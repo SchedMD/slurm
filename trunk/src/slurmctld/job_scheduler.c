@@ -220,9 +220,9 @@ launch_job (struct job_record *job_ptr)
 	launch_msg_ptr -> job_id = job_ptr -> job_id;
 	launch_msg_ptr -> user_id = job_ptr -> user_id;
 	launch_msg_ptr -> nodes = xstrdup (job_ptr -> nodes);
-	launch_msg_ptr -> stderr = xstrdup (job_ptr -> details -> stderr);
-	launch_msg_ptr -> stdin  = xstrdup (job_ptr -> details -> stdin);
-	launch_msg_ptr -> stdout = xstrdup (job_ptr -> details -> stdout);
+	launch_msg_ptr -> err = xstrdup (job_ptr -> details -> err);
+	launch_msg_ptr -> in  = xstrdup (job_ptr -> details -> in);
+	launch_msg_ptr -> out = xstrdup (job_ptr -> details -> out);
 	launch_msg_ptr -> work_dir = xstrdup (job_ptr -> details -> work_dir);
 	launch_msg_ptr -> argc = 0;	/* FIXME */
 	launch_msg_ptr -> argv = NULL;	/* FIXME */

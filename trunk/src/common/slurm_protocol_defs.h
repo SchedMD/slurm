@@ -270,9 +270,9 @@ typedef struct job_descriptor {	/* Job descriptor for submit, allocate, and upda
 	uint32_t num_procs;	/* number of processors required by job, default=0 */
 	uint32_t num_nodes;	/* number of nodes required by job, default=0 */
 	char *script;		/* the actual job script, default NONE */
-	char *stderr;		/* pathname of stderr */
-	char *stdin;		/* pathname of stdin */
-	char *stdout;		/* pathname of stdout */
+	char *err;		/* pathname of stderr */
+	char *in;		/* pathname of stdin */
+	char *out;		/* pathname of stdout */
 	uint32_t user_id;	/* set only if different from current UID, default set
 				 * to UID by API, can only be set if user is root */
 	char *work_dir;		/* fully qualified pathname of working directory */
@@ -537,9 +537,9 @@ typedef struct batch_job_launch_msg {
 	uint32_t user_id;
 	char *nodes;		/* comma delimited list of nodes allocated to job_step */
 	char *script;		/* the actual job script, default NONE */
-	char *stderr;		/* pathname of stderr */
-	char *stdin;		/* pathname of stdin */
-	char *stdout;		/* pathname of stdout */
+	char *err;		/* pathname of stderr */
+	char *in;		/* pathname of stdin */
+	char *out;		/* pathname of stdout */
 	char *work_dir;		/* fully qualified pathname of working directory */
 	uint16_t argc;
 	char **argv;

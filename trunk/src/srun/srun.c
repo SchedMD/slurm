@@ -37,7 +37,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
-#include <linux/limits.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <pwd.h>
@@ -222,11 +221,10 @@ main(int ac, char **av)
 	debug("Started launch thread (%d)", job->lid);
 
 	/* wait for job to terminate */
-	xassert(pthread_mutex_lock(&job->state_mutex) == 0);
+	pthread_mutex_lock(&job->state_mutex);
 	debug3("before main state loop: state = %d", job->state);
 	while (job->state != SRUN_JOB_OVERDONE) {
 		pthread_cond_wait(&job->state_cond, &job->state_mutex);
-		debug3("main thread woke up, state is now %d", job->state);
 	}
 	pthread_mutex_unlock(&job->state_mutex);
 
@@ -338,7 +336,7 @@ allocate_nodes(void)
 		info ("Job %u queued and waiting for resources", resp->job_id);
 		sig_kill_alloc(fake_job_id);
 		action.sa_handler = &sig_kill_alloc;
-		action.sa_flags   = SA_ONESHOT;
+		/* action.sa_flags   = SA_ONESHOT; */
 		sigaction(SIGINT, &action, &old_action);
 		old_job.job_id = resp->job_id;
 		old_job.uid = (uint32_t) getuid();
@@ -478,18 +476,14 @@ sig_thr(void *arg)
 	int signo;
 
 	while (1) {
-		sigfillset(&set);
-		sigdelset(&set, SIGTERM);
-		sigdelset(&set, SIGABRT);
-		sigdelset(&set, SIGSEGV);
-		sigdelset(&set, SIGQUIT);
-		pthread_sigmask(SIG_BLOCK, &set, NULL);
+		sigemptyset(&set);
+		sigaddset(&set, SIGABRT);
+		sigaddset(&set, SIGSEGV);
+		sigaddset(&set, SIGQUIT);
+		sigaddset(&set, SIGINT);
 		sigwait(&set, &signo);
 		debug2("recvd signal %d", signo);
 		switch (signo) {
-		  case SIGTERM:
-			  pthread_exit(0);
-			  break;
 		  case SIGINT:
 			  if (time(NULL) - last_intr > 1) {
 				  if (job->state != SRUN_JOB_OVERDONE) {
@@ -618,11 +612,11 @@ run_batch_job(void)
 	}
 	job.script		= job_script;
 	if (opt.efname)
-		job.stderr	= opt.efname;
+		job.err		= opt.efname;
 	if (opt.ifname)
-		job.stdin	= opt.ifname;
+		job.in		= opt.ifname;
 	if (opt.ofname)
-		job.stdout	= opt.ofname;
+		job.out		= opt.ofname;
 	job.work_dir		= opt.cwd;
 
 	retries = 0;

@@ -23,6 +23,8 @@ endif
 
 noinst_LTLIBRARIES = 	libcommon.la libdaemonize.la libcred.la 
 
+CPPFLAGS = $(SSL_CPPFLAGS)
+
 libcommon_la_SOURCES = 	xmalloc.c 	\
 		      	xassert.c	\
 		      	xstring.c	\
@@ -74,8 +76,9 @@ noinst_HEADERS = 	xmalloc.h 	\
 libdaemonize_la_SOURCES = \
 			daemonize.c
 libcred_la_SOURCES = credential_utils.c signature_utils.c list.c
+
 EXTRA_libcommon_la_SOURCES = \
 			qsw.c
 
-libcommon_la_LIBADD = $(SSL_LIBS) $(AUTHD_LIBS)
-
+libcred_la_LIBADD   = $(SSL_LIBS) $(AUTHD_LIBS)
+libcred_la_LDFLAGS  = $(SSL_LDFLAGS)	

@@ -27,8 +27,19 @@
 #ifndef _HAVE_SLURM_H
 #define _HAVE_SLURM_H
 
+
+#if HAVE_CONFIG_H
+#  include <config.h>
+#  if HAVE_INTTYPES_H
+#    include <inttypes.h>
+#  else
+#    if HAVE_STDINT_H
+#      include <stdint.h>
+#    endif
+#  endif			/* HAVE_INTTYPES_H */
+#endif
+
 #include <pthread.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
 #include <sys/types.h>
@@ -190,9 +201,9 @@ struct job_details {
 	uint32_t min_procs;		/* minimum processors per node, MB */
 	uint32_t min_memory;		/* minimum memory per node, MB */
 	uint32_t min_tmp_disk;		/* minimum temporary disk per node, MB */
-	char *stderr;			/* pathname of job's stderr file */
-	char *stdin;			/* pathname of job's stdin file */
-	char *stdout;			/* pathname of job's stdout file */
+	char *err;			/* pathname of job's stderr file */
+	char *in;			/* pathname of job's stdin file */
+	char *out;			/* pathname of job's stdout file */
 	uint32_t total_procs;		/* total number of allocated processors, for accounting */
 	time_t submit_time;		/* time of submission */
 	char *work_dir;			/* pathname of job's working directory */

@@ -1176,9 +1176,9 @@ void pack_job_desc ( job_desc_msg_t * job_desc_ptr, Buf buffer )
 	packstring_array (job_desc_ptr->environment, job_desc_ptr->env_size, buffer);
 	packstr (job_desc_ptr->script, buffer);
 
-	packstr (job_desc_ptr->stderr, buffer);
-	packstr (job_desc_ptr->stdin, buffer);
-	packstr (job_desc_ptr->stdout, buffer);
+	packstr (job_desc_ptr->err, buffer);
+	packstr (job_desc_ptr->in, buffer);
+	packstr (job_desc_ptr->out, buffer);
 	packstr (job_desc_ptr->work_dir, buffer);
 
 	pack16 (job_desc_ptr->shared, buffer);
@@ -1227,9 +1227,9 @@ int unpack_job_desc ( job_desc_msg_t **job_desc_buffer_ptr, Buf buffer )
 	unpackstring_array (&job_desc_ptr->environment, &job_desc_ptr->env_size, buffer);
 	unpackstr_xmalloc (&job_desc_ptr->script, &uint16_tmp, buffer);
 
-	unpackstr_xmalloc (&job_desc_ptr->stderr, &uint16_tmp, buffer);
-	unpackstr_xmalloc (&job_desc_ptr->stdin, &uint16_tmp, buffer);
-	unpackstr_xmalloc (&job_desc_ptr->stdout, &uint16_tmp, buffer);
+	unpackstr_xmalloc (&job_desc_ptr->err, &uint16_tmp, buffer);
+	unpackstr_xmalloc (&job_desc_ptr->in, &uint16_tmp, buffer);
+	unpackstr_xmalloc (&job_desc_ptr->out, &uint16_tmp, buffer);
 	unpackstr_xmalloc (&job_desc_ptr->work_dir, &uint16_tmp, buffer);
 
 	unpack16 (&job_desc_ptr->shared, buffer);	
@@ -1586,9 +1586,9 @@ pack_batch_job_launch ( batch_job_launch_msg_t* msg , Buf buffer )
 	packstr ( msg -> script, buffer ) ;
 	packstr ( msg -> work_dir, buffer ) ;
 
-	packstr ( msg -> stderr, buffer ) ;
-	packstr ( msg -> stdin, buffer ) ;
-	packstr ( msg -> stdout, buffer ) ;
+	packstr ( msg -> err, buffer ) ;
+	packstr ( msg -> in, buffer ) ;
+	packstr ( msg -> out, buffer ) ;
 
 	pack16 ( msg -> argc, buffer ) ;
 	packstring_array (msg -> argv, msg -> argc, buffer);
@@ -1617,9 +1617,9 @@ unpack_batch_job_launch( batch_job_launch_msg_t** msg , Buf buffer )
 	unpackstr_xmalloc ( & launch_msg_ptr -> script, & uint16_tmp , buffer ) ;
 	unpackstr_xmalloc ( & launch_msg_ptr -> work_dir, & uint16_tmp , buffer ) ;
 
-	unpackstr_xmalloc ( & launch_msg_ptr -> stderr, & uint16_tmp , buffer ) ;
-	unpackstr_xmalloc ( & launch_msg_ptr -> stdin, & uint16_tmp , buffer ) ;
-	unpackstr_xmalloc ( & launch_msg_ptr -> stdout, & uint16_tmp , buffer ) ;
+	unpackstr_xmalloc ( & launch_msg_ptr -> err, & uint16_tmp , buffer ) ;
+	unpackstr_xmalloc ( & launch_msg_ptr -> in, & uint16_tmp , buffer ) ;
+	unpackstr_xmalloc ( & launch_msg_ptr -> out, & uint16_tmp , buffer ) ;
 
 	unpack16 ( & launch_msg_ptr -> argc, buffer ) ;
 	unpackstring_array (& launch_msg_ptr -> argv, &launch_msg_ptr -> argc, buffer);
