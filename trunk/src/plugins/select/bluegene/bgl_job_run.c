@@ -517,12 +517,16 @@ static int _excise_block(List block_list, pm_partition_id_t bgl_part_id,
 	while ((block = list_next(iter))) {
 		if (strcmp(block->bgl_part_id, bgl_part_id))
 			continue;
-		if (strcmp(block->nodes, nodes))	/* changed bglblock */
+		if (strcmp(block->nodes, nodes)) {	/* changed bglblock */
+			error("bgl_part_id:%s old_nodes:%s new_nodes:%s",
+				bgl_part_id, nodes, block->nodes);
 			break;
+		}
 
 		/* exact match of name and node list */
 		rc = SLURM_SUCCESS;
 		(void) list_remove(iter);
+		break;
 	}
 
 	list_iterator_destroy(iter);
@@ -627,6 +631,7 @@ extern int sync_jobs(List job_list)
 	/* Insure that all running jobs own the specified partition */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		bool good_block = true;
 		if (job_ptr->job_state != JOB_RUNNING)
 			continue;
 
@@ -634,10 +639,21 @@ extern int sync_jobs(List job_list)
 		select_g_get_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_PART_ID, &(bgl_update_ptr->bgl_part_id));
 
-		if (_excise_block(block_list, bgl_update_ptr->bgl_part_id, 
-				job_ptr->nodes) != SLURM_SUCCESS) {
+		if (bgl_update_ptr->bgl_part_id == NULL) {
+			error("Running job %u has bglblock==NULL", 
+				job_ptr->job_id);
+			good_block = false;
+		} else if (job_ptr->nodes == NULL) {
+			error("Running job %u has nodes==NULL",
+				job_ptr->job_id);
+			good_block = false;
+		} else if (_excise_block(block_list, bgl_update_ptr->
+				bgl_part_id, job_ptr->nodes) != SLURM_SUCCESS) {
 			error("Kill job %u belongs to defunct bglblock %s",
 				job_ptr->job_id, bgl_update_ptr->bgl_part_id);
+			good_block = false;
+		}
+		if (!good_block) {
 			job_ptr->job_state = JOB_FAILED | JOB_COMPLETING;
 			xfree(bgl_update_ptr);
 			xfree(bgl_update_ptr->bgl_part_id);
