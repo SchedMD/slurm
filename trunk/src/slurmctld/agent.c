@@ -58,8 +58,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <slurm/slurm.h>
-
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"

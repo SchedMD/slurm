@@ -433,6 +433,20 @@ void inline slurm_free_srun_ping_msg(srun_ping_msg_t * msg);
 void inline slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg);
 void inline slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg);
 
+void slurm_free_resource_allocation_response_msg (
+		resource_allocation_response_msg_t * msg);
+void slurm_free_resource_allocation_and_run_response_msg (
+		resource_allocation_and_run_response_msg_t * msg);
+void slurm_free_job_step_create_response_msg(
+		job_step_create_response_msg_t * msg);
+void slurm_free_submit_response_response_msg(submit_response_msg_t * msg);
+void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr);
+void slurm_free_job_info_msg(job_info_msg_t * job_buffer_ptr);
+void slurm_free_job_step_info_response_msg(
+		job_step_info_response_msg_t * msg);
+void slurm_free_node_info_msg(node_info_msg_t * msg);
+void slurm_free_partition_info_msg(partition_info_msg_t * msg);
+
 extern char *job_dist_string(uint16_t inx);
 extern char *job_state_string(enum job_states inx);
 extern char *job_state_string_compact(enum job_states inx);

@@ -31,7 +31,6 @@ libslurm_la_SOURCES =    \
 	cancel.c         \
 	complete.c       \
 	config_info.c    \
-	free_msg.c       \
 	init_msg.c       \
 	job_info.c       \
 	job_step_info.c  \
