@@ -24,6 +24,7 @@
 #ifndef _CREDENTIAL_UTILS_H
 #define _CREDENTIAL_UTILS_H
 
+#include <stdint.h>
 #include <stdio.h>
 #include <openssl/rsa.h>
 #include <openssl/evp.h>
@@ -34,35 +35,39 @@
 #include <openssl/ssl.h>
 
 #include "src/common/list.h"
+#include "src/common/pack.h"
 #include "src/common/signature_utils.h"
 #include "src/common/slurm_protocol_api.h"
 
 typedef struct credential_state {
-	int job_id;		/* job_id that this credential cooresponds to */
-	short int revoked;	/* boolean true/false */
-	short int procs_allocated;	/* number of credential procs running */
-	short int total_procs;	/* number of procs in credential */
+	uint32_t job_id;	/* job_id this credential corresponds to */
+	uint16_t revoked;	/* boolean true/false */
+	uint16_t procs_allocated;  /* number of credential procs running */
+	uint16_t total_procs;	/* number of procs in credential */
 	time_t revoke_time;	/* time of revoke - this is informational only 
 				 * not used */
 	time_t expiration;	/* expiration date set at credential creation 
 				 * time */
 } credential_state_t;
 
-/* time to wait after expiration_time before removing credential_state from credential_state_list, time in seconds */
+/* time to wait after expiration_time before removing credential_state 
+ * from credential_state_list, time in seconds */
 #define EXPIRATION_WINDOW 600
 
 /* function prototypes */
 /* initialize_credential_state_list
  * called from slurmd_init initializes the List structure pointed to by list
  * IN list	- type List 
+ * RET int	- zero or error code
  */
-int initialize_credential_state_list(List * list);
+extern int initialize_credential_state_list(List * list);
 
 /* destroy_credential_state_list
  * destroys a initialized list
  * IN list	- type List 
+ * RET int	- zero or error code
  */
-int destroy_credential_state_list(List list);
+extern int destroy_credential_state_list(List list);
 
 /* print_credential
  * log a credential using info() function
@@ -76,25 +81,46 @@ void print_credential(slurm_job_credential_t * cred);
  * IN verfify_ctx		- slurm ssl public key ctx
  * IN credential		- credential to verify
  * IN credential_state_list	- list to add credential state object to 
+ * RET int			- zero or error code
  */
-int verify_credential(slurm_ssl_key_ctx_t * verfify_ctx,
-		      slurm_job_credential_t * credential,
-		      List credential_state_list);
+extern int verify_credential(slurm_ssl_key_ctx_t * verfify_ctx,
+			     slurm_job_credential_t * credential,
+			     List credential_state_list);
 
 /* sign_credential
  * signs a credential before transmit
  * used by slurmctld
- * IN sign_ctx			- slurm ssl private key ctx
- * IN credential		- credential to sign 
+ * IN sign_ctx		- slurm ssl private key ctx
+ * IN credential	- credential to sign 
+ * RET int		- zero or error code
  */
-int sign_credential(slurm_ssl_key_ctx_t * sign_ctx,
-		    slurm_job_credential_t * credential);
+extern int sign_credential(slurm_ssl_key_ctx_t * sign_ctx,
+			   slurm_job_credential_t * credential);
 
 /* revoke_credential
  * expires a credential in the credential_state_list
- * IN revoke_msg		- revoke rpc message
- * IN list			- list to revoke credential state object in
+ * IN revoke_msg	- revoke rpc message
+ * IN list		- list to revoke credential state object in
+ * RET int		- zero or error code
  */
-int revoke_credential(revoke_credential_msg_t * revoke_msg, List list);
+extern int revoke_credential(revoke_credential_msg_t * revoke_msg, List list);
+
+/* pack_credential_list
+ * pack a list of credentials into a machine independent format buffer
+ * IN list		- list to credentials to pack
+ * IN/OUT buffer	- existing buffer into which the credential
+ *			  information should be stored
+ */ 
+extern void pack_credential_list(List list, Buf buffer);
+
+/* unpack_credential_list
+ * unpack a list of credentials from a machine independent format buffer
+ * IN/OUT list		- existing list into which the credential records 
+ *			  from the buffer are added
+ * IN buffer		- existing buffer from which the credential
+ *			  information should be read
+ * RET int		- zero or error code
+ */ 
+extern int unpack_credential_list(List list, Buf buffer);
 
 #endif
