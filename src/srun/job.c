@@ -48,7 +48,9 @@ typedef struct allocation_info {
 	uint32_t                jobid;
 	uint32_t                stepid;
 	char                   *nodelist;
+	int                     nnodes;
 	slurm_addr             *addrs;
+	int                     num_cpu_groups;
 	int                    *cpus_per_node;
 	int                    *cpu_count_reps;
 } allocation_info_t;
@@ -62,6 +64,27 @@ _estimate_nports(int nclients, int cli_per_port)
 	return d.rem > 0 ? d.quot + 1 : d.quot;
 }
 
+static int
+_compute_task_count(allocation_info_t *info)
+{
+	int i, cnt = 0;
+
+	if (opt.cpus_set) {
+		for (i = 0; i < info->num_cpu_groups; i++)
+			cnt += ( info->cpu_count_reps[i] *
+				 (info->cpus_per_node[i]/opt.cpus_per_task));
+	}
+
+	return (cnt < info->nnodes) ? info->nnodes : cnt;
+}
+
+static void
+_set_nprocs(allocation_info_t *info)
+{
+	if (!opt.nprocs_set)
+		opt.nprocs = _compute_task_count(info);
+}
+
 
 static job_t *
 _job_create_internal(allocation_info_t *info)
@@ -72,6 +95,10 @@ _job_create_internal(allocation_info_t *info)
 	int tph     = 0;
 	hostlist_t hl;
 	job_t *job;
+
+	/* Reset nprocs if necessary 
+	 */
+	_set_nprocs(info);
 
 	job = xmalloc(sizeof(*job));
 
@@ -120,7 +147,7 @@ _job_create_internal(allocation_info_t *info)
 	job->outbuf     = (cbuf_t *) xmalloc(opt.nprocs * sizeof(cbuf_t));
 	job->errbuf     = (cbuf_t *) xmalloc(opt.nprocs * sizeof(cbuf_t));
 	job->inbuf      = (cbuf_t *) xmalloc(opt.nprocs * sizeof(cbuf_t));
-	job->stdin_eof  = (bool *)    xmalloc(opt.nprocs * sizeof(bool));
+	job->stdin_eof  = (bool *)   xmalloc(opt.nprocs * sizeof(bool));
 
 
 	/* nhost host states */
@@ -177,8 +204,10 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 	allocation_info_t *info = xmalloc(sizeof(*info));
 
 	info->nodelist       = resp->node_list;
+	info->nnodes	     = resp->node_cnt;
 	info->jobid          = resp->job_id;
 	info->stepid         = NO_VAL;
+	info->num_cpu_groups = resp->num_cpu_groups;
 	info->cpus_per_node  = resp->cpus_per_node;
 	info->cpu_count_reps = resp->cpu_count_reps;
 	info->addrs          = resp->node_addr;
@@ -225,9 +254,11 @@ job_create_noalloc(void)
 	info->jobid          = (uint32_t) (lrand48() % 65550L + 1L);
 	info->stepid         = 0;
 	info->nodelist       = opt.nodelist;
+	info->nnodes         = hostlist_count(hl);
 
-	if (opt.nprocs < hostlist_count(hl))
+	/* if (opt.nprocs < info->nnodes)
 		opt.nprocs = hostlist_count(hl);
+	*/
 	hostlist_destroy(hl);
 
 	info->cpus_per_node  = &cpn;

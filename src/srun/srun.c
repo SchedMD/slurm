@@ -329,25 +329,10 @@ _allocate_nodes(void)
 		}
 		sigaction(SIGINT, &old_action, NULL);
 	}
-	if (!opt.nprocs_set)	/* can vary by min-max node count */
-		opt.nprocs = _compute_task_count(resp);
-
+	
 	return resp;
 }
 
-static int _compute_task_count(allocation_resp *resp)
-{
-	int i, cnt = 0;
-
-	if (opt.cpus_set) {
-		for (i=0; i<resp->num_cpu_groups; i++)
-			cnt += (resp->cpu_count_reps[i] * 
-				(resp->cpus_per_node[i]/opt.cpus_per_task));
-	} 
-	if (cnt < resp->node_cnt)
-		cnt = resp->node_cnt;
-	return cnt;
-}
 
 static void
 _sig_kill_alloc(int signum)
@@ -773,8 +758,14 @@ _set_batch_script_env(uint32_t jobid, uint32_t node_cnt)
 			opt.nprocs = node_cnt;
 	}
 
-	if (setenvf("SLURM_NPROCS=%u", opt.nprocs)) {
+	if (opt.nprocs_set && setenvf("SLURM_NPROCS=%u", opt.nprocs)) {
 		error("Unable to set SLURM_NPROCS environment variable");
+		return -1;
+	}
+
+	if ( (opt.cpus_per_task > 0) &&
+	     setenvf("SLURM_CPUS_PER_TASK=%u", opt.cpus_per_task)) {
+		error("Unable to set SLURM_CPUS_PER_TASK");
 		return -1;
 	}
 
