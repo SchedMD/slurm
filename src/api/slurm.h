@@ -612,6 +612,15 @@ extern void slurm_print_job_info_msg ( FILE * out,
 extern void slurm_print_job_info ( FILE*, job_info_t * job_ptr );
 
 /*
+ * slurm_pid2jobid - issue RPC to get the slurm job_id given a process_id 
+ *	on this machine
+ * IN job_pid - process_id of interest on this machine
+ * OUT job_id_ptr - place to store a slurm job_id
+ * RET 0 or a slurm error code
+ */
+extern int slurm_pid2jobid ( pid_t job_pid, uint32_t * job_id_ptr ) ;
+
+/*
  * slurm_update_job - issue RPC to a job's configuration per request, 
  *	only usable by user root or (for some parameters) the job's owner
  * IN job_msg - description of job updates
