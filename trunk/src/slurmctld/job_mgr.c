@@ -461,7 +461,7 @@ static int _load_job_state(Buf buffer)
 		      job_id, job_state, batch_flag);
 		goto unpack_error;
 	}
-	if (kill_on_step_done > KILL_IN_PROGRESS) {
+	if (kill_on_step_done > KILL_ON_STEP_DONE) {
 		error("Invalid data for job %u: kill_on_step_done=%u",
 		      job_id, kill_on_step_done);
 		goto unpack_error;
@@ -1169,8 +1169,7 @@ int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
 		return ESLURM_USER_ID_MISSING;
 	}
 
-	if ((IS_JOB_FINISHED(job_ptr)) ||
-	    (job_ptr->kill_on_step_done & KILL_IN_PROGRESS))
+	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 
 	if ((job_ptr->job_state == JOB_PENDING) &&
@@ -1198,14 +1197,9 @@ int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
 		list_iterator_destroy (step_record_iterator);
 
 		if (signal == SIGKILL) {
-			job_ptr->kill_on_step_done |= KILL_IN_PROGRESS;
 			job_ptr->time_last_active   = now;
 			last_job_update = now;
-		}
-		if ((signal == SIGKILL) && (step_cnt == 0)) {
-			/* kill job with no active steps */
 			job_ptr->job_state = JOB_COMPLETE | JOB_COMPLETING;
-			job_ptr->end_time  = now;
 			deallocate_nodes(job_ptr, false);
 		}
 		verbose("job_signal of running job %u successful", job_id);
@@ -1878,21 +1872,6 @@ void job_time_limit(void)
 		if (job_ptr->job_state != JOB_RUNNING)
 			continue;
 
-		if (job_ptr->kill_on_step_done & KILL_IN_PROGRESS) {
-			if (difftime(now, job_ptr->time_last_active) <=
-			    JOB_KILL_TIMEOUT)
-				continue;
-			last_job_update = now;
-			info("Job_id %u not properly terminating, forcing it",
-			     job_ptr->job_id);
-			last_job_update = now;
-			job_ptr->end_time = time(NULL);
-			job_ptr->job_state = JOB_TIMEOUT | JOB_COMPLETING;
-			deallocate_nodes(job_ptr, false);
-			delete_all_step_records(job_ptr);
-			continue;
-		}
-
 		if (slurmctld_conf.inactive_limit) {
 			if (job_ptr->step_list &&
 			    (list_count(job_ptr->step_list) > 0))
@@ -1928,7 +1907,6 @@ static void _job_timed_out(struct job_record *job_ptr)
 		job_ptr->end_time           = now;
 		job_ptr->time_last_active   = now;
 		job_ptr->job_state          = JOB_TIMEOUT | JOB_COMPLETING;
-		job_ptr->kill_on_step_done &= KILL_IN_PROGRESS;
 		deallocate_nodes(job_ptr, true);
 	} else
 		job_signal(job_ptr->job_id, SIGKILL, 0);
