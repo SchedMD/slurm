@@ -421,12 +421,13 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg)
 
 	/* initialize header */
 	init_header(&header, msg->msg_type, SLURM_PROTOCOL_NO_FLAGS);
-	if ((rc =
-	     slurm_auth_activate_credentials(creds, CREDENTIAL_TTL_SEC))
-	    != SLURM_SUCCESS) {
-		/* Should probably do something more meaningful. */
+	rc = slurm_auth_activate_credentials(creds, CREDENTIAL_TTL_SEC);
+	if (rc != SLURM_SUCCESS)	/* Try once more */
+		rc = slurm_auth_activate_credentials(creds, 
+						     CREDENTIAL_TTL_SEC);
+	if (rc != SLURM_SUCCESS) {
 		error
-		    ("init_header: failed to sign client credentials rc=%d",
+		    ("slurm_send_node_msg: sending msg with unsigned credential, rc=%d)",
 		     rc);
 	}
 
