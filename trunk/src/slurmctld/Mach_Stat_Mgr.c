@@ -15,12 +15,10 @@
 #define DEBUG_MODULE 1
 #define SEPCHARS " \n\t"
 
-struct Node_Record  Default_Record;	/* Default values for node record */
-struct Node_Record  Node_Record_Read;	/* Node record being read */
 List   Node_Record_List = NULL;		/* List of Node_Records */
 
-int	Delete_Record(char *name);
-struct Node_Record  *Duplicate_Record(char *name);
+int	Delete_Node_Record(char *name);
+struct Node_Record  *Find_Node_Record(char *name);
 int 	Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS, 
 	int *My_CPUs, int *Set_CPUs, float *My_Speed, int *Set_Speed,
 	int *My_RealMemory, int *Set_RealMemory, int *My_VirtualMemory, int *Set_VirtualMemory, 
@@ -28,6 +26,7 @@ int 	Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
 	enum Node_State *NodeState, int *Set_State, time_t *My_LastResponse, int *Set_LastResponse);
 void	Partition_String_To_Value (char *partition, unsigned int *Partition_Value, int *Error_Code);
 void 	Partition_Value_To_String(unsigned int partition, char *Partition_String, int Partition_String_size, char *node_name);
+int	Tally_Node_CPUs(char *Node_List);
 
 #ifdef DEBUG_MODULE
 /* main is used here for testing purposes only */
@@ -45,8 +44,10 @@ main(int argc, char * argv[]) {
 	exit(1);
     } /* if */
 
+    /* Update existing record */
     Error_Code = Update_Node_Spec_Conf("Name=mx01 CPUs=3 TmpDisk=12345");
     if (Error_Code != 0) printf("Error %d from Update_Node_Spec_Conf\n", Error_Code);
+    /* Create a new record */
     Error_Code = Update_Node_Spec_Conf("Name=mx03 CPUs=4 TmpDisk=16384 Partition=9 State=IDLE LastResponse=123");
     if (Error_Code != 0) printf("Error %d from Update_Node_Spec_Conf\n", Error_Code);
 
@@ -64,16 +65,20 @@ main(int argc, char * argv[]) {
     Error_Code = Show_Node_Record("mx03", Out_Line);
     if (Error_Code != 0) printf("Error %d from Show_Node_Record", Error_Code);
     if (Error_Code == 0) printf("Show_Node_Record: %s\n", Out_Line);
+
+    Error_Code = Tally_Node_CPUs("mx01,mx03 junk...");
+    if (Error_Code != 7) printf("Tally_Node_CPUs returned %d instead of 7\n");
+
     exit(0);
 } /* main */
 #endif
 
 /* 
- * Delete_Record - Find a record for node with specified name and delete it
+ * Delete_Node_Record - Find a record for node with specified name and delete it
  * Input: name - name of the node
  * Output: returns 0 on no error, otherwise errno
  */
-int Delete_Record(char *name) {
+int Delete_Node_Record(char *name) {
     int Error_Code;
     ListIterator Node_Record_Iterator;		/* For iterating through Node_Record_List */
     struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
@@ -81,9 +86,9 @@ int Delete_Record(char *name) {
     Node_Record_Iterator = list_iterator_create(Node_Record_List);
     if (Node_Record_Iterator == NULL) {
 #ifdef DEBUG_MODULE
-	fprintf(stderr, "Delete_Record: list_iterator_create unable to allocate memory\n");
+	fprintf(stderr, "Delete_Node_Record: list_iterator_create unable to allocate memory\n");
 #else
-	syslog(LOG_ERR, "Delete_Record: list_iterator_create unable to allocate memory\n");
+	syslog(LOG_ERR, "Delete_Node_Record: list_iterator_create unable to allocate memory\n");
 #endif
 	return ENOMEM;
     }
@@ -100,7 +105,7 @@ int Delete_Record(char *name) {
 
     list_iterator_destroy(Node_Record_Iterator);
     return Error_Code;
-} /* Delete_Record */
+} /* Delete_Node_Record */
 
 
 /*
@@ -173,18 +178,18 @@ int Dump_Node_Records (char *File_Name) {
 
 
 /* 
- * Duplicate_Record - Find a record for node with specified name, return pointer or NULL if not found
+ * Find_Node_Record - Find a record for node with specified name, return pointer or NULL if not found
  */
-struct Node_Record *Duplicate_Record(char *name) {
+struct Node_Record *Find_Node_Record(char *name) {
     ListIterator Node_Record_Iterator;		/* For iterating through Node_Record_List */
     struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
 
     Node_Record_Iterator = list_iterator_create(Node_Record_List);
     if (Node_Record_Iterator == NULL) {
 #ifdef DEBUG_MODULE
-	fprintf(stderr, "Duplicate_Record:list_iterator_create unable to allocate memory\n");
+	fprintf(stderr, "Find_Node_Record: list_iterator_create unable to allocate memory\n");
 #else
-	syslog(LOG_ERR, "Duplicate_Record:list_iterator_create unable to allocate memory\n");
+	syslog(LOG_ERR, "Find_Node_Record: list_iterator_create unable to allocate memory\n");
 #endif
 	return NULL;
     }
@@ -195,7 +200,7 @@ struct Node_Record *Duplicate_Record(char *name) {
 
     list_iterator_destroy(Node_Record_Iterator);
     return Node_Record_Point;
-} /* Duplicate_Record */
+} /* Find_Node_Record */
 
 
 /* 
@@ -219,7 +224,7 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
     *Set_RealMemory    = 0;
     *Set_VirtualMemory = 0;
     *Set_TmpDisk       = 0;
-    *Set_Partition          = 0;
+    *Set_Partition     = 0;
     *Set_State         = 0;
     *Set_LastResponse  = 0;
 
@@ -403,6 +408,9 @@ int Read_Node_Spec_Conf (char *File_Name) {
     enum Node_State My_NodeState;
     time_t My_LastResponse;
 
+    struct Node_Record  Default_Record;	/* Default values for node record */
+    struct Node_Record  Node_Record_Read;	/* Node record being read */
+
     int Set_CPUs, Set_Speed, Set_RealMemory, Set_VirtualMemory, Set_TmpDisk;
     int Set_Partition, Set_State, Set_LastResponse;
 
@@ -451,6 +459,18 @@ int Read_Node_Spec_Conf (char *File_Name) {
 	    &My_TmpDisk, &Set_TmpDisk, &My_Partition, &Set_Partition, &My_NodeState, &Set_State,
 	    &My_LastResponse, &Set_LastResponse);
 	if (Error_Code != 0) break;
+	if (strlen(My_Name) == 0) {
+#ifdef DEBUG_MODULE
+	    fprintf(stderr, "Read_Node_Spec_Conf line %d, of input file %s contains no Name\n", 
+		Line_Num, File_Name);
+#else
+	    syslog(LOG_ALERT, "Read_Node_Spec_Conf line %d, of input file %s contains no Name\n", 
+		Line_Num, File_Name);
+#endif
+	    Error_Code = EINVAL;
+	    break;
+	} /* if */
+
 	if (strcmp("DEFAULT", My_Name) == 0) {
 	    if (strlen(My_OS) != 0)     strcpy(Default_Record.OS, My_OS);
 	    if (Set_CPUs != 0)          Default_Record.CPUs=My_CPUs;
@@ -458,10 +478,10 @@ int Read_Node_Spec_Conf (char *File_Name) {
 	    if (Set_RealMemory != 0)    Default_Record.RealMemory=My_RealMemory;
 	    if (Set_VirtualMemory != 0) Default_Record.VirtualMemory=My_VirtualMemory;
 	    if (Set_TmpDisk != 0)       Default_Record.TmpDisk=My_TmpDisk;
-	    if (Set_Partition != 0)          Default_Record.Partition=My_Partition;
+	    if (Set_Partition != 0)     Default_Record.Partition=My_Partition;
 	    if (Set_State != 0)         Default_Record.NodeState=My_NodeState;
 	} else {
-	    Node_Record_Point = Duplicate_Record(Node_Record_Read.Name);
+	    Node_Record_Point = Find_Node_Record(Node_Record_Read.Name);
 	    if (Node_Record_Point == NULL) {
 		Node_Record_Point = (struct Node_Record *)malloc(sizeof(struct Node_Record));
 		if (Node_Record_Point == NULL) {
@@ -536,7 +556,7 @@ int Read_Node_Spec_Conf (char *File_Name) {
     char Out_Partition[MAX_PARTITION*3], Out_Time[20];
     struct tm *Node_Time;
 
-    Node_Record_Point = Duplicate_Record(Node_Name);
+    Node_Record_Point = Find_Node_Record(Node_Name);
     if (Node_Record_Point == NULL) return ENOENT;
     Partition_Value_To_String(Node_Record_Point->Partition, Out_Partition, sizeof(Out_Partition), Node_Record_Point->Name);
 /* Alternate, human readable, formatting shown below and commented out */
@@ -555,7 +575,69 @@ int Read_Node_Spec_Conf (char *File_Name) {
 } /* Show_Node_Record */
 
 /*
- * Update_Node_Spec_Conf - Update the configuration for the given node, create record as needed 
+ * Tally_Node_CPUs - Return the count of CPUs in the list provided
+ * Input: comma separated list of nodes
+ * Output: Count of CPUs in the node list provided
+ */
+int Tally_Node_CPUs(char *Node_List) {
+    ListIterator Node_Record_Iterator;		/* For iterating through Node_Record_List */
+    struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
+    int CPU_Count, i, j, str_size;
+    char **str_ptr;
+
+    Node_Record_Iterator = list_iterator_create(Node_Record_List);
+    if (Node_Record_Iterator == NULL) {
+#ifdef DEBUG_MODULE
+	fprintf(stderr, "Tally_Node_CPUs: list_iterator_create unable to allocate memory\n");
+#else
+	syslog(LOG_ERR, "Tally_Node_CPUs: list_iterator_create unable to allocate memory\n");
+#endif
+	return 0;
+    }
+
+    str_ptr = malloc(strlen(Node_List)*sizeof(char *));
+    if (str_ptr == NULL) {
+#ifdef DEBUG_MODULE
+	fprintf(stderr, "Tally_Node_CPUs: unable to allocate memory\n");
+#else
+	syslog(LOG_ERR, "Tally_Node_CPUs: unable to allocate memory\n");
+#endif
+	return 0;
+    } /* if */
+
+    str_ptr[0] = Node_List;
+    j = 1;
+    for (i=0; i<=strlen(Node_List); i++) {
+	if (Node_List[i] == ',') {
+	    str_ptr[j++] = &Node_List[i+1];
+	} else if ((Node_List[i] == ' ') || (Node_List[i] == '\t') || (Node_List[i] == '\n')) {
+	    str_ptr[j++] = &Node_List[i+1];  /* Used just for computing size */
+	    str_ptr[j] == (char *)NULL;
+	    break;
+	} /* if */
+    } /* for */
+
+    CPU_Count = 0;
+    while (Node_Record_Point = (struct Node_Record *)list_next(Node_Record_Iterator)) {
+	/* Look for this node name, Node_Record_Point->Name, in Node_List */
+	str_size = strlen(Node_Record_Point->Name);
+	for (i=0; i<=strlen(Node_List); i++) {
+	    if (str_ptr[i] == (char *)NULL) break;
+	    if ((str_ptr[i+1] != (char *)NULL) && 
+	        ((int)(str_ptr[i+1] - str_ptr[i] - 1) != str_size)) continue;
+	    if (strncmp(str_ptr[i], Node_Record_Point->Name, str_size) != 0) continue;
+	    CPU_Count += Node_Record_Point->CPUs;
+	} /* for */
+    } /* while */
+
+    list_iterator_destroy(Node_Record_Iterator);
+    return CPU_Count;
+} /* Tally_Node_CPUs */
+
+
+/*
+ * Update_Node_Spec_Conf - Update the configuration for the given node, 
+ *	create record as needed 
  *	NOTE: To delete a record, specify CPUs=0 in the configuration
  * Input: Specification - Standard configuration file input line
  * Output: return - 0 if no error, otherwise errno
@@ -593,7 +675,7 @@ int Update_Node_Spec_Conf (char *Specification) {
 	return EINVAL;
     } /* if */
 
-    Node_Record_Point = Duplicate_Record(My_Name);
+    Node_Record_Point = Find_Node_Record(My_Name);
     if (Node_Record_Point == NULL) {		/* Create new record as needed */
 	Node_Record_Point = (struct Node_Record *)malloc(sizeof(struct Node_Record));
 	if (Node_Record_Point == NULL) {
@@ -628,7 +710,7 @@ int Update_Node_Spec_Conf (char *Specification) {
 
     
     if ((Set_CPUs != 0) && (My_CPUs == 0)) {	/* Delete record */
-	return Delete_Record(My_Name);
+	return Delete_Node_Record(My_Name);
 	return 0;
     } /* if */
 
@@ -639,7 +721,7 @@ int Update_Node_Spec_Conf (char *Specification) {
     if (Set_RealMemory != 0)    Node_Record_Point->RealMemory=My_RealMemory;
     if (Set_VirtualMemory != 0) Node_Record_Point->VirtualMemory=My_VirtualMemory;
     if (Set_TmpDisk != 0)       Node_Record_Point->TmpDisk=My_TmpDisk;
-    if (Set_Partition != 0)          Node_Record_Point->Partition=My_Partition;
+    if (Set_Partition != 0)     Node_Record_Point->Partition=My_Partition;
     if (Set_State != 0)         Node_Record_Point->NodeState=My_State;
     if (Set_LastResponse != 0)  Node_Record_Point->LastResponse=My_LastResponse;
 
@@ -677,7 +759,7 @@ int Validate_Node_Spec (char *Specification) {
     if (Error_Code != 0) return Error_Code;
     if (My_Name[0] == (char)NULL) return EINVAL;
 
-    Node_Record_Point = Duplicate_Record(My_Name);
+    Node_Record_Point = Find_Node_Record(My_Name);
     if (Node_Record_Point == NULL) return ENOENT;
     if ((strlen(My_OS) != 0) && 
 	(strcmp(Node_Record_Point->OS, My_OS) < 0)) return EINVAL;
