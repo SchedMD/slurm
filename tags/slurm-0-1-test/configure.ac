@@ -1,0 +1,481 @@
+# This file is to be processed with autoconf to generate a configure script
+
+dnl Prologue
+dnl
+AC_INIT
+AC_PREREQ(2.52)
+AC_CONFIG_SRCDIR([configure.ac])
+AC_CONFIG_AUX_DIR(auxdir)
+AC_CANONICAL_TARGET([])
+
+#
+# Determine project/version from META file.
+# These are substituted into the Makefile and config.h.
+#
+PROJECT="`perl -ne 'print,exit if s/^\s*NAME:\s*(\S*).*/\1/i' $srcdir/META`"
+AC_DEFINE_UNQUOTED(PROJECT, "$PROJECT", [Define the project's name.])
+AC_SUBST(PROJECT)
+
+# Automake desires "PACKAGE" variable instead of PROJECT
+PACKAGE=$PROJECT
+
+# rpm make target needs Version in META, not major and minor version nubmers
+VERSION="`perl -ne 'print,exit if s/^\s*VERSION:\s*(\S*).*/\1/i' $srcdir/META`"
+AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Define the project's version.])
+AC_SUBST(VERSION)
+
+SLURM_MAJOR="`perl -ne 'print,exit if s/^\s*MAJOR:\s*(\S*).*/\1/i' $srcdir/META`"
+AC_DEFINE_UNQUOTED(SLURM_MAJOR, "$SLURM_MAJOR", [Define the project's major version.])
+AC_SUBST(SLURM_MAJOR)
+
+SLURM_MINOR="`perl -ne 'print,exit if s/^\s*MINOR:\s*(\S*).*/\1/i' $srcdir/META`"
+AC_DEFINE_UNQUOTED(SLURM_MINOR, "$SLURM_MINOR", [Define the project's minor version.])
+AC_SUBST(SLURM_MINOR)
+
+#SLURM_VERSION="$SLURM_MAJOR.$SLURM_MINOR"
+
+#VERSION=$SLURM_VERSION
+#AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Define the project's version.])
+#AC_SUBST(VERSION)
+
+RELEASE="`perl -ne 'print,exit if s/^\s*RELEASE:\s*(\S*).*/\1/i' $srcdir/META`"
+AC_DEFINE_UNQUOTED(RELEASE, "$RELEASE", [Define the project's release.])
+AC_SUBST(RELEASE)
+
+dnl Initialize Automake
+dnl
+AM_INIT_AUTOMAKE(slurm, $VERSION)
+AM_CONFIG_HEADER(config.h)
+AM_CONFIG_HEADER(slurm/slurm.h)
+
+
+dnl Checks for programs.
+dnl
+AC_PROG_CC
+AC_PROG_MAKE_SET
+AC_PROG_LIBTOOL
+
+
+dnl Checks for libraries
+dnl
+
+
+dnl Checks for header files.
+dnl
+AC_CHECK_HEADERS(popt.h mcheck.h values.h socket.h sys/socket.h  \
+                 stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
+                 stdlib.h \
+		 )
+AC_HEADER_SYS_WAIT
+AC_HEADER_TIME
+AC_HEADER_STDC
+
+dnl Checks for structures.
+dnl
+
+dnl check to see if glibc's program_invocation_short_name is available:
+dnl
+AC_MSG_CHECKING([for program_invocation_short_name])
+AC_TRY_LINK([extern char *program_invocation_short_name;], 
+  [char *p; p = program_invocation_short_name; printf("%s\n", p);],
+  [got_program_invocation_short_name=yes],
+  []
+)
+AC_MSG_RESULT(${got_program_invocation_short_name=no})
+if test "x$got_program_invocation_short_name" = "xyes"; then
+  AC_DEFINE(HAVE_PROGRAM_INVOCATION_SHORT_NAME, 1, 
+            [Define if libc sets program_invocation_short_name]
+	   )
+fi
+
+
+dnl Checks for types.
+dnl
+AC_C_BIGENDIAN
+if test "x$ac_cv_c_bigendian" = "xyes"; then
+  AC_DEFINE(SLURM_BIGENDIAN,1,
+           [Define if your architecture's byteorder is big endian.])
+fi
+  
+
+dnl Checks for compiler characteristics.
+dnl
+AC_PROG_GCC_TRADITIONAL([])
+
+
+dnl checks for library functions.
+dnl
+AC_FUNC_MALLOC
+AC_FUNC_STRERROR_R
+AC_CHECK_FUNCS(strerror mtrace)
+
+dnl AC_SEARCH_LIBS([pthread_create], [pthread c_r cr], [], 
+dnl               [AC_MSG_ERROR([Error: Cannot find the pthread library])])
+
+ACX_PTHREAD([], AC_MSG_ERROR([Error: Cannot figure out how to use pthreads!]))
+
+# Always define WITH_PTHREADS if we make it this far
+AC_DEFINE(WITH_PTHREADS,1,[Define if you have pthreads.])
+LDFLAGS="$LDFLAGS "
+CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+LIBS="$PTHREAD_LIBS $LIBS"
+
+SEMAPHORE_SOURCES=""
+SEMAPHORE_LIBS=""
+AC_CHECK_LIB(
+  posix4, 
+  sem_open, 
+  [SEMAPHORE_LIBS="-lposix4";
+   AC_DEFINE(HAVE_POSIX_SEMS, 1, [Define if you have Posix semaphores.])],
+  [SEMAPHORE_SOURCES="semaphore.c"]
+)
+AC_SUBST(SEMAPHORE_SOURCES)
+AC_SUBST(SEMAPHORE_LIBS)
+
+AC_CHECK_LIB(popt, poptGetNextOpt, [got_popt=yes], [got_popt=no])
+AM_CONDITIONAL(USE_INCLUDED_POPT, test $got_popt = no)
+if test $got_popt = no; then
+    AC_MSG_RESULT([using included popt package...])
+    POPT_LIBS="\$(top_builddir)/src/popt/libpopt.a"
+    POPT_INCLUDES="-I\$(top_srcdir)/src/popt"
+else
+    POPT_LIBS="-lpopt"
+fi
+AC_SUBST(POPT_LIBS)
+AC_SUBST(POPT_INCLUDES)
+
+dnl checks for system services.
+dnl
+
+
+dnl checks for system-specific stuff.
+dnl
+
+dnl check for debug compilation
+dnl
+AC_MSG_CHECKING(whether debug compilation of modules is enabled)
+AC_ARG_ENABLE(debug, 
+  AC_HELP_STRING([--enable-debug],[Enable debugging of individual modules]),
+  [ case "${enableval}" in
+     yes) with_slurm_debug=true ;;
+     no)  with_slurm_debug=false ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
+    esac
+  ]
+)
+
+AC_MSG_RESULT(${with_slurm_debug=no})
+if test "x$with_slurm_debug" = "xtrue"; then 
+  CFLAGS="-g -Wall -Wpointer-arith $PTHREAD_CFLAGS"
+  AC_DEFINE(DEBUG_SYSTEM, 1, [Define for extra debug messages.])
+else
+  CFLAGS="-g -Wall -Wpointer-arith $PTHREAD_CFLAGS"
+fi
+AM_CONDITIONAL(DEBUG_MODULES, test "x$with_slurm_debug" = "xtrue")
+
+
+dnl check for slurmd and slurmctld default ports
+dnl
+AC_MSG_CHECKING(for slurmctld default port)
+AC_ARG_WITH(slurmctld-port,
+  AC_HELP_STRING([--with-slurmctld-port=N],
+      [set slurmctld default port [[6817]]]),
+    [ if test `expr match "$withval" '[[0-9]]*$'` -gt 0; then
+        slurmctldport="$withval"
+      fi
+    ]
+)
+AC_MSG_RESULT(${slurmctldport=6817})
+AC_DEFINE_UNQUOTED(SLURMCTLD_PORT, "$slurmctldport",
+                   [Define the default port number for slurmctld])
+AC_SUBST(SLURMCTLD_PORT)
+
+AC_MSG_CHECKING(for slurmd default port)
+AC_ARG_WITH(slurmd-port,
+  AC_HELP_STRING([--with-slurmd-port=N],
+      [set slurmd default port [[6818]]]),
+    [ if test `expr match "$withval" '[[0-9]]*$'` -gt 0; then
+        slurmdport="$withval"
+      fi
+    ]
+)
+AC_MSG_RESULT(${slurmdport=6818})
+AC_DEFINE_UNQUOTED(SLURMD_PORT, "$slurmdport",
+                   [Define the default port number for slurmd])
+AC_SUBST(SLURMD_PORT)
+
+
+dnl Set SLURM_CONFIG_DIR in config.h
+dnl
+AC_MSG_CHECKING(for slurm config dir location)
+AC_ARG_WITH(slurm-conf,
+  AC_HELP_STRING([--with-slurm-conf=DIR],
+      [set slurm config dir location]),
+    [ if test -n "$withval" -a "$withval" != yes -a "$withval" != no; then
+        slurmconf="$withval"
+      fi
+    ]
+)
+
+#
+# FIXME: default config dir is in srcdir
+#        during development. Needs to be
+#        moved to $prefix/etc!!
+#
+topsrcdir=`cd $srcdir && pwd`
+AC_MSG_RESULT(${slurmconf=${topsrcdir}/etc})
+AC_DEFINE_UNQUOTED(SLURM_CONFIG_DIR, "$slurmconf", 
+                   [Define Default slurm config dir])
+AC_DEFINE_UNQUOTED(SLURM_CONFIG_FILE, "$slurmconf/slurm.conf", 
+                   [Define Default slurm config file location])
+
+
+dnl check for whether to include Elan support
+dnl
+AC_MSG_CHECKING(whether to include Elan support)
+AC_ARG_WITH(elan,
+  AC_HELP_STRING([--with-elan],[compile with Elan support]),
+  [ case "${withval}" in
+      yes) elan=yes ;;
+      no)  elan=no ;;
+      *) AC_MSG_ERROR([bad value ${enableval} for --with-elan]) ;;
+    esac
+  ]
+)
+AC_MSG_RESULT(${elan=no})
+AM_CONDITIONAL(WITH_ELAN, test "x$with_elan" = "xyes")
+HAVE_ELAN=0
+if test $with_elan; then
+  AC_CHECK_LIB(elan3, elan3_create,
+    [], 
+    [AC_MSG_ERROR([unable to find the Elan3 library needed for Elan support.])], 
+  )
+  AC_CHECK_LIB(rmscall, rms_prgcreate, 
+    [],
+    [AC_MSG_ERROR([unable to find the RMS library needed for Elan support])],
+  )
+  HAVE_ELAN=1
+fi
+
+AC_DEFINE_UNQUOTED(HAVE_ELAN, "$HAVE_ELAN", [Define to enable Elan support.])
+AC_SUBST(HAVE_ELAN)
+
+dnl Check for whether to include readline support
+dnl 
+AC_MSG_CHECKING([whether to include readline support])
+AC_ARG_ENABLE(readline,
+  AC_HELP_STRING([--disable-readline], [disable readline support]),
+  [ readline=no  ],
+  [ readline=yes ]
+)
+AC_MSG_RESULT(${readline})
+
+if test x$readline = xyes; then
+   savedLIBS="$LIBS"
+   READLINE_LIBS="-lreadline -lncurses"
+   LIBS="$READLINE_LIBS $LIBS"
+   AC_CHECK_LIB([readline], [readline], [], AC_MSG_ERROR([Cannot find libreadline!]))
+   AC_DEFINE(HAVE_READLINE, 1, [Define if you are compiling with readline])
+   LIBS="$savedLIBS"
+else
+   READLINE_LIBS=""
+fi
+
+AC_SUBST(READLINE_LIBS)
+
+dnl OpenSSL location (taken from openssh configure.ac)
+dnl
+AC_SUBST(SSL_LDFLAGS)
+AC_SUBST(SSL_LIBS)
+AC_SUBST(SSL_CPPFLAGS)
+SSL_LIBS="-lcrypto"
+AC_ARG_WITH(ssl-dir,
+	[  --with-ssl-dir=PATH     Specify path to OpenSSL installation ],
+	[
+		if test "x$withval" != "xno" ; then
+			tryssldir=$withval
+		fi
+	]
+)
+
+saved_LIBS="$LIBS"
+saved_LDFLAGS="$LDFLAGS"
+saved_CPPFLAGS="$CPPFLAGS"
+if test "x$prefix" != "xNONE" ; then
+	tryssldir="$tryssldir $prefix"
+fi
+AC_CACHE_CHECK([for OpenSSL directory], ac_cv_openssldir, [
+	for ssldir in $tryssldir "" /usr/local/openssl /usr/lib/openssl /usr/local/ssl /usr/lib/ssl /usr/local /usr/pkg /opt /opt/openssl ; do
+		CPPFLAGS="$saved_CPPFLAGS"
+		LDFLAGS="$saved_LDFLAGS"
+		LIBS="$saved_LIBS $SSL_LIBS"
+		
+		# Skip directories if they don't exist
+		if test ! -z "$ssldir" -a ! -d "$ssldir" ; then
+			continue;
+		fi
+		if test ! -z "$ssldir" -a "x$ssldir" != "x/usr"; then
+			# Try to use $ssldir/lib if it exists, otherwise 
+			# $ssldir
+			if test -d "$ssldir/lib" ; then
+				LDFLAGS="-L$ssldir/lib $saved_LDFLAGS"
+				if test ! -z "$need_dash_r" ; then
+					LDFLAGS="-R$ssldir/lib $LDFLAGS"
+				fi
+			else
+				LDFLAGS="-L$ssldir $saved_LDFLAGS"
+				if test ! -z "$need_dash_r" ; then
+					LDFLAGS="-R$ssldir $LDFLAGS"
+				fi
+			fi
+			# Try to use $ssldir/include if it exists, otherwise 
+			# $ssldir
+			if test -d "$ssldir/include" ; then
+				CPPFLAGS="-I$ssldir/include $saved_CPPFLAGS"
+			else
+				CPPFLAGS="-I$ssldir $saved_CPPFLAGS"
+			fi
+		fi
+
+		# Basic test to check for compatible version and correct linking
+		AC_TRY_RUN(
+			[
+#include <string.h>
+#include <openssl/rand.h>
+int main(void) 
+{
+	char a[2048];
+	memset(a, 0, sizeof(a));
+	RAND_add(a, sizeof(a), sizeof(a));
+	return(RAND_status() <= 0);
+}
+			],
+			[
+				found_crypto=1
+				break;
+			], []
+		)
+
+		if test ! -z "$found_crypto" ; then
+			break;
+		fi
+	done
+
+	if test -z "$found_crypto" ; then
+		AC_MSG_ERROR([Could not find working OpenSSL library, please install or check config.log])	
+	fi
+	if test -z "$ssldir" ; then
+		ssldir="(system)"
+	fi
+
+	ac_cv_openssldir=$ssldir
+])
+
+if (test ! -z "$ac_cv_openssldir" && test "x$ac_cv_openssldir" != "x(system)") ; then
+	dnl Need to recover ssldir - test above runs in subshell
+	ssldir=$ac_cv_openssldir
+	if test ! -z "$ssldir" -a "x$ssldir" != "x/usr"; then
+		# Try to use $ssldir/lib if it exists, otherwise 
+		# $ssldir
+		if test -d "$ssldir/lib" ; then
+			SSL_LDFLAGS="-L$ssldir/lib"
+		else
+			SSL_LDFLAGS="-L$ssldir"
+		fi
+		# Try to use $ssldir/include if it exists, otherwise 
+		# $ssldir
+		if test -d "$ssldir/include" ; then
+			SSL_CPPFLAGS="-I$ssldir/include"
+		else
+			SSL_CPPFLAGS="-I$ssldir"
+		fi
+	fi
+fi
+LIBS="$saved_LIBS"
+CPPFLAGS="$saved_CPPFLAGS"
+LDFLAGS="$saved_LDFLAGS"
+
+dnl check for whether to include authd support
+dnl
+AC_MSG_CHECKING([Whether to include authd support])
+authd=no
+AC_ARG_WITH(authd,
+  AC_HELP_STRING([--with-authd],[compile with authd support]),
+  [ authd=yes
+    AUTHD_CFLAGS=""
+    AUTHD_LIBS="-lauth -le"
+    AC_DEFINE(HAVE_AUTHD, 1, [Define if you are running authd])
+  ]
+)
+AC_MSG_RESULT(${authd=no})
+if test x$authd = xyes; then
+   savedLIBS="$LIBS"
+   savedCFLAGS="$CFLAGS"
+   LIBS="$SSL_LIBS $AUTHD_LIBS $LIBS"
+   CFLAGS="$SSL_CPPFLAGS $CFLAGS $AUTHD_CFLAGS"
+   AC_CHECK_LIB(auth, auth_init_credentials, [], 
+                AC_MSG_ERROR([Cannot find libauth!]))
+   AC_DEFINE(HAVE_AUTHD, 1, [Define if you have Brent Chun's authd])
+   LIBS="$savedLIBS"
+   CFLAGS="$savedCFLAGS"
+   AC_SUBST(AUTHD_LIBS)
+   AC_SUBST(AUTHD_CFLAGS)
+fi
+AM_CONDITIONAL(WITH_AUTHD, test "x$with_authd" = "xyes")
+
+
+dnl check for whether to include TotalView support
+dnl
+AC_MSG_CHECKING([Whether to include TotalView support])
+totalview=no
+AC_ARG_WITH(totalview,
+  AC_HELP_STRING([--with-totalview],[compile with TotalView support]),
+  [ totalview=yes 
+    AC_DEFINE(HAVE_TOTALVIEW, 1, [Define if you have TotalView support])
+    TOTALVIEW_LIBS="-ltvmpich"
+  ]
+)
+AC_MSG_RESULT(${totalview=no})
+if test x$totalview = xyes; then
+   savedLIBS="$LIBS"
+   LIBS="$TOTALVIEW_LIBS $LIBS"
+   AC_DEFINE(HAVE_TOTALVIEW, 1, [Define if you have TotalView support])
+   LIBS="$savedLIBS"
+   AC_SUBST(TOTALVIEW_LIBS)
+fi
+AM_CONDITIONAL(WITH_TOTALVIEW, test "x$with_totalview" = "xyes")
+
+
+dnl Add LSD-Tools defines:
+AC_DEFINE(WITH_LSD_FATAL_ERROR_FUNC, 1, [Have definition of lsd_fatal_error()])
+AC_DEFINE(WITH_LSD_NOMEM_ERROR_FUNC, 1, [Have definition of lsd_nomem_error()])
+
+dnl All slurm Makefiles:
+
+AC_CONFIG_FILES([Makefile 
+		 slurm/Makefile
+		 src/Makefile 
+		 src/api/Makefile 
+		 src/common/Makefile 
+		 src/popt/Makefile 
+		 src/srun/Makefile 
+		 src/slurmd/Makefile 
+		 src/slurmctld/Makefile 
+		 src/scontrol/Makefile
+		 src/scancel/Makefile
+		 src/squeue/Makefile
+		 src/sinfo/Makefile
+		 doc/Makefile
+		 doc/man/Makefile
+		 testsuite/Makefile
+		 testsuite/slurm_unit/Makefile
+		 testsuite/slurm_unit/common/Makefile
+		 testsuite/slurm_unit/slurmctld/Makefile
+		 testsuite/slurm_unit/slurmd/Makefile
+		 testsuite/slurm_unit/api/Makefile
+		 testsuite/slurm_unit/api/manual/Makefile
+		 ]
+)
+
+AC_OUTPUT
+
