@@ -14,8 +14,10 @@ documents those changes that are of interest to users and admins.
     request (user root for LCRM batch jobs).
  -- Restructure plugin directory structure.
  -- New --core=type option in srun for lightweight corefile support.
-    (requires liblwcf)
-
+    (requires liblwcf).
+ -- Let user root and SlurmUser exceed any partition limits.
+ -- Srun treats "--time=0" as a request for an infinite time limit.
+ 
 * Changes in SLURM 0.3.0.0-pre10
 ================================
  -- Fix bugs in support of slurmctld "-f" option (specify different 
