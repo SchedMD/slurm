@@ -42,6 +42,7 @@
 typedef enum {false, true} bool;
 #endif /* !HAVE_STDBOOL_H */
 
+#include <errno.h>              /* for errno   */
 #include "src/common/log.h"	/* for error() */
 
 #ifndef FALSE
@@ -56,23 +57,23 @@ typedef enum {false, true} bool;
 #define MAX(a,b) ((a) > (b) ? (a) : (b))	
 #endif
 
-#  define UINT64_SWAP_LE_BE(val)      ((uint64_t) (                        \
-        (((uint64_t) (val) &                                               \
-	  (uint64_t) (0x00000000000000ffU)) << 56) |                       \
-	(((uint64_t) (val) &                                               \
-	  (uint64_t) (0x000000000000ff00U)) << 40) |                       \
-	(((uint64_t) (val) &                                               \
-	  (uint64_t) (0x0000000000ff0000U)) << 24) |                       \
-	(((uint64_t) (val) &                                               \
-	  (uint64_t) (0x00000000ff000000U)) <<  8) |                       \
-	(((uint64_t) (val) &                                               \
-	  (uint64_t) (0x000000ff00000000U)) >>  8) |                       \
-	(((uint64_t) (val) &                                               \
-	  (uint64_t) (0x0000ff0000000000U)) >> 24) |                       \
-	(((uint64_t) (val) &                                               \
-	  (uint64_t) (0x00ff000000000000U)) >> 40) |                       \
-	(((uint64_t) (val) &                                               \
-	  (uint64_t) (0xff00000000000000U)) >> 56)))
+#  define UINT64_SWAP_LE_BE(val)      ((uint64_t) (                           \
+        (((uint64_t) (val) &                                                  \
+          (uint64_t) (0x00000000000000ffU)) << 56) |                          \
+        (((uint64_t) (val) &                                                  \
+          (uint64_t) (0x000000000000ff00U)) << 40) |                          \
+        (((uint64_t) (val) &                                                  \
+          (uint64_t) (0x0000000000ff0000U)) << 24) |                          \
+        (((uint64_t) (val) &                                                  \
+          (uint64_t) (0x00000000ff000000U)) <<  8) |                          \
+        (((uint64_t) (val) &                                                  \
+          (uint64_t) (0x000000ff00000000U)) >>  8) |                          \
+        (((uint64_t) (val) &                                                  \
+          (uint64_t) (0x0000ff0000000000U)) >> 24) |                          \
+        (((uint64_t) (val) &                                                  \
+          (uint64_t) (0x00ff000000000000U)) >> 40) |                          \
+        (((uint64_t) (val) &                                                  \
+          (uint64_t) (0xff00000000000000U)) >> 56)))
 
 #if SLURM_BIGENDIAN
 # define HTON_int64(x)	  ((int64_t)  (x))
@@ -130,7 +131,7 @@ typedef enum {false, true} bool;
  */
 #if !(defined (_STMT_START) && defined (_STMT_END))
 #  if defined (__GNUC__) && !defined (__STRICT_ANSI__) && !defined (__cplusplus)
-#    define _STMT_START        ((void)
+#    define _STMT_START        (void)(
 #    define _STMT_END          )
 #  else
 #    if (defined (sun) || defined (__sun__))
@@ -145,33 +146,45 @@ typedef enum {false, true} bool;
 
 #ifdef WITH_PTHREADS
 
-#  define slurm_mutex_init(mutex)                                              \
-     do {                                                                      \
-         if ((errno = pthread_mutex_init(mutex, NULL)) != 0)                   \
-             error("%s:%d %s: pthread_mutex_init(): %m", 		       \
-	           __FILE__, __LINE__, __CURRENT_FUNC__);            	       \
-     } while (0)
+#  define slurm_mutex_init(mutex)                                             \
+     _STMT_START {                                                            \
+         int err = pthread_mutex_init(mutex, NULL);                           \
+         if (err) {                                                           \
+             errno = err;                                                     \
+             error("%s:%d %s: pthread_mutex_init(): %m",                      \
+                   __FILE__, __LINE__, __CURRENT_FUNC__);                     \
+         }                                                                    \
+     } _STMT_END
 
-#  define slurm_mutex_destroy(mutex)                                           \
-     do {                                                                      \
-         if ((errno = pthread_mutex_destroy(mutex)) != 0)                      \
-             error("%s:%d %s: pthread_mutex_destroy(): %m", 		       \
-	           __FILE__, __LINE__, __CURRENT_FUNC__);            	       \
-     } while (0)
+#  define slurm_mutex_destroy(mutex)                                          \
+     _STMT_START {                                                            \
+         int err = pthread_mutex_destroy(mutex);                              \
+         if (err) {                                                           \
+             errno = err;                                                     \
+             error("%s:%d %s: pthread_mutex_destroy(): %m",                   \
+                   __FILE__, __LINE__, __CURRENT_FUNC__);                     \
+         }                                                                    \
+     } _STMT_END
 
-#  define slurm_mutex_lock(mutex)                                              \
-     do {                                                                      \
-         if ((errno = pthread_mutex_lock(mutex)) != 0)	                       \
-             error("%s:%d %s: pthread_mutex_lock(): %m", 		       \
-	           __FILE__, __LINE__, __CURRENT_FUNC__);            	       \
-     } while (0)
+#  define slurm_mutex_lock(mutex)                                             \
+     _STMT_START {                                                            \
+         int err = pthread_mutex_lock(mutex);                                 \
+         if (err) {                                                           \
+             errno = err;                                                     \
+             error("%s:%d %s: pthread_mutex_lock(): %m",                      \
+                   __FILE__, __LINE__, __CURRENT_FUNC__);                     \
+         }                                                                    \
+     } _STMT_END
 
-#  define slurm_mutex_unlock(mutex)                                            \
-     do {                                                                      \
-         if ((errno = pthread_mutex_unlock(mutex)) != 0)                       \
-             error("%s:%d %s: pthread_mutex_unlock(): %m", 		       \
-	           __FILE__, __LINE__, __CURRENT_FUNC__);            	       \
-     } while (0)
+#  define slurm_mutex_unlock(mutex)                                           \
+     _STMT_START {                                                            \
+         int err = pthread_mutex_unlock(mutex);                               \
+         if (err) {                                                           \
+             errno = err;                                                     \
+             error("%s:%d %s: pthread_mutex_unlock(): %m",                    \
+                   __FILE__, __LINE__, __CURRENT_FUNC__);                     \
+         }                                                                    \
+     } _STMT_END
 
 #else /* !WITH_PTHREADS */
 
@@ -181,6 +194,5 @@ typedef enum {false, true} bool;
 #  define slurm_mutex_unlock(mutex)
 
 #endif /* WITH_PTHREADS */
-
 
 #endif /* !_MACROS_H */
