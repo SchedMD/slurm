@@ -124,7 +124,7 @@ static void _push_to_hashtbl(char *node, char *host)
 	p = host_to_node_hashtbl[idx];
 	while (p) {
 		if (strcmp(p->node_hostname, hh)==0) {
-			fatal("Duplicated NodeHostname %s in the config file"
+			fatal("Duplicated NodeHostname %s in the config file",
 				hh);
 			return;
 		}
