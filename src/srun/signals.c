@@ -124,7 +124,7 @@ sig_thr_create(job_t *job)
 	if ((e = pthread_create(&job->sigid, &attr, &_sig_thr, job)) != 0)
 		slurm_seterrno_ret(e);
 
-	debug("Started signals thread (%d)", job->sigid);
+	debug("Started signals thread (%lu)", (unsigned long) job->sigid);
 
 	return SLURM_SUCCESS;
 }

@@ -628,7 +628,7 @@ msg_thr(void *arg)
 {
 	job_t *job = (job_t *) arg;
 
-	debug3("msg thread pid = %ld", (long) getpid());
+	debug3("msg thread pid = %lu", (unsigned long) getpid());
 
 	slurm_uid = (uid_t) slurm_get_slurm_user_id();
 
@@ -658,7 +658,7 @@ msg_thr_create(job_t *job)
 			            (void *)job)))
 		fatal("Unable to start message thread: %m");
 
-	debug("Started msg server thread (%d)", job->jtid);
+	debug("Started msg server thread (%lu)", (unsigned long) job->jtid);
 
 	return SLURM_SUCCESS;
 }

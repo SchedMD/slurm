@@ -352,7 +352,7 @@ _io_thr_poll(void *job_arg)
 
 	xassert(job != NULL);
 
-	debug3("IO thread pid = %ld", (long) getpid());
+	debug3("IO thread pid = %lu", (unsigned long) getpid());
 
 	_io_thr_init(job, fds);
 
@@ -529,7 +529,7 @@ io_thr_create(job_t *job)
 	if ((errno = pthread_create(&job->ioid, &attr, &io_thr, (void *) job)))
 		return SLURM_ERROR;
 
-	debug("Started IO server thread (%d)", job->ioid);
+	debug("Started IO server thread (%lu)", (unsigned long) job->ioid);
 
 	return SLURM_SUCCESS;
 }

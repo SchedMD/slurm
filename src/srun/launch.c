@@ -126,7 +126,7 @@ launch_thr_create(job_t *job)
 	if ((e = pthread_create(&job->lid, &attr, &launch, (void *) job))) 
 		slurm_seterrno_ret(e);
 
-	debug("Started launch thread (%d)", job->lid);
+	debug("Started launch thread (%lu)", (unsigned long) job->lid);
 
 	return SLURM_SUCCESS;
 }
