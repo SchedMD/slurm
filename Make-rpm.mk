@@ -77,7 +77,8 @@ tar rpm:
 	rel=`perl -ne 'print,exit if s/^\s*RELEASE:\s*(\S*).*/\1/i' $$meta`; \
 	rver="$$ver"; \
 	if test "$$tag" = "HEAD"; then \
-          rel="`date +%Y%m%d%H%M`"; \
+          if test "$$rel" = "UNSTABLE"; then rel="0.pre0"; fi; \
+          rel="$$rel.`date +%Y%m%d%H%M`"; \
           perl -pi -e "s/^(\s*Release:\s*).*/\$${1}$$rel/i" $$meta; fi; \
 	if test -z "$$rel"; then \
 	  pkg=$$name-$$ver; rel=1; else pkg=$$name-$$ver-$$rel; fi; \
