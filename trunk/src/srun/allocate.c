@@ -227,6 +227,7 @@ job_desc_msg_create(void)
 	j->min_nodes      = opt.min_nodes;
 	j->num_tasks      = opt.nprocs;
 	j->user_id        = opt.uid;
+	j->group_id	  = getgid();
 
 	if (opt.hold)
 		j->priority     = 0;

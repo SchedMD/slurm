@@ -50,6 +50,7 @@ libcommon_la_SOURCES = 			\
 	slurm_protocol_interface.h	\
 	slurm_protocol_defs.c		\
 	slurm_protocol_defs.h		\
+	uid.c uid.h			\
 	util-net.c util-net.h		\
 	slurm_auth.c slurm_auth.h	\
 	arg_desc.c arg_desc.h		\

@@ -81,6 +81,8 @@ typedef struct srun_options {
 	char *progname;		/* argv[0] of this program 	*/
 	char user[MAX_USERNAME];/* local username		*/
 	uid_t uid;		/* local uid			*/
+	char *euid;		/* effective user --uid=user	*/
+	char *egid;		/* effective group --gid=group	*/
 	char *cwd;		/* current working directory	*/
 
 	int  nprocs;		/* --nprocs=n,      -n n	*/

@@ -1865,6 +1865,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 			sizeof(job_ptr->name));
 	}
 	job_ptr->user_id    = (uid_t) job_desc->user_id;
+	job_ptr->group_id   = (gid_t) job_desc->group_id;
 	job_ptr->job_state  = JOB_PENDING;
 	job_ptr->time_limit = job_desc->time_limit;
 	job_ptr->alloc_sid  = job_desc->alloc_sid;
@@ -2029,6 +2030,10 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	}
 	if (job_desc_msg->user_id == NO_VAL) {
 		info("_validate_job_desc: job failed to specify User");
+		return ESLURM_USER_ID_MISSING;
+	}
+	if ( job_desc_msg->group_id == NO_VAL ) {
+		info( "_validate_job_desc: job failed to specify group" );
 		return ESLURM_USER_ID_MISSING;
 	}
 	if ((job_desc_msg->name) &&
@@ -2237,6 +2242,7 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 
 	pack32(dump_job_ptr->job_id, buffer);
 	pack32(dump_job_ptr->user_id, buffer);
+	pack32(dump_job_ptr->group_id, buffer);
 
 	pack16((uint16_t) dump_job_ptr->job_state, buffer);
 	pack16((uint16_t) dump_job_ptr->batch_flag, buffer);

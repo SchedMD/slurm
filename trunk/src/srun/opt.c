@@ -52,6 +52,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -94,6 +95,8 @@
 #define LONG_OPT_MEM      0x107
 #define LONG_OPT_MINCPU   0x108
 #define LONG_OPT_CONT     0x109
+#define LONG_OPT_UID      0x10a
+#define LONG_OPT_GID      0x10b
 
 /*---- forward declarations of static functions  ----*/
 
@@ -123,6 +126,9 @@ static void  _opt_list(void);
 
 /* verify options sanity  */
 static bool _opt_verify(void);
+
+/* demote to regular user */
+static uid_t _become_user( char *uid_string, char *gid_string );
 
 static void  _print_version(void);
 
@@ -627,6 +633,8 @@ static void _opt_args(int argc, char **argv)
 		{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 		{"max-launch-time",  required_argument, 0, LONG_OPT_LAUNCH},
 		{"max-exit-timeout", required_argument, 0, LONG_OPT_XTO},
+		{"uid",              required_argument, 0, LONG_OPT_UID},
+		{"gid",              required_argument, 0, LONG_OPT_GID},
 		{"help",             no_argument,       0, LONG_OPT_HELP},
 		{"usage",            no_argument,       0, LONG_OPT_USAGE}
 	};
@@ -639,201 +647,213 @@ static void _opt_args(int argc, char **argv)
 	while((opt_char = getopt_long(argc, argv, opt_string,
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
-			case (int)'?':
-				fprintf(stderr, "Try \"srun --help\" for more "
-					"information\n");
+		case (int)'?':
+			fprintf(stderr, "Try \"srun --help\" for more "
+				"information\n");
+			exit(1);
+			break;
+		case (int)'a':
+			if (opt.allocate || opt.batch) {
+				error("can only specify one mode: "
+				      "allocate, attach or batch.");
 				exit(1);
-				break;
-			case (int)'a':
-				if (opt.allocate || opt.batch) {
-					error("can only specify one mode: "
-					      "allocate, attach or batch.");
-					exit(1);
-				}
-				mode = MODE_ATTACH;
-				opt.attach = strdup(optarg);
-				break;
-			case (int)'A':
-				if (opt.attach || opt.batch) {
-					error("can only specify one mode: "
-				   	   "allocate, attach or batch.");
-					exit(1);
-				}
-				mode = MODE_ALLOCATE;
-				opt.allocate = true;
-				break;
-			case (int)'b':
-				if (opt.allocate || opt.attach) {
-					error("can only specify one mode: "
-					      "allocate, attach or batch.");
-					exit(1);
-				}
-				mode = MODE_BATCH;
-				opt.batch = true;
-				break;
-			case (int)'c':
-				opt.cpus_set = true;
-				opt.cpus_per_task = 
-					_get_int(optarg, "cpus-per-task");
-				break;
-			case (int)'C':
-				xfree(opt.constraints);
-				opt.constraints = xstrdup(optarg);
-				break;
-			case (int)'d':
-				opt.slurmd_debug = 
-					_get_int(optarg, "slurmd-debug");
-				break;
-			case (int)'D':
-				xfree(opt.cwd);
-				opt.cwd = xstrdup(optarg);
-				break;
-			case (int)'e':
-				xfree(opt.efname);
-				opt.efname = xstrdup(optarg);
-				break;
-			case (int)'H':
-				opt.hold = true;
-				break;
-			case (int)'i':
-				xfree(opt.ifname);
-				opt.ifname = xstrdup(optarg);
-				break;
-			case (int)'I':
-				opt.immediate = true;
-				break;
-			case (int)'j':
-				opt.join = true;
-				break;
-			case (int)'J':
-				xfree(opt.job_name);
-				opt.job_name = xstrdup(optarg);
-				break;
-			case (int)'k':
-				opt.no_kill = true;
-				break;
-			case (int)'l':
-				opt.labelio = true;
-				break;
-			case (int)'m':
-				opt.distribution = _verify_dist_type(optarg);
-				if (opt.distribution == SRUN_DIST_UNKNOWN) {
-					error("distribution type `%s' " 
-				  	    "is not recognized", optarg);
-					exit(1);
-				}
-				break;
-			case (int)'n':
-				opt.nprocs_set = true;
-				opt.nprocs = 
-					_get_int(optarg, "number of tasks");
-				break;
-			case (int)'N':
-				opt.nodes_set = 
-					_verify_node_count(optarg, 
-						&opt.min_nodes,
-						&opt.max_nodes);
-				if (opt.nodes_set == false) {
-					error("invalid node count `%s'", 
-						optarg);
-					exit(1);
-				}
-				break;
-			case (int)'o':
-				xfree(opt.ofname);
-				opt.ofname = xstrdup(optarg);
-				break;
-			case (int)'O':
-				opt.overcommit = true;
-				break;
-			case (int)'p':
-				xfree(opt.partition);
-				opt.partition = xstrdup(optarg);
-				break;
-			case (int)'r':
-				xfree(opt.relative);
-				opt.relative = xstrdup(optarg);
-				break;
-			case (int)'s':
-				opt.share = true;
-				break;
-			case (int)'t':
-				opt.time_limit = _get_int(optarg, "time");
-				break;
-			case (int)'T':
-				opt.max_threads = 
-					_get_int(optarg, "max_threads");
-				break;
-			case (int)'u':
-				opt.unbuffered = true;
-				break;
-			case (int)'v':
-				_verbose++;
-				break;
-			case (int)'V':
-				_print_version();
-				exit(0);
-				break;
-			case (int)'w':
-				xfree(opt.nodelist);
-				opt.nodelist = xstrdup(optarg);
-				if (!_valid_node_list(&opt.nodelist))
-					exit(1);
-				break;
-			case (int)'W':
-				opt.max_wait = _get_int(optarg, "wait");
-				break;
-			case (int)'x':
-				xfree(opt.exc_nodes);
-				opt.exc_nodes = xstrdup(optarg);
-				if (!_valid_node_list(&opt.exc_nodes))
-					exit(1);
-				break;
-			case (int)'Z':
-				opt.no_alloc = true;
-				break;
-			case LONG_OPT_CONT:
-				opt.contiguous = true;
-				break;
-			case LONG_OPT_MINCPU:
-				opt.mincpus = _get_int(optarg, "mincpus");
-				break;
-			case LONG_OPT_MEM:
-				opt.realmem = (int) _to_bytes(optarg);
-				if (opt.realmem < 0) {
-					error("invalid memory constraint %s", 
-						optarg);
-					exit(1);
-				}
-				break;
-			case LONG_OPT_TMP:
-				opt.tmpdisk = _to_bytes(optarg);
-				if (opt.tmpdisk < 0) {
-					error("invalid tmp value %s", optarg);
-					exit(1);
-				}
-				break;
-			case LONG_OPT_JOBID:
-				opt.jobid = _get_int(optarg, "jobid");
-				break;
-			case LONG_OPT_TIMEO:
-				opt.msg_timeout = 
-					_get_int(optarg, "msg-timeout");
-				break;
-			case LONG_OPT_LAUNCH:
-				opt.max_launch_time = 
-					_get_int(optarg, "max-launch-time");
-				break;
-			case LONG_OPT_XTO:
-				opt.max_exit_timeout = 
-					_get_int(optarg, "max-exit-timeout");
-				break;
-			case LONG_OPT_HELP:
-				_help();
-				exit(0);
-			case LONG_OPT_USAGE:
-				_usage();
-				exit(0);
+			}
+			mode = MODE_ATTACH;
+			opt.attach = strdup(optarg);
+			break;
+		case (int)'A':
+			if (opt.attach || opt.batch) {
+				error("can only specify one mode: "
+				      "allocate, attach or batch.");
+				exit(1);
+			}
+			mode = MODE_ALLOCATE;
+			opt.allocate = true;
+			break;
+		case (int)'b':
+			if (opt.allocate || opt.attach) {
+				error("can only specify one mode: "
+				      "allocate, attach or batch.");
+				exit(1);
+			}
+			mode = MODE_BATCH;
+			opt.batch = true;
+			break;
+		case (int)'c':
+			opt.cpus_set = true;
+			opt.cpus_per_task = 
+				_get_int(optarg, "cpus-per-task");
+			break;
+		case (int)'C':
+			xfree(opt.constraints);
+			opt.constraints = xstrdup(optarg);
+			break;
+		case (int)'d':
+			opt.slurmd_debug = 
+				_get_int(optarg, "slurmd-debug");
+			break;
+		case (int)'D':
+			xfree(opt.cwd);
+			opt.cwd = xstrdup(optarg);
+			break;
+		case (int)'e':
+			xfree(opt.efname);
+			opt.efname = xstrdup(optarg);
+			break;
+		case (int)'H':
+			opt.hold = true;
+			break;
+		case (int)'i':
+			xfree(opt.ifname);
+			opt.ifname = xstrdup(optarg);
+			break;
+		case (int)'I':
+			opt.immediate = true;
+			break;
+		case (int)'j':
+			opt.join = true;
+			break;
+		case (int)'J':
+			xfree(opt.job_name);
+			opt.job_name = xstrdup(optarg);
+			break;
+		case (int)'k':
+			opt.no_kill = true;
+			break;
+		case (int)'l':
+			opt.labelio = true;
+			break;
+		case (int)'m':
+			opt.distribution = _verify_dist_type(optarg);
+			if (opt.distribution == SRUN_DIST_UNKNOWN) {
+				error("distribution type `%s' " 
+				      "is not recognized", optarg);
+				exit(1);
+			}
+			break;
+		case (int)'n':
+			opt.nprocs_set = true;
+			opt.nprocs = 
+				_get_int(optarg, "number of tasks");
+			break;
+		case (int)'N':
+			opt.nodes_set = 
+				_verify_node_count(optarg, 
+						   &opt.min_nodes,
+						   &opt.max_nodes);
+			if (opt.nodes_set == false) {
+				error("invalid node count `%s'", 
+				      optarg);
+				exit(1);
+			}
+			break;
+		case (int)'o':
+			xfree(opt.ofname);
+			opt.ofname = xstrdup(optarg);
+			break;
+		case (int)'O':
+			opt.overcommit = true;
+			break;
+		case (int)'p':
+			xfree(opt.partition);
+			opt.partition = xstrdup(optarg);
+			break;
+		case (int)'r':
+			xfree(opt.relative);
+			opt.relative = xstrdup(optarg);
+			break;
+		case (int)'s':
+			opt.share = true;
+			break;
+		case (int)'t':
+			opt.time_limit = _get_int(optarg, "time");
+			break;
+		case (int)'T':
+			opt.max_threads = 
+				_get_int(optarg, "max_threads");
+			break;
+		case (int)'u':
+			opt.unbuffered = true;
+			break;
+		case (int)'v':
+			_verbose++;
+			break;
+		case (int)'V':
+			_print_version();
+			exit(0);
+			break;
+		case (int)'w':
+			xfree(opt.nodelist);
+			opt.nodelist = xstrdup(optarg);
+			if (!_valid_node_list(&opt.nodelist))
+				exit(1);
+			break;
+		case (int)'W':
+			opt.max_wait = _get_int(optarg, "wait");
+			break;
+		case (int)'x':
+			xfree(opt.exc_nodes);
+			opt.exc_nodes = xstrdup(optarg);
+			if (!_valid_node_list(&opt.exc_nodes))
+				exit(1);
+			break;
+		case (int)'Z':
+			opt.no_alloc = true;
+			break;
+		case LONG_OPT_CONT:
+			opt.contiguous = true;
+			break;
+		case LONG_OPT_MINCPU:
+			opt.mincpus = _get_int(optarg, "mincpus");
+			break;
+		case LONG_OPT_MEM:
+			opt.realmem = (int) _to_bytes(optarg);
+			if (opt.realmem < 0) {
+				error("invalid memory constraint %s", 
+				      optarg);
+				exit(1);
+			}
+			break;
+		case LONG_OPT_TMP:
+			opt.tmpdisk = _to_bytes(optarg);
+			if (opt.tmpdisk < 0) {
+				error("invalid tmp value %s", optarg);
+				exit(1);
+			}
+			break;
+		case LONG_OPT_JOBID:
+			opt.jobid = _get_int(optarg, "jobid");
+			break;
+		case LONG_OPT_TIMEO:
+			opt.msg_timeout = 
+				_get_int(optarg, "msg-timeout");
+			break;
+		case LONG_OPT_LAUNCH:
+			opt.max_launch_time = 
+				_get_int(optarg, "max-launch-time");
+			break;
+		case LONG_OPT_XTO:
+			opt.max_exit_timeout = 
+				_get_int(optarg, "max-exit-timeout");
+			break;
+		case LONG_OPT_UID:
+			xfree( opt.euid );
+			opt.euid = xstrdup( optarg );
+			if ( getuid() )
+				info( "UID ignored for non-root user" );
+			break;
+		case LONG_OPT_GID:
+			xfree( opt.egid );
+			opt.egid = xstrdup( optarg );
+			if ( getuid() )
+				info( "GID ignored for non-root user" );
+			break;
+		case LONG_OPT_HELP:
+			_help();
+			exit(0);
+		case LONG_OPT_USAGE:
+			_usage();
+			exit(0);
 		}
 	}
 
@@ -871,9 +891,26 @@ static void _opt_args(int argc, char **argv)
 static bool _opt_verify(void)
 {
 	bool verified = true;
+	uid_t euid;
 
 	if (opt.slurmd_debug + LOG_LEVEL_ERROR > LOG_LEVEL_DEBUG2)
 		opt.slurmd_debug = LOG_LEVEL_DEBUG2 - LOG_LEVEL_ERROR;
+
+	/*
+	 * If we are root and have been asked to submit as another
+	 * user, become that user now.
+	 */
+	if ( getuid() == 0 ) {
+		if ( opt.euid ) {
+			euid = _become_user( opt.euid, opt.egid );
+			if ( euid ) {
+				opt.uid = euid;
+				strncpy( opt.user, opt.euid, MAX_USERNAME );
+			} else {
+				verified = false;
+			}
+		}
+	}
 
 	if (opt.no_alloc && !opt.nodelist) {
 		error("must specify a node list with -Z, --no-allocate.");
@@ -1066,6 +1103,55 @@ _search_path(char *cmd, bool check_current_dir, int access_mode)
 	list_destroy(l);
 	return fullpath;
 }
+
+
+static uid_t
+_become_user( char *uid_string, char *gid_string )
+{
+	uid_t euid = 0;
+	gid_t egid = 0;
+
+	/*
+	 * The group is not strictly necessary but we have to change
+	 * the group before we change the user, else we lose the
+	 * ability to change the group after having become a normal
+	 * user.
+	 */
+	if ( gid_string ) {
+
+		/* Resolve group name/ID to numerical form. */
+		if ( is_digit_string( gid_string ) ) {
+			egid = atoi( gid_string );
+		} else {
+			egid = gid_from_name( gid_string );
+		}
+
+		/* Assume this group. */
+		if ( egid ) {
+			if ( setregid( egid, egid ) < 0 ) {
+				error( "can't assume group %s", gid_string );
+			}
+		}
+	}
+	
+	/* Resolve user name/ID to numerical form. */
+	if ( is_digit_string( uid_string ) ) {
+		euid = atoi( uid_string );
+	} else {
+		euid = uid_from_name( uid_string );
+	}
+
+	/* Become this user. */
+	if ( euid ) {
+		if ( setreuid( euid, euid ) < 0 ) {
+			error( "can't become user %s", uid_string );
+			return 0;
+		}
+	}
+
+	return euid;
+}
+
 
 /* helper function for printing options
  * 

@@ -191,6 +191,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *out;		/* pathname of stdout */
 	uint32_t user_id;	/* set only if different from current UID, 
 				 * can only be explicitly set by user root */
+	uint32_t group_id;	/* group to assume, if run as root. */ 
 	char *work_dir;		/* pathname of working directory */
 	char *alloc_node;	/* node making resource allocation request
 				 * NOTE: Normally set by slurm_submit* or 
@@ -207,6 +208,7 @@ typedef struct job_info {
 	uint32_t alloc_sid;	/* local sid making resource alloc */
 	char    *alloc_node;	/* local node making resource alloc */
 	uint32_t user_id;	/* user the job runs as */
+	uint32_t group_id;	/* group job sumitted as */
 	uint16_t job_state;	/* state of the job, see enum job_states */
 	uint32_t time_limit;	/* maximum run time in minutes or INFINITE */
 	time_t start_time;	/* time execution begins, actual or expected */
