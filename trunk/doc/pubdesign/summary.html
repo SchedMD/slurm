@@ -48,7 +48,8 @@ Each compute server (node) has a <i>slurmd</i> daemon, which can be
 compared to a remote shell: it waits for work, executes that work, 
 returns status, and waits for more work. 
 User tools include <i>srun</i> to initiate jobs, 
-<i>scancel</i> to terminate queued or running jobs, and 
+<i>scancel</i> to terminate queued or running jobs, 
+<i>sinfo</i> to report system status, and 
 <i>squeue</i> to report the status of jobs.
 There is also an administrative tool <i>scontrol</i> available to 
 monitor and/or modify configuration and state information. 
@@ -77,7 +78,8 @@ A sample (partial) SLURM configuration file follows.
 # 
 # Sample /etc/slurm.conf
 #
-ControlMachine=linux0001.llnl.gov BackupController=linux0002.llnl.gov
+ControlMachine=linux0001
+BackupController=linux0002
 Epilog=/usr/local/slurm/epilog Prolog=/usr/local/slurm/prolog
 SlurmctldPort=7002 SlurmdPort=7003
 StateSaveLocation=/usr/local/slurm/slurm.state
@@ -100,19 +102,26 @@ PartitionName=batch Nodes=lx[0041-9999] MaxTime=UNLIMITED MaxNodes=4096
 </pre>
 
 <h2>Status</h2>
-As of August 2002 basic SLURM functionality was available, although much work 
-remains for production use in the areas of fault-tolerance, Quadrics Elan3 integration, 
-and security. We plan to have these issues fully addressed by November of 2002 
-and have the system deployed in a production environment. Our next goal will be 
-the support of the <a href="http://www.research.ibm.com/bluegene/">IBM Blue Gene/L</a>
-architecture in the summer of 2003. For additional information please contact
-<a href="mailto:jette@llnl.gov">jette@llnl.gov</a>.
+As of December 2002 most SLURM functionality was in place. 
+Execution of a simple program (/bin/hostname) across 1900 
+tasks on 950 nodes could be completed in under five seconds.
+Additional work remains for production use in the areas of fault-tolerance, 
+<a href=http://www.etuns.com>TotalView debugger</a> support, 
+performance enhancements and security. 
+We plan to have SLURM running in running a beta-test version on 
+LLNL development platforms in January 2003 and deployed on 
+production systems in March 2003.
+Our next goal will be the support of the 
+<a href="http://www.research.ibm.com/bluegene/">IBM Blue Gene/L</a>
+architecture in the summer of 2003. 
+For additional information please contact
+<a href="mailto:jette1@llnl.gov">jette1@llnl.gov</a>.
 <hr>
 <a href="http://www.llnl.gov/disclaimer.html">Privacy and Legal Notice</a>
 <p>URL = http://www-lc.llnl.gov/dctg-lc/slurm/summary.html
-<p>UCRL-WEB-149399
-<p>Last Modified July 30, 2002</p>
-<address>Maintained by Moe Jette <a href="mailto:jette@llnl.gov">
+<p>UCRL-WEB-149399 REV 2
+<p>Last Modified December 13, 2002</p>
+<address>Maintained by Moe Jette <a href="mailto:jette1@llnl.gov">
 jette1@llnl.gov</a></address>
 </body>
 </html>
