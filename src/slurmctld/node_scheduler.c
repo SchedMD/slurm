@@ -118,6 +118,7 @@ deallocate_nodes (struct job_record  * job_ptr)
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
 	int buf_rec_size = 0;
+	uint16_t no_resp_flag, base_state;
 
 	agent_args = xmalloc (sizeof (agent_arg_t));
 	agent_args->msg_type = REQUEST_REVOKE_JOB_CREDENTIAL;
@@ -132,15 +133,28 @@ deallocate_nodes (struct job_record  * job_ptr)
 			continue;
 		if ((agent_args->addr_count+1) > buf_rec_size) {
 			buf_rec_size += 32;
-			xrealloc ((agent_args->slurm_addr), (sizeof (struct sockaddr_in) * buf_rec_size));
-			xrealloc ((agent_args->node_names), (MAX_NAME_LEN * buf_rec_size));
+			xrealloc ((agent_args->slurm_addr), 
+			          (sizeof (struct sockaddr_in) * buf_rec_size));
+			xrealloc ((agent_args->node_names), 
+			          (MAX_NAME_LEN * buf_rec_size));
 		}
-		agent_args->slurm_addr[agent_args->addr_count] = node_record_table_ptr[i].slurm_addr;
+		agent_args->slurm_addr[agent_args->addr_count] = 
+							node_record_table_ptr[i].slurm_addr;
 		strncpy (&agent_args->node_names[MAX_NAME_LEN*agent_args->addr_count],
 		         node_record_table_ptr[i].name, MAX_NAME_LEN);
 		agent_args->addr_count++;
-		node_record_table_ptr[i].node_state = NODE_STATE_IDLE;
-		bit_set (idle_node_bitmap, i);
+		base_state = node_record_table_ptr[i].node_state & (~NODE_STATE_NO_RESPOND);
+		no_resp_flag = node_record_table_ptr[i].node_state & NODE_STATE_NO_RESPOND;
+		if (base_state == NODE_STATE_DRAINING) {
+			node_record_table_ptr[i].node_state = NODE_STATE_DRAINED;
+			bit_clear (idle_node_bitmap, i);
+			bit_clear (up_node_bitmap, i);
+		}
+		else {
+			node_record_table_ptr[i].node_state = NODE_STATE_IDLE | no_resp_flag;
+			if (no_resp_flag == 0)
+				bit_set (idle_node_bitmap, i);
+		}
 	}
 
 	agent_args->msg_args = revoke_job_cred;

@@ -956,7 +956,7 @@ split_node_name (char *name, char *prefix, char *suffix, int *index,
 int 
 update_node ( update_node_msg_t * update_node_msg ) 
 {
-	int error_code = 0, state_val;
+	int error_code = 0, state_val, node_inx;
 	char  *this_node_name ;
 	struct node_record *node_record_point;
 	hostlist_t host_list;
@@ -976,6 +976,7 @@ update_node ( update_node_msg_t * update_node_msg )
 	last_node_update = time (NULL);
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		node_record_point = find_node_record (this_node_name);
+		node_inx = node_record_point - node_record_table_ptr;
 		if (node_record_point == NULL) {
 			error ("update_node: node name %s does not exist, can not be updated", 
 				this_node_name);
@@ -986,17 +987,36 @@ update_node ( update_node_msg_t * update_node_msg )
 
 		if (state_val != NO_VAL) {
 			if (state_val == NODE_STATE_DOWN) {
-				bit_clear (up_node_bitmap,
-					      (int) (node_record_point - node_record_table_ptr));
-				bit_clear (idle_node_bitmap,
-					      (int) (node_record_point - node_record_table_ptr));
+				bit_clear (up_node_bitmap, node_inx);
+				bit_clear (idle_node_bitmap, node_inx);
 			}
-			else if (state_val != NODE_STATE_IDLE)
-				bit_clear (idle_node_bitmap,
-					      (int) (node_record_point - node_record_table_ptr));
-			else	/* (state_val == NODE_STATE_IDLE) */
-				bit_set (idle_node_bitmap,
-					      (int) (node_record_point - node_record_table_ptr));
+			else if (state_val == NODE_STATE_UNKNOWN) {
+				bit_clear (up_node_bitmap, node_inx);
+				bit_clear (idle_node_bitmap, node_inx);
+			}
+			else if (state_val == NODE_STATE_IDLE) {
+				bit_set (up_node_bitmap, node_inx);
+				bit_set (idle_node_bitmap, node_inx);
+			}
+			else if (state_val == NODE_STATE_ALLOCATED) {
+				bit_set (up_node_bitmap, node_inx);
+				bit_clear (idle_node_bitmap, node_inx);
+			}
+			else if (state_val == NODE_STATE_DRAINED) {
+				if (~bit_test (idle_node_bitmap, node_inx))
+					state_val = NODE_STATE_DRAINING;
+				bit_clear (up_node_bitmap, node_inx);
+			}
+			else if (state_val == NODE_STATE_DRAINING) {
+				if (bit_test (idle_node_bitmap, node_inx)) {
+					state_val = NODE_STATE_DRAINED;
+					bit_clear (idle_node_bitmap, node_inx);
+				}
+				bit_clear (up_node_bitmap, node_inx);
+			}
+			else {
+				error ("Invalid node state specified %d", state_val);
+			}
 
 			node_record_point->node_state = state_val;
 			info ("update_node: node %s state set to %s",
@@ -1081,7 +1101,7 @@ void
 node_did_resp (char *name)
 {
 	struct node_record *node_ptr;
-	int i;
+	int node_inx;
 
 	node_ptr = find_node_record (name);
 	if (node_ptr == NULL) {
@@ -1089,16 +1109,16 @@ node_did_resp (char *name)
 		return;
 	}
 
-	i = node_ptr - node_record_table_ptr;
+	node_inx = node_ptr - node_record_table_ptr;
 	last_node_update = time (NULL);
-	node_record_table_ptr[i].last_response = time (NULL);
+	node_record_table_ptr[node_inx].last_response = time (NULL);
 	node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
 	if (node_ptr->node_state == NODE_STATE_UNKNOWN)
 		node_ptr->node_state = NODE_STATE_IDLE;
 	if (node_ptr->node_state == NODE_STATE_IDLE)
-		bit_set (idle_node_bitmap, (node_ptr - node_record_table_ptr));
+		bit_set (idle_node_bitmap, node_inx);
 	if (node_ptr->node_state != NODE_STATE_DOWN)
-		bit_set (up_node_bitmap, (node_ptr - node_record_table_ptr));
+		bit_set (up_node_bitmap, node_inx);
 	return;
 }
 
