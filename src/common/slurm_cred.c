@@ -391,7 +391,7 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	cred->ctime  = time(NULL);
 	cred->siglen = SLURM_IO_KEY_SIZE;
 
-	if ((fd = open("/dev/random", O_RDONLY)) < 0)
+	if ((fd = open("/dev/urandom", O_RDONLY)) < 0)
 		error ("unable to open /dev/random: %m");
 
 	cred->signature = xmalloc(cred->siglen * sizeof(char));
