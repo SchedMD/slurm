@@ -2038,7 +2038,7 @@ update_job (job_desc_msg_t * job_specs, uid_t uid)
 		error ("update_job: job_id %u does not exist.", job_specs -> job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
-	if ( (uid == 0) || (uid = getuid ()) )
+	if ( (uid == 0) || (uid == getuid ()) )
 		super_user = 1;
 	if ( (job_ptr->user_id != uid) && 
 	     (super_user == 0) ) {
