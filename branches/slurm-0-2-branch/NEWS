@@ -1,6 +1,19 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.2.23
+=========================
+ -- Fixes for reported problems:
+   - slurm/381: Hold jobs requesting more resources than partition limit.
+ -- Nodes no longer transition from COMPLETING to DOWN when not responding.
+    Instead, slurmctld either waits for positive verification of job
+	completion, or an administrator must explicitly set the node DOWN.
+ -- New srun option `-q, --quit-on-interrupt' enables single Ctrl-C to
+    terminate running job.
+ -- Improved error message from srun when jobid set in environment is
+    no longer running.
+ -- Export only required symbols from libslurm.so. 
+
 * Changes in SLURM 0.2.22
 =========================
  -- Fixes for reported problems:
