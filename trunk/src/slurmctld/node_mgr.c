@@ -1002,8 +1002,6 @@ pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time)
 int 
 pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len) 
 {
-	char *partition = NULL;
-
 	packstr (dump_node_ptr->name, buf_ptr, buf_len);
 	pack16  (dump_node_ptr->node_state, buf_ptr, buf_len);
 	pack32  (dump_node_ptr->cpus, buf_ptr, buf_len);
@@ -1011,7 +1009,10 @@ pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len)
 	pack32  (dump_node_ptr->tmp_disk, buf_ptr, buf_len);
 	pack32  (dump_node_ptr->config_ptr->weight, buf_ptr, buf_len);
 	packstr (dump_node_ptr->config_ptr->feature, buf_ptr, buf_len);
-	packstr (partition, buf_ptr, buf_len);
+	if (dump_node_ptr->partition_ptr)
+		packstr (dump_node_ptr->partition_ptr->name, buf_ptr, buf_len);
+	else
+		packstr (NULL, buf_ptr, buf_len);
 
 	return 0;
 }
