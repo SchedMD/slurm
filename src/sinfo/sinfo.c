@@ -752,8 +752,8 @@ _display_partition_node_info(struct partition_summary *partition)
 		part_groups = "ALL";
 	if (params.long_output)
 		name_len = 1024;
-	else
-		name_len = 64;
+	else	/* limit to 80 columns for short/default format */
+		name_len = 49;
 	name_buf = malloc(name_len);
 
 	while ((state_sum = list_next(node_i)) != NULL) {
