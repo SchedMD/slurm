@@ -244,8 +244,13 @@ slurmctld_req (int sockfd) {
 				 node_name_ptr, &in_line[8], job_id_ptr, 
 				(long) (clock () - start_time));
 
-		if (error_code == 0)
-			send (sockfd, node_name_ptr, strlen (node_name_ptr) + 1, 0);
+		if (error_code == 0) {
+			i = strlen(node_name_ptr) + strlen (job_id_ptr) + 2;
+			dump = xmalloc(i);
+			sprintf(dump, "%s %s", node_name_ptr, job_id_ptr);
+			send (sockfd, dump, i, 0);
+			xfree(dump);
+		}
 		else if (error_code == EAGAIN)
 			send (sockfd, "EAGAIN", 7, 0);
 		else
@@ -353,17 +358,15 @@ slurmctld_req (int sockfd) {
 	/* JobCancel - cancel a slurm job or reservation */
 	else if (strncmp ("JobCancel", in_line, 9) == 0) {
 		time_stamp = NULL;
-		error_code = EINVAL;
+		error_code = job_cancel(&in_line[10]);
 		if (error_code)
 			info ("slurmctld_req: job_cancel error %d, time=%ld",
 				 error_code, (long) (clock () - start_time));
 		else
 			info ("slurmctld_req: job_cancel success for %s, time=%ld",
 				 &in_line[10], (long) (clock () - start_time));
-		fprintf (stderr, "job_cancel time = %ld usec\n",
-			 (long) (clock () - start_time));
 		if (error_code == 0)
-			send (sockfd, dump, dump_size, 0);
+			send (sockfd, "Job killed", 11, 0);
 		else
 			send (sockfd, "EINVAL", 7, 0);
 	}

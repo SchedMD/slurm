@@ -128,8 +128,8 @@ main (int argc, char *argv[])
 #endif
 
 
-/* for a given bitmap, change the state of specified nodes to stage_in */
-/* this is a simple prototype for testing 
+/* allocate_nodes - for a given bitmap, change the state of specified nodes to stage_in
+ * this is a simple prototype for testing 
  * globals: node_record_count - number of nodes in the system
  *	node_record_table_ptr - pointer to global node table
  */
@@ -167,6 +167,26 @@ count_cpus (unsigned *bitmap)
 		sum += node_record_table_ptr[i].cpus;
 	}
 	return sum;
+}
+
+
+/* deallocate_nodes - for a given bitmap, change the state of specified nodes to idle
+ * this is a simple prototype for testing 
+ * globals: node_record_count - number of nodes in the system
+ *	node_record_table_ptr - pointer to global node table
+ */
+void 
+deallocate_nodes (unsigned *bitmap) 
+{
+	int i;
+
+	for (i = 0; i < node_record_count; i++) {
+		if (bit_test (bitmap, i) == 0)
+			continue;
+		node_record_table_ptr[i].node_state = STATE_IDLE;
+		bit_set (idle_node_bitmap, i);
+	}
+	return;
 }
 
 
@@ -471,7 +491,7 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 		 bitstr_t **req_bitmap, int req_cpus, int req_nodes,
 		 int contiguous, int shared, int max_nodes) 
 {
-	int error_code, i, j, size;
+	int error_code, i, j, pick_code, size;
 	int total_nodes, total_cpus;	/* total resources configured in partition */
 	int avail_nodes, avail_cpus;	/* resources available for use now */
 	bitstr_t *avail_bitmap, *total_bitmap;
@@ -479,10 +499,14 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 	int *cpus_per_node;
 	int avail_set, total_set, runable;
 
-	if (node_set_size == 0)
+	if (node_set_size == 0) {
+		info ("pick_best_nodes: empty node set for selection");
 		return EINVAL;
-	if ((max_nodes != -1) && (req_nodes > max_nodes))
+	}
+	if ((max_nodes != -1) && (req_nodes > max_nodes)) {
+		info ("pick_best_nodes: more nodes required than possible in partition");
 		return EINVAL;
+	}
 	error_code = 0;
 	avail_bitmap = total_bitmap = NULL;
 	avail_nodes = avail_cpus = 0;
@@ -494,8 +518,10 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 			total_nodes = bit_set_count (req_bitmap[0]);
 		if (req_cpus != 0)
 			total_cpus = count_cpus (req_bitmap[0]);
-		if (total_nodes > max_nodes)
+		if (total_nodes > max_nodes) {
+			info ("pick_best_nodes: more nodes required than possible in partition");
 			return EINVAL;
+		}
 		if ((req_nodes <= total_nodes) && (req_cpus <= total_cpus)) {
 			if (bit_super_set (req_bitmap[0], up_node_bitmap) != 1)
 				return EAGAIN;
@@ -556,46 +582,49 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 			avail_cpus +=
 				(node_set_ptr[i].nodes *
 				 node_set_ptr[i].cpus_per_node);
-			if ((req_bitmap[0])
-			    && (bit_super_set (req_bitmap[0], avail_bitmap)
-				== 0))
+			if ((req_bitmap[0]) && 
+			    (bit_super_set (req_bitmap[0], avail_bitmap) == 0))
 				continue;
 			if (avail_nodes < req_nodes)
 				continue;
 			if (avail_cpus < req_cpus)
 				continue;
-			error_code =
+			pick_code =
 				pick_best_quadrics (avail_bitmap, req_bitmap[0],
 						req_nodes, req_cpus,
 						contiguous);
-			if ((error_code == 0) && (max_nodes != -1)
+			if ((pick_code == 0) && (max_nodes != -1)
 			    && (bit_set_count (avail_bitmap) > max_nodes)) {
+				info ("pick_best_nodes: too many nodes selected");
 				error_code = EINVAL;
 				break;
 			}	
-			if (error_code == 0) {
+			if (pick_code == 0) {
 				if (total_bitmap)
 					bit_free (total_bitmap);
 				if (req_bitmap[0])
 					bit_free (req_bitmap[0]);
 				req_bitmap[0] = avail_bitmap;
 				return 0;
-			}	
+			}
 		}
 		if ((error_code == 0) && (runable == 0) &&
 		    (total_nodes > req_nodes) && (total_cpus > req_cpus) &&
 		    ((req_bitmap[0] == NULL)
-		     || (bit_super_set (req_bitmap[0], avail_bitmap) == 1))
+		     || (bit_super_set (req_bitmap[0], total_bitmap) == 1))
 		    && ((max_nodes == -1) || (req_nodes <= max_nodes))) {
-			/* determine if job could possibly run (if configured nodes all available) */
-			error_code =
+			/* determine if job could possibly run */
+			/* (if configured nodes all available) */
+			pick_code =
 				pick_best_quadrics (total_bitmap, req_bitmap[0],
 						req_nodes, req_cpus,
 						contiguous);
-			if ((error_code == 0) && (max_nodes != -1)
-			    && (bit_set_count (avail_bitmap) > max_nodes))
+			if ((pick_code == 0) && (max_nodes != -1)
+			    && (bit_set_count (avail_bitmap) > max_nodes)) {
 				error_code = EINVAL;
-			if (error_code == 0)
+				info ("pick_best_nodes: too many nodes selected");
+			}
+			if (pick_code == 0)
 				runable = 1;
 		}		
 		if (avail_bitmap)
@@ -607,8 +636,10 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 			break;
 	}
 
-	if (runable == 0)
+	if (runable == 0) {
 		error_code = EINVAL;
+		info ("pick_best_nodes: job never runnable");
+	}
 	if (error_code == 0)
 		error_code = EAGAIN;
 	return error_code;
@@ -734,7 +765,7 @@ select_nodes (struct job_record *job_ptr)
 		node_set_ptr[node_set_index].cpus_per_node = config_record_point->cpus;
 		node_set_ptr[node_set_index].weight = config_record_point->weight;
 		node_set_ptr[node_set_index].feature = tmp_feature;
-#if DEBUG_MODULE > 1
+#if DEBUG_SYSTEM > 1
 		info ("found %d usable nodes from configuration with %s",
 			node_set_ptr[node_set_index].nodes,
 			config_record_point->nodes);
