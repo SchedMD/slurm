@@ -42,7 +42,8 @@ slurmctld_SOURCES = 	\
 	state_save.h	\
 	step_mgr.c
 
-slurmctld_LDFLAGS = -export-dynamic
+
+slurmctld_LDFLAGS = -export-dynamic 
 
 force:
 $(slurmctld_LDADD) : force
