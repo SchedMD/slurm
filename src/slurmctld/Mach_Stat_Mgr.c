@@ -123,15 +123,6 @@ int Dump_Node_Records (char *File_Name) {
 
     /* Initialization */
     Error_Code = 0;
-    Node_Record_Iterator = list_iterator_create(Node_Record_List);
-   if (Node_Record_Iterator == NULL) {
-#if DEBUG_MODULE
-	fprintf(stderr, "Dump_Node_Records: list_iterator_create unable to allocate memory\n");
-#else
-	syslog(LOG_ERR, "Dump_Node_Records: list_iterator_create unable to allocate memory\n");
-#endif
-	return ENOMEM;
-    }
     Node_Spec_File = fopen(File_Name, "w");
     if (Node_Spec_File == NULL) {
 #if DEBUG_MODULE
@@ -140,6 +131,16 @@ int Dump_Node_Records (char *File_Name) {
 	syslog(LOG_ERR, "Dump_Node_Records error %d opening file %s\n", errno, File_Name);
 #endif
 	return errno;
+    } /* if */
+
+    Node_Record_Iterator = list_iterator_create(Node_Record_List);
+    if (Node_Record_Iterator == NULL) {
+#if DEBUG_MODULE
+	fprintf(stderr, "Dump_Node_Records: list_iterator_create unable to allocate memory\n");
+#else
+	syslog(LOG_ERR, "Dump_Node_Records: list_iterator_create unable to allocate memory\n");
+#endif
+	return ENOMEM;
     } /* if */
 
     i = NODE_STRUCT_VERSION;
@@ -504,6 +505,7 @@ int Read_Node_Spec_Conf (char *File_Name) {
 		    Error_Code =  errno;
 		    break;
 		} /* if */
+		memset(Node_Record_Point, 0, (size_t)sizeof(struct Node_Record));
 		if (list_append(Node_Record_List, (void *)Node_Record_Point) == NULL) {
 #if DEBUG_MODULE
 		    fprintf(stderr, "Read_Node_Spec_Conf: list_append can not allocate memory\n");
@@ -626,7 +628,7 @@ int Tally_Node_CPUs(char *Node_List) {
 	    str_ptr[j++] = &Node_List[i+1];
 	} else if ((Node_List[i] == ' ') || (Node_List[i] == '\t') || (Node_List[i] == '\n')) {
 	    str_ptr[j++] = &Node_List[i+1];  /* Used just for computing size */
-	    str_ptr[j] == (char *)NULL;
+	    str_ptr[j] = (char *)NULL;
 	    break;
 	} /* if */
     } /* for */
@@ -700,6 +702,7 @@ int Update_Node_Spec_Conf (char *Specification) {
 #endif
 	    return errno;
 	} /* if */
+	memset(Node_Record_Point, 0, (size_t)sizeof(struct Node_Record));
 	if (list_append(Node_Record_List, (void *)Node_Record_Point) == NULL) {
 #if DEBUG_MODULE
 	    fprintf(stderr, "Update_Node_Spec_Conf list_append can not allocate memory\n");
@@ -809,15 +812,6 @@ int Write_Node_Spec_Conf (char *File_Name, int Full_Dump) {
 
     /* Initialization */
     Error_Code = 0;
-    Node_Record_Iterator = list_iterator_create(Node_Record_List);
-   if (Node_Record_Iterator == NULL) {
-#if DEBUG_MODULE
-	fprintf(stderr, "Write_Node_Spec_Conf: list_iterator_create unable to allocate memory\n");
-#else
-	syslog(LOG_ERR, "Write_Node_Spec_Conf: list_iterator_create unable to allocate memory\n");
-#endif
-	return ENOMEM;
-    }
     Node_Spec_File = fopen(File_Name, "w");
     if (Node_Spec_File == NULL) {
 #if DEBUG_MODULE
@@ -827,6 +821,17 @@ int Write_Node_Spec_Conf (char *File_Name, int Full_Dump) {
 #endif
 	return errno;
     } /* if */
+
+    Node_Record_Iterator = list_iterator_create(Node_Record_List);
+    if (Node_Record_Iterator == NULL) {
+#if DEBUG_MODULE
+	fprintf(stderr, "Write_Node_Spec_Conf: list_iterator_create unable to allocate memory\n");
+#else
+	syslog(LOG_ERR, "Write_Node_Spec_Conf: list_iterator_create unable to allocate memory\n");
+#endif
+	return ENOMEM;
+    } /* if */
+
     (void) time(&now);
     if (fprintf(Node_Spec_File, "#\n# Written by SLURM: %s#\n", ctime(&now)) <= 0) {
 	Error_Code = errno;

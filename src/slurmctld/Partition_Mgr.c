@@ -45,7 +45,6 @@ main(int argc, char * argv[]) {
 	exit(1);
     } /* if */
 
-
     /* Update existing record */
     Error_Code = Update_Part_Spec_Conf("Name=pbatch DenyUsers=student1");
     if (Error_Code != 0) printf("Error %d from Update_Part_Spec_Conf\n", Error_Code);
@@ -72,7 +71,7 @@ main(int argc, char * argv[]) {
     if (Error_Code != 0) printf("Error %d from Show_Part_Record", Error_Code);
     if (Error_Code == 0) printf("Show_Part_Record: %s\n", Out_Line);
 
-    Error_Code =  Dump_Part_Records (argv[1], argv[2]);
+    Error_Code =  Dump_Part_Records (argv[3], argv[4]);
     if (Error_Code != 0) printf("Error %d from Dump_Part_Records", Error_Code);
 
     exit(0);
@@ -126,6 +125,132 @@ int Delete_Part_Record(char *name) {
  *                             and DenyUsers written to 
  */
 int Dump_Part_Records (char *File_Name, char *File_Name_UserList) {
+    FILE *Part_Spec_File;	/* Pointer to output data file */
+    FILE *User_Spec_File;	/* Pointer to output data file */
+    int Error_Code;		/* Error returns from system functions */
+    ListIterator Part_Record_Iterator;		/* For iterating through Part_Record_List */
+    struct Part_Record *Part_Record_Point;	/* Pointer to Part_Record */
+    struct Part_Record Tmp_Part_Record;		/* Temporary storage to manipulate user list pointers */
+    int i;
+
+    /* Initialization */
+    Error_Code = 0;
+    Part_Spec_File = fopen(File_Name, "w");
+    if (Part_Spec_File == NULL) {
+#if DEBUG_MODULE
+	fprintf(stderr, "Dump_Part_Records: error %d opening file %s\n", errno, File_Name);
+#else
+	syslog(LOG_ERR, "Dump_Part_Records: error %d opening file %s\n", errno, File_Name);
+#endif
+	return errno;
+    } /* if */
+
+    User_Spec_File = fopen(File_Name_UserList, "w");
+    if (User_Spec_File == NULL) {
+#if DEBUG_MODULE
+	fprintf(stderr, "Dump_Part_Records: error %d opening file %s\n", errno, File_Name_UserList);
+#else
+	syslog(LOG_ERR, "Dump_Part_Records: error %d opening file %s\n", errno, File_Name_UserList);
+#endif
+	return errno;
+    } /* if */
+
+    i = PART_STRUCT_VERSION;
+    if (fwrite((void *)&i, sizeof(i), 1, Part_Spec_File) < 1) {
+	Error_Code = ferror(Part_Spec_File);
+#if DEBUG_MODULE
+	fprintf(stderr, "Dump_Part_Records: error %d writing to file %s\n", Error_Code, File_Name);
+#else
+	syslog(LOG_ERR, "Dump_Part_Records: error %d writing to file %s\n", Error_Code, File_Name);
+#endif
+    } /* if */
+    if (fwrite((void *)&i, sizeof(i), 1, User_Spec_File) < 1) {
+	Error_Code = ferror(User_Spec_File);
+#if DEBUG_MODULE
+	fprintf(stderr, "Dump_Part_Records: error %d writing to file %s\n", Error_Code, File_Name_UserList);
+#else
+	syslog(LOG_ERR, "Dump_Part_Records: error %d writing to file %s\n", Error_Code, File_Name_UserList);
+#endif
+    } /* if */
+
+    Part_Record_Iterator = list_iterator_create(Part_Record_List);
+    if (Part_Record_Iterator == NULL) {
+#if DEBUG_MODULE
+	fprintf(stderr, "Dump_Part_Records: list_iterator_create unable to allocate memory\n");
+#else
+	syslog(LOG_ERR, "Dump_Part_Records: list_iterator_create unable to allocate memory\n");
+#endif
+	return ENOMEM;
+    } /* if */
+
+    /* Process the data file */
+    while (Part_Record_Point = (struct Part_Record *)list_next(Part_Record_Iterator)) {
+	memcpy(&Tmp_Part_Record, Part_Record_Point, sizeof(Tmp_Part_Record));
+	if (Tmp_Part_Record.AllowUsers) {
+	    /* Change AllowUsers to file pointer */
+	    i = ftell(User_Spec_File);
+	    if (fwrite((void *)Tmp_Part_Record.AllowUsers, 
+			(size_t)(strlen(Tmp_Part_Record.AllowUsers)+1), 
+			(size_t)1, User_Spec_File) < 1) {
+		if (Error_Code == 0) Error_Code = ferror(User_Spec_File);
+#if DEBUG_MODULE
+		fprintf(stderr, "Dump_Part_Records error %d writing to file %s\n", 
+			Error_Code, File_Name_UserList);
+#else
+		syslog(LOG_ERR, "Dump_Part_Records error %d writing to file %s\n", 
+			Error_Code, File_Name_UserList);
+#endif
+		Tmp_Part_Record.AllowUsers = (char *)NULL;
+	    } else
+		Tmp_Part_Record.AllowUsers = (char *)i;
+	} /* if */
+	if (Tmp_Part_Record.DenyUsers) {
+	    /* Change DenyUsers to file pointer */
+	    i = ftell(User_Spec_File);
+	    if (fwrite((void *)Tmp_Part_Record.DenyUsers, 
+			(size_t)(strlen(Tmp_Part_Record.DenyUsers)+1), 
+			(size_t)1, User_Spec_File) < 1) {
+		if (Error_Code == 0) Error_Code = ferror(User_Spec_File);
+#if DEBUG_MODULE
+		fprintf(stderr, "Dump_Part_Records error %d writing to file %s\n", 
+			Error_Code, File_Name_UserList);
+#else
+		syslog(LOG_ERR, "Dump_Part_Records error %d writing to file %s\n", 
+			Error_Code, File_Name_UserList);
+#endif
+		Tmp_Part_Record.DenyUsers = (char *)NULL;
+	    } else
+		Tmp_Part_Record.DenyUsers = (char *)i;
+	} /* if */
+	if (fwrite((void *)&Tmp_Part_Record, sizeof (struct Part_Record), 1, Part_Spec_File) < 1) {
+	    if (Error_Code == 0) Error_Code = ferror(Part_Spec_File);
+#if DEBUG_MODULE
+	    fprintf(stderr, "Dump_Part_Records error %d writing to file %s\n", Error_Code, File_Name);
+#else
+	    syslog(LOG_ERR, "Dump_Part_Records error %d writing to file %s\n", Error_Code, File_Name);
+#endif
+	} /* if */
+    } /* while */
+
+    /* Termination */
+    if (fclose(Part_Spec_File) != 0) {
+	if (Error_Code == 0) Error_Code = errno;
+#if DEBUG_MODULE
+	fprintf(stderr, "Dump_Part_Records: error %d closing file %s\n", errno, File_Name);
+#else
+	syslog(LOG_NOTICE, "Dump_Part_Records: error %d closing file %s\n", errno, File_Name);
+#endif
+    } /* if */
+    if (fclose(User_Spec_File) != 0) {
+	if (Error_Code == 0) Error_Code = errno;
+#if DEBUG_MODULE
+	fprintf(stderr, "Dump_Part_Records: error %d closing file %s\n", errno, File_Name_UserList);
+#else
+	syslog(LOG_NOTICE, "Dump_Part_Records: error %d closing file %s\n", errno, File_Name_UserList);
+#endif
+    } /* if */
+    list_iterator_destroy(Part_Record_Iterator);
+    return Error_Code;
 } /* Dump_Part_Records */
 
 
@@ -591,6 +716,7 @@ int Read_Part_Spec_Conf (char *File_Name) {
 		    Error_Code =  errno;
 		    break;
 		} /* if */
+		memset(Part_Record_Point, 0, (size_t)sizeof(struct Part_Record));
 		if (list_append(Part_Record_List, (void *)Part_Record_Point) == NULL) {
 #if DEBUG_MODULE
 		    fprintf(stderr, "Read_Part_Spec_Conf list_append can not allocate memory\n");
@@ -788,6 +914,7 @@ int Update_Part_Spec_Conf (char *Specification) {
 #endif
 	    return errno;
 	} /* if */
+	memset(Part_Record_Point, 0, (size_t)sizeof(struct Part_Record));
 	if (list_append(Part_Record_List, (void *)Part_Record_Point) == NULL) {
 #if DEBUG_MODULE
 	    fprintf(stderr, "Update_Part_Spec_Conf list_append can not allocate memory\n");
@@ -850,15 +977,6 @@ int Write_Part_Spec_Conf (char *File_Name) {
 
     /* Initialization */
     Error_Code = 0;
-    Part_Record_Iterator = list_iterator_create(Part_Record_List);
-   if (Part_Record_Iterator == NULL) {
-#if DEBUG_MODULE
-	fprintf(stderr, "Write_Part_Spec_Conf: list_iterator_create unable to allocate memory\n");
-#else
-	syslog(LOG_ERR, "Write_Part_Spec_Conf: list_iterator_create unable to allocate memory\n");
-#endif
-	return ENOMEM;
-    }
     Part_Spec_File = fopen(File_Name, "w");
     if (Part_Spec_File == NULL) {
 #if DEBUG_MODULE
@@ -868,6 +986,17 @@ int Write_Part_Spec_Conf (char *File_Name) {
 #endif
 	return errno;
     } /* if */
+
+    Part_Record_Iterator = list_iterator_create(Part_Record_List);
+    if (Part_Record_Iterator == NULL) {
+#if DEBUG_MODULE
+	fprintf(stderr, "Write_Part_Spec_Conf: list_iterator_create unable to allocate memory\n");
+#else
+	syslog(LOG_ERR, "Write_Part_Spec_Conf: list_iterator_create unable to allocate memory\n");
+#endif
+	return ENOMEM;
+    } /* if */
+
     (void) time(&now);
     if (fprintf(Part_Spec_File, "#\n# Written by SLURM: %s#\n", ctime(&now)) <= 0) {
 	Error_Code = errno;

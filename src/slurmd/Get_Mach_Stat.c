@@ -15,7 +15,7 @@
 #include <sys/utsname.h>
 #include <sys/vfs.h>
 
-#include "Mach_Stat_Mgr.h"
+#include "slurm.h"
 
 #define DEBUG_MODULE 1
 
