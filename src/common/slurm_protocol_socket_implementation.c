@@ -193,7 +193,7 @@ slurm_fd _slurm_open_stream ( slurm_addr * slurm_address )
 
 	if ( ( rc = _slurm_connect ( connection_fd , ( struct sockaddr const * ) slurm_address , sizeof ( slurm_addr ) ) ) == SLURM_SOCKET_ERROR )
 	{
-		info ( "Error listening on slurm stream socket: errno %i" , errno ) ;
+		info ( "Error connecting on slurm stream socket: errno %i" , errno ) ;
 		return rc ;
 	}
 
