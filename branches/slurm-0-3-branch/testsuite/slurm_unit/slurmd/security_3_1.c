@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 {
 	batch_job_launch_msg_t launch_msg;
 	int uid;
-	uint32_t jid;
+	uint32_t jid, cpu_arr[1];
 
 	if (argc != 2) {
 		_usage(argv[0]);
@@ -40,6 +40,10 @@ int main(int argc, char *argv[])
 	launch_msg.job_id	= jid;
 	launch_msg.uid		= uid;
 	launch_msg.nodes	= argv[1];
+	launch_msg.num_cpu_groups	= 1;
+	cpu_arr[0]			= 1;
+	launch_msg.cpus_per_node	= cpu_arr;
+	launch_msg.cpu_count_reps	= cpu_arr;
 	launch_msg.err		= "/dev/null";
 	launch_msg.in		= "/dev/null";
 	launch_msg.out		= "/dev/null";
