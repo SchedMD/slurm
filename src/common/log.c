@@ -251,8 +251,10 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 
 	if (level > SYSLOG_LEVEL  && 
 	    level > LOGFILE_LEVEL && 
-	    level > STDERR_LEVEL)
+	    level > STDERR_LEVEL) {
+		pthread_mutex_unlock(&log_lock);
 		return;
+	}
 
 	if (log->opt.prefix_level || SYSLOG_LEVEL > level) {
 		switch (level) {
