@@ -381,8 +381,8 @@ AC_SUBST(SSL_CPPFLAGS)
 SSL_LIBS="-lcrypto"
 
 AC_ARG_WITH(ssl-dir,
-	[  --with-ssl=[PATH]     Specify path to OpenSSL installation ],
-	[ tryssldir=$withval ]
+  AC_HELP_STRING([--with-ssl=PATH],[Specify path to OpenSSL installation]),
+  [ tryssldir=$withval ]
 )
 
 saved_LIBS="$LIBS"
