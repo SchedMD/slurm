@@ -135,7 +135,7 @@ public:
 
 	const bool eval( sched_obj_list_t obj_data, int32_t idx )
 	{
-		(int32_t) m_func( obj_data, idx, NULL ) > m_val;
+		return (int32_t) m_func( obj_data, idx, NULL ) > m_val;
 	}
 };
 
