@@ -93,8 +93,7 @@ static char * script = NULL;
 static char error_str[256];
 static List job_list = NULL;
 
-static pthread_t script_thread;
-static bool thread_running = false;
+static pthread_t script_thread = 0;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t job_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t job_list_cond = PTHREAD_COND_INITIALIZER;
@@ -370,7 +369,7 @@ int init ( void )
 		return SLURM_ERROR;
 	}
 
-	if (thread_running) {
+	if (script_thread) {
 		debug2( "Script thread already running, not starting another");
 		pthread_mutex_unlock(&thread_flag_mutex);
 		return SLURM_ERROR;
@@ -378,7 +377,6 @@ int init ( void )
 	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
 	pthread_create(&script_thread, &attr, script_agent, NULL);
-	thread_running = true;
 	
 	pthread_mutex_unlock(&thread_flag_mutex);
 
@@ -445,14 +443,26 @@ char *slurm_jobcomp_strerror( int errnum )
 	return error_str;
 }
 
+static void _cancel_thread (pthread_t thread_id)
+{
+	int i;
+
+	for (i=0; i<4; i++) {
+		if (pthread_cancel(thread_id))
+			return;
+		usleep(1000);
+	}
+	error("Could not kill jobcomp script pthread");
+}
+
 /* Called when script unloads */
 int fini ( void )
 {
 	pthread_mutex_lock(&thread_flag_mutex);
-	if(thread_running) {
+	if(script_thread) {
 		verbose("Script Job Completion plugin shutting down");
-		pthread_cancel(script_thread);
-		thread_running = false;
+		_cancel_thread(script_thread);
+		script_thread = 0;
 	}
 	pthread_mutex_unlock(&thread_flag_mutex);
 

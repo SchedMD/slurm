@@ -254,8 +254,8 @@ slurm_auth_generic_errstr( int slurm_errno )
 }
 
 
-int
-slurm_auth_context_destroy( slurm_auth_context_t c )
+static int
+_slurm_auth_context_destroy( slurm_auth_context_t c )
 {    
         /*
          * Must check return code here because plugins might still
@@ -303,7 +303,7 @@ slurm_auth_init( void )
         if ( slurm_auth_get_ops( g_context ) == NULL ) {
                 error( "cannot resolve %s plugin operations", 
 				auth_type );
-                slurm_auth_context_destroy( g_context );
+                _slurm_auth_context_destroy( g_context );
                 g_context = NULL;
                 retval = SLURM_ERROR;
         }
@@ -314,6 +314,18 @@ slurm_auth_init( void )
         return retval;
 }
 
+/* Release all global memory associated with the plugin */
+extern int
+slurm_auth_fini( void )
+{
+	int rc;
+
+	if ( !g_context )
+		return SLURM_SUCCESS;
+
+	rc = _slurm_auth_context_destroy( g_context );
+	return rc;
+}
 
 /*
  * Static bindings for the global authentication context.  The test

@@ -123,16 +123,19 @@ int slurm_api_set_default_config()
         static time_t last_config_update = (time_t) 0;
 
         slurm_mutex_lock(&config_lock);
-        if ( (slurmctld_conf.slurm_conf) &&
-             (stat(slurmctld_conf.slurm_conf, &config_stat) < 0)) {
-                error("Can't stat %s: %m", slurmctld_conf.slurm_conf);
-                rc = SLURM_ERROR;
-                goto cleanup;
-        }
-        if ((last_config_update == config_stat.st_mtime) &&
-            (slurmctld_conf.control_addr != NULL)        &&
-            (slurmctld_conf.slurmctld_port != 0))
-                goto cleanup;
+	if (slurmctld_conf.slurm_conf
+	&&  (stat(slurmctld_conf.slurm_conf, &config_stat) < 0)) {
+		error("Can't stat %s: %m", slurmctld_conf.slurm_conf);
+		rc = SLURM_ERROR;
+		goto cleanup;
+	}
+
+	if (last_config_update
+	&&  (slurmctld_conf.slurm_conf
+	&&   (last_config_update == config_stat.st_mtime))
+	&&  slurmctld_conf.control_addr
+	&&  slurmctld_conf.slurmctld_port)
+  		goto cleanup;
 
         last_config_update = config_stat.st_mtime;
         init_slurm_conf(&slurmctld_conf);

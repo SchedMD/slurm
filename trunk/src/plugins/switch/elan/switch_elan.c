@@ -55,7 +55,7 @@ static int   _set_elan_ids(void);
 static void *_neterr_thr(void *arg);
 
 static int             neterr_retval = 0;
-static pthread_t       neterr_tid;
+static pthread_t       neterr_tid = 0;
 static pthread_mutex_t neterr_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  neterr_cond  = PTHREAD_COND_INITIALIZER;
 
@@ -530,13 +530,22 @@ static void *_neterr_thr(void *arg)
  *   We don't really need to do anything special for Elan, but
  *   we'll call pthread_cancel() on the neterr resolver thread anyhow.
  */
-int switch_p_node_fini ( void )
+extern int switch_p_node_fini ( void )
 {
 #if HAVE_LIBELAN3
-	if (pthread_cancel(neterr_tid) == 0) 
+	int i;
+
+	if (!neterr_tid)
 		return SLURM_SUCCESS;
 
-	error("Unable to cancel neterr thread: %m");
+	for (i=0; i<4; i++) {
+		if (pthread_cancel(neterr_tid)) {
+			neterr_tid = 0;
+			return SLURM_SUCCESS;
+		}
+		usleep(1000);
+	}
+	error("Could not kill switch elan pthread");
 	return SLURM_ERROR;
 #else  /* !HAVE_LIBELAN3 */
 

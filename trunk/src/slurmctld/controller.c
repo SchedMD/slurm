@@ -82,8 +82,20 @@
 				 * 2 = recover all state saved from last shutdown */
 #define MIN_CHECKIN_TIME  3	/* Nodes have this number of seconds to 
 				 * check-in before we ping them */
-#define MEM_LEAK_TEST	  0	/* Running memory leak test if set */
 #define SHUTDOWN_WAIT     2	/* Time to wait for backup server shutdown */
+
+/**************************************************************************\
+ * To test for memory leaks, set MEM_LEAK_TEST to 1 then execute
+ * > valgrind --tool=memcheck --leak-check=yes --num-callers=6 
+ *    --leak-resolution=med slurmctld -D
+ * then exercise the slurmctld functionality before executing
+ * > scontrol shutdown
+ * The OpenSSL code produces a bunch of errors related to use of 
+ * non-initialized memory use. Otherwise the report should be free 
+ * of errors. Remember to reset MEM_LEAK_TEST to 0 afterwards for 
+ * best system response (non-seamless backup controller use).
+\**************************************************************************/
+#define MEM_LEAK_TEST     0	/* Running memory leak test if set */
 
 
 /* Log to stderr and syslog until becomes a daemon */
@@ -319,12 +331,17 @@ int main(int argc, char *argv[])
 	if (select_g_state_save(slurmctld_conf.state_save_location))
 		error("Failed to save node select plugin state");
 
-#if	MEM_LEAK_TEST
+#if MEM_LEAK_TEST
 	/* This should purge all allocated memory,   *\
 	\*   Anything left over represents a leak.   */
 	sleep(5);	/* give running agents a chance to complete */
 	agent_purge();
 	slurm_select_fini();
+	g_slurm_jobcomp_fini();
+	slurm_sched_fini();
+	checkpoint_fini();
+	slurm_auth_fini();
+	switch_fini();
 	job_fini();
 	part_fini();	/* part_fini() must preceed node_fini() */
 	node_fini();

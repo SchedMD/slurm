@@ -37,6 +37,13 @@
 int slurm_sched_init( void );
 
 /*
+ * Terminate external scheduler, free memory.
+ * 
+ * Returns a SLURM errno.
+ */
+extern int slurm_sched_fini(void);
+
+/*
  **************************************************************************
  *                          P L U G I N   C A L L S                       *
  **************************************************************************

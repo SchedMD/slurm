@@ -210,13 +210,18 @@ checkpoint_init(char *checkpoint_type)
 }
 
 /* shutdown checkpoint plugin */
-extern void
+extern int
 checkpoint_fini(void)
 {
+	int rc;
+
+	if ( !g_context )
+		return SLURM_SUCCESS;
+
 	slurm_mutex_lock( &context_lock );
-	if ( g_context )
-		_slurm_checkpoint_context_destroy(g_context);
+	rc =_slurm_checkpoint_context_destroy(g_context);
 	slurm_mutex_unlock( &context_lock );
+	return rc;
 }
 
 

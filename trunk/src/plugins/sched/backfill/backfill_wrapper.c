@@ -28,6 +28,7 @@
 
 #include <pthread.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <slurm/slurm_errno.h>
 
 #include "src/common/plugin.h"
@@ -42,8 +43,7 @@ const uint32_t		plugin_version	= 90;
 /* A plugin-global errno. */
 static int plugin_errno = SLURM_SUCCESS;
 
-static pthread_t backfill_thread;
-static bool thread_running = false;
+static pthread_t backfill_thread = 0;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /**************************************************************************/
@@ -65,7 +65,7 @@ int init( void )
 	verbose( "Backfill scheduler plugin loaded" );
 
 	pthread_mutex_lock( &thread_flag_mutex );
-	if ( thread_running ) {
+	if ( backfill_thread ) {
 		debug2( "Backfill thread already running, not starting another" );
 		pthread_mutex_unlock( &thread_flag_mutex );
 		return SLURM_ERROR;
@@ -74,23 +74,33 @@ int init( void )
 	slurm_attr_init( &attr );
 	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
 	pthread_create( &backfill_thread, &attr, backfill_agent, NULL);
-	thread_running = true;
 	pthread_mutex_unlock( &thread_flag_mutex );
-	
-	return SLURM_SUCCESS;
 #endif
+	return SLURM_SUCCESS;
 }
 
 /**************************************************************************/
 /*  TAG(                              fini                              ) */
 /**************************************************************************/
+static void _cancel_thread (pthread_t thread_id)
+{
+	int i;
+
+	for (i=0; i<4; i++) {
+		if (pthread_cancel(thread_id))
+			return;
+		usleep(1000);
+	}
+	error("Could not kill backfill sched pthread");
+}
+
 void fini( void )
 {
 	pthread_mutex_lock( &thread_flag_mutex );
-	if ( thread_running ) {
+	if ( backfill_thread ) {
 		verbose( "Backfill scheduler plugin shutting down" );
-		pthread_cancel( backfill_thread );
-		thread_running = false;
+		_cancel_thread( backfill_thread );
+		backfill_thread = false;
 	}
 	pthread_mutex_unlock( &thread_flag_mutex );
 }

@@ -126,18 +126,23 @@ int slurm_auth_context_destroy( slurm_auth_context_t ctxt );
 /*
  * Prepare the global context.
  */
-int slurm_auth_init( void );
+extern int slurm_auth_init( void );
+
+/*
+ * Destroy global context, free memory.
+ */
+extern int slurm_auth_fini( void );
 
 /*
  * Static bindings for the global authentication context.
  */
-void	*g_slurm_auth_create( void *hosts, int timeout );
-int	g_slurm_auth_destroy( void *cred );
-int	g_slurm_auth_verify( void *cred, void *hosts, int timeout );
-uid_t	g_slurm_auth_get_uid( void *cred );
-gid_t	g_slurm_auth_get_gid( void *cred );
-int	g_slurm_auth_pack( void *cred, Buf buf );
-void	*g_slurm_auth_unpack( Buf buf );
+extern void	*g_slurm_auth_create( void *hosts, int timeout );
+extern int	g_slurm_auth_destroy( void *cred );
+extern int	g_slurm_auth_verify( void *cred, void *hosts, int timeout );
+extern uid_t	g_slurm_auth_get_uid( void *cred );
+extern gid_t	g_slurm_auth_get_gid( void *cred );
+extern int	g_slurm_auth_pack( void *cred, Buf buf );
+extern void	*g_slurm_auth_unpack( Buf buf );
 int	g_slurm_auth_print( void *cred, FILE *fp );
 int	g_slurm_auth_errno( void *cred );
 const char *g_slurm_auth_errstr( int slurm_errno );

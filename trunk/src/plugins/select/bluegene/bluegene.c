@@ -530,8 +530,14 @@ extern int init_bgl(void)
 /* Purge all plugin variables */
 extern void fini_bgl(void)
 {
-	list_destroy(bgl_list);
-	list_destroy(bgl_conf_list);
+	if (bgl_list) {
+		list_destroy(bgl_list);
+		bgl_list = NULL;
+	}
+	if (bgl_conf_list) {
+		list_destroy(bgl_conf_list);
+		bgl_conf_list = NULL;
+	}
 }
 
 extern void print_bgl_record(bgl_record_t* record)

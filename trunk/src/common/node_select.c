@@ -56,7 +56,6 @@
  */
 
 typedef struct slurm_select_ops {
-	int		(*fini)			( void );
 	int		(*state_save)		( char *dir_name );
 	int	       	(*state_restore)	( char *dir_name );
 	int 		(*node_init)		( struct node_record *node_ptr,
@@ -110,7 +109,6 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
 	 * Must be synchronized with slurm_select_ops_t above.
 	 */
 	static const char *syms[] = {
-		"fini",
 		"select_p_state_save",
 		"select_p_state_restore",
 		"select_p_node_init",
@@ -236,10 +234,14 @@ extern int slurm_select_init(void)
 
 extern int slurm_select_fini(void)
 {
-	if (slurm_select_init() < 0)
-		return SLURM_ERROR;
+	int rc;
 
-	return (*(g_select_context->ops.fini))();
+	if (!g_select_context)
+		return SLURM_SUCCESS;
+
+	rc = _select_context_destroy( g_select_context );
+	g_select_context = NULL;
+	return rc;
 }
 
 /*
@@ -410,6 +412,8 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 			jobinfo->conn_type = *tmp_16;
 			break;
 		case SELECT_DATA_PART_ID:
+			/* we xfree() any preset value to avoid a memory leak */
+			xfree(jobinfo->bgl_part_id);
 			jobinfo->bgl_part_id = xstrdup(tmp_char);
 			break;
 		default:

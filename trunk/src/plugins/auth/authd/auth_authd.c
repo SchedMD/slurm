@@ -102,6 +102,10 @@ int init( void )
 	return SLURM_SUCCESS;
 }
 
+extern int fini ( void )
+{
+	return SLURM_SUCCESS;
+}
 
 slurm_auth_credential_t *
 slurm_auth_create( void *argv[] )

@@ -209,6 +209,19 @@ g_slurm_jobcomp_init( char *jobcomp_loc )
 }
 
 extern int
+g_slurm_jobcomp_fini(void)
+{
+	int rc;
+
+	if ( !g_context)
+		return SLURM_SUCCESS;
+
+	rc = _slurm_jobcomp_context_destroy ( g_context );
+	g_context = NULL;
+	return SLURM_SUCCESS;
+}
+
+extern int
 g_slurm_jobcomp_write(struct job_record *job_ptr)
 {
 	int retval = SLURM_SUCCESS;
