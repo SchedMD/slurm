@@ -1523,7 +1523,7 @@ _client_error(io_obj_t *obj, List objs)
 	if (getsockopt(obj->fd, SOL_SOCKET, SO_ERROR, &err, &size) < 0)
 		error ("getsockopt: %m");
 
-	if (err) 
+	if (err != ECONNRESET) /* Do not log connection resets */
 		_update_error_state(io, E_POLL, err);
 
 	return 0;
