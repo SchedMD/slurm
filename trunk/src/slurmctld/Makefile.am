@@ -26,8 +26,10 @@ LDADD = $(top_srcdir)/src/common/libcommon.la \
 	$(SSL_LIBS)
 
 slurmctld_SOURCES = 	\
+	agent.h		\
 	locks.h  	\
 	slurmctld.h	\
+	agent.c		\
 	controller.c 	\
 	job_mgr.c 	\
 	job_scheduler.c \
