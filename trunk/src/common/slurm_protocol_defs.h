@@ -283,7 +283,7 @@ void inline slurm_free_last_update_msg ( last_update_msg_t * msg ) ;
 void inline slurm_free_return_code_msg ( return_code_msg_t * msg ) ;
 void inline slurm_free_job_id_msg ( job_id_msg_t * msg ) ;
 
-void inline slurm_free_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr ) ;
+void inline slurm_free_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr ) ;
 
 void inline slurm_free_job_desc_msg ( job_desc_msg_t * msg ) ;
 void inline slurm_free_node_registration_status_msg ( slurm_node_registration_status_msg_t * msg ) ;
