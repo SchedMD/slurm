@@ -145,6 +145,89 @@ and directs operations.
 Compute nodes simply run a \slurmd\ daemon (similar to a remote shell 
 daemon) to export control to SLURM.  
 
+\subsection{What SLURM is Not}
+
+SLURM is not a comprehensive cluster administration or monitoring package.  
+While SLURM knows the state of its compute nodes, it makes no attempt to put
+this information to use in other ways, such as with a general purpose event
+logging mechanism or a back-end database for recording historical state.
+It is expected that SLURM will be deployed in a cluster with other 
+tools performing these functions. 
+
+SLURM is not a meta-batch system like Globus\cite{Globus2002}
+or DPCS (Distributed Production Control System)\cite{DPCS2002}.  
+SLURM supports resource management across a single cluster.
+
+SLURM is not a sophisticated batch system.  
+In fact, it was expressly designed to provide high-performance 
+parallel job management while leaving scheduling decisions to an 
+external entity. 
+
+\section{Architecture}
+
+\subsection{Node Management}
+
+\subsection{Partition Management}
+
+\subsection{Job Management}
+
+\subsection{Scheduling Infrastructure}
+
+Scheduling parallel computers is a very complex matter.  
+Several good public domain schedulers exist with the most 
+popular being the Maui Scheduler\cite{Jackson2001,Maui2002}. 
+The scheduler used at our site, DPCS\cite{DPCS2002}, is quite 
+sophisticated and has over 150,000 lines of code. 
+We felt no need to address scheduling issues within SLURM, but 
+have instead developed a resource manager with a rich set of 
+application programming interfaces (APIs) and the flexibility 
+to satisfy the needs of others working on scheduling issues.  
+
+When jobs are submitted to SLURM they are assigned an initial 
+scheduling priority through a plug-in library function. It 
+maintains a priority ordered queue of pending jobs
+
+to perform gang scheduling, namely an API 
+to explicit preempt and later resume a job.
+
+\section{Results}
+
+\begin{figure}[htb]
+\centerline{\epsfig{file=figures/times.eps}}
+\caption{Time to execute /bin/hostname with various node counts}
+\label{timing}
+\end{figure}
+
+We were able to perform some SLURM tests on a 1000 node cluster in 
+November 2002. Some development was still underway at that time and 
+tuning had not been performed. The results for executing the program 
+/bin/hostname on two tasks per node and various node counts is show 
+in Figure~\ref{timing}. We found SLURM performance to be comparable 
+to the Quadrics Resource Management System (RMS)\cite{Quadrics2002} 
+for all job sizes and about 80 times faster than IBM 
+LoadLeveler\cite{LL2002} at small job sizes.
+(While not shown on this chart, LoadLeveler reaches 1200 seconds to 
+launch an 8000 task job on 500 nodes.)
+
+\section{Future plans}
+
+We expect SLURM to begin production use on LLNL Linux clusters 
+starting in March 2003 and be available for distribution shortly 
+thereafter. 
+
+Looking ahead, we anticipate moving the interconnect topography 
+and API functions into plug-in modules and adding support for 
+additional systems. 
+We plan to add support for additional operating systems 
+(IA64 and x86-64) and interconnects (InfiniBand, Myrinet, and 
+the IBM Blue Gene\cite{BlueGene2002} system\footnote{Blue Gene 
+has a different interconnect than any supported by SLURM and 
+a 3-D topography with restrictive allocation constraints.}). 
+We plan to add support for suspending and resuming jobs, which 
+provides the infrastructure needed to support gang scheduling. 
+We also plan to support changing the node count associated 
+with running jobs (as needed for MPI2).
+
 
 \bibliographystyle{plain}
 \bibliography{project}
