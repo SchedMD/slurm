@@ -155,10 +155,10 @@ struct poptOption constraintTable[] = {
 	 },
 	{"nodelist", 'w', POPT_ARG_STRING, &opt.nodelist, OPT_NODELIST,
 	 "request a specific list of hosts",
-	 "host1,host2,..."},
+	 "hosts..."},
 	{"exclude", 'x', POPT_ARG_STRING, &opt.exc_nodes, OPT_EXC_NODES,
-	 "request a specific list of hosts be excluded from the allocation",
-	 "host1,host2,..."},
+	 "exclude a specific list of hosts",
+	 "hosts..."},
 	{"no-allocate", 'Z', POPT_ARG_NONE, &opt.no_alloc, OPT_NO_ALLOC,
 	 "don't allocate nodes (must supply -w)",
 	},
@@ -195,7 +195,7 @@ struct poptOption runTable[] = {
 	 "overcommit resources",
 	 },
 	{"no-kill", 'k', POPT_ARG_NONE, &opt.no_kill, 0,
-	 "Do not kill job on node failure",
+	 "do not kill job on node failure",
 	 },
 	{"share", 's', POPT_ARG_NONE, &opt.share, 0,
 	 "share node with other jobs",
@@ -203,6 +203,9 @@ struct poptOption runTable[] = {
 	{"label", 'l', POPT_ARG_NONE, &opt.labelio, 0,
 	 "prepend task number to lines of stdout/err",
 	 },
+	{"unbuffered", 'u',  POPT_ARG_NONE, &opt.unbuffered, 0,
+	 "do not line-buffer stdout/err",
+	},
 	{"distribution", 'm', POPT_ARG_STRING, 0, OPT_DISTRIB,
 	 "distribution method for processes (type = block|cyclic)",
 	 "type"},
@@ -226,7 +229,7 @@ struct poptOption runTable[] = {
         {"slurmd-debug", 'd', POPT_ARG_INT, &opt.slurmd_debug, OPT_DEBUG,
 	 "slurmd debug level", "value"},
 	{"threads", 'T', POPT_ARG_INT, &opt.max_threads, OPT_THREADS,
-	 "number of threads in srun",
+	 "set srun launch fanout",
 	 "threads"},
 	{"wait", 'W', POPT_ARG_INT, &opt.max_wait, OPT_WAIT,
 	 "seconds to wait after first task ends before killing job",
@@ -583,6 +586,7 @@ static void _opt_default()
 	opt.core_format = "normal";
 
 	opt.labelio = false;
+	opt.unbuffered = false;
 	opt.overcommit = false;
 	opt.batch = false;
 	opt.share = false;
@@ -952,11 +956,6 @@ _opt_verify(poptContext optctx)
 		 *}
 		 */
 
-
-		/* XXX check here to see if job to attach to exists ? */
-
-		/* XXX what other args are incompatible with attach mode? */
-
 	} else { /* mode != MODE_ATTACH */
 
 		if ((remote_argc == 0) && (mode != MODE_ALLOCATE)) {
@@ -1012,9 +1011,15 @@ _opt_verify(poptContext optctx)
 		error("Thread value invalid, reset to 1");
 		opt.max_threads = 1;
 	} else if (opt.max_threads > MAX_THREADS) {
-		error("Thread value exceeds system limit, reset to %d", 
+		error("Thread value exceeds defined limit, reset to %d", 
 			MAX_THREADS);
 		opt.max_threads = MAX_THREADS;
+	}
+
+	if (opt.labelio && opt.unbuffered) {
+		error("Do not specify both -l (--label) and " 
+		      "-u (--unbuffered)");
+		exit(1);
 	}
 
 	return verified;
@@ -1167,6 +1172,7 @@ void _opt_list()
 	info("slurmd_debug   : %d", opt.slurmd_debug);
 	info("immediate      : %s", tf_(opt.immediate));
 	info("label output   : %s", tf_(opt.labelio));
+	info("unbuffered IO  : %s", tf_(opt.unbuffered));
 	info("allocate       : %s", tf_(opt.allocate));
 	info("attach         : `%s'", opt.attach);
 	info("overcommit     : %s", tf_(opt.overcommit));

@@ -98,8 +98,12 @@ default value is the smaller of 10 or the number of nodes allocated.
 prepend task number to lines of stdout/err. Normally, stdout and stderr
 from remote tasks is line-buffered directly to the stdout and stderr of
 .B srun
-. The \fB\-\-label\fR option will prepend lines of output with the remote
+The \fB\-\-label\fR option will prepend lines of output with the remote
 task id.
+.TP
+\fB-u\fR, \fB\-\-unbuffered\fR
+do not line buffer stdout from remote tasks. This option cannot be used
+with \fI\-\-label\fR. 
 .TP
 \fB\-m\fR, \fB\-\-distribution\fR=(\fIblock\fR|\fIcyclic\fR)
 Specify an alternate distribution method for remote processes.

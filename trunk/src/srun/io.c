@@ -170,7 +170,7 @@ _update_task_state(job_t *job, int taskid)
 
 
 static void
-_do_output(cbuf_t buf, FILE *out, int tasknum)
+_do_output_line(cbuf_t buf, FILE *out, int tasknum)
 {
 	int  len     = 0;
 	int  tot     = 0;
@@ -196,6 +196,15 @@ _do_output(cbuf_t buf, FILE *out, int tasknum)
 
 	nwritten += tot;
 	return;
+}
+
+static void
+_do_output(cbuf_t buf, FILE *out, int tasknum)
+{
+	if (opt.unbuffered)
+		cbuf_read_to_fd(buf, fileno(out), -1);
+	else
+		_do_output_line(buf, out, tasknum);
 }
 
 static void

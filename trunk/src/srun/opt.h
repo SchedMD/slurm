@@ -127,6 +127,7 @@ typedef struct srun_options {
 	int immediate;		/* -i, --immediate      	*/
 
 	bool labelio;		/* --label-output, -l		*/
+	bool unbuffered;        /* --unbuffered,   -u           */
 	bool allocate;		/* --allocate, 	   -A		*/
 	bool overcommit;	/* --overcommit,   -O		*/
 	bool batch;		/* --batch,   -b		*/
