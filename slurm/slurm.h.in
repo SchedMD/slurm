@@ -97,6 +97,8 @@ BEGIN_C_DECLS
 /* eg. the maximum count of nodes any job may use in some partition */
 #define	INFINITE (0xffffffff)
 #define NO_VAL	 (0xfffffffe)
+#define DEFAULT_KILL_WAIT  30
+#define DEFAULT_WAIT_TIME   0
 #define MAX_TASKS_PER_NODE 64
 
 /* last entry must be JOB_END, keep in sync with job_state_string and 
@@ -366,6 +368,9 @@ typedef struct slurm_ctl_conf {
 				 * inactive resource allocation is released */
 	uint16_t kill_wait;	/* seconds between SIGXCPU to SIGKILL 
 				 * on job termination */
+	uint16_t max_job_cnt;	/* maximum number of active jobs */
+	uint16_t min_job_age;	/* COMPLETED jobs over this age (secs) 
+	                         * purged from in memory records */
 	char *plugindir;	/* pathname to plugins */
 	char *prioritize;	/* pathname of program to set initial job 
 				 * priority */
@@ -391,6 +396,7 @@ typedef struct slurm_ctl_conf {
 	char *state_save_location;/* pathname of slurmctld state save
 				 * directory */
 	char *tmp_fs;		/* pathname of temporary file system */
+	uint16_t wait_time;	/* default job --wait time */
 	char *job_credential_private_key;	/* path to private key */
 	char *job_credential_public_certificate;/* path to public certificate*/
 } slurm_ctl_conf_t;

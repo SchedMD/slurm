@@ -161,9 +161,16 @@
 #    "InactiveLimit"    : The interval, in seconds, a job is permitted to
 #                         be inactive (no active job steps) before it is
 #                         terminated.
+#
+#    "MinJobAge"        : The time, in seconds, after a job completes before
+#                         its record is purged from the active slurmctld data.
 #   
 #    "KillWait"         : The time, in seconds, between SIGTERM and SIGKILL
 #                         signals sent to a job upon reaching its timelimit.
+#
+#    "WaitTime"         : Specifies how many seconds srun should wait after the 
+#                         first task terminates before terminating all remaining  
+#                         tasks. If set to 0, this feature is disabled.
 #
 # Example:
 #
@@ -171,7 +178,9 @@
 # SlurmdTimeout=60	# Defaults to 300 seconds
 # HeartBeatInterval=20	# Defaults to 30 seconds
 # InactiveLimit=600	# Defaults to 0 (unlimited)
+# MinJobAge=30		# Defaults to 300 seconds
 # KillWait=10		# Defaults to 30 seconds
+# WaitTime=30		# Defaults to 0 (unlimited)
 
 
 #
@@ -195,6 +204,10 @@
 #                         nodes will stay in the down state until manually
 #                         brought into the IDLE state.
 # 
+#    "MaxJobCount"      : defines the maximum number of jobs slurmctld can 
+#                         have in its active database at one time. Set the 
+#                         values of MaxJobCount and MinJobAge so as to avoid 
+#                         having slurmctld exhaust its memory or other resources.
 # Example:
 #
 # FastSchedule=0	# default is `1'
@@ -202,6 +215,7 @@
 # HashBase=8		# default is `10'
 # Prioritize=/etc/prio  # default is none
 # ReturnToService=1     # default is `0'
+# MaxJobCount=10000		# Defaults to 2000
 
 
 #

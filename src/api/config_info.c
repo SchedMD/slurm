@@ -80,6 +80,10 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->job_credential_public_certificate);
 	fprintf(out, "KillWait          = %u\n", 
 		slurm_ctl_conf_ptr->kill_wait);
+	fprintf(out, "MaxJobCnt         = %u\n", 
+		slurm_ctl_conf_ptr->max_job_cnt);
+	fprintf(out, "MinJobAge         = %u\n", 
+		slurm_ctl_conf_ptr->min_job_age);
 	fprintf(out, "PluginDir         = %s\n", 
 		slurm_ctl_conf_ptr->plugindir);
 	fprintf(out, "Prioritize        = %s\n", 
@@ -119,6 +123,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->state_save_location);
 	fprintf(out, "TmpFS             = %s\n", 
 		slurm_ctl_conf_ptr->tmp_fs);
+	fprintf(out, "WaitTime          = %u\n", 
+		slurm_ctl_conf_ptr->wait_time);
 }
 
 /*
