@@ -1,21 +1,21 @@
 #ifndef _SLURM_PROTOCOL_ERRNO_H
 #define _SLURM_PROTOCOL_ERRNO_H
 
-/* communcation layer RESPONSE_SLURM_RC message codes */
-#define SLURM_NO_CHANGE_IN_DATA 100
+#include <src/common/slurm_return_codes.h>
+
 
 /* general communication layer return codes */
-#define SLURM_UNEXPECTED_MSG_ERROR 220
-#define SLURM_PROTOCOL_VERSION_ERROR -100
 #define SLURM_SOCKET_ERROR -1
 #define SLURM_PROTOCOL_SUCCESS 0
 #define SLURM_PROTOCOL_ERROR -1
 #define SLURM_PROTOCOL_FAILURE -1
 
-/* general return codes */
-#define SLURM_SUCCESS 0
-#define SLURM_ERROR -1 
-#define SLURM_FAILURE -1
+/* Geneeral Message error codes */
+#define SLURM_UNEXPECTED_MSG_ERROR -1900
+#define SLURM_PROTOCOL_VERSION_ERROR -1910
+
+/* _info.c/ocommuncation layer RESPONSE_SLURM_RC message codes */
+#define SLURM_NO_CHANGE_IN_DATA 100
 
 /* job_mgr.c/job_create */
 #define ESLURM_INVALID_PARTITION_SPECIFIED		-2000
