@@ -115,7 +115,11 @@ AC_SUBST(PROJECT)
 # Automake desires "PACKAGE" variable instead of PROJECT
 PACKAGE=$PROJECT
 
-# rpm make target needs Version in META, not major and minor version nubmers
+# rpm make target needs Version in META, not major and minor version numbers
+API="`perl -ne 'print,exit if s/^\s*API:\s*(\S*).*/\1/i' $srcdir/META`"
+AC_DEFINE_UNQUOTED(SLURM_API_VERSION, $API, [Define the API's version.])
+AC_SUBST(SLURM_API_VERSION)
+
 VERSION="`perl -ne 'print,exit if s/^\s*VERSION:\s*(\S*).*/\1/i' $srcdir/META`"
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Define the project's version.])
 AC_SUBST(VERSION)
@@ -139,11 +143,11 @@ else
    SLURM_VERSION="$MAJOR.$MINOR.$MICRO"
    test $RELEASE = "1" || SLURM_VERSION="$SLURM_VERSION-$SLURM_RELEASE"
 fi
-AC_DEFINE_UNQUOTED(SLURM_MAJOR, $MAJOR, 
+AC_DEFINE_UNQUOTED(SLURM_MAJOR, "$MAJOR", 
                    [Define the project's major version.])
-AC_DEFINE_UNQUOTED(SLURM_MINOR, $MINOR,
+AC_DEFINE_UNQUOTED(SLURM_MINOR, "$MINOR",
                    [Define the project's minor version.])
-AC_DEFINE_UNQUOTED(SLURM_MICRO, $MICRO,
+AC_DEFINE_UNQUOTED(SLURM_MICRO, "$MICRO",
                    [Define the project's micro version.])
 AC_DEFINE_UNQUOTED(RELEASE, "$RELEASE", [Define the project's release.])
 AC_DEFINE_UNQUOTED(SLURM_VERSION, "$SLURM_VERSION",

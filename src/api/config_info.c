@@ -45,7 +45,7 @@
  */
 extern long slurm_api_version (void)
 {
-	return (long) SLURM_VERSION_NUM(SLURM_MAJOR, SLURM_MINOR, SLURM_MICRO);
+	return (long) SLURM_API_VERSION;
 }
 
 /*
