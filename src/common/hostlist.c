@@ -928,7 +928,7 @@ hostrange_to_string(hostrange_t hr, size_t n, char *buf, char *separator)
         size_t m = (n - len) <= n ? n - len : 0; /* check for < 0 */
         int ret = snprintf(buf + len, m, "%s%0*lu",
                    hr->prefix, hr->width, i);
-        if (ret < 0 || ret > m) {
+        if (ret < 0 || ret >= m) {
             len = n;
             truncated = 1;
             break;
@@ -937,10 +937,14 @@ hostrange_to_string(hostrange_t hr, size_t n, char *buf, char *separator)
         buf[len++] = sep;
     }
 
-    /* back up over final separator */
-    buf[--len] = '\0';
-
-    return truncated == 1 ? -1 : len;
+    if (truncated) {
+        buf[n-1] = '\0';
+        return -1;
+    } else {
+        /* back up over final separator */
+        buf[--len] = '\0';
+        return len;
+    }
 }
 
 /* Place the string representation of the numeric part of hostrange into buf
@@ -2050,8 +2054,11 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
         /* NUL terminate for safety, but do not add terminator to len */
         buf[len]   = '\0';
 
-    } else {
+    } else if (len >= n) {
+        if (n > 0)
+            buf[n-1] = '\0';
 
+    } else {
         /* If len is > 0, NUL terminate (but do not add to len) */
         buf[len > 0 ? len : 0] = '\0';
     }
@@ -2074,11 +2081,13 @@ size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
     }
     UNLOCK_HOSTLIST(hl);
 
-    if (len >= n)
-        truncated = 1;
-
     /* NUL terminate */
-    buf[len > 0 ? len : 0] = '\0';
+    if (len >= n) {
+        truncated = 1;
+        if (n > 0)
+            buf[n-1] = '\0';
+    } else
+        buf[len > 0 ? len : 0] = '\0';
 
     return truncated ? -1 : len;
 }
