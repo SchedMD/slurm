@@ -2,10 +2,6 @@
  * read_config.c - read the overall slurm configuration file
  * see slurm.h for documentation on external functions and data structures
  *
- * NOTE: DEBUG_MODULE mode test with execution line
- *	read_config ../../etc/slurm.conf1
- *	read_config ../../etc/slurm.conf1 1000
- *
  * author: moe jette, jette@llnl.gov
  */
 
@@ -33,13 +29,8 @@ int parse_part_spec (char *in_line);
 int node_record_count = 0;
 
 #if DEBUG_MODULE
-slurm_ctl_conf_t slurmctld_conf;
-#else
-extern slurm_ctl_conf_t slurmctld_conf;
-#endif
-
-#if DEBUG_MODULE
 /* main is used here for module testing purposes only */
+slurm_ctl_conf_t slurmctld_conf;
 #include <sys/resource.h>
 int 
 main (int argc, char *argv[]) {
@@ -62,11 +53,7 @@ main (int argc, char *argv[]) {
 		printf ("ERROR %d from init_slurm_conf\n", error_code);
 		exit (error_code);
 	}
-
-	if (argc >= 2)
-		error_code = read_slurm_conf (argv[1]);
-	else
-		error_code = read_slurm_conf (SLURM_CONF);
+	error_code = read_slurm_conf ( );
 
 	if (error_code) {
 		printf ("ERROR %d from read_slurm_conf\n", error_code);
@@ -150,7 +137,7 @@ main (int argc, char *argv[]) {
 			exit (error_code);
 		}		
 
-		error_code = read_slurm_conf (argv[1]);
+		error_code = read_slurm_conf ( );
 		if (error_code) {
 			printf ("ERROR %d from read_slurm_conf\n",
 				error_code);
@@ -327,8 +314,6 @@ build_bitmaps () {
  * init_slurm_conf - initialize or re-initialize the slurm configuration  
  *	values. this should be called before calling read_slurm_conf.  
  * output: return value - 0 if no error, otherwise an error code
- * globals: control_machine - name of primary slurmctld machine
- *	backup_controller - name of backup slurmctld machine
  */
 int
 init_slurm_conf () {
@@ -676,41 +661,41 @@ parse_part_spec (char *in_line) {
 
 
 /*
- * read_slurm_conf - load the slurm configuration from the specified file. 
+ * read_slurm_conf - load the slurm configuration from the configured file. 
  * read_slurm_conf can be called more than once if so desired.
- * input: file_name - name of the file containing overall slurm configuration information
  * output: return - 0 if no error, otherwise an error code
- * global: control_machine - primary machine on which slurmctld runs
- * 	backup_controller - backup machine on which slurmctld runs
- *	default_part_loc - pointer to default partition
  * NOTE: call init_slurm_conf before ever calling read_slurm_conf.  
  */
 int 
-read_slurm_conf (char *file_name) {
+read_slurm_conf ( ) {
+	clock_t start_time;
 	FILE *slurm_spec_file;	/* pointer to input data file */
 	int line_num;		/* line number in input file */
 	char in_line[BUF_SIZE];	/* input line */
 	int i, j, error_code;
+	char *backup_controller = NULL, *control_machine = NULL, *epilog = NULL;
+	char *prioritize = NULL, *prolog = NULL, *state_save_location = NULL, *tmp_fs = NULL;
+	int fast_schedule = 0, hash_base = 0, heartbeat_interval = 0, kill_wait = 0;
+	int slurmctld_port = 0, slurmctld_timeout = 0, slurmd_port = 0;
+	int slurmd_timeout = 0;
+	long first_job_id = 0;
 
 	/* initialization */
-	slurm_spec_file = fopen (file_name, "r");
-	if (slurm_spec_file == NULL) {
-		fatal ("read_slurm_conf error %d opening file %s", errno, file_name);
-		return errno;
-	}			
+	start_time = clock ();
+	slurm_spec_file = fopen (SLURM_CONFIG_FILE, "r");
+	if (slurm_spec_file == NULL)
+		fatal ("read_slurm_conf error %d opening file %s", errno, SLURM_CONFIG_FILE);
 
-	info ("read_slurm_conf: loading configuration from %s", file_name);
+	info ("read_slurm_conf: loading configuration from %s", SLURM_CONFIG_FILE);
 
 	/* process the data file */
 	line_num = 0;
 	while (fgets (in_line, BUF_SIZE, slurm_spec_file) != NULL) {
-		char* control_machine = NULL;
-		char* backup_machine = NULL;
 
 		line_num++;
 		if (strlen (in_line) >= (BUF_SIZE - 1)) {
 			error ("read_slurm_conf line %d, of input file %s too long\n",
-				 line_num, file_name);
+				 line_num, SLURM_CONFIG_FILE);
 			fclose (slurm_spec_file);
 			return E2BIG;
 			break;
@@ -736,19 +721,101 @@ read_slurm_conf (char *file_name) {
 		/* parse what is left */
 		/* overall slurm configuration parameters */
 		error_code = slurm_parser(in_line,
+			"BackupController=", 's', &backup_controller, 
 			"ControlMachine=", 's', &control_machine, 
-			"BackupController=", 's', &backup_machine, 
+			"Epilog=", 's', &epilog, 
+			"FastSchedule=", 'd', &fast_schedule,
+			"FirstJobId=", 'l', &first_job_id,
+			"HashBase=", 'd', &hash_base,
+			"HeartbeatInterval=", 'd', &heartbeat_interval,
+			"KillWait=", 'd', &kill_wait,
+			"Prioritize=", 's', &prioritize,
+			"Prolog=", 's', &prolog,
+			"SlurmctldPort=", 'd', &slurmctld_port,
+			"SlurmctldTimeout=", 'd', &slurmctld_timeout,
+			"SlurmdPort=", 'd', &slurmd_port,
+			"SlurmdTimeout=", 'd', &slurmd_timeout,
+			"StateSaveLocation=", 's', &state_save_location, 
+			"TmpFS=", 's', &tmp_fs,
 			"END");
 		if (error_code) {
 			fclose (slurm_spec_file);
 			return error_code;
 		}		
 
-		if ( slurmctld_conf.control_machine == NULL ) {
-			slurmctld_conf.control_machine = control_machine;
+		if ( backup_controller ) {
+			if ( slurmctld_conf.backup_controller )
+				xfree (slurmctld_conf.backup_controller);
+			slurmctld_conf.backup_controller = backup_controller;
+			backup_controller = NULL;
 		}
-		if ( slurmctld_conf.backup_machine == NULL ) {
-			slurmctld_conf.backup_machine = backup_machine;
+		if ( control_machine ) {
+			if ( slurmctld_conf.control_machine )
+				xfree (slurmctld_conf.control_machine);
+			slurmctld_conf.control_machine = control_machine;
+			control_machine = NULL;
+		}
+		if ( epilog ) {
+			if ( slurmctld_conf.epilog )
+				xfree (slurmctld_conf.epilog);
+			slurmctld_conf.epilog = epilog;
+			epilog = NULL;
+		}
+		if ( fast_schedule ) {
+			slurmctld_conf.fast_schedule = fast_schedule;
+			fast_schedule = 0;
+		}
+		if ( first_job_id ) {
+			slurmctld_conf.first_job_id = first_job_id;
+			first_job_id = 0;
+		}
+		if ( hash_base ) {
+			slurmctld_conf.hash_base = hash_base;
+			hash_base = 0;
+		}
+		if ( kill_wait ) {
+			slurmctld_conf.kill_wait = kill_wait;
+			kill_wait = 0;
+		}
+		if ( prioritize ) {
+			if ( slurmctld_conf.prioritize )
+				xfree (slurmctld_conf.prioritize);
+			slurmctld_conf.prioritize = prioritize;
+			prioritize = NULL;
+		}
+		if ( prolog ) {
+			if ( slurmctld_conf.prolog )
+				xfree (slurmctld_conf.prolog);
+			slurmctld_conf.prolog = prolog;
+			prolog = NULL;
+		}
+		if ( slurmctld_port ) {
+			slurmctld_conf.slurmctld_port = slurmctld_port;
+			slurmctld_port = 0;
+		}
+		if ( slurmctld_timeout ) {
+			slurmctld_conf.slurmctld_timeout = slurmctld_timeout;
+			slurmctld_timeout = 0;
+		}
+		if ( slurmd_port ) {
+			slurmctld_conf.slurmd_port = slurmd_port;
+			slurmd_port = 0;
+		}
+		if ( slurmd_timeout ) {
+			slurmctld_conf.slurmd_timeout = slurmd_timeout;
+			slurmd_timeout = 0;
+		}
+		if ( state_save_location ) {
+			if ( slurmctld_conf.state_save_location )
+				xfree (slurmctld_conf.state_save_location);
+			slurmctld_conf.state_save_location = state_save_location;
+			state_save_location = NULL;
+		}
+		if ( tmp_fs ) {
+			if ( slurmctld_conf.tmp_fs )
+				xfree (slurmctld_conf.tmp_fs);
+			slurmctld_conf.tmp_fs = tmp_fs;
+			tmp_fs = NULL;
 		}
 
 		/* node configuration parameters */
@@ -769,7 +836,7 @@ read_slurm_conf (char *file_name) {
 	fclose (slurm_spec_file);
 
 	/* if values not set in configuration file, set defaults */
-	if (slurmctld_conf.backup_machine == NULL)
+	if (slurmctld_conf.backup_controller == NULL)
 		info ("read_slurm_conf: backup_controller value not specified.");		
 
 	if (slurmctld_conf.control_machine == NULL) {
@@ -786,7 +853,10 @@ read_slurm_conf (char *file_name) {
 		return error_code;
 	list_sort (config_list, &list_compare_config);
 
-	info ("read_slurm_conf: finished loading configuration");
+	info ("read_slurm_conf: finished loading configuration, time =%ld",
+		(long) (clock () - start_time));
 
-	return 0;
+	return SLURM_SUCCESS
+
+;
 }
