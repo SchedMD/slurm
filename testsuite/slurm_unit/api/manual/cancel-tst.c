@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -19,9 +20,9 @@ main (int argc, char *argv[])
 	}
 
 	for (i=1; i<argc; i++) {
-		error_code = slurm_cancel_job ((uint32_t) atoi(argv[i]));
+		error_code = slurm_kill_job ((uint32_t) atoi(argv[i]), SIGKILL);
 		if (error_code)
-			printf ("slurm_cancel_job error %d for job %s\n", 
+			printf ("slurm_kill_job error %d for job %s\n", 
 				errno, argv[i]);
 	}
 
