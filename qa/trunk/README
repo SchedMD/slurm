@@ -28,7 +28,7 @@ to identify locations of files to be used in testing. These tests expect single
 node jobs submitted to the default partition to respond within a one minutes. 
 If that is not the case, modify the value of "max_job_delay" in the "globals" 
 file to an appropriate value or the tests will report failures due to timeouts. 
-If there are file propogation delays (e.g. due to NFS), the value of 
+If there are file propagation delays (e.g. due to NFS), the value of 
 "max_file_delay" in the "globals" file may need modification.
 
 Each test can be executed independently. Upon successful completion, the test 
@@ -94,8 +94,8 @@ test1.25   Submit job to not be killed on node failure (--no-kill option).
 test1.26   Submit job directly to slurmd without use of slurmctld scheduler.
 	   (--no-allocate option). NOTE: Needs to run as SlurmUser or root.
 test1.27   Verify the appropriate job environment variables are set.
-test1.28   Verify that user environment variables are propogated to the job.
-test1.29   Verify that user user limits are propogated to the job.
+test1.28   Verify that user environment variables are propagated to the job.
+test1.29   Verify that user user limits are propagated to the job.
 test1.30   Test of increasing job sizes.
 test1.31   Verify that SLURM directed environment variables are processed:
            SLURM_DEBUG, SLURM_NNODES, SLURM_NPROCS, SLURM_OVERCOMMIT, 

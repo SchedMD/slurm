@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Verify that user user limits are propogated to the job.
+#          Verify that user user limits are propagated to the job.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -159,7 +159,7 @@ expect {
 }
 
 if {$matches != 5} {
-	send_user "\nFAILURE: User limits not propogated\n"
+	send_user "\nFAILURE: User limits not propagated\n"
 	set exit_code 1
 }
 
