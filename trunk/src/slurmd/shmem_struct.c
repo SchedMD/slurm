@@ -30,7 +30,11 @@ void * get_shmem ( )
 	key = ftok ( ".", 'a' );
 	assert ( key != SLURM_ERROR );
 	shmem_gid = shmget ( key , sizeof ( slurmd_shmem_t ) , IPC_CREAT | OCTAL_RW_PERMISSIONS ); 
-	debug ( "shmget id = %i , errno = %i ", shmem_gid, errno );
+	debug ( "shmget id = %i ", shmem_gid );
+	if ( shmem_gid == SLURM_ERROR ) 
+	{
+		debug ( "can't get shared memory segment: %m " ) ;
+	}
 	assert ( shmem_gid != SLURM_ERROR ) ;
 	shmem_addr = shmat ( shmem_gid , NULL , 0 ) ;
 	assert ( shmem_addr != (void * ) SLURM_ERROR ) ;

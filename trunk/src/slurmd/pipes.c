@@ -41,7 +41,7 @@ int setup_child_pipes ( int * pipes )
 	if ( SLURM_ERROR == ( error_code |= dup2 ( pipes[CHILD_IN_RD] , STDIN_FILENO ) ) ) 
 	{
 		local_errno = errno ;
-		error ("dup failed on child standard in pipe, errno %i" , local_errno );
+		error ("dup failed on child standard in pipe, %m errno %i" , local_errno );
 		//return error_code ;
 	}
 	close ( CHILD_IN_RD );
@@ -52,7 +52,7 @@ int setup_child_pipes ( int * pipes )
 	if ( SLURM_ERROR == ( error_code |= dup2 ( pipes[CHILD_OUT_WR] , STDOUT_FILENO ) ) ) 
 	{
 		local_errno = errno ;
-		error ("dup failed on child standard out pipe, errno %i" , local_errno );
+		error ("dup failed on child standard out pipe, %m errno %i" , local_errno );
 		//return error_code ;
 	}
 	return error_code ;
