@@ -128,6 +128,7 @@ static void _alarm_handler(int dummy);
 static void _list_delete_retry(void *retry_entry);
 static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr);
 static task_info_t *_make_task_data(agent_info_t *agent_info_ptr, int inx);
+static void _purge_agent_args(agent_arg_t *agent_arg_ptr);
 static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count);
 static void _slurmctld_free_job_launch_msg(batch_job_launch_msg_t * msg);
 static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr);
@@ -238,19 +239,7 @@ void *agent(void *args)
 
       cleanup:
 #if AGENT_IS_THREAD
-	if (agent_arg_ptr) {
-		xfree(agent_arg_ptr->slurm_addr);
-		xfree(agent_arg_ptr->node_names);
-		if (agent_arg_ptr->msg_args) {
-			if (agent_arg_ptr->msg_type ==
-			    REQUEST_BATCH_JOB_LAUNCH)
-				_slurmctld_free_job_launch_msg
-				    (agent_arg_ptr->msg_args);
-			else
-				xfree(agent_arg_ptr->msg_args);
-		}
-		xfree(agent_arg_ptr);
-	}
+	_purge_agent_args(agent_arg_ptr);
 #endif
 
 	if (agent_info_ptr) {
@@ -797,10 +786,31 @@ static void _slurmctld_free_job_launch_msg(batch_job_launch_msg_t * msg)
 /* agent_purge - purge all pending RPC requests */
 void agent_purge(void)
 {
-	retry_list = list_create(NULL);
+#if AGENT_IS_THREAD
+	agent_arg_t *agent_arg_ptr = NULL;
+
+	if (retry_list == NULL)
+		return;
 
 	slurm_mutex_lock(&retry_mutex);
-	if (retry_list == NULL)
-		list_destroy(retry_list);
+	while ((agent_arg_ptr = (agent_arg_t *) list_dequeue(retry_list)))
+		_purge_agent_args(agent_arg_ptr);
 	slurm_mutex_unlock(&retry_mutex);
+#endif
+}
+
+static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
+{
+	if (agent_arg_ptr == NULL)
+		return;
+
+	xfree(agent_arg_ptr->slurm_addr);
+	xfree(agent_arg_ptr->node_names);
+	if (agent_arg_ptr->msg_args) {
+		if (agent_arg_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH)
+			_slurmctld_free_job_launch_msg(agent_arg_ptr->msg_args);
+		else
+			xfree(agent_arg_ptr->msg_args);
+		}
+	xfree(agent_arg_ptr);
 }

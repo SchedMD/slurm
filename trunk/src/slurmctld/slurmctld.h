@@ -156,8 +156,6 @@ extern time_t last_bitmap_update;	/* time of last node creation or
 					 * deletion */
 extern time_t last_node_update;		/* time of last node record update */
 extern int node_record_count;		/* count in node_record_table_ptr */
-extern int *hash_table;			/* table of hashed indicies into 
-					 * node_record_table_ptr */
 extern bitstr_t *up_node_bitmap;	/* bitmap of nodes are up */
 extern bitstr_t *idle_node_bitmap;	/* bitmap of nodes are idle */
 extern struct config_record default_config_record;
@@ -576,6 +574,9 @@ extern int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 	     int immediate, int will_run, int allocate, uid_t submit_uid,
 	     uint16_t * node_cnt, slurm_addr ** node_addr);
 
+/* job_fini - free all memory associated with job records */
+void job_fini (void);
+
 /* 
  * job_signal - signal the specified job
  * IN job_id - id of the job to be signaled
@@ -713,6 +714,9 @@ extern void make_node_idle(struct node_record *node_ptr,
 /* msg_to_slurmd - send given msg_type every slurmd, no args */
 extern void msg_to_slurmd (slurm_msg_type_t msg_type);
 
+/* node_fini - free all memory associated with node records */
+extern void node_fini(void);
+
 /*
  * node_name2bitmap - given a node name regular expression, build a bitmap 
  *	representation
@@ -813,6 +817,9 @@ extern void pack_job (struct job_record *dump_job_ptr, Buf buffer);
  */
 extern void pack_part (struct part_record *part_record_point, Buf buffer);
 
+/* part_fini - free all memory associated with partition records */
+void part_fini (void);
+
 /* ping_nodes - check that all nodes and daemons are alive,  
  *	get nodes in UNKNOWN state to register */
 extern void ping_nodes (void);
@@ -844,8 +851,8 @@ void rehash_jobs(void);
  *	upon its name without regards to their number. there should be no 
  *	need for a search. 
  * global: node_record_table_ptr - pointer to global node table
- *         hash_table - table of hash indecies
- * NOTE: manages memory for hash_table
+ *         node_hash_table - table of hash indecies
+ * NOTE: manages memory for node_hash_table
  */
 extern void rehash_node (void);
 

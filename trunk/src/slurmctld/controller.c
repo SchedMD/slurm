@@ -234,10 +234,9 @@ int main(int argc, char *argv[])
 	/* init job credential stuff */
 	cred_ctx = slurm_cred_creator_ctx_create(slurmctld_conf.
 						 job_credential_private_key);
-	if (!cred_ctx) {
-		error("slurm_cred_creator_ctx_create: %m");
-		exit(1);
-	}
+	if (!cred_ctx)
+		fatal("slurm_cred_creator_ctx_create: %m");
+
 
 	/* Not used in creator
 	 *
@@ -313,12 +312,20 @@ int main(int argc, char *argv[])
 			break;
 	}
 
-	/* NOTE: We don't wait for the agent to complete or clear
-	 * free data structures by default */
 #if	MEM_LEAK_TEST
-	log_fini();
+	/* This should purge all allocated memory,   *\
+	\*   Anything left over represents a leak.   */
+	sleep(5);	/* give running agents a chance to complete */
+	agent_purge();
+	job_fini();
+	part_fini();	/* part_fini() must preceed node_fini() */
+	node_fini();
+	slurm_cred_ctx_destroy(cred_ctx);
+	init_slurm_conf(&slurmctld_conf);
 	xfree(slurmctld_conf.slurm_conf);
 #endif
+	log_fini();
+
 	return SLURM_SUCCESS;
 }
 
@@ -619,22 +626,6 @@ static void *_slurmctld_background(void *no_data)
 	}
 	debug3("_slurmctld_background shutting down");
 
-#if	MEM_LEAK_TEST
-	/* This should purge all allocated memory,      *\
-	\*   Anything left over represents a leak.   */
-	if (job_list)
-		list_destroy(job_list);
-
-	if (part_list)
-		list_destroy(part_list);
-
-	if (config_list)
-		list_destroy(config_list);
-	xfree(node_record_table_ptr);
-	xfree(hash_table);
-
-	agent_purge();
-#endif
 	return NULL;
 }
 

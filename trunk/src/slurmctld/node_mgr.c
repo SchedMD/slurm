@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  node_mgr.c - manage the node records of slurm
  *	Note: there is a global node table (node_record_table_ptr), its 
- *	hash table (hash_table), time stamp (last_node_update) and 
+ *	hash table (node_hash_table), time stamp (last_node_update) and 
  *	configuration list (config_list)
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
@@ -56,7 +56,7 @@
 /* Global variables */
 List config_list = NULL;		/* list of config_record entries */
 struct node_record *node_record_table_ptr = NULL;	/* node records */
-int *hash_table = NULL;			/* table of hashed indexes into 
+int *node_hash_table = NULL;			/* table of hashed indexes into 
 					 * node_record */
 struct config_record default_config_record;
 struct node_record default_node_record;
@@ -481,7 +481,7 @@ unpack_error:
  * input: name - name of the desired node 
  * output: return pointer to node record or NULL if not found
  * global: node_record_table_ptr - pointer to global node table
- *         hash_table - table of hash indecies
+ *         node_hash_table - table of hash indecies
  */
 struct node_record * 
 find_node_record (char *name) 
@@ -489,10 +489,10 @@ find_node_record (char *name)
 	int i, inx;
 
 	/* try to find in hash table first */
-	if (hash_table) {
+	if (node_hash_table) {
 		i = _hash_index (name);
 		if ( (i <= node_record_count) &&
-		     ((inx = hash_table[i]) <= node_record_count ) &&
+		     ((inx = node_hash_table[i]) <= node_record_count ) &&
 		     (strncmp ((node_record_table_ptr[inx]).name, name, 
 		                MAX_NAME_LEN) == 0) )
 			return (node_record_table_ptr + inx);
@@ -510,7 +510,7 @@ find_node_record (char *name)
 		return (node_record_table_ptr + i);
 	}
 
-	if (hash_table) 
+	if (node_hash_table) 
 		error ("find_node_record: lookup failure for %s", name);
 	return (struct node_record *) NULL;
 }
@@ -520,8 +520,7 @@ find_node_record (char *name)
  * _hash_index - return a hash table index for the given node name 
  * IN name = the node's name
  * RET the hash table index
- * global: hash_table - table of hash indexes
- *	slurmctld_conf.hash_base - numbering base for sequence numbers
+ * global: slurmctld_conf.hash_base - numbering base for sequence numbers
  */
 static int _hash_index (char *name) 
 {
@@ -592,7 +591,7 @@ static int _hash_index (char *name)
  * global: node_record_table_ptr - pointer to global node table
  *         default_node_record - default values for node records
  *         default_config_record - default values for configuration records
- *         hash_table - table of hash indecies
+ *         node_hash_table - table of hash indecies
  *         last_node_update - time of last node table update
  */
 int init_node_conf (void) 
@@ -601,7 +600,7 @@ int init_node_conf (void)
 
 	node_record_count = 0;
 	xfree(node_record_table_ptr);
-	xfree(hash_table);
+	xfree(node_hash_table);
 
 	strcpy (default_node_record.name, "DEFAULT");
 	default_node_record.node_state = NODE_STATE_UNKNOWN;
@@ -814,21 +813,21 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer)
  *	upon its name without regards to their number. there should be no 
  *	need for a search. 
  * global: node_record_table_ptr - pointer to global node table
- *         hash_table - table of hash indecies
- * NOTE: manages memory for hash_table
+ *         node_hash_table - table of hash indecies
+ * NOTE: manages memory for node_hash_table
  */
 void rehash_node (void) 
 {
 	int i, inx;
 
-	xfree (hash_table);
-	hash_table = xmalloc (sizeof (int) * node_record_count);
+	xfree (node_hash_table);
+	node_hash_table = xmalloc (sizeof (int) * node_record_count);
 
 	for (i = 0; i < node_record_count; i++) {
 		if (strlen (node_record_table_ptr[i].name) == 0)
 			continue;
 		inx = _hash_index (node_record_table_ptr[i].name);
-		hash_table[inx] = i;
+		node_hash_table[inx] = i;
 	}
 
 	return;
@@ -1425,19 +1424,19 @@ find_first_node_record (bitstr_t *node_bitmap)
 
 #if DEBUG_SYSTEM
 /* 
- * _dump_hash - print the hash_table contents, used for debugging or
- *	analysis of hash technique 
+ * _dump_hash - print the node_hash_table contents, used for debugging
+ *	or analysis of hash technique 
  * global: node_record_table_ptr - pointer to global node table
- *         hash_table - table of hash indecies
+ *         node_hash_table - table of hash indecies
  */
 static void _dump_hash (void) 
 {
 	int i, inx;
 
-	if (hash_table == NULL)
+	if (node_hash_table == NULL)
 		return;
 	for (i = 0; i < node_record_count; i++) {
-		inx = hash_table[i];
+		inx = node_hash_table[i];
 		if ((inx >= node_record_count) ||
 		    (strlen (node_record_table_ptr[inx].name) == 0))
 			continue;
@@ -1621,3 +1620,11 @@ void make_node_idle(struct node_record *node_ptr,
 	}
 }
 
+/* node_fini - free all memory associated with node records */
+void node_fini(void)
+{
+	if (config_list)
+		list_destroy(config_list);
+	xfree(node_record_table_ptr);
+	xfree(node_hash_table);
+}

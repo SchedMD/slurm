@@ -2032,20 +2032,19 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
  */
 static void _list_delete_job(void *job_entry)
 {
-	struct job_record *job_record_point;
+	struct job_record *job_ptr;
 	int i, j;
 
-	job_record_point = (struct job_record *) job_entry;
-	if (job_record_point == NULL)
-		fatal ("_list_delete_job: job_record_point == NULL");
-	xassert (job_record_point->magic == JOB_MAGIC);
+	job_ptr = (struct job_record *) job_entry;
+	if (job_ptr == NULL)
+		fatal ("_list_delete_job: job_ptr == NULL");
+	xassert (job_ptr->magic == JOB_MAGIC);
 
-	if (job_hash[JOB_HASH_INX(job_record_point->job_id)] ==
-	    job_record_point)
-		job_hash[JOB_HASH_INX(job_record_point->job_id)] = NULL;
+	if (job_hash[JOB_HASH_INX(job_ptr->job_id)] == job_ptr)
+		job_hash[JOB_HASH_INX(job_ptr->job_id)] = NULL;
 	else {
 		for (i = 0; i < max_hash_over; i++) {
-			if (job_hash_over[i] != job_record_point)
+			if (job_hash_over[i] != job_ptr)
 				continue;
 			for (j = i + 1; j < max_hash_over; j++) {
 				job_hash_over[j - 1] = job_hash_over[j];
@@ -2055,20 +2054,19 @@ static void _list_delete_job(void *job_entry)
 		}
 	}
 
-	delete_job_details(job_record_point);
-
-	xfree(job_record_point->alloc_node);
-	xfree(job_record_point->nodes);
-	FREE_NULL_BITMAP(job_record_point->node_bitmap);
-	xfree(job_record_point->cpus_per_node);
-	xfree(job_record_point->cpu_count_reps);
-	xfree(job_record_point->node_addr);
-	if (job_record_point->step_list) {
-		delete_all_step_records(job_record_point);
-		list_destroy(job_record_point->step_list);
+	delete_job_details(job_ptr);
+	xfree(job_ptr->alloc_node);
+	xfree(job_ptr->nodes);
+	FREE_NULL_BITMAP(job_ptr->node_bitmap);
+	xfree(job_ptr->cpus_per_node);
+	xfree(job_ptr->cpu_count_reps);
+	xfree(job_ptr->node_addr);
+	if (job_ptr->step_list) {
+		delete_all_step_records(job_ptr);
+		list_destroy(job_ptr->step_list);
 	}
 	job_count--;
-	xfree(job_record_point);
+	xfree(job_ptr);
 }
 
 
@@ -3061,3 +3059,12 @@ _xmit_new_end_time(struct job_record *job_ptr)
 	return;
 }
 
+
+/* job_fini - free all memory associated with job records */
+void job_fini (void) 
+{
+	if (job_list)
+		list_destroy(job_list);
+	xfree(job_hash);
+	xfree(job_hash_over);
+}
