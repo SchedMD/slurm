@@ -41,6 +41,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/utsname.h>
 #include <sys/wait.h>
 #include <ctype.h>
 #include <fcntl.h>
@@ -560,6 +561,7 @@ _set_batch_script_env(job_t *job)
 {
 	int rc = SLURM_SUCCESS;
 	char *dist = NULL, *task_cnt;
+	struct utsname name;
 
 	if (job->jobid > 0) {
 		if (setenvf("SLURM_JOBID=%u", job->jobid)) {
@@ -628,6 +630,11 @@ _set_batch_script_env(job_t *job)
 		rc = SLURM_FAILURE;
 	}
 	xfree(task_cnt);
+
+	uname(&name);
+	if (strcasecmp(name.sysname, "AIX") == 0)
+		setenvf("LOADL_BATCH=yes");	/* Required for AIX/POE systems
+						 * indicating pre-allocation */
 
 	return rc;
 }
