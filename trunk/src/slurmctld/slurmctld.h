@@ -635,12 +635,13 @@ extern int job_step_complete (uint32_t job_id, uint32_t job_step_id,
 extern void job_time_limit (void);
 
 /*
- * kill_running_job_by_node_name - Given a node name, deallocate that job 
- *	from the node or kill it 
+ * kill_running_job_by_node_name - Given a node name, deallocate jobs 
+ *	from the node or kill them 
  * IN node_name - name of a node
+ * IN step_test - if true, only kill the job if a step is running on the node
  * RET number of killed jobs
  */
-extern int kill_running_job_by_node_name (char *node_name);
+extern int kill_running_job_by_node_name(char *node_name, bool step_test);
 
 
 /* list_compare_config - compare two entry from the config list based upon 
@@ -885,6 +886,16 @@ extern void set_slurmd_addr (void);
 extern int step_create ( step_specs *step_specs, 
 			 struct step_record** new_step_record,
 			 bool kill_job_when_step_done );
+
+/* 
+ * step_on_node - determine if the specified job has any job steps allocated to 
+ * 	the specified node 
+ * IN job_ptr - pointer to an active job record
+ * IN node_ptr - pointer to a node record
+ * RET true of job has step on the node, false otherwise 
+ */
+extern bool step_on_node(struct job_record  *job_ptr, 
+			 struct node_record *node_ptr);
 
 /*
  * Synchronize the batch job in the system with their files.

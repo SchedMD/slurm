@@ -1923,7 +1923,6 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 /* Process RPC registering batch job launch */
 static void  _slurm_rpc_batch_launch_resp(slurm_msg_t * msg)
 {
-	int error_code = SLURM_SUCCESS;
 	uid_t uid;
 	batch_launch_response_msg_t *launch_resp_msg =
 	    (batch_launch_response_msg_t *) msg->data;

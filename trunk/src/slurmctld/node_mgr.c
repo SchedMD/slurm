@@ -1236,7 +1236,7 @@ void ping_nodes (void)
 			bit_clear (idle_node_bitmap, i);
 			node_record_table_ptr[i].node_state = NODE_STATE_DOWN;
 			kill_running_job_by_node_name (
-					node_record_table_ptr[i].name);
+					node_record_table_ptr[i].name, false);
 			continue;
 		}
 
