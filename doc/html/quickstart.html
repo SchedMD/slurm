@@ -100,6 +100,8 @@ it is restored to service. The controller saves its state to disk
 whenever there is a change. This state can be recovered by the controller 
 at startup time. <b>slurmctld</b> would typically execute as a 
 special user specifically for this purpose (not user root). 
+State changes are saved so that jobs and other state can be 
+preserved when slurmctld moves or is restarted.
 <p>
 The <b>slurmd</b> daemon executes on every compute node.
 It resembles a remote shell daemon to export control to SLURM.
@@ -199,12 +201,22 @@ The remaining information provides basic SLURM administration information.
 Individuals only interested in making use of SLURM need not read 
 read further.
 
-<h3>Authentication</h3>
+<h3>Infrastructure</h3>
 
 All communications between SLURM components are authenticated. 
 The authentication infrastructure used is specified in the SLURM 
 configuration file and options include: 
 <a href="http://www.theether.org/authd/">authd</a>, munged and none.
+<p>
+SLURM uses the syslog function to record events. It uses a 
+range of importance levels for these messages. Be certain
+that your system's syslog functionality is operational.
+<p>
+There is no necessity for synchronized clocks on the nodes. 
+Events occur either in real-time based upon message traffic. 
+However, synchronized clocks will permit easier analysis of 
+SLURM logs from multiple nodes.
+
 
 <h3>Configuration</h3>
 
