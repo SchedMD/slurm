@@ -35,13 +35,14 @@
 #include <fcntl.h>
 #include <signal.h>
 
+#include "src/common/bitstring.h"
+#include "src/common/cbuf.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/cbuf.h"
 
 #include "src/srun/job.h"
 #include "src/srun/opt.h"
@@ -77,6 +78,16 @@ static int        _compute_task_count(allocation_info_t *info);
 static void       _set_nprocs(allocation_info_t *info);
 static job_t *    _job_create_internal(allocation_info_t *info);
 static void       _job_fake_cred(job_t *job);
+static int        _job_resp_add_nodes(bitstr_t *req_bitmap, 
+				bitstr_t *exc_bitmap, int node_cnt);
+static int        _job_resp_bitmap(hostlist_t resp_node_hl, char *nodelist, 
+				bitstr_t *bitmap_ptr);
+static int        _job_resp_count_max_tasks(
+				resource_allocation_response_msg_t *resp);
+static int        _job_resp_cpus(uint32_t *cpus_per_node, 
+				uint32_t *cpu_count_reps, int node);
+static void       _job_resp_hack(resource_allocation_response_msg_t *resp, 
+				bitstr_t *req_bitmap);
 static char *     _task_state_name(task_state_t state_inx);
 static char *     _host_state_name(host_state_t state_inx);
 
@@ -529,4 +540,199 @@ _host_state_name(host_state_t state_inx)
 	}
 }
 
+/* The below functions are used to support job steps *\
+\* with different allocations than the parent job.   */
+int    job_resp_hack_for_step(resource_allocation_response_msg_t *resp)
+{
+	bitstr_t *exc_bitmap = NULL, *req_bitmap = NULL;
+	hostlist_t resp_nodes = hostlist_create(resp->node_list);
+	int return_code = 0, total;
 
+	req_bitmap = bit_alloc(resp->node_cnt);
+	if (opt.nodelist && 
+	    _job_resp_bitmap(resp_nodes, opt.nodelist, req_bitmap)) {
+		error("Required nodes (%s) missing from job's allocation (%s)",
+			opt.nodelist, resp->node_list);
+		return_code = 1;
+		goto cleanup;
+	}
+
+	exc_bitmap = bit_alloc(resp->node_cnt);
+	if (opt.exc_nodes) {
+		bitstr_t *tmp_bitmap;
+		int overlap;
+		_job_resp_bitmap(resp_nodes, opt.exc_nodes, exc_bitmap);
+		tmp_bitmap = bit_copy(exc_bitmap);
+		bit_and(tmp_bitmap, req_bitmap);
+		overlap = bit_set_count(tmp_bitmap);
+		bit_free(tmp_bitmap);
+		if (overlap > 0) {
+			error("Duplicates in hostlist (%s) and exclude list (%s)",
+				opt.nodelist, opt.exc_nodes);
+			return_code = 1;
+			goto cleanup;
+		}
+	}
+
+	/* Add nodes as specified */
+	if (opt.nodes_set) {
+		total = _job_resp_add_nodes(req_bitmap, exc_bitmap, 
+		                                resp->node_cnt);
+		if (total < opt.min_nodes) {
+			error("More nodes requested (%d) than available (%d)",
+				opt.min_nodes, total);
+			return_code = 1;
+			goto cleanup;
+		}
+	} else
+		total = bit_set_count(req_bitmap);
+
+	if (total != resp->node_cnt)
+		_job_resp_hack(resp, req_bitmap);
+	if (!opt.overcommit) {
+		int total = _job_resp_count_max_tasks(resp);
+		if (total < opt.nprocs) {
+			error("More tasks requested (%d) than resources (%d)",
+				opt.nprocs, total);
+			return_code = 1;
+			goto cleanup;
+		}
+	}
+
+      cleanup:
+	if (exc_bitmap)
+		bit_free(exc_bitmap);
+	if (req_bitmap)
+		bit_free(req_bitmap);
+	return return_code;
+}
+
+
+static int 
+_job_resp_add_nodes(bitstr_t *req_bitmap, bitstr_t *exc_bitmap, int node_cnt)
+{
+	int inx;
+	int total = bit_set_count(req_bitmap);
+	int max_nodes = MAX(opt.min_nodes, opt.max_nodes);
+
+	for (inx=0; ((inx<node_cnt) && (total<max_nodes)); inx++) {
+		if (bit_test(exc_bitmap, inx) || bit_test(req_bitmap, inx))
+			continue;
+		bit_set(req_bitmap, inx);
+		total++;
+	}
+	return total;
+}
+
+/*
+ * Set bitmap for every entry in nodelist also in the resp_node_hl
+ * resp_node_hl IN - nodes in job's allocation
+ * nodelist IN     - list of nodes to seek in resp_node_hl
+ * bitmap_ptr OUT  - set bit for every entry in nodelist found
+ * RET 1 if some nodelist record not found in resp_node_hl, otherwise zero
+ */
+static int 
+_job_resp_bitmap(hostlist_t resp_node_hl, char *nodelist, 
+		bitstr_t *bitmap_ptr)
+{
+	int  rc = 0;
+	hostlist_t node_hl = hostlist_create(nodelist);
+	char *node_name;
+
+	while ((node_name = hostlist_shift(node_hl))) {
+		int inx = hostlist_find(resp_node_hl, node_name);
+		if (inx >= 0)
+			bit_set(bitmap_ptr, inx);
+		else
+			rc = 1;
+		free(node_name);
+	}
+
+	hostlist_destroy(node_hl);
+	return rc;
+}
+
+static int _job_resp_count_max_tasks(resource_allocation_response_msg_t *resp)
+{
+	int inx, total = 0;
+
+	for (inx=0; inx<resp->num_cpu_groups; inx++) {
+		int tasks_per_node;
+		tasks_per_node = resp->cpus_per_node[inx] / opt.cpus_per_task;
+		total += (tasks_per_node * resp->cpu_count_reps[inx]);
+	}
+	return total;
+}
+
+/* Build an updated resource_allocation_response_msg 
+ * including only nodes for which req_bitmap is set */
+static void
+_job_resp_hack(resource_allocation_response_msg_t *resp, bitstr_t *req_bitmap)
+{
+	hostlist_t old_hl = hostlist_create(resp->node_list);
+	hostlist_t new_hl = hostlist_create("");
+	char *new_node_list;	/* assigned list of nodes */
+	slurm_addr *new_node_addr;	/* network addresses */
+	uint32_t *new_cpus_per_node;/* cpus per node */
+	uint32_t *new_cpu_count_reps;/* how many nodes have same cpu count */
+	int new_node_cnt = bit_set_count(req_bitmap);
+	int old_inx, new_inx = 0, i;
+
+	/* Build updated response data structures */
+	new_node_addr      = xmalloc(sizeof(slurm_addr) * new_node_cnt);
+	new_cpus_per_node  = xmalloc(sizeof(uint32_t)   * new_node_cnt);
+	new_cpu_count_reps = xmalloc(sizeof(uint32_t)   * new_node_cnt);
+	for (old_inx=0; old_inx<resp->node_cnt; old_inx++) {
+		char *node = hostlist_shift(old_hl);
+		if (!bit_test(req_bitmap, old_inx)) {
+			free(node);
+			continue;
+		}
+		hostlist_push_host(new_hl, node);
+		free(node);
+		
+		memcpy(new_node_addr+new_inx, resp->node_addr+old_inx, 
+		       sizeof(slurm_addr));
+
+		new_cpus_per_node[new_inx]  = _job_resp_cpus(
+				resp->cpus_per_node, resp->cpu_count_reps, old_inx);
+		new_cpu_count_reps[new_inx] = 1;
+		new_inx++;
+	}
+
+	/* Update the response */
+	resp->node_cnt = new_node_cnt;
+
+	hostlist_sort(new_hl);
+	i = 64;
+	new_node_list = xmalloc(i);
+	while (hostlist_ranged_string(new_hl, i, new_node_list) == -1) {
+		i *= 2;
+		xrealloc(new_node_list, i);
+	}
+	xfree(resp->node_list);
+	resp->node_list = new_node_list;
+	hostlist_destroy(old_hl);
+	hostlist_destroy(new_hl);
+
+	xfree(resp->node_addr);
+	resp->node_addr = new_node_addr;
+
+	resp->num_cpu_groups = new_node_cnt;
+	xfree(resp->cpus_per_node);
+	resp->cpus_per_node  = new_cpus_per_node;
+	xfree(resp->cpu_count_reps);
+	resp->cpu_count_reps = new_cpu_count_reps;
+}
+
+static int 
+_job_resp_cpus(uint32_t *cpus_per_node, uint32_t *cpu_count_reps, int node)
+{
+	int inx, total = 0;
+
+	for (inx=0; ; inx++) {
+		total += cpu_count_reps[inx];
+		if (node < total)
+			return cpus_per_node[inx];
+	}
+}

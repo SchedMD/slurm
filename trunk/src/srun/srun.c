@@ -148,6 +148,8 @@ int main(int ac, char **av)
 			error("job %u already has an allocation", resp->job_id);
 			exit(1);
 		}
+		if (job_resp_hack_for_step(resp))	/* FIXME */
+			exit(1);
 		job = job_create_allocation(resp); 
 		job->old_job = true;
 		sig_setup_sigmask();
