@@ -109,28 +109,14 @@ int plugrack_add_plugin_file( plugrack_t rack, const char *fq_path );
 /*
  * Add plugins to a rack by scanning the given directory.  If a
  * type has been set for this rack, only those plugins whose major type
- * matches the rack's type will be loaded.
+ * matches the rack's type will be loaded.  If a rack's paranoia factors
+ * have been set, they are applied to files considered candidates for
+ * plugins.  Plugins that fail the paranoid examination are not loaded.
  *
  * Returns a SLURM errno.
  */
 int plugrack_read_dir( plugrack_t rack,
 		       const char *dir );
-
-/*
- * Identical to plugrack_read_dir() except that additional criteria are
- * tested:
- *
- * 1. The directory must be owned by the specified UID and must be
- * writable by that user only; "other" and "group" may not write to
- * it.
- *
- * 2. Each candidate plugin must be owned by the specified UID and
- * must not be writable by any other means.  In addition, the plugin's
- * setuid bit must be cleared.
- */
-int plugrack_read_dir_paranoid( plugrack_t rack,
-				const char *dir,
-				uid_t uid );
 
 /*
  * Add plugins to the rack by reading the given cache.  Note that plugins
@@ -147,7 +133,7 @@ int plugrack_read_cache( plugrack_t rack,
  *
  * Returns a SLURM errno.
  */
-int plugrack_unload_idle( plugrack_t rack );
+int plugrack_purge_idle( plugrack_t rack );
 
 /*
  * Load into memory all plugins which are currently unloaded.
