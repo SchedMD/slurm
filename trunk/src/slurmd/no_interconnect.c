@@ -68,6 +68,12 @@ int interconnect_fini (slurmd_job_t *job)
 
 int interconnect_postfini (slurmd_job_t *job)
 {
+	/*
+	 *  Kill all processes in the job's session
+	 */
+	debug2("Sending SIGKILL to pgid %d", job->smgr_pid); 
+	kill(-job->smgr_pid, SIGKILL);
+
 	return SLURM_SUCCESS;
 }
 
