@@ -378,7 +378,7 @@ int _save_allocation(char *com, List allocated_partitions)
 		results_i = list_iterator_create(allocated_partitions);
 		while((allocated_part = list_next(results_i)) != NULL) {
 			memset(save_string,0,255);
-			sprintf(save_string, "Nodes=bgl[%s] Type=%d\n", allocated_part->request->save_name, allocated_part->request->conn_type);
+			sprintf(save_string, "Nodes=bgl[%s] Type=%d Use=%d\n", allocated_part->request->save_name, allocated_part->request->conn_type, allocated_part->request->co_proc);
 			
 			fputs (save_string,file_ptr);
 		}

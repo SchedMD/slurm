@@ -4,7 +4,7 @@
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Dan Phung <phung4@llnl.gov> and Morris Jette <jette1@llnl.gov>
- *  
+ *  and Danny Auble <da@llnl.gov>
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
  *  
@@ -62,8 +62,6 @@ List bgl_conf_list = NULL;              /* list of bgl_conf_record entries */
 /* Global variables */
 rm_BGL_t *bgl;
 List bgl_list = NULL;			/* list of bgl_record entries */
-char *bluegene_blrts = NULL, *bluegene_linux = NULL, *bluegene_mloader = NULL;
-char *bluegene_ramdisk = NULL, *bluegene_serial = NULL;
 bool agent_fini = false;
 
 /* some local functions */
@@ -350,6 +348,7 @@ extern int read_bgl_conf(void)
 	DEF_TIMERS;
 	FILE *bgl_spec_file;	/* pointer to input data file */
 	int line_num;		/* line number in input file */
+	int line_len;		/* length of the line */
 	char in_line[BUFSIZE];	/* input line */
 	int i, j, error_code;
 	bgl_conf_record_t *conf_rec;
@@ -387,7 +386,8 @@ extern int read_bgl_conf(void)
 	line_num = 0;
 	while (fgets(in_line, BUFSIZE, bgl_spec_file) != NULL) {
 		line_num++;
-		if (strlen(in_line) >= (BUFSIZE - 1)) {
+		line_len = strlen(in_line);
+		if (line_len >= (BUFSIZE - 1)) {
 			error("read_bgl_config line %d, of input file %s "
 			      "too long", line_num, bgl_conf);
 			fclose(bgl_spec_file);
@@ -398,13 +398,13 @@ extern int read_bgl_conf(void)
 		/* everything after a non-escaped "#" is a comment */
 		/* replace comment flag "#" with an end of string (NULL) */
 		/* escape sequence "\#" translated to "#" */
-		for (i = 0; i < BUFSIZE; i++) {
+		for (i = 0; i < line_len; i++) {
 			if (in_line[i] == (char) NULL)
 				break;
 			if (in_line[i] != '#')
 				continue;
 			if ((i > 0) && (in_line[i - 1] == '\\')) {
-				for (j = i; j < BUFSIZE; j++) {
+				for (j = i; j < line_len; j++) {
 					in_line[j - 1] = in_line[j];
 				}
 				continue;
@@ -422,16 +422,6 @@ extern int read_bgl_conf(void)
 	}
 	fclose(bgl_spec_file);
 
-	if (!bluegene_blrts)
-		fatal("BlrtsImage not configured in bluegene.conf");
-	if (!bluegene_linux)
-		fatal("LinuxImage not configured in bluegene.conf");
-	if (!bluegene_mloader)
-		fatal("MloaderImage not configured in bluegene.conf");
-	if (!bluegene_ramdisk)
-		fatal("RamDiskImage not configured in bluegene.conf");
-	if (!bluegene_serial)
-		bluegene_serial = xstrdup(DEFAULT_BLUEGENE_SERIAL);
 	END_TIMER;
 	debug("read_bgl_conf: finished loading configuration %s", TIME_STR);
 	
@@ -455,51 +445,19 @@ extern int read_bgl_conf(void)
 static int _parse_bgl_spec(char *in_line)
 {
 	int error_code = SLURM_SUCCESS;
-	char *nodes = NULL, *node_use = NULL, *serial = NULL, *conn_type = NULL;
-	char *blrts_image = NULL,   *linux_image = NULL;
-	char *mloader_image = NULL, *ramdisk_image = NULL;
+	char *nodes = NULL;
+	int node_use = 0;
+	int conn_type = 0;
 	bgl_conf_record_t* new_record;
 
 	error_code = slurm_parser(in_line,
-				"BlrtsImage=", 's', &blrts_image,
-				"LinuxImage=", 's', &linux_image,
-				"MloaderImage=", 's', &mloader_image,
 				"Nodes=", 's', &nodes,
-				"RamDiskImage=", 's', &ramdisk_image,
-				"Serial=", 's', &serial,
-				"Type=", 's', &conn_type,
-				"Use=", 's', &node_use,
+				"Type=", 'd', &conn_type,
+				"Use=", 'd', &node_use,
 				"END");
 
 	if (error_code)
 		goto cleanup;
-
-	/* Process system-wide info */
-	if (blrts_image) {
-		xfree(bluegene_blrts);
-		bluegene_blrts = blrts_image;
-		blrts_image = NULL;	/* nothing left to xfree */
-	}
-	if (linux_image) {
-		xfree(bluegene_linux);
-		bluegene_linux = linux_image;
-		linux_image = NULL;	/* nothing left to xfree */
-	}
-	if (mloader_image) {
-		xfree(bluegene_mloader);
-		bluegene_mloader = mloader_image;
-		mloader_image = NULL;	/* nothing left to xfree */
-	}
-	if (ramdisk_image) {
-		xfree(bluegene_ramdisk);
-		bluegene_ramdisk = ramdisk_image;
-		ramdisk_image = NULL;	/* nothing left to xfree */
-	}
-	if (serial) {
-		xfree(bluegene_serial);
-		bluegene_serial = serial;
-		serial = NULL;	/* nothing left to xfree */
-	}
 
 	/* Process node information */
 	if (!nodes && !node_use && !conn_type)
@@ -513,33 +471,17 @@ static int _parse_bgl_spec(char *in_line)
 
 	new_record = (bgl_conf_record_t*) xmalloc(sizeof(bgl_conf_record_t));
 	new_record->nodes = nodes;
-	nodes = NULL;	/* pointer moved, nothing left to xfree */
-
+	
 	if (!conn_type)
 		new_record->conn_type = SELECT_MESH;
-	else if (strcasecmp(conn_type, "TORUS") == 0)
+	else 
 		new_record->conn_type = SELECT_TORUS;
-	else if (strcasecmp(conn_type, "MESH") == 0)
-		new_record->conn_type = SELECT_MESH;
-	else {
-		error("_parse_bgl_spec: partition type %s invalid for nodes "
-			"%s, defaulting to type: MESH", 
-			conn_type, new_record->nodes);
-		new_record->conn_type = SELECT_MESH;
-	}
-
+	
 	if (!node_use)
-		new_record->node_use = SELECT_COPROCESSOR_MODE;
-	else if (strcasecmp(node_use, "COPROCESSOR") == 0)
-		new_record->node_use = SELECT_COPROCESSOR_MODE;
-	else if (strcasecmp(node_use, "VIRTUAL") == 0)
 		new_record->node_use = SELECT_VIRTUAL_NODE_MODE;
-	else {
-		error("_parse_bgl_spec: node use %s invalid for nodes %s, "
-			"defaulting to type: COPROCESSOR", 
-			node_use, new_record->nodes);
+	else 
 		new_record->node_use = SELECT_COPROCESSOR_MODE;
-	}
+	
 	list_push(bgl_conf_list, new_record);
 
 #if _DEBUG
@@ -550,14 +492,8 @@ static int _parse_bgl_spec(char *in_line)
 #endif
 
   cleanup:
-	xfree(blrts_image);
-	xfree(conn_type);
-	xfree(linux_image);
-	xfree(mloader_image);
-	xfree(node_use);
 	xfree(nodes);
-	xfree(ramdisk_image);
-	xfree(serial);
+	
 	return error_code;
 }
 
@@ -746,12 +682,6 @@ extern void fini_bgl(void)
 		list_destroy(bgl_init_part_list);
 		bgl_init_part_list = NULL;
 	}
-
-	xfree(bluegene_blrts);
-	xfree(bluegene_linux);
-	xfree(bluegene_mloader);
-	xfree(bluegene_ramdisk);
-	xfree(bluegene_serial);
 
 #ifdef USE_BGL_FILES
 /* FIXME: rm_free_BGL() is consistenly generating a segfault, even 
