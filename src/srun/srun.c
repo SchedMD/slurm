@@ -34,8 +34,10 @@
 #  include <pthread.h>
 #endif
 
-#include <sys/types.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <ctype.h>
 #include <fcntl.h>
@@ -123,6 +125,7 @@ main(int ac, char **av)
 	struct sigaction action;
 	int n, i;
 	bool old_job = false;
+	struct rlimit rlim;
 
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
@@ -134,6 +137,11 @@ main(int ac, char **av)
 	initialize_and_process_args(ac, av);
 	if (read_slurm_port_config() < 0)
 		error("read_slurm_port_config: %s", slurm_strerror(errno));
+
+	if (getrlimit(RLIMIT_NOFILE,&rlim) == 0) {
+		rlim.rlim_cur = rlim.rlim_max;
+		setrlimit(RLIMIT_NOFILE,&rlim);
+	}
 
 	/* reinit log with new verbosity
 	 */
