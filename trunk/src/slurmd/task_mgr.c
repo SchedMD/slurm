@@ -583,7 +583,7 @@ void * task_exec_thread ( void * arg )
 
 			resp_msg . address = launch_msg -> response_addr ;	
 			resp_msg . data = & task_exit ;
-			resp_msg . msg_type = RESPONSE_LAUNCH_TASKS ;
+			resp_msg . msg_type = MESSAGE_TASK_EXIT;
 			slurm_send_only_node_msg ( & resp_msg ) ;
 			break;
 	}
