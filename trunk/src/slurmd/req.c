@@ -162,29 +162,58 @@ static int
 _fork_new_slurmd(void)
 {
 	pid_t pid;
+	int fds[2] = {-1, -1};
+	char c;
+
+	/* Idea taken from ConMan by Chris Dunlap:
+	 *  Create pipe for IPC so parent slurmd will wait
+	 *  to return until signaled by grandchild process that
+	 *  slurmd job manager has been successfully created.
+	 */
+	if (pipe(fds) < 0)
+		error("fork_slurmd: pipe: %m");
 	
-	switch ((pid = fork())) {
-		case -1:
-			error("fork: %m");
-			return SLURM_ERROR;
-			break;
-		case 0: /* child continues */
-			slurm_shutdown_msg_engine(conf->lfd);
-			slurm_cred_ctx_destroy(conf->vctx);
-			_close_fds();
-			/*
-			 *  Reopen logfile by calling log_alter() without
-			 *    changing log options
-			 */   
-			log_alter(conf->log_opts, 0, conf->logfile);
-			return 0;
-			/* NOTREACHED */
-			break;
-		default:
-			break;
+	if ((pid = fork()) < 0) 
+		error("fork_slurmd: fork: %m");
+	else if (pid > 0) {
+		if (close(fds[1]) < 0)
+			error("Unable to close write-pipe in parent: %m");
+		if (read(fds[0], &c, 1) < 0)
+			return error("Unable to read EOF from grandchild: %m");
+		if (close(fds[0]) < 0)
+			error("Unable to close read-pipe in parent: %m");
+		return ((int) pid);
 	}
 
-	return((int) pid);
+	if (close(fds[0]) < 0)
+		error("Unable to close read-pipe in child: %m");
+
+	if (setsid() < 0)
+		error("fork_slurmd: setsid: %m");
+
+	if ((pid = fork()) < 0)
+		error("fork_slurmd: Unable to fork grandchild: %m");
+	else if (pid > 0)
+		exit(0);
+
+	/* Grandchild continues */
+
+	if (close(fds[1]) < 0)
+		error("Unable to close write-pipe in grandchild: %m");
+
+	slurm_shutdown_msg_engine(conf->lfd);
+	slurm_cred_ctx_destroy(conf->vctx);
+	_close_fds();
+	/*
+	 *  Reopen logfile by calling log_alter() without
+	 *    changing log options
+	 */   
+	log_alter(conf->log_opts, 0, conf->logfile);
+
+	/* 
+	 * Return 0 to indicate this is a child slurmd
+	 */
+	return(0);
 }
 
 static int

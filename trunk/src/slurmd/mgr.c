@@ -146,10 +146,6 @@ mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli)
 {
 	slurmd_job_t *job = NULL;
 
-	/*  Reset signal handler for SIGCHLD to default
-         */
-	xsignal(SIGCHLD, SIG_DFL);
-
 	if (!(job = job_create(msg, cli)))
 		return SLURM_ERROR;
 
@@ -175,10 +171,6 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	int           status = 0;
 	slurmd_job_t *job;
 	char         *batchdir;
-
-	/*  Reset signal handler for SIGCHLD to default
-         */
-	xsignal(SIGCHLD, SIG_DFL);
 
 	if (!(job = job_batch_job_create(msg))) 
 		goto cleanup;
