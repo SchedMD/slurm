@@ -14,4 +14,9 @@
  */
 int setenvf(const char *fmt, ...);
 
+/*
+ * Return the number of elements in the environment array `env'
+ */
+int envcount (char **env);
+
 #endif /* _HAVE_ENV_H */

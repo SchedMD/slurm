@@ -43,6 +43,7 @@
 #include "src/srun/job.h"
 #include "src/srun/launch.h"
 #include "src/srun/opt.h"
+#include "src/srun/env.h"
 
 extern char **environ;
 
@@ -73,7 +74,6 @@ static void   _p_launch(slurm_msg_t *req_array_ptr, job_t *job);
 static void * _p_launch_task(void *args);
 static void   _print_launch_msg(launch_tasks_request_msg_t *msg, 
 		                char * hostname);
-static int    _envcount(char **env);
 
 int 
 launch_thr_create(job_t *job)
@@ -109,7 +109,7 @@ launch(void *arg)
 	msg_array_ptr = 
 		xmalloc(sizeof(launch_tasks_request_msg_t)*job->nhosts);
 	req_array_ptr = xmalloc(sizeof(slurm_msg_t) * job->nhosts);
-	my_envc = _envcount(environ);
+	my_envc = envcount(environ);
 	for (i = 0; i < job->nhosts; i++) {
 		launch_tasks_request_msg_t *r = &msg_array_ptr[i];
 		slurm_msg_t                *m = &req_array_ptr[i];
@@ -444,13 +444,4 @@ _print_launch_msg(launch_tasks_request_msg_t *msg, char * hostname)
 
 	debug3("uid:%ld cwd:%s %d",
 		(long) msg->uid, msg->cwd, msg->srun_node_id);
-}
-
-static int
-_envcount(char **environ)
-{
-	int envc = 0;
-	while (environ[envc] != NULL)
-		envc++;
-	return envc;
 }

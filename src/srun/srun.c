@@ -345,10 +345,10 @@ _run_batch_job(void)
 {
 	int file_type, retries;
 	int rc = SLURM_SUCCESS;
-	job_desc_msg_t job;
+	job_desc_msg_t *req;
 	submit_response_msg_t *resp;
-	extern char **environ;
-	char *job_script;
+	char *script;
+	void (*log_msg) (const char *fmt, ...) = (void (*)) &error;
 
 	if ((remote_argc == 0) || (remote_argv[0] == NULL))
 		return SLURM_ERROR;
@@ -361,100 +361,38 @@ _run_batch_job(void)
 	 * }
 	 */
 
-	job_script = _build_script (remote_argv[0], file_type);
-	if (job_script == NULL) {
+	if ((script = _build_script (remote_argv[0], file_type)) == NULL) {
 		error ("unable to build script from file %s", remote_argv[0]);
 		return SLURM_ERROR;
 	}
 
-	slurm_init_job_desc_msg(&job);
-
-	job.contiguous     = opt.contiguous;
-	job.features       = opt.constraints;
-
-	job.name           = opt.job_name;
-
-	job.partition      = opt.partition;
-
-	if (opt.hold)
-		job.priority = 0;
-	if (opt.mincpus > -1)
-		job.min_procs = opt.mincpus;
-	if (opt.realmem > -1)
-		job.min_memory = opt.realmem;
-	if (opt.tmpdisk > -1)
-		job.min_tmp_disk = opt.tmpdisk;
-
-	job.req_nodes      = opt.nodelist;
-	job.exc_nodes      = opt.exc_nodes;
-
-	if (opt.overcommit)
-		job.num_procs      = opt.min_nodes;
-	else
-		job.num_procs      = opt.nprocs * opt.cpus_per_task;
-
-	job.min_nodes      = opt.min_nodes;
-	if (opt.max_nodes)
-		job.max_nodes      = opt.max_nodes;
-
-	job.num_tasks      = opt.nprocs;
-
-	job.user_id        = opt.uid;
-	job.group_id	= getgid();
-
-	if (opt.hold)
-		job.priority 		= 0;
-	if (opt.no_kill)
- 		job.kill_on_node_fail	= 0;
-	if (opt.time_limit > -1)
-		job.time_limit		= opt.time_limit;
-	if (opt.share)
-		job.shared		= 1;
-
-	/* _set_batch_script_env(job); */
-	job.environment		= environ;
-
-	job.env_size            = 0;
-	while (environ[job.env_size] != NULL)
-		job.env_size++;
-
-	job.script		= job_script;
-	job.argv		= remote_argv;
-	job.argc		= remote_argc;
-	job.err		        = opt.efname;
-	job.in        		= opt.ifname;
-	job.out	        	= opt.ofname;
-	job.work_dir		= opt.cwd;
+	if (!(req = job_desc_msg_create_from_opts (script)))
+		fatal ("Unable to create job request");
 
 	retries = 0;
-	while ((rc = slurm_submit_batch_job(&job, &resp)) < 0) {
-		if (   (errno == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) 
-		    && (retries < MAX_RETRIES) ) {
-			if (retries == 0)
-				error ("Slurm controller not responding, "
-						"sleeping and retrying");
-			else
-				debug ("Slurm controller not responding, "
-						"sleeping and retrying");
+	while (  (retries < MAX_RETRIES)
+              && (rc = slurm_submit_batch_job(req, &resp)) < 0) {
 
-			sleep (++retries);
-		}
-		else {
-			error("Unable to submit batch job resources: %s", 
-					slurm_strerror(errno));
-			return SLURM_ERROR;
-		}			
+		if (errno != ESLURM_ERROR_ON_DESC_TO_RECORD_COPY)
+			return (error("Unable to submit batch job: %m"));
+		
+		(*log_msg) ("Controller not responding, retrying...");
+		log_msg = &debug;
+		sleep (++retries);
 	}
 
 	
 	if (rc == SLURM_SUCCESS) {
-		info("jobid %u submitted",resp->job_id);
+		info ("jobid %u submitted",resp->job_id);
 		if (resp->error_code)
 			info("Warning: %s", slurm_strerror(resp->error_code));
 		slurm_free_submit_response_response_msg (resp);
 	}
-	xfree (job_script);
-	return rc;
+
+	job_desc_msg_destroy (req);
+	xfree (script);
+
+	return (rc);
 }
 
 /* _get_shell - return a string containing the default shell for this user

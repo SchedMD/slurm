@@ -33,3 +33,14 @@ setenvf(const char *fmt, ...)
 	return putenv(bufcpy);
 }
 
+/*
+ * Return the number of elements in the environment `env'
+ */
+int 
+envcount (const char **env)
+{
+	int envc = 0;
+	while (env[envc] != NULL)
+		envc++;
+	return (envc);
+}
