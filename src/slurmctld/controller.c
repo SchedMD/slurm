@@ -98,7 +98,7 @@
  * MEM_LEAK_TEST to 0 afterwards for best system response (non-seamless 
  * backup controller use).
 \**************************************************************************/
-#define MEM_LEAK_TEST     1	/* Running memory leak test if set */
+#define MEM_LEAK_TEST     0	/* Running memory leak test if set */
 
 
 /* Log to stderr and syslog until becomes a daemon */
