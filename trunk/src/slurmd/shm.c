@@ -257,15 +257,23 @@ shm_step_still_running(uint32_t jobid, uint32_t stepid)
 	xassert(slurmd_shm != NULL);
 
 	_shm_lock();
-	if ((i = _shm_find_step(jobid, stepid)) >= 0) {
-		s = &slurmd_shm->step[i];
-		/*
-		 *  Check for existence of any processes in the 
-		 *    job step's session:
-		 */
-		if ((s->sid >= 0) && (kill(-s->sid, 0) == 0))
-			retval = true;
-	} 
+	if ((i = _shm_find_step(jobid, stepid)) < 0) 
+		goto done;
+
+	s = &slurmd_shm->step[i];
+
+	/*
+	 *  Consider a job step running if the step state is less 
+	 *   than STARTED or if s->sid has not yet been set. 
+	 *   If the state is >= STARTED, check for running processes 
+	 *   by attempting to signal the running session.
+	 */
+	if (  (s->state < SLURMD_JOB_STARTED)
+	   || (s->sid <= (pid_t) 0) 
+	   || (kill(-s->sid, 0) == 0) )
+		retval = true;
+
+    done:
 	_shm_unlock();
 
 	return retval;
@@ -886,7 +894,7 @@ _shm_clear_stale_entries(void)
 		if (s->state == SLURMD_JOB_UNUSED) 
 			continue;
 		
-		if ((s->sid >= (pid_t) 0) && (kill(-s->sid, 0) != 0)) {
+		if ((s->sid > (pid_t) 0) && (kill(-s->sid, 0) != 0)) {
 			debug ("Clearing stale job %ld.%ld from shm",
 					s->jobid, s->stepid);
 			_shm_clear_step(s);
