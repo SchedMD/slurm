@@ -42,7 +42,7 @@ convenience_libs =  \
 srun_LDADD = \
 	$(convenience_libs) 
 
-srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)
 
 force:
 $(convenience_libs) : force
