@@ -81,6 +81,8 @@ test1.35   Test of batch job with multiple concurrent job steps
 test1.36   Test parallel launch of srun (e.g. "srun srun hostname")
 test1.37   Confirm that node sharing flags are respected  (--nodelist and 
            --share options).
+test1.38   Test srun handling of SIGINT to get task status or kill the job
+           (--quit-on-interrupt option).
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
            The test will print "WARNING" and terminate with an exit code of 
            zero if the cluster configuration does not permit proper testing.
