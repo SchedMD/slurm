@@ -69,6 +69,27 @@ main(int argc, char * argv[]) {
     Map1 = malloc(size);
     memset(Map1, 0, size);
     BitMapSet(Map1, 23);
+    BitMapSet(Map1, 24);
+    BitMapSet(Map1, 25);
+    BitMapSet(Map1, 71);
+    BitMapSet(Map1, 72);
+    Error_Code = BitMapFit(Map1, 5, 0);
+    if (Error_Code != 0)           printf("BitMapFit error 1.1\n");
+    Error_Code = BitMapFit(Map1, 4, 0);
+    if (Error_Code != 0)           printf("BitMapFit error 2.1\n");
+    if (BitMapValue(Map1,23) != 1) printf("BitMapFit error 2.2\n");
+    if (BitMapValue(Map1,24) != 1) printf("BitMapFit error 2.3\n");
+    if (BitMapValue(Map1,25) != 1) printf("BitMapFit error 2.4\n");
+    if (BitMapValue(Map1,71) != 1) printf("BitMapFit error 2.5\n");
+    if (BitMapCount(Map1) != 4)    printf("BitMapFit error 2.6\n");
+    BitMapSet(Map1, 72);
+    Error_Code = BitMapFit(Map1, 2, 1);
+    if (Error_Code != 0)           printf("BitMapFit error 3.1\n");
+    if (BitMapValue(Map1,71) != 1) printf("BitMapFit error 3.2\n");
+    if (BitMapValue(Map1,72) != 1) printf("BitMapFit error 3.3\n");
+    if (BitMapCount(Map1) != 2)    printf("BitMapFit error 2.4\n");
+    memset(Map1, 0, size);
+    BitMapSet(Map1, 23);
     BitMapSet(Map1, 71);
     Out_Line = BitMapPrint(Map1);
     printf("BitMapPrint #1 Map1 shows %s\n", Out_Line);
@@ -338,6 +359,105 @@ void BitMapFill(unsigned *BitMap) {
 	} /* for (bit */
     } /* for (word */
 } /* BitMapFill */
+
+
+/*
+ * BitMapFit - Identify the nodes which best fit the Request count
+ * Input: BitMap - The bit map to search
+ *        Req_Nodes - Number of nodes required
+ *        Consecutive - Nodes must be consecutive is 1, otherwise 0
+ * Output: BitMap - Nodes NOT required to satisfy the request are cleared, other left set
+ *         Returns zero on success, EINVAL otherwise
+ */
+int BitMapFit(unsigned *BitMap, int Req_Nodes, int Consecutive) {
+    int bit, size, word, i, Error_Code;
+    int *Consec_Count, *Consec_Start, Consec_Index, Consec_Size;
+    int Rem_Nodes, Best_Fit, Best_Fit_Location;
+    unsigned mask;
+
+    if (BitMap == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "BitMapFit: BitMap pointer is NULL\n");
+#else
+	syslog(LOG_ALERT, "BitMapFit: BitMap pointer is NULL\n");
+#endif
+	return EINVAL;
+    } /* if */
+
+    Error_Code = EINVAL;	/* Default is no fit */
+    Consec_Index = 0;
+    Consec_Size = 1000;
+    Consec_Count = malloc(sizeof(int)*Consec_Size);
+    Consec_Start = malloc(sizeof(int)*Consec_Size);
+    if ((Consec_Count == NULL) || (Consec_Start == NULL)) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "BitMapFit: unable to allocate memory\n");
+#else
+	syslog(LOG_ALERT, "BitMapFit: unable to allocate memory\n");
+#endif
+	goto cleanup;
+    } /* if */
+
+    Consec_Count[Consec_Index] = 0;
+    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / 8;	/* Bytes */
+    size /= sizeof(unsigned);			/* Count of unsigned's */
+    for (word=0; word<size; word++) {
+	for (bit=0; bit<(sizeof(unsigned)*8); bit++) {
+	    mask = (0x1 << ((sizeof(unsigned)*8)-1-bit));
+	    if (BitMap[word] & mask) {
+		if ((Consec_Count[Consec_Index]++) == 0) 
+			Consec_Start[Consec_Index] = (word * sizeof(unsigned) * 8 + bit);
+		BitMap[word] &= (~mask);
+	    } else {
+		if (++Consec_Index >= Consec_Size) {
+		    Consec_Size *= 2;
+		    Consec_Count = realloc(Consec_Count, sizeof(int)*Consec_Size);
+		    Consec_Start = realloc(Consec_Start, sizeof(int)*Consec_Size);
+		    if ((Consec_Count == NULL) || (Consec_Start == NULL)) {
+#if DEBUG_SYSTEM
+			fprintf(stderr, "BitMapFit: unable to allocate memory\n");
+#else
+			syslog(LOG_ALERT, "BitMapFit: unable to allocate memory\n");
+#endif
+			goto cleanup;
+		    } /* if */
+		} /* if */
+		Consec_Count[Consec_Index] = 0;
+	    } /* else */
+	} /* for (bit */
+    } /* for (word */
+    Consec_Index++;
+
+    Rem_Nodes = Req_Nodes;
+    while (1) {
+	Best_Fit = 0;
+	for (i=0; i<Consec_Index; i++) {
+	    if (Consec_Count[i] == 0) continue;
+	    if ((Best_Fit == 0) || 
+	        ((Best_Fit < Rem_Nodes) && (Consec_Count[i] > Best_Fit)) ||
+	        ((Best_Fit > Rem_Nodes) && (Consec_Count[i] < Best_Fit) && (Consec_Count[i] >= Rem_Nodes))) {
+		Best_Fit = Consec_Count[i];
+		Best_Fit_Location = i;
+	    } /* if */
+	} /* for */
+	if (Consecutive && (Best_Fit < Req_Nodes)) break; /* No hole large enough */
+	if (Best_Fit > Rem_Nodes) Best_Fit=Rem_Nodes;
+	for (i=0; i<Best_Fit; i++) {
+	    BitMapSet(BitMap, i+Consec_Start[Best_Fit_Location]);
+	} /* for */
+	Consec_Count[Best_Fit_Location] = 0;
+	Rem_Nodes -= Best_Fit;
+	if (Rem_Nodes == 0) {
+	    Error_Code = 0;
+	    break;
+	} /* if */
+    } /* while */
+
+cleanup:
+    if (Consec_Count) free(Consec_Count);
+    if (Consec_Start) free(Consec_Start);
+    return Error_Code;
+} /* BitMapFit */
 
 
 /* 
