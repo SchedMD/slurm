@@ -880,19 +880,21 @@ int kill_running_job_by_node_name(char *node_name, bool step_test)
 			if (step_test && 
 			    (step_on_node(job_ptr, node_ptr) == 0))
 				continue;
-			error("Running job_id %u on failed node %s",
-		   	   job_ptr->job_id, node_name);
+
 			job_count++;
 			if ((job_ptr->details == NULL) ||
 			    (job_ptr->kill_on_node_fail) ||
 			    (job_ptr->node_cnt <= 1)) {
+				error("Killing job_id %u on failed node %s",
+				      job_ptr->job_id, node_name);
 				job_ptr->job_state = JOB_NODE_FAIL | 
 						     JOB_COMPLETING;
 				job_ptr->end_time = time(NULL);
 				deallocate_nodes(job_ptr, false);
 				delete_all_step_records(job_ptr);
 			} else {
-				/* Remove node from this job's list */
+				error("Removing failed node %s from job_id %u",
+				      node_name, job_ptr->job_id);
 				_excise_node_from_job(job_ptr, node_ptr);
 			}
 		}
