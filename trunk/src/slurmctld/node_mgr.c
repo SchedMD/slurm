@@ -64,8 +64,8 @@ time_t last_bitmap_update = (time_t) NULL;	/* time of last node creation
 						 * or deletion */
 time_t last_node_update = (time_t) NULL;	/* time of last update to 
 						 * node records */
-bitstr_t *up_node_bitmap = NULL;	/* bitmap of nodes are up */
-bitstr_t *idle_node_bitmap = NULL;	/* bitmap of nodes are idle */
+bitstr_t *avail_node_bitmap = NULL;	/* bitmap of available nodes */
+bitstr_t *idle_node_bitmap = NULL;	/* bitmap of idle nodes */
 
 
 static int	_delete_config_record (void);
@@ -952,18 +952,18 @@ int update_node ( update_node_msg_t * update_node_msg )
 				kill_running_job_by_node_name (this_node_name,
 							       false);
 				bit_set   (idle_node_bitmap, node_inx);
-				bit_clear (up_node_bitmap, node_inx);
+				bit_clear (avail_node_bitmap, node_inx);
 			}
 			else if (state_val == NODE_STATE_UNKNOWN) {
-				bit_clear (up_node_bitmap, node_inx);
+				bit_clear (avail_node_bitmap, node_inx);
 				bit_clear (idle_node_bitmap, node_inx);
 			}
 			else if (state_val == NODE_STATE_IDLE) {
-				bit_set (up_node_bitmap, node_inx);
+				bit_set (avail_node_bitmap, node_inx);
 				bit_set (idle_node_bitmap, node_inx);
 			}
 			else if (state_val == NODE_STATE_ALLOCATED) {
-				bit_set   (up_node_bitmap, node_inx);
+				bit_set   (avail_node_bitmap, node_inx);
 				bit_clear (idle_node_bitmap, node_inx);
 			}
 			else if ((state_val == NODE_STATE_DRAINED) ||
@@ -972,10 +972,10 @@ int update_node ( update_node_msg_t * update_node_msg )
 					state_val = NODE_STATE_DRAINED;
 				else
 					state_val = NODE_STATE_DRAINING;
-				bit_clear (up_node_bitmap, node_inx);
+				bit_clear (avail_node_bitmap, node_inx);
 			}
 			else if (state_val == NODE_STATE_NO_RESPOND) {
-				bit_clear (up_node_bitmap,   node_inx);
+				bit_clear (avail_node_bitmap,   node_inx);
 				node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 				info ("update_node: node %s state set to %s",
 				      this_node_name, "NoResp");
@@ -1138,9 +1138,9 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		if ((node_ptr->node_state == NODE_STATE_DOWN)     ||
 		    (node_ptr->node_state == NODE_STATE_DRAINING) ||
 		    (node_ptr->node_state == NODE_STATE_DRAINED))
-			bit_clear (up_node_bitmap, node_inx);
+			bit_clear (avail_node_bitmap, node_inx);
 		else
-			bit_set   (up_node_bitmap, node_inx);
+			bit_set   (avail_node_bitmap, node_inx);
 	}
 
 	return error_code;
@@ -1176,9 +1176,9 @@ void node_did_resp (char *name)
 	if ((node_ptr->node_state == NODE_STATE_DOWN)     ||
 	    (node_ptr->node_state == NODE_STATE_DRAINING) ||
 	    (node_ptr->node_state == NODE_STATE_DRAINED))
-		bit_clear (up_node_bitmap, node_inx);
+		bit_clear (avail_node_bitmap, node_inx);
 	else
-		bit_set   (up_node_bitmap, node_inx);
+		bit_set   (avail_node_bitmap, node_inx);
 	return;
 }
 
@@ -1208,7 +1208,7 @@ void node_not_resp (char *name, time_t msg_time)
 	}
 	last_node_update = time (NULL);
 	error ("Node %s not responding", name);
-	bit_clear (up_node_bitmap, i);
+	bit_clear (avail_node_bitmap, i);
 	bit_clear (idle_node_bitmap, i);
 	node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 	return;
@@ -1563,7 +1563,7 @@ static void _make_node_down(struct node_record *node_ptr)
 	last_node_update = time (NULL);
 	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 	node_ptr->node_state = NODE_STATE_DOWN | no_resp_flag;
-	bit_clear (up_node_bitmap, inx);
+	bit_clear (avail_node_bitmap, inx);
 	bit_clear (idle_node_bitmap, inx);
 }
 
@@ -1612,7 +1612,7 @@ void make_node_idle(struct node_record *node_ptr,
 	} else if (base_state == NODE_STATE_DRAINING) {
 		node_ptr->node_state = NODE_STATE_DRAINED;
 		bit_clear(idle_node_bitmap, inx);
-		bit_clear(up_node_bitmap, inx);
+		bit_clear(avail_node_bitmap, inx);
 	} else if (node_ptr->run_job_cnt) {
 		node_ptr->node_state = NODE_STATE_ALLOCATED | no_resp_flag;
 		xfree(node_ptr->reason);

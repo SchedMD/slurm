@@ -549,7 +549,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		if ((min_nodes <= total_nodes) && 
 		    (max_nodes <= min_nodes  ) &&
 		    (req_cpus  <= total_cpus )) {
-			if (!bit_super_set(*req_bitmap, up_node_bitmap))
+			if (!bit_super_set(*req_bitmap, avail_node_bitmap))
 				return EAGAIN;
 			if ((!shared) &&
 			    (!bit_super_set(*req_bitmap, idle_node_bitmap)))
@@ -577,7 +577,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				_add_node_set_info(&node_set_ptr[i],
 						   &total_bitmap, 
 						   &total_nodes, &total_cpus);
-			bit_and(node_set_ptr[i].my_bitmap, up_node_bitmap);
+			bit_and(node_set_ptr[i].my_bitmap, avail_node_bitmap);
 			if (!shared)
 				bit_and(node_set_ptr[i].my_bitmap,
 					idle_node_bitmap);

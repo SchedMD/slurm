@@ -378,7 +378,7 @@ _pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 		return NULL;
 	
 	nodes_avail = bit_copy (job_ptr->node_bitmap);
-	bit_and (nodes_avail, up_node_bitmap);
+	bit_and (nodes_avail, avail_node_bitmap);
 
 	if ( step_spec->node_count == INFINITE)	/* use all nodes */
 		return nodes_avail;
@@ -396,8 +396,8 @@ _pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 				step_spec->node_list, job_ptr->job_id);
 			goto cleanup;
 		}
-		if (bit_super_set (nodes_picked, up_node_bitmap) == 0) {
-			info ("_pick_step_nodes: some requested node %s is/are down",
+		if (bit_super_set (nodes_picked, avail_node_bitmap) == 0) {
+			info ("_pick_step_nodes: some requested node %s are down",
 				step_spec->node_list);
 			goto cleanup;
 		}
