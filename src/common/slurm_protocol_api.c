@@ -202,7 +202,7 @@ int slurm_send_node_msg ( slurm_fd open_fd ,  slurm_msg_t * msg )
 	char buf_temp[SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE] ;
 	char * buffer = buf_temp ;
 	header_t header ;
-	int i, rc ;
+	int rc ;
 	unsigned int pack_len ;
 
 	/* initheader */

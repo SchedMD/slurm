@@ -358,32 +358,6 @@ slurm_rpc_job_cancel ( slurm_msg_t * msg )
 
 }
 
-void
-slurm_rpc_job_submit ( slurm_msg_t * msg )
-{
-	clock_t start_time;
-	char *dump;
-	int dump_size;
-	slurm_msg_t response_msg ;
-	job_desc_msg_t * job_desc_ptr = ( job_desc_msg_t * ) msg-> data ;
-
-	start_time = clock ();
-
-		pack_all_part (&dump, &dump_size, &last_update);
-		/* init response_msg structure */
-		response_msg . address = msg -> address ;
-		response_msg . msg_type = RESPONSE_SUBMIT_BATCH_JOB ;
-/*
-		response_msg . data = dump ;
-		response_msg . data_size = dump_size ;
-
-		/* send message */
-		slurm_send_node_msg( msg -> conn_fd , &response_msg ) ;
-		info ("slurmctld_req: job_submit, size=%d, time=%ld", 
-		      dump_size, (long) (clock () - start_time));
-*/
-}
-
 /* UpdateNode - */
 /* Update - modify node or partition configuration */
 	void 
