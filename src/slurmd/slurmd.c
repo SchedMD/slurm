@@ -408,6 +408,7 @@ void slurm_rpc_launch_tasks ( slurm_msg_t * msg )
 
 	task_resp . return_code = error_code ;
 	task_resp . node_name = node_name ;
+	task_resp . srun_node_id = task_desc -> srun_node_id ;
 
 	resp_msg . address = task_desc -> response_addr ;	
 	resp_msg . data = & task_resp ;
