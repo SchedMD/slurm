@@ -35,6 +35,7 @@ libcommon_la_SOURCES = 	\
 	pack.c		\
 	hostlist.c	\
 	parse_spec.c	\
+	read_config.c	\
 	slurm_errno.c	\
 	slurm_protocol_api.c	\
 	slurm_protocol_pack.c	\
@@ -61,6 +62,7 @@ noinst_HEADERS = 	\
 	pack.h		\
 	hostlist.h	\
 	parse_spec.h	\
+	read_config.h	\
 	slurm_auth.h    \
 	slurm_protocol_api.h	\
 	slurm_protocol_pack.h	\
@@ -76,6 +78,7 @@ noinst_HEADERS = 	\
 libdaemonize_la_SOURCES =  \
 	daemonize.c        \
 	daemonize.h
+
 libcred_la_SOURCES =       \
         credential_utils.c \
 	credential_utils.h \
@@ -84,6 +87,7 @@ libcred_la_SOURCES =       \
 
 EXTRA_libcommon_la_SOURCES = \
 	qsw.c
+
 libcommon_la_LIBADD   = $(AUTHD_LIBS) $(SSL_LIBS)
 libcred_la_LIBADD     = $(SSL_LIBS) 
 libcred_la_LDFLAGS    = $(SSL_LDFLAGS)	
