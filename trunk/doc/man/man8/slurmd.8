@@ -17,6 +17,13 @@ abnormally.
 \fB-D\fR
 Run slurmd in the foreground. Error and debug messages will be copied to stderr.
 .TP
+\fB-M\fR
+Lock slurmd pages into system memory using mlockall(2) to disable
+paging of the slurmd process. This may help in cases where nodes are
+marked DOWN during periods of heavy swap activity. If the mlockall(2)
+system call is not available, an error will be printed to the log
+and slurmd will continue as normal.
+.TP
 \fB-h\fR
 Help; print a brief summary of command options.
 .TP

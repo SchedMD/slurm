@@ -40,6 +40,7 @@
 #include <sys/resource.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/mman.h>
 
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -62,7 +63,7 @@
 #include "src/slurmd/setproctitle.h"
 #include "src/slurmd/get_mach_stat.h"
 
-#define GETOPT_ARGS	"L:Dvhc"
+#define GETOPT_ARGS	"L:DvhcM"
 
 #ifndef MAXHOSTNAMELEN
 #  define MAXHOSTNAMELEN	64
@@ -528,6 +529,7 @@ _init_conf()
 	conf->daemonize   =  1;
 	conf->lfd         = -1;
 	conf->cleanstart  =  0;
+	conf->mlock_pages =  0;
 	conf->log_opts    = lopts;
 	conf->debug_level = LOG_LEVEL_INFO;
 	conf->pidfile     = xstrdup(DEFAULT_SLURMD_PIDFILE);
@@ -561,6 +563,9 @@ _process_cmdline(int ac, char **av)
 			break;
 		case 'c':
 			conf->cleanstart = 1;
+			break;
+		case 'M':
+			conf->mlock_pages = 1;
 			break;
 		default:
 			_usage(c);
@@ -653,6 +658,19 @@ _slurmd_init()
 		_kill_old_slurmd(); 
 
 		shm_cleanup();
+	}
+
+	if (conf->mlock_pages) {
+		/*
+		 * Call mlockall() if available to ensure slurmd
+		 *  doesn't get swapped out
+		 */
+#ifdef _POSIX_MEMLOCK
+		if (mlockall (MCL_FUTURE | MCL_CURRENT) < 0)
+			error ("failed to mlock() slurmd pages: %m");
+#else
+		error ("mlockall() system call does not appear to be available");
+#endif /* _POSIX_MEMLOCK */
 	}
 
 	/*
@@ -791,17 +809,15 @@ _hup_handler(int signum)
 static void 
 _usage()
 {
-	fprintf(stderr, "Usage: %s [OPTIONS]\n", conf->prog);
-	fprintf(stderr, "  -L logfile "
-			"\tLog messages to the file `logfile'\n");
-	fprintf(stderr, "  -v      "
-			"\tVerbose mode. Multiple -v's increase verbosity.\n");
-	fprintf(stderr, "  -D      "
-			"\tRun daemon in foreground.\n");
-	fprintf(stderr, "  -c      "
-			"\tForce cleanup of slurmd shared memory.\n");
-	fprintf(stderr, "  -h      "
-			"\tPrint this help message.\n");
+	fprintf(stderr, "\
+Usage: %s [OPTIONS]\n\
+   -L logfile  Log messages to the file `logfile'\n\
+   -v          Verbose mode. Multiple -v's increase verbosity.\n\
+   -D          Run daemon in foreground.\n\
+   -M          Use mlock() to lock slurmd pages into memory.\n\
+   -c          Force cleanup of slurmd shared memory.\n\
+   -h          Print this help message.\n", conf->prog);
+	return;
 }
 
 /* 

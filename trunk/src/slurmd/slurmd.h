@@ -81,6 +81,7 @@ typedef struct slurmd_config {
 	int           debug_level;	/* logging detail level            */ 
 	int           daemonize:1;	/* daemonize flag	           */ 
 	int	      cleanstart:1;     /* clean start requested (-c)      */
+	int           mlock_pages:1;	/* mlock() slurmd  */
 
 	slurm_cred_ctx_t vctx;          /* slurm_cred_t verifier context   */
 
