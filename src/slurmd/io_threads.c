@@ -44,6 +44,7 @@ void * stdin_io_pipe_thread ( void * arg )
 		
 		if ( ( bytes_read = slurm_read_stream ( task_start->sockets[STDIN_OUT_SOCK] , cir_buf->tail , cir_buf->write_size ) ) <= 0 )
 		{
+			sleep (1) ;
 			local_errno = errno ;	
 			if ( bytes_read == 0)
 			{
