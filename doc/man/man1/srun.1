@@ -676,9 +676,7 @@ STEPID     PARTITION     USER      TIME NODELIST
 
 .fi
 .PP
-This example demonstrates how one executes a simple MPICH job
-in the event that MPICH has not been configured to automatically 
-set the required parameters (this is the worst cases scenario). 
+This example demonstrates how one executes a simple MPICH job.
 We use \fBsrun\fR to build a list of machines (nodes) to be used by 
 \fBmpirun\fR in its required format. A sample command line and 
 the script to be executed follow.
@@ -687,9 +685,16 @@ the script to be executed follow.
 
 > cat test.sh
 #!/bin/sh
-PROCFILE="nodes.$SLURM_JOBID"
-srun -o $PROCFILE /bin/hostname
-mpirun -np $SLURM_NPROCS -machinefile $PROCFILE /bin/hostname
+MACHINEFILE="nodes.$SLURM_JOBID"
+
+# Generate Machinefile for mpich such that hosts are in the same
+#  order as if run via srun
+#
+srun -l /bin/hostname | sort -n | awk '{print $2}' > $MACHINEFILE
+
+# Run using generated Machine file:
+mpirun -np $SLURM_NPROCS -machinefile $MACHINEFILE mpi-app
+
 rm $PROCFILE
 
 > srun -AN2 -n4 test.sh
