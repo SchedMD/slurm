@@ -1408,7 +1408,8 @@ _update_job (int argc, char *argv[])
 				(uint32_t) strtol(&argv[i][6], 
 						 (char **) NULL, 10);
 		else if (strncasecmp(argv[i], "TimeLimit=", 10) == 0) {
-			if (strcasecmp(&argv[i][10], "UNLIMITED") == 0)
+			if ((strcasecmp(&argv[i][10], "UNLIMITED") == 0) ||
+			    (strcasecmp(&argv[i][10], "INFINITE") == 0))
 				job_msg.time_limit = INFINITE;
 			else
 				job_msg.time_limit = 
@@ -1586,7 +1587,8 @@ _update_part (int argc, char *argv[])
 		if (strncasecmp(argv[i], "PartitionName=", 14) == 0)
 			part_msg.name = &argv[i][14];
 		else if (strncasecmp(argv[i], "MaxTime=", 8) == 0) {
-			if (strcasecmp(&argv[i][8],"UNLIMITED") == 0)
+			if ((strcasecmp(&argv[i][8],"UNLIMITED") == 0) ||
+			    (strcasecmp(&argv[i][8],"INFINITE") == 0))
 				part_msg.max_time = INFINITE;
 			else
 				part_msg.max_time = 
@@ -1594,14 +1596,16 @@ _update_part (int argc, char *argv[])
 						(char **) NULL, 10);
 		}
 		else if (strncasecmp(argv[i], "MaxNodes=", 9) == 0)
-			if (strcasecmp(&argv[i][9],"UNLIMITED") == 0)
+			if ((strcasecmp(&argv[i][9],"UNLIMITED") == 0) ||
+			    (strcasecmp(&argv[i][8],"INFINITE") == 0))
 				part_msg.max_nodes = INFINITE;
 			else
 				part_msg.max_nodes = 
 					(uint32_t) strtol(&argv[i][9], 
 						(char **) NULL, 10);
 		else if (strncasecmp(argv[i], "MinNodes=", 9) == 0)
-			if (strcasecmp(&argv[i][9],"UNLIMITED") == 0)
+			if ((strcasecmp(&argv[i][9],"UNLIMITED") == 0) ||
+			    (strcasecmp(&argv[i][8],"INFINITE") == 0))
 				part_msg.min_nodes = INFINITE;
 			else
 				part_msg.min_nodes = 
