@@ -655,7 +655,7 @@ load_job_state ( void )
 			if (buffer_size < QSW_PACK_SIZE)
 				break;
 			qsw_alloc_jobinfo(&step_ptr->qsw_job);
-			qsw_unpack_jobinfo(step_ptr->qsw_job, buf_ptr, &buffer_size);
+			qsw_unpack_jobinfo(step_ptr->qsw_job, &buf_ptr, &buffer_size);
 #endif
 			safe_unpack16 (&step_flag, &buf_ptr, &buffer_size);
 		}
