@@ -26,7 +26,6 @@
 
 #include "src/common/node_select.h"
 #include "bluegene.h"
-#include "partition_sys.h"
 
 #define BUFSIZE 4096
 #define BITSIZE 128

@@ -17,7 +17,7 @@ select_bluegene_la_SOURCES = select_bluegene.c \
 				bluegene.c bluegene.h \
 				state_test.c state_test.h \
 				bgl_switch_connections.c \
-				partition_sys.c partition_sys.h
+				partition_sys.c
 
 select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 

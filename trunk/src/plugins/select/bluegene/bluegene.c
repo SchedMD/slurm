@@ -30,7 +30,7 @@
 #define NODE_POLL_TIME 120	/* poll MMCS node state every 120 secs */
 #define SWITCH_POLL_TIME 180	/* poll MMCS switch state every 180 secs */
 
-#define _DEBUG 1
+#define _DEBUG 0
 
 char* bgl_conf = BLUEGENE_CONFIG_FILE;
 
@@ -52,10 +52,12 @@ static int  _parse_bgl_spec(char *in_line);
 static void _process_nodes(bgl_record_t *bgl_record);
 
 /* Initialize all plugin variables */
-int init_bgl(void)
+extern int init_bgl(void)
 {
 #ifdef HAVE_BGL_FILES
 	int rc;
+	rm_BGL_t *bgl;		/* DB2 pointer */
+
 	rm_size3D_t bp_size;
 	if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
 		fatal("init_bgl: rm_set_serial(): %s", bgl_err_str(rc));
@@ -76,6 +78,7 @@ int init_bgl(void)
 	DIM_SIZE[X]=bp_size.X;
 	DIM_SIZE[Y]=bp_size.Y;
 	DIM_SIZE[Z]=bp_size.Z;
+	rm_free_BGL(bgl);
 #endif
 	pa_init(NULL);
 
@@ -85,7 +88,7 @@ int init_bgl(void)
 }
 
 /* Purge all plugin variables */
-void fini_bgl(void)
+extern void fini_bgl(void)
 {
 	_set_bgl_lists();
 	
@@ -109,15 +112,10 @@ void fini_bgl(void)
 	xfree(bluegene_mloader);
 	xfree(bluegene_ramdisk);
 
-
-#ifdef HAVE_BGL_FILES
-	if (bgl)
-		slurm_rm_free_BGL(bgl);
-#endif
 	pa_fini();
 }
 
-void print_bgl_record(bgl_record_t* bgl_record)
+extern void print_bgl_record(bgl_record_t* bgl_record)
 {
 	if (!bgl_record) {
 		error("print_bgl_record, record given is null");
@@ -130,7 +128,8 @@ void print_bgl_record(bgl_record_t* bgl_record)
 		info("\tbgl_part_id: %s", bgl_record->bgl_part_id);
 	info("\tnodes: %s", bgl_record->nodes);
 	info("\tsize: %d", bgl_record->bp_count);
-	info("\tgeo: %dx%dx%d", bgl_record->geo[X],bgl_record->geo[Y],bgl_record->geo[Z]);
+	info("\tgeo: %dx%dx%d", bgl_record->geo[X], bgl_record->geo[Y], 
+		bgl_record->geo[Z]);
 	info("\tlifecycle: %s", convert_lifecycle(bgl_record->part_lifecycle));
 	info("\tconn_type: %s", convert_conn_type(bgl_record->conn_type));
 	info("\tnode_use: %s", convert_node_use(bgl_record->node_use));
@@ -147,7 +146,7 @@ void print_bgl_record(bgl_record_t* bgl_record)
 #endif
 }
 
-void destroy_bgl_record(void* object)
+extern void destroy_bgl_record(void* object)
 {
 	bgl_record_t* bgl_record = (bgl_record_t*) object;
 
@@ -168,7 +167,7 @@ void destroy_bgl_record(void* object)
 	}
 }
 
-char* convert_lifecycle(lifecycle_type_t lifecycle)
+extern char* convert_lifecycle(lifecycle_type_t lifecycle)
 {
 	if (lifecycle == DYNAMIC)
 		return "DYNAMIC";
@@ -176,7 +175,7 @@ char* convert_lifecycle(lifecycle_type_t lifecycle)
 		return "STATIC";
 }
 
-char* convert_conn_type(rm_connection_type_t conn_type)
+extern char* convert_conn_type(rm_connection_type_t conn_type)
 {
 	switch (conn_type) {
 		case (SELECT_MESH): 
@@ -191,7 +190,7 @@ char* convert_conn_type(rm_connection_type_t conn_type)
 	return "";
 }
 
-char* convert_node_use(rm_partition_mode_t pt)
+extern char* convert_node_use(rm_partition_mode_t pt)
 {
 	switch (pt) {
 		case (SELECT_COPROCESSOR_MODE): 
@@ -207,7 +206,7 @@ char* convert_node_use(rm_partition_mode_t pt)
 /** 
  * sort the partitions by increasing size
  */
-void sort_bgl_record_inc_size(List records){
+extern void sort_bgl_record_inc_size(List records){
 	if (records == NULL)
 		return;
 	list_sort(records, (ListCmpF) _bgl_record_cmpf_inc);
@@ -220,7 +219,7 @@ void sort_bgl_record_inc_size(List records){
  * NOTE: I don't grab any locks here because slurm_drain_nodes grabs
  * the necessary locks.
  */
-void *bluegene_agent(void *args)
+extern void *bluegene_agent(void *args)
 {
 	static time_t last_node_test, last_switch_test, now;
 
@@ -251,7 +250,7 @@ void *bluegene_agent(void *args)
  * IN inx - error code from any of the BGL Bridge APIs
  * RET - string describing the error condition
  */
-char *bgl_err_str(status_t inx)
+extern char *bgl_err_str(status_t inx)
 {
 #ifdef HAVE_BGL_FILES
 	switch (inx) {
@@ -290,7 +289,7 @@ char *bgl_err_str(status_t inx)
  *   configurations. Fill in bgl_part_id 
  * RET - success of fitting all configurations
  */
-int create_static_partitions(List part_list)
+extern int create_static_partitions(List part_list)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -348,7 +347,8 @@ static int _addto_node_list(bgl_record_t *bgl_record, int *start, int *end)
 			for (z = start[Z]; z <= end[Z]; z++) {
 				sprintf(node_name_tmp, "bgl%d%d%d", 
 					x, y, z);		
-				hostlist_push(bgl_record->hostlist, node_name_tmp);
+				hostlist_push(bgl_record->hostlist, 
+					node_name_tmp);
 				list_append(bgl_record->bgl_part_list, 
 					    &pa_system_ptr->grid[x][y][z]);
 				node_count++;
@@ -409,7 +409,8 @@ static int _validate_config_nodes(void)
 		/* translate hostlist to ranged string for consistent format */
         	/* search here */
 		itr_curr = list_iterator_create(bgl_curr_part_list);
-		while ((init_record = (bgl_record_t*) list_next(itr_curr)) != NULL) {
+		while ((init_record = (bgl_record_t*) list_next(itr_curr)) 
+				!= NULL) {
 			if (strcasecmp(record->nodes, init_record->nodes)) {
 				continue;	/* wrong nodes */
 			}
@@ -458,7 +459,7 @@ static int _bgl_record_cmpf_inc(bgl_record_t* rec_a, bgl_record_t* rec_b)
 
 
 
-static int _delete_old_partitions()
+static int _delete_old_partitions(void)
 {
 #ifdef HAVE_BGL_FILES
 	int rc;
@@ -504,7 +505,9 @@ static int _delete_old_partitions()
 			debug("Checking if Partition %s is free",part_name);
 			if ((rc = rm_get_partition(part_name, &my_part))
 			    != STATUS_OK) {
-				debug("Above error is ok. Partition %s doesn't exist.",part_name);
+				debug("Above error is ok. "
+					"Partition %s doesn't exist.",
+					part_name);
 				break;
 			}
 			rm_remove_partition(part_name);
@@ -517,8 +520,10 @@ static int _delete_old_partitions()
 	while ((init_record = (bgl_record_t*) list_next(itr_curr))) {
 		part_id=init_record->bgl_part_id;
 		itr_found = list_iterator_create(bgl_found_part_list);
-		while ((found_record = (bgl_record_t*) list_next(itr_found)) != NULL) {
-			if (!strcmp(init_record->bgl_part_id, found_record->bgl_part_id)) {
+		while ((found_record = (bgl_record_t*) list_next(itr_found)) 
+				!= NULL) {
+			if (!strcmp(init_record->bgl_part_id, 
+				found_record->bgl_part_id)) {
 				break;	/* don't reboot this one */
 			}
 		}
@@ -528,7 +533,8 @@ static int _delete_old_partitions()
 			    != STATUS_OK) {
 			} else {
 				
-				debug("removing the jobs on partition %s\n",(char *)part_id);
+				debug("removing the jobs on partition %s\n",
+					(char *)part_id);
 				term_jobs_on_part(part_id);
 
 				debug("destroying %s\n",(char *)part_id);
@@ -551,7 +557,8 @@ static int _delete_old_partitions()
 						error("Error in GetPartition\n");
 						return(-1);
 					}
-					rm_get_data(my_part, RM_PartitionState, &state);
+					rm_get_data(my_part, RM_PartitionState,
+						&state);
 					//Free memory allocated to mypart
 				}
 				rm_remove_partition(part_id);
@@ -576,7 +583,7 @@ static int _delete_old_partitions()
  * Read and process the bluegene.conf configuration file so to interpret what
  * partitions are static/dynamic, torus/mesh, etc.
  */
-int read_bgl_conf(void)
+extern int read_bgl_conf(void)
 {
 	FILE *bgl_spec_file;	/* pointer to input data file */
 	int line_num;		/* line number in input file */

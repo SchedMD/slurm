@@ -51,10 +51,11 @@ static int _post_allocate(bgl_record_t *bgl_record);
 static int _part_list_find(void *object, void *key);
 static int _post_bgl_init_read(void *object, void *arg);
 
-/** 
+#if 0
+/* Vestigial
  * print out a list
  */
-void print_list(List list)
+static void _print_list(List list)
 {
 	int* stuff = NULL, i = 0;
 	ListIterator itr;
@@ -81,19 +82,25 @@ void print_list(List list)
 	}
 	list_iterator_destroy(itr);
 }
-
+#endif
 
 /** 
  * initialize the BGL partition in the resource manager 
  */
 static void _pre_allocate(bgl_record_t *bgl_record)
 {
-	rm_set_data(bgl_record->bgl_part, RM_PartitionBlrtsImg,   bluegene_blrts);
-	rm_set_data(bgl_record->bgl_part, RM_PartitionLinuxImg,   bluegene_linux);
-	rm_set_data(bgl_record->bgl_part, RM_PartitionMloaderImg, bluegene_mloader);
-	rm_set_data(bgl_record->bgl_part, RM_PartitionRamdiskImg, bluegene_ramdisk);
-	rm_set_data(bgl_record->bgl_part, RM_PartitionConnection, &bgl_record->conn_type);
-	rm_set_data(bgl_record->bgl_part, RM_PartitionMode, &bgl_record->node_use);
+	rm_set_data(bgl_record->bgl_part, RM_PartitionBlrtsImg,   
+		bluegene_blrts);
+	rm_set_data(bgl_record->bgl_part, RM_PartitionLinuxImg,   
+		bluegene_linux);
+	rm_set_data(bgl_record->bgl_part, RM_PartitionMloaderImg, 
+		bluegene_mloader);
+	rm_set_data(bgl_record->bgl_part, RM_PartitionRamdiskImg, 
+		bluegene_ramdisk);
+	rm_set_data(bgl_record->bgl_part, RM_PartitionConnection, 
+		&bgl_record->conn_type);
+	rm_set_data(bgl_record->bgl_part, RM_PartitionMode, 
+		&bgl_record->node_use);
 	rm_set_data(bgl_record->bgl_part, RM_PartitionUserName, USER_NAME);
 }
 
@@ -143,7 +150,7 @@ static int _post_allocate(bgl_record_t *bgl_record)
 }
 
 
-int configure_partition(bgl_record_t *bgl_record)
+extern int configure_partition(bgl_record_t *bgl_record)
 {
 	rm_new_partition(&bgl_record->bgl_part); /* new partition to be added */
 	_pre_allocate(bgl_record);
