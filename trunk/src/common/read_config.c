@@ -87,6 +87,35 @@ getnodename (char *name, size_t len)
 	return 0;
 }
 
+/* 
+ * free_slurm_conf - free all storage associated with a slurm_ctl_conf_t.   
+ * IN/OUT ctl_conf_ptr - pointer to data structure to be freed
+ */
+void
+free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
+{
+	xfree (ctl_conf_ptr->authtype);
+	xfree (ctl_conf_ptr->backup_addr);
+	xfree (ctl_conf_ptr->backup_controller);
+	xfree (ctl_conf_ptr->control_addr);
+	xfree (ctl_conf_ptr->control_machine);
+	xfree (ctl_conf_ptr->epilog);
+	xfree (ctl_conf_ptr->job_credential_private_key);
+	xfree (ctl_conf_ptr->job_credential_public_certificate);
+	xfree (ctl_conf_ptr->plugindir);
+	xfree (ctl_conf_ptr->prioritize);
+	xfree (ctl_conf_ptr->prolog);
+	xfree (ctl_conf_ptr->slurm_conf);
+	xfree (ctl_conf_ptr->slurm_user_name);
+	xfree (ctl_conf_ptr->slurmctld_logfile);
+	xfree (ctl_conf_ptr->slurmctld_pidfile);
+	xfree (ctl_conf_ptr->slurmd_logfile);
+	xfree (ctl_conf_ptr->slurmd_pidfile);
+	xfree (ctl_conf_ptr->slurmd_spooldir);
+	xfree (ctl_conf_ptr->state_save_location);
+	xfree (ctl_conf_ptr->tmp_fs);
+}
+
 
 
 /* 
@@ -132,8 +161,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->slurmd_spooldir);
 	ctl_conf_ptr->slurmd_timeout		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->state_save_location);
-	xfree (ctl_conf_ptr->plugindir);
-	xfree (ctl_conf_ptr->authtype );
 	xfree (ctl_conf_ptr->tmp_fs);
 	ctl_conf_ptr->wait_time			= (uint16_t) NO_VAL;
 	return;
