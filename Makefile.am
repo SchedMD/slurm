@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = foreign
 
 SUBDIRS    = src testsuite doc
 
-EXTRA_DIST =	\
+EXTRA_DIST =			\
 	etc/slurm.conf.example	\
 	etc/init.d.slurm	\
 	autogen.sh		\
@@ -16,15 +16,15 @@ EXTRA_DIST =	\
  	META
 	
 slurmincludedir=$(includedir)/slurm
-slurminclude_HEADERS =	\
+slurminclude_HEADERS =		\
 	slurm/slurm.h 		\
 	slurm/slurm_errno.h
 
-MAINTAINERCLEANFILES = 			\
-	aclocal.m4 config.guess 	\
-	config.h.in config.sub configure install-sh \
-	ltconfig ltmain.sh missing mkinstalldirs \
-	slurm/slurm.h	\
+MAINTAINERCLEANFILES = 					\
+	aclocal.m4 config.guess 			\
+	config.h.in config.sub configure install-sh 	\
+	ltconfig ltmain.sh missing mkinstalldirs 	\
+	slurm/slurm.h					\
 	stamp-h.in
 
 include $(top_srcdir)/Make-rpm.mk
