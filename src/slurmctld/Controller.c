@@ -32,29 +32,47 @@ extern List   Part_Record_List;		/* List of Part_Records */
 main(int argc, char * argv[]) {
     int Error_Code, Line_Num;
     char In_Line[BUF_SIZE];	/* Input line */
+    char Node_Name[MAX_NAME_LEN];
     char *Node_List;		/* List of nodes assigned to the job */
     FILE *Job_Spec_File;	/* Pointer to input data file */
 
-    if (argc < 4) {
-	printf("Usage: %s <node_in_file> <part_in_file> <job_specs_file>\n", argv[0]);
+    if (argc < 3) {
+	printf("Usage: %s <slurm_conf_file> <job_specs_file>\n", argv[0]);
 	exit(0);
     } /* if */
 
-    Error_Code = Read_Node_Spec_Conf(argv[1]);
+    Init_SLURM_Conf();
+    Error_Code = Read_SLURM_Conf(argv[1]);
+    if (Error_Code != 0) {
+	printf("Error %d from Read_SLURM_Conf\n", Error_Code);
+	exit(1);
+    } /* if */
+
+    Error_Code = gethostname(Node_Name, MAX_NAME_LEN);
+    if (Error_Code != 0) {
+	fprintf(stderr, "Read_SLURM_Conf: gethostname error %d\n", Error_Code);
+    } /* if */
+    if ((strcmp(Node_Name,ControlMachine) != 0) && (strcmp(Node_Name,BackupController) != 0)) {
+	printf("This machine (%s) is not a valid control machine (%s or %s)\n", 
+		Node_Name, ControlMachine, BackupController);
+	exit(1);
+    } /* if */
+
+    Error_Code = Read_Node_Spec_Conf(NodeSpecConf);
     if (Error_Code != 0) {
 	printf("Error %d from Read_Node_Spec_Conf\n", Error_Code);
 	exit(1);
     } /* if */
 
-    Error_Code = Read_Part_Spec_Conf(argv[2]);
+    Error_Code = Read_Part_Spec_Conf(PartitionConf);
     if (Error_Code != 0) {
 	printf("Error %d from Read_Part_Spec_Conf", Error_Code);
 	exit(1);
     } /* if */
 
-    Job_Spec_File = fopen(argv[3], "r");
+    Job_Spec_File = fopen(argv[2], "r");
     if (Job_Spec_File == NULL) {
-	fprintf(stderr, "Read_Node_Spec_Conf: error %d opening file %s\n", errno, argv[3]);
+	fprintf(stderr, "Read_Node_Spec_Conf: error %d opening file %s\n", errno, argv[2]);
 	exit(1);
     } /* if */
 
@@ -63,7 +81,7 @@ main(int argc, char * argv[]) {
 	Line_Num++;
 	if (strlen(In_Line) >= (BUF_SIZE-1)) {
 	    fprintf(stderr, "Controller: line %d, of input file %s too long\n", 
-		Line_Num, argv[3]);
+		Line_Num, argv[2]);
 	    exit(1);
 	} /* if */
 

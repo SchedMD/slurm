@@ -25,15 +25,13 @@
 #define DEFAULT_CONTROL_DAEMON  "/usr/local/SLURM/Slurmd.Control"
 #define DEFAULT_SERVER_DAEMON   "/usr/local/SLURM/Slurmd"
 
-#ifndef SLURM_CONFIG_SET
-extern char *Administrators;
-extern char *ControlMachine;
-extern char *BackupController;
-extern char *NodeSpecConf;
-extern char *PartitionConf;
-extern char *ControlDaemon;
-extern char *ServerDaemon;
-#endif
+char *Administrators;
+char *ControlMachine;
+char *BackupController;
+char *NodeSpecConf;
+char *PartitionConf;
+char *ControlDaemon;
+char *ServerDaemon;
 
 /* Last entry must be "END" */
 enum Node_State {
@@ -104,11 +102,18 @@ struct Node_Record *Find_Node_Record(char *name);
  */
 int Find_Valid_Parts (char *Specification, unsigned *Partition);
 
+/* 
+ * Init_SLURM_Conf - Initialize the SLURM configuration values. This should be called 
+ * before ever calling Read_SLURM_Conf.
+ */
+void Init_SLURM_Conf();
+
 /*
- * Read_Node_Spec_Conf - Load the node specification information from the specified file 
- * NOTE: Call this routine must be called at SLURM Controller daemon startup
- * Input: File_Name - Name of the file containing node specification
- * Output: return - 0 if no error, otherwise errno
+ * Read_SLURM_Conf - Load the overall SLURM configuration from the specified file 
+ * Call Init_SLURM_Conf before ever calling Read_SLURM_Conf.  
+ * Read_SLURM_Conf can be called more than once if so desired.
+ * Input: File_Name - Name of the file containing overall SLURM configuration information
+ * Output: return - 0 if no error, otherwise an error code
  */
 int Read_Node_Spec_Conf (char *File_Name);
 

@@ -9,19 +9,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#define SLURM_CONFIG_SET
-static char *Administrators = NULL;
-static char *ControlMachine = NULL;
-static char *BackupController = NULL;
-static char *NodeSpecConf = NULL;
-static char *PartitionConf = NULL;
-static char *ControlDaemon = NULL;
-static char *ServerDaemon = NULL;
-
 #include "slurm.h"
 
 #define BUF_SIZE 1024
-#define DEBUG_MODULE 1
+#define DEBUG_MODULE 0
 #define DEBUG_SYSTEM 1
 #define SEPCHARS " \n\t"
 
@@ -36,6 +27,7 @@ main(int argc, char * argv[]) {
 	exit(0);
     } /* if */
 
+    Init_SLURM_Conf();
     Error_Code = Read_SLURM_Conf(argv[1]);
     if (Error_Code != 0) {
 	printf("Error %d from Read_SLURM_Conf", Error_Code);
@@ -55,8 +47,25 @@ main(int argc, char * argv[]) {
 #endif
 
 
+/* 
+ * Init_SLURM_Conf - Initialize the SLURM configuration values. This should be called 
+ * before ever calling Read_SLURM_Conf.
+ */
+void Init_SLURM_Conf() {
+    Administrators = NULL;
+    ControlMachine = NULL;
+    BackupController = NULL;
+    NodeSpecConf = NULL;
+    PartitionConf = NULL;
+    ControlDaemon = NULL;
+    ServerDaemon = NULL;
+} /* Init_SLURM_Conf */
+
+
 /*
  * Read_SLURM_Conf - Load the overall SLURM configuration from the specified file 
+ * Call Init_SLURM_Conf before ever calling Read_SLURM_Conf.  
+ * Read_SLURM_Conf can be called more than once if so desired.
  * Input: File_Name - Name of the file containing overall SLURM configuration information
  * Output: return - 0 if no error, otherwise an error code
  */
@@ -259,7 +268,18 @@ int Read_SLURM_Conf (char *File_Name) {
 	return EINVAL;
     } /* if */
 
-/*  if (BackupController == NULL) */
+    if (BackupController == NULL) {
+	BackupController = (char *)malloc(1);
+	if (BackupController == NULL) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Read_SLURM_Conf: unable to allocate memory\n");
+#else
+	    syslog(LOG_ALERT, "Read_SLURM_Conf: unable to allocate memory\n")
+#endif
+	    return ENOMEM;
+	} /* if */
+	strcpy(BackupController, "");
+    } /* if */
 
     if (NodeSpecConf == NULL)  {
 	NodeSpecConf = (char *)malloc(strlen(DEFAULT_NODE_SPEC_CONF)+1);
