@@ -708,7 +708,7 @@ static void _read_part_db2(void)
 			/* New BGL partition record */
 			rm_connection_type_t conn_type;
 			rm_partition_mode_t node_use;
-			char *name;
+
 			if ((rc = rm_get_partition(part_id, &part_ptr))
 			    != STATUS_OK) {
 				fprintf(stderr, "rm_get_partition(%s): %s\n",
@@ -718,7 +718,6 @@ static void _read_part_db2(void)
 			block_ptr = xmalloc(sizeof(db2_block_info_t));
 			list_push(block_list, block_ptr);
 			block_ptr->bgl_block_name = xstrdup(part_id);
-			
 
 			if ((rc = rm_get_data(part_ptr, 
 					      RM_PartitionState, 
