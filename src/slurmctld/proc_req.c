@@ -499,8 +499,13 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 
 	req_step_msg.job_id     = job_id;
 	req_step_msg.user_id    = job_desc_msg->user_id;
+#ifdef HAVE_BGL
+	req_step_msg.node_count = 1;
+	req_step_msg.cpu_count  = NO_VAL;
+#else
 	req_step_msg.node_count = INFINITE;
 	req_step_msg.cpu_count  = job_desc_msg->num_procs;
+#endif
 	req_step_msg.num_tasks  = job_desc_msg->num_tasks;
 	req_step_msg.task_dist  = job_desc_msg->task_dist;
 	error_code = step_create(&req_step_msg, &step_rec, true);
@@ -947,6 +952,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_JOB_STEP_CREATE");
+
 	dump_step_desc(req_step_msg);
 	uid = g_slurm_auth_get_uid(msg->cred);
 	if ( (uid != req_step_msg->user_id) && (!_is_super_user(uid)) ) {
@@ -1007,6 +1013,7 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_JOB_STEP_INFO");
+
 	lock_slurmctld(job_read_lock);
 
 	if ((request->last_update - 1) >= last_job_update) {
@@ -1119,16 +1126,23 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 	uid = g_slurm_auth_get_uid(msg->cred);
 	if (!_is_super_user(uid)) {
 		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation,  NODE_REGISTER RPC from uid=%u",
+		error("Security violation, NODE_REGISTER RPC from uid=%u",
 		      (unsigned int) uid);
 	}
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
 		lock_slurmctld(job_write_lock);
+#ifdef HAVE_BGL
+		error_code = validate_nodes_via_front_end(
+					node_reg_stat_msg->job_count,
+					node_reg_stat_msg->job_id,
+					node_reg_stat_msg->step_id,
+					node_reg_stat_msg->status);
+#else
 		validate_jobs_on_node(node_reg_stat_msg->node_name,
-				      &node_reg_stat_msg->job_count,
-				      node_reg_stat_msg->job_id,
-				      node_reg_stat_msg->step_id);
+					&node_reg_stat_msg->job_count,
+					node_reg_stat_msg->job_id,
+					node_reg_stat_msg->step_id);
 		error_code =
 		    validate_node_specs(node_reg_stat_msg->node_name,
 					node_reg_stat_msg->cpus,
@@ -1138,6 +1152,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 					temporary_disk_space,
 					node_reg_stat_msg->job_count,
 					node_reg_stat_msg->status);
+#endif
 		unlock_slurmctld(job_write_lock);
 		END_TIMER;
 	}

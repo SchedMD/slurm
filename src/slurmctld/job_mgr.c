@@ -103,7 +103,6 @@ static void _job_timed_out(struct job_record *job_ptr);
 static int  _job_create(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		        int allocate, int will_run,
 		        struct job_record **job_rec_ptr, uid_t submit_uid);
-static void _kill_job_on_node(uint32_t job_id, struct node_record *node_ptr);
 static void _list_delete_job(void *job_entry);
 static int  _list_find_job_id(void *job_entry, void *key);
 static int  _list_find_job_old(void *job_entry, void *key);
@@ -3098,7 +3097,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 		if (job_ptr == NULL) {
 			error("Orphan job %u.%u reported on node %s",
 			      job_id_ptr[i], step_id_ptr[i], node_name);
-			_kill_job_on_node(job_id_ptr[i], node_ptr);
+			kill_job_on_node(job_id_ptr[i], node_ptr);
 		}
 
 		else if (job_ptr->job_state == JOB_RUNNING) {
@@ -3117,14 +3116,14 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 				error
 				    ("Registered job %u.%u on wrong node %s ",
 				     job_id_ptr[i], step_id_ptr[i], node_name);
-				_kill_job_on_node(job_id_ptr[i], node_ptr);
+				kill_job_on_node(job_id_ptr[i], node_ptr);
 			}
 		}
 
 		else if (job_ptr->job_state & JOB_COMPLETING) {
 			/* Re-send kill request as needed, 
 			 * not necessarily an error */
-			_kill_job_on_node(job_id_ptr[i], node_ptr);
+			kill_job_on_node(job_id_ptr[i], node_ptr);
 		}
 
 
@@ -3136,7 +3135,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 			last_job_update    = now;
 			job_ptr->end_time  = now;
 			delete_job_details(job_ptr);
-			_kill_job_on_node(job_id_ptr[i], node_ptr);
+			kill_job_on_node(job_id_ptr[i], node_ptr);
 			job_completion_logger(job_ptr);
 		}
 
@@ -3146,7 +3145,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 			     job_id_ptr[i], step_id_ptr[i], 
 			     job_state_string(job_ptr->job_state),
 			     node_name);
-			_kill_job_on_node(job_id_ptr[i], node_ptr);
+			kill_job_on_node(job_id_ptr[i], node_ptr);
 		}
 	}
 
@@ -3190,7 +3189,7 @@ static void _purge_lost_batch_jobs(int node_inx, time_t now)
 }
 
 /*
- * _kill_job_on_node - Kill the specific job_id on a specific node,
+ * kill_job_on_node - Kill the specific job_id on a specific node,
  *	the request is not processed immediately, but queued. 
  *	This is to prevent a flood of pthreads if slurmctld restarts 
  *	without saved state and slurmd daemons register with a 
@@ -3200,8 +3199,8 @@ static void _purge_lost_batch_jobs(int node_inx, time_t now)
  * IN job_id - id of the job to be killed
  * IN node_ptr - pointer to the node on which the job resides
  */
-static void
-_kill_job_on_node(uint32_t job_id, struct node_record *node_ptr)
+extern void
+kill_job_on_node(uint32_t job_id, struct node_record *node_ptr)
 {
 	agent_arg_t *agent_info;
 	kill_job_msg_t *kill_req;
@@ -3435,9 +3434,28 @@ bool job_epilog_complete(uint32_t job_id, char *node_name,
 		uint32_t return_code)
 {
 	struct job_record  *job_ptr = find_job_record(job_id);
+#ifdef HAVE_BGL
+	int i;
+	struct node_record *node_ptr;
+#endif
 
 	if (job_ptr == NULL)
 		return true;
+
+#ifdef HAVE_BGL
+	if (return_code)
+		error("Epilog error on %s, setting DOWN", 
+			job_ptr->nodes);
+	for (i=0; i<node_record_count; i++) {
+		if (!bit_test(job_ptr->node_bitmap, i))
+			continue;
+		node_ptr = &node_record_table_ptr[i];
+		if (return_code)
+			set_node_down(node_ptr->name, "Epilog error");
+		else
+			make_node_idle(node_ptr, job_ptr);
+	}
+#else
 	if (return_code) {
 		error("Epilog error on %s, setting DOWN", node_name);
 		set_node_down(node_name, "Epilog error");
@@ -3446,6 +3464,7 @@ bool job_epilog_complete(uint32_t job_id, char *node_name,
 		if (node_ptr)
 			make_node_idle(node_ptr, job_ptr);
 	}
+#endif
 
 	if (!(job_ptr->job_state & JOB_COMPLETING))	/* COMPLETED */
 		return true;

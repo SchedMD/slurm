@@ -754,6 +754,20 @@ extern void job_time_limit (void);
 extern int kill_job_by_part_name(char *part_name);
 
 /*
+ * kill_job_on_node - Kill the specific job_id on a specific node,
+ *	the request is not processed immediately, but queued. 
+ *	This is to prevent a flood of pthreads if slurmctld restarts 
+ *	without saved state and slurmd daemons register with a 
+ *	multitude of running jobs. Slurmctld will not recognize 
+ *	these jobs and use this function to kill them - one 
+ *	agent request per node as they register.
+ * IN job_id - id of the job to be killed
+ * IN node_ptr - pointer to the node on which the job resides
+ */
+extern void kill_job_on_node(uint32_t job_id, 
+		struct node_record *node_ptr);
+
+/*
  * kill_running_job_by_node_name - Given a node name, deallocate jobs 
  *	from the node or kill them 
  * IN node_name - name of a node
@@ -1180,5 +1194,21 @@ extern int validate_node_specs (char *node_name,
 				uint32_t cpus, uint32_t real_memory, 
 				uint32_t tmp_disk, uint32_t job_count,
 				uint32_t status);
+
+/*
+ * validate_nodes_via_front_end - validate all nodes on a cluster as having
+ *	a valid configuration as soon as the front-end registers. Individual
+ *	nodes will not register with this configuration
+ * IN job_count - number of jobs which should be running on cluster
+ * IN job_id_ptr - pointer to array of job_ids that should be on cluster
+ * IN step_id_ptr - pointer to array of job step ids that should be on cluster
+ * IN status - cluster status code
+ * RET 0 if no error, SLURM error code otherwise
+ * global: node_record_table_ptr - pointer to global node table
+ * NOTE: READ lock_slurmctld config before entry
+ */
+extern int validate_nodes_via_front_end(uint32_t job_count, 
+			uint32_t *job_id_ptr, uint16_t *step_id_ptr,
+			uint32_t status);
 
 #endif /* !_HAVE_SLURM_H */
