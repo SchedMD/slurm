@@ -969,14 +969,14 @@ extern int update_part (update_part_msg_t * part_desc );
 extern int validate_group (struct part_record *part_ptr, uid_t submit_uid);
 
 /*
- * validate_node_specs - validate the node's specifications as valid, 
- *   if not set state to down, in any case update last_response
- * IN node_name - name of the node
- * IN cpus - number of cpus measured
- * IN real_memory - mega_bytes of real_memory measured
- * IN tmp_disk - mega_bytes of tmp_disk measured
- * RET 0 if no error, ENOENT if no such node, EINVAL if values too low
- * global: node_record_table_ptr - pointer to global node table
+ * validate_jobs_on_node - validate that any jobs that should be on the node 
+ *	are actually running, if not clean up the job records and/or node 
+ *	records, call this function after validate_node_specs() sets the node 
+ *	state properly 
+ * IN node_name - node which should have jobs running
+ * IN job_count - number of jobs which should be running on specified node
+ * IN job_id_ptr - pointer to array of job_ids that should be on this node
+ * IN step_id_ptr - pointer to array of job step ids that should be on node
  */
 extern void validate_jobs_on_node ( char *node_name, uint32_t *job_count, 
 			uint32_t *job_id_ptr, uint16_t *step_id_ptr);
