@@ -17,7 +17,40 @@
 /* EXTERNAL VARIABLES */
 
 /* #DEFINES */
+#define SLURM_PORT 7000
+#define SLURM_PROTOCOL_DEFAULT_PORT 7000
+#define SLURM_PROTOCOL_DEFAULT_PRIMARY_CONTROLLER "localhost"
+#define SLURM_PROTOCOL_DEFAULT_SECONDARY_CONTROLLER "localhost"
 
+/* STATIC VARIABLES */
+static slurm_protocol_config_t * proto_conf = NULL ;
+static slurm_protocol_config_t proto_conf_default ;
+
+
+/************************/
+/***** API init functions */
+/************************/
+int slurm_api_init ( slurm_protocol_config_t * protocol_conf )
+{
+	proto_conf = protocol_conf ;
+	return SLURM_SUCCESS ;
+}
+
+int slurm_api_cleanup ( )
+{
+	return SLURM_SUCCESS ;
+}
+
+int slurm_api_set_defaults ( )
+{
+	if ( proto_conf == NULL )
+	{
+		slurm_set_addr ( & proto_conf_default . primary_controller , SLURM_PROTOCOL_DEFAULT_PORT , SLURM_PROTOCOL_DEFAULT_PRIMARY_CONTROLLER ) ;
+		slurm_set_addr ( & proto_conf_default . secondary_controller , SLURM_PROTOCOL_DEFAULT_PORT , SLURM_PROTOCOL_DEFAULT_SECONDARY_CONTROLLER ) ;
+
+	}	
+	return SLURM_SUCCESS ;
+}
 
 /************************/
 /***** msg functions */
@@ -81,19 +114,15 @@ slurm_fd slurm_open_msg_conn ( slurm_addr * slurm_address )
 slurm_fd slurm_open_controller_conn ( )
 {
 	slurm_fd connection_fd ;
-	slurm_addr primary_destination_address ;
-	slurm_addr secondary_destination_address ;
-
-	/* set slurm_addr structures */
-	slurm_set_addr ( & primary_destination_address , SLURM_PORT , PRIMARY_SLURM_CONTROLLER ) ;
-	slurm_set_addr ( & secondary_destination_address , SLURM_PORT , SECONDARY_SLURM_CONTROLLER ) ;
 	
+	slurm_api_set_defaults ( ) ;
+
 	/* try to send to primary first then secondary */	
-	if ( ( connection_fd = slurm_open_msg_conn ( & primary_destination_address ) ) == SLURM_SOCKET_ERROR )
+	if ( ( connection_fd = slurm_open_msg_conn ( & proto_conf -> primary_controller ) ) == SLURM_SOCKET_ERROR )
 	{
 		info  ( "Send message to primary controller failed" ) ;
 		
-		if ( ( connection_fd = slurm_open_msg_conn ( & secondary_destination_address ) ) ==  SLURM_SOCKET_ERROR )	
+		if ( ( connection_fd = slurm_open_msg_conn ( & proto_conf -> secondary_controller ) ) ==  SLURM_SOCKET_ERROR )	
 		{
 			info  ( "Send messge to secondary controller failed" ) ;
 		}
@@ -170,19 +199,12 @@ int slurm_receive_msg ( slurm_fd open_fd , slurm_msg_t * msg )
 int slurm_send_controller_msg ( slurm_fd open_fd , slurm_msg_t * msg )
 {
 	int rc ;
-	slurm_addr primary_destination_address ;
-	slurm_addr secondary_destination_address ;
-
-	/* set slurm_addr structures */
-	slurm_set_addr ( & primary_destination_address , SLURM_PORT , PRIMARY_SLURM_CONTROLLER ) ;
-	slurm_set_addr ( & secondary_destination_address , SLURM_PORT , SECONDARY_SLURM_CONTROLLER ) ;
-	
 	/* try to send to primary first then secondary */	
-	msg -> address = primary_destination_address ;
+	msg -> address = proto_conf -> primary_controller ; 
 	if ( (rc = slurm_send_node_msg ( open_fd , msg ) ) == SLURM_SOCKET_ERROR )
 	{
 		info  ( "Send message to primary controller failed" ) ;
-		msg -> address = secondary_destination_address ;
+		msg -> address = proto_conf -> secondary_controller ;
 		if ( (rc = slurm_send_node_msg ( open_fd , msg ) ) ==  SLURM_SOCKET_ERROR )	
 		{
 			info  ( "Send messge to secondary controller failed" ) ;
@@ -276,19 +298,13 @@ int slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slur
 int slurm_send_controller_buffer ( slurm_fd open_fd , slurm_msg_type_t msg_type , char * data_buffer , size_t buf_len )
 {
 	int rc ;
-	slurm_addr primary_destination_address ;
-	slurm_addr secondary_destination_address ;
-
-	/* set slurm_addr structures */
-	slurm_set_addr ( & primary_destination_address , SLURM_PORT , PRIMARY_SLURM_CONTROLLER ) ;
-	slurm_set_addr ( & secondary_destination_address , SLURM_PORT , SECONDARY_SLURM_CONTROLLER ) ;
 
 	/* try to send to primary first then secondary */	
-	if ( ( rc = slurm_send_node_buffer ( open_fd , & primary_destination_address , msg_type , data_buffer , buf_len ) ) == SLURM_SOCKET_ERROR )	
+	if ( ( rc = slurm_send_node_buffer ( open_fd ,  & proto_conf -> primary_controller , msg_type , data_buffer , buf_len ) ) == SLURM_SOCKET_ERROR )	
 	{
 		info  ( "Send message to primary controller failed" ) ;
 		
-		if ( ( rc = slurm_send_node_buffer ( open_fd , & secondary_destination_address , msg_type , data_buffer , buf_len ) ) == SLURM_SOCKET_ERROR )
+		if ( ( rc = slurm_send_node_buffer ( open_fd ,  & proto_conf -> secondary_controller , msg_type , data_buffer , buf_len ) ) == SLURM_SOCKET_ERROR )
 		{
 			info  ( "Send messge to secondary controller failed" ) ;
 		}
