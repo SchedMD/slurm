@@ -209,6 +209,10 @@ void slurmctld_req (slurm_msg_t * msg)
 		_slurm_rpc_update_partition(msg);
 		slurm_free_update_part_msg(msg->data);
 		break;
+	case  REQUEST_NODE_REGISTRATION_STATUS:
+		error("slurmctld is talking with itself. SlurmctldPort == SlurmdPort");
+		slurm_send_rc_msg(msg, EINVAL);
+		break;
 	default:
 		error("invalid RPC msg_type=%d", msg->msg_type);
 		slurm_send_rc_msg(msg, EINVAL);
