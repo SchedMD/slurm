@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
  -- Add Blue Gene User Guide to html documents
  -- Fix srun bug that could cause seg fault with --no-shell option if not 
     running under a debugger
+ -- Propogate job's task count (if set) for batch job via SLURM_NPROCS.
 
 * Changes in SLURM 0.4.0-pre2
 =============================
