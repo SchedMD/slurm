@@ -22,6 +22,7 @@ documents those changes that are of interest to users and admins.
     moved from common into plugin modules
  -- Documentation for writing scheduler, switch, and job completion 
     logging plugins added
+ -- Added job and node state descriptions to the squeue and sinfo man pages
 
 * Changes in SLURM 0.3.0.0-pre6
 ===============================
