@@ -164,6 +164,7 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 			/* We issue the KILL RPC, but don't verify on DOWN nodes */
 			down_node_cnt++;
 			bit_clear(job_ptr->node_bitmap, i);
+			job_ptr->node_cnt--;
 		}
 		if ((agent_args->node_count + 1) > buf_rec_size) {
 			buf_rec_size += 32;
