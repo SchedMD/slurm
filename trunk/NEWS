@@ -6,6 +6,9 @@ documents those changes that are of interest to users and admins.
  -- Minor tweak to init.d/slurm for BlueGene systems.
  -- Added smap RPM package (to install binary built on BlueGene 
     service node on front-end nodes).
+ -- Added wait between bglblock destroy and creation of new blocks
+    so that MMCS can complete the operation.
+ -- Fix bug in synchronizing bglblock owners on slurmctld restart.
 
 * Changes in SLURM 0.4.0-pre11
 ==============================
