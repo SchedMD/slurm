@@ -109,7 +109,7 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 	int bit_position;
 	slurm_addr * addr;
 	srun_node_fail_msg_t *msg_arg;
-	ListIterator step_record_iterator;
+	ListIterator step_iterator;
 	struct step_record *step_ptr;
 
 	xassert(job_ptr);
@@ -132,9 +132,8 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 	}
 
 
-	step_record_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = (struct step_record *) 
-				list_next(step_record_iterator))) {
+	step_iterator = list_iterator_create(job_ptr->step_list);
+	while ((step_ptr = (struct step_record *) list_next(step_iterator))) {
 		if (!bit_test(step_ptr->step_node_bitmap, bit_position))
 			continue;	/* job step not on this node */
 		if ( (step_ptr->port    == 0)    || 
@@ -150,15 +149,15 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 		_srun_agent_launch(addr, step_ptr->host, SRUN_NODE_FAIL, 
 				msg_arg);
 	}	
-	list_iterator_destroy(step_record_iterator);
+	list_iterator_destroy(step_iterator);
 }
 
 /* srun_ping - ping all srun commands that have not been heard from recently */
 extern void srun_ping (void)
 {
-	ListIterator job_record_iterator;
+	ListIterator job_iterator;
 	struct job_record *job_ptr;
-	ListIterator step_record_iterator;
+	ListIterator step_iterator;
 	struct step_record *step_ptr;
 	slurm_addr * addr;
 	time_t now = time(NULL);
@@ -168,9 +167,8 @@ extern void srun_ping (void)
 	if (slurmctld_conf.inactive_limit == 0)
 		return;		/* No limit, don't bother pinging */
 
-	job_record_iterator = list_iterator_create(job_list);
-	while ((job_ptr =
-		(struct job_record *) list_next(job_record_iterator))) {
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 		if (job_ptr->job_state != JOB_RUNNING)
 			continue;
@@ -185,9 +183,9 @@ extern void srun_ping (void)
 				msg_arg);
 		}
 
-		step_record_iterator = list_iterator_create(job_ptr->step_list);
+		step_iterator = list_iterator_create(job_ptr->step_list);
 		while ((step_ptr = (struct step_record *) 
-				list_next(step_record_iterator))) {
+				list_next(step_iterator))) {
 			if ( (step_ptr->time_last_active > old) ||
 			     (step_ptr->port    == 0)    || 
 			     (step_ptr->host    == NULL) ||
@@ -201,10 +199,10 @@ extern void srun_ping (void)
 			_srun_agent_launch(addr, step_ptr->host, SRUN_PING, 
 				msg_arg);
 		}	
-		list_iterator_destroy(step_record_iterator);
+		list_iterator_destroy(step_iterator);
 	}
 
-	list_iterator_destroy(job_record_iterator);
+	list_iterator_destroy(job_iterator);
 }
 
 /*
@@ -217,7 +215,7 @@ extern void srun_timeout (uint32_t job_id, time_t timeout)
 	struct job_record *job_ptr = find_job_record (job_id);
 	slurm_addr * addr;
 	srun_timeout_msg_t *msg_arg;
-	ListIterator step_record_iterator;
+	ListIterator step_iterator;
 	struct step_record *step_ptr;
 
 	xassert(job_ptr);
@@ -236,9 +234,8 @@ extern void srun_timeout (uint32_t job_id, time_t timeout)
 	}
 
 
-	step_record_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = (struct step_record *) 
-				list_next(step_record_iterator))) {
+	step_iterator = list_iterator_create(job_ptr->step_list);
+	while ((step_ptr = (struct step_record *) list_next(step_iterator))) {
 		if ( (step_ptr->port    == 0)    || 
 		     (step_ptr->host    == NULL) ||
 		     (step_ptr->host[0] == '\0') )
@@ -252,7 +249,7 @@ extern void srun_timeout (uint32_t job_id, time_t timeout)
 		_srun_agent_launch(addr, step_ptr->host, SRUN_TIMEOUT, 
 				msg_arg);
 	}	
-	list_iterator_destroy(step_record_iterator);
+	list_iterator_destroy(step_iterator);
 }
 
 /*

@@ -60,21 +60,20 @@ static bitstr_t * _pick_step_nodes (struct job_record  *job_ptr,
 struct step_record * 
 create_step_record (struct job_record *job_ptr) 
 {
-	struct step_record *step_record_point;
+	struct step_record *step_ptr;
 
 	xassert(job_ptr);
-	step_record_point = 
-		(struct step_record *) xmalloc (sizeof (struct step_record));
+	step_ptr = (struct step_record *) xmalloc (sizeof (struct step_record));
 
 	last_job_update = time(NULL);
-	step_record_point->job_ptr = job_ptr; 
-	step_record_point->step_id = (job_ptr->next_step_id)++;
-	step_record_point->start_time = time ( NULL ) ;
+	step_ptr->job_ptr = job_ptr; 
+	step_ptr->step_id = (job_ptr->next_step_id)++;
+	step_ptr->start_time = time ( NULL ) ;
 
-	if (list_append (job_ptr->step_list, step_record_point) == NULL)
+	if (list_append (job_ptr->step_list, step_ptr) == NULL)
 		fatal ("create_step_record: unable to allocate memory");
 
-	return step_record_point;
+	return step_ptr;
 }
 
 
@@ -173,21 +172,20 @@ dump_step_desc(step_specs *step_spec)
 struct step_record *
 find_step_record(struct job_record *job_ptr, uint16_t step_id) 
 {
-	ListIterator step_record_iterator;
+	ListIterator step_iterator;
 	struct step_record *step_ptr;
 
 	if (job_ptr == NULL)
 		return NULL;
 
-	step_record_iterator = list_iterator_create (job_ptr->step_list);		
-	while ((step_ptr = (struct step_record *) 
-			   list_next (step_record_iterator))) {
+	step_iterator = list_iterator_create (job_ptr->step_list);
+	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		if (step_ptr->step_id == step_id) {
 			break;
 		}
 	}		
 
-	list_iterator_destroy (step_record_iterator);
+	list_iterator_destroy (step_iterator);
 	return step_ptr;
 }
 
@@ -584,8 +582,8 @@ static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer)
 int pack_ctld_job_step_info_response_msg(uint32_t job_id, 
 				         uint32_t step_id, Buf buffer)
 {
-	ListIterator job_record_iterator;
-	ListIterator step_record_iterator;
+	ListIterator job_iterator;
+	ListIterator step_iterator;
 	int error_code = 0;
 	uint32_t steps_packed = 0, tmp_offset;
 	struct step_record *step_ptr;
@@ -597,35 +595,35 @@ int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 
 	if (job_id == 0) {
 		/* Return all steps for all jobs */
-		job_record_iterator = list_iterator_create(job_list);
-		while ((job_ptr =
-			(struct job_record *)
-			list_next(job_record_iterator))) {
-			step_record_iterator =
+		job_iterator = list_iterator_create(job_list);
+		while ((job_ptr = 
+				(struct job_record *) 
+				list_next(job_iterator))) {
+			step_iterator =
 			    list_iterator_create(job_ptr->step_list);
 			while ((step_ptr =
-				(struct step_record *)
-				list_next(step_record_iterator))) {
+					(struct step_record *)
+					list_next(step_iterator))) {
 				_pack_ctld_job_step_info(step_ptr, buffer);
 				steps_packed++;
 			}
-			list_iterator_destroy(step_record_iterator);
+			list_iterator_destroy(step_iterator);
 		}
-		list_iterator_destroy(job_record_iterator);
+		list_iterator_destroy(job_iterator);
 
 	} else if (step_id == 0) {
 		/* Return all steps for specific job_id */
 		job_ptr = find_job_record(job_id);
 		if (job_ptr) {
-			step_record_iterator =
-			    list_iterator_create(job_ptr->step_list);
+			step_iterator = 
+				list_iterator_create(job_ptr->step_list);
 			while ((step_ptr =
-				(struct step_record *)
-				list_next(step_record_iterator))) {
+					(struct step_record *)
+					list_next(step_iterator))) {
 				_pack_ctld_job_step_info(step_ptr, buffer);
 				steps_packed++;
 			}
-			list_iterator_destroy(step_record_iterator);
+			list_iterator_destroy(step_iterator);
 		} else
 			error_code = ESLURM_INVALID_JOB_ID;
 	} else {
@@ -659,8 +657,8 @@ int pack_ctld_job_step_info_response_msg(uint32_t job_id,
  */
 bool step_on_node(struct job_record  *job_ptr, struct node_record *node_ptr)
 {
-	ListIterator step_record_iterator;
-	struct step_record *step_record_point;
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
 	bool found = false;
 	int bit_position;
 
@@ -668,16 +666,14 @@ bool step_on_node(struct job_record  *job_ptr, struct node_record *node_ptr)
 		return false;
 
 	bit_position = node_ptr - node_record_table_ptr;
-	step_record_iterator = list_iterator_create (job_ptr->step_list);		
-	while ((step_record_point = 
-		(struct step_record *) list_next (step_record_iterator))) {
-		if (bit_test(step_record_point->step_node_bitmap, 
-			     bit_position)) {
+	step_iterator = list_iterator_create (job_ptr->step_list);	
+	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		if (bit_test(step_ptr->step_node_bitmap, bit_position)) {
 			found = true;
 			break;
 		}
 	}		
 
-	list_iterator_destroy (step_record_iterator);
+	list_iterator_destroy (step_iterator);
 	return found;
 }

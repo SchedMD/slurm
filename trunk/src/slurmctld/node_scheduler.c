@@ -965,7 +965,7 @@ static int _build_node_list(struct job_record *job_ptr,
 	struct node_set *node_set_ptr;
 	struct config_record *config_ptr;
 	struct part_record *part_ptr = job_ptr->part_ptr;
-	ListIterator config_record_iterator;
+	ListIterator config_iterator;
 	int tmp_feature, check_node_config, config_filter = 0;
 	struct job_details *detail_ptr = job_ptr->details;
 	bitstr_t *exc_node_mask = NULL;
@@ -979,13 +979,12 @@ static int _build_node_list(struct job_record *job_ptr,
 		bit_not(exc_node_mask);
 	}
 
-	config_record_iterator = list_iterator_create(config_list);
-	if (config_record_iterator == NULL)
+	config_iterator = list_iterator_create(config_list);
+	if (config_iterator == NULL)
 		fatal("list_iterator_create malloc failure");
 
-	while ((config_ptr = (struct config_record *)
-		list_next(config_record_iterator))) {
-
+	while ((config_ptr = (struct config_record *) 
+			list_next(config_iterator))) {
 		tmp_feature = _valid_features(job_ptr->details->features,
 					      config_ptr->feature);
 		if (tmp_feature == 0)
@@ -1041,7 +1040,7 @@ static int _build_node_list(struct job_record *job_ptr,
 			 sizeof(struct node_set) * (node_set_inx + 2));
 		node_set_ptr[node_set_inx + 1].my_bitmap = NULL;
 	}
-	list_iterator_destroy(config_record_iterator);
+	list_iterator_destroy(config_iterator);
 	/* eliminate last (incomplete) node_set record */
 	FREE_NULL_BITMAP(node_set_ptr[node_set_inx].my_bitmap);
 	FREE_NULL_BITMAP(exc_node_mask);
