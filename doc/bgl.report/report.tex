@@ -310,26 +310,89 @@ identifies the directory in which to find the plugin.
 
 \section {Blue Gene/L Specific Resource Management Issues}
 
-SLURM was only required to address a one-dimensional topology.
-It was obvious that the resource selection logic would require a major 
-redesign. Plugin...
+Several issues needed to be addressed for SLURM to support BGL:
+pseudo-nodes representing the base partitions, topology, 
+\slurmd\ executing only on the front-end-node, 
+BGL wiring issues and use of the BGL-specific APIs.
+BGL wiring issues are extensive and addressed in a separate section.
 
-The topology requirements also necessitated the addition of several 
+Since a BGL base partition is the minimum allocation unit for a job, 
+it was natural to consider each one as an independent SLURM node. 
+This meant SLURM would manage a very reasonable 128 nodes 
+rather than tens of thousands of individual c-nodes.
+The \slurmd\ daemon was designed to execute on each SLURM 
+nodes to monitor the status of that node, launch job steps, etc. 
+Unfortunately BGL prohibited the execute of SLURM daemons within 
+the base partitions on any of the c-nodes. 
+SLIURM forced to execute one \slurmd\ for the entire BGL system 
+on a front-end node.
+In addition,  the typical Unix mechanism used to interact with a 
+compute host do not function with BGL base partitions. 
+This issue was addressed by adding a SLURM parameter to 
+indicate when it is running with a front-end node, in which case 
+there is assumed to be a single \slurmd\ for the entire system. 
+
+SLURM was originally designed to address a one-dimensional topology
+and this impacted a variety of areas from naming convensions to 
+node selection. 
+SLURM provides resource management on several Linux clusters 
+exceeding 1000 nodes and it is impractical to display or otherwise 
+work with hundreds of individual node names. 
+SLURM addresses this by using regular expressions to indicate 
+ranges of node names. 
+For example, "linux[0-1023]" was used to represent 1024 nodes 
+with names having a prefix of "linux" and a numeric suffic ranging 
+from "0" to "1023". 
+The most reasonable way to name the BGL nodes seemed to be 
+using a three digit suffix, but rather than indicate a monotonically 
+increasing number, each digit would represent the base partition's 
+location in the X, Y and Z dimensions (the value of X ranges 
+from 0 to 7, Y from 0 to 3, and Z from 0 to 3 on the LLNL system).
+For example, "bgl012" would represent the base partition at
+the position X=0, Y=1 and Z=2.
+Since BGL resources naturally tend to be rectangular prisms in 
+shape, we modified the regular expression to indicate the two 
+extreme base partition locations. 
+The name prefix is always "bgl". 
+Within the brackets one lists the base partition with the smallest
+X, Y and Z coordinates followed by a "x" followed by the base 
+partition with the highest X, Y and Z coordinates.
+For example, "bgl[200x311]" represents the following eight base 
+partitions: bgl200, bgl201, bgl210, bgl211, bgl300, bgl301, bgl310
+and bgl311.
+Note that this method does can not accomodate blocks of base 
+partitions that wrap over the torus boundaries particularly well, 
+although a regular expression of this sort is supported: 
+"bgl[000x-011,700x711]".
+
+The node selection functionality is another topology aware 
+SLURM component. 
+Rather than embedding BGL-specific logic into a multitude of 
+locations, all of this logic was put into a single plugin. 
+The pre-existing node selection logic was put into a plugin 
+supporting typical Linux clusters with node names based 
+upon a one-dimensional array. 
+The BGL-specific plugin not only selects nodes for pending jobs 
+based upon BGL topography, but issues the BGL-specific APIs 
+to monitor the system health (draining nodes with any failure 
+mode) and perform initialization and termination sequences for the job.
+
+BGL's topology requirement necessitated the addition of several 
 \srun\ options: {\em --geometry} to specify the dimension required by 
 the job,
  {\em --no-rotate} to indicate of the geometry specification could rotate 
 in three-dimensions,
+{\em --comm-type} to indicate the communctions type being mesh or torus,
 {\em --node-use} to specify if the second process on a c-node should 
-be used to execute the user application or be used for communications.
-
-The \slurmd\ daemon was designed to execute on the individual SLURM 
-nodes to monitor the status of that computer, launch job steps, etc. 
-BGL prohibited the execute of SLURM daemons within the base partitions. 
-In addition the base partition was a ...
-\slurmd\ needed to execute on front-end-node....
-Disable job step.
-
-Base partitions are virtual nodes to SLURM.
+be used to execute the user application or be used for communications. 
+While \srun\ accepts these new options on all computer systems, 
+the node selection plugin logic is used to manage this data in an 
+opaque data type. 
+Since these new data types are unused on non-BGL systems, the 
+functions to manage them perform no work. 
+Other computers with other topology requiremens will be able to 
+take advantage of this plugin infrastructure as well with minimal 
+effort.
 
 In order to provide users with a clear view of the BGL topology, a new 
 tools was developed.
@@ -354,9 +417,28 @@ Table ~\ref{smap_out}.
 \end{center}
 \end{table}
 
+Rather than modifying SLURM to initiate and manage the parallel 
+tasks for BGL jobs, we decided utilize existing software from IBM. 
+This eliminated a multitude of software integration issues. 
+SLURM will manage resources, select resources for the job, 
+set an environment variable BGL\_PARTITION\_ID, and spawn 
+a script. 
+The job will initiate its parallel tasks through the use of {\em mpirun}.
+{\em mpirun} uses BGL-specific APIs to launch and manage the 
+tasks. 
+An additional benefit of this architecture is that the single \slurmd\ 
+for the entire system is relieved of job step management, which 
+could involve a significant amount of overhead for a computer 
+of BGL's size. 
+We disabled SLURM's job step support for normal users to 
+mitigate the possible impact of users inadvertently attempting 
+to initiate job steps through SLURM.
+
 \section{Blue Gene/L Network Wiring Issues}
 
 TBD
+
+Static partitioning
 
 \section{Results}
 
@@ -364,7 +446,7 @@ TBD
 
 \section{Future Plans}
 
-TBD
+Dynamic partitioning
 
 \raggedright
 % make the bibliography
