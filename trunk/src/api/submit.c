@@ -61,6 +61,7 @@ slurm_submit_batch_job (job_desc_msg_t * job_desc_msg,
 	}
 
         /* send request message */
+	/* job_desc_msg.immediate = false;	implicit */
         request_msg . msg_type = REQUEST_SUBMIT_BATCH_JOB ;
         request_msg . data = job_desc_msg ; 
 	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 

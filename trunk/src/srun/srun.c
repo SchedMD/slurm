@@ -307,6 +307,7 @@ _allocate_nodes(void)
 
 	job.contiguous     = opt.contiguous;
 	job.features       = opt.constraints;
+	job.immediate      = opt.immediate;
 	job.name           = opt.job_name;
 	job.req_nodes      = opt.nodelist;
 	job.partition      = opt.partition;
@@ -333,7 +334,7 @@ _allocate_nodes(void)
 		job.shared		= 1;
 
 	retries = 0;
-	while ((rc = slurm_allocate_resources(&job, &resp, opt.immediate))
+	while ((rc = slurm_allocate_resources(&job, &resp))
 					== SLURM_FAILURE) {
 		if ((slurm_get_errno() == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) 
 		    && (retries < MAX_RETRIES)) {
@@ -366,9 +367,10 @@ _allocate_nodes(void)
 		/* Keep polling until the job is allocated resources */
 		while (slurm_confirm_allocation(&old_job, &resp) == 
 							SLURM_FAILURE) {
-			if (slurm_get_errno() == ESLURM_JOB_PENDING)
+			if (slurm_get_errno() == ESLURM_JOB_PENDING) {
+				debug3("Still waiting for allocation");
 				sleep (10);
-			else {
+			} else {
 				error("Unable to confirm resource allocation for job %u: %s", 
 					old_job.job_id, slurm_strerror(errno));
 				exit (1);
@@ -395,6 +397,7 @@ _alloc_nodes_step(void)
 
 	job.contiguous     = opt.contiguous;
 	job.features       = opt.constraints;
+	job.immediate      = opt.immediate;
 	job.name           = opt.job_name;
 	job.req_nodes      = opt.nodelist;
 	job.partition      = opt.partition;

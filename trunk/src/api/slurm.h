@@ -132,6 +132,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t env_size;	/* element count in environment */
 	char *features;		/* comma separated list of required features, 
 				 * default NONE */
+	uint16_t immediate;	/* 1 if allocate to run or fail immediately, 
+				 * 0 if to be queued awaiting resources */
 	uint32_t job_id;	/* job ID, default set by SLURM */
 	char *name;		/* name of the job, default "" */
 	uint32_t min_procs;	/* minimum processors per node, default=0 */
@@ -377,14 +379,11 @@ extern void slurm_init_job_desc_msg (job_desc_msg_t * job_desc_msg);
  * slurm_allocate_resources - allocate resources for a job request
  * IN job_desc_msg - description of resource allocation request
  * OUT slurm_alloc_msg - response to request
- * IN immediate - if set then resource allocation must be satisfied 
- *	immediately or fail
  * RET 0 on success or slurm error code
  * NOTE: free the allocated using slurm_free_resource_allocation_response_msg
  */
 extern int slurm_allocate_resources (job_desc_msg_t * job_desc_msg , 
-		resource_allocation_response_msg_t ** job_alloc_resp_msg, 
-		int immediate ) ;
+		resource_allocation_response_msg_t ** job_alloc_resp_msg ) ;
 
 /*
  * slurm_free_resource_allocation_response_msg - free slurm resource
