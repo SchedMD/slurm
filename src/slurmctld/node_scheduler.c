@@ -650,8 +650,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 /*
  * select_nodes - select and allocate nodes to a specific job
  * IN job_ptr - pointer to the job record
- * IN test_only - do not allocate nodes, just confirm they could be 
- *	allocated now
+ * IN test_only - if set do not allocate nodes, just confirm they  
+ *	could be allocated now
  * RET 0 on success, ESLURM code from slurm_errno.h otherwise
  * globals: list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
@@ -664,7 +664,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
  *	   the request, (e.g. best-fit or other criterion)
  *	3) Call allocate_nodes() to perform the actual allocation
  */
-int select_nodes(struct job_record *job_ptr, int test_only)
+int select_nodes(struct job_record *job_ptr, bool test_only)
 {
 	int error_code, i, node_set_index, node_set_size = 0;
 	bitstr_t *req_bitmap, *scratch_bitmap;

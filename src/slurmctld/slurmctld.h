@@ -234,7 +234,8 @@ struct job_record {
 	time_t end_time;		/* time of termination, 
 					   actual or expected */
 	time_t time_last_active;	/* time of last job activity */
-	uint32_t priority;		/* relative priority of the job */
+	uint32_t priority;		/* relative priority of the job,
+					   zero == held (don't initiate) */
 	struct job_details *details;	/* job details */
 	uint16_t num_cpu_groups;	/* record count in cpus_per_node and 
 					   cpu_count_reps */
@@ -832,8 +833,8 @@ extern int schedule (void);
 /*
  * select_nodes - select and allocate nodes to a specific job
  * IN job_ptr - pointer to the job record
- * IN test_only - do not allocate nodes, just confirm they could be 
- *	allocated now
+ * IN test_only - if set do not allocate nodes, just confirm they  
+ *	could be allocated now
  * RET 0 on success, ESLURM code from slurm_errno.h otherwise
  * globals: list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
@@ -846,7 +847,7 @@ extern int schedule (void);
  *	   the request, (e.g. best-fit or other criterion)
  *	3) Call allocate_nodes() to perform the actual allocation
  */
-extern int select_nodes (struct job_record *job_ptr, int test_only);
+extern int select_nodes (struct job_record *job_ptr, bool test_only);
 
 /* set_slurmd_addr - establish the slurm_addr for the slurmd on each node
  *	Uses common data structures. */

@@ -36,6 +36,7 @@
 #include <unistd.h>
 
 #include "src/common/list.h"
+#include "src/common/macros.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
@@ -73,6 +74,8 @@ static int _build_job_queue(struct job_queue **job_queue)
 	while ((job_record_point =
 		(struct job_record *) list_next(job_record_iterator))) {
 		if (job_record_point->job_state != JOB_PENDING)
+			continue;
+		if (job_record_point->priority == 0)	/* held */
 			continue;
 		if (job_record_point->magic != JOB_MAGIC)
 			fatal("prio_order_job: data integrity is bad");
@@ -133,7 +136,7 @@ int schedule(void)
 		}
 		if (j < failed_part_cnt)
 			continue;
-		error_code = select_nodes(job_ptr, 0);
+		error_code = select_nodes(job_ptr, false);
 		if (error_code == ESLURM_NODES_BUSY) {
 			xrealloc(failed_parts,
 				 (failed_part_cnt +
