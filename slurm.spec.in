@@ -12,9 +12,9 @@ Source: %{name}-%{version}-%{release}.tgz
 Requires: readline popt
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 
-%define _with_authd 0
+%define _with_authd 1
 %define _with_elan 0
-%define _with_totalview 0
+%define _with_totalview 1
 
 %package devel
 Summary: Development package for SLURM.
