@@ -97,7 +97,7 @@ _load_job_records (void)
 	error_code = slurm_load_jobs ((time_t) NULL, &job_buffer_ptr);
 
 	if (error_code) {
-		slurm_perror ("slurm_load_jobs error: ");
+		slurm_perror ("slurm_load_jobs error");
 		exit (1);
 	}
 }
