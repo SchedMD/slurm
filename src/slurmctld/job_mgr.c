@@ -66,7 +66,7 @@ slurm_ssl_key_ctx_t sign_ctx ;
 #define MAX_STR_PACK 128
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
 #define STEP_FLAG 0xbbbb
-#define TOP_PRIORITY 100000;
+#define TOP_PRIORITY 0xffff0000 /* large, but leave headroom for higher */
 
 #define job_hash_inx(job_id)	(job_id % MAX_JOB_COUNT)
 #define yes_or_no(in_string) \

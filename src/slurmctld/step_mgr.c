@@ -36,8 +36,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef HAVE_LIBELAN3
+#  include <src/common/qsw.h>
+#endif
+
 #include <src/common/bitstring.h>
-#include <src/common/qsw.h>
 #include <src/common/slurm_errno.h>
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
