@@ -119,9 +119,17 @@ launch(void *arg)
 	for (i = 0; i < job->nhosts; i++)
 		task_ids[i] = (uint32_t *) xmalloc(job->cpus[i] * 
 							sizeof(uint32_t));
+
+	if (opt.distribution == SRUN_DIST_UNKNOWN) {
+		if (opt.nprocs <= job->nhosts)
+			opt.distribution = SRUN_DIST_CYCLIC;
+		else
+			opt.distribution = SRUN_DIST_BLOCK;
+	}
+
 	if (opt.distribution == SRUN_DIST_BLOCK)
 		_dist_block(job, task_ids);
-	else 
+	else  
 		_dist_cyclic(job, task_ids);
 
 	msg_array_ptr = (launch_tasks_request_msg_t *) 
@@ -147,12 +155,12 @@ launch(void *arg)
 		r->nnodes          = job->nhosts;
 		r->nprocs          = opt.nprocs;
 
-		if (opt.output == IO_PER_TASK)
-			r->ofname  = opt.ofname;
-		if (opt.error  == IO_PER_TASK)
-			r->efname  = opt.efname;
-		if (opt.input  == IO_PER_TASK)
-			r->ifname  = opt.ifname;
+		if (job->ofname->type == IO_PER_TASK)
+			r->ofname  = job->ofname->name;
+		if (job->efname->type == IO_PER_TASK)
+			r->efname  = job->efname->name;
+		if (job->ifname->type == IO_PER_TASK)
+			r->ifname  = job->ifname->name;
 
 		/* Node specific message contents */
 		r->tasks_to_launch = job->ntask[i];

@@ -783,7 +783,7 @@ list_alloc_aux (int size, void *pfreelist)
     if (!*pfree) {
         if ((*pfree = malloc(LIST_ALLOC * size))) {
             px = *pfree;
-            plast = *pfree + ((LIST_ALLOC - 1) * size);
+            plast = (void **) ((char *) *pfree + ((LIST_ALLOC - 1) * size));
             while (px < plast)
                 *px = (char *) px + size, px = *px;
             *plast = NULL;

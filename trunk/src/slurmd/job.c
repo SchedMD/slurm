@@ -45,12 +45,12 @@
 #include "src/slurmd/job.h"
 #include "src/slurmd/shm.h"
 #include "src/slurmd/io.h"
+#include "src/slurmd/fname.h"
 
 static char ** _array_copy(int n, char **src);
 static void _array_free(int n, char ***array);
 static void _srun_info_destructor(void *arg);
-static void _job_init_task_info(slurmd_job_t *job, 
-		                launch_tasks_request_msg_t *msg);
+static void _job_init_task_info(slurmd_job_t *job, uint32_t *gids);
 
 
 /* create a slurmd job structure from a launch tasks message */
@@ -65,16 +65,12 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 
 	xassert(msg != NULL);
 
+	debug3("entering job_create");
+
 	if ((pwd = getpwuid((uid_t)msg->uid)) < 0) {
 		error("uid %ld not found on system", msg->uid);
 		return NULL;
 	}
-
-	memcpy(&resp_addr, cli_addr, sizeof(slurm_addr));
-	memcpy(&io_addr,   cli_addr, sizeof(slurm_addr));
-	slurm_set_addr(&resp_addr, msg->resp_port, NULL); 
-	slurm_set_addr(&io_addr,   msg->io_port,   NULL); 
-
 	job = xmalloc(sizeof(*job));
 
 	job->jobid   = msg->job_id;
@@ -94,9 +90,12 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->argv    = _array_copy(job->argc, msg->argv);
 
 	job->cwd     = xstrdup(msg->cwd);
-	job->ofname  = xstrdup(msg->ofname);
-	job->efname  = msg->efname ? xstrdup(msg->efname) : job->ofname;
-	job->ifname  = xstrdup(msg->ifname);
+
+	memcpy(&resp_addr, cli_addr, sizeof(slurm_addr));
+	slurm_set_addr(&resp_addr, msg->resp_port, NULL); 
+	memcpy(&io_addr,   cli_addr, sizeof(slurm_addr));
+	slurm_set_addr(&io_addr,   msg->io_port,   NULL); 
+
 
 #ifdef HAVE_LIBELAN3
 	job->qsw_job = msg->qsw_job;
@@ -106,16 +105,22 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 
 	srun = srun_info_create((void *)msg->credential->signature, 
 			        &resp_addr, &io_addr);
+	srun->ofname = xstrdup(msg->ofname);
+	srun->efname = xstrdup(msg->efname);
+	srun->ifname = xstrdup(msg->ifname);
 
-	job->sruns  = list_create((ListDelF) _srun_info_destructor);
+	job->sruns   = list_create((ListDelF) _srun_info_destructor);
 
 	list_append(job->sruns, (void *) srun);
 
-	_job_init_task_info(job, msg);
+	_job_init_task_info(job, msg->global_task_ids);
 
 	return job;
 }
 
+/*
+ * return the default output filename for a batch job
+ */
 static char *
 _mkfilename(slurmd_job_t *job, const char *name)
 {
@@ -125,7 +130,7 @@ _mkfilename(slurmd_job_t *job, const char *name)
 		snprintf(buf, 256, "%s/job%u.out", job->cwd, job->jobid);
 		return xstrdup(buf);
 	} else
-		return xstrdup(name);
+		return fname_create(job, name, 0);
 }
 
 slurmd_job_t * 
@@ -133,7 +138,8 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 {
 	struct passwd *pwd;
 	slurmd_job_t *job = xmalloc(sizeof(*job));
-	task_info_t  *t   = task_info_create(0, 0);
+	srun_info_t  *srun = NULL;
+	uint32_t      gid = 0;
 
 	if ((pwd = getpwuid((uid_t)msg->uid)) < 0) {
 		error("uid %ld not found on system", msg->uid);
@@ -147,65 +153,43 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->uid     = (uid_t)msg->uid;
 	job->cwd     = xstrdup(msg->work_dir);
 
-	job->ofname  = _mkfilename(job, msg->out);
-	job->efname  = msg->err ? xstrdup(msg->err): job->ofname;
-	job->ifname  = xstrdup("/dev/null");
-
 	job->envc    = msg->envc;
 	job->env     = _array_copy(job->envc, msg->environment);
 	job->objs    = list_create((ListDelF) io_obj_destroy);
 	job->sruns   = list_create((ListDelF) _srun_info_destructor);
 
-	job->task    = (task_info_t **) xmalloc(sizeof(task_info_t *));
-	job->task[0] = t;
-	t->ofname    = xstrdup(job->ofname);
-	t->efname    = xstrdup(job->efname);
-	t->ifname    = xstrdup(job->ifname);
+	srun = srun_info_create(NULL, NULL, NULL);
+
+	srun->ofname = _mkfilename(job, msg->out);
+	srun->efname = msg->err ? xstrdup(msg->err) : srun->ofname;
+	srun->ifname = xstrdup("/dev/null");
+	list_append(job->sruns, (void *) srun);
 
 	job->argc    = msg->argc > 0 ? msg->argc : 2;
+
+	/* job script has not yet been written out to disk --
+	 * argv will be filled in later
+	 */
 	job->argv    = (char **) xmalloc(job->argc * sizeof(char *));
+
+	_job_init_task_info(job, &gid);
+
 	return job;
 }
 
-static int
-_wid(uint32_t n)
-{
-	int width = 1;
-	while (n /= 10L)
-		width++;
-	return width;
-}
-
-static char *
-_task_filename_create(const char *basename, int i, int width)
-{
-	int  len = basename ? strlen(basename) : 0;
-	char buf[len+width+16];
-	if (basename == NULL)
-		return NULL;
-	snprintf(buf, len+width+16, "%s%0*d", basename, width, i);
-	return xstrdup(buf);
-}
-
-
 static void
-_job_init_task_info(slurmd_job_t *job, launch_tasks_request_msg_t *msg)
+_job_init_task_info(slurmd_job_t *job, uint32_t *gid)
 {
 	int          i;
 	int          n    = job->ntasks;
-	int          wid  = _wid(job->nprocs);
-	uint32_t    *gid  = msg->global_task_ids;
 	srun_info_t *srun = (srun_info_t *) list_peek(job->sruns);
 
 	job->task = (task_info_t **) xmalloc(n * sizeof(task_info_t *));
 
 	for (i = 0; i < n; i++){
-		task_info_t *t = job->task[i] = task_info_create(i, gid[i]);
+		job->task[i] = task_info_create(i, gid[i]);
 		if (srun != NULL) 
-			list_append(t->srun_list, (void *)srun);
-		t->ofname = _task_filename_create(job->ofname, t->gid, wid);
-		t->efname = _task_filename_create(job->efname, t->gid, wid);
-		t->ifname = _task_filename_create(job->ifname, t->gid, wid);
+			list_append(job->task[i]->srun_list, (void *)srun);
 	}
 }
 
@@ -294,11 +278,11 @@ srun_info_create(void *keydata, slurm_addr *resp_addr, slurm_addr *ioaddr)
 	if (keydata != NULL)
 		memcpy((void *) key->data, keydata, SLURM_KEY_SIZE);
 	srun->key = key;
+
 	if (ioaddr != NULL)
-		srun->ioaddr = *ioaddr;
-	else
-		srun->noconnect = true;
-	srun->resp_addr = *resp_addr;
+		srun->ioaddr    = *ioaddr;
+	if (resp_addr != NULL)
+		srun->resp_addr = *resp_addr;
 	return srun;
 }
 
@@ -341,9 +325,6 @@ task_info_create(int taskid, int gtaskid)
 	t->in        = NULL;
 	t->out       = NULL;
 	t->err       = NULL;
-	t->ifname    = NULL;
-	t->ofname    = NULL;
-	t->efname    = NULL;
 	t->srun_list = list_create(NULL); 
 	slurm_mutex_unlock(&t->mutex);
 	return t;

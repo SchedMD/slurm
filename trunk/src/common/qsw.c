@@ -280,6 +280,8 @@ qsw_alloc_jobinfo(qsw_jobinfo_t *jp)
 void
 qsw_free_jobinfo(qsw_jobinfo_t j)
 {
+	if (j == NULL)
+		return;
 	assert(j->j_magic == QSW_JOBINFO_MAGIC);
 	assert(j->j_ctx == NULL);
 	j->j_magic = 0;

@@ -82,13 +82,13 @@ enum distribution_t {
 			         "unknown"
 
 enum io_t {
-	IO_NORMAL 	= 0,
-	IO_ALL		= 1,
-	IO_PER_TASK	= 2,
-	IO_NONE		= 3,
+	IO_ALL		= 0, /* multiplex output from all/bcast stdin to all */
+	IO_ONE 	        = 1, /* output from only one task/stdin to one task  */
+	IO_PER_TASK	= 2, /* separate output/input file per task          */
+	IO_NONE		= 3, /* close output/close stdin                     */
 };
 
-#define format_io_t(t) (t == IO_NORMAL) ? "normal" : (t == IO_ALL) ? \
+#define format_io_t(t) (t == IO_ONE) ? "one" : (t == IO_ALL) ? \
                                                      "all" : "per task"
 
 typedef struct srun_options {
@@ -111,14 +111,9 @@ typedef struct srun_options {
 		distribution;	/* --distribution=, -m dist	*/
 	char *job_name;		/* --job-name=,     -J name	*/
 
-	enum io_t output;	/* --output=,       -o type	*/
-	char *ofname;		/* output filename if PER_TASK 	*/
-
-	enum io_t input;	/* --input=, 	    -i type	*/
-	char *ifname;		/* input filename if PER_TASK 	*/
-
-	enum io_t error;	/* --error=,	    -e type	*/
-	char *efname;		/* stderr filename if PER_TASK 	*/
+	char *ofname;		/* --output -o filename         */
+	char *ifname;		/* --input  -i filename         */
+	char *efname;		/* --error, -e filename         */
 
 	char *core_format;	/* --corefile-format=, -C type	*/
 	char *attach;		/* --attach=id	    -a id	*/ 

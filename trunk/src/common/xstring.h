@@ -34,6 +34,8 @@
 #define xstrcatchar(__p, __c)		_xstrcatchar(&(__p), __c)
 #define xslurm_strerrorcat(__p)		_xslurm_strerrorcat(&(__p))
 #define xstrftimecat(__p, __fmt)	_xstrftimecat(&(__p), __fmt)
+#define xstrfmtcat(__p, __fmt, args...)	_xstrfmtcat(&(__p), __fmt, ## args)
+#define xmemcat(__p, __s, __e)          _xmemcat(&(__p), __s, __e)
 
 /*
 ** The following functions take a ptr to a string and expand the
@@ -66,6 +68,18 @@ void _xslurm_strerrorcat(char **str);
 ** see strftime(3) for the usage of the format string
 */
 void _xstrftimecat(char **str, const char *fmt);
+
+/*
+** concatenate printf-style formatted string onto str
+** return value is result from vsnprintf(3)
+*/
+int _xstrfmtcat(char **str, const char *fmt, ...);
+
+/*
+** concatenate range of memory from start to end (not including end)
+** onto str. 
+*/
+void _xmemcat(char **str, char *start, char *end);
 
 /*
 ** strdup which uses xmalloc routines
