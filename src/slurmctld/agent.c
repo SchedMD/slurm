@@ -564,9 +564,10 @@ static void *_thread_per_node_rpc(void *args)
 			goto cleanup;
 		}
 	} else {
-		if (slurm_send_only_node_msg(&msg) < 0)
-			_comm_err(thread_ptr->node_name);
-		else
+		if (slurm_send_only_node_msg(&msg) < 0) {
+			if (!srun_agent)
+				_comm_err(thread_ptr->node_name);
+		} else
 			thread_state = DSH_DONE;
 		goto cleanup;
 	}
