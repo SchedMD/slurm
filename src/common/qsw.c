@@ -875,6 +875,25 @@ _print_capbitmap(FILE *fp, ELAN_CAPABILITY *cap)
 }
 #endif /* !_USE_ELAN3_CAPABILITY_STRING */
 
+char *
+qsw_capability_string(struct qsw_jobinfo *j, char *buf, size_t size)
+{
+	ELAN_CAPABILITY *cap;
+	int len;
+
+	assert(buf != NULL);
+	assert(j->j_magic == QSW_JOBINFO_MAGIC);
+
+	cap = &j->j_cap;
+
+	snprintf(buf, size, "prg=%d ctx=%x.%x nodes=%d.%d entries=%d",
+	         j->j_prognum, cap->LowContext, cap->HighContext, 
+		 cap->LowNode, cap->HighNode, 
+	         cap->Entries);
+	         
+	return buf;
+}
+
 void
 qsw_print_jobinfo(FILE *fp, struct qsw_jobinfo *jobinfo)
 {
