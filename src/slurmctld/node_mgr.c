@@ -266,7 +266,7 @@ bitmap2node_name (bitstr_t *bitmap)
 	char prefix[MAX_NAME_LEN], suffix[MAX_NAME_LEN];
 	char format[MAX_NAME_LEN], temp[MAX_NAME_LEN];
 	char last_prefix[MAX_NAME_LEN], last_suffix[MAX_NAME_LEN];
-	int first_index = 0, last_index = 0, index, digits;
+	int first_index = 0, last_index = 0, index, first_digits, last_digits;
 
 	node_list_size = 0;
 	if (bitmap == NULL)
@@ -286,7 +286,7 @@ bitmap2node_name (bitstr_t *bitmap)
 		if (bit_test (bitmap, i) == 0)
 			continue;
 		split_node_name (node_record_table_ptr[i].name, prefix,
-				 suffix, &index, &digits);
+				 suffix, &index, &last_digits);
 		if ((index == (last_index + 1)) &&	/* next in sequence */
 		    (strcmp (last_prefix, prefix) == 0) &&
 		    (strcmp (last_suffix, suffix) == 0)) {
@@ -301,13 +301,13 @@ bitmap2node_name (bitstr_t *bitmap)
 			if (first_index != last_index)
 				strcat (node_list_ptr, "[");
 			strcpy (format, "%0");
-			sprintf (&format[2], "%dd", digits);
+			sprintf (&format[2], "%dd", first_digits);
 			sprintf (temp, format, first_index);
 			strcat (node_list_ptr, temp);
 			if (first_index != last_index) {
 				strcat (node_list_ptr, "-");
 				strcpy (format, "%0");
-				sprintf (&format[2], "%dd]", digits);
+				sprintf (&format[2], "%dd]", first_digits);
 				sprintf (temp, format, last_index);
 				strcat (node_list_ptr, temp);
 			}	
@@ -321,6 +321,7 @@ bitmap2node_name (bitstr_t *bitmap)
 			strcat (node_list_ptr, node_record_table_ptr[i].name);
 		}
 		else {
+			first_digits = last_digits;
 			strcpy (last_prefix, prefix);
 			strcpy (last_suffix, suffix);
 			first_index = last_index = index;
@@ -335,13 +336,13 @@ bitmap2node_name (bitstr_t *bitmap)
 		if (first_index != last_index)
 			strcat (node_list_ptr, "[");
 		strcpy (format, "%0");
-		sprintf (&format[2], "%dd", digits);
+		sprintf (&format[2], "%dd", first_digits);
 		sprintf (temp, format, first_index);
 		strcat (node_list_ptr, temp);
 		if (first_index != last_index) {
 			strcat (node_list_ptr, "-");
 			strcpy (format, "%0");
-			sprintf (&format[2], "%dd]", digits);
+			sprintf (&format[2], "%dd]", first_digits);
 			sprintf (temp, format, last_index);
 			strcat (node_list_ptr, temp);
 		}
