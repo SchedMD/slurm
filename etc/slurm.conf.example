@@ -132,7 +132,7 @@
 #   components
 #
 # "auth/none"  : no authentication, the default
-# "auth/authd" : Brett Chun's authd
+# "auth/authd" : Brent Chun's authd
 #
 # AuthType=auth/none
 
