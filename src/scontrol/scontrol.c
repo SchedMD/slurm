@@ -914,23 +914,29 @@ update_part (int argc, char *argv[])
 /* usage - show the valid scontrol commands */
 void
 usage () {
-	printf ("%s [-q | -v] [<keyword>]\n", command_name);
+	printf ("scontrol [-q | -v] [<keyword>]\n");
 	printf ("  -q is equivalent to the keyword \"quiet\" described below.\n");
 	printf ("  -v is equivalent to the keyword \"verbose\" described below.\n");
-	printf ("  <keyword> may be omitted from the execute line and %s will execute in interactive\n",
-		command_name);
-	printf ("    mode to process multiple keywords (i.e. commands). valid <entity> values are:\n");
-	printf ("    build, job, node, and partition. node names may be sepcified using regular simple \n");
-	printf ("    expressions. valid <keyword> values are:\n");
+	printf ("  <keyword> may be omitted from the execute line and scontrol will execute in interactive\n");
+	printf ("    mode to process multiple keywords (i.e. commands). otherwise, it will execute\n");
+	printf ("    that command and terminate. Valid <keyword> values are:\n");
 	printf ("     exit                     terminate this command.\n");
 	printf ("     help                     print this description of use.\n");
 	printf ("     quiet                    print no messages other than error messages.\n");
 	printf ("     quit                     terminate this command.\n");
 	printf ("     reconfigure              re-read configuration files.\n");
 	printf ("     show <entity> [<id>]     display state of identified entity, default is all records.\n");
-	printf ("     update <options>         update configuration per configuration file format.\n");
+	printf ("     update <options>         update job, node, or partition configuration.\n");
 	printf ("     verbose                  enable detailed logging.\n");
 	printf ("     version                  display tool version number.\n");
+	printf ("  <entity> may be \"build\", \"job\", \"node\", or \"partition\".\n");
+	printf ("  <id> may be a build parameter, job id, node name or partition name. Node names may\n");
+	printf ("     specified using simple regular expressions, (e.g. \"lx[10-20]\").\n");
+	printf ("  <options> are specified in the same format as the configuration file. You may wish\n");
+	printf ("     to use the \"show\" keyword then use its output as input for the update keyword,\n");
+	printf ("     editing as needed.\n");
+	printf ("  All commands and options are case-insensitive, although node names and partition\n");
+	printf ("     names tests are case-sensitive (node names \"LX\" and \"lx\" are distinct).\n");
 }
 
 /* strcmp_i - case insensitive version of strcmp */
