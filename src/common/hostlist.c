@@ -2190,7 +2190,7 @@ hostset_insert_host(hostset_t set, char *host)
 static int
 hostset_insert_range(hostset_t set, hostrange_t hr)
 {
-	int i, n;
+	int i, n = 0;
 	int inserted = 0;
 	int retval   = 0;
 
