@@ -45,7 +45,11 @@
 #define DEFAULT_RETURN_TO_SERVICE   0
 #define DEFAULT_SAVE_STATE_LOC      "/tmp"
 #define DEFAULT_SCHEDTYPE           "sched/builtin"
-#define DEFAULT_SELECT_TYPE           "select/linear"
+#ifdef HAVE_BGL
+#define DEFAULT_SELECT_TYPE         "select/bluegene"
+#else
+#define DEFAULT_SELECT_TYPE         "select/linear"
+#endif
 #define DEFAULT_SLURMCTLD_PIDFILE   "/var/run/slurmctld.pid"
 #define DEFAULT_SLURMCTLD_TIMEOUT   120
 #define DEFAULT_SLURMD_PIDFILE      "/var/run/slurmd.pid"
