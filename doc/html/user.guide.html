@@ -14,7 +14,237 @@ includes a scalable, general-purpose communication infrastructure.
 SLURM requires no kernel modifications and is relatively self-contained.
 
 <h2>Commands</h2>
-To be developed and documented by Mark Grondona...
+The command that users will typically use to access resources on a cluster
+managed by slurm is the <tt> srun </tt> utility. <tt> srun </tt> will request
+resources from the slurm job manager based on options provided by the user. 
+The options available in <tt> srun </tt> are summarized below:
+<br>
+<pre>
+Usage: srun [OPTIONS...] executable [args...]
+
+parallel run options 
+  -n, --nprocs=nprocs                number of processes to run
+  -c, --cpus=ncpus                   number of cpus required per process
+  -N, --nodes=nnodes                 number of nodes on which to run
+  -p, --partition=partition          partition requested
+  -I, --immediate                    exit if resources are not immediately
+                                     available
+  -O, --overcommit                   overcommit resources
+  -l, --label-output                 prepend task number to lines of stdout/err
+  -m, --distribution=block|cyclic    distribution method for tasks ( block |
+                                     cyclic)
+  -B, --base-node=hostname           start allocation at base node
+  -J, --job-name=jobname             name of job
+  -o, --output=out                   location of stdout redirection
+  -i, --input=in                     location of stdin redirection
+  -e, --error=err                    location of stderr redirection
+  -v, --verbose                      verbose operation
+  -d, --debug                        enable debug
+
+allocate only
+  -A, --allocate                     allocate resources and spawn a shell
+
+attach to running job
+  -a, --attach=id                    attach to running job with job id = id
+
+constraint options
+  --mincpus=n                        cpus per node
+  --mem=MB                           minimum amount of real memory
+  --vmem=MB                          minimum amount of virtual memory
+  --tmp=MB                           minimun amount of temp disk
+  -C, --constraint=constraint list   specify a list of constraints
+  --contiguous                       demand a contiguous range of nodes
+  -w, --nodelist=host1,host2,...     request a specific list of hosts
+
+Help options
+  -?, --help                         Show this help message
+  --usage                            Display brief usage message
+</pre>
+<br> <br>
+A number of the options above may also be set via environment variables. These
+environment variables and their corresponding option are shown below:
+<br>
+<br>
+<table align="none">
+<tr align="left"> <th> Environment Var </th> <th> Option </th> </tr>
+<tr align="left"> 
+  <td> <tt> SLURM_NPROCS </tt> </td>
+  <td> <tt> -n, --nprocs=n  </tt> </td>
+</tr>
+<tr align="left"> 
+  <td> <tt> SLURM_CPUS_PER_TASK </tt> </td>
+  <td> <tt> -c, --cpus=n  </tt> </td>
+</tr>
+<tr align="left"> 
+  <td> <tt> SLURM_NNODES </tt> </td>
+  <td> <tt> -N, --nodes=n  </tt> </td>
+</tr>
+<tr align="left"> 
+  <td> <tt> SLURM_PARTITION </tt> </td>
+  <td> <tt> -p, --partition=partition </tt> </td>
+</tr>
+<tr align="left"> 
+  <td> <tt> SLURM_STDOUTMODE </tt> </td>
+  <td> <tt> -o, --output=out  </tt> </td>
+</tr>
+<tr align="left"> 
+  <td> <tt> SLURM_STDINMODE </tt> </td>
+  <td> <tt> -i, --input=in  </tt> </td>
+</tr>
+<tr align="left"> 
+  <td> <tt> SLURM_STDERRMODE </tt> </td>
+  <td> <tt> -e, --errro=err  </tt> </td>
+</tr>
+<tr align="left"> 
+  <td> <tt> SLURM_DISTRIBUTION </tt> </td>
+  <td> <tt> -m, --distribution=(block|cyclic) </tt> </td>
+</tr>
+<tr align="left"> 
+  <td> <tt> SLURM_DEBUG </tt> </td>
+  <td> <tt> -d, --debug  </tt> </td>
+</tr>
+</table>
+<br>
+
+<h3> Explanation of options </h3>
+<pre> -n, --nprocs=nprocs </pre>  Request that <tt> srun </tt> 
+allocate and initiate nprocs processes. The number of processes
+per node may be controlled with the -c and -N options. The default
+is one process.
+<br>
+<br>
+<pre> -c, --cpus=ncpus </pre> Request that ncpus cpus be allocated
+<i> per process</i>. This is useful if the job will be multithreaded
+and more than one cpu is required for optimal performance. The default
+is one cpu per process.
+<br>
+<pre> -N, --nodes=nnodes </pre> Request that nnodes be allocated
+to this job. The default is to allocate one cpu per process.
+<br>
+<pre> -p, --partition=N </pre> Request that nodes be allocated from
+partition N. N should be a number argument. The partition numbers
+are assigned by the slurm administrator. The default partition is
+partition 0 (zero).
+<br>
+<pre> -I, --immediate </pre> <tt> srun </tt> will exit if resources
+are not immediately available. By default, the immediate option is
+off, and <tt> srun </tt> will block until resources become available.
+<br>
+<pre> -O, --overcommit </pre> By default, specifying the -n and -N options 
+such that more than one process is allocated to a cpu is an error. 
+The overcommit option allows this behavior.
+<br>
+<pre> -l, --label-output </pre> Request that a task id be prepended to
+stdout and stderr during a run.
+<br>
+<pre> -m, --distribution=(block|cyclic) </pre> Change the way in which
+the nproc processes are distributed over the nnodes nodes. For block
+distribution, the processes are allocated in-order to the cpus on a node.
+For cyclic distribution, the processes are distributed in a round-robin
+fashion to the allocated nodes. The default distribution type is block.
+<br>
+<pre> -B, --base-node=hostname </pre> Request a specific node to be the
+first node in the allocation. The default is "any."
+<br>
+<pre> -J, --job-name=jobname </pre> Name the job. The default is an
+empty name.
+<br>
+<pre> -o, --output=out </pre> Change how stdout is redirected. Normal
+redirection is that  all processes stdout is redirected to <tt>srun</tt>'s 
+stdout. If a filename is specified, all stdout will be redirected to this
+file. If the filename ends in a '%' character, each task will create a 
+separate file for stdout named as filename.[task_id] where task id is the
+task number of the process.
+<br>
+<pre> -i, --input=in </pre> Change how stdin is redirected. By default, 
+stdin is redirected from <tt> srun </tt> to task 0. stdin may be redirected
+from a file, or a different file per task using the naming scheme described
+above for the -o option.
+<br>
+<pre> -e, --error=err </pre> Change how stderr is redirected. By default,
+stderr is redirected to the same place as stdout. Thus, if it is desired
+that stdout and stderr both go to the same file, then --output is the only
+option that need be specified. The --error option is provided to allow
+for redirection of stderr and stdout to differing locations. The argument 
+takes the same form as -o option.
+<br> 
+<pre> -v, --verbose </pre> Increase the verbosity of <tt> srun </tt>.
+multiple -v's will increase output.
+<br>
+<pre> -d, --debug </pre> Put srun into debug mode.
+<br>
+<br>
+<pre> -A, --allocate </pre> Allocate resources and spawn a subshell which
+has access to these resources. This allows multiple runs under the same
+set of nodes with the same number of processes in each run. It is an
+error to specify both --allocate and a command to run. 
+<br>
+<pre> -a, --attach=id </pre> Attach to a currently running job. The running
+job must be detached. Reattaching to a running job will cause stdout and
+stderr to be redirected to <tt>srun</tt> and will allow signals to be 
+forwarded to the remote tasks. 
+<br>
+constraints
+<pre> -C, --constraints= </pre> specify a list of constraints. Constraints
+are typically a comma separated list of "variable=value" pairs, such as
+"ncpus=2,mem=1024" which will constrain the list of nodes considered for the
+job to those that have the requested attributes.
+<pre> -w, --nodelist= </pre> Request that the job be run on a specific list
+of nodes. The nodelist is a comma separated list of hostnames. Lists of 
+consecutive hosts may be specified in range form if the cluster naming
+convention allows this. For example the nodelist "host1,host2,host3" may be
+specified as "host[1-3]." See more in "Hostname Ranges" below.
+<pre> --contiguous </pre> Only allow the job to run on a contiguous range
+of hosts.
+<br>
+<br>
+<h3> Operation </h3>
+<p>
+Once <tt> srun </tt> has processed user options it generates a node
+allocation request, unless it is running within an environment that
+already has nodes allocated to it (see --allocate). <tt> srun </tt> 
+then forwards this request to the slurm job manager. If the request 
+can not be met immediately, <tt> srun </tt> will block and wait for 
+the resources to become available unless the --immediate option is 
+specified, in which case <tt> srun </tt> will terminate. 
+<br></p><p>
+Once the appropriate resources have been allocated, <tt> srun </tt> 
+will start all processes on the assigned nodes. Once all processes
+are running, stdout and stderr will be displayed and stdin will be
+forwarded to process 0, unless these defaults have been changed 
+with --output, --input, or --error. All signals except for SIGQUIT
+and SIGKILL will be forwarded to all remote processes. <tt> srun </tt> 
+will terminate once all remote processes have exited. The
+exit status of srun will represent the maximum exit status of 
+the remote processes.
+<br></p><p>
+If allocate mode is specified via --allocate, no remote processes
+are started when the node allocation is complete. Instead, <tt> srun </tt> 
+will spawn a subshell that will have access to the allocated resources. 
+Thus, subsequent invocations of <tt> srun </tt> within the subshell 
+will run across the nodes allocated with --allocate.  If any of the 
+node allocation options (-n, -c, -N) are specified from within the 
+subshell, it will be assumed that a new allocation is being requested 
+and <tt> srun </tt>  will allocate a new set of nodes. Resources allocated 
+with --allocate will be released when the subshell exits.
+<br></p><p>
+If I/O is not to be redirected from/to a terminal then srun will, by
+default, put itself into the "background." To accomplish this, <tt> srun </tt> 
+will run a copy of itself on the first of the allocated nodes for the 
+job then terminate. The new srun task will then initiate the rest of the 
+processes, and manage io redirection, etc. 
+<br></p><p>
+In order to "reattach" stdout, stderr, and signal forwarding to a 
+"backgrounded" job, you may run srun with the --attach=jid option. 
+This will reattach your current terminal to the running job. Normally,
+no other options are valid with --attach. You may also need to reattach
+to a job if the node you are on during an srun session goes down. 
+In this case, slurm will automatically "background" all active srun
+sessions on the failed node, sending their output to a file in the
+current working directory of the program. To regain control of the 
+srun session, simply reattach to the job. Note that jobs that are 
+receiving stdin from a terminal cannot be "backgrounded."
+</p>
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/user.guide.html
