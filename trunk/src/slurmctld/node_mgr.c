@@ -1648,10 +1648,20 @@ void make_node_idle(struct node_record *node_ptr,
 /* node_fini - free all memory associated with node records */
 void node_fini(void)
 {
+	int i;
+
 	if (config_list) {
 		list_destroy(config_list);
 		config_list = NULL;
 	}
+
+	for (i=0; i< node_record_count; i++)
+		xfree(node_record_table_ptr[i].reason);
+
+	FREE_NULL_BITMAP(idle_node_bitmap);
+	FREE_NULL_BITMAP(avail_node_bitmap);
+	FREE_NULL_BITMAP(share_node_bitmap);
+
 	xfree(node_record_table_ptr);
 	xfree(node_hash_table);
 }
