@@ -700,6 +700,7 @@ static void _slurmctld_req (slurm_msg_t * msg)
 		break;
 	case REQUEST_OLD_JOB_RESOURCE_ALLOCATION:
 		_slurm_rpc_old_job_alloc(msg);
+		slurm_free_old_job_alloc_msg(msg->data);
 		break;
 	case REQUEST_JOB_WILL_RUN:
 		_slurm_rpc_job_will_run(msg->data);
@@ -1863,6 +1864,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		resp.data = &job_step_resp;
 
 		slurm_send_node_msg(msg->conn_fd, &resp);
+		xfree(job_step_resp.node_list);
 		(void) dump_all_job_state();	/* Sets own locks */
 	}
 }

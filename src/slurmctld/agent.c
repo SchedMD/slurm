@@ -416,7 +416,7 @@ static void *_thread_per_node_rpc(void *args)
 	int rc;
 	slurm_fd sockfd;
 	slurm_msg_t request_msg;
-	slurm_msg_t response_msg;
+	slurm_msg_t *response_msg = xmalloc(sizeof(slurm_msg_t));
 	return_code_msg_t *slurm_rc_msg;
 	task_info_t *task_ptr = (task_info_t *) args;
 	thd_t *thread_ptr = task_ptr->thread_struct_ptr;
@@ -460,7 +460,7 @@ static void *_thread_per_node_rpc(void *args)
 	}
 
 	/* receive message */
-	if ((msg_size = slurm_receive_msg(sockfd, &response_msg))
+	if ((msg_size = slurm_receive_msg(sockfd, response_msg))
 	    == SLURM_SOCKET_ERROR) {
 		error(
 		    "_thread_per_node_rpc/slurm_receive_msg to host %s: %m",
@@ -481,9 +481,9 @@ static void *_thread_per_node_rpc(void *args)
 		goto cleanup;
 	}
 
-	switch (response_msg.msg_type) {
+	switch (response_msg->msg_type) {
 	case RESPONSE_SLURM_RC:
-		slurm_rc_msg = (return_code_msg_t *) response_msg.data;
+		slurm_rc_msg = (return_code_msg_t *) response_msg->data;
 		rc = slurm_rc_msg->return_code;
 		slurm_free_return_code_msg(slurm_rc_msg);
 		if (rc)
@@ -499,7 +499,7 @@ static void *_thread_per_node_rpc(void *args)
 		break;
 	default:
 		error("_thread_per_node_rpc from host %s, bad msg_type %d",
-		      thread_ptr->node_name, response_msg.msg_type);
+		      thread_ptr->node_name, response_msg->msg_type);
 		break;
 	}
 
@@ -513,6 +513,7 @@ static void *_thread_per_node_rpc(void *args)
 	pthread_cond_signal(task_ptr->thread_cond_ptr);
 	slurm_mutex_unlock(task_ptr->thread_mutex_ptr);
 
+	slurm_free_msg(response_msg);
 	xfree(args);
 	return (void *) NULL;
 }
