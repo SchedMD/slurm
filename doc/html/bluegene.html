@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324">
-<meta name="LLNLRandRdate" content="11 November 2004">
+<meta name="LLNLRandRdate" content="7 February 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -146,10 +146,13 @@ a a a a . . . #            Z
 program locating some expected files. You should see "#define HAVE_BGL 1" and
 "#define HAVE_FRONT_END 1" in the "config.h" file before making SLURM.</p>
 
-<p>The slurmctld daemon should execute on the system's service node with 
-an optional backup daemon on one of the front end nodes. 
+<p>The slurmctld daemon should execute on the system's service node.
+If an optional backup daemon is used, it must be in some location where 
+it is capable of writing to MMCS.
 One slurmd daemon should be configured to execute on one of the front end nodes. 
 That one slurmd daemon represents communications channel for every base partition. 
+A future release of SLURM will support multiple slurmd daemons on multiple
+front end nodes.
 You can use the scontrol command to drain individual nodes as desired and 
 return them to service. </p>
 
@@ -185,31 +188,34 @@ If large numbers of job steps are initiated by slurmd, expect the daemon to
 fail due to lack of memory. </p>
 
 <p>Presently the system administrator must explicitly define each of the 
-Blue Gene job partitions available to execute jobs. 
-(<b>NOTE:</b> Blue Gene job partitions are unrelated to SLURM partitions.)
-Jobs must then execute in one of these pre-defined Blue Gene job partitions. 
+Blue Gene partitions (or bglblocks) available to execute jobs. 
+(<b>NOTE:</b> Blue Gene partitions are unrelated to SLURM partitions.)
+Jobs must then execute in one of these pre-defined bglblocks. 
 This is known as <i>static partitioning</i>. 
-Each of these Blue Gene job partitions is explicitly configured with
-either a mesh or torus interconnect and either coprocessor or virtual 
-c-node usage.
+Each of these bglblocks are explicitly configured with either a mesh or 
+torus interconnect.
 In addition to the normal <i>slurm.conf</i> file, a new 
 <i>bluegene.conf</i> configuration file is required with this information.
 Put <i>bluegene.conf</i> into the SLURM configuration directory with
 <i>slurm.conf</i>.
 System administrators should use the smap tool to build appropriate 
-configuration files for static partitioning. 
-See the smap man page for more information.</p>
+configuration file for static partitioning. 
+See the smap man page for more information.
+Note that in addition to the bglblocks defined in blugene.conf, an 
+additional block containing all resources is created. 
+Make use of the SLURM partition mechanism to control access to these 
+bglblocks.</p>
 
 <p>Two other changes are required to support SLURM interactions with 
 the DB2 database.
 The <i>db2profile</i> script must be executed prior to the execution 
 of the slurmctld daemon.
-This may be accomplished by copying the approriate file into 
-<i>/etc/sysconfig/slurm</i>, which will be executed by 
+This may be accomplished by executing the script from
+<i>/etc/sysconfig/slurm</i>, which is executed by 
 <i>/etc/init.d/slurm</i>.
 The second required file is <i>db.properties</i>, which should 
-be copied into the SLURM configuration directory with 
-<i>slurm.conf</i>. </p>
+be copied into the SLURM configuration directory with <i>slurm.conf</i>. 
+Again, this can be accomplished using /etc/sysconfig/slurm.</p>
 
 <p>At some time in the future, we expect SLURM to support <i>dynamic 
 partitioning</i> in which Blue Gene job partitions are created and destroyed 
@@ -225,7 +231,7 @@ rebooting of c-nodes and I/O nodes.</p>
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-207187<br>
-Last modified 11 November 2004</p></td>
+Last modified 7 February 200</p></td>
 </tr>
 </table>
 </td>
