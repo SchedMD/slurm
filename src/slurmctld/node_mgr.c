@@ -77,8 +77,6 @@ static void 	_list_delete_config (void *config_entry);
 static int	_list_find_config (void *config_entry, void *key);
 static void 	_make_node_down(struct node_record *node_ptr);
 static void 	_pack_node (struct node_record *dump_node_ptr, Buf buffer);
-static void	_split_node_name (char *name, char *prefix, char *suffix, 
-					int *index, int *digits);
 static bool 	_valid_node_state_change(enum node_states old, 
 					enum node_states new);
 
@@ -97,98 +95,24 @@ static void	_dump_hash (void);
  */
 char * bitmap2node_name (bitstr_t *bitmap) 
 {
-	char *node_list_ptr;
-	int node_list_size, i;
-	char prefix[MAX_NAME_LEN], suffix[MAX_NAME_LEN];
-	char format[MAX_NAME_LEN], temp[MAX_NAME_LEN];
-	char last_prefix[MAX_NAME_LEN], last_suffix[MAX_NAME_LEN];
-	int first_index = 0, last_index = 0, index;
-	int first_digits = 0, last_digits = 0;
+	int i;
+	hostlist_t hl;
+	char buf[8192];
 
-	if (bitmap == NULL) {
-		node_list_ptr = xmalloc (1);	/* returns ptr to "\0" */
-		return node_list_ptr;
-	}
+	if (bitmap == NULL)
+		return xstrdup("");
 
-	node_list_size = 0;
-	node_list_ptr = xmalloc (BUF_SIZE);
-	strcpy (node_list_ptr, "");
-
-	strcpy (last_prefix, "");
-	strcpy (last_suffix, "");
+	hl = hostlist_create("");
 	for (i = 0; i < node_record_count; i++) {
-		if (node_list_size <
-		    (strlen (node_list_ptr) + MAX_NAME_LEN * 3)) {
-			node_list_size += BUF_SIZE;
-			xrealloc (node_list_ptr, node_list_size);
-		}
 		if (bit_test (bitmap, i) == 0)
 			continue;
-		_split_node_name (node_record_table_ptr[i].name, prefix,
-				 suffix, &index, &last_digits);
-		if ((index == (last_index + 1)) &&	/* next in sequence */
-		    (strcmp (last_prefix, prefix) == 0) &&
-		    (strcmp (last_suffix, suffix) == 0)) {
-			last_index = index;
-			continue;
-		}
-		if ((strlen (last_prefix) != 0) ||	/* end of a sequence */
-		    (strlen (last_suffix) != 0)) {
-			if (strlen (node_list_ptr) > 0)
-				strcat (node_list_ptr, ",");
-			strcat (node_list_ptr, last_prefix);
-			if (first_index != last_index)
-				strcat (node_list_ptr, "[");
-			strcpy (format, "%0");
-			sprintf (&format[2], "%dd", first_digits);
-			sprintf (temp, format, first_index);
-			strcat (node_list_ptr, temp);
-			if (first_index != last_index) {
-				strcat (node_list_ptr, "-");
-				strcpy (format, "%0");
-				sprintf (&format[2], "%dd]", first_digits);
-				sprintf (temp, format, last_index);
-				strcat (node_list_ptr, temp);
-			}	
-			strcat (node_list_ptr, last_suffix);
-			strcpy (last_prefix, "");
-			strcpy (last_suffix, "");
-		}
-		if (index == NO_VAL) {
-			if (strlen (node_list_ptr) > 0)
-				strcat (node_list_ptr, ",");
-			strcat (node_list_ptr, node_record_table_ptr[i].name);
-		}
-		else {
-			first_digits = last_digits;
-			strcpy (last_prefix, prefix);
-			strcpy (last_suffix, suffix);
-			first_index = last_index = index;
-		}
+		hostlist_push(hl, node_record_table_ptr[i].name);
 	}
+	hostlist_uniq(hl);
+	hostlist_ranged_string(hl, 8192, buf);
+	hostlist_destroy(hl);
 
-	if ((strlen (last_prefix) != 0) ||	/* end of a sequence */
-	    (strlen (last_suffix) != 0)) {
-		if (strlen (node_list_ptr) > 0)
-			strcat (node_list_ptr, ",");
-		strcat (node_list_ptr, last_prefix);
-		if (first_index != last_index)
-			strcat (node_list_ptr, "[");
-		strcpy (format, "%0");
-		sprintf (&format[2], "%dd", first_digits);
-		sprintf (temp, format, first_index);
-		strcat (node_list_ptr, temp);
-		if (first_index != last_index) {
-			strcat (node_list_ptr, "-");
-			strcpy (format, "%0");
-			sprintf (&format[2], "%dd]", first_digits);
-			sprintf (temp, format, last_index);
-			strcat (node_list_ptr, temp);
-		}
-		strcat (node_list_ptr, last_suffix);
-	}
-	xrealloc (node_list_ptr, strlen (node_list_ptr) + 1);
-	return node_list_ptr;
+	return xstrdup(buf);
 }
 
 
@@ -901,48 +825,6 @@ void set_slurmd_addr (void)
 
 	return;
 }
-
-
-/* 
- * _split_node_name - split a node name into prefix, suffix, index value, 
- *	and digit count
- * IN name - the node name to parse
- * OUT prefix, suffix, index - the node name's constituents 
- * OUT index - index, defaults to NO_VAL
- * OUT digits - number of digits in the index, defaults to NO_VAL
- */
-static void _split_node_name (char *name, char *prefix, char *suffix, 
-				int *index, int *digits) 
-{
-	int i;
-	char tmp[2];
-
-	strcpy (prefix, "");
-	strcpy (suffix, "");
-	*index = NO_VAL;
-	*digits = NO_VAL;
-	tmp[1] = (char) NULL;
-	for (i = 0;; i++) {
-		if (name[i] == (char) NULL)
-			break;
-		if ((name[i] >= '0') && (name[i] <= '9')) {
-			if (*index == NO_VAL) {
-				*index = *digits = 0;
-			}	
-			(*digits)++;
-			*index = (*index * 10) + (name[i] - '0');
-		}
-		else {
-			tmp[0] = name[i];
-			if (*index == NO_VAL)
-				strcat (prefix, tmp);
-			else
-				strcat (suffix, tmp);
-		}
-	}
-	return;
-}
-
 
 /* 
  * update_node - update the configuration data for one or more nodes
