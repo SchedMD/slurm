@@ -54,6 +54,7 @@ int print_jobs(List jobs, List format)
 		while ((job = (job_info_t *) list_next(i)) != NULL) {
 			print_job_from_format(job, format);
 		}
+		list_iterator_destroy(i);
 	} else
 		printf("No jobs found in system\n");
 
@@ -276,6 +277,7 @@ int print_job_from_format(job_info_t * job, List list)
 {
 	ListIterator i = list_iterator_create(list);
 	job_format_t *current;
+	int total_width = 0, inx;
 
 	while ((current = (job_format_t *) list_next(i)) != NULL) {
 		if (current->
@@ -283,8 +285,20 @@ int print_job_from_format(job_info_t * job, List list)
 			     current->suffix)
 		    != SLURM_SUCCESS)
 			return SLURM_ERROR;
+		if (current->width)
+			total_width += (current->width + 1);
+		else
+			total_width += 10;
 	}
+	list_iterator_destroy(i);
+
 	printf("\n");
+	if (job == NULL) {
+		/* one-origin for no trailing space */
+		for (inx=1; inx<total_width; inx++)
+			printf("-");
+		printf("\n");
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -310,7 +324,7 @@ int _print_job_job_id(job_info_t * job, int width, bool right, char* suffix)
 {
 	char id[FORMAT_STRING_SIZE];
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("JobId", width, right, true);
+		_print_str("JOBID", width, right, true);
 	else {
 		snprintf(id, FORMAT_STRING_SIZE, "%u", job->job_id);
 		_print_str(id, width, right, true);
@@ -324,7 +338,7 @@ int _print_job_partition(job_info_t * job, int width, bool right, char* suffix)
 {
 	char id[FORMAT_STRING_SIZE];
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("Partition", width, right, true);
+		_print_str("PARTITION", width, right, true);
 	else {
 		snprintf(id, FORMAT_STRING_SIZE, "%s", job->partition);
 		_print_str(id, width, right, true);
@@ -344,7 +358,7 @@ int _print_job_prefix(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_name(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("Name", width, right, true);
+		_print_str("NAME", width, right, true);
 	else
 		_print_str(job->name, width, right, true);
 	if (suffix)
@@ -355,7 +369,7 @@ int _print_job_name(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_user_id(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("User", width, right, true);
+		_print_str("USER", width, right, true);
 	else
 		_print_int(job->user_id, width, right, true);
 	if (suffix)
@@ -368,7 +382,7 @@ int _print_job_user_name(job_info_t * job, int width, bool right, char* suffix)
 	struct passwd *user_info = NULL;
 
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("User", width, right, true);
+		_print_str("USER", width, right, true);
 	else {
 		user_info = getpwuid((uid_t) job->user_id);
 		if (user_info && user_info->pw_name[0])
@@ -384,7 +398,7 @@ int _print_job_user_name(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_job_state(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("State", width, right, true);
+		_print_str("STATE", width, right, true);
 	else
 		_print_str(job_state_string(job->job_state), width, right,
 			   true);
@@ -397,7 +411,7 @@ int _print_job_job_state_compact(job_info_t * job, int width, bool right,
 				 char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("St", width, right, true);
+		_print_str("ST", width, right, true);
 	else
 		_print_str(job_state_string_compact(job->job_state), width,
 			   right, true);
@@ -411,9 +425,11 @@ int _print_job_time_limit(job_info_t * job, int width, bool right,
 {
 	char time[FORMAT_STRING_SIZE];
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("TimeLimit", width, right, true);
+		_print_str("TIME_LIMIT", width, right, true);
 	else if (job->time_limit == INFINITE)
 		_print_str("UNLIMITED", width, right, true);
+	else if (job->time_limit == NO_VAL)
+		_print_str("NOT_SET", width, right, true);
 	else {
 		/* format is "hours:minutes" */
 		snprintf(time, FORMAT_STRING_SIZE, "%d:%2.2d",
@@ -431,7 +447,7 @@ int _print_job_start_time(job_info_t * job, int width, bool right,
 			  char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("StartTime", width, right, true);
+		_print_str("START_TIME", width, right, true);
 	else
 		_print_time(job->start_time, 0, width, right);
 	if (suffix)
@@ -442,7 +458,7 @@ int _print_job_start_time(job_info_t * job, int width, bool right,
 int _print_job_end_time(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("EndTime", width, right, true);
+		_print_str("END_TIME", width, right, true);
 	else if ((job->time_limit == INFINITE) &&
 		 (job->end_time > time(NULL)))
 		_print_str("NONE", width, right, true);
@@ -457,7 +473,7 @@ int _print_job_priority(job_info_t * job, int width, bool right, char* suffix)
 {
 	char temp[FORMAT_STRING_SIZE];
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("Priority", width, right, true);
+		_print_str("PRIORITY", width, right, true);
 	else {
 		float prio = (float) job->priority / 
 		             (float) ((uint32_t) 0xffffffff);
@@ -472,7 +488,7 @@ int _print_job_priority(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_nodes(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("Nodes", width, right, false);
+		_print_str("NODES", width, right, false);
 	else
 		_print_nodes(job->nodes, width, right, false);
 	if (suffix)
@@ -483,7 +499,7 @@ int _print_job_nodes(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_node_inx(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("NodeByIndex", width, right, true);
+		_print_str("NODE_BY_INDEX", width, right, true);
 	else {
 		int *current = job->node_inx;
 		int curr_width = 0;
@@ -503,7 +519,7 @@ int _print_job_node_inx(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_num_procs(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("NumProcs", width, right, true);
+		_print_str("NUM_PROCS", width, right, true);
 	else
 		_print_int(job->num_procs, width, right, true);
 	if (suffix)
@@ -515,7 +531,7 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 			 char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("NumNodes", width, right_justify, true);
+		_print_str("NUM_NODES", width, right_justify, true);
 	else
 		_print_int(job->num_nodes, width, right_justify, true);
 	if (suffix)
@@ -527,7 +543,7 @@ int _print_job_shared(job_info_t * job, int width, bool right_justify,
 		      char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("Shared", width, right_justify, true);
+		_print_str("SHARED", width, right_justify, true);
 	else
 		_print_int(job->shared, width, right_justify, true);
 	if (suffix)
@@ -539,7 +555,7 @@ int _print_job_contiguous(job_info_t * job, int width, bool right_justify,
 			  char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("Contiguous", width, right_justify, true);
+		_print_str("CONTIGUOUS", width, right_justify, true);
 	else
 		_print_int(job->contiguous, width, right_justify, true);
 	if (suffix)
@@ -551,7 +567,7 @@ int _print_job_min_procs(job_info_t * job, int width, bool right_justify,
 			 char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("MinProcs", width, right_justify, true);
+		_print_str("MIN_PROCS", width, right_justify, true);
 	else
 		_print_int(job->min_procs, width, right_justify, true);
 	if (suffix)
@@ -563,7 +579,7 @@ int _print_job_min_memory(job_info_t * job, int width, bool right_justify,
 			  char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("MinMemory", width, right_justify, true);
+		_print_str("MIN_MEMORY", width, right_justify, true);
 	else
 		_print_int(job->min_memory, width, right_justify, true);
 	if (suffix)
@@ -576,7 +592,7 @@ _print_job_min_tmp_disk(job_info_t * job, int width, bool right_justify,
 			char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("MinTmpDisk", width, right_justify, true);
+		_print_str("MIN_TMP_DISK", width, right_justify, true);
 	else
 		_print_int(job->min_tmp_disk, width, right_justify, true);
 	if (suffix)
@@ -588,7 +604,7 @@ int _print_job_req_nodes(job_info_t * job, int width, bool right_justify,
 			 char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("ReqNodes", width, right_justify, true);
+		_print_str("REQ_NODES", width, right_justify, true);
 	else
 		_print_nodes(job->req_nodes, width, right_justify, true);
 	if (suffix)
@@ -601,7 +617,7 @@ _print_job_req_node_inx(job_info_t * job, int width, bool right_justify,
 			char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("ReqNodesByInx", width, right_justify, true);
+		_print_str("REQ_NODES_BY_INX", width, right_justify, true);
 	else {
 		int *current = job->req_node_inx;
 		int curr_width = 0;
@@ -623,7 +639,7 @@ int _print_job_features(job_info_t * job, int width, bool right_justify,
 			char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("Features", width, right_justify, true);
+		_print_str("FEATURES", width, right_justify, true);
 	else
 		_print_str(job->features, width, right_justify, true);
 	if (suffix)
@@ -639,6 +655,7 @@ int print_step_from_format(job_step_info_t * job_step, List list)
 {
 	ListIterator i = list_iterator_create(list);
 	step_format_t *current;
+	int total_width = 0, inx;
 
 	while ((current = (step_format_t *) list_next(i)) != NULL) {
 		if (current->
@@ -646,8 +663,19 @@ int print_step_from_format(job_step_info_t * job_step, List list)
 			     current->right_justify, current->suffix)
 		    != SLURM_SUCCESS)
 			return SLURM_ERROR;
+		if (current->width)
+			total_width += current->width;
+		else
+			total_width += 10;
 	}
+	list_iterator_destroy(i);
 	printf("\n");
+	if (job_step == NULL) {
+		/* one-origin for no trailing space */
+		for (inx=1; inx<total_width; inx++)
+			printf("-");
+		printf("\n");
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -675,7 +703,7 @@ int _print_step_id(job_step_info_t * step, int width, bool right, char* suffix)
 	char id[FORMAT_STRING_SIZE];
 
 	if (step == NULL)	/* Print the Header instead */
-		_print_str("StepId", width, right, true);
+		_print_str("STEPID", width, right, true);
 	else {
 		snprintf(id, FORMAT_STRING_SIZE, "%u.%u", step->job_id,
 			 step->step_id);
@@ -692,7 +720,7 @@ int _print_step_partition(job_step_info_t * step, int width, bool right,
 	char id[FORMAT_STRING_SIZE];
 
 	if (step == NULL)	/* Print the Header instead */
-		_print_str("Partition", width, right, true);
+		_print_str("PARTITION", width, right, true);
 	else {
 		snprintf(id, FORMAT_STRING_SIZE, "%s", step->partition);
 		_print_str(id, width, right, true);
@@ -714,7 +742,7 @@ int _print_step_user_id(job_step_info_t * step, int width, bool right,
 			char* suffix)
 {
 	if (step == NULL)	/* Print the Header instead */
-		_print_str("User", width, right, true);
+		_print_str("USER", width, right, true);
 	else
 		_print_int(step->user_id, width, right, true);
 	if (suffix)
@@ -728,7 +756,7 @@ int _print_step_user_name(job_step_info_t * step, int width, bool right,
 	struct passwd *user_info = NULL;
 
 	if (step == NULL)	/* Print the Header instead */
-		_print_str("User", width, right, true);
+		_print_str("USER", width, right, true);
 	else {
 		user_info = getpwuid((uid_t) step->user_id);
 		if (user_info && user_info->pw_name[0])
@@ -745,7 +773,7 @@ int _print_step_start_time(job_step_info_t * step, int width, bool right,
 			   char* suffix)
 {
 	if (step == NULL)	/* Print the Header instead */
-		_print_str("StartTime", width, right, true);
+		_print_str("START_TIME", width, right, true);
 	else
 		_print_time(step->start_time, 0, width, right);
 	if (suffix)
@@ -757,7 +785,7 @@ int _print_step_nodes(job_step_info_t * step, int width, bool right,
 		      char* suffix)
 {
 	if (step == NULL)	/* Print the Header instead */
-		_print_str("Nodes", width, right, false);
+		_print_str("NODES", width, right, false);
 	else
 		_print_nodes(step->nodes, width, right, false);
 	if (suffix)
