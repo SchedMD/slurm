@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
+                        "http://www.w3.org/TR/REC-html40/loose.dtd">
+
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
+Linux clusters, high-performance computing, Livermore Computing">
+<meta name="LLNLRandR" content="UCRL-WEB-201790">
+<meta name="LLNLRandRdate" content="19 April 2004">
+<meta name="distribution" content="global">
+<meta name="description" content="Simple Linux Utility for Resource Management">
+<meta name="copyright"
+content="This document is copyrighted U.S.
+Department of Energy under Contract W-7405-Eng-48">
+<meta name="Author" content="Moe Jette">
+<meta name="email" content="jette@llnl.gov">
+<meta name="Classification"
+content="DOE:DOE Web sites via organizational
+structure:Laboratories and Other Field Facilities">
+<title>Simple Linux Utility for Resource Management:Download</title>
+<link href="slurmstyles.css" rel="stylesheet" type="text/css">
+</head>
+
+<body bgcolor="#000000" text="#000000" leftmargin="0" topmargin="0">
+<table width="770" border="0" cellspacing="0" cellpadding="0">
+<tr> 
+<td><img src="slurm_banner.jpg" width="770" height="145" usemap="#Map" border="0" alt="Simple Linux Utility for Resource Management"></td>
+</tr>
+</table>
+<table width="770" border="0" cellspacing="0" cellpadding="3" bgcolor="#FFFFFF">
+<tr> 
+<td width="100%"> 
+<table width="760" border="0" cellspacing="0" cellpadding="4" align="right">
+<tr>
+<td valign="top" bgcolor="#000000"><p><img src="spacer.gif" width="110" height="1" alt=""></p>
+<p><a href="slurm.html" class="nav" align="center">Home</a></p>
+<p><span class="whitetext">About</span><br>
+<a href="overview.html" class="nav">Overview</a><br>
+<a href="news.html" class="nav">What's New</a><br>
+<a href="publications.html" class="nav">Publications</a><br>
+<a href="team.html" class="nav">SLURM Team</a></p>
+<p><span class="whitetext">Using</span><br>
+<a href="documentation.html" class="nav">Documentation</a><br>
+<a href="faq.html" class="nav">FAQ</a><br>
+<a href="help.html" class="nav">Getting Help</a></p>
+<p><span class="whitetext">Installing</span><br>
+<a href="platforms.html" class="nav">Platforms</a><br>
+<a href="download.html" class="nav">Download</a><br>
+<a href="quickstart_admin.html" class="nav">Guide</a></p></td>
+<td><img src="spacer.gif" width="10" height="1" alt=""></td>
+<td valign="top"><h2>Download</h2>
+<p>We expect to post SLURM for download when version 0.3 is completed and tested 
+in the first quarter of 2004. However, we will provide the code upon request (send 
+e-mail to <a href="mailto:jette@llnl.gov">jette@llnl.gov</a>). The available components 
+include: </p>
+<ul>
+<li><b>Source Code<br>
+</b>Includes the code for all SLURM daemons, commands, and libraries. Man pages 
+and other documents are included. </li>
+<ul>
+<li>Version 0.3 
+<a href="ftp://ftp.llnl.gov/pub/linux/slurm/beta/slurm-0.3.0.tar.gz">slurm-0.3.0.tar.gz</a></li>
+</ul>
+<li><b>Test Suite<br>
+</b>Includes a collection of about 100 functionality and stress tests for SLURM. 
+Approximately 1000 SLURM jobs will be executed by this test suite. Total execution 
+time will vary by system type and size but will be on the order of 40 minutes. </li>
+<ul>
+<li>Version 0.3
+<a href="ftp://ftp.llnl.gov/pub/linux/slurm/slurm-qa.0.3.0.tar.gz">slurm-qa.0.3.0.tar.gz</a></li>
+</ul>
+<li><b>PAM Module<br>
+</b>Pluggable Authentication Module (PAM) for restricting access to compute nodes 
+where SLURM performs resource management. Access to the node is restricted to 
+user root and users who have been allocated resources on that node. </li>
+<ul>
+<li>Version 0.3
+<a href="ftp://ftp.llnl.gov/pub/linux/slurm/slurm-pam.0.3.0.tar.gz">slurm-pam.0.3.0.tar.gz</a></li>
+</ul>
+<li><b>MPICH Patch<br>
+</b>MPICH normally uses the <b>rsh</b> program to initiate tasks. Because these 
+processes are not directly under the control of SLURM daemons, SLURM functionality 
+is restricted. For example, SLURM has no reliable means of determining which processes 
+are associated with a given job. This patch improves the integration of SLURM 
+and MPICH. </li>
+<ul>
+<li>NOTE: Patch unavailable as of April 2004.</li>
+</ul>
+</ul>
+<h2>Related Software</h2>
+<ul>
+<li>Authentication plugins</li>
+<ul>
+<li><a href="http://www.theether.org/authd/">Authd</a></li>
+<li><a href="http://www.llnl.gov/linux/munge/">Munge</a></li>
+</ul>
+<li>MPI version supported</li>
+<ul>
+<li><a href="http://www.lam-mpi.org/">LAM/MPI</a></li>
+<li><a href="http://www.mpi-softtech.com/">MPI Software Technology</a></li>
+<li><a href="http://www.quadrics.com/">Quadrics MPI</a></li>
+</ul>
+<li>Schedulers</li>
+<ul>
+<li><a href="http://www.llnl.gov/LCdocs/dpcs/">Livermore Computing Resource Manager (LCRM/DPCS)</a></li>
+<li><a href="http://www.platform.com/">Load Sharing Facility (LSF)</a></li>
+<li><a href="http://www.supercluster.org/maui/">Maui Scheduler</a></li>
+</ul>
+</ul>
+</td>
+</tr>
+<tr> 
+<td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
+<p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
+<p class="footer">UCRL-WEB-201790<br>
+Last modified April 19 2004</p></td>
+</tr>
+</table>
+</td>
+ </tr>
+</table>
+<map name="Map">
+<area shape="rect" coords="616,4,762,97" href="../">
+<area shape="rect" coords="330,1,468,11" href="http://www.llnl.gov/disclaimer.html">
+<area shape="rect" coords="11,23,213,115" href="slurm.html">
+</map>
+</body>
+</html>
