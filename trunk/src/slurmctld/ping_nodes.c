@@ -137,7 +137,8 @@ void ping_nodes (void)
 		     (base_state != NODE_STATE_DRAINED))) {
 			error ("Node %s not responding, setting DOWN", 
 			       node_record_table_ptr[i].name);
-			set_node_down(node_record_table_ptr[i].name);
+			set_node_down(node_record_table_ptr[i].name, 
+					"Not responding");
 			continue;
 		}
 

@@ -1036,6 +1036,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
 	uint16_t resp_state;
+	char *reason_down;
 
 	node_ptr = find_node_record (node_name);
 	if (node_ptr == NULL)
@@ -1047,8 +1048,8 @@ validate_node_specs (char *node_name, uint32_t cpus,
 
 	if (cpus < config_ptr->cpus) {
 		error ("Node %s has low cpu count %u", node_name, cpus);
-		error_code = EINVAL;
-	}
+		error_code  = EINVAL;
+		reason_down = "Low CPUs";	}
 	node_ptr->cpus = cpus;
 	if ((config_ptr->cpus != cpus) && (node_ptr->partition_ptr))		
 		node_ptr->partition_ptr->total_cpus += 
@@ -1057,7 +1058,8 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	if (real_memory < config_ptr->real_memory) {
 		error ("Node %s has low real_memory size %u", 
 		       node_name, real_memory);
-		error_code = EINVAL;
+		error_code  = EINVAL;
+		reason_down = "Low RealMemory";
 	}
 	node_ptr->real_memory = real_memory;
 
@@ -1065,6 +1067,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		error ("Node %s has low tmp_disk size %u",
 		       node_name, tmp_disk);
 		error_code = EINVAL;
+		reason_down = "Low TmpDisk";
 	}
 	node_ptr->tmp_disk = tmp_disk;
 
@@ -1074,14 +1077,14 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		if ((node_ptr->node_state != NODE_STATE_DRAINING) &&
 		    (node_ptr->node_state != NODE_STATE_DRAINED)) {
 			error ("Setting node %s state to DOWN", node_name);
-			set_node_down(node_name);
+			set_node_down(node_name, reason_down);
 		}
 	} else if (status == ESLURMD_PROLOG_FAILED) {
 		if ((node_ptr->node_state != NODE_STATE_DRAINING) &&
 		    (node_ptr->node_state != NODE_STATE_DRAINED)) {
 			error ("Prolog failure on node %s, state to DOWN",
 				node_name);
-			set_node_down(node_name);
+			set_node_down(node_name, "Prolog failed");
 		}
 	} else {
 		node_ptr->cpus = cpus;
@@ -1092,8 +1095,8 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		 * processor count at present */
 		if ((slurmctld_conf.fast_schedule == 0) &&
 		    (node_ptr->config_ptr->cpus != cpus)) {
-			error ("Node %s processor count inconsistent with rest of partition",
-				node_name);
+			error ("Node %s processor count inconsistent with rest "
+			       "of partition", node_name);
 			return EINVAL;		/* leave node down */
 		}
 #endif
@@ -1216,8 +1219,9 @@ void node_not_resp (char *name, time_t msg_time)
  * set_node_down - make the specified node's state DOWN if possible
  *	(not in a DRAIN state), kill jobs as needed 
  * IN name - name of the node 
+ * IN reason - why the node is DOWN
  */
-void set_node_down (char *name)
+void set_node_down (char *name, char *reason)
 {
 	struct node_record *node_ptr;
 
@@ -1231,6 +1235,8 @@ void set_node_down (char *name)
 	    (node_ptr->node_state != NODE_STATE_DRAINED))
 		_make_node_down(node_ptr);
 	(void) kill_running_job_by_node_name(name, false);
+	if (node_ptr->reason == NULL)
+		node_ptr->reason = xstrdup(reason);
 
 	return;
 }
