@@ -55,19 +55,19 @@ typedef struct partition{
 int configure_switches(partition_t* partition);
 int partition_sys(List requests);
 
-void copyPartition(partition_t* A, partition_t* B);
-void printPartition(partition_t* part);
-void printList(List list);
-void printSysList(List list);
+void copy_partition(partition_t* A, partition_t* B);
+void print_partition(partition_t* part);
+void print_list(List list);
+void print_sys_list(List list);
 
-int isNotCorrectDimension(ushort* cur_part, ushort* req);
-int isPartitionNotEquals(partition_t* A, partition_t* B);
+int is_not_correct_dimension(ushort* cur_part, ushort* req);
+int is_partition_not_equals(partition_t* A, partition_t* B);
 void rotate_part(const ushort* config, ushort** new_config);
 
-int intArray_size(ushort* part_geometry);
-void sortIntArrayByDecSize(List configs);
-void sortPartitionsByIncSize(List partitions);
-void sortPartitionsByDecSize(List partitions);
+int int_array_size(ushort* part_geometry);
+void sort_int_array_by_dec_size(List configs);
+void sort_partitions_by_inc_size(List partitions);
+void sort_partitions_by_dec_size(List partitions);
 
 
 #endif /* _PARTITION_SYS_H_ */
