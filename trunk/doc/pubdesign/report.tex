@@ -158,7 +158,7 @@ terminate jobs via the API.
 \subsection{Architecture}
 
 \begin{figure}[tb]
-\centerline{\epsfig{file=figures/arch.eps,scale=1.2}}
+\centerline{\epsfig{file=figures/arch.eps,scale=0.40}}
 \caption{SLURM Architecture}
 \label{arch}
 \end{figure}
@@ -174,7 +174,7 @@ compute resource in SLURM, {\em partitions}, which group nodes into
 logical disjoint sets, {\em jobs}, or allocations of resources assigned
 to a user for a specified amount of time, and {\em job steps}, which are
 sets of (possibly parallel) tasks within a job.  
-Jobs are allocated nodes within 
+Priority-ordered jobs are allocated nodes within 
 partitions until the resources (nodes) within that partition are exhausted. 
 Once a job is assigned a set of nodes, the user is able to initiate
 parallel work in the form of job steps in any configuration within the
@@ -183,7 +183,7 @@ all nodes allocated to the job, or several job steps may independently
 use a portion of the allocation.
 
 \begin{figure}[tcb]
-\centerline{\epsfig{file=figures/entities.eps,scale=0.6}}
+\centerline{\epsfig{file=figures/entities.eps,scale=0.7}}
 \caption{SLURM Entities}
 \label{entities}
 \end{figure}
@@ -355,10 +355,10 @@ A set of functions is defined for use by all of the different
 infrastructures of a particular variety. 
 For example, the authentication plugin must define functions 
 such as: 
-{\em slurm_auth_activate} to create a credential,
-{\em slurm_auth_verify} to verify a credential to 
+{\em slurm\_auth\_activate} to create a credential,
+{\em slurm\_auth\_verify} to verify a credential to 
 approve or deny authentication, 
-{\em slurm_auth_get_uid} to get the user id associated with 
+{\em slurm\_auth\_get\_uid} to get the user id associated with 
 a specific credential, etc.
 It also must define the data structure used, a plugin type, 
 a plugin version number, etc. 

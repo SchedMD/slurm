@@ -177,7 +177,7 @@ terminate jobs via the API.
 \subsection{Architecture}
 
 \begin{figure}[tb]
-\centerline{\epsfig{file=figures/arch.eps,scale=1.2}}
+\centerline{\epsfig{file=figures/arch.eps,scale=0.40}}
 \caption{SLURM Architecture}
 \label{arch}
 \end{figure}
@@ -202,7 +202,7 @@ all nodes allocated to the job, or several job steps may independently
 use a portion of the allocation.
 
 \begin{figure}[tcb]
-\centerline{\epsfig{file=figures/entities.eps,scale=0.6}}
+\centerline{\epsfig{file=figures/entities.eps,scale=0.7}}
 \caption{SLURM Entities}
 \label{entities}
 \end{figure}
@@ -374,10 +374,10 @@ A set of functions is defined for use by all of the different
 infrastructures of a particular variety. 
 For example, the authentication plugin must define functions 
 such as: 
-{\em slurm_auth_activate} to create a credential,
-{\em slurm_auth_verify} to verify a credential to 
+{\em slurm\_auth\_activate} to create a credential,
+{\em slurm\_auth\_verify} to verify a credential to 
 approve or deny authentication, 
-{\em slurm_auth_get_uid} to get the user id associated with 
+{\em slurm\_auth\_get\_uid} to get the user id associated with 
 a specific credential, etc.
 It also must define the data structure used, a plugin type, 
 a plugin version number, etc. 
