@@ -47,6 +47,7 @@
 #include "src/common/pack.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE 1024
@@ -234,7 +235,9 @@ int dump_all_part_state(void)
 	slurmctld_lock_t part_read_lock =
 	    { READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 	Buf buffer = init_buf(BUF_SIZE * 16);
+	DEF_TIMERS;
 
+	START_TIMER;
 	/* write header: time */
 	pack_time(time(NULL), buffer);
 
@@ -293,6 +296,8 @@ int dump_all_part_state(void)
 	unlock_state_files();
 
 	free_buf(buffer);
+	END_TIMER;
+	debug3("dump_all_part_state %s", TIME_STR);
 	return 0;
 }
 

@@ -56,6 +56,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
@@ -247,7 +248,9 @@ int dump_all_job_state(void)
 	ListIterator job_record_iterator;
 	struct job_record *job_record_point;
 	Buf buffer = init_buf(BUF_SIZE * 16);
+	DEF_TIMERS;
 
+	START_TIMER;
 	/* write header: time */
 	pack_time(time(NULL), buffer);
 
@@ -306,6 +309,8 @@ int dump_all_job_state(void)
 	unlock_state_files();
 
 	free_buf(buffer);
+	END_TIMER;
+	debug3("dump_all_job_state %s", TIME_STR);
 	return error_code;
 }
 
