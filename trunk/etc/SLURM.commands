@@ -1,2 +1,16 @@
 Reconfigure
+Update     NodeName=lx3000,lx3003 State=DRAINING
+Update     PartitionName=class AllowGroups=students,teachers MaxTime=20 MaxNodes=4
+Update     PartitionName=debug State=DOWN
+Update     PartitionName=batch Key=NO Nodes=lx[0100-9999]
+NodeConfig NodeName=lx1234 CPUs=16 RealMemory=2048 TmpDisk=16384
+DumpNode   LastUpdate=1234
+DumpPart   LastUpdate=5678
+Expect     errors from here on ...
+NodeConfig NodeName=lx1235 CPUs=1 RealMemory=2 TmpDisk=3
+NodeConfig CPUs=1 RealMemory=2 TmpDisk=3
+Update     PartitionName=debug State=DOWN MoreStuff
+Update     PartitionName=debug State=OTHER MoreStuff
+Update     PartitionName=debug State=OTHER MoreStuff
+Update     NodeName=lx[3000-1234 State=DRAINING
 Shutdown
