@@ -136,9 +136,12 @@ struct job_details {
 	uint32_t min_procs;		/* minimum processors per node, MB */
 	uint32_t min_memory;		/* minimum memory per node, MB */
 	uint32_t min_tmp_disk;		/* minimum temporary disk per node, MB */
-	char *job_script;		/* name of job script to execute */
+	char *stderr;			/* pathname of job's stderr file */
+	char *stdin;			/* pathname of job's stdin file */
+	char *stdout;			/* pathname of job's stdout file */
 	uint32_t total_procs;		/* total number of allocated processors, for accounting */
 	time_t submit_time;		/* time of submission */
+	char *work_dir;			/* pathname of job's working directory */
 };
 
 struct job_record {

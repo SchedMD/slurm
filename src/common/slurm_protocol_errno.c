@@ -38,11 +38,13 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_USER_ID_MISSING , 		"User id missing" },
 	{ ESLURM_JOB_NAME_TOO_LONG,		"Job name too long" },
 	{ ESLURM_DUPLICATE_JOB_ID , 		"Duplicate job id" },
+	{ ESLURM_PATHNAME_TOO_LONG , 		"Pathname of a file or directory too long" },
 	{ ESLURM_NOT_TOP_PRIORITY,		"Immediate execution impossible, higher priority jobs pending" },
 	{ ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE, "Requested node configuration is not available" },
 	{ ESLURM_NODES_BUSY,			"Requested nodes are busy" },
 	{ ESLURM_INVALID_JOB_ID,		"Invalid job id specified" },
 	{ ESLURM_INVALID_NODE_NAME,		"Invalid node name specified" },
+	{ ESLURM_WRITING_TO_FILE,		"I/O error writing script/environment to file" },
 	{ ESLURM_TRANSITION_STATE_NO_UPDATE,	"Job can not be altered now, try again later" },
 	{ ESLURM_ALREADY_DONE,			"Job/step already completed" },
 

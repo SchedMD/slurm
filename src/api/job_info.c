@@ -79,7 +79,6 @@ slurm_print_job_table ( FILE* out, job_table_t * job_ptr )
 	fprintf ( out, "MinProcs=%u MinMemory=%u ", job_ptr->min_procs, job_ptr->min_memory);
 	fprintf ( out, "MinTmpDisk=%u\n", job_ptr->min_tmp_disk);
 	fprintf ( out, "   ReqNodeList=%s Features=%s ", job_ptr->req_nodes, job_ptr->features);
-	fprintf ( out, "JobScript=%s ", job_ptr->job_script);
 	fprintf ( out, "ReqNodeListIndecies=");
 	for (j = 0; job_ptr->req_node_inx; j++) {
 		if (j > 0)

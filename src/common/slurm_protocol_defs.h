@@ -293,6 +293,8 @@ typedef struct submit_response_msg
 typedef struct job_desc_msg {   /* Job descriptor for submit, allocate, and update requests */
 	uint16_t contiguous;    /* 1 if job requires contiguous nodes, 0 otherwise,
 				 * default=0 */
+	char *environment;      /* environment variables to set for job, 
+	                         *	name=value pairs, one per line */
 	char *features;         /* comma separated list of required features, default NONE */
 	char *groups;           /* comma separated list of groups the user can access,
 				 * default set output of "/usr/bin/groups" by API,
@@ -308,7 +310,6 @@ typedef struct job_desc_msg {   /* Job descriptor for submit, allocate, and upda
 				 * can only be explicitly set if user is root, maximum
 				 *                                  * value is #fffffffe */
 	char *req_nodes;        /* comma separated list of required nodes, default NONE */
-	char *job_script;       /* pathname of required script, default NONE */
 	uint16_t shared;        /* 1 if job can share nodes with other jobs, 0 otherwise,
 				 * default in SLURM configuration */
 	uint32_t time_limit;    /* maximum run time in minutes, default is partition
@@ -316,8 +317,13 @@ typedef struct job_desc_msg {   /* Job descriptor for submit, allocate, and upda
 				 *                                  * value is #fffffffe */
 	uint32_t num_procs;     /* number of processors required by job, default=0 */
 	uint32_t num_nodes;     /* number of nodes required by job, default=0 */
+	char *script;           /* the actual job script, default NONE */
+	char *stderr;		/* pathname of stderr */
+	char *stdin;		/* pathname of stdin */
+	char *stdout;		/* pathname of stdout */
 	uint32_t user_id;       /* set only if different from current UID, default set
 				 * to UID by API, can only be set if user is root */
+	char *work_dir;         /* fully qualified pathname of working directory */
 } job_desc_msg_t ;
 
 struct slurm_ctl_conf {
@@ -368,7 +374,6 @@ struct job_table {
 	int *req_node_inx;	/* list index pairs into node_table for *req_nodes:
 				   start_range_1, end_range_1, start_range_2, .., -1  */
 	char *features;		/* comma separated list of required features */
-	char *job_script;	/* pathname of required script */
 };
 typedef struct job_table job_table_t ;
 typedef struct job_table job_table_msg_t ;
@@ -464,6 +469,7 @@ extern char *job_state_string(uint16_t inx);
 extern char *node_state_string(uint16_t inx);
 
 #define SLURM_JOB_DESC_DEFAULT_CONTIGUOUS	NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_ENVIRONMENT	NULL
 #define SLURM_JOB_DESC_DEFAULT_FEATURES		NULL
 #define SLURM_JOB_DESC_DEFAULT_GROUPS		NULL
 #define SLURM_JOB_DESC_DEFAULT_JOB_ID		NO_VAL	
@@ -481,6 +487,7 @@ extern char *node_state_string(uint16_t inx);
 #define SLURM_JOB_DESC_DEFAULT_NUM_PROCS	NO_VAL
 #define SLURM_JOB_DESC_DEFAULT_NUM_NODES	NO_VAL
 #define SLURM_JOB_DESC_DEFAULT_USER_ID		NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_WORKING_DIR	NULL
 void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg ) ;
 void slurm_init_part_desc_msg ( update_part_msg_t * update_part_msg ) ;
 
