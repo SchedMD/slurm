@@ -43,6 +43,7 @@
 /* #include <stdlib.h> */
 #include <time.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #ifdef HAVE_LIBELAN3
 #  include "src/common/qsw.h"
@@ -59,6 +60,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 
@@ -109,6 +111,31 @@
 #define DEFAULT_SLURMD_TIMEOUT      300
 #define DEFAULT_TMP_FS              "/tmp"
 
+/*****************************************************************************\
+ *  General configuration parameters and data structures
+\*****************************************************************************/
+
+typedef struct slurmctld_config {
+	int	daemonize;
+	bool	resume_backup;
+	time_t	shutdown_time;
+	int	server_thread_count;
+
+	slurm_cred_ctx_t cred_ctx;
+#ifdef WITH_PTHREADS
+	pthread_mutex_t thread_count_lock;
+	pthread_t thread_id_main;
+	pthread_t thread_id_sig;
+	pthread_t thread_id_rpc;
+#else
+	int thread_count_lock;
+	int thread_id_main;
+	int thread_id_sig;
+	int thread_id_rpc;
+#endif
+} slurmctld_config_t;
+
+extern slurmctld_config_t slurmctld_config;
 extern slurm_ctl_conf_t slurmctld_conf;
 
 /*****************************************************************************\
@@ -869,6 +896,13 @@ extern void reset_first_job_id(void);
  */
 extern void reset_job_bitmaps (void);
 
+/* run_backup - this is the backup controller, it should run in standby 
+ *	mode, assuming control when the primary controller stops responding */
+extern void run_backup(void);
+
+/* save_all_state - save entire slurmctld state for later recovery */
+extern void save_all_state(void);
+
 /* 
  * schedule - attempt to schedule all pending jobs
  *	pending jobs for each partition will be scheduled in priority  
@@ -926,6 +960,19 @@ extern int shutdown_backup_controller(void);
  * IN signal - signal to send
  */
 extern void signal_step_tasks(struct step_record *step_ptr, uint16_t signal);
+
+/*
+ * slurmctld_req  - Process an individual RPC request
+ * IN/OUT - the request message, data associated with the message is freed
+ */
+extern void slurmctld_req (slurm_msg_t * msg);
+
+/*
+ * slurmctld_shutdown - issue RPC to have slurmctld shutdown, knocks
+ *	loose an slurm_accept_msg_conn() if we have a thread hung there
+ * RET 0 or error code
+ */
+extern int slurmctld_shutdown(void);
 
 /*
  * step_create - creates a step_record in step_specs->job_id, sets up the

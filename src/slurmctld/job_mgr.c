@@ -34,14 +34,12 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
 
 #ifdef HAVE_LIBELAN3
 #  include <elan3/elan3.h>
@@ -53,9 +51,6 @@
 
 #include <slurm/slurm_errno.h>
 
-#include "src/common/list.h"
-#include "src/common/macros.h"
-#include "src/common/pack.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 
@@ -71,10 +66,6 @@
 
 #define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
 
-#define YES_OR_NO(_in_string)	\
-		(( strcmp ((_in_string),"YES"))? \
-			(strcmp((_in_string),"NO")? \
-				-1 : 0 ) : 1 )
 /* Global variables */
 List job_list = NULL;		/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -504,8 +495,11 @@ static int _load_job_state(Buf buffer)
 
 	safe_unpack16(&details, buffer);
 	if ((details == DETAILS_FLAG) && 
-	    (_load_job_details(job_ptr, buffer)))
+	    (_load_job_details(job_ptr, buffer))) {
+		job_ptr->job_state = JOB_FAILED;
+		job_ptr->end_time = time(NULL);
 		goto unpack_error;
+	}
 
 	job_ptr->user_id      = user_id;
 	job_ptr->time_limit   = time_limit;
@@ -519,13 +513,14 @@ static int _load_job_state(Buf buffer)
 	strncpy(job_ptr->name, name, MAX_NAME_LEN);
 	xfree(name);
 	xfree(job_ptr->nodes);
-	job_ptr->nodes        = nodes;
-	nodes = NULL;	/* reused, nothing left to free */
+	job_ptr->nodes  = nodes;
+	nodes           = NULL;	/* reused, nothing left to free */
 	xfree(job_ptr->alloc_node);
-	job_ptr->alloc_node   = alloc_node;
-	alloc_node = NULL;	/* reused, nothing left to free */
+	job_ptr->alloc_node = alloc_node;
+	alloc_node          = NULL;	/* reused, nothing left to free */
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	job_ptr->node_bitmap  = node_bitmap;
+	node_bitmap           = NULL;
 	strncpy(job_ptr->partition, partition, MAX_NAME_LEN);
 	xfree(partition);
 	job_ptr->part_ptr = part_ptr;
@@ -637,7 +632,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 		goto unpack_error;
 	}
 
-	/* free any left-over data */
+	/* free any left-over detail data */
 	xfree(job_ptr->details->req_nodes);
 	FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
 	xfree(job_ptr->details->exc_nodes);
