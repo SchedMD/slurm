@@ -562,32 +562,28 @@ int list_find_part(void *part_entry, void *key)
  *	machine independent form (for network transmission)
  * OUT buffer_ptr - the pointer is set to the allocated buffer.
  * OUT buffer_size - set to size of the buffer in bytes
- * IN/OUT update_time - dump new data only if partition records updated ,
- *	set to time partition records last updated
- *	since time specified, otherwise return empty buffer
  * global: part_list - global list of partition records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change slurm_load_part() in api/part_info.c if data format changes
  */
 void
-pack_all_part(char **buffer_ptr, int *buffer_size, time_t * update_time)
+pack_all_part(char **buffer_ptr, int *buffer_size)
 {
 	ListIterator part_record_iterator;
 	struct part_record *part_record_point;
 	int parts_packed, tmp_offset;
 	Buf buffer;
+	time_t now = time(NULL);
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
-	if (*update_time == last_part_update)
-		return;
 
 	buffer = init_buf(BUF_SIZE * 16);
 
 	/* write haeader: version and time */
 	parts_packed = 0;
 	pack32((uint32_t) parts_packed, buffer);
-	pack_time(last_part_update, buffer);
+	pack_time(now, buffer);
 
 	/* write individual partition records */
 	part_record_iterator = list_iterator_create(part_list);
@@ -608,7 +604,6 @@ pack_all_part(char **buffer_ptr, int *buffer_size, time_t * update_time)
 	pack32((uint32_t) parts_packed, buffer);
 	set_buf_offset(buffer, tmp_offset);
 
-	*update_time = last_part_update;
 	*buffer_size = get_buf_offset(buffer);
 	buffer_ptr[0] = xfer_buf_data(buffer);
 }

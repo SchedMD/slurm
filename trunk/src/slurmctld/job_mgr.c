@@ -1981,33 +1981,29 @@ int _list_find_job_old(void *job_entry, void *key)
  *	machine independent form (for network transmission)
  * OUT buffer_ptr - the pointer is set to the allocated buffer.
  * OUT buffer_size - set to size of the buffer in bytes
- * IN/OUT update_time - dump new data only if job records updated since time 
- * 	specified, otherwise return empty buffer, set to time partition 
- *	records last updated
  * global: job_list - global list of job records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c 
  *	whenever the data format changes
  */
 void
-pack_all_jobs(char **buffer_ptr, int *buffer_size, time_t * update_time)
+pack_all_jobs(char **buffer_ptr, int *buffer_size)
 {
 	ListIterator job_record_iterator;
 	struct job_record *job_record_point;
 	uint32_t jobs_packed = 0, tmp_offset;
 	Buf buffer;
+	time_t now = time(NULL);
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
-	if (*update_time == last_job_update)
-		return;
 
 	buffer = init_buf(BUF_SIZE * 16);
 
 	/* write message body header : size and time */
 	/* put in a place holder job record count of 0 for now */
 	pack32((uint32_t) jobs_packed, buffer);
-	pack_time(last_job_update, buffer);
+	pack_time(now, buffer);
 
 	/* write individual job records */
 	job_record_iterator = list_iterator_create(job_list);
@@ -2028,7 +2024,6 @@ pack_all_jobs(char **buffer_ptr, int *buffer_size, time_t * update_time)
 	pack32((uint32_t) jobs_packed, buffer);
 	set_buf_offset(buffer, tmp_offset);
 
-	*update_time = last_job_update;
 	*buffer_size = get_buf_offset(buffer);
 	buffer_ptr[0] = xfer_buf_data(buffer);
 }

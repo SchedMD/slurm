@@ -63,11 +63,11 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
-#define BUF_SIZE 1024
-#define DEFAULT_DAEMONIZE 0
-#define DEFAULT_RECOVER 0
-#define MAX_SERVER_THREAD_COUNT 20
-#define MEM_LEAK_TEST 0
+#define BUF_SIZE	1024	/* Temporary buffer size */
+#define DEFAULT_DAEMONIZE 0	/* Run as daemon by default if set */
+#define DEFAULT_RECOVER 0	/* Recover state by default if set */
+#define MAX_SERVER_THREADS 20	/* Max threads to service RPCs */
+#define MEM_LEAK_TEST	0	/* Running memory leak test if set */
 
 #ifndef MAX
 #  define MAX(x,y) (((x) >= (y)) ? (x) : (y))
@@ -116,7 +116,7 @@ static void *       _service_connection(void *arg);
 static int          _shutdown_backup_controller(void);
 inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
 inline static void  _slurm_rpc_allocate_and_run(slurm_msg_t * msg);
-inline static void  _slurm_rpc_dump_build(slurm_msg_t * msg);
+inline static void  _slurm_rpc_dump_conf(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_nodes(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_partitions(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_jobs(slurm_msg_t * msg);
@@ -406,7 +406,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		slurm_mutex_lock(&thread_count_lock);
 		server_thread_count++;
 		slurm_mutex_unlock(&thread_count_lock);
-		if (server_thread_count >= MAX_SERVER_THREAD_COUNT) {
+		if (server_thread_count >= MAX_SERVER_THREADS) {
 			info(
 			   "Warning: server_thread_count is %d, over system limit", 
 			   server_thread_count);
@@ -675,7 +675,7 @@ static void _slurmctld_req (slurm_msg_t * msg)
 
 	switch (msg->msg_type) {
 	case REQUEST_BUILD_INFO:
-		_slurm_rpc_dump_build(msg);
+		_slurm_rpc_dump_conf(msg);
 		slurm_free_last_update_msg(msg->data);
 		break;
 	case REQUEST_NODE_INFO:
@@ -765,39 +765,39 @@ static void _slurmctld_req (slurm_msg_t * msg)
 	}
 }
 
-/* _slurm_rpc_dump_build - process RPC for Slurm configuration information */
-static void _slurm_rpc_dump_build(slurm_msg_t * msg)
+/* _slurm_rpc_dump_conf - process RPC for Slurm configuration information */
+static void _slurm_rpc_dump_conf(slurm_msg_t * msg)
 {
 	clock_t start_time;
 	slurm_msg_t response_msg;
 	last_update_msg_t *last_time_msg = (last_update_msg_t *) msg->data;
-	slurm_ctl_conf_info_msg_t build_tbl;
+	slurm_ctl_conf_info_msg_t config_tbl;
 	/* Locks: Read config */
 	slurmctld_lock_t config_read_lock = { READ_LOCK, NO_LOCK,
 		NO_LOCK, NO_LOCK
 	};
 
 	start_time = clock();
-	debug("Processing RPC: REQUEST BUILD_INFO");
+	debug("Processing RPC: REQUEST_BUILD_INFO");
 	lock_slurmctld(config_read_lock);
 
 	/* check to see if configuration data has changed */
-	if (last_time_msg->last_update >= slurmctld_conf.last_update) {
+	if ((last_time_msg->last_update - 1) >= slurmctld_conf.last_update) {
 		unlock_slurmctld(config_read_lock);
-		info("_slurm_rpc_dump_build, no change, time=%ld",
+		info("_slurm_rpc_dump_conf, no change, time=%ld",
 		     (long) (clock() - start_time));
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
-		_fill_ctld_conf(&build_tbl);
+		_fill_ctld_conf(&config_tbl);
 		unlock_slurmctld(config_read_lock);
 
 		/* init response_msg structure */
 		response_msg.address = msg->address;
 		response_msg.msg_type = RESPONSE_BUILD_INFO;
-		response_msg.data = &build_tbl;
+		response_msg.data = &config_tbl;
 
 		/* send message */
-		info("_slurm_rpc_dump_build time=%ld",
+		info("_slurm_rpc_dump_conf time=%ld",
 		     (long) (clock() - start_time));
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 	}
@@ -812,7 +812,6 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
 	slurm_msg_t response_msg;
 	job_info_request_msg_t *last_time_msg =
 	    (job_info_request_msg_t *) msg->data;
-	time_t last_update = last_time_msg->last_update;
 	/* Locks: Read job */
 	slurmctld_lock_t job_read_lock = { NO_LOCK, READ_LOCK,
 		NO_LOCK, NO_LOCK
@@ -822,13 +821,13 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
 	debug("Processing RPC: REQUEST_JOB_INFO");
 	lock_slurmctld(job_read_lock);
 
-	if (last_time_msg->last_update >= last_job_update) {
+	if ((last_time_msg->last_update - 1) >= last_job_update) {
 		unlock_slurmctld(job_read_lock);
 		info("_slurm_rpc_dump_jobs, no change, time=%ld",
 		     (long) (clock() - start_time));
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
-		pack_all_jobs(&dump, &dump_size, &last_update);
+		pack_all_jobs(&dump, &dump_size);
 		unlock_slurmctld(job_read_lock);
 
 		/* init response_msg structure */
@@ -854,7 +853,6 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 	int dump_size;
 	slurm_msg_t response_msg;
 	last_update_msg_t *last_time_msg = (last_update_msg_t *) msg->data;
-	time_t last_update = last_time_msg->last_update;
 	/* Locks: Read node */
 	slurmctld_lock_t node_read_lock = { NO_LOCK, NO_LOCK,
 		READ_LOCK, NO_LOCK
@@ -864,13 +862,13 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 	debug("Processing RPC: REQUEST_NODE_INFO");
 	lock_slurmctld(node_read_lock);
 
-	if (last_time_msg->last_update >= last_node_update) {
+	if ((last_time_msg->last_update - 1) >= last_node_update) {
 		unlock_slurmctld(node_read_lock);
 		info("_slurm_rpc_dump_nodes, no change, time=%ld",
 		     (long) (clock() - start_time));
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
-		pack_all_node(&dump, &dump_size, &last_update);
+		pack_all_node(&dump, &dump_size);
 		unlock_slurmctld(node_read_lock);
 
 		/* init response_msg structure */
@@ -896,7 +894,6 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 	int dump_size;
 	slurm_msg_t response_msg;
 	last_update_msg_t *last_time_msg = (last_update_msg_t *) msg->data;
-	time_t last_update = last_time_msg->last_update;
 	/* Locks: Read partition */
 	slurmctld_lock_t part_read_lock = { NO_LOCK, NO_LOCK,
 		NO_LOCK, READ_LOCK
@@ -906,13 +903,13 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 	debug("Processing RPC: REQUEST_PARTITION_INFO");
 	lock_slurmctld(part_read_lock);
 
-	if (last_time_msg->last_update >= last_part_update) {
+	if ((last_time_msg->last_update - 1) >= last_part_update) {
 		unlock_slurmctld(part_read_lock);
 		info("_slurm_rpc_dump_partitions, no change, time=%ld",
 		     (long) (clock() - start_time));
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
-		pack_all_part(&dump, &dump_size, &last_update);
+		pack_all_part(&dump, &dump_size);
 		unlock_slurmctld(part_read_lock);
 
 		/* init response_msg structure */
@@ -1116,7 +1113,7 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 	debug("Processing RPC: REQUEST_JOB_STEP_INFO");
 	lock_slurmctld(job_read_lock);
 
-	if (request->last_update >= last_job_update) {
+	if ((request->last_update - 1) >= last_job_update) {
 		unlock_slurmctld(job_read_lock);
 		info("_slurm_rpc_job_step_get_info, no change, time=%ld",
 		     (long) (clock() - start_time));
@@ -1974,7 +1971,7 @@ static int _slurmctld_shutdown(void)
  */
 void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 {
-	conf_ptr->last_update = slurmctld_conf.last_update;
+	conf_ptr->last_update = time(NULL);
 	conf_ptr->backup_addr = slurmctld_conf.backup_addr;
 	conf_ptr->backup_controller = slurmctld_conf.backup_controller;
 	conf_ptr->control_addr = slurmctld_conf.control_addr;

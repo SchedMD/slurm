@@ -701,31 +701,23 @@ extern int old_job_info (uint32_t uid, uint32_t job_id, char **node_list,
  *	machine independent form (for network transmission)
  * OUT buffer_ptr - the pointer is set to the allocated buffer.
  * OUT buffer_size - set to size of the buffer in bytes
- * IN/OUT update_time - dump new data only if job records updated since time 
- * 	specified, otherwise return empty buffer, set to time partition 
- *	records last updated
  * global: job_list - global list of job records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c 
  *	whenever the data format changes
  */
-extern void pack_all_jobs (char **buffer_ptr, int *buffer_size, 
-			   time_t * update_time);
+extern void pack_all_jobs (char **buffer_ptr, int *buffer_size);
 
 /* 
  * pack_all_node - dump all configuration and node information for all nodes  
  *	in machine independent form (for network transmission)
  * OUT buffer_ptr - pointer to the stored data
  * OUT buffer_size - set to size of the buffer in bytes
- * IN/OUT update_time - dump new data only if partition records updated since 
- *	time specified, otherwise return empty buffer, set to time partition 
- *	records last updated
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: the caller must xfree the buffer at *buffer_ptr
  * NOTE: change slurm_load_node() in api/node_info.c when data format changes
  */
-extern void pack_all_node (char **buffer_ptr, int *buffer_size, 
-			   time_t * update_time);
+extern void pack_all_node (char **buffer_ptr, int *buffer_size);
 
 /* 
  * pack_ctld_job_step_info_response_msg - packs job step info
@@ -742,15 +734,11 @@ extern int pack_ctld_job_step_info_response_msg ( uint32_t job_id,
  *	machine independent form (for network transmission)
  * OUT buffer_ptr - the pointer is set to the allocated buffer.
  * OUT buffer_size - set to size of the buffer in bytes
- * IN/OUT update_time - dump new data only if partition records updated ,
- *	set to time partition records last updated
- *	since time specified, otherwise return empty buffer
  * global: part_list - global list of partition records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change slurm_load_part() in api/part_info.c if data format changes
  */
-extern void pack_all_part (char **buffer_ptr, int *buffer_size, 
-			   time_t * update_time);
+extern void pack_all_part (char **buffer_ptr, int *buffer_size);
 
 /* 
  * pack_job - dump all configuration information about a specific job in 
