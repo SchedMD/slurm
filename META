@@ -3,6 +3,8 @@
 ##
 # Metadata for RPM/TAR makefile targets
 ##
+# See src/api/Makefile.am for guidance on setting API_ values
+##
   Meta:		1
   Name:		slurm
   Major:	0
@@ -11,5 +13,5 @@
   Version:	0.3.5
   Release:	1
   API_CURRENT:	1
-  API_REVISION: 3
   API_AGE:      0
+  API_REVISION: 3
