@@ -129,7 +129,7 @@ SLURM switch plugin for IBM Federation switch.
 # The following was stolen from the E17 packages:
 # Build with make -j if SMP is defined in the current environment.
 #
-if [ "$SMP" != "" ]; then
+if [ "x$SMP" != "x" ]; then
   (make "MAKE=make -k -j $SMP"; exit 0)
   make
 else
