@@ -18,7 +18,7 @@
 #include "slurm.h"
 
 #define BUF_SIZE 1024
-#define NO_VAL   -99
+#define NO_VAL   -9876
 
 int job_count;				/* job's in the system */
 List job_list = NULL;			/* job_record list */
@@ -32,18 +32,21 @@ int dump_job (struct job_record *dump_job_ptr, char *out_line, int out_line_size
 void list_delete_job (void *job_entry);
 int list_find_job_id (void *job_entry, void *key);
 int list_find_job_old (void *job_entry, void *key);
+void set_job_id (struct job_record *job_ptr);
+void set_job_prio (struct job_record *job_ptr);
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
 main (int argc, char *argv[]) 
 {
 	int dump_size, error_code, i;
-	time_t update_time;
+	time_t update_time = (time_t) NULL;
 	struct job_record * job_rec;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
-	char *dump;
+	char *dump, tmp_id[50];
 	char update_spec[] = "TimeLimit=1234 Priority=123.45";
 
+	printf("initialize the database and create a few jobs\n");
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 	error_code = init_job_conf ();
 	if (error_code)
@@ -54,15 +57,34 @@ main (int argc, char *argv[])
 		printf("ERROR:create_job_record failure %d\n",error_code);
 		exit(1);
 	}
-	strcpy(job_rec->job_id, "JobId");
-	strcpy(job_rec->name, "Name");
-	strcpy(job_rec->partition, "Partition");
+	strcpy(job_rec->name, "Name1");
+	strcpy(job_rec->partition, "batch");
 	job_rec->details->job_script = xmalloc(20);
 	strcpy(job_rec->details->job_script, "/bin/hostname");
-	job_rec->details->num_nodes = 4;
-	job_rec->details->min_procs = 4;
+	job_rec->details->num_nodes = 1;
+	job_rec->details->num_procs = 1;
+	set_job_id(job_rec);
+	set_job_prio(job_rec);
+	strcpy(tmp_id, job_rec->job_id);
 
-	error_code = update_job ("JobId", update_spec);
+	for (i=1; i<=4; i++) {
+		job_rec = create_job_record(&error_code);
+		if ((job_rec == NULL) || error_code) {
+			printf("ERROR:create_job_record failure %d\n",error_code);
+			exit(1);
+		}
+		strcpy(job_rec->name, "Name2");
+		strcpy(job_rec->partition, "debug");
+		job_rec->details->job_script = xmalloc(20);
+		strcpy(job_rec->details->job_script, "/bin/hostname");
+		job_rec->details->num_nodes = i;
+		job_rec->details->num_procs = i;
+		set_job_id(job_rec);
+		set_job_prio(job_rec);
+	}
+
+	printf("\nupdate a job record\n");
+	error_code = update_job (tmp_id, update_spec);
 	if (error_code)
 		printf ("ERROR: update_job error %d\n", error_code);
 
@@ -70,7 +92,7 @@ main (int argc, char *argv[])
 	if (error_code)
 		printf ("ERROR: dump_all_job error %d\n", error_code);
 	else {
-		printf("dump of job info:\n");
+		printf("\ndump of job info:\n");
 		for (i=0; i<dump_size; ) {
 			printf("%s", &dump[i]);
 			i += strlen(&dump[i]) + 1;
@@ -80,17 +102,18 @@ main (int argc, char *argv[])
 	if (dump)
 		xfree(dump);
 
-	job_rec = find_job_record ("JobId");
+	job_rec = find_job_record (tmp_id);
 	if (job_rec == NULL)
 		printf("find_job_record error 1\n");
 	else
-		printf("found job JobId, script=%s\n", job_rec->details->job_script);
+		printf("found job %s, script=%s\n", 
+			job_rec->job_id, job_rec->details->job_script);
 
-	error_code = delete_job_record("JobId");
+	error_code = delete_job_record(tmp_id);
 	if (error_code)
 		printf ("ERROR: delete_job_record error %d\n", error_code);
 
-	job_rec = find_job_record ("JobId");
+	job_rec = find_job_record (tmp_id);
 	if (job_rec != NULL)
 		printf("find_job_record error 2\n");
 
@@ -107,7 +130,8 @@ main (int argc, char *argv[])
  *         returns a pointer to the record or NULL if error
  * global: job_list - global job list
  *         job_count - number of jobs in the system
- * NOTE: allocates memory that should be xfreed with list_delete_job
+ * NOTE: allocates memory that should be xfreed with either
+ *	delete_job_record or list_delete_job
  */
 struct job_record * 
 create_job_record (int *error_code) 
@@ -186,10 +210,11 @@ delete_job_record (char *job_id)
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  */
 int 
-dump_all_job (char **buffer_ptr, int *buffer_size, time_t * update_time, int detail) 
+dump_all_job (char **buffer_ptr, int *buffer_size, time_t * update_time, 
+	int detail) 
 {
-	ListIterator job_record_iterator;	/* for iterating through job_record list */
-	struct job_record *job_record_point;	/* pointer to job_record */
+	ListIterator job_record_iterator;
+	struct job_record *job_record_point;
 	char *buffer;
 	int buffer_offset, buffer_allocated, error_code, i, record_size;
 	char out_line[BUF_SIZE];
@@ -248,13 +273,16 @@ dump_all_job (char **buffer_ptr, int *buffer_size, time_t * update_time, int det
  *         detail - report job_detail only if set
  * output: out_line - set to partition information values
  *         return 0 if no error, 1 if out_line buffer too small
- * NOTE: if you make any changes here be sure to increment the value of JOB_STRUCT_VERSION
- *       and make the corresponding changes to load_part_config in api/partition_info.c
+ * NOTE: if you make any changes here be sure to increment the value of 
+ *       JOB_STRUCT_VERSION and make the corresponding changes to load_part_config 
+ *       in api/partition_info.c
  */
 int 
-dump_job (struct job_record *dump_job_ptr, char *out_line, int out_line_size, int detail) 
+dump_job (struct job_record *dump_job_ptr, char *out_line, int out_line_size, 
+	int detail) 
 {
-	char *job_id, *name, *partition, *nodes, *req_nodes, *features, *groups, *job_script;
+	char *job_id, *name, *partition, *nodes, *req_nodes, *features;
+	char *groups, *job_script;
 	struct job_details *detail_ptr;
 
 	if (dump_job_ptr->job_id)
@@ -280,7 +308,8 @@ dump_job (struct job_record *dump_job_ptr, char *out_line, int out_line_size, in
 	if (detail == 0 || (dump_job_ptr->details == NULL)) {
 		if ((strlen(JOB_STRUCT_FORMAT1) + strlen(job_id) +  
 		     strlen(partition) + strlen(name) + strlen(nodes) + 
-		     strlen(job_state_string[dump_job_ptr->job_state]) + 20) > out_line_size) {
+		     strlen(job_state_string[dump_job_ptr->job_state]) + 20) > 
+		     out_line_size) {
 			error ("dump_job: buffer too small for job %s", job_id);
 			return 1;
 		}
@@ -331,7 +360,7 @@ dump_job (struct job_record *dump_job_ptr, char *out_line, int out_line_size, in
 			return 1;
 		}
 
-		sprintf (out_line, JOB_STRUCT_FORMAT1,
+		sprintf (out_line, JOB_STRUCT_FORMAT2,
 			 job_id, 
 			 partition, 
 			 name, 
@@ -468,8 +497,8 @@ list_delete_job (void *job_entry)
 
 
 /*
- * list_find_job_id - find an entry in the job list, see common/list.h for documentation, 
- *	key is the job's id 
+ * list_find_job_id - find an entry in the job list,  
+ *	see common/list.h for documentation, key is the job's id 
  * global- job_list - the global partition list
  */
 int 
@@ -483,8 +512,8 @@ list_find_job_id (void *job_entry, void *key)
 
 
 /*
- * list_find_job_old - find an entry in the job list, see common/list.h for documentation, 
- *	key is ignored 
+ * list_find_job_old - find an entry in the job list,  
+ *	see common/list.h for documentation, key is ignored 
  * global- job_list - the global partition list
  */
 int 
@@ -494,8 +523,11 @@ list_find_job_old (void *job_entry, void *key)
 
 	min_age = time(NULL) - MIN_JOB_AGE;
 
-	if (((struct job_record *) job_entry)->job_state != JOB_COMPLETE) return 0;
-	if (((struct job_record *) job_entry)->end_time  <  min_age)      return 0;
+	if (((struct job_record *) job_entry)->job_state != JOB_COMPLETE) 
+		return 0;
+	if (((struct job_record *) job_entry)->end_time  <  min_age)
+		return 0;
+
 	return 1;
 }
 
@@ -518,13 +550,58 @@ purge_old_job (void)
 
 
 /*
+ * set_job_id - set a default job_id: partition name, ".", sequence number
+ *	insure that the job_id is unique
+ * input: job_ptr - pointer to the job_record
+ */
+void
+set_job_id (struct job_record *job_ptr)
+{
+	static int id_sequence = 0;
+	char new_id[MAX_NAME_LEN+20];
+
+	if ((job_ptr == NULL) || 
+	    (job_ptr->magic != JOB_MAGIC)) 
+		fatal ("set_job_id: invalid job_ptr");
+	while (1) {
+		if (job_ptr->partition)
+			sprintf(new_id, "%s.%d", job_ptr->partition, id_sequence++);
+		else
+			sprintf(new_id, "nopart.%d", id_sequence++);
+		if (find_job_record(new_id) == NULL) {
+			strncpy(job_ptr->job_id, new_id, MAX_ID_LEN);
+			break;
+		}
+	}
+}
+
+
+/*
+ * set_job_prio - set a default job priority
+ * input: job_ptr - pointer to the job_record
+ * NOTE: this is a simple prototype, we need to re-establish value on restart
+ */
+void
+set_job_prio (struct job_record *job_ptr)
+{
+	static float default_prio = 1.000;
+
+	if ((job_ptr == NULL) || 
+	    (job_ptr->magic != JOB_MAGIC)) 
+		fatal ("set_job_prio: invalid job_ptr");
+	job_ptr->priority = default_prio;
+	default_prio -= 0.00001;
+}
+
+
+/*
  * update_job - update a job's parameters
  * input: job_id - job's id
  *        spec - the updates to the job's specification 
  * output: return - 0 if no error, otherwise an error code
  * global: job_list - global list of job entries
  * NOTE: the contents of spec are overwritten by white space
- * NOTE: only the job's priority and time_limt may be changed once queued
+ * NOTE: only the job's priority and time_limt may be changed
  */
 int 
 update_job (char *job_id, char *spec) 
@@ -570,11 +647,17 @@ update_job (char *job_id, char *spec)
 		return EINVAL;
 	}			
 
-	if (time_limit != NO_VAL)
+	if (time_limit != NO_VAL) {
 		job_ptr->time_limit = time_limit;
+		info ("update_job: setting time_limit to %d for job_id %s",
+			time_limit, job_id);
+	}
 
-	if ((prio - NO_VAL) > 0.1)
+	if ((prio - NO_VAL) > 0.01) {	/* avoid reset from round-off */
 		job_ptr->priority = prio;
+		info ("update_job: setting priority to %f for job_id %s",
+			(double) prio, job_id);
+	}
 
 	return 0;
 }
