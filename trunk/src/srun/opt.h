@@ -110,6 +110,7 @@ typedef struct srun_options {
 	enum distribution_t
 		distribution;	/* --distribution=, -m dist	*/
 	char *job_name;		/* --job-name=,     -J name	*/
+	unsigned int jobid;     /* --jobid=jobid                */
 
 	char *ofname;		/* --output -o filename         */
 	char *ifname;		/* --input  -i filename         */
@@ -151,6 +152,7 @@ typedef struct srun_options {
 	bool no_alloc;		/* --no-allocate, -Z		*/
 	int  max_launch_time;   /* Undocumented                 */
 	int  max_exit_timeout;  /* Undocumented                 */
+	int  msg_timeout;       /* Undocumented                 */
 
 } opt_t;
 

@@ -190,9 +190,12 @@ int main(int ac, char **av)
 	/* job structure should now be filled in */
 
 	/*
-	 *  Set nodelist environment variable
+	 *  Enhance environment for job
 	 */
 	setenvf("SLURM_NODELIST=%s", job->nodelist);
+	setenvf("SLURM_JOBID=%u",    job->jobid);
+	setenvf("SLURM_NPROCS=%d",   opt.nprocs);
+	setenvf("SLURM_NNODES=%d",   job->nhosts);
 
 	if (msg_thr_create(job) < 0)
 		job_fatal(job, "Unable to create msg thread");

@@ -100,43 +100,15 @@ static void     _print_pid_list(const char *host, int ntasks,
 
 
 #ifdef HAVE_TOTALVIEW
-/* Convert node name to address string, eg. "123.45.67.8", 
- *	also return the index in the job table (-1 if not found) */
-static char *
-_node_name_to_addr(const char *name, job_t *job, int *inx)
+/*
+ * Install entry in the MPI_proctable for host with node id `nodeid'
+ *  and the number of tasks `ntasks' with pid array `pid'
+ */
+static void
+_build_tv_list(job_t *job, char *host, int nodeid, int ntasks, uint32_t *pid)
 {
 	int i;
-	char *buf = xmalloc(28);
-	char *colon;
-
-	for (i=0; i<job->nhosts; i++) {
-		if (strcmp(name, job->host[i]))
-			continue;
-		slurm_print_slurm_addr(&job->slurmd_addr[i], buf, 128);
-		/* This returns address:port, we need to remove ":port" */
-		colon = strchr(buf, (int)':');
-		if (colon)
-			colon[0] = '\0'; 
-		*inx = i;
-		return buf;
-	}
-
-	error("_node_name_to_addr error on %s", name);
-	*inx = -1;
-	return NULL;
-}
-
-static void
-_build_tv_list(job_t *job, char *host, int ntasks, uint32_t *pid)
-{
-	MPIR_PROCDESC * tv_tasks;
-	int i, node_inx, task_id;
-	char *node_addr;
 	static int tasks_recorded = 0;
-
-	node_addr = _node_name_to_addr(host, job, &node_inx);
-	if ((node_addr == NULL) || (node_inx < 0))
-		return;
 
 	if (MPIR_proctable_size == 0) {
 		MPIR_proctable_size = opt.nprocs;
@@ -144,15 +116,13 @@ _build_tv_list(job_t *job, char *host, int ntasks, uint32_t *pid)
 	}
 
 	for (i = 0; i < ntasks; i++) {
+		int taskid          = job->tids[nodeid][i];
+		MPIR_PROCDESC *tv   = &MPIR_proctable[taskid];
+		tv->host_name       = job->host[nodeid];
+		tv->executable_name = remote_argv[0];
+		tv->pid             = pid[i];
+
 		tasks_recorded++;
-		task_id = job->tids[node_inx][i];
-		tv_tasks = &MPIR_proctable[task_id];
-		tv_tasks->host_name = node_addr;
-		tv_tasks->executable_name = remote_argv[0];
-		tv_tasks->pid = pid[i];
-		debug("task=%d host=%s executable=%s pid=%d", task_id,
-		      tv_tasks->host_name, tv_tasks->executable_name, 
-		      tv_tasks->pid);
 	}
 
 	if (tasks_recorded == opt.nprocs) {
@@ -185,26 +155,21 @@ static bool _job_msg_done(job_t *job)
 static void
 _process_launch_resp(job_t *job, launch_tasks_response_msg_t *msg)
 {
-	if ((msg->srun_node_id >= 0) 
-	    && (msg->srun_node_id < job->nhosts)) {
-
-		pthread_mutex_lock(&job->task_mutex);
-		job->host_state[msg->srun_node_id] = SRUN_HOST_REPLIED;
-		pthread_mutex_unlock(&job->task_mutex);
-#ifdef HAVE_TOTALVIEW
-		_build_tv_list( job, msg->node_name, msg->count_of_pids,
-				msg->local_pids );
-#endif
-		_print_pid_list( msg->node_name, msg->count_of_pids, 
-				 msg->local_pids, remote_argv[0] );
-
-	} else {
-		error("launch resp from %s has bad task id %d",
-				msg->node_name, msg->srun_node_id);
-#ifdef HAVE_TOTALVIEW
-		tv_launch_failure();
-#endif
+	if ((msg->srun_node_id < 0) || (msg->srun_node_id >= job->nhosts)) {
+		error ("Bad launch response from %s", msg->node_name);
+		return;
 	}
+
+	pthread_mutex_lock(&job->task_mutex);
+	job->host_state[msg->srun_node_id] = SRUN_HOST_REPLIED;
+	pthread_mutex_unlock(&job->task_mutex);
+#ifdef HAVE_TOTALVIEW
+	_build_tv_list( job, msg->node_name, msg->srun_node_id, 
+			msg->count_of_pids,  msg->local_pids   );
+#endif
+	_print_pid_list( msg->node_name, msg->count_of_pids, 
+			msg->local_pids, remote_argv[0]     );
+
 }
 
 static void
@@ -349,7 +314,8 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 		resp->executable_name = NULL; /* nothing left to free */
 		remote_argv[1] = NULL;
 	}
-	_build_tv_list(job, resp->node_name, resp->ntasks, resp->local_pids);
+	_build_tv_list(job, resp->node_name, resp->srun_node_id,
+	                    resp->ntasks, resp->local_pids      );
 #endif
 	_print_pid_list(resp->node_name, resp->ntasks, resp->local_pids, 
 			resp->executable_name);

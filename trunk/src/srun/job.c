@@ -648,8 +648,8 @@ _relative_hosts(hostlist_t hl)
 	 */
 	n = hostlist_count(rlist);
 	if (n < opt.min_nodes) {
-		info("Warning: Only %d node(s) beyond relative location "
-			"specified, resetting nnodes to %d", n, n);
+		info("Warning: Only %d node%s available in relative set, "
+		     "resetting nnodes to %d", n, (n>1 ? "s":""), n);
 		opt.min_nodes = n;
 	}
 
