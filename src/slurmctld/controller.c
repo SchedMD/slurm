@@ -680,9 +680,7 @@ fill_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 	conf_ptr->last_update = init_time ;
 	if ( !conf_ptr->backup_interval )    conf_ptr->backup_interval   	= BACKUP_INTERVAL ;
 	if ( !conf_ptr->backup_location )    conf_ptr->backup_location   	= BACKUP_LOCATION ;
-	if ( !conf_ptr->backup_machine )     conf_ptr->backup_machine    	= backup_controller ;
 	if ( !conf_ptr->control_daemon )     conf_ptr->control_daemon    	= CONTROL_DAEMON ;
-	if ( !conf_ptr->control_machine )    conf_ptr->control_machine   	= control_machine ;
 	if ( !conf_ptr->controller_timeout ) conf_ptr->controller_timeout	= CONTROLLER_TIMEOUT ;
 	if ( !conf_ptr->epilog )             conf_ptr->epilog           	= EPILOG ;
 	if ( !conf_ptr->fast_schedule )      conf_ptr->fast_schedule     	= FAST_SCHEDULE ;
