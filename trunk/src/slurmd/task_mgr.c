@@ -129,36 +129,25 @@ void * iowatch_launch_thread ( void * arg )
 
 	/* create pipes to read child stdin, stdout, sterr */
 	init_parent_pipes ( task_start->pipes ) ;
-
-	/* create task thread */
-	if ( pthread_create ( & task_start->exec_pthread_id , NULL , task_exec_thread , ( void * ) arg ) )
-		return ( void * ) SLURM_ERROR ;
-
-	/* pipe output from child task to srun over sockets */
-	setup_parent_pipes ( task_start->pipes ) ;
-	//forward_io ( arg ) ;
-
-	/* wait for thread to die */
-	pthread_join ( task_start->exec_pthread_id , NULL ) ;
-
-	return ( void * ) SLURM_SUCCESS ;
+	return task_exec_thread ( arg ) ;
 }
 
 int forward_io ( task_start_t * task_arg ) 
 {
 	pthread_attr_t pthread_attr ;
-	slurm_addr dest_addr ;
+	slurm_addr * dest_out_addr = task_arg -> launch_msg -> streams ;
+	slurm_addr * dest_err_addr = task_arg -> launch_msg -> streams + 1 ;
 	int local_errno;
 
 	/* open stdout & stderr sockets */
-	if ( ( task_arg->sockets[0] = slurm_open_stream ( & dest_addr ) ) == SLURM_PROTOCOL_ERROR )
+	if ( ( task_arg->sockets[0] = slurm_open_stream ( dest_out_addr ) ) == SLURM_PROTOCOL_ERROR )
 	{
 		local_errno = errno ;	
 		info ( "error opening socket to srun to pipe stdout errno %i" , local_errno ) ;
 		pthread_exit ( 0 ) ;
 	}
 	
-	if ( ( task_arg->sockets[1] = slurm_open_stream ( & dest_addr ) ) == SLURM_PROTOCOL_ERROR )
+	if ( ( task_arg->sockets[1] = slurm_open_stream ( dest_err_addr ) ) == SLURM_PROTOCOL_ERROR )
 	{
 		local_errno = errno ;	
 		info ( "error opening socket to srun to pipe stdout errno %i" , local_errno ) ;
@@ -218,17 +207,20 @@ void * stdout_io_pipe_thread ( void * arg )
 	char buffer[SLURMD_IO_MAX_BUFFER_SIZE] ;
 	int bytes_read ;
 	int sock_bytes_written ;
+	int local_errno ;
 	
 	while ( true )
 	{
 		if ( ( bytes_read = read ( io_arg->pipes[CHILD_OUT_RD] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) <= 0 )
 		{
-			info ( "error reading stdout stream for task %i", 1 ) ;
+			local_errno = errno ;	
+			info ( "error reading stdout stream for task %i , errno %i", 1 , local_errno ) ;
 			pthread_exit ( NULL ) ;
 		}
 		if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[0] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
 		{
-			info ( "error sending stdout stream for task %i", 1 ) ;
+			local_errno = errno ;	
+			info ( "error sending stdout stream for task %i , errno %i", 1 , local_errno ) ;
 			pthread_exit ( NULL ) ; 
 		}
 	}
@@ -258,23 +250,28 @@ void * stderr_io_pipe_thread ( void * arg )
 		}
 	}
 }
-#define FORK_ERROR -1
-#define CHILD_PROCCESS 0
+
 
 void * task_exec_thread ( void * arg )
 {
-	task_start_t * task_arg = ( task_start_t * ) arg ;
-	launch_tasks_msg_t * launch_msg = task_arg -> launch_msg ;
-	int * pipes = task_arg->pipes ;
+	task_start_t * task_start = ( task_start_t * ) arg ;
+	launch_tasks_msg_t * launch_msg = task_start -> launch_msg ;
+	int * pipes = task_start->pipes ;
 	int rc ;
 	int cpid ;
 
+
+#define FORK_ERROR -1
+#define CHILD_PROCCESS 0
 	switch ( ( cpid = fork ( ) ) )
 	{
 		case FORK_ERROR:
 			break ;
 		case CHILD_PROCCESS:
 
+			signal(SIGTTOU, SIG_IGN); // ignore tty output
+			signal(SIGTTIN, SIG_IGN); // ignore tty input
+			signal(SIGTSTP, SIG_IGN); // ignore user
 			/* setup std stream pipes */
 			setup_child_pipes ( pipes ) ;
 
@@ -290,7 +287,10 @@ void * task_exec_thread ( void * arg )
 			/* run bash and cmdline */
 			chdir ( launch_msg->cwd ) ;
 			execl ( "/bin/bash" , "bash" , "-c" , launch_msg->cmd_line );
+			_exit ( SLURM_SUCCESS ) ;
 		default: /*parent proccess */
+			setup_parent_pipes ( task_start->pipes ) ;
+			forward_io ( arg ) ;
 			waitpid ( cpid , NULL , 0 ) ;
 	}
 	return ( void * ) SLURM_SUCCESS ;
