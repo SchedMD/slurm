@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324">
-<meta name="LLNLRandRdate" content="12 January 2004">
+<meta name="LLNLRandRdate" content="9 July 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -150,13 +150,20 @@ error messages.</p>
 needed for correct operation. Plugins will not load if their dependent libraries 
 are not available, so it is the installer's job to make sure the specified libraries 
 are available.</p>
+<h3>Performance</h3>
+<p>All plugin functions are expected to execute very quickly. If any function 
+entails delays (e.g. transations with other systems), it should be written to 
+utilize a thread for that functionality. This thread may be created by the 
+<span class="commandline">init()</span> function and deleted by the 
+<span class="commandline">fini()</span> functions. See <b>plugins/sched/backfill</b>
+for an example of how to do this.</p>
 <p class="footer"><a href="#top">top</a></p></td>
 </tr>
 <tr> 
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-204324<br>
-Last modified January 15, 2004</p></td>
+Last modified 9 July 2004</p></td>
 </tr>
 </table>
 </td>
