@@ -388,7 +388,7 @@ print_node_list (char *node_list)
 			slurm_perror ("slurm_load_node error");
 		return;
 	}
-	else if (error_code == 0)
+	else
 		old_node_info_ptr = node_info_ptr;
 
 	if (quiet_flag == -1)
@@ -433,8 +433,7 @@ print_part (char *partition_name)
 	partition_table_t *part_ptr = NULL;
 
 	if (old_part_info_ptr) {
-		error_code = slurm_load_partitions (old_part_info_ptr->last_update, 
-					&part_info_ptr);
+		error_code = slurm_load_partitions (old_part_info_ptr->last_update, &part_info_ptr);
 		if (error_code == 0) {
 			slurm_free_partition_info (old_part_info_ptr);
 		}
@@ -447,7 +446,7 @@ print_part (char *partition_name)
 	}
 	else
 		error_code = slurm_load_partitions ((time_t) NULL, &part_info_ptr);
-	if (error_code > 0) {
+	if (error_code) {
 		if (quiet_flag != 1)
 			slurm_perror ("slurm_load_partitions error");
 		return;
