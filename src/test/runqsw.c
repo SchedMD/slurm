@@ -15,8 +15,8 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include <bitstring.h>
-#include <qsw.h>
+#include <src/common/bitstring.h>
+#include <src/common/qsw.h>
 
 /*
  * Set a variable in the callers environment.  Args are printf style.
