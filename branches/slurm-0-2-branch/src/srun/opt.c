@@ -1216,6 +1216,7 @@ static void _help(void)
 	printf("  -T, --threads=threads         set srun launch fanout\n");
 	printf("  -W, --wait=sec                seconds to wait after first task ends\n");
  	printf("                                before killing job\n");
+	printf("  -q, --quit-on-interrupt       quit on single Ctrl-C\n");
 
 	printf("\nAllocate only:\n");
 	printf("  -A, --allocate                allocate resources and spawn a shell\n");

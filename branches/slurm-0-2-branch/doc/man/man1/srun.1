@@ -208,6 +208,12 @@ Specify how long to wait after the first task terminates before terminating
 all remaining tasks. The default value is unlimited. This can be useful to 
 insure that a job is terminated in a timely fashion in the event that one 
 or more tasks terminate prematurely.
+.TP
+\fB\-q\fR, \fB\-\-quit\-on\-interrupt\fR
+Quit immediately on single SIGINT (Ctrl-C). Use of this option 
+disables the status feature normally available when \fBsrun\fR receives
+a single Ctrl-C and causes \fBsrun\fR to instead immediately terminate the
+running job.
 .PP
 Allocate options:
 .TP
