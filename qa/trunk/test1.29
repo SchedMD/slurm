@@ -24,7 +24,9 @@ set matches          0
 print_header $test_id
 
 #
-# Delete left-over programs and rebuild them
+# Delete left-over programs and rebuild them.
+# We use our own program to get ulimit values since the output 
+# of the ulimit program is inconsistent across systems.
 #
 exec $bin_rm -f $file_prog_get $file_in $file_out
 exec $bin_make $file_prog_get
