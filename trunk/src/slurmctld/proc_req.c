@@ -1366,7 +1366,7 @@ static void _slurm_rpc_update_node(slurm_msg_t * msg)
 
 	/* return result */
 	if (error_code) {
-		error("_slurm_rpc_update_node for %s: %s",
+		info("_slurm_rpc_update_node for %s: %s",
 		      update_node_msg_ptr->node_names,
 		      slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
@@ -1415,7 +1415,7 @@ static void _slurm_rpc_update_partition(slurm_msg_t * msg)
 
 	/* return result */
 	if (error_code) {
-		error("_slurm_rpc_update_partition partition=%s: %s",
+		info("_slurm_rpc_update_partition partition=%s: %s",
 			part_desc_ptr->name, slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {

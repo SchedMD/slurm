@@ -77,6 +77,8 @@ static void 	_make_node_down(struct node_record *node_ptr);
 static void 	_pack_node (struct node_record *dump_node_ptr, Buf buffer);
 static void	_split_node_name (char *name, char *prefix, char *suffix, 
 					int *index, int *digits);
+static bool 	_valid_node_state_change(enum node_states old, 
+					enum node_states new);
 
 #if DEBUG_SYSTEM
 static void	_dump_hash (void);
@@ -945,6 +947,18 @@ int update_node ( update_node_msg_t * update_node_msg )
 		}
 
 		if (state_val != NO_VAL) {
+			base_state = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
+			if (!_valid_node_state_change(base_state, state_val)) {
+				info ("Invalid node state transition requested "
+					"for node %s from=%s to=%s",
+					this_node_name, 
+					node_state_string(base_state),
+					node_state_string(state_val));
+				state_val = NO_VAL;
+				error_code = ESLURM_INVALID_NODE_STATE;
+			}
+		}
+		if (state_val != NO_VAL) {
 			if (state_val == NODE_STATE_DOWN) {
 				/* We must set node down before killing its jobs */
 				_make_node_down(node_ptr);
@@ -952,10 +966,6 @@ int update_node ( update_node_msg_t * update_node_msg )
 							       false);
 				bit_set   (idle_node_bitmap, node_inx);
 				bit_clear (avail_node_bitmap, node_inx);
-			}
-			else if (state_val == NODE_STATE_UNKNOWN) {
-				bit_clear (avail_node_bitmap, node_inx);
-				bit_clear (idle_node_bitmap, node_inx);
 			}
 			else if (state_val == NODE_STATE_IDLE) {
 				bit_set (avail_node_bitmap, node_inx);
@@ -973,16 +983,10 @@ int update_node ( update_node_msg_t * update_node_msg )
 					state_val = NODE_STATE_DRAINING;
 				bit_clear (avail_node_bitmap, node_inx);
 			}
-			else if (state_val == NODE_STATE_NO_RESPOND) {
-				bit_clear (avail_node_bitmap,   node_inx);
-				node_ptr->node_state |= NODE_STATE_NO_RESPOND;
-				info ("update_node: node %s state set to %s",
-				      this_node_name, "NoResp");
-				err_code = 1;
-			}
 			else {
-				error ("Invalid node state specified %d", state_val);
+				info ("Invalid node state specified %d", state_val);
 				err_code = 1;
+				error_code = ESLURM_INVALID_NODE_STATE;
 			}
 
 			if (err_code == 0) {
@@ -1015,6 +1019,36 @@ int update_node ( update_node_msg_t * update_node_msg )
 	return error_code;
 }
 
+/* Return true if admin request to change node state from old to new is valid */
+static bool _valid_node_state_change(enum node_states old, enum node_states new)
+{
+	if (old == new)
+		return true;
+
+	switch (new) {
+		case NODE_STATE_DOWN:
+		case NODE_STATE_DRAINED:
+		case NODE_STATE_DRAINING:
+			return true;
+			break;
+
+		case NODE_STATE_IDLE:
+			if ((old == NODE_STATE_DRAINED) ||
+			    (old == NODE_STATE_DOWN))
+				return true;
+			break;
+
+		case NODE_STATE_ALLOCATED:
+			if (old == NODE_STATE_DRAINING)
+				return true;
+			break;
+
+		default:	/* All others invalid */
+			break;
+	}
+
+	return false;
+}
 
 /*
  * validate_node_specs - validate the node's specifications as valid, 
