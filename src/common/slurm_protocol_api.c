@@ -839,5 +839,7 @@ short int slurm_get_slurmd_port()
 
 void slurm_free_msg(slurm_msg_t * msg)
 {
+	if (msg->cred)
+		xfree(msg->cred);
 	xfree(msg);
 }
