@@ -168,7 +168,7 @@ void *agent(void *args)
 	if (_valid_agent_arg(agent_arg_ptr))
 		goto cleanup;
 
-	xsignal(SIGCONT, _alarm_handler);
+	xsignal(SIGALRM, _alarm_handler);
 
 	/* initialize the agent data structures */
 	agent_info_ptr = _make_agent_info(agent_arg_ptr);
@@ -331,9 +331,8 @@ static task_info_t *_make_task_data(agent_info_t *agent_info_ptr, int inx)
 }
 
 /* 
- * _wdog - Watchdog thread. Send SIGCONT to threads which have been active 
- *	for too long. This used to be SIGALRM, but that caused problems for 
- *	the socket communications poll() and its use of SIGALRM on some systems.
+ * _wdog - Watchdog thread. Send SIGALRM to threads which have been active 
+ *	for too long. 
  * IN args - pointer to agent_info_t with info on threads to watch
  * Sleep for WDOG_POLL seconds between polls.
  */
@@ -370,7 +369,7 @@ static void *_wdog(void *args)
 					debug3("agent thread %lu timed out\n", 
 					       (unsigned long) thread_ptr[i].thread);
 					if (pthread_kill(thread_ptr[i].thread,
-						     SIGCONT) == ESRCH)
+						     SIGALRM) == ESRCH)
 						thread_ptr[i].state = DSH_FAILED;
 				}
 				break;
@@ -690,12 +689,12 @@ static void *_thread_per_node_rpc(void *args)
 }
 
 /*
- * SIGCONT handler.  We are really interested in interrupting hung communictions 
+ * SIGALRM handler.  We are really interested in interrupting hung communictions 
  * and causing them to return EINTR. Multiple interupts might be required.
  */
 static void _alarm_handler(int dummy)
 {
-	xsignal(SIGCONT, _alarm_handler);
+	xsignal(SIGALRM, _alarm_handler);
 }
 
 
