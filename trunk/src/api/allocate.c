@@ -30,9 +30,16 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+
+#ifndef __USE_XOPEN_EXTENDED
+extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
+#endif
 
 #include <slurm/slurm.h>
 
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 
 /*
@@ -52,6 +59,8 @@ slurm_allocate_resources (job_desc_msg_t * job_desc_msg ,
 	slurm_msg_t request_msg ;
 	slurm_msg_t response_msg ;
 	return_code_msg_t * slurm_rc_msg ;
+	bool set_alloc_node = false;
+	char this_node_name[64];
 
 	/* init message connection for message communication with controller */
 	if ( ( sockfd = slurm_open_controller_conn ( ) ) 
@@ -60,11 +69,22 @@ slurm_allocate_resources (job_desc_msg_t * job_desc_msg ,
 		return SLURM_SOCKET_ERROR ;
 	}
 
+	/* set alloc node/sid info as needed for request */
+	if (job_desc_msg->alloc_sid == NO_VAL)
+		job_desc_msg->alloc_sid = getsid(0);
+	if ((job_desc_msg->alloc_node == NULL) &&
+	    (getnodename(this_node_name, sizeof(this_node_name)) == 0)) {
+		job_desc_msg->alloc_node = this_node_name;
+		set_alloc_node = true;
+	}
+
 	/* send request message */
 	request_msg . msg_type = REQUEST_RESOURCE_ALLOCATION ;
 	request_msg . data = job_desc_msg ; 
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
-			== SLURM_SOCKET_ERROR ) {
+	rc = slurm_send_controller_msg ( sockfd , & request_msg );
+	if (set_alloc_node)	/* reset (clear) alloc_node */
+		job_desc_msg->alloc_node = NULL;
+	if ( rc == SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -212,6 +232,8 @@ slurm_allocate_resources_and_run (job_desc_msg_t * job_desc_msg ,
 	slurm_msg_t request_msg ;
 	slurm_msg_t response_msg ;
 	return_code_msg_t * slurm_rc_msg ;
+	bool set_alloc_node = false;
+	char this_node_name[64];
 
 	/* init message connection for message communication with controller */
 	if ( ( sockfd = slurm_open_controller_conn ( ) ) 
@@ -220,11 +242,22 @@ slurm_allocate_resources_and_run (job_desc_msg_t * job_desc_msg ,
 		return SLURM_SOCKET_ERROR ;
 	}
 
+	/* set alloc node/sid info as needed for request */
+	if (job_desc_msg->alloc_sid == NO_VAL)
+		job_desc_msg->alloc_sid = getsid(0);
+	if ((job_desc_msg->alloc_node == NULL) &&
+	    (getnodename(this_node_name, sizeof(this_node_name)) == 0)) {
+		job_desc_msg->alloc_node = this_node_name;
+		set_alloc_node = true;
+	}
+
 	/* send request message */
 	request_msg . msg_type = REQUEST_ALLOCATION_AND_RUN_JOB_STEP ;
 	request_msg . data = job_desc_msg ; 
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
-			== SLURM_SOCKET_ERROR ) {
+	rc = slurm_send_controller_msg ( sockfd , & request_msg );
+	if (set_alloc_node)	/* reset (clear) alloc_node */
+		job_desc_msg->alloc_node = NULL;
+	if ( rc == SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}

@@ -192,6 +192,7 @@ static void _slurm_free_job_info_members(job_info_t * job)
 	if (job) {
 		xfree(job->nodes);
 		xfree(job->partition);
+		xfree(job->alloc_node);
 		xfree(job->name);
 		xfree(job->node_inx);
 		xfree(job->req_nodes);
