@@ -254,9 +254,6 @@
 #
 #    "FirstJobId"       : Number of the first assigned job id.
 #
-#    "HashBase"         : Base of numeric suffix on node hostnames
-#                         (always `10' in a sane world)
-#
 #    "ReturnToService"  : if set to `1,' nodes in the DOWN state will be
 #                         set to IDLE after they come back up. Otherwise,
 #                         nodes will stay in the down state until manually
@@ -282,7 +279,6 @@
 #
 # FastSchedule=0		# default is `1'
 # FirstJobid=1000       	# default is `1'
-# HashBase=8			# default is `10'
 # ReturnToService=1     	# default is `0'
 # MaxJobCount=10000		# Defaults to 2000
 # MpichGmDirectSupport=1	# default is `0'
