@@ -721,8 +721,8 @@ int read_slurm_conf(int recover)
 	}
 	fclose(slurm_spec_file);
 
-	validate_config(&slurmctld_conf);
 	_set_config_defaults(&slurmctld_conf);
+	validate_config(&slurmctld_conf);
 	update_logging();
 
 	if (default_part_loc == NULL) {
@@ -737,7 +737,8 @@ int read_slurm_conf(int recover)
 		return EINVAL;
 	}
 
-	rehash();
+	rehash_node();
+	rehash_jobs();
 	set_slurmd_addr();
 
 	if ((error_code = getnodename(node_name, MAX_NAME_LEN)))
@@ -804,13 +805,12 @@ static void _restore_node_state(struct node_record *old_node_table_ptr,
 
 
 /* Set configuration parameters to default values if not initialized 
- * by the configuration file 
+ * by the configuration file or common/read_config.c:validate_config()
  */
 static void _set_config_defaults(slurm_ctl_conf_t * ctl_conf_ptr)
 {
 	if (ctl_conf_ptr->backup_controller == NULL)
-		info(
-		   "read_slurm_conf: backup_controller value not specified.");
+		info("read_slurm_conf: backup_controller value not specified.");
 
 	if (ctl_conf_ptr->fast_schedule == (uint16_t) NO_VAL)
 		ctl_conf_ptr->fast_schedule = DEFAULT_FAST_SCHEDULE;
@@ -826,9 +826,6 @@ static void _set_config_defaults(slurm_ctl_conf_t * ctl_conf_ptr)
 
 	if (ctl_conf_ptr->inactive_limit == (uint16_t) NO_VAL)
 		ctl_conf_ptr->inactive_limit = DEFAULT_INACTIVE_LIMIT;
-
-	if (ctl_conf_ptr->kill_wait == (uint16_t) NO_VAL)
-		ctl_conf_ptr->kill_wait = DEFAULT_KILL_WAIT;
 
 	if (ctl_conf_ptr->max_job_cnt == (uint16_t) NO_VAL)
 		ctl_conf_ptr->max_job_cnt = DEFAULT_MAX_JOB_COUNT;
@@ -846,14 +843,10 @@ static void _set_config_defaults(slurm_ctl_conf_t * ctl_conf_ptr)
 		ctl_conf_ptr->slurmd_timeout = DEFAULT_SLURMD_TIMEOUT;
 
 	if (ctl_conf_ptr->state_save_location == NULL)
-		ctl_conf_ptr->state_save_location =
-		    xstrdup(DEFAULT_TMP_FS);
+		ctl_conf_ptr->state_save_location = xstrdup(DEFAULT_TMP_FS);
 
 	if (ctl_conf_ptr->tmp_fs == NULL)
 		ctl_conf_ptr->tmp_fs = xstrdup(DEFAULT_TMP_FS);
-
-	if (ctl_conf_ptr->wait_time == (uint16_t) NO_VAL)
-		ctl_conf_ptr->wait_time = DEFAULT_WAIT_TIME;
 }
 
 

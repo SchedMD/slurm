@@ -833,8 +833,12 @@ void purge_old_job (void);
  */
 extern int  read_slurm_conf (int recover);
 
+/* rehash_jobs - Create or rebuild the job rehash table. Actually for now we 
+ * just preserve it */
+void rehash_jobs(void);
+
 /* 
- * rehash - build a hash table of the node_record entries. this is a large 
+ * rehash_node - build a hash table of the node_record entries. this is a large 
  *	hash table to permit the immediate finding of a record based only 
  *	upon its name without regards to their number. there should be no 
  *	need for a search. 
@@ -842,7 +846,7 @@ extern int  read_slurm_conf (int recover);
  *         hash_table - table of hash indecies
  * NOTE: manages memory for hash_table
  */
-extern void rehash (void);
+extern void rehash_node (void);
 
 /* update first assigned job id as needed on reconfigure */
 extern void reset_first_job_id(void);

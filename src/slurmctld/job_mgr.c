@@ -69,7 +69,7 @@
 #define STEP_FLAG 0xbbbb
 #define TOP_PRIORITY 0xffff0000	/* large, but leave headroom for higher */
 
-#define JOB_HASH_INX(_job_id)	(_job_id % DEFAULT_MAX_JOB_COUNT)
+#define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
 
 #define YES_OR_NO(_in_string)	\
 		(( strcmp ((_in_string),"YES"))? \
@@ -80,12 +80,13 @@ List job_list = NULL;		/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
 
 /* Local variables */
-static int default_prio = TOP_PRIORITY;
-static int job_count;		/* job's in the system */
-static long job_id_sequence = -1;	/* first job_id to assign new job */
-static struct job_record *job_hash[DEFAULT_MAX_JOB_COUNT];
-static struct job_record *job_hash_over[DEFAULT_MAX_JOB_COUNT];
-static int max_hash_over = 0;
+static int    default_prio = TOP_PRIORITY;
+static int    hash_table_size = 0;
+static int    job_count = 0;        /* job's in the system */
+static long   job_id_sequence = -1; /* first job_id to assign new job */
+static struct job_record **job_hash = NULL;
+static struct job_record **job_hash_over = NULL;
+static int    max_hash_over = 0;
 
 /* Local functions */
 static void _add_job_hash(struct job_record *job_ptr);
@@ -154,7 +155,7 @@ struct job_record *create_job_record(int *error_code)
 	struct job_record *job_record_point;
 	struct job_details *job_details_point;
 
-	if (job_count >= DEFAULT_MAX_JOB_COUNT) {
+	if (job_count >= slurmctld_conf.max_job_cnt) {
 		error("create_job_record: job_count exceeds limit");
 		*error_code = EAGAIN;
 		return NULL;
@@ -770,7 +771,7 @@ void _add_job_hash(struct job_record *job_ptr)
 
 	inx = JOB_HASH_INX(job_ptr->job_id);
 	if (job_hash[inx]) {
-		if (max_hash_over >= DEFAULT_MAX_JOB_COUNT)
+		if (max_hash_over >= hash_table_size)
 			fatal("Job hash table overflow");
 		job_hash_over[max_hash_over++] = job_ptr;
 	} else
@@ -1009,7 +1010,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
  * init_job_conf - initialize the job configuration tables and values. 
  *	this should be called after creating node information, but 
  *	before creating any job entries. Pre-existing job entries are 
- *	left unchanged.
+ *	left unchanged. 
+ *	NOTE: The job hash table size does not change after initial creation.
  * RET 0 if no error, otherwise an error code
  * global: last_job_update - time of last job table update
  *	job_list - pointer to global job list
@@ -1020,13 +1022,32 @@ int init_job_conf(void)
 		job_count = 0;
 		job_list = list_create(&_list_delete_job);
 		if (job_list == NULL)
-			fatal ("Memory allocation failure");;
+			fatal ("Memory allocation failure");
 	}
 
 	last_job_update = time(NULL);
 	return SLURM_SUCCESS;
 }
 
+/* rehash_jobs - Create or rebuild the job rehash table. Actually for now we 
+ * just preserve it */
+void rehash_jobs(void)
+{
+	if (job_hash == NULL) {
+		hash_table_size = slurmctld_conf.max_job_cnt;
+		job_hash = (struct job_record **) xmalloc(hash_table_size *
+					sizeof(struct job_record *));
+		job_hash_over = (struct job_record **) xmalloc(hash_table_size *
+					sizeof(struct job_record *));
+	} else if (hash_table_size < slurmctld_conf.max_job_cnt) {
+		/* If the MaxJobCount grows by too much, the hash table will 
+		 * be ineffective without rebuilding. We don't presently bother 
+		 * to rebuild the hash table, but cut MaxJobCount back as 
+		 * needed. */ 
+		error ("MaxJobCount reset too high, restart slurmctld");
+		slurmctld_conf.max_job_cnt = hash_table_size;
+	}
+}
 
 /*
  * job_allocate - create job_records for the suppied job specification and 

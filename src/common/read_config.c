@@ -745,6 +745,10 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 		xfree (ctl_conf_ptr->backup_controller);
 	}
 
+	if (ctl_conf_ptr->max_job_cnt < 1)
+		fatal ("MaxJobCount=%u, No jobs permitted",
+		       ctl_conf_ptr->max_job_cnt);
+
 	if (ctl_conf_ptr->slurmctld_port == (uint32_t) NO_VAL) {
 		servent = getservbyname (SLURMCTLD_PORT, NULL);
 		if (servent)
