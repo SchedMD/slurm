@@ -1666,8 +1666,8 @@ init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 	conf_ptr->slurmctld_timeout   	= 300 ;
 	conf_ptr->slurmd_timeout   	= 300 ;
 	conf_ptr->slurm_conf       	= SLURM_CONFIG_FILE ;
-	conf_ptr->state_save_location   = xstrdup ("/tmp") ;
-	conf_ptr->tmp_fs            	= xstrdup ("/tmp") ;
+	conf_ptr->state_save_location   = xstrdup (DEFAULT_TMP_FS) ;
+	conf_ptr->tmp_fs            	= xstrdup (DEFAULT_TMP_FS) ;
 
 	servent = getservbyname (SLURMCTLD_PORT, NULL);
 	if (servent)

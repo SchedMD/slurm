@@ -62,6 +62,9 @@
  *	Update the group uid_t access list as needed */
 #define	PERIODIC_GROUP_CHECK	600
 
+/* Default temporary storage for slurm state and user files */
+#define DEFAULT_TMP_FS	"/tmp"
+
 #define safe_unpack16(valp,bufp,lenp) {			\
         if (*(lenp) < sizeof(*(valp)))			\
 		break;					\
