@@ -139,7 +139,7 @@ int slurm_api_set_default_config()
 
         last_config_update = config_stat.st_mtime;
         init_slurm_conf(&slurmctld_conf);
-        read_slurm_conf_ctl(&slurmctld_conf);
+        read_slurm_conf_ctl(&slurmctld_conf, false);
 
         if ((slurmctld_conf.control_addr == NULL) ||
             (slurmctld_conf.slurmctld_port == 0)) {

@@ -621,7 +621,7 @@ _print_ping (void)
 	if (slurm_conf_ptr == NULL) {
 		slurm_conf_ptr = xmalloc(sizeof(slurm_ctl_conf_info_msg_t));
 		init_slurm_conf(slurm_conf_ptr);
-		read_slurm_conf_ctl(slurm_conf_ptr);
+		read_slurm_conf_ctl(slurm_conf_ptr, false);
 		validate_config(slurm_conf_ptr);
 	}
 
@@ -669,7 +669,7 @@ _print_daemons (void)
 	char daemon_list[] = "slurmctld slurmd";
 
 	bzero(&conf, sizeof(conf));
-	if (read_slurm_conf_ctl(&conf) != SLURM_SUCCESS)
+	if (read_slurm_conf_ctl(&conf, true) != SLURM_SUCCESS)
 		return;
 	getnodename(me, MAX_NAME_LEN);
 	if ((b = conf.backup_controller)) {

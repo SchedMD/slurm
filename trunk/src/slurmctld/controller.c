@@ -165,7 +165,7 @@ int main(int argc, char *argv[])
 	slurm_api_set_conf_file(slurmctld_conf.slurm_conf);
 
 	/* Get SlurmctldPidFile for _kill_old_slurmctld */
-	if ((error_code = read_slurm_conf_ctl (&slurmctld_conf)))
+	if ((error_code = read_slurm_conf_ctl (&slurmctld_conf, false)))
 		fatal("read_slurm_conf_ctl reading %s: %s",
 		      slurmctld_conf.slurm_conf, slurm_strerror(error_code));
 	update_logging();

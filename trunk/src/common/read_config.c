@@ -55,7 +55,7 @@
 #define MULTIPLE_VALUE_MSG "Multiple values for %s, latest one used"
 
 inline static void _normalize_debug_level(uint16_t *level);
-static int  _parse_node_spec (char *in_line);
+static int  _parse_node_spec (char *in_line, bool slurmd_hosts);
 static int  _parse_part_spec (char *in_line);
 
 
@@ -64,6 +64,7 @@ typedef struct names_ll_s {
 	char *node_name;
 	struct names_ll_s *next;
 } names_ll_t;
+bool all_slurmd_hosts = false;
 #define NAME_HASH_LEN 512
 static names_ll_t *host_to_node_hashtbl[NAME_HASH_LEN] = {NULL};
 static names_ll_t *node_to_host_hashtbl[NAME_HASH_LEN] = {NULL};
@@ -160,8 +161,7 @@ static void _register_conf_node_aliases(char *node_name, char *node_hostname)
 	char *hn = NULL, *nn;
 	static char *me = NULL;
 
-	if (node_hostname == NULL
-	|| node_name == NULL || *node_name == '\0')
+	if (node_name == NULL || *node_name == '\0')
 		return;
 	if (strcasecmp(node_name, "DEFAULT") == 0) {
 		if (node_hostname) {
@@ -175,7 +175,9 @@ static void _register_conf_node_aliases(char *node_name, char *node_hostname)
 	}
 	if (strcasecmp(node_name, "localhost") == 0)
 		node_name = me;
-	if (node_hostname && (strcasecmp(node_hostname, "localhost") == 0))
+	if (node_hostname == NULL)
+		node_hostname = node_name;
+	if (strcasecmp(node_hostname, "localhost") == 0)
 		node_hostname = me;
 
 	node_list = hostlist_create(node_name);
@@ -183,12 +185,10 @@ static void _register_conf_node_aliases(char *node_name, char *node_hostname)
 	/* Expect one common node_hostname for all back-end nodes */
 	hn = node_hostname;
 #else
-	if (node_hostname && *node_hostname != '\0') {
-		host_list = hostlist_create(node_hostname);
-		if (hostlist_count(node_list) != hostlist_count(host_list))
-			fatal("NodeName and NodeHostname have different "
-				"number of records");
-	}
+	host_list = hostlist_create(node_hostname);
+	if (hostlist_count(node_list) != hostlist_count(host_list))
+		fatal("NodeName and NodeHostname have different "
+			"number of records");
 #endif
 	while ((nn = hostlist_shift(node_list))) {
 		if (host_list)
@@ -221,7 +221,13 @@ extern char *get_conf_node_hostname(char *node_name)
 		}
 		p = p->next;
 	}
-	return xstrdup(node_name);
+
+	if (all_slurmd_hosts)
+		return NULL;
+	else {
+		 /* Assume identical if we didn't explicitly save all pairs */
+		return xstrdup(node_name);
+	}
 }
 
 /*
@@ -240,7 +246,13 @@ extern char *get_conf_node_name(char *node_hostname)
 		}
 		p = p->next;
 	}
-	return xstrdup(node_hostname);
+
+	if (all_slurmd_hosts)
+		return NULL;
+	else {
+		/* Assume identical if we didn't explicitly save all pairs */
+		return xstrdup(node_hostname);
+	}
 }
 
 
@@ -813,10 +825,12 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 /*
  * _parse_node_spec - just overwrite node specifications (toss the results)
  * IN/OUT in_line - input line, parsed info overwritten with white-space
+ * IN  slurmd_hosts - if true then build a list of hosts on which slurmd runs,
+ *	only useful for "scontrol show daemons" command
  * RET 0 if no error, otherwise an error code
  */
 static int 
-_parse_node_spec (char *in_line) 
+_parse_node_spec (char *in_line, bool slurmd_hosts) 
 {
 	int error_code;
 	char *feature = NULL, *node_addr = NULL, *node_name = NULL;
@@ -840,7 +854,9 @@ _parse_node_spec (char *in_line)
 	if (error_code)
 		return error_code;
 
-	if (node_name) {
+	if (node_name
+	&&  (node_hostname || slurmd_hosts)) {
+		all_slurmd_hosts = true;
 		_register_conf_node_aliases(node_name, node_hostname);
 	}
 
@@ -900,10 +916,13 @@ _parse_part_spec (char *in_line)
  * read_slurm_conf_ctl - load the slurm configuration from the configured 
  *	file. 
  * OUT ctl_conf_ptr - pointer to data structure to be filled
+ * IN  slurmd_hosts - if true then build a list of hosts on which slurmd runs
+ *	(only useful for "scontrol show daemons" command). Otherwise only
+ *	record nodes in which NodeName and NodeHostname differ.
  * RET 0 if no error, otherwise an error code
  */
-int 
-read_slurm_conf_ctl (slurm_ctl_conf_t *ctl_conf_ptr) 
+extern int 
+read_slurm_conf_ctl (slurm_ctl_conf_t *ctl_conf_ptr, bool slurmd_hosts) 
 {
 	FILE *slurm_spec_file;	/* pointer to input data file */
 	int line_num;		/* line number in input file */
@@ -964,7 +983,7 @@ read_slurm_conf_ctl (slurm_ctl_conf_t *ctl_conf_ptr)
 		}
 
 		/* node configuration parameters */
-		if ((error_code = _parse_node_spec (in_line))) {
+		if ((error_code = _parse_node_spec (in_line, slurmd_hosts))) {
 			fclose (slurm_spec_file);
 			return error_code;
 		}		
