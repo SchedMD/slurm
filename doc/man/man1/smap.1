@@ -174,82 +174,77 @@ Mode Type: \fBCOPROCESS\fR or \fBVIRTUAL\fR.
 .TP
 \fBINPUT COMMANDS\fR
 .TP
-.I "CREATE" 
-Submit request for partition creation. There are two main ways this 
-can be used. Primarily the admin can specify either a size number or on 
-a BGL system a XYZ coord can be given like this 1x1x1. Command options 
-include: \fBConnection = MESH | TORUS\fR, \fBRotation = TRUE | FALSE\fR,
-\fBElongation = TRUE | FALSE\fR, \fBMode = COPROC | VIRTUAL\fR, and
-\fBRotation = TRUE | FALSE\fR. All command entries are case insensitive.
-The default settings are Connection=mesh, Rotation=false, Elongation=false, 
-and Mode=Coproc.
+.I \fBcreate <size> <options>\fR
+Submit request for partition creation. The size may be specified either 
+as a count of base partitions or specific dimensions in the X, Y and Z 
+directions separated by "x", for example "2x3x4". A variety of options 
+may be specified. Valid options are listed below. Note that the option
+and their values are case insensitive (e.g. "MESH" and "mesh" are equivalent).
 
 .RS
 .TP 10
-.I \fBcreate 8\fR
-This will request a creation of 8 meaning a block of 1x2x4 
-or 2x2x2 base partitions which ever fits into the configuration.
+.I \fBConnection = MESH | TORUS\fR
+Identify how the nodes should be connected in network. 
+The default value is TORUS.
 .TP
-.I \fBcreate 1 mode=virtual\fR
-This will create a block of one base partition with virtual mode.
+.I \fBMesh\fR
+Equivalent to "Connection=Mesh".
+.TP
+.I \fBTorus\fR
+Equivalent to "Connection=Torus".
+.TP
+.I \fBRotation = TRUE | FALSE\fR
+Specifies that the geometry specified in the size parameter may 
+be rotated in space (e.g. the Y and Z dimensions may be switched).
+The default value is FALSE.
+.TP
+.I \fBRotate\fR
+Equivalent to "Rotation=true".
+.TP
+.I \fBMode = COPROC | VIRTUAL\fR
+Specify how the second processor on a c-node should be used. 
+To use it for computation, specify VIRTUAL. 
+To use it for communications, specify COPROC.
+The default value is COPROC.
+.TP
+.I \fBCoproc\fR
+Equivalent to "Mode=Coproc".
+.TP
+.I \fBVirtual\fR
+Equivalent to "Mode=Virtual".
+.TP
+.I \fBElongation = TRUE | FALSE\fR
+If TRUE, permit the geometry specified in the size parameter to be altered as 
+needed to fit available resources. 
+For example, an allocation of "4x2x1" might be used to satisfy a size specification 
+of "2x2x2". 
+The default value is FALSE.
+.TP
+.I \fBElongate\fR
+Equivalent to "Elongation=true".
 .RE
 
 .TP
-.I "COPY"
-Submit request for partition to be copied. There are two main ways this 
-can be used. Primarily the admin can either type 'c' or 'copy' and smap
-will copy the last entry configured.  If you want to copy a specific 
-partition you can specify a particular ID.  If a number is placed behind then 
-there will be that many copies made.
-
-.RS
-.TP 10
-.I \fBcopy\fR
-This will request a copy of the last partition created.
-.TP
-.I \fBcopy A\fR
-This will request a copy of partition A.
-.TP
-.I \fBcopy A 8\fR
-This will request 8 copies of partition A.
-.RE
+.I \fBcopy <id> <count>\fR
+Submit request for partition to be copied. 
+You may copy a specific partition by specifying its id, by default the 
+last configured partition is copied. 
+You may also specify a number of copies to be made. 
+By default, one copy is made.
 
 .TP
-.I "DELETE"
+.I \fBdelete <id>\fR
 Delete the specified block or (default) the last partition created. 
-(Also can use REMOVE, or DROP)
-
-.RS
-.TP 10
-.I \fBdelete\fR
-This will delete last partition created.
-.TP
-.I \fBdelete C\fR
-This will delete the block with key A.
-.RE
 
 .TP
-.I "SAVE"
-Save system into a bluegene.conf file into the path of the user.
-
-.RS
-.TP 10
-.I \fBsave\fR
-This will save system into a bluegene.conf.timestamp file.
-.TP
-.I \fBsave mybluegenefile.conf\fR
-This will save system into a file named mybluegenefile.conf file.
-.RE
+.I \fBsave <file_name>\fR
+Save the current configuration to a file. 
+If no file_name is specified, the configuration is written to a 
+file named "bluegene.conf" in the current working directory.
 
 .TP
-.I "CLEAR ALL"
-Clear all partitions created. (Also can use CLEAR)
-
-.RS
-.TP 10
-.I \fBclear all\fR
-This will clear all previously created blocks.
-.RE
+.I \fBclear\fR
+Clear all partitions created.
 
 .SH "NODE STATE CODES"
 .PP
