@@ -175,15 +175,15 @@ void ping_nodes (void)
 			continue;
 		}
 
-#ifdef HAVE_BGL			/* Only one front-end node */
-		if (i > 0)
-			continue;
-#endif
-
 		if (node_ptr->last_response == (time_t)0) {
 			no_resp_flag = 1;
 			node_ptr->last_response = slurmctld_conf.last_update;
 		}
+
+#ifdef HAVE_BGL			/* Only one front-end node */
+		if (i > 0)
+			continue;
+#endif
 
 		/* Request a node registration if its state is UNKNOWN or 
 		 * on a periodic basis (about every MAX_REG_FREQUENCY ping, 
