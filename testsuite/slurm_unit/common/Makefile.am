@@ -9,15 +9,15 @@ endif
 INCLUDES = 	-I$(top_srcdir)
 LDADD =		$(top_builddir)/src/common/libcommon.la
 
-check_PROGRAMS = $(TESTS)
+check_PROGRAMS = \
+	$(TESTS) \
+	stream_server stream_client \
+	slurm_protocol_message_client \
+	slurm_protocol_message_server \
+	$(elan_testprogs)
 
 TESTS = \
-	$(elan_testprogs) \
 	pack-test \
         log-test \
-        stream_server \
-        stream_client \
-        bitstring-test \
-        slurm_protocol_message_client \
-        slurm_protocol_message_server
+	bitstring-test 
 
