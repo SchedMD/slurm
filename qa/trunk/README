@@ -175,6 +175,11 @@ test6.11   Validate scancel quiet option, no warning if job gone
            (--quiet option).
 
 
+test7.#    Testing of slurmctld functionality.
+==============================================
+test7.1    Test priorities assigned to jobs. Uses srun --hold and --batch options. 
+
+
 test9.#    System stress testing. Exercises all commands and daemons.
 =====================================================================
 test9.1    Stress test of stdin broadcast.
