@@ -127,10 +127,10 @@ static int _post_allocate(bgl_record_t *bgl_record)
 	/* Get back the new partition id */
 	rm_get_data(bgl_record->bgl_part, RM_PartitionID, &part_id);
 	bgl_record->bgl_part_id = xstrdup(part_id);
-	if(change_numpsets) {
+	if (change_numpsets) {
 		memset(command,0,255);
 		sprintf(command,"%s %s", change_numpsets, part_id);
-		printf("%s\n",command);
+		info("%s",command);
 		system(command);
 	}
 	/* We are done with the partition */
