@@ -100,48 +100,43 @@ int slurm_init_verifier(slurm_ssl_key_ctx_t * ctx, char *path)
 
 int slurm_destroy_ssl_key_ctx(slurm_ssl_key_ctx_t * ctx)
 {
-	if (ctx) 
-		EVP_PKEY_free(ctx->key.private);
+	if (ctx) EVP_PKEY_free(ctx->key.private);
 	return SLURM_SUCCESS;
 }
 
 
 int
-slurm_ssl_sign(slurm_ssl_key_ctx_t *ctx, char *data_buffer,
-	       int data_length, char *signature_buffer,
-	       int *signature_length)
+slurm_ssl_sign(slurm_ssl_key_ctx_t *ctx, 
+               char *data, int datalen, char *sig,  int *siglen )
 {
-	int rc;
-	EVP_MD_CTX md_ctx;
+	EVP_MD_CTX ectx;
+
 	if (EVP_PKEY_size(ctx->key.private) > SLURM_SSL_SIGNATURE_LENGTH) 
 		slurm_seterrno_ret(ESLURMD_SIGNATURE_FIELD_TOO_SMALL);
 
-	EVP_SignInit(&md_ctx, EVP_sha1());
-	EVP_SignUpdate(&md_ctx, data_buffer, data_length);
-	if ((rc = 
-	    EVP_SignFinal(&md_ctx, signature_buffer, signature_length,
-			   ctx->key.private)) != SLURM_OPENSSL_SIGNED) {
+	EVP_SignInit(&ectx, EVP_sha1());
+
+	EVP_SignUpdate(&ectx, data, datalen);
+
+	if (!EVP_SignFinal(&ectx, sig, siglen, ctx->key.private)) {
 		ERR_print_errors_fp(log_fp()); 
-		slurm_seterrno(ESLURMD_OPENSSL_ERROR);
-		return SLURM_ERROR;
+		slurm_seterrno_ret(ESLURMD_OPENSSL_ERROR);
 	}
-	info("signature length = %d", *signature_length);
+
 	return SLURM_SUCCESS;
 }
 
 int
-slurm_ssl_verify(slurm_ssl_key_ctx_t * ctx, char *data_buffer,
-		 int data_length, char *signature_buffer,
-		 int signature_length)
+slurm_ssl_verify(slurm_ssl_key_ctx_t * ctx, 
+                 char *data, int datalen, char *sig, int siglen)
 {
-	int rc;
-	EVP_MD_CTX md_ctx;
+	EVP_MD_CTX ectx;
 
-	EVP_VerifyInit(&md_ctx, EVP_sha1());
-	EVP_VerifyUpdate(&md_ctx, data_buffer, data_length);
-	if ((rc =
-	     EVP_VerifyFinal(&md_ctx, signature_buffer, signature_length,
-			     ctx->key.public)) != SLURM_OPENSSL_VERIFIED) {
+	EVP_VerifyInit(&ectx, EVP_sha1());
+
+	EVP_VerifyUpdate(&ectx, data, datalen);
+
+	if (!EVP_VerifyFinal(&ectx, sig, siglen, ctx->key.public)) {
 		error("EVP_VerifyFinal: %s", 
 		      ERR_error_string(ERR_get_error(), NULL));
 		slurm_seterrno_ret(ESLURMD_OPENSSL_ERROR);

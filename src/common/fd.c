@@ -66,6 +66,19 @@ void fd_set_nonblocking(int fd)
     return;
 }
 
+void fd_set_blocking(int fd)
+{
+    int fval;
+
+    assert(fd >= 0);
+
+    if ((fval = fcntl(fd, F_GETFL, 0)) < 0)
+	    error("fcntl(F_GETFL) failed: %m");
+    if (fcntl(fd, F_SETFL, fval & ~O_NONBLOCK) < 0)
+	    error("fcntl(F_SETFL) failed: %m");
+    return;
+}
+
 
 int fd_get_read_lock(int fd)
 {

@@ -51,20 +51,15 @@
 /* prototypes */
 
 static int  _clear_expired_revoked_credentials(List list);
-static int  _is_credential_still_valid(slurm_job_credential_t * credential,
-				       List list);
+static int  _is_credential_still_valid(slurm_job_credential_t *, List);
 static void _free_credential_state(void *credential_state);
-static int  _init_credential_state(credential_state_t * state,
-				   slurm_job_credential_t * cred);
-static int  _insert_credential_state(slurm_job_credential_t * credential,
-				     List list);
-static int  _insert_revoked_credential_state(revoke_credential_msg_t *
-					     revoke_msg, List list);
-static void _pack_one_cred(credential_state_t *credential_state_ptr, 
-			   Buf buffer);
-static int  _unpack_one_cred(credential_state_t *credential_state_ptr, 
-			     Buf buffer);
+static int  _insert_credential_state(slurm_job_credential_t *l, List);
+static int  _insert_revoked_credential_state(revoke_credential_msg_t *, List);
+static void _pack_one_cred(credential_state_t *, Buf);
+static int  _unpack_one_cred(credential_state_t *, Buf);
 
+static int  _init_credential_state(credential_state_t *, 
+		                   slurm_job_credential_t *);
 
 int
 sign_credential(slurm_ssl_key_ctx_t * ctx, slurm_job_credential_t * cred)
@@ -277,18 +272,17 @@ int _insert_credential_state(slurm_job_credential_t * credential, List list)
 }
 
 int
-_insert_revoked_credential_state(revoke_credential_msg_t * revoke_msg,
-				List list)
+_insert_revoked_credential_state(revoke_credential_msg_t *msg, List list)
 {
 	time_t now = time(NULL);
-	credential_state_t *credential_state;
+	credential_state_t *s = xmalloc(sizeof(*s));
 
-	credential_state = xmalloc(sizeof(slurm_job_credential_t));
-	credential_state->job_id = revoke_msg->job_id;
-	credential_state->expiration = revoke_msg->expiration_time;
-	credential_state->revoked = true;
-	credential_state->revoke_time = now;
-	list_append(list, credential_state);
+	s->job_id      = msg->job_id;
+	s->expiration  = msg->expiration_time;
+	s->revoked     = true;
+	s->revoke_time = now;
+
+	list_append(list, s);
 	return SLURM_SUCCESS;
 }
 
@@ -300,13 +294,13 @@ _insert_revoked_credential_state(revoke_credential_msg_t * revoke_msg,
  */ 
 void pack_credential_list(List list, Buf buffer)
 {
-	ListIterator iterator;
-	credential_state_t *credential_state_ptr;
+	ListIterator        i = NULL;
+	credential_state_t *s = NULL;
 
-	iterator = list_iterator_create(list);
-	while ((credential_state_ptr = list_next(iterator)))
-		_pack_one_cred(credential_state_ptr, buffer);
-	list_iterator_destroy(iterator);
+	i = list_iterator_create(list);
+	while ((s = list_next(i)))
+		_pack_one_cred(s, buffer);
+	list_iterator_destroy(i);
 }
 
 /* unpack_credential_list
@@ -319,39 +313,40 @@ void pack_credential_list(List list, Buf buffer)
  */ 
 int unpack_credential_list(List list, Buf buffer)
 {
-	credential_state_t *credential_state_ptr;
+	credential_state_t *s = NULL;
 
-	while (1) {
-		credential_state_ptr = xmalloc(sizeof(slurm_job_credential_t));
-		if (_unpack_one_cred(credential_state_ptr, buffer)) {
-			xfree(credential_state_ptr);
+	do {
+		s = xmalloc(sizeof(slurm_job_credential_t));
+		if (_unpack_one_cred(s, buffer)) {
+			xfree(s);
 			return SLURM_ERROR;
 		} else	
-			list_append(list, credential_state_ptr);
-	}
+			list_append(list, s);
+	} while (remaining_buf(buffer));
+
 	return SLURM_SUCCESS;
 }
 
 static void 
-_pack_one_cred(credential_state_t *credential_state_ptr, Buf buffer)
+_pack_one_cred(credential_state_t *state, Buf buffer)
 {
-	pack32(credential_state_ptr->job_id,		buffer);
-	pack16(credential_state_ptr->revoked,		buffer);
-	pack16(credential_state_ptr->procs_allocated,	buffer);
-	pack16(credential_state_ptr->total_procs,	buffer);
-	pack_time(credential_state_ptr->revoke_time,	buffer);
-	pack_time(credential_state_ptr->expiration,	buffer);
+	pack32(state->job_id,		buffer);
+	pack16(state->revoked,		buffer);
+	pack16(state->procs_allocated,	buffer);
+	pack16(state->total_procs,	buffer);
+	pack_time(state->revoke_time,	buffer);
+	pack_time(state->expiration,	buffer);
 }
 
 static int 
-_unpack_one_cred(credential_state_t *credential_state_ptr, Buf buffer)
+_unpack_one_cred(credential_state_t *state, Buf buffer)
 {
-	safe_unpack32(&credential_state_ptr->job_id,		buffer);
-	safe_unpack16(&credential_state_ptr->revoked,		buffer);
-	safe_unpack16(&credential_state_ptr->procs_allocated,	buffer);
-	safe_unpack16(&credential_state_ptr->total_procs,	buffer);
-	unpack_time(&credential_state_ptr->revoke_time,		buffer);
-	unpack_time(&credential_state_ptr->expiration,		buffer);
+	safe_unpack32(&state->job_id,		buffer);
+	safe_unpack16(&state->revoked,		buffer);
+	safe_unpack16(&state->procs_allocated,	buffer);
+	safe_unpack16(&state->total_procs,	buffer);
+	unpack_time(&state->revoke_time,		buffer);
+	unpack_time(&state->expiration,		buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:

@@ -580,6 +580,7 @@ int _slurm_set_stream_non_blocking ( slurm_fd open_fd )
 		return SLURM_SOCKET_ERROR ;
 	}
 	flags |= O_NONBLOCK ;
+
 	return _slurm_fcntl ( open_fd , F_SETFL , flags )  ;
 }
 
@@ -820,7 +821,7 @@ void _slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port ,
 		host_info = get_host_by_name( host, (void *) &hostent_buf, 
 				sizeof(hostent_buf), NULL );
 		if (host_info == NULL) {
-			fatal ("get_host_by_name failure on %s", host);
+			error ("get_host_by_name failure on %s", host);
 			slurm_address->sin_family = 0;
 			slurm_address->sin_port = 0;
 			return;

@@ -163,6 +163,7 @@ _update_task_state(job_t *job, int taskid)
 	slurm_mutex_unlock(&job->task_mutex);
 }
 
+
 static void
 _do_output(cbuf_t buf, FILE *out, int tasknum)
 {
@@ -170,29 +171,35 @@ _do_output(cbuf_t buf, FILE *out, int tasknum)
 	int  tot     = 0;
 	char line[4096];
 
+	/* 
+	 * This here is a hack to ensure that output streams are
+	 * set blocking. Until I can figure out where stdout/err
+	 * are getting set to nonblocking I/O, this test should
+	 * remain here.
+	 */
+	if ((fcntl(fileno(out), F_GETFL, 0) & O_NONBLOCK)) 
+		fd_set_blocking(fileno(out));
+
 	while ((len = cbuf_read_line(buf, line, sizeof(line), 1))) {
-		int n = len;
+		int n = 0;
 
 		if (opt.labelio)
 			fprintf(out, "%0*d: ", fmt_width, tasknum);
 
-		if ((n -= fprintf(out, "%s", line)) != 0) { 
-			error("Need to rewind %d bytes", n);
-			cbuf_rewind(buf, n);
-		} 
-
-		tot += (len - n);
+		if ((n = fprintf(out, "%s", line)) < 0) { 
+			error("Need to rewind %d bytes: %m", len);
+			goto done;
+		} else
+			tot += n;
 	}
 
-	/* if (fflush(out) == EOF)
-		error ("fflush: %m");
-	*/
+    done:
+	fflush(NULL);
 
-	debug3("Wrote %d bytes output. %d still buffered", 
-	       tot, cbuf_used(buf));
+	debug3("do_output: [%d %d %d]", tot, cbuf_used(buf), cbuf_size(buf));
 
 	nwritten += tot;
-
+	return;
 }
 
 static void
@@ -219,7 +226,6 @@ _flush_io(job_t *job)
 			_close_stream(&job->err[i], stderr, i);
 	}
 
-	fclose(job->outstream);
 	debug3("Read %dB from tasks, wrote %dB", nbytes, nwritten);
 }
 
@@ -271,13 +277,15 @@ _io_thr_poll(void *job_arg)
 		_poll_set_rd(fds[i], job->iofd[i]);
 
 	while (!_io_thr_done(job)) {
-		int eofcnt = 0;
+		int  eofcnt = 0;
+
 		nfds = job->niofds; /* already have n ioport fds + stdin */
 
 		if ((job->stdinfd >= 0) && stdin_open) {
 			_poll_set_rd(fds[nfds], job->stdinfd);
 			nfds++;
 		}
+
 
 		for (i = 0; i < opt.nprocs; i++) {
 			if (job->out[i] >= 0) {
@@ -308,6 +316,7 @@ _io_thr_poll(void *job_arg)
 				eofcnt++;
 				_update_task_state(job, i);
 			}
+
 		}
 
 		/* exit if we have received EOF on all streams */
@@ -330,10 +339,12 @@ _io_thr_poll(void *job_arg)
 
 		while ((!_io_thr_done(job)) && 
 		       ((rc = poll(fds, nfds, POLL_TIMEOUT_MSEC)) <= 0)) {
+
 			if (rc == 0) {	/* timeout */
 				_do_poll_timeout(job);
 				continue;
 			}
+
 			switch(errno) {
 				case EINTR:
 				case EAGAIN:
@@ -349,7 +360,6 @@ _io_thr_poll(void *job_arg)
 			}
 		}
 
-		debug3("poll returned with rc = %d", rc);
 
 		for (i = 0; i < job->niofds; i++) {
 			if (fds[i].revents) {
@@ -565,7 +575,7 @@ open_streams(job_t *job)
 	 * with our own buffers. (Also, stdio buffering seems to
 	 * causing some problems with loss of output)
 	 */
-	setvbuf(job->outstream, NULL, _IONBF, 0);
+	 /* setvbuf(job->outstream, NULL, _IONBF, 0); */
 
 	return 0;
 }
@@ -731,10 +741,6 @@ _do_task_output(int *fd, FILE *out, cbuf_t buf, int tasknum)
 		_close_stream(fd, out, tasknum);
 		return len;
 	}
-
-	debug3("Wrote %d bytes into buffer of size %d", len, cbuf_used(buf));
-	if (dropped)
-		debug3("dropped %d bytes", dropped);
 
 	nbytes += len;
 
