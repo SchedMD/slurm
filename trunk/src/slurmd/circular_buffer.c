@@ -1,4 +1,6 @@
 #include <assert.h>
+#include <stdlib.h>
+#include <string.h>
 #include <src/common/log.h>
 #include <src/common/xmalloc.h>
 #include <src/common/slurm_errno.h>
@@ -10,6 +12,7 @@
 #define MAX_BUFFER_SIZE ( ( 8192 * 10 ) )
 
 static int assert_checks ( circular_buffer_t * buf ) ;
+static int assert_checks_2 ( circular_buffer_t * buf ) ;
 static int expand_buffer ( circular_buffer_t * buf ) ;
 static int shrink_buffer ( circular_buffer_t * buf ) ;
 
@@ -56,6 +59,7 @@ int read_update ( circular_buffer_t * buf , unsigned int size )
 	/* before modifing the buffer lets do some sanity checks*/
 	assert ( size <= buf-> read_size ) ;
 	assert_checks ( buf ) ;
+	assert_checks_2 ( buf ) ;
 
 	/*modify headning position of the buffer*/
 	buf->head = buf->head + size ;
@@ -96,6 +100,7 @@ int read_update ( circular_buffer_t * buf , unsigned int size )
 
 	/* final sanity check */
 	assert_checks ( buf ) ;
+	assert_checks_2 ( buf ) ;
 	return SLURM_SUCCESS ;
 }
 
@@ -111,6 +116,7 @@ int write_update ( circular_buffer_t * buf , unsigned int size )
 	/* before modifing the buffer lets do some sanity checks*/
 	assert ( size <= buf-> write_size ) ;
 	assert_checks ( buf ) ;
+	assert_checks_2 ( buf ) ;
 
 	/*modify headning position of the buffer*/
 	buf->tail = buf->tail + size ;
@@ -151,6 +157,38 @@ int write_update ( circular_buffer_t * buf , unsigned int size )
 
 	/* final sanity check */
 	assert_checks ( buf ) ;
+	assert_checks_2 ( buf ) ;
+	return SLURM_SUCCESS ;
+}
+
+static int assert_checks_2 ( circular_buffer_t * buf )
+{
+	/* sanity checks */
+
+	/* head pointer is between start and end */	
+	assert ( buf-> head >= buf -> start ) ; 
+	assert ( buf-> head < buf -> end ) ;
+
+	/* tail pointer is between start and end */	
+	assert ( buf-> tail >= buf -> start ) ; 
+	assert ( buf-> tail < buf -> end ) ;
+
+	if ( buf->tail > buf->head )
+	{
+		assert ( buf -> write_size == buf -> end - buf -> tail ) ;
+		assert ( buf -> read_size == buf -> tail - buf -> head ) ;
+	}
+	else if ( buf->tail < buf->head )
+	{
+		assert ( buf -> write_size == buf -> head - buf -> tail ) ;
+		assert ( buf -> read_size == buf -> end - buf -> head ) ;
+	}
+	else if ( buf->tail == buf->head )
+	{
+		assert ( buf -> write_size == buf -> buf_size ) ;
+		assert ( buf -> read_size == 0 ) ;
+	}
+
 	return SLURM_SUCCESS ;
 }
 
@@ -171,21 +209,6 @@ static int assert_checks ( circular_buffer_t * buf )
 	assert ( buf-> tail >= buf -> start ) ; 
 	assert ( buf-> tail <= buf -> end ) ;
 
-	if ( buf->tail > buf->head )
-	{
-		assert ( buf -> write_size == buf -> end - buf -> tail ) ;
-		assert ( buf -> read_size == buf -> tail - buf -> head ) ;
-	}
-	else if ( buf->tail < buf->head )
-	{
-		assert ( buf -> write_size == buf -> head - buf -> tail ) ;
-		assert ( buf -> read_size == buf -> end - buf -> head ) ;
-	}
-	else if ( buf->tail == buf->head )
-	{
-		assert ( buf -> write_size == buf -> buf_size ) ;
-		assert ( buf -> read_size == 0 ) ;
-	}
 	return SLURM_SUCCESS ;
 }
 
