@@ -328,6 +328,8 @@ _allocate_nodes(void)
 		}
 		sigaction(SIGINT, &old_action, NULL);
 	}
+	if (!opt.nprocs_set)	/* can vary by min-max node count */
+		opt.nprocs = resp->node_cnt;
 
 	return resp;
 }
