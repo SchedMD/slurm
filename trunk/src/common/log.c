@@ -218,7 +218,7 @@ FILE *log_fp(void)
 static char *vxstrfmt(const char *fmt, va_list ap)
 {
 	char        *buf = NULL;
-	char        *p;
+	char        *p   = NULL;
 	size_t      len = (size_t) 0;
 	char        tmp[LINEBUFSIZE];
 	int         unprocessed = 0;
@@ -310,7 +310,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 static void xstrfmtcat(char **dst, const char *fmt, ...)
 {
 	va_list ap;
-	char *buf;
+	char *buf = NULL;
 
 	va_start(ap, fmt);
 	buf = vxstrfmt(fmt, ap);

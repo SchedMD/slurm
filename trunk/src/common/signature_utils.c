@@ -43,7 +43,7 @@ int slurm_init_signer(slurm_ssl_key_ctx_t * ctx, char *path)
 	fclose(key_file);
 
 	if (ctx->key.private == NULL) {
-		ERR_print_errors_fp(log_fp());
+		/* ERR_print_errors_fp(log_fp()); */
 		slurm_seterrno(ESLURMD_OPENSSL_ERROR);
 		return SLURM_ERROR;
 	}
@@ -64,7 +64,7 @@ int slurm_init_verifier(slurm_ssl_key_ctx_t * ctx, char *path)
 	fclose(cert_file);
 
 	if (x509 == NULL) {
-		ERR_print_errors_fp(log_fp());
+		/* ERR_print_errors_fp(log_fp()); */
 		slurm_seterrno(ESLURMD_OPENSSL_ERROR);
 		return SLURM_ERROR;
 	}
@@ -73,7 +73,7 @@ int slurm_init_verifier(slurm_ssl_key_ctx_t * ctx, char *path)
 	X509_free(x509);
 
 	if (ctx->key.public == NULL) {
-		ERR_print_errors_fp(log_fp());
+		/* ERR_print_errors_fp(log_fp()); */
 		slurm_seterrno(ESLURMD_OPENSSL_ERROR);
 		return SLURM_ERROR;
 	}
@@ -103,7 +103,7 @@ slurm_ssl_sign(slurm_ssl_key_ctx_t *ctx, char *data_buffer,
 	if ((rc =
 	     EVP_SignFinal(&md_ctx, signature_buffer, signature_length,
 			   ctx->key.private)) != SLURM_OPENSSL_SIGNED) {
-		ERR_print_errors_fp(log_fp());
+		/* ERR_print_errors_fp(log_fp()); */
 		slurm_seterrno(ESLURMD_OPENSSL_ERROR);
 		return SLURM_ERROR;
 	}
@@ -123,7 +123,7 @@ slurm_ssl_verify(slurm_ssl_key_ctx_t * ctx, char *data_buffer,
 	if ((rc =
 	     EVP_VerifyFinal(&md_ctx, signature_buffer, signature_length,
 			     ctx->key.public)) != SLURM_OPENSSL_VERIFIED) {
-		ERR_print_errors_fp(log_fp());
+		/* ERR_print_errors_fp(log_fp()); */
 		slurm_seterrno_ret(ESLURMD_OPENSSL_ERROR);
 	}
 	return SLURM_SUCCESS;
