@@ -262,6 +262,8 @@ fi
 
 
 %changelog
+* Thu Feb 10 2005 Morris Jette <jette1@llnl.gov>
+- disable rpm build termination if unpackaged files found (rpm bug)
 * Wed Jan 02 2005 Morris Jette <jette1@llnl.gov>
 - added smap package
 * Tue Nov 16 2004 Morris Jette <jette1@llnl.gov>
