@@ -198,7 +198,7 @@ main(int ac, char **av)
 		exit (0);
 
 	} else if ((run_resp = _alloc_nodes_step()) != NULL) {
-		debug("doing combined alloc and run");
+		debug("doing combined alloc and run"); /* Eliminates an RPC */
 		resp = xmalloc(sizeof(*resp));
 		_xlate_allocrun2alloc_resp(run_resp, resp);
 		if (_verbose || _debug)
@@ -207,6 +207,7 @@ main(int ac, char **av)
 		xfree(resp);
 		_job_step_record(job, run_resp);
 		slurm_free_resource_allocation_and_run_response_msg(run_resp);
+
 	} else {
 		if ( !(resp = _allocate_nodes()) ) 
 			exit(1);
