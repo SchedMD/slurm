@@ -12,7 +12,7 @@
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Moe Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
 # 
 # This file is part of SLURM, a resource management program.
@@ -71,6 +71,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 if {$job_id == 0} {
@@ -101,6 +102,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 if {$matches == 0} {
@@ -118,11 +120,12 @@ expect {
 		set exit_code   1
 	}
 	eof {
+		wait
 	}
 }
 
-exec $bin_rm -f $file_prog
 if {$exit_code == 0} {
+	exec $bin_rm -f $file_prog
 	send_user "\nSUCCESS\n"
 } else {
 	cancel_job $job_id
