@@ -61,6 +61,11 @@ Summary: SLURM jobcomp plugin that stores expired data in a text file
 Group: System Environment/Base
 Requires: slurm
 
+%package sched-wiki
+Summary: SLURM scheduling plugin for the Maui scheduler.
+Group: System Environment/Base
+Requires: slurm
+
 %description 
 SLURM is an open source, fault-tolerant, and highly
 scalable cluster management and job scheduling system for Linux clusters
@@ -83,6 +88,9 @@ SLURM authentication module for Chris Dunlap's Munge
 %description jobcomp-filetxt
 SLURM jobcomp module which saves job information in an ascii flat-file
 before purging jobs from memory.
+
+%description sched-wiki
+SLURM scheduling plugin for the Maui scheduler.
 
 %prep
 %setup -n %{name}-%{version}-%{release}
@@ -143,6 +151,8 @@ rm -rf $RPM_BUILD_ROOT
 %dir /etc/slurm
 %dir %{_libdir}/slurm
 %{_libdir}/slurm/jobcomp_none.so
+%{_libdir}/slurm/sched_backfill.so
+%{_libdir}/slurm/sched_builtin.so
 %dir %{_libdir}/slurm/src
 %config(noreplace) /etc/rc.d/init.d/slurm
 %config(noreplace) /etc/slurm/slurm.conf
@@ -182,6 +192,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/jobcomp_filetxt.so
 #############################################################################
 
+%files sched-wiki
+%defattr(-,root,root)
+%{_libdir}/slurm/sched_wiki.so
+#############################################################################
+
 
 %pre
 #if [ -x /etc/rc.d/init.d/slurm ]; then
@@ -219,6 +234,8 @@ fi
 
 
 %changelog
+* Thu Dec 11 2003 Mark Grondona <mgrondona@llnl.gov>
+- package slurm sched plugins 
 * Mon Nov 03 2003 Mark Grondona <mgrondona@llnl.gov>
 - also package "jobcomp" plugins
 * Fri Oct 10 2003 Mark Grondona <mgrondona@llnl.gov>
