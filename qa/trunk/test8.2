@@ -50,8 +50,8 @@ if {[test_front_end] == 0} {
 # Set target environment variables
 #
 global env
-set env(SLURM_CONN_TYPE)    torus
-set env(SLURM_GEOMETRY)     2x3x4
+set env(SLURM_CONN_TYPE)    mesh
+set env(SLURM_GEOMETRY)     1x1x1
 set env(SLURM_NODE_USE)     coprocessor
 set env(SLURM_NO_ROTATE)    1
 
@@ -95,7 +95,7 @@ if {$job_id == 0} {
 set matches 0
 spawn $scontrol show job $job_id
 expect {
-	-re "Connection=\[Tt\]" {
+	-re "Connection=\[Mm\]" {
 		incr matches
 		exp_continue
 	}
@@ -107,7 +107,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "Geometry=2x3x4" {
+	-re "Geometry=1x1x1" {
 		incr matches
 		exp_continue
 	}

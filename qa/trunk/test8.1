@@ -38,9 +38,9 @@ set test_id     "8.1"
 set exit_code   0
 set file_in     "test$test_id.input"
 set job_id      0
-set connection  "TORUS"
+set connection  "MESH"
 set node_use    "COPROCESSOR"
-set geometry    "2x3x4"
+set geometry    "1x1x1"
 
 print_header $test_id
 
@@ -89,7 +89,7 @@ if {$job_id == 0} {
 set matches 0
 spawn $scontrol show job $job_id
 expect {
-	-re "Connection=\[Tt\]" {
+	-re "Connection=\[Mm\]" {
 		incr matches
 		exp_continue
 	}
