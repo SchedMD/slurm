@@ -440,7 +440,7 @@ static void _read_part_db2(void)
 {
 #ifdef HAVE_BGL_FILES
 	status_t rc;
-	rm_BGL_t *bgl;
+	static rm_BGL_t *bgl = NULL;
 	rm_BP_t *my_bp;
 	int bp_num, i;
 	rm_location_t bp_loc;
@@ -448,6 +448,14 @@ static void _read_part_db2(void)
 	rm_partition_t *part_ptr;
 	char bgl_node[16];
 	db2_block_info_t *block_ptr;
+
+	if (bgl) {
+		/* if we have a single base partition, we can't 
+		 * run rm_bgl_free, so just read the data once 
+		 * and never free it. There is also no sense in
+		 * processing it again either. */
+		return;
+	}
 
 	if (block_list) {
 		/* clear the old list */
@@ -575,11 +583,20 @@ static void _read_part_db2(void)
 	/* perform post-processing for each bluegene partition */
 	list_for_each(block_list, _post_block_read, NULL);
 
-#ifdef USE_BGL_FILES
-	/* Causes seg-fault with 410 drivers */
+	/* We can't free the data on single base partition system 
+	 * without wires, could also be a problem with old drivers.
+	 * this fails with driver level 410. */
+	if ((rc = rm_get_data(bgl, RM_SwitchNum, &i)) != STATUS_OK) {
+		fprintf(stderr, "rm_get_data(RM_SwitchNum): %s\n",
+			bgl_err_str(rc));
+		return;
+	}
+	if (i == 0)
+		return;
 	if ((rc = rm_free_BGL(bgl)) != STATUS_OK)
 		fprintf(stderr, "rm_free_BGL(): %s\n", bgl_err_str(rc));
-#endif
+	else
+		bgl = NULL;
 #endif
 }
 
