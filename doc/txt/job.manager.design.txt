@@ -1,0 +1,22 @@
+SLURM Job Manager
+Moe Jette
+December 17, 2001
+
+
+Job Submission
+
+Jobs will be submitted via an API with an execution specification 
+which is expected to be constructed by a front-end program (e.g. 
+prun or poe). The specification contains the following fields:
+
+Name       The name of the user submitting the job (required)
+Partition  The name of the partition on which the job should execute (optional)
+Time       Maximum execution period of the job. This execution may be 
+           provided in more than one piece via gang scheduling (job preemption). 
+           The default value is unlimited, which is indicated with a value of -1.
+CPUs       Count of CPUs desired, default value is 1
+Nodes      Explicit comma separated list of desired nodes. This is optional. 
+           If specified, the CPUs parameter will be computed and all partition  
+           configuration specifications must still be satisfied. These nodes need  
+           not be in a single partition.
+JobType    INTERACTIVE or BATCH (required)

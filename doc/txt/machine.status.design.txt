@@ -64,7 +64,7 @@ A sample SlurmConf file is included at the end of this document.
 
 
 MSM will maintain the following information about each node:
- 1 Name           Name of a node as returned by uname (e.g. "lx12")
+ 1 Name           Name of a node as returned by hostname (e.g. "lx12")
  2 OS             Operating System name and level (output of the command
                   "/bin/uname -s -r | /bin/sed 's/ //g'")
  3 CPUs           Number of processors (e.g. "2")
