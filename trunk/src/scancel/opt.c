@@ -431,11 +431,10 @@ static void _usage(void)
 
 static void _help(void)
 {
-	printf("Usage: scancel [options] [job_id[.step_id]]\n");
+	printf("Usage: scancel [OPTIONS] [job_id[.step_id]]\n");
 	printf("  -i, --interactive               require response from user for each job\n");
 	printf("  -n, --name=job_name             name of job to be signalled\n");
-	printf("  -p, --partitions=partitions     comma separated list of partitions with jobs\n");
-	printf("                                  to signal, default is all partitions\n");
+	printf("  -p, --partition=partition       name of job's partition\n");
 	printf("  -s, --signal=name | integer     signal to send to job, default is SIGKILL\n");
 	printf("  -t, --states=states             states to jobs to cancel,\n");
 	printf("                                  default is pending and running,\n");

@@ -46,6 +46,7 @@ static List  _build_all_states_list( void );
 static List  _build_step_list( char* str );
 static List  _build_user_list( char* str );
 static char *_get_prefix(char *token);
+static void  _help( void );
 static int   _max_procs_per_node(void);
 static int   _parse_state( char* str, enum job_states* states );
 static void  _parse_token( char *token, char *field, int *field_size, 
@@ -65,8 +66,6 @@ parse_command_line( int argc, char* argv[] )
 	int option_index;
 	static struct option long_options[] = {
 		{"noheader",   no_argument,       0, 'h'},
-		{"help",       no_argument,       0, 'H'},
-		{"usage",      no_argument,       0, 'H'},
 		{"iterate",    required_argument, 0, 'i'},
 		{"jobs",       optional_argument, 0, 'j'},
 		{"long",       no_argument,       0, 'l'},
@@ -77,21 +76,19 @@ parse_command_line( int argc, char* argv[] )
 		{"states",     required_argument, 0, 't'},
 		{"user",       required_argument, 0, 'u'},
 		{"verbose",    no_argument,       0, 'v'},
-		{"version",    no_argument,       0, 'V'}
+		{"version",    no_argument,       0, 'V'},
+		{"help",       no_argument,       0, '1'},
+		{"usage",      no_argument,       0, '2'}
 	};
 
-	while((opt_char = getopt_long(argc, argv, "hHi:j::lo:p:s::S:t:u:vV",
+	while((opt_char = getopt_long(argc, argv, "hi:j::lo:p:s::S:t:u:vV12",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
-				_usage();
+				fprintf(stderr, "Try \"squeue --help\" for more information\n");
 				exit(1);
 			case (int)'h':
 				params.no_header = true;
-				break;
-			case (int)'H':
-				_usage();
-				exit(0);
 				break;
 			case (int) 'i':
 				params.iterate= atoi(optarg);
@@ -148,7 +145,12 @@ parse_command_line( int argc, char* argv[] )
 			case (int) 'V':
 				_print_version();
 				exit(0);
-				break;
+			case (int) '1':
+				_help();
+				exit(0);
+			case (int) '2':
+				_usage();
+				exit(0);
 		}
 	}
 
@@ -806,7 +808,13 @@ static void _print_version(void)
 
 static void _usage(void)
 {
-	printf("Usage: squeue [options]\n");
+	printf("Usage: squeue [-i seconds] [-S fields] [-t states] [-p partitions]\n");
+	printf("              [-o format] [-u user_name] [--usage] [-hjlsv]\n");
+}
+
+static void _help(void)
+{
+	printf("Usage: squeue [OPTIONS]\n");
 	printf("  -h, --noheader                  no headers on output\n");
 	printf("  -i, --iterate=seconds           specify an interation period\n");
 	printf("  -j, --jobs                      comma separated list of jobs\n");
@@ -825,5 +833,6 @@ static void _usage(void)
 	printf("  -v, --verbose                   verbosity level\n");
 	printf("  -V, --version                   output version information and exit\n");
 	printf("\nHelp options:\n");
-	printf("  -H, --help, --usage             show this help message\n");
+	printf("  --help                          show this help message\n");
+	printf("  --usage                         display a brief summary of squeue options\n");
 }
