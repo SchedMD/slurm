@@ -30,6 +30,7 @@
 #include <netdb.h>
 #include <errno.h>
 #include <netinet/in.h>
+#include <sys/poll.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <signal.h>
@@ -52,9 +53,6 @@
 #include <src/common/pack.h>
 
 #define TEMP_BUFFER_SIZE 1024
-
-/* global constants */
-struct timeval SLURM_MESSGE_TIMEOUT_SEC_STATIC = { tv_sec:10L , tv_usec:0 } ;
 
 
 /* internal static prototypes */
@@ -84,11 +82,11 @@ int _slurm_close_accepted_conn ( slurm_fd open_fd )
 
 ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address )
 {
-	struct timeval SLURM_MESSGE_TIMEOUT_SEC = SLURM_MESSGE_TIMEOUT_SEC_STATIC ;
-	return _slurm_msg_recvfrom_timeout ( open_fd , buffer , size , flags , slurm_address , & SLURM_MESSGE_TIMEOUT_SEC ) ;
+	return _slurm_msg_recvfrom_timeout ( open_fd , buffer , size , flags , 
+				slurm_address , SLURM_MESSGE_TIMEOUT_MSEC_STATIC ) ;
 }
 
-ssize_t _slurm_msg_recvfrom_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address , struct timeval * timeout)
+ssize_t _slurm_msg_recvfrom_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address , int timeout)
 {
 	size_t recv_len ;
 
@@ -218,11 +216,11 @@ ssize_t _slurm_msg_recvfrom_timeout ( slurm_fd open_fd, char *buffer , size_t si
 
 ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address )
 {
-	struct timeval SLURM_MESSGE_TIMEOUT_SEC = SLURM_MESSGE_TIMEOUT_SEC_STATIC ;
-	return _slurm_msg_sendto_timeout ( open_fd, buffer , size , flags, slurm_address , & SLURM_MESSGE_TIMEOUT_SEC ) ;
+	return _slurm_msg_sendto_timeout ( open_fd, buffer , size , flags, 
+				slurm_address , SLURM_MESSGE_TIMEOUT_MSEC_STATIC ) ;
 }
 
-ssize_t _slurm_msg_sendto_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address , struct timeval * timeout )
+ssize_t _slurm_msg_sendto_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address , int timeout )
 {
 	size_t send_len ;
 
@@ -287,30 +285,27 @@ ssize_t _slurm_msg_sendto_timeout ( slurm_fd open_fd, char *buffer , size_t size
 	return SLURM_PROTOCOL_ERROR ;
 }
 
-int _slurm_send_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, struct timeval * timeout )
+int _slurm_send_timeout ( slurm_fd open_fd, char *buffer , size_t size , 
+	                  uint32_t flags, int timeout )
 {
 	int rc ;
 	int bytes_sent = 0 ;
 	int fd_flags ;
-	_slurm_fd_set set ;
+	struct pollfd ufds;
 
-	_slurm_FD_ZERO ( & set ) ;
+	ufds.fd = open_fd;
+	ufds.events = POLLOUT;
 	fd_flags = _slurm_fcntl ( open_fd , F_GETFL ) ;
 	_slurm_set_stream_non_blocking ( open_fd ) ;
 	while ( bytes_sent < size )
 	{
-		_slurm_FD_SET ( open_fd , &set ) ;
-		rc = _slurm_select ( open_fd + 1 , NULL , & set, NULL , timeout ) ;
-		if ( (rc == SLURM_PROTOCOL_ERROR) || (rc < 0) )
+		rc = poll(&ufds, 1, timeout);
+		if ( rc < 0 )
 		{
 			if ( errno == EINTR )
-			{
 				continue ;
-			}
 			else
-			{
 				goto _slurm_send_timeout_exit_error;
-			}
 				
 		}
 		else if  ( rc == 0 )
@@ -320,17 +315,14 @@ int _slurm_send_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_
 		}
 		else 
 		{
-			rc = _slurm_send ( open_fd, &buffer[bytes_sent] , (size-bytes_sent) , flags ) ;
+			rc = _slurm_send ( open_fd, &buffer[bytes_sent] , 
+			                   (size-bytes_sent) , flags ) ;
 			if ( rc  == SLURM_PROTOCOL_ERROR || rc < 0 )
 			{
 				if ( errno == EINTR )
-				{
 					continue ;
-				}
 				else
-				{
 					goto _slurm_send_timeout_exit_error;
-				}
 			}
 			else if ( rc == 0 )
 			{
@@ -339,7 +331,7 @@ int _slurm_send_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_
 			}
 			else
 			{
-				bytes_sent+=rc ;
+				bytes_sent += rc ;
 			}
 		}
 	}
@@ -359,31 +351,27 @@ int _slurm_send_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_
 	
 }
 
-int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, struct timeval * timeout )
+int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer , size_t size , 
+                          uint32_t flags, int timeout )
 {
 	int rc ;
 	int bytes_recv = 0 ;
 	int fd_flags ;
-	_slurm_fd_set set ;
-	
+	struct pollfd ufds;
 
-	_slurm_FD_ZERO ( & set ) ;
+	ufds.fd = open_fd;
+	ufds.events = POLLIN;
 	fd_flags = _slurm_fcntl ( open_fd , F_GETFL ) ;
 	_slurm_set_stream_non_blocking ( open_fd ) ;
 	while ( bytes_recv < size )
 	{
-		_slurm_FD_SET ( open_fd , &set ) ;
-		rc = _slurm_select ( open_fd + 1 , & set , NULL , NULL , timeout ) ;
-		if ( (rc == SLURM_PROTOCOL_ERROR) || (rc < 0) )
+		rc = poll(&ufds, 1, timeout);
+		if ( rc < 0 )
 		{
 			if ( errno == EINTR )
-			{
 				continue ;
-			}
 			else
-			{
 				goto _slurm_recv_timeout_exit_error;
-			}
 				
 		}
 		else if  ( rc == 0 )
@@ -393,18 +381,15 @@ int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_
 		}
 		else 
 		{
-			rc = _slurm_recv ( open_fd, &buffer[bytes_recv], (size-bytes_recv), flags ) ;
+			rc = _slurm_recv ( open_fd, &buffer[bytes_recv], 
+			                   (size-bytes_recv), flags ) ;
 			if ( (rc  == SLURM_PROTOCOL_ERROR) || (rc < 0) )
 			{
 
 				if ( errno == EINTR )
-				{
 					continue ;
-				}
 				else
-				{
 					goto _slurm_recv_timeout_exit_error;
-				}
 			}
 			else if ( rc == 0 )
 			{
@@ -413,7 +398,7 @@ int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_
 			}
 			else
 			{
-				bytes_recv+=rc ;
+				bytes_recv += rc ;
 				break ;
 			}
 		}
@@ -706,24 +691,22 @@ extern int _slurm_close (int __fd )
 
 extern int _slurm_select(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)
 {
+	assert (n <= FD_SETSIZE); /* select data structure overflows */;
 	return select ( n , readfds , writefds , exceptfds , timeout ) ;
 }
-/*
-   extern int _slurm_pselect(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timespec *timeout, sigset_t * sigmask)
-   {
-   return pselect ( n , readfds , writefds , exceptfds , timeout , sigmask ) ;
-   }
-   */
 extern void _slurm_FD_CLR(int fd, fd_set *set)
 {
+	assert (fd < FD_SETSIZE); /* select data structure overflows */;
 	FD_CLR ( fd , set ) ;
 }
 extern int _slurm_FD_ISSET(int fd, fd_set *set)
 {
+	assert (fd < FD_SETSIZE); /* select data structure overflows */;
 	return FD_ISSET ( fd , set ) ;
 }
 extern void _slurm_FD_SET(int fd, fd_set *set)
 {
+	assert (fd < FD_SETSIZE); /* select data structure overflows */;
 	FD_SET ( fd , set ) ;
 }
 extern void _slurm_FD_ZERO(fd_set *set)

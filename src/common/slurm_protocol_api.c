@@ -508,7 +508,7 @@ slurm_fd slurm_open_stream(slurm_addr * slurm_address)
 }
 
 size_t slurm_write_stream_timeout_tv(slurm_fd open_fd, char *buffer,
-				     size_t size, struct timeval * timeout)
+				     size_t size, int timeout)
 {
 	return _slurm_send_timeout(open_fd, buffer, size,
 				   SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
@@ -516,7 +516,7 @@ size_t slurm_write_stream_timeout_tv(slurm_fd open_fd, char *buffer,
 }
 
 size_t slurm_read_stream_timeout_tv(slurm_fd open_fd, char *buffer,
-				    size_t size, struct timeval * timeout)
+				    size_t size, int timeout)
 {
 	return _slurm_recv_timeout(open_fd, buffer, size,
 				   SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
@@ -526,41 +526,31 @@ size_t slurm_read_stream_timeout_tv(slurm_fd open_fd, char *buffer,
 size_t slurm_write_stream_timeout(slurm_fd open_fd, char *buffer,
 				  size_t size, int timeout)
 {
-	struct timeval time_out;
-	time_out.tv_sec = timeout;
-	time_out.tv_usec = 0;
 	return _slurm_send_timeout(open_fd, buffer, size,
 				   SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				   &time_out);
+				   timeout);
 }
 
 size_t slurm_read_stream_timeout(slurm_fd open_fd, char *buffer,
 				 size_t size, int timeout)
 {
-	struct timeval time_out;
-	time_out.tv_sec = timeout;
-	time_out.tv_usec = 0;
 	return _slurm_recv_timeout(open_fd, buffer, size,
 				   SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				   &time_out);
+				   timeout);
 }
 
 size_t slurm_write_stream(slurm_fd open_fd, char *buffer, size_t size)
 {
-	struct timeval SLURM_MESSGE_TIMEOUT_SEC =
-	    SLURM_MESSGE_TIMEOUT_SEC_STATIC;
 	return _slurm_send_timeout(open_fd, buffer, size,
 				   SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				   &SLURM_MESSGE_TIMEOUT_SEC);
+				   SLURM_MESSGE_TIMEOUT_MSEC_STATIC);
 }
 
 size_t slurm_read_stream(slurm_fd open_fd, char *buffer, size_t size)
 {
-	struct timeval SLURM_MESSGE_TIMEOUT_SEC =
-	    SLURM_MESSGE_TIMEOUT_SEC_STATIC;
 	return _slurm_recv_timeout(open_fd, buffer, size,
 				   SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				   &SLURM_MESSGE_TIMEOUT_SEC);
+				   SLURM_MESSGE_TIMEOUT_MSEC_STATIC);
 }
 
 /*

@@ -64,7 +64,7 @@
 #include <src/common/pack.h>
 #include <src/common/slurm_protocol_common.h>
 
-extern struct timeval SLURM_MESSGE_TIMEOUT_SEC_STATIC ;
+#define SLURM_MESSGE_TIMEOUT_MSEC_STATIC 10000
 
 /****************\
  **  Data Types  **
@@ -93,9 +93,9 @@ slurm_fd _slurm_create_socket (slurm_socket_type_t type)  ;
 slurm_fd _slurm_init_msg_engine ( slurm_addr * slurm_address ) ;
 slurm_fd _slurm_open_msg_conn ( slurm_addr * slurm_address ) ;
 ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address ) ;
-ssize_t _slurm_msg_recvfrom_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address , struct timeval * timeout) ;
+ssize_t _slurm_msg_recvfrom_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address , int timeout) ;
 ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address ) ;
-ssize_t _slurm_msg_sendto_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address , struct timeval * timeout ) ;
+ssize_t _slurm_msg_sendto_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address , int timeout ) ;
 slurm_fd _slurm_accept_msg_conn ( slurm_fd open_fd , slurm_addr * slurm_address ) ;
 int _slurm_close_accepted_conn ( slurm_fd open_fd ) ;
 
@@ -111,8 +111,8 @@ extern int _slurm_close_stream ( slurm_fd open_fd ) ;
 extern inline int _slurm_set_stream_non_blocking ( slurm_fd open_fd ) ;
 extern inline int _slurm_set_stream_blocking ( slurm_fd open_fd ) ;
 
-int _slurm_send_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, struct timeval * timeout ) ;
-int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, struct timeval * timeout ) ;
+int _slurm_send_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, int timeout ) ;
+int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, int timeout ) ;
 	
 /***************************/
 /* slurm address functions */
