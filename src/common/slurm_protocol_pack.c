@@ -60,11 +60,12 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_JOB_INFO:
 			pack_job_info_msg ( ( slurm_msg_t * ) msg , (void ** ) buffer , buf_len ) ;
 			break ;
-
 		case RESPONSE_PARTITION_INFO:
 			pack_partition_info_msg ( ( slurm_msg_t * ) msg , (void ** ) buffer , buf_len ) ;
 			break ;
-
+		case RESPONSE_NODE_INFO:
+			pack_node_info_msg ( ( slurm_msg_t * ) msg , (void ** ) buffer , buf_len ) ;
+			break ;
 		case REQUEST_NODE_REGISRATION_STATUS :
 			break ;
 		case MESSAGE_NODE_REGISRATION_STATUS :
@@ -160,6 +161,9 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 			break;
 		case RESPONSE_PARTITION_INFO:
 			unpack_partition_info_msg ( ( partition_info_msg_t ** ) &(msg -> data) , (void ** ) buffer , buf_len ) ;
+			break;
+		case RESPONSE_NODE_INFO:
+			unpack_node_info_msg ( ( node_info_msg_t ** ) &(msg -> data) , (void ** ) buffer , buf_len ) ;
 			break;
 		case REQUEST_NODE_REGISRATION_STATUS :
 			break ;
@@ -261,6 +265,63 @@ int unpack_node_registration_status_msg ( node_registration_status_msg_t ** msg 
 	return 0 ;
 }
 
+void pack_node_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size )
+{	
+	memcpy ( *buf_ptr , msg->data , msg->data_size );
+	(*buf_ptr) += msg->data_size;
+	(*buffer_size) -= msg->data_size;
+}
+
+int unpack_node_info_msg ( node_info_msg_t ** msg , void ** buf_ptr , int * buffer_size )
+{
+	int i;
+	node_table_t *node;
+	
+	*msg = malloc ( sizeof ( node_info_msg_t ) );
+	if ( *msg == NULL )
+		return ENOMEM ;
+
+	/* load buffer's header (data structure version and time) */
+	unpack32 (&((*msg) -> record_count), buf_ptr, buffer_size);
+	unpack32 (&((*msg) -> last_update ) , buf_ptr, buffer_size);
+
+	node = (*msg) -> node_array = malloc ( sizeof ( node_table_t ) * (*msg)->record_count ) ;
+
+	/* load individual job info */
+	for (i = 0; i < (*msg)->record_count ; i++) {
+	unpack_node_table ( & node[i] , buf_ptr , buffer_size ) ;
+
+	}
+	return 0;
+}
+
+
+int unpack_node_table_msg ( node_table_msg_t ** node , void ** buf_ptr , int * buffer_size )
+{
+		*node = malloc ( sizeof(node_table_t) );
+		if (node == NULL) {
+			return ENOMEM;
+		}
+		unpack_node_table ( *node , buf_ptr , buffer_size ) ;
+		return 0 ;
+}
+
+int unpack_node_table ( node_table_msg_t * node , void ** buf_ptr , int * buffer_size )
+{
+	uint16_t uint16_tmp;
+
+        unpackstr_ptr_malloc (&node->name, &uint16_tmp, buf_ptr, buffer_size);
+        unpack16  (&node->node_state, buf_ptr, buffer_size);
+        unpack32  (&node->cpus, buf_ptr, buffer_size);
+        unpack32  (&node->real_memory, buf_ptr, buffer_size);
+        unpack32  (&node->tmp_disk, buf_ptr, buffer_size);
+        unpack32  (&node->weight, buf_ptr, buffer_size);
+        unpackstr_ptr_malloc (&node->features, &uint16_tmp, buf_ptr, buffer_size);
+	unpackstr_ptr_malloc (&node->name, &uint16_tmp, buf_ptr, buffer_size);
+
+        return 0;
+}
+
 void pack_partition_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size )
 {	
 	memcpy ( *buf_ptr , msg->data , msg->data_size );
@@ -270,26 +331,28 @@ void pack_partition_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer
 
 int unpack_partition_info_msg ( partition_info_msg_t ** msg , void ** buf_ptr , int * buffer_size )
 {
-	int i;
-	partition_table_t *partition;
-	
-	*msg = malloc ( sizeof ( partition_info_msg_t ) );
-	if ( *msg == NULL )
-		return ENOMEM ;
+        int i;
+        partition_table_t *partition;
 
-	/* load buffer's header (data structure version and time) */
-	unpack32 (&((*msg) -> record_count), buf_ptr, buffer_size);
-	unpack32 (&((*msg) -> last_update ) , buf_ptr, buffer_size);
+        *msg = malloc ( sizeof ( partition_info_msg_t ) );
+        if ( *msg == NULL )
+                return ENOMEM ;
 
-	partition = (*msg) -> partition_array = malloc ( sizeof ( partition_table_t ) * (*msg)->record_count ) ;
+        /* load buffer's header (data structure version and time) */
+        unpack32 (&((*msg) -> record_count), buf_ptr, buffer_size);
+        unpack32 (&((*msg) -> last_update ) , buf_ptr, buffer_size);
 
-	/* load individual job info */
-	for (i = 0; i < (*msg)->record_count ; i++) {
-	unpack_partition_table ( & partition[i] , buf_ptr , buffer_size ) ;
+        partition = (*msg) -> partition_array = malloc ( sizeof ( partition_table_t ) * (*msg)->record_count ) ;
 
-	}
-	return 0;
+        /* load individual job info */
+        for (i = 0; i < (*msg)->record_count ; i++) {
+        unpack_partition_table ( & partition[i] , buf_ptr , buffer_size ) ;
+
+        }
+        return 0;
 }
+
+
 
 
 int unpack_partition_table_msg ( partition_table_msg_t ** part , void ** buf_ptr , int * buffer_size )

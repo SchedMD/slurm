@@ -52,4 +52,9 @@ void pack_partition_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer
 int unpack_partition_info_msg ( partition_info_msg_t ** , void ** buffer , int * buffer_size ) ;
 int unpack_partition_table_msg ( partition_table_msg_t ** part , void ** buf_ptr , int * buffer_size ) ;
 int unpack_partition_table ( partition_table_msg_t * part , void ** buf_ptr , int * buffer_size ) ;
+
+void pack_node_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size ) ;
+int unpack_node_info_msg ( node_info_msg_t ** msg , void ** buf_ptr , int * buffer_size ) ;
+int unpack_node_table_msg ( node_table_msg_t ** node , void ** buf_ptr , int * buffer_size ) ;
+int unpack_node_table ( node_table_msg_t * node , void ** buf_ptr , int * buffer_size ) ;
 #endif

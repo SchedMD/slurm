@@ -264,14 +264,17 @@ void inline slurm_free_job_id_msg ( job_id_msg_t * msg ) ;
 
 void inline slurm_free_build_info ( build_info_msg_t * build_ptr ) ;
 
+void inline slurm_free_job_desc_msg ( job_desc_msg_t * msg ) ;
+
 void inline slurm_free_job_info ( job_info_msg_t * msg ) ;
 void inline slurm_free_job_table ( job_table_t * job ) ;
-
-void inline slurm_free_job_desc_msg ( job_desc_msg_t * msg ) ;
+void inline slurm_free_job_table_msg ( job_table_t * job ) ;
 
 void inline slurm_free_partition_info ( partition_info_msg_t * msg ) ;
 void inline slurm_free_partition_table ( partition_table_t * part ) ;
+void inline slurm_free_partition_table_msg ( partition_table_t * part ) ;
 
 void inline slurm_free_node_info ( node_info_msg_t * msg ) ;
 void inline slurm_free_node_table ( node_table_t * node ) ;
+void inline slurm_free_node_table_msg ( node_table_t * node ) ;
 #endif
