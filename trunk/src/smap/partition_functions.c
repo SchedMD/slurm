@@ -35,13 +35,15 @@ void get_part(void)
 {
 	int error_code, i, j, count = 0;
 	static partition_info_msg_t *part_info_ptr = NULL, *new_part_ptr;
+#ifdef HAVE_BGL_FILES
+	rm_partition_t *rm_part_ptr;
+#endif
 	partition_info_t part;
 	char node_entry[13];
 	int start, startx, starty, startz, endx, endy, endz;
+	int conn_type;
 	if (part_info_ptr) {
-		error_code =
-		    slurm_load_partitions(part_info_ptr->last_update,
-					  &new_part_ptr, 0);
+		error_code = slurm_load_partitions(part_info_ptr->last_update, &new_part_ptr, 0);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_partition_info_msg(part_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -49,8 +51,7 @@ void get_part(void)
 			new_part_ptr = part_info_ptr;
 		}
 	} else
-		error_code =
-		    slurm_load_partitions((time_t) NULL, &new_part_ptr, 0);
+		error_code = slurm_load_partitions((time_t) NULL, &new_part_ptr, 0);
 	if (error_code) {
 		if (quiet_flag != 1) {
 			wclear(pa_system_ptr->text_win);
@@ -71,7 +72,21 @@ void get_part(void)
 	for (i = 0; i < new_part_ptr->record_count; i++) {
 		j = 0;
 		part = new_part_ptr->partition_array[i];
-
+		
+#ifdef HAVE_BGL_FILES
+		error_code = rm_get_partition(part.name, &rm_part_ptr);
+		if (error_code) {
+			info("rm_get_partition %s errno=%d",
+			     part.name, error_code);
+			continue;
+		}
+		rm_get_data(rm_part_ptr, RM_PartitionConnection,
+				&conn_type);
+		pa_system_ptr->ycord++;
+		mvwprintw(pa_system_ptr->text_win,
+				  pa_system_ptr->ycord, 1,
+				  "Partition name %s is type %d",part.name, conn_type);		
+#endif
 		if (params.display == BGLPART) {
 			memset(node_entry, 0, 13);
 			memcpy(node_entry, part.nodes, 12);
@@ -90,30 +105,15 @@ void get_part(void)
 					endz = (start % 10);
 					j += 5;
 
-					part.total_nodes =
-					    set_grid_bgl(startx, starty,
-							 startz, endx,
-							 endy, endz,
-							 count);
-					part.root_only =
-					    (int) pa_system_ptr->
-					    fill_in_value[count].letter;
-					wattron(pa_system_ptr->text_win,
-						COLOR_PAIR(pa_system_ptr->
-							   fill_in_value
-							   [count].color));
+					part.total_nodes =  set_grid_bgl(startx, starty, startz, endx, endy, endz, count);
+					part.root_only = (int) pa_system_ptr->fill_in_value[count].letter;
+					wattron(pa_system_ptr->text_win, COLOR_PAIR(pa_system_ptr->fill_in_value[count].color));
 					print_text_part(&part);
-					wattroff(pa_system_ptr->text_win,
-						 COLOR_PAIR(pa_system_ptr->
-							    fill_in_value
-							    [count].
-							    color));
+					wattroff(pa_system_ptr->text_win, COLOR_PAIR(pa_system_ptr->fill_in_value[count].color));
 					count++;
 					memset(node_entry, 0, 13);
-					memcpy(node_entry, part.nodes + j,
-					       12);
+					memcpy(node_entry, part.nodes + j, 12);
 					part.allow_groups = node_entry;
-
 				}
 				j++;
 			}
