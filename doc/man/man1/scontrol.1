@@ -172,6 +172,10 @@ Set the job's time limit to the specified value.
 Identify the node(s) to be updated. Multiple node names may be specified using 
 simple node range expressions (e.g. "lx[10-20]"). This specification is required.
 .TP
+\fIReason\fP=<reason>
+Identify the reason the node is in a "DOWN" or "DRAINED" or "DRAINING" state.
+Use quotes to enclose a reason having more than one word.
+.TP
 \fIState\fP=<state>
 Identify the state to be assigned to the node. Possible values are  "NoResp", 
 "DOWN", "IDLE", "DRAIN", "DRAINED", "DRAINING", and "ALLOCATED". 
