@@ -11,13 +11,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#include <syslog.h>
 #include <sys/utsname.h>
 #include <sys/vfs.h>
 
 #include "slurm.h"
 
-#define DEBUG_MODULE 1
+#define DEBUG_MODULE 0
 
 int Get_CPUs(int *CPUs);
 int Get_OS_Name(char *OS_Name);
@@ -26,7 +26,7 @@ int Get_Memory(int *RealMemory, int *VirtualMemory);
 int Get_Speed(float *Speed);
 int Get_TmpDisk(long *TmpDisk);
 
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 /* main is used here for testing purposes only */
 main(int argc, char * argv[]) {
     int Error_Code;
@@ -45,6 +45,7 @@ main(int argc, char * argv[]) {
 	This_Node.Name, This_Node.OS, This_Node.CPUs, This_Node.Speed, This_Node.RealMemory, 
 	This_Node.VirtualMemory, This_Node.TmpDisk);
     if (Error_Code != 0) printf("Get_Mach_Stat Errors encountered, Error_Code=%d\n", Error_Code);
+    exit (Error_Code);
 } /* main */
 #endif
 
@@ -63,7 +64,7 @@ int Get_CPUs(int *CPUs) {
     *CPUs = 1;
     CPU_Info_File = fopen("/proc/stat", "r");
     if (CPU_Info_File == NULL) {
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	fprintf(stderr, "Get_CPUs: error %d opening /proc/stat\n", errno);
 #else
 	syslog(LOG_ERR, "Get_CPUs: error %d opening /proc/stat\n", errno);
@@ -97,19 +98,19 @@ int Get_OS_Name(char *OS_Name) {
     strcpy(OS_Name, "UNKNOWN");
     Error_Code = uname(&Sys_Info);
     if (Error_Code != 0) {
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	fprintf(stderr, "Get_OS_Name: uname error %d\n", Error_Code);
 #else
-	syslog(LOG_WARN "Get_OS_Name: uname error %d\n", Error_Code);
+	syslog(LOG_WARNING, "Get_OS_Name: uname error %d\n", Error_Code);
 #endif
 	return Error_Code;
     } /* if */
 
     if ((strlen(Sys_Info.sysname) + strlen(Sys_Info.release)) >= MAX_OS_LEN) {
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	fprintf(stderr, "Get_OS_Name: OS name too long\n");
 #else
-	syslog(LOG_WARN, "Get_OS_Name: OS name too long\n");
+	syslog(LOG_WARNING, "Get_OS_Name: OS name too long\n");
 #endif
 	return Error_Code;
     } /* if */
@@ -130,7 +131,7 @@ int Get_Mach_Name(char *Node_Name) {
 
     Error_Code = gethostname(Node_Name, MAX_NAME_LEN);
     if (Error_Code != 0) {
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	fprintf(stderr, "Get_Mach_Name: gethostname error %d\n", Error_Code);
 #else
 	syslog(LOG_ERR, "Get_Mach_Name: gethostname error %d\n", Error_Code);
@@ -157,7 +158,7 @@ int Get_Memory(int *RealMemory, int *VirtualMemory) {
     *VirtualMemory = 1;
     Mem_Info_File = fopen("/proc/meminfo", "r");
     if (Mem_Info_File == NULL) {
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	fprintf(stderr, "Get_Memory: error %d opening /proc/meminfo\n", errno);
 #else
 	syslog(LOG_ERR, "Get_Memory: error %d opening /proc/meminfo\n", errno);
@@ -194,7 +195,7 @@ int Get_Speed(float *Speed) {
     *Speed = 1.0;
     CPU_Info_File = fopen("/proc/cpuinfo", "r");
     if (CPU_Info_File == NULL) {
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	fprintf(stderr, "Get_Speed: error %d opening /proc/cpuinfo\n", errno);
 #else
 	syslog(LOG_ERR, "Get_Speed: error %d opening /proc/cpuinfo\n", errno);
@@ -245,7 +246,7 @@ int Get_TmpDisk(long *TmpDisk) {
 	    FS_Size[i] = 0;
 	} else {
 	    Error_Code = errno;
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	    fprintf(stderr, "Get_TmpDisk: error %d executing statfs on %s\n", errno, FS_Name[i]);
 #else
 	    syslog(LOG_ERR, "Get_TmpDisk: error %d executing statfs on %sp\n", errno, FS_Name[i]);

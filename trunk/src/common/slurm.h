@@ -29,7 +29,6 @@ enum Node_State {
 	STATE_DRAINED, 		/* Node idle and not to be allocated future work */
 	STATE_DRAINING,		/* Node in use, but not to be allocated future work */
 	STATE_END };		/* LAST ENTRY IN TABLE */
-char *Node_State_String[] = {"UNKNOWN", "IDLE", "BUSY", "DOWN", "DRAINED", "DRAINING", "END"};
 
 /* NOTE: Change NODE_STRUCT_VERSION value whenever the contents of "struct Node_Record" change */
 #define NODE_STRUCT_VERSION 1
@@ -45,10 +44,6 @@ struct Node_Record {
     enum Node_State NodeState;
     time_t LastResponse;
 };
-
-/* Last entry must be "END" */
-char *Part_State_String[] = {"UP", "DOWN", "DRAINING", "DRAINED", "END"};
-char *Job_Type_String[]   = {"NONE", "INTERACTIVE", "BATCH", "ALL", "END"};
 
 /* NOTE: Change PART_STRUCT_VERSION value whenever the contents of "struct Node_Record" change */
 #define PART_STRUCT_VERSION 1
@@ -146,6 +141,15 @@ int Update_Part_Spec_Conf (char *Specification);
  * Output: Returns 0 if satisfactory, errno otherwise
  */
 int Validate_Node_Spec (char *Specification);
+
+/*
+ * Will_Job_Run - Determine if the given job specification can be initiated now
+ * Input: Job_Spec - Specifications for the job
+ * Output: Returns node list, NULL if can not be initiated
+ *
+ * NOTE: The value returned MUST be freed to avoid memory leak
+ */
+char *Will_Job_Run(char *Specification);
 
 /*
  * Write_Node_Spec_Conf - Dump the node specification information into the specified file 
