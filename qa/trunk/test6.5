@@ -39,12 +39,18 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		kill_srun
-		set exit_code 1
-		exp_continue
+		exit 1
 	}
 	eof {
+		wait
 	}
 }
+if {$job_id1 == 0} {
+	send_user "\nFAILURE: srun job initiation failure\n"
+	kill_srun
+	exit 1
+}
+
 spawn $srun --batch --output=/dev/null --error=/dev/null -t1 $file_in
 expect {
 	-re "jobid ($number) submitted" {
@@ -54,11 +60,16 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		kill_srun
-		set exit_code 1
-		exp_continue
+		exit 1
 	}
 	eof {
+		wait
 	}
+}
+if {$job_id2  == 0} {
+	send_user "\nFAILURE: srun job initiation failure\n"
+	kill_srun
+	exit 1
 }
 exec $bin_rm -f $file_in
 
