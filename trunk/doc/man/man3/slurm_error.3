@@ -1,0 +1,54 @@
+.TH "Slurm API" "3" "Release 0.0.0" "Morris Jette" "Slurm error calls"
+.SH "NAME"
+.LP 
+\fBslurm_job\fR \- Slurm error calls
+.SH "SYNTAX"
+.LP 
+#include <slurm.h>
+.LP 
+int \fBslurm_get_errno\fR ( );
+.LP
+char * \fBslurm_strerror\fR (
+.br 
+	int \ferrnum\fP
+.br 
+);
+.LP
+void \fBslurm_perror\fR ( 
+.br 
+	char *\fImsg\fP 
+.br 
+);
+.SH "ARGUMENTS"
+.LP 
+.TP 
+\fIerrnum\fP
+A Slurm error code.
+.TP 
+\fImsg\fP
+TBD. 
+.SH "DESCRIPTION"
+.LP 
+\fBslurm_get_errno\fR Return the error code as set by a Slurm API function.
+.LP 
+\fBslurm_strerror\fR Given a Slurm error code, return a descriptive text.
+.LP 
+\fBslurm_perror\fR TBD.
+.SH "RETURN VALUE"
+.LP
+On success, zero is returned. On error, -1 is returned, and errno is set appropriately.
+.SH "ERRORS"
+.LP
+\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re-link your code.
+.SH "EXAMPLE"
+.eo
+.LP 
+#include <stdio.h>
+.br
+#include <slurm.h>
+.LP 
+int main (int argc, char *argv[])
+.br 
+{
+}
+.ec
