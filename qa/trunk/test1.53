@@ -33,7 +33,7 @@ set waiting          0
 set timeout $max_job_delay
 spawn $srun -N3 --contiguous -l -t1 $bin_hostname  
 expect {
-	-re "More processors requested than permitted" {
+	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exit $exit_code
 	}
