@@ -64,8 +64,7 @@ create_step_record (struct job_record *job_ptr)
 {
 	struct step_record *step_record_point;
 
-	if (job_ptr == NULL)
-		fatal ("create_step_record: job_ptr == NULL");
+	xassert(job_ptr);
 	step_record_point = 
 		(struct step_record *) xmalloc (sizeof (struct step_record));
 
@@ -91,8 +90,7 @@ delete_all_step_records (struct job_record *job_ptr)
 	ListIterator step_record_iterator;
 	struct step_record *step_record_point;
 
-	if (job_ptr == NULL)
-		fatal ("delete_all_step_records: job_ptr == NULL");
+	xassert(job_ptr);
 	step_record_iterator = list_iterator_create (job_ptr->step_list);		
 
 	last_job_update = time(NULL);
@@ -125,8 +123,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 	struct step_record *step_record_point;
 	int error_code;
 
-	if (job_ptr == NULL)
-		fatal ("delete_step_record: job_ptr == NULL");
+	xassert(job_ptr);
 	error_code = ENOENT;
 	step_record_iterator = list_iterator_create (job_ptr->step_list);		
 

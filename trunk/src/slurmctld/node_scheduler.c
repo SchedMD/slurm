@@ -144,10 +144,8 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 	int buf_rec_size = 0, down_node_cnt = 0;
 	uint16_t base_state, no_resp_flag;
 
-	if (job_ptr == NULL)
-		fatal ("job_ptr == NULL");
-	if (job_ptr->details == NULL)
-		fatal ("job_ptr->details == NULL");
+	xassert(job_ptr);
+	xassert(job_ptr->details);
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	if (timeout)
@@ -291,8 +289,7 @@ _pick_best_quadrics(bitstr_t * bitmap, bitstr_t * req_bitmap,
 	int best_fit_nodes, best_fit_cpus, best_fit_req;
 	int best_fit_location = 0, best_fit_sufficient;
 
-	if (bitmap == NULL)
-		fatal ("_pick_best_quadrics: bitmap == NULL");
+	xassert(bitmap);
 
 	consec_index = 0;
 	consec_size  = 50;	/* start allocation for 50 sets of 
@@ -706,7 +703,7 @@ _add_node_set_info(struct node_set *node_set_ptr,
 	else {
 		*node_bitmap = bit_copy(node_set_ptr->my_bitmap);
 		if (*node_bitmap == NULL)
-			fatal("bit_copy malloc");
+			fatal("bit_copy malloc failure");
 	}
 	*node_cnt += node_set_ptr->nodes;
 	*cpu_cnt  += node_set_ptr->nodes *
@@ -738,16 +735,13 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 	struct part_record *part_ptr = job_ptr->part_ptr;
 	uint32_t min_nodes, max_nodes;
 
-	if (job_ptr == NULL)
-		fatal ("select_nodes: job_ptr == NULL");
-	xassert (job_ptr->magic == JOB_MAGIC);
+	xassert(job_ptr);
+	xassert(job_ptr->magic == JOB_MAGIC);
 
 	/* insure that partition exists and is up */
 	if (part_ptr == NULL) {
 		part_ptr = find_part_record(job_ptr->partition);
-		if (part_ptr == NULL)
-			fatal("Invalid partition name %s for job %u",
-		   	   job_ptr->partition, job_ptr->job_id);
+		xassert(part_ptr);
 		job_ptr->part_ptr = part_ptr;
 		error("partition pointer reset for job %u, part %s",
 		      job_ptr->job_id, job_ptr->partition);

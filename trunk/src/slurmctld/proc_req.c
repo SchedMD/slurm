@@ -1292,8 +1292,10 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 		/* save_all_state();	performed by _slurmctld_background */
 	}
 	slurm_send_rc_msg(msg, error_code);
-	if ((error_code == SLURM_SUCCESS) && core_arg)
-		fatal("Aborting per RPC request");
+	if ((error_code == SLURM_SUCCESS) && core_arg) {
+		info("Aborting per RPC request");
+		abort();
+	}
 }
 
 /* _slurm_rpc_shutdown_controller_immediate - process RPC to shutdown 
