@@ -45,6 +45,11 @@ int unpack_build_info ( build_info_msg_t **build_buffer_ptr, void ** buffer , in
 
 void pack_job_info_msg ( slurm_msg_t * msg , void ** buffer , int * buffer_size ) ;
 int unpack_job_info_msg ( job_info_msg_t ** msg , void ** buffer , int * buffer_size ) ;
+int unpack_job_table_msg ( job_table_t ** job , void ** buf_ptr , int * buffer_size ) ;
 int unpack_job_table ( job_table_t * job , void ** buf_ptr , int * buffer_size ) ;
 
+void pack_partition_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size ) ;
+int unpack_partition_info_msg ( partition_info_msg_t ** , void ** buffer , int * buffer_size ) ;
+int unpack_partition_table_msg ( partition_table_msg_t ** part , void ** buf_ptr , int * buffer_size ) ;
+int unpack_partition_table ( partition_table_msg_t * part , void ** buf_ptr , int * buffer_size ) ;
 #endif

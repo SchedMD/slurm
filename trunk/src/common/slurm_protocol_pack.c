@@ -60,6 +60,11 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_JOB_INFO:
 			pack_job_info_msg ( ( slurm_msg_t * ) msg , (void ** ) buffer , buf_len ) ;
 			break ;
+
+		case RESPONSE_PARTITION_INFO:
+			pack_partition_info_msg ( ( slurm_msg_t * ) msg , (void ** ) buffer , buf_len ) ;
+			break ;
+
 		case REQUEST_NODE_REGISRATION_STATUS :
 			break ;
 		case MESSAGE_NODE_REGISRATION_STATUS :
@@ -152,6 +157,9 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 			break;
 		case RESPONSE_JOB_INFO:
 			unpack_job_info_msg ( ( job_info_msg_t ** ) &(msg -> data) , (void ** ) buffer , buf_len ) ;
+			break;
+		case RESPONSE_PARTITION_INFO:
+			unpack_partition_info_msg ( ( partition_info_msg_t ** ) &(msg -> data) , (void ** ) buffer , buf_len ) ;
 			break;
 		case REQUEST_NODE_REGISRATION_STATUS :
 			break ;
@@ -253,6 +261,78 @@ int unpack_node_registration_status_msg ( node_registration_status_msg_t ** msg 
 	return 0 ;
 }
 
+void pack_partition_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size )
+{	
+	memcpy ( *buf_ptr , msg->data , msg->data_size );
+	(*buf_ptr) += msg->data_size;
+	(*buffer_size) -= msg->data_size;
+}
+
+int unpack_partition_info_msg ( partition_info_msg_t ** msg , void ** buf_ptr , int * buffer_size )
+{
+	int i;
+	partition_table_t *partition;
+	
+	*msg = malloc ( sizeof ( partition_info_msg_t ) );
+	if ( *msg == NULL )
+		return ENOMEM ;
+
+	/* load buffer's header (data structure version and time) */
+	unpack32 (&((*msg) -> record_count), buf_ptr, buffer_size);
+	unpack32 (&((*msg) -> last_update ) , buf_ptr, buffer_size);
+
+	partition = (*msg) -> partition_array = malloc ( sizeof ( partition_table_t ) * (*msg)->record_count ) ;
+
+	/* load individual job info */
+	for (i = 0; i < (*msg)->record_count ; i++) {
+	unpack_partition_table ( & partition[i] , buf_ptr , buffer_size ) ;
+
+	}
+	return 0;
+}
+
+
+int unpack_partition_table_msg ( partition_table_msg_t ** part , void ** buf_ptr , int * buffer_size )
+{
+		*part = malloc ( sizeof(partition_table_t) );
+		if (part == NULL) {
+			return ENOMEM;
+		}
+		unpack_partition_table ( *part , buf_ptr , buffer_size ) ;
+		return 0 ;
+}
+
+int unpack_partition_table ( partition_table_msg_t * part , void ** buf_ptr , int * buffer_size )
+{
+	uint16_t uint16_tmp;
+	char * node_inx_str;
+
+	unpackstr_ptr_malloc (&part->name, &uint16_tmp, buf_ptr, buffer_size);
+	if (part->name == NULL)
+		part->name = "";
+	unpack32  (&part->max_time, buf_ptr, buffer_size);
+	unpack32  (&part->max_nodes, buf_ptr, buffer_size);
+	unpack32  (&part->total_nodes, buf_ptr, buffer_size);
+
+	unpack32  (&part->total_cpus, buf_ptr, buffer_size);
+	unpack16  (&part->default_part, buf_ptr, buffer_size);
+	unpack16  (&part->key, buf_ptr, buffer_size);
+	unpack16  (&part->shared, buf_ptr, buffer_size);
+
+	unpack16  (&part->state_up, buf_ptr, buffer_size);
+	unpackstr_ptr_malloc (&part->allow_groups, &uint16_tmp, buf_ptr, buffer_size);
+	if (part->allow_groups == NULL)
+		part->allow_groups = "";
+	unpackstr_ptr_malloc (&part->nodes, &uint16_tmp, buf_ptr, buffer_size);
+	if (part->nodes == NULL)
+		part->nodes = "";
+	unpackstr_ptr_malloc (&node_inx_str, &uint16_tmp, buf_ptr, buffer_size);
+	if (node_inx_str == NULL)
+		node_inx_str = "";
+	part->node_inx = bitfmt2int(node_inx_str);
+	return 0;
+}
+
 void pack_job_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size )
 {	
 	memcpy ( *buf_ptr , msg->data , msg->data_size );
@@ -277,7 +357,6 @@ int unpack_job_info_msg ( job_info_msg_t ** msg , void ** buf_ptr , int * buffer
 	job = (*msg) -> job_array = malloc ( sizeof ( job_table_t ) * (*msg)->record_count ) ;
 
 	/* load individual job info */
-	job = NULL;
 	for (i = 0; i < (*msg)->record_count ; i++) {
 	unpack_job_table ( & job[i] , buf_ptr , buffer_size ) ;
 
@@ -348,7 +427,9 @@ int unpack_job_table ( job_table_t * job , void ** buf_ptr , int * buffer_size )
 	if (job->job_script == NULL)
 		job->job_script = "";
 	return 0 ;
-}void pack_build_info ( build_info_msg_t * build_ptr, void ** buf_ptr , int * buffer_size )
+}
+
+void pack_build_info ( build_info_msg_t * build_ptr, void ** buf_ptr , int * buffer_size )
 {	
 	pack32 (build_ptr->last_update, buf_ptr, buffer_size);
 	pack16 (build_ptr->backup_interval, buf_ptr, buffer_size);
