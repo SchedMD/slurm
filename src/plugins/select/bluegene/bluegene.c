@@ -50,6 +50,8 @@
 #define BITSIZE 128
 #define DEFAULT_BLUEGENE_SERIAL "BGL"
 #define NODE_POLL_TIME 60	/* poll CMCS node state every 60 secs */
+#define SWITCH_POLL_TIME 90	/* poll CMCS switch state every 90 secs */
+
 #define _DEBUG 0
 
 char* bgl_conf = BLUEGENE_CONFIG_FILE;
@@ -89,6 +91,7 @@ static int  _parse_request(char* request_string, partition_t** request);
 static void _process_config(void);
 static int  _sync_partitions(void);
 static void _test_down_nodes(void);
+static void _test_down_switches(void);
 static int  _validate_config_nodes(void);
 static int  _wire_bgl_partitions(void);
 
@@ -1100,7 +1103,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 static void _test_down_nodes(void)
 {
 #ifdef HAVE_BGL_FILES
-	int bp_num,i;
+	int bp_num, i;
 	rm_BP_t *my_bp;
 	rm_BP_state_t bp_state;
 	rm_location_t bp_loc;
@@ -1113,21 +1116,31 @@ static void _test_down_nodes(void)
 	}
 
 	down_node_list[0] = '\0';
-	rm_get_data(bgl, RM_BPNum, &bp_num);
-	for (i=0; i<bp_num; i++) {
-		if (i)
-			rm_get_data(bgl, RM_NextBP, &my_bp);
-		else
-			rm_get_data(bgl, RM_FirstBP, &my_bp);
-		
-		rm_get_data(my_bp, RM_BPState, &bp_state);
-		if (RM_BPState != RM_BP_DOWN)
-			continue;
+	if (rm_get_data(bgl, RM_BPNum, &bp_num) != STATUS_OK)
+		return;
 
-		rm_get_data(my_bp, RM_BPLoc, &bp_loc);
+	for (i=0; i<bp_num; i++) {
+		if (i) {
+			if (rm_get_data(bgl, RM_NextBP, &my_bp) != STATUS_OK)
+				continue;
+		} else {
+			if (rm_get_data(bgl, RM_FirstBP, &my_bp) != STATUS_OK)
+				continue;
+		}
+
+		if ((rm_get_data(my_bp, RM_BPState, &bp_state) != STATUS_OK)
+		||  (bp_state != RM_BP_DOWN)
+		||  (rm_get_data(my_bp, RM_BPLoc, &bp_loc) != STATUS_OK)) {
+#ifdef USE_BGL_FILES
+/* FIXME: rm_free_BP is consistenly generating a segfault */
+			rm_free_BP(my_bp);
+#endif
+			continue;
+		}
+
 		snprintf(bgl_down_node, sizeof(bgl_down_node), "bgl%d%d%d", 
 			bp_loc.X, bp_loc.Y, bp_loc.Z);
-		debug("update bgl node bitmap: %s in state %s", 
+		debug("_test_down_nodes: %s in state %s", 
 			bgl_down_node, _convert_bp_state(RM_BPState));
 		if ((strlen(down_node_list) + strlen(bgl_down_node) + 2) 
 				< BUFSIZE) {
@@ -1136,6 +1149,10 @@ static void _test_down_nodes(void)
 			strcat(down_node_list, bgl_down_node);
 		} else
 			error("down_node_list overflow");
+#ifdef USE_BGL_FILES
+/* FIXME: rm_free_BP is consistenly generating a segfault */
+		rm_free_BP(my_bp);
+#endif
 	}
 
 	if (down_node_list[0]) {
@@ -1150,8 +1167,110 @@ static void _test_down_nodes(void)
 #endif
 }
 
-
+/* Find the specified BlueGene node ID and configure it down in CMCS */
+static void _configure_node_down(rm_bp_id_t bp_id)
+{
 #ifdef HAVE_BGL_FILES
+	int bp_num, i;
+	rm_bp_id_t bpid;
+	rm_BP_t *my_bp;
+	rm_location_t bp_loc;
+	rm_BP_state_t bp_state;
+	char bgl_down_node[128];
+
+	if (!bgl) {
+		error("error, BGL is not initialized");
+		return;
+	}
+
+	if (rm_get_data(bgl, RM_BPNum, &bp_num) != STATUS_OK)
+		return;
+	for (i=0; i<bp_num; i++) {
+		if (i) {
+			if (rm_get_data(bgl, RM_NextBP, &my_bp) != STATUS_OK)
+				continue;
+		} else {
+			if (rm_get_data(bgl, RM_FirstBP, &my_bp) != STATUS_OK)
+				continue;
+		}
+		if ((rm_get_data(my_bp, RM_BPID, &bpid) != STATUS_OK)
+		||  (strcmp(bpid, bpid) != 0)
+		||  (rm_get_data(my_bp, RM_BPLoc, &bp_loc) != STATUS_OK)
+		||  (rm_get_data(my_bp, RM_BPState, &bp_state) != STATUS_OK)
+		||  (bp_state == RM_BP_DOWN)	/* already down */
+		||  (rm_get_data(my_bp, RM_BPLoc, &bp_loc) != STATUS_OK)) {
+#ifdef USE_BGL_FILES
+/* FIXME: rm_free_BP is consistenly generating a segfault */
+			rm_free_BP(my_bp);
+#endif
+			continue;
+		}
+		snprintf(bgl_down_node, sizeof(bgl_down_node), "bgl%d%d%d",
+			bp_loc.X, bp_loc.Y, bp_loc.Z);
+#ifdef USE_BGL_FILES
+		if (rm_set_data(my_bp, RM_BPState, RM_BP_DOWN) != STATUS_OK)
+			info("switch for node %s is bad, cound not set down",
+				bgl_down_node);
+		else
+			info("switch for node %s is bad, set down", 
+				bgl_down_node);
+
+/* FIXME: rm_free_BP is consistenly generating a segfault */
+		rm_free_BP(my_bp);
+#else
+		info("switch for node %s is bad, set down", bgl_down_node);
+#endif
+	}	
+}
+
+/* Test for switches that are DOWN in BlueGene database */
+static void _test_down_switches(void)
+{
+#ifdef HAVE_BGL_FILES
+	int switch_num, i;
+	rm_switch_t *my_switch;
+	rm_bp_id_t bp_id;
+	rm_switch_state_t switch_state;
+
+	if (!bgl) {
+		error("error, BGL is not initialized");
+		return;
+	}
+
+	if (rm_get_data(bgl, RM_SwitchNum, &switch_num) != STATUS_OK)
+		return;
+	for (i=0; i<switch_num; i++) {
+		if (i) {
+			if (rm_get_data(bgl, RM_NextSwitch, &my_switch)
+					!= STATUS_OK)
+				continue;
+		} else {
+			if (rm_get_data(bgl, RM_FirstSwitch, &my_switch)
+					!= STATUS_OK)
+				continue;
+		}
+
+		if ((rm_get_data(my_switch, RM_SwitchState, &switch_state)
+				!= STATUS_OK)
+		||  (switch_state != RM_SWITCH_DOWN)
+		||  (rm_get_data(my_switch, RM_SwitchBPID, &bp_id) 
+				!= STATUS_OK)) {
+#ifdef USE_BGL_FILES
+/* FIXME: rm_free_switch() is consistenly generating a segfault */
+			rm_free_switch(my_switch);
+#endif
+			continue;
+		}
+		_configure_node_down(bp_id);
+#ifdef USE_BGL_FILES
+/* FIXME: rm_free_switch() is consistenly generating a segfault */
+		rm_free_switch(my_switch);
+#endif
+	}
+#endif
+}
+
+
 /* Convert base partition state value to a string */
 static char *_convert_bp_state(rm_BP_state_t state)
 {
@@ -1201,11 +1320,11 @@ static void _set_bp_node_state(rm_BP_state_t state, rm_element_t* element)
 extern void *
 bluegene_agent(void *args)
 {
-	static time_t last_node_test, now;
+	static time_t last_node_test, last_switch_test, now;
 	struct timeval tv1, tv2;
 	char tv_str[20];
 
-	last_node_test = time(NULL);
+	last_node_test = last_switch_test = time(NULL);
 	while (!agent_fini) {
 		sleep(1);
 		now = time(NULL);
@@ -1213,6 +1332,12 @@ bluegene_agent(void *args)
 		if (difftime(now, last_node_test) >= NODE_POLL_TIME) {
 			gettimeofday(&tv1, NULL);
 			_test_down_nodes();
+			gettimeofday(&tv2, NULL);
+			_diff_tv_str(&tv1, &tv2, tv_str, 20);
+		}
+		if (difftime(now, last_node_test) >= SWITCH_POLL_TIME) {
+			gettimeofday(&tv1, NULL);
+			_test_down_switches();
 			gettimeofday(&tv2, NULL);
 			_diff_tv_str(&tv1, &tv2, tv_str, 20);
 		}
