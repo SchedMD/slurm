@@ -180,11 +180,12 @@ main (int argc, char *argv[])
 
 	_msg_engine();
 
-	/* 
-	 * Close pidfile, thus releasing write lock and
-	 * allowing a waiting to continue.
+	/*
+	 * Close fd here, otherwise we'll deadlock since create_pidfile()
+	 * flocks the pidfile.
 	 */
-	(void) close(pidfd);  /* Ignore errors */
+	if (pidfd >= 0)			/* valid pidfd, non-error */
+		(void) close(pidfd);	/* Ignore errors */
 	if (unlink(conf->pidfile) < 0)
 		error("Unable to remove pidfile `%s': %m", conf->pidfile);
 
