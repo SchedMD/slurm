@@ -32,6 +32,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -94,11 +95,11 @@ int	job_create (job_desc_msg_t * job_specs, uint32_t *new_job_id, int allocate,
 void	list_delete_job (void *job_entry);
 int	list_find_job_id (void *job_entry, void *key);
 int	list_find_job_old (void *job_entry, void *key);
+void	signal_job_on_node (uint32_t job_id, uint16_t step_id, int signum, char *node_name);
 int	top_priority (struct job_record *job_ptr);
 int 	validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate ) ;
 int	write_data_to_file ( char * file_name, char * data ) ;
 int	write_data_array_to_file ( char * file_name, char ** data, uint16_t size ) ;
-
 
 /* 
  * create_job_record - create an empty job_record including job_details.
@@ -2327,19 +2328,24 @@ update_job (job_desc_msg_t * job_specs, uid_t uid)
 	return error_code;
 }
 
+
 /* validate_jobs_on_node - validate that any jobs that should be on the node are 
  *	actually running, if not clean up the job records and/or node records,
  *	call this function after validate_node_specs() sets the node state properly */
-void
-validate_jobs_on_node ( char *node_name, uint32_t job_count, uint32_t *job_id_ptr)
+void 
+validate_jobs_on_node ( char *node_name, uint32_t job_count, 
+			uint32_t *job_id_ptr, uint16_t *step_id_ptr)
 {
-	int i;
+	int i, node_inx;
 	struct node_record *node_ptr;
 	struct job_record *job_ptr;
 
 	node_ptr = find_node_record (node_name);
-	if (node_ptr == NULL)
+	if (node_ptr == NULL) {
+		error ("slurmd registered on unknown node %s", node_name);
 		return;
+	}
+	node_inx = node_ptr - node_record_table_ptr;
 
 	/* If no job is running here, ensure none are assigned to this node */
 	if (job_count == 0) {
@@ -2353,21 +2359,57 @@ validate_jobs_on_node ( char *node_name, uint32_t job_count, uint32_t *job_id_pt
 		if (job_ptr == NULL) {
 			error ("Orphan job_id %u reported on node %s", 
 			       job_id_ptr[i], node_name);
+			signal_job_on_node (job_id_ptr[i], step_id_ptr[i], 
+						SIGKILL, node_name);
+			/* We may well have pending purge job RPC to send slurmd,
+			 * which would synchronize this */
 			continue;
 		}
 
 		if ( (job_ptr->job_state == JOB_STAGE_IN) ||
 		     (job_ptr->job_state == JOB_RUNNING) ||
 		     (job_ptr->job_state == JOB_STAGE_OUT) ) {
-			debug ("Registered job_id %u on node %s ", 
-			       job_id_ptr[i], node_name);
-			continue;	/* All is well */
+			if ( bit_test (job_ptr->node_bitmap, node_inx))
+				debug3 ("Registered job_id %u on node %s ", 
+				       job_id_ptr[i], node_name);  /* All is well */
+			else {
+				error ("REGISTERED JOB_ID %u ON WRONG NODE %s ", 
+				       job_id_ptr[i], node_name);   /* Very bad */
+				signal_job_on_node (job_id_ptr[i], step_id_ptr[i], 
+							SIGKILL, node_name);
+			}
 		}
+			continue;
+
+		if (job_ptr->job_state == JOB_PENDING) {
+			/* FIXME: In the future try to let job run */
+			error ("REGISTERED PENDING JOB_ID %u ON NODE %s ", 
+			       job_id_ptr[i], node_name);   /* Very bad */
+			job_ptr->job_state = JOB_FAILED;
+			last_job_update = time (NULL);
+			job_ptr->end_time = time(NULL);
+			delete_job_details(job_ptr);
+			signal_job_on_node (job_id_ptr[i], step_id_ptr[i], 
+						SIGKILL, node_name);
+			continue;
+		}
+
+		/* else job is supposed to be done */
 		error ("Registered job_id %u in state %s on node %s ", 
 			job_id_ptr[i], 
 		        job_state_string (job_ptr->job_state), node_name);
-		job_ptr->job_state = JOB_NODE_FAIL;
-/* FIXME: Add code to kill job on this node */	
+			signal_job_on_node (job_id_ptr[i], step_id_ptr[i], 
+						SIGKILL, node_name);
+		/* We may well have pending purge job RPC to send slurmd,
+		 * which would synchronize this */
 	}
 	return;
+}
+
+/* signal_job_on_node - send specific signal to specific job_id, step_id and node_name */
+void
+signal_job_on_node (uint32_t job_id, uint16_t step_id, int signum, char *node_name)
+{
+	/* FIXME: add code to send RPC to specified node */
+	error ("CODE DEVELOPMENT NEEDED HERE");
 }

@@ -255,7 +255,8 @@ wdog (void *args)
 	/* Locks: Write node */
 	slurmctld_lock_t node_write_lock = { NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 #else
-	struct sockaddr_in *slurm_addr;
+	int done_cnt;
+	char *slurm_names;
 #endif
 
 	while (1) {
@@ -301,17 +302,22 @@ wdog (void *args)
 		unlock_slurmctld (node_write_lock);
 #else
 		/* Build a list of all non-responding nodes and send it to slurmctld */
-		error ("agent/wdog: %d nodes failed to respond", fail_cnt);
-		slurm_addr = xmalloc (fail_cnt * sizeof (struct sockaddr_in));
+		slurm_names = xmalloc (fail_cnt * MAX_NAME_LEN);
+		fail_cnt = 0;
 		for (i = 0; i < agent_ptr->thread_count; i++) {
-			if (thread_ptr[i].state == DSH_FAILED)
-				slurm_addr[fail_cnt++] = thread_ptr[i].slurm_addr;
+			if (thread_ptr[i].state == DSH_FAILED) {
+				strncpy (&slurm_names[MAX_NAME_LEN * fail_cnt],
+				         thread_ptr[i].node_name, MAX_NAME_LEN);
+				error ("agent/wdog: node %s failed to respond", 
+				       thread_ptr[i].node_name);
+				fail_cnt++;
+			}
 		}
 
 		/* send RPC */
 		fatal ("Code development needed here if agent is not thread");
 
-		xfree (slurm_addr);
+		xfree (slurm_names);
 #endif
 	}
 #if AGENT_IS_THREAD
@@ -322,6 +328,23 @@ wdog (void *args)
 			node_did_resp (thread_ptr[i].node_name);
 	}
 	unlock_slurmctld (node_write_lock);
+#else
+	/* Build a list of all responding nodes and send it to slurmctld to update time stamps */
+	done_cnt = agent_ptr->thread_count - fail_cnt;
+	slurm_names = xmalloc (done_cnt * MAX_NAME_LEN);
+	done_cnt = 0;
+	for (i = 0; i < agent_ptr->thread_count; i++) {
+		if (thread_ptr[i].state == DSH_DONE) {
+			strncpy (&slurm_names[MAX_NAME_LEN * done_cnt],
+			         thread_ptr[i].node_name, MAX_NAME_LEN);
+			done_cnt++;
+		}
+	}
+
+	/* send RPC */
+	fatal ("Code development needed here if agent is not thread");
+
+	xfree (slurm_addr);
 #endif
 	if (max_delay)
 		debug ("agent maximum delay %d seconds", max_delay);
