@@ -442,7 +442,7 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		goto done;
 	}
 
-	if (step->sid <= 0) {
+	if (step->sid <= (pid_t) 0) {
 		debug ("step %ld.%d invalid in shm [mpid:%d sid:%d]", 
 			req->job_id, req->job_step_id, 
 			step->mpid, step->sid);
@@ -475,7 +475,7 @@ _kill_running_session_mgrs(uint32_t jobid, int signum)
 	job_step_t  *s     = NULL; 
 
 	while ((s = list_next(i))) {
-		if (s->jobid == jobid) {
+		if ((s->jobid == jobid) && (s->sid > (pid_t) 0)) {
 			kill(s->sid, signum);
 		}
 	}
@@ -684,9 +684,15 @@ _kill_all_active_steps(uint32_t jobid, int sig)
 	while ((s = list_next(i))) {
 		if (s->jobid != jobid)		/* wrong job */
 			continue;
-		if ((s->stepid == NO_VAL) &&	/* batch job script */
-		    ((sig != SIGKILL) || (s->sid <= 0)))
+
+		if (s->sid <= 0) {
+			debug ("bad sid value in shm for %d!", jobid);
 			continue;
+		}
+
+		if ((s->stepid == NO_VAL) && (sig != SIGKILL))
+			continue;
+
 		step_cnt++;
 		if (s->stepid == NO_VAL) {
 			debug2("sending signal %d to job %u (pg:%d)", 
@@ -695,8 +701,6 @@ _kill_all_active_steps(uint32_t jobid, int sig)
 				error("kill jid %d sid %d: %m", 
 				      s->jobid, s->sid);
 		} else {
-			debug2("sending signal %d to job %u.%u (pg:%d)", 
-			       sig, jobid, s->stepid, s->sid);
 			shm_signal_step(jobid, s->stepid, sig); 
 		}
 	}
