@@ -87,9 +87,9 @@ extern int _slurm_socket (int __domain, int __type, int __protocol)  ;
 
 
 /* Create two new sockets, of type TYPE in domain DOMAIN and using
- *    protocol PROTOCOL, which are connected to each other, and put file
- *       descriptors for them in FDS[0] and FDS[1].  If PROTOCOL is zero,
- *          one will be chosen automatically.  Returns 0 on success, -1 for errors.  */
+ * protocol PROTOCOL, which are connected to each other, and put file
+ * descriptors for them in FDS[0] and FDS[1].  If PROTOCOL is zero,
+ * one will be chosen automatically.  Returns 0 on success, -1 for errors.  */
 extern int _slurm_socketpair (int __domain, int __type, int __protocol, int __fds[2]) ;
 
 /* Give the socket FD the local address ADDR (which is LEN bytes long).  */
@@ -105,7 +105,7 @@ extern int _slurm_getsockname (int __fd, __SOCKADDR_ARG __addr, socklen_t *__res
 extern int _slurm_connect (int __fd, __CONST_SOCKADDR_ARG __addr, socklen_t __len) ;
 
 /* Put the address of the peer connected to socket FD into *ADDR
- *    (which is *LEN bytes long), and its actual length into *LEN.  */
+ * (which is *LEN bytes long), and its actual length into *LEN.  */
 extern int _slurm_getpeername (int __fd, __SOCKADDR_ARG __addr, socklen_t *__restrict __len) ;
 
 /* Send N bytes of BUF to socket FD.  Returns the number sent or -1.  */
@@ -113,21 +113,22 @@ extern ssize_t _slurm_send (int __fd, __const void *__buf, size_t __n, int __fla
 extern ssize_t _slurm_write (int __fd, __const void *__buf, size_t __n) ;
 
 /* Read N bytes into BUF from socket FD.
- *    Returns the number read or -1 for errors.  */
+ * Returns the number read or -1 for errors.  */
 extern ssize_t _slurm_recv (int __fd, void *__buf, size_t __n, int __flags) ;
 extern ssize_t _slurm_read (int __fd, void *__buf, size_t __n) ;
 
 /* Send N bytes of BUF on socket FD to peer at address ADDR (which is
- *    ADDR_LEN bytes long).  Returns the number sent, or -1 for errors.  */
+ * ADDR_LEN bytes long).  Returns the number sent, or -1 for errors.  */
 extern ssize_t _slurm_sendto (int __fd, __const void *__buf, size_t __n, int __flags, __CONST_SOCKADDR_ARG __addr, socklen_t __addr_len) ;
+
 /* Read N bytes into BUF through socket FD.
- *    If ADDR is not NULL, fill in *ADDR_LEN bytes of it with tha address of
- *       the sender, and store the actual size of the address in *ADDR_LEN.
- *          Returns the number of bytes read or -1 for errors.  */
+ * If ADDR is not NULL, fill in *ADDR_LEN bytes of it with tha address of
+ * the sender, and store the actual size of the address in *ADDR_LEN.
+ * Returns the number of bytes read or -1 for errors.  */
 extern ssize_t _slurm_recvfrom (int __fd, void *__restrict __buf, size_t __n, int __flags, __SOCKADDR_ARG __addr, socklen_t *__restrict __addr_len) ;
 
 /* Send a msg described MESSAGE on socket FD.
- *    Returns the number of bytes sent, or -1 for errors.  */
+ * Returns the number of bytes sent, or -1 for errors.  */
 extern ssize_t _slurm_sendmsg (int __fd, __const struct msghdr *__msg, int __flags)  ;
 
 /* Send a msg described MESSAGE on socket FD.
@@ -135,41 +136,37 @@ extern ssize_t _slurm_sendmsg (int __fd, __const struct msghdr *__msg, int __fla
 extern ssize_t _slurm_recvmsg (int __fd, struct msghdr *__msg, int __flags)  ;
 
 /* Put the current value for socket FD's option OPTNAME at protocol level LEVEL
- *    into OPTVAL (which is *OPTLEN bytes long), and set *OPTLEN to the value's
- *       actual length.  Returns 0 on success, -1 for errors.  */
+ * into OPTVAL (which is *OPTLEN bytes long), and set *OPTLEN to the value's
+ * actual length.  Returns 0 on success, -1 for errors.  */
 extern int _slurm_getsockopt (int __fd, int __level, int __optname, void *__restrict __optval, socklen_t *__restrict __optlen) ;
 
 /* Set socket FD's option OPTNAME at protocol level LEVEL
- *    to *OPTVAL (which is OPTLEN bytes long).
- *       Returns 0 on success, -1 for errors.  */
+ * to *OPTVAL (which is OPTLEN bytes long).
+ * Returns 0 on success, -1 for errors.  */
 extern int _slurm_setsockopt (int __fd, int __level, int __optname, __const void *__optval, socklen_t __optlen) ;
 
 /* Prepare to accept connections on socket FD.
- *    N connection requests will be queued before further requests are refused.
- *       Returns 0 on success, -1 for errors.  */
+ * N connection requests will be queued before further requests are refused.
+ * Returns 0 on success, -1 for errors.  */
 extern int _slurm_listen (int __fd, int __n) ;
 
 /* Await a connection on socket FD.
- *    When a connection arrives, open a new socket to communicate with it,
- *       set *ADDR (which is *ADDR_LEN bytes long) to the address of the connecting
- *          peer and *ADDR_LEN to the address's actual length, and return the
- *             new socket's descriptor, or -1 for errors.  */
+ * When a connection arrives, open a new socket to communicate with it,
+ * set *ADDR (which is *ADDR_LEN bytes long) to the address of the connecting
+ * peer and *ADDR_LEN to the address's actual length, and return the
+ * new socket's descriptor, or -1 for errors.  */
 extern int _slurm_accept (int __fd, __SOCKADDR_ARG __addr, socklen_t *__restrict __addr_len) ;
 
 /* Shut down all or part of the connection open on socket FD.
- *    HOW determines what to shut down:
- *         SHUT_RD   = No more receptions;
- *              SHUT_WR   = No more transmissions;
- *                   SHUT_RDWR = No more receptions or transmissions.
- *                      Returns 0 on success, -1 for errors.  */
+ * HOW determines what to shut down:
+ * SHUT_RD   = No more receptions;
+ * SHUT_WR   = No more transmissions;
+ * SHUT_RDWR = No more receptions or transmissions.
+ * Returns 0 on success, -1 for errors.  */
 extern int _slurm_shutdown (int __fd, int __how) ;
-
-
 extern int _slurm_close (int __fd ) ;
 
-
 extern int _slurm_select(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
-
 extern int _slurm_pselect(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timespec *timeout, sigset_t * sigmask);
 
 void _slurm_FD_CLR(int fd, fd_set *set);
@@ -183,12 +180,11 @@ extern int _slurm_fcntl(int fd, int cmd, struct flock *lock);
 */
 		     
 extern int _slurm_ioctl(int d, int request, ...);
+
 /* sets the fields of a slurm_addr */
 extern void _slurm_set_addr_uint ( slurm_addr * slurm_address , uint16_t port , uint32_t ip_address ) ;
-
 extern void _slurm_set_addr ( slurm_addr * slurm_address , uint16_t port , char * host ) ;
-
 extern void _slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , char * host ) ;
-
 extern void _slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * host , uint32_t buf_len ) ;
+
 #endif /* !_SLURM_PROTOCOL_INTERFACE_H */

@@ -51,6 +51,8 @@ uint32_t slurm_send_node_buffer ( slurm_fd open_fd , slurm_addr * destination_ad
 uint32_t slurm_send_controller_msg ( slurm_fd open_fd , slurm_msg_type_t msg_type , slurm_msg_t const * msg ) ;
 uint32_t slurm_send_node_msg ( slurm_fd open_fd , slurm_addr * slurm_address , slurm_msg_type_t msg_type , slurm_msg_t const * msg ) ;
 
+/* Address Conversion Functions */
+
 void slurm_set_addr_uint ( slurm_addr * slurm_address , uint16_t port , uint32_t ip_address ) ;
 void slurm_set_addr ( slurm_addr * slurm_address , uint16_t port , char * host ) ;
 void slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , char * host ) ;
