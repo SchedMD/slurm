@@ -147,7 +147,6 @@ int main(int argc, char *argv[])
 		_get_option();
 	      redraw:
 
-
 		init_grid(node_info_ptr);
 		wclear(smap_info_ptr->text_win);
 		//wclear(smap_info_ptr->grid_win);        
@@ -271,23 +270,26 @@ void *_resize_handler(int sig)
 {
         int height = smap_info_ptr->Y * smap_info_ptr->Z + smap_info_ptr->Y + 3;
         int width = smap_info_ptr->X + smap_info_ptr->Z + 3;
-        
+        int tempwidth = width;
         smap_info_ptr->ycord = 1;
-	wclear(smap_info_ptr->grid_win);
-	wclear(smap_info_ptr->text_win);
-
+	
+	delwin(smap_info_ptr->grid_win);
+	delwin(smap_info_ptr->text_win);
+	
 	endwin();
 	initscr();
-
-	getmaxyx(stdscr, LINES, COLS);
-
-	delwin(smap_info_ptr->grid_win);
+	if (COLS < (75 + width) || LINES < height) {
+		endwin();
+		printf
+			("Screen is too small make sure the screen is at least %dx%d\nRight now it is %dx%d\n",
+			 75 + width, height, COLS, LINES);
+		exit(0);
+	}
+	
 	smap_info_ptr->grid_win = newwin(height, width, 0, 0);
 
 	width = COLS - width;
-	delwin(smap_info_ptr->text_win);
-	smap_info_ptr->text_win =
-	    newwin(LINES, width, 0, smap_info_ptr->X * 2);
+	smap_info_ptr->text_win = newwin(LINES, width, 0, tempwidth);
 
 	print_date();
 	switch (params.display) {
