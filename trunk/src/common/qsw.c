@@ -617,7 +617,8 @@ qsw_getnodeid(void)
  * conform to RMS's hostname requirements.  They are:
  * 1) all hostnames with an elan adapter have a numerical suffix that 
  *    corresponds to the elanid.
- * 2) all hostnames without an elan adapter have a single character suffix.
+ * 2) numerical suffixes never have leading zeros
+ * 3) all hostnames without an elan adapter have a single character suffix.
  */
 
 /*
@@ -665,17 +666,12 @@ qsw_gethost_bynodeid(char *buf, int len, int id)
 	if (gethostname(name, MAXHOSTNAMELEN) < 0)
 		return -1;
 	if ((domainname = strchr(name, '.')))		
-		*domainname++ = '\0';
+		*domainname++ = '\0';		/* save domainname for later */
 
-	/* 
-	 * Assume RMS-like system where all nodes have a numerical suffix
-	 * (with no leading zero padding) except the node ending in 'i',
-	 * e.g. dev[i,0-25].  If no numerical suffix, just strip the last
-	 * character and take what's left as the base.  Else strip the numbers.
-	 */
-	if (qsw_getnodeid_byhost(name) == -1)
-		name[strlen(name) - 1] = '\0';
-	else {				
+	/* extract the 'base' name */
+	if (qsw_getnodeid_byhost(name) == -1)	/* no numerical suffix */
+		name[strlen(name) - 1] = '\0';	/*   assume one char suffix */
+	else {					/* numerical suffix */
 		p = name + strlen(name) - 1;
 		while (p >= name && isdigit(*p))
 			*p-- = '\0';
