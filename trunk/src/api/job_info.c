@@ -46,7 +46,7 @@ main (int argc, char *argv[])
 	job_ptr = job_buffer_ptr->job_table_ptr;
 
 	for (i = 0; i < job_buffer_ptr->job_count; i++) {
-		printf ("JobId=%s UserId=%u ", 
+		printf ("JobId=%u UserId=%u ", 
 			job_ptr[i].job_id, job_ptr[i].user_id);
 		printf ("JobState=%u TimeLimit=%u ", 
 			job_ptr[i].job_state, job_ptr[i].time_limit);
@@ -213,10 +213,7 @@ slurm_load_job (time_t update_time, struct job_buffer **job_buffer_ptr)
 			free (buffer);
 			return ENOMEM;
 		}
-		unpackstr_ptr (&job[i].job_id, &uint16_tmp, 
-			&buf_ptr, &buffer_size);
-		if (job[i].job_id == NULL)
-			job[i].job_id = "";
+		unpack16  (&job[i].job_id, &buf_ptr, &buffer_size);
 		unpack32  (&job[i].user_id, &buf_ptr, &buffer_size);
 		unpack16  (&job[i].job_state, &buf_ptr, &buffer_size);
 		unpack32  (&job[i].time_limit, &buf_ptr, &buffer_size);

@@ -13,6 +13,7 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
 #include <sys/socket.h>
@@ -20,7 +21,6 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "slurm.h"
 #include "slurmlib.h"
 
 #if DEBUG_MODULE
@@ -36,7 +36,7 @@ main (int argc, char *argv[])
 	}
 
 	for (i=1; i<argc; i++) {
-		error_code = slurm_cancel (argv[i]);
+		error_code = slurm_cancel ((uint16_t) atoi(argv[i]));
 		if (error_code != 0)
 			printf ("slurm_cancel error %d for job %s\n", 
 				error_code, argv[i]);
@@ -54,21 +54,19 @@ main (int argc, char *argv[])
  *			EAGAIN if the request can not be satisfied at present
  */
 int
-slurm_cancel (char *job_id) 
+slurm_cancel (uint16_t job_id) 
 {
 	int buffer_offset, buffer_size, in_size;
-	char *request_msg, *buffer;
+	char *request_msg, *buffer, id_str[20];
 	int sockfd;
 	struct sockaddr_in serv_addr;
 
-	if (job_id == NULL)
-		return EINVAL;
-
-	request_msg = malloc (strlen (job_id) + 11);
+	sprintf (id_str, "%u", job_id);
+	request_msg = malloc (strlen (id_str) + 11);
 	if (request_msg == NULL)
 		return EAGAIN;
 	strcpy (request_msg, "JobCancel ");
-	strcat (request_msg, job_id);
+	strcat (request_msg, id_str);
 
 	if ((sockfd = socket (AF_INET, SOCK_STREAM, 0)) < 0)
 		return EINVAL;
