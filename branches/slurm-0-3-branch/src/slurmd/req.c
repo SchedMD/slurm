@@ -617,10 +617,12 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		goto done;
 	}
 
-	if (kill(-step->sid, req->signal) < 0)
+	if ((step->sid > (pid_t) 0)
+	 && (kill(-step->sid, req->signal) < 0))
 		rc = errno; 
 
-	if (kill (-step->task_list->pid, req->signal) < 0)
+	if ((step->task_list->pid > (pid_t) 0)
+	&&  (kill (-step->task_list->pid, req->signal) < 0))
 		rc = errno;
 
 	if (rc == SLURM_SUCCESS)
@@ -876,9 +878,11 @@ _kill_all_active_steps(uint32_t jobid, int sig)
 		step_cnt++;
 		debug2("signal %d to job %u (pg:%d)", sig, jobid, s->sid);
 
-		if (kill(-s->sid, sig) < 0)
+		if ((s->sid > (pid_t) 0)
+		&&  (kill(-s->sid, sig) < 0))
 			error("kill jid %d sid %d: %m", s->jobid, s->sid);
-		if (kill(-s->task_list->pid, sig) < 0)
+		if ((s->task_list->pid  > (pid_t) 0)
+		&&  (kill(-s->task_list->pid, sig) < 0))
 			error("kill jid %d pgrp %d: %m", s->jobid, 
 				s->task_list->pid);
 	}
