@@ -195,7 +195,10 @@ is especially important in clusters having very large numbers of
 nodes. For example, name nodes lx01, lx02, lx03, lx04, lx05, lx06, 
 lx07, lx08, lx09, lx10, lx11, lx12, lx13, lx14, lx15, lx16 for 
 best performance. If the leading zeros are not present (e.g "lx4" 
-instead of "lx04" in the example), performance will be reduced.
+instead of "lx04" in the example), performance will be reduced. 
+If you use a different naming convention and have a large cluster
+(say over 128 nodes), it may be desirable to modify the hashing 
+functions Hash_Index and Rehash in the Mach_Stat_Mgr.c module.
 
 <h3>Partition Configuration</h3>
 The partition configuration permits you to establish different job 
