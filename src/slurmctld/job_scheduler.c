@@ -141,8 +141,8 @@ schedule (void)
 			job_cnt++;
 		}
 		else {
-			info ("schedule: job_id %u non-runnable, errno %d",
-				job_ptr->job_id, errno);
+			info ("schedule: job_id %u non-runnable, error %m",
+				job_ptr->job_id);
 			last_job_update = time (NULL);
 			job_ptr->job_state = JOB_FAILED;
 			job_ptr->start_time = job_ptr->end_time = time(NULL);

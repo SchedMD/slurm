@@ -333,13 +333,13 @@ dump_all_job_state ( void )
 	lock_state_files ();
 	log_fd = creat (new_file, 0600);
 	if (log_fd == 0) {
-		error ("Create error %d on file %s, can't save state", errno, new_file);
+		error ("Can't save state, create file %s error %m", new_file);
 		error_code = errno;
 	}
 	else {
 		buf_len = buffer_allocated - buf_len;
 		if (write (log_fd, buffer, buf_len) != buf_len) {
-			error ("Write error %d on file %s, can't save state", errno, new_file);
+			error ("Can't save state, write file %s error %m", new_file);
 			error_code = errno;
 		}
 		close (log_fd);
@@ -573,7 +573,7 @@ load_job_state ( void )
 		buffer_size += buffer_used;
 		close (state_fd);
 		if (buffer_used < 0) 
-			error ("Read error %d on %s", errno, state_file);
+			error ("Error reading file %s: %m", state_file);
 	}
 	xfree (state_file);
 	unlock_state_files ();
@@ -1314,7 +1314,7 @@ copy_job_desc_to_file ( job_desc_msg_t * job_desc , uint32_t job_id )
 	xstrcat (dir_name, job_dir);
 	if (stat (dir_name, &sbuf) == -1) {	/* create job specific directory as needed */
 		if (mkdir2 (dir_name, 0700))
-			error ("mkdir2 errno=%d on %s", errno, dir_name);
+			error ("mkdir2 on %s error %m", dir_name);
 	}
 
 	/* Create environment file, and write data to it */
@@ -1395,7 +1395,7 @@ write_data_array_to_file ( char * file_name, char ** data, uint16_t size )
 
 	fd = creat (file_name, 0600);
 	if (fd < 0) {
-		error ("create file %s errno %d", file_name, errno);
+		error ("Error creating file %s, %m", file_name);
 		return ESLURM_WRITING_TO_FILE;
 	}
 
@@ -1405,7 +1405,7 @@ write_data_array_to_file ( char * file_name, char ** data, uint16_t size )
 		while (nwrite > 0) {
 			pos = write (fd, &data[i][pos], nwrite);
 			if (pos < 0) {
-				error ("write file %s errno %d", file_name, errno);
+				error ("Error writing file %s, %m", file_name);
 				return ESLURM_WRITING_TO_FILE;
 			}
 			nwrite -= pos;
@@ -1429,7 +1429,7 @@ write_data_to_file ( char * file_name, char * data )
 
 	fd = creat (file_name, 0600);
 	if (fd < 0) {
-		error ("create file %s errno %d", file_name, errno);
+		error ("Error creating file %s, %m", file_name);
 		return ESLURM_WRITING_TO_FILE;
 	}
 
@@ -1438,7 +1438,7 @@ write_data_to_file ( char * file_name, char * data )
 	while (nwrite > 0) {
 		pos = write (fd, &data[pos], nwrite);
 		if (pos < 0) {
-			error ("write file %s errno %d", file_name, errno);
+			error ("Error writing file %s, %m", file_name);
 			return ESLURM_WRITING_TO_FILE;
 		}
 		nwrite -= pos;

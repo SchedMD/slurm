@@ -200,7 +200,7 @@ build_part_bitmap (struct part_record *part_record_point)
 	if ( (host_list = hostlist_create (part_record_point->nodes)) == NULL) {
 		if (old_bitmap)
 			bit_free (old_bitmap);
-		error ("hostlist_create errno %d on %s", errno, part_record_point->nodes);
+		error ("hostlist_create error on %s, %m", part_record_point->nodes);
 		return ESLURM_INVALID_NODE_NAME;
 	}
 
@@ -372,13 +372,13 @@ dump_all_part_state ( void )
 	lock_state_files ();
 	log_fd = creat (new_file, 0600);
 	if (log_fd == 0) {
-		error ("Create error %d on file %s, can't save state", errno, new_file);
+		error ("Can't save state, error creating file %s, %m", new_file);
 		error_code = errno;
 	}
 	else {
 		buf_len = buffer_allocated - buf_len;
 		if (write (log_fd, buffer, buf_len) != buf_len) {
-			error ("Write error %d on file %s, can't save state", errno, new_file);
+			error ("Can't save state, error writing file %s, %m", new_file);
 			error_code = errno;
 		}
 		close (log_fd);
@@ -472,7 +472,7 @@ load_part_state ( void )
 		buffer_size += buffer_used;
 		close (state_fd);
 		if (buffer_used < 0) 
-			error ("Read error %d on %s", errno, state_file);
+			error ("Error reading file %s, %m", state_file);
 	}
 	xfree (state_file);
 	unlock_state_files ();

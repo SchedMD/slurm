@@ -145,7 +145,7 @@ main (int argc, char *argv[]) {
 	cycles = atoi (argv[2]);
 	printf ("let's reinitialize the database %d times.\n", cycles);
 	if (getrusage (RUSAGE_CHILDREN, &begin_usage))
-		printf ("ERROR %d from getrusage\n", errno);
+		printf ("getrusage error %m\n");
 	else if (begin_usage.ru_maxrss == 0) {
 		printf ("WARNING: getrusage inopeative, run /bin/ps and check for memory leak\n");
 		sleep (5);
@@ -153,13 +153,12 @@ main (int argc, char *argv[]) {
 	for (i = 0; i < cycles; i++) {
 		error_code = read_slurm_conf (0);
 		if (error_code) {
-			printf ("ERROR %d from read_slurm_conf\n",
-				error_code);
+			printf ("read_slurm_conf error %m\n", error_code);
 			exit (error_code);
 		}		
 	}			
 	if (getrusage (RUSAGE_CHILDREN, &end_usage))
-		printf ("error %d from getrusage\n", errno);
+		printf ("getrusage error %m\n");
 	i = (int) (end_usage.ru_maxrss - begin_usage.ru_maxrss);
 	if (i > 0) {
 		printf ("ERROR: Change in maximum RSS is %d.\n", i);
@@ -290,7 +289,7 @@ build_bitmaps ()
 			continue;
 
 		if ( (host_list = hostlist_create (part_record_point->nodes)) == NULL) {
-			error ("hostlist_create errno %d on %s", errno, part_record_point->nodes);
+			error ("hostlist_create error for %s, %m", part_record_point->nodes);
 			continue;
 		}
 
@@ -541,7 +540,7 @@ parse_node_spec (char *in_line) {
 	}			
 
 	if ( (host_list = hostlist_create (node_name)) == NULL) {
-		error ("hostlist_create errno %d on %s", errno, node_name);
+		error ("hostlist_create error for %s, %m", node_name);
 		error_code = errno;
 		goto cleanup;
 	}
@@ -865,8 +864,8 @@ read_slurm_conf (int recover) {
 
 	slurm_spec_file = fopen (slurmctld_conf.slurm_conf, "r");
 	if (slurm_spec_file == NULL)
-		fatal ("read_slurm_conf error %d opening file %s", 
-			errno, slurmctld_conf.slurm_conf);
+		fatal ("read_slurm_conf error opening file %s, %m", 
+			slurmctld_conf.slurm_conf);
 
 	info ("read_slurm_conf: loading configuration from %s", slurmctld_conf.slurm_conf);
 
