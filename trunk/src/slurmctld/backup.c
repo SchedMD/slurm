@@ -126,6 +126,7 @@ void run_backup(void)
 		slurmctld_conf.backup_controller);
 	pthread_kill(slurmctld_config.thread_id_sig, SIGTERM);
 	pthread_join(slurmctld_config.thread_id_sig, NULL);
+	pthread_join(slurmctld_config.thread_id_rpc, NULL);
 
 	/* clear old state and read new state */
 	job_fini();
@@ -168,8 +169,6 @@ static void *_background_signal_hand(void *no_data)
 			slurmctld_config.shutdown_time = time(NULL);
 			/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
 			slurmctld_shutdown();
-			pthread_join(slurmctld_config.thread_id_rpc, NULL);
-
 			return NULL;	/* Normal termination */
 			break;
 		case SIGABRT:	/* abort */
@@ -205,7 +204,7 @@ static void *_background_rpc_mgr(void *no_data)
 	}
 
 	/*
-	 * Procss incoming RPCs indefinitely
+	 * Process incoming RPCs indefinitely
 	 */
 	while (done_flag == false) {
 		/* accept needed for stream implementation 
