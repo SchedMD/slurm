@@ -104,7 +104,7 @@ static void      _print_conf();
 static void      _read_config();
 static void 	 _kill_old_slurmd();
 static void      _reconfigure();
-static void      _restore_cred_state(slurm_cred_ctx_t ctx);
+static int       _restore_cred_state(slurm_cred_ctx_t ctx);
 static void      _increment_thd_count();
 static void      _decrement_thd_count();
 static void      _wait_for_all_threads();
@@ -593,7 +593,8 @@ _slurmd_init()
 	/* 
 	 * Restore any saved revoked credential information
 	 */
-	_restore_cred_state(conf->vctx); 
+	if (_restore_cred_state(conf->vctx))
+		return SLURM_FAILURE;
 
 	/*
 	 * Cleanup shared memory if so configured
@@ -624,13 +625,19 @@ _slurmd_init()
 	return SLURM_SUCCESS;
 }
 
-static void
+static int
 _restore_cred_state(slurm_cred_ctx_t ctx)
 {
-	char *file_name, *data = NULL;
+	char *file_name = NULL, *data = NULL;
 	uint32_t data_size = 0;
 	int cred_fd, data_allocated, data_read = 0;
 	Buf buffer = NULL;
+
+	if ((mkdir(conf->spooldir, 0755) < 0) && 
+	    (errno != EEXIST)) {
+		error("mkdir(%s): %m", conf->spooldir);
+		return SLURM_ERROR;
+	}
 
 	file_name = xstrdup(conf->spooldir);
 	xstrcat(file_name, "/cred_state");
@@ -655,6 +662,7 @@ _restore_cred_state(slurm_cred_ctx_t ctx)
 	xfree(file_name);
 	if (buffer)
 		free_buf(buffer);
+	return SLURM_SUCCESS;
 }
 
 static int
