@@ -71,7 +71,7 @@ typedef resource_allocation_response_msg_t allocation_resp;
 /*
  * forward declaration of static funcs
  */
-static allocation_resp * allocate_nodes(void);
+static allocation_resp	*allocate_nodes(void);
 static void              print_job_information(allocation_resp *resp);
 static void		 create_job_step(job_t *job);
 static void		 sigterm_handler(int signum);
@@ -82,6 +82,7 @@ static char 		*find_file_path (char *fname);
 static char 		*get_shell (void);
 static int 		 is_file_text (char *fname);
 static int		 run_batch_job (void);
+static allocation_resp	*existing_allocation(void);
 
 #if HAVE_LIBELAN3
 #  include <src/common/qsw.h> 
@@ -128,6 +129,10 @@ main(int ac, char **av)
 #if HAVE_LIBELAN3
 		qsw_standalone(job);
 #endif
+	} else if ( (resp = existing_allocation()) ) {
+		job = job_create(resp); 
+		create_job_step(job);
+		slurm_free_resource_allocation_response_msg(resp);
 	} else {
 		if (!(resp = allocate_nodes()) || (resp->node_list == NULL)) {
 			info("No nodes allocated. exiting");
@@ -739,8 +744,41 @@ build_script (char *fname, int file_type)
 			break;
 		buf_used += i;
 	}
-	buffer[buf_used] = '\000';
+	buffer[buf_used] = '\0';
 	(void) close (fd);
 
 	return buffer;
+}
+
+/* If this is a valid job then return a (psuedo) allocation response pointer, 
+ * otherwise return NULL */
+static allocation_resp *
+existing_allocation( void )
+{
+	char * jobid_str, *end_ptr;
+	uint32_t jobid_uint;
+	old_job_alloc_msg_t job;
+	allocation_resp *resp;
+
+	/* Load SLURM_JOBID environment variable */
+	jobid_str = getenv( "SLURM_JOBID" );
+	if (jobid_str == NULL)
+		return NULL;
+	jobid_uint = (uint32_t) strtoul( jobid_str, &end_ptr, 10 );
+	if (end_ptr[0] != '\0') {
+		error( "Invalid SLURM_JOBID environment variable: %s", jobid_str );
+		exit( 1 );
+	}
+
+	/* Confirm that this job_id is legitimate */
+	job.job_id = jobid_uint;
+	job.uid = (uint32_t) getuid();
+
+	if (slurm_confirm_allocation(&job, &resp) == SLURM_FAILURE) {
+		error("Unable to confirm resource allocation for job %u: %s", 
+			jobid_uint, slurm_strerror(errno));
+		exit( 1 );
+	}
+
+	return resp;
 }
