@@ -42,7 +42,7 @@
 /*
  * Here are included the implementation details of the
  * authentication scheme.  Among other things, that file must define
- * slurm_client_credentials_t.  That file is identified at compile
+ * slurm_auth_credentials_t.  That file is identified at compile
  * time.
  */
 #include <src/common/slurm_auth_impl.h>
@@ -52,12 +52,12 @@
  * Allocation a new set of credentials from the free store.  Returns
  * NULL if no allocation is possible.
  */
-slurm_client_credentials_t *slurm_auth_alloc_credentials( void );
+slurm_auth_credentials_t *slurm_auth_alloc_credentials( void );
 
 /*
  * Deallocate credentials allocated with slurm_auth_alloc_credentials().
  */
-void slurm_auth_free_credentials( slurm_client_credentials_t *cred );
+void slurm_auth_free_credentials( slurm_auth_credentials_t *cred );
 
 /*
  * Populate the credentials and validate them for use.
@@ -67,35 +67,35 @@ void slurm_auth_free_credentials( slurm_client_credentials_t *cred );
  * Returns SLURM_ERROR if the credentials could not be populated,
  * validated, or if the authentication daemon is not running.
  */
-int slurm_auth_activate_credentials( slurm_client_credentials_t *cred,
+int slurm_auth_activate_credentials( slurm_auth_credentials_t *cred,
 				     time_t seconds_to_live );
 
 /*
  * Verify the credentials.  Returns SLURM_ERROR if the credentials are
  * invalid or has expired.
  */
-int slurm_auth_verify_credentials( slurm_client_credentials_t *cred );
+int slurm_auth_verify_credentials( slurm_auth_credentials_t *cred );
 
 /*
  * Extract user and group identification from the credentials.
  * They are trustworthy only if the credentials have first been
  * verified.
  */
-int slurm_auth_uid( slurm_client_credentials_t *cred );
-int slurm_auth_gid( slurm_client_credentials_t *cred );
+int slurm_auth_uid( slurm_auth_credentials_t *cred );
+int slurm_auth_gid( slurm_auth_credentials_t *cred );
 
 /*
  * Methods for packing and unpacking the credentials for transport.
  */
-void slurm_auth_pack_credentials( slurm_client_credentials_t *cred,
+void slurm_auth_pack_credentials( slurm_auth_credentials_t *cred,
 				  void **buffer,
 				  uint32_t *length );
-void slurm_auth_unpack_credentials( slurm_client_credentials_t **cred,
+void slurm_auth_unpack_credentials( slurm_auth_credentials_t **cred,
 				    void **buffer,
 				    uint32_t *length );
 
 #if DEBUG
-void slurm_auth_print_credentials( slurm_client_credentials_t *cred );
+void slurm_auth_print_credentials( slurm_auth_credentials_t *cred );
 #endif
 
 #endif /*__SLURM_AUTHENTICATION_H__*/

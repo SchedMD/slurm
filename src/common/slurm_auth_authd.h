@@ -30,9 +30,9 @@
 #include <src/common/auth.h>
 
 /* Each implementation must define this structure. */
-typedef struct slurm_client_credentials {
+typedef struct slurm_auth_credentials {
 	credentials creds;	/* Authd's credential structure. */
 	signature sig;		/* RSA hash for the credentials. */
-} slurm_client_credentials_t;
+} slurm_auth_credentials_t;
 
 #endif /*__SLURM_AUTH_IMPL_H__*/
