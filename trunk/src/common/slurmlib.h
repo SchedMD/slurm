@@ -5,12 +5,49 @@
  * author: moe jette, jette@llnl.gov
  */
 
-#define MAX_ID_LEN	32
-#define MAX_NAME_LEN	16
 #define BUILD_SIZE	128
 #define FEATURE_SIZE	1024
+#define MAX_ID_LEN	32
+#define MAX_NAME_LEN	16
+#define NODE_STRUCT_VERSION 1
 #define SLURMCTLD_HOST	"134.9.55.42"
 #define SLURMCTLD_PORT	1543
+
+/* INFINITE is used to identify unlimited configurations,  */
+/* eg. the maximum count of nodes any job may use in some partition */
+#define	INFINITE (0xffffffff)
+
+/* last entry must be STATE_END, keep in sync with node_state_string    	*/
+/* any value less than or equal to zero is down. if a node was in state 	*/
+/* STATE_BUSY and stops responding, its state becomes -(STATE_BUSY), etc.	*/
+enum node_states {
+	STATE_DOWN,		/* node is not responding */
+	STATE_UNKNOWN,		/* node's initial state, unknown */
+	STATE_IDLE,		/* node idle and available for use */
+	STATE_STAGE_IN,		/* node has been allocated, job not yet running */
+	STATE_BUSY,		/* node has been allocated, job currently */
+	STATE_DRAINED,		/* node idle and not to be allocated future work */
+	STATE_DRAINING,		/* node in use, but not to be allocated future work */
+	STATE_END		/* last entry in table */
+};
+
+struct node_table {
+	char *name;		/* name of the node. a null name indicates defunct node */
+	uint32_t node_state;	/* state of the node, see node_states */
+	uint32_t cpus;		/* count of processors running on the node */
+	uint32_t real_memory;	/* megabytes of real memory on the node */
+	uint32_t tmp_disk;	/* megabytes of total disk in TMP_FS */
+	uint32_t weight;	/* desirability of use */
+	char *features;		/* comma delimited feature list */
+	char *partition;	/* partition name */ 
+};
+
+struct node_buffer {
+	time_t last_update;	/* time of last buffer update */
+	int node_count;		/* count of entries in node_table */
+	void *raw_buffer_ptr;	/* raw network buffer info */
+	struct node_table *node_table_ptr;
+};
 
 /*
  * slurm_allocate - allocate nodes for a job with supplied contraints. 
@@ -46,16 +83,16 @@ extern int slurm_cancel (char *job_id);
 extern void slurm_free_build_info (void);
 
 /*
+ * slurm_free_node_info - free the node information buffer (if allocated)
+ * NOTE: buffer is loaded by slurm_load_node.
+ */
+extern void slurm_free_node_info (struct node_buffer *node_buffer_ptr);
+
+/*
  * free_job_info - free the job information buffer (if allocated)
  * NOTE: buffer is loaded by load_job and used by load_job_name.
  */
 extern void free_job_info (void);
-
-/*
- * free_node_info - free the node information buffer (if allocated)
- * NOTE: buffer is loaded by load_node and used by load_node_name.
- */
-extern void free_node_info (void);
 
 /*
  * free_part_info - free the partition information buffer (if allocated)
@@ -88,6 +125,20 @@ extern int slurm_load_build ();
 extern int slurm_load_build_name (char *req_name, char *next_name, char *value);
 
 /*
+ * slurm_load_node - load the supplied node information buffer for use by info 
+ *	gathering APIs if node records have changed since the time specified. 
+ * input: update_time - time of last update
+ *	node_buffer_ptr - place to park node_buffer pointer
+ * output: node_buffer_ptr - pointer to allocated node_buffer
+ *	returns -1 if no update since update_time, 
+ *		0 if update with no error, 
+ *		EINVAL if the buffer (version or otherwise) is invalid, 
+ *		ENOMEM if malloc failure
+ * NOTE: the allocated memory at node_buffer_ptr freed by slurm_free_node_info.
+ */
+extern int slurm_load_node (time_t update_time, struct node_buffer **node_buffer_ptr);
+
+/*
  * slurm_submit - submit/queue a job with supplied contraints. 
  * input: spec - specification of the job's constraints
  *	job_id - place to store id of submitted job
@@ -115,57 +166,6 @@ extern int slurm_submit (char *spec, char **job_id);
  * NOTE: buffer is used by load_job_config and freed by free_job_info.
  */
 extern int load_job (time_t * last_update_time);
-
-/*
- * load_node - load the supplied node information buffer for use by info gathering APIs if
- *	node records have changed since the time specified. 
- * input: buffer - pointer to node information buffer
- *        buffer_size - size of buffer
- * output: returns 0 if no error, einval if the buffer is invalid, enomem if malloc failure
- * NOTE: buffer is used by load_node_config and freed by free_node_info.
- */
-extern int load_node (time_t * last_update_time);
-
-/* 
- * load_job_config - load the state information about the named job
- * input: req_name - job_id of the job for which information is requested
- *		     if "", then get info for the first job in list
- *        next_name - location into which the name of the next job_id is 
- *                   stored, "" if no more
- *        job_name, etc. - pointers into which the information is to be stored
- * output: next_name - job_id of the next job in the list
- *         job_name, etc. - the job's state information
- *         returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
- * NOTE:  req_name and next_name must be declared by the caller and 
- *		have length MAX_ID_LEN or larger
- * NOTE:  job_name, partition, and job_state must be declared by the caller and 
- *		have length MAX_NAME_LEN or larger
- * NOTE: buffer is loaded by load_job and freed by free_job_info.
- */
-extern int load_job_config (char *req_name, char *next_name, char *job_name,
-		char *partition, int *user_id, char *job_state, 
-		char *node_list, int *time_limit, time_t *start_time, 
-		time_t *end_time, int *priority);
-
-/* 
- * load_node_config - load the state information about the named node
- * input: req_name - name of the node for which information is requested
- *		     if "", then get info for the first node in list
- *        next_name - location into which the name of the next node is 
- *                   stored, "" if no more
- *        cpus, etc. - pointers into which the information is to be stored
- * output: next_name - name of the next node in the list
- *         cpus, etc. - the node's state information
- *         returns 0 on success, enoent if not found, or einval if buffer is bad
- * NOTE:  req_name, next_name, partition, and node_state must be declared by the 
- *        caller and have length MAX_NAME_LEN or larger
- *        features must be declared by the caller and have length FEATURE_SIZE or larger
- * NOTE: buffer is loaded by load_node and freed by free_node_info.
- */
-extern int load_node_config (char *req_name, char *next_name, int *cpus,
-			     int *real_memory, int *tmp_disk, int *weight,
-			     char *features, char *partition,
-			     char *node_state);
 
 /*
  * load_part - update the partition information buffer for use by info gathering APIs if 

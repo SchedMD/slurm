@@ -15,7 +15,6 @@
 #include <string.h>
 
 #include "slurm.h"
-#include "slurmlib.h"
 
 #define BUF_SIZE 	1024
 #define SEPCHARS 	" \n\t"
@@ -1055,8 +1054,8 @@ pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time)
 		buf_ptr = buffer + buffer_offset;
 	}
 
-	if (buffer)
-		xrealloc (buffer, buffer_offset);
+	buffer_offset = (char *)buf_ptr - buffer;
+	xrealloc (buffer, buffer_offset);
 
 	buffer_ptr[0] = buffer;
 	*buffer_size = buffer_offset;

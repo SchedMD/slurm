@@ -13,6 +13,7 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
 #include <sys/socket.h>
@@ -20,87 +21,89 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "slurm.h"
 #include "slurmlib.h"
-
-char *node_api_buffer = NULL;
-int node_api_buffer_size = 0;
+#include "pack.h"
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
 int
-main (int argc, char *argv[]) {
+main (int argc, char *argv[]) 
+{
 	static time_t last_update_time = (time_t) NULL;
 	int error_code, i;
-	char partition[MAX_NAME_LEN], node_state[MAX_NAME_LEN],
-		features[FEATURE_SIZE];
-	char req_name[MAX_NAME_LEN];	/* name of the partition */
-	char next_name[MAX_NAME_LEN];	/* name of the next partition */
-	int cpus, real_memory, tmp_disk, weight;
+	struct node_buffer *node_buffer_ptr = NULL;
+	struct node_table *node_ptr;
 
-	error_code = load_node (&last_update_time);
-	if (error_code)
+	error_code = slurm_load_node (last_update_time, &node_buffer_ptr);
+	if (error_code) {
 		printf ("load_node error %d\n", error_code);
+		exit (error_code);
+	}
 
-	strcpy (req_name, "");	/* start at beginning of node list */
-	for (i = 1;; i++) {
-		error_code =
-			load_node_config (req_name, next_name, &cpus,
-					  &real_memory, &tmp_disk, &weight,
-					  features, partition, node_state);
-		if (error_code != 0) {
-			printf ("load_node_config error %d on %s\n",
-				error_code, req_name);
-			exit (1);
-		}		
-		if ((i < 10) || (i % 100 == 0)) {
-			printf ("found NodeName=%s CPUs=%d RealMemory=%d TmpDisk=%d ", 
-				req_name, cpus, real_memory, tmp_disk);
-			printf ("State=%s Weight=%d Features=%s Partition=%s\n", 
-				node_state, weight, features, partition);
+	printf("Updated at %lx, record count %d\n",
+		node_buffer_ptr->last_update, node_buffer_ptr->node_count);
+	node_ptr = node_buffer_ptr->node_table_ptr;
+
+	for (i = 0; i < node_buffer_ptr->node_count; i++) {
+		if ((i < 10) || (i % 200 == 0) || 
+		    ((i + 1)  == node_buffer_ptr->node_count)) {
+			printf ("NodeName=%s CPUs=%u ", 
+				node_ptr[i].name, node_ptr[i].cpus);
+			printf ("RealMemory=%u TmpDisk=%u ", 
+				node_ptr[i].real_memory, node_ptr[i].tmp_disk);
+			printf ("State=%u Weight=%u ", 
+				node_ptr[i].node_state, node_ptr[i].weight);
+			printf ("Features=%s Partition=%s\n", 
+				node_ptr[i].features, node_ptr[i].partition);
 		}
-		else if ((i==10) || (i % 100 == 1))
+		else if ((i==10) || (i % 200 == 1))
 			printf ("skipping...\n");
-
-		if (strlen (next_name) == 0)
-			break;
-		strcpy (req_name, next_name);
 	}			
-	free_node_info ();
+	slurm_free_node_info (node_buffer_ptr);
 	exit (0);
 }
 #endif
 
 
 /*
- * free_node_info - free the node information buffer (if allocated)
- * NOTE: buffer is loaded by load_node and used by load_node_name.
+ * slurm_free_node_info - free the node information buffer (if allocated)
+ * NOTE: buffer is loaded by load_node.
  */
 void
-free_node_info (void)
+slurm_free_node_info (struct node_buffer *node_buffer_ptr)
 {
-	if (node_api_buffer)
-		free (node_api_buffer);
+	if (node_buffer_ptr == NULL)
+		return;
+	if (node_buffer_ptr->raw_buffer_ptr)
+		free (node_buffer_ptr->raw_buffer_ptr);
+	if (node_buffer_ptr->node_table_ptr)
+		free (node_buffer_ptr->node_table_ptr);
 }
 
 
 /*
- * load_node - load the supplied node information buffer for use by info gathering
- *	APIs if node records have changed since the time specified. 
- * input: buffer - pointer to node information buffer
- *        buffer_size - size of buffer
- * output: returns 0 if no error, EINVAL if the buffer is invalid, 
+ * slurm_load_node - load the supplied node information buffer for use by info 
+ *	gathering APIs if node records have changed since the time specified. 
+ * input: update_time - time of last update
+ *	node_buffer_ptr - place to park node_buffer pointer
+ * output: node_buffer_ptr - pointer to allocated node_buffer
+ *	returns -1 if no update since update_time, 
+ *		0 if update with no error, 
+ *		EINVAL if the buffer (version or otherwise) is invalid, 
  *		ENOMEM if malloc failure
- * NOTE: buffer is used by load_node_config and freed by free_node_info.
+ * NOTE: the allocated memory at node_buffer_ptr freed by slurm_free_node_info.
  */
 int
-load_node (time_t * last_update_time) {
-	int buffer_offset, buffer_size, error_code, in_size, version;
-	char request_msg[64], *buffer, *my_line;
-	int sockfd;
+slurm_load_node (time_t update_time, struct node_buffer **node_buffer_ptr)
+{
+	int buffer_offset, buffer_size, in_size, i, sockfd;
+	char request_msg[64], *buffer;
+	void *buf_ptr;
 	struct sockaddr_in serv_addr;
-	unsigned long my_time;
+	uint32_t uint32_tmp, uint32_time;
+	struct node_table *node;
 
+	*node_buffer_ptr = NULL;
 	if ((sockfd = socket (AF_INET, SOCK_STREAM, 0)) < 0)
 		return EINVAL;
 	serv_addr.sin_family = PF_INET;
@@ -113,7 +116,7 @@ load_node (time_t * last_update_time) {
 		return EINVAL;
 	}			
 	sprintf (request_msg, "DumpNode LastUpdate=%lu",
-		 (long) (*last_update_time));
+		 (long) (update_time));
 	if (send (sockfd, request_msg, strlen (request_msg) + 1, 0) <
 	    strlen (request_msg)) {
 		close (sockfd);
@@ -145,130 +148,46 @@ load_node (time_t * last_update_time) {
 		return ENOMEM;
 	if (strcmp (buffer, "nochange") == 0) {
 		free (buffer);
-		return 0;
-	}			
+		return -1;
+	}
+printf("size=%d\n",	buffer_size);
 
 	/* load buffer's header (data structure version and time) */
-	buffer_offset = 0;
-	error_code =
-		read_buffer (buffer, &buffer_offset, buffer_size, &my_line);
-	if ((error_code) || (strlen (my_line) < strlen (HEAD_FORMAT))) {
-#if DEBUG_SYSTEM
-		fprintf (stderr,
-			 "load_node: node buffer lacks valid header\n");
-#else
-		syslog (LOG_ERR,
-			"load_node: node buffer lacks valid header\n");
-#endif
+	buf_ptr = buffer;
+	unpack32 (&uint32_tmp, &buf_ptr, &buffer_size);
+	if (uint32_tmp != NODE_STRUCT_VERSION) {
 		free (buffer);
-		return EINVAL;
-	}			
-	sscanf (my_line, HEAD_FORMAT, &my_time, &version);
+		return -2;
+	}
+	unpack32 (&uint32_time, &buf_ptr, &buffer_size);
 
-	if (version != NODE_STRUCT_VERSION) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "load_part: expect version %d, read %d\n",
-			 NODE_STRUCT_VERSION, version);
-#else
-		syslog (LOG_ERR, "load_part: expect version %d, read %d\n",
-			NODE_STRUCT_VERSION, version);
-#endif
+	/* load individual node info */
+	node = NULL;
+	for (i = 0; buffer_size > 0; i++) {
+		node = realloc (node, sizeof(struct node_table) * (i+1));
+		if (node == NULL) {
+			free (buffer);
+			return ENOMEM;
+		}
+		unpackstr_ptr (&node[i].name, &uint32_tmp, &buf_ptr, &buffer_size);
+		unpack32  (&node[i].node_state, &buf_ptr, &buffer_size);
+		unpack32  (&node[i].cpus, &buf_ptr, &buffer_size);
+		unpack32  (&node[i].real_memory, &buf_ptr, &buffer_size);
+		unpack32  (&node[i].tmp_disk, &buf_ptr, &buffer_size);
+		unpack32  (&node[i].weight, &buf_ptr, &buffer_size);
+		unpackstr_ptr (&node[i].features, &uint32_tmp, &buf_ptr, &buffer_size);
+		unpackstr_ptr (&node[i].partition, &uint32_tmp, &buf_ptr, &buffer_size);
+	}
+
+	*node_buffer_ptr = malloc (sizeof (struct node_buffer));
+	if (*node_buffer_ptr == NULL) {
 		free (buffer);
-		return EINVAL;
-	}			
-
-	*last_update_time = (time_t) my_time;
-	node_api_buffer = buffer;
-	node_api_buffer_size = buffer_size;
+		free (node);
+		return ENOMEM;
+	}
+	(*node_buffer_ptr)->last_update = (time_t) uint32_time;
+	(*node_buffer_ptr)->node_count = i;
+	(*node_buffer_ptr)->raw_buffer_ptr = buffer;
+	(*node_buffer_ptr)->node_table_ptr = node;
 	return 0;
-}
-
-
-/* 
- * load_node_config - load the state information about the named node
- * input: req_name - name of the node for which information is requested
- *		     if "", then get info for the first node in list
- *        next_name - location into which the name of the next node is 
- *                   stored, "" if no more
- *        cpus, etc. - pointers into which the information is to be stored
- * output: next_name - name of the next node in the list
- *         cpus, etc. - the node's state information
- *         returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
- * NOTE:  req_name, next_name, partition, and node_state must be declared by the 
- *        caller and have length MAX_NAME_LEN or larger
- *        features must be declared by the caller and have length FEATURE_SIZE or larger.
- * NOTE: buffer is loaded by load_node and freed by free_node_info.
- */
-int
-load_node_config (char *req_name, char *next_name, int *cpus,
-		  int *real_memory, int *tmp_disk, int *weight,
-		  char *features, char *partition, char *node_state) {
-	int error_code, version, buffer_offset, my_weight;
-	static time_t last_update_time, update_time;
-	struct node_record my_node;
-	static char next_name_value[MAX_NAME_LEN];
-	static int last_buffer_offset;
-	char my_node_name[MAX_NAME_LEN], *my_line;
-	unsigned long my_time;
-
-	/* load buffer's header (data structure version and time) */
-	buffer_offset = 0;
-	error_code =
-		read_buffer (node_api_buffer, &buffer_offset,
-			     node_api_buffer_size, &my_line);
-	if (error_code)
-		return error_code;
-	sscanf (my_line, HEAD_FORMAT, &my_time, &version);
-	update_time = (time_t) my_time;
-
-	if ((update_time == last_update_time)
-	    && (strcmp (req_name, next_name_value) == 0)
-	    && (strlen (req_name) != 0))
-		buffer_offset = last_buffer_offset;
-	last_update_time = update_time;
-
-	while (1) {
-		/* load all information for next node */
-		error_code =
-			read_buffer (node_api_buffer, &buffer_offset,
-				     node_api_buffer_size, &my_line);
-		if (error_code == EFAULT)
-			break;	/* end of buffer */
-		if (error_code)
-			return error_code;
-		sscanf (my_line, NODE_STRUCT_FORMAT,
-			my_node_name,
-			node_state,
-			&my_node.cpus,
-			&my_node.real_memory,
-			&my_node.tmp_disk, &my_weight, features, partition);
-		if (strlen (req_name) == 0)
-			strncpy (req_name, my_node_name, MAX_NAME_LEN);
-
-		/* check if this is requested node */
-		if (strcmp (req_name, my_node_name) != 0)
-			continue;
-
-		/*load values to be returned */
-		*cpus = my_node.cpus;
-		*real_memory = my_node.real_memory;
-		*tmp_disk = my_node.tmp_disk;
-		*weight = my_weight;
-
-		last_buffer_offset = buffer_offset;
-		error_code =
-			read_buffer (node_api_buffer, &buffer_offset,
-				     node_api_buffer_size, &my_line);
-		if (error_code) {	/* no more records */
-			strcpy (next_name_value, "");
-			strcpy (next_name, "");
-		}
-		else {
-			sscanf (my_line, "NodeName=%s", my_node_name);
-			strncpy (next_name_value, my_node_name, MAX_NAME_LEN);
-			strncpy (next_name, my_node_name, MAX_NAME_LEN);
-		}
-		return 0;
-	}			
-	return ENOENT;
 }
