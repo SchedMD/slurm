@@ -376,7 +376,7 @@ dump_job (struct job_record *dump_job_ptr, char *out_line, int out_line_size,
 			 detail_ptr->min_procs, 
 			 detail_ptr->min_memory, 
 			 detail_ptr->min_tmp_disk, 
-			 detail_ptr->dist, 
+			 (int) detail_ptr->dist, 
 			 job_script, 
 			 detail_ptr->procs_per_task, 
 			 detail_ptr->total_procs);
@@ -595,8 +595,6 @@ job_create (char *job_specs, char **new_job_id)
 		req_cpus = 1;		/* default cpu count of 1 */
 	if (req_nodes == NO_VAL)
 		req_nodes = 1;		/* default node count of 1 */
-	if (min_cpus == NO_VAL)
-		min_cpus = 1;		/* default is 1 processor per node */
 	if (min_memory == NO_VAL)
 		min_memory = 1;		/* default is 1 MB memory per node */
 	if (min_tmp_disk == NO_VAL)
@@ -604,9 +602,20 @@ job_create (char *job_specs, char **new_job_id)
 	if (shared == NO_VAL)
 		shared = 0;		/* default is not shared nodes */
 	if (dist == NO_VAL)
-		dist = 0;		/* default is block distribution */
+		dist = DIST_BLOCK;	/* default is block distribution */
 	if (procs_per_task == NO_VAL)
 		procs_per_task = 1;	/* default is 1 processor per task */
+	else if (procs_per_task <= 0) {
+		info ("job_create: Invalid procs_per_task");
+		error_code = EINVAL;
+		goto cleanup;
+	}
+	if (min_cpus == NO_VAL)
+		min_cpus = 1;		/* default is 1 processor per node */
+	if (min_cpus < procs_per_task) {
+		info ("job_create: min_cpus < procs_per_task, reset to equal");
+		min_cpus = procs_per_task;
+	}	
 
 
 	/* find selected partition */
@@ -734,7 +743,7 @@ job_create (char *job_specs, char **new_job_id)
 	detail_ptr->min_procs = min_cpus;
 	detail_ptr->min_memory = min_memory;
 	detail_ptr->min_tmp_disk = min_tmp_disk;
-	detail_ptr->dist = dist;
+	detail_ptr->dist = (enum task_dist) dist;
 	detail_ptr->job_script = script;
 	detail_ptr->procs_per_task = procs_per_task;
 	/* job_ptr->nodes		*leave as NULL pointer for now */
@@ -819,6 +828,8 @@ list_delete_job (void *job_entry)
 			xfree(job_record_point->details->job_script);
 		if (job_record_point->details->nodes)
 			xfree(job_record_point->details->nodes);
+		if (job_record_point->details->node_list)
+			xfree(job_record_point->details->node_list);
 		if (job_record_point->details->features)
 			xfree(job_record_point->details->features);
 		xfree(job_record_point->details);
@@ -934,7 +945,7 @@ parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
 	}
 
 	if (dist_str) {
-		i = block_or_cycle (dist_str);
+		i = (int) block_or_cycle (dist_str);
 		if (i == -1) {
 			error ("parse_job_specs: invalid Distribution value");
 			goto cleanup;
