@@ -35,7 +35,6 @@
 
 char *ControlMachine;		/* Name of computer acting as SLURM controller */
 char *BackupController;		/* Name of computer acting as SLURM backup controller */
-int  Node_Count;		/* Number of nodes in SLURM database */
 
 /* NOTE: Change JOB_STRUCT_VERSION value whenever the contents of "struct Job_Record" change */
 #define JOB_STRUCT_VERSION 1
@@ -48,23 +47,27 @@ struct Job_Record {
 /* NOTE: Change CONFIG_STRUCT_VERSION value whenever the contents of "struct Config_Record" change */
 #define CONFIG_STRUCT_VERSION 1
 struct Config_Record {
-    int CPUs;				/* Count of CPUs running on the node */
-    int RealMemory;			/* Megabytes of real memory on the node */
-    int TmpDisk;			/* Megabytes of total storage in TMP_FS file system */
-    char *Feature;			/* Arbitrary list of features associated with a node */
+    int CPUs;			/* Count of CPUs running on the node */
+    int RealMemory;		/* Megabytes of real memory on the node */
+    int TmpDisk;		/* Megabytes of total storage in TMP_FS file system */
+    char *Feature;		/* Arbitrary list of features associated with a node */
+    char *Nodes;		/* Names of nodes in partition configuration record */
+    char *NodeBitMap;		/* Bitmap of nodes in configuration record */
 };
-List Config_List;			/* List of Config_Record entries */
+List Config_List;		/* List of Config_Record entries */
 
 /* Last entry must be "END" */
 enum Node_State {
 	STATE_UNKNOWN, 		/* Node's initial state, unknown */
 	STATE_IDLE, 		/* Node idle and available for use */
-	STATE_BUSY,		/* Node allocated to a job */
+	STATE_STAGE_IN, 	/* Node has been allocated to a job, which has not yet begun execution */
+	STATE_BUSY,		/* Node allocated to a job and that job is actively running */
+	STATE_STAGE_OUT,	/* Node has been allocated to a job, which has completed execution */
 	STATE_DOWN, 		/* Node unavailable */
 	STATE_DRAINED, 		/* Node idle and not to be allocated future work */
 	STATE_DRAINING,		/* Node in use, but not to be allocated future work */
 	STATE_END };		/* LAST ENTRY IN TABLE */
-char *Node_State_String[] = {"UNKNOWN", "IDLE", "BUSY", "DOWN", "DRAINED", "DRAINING", "END"};
+char *Node_State_String[] = {"UNKNOWN", "IDLE", "STAGE_IN", "BUSY", "STAGE_OUT", "DOWN", "DRAINED", "DRAINING", "END"};
 
 /* NOTE: Change NODE_STRUCT_VERSION value whenever the contents of "struct Node_Record" change */
 #define NODE_STRUCT_VERSION 1
@@ -78,6 +81,8 @@ struct Node_Record {
 struct Node_Record *Node_Record_Table_Ptr;	/* Location of the node records */
 int	Node_Record_Count;		/* Count of records in the Node Record Table */
 int	*Hash_Table;			/* Table of hashed indicies into Node_Record */
+char 	*Up_NodeBitMap;			/* Bitmap of nodes are UP */
+char 	*Idle_NodeBitMap;		/* Bitmap of nodes are IDLE */
 
 /* NOTE: Change PART_STRUCT_VERSION value whenever the contents of "struct Node_Record" change */
 #define PART_STRUCT_VERSION 1
@@ -88,8 +93,8 @@ struct Part_Record {
     char *Nodes;		/* Names of nodes in partition */
     char *AllowGroups;		/* NULL indicates ALL */
     unsigned RootKey:1;		/* 1 if RootKey is required for use */
-    unsigned Shared:1;		/* 1 if access is shared */
     unsigned StateUp:1;		/* 1 if state is UP */
+    char *NodeBitMap;		/* Bitmap of nodes in partition */
 };
 List Part_List;			/* List of Part_Record entries */
 char Default_Part_Name[MAX_NAME_LEN];	/* Name of default partition */
