@@ -23,7 +23,7 @@ main (int argc, char *argv[])
 	note("Updated at %lx, record count %d\n",
 		(time_t) part_info_ptr->last_update, part_info_ptr->record_count);
 
-	slurm_print_partition_info ( part_info_ptr );
+	slurm_print_partition_info ( stdout, part_info_ptr );
 	slurm_free_partition_info (part_info_ptr);
 	return (0);
 }
