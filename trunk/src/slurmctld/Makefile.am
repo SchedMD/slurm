@@ -24,6 +24,7 @@ LDADD = $(top_srcdir)/src/common/libcommon.a
 slurmctld_SOURCES = bits_bytes.c \
 		    controller.c \
 		    node_mgr.c \
+		    node_scheduler.c \
 		    partition_mgr.c \
 		    read_config.c 
 
@@ -31,11 +32,12 @@ slurmctld_SOURCES = bits_bytes.c \
 # for now. If we ever move to 1.5, the CFLAGS defs below should work in
 # place of the rules that follow.
 
-#bits_bytes_CFLAGS    = -DDEBUG_MODULE $(AM_CFLAGS)
-#controller_CFLAGS    = -DDEBUG_MODULE $(AM_CFLAGS)
-#node_mgr_CFLAGS      = -DDEBUG_MODULE $(AM_CFLAGS)
-#partition_mgr_CFLAGS = -DDEBUG_MODULE $(AM_CFLAGS)
-#read_config_CFLAGS   = -DDEBUG_MODULE $(AM_CFLAGS)
+#bits_bytes_CFLAGS     = -DDEBUG_MODULE $(AM_CFLAGS)
+#controller_CFLAGS     = -DDEBUG_MODULE $(AM_CFLAGS)
+#node_mgr_CFLAGS       = -DDEBUG_MODULE $(AM_CFLAGS)
+#node_scheduler_CFLAGS = -DDEBUG_MODULE $(AM_CFLAGS)
+#partition_mgr_CFLAGS  = -DDEBUG_MODULE $(AM_CFLAGS)
+#read_config_CFLAGS    = -DDEBUG_MODULE $(AM_CFLAGS)
 
 # debug modules to built as binaries:
 #
@@ -44,11 +46,12 @@ slurmctld_SOURCES = bits_bytes.c \
 #
 # Note: automake 1.5 will complain about these...
 #
-bits_bytes    : bits_bytes_d.o
-controller    : controller_d.o bits_bytes.o node_mgr.o partition_mgr.o read_config.o 
-node_mgr      : node_mgr_d.o bits_bytes.o
-partition_mgr : partition_mgr_d.o bits_bytes.o node_mgr.o
-read_config   : read_config_d.o bits_bytes.o node_mgr.o partition_mgr.o
+bits_bytes     : bits_bytes_d.o
+controller     : controller_d.o bits_bytes.o node_mgr.o partition_mgr.o read_config.o 
+node_mgr       : node_mgr_d.o bits_bytes.o
+node_scheduler : node_scheduler_d.o bits_bytes.o node_mgr.o partition_mgr.o read_config.o
+partition_mgr  : partition_mgr_d.o bits_bytes.o node_mgr.o
+read_config    : read_config_d.o bits_bytes.o node_mgr.o partition_mgr.o
 
 % : %_d.o
 	$(LINK) $(LDFLAGS) $^ $(LDADD) $(LIBS)

@@ -76,6 +76,7 @@ main(int argc, char * argv[]) {
     Default_Part.MaxNodes	= 556677;
     Default_Part.TotalNodes	= 4;
     Default_Part.TotalCPUs	= 16;
+    Default_Part.Key	   	= 1;
     Node_Record_Count 		= 8;
 
     printf("Create some partitions and test defaults\n");
@@ -347,8 +348,8 @@ int Delete_Part_Record(char *name) {
 int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     ListIterator Part_Record_Iterator;		/* For iterating through Part_Record_List */
     struct Part_Record *Part_Record_Point;	/* Pointer to Part_Record */
-    char *Buffer, *Buffer_Loc;
-    int Buffer_Allocated, i, Record_Size;
+    char *Buffer;
+    int Buffer_Offset, Buffer_Allocated, i, Record_Size;
 
     Buffer_Ptr[0] = NULL;
     *Buffer_Size = 0;
@@ -377,12 +378,12 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     } /* if */
 
     /* Write haeader, version and time */
-    Buffer_Loc = Buffer;
+    Buffer_Offset = 0;
     i = PART_STRUCT_VERSION;
-    memcpy(Buffer_Loc, &i, sizeof(i)); 
-    Buffer_Loc += sizeof(i);
-    memcpy(Buffer_Loc, &Last_Part_Update, sizeof(Last_Part_Update));
-    Buffer_Loc += sizeof(Last_Part_Update);
+    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+    Buffer_Offset += sizeof(i);
+    memcpy(Buffer+Buffer_Offset, &Last_Part_Update, sizeof(Last_Part_Update));
+    Buffer_Offset += sizeof(Last_Part_Update);
 
     /* Write partition records */
     while (Part_Record_Point = (struct Part_Record *)list_next(Part_Record_Iterator)) {
@@ -392,7 +393,7 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 	if (Part_Record_Point->Nodes)       Record_Size+=strlen(Part_Record_Point->Nodes)+1;
 	if (Part_Record_Point->AllowGroups) Record_Size+=strlen(Part_Record_Point->AllowGroups)+1;
 
-	if ((Buffer_Loc-Buffer+Record_Size) >= Buffer_Allocated) { /* Need larger buffer */
+	if ((Buffer_Offset+Record_Size) >= Buffer_Allocated) { /* Need larger buffer */
 	    Buffer_Allocated += (Record_Size + BUF_SIZE);
 	    Buffer = realloc(Buffer, Buffer_Allocated);
 	    if (Buffer == NULL) {
@@ -406,70 +407,70 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 	    } /* if */
 	} /* if */
 
-	memcpy(Buffer_Loc, Part_Record_Point->Name, sizeof(Part_Record_Point->Name)); 
-	Buffer_Loc += sizeof(Part_Record_Point->Name);
+	memcpy(Buffer+Buffer_Offset, Part_Record_Point->Name, sizeof(Part_Record_Point->Name)); 
+	Buffer_Offset += sizeof(Part_Record_Point->Name);
 
-	memcpy(Buffer_Loc, &Part_Record_Point->MaxTime, sizeof(Part_Record_Point->MaxTime)); 
-	Buffer_Loc += sizeof(Part_Record_Point->MaxTime);
+	memcpy(Buffer+Buffer_Offset, &Part_Record_Point->MaxTime, sizeof(Part_Record_Point->MaxTime)); 
+	Buffer_Offset += sizeof(Part_Record_Point->MaxTime);
 
-	memcpy(Buffer_Loc, &Part_Record_Point->MaxNodes, sizeof(Part_Record_Point->MaxNodes)); 
-	Buffer_Loc += sizeof(Part_Record_Point->MaxNodes);
+	memcpy(Buffer+Buffer_Offset, &Part_Record_Point->MaxNodes, sizeof(Part_Record_Point->MaxNodes)); 
+	Buffer_Offset += sizeof(Part_Record_Point->MaxNodes);
 
-	memcpy(Buffer_Loc, &Part_Record_Point->TotalNodes, sizeof(Part_Record_Point->TotalNodes)); 
-	Buffer_Loc += sizeof(Part_Record_Point->TotalNodes);
+	memcpy(Buffer+Buffer_Offset, &Part_Record_Point->TotalNodes, sizeof(Part_Record_Point->TotalNodes)); 
+	Buffer_Offset += sizeof(Part_Record_Point->TotalNodes);
 
-	memcpy(Buffer_Loc, &Part_Record_Point->TotalCPUs, sizeof(Part_Record_Point->TotalCPUs)); 
-	Buffer_Loc += sizeof(Part_Record_Point->TotalCPUs);
+	memcpy(Buffer+Buffer_Offset, &Part_Record_Point->TotalCPUs, sizeof(Part_Record_Point->TotalCPUs)); 
+	Buffer_Offset += sizeof(Part_Record_Point->TotalCPUs);
 
 	i = (int)Part_Record_Point->Key;
-	memcpy(Buffer_Loc, &i, sizeof(i)); 
-	Buffer_Loc += sizeof(i);
+	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	Buffer_Offset += sizeof(i);
 
 	i = (int)Part_Record_Point->StateUp;
-	memcpy(Buffer_Loc, &i, sizeof(i)); 
-	Buffer_Loc += sizeof(i);
+	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	Buffer_Offset += sizeof(i);
 
 	if (Part_Record_Point->Nodes) {
 	    i = strlen(Part_Record_Point->Nodes) + 1;
-	    memcpy(Buffer_Loc, &i, sizeof(i)); 
-	    Buffer_Loc += sizeof(i);
-	    memcpy(Buffer_Loc, Part_Record_Point->Nodes, i); 
-	    Buffer_Loc += i;
+	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	    Buffer_Offset += sizeof(i);
+	    memcpy(Buffer+Buffer_Offset, Part_Record_Point->Nodes, i); 
+	    Buffer_Offset += i;
 	} else {
 	    i = 0;
-	    memcpy(Buffer_Loc, &i, sizeof(i)); 
-	    Buffer_Loc += sizeof(i);
+	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	    Buffer_Offset += sizeof(i);
 	} /* else */
 
 	if (Part_Record_Point->AllowGroups) {
 	    i = strlen(Part_Record_Point->AllowGroups) + 1;
-	    memcpy(Buffer_Loc, &i, sizeof(i)); 
-	    Buffer_Loc += sizeof(i);
-	    memcpy(Buffer_Loc, Part_Record_Point->AllowGroups, i); 
-	    Buffer_Loc += i;
+	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	    Buffer_Offset += sizeof(i);
+	    memcpy(Buffer+Buffer_Offset, Part_Record_Point->AllowGroups, i); 
+	    Buffer_Offset += i;
 	} else {
 	    i = 0;
-	    memcpy(Buffer_Loc, &i, sizeof(i)); 
-	    Buffer_Loc += sizeof(i);
+	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	    Buffer_Offset += sizeof(i);
 	} /* else */
 
 	if ((Node_Record_Count > 0) && (Part_Record_Point->NodeBitMap)){
 	    i = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
 	    i *= sizeof(unsigned);
-	    memcpy(Buffer_Loc, &i, sizeof(i)); 
-	    Buffer_Loc += sizeof(i);
-	    memcpy(Buffer_Loc, Part_Record_Point->NodeBitMap, i); 
-	    Buffer_Loc += i;
+	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	    Buffer_Offset += sizeof(i);
+	    memcpy(Buffer+Buffer_Offset, Part_Record_Point->NodeBitMap, i); 
+	    Buffer_Offset += i;
 	} else {
 	    i = 0;
-	    memcpy(Buffer_Loc, &i, sizeof(i)); 
-	    Buffer_Loc += sizeof(i);
+	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	    Buffer_Offset += sizeof(i);
 	} /* else */
 
     } /* while */
 
     list_iterator_destroy(Part_Record_Iterator);
-    Buffer = realloc(Buffer, (int)(Buffer_Loc - Buffer));
+    Buffer = realloc(Buffer, Buffer_Offset);
     if (Buffer == NULL) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Dump_Part: unable to allocate memory\n");
@@ -480,7 +481,7 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     } /* if */
 
     Buffer_Ptr[0] = Buffer;
-    *Buffer_Size = (int)(Buffer_Loc - Buffer);
+    *Buffer_Size = Buffer_Offset;
     *Update_Time = Last_Part_Update;
     return 0;
 } /* Dump_Part */
@@ -498,7 +499,7 @@ int Init_Part_Conf() {
     Default_Part.AllowGroups = (char *)NULL;
     Default_Part.MaxTime     = -1;
     Default_Part.MaxNodes    = -1;
-    Default_Part.Key         = 1;
+    Default_Part.Key         = 0;
     Default_Part.StateUp     = 1;
     Default_Part.TotalNodes  = 0;
     Default_Part.TotalCPUs   = 0;
@@ -639,10 +640,50 @@ int Update_Part(char *PartitionName, char *Spec) {
 	return EINVAL;
     } /* if */
 
-    if (MaxTime_Val  != NO_VAL) Part_Ptr->MaxTime  = MaxTime_Val;
-    if (MaxNodes_Val != NO_VAL) Part_Ptr->MaxNodes = MaxNodes_Val;
-    if (Key_Val      != NO_VAL) Part_Ptr->Key      = Key_Val;
-    if (State_Val    != NO_VAL) Part_Ptr->StateUp  = State_Val;
+    if (MaxTime_Val  != NO_VAL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Update_Part: setting MaxTime to %d for partition %s\n", 
+		    MaxTime_Val, PartitionName);
+#else
+	syslog(LOG_NOTICE, "Update_Part: setting MaxTime to %d for partition %s\n", 
+		    MaxTime_Val, PartitionName);
+#endif
+	Part_Ptr->MaxTime  = MaxTime_Val;
+    }/* if */
+
+    if (MaxNodes_Val != NO_VAL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Update_Part: setting MaxNodes to %d for partition %s\n", 
+		    MaxNodes_Val, PartitionName);
+#else
+	syslog(LOG_NOTICE, "Update_Part: setting MaxNodes to %d for partition %s\n", 
+		    MaxNodes_Val, PartitionName);
+#endif
+	Part_Ptr->MaxNodes = MaxNodes_Val;
+    }/* if */
+
+    if (Key_Val      != NO_VAL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Update_Part: setting Key to %d for partition %s\n", 
+		    Key_Val, PartitionName);
+#else
+	syslog(LOG_NOTICE, "Update_Part: setting Key to %d for partition %s\n", 
+		    Key_Val, PartitionName);
+#endif
+	Part_Ptr->Key      = Key_Val;
+    }/* if */
+
+    if (State_Val    != NO_VAL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Update_Part: setting StateUp to %d for partition %s\n", 
+		    State_Val, PartitionName);
+#else
+	syslog(LOG_NOTICE, "Update_Part: setting StateUp to %d for partition %s\n", 
+		    State_Val, PartitionName);
+#endif
+	Part_Ptr->StateUp  = State_Val;
+    }/* if */
+
     if (Default_Val == 1) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Update_Part: changing default partition from %s to %s\n", 
@@ -658,11 +699,25 @@ int Update_Part(char *PartitionName, char *Spec) {
     if (AllowGroups != NULL) {
 	if (Part_Ptr->AllowGroups) free(Part_Ptr->AllowGroups);
 	Part_Ptr->AllowGroups = AllowGroups;
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Update_Part: setting AllowGroups to %s for partition %s\n", 
+		    AllowGroups, PartitionName);
+#else
+	syslog(LOG_NOTICE, "Update_Part: setting AllowGroups to %s for partition %s\n", 
+		    AllowGroups, PartitionName);
+#endif
     } /* if */
 
     if (Nodes != NULL) {
 	if (Part_Ptr->Nodes) free(Part_Ptr->Nodes);
 	Part_Ptr->Nodes = Nodes;
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Update_Part: setting Nodes to %s for partition %s\n", 
+		    Nodes, PartitionName);
+#else
+	syslog(LOG_NOTICE, "Update_Part: setting Nodes to %s for partition %s\n", 
+		    Nodes, PartitionName);
+#endif
 	/* Now we need to update TotalCPUs, TotalNodes, and NodeBitMap */
 	Error_Code = Build_Part_BitMap(Part_Ptr);
 	if (Error_Code) return Error_Code;
