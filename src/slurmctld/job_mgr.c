@@ -2167,7 +2167,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		job_ptr->rotate = job_desc->rotate;
 	if (job_desc->node_use != (uint16_t) NO_VAL)
 		job_ptr->node_use = job_desc->node_use;
-	job_ptr->bgl_part_id = xstrdup(DEFAULT_BGL_PART_ID);
 #endif
 
 	*job_rec_ptr = job_ptr;

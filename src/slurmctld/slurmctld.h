@@ -102,9 +102,6 @@
 /* Seconds to wait for backup controller response to REQUEST_CONTROL RPC */
 #define CONTROL_TIMEOUT 4
 
-/* Temporary value to set default BGL partition ID */
-#define DEFAULT_BGL_PART_ID "LLNL_128_16"
-
 /*****************************************************************************\
  *  General configuration parameters and data structures
 \*****************************************************************************/
