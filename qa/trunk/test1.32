@@ -9,8 +9,6 @@
 #
 # Note:    This script generates and then deletes files in the working directory
 #          named test1.32.prog
-# Note:    We use both "kill <pid>" and "killall srun" to support systems 
-#          with full pthread support and early Linux systems
 #
 source ./globals
 
@@ -29,6 +27,19 @@ exec $bin_make $file_prog
 exec $bin_chmod 700 $file_prog
 
 #
+# Get uid
+#
+spawn $bin_id -u
+expect {
+	-re "($number)" {
+		set uid $expect_out(1,string)
+	}
+	eof {
+		wait
+	}
+}
+
+#
 # Spawn initial program via srun
 #
 set timeout $max_job_delay
@@ -37,14 +48,12 @@ set srun_pid [exp_pid]
 expect {
 	-re "WAITING" {
 		incr matches
-#		exec $bin_kill    -USR1 $srun_pid
-		exec $bin_killall -USR1 srun
+		exec pkill -USR1 -u $uid srun
 		exp_continue
 	}
 	-re "SIGUSR1" {
 		incr matches
-#		exec $bin_kill    -USR2 $srun_pid
-		exec $bin_killall -USR2 srun
+		exec pkill -USR2 -u $uid srun
 		exp_continue
 	}
 	-re "SIGUSR2" {
