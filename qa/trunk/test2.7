@@ -64,12 +64,11 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 
 #
 # Verify job_id in output file
-# NOTE: after slurm version 0.3 is deployed, remove "\[:\]" below
 #
 if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
-		-re "job id\[:\]* ($number)" {
+		-re "job id ($number)" {
 			set scontrol_id $expect_out(1,string)
 			exp_continue
 		}

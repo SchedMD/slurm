@@ -109,7 +109,7 @@ test2.4    Validate scontrol exit, quit, and !! commands.
 test2.5    Validate scontrol show commands for configuation, daemons, 
            nodes, and partitions.         
 test2.6    Validate scontrol verbose and quite options.
-test2.7    Validate scontrol pid2jid command.
+test2.7    Validate scontrol pidinfo command.
 test2.8    Validate scontrol show commands for jobs and steps.
 test2.9    Validate scontrol completing command.
 test2.10   Validate scontrol oneliner mode (--oneliner option).
@@ -121,6 +121,7 @@ test3.1    Validate scontrol reconfigure command.
 test3.2    Validate scontrol update command for partitions.
 test3.3    Validate scontrol update command for nodes.
 test3.4    Validate scontrol update command for jobs.
+test3.5    Validate scontrol create and delete of partition.
 UNTESTED   "scontrol abort"    would stop slurm 
 UNTESTED   "scontrol shutdown" would stop slurm
 
@@ -158,17 +159,19 @@ test5.8    Confirm that squeue reports a proper version number (--version
 
 test6.#    Testing of scancel options. 
 ======================================
-test6.1    Confirm scancel usage option works (--usage option).
-test6.2    Confirm scancel help option works (--help option).
-test6.3    Test scancel interactive mode (--interactive option).
-test6.4    Test scancel job name filter (--name option).
-test6.5    Test scancel verbose option (--verbose option).
+test6.1    Validate scancel usage option (--usage option).
+test6.2    Validate scancel help option (--help option).
+test6.3    Validate scancel interactive mode (--interactive option).
+test6.4    Validate scancel job name filter (--name option).
+test6.5    Validate scancel verbose option (--verbose option).
 test6.6    Confirm that scancel reports a proper version number (-V option).
-test6.7    Test scancel signal option (--signal and --verbose options).
-test6.8    Test scancel state and name filters (--state and --name options).
-test6.9    Test scancel of individual job steps (job.step specification).
-test6.10   Test scancel user and partition filters, delete all remaining jobs 
-           (--partition and --user options).
+test6.7    Validate scancel signal option (--signal and --verbose options).
+test6.8    Validate scancel state and name filters (--state and --name options).
+test6.9    Validate scancel of individual job steps (job.step specification).
+test6.10   Validate scancel user and partition filters, delete all remaining 
+           jobs (--partition and --user options).
+test6.11   Validate scancel quiet option, no warning if job gone 
+           (--quiet option).
 
 
 test9.#    System stress testing. Exercises all commands and daemons.
