@@ -30,11 +30,16 @@
 
 #include "src/squeue/squeue.h"
 
-static char *command_name;
+/********************
+ * Global Variables *
+ ********************/
 struct squeue_parameters params;
 int quiet_flag = 0;
 int max_line_size;
 
+/************
+ * Funtions *
+ ************/
 static int  _get_window_width( void );
 static void _print_date( void );
 static void _print_job (void);
@@ -44,9 +49,6 @@ int
 main (int argc, char *argv[]) 
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
-
-	command_name = argv[0];
-	quiet_flag = 0;
 
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line( argc, argv );
