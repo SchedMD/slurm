@@ -453,6 +453,7 @@ void inline slurm_free_node_info ( node_info_msg_t * msg ) ;
 void inline slurm_free_node_table ( node_table_t * node ) ;
 void inline slurm_free_node_table_msg ( node_table_t * node ) ;
 void inline slurm_free_update_node_msg ( update_node_msg_t * msg ) ;
+void inline slurm_free_update_part_msg ( update_part_msg_t * msg ) ;
 void inline slurm_free_job_step_create_request_msg ( job_step_create_request_msg_t * msg );
 void inline slurm_free_job_step_create_response_msg ( job_step_create_response_msg_t * msg );
 void inline slurm_free_launch_tasks_msg ( launch_tasks_msg_t * msg ) ;
