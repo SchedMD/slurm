@@ -503,6 +503,7 @@ void * task_exec_thread ( void * arg )
 	int cpid ;
 	struct passwd * pwd ;
 	int task_return_code ;
+	int local_errno ;
 
 	/* create pipes to read child stdin, stdout, sterr */
 	init_parent_pipes ( task_start->pipes ) ;
@@ -566,7 +567,8 @@ void * task_exec_thread ( void * arg )
 			close ( STDOUT_FILENO );
 			close ( STDERR_FILENO );
 			error("execve(): %s: %m", launch_msg->argv[0]);
-			_exit ( SLURM_EXIT_FAILURE_CODE ) ;
+			local_errno = errno ;
+			_exit ( local_errno ) ;
 			break;
 			
 		default: /*parent proccess */
