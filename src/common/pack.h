@@ -115,7 +115,7 @@ void	_unpackmem_malloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
 	uint32_t _size;					\
 	_size = (uint32_t)(str ? strlen(str)+1 : 0);	\
         assert(_size == 0 || str != NULL);		\
-	assert(_size <= 0xffffffff);			\
+	assert(_size <= 0xffff);			\
 	assert((bufp) != NULL && *(bufp) != NULL);	\
         assert((lenp) != NULL);				\
         assert(*(lenp) >= (sizeof(_size)+_size));	\
