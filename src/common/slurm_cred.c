@@ -461,11 +461,13 @@ slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid)
 int
 slurm_cred_get_signature(slurm_cred_t cred, char **datap, int *datalen)
 {
-	xassert(datap != NULL);
+	xassert(cred    != NULL);
+	xassert(datap   != NULL);
 	xassert(datalen != NULL);
 
 	*datap   = cred->signature;
 	*datalen = cred->siglen;
+
 	return SLURM_SUCCESS;
 }
 

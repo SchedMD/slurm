@@ -336,6 +336,18 @@ srun_info_create(slurm_cred_t cred, slurm_addr *resp_addr, slurm_addr *ioaddr)
 	struct srun_info *srun = xmalloc(sizeof(*srun));
 	srun_key_t       *key  = xmalloc(sizeof(*key ));
 
+	srun->key    = key;
+	srun->ofname = NULL;
+	srun->efname = NULL;
+	srun->ifname = NULL;
+
+	/*
+	 * If no credential was provided, return the empty
+	 * srun info object. (This is used, for example, when
+	 * creating a batch job structure)
+	 */
+	if (!cred) return srun;
+
 	slurm_cred_get_signature(cred, &data, &len);
 
 	len = len > SLURM_IO_KEY_SIZE ? SLURM_IO_KEY_SIZE : len;
@@ -347,8 +359,6 @@ srun_info_create(slurm_cred_t cred, slurm_addr *resp_addr, slurm_addr *ioaddr)
 			memset( (void *) (key->data + len), 0, 
 			        SLURM_IO_KEY_SIZE - len        );
 	}
-
-	srun->key = key;
 
 	if (ioaddr != NULL)
 		srun->ioaddr    = *ioaddr;
