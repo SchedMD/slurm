@@ -136,10 +136,16 @@ slurm_fd _slurm_listen_stream ( slurm_addr * slurm_address )
 {
 	int rc ;
 	slurm_fd connection_fd ;
+	const int one = 1;
 	if ( ( connection_fd =_slurm_create_socket ( SLURM_STREAM ) ) == SLURM_SOCKET_ERROR )
 	{
 		debug( "Error creating slurm stream socket: errno %i\n", errno ) ;
 		return connection_fd ;
+	}
+
+	if ( ( rc = _slurm_setsockopt(connection_fd , SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one) ) ) ) {
+		debug("setsockopt SO_REUSEADDR");
+		return rc ;
 	}
 
 	if ( ( rc = _slurm_bind ( connection_fd , ( struct sockaddr const * ) slurm_address , sizeof ( slurm_addr ) ) ) == SLURM_SOCKET_ERROR )

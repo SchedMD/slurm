@@ -21,72 +21,32 @@
 #include <src/common/slurm_protocol_common.h>
 
 /* SLURM Message types */
-typedef enum { 
-	REQUEST_NODE_REGISRATION_STATUS 	= 1,
-	MESSAGE_NODE_REGISRATION_STATUS 	= 2,
-	REQUEST_RESOURCE_ALLOCATION 		= 3,
-	RESPONSE_RESOURCE_ALLOCATION		= 4,
-	REQUEST_CANCEL_JOB			= 5,
-	REQUEST_RECONFIGURE			= 6,
-	RESPONSE_CANCEL_JOB			= 7,
-	REQUEST_JOB_INFO			= 8,
-	RESPONSE_JOB_INFO			= 9,
-	REQUEST_JOB_STEP_INFO			= 10,
-	RESPONSE_JOB_STEP_INFO			= 11,
-	REQUEST_NODE_INFO			= 12,
-	RESPONSE_NODE_INFO			= 13,
-	REQUEST_PARTITION_INFO			= 14,
-	RESPONSE_PARTITION_INFO			= 15,
-	REQUEST_ACCTING_INFO			= 16,
-	RESPONSE_ACCOUNTING_INFO		= 17,
-	REQUEST_BUILD_INFO			= 18,
-	RESPONSE_BUILD_INFO			= 19,
-	MESSAGE_UPLOAD_ACCOUNTING_INFO		= 20,
-	RESPONSE_RECONFIGURE			= 21,
-	REQUEST_SUBMIT_BATCH_JOB		= 22,
-	RESPONSE_SUBMIT_BATCH_JOB		= 23,
-	REQUEST_CANCEL_JOB_STEP			= 24, 
-	RESPONSE_CANCEL_JOB_STEP		= 25,
-	REQUEST_SIGNAL_JOB			= 26,
-	RESPONSE_SIGNAL_JOB			= 27,
-	REQUEST_SIGNAL_JOB_STEP			= 28,
-	RESPONSE_SIGNAL_JOB_STEP		= 29,
-	REQUEST_BATCH_JOB_LAUNCH		= 30,
-	RESPONSE_BATCH_JOB_LAUNCH		= 31,
-	MESSAGE_TASK_EXIT			= 32,
-	MESSAGE_REVOKE_JOB_CREDENTIAL		= 33,
-	REQUEST_LAUNCH_TASKS			= 34,
-	REQUEST_CREATE_JOB_STEP			= 35,
-	RESPONSE_CREATE_JOB_STEP		= 36,
-	REQUEST_RUN_JOB_STEP			= 37,
-	RESPONSE_RUN_JOB_STEP			= 38,
-	REQUEST_JOB_ATTACH			= 39,
-	RESPONSE_JOB_ATTACH			= 40,
-	RESPONSE_LAUNCH_TASKS			= 41,
-	REQUEST_GET_KEY				= 42,
-	RESPONSE_GET_KEY			= 43,
-	REQUEST_GET_JOB_STEP_INFO		= 44,
-	RESPONSE_GET_JOB_STEP_INFO		= 45,
-	REQUEST_JOB_RESOURCE			= 46,
-	RESPONSE_JOB_RESOURCE			= 47
-	/*
-	REQUEST_RUN_JOB_STEP			= 48,
-	RESPONSE_RUN_JOB_STEP			= 49
-	*/
+typedef enum { test1, test2
 } SLURM_MSG_TYPE_T ;
-typedef uint16_t slurm_msg_type_t ;
 	
-#define REQUEST_NODE_REGISRATION_STATUS 	1
-#define MESSAGE_NODE_REGISRATION_STATUS 	2	
+#define REQUEST_NODE_REGISRATION_STATUS 	1001
+#define MESSAGE_NODE_REGISRATION_STATUS 	1002	
+#define REQUEST_RECONFIGURE			1011
+#define RESPONSE_RECONFIGURE			1012 
 
-#define REQUEST_RESOURCE_ALLOCATION 		3
-#define RESPONSE_RESOURCE_ALLOCATION		4
+#define REQUEST_RESOURCE_ALLOCATION 		4001
+#define RESPONSE_RESOURCE_ALLOCATION		4002
+#define REQUEST_SUBMIT_BATCH_JOB		4011
+#define RESPONSE_SUBMIT_BATCH_JOB		4012
+#define REQUEST_BATCH_JOB_LAUNCH		4021
+#define RESPONSE_BATCH_JOB_LAUNCH		4022
+#define REQUEST_SIGNAL_JOB			4031
+#define RESPONSE_SIGNAL_JOB			4032
+#define REQUEST_CANCEL_JOB			4041
+#define RESPONSE_CANCEL_JOB			4042	
+#define REQUEST_JOB_RESOURCE			4051
+#define RESPONSE_JOB_RESOURCE			4052
+#define REQUEST_JOB_ATTACH			4061
+#define RESPONSE_JOB_ATTACH			4062
+#define MESSAGE_REVOKE_JOB_CREDENTIAL		4901
 
-#define REQUEST_CANCEL_JOB			5
-#define RESPONSE_CANCEL_JOB			7
-
-#define REQUEST_RECONFIGURE			6
-
+#define REQUEST_BUILD_INFO			3011
+#define RESPONSE_BUILD_INFO			3012
 #define REQUEST_JOB_INFO			3021
 #define RESPONSE_JOB_INFO			3022
 #define REQUEST_JOB_STEP_INFO			3031
@@ -94,43 +54,33 @@ typedef uint16_t slurm_msg_type_t ;
 #define REQUEST_NODE_INFO			3041
 #define RESPONSE_NODE_INFO			3042
 #define REQUEST_PARTITION_INFO			3051
-#define RESPONSE_PATITION_INFO			3052
+#define RESPONSE_PARTITION_INFO			3052
 #define REQUEST_ACCTING_INFO			3061
 #define RESPONSE_ACCOUNTING_INFO		3062
-#define REQUEST_BUILD_INFO			3011
-#define RESPONSE_BUILD_INFO			3012
-#define RESPONSE_BUILD_INFO_RC			3013
+#define REQUEST_GET_JOB_STEP_INFO		3071
+#define RESPONSE_GET_JOB_STEP_INFO		4072
 
-#define MESSAGE_UPLOAD_ACCOUNTING_INFO		20
-#define RESPONSE_RECONFIGURE			21 
-#define REQUEST_SUBMIT_BATCH_JOB		22
-#define RESPONSE_SUBMIT_BATCH_JOB		23
-#define REQUEST_CANCEL_JOB_STEP			24  
-#define RESPONSE_CANCEL_JOB_STEP		25
-#define REQUEST_SIGNAL_JOB			26
-#define RESPONSE_SIGNAL_JOB			27
-#define REQUEST_SIGNAL_JOB_STEP			28
-#define RESPONSE_SIGNAL_JOB_STEP		29
-#define REQUEST_BATCH_JOB_LAUNCH		30
-#define RESPONSE_BATCH_JOB_LAUNCH		31
-#define MESSAGE_TASK_EXIT			32
-#define MESSAGE_REVOKE_JOB_CREDENTIAL		33
-#define REQUEST_LAUNCH_TASKS			34
-#define REQUEST_CREATE_JOB_STEP			35
-#define RESPONSE_CREATE_JOB_STEP		36
-#define REQUEST_RUN_JOB_STEP			37
-#define RESPONSE_RUN_JOB_STEP			38
-#define REQUEST_JOB_ATTACH			39
-#define RESPONSE_JOB_ATTACH			40
-#define RESPONSE_LAUNCH_TASKS			41
-#define REQUEST_GET_KEY				42
-#define RESPONSE_GET_KEY			43
-#define REQUEST_GET_JOB_STEP_INFO		44
-#define RESPONSE_GET_JOB_STEP_INFO		45
-#define REQUEST_JOB_RESOURCE			46
-#define RESPONSE_JOB_RESOURCE			47
-#define RESPONSE_SLURM_RC			47
+#define REQUEST_CREATE_JOB_STEP			5001
+#define RESPONSE_CREATE_JOB_STEP		5002
+#define REQUEST_RUN_JOB_STEP			5011
+#define RESPONSE_RUN_JOB_STEP			5012
+#define REQUEST_SIGNAL_JOB_STEP			5021
+#define RESPONSE_SIGNAL_JOB_STEP		5022
+#define REQUEST_CANCEL_JOB_STEP			5031
+#define RESPONSE_CANCEL_JOB_STEP		5032
 
+#define REQUEST_LAUNCH_TASKS			6001	
+#define RESPONSE_LAUNCH_TASKS			6002
+#define MESSAGE_TASK_EXIT		 	6003	
+
+/*DPCS get key to sign submissions*/
+#define REQUEST_GET_KEY				8001	
+#define RESPONSE_GET_KEY			8002
+
+#define RESPONSE_SLURM_RC			9000	
+#define MESSAGE_UPLOAD_ACCOUNTING_INFO		9010	
+
+/*core api protocol message structures */
 typedef struct slurm_protocol_header
 {
 	uint16_t version ;
@@ -147,6 +97,20 @@ typedef struct slurm_msg
 	void * data ;
 	uint32_t data_size ;
 } slurm_msg_t ;
+
+/* really short messages */
+typedef struct last_update_msg {
+	uint32_t last_update;
+} last_update_msg_t ;
+
+typedef struct return_code_msg {
+	int32_t return_code;
+} return_code_msg_t ;
+
+typedef struct job_id_msg {
+	uint32_t job_id;
+} job_id_msg_t ;
+
 
 typedef struct slurm_node_registration_status_msg
 {
@@ -186,18 +150,6 @@ typedef struct job_desc_msg {    /* Job descriptor for submit, allocate, and upd
 	uint32_t user_id;       /* set only if different from current UID, default set
 				 * to UID by API, can only be set if user is root */
 } job_desc_msg_t ;
-
-typedef struct last_update_msg {
-	uint32_t last_update;
-} last_update_msg_t ;
-
-typedef struct return_code_msg {
-	int32_t return_code;
-} return_code_msg_t ;
-
-typedef struct job_id_msg {
-	uint32_t job_id;
-} job_id_msg_t ;
 
 struct build_table {
 	uint32_t last_update;   /* last update time of the build parameters*/
@@ -263,9 +215,13 @@ typedef struct job_info_msg {
 
 /* free message functions */
 void inline slurm_free_last_update_msg ( last_update_msg_t * msg ) ;
-void inline slurm_free_job_desc_msg ( job_desc_msg_t * msg ) ;
-void inline slurm_free_job_info_msg ( job_info_msg_t * msg ) ;
-void inline slurm_free_job_table ( job_table_t * job ) ;
+void inline slurm_free_return_code_msg ( return_code_msg_t * msg ) ;
 void inline slurm_free_job_id_msg ( job_id_msg_t * msg ) ;
 
+void inline slurm_free_build_info ( build_info_msg_t * build_ptr ) ;
+
+void inline slurm_free_job_info ( job_info_msg_t * msg ) ;
+void inline slurm_free_job_table ( job_table_t * job ) ;
+
+void inline slurm_free_job_desc_msg ( job_desc_msg_t * msg ) ;
 #endif

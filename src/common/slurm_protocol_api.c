@@ -159,6 +159,37 @@ int slurm_receive_msg ( slurm_fd open_fd , slurm_msg_t * msg )
 	return rc ;
 }
 
+/* looks like a receive message, except the buffer isn't unpacked it is just memcopied */
+int slurm_receive_buffer2 ( slurm_fd open_fd , slurm_msg_t * msg ) 
+{
+	char buftemp[SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE] ;
+	char * buffer = buftemp ;
+	header_t header ;
+	int rc ;
+	unsigned int unpack_len ;
+	unsigned int receive_len = SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE ;
+
+	if ( ( rc = _slurm_msg_recvfrom ( open_fd , buffer , receive_len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , & (msg)->address ) ) == SLURM_SOCKET_ERROR ) 
+	{
+		debug ( "Error recieving msg socket: errno %i\n", errno ) ;
+		return rc ;
+	}
+
+	/* unpack header */
+	unpack_len = rc ;
+	unpack_header ( &header , & buffer , & unpack_len ) ;
+
+	if ( (rc = check_header_version ( & header ) ) < 0 ) 
+	{
+		return rc;
+	}
+
+	msg->data = malloc ( unpack_len ) ;
+	msg->data_size = unpack_len ;
+	memcpy ( msg->data , buffer , unpack_len ) ;
+	return unpack_len  ;
+}
+
 /***** send msg functions */
 /* sends a slurm_protocol msg to the slurmctld based on location information retrieved from the slurmd.conf
  * if unable to contant the primary slurmctld attempts will be made to contact the backup controller
@@ -168,6 +199,30 @@ int slurm_receive_msg ( slurm_fd open_fd , slurm_msg_t * msg )
  * int	- size of msg sent in bytes
  */
 int slurm_send_controller_msg ( slurm_fd open_fd , slurm_msg_t * msg )
+{
+	int rc ;
+	slurm_addr primary_destination_address ;
+	slurm_addr secondary_destination_address ;
+
+	/* set slurm_addr structures */
+	slurm_set_addr ( & primary_destination_address , SLURM_PORT , PRIMARY_SLURM_CONTROLLER ) ;
+	slurm_set_addr ( & secondary_destination_address , SLURM_PORT , SECONDARY_SLURM_CONTROLLER ) ;
+	
+	/* try to send to primary first then secondary */	
+	msg -> address = primary_destination_address ;
+	if ( (rc = slurm_send_node_msg ( open_fd , msg ) ) == SLURM_SOCKET_ERROR )
+	{
+		debug ( "Send message to primary controller failed" ) ;
+		msg -> address = secondary_destination_address ;
+		if ( (rc = slurm_send_node_msg ( open_fd , msg ) ) ==  SLURM_SOCKET_ERROR )	
+		{
+			debug ( "Send messge to secondary controller failed" ) ;
+		}
+	}
+	return rc ;
+}
+
+int slurm_send_controller_buffer2 ( slurm_fd open_fd , slurm_msg_t * msg )
 {
 	int rc ;
 	slurm_addr primary_destination_address ;
@@ -223,6 +278,33 @@ int slurm_send_node_msg ( slurm_fd open_fd ,  slurm_msg_t * msg )
 	return rc ;
 }
 
+int slurm_send_node_buffer2 ( slurm_fd open_fd ,  slurm_msg_t * msg )
+{
+	char buf_temp[SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE] ;
+	char * buffer = buf_temp ;
+	header_t header ;
+	int rc ;
+	unsigned int pack_len ;
+
+	/* initheader */
+	init_header ( & header , msg->msg_type , SLURM_PROTOCOL_NO_FLAGS ) ;
+
+	/* pack header */
+	pack_len = SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE ;
+	pack_header ( &header , & buffer , & pack_len ) ;
+
+	/* pack msg */
+	memcpy ( buffer , msg->data , msg->data_size ) ;
+	pack_len -=  msg->data_size ;
+
+	/* send msg */
+	if (  ( rc = _slurm_msg_sendto ( open_fd , buf_temp , SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE - pack_len , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , &msg->address ) ) == SLURM_SOCKET_ERROR )
+	{
+		debug ( "Error sending msg socket: errno %i\n", errno ) ;
+	}
+	return rc ;
+}
+
 /*
  *
  * open_fd              - file descriptor to receive msg on
@@ -238,9 +320,8 @@ int slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slur
 	char * buffer = buftemp ;
 	header_t header ;
 	int rc ;
-       	int bytes_read;
-	unsigned int unpack_len ;
-	unsigned int receive_len = SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE ;
+	unsigned int unpack_len ; /* length left to upack */
+	unsigned int receive_len = SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE ; /* buffer size */
 
 	if ( ( rc = _slurm_msg_recvfrom ( open_fd , buffer , receive_len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , source_address ) ) == SLURM_SOCKET_ERROR ) ;
 	{
@@ -249,15 +330,20 @@ int slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slur
 	}
 
 	/* unpack header */
-	bytes_read = rc ;
 	unpack_len = rc ;
 	unpack_header ( &header , & buffer , & unpack_len ) ;
 
-	rc = check_header_version ( & header ) ;
-	if ( rc < 0 ) return rc ;
+	/* unpack_header decrements the unpack_len by the size of the header, so 
+	 * unpack_len not holds the size of the data left in the buffer */
+	if ( ( rc = check_header_version ( & header ) ) < 0 ) 
+	{
+		return rc ;
+	}
+
 	*msg_type = header . msg_type ;
-	data_buffer = buffer ;
-	return bytes_read ;
+	/* *data_buffer = malloc ( unpack_len ) ; */
+	memcpy ( data_buffer , buffer , unpack_len ) ;
+	return unpack_len  ;
 }
 
 /*
