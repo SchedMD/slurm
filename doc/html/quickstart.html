@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324">
-<meta name="LLNLRandRdate" content="12 January 2004">
+<meta name="LLNLRandRdate" content="27 January 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -184,19 +184,26 @@ batch          1 DOWN         2      3448       82306 adev8
                7 IDLE         2 3448-3458       82306 adev[9-15]
 </pre> <p class="footer"><a href="#top">top</a></p>
 <h3>MPI</h3>
-<p>MPI use depends upon the type of MPI being used. <a href="http://www.quadrics.com/">Quadrics</a> 
-MPI relies upon SLURM to allocate resources for the job and <span class="commandline">srun</span> 
-to initiate the tasks. One would build the MPI program in the normal manner then 
-initiate it using a command line of this sort:</p>
+<p>MPI use depends upon the type of MPI being used. 
+Instructions for using several varieties of MPI with SLURM are
+provided below.</p> 
+
+<p> <a href="http://www.quadrics.com/">Quadrics MPI</a> relies upon SLURM to 
+allocate resources for the job and <span class="commandline">srun</span> 
+to initiate the tasks. One would build the MPI program in the normal manner 
+then initiate it using a command line of this sort:</p>
 <p class="commandline"> srun [OPTIONS] &lt;program&gt; [program args]</p>
-<p> <a href="http://www.lam-mpi.org/">LAM/MPI</a> relies upon the SLURM <span class="commandline">srun</span> 
-command to allocate resources using either the <span class="commandline">--allocate</span> 
-or the <span class="commandline">--batch</span> option. In either case, specify 
-the maximum number of tasks required for the job. Then execute the <span class="commandline">lamboot</span> 
-command to start lamd daemons. <span class="commandline">lamboot</span> utilizes 
-SLURM's <span class="commandline">srun</span> command to launch these daemons. 
-Do not directly execute the <span class="commandline">srun</span> command to launch 
-LAM/MPI tasks. For example: 
+
+<p> <a href="http://www.lam-mpi.org/">LAM/MPI</a> relies upon the SLURM 
+<span class="commandline">srun</span> command to allocate resources using 
+either the <span class="commandline">--allocate</span> or the 
+<span class="commandline">--batch</span> option. In either case, specify 
+the maximum number of tasks required for the job. Then execute the 
+<span class="commandline">lamboot</span> command to start lamd daemons. 
+<span class="commandline">lamboot</span> utilizes SLURM's 
+<span class="commandline">srun</span> command to launch these daemons. 
+Do not directly execute the <span class="commandline">srun</span> command 
+to launch LAM/MPI tasks. For example: 
 <pre>
 adev0: srun -n16 -A     # allocates resources and spawns shell for job
 adev0: lamboot
@@ -207,13 +214,33 @@ etc.
 adev0: lamclean
 adev0: lamhalt
 adev0: exit             # exits shell spawned by initial srun command
-</pre> <p class="footer"><a href="#top">top</a></p></td>
+</pre> <p class="footer"><a href="#top">top</a></p>
+
+<p><a href="http://www.hp.com/go/mpi">HP-MPI</a> uses the 
+<span class="commandline">mpirun</span> command with the <b>-srun</b> 
+option to launch jobs. For example:
+<pre>
+$MPI_ROOT/bin/mpirun -TCP -srun -N8 ./a.out
+</pre></p>
+
+<p><a href="http://www.research.ibm.com/bluegene/">BlueGene MPI</a> relies 
+upon SLURM to create the resource allocation and then uses the native
+<span class="commandline">mpirun</span> command to launch tasks. 
+Build a job script containing one or more invocations of the 
+<span class="commandline">mpirun</span> command. Then submit 
+the script to SLURM using <span class="commandline">srun</span>
+command with the <b>--batch</b> option. For example:
+<pre>
+srun -N2 --batch my.script
+</pre></p>
+
+</td>
 </tr>
 <tr> 
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-207187<br>
-Last modified January 15, 2004</p></td>
+Last modified 27 January 2005</p></td>
 </tr>
 </table>
 </td>
