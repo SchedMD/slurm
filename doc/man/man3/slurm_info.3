@@ -140,7 +140,7 @@ int main (int argc, char *argv[])
 .br
 	if ( slurm_load_ctl_conf ((time_t) NULL, &conf_info_msg_ptr ) ) {
 .br
-		printf ("slurm_load_ctl_conf errno %d\n", errno);
+		printf ("slurm_load_ctl_conf errno %d\n", slurm_get_errno());
 .br
 		exit (1);
 .br
@@ -156,7 +156,7 @@ int main (int argc, char *argv[])
 .br
 	if ( slurm_load_jobs ((time_t) NULL, &job_buffer_ptr) ) {
 .br
-		printf ("slurm_load_jobs errno %d\n", errno);
+		printf ("slurm_load_jobs errno %d\n", slurm_get_errno());
 .br
 		exit (1);
 .br
@@ -182,7 +182,7 @@ int main (int argc, char *argv[])
 .br
 	if ( slurm_load_node ((time_t) NULL, &node_buffer_ptr) ) {
 .br
-		printf ("slurm_load_node errno %d\n", errno);
+		printf ("slurm_load_node errno %d\n", slurm_get_errno());
 .br
 		exit (1);
 .br
@@ -206,7 +206,7 @@ int main (int argc, char *argv[])
 .br
 	if ( slurm_load_partitions ((time_t) NULL, &part_buffer_ptr) ) {
 .br
-		printf ("slurm_load_part errno %d\n", errno);
+		printf ("slurm_load_part errno %d\n", slurm_get_errno());
 .br
 		exit (1);
 .br
@@ -258,5 +258,5 @@ int main (int argc, char *argv[])
 .ec
 .SH "SEE ALSO"
 .LP 
-\fBslurm_strerror\fR(3), \fBslurm_perror\fR(3)
+\fBslurm_get_errno\fR(3), \fBslurm_perror\fR(3), \fBslurm_strerror\fR(3)
 
