@@ -128,6 +128,8 @@ main (int argc, char *argv[])
 	 */
 	_create_conf();
 	_init_conf();
+	conf->argv = &argv;
+	conf->argc = &argc;
 
 	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
 
@@ -145,25 +147,17 @@ main (int argc, char *argv[])
 	_read_config();
 
 	/* 
-	 * Update location of log messages (syslog, stderr, logfile, etc.)
-	 * and print current configuration (if in debug mode)
-	 */
-	_update_logging();
-	_print_conf();
-
-	/* 
 	 * Create slurmd spool directory if necessary, and chdir() to it.
 	 */
 	_set_slurmd_spooldir();
 
 	if (conf->daemonize) 
 		daemon(1,0);
-
-	conf->argv = &argv;
-	conf->argc = &argc;
-
-
-	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
+	/* 
+	 * Update location of log messages (syslog, stderr, logfile, etc.)
+	 * and print current configuration (if in debug mode)
+	 */
+	_update_logging();
 	_print_conf();
 
 	_kill_old_slurmd();
@@ -499,20 +493,21 @@ _init_conf()
 		error("Unable to get my hostname: %m");
 		exit(1);
 	}
-	conf->hostname  = xstrdup(host);
-	conf->conffile  = NULL;
-	conf->epilog    = NULL;
-	conf->logfile   = NULL;
-	conf->pubkey    = NULL;
-	conf->prolog    = NULL;
-	conf->port      =  0;
-	conf->daemonize =  1;
+	conf->hostname    = xstrdup(host);
+	conf->conffile    = NULL;
+	conf->epilog      = NULL;
+	conf->logfile     = NULL;
+	conf->pubkey      = NULL;
+	conf->prolog      = NULL;
+	conf->port        =  0;
+	conf->daemonize   =  1;
+	conf->lfd         = -1;
 	conf->shm_cleanup =  0;
-	conf->lfd       = -1;
-	conf->log_opts  = lopts;
-	conf->pidfile   = xstrdup(DEFAULT_PIDFILE);
-	conf->spooldir	= xstrdup(DEFAULT_SPOOLDIR);
-	conf->debug_level =  0;
+	conf->log_opts    = lopts;
+	conf->debug_level = LOG_LEVEL_INFO;
+	conf->pidfile     = xstrdup(DEFAULT_PIDFILE);
+	conf->spooldir	  = xstrdup(DEFAULT_SPOOLDIR);
+
 	slurm_mutex_init(&conf->config_mutex);
 	return;
 }
@@ -786,32 +781,30 @@ _kill_old_slurmd(void)
 /* Reset slurmctld logging based upon configuration parameters */
 static void _update_logging(void) 
 {
-	info("In update logging");
-
 	/* 
 	 * Initialize debug level if not already set
 	 */
-	if (conf->debug_level == 0) {
-		conf->debug_level = LOG_LEVEL_INFO;
-		if (conf->cf.slurmd_debug != (uint16_t) NO_VAL)
-			conf->debug_level = conf->cf.slurmd_debug; 
-
-	} 
-
-	info("conf->debug_level = %d", conf->debug_level);
+	if ( (conf->debug_level == LOG_LEVEL_INFO)
+	    && (conf->cf.slurmd_debug != (uint16_t) NO_VAL) )
+		conf->debug_level = conf->cf.slurmd_debug; 
 
 	conf->log_opts.stderr_level  = conf->debug_level;
 	conf->log_opts.logfile_level = conf->debug_level;
 	conf->log_opts.syslog_level  = conf->debug_level;
 
+	/*
+	 * If daemonizing, turn off stderr logging -- also, if
+	 * logging to a file, turn off syslog.
+	 *
+	 * Otherwise, if remaining in foreground, turn off logging
+	 * to syslog.
+	 */
 	if (conf->daemonize) {
 		conf->log_opts.stderr_level = LOG_LEVEL_QUIET;
 		if (conf->logfile)
 			conf->log_opts.syslog_level = LOG_LEVEL_QUIET;
 	} else
 		conf->log_opts.syslog_level = LOG_LEVEL_QUIET;
-
-	info("conf->logfile = [%s]", conf->logfile);
 
 	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
 }
