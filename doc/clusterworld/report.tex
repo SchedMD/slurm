@@ -426,14 +426,14 @@ identifies the directory in which to find the plugin.
 \subsection{Communications Layer}
 
 SLURM presently uses Berkeley sockets for communications.  However,
-we anticipate using the plugin mechanism to permit use of
-other communications layers.  At LLNL we are using an Ethernet
+we anticipate using the plugin mechanism to permit use of other
+communications layers.  At LLNL we are using an ethernet network
 for SLURM communications and the Quadrics Elan switch exclusively
 for user applications.  The SLURM configuration file permits the
 identification of each node's hostname as well as its name to be used
 for communications.  In the case of a control machine known as {\em mcri}
 to be communicated with using the name {\em emcri} (say to indicate an
-Ethernet communications path), this is represented in the configuration
+ethernet communications path), this is represented in the configuration
 file as {\em ControlMachine=mcri ControlAddr=emcri}.  The name used for
 communication is the same as the hostname unless otherwise specified.
 
@@ -468,7 +468,7 @@ does not depend on reserved ports. In this design, a SLURM authentication
 credential is attached to every message and authoritatively verifies the
 uid and gid of the message originator. Once recipients of SLURM messages
 verify the validity of the authentication credential, they can use the uid
-and gid from the credential as the authoritative identity of the sender.
+and gid from the credential as the verified identity of the sender.
 
 The actual implementation of the SLURM authentication credential is
 relegated to an ``auth'' plugin.  We presently have implemented three
@@ -1204,7 +1204,7 @@ stderr are displayed on the user's terminal in real time, and stdin and
 signals may be forwarded from the  terminal transparently to the remote
 tasks. The second mode is {\em batch} or {\em queued} mode, in which the job is
 queued until the request for resources can be satisfied, at which time the
-job is run by SLURM as the submitting user. In the third mode,{\em allocate} 
+job is run by SLURM as the submitting user. In the third mode, {\em allocate} 
 mode, a job is allocated to the requesting user, under which the user may
 manually run job steps via a script or in a sub-shell spawned by \srun .
 
@@ -1294,8 +1294,8 @@ epilog ran successfully, the nodes are returned to the partition.
 \section{Results}
 
 \begin{figure}[htb]
-\centerline{\epsfig{file=../figures/times.eps}}
-\caption{Time to execute /bin/hostname with various node counts}
+\centerline{\epsfig{file=../figures/times.eps,scale=0.7}}
+\caption{\small Time to execute /bin/hostname with various node counts}
 \label{timing}
 \end{figure}
 
@@ -1338,7 +1338,7 @@ use by each parallel job is planned for a future release.
 \section{Acknowledgments}
 
 SLURM is jointly developed by LLNL and Linux NetworX.
-Contributers to SLURM development include:
+Contributors to SLURM development include:
 \begin{itemize}
 \item Jay Windley of Linux NetworX for his development of the plugin 
 mechanism and work on the security components
@@ -1375,8 +1375,9 @@ integrate SLURM with STORM communications
 %\item[TotalView] Etnus' debugger
 %\end{description}
 
+\raggedright
 % make the bibliography
-\bibliographystyle{unsrt}
+\bibliographystyle{splncs}
 \bibliography{project}
 
 % make the back cover page
