@@ -626,7 +626,7 @@ _accept_io_stream(job_t *job, int i)
 	int fd = job->iofd[i];
 	debug2("Activity on IO server port %d fd %d", i, fd);
 
-	for (j = 0; j < 15; i++) {
+	for (j = 0; j < 15; j++) {
 		int sd;
 		struct sockaddr addr;
 		struct sockaddr_in *sin;
@@ -635,11 +635,6 @@ _accept_io_stream(job_t *job, int i)
 
 		/* 
 		 * Return early if fd is not now ready
-		 * This ensures that we never block when trying 
-		 * to read the io header below.
-		 *
-		 * (XXX: This should eventually be fixed by making
-		 *  reads of IO headers nonblocking)
 		 */
 		if (!_is_fd_ready(fd))
 			return;
@@ -666,6 +661,8 @@ _accept_io_stream(job_t *job, int i)
 		 * On AIX the new socket [sd] seems to inherit the O_NONBLOCK
 		 * flag from the listening socket [fd], so we need to explicitly
 		 * set it back to blocking mode.
+		 * (XXX: This should eventually be fixed by making
+		 *  reads of IO headers nonblocking)
 		 */
 		fd_set_blocking(sd);
 
