@@ -5,7 +5,7 @@
 #include <src/common/slurm_protocol_pack.h>
 #include <src/common/pack.h>
 #include <src/common/log.h>
-#include <src/api/nodelist.h>
+#include <src/common/nodelist.h>
 #include <src/slurmctld/slurmctld.h>
 
 /* pack_header
