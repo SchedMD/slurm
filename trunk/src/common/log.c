@@ -93,7 +93,7 @@ int log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 
 	log->logfp = NULL;
 
-	log->argv0 = xstrdup(prog);
+	log->argv0 = xstrdup(xbasename(prog));
 
 	log->opt = opt;
 
