@@ -36,6 +36,7 @@
 #include <syslog.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <src/common/hostlist.h>
@@ -491,6 +492,7 @@ parse_node_spec (char *in_line) {
 			if ((state_val != NO_VAL) && 
 			    (state_val != NODE_STATE_UNKNOWN))
 				node_record_point->node_state = state_val;
+			node_record_point->last_response = time (NULL);
 		}
 		else {
 			error ("parse_node_spec: reconfiguration for node %s ignored.",

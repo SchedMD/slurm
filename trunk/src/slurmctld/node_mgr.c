@@ -440,7 +440,7 @@ load_node_state ( void )
 	char *node_name, *state_file;
 	int buffer_allocated, buffer_used = 0, error_code = 0;
 	uint16_t node_state, name_len;
-	uint32_t time, cpus, real_memory, tmp_disk;
+	uint32_t time_stamp, cpus, real_memory, tmp_disk;
 	struct node_record *node_ptr;
 	uint32_t buffer_size = 0;
 	int state_fd;
@@ -476,7 +476,7 @@ load_node_state ( void )
 	unlock_state_files ();
 
 	if (buffer_size > sizeof (uint32_t))
-		unpack32 (&time, &buf_ptr, &buffer_size);
+		unpack32 (&time_stamp, &buf_ptr, &buffer_size);
 
 	while (buffer_size > 0) {
 		safe_unpackstr_xmalloc (&node_name, &name_len, &buf_ptr, &buffer_size);
@@ -492,6 +492,7 @@ load_node_state ( void )
 			node_ptr->cpus = cpus;
 			node_ptr->real_memory = real_memory;
 			node_ptr->tmp_disk = tmp_disk;
+			node_ptr->last_response = time (NULL);
 		}
 		if (node_name)
 			xfree (node_name);
@@ -1123,7 +1124,6 @@ node_not_resp (char *name)
 	bit_clear (up_node_bitmap, i);
 	bit_clear (idle_node_bitmap, i);
 	node_record_table_ptr[i].node_state |= NODE_STATE_NO_RESPOND;
-	kill_running_job_by_node_name (node_record_table_ptr[i].name);
 	return;
 }
 
@@ -1165,7 +1165,7 @@ ping_nodes (void)
 			last_node_update = time (NULL);
 			bit_clear (up_node_bitmap, i);
 			bit_clear (idle_node_bitmap, i);
-			node_record_table_ptr[i].node_state |= NODE_STATE_NO_RESPOND;
+			node_record_table_ptr[i].node_state = NODE_STATE_DOWN;
 			kill_running_job_by_node_name (node_record_table_ptr[i].name);
 		}
 	}
@@ -1190,4 +1190,3 @@ ping_nodes (void)
 			fatal ("pthread_create error %m");
 	}
 }
-
