@@ -710,6 +710,7 @@ load_job_state ( void )
 #ifdef HAVE_LIBELAN3
 			if (buffer_size < (2 * sizeof (uint16_t)))
 				break;
+			qsw_alloc_jobinfo(&step_ptr->qsw_job);
 			qsw_unpack_jobinfo(step_ptr->qsw_job, buf_ptr, &buffer_size);
 #endif
 			safe_unpack16 (&step_flag, &buf_ptr, &buffer_size);

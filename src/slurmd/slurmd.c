@@ -511,9 +511,9 @@ void slurm_rpc_revoke_credential ( slurm_msg_t * msg )
 	/* return result */
 	if (error_code)
 	{
-		error ("slurmd_req:  error %d, time=%ld",
+		error ("slurmd_req:  error %m errno %d, time=%ld",
 				error_code, (long) (clock () - start_time));
-		slurm_send_rc_msg ( msg , error_code );
+		slurm_send_rc_msg ( msg , errno );
 	}
 	else
 	{

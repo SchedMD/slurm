@@ -731,6 +731,7 @@ void pack_revoke_credential_msg ( revoke_credential_msg_t* msg , void ** buffer 
 	assert ( msg != NULL );
 
 	pack32( msg->job_id, buffer, length ) ;
+	pack32( ( uint32_t ) msg->expiration_time, buffer, length ) ;
 	packmem( msg->signature, SLURM_SSL_SIGNATURE_LENGTH , buffer, length ) ; 
 }
 
@@ -744,6 +745,7 @@ int unpack_revoke_credential_msg ( revoke_credential_msg_t** msg , void ** buffe
 		return ENOMEM;
 
 	unpack32( &(tmp_ptr->job_id), buffer, length ) ;
+	unpack32( &(tmp_ptr->expiration_time), buffer, length ) ;
 	unpackmem( tmp_ptr->signature, & uint16_tmp , buffer, length ) ; 
 
 	*msg = tmp_ptr;

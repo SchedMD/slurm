@@ -199,6 +199,7 @@ deallocate_nodes (struct job_record  * job_ptr)
 
 	last_node_update = time (NULL);
 	revoke_job_cred.job_id = job_ptr -> job_id;
+	revoke_job_cred.expiration_time = job_ptr -> details -> credential . expiration_time ;
 	memset ( (void *)revoke_job_cred.signature, 0, sizeof (revoke_job_cred.signature));
 
 	for (i = 0; i < node_record_count; i++) {

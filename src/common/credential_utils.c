@@ -29,6 +29,7 @@ static int is_credential_still_valid ( slurm_job_credential_t * credential , Lis
 static int init_credential_state ( credential_state_t * credential_state , slurm_job_credential_t * credential ) ;
 void free_credential_state ( void * credential_state ) ;
 static int insert_credential_state ( slurm_job_credential_t * credential , List list ) ;
+static int insert_revoked_credential_state ( revoke_credential_msg_t * revoke_msg , List list ) ;
 	
 int sign_credential ( slurm_ssl_key_ctx_t * sign_ctx , slurm_job_credential_t * credential ) 
 {
@@ -121,8 +122,8 @@ int revoke_credential ( revoke_credential_msg_t * revoke_msg , List list )
 			return SLURM_SUCCESS ;
 		}
 	}
-	slurm_seterrno ( ESLURMD_CREDENTIAL_TO_EXPIRE_DOESNOT_EXIST ) ;
-	return SLURM_FAILURE ;
+	insert_revoked_credential_state ( revoke_msg , list ) ;
+	return SLURM_SUCCESS ;
 }
 
 int is_credential_still_valid ( slurm_job_credential_t * credential , List list )
@@ -207,3 +208,18 @@ int insert_credential_state ( slurm_job_credential_t * credential , List list )
 	list_append ( list , credential_state ) ;
 	return SLURM_SUCCESS ;	
 }
+
+int insert_revoked_credential_state ( revoke_credential_msg_t * revoke_msg , List list )
+{
+	time_t now = time ( NULL ) ;
+	credential_state_t * credential_state ;
+	
+	credential_state = xmalloc ( sizeof ( slurm_job_credential_t ) ) ;
+	credential_state -> job_id = revoke_msg -> job_id ;	
+	credential_state -> expiration = revoke_msg -> expiration_time ;
+	credential_state -> revoked = true ;
+	credential_state -> revoke_time = now ;
+	list_append ( list , credential_state ) ;
+	return SLURM_SUCCESS ;	
+}
+
