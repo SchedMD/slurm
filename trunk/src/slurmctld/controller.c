@@ -122,15 +122,15 @@ int main(int argc, char *argv[])
 
 	/* Get SlurmctldPidFile for _kill_old_slurmctld */
 	if ((error_code = read_slurm_conf_ctl (&slurmctld_conf))) {
-		error("read_slurm_conf_ctl error %d reading %s",
-		      error_code, SLURM_CONFIG_FILE);
+		error("read_slurm_conf_ctl reading %s: %m",
+		      SLURM_CONFIG_FILE);
 		exit(1);
 	}
 	_kill_old_slurmctld();
 	/* Now recover the remaining state information */
 	if ((error_code = read_slurm_conf(recover))) {
 		error("read_slurm_conf reading %s: %m",
-		      error_code, SLURM_CONFIG_FILE);
+		      SLURM_CONFIG_FILE);
 		exit(1);
 	}
 	/* 
