@@ -68,6 +68,6 @@ int int_array_size(ushort* part_geometry);
 void sort_int_array_by_dec_size(List configs);
 void sort_partitions_by_inc_size(List partitions);
 void sort_partitions_by_dec_size(List partitions);
-
+void init_BGL_PARTITION_NUM();
 
 #endif /* _PARTITION_SYS_H_ */
