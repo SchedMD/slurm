@@ -66,7 +66,7 @@ A sample SlurmConf file is included at the end of this document.
 MSM will maintain the following information about each node:
  1 Name           Name of a node as returned by hostname (e.g. "lx12")
  2 OS             Operating System name and level (output of the command
-                  "/bin/uname -s -r | /bin/sed 's/ //g'")
+                  "/bin/uname -s -r | /bin/sed 's/ /./g'")
  3 CPUs           Number of processors (e.g. "2")
  4 Speed          Relative speed of these CPUs, units can be an arbitrary 
                   floating point number, but MHz value is recommended 
@@ -248,7 +248,7 @@ Sample NodeSpecConf
 # Author: John Doe
 # Date: 11/06/2001
 #
-Name=DEFAULT OS=RedHat4.3 CPUs=2 Speed=1.0 RealMemory=2048 VirtualMemory=4096 TmpDisk=16384 Partition=1
+Name=DEFAULT OS=Linux.2.4.7-10 CPUs=2 Speed=1.0 RealMemory=2048 VirtualMemory=4096 TmpDisk=16384 Partition=1
 #
 Name=lx01
 Name=lx02
