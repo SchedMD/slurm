@@ -23,7 +23,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 # 
 # Don't strip installed binaries for now:
 #
-%define %__strip ""
+%define __strip ""
 
 
 %package devel
