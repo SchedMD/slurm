@@ -1,3 +1,5 @@
+# $Id$
+#
 # Makefile for squeue
 
 AUTOMAKE_OPTIONS = foreign

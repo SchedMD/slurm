@@ -1,4 +1,5 @@
 # $Id$
+#
 # Makefile for slurmd
 
 AUTOMAKE_OPTIONS = foreign
@@ -13,7 +14,7 @@ else
 interconnect_sources = no_interconnect.c
 endif
 
-slurmd_LDADD = \
+slurmd_LDADD = 					   \
         $(top_builddir)/src/common/libcommon.la    \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/common/libcred.la      \
@@ -39,7 +40,6 @@ slurmd_SOURCES = $(common_sources) $(interconnect_sources)
 
 EXTRA_slurmd_SOURCES = no_interconnect.c elan_interconnect.c
 
-force-dependency-check:
-
-$(slurmd_LDADD) : force-dependency-check
+force:
+$(slurmd_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`

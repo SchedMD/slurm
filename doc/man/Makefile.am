@@ -1,4 +1,4 @@
-
+# $Id$
 
 man1_MANS =            \
 	man1/scancel.1 \

@@ -1,3 +1,6 @@
+# $Id$
+#
+
 AUTOMAKE_OPTIONS = foreign
 
 INCLUDES = -I$(top_srcdir) $(POPT_INCLUDES) 
@@ -20,6 +23,5 @@ srun_LDADD = $(top_builddir)/src/common/libcommon.la \
 	     $(POPT_LIBS) 
 
 force:
-
 $(srun_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`

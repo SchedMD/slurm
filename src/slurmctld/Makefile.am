@@ -9,8 +9,9 @@ INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS)
 
 sbin_PROGRAMS = slurmctld
 
-LDADD = $(top_builddir)/src/common/libcommon.la    \
-	$(top_builddir)/src/common/libcred.la      \
+slurmctld_LDADD = 					\
+	$(top_builddir)/src/common/libcommon.la    	\
+	$(top_builddir)/src/common/libcred.la      	\
 	$(top_builddir)/src/common/libdaemonize.la 
 
 
@@ -29,8 +30,6 @@ slurmctld_SOURCES = 	\
 	read_config.c	\
 	step_mgr.c
 
-% : %_d.o
-	$(LINK) $(LDFLAGS) $^ $(LDADD) $(LIBS)
-
-%_d.o : %.c
-	$(COMPILE) -DDEBUG_MODULE -c -o $@ $< 
+force:
+$(slurmctld_LDADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`

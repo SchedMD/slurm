@@ -1,4 +1,5 @@
-# Makefile for popt.
+# Makefile for included popt.
+# $Id$
 
 EXTRA_DIST = README COPYING
 

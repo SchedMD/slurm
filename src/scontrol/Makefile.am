@@ -1,3 +1,4 @@
+# $Id$
 # Makefile for scontrol
 
 AUTOMAKE_OPTIONS = foreign
