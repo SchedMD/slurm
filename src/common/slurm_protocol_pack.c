@@ -191,6 +191,13 @@ static void _pack_slurm_addr_array(slurm_addr * slurm_address,
 static int _unpack_slurm_addr_array(slurm_addr ** slurm_address,
 				    uint16_t * size_val, Buf buffer);
 
+static void _pack_job_id_request_msg(job_id_request_msg_t * msg, Buf buffer);
+static int  _unpack_job_id_request_msg(job_id_request_msg_t ** msg, Buf buffer);
+
+static void _pack_job_id_response_msg(job_id_response_msg_t * msg, Buf buffer);
+static int  _unpack_job_id_response_msg(job_id_response_msg_t ** msg, 
+					Buf buffer);
+
 static void _pack_buffer_msg(slurm_msg_t * msg, Buf buffer);
 
 /* pack_header
@@ -464,6 +471,16 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				(job_step_create_request_msg_t *)
 				msg->data, buffer);
 		 break;
+	 case REQUEST_JOB_ID:
+		 _pack_job_id_request_msg(
+				(job_id_request_msg_t *)msg->data,
+				buffer);
+		 break;
+	 case RESPONSE_JOB_ID:
+		 _pack_job_id_response_msg(
+				(job_id_response_msg_t *)msg->data,
+				buffer);
+		 break;
 	 default:
 		 debug("No pack method for msg type %i", msg->msg_type);
 		 return EINVAL;
@@ -663,6 +680,16 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		 rc = _unpack_job_step_create_request_msg(
 					(job_step_create_request_msg_t **)
 					& msg->data, buffer);
+		 break;
+	 case REQUEST_JOB_ID:
+		 rc = _unpack_job_id_request_msg(
+				(job_id_request_msg_t **) & msg->data,
+				buffer);
+		 break;
+	 case RESPONSE_JOB_ID:
+		 rc = _unpack_job_id_response_msg(
+				(job_id_response_msg_t **) & msg->data,
+				buffer);
 		 break;
 	 default:
 		 debug("No unpack method for msg type %i", msg->msg_type);
@@ -2333,6 +2360,62 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	FREE_NULL(launch_msg_ptr->argv);
 	FREE_NULL(launch_msg_ptr->environment);
 	FREE_NULL(launch_msg_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_job_id_request_msg(job_id_request_msg_t * msg, Buf buffer)
+{
+	assert(msg != NULL);
+
+	pack32(msg->job_pid, buffer);
+}
+
+static int
+_unpack_job_id_request_msg(job_id_request_msg_t ** msg, Buf buffer)
+{
+	job_id_request_msg_t *tmp_ptr;
+
+	/* alloc memory for structure */
+	assert(msg != NULL);
+	tmp_ptr = xmalloc(sizeof(job_id_request_msg_t));
+	*msg = tmp_ptr;
+
+	/* load the data values */
+	safe_unpack32(&tmp_ptr->job_pid, buffer);
+	return SLURM_SUCCESS;
+
+      unpack_error:
+	FREE_NULL(tmp_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_job_id_response_msg(job_id_response_msg_t * msg, Buf buffer)
+{
+	assert(msg != NULL);
+
+	pack32(msg->job_id, buffer);
+}
+
+static int
+_unpack_job_id_response_msg(job_id_response_msg_t ** msg, Buf buffer)
+{
+	job_id_response_msg_t *tmp_ptr;
+
+	/* alloc memory for structure */
+	assert(msg != NULL);
+	tmp_ptr = xmalloc(sizeof(job_id_response_msg_t));
+	*msg = tmp_ptr;
+
+	/* load the data values */
+	safe_unpack32(&tmp_ptr->job_id, buffer);
+	return SLURM_SUCCESS;
+
+      unpack_error:
+	FREE_NULL(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

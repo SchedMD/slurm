@@ -405,14 +405,6 @@ int slurm_send_recv_node_msg(slurm_msg_t * request_msg,
 			     slurm_msg_t * response_msg);
 
 /* slurm_send_only_controller_msg
- * opens a connection to the controller, sends the controller a 
- * message then, closes the connection
- * IN request_msg	- slurm_msg request
- * RET int 		- return code
- */
-int slurm_send_only_node_msg(slurm_msg_t * request_msg);
-
-/* slurm_send_only_controller_msg
  * opens a connection to node, sends the node a message then, 
  * closes the connection
  * IN request_msg	- slurm_msg request
