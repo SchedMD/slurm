@@ -189,7 +189,7 @@ int read_bgl_partitions()
 	int part_number, part_count;
 	char *part_name;
 	rm_partition_list_t *part_list;
-	rm_partition_state_flag_t state = 7;
+	rm_partition_state_flag_t state = RM_PARTITION_ALL;
 	
 #endif
 

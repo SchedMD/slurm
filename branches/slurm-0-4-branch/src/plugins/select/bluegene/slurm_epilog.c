@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <strings.h>
+#include <string.h>
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
 
 #define _DEBUG 0
@@ -89,9 +89,9 @@ static void  _wait_part_owner(char *part_name, char *user_id)
 	char *name;
 	struct passwd *pw_ent;
 	int is_ready = 0;
-	rm_partition_state_flag_t part_state = 7;
+	rm_partition_state_flag_t part_state = RM_PARTITION_ALL;
 	rm_partition_list_t *part_list;
-	
+
 	target_uid = atoi(user_id);
 
 #if _DEBUG
@@ -113,6 +113,7 @@ static void  _wait_part_owner(char *part_name, char *user_id)
 				rc1);
 				
 		}
+		
 		rm_get_data(part_list, RM_PartListSize, &num_parts);
 		for(j=0; j<num_parts; j++) {
 			if(j)
@@ -120,10 +121,13 @@ static void  _wait_part_owner(char *part_name, char *user_id)
 			else
 				rm_get_data(part_list, RM_PartListFirstPart, &part_ptr);
 			rm_get_data(part_ptr, RM_PartitionID, &name);
-			if(!strcasecmp(part_name, name)) {
+			if(!strcmp(part_name, name)) {
 				rc1 = rm_get_data(part_ptr, RM_PartitionUserName, &name);
-				if (name[0] == '\0')
-					continue;
+				if (name[0] == '\0') {
+					is_ready = 1;
+					break;
+				}
+				
 				if ((pw_ent = getpwnam(name)) == NULL) {
 					fprintf(stderr, "getpwnam(%s) errno=%d\n", name, 
 						errno);
@@ -132,7 +136,7 @@ static void  _wait_part_owner(char *part_name, char *user_id)
 #if (_DEBUG > 1)
 				printf("\nowner = %s(%d)\n", name, pw_ent->pw_uid);
 #endif
-				if (pw_ent->pw_uid == target_uid) {
+				if (pw_ent->pw_uid != target_uid) {
 					is_ready = 1;
 					break;
 				}

@@ -456,7 +456,7 @@ extern int bgl_free_partition(pm_partition_id_t part_id)
 	rm_partition_t *part_ptr;
 	int rc, j, num_parts;
 	rm_partition_list_t *part_list;
-	rm_partition_state_flag_t part_state = 7;
+	rm_partition_state_flag_t part_state = RM_PARTITION_ALL;
 	char *name;
 		
 	if ((rc = rm_get_partitions_info(part_state, &part_list))
@@ -686,7 +686,7 @@ static int _delete_old_partitions(void)
 	int part_number, part_count;
 	char *part_name;
 	rm_partition_list_t *part_list;
-	rm_partition_state_flag_t state = 7;
+	rm_partition_state_flag_t state = RM_PARTITION_ALL;
 
 	/******************************************************************/
 	if ((rc = rm_get_partitions_info(state, &part_list))

@@ -99,7 +99,7 @@ static void _wait_part_ready(char *part_name)
 	int i, j, rc1, rc2, num_parts;
 	rm_partition_t *part_ptr;
 	rm_partition_state_t state;
-	rm_partition_state_flag_t part_state = 7;
+	rm_partition_state_flag_t part_state = RM_PARTITION_ALL;
 	int is_ready = 0;
 	char *name;
 	rm_partition_list_t *part_list;
@@ -227,7 +227,7 @@ static void  _wait_part_owner(char *part_name, char *user_id)
 	char *name;
 	struct passwd *pw_ent;
 	int is_ready = 0;
-	rm_partition_state_flag_t part_state = 7;
+	rm_partition_state_flag_t part_state = RM_PARTITION_ALL;
 	rm_partition_list_t *part_list;
 	
 	target_uid = atoi(user_id);

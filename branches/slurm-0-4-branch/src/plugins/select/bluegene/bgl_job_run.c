@@ -257,7 +257,7 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 	int i=0, j, num_parts;
 	rm_partition_list_t *part_list;
 	rm_partition_state_t state;
-	rm_partition_state_flag_t part_state = 7;
+	rm_partition_state_flag_t part_state = RM_PARTITION_ALL;
 	char *name;
 	int is_ready=0;
 	/* Wait for partition state to be FREE */
