@@ -81,6 +81,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"format",    required_argument, 0, 'o'},
 		{"partition", required_argument, 0, 'p'},
 		{"responding",no_argument,       0, 'r'},
+		{"list-reasons", no_argument,    0, 'R'},
 		{"summarize", no_argument,       0, 's'},
 		{"sort",      required_argument, 0, 'S'},
 		{"states",    required_argument, 0, 't'},
@@ -90,7 +91,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"usage",     no_argument,       0, OPT_LONG_USAGE}
 	};
 
-	while((opt_char = getopt_long(argc, argv, "dehi:ln:No:p:rsS:t:vV",
+	while((opt_char = getopt_long(argc, argv, "dehi:ln:No:p:rRsS:t:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
@@ -132,6 +133,10 @@ extern void parse_command_line(int argc, char *argv[])
 				break;
 			case (int) 'r':
 				params.responding_nodes = true;
+				break;
+			case (int) 'R':
+				params.list_reasons = true;
+				params.format = "%35R %N";
 				break;
 			case (int) 's':
 				params.summarize = true;
@@ -191,6 +196,11 @@ extern void parse_command_line(int argc, char *argv[])
 		}
 	}
 	_parse_format( params.format );
+
+	if (params.list_reasons && (params.state_list == NULL)) {
+		params.states = xstrdup ("down,drain");
+		params.state_list = _build_state_list (params.states);
+	}
 
 	if (params.dead_nodes || params.nodes || params.partition || 
 	   		params.responding_nodes ||params.state_list)
@@ -558,30 +568,32 @@ static void _print_version(void)
 
 static void _usage( void )
 {
-	printf("Usage: sinfo [-i seconds] [-t node_state] [-p PARTITION] [-n NODES]\n");
-	printf("             [-S fields] [-o format] [--usage] [-delNrsv]\n");
+	printf("\
+Usage: sinfo [-delNRrsv] [-i seconds] [-t states] [-p partition] [-n nodes]\n\
+             [-S fields] [-o format] \n");
 }
 
 static void _help( void )
 {
-	printf("Usage: sinfo [OPTIONS]\n");
-	printf("  -d, --dead                    show only non-responding nodes\n");
-	printf("  -e, --exact                   group nodes only on exact match of\n");
-	printf("                                configuration\n");
-	printf("  -h, --noheader                no headers on output\n");
-	printf("  -i, --iterate=seconds         specify an interation period\n");
-	printf("  -l, --long                    long output - displays more information\n");
-	printf("  -n, --nodes=NODES             report on specific node(s)\n");
-	printf("  -N, --Node                    Node-centric format\n");
-	printf("  -o, --format=format           format specification\n");
-	printf("  -p, --partition=PARTITION     report on specific partition\n");
-	printf("  -r, --responding              report only responding nodes\n");
-	printf("  -s, --summarize               report state summary only\n");
-	printf("  -S, --sort=fields             comma seperated list of fields to sort on\n");
-	printf("  -t, --states=node_state       specify the what states of nodes to view\n");
-	printf("  -v, --verbose                 verbosity level\n");
-	printf("  -V, --version                 output version information and exit\n");
-	printf("\nHelp options:\n");
-	printf("  --help                        show this help message\n");
-	printf("  --usage                       display brief usage message\n");
+	printf ("\
+Usage: sinfo [OPTIONS]\n\
+  -d, --dead                 show only non-responding nodes\n\
+  -e, --exact                group nodes only on exact match of configuration\n\
+  -h, --noheader             no headers on output\n\
+  -i, --iterate=seconds      specify an interation period\n\
+  -l, --long                 long output - displays more information\n\
+  -n, --nodes=NODES          report on specific node(s)\n\
+  -N, --Node                 Node-centric format\n\
+  -o, --format=format        format specification\n\
+  -p, --partition=PARTITION  report on specific partition\n\
+  -r, --responding           report only responding nodes\n\
+  -R, --list-reasons         list reason nodes are down or drained\n\
+  -s, --summarize            report state summary only\n\
+  -S, --sort=fields          comma seperated list of fields to sort on\n\
+  -t, --states=node_state    specify the what states of nodes to view\n\
+  -v, --verbose              verbosity level\n\
+  -V, --version              output version information and exit\n\
+\nHelp options:\n\
+  --help                     show this help message\n\
+  --usage                    display brief usage message\n");
 }
