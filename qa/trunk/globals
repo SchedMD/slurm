@@ -38,6 +38,7 @@ set bin_rm	"rm"
 set bin_sleep   "sleep"
 set bin_sort    "sort"
 set bin_touch   "touch"
+set bin_usleep  "usleep"
 set bin_wc	"wc"
 
 #
