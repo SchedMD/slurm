@@ -39,6 +39,6 @@ typedef struct task_start
 	void *			io_thread_return[SLURMD_NUMBER_OF_IO_THREADS];
 	launch_tasks_msg_t * 	launch_msg;
 	int			slurmd_fanout_id; /* the node specific task number used to compute port to stream std streams to */
-	int *			pipes;
-	
+	int			pipes[6];
+	int			sockets[2];
 } task_start_t ;

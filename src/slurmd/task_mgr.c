@@ -44,7 +44,9 @@ int init_parent_pipes ( int * pipes ) ;
 void setup_parent_pipes ( int * pipes ) ; 
 int setup_child_pipes ( int * pipes ) ;
 int forward_io ( task_start_t * task_arg ) ;
+void * stdin_io_pipe_thread ( void * arg ) ;
 void * stdout_io_pipe_thread ( void * arg ) ;
+void * stderr_io_pipe_thread ( void * arg ) ;
 /******************************************************************
  *task launch method call hierarchy
  *
@@ -72,17 +74,17 @@ int fan_out_task_launch ( launch_tasks_msg_t * launch_msg )
 {
 	int i ;
 	int rc ;
-	task_start_t task_start[MAX_TASKS_PER_LAUNCH] ;
 	/*place on the stack so we don't have to worry about mem clean up should
 	 *this task_launch get brutally killed by a kill_job step message */
-	//task_start = xmalloc ( sizeof ( task_start[MAX_TASKS_PER_LAUNCH] ) );
+	task_start_t task_start[MAX_TASKS_PER_LAUNCH] ;
 
 	/* launch requested number of threads */
 	for ( i = 0 ; i < launch_msg->tasks_to_launch ; i ++ )
 	{
 		task_start[i].launch_msg = launch_msg ;
 		task_start[i].slurmd_fanout_id = i ;
-		rc = pthread_create ( & task_start[i].pthread_id , NULL , iowatch_launch_thread , ( void * ) & task_start[i] ) ;
+		if ( pthread_create ( & task_start[i].pthread_id , NULL , iowatch_launch_thread , ( void * ) & task_start[i] ) )
+			goto kill_threads;
 	}
 	
 	/* wait for all the launched threads to finish */
@@ -90,8 +92,16 @@ int fan_out_task_launch ( launch_tasks_msg_t * launch_msg )
 	{
 		rc = pthread_join( task_start[i].pthread_id , & task_start[i].thread_return ) ;
 	}
+	goto return_label;
 
-	//xfree ( tast_start )
+	
+	kill_threads:
+	for (  i-- ; i >= 0  ; i -- )
+	{
+		rc = pthread_kill ( task_start[i].pthread_id , SIGKILL ) ;
+	}
+
+	return_label:
 	return SLURM_SUCCESS ;
 }
 
@@ -99,24 +109,17 @@ int fan_out_task_launch ( launch_tasks_msg_t * launch_msg )
 void * iowatch_launch_thread ( void * arg ) 
 {
 	task_start_t * task_start = ( task_start_t * ) arg ;
-	int pipes[6] ;
-	/*
-	int * childin = &newstdin[1] ;
-	int * childout = &newstdout[0] ;
-	int * childerr = &newstderr[0] ;
-	*/
-	/* init arg to be passed to task launch thread */
-	task_start->pipes = pipes ;
 
 	/* create pipes to read child stdin, stdout, sterr */
-	init_parent_pipes ( pipes ) ;
+	init_parent_pipes ( task_start->pipes ) ;
 
 	/* create task thread */
-	pthread_create ( & task_start->exec_pthread_id , NULL , task_exec_thread , ( void * ) arg ) ;
+	if ( pthread_create ( & task_start->exec_pthread_id , NULL , task_exec_thread , ( void * ) arg ) )
+		return ( void * ) SLURM_ERROR ;
 
 	/* pipe output from child task to srun over sockets */
-	setup_parent_pipes ( pipes ) ;
-	//forward_io ( arg ) ;
+	setup_parent_pipes ( task_start->pipes ) ;
+	forward_io ( arg ) ;
 
 	/* wait for thread to die */
 	pthread_join ( task_start->exec_pthread_id , & task_start->exec_thread_return ) ;
@@ -126,28 +129,69 @@ void * iowatch_launch_thread ( void * arg )
 
 int forward_io ( task_start_t * task_arg ) 
 {
+	//pthread_attr_t pthread_attr ;
+	slurm_addr dest_addr ;
+	if ( ( task_arg->sockets[0] = slurm_open_stream ( & dest_addr ) ) == SLURM_PROTOCOL_ERROR )
+	{
+		info ( "error opening socket to srun to pipe stdout" ) ;
+		pthread_exit ( 0 ) ;
+	}
+	
+	if ( ( task_arg->sockets[1] = slurm_open_stream ( & dest_addr ) ) == SLURM_PROTOCOL_ERROR )
+	{
+		info ( "error opening socket to srun to pipe stdout" ) ;
+		pthread_exit ( 0 ) ;
+	}
+	
+	//pthread_attr_init( & pthread_attr ) ;
+	//pthread_attr_setdetachstate ( & pthread_attr , PTHREAD_CREATE_DETACHED ) ;
+	if ( pthread_create ( & task_arg->io_pthread_id[STDIN_FILENO] , NULL , stdin_io_pipe_thread , task_arg ) )
+		goto return_label;
+	if ( pthread_create ( & task_arg->io_pthread_id[STDOUT_FILENO] , NULL , stdout_io_pipe_thread , task_arg ) )
+		goto kill_stdin_thread;
+	if ( pthread_create ( & task_arg->io_pthread_id[STDERR_FILENO] , NULL , stderr_io_pipe_thread , task_arg ) )
+		goto kill_stdout_thread;
 
-	pthread_create ( & task_arg->io_pthread_id[STDOUT_FILENO] , NULL , stdout_io_pipe_thread ,  task_arg ) ;
+	pthread_join ( task_arg->io_pthread_id[STDERR_FILENO] , task_arg->io_thread_return[STDERR_FILENO] ) ;
+	pthread_join ( task_arg->io_pthread_id[STDOUT_FILENO] , task_arg->io_thread_return[STDOUT_FILENO] ) ;
+	pthread_join ( task_arg->io_pthread_id[STDIN_FILENO] , task_arg->io_thread_return[STDIN_FILENO] ) ;
 
+	kill_stdout_thread:
+		pthread_kill ( task_arg->io_pthread_id[STDOUT_FILENO] , SIGKILL );
+	kill_stdin_thread:
+		pthread_kill ( task_arg->io_pthread_id[STDIN_FILENO] , SIGKILL );
+	return_label:
 	return SLURM_SUCCESS ;
 }
 
-void * stdout_io_pipe_thread ( void * arg )
+void * stdin_io_pipe_thread ( void * arg )
 {
-	slurm_fd connection_fd ;
-	slurm_addr dest_addr ;
 	task_start_t * io_arg = ( task_start_t * ) arg ;
 	char buffer[SLURMD_IO_MAX_BUFFER_SIZE] ;
 	int bytes_read ;
 	int sock_bytes_written ;
 	
-	/* dest_addr = somethiong from arg */
-
-	if ( ( connection_fd = slurm_open_stream ( & dest_addr ) ) == SLURM_PROTOCOL_ERROR )
+	while ( true )
 	{
-		info ( "error opening socket to srun to pipe stdout" ) ;
-		pthread_exit ( 0 ) ;
+		if ( ( sock_bytes_written = slurm_read_stream ( io_arg->sockets[0] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
+		{
+			info ( "error sending stdout stream for task %i", 1 ) ;
+			pthread_exit ( 0 ) ; 
+		}
+		if ( ( bytes_read = write ( io_arg->pipes[CHILD_IN_WR] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) <= 0 )
+		{
+			info ( "error reading stdout stream for task %i", 1 ) ;
+			pthread_exit ( 0 ) ;
+		}
 	}
+}
+
+void * stdout_io_pipe_thread ( void * arg )
+{
+	task_start_t * io_arg = ( task_start_t * ) arg ;
+	char buffer[SLURMD_IO_MAX_BUFFER_SIZE] ;
+	int bytes_read ;
+	int sock_bytes_written ;
 	
 	while ( true )
 	{
@@ -156,8 +200,7 @@ void * stdout_io_pipe_thread ( void * arg )
 			info ( "error reading stdout stream for task %i", 1 ) ;
 			pthread_exit ( 0 ) ;
 		}
-		if ( ( sock_bytes_written = slurm_write_stream ( connection_fd , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
-
+		if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[0] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
 		{
 			info ( "error sending stdout stream for task %i", 1 ) ;
 			pthread_exit ( 0 ) ; 
@@ -165,102 +208,31 @@ void * stdout_io_pipe_thread ( void * arg )
 	}
 }
 
-/*
-int forward_io ( task_thread_arg_t * task_arg ) 
+void * stderr_io_pipe_thread ( void * arg )
 {
-	slurm_addr in_out_addr = task_arg->launch_msg->
-		slurm_addr sig_err_addr = task_arg->launch_msg->
-	slurm_fd in_out ; 
-	slurm_fd sig_err ; 
-	int * pipes = task_arg-> pipes ;
-
-	fd_set n_rd_set ;
-	fd_set n_wr_set ;
-	fd_set n_err_set ;
-	slurm_fd_set ns_rd_set ;
-	slurm_fd_set ns_wr_set ;
-	slurm_fd_set ns_err_set ;
-
-	fd_set rd_set ;
-	fd_set wr_set ;
-	fd_set err_set ;
-	slurm_fd_set s_rd_set ;
-	slurm_fd_set s_wr_set ;
-	slurm_fd_set s_err_set ;
-	int s_rc ;
-	int rc ;
-	struct timeval timeout ;
-
-	timeout . tv_sec = 0 ;
-	timeout . tv_sec = SLURM_SELECT_TIMEOUT ;
-
-	in_out = slurm_stream_connect ( & in_out_addr ) ;
-	sig_err = slurm_stream_connect ( & sig_err_addr ) ;
+	task_start_t * io_arg = ( task_start_t * ) arg ;
+	char buffer[SLURMD_IO_MAX_BUFFER_SIZE] ;
+	int bytes_read ;
+	int sock_bytes_written ;
 	
-
-	FD_ZERO ( n_rd_set ) ;
-	FD_ZERO ( n_wd_set ) ;
-	FD_ZERO ( n_err_set ) ;
-
-	slurm_FD_ZERO ( ns_rd_set ) ;
-	slurm_FD_ZERO ( ns_wr_set ) ;
-	slurm_FD_ZERO ( ns_err_set ) ;
-
-	slurm_FD_SET ( in_out, & ns_rd_set ) ;
-	slurm_FD_SET ( in_out, & ns_err_set ) ;
-
-	slurm_FD_SET ( ig_err & ns_rd_set ) ;
-	slurm_FD_SET ( ig_err & ns_err_set ) ;
-
-	FD_SET ( pipes[CHILD_OUT_RD], & n_rd_set ) ;
-	FD_SET ( pipes[CHILD_ERR_RD], & n_rd_set ) ;
-
-	FD_SET ( pipes[CHILD_IN_WR], & n_err_set ) ;
-	FD_SET ( pipes[CHILD_OUT_RD], & n_err_set ) ;
-	FD_SET ( pipes[CHILD_ERR_RD], & n_err_set ) ;
+	/* dest_addr = somethiong from arg */
 
 
-	while ( )
+	while ( true )
 	{
-		memcpy ( &rd_set , &n_rd_set , sizeof ( rd_set ) ) ;
-		memcpy ( &wr_set , &n_wr_set , sizeof ( wr_set ) ) ;
-		memcpy ( &err_set , &ns_err_set , sizeof ( err_set ) ) ;
-
-		memcpy ( &s_rd_set , &ns_rd_set , sizeof ( s_rd_set ) ) ;
-		memcpy ( &s_wr_set , &ns_wr_set , sizeof ( s_wr_set ) ) ;
-		memcpy ( &s_err_set , &ns_err_set , sizeof ( s_err_set ) ) ;
-
-		rc = select ( pipes[CHILD_ERR_RD] + 1  , rd_set , wr_set , err_set , & timeout ) ; 
-		if ( rc > 0 )
-
-		timeout . tv_sec = 0 ;
-		timeout . tv_sec = SLURM_SELECT_TIMEOUT ;
-		s_rc = slurm_select ( sig_err_addr + 1 , s_rd_set , s_wr_set , s_err_set , & timeout ) ;
-
-		FD_ZERO ( n_rd_set ) ;
-		FD_ZERO ( n_wd_set ) ;
-		FD_ZERO ( n_err_set ) ;
-
-		slurm_FD_ZERO ( ns_rd_set ) ;
-		slurm_FD_ZERO ( ns_wr_set ) ;
-		slurm_FD_ZERO ( ns_err_set ) ;
-
-		slurm_FD_SET ( in_out, & ns_rd_set ) ;
-		slurm_FD_SET ( ig_err & ns_rd_set ) ;
-
-		slurm_FD_SET ( in_out, & ns_err_set ) ;
-		slurm_FD_SET ( ig_err & ns_err_set ) ;
-
-		FD_SET ( pipes[CHILD_OUT_RD], & n_rd_set ) ;
-		FD_SET ( pipes[CHILD_ERR_RD], & n_rd_set ) ;
-
-		FD_SET ( pipes[CHILD_IN_WR], & n_err_set ) ;
-		FD_SET ( pipes[CHILD_OUT_RD], & n_err_set ) ;
-		FD_SET ( pipes[CHILD_ERR_RD], & n_err_set ) ;
+		if ( ( bytes_read = read ( io_arg->pipes[CHILD_ERR_RD] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) <= 0 )
+		{
+			info ( "error reading stdout stream for task %i", 1 ) ;
+			pthread_exit ( 0 ) ;
+		}
+		if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[1] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
+		{
+			info ( "error sending stdout stream for task %i", 1 ) ;
+			pthread_exit ( 0 ) ; 
+		}
 	}
-
 }
-*/
+
 void * task_exec_thread ( void * arg )
 {
 	task_start_t * task_arg = ( task_start_t * ) arg ;
@@ -270,7 +242,7 @@ void * task_exec_thread ( void * arg )
 
 	setup_child_pipes ( pipes ) ;
 	/* setuid and gid*/
-	if ( ( rc = setuid ( launch_msg->uid ) ) == SLURM_ERROR )  ;
+	if ( ( rc = setuid ( launch_msg->uid ) ) == SLURM_ERROR ) ;
 
 	if ( ( rc = setgid ( launch_msg->gid ) ) == SLURM_ERROR ) ;
 
