@@ -63,7 +63,7 @@ int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
 	if (qsw_prog_init(launch_msg->qsw_job, launch_msg->uid) < 0) 
 	{
 		slurm_perror("qsw_prog_init");
-		_ext(1) ;
+		_exit(1) ;
 	}
 	
 	fan_out_task_launch ( launch_msg ) ;
