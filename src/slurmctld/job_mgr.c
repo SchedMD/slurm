@@ -2143,7 +2143,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		SELECT_DATA_NODE_USE, 
 		&job_desc->node_use);
 	if (job_desc->node_use == (uint16_t) NO_VAL)
-		job_desc->node_use = SELECT_NAV_MODE;
+		job_desc->node_use = SELECT_COPROCESSOR_MODE;
 
 	*job_rec_ptr = job_ptr;
 	return SLURM_SUCCESS;
@@ -2336,7 +2336,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	if (job_desc_msg->conn_type == (uint16_t) NO_VAL)
 		job_desc_msg->conn_type = SELECT_NAV;  /* try TORUS, then MESH */
 	if (job_desc_msg->node_use == (uint16_t) NO_VAL)
-		job_desc_msg->node_use = SELECT_NAV_MODE;
+		job_desc_msg->node_use = SELECT_COPROCESSOR_MODE;
 	if (job_desc_msg->rotate == (uint16_t) NO_VAL)
 		job_desc_msg->rotate = true;    /* default to allow rotate */
 
