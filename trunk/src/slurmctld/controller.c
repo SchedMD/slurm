@@ -155,7 +155,7 @@ main (int argc, char *argv[])
 	 * create attached thread signal handling
 	 */
 	if (pthread_attr_init (&thread_attr_sig))
-		fatal ("thread_attr_sig %m");
+		fatal ("pthread_attr_init error %m");
 #ifdef PTHREAD_SCOPE_SYSTEM
 	/* we want 1:1 threads if there is a choice */
 	pthread_attr_setscope (&thread_attr_sig, PTHREAD_SCOPE_SYSTEM);
@@ -196,15 +196,8 @@ slurmctld_signal_hand ( void * no_data )
 	(void) pthread_setcanceltype (PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	info ("Send signals to slurmctld_signal_hand, pid = %u", getpid ());
 
-	/* just watch for select signals */
-	if (sigemptyset (&set))
-		error ("sigemptyset error: %m");
-	if (sigaddset (&set, SIGHUP))
-		error ("sigaddset error on SIGHUP: %m");
-	if (sigaddset (&set, SIGINT))
-		error ("sigaddset error on SIGINT: %m");
-	if (sigaddset (&set, SIGTERM))
-		error ("sigaddset error on SIGTERM: %m");
+	if (sigfillset (&set))
+		error ("sigfillset error: %m");
 
 	if (sigprocmask (SIG_BLOCK, &set, NULL) != 0)
 		fatal ("sigprocmask error: %m");
