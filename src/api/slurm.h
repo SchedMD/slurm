@@ -188,4 +188,4 @@ extern int slurm_reconfigure ();
  * slurm_update_node - updates the node state
  */
 int slurm_update_node ( update_node_msg_t * node_msg )  ;
-int slurm_update_partition ( partition_desc_msg_t * desc_msg ) ;
+int slurm_update_partition ( update_part_msg_t * desc_msg ) ;

@@ -52,11 +52,36 @@ void slurm_print_partition_table ( FILE* out, partition_table_t * part_ptr )
 {
 	int j ;
 
-	fprintf ( out, "PartitionName=%s MaxTime=%u ", part_ptr->name, part_ptr->max_time);
-	fprintf ( out, "MaxNodes=%u TotalNodes=%u ", part_ptr->max_nodes, part_ptr->total_nodes);
-	fprintf ( out, "TotalCPUs=%u Key=%u\n", part_ptr->total_cpus, part_ptr->key);
-	fprintf ( out, "   Default=%u ", part_ptr->default_part);
-	fprintf ( out, "Shared=%u StateUp=%u ", part_ptr->shared, part_ptr->state_up);
+	fprintf ( out, "PartitionName=%s ", part_ptr->name);
+	if (part_ptr->max_time == INFINITE)
+		fprintf ( out, "MaxTime=INFINITE ");
+	else
+		fprintf ( out, "MaxTime=%u ", part_ptr->max_time);
+	if (part_ptr->max_nodes == INFINITE)
+		fprintf ( out, "MaxNodes=INFINITE ");
+	else
+		fprintf ( out, "MaxNodes=%u ", part_ptr->max_nodes);
+	fprintf ( out, "TotalNodes=%u ", part_ptr->total_nodes);
+	fprintf ( out, "TotalCPUs=%u ", part_ptr->total_cpus);
+	if (part_ptr->key)
+		fprintf ( out, "Key=YES\n");
+	else
+		fprintf ( out, "Key=NO\n");
+	if (part_ptr->default_part)
+		fprintf ( out, "   Default=YES ");
+	else
+		fprintf ( out, "   Default=NO ");
+	if (part_ptr->shared == SHARED_NO)
+		fprintf ( out, "Shared=NO ");
+	else if (part_ptr->shared == SHARED_YES)
+		fprintf ( out, "Shared=YES ");
+	else
+		fprintf ( out, "Shared=FORCE ");
+	if (part_ptr->state_up)
+		fprintf ( out, "State=UP ");
+	else
+		fprintf ( out, "State=DOWN ");
+
 	fprintf ( out, "Nodes=%s AllowGroups=%s\n", part_ptr->nodes, part_ptr->allow_groups);
 	fprintf ( out, "   NodeIndecies=");
 	for (j = 0; part_ptr->node_inx; j++) {
