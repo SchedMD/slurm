@@ -14,33 +14,37 @@ typedef struct {
 
 /* Add new error values to xerrno.h, and their descriptions to this table */
 static slurm_errtab_t slurm_errtab[] = {
-	{ 0, 						"" },
-	{ -1, 						"" },
-	{ SLURM_UNEXPECTED_MSG_ERROR, 			"" },
-	{ SLURM_PROTOCOL_VERSION_ERROR,			"" },
-	{ SLURM_NO_CHANGE_IN_DATA, 			"" },
-	{ ESLURM_INVALID_PARTITION_SPECIFIED, 		"" },
-	{ ESLURM_DEFAULT_PATITION_NOT_SET, 		"" },
-	{ ESLURM_JOB_MISSING_PARTITION_KEY, 		"" },
-	{ ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP,	"" },
-	{ ESLURM_REQUESTED_NODES_NOT_IN_PARTITION, 	"" },
-	{ ESLURM_TOO_MANY_REQUESTED_CPUS, 		"" },
-	{ ESLURM_TOO_MANY_REQUESTED_NODES, 		"" },
-	{ ESLURM_ERROR_ON_DESC_TO_RECORD_COPY,	 	"" },
-	{ ESLURM_JOB_MISSING_SIZE_SPECIFICATION, 	"" },
-	{ ESLURM_JOB_SCRIPT_MISSING,	 		"" },
-	{ ESLURM_USER_ID_MISSING , 			"" },
-	{ ESLURM_JOB_NAME_TOO_LONG,			"" },
-	{ ESLURM_DUPLICATE_JOB_ID , 			"" },
-	{ ESLURM_INVALID_PROCS_PER_TASK,	 	"" },
-	{ ESLURM_NOT_TOP_PRIORITY,			"" },
-	{ ESLURM_REQUESTED_NODE_CONFIGURATION_UNAVAILBLE, "" },
-	{ ESLURM_NODES_BUSY,				"" },
+	{ 0, 					"" },
+	{ -1, 					"" },
+	{ SLURM_UNEXPECTED_MSG_ERROR, 		"Unexpected message recieved" },
+	{ SLURM_PROTOCOL_VERSION_ERROR,		"Protocol version has changed, re-link" },
+	{ SLURM_NO_CHANGE_IN_DATA, 		"Data has not changed since time specified" },
+
+	/* job_mgr.c/job_create */
+	{ ESLURM_INVALID_PARTITION_SPECIFIED, 	"Invalid partition name specified" },
+	{ ESLURM_DEFAULT_PATITION_NOT_SET, 	"System default partition not set" },
+	{ ESLURM_JOB_MISSING_PARTITION_KEY, 	"Key must be specified to use this partition" },
+	{ ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP,	"User's group not permitted to use this partition" },
+	{ ESLURM_REQUESTED_NODES_NOT_IN_PARTITION, "Requested nodes not in this partition" },
+	{ ESLURM_TOO_MANY_REQUESTED_CPUS, 	"More processors requested than permitted" },
+	{ ESLURM_TOO_MANY_REQUESTED_NODES, 	"More nodes requested than permitted" },
+	{ ESLURM_ERROR_ON_DESC_TO_RECORD_COPY,	"Unable to create job record, try again" },
+	{ ESLURM_JOB_MISSING_SIZE_SPECIFICATION,"Job size specification needs to be provided" },
+	{ ESLURM_JOB_SCRIPT_MISSING,	 	"Job script not specified" },
+	{ ESLURM_USER_ID_MISSING , 		"User id missing" },
+	{ ESLURM_JOB_NAME_TOO_LONG,		"Job name too long" },
+	{ ESLURM_DUPLICATE_JOB_ID , 		"Duplicate job id" },
+	{ ESLURM_INVALID_PROCS_PER_TASK,	"Invalid processors per task specification" },
+	{ ESLURM_NOT_TOP_PRIORITY,		"Immediate execution impossible, higher priority jobs pending" },
+	{ ESLURM_REQUESTED_NODE_CONFIGURATION_UNAVAILBLE, "Requested node configuration is not available" },
+	{ ESLURM_NODES_BUSY,			"Requested nodes are busy" },
 
 	/* partition_mgr.c/update_part */
-	{ ESLURM_PROTOCOL_INVALID_PARTITION_NAME,	"" },
+	{ ESLURM_INVALID_PARTITION_NAME,	"Invalid partition name specified" },
+	{ ESLURM_INVALID_NODE_NAME_SPECIFIED, 	"Invalid node name specified" },
+
 	/* node_mgr.c/update_node */
-	{ ESLURM_INVALID_NODE_NAME,		"" }
+	{ ESLURM_INVALID_NODE_NAME,		"Invalid node name specified" }
 };
 
 /* 
