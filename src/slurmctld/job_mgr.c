@@ -1630,14 +1630,16 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 #endif
 	if (job_desc->max_nodes == NO_VAL)
 		job_desc->max_nodes = 0;
-	if (job_desc->num_procs > part_ptr->total_cpus) {
+	if ((part_ptr->state_up)
+	&&  (job_desc->num_procs > part_ptr->total_cpus)) {
 		info("Job requested too many cpus (%d) of partition %s(%d)", 
 		     job_desc->num_procs, part_ptr->name, 
 		     part_ptr->total_cpus);
 		error_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
 		goto cleanup;
 	}
-	if (job_desc->min_nodes > part_ptr->total_nodes) {
+	if ((part_ptr->state_up)
+	&&  (job_desc->min_nodes > part_ptr->total_nodes)) {
 		info("Job requested too many nodes (%d) of partition %s(%d)", 
 		     job_desc->min_nodes, part_ptr->name, 
 		     part_ptr->total_nodes);
