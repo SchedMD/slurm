@@ -1745,12 +1745,12 @@ list_find_job_old (void *job_entry, void *key)
 	min_age = time(NULL) - MIN_JOB_AGE;
 
 	if (((struct job_record *) job_entry)->end_time  >  min_age)
-		return SLURM_SUCCESS;
+		return 0;
 
 	if ((((struct job_record *) job_entry)->job_state != JOB_COMPLETE)  &&
 	    (((struct job_record *) job_entry)->job_state != JOB_FAILED)  &&
 	    (((struct job_record *) job_entry)->job_state != JOB_TIMEOUT))
-		return SLURM_SUCCESS;
+		return 0;
 
 	return 1;
 }
