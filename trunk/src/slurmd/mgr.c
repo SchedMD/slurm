@@ -61,6 +61,8 @@ mgr_launch_tasks(launch_tasks_request_msg_t *msg)
 	slurmd_job_t *job;
 
 	log_reinit();
+
+	/* New process, so we must reinit shm */
 	if (shm_init() < 0) 
 		return SLURM_ERROR;
 	if (!(job = job_create(msg)))

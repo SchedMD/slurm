@@ -121,7 +121,6 @@ int
 shm_fini(void)
 {
 	int destroy = 0;
-	info("process %ld detaching from shm", getpid());
 	xassert(slurmd_shm != NULL);
 	_shm_lock();
 	if (--slurmd_shm->users == 0)
@@ -316,17 +315,20 @@ shm_signal_step(uint32_t jobid, uint32_t stepid, uint32_t signal)
 	int         retval = SLURM_SUCCESS;
 	int         i;
 	job_step_t *s;
-	task_t     *t;
+	task_t     *t, *tlast;
 
 	_shm_lock();
 	if ((i = _shm_find_step(jobid, stepid)) >= 0) {
 		s = &slurmd_shm->step[i];
+		tlast = NULL;
 		for (t = s->task_list; t; t = t->next) {
+			xassert(t != tlast);
 			if (t->pid > 0 && kill(t->pid, signo) < 0) {
-				error("kill %d.%d pid %ld: %m", 
-				      jobid, stepid, (long)t->pid);
+				error("kill %d.%d task %d pid %ld: %m", 
+				      jobid, stepid, t->id, (long)t->pid);
 				retval = errno;
 			}
+			tlast = t;
 		}	
 	} else
 		retval = ESRCH;
@@ -550,6 +552,7 @@ shm_add_task(uint32_t jobid, uint32_t stepid, task_t *task)
 		slurm_seterrno_ret(ESRCH);
 	} 
 	s = &slurmd_shm->step[i];
+	debug2("adding task %d to step %d.%d", task->id, jobid, stepid);
 	if (_shm_find_task_in_step(s, task->id)) {
 		_shm_unlock();
 		slurm_seterrno_ret(EEXIST);
@@ -578,9 +581,9 @@ _shm_find_task_in_step(job_step_t *s, int taskid)
 	task_t *t = NULL;
 	for (t = s->task_list; t && t->used; t = t->next) {
 		if (t->id == taskid)
-			break;
+			return t;
 	}
-	return t;
+	return NULL;
 }
 
 static task_t *
@@ -588,8 +591,10 @@ _shm_alloc_task(void)
 {
 	int i;
 	for (i = 0; i < MAX_TASKS; i++) {
-		if (!slurmd_shm->task[i].used) 
+		if (!slurmd_shm->task[i].used) {
+			slurmd_shm->task[i].used = true;
 			return &slurmd_shm->task[i];
+		}
 	}
 	return NULL;
 }
@@ -599,6 +604,7 @@ _shm_task_copy(task_t *to, task_t *from)
 {
 	*to = *from;
 	/* next and step are not valid for copying */
+	to->used = true;
 	to->next = NULL;
 	to->job_step = NULL;
 }
@@ -606,12 +612,9 @@ _shm_task_copy(task_t *to, task_t *from)
 static void 
 _shm_step_copy(job_step_t *to, job_step_t *from)
 {
-	task_t *t = NULL;
-	if (to->task_list)
-		t = to->task_list;
 	*to = *from;
 	to->state = SLURMD_JOB_ALLOCATED;
-	to->task_list = t; /* addition of tasks is another step */
+	to->task_list = NULL; /* addition of tasks is another step */
 }
 
 static void
@@ -640,9 +643,14 @@ _shm_create()
 	key_t key = ftok(".", 'a');
 
 	if ((shmid = shmget(key, sizeof(slurmd_shm_t), oflags)) < 0) {
-		if ((shmid = shmget(key, sizeof(slurmd_shm_t), 0600)) < 0)
-		error("shmget: %m");
-		return SLURM_ERROR;
+		if ((shmid = shmget(key, sizeof(slurmd_shm_t), 0600)) < 0) {
+			if (errno == EINVAL) {
+				error("shm_init: Existing shm invalid. "
+				      "Please remove.");
+			} else
+				error("shmget: %m");
+			return SLURM_ERROR;
+		}
 	}
 
 	slurmd_shm = shmat(shmid, NULL, 0);
@@ -663,13 +671,13 @@ _shm_attach()
 	key_t key = ftok(".", 'a');
 
 	if ((shmid = shmget(key, sizeof(slurmd_shm_t), oflags)) < 0) 
-		fatal("shm_attach: %m");
+		return SLURM_ERROR;
 
 	slurmd_shm = shmat(shmid, NULL, 0);
 	if (slurmd_shm == (void *)-1 || !slurmd_shm) 
-		fatal("shmat: %m");
+		return SLURM_ERROR;
 
-	return 1;
+	return SLURM_SUCCESS;
 }
 
 /* 
@@ -701,7 +709,11 @@ _shm_reopen()
 	}
 
 	/* Attach to shared memory region */
-	_shm_attach();
+	if ((_shm_attach() < 0) && (_shm_create() < 0)) {
+		error("shm_create(): %m");
+		return SLURM_FAILURE;
+	}
+
 
 	/* Lock and unlock semaphore to ensure data is initialized */
 	_shm_lock();

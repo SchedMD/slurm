@@ -52,8 +52,6 @@ _wait_and_destroy_prg(qsw_jobinfo_t qsw_job, pid_t pid)
 	int i = 0;
 	int sleeptime = 1;
 
-	shm_init();
-
 	debug3("waiting to destory program description...");
   again:
 	if (waitpid(pid, NULL, 0) < 0) {
@@ -80,7 +78,6 @@ _wait_and_destroy_prg(qsw_jobinfo_t qsw_job, pid_t pid)
 		sleep(sleeptime*=2);
 	}
 
-	shm_fini();
 	exit(0);
 	return SLURM_SUCCESS;
 }

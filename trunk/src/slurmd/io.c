@@ -63,9 +63,8 @@ typedef enum slurmd_io_tupe {
 	CLIENT_STDOUT,
 } slurmd_io_type_t;
 
-static char *slurmd_io_str[] = 
+static char *_io_str[] = 
 {
-	"domain socket",
 	"task stderr",
 	"task stdout",
 	"task stdin",
@@ -332,8 +331,8 @@ _validate_task_out(struct io_info *t, int type)
 	while ((r = list_next(i))) {
 		if (r->type != type) {
 			fatal("_validate_io: %s reader is %s",
-					slurmd_io_str[t->type],
-					slurmd_io_str[r->type]);
+					_io_str[t->type],
+					_io_str[r->type]);
 		}
 	}
 	list_iterator_destroy(i);
@@ -357,13 +356,13 @@ _validate_task_in(struct io_info *t)
 	while ((r = list_next(i)) != NULL) {
 		if (r->magic != IO_MAGIC) {
 			error("_validate_io: %s writer is invalid", 
-					slurmd_io_str[t->type]);
+					_io_str[t->type]);
 			return 0;
 		}
 		if (r->type != CLIENT_STDOUT) {
 			error("_validate_io: %s writer is %s",
-					slurmd_io_str[t->type],
-					slurmd_io_str[r->type]);
+					_io_str[t->type],
+					_io_str[r->type]);
 			retval = 0;
 		}
 	}
@@ -386,7 +385,7 @@ _validate_client_stdout(struct io_info *client)
 	while ((t = list_next(i))) {
 		if (t->type != TASK_STDIN) {
 			error("_validate_io: client stdin reader is %s",
-					slurmd_io_str[t->type]);
+					_io_str[t->type]);
 			retval = 0;
 		}
 	}
@@ -396,7 +395,7 @@ _validate_client_stdout(struct io_info *client)
 	while ((t = list_next(i))) {
 		if (t->type != TASK_STDOUT) {
 			error("_validate_io: client stdout writer is %s",
-					slurmd_io_str[t->type]);
+					_io_str[t->type]);
 			retval = 0;
 		}
 	}
@@ -421,7 +420,7 @@ _validate_client_stderr(struct io_info *client)
 	while ((t = list_next(i))) {
 		if (t->type != TASK_STDERR) {
 			error("_validate_io: client stderr writer is %s",
-					slurmd_io_str[t->type]);
+					_io_str[t->type]);
 			retval = 0;
 		}
 	}
@@ -691,8 +690,7 @@ _readable(io_obj_t *obj)
 
 	xassert(io->magic == IO_MAGIC);
 
-	if ((rc = (!io->disconnected && !io->eof && (obj->fd > 0))))
-		debug3("readable %s", slurmd_io_str[io->type]);
+	rc = (!io->disconnected && !io->eof && (obj->fd > 0));
 
 	return rc;
 }
@@ -707,8 +705,7 @@ _writable(io_obj_t *obj)
 
 	rc = (!io->disconnected 
 		&& ((cbuf_used(io->buf) > 0) || io->eof));
-	if (rc)
-		debug3("writable %s", slurmd_io_str[io->type]);
+
 	return rc;
 }
 
@@ -725,7 +722,7 @@ _write(io_obj_t *obj, List objs)
 		return 0;
 
 	verbose("Need to write %ld bytes to %s %d", 
-		cbuf_used(io->buf), slurmd_io_str[io->type], io->id);
+		cbuf_used(io->buf), _io_str[io->type], io->id);
 
 
 	if (io->eof && (cbuf_used(io->buf) == 0)) {
@@ -741,16 +738,18 @@ _write(io_obj_t *obj, List objs)
 	}
 
 	while ((n = cbuf_read_fd(io->buf, obj->fd, -1)) < 0) {
-		int local_errno = errno;
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) 
 			continue;
-		error("task <%ld> write failed: %s", io->id, 
-				slurm_strerror(local_errno));
+		error("task <%ld> write failed: %m", io->id);
+		if (io->type == CLIENT_STDERR || io->type == CLIENT_STDOUT)
+			_io_disconnect_client(io);
+		else
+			_shutdown_task_obj(io);
 		return -1;
 	}
 
 	verbose("Wrote %d bytes to %s %d", 
-		 n, slurmd_io_str[io->type], io->id);
+		 n, _io_str[io->type], io->id);
 
 	return 0;
 }
@@ -796,7 +795,7 @@ _task_read(io_obj_t *obj, List objs)
 			goto again;
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
 		        error("%s %d: read returned EAGAIN",
-			       slurmd_io_str[t->type], t->id);
+			       _io_str[t->type], t->id);
 			return 0;
 		}
 		error("Unable to read from task %ld fd %d errno %d %m", 
@@ -804,7 +803,7 @@ _task_read(io_obj_t *obj, List objs)
 		return -1;
 	}
 	verbose("read %d bytes from %s %d", 
-		n, slurmd_io_str[t->type], t->id);
+		n, _io_str[t->type], t->id);
 
 	if (n == 0) {  /* got eof */
 		verbose("got eof on task %ld", t->id);
@@ -821,7 +820,7 @@ _task_read(io_obj_t *obj, List objs)
 	while((r = list_next(i))) {
 		n = cbuf_write(r->buf, (void *) buf, n, NULL);
 		verbose("wrote %ld bytes into %s buf", n, 
-				slurmd_io_str[r->type]);
+				_io_str[r->type]);
 	}
 	list_iterator_destroy(i);
 
@@ -834,7 +833,7 @@ _task_error(io_obj_t *obj, List objs)
 	struct io_info *t = (struct io_info *) obj->arg;
 	xassert(t->magic == IO_MAGIC);
 
-	error("error on %s %d", slurmd_io_str[t->type], t->id);
+	error("error on %s %d", _io_str[t->type], t->id);
 	_shutdown_task_obj(t);
 	obj->fd = -1;
 	list_delete_all(objs, (ListFindF) find_obj, obj);
@@ -867,7 +866,7 @@ _client_read(io_obj_t *obj, List objs)
 		return -1;
 	}
 
-	debug("read %d bytes from %s %d", n, slurmd_io_str[client->type],
+	debug("read %d bytes from %s %d", n, _io_str[client->type],
 			client->id);
 
 	if (n == 0)  { /* got eof, disconnect this client */
@@ -904,7 +903,7 @@ _client_error(io_obj_t *obj, List objs)
 
 	xassert(io->magic == IO_MAGIC);
 
-	error("%s task %d", slurmd_io_str[io->type], io->id); 
+	error("%s task %d", _io_str[io->type], io->id); 
 	return 0;
 }
 
