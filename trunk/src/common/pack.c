@@ -4,7 +4,9 @@
  * Library routines for packing/unpacking integers.
  */
 
-#include <stdint.h>
+#if HAVE_CONFIG_H
+#  include <config.h> 
+#endif
 #include <errno.h>
 #include <netinet/in.h>
 #include <string.h>
@@ -23,8 +25,8 @@ _pack32(uint32_t val, void **bufp, int *lenp)
 
 	memcpy(*bufp, &nl, sizeof(nl));
 
-	*bufp += sizeof(nl);
-	*lenp -= sizeof(nl);
+	(size_t)*bufp += sizeof(nl);
+	(size_t)*lenp -= sizeof(nl);
 }
 
 /*
@@ -40,8 +42,8 @@ _unpack32(uint32_t *valp, void **bufp, int *lenp)
 	memcpy(&nl, *bufp, sizeof(nl));
 	*valp = ntohl(nl);
 
-	*bufp += sizeof(nl);
-	*lenp -= sizeof(nl);
+	(size_t)*bufp += sizeof(nl);
+	(size_t)*lenp -= sizeof(nl);
 }
 	
 /*
@@ -55,8 +57,8 @@ _pack16(uint16_t val, void **bufp, int *lenp)
 
 	memcpy(*bufp, &ns, sizeof(ns));
 
-	*bufp += sizeof(ns);
-	*lenp -= sizeof(ns);
+	(size_t)*bufp += sizeof(ns);
+	(size_t)*lenp -= sizeof(ns);
 }
 
 /*
@@ -72,8 +74,8 @@ _unpack16(uint16_t *valp, void **bufp, int *lenp)
 	memcpy(&ns, *bufp, sizeof(ns));
 	*valp = ntohs(ns);
 
-	*bufp += sizeof(ns);
-	*lenp -= sizeof(ns);
+	(size_t)*bufp += sizeof(ns);
+	(size_t)*lenp -= sizeof(ns);
 }
 
 /*
@@ -88,12 +90,12 @@ _packstr(char *valp, uint32_t size_val, void **bufp, int *lenp)
 	uint32_t nl = htonl(size_val);
 
 	memcpy(*bufp, &nl, sizeof(nl));
-	*bufp += sizeof(nl);
-	*lenp -= sizeof(nl);
+	(size_t)*bufp += sizeof(nl);
+	(size_t)*lenp -= sizeof(nl);
 
 	memcpy(*bufp, valp, size_val);
-	*bufp += size_val;
-	*lenp -= size_val;
+	(size_t)*bufp += size_val;
+	(size_t)*lenp -= size_val;
 
 }
 
@@ -111,48 +113,12 @@ _unpackstr(char **valp, uint32_t *size_valp, void **bufp, int *lenp)
 
 	memcpy(&nl, *bufp, sizeof(nl));
 	*size_valp = ntohl(nl);
-	*bufp += sizeof(nl);
-	*lenp -= sizeof(nl);
+	(size_t)*bufp += sizeof(nl);
+	(size_t)*lenp -= sizeof(nl);
 
 	*valp = *bufp;
-	*bufp += nl;
-	*lenp -= nl;
+	(size_t)*bufp += nl;
+	(size_t)*lenp -= nl;
 
 }
 	
-
-#if DEBUG_MODULE
-
-/* main is used here for testing purposes only */
-main (int argc, char *argv[]) 
-{
-	char buffer[1024];
-	void *bufp;
-	int len_buf = 0;
-	uint16_t test16 = 1234, out16;
-	uint32_t test32 = 5678, out32, byte_cnt;
-	char testbytes[] = "TEST STRING", *outbytes;
-
-	bufp = buffer;
-	len_buf = sizeof(buffer);
-	pack16 (test16, &bufp, &len_buf);
-	pack32 (test32, &bufp, &len_buf);
-	packstr (testbytes, (uint32_t)(strlen(testbytes)+1), &bufp, &len_buf);
-	printf ("wrote %d bytes\n", len_buf);
-
-	bufp = buffer;
-	len_buf = sizeof(buffer);
-	unpack16 (&out16, &bufp, &len_buf);
-	unpack32 (&out32, &bufp, &len_buf);
-	unpackstr (&outbytes, &byte_cnt, &bufp, &len_buf);
-
-	if (out16 != test16)
-		printf("un/pack16 failed\n");
-	if (out32 != test32)
-		printf("un/pack32 failed\n");
-	if (strcmp(testbytes, outbytes) != 0)
-		printf("un/packstr failed\n");
-	printf("test complete\n");
-}
-
-#endif
