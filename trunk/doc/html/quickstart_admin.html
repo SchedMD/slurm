@@ -124,7 +124,8 @@ Specify location of SLURM configuration file.</p>
 Compile with support for the TotalView debugger (see <a href="http://www.etnus.com/">http://www.etnus.com</a>).</p>
 <p class="footer"><a href="#top">top</a></p>
 <h3>Configuration</h3>
-<p>The SLURM configuration file includes a wide variety of parameters. A full 
+<p>The SLURM configuration file includes a wide variety of parameters. 
+This configuration file must be available on each node of the cluster. A full
 description of the parameters is included in the slurm.conf man page. Rather than 
 duplicate that information, a sample configuration file is shown below. Any text 
 following a &quot;#&quot; is considered a comment. The keywords in the file are 
@@ -187,7 +188,8 @@ An example of how to do this is shown below. Specify file names that
 match the values of JobCredentialPrivateKey and JobCredentialPublicCertificate 
 in your configuration file. The JobCredentialPrivateKey 
 file must be readable only by SlurmUser. The JobCredentialPublicCertificate file 
-must be readable by all users. </p>
+must be readable by all users. 
+Both files must be available on all nodes in the cluster. </p>
 <p class="commandline" style="margin-left:.2in">openssl genrsa -out /usr/local/etc/slurm.key 
 1024<br>
 openssl rsa -in /usr/local/etc/slurm.key -pubout -out /usr/local/etc/slurm.cert 
@@ -346,7 +348,7 @@ adev0: scontrol shutdown
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-201790<br>
-Last modified March 16, 2004</p></td>
+Last modified March 19, 2004</p></td>
 </tr>
 </table>
 </td>
