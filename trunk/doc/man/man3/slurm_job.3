@@ -190,8 +190,10 @@ longer required using the function \fBslurm_free_submit_response_msg\fR.
 .LP 
 \fBslurm_update_job\fR Update the characteristics of an existing job. Not all job 
 characteristics may be changed (e.g. the time limit of a job may be changed, but the nodes 
-allocated to a running job may not be changed). This function may only be successfully 
-executed by user root.
+allocated to a running job may not be changed). This function may only be executed 
+by the job's owner only for selected operations (e.g. decrease the job's priority). 
+User root may modify more job parameters and in ways the job's owner can not (e.g. 
+changing the job's associated features or increasing its priority).
 .SH "RETURN VALUE"
 .LP
 On success, zero is returned. On error, -1 is returned, and Slurm error code is set appropriately.
