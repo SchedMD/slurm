@@ -24,7 +24,7 @@ high priority queue for smaller "interactive" jobs.  Signal to daemons
 causes current log file to be closed, renamed with 
 time-stamp, and a new log file created.
 
-Although the PBS is portable and has broad user base, it has significant drawbacks.
+Although the PBS is portable and has a broad user base, it has significant drawbacks.
 PBS is single threaded and hence exhibits poor performance on large clusters. 
 This is particularly problematic when a compute node in the system fails: 
 PBS tries to contact down node while other activities must wait. 
@@ -83,17 +83,17 @@ PBS also has a weak mechanism for starting and cleaning up parallel jobs.
 \subsection{Quadrics RMS}
 
 Quadrics RMS\cite{Quadrics02}
-(Resource Management System) is a cluster management system for 
+(Resource Management System) is for 
 Unix systems having Quadrics Elan interconnects. 
 RMS functionality and performance is excellent. 
-It major drawback is the requirement for a Quadrics interconnect. 
-The priorietary code and cost may also pose difficulties under some 
+It major limitation is the requirement for a Quadrics interconnect. 
+The proprietary code and cost may also pose difficulties under some 
 circumstances.
 
 
 \subsection*{Maui Scheduler}
 
-Maui Scheduler~\cite{Maui} is an advance reservation HPC batch scheduler 
+Maui Scheduler~\cite{Maui} is an advanced reservation HPC batch scheduler 
 for use with SP, O2K, and UNIX/Linux clusters. 
 It is widely used to extend the functionality of PBS and LoadLeveler, 
 which Maui requires to perform the parallel job initiation and management.
@@ -128,7 +128,7 @@ overuse of a computer where not authorized.
 %      not authorized.
 %\end{itemize}
 
-While DPCS does have these attractive characteristics, it supports only a 
+DPCS supports only a 
 limited number of computer systems: IBM RS/6000 and SP, Linux, 
 Sun Solaris, and Compaq Alpha. 
 Like the Maui Scheduler, DPCS requires an underlying infrastructure for 
@@ -140,10 +140,10 @@ LoadLeveler~\cite{LoadLevelerManual,LoadLevelerWeb}
 is a proprietary batch system and parallel job manager by 
 IBM. LoadLeveler supports few non-IBM systems. Very primitive 
 scheduling software exists and other software is required for reasonable 
-performance such as Maui Scheduler or DPCS. 
-The LoadLeveler is simple and very flexible queue and job class structure is available 
+performance, such as Maui Scheduler or DPCS. 
+The LoadLeveler has a  simple and very flexible queue and job class structure available 
 operating in "matrix" fashion. 
-The biggest problem of the LoadLeveler is its extremely poor scalability. 
+The biggest problem of the LoadLeveler is its poor scalability. 
 It typically requires 20 minutes to execute even a trivial 500-node, 8000-task
 on the IBM SP computers at LLNL.
 %In addition, all jobs must be initiated through the LoadLeveler, and a special version of
@@ -184,7 +184,7 @@ architectures, it has sophisticated scheduling software including
 fair-share, backfill, consumable resources, an job preemption and 
 very flexible queue structure.
 It also provides good status information on nodes and LSF daemons.
-While LSF is quite powerful, it is not open source and is costly on 
+While LSF is quite powerful, it is not open-source and can be costly on 
 larger clusters.
 %The LSF share many of its shortcomings with the LoadLeveler: job initiation only
 %through LSF, requirement of a spwcial MPI library, etc.
@@ -227,17 +227,17 @@ their requirements for a broker to perform matches. The checkpoint
 mechanism is used to relocate work on demand (when the "owner" of a 
 desktop machine wants to resume work).
 
-
-\subsection*{Linux PAGG Process Aggregates}
-
-PAGG~\cite{PAGG}
-consists of modifications to the linux kernel that allows
-developers to implement Process AGGregates as loadable kernel modules.
-A process aggregate is defined as a collection of processes that are
-all members of the same set. A set would be implemented as a container
-for the member processes. For instance, process sessions and groups
-could have been implemented as process aggregates.
-
+%
+%\subsection*{Linux PAGG Process Aggregates}
+%
+%PAGG~\cite{PAGG}
+%consists of modifications to the linux kernel that allows
+%developers to implement Process AGGregates as loadable kernel modules.
+%A process aggregate is defined as a collection of processes that are
+%all members of the same set. A set would be implemented as a container
+%for the member processes. For instance, process sessions and groups
+%could have been implemented as process aggregates.
+%
 
 \subsection*{Beowulf Distributed Process Space (BPROC)}
 
@@ -250,7 +250,9 @@ processes started with this mechanism appear in the process table
 of the front end machine in a cluster. This allows remote process
 management using the normal UNIX process control facilities. Signals
 are transparently forwarded to remote processes and exit status is
-received using the usual wait() mechanisms.
+received using the usual wait() mechanisms. This tight coupling of 
+a cluster's nodes is convenient, but high scalability can be difficult 
+to achieve.
 
 %\subsection{xcat}
 %
@@ -269,18 +271,18 @@ received using the usual wait() mechanisms.
 %NQS\footnote{http://umbc7.umbc.edu/nqs/nqsmain.html}, 
 %the Network Queueing System, is a serial batch system.
 %
-\subsection*{LAM / MPI}
-
-Local Area Multicomputer (LAM)~\cite{LAM}
-is an MPI programming environment and development system for heterogeneous 
-computers on a network. 
-With LAM, a dedicated cluster or an existing network
-computing infrastructure can act as one parallel computer solving
-one problem.  LAM features extensive debugging support in the
-application development cycle and peak performance for production
-applications. LAM features a full implementation of the MPI
-communication standard.
-
+%\subsection*{LAM / MPI}
+%
+%Local Area Multicomputer (LAM)~\cite{LAM}
+%is an MPI programming environment and development system for heterogeneous 
+%computers on a network. 
+%With LAM, a dedicated cluster or an existing network
+%computing infrastructure can act as one parallel computer solving
+%one problem.  LAM features extensive debugging support in the
+%application development cycle and peak performance for production
+%applications. LAM features a full implementation of the MPI
+%communication standard.
+%
 %\subsection{MPICH}
 %
 %MPICH\footnote{http://www-unix.mcs.anl.gov/mpi/mpich/}
