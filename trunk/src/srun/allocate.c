@@ -63,6 +63,7 @@ resource_allocation_response_msg_t *
 allocate_nodes(void)
 {
 	int rc = 0;
+	static int sigarray[] = { SIGQUIT, SIGINT, SIGTERM, 0 };
 	SigFunc *oquitf, *ointf, *otermf;
 	sigset_t oset;
 	resource_allocation_response_msg_t *resp = NULL;
@@ -73,9 +74,7 @@ allocate_nodes(void)
 	otermf = xsignal(SIGTERM, _intr_handler);
 
 	xsignal_save_mask(&oset);
-	xsignal_unblock(SIGQUIT);
-	xsignal_unblock(SIGINT);
-	xsignal_unblock(SIGTERM);
+	xsignal_unblock(sigarray);
 
 	while ((rc = slurm_allocate_resources(j, &resp) < 0) && _retry()) {
 		if (destroy_job)
@@ -89,7 +88,7 @@ allocate_nodes(void)
 	}
 
     done:
-	xsignal_restore_mask(&oset);
+	xsignal_set_mask(&oset);
 	xsignal(SIGINT,  ointf);
 	xsignal(SIGTERM, otermf);
 	xsignal(SIGQUIT, oquitf);

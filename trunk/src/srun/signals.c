@@ -47,6 +47,13 @@
 #include "src/srun/job.h"
 #include "src/srun/io.h"
 
+/*
+ *  Static list of signals to block in srun:
+ */
+static int srun_sigarray[] = {
+	SIGINT,  SIGQUIT, SIGTSTP, SIGCONT, 
+	SIGALRM, SIGUSR1, SIGUSR2, 0
+};
 
 /* number of active threads */
 static pthread_mutex_t active_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -92,29 +99,19 @@ _sig_thr_done(job_t *job)
 int 
 sig_setup_sigmask(void)
 {
-	int err;
-	sigset_t sigset;
-
-	/* block most signals in all threads, except sigterm */
-	sigemptyset(&sigset);
-	sigaddset(&sigset, SIGINT);
-	sigaddset(&sigset, SIGQUIT);
-	sigaddset(&sigset, SIGTSTP);
-	sigaddset(&sigset, SIGSTOP);
-	sigaddset(&sigset, SIGCONT);
-	sigaddset(&sigset, SIGALRM);
-	sigaddset(&sigset, SIGUSR1);
-	sigaddset(&sigset, SIGUSR2);
-
-	if ((err = pthread_sigmask(SIG_BLOCK, &sigset, NULL)) != 0) {
-		error("pthread_sigmask: %s", slurm_strerror(err));
+	if (xsignal_block(srun_sigarray) < 0)
 		return SLURM_ERROR;
-	}
 
 	xsignal(SIGTERM, &_sigterm_handler);
-	xsignal(SIGHUP,  &_sigterm_handler);	/* just an interupt */
+	xsignal(SIGHUP,  &_sigterm_handler);
 
 	return SLURM_SUCCESS;
+}
+
+int 
+sig_unblock_signals(void)
+{
+	return xsignal_unblock(srun_sigarray);
 }
 
 int 
@@ -218,18 +215,6 @@ _handle_intr(job_t *job, time_t *last_intr, time_t *last_intr_sent)
 	}
 }
 
-static void
-_sig_thr_setup(sigset_t *set)
-{
-	sigemptyset(set);
-	sigaddset(set, SIGINT);
-	sigaddset(set, SIGQUIT);
-	sigaddset(set, SIGTSTP);
-	sigaddset(set, SIGSTOP);
-	sigaddset(set, SIGUSR1);
-	sigaddset(set, SIGUSR2);
-}
-
 /* simple signal handling thread */
 static void *
 _sig_thr(void *arg)
@@ -242,7 +227,7 @@ _sig_thr(void *arg)
 
 	while (!_sig_thr_done(job)) {
 
-		_sig_thr_setup(&set);
+		xsignal_sigset_create(srun_sigarray, &set);
 
 		sigwait(&set, &signo);
 		debug2("recvd signal %d", signo);
@@ -250,9 +235,6 @@ _sig_thr(void *arg)
 		  case SIGINT:
 			  _handle_intr(job, &last_intr, &last_intr_sent);
 			  break;
-		  case SIGSTOP:
-			debug3("Ignoring SIGSTOP");
-			break;
 		  case SIGTSTP:
 			debug3("got SIGTSTP");
 			break;

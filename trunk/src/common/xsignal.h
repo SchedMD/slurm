@@ -38,23 +38,36 @@ typedef void SigFunc(int);
 SigFunc *xsignal(int signo, SigFunc *);
 
 /*
- * Unblock a single signal
- */
-int xsignal_unblock(int signo);
-
-/*
  * Save current set of blocked signals into `set'
  */
 int xsignal_save_mask(sigset_t *set);
 
 /*
- * Restore the mask of blocked signals to `set'
+ *  Set the mask of blocked signals to exactly `set'
  */
-int xsignal_restore_mask(sigset_t *set);
+int xsignal_set_mask(sigset_t *set);
 
-/* 
- * Unblock all possible signals
+/*
+ *  Add the list of signals given in the signal array `sigarray' 
+ *   to the current list of signals masked in the process.
+ *
+ *   sigarray is a zero-terminated array of signal numbers, 
+ *   e.g. { SIGINT, SIGTERM, ... , 0 } 
+ *
+ *  Returns SLURM_SUCCESS or SLURM_ERROR.
+ *
  */
-int unblock_all_signals(void);
+int xsignal_block(int sigarray[]);
+
+/*
+ *  As xsignal_block() above, but instead remove the list of signals
+ *    from the threads signal mask.
+ */
+int xsignal_unblock(int sigarray[]);
+
+/*
+ *  Create a sigset_t from a sigarray
+ */
+int xsignal_sigset_create(int sigarray[], sigset_t *setp);
 
 #endif /* !_XSIGNAL_H */

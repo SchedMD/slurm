@@ -720,7 +720,7 @@ static void _run_job_script (job_t *job)
 		/*
 		 *  Child.
 		 */
-		unblock_all_signals();
+		sig_unblock_signals();
 		execvp(argv[0], argv);
 		exit(1);
 	}
