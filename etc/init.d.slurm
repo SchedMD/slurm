@@ -71,6 +71,7 @@ slurmstatus() {
     pidfile=`grep -i ${base}pid /etc/slurm/slurm.conf | grep -v '^ *#'`
     if [ $? = 0 ]; then
         pidfile=${pidfile##*=}
+        pidfile=${pidfile%#*}
     else
         pidfile=/var/run/${base}.pid
     fi
