@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "July 2003" "Morris Jette" "Slurm configuration file"
+.TH "slurm.conf" "5" "September 2003" "Morris Jette" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -150,8 +150,9 @@ is no prolog.
 \fBReturnToService\fR
 If set to 1, then a DOWN node will become available for use 
 upon registration. The default value is 0, which 
-means that a node will remain DOWN until a system administrator explicitly 
-makes it available for use.
+means that a node will remain in the DOWN state 
+until a system administrator explicitly changes its state
+(even if the slurmd daemon registers and resumes communications).
 .TP
 \fBSlurmUser\fR
 The name of the user that the \fBslurmctld\fR daemon executes as. 
