@@ -24,7 +24,7 @@
 if [ -f /etc/sysconfig/slurm ] ; then
     . /etc/sysconfig/slurm
 else
-    SLURMCTLD_OPTIONS="-c"
+    SLURMCTLD_OPTIONS=""
     SLURMD_OPTIONS=""
 fi
 
@@ -42,13 +42,19 @@ start() {
     return $RETVAL
 }
 
-stop() {
-    echo -n "stopping $1: "
+stop() { echo -n "stopping $1: "
     killproc $1 -TERM
     RETVAL=$?
     echo
     rm -f /var/lock/subsys/$prog
     return $RETVAL
+}
+
+startall() {
+    for prog in `scontrol show daemons`; do 
+        optvar=`echo ${prog}_OPTIONS | tr "a-z" "A-Z"`
+        start $prog ${!optvar} 
+     done 
 }
 
 
@@ -61,10 +67,12 @@ stop() {
 #
 case "$1" in
     start)
-        for prog in `scontrol show daemons`; do
-            optvar=`echo ${prog}_OPTIONS | tr "a-z" "A-Z"`
-            start $prog ${!optvar} 
-        done 
+	startall
+        ;;
+    startclean)
+        SLURMCTLD_OPTIONS="-c $SLURMCTLD_OPTIONS"
+        SLURMD_OPTIONS="-c $SLURMD_OPTIONS"
+        startall
         ;;
     stop)
 	for prog in `scontrol show daemons`; do
@@ -98,7 +106,7 @@ case "$1" in
 	done
 	;;
     *)
-        echo "Usage: $0 {start|stop|status|restart|reconfig|condrestart|test}"
+        echo "Usage: $0 {start|startclean|stop|status|restart|reconfig|condrestart|test}"
         exit 1
         ;;
 esac
