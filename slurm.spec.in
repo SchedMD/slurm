@@ -107,6 +107,9 @@ DESTDIR="$RPM_BUILD_ROOT" make install
 install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/rc.d/init.d/slurm
 install -D -m644 etc/slurm.conf.example $RPM_BUILD_ROOT/etc/slurm/slurm.conf
 
+rm $RPM_BUILD_ROOT/usr/lib/slurm/*.a 
+rm $RPM_BUILD_ROOT/usr/lib/slurm/*.la
+
 #############################################################################
 
 %clean
@@ -151,7 +154,7 @@ rm -rf $RPM_BUILD_ROOT
 #%endif
 #############################################################################
 
-%if %(test -f %{_libdir}/slurm/auth_munge.so && echo 1 || echo 0)
+%if %{?_with_munge:1}%{!?_with_munge:0}
 %files auth-munge
 %defattr(-,root,root)
 %{_libdir}/slurm/auth_munge.so
