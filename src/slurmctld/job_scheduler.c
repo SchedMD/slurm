@@ -33,8 +33,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <src/common/list.h>
+#include <src/slurmctld/agent.h>
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 
@@ -43,8 +45,9 @@ struct job_queue {
 	struct job_record *job_ptr;
 };
 
-int build_job_queue (struct job_queue **job_queue);
-void sort_job_queue (struct job_queue *job_queue, int job_queue_size);
+static	int	build_job_queue (struct job_queue **job_queue);
+static	void	launch_job (struct job_record *job_ptr);
+static	void	sort_job_queue (struct job_queue *job_queue, int job_queue_size);
 
 /* 
  * build_job_queue - build (non-priority ordered) list of pending jobs
@@ -138,6 +141,7 @@ schedule (void)
 			last_job_update = time (NULL);
 			info ("schedule: job_id %u on nodes %s", 
 			      job_ptr->job_id, job_ptr->nodes);
+			launch_job (job_ptr);
 			job_cnt++;
 		}
 		else {
@@ -190,5 +194,68 @@ sort_job_queue (struct job_queue *job_queue, int job_queue_size)
 		job_queue[i].job_ptr = job_queue[top_prio_inx].job_ptr;
 		job_queue[top_prio_inx].priority = tmp_prio;
 		job_queue[top_prio_inx].job_ptr  = tmp_job_ptr;
+	}
+}
+
+/* launch_job - send an RPC to a slurmd to initiate a job */
+void
+launch_job (struct job_record *job_ptr)
+{
+	batch_job_launch_msg_t *launch_msg_ptr;
+	agent_arg_t *agent_arg_ptr;
+	struct node_record *node_ptr;
+	pthread_attr_t attr_agent;
+	pthread_t thread_agent;
+
+/*	if (job_ptr->details->batch_flag == 0) */
+		return;
+
+	node_ptr = find_first_node_record (job_ptr -> node_bitmap);
+	if (node_ptr == NULL)
+		return;
+
+	/* Initialization of data structures */
+	launch_msg_ptr = (batch_job_launch_msg_t *) xmalloc (sizeof (batch_job_launch_msg_t));
+	launch_msg_ptr -> job_id = job_ptr -> job_id;
+	launch_msg_ptr -> user_id = job_ptr -> user_id;
+	launch_msg_ptr -> nodes = job_ptr -> nodes;
+	launch_msg_ptr -> script = "";	/* FIXME */
+	launch_msg_ptr -> stderr = job_ptr -> details -> stderr;
+	launch_msg_ptr -> stdin  = job_ptr -> details -> stdin;
+	launch_msg_ptr -> stdout = job_ptr -> details -> stdout;
+	launch_msg_ptr -> work_dir = job_ptr -> details -> work_dir;
+	launch_msg_ptr -> argc = 0;	/* FIXME */
+	launch_msg_ptr -> argv = NULL;	/* FIXME */
+	launch_msg_ptr -> env_size = 0;	/* FIXME */
+	launch_msg_ptr -> environment = NULL;	/* FIXME */
+
+	agent_arg_ptr = (agent_arg_t *) xmalloc (sizeof (agent_arg_t));
+	agent_arg_ptr -> node_count = 1;
+	agent_arg_ptr -> retry = 1;
+	agent_arg_ptr -> slurm_addr = xmalloc (sizeof (struct sockaddr_in));
+	memcpy (agent_arg_ptr -> slurm_addr, 
+		&(node_ptr -> slurm_addr), sizeof (struct sockaddr_in));
+	agent_arg_ptr -> node_names = node_ptr -> name;
+	agent_arg_ptr -> msg_type = REQUEST_BATCH_JOB_LAUNCH;
+	agent_arg_ptr -> msg_args = (void *)launch_msg_ptr;
+/* FIXME: Agent must perform full data structure cleanup for launch_msg_ptr */
+
+	/* Launch the RPC via agent */
+	debug3 ("Spawning job launch agent for job_id %u", job_ptr -> job_id);
+	if (pthread_attr_init (&attr_agent))
+		fatal ("pthread_attr_init error %m");
+	if (pthread_attr_setdetachstate (&attr_agent, PTHREAD_CREATE_DETACHED))
+		error ("pthread_attr_setdetachstate error %m");
+#ifdef PTHREAD_SCOPE_SYSTEM
+	if (pthread_attr_setscope (&attr_agent, PTHREAD_SCOPE_SYSTEM))
+		error ("pthread_attr_setscope error %m");
+#endif
+	if (pthread_create (&thread_agent, &attr_agent, 
+				agent, (void *)agent_arg_ptr)) {
+		error ("pthread_create error %m");
+		sleep (1); /* sleep and try once more */
+		if (pthread_create (&thread_agent, &attr_agent, 
+					agent, (void *)agent_arg_ptr))
+			fatal ("pthread_create error %m");
 	}
 }

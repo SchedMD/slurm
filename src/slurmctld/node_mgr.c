@@ -1289,3 +1289,22 @@ ping_nodes (void)
 		}
 	}
 }
+
+/* find_first_node_record - find a record for first node in the bitmap */
+extern struct node_record *
+find_first_node_record (bitstr_t *node_bitmap)
+{
+	int inx;
+
+	if (node_bitmap == NULL) {
+		error ("find_first_node_record passed null bitstring");
+		return NULL;
+	}
+
+	inx = bit_ffs (node_bitmap);
+	if (inx < 0)
+		return NULL;
+	else
+		return &node_record_table_ptr[inx];
+}
+
