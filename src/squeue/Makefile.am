@@ -14,5 +14,5 @@ LDADD = $(top_builddir)/src/common/libcommon.la 	\
 	$(POPT_LIBS)
 
 noinst_HEADERS = squeue.h print.h
-squeue_SOURCES = squeue.c print.c opts.c 
+squeue_SOURCES = squeue.c print.c opts.c sort.c
 

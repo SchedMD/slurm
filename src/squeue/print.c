@@ -97,27 +97,7 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 		list_append(job_list, (void *) &jobs[i]);
 	}
 
-	/* Sort the jobs */
-	if (params.sort == NULL)
-		params.sort = xstrdup("P,t,p"); /* Partition,state,priority */
-	for (i = strlen(params.sort); i >= 0; i--) {
-		if (params.sort[i] == ',')
-			continue;
-		else if (params.sort[i] == 'i')
-			sort_job_by_job_id(job_list);
-		else if (params.sort[i] == 'j')
-			sort_job_by_job_name(job_list);
-		else if (params.sort[i] == 'p')
-			sort_job_by_priority(job_list);
-		else if (params.sort[i] == 'P')
-			sort_job_by_partition(job_list);
-		else if ((params.sort[i] == 't') ||
-			 (params.sort[i] == 'T'))
-			sort_job_by_state(job_list);
-		else if ((params.sort[i] == 'u') ||
-			 (params.sort[i] == 'U'))
-			sort_job_by_user(job_list);
-	}
+	sort_job_list(job_list);
 
 	/* Print the jobs of interest */
 	job_iterator = list_iterator_create(job_list);
@@ -151,20 +131,7 @@ int print_steps_array(job_step_info_t * steps, int size, List format)
 			list_append(step_list, (void *) &steps[i]);
 		}
 
-		/* Sort the job steps */
-		if (params.sort == NULL)
-			params.sort = xstrdup("P,i");	/* Partition, id */
-		for (i = strlen(params.sort); i >= 0; i--) {
-			if (params.sort[i] == ',')
-				continue;
-			else if (params.sort[i] == 'i')
-				sort_step_by_job_step_id(step_list);
-			else if (params.sort[i] == 'P')
-				sort_step_by_partition(step_list);
-			else if ((params.sort[i] == 'u')
-				 || (params.sort[i] == 'U'))
-				sort_step_by_user(step_list);
-		}
+		sort_step_list(step_list);
 
 		/* Print the steps of interest */
 		step_iterator = list_iterator_create(step_list);
@@ -464,19 +431,25 @@ int _print_job_time_used(job_info_t * job, int width, bool right,
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("TIME_USED", width, false, true);
-	else {
-		long delta_t;
-		if (job->job_state == JOB_PENDING)
-			delta_t = 0;
-		else if (job->job_state == JOB_RUNNING)
-			delta_t = difftime(time(NULL), job->start_time);
-		else
-			delta_t = difftime(job->end_time, job->start_time);
-		_print_secs(delta_t, width, right, false);
-	}
+	else
+		_print_secs(job_time_used(job), width, right, false);
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
+}
+
+long job_time_used(job_info_t * job_ptr)
+{
+	long delta_t;
+
+	if (job_ptr->job_state == JOB_PENDING)
+		delta_t = 0;
+	else if (job_ptr->job_state == JOB_RUNNING)
+		delta_t = difftime(time(NULL), job_ptr->start_time);
+	else
+		delta_t = difftime(job_ptr->end_time, job_ptr->start_time);
+
+	return delta_t;
 }
 
 int _print_job_time_start(job_info_t * job, int width, bool right, 
@@ -524,7 +497,7 @@ int _print_job_priority(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_nodes(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("NODES", width, right, false);
+		_print_str("NODELIST", width, right, false);
 	else
 		_print_nodes(job->nodes, width, right, false);
 	if (suffix)
@@ -556,7 +529,7 @@ int _print_job_node_inx(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_num_procs(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("#CPUS", width, right, true);
+		_print_str("CPUS", width, right, true);
 	else
 		_print_int(job->num_procs, width, right, true);
 	if (suffix)
@@ -568,7 +541,7 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 			 char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("#NODES", width, right_justify, true);
+		_print_str("NODES", width, right_justify, true);
 	else {
 		int *current = job->node_inx, node_cnt = 0;
 		for ( ; *current != -1; current +=2)
@@ -843,7 +816,7 @@ int _print_step_nodes(job_step_info_t * step, int width, bool right,
 		      char* suffix)
 {
 	if (step == NULL)	/* Print the Header instead */
-		_print_str("NODES", width, right, false);
+		_print_str("NODELIST", width, right, false);
 	else
 		_print_nodes(step->nodes, width, right, false);
 	if (suffix)
@@ -995,93 +968,4 @@ static int _filter_step(job_step_info_t * step)
 	}
 
 	return 0;
-}
-
-/*****************************************************************************
- * Job Sort Functions
- *****************************************************************************/
-/* sort lower to higher */
-int _sort_job_by_id(void *void1, void *void2)
-{
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
-
-	return job1->job_id - job2->job_id;
-}
-
-/* sort lower to higher */
-int _sort_job_by_name(void *void1, void *void2)
-{
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
-
-	return strcmp(job1->name, job2->name);
-}
-
-/* sort higher to lower */
-int _sort_job_by_priority(void *void1, void *void2)
-{
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
-
-	return (job2->priority - job1->priority);
-}
-
-int _sort_job_by_partition(void *void1, void *void2)
-{
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
-
-	return strcmp(job1->partition, job2->partition);
-}
-
-int _sort_job_by_state(void *void1, void *void2)
-{
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
-
-	return (job1->job_state - job2->job_state);
-}
-
-/* sort lower to higher */
-int _sort_job_by_user(void *void1, void *void2)
-{
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
-
-	return (job1->user_id - job2->user_id);
-}
-
-/*****************************************************************************
- * Step Sort Functions
- *****************************************************************************/
-/* sort lower to higher */
-int _sort_step_by_id(void *void1, void *void2)
-{
-	int i;
-	job_step_info_t *step1 = (job_step_info_t *) void1;
-	job_step_info_t *step2 = (job_step_info_t *) void2;
-
-	i = step1->job_id - step2->job_id;
-	if (i == 0)
-		return (step1->step_id - step2->step_id);
-	else
-		return i;
-}
-
-int _sort_step_by_partition(void *void1, void *void2)
-{
-	job_step_info_t *step1 = (job_step_info_t *) void1;
-	job_step_info_t *step2 = (job_step_info_t *) void2;
-
-	return strcmp(step1->partition, step2->partition);
-}
-
-/* sort lower to higher */
-int _sort_step_by_user(void *void1, void *void2)
-{
-	job_step_info_t *step1 = (job_step_info_t *) void1;
-	job_step_info_t *step2 = (job_step_info_t *) void2;
-
-	return (step1->user_id - step2->user_id);
 }
