@@ -76,15 +76,6 @@ typedef struct hostset * hostset_t;
  */
 typedef struct hostlist_iterator * hostlist_iterator_t;
 
-/* ----[ general node name functions: ]---- */
-
-/*
- * getnodename - equivalent to gethostname(), but return only the first 
- *	component of the fully qualified name (e.g. "linux123.foo.bar" 
- *	becomes "linux123") 
- */
-extern int getnodename PARAMS((char *name, size_t len));
-
 /* ----[ hostlist_t functions: ]---- */
 
 /* ----[ hostlist creation and destruction ]---- */

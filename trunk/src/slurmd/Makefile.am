@@ -18,6 +18,8 @@ slurmd_LDADD = 					   \
         $(top_builddir)/src/common/libcommon.la    \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/common/libcred.la      \
+	$(top_builddir)/src/common/libhostlist.la  \
+	$(top_builddir)/src/common/libeio.la       \
 	$(SSL_LIBS) 
 
 	
