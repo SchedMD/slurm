@@ -46,6 +46,7 @@
 #else /* ! HAVE_CONFIG_H */
 #  include <sys/types.h>
 #  include <unistd.h>
+#  include <time.h>
 #  include <stdint.h>
 #  include <string.h>
 #endif /* HAVE_CONFIG_H */
@@ -93,6 +94,83 @@ typedef struct _slurm_auth_credential {
 	int cr_errno;
 } slurm_auth_credential_t;
 
+typedef struct {
+	time_t         encoded;
+	time_t         decoded;
+	munge_cipher_t cipher;
+	munge_mac_t    mac;
+	munge_zip_t    zip;
+} munge_info_t;
+
+
+static munge_info_t *
+cred_info_alloc(void)
+{
+	munge_info_t *mi = xmalloc(sizeof(*mi));
+	memset(mi, 0, sizeof(*mi));
+	return mi;
+}
+
+static void
+cred_info_destroy(munge_info_t *mi)
+{
+	xfree(mi);
+}
+
+static munge_info_t *
+cred_info_create(munge_ctx_t ctx)
+{
+	munge_err_t e;
+	munge_info_t *mi = cred_info_alloc();
+
+	e = munge_ctx_get(ctx, MUNGE_OPT_ENCODE_TIME, &mi->encoded);
+	if (e != EMUNGE_SUCCESS)
+		error ("auth_munge: Unable to retrieve encode time: %s",
+		       munge_ctx_strerror(ctx));
+
+	e = munge_ctx_get(ctx, MUNGE_OPT_DECODE_TIME, &mi->decoded);
+	if (e != EMUNGE_SUCCESS)
+		error ("auth_munge: Unable to retrieve decode time: %s",
+		       munge_ctx_strerror(ctx));
+
+	e = munge_ctx_get(ctx, MUNGE_OPT_CIPHER_TYPE, &mi->cipher);
+	if (e != EMUNGE_SUCCESS)
+		error ("auth_munge: Unable to retrieve cipher type: %s",
+		       munge_ctx_strerror(ctx));
+
+	e = munge_ctx_get(ctx, MUNGE_OPT_MAC_TYPE, &mi->mac);
+	if (e != EMUNGE_SUCCESS)
+		error ("auth_munge: Unable to retrieve mac type: %s",
+		       munge_ctx_strerror(ctx));
+
+	e = munge_ctx_get(ctx, MUNGE_OPT_ZIP_TYPE, &mi->zip);
+	if (e != EMUNGE_SUCCESS)
+		error ("auth_munge: Unable to retrieve mac type: %s",
+		       munge_ctx_strerror(ctx));
+
+	return mi;
+}
+
+static void
+_print_cred_info(munge_info_t *mi)
+{
+	char buf[256];
+	info ("ENCODED: %s", ctime_r(&mi->encoded, buf));
+	info ("DECODED: %s", ctime_r(&mi->decoded, buf));
+	info ("CIPHER:  %s", munge_cipher_strings[mi->cipher]);
+	info ("MAC:     %s", munge_mac_strings[mi->mac]);
+	info ("ZIP:     %s", munge_zip_strings[mi->zip]);
+}
+
+static void 
+_print_cred(munge_ctx_t ctx)
+{
+	munge_info_t *mi = cred_info_create(ctx);
+	_print_cred_info(mi);
+	cred_info_destroy(mi);
+}
+
+
 /*
  * Decode the munge encoded credential `m' placing results, if validated,
  * into slurm credential `c'
@@ -101,7 +179,7 @@ static int
 _decode_cred(char *m, slurm_auth_credential_t *c)
 {
 	munge_err_t e;
-	munge_ctx_t ctx = NULL;
+	munge_ctx_t ctx = munge_ctx_create();
 
 	if ((c == NULL) || (m == NULL)) 
 		return SLURM_ERROR;
@@ -113,19 +191,25 @@ _decode_cred(char *m, slurm_auth_credential_t *c)
 
 	if ((e = munge_decode(m, ctx, &c->buf, &c->len, &c->uid, &c->gid))) {
 		error ("Invalid Munge credential: %s", munge_strerror(e));
-		return SLURM_ERROR;
+		_print_cred(ctx);
+		goto done;
 	}
 
 	c->verified = true;
+
+     done:
+	munge_ctx_destroy(ctx);
 	return SLURM_SUCCESS;
 }
 
 
 int init ( void )
 {
-	host_list_idx = arg_idx_by_name( slurm_auth_get_arg_desc(),
-									 ARG_HOST_LIST );
-	if ( host_list_idx == -1 ) return SLURM_ERROR;
+	host_list_idx = arg_idx_by_name( slurm_auth_get_arg_desc(), 
+			                 ARG_HOST_LIST );
+	if (host_list_idx == -1) 
+		return SLURM_ERROR;
+
 	return SLURM_SUCCESS;
 }
 
