@@ -75,6 +75,7 @@ typedef struct srun_job {
 	uint32_t jobid;		/* assigned job id 	                  */
 	uint32_t stepid;	/* assigned step id 	                  */
 	bool old_job;           /* run job step under previous allocation */
+	bool removed;       /* job has been removed from SLURM */
 
 	job_state_t state;	/* job state	   	                  */
 	pthread_mutex_t state_mutex; 
@@ -92,7 +93,7 @@ typedef struct srun_job {
 	uint32_t **tids;	/* host id => task ids mapping    */
 	uint32_t *hostid;	/* task id => host id mapping     */
 
-        slurm_addr *slurmd_addr;/* slurm_addr vector to slurmd's */
+	slurm_addr *slurmd_addr;/* slurm_addr vector to slurmd's */
 
 	pthread_t sigid;	/* signals thread tid		  */
 

@@ -219,12 +219,15 @@ int
 job_rc(job_t *job)
 {
 	int i;
-	int rc;
+	int rc = 0;
 
-	if (job->rc) return(job->rc);
+	if (job->rc >= 0) return(job->rc);
 
-	for (i = 0; i < opt.nprocs; i++) 
-		job->rc |= job->tstatus[i];
+
+	for (i = 0; i < opt.nprocs; i++) {
+		if (job->rc < job->tstatus[i])
+			job->rc = job->tstatus[i];
+	}
 
 	if ((rc = WEXITSTATUS(job->rc)))
 		job->rc = rc;
@@ -248,8 +251,12 @@ void job_fatal(job_t *job, const char *msg)
 void 
 job_destroy(job_t *job, int error)
 {
+	if (job->removed)
+		return;
+
 	if (job->old_job) {
 		debug("cancelling job step %u.%u", job->jobid, job->stepid);
+		slurm_kill_job_step(job->jobid, job->stepid, SIGKILL);
 		slurm_complete_job_step(job->jobid, job->stepid, 0, error);
 	} else if (!opt.no_alloc) {
 		debug("cancelling job %u", job->jobid);
@@ -263,6 +270,8 @@ job_destroy(job_t *job, int error)
 #ifdef HAVE_TOTALVIEW
 	if (error) tv_launch_failure();
 #endif
+
+	job->removed = true;
 }
 
 
@@ -389,7 +398,7 @@ _job_create_internal(allocation_info_t *info)
 	job->state = SRUN_JOB_INIT;
 
 	job->signaled = false;
-	job->rc       = 0;
+	job->rc       = -1;
 
 	job->nodelist = xstrdup(info->nodelist);
 	hl = hostlist_create(job->nodelist);
@@ -398,6 +407,7 @@ _job_create_internal(allocation_info_t *info)
 	job->jobid   = info->jobid;
 	job->stepid  = info->stepid;
 	job->old_job = false;
+	job->removed = false;
 
 	/* 
 	 *  Initialize Launch and Exit timeout values
