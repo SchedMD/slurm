@@ -42,7 +42,7 @@ main (int argc, char *argv[])
 {
 	int error_code, line_num, i;
 	FILE *command_file;
-	char in_line[BUF_SIZE], *node_list;
+	char in_line[BUF_SIZE], *job_id, *node_list;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
@@ -101,23 +101,27 @@ main (int argc, char *argv[])
 	line_num = 0;
 	printf ("\n");
 	while (fgets (in_line, BUF_SIZE, command_file)) {
+		job_id = node_list = NULL;
 		if (in_line[strlen (in_line) - 1] == '\n')
 			in_line[strlen (in_line) - 1] = (char) NULL;
 		line_num++;
-		error_code = select_nodes (in_line, &node_list);
+		error_code = job_allocate(in_line, &job_id, &node_list);
 		if (error_code) {
 			if (strncmp (in_line, "JobName=FAIL", 12) != 0)
 				printf ("ERROR:");
 			printf ("for job: %s\n", in_line, node_list);
-			printf ("node_scheduler: error %d from select_nodes on line %d\n\n", 
+			printf ("node_scheduler: error %d from job_allocate on line %d\n\n", 
 				error_code, line_num);
 		}
 		else {
-			if (strncmp (in_line, "job_name=fail", 12) == 0)
+			if (strncmp (in_line, "JobName=FAIL", 12) == 0)
 				printf ("ERROR: ");
 			printf ("for job: %s\n  nodes selected %s\n\n",
 				in_line, node_list);
-			xfree (node_list);
+			if (job_id)
+				xfree (job_id);
+			if (node_list)
+				xfree (node_list);
 		}		
 	}			
 }
@@ -612,187 +616,76 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 
 
 /*
- * select_nodes - select and allocate nodes to a job with the given specifications
- * input: job_specs - job specifications
- *        node_list - pointer to node list returned
- * output: node_list - list of allocated nodes
- *         returns 0 on success, EINVAL if not possible to satisfy request, 
+ * select_nodes - select and allocate nodes to a specific job
+ * input: job_ptr - pointer to the job record
+ * output: returns 0 on success, EINVAL if not possible to satisfy request, 
  *		or EAGAIN if resources are presently busy
+ *	job_ptr->nodes is set to the node list (on success)
  * globals: list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
- * NOTE: the calling program must xfree the memory pointed to by node_list
+ *	config_list - global list of node configuration info
  */
 int
-select_nodes (char *job_specs, char **node_list) 
+select_nodes (struct job_record *job_ptr) 
 {
-	char *req_features, *req_node_list, *job_name, *req_group;
-	char *req_partition, *out_line, *script, *job_id;
-	int contiguous, req_cpus, req_nodes, min_cpus, min_memory;
-	int min_tmp_disk, time_limit, procs_per_task, dist;
-	int error_code, cpu_tally, node_tally, key, shared, user_id;
-	float priority;
-	struct part_record *part_ptr;
+	int error_code, i, node_set_index, node_set_size;
 	bitstr_t *req_bitmap, *scratch_bitmap;
 	ListIterator config_record_iterator;	/* for iterating through config_list */
-	struct config_record *config_record_point;	/* pointer to config_record */
-	int i;
+	struct config_record *config_record_point;
 	struct node_set *node_set_ptr;
-	int node_set_index, node_set_size;
+	struct part_record *part_ptr;
 
-	req_features = req_node_list = job_name = req_group = NULL;
 	req_bitmap = scratch_bitmap = NULL;
-	req_partition = script = job_id = NULL;
-	contiguous = req_cpus = req_nodes = min_cpus = NO_VAL;
-	min_memory = min_tmp_disk = NO_VAL;
-	key = shared = NO_VAL;
-	node_set_ptr = NULL;
-	config_record_iterator = NULL;
-	node_list[0] = NULL;
 	config_record_iterator = (ListIterator) NULL;
-	node_lock ();
-	part_lock ();
+	node_set_ptr = NULL;
+	part_ptr = NULL;
 
-	/* setup and basic parsing */
-	error_code =	
-		parse_job_specs (job_specs, &req_features, &req_node_list,
-				 &job_name, &req_group, &req_partition,
-				 &contiguous, &req_cpus, &req_nodes,
-				 &min_cpus, &min_memory, &min_tmp_disk, &key,
-				 &shared, &dist, &script, &time_limit, 
-				 &procs_per_task, &job_id, &priority, &user_id);
-	if (error_code != 0) {
-		error_code = EINVAL;	/* permanent error, invalid parsing */
-		error ("select_nodes: parsing failure on %s", job_specs);
-		goto cleanup;
-	}			
-	if ((req_cpus == NO_VAL) && (req_nodes == NO_VAL) && (req_node_list == NULL)) {
-		info ("select_nodes: job failed to specify ReqNodes, TotalNodes or TotalProcs");
-		error_code = EINVAL;
-		goto cleanup;
-	}			
-	if (contiguous == NO_VAL)
-		contiguous = 0;	/* default not contiguous */
-	if (req_cpus == NO_VAL)
-		req_cpus = 0;	/* default no cpu count requirements */
-	if (req_nodes == NO_VAL)
-		req_nodes = 0;	/* default no node count requirements */
-
-
-	/* find selected partition */
-	if (req_partition) {
-		part_ptr =
-			list_find_first (part_list, &list_find_part,
-					 req_partition);
-		if (part_ptr == NULL) {
-			info ("select_nodes: invalid partition specified: %s",
-				 req_partition);
-			error_code = EINVAL;
-			goto cleanup;
-		}		
-	}
-	else {
-		if (default_part_loc == NULL) {
-			error ("select_nodes: default partition not set.");
-			error_code = EINVAL;
-			goto cleanup;
-		}		
-		part_ptr = default_part_loc;
-	}			
-
-
-	/* can this user access this partition */
-	if (part_ptr->key && (is_key_valid (key) == 0)) {
-		info ("select_nodes: job lacks key required of partition %s",
-			 part_ptr->name);
-		error_code = EINVAL;
-		goto cleanup;
-	}			
-	if (match_group (part_ptr->allow_groups, req_group) == 0) {
-		info ("select_nodes: job lacks group required of partition %s",
-			 part_ptr->name);
-		error_code = EINVAL;
-		goto cleanup;
-	}			
-
-
-	/* check if select partition has sufficient resources to satisfy request */
-	if (req_node_list) {	/* insure that selected nodes are in this partition */
-		error_code = node_name2bitmap (req_node_list, &req_bitmap);
-		if (error_code == EINVAL)
-			goto cleanup;
-		if (error_code != 0) {
-			error_code = EAGAIN;	/* no memory */
-			goto cleanup;
-		}		
-		if (contiguous == 1)
-			bit_fill_gaps (req_bitmap);
-		if (bit_super_set (req_bitmap, part_ptr->node_bitmap) != 1) {
-			info ("select_nodes: requested nodes %s not in partition %s",
-				req_node_list, part_ptr->name);
-			error_code = EINVAL;
-			goto cleanup;
-		}		
-		i = count_cpus (req_bitmap);
-		if (i > req_cpus)
-			req_cpus = i;
-		i = bit_set_count (req_bitmap);
-		if (i > req_nodes)
-			req_nodes = i;
-	}			
-	if (req_cpus > part_ptr->total_cpus) {
-		info ("select_nodes: too many cpus (%d) requested of partition %s(%d)",
-			req_cpus, part_ptr->name, part_ptr->total_cpus);
-		error_code = EINVAL;
-		goto cleanup;
-	}			
-	if ((req_nodes > part_ptr->total_nodes)
-	    || (req_nodes > part_ptr->max_nodes)) {
-		if (part_ptr->total_nodes > part_ptr->max_nodes)
-			i = part_ptr->max_nodes;
-		else
-			i = part_ptr->total_nodes;
-		info ("select_nodes: too many nodes (%d) requested of partition %s(%d)",
-			 req_nodes, part_ptr->name, i);
-		error_code = EINVAL;
-		goto cleanup;
-	}			
-	if (part_ptr->shared == 2)	/* shared=force */
-		shared = 1;
-	else if ((shared != 1) || (part_ptr->shared == 0)) /* user or partition want no sharing */
-		shared = 0;
-
+	if (job_ptr == NULL)
+		fatal("select_nodes: NULL job pointer value");
+	if (job_ptr->magic != JOB_MAGIC)
+		fatal("select_nodes: bad job pointer value");
 
 	/* pick up nodes from the weight ordered configuration list */
+	if (job_ptr->details->nodes) {	/* insure that selected nodes are in this partition */
+		error_code = node_name2bitmap (job_ptr->details->nodes, &req_bitmap);
+		if (error_code == EINVAL)
+			goto cleanup;
+	}
+	part_ptr = find_part_record(job_ptr->partition);
+	if (part_ptr == NULL)
+		fatal("select_nodes: invalid partition name %s for job %s", 
+			job_ptr->partition, job_ptr->job_id);
 	node_set_index = 0;
 	node_set_size = 0;
 	node_set_ptr = (struct node_set *) xmalloc (sizeof (struct node_set));
 	node_set_ptr[node_set_size++].my_bitmap = NULL;
 
 	config_record_iterator = list_iterator_create (config_list);
-	if (config_record_iterator == NULL) {
+	if (config_record_iterator == NULL)
 		fatal ("select_nodes: ListIterator_create unable to allocate memory");
-		error_code = EAGAIN;
-		goto cleanup;
-	}			
 
 	while (config_record_point =
 	       (struct config_record *) list_next (config_record_iterator)) {
 		int tmp_feature, check_node_config;
 
-		tmp_feature =
-			valid_features (req_features,
+		tmp_feature = valid_features (job_ptr->details->features,
 					config_record_point->feature);
 		if (tmp_feature == 0)
 			continue;
 
-		/* since nodes can register with more resources than defined in the configuration,    */
-		/* we want to use those higher values for scheduling, but only as needed */
-		if ((min_cpus > config_record_point->cpus) ||
-		    (min_memory > config_record_point->real_memory) ||
-		    (min_tmp_disk > config_record_point->tmp_disk))
+		/* since nodes can register with more resources than defined */
+		/* in the configuration, we want to use those higher values */
+		/* for scheduling, but only as needed */
+		if ((job_ptr->details->min_procs > config_record_point->cpus) ||
+		    (job_ptr->details->min_memory > config_record_point->real_memory) ||
+		    (job_ptr->details->min_tmp_disk > config_record_point->tmp_disk)) {
+			if (FAST_SCHEDULE) 	/* don't bother checking each node */
+				continue;
 			check_node_config = 1;
+		}
 		else
 			check_node_config = 0;
+
 		node_set_ptr[node_set_index].my_bitmap =
 			bit_copy (config_record_point->node_bitmap);
 		if (node_set_ptr[node_set_index].my_bitmap == NULL)
@@ -801,25 +694,24 @@ select_nodes (char *job_specs, char **node_list)
 			    part_ptr->node_bitmap);
 		node_set_ptr[node_set_index].nodes =
 			bit_set_count (node_set_ptr[node_set_index].my_bitmap);
-		/* check configuration of individual nodes only if the check of baseline */
-		/* values in the configuration file are too low. this will slow the scheduling */
-		/* for very large cluster. */
-		if ((FAST_SCHEDULE == 0) && check_node_config && 
-		    (node_set_ptr[node_set_index].nodes != 0)) {
+
+		/* check configuration of individual nodes only if the check */
+		/* of baseline values in the configuration file are too low. */
+		/* this will slow the scheduling for very large cluster. */
+		if (check_node_config && (node_set_ptr[node_set_index].nodes != 0)) {
 			for (i = 0; i < node_record_count; i++) {
 				if (bit_test
 				    (node_set_ptr[node_set_index].my_bitmap, i) == 0)
 					continue;
-				if ((min_cpus <=
-				     node_record_table_ptr[i].cpus)
-				    && (min_memory <=
+				if ((job_ptr->details->min_procs <= 
+					node_record_table_ptr[i].cpus)
+				    && (job_ptr->details->min_memory <=
 					node_record_table_ptr[i].real_memory)
-				    && (min_tmp_disk <=
+				    && (job_ptr->details->min_tmp_disk <=
 					node_record_table_ptr[i].tmp_disk))
 					continue;
 				bit_clear (node_set_ptr[node_set_index].my_bitmap, i);
-				if ((--node_set_ptr[node_set_index].nodes) ==
-				    0)
+				if ((--node_set_ptr[node_set_index].nodes) == 0)
 					break;
 			}
 		}		
@@ -831,8 +723,7 @@ select_nodes (char *job_specs, char **node_list)
 		if (req_bitmap) {
 			if (scratch_bitmap)
 				bit_or (scratch_bitmap,
-					   node_set_ptr[node_set_index].
-					   my_bitmap);
+					   node_set_ptr[node_set_index].my_bitmap);
 			else {
 				scratch_bitmap =
 					bit_copy (node_set_ptr[node_set_index].my_bitmap);
@@ -840,10 +731,8 @@ select_nodes (char *job_specs, char **node_list)
 					fatal ("bit_copy memory allocation failure");
 			}	
 		}		
-		node_set_ptr[node_set_index].cpus_per_node =
-			config_record_point->cpus;
-		node_set_ptr[node_set_index].weight =
-			config_record_point->weight;
+		node_set_ptr[node_set_index].cpus_per_node = config_record_point->cpus;
+		node_set_ptr[node_set_index].weight = config_record_point->weight;
 		node_set_ptr[node_set_index].feature = tmp_feature;
 #if DEBUG_MODULE > 1
 		info ("found %d usable nodes from configuration with %s",
@@ -856,10 +745,12 @@ select_nodes (char *job_specs, char **node_list)
 	}			
 	if (node_set_index == 0) {
 		info ("select_nodes: no node configurations satisfy requirements %d:%d:%d:%s",
-			 min_cpus, min_memory, min_tmp_disk, req_features);
+			job_ptr->details->min_procs, job_ptr->details->min_memory, 
+			job_ptr->details->min_tmp_disk, job_ptr->details->features);
 		error_code = EINVAL;
 		goto cleanup;
-	}			
+	}
+	/* eliminate last (incomplete) node_set record */	
 	if (node_set_ptr[node_set_index].my_bitmap)
 		bit_free (node_set_ptr[node_set_index].my_bitmap);
 	node_set_ptr[node_set_index].my_bitmap = NULL;
@@ -869,7 +760,8 @@ select_nodes (char *job_specs, char **node_list)
 		if ((scratch_bitmap == NULL)
 		    || (bit_super_set (req_bitmap, scratch_bitmap) != 1)) {
 			info ("select_nodes: requested nodes do not satisfy configurations requirements %d:%d:%d:%s",
-				 min_cpus, min_memory, min_tmp_disk, req_features);
+			    job_ptr->details->min_procs, job_ptr->details->min_memory, 
+			    job_ptr->details->min_tmp_disk, job_ptr->details->features);
 			error_code = EINVAL;
 			goto cleanup;
 		}		
@@ -878,8 +770,10 @@ select_nodes (char *job_specs, char **node_list)
 
 	/* pick the nodes providing a best-fit */
 	error_code = pick_best_nodes (node_set_ptr, node_set_size,
-				      &req_bitmap, req_cpus, req_nodes,
-				      contiguous, shared,
+				      &req_bitmap, job_ptr->details->num_procs, 
+				      job_ptr->details->num_nodes,
+				      job_ptr->details->contiguous, 
+				      job_ptr->details->shared,
 				      part_ptr->max_nodes);
 	if (error_code == EAGAIN)
 		goto cleanup;
@@ -888,26 +782,19 @@ select_nodes (char *job_specs, char **node_list)
 		goto cleanup;
 	}			
 
-	/* mark the selected nodes as STATE_STAGE_IN */
-	allocate_nodes (req_bitmap);
-	error_code = bitmap2node_name (req_bitmap, node_list);
-	if (error_code)
+	/* assign the nodes and stage_in the job */
+	error_code = bitmap2node_name (req_bitmap, &(job_ptr->nodes));
+	if (error_code) {
 		error ("bitmap2node_name error %d", error_code);
-
+		goto cleanup;
+	}
+	allocate_nodes (req_bitmap);
+	job_ptr->job_state = JOB_STAGE_IN;
+	job_ptr->start_time = time(NULL);
+	if (job_ptr->time_limit >= 0)
+		job_ptr->end_time = time(NULL) + (job_ptr->time_limit * 60);
 
       cleanup:
-	part_unlock ();
-	node_unlock ();
-	if (req_features)
-		xfree (req_features);
-	if (req_node_list)
-		xfree (req_node_list);
-	if (job_name)
-		xfree (job_name);
-	if (req_group)
-		xfree (req_group);
-	if (req_partition)
-		xfree (req_partition);
 	if (req_bitmap)
 		bit_free (req_bitmap);
 	if (scratch_bitmap)

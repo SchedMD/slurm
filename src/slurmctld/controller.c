@@ -222,7 +222,7 @@ slurmctld_req (int sockfd) {
 	int error_code, in_size, i;
 	char in_line[BUF_SIZE], node_name[MAX_NAME_LEN];
 	int cpus, real_memory, tmp_disk;
-	char *node_name_ptr, *part_name, *time_stamp;
+	char *job_id_ptr, *node_name_ptr, *part_name, *time_stamp;
 	time_t last_update;
 	clock_t start_time;
 	char *dump;
@@ -234,13 +234,15 @@ slurmctld_req (int sockfd) {
 	/* Allocate:  allocate resources for a job */
 	if (strncmp ("Allocate", in_line, 8) == 0) {
 		node_name_ptr = NULL;
-		error_code = select_nodes (&in_line[8], &node_name_ptr);  /* skip "Allocate" */
+		error_code = job_allocate(&in_line[8], 	/* skip "Allocate" */
+			&job_id_ptr, &node_name_ptr);
 		if (error_code)
 			info ("slurmctld_req: error %d allocating resources for %s, time=%ld",
 				 error_code, &in_line[8], (long) (clock () - start_time));
 		else
-			info ("slurmctld_req: allocated nodes %s to job %s, time=%ld",
-				 node_name_ptr, &in_line[8], (long) (clock () - start_time));
+			info ("slurmctld_req: allocated nodes %s to %s, JobId=%s, time=%ld",
+				 node_name_ptr, &in_line[8], job_id_ptr, 
+				(long) (clock () - start_time));
 
 		if (error_code == 0)
 			send (sockfd, node_name_ptr, strlen (node_name_ptr) + 1, 0);
@@ -249,6 +251,8 @@ slurmctld_req (int sockfd) {
 		else
 			send (sockfd, "EINVAL", 7, 0);
 
+		if (job_id_ptr)
+			xfree (job_id_ptr);
 		if (node_name_ptr)
 			xfree (node_name_ptr);
 	}
@@ -367,19 +371,20 @@ slurmctld_req (int sockfd) {
 	/* JobSubmit - submit a job to the slurm queue */
 	else if (strncmp ("JobSubmit", in_line, 9) == 0) {
 		time_stamp = NULL;
-		error_code = EINVAL;
+		error_code = job_create(&in_line[9], &job_id_ptr);	/* skip "JobSubmit" */
 		if (error_code)
 			info ("slurmctld_req: job_submit error %d, time=%ld",
 				 error_code, (long) (clock () - start_time));
 		else
-			info ("slurmctld_req: job_submit success for %s, time=%ld",
-				 &in_line[10], (long) (clock () - start_time));
-		fprintf (stderr, "job_submit time = %ld usec\n",
-			 (long) (clock () - start_time));
+			info ("slurmctld_req: job_submit success for %s, id=%s, time=%ld",
+				 &in_line[9], job_id_ptr, 
+				(long) (clock () - start_time));
 		if (error_code == 0)
-			send (sockfd, dump, dump_size, 0);
+			send (sockfd, job_id_ptr, strlen(job_id_ptr) + 1, 0);
 		else
 			send (sockfd, "EINVAL", 7, 0);
+		if (job_id_ptr)
+			xfree (job_id_ptr);
 	}
 
 	/* JobWillRun - determine if job with given configuration can be initiated now */
@@ -485,7 +490,7 @@ slurmctld_req (int sockfd) {
 			else
 				info ("slurmctld_req: updated partition %s, time=%ld",
 					 part_name, (long) (clock () - start_time));
-		}		
+		}
 		sprintf (in_line, "%d", error_code);
 		send (sockfd, in_line, strlen (in_line) + 1, 0);
 
