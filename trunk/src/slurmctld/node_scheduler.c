@@ -206,7 +206,8 @@ int Match_Group(char *AllowGroups, char *UserGroups) {
     char *Tmp_Allow_Group, *str_ptr1, *str_ptr2;
     char *Tmp_User_Group, *str_ptr3, *str_ptr4;
 
-    if (AllowGroups == NULL) return 1;	/* Anybody can use it */
+    if ((AllowGroups == NULL) ||	/* Anybody can use it */
+        (strcmp(AllowGroups, "ALL") == 0)) return 1;	
     if (UserGroups  == NULL) return 0;	/* Empty group list */
 
     Tmp_Allow_Group = malloc(strlen(AllowGroups)+1);

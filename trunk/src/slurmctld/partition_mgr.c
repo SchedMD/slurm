@@ -361,6 +361,7 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     struct Part_Record *Part_Record_Point;	/* Pointer to Part_Record */
     char *Buffer;
     int Buffer_Offset, Buffer_Allocated, i, Record_Size, My_BitMap_Size;
+    char Out_Line[BUF_SIZE*2], *Nodes, *Key, *Default, *AllowGroups, *Shared, *State;
 
     Buffer_Ptr[0] = NULL;
     *Buffer_Size = 0;
@@ -381,11 +382,8 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     } /* if */
 
     /* Write haeader, version and time */
-    i = PART_STRUCT_VERSION;
-    if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "PartVersion", 
-	&i, sizeof(i))) goto cleanup;
-    if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "UpdateTime", 
-	&Last_Part_Update, sizeof(Last_Part_Update))) goto cleanup;
+    sprintf(Out_Line, HEAD_FORMAT, (unsigned long)Last_Part_Update, PART_STRUCT_VERSION);
+    if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
 
     /* Write partition records */
     while (Part_Record_Point = (struct Part_Record *)list_next(Part_Record_Iterator)) {
@@ -400,49 +398,53 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 	} /* if */
 #endif
 
-	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "PartName", 
-		Part_Record_Point->Name, sizeof(Part_Record_Point->Name))) goto cleanup;
-
-	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "MaxTime", 
-		&Part_Record_Point->MaxTime, sizeof(Part_Record_Point->MaxTime))) goto cleanup;
-
-	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "MaxNodes", 
-		&Part_Record_Point->MaxNodes, sizeof(Part_Record_Point->MaxNodes))) goto cleanup;
-
-	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "TotalNodes", 
-		&Part_Record_Point->TotalNodes, sizeof(Part_Record_Point->TotalNodes))) goto cleanup;
-
-	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "TotalCPUs", 
-		&Part_Record_Point->TotalCPUs, sizeof(Part_Record_Point->TotalCPUs))) goto cleanup;
-
-	i = Part_Record_Point->Key;
-	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "Key", 
-		&i, sizeof(i))) goto cleanup;
-
-	i = Part_Record_Point->StateUp;
-	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "StateUp",
-		&i, sizeof(i))) goto cleanup;
-
-	i = Part_Record_Point->Shared;
-	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "Shared",
-		&i, sizeof(i))) goto cleanup;
-
-	if (Part_Record_Point->Nodes) 
-	    i = strlen(Part_Record_Point->Nodes) + 1;
+	if (Part_Record_Point->Nodes)
+	    Nodes = Part_Record_Point->Nodes;
 	else
-	    i = 0;
-	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "NodeList", 
-		Part_Record_Point->Nodes, i)) goto cleanup;
-
-	if (Part_Record_Point->AllowGroups) 
-	    i = strlen(Part_Record_Point->AllowGroups) + 1;
+	    Nodes = "NONE";
+	if (Part_Record_Point == Default_Part_Loc)
+	    Default = "YES";
 	else
-	    i = 0;
-	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "AllowGroups", 
-		Part_Record_Point->AllowGroups, i)) goto cleanup;
+	    Default = "NO";
+	if (Part_Record_Point->Key)
+	    Key = "YES";
+	else
+	    Key = "NO";
+	if (Part_Record_Point->StateUp)
+	    State = "UP";
+	else
+	    State = "DOWN";
+	if (Part_Record_Point->Shared)
+	    Shared = "YES";
+	else
+	    Shared = "NO";
+	if (Part_Record_Point->AllowGroups)
+	    AllowGroups = Part_Record_Point->AllowGroups;
+	else
+	    AllowGroups = "ALL";
+	sprintf(Out_Line, PART_STRUCT_FORMAT, 
+		Part_Record_Point->Name,
+		Part_Record_Point->MaxNodes,
+		Part_Record_Point->MaxTime,
+		Nodes,
+		Key,
+		Default,
+		AllowGroups,
+		Shared,
+		State,
+		Part_Record_Point->TotalNodes,
+		Part_Record_Point->TotalCPUs);
 
-	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "EndPart", 
-		"", 0)) goto cleanup;
+	if (strlen(Out_Line) > BUF_SIZE) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Dump_Part: buffer overflow for partition %s\n", Part_Record_Point->Name);
+#else
+	    syslog(LOG_ALERT, "Dump_Part: buffer overflow for partition %s\n", Part_Record_Point->Name);
+#endif
+	    if (strlen(Out_Line) > (2*BUF_SIZE)) abort();
+	} /* if */
+
+	if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
     } /* while */
 
     list_iterator_destroy(Part_Record_Iterator);

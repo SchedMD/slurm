@@ -51,9 +51,10 @@ struct Job_Record {
     int MaxTime;		/* -1 if unlimited */
 };
 
-/* NOTE: Change NODE_STRUCT_VERSION value whenever the contents of 
- * "struct Config_Record" or "struct Node_Record" change with respect to the API structures */
+/* NOTE: Change NODE_STRUCT_VERSION value whenever the contents of NODE_STRUCT_FORMAT change */
 #define NODE_STRUCT_VERSION 1
+#define HEAD_FORMAT "#Time=%lu Version=%d\n"
+#define NODE_STRUCT_FORMAT "NodeName=%s State=%s CPUs=%d RealMemory=%d TmpDisk=%d Weight=%d Feature=%s #Partition=%s\n"
 #define CONFIG_MAGIC 'C'
 #define NODE_MAGIC   'N'
 struct Config_Record {
@@ -109,9 +110,9 @@ extern unsigned *Idle_NodeBitMap;	/* Bitmap of nodes are IDLE */
 extern struct 	Config_Record Default_Config_Record;
 extern struct 	Node_Record Default_Node_Record;
 
-/* NOTE: Change PART_STRUCT_VERSION value whenever the contents of "struct Node_Record" 
- * change with respect to the API structures */
+/* NOTE: Change PART_STRUCT_VERSION value whenever the contents of PART_STRUCT_FORMAT change */
 #define PART_STRUCT_VERSION 1
+#define PART_STRUCT_FORMAT "PartitionName=%s MaxNodes=%d MaxTime=%d Nodes=%s Key=%s Default=%s AllowGroups=%s Shared=%s State=%s #TotalNodes=%d TotalCPUs=%d\n"
 #define PART_MAGIC 'P'
 extern time_t Last_Part_Update;	/* Time of last update to Part Records */
 struct Part_Record {
@@ -303,7 +304,7 @@ extern int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time);
  * NOTE: In this prototype, the buffer at *Buffer_Ptr must be freed by the caller
  * NOTE: This is a prototype for a function to ship data partition to an API.
  */
-int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time);
+extern int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time);
 
 /* 
  * Find_Node_Record - Find a record for node with specified name,
@@ -395,7 +396,7 @@ extern void Node_Unlock();
  *         Returns 0 if no error, otherwise EINVAL or ENOMEM
  * NOTE: The caller must free memory at BitMap when no longer required
  */
-int NodeName2BitMap(char *Node_List, unsigned **BitMap);
+extern int NodeName2BitMap(char *Node_List, unsigned **BitMap);
 
 /* 
  * Parse_Node_Name - Parse the node name for regular expressions and return a sprintf format 
@@ -411,26 +412,22 @@ int NodeName2BitMap(char *Node_List, unsigned **BitMap);
 extern int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx, int *Count_Inx);
 
 /* Part_Lock - Lock the partition information */
-void Part_Lock();
+extern void Part_Lock();
 
 /* Part_Unlock - Unlock the partition information */
-void Part_Unlock();
+extern void Part_Unlock();
 
 /* 
- * Read_Array - Read the specified value from the specified buffer
+ * Read_Buffer - Read a line from the specified buffer
  * Input: Buffer - Pointer to read buffer, must be allocated by alloc()
  *        Buffer_Offset - Byte offset in Buffer, read location
  *        Buffer_Size - Byte size of Buffer
- *        Tag - Unique identification for information
- *        Value - Pointer to value to be loaded with POINTER TO ARRAY, NOT THE VALUE
- *        Size - Size of Value in bytes
+ *        Line - Pointer to location to be loaded with POINTER TO THE LINE
  * Output: Buffer_Offset - Incremented by  size of size plus the Value size itself
- *         Value - Set to the buffer contents or location
- *         Size - Set to the byte size of Value
+ *         Line - Set to pointer to the line
  *         Returns 0 if no error or EFAULT on end of buffer, EINVAL on bad tag 
  */
-int Read_Array(char *Buffer, int *Buffer_Offset, int Buffer_Size, 
-		char *Tag, void **Value, int* Size);
+extern int Read_Buffer(char *Buffer, int *Buffer_Offset, int Buffer_Size, char **Line);
 
 /*
  * Read_SLURM_Conf - Load the SLURM configuration from the specified file 
@@ -440,32 +437,6 @@ int Read_Array(char *Buffer, int *Buffer_Offset, int Buffer_Size,
  * Output: Return - 0 if no error, otherwise an error code
  */
 extern int Read_SLURM_Conf (char *File_Name);
-
-/* 
- * Read_Tag - Read the specified buffer up to and including the specified tag
- *            Used to reach end of a record type
- * Input: Buffer - Pointer to read buffer, must be allocated by alloc()
- *        Buffer_Offset - Byte offset in Buffer, read location
- *        Buffer_Size - Byte size of Buffer
- *        Tag - Unique identification for information
- * Output: Buffer_Offset - Incremented by  size of size plus the Value size itself
- *         Returns 0 if no error or EFAULT on end of buffer, EINVAL on bad tag 
- */
-extern int Read_Tag(char *Buffer, int *Buffer_Offset, int Buffer_Size, char *Tag);
-
-/* 
- * Read_Value - Read the specified value from the specified buffer
- * Input: Buffer - Pointer to read buffer, must be allocated by alloc()
- *        Buffer_Offset - Byte offset in Buffer, read location
- *        Buffer_Size - Byte size of Buffer
- *        Tag - Unique identification for information
- *        Value - Pointer to value to be read
- * Output: Buffer_Offset - Incremented by Value_Size
- *         Value - Set to the buffer contents or location
- *         Returns 0 if no error or EFAULT on end of buffer, EINVAL on bad tag 
- */
-extern int Read_Value(char *Buffer, int *Buffer_Offset, int Buffer_Size, 
-		char *Tag, void *Value);
 
 /* 
  * Report_Leftover - Report any un-parsed (non-whitespace) characters on the
@@ -506,18 +477,16 @@ extern int Validate_Node_Specs(char *NodeName,
 	int CPUs, int RealMemory, int TmpDisk);
 
 /* 
- * Write_Value - Write the specified value to the specified buffer, enlarging the buffer as needed
+ * Write_Buffer - Write the specified line to the specified buffer, 
+ *               enlarging the buffer as needed
  * Input: Buffer - Pointer to write buffer, must be allocated by alloc()
  *        Buffer_Offset - Byte offset in Buffer, write location
  *        Buffer_Size - Byte size of Buffer
- *        Tag - Unique identification for information type
- *        Value - Pointer to value to be writen
- *        Value_Size - Byte size of Value (may be int, long, etc.)
+ *        Line - Pointer to data to be writen
  * Output: Buffer - Value is written here, buffer may be relocated by realloc()
  *         Buffer_Offset - Incremented by Value_Size
- *         Returns 0 if no error or ENOMEM on realloc failure 
+ *         Returns 0 if no error or errno otherwise 
  */
-extern int Write_Value(char **Buffer, int *Buffer_Offset, int *Buffer_Size, 
-	char *Tag, void *Value, int Value_Size);
-  
+extern int Write_Buffer(char **Buffer, int *Buffer_Offset, int *Buffer_Size, char *Line);
+
 #endif /* !_HAVE_SLURM_H */

@@ -32,17 +32,16 @@ main(int argc, char * argv[]) {
     int Error_Code;
     char Req_Name[MAX_NAME_LEN];	/* Name of the partition */
     char Next_Name[MAX_NAME_LEN];	/* Name of the next partition */
-    int MaxTime;		/* -1 if unlimited */
-    int MaxNodes;		/* -1 if unlimited */
-    int TotalNodes;		/* Total number of nodes in the partition */
-    int TotalCPUs;		/* Total number of CPUs in the partition */
-    char *Nodes;		/* Names of nodes in partition */
-    char *AllowGroups;		/* NULL indicates ALL */
-    int Key;    	 	/* 1 if SLURM distributed key is required for use of partition */
-    int StateUp;		/* 1 if state is UP */
-    int Shared;			/* 1 if partition can be shared */
-    unsigned *NodeBitMap;	/* Bitmap of nodes in partition */
-    int BitMapSize;		/* Bytes in NodeBitMap */
+    int MaxTime;			/* -1 if unlimited */
+    int MaxNodes;			/* -1 if unlimited */
+    int TotalNodes;			/* Total number of nodes in the partition */
+    int TotalCPUs;			/* Total number of CPUs in the partition */
+    char Nodes[FEATURE_SIZE];		/* Names of nodes in partition */
+    char AllowGroups[FEATURE_SIZE];	/* NULL indicates ALL */
+    int Key;    	 		/* 1 if SLURM distributed key is required for use of partition */
+    int StateUp;			/* 1 if state is UP */
+    int Shared;				/* 1 if partition can be shared */
+    int Default;			/* 1 if default partition */
 
     Error_Code = Load_Part(&Last_Update_Time);
     if (Error_Code) {
@@ -52,14 +51,15 @@ main(int argc, char * argv[]) {
     strcpy(Req_Name, "");	/* Start at beginning of partition list */
     while (Error_Code == 0) {
 	Error_Code = Load_Part_Name(Req_Name, Next_Name, &MaxTime, &MaxNodes, 
-	    &TotalNodes, &TotalCPUs, &Key, &StateUp, &Shared, &Nodes, &AllowGroups);
+	    &TotalNodes, &TotalCPUs, &Key, &StateUp, &Shared, &Default, 
+	    Nodes, AllowGroups);
 	if (Error_Code != 0)  {
 	    printf("Load_Part_Name error %d finding %s\n", Error_Code, Req_Name);
 	    break;
 	} /* if */
 
-	printf("Found partition Name=%s, TotalNodes=%d, Nodes=%s, MaxTime=%d, MaxNodes=%d\n", 
-	    Req_Name, TotalNodes, Nodes, MaxTime, MaxNodes);
+	printf("Found partition Name=%s, TotalNodes=%d, Nodes=%s, MaxTime=%d, MaxNodes=%d Default=%d \n", 
+	    Req_Name, TotalNodes, Nodes, MaxTime, MaxNodes, Default);
 	printf("  TotalNodes=%d, TotalCPUs=%d, Key=%d StateUp=%d, Shared=%d, AllowGroups=%s\n", 
 	    TotalNodes, TotalCPUs, Key, StateUp, Shared, AllowGroups);
 	if (strlen(Next_Name) == 0) break;
@@ -88,9 +88,10 @@ void Free_Part_Info(void) {
  */
 int Load_Part(time_t *Last_Update_Time) {
     int Buffer_Offset, Buffer_Size, Error_Code, In_Size, Version;
-    char Request_Msg[64], *Buffer;
+    char Request_Msg[64], *Buffer, *My_Line;
     int sockfd;
     struct sockaddr_in serv_addr;
+    unsigned long My_Time;
 
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) return EINVAL;
     serv_addr.sin_family	= PF_INET;
@@ -128,16 +129,17 @@ int Load_Part(time_t *Last_Update_Time) {
     if (Buffer == NULL) return ENOMEM;
 
     Buffer_Offset = 0;
-    Error_Code = Read_Value(Buffer, &Buffer_Offset, Buffer_Size, "PartVersion", &Version);
-    if (Error_Code) {
+    Error_Code = Read_Buffer(Buffer, &Buffer_Offset, Buffer_Size, &My_Line);
+    if ((Error_Code) || (strlen(My_Line) < strlen(HEAD_FORMAT))) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Load_Part: Partition buffer lacks valid header\n");
+	fprintf(stderr, "Load_Part: Node buffer lacks valid header\n");
 #else
-	syslog(LOG_ERR, "Load_Part: Partition buffer lacks valid header\n");
+	syslog(LOG_ERR, "Load_Part: Node buffer lacks valid header\n");
 #endif
 	free(Buffer);
 	return EINVAL;
     } /* if */
+    sscanf(My_Line, HEAD_FORMAT, &My_Time, &Version);
     if (Version != PART_STRUCT_VERSION) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Load_Part: expect version %d, read %d\n", PART_STRUCT_VERSION, Version);
@@ -165,24 +167,28 @@ int Load_Part(time_t *Last_Update_Time) {
  *         Next_Name - The name of the next partition in the list is stored here
  *         MaxTime, etc. - The partition's state information
  *         Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
- * NOTE:  Req_Name and Next_Name must have length MAX_NAME_LEN
+ * NOTE:  Req_Name and Next_Name must be declared by caller with have length MAX_NAME_LEN or larger
+ *        Nodes and AllowGroups must be declared by caller with length of FEATURE_SIZE or larger
  */
 int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes, 
-	int *TotalNodes, int *TotalCPUs, int *Key, int *StateUp, int *Shared,
-	char **Nodes, char **AllowGroups) {
+	int *TotalNodes, int *TotalCPUs, int *Key, int *StateUp, int *Shared, int *Default,
+	char *Nodes, char *AllowGroups) {
     int i, Error_Code, Version, Buffer_Offset;
     static time_t Last_Update_Time, Update_Time;
     struct Part_Record My_Part;
     int My_BitMap_Size;
     static char Next_Name_Value[MAX_NAME_LEN];
+    char My_Part_Name[MAX_NAME_LEN], My_Key[MAX_NAME_LEN], My_Default[MAX_NAME_LEN];
+    char My_Shared[MAX_NAME_LEN], My_State[MAX_NAME_LEN], *My_Line;
     static Last_Buffer_Offset;
+    unsigned long My_Time;
 
     /* Load buffer's header (data structure version and time) */
     Buffer_Offset = 0;
-    if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"PartVersion", &Version)) return Error_Code;
-    if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size,
-		"UpdateTime", &Update_Time)) return Error_Code;
+    Error_Code = Read_Buffer(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, &My_Line);
+    if (Error_Code) return Error_Code;
+    sscanf(My_Line, HEAD_FORMAT, &My_Time, &Version);
+    Update_Time = (time_t) My_Time;
 
     if ((Update_Time == Last_Update_Time) && (strcmp(Req_Name,Next_Name_Value) == 0) && 
          (strlen(Req_Name) != 0)) Buffer_Offset=Last_Buffer_Offset;
@@ -190,66 +196,59 @@ int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes,
 
     while (1) {	
 	/* Load all info for next partition */
-	Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"PartName", &My_Part.Name);
+	Error_Code = Read_Buffer(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, &My_Line);
 	if (Error_Code == EFAULT) break; /* End of buffer */
 	if (Error_Code) return Error_Code;
-	if (strlen(Req_Name) == 0)  strcpy(Req_Name,My_Part.Name);
 
-	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"MaxTime", &My_Part.MaxTime)) return Error_Code;
+	sscanf(My_Line, PART_STRUCT_FORMAT, 
+		My_Part_Name, 
+		&My_Part.MaxNodes, 
+		&My_Part.MaxTime, 
+		Nodes, 
+		My_Key,
+		My_Default,
+		AllowGroups,
+		My_Shared,
+		My_State,
+		&My_Part.TotalNodes, 
+		&My_Part.TotalCPUs);
 
-	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"MaxNodes", &My_Part.MaxNodes)) return Error_Code;
-
-	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"TotalNodes", &My_Part.TotalNodes)) return Error_Code;
-
-	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"TotalCPUs", &My_Part.TotalCPUs)) return Error_Code;
-
-	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"Key", &i)) return Error_Code;
-	My_Part.Key = i;
-
-	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"StateUp", &i)) return Error_Code;
-	My_Part.StateUp = i;
-
-	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"Shared", &i)) return Error_Code;
-	My_Part.Shared = i;
-
-	if (Error_Code = Read_Array(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"NodeList", (void **)&My_Part.Nodes, (int *)NULL)) return Error_Code;
-
-	if (Error_Code = Read_Array(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"AllowGroups", (void **)&My_Part.AllowGroups, (int *)NULL)) return Error_Code;
-
-	if (Error_Code = Read_Tag(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"EndPart")) return Error_Code;
+	if (strlen(Req_Name) == 0)  strcpy(Req_Name, My_Part_Name);
 
 	/* Check if this is requested partition */ 
-	if (strcmp(Req_Name, My_Part.Name) != 0) continue;
+	if (strcmp(Req_Name, My_Part_Name) != 0) continue;
 
 	/*Load values to be returned */
 	*MaxTime 	= My_Part.MaxTime;
 	*MaxNodes 	= My_Part.MaxNodes;
 	*TotalNodes	= My_Part.TotalNodes;
 	*TotalCPUs	= My_Part.TotalCPUs;
-	*Key    	= (int)My_Part.Key;
-	*StateUp 	= (int)My_Part.StateUp;
-	*Shared 	= (int)My_Part.Shared;
-	Nodes[0]	= My_Part.Nodes;
-	AllowGroups[0]	= My_Part.AllowGroups;
+	if (strcmp(My_Key, "YES") == 0)
+	    *Key = 1;
+	else
+	    *Key = 0;
+	if (strcmp(My_Default, "YES") == 0)
+	    *Default = 1;
+	else
+	    *Default = 0;
+	if (strcmp(My_State, "UP") == 0) 
+	    *StateUp = 1;
+	else
+	    *StateUp = 0;
+	if (strcmp(My_Shared, "YES") == 0) 
+	    *Shared = 1;
+	else
+	    *Shared = 0;
 
 	Last_Buffer_Offset = Buffer_Offset;
-	Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"PartName", &Next_Name_Value);
-	if (Error_Code)		/* No more records or bad tag */
+	Error_Code = Read_Buffer(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, &My_Line);
+	if (Error_Code) 	/* No more records */
 	    strcpy(Next_Name, "");
-	else
-	    strcpy(Next_Name, Next_Name_Value);
+	else {
+	    sscanf(My_Line, "PartitionName=%s", My_Part_Name);
+	    strncpy(Next_Name_Value, My_Part_Name, MAX_NAME_LEN);
+	    strncpy(Next_Name, My_Part_Name, MAX_NAME_LEN);
+	} /* else */
 	return 0;
     } /* while */
     return ENOENT;

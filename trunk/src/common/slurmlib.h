@@ -6,6 +6,7 @@
  */
 
 #define MAX_NAME_LEN	16
+#define FEATURE_SIZE	1024
 #define SLURMCTLD_HOST	"134.9.55.42"
 #define SLURMCTLD_PORT	1543
 
@@ -55,12 +56,14 @@ extern int Load_Node(time_t *Last_Update_Time);
  * Output: Next_Name - Name of the next node in the list
  *         CPUs, etc. - The node's state information
  *         Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
- * NOTE:  Req_Name and Next_Name must have length MAX_NAME_LEN
+ * NOTE:  Req_Name, Next_Name, Partition, and NodeState must be declared by the 
+ *        caller and have length MAX_NAME_LEN or larger
+ *        Features must be declared by the caller and have length FEATURE_SIZE or larger
  */
 extern int Load_Node_Config(char *Req_Name, char *Next_Name, int *CPUs, 
-	int *RealMemory, int *TmpDisk, int *Weight, char **Features,
-	char **Partition, char **NodeState);
-  
+	int *RealMemory, int *TmpDisk, int *Weight, char *Features,
+	char *Partition, char *NodeState);
+
 /*
  * Load_Part - Update the partition information buffer for use by info gathering APIs if 
  *	partition records have changed since the time specified. 
@@ -81,8 +84,9 @@ int Load_Part(time_t *Last_Update_Time);
  *         Next_Name - The name of the next partition in the list is stored here
  *         MaxTime, etc. - The partition's state information
  *         Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
- * NOTE:  Req_Name and Next_Name must have length MAX_NAME_LEN
+ * NOTE:  Req_Name and Next_Name must be declared by caller with have length MAX_NAME_LEN or larger
+ *        Nodes and AllowGroups must be declared by caller with length of FEATURE_SIZE or larger
  */
-extern int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes, 
-	int *TotalNodes, int *TotalCPUs, int *Key, int *StateUp, int *Shared,
-	char **Nodes, char **AllowGroups);
+int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes, 
+	int *TotalNodes, int *TotalCPUs, int *Key, int *StateUp, int *Shared, int *Default,
+	char *Nodes, char *AllowGroups);

@@ -517,7 +517,8 @@ void Dump_Hash() {
  */
 int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     char *Buffer;
-    int Buffer_Offset, Buffer_Allocated, My_BitMap_Size, i, inx;
+    int Buffer_Offset, Buffer_Allocated, My_BitMap_Size, i, inx, state;
+    char Out_Line[BUF_SIZE*2], *feature, *partition;
 
     Buffer_Ptr[0] = NULL;
     *Buffer_Size = 0;
@@ -528,69 +529,48 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 
     Node_Lock();
     /* Write haeader: version and time */
-    i = NODE_STRUCT_VERSION;
-    if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "NodeVersion", 
-	&i, sizeof(i))) goto cleanup;
-    if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "UpdateTime", 
-	&Last_Node_Update, sizeof(Last_Node_Update))) goto cleanup;
+    sprintf(Out_Line, HEAD_FORMAT, (unsigned long)Last_Node_Update, NODE_STRUCT_VERSION);
+    if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
 
     /* Write node records */
     for (inx=0; inx<Node_Record_Count; inx++) {
 #if DEBUG_SYSTEM
  	if ((Node_Record_Table_Ptr[inx].Magic != NODE_MAGIC) ||
 	    (Node_Record_Table_Ptr[inx].Config_Ptr->Magic != CONFIG_MAGIC)) {
-#if DEBUG_SYSTEM
 	    fprintf(stderr, "Dump_Node: Data integrity is bad\n");
-#else
-	    syslog(LOG_ALERT, "Dump_Node: Data integrity is bad\n");
-#endif
  	    abort();
  	} /* if */
 #endif
 
-	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "NodeName", 
-		Node_Record_Table_Ptr[inx].Name, 
-		sizeof(Node_Record_Table_Ptr[inx].Name))) goto cleanup;
-
-	i = Node_Record_Table_Ptr[inx].NodeState;
-	if (i < 0) i=STATE_DOWN;
-	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "NodeState", 
-		Node_State_String[i], strlen(Node_State_String[i])+1)) goto cleanup;
-
-	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "CPUs", 
-		&Node_Record_Table_Ptr[inx].CPUs, 
-		sizeof(Node_Record_Table_Ptr[inx].Name))) goto cleanup;
-
-	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "RealMemory", 
-		&Node_Record_Table_Ptr[inx].RealMemory, 
-		sizeof(Node_Record_Table_Ptr[inx].RealMemory))) goto cleanup;
-
-	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "TmpDisk", 
-		&Node_Record_Table_Ptr[inx].TmpDisk, 
-		sizeof(Node_Record_Table_Ptr[inx].TmpDisk))) goto cleanup;
-
-	if (Node_Record_Table_Ptr[inx].Partition_Ptr) {
-	    if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "Partition", 
-		&Node_Record_Table_Ptr[inx].Partition_Ptr->Name, 
-		sizeof(Node_Record_Table_Ptr[inx].Partition_Ptr->Name))) goto cleanup;
-	} else {
-	    if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "Partition", 
-		"", 1)) goto cleanup;
-	} /* else */
-
-	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "Weight", 
-		&Node_Record_Table_Ptr[inx].Config_Ptr->Weight, 
-		sizeof(Node_Record_Table_Ptr[inx].Config_Ptr->Weight))) goto cleanup;
-
-	if (Node_Record_Table_Ptr[inx].Config_Ptr->Feature) 
-	    i = strlen(Node_Record_Table_Ptr[inx].Config_Ptr->Feature) + 1;
+	state = Node_Record_Table_Ptr[inx].NodeState;
+	if (state < 0) state=STATE_DOWN;
+	if (Node_Record_Table_Ptr[inx].Config_Ptr->Feature)
+	    feature = Node_Record_Table_Ptr[inx].Config_Ptr->Feature;
 	else
-	    i = 0;
-	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "Feature", 
-		Node_Record_Table_Ptr[inx].Config_Ptr->Feature, i)) goto cleanup;
+	    feature = "NONE";
+	if (Node_Record_Table_Ptr[inx].Partition_Ptr)
+	    partition = Node_Record_Table_Ptr[inx].Partition_Ptr->Name;
+	else
+	    partition = "NONE";
+	sprintf(Out_Line, NODE_STRUCT_FORMAT, 
+		Node_Record_Table_Ptr[inx].Name, 
+		Node_State_String[state],
+		Node_Record_Table_Ptr[inx].CPUs, 
+		Node_Record_Table_Ptr[inx].RealMemory, 
+		Node_Record_Table_Ptr[inx].TmpDisk, 
+		Node_Record_Table_Ptr[inx].Config_Ptr->Weight, 
+		feature, partition);
 
-	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "EndNode", 
-		"", 0)) goto cleanup;
+	if (strlen(Out_Line) > BUF_SIZE) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Dump_Node: buffer overflow for node %s\n", Node_Record_Table_Ptr[inx].Name);
+#else
+	    syslog(LOG_ALERT, "Dump_Node: buffer overflow for node %s\n", Node_Record_Table_Ptr[inx].Name);
+#endif
+	    if (strlen(Out_Line) > (2*BUF_SIZE)) abort();
+	} /* if */
+
+	if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
     } /* for (inx */
 
     Buffer = realloc(Buffer, Buffer_Offset);
