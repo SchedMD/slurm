@@ -52,7 +52,7 @@ main (int argc, char *argv[])
 	job_mesg. partition_key = "1234";
 	job_mesg. min_procs = 1;
 	job_mesg. min_memory = 64;
-	job_mesg. min_tmp_disk = 2034;
+	job_mesg. min_tmp_disk = 256;
 	job_mesg. priority = 100;
 	job_mesg. shared = 0;
 	job_mesg. time_limit = 10;
