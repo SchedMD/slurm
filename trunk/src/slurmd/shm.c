@@ -380,6 +380,7 @@ shm_insert_step(job_step_t *step)
 		slurm_seterrno_ret(ENOSPC);
 	} else {
 		_shm_step_copy(&slurmd_shm->step[i], step);
+		slurmd_shm->step[i].state = SLURMD_JOB_ALLOCATED;
 	}
 
 	_shm_unlock();
@@ -823,7 +824,6 @@ static void
 _shm_step_copy(job_step_t *to, job_step_t *from)
 {
 	memcpy(to, from, sizeof(job_step_t));
-	to->state = SLURMD_JOB_ALLOCATED;
 
 	/* addition of tasks is another step */
 	to->task_list = NULL;  
