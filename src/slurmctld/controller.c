@@ -1463,7 +1463,7 @@ slurm_rpc_shutdown_controller_immediate ( slurm_msg_t * msg )
 	uid_t uid;
 
 	uid = slurm_auth_uid (msg->cred);
-	if (uid != 0) {
+	if ((uid != 0) && (daemonize)) {
 		error ("Security violation, SHUTDOWN_IMMEDIATE RPC from uid %u", (unsigned int) uid);
 		error_code = ESLURM_USER_ID_MISSING;
 	}
