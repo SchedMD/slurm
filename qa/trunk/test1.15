@@ -38,6 +38,7 @@ set timeout $max_job_delay
 spawn $srun -n10 -N1 -O -W2 -t5 $file_in
 expect {
 	-re "First task exited" {
+		send_user "This error is expected, no worries\n"
 		incr matches
 		exp_continue
 	}
@@ -52,6 +53,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 
