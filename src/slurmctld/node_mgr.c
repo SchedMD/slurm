@@ -560,7 +560,7 @@ dump_hash ()
 	for (i = 0; i < node_record_count; i++) {
 		if (strlen (node_record_table_ptr[hash_table[i]].name) == 0)
 			continue;
-		info ("hash:%d:%s", i,
+		debug ("hash:%d:%s", i,
 			node_record_table_ptr[hash_table[i]].name);
 	}
 }
