@@ -59,6 +59,8 @@ int fan_out_task_launch ( launch_tasks_request_msg_t * launch_msg )
 	 * launched*/
 	task_start_t * task_start[launch_msg->tasks_to_launch];
 
+	debug("msg->job_step_id = %d", launch_msg->job_step_id);
+
 	if ( ( session_id = setsid () ) == SLURM_ERROR )
 	{
 		info ( "set sid failed" );
@@ -143,8 +145,13 @@ void * task_exec_thread ( void * arg )
 			posix_signal_ignore (SIGTTOU); /* ignore tty output */
 			posix_signal_ignore (SIGTTIN); /* ignore tty input */
 			posix_signal_ignore (SIGTSTP); /* ignore user */
-			
-			/* setup std stream pipes */
+
+			interconnect_env(&launch_msg->env, &launch_msg->envc,
+					 launch_msg->srun_node_id,			/* setup std stream pipes */
+					 launch_msg->nnodes,
+					 task_start->local_task_id,
+					 launch_msg->nprocs);
+
 			setup_child_pipes ( pipes ) ;
 
 			/* get passwd file info */
@@ -239,6 +246,7 @@ int kill_tasks ( kill_tasks_msg_t * kill_task_msg )
 	task_t * task_ptr ;
 	/* find job step */
 	job_step_t * job_step_ptr = find_job_step ( shmem_ptr , kill_task_msg -> job_id , kill_task_msg -> job_step_id ) ;
+	debug("request to kill step %d.%d", kill_task_msg -> job_id , kill_task_msg -> job_step_id); 
 	debug3 ( "entering kill_tasks" ) ;
 	if ( job_step_ptr == (void * ) SLURM_ERROR )
 	{

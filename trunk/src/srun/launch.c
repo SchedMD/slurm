@@ -63,17 +63,19 @@ launch(void *arg)
 	msg.argc = remote_argc;
 	msg.argv = remote_argv;
 	msg.credential = job->cred;
-	msg.job_step_id = 0;
+	msg.job_step_id = job->stepid;
 	msg.envc = envcount(environ);
 	msg.env = environ;
 	msg.cwd = opt.cwd;
+	msg.nnodes = job->nhosts;
+	msg.nprocs = opt.nprocs;
 	slurm_set_addr_char(&msg.response_addr, 
 		 	    ntohs(job->jaddr.sin_port), hostname);
 
 #if HAVE_LIBELAN3
 	msg.qsw_job = job->qsw_job;
 #endif 
-	debug("setting iopart to %s:%d", hostname, ntohs(job->ioport));
+	debug("setting ioport to %s:%d", hostname, ntohs(job->ioport));
 	slurm_set_addr_char(&msg.streams , ntohs(job->ioport), hostname); 
 	debug("sending to slurmd port %d", slurm_get_slurmd_port());
 
