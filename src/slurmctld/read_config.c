@@ -894,12 +894,10 @@ int read_slurm_conf(int recover)
 #ifdef 	HAVE_ELAN
 	_validate_node_proc_count();
 #endif
-	if (select_g_node_init(node_record_table_ptr, node_record_count)
-			!= SLURM_SUCCESS ) {
-		error("failed to initialize node selection plugin state");
-		abort();
-	}
-	if (select_g_part_init(part_list) != SLURM_SUCCESS ) {
+	if ((select_g_node_init(node_record_table_ptr, node_record_count)
+			!= SLURM_SUCCESS) 
+	|| (select_g_part_init(part_list) != SLURM_SUCCESS) 
+	|| (select_g_job_init(job_list) != SLURM_SUCCESS)) {
 		error("failed to initialize node selection plugin state");
 		abort();
 	}

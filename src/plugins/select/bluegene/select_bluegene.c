@@ -240,6 +240,12 @@ extern int select_p_state_restore(char *dir_name)
 	return SLURM_SUCCESS;
 }
 
+/* Sync BGL blocks to currently active jobs */
+extern int select_p_job_init(List job_list)
+{
+	return sync_jobs(job_list);
+}
+
 /* All initialization is performed by select_p_part_init() */
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
@@ -277,7 +283,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_job_init(struct job_record *job_ptr)
+extern int select_p_job_begin(struct job_record *job_ptr)
 {
 	return start_job(job_ptr);
 }

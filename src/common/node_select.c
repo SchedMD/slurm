@@ -58,13 +58,14 @@
 typedef struct slurm_select_ops {
 	int		(*state_save)		( char *dir_name );
 	int	       	(*state_restore)	( char *dir_name );
+	int		(*job_init)		( List job_list );
 	int 		(*node_init)		( struct node_record *node_ptr,
 						  int node_cnt);
 	int 		(*part_init)		( List part_list );
 	int		(*job_test)		( struct job_record *job_ptr,
 						  bitstr_t *bitmap, int min_nodes, 
 						  int max_nodes );
-	int		(*job_init)		( struct job_record *job_ptr );
+	int		(*job_begin)		( struct job_record *job_ptr );
 	int		(*job_fini)		( struct job_record *job_ptr );
 } slurm_select_ops_t;
 
@@ -111,10 +112,11 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
 	static const char *syms[] = {
 		"select_p_state_save",
 		"select_p_state_restore",
+		"select_p_job_init",
 		"select_p_node_init",
 		"select_p_part_init",
 		"select_p_job_test",
-		"select_p_job_init",
+		"select_p_job_begin",
 		"select_p_job_fini"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
@@ -270,6 +272,18 @@ extern int select_g_state_restore(char *dir_name)
 }
 
 /*
+ * Note the initialization of job records, issued upon restart of
+ * slurmctld and used to synchronize any job state.
+ */
+extern int select_g_job_init(List job_list)
+{
+	if (slurm_select_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(g_select_context->ops.job_init))(job_list);
+}
+
+/*
  * Note re/initialization of node record data structure
  * IN node_ptr - current node data
  * IN node_count - number of node entries
@@ -318,12 +332,12 @@ extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
  * after select_g_job_test(). Executed from slurmctld.
  * IN job_ptr - pointer to job being initiated
  */
-extern int select_g_job_init(struct job_record *job_ptr)
+extern int select_g_job_begin(struct job_record *job_ptr)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(g_select_context->ops.job_init))(job_ptr);
+	return (*(g_select_context->ops.job_begin))(job_ptr);
 }
 
 /*

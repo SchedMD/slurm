@@ -106,7 +106,7 @@ extern int create_static_partitions(List part_list)
 	if ((rc = _copy_slurm_partition_list(part_list)))
 		return rc;
 
-	/* syncronize slurm.conf and bluegene.conf data */
+	/* synchronize slurm.conf and bluegene.conf data */
 	_process_config();
 
 	/* 
@@ -548,6 +548,7 @@ static void _destroy_bgl_record(void* object)
 
 	if (this_record) {
 		xfree(this_record->nodes);
+		xfree(this_record->owner_name);
 		xfree(this_record->slurm_part_id);
 		if (this_record->hostlist)
 			hostlist_destroy(this_record->hostlist);

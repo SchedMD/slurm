@@ -45,6 +45,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/uid.h"
+#include "src/common/xstring.h"
 #include "src/slurmctld/proc_req.h"
 #include "bgl_job_run.h"
 #include "bluegene.h"
@@ -55,9 +56,10 @@
 #define MAX_PTHREAD_RETRIES  1
 #define POLL_INTERVAL        2
 
+enum update_op {START_OP, TERM_OP, SYNC_OP};
 
 typedef struct bgl_update {
-	bool start;		/* true=start, false=terminate */
+	enum update_op op;	/* start | terminate | sync */
 	uid_t uid;		/* new owner */
 	uint32_t job_id;	/* SLURM job id */	
 	pm_partition_id_t bgl_part_id;
@@ -66,6 +68,22 @@ typedef struct bgl_update {
 List bgl_update_list = NULL;
 static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int agent_cnt = 0;
+
+static void	_bgl_list_del(void *x);
+static void	_block_list_elem_del(void *x);
+static int	_boot_part(pm_partition_id_t bgl_part_id);
+static void	_excise_block(List block_list, pm_partition_id_t bgl_part_id);
+static List	_get_all_blocks(void);
+static char *	_get_part_owner(pm_partition_id_t bgl_part_id);
+static int	_match_block_name(void *x, void *key);
+static void *	_part_agent(void *args);
+static void	_part_op(bgl_update_t *bgl_update_ptr);
+static int	_remove_job(db_job_id_t job_id);
+static int	_set_part_owner(pm_partition_id_t bgl_part_id, char *user);
+static void	_start_agent(bgl_update_t *bgl_update_ptr);
+static void	_sync_agent(bgl_update_t *bgl_update_ptr);
+static void	_term_agent(bgl_update_t *bgl_update_ptr);
+
 
 /* Delete a bgl_update_t record */
 static void _bgl_list_del(void *x)
@@ -137,6 +155,29 @@ static int _remove_job(db_job_id_t job_id)
 	(void) rm_remove_job(job_id);
 	error("Failed to remove job %d from DB2", job_id);
 	return INTERNAL_ERROR;
+}
+
+/* Get the owner of an existing partition. Caller must xfree() return value. */
+static char *_get_part_owner(pm_partition_id_t bgl_part_id)
+{
+	int rc;
+	char *owner, *cur_owner;
+	rm_partition_t * part_elem;
+
+	if ((rc = rm_get_partition(bgl_part_id,  &part_elem)) != STATUS_OK) {
+		error("rm_get_partition(%s): %s", bgl_part_id, bgl_err_str(rc));
+		return NULL;
+	}
+	if ((rc = rm_get_data(part_elem, RM_PartitionUserName, &owner)) != 
+			STATUS_OK) {
+		error("rm_get_data(RM_PartitionUserName): %s", bgl_err_str(rc));
+		(void) rm_free_partition(part_elem);
+		return NULL;
+	}
+	cur_owner = xstrdup(owner);
+	if ((rc = rm_free_partition(part_elem)) != STATUS_OK)
+		error("rm_free_partition(): %s", bgl_err_str(rc));
+	return cur_owner;
 }
 
 /* Set the owner of an existing partition */
@@ -217,8 +258,23 @@ static int _boot_part(pm_partition_id_t bgl_part_id)
 	return SLURM_SUCCESS;
 }
 
+/* Update partition owner and reboot as needed */
+static void _sync_agent(bgl_update_t *bgl_update_ptr)
+{
+	char *cur_part_owner, *new_part_owner;
+
+	cur_part_owner = _get_part_owner(bgl_update_ptr->bgl_part_id);
+	new_part_owner = uid_to_string(bgl_update_ptr->uid);
+	if (strcmp(cur_part_owner, new_part_owner)) {
+		/* need to change owner */
+		_term_agent(bgl_update_ptr);
+		_start_agent(bgl_update_ptr);
+	}
+	xfree(cur_part_owner);
+}
+	
 /* Perform job initiation work */
-extern void _start_agent(bgl_update_t *bgl_update_ptr)
+static void _start_agent(bgl_update_t *bgl_update_ptr)
 {
 	int rc;
 
@@ -311,10 +367,12 @@ static void *_part_agent(void *args)
 			return NULL;
 		}
 		slurm_mutex_unlock(&agent_cnt_mutex);
-		if (bgl_update_ptr->start)
+		if (bgl_update_ptr->op == START_OP)
 			_start_agent(bgl_update_ptr);
-		else
+		else if (bgl_update_ptr->op == TERM_OP)
 			_term_agent(bgl_update_ptr);
+		else if (bgl_update_ptr->op == SYNC_OP)
+			_sync_agent(bgl_update_ptr);
 		_bgl_list_del(bgl_update_ptr);
 	}	
 }
@@ -350,6 +408,53 @@ static void _part_op(bgl_update_t *bgl_update_ptr)
 		usleep(1000);	/* sleep and retry */
 	}
 }
+
+static void _block_list_elem_del(void *x)
+{
+	xfree(x);
+}
+
+static int _match_block_name(void *x, void *key)
+{
+	pm_partition_id_t elem    = (pm_partition_id_t) x;
+	pm_partition_id_t part_id = (pm_partition_id_t) key;
+
+	if (strcmp(elem, part_id) == 0)
+		return 1;	/* part_id matches */
+	return 0;
+}
+
+/* get a list of all BGL blocks with owners */
+static List _get_all_blocks(void)
+{
+	List ret_list = list_create(_block_list_elem_del);
+	ListIterator itr;
+	bgl_record_t *block_ptr;
+	char *part_id;
+
+	if (!ret_list)
+		fatal("malloc error");
+
+	itr = list_iterator_create(bgl_init_part_list);
+	while ((block_ptr = (bgl_record_t *) list_next(itr))) {
+		if ((block_ptr->owner_name == NULL)
+		||  (block_ptr->owner_name[0] == '\0') 
+		||  (block_ptr->bgl_part_id == NULL)
+		||  (block_ptr->bgl_part_id[0] == '0'))
+			continue;
+		part_id = xstrdup(block_ptr->bgl_part_id);
+		list_append(ret_list, part_id);
+	}
+	list_iterator_destroy(itr);
+
+	return ret_list;
+}
+
+/* remove a BGL block from the given list */
+static void _excise_block(List block_list, pm_partition_id_t bgl_part_id)
+{
+	list_delete_all(block_list, _match_block_name, bgl_part_id);
+}
 #endif
 
 /*
@@ -380,7 +485,7 @@ extern int start_job(struct job_record *job_ptr)
 	}
 
 	bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
-	bgl_update_ptr->start = true;
+	bgl_update_ptr->op = START_OP;
 	bgl_update_ptr->uid = job_ptr->user_id;
 	bgl_update_ptr->job_id = job_ptr->job_id;
 	bgl_update_ptr->bgl_part_id = bgl_part_id;
@@ -412,12 +517,71 @@ extern int term_job(struct job_record *job_ptr)
 		job_ptr->job_id, bgl_part_id);
 
 	bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
-	bgl_update_ptr->start = false;
+	bgl_update_ptr->op = TERM_OP;
 	bgl_update_ptr->uid = job_ptr->user_id;
 	bgl_update_ptr->job_id = job_ptr->job_id;
 	bgl_update_ptr->bgl_part_id = bgl_part_id;
 	_part_op(bgl_update_ptr);
 #endif
 	return rc;
+}
+
+/*
+ * Synchronize BGL block state to that of currently active jobs.
+ * This can recover from slurmctld crashes when partition ownership
+ * changes were queued
+ */
+extern int sync_jobs(List job_list)
+{
+#ifdef HAVE_BGL_FILES
+	ListIterator job_iterator, block_iterator;
+	struct job_record  *job_ptr;
+	pm_partition_id_t bgl_part_id;
+	bgl_update_t *bgl_update_ptr;
+	List block_list = _get_all_blocks();
+
+	/* Insure that all running jobs own the specified partition */
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (job_ptr->job_state != JOB_RUNNING)
+			continue;
+		select_g_get_jobinfo(job_ptr->select_jobinfo,
+			SELECT_DATA_PART_ID, &bgl_part_id);
+#ifdef USE_BGL_BLOCK
+		debug3("Queue sync of job %u in BGL partition %s",
+			job_ptr->job_id, bgl_part_id);
+		bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
+		bgl_update_ptr->op = SYNC_OP;
+		bgl_update_ptr->uid = job_ptr->user_id;
+		bgl_update_ptr->job_id = job_ptr->job_id;
+		bgl_update_ptr->bgl_part_id = bgl_part_id;
+#else
+		info("Queue sync of job %u in BGL partition %s",
+			job_ptr->job_id, bgl_part_id);
+#endif
+		_excise_block(block_list, bgl_part_id);
+		_part_op(bgl_update_ptr);
+	}
+	list_iterator_destroy(job_iterator);
+
+	/* Insure that all other partitions are free */
+	block_iterator = list_iterator_create(block_list);
+	while ((bgl_part_id = (pm_partition_id_t) list_next(block_iterator))) {
+#ifdef USE_BGL_BLOCK
+		debug3("Queue clearing of vestigial owner in BGL partition %s",
+			bgl_part_id);
+		bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
+		bgl_update_ptr->op = TERM_OP;
+		bgl_update_ptr->bgl_part_id = bgl_part_id;
+		_part_op(bgl_update_ptr);
+#else
+		info("Queue clearing of vestigial owner in BGL partition %s",
+			bgl_part_id);
+#endif
+	}
+	list_iterator_destroy(block_iterator);
+	list_destroy(block_list);
+#endif
+	return SLURM_SUCCESS;
 }
 

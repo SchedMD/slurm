@@ -70,6 +70,12 @@ extern int select_g_node_init(struct node_record *node_ptr, int node_cnt);
  */
 extern int select_g_part_init(List part_list);
 
+/* 
+ * Note the initialization of job records, issued upon restart of 
+ * slurmctld and used to synchronize any job state.
+ */
+extern int select_g_job_init(List job_list);
+
 /******************************************************\
  * JOB-SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCIONS *
 \******************************************************/
@@ -90,7 +96,7 @@ extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
  * after select_g_job_test(). Executed from slurmctld.
  * IN job_ptr - pointer to job being initiated
  */
-extern int select_g_job_init(struct job_record *job_ptr);
+extern int select_g_job_begin(struct job_record *job_ptr);
 
 /*
  * Note termination of job is starting. Executed from slurmctld.
