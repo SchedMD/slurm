@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-209488">
-<meta name="LLNLRandRdate" content="27 January 2005">
+<meta name="LLNLRandRdate" content="5 April 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -60,6 +60,7 @@ structure:Laboratories and Other Field Facilities">
 to run on nodes?</a></li>
 <li><a href="#purge">Why is my job killed prematurely?</a></li>
 <li><a href="#opts">Why are my srun options ignored?</a></li>
+<li><a href="#cred">Why are &quot;Invalid job credential&quot; errors generated?</a></li>
 </ol>
 <p><a name="comp"><b>1. Why is my job/node in &quot;completing&quot; state?</b></a><br>
 When a job is terminating, both the job and its nodes enter the state &quot;completing.&quot; 
@@ -161,6 +162,13 @@ hostname command. Which will change the name of the computer
 on which SLURM executes the command - Very bad, <b>Don't run 
 this command as user root!</b></p>
 
+<p><a name="cred"><b>7. Why are &quot;Invalid job credential&quot; errors generated?
+</b></a><br>
+This error is indicative of SLURM's job credential files being inconsistent across 
+the cluster. All nodes in the cluster must have the matching public and private 
+keys as defined by <b>JobCredPrivateKey</b> and <b>JobCredPublicKey</b> in the 
+slurm configuration file <b>slurm.conf</b>.
+
 <br>
 </td>
 </tr>
@@ -168,7 +176,7 @@ this command as user root!</b></p>
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-209488<br>
-Last modified 27 January 2005</p></td>
+Last modified 5 April 2005</p></td>
 </tr>
 </table>
 </td>
