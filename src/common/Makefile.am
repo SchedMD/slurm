@@ -26,6 +26,7 @@ libcommon_la_SOURCES = 	xmalloc.c 	\
 			safeopen.c	\
 			bitstring.c     \
 			pack.c		\
+			xerrno.c	\
 			slurm_protocol_api.c	\
 			slurm_protocol_pack.c	\
 			slurm_protocol_util.c	\
@@ -42,6 +43,7 @@ noinst_HEADERS = 	xmalloc.h 	\
 		 	strlcpy.h	\
 			bitstring.h     \
 			pack.h		\
+			xerrno.h	\
 			slurm_protocol_api.h	\
 			slurm_protocol_pack.h	\
 			slurm_protocol_util.h	\

@@ -33,17 +33,18 @@ int		qsw_unpack_jobinfo(qsw_jobinfo_t j, void *data, int len);
 int 		qsw_setup_jobinfo(qsw_jobinfo_t j, int nprocs, 
 			bitstr_t *nodeset, int cyclic_alloc);
 
-int 		qsw_prog_reap(qsw_jobinfo_t jobinfo);
-
 int 		qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid);
 void 		qsw_prog_fini(qsw_jobinfo_t jobinfo);
 
-int 		qsw_attach(qsw_jobinfo_t jobinfo, int procnum);
+int 		qsw_prgdestroy(qsw_jobinfo_t jobinfo); /* was qsw_prog_reap */
+
+int 		qsw_setcap(qsw_jobinfo_t jobinfo, int procnum); /* was qsw_attach */
+
+int		qsw_prgsignal(qsw_jobinfo_t jobinfo, int signum); /* was qsw_signal_job */
 
 int		qsw_getnodeid(void);
 int		qsw_getnodeid_byhost(char *host);
 int		qsw_gethost_bynodeid(char *host, int len, int elanid);
 
-int		qsw_signal_job(qsw_jobinfo_t jobinfo, int signum);
 
 #endif /* _QSW_INCLUDED */
