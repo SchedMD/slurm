@@ -99,7 +99,11 @@ fi
 AC_SUBST(POPT_LIBS)
 AC_SUBST(POPT_INCLUDES)
 
-
+AC_CHECK_LIB(ssl, EVP_SignInit, [got_ssl=yes], [got_ssl=no])
+SSL_LIBS="-lssl"
+dnl SSL_INCLUDES=""
+AC_SUBST(SSL_LIBS)
+AC_SUBST(SSL_INCLUDES)
 dnl checks for system services.
 dnl
 
