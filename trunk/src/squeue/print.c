@@ -408,7 +408,7 @@ int _print_job_time_limit(job_info_t * job, int width, bool right,
 {
 	char time[FORMAT_STRING_SIZE];
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("TIME_LIMIT", width, right, true);
+		_print_str("TIMELIMIT", width, right, true);
 	else if (job->time_limit == INFINITE)
 		_print_str("UNLIMITED", width, right, true);
 	else if (job->time_limit == NO_VAL)
@@ -430,7 +430,7 @@ int _print_job_time_used(job_info_t * job, int width, bool right,
 			   char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("TIME_USED", width, false, true);
+		_print_str("TIME", width, false, true);
 	else
 		_print_secs(job_time_used(job), width, right, false);
 	if (suffix)
@@ -456,7 +456,7 @@ int _print_job_time_start(job_info_t * job, int width, bool right,
 			  char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("TIME_START", width, false, true);
+		_print_str("START", width, false, true);
 	else
 		_print_time(job->start_time, 0, width, right);
 	if (suffix)
@@ -467,7 +467,7 @@ int _print_job_time_start(job_info_t * job, int width, bool right,
 int _print_job_time_end(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("TIME_END", width, false, true);
+		_print_str("END", width, false, true);
 	else if ((job->time_limit == INFINITE) &&
 		 (job->end_time > time(NULL)))
 		_print_str("NONE", width, right, true);
@@ -790,7 +790,7 @@ int _print_step_time_start(job_step_info_t * step, int width, bool right,
 			   char* suffix)
 {
 	if (step == NULL)	/* Print the Header instead */
-		_print_str("TIME_START", width, false, true);
+		_print_str("START", width, false, true);
 	else
 		_print_time(step->start_time, 0, width, right);
 	if (suffix)
@@ -802,7 +802,7 @@ int _print_step_time_used(job_step_info_t * step, int width, bool right,
 			   char* suffix)
 {
 	if (step == NULL)	/* Print the Header instead */
-		_print_str("TIME_USED", width, false, true);
+		_print_str("TIME", width, false, true);
 	else {
 		long delta_t = difftime(time(NULL), step->start_time);
 		_print_secs(delta_t, width, right, false);
