@@ -888,11 +888,20 @@ void part_fini (void);
  * global: job_list - global job table
  *	last_job_update - time of last job table update
  */
-void purge_old_job (void);
+extern void purge_old_job (void);
+
+/*
+ * re_kill_job - for a given job, deallocate its nodes for a second time, 
+ *      basically a cleanup for failed deallocate() calls
+ * IN job_ptr - pointer to terminating job (already in some COMPLETING state)
+ * globals: node_record_count - number of nodes in the system
+ *      node_record_table_ptr - pointer to global node table
+ */
+extern void re_kill_job(struct job_record *job_ptr);
 
 /* rehash_jobs - Create or rebuild the job rehash table. Actually for now we 
  * just preserve it */
-void rehash_jobs(void);
+extern void rehash_jobs(void);
 
 /* 
  * rehash_node - build a hash table of the node_record entries. this is a large 

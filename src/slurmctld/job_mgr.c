@@ -2159,11 +2159,15 @@ static int _list_find_job_old(void *job_entry, void *key)
 	if (job_ptr->end_time > min_age)
 		return 0;	/* Too new to purge */
 
-	if ((!(IS_JOB_FINISHED(job_ptr))) ||
-	    (job_ptr->job_state & JOB_COMPLETING))
-		return 0;	/* Still active, can't purge */
+	if (!(IS_JOB_FINISHED(job_ptr))) 
+		return 0;	/* Job still active */
 
-	return 1;
+	if (job_ptr->job_state & JOB_COMPLETING) {
+		re_kill_job(job_ptr);
+		return 0;	/* Job still completing */
+	}
+
+	return 1;		/* Purge the job */
 }
 
 

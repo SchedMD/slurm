@@ -159,12 +159,11 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 	kill_job->job_uid = job_ptr->user_id;
 
 	for (i = 0; i < node_record_count; i++) {
+		struct node_record *node_ptr = &node_record_table_ptr[i];
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
-		base_state = node_record_table_ptr[i].node_state &
-				(~NODE_STATE_NO_RESPOND);
-		no_resp_flag = node_record_table_ptr[i].node_state &
-				NODE_STATE_NO_RESPOND;
+		base_state = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
+		no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 		if ((base_state == NODE_STATE_DOWN) || no_resp_flag) {
 			/* Issue the KILL RPC, but don't verify response */
 			down_node_cnt++;
@@ -180,12 +179,12 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 				 (MAX_NAME_LEN * buf_rec_size));
 		}
 		agent_args->slurm_addr[agent_args->node_count] =
-		    node_record_table_ptr[i].slurm_addr;
+		    node_ptr->slurm_addr;
 		strncpy(&agent_args->
 			node_names[MAX_NAME_LEN * agent_args->node_count],
-			node_record_table_ptr[i].name, MAX_NAME_LEN);
+			node_ptr->name, MAX_NAME_LEN);
 		agent_args->node_count++;
-		make_node_comp(&node_record_table_ptr[i]);
+		make_node_comp(node_ptr);
 	}
 
 	if ((agent_args->node_count - down_node_cnt) == 0)
@@ -193,6 +192,7 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 	if (agent_args->node_count == 0) {
 		error("Job %u allocated no nodes to be killed on",
 		      job_ptr->job_id);
+		xfree(kill_job);
 		xfree(agent_args);
 		return;
 	}
@@ -217,7 +217,6 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 	}
 	return;
 }
-
 
 /*
  * _match_feature - determine if the desired feature is one of those available
@@ -1181,4 +1180,82 @@ static int _valid_features(char *requested, char *available)
 		result *= option;
 	xfree(tmp_requested);
 	return result;
+}
+
+/*
+ * re_kill_job - for a given job, deallocate its nodes for a second time, 
+ *	basically a cleanup for failed deallocate() calls
+ * IN job_ptr - pointer to terminating job (already in some COMPLETING state)
+ * globals: node_record_count - number of nodes in the system
+ *	node_record_table_ptr - pointer to global node table
+ */
+extern void re_kill_job(struct job_record *job_ptr)
+{
+	int i, retries = 0;
+	kill_job_msg_t *kill_job;
+	agent_arg_t *agent_args;
+	pthread_attr_t attr_agent;
+	pthread_t thread_agent;
+	int buf_rec_size = 0;
+
+	xassert(job_ptr);
+	xassert(job_ptr->details);
+
+	agent_args = xmalloc(sizeof(agent_arg_t));
+	agent_args->msg_type = REQUEST_KILL_JOB;
+	agent_args->retry = 0;
+	kill_job = xmalloc(sizeof(kill_job_msg_t));
+	last_node_update = time(NULL);
+	kill_job->job_id = job_ptr->job_id;
+	kill_job->job_uid = job_ptr->user_id;
+
+	for (i = 0; i < node_record_count; i++) {
+		struct node_record *node_ptr = &node_record_table_ptr[i];
+		if (bit_test(job_ptr->node_bitmap, i) == 0)
+			continue;
+		if (node_ptr->node_state & NODE_STATE_NO_RESPOND)
+			continue;
+		info("Resending KILL_JOB request for JobId=%u, Node=%s",
+			job_ptr->job_id, node_ptr->name);
+		if ((agent_args->node_count + 1) > buf_rec_size) {
+			buf_rec_size += 32;
+			xrealloc((agent_args->slurm_addr),
+				 (sizeof(struct sockaddr_in) *
+				  buf_rec_size));
+			xrealloc((agent_args->node_names),
+				 (MAX_NAME_LEN * buf_rec_size));
+		}
+		agent_args->slurm_addr[agent_args->node_count] =
+		    node_ptr->slurm_addr;
+		strncpy(&agent_args->
+			node_names[MAX_NAME_LEN * agent_args->node_count],
+			node_ptr->name, MAX_NAME_LEN);
+		agent_args->node_count++;
+	}
+
+	if (agent_args->node_count == 0) {
+		xfree(kill_job);
+		xfree(agent_args);
+		return;
+	}
+
+	agent_args->msg_args = kill_job;
+	debug2("Spawning job kill agent");
+	if (pthread_attr_init(&attr_agent))
+		fatal("pthread_attr_init error %m");
+	if (pthread_attr_setdetachstate
+	    (&attr_agent, PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate error %m");
+#ifdef PTHREAD_SCOPE_SYSTEM
+	if (pthread_attr_setscope(&attr_agent, PTHREAD_SCOPE_SYSTEM))
+		error("pthread_attr_setscope error %m");
+#endif
+	while (pthread_create(&thread_agent, &attr_agent, agent, 
+			(void *) agent_args)) {
+		error("pthread_create error %m");
+		if (++retries > MAX_RETRIES)
+			fatal("Can't create pthread");
+		sleep(1);	/* sleep and try again */
+	}
+	return;
 }
