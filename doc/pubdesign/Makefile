@@ -22,7 +22,7 @@ BIB = project.bib
 %.eps: %.obj
 	tgif -print -eps $<
 %.ps: %.dvi
-	dvips -o $(@F) $(<F)
+	dvips -t letter -o $(@F) $(<F)
 %.pdf: %.dvi
 	dvipdf $< $@ 
 
@@ -40,4 +40,4 @@ view: $(REPORT).ps
 	ghostview $(REPORT) &
 
 clean: 
-	rm -f *~ *.dvi *.log *.aux report.ps *.blg *.bbl *.eps #*.gif
+	rm -f *~ *.dvi *.log *.aux report.ps *.blg *.bbl #*.eps #*.gif
