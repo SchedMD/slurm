@@ -57,9 +57,10 @@ communication and the Quadrics Elan3 interconnect.  Adding support for other
 interconnects is straightforward.  Users select the supported interconnects
 at compile time via GNU autoconf.
 
-\item {\em Scalability}: SLURM is designed for scalability to a 
-{\em ludicrious}\footnote{The authors define a {\em ludicrious} 
-number of nodes to be $2^{16} = 65536$.} number of nodes.
+\item {\em Scalability}: SLURM is designed for scalability to clusters of
+thousands of nodes.\footnote{It is anticipiated that a Linux cluster of
+size $>1000$ nodes will be available for testing before the initial public 
+release.}
 
 \item {\em Fault tolerence}: SLURM can handle a variety of failure modes
 without terminating workloads, including crashes of the node running the SLURM
