@@ -404,11 +404,6 @@ job_desc_msg_create_from_opts (char *script)
 		 */
 		xassert (opt.batch);
 
-		if (opt.nprocs_set
-		&&  setenvf("SLURM_NPROCS=%u", opt.nprocs)) {
-			error("Unable to set SLURM_NPROCS environment "
-				"variable");
-		}
 		j->environment = environ;
 		j->env_size = envcount (environ);
 		j->script = script;
