@@ -158,12 +158,11 @@ parse_command_line( int argc, char* argv[] )
 	if ( next_opt < -1 )
 	{
 		const char *bad_opt;
-		bad_opt = poptBadOption(context, POPT_BADOPTION_NOALIAS);
-		if (strcmp (bad_opt, "-h"))
-			error("bad argument %s: %s", bad_opt, poptStrerror(next_opt));
-		poptPrintUsage(context, stderr, 0);
-
-		exit (1);
+		bad_opt = poptBadOption( context, POPT_BADOPTION_NOALIAS );
+		fprintf( stderr, "bad argument %s: %s\n", bad_opt, 
+				poptStrerror(next_opt) );
+		fprintf( stderr, "Try \"%s --help\" for more information\n", argv[0] );
+		exit( 1 );
 	}
 
 	if ( params.format )
@@ -209,11 +208,11 @@ parse_format( char* format )
 	char field[1];
 
 	if (format == NULL) {
-		fprintf( stderr, "Format option lacks specification" );
+		fprintf( stderr, "Format option lacks specification\n" );
 		exit( 1 );
 	}
 	if (format[0] != '%') {
-		fprintf( stderr, "Invalid format specification: %s", format );
+		fprintf( stderr, "Invalid format specification: %s\n", format );
 		exit( 1 );
 	}
 	field_size = strlen( format );
@@ -315,7 +314,7 @@ parse_token( char *token, char *field, int *field_size, bool *right_justify)
 	field[0] = token[i++];
 
 	if (token[i] != '\0') {
-		fprintf( stderr, "Invalid format specification: %s", token);
+		fprintf( stderr, "Invalid format specification: %s\n", token);
 		exit( 1 );
 	}
 }
