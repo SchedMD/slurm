@@ -161,12 +161,14 @@ main (int argc, char *argv[])
 		fatal ("read_slurm_conf error %d reading %s", 
 			error_code, SLURM_CONFIG_FILE);
 
-	if (slurmctld_conf.slurmctld_logfile) {
-		debug ("Routing all log messages to %s", slurmctld_conf.slurmctld_logfile);
+	if (slurmctld_conf.slurmctld_logfile && daemonize) {
+		info ("Routing all log messages to %s", slurmctld_conf.slurmctld_logfile);
 		log_opts.logfile_level = MAX (log_opts.logfile_level, log_opts.stderr_level);
 		log_opts.logfile_level = MAX (log_opts.logfile_level, log_opts.syslog_level);
 		log_opts.stderr_level  = LOG_LEVEL_QUIET;
 		log_opts.syslog_level  = LOG_LEVEL_QUIET;
+	}
+	if (slurmctld_conf.slurmctld_logfile) {
 		log_init (argv[0], log_opts, SYSLOG_FACILITY_DAEMON,
 			 slurmctld_conf.slurmctld_logfile);
 	}
