@@ -87,8 +87,8 @@ static void _node_cpus_string_from_list(List nodes, char *buffer);
 static void _node_mem_string_from_list(List nodes, char *buffer);
 static void _node_disk_string_from_list(List nodes, char *buffer);
 static void _node_weight_string_from_list(List nodes, char *buffer);
-static char *_node_name_string_from_list(List nodes, char *buffer, 
-					 int *node_count);
+static int  _node_name_string_from_list(List nodes, char *buffer, 
+					int buf_size, int *node_count);
 static void _swap_char(char **from, char **to);
 static void _swap_node_rec(node_info_t *from_node, node_info_t *to_node);
 
@@ -303,7 +303,7 @@ static void _display_all_nodes(node_info_msg_t * node_msg, int node_rec_cnt)
 static void _set_node_field_sizes(List nodes)
 {
 	int node_cnt, len;
-	char node_names[64];
+	char node_names[1024];
 	List current;
 	ListIterator i = list_iterator_create(nodes);
 
@@ -321,7 +321,8 @@ static void _set_node_field_sizes(List nodes)
 
 	node_sz_name      = NODE_SIZE_NAME;
 	while ((current = list_next(i)) != NULL) {
-		_node_name_string_from_list(current, node_names, &node_cnt);
+		_node_name_string_from_list(current, node_names, 
+					sizeof(node_names), &node_cnt);
 		len = strlen(node_names);
 		if (len > node_sz_name)
 			node_sz_name = len;
@@ -361,7 +362,8 @@ static void _display_node_info(List nodes)
 	int node_cnt;
 	node_info_t *node = list_peek(nodes);
 
-	_node_name_string_from_list(nodes, node_names, &node_cnt);
+	_node_name_string_from_list(nodes, node_names, sizeof(node_names), 
+					&node_cnt);
 	_print_str(node_names, node_sz_name, false);
 	printf(" ");
 	_print_int(node_cnt, node_sz_nodes, true);
@@ -616,8 +618,8 @@ static void _print_summary_header(void)
 static void
 _display_partition_node_summary(struct partition_summary *partition)
 {
-	int  line_cnt = 0;
-	char name_buf[64], part_name[64];
+	int  line_cnt = 0, name_len = 1024;
+	char *name_buf, part_name[64];
 
 	ListIterator node_i = list_iterator_create(partition->states);
 	struct node_state_summary *state_sum = NULL;
@@ -626,9 +628,14 @@ _display_partition_node_summary(struct partition_summary *partition)
 	if (partition->info->default_part)
 		strcat(part_name, "*");
 
+	name_buf = malloc(name_len);
 	while ((state_sum = list_next(node_i)) != NULL) {
 		line_cnt++;
-		hostlist_ranged_string(state_sum->nodes, 64, name_buf);
+		while ((int)hostlist_ranged_string(state_sum->nodes, 
+						name_len, name_buf) < 0) {
+			name_len *= 2;
+			name_buf = realloc(name_buf, name_len);
+		}
 		_print_str(part_name, part_sz_part, false);
 		printf(" ");
 		_print_str(partition->info->state_up ? "UP" : "DOWN", 
@@ -640,6 +647,7 @@ _display_partition_node_summary(struct partition_summary *partition)
 		printf("\n");
 	}
 	list_iterator_destroy(node_i);
+	free(name_buf);
 
 	if (line_cnt == 0) {
 		_print_str(part_name, part_sz_part, false);
@@ -720,12 +728,12 @@ _display_partition_node_info(struct partition_summary *partition)
 	char *no_name = "";
 	char *name_buf = NULL, part_name[64], part_time[20], part_job_size[30];
 	char part_root[10], part_share[10], *part_groups;
-	int  line_cnt = 0, name_len, err;
+	int  line_cnt = 0, name_len = 1024;
 
 	ListIterator node_i = list_iterator_create(partition->states);
 	struct node_state_summary *state_sum = NULL;
 	char *part_state = partition->info->state_up ? "UP" : "DOWN";
-
+ 
 	strcpy(part_name, partition->info->name);
 	if (partition->info->default_part)
 		strcat(part_name, "*");
@@ -750,21 +758,14 @@ _display_partition_node_info(struct partition_summary *partition)
 		part_groups = partition->info->allow_groups;
 	else 
 		part_groups = "ALL";
-	if (params.long_output)
-		name_len = 1024;
-	else	/* limit to 80 columns for short/default format */
-		name_len = 49;
-	name_buf = malloc(name_len);
 
+	name_buf = malloc(name_len);
 	while ((state_sum = list_next(node_i)) != NULL) {
 		line_cnt++;
-		err = hostlist_ranged_string(state_sum->nodes, name_len, 
-						name_buf);
-		while ((err < 0) && params.long_output) {
+		while ((int)hostlist_ranged_string(state_sum->nodes, 
+						name_len, name_buf) < 0) {
 			name_len *= 2;
 			name_buf = realloc(name_buf, name_len);
-			err = hostlist_ranged_string(state_sum->nodes, 
-						name_len, name_buf);
 		}
 
 		_print_str(part_name, part_sz_part, false);
@@ -887,16 +888,18 @@ static void _print_date(void)
  * 	fills in a buffer with the appropriate nodename in a
  *	prefix[001-100] type format.
  * IN nodes - list of node_info_t* to analyze
- * OUT buffer - a char buffer to store the string in.
+ * OUT buffer - a char buffer to store the string in
+ * IN  buf_size - byte size of buffer
  * OUT node_count - count of nodes found
- * RET on success return buffer, NULL on failure
+ * RET 0 on success, -1 on failure
  */
-static char *_node_name_string_from_list(List nodes, char *buffer,
-					 int *node_count)
+static int _node_name_string_from_list(List nodes, char *buffer,
+				int buf_size, int *node_count)
 {
 	node_info_t *curr_node = NULL;
 	ListIterator i = list_iterator_create(nodes);
 	hostlist_t list = hostlist_create(NULL);
+	int err;
 
 	*node_count = 0;
 	while ((curr_node = list_next(i)) != NULL) {
@@ -905,9 +908,12 @@ static char *_node_name_string_from_list(List nodes, char *buffer,
 	}
 	list_iterator_destroy(i);
 
-	hostlist_ranged_string(list, 32, buffer);
+	err = hostlist_ranged_string(list, buf_size, buffer);
 	hostlist_destroy(list);
-	return buffer;
+	if (err < 0)
+		return -1;
+	else
+		return 0;
 }
 
 /* _node_cpus_string_from_list - analyzes a list of node_info_t* and 
