@@ -482,22 +482,23 @@ _io_add_connecting(slurmd_job_t *job, task_info_t *t, srun_info_t *srun,
 static int
 _io_prepare_one(slurmd_job_t *j, task_info_t *t, srun_info_t *s)
 {
+	int retval = SLURM_SUCCESS;
 	/* Try hard to get stderr connected to something
 	 */
 	if (  (_open_output_file(j, t, s->efname, CLIENT_STDERR) < 0)
 	   && (_io_add_connecting(j, t, s, CLIENT_STDERR)        < 0) )
-		return SLURM_FAILURE;
+		retval = SLURM_FAILURE;
 
 	if (s->ofname) {
 		if (_open_output_file(j, t, s->ofname, CLIENT_STDOUT) < 0)
-			return SLURM_FAILURE;
+			retval = SLURM_FAILURE;
 	} else {
 		_io_add_connecting(j, t, s, CLIENT_STDOUT); 
 	}
 
 	if (s->ifname) {
 		if (_open_stdin_file(j, t, s) < 0)
-			return SLURM_FAILURE;
+			retval = SLURM_FAILURE;
 	} else if (s->ofname) {
 		_io_add_connecting(j, t, s, CLIENT_STDIN);
 	}
@@ -507,7 +508,7 @@ _io_prepare_one(slurmd_job_t *j, task_info_t *t, srun_info_t *s)
 		list_append(t->srun_list, (void *) s);
 	}
 
-	return SLURM_SUCCESS;
+	return retval;
 }
 
 /* 
@@ -517,15 +518,17 @@ int
 io_prepare_clients(slurmd_job_t *job)
 {
 	int          i;
+	int          retval = SLURM_SUCCESS;
 	srun_info_t *srun;
 
 	srun = list_peek(job->sruns);
 	xassert(srun != NULL);
 
 	if (srun->ofname && (fname_trunc_all(job, srun->ofname) < 0))
-			goto error;
+		goto error;
 
-	if (srun->efname && (strcmp(srun->ofname, srun->efname) != 0)) {
+	if (  srun->efname  
+	   && (!srun->ofname || (strcmp(srun->ofname, srun->efname) != 0))) {
 		if (fname_trunc_all(job, srun->efname) < 0)
 			goto error;
 	}
@@ -542,7 +545,7 @@ io_prepare_clients(slurmd_job_t *job)
 	 */
 	for (i = 0; i < job->ntasks; i++) {
 		if (_io_prepare_one(job, job->task[i], srun) < 0)
-			return SLURM_FAILURE;
+			retval = SLURM_ERROR;
 
 		/* kick IO thread */
 		debug3("sending sighup to io thread id %ld", (long) job->ioid);
@@ -550,7 +553,7 @@ io_prepare_clients(slurmd_job_t *job)
 			error("pthread_kill: %m");
 	}
 
-	return SLURM_SUCCESS;
+	return retval;
 
    error:
 	/* 
@@ -574,7 +577,8 @@ _open_task_file(char *filename, int flags)
 	if (filename == NULL)
 		return -1;
 	if ((fd = open(filename, flags, 0644))< 0) {
-		error ("Unable to open `%s': %m", filename);
+		error( "Unable to open `%s': %s", 
+                       filename, slurm_strerror(errno) );
 		return -1;
 	}
 	fd_set_nonblocking(fd);
