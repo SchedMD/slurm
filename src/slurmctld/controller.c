@@ -163,6 +163,10 @@ main (int argc, char *argv[])
 	/* create attached thread for background activities */
 	if (pthread_attr_init (&thread_attr_bg))
 		fatal ("pthread_attr_init errno %d", errno);
+#ifdef PTHREAD_SCOPE_SYSTEM
+	/* we want 1:1 threads if there is a choice */
+	pthread_attr_setscope (&thread_attr_bg, PTHREAD_SCOPE_SYSTEM);
+#endif
 	if (pthread_create ( &thread_id_bg, &thread_attr_bg, slurmctld_background, NULL))
 		fatal ("pthread_create errno %d", errno);
 
@@ -172,6 +176,10 @@ main (int argc, char *argv[])
 	pthread_mutex_unlock(&thread_count_lock);
 	if (pthread_attr_init (&thread_attr_rpc))
 		fatal ("pthread_attr_init errno %d", errno);
+#ifdef PTHREAD_SCOPE_SYSTEM
+	/* we want 1:1 threads if there is a choice */
+	pthread_attr_setscope (&thread_attr_rpc, PTHREAD_SCOPE_SYSTEM);
+#endif
 	if (pthread_create ( &thread_id_rpc, &thread_attr_rpc, slurmctld_rpc_mgr, NULL))
 		fatal ("pthread_create errno %d", errno);
 
@@ -236,6 +244,10 @@ slurmctld_rpc_mgr ( void * no_data )
 		fatal ("pthread_attr_init errno %m %d", errno);
 	if (pthread_attr_setdetachstate (&thread_attr_rpc_req, PTHREAD_CREATE_DETACHED))
 		fatal ("pthread_attr_setdetachstate errno %m %d", errno);
+#ifdef PTHREAD_SCOPE_SYSTEM
+	/* we want 1:1 threads if there is a choice */
+	pthread_attr_setscope (&thread_attr_rpc_req, PTHREAD_SCOPE_SYSTEM);
+#endif
 
 	/* initialize port for RPCs */
 	if ( ( sockfd = slurm_init_msg_engine_port ( slurmctld_conf . slurmctld_port ) ) 
