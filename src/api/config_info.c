@@ -38,7 +38,7 @@ main (int argc, char *argv[])
 		exit (1);
 	}
 
-	printf("Updated at %lx\n", build_buffer_ptr->last_update);
+	printf("Build updated at %lx\n", build_buffer_ptr->last_update);
 	build_table_ptr = build_buffer_ptr->build_table_ptr;
 	printf("backup_interval	= %u\n", build_table_ptr->backup_interval);
 	printf("backup_location	= %s\n", build_table_ptr->backup_location);
