@@ -109,6 +109,8 @@ int slurm_jobcomp_set_location ( char * location )
 		plugin_errno = EACCES;
 		return SLURM_ERROR;
 	}
+	xfree(log_name);
+	log_name = xstrdup(location);
 
 	slurm_mutex_lock( &file_lock );
 	if (job_comp_fd >= 0)
@@ -118,11 +120,8 @@ int slurm_jobcomp_set_location ( char * location )
 		error("open %s: %m", location);
 		plugin_errno = errno;
 		rc = SLURM_ERROR;
-	} else {
+	} else
 		fchmod(job_comp_fd, 0644);
-		xfree(log_name);
-		log_name = xstrdup(location);
-	}
 	slurm_mutex_unlock( &file_lock );
 	return rc;
 }
