@@ -62,7 +62,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/util-net.h"
 
-#define PORT_RETRIES    0
+#define PORT_RETRIES    2
 #define MIN_USER_PORT   (IPPORT_RESERVED + 1)
 #define MAX_USER_PORT   0xffff
 #define RANDOM_USER_PORT ((uint16_t) ((lrand48() % \
@@ -99,7 +99,7 @@ slurm_fd _slurm_init_msg_engine ( slurm_addr * slurm_address )
 
 slurm_fd _slurm_open_msg_conn ( slurm_addr * slurm_address )
 {
-        return _slurm_open_stream ( slurm_address ) ;
+        return _slurm_open_stream ( slurm_address, false ) ;
 }
 
 slurm_fd _slurm_accept_msg_conn (slurm_fd fd, slurm_addr *addr)
@@ -425,22 +425,24 @@ slurm_fd _slurm_accept_stream(slurm_fd fd, slurm_addr *addr)
         return _slurm_accept(fd, (struct sockaddr *)addr, &len);
 }
 
-slurm_fd _slurm_open_stream(slurm_addr *addr)
+slurm_fd _slurm_open_stream(slurm_addr *addr, bool retry)
 {
-        int rc, retry;
+        int retry_cnt;
         slurm_fd fd;
 
         if ( (addr->sin_family == 0) || (addr->sin_port  == 0) ) 
                 return SLURM_SOCKET_ERROR;
 
-        for (retry=0; ; retry++) {
+        for (retry_cnt=0; ; retry_cnt++) {
+                int rc;
                 if ((fd =_slurm_create_socket(SLURM_STREAM)) < 0) {
         		error("Error creating slurm stream socket: %m");
-                        return fd;
+                        slurm_seterrno(errno);
+                        return SLURM_SOCKET_ERROR;
                 }
 
-                if (retry) {
-                        if (retry == 1)
+                if (retry_cnt) {
+                        if (retry_cnt == 1)
                                 debug3("Error connecting, picking new stream port");
                         _sock_bind_wild(fd);
                 }
@@ -448,8 +450,11 @@ slurm_fd _slurm_open_stream(slurm_addr *addr)
                 rc = _slurm_connect(fd, (struct sockaddr const *)addr, sizeof(*addr));
                 if (rc >= 0)                    /* success */
                         break;
-                if ((errno != ECONNREFUSED) || (retry >= PORT_RETRIES))
+                if ((errno != ECONNREFUSED) || 
+                    (!retry) || (retry_cnt >= PORT_RETRIES)) {
+                        slurm_seterrno(errno);
                         goto error;
+                }
 
                 if ((_slurm_close_stream(fd) < 0) && (errno == EINTR))
                         _slurm_close_stream(fd);        /* try again */
@@ -461,7 +466,7 @@ slurm_fd _slurm_open_stream(slurm_addr *addr)
         debug2("Error connecting slurm stream socket: %m");
 	if ((_slurm_close_stream(fd) < 0) && (errno == EINTR))
 		_slurm_close_stream(fd);	/* try again */
-        return rc;
+        return SLURM_SOCKET_ERROR;
 }
 
 int _slurm_get_stream_addr(slurm_fd fd, slurm_addr *addr )
