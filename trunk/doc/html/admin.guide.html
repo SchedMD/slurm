@@ -47,6 +47,9 @@ as a controller only upon the failure of ControlMachine and will revert
 to a "standby" mode when the ControlMachine becomes available once again. 
 While not essential, it is highly recommended that you specify a backup 
 controller.
+<dt>ControllerTimeout
+<dd>The number of seconds the BackupController should allow the ControlMachine
+to respond before assuming responsibilities for control functions. 
 <dt>NodeSpecConf
 <dd>Fully qualified pathname of the file containing node configuration information 
 as described below (the default value is "/usr/local/SLURM/NodeSpecConf"). This 
@@ -55,6 +58,12 @@ file must be accessible to the ControlMachine and BackupController.
 <dd>Fully qualified pathname of the file containing partition configuration 
 information as described below (the default value is  "/usr/local/SLURM/PartitionConf").
 This file must be accessible to the ControlMachine and BackupController.
+<dt>InitProgram
+<dd>This program must execute and return an exit code of zero before the 
+ControlDaemon or ServerDaemon enter into service. This would normally be 
+used to insure that the computer is fully ready for executing user jobs. 
+It may, for example, wait until every required file system has been mounted.
+By default there is no initialization program.
 <dt>ControlDaemon
 <dd>The fully qualified pathname of the file containing the SLURM daemon
 to execute on the ControlMachine (the default value is "/usr/local/SLURM/Slurmd.Control").
@@ -451,7 +460,7 @@ Remove node lx30 from service, removing jobs as needed:
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/user.administrator.html
-<p>Last Modified January 9, 2002</p>
+<p>Last Modified January 15, 2002</p>
 <address>Maintained by Moe Jette <a href="mailto:jette@llnl.gov">
 jette1@llnl.gov</a></address>
 </body>
