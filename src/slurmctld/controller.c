@@ -388,9 +388,147 @@ slurm_rpc_job_cancel ( slurm_msg_t * msg )
 
 }
 
+/* UpdateNode - */
+/* Update - modify node or partition configuration */
+	void 
+slurm_rpc_update_node ( slurm_msg_t * msg )
+{
+	/* init */
+	int error_code;
+	clock_t start_time;
+	char * node_name_ptr = NULL;
+
+	start_time = clock ();
+
+	/* do RPC call */
+	error_code = update_node (node_name_ptr, msg );	/* skip "Update" */
+
+	/* return result */
+	if (error_code)
+	{
+		error ("slurmctld_req: update error %d on node %s, time=%ld",
+				error_code, node_name_ptr, (long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , error_code );
+	}
+	else
+	{
+		info ("slurmctld_req: updated node %s, time=%ld",
+				node_name_ptr, (long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+	}
+	if (node_name_ptr)
+		xfree (node_name_ptr);
+
+}
+
+/* UpdatePartition - */
+/* Update - modify node or partition configuration */
+	void 
+slurm_rpc_update_partition ( slurm_msg_t * msg )
+{
+	/* init */
+	int error_code;
+	clock_t start_time;
+	char * part_name = NULL;
+
+	start_time = clock ();
+
+	/* do RPC call */
+	error_code = update_part (part_name, msg ); /* skip "Update" */
+
+	/* return result */
+	if (error_code)
+	{
+		error ("slurmctld_req: update error %d on partition %s, time=%ld",
+				error_code, part_name, (long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , error_code );
+	}
+	else
+	{
+		info ("slurmctld_req: updated partition %s, time=%ld",
+				part_name, (long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+	}
+	if (part_name)
+		xfree (part_name);
+
+}
+
+/* JobSubmit - submit a job to the slurm queue */
+void
+slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
+{
+	/* init */
+	int error_code;
+	clock_t start_time;
+	struct job_record *job_rec_ptr;
+	uint32_t job_id ;
+	slurm_msg_t response_msg ;
+	job_id_msg_t job_id_msg ;
+	job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
+
+	start_time = clock ();
+
+	/* do RPC call */
+	error_code = job_create(job_desc_msg, &job_id, 0, 0, &job_rec_ptr);	/* skip "JobSubmit" */
+
+	/* return result */
+	if (error_code)
+	{
+		info ("slurmctld_req: job_submit error %d, time=%ld",
+				error_code, (long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , error_code );
+	}
+	else
+	{
+		info ("slurmctld_req: job_submit success for id=%u, time=%ld",
+				job_id, (long) (clock () - start_time));
+		/* send job_ID */
+		job_id_msg . job_id = job_id ;
+		response_msg . msg_type = RESPONSE_SUBMIT_BATCH_JOB ;
+		response_msg . data = & job_id_msg ;
+		slurm_send_controller_msg ( msg->conn_fd , & response_msg ) ;
+	}
+	schedule();
+}
+
+/* Allocate:  allocate resources for a job */
+void slurm_rpc_allocate_resources ( slurm_msg_t * msg )
+{
+	/* init */
+	int error_code;
+	clock_t start_time;
+	struct job_record *job_rec_ptr;
+	uint32_t job_id ;
+	job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
+	char * node_name_ptr = NULL;
+
+	start_time = clock ();
+
+	/* do RPC call */
+	error_code = job_allocate(job_desc_msg, 	/* skip "Allocate" */
+			&job_id, &node_name_ptr);
+
+	/* return result */
+	if (error_code)
+	{
+		info ("slurmctld_req: error %d allocating resources, time=%ld",
+				error_code,  (long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , error_code );
+	}
+	else
+	{
+		info ("slurmctld_req: allocated nodes %s, JobId=%u, time=%ld",
+				node_name_ptr, job_id, 
+				(long) (clock () - start_time));
+		/* send job_ID  and node_name_ptr */
+	}
+	if (node_name_ptr)
+		xfree (node_name_ptr);
+}
+
 /* JobWillRun - determine if job with given configuration can be initiated now */
-void 
-slurm_rpc_job_will_run ( slurm_msg_t * msg )
+void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 {
 	/* init */
 	int error_code;
@@ -416,6 +554,7 @@ slurm_rpc_job_will_run ( slurm_msg_t * msg )
 	}
 
 }
+
 /* Reconfigure - re-initialized from configuration files */
 void 
 slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
@@ -508,123 +647,4 @@ fill_build_table ( struct build_table * build_ptr )
 	build_ptr->server_timeout	= SERVER_TIMEOUT ;
 	build_ptr->slurm_conf		= SLURM_CONF ;
 	build_ptr->tmp_fs		= TMP_FS ;
-}
-
-
-/*
- * slurmctld_req - process a slurmctld request from the given socket
- * input: sockfd - the socket with a request to be processed
- */
-void
-slurmctld_req_old (int sockfd) {
-	int error_code, in_size, i;
-	char in_line[BUF_SIZE];
-	char *node_name_ptr, *part_name;
-	uint32_t job_id;
-	clock_t start_time;
-	char *dump;
-
-	in_size = recv (sockfd, in_line, sizeof (in_line), 0);
-	start_time = clock ();
-
-	/* Allocate:  allocate resources for a job */
-
-	if (strncmp ("Allocate", in_line, 8) == 0) {
-		node_name_ptr = NULL;
-		error_code = job_allocate(&in_line[8], 	/* skip "Allocate" */
-			&job_id, &node_name_ptr);
-		if (error_code)
-			info ("slurmctld_req: error %d allocating resources for %s, time=%ld",
-				 error_code, &in_line[8], (long) (clock () - start_time));
-		else
-			info ("slurmctld_req: allocated nodes %s to %s, JobId=%u, time=%ld",
-				 node_name_ptr, &in_line[8], job_id, 
-				(long) (clock () - start_time));
-
-		if (error_code == 0) {
-			i = strlen(node_name_ptr) + 12;
-			dump = xmalloc(i);
-			sprintf(dump, "%s %u", node_name_ptr, job_id);
-			send (sockfd, dump, i, 0);
-			xfree(dump);
-		}
-		else if (error_code == EAGAIN)
-			send (sockfd, "EAGAIN", 7, 0);
-		else
-			send (sockfd, "EINVAL", 7, 0);
-
-		if (node_name_ptr)
-			xfree (node_name_ptr);
-	}
-
-
-	/* JobSubmit - submit a job to the slurm queue */
-	else if (strncmp ("JobSubmit", in_line, 9) == 0) {
-		struct job_record *job_rec_ptr;
-		error_code = job_create(&in_line[9], &job_id, 0, 0, 
-				&job_rec_ptr);	/* skip "JobSubmit" */
-		if (error_code)
-			info ("slurmctld_req: job_submit error %d, time=%ld",
-				 error_code, (long) (clock () - start_time));
-		else
-			info ("slurmctld_req: job_submit success for %s, id=%u, time=%ld",
-				 &in_line[9], job_id, 
-				(long) (clock () - start_time));
-		if (error_code == 0) {
-			dump = xmalloc(12);
-			sprintf(dump, "%u", job_id);
-			send (sockfd, dump, strlen(dump) + 1, 0);
-			xfree (dump);
-		}
-		else
-			send (sockfd, "EINVAL", 7, 0);
-		schedule();
-	}
-
-	/* Update - modify node or partition configuration */
-	else if (strncmp ("Update", in_line, 6) == 0) {
-		node_name_ptr = part_name = NULL;
-		error_code = load_string (&node_name_ptr, "NodeName=", in_line);
-		if ((error_code == 0) && (node_name_ptr != NULL))
-			error_code = update_node (node_name_ptr, &in_line[6]);	/* skip "Update" */
-		else {
-			error_code =
-				load_string (&part_name, "PartitionName=", in_line);
-			if ((error_code == 0) && (part_name != NULL))
-				error_code = update_part (part_name, &in_line[6]); /* skip "Update" */
-			else
-				error_code = EINVAL;
-		}		
-		if (error_code) {
-			if (node_name_ptr)
-				error ("slurmctld_req: update error %d on node %s, time=%ld",
-					 error_code, node_name_ptr, (long) (clock () - start_time));
-			else if (part_name)
-				error ("slurmctld_req: update error %d on partition %s, time=%ld",
-					 error_code, part_name, (long) (clock () - start_time));
-			else
-				error ("slurmctld_req: update error %d on request %s, time=%ld",
-					 error_code, in_line, (long) (clock () - start_time));
-
-		}
-		else {
-			if (node_name_ptr)
-				info ("slurmctld_req: updated node %s, time=%ld",
-					 node_name_ptr, (long) (clock () - start_time));
-			else
-				info ("slurmctld_req: updated partition %s, time=%ld",
-					 part_name, (long) (clock () - start_time));
-		}
-		sprintf (in_line, "%d", error_code);
-		send (sockfd, in_line, strlen (in_line) + 1, 0);
-
-		if (node_name_ptr)
-			xfree (node_name_ptr);
-		if (part_name)
-			xfree (part_name);
-
-	}
-	else {
-	}			
-	return;
 }
