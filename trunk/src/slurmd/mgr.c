@@ -200,7 +200,7 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 		error("rmdir(%s): %m",  batchdir);
 	xfree(batchdir);
    cleanup :
-	verbose("job %d completed with slurm_rc = %d, job_rc = %d", 
+	verbose("job %u completed with slurm_rc = %d, job_rc = %d", 
 		job->jobid, rc, status);
 	_complete_job(job, rc, status);
 	return 0; 
@@ -223,7 +223,7 @@ run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid)
 	if (path == NULL || path[0] == '\0')
 		return 0;
 
-	debug("[job %d] attempting to run %s [%s]", jobid, name, path);
+	debug("[job %u] attempting to run %s [%s]", jobid, name, path);
 
 	if (access(path, R_OK | X_OK) < 0) {
 		debug("Not running %s [%s]: %m", name, path);
@@ -963,7 +963,7 @@ _handle_attach_req(slurmd_job_t *job)
 {
 	srun_info_t *srun;
 
-	debug("handling attach request for %d.%d", job->jobid, job->stepid);
+	debug("handling attach request for %u.%u", job->jobid, job->stepid);
 
 	srun       = xmalloc(sizeof(*srun));
 	srun->key  = xmalloc(sizeof(*srun->key));
@@ -1074,7 +1074,7 @@ _setargs(slurmd_job_t *job)
 		return;
 
 	if (job->jobid >= MIN_NOALLOC_JOBID) {
-		setproctitle("no-alloc [%d]", job->jobid - MIN_NOALLOC_JOBID);
+		setproctitle("no-alloc [%u]", job->jobid - MIN_NOALLOC_JOBID);
 		return;
 	}
 
@@ -1082,9 +1082,9 @@ _setargs(slurmd_job_t *job)
 	 *  Otherwise, a normal job
 	 */
 	if (job->stepid == NO_VAL)
-		setproctitle("[%d]",    job->jobid);
+		setproctitle("[%u]",    job->jobid);
 	else
-		setproctitle("[%d.%d]", job->jobid, job->stepid); 
+		setproctitle("[%u.%u]", job->jobid, job->stepid); 
 
 	return;
 }
