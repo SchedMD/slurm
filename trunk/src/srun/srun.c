@@ -233,7 +233,7 @@ int main(int ac, char **av)
 	pthread_kill(job->jtid,  SIGTERM);
 
 	/* kill signal thread */
-	pthread_kill(job->sigid, SIGTERM);
+	/* pthread_kill(job->sigid, SIGTERM); */
 
 	log_fini();
 
