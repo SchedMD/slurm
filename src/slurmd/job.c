@@ -203,7 +203,7 @@ srun_info_create(void *keydata, slurm_addr resp_addr, slurm_addr ioaddr)
 	struct srun_info *srun = xmalloc(sizeof(*srun));
 	srun_key_t       *key  = xmalloc(sizeof(*key ));
 
-	memcpy((void *) key->data, keydata, sizeof(*key->data));
+	memcpy((void *) key->data, keydata, SLURM_KEY_SIZE);
 
 	srun->key       = key;
 	srun->ioaddr    = ioaddr;
