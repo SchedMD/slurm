@@ -119,6 +119,11 @@ extern char *slurm_get_auth_type(void);
  */
 extern int slurm_set_auth_type(char *auth_type);
 
+/* slurm_get_fast_schedule
+ * returns the value of fast_schedule in slurmctld_conf object
+ */
+extern uint16_t slurm_get_fast_schedule(void);
+
 /* slurm_get_jobcomp_type
  * returns the job completion logger type from slurmctld_conf object
  * RET char *    - job completion type,  MUST be xfreed by caller
