@@ -25,19 +25,22 @@
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <errno.h>
 #include <stdio.h>
 
-#include <src/api/slurm.h>
-#include <src/common/slurm_protocol_api.h>
+#include "src/api/slurm.h"
+#include "src/common/slurm_protocol_api.h"
 
 
 /*
  * slurm_submit_batch_job - issue RPC to submit a job for later execution
  * NOTE: free the response using slurm_free_submit_response_response_msg
+ * IN job_desc_msg - description of batch job request
+ * OUT slurm_alloc_msg - response to request
+ * RET 0 on success or slurm error code
  */
 int
 slurm_submit_batch_job (job_desc_msg_t * job_desc_msg, 

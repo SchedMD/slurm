@@ -25,17 +25,22 @@
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <errno.h>
 #include <stdio.h>
 
-#include <src/api/slurm.h>
-#include <src/common/slurm_protocol_api.h>
+#include "src/api/slurm.h"
+#include "src/common/slurm_protocol_api.h"
 
 /*
  * slurm_allocate_resources - allocate resources for a job request
+ * IN job_desc_msg - description of resource allocation request
+ * OUT slurm_alloc_msg - response to request
+ * IN immediate - if set then resource allocation must be satisfied 
+ *	immediately or fail
+ * RET 0 on success or slurm error code
  * NOTE: free the allocated using slurm_free_resource_allocation_response_msg
  */
 int
@@ -118,6 +123,9 @@ slurm_allocate_resources (job_desc_msg_t * job_desc_msg ,
 /*
  * slurm_job_will_run - determine if a job would execute immediately if 
  *	submitted now
+ * IN job_desc_msg - description of resource allocation request
+ * OUT slurm_alloc_msg - response to request
+ * RET 0 on success or slurm error code
  * NOTE: free the allocated using slurm_free_resource_allocation_response_msg
  */
 int slurm_job_will_run (job_desc_msg_t * job_desc_msg , 
@@ -193,6 +201,9 @@ int slurm_job_will_run (job_desc_msg_t * job_desc_msg ,
 /*
  * slurm_allocate_resources_and_run - allocate resources for a job request and 
  *	initiate a job step
+ * IN job_desc_msg - description of resource allocation request
+ * OUT slurm_alloc_msg - response to request
+ * RET 0 on success or slurm error code
  * NOTE: free the response using 
  *	slurm_free_resource_allocation_and_run_response_msg
  */
@@ -270,6 +281,9 @@ slurm_allocate_resources_and_run (job_desc_msg_t * job_desc_msg ,
 
 /*
  * slurm_job_step_create - create a job step for a given job id
+ * IN slurm_step_alloc_req_msg - description of job step request
+ * OUT slurm_step_alloc_resp_msg - response to request
+ * RET 0 on success or slurm error code
  * NOTE: free the response using slurm_free_job_step_create_response_msg
  */
 int
@@ -346,6 +360,9 @@ slurm_job_step_create (job_step_create_request_msg_t * slurm_step_alloc_req_msg,
 
 /*
  * slurm_confirm_allocation - confirm an existing resource allocation
+ * IN job_desc_msg - description of existing job request
+ * OUT slurm_alloc_msg - response to request
+ * RET 0 on success or slurm error code
  * NOTE: free the response using slurm_free_resource_allocation_response_msg
  */
 int 

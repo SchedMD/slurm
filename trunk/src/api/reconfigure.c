@@ -25,8 +25,8 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifdef have_config_h
-#  include <config.h>
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
 #endif
 
 #include <errno.h>
@@ -34,15 +34,16 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <src/api/slurm.h>
-#include <src/common/slurm_protocol_api.h>
+#include "src/api/slurm.h"
+#include "src/common/slurm_protocol_api.h"
 
 static int _send_message_controller (	enum controller_id dest, 
 					slurm_msg_t *request_msg );
 
 /*
  * slurm_reconfigure - issue RPC to have Slurm controller (slurmctld)
- * reload its configuration file 
+ *	reload its configuration file 
+ * RET 0 or a slurm error code
  */
 int
 slurm_reconfigure ( void )
@@ -111,7 +112,8 @@ slurm_reconfigure ( void )
  * slurm_shutdown - issue RPC to have Slurm controller (slurmctld)
  *	cease operations, both the primary and backup controller 
  *	are shutdown.
- * core(I) - controller generates a core file if set
+ * IN core - controller generates a core file if set
+ * RET 0 or a slurm error code
  */
 int
 slurm_shutdown (uint16_t core)
@@ -172,7 +174,8 @@ _send_message_controller ( enum controller_id dest, slurm_msg_t *request_msg )
 	switch ( response_msg . msg_type )
 	{
 		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			slurm_rc_msg = 
+				( return_code_msg_t * ) response_msg . data ;
 			rc = slurm_rc_msg->return_code;
 			slurm_free_return_code_msg ( slurm_rc_msg );	
 			if (rc) {

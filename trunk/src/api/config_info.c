@@ -25,19 +25,23 @@
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <errno.h>
 #include <stdio.h>
-#include <src/api/slurm.h>
-#include <src/common/slurm_protocol_api.h>
+
+#include "src/api/slurm.h"
+#include "src/common/slurm_protocol_api.h"
 
 /*
- * slurm_print_ctl_conf - output the contents of slurm control configuration message 
- *	as loaded using slurm_load_ctl_conf
+ * slurm_print_ctl_conf - output the contents of slurm control configuration 
+ *	message as loaded using slurm_load_ctl_conf
+ * IN out - file to write to
+ * IN slurm_ctl_conf_ptr - slurm control configuration pointer
  */
-void slurm_print_ctl_conf ( FILE* out, slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr )
+void slurm_print_ctl_conf ( FILE* out, 
+                            slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr )
 {
 	char time_str[16];
 
@@ -93,6 +97,10 @@ void slurm_print_ctl_conf ( FILE* out, slurm_ctl_conf_info_msg_t * slurm_ctl_con
 /*
  * slurm_load_ctl_conf - issue RPC to get slurm control configuration  
  *	information if changed since update_time 
+ * IN update_time - time of current configuration data
+ * IN slurm_ctl_conf_ptr - place to store slurm control configuration 
+ *	pointer
+ * RET 0 on success or slurm error code
  * NOTE: free the response using slurm_free_ctl_conf
  */
 int
