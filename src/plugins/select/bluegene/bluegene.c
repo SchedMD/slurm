@@ -55,7 +55,9 @@ char *change_numpsets = NULL;
 bool agent_fini = false;
 
 /* some local functions */
+#if HAVE_BGL
 static int  _addto_node_list(bgl_record_t *bgl_record, int *start, int *end);
+#endif
 static void _set_bgl_lists();
 static int  _validate_config_nodes(void);
 static int  _bgl_record_cmpf_inc(bgl_record_t* rec_a, bgl_record_t* rec_b);
@@ -508,6 +510,7 @@ extern int bgl_free_partition(pm_partition_id_t part_id)
 	return SLURM_SUCCESS;
 }
 
+#if HAVE_BGL
 static int _addto_node_list(bgl_record_t *bgl_record, int *start, int *end)
 {
 	int node_count=0;
@@ -534,6 +537,7 @@ static int _addto_node_list(bgl_record_t *bgl_record, int *start, int *end)
 	}
 	return node_count;
 }
+#endif
 
 static void _set_bgl_lists()
 {
@@ -997,6 +1001,7 @@ static int _parse_bgl_spec(char *in_line)
 
 static void _process_nodes(bgl_record_t *bgl_record)
 {
+#if HAVE_BGL
 	int j=0, number;
 	int start[PA_SYSTEM_DIMENSIONS];
 	int end[PA_SYSTEM_DIMENSIONS];
@@ -1094,6 +1099,7 @@ static void _process_nodes(bgl_record_t *bgl_record)
 		error("Unable to convert nodes %s to bitmap", 
 		      bgl_record->nodes);
 	}
+#endif
 	return;
 }
 
