@@ -1,0 +1,84 @@
+<html>
+<head>
+<title>SLURM Programmer's Guide</title>
+</head>
+<body>
+<h1>SLURM Programmer's Guide</h1>
+<h2>Overview</h2>
+Simple Linux Utility for Resource Management (SLURM) is an open source,
+fault-tolerant, and highly scalable cluster management and job 
+scheduling system for Linux clusters of 
+thousands of nodes.  Components include machine status, partition
+management, job management, and scheduling modules.  The design also 
+includes a scalable, general-purpose communication infrastructure.
+SLURM requires no kernel modifications and is relatively self-contained.
+
+<h2>Components</h2>
+<b>config.h</b> is just used to define "out_of_memory" for list.c.
+<p>
+<b>errors.h</b> is needed for config.h
+<p>
+<b>Get_Mach_Stat.c</b> gets the machine's status and configuration. 
+This includes: operating system version, size of real memory, size 
+of virtual memory, size of /tmp disk storage, number of processors, 
+and speed of processors.
+<p>
+<b>list.c</b> is a general purpose list manager. One can define a 
+list, add and delete entries, search for entries, etc.
+<p>
+<b>list.h</b> contains definitions for list.c and documentation for 
+its functions.
+<p>
+<b>Mach_Stat_Mgr.c</b> reads, writes, records, updates, and otherwise 
+manages the state information for all nodes (machines) in the 
+cluster managed by SLURM.
+<p>
+<b>Partition_Mgr.c</b> reads, writes, records, updates, and otherwise 
+manages the state information associated with partitions in the 
+cluster managed by SLURM.
+
+<h2>Design Issues</h2>
+Most modules are constructed with a some simple, built-in tests. 
+Set declarations for DEBUG_MODULE and DEBUG_SYSTEM  both to 1 near 
+the top of the module's code. Then compile and run the test. 
+Required input scripts and configuration files for these tests 
+will be kept in the "etc" subdirectory and the commands to execute 
+the tests are in the "Makefile". In some cases, the module must 
+be loaded with some other components. In those cases, the support 
+modules should be built with the declaration for DEBUG_MODULE set 
+to 0 and for DEBUG_SYSTEM set to 1.
+<p>
+Many of these modules have been built and tested on a variety of 
+Unix computers including Redhat's Linux, IBM's AIX, Sun's Solaris, 
+and Compaq's Tru-64. The only module at this time which is operating 
+system dependent is Get_Mach_Stat.c.
+<p>
+We have tried to develop the SLURM code to be quite general and
+flexible, but compromises were made in several areas for the sake of 
+simplicity and ease of support. Entire nodes are dedicated to user 
+applications. Our customers at LLNL have expressed the opinion that sharing of 
+nodes can severely reduce their job's performance and even reliability. 
+This is due to contention for shared resources such as local disk space, 
+real memory, virtual memory and processor cycles. The proper support of 
+shared resources, including the enforcement of limits on these resources, 
+entails a substantial amount of additional effort. Given such a cost to 
+benefit situation at LLNL, we have decided to not support shared nodes. 
+However, we have designed SLURM so as to not preclude the addition of 
+such a capability at a later time if so desired.
+
+<h2>To Do</h2>
+<ul>
+<li>We probably want to move into list.h only what is need from config.h and errors.h.</li>
+<li>We need to build up a reasonable Makefile.</li>
+<li>The node selection process for contiguous nodes in Controller.c selects 
+the first fit. Best fit would probably be better. For now, 
+higher-level scheduler will insure that no job suffers from starvation.</li>
+</ul>
+
+<hr>
+URL = http://www-lc.llnl.gov/dctg-lc/slurm/programmer.guide.html
+<p>Last Modified December 21, 2001</p>
+<address>Maintained by Moe Jette <a href="mailto:jette@llnl.gov">
+jette1@llnl.gov</a></address>
+</body>
+</html>

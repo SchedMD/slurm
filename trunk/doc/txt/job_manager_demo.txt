@@ -37,6 +37,14 @@ User=jette           JobType=BATCH       NodeCount=29
   Job scheduled on this nodes:
   lx03,lx04,lx05,lx06,lx07,lx08,lx09,lx10,lx11,lx12,lx13,lx14,lx15,lx16,lx17,lx19,lx20,lx21,lx22,lx23,lx24,lx25,lx26,lx27,lx28,lx29,lx30,lx31,lx32
 
+User=anyuser         JobType=BATCH       NodeCount=4 MinRealMemory=2048 Continguous=FALSE
+  Job scheduled on this nodes:
+  lx10,lx11,lx13,lx14
+
+User=userforlx13-16  JobType=BATCH       NodeCount=4 MinRealMemory=2048 Continguous=TRUE
+  Job scheduled on this nodes:
+  lx13,lx14,lx15,lx16
+
 
 
 # The sample node configuration file

@@ -1,0 +1,259 @@
+<html>
+<head>
+<title>SLURM Administrator's Guide</title>
+</head>
+<body>
+<h1>SLURM Administrator's Guide</h1>
+<h2>Overview</h2>
+Simple Linux Utility for Resource Management (SLURM) is an open source,
+fault-tolerant, and highly scalable cluster management and job 
+scheduling system for Linux clusters of 
+thousands of nodes.  Components include machine status, partition
+management, job management, and scheduling modules.  The design also 
+includes a scalable, general-purpose communication infrastructure.
+SLURM requires no kernel modifications and is relatively self-contained.
+
+<h2>Configuration</h2>
+There are three SLURM configuration files that you need to establish: 
+overall SLURM options, node configurations, and partition configuration. 
+The overall SLURM configuration options indicate where to find the 
+other configuration files, where to find the daemons, how often to 
+perform certain actions, etc. The node configuration tell SLURM 
+what nodes it is to manage as well as their anticipated hardware 
+and system software configurations. The partition configuration 
+permits you to establish different job limits or access lists for 
+various groups (or partitions) of nodes. 
+
+<h3>Overall SLURM Configuration</h3>
+The overall SLURM configuration file contents have yet to be 
+established. Moe Jette to document later
+
+<h3>Node Configuration</h3>
+The node configuration permits you to identify the nodes (or machines) 
+to be managed by SLURM. You may identify the hardware and/or software 
+characteristics of the node in the configuration file. SLURM operates 
+in a heterogeneous environment and users are able to specify resource 
+requirements to achieve the desired scheduling characteristics. 
+Note that some of these values are not appropriate for you to 
+set and this will be described in detail below.
+The partiton configuration file contains the following information: 
+<dl>
+<dt>Name
+<dd>Name of a node as returned by hostname (e.g. "lx12").
+<dt>Partition
+<dd>List of partition numbers this node belongs to, partition numbers 
+range from 0 to 31 and are specified with comma separators (e.g. "1,3").
+This can be altered by resetting MAX_PARTITION in the slurm.h file 
+before building. In no case should this value exceed the number of 
+bits in an integer on the computer as a bit-mask is used to record 
+partition information. The default partition value is zero.
+<dt>OS
+<dd>Operating System name and level (output of the command
+"/bin/uname -s -r | /bin/sed 's/ /./g'", e.g. "Linux.2.4.7-10"). 
+The default value is "UNKNOWN"
+<dt>CPUs
+<dd>Number of processors on the node (e.g. "2"). The default 
+value is 1.
+<dt>Speed
+<dd>Relative speed of these processors. Units can be an arbitrary 
+floating point number, but MHz value is recommended (e.g. "863.8").
+The default value is 1.
+<dt>RealMemory
+<dd>Size of real memory on the node in MegaBytes (e.g. "2048").
+The default value is 1.
+<dt>VirtualMemory
+<dd>Size of virtual memory on the node in MegaBytes (e.g. "4096").
+The default value is 1.
+<dt>TmpDisk
+<dd>Total size of temporary disk storage on "/tmp" in MegaBytes 
+(e.g. "16384"). Note this does not indicate the amount of free 
+space available to the user on the node, only the total file 
+The default value is 1.
+system size. 
+<dt>LastResponse
+<dd>Time of last contact from node, format is time_t as returned 
+by the "time" function. The default value is 0.
+<dt>State
+<dd>State of the node. Acceptable values are "UNKNOWN", "IDLE", 
+"BUSY", "DOWN", "DRAINED", "DRAINING". 
+The default value is "UNKNOWN".
+</dl>
+
+<p>
+Only the <b>Name</b> must be supplied in the configuration file; all other 
+items are optional.
+If you operate with more than one partition, <b>Partition</b> should also 
+be specified. 
+Other configuration information can be established through communications 
+with the SLURM Daemon, slurmd actually running on each node.
+ALternately, you can explicitly establish baseline values in the 
+configuration file. 
+Nodes which register to the system with less than the configured resources 
+(e.g. too little memory), will be placed in the "DRAINED" state to 
+avoid scheduling jobs on them.
+By default all nodes will be in partition zero, but it is possible 
+to configure your system with multiple overlapping partitions (more 
+on that below).
+If a node is not to be included in any partition, indicate this with the 
+expression "Partition= ".
+Lines in the configuration file having "#" in column one will be 
+considered comments.
+The configuration file should contain information about one node on 
+a single line. 
+If more than one line is used to describe a node's configuration, 
+be sure to include "Name=" on each line.
+In the interest of simplicity (for the developers), the field 
+descriptors above are case sensitive. 
+Each field should contain the field's name, an equal sign, and the value. 
+Fields should be space or tab separated.
+The default values for each node can be specified with a record in which 
+"Name" is "DEFAULT". 
+The default entry values will apply only to lines following it in the 
+configuration file and the default values can be reset multiple times 
+in the configuration file with multiple entries where "Name=DEFAULT".
+In order to support the concept of jobs requiring consecutive nodes, 
+nodes should be place in this file in consecutive order.
+The size of any field in the configuration file is limited to 1024 characters.
+A sample node configuration file is included at the end of this document.
+
+<h3>Partition Configuration</h3>
+The partition configuration permits you to establish different job 
+limits or access lists for various groups (or partitions) of nodes. 
+Nodes may be in more than one partition. The partiton configuration 
+file contains the following information: 
+<dl>
+<dt>Name
+<dd>Name by which the partition may be referenced (e.g. "Interactive"). 
+This name can be used by users when submitting their jobs.
+<dt>Number
+<dd>Unique number by which the partition can be referenced. This is 
+used in the node configuration file.
+<dt>JobType
+<dd>Job types which may execute in the partition. Possible values 
+are "BATCH", "INTERACTIVE", and "ALL". The default value is "ALL".
+<dt>MaxTime
+<dd>Maximum wall-time limit for any job in minutes. The default 
+value is "UNLIMITED", which is represented internally as -1.
+<dt>MaxCpus
+<dd>Maximum count of CPUs which may be allocated to any single job,
+The default value is "UNLIMITED", which is represented internally as -1.
+<dt>State
+<dd>State of partition or availability for use.  Possible values 
+are "UP" or "DOWN". The default value is "UP".
+<dt>AllowUsers
+<dd>Names of user who may use the partition, separated by commas. 
+The default value is "ALL". If AllowUsers is specified, then 
+the value of DenyUsers will be ignored.
+<dt>DenyUsers
+<dd>Names of user who may not use the partition, separated by commas.
+The  default value is "NONE".
+</dl>
+
+<p>
+Only the first two items, Name and Number, must be supplied in the 
+configuration file.
+If not otherwise specified, all nodes will be in partition zero.
+Lines in the configuration file having "#" in the first collumn 
+will be considered comments.
+It is recommended that configuration file contain information 
+about one partition per line. If more than one line is used to 
+describe the configuration of a partition, specify the "Name=" 
+on each line.
+In the interest of simplicity (for the developers), the field 
+descriptors above are case sensitive. 
+Each field should contain the field's name, an equal sign, and the value. 
+Fields should be space or tab separated.
+The default values for each partition can be specified with a record in which 
+"Name" is "DEFAULT" if other default values are desired. 
+The default entry values will apply only to lines following it in the 
+configuration file and the default values can be reset multiple times 
+in the configuration file with multiple entries where "Name=DEFAULT".
+The size of any field in the configuration file is limited to 1024 characters.
+If user controls are desired then set either AllowUsers or DenyUsers, but not both.
+If AllowUsers is set, then DenyUsers is ignored. 
+A sample partition configuration file is included at the end of this document.
+
+<h2>Commands</h2>
+To be developed and documented by Moe Jette.
+
+<h2>Miscellaneous</h2>
+It is advisable to start the ControlMachine before any other 
+of the cluster's nodes.
+There is no necessity for synchronized clocks on the nodes.
+The hierarchical communications provides excellent scalability.
+Fault-tolerance will be built through mechanisms to save 
+and restore the database using local and global file systems. 
+
+<h2>Sample node configuration file</h2>
+<pre>
+# 
+# Sample sample.node.conf2
+# Author: John Doe
+# Date: 11/06/2001
+#
+Name=DEFAULT OS=Linux.2.4.7-1 CPUs=16 Speed=345.0 RealMemory=2048 VirtualMemory=4096 TmpDisk=16384 State=IDLE
+#
+# lx01-lx02 for login only, no state is DOWN for SLURM initiated jobs
+Name=lx01 State=DOWN
+Name=lx02 State=DOWN
+#
+# lx03-lx09 for partitions 1 (debug) and 3 (super)
+Name=DEFAULT Partition=1,3
+Name=lx03
+Name=lx04
+Name=lx05 
+Name=lx06 
+Name=lx07 TmpDisk=4096
+Name=lx08 
+Name=lx09 
+#
+# lx10-lx30 for partitions 0 (pbatch) and 3 (super)
+Name=DEFAULT Partition=0,3
+Name=lx10 
+Name=lx11 VirtualMemory=2048
+Name=lx12 RealMemory=1024 
+Name=lx13 
+Name=lx14 CPUs=32
+Name=lx15 
+Name=lx16 
+Name=lx17 
+Name=lx18 State=DOWN
+Name=lx19 
+Name=lx20 
+Name=lx21 
+Name=lx22 CPUs=8
+Name=lx23 
+Name=lx24 
+Name=lx25 
+Name=lx26 
+Name=lx27 
+Name=lx28 
+Name=lx29 
+Name=lx30 
+#
+# lx31-lx32 for partitions 4 (class) and 3 (super)
+Name=DEFAULT Partition=3,4
+Name=lx31 
+Name=lx32 
+</pre>
+
+<h2>Sample partition configuration file</h2>
+<pre>
+# 
+# Example sample.part.conf2
+# Author: John Doe
+# Date: 12/14/2001
+#
+Name=pbatch  Number=0 JobType=BATCH       MaxCpus=128 MaxTime=UNLIMITED
+Name=debug   Number=1 JobType=INTERACTIVE MaxCpus=16  MaxTime=60
+Name=super   Number=3 JobType=ALL   MaxCpus=UNLIMITED MaxTime=UNLIMITED AllowUsers=cdunlap,garlick,jette
+Name=class   Number=4 JobType=ALL         MaxCpus=16  MaxTime=10        AllowUsers=student1,student2,student3
+</pre>
+
+<hr>
+URL = http://www-lc.llnl.gov/dctg-lc/slurm/user.administrator.html
+<p>Last Modified December 21, 2001</p>
+<address>Maintained by Moe Jette <a href="mailto:jette@llnl.gov">
+jette1@llnl.gov</a></address>
+</body>
+</html>

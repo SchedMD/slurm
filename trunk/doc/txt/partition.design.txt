@@ -69,7 +69,7 @@ PM will maintain the following information about each partition:
                   default value is "UNLIMITED"
  5 MaxCpus        Maximum count of CPUs which may be allocated to any job,
                   default value is "UNLIMITED"
- 7 State          State of partition (e.g. UP, DRAINING, DRAINED, DOWN), 
+ 7 State          State of partition (e.g. UP or DOWN), 
                   default value is "UP"
  8 AllowUsers     Names of user who may use the partition, 
                   separated by commas, default value is "ALL"
