@@ -141,6 +141,8 @@ int _tokenize_port_conf_list(char* source, char* delimiter,
 			     char* separator, List port_conf_list);
 int _tokenize_port_conf(char* source, char* delimiter,
 			List port_conf_list);
+/** */
+void _reset_pa_system();
 
 /** */
 void _new_pa_node(pa_node_t* pa_node, int* coord)
@@ -254,11 +256,9 @@ void _print_pa_system(pa_system_t pa_system)
 void _delete_pa_system(void* object)
 {
 	int x, y, z;
-	pa_system_t* pa_system = (pa_system_t*) object;
-
-	// 999
-	return;
-
+	// pa_system_t* pa_system = (pa_system_t*) object;
+	pa_system_t pa_system = (pa_system_t) object;
+	
 	if (!pa_system){
 		return;
 	}
@@ -267,13 +267,17 @@ void _delete_pa_system(void* object)
 		for (y=0; y<DIM_SIZE[Y]; y++){
 			for (z=0; z<DIM_SIZE[Z]; z++){
 				// 999: memory leak!!!
-				_delete_pa_node(&((*pa_system)[x][y][z]));
+				// _delete_pa_node(&((*pa_system)[x][y][z]));
+				_delete_pa_node(&(pa_system[x][y][z]));
 			}			
-			xfree((*pa_system)[x][y]);
+			// xfree((*pa_system)[x][y]);
+			xfree(pa_system[x][y]);
 		}
-		xfree((*pa_system)[x]);
+		// xfree((*pa_system)[x]);
+		xfree(pa_system[x]);
 	}
-	xfree(*pa_system);
+	// xfree(*pa_system);
+	xfree(pa_system);
 }
 
 /* */
@@ -306,7 +310,7 @@ void _backup_pa_system()
 	pa_system_t new_system;
 	// new_system = (pa_system_t*) xmalloc(sizeof(pa_system_t));
 	
-	list_push(_pa_system_list, &_pa_system);
+	list_push(_pa_system_list, _pa_system);
 	_copy_pa_system(_pa_system, &new_system);
 	_pa_system = new_system;
 
@@ -1115,6 +1119,19 @@ int _cmpf_int(int* A, int* B)
 		return 1;
 }
 
+/** */
+void _reset_pa_system()
+{
+	pa_system_t* pa_system = NULL;
+	while((pa_system = (pa_system_t*) list_pop(_pa_system_list))){
+		;
+	}
+	
+	/* after that's done, we should be left with the top
+	 * of the stack which was the original pa_system */
+	_pa_system = *pa_system;
+}
+
 /**
  * create a partition request.  Note that if the geometry is given,
  * then size is ignored.  
@@ -1231,7 +1248,7 @@ void pa_init()
 {
 	int i;
 	List switch_config_list;
-	pa_system_t* pa_system = NULL;
+
 	
 #ifdef DEBUG_PA
 	printf("pa_init()\n");
@@ -1239,16 +1256,10 @@ void pa_init()
 	/* if we've initialized, just pop off all the old crusty
 	 * pa_systems */
 	if (_initialized){
-		while((pa_system = (pa_system_t*) list_pop(_pa_system_list))){
-			;
-		}
-
-		/* after that's done, we should be left with the top
-		 * of the stack which was the original pa_system */
-		_pa_system = *pa_system;
+		_reset_pa_system();
 		return;
 	}
-
+	
 	char** filenames = (char**)xmalloc(sizeof(char*) * PA_SYSTEM_DIMENSIONS);
 	_conf_result_list = (List*) xmalloc(sizeof(List) * PA_SYSTEM_DIMENSIONS);
 	
@@ -1256,7 +1267,7 @@ void pa_init()
 		_conf_result_list[i] = list_create(delete_conf_result);
 	}
 
-	/* see if we need to load in the filenames from the env */
+	/* see if we can load in the filenames from the env */
 	filenames[X] = getenv("X_DIM_CONF");
 	filenames[Y] = getenv("Y_DIM_CONF");
 	filenames[Z] = getenv("Z_DIM_CONF");
@@ -1273,7 +1284,6 @@ void pa_init()
 		}
 		list_destroy(switch_config_list);
 	}
-
 	// 999
 	// exit(0);	
 
@@ -1317,9 +1327,8 @@ void pa_init()
  */
 void pa_fini()
 {
-	ListIterator itr;
 	int i;
-	pa_system_t* pa_system;
+
 #ifdef DEBUG_PA
 	printf("pa_fini()\n");
 #endif
@@ -1328,12 +1337,9 @@ void pa_fini()
 	}
 	xfree(_conf_result_list);
 
-	itr = list_iterator_create(_pa_system_list);
-	while((pa_system = (pa_system_t*) list_next(itr))){
-		_delete_pa_system(pa_system);
-	}
-	list_iterator_destroy(itr);
-	
+	list_destroy(_pa_system_list);
+	_delete_pa_system(_pa_system);
+
 	printf("pa system destroyed\n");
 }
 
