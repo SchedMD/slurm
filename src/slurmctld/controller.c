@@ -45,8 +45,10 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
+#include "src/common/credential_utils.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
@@ -54,10 +56,10 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/macros.h"
 #include "src/common/xstring.h"
+
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/common/credential_utils.h"
 
 #define BUF_SIZE 1024
 #define DEFAULT_DAEMONIZE 0
@@ -980,6 +982,7 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 		WRITE_LOCK, NO_LOCK
 	};
 	uid_t uid = 0;
+	bool job_requeue = false;
 
 	/* init */
 	start_time = clock();
@@ -990,16 +993,15 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 	lock_slurmctld(job_write_lock);
 	/* do RPC call */
 	/* First set node down as needed on fatal error */
-	if ((complete_job_step_msg->job_rc   != SLURM_SUCCESS) && 
-	    (complete_job_step_msg->slurm_rc != SLURM_SUCCESS)) {
-		error ("Fatal error running job %u from node %s: %s",
+	if (complete_job_step_msg->slurm_rc != SLURM_SUCCESS) {
+		error ("Fatal slurmd error running job %u from node %s: %s",
 			complete_job_step_msg->job_id, 
 		        complete_job_step_msg->node_name, 
 	                slurm_strerror (complete_job_step_msg->slurm_rc));
 #ifdef	HAVE_AUTHD
 		if ((uid != 0) && (uid != getuid())) {
 			error_code = ESLURM_USER_ID_MISSING;
-			error("Security violation, can't set node down uid %u",
+			error("Security violation, uid %u can't set node down",
 		  	      (unsigned int) uid);
 		}
 #endif
@@ -1009,13 +1011,15 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 					complete_job_step_msg->node_name;
 			update_node_msg.node_state = NODE_STATE_DOWN;
 			error_code = update_node ( &update_node_msg );
-			/* FIXME: Release resources and requeue the job */
+			if (complete_job_step_msg->job_rc != SLURM_SUCCESS)
+				job_requeue = true;
 		}
 	}
 
 	/* Mark job and/or job step complete */
 	if (complete_job_step_msg->job_step_id == NO_VAL) {
-		error_code = job_complete(complete_job_step_msg->job_id, uid);
+		error_code = job_complete(complete_job_step_msg->job_id, 
+		                          uid, job_requeue);
 		unlock_slurmctld(job_write_lock);
 
 		/* return result */

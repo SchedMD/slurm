@@ -45,17 +45,22 @@
 #include <sys/types.h>
 
 #ifdef HAVE_LIBELAN3
-#include <src/common/qsw.h>
-#endif
+#  include "src/common/qsw.h"
+#endif				/* HAVE_LIBELAN3 */
 
-#include <src/api/slurm.h>
-#include <src/common/bitstring.h>
-#include <src/common/list.h>
-#include <src/common/log.h>
-#include <src/common/macros.h>
-#include <src/common/pack.h>
-#include <src/common/slurm_protocol_api.h>
-#include <src/common/xmalloc.h>
+#ifdef WITH_PTHREADS
+#  include <pthread.h>
+#endif				/* WITH_PTHREADS */
+
+#include "src/api/slurm.h"
+
+#include "src/common/bitstring.h"
+#include "src/common/list.h"
+#include "src/common/log.h"
+#include "src/common/macros.h"
+#include "src/common/pack.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
 
 /* Perform full slurmctld's state every PERIODIC_CHECKPOINT seconds */
 #define	PERIODIC_CHECKPOINT	300
@@ -371,7 +376,7 @@ extern int job_cancel (uint32_t job_id, uid_t uid);
 extern int job_step_cancel (uint32_t job_id, uint32_t job_step_id, uid_t uid );
 
 /* job_complete - note the completion the specified job */
-extern int job_complete (uint32_t job_id, uid_t uid);
+extern int job_complete (uint32_t job_id, uid_t uid, bool requeue);
 
 /* job_step_complete - note the completion the specified job step*/
 extern int job_step_complete (uint32_t job_id, uint32_t job_step_id, uid_t uid);
