@@ -174,7 +174,7 @@ int read_bgl_partitions()
 {
 	int rc = SLURM_SUCCESS;
 
-	int bp_cnt, i, rm_rc;
+	int bp_cnt, i;
 	rm_element_t *bp_ptr;
 	pm_partition_id_t part_id;
 	rm_partition_t *part_ptr;
@@ -205,7 +205,9 @@ int read_bgl_partitions()
 		part_count = 0;
 	}
 	
+	
 	for(part_number=0; part_number<part_count; part_number++) {
+		
 		if (part_number) {
 			if ((rc = rm_get_data(part_list, RM_PartListNextPart,
 					&part_ptr)) != STATUS_OK) {
@@ -236,7 +238,7 @@ int read_bgl_partitions()
 			    != STATUS_OK) {
 				error("Partition %s doesn't exist.",
 				      part_name);
-				rc = SLURM_SUCCESS;
+				rc = SLURM_ERROR;
 				break;
 			}
 		/* New BGL partition record */		
@@ -245,9 +247,9 @@ int read_bgl_partitions()
 		list_push(bgl_curr_part_list, bgl_record);
 				
 		bgl_record->bgl_part_id = xstrdup(part_name);
-		//rm_BP_id_t *bp_id;
-		if ((rm_rc = rm_get_data(part_ptr, RM_PartitionBPNum, &bp_cnt)) != STATUS_OK) {
-			error("rm_get_data(RM_BPNum): %s", bgl_err_str(rm_rc));
+		
+		if ((rc = rm_get_data(part_ptr, RM_PartitionBPNum, &bp_cnt)) != STATUS_OK) {
+			error("rm_get_data(RM_BPNum): %s", bgl_err_str(rc));
 			bp_cnt = 0;
 		}
 		if(bp_cnt==0)
@@ -256,19 +258,27 @@ int read_bgl_partitions()
 		bgl_record->bgl_part_list = list_create(NULL);
 		bgl_record->hostlist = hostlist_create(NULL);
 		
-		if ((rm_rc = rm_get_data(part_ptr, RM_PartitionFirstBP, &bp_ptr))
-		    != STATUS_OK) {
-			error("rm_get_data(RM_FirstBP): %s",
-			      bgl_err_str(rm_rc));
-			rc = SLURM_ERROR;
-			return rc;
-		}
-	
 		for (i=0; i<bp_cnt; i++) {
-			if ((rm_rc = rm_get_data(bp_ptr, RM_BPID, &part_id))
+			if(i) {
+				if ((rc = rm_get_data(part_ptr, RM_PartitionNextBP, &bp_ptr))
+				    != STATUS_OK) {
+					error("rm_get_data(RM_NextBP): %s",
+					      bgl_err_str(rc));
+					rc = SLURM_ERROR;
+					break;
+				}
+			} else {
+				if ((rc = rm_get_data(part_ptr, RM_PartitionFirstBP, &bp_ptr))
+				    != STATUS_OK) {
+					error("rm_get_data(RM_FirstBP): %s", bgl_err_str(rc));
+					rc = SLURM_ERROR;
+					return rc;
+				}	
+			}
+			if ((rc = rm_get_data(bp_ptr, RM_BPID, &part_id))
 			    != STATUS_OK) {
 				error("rm_get_data(RM_BPLoc): %s",
-				      bgl_err_str(rm_rc));
+				      bgl_err_str(rc));
 				rc = SLURM_ERROR;
 				break;
 			}
@@ -283,198 +293,59 @@ int read_bgl_partitions()
 			hostlist_push(bgl_record->hostlist, node_name_tmp);
 			list_append(bgl_record->bgl_part_list, 
 				    &pa_system_ptr->grid[coord[X]][coord[Y]][coord[Z]]);
-			if ((rm_rc = rm_get_data(part_ptr, RM_PartitionNextBP, &bp_ptr))
-			    != STATUS_OK) {
-				error("rm_get_data(RM_NextBP): %s",
-				      bgl_err_str(rm_rc));
-				rc = SLURM_ERROR;
-				break;
-			}
 		}	
 		
 		// need to get the 000x000 range for nodes
 		// also need to get coords
 				
-		if ((rm_rc = rm_get_data(part_ptr,
+		if ((rc = rm_get_data(part_ptr,
 					 RM_PartitionConnection,
 					 &bgl_record->conn_type))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionConnection): %s",
-			      bgl_err_str(rm_rc));
+			      bgl_err_str(rc));
 		}
-		if ((rm_rc = rm_get_data(part_ptr, RM_PartitionMode,
+		if ((rc = rm_get_data(part_ptr, RM_PartitionMode,
 					 &bgl_record->node_use))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionMode): %s",
-			      bgl_err_str(rm_rc));
+			      bgl_err_str(rc));
 		}
 			
-		if ((rm_rc = rm_get_data(part_ptr, 
+		if ((rc = rm_get_data(part_ptr, 
 					 RM_PartitionUserName,
 					 &owner_name)) != STATUS_OK) {
 			error("rm_get_data(RM_PartitionUserName): %s",
-			      bgl_err_str(rm_rc));
+			      bgl_err_str(rc));
 		} else
 			bgl_record->owner_name = xstrdup(owner_name);
 							
-		if ((rm_rc = rm_get_data(part_ptr, 
+		if ((rc = rm_get_data(part_ptr, 
 					 RM_PartitionBPNum,
 					 &bgl_record->bp_count))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionUserName): %s",
-			      bgl_err_str(rm_rc));
+			      bgl_err_str(rc));
 		} 
 				
-		if ((rm_rc = rm_get_data(part_ptr, 
+		if ((rc = rm_get_data(part_ptr, 
 					 RM_PartitionSwitchNum,
 					 &bgl_record->switch_count))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionUserName): %s",
-			      bgl_err_str(rm_rc));
+			      bgl_err_str(rc));
 		} 
 				
 		bgl_record->part_lifecycle = STATIC;
 				
-		if ((rm_rc = rm_free_partition(part_ptr))
+		if ((rc = rm_free_partition(part_ptr))
 		    != STATUS_OK) {
 			error("rm_free_partition(): %s",
-			      bgl_err_str(rm_rc));
+			      bgl_err_str(rc));
 		}
 	}
 	rm_free_partition_list(part_list);
-		
-/* 	if ((rc = rm_get_BGL(&bgl)) != STATUS_OK) { */
-/* 		fatal("init_bgl: rm_get_BGL(): %s", bgl_err_str(rc)); */
-/* 		return SLURM_ERROR; */
-/* 	} */
 
-/* 	if ((rm_rc = rm_get_data(bgl, RM_BPNum, &bp_cnt)) != STATUS_OK) { */
-/* 		error("rm_get_data(RM_BPNum): %s", bgl_err_str(rm_rc)); */
-/* 		rc = SLURM_ERROR; */
-/* 		bp_cnt = 0; */
-/* 	} */
-	
-/*         if ((rm_rc = rm_get_data(bgl, RM_FirstBP, &bp_ptr)) */
-/*             != STATUS_OK) { */
-/*                 error("rm_get_data(RM_FirstBP): %s", */
-/*                       bgl_err_str(rm_rc)); */
-/*                 rc = SLURM_ERROR; */
-/*                 return rc; */
-/*         } */
-
-/*         for (i=0; i<bp_cnt; i++) { */
-
-/* 		if ((rm_rc = rm_get_data(bp_ptr, RM_BPLoc, &bp_loc)) */
-/* 		    != STATUS_OK) { */
-/* 			error("rm_get_data(RM_BPLoc): %s", */
-/* 			      bgl_err_str(rm_rc)); */
-/* 			rc = SLURM_ERROR; */
-/* 			break; */
-/* 		} */
-
-/* 		sprintf(node_name_tmp, "bgl%d%d%d",  */
-/* 			bp_loc.X, bp_loc.Y, bp_loc.Z); */
-		
-/* 		if ((rm_rc = rm_get_data(bp_ptr, RM_BPPartID, &part_id)) */
-/* 		    != STATUS_OK) { */
-/* 			error("rm_get_data(RM_BPPartID: %s", */
-/* 			      bgl_err_str(rm_rc)); */
-/* 			rc = SLURM_ERROR; */
-/* 			break; */
-/* 		} */
-
-/* 		if (!part_id || (part_id[0] == '\0')) { */
-/*                         error("no part_id exiting"); */
-/* 			rc = SLURM_ERROR; */
-/* 			break;  */
-/* 		} */
-/* 		//info("Node:%s in BglBlock:%s", node_name_tmp, part_id); */
-/* 		if(strncmp("RMP",part_id,3))  */
-/* 			goto noadd; */
-/* 		bgl_record = list_find_first(bgl_curr_part_list, */
-/* 					       _part_list_find, part_id); */
-/* 		if (!bgl_record) { */
-/* 			/\* New BGL partition record *\/ */
-/* 			if ((rm_rc = rm_get_partition(part_id, &part_ptr)) */
-/* 			    != STATUS_OK) { */
-/* 				error("rm_get_partition(%s): %s", */
-/* 				      part_id, bgl_err_str(rm_rc)); */
-/* 				rc = SLURM_ERROR; */
-/* 				continue; */
-/* 			} */
-/* 			bgl_record = xmalloc(sizeof(bgl_record_t)); */
-/* 			list_push(bgl_curr_part_list, bgl_record); */
-				
-/* 			bgl_record->bgl_part_list = list_create(NULL); */
-/* 			list_append(bgl_record->bgl_part_list, &pa_system_ptr->grid[bp_loc.X][bp_loc.Y][bp_loc.Z]); */
-/* 			bgl_record->hostlist = hostlist_create(node_name_tmp); */
-/* 			bgl_record->bgl_part_id = xstrdup(part_id); */
-				
-/* 			// need to get the 000x000 range for nodes */
-/* 			// also need to get coords */
-				
-/* 			if ((rm_rc = rm_get_data(part_ptr, */
-/* 						 RM_PartitionConnection, */
-/* 						 &bgl_record->conn_type)) */
-/* 			    != STATUS_OK) { */
-/* 				error("rm_get_data(RM_PartitionConnection): %s", */
-/* 				      bgl_err_str(rm_rc)); */
-/* 			} */
-/* 			if ((rm_rc = rm_get_data(part_ptr, RM_PartitionMode, */
-/* 						 &bgl_record->node_use)) */
-/* 			    != STATUS_OK) { */
-/* 				error("rm_get_data(RM_PartitionMode): %s", */
-/* 				      bgl_err_str(rm_rc)); */
-/* 			} */
-			
-/* 			if ((rm_rc = rm_get_data(part_ptr,  */
-/* 					RM_PartitionUserName, */
-/* 					&owner_name)) != STATUS_OK) { */
-/* 				error("rm_get_data(RM_PartitionUserName): %s", */
-/* 					bgl_err_str(rm_rc)); */
-/* 			} else */
-/* 				bgl_record->owner_name = xstrdup(owner_name); */
-							
-/* 			if ((rm_rc = rm_get_data(part_ptr,  */
-/* 						 RM_PartitionBPNum, */
-/* 						 &bgl_record->bp_count)) */
-/* 			    != STATUS_OK) { */
-/* 				error("rm_get_data(RM_PartitionUserName): %s", */
-/* 				      bgl_err_str(rm_rc)); */
-/* 			}  */
-				
-/* 			if ((rm_rc = rm_get_data(part_ptr,  */
-/* 						 RM_PartitionSwitchNum, */
-/* 						 &bgl_record->switch_count)) */
-/* 			    != STATUS_OK) { */
-/* 				error("rm_get_data(RM_PartitionUserName): %s", */
-/* 				      bgl_err_str(rm_rc)); */
-/* 			}  */
-				
-/* 			bgl_record->part_lifecycle = STATIC; */
-				
-
-/* 			if ((rm_rc = rm_free_partition(part_ptr)) */
-/* 			    != STATUS_OK) { */
-/* 				error("rm_free_partition(): %s", */
-/* 				      bgl_err_str(rm_rc)); */
-/* 			} */
-			
-
-/* 		} else { */
-/* 			hostlist_push(bgl_record->hostlist, node_name_tmp); */
-/* 			list_append(bgl_record->bgl_part_list,  */
-/* 				    &pa_system_ptr->grid[bp_loc.X][bp_loc.Y][bp_loc.Z]);			 */
-/* 		} */
-/* 	noadd: */
-/*                 if ((rm_rc = rm_get_data(bgl, RM_NextBP, &bp_ptr)) */
-/* 		    != STATUS_OK) { */
-/* 			error("rm_get_data(RM_NextBP): %s", */
-/* 			      bgl_err_str(rm_rc)); */
-/* 			rc = SLURM_ERROR; */
-/* 			break; */
-/* 		} */
-/* 	} */
 	/* perform post-processing for each bluegene partition */
 	if(bgl_recover)
 		list_for_each(bgl_curr_part_list, _post_bgl_init_read, NULL);

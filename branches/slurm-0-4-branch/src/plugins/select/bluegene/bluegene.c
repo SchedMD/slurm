@@ -56,7 +56,7 @@ static int  _validate_config_nodes(void);
 static int  _bgl_record_cmpf_inc(bgl_record_t* rec_a, bgl_record_t* rec_b);
 static int  _parse_bgl_spec(char *in_line);
 static void _process_nodes(bgl_record_t *bgl_record);
-static int  _reopen_bridge_log(int api_verb);
+static int  _reopen_bridge_log();
 static void _strip_13_10(char *line);
 
 /* Initialize all plugin variables */
@@ -140,7 +140,7 @@ extern void print_bgl_record(bgl_record_t* bgl_record)
 	info("\tnodes: %s", bgl_record->nodes);
 	info("\tsize: %d", bgl_record->bp_count);
 	info("\tgeo: %dx%dx%d", bgl_record->geo[X], bgl_record->geo[Y], 
-		bgl_record->geo[Z]);
+	     bgl_record->geo[Z]);
 	info("\tlifecycle: %s", convert_lifecycle(bgl_record->part_lifecycle));
 	info("\tconn_type: %s", convert_conn_type(bgl_record->conn_type));
 	info("\tnode_use: %s", convert_node_use(bgl_record->node_use));
@@ -156,7 +156,7 @@ extern void print_bgl_record(bgl_record_t* bgl_record)
 	}
 #else
 	info("bgl_part_id=%s nodes=%s", bgl_record->bgl_part_id, 
-		bgl_record->nodes);
+	     bgl_record->nodes);
 #endif
 }
 
@@ -193,14 +193,14 @@ extern char* convert_lifecycle(lifecycle_type_t lifecycle)
 extern char* convert_conn_type(rm_connection_type_t conn_type)
 {
 	switch (conn_type) {
-		case (SELECT_MESH): 
-			return "MESH"; 
-		case (SELECT_TORUS): 
-			return "TORUS"; 
-		case (SELECT_NAV):
-			return "NAV";
-		default:
-			break;
+	case (SELECT_MESH): 
+		return "MESH"; 
+	case (SELECT_TORUS): 
+		return "TORUS"; 
+	case (SELECT_NAV):
+		return "NAV";
+	default:
+		break;
 	}
 	return "";
 }
@@ -208,12 +208,12 @@ extern char* convert_conn_type(rm_connection_type_t conn_type)
 extern char* convert_node_use(rm_partition_mode_t pt)
 {
 	switch (pt) {
-		case (SELECT_COPROCESSOR_MODE): 
-			return "COPROCESSOR"; 
-		case (SELECT_VIRTUAL_NODE_MODE): 
-			return "VIRTUAL"; 
-		default:
-			break;
+	case (SELECT_COPROCESSOR_MODE): 
+		return "COPROCESSOR"; 
+	case (SELECT_VIRTUAL_NODE_MODE): 
+		return "VIRTUAL"; 
+	default:
+		break;
 	}
 	return "";
 }
@@ -262,28 +262,28 @@ extern char *bgl_err_str(status_t inx)
 {
 #ifdef HAVE_BGL_FILES
 	switch (inx) {
-		case STATUS_OK:
-			return "Status OK";
-		case PARTITION_NOT_FOUND:
-			return "Partition not found";
-		case JOB_NOT_FOUND:
-			return "Job not found";
-		case BP_NOT_FOUND:
-			return "Base partition not found";
-		case SWITCH_NOT_FOUND:
-			return "Switch not found";
-		case JOB_ALREADY_DEFINED:
-			return "Job already defined";
-		case CONNECTION_ERROR:
-			return "Connection error";
-		case INTERNAL_ERROR:
-			return "Internal error";
-		case INVALID_INPUT:
-			return "Invalid input";
-		case INCOMPATIBLE_STATE:
-			return "Incompatible state";
-		case INCONSISTENT_DATA:
-			return "Inconsistent data";
+	case STATUS_OK:
+		return "Status OK";
+	case PARTITION_NOT_FOUND:
+		return "Partition not found";
+	case JOB_NOT_FOUND:
+		return "Job not found";
+	case BP_NOT_FOUND:
+		return "Base partition not found";
+	case SWITCH_NOT_FOUND:
+		return "Switch not found";
+	case JOB_ALREADY_DEFINED:
+		return "Job already defined";
+	case CONNECTION_ERROR:
+		return "Connection error";
+	case INTERNAL_ERROR:
+		return "Internal error";
+	case INVALID_INPUT:
+		return "Invalid input";
+	case INCOMPATIBLE_STATE:
+		return "Incompatible state";
+	case INCONSISTENT_DATA:
+		return "Inconsistent data";
 	}
 #endif
 
@@ -434,13 +434,13 @@ static rm_partition_state_t _get_state_partition(pm_partition_id_t part_id)
 	char *name;
 		
 	if ((rc = rm_get_partitions_info(part_state, &part_list))
-			!= STATUS_OK) {
+	    != STATUS_OK) {
 		error("rm_get_partitions(): %s\n", bgl_err_str(rc));
 		return state;	
 	}
 
 	if ((rc = rm_get_data(part_list, RM_PartListSize, &num_parts))
-			!= STATUS_OK) {
+	    != STATUS_OK) {
 		error("rm_get_data(RM_PartListSize): %s\n", bgl_err_str(rc));
 		num_parts = 0;
 	}
@@ -448,43 +448,43 @@ static rm_partition_state_t _get_state_partition(pm_partition_id_t part_id)
 	for (j=0; j<num_parts; j++) {
 		if (j) {
 			if ((rc = rm_get_data(part_list,
-					RM_PartListNextPart, &part_ptr))
-					!= STATUS_OK) {
+					      RM_PartListNextPart, &part_ptr))
+			    != STATUS_OK) {
 				error("rm_get_data(RM_PartListNextPart): %s",
-					bgl_err_str(rc));
+				      bgl_err_str(rc));
 				break;
 			}
 		} else {
 			if ((rc = rm_get_data(part_list,
-					RM_PartListFirstPart, &part_ptr))
-					!= STATUS_OK) {
+					      RM_PartListFirstPart, &part_ptr))
+			    != STATUS_OK) {
 				error("rm_get_data(RM_PartListFirstPart): %s",
-					bgl_err_str(rc));
+				      bgl_err_str(rc));
 				break;
 			}
 		}
-
+		
 		if ((rc = rm_get_data(part_ptr, RM_PartitionID, &name)) 
-				!= STATUS_OK) {
+		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionID): %s",
-				bgl_err_str(rc));
+			      bgl_err_str(rc));
 			continue;
 		}
-
+		
 		if (strcmp(part_id, name))
 			continue;
-
+		
 		if ((rc = rm_get_data(part_ptr, RM_PartitionState, &state))
-				!= STATUS_OK) {
+		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionState): %s",
-				bgl_err_str(rc));
+			      bgl_err_str(rc));
 			state = RM_PARTITION_NAV;
 		}
 		break;
 	}
 	if ((rc = rm_free_partition_list(part_list)) != STATUS_OK)
 		error("rm_free_partition_list(): %s", bgl_err_str(rc));
-
+	
 	return state;
 }
 #endif
@@ -501,11 +501,11 @@ extern int bgl_free_partition(pm_partition_id_t part_id)
 		if (state != RM_PARTITION_FREE) {
 			if ((rc = pm_destroy_partition(part_id)) != STATUS_OK)
 				error("pm_destroy_partition(%s): %s",
-					part_id, bgl_err_str(rc));
+				      part_id, bgl_err_str(rc));
 		}
 
 		if ((state == RM_PARTITION_FREE)
-		||  (state == RM_PARTITION_ERROR))
+		    ||  (state == RM_PARTITION_ERROR))
 			break;
 		sleep(3);
 	}
@@ -531,7 +531,7 @@ static int _addto_node_list(bgl_record_t *bgl_record, int *start, int *end)
 				sprintf(node_name_tmp, "bgl%d%d%d", 
 					x, y, z);		
 				hostlist_push(bgl_record->hostlist, 
-					node_name_tmp);
+					      node_name_tmp);
 				list_append(bgl_record->bgl_part_list, 
 					    &pa_system_ptr->grid[x][y][z]);
 				node_count++;
@@ -696,7 +696,7 @@ static int _delete_old_partitions(void)
 		list_iterator_destroy(itr_curr);
 	}
 #endif	
-	return 1;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -720,9 +720,9 @@ extern int read_bgl_conf(void)
 	if (stat(bgl_conf, &config_stat) < 0)
 		fatal("can't stat bluegene.conf file %s: %m", bgl_conf);
 	if (last_config_update
-	&&  (last_config_update == config_stat.st_mtime)) {
+	    &&  (last_config_update == config_stat.st_mtime)) {
 		debug("bluegene.conf unchanged");
-		_reopen_bridge_log(0);
+		_reopen_bridge_log();
 		return SLURM_SUCCESS;
 	}
 	last_config_update = config_stat.st_mtime; 
@@ -746,7 +746,6 @@ extern int read_bgl_conf(void)
 			      "too long", line_num, bgl_conf);
 			fclose(bgl_spec_file);
 			return E2BIG;
-			break;
 		}
 
 		/* everything after a non-escaped "#" is a comment */
@@ -859,7 +858,7 @@ static int _parse_bgl_spec(char *in_line)
 				  "END");
 
 	if (error_code)
-		goto cleanup;
+		return SLURM_ERROR;
 
 	/* Process system-wide info */
 	if (blrts_image) {
@@ -886,26 +885,19 @@ static int _parse_bgl_spec(char *in_line)
 		xfree(bridge_api_file);
 		bridge_api_file = api_file;
 		api_file = NULL;	/* nothing left to xfree */
-		_reopen_bridge_log(bridge_api_verb);
 	}
+	
 	if (pset_num > 0) {
 		numpsets = pset_num;
 	}
 	if (api_verb >= 0) {
 		bridge_api_verb = api_verb;
-		_reopen_bridge_log(bridge_api_verb);
 	}
 
 	/* Process node information */
-	if (!nodes && !conn_type)
-		goto cleanup;	/* no data */
-	if (!nodes && conn_type) {
-		error("bluegene.conf lacks Nodes value, but has "
-			"Type or Use value");
-		error_code = SLURM_ERROR;
-		goto cleanup;
-	}
-
+	if (!nodes)
+		return SLURM_SUCCESS;	/* not partition line. */
+	
 	bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
 	list_push(bgl_list, bgl_record);
 	
@@ -963,13 +955,11 @@ static int _parse_bgl_spec(char *in_line)
 	}
 #if _DEBUG
 	debug("_parse_bgl_spec: added nodes=%s type=%s use=%s", 
-		bgl_record->nodes, 
-		convert_conn_type(bgl_record->conn_type), 
-		convert_node_use(bgl_record->node_use));
+	      bgl_record->nodes, 
+	      convert_conn_type(bgl_record->conn_type), 
+	      convert_node_use(bgl_record->node_use));
 #endif
-
-  cleanup:
-	return error_code;
+	return SLURM_SUCCESS;
 }
 
 static void _process_nodes(bgl_record_t *bgl_record)
@@ -1000,8 +990,8 @@ static void _process_nodes(bgl_record_t *bgl_record)
 			end[Z] = (number % 10);
 			j += 5;
 			bgl_record->bp_count += _addto_node_list(bgl_record, 
-						       start, 
-						       end);
+								 start, 
+								 end);
 			if(bgl_record->nodes[j] != ',')
 				break;
 		} else if((bgl_record->nodes[j] < 58 && bgl_record->nodes[j] > 47) 
@@ -1013,8 +1003,8 @@ static void _process_nodes(bgl_record_t *bgl_record)
 			start[Z] = (number % 10);
 			j+=3;
 			bgl_record->bp_count += _addto_node_list(bgl_record, 
-						       start, 
-						       start);
+								 start, 
+								 start);
 			if(bgl_record->nodes[j] != ',')
 				break;	
 		}
@@ -1076,7 +1066,7 @@ static void _process_nodes(bgl_record_t *bgl_record)
 	return;
 }
 
-static int _reopen_bridge_log(int api_verb)
+static int _reopen_bridge_log()
 {
 	static FILE *fp = NULL;
 
@@ -1088,15 +1078,15 @@ static int _reopen_bridge_log(int api_verb)
 	fp = fopen(bridge_api_file,"a");
 	if (fp == NULL) { 
 		error("can't open file for bridgeapi.log at %s: %m", 
-			bridge_api_file);
+		      bridge_api_file);
 		return SLURM_ERROR;
 	}
 
 #ifdef HAVE_BGL_FILES
-	setSayMessageParams(fp, api_verb);
+	setSayMessageParams(fp, bridge_api_verb);
 #else
-	if (fprintf(fp, "bridgeapi.log to write here at level %d\n", api_verb)
-			< 20) {
+	if (fprintf(fp, "bridgeapi.log to write here at level %d\n", bridge_api_verb)
+	    < 20) {
 		error("can't write to bridgeapi.log: %m");
 		return SLURM_ERROR;
 	}

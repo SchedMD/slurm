@@ -745,7 +745,7 @@ static void _read_part_db2(void)
 	rm_connection_type_t conn_type;
 	rm_partition_mode_t node_use;
 	rm_partition_list_t *part_list;
-	rm_partition_state_flag_t state = 7;
+	rm_partition_state_flag_t state = PARTITION_ALL_FLAG;
 	
 	if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
 		error("rm_set_serial(): %d\n", rc);
@@ -773,34 +773,64 @@ static void _read_part_db2(void)
 	
 	rm_get_data(part_list, RM_PartListSize, &part_count);
 	
-	rm_get_data(part_list, RM_PartListFirstPart, &part_ptr);
-	
 	for(part_number=0; part_number<part_count; part_number++) {
-		rm_get_data(part_ptr, RM_PartitionID, &part_name);
-		if(strncmp("RMP",part_name,3))
-			goto next_partition;
+		if (part_number) {
+			if ((rc = rm_get_data(part_list, RM_PartListNextPart,
+					&part_ptr)) != STATUS_OK) {
+				error("rm_get_data(RM_PartListNextPart): %s",
+					bgl_err_str(rc));
+				break;
+			}
+		} else {
+			if ((rc = rm_get_data(part_list, RM_PartListFirstPart, 
+					&part_ptr)) != STATUS_OK) {
+				error("rm_get_data(RM_PartListFirstPart): %s",
+					bgl_err_str(rc));
+				break;
+			}
+		}
 		
-		//printf("Checking if Partition %s is free",part_name);
+		if ((rc = rm_get_data(part_ptr, RM_PartitionID, &part_name))
+				!= STATUS_OK) {
+			error("rm_get_data(RM_PartitionID): %s", 
+				bgl_err_str(rc));
+			continue;
+		}
+		if(strncmp("RMP",part_name,3))
+			continue;
+		
 		if ((rc = rm_get_partition(part_name, &part_ptr)) != STATUS_OK)
 			break;
 			
+		block_ptr = xmalloc(sizeof(db2_block_info_t));
+		list_push(block_list, block_ptr);
+		
+		block_ptr->bgl_block_name = xstrdup(part_name);
+		
 		if ((rc = rm_get_data(part_ptr, RM_PartitionBPNum, &bp_num)) != STATUS_OK) {
 			error("rm_get_data(RM_BPNum): %s", bgl_err_str(rc));
 			bp_num = 0;
 		}
-		if ((rc = rm_get_data(part_ptr, RM_PartitionFirstBP, &bp_ptr))
-		    != STATUS_OK) {
-			error("rm_get_data(RM_FirstBP): %s", bgl_err_str(rc));
-			rc = SLURM_ERROR;
-			return;
-		}
-		block_ptr = xmalloc(sizeof(db2_block_info_t));
-		list_push(block_list, block_ptr);
-		block_ptr->bgl_block_name = xstrdup(part_name);
-			
+		
 		block_ptr->hostlist = hostlist_create(NULL);
-			
+		
 		for (i=0; i<bp_num; i++) {
+			if(i) {
+				if ((rc = rm_get_data(part_ptr, RM_PartitionNextBP, &bp_ptr))
+				    != STATUS_OK) {
+					error("rm_get_data(RM_NextBP): %s",
+					      bgl_err_str(rc));
+					rc = SLURM_ERROR;
+					break;
+				}
+			} else {
+				if ((rc = rm_get_data(part_ptr, RM_PartitionFirstBP, &bp_ptr))
+				    != STATUS_OK) {
+					error("rm_get_data(RM_FirstBP): %s", bgl_err_str(rc));
+					rc = SLURM_ERROR;
+					return;
+				}	
+			}
 			if ((rc = rm_get_data(bp_ptr, RM_BPID, &bp_id))
 			    != STATUS_OK) {
 				error("rm_get_data(RM_BPLoc): %s",
@@ -813,41 +843,40 @@ static void _read_part_db2(void)
 			sprintf(node_name_tmp, "bgl%d%d%d", 
 				coord[X], coord[Y], coord[Z]);
 				
-			hostlist_push(block_ptr->hostlist, node_name_tmp);
-			if ((rc = rm_get_data(part_ptr, RM_PartitionNextBP, &bp_ptr))
-			    != STATUS_OK) {
-				error("rm_get_data(RM_NextBP): %s",
-				      bgl_err_str(rc));
-				rc = SLURM_ERROR;
-				break;
-			}
+			hostlist_push(block_ptr->hostlist, node_name_tmp);			
 		}	
-		if ((rc = rm_get_data(part_ptr, 
-				      RM_PartitionState, 
-				      &block_ptr->state)) != STATUS_OK) {
-		}
-			
-		if ((rc = rm_get_data(part_ptr, 
-				      RM_PartitionUserName, 
-				      &user_name)) != STATUS_OK) {
-		} else
-			block_ptr->bgl_user_name = xstrdup(user_name);
-			
+		
 		if ((rc = rm_get_data(part_ptr,
 				      RM_PartitionConnection,
 				      &conn_type)) != STATUS_OK) {
 			block_ptr->bgl_conn_type = SELECT_NAV;
 		} else
 			block_ptr->bgl_conn_type = conn_type;
+		
 		if ((rc = rm_get_data(part_ptr, RM_PartitionMode,
 				      &node_use))
 		    != STATUS_OK) {
 			block_ptr->bgl_node_use = SELECT_NAV_MODE;
 		} else
 			block_ptr->bgl_node_use = node_use;
-			
-	next_partition:
-		rm_get_data(part_list, RM_PartListNextPart, &part_ptr);
+		
+		if ((rc = rm_get_data(part_ptr, 
+				      RM_PartitionUserName, 
+				      &user_name)) != STATUS_OK) {
+		} else
+			block_ptr->bgl_user_name = xstrdup(user_name);
+		
+		if ((rc = rm_get_data(part_ptr, 
+				      RM_PartitionState, 
+				      &block_ptr->state)) != STATUS_OK) {
+			error("can't get the state for %s.", block_ptr->bgl_block_name);
+		}			
+		
+		if ((rc = rm_free_partition(part_ptr))
+		    != STATUS_OK) {
+			error("rm_free_partition(): %s",
+			      bgl_err_str(rc));
+		}
 	}
 	rm_free_partition_list(part_list);
 		

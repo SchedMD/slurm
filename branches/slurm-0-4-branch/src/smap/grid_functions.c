@@ -79,7 +79,6 @@ extern int set_grid_bgl(int *start, int *end, int count, int set)
 	int i = 0;
 	assert(end[X] < DIM_SIZE[X]);
 	assert(start[X] >= 0);
-	assert(count < pa_system_ptr->num_of_proc);
 	assert(count >= 0);
 	assert(set >= 0);
 	assert(set <= 2);

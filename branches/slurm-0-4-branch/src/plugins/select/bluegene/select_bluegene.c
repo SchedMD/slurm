@@ -165,13 +165,13 @@ extern int fini ( void )
 {
 	xassert(part_list);
 #ifdef HAVE_BGL
-	if(read_bgl_conf()) {
+	if(read_bgl_conf() == SLURM_ERROR) {
 		fatal("Error, could not read the file");
 		return SLURM_ERROR;
 	}
 #else
 	/*looking for partitions only I created */
-	if (create_static_partitions(part_list)) {
+	if (create_static_partitions(part_list) == SLURM_ERROR) {
 		/* error in creating the static partitions, so
 		 * partitions referenced by submitted jobs won't
 		 * correspond to actual slurm partitions/bgl

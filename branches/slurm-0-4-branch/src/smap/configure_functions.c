@@ -542,6 +542,10 @@ static int _save_allocation(char *com, List allocated_partitions)
 		fputs ("LinuxImage=/bgl/BlueLight/ppcfloor/bglsys/bin/zImage.elf\n", file_ptr);
 		fputs ("MloaderImage=/bgl/BlueLight/ppcfloor/bglsys/bin/mmcs-mloader.rts\n", file_ptr);
 		fputs ("RamDiskImage=/bgl/BlueLight/ppcfloor/bglsys/bin/ramdisk.elf\n", file_ptr);
+		fputs ("BridgeAPILogFile=/var/log/slurm/bridgeapi.log\n", file_ptr);
+		fputs ("Numpsets=8\n", file_ptr);
+		fputs ("BridgeAPIVerbose=0\n", file_ptr);
+
 		results_i = list_iterator_create(allocated_partitions);
 		while((allocated_part = list_next(results_i)) != NULL) {
 			memset(save_string,0,255);
