@@ -1,6 +1,6 @@
 /*****************************************************************************\
  *  scontrol - administration tool for slurm. 
- *  provides interface to read, write, update, and configurations.
+ *	provides interface to read, write, update, and configurations.
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,6 +32,8 @@
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 #if HAVE_INTTYPES_H
 #  include <inttypes.h>
@@ -155,70 +157,33 @@ dump_command (int argc, char *argv[])
  * get_command - get a command from the user
  * input: argc - location to store count of arguments
  *        argv - location to store the argument list
- * output: returns error code, 0 if no problems
  */
 int 
 get_command (int *argc, char **argv) 
 {
-	static char *in_line;
-	static int in_line_size = 0;
+	char *in_line;
+	static char *last_in_line = NULL;
+	int i, in_line_size;
 	static int last_in_line_size = 0;
-	int in_line_pos = 0;
-	int temp_char, i;
 
-	if (in_line_size == 0) {
-		in_line_size += BUF_SIZE;
-		in_line = (char *) xmalloc (in_line_size);
-		if (in_line == NULL) {
-			fprintf (stderr, "%s: error %d allocating memory\n",
-				 command_name, errno);
-			in_line_size = 0;
-			return ENOMEM;
-		}		
-	}			
-
-	printf ("scontrol: ");
 	*argc = 0;
-	in_line_pos = 0;
 
-	while (1) {
-		temp_char = getchar();
-		if (temp_char == EOF)
-			break;
-		if (temp_char == (int) '\n')
-			break;
-		if ((temp_char == (int) '!') && (in_line_pos == 0)) {
-			temp_char = getchar();
-			if (temp_char == (int) '!') {
-				in_line_pos = last_in_line_size;
-				while (temp_char != (int) '\n')
-					temp_char = getchar();
-				break;
-			}
-			else {
-				in_line[in_line_pos++] = (char) temp_char;
-				in_line[in_line_pos++] = (char) temp_char;
-				continue;
-			}
-		}
-		if ((in_line_pos + 2) >= in_line_size) {
-			in_line_size += BUF_SIZE;
-			xrealloc (in_line, in_line_size);
-			if (in_line == NULL) {
-				fprintf (stderr,
-					 "%s: error %d allocating memory\n",
-					 command_name, errno);
-				in_line_size = 0;
-				return ENOMEM;
-			}	
-		}		
-		in_line[in_line_pos++] = (char) temp_char;
+	in_line = readline ("scontrol: ");
+	if (in_line == NULL)
+		return 0;
+	else if (strcmp (in_line, "!!") == 0) {
+		free (in_line);
+		in_line = last_in_line;
+		in_line_size = last_in_line_size;
+	}
+	else {
+		if (last_in_line)
+			free (last_in_line);
+		last_in_line = in_line;
+		last_in_line_size = in_line_size = strlen (in_line);
 	}
 
-	in_line[in_line_pos] = (char) NULL;
-	last_in_line_size = in_line_pos;
-
-	for (i = 0; i < in_line_pos; i++) {
+	for (i = 0; i < in_line_size; i++) {
 		if ((in_line[i] == '\0') && (isspace ((int) in_line[i])))
 			continue;
 		if (((*argc) + 1) > MAX_INPUT_FIELDS) {	/* really bogus input line */
@@ -227,14 +192,14 @@ get_command (int *argc, char **argv)
 			return E2BIG;
 		}		
 		argv[(*argc)++] = &in_line[i];
-		for (i++; i < in_line_pos; i++) {
+		for (i++; i < in_line_size; i++) {
 			if ((in_line[i] != '\0') && (!isspace ((int) in_line[i])))
 				continue;
 			in_line[i] = (char) NULL;
 			break;
 		}		
-	}			
-	return 0;
+	}
+	return 0;		
 }
 
 
