@@ -24,8 +24,12 @@ Requires: openssl >= 0.9.6
 #
 %if %{?_with_debug:1}%{!?_with_debug:0}
   %define _enable_debug --enable-debug
-  %define __os_install_post /usr/lib/rpm/brp-compress
 %endif
+#
+# Never allow rpm to strip binaries as this will break
+#  parallel debugging capability
+#
+%define __os_install_post /usr/lib/rpm/brp-compress
 
 
 %package devel
@@ -224,6 +228,9 @@ fi
 
 
 %changelog
+* Wed Aug 04 2004 Mark Grondona <mgrondona@llnl.gov>
+- don't allow rpm to strip binaries since this breaks interface to parallel
+  debuggers.
 * Thu Jul 29 2004 Morris Jette <jette1@llnl.gov>
 - added checkpoint_none.so and jobcomp_script.so plugins
 * Fri Mar 07 2004 Mark Grondona <mgrondona@llnl.gov>
