@@ -194,7 +194,7 @@ int _get_part_config(List switch_config_list, List part_config_list)
  */
 int _find_first_match(int* geometry, int conn_type)
 {
-	int dim, i, j, k, x, y, z;
+	int i=0, j=0, k=0, x=0, y=0, z=0;
 	int found_count[MY_SYSTEM_DIMENSIONS] = {0,0,0};
 	ListIterator itr;
 	conf_result_t* conf_result;
