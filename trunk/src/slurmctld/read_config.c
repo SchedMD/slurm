@@ -55,124 +55,6 @@ static int	parse_part_spec (char *in_line);
 static char highest_node_name[MAX_NAME_LEN] = "";
 int node_record_count = 0;
 
-#if DEBUG_MODULE
-/* main is used here for module testing purposes only */
-slurm_ctl_conf_t slurmctld_conf;
-#include <sys/resource.h>
-int 
-main (int argc, char *argv[]) {
-	int error_code;
-	char bitmap[128];
-	char *partitions[] = { "login", "debug", "batch", "class", "end" };
-	struct part_record *part_ptr;
-	int cycles, i, found;
-	log_options_t opts = LOG_OPTS_STDERR_ONLY;
-	struct rusage begin_usage, end_usage;
-
-	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
-	if (argc > 3) {
-		printf ("usage: %s <in_file> <cnt>\n", argv[0]);
-		exit (1);
-	}			
-
-	error_code = read_slurm_conf (0);
-	if (error_code) {
-		printf ("ERROR %d from read_slurm_conf\n", error_code);
-		exit (error_code);
-	}			
-
-	printf ("ControlMachine=%s\n", slurmctld_conf.control_machine);
-	printf ("BackupController=%s\n", bslurmctld_conf.backup_controller);
-	printf ("\n");
-
-	for (i = 0; i < node_record_count; i++) {
-		if (strlen (node_record_table_ptr[i].name) == 0)
-			continue;
-		printf ("NodeName=%s ", node_record_table_ptr[i].name);
-		printf ("NodeState=%s ",
-			node_state_string[node_record_table_ptr[i].
-					  node_state]);
-		printf ("LastResponse=%ld ",
-			(long) node_record_table_ptr[i].last_response);
-
-		printf ("CPUs=%d ", node_record_table_ptr[i].cpus);
-		printf ("RealMemory=%d ",
-			node_record_table_ptr[i].real_memory);
-		printf ("TmpDisk=%d ", node_record_table_ptr[i].tmp_disk);
-		printf ("Weight=%d ",
-			node_record_table_ptr[i].config_ptr->weight);
-		printf ("Feature=%s\n",
-			node_record_table_ptr[i].config_ptr->feature);
-	}			
-	(void) bit_fmt (bitmap, sizeof(bitmap), up_node_bitmap);
-	printf ("\nup_node_bitmap  = %s\n", bitmap);
-	(void) bit_fmt (bitmap, sizeof(bitmap), idle_node_bitmap);
-	printf ("idle_node_bitmap= %s\n\n", bitmap);
-
-	printf ("default_part_name=%s\n", default_part_name);
-	found = 0;
-	for (i = 0;; i++) {
-		if (strcmp (partitions[i], "end") == 0) {
-			if (found)
-				break;
-			part_ptr = default_part_loc;
-		}
-		else {
-			part_ptr =
-				list_find_first (part_list, &list_find_part,
-						 partitions[i]);
-			if (part_ptr == default_part_loc)
-				found = 1;
-		}		
-		if (part_ptr == NULL)
-			continue;
-		printf ("PartitionName=%s ", part_ptr->name);
-		printf ("MaxTime=%d ", part_ptr->max_time);
-		printf ("MaxNodes=%d ", part_ptr->max_nodes);
-		printf ("Key=%d ", part_ptr->key);
-		printf ("State=%d ", part_ptr->state_up);
-		printf ("Shared=%d ", part_ptr->shared);
-		printf ("Nodes=%s ", part_ptr->nodes);
-		printf ("AllowGroups=%s  ", part_ptr->allow_groups);
-		printf ("total_nodes=%d ", part_ptr->total_nodes);
-		printf ("total_cpus=%d ", part_ptr->total_cpus);
-		(void)  bit_fmt (bitmap, sizeof(bitmap), part_ptr->node_bitmap);
-		printf ("node_bitmap=%s\n", bitmap);
-	}			
-	if (argc < 3)
-		exit (0);
-
-	cycles = atoi (argv[2]);
-	printf ("let's reinitialize the database %d times.\n", cycles);
-	if (getrusage (RUSAGE_CHILDREN, &begin_usage))
-		printf ("getrusage error %m\n");
-	else if (begin_usage.ru_maxrss == 0) {
-		printf ("WARNING: getrusage inopeative, run /bin/ps and check for memory leak\n");
-		sleep (5);
-	}
-	for (i = 0; i < cycles; i++) {
-		error_code = read_slurm_conf (0);
-		if (error_code) {
-			printf ("read_slurm_conf error %m\n", error_code);
-			exit (error_code);
-		}		
-	}			
-	if (getrusage (RUSAGE_CHILDREN, &end_usage))
-		printf ("getrusage error %m\n");
-	i = (int) (end_usage.ru_maxrss - begin_usage.ru_maxrss);
-	if (i > 0) {
-		printf ("ERROR: Change in maximum RSS is %d.\n", i);
-		error_code = ENOMEM;
-	}
-	else if (end_usage.ru_maxrss == 0) {
-		printf ("WARNING: getrusage inopeative, run /bin/ps and check for memory leak\n");
-		sleep (10);
-	}
-
-	exit (error_code);
-}
-#endif
-
 
 /* 
  * report_leftover - report any un-parsed (non-whitespace) characters on the
@@ -973,6 +855,8 @@ read_slurm_conf (int recover) {
 	if (recover) {
 		(void) sync_nodes_to_jobs ();
 	}
+
+	load_part_uid_allow_list ( 1 );
 
 	/* sort config_list by weight for scheduling */
 	list_sort (config_list, &list_compare_config);
