@@ -26,8 +26,6 @@
 /*#define SECONDARY_SLURM_CONTROLLER	"sec_slrumctld.llnl.gov" */
 #define PRIMARY_SLURM_CONTROLLER	"localhost" 
 #define SECONDARY_SLURM_CONTROLLER	"localhost" 
-#define REQUEST_BUFFER_SIZE 64
-#define RESPONSE_BUFFER_SIZE 1024
 
 //WHAT ABOUT THESE INCLUDES
 
