@@ -105,7 +105,7 @@ extern uint32_t slurm_create_container ( uint32_t job_id )
 	(void) setpgrp();
 
 	if (pid < 0) {
-		error("slurm_create_container: setpsid: %m");
+		error("slurm_create_container: setsid: %m");
 		return (uint32_t) 0;
 	}
 	return (uint32_t) pid;

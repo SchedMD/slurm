@@ -45,8 +45,13 @@
 
 #ifndef __USE_XOPEN_EXTENDED
 extern pid_t getsid(pid_t pid);	/* missing from <unistd.h> */
-extern pid_t setsid(void);	/* missing from <unistd.h> */
 #endif
+
+extern int proctrack_job_reg(int *jobid);	/* register a job, include this proc */
+extern int proctrack_job_unreg(int *jobid);	/* unregister a job */
+extern int proctrack_job_kill(int *jobid, int *signal);	/* signal a job */
+extern int proctrack_get_job_id(int *pid_ptr);	/* return jobid for given pid */
+extern int proctrack_dump_records(void);	/* dump records */
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -102,38 +107,57 @@ extern int fini ( void )
 extern uint32_t slurm_create_container ( uint32_t job_id )
 {
 	pid_t pid = setsid();
+	int jobid = (int) pid;
 	(void) setpgrp();
 
 	if (pid < 0) {
-		error("slurm_create_container: setpsid: %m");
+		error("slurm_create_container: setsid: %m");
 		return (uint32_t) 0;
 	}
-	return (uint32_t) pid;
+
+	if (proctrack_job_reg(&jobid) == 0)
+		return (uint32_t) pid;
+
+	error("proctrack_job_reg(%d): %m", jobid);
+	return (uint32_t) 0;
 }
 
 extern int slurm_add_container ( uint32_t id )
 {
-	return SLURM_SUCCESS;
+	error("slurm_add_container not supported");
+	return SLURM_ERROR;
 }
 
 extern int slurm_signal_container  ( uint32_t id, int signal )
 {
-	pid_t pid = (pid_t) id;
-
+	int jobid = (int) id;
 	if (!id)	/* no container ID */
 		return ESRCH;
 
-	return killpg(pid, signal);
+	return proctrack_job_kill(&jobid, &signal);
 }
 
 extern int slurm_destroy_container ( uint32_t id )
 {
-	return SLURM_SUCCESS;
+	int jobid = (int) id;
+
+	if (!id)	/* no container ID */
+		return ESRCH;
+
+	if (proctrack_job_unreg(&jobid) == 0)
+		return SLURM_SUCCESS;
+
+	error("proctrack_job_unreg(%d): %m", jobid);
+	return SLURM_ERROR;
 }
 
 extern uint32_t
 slurm_find_container(pid_t pid)
 {
-	return (uint32_t) getsid(pid);
+	int local_pid = (int) pid;
+	int cont_id = proctrack_get_job_id(&local_pid);
+	if (cont_id == -1)
+		return (uint32_t) 0;
+	return (uint32_t) cont_id;
 }
 
