@@ -404,6 +404,8 @@ void inline slurm_free_update_job_time_msg(job_time_msg_t * msg);
 
 void inline slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg);
 
+void inline slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg);
+
 extern char *job_dist_string(uint16_t inx);
 extern char *job_state_string(enum job_states inx);
 extern char *job_state_string_compact(enum job_states inx);
