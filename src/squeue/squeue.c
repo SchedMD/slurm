@@ -61,6 +61,7 @@ int parse_state( char* str, enum job_states* states );
 int parse_command_line( int argc, char* argv[] );
 void print_options();
 void print_job (char * job_id_str);
+void print_job_steps( uint32_t job_id, uint16_t step_id );
 void usage ();
 
 struct command_line_params {
@@ -78,7 +79,6 @@ struct command_line_params {
 int 
 main (int argc, char *argv[]) 
 {
-	int i;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 
 	command_name = argv[0];
@@ -87,13 +87,12 @@ main (int argc, char *argv[])
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line( argc, argv );
 	print_options();
-	if (argc > 1) {
-		for ( i = 1; i < argc; i++ ) {
-			print_job (argv[i]);
-		}
+	
+	if ( params.step_flag )
+	{
+		print_job_steps( 0, 0 );
 	}
-	else
-		print_job (NULL);
+	else print_job( NULL );
 
 	exit (0);
 }
@@ -257,14 +256,11 @@ print_job (char * job_id_str)
 
 
 void
-print_job_steps( )
+print_job_steps( uint32_t job_id, uint16_t step_id )
 {
-/*	int i, print_cnt = 0;
-	uint32_t job_id = 0;
-	uint16_t step_id = 0;
-	static job_step_info_t * step_msg = NULL;
-	job_step_info_t *step_ptr = NULL;
-
+	int i;
+	int rc = SLURM_SUCCESS;
+	static job_step_info_response_msg_t * step_msg = NULL;
 
 
 	List format = list_create( NULL );
@@ -273,7 +269,23 @@ print_job_steps( )
 	step_format_add_user_id( format, 8, true );
 	step_format_add_start_time( format, 12, true );
 	step_format_add_nodes( format, 20, true );
-*/	
+	
+	if ( ( rc = slurm_get_job_steps( job_id, step_id, &step_msg ) ) != SLURM_SUCCESS )
+	{
+		error( "slurm_get_job_steps failed: I really should be more descriptive here\n");
+		return;
+	}
+
+	print_steps_from_list( format, NULL );
+	if ( step_msg->job_step_count > 0 )
+		for ( i=0; i < step_msg->job_step_count; i++ )
+		{
+			print_steps_from_list( format, &step_msg->job_steps[i] );
+		}
+	else printf("No job steps found in system" );
+	
+
+	
 }
 
 /* usage - show the valid squeue commands */

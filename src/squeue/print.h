@@ -26,8 +26,7 @@ typedef struct step_format {
 
 
 int print_jobs_from_list( List list, job_info_t* job );
-
-int print_stepss_from_list( List list, job_info_t* job );
+int print_steps_from_list( List list, job_step_info_t* job_step );
 
 /*****************************************************************************
  * Job Line Format Options
