@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "January 2003" "squeue 0.1" "Slurm components"
+.TH SQUEUE "1" "March 2003" "squeue 0.1" "Slurm components"
 
 .SH "NAME"
 squeue \- Used to view information of jobs located in the scheduling queue.
@@ -15,6 +15,21 @@ OPTIONS
 .TP
 \fB\-?\fR, \fB\-\-help\fR
 Print a help message describing the usage of \fBsqueue\fR.
+.TP
+\fB\-h\fR, \fB\-\-noheader\fR
+Do not print a header on the output.
+.TP
+\fB\-i\fR, \fB\-\-iterate\fR
+Repeatedly gather and report the requested information at the interval
+specified (in seconds).
+.TP
+\fB\-j\fR, \fB\-\-jobs\fR
+Specify the jobs to view.  This takes a comma separated list of jobs to view.
+Defaults to all jobs.
+.TP
+\fB\-l\fR, \fB\-\-long\fR
+Report more of the available information for the selected jobs or job steps, 
+subject to any constraints specified.
 .TP
 \fB\-o\fR, \fB\-\-format\fR
 Specify the information to be displayed.  
@@ -81,25 +96,13 @@ limit)
 \fB\-v\fR
 Display all job information.
 .TP
-\fB\-i\fR, \fB\-\-iterate\fR
-Repeatedly gather and report the requested information at the interval
-specified (in seconds).
-.TP
-\fB\-j\fR, \fB\-\-jobs\fR
-Specify the jobs to view.  This takes a comma separated list of jobs to view.
-Defaults to all jobs.
-.TP
-\fB\-s\fR, \fB\-\-job-steps\fR
-Specify the job steps to view.  This takes a comma separated list of job steps
-to view in the format "job_id.step_id". Defaults to all job steps.
-.TP
-\fB\-l\fR, \fB\-\-long\fR
-Report more of the available information for the selected jobs or job steps, 
-subject to any constraints specified.
-.TP
 \fB\-p\fR, \fB\-\-partition\fR
 Specify the partitions of the jobs or steps to view. Accepts a comma separated 
 list of partition names.
+.TP
+\fB\-s\fR, \fB\-\-steps\fR
+Specify the job steps to view.  This takes a comma separated list of job steps
+to view in the format "job_id.step_id". Defaults to all job steps.
 .TP
 \fB\-S\fR, \fB\-\-sort\fR
 Specifies the sorting order of job's or job step's records for printing. 
