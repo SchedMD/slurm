@@ -263,7 +263,7 @@ _qsw_standalone(job_t *job)
 {
 	int i;
 	bitstr_t bit_decl(nodeset, QSW_MAX_TASKS);
-	bool cyclic = opt.distribution == SRUN_DIST_CYCLIC;
+	bool cyclic = (opt.distribution == SRUN_DIST_CYCLIC);
 
 	for (i = 0; i < job->nhosts; i++) {
 		int nodeid;
@@ -276,7 +276,6 @@ _qsw_standalone(job_t *job)
 		fatal("qsw_alloc_jobinfo: %m");
 	if (qsw_setup_jobinfo(job->qsw_job, opt.nprocs, nodeset, cyclic) < 0)
 		fatal("qsw_setup_jobinfo: %m");
-
 }
 #endif /* HAVE_ELAN */
 
