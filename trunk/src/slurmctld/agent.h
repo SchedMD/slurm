@@ -43,6 +43,6 @@ typedef struct agent_arg {
 	void		*msg_args;		/* RPC data to be transmitted */
 } agent_arg_t;
 
-void *agent (void *args);
+extern void *agent (void *args);
 
 #endif /* !_AGENT_H */

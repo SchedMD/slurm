@@ -177,7 +177,7 @@ agent (void *args)
 		task_specific_ptr 			= xmalloc (sizeof (task_info_t));
 		task_specific_ptr->thread_mutex		= &agent_info_ptr->thread_mutex;
 		task_specific_ptr->thread_cond		= &agent_info_ptr->thread_cond;
-		task_specific_ptr->threads_active	= &agent_info_ptr->thread_count;
+		task_specific_ptr->threads_active	= &agent_info_ptr->threads_active;
 		task_specific_ptr->thread_struct	= &thread_ptr[i];
 		task_specific_ptr->msg_type		= agent_info_ptr->msg_type;
 		task_specific_ptr->msg_args		= &agent_info_ptr->msg_args;
@@ -210,9 +210,6 @@ agent (void *args)
         }
 
 	/* wait for termination of remaining threads */
-	pthread_mutex_lock(&agent_info_ptr->thread_mutex);
-     	while (agent_info_ptr->threads_active > 0)
-		pthread_cond_wait(&agent_info_ptr->thread_cond, &agent_info_ptr->thread_mutex);
 	pthread_join (thread_wdog, NULL);
 
 cleanup:
@@ -387,6 +384,7 @@ cleanup:
 	pthread_cond_signal(task_ptr->thread_cond);
 	pthread_mutex_unlock (task_ptr->thread_mutex);
 
+	xfree (task_ptr);
 	return (void *) NULL;
 }
 
