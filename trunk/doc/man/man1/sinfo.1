@@ -1,4 +1,4 @@
-.TH SINFO "1" "July 2003" "sinfo 0.2" "Slurm components"
+.TH SINFO "1" "October 2003" "sinfo 0.2" "Slurm components"
 
 .SH "NAME"
 sinfo \- Used to view information about Slurm nodes and partitions.
@@ -11,7 +11,7 @@ system running SLURM.
 
 .SH "OPTIONS"
 .TP
-\fB\-?\fR, \fB\-\-help\fR
+\fB\-H\fR, \fB\-\-help\fR, \fB\-\-usage\fR
 Print a help message describing the usage of \fBsinfo\fR.
 .TP
 \fB\-e\fR, \fB\-\-exact\fR
@@ -138,9 +138,6 @@ responding or not.
 .TP
 \fB\-p <partition>\fR, \fB\-\-partition=<partition>\fR
 Print information only about the specified partition.  
-.TP
-\fB\-\-usage\fR
-Dipaly brief description of commands and options.
 .TP
 \fB\-v\fR , \fB\-\-verbose\fR
 Provide detailed event logging through program execution.
