@@ -247,32 +247,33 @@ struct job_record {
 	uint32_t user_id;		/* user the job runs as */
 	enum job_states job_state;	/* state of the job */
 	uint16_t kill_on_node_fail;	/* 1 if job should be killed on 
-					   node failure */
+					 * node failure */
 	uint16_t kill_on_step_done;	/* 1 if job should be killed when 
-					   the job step completes, 2 if kill
-					   in progress */
+					 * the job step completes, 2 if kill
+					 * in progress */
 	char *nodes;			/* list of nodes allocated to job */
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
-	uint32_t time_limit;		/* time_limit minutes or INFINITE */
+	uint32_t time_limit;		/* time_limit minutes or INFINITE,
+					 * NO_VAL implies partition max_time */
 	time_t start_time;		/* time execution begins, 
-					   actual or expected */
+					 * actual or expected */
 	time_t end_time;		/* time of termination, 
-					   actual or expected */
+					 * actual or expected */
 	time_t time_last_active;	/* time of last job activity */
 	uint32_t priority;		/* relative priority of the job,
-					   zero == held (don't initiate) */
+					 * zero == held (don't initiate) */
 	struct job_details *details;	/* job details */
 	uint16_t num_cpu_groups;	/* record count in cpus_per_node and 
-					   cpu_count_reps */
+					 * cpu_count_reps */
 	uint32_t *cpus_per_node;	/* array of cpus per node allocated */
 	uint32_t *cpu_count_reps;	/* array of consecutive nodes with 
-					   same cpu count */
+					 * same cpu count */
 	uint32_t alloc_sid;		/* local sid making resource alloc */
 	char    *alloc_node;		/* local node making resource alloc */
 	uint16_t next_step_id;		/* next step id to be used */
 	uint16_t node_cnt;		/* count of nodes allocated to job */
 	slurm_addr *node_addr;		/* addresses of the nodes allocated to 
-					   job */
+					 * job */
 	List step_list;			/* list of job's steps */
 };
 

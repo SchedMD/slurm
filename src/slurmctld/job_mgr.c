@@ -1334,11 +1334,6 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 		part_ptr = default_part_loc;
 	}
 
-	if (job_desc->time_limit == NO_VAL)
-		/* Default time_limit is partition maximum */
-		job_desc->time_limit = part_ptr->max_time;
-
-
 	/* can this user access this partition */
 	if ((part_ptr->root_only) && (submit_uid != 0)) {
 		info("_job_create: uid %u access to partition %s denied, %s",
