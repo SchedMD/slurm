@@ -24,33 +24,19 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#include <popt.h>
+#ifndef _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+
+#include <getopt.h>
 #include <pwd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "src/common/xstring.h"
-#include "src/popt/popt.h"
 #include "src/squeue/squeue.h"
-
-#define __DEBUG 0
-
-#define OPT_JOBS      	0x01
-#define OPT_JOBS_NONE 	0x02
-#define OPT_STEPS     	0x03
-#define OPT_STEPS_NONE	0x04
-#define OPT_PARTITIONS	0x05
-#define OPT_NODES     	0x06
-#define OPT_STATES     	0x07
-#define OPT_FORMAT    	0x08
-#define OPT_VERBOSE   	0x09
-#define OPT_ITERATE   	0x0a
-#define OPT_USERS   	0x0b
-#define OPT_LONG   	    0x0c
-#define OPT_SORT   	    0x0d
-#define OPT_NO_HEAD   	0x0e
-#define OPT_VERSION     0x0f
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -66,137 +52,126 @@ static void  _parse_token( char *token, char *field, int *field_size,
                            bool *right_justify, char **suffix);
 static void  _print_options( void );
 static void  _print_version( void );
+static void  _usage( void );
 
 /*
  * parse_command_line
  */
-int
+extern void
 parse_command_line( int argc, char* argv[] )
 {
-	poptContext context;
-	char next_opt, curr_opt;
 	char *env_val = NULL;
-	int rc = 0;
-
-	/* Declare the Options */
-	static const struct poptOption options[] = 
-	{
-		/* { long-option, short-option, argument type, 
-		 *    variable address, option tag, docstr, argstr } */
-
-		{"iterate", 'i', POPT_ARG_INT, &params.iterate, OPT_ITERATE,
-			"specify an interation period", "seconds"},
-		{"noheader", 'h', POPT_ARG_NONE, NULL, OPT_NO_HEAD, 
-			"no headers on output", NULL},
-		{"jobs", 'j', POPT_ARG_NONE, NULL, OPT_JOBS_NONE, 
-			"comma separated list of jobs to view, default is all", 
-			"job_id"},
-		{"steps", 's', POPT_ARG_NONE, NULL, OPT_STEPS_NONE, 
-			"comma separated list of job steps to view, "
-			"default is all",
-			"job_step"},
-		{"long", 'l', POPT_ARG_NONE, NULL, OPT_LONG, 
-			"long report", NULL},
-		{"sort", 'S', POPT_ARG_STRING, &params.sort, OPT_SORT,
-			"comma seperated list of fields to sort on", "fields"},
-		{"states", 't', POPT_ARG_STRING, &params.states, OPT_STATES,
-			"comma seperated list of states to view, "
-			"default is pending and running, "
-			"\"all\" reports all states", "states"},
-		{"partitions", 'p', POPT_ARG_STRING, 
-			&params.partitions, OPT_PARTITIONS,
-			"comma separated list of partitions to view, "
-			"default is all partitions", 
-			"partitions"},
-		{"format", 'o', POPT_ARG_STRING, &params.format, OPT_FORMAT, 
-			"format specification", "format"},
-		{"user", 'u', POPT_ARG_STRING, &params.users, OPT_USERS,
-			"comma separated list of users to view", "user_name"},
-		{"verbose", 'v', POPT_ARG_NONE, NULL, OPT_VERBOSE,
-			"verbosity level", NULL},
-		{"version", 'V', POPT_ARG_NONE, NULL, OPT_VERSION,
-			"output version information and exit", NULL},
-		POPT_AUTOHELP
-		{NULL, '\0', 0, NULL, 0, NULL, NULL} /* end the list */
+	int opt_char;
+	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
+	int option_index;
+	static struct option long_options[] = {
+		{"noheader",   no_argument,       0, 'h'},
+		{"help",       no_argument,       0, 'H'},
+		{"usage",      no_argument,       0, 'H'},
+		{"iterate",    required_argument, 0, 'i'},
+		{"jobs",       optional_argument, 0, 'j'},
+		{"long",       no_argument,       0, 'l'},
+		{"format",     required_argument, 0, 'o'},
+		{"partitions", required_argument, 0, 'p'},
+		{"steps",      optional_argument, 0, 's'},
+		{"sort",       required_argument, 0, 'S'},
+		{"states",     required_argument, 0, 't'},
+		{"user",       required_argument, 0, 'u'},
+		{"verbose",    no_argument,       0, 'v'},
+		{"version",    no_argument,       0, 'V'}
 	};
 
-	/* Initial the popt contexts */
-	context = poptGetContext("squeue", argc, (const char**)argv, 
-				options, POPT_CONTEXT_POSIXMEHARDER);
+	log_init("sinfo", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	poptSetOtherOptionHelp(context, "[-hjlsv]");
-
-	next_opt = poptGetNextOpt(context); 
-
-	while ( next_opt > -1  )
-	{
-		const char* opt_arg = NULL;
-		curr_opt = next_opt;
-		next_opt = poptGetNextOpt(context);
-
-		switch ( curr_opt )
-		{
-			case OPT_NO_HEAD:
+	while((opt_char = getopt_long(argc, argv, "?hi:j::lo:p:s::S:t:u:vV",
+			long_options, &option_index)) != -1) {
+		switch (opt_char) {
+			case (int)'?':
+				_usage();
+				exit(1);
+			case (int)'h':
 				params.no_header = true;
 				break;
-			case OPT_JOBS_NONE:
-				if ( (opt_arg = poptGetArg(context)) != NULL )
-					params.jobs = (char*)opt_arg;
-				params.job_list = _build_job_list(params.jobs);
+			case (int)'H':
+				_usage();
+				exit(0);
+				break;
+			case (int) 'i':
+				params.iterate= atoi(optarg);
+				if (params.iterate <= 0) {
+					fprintf(stderr, 
+						"Error: --iterate=%s",
+						optarg);
+					exit(1);
+				}
+				break;
+			case (int) 'j':
+				if (optarg) {
+					params.jobs = xstrdup(optarg);
+					params.job_list = 
+						_build_job_list(params.jobs);
+				}
 				params.job_flag = true;
 				break;	
-			case OPT_STEPS_NONE:
-				if ( (opt_arg = poptGetArg( context )) != NULL )
-					params.steps = (char*)opt_arg;
-				params.step_list = _build_step_list( params.steps );
-				params.step_flag = true;
-				break;	
-			case OPT_LONG:
+			case (int) 'l':
 				params.long_list = true;
 				break;
-			case OPT_STATES:
-				params.state_list = _build_state_list( params.states );
-				break;	
-			case OPT_PARTITIONS:
+			case (int) 'o':
+				params.format = xstrdup(optarg);
+				break;
+			case (int) 'p':
+				params.partitions = xstrdup(optarg);
 				params.part_list = 
 					_build_part_list( params.partitions );
-				break;	
-			case OPT_USERS:
-				params.user_list = _build_user_list( params.users );
 				break;
-			case OPT_VERBOSE:
+			case (int) 's':
+				if (optarg) {
+					params.steps = xstrdup(optarg);
+					params.step_list = 
+						_build_step_list( params.steps );
+				}
+				params.step_flag = true;
+				break;
+			case (int) 'S':
+				params.sort = xstrdup(optarg);
+				break;
+			case (int) 't':
+				params.states = xstrdup(optarg);
+				params.state_list = 
+					_build_state_list( params.states );
+				break;
+			case (int) 'u':
+				params.users = xstrdup(optarg);
+				params.user_list = 
+					_build_user_list( params.users );
+				break;
+			case (int) 'v':
 				params.verbose++;
-				break;	
-			case OPT_VERSION:
+				break;
+			case (int) 'V':
 				_print_version();
 				exit(0);
-				break;	
-			default:
-				break;	
-		}
-		if ( (opt_arg = poptGetArg( context )) != NULL )
-		{
-			fprintf(stderr, "%s: %s \"%s\"\n", argv[0],
-				poptStrerror(POPT_ERROR_BADOPT), opt_arg);
-			exit (1);
-		}
-		if ( curr_opt < 0 )
-		{
-			fprintf(stderr, "%s: \"%s\" %s\n", argv[0], 
-				poptBadOption(context, POPT_BADOPTION_NOALIAS), 
-				poptStrerror(next_opt));
-			exit (1);
+				break;
 		}
 	}
-	if ( next_opt < -1 )
-	{
-		const char *bad_opt;
-		bad_opt = poptBadOption( context, POPT_BADOPTION_NOALIAS );
-		fprintf( stderr, "bad argument %s: %s\n", bad_opt, 
-				poptStrerror(next_opt) );
-		fprintf( stderr, "Try \"%s --help\" for more information\n", 
-		         argv[0] );
-		exit( 1 );
+
+	if (optind < argc) {
+		if (params.job_flag) {
+			params.jobs = xstrdup(argv[optind++]);
+			params.job_list = _build_job_list(params.jobs);
+		} else if (params.step_flag) {
+			params.steps = xstrdup(argv[optind++]);
+			params.step_list = _build_step_list(params.steps);
+		}
+		if (optind < argc) {
+			fprintf(stderr, "Unrecognized option: %s",argv[optind]);
+			exit(1);
+		}
+	}
+
+	if ( params.job_flag && params.step_flag) {
+		fprintf(stderr, "Incompatable options --jobs and --steps\n");
+		exit(1);
 	}
 
 	if ( ( params.format == NULL ) && 
@@ -229,8 +204,6 @@ parse_command_line( int argc, char* argv[] )
 
 	if ( params.verbose )
 		_print_options();
-
-	return rc;
 }
 
 /* Return the maximum number of processors for any node in the cluster */
@@ -300,7 +273,7 @@ _parse_state( char* str, enum job_states* states )
  * IN format - user's format specification
  * RET zero or error code
  */
-int parse_format( char* format )
+extern int parse_format( char* format )
 {
 	int field_size;
 	bool right_justify;
@@ -564,7 +537,6 @@ _parse_token( char *token, char *field, int *field_size, bool *right_justify,
 static void
 _print_options()
 {
-#if	__DEBUG
 	ListIterator iterator;
 	int i;
 	char *part;
@@ -572,7 +544,6 @@ _print_options()
 	enum job_states *state_id;
 	squeue_job_step_t *job_step_id;
 	uint32_t *job_id;
-#endif
 
 	printf( "-----------------------------\n" );
 	printf( "format     = %s\n", params.format );
@@ -588,8 +559,7 @@ _print_options()
 	printf( "users      = %s\n", params.users );	
 	printf( "verbose    = %d\n", params.verbose );
 
-#if	__DEBUG
-	if (params.job_list) {
+	if ((params.verbose > 1) && params.job_list) {
 		i = 0;
 		iterator = list_iterator_create( params.job_list );
 		while ( (job_id = list_next( iterator )) ) {
@@ -598,7 +568,7 @@ _print_options()
 		list_iterator_destroy( iterator );
 	}
 
-	if (params.part_list) {
+	if ((params.verbose > 1) && params.part_list) {
 		i = 0;
 		iterator = list_iterator_create( params.part_list );
 		while ( (part = list_next( iterator )) ) {
@@ -607,7 +577,7 @@ _print_options()
 		list_iterator_destroy( iterator );
 	}
 
-	if (params.state_list) {
+	if ((params.verbose > 1) && params.state_list) {
 		i = 0;
 		iterator = list_iterator_create( params.state_list );
 		while ( (state_id = list_next( iterator )) ) {
@@ -617,7 +587,7 @@ _print_options()
 		list_iterator_destroy( iterator );
 	}
 
-	if (params.step_list) {
+	if ((params.verbose > 1) && params.step_list) {
 		i = 0;
 		iterator = list_iterator_create( params.step_list );
 		while ( (job_step_id = list_next( iterator )) ) {
@@ -627,7 +597,7 @@ _print_options()
 		list_iterator_destroy( iterator );
 	}
 
-	if (params.user_list) {
+	if ((params.verbose > 1) && params.user_list) {
 		i = 0;
 		iterator = list_iterator_create( params.user_list );
 		while ( (user = list_next( iterator )) ) {
@@ -636,7 +606,6 @@ _print_options()
 		list_iterator_destroy( iterator );
 	}
 
-#endif
 	printf( "-----------------------------\n\n\n" );
 } ;
 
@@ -838,3 +807,26 @@ static void _print_version(void)
 	printf("%s %s\n", PACKAGE, SLURM_VERSION);
 }
 
+static void _usage(void)
+{
+	printf("Usage: squeue [options]\n");
+	printf("  -h, --noheader                  no headers on output\n");
+	printf("  -i, --iterate=seconds           specify an interation period\n");
+	printf("  -j, --jobs                      comma separated list of jobs\n");
+	printf("                                  to view, default is all\n");
+	printf("  -l, --long                      long report\n");
+	printf("  -o, --format=format             format specification\n");
+	printf("  -p, --partitions=partitions     comma separated list of partitions\n");
+	printf("                                  to view, default is all partitions\n");
+	printf("  -s, --steps                     comma separated list of job steps\n");
+	printf("                                  to view, default is all\n");
+	printf("  -S, --sort=fields               comma seperated list of fields to sort on\n");
+	printf("  -t, --states=states             comma seperated list of states to view,\n");
+	printf("                                  default is pending and running,\n");
+	printf("                                  '--states=all' reports all states\n");
+	printf("  -u, --user=user_name            comma separated list of users to view\n");
+	printf("  -v, --verbose                   verbosity level\n");
+	printf("  -V, --version                   output version information and exit\n");
+	printf("\nHelp options:\n");
+	printf("  -?, --help, --usage             show this help message\n");
+}
