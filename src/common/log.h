@@ -129,7 +129,7 @@ int log_init(char *argv0, log_options_t opts,
  * that protects the log. This call is needed after a fork() in a threaded
  * program
  */
-int log_reinit(void);
+void log_reinit(void);
 
 /* Alter log facility, options are like log_init() above, except that
  * an argv0 argument is not passed. 

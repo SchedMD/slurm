@@ -43,24 +43,99 @@
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_defs.h"
 
-/* Pack / Unpack methods for slurm protocol header */
-void pack_header ( header_t  * header , Buf buffer );
-int  unpack_header ( header_t * header , Buf buffer );
+/****************************/
+/* Message header functions */
+/****************************/
+/* pack_header
+ * packs a slurm protocol header that proceeds every slurm message
+ * IN header - the header structure to pack
+ * IN/OUT buffer - destination of the pack, contains pointers that are
+ *			automatically updated
+ */
+extern void pack_header ( header_t  * header , Buf buffer );
 
-/* Pack / Unpack methods for slurm io pipe streams header */
-int size_io_stream_header (void);
-void pack_io_stream_header ( slurm_io_stream_header_t * msg , Buf buffer ) ;
-int unpack_io_stream_header ( slurm_io_stream_header_t * msg , Buf buffer ) ;
+/* unpack_header
+ * unpacks a slurm protocol header that proceeds every slurm message
+ * OUT header - the header structure to unpack
+ * IN/OUT buffer - source of the unpack data, contains pointers that are
+ *			automatically updated
+ * RET 0 or error code
+ */
+extern int unpack_header ( header_t * header , Buf buffer );
 
+
+/****************************/
+/* Stream header functions  */
+/****************************/
+/* size_io_stream_header - get the size of an I/O stream header
+ * RET number of bytes in an I/O steam header
+ */
+extern int size_io_stream_header ( void );
+
+/* pack_io_stream_header
+ * packs an i/o stream protocol header used for stdin/out/err
+ * IN header - the header structure to pack
+ * IN/OUT buffer - destination of the pack, contains pointers that are
+ *			automatically updated
+ */
+extern void pack_io_stream_header ( slurm_io_stream_header_t * header , 
+                                    Buf buffer ) ;
+
+/* unpack_io_stream_header
+ * unpacks an i/o stream protocol header used for stdin/out/err
+ * OUT header - the header structure to unpack
+ * IN/OUT buffer - source of the unpack data, contains pointers that are
+ *			automatically updated
+ * RET 0 or error code
+ */
+extern int unpack_io_stream_header ( slurm_io_stream_header_t * header , 
+                                     Buf buffer ) ;
+
+/**************************************************************************/
 /* generic case statement Pack / Unpack methods for slurm protocol bodies */
-int pack_msg ( slurm_msg_t const * msg , Buf buffer );
-int unpack_msg ( slurm_msg_t * msgi , Buf buffer );
+/**************************************************************************/
 
-/* specific Pack / Unpack methods for slurm protocol bodies */
-void pack_node_registration_status_msg ( 
-	slurm_node_registration_status_msg_t * msg , Buf buffer );
+/* pack_msg
+ * packs a generic slurm protocol message body
+ * IN msg - the body structure to pack (note: includes message type)
+ * IN/OUT buffer - destination of the pack, contains pointers that are 
+ *			automatically updated
+ * RET 0 or error code
+ */
+extern int pack_msg ( slurm_msg_t const * msg , Buf buffer );
 
-int unpack_node_registration_status_msg ( slurm_node_registration_status_msg_t ** msg ,  Buf buffer );
+/* unpack_msg
+ * unpacks a generic slurm protocol message body
+ * OUT msg - the body structure to unpack (note: includes message type)
+ * IN/OUT buffer - source of the unpack, contains pointers that are 
+ *			automatically updated
+ * RET 0 or error code
+ */
+extern int unpack_msg ( slurm_msg_t * msgi , Buf buffer );
+
+/***************************************************************************/
+/* specific case statement Pack / Unpack methods for slurm protocol bodies */
+/***************************************************************************/
+/* pack_job_credential
+ * packs a slurm job credential
+ * IN cred - pointer to the credential
+ * IN/OUT buffer - destination of the pack, contains pointers that are 
+ *			automatically updated
+ */
+void pack_job_credential ( slurm_job_credential_t* cred , Buf buffer ) ;
+
+/* unpack_job_credential
+ * unpacks a slurm job credential
+ * OUT cred - pointer to the credential pointer
+ * IN/OUT buffer - source of the unpack, contains pointers that are 
+ *			automatically updated
+ * RET 0 or error code
+ */
+int unpack_job_credential( slurm_job_credential_t** cred , Buf buffer ) ;
+
+
+
+
 
 void pack_job_desc ( job_desc_msg_t *job_desc_msg_ptr, Buf buffer );
 int unpack_job_desc ( job_desc_msg_t **job_desc_msg_ptr, Buf buffer );
@@ -71,11 +146,6 @@ int unpack_old_job_desc ( old_job_alloc_msg_t **job_desc_buffer_ptr,
 
 void pack_last_update ( last_update_msg_t * msg , Buf buffer );
 int unpack_last_update ( last_update_msg_t ** msg , Buf buffer );
-
-void pack_job_step_create_request_msg ( job_step_create_request_msg_t* msg , 
-                                        Buf buffer );
-int unpack_job_step_create_request_msg ( job_step_create_request_msg_t** msg , 
-                                         Buf buffer );
 
 void pack_job_step_create_response_msg (  job_step_create_response_msg_t* msg , 
                                           Buf buffer );
@@ -115,11 +185,6 @@ int unpack_partition_info_msg ( partition_info_msg_t ** , Buf buffer );
 int unpack_partition_info ( partition_info_t ** part , Buf buffer );
 int unpack_partition_info_members ( partition_info_t * part , Buf buffer );
 
-void pack_node_info_msg ( slurm_msg_t * msg, Buf buffer );
-int unpack_node_info_msg ( node_info_msg_t ** msg , Buf buffer );
-int unpack_node_info ( node_info_t ** node , Buf buffer );
-int unpack_node_info_members ( node_info_t * node , Buf buffer );
-
 void pack_cancel_job_msg ( job_id_msg_t * msg , Buf buffer );
 int unpack_cancel_job_msg ( job_id_msg_t ** msg_ptr , Buf buffer );
 
@@ -157,27 +222,8 @@ int  unpack_complete_job_step ( complete_job_step_msg_t ** msg_ptr ,
 void pack_cancel_tasks_msg ( kill_tasks_msg_t * msg , Buf buffer );
 int unpack_cancel_tasks_msg ( kill_tasks_msg_t ** msg_ptr , Buf buffer );
 
-void pack_resource_allocation_response_msg ( 
-	resource_allocation_response_msg_t * msg, Buf buffer );
-int unpack_resource_allocation_response_msg ( 
-	resource_allocation_response_msg_t ** msg , Buf buffer );
-
-void pack_resource_allocation_and_run_response_msg ( 
-	resource_allocation_and_run_response_msg_t * msg, Buf buffer );
-int unpack_resource_allocation_and_run_response_msg ( 
-	resource_allocation_and_run_response_msg_t ** msg , Buf buffer );
-
-void pack_submit_response_msg ( submit_response_msg_t * msg, Buf buffer );
-int unpack_submit_response_msg ( submit_response_msg_t ** msg , Buf buffer );
-
-void pack_update_node_msg ( update_node_msg_t * msg, Buf buffer );
-int unpack_update_node_msg ( update_node_msg_t ** msg , Buf buffer );
-
 void pack_partition_table_msg ( partition_desc_msg_t *  msg , Buf buffer );
 int unpack_partition_table_msg ( partition_desc_msg_t **  msg_ptr , Buf buffer );
-
-void pack_update_partition_msg ( update_part_msg_t * msg , Buf buffer );
-int unpack_update_partition_msg ( update_part_msg_t ** msg_ptr , Buf buffer );
 
 void pack_shutdown_msg ( shutdown_msg_t * msg , Buf buffer );
 int unpack_shutdown_msg ( shutdown_msg_t ** msg_ptr , Buf buffer );
@@ -211,14 +257,8 @@ void pack_reattach_tasks_streams_msg (
 int unpack_reattach_tasks_streams_msg ( 
 	reattach_tasks_streams_msg_t ** msg_ptr , Buf buffer ) ;
 
-void pack_revoke_credential_msg ( revoke_credential_msg_t* msg , Buf buffer ) ;
-int unpack_revoke_credential_msg ( revoke_credential_msg_t** msg , Buf buffer ) ;
-
 void pack_task_exit_msg ( task_exit_msg_t * msg , Buf buffer ) ;
 int unpack_task_exit_msg ( task_exit_msg_t ** msg_ptr , Buf buffer ) ;
-
-void pack_job_credential ( slurm_job_credential_t* cred , Buf buffer ) ;
-int unpack_job_credential( slurm_job_credential_t** msg , Buf buffer ) ;
 
 void pack_batch_job_launch ( batch_job_launch_msg_t* cred , Buf buffer ) ;
 int  unpack_batch_job_launch( batch_job_launch_msg_t** msg , Buf buffer ) ;
