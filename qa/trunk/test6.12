@@ -80,7 +80,7 @@ if {$job_id == 0} {
 }
 
 #
-# Wait for job to start running
+# Wait for job to start running, then signal it
 #
 if {[wait_for_job $job_id "RUNNING"] != 0} {
 	send_user "\nFAILURE: waiting for job to start running\n"
@@ -147,8 +147,13 @@ if {$job_id == 0} {
 }
 
 #
-# Now send SIGHUP and confirm that job gets cancelled
+# Wait for job to start running and 
+# send SIGHUP and confirm that job gets cancelled
 #
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: waiting for job to start running\n"
+	exit 1
+}
 spawn $scancel --batch -s HUP $job_id
 expect {
 	eof {
