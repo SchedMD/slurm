@@ -71,9 +71,15 @@ static int _match_feature(char *seek, char *available);
 static int _nodes_in_sets(bitstr_t *req_bitmap, 
 			  struct node_set * node_set_ptr, 
 			  int node_set_size);
-static int _pick_best_quadrics(bitstr_t * bitmap, bitstr_t * req_bitmap,
-			       int min_nodes, int max_nodes, int req_cpus,
-			       int consecutive);
+static void _node_load_bitmaps(bitstr_t * bitmap, bitstr_t ** no_load_bit, 
+				bitstr_t ** light_load_bit, 
+				bitstr_t ** heavy_load_bit);
+static int _pick_best_layout(bitstr_t * bitmap, bitstr_t * req_bitmap,
+			     int min_nodes, int max_nodes, int req_cpus,
+			     int consecutive);
+static int _pick_best_load(bitstr_t * bitmap, bitstr_t * req_bitmap,
+			   int min_nodes, int max_nodes, int req_cpus,
+			   int consecutive);
 static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    int node_set_size, bitstr_t ** req_bitmap,
 			    uint32_t req_cpus, 
@@ -251,7 +257,7 @@ static int _match_feature(char *seek, char *available)
 
 
 /*
- * _pick_best_quadrics - Given a specification of scheduling requirements, 
+ * _pick_best_layout - Given a specification of scheduling requirements, 
  *	identify the nodes which "best" satify the request.
  * 	"best" is defined as either single set of consecutive nodes satisfying 
  *	the request and leaving the minimum number of unused nodes OR 
@@ -267,10 +273,10 @@ static int _match_feature(char *seek, char *available)
  * globals: node_record_count - count of nodes configured
  *	node_record_table_ptr - pointer to global node table
  * NOTE: bitmap must be a superset of req_nodes at the time that 
- *	_pick_best_quadrics is called
+ *	_pick_best_layout is called
  */
 static int
-_pick_best_quadrics(bitstr_t * bitmap, bitstr_t * req_bitmap,
+_pick_best_layout(bitstr_t * bitmap, bitstr_t * req_bitmap,
 		    int min_nodes, int max_nodes, 
 		    int req_cpus, int consecutive)
 {
@@ -466,6 +472,95 @@ _pick_best_quadrics(bitstr_t * bitmap, bitstr_t * req_bitmap,
 	return error_code;
 }
 
+/*
+ * _pick_best_load - Given a specification of scheduling requirements, 
+ *	identify the nodes which "best" satify the request.
+ * 	"best" is defined as the least loaded nodes
+ * IN/OUT bitmap - usable nodes are set on input, nodes not required to 
+ *	satisfy the request are cleared, other left set
+ * IN req_bitmap - map of required nodes
+ * IN min_nodes - minimum count of nodes
+ * IN max_nodes - maximum count of nodes (0==don't care)
+ * IN req_cpus - count of required processors
+ * IN consecutive - allocated nodes must be consecutive if set
+ * RET zero on success, EINVAL otherwise
+ * globals: node_record_count - count of nodes configured
+ *	node_record_table_ptr - pointer to global node table
+ * NOTE: bitmap must be a superset of req_nodes at the time that 
+ *	_pick_best_load is called
+ */
+static int
+_pick_best_load(bitstr_t * bitmap, bitstr_t * req_bitmap,
+		int min_nodes, int max_nodes, 
+		int req_cpus, int consecutive)
+{
+	bitstr_t *no_load_bit, *light_load_bit, *heavy_load_bit;
+	int error_code;
+
+	_node_load_bitmaps(bitmap, &no_load_bit, &light_load_bit, 
+			&heavy_load_bit);
+
+	/* first try to use idle nodes */
+	bit_and(bitmap, no_load_bit);
+	FREE_NULL_BITMAP(no_load_bit);
+	error_code = _pick_best_layout(bitmap, req_bitmap, min_nodes, 
+				max_nodes, req_cpus, consecutive);
+
+	/* now try to use idle and lightly loaded nodes */
+	if (error_code) {
+		bit_or(bitmap, light_load_bit);
+		error_code = _pick_best_layout(bitmap, req_bitmap, min_nodes, 
+				max_nodes, req_cpus, consecutive);
+	} 
+	FREE_NULL_BITMAP(light_load_bit);
+
+	/* now try to use all possible nodes */
+	if (error_code) {
+		bit_or(bitmap, heavy_load_bit);
+		error_code = _pick_best_layout(bitmap, req_bitmap, min_nodes, 
+				max_nodes, req_cpus, consecutive);
+	}
+	FREE_NULL_BITMAP(heavy_load_bit);
+
+	return error_code;
+}
+
+/* 
+ * _node_load_bitmaps - given a bitmap of nodes, create three new bitmaps
+ *	indicative of the load on those nodes
+ * IN bitmap             - map of nodes to test
+ * OUT no_load_bitmap    - nodes from bitmap with no jobs
+ * OUT light_load_bitmap - nodes from bitmap with one job
+ * OUT heavy_load_bitmap - nodes from bitmap with two or more jobs
+ * NOTE: caller must free the created bitmaps
+ */
+static void
+_node_load_bitmaps(bitstr_t * bitmap, bitstr_t ** no_load_bit, 
+		bitstr_t ** light_load_bit, bitstr_t ** heavy_load_bit)
+{
+	int i, load;
+	bitoff_t size = bit_size(bitmap);
+	bitstr_t *bitmap0 = bit_alloc(size);
+	bitstr_t *bitmap1 = bit_alloc(size);
+	bitstr_t *bitmap2 = bit_alloc(size);
+
+	for (i = 0; i < size; i++) {
+		if (!bit_test(bitmap, i))
+			continue;
+		load = node_record_table_ptr[i].run_job_cnt;
+		if      (load == 0)
+			bit_set(bitmap0, i);
+		else if (load == 1)
+			bit_set(bitmap1, i);
+		else
+			bit_set(bitmap2, i);
+	}
+	
+	*no_load_bit    = bitmap0;
+	*light_load_bit = bitmap1;
+	*heavy_load_bit = bitmap2;
+}
+
 static bool 
 _enough_nodes(int avail_nodes, int rem_nodes, int min_nodes, int max_nodes)
 {
@@ -508,9 +603,11 @@ _enough_nodes(int avail_nodes, int rem_nodes, int min_nodes, int max_nodes)
  *	   (e.g. "FS1|FS2|FS3")
  *	3) For each feature: find matching node table entries, identify nodes 
  *	   that are up and available (idle or shared) and add them to a bit 
- *	   map, call _pick_best_quadrics() to select the "best" of those 
- *	   based upon topology
- *	4) If request can't be satified now, execute _pick_best_quadrics() 
+ *	   map
+ *	4) If nodes _not_ shared then call _pick_best_layout() to select the 
+ *	   "best" of those based upon topology, else call _pick_best_load()
+ *	   to pick the "best" nodes in terms of workload
+ *	5) If request can't be satified now, execute _pick_best_layout() 
  *	   against the list of nodes that exist in any state (perhaps down 
  *	   or busy) to determine if the request can ever be satified.
  */
@@ -587,7 +684,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				bit_and(node_set_ptr[i].my_bitmap,
 					idle_node_bitmap);
 			node_set_ptr[i].nodes =
-			    bit_set_count(node_set_ptr[i].my_bitmap);
+				bit_set_count(node_set_ptr[i].my_bitmap);
 			_add_node_set_info(&node_set_ptr[i], &avail_bitmap, 
 					   &avail_nodes, &avail_cpus);
 			if ((*req_bitmap) &&
@@ -598,10 +695,18 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			    ((max_nodes   > min_nodes) && 
 			     (avail_nodes < max_nodes)))
 				continue;	/* Keep accumulating nodes */
-			pick_code = _pick_best_quadrics(avail_bitmap, 
+
+			if (shared)
+				pick_code = _pick_best_load(avail_bitmap, 
 							*req_bitmap, min_nodes,
 							max_nodes, req_cpus, 
 							contiguous);
+			else
+				pick_code = _pick_best_layout(avail_bitmap, 
+							*req_bitmap, min_nodes,
+							max_nodes, req_cpus, 
+							contiguous);
+
 			if (pick_code == SLURM_SUCCESS) {
 				if ((node_lim != INFINITE) && 
 				    (bit_set_count(avail_bitmap) > node_lim)) {
@@ -620,7 +725,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		if ((max_nodes   >  min_nodes) && 
 		    (avail_nodes >= min_nodes) &&
 		    (avail_nodes <  max_nodes)) {
-			pick_code = _pick_best_quadrics(avail_bitmap, 
+			pick_code = _pick_best_layout(avail_bitmap, 
 							*req_bitmap, min_nodes,
 							max_nodes, req_cpus, 
 							contiguous);
@@ -644,7 +749,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				FREE_NULL_BITMAP(avail_bitmap);
 				avail_bitmap = bit_copy(total_bitmap);
 				bit_and(avail_bitmap, avail_node_bitmap);
-				pick_code = _pick_best_quadrics(
+				pick_code = _pick_best_layout(
 							avail_bitmap, 
 							*req_bitmap, min_nodes,
 							max_nodes, req_cpus, 
@@ -655,7 +760,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				}
 			}
 			if (!runable_ever) {
-				pick_code = _pick_best_quadrics(
+				pick_code = _pick_best_layout(
 							total_bitmap, 
 							*req_bitmap, min_nodes,
 							max_nodes, req_cpus, 
@@ -685,7 +790,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 
 /*
- * _add_node_set_info - add info in node_set_ptr to 
+ * _add_node_set_info - add info in node_set_ptr to node_bitmap
  * IN node_set_ptr - node set info
  * IN/OUT node_bitmap - add nodes in set to this bitmap
  * IN/OUT node_cnt - add count of nodes in set to this total
@@ -854,7 +959,8 @@ static int _build_node_list(struct job_record *job_ptr,
 	bitstr_t *exc_node_mask = NULL;
 
 	node_set_inx = 0;
-	node_set_ptr = (struct node_set *) xmalloc(sizeof(struct node_set) * 2);
+	node_set_ptr = (struct node_set *) 
+			xmalloc(sizeof(struct node_set) * 2);
 	node_set_ptr[node_set_inx+1].my_bitmap = NULL;
 	if (detail_ptr->exc_node_bitmap) {
 		exc_node_mask = bit_copy(detail_ptr->exc_node_bitmap);
@@ -1106,8 +1212,8 @@ static int _valid_features(char *requested, char *available)
 
 		if (tmp_requested[i] == '&') {
 			if (bracket != 0) {
-				info("_valid_features: parsing failure 1 on %s", 
-				     requested);
+				debug("_valid_features: parsing failure on %s",
+					requested);
 				result = 0;
 				break;
 			}
@@ -1165,9 +1271,8 @@ static int _valid_features(char *requested, char *available)
 				   && (bracket == 1)) {
 				break;
 			} else {
-				error
-				    ("_valid_features: parsing failure 2 on %s",
-				     requested);
+				debug("_valid_features: parsing failure on %s",
+					requested);
 				result = 0;
 				break;
 			}
