@@ -63,10 +63,10 @@ expect {
 	}
 }
 
-if {$env_flag_debug != 1} {
-	send_user "\nFAILURE: did not process"
-	send_user " $env_name_debug environment variable\n"
-	set exit_code 1
+if {$job_id == 0} {
+	send_user "\nFAILURE: did not get job_id\n" 
+	kill_srun
+	exit 1
 }
 
 #
@@ -105,7 +105,7 @@ exec $bin_rm -f $env_valu_stdout
 
 if {$task_cnt != $env_valu_nprocs} {
 	send_user "\nFAILURE: did not process"
-	send_user " $env_valu_nprocs environment variable\n"
+	send_user " $env_name_nprocs environment variable\n"
 	set exit_code 1
 }
 # Note zero origin conversion
