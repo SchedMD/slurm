@@ -1,5 +1,7 @@
 # Makefile for common library 
 
+AUTOMAKE_OPTIONS = foreign
+
 #
 if DEBUG_MODULES
 test_modules = bits_bytes bitstring
@@ -9,21 +11,17 @@ endif
 
 if WITH_ELAN
 elan_sources = qsw.c
-elan_headers = qsw.h
 else
 elan_sources = 
-elan_headers = 
 endif
 
-AUTOMAKE_OPTIONS = foreign
-
-noinst_LIBRARIES = libcommon.a
+noinst_LIBRARIES = 	libcommon.a
 
 libcommon_a_SOURCES = 	xmalloc.c 	\
 		      	xassert.c	\
 		      	xstring.c	\
 		      	strlcpy.c	\
-                      	list.c  	\
+			list.c  	\
 		      	log.c		\
 		      	bits_bytes.c	\
 			bitstring.c     \
@@ -33,6 +31,7 @@ libcommon_a_SOURCES = 	xmalloc.c 	\
 noinst_HEADERS = 	xmalloc.h 	\
 		 	xassert.h 	\
 		 	xstring.h	\
+			macros.h	\
 		 	list.h 		\
 		 	log.h 		\
 		 	strlcpy.h	\
@@ -40,7 +39,10 @@ noinst_HEADERS = 	xmalloc.h 	\
 		 	slurmlib.h	\
 			bitstring.h     \
 			pack.h		\
-			$(elan_headers)
+			qsw.h	
+
+EXTRA_libcommon_a_SOURCES =		\
+			qsw.c
 
 # target specific CFLAGS do not work until automake 1.5, use explicit rules
 # for now. If we ever move to 1.5, the CFLAGS defs below should work in
