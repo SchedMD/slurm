@@ -45,11 +45,11 @@ print_header $test_id
 # Test for existence of simple program (mpi_ping)
 #
 if {[info exists mpi_ping] == 0} {
-	send_user "\nWARNING: mpi_program not defined, can't perform mpi testing\n"
+	send_user "\nWARNING: mpi_ping not defined, can't perform mpi testing\n"
 	exit 0
 }
 if {[file executable $mpi_ping] == 0} {
-	send_user "\nWARNING: mpi_program $mpi_ping does not exists\n"
+	send_user "\nWARNING: $mpi_ping does not exists\n"
 	exit 0
 }
 
