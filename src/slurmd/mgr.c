@@ -767,8 +767,10 @@ _wait_for_session(slurmd_job_t *job)
     done:
 	if (WIFSIGNALED(status)) {
 
-		error ("slurmd session manager killed by signal %d",
-		       WTERMSIG(status));
+		int signo = WTERMSIG(status);
+
+		if (signo != 9)
+			error ("slurmd session manager killed by signal %d", signo);
 
 		/*
 		 * Make sure all processes in session are dead
