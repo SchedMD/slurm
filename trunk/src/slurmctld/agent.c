@@ -104,6 +104,7 @@ typedef struct task_info {
 
 static void alarm_handler(int dummy);
 static void queue_agent_retry (agent_info_t *agent_info_ptr, int count);
+static void slurmctld_free_job_launch_msg(batch_job_launch_msg_t * msg);
 static void spawn_retry_agent (agent_arg_t *agent_arg_ptr);
 static void *thread_per_node_rpc (void *args);
 static void *wdog (void *args);
@@ -141,7 +142,8 @@ agent (void *args)
 		fatal ("agent passed NULL node name list");
 	if ((agent_arg_ptr->msg_type != REQUEST_REVOKE_JOB_CREDENTIAL) &&
 	    (agent_arg_ptr->msg_type != REQUEST_NODE_REGISTRATION_STATUS) &&
-	    (agent_arg_ptr->msg_type != REQUEST_PING))
+	    (agent_arg_ptr->msg_type != REQUEST_PING) &&
+	    (agent_arg_ptr->msg_type != REQUEST_BATCH_JOB_LAUNCH))
 		fatal ("agent passed invalid message type %d", agent_arg_ptr->msg_type);
 
 	/* initialize the data structures */
@@ -239,8 +241,12 @@ cleanup:
 			xfree (agent_arg_ptr->slurm_addr);
 		if (agent_arg_ptr->node_names)
 			xfree (agent_arg_ptr->node_names);
-		if (agent_arg_ptr->msg_args)
-			xfree (agent_arg_ptr->msg_args);
+		if (agent_arg_ptr->msg_args) {
+			if (agent_arg_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH) 
+				slurmctld_free_job_launch_msg (agent_arg_ptr->msg_args);
+			else
+				xfree (agent_arg_ptr->msg_args);
+		}
 		xfree (agent_arg_ptr);
 	}
 #endif
@@ -437,13 +443,13 @@ thread_per_node_rpc (void *args)
 			rc = slurm_rc_msg->return_code;
 			slurm_free_return_code_msg ( slurm_rc_msg );	
 			if (rc)
-				error ("thread_per_node_rpc/rc error %d", rc);
+				error ("thread_per_node_rpc/rc error %s", 
+				       slurm_strerror (rc));
 			else {
 				debug3 ("agent sucessfully processed RPC to node %s", 
 				        thread_ptr->node_name);
-				thread_state = DSH_DONE;
 			}
-
+			thread_state = DSH_DONE;
 			break ;
 		default:
 			error ("thread_per_node_rpc bad msg_type %d",response_msg.msg_type);
@@ -608,3 +614,23 @@ spawn_retry_agent (agent_arg_t *agent_arg_ptr)
 			fatal ("pthread_create error %m");
 	}
 }
+
+/* slurmctld_free_job_launch_msg is a variant of slurm_free_job_launch_msg
+ *	because all environment variables currently loaded in one xmalloc 
+ *	buffer (see get_job_env()), which is different from how slurmd 
+ *	assembles the data from a message */
+
+void slurmctld_free_job_launch_msg(batch_job_launch_msg_t * msg)
+{
+	if (msg) {
+		if (msg->environment) {
+			if (msg->environment[0])
+				xfree(msg->environment[0]);
+
+			xfree(msg->environment);
+			msg->environment = NULL;
+		}
+		slurm_free_job_launch_msg (msg);
+	}
+}
+

@@ -171,6 +171,7 @@ extern int job_count;			/* number of jobs in the system */
 /* job_details - specification of a job's constraints */
 struct job_details {
 	uint32_t magic;			/* magic cookie to test data integrity */
+	uint16_t batch_flag;		/* 1 if batch job (with script) */
 	uint32_t num_procs;		/* minimum number of processors */
 	uint32_t num_nodes;		/* minimum number of nodes */
 	char *req_nodes;		/* required nodes */
