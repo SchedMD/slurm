@@ -28,9 +28,13 @@
 int parse_node_spec (char *in_line);
 int parse_part_spec (char *in_line);
 
-char *backup_controller = NULL;
-char *control_machine = NULL;
 int node_record_count = 0;
+
+#if DEBUG_MODULE
+slurm_ctl_conf_t slurmctld_conf;
+#else
+extern slurm_ctl_conf_t slurmctld_conf;
+#endif
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
@@ -67,8 +71,8 @@ main (int argc, char *argv[]) {
 		exit (error_code);
 	}			
 
-	printf ("ControlMachine=%s\n", control_machine);
-	printf ("BackupController=%s\n", backup_controller);
+	printf ("ControlMachine=%s\n", slurmctld_conf.control_machine);
+	printf ("BackupController=%s\n", bslurmctld_conf.backup_controller);
 	printf ("\n");
 
 	for (i = 0; i < node_record_count; i++) {
@@ -327,15 +331,6 @@ build_bitmaps () {
 int
 init_slurm_conf () {
 	int error_code;
-
-	if (control_machine) {
-		xfree (control_machine);
-		control_machine = NULL;
-	}
-	if (backup_controller) {
-		xfree (backup_controller);
-		backup_controller = NULL;
-	}
 
 	if ((error_code = init_node_conf ()))
 		return error_code;
@@ -707,6 +702,9 @@ read_slurm_conf (char *file_name) {
 	/* process the data file */
 	line_num = 0;
 	while (fgets (in_line, BUF_SIZE, slurm_spec_file) != NULL) {
+		char* control_machine = NULL;
+		char* backup_machine = NULL;
+
 		line_num++;
 		if (strlen (in_line) >= (BUF_SIZE - 1)) {
 			error ("read_slurm_conf line %d, of input file %s too long\n",
@@ -737,12 +735,19 @@ read_slurm_conf (char *file_name) {
 		/* overall slurm configuration parameters */
 		error_code = slurm_parser(in_line,
 			"ControlMachine=", 's', &control_machine, 
-			"BackupController=", 's', &backup_controller, 
+			"BackupController=", 's', &backup_machine, 
 			"END");
 		if (error_code) {
 			fclose (slurm_spec_file);
 			return error_code;
 		}		
+
+		if ( slurmctld_conf.control_machine == NULL ) {
+			slurmctld_conf.control_machine = control_machine;
+		}
+		if ( slurmctld_conf.backup_machine == NULL ) {
+			slurmctld_conf.backup_machine = backup_machine;
+		}
 
 		/* node configuration parameters */
 		if ((error_code = parse_node_spec (in_line))) {
@@ -762,10 +767,10 @@ read_slurm_conf (char *file_name) {
 	fclose (slurm_spec_file);
 
 	/* if values not set in configuration file, set defaults */
-	if (backup_controller == NULL)
+	if (slurmctld_conf.backup_machine == NULL)
 		info ("read_slurm_conf: backup_controller value not specified.");		
 
-	if (control_machine == NULL) {
+	if (slurmctld_conf.control_machine == NULL) {
 		error ("read_slurm_conf: control_machine value not specified.");
 		return EINVAL;
 	}			
