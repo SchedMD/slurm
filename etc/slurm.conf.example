@@ -148,6 +148,8 @@
 # "SchedulerType"	 : the type of scheduler.
 #	"sched/builtin"	 : the default, SLURM's built-in FIFO scheduler.
 #	"sched/backfill" : FIFO scheduling with backfill.
+#	"sched/hold"     : hold all new jobs if "/etc/slurm.hold" exists, 
+#	                   otherwise perform FIFO scheduling.
 #	"sched/wiki"	 : the Wiki interface to Maui.
 #
 # "SchedulerAuth"	 : an authentication token, if any, that must

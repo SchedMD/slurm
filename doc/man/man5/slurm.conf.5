@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "October 2004" "slurm.conf 0.4" "Slurm configuration file"
+.TH "slurm.conf" "5" "November 2004" "slurm.conf 0.4" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -210,7 +210,9 @@ This value is only used by the Maui Scheduler (see \fBSchedulerType\fR).
 Identifies the type of scheduler to be used. Acceptable values include 
 "sched/builtin" for the built-in FIFO scheduler, 
 "sched/backfill" for a backfill scheduling module to augment 
-the default FIFO scheduling, and 
+the default FIFO scheduling, 
+"sched/hold" to hold all newly arriving jobs if a file "/etc/slurm.hold" 
+exists otherwise use the built-in FIFO scheduler, and 
 "sched/wiki" for the Wiki interface to the Maui Scheduler. 
 The default value is "sched/builtin".
 Backfill scheduling will initiate lower-priority jobs if doing 

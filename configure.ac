@@ -208,6 +208,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/sched/Makefile
 		 src/plugins/sched/backfill/Makefile
 		 src/plugins/sched/builtin/Makefile
+		 src/plugins/sched/hold/Makefile
 		 src/plugins/sched/maui/Makefile
 		 src/plugins/sched/maui/wiki/Makefile
 		 src/plugins/select/Makefile
