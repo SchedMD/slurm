@@ -6,6 +6,11 @@
 #include <src/api/slurm.h>
 #include <testsuite/dejagnu.h>
 
+#ifndef true
+#define false 0
+#define true  1
+#endif
+
 /* main is used here for module testing purposes only */
 int
 main (int argc, char *argv[]) {

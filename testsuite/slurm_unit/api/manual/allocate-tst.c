@@ -31,6 +31,11 @@
 #include <src/api/slurm.h>
 #include <testsuite/dejagnu.h>
 
+#ifndef true
+#define false 0
+#define true  1
+#endif
+
 void report_results(resource_allocation_response_msg_t* resp_msg);
 
 /* main is used here for testing purposes only */
@@ -143,7 +148,8 @@ report_results(resource_allocation_response_msg_t* resp_msg)
 		for (i=0; i<resp_msg->num_cpu_groups; i++) {
 			if (i > 0)
 				printf(", ");
-			printf ("%u(x%u)", resp_msg->cpus_per_node[i], resp_msg->cpu_count_reps[i]);
+			printf ("%u(x%u)", resp_msg->cpus_per_node[i], 
+				resp_msg->cpu_count_reps[i]);
 		}
 		printf ("\n");
 	}
