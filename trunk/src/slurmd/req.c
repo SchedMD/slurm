@@ -550,17 +550,18 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 static void 
 _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 {
-	int         rc   = SLURM_SUCCESS;
-	uint16_t    port = 0;
-	char        host[MAXHOSTNAMELEN];
-	int         i;
-	job_step_t *step;
-	task_t     *t;
-	uid_t       req_uid;
-	gid_t       req_gid;
-	slurm_addr  ioaddr;
-	char       *key;
-	int         len;
+	int          rc   = SLURM_SUCCESS;
+	uint16_t     port = 0;
+	char         host[MAXHOSTNAMELEN];
+	int          i;
+	job_step_t  *step;
+	job_state_t *state;
+	task_t      *t;
+	uid_t        req_uid;
+	gid_t        req_gid;
+	slurm_addr   ioaddr;
+	char        *key;
+	int          len;
 	slurm_msg_t                    resp_msg;
 	reattach_tasks_request_msg_t  *req = msg->data;
 	reattach_tasks_response_msg_t  resp;
@@ -591,6 +592,15 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		rc = EPERM;
 		goto done;
 	}
+
+	state = shm_lock_step_state(req->job_id, req->job_step_id);
+	if (  (*state != SLURMD_JOB_STARTING) 
+	   && (*state != SLURMD_JOB_STARTED)  ) {
+		shm_unlock_step_state(req->job_id, req->job_step_id);
+		rc = ESLURMD_JOB_NOTRUNNING;
+		goto done;
+	}
+	shm_unlock_step_state(req->job_id, req->job_step_id);
 
 	/* 
 	 * Set IO and response addresses in shared memory

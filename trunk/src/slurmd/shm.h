@@ -51,21 +51,11 @@
 
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/list.h"
-
 #include "src/slurmd/job.h"
-
-/* local job states */
-typedef enum job_state {
-	SLURMD_JOB_UNUSED = 0,
-	SLURMD_JOB_ALLOCATED,
-	SLURMD_JOB_STARTING,
-	SLURMD_JOB_STARTED,
-	SLURMD_JOB_ENDING,
-	SLURMD_JOB_COMPLETE
-} job_state_t;
 
 typedef struct task task_t;
 typedef struct job_step job_step_t;
+
 
 struct task {
 	int used;

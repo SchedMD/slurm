@@ -376,17 +376,19 @@ _job_mgr(slurmd_job_t *job)
 	}
 
 	_block_most_signals();
+	xsignal(SIGHUP, _hup_handler);
 
 	if ((rc = _setup_io(job))) 
 		goto fail1;
-
-	xsignal(SIGHUP, _hup_handler);
 
 	/*
 	 * Create slurmd session manager and read task pids from pipe
 	 * (waits for session manager process on failure)
 	 */
 	if ((rc = _create_job_session(job))) 
+		goto fail2;
+
+	if (job_update_state(job, SLURMD_JOB_STARTED) < 0)
 		goto fail2;
 
 	/*
@@ -413,11 +415,13 @@ _job_mgr(slurmd_job_t *job)
 	_set_unexited_task_status(job, job->smgr_status);
 	while (_send_pending_exit_msgs(job)) {;}
 
+	job_update_state(job, SLURMD_JOB_ENDING);
     fail2:
 	/*
 	 * Wait for io thread to complete
 	 */
 	_wait_for_io(job);
+	job_update_state(job, SLURMD_JOB_COMPLETE);
 
 	if (!job->batch && (interconnect_postfini(job) < 0))
 		error("interconnect_postfini: %m");

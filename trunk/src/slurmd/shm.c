@@ -643,10 +643,15 @@ shm_step_addrs(uint32_t jobid, uint32_t stepid,
 	_shm_lock();
 	if ((i = _shm_find_step(jobid, stepid)) >= 0) {
 		job_step_t *s = &slurmd_shm->step[i];
-		*ioaddr   = s->ioaddr;
-		*respaddr = s->respaddr;
-		memcpy(key->data, s->key.data, SLURM_IO_KEY_SIZE);
-		s->io_update = false;
+		if (!s->io_update) {
+			slurm_seterrno(0);
+			retval = SLURM_FAILURE;
+		} else {
+			*ioaddr   = s->ioaddr;
+			*respaddr = s->respaddr;
+			memcpy(key->data, s->key.data, SLURM_IO_KEY_SIZE);
+			s->io_update = false;
+		}
 	} else {
 		slurm_seterrno(ESRCH);
 		retval = SLURM_FAILURE;
@@ -963,6 +968,7 @@ _shm_reopen()
 			error ("reopen of [%s] failed: %m", lockname);
 			return SLURM_ERROR;
 		}
+		_shm_lock();
 		return _shm_new();
 	}
 	
@@ -1029,6 +1035,12 @@ _shm_lock_and_initialize()
 static void 
 _shm_lock()
 {
+#ifndef NDEBUG
+	int semval = 0;
+	sem_getvalue(shm_lock, &semval);
+	debug("_shm_lock: semval = %d", semval);
+#endif /* !NDEBUG */
+
     restart:
 	if (sem_wait(shm_lock) == -1) {
 		if (errno == EINTR)
