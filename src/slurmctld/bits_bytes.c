@@ -160,7 +160,7 @@ void BitMapAND(unsigned *BitMap1, unsigned *BitMap2) {
 #else
 	syslog(LOG_ALERT, "BitMapAND: BitMap pointer is NULL\n");
 #endif
-	return;
+	exit(EFAULT);
     } /* if */
 
     size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
@@ -186,7 +186,7 @@ void BitMapClear(unsigned *BitMap, int Position) {
 #else
 	syslog(LOG_ALERT, "BitMapClear: BitMap pointer is NULL\n");
 #endif
-	return;
+	exit(EFAULT);
     } /* if */
 
     val  = Position / (sizeof(unsigned)*8);
@@ -213,7 +213,7 @@ unsigned *BitMapCopy(unsigned *BitMap) {
 #else
 	syslog(LOG_ALERT, "BitMapCopy: BitMap pointer is NULL\n");
 #endif
-	return NULL;
+	exit(EFAULT);
     } /* if */
 
     size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / 8;	/* Bytes */
@@ -224,7 +224,7 @@ unsigned *BitMapCopy(unsigned *BitMap) {
 #else
 	syslog(LOG_ALERT, "BitMapCopy: unable to allocate memory\n");
 #endif
-	return NULL;
+	exit(ENOMEM);
     } /* if */
 
     (void) memcpy(Output, BitMap, size);
@@ -238,7 +238,6 @@ unsigned *BitMapCopy(unsigned *BitMap) {
  * Output: Returns the count of set bits
  * NOTE: This routine adapted from Linux 2.4.9 <linux/bitops.h>.
  */
- */
 int BitMapCount(unsigned *BitMap) {
     int count, quad_byte, size, word, res;
     unsigned scan;
@@ -249,7 +248,7 @@ int BitMapCount(unsigned *BitMap) {
 #else
 	syslog(LOG_ALERT, "BitMapCount: BitMap pointer is NULL\n");
 #endif
-	return 0;
+	exit(EFAULT);
     } /* if */
 
     count = 0;
@@ -287,7 +286,7 @@ void BitMapFill(unsigned *BitMap) {
 #else
 	syslog(LOG_ALERT, "BitMapFill: BitMap pointer is NULL\n");
 #endif
-	return;
+	exit(EFAULT);
     } /* if */
 
     first = last = position = gap = -1;
@@ -334,7 +333,7 @@ int BitMapIsSuper(unsigned *BitMap1, unsigned *BitMap2) {
 #else
 	syslog(LOG_ALERT, "BitMapOR: BitMap pointer is NULL\n");
 #endif
-	return;
+	exit(EFAULT);
     } /* if */
 
     size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
@@ -359,7 +358,7 @@ void BitMapOR(unsigned *BitMap1, unsigned *BitMap2) {
 #else
 	syslog(LOG_ALERT, "BitMapOR: BitMap pointer is NULL\n");
 #endif
-	return;
+	exit(EFAULT);
     } /* if */
 
     size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
@@ -385,7 +384,7 @@ char *BitMapPrint(unsigned *BitMap) {
 #else
 	syslog(LOG_ALERT, "BitMapPrint: BitMap pointer is NULL\n");
 #endif
-	return NULL;
+	exit(EFAULT);
     } /* if */
 
     size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
@@ -397,7 +396,7 @@ char *BitMapPrint(unsigned *BitMap) {
 #else
 	syslog(LOG_ALERT, "BitMapPrint: unable to allocate memory\n");
 #endif
-	return NULL;
+	exit(ENOMEM);
     } /* if */
 
     strcpy(Output, "0x");
@@ -430,7 +429,7 @@ void BitMapSet(unsigned *BitMap, int Position) {
 #else
 	syslog(LOG_ALERT, "BitMapSet: BitMap pointer is NULL\n");
 #endif
-	return;
+	exit(EFAULT);
     } /* if */
 
     val  = Position / (sizeof(unsigned)*8);
@@ -445,7 +444,7 @@ void BitMapSet(unsigned *BitMap, int Position) {
  * BitMapValue - Return the value of specified bit in the specified bitmap
  * Input: BitMap - The bit map to get value from
  *        Position - Postition to get
- * Output: Normally returns the value 0 or 1, returns -1 if given bad BitMap ponter
+ * Output: Normally returns the value 0 or 1
  */
 int BitMapValue(unsigned *BitMap, int Position) {
     int val, bit;
@@ -457,7 +456,7 @@ int BitMapValue(unsigned *BitMap, int Position) {
 #else
 	syslog(LOG_ALERT, "BitMapValue: BitMap pointer is NULL\n");
 #endif
-	return -1;
+	exit(EFAULT);
     } /* if */
 
     val  = Position / (sizeof(unsigned)*8);
@@ -563,7 +562,7 @@ int Load_String(char **destination, char *keyword, char *In_Line) {
 #else
 	    syslog(LOG_ALERT, "Load_String: unable to allocate memory\n");
 #endif
-	    return ENOMEM;
+	    exit(ENOMEM);
 	} /* if */
 	strcpy(destination[0], str_ptr2);
 	for (i=0; i<(str_len1+str_len2); i++) {
@@ -734,7 +733,7 @@ void Report_Leftover(char *In_Line, int Line_Num) {
  *        Value_Size - Byte size of Value (may be int, long, etc.)
  * Output: Buffer - Value is written here, buffer may be relocated by realloc()
  *         Buffer_Offset - Incremented by Value_Size
- *         Returns 0 if no error or ENOMEM on realloc failure 
+ *         Returns 0 if no error or errno otherwise 
  */
 int Write_Value(char **Buffer, int *Buffer_Offset, int *Buffer_Size, 
 		char *Tag, void *Value, int Value_Size) {
@@ -747,7 +746,7 @@ int Write_Value(char **Buffer, int *Buffer_Offset, int *Buffer_Size,
 #else
 	    syslog(LOG_ALERT, "Write_Value: unable to allocate memory\n");
 #endif
-	    return ENOMEM;
+	    exit(ENOMEM);
 	} /* if */
     } /* if */
 

@@ -200,7 +200,7 @@ int Build_Part_BitMap(struct Part_Record *Part_Record_Point) {
 #else
 	    syslog(LOG_ALERT, "Build_Part_BitMap: unable to allocate memory\n");
 #endif
-	    return ENOMEM;
+	    exit(ENOMEM);
 	} /* if */
 	Old_BitMap = NULL;
     } else
@@ -219,7 +219,7 @@ int Build_Part_BitMap(struct Part_Record *Part_Record_Point) {
 	syslog(LOG_ALERT, "Build_Part_BitMap: unable to allocate memory\n");
 #endif
 	if (Old_BitMap) free(Old_BitMap);
-	return ENOMEM;
+	exit(ENOMEM);
     } /* if */
     strcpy(My_Node_List, Part_Record_Point->Nodes);
 
@@ -303,8 +303,7 @@ struct Part_Record *Create_Part_Record(int *Error_Code) {
 #else
 	syslog(LOG_ALERT, "Create_Part_Record: unable to allocate memory\n");
 #endif
-	*Error_Code = ENOMEM;
-	return (struct Part_Record *)NULL;
+	exit(ENOMEM);
     } /* if */
 
     strcpy(Part_Record_Point->Name, "DEFAULT");
@@ -325,9 +324,7 @@ struct Part_Record *Create_Part_Record(int *Error_Code) {
 #else
 	    syslog(LOG_ALERT, "Create_Part_Record: unable to allocate memory\n");
 #endif
-	    free(Part_Record_Point);
-	    *Error_Code = ENOMEM;
-	    return (struct Part_Record *)NULL;
+	    exit(ENOMEM);
 	} /* if */
 	strcpy(Part_Record_Point->AllowGroups, Default_Part.AllowGroups);
     } else
@@ -341,10 +338,7 @@ struct Part_Record *Create_Part_Record(int *Error_Code) {
 #else
 	    syslog(LOG_ALERT, "Create_Part_Record: unable to allocate memory\n");
 #endif
-	    if (Part_Record_Point->AllowGroups) free(Part_Record_Point->AllowGroups);
-	    free(Part_Record_Point);
-	    *Error_Code = ENOMEM;
-	    return NULL;
+	    exit(ENOMEM);
 	} /* if */
 	strcpy(Part_Record_Point->Nodes, Default_Part.Nodes);
     } else
@@ -356,11 +350,7 @@ struct Part_Record *Create_Part_Record(int *Error_Code) {
 #else
 	syslog(LOG_ALERT, "Create_Part_Record: unable to allocate memory\n");
 #endif
-	if (Part_Record_Point->Nodes      ) free(Part_Record_Point->Nodes);
-	if (Part_Record_Point->AllowGroups) free(Part_Record_Point->AllowGroups);
-	free(Part_Record_Point);
-	*Error_Code = ENOMEM;
-	return (struct Part_Record *)NULL;
+	exit(ENOMEM);
     } /* if */
 
     return Part_Record_Point;
@@ -423,7 +413,7 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 #else
 	syslog(LOG_ALERT, "Dump_Part: list_iterator_create unable to allocate memory\n");
 #endif
-	return ENOMEM;
+	exit(ENOMEM);
     } /* if */
 
     Buffer = NULL;
@@ -504,7 +494,7 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 #else
 	syslog(LOG_ALERT, "Dump_Part: unable to allocate memory\n");
 #endif
-	return ENOMEM;
+	exit(ENOMEM);
     } /* if */
 
     Buffer_Ptr[0] = Buffer;
@@ -514,7 +504,7 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 
 cleanup:
     list_iterator_destroy(Part_Record_Iterator);
-    return ENOMEM;
+    return EINVAL;
 } /* Dump_Part */
 
 
@@ -553,7 +543,7 @@ int Init_Part_Conf() {
 #else
 	syslog(LOG_ALERT, "Init_Part_Conf: list_create can not allocate memory\n");
 #endif
-	return ENOMEM;
+	exit(ENOMEM);
     } /* if */
 
     strcpy(Default_Part_Name, "");
