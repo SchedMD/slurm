@@ -73,6 +73,7 @@ static int  _unblock_all_signals(void);
 static int  _block_most_signals(void);
 static int  _send_exit_msg(int rc, task_info_t *t);
 static int  _complete_job(slurmd_job_t *job, int rc, int status);
+static void _send_batch_launch_resp(slurmd_job_t *job);
 static void _send_launch_resp(slurmd_job_t *job, int rc);
 static void _wait_for_all_tasks(slurmd_job_t *job);
 static void _slurmd_job_log_init(slurmd_job_t *job);
@@ -348,7 +349,9 @@ _run_job(slurmd_job_t *job)
 	}
 
 	rc = _exec_all_tasks(job);
-	if (!job->batch)
+	if (job->batch)
+		_send_batch_launch_resp(job);
+	else
 		_send_launch_resp(job, rc);
 	_wait_for_all_tasks(job);
 
@@ -745,6 +748,37 @@ _block_most_signals(void)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+static void
+_send_batch_launch_resp(slurmd_job_t *job)
+{	
+	slurm_msg_t resp_msg;
+	batch_launch_response_msg_t resp;
+	List         steps = shm_get_steps();
+	ListIterator i     = list_iterator_create(steps);
+	job_step_t  *s     = NULL;
+	bool        found  = false;
+
+	while ((s = list_next(i))) {
+		if (s->jobid == job->jobid) {
+			resp.sid = s->sid;
+			found = true;
+			break;
+		}
+	}
+	list_destroy(steps);
+	if (!found)
+		error("failed to find jobid %u in shared memory", job->jobid);
+	else {
+		debug("Sending batch launch resp");
+		resp_msg.data         = &resp;
+		resp_msg.msg_type     = RESPONSE_BATCH_JOB_LAUNCH;
+
+		/* resp.sid           = s->sid; set above */
+		resp.job_id           = job->jobid;
+		slurm_send_only_controller_msg(&resp_msg);
+	}
 }
 
 static void

@@ -47,6 +47,9 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/signature_utils.h"
 
+#ifndef __USE_XOPEN_EXTENDED
+extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
+#endif
 /*
  * Global config type
  */
