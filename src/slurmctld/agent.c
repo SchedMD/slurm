@@ -183,20 +183,20 @@ agent (void *args)
 			fatal ("pthread_create error %m");
 	}
 
+#if 	AGENT_THREAD_COUNT < 1
+	fatal ("AGENT_THREAD_COUNT value is invalid");
+#endif
 	/* start all the other threads (up to AGENT_THREAD_COUNT active at once) */
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
 		
 		/* wait until "room" for another thread */	
 		pthread_mutex_lock (&agent_info_ptr->thread_mutex);
-#if 		AGENT_THREAD_COUNT < 1
-		fatal ("AGENT_THREAD_COUNT value is invalid");
-#endif
      		while (agent_info_ptr->threads_active >= AGENT_THREAD_COUNT) {
 			pthread_cond_wait (&agent_info_ptr->thread_cond, 
 			                   &agent_info_ptr->thread_mutex);
 		}
  
-		/* create thread specific dat, NOTE freed from thread_per_node_rpc() */
+		/* create thread specific data, NOTE freed from thread_per_node_rpc() */
 		task_specific_ptr 			= xmalloc (sizeof (task_info_t));
 		task_specific_ptr->thread_mutex_ptr	= &agent_info_ptr->thread_mutex;
 		task_specific_ptr->thread_cond_ptr	= &agent_info_ptr->thread_cond;
