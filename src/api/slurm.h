@@ -147,6 +147,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * 0 == held (don't initiate) */
 	char *req_nodes;	/* comma separated list of required nodes
 				 * default NONE */
+	char *exc_nodes;	/* comma separated list of nodes excluded
+				 * from job's allocation, default NONE */
 	uint16_t shared;	/* 1 if job can share nodes with other jobs,
 				 * 0 otherwise */
 	uint16_t task_dist;	/* see enum task_dist_state, used only for
@@ -155,7 +157,9 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * partition limit */
 	uint32_t num_procs;	/* total count of processors required, 
 				 * default=0 */
-	uint32_t num_nodes;	/* number of nodes required by job, 
+	uint32_t min_nodes;	/* minimum number of nodes required by job, 
+				 * default=0 */
+	uint32_t max_nodes;	/* maximum number of nodes usable by job, 
 				 * default=0 */
 	uint32_t num_tasks;	/* number of tasks required by job, 
 				 * default=0, used only by 

@@ -96,7 +96,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
 	}
 	fprintf( out, "\n");
 
-	fprintf ( out, "   ReqProcs=%u ReqNodes=%u ", 
+	fprintf ( out, "   ReqProcs=%u MinNodes=%u ", 
 		job_ptr->num_procs, job_ptr->num_nodes);
 	fprintf ( out, "Shared=%u Contiguous=%u\n",  
 		job_ptr->shared, job_ptr->contiguous);

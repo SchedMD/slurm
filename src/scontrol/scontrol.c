@@ -742,8 +742,8 @@ update_job (int argc, char *argv[])
 			job_msg.num_procs = 
 				(uint32_t) strtol(&argv[i][9], 
 						(char **) NULL, 10);
-		else if (strncasecmp(argv[i], "ReqNodes=", 9) == 0)
-			job_msg.num_nodes = 
+		else if (strncasecmp(argv[i], "MinNodes=", 9) == 0)
+			job_msg.min_nodes = 
 				(uint32_t) strtol(&argv[i][9],
 						 (char **) NULL, 10);
 		else if (strncasecmp(argv[i], "MinProcs=", 9) == 0)
