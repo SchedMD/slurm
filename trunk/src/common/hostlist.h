@@ -29,18 +29,6 @@
 #ifndef _HOSTLIST_H
 #define _HOSTLIST_H
 
-#define X 8
-#define Y 4
-#define Z 4
-#define NumofProc 128
-typedef struct {
-  char letter;
-  int color;
-}axis;
-
-axis Axis[X][Y][Z];
-axis FillInValue[NumofProc];
-int GridCount;
 /* Notes:
  *
  * If WITH_LSD_FATAL_ERROR_FUNC is defined, the linker will expect to
