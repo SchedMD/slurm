@@ -111,6 +111,8 @@ main(int ac, char **av)
 	 * verify some basic values
 	 */
 	initialize_and_process_args(ac, av);
+	if (read_slurm_port_config() < 0)
+		error("read_slurm_port_config: %s", slurm_strerror(errno));
 
 	/* reinit log with new verbosity
 	 */
@@ -542,8 +544,7 @@ fwd_signal(job_t *job, int signo)
 			continue;
 		}
 
-		slurm_set_addr_uint(&req.address, slurm_get_slurmd_port(),
-				ntohl(job->iaddr[i]));
+		memcpy(&req.address, &job->slurmd_addr[i], sizeof(slurm_addr));
 		debug("sending kill req to %s", job->host[i]);
 		if (slurm_send_recv_node_msg(&req, &resp) < 0)
 			error("Unable to send signal to host %s", 

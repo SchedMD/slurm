@@ -49,7 +49,7 @@ typedef struct srun_job {
 	char **host;		/* hostname vector */
 	int *cpus; 		/* number of processors on each host */
 	int *ntask; 		/* number of tasks to run on each host */
-        uint32_t *iaddr;	/* in_addr vector  */
+        slurm_addr *slurmd_addr;/* slurm_addr vector to slurmd's */
 
 	pthread_t sigid;	/* signals thread tid		  */
 

@@ -28,8 +28,9 @@
 #include <config.h>
 #endif
 
-#include <unistd.h>
 #include <errno.h>
+#include <string.h>
+#include <unistd.h>
 #include <sys/param.h>
 
 #include <src/common/xmalloc.h>
@@ -68,9 +69,6 @@ launch(void *arg)
 	uint32_t **task_ids;
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
-
-	if (read_slurm_port_config() < 0)
-		error("read_slurm_port_config: %d", slurm_strerror(errno));
 
 	if (gethostname(hostname, MAXHOSTNAMELEN) < 0)
 		error("gethostname: %m");
@@ -139,9 +137,7 @@ launch(void *arg)
 		port = ntohs(job->jaddr[i%job->njfds].sin_port);
 		slurm_set_addr_char(&msg.response_addr, port, hostname);
 
-		slurm_set_addr_uint(&req.address, slurm_get_slurmd_port(), 
-				    ntohl(job->iaddr[i]));
-
+		memcpy(&req.address, &job->slurmd_addr[i], sizeof(slurm_addr));
 
 		debug2("launching on host %s", job->host[i]);
                 print_launch_msg(&msg);
