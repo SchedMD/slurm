@@ -95,6 +95,7 @@ static int	_validate_header(slurm_io_stream_header_t *hdr, job_t *job);
 #define _poll_rd_isset(pfd) ((pfd).revents & POLLIN )
 #define _poll_wr_isset(pfd) ((pfd).revents & POLLOUT)
 #define _poll_err(pfd)      ((pfd).revents & POLLERR)
+#define _poll_hup(pfd)      ((pfd).revents & POLLHUP)
 
 /* True if an EOF needs to be broadcast to all tasks
  */
@@ -309,15 +310,21 @@ _io_thr_poll(void *job_arg)
 
 		for (i = 0; i < job->niofds; i++) {
 			if (fds[i].revents) {
-				if (fds[i].revents & POLLERR)
+				if (_poll_err(fds[i]))
 					error("poll error on io fd %d", i);
 				else
 					_accept_io_stream(job, i);
 			}
 		}
 
-		if ((job->stdinfd >= 0) && _poll_rd_isset(fds[i++])) 
-			_bcast_stdin(job->stdinfd, job);
+		if ((job->stdinfd >= 0)) {
+		       	if (_poll_rd_isset(fds[i]))
+				_bcast_stdin(job->stdinfd, job);
+			if (_poll_hup(fds[i]) || _poll_err(fds[i]))
+				_bcast_stdin(job->stdinfd, job);
+			++i;
+		}
+
 
 		for ( ; i < nfds; i++) {
 			unsigned short revents = fds[i].revents;

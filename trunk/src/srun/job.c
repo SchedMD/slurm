@@ -133,7 +133,7 @@ _job_create_internal(allocation_info_t *info)
 		job->outbuf[i]     = cbuf_create(1024, 1048576);
 		job->errbuf[i]     = cbuf_create(1024, 1048576);
 
-		job->inbuf[i]      = cbuf_create(256,  1048576);
+		job->inbuf[i]      = cbuf_create(4096, 4096);
 		cbuf_opt_set(job->inbuf[i], CBUF_OPT_OVERWRITE, 0);
 
 		job->stdin_eof[i]  = false;

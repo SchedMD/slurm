@@ -486,13 +486,17 @@ _io_prepare_clients(slurmd_job_t *job)
 	srun = list_peek(job->sruns);
 	xassert(srun != NULL);
 
+	if (srun->ofname && (fname_trunc_all(job, srun->ofname) < 0))
+		return SLURM_FAILURE;
+
+	if (srun->efname && (fname_trunc_all(job, srun->efname) < 0))
+		return SLURM_FAILURE;
+
 	if (srun->ioaddr.sin_addr.s_addr) {
 		char         host[256];
 		short        port;
 		slurm_get_addr(&srun->ioaddr, &port, host, sizeof(host));
-		if (port)
-			debug2("connecting IO back to %s:%d", 
-			       host, ntohs(port));
+		debug2("connecting IO back to %s:%d", host, ntohs(port));
 	} 
 
 	/* Connect stdin/out/err to either a remote srun or
@@ -533,10 +537,10 @@ static int
 _open_output_file(slurmd_job_t *job, task_info_t *t, char *fmt, 
 		  slurmd_io_type_t type)
 {
-	int          fd    = -1;
-	io_obj_t    *obj   = NULL;
-	int          flags = O_CREAT|O_TRUNC|O_APPEND|O_WRONLY;
-	char        *fname = fname_create(job, fmt, t->gid);
+	int          fd     = -1;
+	io_obj_t    *obj    = NULL;
+	int          flags  = O_APPEND|O_WRONLY;
+	char        *fname  = fname_create(job, fmt, t->gid);
 
 	xassert((type == CLIENT_STDOUT) || (type == CLIENT_STDERR));
 
@@ -1328,14 +1332,21 @@ _client_read(io_obj_t *obj, List objs)
 	xassert(_validate_io_list(objs));
 	xassert(_isa_client(client));
 
-	i = list_iterator_create(client->readers);
-	while ((reader = list_next(i))) {
-		if (cbuf_free(reader->buf) < len)
-			len = cbuf_free(reader->buf);
-	}
+	/*
+	 * Determine the maximum amount of data we will
+	 * safely be able to read
+	 */
+	if (client->readers) {
+		i = list_iterator_create(client->readers);
+		while ((reader = list_next(i))) {
+			if (cbuf_free(reader->buf) < len)
+				len = cbuf_free(reader->buf);
+		}
+		list_iterator_destroy(i);
 
-	if (len == 0)
-		return 0;
+		if (len == 0)
+			return 0;
+	}
 	
 
    again:
@@ -1391,11 +1402,12 @@ _client_read(io_obj_t *obj, List objs)
 	/* 
 	 * Copy cbuf to all readers 
 	 */
-	list_iterator_reset(i);
+	i = list_iterator_create(client->readers);
 	while((reader = list_next(i))) {
 		n = cbuf_write(reader->buf, (void *) buf, n, &dropped);
-		error ("Dropped %d bytes stdin data to task %d", 
-			dropped, client->id);
+		if (dropped > 0)
+			error("Dropped %d bytes stdin data to task %d", 
+			      dropped, client->id);
 	}
 	list_iterator_destroy(i);
 
