@@ -208,7 +208,7 @@ main (int argc, char *argv[])
 
 	while (1) {
 		if ( (error_code = sigwait (&set, &sig)) )
-			error ("sigwait errno %d\n", error_code);
+			error ("sigwait errno %d", error_code);
 
 		switch (sig) {
 			case SIGINT:	/* kill -2  or <CTRL-C> */
@@ -1533,7 +1533,7 @@ sigabort_handler (int signum)
 	struct sigaction action;
 
 	if (signum == SIGABRT) {
-		info ("Abort signal being processed");
+		info ("Abort signal from thread %d being processed", pthread_self ());
 		action.sa_handler = SIG_IGN;
 		sigaction (SIGABRT, &action, NULL);
 		pthread_kill (thread_id_main, SIGTERM); /* have main thread clean up everything */
