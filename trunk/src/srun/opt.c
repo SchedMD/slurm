@@ -474,23 +474,24 @@ struct env_vars {
 };
 
 env_vars_t env_vars[] = {
-	{"SLURM_JOBID",         OPT_INT, &opt.jobid,         NULL           },
-	{"SLURM_NPROCS",        OPT_INT, &opt.nprocs,        &opt.nprocs_set},
-	{"SLURM_CPUS_PER_TASK", OPT_INT, &opt.cpus_per_task, &opt.cpus_set  },
-	{"SLURM_PARTITION",     OPT_STRING,  &opt.partition, NULL           },
-	{"SLURM_IMMEDIATE",     OPT_INT,     &opt.immediate, NULL           },
-	{"SLURM_DEBUG",         OPT_DEBUG,       NULL,       NULL           },
-	{"SLURMD_DEBUG",        OPT_INT, &opt.slurmd_debug,  NULL           }, 
-	{"SLURM_NNODES",        OPT_NODES,       NULL,       NULL           },
-	{"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT,  NULL,       NULL           },
-	{"SLURM_DISTRIBUTION",  OPT_DISTRIB,     NULL,       NULL           },
-	{"SLURM_WAIT",          OPT_INT,     &opt.max_wait,  NULL           },
-	{"SLURM_STDINMODE",     OPT_STRING,  &opt.ifname,    NULL           },
-	{"SLURM_STDERRMODE",    OPT_STRING,  &opt.efname,    NULL           },
-	{"SLURM_STDOUTMODE",    OPT_STRING,  &opt.ofname,    NULL           },
-	{"SLURM_TIMELIMIT",     OPT_INT,     &opt.time_limit,NULL           },
-	{"SLURM_LABELIO",       OPT_INT,     &opt.labelio,   NULL           },
-	{NULL, 0, NULL, NULL}
+  {"SLURMD_DEBUG",        OPT_INT,        &opt.slurmd_debug,  NULL           }, 
+  {"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set  },
+  {"SLURM_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
+  {"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL           },
+  {"SLURM_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL           },
+  {"SLURM_JOBID",         OPT_INT,        &opt.jobid,         NULL           },
+  {"SLURM_LABELIO",       OPT_INT,        &opt.labelio,       NULL           },
+  {"SLURM_NNODES",        OPT_NODES,      NULL,               NULL           },
+  {"SLURM_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set},
+  {"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
+  {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
+  {"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL           },
+  {"SLURM_STDERRMODE",    OPT_STRING,     &opt.efname,        NULL           },
+  {"SLURM_STDINMODE",     OPT_STRING,     &opt.ifname,        NULL           },
+  {"SLURM_STDOUTMODE",    OPT_STRING,     &opt.ofname,        NULL           },
+  {"SLURM_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
+  {"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
+  {NULL, 0, NULL, NULL}
 };
 
 
@@ -1287,15 +1288,16 @@ static bool _under_totalview(void)
 
 static void _usage(void)
 {
-	printf("Usage: srun [-N nnodes] [-n ntasks] [-i in] [-i in] [-e err] [-e err]\n");
-	printf("            [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n");
-	printf("            [-D path] [--immediate] [--overcommit] [--no-kill]\n");
-	printf("            [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n");
-	printf("            [--jobid=id] [--batch] [--verbose] [--slurmd_debug=#]\n");
-	printf("            [-T threads] [-W sec] [--attach] [--join] [--contiguous]\n");
-	printf("            [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list] [--mpi=type]\n");
-	printf("            [-w hosts...] [-x hosts...] [--usage] [OPTIONS...] \n");
- 	printf("            executable [args...]\n");
+ 	printf("\
+Usage: srun [-N nnodes] [-n ntasks] [-i in] [-i in] [-e err] [-e err]\n\
+            [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n\
+            [-D path] [--immediate] [--overcommit] [--no-kill]\n\
+            [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n\
+            [--jobid=id] [--batch] [--verbose] [--slurmd_debug=#]\n\
+            [-T threads] [-W sec] [--attach] [--join] [--contiguous]\n\
+            [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list] [--mpi=type]\n\
+            [-w hosts...] [-x hosts...] [--usage] [OPTIONS...] \n\
+            executable [args...]\n");
 }
 
 static void _help(void)
@@ -1346,8 +1348,8 @@ Constraint options:\n\
       --mincpus=n             minimum number of cpus per node\n\
       --mem=MB                minimum amount of real memory\n\
       --tmp=MB                minimum amount of temporary disk\n\
+      --contiguous            demand a contiguous range of nodes\n\
   -C, --constraint=list       specify a list of constraints\n\
-  --contiguous                demand a contiguous range of nodes\n\
   -w, --nodelist=hosts...     request a specific list of hosts\n\
   -x, --exclude=hosts...      exclude a specific list of hosts\n\
   -Z, --no-allocate           don't allocate nodes (must supply -w)\n\
