@@ -30,6 +30,40 @@
 #include "src/common/bitstring.h"
 #include "src/common/macros.h"
 
+struct pa_request;
+/**
+ * create a partition request.  Note that if the geometry is given,
+ * then size is ignored.  If elongate is true, the algorithm will try
+ * to fit that a partition of cubic shape and then it will try other
+ * elongated geometries.  (ie, 2x2x2 -> 4x2x1 -> 8x1x1). Note that
+ * size must be a power of 2, given 3 dimensions.
+ * 
+ * OUT - pa_request: structure to allocate and fill in.  
+ * IN - geometry: requested geometry of partition
+ * IN - size: requested size of partition
+ * IN - rotate: if true, allows rotation of partition during fit
+ * IN - elongate: if true, will try to fit different geometries of
+ *      same size requests
+ * IN - conn_type: connection type of request (TORUS or MESH)
+ * IN - contig: enforce contiguous regions constraint
+ * 
+ * return success of allocation/validation of params
+ */
+int new_pa_request(struct pa_request** pa_request, 
+		    int* geometry, int size, 
+		    bool rotate, bool elongate, 
+		    bool force_contig, int conn_type);
+
+/**
+ * delete a partition request 
+ */
+void delete_pa_request(struct pa_request* pa_request);
+
+/**
+ * print a partition request 
+ */
+void print_pa_request(struct pa_request* pa_request);
+
 /**
  * Initialize internal structures by either reading previous partition
  * configurations from a file or by running the graph solver.
@@ -52,40 +86,14 @@ void fini();
 void set_node_down(int* c);
 
 /** 
- * Try to allocate a partition of the given size.  If elongate is
- * true, the algorithm will try to fit that a partition of cubic shape
- * and then it will try other elongated geometries.  
- * (ie, 2x2x2 -> 4x2x1 -> 8x1x1)
+ * Try to allocate a partition.
  * 
- * Note that size must be a power of 2, given 3 dimensions.
- * 
- * IN - size: requested size of partition
- * IN - elongate: if true, will try to fit different geometries of
- *      same size requests
- * IN - connection type of request (TORUS or MESH)
- * IN - contig: enforce contiguous regions constraint
+ * IN - pa_request: allocation request
  * OUT - bitmap: bitmap of the partition allocated
  * 
  * return: success or error of request
  */
-int allocate_part_by_size(int size, bool elongate, int conn_type, 
-			  bool force_contig, bitstr_t** bitmap);
-
-/** 
- * Try to allocate a partition of the given geometery.  This function
- * is more flexible than allocate_part_by_size by allowing
- * configurations that are restricted by the power of 2 restriction.
- * 
- * IN - size: requested size of partition
- * IN - rotate: if true, allows rotation of partition during fit
- * IN - connection type of request (TORUS or MESH)
- * IN - contig: enforce contiguous regions constraint
- * OUT - bitmap: bitmap of the partition allocated
- * 
- * return: success or error of request
- */
-int allocate_part_by_geometry(int* geometry, bool rotate, int conn_type,
-			      bool force_contig, bitstr_t** bitmap);
+int allocate_part(struct pa_request* pa_request, bitstr_t** bitmap);
 
 /** 
  * Doh!  Admin made a boo boo.  Note: Undo only has one history
