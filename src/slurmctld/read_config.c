@@ -652,8 +652,10 @@ static int _parse_part_spec(char *in_line)
 			default_part.shared    = shared_val;
 		if (allow_groups) {
 			xfree(default_part.allow_groups);
-			default_part.allow_groups = allow_groups;
-			allow_groups = NULL;
+			if (strcasecmp(allow_groups, "ALL")) {
+				default_part.allow_groups = allow_groups;
+				allow_groups = NULL;
+			}
 		}
 		if (nodes) {
 			xfree(default_part.nodes);
