@@ -56,7 +56,7 @@ static int  _validate_config_nodes(void);
 static int  _bgl_record_cmpf_inc(bgl_record_t* rec_a, bgl_record_t* rec_b);
 static int  _parse_bgl_spec(char *in_line);
 static void _process_nodes(bgl_record_t *bgl_record);
-static int  _reopen_bridge_log();
+static int  _reopen_bridge_log(void);
 static void _strip_13_10(char *line);
 
 /* Initialize all plugin variables */
@@ -669,10 +669,15 @@ static int _delete_old_partitions(void)
 			term_jobs_on_part(init_record->bgl_part_id);
 			
 			debug("destroying %s\n",(char *)init_record->bgl_part_id);
-			rc = bgl_free_partition(init_record->bgl_part_id);
+			bgl_free_partition(init_record->bgl_part_id);
 			
-			rm_remove_partition(init_record->bgl_part_id);
-			debug("done\n");
+			rc = rm_remove_partition(init_record->bgl_part_id);
+			if (rc != STATUS_OK) {
+				error("rm_remove_partition(%s): %s",
+					init_record->bgl_part_id,
+					bgl_err_str(rc));
+			} else
+				debug("done\n");
 		}
 		list_iterator_destroy(itr_curr);
 	} else {
@@ -695,8 +700,14 @@ static int _delete_old_partitions(void)
 				debug("destroying %s\n",(char *)init_record->bgl_part_id);
 				bgl_free_partition(init_record->bgl_part_id);
 			
-				rm_remove_partition(init_record->bgl_part_id);
-				debug("done\n");
+				rc = rm_remove_partition(init_record->
+						bgl_part_id);
+				if (rc != STATUS_OK) {
+					error("rm_remove_partition(%s): %s",
+						init_record->bgl_part_id,
+						bgl_err_str(rc));
+				} else
+					debug("done\n");
 			}
 		}		
 		list_iterator_destroy(itr_curr);
@@ -1071,7 +1082,7 @@ static void _process_nodes(bgl_record_t *bgl_record)
 	return;
 }
 
-static int _reopen_bridge_log()
+static int _reopen_bridge_log(void)
 {
 	static FILE *fp = NULL;
 
@@ -1090,8 +1101,8 @@ static int _reopen_bridge_log()
 #ifdef HAVE_BGL_FILES
 	setSayMessageParams(fp, bridge_api_verb);
 #else
-	if (fprintf(fp, "bridgeapi.log to write here at level %d\n", bridge_api_verb)
-	    < 20) {
+	if (fprintf(fp, "bridgeapi.log to write here at level %d\n", 
+			bridge_api_verb) < 20) {
 		error("can't write to bridgeapi.log: %m");
 		return SLURM_ERROR;
 	}
