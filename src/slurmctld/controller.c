@@ -227,7 +227,7 @@ slurmctld_signal_hand ( void * no_data )
 				return NULL;	/* Normal termination */
 				break;
 			case SIGHUP:	/* kill -1 */
-				info ("Reconfigure signal (SIGHUP) received\n");
+				info ("Reconfigure signal (SIGHUP) received");
 				lock_slurmctld (config_write_lock);
 				error_code = read_slurm_conf (0);
 				if (error_code == 0)
@@ -235,6 +235,9 @@ slurmctld_signal_hand ( void * no_data )
 				unlock_slurmctld (config_write_lock);
 				if (error_code)
 					error ("read_slurm_conf error %d", error_code);
+				break;
+			case SIBABRT:	/* abort */
+				fatal ("SIGABRT received");
 				break;
 			default:
 				error ("Invalid signal (%d) received", sig);
@@ -325,7 +328,7 @@ void * service_connection ( void * arg )
 	int error_code;
 	slurm_fd newsockfd = ( ( connection_arg_t * ) arg ) -> newsockfd ;
 	slurm_msg_t * msg = NULL ;
-	void * return_code;
+	void * return_code = NULL;
 	
 	msg = xmalloc ( sizeof ( slurm_msg_t ) ) ;	
 
