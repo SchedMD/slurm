@@ -147,7 +147,7 @@ main (int argc, char *argv[])
 	if (_slurmd_init() < 0)
 		exit(1);
 
-        if (send_registration_msg() < 0) 
+        if (send_registration_msg(SLURM_SUCCESS) < 0) 
 		error("Unable to register with slurm controller");
 
 	xsignal(SIGTERM, &_term_handler);
@@ -293,13 +293,14 @@ _service_connection(void *arg)
 }
 
 int
-send_registration_msg()
+send_registration_msg(uint32_t status)
 {
 	slurm_msg_t req;
 	slurm_msg_t resp;
 	slurm_node_registration_status_msg_t msg;
 
 	_fill_registration_msg(&msg);
+	msg.status   = status;
 
 	req.msg_type = MESSAGE_NODE_REGISTRATION_STATUS;
 	req.data     = &msg;
