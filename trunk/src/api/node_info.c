@@ -73,7 +73,7 @@ slurm_print_node_table ( FILE* out, node_info_t * node_ptr )
 }
 
 
-/* slurm_load_jobs - issue RPC to get Slurm node state information if changed since update_time */
+/* slurm_load_node - issue RPC to get Slurm node state information if changed since update_time */
 int
 slurm_load_node (time_t update_time, node_info_msg_t **node_info_msg_pptr)
 {
