@@ -120,6 +120,15 @@ install -D -m644 etc/slurm.conf.example $RPM_BUILD_ROOT/etc/slurm/slurm.conf
 # Delete unpackaged files:
 rm -f $RPM_BUILD_ROOT/usr/lib/slurm/*.{a,la}
 
+# Build file lists for optional plugin packages
+for plugin in auth_munge auth_authd switch_elan; do
+   LIST=./${plugin}.files
+   touch $LIST
+   test -f $RPM_BUILD_ROOT/usr/lib/slurm/${plugin}.so &&
+     echo %{_libdir}/slurm/${plugin}.so > $LIST
+done
+
+
 #############################################################################
 
 %clean
@@ -162,25 +171,17 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 #############################################################################
 
-#%if %(test -f %{_libdir}/slurm/auth_none.so && echo 1 || echo 0)
 %files auth-none
 %defattr(-,root,root)
 %{_libdir}/slurm/auth_none.so
-#%endif
 #############################################################################
 
-%if %(test -f %{_libdir}/slurm/auth_munge.so && echo 1 || echo 0)
-%files auth-munge
+%files -f auth_munge.files auth-munge
 %defattr(-,root,root)
-%{_libdir}/slurm/auth_munge.so
-%endif
 #############################################################################
 
-%if %(test -f %{_libdir}/slurm/auth_authd.so && echo 1 || echo 0)
-%files auth-authd
+%files -f auth_authd.files auth-authd
 %defattr(-,root,root)
-%{_libdir}/slurm/auth_authd.so
-%endif
 #############################################################################
 
 %files sched-wiki
@@ -188,11 +189,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/sched_wiki.so
 #############################################################################
 
-%if %(test -f %{_libdir}/slurm/switch_elan.so && echo 1 || echo 0)
-%files switch-elan
+%files -f switch_elan.files switch-elan
 %defattr(-,root,root)
-%{_libdir}/slurm/switch_elan.so
-%endif
 #############################################################################
 
 %pre
@@ -231,6 +229,8 @@ fi
 
 
 %changelog
+* Fri Mar 07 2004 Mark Grondona <mgrondona@llnl.gov>
+- package optional plugins based on file lists instead of tests
 * Tue Jan 27 2004 Moe Jette <jette@llnl.gov>
 - package slurm switch plugins - none and elan
 * Thu Dec 11 2003 Mark Grondona <mgrondona@llnl.gov>

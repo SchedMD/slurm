@@ -66,10 +66,13 @@ fi
 # make sure that auxdir exists
 mkdir auxdir 2>/dev/null
 
+# Remove config.h.in to make sure it is rebuilt
+rm -f config.h.in
+
+echo "running aclocal $ACLOCAL_FLAGS ... "
+aclocal -I auxdir $ACLOCAL_FLAGS
 echo "running libtoolize --automake --copy ..."
 libtoolize --automake --copy
-echo "running aclocal $ACLOCAL_FLAGS ... "
-aclocal $ACLOCAL_FLAGS
 echo "running autoheader ... "
 autoheader
 echo "running automake --copy --add-missing ... "

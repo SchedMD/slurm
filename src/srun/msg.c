@@ -59,10 +59,7 @@
 #include "src/srun/msg.h"
 #include "src/srun/signals.h"
 #include "src/srun/sigstr.h"
-
-#ifdef HAVE_TOTALVIEW
-#  include "src/srun/attach.h"
-#endif
+#include "src/srun/attach.h"
 
 #include "src/common/xstring.h"
 
@@ -105,13 +102,12 @@ static void     _node_fail_handler(char *nodelist, job_t *job);
 #define _poll_err(pfd)      ((pfd).revents & POLLERR)
 
 
-#ifdef HAVE_TOTALVIEW
 /*
  * Install entry in the MPI_proctable for host with node id `nodeid'
  *  and the number of tasks `ntasks' with pid array `pid'
  */
 static void
-_build_tv_list(job_t *job, char *host, int nodeid, int ntasks, uint32_t *pid)
+_build_proctable(job_t *job, char *host, int nodeid, int ntasks, uint32_t *pid)
 {
 	int i;
 	static int tasks_recorded = 0;
@@ -140,9 +136,9 @@ _build_tv_list(job_t *job, char *host, int nodeid, int ntasks, uint32_t *pid)
 }
 
 
-void tv_launch_failure(void)
+void debugger_launch_failure(void)
 {
-	if (opt.totalview) {
+	if (opt.parallel_debug) {
 		MPIR_debug_state = MPIR_DEBUG_ABORTING;
 		MPIR_Breakpoint(); 
 	}
@@ -151,9 +147,9 @@ void tv_launch_failure(void)
 void MPIR_Breakpoint(void)
 {
 	debug("In MPIR_Breakpoint");
-	/* This just notifies TotalView that some event of interest occured */ 
+	/* This just notifies parallel 
+         * debugger that some event of interest occured */ 
 }
-#endif
 
 /*
  * Job has been notified of it's approaching time limit. 
@@ -212,10 +208,8 @@ _process_launch_resp(job_t *job, launch_tasks_response_msg_t *msg)
 	pthread_mutex_lock(&job->task_mutex);
 	job->host_state[msg->srun_node_id] = SRUN_HOST_REPLIED;
 	pthread_mutex_unlock(&job->task_mutex);
-#ifdef HAVE_TOTALVIEW
-	_build_tv_list( job, msg->node_name, msg->srun_node_id, 
-			msg->count_of_pids,  msg->local_pids   );
-#endif
+	_build_proctable( job, msg->node_name, msg->srun_node_id, 
+			  msg->count_of_pids,  msg->local_pids   );
 	_print_pid_list( msg->node_name, msg->count_of_pids, 
 			msg->local_pids, remote_argv[0]     );
 
@@ -279,9 +273,7 @@ _launch_handler(job_t *job, slurm_msg_t *resp)
 		} else 
 			update_failed_tasks(job, msg->srun_node_id);
 		*/
-#ifdef HAVE_TOTALVIEW
-		tv_launch_failure();
-#endif
+		debugger_launch_failure();
 		return;
 	} else {
 		_process_launch_resp(job, msg);
@@ -355,7 +347,8 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 		job->hostid[resp->gids[i]]       = resp->srun_node_id;
 	}
 
-#if HAVE_TOTALVIEW
+	/* Build process table for any parallel debugger
+         */
 	if ((remote_argc == 0) && (resp->executable_name)) {
 		remote_argc = 1;
 		xrealloc(remote_argv, 2 * sizeof(char *));
@@ -363,9 +356,9 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 		resp->executable_name = NULL; /* nothing left to free */
 		remote_argv[1] = NULL;
 	}
-	_build_tv_list(job, resp->node_name, resp->srun_node_id,
-	                    resp->ntasks, resp->local_pids      );
-#endif
+	_build_proctable (job, resp->node_name, resp->srun_node_id,
+	                  resp->ntasks, resp->local_pids);
+
 	_print_pid_list(resp->node_name, resp->ntasks, resp->local_pids, 
 			resp->executable_name);
 

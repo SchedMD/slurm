@@ -133,9 +133,7 @@ typedef struct srun_options {
 	int  max_wait;		/* --wait,    -W		*/
 	bool quit_on_intr;      /* --quit-on-interrupt, -q      */
 	int  quiet;
-#ifdef HAVE_TOTALVIEW
-	bool totalview;		/* srun controlled by TotalView	*/
-#endif
+	bool parallel_debug;	/* srun controlled by debugger	*/
 
 	/* constraint options */
 	int mincpus;		/* --mincpus=n			*/

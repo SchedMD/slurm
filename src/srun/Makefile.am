@@ -5,12 +5,6 @@ AUTOMAKE_OPTIONS = foreign
 
 INCLUDES = -I$(top_srcdir) 
 
-if WITH_TOTALVIEW
-AM_CFLAGS = -gstabs
-SRUN_WRAPPER_OBJ = srun.wrapper.o
-endif
-
-
 bin_PROGRAMS = srun
 
 srun_SOURCES = \
@@ -41,6 +35,9 @@ convenience_libs =  \
 	$(top_builddir)/src/common/libcommon.la   \
 	$(top_builddir)/src/common/libeio.la      \
 	$(top_builddir)/src/api/libslurm.la
+
+SRUN_WRAPPER_OBJ = \
+	srun.wrapper.o
 
 srun_LDADD = \
 	$(SRUN_WRAPPER_OBJ) \

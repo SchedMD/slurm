@@ -75,7 +75,7 @@ extern int MPIR_i_am_starter;
 extern int MPIR_acquired_pre_main;
 
 extern void MPIR_Breakpoint(void);
-extern void tv_launch_failure(void);
+extern void debugger_launch_failure(void);
 
 /* Value for totalview %J expansion in bulk launch string
  */
