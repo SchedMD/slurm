@@ -117,7 +117,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr)
         slurm_msg_t request_msg ;
         slurm_msg_t response_msg ;
         last_update_msg_t last_time_msg ;
-	return_code_msg_t * slurm_rc_msg ;
+		return_code_msg_t * slurm_rc_msg ;
 
         /* init message connection for message communication with controller */
         if ( ( sockfd = slurm_open_controller_conn ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
