@@ -83,8 +83,6 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->fast_schedule);
 	fprintf(out, "FirstJobId        = %u\n", 
 		slurm_ctl_conf_ptr->first_job_id);
-	fprintf(out, "NodeHashBase      = %u\n", 
-		slurm_ctl_conf_ptr->hash_base);
 	fprintf(out, "HeartbeatInterval = %u\n", 
 		slurm_ctl_conf_ptr->heartbeat_interval);
 	fprintf(out, "InactiveLimit     = %u\n", 

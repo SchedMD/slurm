@@ -1707,7 +1707,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->epilog, buffer);
 	pack16(build_ptr->fast_schedule, buffer);
 	pack32(build_ptr->first_job_id, buffer);
-	pack16(build_ptr->hash_base, buffer);
 	pack16(build_ptr->heartbeat_interval, buffer);
 	pack16(build_ptr->inactive_limit, buffer);
 	packstr(build_ptr->job_comp_loc, buffer);
@@ -1770,7 +1769,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->epilog, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->fast_schedule, buffer);
 	safe_unpack32(&build_ptr->first_job_id, buffer);
-	safe_unpack16(&build_ptr->hash_base, buffer);
 	safe_unpack16(&build_ptr->heartbeat_interval, buffer);
 	safe_unpack16(&build_ptr->inactive_limit, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_loc, &uint16_tmp, buffer);

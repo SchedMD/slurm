@@ -482,7 +482,6 @@ typedef struct slurm_ctl_conf {
 	uint32_t first_job_id;	/* first slurm generated job_id to assign */
 	uint16_t fast_schedule;	/* 1 to *not* check configurations by node 
 				 * (only check configuration file, faster) */
-	uint16_t hash_base;	/* base used for hashing node table */
 	uint16_t heartbeat_interval; /* interval between heartbeats, seconds */
 	uint16_t inactive_limit;/* seconds of inactivity before a
 				 * inactive resource allocation is released */

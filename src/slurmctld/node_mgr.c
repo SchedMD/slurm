@@ -473,8 +473,6 @@ find_node_record (char *name)
  * _hash_index - return a hash table index for the given node name 
  * IN name = the node's name
  * RET the hash table index
- * global: slurmctld_conf.hash_base - numbering base for sequence numbers, 
- * 		if not set (while updating), reverts to sequential search
  */
 static int _hash_index (char *name) 
 {
