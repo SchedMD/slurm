@@ -372,7 +372,7 @@ char *node_state_string_compact(enum node_states inx)
 		"IDLE",
 		"ALLOC",
 		"DRAIN",
-		"DRAIN",
+		"DRNG",
 		"COMP",
 		"END"
 	};
