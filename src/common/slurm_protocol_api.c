@@ -1,3 +1,29 @@
+/*****************************************************************************\
+ *  slurm_protocol_api.c - high-level slurm communication functions
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
+
 #if HAVE_CONFIG_H
 #  include <config.h>
 #endif
@@ -47,16 +73,21 @@ slurm_protocol_config_t *slurm_get_api_config()
 int slurm_api_set_default_config()
 {
 	if ((slurmctld_conf.control_machine == NULL) ||
-	    (slurmctld_conf.backup_controller == NULL) ||
-	    (slurmctld_conf.slurmctld_port == 0))
+	    (slurmctld_conf.slurmctld_port == 0)) {
 		read_slurm_port_config();
+		if ((slurmctld_conf.control_machine == NULL) ||
+		    (slurmctld_conf.slurmctld_port == 0))
+			fatal ("Unable to establish control machine or port");
+	}
 
 	slurm_set_addr(&proto_conf_default.primary_controller,
 		       slurmctld_conf.slurmctld_port,
 		       slurmctld_conf.control_machine);
-	slurm_set_addr(&proto_conf_default.secondary_controller,
-		       slurmctld_conf.slurmctld_port,
-		       slurmctld_conf.backup_controller);
+	if (slurmctld_conf.backup_controller) {
+		slurm_set_addr(&proto_conf_default.secondary_controller,
+			       slurmctld_conf.slurmctld_port,
+			       slurmctld_conf.backup_controller);
+	}
 	proto_conf = &proto_conf_default;
 
 	return SLURM_SUCCESS;
@@ -135,13 +166,11 @@ int read_slurm_port_config()
 		/* parse what is left */
 		/* overall slurm configuration parameters */
 		error_code = slurm_parser(in_line,
-					  "ControlMachine=", 's',
-					  &control_machine,
-					  "BackupController=", 's',
-					  &backup_controller,
-					  "SlurmctldPort=", 'd',
-					  &slurmctld_port, "SlurmdPort=",
-					  'd', &slurmd_port, "END");
+					  "ControlMachine=", 's', &control_machine,
+					  "BackupController=", 's', &backup_controller,
+					  "SlurmctldPort=", 'd',&slurmctld_port, 
+					  "SlurmdPort=", 'd', &slurmd_port, 
+					  "END");
 		if (error_code) {
 			fclose(slurm_spec_file);
 			return error_code;
@@ -150,8 +179,7 @@ int read_slurm_port_config()
 		if (slurmctld_conf.control_machine == NULL)
 			slurmctld_conf.control_machine = control_machine;
 		if (slurmctld_conf.backup_controller == NULL)
-			slurmctld_conf.backup_controller =
-			    backup_controller;
+			slurmctld_conf.backup_controller = backup_controller;
 		if (slurmctld_port)
 			slurmctld_conf.slurmctld_port = slurmctld_port;
 		if (slurmd_port)
@@ -167,9 +195,11 @@ int slurm_set_default_controllers(char *primary_controller_hostname,
 {
 	slurm_set_addr(&proto_conf_default.primary_controller, pri_port,
 		       primary_controller_hostname);
-	slurm_set_addr(&proto_conf_default.secondary_controller, sec_port,
-		       secondary_controller_hostname);
-
+	if (secondary_controller_hostname) {
+		slurm_set_addr(&proto_conf_default.secondary_controller,
+			       sec_port,
+			       secondary_controller_hostname);
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -242,12 +272,11 @@ slurm_fd slurm_open_controller_conn()
 	    SLURM_SOCKET_ERROR) {
 		debug("Open connection to primary controller failed: %m");
 
-		if ((connection_fd =
-		     slurm_open_msg_conn(&proto_conf->
-					 secondary_controller)) ==
-		    SLURM_SOCKET_ERROR)
-			debug
-			    ("Open connection to secondary controller failed: %m");
+		if ((slurmctld_conf.backup_controller) &&
+		    ((connection_fd =
+		      slurm_open_msg_conn(&proto_conf->secondary_controller)) == 
+								SLURM_SOCKET_ERROR))
+			debug ("Open connection to secondary controller failed: %m");
 	}
 	return connection_fd;
 }
