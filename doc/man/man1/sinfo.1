@@ -1,4 +1,4 @@
-.TH SINFO "1" "February 2003" "sinfo 0.1" "Slurm components"
+.TH SINFO "1" "March 2003" "sinfo 0.1" "Slurm components"
 
 .SH "NAME"
 sinfo \- Used to view information of jobs located in the scheduling queue.
@@ -57,6 +57,29 @@ A valid node state. Possible values include: DOWN, UNKNOWN, IDLE, ALLOCATED, DRA
 .TP
 \fBtime\fR
 Number of seconds to wait between each iteration.
+.SH "OUTPUT"
+.TP
+\fBPARTITION\fR
+Name of the partition.
+.TP
+\fBNODES\fR
+Count of nodes with this particular configuration.
+.TP
+\fBSTATE\fR
+State of the nodes. Note that the suffix "*" marks nodes that are presently 
+not responding.
+.TP
+\fBCPUS\fR
+Count of CPUs (processors) on these nodes.
+.TP
+\fBMEM\fR
+Size of real memory in megabytes on these nodes.
+.TP
+\fBDISK\fR
+Size of temporary disk space in megabytes on these nodes.
+.TP
+\fBNODES\fR
+Names of nodes with this particular configuration.
 .SH "EXAMPLES"
 .eo
 Report basic system configuration:
