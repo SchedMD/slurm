@@ -262,6 +262,9 @@ bit_fls(bitstr_t *b)
 
 	_assert_bitstr_valid(b);
 
+	if (_bitstr_bits(b) == 0)	/* empty bitstring */
+		return -1;
+
 	bit = _bitstr_bits(b) - 1;	/* zero origin */
 	while (bit >= 0 && 		/* test partitial words */
 		(_bit_word(bit) == _bit_word(bit + 1))) {
