@@ -595,6 +595,7 @@ static void *_slurmctld_background(void *no_data)
 
 	while (slurmctld_config.shutdown_time == 0) {
 		sleep(1);
+
 		now = time(NULL);
 
 		if (slurmctld_config.shutdown_time) {
@@ -654,9 +655,9 @@ static void *_slurmctld_background(void *no_data)
 
 		if (difftime(now, last_checkpoint_time) >=
 		    PERIODIC_CHECKPOINT) {
-				last_checkpoint_time = now;
-				debug2("Performing full system state save");
-				save_all_state();
+			last_checkpoint_time = now;
+			debug2("Performing full system state save");
+			save_all_state();
 		}
 
 	}
