@@ -10,7 +10,7 @@ INCLUDES = -I$(top_srcdir)/src/common
 # (--enable-debug)
 #
 if DEBUG_MODULES
-test_modules = node_info partition_info 
+test_modules = allocate node_info partition_info 
 else
 test_modules = 
 endif
@@ -21,13 +21,15 @@ noinst_PROGRAMS = $(test_modules)
 
 LDADD = $(top_srcdir)/src/common/libcommon.a
 
-slurmctld_SOURCES = node_info.c \
+slurmctld_SOURCES = allocate.c \
+		    node_info.c \
 		    partition_info.c
 
 # target specific CFLAGS do not work until automake 1.5, use explicit rules
 # for now. If we ever move to 1.5, the CFLAGS defs below should work in
 # place of the rules that follow.
 
+#allocate_CFLAGS        = -DDEBUG_MODULE $(AM_CFLAGS)
 #node_info_CFLAGS       = -DDEBUG_MODULE $(AM_CFLAGS)
 #partition_info_CFLAGS  = -DDEBUG_MODULE $(AM_CFLAGS)
 
@@ -38,6 +40,7 @@ slurmctld_SOURCES = node_info.c \
 #
 # Note: automake 1.5 will complain about these...
 #
+allocate      : allocate_d.o
 node_info      : node_info_d.o
 partition_info : partition_info_d.o
 

@@ -121,7 +121,6 @@ int Load_Node(time_t *Last_Update_Time) {
     } /* while */
     close(sockfd); 
     Buffer_Size = Buffer_Offset + In_Size;
-printf("size=%d\n",Buffer_Size);
     Buffer = realloc(Buffer, Buffer_Size);
     if (Buffer == NULL) return ENOMEM;
 
