@@ -1,6 +1,22 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.2.12
+=========================
+ -- Fixes for reported problems:
+   - Fix for "waitpid: No child processes" when using TotalView (slurm/217).
+   - Implemented temporary workaround for slurm/223: "Munge decode failed: 
+     Munged communication error." 
+   - Temporary fix for slurm/222: "elan3_create(0): Invalid argument."
+ -- Fixed memory leaks in slurmctld (mostly due to reconfigure).
+ -- More squeue/sinfo interface changes (see squeue(1), sinfo(1)).
+ -- Sinfo now accepts list of node states to -t,--state option.
+ -- Node "reason" field now available via sinfo command (see sinfo(1)).
+ -- Wrapper source for srun (srun.wrapper.c) now installed and available
+    for TotalView support.
+ -- Improved retry login in user commands for periods when slurmctld
+    primary is down and backup has not yet taken over.
+
 * Changes in SLURM 0.2.11
 =========================
  -- Changes in srun:
