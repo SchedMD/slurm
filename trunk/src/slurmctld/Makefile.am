@@ -62,7 +62,7 @@ node_mgr$(EXEEXT)       : node_mgr_d.o
 node_scheduler$(EXEEXT) : node_scheduler_d.o job_mgr.o node_mgr.o partition_mgr.o read_config.o
 partition_mgr$(EXEEXT)  : partition_mgr_d.o node_mgr.o
 read_config$(EXEEXT)    : read_config_d.o job_mgr.o node_mgr.o node_scheduler.o partition_mgr.o step_mgr.o
-step_mgr$(EXEEXT)       : step_mgr_d.o
+step_mgr$(EXEEXT)       : step_mgr_d.o job_mgr.o node_mgr.o node_scheduler.o partition_mgr.o
 
 % : %_d.o
 	$(LINK) $(LDFLAGS) $^ $(LDADD) $(LIBS)

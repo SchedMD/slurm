@@ -52,7 +52,7 @@ main (int argc, char *argv[])
 	step_ptr->dist = 1;
 	step_ptr->procs_per_task = 2;
 
-	step_ptr = find_step_record ("Job_Id", (uint16_t) 99);
+	step_ptr = find_step_record ((uint32_t) 123, (uint16_t) 99);
 	if (step_ptr) {
 		printf ("step_ptr failure\n");
 		error_count++;
@@ -237,7 +237,7 @@ pack_all_step (char **buffer_ptr, int *buffer_size, time_t * update_time)
 		if (step_record_point->magic != STEP_MAGIC)
 			fatal ("pack_all_step: data integrity is bad");
 
-		error_code = pack_step(step_record_point, &buf_ptr, &buf_len);
+		error_code = pack_step (step_record_point, &buf_ptr, &buf_len);
 		if (error_code != 0) continue;
 		if (buf_len > BUF_SIZE) 
 			continue;
@@ -277,6 +277,7 @@ int
 pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len) 
 {
 	char node_inx_ptr[BUF_SIZE];
+	int len;
 
 	if (dump_step_ptr->job_ptr)
 		pack32 (dump_step_ptr->job_ptr->job_id, buf_ptr, buf_len);
@@ -296,6 +297,11 @@ pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len)
 
 #ifdef HAVE_LIBELAN3
 	if (dump_step_ptr->qsw_jobinfo_t) {
+		len = qsw_pack_jobinfo (dump_step_ptr->qsw_jobinfo_t, *buf_ptr, *buf_len);
+		if (len > 0) {		/* Need to explicitly advance pointer and index here */
+			*buf_ptr = (void *) ((char *)*buf_ptr + len);
+			*buf_len += len;
+		}
 	}
 	else
 		packstr (NULL, buf_ptr, buf_len);
@@ -306,21 +312,60 @@ pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len)
 
 
 /*
- * step_create - parse the suppied job specification and create job_records for it
- * input: job_specs - job specifications
- *	new_job_id - location for storing new job's id
- * output: new_job_id - the job's ID
- *	returns 0 on success, EINVAL if specification is invalid
- *	allocate - if set, job allocation only (no script required)
- * globals: job_list - pointer to global job list 
- *	list_part - global list of partition info
- *	default_part_loc - pointer to default partition 
+ * step_create - parse the suppied job step specification and create step_records for it
+ * input: step_specs - job step specifications
+ * output: returns 0 on success, EINVAL if specification is invalid
+ * globals: step_list - pointer to global job step list 
  * NOTE: the calling program must xfree the memory pointed to by new_job_id
  */
 int
-step_create (char *step_specs, uint32_t *new_job_id, int allocate)
+step_create (struct step_specs *step_specs)
 {
-	return EINVAL;
+	int error_code, nprocs;
+	struct step_record *step_ptr;
+	struct job_record  *job_ptr;
+#ifdef HAVE_LIBELAN3
+	int first, last, i, node_id;
+	bitstr_t *nodeset;
+#endif
+
+	job_ptr = find_job_record (step_specs->job_id);
+	if (job_ptr == NULL)
+		return ENOENT;;
+	if (step_specs->user_id != job_ptr->user_id &&
+	    step_specs->user_id != 0)
+		return EACCES;
+
+	step_ptr = create_step_record (&error_code);
+	if (error_code)
+		return error_code;
+
+	step_ptr->job_ptr = job_ptr;
+	step_ptr->step_id = (job_ptr->next_step_id)++;
+	step_ptr->magic = STEP_MAGIC;
+	step_ptr->dist = step_specs->dist;
+	step_ptr->procs_per_task = step_specs->procs_per_task;
+/* we need to be able to filter out some of the bitmap entries here for partial allocation */
+	step_ptr->node_bitmap = bit_copy (job_ptr->node_bitmap);
+#ifdef HAVE_LIBELAN3
+	if (qsw_alloc_jobinfo (&step_ptr->qsw_job) < 0)
+		fatal ("step_create: qsw_alloc_jobinfo error");
+	first = bit_ffs (step_ptr->node_bitmap);
+	last  = bit_fls (step_ptr->node_bitmap);
+	nodeset = bit_alloc (node_set_size);
+	if (nodeset == NULL)
+		fatal ("step_create: bit_alloc error");
+	for (i = first; i <= last; i++) {
+		if (bit_test (step_ptr->node_bitmap, i)) {
+			node_id = qsw_getnodeid_byhost (node_record_table_ptr[i].name);
+			bit_set(nodeset, node_id);
+		}
+	}
+	if (qsw_setup_jobinfo (step_ptr->qsw_job, nprocs, nodeset, step_ptr->dist) < 0)
+		fatal ("step_create: qsw_setup_jobinfo error");
+	bit_free (nodeset);
+#endif
+	return 0;
 }
 
 

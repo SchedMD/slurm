@@ -176,8 +176,16 @@ struct 	step_record {
 	uint16_t procs_per_task;	/* processors required per task */
 	bitstr_t *node_bitmap;		/* bitmap of nodes in allocated to job step */
 #ifdef HAVE_LIBELAN3
-	struct qsw_jobinfo *qsw_jobinfo_t; /* Elan3 switch context, opaque data structure */
+	qsw_jobinfo_t qsw_job;		/* Elan3 switch context, opaque data structure */
 #endif
+};
+
+struct step_specs {
+	uint32_t job_id;		/* job ID */
+	uint16_t step_id;		/* step number */
+	uint16_t dist;			/* task distribution 1=cycle, 0=block */
+	uint16_t procs_per_task;	/* processors required per task */
+	uint32_t user_id;		/* user the job runs as */
 };
 
 extern List job_list;			/* list of job_record entries */
@@ -840,17 +848,13 @@ extern int select_nodes (struct job_record *job_ptr, int test_only);
 extern int slurm_parser (char *spec, ...);
 
 /*
- * step_create - parse the suppied job specification and create job_records for it
- * input: job_specs - job specifications
- *	new_job_id - location for storing new job's id
- * output: new_job_id - the job's ID
- *	returns 0 on success, EINVAL if specification is invalid
- *	allocate - if set, job allocation only (no script required)
- * globals: job_list - pointer to global job list 
- *	list_part - global list of partition info
- *	default_part_loc - pointer to default partition 
+ * step_create - parse the suppied job step specification and create step_records for it
+ * input: step_specs - job step specifications
+ * output: returns 0 on success, EINVAL if specification is invalid
+ * globals: step_list - pointer to global job step list 
+ * NOTE: the calling program must xfree the memory pointed to by new_job_id
  */
-extern int step_create (char *step_specs, uint32_t *new_job_id, int allocate);
+extern int step_create (struct step_specs *step_specs);
 
 /* step_lock - lock the step information 
  * global: step_mutex - semaphore for the step table
