@@ -8,10 +8,12 @@ documents those changes that are of interest to users and admins.
  -- Change some slurmctld malloc sizes to reduce demand for realloc
     calls, improves performance and eliminates realloc failure on 
     RH EL3 under extremely heavy workload apparently due to memory 
-    fragmentation
+    fragmentation.
  -- Fix scheduling logic for heterogeneous processor count.
  -- Modify security_2_2 test to function with release 0.3
-
+ -- Fix broken rpm build when libslurm not already installed.
+ -- New slurmd option -M to mlock() slurmd process into memory.
+ 
 * Changes in SLURM 0.3.0
 ========================
  -- Support for AIX added (a few bugs do remain).
