@@ -709,7 +709,7 @@ update_it (int argc, char *argv[])
 		strcat (in_line, " ");
 	}			
 
-	error_code = update_config (in_line);
+	error_code = slurm_update_config (in_line);
 	free (in_line);
 	return error_code;
 }
