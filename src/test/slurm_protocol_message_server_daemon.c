@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * controller.c - main control machine daemon for slurm
+ * slurm_protocol_message_server_daemon.c - 
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -67,13 +67,14 @@ main (int argc, char *argv[])
 
 	if ( ( error_code = init_slurm_conf () ) ) 
 		fatal ("slurmd: init_slurm_conf error %d", error_code);
-	if ( ( error_code = read_slurm_conf (SLURM_CONF) ) ) 
-		fatal ("slurmd: error %d from read_slurm_conf reading %s", error_code, SLURM_CONF);
+	if ( ( error_code = read_slurm_conf ( ) ) ) 
+		fatal ("slurmd: error %d from read_slurm_conf reading %s", error_code, SLURM_CONFIG_FILE);
 	if ( ( error_code = gethostname (node_name, MAX_NAME_LEN) ) ) 
 		fatal ("slurmd: errno %d from gethostname", errno);
 
 	
-	if ( ( sockfd = slurm_init_msg_engine_port ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
+	if ( ( sockfd = slurm_init_msg_engine_port ( SLURM_PROTOCOL_DEFAULT_SLURMCTLD_PORT ) ) 
+			== SLURM_SOCKET_ERROR )
 		fatal ("slurmctld: error starting message engine \n", errno);
 		
 	while (1) 
@@ -171,7 +172,7 @@ slurm_rpc_ex_example ( slurm_msg_t * msg )
 	/* do RPC call */
 	/*error_code = init_slurm_conf ();
 	if (error_code == 0)
-		error_code = read_slurm_conf (SLURM_CONF);
+		error_code = read_slurm_conf ( );
 	reset_job_bitmaps ();
 	*/
 	/* return result */

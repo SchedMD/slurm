@@ -1124,8 +1124,11 @@ reset_job_bitmaps ()
 void
 set_job_id (struct job_record *job_ptr)
 {
-	static uint32_t id_sequence = FIRST_JOB_ID;
+	static long id_sequence = -1;
 	uint32_t new_id;
+
+	if (id_sequence < 0)
+		id_sequence = slurmctld_conf . first_job_id;
 
 	if ((job_ptr == NULL) || 
 			(job_ptr->magic != JOB_MAGIC)) 

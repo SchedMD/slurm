@@ -50,6 +50,7 @@ slurm_ctl_conf_t slurmctld_conf;
 int msg_from_root (void);
 void slurmctld_req ( slurm_msg_t * msg );
 void fill_ctld_conf ( slurm_ctl_conf_t * build_ptr );
+void init_ctld_conf ( slurm_ctl_conf_t * build_ptr );
 void parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * );
 inline static void slurm_rpc_dump_build ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_nodes ( slurm_msg_t * msg ) ;
@@ -83,22 +84,25 @@ main (int argc, char *argv[])
 	init_time = time (NULL);
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	fill_ctld_conf ( &slurmctld_conf );
+	init_ctld_conf ( &slurmctld_conf );
 	parse_commandline ( argc, argv, &slurmctld_conf );
 
 	if ( ( error_code = init_slurm_conf () ) ) 
 		fatal ("slurmctld: init_slurm_conf error %d", error_code);
-	if ( ( error_code = read_slurm_conf ( slurmctld_conf.slurm_conf )) ) 
-		fatal ("slurmctld: error %d from read_slurm_conf reading %s", error_code, SLURM_CONF);
+	if ( ( error_code = read_slurm_conf ()) ) 
+		fatal ("slurmctld: error %d from read_slurm_conf reading %s", error_code, SLURM_CONFIG_FILE);
 	if ( ( error_code = gethostname (node_name, MAX_NAME_LEN) ) ) 
 		fatal ("slurmctld: errno %d from gethostname", errno);
 
 	if ( strcmp (node_name, slurmctld_conf.control_machine) &&  
-	     strcmp (node_name, slurmctld_conf.backup_machine) )
+	     strcmp (node_name, slurmctld_conf.backup_controller) &&
+	     strcmp ("localhost", slurmctld_conf.control_machine) &&
+	     strcmp ("localhost", slurmctld_conf.backup_controller) )
 	       	fatal ("slurmctld: this machine (%s) is not the primary (%s) or backup (%s) controller", 
-			node_name, slurmctld_conf.control_machine, slurmctld_conf.backup_machine);
+			node_name, slurmctld_conf.control_machine, slurmctld_conf.backup_controller);
 	
-	if ( ( sockfd = slurm_init_msg_engine_port ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
+	if ( ( sockfd = slurm_init_msg_engine_port ( slurmctld_conf . slurmctld_port ) ) 
+			== SLURM_SOCKET_ERROR )
 		fatal ("slurmctld: error starting message engine \n", errno);
 		
 	while (1) 
@@ -642,7 +646,7 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 	/* do RPC call */
 	error_code = init_slurm_conf ();
 	if (error_code == 0)
-		error_code = read_slurm_conf (SLURM_CONF);
+		error_code = read_slurm_conf ( );
 	reset_job_bitmaps ();
 
 	/* return result */
@@ -754,47 +758,42 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
 void
 init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 {
-	conf_ptr->last_update       	= init_time ;
-	conf_ptr->backup_interval   	= 0 ;
-	conf_ptr->backup_location   	= NULL ;
-	conf_ptr->backup_machine    	= NULL ;
-	conf_ptr->control_daemon    	= NULL ;
-	conf_ptr->control_machine   	= NULL ;
-	conf_ptr->controller_timeout	= 0 ;
+	conf_ptr->last_update		= init_time ;
+	conf_ptr->backup_controller   	= NULL ;
+	conf_ptr->control_machine    	= NULL ;
 	conf_ptr->epilog           	= NULL ;
-	conf_ptr->fast_schedule     	= 0 ;
-	conf_ptr->hash_base         	= 0 ;
-	conf_ptr->heartbeat_interval	= 0;
-	conf_ptr->kill_wait         	= 0 ;
+	conf_ptr->fast_schedule     	= 1 ;
+	conf_ptr->hash_base         	= 10 ;
+	conf_ptr->heartbeat_interval	= 30;
+	conf_ptr->kill_wait         	= 30 ;
 	conf_ptr->prioritize        	= NULL ;
 	conf_ptr->prolog            	= NULL ;
-	conf_ptr->server_daemon     	= NULL ;
-	conf_ptr->server_timeout    	= 0 ;
-	conf_ptr->slurm_conf        	= NULL ;
+	conf_ptr->slurmctld_timeout   	= 300 ;
+	conf_ptr->slurmd_timeout   	= 300 ;
+	conf_ptr->slurm_conf       	= SLURM_CONFIG_FILE ;
+	conf_ptr->state_save_location   = NULL ;
 	conf_ptr->tmp_fs            	= NULL ;
 }
+
 
 void
 fill_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 {
 	conf_ptr->last_update		= init_time ;
-	conf_ptr->backup_interval   	= BACKUP_INTERVAL ;
-	conf_ptr->backup_location   	= BACKUP_LOCATION ;
-	conf_ptr->backup_machine   	= slurmctld_conf.backup_machine ;
-	conf_ptr->control_daemon    	= CONTROL_DAEMON ;
+	conf_ptr->backup_controller   	= slurmctld_conf.backup_controller ;
 	conf_ptr->control_machine    	= slurmctld_conf.control_machine ;
-	conf_ptr->controller_timeout	= CONTROLLER_TIMEOUT ;
-	conf_ptr->epilog           	= EPILOG ;
-	conf_ptr->fast_schedule     	= FAST_SCHEDULE ;
-	conf_ptr->hash_base         	= HASH_BASE ;
-	conf_ptr->heartbeat_interval	= HEARTBEAT_INTERVAL;
-	conf_ptr->kill_wait         	= KILL_WAIT ;
-	conf_ptr->prioritize        	= PRIORITIZE ;
-	conf_ptr->prolog            	= PROLOG ;
-	conf_ptr->server_daemon     	= SERVER_DAEMON ;
-	conf_ptr->server_timeout   	= SERVER_TIMEOUT ;
-	conf_ptr->slurm_conf       	= SLURM_CONF ;
-	conf_ptr->tmp_fs            	= TMP_FS ;
+	conf_ptr->epilog           	= slurmctld_conf.epilog ;
+	conf_ptr->fast_schedule     	= slurmctld_conf.fast_schedule ;
+	conf_ptr->hash_base         	= slurmctld_conf.hash_base ;
+	conf_ptr->heartbeat_interval	= slurmctld_conf.heartbeat_interval;
+	conf_ptr->kill_wait         	= slurmctld_conf.kill_wait ;
+	conf_ptr->prioritize        	= slurmctld_conf.prioritize ;
+	conf_ptr->prolog            	= slurmctld_conf.prolog ;
+	conf_ptr->slurmctld_timeout   	= slurmctld_conf.slurmctld_timeout ;
+	conf_ptr->slurmd_timeout   	= slurmctld_conf.slurmd_timeout ;
+	conf_ptr->slurm_conf       	= SLURM_CONFIG_FILE ;
+	conf_ptr->state_save_location   = slurmctld_conf.state_save_location ;
+	conf_ptr->tmp_fs            	= slurmctld_conf.tmp_fs ;
 }
 
 
@@ -812,8 +811,8 @@ parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * conf_ptr )
 		switch (c)
 		{
 			case 'b':
-				conf_ptr->backup_machine = optarg;
-				printf("backup_machine = %s\n", conf_ptr->backup_machine );
+				conf_ptr->backup_controller = optarg;
+				printf("backup_controller = %s\n", conf_ptr->backup_controller );
 				break;
 			case 'c':
 				conf_ptr->control_machine = optarg;

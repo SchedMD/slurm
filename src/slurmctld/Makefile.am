@@ -25,7 +25,6 @@ LDADD   = $(top_srcdir)/src/common/libcommon.la
 
 slurmctld_SOURCES = 	\
 	slurmctld.h	\
-	parse_spec.c	\
 	controller.c 	\
 	job_mgr.c 	\
 	job_scheduler.c \

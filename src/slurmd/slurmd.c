@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * controller.c - main control machine daemon for slurm
+ * slurmd.c - main server machine daemon for slurm
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -52,6 +52,7 @@
 
 time_t init_time;
 slurmd_shmem_t * shmem_seg ;
+static slurm_ctl_conf_t slurmctld_conf;
 
 /* function prototypes */
 void * request_thread ( void * arg ) ;
@@ -73,8 +74,8 @@ int main (int argc, char *argv[])
 /*
 	if ( ( error_code = init_slurm_conf () ) ) 
 		fatal ("slurmd: init_slurm_conf error %d", error_code);
-	if ( ( error_code = read_slurm_conf (SLURM_CONF) ) ) 
-		fatal ("slurmd: error %d from read_slurm_conf reading %s", error_code, SLURM_CONF);
+	if ( ( error_code = read_slurm_conf ( ) ) ) 
+		fatal ("slurmd: error %d from read_slurm_conf reading %s", error_code, SLURM_CONFIG_FILE);
 */
 
 	/* shared memory init */
@@ -146,8 +147,12 @@ int slurmd_msg_engine ( void * args )
 	pthread_t request_thread_id ;
 	pthread_attr_t thread_attr ;
 
-	if ( ( sockfd = slurm_init_msg_engine_port ( SLURM_PORT+1 ) ) == SLURM_SOCKET_ERROR )
-		fatal ("slurmctld: error starting message engine \n", errno);
+	if ( ( error_code = read_slurm_port_config ( ) ) )
+		fatal ("slurmd: error reading configuration file \n", error_code);
+
+	if ( ( sockfd = slurm_init_msg_engine_port ( slurmctld_conf.slurmd_port ) )
+			 == SLURM_SOCKET_ERROR )
+		fatal ("slurmd: error starting message engine \n", errno);
 #ifdef PTHREAD_IMPL
 	if ( ( error_code = pthread_attr_init ( & thread_attr ) ) ) 
 	{

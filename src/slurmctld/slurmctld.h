@@ -42,37 +42,10 @@
 #include <src/common/log.h>
 #include <src/common/macros.h>
 #include <src/common/pack.h>
-#include <src/common/slurm_protocol_defs.h>
+#include <src/common/slurm_protocol_api.h>
 #include <src/common/xmalloc.h>
 
-#if DEBUG_MODULE
-slurm_ctl_conf_t slurmctld_conf;
-#else
 extern slurm_ctl_conf_t slurmctld_conf;
-#endif
-
-#define BACKUP_INTERVAL		60
-#define BACKUP_LOCATION		"/usr/local/slurm/slurm.state"
-#define CONTROL_DAEMON  	"/usr/local/slurm/slurmd.control"
-#define CONTROLLER_TIMEOUT 	300
-#define EPILOG			""
-#define FAST_SCHEDULE		1
-#define HASH_BASE		10
-#define HEARTBEAT_INTERVAL	60
-#define INIT_PROGRAM		""
-#define FIRST_JOB_ID		(1 << 16)
-#define KILL_WAIT		30
-#define	PRIORITIZE		""
-#define PROLOG			""
-#define SERVER_DAEMON   	"/usr/local/slurm/slurmd.server"
-#define SERVER_TIMEOUT  	300
-#define SLURM_CONF		"../../etc/slurm.conf2"
-#define TMP_FS			"/tmp"
-
-extern char *control_machine;	/* name of computer acting as slurm controller */
-extern char *backup_controller;	/* name of computer acting as slurm backup controller */
-
-extern slurm_ctl_conf_t slurmctld_config;
 
 #define CONFIG_MAGIC 0xc065eded
 #define NODE_MAGIC   0x0de575ed
@@ -380,8 +353,6 @@ extern int init_part_conf ();
  * init_slurm_conf - initialize or re-initialize the slurm configuration  
  *	values. this should be called before calling read_slurm_conf.  
  * output: return value - 0 if no error, otherwise an error code
- * globals: control_machine - name of primary slurmctld machine
- *	backup_controller - name of backup slurmctld machine
  */
 extern int init_slurm_conf ();
 
@@ -584,16 +555,12 @@ extern void part_unlock ();
 void purge_old_job (void);
 
 /*
- * read_slurm_conf - load the slurm configuration from the specified file. 
+ * read_slurm_conf - load the slurm configuration from the configured file. 
  * read_slurm_conf can be called more than once if so desired.
- * input: file_name - name of the file containing overall slurm configuration information
  * output: return - 0 if no error, otherwise an error code
- * global: control_machine - primary machine on which slurmctld runs
- * 	backup_controller - backup machine on which slurmctld runs
- *	default_part_loc - pointer to default partition
  * NOTE: call init_slurm_conf before ever calling read_slurm_conf.  
  */
-extern int  read_slurm_conf (char *file_name);
+extern int  read_slurm_conf ( );
 
 /* 
  * rehash - build a hash table of the node_record entries. this is a large hash table 

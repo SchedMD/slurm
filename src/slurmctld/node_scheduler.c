@@ -744,7 +744,7 @@ select_nodes (struct job_record *job_ptr, int test_only)
 		if ((job_ptr->details->min_procs > config_record_point->cpus) ||
 		    (job_ptr->details->min_memory > config_record_point->real_memory) ||
 		    (job_ptr->details->min_tmp_disk > config_record_point->tmp_disk)) {
-			if (FAST_SCHEDULE) 	/* don't bother checking each node */
+			if (slurmctld_conf.fast_schedule) 	/* don't bother checking each node */
 				continue;
 			check_node_config = 1;
 		}
