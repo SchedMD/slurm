@@ -123,6 +123,8 @@ is 300 seconds.
 <dd>Fully qualified pathname of a directory into which the slurm controller, 
 <i>slurmctld</i>, saves its state (e.g. "/usr/local/slurm/checkpoint"). SLURM 
 state will saved here to recover from system failures. The default value is "/tmp".
+If any slurm daemons terminate abnormally, their core files will also be written 
+into this directory.
 
 <dt>TmpFS
 <dd>Fully qualified pathname of the file system available to user jobs for 
@@ -544,6 +546,9 @@ Usage: scontrol [-q | -v] [&lt;keyword&gt;]<br>
 -v is equivalent to the "verbose" keyword<br>
 </pre>
 <dl>
+<dt>abort
+<dd>Cause <i>slurmctld</i> terminate immediately and generate a core file.
+
 <dt>exit
 <dd>Terminate scontrol.
 
@@ -657,7 +662,7 @@ Remove node lx0030 from service, removing jobs as needed:
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/admin.guide.html
-<p>Last Modified August 2, 2002</p>
+<p>Last Modified September 13, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>

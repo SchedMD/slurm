@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "August 2002" "Morris Jette" "Slurm administrative calls"
+.TH "Slurm API" "3" "September 2002" "Morris Jette" "Slurm administrative calls"
 .SH "NAME"
 .LP 
 \fBslurm_job\fR \- Slurm administrative calls
@@ -8,7 +8,11 @@
 .LP 
 int \fBslurm_reconfigure\fR ( );
 .LP 
-int \fBslurm_shutdown\fR ( );
+int \fBslurm_shutdown\fR ( 
+.br
+	uint16_t \fIcore\fP
+.br
+);
 .LP
 int \fBslurm_update_job\fR (
 .br 
@@ -36,6 +40,9 @@ int \fBslurm_update_partition\fR (
 .SH "ARGUMENTS"
 .LP 
 .TP 
+\fIcore\fP
+Generate a core file if value is non-zero.
+.TP
 \fIupdate_job_msg_ptr\fP
 Specifies the pointer to a job update request specification. See slurm.h for full details on the data structure's contents. 
 .TP 
@@ -50,7 +57,7 @@ Specifies the pointer to a partition update request specification. See slurm.h f
 .LP 
 \fBslurm_reconfigure\fR Request that the Slurm controller re-read its configuration file. The new configuration parameters take effect immediately. This function may only be successfully executed by user root.
 .LP 
-\fBslurm_shutdown\fR Request that the Slurm controller save its state and terminate.
+\fBslurm_shutdown\fR Request that the Slurm controller terminate.
 .LP 
 \fBslurm_update_job\fR Request that the configuration of a job be updated. Note that most, but not all paramters of a job may be changed by this function. Initialize the data structure using the \fBslurm_init_job_desc_msg\fR function to avoid making unanticipated changes to a job's configuration. This function may only be successfully executed by user root.
 .LP 
