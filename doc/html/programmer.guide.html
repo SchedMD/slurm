@@ -4,400 +4,186 @@
 </head>
 <body>
 <h1>SLURM Programmer's Guide</h1>
+
 <h2>Overview</h2>
+
 Simple Linux Utility for Resource Management (SLURM) is an open source,
 fault-tolerant, and highly scalable cluster management and job 
-scheduling system for Linux clusters containing 
-thousands of nodes.  Components include machine status, 
-job management, and scheduling modules.  The design also 
-includes a scalable, general-purpose communication infrastructure
-(MONGO, to be described elsewhere).
+scheduling system for Linux clusters having 
+thousands of nodes.  Components include machine status, partition
+management, job management, scheduling and stream copy modules.  
 SLURM requires no kernel modifications for it operation and is 
 relatively self-contained.
-Initial target platforms include Red Hat Linux clusters with 
-Quadrics interconnect and the IBM Blue Gene product line.
 <p>
 There is an overview the components and their interactions available 
-in a separate document, <a href="overview.pdf">SLURM: Simple Linux Utility 
-for Resource Management</a>.
+in a separate document, SLURM: Simple Linux Utility for Resource Management
+[<a href="http://www.llnl.gov/linux/slurm/slurm_design.pdf">PDF</a>] 
+[<a href="http://www.llnl.gov/linux/slurm/slurm_design.ps">PS</a>].
 <p>
-Code should adhere to the Linux kernel code style as described in
-<a href="http://www.linuxhq.com/kernel/v2.4/doc/CodingStyle.html">
-http://www.linuxhq.com/kernel/v2.4/doc/CodingStyle.html</a>.
+SLURM is written in the C language and uses a GNU <i>autoconf</i> 
+configuration engine.  
+While initially written for Linux, other UNIX-like operating systems 
+should be easy porting targets.
+Code should adhere to the 
+<a href="http://libros.es.gnome.org/guias/programming-guidelines/CodingStyle.html">
+Linux kernel coding style</a>.
+<p>
+Many of these modules have been built and tested on a variety of 
+Unix computers including Red Hat Linux, IBM's AIX, Sun's Solaris, 
+and Compaq's Tru-64. The only module at this time which is operating 
+system dependent is <i>src/slurmd/read_proc.c</i>. 
+We will be porting and testing on additional platforms in future releases.
+
+<h2>Plugins</h2>
+
+In order to make the use of different infrastructures possible, 
+SLURM uses a general purpose plugin mechanism. 
+A SLURM plugin is a dynamically linked code object which is 
+loaded explicitly at run time by the SLURM libraries. 
+It provides a customized implemenation of a well-defined
+API connected to tasks such as authentication, interconnect fabric, 
+task scheduling, etc.
+A set of functions is defined for use by all of the different 
+infrastructures of a particular variety. 
+When a slurm daemon is initiated, it reads the configuration 
+file to determine which of the available plugins should be used. 
+For details, see <a href="plugins.html">plugins.html</a> and
+<a href="authplugins.html">authplugins.html</a>.
+<p>
+Our intent is to make more full use of the plugin mechanism in the future. 
+Only the authentication mechanism uses a plugin in the initial release, 
+but interconnect, job prioritization, and node allocation (for topgraphy 
+differences) will be converted to plugins for greater system flexibility.
 
 <h2>Directory Structure</h2>
+
 The contents of the SLURM directory structure will be described below in 
 increasing detail as the structure is descended. The top level directory 
 contains the scripts and tools required to build the entire SLURM system. 
 It also contains a variety of subdirectories for each type of file.
 <p>
-General build tools/files include: <i>autogen.sh</i>, <i>configure.ac</i>, <i>Makefile.am</i> 
-and the contents of the <i>auxdir</i> directory.
-<i>autoconf</i> and <i>make</i> are used to build and install 
+General build tools/files include: <i>acinclude.m4</i>, <i>autogen.sh</i>, 
+<i>configure.ac</i>, <i>Makefile.am</i>,  <i>Make-rpm.mk</i>, <i>META</i>, 
+<i>README</i>, <i>slurm.spec.in</i>, and the contents of the <i>auxdir</i> 
+directory.
+<i>autoconf</i> and <i>make</i> commands are used to build and install 
 SLURM in an automated fashion. NOTE: <i>autoconf</i> version 2.52 
 or higher is required to build SLURM. Execute "autoconf -V" to check 
-your version number. The build process may be as simple as executing 
-a sequence of three commands:
+your version number. The build process is described in the <i>README</i>
+file and may be as simple as executing a sequence of three commands:
 <pre>
 ./autogen.sh
-./configure
+./configure [OPTIONS]
 make
 </pre>
 <p>
 Copyright and disclaimer information are in the files <i>COPYING</i> and <i>DISCLAIMER</i>.
-Documentation including man pages are in the subdirectory <i>doc</i>.
-Sample configuration files are in the <i>etc</i> subdirectory.
-All source code and header files are in the directory <i>src</i>.
-DejaGnu is used as a testing framework and all of its files are in the 
-<i>testsuite</i> directory.
+
+All of the top-level subdirectories are describe below.
+<dl>
+
+<dt>auxdir
+<dd>Used for building SLURM.
+
+<dt>doc
+<dd>Documentation including man pages.
+
+<dt>etc
+<dd>Sample configuration files.
+
+<dt>slurm
+<dd>Header files for API use. These files must be installed.
+Placing these header files in this location makes for better code portability. 
+
+<dt>src
+<dd>Contains all source code and header files not in the slurm subdirectory 
+described above.
+
+<dt>testsuite
+<dd>DejaGnu is used as a testing framework and all of its files are here.
+
+</dl>
 
 <h2>Documentation</h2>
+
 All of the documentation is in the subdirectory <i>doc</i>.
-Man pages for both the commands and APIs are in <i>doc/man</i>.
+Man pages for the APIs, configuration file, commands, and daemons 
+are in <i>doc/man</i>.
 Various documents suitable for public consumption are in <i>doc/html</i>.
-An overall SLURM design document including various figures is in <i>doc/pubdesign</i>.
+Overall SLURM design documents including various figures are in <i>doc/pubdesign</i>.
 Various design documents (many of which are dated) can be found in 
 <i>doc/slides</i> and <i>doc/txt</i>.
-A survey of available resource managers initiated at the start of 
-the SLURM project is in <i>doc/survey</i>.
+A survey of available resource managers as of 2001 is in 
+<i>doc/survey</i>.
 
-<h2>Source code</h2>
+<h2>Source Code</h2>
 
-<p>Functions are divided into several catagories, each in its own 
+Functions are divided into several catagories, each in its own 
 subdirectory. The details of each directory's contents are proved 
 below. The directories are as follows:
 
 <dl>
 <dt>api
 <dd>Application Program Interfaces into the SLURM code. 
-Used to send and get SLURM information from the central manager.
+Used to send and get SLURM information from the central manager. 
+These are the functions user applications might utilize.
 
 <dt>common
-<dd>General purpose functions for widespread use.
+<dd>General purpose functions for widespread use throughout SLURM.
+
+<dt>plugins
+<dd>Plugin functions for various infrastructure. 
+A separate subdirectory is used for each plugin class: <i>auth</i> 
+for user authentication, <i>prio</i> for job prioritization, etc.
 
 <dt>popt
-<dd>General purpose parsing tools.
+<dd>Command line option parsing tools from Red Hat Software, Inc.
 
 <dt>scancel
-<dd>User command to cancel a job or job step.
+<dd>User command to cancel (or signal) a job or job step.
 
 <dt>scontrol
 <dd>Administrator tool to manage SLURM.
 
+<dt>sinfo
+<dd>User command to get information on SLURM nodes and partitions.
+
 <dt>slurmctld
-<dd>SLURM central manager code.
+<dd>SLURM central manager daemon code.
 
 <dt>slurmd
-<dd>SLURM code to manage the compute server nodes including the 
+<dd>SLURM daemon code to manage the compute server nodes including the 
 execution of user applications.
 
 <dt>squeue
-<dd>User command to get information on SLURM jobs and allocations
+<dd>User command to get information on SLURM jobs and job steps.
 
 <dt>srun
 <dd>User command to submit a job, get an allocation, and/or initiation 
 a parallel job step.
 
-<dt>test
-<dd>Functions for testing individual SLURM modules. These tests are 
-not under the DejaGnu framework.
 </dl>
 
-<h2>API Modules</h2>
-This directory contains modules supporting the SLURM API functions.
-The APIs to get SLURM information accept a time-stamp. If the data 
-has not changed since the specified time, a return code will indicate 
-this and return no other data. Otherwise a data structure is returned 
-including its time-stamp, element count, and an array of structures 
-describing the state of each node, job, partition, etc.
-Each of these functions also includes a corresponding function to 
-release all storage associated with the data structure. 
-
-<dl>
-<dt>allocate.c
-<dd>Allocates resources for a job's initiation. 
-This creates a job entry and allocates resouces to it. 
-The resources can be claimed at a later time to actually 
-run a parallel job. If the requested resouces are not 
-currently available, the request will fail.
-
-<dt>allocate.c
-<dd>Allocate resources for a job. The allocation request may 
-result in the immediate execution of a job step, the immediate 
-allocation of resources for future job steps, or the queuing 
-the allocation request depending upon parameters used.
-
-<dt>cancel.c
-<dd>Cancels (i.e. terminates) a running or pending job or job step.
-
-<dt>complete.c
-<dd>Note the completion of a running job or job step.
-
-<dt>config_info.c
-<dd>Reports SLURM configuration parameter values.
-
-<dt>job_info.c
-<dd>Reports job state information
-
-<dt>Makefile.am
-<dd>Information used by autoconf to build a Makefile for the api 
-subdirectory.
-
-<dt>node_info.c
-<dd>Reports node state and configuration values.
-
-<dt>partition_info.c
-<dd>Reports partition state and configuration values.
-
-<dt>reconfigure.c
-<dd>Requests that slurmctld reload configuration information. 
-Also includes the API to request slurmctld shutdown.
-
-<dt>submit.c
-<dd>Submits a job to slurm. The job will be queued 
-for initiation when resources are available.
-
-<dt>update_config.c
-<dd>Updates job, node or partition state information.
-</dl>
-
-<i>Future components to include: job step support (a set of parallel 
-tasks associated with a job or allocation, multiple job steps may 
-execute in serial or parallel within an allocation), 
-issuing keys, getting Elan (Quadrics 
-interconnect) capabilities, and resource accounting.</i>
-
-<h2>Common Modules</h2>
-This directory contains modules of general use throughout the SLURM code. 
-The modules are described below.
-
-<dl>
-<dt>bitstring.[ch]
-<dd>A collection of general purpose functions for managing bitmaps. 
-We use these for rapid node management functions including: scheduling 
-and associating partitions and jobs with the nodes.
-
-<dt>hostlist.[ch]
-<dd>Has tools which accept a regular expression for a host list (e.g. 
-"lx[123-456,777]") and provide individual node names in several fashions. 
-
-<dt>list.[ch]
-<dd>A general purpose list manager. 
-One can define a list, add and delete entries, search for entries, etc. 
-
-<dt>log.[ch]
-<dd>A general purpose log manager. It can filter log messages 
-based upon severity and route them to stderr, syslog, or a log file.
-
-<dt>macros.h
-<dd>General purpose SLURM macro definitions.
-
-<dt>Makefile.am
-<dd>autoconf input to build a Makefile for this subdirectory.
-
-<dt>pack.[ch]
-<dd>Functions for packing and unpacking unsigned integers and strings 
-for transmission over the network. The unsigned integers are translated 
-to/from machine independent form. Strings are transmitted with a length 
-value.
-
-<dt>parse_spec.[ch]
-<dd>Parser functions for translating the configuration file or input to scontrol.
-
-<dt>qsw.[ch]
-<dd>Functions for interacting with the Quadrics interconnect.
-
-<dt>qsw.h
-<dd>Definitions for qsw.c and documentation for its functions.
-
-<dt>safeopen.[ch]
-<dd>Functions for opening files with simple sanity checks on the file.
-
-<dt>slurm_errno.h
-<dd>Slurmd specific error codes.
-
-<dt>slurm_protocol_api.[ch]
-<dd>TBD
-
-<dt>slurm_protocol_common.h
-<dd>TBD
-
-<dt>slurm_protocol_defs.[ch]
-<dd>TBD
-
-<dt>slurm_protocol_errno.[ch]
-<dd>General SLURM error functions and codes.
-
-<dt>slurm_protocol_implementation.c
-<dd>TBD
-
-<dt>slurm_protocol_mongo_common.h
-<dd>TBD
-
-<dt>slurm_protocol_pack.[ch]
-<dd>Functions to pack a variety of RPC specific data structures.
-
-<dt>slurm_protocol_socket_common.h
-<dd>TBD
-
-<dt>slurm_protocol_socket_implementation.c
-<dd>Socket-based communctions protocol functions.
-
-<dt>slurm_protocol_util.[ch]
-<dd>TBD
-
-<dt>slurm_return_codes.h
-<dd>TBD
-
-<dt>strlcpy.[ch]
-<dd>String copy function with input/output length information.
-
-<dt>util_signals.[ch]
-<dd>TBD
-
-<dt>xassert.[ch]
-<dd>Assert function with configurable handling.
-
-<dt>xerrno.[ch]
-<dd>Quadrics Elan error management functions.
-
-<dt>xmalloc.[ch]
-<dd>"Safe" memory management functions. Includes magic cooking to insure 
-that freed memory was in fact allocated by its functions.
-
-<dt>xstring.[ch]
-<dd>A collection of functions for string manipulations with automatic expansion 
-of allocated memory on an <i>as needed</i> basis.
-
-</dl>
-
-<h2>scancel Modules</h2>
-scancel is a command to cancel running or pending jobs or job steps.
-
-<dl>
-<dt>Makefile.am
-<dd>autoconf input to build a Makefile for this subdirectory.
-
-<dt>scancel.c
-<dd>A command line interface to cancel jobs or job steps.
-</dl>
-
-
-<h2>scontrol Modules</h2>
-scontrol is the administrator tool for monitoring and modifying SLURM configuration 
-and state. It has a command line interface only.
-
-<dl>
-<dt>Makefile.am
-<dd>autoconf input to build a Makefile for this subdirectory.
-
-<dt>scontrol.c
-<dd>A command line interface to slurmctld.
-</dl>
-
-
-<h2>slurmctld Modules</h2>
-slurmctld executes on the control machine and orchestrates SLURM activities 
-across the entire cluster including monitoring node and partition state, 
-scheduling, job queue management, job dispatching, and switch management. 
-The slurmctld modules and their functionality are described below.
-
-<dl>
-<dt>controller.c
-<dd>Primary SLURM daemon to execute on control machine. 
-It has several threads to handle signals, incomming RPCs, generate heartbeat 
-requests for <i>slurmd</i>, etc. It manages the Partition Manager, Switch Manager, 
-and Job Manager sub-systems.
-
-<dt>job_mgr.c
-<dd>Reads, writes, records, updates, and otherwise 
-manages the state information for all jobs and allocations
-for jobs.
-
-<dt>job_scheduler.c
-<dd>Determines which pending job(s) should execute next and initiates them.
-
-<dt>locks.[ch]
-<dd>Provides read and write locks for the various slurmctld data structures.
-
-<dt>Makefile.am
-<dd>autoconf input to build a Makefile for this subdirectory.
-
-<dt>node_mgr.c
-<dd>Reads, writes, records, updates, and otherwise 
-manages the state information for all nodes (machines) in the 
-cluster managed by SLURM. 
-
-<dt>node_scheduler.c
-<dd>Selects the nodes to be allocated to pending jobs. This makes extensive use 
-of bit maps in representing the nodes. It also considers the locality of nodes 
-to improve communications performance.
-
-<dt>pack.c
-<dd>Pack the slurmctld structures into buffers understood by slurm_protocol.
-
-<dt>partition_mgr.c
-<dd>Reads, writes, records, updates, and otherwise 
-manages the state information associated with partitions in the 
-cluster managed by SLURM. 
-
-<dt>read_config.c
-<dd>Read the SLURM configuration file and use it to build node and 
-partition data structures.
-
-<dt>slurmctld.h
-<dd>Defines data structures and functions for all of slurmctld
-
-<dt>step_mgr.c
-<dd>Reads, writes, records, updates, and otherwise 
-manages the state information for job steps.
-</dl>
-
-
-<h2>slurmd Modules</h2>
-slurmd executes on each compute node. It initiates and terminates user 
-jobs and monitors both system and job state. The slurmd modules and their 
-functionality are described below.
-
-<dl>
-<dt>get_mach_stat.c
-<dd>Gets the machine's status and configuration in a operating system 
-independent fashion. 
-This configuration information includes: size of real memory, 
-size of temporary disk storage, and the number of processors.
-
-<dt>read_proc.c
-<dd>Collects job state information including real memory use, virtual 
-memory use, and CPU time use. 
-While desirable to maintain operating system independent code, this 
-module is not completely portable.
-</dl>
-
-<h2>Design Issues</h2>
-Many of these modules have been built and tested on a variety of 
-Unix computers including Redhat's Linux, IBM's AIX, Sun's Solaris, 
-and Compaq's Tru-64. The only module at this time which is operating 
-system dependent is <i>slurmd/read_proc.c</i>.
-<p>
-The node selection logic allocates nodes to jobs in a fashion which 
-makes most sense for a Quadrics switch interconnect. It allocates 
-the smallest collection of consecutive nodes that satisfies the 
-request (e.g. if there are 32 consecutive nodes and 16 consecutive 
-nodes available, a job needing 16 or fewer nodes will be allocated 
-those nodes from the 16 node set rather than fragment the 32 node 
-set). If the job can not be allocated consecutive nodes, it will 
-be allocated the smallest number of consecutive sets (e.g. if there 
-are sets of available consecutive nodes of sizes 6, 4, 3, 3, 2, 1, 
-and 1 then a request for 10 nodes will always be allocated the 6 
-and 4 node sets rather than use the smaller sets). 
-These techniques minimize the job communications overhead. 
-A job can use hardware broadcast mechanisms given consecutive nodes. 
-Without consecutive nodes, much slower software broadcase mechanisms 
-must be used.
+<h2>Configuration</h2>
+
+Several configuration files are included in the <i>etc</i> subdirectory.
+<i>slurm.conf.example</i> includes a description of all configuration 
+options and default settings. See <i>doc/man/man5/slurm.conf.5</i> for 
+more details.
+<i>init.d.slurm</i> is a script that determines which slurm daemon(s) 
+should execute on any node based upon the configuration file contents. 
+This can be used as part of a daemon startup/shutdown mechanism.
+
+<h2>Test Suite</h2>
+
+The test suite uses a Dega GNU framework for testing. 
+Some of these tests directly test modules in the daemons.
+Other tests are more general and exercise API functionality. 
+Be aware that some of these tests are dated and some no longer function. 
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/programmer.guide.html
-<p>Last Modified July 30, 2002</p>
+<p>Last Modified March 18, 2003</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
