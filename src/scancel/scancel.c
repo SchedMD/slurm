@@ -69,7 +69,7 @@ main (int argc, char *argv[])
 	log_init ("scancel", log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 	initialize_and_process_args(argc, argv);
 	if (opt.verbose) {
-		log_opts.stderr_level =+opt.verbose;
+		log_opts.stderr_level += opt.verbose;
 		log_alter (log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 	}
 
@@ -217,17 +217,17 @@ _cancel_job_id (uint32_t job_id, uint16_t signal)
 	int error_code = SLURM_SUCCESS, i;
 
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
-		verbose("Killing job %u", job_id);
+		verbose("Signal %u to job %u", signal, job_id);
 		error_code = slurm_kill_job (job_id, signal);
 		if ((error_code == 0) || 
 		    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
 			break;
-		printf ("Job is in transistional state, retrying\n");
+		verbose("Job is in transistional state, retrying");
 		sleep ( 5 + i );
 	}
 	if (error_code) {
-		fprintf (stderr, "Kill job error on job id %u: %s\n", 
-			job_id, slurm_strerror(slurm_get_errno()));
+		error("Kill job error on job id %u: %s", 
+		      job_id, slurm_strerror(slurm_get_errno()));
 	}
 }
 
@@ -237,17 +237,17 @@ _cancel_step_id (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	int error_code = SLURM_SUCCESS, i;
 
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
-		verbose("Killing step %u.%u", job_id, step_id);
+		verbose("Signal %u to step %u.u", signal, job_id, step_id);
 		error_code = slurm_kill_job_step (job_id, step_id, signal);
 		if ((error_code == 0) || 
 		    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
 			break;
-		printf ("Job is in transistional state, retrying\n");
+		verbose("Job is in transistional state, retrying");
 		sleep ( 5 + i );
 	}
 	if (error_code) {
-		fprintf (stderr, "Kill job error on job id %u.%u: %s\n", 
-			job_id, step_id, slurm_strerror(slurm_get_errno()));
+		error("Kill job error on job id %u.%u: %s", 
+		      job_id, step_id, slurm_strerror(slurm_get_errno()));
 	}
 }
 
@@ -261,7 +261,8 @@ confirmation (int i)
 	job_ptr = job_buffer_ptr->job_array ;
 	while (1) {
 		printf ("Cancel job_id=%u name=%s partition=%s [y/n]? ", 
-		        job_ptr[i].job_id, job_ptr[i].name, job_ptr[i].partition);
+		        job_ptr[i].job_id, job_ptr[i].name, 
+			job_ptr[i].partition);
 
 		fgets (in_line, sizeof (in_line), stdin);
 		if ((in_line[0] == 'y') || (in_line[0] == 'Y'))
