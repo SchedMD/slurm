@@ -78,7 +78,8 @@ The days and hours are printed only as needed.
 .br
 \fB%O\fR Are contiguous nodes requested by the job
 .br
-\fB%p\fR Priority of the job (converted to a floating point number between 0.0 and 1.0
+\fB%p\fR Priority of the job (converted to a floating point number 
+between 0.0 and 1.0
 .br
 \fB%P\fR Partition of the job or job step
 .br
@@ -130,6 +131,26 @@ reported.
 \fB\-v\fR, \fB\-\-verbose\fR
 Report details of squeues actions.
 
+.SH "ENVIRONMENT VARIABLES"
+.PP
+Some \fBsqueue\fR options may be set via environment variables. These 
+environment variables, along with their corresponding options, are listed 
+below. (Note: commandline options will always override these settings)
+.TP 20
+SQUEUE_FORMAT
+\fB\-o, \-\-format\fR
+.TP
+SQUEUE_PARTITION
+\fB\-p, \-\-partition\fR
+.TP
+SQUEUE_SORT
+\fB\-S, \-\-sort\fR
+.TP
+SQUEUE_STATES
+\fB\-t, \-\-states\fR
+.TP
+SQUEUE_USERS
+\fB\-u, \-\-users\fR
 
 .SH "EXAMPLES"
 .eo

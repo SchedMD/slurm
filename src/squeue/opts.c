@@ -26,6 +26,8 @@
 
 #include <popt.h>
 #include <pwd.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 
 #include "src/common/xstring.h"
@@ -45,8 +47,8 @@
 #define OPT_VERBOSE   	0x09
 #define OPT_ITERATE   	0x0a
 #define OPT_USERS   	0x0b
-#define OPT_LONG   	0x0c
-#define OPT_SORT   	0x0d
+#define OPT_LONG   	    0x0c
+#define OPT_SORT   	    0x0d
 #define OPT_NO_HEAD   	0x0e
 
 /* FUNCTIONS */
@@ -71,7 +73,8 @@ parse_command_line( int argc, char* argv[] )
 {
 	poptContext context;
 	char next_opt, curr_opt;
-	int rc = 0;
+	char *env_val = NULL;
+	int i = 0, rc = 0;
 
 	/* Declare the Options */
 	static const struct poptOption options[] = 
@@ -138,20 +141,17 @@ parse_command_line( int argc, char* argv[] )
 			case OPT_STEPS_NONE:
 				if ( (opt_arg = poptGetArg( context )) != NULL )
 					params.steps = (char*)opt_arg;
-				params.step_list = 
-					_build_step_list( params.steps );
+				params.step_list = _build_step_list( params.steps );
 				break;	
 			case OPT_STATES:
-				params.state_list = 
-					_build_state_list( params.states );
+				params.state_list = _build_state_list( params.states );
 				break;	
 			case OPT_PARTITIONS:
 				params.part_list = 
 					_build_part_list( params.partitions );
 				break;	
 			case OPT_USERS:
-				params.user_list = 
-					_build_user_list( params.users );
+				params.user_list = _build_user_list( params.users );
 				break;
 			case OPT_VERBOSE:
 				params.verbose = true;
@@ -182,6 +182,49 @@ parse_command_line( int argc, char* argv[] )
 		fprintf( stderr, "Try \"%s --help\" for more information\n", 
 		         argv[0] );
 		exit( 1 );
+	}
+
+	if ( ( params.format == NULL ) && 
+	     ( env_val = getenv("SQUEUE_FORMAT") ) ) {
+		i = strlen(env_val);
+		params.format = xmalloc(i);
+		strcpy(params.format, env_val);
+		env_val = NULL;
+	}
+
+	if ( ( params.partitions == NULL ) && 
+	     ( env_val = getenv("SQUEUE_PARTITION") ) ) {
+		i = strlen(env_val);
+		params.partitions = xmalloc(i);
+		strcpy(params.partitions, env_val);
+		params.part_list = _build_part_list( params.partitions );
+		env_val = NULL;
+	}
+
+	if ( ( params.sort == NULL ) && 
+	     ( env_val = getenv("SQUEUE_SORT") ) ) {
+		i = strlen(env_val);
+		params.sort = xmalloc(i);
+		strcpy(params.sort, env_val);
+		env_val = NULL;
+	}	
+
+	if ( ( params.states == NULL ) && 
+	     ( env_val = getenv("SQUEUE_STATES") ) ) {
+		i = strlen(env_val);
+		params.states = xmalloc(i);
+		strcpy(params.states, env_val);
+		params.state_list = _build_state_list( params.states );
+		env_val = NULL;
+	}
+
+	if ( ( params.users == NULL ) && 
+	     ( env_val = getenv("SQUEUE_USERS") ) ) {
+		i = strlen(env_val);
+		params.users = xmalloc(i);
+		strcpy(params.users, env_val);
+		params.user_list = _build_user_list( params.users );
+		env_val = NULL;
 	}
 
 	if ( params.format )
