@@ -309,7 +309,7 @@ are available.
 The job is a two-node run of {\em mping}, a simple MPI application.
 The user submits the job:
 \begin{verbatim}
-srun --numnodes 2 --taskspernode 1 mping 1 1048576
+srun --batch --nodes 2 --nprocs 2 1 mping 1 1048576
 \end{verbatim}
 
 The {\tt srun} command authenticates the user to the controller and submits
@@ -389,7 +389,7 @@ copied onto stdout/stderr of {\tt srun}.
 
 The user submits the job, this time requesting an interactive run:
 \begin{verbatim}
-srun --interactive --numnodes 2 --taskspernode 1 mping 1 1048576
+srun --nodes 2 --nprocs 2 1 mping 1 1048576
 \end{verbatim}
 
 The {\tt srun} command authenticates the user to the controller and 
