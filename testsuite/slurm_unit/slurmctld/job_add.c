@@ -41,7 +41,6 @@ main( int argc, char* argv[])
 	job_mesg. partition = get_string_resp("string_resp", "batch\0" );
 	job_mesg. priority = get_int_resp( "priority", 100 );
 	job_mesg. req_nodes = get_string_resp( "req_nodes", "lx[3000-3003]\0" );
-	job_mesg. job_script = get_string_resp( "job_script", "/bin/hostname\0");
 	job_mesg. shared = get_int_resp( "shared", 0 );
 	job_mesg. time_limit = get_int_resp( "time_limit", 200 );
 	job_mesg. num_procs = get_int_resp( "num_procs", 1000) ;
