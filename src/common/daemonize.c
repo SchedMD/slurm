@@ -130,7 +130,7 @@ read_pidfile(const char *pidfile, int *pidfd)
 	}
 
 	if ((lpid = fd_is_read_lock_blocked(fd)) == (pid_t) 0) {
-		verbose ("pidfile not locked, assuming no running slurmd");
+		verbose ("pidfile not locked, assuming no running daemon");
 		return (lpid);
 	}
 
