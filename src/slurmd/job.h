@@ -141,7 +141,7 @@ struct task_info * task_info_create(int taskid, int gtaskid);
 
 void task_info_destroy(struct task_info *t);
 
-void job_update_shm(slurmd_job_t *job);
+int job_update_shm(slurmd_job_t *job);
 
 void job_delete_shm(slurmd_job_t *job);
 

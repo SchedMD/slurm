@@ -490,13 +490,21 @@ _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 	 */
 	_kill_running_session_mgrs(req->job_id, SIGXCPU);
 
-	step_cnt = _kill_all_active_steps(req->job_id, SIGTERM);
-
-	info("Timeout for job=%u, step_cnt=%d, kill_wait=%u", 
-	     req->job_id, step_cnt, conf->cf.kill_wait);
-
-	if (step_cnt) {
+	if ((step_cnt = _kill_all_active_steps(req->job_id, SIGTERM)))
 		found_job = true;
+
+	verbose( "Job %u: timeout: sent SIGTERM to %d active steps", 
+	         req->job_id, step_cnt );
+
+	sleep(1);
+	/*
+	 * Check to see if any processes are still around
+	 */
+	if (found_job && _kill_all_active_steps(req->job_id, 0)) {
+
+		verbose( "Job %u: waiting %d secs for SIGKILL", 
+			 req->job_id, conf->cf.kill_wait       );
+
 		sleep(conf->cf.kill_wait);
 	}
 
@@ -653,8 +661,7 @@ _kill_all_active_steps(uint32_t jobid, int sig)
 	}
 	list_destroy(steps);
 	if (step_cnt == 0)
-		debug2("No steps in jobid %d to send signal %d",
-		       jobid, sig);
+		debug2("No steps in jobid %d to send signal %d", jobid, sig);
 	return step_cnt;
 }
 

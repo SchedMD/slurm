@@ -282,7 +282,7 @@ _exec_task(slurmd_job_t *job, int i)
 }
 
 static sig_atomic_t timelimit_exceeded = 0;
-static
+static void
 _xcpu_handler()
 {
 	timelimit_exceeded = 1;
