@@ -8,6 +8,10 @@
 command=""
 signal=""
 user_id=-1
+if [ $# -lt 4 ]; then
+	echo "Usage: pkill -<signal> -u <user_id> <command>"
+	exit 1
+fi
 if [ $1 == "-INT" ]; then
 	signal="INT"
 fi
@@ -37,7 +41,6 @@ if [ $user_id -eq -1 ]; then
 	echo "Need user ID"
 	exit 1
 fi
-echo "command=$command, signal=$signal, user_id=$user_id"
 # Find the appropriate processes and signal them
 if [ $signal == "INT" ]; then
 	ps -U $user_id | grep " $command$" | awk '{printf "kill -s INT %s\n",$2}' | bash
