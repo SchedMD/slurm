@@ -92,6 +92,7 @@ int fan_out_task_launch ( launch_tasks_request_msg_t * launch_msg )
 	for ( i = 0 ; i < launch_msg->tasks_to_launch ; i ++ )
 	{
 		rc = pthread_join( task_start[i]->pthread_id , NULL )  ;
+		debug3 ( "thread %i pthread_id %i joined " , i , task_start[i]->pthread_id ) ;
 	}
 	goto return_label;
 
@@ -104,7 +105,9 @@ int fan_out_task_launch ( launch_tasks_request_msg_t * launch_msg )
 	}
 	*/
 	return_label:
-		rel_shmem ( shmem_ptr ) ;
+		/* can't release if this is the same process as the main daemon ie threads
+		 * this is needed if we use forks
+		 * rel_shmem ( shmem_ptr ) ; */
 	return SLURM_SUCCESS ;
 }
 
@@ -193,8 +196,8 @@ void * task_exec_thread ( void * arg )
 			task_start->exec_pid = cpid ;
 			setup_parent_pipes ( task_start->pipes ) ;
 			waitpid ( cpid , & task_return_code , 0 ) ;
-			wait_on_io_threads ( task_start ) ;
 			cleanup_parent_pipes (  task_start->pipes ) ;
+			wait_on_io_threads ( task_start ) ;
 			send_task_exit_msg ( task_return_code , task_start ) ;
 			break;
 	}
@@ -230,6 +233,7 @@ int kill_tasks ( kill_tasks_msg_t * kill_task_msg )
 	task_t * task_ptr ;
 	/* find job step */
 	job_step_t * job_step_ptr = find_job_step ( shmem_ptr , kill_task_msg -> job_id , kill_task_msg -> job_step_id ) ;
+	debug3 ( "entering kill_tasks" ) ;
 	if ( job_step_ptr == (void * ) SLURM_ERROR )
 	{
 		debug3 ( "we have problems huston, find_job_step faild " ) ;
@@ -245,7 +249,9 @@ int kill_tasks ( kill_tasks_msg_t * kill_task_msg )
 		kill_task ( task_ptr , kill_task_msg -> signal ) ;
 		task_ptr = task_ptr -> next ;
 		i++ ;
+		debug3 ( "next task_ptr %i ", task_ptr ) ;
 	}
+	debug3 ( "leaving kill_tasks" ) ;
 	return error_code ;
 }
 
