@@ -1,0 +1,218 @@
+.TH SINFO "1" "June 2003" "sinfo 0.1" "Slurm components"
+
+.SH "NAME"
+sinfo \- Used to view information about Slurm nodes and partitions.
+
+.SH "SYNOPSIS"
+\fBsinfo\fR [\fIOPTIONS\fR...] 
+.SH "DESCRIPTION"
+\fBsinfo\fR is used to view partition and node information for a 
+system running SLURM. 
+
+.SH "OPTIONS"
+.TP
+\fB\-?\fR, \fB\-\-help\fR
+Print a help message describing the usage of \fBsinfo\fR.
+.TP
+\fB\-e\fR, \fB\-\-exact\fR
+If set, do not group node information on multiple nodes unless their 
+configurations to be reported are identical. Otherwise cpu count, 
+memory size, and disk space for nodes will be listed with the minimum 
+value followed by a "+" for nodes with the same partition and state 
+(e.g., "250+").
+.TP
+\fB\-i <seconds>\fR , \fB\-\-iterate=<seconds>\fR
+Print the state on a periodic basis. 
+Sleep for the indicated number of seconds between reports.
+.TP
+\fB\-l\fR , \fB\-\-long\fR
+Print more detailed information.
+.TP
+\fB\-n <nodes>\fR , \fB\-\-nodes=<nodes>\fR
+Print information only about the specified node(s). 
+.TP
+\fB\-N\fR , \fB\-\-Node\fR
+Print information in a node-oriented format.
+The default is to print information in a partition-oriented format.
+.TP
+\fB\-t <state>\fR , \fB\-\-state=<state>\fR
+List nodes of a given state.
+.TP
+\fB\-s\fR , \fB\-\-summarize\fR
+List only a partition state summary with no node state details.
+.TP
+\fB\-p <partition>\fR, \fB\-\-partition=<partition>\fR
+Print information only about the specified partition.  
+.TP
+\fB\-\-usage\fR
+Dipaly brief description of commands and options.
+.TP
+\fB\-v\fR , \fB\-\-verbose\fR
+Provide detailed event logging through program execution.
+.SH "ARGUMENTS"
+.TP
+\fBnodes\fR
+The names of one or more comma separated nodes. Names may be specified 
+using node range expressions.
+For example "linux[00-07]" would indicate eight nodes, "linux00" 
+through "linux07".
+.TP
+\fBpartition\fR
+The name of one partition.
+.TP
+\fBstate\fR
+A valid node state. Possible values include: ALLOC, ALLOCATED, COMP, 
+COMPLETING, DOWN, DRAIN, DRAINED, DRAINING, IDLE, UNK, and UNKNOWN.
+A "*" suffix may be appended to any of these states to search for 
+nodes in the specified state which are not responding. 
+By default nodes in the specified state are reported whether they are 
+responding or not.
+.SH "OUTPUT"
+.TP
+\fBPARTITION\fR
+Name of a partition. 
+Note that the suffix "*" identifies the default partition.
+.TP
+\fBAVAIL\fR
+Partition state, \fBUP\fR or \fBDOWN\fR.
+.TP
+\fBNODES\fR
+Count of nodes with this particular configuration.
+.TP
+\fBSTATE\fR
+State of the nodes. Note that the suffix "*" identifies nodes 
+that are presently not responding.
+.TP
+\fBCPUS\fR
+Count of CPUs (processors) on these nodes.
+.TP
+\fBMEMORY\fR
+Size of real memory in megabytes on these nodes.
+.TP
+\fBTMP_DISK\fR
+Size of temporary disk space in megabytes on these nodes.
+.TP
+\fBNODE_LIST\fR
+Names of nodes associated with this configuration/partition.
+.TP
+\fBMAX_TIME\fR
+Maximum time limit for any user job in minutes.
+\fBNONE\fR is used to identify partitions without a job time limit.
+.TP
+\fBJOB_SIZE\fR
+Minimum and maximum node count that can be allocated to any user job. 
+A single number indicates the minimum and maximum node count are the 
+same.
+.TP
+\fBROOT\fR
+Is the ability to allocate resources in this partition restricted to 
+user root, \fBYES\fR or \fBNO\fR.
+.TP
+\fBSHARE\fR
+Will jobs allocated resources in this partition share those resources.
+\fBNO\fR indicates resources are never shared. 
+\fBFORCE\fR indicates resources are always available to be shared.
+\fBYES\fR indicates resource may be shared or not per job's resource allocation.
+.TP
+\fBGROUPS\fR
+Resource allocations in this partition are restricted to the named groups.
+\fBALL\fR indicates that all groups may use this partition.
+
+.SH "EXAMPLES"
+.eo
+Report basic node and partition configurations:
+.br
+> sinfo
+.br
+PARTITION AVAIL NODES STATE  NODE_LIST
+.br
+------------------------------------------------------------
+.br
+debug     UP        8 IDLE   adev[0-7]
+.br
+batch*    UP        2 ALLOC  adev[8-9]
+.br
+                    6 IDLE   adev[10-15]
+.br
+ 
+.br
+Report partition summary information:
+.br
+> sinfo -s
+.br
+PARTITION AVAIL NODES NODE_LIST
+.br
+------------------------------------------------------------
+.br
+debug     UP        8 adev[0-7]
+.br
+batch*    UP        8 adev[8-15]
+.br
+ 
+.br
+Report more complete information about the partition debug:
+.br
+> sinfo --long --partition debug
+.br
+PARTITION AVAIL NODES STATE MAX_TIME JOB_SIZE ROOT SHARE GROUPS NODE_LIST
+.br
+-------------------------------------------------------------------------
+.br
+debug     UP        8 IDLE      NONE     1-26 NO   NO    ALL    adev[0-7]
+.br
+
+.br
+Report only those nodes that are in state DRAINED:
+.br
+> sinfo --state=DRAINED
+.br
+PARTITION AVAIL NODES STATE  NODE_LIST
+.br
+------------------------------------------------------------
+.br
+debug     UP        2 DRAIN  adev[6-7]
+.br
+
+.br
+Report node-oriented information with details and exact matches:
+.br
+> sinfo -Nel
+.br
+NODE_LIST  NODES PARTITION STATE  CPUS MEMORY TMP_DISK WEIGHT FEATURES
+.br
+----------------------------------------------------------------------
+.br
+adev[0-1]      2 debug     IDLE      2   3448    38536     16 (null)  
+.br
+adev[2,4-7]    5 debug     IDLE      2   3384    38536     16 (null)  
+.br
+adev3          1 debug     IDLE      2   3394    38536     16 (null)  
+.br
+adev[8-9]      2 batch     ALLOCATED 2    246    82306     16 (null)  
+.br
+adev[10-15]    6 batch     IDLE      2    246    82306     16 (null)  
+.ec
+
+.SH "COPYING"
+Copyright (C) 2002 The Regents of the University of California.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+UCRL-CODE-2002-040.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <http://www.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+.SH "SEE ALSO"
+\fBscontrol\fR(1), \fBsqueue\fR(1), 
+\fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3), 
+\fBslurm_load_partitions\fR(3), 
+\fBslurm_reconfigure\fR(3), \fBslurm_shutdown\fR(3), 
+\fBslurm_update_job\fR(3), \fBslurm_update_node\fR(3), \fBslurm_update_partition\fR(3)
