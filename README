@@ -1,13 +1,16 @@
 TO BUILD:
   > cd slurm
   > ./autogen.sh
-  > ./configure [--with-authd] [--with-elan] [--with-totalview]
+  > ./configure [--with-authd] [--with-elan] [--with-totalview] [--enable-debug]
   > make
 
   NOTES:
      # --with-authd if you want to use authd for authentication
      # --with-elan  if you have an Quadics elan switch, defaults to IP
      # --with-totalview  if you want to support the Etnus TotalView debugger
+     # --enable-debug if you want to run the daemons in debug mode (more 
+       validity checking and writes core files, useful for getting things 
+       running)
 
 TO TEST:
   You will need to construct a valid configuration file for your machine.
@@ -20,7 +23,7 @@ TO TEST:
   See "doc/man/man5/slurm.conf.5" for help in building this.
 
   Initiate "src/slurmctld/slurmctld" on the control machine (it can run 
-     without root permissions, as user SlurmUser as specified in slurm.conf).
+     without root permissions, see SlurmUser in slurm.conf).
      For testing purposes you probably want to use several options:
      "-D" keep in foreground, "-c" clear state from previous executions, 
      and possibly "-v" for verbose messages (more v's for more verbosity).
@@ -37,8 +40,7 @@ TO TEST:
   Get and set system configuration information using "src/scontrol/scontrol".
   Man pages for all of these daemons and commands can be found in "doc/man". 
 
-  There DejaGnu scripts to exercise various APIs and tools (they need 
-     more work).
+  There DejaGnu scripts to exercise various APIs and tools.
 
 NOTES:
   You should have autoconf version 2.52 or higher (see "autoconf -V").
@@ -54,12 +56,15 @@ NOTES:
   > openssl rsa -in <name of private key> -pubout -out <name of public key>
 
 
-STATUS (As of 12/19/2002): 
+STATUS (As of 3/4/2002): 
   Most functionality is in place and working.
   Performance is good (under 5 seconds to run 1900 tasks of "/bin/hostname"
       over 950 nodes). 
-  Numerous performance enhancements are in the works as well as support
-      for the TotalView debugger and pluggable authentication modules (PAM).
+  Fault-tolerance is good.
+  Support for additional hardware and software is planned in future releases
+      (IA64, RedHat 8.1, Myrinet, IBM Blue Gene).
+  Support for job suspend/resume and checkpoint/restart is planned for 
+      future releases.
   Send feedback to Morris Jette <jette1@llnl.gov> or Mark Grondona
       <grondona1@llnl.gov>.
 
