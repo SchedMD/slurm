@@ -21,8 +21,8 @@ void pack_header ( header_t  * header , char ** buffer , uint32_t * length );
 void unpack_header ( header_t * header , char ** buffer , uint32_t * length );
 
 /* Pack / Unpack methods for slurm io pipe streams header */
-void pack_stream_io_header ( slurm_stream_io_header * msg , void ** buffer , uint32_t * length ) ;
-void unpack_stream_io_header ( slurm_stream_io_header * msg , void ** buffer , uint32_t * length ) ;
+void pack_io_stream_header ( slurm_io_stream_header_t * msg , void ** buffer , uint32_t * length ) ;
+void unpack_io_stream_header ( slurm_io_stream_header_t * msg , void ** buffer , uint32_t * length ) ;
 
 /* generic case statement Pack / Unpack methods for slurm protocol bodies */
 int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len );

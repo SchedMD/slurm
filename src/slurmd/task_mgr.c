@@ -115,12 +115,12 @@ int fan_out_task_launch ( launch_tasks_request_msg_t * launch_msg )
 	{
 		curr_task = alloc_task ( shmem_ptr , curr_job_step );
 		task_start[i] = & curr_task -> task_start ;
+		curr_task -> task_id = launch_msg -> global_task_ids[i] ;
 		
 		/* fill in task_start struct */
 		task_start[i] -> launch_msg = launch_msg ;
 		task_start[i] -> local_task_id = i ; 
-		task_start[i] -> inout_dest = launch_msg -> streams ; 
-		task_start[i] -> err_dest = launch_msg -> streams ; 
+		task_start[i] -> io_streams_dest = launch_msg -> streams ; 
 
 		if ( pthread_create ( & task_start[i]->pthread_id , NULL , task_exec_thread , ( void * ) task_start[i] ) )
 			goto kill_threads;
@@ -149,6 +149,7 @@ int forward_io ( task_start_t * task_arg )
 {
 	pthread_attr_t pthread_attr ;
 	int local_errno;
+	slurm_io_stream_header_t io_header ;
 	
 #define STDIN_OUT_SOCK 0
 #define SIG_STDERR_SOCK 1 
@@ -156,18 +157,40 @@ int forward_io ( task_start_t * task_arg )
 	posix_signal_pipe_ignore ( ) ;
 
 	/* open stdout & stderr sockets */
-	if ( ( task_arg->sockets[STDIN_OUT_SOCK] = slurm_open_stream ( & ( task_arg -> inout_dest ) ) ) == SLURM_PROTOCOL_ERROR )
+	if ( ( task_arg->sockets[STDIN_OUT_SOCK] = slurm_open_stream ( & ( task_arg -> io_streams_dest ) ) ) == SLURM_PROTOCOL_ERROR )
 	{
 		local_errno = errno ;	
 		info ( "error opening socket to srun to pipe stdout errno %i" , local_errno ) ;
 //		pthread_exit ( 0 ) ;
 	}
+	else
+	{
+		char buffer[sizeof(slurm_io_stream_header_t)] ;
+		char * buf_ptr = buffer ;
+		int buf_size = sizeof(slurm_io_stream_header_t) ;
+		int size = sizeof(slurm_io_stream_header_t) ;
+		
+		init_io_stream_header ( & io_header , task_arg -> launch_msg -> credential -> signature , task_arg -> launch_msg -> global_task_ids[task_arg -> local_task_id ] , SLURM_IO_STREAM_INOUT ) ;
+		pack_io_stream_header ( & io_header , & buf_ptr , & size ) ;
+		slurm_write_stream (  task_arg->sockets[STDIN_OUT_SOCK] , buffer , buf_size - size ) ;
+	}
 	
-	if ( ( task_arg->sockets[SIG_STDERR_SOCK] = slurm_open_stream ( &( task_arg -> err_dest ) ) ) == SLURM_PROTOCOL_ERROR )
+	if ( ( task_arg->sockets[SIG_STDERR_SOCK] = slurm_open_stream ( &( task_arg -> io_streams_dest ) ) ) == SLURM_PROTOCOL_ERROR )
 	{
 		local_errno = errno ;	
 		info ( "error opening socket to srun to pipe stdout errno %i" , local_errno ) ;
 //		pthread_exit ( 0 ) ;
+	}
+	else
+	{
+		char buffer[sizeof(slurm_io_stream_header_t)] ;
+		char * buf_ptr = buffer ;
+		int buf_size = sizeof(slurm_io_stream_header_t) ;
+		int size = sizeof(slurm_io_stream_header_t) ;
+		
+		init_io_stream_header ( & io_header , task_arg -> launch_msg -> credential -> signature , task_arg -> launch_msg -> global_task_ids[task_arg -> local_task_id ] , SLURM_IO_STREAM_SIGERR ) ;
+		pack_io_stream_header ( & io_header , & buf_ptr , & size ) ;
+		slurm_write_stream (  task_arg->sockets[SIG_STDERR_SOCK] , buffer , buf_size - size ) ;
 	}
 	
 	/* spawn io pipe threads */
@@ -316,7 +339,7 @@ void * stdout_io_pipe_thread ( void * arg )
 			if ( difftime ( curr_time , last_reconnect_try )  > RECONNECT_RETRY_TIME )
 			{
 				slurm_close_stream ( io_arg->sockets[STDIN_OUT_SOCK] ) ;
-				if ( ( io_arg->sockets[STDIN_OUT_SOCK] = slurm_open_stream ( & ( io_arg -> inout_dest ) ) ) == SLURM_PROTOCOL_ERROR )
+				if ( ( io_arg->sockets[STDIN_OUT_SOCK] = slurm_open_stream ( & ( io_arg -> io_streams_dest ) ) ) == SLURM_PROTOCOL_ERROR )
 				{
 					local_errno = errno ;	
 					info ( "error reconnecting socket to srun to pipe stdout errno %i" , local_errno ) ;
@@ -404,7 +427,7 @@ void * stderr_io_pipe_thread ( void * arg )
 			if ( difftime ( curr_time , last_reconnect_try )  > RECONNECT_RETRY_TIME )
 			{
 				slurm_close_stream ( io_arg->sockets[SIG_STDERR_SOCK] ) ;
-				if ( ( io_arg->sockets[SIG_STDERR_SOCK] = slurm_open_stream ( &( io_arg -> err_dest ) ) ) == SLURM_PROTOCOL_ERROR )
+				if ( ( io_arg->sockets[SIG_STDERR_SOCK] = slurm_open_stream ( &( io_arg -> io_streams_dest ) ) ) == SLURM_PROTOCOL_ERROR )
 				{
 					local_errno = errno ;	
 					info ( "error reconnecting socket to srun to pipe stderr errno %i" , local_errno ) ;
@@ -486,17 +509,18 @@ void * task_exec_thread ( void * arg )
 			}
 			
 			/* setuid and gid*/
+			if ( ( rc = setgid ( pwd -> pw_gid ) ) == SLURM_ERROR )
+			{
+				info ( "set group id failed " ) ;
+				_exit ( SLURM_FAILURE ) ;
+			}
+
 			if ( ( rc = setuid ( launch_msg->uid ) ) == SLURM_ERROR ) 
 			{
 				info ( "set user id failed " ) ;
 				_exit ( SLURM_FAILURE ) ;
 			}
 			
-			if ( ( rc = setgid ( pwd -> pw_gid ) ) == SLURM_ERROR )
-			{
-				info ( "set group id failed " ) ;
-				_exit ( SLURM_FAILURE ) ;
-			}
 			/* initgroups */
 			/*if ( ( rc = initgroups ( pwd ->pw_name , pwd -> pw_gid ) ) == SLURM_ERROR )
 			{
@@ -508,10 +532,9 @@ void * task_exec_thread ( void * arg )
 			/* run bash and cmdline */
 			debug( "cwd %s", launch_msg->cwd ) ;
 			chdir ( launch_msg->cwd ) ;
-			debug( "cmdline %s", launch_msg->cmd_line ) ;
-			execl ("/bin/bash", "bash", "-c", launch_msg->cmd_line, 0);
+			//execl ("/bin/bash", "bash", "-c", launch_msg->cmd_line, 0);
 	
-			//execle ( "/bin/sh", launch_msg->cmd_line , launch_msg->env );
+			execve ( launch_msg->argv[0], launch_msg->argv , launch_msg->env );
 			close ( STDIN_FILENO );
 			close ( STDOUT_FILENO );
 			close ( STDERR_FILENO );
@@ -626,8 +649,7 @@ int reattach_tasks_streams ( reattach_tasks_streams_msg_t * req_msg )
 		task_t * task = find_task ( job_step_ptr , req_msg->global_task_ids[i] ) ;
 		if ( task != NULL )
 		{
-			task -> task_start . inout_dest =  req_msg -> streams ;
-			task -> task_start . err_dest =  req_msg -> streams ;
+			task -> task_start . io_streams_dest =  req_msg -> streams ;
 		}
 		else
 		{

@@ -42,7 +42,6 @@ typedef struct task_start
 	int			sockets[2];
 	int			local_task_id;
 	char 			addr_update;
-	slurm_addr		inout_dest;
-	slurm_addr		err_dest;
+	slurm_addr		io_streams_dest;	
 } task_start_t ;
 #endif
