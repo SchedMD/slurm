@@ -37,6 +37,7 @@ int read_slurm_port_config ( );
 
 /* slurm_set_api_config
  * sets the slurm_protocol_config object
+ * NOT THREAD SAFE
  * IN protocol_conf		-  slurm_protocol_config object
  */
 int inline slurm_set_api_config ( slurm_protocol_config_t * protocol_conf );
@@ -55,6 +56,7 @@ int inline slurm_api_set_default_config ( );
 
 /* slurm_set_default_controllers
  * sets the controller info members of the default slurm_protocol_config object
+ * NOT THREAD SAFE
  * IN primary_controller_hostname	- primary controller hostname
  * IN secondary_controller_hostnme	- secondary controller hostnme
  * IN pri_port				- primary controller port
@@ -258,6 +260,7 @@ void inline slurm_set_addr_uint ( slurm_addr * slurm_address , uint16_t port , u
 
 /* slurm_set_addr
  * initializes the slurm_address with the port and ip_addrss passed to it
+ * NOT THREAD SAFE
  * OUT slurm_address	- slurm_addr to be filled in
  * IN port		- port in host order
  * IN host		- hostname or dns name 
@@ -266,6 +269,7 @@ void inline slurm_set_addr ( slurm_addr * slurm_address , uint16_t port , char *
 
 /* slurm_set_addr_any
  * initialized the slurm_address with the port passed to in on INADDR_ANY
+ * NOT THREAD SAFE
  * OUT slurm_address	- slurm_addr to be filled in
  * IN port		- port in host order
  */
@@ -281,6 +285,7 @@ void inline slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , c
 
 /* slurm_get_addr 
  * given a slurm_address it returns to port and hostname
+ * NOT THREAD SAFE
  * IN slurm_address	- slurm_addr to be queried
  * OUT port		- port number
  * OUT host		- hostname

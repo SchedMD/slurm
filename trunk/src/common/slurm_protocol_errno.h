@@ -16,6 +16,7 @@
 #define SLURM_COMMUNICATIONS_RECEIVE_ERROR 		-1903
 #define SLURM_COMMUNICATIONS_SHUTDOWN_ERROR 		-1904
 #define SLURM_PROTOCOL_VERSION_ERROR 			-1910
+#define SLURM_PROTOCOL_IO_STREAM_VERSION_ERROR		-1911
 
 /* _info.c/ocommuncation layer RESPONSE_SLURM_RC message codes */
 #define SLURM_NO_CHANGE_IN_DATA 			-1920
@@ -54,6 +55,9 @@
 /* step_mgr.c */
 /* already defined above ESLURM_ACCESS_DENIED		-2202 */
 
+#define SLURM_PROTOCOL_SOCKET_IMPL_ZERO_RECV_LENGTH	-8000
+#define SLURM_PROTOCOL_SOCKET_IMPL_NEGATIVE_RECV_LENGTH	-8001
+#define SLURM_PROTOCOL_SOCKET_IMPL_NOT_ALL_DATA_SENT	-8002
 /* look up an errno value */
 extern char * slurm_strerror(int errnum);
 
