@@ -414,9 +414,9 @@ void slurm_pack_slurm_addr ( slurm_addr * slurm_address , void ** buffer , int *
 	_slurm_pack_slurm_addr ( slurm_address , buffer , length ) ;
 }
 
-void slurm_pack_slurm_addr_no_alloc ( slurm_addr * slurm_address , void ** buffer , int * length )
+void slurm_unpack_slurm_addr_no_alloc ( slurm_addr * slurm_address , void ** buffer , int * length )
 {
-	_slurm_pack_slurm_addr_no_alloc ( slurm_address , buffer , length ) ;
+	_slurm_unpack_slurm_addr_no_alloc ( slurm_address , buffer , length ) ;
 }
 
 /************************/

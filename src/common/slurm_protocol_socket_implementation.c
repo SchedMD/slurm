@@ -427,7 +427,7 @@ void _slurm_pack_slurm_addr ( slurm_addr * slurm_address , void ** buffer , int 
 	pack16 ( ntohs ( slurm_address -> sin_port ) , ( void ** ) buffer , length ) ;
 }
 
-void _slurm_pack_slurm_addr_no_alloc ( slurm_addr * slurm_address , void ** buffer , int * length )
+void _slurm_unpack_slurm_addr_no_alloc ( slurm_addr * slurm_address , void ** buffer , int * length )
 {
 	slurm_address -> sin_family = AF_SLURM ;
 	unpack32 ( & slurm_address -> sin_addr.s_addr , ( void ** ) buffer , length ) ;

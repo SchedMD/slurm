@@ -74,6 +74,7 @@ _unpack32array( uint32_t **valp, uint16_t* size_val, void **bufp, int *lenp)
 		_unpack32( (*valp) + i , bufp, lenp );
 	}
 }	
+
 /*
  * Given a 16-bit integer in host byte order, convert to network byte order
  * and store at 'bufp'.  Advance bufp by 2 bytes, decrement lenp by 2 bytes.
@@ -221,4 +222,3 @@ _unpackmem_malloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
 		*valp = NULL;
 
 }
-	
