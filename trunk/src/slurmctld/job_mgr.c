@@ -1908,7 +1908,6 @@ static void _job_timed_out(struct job_record *job_ptr)
 
 	if (job_ptr->details) {
 		time_t now      = time(NULL);
-		last_job_update = now;
 		job_ptr->end_time           = now;
 		job_ptr->time_last_active   = now;
 		job_ptr->job_state          = JOB_TIMEOUT | JOB_COMPLETING;
