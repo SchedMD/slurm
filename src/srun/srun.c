@@ -52,6 +52,8 @@
 #include <src/srun/msg.h>
 #include <src/srun/io.h>
 
+#define MAX_RETRIES 20
+
 typedef resource_allocation_response_msg_t allocation_resp;
 
 /*
@@ -221,7 +223,7 @@ main(int ac, char **av)
 static allocation_resp *
 allocate_nodes(void)
 {
-	int rc;
+	int rc, retries;
 	job_desc_msg_t job;
 	resource_allocation_response_msg_t *resp;
 
@@ -250,12 +252,23 @@ allocate_nodes(void)
 
 	job.user_id        = opt.uid;
 
-	rc = slurm_allocate_resources(&job, &resp, opt.immediate);
+	retries = 0;
+	while ((rc = slurm_allocate_resources(&job, &resp, opt.immediate))
+					== SLURM_FAILURE) {
+		if ((slurm_get_errno() == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) &&
+		    (retries < MAX_RETRIES)) {
+			if (retries == 0)
+				error ("Slurm controller not responding, sleeping and retrying");
+			else
+				debug ("Slurm controller not responding, sleeping and retrying");
 
-	if (rc == SLURM_FAILURE) {
-		error("Unable to allocate resources: %s", 
-				slurm_strerror(errno));
-		return NULL;
+			sleep (++retries);
+		}
+		else {
+			error("Unable to allocate resources: %s", 
+					slurm_strerror(errno));
+			return NULL;
+		}			
 	}
 
 	return resp;
