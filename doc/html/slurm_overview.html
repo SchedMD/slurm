@@ -5,7 +5,7 @@
 <body>
 <h1>SLURM: A Highly Scalable Resource Manager for Linux Clusters</h1>
 <a href="http://www.llnl.gov/">Lawrence Livermore National Laboratory (LLNL)</a> 
-and <a href="http://www.lnxi.com/">Linux Networx</a> 
+and <a href="http://www.lnxi.com/">Linux NetworX</a> 
 are designing and developing SLURM, Simple Linux Utility for 
 Resource Management. 
 SLURM provides three key functions:
@@ -33,7 +33,7 @@ up to thousands of nodes.
 engine. While initially written for Linux, other UNIX-like 
 operating systems should be easy porting targets. The interconnect 
 to be initially supported is <a href="http://www.quadrics.com/">
-Quadrics</a> Elan3, but support for other interconnects is already planned.
+Quadrics</a> Elan3, but support for other interconnects is underway.
 <li>SLURM is highly tolerant of system failures including failure 
 of the node executing its control functions.
 <li>It is simple enough for the motivated end user to understand 
@@ -80,8 +80,17 @@ A sample (partial) SLURM configuration file follows.
 #
 ControlMachine=linux0001
 BackupController=linux0002
-Epilog=/usr/local/slurm/epilog Prolog=/usr/local/slurm/prolog
-SlurmctldPort=7002 SlurmdPort=7003
+#
+AuthType=auth/authd
+Epilog=/usr/local/slurm/sbin/epilog
+HeartbeatInterval=60
+PluginDir=/usr/local/slurm/lib
+Prolog=/usr/local/slurm/sbin/prolog
+SlurmctldPort=7002
+SlurmctldTimeout=120
+SlurmdPort=7003
+SlurmdSpoolDir=/var/tmp/slurmd.spool
+SlurmdTimeout=120
 StateSaveLocation=/usr/local/slurm/slurm.state
 TmpFS=/tmp
 #
@@ -102,19 +111,20 @@ PartitionName=batch Nodes=lx[0041-9999] MaxTime=UNLIMITED MaxNodes=4096
 </pre>
 
 <h2>Status</h2>
-As of March 2003 all SLURM functionality was in place. 
+As of March 2003 all essential SLURM functionality was in place. 
 Execution of a simple program (/bin/hostname) across 1900 
 tasks on 950 nodes could be completed in under five seconds.
 Our next goal will be the support of the 
 <a href="http://www.research.ibm.com/bluegene/">IBM BlueGene/L</a>
 architecture in the summer of 2003. 
 For additional information please contact
-<a href="mailto:jette1@llnl.gov">jette1@llnl.gov</a>.
+<a href="mailto:jette1@llnl.gov">jette1@llnl.gov</a> or
+<a href="mailto:grondona1@llnl.gov">grondona1@llnl.gov</a> .
 <hr>
 <a href="http://www.llnl.gov/disclaimer.html">Privacy and Legal Notice</a>
 <p>URL = http://www-lc.llnl.gov/dctg-lc/slurm/summary.html
 <p>UCRL-WEB-149399 REV 1
-<p>Last Modified March 20, 2003</p>
+<p>Last Modified May 21, 2003</p>
 <address>Maintained by Moe Jette <a href="mailto:jette1@llnl.gov">
 jette1@llnl.gov</a></address>
 </body>
