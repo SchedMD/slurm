@@ -53,10 +53,15 @@ exec $bin_chmod 700 $file_in
 # Spawn a srun batch job that uses stdout/err and confirm their contents
 #
 set timeout $max_job_delay
+set no_start 0
 spawn $srun -N3 --batch --output=$file_out --error=$file_err -t4 $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "configuration not available" {
+		set no_start 1
 		exp_continue
 	}
 	timeout {
@@ -66,12 +71,18 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 
 if {$job_id == 0} {
 	send_user "\nFAILURE: batch submit failure\n"
 	exit 1
+}
+if {$no_start != 0} {
+	send_user "\nWARNING: partition too small for test\n"
+	cancel_job $job_id
+	exit 0
 }
 
 #
@@ -99,6 +110,7 @@ if {[wait_for_file $file_out] == 0} {
 			exp_continue
 		}
                 eof {
+			wait
                 }
         }
 	if {$matches != 12} {
