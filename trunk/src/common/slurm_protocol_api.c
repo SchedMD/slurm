@@ -169,7 +169,7 @@ int slurm_receive_msg ( slurm_fd open_fd , slurm_msg_t * msg )
 
 	if ( ( rc = _slurm_msg_recvfrom ( open_fd , buffer , receive_len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , & (msg)->address ) ) == SLURM_SOCKET_ERROR ) 
 	{
-		info ( "Error recieving msg socket: errno %i\n", errno ) ;
+		info ( "Error recieving msg socket: errno %i", errno ) ;
 		return rc ;
 	}
 
@@ -240,7 +240,7 @@ int slurm_send_node_msg ( slurm_fd open_fd ,  slurm_msg_t * msg )
 	/* send msg */
 	if (  ( rc = _slurm_msg_sendto ( open_fd , buf_temp , SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE - pack_len , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , &msg->address ) ) == SLURM_SOCKET_ERROR )
 	{
-		info  ( "Error sending msg socket: errno %i\n", errno ) ;
+		info  ( "Error sending msg socket: errno %i", errno ) ;
 	}
 	return rc ;
 }
@@ -265,7 +265,7 @@ int slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slur
 
 	if ( ( rc = _slurm_msg_recvfrom ( open_fd , buffer , receive_len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , source_address ) ) == SLURM_SOCKET_ERROR ) ;
 	{
-		info ( "Error recieving msg socket: errno %i\n", errno ) ;
+		info ( "Error recieving msg socket: errno %i", errno ) ;
 		return rc ;
 	}
 
