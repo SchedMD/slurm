@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include "src/slurmctld/proc_req.h"
 #include "src/common/list.h"
+#include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/read_config.h"
 #include "src/common/parse_spec.h"
@@ -41,51 +42,61 @@
 
 char* bgl_conf = BLUEGENE_CONFIG_FILE;
 
- /** some internally used functions */
+#define SWAP(a,b,t)	\
+_STMT_START {	\
+	(t) = (a);	\
+	(a) = (b);	\
+	(b) = (t);	\
+} _STMT_END
+
+ /** some local functions */
 
 /** */
-int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_bitmap,
+static int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_bitmap,
 			       int min_nodes, int max_nodes,
 			       int spec, bgl_record_t** found_bgl_record);
 /** */
-int _parse_request(char* request_string, partition_t** request);
+static int _parse_request(char* request_string, partition_t** request);
 /** */
-int _get_request_dimensions(int* bl, int* tr, uint16_t** dim);
+static int _get_request_dimensions(int* bl, int* tr, uint16_t** dim);
 /** */
-int _extract_range(char* request, char** result);
+static int _extract_range(char* request, char** result);
 /** */
-int _wire_bgl_partitions();
+static int _wire_bgl_partitions();
 /** */
-int _bgl_record_cmpf_inc(bgl_record_t* A, bgl_record_t* B);
+static int _bgl_record_cmpf_inc(bgl_record_t* rec_a, bgl_record_t* rec_b);
 /** */
-int _bgl_record_cmpf_dec(bgl_record_t* A, bgl_record_t* B);
+static int _bgl_record_cmpf_dec(bgl_record_t* rec_a, bgl_record_t* rec_b);
 /** 
  * to be used by list object to destroy the array elements
  */
-void _destroy_bgl_record(void* object);
+static void _destroy_bgl_record(void* object);
 /** */
-void _destroy_bgl_conf_record(void* object);
+static void _destroy_bgl_conf_record(void* object);
 
 /** */
-void _print_bitmap(bitstr_t* bitmap);
+static void _print_bitmap(bitstr_t* bitmap);
 
 /** */
-void _process_config();
+static void _process_config();
 /** */
-int _parse_bgl_spec(char *in_line);
+static int _parse_bgl_spec(char *in_line);
 /** */
-int _copy_slurm_partition_list();
+static int _copy_slurm_partition_list();
 /** */
-int _find_part_type(char* nodes, rm_partition_t** return_part_type);
+static int _find_part_type(char* nodes, rm_partition_t** return_part_type);
 /** */
-int _listfindf_conf_part_record(bgl_conf_record_t* record, char *nodes);
+static int _listfindf_conf_part_record(bgl_conf_record_t* record, char *nodes);
 /** */
-int _compute_part_size(char* nodes);
+static int _compute_part_size(char* nodes);
 /** */
-void _update_bgl_node_bitmap();
+static void _update_bgl_node_bitmap();
 /** */
 static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 		char *tv_str, int len_tv_str);
+
+/* Rotate a geometry array through six permutations */
+static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
 
 /**
  * create_static_partitions - create the static partitions that will be used
@@ -94,7 +105,7 @@ static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
  * OUT - (global, to slurmctld): Table of partitionIDs to geometries
  * RET - success of fitting all configurations
  */
-int create_static_partitions()
+extern int create_static_partitions()
 {
 	/** purge the old list.  Later on, it may be more efficient just to amend the list */
 	if (bgl_list){
@@ -120,7 +131,7 @@ int create_static_partitions()
 /**
  * IN - requests: list of bgl_record(s)
  */
-int _wire_bgl_partitions()
+static int _wire_bgl_partitions()
 {
 	bgl_record_t* cur_record;
 	partition_t* cur_partition;
@@ -148,7 +159,7 @@ int _wire_bgl_partitions()
  * 
  * 
  */
-void _process_config()
+static void _process_config()
 {
 	ListIterator itr;
 	bgl_record_t *bgl_part;
@@ -180,7 +191,7 @@ void _process_config()
  * that we can maintain our own separate table of bgl_part_id to
  * slurm_part_id.
  */
-int _copy_slurm_partition_list()
+static int _copy_slurm_partition_list()
 {
 	struct part_record* slurm_part;
 	bgl_record_t* bgl_record;
@@ -222,21 +233,9 @@ int _copy_slurm_partition_list()
 		err = 0;
 		while(cur_nodes != NULL){
 			bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
-			if (!bgl_record){
-				error("_copy_slurm_partition_list: not enough memory for bgl_record"
-				      "for node %s", cur_nodes);
-				err = 1;
-				goto cleanup_while;
-			}
-
 			bgl_record->nodes = xstrdup(cur_nodes);
 			bgl_record->slurm_part_id = xstrdup(slurm_part->name);
 			bgl_record->part_type = (rm_partition_t*) xmalloc(sizeof(rm_partition_t));
-			if (!bgl_record->part_type){
-				error("_copy_slurm_partition_list: not enough memory for bgl_record->part_type");
-				err = 1;
-				goto cleanup_while;
-			}
 
 			if (_find_part_type(cur_nodes, &bgl_record->part_type)){
 				error("_copy_slurm_partition_list: not enough memory for bgl_record->part_type");
@@ -281,7 +280,7 @@ int _copy_slurm_partition_list()
 	return rc;
 }
 
-int read_bgl_conf()
+extern int read_bgl_conf()
 {
 	DEF_TIMERS;
 	FILE *bgl_spec_file;	/* pointer to input data file */
@@ -361,7 +360,7 @@ int read_bgl_conf()
  * global: part_list - global partition list pointer
  *	default_part - default parameters for a partition
  */
-int _parse_bgl_spec(char *in_line)
+static int _parse_bgl_spec(char *in_line)
 {
 	int error_code = SLURM_SUCCESS;
 	char *nodes = NULL, *part_type = NULL;
@@ -421,7 +420,7 @@ int _parse_bgl_spec(char *in_line)
 	return SLURM_SUCCESS;
 }
 
-void _destroy_bgl_record(void* object)
+static void _destroy_bgl_record(void* object)
 {
 	bgl_record_t* this_record = (bgl_record_t*) object;
 	if (this_record){
@@ -458,7 +457,7 @@ void _destroy_bgl_record(void* object)
 	this_record = NULL;
 }
 
-void _destroy_bgl_conf_record(void* object)
+static void _destroy_bgl_conf_record(void* object)
 {
 	bgl_conf_record_t* this_record = (bgl_conf_record_t*) object;
 	if (this_record){
@@ -479,7 +478,7 @@ void _destroy_bgl_conf_record(void* object)
  * search through the list of nodes,types to find the partition type
  * for the given nodes
  */
-int _find_part_type(char* nodes, rm_partition_t** return_part_type)
+static int _find_part_type(char* nodes, rm_partition_t** return_part_type)
 {
 	bgl_conf_record_t* record = NULL;
 
@@ -504,12 +503,12 @@ int _find_part_type(char* nodes, rm_partition_t** return_part_type)
 }
 
 /** nodes example: 000x111 */
-int _listfindf_conf_part_record(bgl_conf_record_t* record, char *nodes)
+static int _listfindf_conf_part_record(bgl_conf_record_t* record, char *nodes)
 {
 	return (!strcasecmp(record->nodes, nodes));
 }
 
-int _compute_part_size(char* nodes) 
+static int _compute_part_size(char* nodes) 
 {
 	int size;
 	/* nhosts is stored as int, hopefully unsigned 32-bit */
@@ -524,7 +523,7 @@ int _compute_part_size(char* nodes)
  * converts a request of form ABCxXYZ to two int*'s
  * of bl[ABC] and tr[XYZ].
  */
-int char2intptr(char* request, int** bl, int** tr)
+static int _char2intptr(char* request, int** bl, int** tr)
 {
 	int i, rc;
 	char *request_tmp, *delimit = ",x", *next_ptr, *orig_ptr;
@@ -537,7 +536,7 @@ int char2intptr(char* request, int** bl, int** tr)
 	(*tr) = (int*) xmalloc(sizeof(int) * SYSTEM_DIMENSIONS);
 
 	if (!request_tmp || !bl || !tr){
-		error("char2intptr: not enough memory for new structs");
+		error("_char2intptr: not enough memory for new structs");
 		goto cleanup;
 	}
 
@@ -579,7 +578,7 @@ int char2intptr(char* request, int** bl, int** tr)
 /** 
  * parses the request_string
  */
-int _parse_request(char* request_string, partition_t** request_result)
+static int _parse_request(char* request_string, partition_t** request_result)
 {
 	char* range;
 	int *bl=NULL, *tr=NULL;
@@ -602,7 +601,7 @@ int _parse_request(char* request_string, partition_t** request_result)
 		goto cleanup;
 	}
 	
-	if (char2intptr(range, &bl, &tr) || bl == NULL || tr == NULL ||
+	if (_char2intptr(range, &bl, &tr) || bl == NULL || tr == NULL ||
 	    _get_request_dimensions(bl, tr, &dim)){
 		goto cleanup;
 	}
@@ -641,7 +640,7 @@ int _parse_request(char* request_string, partition_t** request_result)
 	return rc;
 }
 
-int _get_request_dimensions(int* bl, int* tr, uint16_t** dim)
+static int _get_request_dimensions(int* bl, int* tr, uint16_t** dim)
 {
 	int i;
 	/*
@@ -676,7 +675,7 @@ int _get_request_dimensions(int* bl, int* tr, uint16_t** dim)
 	return SLURM_ERROR;
 }
 
-int init_bgl()
+extern int init_bgl()
 {
 #ifdef _RM_API_H__
 	int rc;
@@ -693,7 +692,7 @@ int init_bgl()
 	return SLURM_SUCCESS;
 }
 
-int _extract_range(char* request, char** result)
+static int _extract_range(char* request, char** result)
 {
 	int RANGE_SIZE = 7; /* expecting something of the size: 000x000 = 7 chars */
 	int i, request_length;
@@ -737,7 +736,7 @@ int _extract_range(char* request, char** result)
 	return SLURM_ERROR;
 }
 
-void print_bgl_record(bgl_record_t* record)
+extern void print_bgl_record(bgl_record_t* record)
 {
 	if (!record){
 		error("print_bgl_record, record given is null");
@@ -773,7 +772,7 @@ void print_bgl_record(bgl_record_t* record)
 	}
 }
 
-char* convert_lifecycle(lifecycle_type_t lifecycle)
+extern char* convert_lifecycle(lifecycle_type_t lifecycle)
 {
 	if (lifecycle == DYNAMIC)
 		return "DYNAMIC";
@@ -781,7 +780,7 @@ char* convert_lifecycle(lifecycle_type_t lifecycle)
 		return "STATIC";
 }
 
-char* convert_part_type(rm_partition_t* pt)
+extern char* convert_part_type(rm_partition_t* pt)
 {
 	switch(*pt) {
 	case (RM_MESH): 
@@ -808,19 +807,19 @@ char* convert_part_type(rm_partition_t* pt)
  * returns 1 for error (no match)
  * 
  */
-int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_bitmap,
-			       int min_nodes, int max_nodes,
-			       int spec, bgl_record_t** found_bgl_record)
+static int _find_best_partition_match(struct job_record* job_ptr, 
+		bitstr_t* slurm_part_bitmap, int min_nodes, int max_nodes,
+		int spec, bgl_record_t** found_bgl_record)
 {
 	/** FIXME, need to get all the partition_t's in a list, or a common data structure
 	 * that holds all that info I need!!!
 	 */
 	ListIterator itr;
 	bgl_record_t* record;
-	int i, num_dim_best, cur_dim_match;
-	uint16_t* geometry = NULL;
+	int i;
 	uint16_t req_geometry[SYSTEM_DIMENSIONS];
-	uint16_t conn_type, node_use, rotate;
+	uint16_t conn_type, node_use, rotate, target_size = 1;
+
 	sort_bgl_record_inc_size(bgl_list);
 
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
@@ -831,10 +830,11 @@ int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_
 		SELECT_DATA_NODE_USE, &node_use);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_ROTATE, &rotate);
+	for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		target_size *= req_geometry[i];
 
 	/** this is where we should have the control flow depending on
 	    the spec arguement*/
-	num_dim_best = 0;
 	itr = list_iterator_create(bgl_list);
 	*found_bgl_record = NULL;
 	/* NEED TO PUT THIS LOGIC IN: 
@@ -844,42 +844,30 @@ int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_
 	 */
 	debug("number of partitions to check: %d", list_count(bgl_list));
 	while ((record = (bgl_record_t*) list_next(itr))) {
-		debug("- - - - - - - - - - - - -");
-		debug("check partition <%s>", record->slurm_part_id);
-		debug("- - - - - - - - - - - - -");
-		if (!record){
-			error("FIXME: well, bad bad bad..."); 
-			continue;
-		}
-		/** 
-		 * first we check against the bitmap to see 
-		 * if this partition can be used for this job.
-		 * 		 
-		 * the slurm partition bitmap is a superset of the bgl part bitmap
-		 * 
-		 * - if we AND the incoming slurm bitmap with the bgl
-		 * bitmap, and the bgl bitmap is different that should
-		 * mean that some nodes in the slurm bitmap have been
-		 * "drained" or set otherwise unusable.
+		/*
+		 * check that the number of nodes is suitable
 		 */
-		// debug("- - - - - - - - - - - - -");
-		// debug("check partition bitmap");
-		// _print_bitmap(record->bitmap);
-		if (!bit_super_set(record->bitmap, slurm_part_bitmap)){
-			debug("bgl partition %s unusable", record->nodes);
+ 		if ((record->size < min_nodes)
+		||  (max_nodes != 0 && record->size > max_nodes)
+		||  (record->size < target_size)) {
+			debug("partition %s node count not suitable",
+				record->slurm_part_id);
 			continue;
 		}
-		// debug("- - - - - - - - - - - - -");
 
-		/*******************************************/
-		/** check that the number of nodes match   */
-		/*******************************************/
-		// debug("nodes num match: max %d min %d record_num_nodes %d",
-		// max_nodes, min_nodes, record->size);
- 		if (record->size < min_nodes || (max_nodes != 0 && record->size > max_nodes)){
-			error("debug request num nodes doesn't fit"); 
+		/*
+		 * Next we check that this partition's bitmap is within 
+		 * the set of nodes which the job can use. 
+		 * Nodes not available for the job could be down,
+		 * drained, allocated to some other job, or in some 
+		 * SLURM partition not available to this job.
+		 */
+		if (!bit_super_set(record->bitmap, slurm_part_bitmap)) {
+			debug("bgl partition %s has nodes not usable by this job", 
+				record->nodes);
 			continue;
 		}
+
 		/***********************************************/
 		/* check the connection type specified matches */
 		/***********************************************/
@@ -894,39 +882,46 @@ int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_
 		    conn_type != RM_NAV){
 			continue;
 		} 
+
 		/*****************************************/
 		/** match up geometry as "best" possible */
 		/*****************************************/
-		if (req_geometry[0] == 0){
-			debug("find_best_partitionmatch: we don't care about geometry");
-			*found_bgl_record = record;
-			break;
+		if (!record->alloc_part) {
+			error("warning, bgl_record %s has not found a home...",
+				record->nodes);
+			continue;
 		}
-		if (rotate)
-			rotate_part(req_geometry, &geometry); 
-		
-		cur_dim_match = 0;
-		for (i=0; i<SYSTEM_DIMENSIONS; i++){
-			if (!record->alloc_part) {
-				error("warning, bgl_record %s has not found a home...",
-				      record->nodes);
-				continue;
-			}
-			
-			/**
-			 * we should distinguish between an exact match and a
-			 * fuzzy match (being greater than
-			 */
-			if (record->alloc_part->dimensions[i] >= req_geometry[i]){
-				cur_dim_match++;
-			}
-		}
-		
-		if (cur_dim_match > num_dim_best){
-			*found_bgl_record = record;
-			num_dim_best = cur_dim_match;
-			if (num_dim_best == SYSTEM_DIMENSIONS)
+
+		if (req_geometry[0] == 0) {
+			debug("Geometry not specified");
+		} else {	/* match requested geometry */
+			bool match = false;
+			int rot_cnt = 0;	/* attempt six rotations of dimensions */
+
+			for (rot_cnt=0; rot_cnt<6; rot_cnt++) {
+				for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+					if (record->alloc_part->dimensions[i] <
+							req_geometry[i])
+						break;
+				}
+				if (i == SYSTEM_DIMENSIONS) {
+					match = true;
 					break;
+				}
+				if (rotate == 0)
+					break;		/* not usable */
+				_rotate_geo(req_geometry, rot_cnt);
+			}
+
+			if (!match) 
+				continue;	/* Not usable */
+		}
+
+		if ((*found_bgl_record == NULL)
+		||  (record->size < (*found_bgl_record)->size)) {
+			*found_bgl_record = record;
+			if (record->size == target_size)
+				break;
 		}
 	}	
 	
@@ -946,14 +941,14 @@ int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_
 /** 
  * Comparator used for sorting partitions smallest to largest
  * 
- * returns: -1: A greater than B 0: A equal to B 1: A less than B
+ * returns: -1: rec_a >rec_b   0: rec_a == rec_b   1: rec_a < rec_b
  * 
  */
-int _bgl_record_cmpf_inc(bgl_record_t* A, bgl_record_t* B)
+static int _bgl_record_cmpf_inc(bgl_record_t* rec_a, bgl_record_t* rec_b)
 {
-	if (A->size < B->size)
+	if (rec_a->size < rec_b->size)
 		return -1;
-	else if (A->size > B->size)
+	else if (rec_a->size > rec_b->size)
 		return 1;
 	else 
 		return 0;
@@ -962,14 +957,14 @@ int _bgl_record_cmpf_inc(bgl_record_t* A, bgl_record_t* B)
 /** 
  * Comparator used for sorting partitions largest to smallest
  * 
- * returns: -1: A greater than B 0: A equal to B 1: A less than B
+ * returns: -1: rec_a >rec_b   0: rec_a == rec_b   1: rec_a < rec_b
  * 
  */
-int _bgl_record_cmpf_dec(bgl_record_t* A, bgl_record_t* B)
+static int _bgl_record_cmpf_dec(bgl_record_t* rec_a, bgl_record_t* rec_b)
 {
-	if (A->size > B->size)
+	if (rec_a->size > rec_b->size)
 		return -1;
-	else if (A->size < B->size)
+	else if (rec_a->size < rec_b->size)
 		return 1;
 	else 
 		return 0;
@@ -978,7 +973,7 @@ int _bgl_record_cmpf_dec(bgl_record_t* A, bgl_record_t* B)
 /** 
  * sort the partitions by increasing size
  */
-void sort_bgl_record_inc_size(List records){
+extern void sort_bgl_record_inc_size(List records){
 	if (records == NULL)
 		return;
 	list_sort(records, (ListCmpF) _bgl_record_cmpf_inc);
@@ -996,7 +991,7 @@ void sort_bgl_record_dec_size(List records){
 /** 
  * 
  */
-int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
+extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 		      int min_nodes, int max_nodes)
 {
 	int spec = 1; // this will be like, keep TYPE a priority, etc, blah blah.
@@ -1044,7 +1039,7 @@ int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 /** 
  * for my debugging purposes, I occasionally print out the bitmap
  */
-void _print_bitmap(bitstr_t* bitmap)
+static void _print_bitmap(bitstr_t* bitmap)
 {
 	char* bitstring = (char*) xmalloc(sizeof(char)*BITSIZE);
 	bit_fmt(bitstring, BITSIZE, bitmap);
@@ -1061,7 +1056,7 @@ void _print_bitmap(bitstr_t* bitmap)
  * through the list anyways, we would like to have instant O(1) access
  * to the nodelist that we need to update.
  */
-void _update_bgl_node_bitmap()
+static void _update_bgl_node_bitmap()
 {
 #ifdef _RM_API_H__
 	int bp_num,wire_num,switch_num,i;
@@ -1147,7 +1142,7 @@ void _update_bgl_node_bitmap()
 
 #ifdef _RM_API_H__
 /** */
-char *convert_bp_state(rm_BP_state_t state){
+extern char *convert_bp_state(rm_BP_state_t state){
 	switch(state){ 
 	case RM_BP_UP:
 		return "RM_BP_UP";
@@ -1163,7 +1158,7 @@ char *convert_bp_state(rm_BP_state_t state){
 };
 
 /** */
-void set_bp_node_state(rm_BP_state_t state, node_record node){
+extern void set_bp_node_state(rm_BP_state_t state, node_record node){
 	switch(state){ 
 	case RM_BP_UP:
 		debug("RM_BP_UP");
@@ -1221,4 +1216,31 @@ static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
 	delta_t +=  tv2->tv_usec - tv1->tv_usec;
 	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
+}
+
+/* Rotate a geometry array through six permutations */
+static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
+{
+	uint16_t tmp;
+
+	switch (rot_cnt) {
+		case 0:		/* ABC -> ACB */
+			SWAP(req_geometry[1], req_geometry[2], tmp);
+			break;
+		case 1:		/* ACB -> CAB */
+			SWAP(req_geometry[0], req_geometry[1], tmp);
+			break;
+		case 2:		/* CAB -> CBA */
+			SWAP(req_geometry[1], req_geometry[2], tmp);
+			break;
+		case 3:		/* CBA -> BCA */
+			SWAP(req_geometry[0], req_geometry[1], tmp);
+			break;
+		case 4:		/* BCA -> BAC */
+			SWAP(req_geometry[1], req_geometry[2], tmp);
+			break;
+		case 5:		/* BAC -> ABC */
+			SWAP(req_geometry[0], req_geometry[1], tmp);
+			break;
+	}
 }
