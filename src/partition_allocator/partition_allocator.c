@@ -317,9 +317,9 @@ int _find_first_match(pa_request_t* pa_request, List* results)
 							     geometry[cur_dim],
 							     conn_type, force_contig,
 							     cur_dim, current_node_id);
-							     
+				
 				if (match_found){
-					/* insert the pa_node_t* into the List of results */ 
+					/* insert the pa_node_t* into the List of results */
 					list_append(*results, &(_pa_system[x][y][z]));
 #ifdef DEBUG_PA
 					printf("_find_first_match: found match for %s = %d%d%d\n",
@@ -463,6 +463,7 @@ void _process_results(List results, pa_request_t* request)
 	while((result = (pa_node_t*) list_next(itr))){
 		_process_result(result, request);
 	}	
+	list_iterator_destroy(itr);
 	printf("done processing results\n");
 }
 
@@ -492,21 +493,21 @@ void _process_result(pa_node_t* result, pa_request_t* pa_request)
 	for (cur_dim=0; cur_dim<PA_SYSTEM_DIMENSIONS; cur_dim++){
 		for(i=0; i<DIM_SIZE[cur_dim]; i++){
 			if (cur_dim == X){
-				printf("touching X %d%d%d\n", i, y, z);
+				// printf("touching X %d%d%d\n", i, y, z);
 				if (_is_down_node(&(_pa_system[i][y][z]))){
 					return;
 				}
 
 				itr = list_iterator_create(_pa_system[i][y][z].conf_result_list[cur_dim]);
 			} else if (cur_dim == Y){
-				printf("touching Y %d%d%d\n", x, i, z);
+				// printf("touching Y %d%d%d\n", x, i, z);
 				if (_is_down_node(&(_pa_system[x][i][z]))){
 					return;
 				}
 
 				itr = list_iterator_create(_pa_system[x][i][z].conf_result_list[cur_dim]);
 			} else {
-				printf("touching Z %d%d%d\n", x, y, i);
+				// printf("touching Z %d%d%d\n", x, y, i);
 				if (_is_down_node(&(_pa_system[x][y][i]))){
 					return;
 				}
@@ -538,7 +539,6 @@ void _process_result(pa_node_t* result, pa_request_t* pa_request)
 											   conf_result->conf_data->node_id[j]))
 										conf_match = true;
 								} else {
-									printf("force contig false\n");
 									conf_match = true;
 								}
 							}
@@ -547,19 +547,14 @@ void _process_result(pa_node_t* result, pa_request_t* pa_request)
 				}
 				/* if it doesn't match, remove it */
 				if (conf_match == false){
-					printf("conf didn't match, removing: ");
-					print_conf_result(conf_result);
 					list_remove(itr);
-				} else {
-					printf("conf matched: ");
-					print_conf_result(conf_result);
-				}
+				} 
 			}
 			list_iterator_destroy(itr);
 		}
 	}
 	printf("done processing result\n");
-	exit(0);
+	// exit(0);
 }
 
 /** 
@@ -708,6 +703,7 @@ int new_pa_request(pa_request_t** pa_request,
  */
 void delete_pa_request(pa_request_t *pa_request)
 {
+	xfree(pa_request->geometry);
 	xfree(pa_request);
 }
 
@@ -816,13 +812,14 @@ void set_node_down(int* c)
  * Try to allocate a partition.
  * 
  * IN - pa_request: allocation request
- * OUT - bitmap: bitmap of the partition allocated
+ * OUT - results: List of results of the allocation request.  Each
+ * list entry will be a coordinate.  allocate_part will create the
+ * list, but the caller must destroy it.
  * 
  * return: success or error of request
  */
-int allocate_part(pa_request_t* pa_request, bitstr_t** bitmap)
+int allocate_part(pa_request_t* pa_request, List* results)
 {
-	List results = NULL;
 	if (!_initialized){
 		printf("allocate_part Error, configuration not initialized, call init_configuration first\n");
 		return 1;
@@ -834,7 +831,7 @@ int allocate_part(pa_request_t* pa_request, bitstr_t** bitmap)
 	}
 
 	print_pa_request(pa_request);
-	_find_first_match(pa_request, &results);
+	_find_first_match(pa_request, results);
 
 	if (!results)
 		xfree(results);
@@ -868,18 +865,21 @@ int main(int argc, char** argv)
 	bool rotate = false;
 	bool elongate = false;
 	bool force_contig = true;
-	bitstr_t* result;
+	List results;
 	pa_request_t* request; 
 	new_pa_request(&request, geo, -1, rotate, elongate, force_contig, TORUS);
-	if (!allocate_part(request, &result)){
+	if (!allocate_part(request, &results)){
 		printf("allocate success for %d%d%d\n", 
 		       geo[0], geo[1], geo[2]);
 	}
+	list_destroy(results);
 	
-	if (!allocate_part(request, &result)){
+	if (!allocate_part(request, &results)){
 		printf("allocate success for %d%d%d\n", 
 		       geo[0], geo[1], geo[2]);
 	}
+	list_destroy(results);
+
 	delete_pa_request(request);
 	
 	fini();

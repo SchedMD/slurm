@@ -27,6 +27,7 @@
 #ifndef _PARTITION_ALLOCATOR_H_
 #define _PARTITION_ALLOCATOR_H_
 
+#include "src/common/list.h"
 #include "src/common/bitstring.h"
 #include "src/common/macros.h"
 
@@ -89,11 +90,13 @@ void set_node_down(int* c);
  * Try to allocate a partition.
  * 
  * IN - pa_request: allocation request
- * OUT - bitmap: bitmap of the partition allocated
+ * OUT - results: List of results of the allocation request.  Each
+ * list entry will be a coordinate.  allocate_part will create the
+ * list, but the caller must destroy it.
  * 
  * return: success or error of request
  */
-int allocate_part(struct pa_request* pa_request, bitstr_t** bitmap);
+int allocate_part(struct pa_request* pa_request, List* results);
 
 /** 
  * Doh!  Admin made a boo boo.  Note: Undo only has one history
