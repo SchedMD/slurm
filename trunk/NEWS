@@ -7,6 +7,10 @@ documents those changes that are of interest to users and admins.
     pthreads (under heavy load this resulted in hundreds of pthreads 
     using more memory than was available).
  -- Restructure slurmctld message agent for higher throughput.
+ -- Add new sinfo options --responding and --dead (i.e. non-responding)
+    for filtering node states.
+ -- Fix bug in sinfo to properly process specified state filter including
+    "*" suffix for non-responding nodes.
 
 * Changes in SLURM 0.3.0.0-pre7
 ===============================
