@@ -17,29 +17,16 @@
 #define DEBUG_MODULE 1
 #define DEBUG_SYSTEM 1
 #define NO_VAL (-99)
-#define NODE_BUF_SIZE 1024
 #define SEPCHARS " \n\t"
 
-void 	BitMapAND(unsigned *BitMap1, unsigned *BitMap2);
-void 	BitMapClear(unsigned *BitMap, int Position);
-void 	BitMapOR(unsigned *BitMap1, unsigned *BitMap2);
-char 	*BitMapPrint(unsigned *BitMap);
-void 	BitMapSet(unsigned *BitMap, int Position);
-int 	BitMapValue(unsigned *BitMap, int Position);
-void	Dump_Hash();
-int 	Hash_Index(char *name);
 int 	Load_Integer(int *destination, char *keyword, char *In_Line);
 int 	Load_String(char **destination, char *keyword, char *In_Line);
 int 	Parse_Node_Spec(char *In_Line);
 int 	Parse_Part_Spec(char *In_Line);
-void 	Rehash();
 void	Report_Leftover(char *In_Line, int Line_Num);
 
-struct {
-    struct Config_Record Config;
-    struct Node_Record Node;
-} Default_Record;
-struct Part_Record Default_Part;
+char *BackupController = NULL;
+char *ControlMachine  = NULL;
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
@@ -83,7 +70,7 @@ main(int argc, char * argv[]) {
 	printf("RealMemory=%d ",    (Node_Record_Table_Ptr+i)->Config_Ptr->RealMemory);
 	printf("TmpDisk=%d ",       (Node_Record_Table_Ptr+i)->Config_Ptr->TmpDisk);
 	printf("Weight=%d ",        (Node_Record_Table_Ptr+i)->Config_Ptr->Weight);
-	printf("Feature=%s\n",        (Node_Record_Table_Ptr+i)->Config_Ptr->Feature);
+	printf("Feature=%s\n",      (Node_Record_Table_Ptr+i)->Config_Ptr->Feature);
     } /* for */
     BitMap = BitMapPrint(Up_NodeBitMap);
     printf("\nUp_NodeBitMap  =%s\n", BitMap);
@@ -120,155 +107,6 @@ main(int argc, char * argv[]) {
     exit(0);
 } /* main */
 #endif
-
-
-
-/*
- * BitMapAND - AND two bitmaps together
- * Input: BitMap1 and BitMap2 - The bitmaps to AND
- * Output: BitMap1 is set to the value of BitMap1 & BitMap2
- */
-void BitMapAND(unsigned *BitMap1, unsigned *BitMap2) {
-    int i, size;
-
-    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
-    for (i=0; i<size; i++) {
-	BitMap1[i] &= BitMap2[i];
-    } /* for (i */
-} /* BitMapAND */
-
-
-/*
- * BitMapClear - Clear the specified bit in the specified bitmap
- * Input: BitMap - The bit map to manipulate
- *        Position - Postition to clear
- */
-void BitMapClear(unsigned *BitMap, int Position) {
-    int val, bit, mask;
-
-    val  = Position / (sizeof(unsigned)*8);
-    bit  = Position % (sizeof(unsigned)*8);
-    mask = ~(0x1 << ((sizeof(unsigned)*8)-1-bit));
-
-    BitMap[val] &= mask;
-} /* BitMapClear */
-
-
-/*
- * BitMapCopy - AND two bitmaps together
- * Input: BitMap - The bitmap create a copy of
- * Output: Returns pointer to copy of BitMap or NULL if error (no memory)
- *   The returned value MUST BE FREED by the calling routine
- */
-unsigned * BitMapCopy(unsigned *BitMap) {
-    int i, size;
-    unsigned *Output;
-
-    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
-    size *= sizeof(unsigned);
-    Output = malloc(size);
-    if (Output == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "BitMapCopy: unable to allocate memory\n");
-#else
-	syslog(LOG_ALERT, "BitMapCopy: unable to allocate memory\n")
-#endif
-	return NULL;
-    } /* if */
-
-    for (i=0; i<size; i++) {
-	Output[i] &= BitMap[i];
-    } /* for (i */
-    return Output;
-} /* BitMapCopy */
-
-
-/*
- * BitMapOR - OR two bitmaps together
- * Input: BitMap1 and BitMap2 - The bitmaps to OR
- * Output: BitMap1 is set to the value of BitMap1 | BitMap2
- */
-void BitMapOR(unsigned *BitMap1, unsigned *BitMap2) {
-    int i, size;
-
-    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
-    for (i=0; i<size; i++) {
-	BitMap1[i] |= BitMap2[i];
-    } /* for (i */
-} /* BitMapOR */
-
-
-/*
- * BitMapPrint - Convert the specified bitmap into a printable hexadecimal string
- * Input: BitMap - The bit map to print
- * Output: Returns a string
- * NOTE: The returned string must be freed by the calling program
- */
-char *BitMapPrint(unsigned *BitMap) {
-    int i, j, k, size, nibbles;
-    char *Output, temp_str[2];
-
-    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
-    nibbles = (Node_Record_Count + 3) / 4;
-    Output = (char *)malloc((sizeof(unsigned)*size*2)+3);
-    if (Output == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "BitMapPrint: unable to allocate memory\n");
-#else
-	syslog(LOG_ALERT, "BitMapPrint: unable to allocate memory\n")
-#endif
-	return NULL;
-    } /* if */
-
-    strcpy(Output, "0x");
-    k = 0;
-    for (i=0; i<size; i++) {
-	for (j=((sizeof(unsigned)*8)-4); j>=0; j-=4) {
-	    sprintf(temp_str, "%x", ((BitMap[i]>>j)&0xf));
-	    strcat(Output, temp_str);
-	    k++;
-	    if (k == nibbles) return Output;
-	} /* for (j */
-    } /* for (i */
-    return Output;
-} /* BitMapPrint */
-
-
-/*
- * BitMapSet - Set the specified bit in the specified bitmap
- * Input: BitMap - The bit map to manipulate
- *        Position - Postition to set
- */
-void BitMapSet(unsigned *BitMap, int Position) {
-    int val, bit, mask;
-
-    val  = Position / (sizeof(unsigned)*8);
-    bit  = Position % (sizeof(unsigned)*8);
-    mask = (0x1 << ((sizeof(unsigned)*8)-1-bit));
-
-    BitMap[val] |= mask;
-} /* BitMapSet */
-
-
-/*
- * BitMapValue - Return the specified bit in the specified bitmap
- * Input: BitMap - The bit map to get value from
- *        Position - Postition to get
- * Output: Returns the value 0 or 1
- */
-int BitMapValue(unsigned *BitMap, int Position) {
-    int val, bit, mask;
-
-    val  = Position / (sizeof(unsigned)*8);
-    bit  = Position % (sizeof(unsigned)*8);
-    mask = (0x1 << ((sizeof(unsigned)*8)-1-bit));
-
-    mask &= BitMap[val];
-    if (mask == 0)
-	return 0;
-    else
-	return 1;
-} /* BitMapValue */
 
 
 /*
@@ -433,371 +271,6 @@ int Build_BitMaps() {
     return 0;
 } /* Build_BitMaps */
 
-/*
- * Create_Config_Record - Create a Config_Record entry, append it to the Config_List, 
- *	and set is values to the defaults.
- * Input: Error_Code - Pointer to an error code
- * Output: Returns pointer to the Config_Record
- *         Error_Code - set to zero if no error, errno otherwise
- * NOTE: The pointer returned is allocated memory that must be freed when no longer needed.
- */
-struct Config_Record *Create_Config_Record(int *Error_Code) {
-    struct Config_Record *Config_Point;
-
-    Config_Point = (struct Config_Record *)malloc(sizeof(struct Config_Record));
-    if (Config_Point == (struct Config_Record *)NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Create_Config_Record: unable to allocate memory\n");
-#else
-	syslog(LOG_ALERT, "Create_Config_Record: unable to allocate memory\n")
-#endif
-	*Error_Code = ENOMEM;
-	return (struct Config_Record *)NULL;
-    } /* if */
-
-    /* Set default values */
-    Config_Point->CPUs = Default_Record.Config.CPUs;
-    Config_Point->RealMemory = Default_Record.Config.RealMemory;
-    Config_Point->TmpDisk = Default_Record.Config.TmpDisk;
-    Config_Point->Weight = Default_Record.Config.Weight;
-    Config_Point->NodeBitMap = NULL;
-    if (Default_Record.Config.Feature == (char *)NULL)
-	Config_Point->Feature = (char *)NULL;
-    else {
-	Config_Point->Feature = (char *)malloc(strlen(Default_Record.Config.Feature)+1);
-	if (Config_Point->Feature == (char *)NULL) {
-#if DEBUG_SYSTEM
-	    fprintf(stderr, "Create_Config_Record: unable to allocate memory\n");
-#else
-	    syslog(LOG_ALERT, "Create_Config_Record: unable to allocate memory\n")
-#endif
-	    free(Config_Point);
-	    *Error_Code = ENOMEM;
-	    return (struct Config_Record *)NULL;
-	} /* if */
-	strcpy(Config_Point->Feature, Default_Record.Config.Feature);
-    } /* else */
-
-    if (list_append(Config_List, Config_Point) == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Create_Config_Record: unable to allocate memory\n");
-#else
-	syslog(LOG_ALERT, "Create_Config_Record: unable to allocate memory\n")
-#endif
-	if (Config_Point->Feature != (char *)NULL) free(Config_Point->Feature);
-	free(Config_Point);
-	*Error_Code = ENOMEM;
-	return (struct Config_Record *)NULL;
-    } /* if */
-
-    return Config_Point;
-} /* Create_Config_Record */
-
-/* 
- * Create_Node_Record - Create a node record
- * Input: Error_Code - Location to store error value in
- * Output: Error_Code - Set to zero if no error, errno otherwise
- *         Returns a pointer to the record or NULL if error
- * NOTE The record's values are initialized to those of Default_Record
- */
-struct Node_Record *Create_Node_Record(int *Error_Code) {
-    struct Node_Record *Node_Record_Point;
-    int Old_Buffer_Size, New_Buffer_Size;
-
-    *Error_Code = 0;
-
-    /* Round up the buffer size to reduce overhead of realloc */
-    Old_Buffer_Size = (Node_Record_Count) * sizeof(struct Node_Record);
-    Old_Buffer_Size = ((int)((Old_Buffer_Size / NODE_BUF_SIZE) + 1)) * NODE_BUF_SIZE;
-    New_Buffer_Size = (Node_Record_Count+1) * sizeof(struct Node_Record);
-    New_Buffer_Size = ((int)((New_Buffer_Size / NODE_BUF_SIZE) + 1)) * NODE_BUF_SIZE;
-    if (Node_Record_Count == 0)
-	Node_Record_Table_Ptr = (struct Node_Record *)malloc(New_Buffer_Size);
-    else if (Old_Buffer_Size != New_Buffer_Size)
-	Node_Record_Table_Ptr = (struct Node_Record *)realloc(Node_Record_Table_Ptr, New_Buffer_Size);
-
-    if (Node_Record_Table_Ptr == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Create_Node_Record: unable to allocate memory\n");
-#else
-	syslog(LOG_ALERT, "Create_Node_Record: unable to allocate memory\n");
-#endif
-	*Error_Code = ENOMEM;
-	return;
-    } /* if */
-
-    Node_Record_Point = Node_Record_Table_Ptr + (Node_Record_Count++);
-    strcpy(Node_Record_Point->Name,    Default_Record.Node.Name);
-    Node_Record_Point->NodeState     = Default_Record.Node.NodeState;
-    Node_Record_Point->LastResponse  = (time_t) NULL;
-    return Node_Record_Point;
-} /* Create_Node_Record */
-
-
-/* 
- * Create_Part_Record - Create a partition record
- * Input: Error_Code - Location to store error value in
- * Output: Error_Code - Set to zero if no error, errno otherwise
- *         Returns a pointer to the record or NULL if error
- * NOTE: The record's values are initialized to those of Default_Part
- */
-struct Part_Record *Create_Part_Record(int *Error_Code) {
-    struct Part_Record *Part_Record_Point;
-
-    *Error_Code = 0;
-
-    Part_Record_Point = (struct Part_Record *)malloc(sizeof(struct Part_Record));
-    if (Part_Record_Point == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Create_Part_Record: unable to allocate memory\n");
-#else
-	syslog(LOG_ALERT, "Create_Part_Record: unable to allocate memory\n");
-#endif
-	*Error_Code = ENOMEM;
-	return (struct Part_Record *)NULL;
-    } /* if */
-
-    strcpy(Part_Record_Point->Name, "DEFAULT");
-    Part_Record_Point->MaxTime     = Default_Part.MaxTime;
-    Part_Record_Point->MaxNodes    = Default_Part.MaxNodes;
-    Part_Record_Point->Key         = Default_Part.Key;
-    Part_Record_Point->StateUp     = Default_Part.StateUp;
-    Part_Record_Point->TotalNodes  = 0;
-    Part_Record_Point->TotalCPUs   = 0;
-    Part_Record_Point->NodeBitMap  = NULL;
-
-    if (Default_Part.AllowGroups == (char *)NULL)
-	Part_Record_Point->AllowGroups = (char *)NULL;
-    else {
-	Part_Record_Point->AllowGroups = (char *)malloc(strlen(Default_Part.AllowGroups)+1);
-	if (Part_Record_Point->AllowGroups == NULL) {
-#if DEBUG_SYSTEM
-	    fprintf(stderr, "Create_Part_Record: unable to allocate memory\n");
-#else
-	    syslog(LOG_ALERT, "Create_Part_Record: unable to allocate memory\n");
-#endif
-	    free(Part_Record_Point);
-	    *Error_Code = ENOMEM;
-	    return (struct Part_Record *)NULL;
-	} /* if */
-	strcpy(Part_Record_Point->AllowGroups, Default_Part.AllowGroups);
-    } /* else */
-
-    if (Default_Part.Nodes == (char *)NULL)
-	Part_Record_Point->Nodes = (char *)NULL;
-    else {
-	Part_Record_Point->Nodes = (char *)malloc(strlen(Default_Part.Nodes)+1);
-	if (Part_Record_Point->Nodes == NULL) {
-#if DEBUG_SYSTEM
-	    fprintf(stderr, "Create_Part_Record: unable to allocate memory\n");
-#else
-	    syslog(LOG_ALERT, "Create_Part_Record: unable to allocate memory\n");
-#endif
-	    if (Part_Record_Point->AllowGroups != NULL) free(Part_Record_Point->AllowGroups);
-	    free(Part_Record_Point);
-	    *Error_Code = ENOMEM;
-	    return NULL;
-	} /* if */
-	strcpy(Part_Record_Point->Nodes, Default_Part.Nodes);
-    } /* else */
-
-    if (list_append(Part_List, Part_Record_Point) == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Create_Part_Record: unable to allocate memory\n");
-#else
-	syslog(LOG_ALERT, "Create_Part_Record: unable to allocate memory\n")
-#endif
-	if (Part_Record_Point->Nodes       != NULL) free(Part_Record_Point->Nodes);
-	if (Part_Record_Point->AllowGroups != NULL) free(Part_Record_Point->AllowGroups);
-	free(Part_Record_Point);
-	*Error_Code = ENOMEM;
-	return (struct Part_Record *)NULL;
-    } /* if */
-
-    return Part_Record_Point;
-} /* Create_Part_Record */
-
-
-/* 
- * Delete_Node_Record - Delete record for node with specified name
- *   To avoid invalidating the bitmaps and hash table, we just clear the name 
- *   set its state to STATE_DOWN
- * Input: name - name of the desired node 
- * Output: return 0 on success, errno otherwise
- */
-int Delete_Node_Record(char *name) {
-    struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
-
-    Node_Record_Point = Find_Node_Record(name);
-    if (Node_Record_Point == NULL) return ENOENT;
-
-    strcpy(Node_Record_Point->Name, "");
-    Node_Record_Point->NodeState = STATE_DOWN;
-    return 0;
-} /* Delete_Node_Record */
-
-
-/* 
- * Delete_Part_Record - Delete record for partition with specified name
- * Input: name - name of the desired node 
- * Output: return 0 on success, errno otherwise
- */
-int Delete_Part_Record(char *name) {
-    ListIterator Part_Record_Iterator;		/* For iterating through Part_Record_List */
-    struct Part_Record *Part_Record_Point;	/* Pointer to Part_Record */
-
-    Part_Record_Iterator = list_iterator_create(Part_List);
-    if (Part_Record_Iterator == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Delete_Part_Record: list_iterator_create unable to allocate memory\n");
-#else
-	syslog(LOG_ALERT, "Delete_Part_Record: list_iterator_create unable to allocate memory\n");
-#endif
-	return ENOMEM;
-    } /* if */
-
-    while (Part_Record_Point = (struct Part_Record *)list_next(Part_Record_Iterator)) {
-	if (strcmp(Part_Record_Point->Name, name) == 0) continue;
-	if (Part_Record_Point->AllowGroups) free(Part_Record_Point->AllowGroups);
-	if (Part_Record_Point->Nodes)       free(Part_Record_Point->Nodes);
-	free(Part_Record_Point);
-	list_iterator_destroy(Part_Record_Iterator);
-	return 0;
-    } /* while */
-
-    list_iterator_destroy(Part_Record_Iterator);
-    return ENOENT;
-} /* Delete_Part_Record */
-
-
-/* Print the Hash_Table contents, used for debugging or analysis of hash technique */
-void Dump_Hash() {
-    int i;
-
-    if (Hash_Table ==  NULL) return;
-    for (i=0; i<Node_Record_Count; i++) {
-	if (Hash_Table[i] == (int)NULL) continue;
-	printf("Hash:%d:%s\n", i, (Node_Record_Table_Ptr+Hash_Table[i])->Name);
-    } /* for */
-} /* Dump_Hash */
-
-
-/* 
- * Find_Node_Record - Find a record for node with specified name,
- * Input: name - name of the desired node 
- * Output: return pointer to node record or NULL if not found
- */
-struct Node_Record *Find_Node_Record(char *name) {
-    struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
-    int i;
-
-    /* Try to find in hash table first */
-    if (Hash_Table != NULL) {
-	i = Hash_Index(name);
-        if (strcmp((Node_Record_Table_Ptr+Hash_Table[i])->Name, name) == 0) 
-		return (Node_Record_Table_Ptr+Hash_Table[i]);
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Find_Node_Record: Hash table lookup failure for %s\n", name);
-#else
-	syslog(LOG_DEBUG, "Find_Node_Record: Hash table lookup failure for %s\n", name)
-#endif
-    } /* if */
-
-#if DEBUG_SYSTEM
-    if (Hash_Table != NULL) {
-	printf("Sequential search for %s\n", name);
-	Dump_Hash();
-    } /* if */
-#endif
-
-    /* Revert to sequential search */
-    for (i=0; i<Node_Record_Count; i++) {
-	if (strcmp(name, (Node_Record_Table_Ptr+i)->Name) != 0) continue;
-	return (Node_Record_Table_Ptr+i);
-    } /* for */
-
-    return (struct Node_Record *)NULL;
-} /* Find_Node_Record */
-
-
-/* 
- * Find_Part_Record - Find a record for node with specified name,
- * Input: name - name of the desired node 
- * Output: return pointer to node record or NULL if not found
- */
-struct Part_Record *Find_Part_Record(char *name) {
-    ListIterator Part_Record_Iterator;		/* For iterating through Part_Record_List */
-    struct Part_Record *Part_Record_Point;	/* Pointer to Part_Record */
-
-    Part_Record_Iterator = list_iterator_create(Part_List);
-    if (Part_Record_Iterator == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Find_Part_Record: list_iterator_create unable to allocate memory\n");
-#else
-	syslog(LOG_ALERT, "Find_Part_Record: list_iterator_create unable to allocate memory\n");
-#endif
-	return NULL;
-    }
-
-    while (Part_Record_Point = (struct Part_Record *)list_next(Part_Record_Iterator)) {
-	if (strcmp(Part_Record_Point->Name, name) == 0) break;
-    } /* while */
-
-    list_iterator_destroy(Part_Record_Iterator);
-    return Part_Record_Point;	/* Value is NULL at end of list */
-} /* Find_Part_Record */
-
-
-/* 
- * Hash_Index - Return a hash table index for the given node name 
- * This code is optimized for names containing a base-ten suffix (e.g. "lx04")
- * Input: The node's name
- * Output: Return code is the hash table index
- */
-int Hash_Index(char *name) {
-    int i, inx, tmp;
-
-    if (Node_Record_Count == 0) return 0;		/* Degenerate case */
-    inx = 0;
-
-#if ( HASH_BASE == 10 )
-    for (i=0; ;i++) { 
-	tmp = (int) name[i];
-	if (tmp == 0) break;			/* end if string */
-	if ((tmp >= (int)'0') && (tmp <= (int)'9')) 
-	    inx = (inx * HASH_BASE) + (tmp - (int)'0');
-    } /* for */
-#elif ( HASH_BASE == 8 )
-    for (i=0; ;i++) { 
-	tmp = (int) name[i];
-	if (tmp == 0) break;			/* end if string */
-	if ((tmp >= (int)'0') && (tmp <= (int)'7')) 
-	    inx = (inx * HASH_BASE) + (tmp - (int)'0');
-    } /* for */
-
-#else
-    for (i=0; i<5;i++) { 
-	tmp = (int) name[i];
-	if (tmp == 0) break;					/* end if string */
-	if ((tmp >= (int)'0') && (tmp <= (int)'9')) {		/* value 0-9 */
-	    tmp -= (int)'0';
-	} else if ((tmp >= (int)'a') && (tmp <= (int)'z')) {	/* value 10-35 */
-	    tmp -= (int)'a';
-	    tmp += 10;
-	} else if ((tmp >= (int)'A') && (tmp <= (int)'Z')) {	/* value 10-35 */
-	    tmp -= (int)'A';
-	    tmp += 10;
-	} else {
-	    tmp = 36;
-	}
-	inx = (inx * 37) + tmp;
-    } /* for */
- #endif
-
-    inx = inx % Node_Record_Count;
-    return inx;
-} /* Hash_Index */
-
 
 /* 
  * Init_SLURM_Conf - Initialize the SLURM configuration values. 
@@ -805,54 +278,14 @@ int Hash_Index(char *name) {
  * Output: return value - 0 if no error, otherwise an error code
  */
 int Init_SLURM_Conf() {
+    int Error_Code;
 
-    BackupController = NULL;
-    ControlMachine = NULL;
+    Error_Code = Init_Node_Conf();
+    if (Error_Code) return Error_Code;
 
-    strcpy(Default_Record.Node.Name, "DEFAULT");
-    Default_Record.Node.NodeState    = STATE_UNKNOWN;
-    Default_Record.Node.LastResponse = (time_t)0;
-    Default_Record.Config.CPUs       = 1;
-    Default_Record.Config.RealMemory = 1;
-    Default_Record.Config.TmpDisk    = 1;
-    Default_Record.Config.Weight     = 1;
-    Default_Record.Config.Feature    = (char *)NULL;
+    Error_Code = Init_Part_Conf();
+    if (Error_Code) return Error_Code;
 
-    Node_Record_Table_Ptr = (struct Node_Record *)NULL;
-    Node_Record_Count = 0;
-    Hash_Table = (int *)NULL;
-    Last_Node_Update = time(NULL);
-
-    Config_List = list_create(NULL);
-    if (Config_List == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Init_SLURM_Conf: list_create can not allocate memory\n");
-#else
-	syslog(LOG_ALARM, "Init_SLURM_Conf: list_create can not allocate memory\n");
-#endif
-	return ENOMEM;
-    } /* if */
-
-    Default_Part.AllowGroups = (char *)NULL;
-    Default_Part.MaxTime     = -1;
-    Default_Part.MaxNodes    = -1;
-    Default_Part.Nodes       = (char *)NULL;
-    Default_Part.Key         = 1;
-    Default_Part.StateUp     = 1;
-
-    Part_List = list_create(NULL);
-    if (Part_List == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Init_SLURM_Conf: list_create can not allocate memory\n");
-#else
-	syslog(LOG_ALARM, "Init_SLURM_Conf: list_create can not allocate memory\n");
-#endif
-	return ENOMEM;
-    } /* if */
-    strcpy(Default_Part_Name, "");
-    Default_Part_Loc = (struct Part_Record *)NULL;
-
-    Up_NodeBitMap = Idle_NodeBitMap = NULL;
     return 0;
 } /* Init_SLURM_Conf */
 
@@ -955,117 +388,6 @@ int Load_String(char **destination, char *keyword, char *In_Line) {
 
 
 /* 
- * Parse_Node_Name - Parse the node name for regular expressions and return a sprintf format 
- * generate multiple node names as needed.
- * Input: NodeName - Node name to parse
- * Output: Format - sprintf format for generating names
- *         Start_Inx - First index to used
- *         End_Inx - Last index value to use
- *         Count_Inx - Number of index values to use (will be zero if none)
- *         return 0 if no error, error code otherwise
- * NOTE: The calling program must execute free(Format) when the storage location is no longer needed
- */
-int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx, int *Count_Inx) {
-    int Base, Format_Pos, Precision, i;
-    char Type[1];
-
-    i = strlen(NodeName);
-    Format[0] = (char *)malloc(i+1);
-    if (Format[0] == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Parse_Node_Name: unable to allocate memory\n");
-#else
-	syslog(LOG_ERR, "Parse_Node_Name: unable to allocate memory\n")
-#endif
-	return ENOMEM;
-    } /* if */
-
-    *Start_Inx = 0;
-    *End_Inx   = 0;
-    *Count_Inx = 0;
-    Format_Pos = 0;
-    Base = 0;
-    Format[0][Format_Pos] = (char)NULL;
-    i = 0;
-    while (1) {
-	if (NodeName[i] == (char)NULL) break;
-	if (NodeName[i] == '\\') {
-	    if (NodeName[++i] == (char)NULL) break;
-	    Format[0][Format_Pos++] = NodeName[i++];
-	} else if (NodeName[i] == '[') {
-	    if (NodeName[++i] == (char)NULL) break;
-	    if (Base != 0) {
-#if DEBUG_SYSTEM
-		fprintf(stderr, "Parse_Node_Name: Invalid '[' in node name %s\n", NodeName);
-#else
-		syslog(LOG_ALERT, "Parse_Node_Name: Invalid '[' in node name %s\n", NodeName)
-#endif
-		free(Format[0]);
-		return EINVAL;
-	    } /* if */
-	    if (NodeName[i] == 'o') {
-		Type[0] = NodeName[i++];
-		Base = 8;
-	    } else {
-		Type[0] = 'd';
-		Base = 10;
-	    } /* else */
-	    Precision = 0;
-	    while (1) {
-		if ((NodeName[i] >= '0') && (NodeName[i] <= '9')) {
-		    *Start_Inx = ((*Start_Inx) * Base) + (int)(NodeName[i++] - '0');
-		    Precision++;
-		    continue;
-		} /* if */
-		if (NodeName[i] == '-') {
-		    i++;
-		    break;
-		} /* if */
-#if DEBUG_SYSTEM
-		fprintf(stderr, "Parse_Node_Name: Invalid '%c' in node name %s\n", 
-			NodeName[i], NodeName);
-#else
-		syslog(LOG_ALERT, "Parse_Node_Name: Invalid '%c' in node name %s\n", 
-			NodeName[i], NodeName)
-#endif
-		free(Format[0]);
-		return EINVAL;
-	    } /* while */
-	    while (1) {
-		if ((NodeName[i] >= '0') && (NodeName[i] <= '9')) {
-		    *End_Inx = ((*End_Inx) * Base) + (int)(NodeName[i++] - '0');
-		    continue;
-		} /* if */
-		if (NodeName[i] == ']') {
-		    i++;
-		    break;
-		} /* if */
-#if DEBUG_SYSTEM
-		fprintf(stderr, "Parse_Node_Name: Invalid '%c' in node name %s\n", 
-			NodeName[i], NodeName);
-#else
-		syslog(LOG_ALERT, "Parse_Node_Name: Invalid '%c' in node name %s\n", 
-			NodeName[i], NodeName)
-#endif
-		free(Format[0]);
-		return EINVAL;
-	    } /* while */
-	    *Count_Inx = (*End_Inx - *Start_Inx) + 1;
-	    Format[0][Format_Pos++] = '%';
-	    Format[0][Format_Pos++] = '.';
-	    if (Precision > 9) Format[0][Format_Pos++] = '0' + (Precision/10);
-	    Format[0][Format_Pos++] = '0' + (Precision%10);
-	    Format[0][Format_Pos++] = Type[0];
-	} else {
-	    Format[0][Format_Pos++] = NodeName[i++];
-	} /* else */
-    } /* while */
-    Format[0][Format_Pos] = (char)NULL;
-    return 0;
-} /* Parse_Node_Name */
-
-
-/* 
  * Parse_Node_Spec - Parse the node specification, build table and set values
  * Input:  In_Line line from the configuration file
  * Output: In_Line parsed keywords and values replaced by blanks
@@ -1159,14 +481,14 @@ int Parse_Node_Spec (char *In_Line) {
 	    break;
 	} /* if */
 	if (strcmp(This_Node_Name, "DEFAULT") == 0) {
-	    if (CPUs_Val != NO_VAL)          Default_Record.Config.CPUs = CPUs_Val;
-	    if (RealMemory_Val != NO_VAL)    Default_Record.Config.RealMemory = RealMemory_Val;
-	    if (TmpDisk_Val != NO_VAL)       Default_Record.Config.TmpDisk = TmpDisk_Val;
-	    if (Weight_Val != NO_VAL)        Default_Record.Config.Weight = Weight_Val;
-	    if (State_Val != NO_VAL)         Default_Record.Node.NodeState = State_Val;
+	    if (CPUs_Val != NO_VAL)          Default_Config_Record.CPUs = CPUs_Val;
+	    if (RealMemory_Val != NO_VAL)    Default_Config_Record.RealMemory = RealMemory_Val;
+	    if (TmpDisk_Val != NO_VAL)       Default_Config_Record.TmpDisk = TmpDisk_Val;
+	    if (Weight_Val != NO_VAL)        Default_Config_Record.Weight = Weight_Val;
+	    if (State_Val != NO_VAL)         Default_Node_Record.NodeState = State_Val;
 	    if (Feature != NULL) {
-		if (Default_Record.Config.Feature) free(Default_Record.Config.Feature);
-		Default_Record.Config.Feature = Feature;
+		if (Default_Config_Record.Feature) free(Default_Config_Record.Feature);
+		Default_Config_Record.Feature = Feature;
 	    } /* if */
 	} else {
 	    if (i == Start_Inx) {
@@ -1446,42 +768,6 @@ int Read_SLURM_Conf (char *File_Name) {
 
     return 0;
 } /* Read_SLURM_Conf */
-
-
-/* 
- * Rehash - Build a hash table of the Node_Record entries. This is a large hash table 
- * to permit the immediate finding of a record based only upon its name without regards 
- * to the number. There should be no need for a search. The algorithm is optimized for 
- * node names with a base-ten sequence number suffix. If you have a large cluster and 
- * use a different naming convention, this function and/or the Hash_Index function 
- * should be re-written.
- */
-void Rehash() {
-    struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
-    int i, inx;
-
-    if (Hash_Table ==  (int *)NULL)
-	Hash_Table = (int *)malloc(sizeof(int) * Node_Record_Count);
-    else
-	Hash_Table = (int *)realloc(Hash_Table, (sizeof(int) * Node_Record_Count));
-
-    if (Hash_Table == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Rehash: list_append can not allocate memory\n");
-#else
-	syslog(LOG_ERR, "Rehash: list_append can not allocate memory\n");
-#endif
-	return;
-    } /* if */
-    memset(Hash_Table, 0, (sizeof(int *) * Node_Record_Count));
-
-    for (i=0; i<Node_Record_Count; i++) {
-	if (strlen((Node_Record_Table_Ptr+i)->Name) == 0) continue;
-	inx = Hash_Index((Node_Record_Table_Ptr+i)->Name);
-	Hash_Table[inx] = i;
-    } /* for */
-
-} /* Rehash */
 
 
 /* 
