@@ -938,6 +938,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 
 	last_node_update = time (NULL);
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
+		int err_code = 0;
 		node_ptr = find_node_record (this_node_name);
 		node_inx = node_ptr - node_record_table_ptr;
 		if (node_ptr == NULL) {
@@ -954,6 +955,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 				_make_node_down(node_ptr);
 				kill_running_job_by_node_name (this_node_name,
 							       false);
+				bit_set   (idle_node_bitmap, node_inx);
+				bit_clear (up_node_bitmap, node_inx);
 			}
 			else if (state_val == NODE_STATE_UNKNOWN) {
 				bit_clear (up_node_bitmap, node_inx);
@@ -964,43 +967,40 @@ int update_node ( update_node_msg_t * update_node_msg )
 				bit_set (idle_node_bitmap, node_inx);
 			}
 			else if (state_val == NODE_STATE_ALLOCATED) {
-				bit_set (up_node_bitmap, node_inx);
+				bit_set   (up_node_bitmap, node_inx);
 				bit_clear (idle_node_bitmap, node_inx);
 			}
-			else if (state_val == NODE_STATE_DRAINED) {
-				if (!bit_test (idle_node_bitmap, node_inx))
-					state_val = NODE_STATE_DRAINING;
-				bit_clear (up_node_bitmap, node_inx);
-			}
-			else if (state_val == NODE_STATE_DRAINING) {
-				if (bit_test (idle_node_bitmap, node_inx) ||
-				    (!bit_test (up_node_bitmap, node_inx))) {
+			else if ((state_val == NODE_STATE_DRAINED) ||
+			         (state_val == NODE_STATE_DRAINING)) {
+				if (bit_test (idle_node_bitmap, node_inx))
 					state_val = NODE_STATE_DRAINED;
-					bit_clear (idle_node_bitmap, node_inx);
-				}
+				else
+					state_val = NODE_STATE_DRAINING;
 				bit_clear (up_node_bitmap, node_inx);
 			}
 			else if (state_val == NODE_STATE_NO_RESPOND) {
 				bit_clear (up_node_bitmap,   node_inx);
-				bit_clear (idle_node_bitmap, node_inx);
 				node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 				info ("update_node: node %s state set to %s",
 				      this_node_name, "NoResp");
-				continue;
+				err_code = 1;
 			}
 			else {
-				error ("Invalid node state specified %d", 
-				       state_val);
-				continue;
+				error ("Invalid node state specified %d", state_val);
+				err_code = 1;
 			}
 
-			no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
-			node_ptr->node_state = state_val | no_resp_flag;
-			info ("update_node: node %s state set to %s",
-				this_node_name, node_state_string(state_val));
+			if (err_code == 0) {
+				no_resp_flag = node_ptr->node_state & 
+				               NODE_STATE_NO_RESPOND;
+				node_ptr->node_state = state_val | no_resp_flag;
+				info ("update_node: node %s state set to %s",
+					this_node_name, node_state_string(state_val));
+			}
 		}
 
-		if ((update_node_msg -> reason) && (update_node_msg -> reason[0])) {
+		if ((update_node_msg -> reason) && 
+		    (update_node_msg -> reason[0])) {
 			xfree(node_ptr->reason);
 			xstrcat(node_ptr->reason, update_node_msg->reason);
 			info ("update_node: node %s reason set to: %s",
@@ -1037,7 +1037,7 @@ int
 validate_node_specs (char *node_name, uint32_t cpus, 
 			uint32_t real_memory, uint32_t tmp_disk, 
 			uint32_t job_count, uint32_t status) {
-	int error_code;
+	int error_code, node_inx;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
 	uint16_t resp_state;
@@ -1132,18 +1132,21 @@ validate_node_specs (char *node_name, uint32_t cpus,
 			node_ptr->node_state = NODE_STATE_IDLE;
 		}
 
-		if (node_ptr->node_state == NODE_STATE_IDLE) {
-			bit_set (idle_node_bitmap, 
-			         (node_ptr - node_record_table_ptr));
+		node_inx = node_ptr - node_record_table_ptr;
+		if (job_count == 0) {
+			bit_set (idle_node_bitmap, node_inx);
 			if (resp_state)	{
 				/* Node just started responding, 
 				 * do all pending RPCs now */
 				retry_pending (node_name);
 			}
 		}
-		if (node_ptr->node_state != NODE_STATE_DOWN)
-			bit_set (up_node_bitmap, 
-			         (node_ptr - node_record_table_ptr));
+		if ((node_ptr->node_state == NODE_STATE_DOWN)     ||
+		    (node_ptr->node_state == NODE_STATE_DRAINING) ||
+		    (node_ptr->node_state == NODE_STATE_DRAINED))
+			bit_clear (up_node_bitmap, node_inx);
+		else
+			bit_set   (up_node_bitmap, node_inx);
 	}
 
 	return error_code;
