@@ -9,7 +9,7 @@
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
 
-#include <src/common/slurm_protocol_api.h>
+#include "src/common/slurm_protocol_api.h"
 
 enum key_type { SIGNER_PRIVATE_KEY, VERIFIER_PUBLIC_KEY };
 enum { SLURM_OPENSSL_SIGNED = 1 };

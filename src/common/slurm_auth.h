@@ -28,7 +28,7 @@
 #define __SLURM_AUTHENTICATION_H__
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #  if HAVE_INTTYPES_H
 #    include <inttypes.h>
 #  else
@@ -40,7 +40,7 @@
 #  include <inttypes.h>
 #endif  /*  HAVE_CONFIG_H */
 
-#include <src/common/pack.h>
+#include "src/common/pack.h"
 
 
 /* slurm_auth_credentials_t is an opaque type whose definition is to
