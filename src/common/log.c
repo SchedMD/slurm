@@ -194,8 +194,13 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 				memcpy(tmp, p, len);
 				tmp[len] = '\0';
 
-				snprintf(tmp2, sizeof(tmp2), tmp, 
-					 va_arg(ap, char *));
+				/* XXX this is really lame way to do this
+				 * and should be changed asap
+				 * (not a trivial fix to do what I want, though)
+				 */
+				snprintf(tmp2, sizeof(tmp2), 
+					 tmp, va_arg(ap, double));
+
 				xstrcat(buf, tmp2);
 
 				p+=len-1;
