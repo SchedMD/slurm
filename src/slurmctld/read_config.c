@@ -649,9 +649,11 @@ int read_slurm_conf(int recover)
 	}
 
 	slurm_spec_file = fopen(slurmctld_conf.slurm_conf, "r");
-	if (slurm_spec_file == NULL)
-		fatal("read_slurm_conf error opening file %s, %m",
+	if (slurm_spec_file == NULL) {
+		error("read_slurm_conf error opening file %s, %m",
 		      slurmctld_conf.slurm_conf);
+		exit(1);
+	}
 
 	info("read_slurm_conf: loading configuration from %s",
 	     slurmctld_conf.slurm_conf);
