@@ -337,6 +337,7 @@ typedef struct slurm_ctl_conf slurm_ctl_conf_info_msg_t;
 void inline slurm_free_last_update_msg(last_update_msg_t * msg);
 void inline slurm_free_return_code_msg(return_code_msg_t * msg);
 void inline slurm_free_job_step_id(job_step_id_t * msg);
+void inline slurm_free_old_job_alloc_msg(old_job_alloc_msg_t * msg);
 
 #define slurm_free_job_step_id_msg(msg) \
 	slurm_free_job_step_id((job_step_id_t*)(msg))
