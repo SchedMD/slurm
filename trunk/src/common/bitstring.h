@@ -47,6 +47,7 @@ typedef bitstr_t bitoff_t;
 /* word of the bitstring bit is in */
 #define	_bit_word(bit) 		(((bit) >> BITSTR_SHIFT) + BITSTR_OVERHEAD)
 
+/* address of the byte containing bit */
 #define _bit_byteaddr(name, bit) \
 	((char *)((name) + BITSTR_OVERHEAD) + ((bit) >> BITSTR_SHIFT_WORD8))
 
