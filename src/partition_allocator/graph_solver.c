@@ -1642,7 +1642,6 @@ void create_config_4_1d(List configs)
 	list_append(configs, conf);
 	new_switch_config(&conf, NO_VAL, X, 3, 3, 0, 4);
 	list_append(configs, conf);
-	printf("done create_conf\n");
 }
 
 /* */
