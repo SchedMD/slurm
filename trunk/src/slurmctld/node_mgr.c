@@ -1005,9 +1005,16 @@ pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len)
 {
 	packstr (dump_node_ptr->name, buf_ptr, buf_len);
 	pack16  (dump_node_ptr->node_state, buf_ptr, buf_len);
-	pack32  (dump_node_ptr->cpus, buf_ptr, buf_len);
-	pack32  (dump_node_ptr->real_memory, buf_ptr, buf_len);
-	pack32  (dump_node_ptr->tmp_disk, buf_ptr, buf_len);
+	if (FAST_SCHEDULE) {	/* Only data from config_record used for scheduling */
+		pack32  (dump_node_ptr->config_ptr->cpus, buf_ptr, buf_len);
+		pack32  (dump_node_ptr->config_ptr->real_memory, buf_ptr, buf_len);
+		pack32  (dump_node_ptr->config_ptr->tmp_disk, buf_ptr, buf_len);
+	}
+	else {			/* Individual node data used for scheduling */
+		pack32  (dump_node_ptr->cpus, buf_ptr, buf_len);
+		pack32  (dump_node_ptr->real_memory, buf_ptr, buf_len);
+		pack32  (dump_node_ptr->tmp_disk, buf_ptr, buf_len);
+	}
 	pack32  (dump_node_ptr->config_ptr->weight, buf_ptr, buf_len);
 	packstr (dump_node_ptr->config_ptr->feature, buf_ptr, buf_len);
 	if (dump_node_ptr->partition_ptr)
