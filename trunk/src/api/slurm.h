@@ -343,6 +343,8 @@ typedef struct slurm_ctl_conf {
 	char *prolog;		/* pathname of job prolog */
 	uint16_t ret2service;	/* 1 return DOWN node to service at 
 				 * registration */ 
+	uint16_t slurm_user_id;	/* uid of slurm_user_name */
+	char *slurm_user_name;	/* user that slurmctld runs as */
 	char *slurmctld_logfile;/* where slurmctld error log gets written */
 	uint32_t slurmctld_port;/* default communications port to slurmctld */
 	uint16_t slurmctld_timeout;/* seconds that backup controller waits 

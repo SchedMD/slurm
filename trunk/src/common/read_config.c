@@ -32,6 +32,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <netdb.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -85,6 +86,8 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	FREE_NULL (ctl_conf_ptr->prolog);
 	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL; 
 	FREE_NULL (ctl_conf_ptr->slurmctld_logfile);
+	ctl_conf_ptr->slurm_user_id		= (uint16_t) NO_VAL; 
+	FREE_NULL (ctl_conf_ptr->slurm_user_name);
 	ctl_conf_ptr->slurmctld_port		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->slurmctld_timeout		= (uint16_t) NO_VAL;
 	FREE_NULL (ctl_conf_ptr->slurmd_logfile);
@@ -124,6 +127,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	char *control_addr = NULL, *control_machine = NULL, *epilog = NULL;
 	char *prioritize = NULL, *prolog = NULL;
 	char *state_save_location = NULL, *tmp_fs = NULL;
+	char *slurm_user = NULL;
 	char *slurmctld_logfile = NULL, *slurmctld_port = NULL;
 	char *slurmd_logfile = NULL, *slurmd_port = NULL;
 	char *slurmd_spooldir = NULL, *slurmd_pidfile = NULL;
@@ -143,23 +147,24 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"HashBase=", 'd', &hash_base,
 		"HeartbeatInterval=", 'd', &heartbeat_interval,
 		"InactiveLimit=", 'd', &inactive_limit,
+		"JobCredentialPrivateKey=", 's', &job_credential_private_key,
+		"JobCredentialPublicCertificate=", 's', 
+					&job_credential_public_certificate,
 		"KillWait=", 'd', &kill_wait,
 		"Prioritize=", 's', &prioritize,
 		"Prolog=", 's', &prolog,
 		"ReturnToService=", 'd', &ret2service,
+		"SlurmUser=", 's', &slurm_user,
 		"SlurmctldLogFile=", 's', &slurmctld_logfile,
 		"SlurmctldPort=", 's', &slurmctld_port,
 		"SlurmctldTimeout=", 'd', &slurmctld_timeout,
 		"SlurmdLogFile=", 's', &slurmd_logfile,
+		"SlurmdPidFile=",  's', &slurmd_pidfile,
 		"SlurmdPort=", 's', &slurmd_port,
 		"SlurmdSpoolDir=", 's', &slurmd_spooldir,
-		"SlurmdPidFile=",  's', &slurmd_pidfile,
 		"SlurmdTimeout=", 'd', &slurmd_timeout,
 		"StateSaveLocation=", 's', &state_save_location, 
 		"TmpFS=", 's', &tmp_fs,
-		"JobCredentialPrivateKey=", 's', &job_credential_private_key,
-		"JobCredentialPublicCertificate=", 's', 
-					&job_credential_public_certificate,
 		"END");
 
 	if (error_code)
@@ -261,6 +266,22 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		if ( ctl_conf_ptr->ret2service != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "ReturnToService");
 		ctl_conf_ptr->ret2service = ret2service;
+	}
+
+	if ( slurm_user ) {
+		struct passwd *slurm_passwd;
+		slurm_passwd = getpwnam(slurm_user);
+		if (slurm_passwd == NULL) {
+			error ("Invalid user for SlurmUser %s, ignored",
+			       slurm_user);
+		} else {
+			if ( ctl_conf_ptr->slurm_user_name ) {
+				error (MULTIPLE_VALUE_MSG, "SlurmUser");
+				xfree (ctl_conf_ptr->slurm_user_name);
+			}
+			ctl_conf_ptr->slurm_user_name = slurm_user;
+			ctl_conf_ptr->slurm_user_id = slurm_passwd->pw_uid;
+		}
 	}
 
 	if ( slurmctld_logfile ) {
