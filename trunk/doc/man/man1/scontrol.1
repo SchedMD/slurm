@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "March 2003" "scontrol 0.1" "Slurm components"
+.TH SCONTROL "1" "July 2003" "scontrol 0.2" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -16,7 +16,8 @@ mode and prompt for input. It will continue prompting for input and executing
 commands until explicitly terminated. If a command is entered on the execute 
 line, \fBscontrol\fR will execute that command and terminate. All commands 
 and options are case-insensitive, although node names and partition names 
-are case-sensitive (node names "LX" and "lx" are distinct).
+are case-sensitive (node names "LX" and "lx" are distinct). Commands can 
+be abbreviated to the extent that the specification is unique.
 
 .TP
 \fBOPTIONS\fR
@@ -36,6 +37,10 @@ record counts, etc.
 \fIabort\fP
 Instruct the Slurm controller to terminate immediately and generate a core file.
 .TP
+\fIcompleting\fP
+Display all jobs in a COMPLETING state along with associated nodes in either a 
+COMPLETING or DOWN state.
+..TP
 \fIexit\fP
 Terminate the execution of scontrol.
 .TP
