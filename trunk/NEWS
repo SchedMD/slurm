@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.4.0-pre6
+=============================
+
 * Changes in SLURM 0.4.0-pre5
 =============================
  -- select/bluegene plugin confirms db.properties file in $sysconfdir
@@ -13,6 +16,8 @@ documents those changes that are of interest to users and admins.
     they fail to execute
  -- modify srun to forward SIGTERM
  -- enable select/bluegene testing for DOWN nodes and switches
+ -- select/bluegene plugin to delete orphan jobs, free BGLblocks and 
+    set owner as jobs terminate/start
 
 * Changes in SLURM 0.4.0-pre4
 =============================
