@@ -97,6 +97,7 @@ int main(int argc, char *argv[])
 	} else {
 		pa_init(new_node_ptr);
 	}	
+	
 	if(params.partition) {
 		if(params.partition[0] == 'r')
 			params.partition[0] = 'R';
@@ -303,6 +304,8 @@ static int _get_option()
 		return 1;
 		break;
 #endif
+
+#ifdef HAVE_BGL
 	case 'u':
 	case KEY_UP:
 		line_cnt--;
@@ -322,6 +325,7 @@ static int _get_option()
 		_scroll_grid(line_cnt*(pa_system_ptr->grid_win->_maxx-1));
 		return 2;
 		break;
+#endif
 	case 'q':
 	case '\n':
 		endwin();
@@ -439,3 +443,4 @@ static int _scroll_grid(int dir)
 	doupdate();
 	return 1;
 }
+

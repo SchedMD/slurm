@@ -324,6 +324,11 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 				break;
 			if ((rc = pm_destroy_partition(bgl_part_id))
 					!= STATUS_OK)  {
+				if(rc == PARTITION_NOT_FOUND) {
+					debug("partition %s is not found");
+					destroyed = 1;
+					break;
+				}
 				error("pm_destroy_partition(%s): %s", 
 					bgl_part_id, bgl_err_str(rc));
 			} else

@@ -503,9 +503,14 @@ extern int bgl_free_partition(pm_partition_id_t part_id)
 		state = _get_state_partition(part_id);
 
 		if (state != RM_PARTITION_FREE) {
-			if ((rc = pm_destroy_partition(part_id)) != STATUS_OK)
+			if ((rc = pm_destroy_partition(part_id)) != STATUS_OK) {
+				if(rc == PARTITION_NOT_FOUND) {
+					debug("partition %s is not found");
+					break;
+				}
 				error("pm_destroy_partition(%s): %s",
 				      part_id, bgl_err_str(rc));
+			}
 		}
 
 		if ((state == RM_PARTITION_FREE)
