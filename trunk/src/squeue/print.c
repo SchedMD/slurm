@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Joey Ekstrom <ekstrom1@llnl.gov>
+ *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -130,15 +130,14 @@ _print_str( char* str, int width, bool right, bool cut_output )
 	if ( right == true && width != 0 )
 		snprintf( format, 64, "%%%ds", width );
 	else if ( width != 0 )
-		snprintf( format, 64, "%%.%ds", width-1 );
+		snprintf( format, 64, "%%.%ds", width );
 	else
 	{
 		format[0] = '%';
 		format[1] = 's';
-		format[2] = '\0';
-	}
+		format[2] = '\0';	}
 
-	if ( cut_output == false )
+	if ( (width == 0) || (cut_output == false) )
 	{
 		if ( ( printed = printf( format, str ) ) < 0  )
 			return printed;
@@ -168,16 +167,16 @@ _print_int( int number, int width, bool right, bool cut_output )
 
 
 int
-_create_format( char* buffer, const char* type, int width, bool right_justify )
+_create_format( char* buffer, const char* type, int width, bool right )
 {
-	if ( snprintf( buffer, FORMAT_STRING_SIZE, (right_justify ? " %%-%d.%d%s": "%%%d.%d%s " ),
+	if ( snprintf( buffer, FORMAT_STRING_SIZE, (right ? " %%-%d.%d%s": "%%%d.%d%s " ),
 			width, width - 1, type ) == -1 )
 		return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
 
 int
-_print_time( time_t t, int level, int width, bool right_justify )
+_print_time( time_t t, int level, int width, bool right )
 {
 	struct tm time;
 	char str[FORMAT_STRING_SIZE];
@@ -194,7 +193,7 @@ _print_time( time_t t, int level, int width, bool right_justify )
 			break;
 	}
 
-	_print_str( str, width, right_justify, true );
+	_print_str( str, width, right, true );
 
 	return SLURM_SUCCESS;
 }
@@ -213,24 +212,23 @@ print_job_from_format( job_info_t* job,  List list )
 		if ( current->function( job, current->width, current->right_justify ) 
 				!= SLURM_SUCCESS )
 			return SLURM_ERROR;
-		printf(" ");
-		
+		printf( " " );
 	}
-	printf("\n");
+	printf( "\n" );
 	return SLURM_SUCCESS;
 }
 
 int
-job_format_add_function ( List list, int width, bool right_justify, 
+job_format_add_function ( List list, int width, bool right,
 		int (*function)(job_info_t*,int,bool) )
 {
 	job_format_t* tmp = (job_format_t*) xmalloc(sizeof(job_format_t));	
 	tmp->function = function;
 	tmp->width = width;
-	tmp->right_justify = right_justify;
+	tmp->right_justify = right;
 
-	/* FIXME: Check for error */
-	list_append( list, tmp );
+	if (list_append( list, tmp ) == NULL)
+		fprintf (stderr, "Memory exhausted\n");
 	return SLURM_SUCCESS;
 }
 
@@ -240,10 +238,24 @@ _print_job_job_id( job_info_t* job, int width, bool right )
 {
 	char id[FORMAT_STRING_SIZE];
 	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "JOB_ID", width, right, true );
+		_print_str( "JobId", width, right, true );
 	else
 	{
-		snprintf( id, FORMAT_STRING_SIZE, "%s.%d", job->partition, job->job_id );
+		snprintf( id, FORMAT_STRING_SIZE, "%u", job->job_id );
+		_print_str( id, width, right, true );
+	}
+	return SLURM_SUCCESS;
+}
+
+int
+_print_job_partition( job_info_t* job, int width, bool right )
+{
+	char id[FORMAT_STRING_SIZE];
+	if ( job == NULL ) /* Print the Header instead */
+		_print_str( "Partition", width, right, true );
+	else
+	{
+		snprintf( id, FORMAT_STRING_SIZE, "%s", job->partition );
 		_print_str( id, width, right, true );
 	}
 	return SLURM_SUCCESS;
@@ -253,9 +265,20 @@ int
 _print_job_name( job_info_t* job, int width, bool right )
 {
 	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "NAME", width, right, true );
+		_print_str( "Name", width, right, true );
 	else 
 		_print_str( job->name, width, right, true );
+
+	return SLURM_SUCCESS;
+}
+
+int
+_print_job_user_id( job_info_t* job, int width, bool right )
+{
+	if ( job == NULL ) /* Print the Header instead */
+		_print_str( "User", width, right, true );
+	else
+		_print_int( job->user_id, width, right, true );
 
 	return SLURM_SUCCESS;
 }
@@ -266,23 +289,22 @@ _print_job_user_name( job_info_t* job, int width, bool right )
 	struct passwd* user_info = NULL;
 
 	if ( job == NULL ) /* Print the Header instead */
-	{
-		_print_str( "USER", width, right, true );
-		return SLURM_SUCCESS;
+		_print_str( "User", width, right, true );
+	else {
+		user_info = getpwuid( (uid_t) job->user_id );
+		if ( user_info && user_info->pw_name[0] )
+			_print_str( user_info->pw_name, width, right, true );
+		else
+			_print_int( job->user_id, width, right, true );
 	}
-	user_info = getpwuid( (uid_t) job->user_id );
-	if ( user_info != NULL && user_info->pw_name[0] != '\0' )
-		_print_str( user_info->pw_name, width, right, true );
-	else
-		_print_int( job->user_id, width, right, true );
 	return SLURM_SUCCESS;
-}
-	
+	}
+
 int
 _print_job_job_state( job_info_t* job, int width, bool right )
 {
 	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "JOB_STATE", width, right, true );
+		_print_str( "State", width, right, true );
 	else
 		_print_str( job_state_string( job->job_state ), width, right, true );
 
@@ -293,7 +315,7 @@ int
 _print_job_job_state_compact( job_info_t* job, int width, bool right )
 {
 	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "ST", width, right, true);
+		_print_str( "St", width, right, true);
 	else
 		_print_str( job_state_string_compact( job->job_state ), width, right, true );
 	return SLURM_SUCCESS;
@@ -304,7 +326,7 @@ _print_job_time_limit( job_info_t* job, int width, bool right )
 {
 	char time[FORMAT_STRING_SIZE];
 	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "WC", width, right, true );
+		_print_str( "TimeLimit", width, right, true );
 	else
 	{
 		snprintf( time, FORMAT_STRING_SIZE, "%d:%2.2d:%2.2d", 
@@ -322,7 +344,7 @@ int
 _print_job_start_time( job_info_t* job, int width, bool right )
 {
 	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "START", width, right, true );
+		_print_str( "StartTime", width, right, true );
 	else
 		_print_time( job->start_time, 0, width, right );
 
@@ -333,7 +355,7 @@ int
 _print_job_end_time( job_info_t* job, int width, bool right )
 {
 	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "END", width, right, true );
+		_print_str( "EndTime", width, right, true );
 	else
 		_print_time( job->end_time, 0, width, right );
 
@@ -345,7 +367,7 @@ _print_job_priority( job_info_t* job, int width, bool right)
 {
 	char temp[FORMAT_STRING_SIZE];
 	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "PRI", width, right, true );
+		_print_str( "Prio", width, right, true );
 	else
 	{
 		sprintf(temp, "%d", job->priority );
@@ -356,12 +378,12 @@ _print_job_priority( job_info_t* job, int width, bool right)
 }
 
 int
-_print_job_nodes( job_info_t* job, int width, bool right_justify )
+_print_job_nodes( job_info_t* job, int width, bool right )
 {
 	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "NODES", width, right_justify, true );
+		_print_str( "Nodes", width, right, false );
 	else
-		_print_str( job->nodes, width, right_justify, true );
+		_print_str( job->nodes, width, right, false );
 
 	return SLURM_SUCCESS;
 }
@@ -370,7 +392,7 @@ int
 _print_job_node_inx( job_info_t* job, int width, bool right )
 {
 	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "NODE_INX", width, right, true );
+		_print_str( "NodeByIndex", width, right, true );
 	else
 	{
 		int* current = job->node_inx;
@@ -387,23 +409,12 @@ _print_job_node_inx( job_info_t* job, int width, bool right )
 }
 
 int
-_print_job_partition( job_info_t* job, int width, bool right )
+_print_job_num_procs( job_info_t* job, int width, bool right )
 {
 	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "PARTITION", width, right, true );
+		_print_str( "NumProcs", width, right, true );
 	else
-		printf( job->partition, width, right, true );
-
-	return SLURM_SUCCESS;
-}
-
-int
-_print_job_num_procs( job_info_t* job, int width, bool right_justify )
-{
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "NUM_PROCS", width, right_justify, true );
-	else
-		_print_int( job->num_procs, width, right_justify, true );
+		_print_int( job->num_procs, width, right, true );
 
 	return SLURM_SUCCESS;
 }
@@ -412,7 +423,7 @@ int
 _print_job_num_nodes( job_info_t* job, int width, bool right_justify )
 {
 	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "NUM_NODES", width, right_justify, true );
+		_print_str( "NumNodes", width, right_justify, true );
 	else
 		_print_int( job->num_nodes, width, right_justify, true );
 
@@ -423,7 +434,7 @@ int
 _print_job_shared( job_info_t* job, int width, bool right_justify )
 {
 	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "SHARED", width, right_justify, true );
+		_print_str( "Shared", width, right_justify, true );
 	else
 		_print_int( job->shared, width, right_justify, true );
 
@@ -434,7 +445,7 @@ int
 _print_job_contiguous( job_info_t* job, int width, bool right_justify )
 {
 	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "CONTIGUOUS", width, right_justify, true );
+		_print_str( "Contiguous", width, right_justify, true );
 	else
 		_print_int( job->contiguous, width, right_justify, true );
 
@@ -445,7 +456,7 @@ int
 _print_job_min_procs( job_info_t* job, int width, bool right_justify )
 {
 	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "MIN_PROCS", width, right_justify, true );
+		_print_str( "MinProcs", width, right_justify, true );
 	else
 		_print_int( job->min_procs, width, right_justify, true );
 
@@ -456,7 +467,7 @@ int
 _print_job_min_memory( job_info_t* job, int width, bool right_justify )
 {
 	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "MIN_MEMORY", width, right_justify, true );
+		_print_str( "MinMemory", width, right_justify, true );
 	else
 		_print_int( job->min_memory, width, right_justify, true );
 
@@ -467,7 +478,7 @@ int
 _print_job_min_tmp_disk( job_info_t* job, int width, bool right_justify )
 {
 	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "MIN_TMP_DISK", width, right_justify, true );
+		_print_str( "MinTmpDisk", width, right_justify, true );
 	else
 		_print_int( job->min_tmp_disk, width, right_justify, true );
 
@@ -478,7 +489,7 @@ int
 _print_job_req_nodes( job_info_t* job, int width, bool right_justify )
 {
 	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "REQ_NODES", width, right_justify, true );
+		_print_str( "ReqNodes", width, right_justify, true );
 	else
 		_print_str( job->req_nodes, width, right_justify, true );
 
@@ -489,7 +500,7 @@ int
 _print_job_req_node_inx( job_info_t* job, int width, bool right_justify )
 {
 	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "REQ_NODE_INX", width, right_justify, true );
+		_print_str( "ReqNodesByInx", width, right_justify, true );
 	else
 	{
 		int* current = job->req_node_inx;
@@ -528,12 +539,13 @@ print_step_from_format( job_step_info_t* job_step, List list )
 
 	while ( (current = (step_format_t*) list_next(i)) != NULL)
 	{
-		if ( current->function( job_step, current->width, current->right_justify ) 
+		if ( current->function( job_step, current->width, current->right_justify )
 				!= SLURM_SUCCESS )
 			return SLURM_ERROR;
+		printf( " " );
 		
 	}
-	printf("\n");
+	printf( "\n" );
 	return SLURM_SUCCESS;
 }
 
@@ -551,87 +563,76 @@ step_format_add_function ( List list, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
-int _print_step_id( job_step_info_t* step, int width, bool right_justify )
+int _print_step_id( job_step_info_t* step, int width, bool right )
 {
-	char format[FORMAT_STRING_SIZE];
-    char id[FORMAT_STRING_SIZE];
+	char id[FORMAT_STRING_SIZE];
+
 	if ( step == NULL ) /* Print the Header instead */
-	{
-		if ( _create_format( format, "s", width, right_justify ) == SLURM_ERROR )
-			return SLURM_ERROR;
-		printf( format, "ID" );
-		return SLURM_SUCCESS;
-	}
-
-	if ( _create_format( format, "s", width, right_justify ) == SLURM_ERROR )
-		return SLURM_ERROR;
-	snprintf( id, FORMAT_STRING_SIZE, "%s.%u.%u", step->partition, step->job_id, step->step_id );
-	printf( format, id );
-
-	return SLURM_SUCCESS;
-}
-
-int _print_step_user_id( job_step_info_t* step, int width, bool right_justify )
-{
-	char format[FORMAT_STRING_SIZE];
-	struct passwd* user_info = NULL;
-	if ( step == NULL ) /* Print the Header instead */
-	{
-		if ( _create_format( format, "s", width, right_justify ) == SLURM_ERROR )
-			return SLURM_ERROR;
-		printf( format, "USER" );
-		return SLURM_SUCCESS;
-	}
-
-	user_info = getpwuid( (uid_t) step->user_id );
-	if ( user_info != NULL || user_info->pw_name[0] == '\0' )
-	{
-		if ( _create_format( format, "s", width, right_justify ) == SLURM_ERROR )
-			return SLURM_ERROR;
-		printf( format, user_info->pw_name );
-	}
+		_print_str( "StepId", width, right, true );
 	else
 	{
-		if ( _create_format( format, "d", width, right_justify ) == SLURM_ERROR )
-			return SLURM_ERROR;
-		printf( format, step->user_id );
+		snprintf( id, FORMAT_STRING_SIZE, "%u.%u", step->job_id, step->step_id );
+		_print_str( id, width, right, true );
 	}
-
-	if ( _create_format( format, "s", width, right_justify ) == SLURM_ERROR )
-		return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
 
-int _print_step_start_time( job_step_info_t* step, int width, bool right_justify )
+int _print_step_partition( job_step_info_t* step, int width, bool right )
 {
-	char format[FORMAT_STRING_SIZE];
-	if ( step == NULL ) /* Print the Header instead */
-	{
-		if ( _create_format( format, "s", width, right_justify ) == SLURM_ERROR )
-			return SLURM_ERROR;
-		printf( format, "START" );
-		return SLURM_SUCCESS;
-	}
+	char id[FORMAT_STRING_SIZE];
 
-	_print_time( step->start_time, 0, width, right_justify );
+	if ( step == NULL ) /* Print the Header instead */
+		_print_str( "Partition", width, right, true );
+	else
+	{
+		snprintf( id, FORMAT_STRING_SIZE, "%s", step->partition );
+		_print_str( id, width, right, true );
+	}
 	return SLURM_SUCCESS;
 }
 
-int _print_step_nodes( job_step_info_t* step, int width, bool right_justify )
+int _print_step_user_id( job_step_info_t* step, int width, bool right )
 {
-	char format[FORMAT_STRING_SIZE];
 	if ( step == NULL ) /* Print the Header instead */
-	{
-		if ( _create_format( format, "s", width, right_justify ) == SLURM_ERROR )
-			return SLURM_ERROR;
-		printf( format, "NODES" );
-		return SLURM_SUCCESS;
+		_print_str( "User", width, right, true );
+	else
+		_print_int( step->user_id, width, right, true );
+
+	return SLURM_SUCCESS;
+}
+
+int _print_step_user_name( job_step_info_t* step, int width, bool right )
+{
+	struct passwd* user_info = NULL;
+
+	if ( step == NULL ) /* Print the Header instead */
+		_print_str( "User", width, right, true );
+	else {
+		user_info = getpwuid( (uid_t) step->user_id );
+		if ( user_info && user_info->pw_name[0] )
+			_print_str( user_info->pw_name, width, right, true );
+		else
+			_print_int( step->user_id, width, right, true );
+	}
+	return SLURM_SUCCESS;
+}
+
+int _print_step_start_time( job_step_info_t* step, int width, bool right )
+{
+	if ( step == NULL ) /* Print the Header instead */
+		_print_str( "StartTime", width, right, true );
+	else
+		_print_time( step->start_time, 0, width, right );
+
+	return SLURM_SUCCESS;
 	}
 
-	if ( _create_format( format, "s", width, right_justify ) == SLURM_ERROR )
-		return SLURM_ERROR;
-	printf( format, step->nodes );
-
+int _print_step_nodes( job_step_info_t* step, int width, bool right )
+{
+	if ( step == NULL ) /* Print the Header instead */
+		_print_str( "Nodes", width, right, false );
+	else
+		_print_str( step->nodes, width, right, false );
 
 	return SLURM_SUCCESS;
 }

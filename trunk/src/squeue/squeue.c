@@ -77,17 +77,6 @@ print_job ( void )
 	static job_info_msg_t * old_job_ptr = NULL, * new_job_ptr;
 	int error_code;
 
-	List format = list_create( NULL );
-	job_format_add_job_id( format, 12, false );	
-	job_format_add_name( format, 10, true );	
-	job_format_add_user_name( format, 8, false );	
-	job_format_add_job_state_compact( format, 3, false );	
-	job_format_add_time_limit( format, 10, false );	
-	job_format_add_start_time( format, 12, false );	
-	job_format_add_end_time( format, 12, false);	
-	job_format_add_priority( format, 6, false );	
-	job_format_add_nodes( format, 16, false );	
-
 	if (old_job_ptr) {
 		error_code = slurm_load_jobs (old_job_ptr->last_update, &new_job_ptr);
 		if (error_code ==  SLURM_SUCCESS)
@@ -108,8 +97,27 @@ print_job ( void )
 	if (quiet_flag == -1)
 		printf ("last_update_time=%ld\n", (long) new_job_ptr->last_update);
 
-	print_jobs_array( new_job_ptr->job_array, new_job_ptr->record_count , format) ;
-	list_destroy( format );
+	if (params.format_list == NULL) {
+		params.format_list = list_create( NULL );
+		job_format_add_job_id( params.format_list, 7, true );
+		job_format_add_partition( params.format_list, 10, false );
+		job_format_add_name( params.format_list, 10, false );
+		job_format_add_user_name( params.format_list, 10, false );
+		if (params.long_list)
+			job_format_add_job_state( params.format_list, 10, false );
+		else
+			job_format_add_job_state_compact( params.format_list, 3, false );
+		job_format_add_start_time( params.format_list, 12, false );
+		job_format_add_end_time( params.format_list, 12, false);
+		job_format_add_priority( params.format_list, 8, true );
+		if (params.long_list) {
+			job_format_add_time_limit( params.format_list, 10, true );
+		}
+		/* Leave nodes at the end, length is hightly variable */
+		job_format_add_nodes( params.format_list, 0, false );
+	}
+
+	print_jobs_array( new_job_ptr->job_array, new_job_ptr->record_count , params.format_list ) ;
 	return;
 }
 
@@ -120,12 +128,6 @@ print_job_steps( void )
 	int error_code;
 	static job_step_info_response_msg_t * old_step_ptr = NULL, * new_step_ptr;
 
-	List format = list_create( NULL );
-	step_format_add_id( format, 18, true );
-	step_format_add_user_id( format, 8, true );
-	step_format_add_start_time( format, 12, true );
-	step_format_add_nodes( format, 20, true );
-	
 	if (old_step_ptr) {
 		error_code = slurm_get_job_steps (old_step_ptr->last_update, 0, 0, &new_step_ptr);
 		if (error_code ==  SLURM_SUCCESS)
@@ -143,8 +145,19 @@ print_job_steps( void )
 	}
 	old_step_ptr = new_step_ptr;
 
-	print_steps_array( new_step_ptr->job_steps ,new_step_ptr->job_step_count , format );	
-	list_destroy( format );
+	if (quiet_flag == -1)
+		printf ("last_update_time=%ld\n", (long) new_step_ptr->last_update);
+	
+	if (params.format_list == NULL) {
+		params.format_list = list_create( NULL );
+		step_format_add_id( params.format_list, 10, false );
+		step_format_add_partition( params.format_list, 10, false );
+		step_format_add_user_name( params.format_list, 10, false );
+		step_format_add_start_time( params.format_list, 12, false );
+		step_format_add_nodes( params.format_list, 0, false );
+	}
+		
+	print_steps_array( new_step_ptr->job_steps, new_step_ptr->job_step_count, params.format_list );
 	return;
 }
 
