@@ -641,7 +641,7 @@ static int _print_rest(db2_block_info_t *block_ptr, int *count)
 {
 	//static rm_BGL_t *bgl = NULL;
 	partition_info_t part;
-	db2_block_info_t *db2_info_ptr;
+	db2_block_info_t *db2_info_ptr = NULL;
 	ListIterator itr;
 	int set = 0;
 	if (block_ptr->printed)

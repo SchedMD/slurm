@@ -180,7 +180,7 @@ static int _print_text_job(job_info_t * job_ptr)
 	time_t time;
 	int printed = 0;
 	int tempxcord;
-	int prefixlen;
+	int prefixlen = 0;
 	int i = 0;
 	int width = 0;
 	char time_buf[20];
