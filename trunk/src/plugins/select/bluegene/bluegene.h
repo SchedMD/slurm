@@ -75,7 +75,7 @@ extern char *bluegene_ramdisk;
 extern pa_system_t *pa_system_ptr;
 extern int DIM_SIZE[PA_SYSTEM_DIMENSIONS];
 
-extern List bgl_init_part_list; 	/* Initial bgl partition state */
+extern List bgl_curr_part_list; 	/* Initial bgl partition state */
 extern List bgl_list;			/* List of configured BGL blocks */
 extern bool agent_fini;
 
