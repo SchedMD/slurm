@@ -1027,6 +1027,114 @@ pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len)
 
 
 /* 
+ * parse_node_name - parse the node name for regular expressions and return a 
+ *                   sprintf format generate multiple node names as needed.
+ * input: node_name - node name to parse
+ * output: format - sprintf format for generating names
+ *         start_inx - first index to used
+ *         end_inx - last index value to use
+ *         count_inx - number of index values to use (will be zero if none)
+ *         return 0 if no error, error code otherwise
+ * NOTE: the calling program must execute xfree(format) when the storage location 
+ *       is no longer needed
+ */
+int 
+parse_node_name (char *node_name, char **format, int *start_inx, int *end_inx,
+		 int *count_inx) 
+{
+	int base, format_pos, precision, i;
+	char type[1];
+
+	i = strlen (node_name);
+	format[0] = (char *) xmalloc (i + 1);
+
+	*start_inx = 0;
+	*end_inx = 0;
+	*count_inx = 0;
+	format_pos = 0;
+	base = 0;
+	format[0][format_pos] = (char) NULL;
+	i = 0;
+	while (1) {
+		if (node_name[i] == (char) NULL)
+			break;
+		if (node_name[i] == '\\') {
+			if (node_name[++i] == (char) NULL)
+				break;
+			format[0][format_pos++] = node_name[i++];
+		}
+		else if (node_name[i] == '[') {	/* '[' preceeding number range */
+			if (node_name[++i] == (char) NULL)
+				break;
+			if (base != 0) {
+				error ("parse_node_name: invalid '[' in node name %s\n",
+					node_name);
+				xfree (format[0]);
+				return EINVAL;
+			}
+			if (node_name[i] == 'o') {
+				type[0] = node_name[i++];
+				base = 8;
+			}
+			else {
+				type[0] = 'd';
+				base = 10;
+			}
+			precision = 0;
+			while (1) {
+				if ((node_name[i] >= '0')
+				    && (node_name[i] <= '9')) {
+					*start_inx =
+						((*start_inx) * base) +
+						(int) (node_name[i++] - '0');
+					precision++;
+					continue;
+				}
+				if (node_name[i] == '-') {	/* '-' between numbers */
+					i++;
+					break;
+				}
+				error ("parse_node_name: invalid '%c' in node name %s\n",
+					 node_name[i], node_name);
+				xfree (format[0]);
+				return EINVAL;
+			}
+			while (1) {
+				if ((node_name[i] >= '0')
+				    && (node_name[i] <= '9')) {
+					*end_inx =
+						((*end_inx) * base) +
+						(int) (node_name[i++] - '0');
+					continue;
+				}
+				if (node_name[i] == ']') {	/* ']' terminating number range */
+					i++;
+					break;
+				}
+				error ("parse_node_name: invalid '%c' in node name %s\n",
+					 node_name[i], node_name);
+				xfree (format[0]);
+				return EINVAL;
+			}
+			*count_inx = (*end_inx - *start_inx) + 1;
+			format[0][format_pos++] = '%';
+			format[0][format_pos++] = '.';
+			if (precision > 9)
+				format[0][format_pos++] =
+					'0' + (precision / 10);
+			format[0][format_pos++] = '0' + (precision % 10);
+			format[0][format_pos++] = type[0];
+		}
+		else {
+			format[0][format_pos++] = node_name[i++];
+		}
+	}
+	format[0][format_pos] = (char) NULL;
+	return 0;
+}
+
+
+/* 
  * rehash - build a hash table of the node_record entries. this is a large hash table 
  * to permit the immediate finding of a record based only upon its name without regards 
  * to the number. there should be no need for a search. the algorithm is optimized for 

@@ -737,6 +737,8 @@ extern int parse_job_specs (char *job_specs, char **req_features, char **req_nod
 		 int *procs_per_task, long *job_id, int *priority, 
 		 int *user_id);
 
+extern int parse_node_name(char *name, char **fmt, int *start, int *end, int *count); 
+
 /* part_lock - lock the partition information */
 extern void part_lock ();
 
