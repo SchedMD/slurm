@@ -8,7 +8,7 @@
 #    X_AC_NCURSES
 #
 #  DESCRIPTION:
-#    Test for NCURSES or CURSES. If found define HAVE_BGL
+#    Test for NCURSES or CURSES. If found define NCURSES
 ##*****************************************************************************
 
 
