@@ -494,8 +494,12 @@ _enough_nodes(int avail_nodes, int rem_nodes, int min_nodes, int max_nodes)
  * IN shared - set to 1 if nodes may be shared, 0 otherwise
  * IN node_lim - maximum number of nodes permitted for job, 
  *	INFINITE for no limit (partition limit)
- * RET 0 on success, EAGAIN if request can not be satisfied now, EINVAL if
- *	request can never be satisfied (insufficient contiguous nodes)
+ * RET SLURM_SUCCESS on success, 
+ *	ESLURM_NODES_BUSY if request can not be satisfied now, 
+ *	ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE if request can never 
+ *	be satisfied , or
+ *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE if the job can not be 
+ *	initiated until the parition's configuration changes
  * NOTE: the caller must xfree memory pointed to by req_bitmap
  * Notes: The algorithm is
  *	1) If required node list is specified, determine implicitly required
@@ -523,11 +527,12 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						 * use now */
 	bitstr_t *avail_bitmap = NULL, *total_bitmap = NULL;
 	int max_feature, min_feature;
-	bool runable = false;
+	bool runable_ever  = false;	/* Job can ever run */
+	bool runable_avail = false;	/* Job can run with available nodes */
 
 	if (node_set_size == 0) {
 		info("_pick_best_nodes: empty node set for selection");
-		return EINVAL;
+		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	}
 
 	if (*req_bitmap) {	/* specific nodes required */
@@ -540,20 +545,20 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		if ((max_nodes != 0) &&
 		    (total_nodes > max_nodes)) {
 			info("_pick_best_nodes: required nodes exceed limit");
-			return EINVAL;
+			return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		}
 		if (total_nodes > node_lim) {
 			/* exceed partition node limit */
-			return EAGAIN;
+			return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 		}
 		if ((min_nodes <= total_nodes) && 
 		    (max_nodes <= min_nodes  ) &&
 		    (req_cpus  <= total_cpus )) {
 			if (!bit_super_set(*req_bitmap, avail_node_bitmap))
-				return EAGAIN;
+				return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 			if ((!shared) &&
 			    (!bit_super_set(*req_bitmap, idle_node_bitmap)))
-				return EAGAIN;
+				return ESLURM_NODES_BUSY;
 			return SLURM_SUCCESS;	/* user can have selected 
 						 * nodes, we're done! */
 		}
@@ -573,7 +578,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		for (i = 0; i < node_set_size; i++) {
 			if (node_set_ptr[i].feature != j)
 				continue;
-			if (!runable)
+			if (!runable_ever)
 				_add_node_set_info(&node_set_ptr[i],
 						   &total_bitmap, 
 						   &total_nodes, &total_cpus);
@@ -631,16 +636,34 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 		/* determine if job could possibly run (if all configured 
 		 * nodes available) */
-		if ((error_code == SLURM_SUCCESS) && (!runable) &&
+		if ((error_code == SLURM_SUCCESS) && 
+		    (!runable_ever || !runable_avail) &&
 		    (total_nodes >= min_nodes) && (total_cpus >= req_cpus) &&
 		    ((*req_bitmap == NULL) ||
 		     (bit_super_set(*req_bitmap, total_bitmap)))) {
-			pick_code = _pick_best_quadrics(total_bitmap, 
+			if (!runable_ever) {
+				pick_code = _pick_best_quadrics(
+							total_bitmap, 
 							*req_bitmap, min_nodes,
 							max_nodes, req_cpus, 
 							contiguous);
-			if (pick_code == SLURM_SUCCESS)
-				runable = true;
+				if (pick_code == SLURM_SUCCESS)
+					runable_ever = true;
+				if ((pick_code == SLURM_SUCCESS) &&
+				    (!runable_avail) &&
+					(bit_super_set(total_bitmap, avail_node_bitmap)))
+					runable_avail = true;
+			}
+			if (!runable_avail) {
+				bit_and(total_bitmap, avail_node_bitmap);
+				pick_code = _pick_best_quadrics(
+							total_bitmap, 
+							*req_bitmap, min_nodes,
+							max_nodes, req_cpus, 
+							contiguous);
+				if (pick_code == SLURM_SUCCESS)
+					runable_avail = true;
+			}
 		}
 		FREE_NULL_BITMAP(avail_bitmap);
 		FREE_NULL_BITMAP(total_bitmap);
@@ -648,12 +671,16 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			break;
 	}
 
-	if (!runable) {
-		error_code = EINVAL;
+	/* The job is not able to start right now, return a 
+	 * value indicating when the job can start */
+	if (!runable_ever) {
+		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		info("_pick_best_nodes: job never runnable");
 	}
+	if (!runable_avail)
+		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	if (error_code == SLURM_SUCCESS)
-		error_code = EAGAIN;
+		error_code = ESLURM_NODES_BUSY;
 	return error_code;
 }
 
@@ -769,15 +796,8 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 				      min_nodes, max_nodes,
 				      job_ptr->details->contiguous, 
 				      shared, part_ptr->max_nodes);
-	if (error_code == EAGAIN) {
-		error_code = ESLURM_NODES_BUSY;
+	if (error_code)
 		goto cleanup;
-	}
-	if (error_code == EINVAL) {
-		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
-		info("select_nodes: no nodes can satisfy job request");
-		goto cleanup;
-	}
 	if (test_only) {
 		error_code = SLURM_SUCCESS;
 		goto cleanup;
