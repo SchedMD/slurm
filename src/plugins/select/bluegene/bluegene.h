@@ -131,4 +131,10 @@ extern char* convert_node_use(rm_partition_mode_t pt);
  * nodes and switches */
 extern void *bluegene_agent(void *args);
 
+/*
+ * Convert a BGL API error code to a string
+ * IN inx - error code from any of the BGL Bridge APIs
+ * RET - string describing the error condition
+ */
+extern char *bgl_err_str(status_t inx);
 #endif /* _BLUEGENE_H_ */

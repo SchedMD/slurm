@@ -838,7 +838,7 @@ extern char* convert_node_use(rm_partition_mode_t pt)
 	return "";
 }
 
-/** 
+/* 
  * Comparator used for sorting partitions smallest to largest
  * 
  * returns: -1: rec_a >rec_b   0: rec_a == rec_b   1: rec_a < rec_b
@@ -938,3 +938,41 @@ static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 	delta_t +=  tv2->tv_usec - tv1->tv_usec;
 	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
 }
+
+/*
+ * Convert a BGL API error code to a string
+ * IN inx - error code from any of the BGL Bridge APIs
+ * RET - string describing the error condition
+ */
+extern char *bgl_err_str(status_t inx)
+{
+#ifdef HAVE_BGL_FILES
+	switch (inx) {
+		case STATUS_OK:
+			return "Status OK";
+		case PARTITION_NOT_FOUND:
+			return "Partition not found";
+		case JOB_NOT_FOUND:
+			return "Job not found";
+		case BP_NOT_FOUND:
+			return "Base partition not found";
+		case SWITCH_NOT_FOUND:
+			return "Switch not found";
+		case JOB_ALREADY_DEFINED:
+			return "Job already defined";
+		case CONNECTION_ERROR:
+			return "Connection error";
+		case INTERNAL_ERROR:
+			return "Internal error";
+		case INVALID_INPUT:
+			return "Invalid input";
+		case INCOMPATIBLE_STATE:
+			return "Incompatible state";
+		case INCONSISTENT_DATA:
+			return "Inconsistent data";
+	}
+#endif
+
+	return "?";
+}
+
