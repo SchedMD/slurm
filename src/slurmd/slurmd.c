@@ -66,6 +66,8 @@
 #  define MAXHOSTNAMELEN	64
 #endif
 
+#define MAX_THREADS		64
+
 #define DEFAULT_SPOOLDIR	"/tmp/slurmd"
 #define DEFAULT_PIDFILE		"/var/run/slurmd.pid"
 
@@ -73,6 +75,14 @@ typedef struct connection {
 	slurm_fd fd;
 	slurm_addr *cli_addr;
 } conn_t;
+
+/*
+ * count of active threads
+ */
+static int             active_threads = 0;
+static pthread_mutex_t active_mutex   = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  active_cond    = PTHREAD_COND_INITIALIZER;
+
 
 
 /*
@@ -85,8 +95,6 @@ static void      _term_handler(int);
 static void      _hup_handler(int);
 static void      _process_cmdline(int ac, char **av);
 static void      _create_msg_socket();
-static void      _tid_free(pthread_t *);
-static pthread_t *_tid_copy(pthread_t *);
 static void      _msg_engine();
 static int       _slurmd_init();
 static int       _slurmd_fini();
@@ -98,6 +106,8 @@ static void 	 _kill_old_slurmd();
 static void      _list_recovered_creds(List list);
 static void      _reconfigure();
 static void      _restore_cred_state(List *list);
+static void      _increment_thd_count();
+static void      _decrement_thd_count();
 static void      _wait_for_all_threads();
 static void      _set_slurmd_spooldir(void);
 static void      _usage();
@@ -197,34 +207,33 @@ _msg_engine()
 	return;
 }
 
-static pthread_t *
-_tid_copy(pthread_t *tid)
+static void
+_decrement_thd_count(void)
 {
-	pthread_t *id = xmalloc(sizeof(*id));
-	*id = *tid;
-	return id;
+	slurm_mutex_lock(&active_mutex);
+	active_threads--;
+	slurm_mutex_unlock(&active_mutex);
 }
 
 static void
-_tid_free(pthread_t *tid)
+_increment_thd_count(void)
 {
-	xfree(tid);
+	slurm_mutex_lock(&active_mutex);
+	while (active_threads >= MAX_THREADS)
+		pthread_cond_wait(&active_cond, &active_mutex);
+	active_threads++;
+	slurm_mutex_unlock(&active_mutex);
 }
 
 static void
 _wait_for_all_threads()
 {
-	ListIterator i;
-	pthread_t *ptid;
-
-	debug("Waiting for %d running threads", list_count(conf->threads));
-
-	i = list_iterator_create(conf->threads);
-	while ((ptid = list_next(i))) {
-		pthread_join(*ptid, NULL);
-		debug2("thread %d finished", *ptid);
+	slurm_mutex_lock(&active_mutex);
+	while (active_threads > 0) {
+		verbose("waiting on %d active threads", active_threads);
+		pthread_cond_wait(&active_cond, &active_mutex);
 	}
-	list_iterator_destroy(i);
+	slurm_mutex_unlock(&active_mutex);
 }
 
 static void
@@ -240,31 +249,27 @@ _handle_connection(slurm_fd fd, slurm_addr *cli)
 
 	if ((rc = pthread_attr_init(&attr)) != 0) {
 		error("pthread_attr_init: %s", slurm_strerror(rc));
+		xfree(arg);
 		return;
 	}
 
-	/* 
-	 * Do not create a detached thread.
-	 *
-	 * rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	 * if (rc != 0) {
-	 * 	error("Unable to set detachstate on attr: %s", 
-	 *			slurm_strerror(rc));
-	 *	return;
-	 * }
-	 */
+	rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	if (rc != 0) {
+		errno = rc;
+		xfree(arg);
+		error("Unable to set detachstate on attr: %m");
+		return;
+	}
 
 	fd_set_close_on_exec(fd);
 
+	_increment_thd_count();
 	rc = pthread_create(&id, &attr, &_service_connection, (void *) arg);
 	if (rc != 0) {
 		error("msg_engine: pthread_create: %s", slurm_strerror(rc));
-		_service_connection((void *) &arg);
+		_service_connection((void *) arg);
 		return;
 	}
-
-	list_append(conf->threads, (void *) _tid_copy(&id));
-
 	return;
 }
 
@@ -278,7 +283,6 @@ static void *
 _service_connection(void *arg)
 {
 	int rc;
-	pthread_t tid = pthread_self();
 	conn_t *con = (conn_t *) arg;
 	slurm_msg_t *msg = xmalloc(sizeof(*msg));
 
@@ -290,8 +294,10 @@ _service_connection(void *arg)
 		slurmd_req(msg, con->cli_addr);
 	}
 	slurm_close_accepted_conn(con->fd);	
+
 	xfree(con);
-	list_delete_all(conf->threads, (ListFindF) _find_tid, &tid);
+	_decrement_thd_count();
+
 	return NULL;
 }
 
@@ -539,7 +545,6 @@ _slurmd_init()
 	slurm_ssl_init();
 	slurm_init_verifier(&conf->vctx, conf->pubkey);
 	_restore_cred_state(&conf->cred_state_list); 
-	conf->threads = list_create((ListDelF) _tid_free);
 	if (conf->shm_cleanup)
 		shm_cleanup();
 	if (shm_init() < 0)
@@ -609,7 +614,6 @@ static void _list_recovered_creds(List list)
 static int
 _slurmd_fini()
 {
-	list_destroy(conf->threads);
 	save_cred_state(conf->cred_state_list);
 	slurm_destroy_ssl_key_ctx(&conf->vctx);
 	slurm_ssl_destroy();

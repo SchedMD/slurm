@@ -79,9 +79,14 @@ static void   _p_fwd_signal(slurm_msg_t *, job_t *);
 static void * _p_signal_task(void *);
 
 
-static bool _job_sig_done(job_t *job)
+static inline bool 
+_sig_thr_done(job_t *job)
 {
-	return (job->state >= SRUN_JOB_DONE);
+	bool retval;
+	slurm_mutex_lock(&job->state_mutex);
+	retval = (job->state >= SRUN_JOB_DONE);
+	slurm_mutex_unlock(&job->state_mutex);
+	return retval;
 }
 
 int 
@@ -145,6 +150,9 @@ fwd_signal(job_t *job, int signo)
 			debug2("%s has not yet replied\n", job->host[i]);
 			continue;
 		}
+
+		if (job_active_tasks_on_host(job, i) == 0)
+			continue;
 
 		req_array_ptr[i].msg_type = REQUEST_KILL_TASKS;
 		req_array_ptr[i].data = &msg;
@@ -220,7 +228,7 @@ _sig_thr(void *arg)
 	time_t last_intr_sent = 0;
 	int signo;
 
-	while (!_job_sig_done(job)) {
+	while (!_sig_thr_done(job)) {
 
 		_sig_thr_setup(&set);
 
@@ -263,12 +271,12 @@ static void _p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job)
 		if (req_array_ptr[i].msg_type == 0)
 			continue;	/* inactive task */
 
-		pthread_mutex_lock(&active_mutex);
+		slurm_mutex_lock(&active_mutex);
 		while (active >= opt.max_threads) {
 			pthread_cond_wait(&active_cond, &active_mutex);
 		}
 		active++;
-		pthread_mutex_unlock(&active_mutex);
+		slurm_mutex_unlock(&active_mutex);
 
 		task_info_ptr = (task_info_t *)xmalloc(sizeof(task_info_t));
 		task_info_ptr->req_ptr  = &req_array_ptr[i];
@@ -296,11 +304,11 @@ static void _p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job)
 	}
 
 
-	pthread_mutex_lock(&active_mutex);
+	slurm_mutex_lock(&active_mutex);
 	while (active > 0) {
 		pthread_cond_wait(&active_cond, &active_mutex);
 	}
-	pthread_mutex_unlock(&active_mutex);
+	slurm_mutex_unlock(&active_mutex);
 	xfree(thread_ptr);
 }
 
@@ -328,10 +336,10 @@ static void * _p_signal_task(void *args)
 			slurm_free_return_code_msg(resp.data);
 	}
 
-	pthread_mutex_lock(&active_mutex);
+	slurm_mutex_lock(&active_mutex);
 	active--;
 	pthread_cond_signal(&active_cond);
-	pthread_mutex_unlock(&active_mutex);
+	slurm_mutex_unlock(&active_mutex);
 	xfree(args);
 	return NULL;
 }

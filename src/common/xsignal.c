@@ -33,18 +33,42 @@
 
 #include "src/common/log.h"
 #include "src/common/slurm_errno.h"
+#include "src/common/xsignal.h"
 
 
-void
-xsignal(int signo, void (*handler)(int))
+SigFunc *
+xsignal(int signo, SigFunc *f)
 {
 	struct sigaction sa, old_sa;
-	sa.sa_handler = handler;
+
+	sa.sa_handler = f;
 	sigemptyset(&sa.sa_mask);
 	sigaddset(&sa.sa_mask, signo);
 	sa.sa_flags = 0;
-	sigaction(signo, &sa, &old_sa);
-	return;
+	if (sigaction(signo, &sa, &old_sa) < 0)
+		error("xsignal(%d) failed: %m", signo);
+	return (old_sa.sa_handler);
+}
+
+int 
+xsignal_unblock(int signo)
+{
+	sigset_t set;
+	if (sigemptyset(&set) < 0) {
+		error("sigemptyset: %m");
+		return SLURM_ERROR;
+	}
+	if (sigaddset(&set, signo) < 0) {
+		error("sigaddset: %m");
+		return SLURM_ERROR;
+	}
+
+	if (sigprocmask(SIG_UNBLOCK, &set, NULL) < 0) {
+		error("sigprocmask: %m");
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 int

@@ -78,7 +78,7 @@ static int	_do_task_output(int *fd, FILE *out, cbuf_t buf, int tasknum);
 static int 	_do_task_output_poll(fd_info_t *info);
 static int      _do_task_input(job_t *job, int taskid);
 static int 	_do_task_input_poll(job_t *job, fd_info_t *info);
-static inline bool _job_io_done(job_t *job);
+static inline bool _io_thr_done(job_t *job);
 static int	_handle_pollerr(fd_info_t *info);
 static char *	_host_state_name(host_state_t state_inx);
 static ssize_t	_readn(int fd, void *buf, size_t nbytes);
@@ -244,7 +244,7 @@ _io_thr_poll(void *job_arg)
 	for (i = 0; i < job->niofds; i++) 
 		_poll_set_rd(fds[i], job->iofd[i]);
 
-	while (!_job_io_done(job)) {
+	while (!_io_thr_done(job)) {
 		int eofcnt = 0;
 		nfds = job->niofds; /* already have n ioport fds + stdin */
 
@@ -299,7 +299,7 @@ _io_thr_poll(void *job_arg)
 			pthread_exit(0);
 		}
 
-		while ((!_job_io_done(job)) && 
+		while ((!_io_thr_done(job)) && 
 		       ((rc = poll(fds, nfds, POLL_TIMEOUT_MSEC)) <= 0)) {
 			if (rc == 0) {	/* timeout */
 				_do_poll_timeout(job);
@@ -420,9 +420,14 @@ static char *_host_state_name(host_state_t state_inx)
 	}
 }
 
-static bool _job_io_done(job_t *job)
+static inline bool 
+_io_thr_done(job_t *job)
 {
-	return (job->state >= SRUN_JOB_FORCETERM);
+	bool retval;
+	slurm_mutex_lock(&job->state_mutex);
+	retval = (job->state >= SRUN_JOB_FORCETERM);
+	slurm_mutex_unlock(&job->state_mutex);
+	return retval;
 }
 
 void report_task_status(job_t *job)
