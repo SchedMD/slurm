@@ -655,7 +655,7 @@ process_command (int argc, char *argv[])
 				 "too many arguments for %s keyword\n",
 				 argv[0]);
 		}		
-		printf ("%s version 0.1\n", command_name);
+		printf ("%s Version %s\n", command_name, VERSION);
 
 	}
 	else
