@@ -14,6 +14,11 @@
 . /etc/rc.d/init.d/functions
 
 RETVAL=0
+DAEMONS=`scontrol show daemons`
+echo $DAEMONS | grep -q slurmctld
+CONTROLLER=$?
+echo $DAEMONS | grep -q slurmd
+SERVER=$?
 
 #
 # The pathname substitution in daemon command assumes prefix and
@@ -24,14 +29,14 @@ RETVAL=0
 #
 case "$1" in
     start)
-        if [ controller ]; then
+        if [ $CONTROLLER -eq 0 ]; then
             echo -n "Starting slurmctld: "
             daemon /usr/local/slurm/sbin/slurmctld
             RETVAL=$?
             [ $RETVAL -eq 0 ] && touch /var/lock/subsys/slurmctld
             echo
 	fi
-        if [ server ]; then
+        if [ $SERVER -eq 0 ]; then
             echo -n "Starting slurmd: "
             daemon /usr/local/slurm/sbin/slurmd
             RETVALS=$?
@@ -41,14 +46,14 @@ case "$1" in
 	fi
         ;;
     stop)
-        if [ controller ]; then
+        if [ $CONTROLLER -eq 0 ]; then
             echo -n "Shutting down slurmctld: "
             killproc slurmctld
             RETVAL=$?
             [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/slurmctld
             echo
 	fi
-        if [ server ]; then
+        if [ $SERVER -eq 0 ]; then
             echo -n "Shutting down slurmd: "
             killproc slurmd
             RETVALS=$?
@@ -58,10 +63,10 @@ case "$1" in
 	fi
         ;;
     status)
-        if [ controller ]; then
+        if [ $CONTROLLER -eq 0 ]; then
             status slurmctld
 	fi
-        if [ server ]; then
+        if [ $SERVER -eq 0 ]; then
             status slurmd
 	fi
         ;;
@@ -69,8 +74,16 @@ case "$1" in
         $0 stop
         $0 start
         ;;
+    test)
+        if [ $CONTROLLER -eq 0 ]; then
+            echo "slurmctld runs here"
+	fi
+        if [ $SERVER -eq 0 ]; then
+            echo "slurmd runs here"
+	fi
+        ;;
     *)
-        echo "Usage: $0 {start|stop|status|restart}"
+        echo "Usage: $0 {start|stop|status|restart|test}"
         exit 1
         ;;
 esac
