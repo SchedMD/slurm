@@ -531,6 +531,7 @@ char *job_state_string(enum job_states inx)
 		"COMPLETE",
 		"FAILED",
 		"TIMEOUT",
+		"NODE_FAIL",
 		"END"
 	};
 	return job_state_string[inx];
