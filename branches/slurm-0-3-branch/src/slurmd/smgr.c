@@ -333,7 +333,7 @@ _exec_task(slurmd_job_t *job, int i)
 	 * Move this process into new pgrp within this session
 	 */
 	if (setpgid (0, i ? job->task[0]->pid : 0) < 0) 
-		error ("Unable to put task %d into pgrp %ld", 
+		error ("Unable to put task %d into pgrp %ld: %m", 
 		       i, job->task[0]->pid);
 
 	if (!job->batch) {
