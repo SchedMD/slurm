@@ -43,7 +43,6 @@ int DIM_SIZE[PA_SYSTEM_DIMENSIONS] = {8,4,4};
 List* _conf_result_list;
 bool _initialized = false;
 
-
 /** some internal structures used in the partition allocator alone 
  * 
  * the partition virtual system is a linked list where each node has a
@@ -1219,7 +1218,6 @@ void pa_init()
 {
 	int i;
 	List switch_config_list;
-
 	
 #ifdef DEBUG_PA
 	printf("pa_init()\n");
@@ -1239,13 +1237,17 @@ void pa_init()
 	}
 
 	/* see if we can load in the filenames from the env */
-	filenames[X] = "Y_dim_torus.conf";
+	filenames[X] = "X_alt_dim_torus.conf";
 	filenames[Y] = "Y_dim_torus.conf";
 	filenames[Z] = "Z_dim_torus.conf";
 	
 	/* create the X configuration (8 nodes) */
 	if (filenames[X]){
+		time_t start, end;
+		time(&start);
 		_load_part_config(filenames[X], _conf_result_list[X]);
+		time(&end);
+		error("loading file time: %ld\n", (end-start));
 	} else {
 		switch_config_list = list_create(delete_gen);
 		create_config_8_1d(switch_config_list);
@@ -1335,7 +1337,8 @@ void set_node_down(int c[PA_SYSTEM_DIMENSIONS])
 #endif
 
 	/* first we make a copy of the current system */
-	_backup_pa_system();
+	// 999
+	//_backup_pa_system();
 
 	/* basically set the node as NULL */
 	_delete_pa_node(&(_pa_system[c[0]][c[1]][c[2]]));
@@ -1367,7 +1370,8 @@ int allocate_part(pa_request_t* pa_request, List* results)
 	print_pa_request(pa_request);
 #endif
 
-	_backup_pa_system();
+	// 999
+	// _backup_pa_system();
 	_find_first_match(pa_request, results);
 	return 1;
 }
@@ -1401,6 +1405,7 @@ int main(int argc, char** argv)
 	bool force_contig = true;
 	List results;
 	pa_request_t* request; 
+	time_t start, end;
 
 	if (argc == 4){
 		int i;
@@ -1422,7 +1427,11 @@ int main(int argc, char** argv)
 		exit(0);
 	}
 
+	
+	time(&start);
 	pa_init();
+	time(&end);
+	error("init: %ld\n", (end-start));
 	/*
 	  int dead_node1[3] = {0,0,0};
 	  int dead_node2[3] = {1,0,0};
@@ -1431,17 +1440,36 @@ int main(int argc, char** argv)
 	  printf("done setting node down\n");
 	*/
 	
+
+	time(&start);
 	if (allocate_part(request, &results)){
+		ListIterator itr;
+		pa_node_t* result;
 		printf("allocation succeeded\n");
 		       
+		itr = list_iterator_create(results);
+		printf("results: \n");
+		while((result = (pa_node_t*) list_next(itr))){
+			printf("%d%d%d ", 
+			       result->coord[0], 
+			       result->coord[1],
+			       result->coord[2]);
+		}
+		printf("\n");
 		// _print_results(results);
 		list_destroy(results);
 	} else {
 		printf("request failed\n");
 	}
+	time(&end);
+	error("allocate: %ld\n", (end-start));
 
-	delete_pa_request(request);
-	
+	time(&start);
 	pa_fini();
+	time(&end);
+	error("fini: %ld\n", (end-start));
+
+	
+
 	return 0;
 }
