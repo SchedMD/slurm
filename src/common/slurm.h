@@ -55,9 +55,6 @@
 extern char *control_machine;	/* name of computer acting as slurm controller */
 extern char *backup_controller;	/* name of computer acting as slurm backup controller */
 
-/* NOTE: change NODE_STRUCT_VERSION value whenever the contents of NODE_STRUCT_FORMAT change */
-#define NODE_STRUCT_VERSION 1
-#define NODE_STRUCT_FORMAT "NodeName=%s State=%s CPUs=%d RealMemory=%d TmpDisk=%d Weight=%d Feature=%s #Partition=%s\n"
 #define CONFIG_MAGIC 0xc065eded
 #define NODE_MAGIC   0x0de575ed
 #define NO_VAL   (-9812)
@@ -98,20 +95,18 @@ extern struct config_record default_config_record;
 extern struct node_record default_node_record;
 
 /* NOTE: change PART_STRUCT_VERSION value whenever the contents of PART_STRUCT_FORMAT change */
-#define PART_STRUCT_VERSION 1
-#define PART_STRUCT_FORMAT "PartitionName=%s MaxNodes=%u MaxTime=%u Nodes=%s Key=%s Default=%s AllowGroups=%s Shared=%s State=%s #TotalNodes=%d TotalCPUs=%d\n"
 #define PART_MAGIC 0xaefe8495
 extern time_t last_part_update;	/* time of last update to part records */
 struct part_record {
 	uint32_t magic;		/* magic cookie to test data integrity */
 	char name[MAX_NAME_LEN];/* name of the partition */
-	uint32_t max_time;	/* minutes, 0xffffffff if unlimited */
-	uint32_t max_nodes;	/* per job, 0xffffffff if unlimited */
+	uint32_t max_time;	/* minutes or INFINITE */
+	uint32_t max_nodes;	/* per job or INFINITE */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
-	unsigned key:1;		/* 1 if slurm distributed key is required for use of partition */
-	unsigned shared:2;	/* 1 if more than one job can execute on a node, 2 if required */
-	unsigned state_up:1;	/* 1 if state is up, 0 if down */
+	uint16_t key;		/* 1 if slurm distributed key is required for use of partition */
+	uint16_t shared;	/* 1 if >1 job can share a node, 2 if required */
+	uint16_t state_up;	/* 1 if state is up, 0 if down */
 	char *nodes;		/* comma delimited list names of nodes in partition */
 	char *allow_groups;	/* comma delimited list of groups, null indicates all */
 	bitstr_t *node_bitmap;	/* bitmap of nodes in partition */
@@ -334,64 +329,6 @@ extern int delete_part_record (char *name);
  */
 extern int dump_all_job (char **buffer_ptr, int *buffer_size, 
 	time_t * update_time, int detail);
-
-/* 
- * dump_all_node - dump all configuration and node information to a buffer
- * input: buffer_ptr - location into which a pointer to the data is to be stored.
- *                     the data buffer is actually allocated by dump_node and the 
- *                     calling function must xfree the storage.
- *         buffer_size - location into which the size of the created buffer is in bytes
- *         update_time - dump new data only if partition records updated since time 
- *                       specified, otherwise return empty buffer
- * output: buffer_ptr - the pointer is set to the allocated buffer.
- *         buffer_size - set to size of the buffer in bytes
- *         update_time - set to time partition records last updated
- *         returns 0 if no error, errno otherwise
- * global: node_record_table_ptr - pointer to global node table
- * NOTE: the caller must xfree the buffer at *buffer_ptr when no longer required
- */
-extern int  dump_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time);
-
-/* 
- * dump_all_part - dump all partition information to a buffer
- * input: buffer_ptr - location into which a pointer to the data is to be stored.
- *                     the data buffer is actually allocated by dump_part and the 
- *                     calling function must xfree the storage.
- *         buffer_size - location into which the size of the created buffer is in bytes
- *         update_time - dump new data only if partition records updated since time 
- *                       specified, otherwise return empty buffer
- * output: buffer_ptr - the pointer is set to the allocated buffer.
- *         buffer_size - set to size of the buffer in bytes
- *         update_time - set to time partition records last updated
- *         returns 0 if no error, errno otherwise
- * global: part_list - global list of partition records
- * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
- */
-extern int  dump_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time);
-
-/* 
- * dump_node - dump all configuration information about a specific node to a buffer
- * input:  dump_node_ptr - pointer to node for which information is requested
- *         out_line - buffer for node information 
- *         out_line_size - byte size of out_line
- * output: out_line - set to node information values
- *         return 0 if no error, 1 if out_line buffer too small
- * NOTE: if you make any changes here be sure to increment the value of NODE_STRUCT_VERSION
- *       and make the corresponding changes to load_node_config in api/node_info.c
- */
-extern int  dump_node (struct node_record *dump_node_ptr, char *out_line, int out_line_size);
-
-/* 
- * dump_part - dump all configuration information about a specific partition to a buffer
- * input:  dump_part_ptr - pointer to partition for which information is requested
- *         out_line - buffer for partition information 
- *         out_line_size - byte size of out_line
- * output: out_line - set to partition information values
- *         return 0 if no error, 1 if out_line buffer too small
- * NOTE: if you make any changes here be sure to increment the value of PART_STRUCT_VERSION
- *       and make the corresponding changes to load_part_config in api/partition_info.c
- */
-extern int dump_part (struct part_record *part_record_point, char *out_line, int out_line_size);
 
 /* 
  * find_job_record - return a pointer to the job record with the given job_id
@@ -631,6 +568,25 @@ extern int  node_name2list (char *node_names, char **node_list, int *node_count)
 extern int pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time);
 
 /* 
+ * pack_all_part - dump all partition information for all partitions in 
+ *	machine independent form (for network transmission)
+ * input: buffer_ptr - location into which a pointer to the data is to be stored.
+ *                     the calling function must xfree the storage.
+ *         buffer_size - location into which the size of the created buffer is in bytes
+ *         update_time - dump new data only if partition records updated since time 
+ *                       specified, otherwise return empty buffer
+ * output: buffer_ptr - the pointer is set to the allocated buffer.
+ *         buffer_size - set to size of the buffer in bytes
+ *         update_time - set to time partition records last updated
+ *         returns 0 if no error, errno otherwise
+ * global: part_list - global list of partition records
+ * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
+ * NOTE: change PART_STRUCT_VERSION in common/slurmlib.h whenever the format changes
+ * NOTE: change slurm_load_part() in api/part_info.c whenever the data format changes
+ */
+extern int pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time);
+
+/* 
  * pack_node - dump all configuration information about a specific node in 
  *	machine independent form (for network transmission)
  * input:  dump_node_ptr - pointer to node for which information is requested
@@ -643,6 +599,20 @@ extern int pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_t
  *	and make the corresponding changes to load_node_config in api/node_info.c
  */
 extern int pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len); 
+
+/* 
+ * pack_part - dump all configuration information about a specific partition in 
+ *	machine independent form (for network transmission)
+ * input:  dump_part_ptr - pointer to partition for which information is requested
+ *	buf_ptr - buffer for node information 
+ *	buf_len - byte size of buffer
+ * output: buf_ptr - advanced to end of data written
+ *	buf_len - byte size remaining in buffer
+ *	return 0 if no error, 1 if buffer too small
+ * NOTE: if you make any changes here be sure to increment the value of PART_STRUCT_VERSION
+ *	and make the corresponding changes to load_part_config in api/partition_info.c
+ */
+extern int pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len);
 
 /* 
  * parse_job_specs - pick the appropriate fields out of a job request specification

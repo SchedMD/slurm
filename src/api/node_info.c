@@ -36,7 +36,7 @@ main (int argc, char *argv[])
 
 	error_code = slurm_load_node (last_update_time, &node_buffer_ptr);
 	if (error_code) {
-		printf ("load_node error %d\n", error_code);
+		printf ("slurm_load_node error %d\n", error_code);
 		exit (error_code);
 	}
 
@@ -150,7 +150,6 @@ slurm_load_node (time_t update_time, struct node_buffer **node_buffer_ptr)
 		free (buffer);
 		return -1;
 	}
-printf("size=%d\n",	buffer_size);
 
 	/* load buffer's header (data structure version and time) */
 	buf_ptr = buffer;

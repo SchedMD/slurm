@@ -525,125 +525,6 @@ dump_hash ()
 
 
 /* 
- * dump_all_node - dump all configuration and node information in text format
- *	to a buffer, the data format will be the same as that of a configuration 
- *	file (and can be used as such)
- * input: buffer_ptr - location into which a pointer to the data is to be stored.
- *                     the data buffer is actually allocated by dump_node and the 
- *                     calling function must xfree the storage.
- *         buffer_size - location into which the size of the created buffer is in bytes
- *         update_time - dump new data only if partition records updated since time 
- *                       specified, otherwise return empty buffer
- * output: buffer_ptr - the pointer is set to the allocated buffer.
- *         buffer_size - set to size of the buffer in bytes
- *         update_time - set to time partition records last updated
- *         returns 0 if no error, errno otherwise
- * global: node_record_table_ptr - pointer to global node table
- * NOTE: the caller must xfree the buffer at *buffer_ptr when no longer required
- */
-int 
-dump_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time) 
-{
-	char *buffer;
-	int buffer_offset, buffer_allocated, error_code, inx;
-	char out_line[BUF_SIZE];
-
-	buffer_ptr[0] = NULL;
-	*buffer_size = 0;
-	buffer = NULL;
-	buffer_offset = 0;
-	buffer_allocated = 0;
-	if (*update_time == last_node_update)
-		return 0;
-
-	/* write haeader: version and time */
-	sprintf (out_line, HEAD_FORMAT, (unsigned long) last_node_update,
-		 NODE_STRUCT_VERSION);
-	if (write_buffer
-	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-		goto cleanup;
-
-	/* write node records */
-	for (inx = 0; inx < node_record_count; inx++) {
-		if ((node_record_table_ptr[inx].magic != NODE_MAGIC) ||
-		    (node_record_table_ptr[inx].config_ptr->magic != CONFIG_MAGIC))
-			fatal ("dump_all_node: data integrity is bad");
-
-		error_code = dump_node(&node_record_table_ptr[inx], out_line, BUF_SIZE);
-		if (error_code != 0) continue;
-
-		if (write_buffer(&buffer, &buffer_offset, &buffer_allocated, out_line))
-			goto cleanup;
-	}
-
-	if (buffer)
-		xrealloc (buffer, buffer_offset);
-
-	buffer_ptr[0] = buffer;
-	*buffer_size = buffer_offset;
-	*update_time = last_node_update;
-	return 0;
-
-      cleanup:
-	if (buffer)
-		xfree (buffer);
-	return EINVAL;
-}
-
-
-/* 
- * dump_node - dump all configuration information about a specific node in text format
- *	to a buffer, the data format will be the same as that of a configuration 
- *	file (and can be used as such)
- * input:  dump_node_ptr - pointer to node for which information is requested
- *         out_line - buffer for node information 
- *         out_line_size - byte size of out_line
- * output: out_line - set to node information values
- *         return 0 if no error, 1 if out_line buffer too small
- * NOTE: if you make any changes here be sure to increment the value of NODE_STRUCT_VERSION
- *       and make the corresponding changes to load_node_config in api/node_info.c
- */
-int 
-dump_node (struct node_record *dump_node_ptr, char *out_line, int out_line_size) 
-{
-	int state;
-	char *feature, *partition;
-
-	state = dump_node_ptr->node_state;
-	if (state < 0)
-		state = STATE_DOWN;
-
-	if (dump_node_ptr->config_ptr->feature)
-		feature = dump_node_ptr->config_ptr->feature;
-	else
-		feature = "none";
-
-	if (dump_node_ptr->partition_ptr)
-		partition = dump_node_ptr->partition_ptr->name;
-	else
-		partition = "none";
-
-	if ((strlen(NODE_STRUCT_FORMAT) + strlen(dump_node_ptr->name) + 20 +
-	     strlen(node_state_string[state]) + strlen(feature) + strlen(partition)) > 
-		out_line_size) {
-		error ("dump_node: buffer too small for node %s", dump_node_ptr->name);
-		return 1;
-	}
-
-	sprintf (out_line, NODE_STRUCT_FORMAT,
-		 dump_node_ptr->name,
-		 node_state_string[state],
-		 dump_node_ptr->cpus,
-		 dump_node_ptr->real_memory,
-		 dump_node_ptr->tmp_disk,
-		 dump_node_ptr->config_ptr->weight,
-		 feature, partition);
-
-	return 0;
-}
-
-
-/* 
  * find_node_record - find a record for node with specified name,
  * input: name - name of the desired node 
  * output: return pointer to node record or NULL if not found
@@ -1004,8 +885,7 @@ node_unlock ()
  * pack_all_node - dump all configuration and node information for all nodes in 
  *	machine independent form (for network transmission)
  * input: buffer_ptr - location into which a pointer to the data is to be stored.
- *                     the data buffer is actually allocated by dump_node and the 
- *                     calling function must xfree the storage.
+ *                     the calling function must xfree the storage.
  *         buffer_size - location into which the size of the created buffer is in bytes
  *         update_time - dump new data only if partition records updated since time 
  *                       specified, otherwise return empty buffer
@@ -1015,6 +895,8 @@ node_unlock ()
  *         returns 0 if no error, errno otherwise
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: the caller must xfree the buffer at *buffer_ptr when no longer required
+ * NOTE: change NODE_STRUCT_VERSION in common/slurmlib.h whenever the format changes
+ * NOTE: change slurm_load_node() in api/node_info.c whenever the data format changes
  */
 int 
 pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time) 
@@ -1072,7 +954,7 @@ pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time)
  *	buf_len - byte size of buffer
  * output: buf_ptr - advanced to end of data written
  *	buf_len - byte size remaining in buffer
- *	return 0 if no error, 1 if out_line buffer too small
+ *	return 0 if no error, 1 if buffer too small
  * NOTE: if you make any changes here be sure to increment the value of NODE_STRUCT_VERSION
  *	and make the corresponding changes to load_node_config in api/node_info.c
  */

@@ -380,7 +380,7 @@ slurmctld_req (int sockfd) {
 		}
 		else
 			last_update = (time_t) 0;
-		error_code = dump_all_part (&dump, &dump_size, &last_update);
+		error_code = pack_all_part (&dump, &dump_size, &last_update);
 		if (error_code)
 			info ("slurmctld_req: dump_part error %d, time=%ld",
 				 error_code, (long) (clock () - start_time));
