@@ -124,7 +124,7 @@ ssize_t _slurm_msg_recvfrom_timeout(slurm_fd fd, char **pbuf, size_t *lenp,
                                    sizeof(msglen), 0, tmout );
 
         if (len < ((ssize_t) sizeof(msglen))) 
-                slurm_seterrno_ret(SLURM_COMMUNICATIONS_RECEIVE_ERROR);
+                return SLURM_ERROR;
 
         msglen = ntohl(msglen);
 
@@ -139,7 +139,7 @@ ssize_t _slurm_msg_recvfrom_timeout(slurm_fd fd, char **pbuf, size_t *lenp,
         if (_slurm_recv_timeout(fd, *pbuf, msglen, 0, tmout) != msglen) {
                 xfree(*pbuf);
                 *pbuf = NULL;
-		slurm_seterrno_ret(SLURM_COMMUNICATIONS_RECEIVE_ERROR);
+                return SLURM_ERROR;
         }
 
         *lenp = msglen;
@@ -171,15 +171,11 @@ ssize_t _slurm_msg_sendto_timeout(slurm_fd fd, char *buffer, size_t size,
 
 	if ((len = _slurm_send_timeout( 
 				fd, (char *)&usize, sizeof(usize), 0, 
-				timeout)) < 0) {
-		slurm_seterrno(SLURM_COMMUNICATIONS_SEND_ERROR);
+				timeout)) < 0)
 		goto done;
-	}
 
-	if ((len = _slurm_send_timeout(fd, buffer, size, 0, timeout)) < 0) {
-		slurm_seterrno(SLURM_COMMUNICATIONS_SEND_ERROR);
+	if ((len = _slurm_send_timeout(fd, buffer, size, 0, timeout)) < 0)
 		goto done;
-	}
 
 
      done:
@@ -251,8 +247,12 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
         }
 
     done:
-        if (fd_flags != SLURM_PROTOCOL_ERROR) 
-                _slurm_fcntl(fd , F_SETFL , fd_flags);
+	/* Reset fd flags to prior state, preserve errno */
+	if (fd_flags != SLURM_PROTOCOL_ERROR) {
+		int slurm_err = slurm_get_errno();
+		_slurm_fcntl(fd , F_SETFL , fd_flags);
+		slurm_seterrno(slurm_err);
+	}
 
         return sent;
         
@@ -265,14 +265,14 @@ int _slurm_recv_timeout(slurm_fd fd, char *buffer, size_t size,
 {
         int rc;
         int recvlen = 0;
-        int fval;
+        int fd_flags;
         struct pollfd  ufds;
         struct timeval tstart;
 
         ufds.fd     = fd;
         ufds.events = POLLIN;
 
-        fval = _slurm_fcntl(fd, F_GETFL);
+        fd_flags = _slurm_fcntl(fd, F_GETFL);
         fd_set_nonblocking(fd);
 
         gettimeofday(&tstart, NULL);
@@ -324,12 +324,14 @@ int _slurm_recv_timeout(slurm_fd fd, char *buffer, size_t size,
                 recvlen += rc;
         }
 
+
     done:
-        /*
-         * Reset fd flags to prior state
-         */
-        if (fval != SLURM_PROTOCOL_ERROR) 
-                _slurm_fcntl(fd, F_SETFL, fval);
+	/* Reset fd flags to prior state, preserve errno */
+	if (fd_flags != SLURM_PROTOCOL_ERROR) {
+		int slurm_err = slurm_get_errno();
+		_slurm_fcntl(fd , F_SETFL , fd_flags);
+		slurm_seterrno(slurm_err);
+	}
 
         return recvlen;
 }
