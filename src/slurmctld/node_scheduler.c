@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
+#include <src/common/slurm_protocol_errno.h>
 
 #include "slurmctld.h"
 
@@ -679,9 +680,7 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
  * select_nodes - select and allocate nodes to a specific job
  * input: job_ptr - pointer to the job record
  *	test_only - do not allocate nodes, just confirm they could be allocated now
- * output: returns 0 on success, EINVAL if not possible to satisfy request, 
- *		or EAGAIN if resources are presently busy
- *	job_ptr->nodes is set to the node list (on success)
+ * output: returns 0 on success, ESLURM code from slurm_protocol_errno.h otherwise)
  * globals: list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
  *	config_list - global list of node configuration info
@@ -805,7 +804,7 @@ select_nodes (struct job_record *job_ptr, int test_only)
 		info ("select_nodes: no node configurations satisfy requirements procs=%d:mem=%d:disk=%d:feature=%s",
 			job_ptr->details->min_procs, job_ptr->details->min_memory, 
 			job_ptr->details->min_tmp_disk, job_ptr->details->features);
-		error_code = EINVAL;
+		error_code = ESLURM_REQUESTED_NODE_CONFIGURATION_UNAVAILBLE;
 		goto cleanup;
 	}
 	/* eliminate last (incomplete) node_set record */	
@@ -820,7 +819,7 @@ select_nodes (struct job_record *job_ptr, int test_only)
 			info ("select_nodes: requested nodes do not satisfy configurations requirements procs=%d:mem=%d:disk=%d:feature=%s",
 			    job_ptr->details->min_procs, job_ptr->details->min_memory, 
 			    job_ptr->details->min_tmp_disk, job_ptr->details->features);
-			error_code = EINVAL;
+			error_code = ESLURM_REQUESTED_NODE_CONFIGURATION_UNAVAILBLE;
 			goto cleanup;
 		}		
 	}			
@@ -833,9 +832,12 @@ select_nodes (struct job_record *job_ptr, int test_only)
 				      job_ptr->details->contiguous, 
 				      job_ptr->details->shared,
 				      part_ptr->max_nodes);
-	if (error_code == EAGAIN)
+	if (error_code == EAGAIN) {
+		error_code = ESLURM_NODES_BUSY;
 		goto cleanup;
+	}
 	if (error_code == EINVAL) {
+		error_code = ESLURM_REQUESTED_NODE_CONFIGURATION_UNAVAILBLE;
 		info ("select_nodes: no nodes can satisfy job request");
 		goto cleanup;
 	}			
