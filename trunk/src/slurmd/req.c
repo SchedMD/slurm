@@ -29,6 +29,7 @@
 #endif
 
 #include <pthread.h>
+#include <sched.h>
 #include <signal.h>
 #include <string.h>
 #include <sys/param.h>
@@ -456,11 +457,14 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 
 	debug3("reattach: srun ioaddr: %s:%d", host, port);
 
-	do {
+	while (1) {
 		rc = shm_update_step_addrs( req->job_id, req->job_step_id,
 				            &ioaddr, &resp_msg.address,
 				            req->key ); 
-	} while ((rc < 0) && (errno == EAGAIN));
+		if ((rc == 0) || (errno != EAGAIN))
+			break;
+		sched_yield();	/* relinquish processor */
+	}
 
 	resp.local_pids = xmalloc(step->ntasks * sizeof(*resp.local_pids));
 	resp.gids       = xmalloc(step->ntasks * sizeof(*resp.local_pids));
