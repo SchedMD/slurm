@@ -173,7 +173,8 @@ char * xbasename(char *path)
  */
 char * xstrdup(const char *str)
 {
-	size_t siz;
+	size_t siz,
+	       rsiz;
 	char   *result;
 
 	if (str == NULL)
@@ -182,7 +183,9 @@ char * xstrdup(const char *str)
 	siz = strlen(str) + 1;
 	result = (char *)xmalloc(siz);
 
-	xassert(strlcpy(result, str, siz) == siz-1);
+	rsiz = strlcpy(result, str, siz);
+
+	xassert(rsiz == siz-1);
 
 	return result;
 }
