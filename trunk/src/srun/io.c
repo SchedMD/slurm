@@ -96,7 +96,7 @@ _handle_pollerr(fd_info_t *info)
 	socklen_t size = sizeof(int);
 	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&err, &size) < 0)
 		error("_handle_error_poll: getsockopt: %m");
-	else
+	else if (err)
 		error("poll error on fd %d: %s", fd, slurm_strerror(err));
 
 	if (*info->fd > 0)
