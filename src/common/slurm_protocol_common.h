@@ -16,6 +16,7 @@
 
 
 #define AF_SLURM AF_INET
+#define SLURM_INADDR_ANY 0x00000000
 
 /* LINUX SPECIFIC */
 /* this is the slurm equivalent of the operating system file descriptor, which in linux is just an int */
@@ -32,6 +33,8 @@ typedef struct {
 /* SLURM datatypes */
 /* this is a custom data type to describe the slurm msg type type that is placed in the slurm protocol header
  * while just an short now, it may change in the future */
-typedef uint16_t slurm_msg_type_t ;
+/* Now defined in ../../src/common/slurm_protocol_defs.h
+ * typedef uint16_t slurm_msg_type_t ;
+ */
 
 #endif

@@ -66,6 +66,7 @@ typedef enum slurm_socket_type { SLURM_MESSAGE , SLURM_STREAM } slurm_socket_typ
 int _slurm_create_socket (slurm_socket_type_t type)  ;
 /* msg functions */
 uint32_t _slurm_init_msg_engine ( slurm_addr * slurm_address ) ;
+uint32_t _slurm_open_msg_conn ( slurm_addr * slurm_address ) ;
 ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address ) ;
 ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address ) ;
 /* uint32_t _slurm_shutdown_msg_engine ( slurm_fd open_fd ) ; */

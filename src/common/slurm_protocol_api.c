@@ -17,11 +17,22 @@ extern int errno ;
 
 /* #DEFINES */
 
-#define SLURM_PORT 7000
-#define PRIMARY_SLURM_CONTROLLER	"pri_slrumctld.llnl.gov"
-#define SECONDARY_SLURM_CONTROLLER	"sec_slrumctld.llnl.gov"
 
 /***** high level routines */
+/***** msg functions */
+
+/* In the socket implementation it creates a socket, binds to it, and listens for connections.
+ * In the mongo implemenetation is should just create a mongo socket , bind and return.
+ * slurm_address 	- for now it is really just a sockaddr_in
+ * slurm_fd		- file descriptor of the connection created
+ */
+slurm_fd slurm_init_msg_engine_port ( uint16_t port )
+{
+	slurm_addr slurm_address ;
+	slurm_set_addr_any ( &slurm_address , port ) ;
+	return _slurm_init_msg_engine ( & slurm_address ) ;
+}
+
 /***** msg functions */
 
 /* In the socket implementation it creates a socket, binds to it, and listens for connections.
@@ -43,6 +54,20 @@ uint32_t slurm_shutdown_msg_engine ( slurm_fd open_fd )
 	return _slurm_close ( open_fd ) ;
 }
 
+uint32_t slurm_shutdown_msg_conn ( slurm_fd open_fd ) 
+{
+	return _slurm_close ( open_fd ) ;
+}
+
+/* calls connect to make a connection-less connection to the destination msg engine
+ * slurm_address 	- for now it is really just a sockaddr_in
+ * uint32_t	- the return code
+ */
+uint32_t slurm_open_msg_conn ( slurm_addr * slurm_address ) 
+{
+	return _slurm_open_msg_conn ( slurm_address ) ;
+}
+
 /***** recv msg functions */
 /*
  * note that a memory is allocated for the returned msg and must be freed at some point 
@@ -61,8 +86,7 @@ uint32_t slurm_receive_msg ( slurm_fd open_fd , slurm_addr * source_address , sl
 	uint32_t unpack_len ;
 	uint32_t receive_len = MAX_MESSAGE_BUFFER_SIZE ;
 
-	rc = _slurm_msg_recvfrom ( open_fd , buffer , receive_len, NO_SEND_RECV_FLAGS , source_address ) ;
-	if ( rc == SLURM_SOCKET_ERROR )
+	if ( ( rc = _slurm_msg_recvfrom ( open_fd , buffer , receive_len, NO_SEND_RECV_FLAGS , source_address ) ) == SLURM_SOCKET_ERROR ) 
 	{
 		debug ( "Error recieving msg socket: errno %i\n", errno ) ;
 		return rc ;
@@ -72,8 +96,10 @@ uint32_t slurm_receive_msg ( slurm_fd open_fd , slurm_addr * source_address , sl
 	unpack_len = rc ;
 	unpack_header ( & buffer , & unpack_len , & header ) ;
 
-	rc = check_header_version ( & header ) ;
-	if ( rc < 0 ) return rc ;
+	if ( (rc = check_header_version ( & header ) ) < 0 ) 
+	{
+		return rc;
+	}
 
 	/* unpack msg body */
 	new_msg = xmalloc ( sizeof ( slurm_msg_t ) ) ;
@@ -104,13 +130,11 @@ uint32_t slurm_send_controller_msg ( slurm_fd open_fd , slurm_msg_type_t msg_typ
 	slurm_set_addr ( & secondary_destination_address , SLURM_PORT , SECONDARY_SLURM_CONTROLLER ) ;
 	
 	/* try to send to primary first then secondary */	
-	rc = slurm_send_node_msg ( open_fd , & primary_destination_address , msg_type , msg ) ;	
-	if ( rc == SLURM_SOCKET_ERROR )
+	if ( (rc = slurm_send_node_msg ( open_fd , & primary_destination_address , msg_type , msg ) ) == SLURM_SOCKET_ERROR )
 	{
 		debug ( "Send message to primary controller failed" ) ;
 		
-		rc = slurm_send_node_msg ( open_fd , & secondary_destination_address , msg_type , msg ) ;	
-		if ( rc == SLURM_SOCKET_ERROR )
+		if ( (rc = slurm_send_node_msg ( open_fd , & secondary_destination_address , msg_type , msg ) ) ==  SLURM_SOCKET_ERROR )	
 		{
 			debug ( "Send messge to secondary controller failed" ) ;
 		}
@@ -145,11 +169,9 @@ uint32_t slurm_send_node_msg ( slurm_fd open_fd , slurm_addr * destination_addre
 	pack_msg ( & buffer , & pack_len , msg ) ;
 
 	/* send msg */
-	rc = _slurm_msg_sendto ( open_fd , buf_temp , MAX_MESSAGE_BUFFER_SIZE - pack_len , NO_SEND_RECV_FLAGS , destination_address ) ;
-	if ( rc == SLURM_SOCKET_ERROR )
+	if (  ( rc = _slurm_msg_sendto ( open_fd , buf_temp , MAX_MESSAGE_BUFFER_SIZE - pack_len , NO_SEND_RECV_FLAGS , destination_address ) ) == SLURM_SOCKET_ERROR )
 	{
 		debug ( "Error sending msg socket: errno %i\n", errno ) ;
-		return rc ;
 	}
 	return rc ;
 }
@@ -172,8 +194,7 @@ uint32_t slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address ,
 	uint32_t unpack_len ;
 	uint32_t receive_len = MAX_MESSAGE_BUFFER_SIZE ;
 
-	rc = _slurm_msg_recvfrom ( open_fd , buffer , receive_len, NO_SEND_RECV_FLAGS , source_address ) ;
-	if ( rc == SLURM_SOCKET_ERROR )
+	if ( ( rc = _slurm_msg_recvfrom ( open_fd , buffer , receive_len, NO_SEND_RECV_FLAGS , source_address ) ) == SLURM_SOCKET_ERROR ) ;
 	{
 		debug ( "Error recieving msg socket: errno %i\n", errno ) ;
 		return rc ;
@@ -210,13 +231,11 @@ uint32_t slurm_send_controller_buffer ( slurm_fd open_fd , slurm_msg_type_t msg_
 	slurm_set_addr ( & secondary_destination_address , SLURM_PORT , SECONDARY_SLURM_CONTROLLER ) ;
 
 	/* try to send to primary first then secondary */	
-	rc = slurm_send_node_buffer ( open_fd , & primary_destination_address , msg_type , data_buffer , buf_len ) ;	
-	if ( rc == SLURM_SOCKET_ERROR )
+	if ( ( rc = slurm_send_node_buffer ( open_fd , & primary_destination_address , msg_type , data_buffer , buf_len ) ) == SLURM_SOCKET_ERROR )	
 	{
 		debug ( "Send message to primary controller failed" ) ;
 		
-		rc = slurm_send_node_buffer ( open_fd , & secondary_destination_address , msg_type , data_buffer , buf_len ) ;	
-		if ( rc == SLURM_SOCKET_ERROR )
+		if ( ( rc = slurm_send_node_buffer ( open_fd , & secondary_destination_address , msg_type , data_buffer , buf_len ) ) == SLURM_SOCKET_ERROR )
 		{
 			debug ( "Send messge to secondary controller failed" ) ;
 		}
@@ -252,11 +271,9 @@ uint32_t slurm_send_node_buffer ( slurm_fd open_fd , slurm_addr * destination_ad
 	memcpy ( buffer , data_buffer , buf_len ) ;
 	pack_len -= buf_len ;
 
-	rc = _slurm_msg_sendto ( open_fd , buf_temp , MAX_MESSAGE_BUFFER_SIZE - pack_len , NO_SEND_RECV_FLAGS , destination_address ) ;
-	if ( rc == SLURM_SOCKET_ERROR )
+	if ( ( rc = _slurm_msg_sendto ( open_fd , buf_temp , MAX_MESSAGE_BUFFER_SIZE - pack_len , NO_SEND_RECV_FLAGS , destination_address ) ) == SLURM_SOCKET_ERROR )
 	{
 		debug ( "Error sending msg socket: errno %i", errno ) ;
-		return rc ;
 	}
 	return rc ;
 }
@@ -296,6 +313,11 @@ uint32_t slurm_close_stream ( slurm_fd open_fd )
 void slurm_set_addr_uint ( slurm_addr * slurm_address , uint16_t port , uint32_t ip_address )
 {
 	_slurm_set_addr_uint ( slurm_address , port , ip_address ) ;
+}
+
+void slurm_set_addr_any ( slurm_addr * slurm_address , uint16_t port ) 
+{
+	_slurm_set_addr_uint ( slurm_address , port , SLURM_INADDR_ANY ) ;
 }
 
 void slurm_set_addr ( slurm_addr * slurm_address , uint16_t port , char * host )
