@@ -548,7 +548,7 @@ _usage()
 	fprintf(stderr, "  -v      "
 			"\tVerbose mode. Multiple -v's increase verbosity.\n");
 	fprintf(stderr, "  -D      "
-			"\tRun daemon in forground.\n");
+			"\tRun daemon in foreground.\n");
 	fprintf(stderr, "  -c      "
 			"\tForce cleanup of slurmd shared memory.\n");
 	fprintf(stderr, "  -h      "
