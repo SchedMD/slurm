@@ -117,7 +117,9 @@ find_step_record(struct job_record *job_ptr, uint16_t step_id)
 	ListIterator step_record_iterator;
 	struct step_record *step_record_point;
 
-	assert (job_ptr);
+	if (job_ptr == NULL)
+		return NULL;
+
 	step_record_iterator = list_iterator_create (job_ptr->step_list);		
 
 	while ((step_record_point = 
