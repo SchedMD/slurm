@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-201790">
-<meta name="LLNLRandRdate" content="2 May 2004">
+<meta name="LLNLRandRdate" content="5 May 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -123,7 +123,9 @@ Install architecture-independent files in PREFIX; default value is /usr/local.</
 </i> 
 Specify location of SLURM configuration file.</p>
 <p style="margin-left:.2in"><span class="commandline">--with-totalview</span><br>
-Compile with support for the TotalView debugger (see <a href="http://www.etnus.com/">http://www.etnus.com</a>).</p>
+Compile with support for the TotalView debugger 
+(see <a href="http://www.etnus.com/">http://www.etnus.com</a>).
+The kernel patch in <b>etc/ptrace.patch</b> may also be required.</p>
 <p class="footer"><a href="#top">top</a></p>
 <h3>Configuration</h3>
 <p>The SLURM configuration file includes a wide variety of parameters. 
@@ -352,7 +354,7 @@ adev0: scontrol shutdown
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-201790<br>
-Last modified 2 May 2004</p></td>
+Last modified 5 May 2004</p></td>
 </tr>
 </table>
 </td>

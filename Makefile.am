@@ -8,6 +8,7 @@ EXTRA_DIST =			\
 	Make-rpm.mk		\
 	etc/slurm.conf.example	\
 	etc/init.d.slurm	\
+	etc/ptrace.patch	\
 	autogen.sh		\
 	slurm.spec		\
 	README			\
