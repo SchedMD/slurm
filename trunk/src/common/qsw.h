@@ -37,7 +37,10 @@
 
 /* opaque data structures - no peeking! */
 typedef struct qsw_libstate 	*qsw_libstate_t;
-typedef struct qsw_jobinfo 	*qsw_jobinfo_t;
+#ifndef __qsw_jobinfo_t_defined
+#  define  __qsw_jobinfo_t_defined
+   typedef struct qsw_jobinfo *qsw_jobinfo_t;	/* opaque data type */
+#endif
 
 #define QSW_LIBSTATE_PACK_MAX	12
 #define QSW_JOBINFO_PACK_MAX	120
