@@ -24,14 +24,4 @@
  */
 FILE *safeopen(const char *path, const char *mode, int flags);
 
-/*
- * create parent directories as needed so that a specified 
- * file or directory can later be create
- * path_name IN - path name of the file or directory to be later 
- *                created, only its parents are created
- * mode IN      - permission mode to be used in creating directories
- * RET          - zero on success, -1 on failure with errno set
- */
-extern int mkdir_parent(const char *path_name, mode_t mode);
-
 #endif /* _SAFEOPEN_H */
