@@ -298,7 +298,7 @@ allocate_nodes(void)
 
 	job.req_nodes      = opt.nodelist;
 
-	job.num_procs      = opt.nprocs;
+	job.num_procs      = opt.nprocs * opt.cpus_per_task;
 
 	if (opt.nodes > -1)
 		job.num_nodes = opt.nodes;
@@ -409,7 +409,7 @@ create_job_step(job_t *job)
 	req.job_id     = job->jobid;
 	req.user_id    = opt.uid;
 	req.node_count = job->nhosts;
-	req.cpu_count  = opt.nprocs;
+	req.cpu_count  = opt.nprocs * opt.cpus_per_task;
 	req.node_list  = job->nodelist;
 	req.relative   = false;
 	if (opt.distribution == SRUN_DIST_BLOCK)
@@ -594,7 +594,7 @@ run_batch_job(void)
 
 	job.req_nodes      = opt.nodelist;
 
-	job.num_procs      = opt.nprocs;
+	job.num_procs      = opt.nprocs * opt.cpus_per_task;
 
 	if (opt.nodes > -1)
 		job.num_nodes = opt.nodes;
