@@ -684,6 +684,7 @@ int Tally_Node_CPUs(char *Node_List) {
     } /* while */
 
     list_iterator_destroy(Node_Record_Iterator);
+    free(str_ptr);
     return CPU_Count;
 } /* Tally_Node_CPUs */
 
