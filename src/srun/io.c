@@ -238,8 +238,9 @@ _accept_io_stream(job_t *job, int i)
 		while ((sd = accept(job->iofd[i], &addr, (socklen_t *)&size)) < 0) {
 			if (errno == EINTR)
 				continue;
-			if ((errno == EAGAIN) || 
-			    (errno == ECONNABORTED) || 
+			if (errno == EAGAIN)	/* No more connections */
+				return;
+			if ((errno == ECONNABORTED) || 
 			    (errno == EWOULDBLOCK)) {
 				debug("Stream connection refused: %m");
 				return;
@@ -275,12 +276,18 @@ _accept_io_stream(job_t *job, int i)
 		if (fcntl(sd, F_SETFL, O_NONBLOCK) < 0)
 			error("Unable to set nonblocking I/O on new connection");
 
+		if ((hdr.task_id < 0) || (hdr.task_id >= opt.nprocs)) {
+			error ("Invalid task_id %d from %s",
+			       hdr.task_id, buf);
+			continue;
+		}
+
 		if (hdr.type == SLURM_IO_STREAM_INOUT)
 			job->out[hdr.task_id] = sd;
 		else
 			job->err[hdr.task_id] = sd;
 
-		/* XXX: Need to check key */
+		/* FIXME: Need to check key */
 		verbose("accepted %s connection from %s task %ld, sd=%d", 
 				(hdr.type ? "stderr" : "stdout"), 
 				buf, hdr.task_id, sd                   );
