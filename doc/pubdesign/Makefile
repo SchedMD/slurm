@@ -52,5 +52,5 @@ view: $(REPORT).ps
 	ghostview $(REPORT) &
 
 clean: 
-	rm -f *~ *.dvi *.log *.aux report.ps *.blg *.bbl #*.eps #*.gif
+	rm -f *~ *.dvi *.log *.aux report.ps *.blg *.bbl #*.eps #*.gif *.ps
 	      
