@@ -46,15 +46,19 @@ typedef enum {false, true} bool;
 #include "src/common/log.h"	/* for error() */
 
 #ifndef FALSE
-#define FALSE	false
+#  define FALSE	false
 #endif
 
 #ifndef TRUE
-#define TRUE	true
+#  define TRUE	true
 #endif
 
 #ifndef MAX
-#define MAX(a,b) ((a) > (b) ? (a) : (b))	
+#  define MAX(a,b) ((a) > (b) ? (a) : (b))	
+#endif
+
+#ifndef MIN
+#  define MIN(a,b) ((a) < (b) ? (a) : (b))
 #endif
 
 #define SLURM_IO_KEY_SIZE 8

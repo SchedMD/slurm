@@ -40,7 +40,7 @@
 #endif
 
 #include <pthread.h>
-#include <stdlib.h>
+/* #include <stdlib.h> */
 #include <time.h>
 #include <sys/types.h>
 
@@ -71,8 +71,6 @@
 	((_X->job_state & (~JOB_COMPLETING)) >  JOB_RUNNING)
 #define IS_JOB_PENDING(_X)		\
 	((_X->job_state & (~JOB_COMPLETING)) == JOB_PENDING)
-#define MAX(x,y) (((x)>(y))?(x):(y))
-#define MIN(x,y) (((x)<(y))?(x):(y))
 
 /*****************************************************************************\
  *  GENERAL CONFIGURATION parameters and data structures
