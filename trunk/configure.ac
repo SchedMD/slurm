@@ -104,10 +104,10 @@ AC_ARG_ENABLE(debug,
 
 AC_MSG_RESULT(${with_slurm_debug=no})
 if test "x$with_slurm_debug" = "xtrue"; then 
-  CFLAGS="-g -Wall -Wpointer-arith $PTHREAD_CFLAGS"
+  CFLAGS="-g -Wall -Wpointer-arith $CFLAGS"
   AC_DEFINE(DEBUG_SYSTEM, 1, [Define for extra debug messages.])
 else
-  CFLAGS="-O2 -Wall -Wpointer-arith $PTHREAD_CFLAGS"
+  CFLAGS="-O2 -Wall -Wpointer-arith $CFLAGS"
   AC_DEFINE(NDEBUG, 1, [Define for production compile of code])
 fi
 AM_CONDITIONAL(DEBUG_MODULES, test "x$with_slurm_debug" = "xtrue")
@@ -142,14 +142,6 @@ AC_MSG_RESULT(${slurmdport=6818})
 AC_DEFINE_UNQUOTED(SLURMD_PORT, "$slurmdport",
                    [Define the default port number for slurmd])
 AC_SUBST(SLURMD_PORT)
-
-
-dnl Set SLURM_CONFIG_DIR in config.h
-dnl
-AC_DEFINE_UNQUOTED(SLURM_CONFIG_DIR, "$sysconfdir", 
-                   [Define Default slurm config dir])
-AC_DEFINE_UNQUOTED(SLURM_CONFIG_FILE, "$sysconfdir/slurm.conf", 
-                   [Define Default slurm config file location])
 
 
 dnl check for whether to include Elan support
@@ -221,9 +213,9 @@ MUNGE_LIBS="-lmunge"
 savedLIBS="$LIBS"
 LIBS="$MUNGE_LIBS $LIBS"
 AC_CHECK_LIB(munge, munge_encode, [have_munge=yes], [have_munge=no])
-LIBS="$savedLIBS"
 AC_SUBST(MUNGE_LIBS)
 AM_CONDITIONAL(WITH_MUNGE, test "x$have_munge" = "xyes")
+LIBS="$savedLIBS"
 
 AUTHD_CFLAGS=""
 AUTHD_LIBS="-lauth -le"
@@ -232,11 +224,11 @@ savedCFLAGS="$CFLAGS"
 LIBS="$SSL_LIBS $AUTHD_LIBS $LIBS"
 CFLAGS="$SSL_CPPFLAGS $CFLAGS $AUTHD_CFLAGS"
 AC_CHECK_LIB(auth, auth_init_credentials, [have_authd=yes], [have_authd=no])
-LIBS="$savedLIBS"
-CFLAGS="$savedCFLAGS"
 AC_SUBST(AUTHD_LIBS)
 AC_SUBST(AUTHD_CFLAGS)
 AM_CONDITIONAL(WITH_AUTHD, test "x$have_authd" = "xyes")
+LIBS="$savedLIBS"
+CFLAGS="$savedCFLAGS"
 
 
 dnl check for whether to include TotalView support
@@ -260,6 +252,12 @@ if test x$totalview = xyes; then
 fi
 AM_CONDITIONAL(WITH_TOTALVIEW, test "x$with_totalview" = "xyes")
 
+
+#
+# Add system directories and config files to CPPFLAGS
+#
+CPPFLAGS="$CPPFLAGS -DSLURM_CONFIG_FILE=\\\"\$(sysconfdir)/slurm.conf\\\""
+CPPFLAGS="$CPPFLAGS -DSLURM_PLUGIN_PATH=\\\"\$(pkglibdir)\\\""
 
 dnl Add LSD-Tools defines:
 AC_DEFINE(WITH_LSD_FATAL_ERROR_FUNC, 1, [Have definition of lsd_fatal_error()])
