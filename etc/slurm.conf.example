@@ -131,8 +131,12 @@
 # o Define the authentication method for communicating between SLURM
 #   components
 #
-# "auth/none"  : no authentication, the default
-# "auth/authd" : Brent Chun's authd
+# "auth/none"   : no authentication, the default
+# "auth/authd"  : Brent Chun's authd
+# "auth/munge": LLNL's munge
+#
+# WARNING: The use of "auth/none" permits any user to execute jobs as any 
+# other user. This may be fine for testing purposes, but do not use it in production.
 #
 # AuthType=auth/none
 
