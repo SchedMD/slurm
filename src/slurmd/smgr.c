@@ -291,6 +291,14 @@ _xcpu_handler()
 	timelimit_exceeded = 1;
 }
 
+/*
+ *  Empty SIGTERM and SIGINT handler so session manager is not
+ *    killed by attempts to terminate job.
+ */
+static void
+_term_handler()
+{ }
+
 
 /* wait for N tasks to exit, reporting exit status back to slurmd mgr
  * process over file descriptor fd.
@@ -305,15 +313,18 @@ _wait_for_all_tasks(slurmd_job_t *job)
 	int fd = job->fdpair[1];
 
 	xsignal(SIGXCPU, _xcpu_handler);
+	xsignal(SIGTERM, _term_handler);
+	xsignal(SIGINT,  _term_handler);
 
 	while (waiting > 0) {
 		int status  = 0;
 		pid_t pid;
 
 		if ((pid = waitpid(0, &status, 0)) < (pid_t) 0) {
-			if ((errno == EINTR) && (timelimit_exceeded))
-				error("job exceeded timelimit");
-			else
+			if (errno == EINTR) {
+				if (timelimit_exceeded)
+					error("job exceeded timelimit");
+			} else
 				error("waitpid: %m");
 			continue;
 		}
@@ -343,7 +354,8 @@ _send_exit_status(slurmd_job_t *job, int fd, int tid, int status)
 
 	len = _writen(fd, &e, sizeof(e));
 
-	debug("task %d exited with status %d", tid, status);
+	debug("task %d (pid %ld) exited with status 0x%04x", 
+	      tid, job->task[tid]->pid, status);
 
 	return len;
 }
