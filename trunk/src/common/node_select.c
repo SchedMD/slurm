@@ -10,7 +10,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette@llnl.gov>.
+ *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -409,7 +409,7 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 	char * tmp_char = (char *) data;
 
 	if (jobinfo->magic != JOBINFO_MAGIC) {
-		error("select_p_set_jobinfo: jobinfo magic bad");
+		error("select_g_set_jobinfo: jobinfo magic bad");
 		return SLURM_ERROR;
 	}
 
@@ -452,7 +452,7 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 	char **tmp_char = (char **) data;
 
 	if (jobinfo->magic != JOBINFO_MAGIC) {
-		error("select_p_set_jobinfo: jobinfo magic bad");
+		error("select_g_get_jobinfo: jobinfo magic bad");
 		return SLURM_ERROR;
 	}
 
@@ -494,8 +494,10 @@ extern select_jobinfo_t select_g_copy_jobinfo(select_jobinfo_t jobinfo)
 {
 	struct select_jobinfo *rc = NULL;
 
-	if (jobinfo->magic != JOBINFO_MAGIC)
-		error("select_p_copy_jobinfo: jobinfo magic bad");
+	if (jobinfo == NULL)
+		;
+	else if (jobinfo->magic != JOBINFO_MAGIC)
+		error("select_g_copy_jobinfo: jobinfo magic bad");
 	else {
 		int i;
 		rc = xmalloc(sizeof(struct select_jobinfo));
@@ -523,7 +525,7 @@ extern int select_g_free_jobinfo  (select_jobinfo_t *jobinfo)
 	if (*jobinfo == NULL)	/* never set, treat as not an error */
 		;
 	else if ((*jobinfo)->magic != JOBINFO_MAGIC) {
-		error("select_p_set_jobinfo: jobinfo magic bad");
+		error("select_g_free_jobinfo: jobinfo magic bad");
 		rc = EINVAL;
 	} else {
 		(*jobinfo)->magic = 0;
@@ -595,13 +597,13 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 	int i;
 
 	if (buf == NULL) {
-		error("select_p_sprint_jobinfo: buf is null");
+		error("select_g_sprint_jobinfo: buf is null");
 		return NULL;
 	}
 
 	if ((mode != SELECT_PRINT_DATA)
 	&& jobinfo && (jobinfo->magic != JOBINFO_MAGIC)) {
-		error("select_p_copy_jobinfo: jobinfo magic bad");
+		error("select_g_sprint_jobinfo: jobinfo magic bad");
 		return NULL;
 	}
 
