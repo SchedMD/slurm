@@ -24,12 +24,12 @@
 #include <src/common/pack.h>
 
 /* high level calls */
-uint32_t _slurm_init_msg_engine ( slurm_addr * slurm_address )
+slurm_fd _slurm_init_msg_engine ( slurm_addr * slurm_address )
 {
 	return _slurm_listen_stream ( slurm_address ) ;
 }
 
-uint32_t _slurm_open_msg_conn ( slurm_addr * slurm_address )
+slurm_fd _slurm_open_msg_conn ( slurm_addr * slurm_address )
 {
 /*	return _slurm_listen_stream ( slurm_address ) ; */
 	return _slurm_open_stream ( slurm_address ) ;
@@ -53,9 +53,9 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 
 	char size_buffer_temp [8] ;
 	char * size_buffer = size_buffer_temp ;
-	uint32_t size_size = 8 ;
-	uint32_t transmit_size ;
-	uint32_t total_len ;
+	unsigned int size_buffer_len = 8 ;
+	unsigned int transmit_size ;
+	unsigned int total_len ;
 	
 /*	
 	if ( ( connection_fd = _slurm_accept_stream ( open_fd , slurm_address ) ) == SLURM_SOCKET_ERROR )
@@ -69,7 +69,7 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 	{
 		debug ( "Error receiving legth of datagram.  Total Bytes Sent %i \n", recv_len ) ;
 	}
-	unpack32 ( & transmit_size , ( void ** ) & size_buffer , & size_size ) ;
+	unpack32 ( & transmit_size , ( void ** ) & size_buffer , & size_buffer_len ) ;
 
 	total_len = 0 ;
 	while ( total_len < transmit_size )
@@ -98,9 +98,9 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 
 	char size_buffer_temp [8] ;
 	char * size_buffer = size_buffer_temp ;
-	uint32_t size_size = 8 ;
+	unsigned int size_buffer_len = 8 ;
 	
-	pack32 (  size , ( void ** ) & size_buffer , & size_size ) ;
+	pack32 (  size , ( void ** ) & size_buffer , & size_buffer_len ) ;
 /*	
 	if ( ( connection_fd = _slurm_open_stream ( slurm_address ) ) ==SLURM_SOCKET_ERROR )
 	{
@@ -127,14 +127,14 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 	return send_len ;
 }
 
-uint32_t _slurm_shutdown_msg_engine ( slurm_fd open_fd )
+int _slurm_shutdown_msg_engine ( slurm_fd open_fd )
 {
 	return _slurm_close ( open_fd ) ;
 }
 
-uint32_t _slurm_listen_stream ( slurm_addr * slurm_address )
+slurm_fd _slurm_listen_stream ( slurm_addr * slurm_address )
 {
-	uint32_t rc ;
+	int rc ;
 	slurm_fd connection_fd ;
 	if ( ( connection_fd =_slurm_create_socket ( SLURM_STREAM ) ) == SLURM_SOCKET_ERROR )
 	{
@@ -157,9 +157,9 @@ uint32_t _slurm_listen_stream ( slurm_addr * slurm_address )
 	return connection_fd ;
 }
 
-uint32_t _slurm_accept_stream ( slurm_fd open_fd , slurm_addr * slurm_address )
+slurm_fd _slurm_accept_stream ( slurm_fd open_fd , slurm_addr * slurm_address )
 {
-	uint32_t addr_len = sizeof ( slurm_addr ) ;
+	size_t addr_len = sizeof ( slurm_addr ) ;
 	slurm_fd connection_fd ;
 	if ( ( connection_fd = _slurm_accept ( open_fd , ( struct sockaddr * ) slurm_address , & addr_len ) ) == SLURM_SOCKET_ERROR )
 	{
@@ -169,9 +169,9 @@ uint32_t _slurm_accept_stream ( slurm_fd open_fd , slurm_addr * slurm_address )
 
 }
 
-uint32_t _slurm_open_stream ( slurm_addr * slurm_address )
+slurm_fd _slurm_open_stream ( slurm_addr * slurm_address )
 {
-	uint32_t rc ;
+	int rc ;
 	slurm_fd connection_fd ;
 	if ( ( connection_fd =_slurm_create_socket ( SLURM_STREAM ) ) == SLURM_SOCKET_ERROR )
 	{
@@ -358,9 +358,9 @@ extern void _slurm_FD_CLR(int fd, fd_set *set)
 {
 	FD_CLR ( fd , set ) ;
 }
-extern void _slurm_FD_ISSET(int fd, fd_set *set)
+extern int _slurm_FD_ISSET(int fd, fd_set *set)
 {
-	FD_ISSET ( fd , set ) ;
+	return FD_ISSET ( fd , set ) ;
 }
 extern void _slurm_FD_SET(int fd, fd_set *set)
 {
@@ -409,7 +409,7 @@ void _slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , char * 
 	slurm_address -> port = htons ( port ) ;
 }
 
-void _slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * host , uint32_t buf_len )
+void _slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * host , unsigned int buf_len )
 {
 	struct hostent * host_info = gethostbyaddr ( ( char * ) &( slurm_address -> address) , sizeof ( slurm_address ->  address ) , AF_SLURM ) ;
 	*port = slurm_address -> port ;
