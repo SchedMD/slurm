@@ -495,6 +495,7 @@ static void *_slurmctld_background(void *no_data)
 {
 	static time_t last_sched_time;
 	static time_t last_checkpoint_time;
+	static time_t last_group_time;
 	static time_t last_ping_time;
 	static time_t last_rpc_retry_time;
 	static time_t last_timelimit_time;
@@ -514,7 +515,7 @@ static void *_slurmctld_background(void *no_data)
 
 	/* Let the dust settle before doing work */
 	now = time(NULL);
-	last_sched_time = last_checkpoint_time =  now;
+	last_sched_time = last_checkpoint_time = last_group_time = now;
 	last_timelimit_time = last_rpc_retry_time = now;
 	last_ping_time = now + (time_t)MIN_CHECKIN_TIME -
 			 (time_t)slurmctld_conf.heartbeat_interval;
@@ -544,15 +545,13 @@ static void *_slurmctld_background(void *no_data)
 			unlock_slurmctld(node_write_lock);
 		}
 
-		if (difftime(now, last_rpc_retry_time) >=
-		    RPC_RETRY_INTERVAL) {
+		if (difftime(now, last_rpc_retry_time) >= RPC_RETRY_INTERVAL) {
 			last_rpc_retry_time = now;
 			agent_retry(NULL);
 		}
 
-		if (difftime(now, last_timelimit_time) >=
-		    PERIODIC_GROUP_CHECK) {
-			last_timelimit_time = now;
+		if (difftime(now, last_group_time) >= PERIODIC_GROUP_CHECK) {
+			last_group_time = now;
 			lock_slurmctld(part_write_lock);
 			load_part_uid_allow_list(0);
 			unlock_slurmctld(part_write_lock);
