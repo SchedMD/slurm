@@ -133,6 +133,7 @@ typedef struct srun_options {
 	bool share;		/* --share,   -s		*/
 	int  max_wait;		/* --wait,    -W		*/
 	bool quit_on_intr;      /* --quit-on-interrupt, -q      */
+	bool disable_status;    /* --disable-status, -X         */
 	int  quiet;
 	bool parallel_debug;	/* srun controlled by debugger	*/
 	bool debugger_test;	/* --debugger-test		*/
