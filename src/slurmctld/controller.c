@@ -163,7 +163,8 @@ main (int argc, char *argv[])
 		fatal ("pthread_attr_init error %m");
 #ifdef PTHREAD_SCOPE_SYSTEM
 	/* we want 1:1 threads if there is a choice */
-	pthread_attr_setscope (&thread_attr_sig, PTHREAD_SCOPE_SYSTEM);
+	if (pthread_attr_setscope (&thread_attr_sig, PTHREAD_SCOPE_SYSTEM))
+		error ("pthread_attr_setscope error %m");
 #endif
 	if (pthread_create ( &thread_id_sig, &thread_attr_sig, slurmctld_signal_hand, NULL))
 		fatal ("pthread_create %m");
@@ -178,7 +179,8 @@ main (int argc, char *argv[])
 		fatal ("pthread_attr_init error %m");
 #ifdef PTHREAD_SCOPE_SYSTEM
 	/* we want 1:1 threads if there is a choice */
-	pthread_attr_setscope (&thread_attr_rpc, PTHREAD_SCOPE_SYSTEM);
+	if (pthread_attr_setscope (&thread_attr_rpc, PTHREAD_SCOPE_SYSTEM))
+		error ("pthread_attr_setscope error %m");
 #endif
 	if (pthread_create ( &thread_id_rpc, &thread_attr_rpc, slurmctld_rpc_mgr, NULL))
 		fatal ("pthread_create error %m");
@@ -274,7 +276,8 @@ slurmctld_rpc_mgr ( void * no_data )
 		fatal ("pthread_attr_setdetachstate %m");
 #ifdef PTHREAD_SCOPE_SYSTEM
 	/* we want 1:1 threads if there is a choice */
-	pthread_attr_setscope (&thread_attr_rpc_req, PTHREAD_SCOPE_SYSTEM);
+	if (pthread_attr_setscope (&thread_attr_rpc_req, PTHREAD_SCOPE_SYSTEM))
+		error ("pthread_attr_setscope error %m");
 #endif
 
 	/* initialize port for RPCs */
