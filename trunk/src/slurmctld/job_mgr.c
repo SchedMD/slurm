@@ -48,11 +48,6 @@
 
 /* macros for simple comparisons
  */
-#define block_or_cycle(in_string) \
-		(strcmp((in_string),"BLOCK")? \
-			(strcmp((in_string),"CYCLE")? \
-				-1 : DIST_CYCLE ) : DIST_BLOCK ) 
-
 #define yes_or_no(in_string) \
 		(( strcmp ((in_string),"YES"))? \
 			(strcmp((in_string),"NO")? \
@@ -204,7 +199,6 @@ create_job_record (int *error_code)
 
 	job_details_point->magic  = DETAILS_MAGIC;
 	job_details_point->submit_time = time (NULL);
-	job_details_point->procs_per_task = 1;
 
 	if (list_append (job_list, job_record_point) == NULL)
 		fatal ("create_job_record: unable to allocate memory");
@@ -310,9 +304,8 @@ find_job_record(uint32_t job_id)
 void
 dump_job_desc(job_desc_msg_t * job_specs)
 {
-	char * dist = NULL;
 	long job_id, min_procs, min_memory, min_tmp_disk, num_procs;
-	long num_nodes,  procs_per_task, time_limit, priority, contiguous, shared;
+	long num_nodes, time_limit, priority, contiguous, shared;
 
 	if (job_specs == NULL) 
 		return;
@@ -340,13 +333,8 @@ dump_job_desc(job_desc_msg_t * job_specs)
 	debug3("   time_limit=%ld priority=%ld contiguous=%ld shared=%ld features=%s", 
 		time_limit, priority, contiguous, shared, job_specs->features);
 
-	procs_per_task = (job_specs->procs_per_task != NO_VAL) ? job_specs->procs_per_task : -1 ;
-	if (job_specs->dist == DIST_BLOCK)
-		dist = "BLOCK";
-	else if (job_specs->dist == DIST_CYCLE)
-		dist = "CYCLE";
-	debug3("   procs_per_task=%ld dist=%s job_script=%s groups=%s", 
-		procs_per_task, dist, job_specs->job_script, job_specs->groups);
+	debug3("   job_script=%s groups=%s", 
+		job_specs->job_script, job_specs->groups);
 
 /*	debug3("   partition_key=%?\n", job_specs->partition_key); */
 
@@ -717,10 +705,6 @@ copy_job_desc_to_job_record ( job_desc_msg_t * job_desc ,
 		detail_ptr->min_memory = job_desc->min_memory;
 	if (job_desc->min_tmp_disk != NO_VAL)
 		detail_ptr->min_tmp_disk = job_desc->min_tmp_disk;
-	if (job_desc->dist != NO_VAL)
-		detail_ptr->dist = (enum task_dist) job_desc->dist;
-	if (job_desc->procs_per_task != NO_VAL)
-		detail_ptr->procs_per_task = job_desc->procs_per_task;
 	if (job_desc->job_script)
 		detail_ptr->job_script = xstrdup ( job_desc->job_script );
 	/* job_ptr->nodes		*leave as NULL pointer for now */
@@ -759,8 +743,6 @@ validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate )
 		job_desc_msg->contiguous = 0 ;
 	if (job_desc_msg->shared == NO_VAL)
 		job_desc_msg->shared =  0 ;
-	if (job_desc_msg->dist == NO_VAL)
-		job_desc_msg->shared = DIST_BLOCK ;
 
 	if (job_desc_msg->job_id != NO_VAL && 
 	    find_job_record ((uint32_t) job_desc_msg->job_id))
@@ -778,22 +760,8 @@ validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate )
 		job_desc_msg->min_tmp_disk = 1;		/* default is 1 MB disk per node */
 	if (job_desc_msg->shared == NO_VAL)
 		job_desc_msg->shared = 0;		/* default is not shared nodes */
-	if (job_desc_msg->dist == NO_VAL)
-		job_desc_msg->dist = DIST_BLOCK;	/* default is block distribution */
-	if (job_desc_msg->procs_per_task == NO_VAL)
-		job_desc_msg->procs_per_task = 1;	/* default is 1 processor per task */
-	else if (job_desc_msg->procs_per_task <= 0) {
-		info ("job_create: Invalid procs_per_task");
-		return ESLURM_INVALID_PROCS_PER_TASK;
-	}
-
 	if (job_desc_msg->min_procs == NO_VAL)
 		job_desc_msg->min_procs = 1;		/* default is 1 processor per node */
-	if (job_desc_msg->min_procs < job_desc_msg->procs_per_task) {
-		info ("job_create: min_cpus(%d) < procs_per_task, reset to equal (%d)", 
-		       job_desc_msg->min_procs, job_desc_msg->procs_per_task);
-		job_desc_msg->min_procs = job_desc_msg->procs_per_task;
-	}	
 	return SLURM_SUCCESS ;
 }
 

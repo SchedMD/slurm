@@ -73,12 +73,6 @@ enum job_states {
 	JOB_END			/* last entry in table */
 };
 
-/* keep in sync with job_dist_string    	*/
-enum task_dist {
-	DIST_BLOCK,		/* fill each node in turn */
-	DIST_CYCLE		/* one task each node, round-robin through nodes */
-};
-
 enum part_shared {
 	SHARED_NO,		/* Nodes never shared in partition */
 	SHARED_YES,		/* Nodes possible to share in partition */
@@ -278,8 +272,6 @@ typedef struct job_desc_msg {   /* Job descriptor for submit, allocate, and upda
 				 *                                  * value is #fffffffe */
 	uint32_t num_procs;     /* number of processors required by job, default=0 */
 	uint32_t num_nodes;     /* number of nodes required by job, default=0 */
-	uint32_t dist;    	/* task distribution pattern, block/cycle */
-	uint32_t procs_per_task;   
 	uint32_t user_id;       /* set only if different from current UID, default set
 				 * to UID by API, can only be set if user is root */
 } job_desc_msg_t ;
@@ -426,7 +418,6 @@ extern char *job_state_string(uint16_t inx);
 extern char *node_state_string(uint16_t inx);
 
 #define SLURM_JOB_DESC_DEFAULT_CONTIGUOUS	NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_DIST		NO_VAL	
 #define SLURM_JOB_DESC_DEFAULT_FEATURES		NULL
 #define SLURM_JOB_DESC_DEFAULT_GROUPS		NULL
 #define SLURM_JOB_DESC_DEFAULT_JOB_ID		NO_VAL	
@@ -437,7 +428,6 @@ extern char *node_state_string(uint16_t inx);
 #define SLURM_JOB_DESC_DEFAULT_MIN_TMP_DISK	NO_VAL	
 #define SLURM_JOB_DESC_DEFAULT_PARTITION	NULL
 #define SLURM_JOB_DESC_DEFAULT_PRIORITY		NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_PROCS_PER_TASK 	NO_VAL
 #define SLURM_JOB_DESC_DEFAULT_REQ_NODES	NULL
 #define SLURM_JOB_DESC_DEFAULT_JOB_SCRIPT	NULL
 #define SLURM_JOB_DESC_DEFAULT_SHARED	 	NO_VAL	
