@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
     RH EL3 under extremely heavy workload apparently due to memory 
     fragmentation
  -- Fix scheduling logic for heterogeneous processor count.
+ -- Modify security_2_2 test to function with release 0.3
 
 * Changes in SLURM 0.3.0
 ========================
