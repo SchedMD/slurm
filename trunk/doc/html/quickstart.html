@@ -328,13 +328,17 @@ adev0: scontrol
 scontrol: show node adev13
 NodeName=adev13 State=ALLOCATED CPUs=2 RealMemory=3448 TmpDisk=32000
    Weight=16 Partition=debug Features=(null) 
-scontrol: update NodeName=adev13 State=DRAINING
+scontrol: update NodeName=adev13 State=DRAIN
 scontrol: show node adev13
 NodeName=adev13 State=DRAINING CPUs=2 RealMemory=3448 TmpDisk=32000
    Weight=16 Partition=debug Features=(null) 
 scontrol: quit
 <i>Later</i>
-adev0: scontrol update NodeName=adev13 State=IDLE
+adev0: scontrol 
+scontrol: show node adev13
+NodeName=adev13 State=DRAINED CPUs=2 RealMemory=3448 TmpDisk=32000
+   Weight=16 Partition=debug Features=(null) 
+scontrol: update NodeName=adev13 State=IDLE
 </pre>
 <p>
 Reconfigure all slurm daemons on all nodes. 
@@ -343,7 +347,10 @@ This should be done after changing the SLURM configuration file.
 adev0: scontrol reconfig
 </pre>
 <p>
-Print the current slurm configuration.
+Print the current slurm configuration. 
+This also reports if the priarmy and secondary controllers (slurmctld 
+daemons) are responding. 
+To just see the state of the controllers, use the command "ping".
 <pre>
 adev0: scontrol show config
 Configuration data as of 03/19-13:04:12
@@ -380,6 +387,9 @@ SlurmdTimeout     = 300
 SLURM_CONFIG_FILE = /etc/slurm/slurm.conf
 StateSaveLocation = /usr/local/tmp/slurm/adev
 TmpFS             = /tmp
+
+Slurmctld(primary)   at adevi is UP
+Slurmctld(secondary) at adevj is UP
 </pre>
 <p>
 Shutdown all SLURM daemons on all nodes.
@@ -389,7 +399,7 @@ adev0: scontrol shutdown
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/quick.start.guide.html
-<p>Last Modified March 20, 2003</p>
+<p>Last Modified March 21, 2003</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
