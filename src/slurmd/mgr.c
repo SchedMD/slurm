@@ -67,6 +67,7 @@ static int  _seteuid_and_chdir(slurmd_job_t *job);
 static int  _setuid(slurmd_job_t *job);
 static int  _unblock_all_signals(void);
 static int  _send_exit_msg(int rc, task_info_t *t);
+static int  _complete_job(slurmd_job_t *job);
 
 /* Launch a job step on this node
  */
@@ -98,19 +99,25 @@ mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli)
 }
 
 static char *
-_make_batch_dir(batch_job_launch_msg_t *msg)
+_make_batch_dir(slurmd_job_t *job)
 {
 	char path[MAXPATHLEN]; 
 
-	snprintf(path, 1024, "%s/job%05u", conf->spooldir, msg->job_id);
+	snprintf(path, 1024, "%s/job%05u", conf->spooldir, job->jobid);
 
-	if ((mkdir(path, 0700) < 0) && (errno != EEXIST)) {
+	if ((mkdir(path, 0750) < 0) && (errno != EEXIST)) {
 		error("mkdir(%s): %m", path);
 		goto error;
 	}
 
-	if (chown(path, (uid_t) msg->uid, (gid_t) -1) < 0) {
+
+	if (chown(path, (uid_t) -1, (gid_t) job->pwd->pw_gid) < 0) {
 		error("chown(%s): %m", path);
+		goto error;
+	}
+
+	if (chmod(path, 0750) < 0) {
+		error("chmod(%s, 750): %m");
 		goto error;
 	}
 
@@ -198,7 +205,7 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	if (!(job = job_batch_job_create(msg))) 
 		goto cleanup;
 
-	if ((batchdir = _make_batch_dir(msg)) == NULL) 
+	if ((batchdir = _make_batch_dir(job)) == NULL) 
 		goto cleanup;
 
 	if (job->argv[0])
@@ -206,11 +213,6 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 
 	if ((job->argv[0] = _make_batch_script(msg, batchdir)) == NULL)
 		goto cleanup;
-
-	if ((chmod(batchdir, 0500) < 0)) {
-		error("chmod(%s): %m", batchdir);
-		goto cleanup;
-	}
 
 	_setup_batch_env(job, msg->nodes);
 
