@@ -43,7 +43,7 @@
 
 // #ifdef SYSTEM_DIMENSIONS
 // #undef SYSTEM_DIMENSIONS
-#define SYSTEM_DIMENSIONS 1
+#define SYSTEM_DIMENSIONS 1 // 999
 // #endif
 
 /* a connection could be an internal or external wire */
@@ -204,8 +204,6 @@ typedef struct partition
 	List node_list; 
 	/* */
 	List connection_list; 
-	/* need to figure out how to fill in */
-	int dimensions[SYSTEM_DIMENSIONS]; 
 	/* true if no non-toridal connections included in partition */
 	// bool is_torus;
 	conn_type_t conn_type;

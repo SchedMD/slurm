@@ -1,3 +1,6 @@
+- add undo buffer
+  > redo create_pa_system, delete_pa_system and do copy_pa_system
+
 - be able to translate out the geometry
 - add trace of coordinates into structures
 

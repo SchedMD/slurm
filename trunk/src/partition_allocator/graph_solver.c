@@ -221,10 +221,8 @@ void print_conf_result(conf_result_t* conf_result)
 	printf("  port_conf: ");
 	print_port_conf_list(conf_result->port_conf_list);
 
-	printf("  conf_data: \n");
 	num_part = conf_result->conf_data->num_partitions;
-	printf("  num_paritions :\t%d\n", num_part);
-	printf("  partition_sizes :\t");
+	printf("  conf_data: ");
 	for (i=0; i<num_part; i++){
 		printf("%d", conf_result->conf_data->partition_sizes[i]);
 		printf("(");
