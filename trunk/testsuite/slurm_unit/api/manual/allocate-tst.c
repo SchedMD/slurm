@@ -40,6 +40,7 @@ main (int argc, char *argv[])
 	int error_code, job_count, max_jobs;
 	job_desc_msg_t job_mesg;
 	resource_allocation_response_msg_t* resp_msg ;
+	resource_allocation_and_run_response_msg_t* run_resp_msg ;
 
 	if (argc > 1) 
 		max_jobs = atoi (argv[1]);
@@ -60,12 +61,12 @@ main (int argc, char *argv[])
 	job_mesg. user_id = 1500;
 
 
-	error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , false ); 
+	error_code = slurm_allocate_resources_and_run ( &job_mesg , &run_resp_msg ); 
 	if (error_code)
 		printf ("allocate error %d\n", errno);
 	else {
-		report_results(resp_msg);
-		slurm_free_resource_allocation_response_msg ( resp_msg );
+		report_results ((resource_allocation_response_msg_t*) run_resp_msg);
+		slurm_free_resource_allocation_and_run_response_msg ( run_resp_msg );
 	}
 
 	for (job_count = 1 ; job_count <max_jobs;  job_count++) {
