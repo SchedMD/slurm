@@ -1,5 +1,5 @@
 /******************************************************************************\
- *  $Id: list.c,v 1.13 2001/10/14 06:09:01 dun Exp $
+ *  $Id: list.c,v 1.15 2001/12/15 14:33:49 dun Exp $
  *    by Chris Dunlap <cdunlap@llnl.gov>
  ******************************************************************************
  *  Refer to "list.h" for documentation on public functions.
@@ -10,12 +10,12 @@
 #  include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#ifdef USE_PTHREADS
+#ifdef WITH_PTHREADS
 #  include <errno.h>
 #  include <pthread.h>
 #  include <stdio.h>
 #  include <unistd.h>
-#endif /* USE_PTHREADS */
+#endif /* WITH_PTHREADS */
 
 #include <assert.h>
 #include <stdlib.h>
@@ -27,14 +27,14 @@
 **  Out of Memory  **
 \*******************/
 
-#ifdef USE_OOMF
+#ifdef WITH_OOMF
 #  undef out_of_memory
    extern void * out_of_memory(void);
-#else /* !USE_OOMF */
+#else /* !WITH_OOMF */
 #  ifndef out_of_memory
 #    define out_of_memory() (NULL)
 #  endif /* !out_of_memory */
-#endif /* USE_OOMF */
+#endif /* WITH_OOMF */
 
 
 /***************\
@@ -70,9 +70,9 @@ struct list {
     struct listIterator  *iNext;	/* iterator chain for list_destroy()  */
     ListDelF              fDel;		/* function to delete node data       */
     int                   count;	/* number of nodes in list            */
-#ifdef USE_PTHREADS
+#ifdef WITH_PTHREADS
     pthread_mutex_t       mutex;	/* mutex to protect access to list    */
-#endif /* USE_PTHREADS */
+#endif /* WITH_PTHREADS */
 #ifndef NDEBUG
     unsigned int          magic;	/* sentinel for asserting validity    */
 #endif /* NDEBUG */
@@ -102,18 +102,18 @@ static void list_iterator_free(ListIterator i);
 static List freeLists = NULL;
 static ListNode freeListNodes = NULL;
 static ListIterator freeListIterators = NULL;
-#ifdef USE_PTHREADS
+#ifdef WITH_PTHREADS
 static pthread_mutex_t freeListsLock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t freeListNodesLock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t freeListIteratorsLock = PTHREAD_MUTEX_INITIALIZER;
-#endif /* USE_PTHREADS */
+#endif /* WITH_PTHREADS */
 
 
 /************\
 **  Macros  **
 \************/
 
-#ifdef USE_PTHREADS
+#ifdef WITH_PTHREADS
 
 #  define list_mutex_init(mutex)                                               \
      do {                                                                      \
@@ -139,14 +139,14 @@ static pthread_mutex_t freeListIteratorsLock = PTHREAD_MUTEX_INITIALIZER;
              perror("ERROR: pthread_mutex_destroy() failed"), exit(1);         \
      } while (0)
 
-#else /* !USE_PTHREADS */
+#else /* !WITH_PTHREADS */
 
 #  define list_mutex_init(mutex)
 #  define list_mutex_lock(mutex)
 #  define list_mutex_unlock(mutex)
 #  define list_mutex_destroy(mutex)
 
-#endif /* USE_PTHREADS */
+#endif /* WITH_PTHREADS */
 
 
 /***************\
@@ -175,7 +175,7 @@ void list_destroy(List l)
     ListIterator i, iTmp;
     ListNode p, pTmp;
 
-    assert(l);
+    assert(l != NULL);
     list_mutex_lock(&l->mutex);
     assert(l->magic == LIST_MAGIC);
     i = l->iNext;
@@ -206,7 +206,7 @@ int list_is_empty(List l)
 {
     int n;
 
-    assert(l);
+    assert(l != NULL);
     list_mutex_lock(&l->mutex);
     assert(l->magic == LIST_MAGIC);
     n = l->count;
@@ -219,7 +219,7 @@ int list_count(List l)
 {
     int n;
 
-    assert(l);
+    assert(l != NULL);
     list_mutex_lock(&l->mutex);
     assert(l->magic == LIST_MAGIC);
     n = l->count;
@@ -232,8 +232,8 @@ void * list_append(List l, void *x)
 {
     void *v;
 
-    assert(l);
-    assert(x);
+    assert(l != NULL);
+    assert(x != NULL);
     list_mutex_lock(&l->mutex);
     assert(l->magic == LIST_MAGIC);
     v = list_node_create(l, l->tail, x);
@@ -246,8 +246,8 @@ void * list_prepend(List l, void *x)
 {
     void *v;
 
-    assert(l);
-    assert(x);
+    assert(l != NULL);
+    assert(x != NULL);
     list_mutex_lock(&l->mutex);
     assert(l->magic == LIST_MAGIC);
     v = list_node_create(l, &l->head, x);
@@ -261,9 +261,9 @@ void * list_find_first(List l, ListFindF f, void *key)
     ListNode p;
     void *v = NULL;
 
-    assert(l);
-    assert(f);
-    assert(key);
+    assert(l != NULL);
+    assert(f != NULL);
+    assert(key != NULL);
     list_mutex_lock(&l->mutex);
     assert(l->magic == LIST_MAGIC);
     for (p=l->head; p; p=p->next) {
@@ -283,9 +283,9 @@ int list_delete_all(List l, ListFindF f, void *key)
     void *v;
     int n = 0;
 
-    assert(l);
-    assert(f);
-    assert(key);
+    assert(l != NULL);
+    assert(f != NULL);
+    assert(key != NULL);
     list_mutex_lock(&l->mutex);
     assert(l->magic == LIST_MAGIC);
     pp = &l->head;
@@ -313,8 +313,8 @@ void list_sort(List l, ListCmpF f)
     ListNode *pp, *ppPrev, *ppPos, pTmp;
     ListIterator i;
 
-    assert(l);
-    assert(f);
+    assert(l != NULL);
+    assert(f != NULL);
     list_mutex_lock(&l->mutex);
     assert(l->magic == LIST_MAGIC);
     if (l->count > 1) {
@@ -354,8 +354,8 @@ void * list_push(List l, void *x)
 {
     void *v;
 
-    assert(l);
-    assert(x);
+    assert(l != NULL);
+    assert(x != NULL);
     list_mutex_lock(&l->mutex);
     assert(l->magic == LIST_MAGIC);
     v = list_node_create(l, &l->head, x);
@@ -368,7 +368,7 @@ void * list_pop(List l)
 {
     void *v;
 
-    assert(l);
+    assert(l != NULL);
     list_mutex_lock(&l->mutex);
     assert(l->magic == LIST_MAGIC);
     v = list_node_destroy(l, &l->head);
@@ -381,7 +381,7 @@ void * list_peek(List l)
 {
     void *v;
 
-    assert(l);
+    assert(l != NULL);
     list_mutex_lock(&l->mutex);
     assert(l->magic == LIST_MAGIC);
     v = (l->head) ? l->head->data : NULL;
@@ -394,8 +394,8 @@ void * list_enqueue(List l, void *x)
 {
     void *v;
 
-    assert(l);
-    assert(x);
+    assert(l != NULL);
+    assert(x != NULL);
     list_mutex_lock(&l->mutex);
     assert(l->magic == LIST_MAGIC);
     v = list_node_create(l, l->tail, x);
@@ -408,7 +408,7 @@ void * list_dequeue(List l)
 {
     void *v;
 
-    assert(l);
+    assert(l != NULL);
     list_mutex_lock(&l->mutex);
     assert(l->magic == LIST_MAGIC);
     v = list_node_destroy(l, &l->head);
@@ -421,7 +421,7 @@ ListIterator list_iterator_create(List l)
 {
     ListIterator i;
 
-    assert(l);
+    assert(l != NULL);
     if (!(i = list_iterator_alloc()))
         return(out_of_memory());
     i->list = l;
@@ -439,7 +439,7 @@ ListIterator list_iterator_create(List l)
 
 void list_iterator_reset(ListIterator i)
 {
-    assert(i);
+    assert(i != NULL);
     assert(i->magic == LIST_MAGIC);
     list_mutex_lock(&i->list->mutex);
     assert(i->list->magic == LIST_MAGIC);
@@ -454,7 +454,7 @@ void list_iterator_destroy(ListIterator i)
 {
     ListIterator *pi;
 
-    assert(i);
+    assert(i != NULL);
     assert(i->magic == LIST_MAGIC);
     list_mutex_lock(&i->list->mutex);
     assert(i->list->magic == LIST_MAGIC);
@@ -476,7 +476,7 @@ void * list_next(ListIterator i)
 {
     ListNode p;
 
-    assert(i);
+    assert(i != NULL);
     assert(i->magic == LIST_MAGIC);
     list_mutex_lock(&i->list->mutex);
     assert(i->list->magic == LIST_MAGIC);
@@ -493,8 +493,8 @@ void * list_insert(ListIterator i, void *x)
 {
     void *v;
 
-    assert(i);
-    assert(x);
+    assert(i != NULL);
+    assert(x != NULL);
     assert(i->magic == LIST_MAGIC);
     list_mutex_lock(&i->list->mutex);
     assert(i->list->magic == LIST_MAGIC);
@@ -508,9 +508,9 @@ void * list_find(ListIterator i, ListFindF f, void *key)
 {
     void *v;
 
-    assert(i);
-    assert(f);
-    assert(key);
+    assert(i != NULL);
+    assert(f != NULL);
+    assert(key != NULL);
     assert(i->magic == LIST_MAGIC);
     while ((v=list_next(i)) && !f(v,key)) {;}
     return(v);
@@ -521,7 +521,7 @@ void * list_remove(ListIterator i)
 {
     void *v = NULL;
 
-    assert(i);
+    assert(i != NULL);
     assert(i->magic == LIST_MAGIC);
     list_mutex_lock(&i->list->mutex);
     assert(i->list->magic == LIST_MAGIC);
@@ -536,7 +536,7 @@ int list_delete(ListIterator i)
 {
     void *v;
 
-    assert(i);
+    assert(i != NULL);
     assert(i->magic == LIST_MAGIC);
     if ((v = list_remove(i))) {
         if (i->list->fDel)
@@ -557,10 +557,10 @@ static void * list_node_create(List l, ListNode *pp, void *x)
     ListNode p;
     ListIterator i;
 
-    assert(l);
+    assert(l != NULL);
     assert(l->magic == LIST_MAGIC);
-    assert(pp);
-    assert(x);
+    assert(pp != NULL);
+    assert(x != NULL);
     if (!(p = list_node_alloc()))
         return(out_of_memory());
     p->data = x;
@@ -592,9 +592,9 @@ static void * list_node_destroy(List l, ListNode *pp)
     ListNode p;
     ListIterator i;
 
-    assert(l);
+    assert(l != NULL);
     assert(l->magic == LIST_MAGIC);
-    assert(pp);
+    assert(pp != NULL);
     if (!(p = *pp))
         return(NULL);
     v = p->data;

@@ -10,7 +10,6 @@
 #include <string.h>
 #include <syslog.h>
 
-#include "config.h"
 #include "list.h"
 #include "slurm.h"
 

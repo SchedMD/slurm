@@ -1,5 +1,5 @@
 /******************************************************************************\
- *  $Id: list.h,v 1.5 2001/09/22 21:32:52 dun Exp $
+ *  $Id: list.h,v 1.6 2001/12/15 14:33:49 dun Exp $
  *    by Chris Dunlap <cdunlap@llnl.gov>
 \******************************************************************************/
 
@@ -14,7 +14,7 @@
 
 /*  When a memory allocation request fails, the list returns out_of_memory().
  *  By default, this is a macro definition that returns NULL; this macro may
- *  be redefined to invoke another routine instead.  Furthermore, if USE_OOMF
+ *  be redefined to invoke another routine instead.  Furthermore, if WITH_OOMF
  *  is defined, this macro will not be defined and the list will expect an
  *  external Out-Of-Memory Function to be defined.
  */
