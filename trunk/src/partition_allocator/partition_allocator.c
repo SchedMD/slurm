@@ -325,7 +325,7 @@ int _find_first_match(pa_request_t* pa_request, List* results)
 				/* now we recursively snake down the remaining dimensions 
 				 * to see if they can also satisfy the request. 
 				 */
-				// FIXME: find a better name than "remaining_OK"
+				/* "remaining_OK": remaining nodes can support the configuration */
 				bool remaining_OK = _find_first_match_aux(pa_request, X, Y, x, z, results);
 				if (remaining_OK){
 					/* insert the pa_node_t* into the List of results */
@@ -432,9 +432,11 @@ int _find_first_match(pa_request_t* pa_request, List* results)
 
 /**
  * auxilliary recursive call.
+ * 
+ * 
  */
 // 999
-bool _find_first_match_aux(pa_request_t* pa_request, int dim2check, int const_dim,
+bool _find_first_match_aux(pa_request_t* pa_request, int dim2check, int var_dim,
 			   int dimA, int dimB, List* results)
 {
 	int i=0;
@@ -445,36 +447,47 @@ bool _find_first_match_aux(pa_request_t* pa_request, int dim2check, int const_di
 	bool force_contig = pa_request->force_contig;
 
 	/** we want to go up the Y dim, but checking for correct X size*/
-	for (i=0; i<DIM_SIZE[const_dim]; i++){
-		
+	for (i=0; i<DIM_SIZE[var_dim]; i++){
+
 		pa_node_t* pa_node;
-		if (const_dim == X){
+		if (var_dim == X){
 			printf("_find_first_match_aux: aaah, this should never happen\n");
 			return false;
 			// pa_node = &(_pa_system[i][dimA][dimB]);
 			// i,dimA,dimB
-			// printf("_find_first_match_aux pa_node %d%d%d const_dim %s dim2check %s\n",
+			// printf("_find_first_match_aux pa_node %d%d%d var_dim %s dim2check %s\n",
 			// pa_node->coord[X], pa_node->coord[Y], pa_node->coord[Z], 
-			// convert_dim(const_dim), convert_dim(dim2check));
+			// convert_dim(var_dim), convert_dim(dim2check));
 
-		} else if (const_dim == Y){
+		} else if (var_dim == Y){
+			// printf("_find_first_match_aux: <%s %s %d [%d] %d>\n",
+			// convert_dim(dim2check), convert_dim(var_dim),
+			// dimA, i, dimB);
 			pa_node = &(_pa_system[dimA][i][dimB]);
 			// printf("_find_first_match_aux pa_node %d%d%d(%s) dim2check %s\n",
 			// pa_node->coord[X], pa_node->coord[Y], pa_node->coord[Z], 
-			// convert_dim(const_dim), convert_dim(dim2check));
+			// convert_dim(var_dim), convert_dim(dim2check));
 
 		} else {
+			// printf("_find_first_match_aux: <%s %s %d %d [%d]>\n", 
+			// convert_dim(dim2check), convert_dim(var_dim),
+			// dimA, dimB, i);
 			pa_node = &(_pa_system[dimA][dimB][i]);
 			// printf("_find_first_match_aux pa_node %d%d%d(%s) dim2check %s\n",
 			// pa_node->coord[X], pa_node->coord[Y], pa_node->coord[Z], 
-			// convert_dim(const_dim), convert_dim(dim2check));
+			// convert_dim(var_dim), convert_dim(dim2check));
 		}
 
 		if (found_count[dim2check] != geometry[dim2check]){
+			/*
 			match_found = _check_pa_node(pa_node,
 						     geometry[dim2check],
 						     conn_type, force_contig,
-						     dim2check, dimA);
+						     dim2check, i);*/
+			match_found = _check_pa_node(pa_node,
+						     geometry[var_dim],
+						     conn_type, force_contig,
+						     var_dim, i);
 			if (match_found){
 				
 				bool remaining_OK;
@@ -524,6 +537,7 @@ bool _check_pa_node(pa_node_t* pa_node, int geometry,
 	conf_result_t* conf_result;
 	int i=0, j = 0;
 
+	/* printf("check_pa_node: node to check against %s %d\n", convert_dim(dim), cur_node_id); */
 	if (_is_down_node(pa_node)){
 		return false;
 	}
@@ -652,23 +666,17 @@ void _process_result(pa_node_t* result, pa_request_t* pa_request, List* result_i
 					cur_size = conf_result->conf_data->partition_sizes[j];
 					/* check geometry of the partition */
 					if (cur_size == pa_request->geometry[cur_dim]){
-						/* now we check to see if the node_id's match */
-						int *cur_node_id;
-						ListIterator indices_itr = list_iterator_create(result_indices[cur_dim]);
-						k = 0;
-						// printf("node_id: %d%d\n",
-						// conf_result->conf_data->node_id[j][0],
-						// conf_result->conf_data->node_id[j][1]);
-						while((cur_node_id = (int*) list_next(indices_itr))){
-							// printf("!!comparing %d %d\n", *cur_node_id,
-							// conf_result->conf_data->node_id[j][k]);
-							if (*cur_node_id != conf_result->conf_data->node_id[j][k++])
+						/* now we check to see if the node_id's match. 
+						 */
+						for (k=0; k<conf_result->conf_data->partition_sizes[j]; k++){
+							if (!list_find_first(result_indices[cur_dim],
+									     (ListFindF) _listfindf_int,
+									     &(conf_result->conf_data->node_id[j][k]))){
 								goto next_partition;
+							}
 						}
-						// printf("!! size and all nodes match for: ");
-						// print_conf_result(conf_result);
-						if (conf_result->conf_data->partition_type[j] == 
-						    pa_request->conn_type){
+						if (conf_result->conf_data->partition_type[j] != pa_request->conn_type){
+							goto next_partition;							
 						}
 						if (pa_request->force_contig){
 							if (_is_contiguous(cur_size,
@@ -693,6 +701,9 @@ void _process_result(pa_node_t* result, pa_request_t* pa_request, List* result_i
 			; // noop target to jump to next node
 		}
 	}
+	// 999
+	// _print_pa_system();
+	// exit(0);
 }
 
 /** 
@@ -1133,15 +1144,15 @@ int main(int argc, char** argv)
 	list_iterator_destroy(itr);
 	*/
 
-	// int dead_node1[3] = {0,0,0};
-	// int dead_node2[3] = {1,0,0};
-	// set_node_down(dead_node1);
-	// set_node_down(dead_node2);
+	/*
+	  int dead_node1[3] = {0,0,0};
+	  int dead_node2[3] = {1,0,0};
+	set_node_down(dead_node1);
+	set_node_down(dead_node2);
 	printf("done setting node down\n");
-
+	*/
 	// _print_pa_system();
 	
-	int i;
 	int geo[3] = {2,2,2};
 	bool rotate = false;
 	bool elongate = false;
@@ -1149,12 +1160,22 @@ int main(int argc, char** argv)
 	List results;
 	pa_request_t* request; 
 	new_pa_request(&request, geo, -1, rotate, elongate, force_contig, TORUS);
-	for (i=0; i<8; i++){
-		if (!allocate_part(request, &results)){
-			printf("allocate success for %d%d%d\n", 
-			       geo[0], geo[1], geo[2]);
-			list_destroy(results);
-		}
+	
+	// int i;
+	// for (i=0; i<8; i++){
+	// _print_pa_system();
+	if (!allocate_part(request, &results)){
+		printf("allocate success for %d%d%d\n", 
+		       geo[0], geo[1], geo[2]);
+		list_destroy(results);
+	}
+	// }
+
+	// _print_pa_system();
+	if (!allocate_part(request, &results)){
+		printf("allocate success for %d%d%d\n", 
+		       geo[0], geo[1], geo[2]);
+		list_destroy(results);
 	}
 
 	delete_pa_request(request);

@@ -598,14 +598,17 @@ void _find_all_paths_aux(List* connection_list, List current_port_conf,
 void _insert_results(List part_config_list, List result_partitions, List current_port_conf)
 {
 	int part_size;
-	bool has_large_part=false, found_torus=false;
+	bool has_large_part=false, found_torus=false, p1_all_toroidal = true;
 	ListIterator itr;
 	partition_t* part;
 
 	/* check to see if this set has partitions greater than or
 	 * equal to LARGE_PART size partitions, and that we at least
 	 * have one toroidal partition (otherwise, it's worthless to
-	 * print out.
+	 * save.
+	 * 
+	 * in addition, we're enforcing that all partitions of size 1
+	 * must be toroidal (cleans up the conf_result_list)
 	 */
 	itr = list_iterator_create(result_partitions);
 	while((part = (partition_t*) list_next(itr))){
@@ -616,10 +619,14 @@ void _insert_results(List part_config_list, List result_partitions, List current
 				found_torus = true;
 			}
 		}
+		if (part_size == 1 && part->conn_type != TORUS){
+			p1_all_toroidal = false;
+			break;
+		}
 	}
 	list_iterator_destroy(itr);
 	
-	if (has_large_part && found_torus){
+	if (has_large_part && found_torus && p1_all_toroidal){
 		conf_data_t* conf_data;
 		conf_result_t* conf_result;
 		port_conf_t* port_conf, *port_conf_copy;
