@@ -1,3 +1,4 @@
+# $Id$
 # Makefile for slurmd
 
 AUTOMAKE_OPTIONS = foreign
@@ -39,7 +40,7 @@ Read_Proc     : Read_Proc_d.o
 Get_Mach_Stat : Get_Mach_Stat_d.o
 
 % : %_d.o
-	$(LINK) $(LDFLAGS) $< $(LDADD)
+	$(LINK) $(LDFLAGS) $^ $(LDADD) $(LIBS)
 
 %_d.o : %.c
 	$(COMPILE) -DDEBUG_MODULE -c -o $@ $< 
