@@ -107,6 +107,8 @@ static int mgr_sigarray[] = {
 /* 
  * Job manager related prototypes
  */
+static void _send_launch_failure(launch_tasks_request_msg_t *, 
+                                 slurm_addr *, int);
 static int  _job_mgr(slurmd_job_t *job);
 static void _set_job_log_prefix(slurmd_job_t *job);
 static int  _setup_io(slurmd_job_t *job);
@@ -137,7 +139,7 @@ static void _random_sleep(slurmd_job_t *job);
 static char * _make_batch_dir(slurmd_job_t *job);
 static char * _make_batch_script(batch_job_launch_msg_t *msg, char *path);
 static int    _setup_batch_env(slurmd_job_t *job, char *nodes);
-static int    _complete_job(slurmd_job_t *job, int err, int status);
+static int    _complete_job(uint32_t jobid, int err, int status);
 
 
 /* SIGHUP (empty) signal handler
@@ -152,8 +154,10 @@ mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli)
 {
 	slurmd_job_t *job = NULL;
 
-	if (!(job = job_create(msg, cli)))
+	if (!(job = job_create(msg, cli))) {
+		_send_launch_failure (msg, cli, errno);
 		return SLURM_ERROR;
+	}
 
 	_set_job_log_prefix(job);
 
@@ -177,11 +181,17 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 {
 	int           rc     = 0;
 	int           status = 0;
+	uint32_t      jobid  = msg->job_id;
 	slurmd_job_t *job;
 	char         *batchdir;
 
-	if (!(job = job_batch_job_create(msg))) 
+	if (!(job = job_batch_job_create(msg))) {
+		/*
+		 *  Set "job" status to returned errno and cleanup job.
+		 */
+		status = errno;
 		goto cleanup;
+	}
 
 	_set_job_log_prefix(job);
 
@@ -209,8 +219,8 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	xfree(batchdir);
    cleanup :
 	verbose("job %u completed with slurm_rc = %d, job_rc = %d", 
-		job->jobid, rc, status);
-	_complete_job(job, rc, status);
+	        jobid, rc, status);
+	_complete_job(jobid, rc, status);
 	return 0; 
 }
 
@@ -914,6 +924,28 @@ _setup_batch_env(slurmd_job_t *job, char *nodes)
 	return 0;
 }
 
+static void
+_send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr *cli, int rc)
+{
+	slurm_msg_t resp_msg;
+	launch_tasks_response_msg_t resp;
+
+	debug ("sending launch failure message: %s", slurm_strerror (rc));
+
+	memcpy(&resp_msg.address, cli, sizeof(slurm_addr));
+	slurm_set_addr(&resp_msg.address, msg->resp_port, NULL); 
+	resp_msg.data = &resp;
+	resp_msg.msg_type = RESPONSE_LAUNCH_TASKS;
+
+	resp.node_name     = conf->hostname;
+	resp.srun_node_id  = msg->srun_node_id;
+	resp.return_code   = rc ? rc : -1;
+	resp.count_of_pids = 0;
+
+	slurm_send_only_node_msg(&resp_msg);
+
+	return;
+}
 
 static void
 _send_launch_resp(slurmd_job_t *job, int rc)
@@ -945,15 +977,15 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 
 
 static int
-_complete_job(slurmd_job_t *job, int err, int status)
+_complete_job(uint32_t jobid, int err, int status)
 {
 	int                      rc;
 	slurm_msg_t              req_msg;
 	complete_job_step_msg_t  req;
 
-	req.job_id	= job->jobid;
+	req.job_id	    = jobid;
 	req.job_step_id	= NO_VAL; 
-	req.job_rc	= status;
+	req.job_rc      = status;
 	req.slurm_rc	= err; 
 	req.node_name	= conf->hostname;
 	req_msg.msg_type= REQUEST_COMPLETE_JOB_STEP;

@@ -106,6 +106,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 
 	if ((pwd = _pwd_create((uid_t)msg->uid)) == NULL) {
 		error("uid %ld not found on system", (long) msg->uid);
+		slurm_seterrno (ESLURMD_UID_NOT_FOUND);
 		return NULL;
 	}
 	job = xmalloc(sizeof(*job));
@@ -190,6 +191,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 
 	if ((pwd = _pwd_create((uid_t)msg->uid)) == NULL) {
 		error("uid %ld not found on system", (long) msg->uid);
+		slurm_seterrno (ESLURMD_UID_NOT_FOUND);
 		return NULL;
 	}
 
