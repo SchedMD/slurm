@@ -1,4 +1,4 @@
-.TH SLURMCTLD "1" "August 2002" "slurmctld 0.1" "Slurm components"
+.TH SLURMCTLD "1" "October 2002" "slurmctld 0.1" "Slurm components"
 .SH "NAME"
 slurmctld \- The central management daemon of Slurm.
 .SH "SYNOPSIS"
@@ -73,7 +73,8 @@ configuration parameters using a distinct configuration file. However,
 this special configuration file will not be recognized by \fBslurmd\fR 
 or the Slurm programs. If you desire changing communication ports, 
 the location of the temporary file system, or other parameters used 
-by other Slurm components, change the common configuration file.
+by other Slurm components, change the common configuration file, 
+\fB/etc/slurm.conf\fR.
 .SH "COPYING"
 Copyright (C) 2002 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -91,3 +92,8 @@ SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
+.SH "FILES"
+.LP
+/etc/slurm.conf
+.SH "SEE ALSO"
+\fBslurm.conf\fR(5)
