@@ -440,7 +440,7 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 	uint32_t key;
 	int shared;
 	struct part_record *part_ptr;
-	bitstr_t *req_bitmap;
+	bitstr_t *req_bitmap = NULL ;
 
 	validate_job_desc ( job_desc , allocate ) ;
 
@@ -451,14 +451,14 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 		if (part_ptr == NULL) {
 			info ("job_create: invalid partition specified: %s",
 					job_desc->partition);
-			error_code = EINVAL;
+			error_code = ESLURM_INVALID_PARTITION_SPECIFIED;
 			return error_code ;
 		}		
 	}
 	else {
 		if (default_part_loc == NULL) {
 			error ("job_create: default partition not set.");
-			error_code = EINVAL;
+			error_code = ESLURM_DEFAULT_PATITION_NOT_SET;
 			return error_code ;
 		}		
 		part_ptr = default_part_loc;
@@ -471,13 +471,13 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 	if (part_ptr->key && (is_key_valid (key) == 0)) {
 		info ("job_create: job lacks key required of partition %s",
 				part_ptr->name);
-		error_code = EINVAL;
+		error_code = ESLURM_JOB_MISSING_PARTITION_KEY ;
 		return error_code;
 	}			
 	if (match_group (part_ptr->allow_groups, job_desc->groups) == 0) {
 		info ("job_create: job lacks group required of partition %s",
 				part_ptr->name);
-		error_code = EINVAL;
+		error_code = ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP;
 		return error_code;
 	}
 
@@ -486,22 +486,19 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 		error_code = node_name2bitmap (job_desc->req_nodes, &req_bitmap);
 		if (error_code == EINVAL)
 		{
-			bit_free (req_bitmap);
-			return error_code ;
+			goto cleanup;
 		}
 		if (error_code != 0) {
 			error_code = EAGAIN;	/* no memory */
-			bit_free (req_bitmap);
-			return error_code ;
+			goto cleanup;
 		}		
 		if (job_desc->contiguous == SLURM_JOB_DESC_CONTIGUOUS )
 			bit_fill_gaps (req_bitmap);
 		if (bit_super_set (req_bitmap, part_ptr->node_bitmap) != 1) {
 			info ("job_create: requested nodes %s not in partition %s",
 					job_desc->req_nodes, part_ptr->name);
-			error_code = EINVAL;
-			bit_free (req_bitmap);
-			return error_code ;
+			error_code = ESLURM_REQUESTED_NODES_NOT_IN_PARTITION;
+			goto cleanup;
 		}		
 		i = count_cpus (req_bitmap);
 		if (i > job_desc->num_procs)
@@ -513,9 +510,8 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 	if (job_desc->num_procs > part_ptr->total_cpus) {
 		info ("job_create: too many cpus (%d) requested of partition %s(%d)",
 				job_desc->num_procs, part_ptr->name, part_ptr->total_cpus);
-		error_code = EINVAL;
-		bit_free (req_bitmap);
-		return error_code ;
+		error_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
+		goto cleanup;
 	}			
 	if ((job_desc->num_nodes > part_ptr->total_nodes) || 
 			(job_desc->num_nodes > part_ptr->max_nodes)) {
@@ -525,15 +521,13 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 			i = part_ptr->total_nodes;
 		info ("job_create: too many nodes (%d) requested of partition %s(%d)",
 				job_desc->req_nodes, part_ptr->name, i);
-		error_code = EINVAL;
-		bit_free (req_bitmap);
-		return error_code ;
+		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
+		goto cleanup;
 	}
 
 	if (will_run) {
 		error_code = 0;
-		bit_free (req_bitmap);
-		return error_code ;
+		goto cleanup;
 	}
 
 	if (part_ptr->shared == 2)	/* shared=force */
@@ -542,11 +536,18 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 		shared = 0;
 
 	if ( ( error_code = copy_job_desc_to_job_record ( job_desc , job_rec_ptr , part_ptr , req_bitmap ) ) == SLURM_ERROR ) 
-		bit_free (req_bitmap);
-	return error_code ;
+		error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY ;
+		goto cleanup ;
 
 	*new_job_id = (*job_rec_ptr)->job_id;
-	return SLURM_SUCCESS ; 
+	error_code = SLURM_SUCCESS ;
+	goto cleanup;
+
+
+	cleanup:
+		if ( req_bitmap)
+			bit_free (req_bitmap);
+		return error_code ;
 }
 
 int copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , struct job_record ** job_rec_ptr , struct part_record *part_ptr, bitstr_t *req_bitmap )
