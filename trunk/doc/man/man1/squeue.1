@@ -5,6 +5,7 @@ squeue \- Used to view information of jobs located in the scheduling queue.
 
 .SH "SYNOPSIS"
 \fBsqueue\fR [\fIOPTIONS\fR...] 
+
 .SH "DESCRIPTION"
 \fBsqueue\fR is used to view job and job step information for jobs managed by 
 \fBslurmctld\fR. 
@@ -12,7 +13,7 @@ squeue \- Used to view information of jobs located in the scheduling queue.
 .TP
 OPTIONS
 .TP
-\fB-?\fR, \fB-n\fR, \fB--help\fR
+\fB-?\fR, \fB--help\fR
 Print a help message describing the usage of \fBsqueue\fR.
 .TP
 \fB-o\fR, \fB--format\fR
@@ -114,13 +115,33 @@ Report details of squeues actions.
 
 .SH "EXAMPLE"
 .eo
-squeue -f '%i%.10n%20N'
+squeue -p debug -t C -o "%.6i%p"
 .br
-would print the jobs in the following format:
-PUT THE EXAMPLE HERE...
+would print the jobs scheduled in the debug partition and in the 
+completed state in the format with six right justified digits for 
+the job id followed by the priority with an arbitrary fields size:
 .br
-Figure out how to format the example...
-.br 
+ JobId Prio 
+.br
+ 65543 99993 
+.br
+ 65544 99992 
+.br
+ 65545 99991 
+.ec
+
+.eo
+squeue -s -p debug -S u
+.br
+would print the job steps in the debug partition sorted by user:
+.br
+StepId      Partition   User        StartTime     Nodes
+.br
+65552.1     debug       alice       10/14-11:02   dev[1-4]
+.br
+65562.2     debug       bob         10/14-11:54   dev22
+.br
+65550.1     debug       candice     10/14-11:18   dev[10-12]
 .ec
 
 .SH "COPYING"
