@@ -33,6 +33,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
+#include "src/common/macros.h"
 #include "src/slurmctld/slurmctld.h"
 
 #ifdef HAVE_BGL_FILES
@@ -65,6 +66,7 @@ extern char *bluegene_mloader;
 extern char *bluegene_ramdisk;
 extern char *bluegene_serial;
 extern List bgl_init_part_list; 	/* Initial bgl partition state */
+extern bool agent_fini;
 
 typedef int lifecycle_type_t;
 enum part_lifecycle {DYNAMIC, STATIC};

@@ -83,7 +83,7 @@ const char plugin_name[]       	= "Blue Gene node selection plugin";
 const char plugin_type[]       	= "select/bluegene";
 const uint32_t plugin_version	= 90;
 
-/** pthread stuff for updating BGL node status */
+/* pthread stuff for updating BGL node status */
 static pthread_t bluegene_thread = 0;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -168,28 +168,15 @@ static int _init_status_pthread(void)
 	pthread_create( &bluegene_thread, &attr, bluegene_agent, NULL);
 	pthread_mutex_unlock( &thread_flag_mutex );
 	pthread_attr_destroy( &attr );
-
 	return SLURM_SUCCESS;
-}
-
-static void _cancel_thread (pthread_t thread_id)
-{
-	int i;
-
-	for (i=0; i<8; i++) {
-		if (pthread_cancel(thread_id))
-			return;		/* pthread now gone */
-		usleep(1000);
-	}
-	error("Could not kill bluegene select pthread");
 }
 
 extern int fini ( void )
 {
 	pthread_mutex_lock( &thread_flag_mutex );
 	if ( bluegene_thread ) {
+		agent_fini = true;
 		verbose( "Bluegene select plugin shutting down" );
-		_cancel_thread( bluegene_thread );
 		bluegene_thread = 0;
 	}
 	pthread_mutex_unlock( &thread_flag_mutex );
