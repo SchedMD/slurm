@@ -132,7 +132,8 @@ void parse_command_line(int argc, char *argv[]);
 void snprint_time(char *buf, size_t buf_size, time_t time);
 void print_date();
 
-void get_part();
+void get_slurm_part();
+void get_bgl_part();
 void get_job();
 void get_command();
 
