@@ -54,6 +54,7 @@ Requires: slurm munge
 
 %package bluegene
 Summary: SLURM plugin interfaces to IBM Blue Gene system
+Group: System Environment/Base
 Requires: slurm
 
 %package sched-wiki
