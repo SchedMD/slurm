@@ -422,7 +422,7 @@ _print_completing_job(job_info_t *job_ptr, node_info_msg_t *node_info_msg)
 {
 	int i;
 	node_info_t *node_info;
-	uint16_t base_state;
+	uint16_t node_state;
 	hostlist_t all_nodes, comp_nodes, down_nodes;
 	char node_buf[1024];
 
@@ -434,10 +434,10 @@ _print_completing_job(job_info_t *job_ptr, node_info_msg_t *node_info_msg)
 	for (i=0; i<node_info_msg->record_count; i++) {
 		if (hostlist_find(all_nodes, node_info[i].name) == -1)
 			continue;	/* node not assigned to this job */
-		base_state = node_info[i].node_state;
-		if (base_state &  NODE_STATE_COMPLETING)
+		node_state = node_info[i].node_state;
+		if (node_state == NODE_STATE_COMPLETING)
 			hostlist_push_host(comp_nodes, node_info[i].name);
-		if (base_state == NODE_STATE_DOWN)
+		if (node_state == NODE_STATE_DOWN)
 			hostlist_push_host(down_nodes, node_info[i].name);
 	}
 
