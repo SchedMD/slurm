@@ -900,7 +900,7 @@ static void _update_logging(void)
 }
 
 /*
- *  Lock the fork mutex to protext fork-critical regions
+ *  Lock the fork mutex to protect fork-critical regions
  */
 static void _atfork_prepare(void)
 {
