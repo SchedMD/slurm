@@ -46,7 +46,7 @@
 #include <src/common/xmalloc.h>
 
 /* Perform full slurmctld's state every PERIODIC_CHECKPOINT seconds */
-#define	PERIODIC_CHECKPOINT	60
+#define	PERIODIC_CHECKPOINT	300
 
 /* Attempt to schedule jobs every PERIODIC_SCHEDULE seconds despite any RPC activity 
  * This will catch any state transisions that may have otherwise been missed */
@@ -457,7 +457,7 @@ extern void reset_job_bitmaps ();
 extern int rmdir2 (char * path);
 
 /* schedule - attempt to schedule all pending jobs */
-void schedule();
+extern int schedule (void);
 
 /* select_nodes - select and allocate nodes to a specific job */
 extern int select_nodes (struct job_record *job_ptr, int test_only);

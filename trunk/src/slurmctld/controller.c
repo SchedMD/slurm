@@ -346,12 +346,11 @@ slurmctld_background ( void * no_data )
 
 		if ((now - last_sched_time) > PERIODIC_SCHEDULE) {
 			last_sched_time = now;
-			/* locking is done outside of schedule() because it is called  
-			 * from other many functions that already have their locks set */
 			lock_slurmctld (job_write_lock);
 			purge_old_job ();	/* remove defunct job records */
-			schedule ();
 			unlock_slurmctld (job_write_lock);
+			if (schedule ())
+				last_checkpoint_time = 0;	/* force state save */
 		}
 
 		if (shutdown_time || (now - last_checkpoint_time) > PERIODIC_CHECKPOINT) {
@@ -387,9 +386,9 @@ save_all_state ( void )
 	clock_t start_time;
 
 	start_time = clock ();
-	dump_all_node_state ( );
-	dump_all_part_state ( );
-	dump_all_job_state ( );
+	(void) dump_all_node_state ( );
+	(void) dump_all_part_state ( );
+	(void) dump_all_job_state ( );
 	info ("save_all_state complete, time=%ld", (long) (clock () - start_time));
 }
 
@@ -708,6 +707,9 @@ slurm_rpc_job_step_cancel ( slurm_msg_t * msg )
 			info ("slurm_rpc_job_step_cancel success for JobId=%u, time=%ld",
 				job_step_id_msg->job_id, (long) (clock () - start_time));
 			slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+			schedule ();
+			(void) dump_all_job_state ( );
+
 		}
 	}
 	else {
@@ -727,10 +729,9 @@ slurm_rpc_job_step_cancel ( slurm_msg_t * msg )
 				job_step_id_msg->job_id, job_step_id_msg->job_step_id, 
 				(long) (clock () - start_time));
 			slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+			(void) dump_all_job_state ( );
 		}
 	}
-
-	schedule();
 }
 
 /* slurm_rpc_job_step_complete - process RPC to note the completion an entire job or 
@@ -761,6 +762,8 @@ slurm_rpc_job_step_complete ( slurm_msg_t * msg )
 			info ("slurm_rpc_job_step_complete success for JobId=%u, time=%ld",
 				job_step_id_msg->job_id, (long) (clock () - start_time));
 			slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+			schedule ();
+			(void) dump_all_job_state ();
 		}
 	}
 	else {
@@ -780,10 +783,9 @@ slurm_rpc_job_step_complete ( slurm_msg_t * msg )
 				job_step_id_msg->job_id, job_step_id_msg->job_step_id, 
 				(long) (clock () - start_time));
 			slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+			(void) dump_all_job_state ( );
 		}
 	}
-
-	schedule();
 }
 
 void 
@@ -858,9 +860,9 @@ slurm_rpc_update_job ( slurm_msg_t * msg )
 				job_desc_msg->job_id, 
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+		schedule ();
+		(void) dump_all_job_state ();
 	}
-
-	schedule();
 }
 
 /* slurm_rpc_update_node - process RPC to update the configuration of a node (e.g. UP/DOWN) */
@@ -893,7 +895,9 @@ slurm_rpc_update_node ( slurm_msg_t * msg )
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
-	schedule();
+	if (schedule ())
+		(void) dump_all_job_state ();
+	(void) dump_all_node_state ();
 }
 
 /* slurm_rpc_update_partition - process RPC to update the configuration of a partition (e.g. UP/DOWN) */
@@ -921,8 +925,10 @@ slurm_rpc_update_partition ( slurm_msg_t * msg )
 		info ("slurm_rpc_update_partition complete for partition %s, time=%ld",
 				part_desc_ptr->name, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+		(void) dump_all_part_state ();
+		if (schedule ())
+			(void) dump_all_job_state ();
 	}
-	schedule();
 }
 
 /* slurm_rpc_submit_batch_job - process RPC to submit a batch job */
@@ -961,7 +967,8 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 		response_msg . msg_type = RESPONSE_SUBMIT_BATCH_JOB ;
 		response_msg . data = & submit_msg ;
 		slurm_send_node_msg ( msg->conn_fd , & response_msg ) ;
-		schedule();
+		schedule ();
+		(void) dump_all_job_state ();
 	}
 }
 
@@ -1013,6 +1020,7 @@ slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 		response_msg . data =  & alloc_msg ;
 
 		slurm_send_node_msg ( msg->conn_fd , & response_msg ) ;
+		(void) dump_all_job_state ( );
 	}
 }
 
@@ -1080,8 +1088,7 @@ slurm_rpc_allocate_and_run ( slurm_msg_t * msg )
                 response_msg . data =  & alloc_msg ;
 
 		slurm_send_node_msg ( msg->conn_fd , & response_msg ) ;
-	
-		schedule ();
+		(void) dump_all_job_state ( );
 	}
 }
 
@@ -1148,9 +1155,9 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 		info ("slurm_rpc_reconfigure_controller completed successfully, time=%ld", 
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+		schedule ();
+		save_all_state ();
 	}
-
-	schedule();
 }
 
 
@@ -1218,10 +1225,8 @@ slurm_rpc_job_step_create( slurm_msg_t* msg )
 		resp. data = &job_step_resp  ;
 
 		slurm_send_node_msg ( msg->conn_fd , &resp);
+		(void) dump_all_job_state ( );
 	}
-
-	schedule();
-
 }
 
 /* slurm_rpc_node_registration - process RPC to determine if a node's actual configuration satisfies the
