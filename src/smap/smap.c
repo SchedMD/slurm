@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
 		DIM_SIZE[X]=bp_size.X;
 		DIM_SIZE[Y]=bp_size.Y;
 		DIM_SIZE[Z]=bp_size.Z;
-		slurm_rm_free_BGL(bgl);
+		rm_free_BGL(bgl);
 #else
      		slurm_perror("slurm_load_node");
 		exit(0);
