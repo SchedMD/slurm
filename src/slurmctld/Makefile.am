@@ -5,6 +5,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 INCLUDES = -I$(top_srcdir)/src/common
+CFLAGS = 
 
 # should we build individual modules?
 # (--enable-debug)
@@ -19,16 +20,20 @@ bin_PROGRAMS = slurmctld
 
 noinst_PROGRAMS = $(test_modules)
 
-LDADD = $(top_srcdir)/src/api/libslurmapi.a $(top_srcdir)/src/common/libcommon.a
+#LDADD = $(top_srcdir)/src/api/libslurmapi.a $(top_srcdir)/src/common/libcommon.a
+LDADD   = $(top_srcdir)/src/api/nodelist.lo $(top_srcdir)/src/common/libcommon.la 
 
-slurmctld_SOURCES = controller.c \
-		    job_mgr.c \
-		    job_scheduler.c \
-		    node_mgr.c \
-		    node_scheduler.c \
-		    partition_mgr.c \
-		    read_config.c \
-		    step_mgr.c
+slurmctld_SOURCES = 	\
+	util.c		\
+	parse_spec.c	\
+	controller.c 	\
+	job_mgr.c 	\
+	job_scheduler.c \
+	node_mgr.c 	\
+	node_scheduler.c\
+	partition_mgr.c \
+	read_config.c	\
+	step_mgr.c
 
 # target specific CFLAGS do not work until automake 1.5, use explicit rules
 # for now. If we ever move to 1.5, the CFLAGS defs below should work in

@@ -3,7 +3,7 @@
 # XXX generate PROJECT and VERSION automatically at some point
 AC_INIT([slurm],[0.1])
 # AC_PREREQ(2.52)
-AC_CONFIG_SRCDIR([src/common/slurm.h])
+AC_CONFIG_SRCDIR([src/api/slurm.h])
 AC_CONFIG_AUX_DIR(auxdir)
 AC_CANONICAL_TARGET([])
 
@@ -58,7 +58,7 @@ AM_CONDITIONAL(WITH_ELAN, test "x$with_elan" = "xyes")
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_MAKE_SET
-AC_PROG_RANLIB
+AC_PROG_LIBTOOL
 
 dnl Checks for libraries
 if test $with_elan; then
@@ -134,6 +134,7 @@ AC_CONFIG_FILES([Makefile
 		 src/slurmd/Makefile 
 		 src/slurmctld/Makefile 
 		 src/scontrol/Makefile
+		 src/test/Makefile
 		 testsuite/Makefile
 		 testsuite/slurm_compiled/Makefile
 		]

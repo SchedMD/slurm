@@ -15,11 +15,45 @@ else
 test_modules = 
 endif
 
-noinst_LIBRARIES = libslurmapi.a
+# link to libslurm (for test modules):
+LDADD = -lslurm
 
-libslurmapi_a_SOURCES = allocate.c build_info.c job_info.c node_info.c partition_info.c submit.c reconfigure.c update_config.c
+lib_LTLIBRARIES = libslurm.la 
 
-LDADD = $(top_srcdir)/src/common/libcommon.a
+libslurm_la_SOURCES =    \
+	nodelist.c	 \
+	allocate.c       \
+	build_info.c     \
+	job_info.c       \
+	node_info.c      \
+	partition_info.c \
+	submit.c         \
+	reconfigure.c    \
+	update_config.c  
+
+common_dir = $(top_srcdir)/src/common
+
+#libslurm_la_LIBADD        = \
+#	$(common_dir)/pack.lo 	 	\
+#	$(common_dir)/xmalloc.lo 	\
+#	$(common_dir)/log.lo		\
+#	$(common_dir)/safeopen.lo	\
+#	$(common_dir)/xassert.c		\
+#	$(common_dir)/xstring.lo	
+
+libslurm_la_LIBADD        = $(common_dir)/libcommon.la
+libslurm_la_LDFLAGS       = -export-symbols libslurm.sym
+libslurm_la_DEPENDENCIES  = libslurm.sym $(libslurm_la_LIBADD)
+
+libslurm.sym :
+	cp slurmapi.exp libslurm.sym
+
+# hack to allow building .lo objects from other directories
+$(filter %.lo, $(libslurm_la_LIBADD)) : %.lo : %.c
+	cd `echo $@|sed 's#/[^/]*\$$##'` && $(MAKE) `echo $@|sed 's#.*/##'`
+	
+$(filter %.la, $(libslurm_la_LIBADD)) : %.la : 
+	cd `echo $@|sed 's#/[^/]*\$$##'` && $(MAKE) `echo $@|sed 's#.*/##'`
 
 # target specific CFLAGS do not work until automake 1.5, use explicit rules
 # for now. If we ever move to 1.5, the CFLAGS defs below should work in
