@@ -57,7 +57,6 @@ extern void get_job(void)
 				"slurm_load_job: %s", 
 				slurm_strerror(slurm_get_errno()));
 			pa_system_ptr->ycord++;
-			return;
 		}
 	}
 
