@@ -474,7 +474,7 @@ struct fatal_cleanup {
 static pthread_mutex_t  fatal_lock = PTHREAD_MUTEX_INITIALIZER;    
 static struct fatal_cleanup *fatal_cleanups = NULL;
 
-/* Registers a cleanup function to be called by fatal() before exiting. */
+/* Registers a cleanup function to be called by fatal() for this thread before exiting. */
 void
 fatal_add_cleanup(void (*proc) (void *), void *context)
 {
@@ -490,7 +490,23 @@ fatal_add_cleanup(void (*proc) (void *), void *context)
 	pthread_mutex_unlock(&fatal_lock);
 }
 
-/* Removes a cleanup frunction to be called at fatal(). */
+/* Registers a cleanup function to be called by fatal() for all threads of the job. */
+void
+fatal_add_cleanup_job(void (*proc) (void *), void *context)
+{
+	struct fatal_cleanup *cu;
+
+	pthread_mutex_lock(&fatal_lock);
+	cu = xmalloc(sizeof(*cu));
+	cu->thread_id = 0;
+	cu->proc = proc;
+	cu->context = context;
+	cu->next = fatal_cleanups;
+	fatal_cleanups = cu;
+	pthread_mutex_unlock(&fatal_lock);
+}
+
+/* Removes a cleanup frunction to be called at fatal() for this thread. */
 void
 fatal_remove_cleanup(void (*proc) (void *context), void *context)
 {
@@ -514,7 +530,30 @@ fatal_remove_cleanup(void (*proc) (void *context), void *context)
 	    (u_long) proc, (u_long) context);
 }
 
-/* Execute cleanup functions */
+/* Removes a cleanup frunction to be called at fatal() for all threads of the job. */
+void
+fatal_remove_cleanup_job(void (*proc) (void *context), void *context)
+{
+	struct fatal_cleanup **cup, *cu;
+
+	pthread_mutex_lock(&fatal_lock);
+	for (cup = &fatal_cleanups; *cup; cup = &cu->next) {
+		cu = *cup;
+		if (cu->thread_id == 0 &&
+		    cu->proc == proc && 
+		    cu->context == context) {
+			*cup = cu->next;
+			xfree(cu);
+			pthread_mutex_unlock(&fatal_lock);
+			return;
+		}
+	}
+	pthread_mutex_unlock(&fatal_lock);
+	fatal("fatal_remove_cleanup_job: no such cleanup function: 0x%lx 0x%lx",
+	    (u_long) proc, (u_long) context);
+}
+
+/* Execute cleanup functions, first thread-specific then those for the whole job */
 void
 fatal_cleanup(void)
 {
@@ -533,6 +572,14 @@ fatal_cleanup(void)
 		(*cu->proc) (cu->context);
 		*cup = cu->next;
 		xfree(cu);
+	}
+	for (cup = &fatal_cleanups; *cup; cup = &cu->next) {
+		cu = *cup;
+		if (cu->thread_id != 0)
+			continue;
+		debug("Calling cleanup 0x%lx(0x%lx)",
+		      (u_long) cu->proc, (u_long) cu->context);
+		(*cu->proc) (cu->context);
 	}
 	pthread_mutex_unlock(&fatal_lock);
 }

@@ -148,7 +148,9 @@ void	debug3(const char *, ...);
 
 void	dump_cleanup_list(void);
 void	fatal_add_cleanup(void (*proc) (void *), void *context);
+void	fatal_add_cleanup_job(void (*proc) (void *), void *context);
 void	fatal_remove_cleanup(void (*proc) (void *context), void *context);
+void	fatal_remove_cleanup_job(void (*proc) (void *context), void *context);
 void	fatal_cleanup(void);
 
 #endif /* !_LOG_H */
