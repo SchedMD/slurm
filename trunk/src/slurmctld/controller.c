@@ -16,210 +16,343 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <syslog.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 #include "slurm.h"
+#include "slurmlib.h"
 
 #define BUF_SIZE 1024
 
 int Msg_From_Root(void);
+void Slurmctld_Req(int sockfd);
 
-#if DEBUG_MODULE
-/* main is used here for testing purposes only */
 main(int argc, char * argv[]) {
-    int Error_Code, Line_Num, i;
-    FILE *Command_File;
+    int Error_Code;
+    int child_pid, cli_len, newsockfd, sockfd;
+    struct sockaddr_in cli_addr, serv_addr;
+    char Node_Name[MAX_NAME_LEN];
+
+    Error_Code = Init_SLURM_Conf();
+    if (Error_Code) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "slurmctld: Init_SLURM_Conf error %d\n", Error_Code);
+#else
+	syslog(LOG_ALERT, "slurmctld: Init_SLURM_Conf error %d\n", Error_Code);
+#endif
+	abort();
+    } /* if */
+
+    Error_Code = Read_SLURM_Conf(SLURM_CONF);
+    if (Error_Code) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "slurmctld: Error %d from Read_SLURM_Conf reading %s\n", 
+		Error_Code, SLURM_CONF);
+#else
+	syslog(LOG_ALERT, "slurmctld: Error %d from Read_SLURM_Conf reading %s\n", 
+		Error_Code, SLURM_CONF);
+#endif
+	abort();
+    } /* if */
+
+    Error_Code = gethostname(Node_Name, MAX_NAME_LEN);
+    if (Error_Code != 0) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "slurmctld: Error %d from gethostname\n", Error_Code);
+#else
+	syslog(LOG_ALERT, "slurmctld: Error %d from gethostname\n", Error_Code);
+#endif
+	abort();
+    } /* if */
+    if (strcmp(Node_Name, ControlMachine) != 0) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "slurmctld: This machine (%s) is not the primary control machine (%s)\n", 
+		Node_Name, ControlMachine);
+#else
+	syslog(LOG_ERR, "slurmctld: This machine (%s) is not the primary control machine (%s)\n", 
+		Node_Name, ControlMachine);
+#endif
+	exit(1);
+    } /* if */
+
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "slurmctld: Error %d from socket\n", errno);
+#else
+	syslog(LOG_ALERT, "slurmctld: Error %d from socket\n", errno);
+#endif
+	abort();
+    } /* if */
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family	= PF_INET;
+    serv_addr.sin_addr.s_addr	= htonl(INADDR_ANY);
+    serv_addr.sin_port  	= htons(SLURMCTLD_PORT);
+    if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "slurmctld: Error %d from bind\n", errno);
+#else
+	syslog(LOG_ALERT, "slurmctld: Error %d from bind\n", errno);
+#endif
+	abort();
+    } /* if */
+    listen(sockfd, 5);
+    while (1) {
+	cli_len = sizeof(cli_addr);
+	if ((newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &cli_len)) < 0) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "slurmctld: Error %d from accept\n", errno);
+#else
+	    syslog(LOG_ALERT, "slurmctld: Error %d from accept\n", errno);
+#endif
+	    abort();
+	} /* if */
+
+/* Convert to pthread, TBD */
+	if ((child_pid = fork()) < 0) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "slurmctld: Error %d from fork\n", errno);
+#else
+	    syslog(LOG_ALERT, "slurmctld: Error %d from fork\n", errno);
+#endif
+	    abort();
+	} else if (child_pid == 0) {	/* child */
+	    close(sockfd);		/* close original socket */
+	    Slurmctld_Req(newsockfd);	/* process the request */
+	    close(newsockfd);		/* close the new socket */
+	    exit(0);
+	} else {			/* parent */
+	    close(newsockfd);		/* close the new socket */
+	} /* else */
+    } /* while */
+} /* main */
+
+/*
+ * Slurmctld_Req - Process a slurmctld request from the given socket
+ * Input: sockfd - The socket with a request to be processed
+ */
+void Slurmctld_Req(int sockfd) {
+    int Error_Code, In_Size, i;
     char In_Line[BUF_SIZE], Node_Name[MAX_NAME_LEN];
     int CPUs, RealMemory, TmpDisk;
     char *NodeName, *PartName, *TimeStamp;
     time_t Last_Update;
     clock_t Start_Time;
     char *Dump;
-    int Dump_Size;
+    int Dump_Size, Dump_Loc;
 
-    if (argc < 3) {
-	printf("Usage: %s <slurm_conf_file> <command_file>\n", argv[0]);
-	exit(1);
-    } /* if */
+    In_Size = recv(sockfd, In_Line, sizeof(In_Line), 0);
 
-    Error_Code = Init_SLURM_Conf();
-    if (Error_Code) {
-	printf("controller: Error %d from Init_SLURM_Conf\n", Error_Code);
-	exit(Error_Code);
-    } /* if */
-
-    Error_Code = Read_SLURM_Conf(argv[1]);
-    if (Error_Code) {
-	printf("controller: Error %d from Read_SLURM_Conf\n", Error_Code);
-	exit(Error_Code);
-    } /* if */
-
-    /* Mark everything up and idle for testing */
-    for (i=0; i<Node_Record_Count; i++) {
-	BitMapSet(Idle_NodeBitMap, i);
-	BitMapSet(Up_NodeBitMap, i);
-    } /* for */
-
-    Error_Code = gethostname(Node_Name, MAX_NAME_LEN);
-    if (Error_Code != 0) {
-	fprintf(stderr, "controller: Error %d from gethostname\n", Error_Code);
-    } /* if */
-    if (strcmp(Node_Name, ControlMachine) != 0) {
-	printf("controller: This machine (%s) is not the primary control machine (%s)\n", 
-		Node_Name, ControlMachine);
-	exit(1);
-    } /* if */
-
-    Command_File = fopen(argv[2], "r");
-    if (Command_File == NULL) {
-	fprintf(stderr, "controller: error %d opening command file %s\n", 
-		errno, argv[2]);
-	exit(1);
-    } /* if */
-
-    Line_Num = 0;
-    while (fgets(In_Line, BUF_SIZE, Command_File)) {
-	Line_Num++;
-	if (strlen(In_Line) >= (BUF_SIZE-1)) {
-	    fprintf(stderr, "controller: line %d, of input file %s too long\n", 
-		Line_Num, argv[2]);
-	    exit(1);
-	} /* if */
-
-	/* Allocate:  Allocate resources for a job */
-	if (strncmp("Allocate",   In_Line,  8) == 0) {	
-	    printf("\n\nAllocate resources for a job\n");
-	    Start_Time = clock();
-	    NodeName = NULL;
-	    Error_Code = Select_Nodes(&In_Line[8], &NodeName);   /* Skip over "Allocate" */
-	    if (Error_Code)
-		printf("Error %d allocating resources for %s", Error_Code, &In_Line[8]);
-	    else 
-		printf("Allocated nodes %s to job %s", NodeName, &In_Line[8]);
-	    if (NodeName) free(NodeName);
-	    printf("Time = %ld usec\n", (long)(clock() - Start_Time));
-
-	/* DumpNode:  Dump node state information to a buffer */
-	} else if (strncmp("DumpNode",    In_Line,  8) == 0) {	
-	    printf("\n\nDumping node information\n");
-	    Start_Time = clock();
-	    TimeStamp = NULL;
-	    Error_Code = Load_String(&TimeStamp, "LastUpdate=", In_Line);
-	    if (TimeStamp) {
-		Last_Update = strtol(TimeStamp, (char **)NULL, 10);
-		free(TimeStamp);
-	    } else 
-		Last_Update = (time_t) 0;
-	    Error_Code = Dump_Node(&Dump, &Dump_Size, &Last_Update);
-	    printf("Pass %d bytes of data to the user now\n", Dump_Size);
-	    if (Dump) free(Dump);
-	    printf("Time = %ld usec\n", (long)(clock() - Start_Time));
-
-	/* DumpPart:  Dump partition state information to a buffer */
-	} else if (strncmp("DumpPart",    In_Line,  8) == 0) {	
-	    printf("\n\nDumping partition information\n");
-	    Start_Time = clock();
-	    TimeStamp = NULL;
-	    Error_Code = Load_String(&TimeStamp, "LastUpdate=", In_Line);
-	    if (TimeStamp) {
-		Last_Update = strtol(TimeStamp, (char **)NULL, 10);
-		free(TimeStamp);
-	    } else 
-		Last_Update = (time_t) 0;
-	    Error_Code = Dump_Part(&Dump, &Dump_Size, &Last_Update);
-	    printf("Pass %d bytes of data to the user now\n", Dump_Size);
-	    if (Dump) free(Dump);
-	    printf("Time = %ld usec\n", (long)(clock() - Start_Time));
-
-	/* JobSubmit:  Submit job to execute */
-	} else if (strncmp("JobSubmit",   In_Line,  9) == 0) {	
-	    printf("\n\nJob submitted for execution\n");
-	    continue;
-/* TBD */
-
-	/* JobWillRun:   Will job run if submitted */
-	} else if (strncmp("JobWillRun",  In_Line, 10) == 0) {	
-	    printf("\n\nTesting if job could run\n");
-	    continue;
-/* TBD */
-
-	/* NodeConfig: Process node configuration state on check-in */
-	} else if ((strncmp("NodeConfig",  In_Line, 10) == 0) && Msg_From_Root()) {
-	    printf("\n\nNode check-in: %s\n", In_Line);
-	    Start_Time = clock();
-	    NodeName = NULL;
-	    Error_Code  = Load_String (&NodeName,   "NodeName=",   In_Line);
-	    if (NodeName == NULL) {
-		if (Error_Code == 0) Error_Code =EINVAL;
-		printf("\n\nNodeConfig: ERROR No NodeName specified\n");
-	    } else
-		printf("\n\nNodeConfig for NodeName %s\n", NodeName);
-	    if (Error_Code == 0) Error_Code = Load_Integer(&CPUs,       "CPUs=",       In_Line);
-	    if (Error_Code == 0) Error_Code = Load_Integer(&RealMemory, "RealMemory=", In_Line);
-	    if (Error_Code == 0) Error_Code = Load_Integer(&TmpDisk,    "TmpDisk=",    In_Line);
-	    if (Error_Code == 0) Error_Code = Validate_Node_Specs(NodeName,CPUs,RealMemory,TmpDisk);
-	    if (Error_Code) printf("Error %d on NodeConfig with NodeName %s\n", 
-			Error_Code, NodeName);
-	    printf("Time = %ld usec\n", (long)(clock() - Start_Time));
-	    if (NodeName) free(NodeName);
-
-	/* Reconfigure:  Re-read configuration files */
-	} else if ((strncmp("Reconfigure", In_Line, 11) == 0) && Msg_From_Root()) {
-	    printf("\n\nReconfigure per operator command\n");
-	    Start_Time = clock();
-	    Node_Lock();
-	    Part_Lock();
-	    Error_Code = Init_SLURM_Conf();
-	    if (Error_Code != 0) exit(Error_Code);
-	    Error_Code = Read_SLURM_Conf(argv[1]);
-	    Part_Unlock();
-	    Node_Unlock();
-	    if (Error_Code) printf("Error %d from Read_SLURM_Conf\n", Error_Code);
-	    printf("Time = %ld usec\n", (long)(clock() - Start_Time));
-
-	/* Shutdown:  Shutdown controller */
-	} else if ((strncmp("Shutdown",    In_Line,  8) == 0) && Msg_From_Root()) {	
-	    printf("\n\nShutdown per operator command\n");
-	    exit(0);
-
-	/* Update:   Modify the configuration of a job, node, or partition */
-	} else if (strncmp("Update",  In_Line, 6) == 0)  {	
-	    Start_Time = clock();
-	    NodeName = PartName = NULL;
-	    Error_Code = Load_String(&NodeName, "NodeName=", In_Line);
-	    if ((Error_Code == 0) && (NodeName != NULL) && Msg_From_Root()) {
-		printf("\n\nUpdate of Node %s per operator command\n", NodeName);
-		Error_Code = Update_Node(NodeName, &In_Line[6]);  /* Skip over "Update" */
-		if (Error_Code) printf("Error %d from Update_Node on %s\n", Error_Code, NodeName);
-		printf("Time = %ld usec\n", (long)(clock() - Start_Time));
-		free(NodeName);
-		continue;
-	    } /* if */
-	    Error_Code = Load_String(&PartName, "PartitionName=", In_Line);
-	    if ((Error_Code == 0) && (PartName != NULL) && Msg_From_Root()) {
-		printf("\n\nUpdate of Partition %s per operator command\n", PartName);
-		Error_Code = Update_Part(PartName, &In_Line[6]);  /* Skip over "Update" */
-		if (Error_Code) printf("Error %d from Update_Part on %s\n", Error_Code, PartName);
-		printf("Time = %ld usec\n", (long)(clock() - Start_Time));
-		free(PartName);
-		continue;
-	    } /* if */
-
-	} else {
-	    printf("\n\nInvalid input: %s\n", In_Line);
-	} /* if */
-    } /* while */
-
-    exit(0);
-} /* main */
+    /* Allocate:  Allocate resources for a job */
+    if (strncmp("Allocate",   In_Line,  8) == 0) {	
+	Start_Time = clock();
+	NodeName = NULL;
+	Error_Code = Select_Nodes(&In_Line[8], &NodeName);   /* Skip over "Allocate" */
+#if DEBUG_SYSTEM
+	if (Error_Code)
+	    fprintf(stderr, "Slurmctld_Req: Error %d allocating resources for %s",
+		 Error_Code, &In_Line[8]);
+	else 
+	    fprintf(stderr, "Slurmctld_Req: Allocated nodes %s to job %s", 
+		NodeName, &In_Line[8]);
+	fprintf(stderr, "Allocate Time = %ld usec\n", (long)(clock() - Start_Time));
 #endif
+	if (Error_Code == 0)
+	    send(sockfd, NodeName, strlen(NodeName)+1, 0);
+	else if (Error_Code == EAGAIN)
+	    send(sockfd, "EAGAIN", 7, 0);
+	else
+	    send(sockfd, "EINVAL", 7, 0);
 
+	if (NodeName) free(NodeName);
+	return;
+    } /* if (Allocate */
 
-/* 
- * Msg_From_Root - Determine if a message is from user root
- * Output: Returns 1 if the message received is from user root, otherwise 0
- * NOTE: Must be modified once communications infrastructure established
- */
-int Msg_From_Root(void) {
-    return 1;
-} /* Msg_From_Root */
+    /* DumpNode:  Dump node state information to a buffer */
+    if (strncmp("DumpNode",    In_Line,  8) == 0) {	
+	Start_Time = clock();
+	TimeStamp = NULL;
+	Error_Code = Load_String(&TimeStamp, "LastUpdate=", In_Line);
+	if (TimeStamp) {
+	    Last_Update = strtol(TimeStamp, (char **)NULL, 10);
+	    free(TimeStamp);
+	} else 
+	    Last_Update = (time_t) 0;
+	Error_Code = Dump_Node(&Dump, &Dump_Size, &Last_Update);
+#if DEBUG_SYSTEM
+	if (Error_Code)
+	    fprintf(stderr, "Slurmctld_Req: Dump_Node error %d, ", Error_Code);
+	else 
+	   fprintf(stderr, "Slurmctld_Req: Dump_Node returning %d bytes, ", Dump_Size);
+	fprintf(stderr, "time = %ld usec\n", (long)(clock() - Start_Time));
+#endif
+	if (Error_Code == 0) {
+	    Dump_Loc = 0;
+	    while (Dump_Size > 0) {
+		i = send(sockfd, &Dump[Dump_Loc], Dump_Size, 0);
+		Dump_Loc += i;
+		Dump_Size -= i;
+	    } /* while */
+	} else
+	    send(sockfd, "EINVAL", 7, 0);
+	if (Dump) free(Dump);
+	return;
+    } /* if (DumpNode */
 
+    /* DumpPart:  Dump partition state information to a buffer */
+    if (strncmp("DumpPart",    In_Line,  8) == 0) {	
+	Start_Time = clock();
+	TimeStamp = NULL;
+	Error_Code = Load_String(&TimeStamp, "LastUpdate=", In_Line);
+	if (TimeStamp) {
+	    Last_Update = strtol(TimeStamp, (char **)NULL, 10);
+	    free(TimeStamp);
+	} else 
+	    Last_Update = (time_t) 0;
+	Error_Code = Dump_Part(&Dump, &Dump_Size, &Last_Update);
+#if DEBUG_SYSTEM
+	if (Error_Code)
+	    fprintf(stderr, "Slurmctld_Req: Dump_Part error %d, ", Error_Code);
+	else 
+	    fprintf(stderr, "Slurmctld_Req: Dump_Part returning %d bytes, ", Dump_Size);
+	fprintf(stderr, "time = %ld usec\n", (long)(clock() - Start_Time));
+#endif
+	if (Error_Code == 0)
+	    send(sockfd, Dump, Dump_Size, 0);
+	else
+	    send(sockfd, "EINVAL", 7, 0);
+	if (Dump) free(Dump);
+	return;
+    } /* if (Dump_Part */
+
+    /* JobSubmit:  Submit job to execute, TBD */
+    if (strncmp("JobSubmit",    In_Line,  9) == 0) {	
+	Start_Time = clock();
+	TimeStamp = NULL;
+	Error_Code = EINVAL;
+#if DEBUG_SYSTEM
+	if (Error_Code)
+	    fprintf(stderr, "Slurmctld_Req: JobSubmit error %d", Error_Code);
+	else 
+	    fprintf(stderr, "Slurmctld_Req: JobSubmit success for %s", &In_Line[10]);
+	fprintf(stderr, "JobSubmit Time = %ld usec\n", (long)(clock() - Start_Time));
+#endif
+	if (Error_Code == 0)
+	    send(sockfd, Dump, Dump_Size, 0);
+	else
+	    send(sockfd, "EINVAL", 7, 0);
+	return;
+    } /* if (JobSubmit */
+
+    /* JobWillRun:  Will job run if submitted, TBD */
+    if (strncmp("JobWillRun",    In_Line,  10) == 0) {	
+	Start_Time = clock();
+	TimeStamp = NULL;
+	Error_Code = EINVAL;
+#if DEBUG_SYSTEM
+	if (Error_Code)
+	    fprintf(stderr, "Slurmctld_Req: JobWillRun error %d", Error_Code);
+	else 
+	    fprintf(stderr, "Slurmctld_Req: JobWillRun success for %s", &In_Line[10]);
+	fprintf(stderr, "JobWillRun Time = %ld usec\n", (long)(clock() - Start_Time));
+#endif
+	if (Error_Code == 0)
+	    send(sockfd, Dump, Dump_Size, 0);
+	else
+	    send(sockfd, "EINVAL", 7, 0);
+	return;
+    } /* if (JobWillRun */
+
+    /* NodeConfig:   Process node configuration state on check-in */
+    if (strncmp("NodeConfig",    In_Line,  10) == 0) {	
+	Start_Time = clock();
+	TimeStamp = NULL;
+	Error_Code  = Load_String (&NodeName,   "NodeName=",   In_Line);
+	if (NodeName == NULL) Error_Code = EINVAL;
+	if (Error_Code == 0) Error_Code = Load_Integer(&CPUs,       "CPUs=",       In_Line);
+	if (Error_Code == 0) Error_Code = Load_Integer(&RealMemory, "RealMemory=", In_Line);
+	if (Error_Code == 0) Error_Code = Load_Integer(&TmpDisk,    "TmpDisk=",    In_Line);
+	if (Error_Code == 0) Error_Code = Validate_Node_Specs(NodeName,CPUs,RealMemory,TmpDisk);
+#if DEBUG_SYSTEM
+	if (Error_Code)
+	    fprintf(stderr, "Slurmctld_Req: NodeConfig error %d for %s", Error_Code, NodeName);
+	else 
+	    fprintf(stderr, "Slurmctld_Req: NodeConfig for %s", NodeName);
+	fprintf(stderr, "NodeConfig Time = %ld usec\n", (long)(clock() - Start_Time));
+#endif
+	if (Error_Code == 0)
+	    send(sockfd, Dump, Dump_Size, 0);
+	else
+	    send(sockfd, "EINVAL", 7, 0);
+	if (NodeName) free(NodeName);
+	return;
+    } /* if (NodeConfig */
+
+    /* Reconfigure:   Re-read configuration files */
+    if (strncmp("Reconfigure",    In_Line,  11) == 0) {	
+	Start_Time = clock();
+	TimeStamp = NULL;
+	Node_Lock();
+	Part_Lock();
+	Error_Code = Init_SLURM_Conf();
+	if (Error_Code == 0) Error_Code = Read_SLURM_Conf(SLURM_CONF);
+	Part_Unlock();
+	Node_Unlock();
+#if DEBUG_SYSTEM
+	if (Error_Code)
+	    fprintf(stderr, "Slurmctld_Req: Reconfigure error %d", Error_Code);
+	else 
+	    fprintf(stderr, "Slurmctld_Req: Reconfigure completed successfully");
+	fprintf(stderr, "Reconfigure Time = %ld usec\n", (long)(clock() - Start_Time));
+#endif
+	if (Error_Code == 0)
+	    send(sockfd, "SUCCESS", 8, 0);
+	else
+	    send(sockfd, "EINVAL", 7, 0);
+	return;
+    } /* if (Reconfigure */
+
+    /* Update:   Modify the configuration of a job, node, or partition */
+    if (strncmp("Update",    In_Line,  6) == 0) {	
+	Start_Time = clock();
+	NodeName = PartName = NULL;
+	Error_Code = Load_String(&NodeName, "NodeName=", In_Line);
+	if ((Error_Code == 0) && (NodeName != NULL))
+	    Error_Code = Update_Node(NodeName, &In_Line[6]);  /* Skip over "Update" */
+	else {
+	    Error_Code = Load_String(&PartName, "PartitionName=", In_Line);
+	    if ((Error_Code == 0) && (PartName != NULL)) {
+		Error_Code = Update_Part(PartName, &In_Line[6]);  /* Skip over "Update" */
+	    } /* if */
+	} /* else */
+#if DEBUG_SYSTEM
+	if (Error_Code) {
+	    if (NodeName)
+		fprintf(stderr, "Slurmctld_Req: Update error %d on node %s", Error_Code, NodeName);
+	    else
+		fprintf(stderr, "Slurmctld_Req: Update error %d on partition %s", Error_Code, PartName);
+	} else {
+	    if (NodeName)
+		fprintf(stderr, "Slurmctld_Req: Updated node %s", NodeName);
+	    else
+		fprintf(stderr, "Slurmctld_Req: Updated partition %s", PartName);
+	} /* else */
+	fprintf(stderr, "Update Time = %ld usec\n", (long)(clock() - Start_Time));
+#endif
+	if (Error_Code == 0)
+	    send(sockfd, "SUCCESS", 8, 0);
+	else
+	    send(sockfd, "EINVAL", 7, 0);
+	if (NodeName) free(NodeName);
+	if (PartName) free(PartName);
+	return;
+    } /* if (Update */
+
+#if DEBUG_SYSTEM
+    fprintf(stderr, "Slurmctld_Req: Invalid input %s", In_Line);
+#else
+    syslog(LOG_WARNING, "Slurmctld_Req: Invalid input %s", In_Line);
+#endif
+    send(sockfd, "EINVAL", 7, 0);
+    return;
+} /* main */

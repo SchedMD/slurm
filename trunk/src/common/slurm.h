@@ -36,7 +36,7 @@
 #define PROLOG			""
 #define SERVER_DAEMON   	"/usr/local/SLURM/Slurmd.Server"
 #define SERVER_TIMEOUT  	300
-#define SLURM_CONF		"/etc/SLURM.conf"
+#define SLURM_CONF		"/g/g0/jette/slurm/etc/SLURM.conf2"
 #define TMP_FS			"/tmp"
 
 extern char *ControlMachine;	/* Name of computer acting as SLURM controller */

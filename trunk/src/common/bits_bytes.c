@@ -676,7 +676,7 @@ int Read_Tag(char *Buffer, int *Buffer_Offset, int Buffer_Size, char *Tag) {
  *        Buffer_Offset - Byte offset in Buffer, read location
  *        Buffer_Size - Byte size of Buffer
  *        Tag - Unique identification for information
- *        Value - Pointer to value to be loaded, If pointer to pointer, set Copy=0
+ *        Value - Pointer to value to be loaded, If pointer to pointer
  * Output: Buffer_Offset - Incremented by  size of size plus the Value size itself
  *         Value - Set to the buffer contents or location
  *         Returns 0 if no error or EFAULT on end of buffer, EINVAL on bad tag 
