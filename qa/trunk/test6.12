@@ -92,7 +92,7 @@ expect {
 		wait
 	}
 }
-exec $bin_sleep 2
+exec $bin_sleep 10
 
 #
 # Confirm that job step still exists.
@@ -160,7 +160,7 @@ expect {
 		wait
 	}
 }
-exec $bin_sleep 2
+exec $bin_sleep 10
 
 set found_job 0
 spawn $squeue --jobs=$job_id --states=cg,cd
