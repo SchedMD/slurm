@@ -190,4 +190,15 @@ void    report_job_status(job_t *job);
  */
 int    job_rc(job_t *job);
 
+/*
+ * To run a job step on existing allocation, modify the 
+ * existing_allocation() response to remove nodes as needed 
+ * for the job step request (for --excluded nodes or reduced 
+ * --nodes count). This is a temporary fix for slurm 0.2.
+ * resp IN/OUT - existing_allocation() response message
+ * RET - zero or fatal error code
+ */
+
+int    job_resp_hack_for_step(resource_allocation_response_msg_t *resp);
+
 #endif /* !_HAVE_JOB_H */
