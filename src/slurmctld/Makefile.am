@@ -21,8 +21,7 @@ bin_PROGRAMS = slurmctld
 
 noinst_PROGRAMS = $(test_modules)
 
-#LDADD = $(top_srcdir)/src/common/libcommon.a
-LDADD   = $(top_srcdir)/src/common/libcommon.la 
+LDADD = $(top_srcdir)/src/common/libcommon.la
 
 slurmctld_SOURCES = 	\
 	locks.h  	\

@@ -30,6 +30,7 @@
 
 #include <errno.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -61,6 +62,8 @@ void init_ctld_conf ( slurm_ctl_conf_t * build_ptr );
 void parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * );
 void *process_rpc ( void * req );
 void *slurmctld_background ( void * no_data );
+void *slurmctld_rpc_mgr ( void * no_data );
+int slurm_shutdown ( void );
 inline static void slurm_rpc_dump_build ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_nodes ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_partitions ( slurm_msg_t * msg ) ;
@@ -83,14 +86,11 @@ void usage (char *prog_name);
 int 
 main (int argc, char *argv[]) 
 {
-	int error_code;
-	pthread_t thread_id;
-	slurm_fd newsockfd;
-        slurm_fd sockfd;
-	slurm_msg_t * msg = NULL ;
-	slurm_addr cli_addr ;
+	int error_code, sig;
 	char node_name[MAX_NAME_LEN];
-	pthread_attr_t thread_attr_rpc, thread_attr_bg;
+	pthread_t thread_id_bg, thread_id_rpc;
+	pthread_attr_t thread_attr_bg, thread_attr_rpc;
+	sigset_t set;
 
 	/*
 	 * Establish initial configuration
@@ -114,16 +114,81 @@ main (int argc, char *argv[])
 			node_name, slurmctld_conf.control_machine, 
 			slurmctld_conf.backup_controller);
 
+	/* block all signals for now */
+	if (sigfillset (&set))
+		error ("sigfillset errno %d", errno);
+
+	if (pthread_sigmask (SIG_BLOCK, &set, NULL))
+		error ("pthread_sigmask errno %d", errno);
+
 	/* create attached thread for background activities */
 	if (pthread_attr_init (&thread_attr_bg))
 		fatal ("pthread_attr_init errno %d", errno);
-	if (pthread_create ( &thread_id, &thread_attr_bg, slurmctld_background, NULL))
+	if (pthread_create ( &thread_id_bg, &thread_attr_bg, slurmctld_background, NULL))
 		fatal ("pthread_create errno %d", errno);
 
-	/* threads to process RPC's are detached */
+	/* create attached thread to process RPCs */
 	if (pthread_attr_init (&thread_attr_rpc))
 		fatal ("pthread_attr_init errno %d", errno);
-	if (pthread_attr_setdetachstate (&thread_attr_rpc, PTHREAD_CREATE_DETACHED))
+	if (pthread_create ( &thread_id_rpc, &thread_attr_rpc, slurmctld_rpc_mgr, NULL))
+		fatal ("pthread_create errno %d", errno);
+
+	/* just watch for select signals */
+	if (sigemptyset (&set))
+		error ("sigemptyset errno %d", errno);
+	if (sigaddset (&set, SIGHUP))
+		error ("sigaddset errno %d on SIGHUP", errno);
+	if (sigaddset (&set, SIGINT))
+		error ("sigaddset errno %d on SIGINT", errno);
+	if (sigaddset (&set, SIGTERM))
+		error ("sigaddset errno %d on SIGTERM", errno);
+	while (1) {
+		if ( (error_code = sigwait (&set, &sig)) )
+			error ("sigwait errno %d\n", error_code);
+
+		switch (sig) {
+			case SIGINT:	/* kill -2  or <CTRL-C>*/
+			case SIGTERM:	/* kill -15 */
+				info ("Terminate signal (SIGINT or SIGTERM) received\n");
+				shutdown_time = time (NULL);
+				/* send RPC to shutdown */
+				slurm_shutdown ();
+				pthread_join (thread_id_rpc, NULL);
+				/* thread_id_bg waits for all RPCs to complete */
+				pthread_join (thread_id_bg, NULL);
+				pthread_exit ((void *)0);
+				break;
+			case SIGHUP:	/* kill -1 */
+				info ("Reconfigure signal (SIGHUP) received\n");
+				error_code = read_slurm_conf ( );
+				if (error_code)
+					error ("read_slurm_conf error %d", error_code);
+				break;
+			default:
+				error ("Invalid signal (%d) received\n", sig);
+		}
+	}
+
+	pthread_exit ((void *)0);
+
+}
+
+/* slurmctld_rpc_mgr - Read incoming RPCs and create individual threads for each */
+void *
+slurmctld_rpc_mgr ( void * no_data ) 
+{
+	int error_code;
+	slurm_fd newsockfd;
+        slurm_fd sockfd;
+	slurm_msg_t * msg = NULL ;
+	slurm_addr cli_addr ;
+	pthread_t thread_id_rpc_req;
+	pthread_attr_t thread_attr_rpc_req;
+
+	/* threads to process individual RPC's are detached */
+	if (pthread_attr_init (&thread_attr_rpc_req))
+		fatal ("pthread_attr_init errno %d", errno);
+	if (pthread_attr_setdetachstate (&thread_attr_rpc_req, PTHREAD_CREATE_DETACHED))
 		fatal ("pthread_attr_setdetachstate errno %d", errno);
 
 	/* initialize port for RPCs */
@@ -151,6 +216,8 @@ main (int argc, char *argv[])
 		
 		if ( ( error_code = slurm_receive_msg ( newsockfd , msg ) ) == SLURM_SOCKET_ERROR )
 		{
+			if (shutdown_time)
+				break;
 			error ("slurm_receive_msg error %d", errno);
 			slurm_close_accepted_conn ( newsockfd ); /* close the new socket */
 			slurm_free_msg ( msg ) ;
@@ -159,7 +226,7 @@ main (int argc, char *argv[])
 
 		msg -> conn_fd = newsockfd ;	
 
-		if (pthread_create ( &thread_id, &thread_attr_rpc, process_rpc, (void *) msg)) {
+		if (pthread_create ( &thread_id_rpc_req, &thread_attr_rpc_req, process_rpc, (void *) msg)) {
 			/* Do without threads on failure */
 			error ("pthread_create errno %d", errno);
 			slurmctld_req ( msg );	/* process the request */
@@ -168,7 +235,7 @@ main (int argc, char *argv[])
 			slurm_close_accepted_conn ( newsockfd ); /* close the new socket */
 		}
 	}			
-	exit (0) ;
+	pthread_exit ((void *)0);
 }
 
 /* slurmctld_background - process slurmctld background activities */
@@ -219,7 +286,7 @@ slurmctld_background ( void * no_data )
 		}
 
 	}
-	return ((void *)0);
+	pthread_exit ((void *)0);
 }
 
 /* process_rpc - process an RPC request and close the connection */
@@ -926,6 +993,65 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
 			node_reg_stat_msg -> node_name, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
+}
+
+/* slurm_shutdown - issue RPC to have slurmctld shutdown, knocks loose an accept() */
+int
+slurm_shutdown ()
+{
+	int msg_size ;
+	int rc ;
+	slurm_fd sockfd ;
+	slurm_msg_t request_msg ;
+	slurm_msg_t response_msg ;
+	return_code_msg_t * slurm_rc_msg ;
+
+        /* init message connection for message communication with controller */
+	if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR ) {
+		error ("slurm_open_controller_conn error");
+		return SLURM_SOCKET_ERROR ;
+	}
+
+	/* send request message */
+	request_msg . msg_type = REQUEST_SHUTDOWN ;
+
+	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
+		error ("slurm_send_controller_msg error");
+		return SLURM_SOCKET_ERROR ;
+	}
+
+	/* receive message */
+	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR ) {
+		error ("slurm_receive_msg error");
+		return SLURM_SOCKET_ERROR ;
+	}
+
+	/* shutdown message connection */
+	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR ) {
+		error ("slurm_shutdown_msg_conn error");
+		return SLURM_SOCKET_ERROR ;
+	}
+	if ( msg_size )
+		return msg_size;
+
+	switch ( response_msg . msg_type )
+	{
+		case RESPONSE_SLURM_RC:
+			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			rc = slurm_rc_msg->return_code;
+			slurm_free_return_code_msg ( slurm_rc_msg );	
+			if (rc) {
+				error ("slurm_shutdown_msg_conn error (%d)", rc);
+				return SLURM_PROTOCOL_ERROR;
+			}
+			break ;
+		default:
+			error ("slurm_shutdown_msg_conn type bad (%d)", response_msg . msg_type);
+			return SLURM_UNEXPECTED_MSG_ERROR;
+			break ;
+	}
+
+        return SLURM_PROTOCOL_SUCCESS ;
 }
 
 /*
