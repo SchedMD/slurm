@@ -136,6 +136,10 @@ launch(void *arg)
 		msg_array_ptr[i].srun_node_id    = (uint32_t)i;
 		msg_array_ptr[i].io_port         = ntohs(job->ioport[i%job->niofds]);
 		msg_array_ptr[i].resp_port       = ntohs(job->jaddr[i%job->njfds].sin_port);
+#if HAVE_TOTALVIEW
+		if (opt.totalview)
+			msg_array_ptr[i].task_flags &= TASK_TOTALVIEW_DEBUG;
+#endif
 
 		req_array_ptr[i].msg_type = REQUEST_LAUNCH_TASKS;
 		req_array_ptr[i].data     = &msg_array_ptr[i];
