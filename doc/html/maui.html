@@ -20,7 +20,7 @@ Department of Energy under Contract W-7405-Eng-48">
 <meta name="Classification"
 content="DOE:DOE Web sites via organizational
 structure:Laboratories and Other Field Facilities">
-<title>Simple Linux Utility for Resource Management:Documentation</title>
+<title>Simple Linux Utility for Resource Management:Maui Scheduler Integration Guide</title>
 <link href="slurmstyles.css" rel="stylesheet" type="text/css">
 </head>
 
@@ -51,21 +51,76 @@ structure:Laboratories and Other Field Facilities">
 <a href="download.html" class="nav">Download</a><br>
 <a href="quickstart_admin.html" class="nav">Guide</a></p></td>
 <td><img src="spacer.gif" width="10" height="1" alt=""></td>
-<td valign="top"><h2> Documentation</h2>
-<p>The SLURM <a href="quickstart.html">Quick Start User Guide</a> provides basic 
-introductory information for all SLURM users.</p>
-<p>The following documents have been written to provide guidance and information 
-for SLURM administrators and developers.</p>
-<ul>
-<li><a href="quickstart_admin.html">Quick Start Administrator Guide</a></li>
-<li><a href="programmer_guide.html">Programmer Guide</a></li>
-<li><a href="plugins.html">Plugin Programmer Guide</a></li>
-<li><a href="authplugins.html">Authentication Plugin Programmer Guide</a></li>
-<li><a href="jobcompplugins.html">Job Completion Logging Plugin Programmer Guide</a></li>
-<li><a href="schedplugins.html">Scheduler Plugin Programmer Guide</a></li>
-<li><a href="switchplugins.html">Switch (Interconnect) Plugin Programmer Guide</a></li>
-<li><a href="maui.html">Maui Scheduler Inegration Guide</a></li>
-</ul></td>
+<td valign="top"><h2>Maui Scheduler Integration Guide</h2>
+<h3>Overview</h3>
+<p>Maui configuration is quite complicated and is really beyond the scope
+of any documents we could supply with SLURM.  We don't intend SLURM to
+be a "wrapper" for Maui, or to subordinate Maui.  The best (and
+practically only) resource for configuration Maui is the online
+documents at the site of Maui's developers: 
+<a href="http://www.supercluster.org">http://www.supercluster.org</a>.
+
+<h3>Configuration</h3>
+<p>First, compile Maui from its source distribution.  As part of the Maui
+pre-compilation configuration you will be asked whether you want to us
+PBS.  Say no.  You will be asked for a "Checksum Seed".  Enter any
+number and make note of the number you give; it will be needed for the
+SchedulerAuth configuration parameter in SLURM.
+
+<p>You must also select a TCP port number over which Maui and SLURM will
+communicate.  I use 7321, but you can pick any port that is available
+and accessible.  In the Maui configuration file, add the following
+configuration parameters:
+<pre>
+RMCFG[base]     TYPE=WIKI
+RMPORT          7321            # or whatever you choose as a port
+</pre>
+
+<p>You must also give the host name on which the SLURM controller is
+running.  Note that "localhost" doesn't seem to work; if you run Maui
+and SLURM on the same machine, you must still give the host name.  In
+the Maui configuration add:
+<pre>
+RMHOST          myhost.mydomain
+</pre>
+replacing "myhost.mydomain" with your SLURM controller host.  You can
+also set a polling interval with
+<pre>
+RMPOLLINTERVAL  00:00:20
+</pre>
+I like Maui to poll SLURM quite often -- in this case every 20 seconds.
+
+The sample SLURM configuration file contains a schedule section that
+looks like this:
+<pre>
+#
+# o Define a scheduler.
+#
+# "SchedulerType"        : the type of scheduler.
+#       "sched/builtin"  : the default, SLURM's built-in FIFO scheduler.
+#       "sched/backfill" : FIFO scheduling with backfill.
+#       "sched/wiki"     : the Wiki interface to Maui.
+#
+# "SchedulerAuth"        : an authentication token, if any, that must
+#                          be used in a scheduler communication
+#                          protocol.  The interpretation of this value
+#                          depends on the plugin type.
+#
+# "SchedulerPort"        : for polling schedulers, the port number on
+#                          which slurmctld should listen for connection
+#                          requests.
+#
+SchedulerType=sched/wiki
+SchedulerPort=7321
+SchedulerAuth=42
+</pre>
+In this case, "SchedulerAuth" has been set to 42, which is the number
+you could have given as the "Checksum Seed" to Maui.  Just make sure the
+numbers match.  The Maui folks have assured me that the checksum won't
+always be a compiled-in feature.
+
+
+<p class="footer"><a href="#top">top</a></p></td>
 </tr>
 <tr> 
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
