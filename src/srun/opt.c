@@ -893,12 +893,15 @@ static void _opt_args(int ac, char **av)
 		remote_argv[i] = strdup(rest[i]);
 	remote_argv[i] = NULL;	/* End of argv's (for possible execv) */
 
-
 	if (remote_argc > 0) {
 		char *cmd       = remote_argv[0];
 		bool search_cwd = (opt.batch || opt.allocate);
 		int  mode       = (search_cwd) ? R_OK : R_OK | X_OK;
 
+		if (search_cwd)
+			debug("searching cwd first");
+
+		info("going to search path");
 		if ((fullpath = _search_path(cmd, search_cwd, mode))) {
 			free(remote_argv[0]);
 			remote_argv[0] = fullpath;
@@ -1067,7 +1070,8 @@ _search_path(char *cmd, bool check_current_dir, int access_mode)
 	ListIterator i        = NULL;
 	char *path, *fullpath = NULL;
 
-	if (access(cmd, access_mode) == 0) {
+	if (  (cmd[0] == '.' || cmd[0] == '/') 
+           && (access(cmd, access_mode) == 0 ) ) {
 		if (cmd[0] == '.')
 			xstrfmtcat(fullpath, "%s/", opt.cwd);
 		xstrcat(fullpath, cmd);
@@ -1079,9 +1083,7 @@ _search_path(char *cmd, bool check_current_dir, int access_mode)
 
 	i = list_iterator_create(l);
 	while ((path = list_next(i))) {
-		xstrcat(fullpath, path);
-		xstrcatchar(fullpath, '/');
-		xstrcat(fullpath, cmd);
+		xstrfmtcat(fullpath, "%s/%s", path, cmd);
 
 		if (access(fullpath, access_mode) == 0)
 			goto done;
