@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Fixes for reported problems:
    - slurm/512: Let job steps run on DRAINING nodes
+   - slurm/513: Gracefully deal with UIDs missing from passwd file
  -- Add support for MPICH-GM (from takao.hatazaki@hp.com)
  -- Add support for NodeHostname in node configuration
  -- Make "scontrol show daemons" function properly on front-end system 
