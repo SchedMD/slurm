@@ -468,7 +468,7 @@ of reserved ports and set-uid programs. In this scheme, daemons check the
 source port of a request to ensure that it is less than a certain value,
 and thus only accessible by {\tt root}. The communications over that
 connection are then implicitly trusted.  Since reserved ports are a very
-limited resource and setuid programs are a possible security concern,
+limited resource and set-uid programs are a possible security concern,
 we have strived to employ a credential based authentication scheme which
 does not depend on reserved ports. In this design, a SLURM authentication
 credential is attached to every message and authoratatively verifies the
@@ -580,7 +580,7 @@ the presence of a {\tt SLURM\_JOBID} environment variable. \srun\
 connects to \slurmctld\ to request a job step to run on all nodes of
 the current job. \slurmctld\ validates the request and replies with a
 job step credential and switch resources. \srun\ then contacts \slurmd 's
-running on both {\em dev6} and {\em dev7}, passing the job credential,
+running on both {\em dev6} and {\em dev7}, passing the job step credential,
 environment, current working directory, command path and arguments,
 and interconnect information. The {\tt slurmd}'s verify the valid job
 step credential, connect stdout and stderr back to \srun , establish
@@ -630,7 +630,7 @@ srun --nodes 2 --nprocs 2 mping 1 1048576
 
 The \srun\ command authenticates the user to the controller and makes a
 request for a resource allocation {\em and} job step. The Job Manager
-responds with a list of nodes, a job credential, and interconnect
+responds with a list of nodes, a job step credential, and interconnect
 resources on successful allocation. If resources are not immediately
 available, the request terminates or blocks depending upon user options.
 
@@ -911,16 +911,26 @@ or node state might permit the scheduling of a job.
 We are well aware this scheduling algorithm does not satisfy the needs
 of many customers and we provide the means for establishing other
 scheduling algorithms. Before a newly arrived job is placed into the
-queue, it is assigned a priority.  Our intent is to provide a plugin
-for use by an external scheduler to establish this initial priority.
-A plugin function would also be called at the start of each scheduling
+queue, an external scheduler plugin assigns its initial priority.  
+A plugin function is also be called at the start of each scheduling
 cycle to modify job or system state as desired.  SLURM APIs permit an
-external entity to alter the priorities of jobs at any time to re-order
+external entity to alter the priorities of jobs at any time and re-order
 the queue as desired.  The Maui Scheduler\cite{Jackson2001,Maui2002}
 is one example of an external scheduler suitable for use with SLURM.
-Another scheduler that we plan to offer with SLURM is DPCS\cite{DPCS2002}.
-DPCS has flexible scheduling algorithms that suit our needs well and
-provides the scalability required for this application.
+
+LLNL uses DPCS\cite{DPCS2002} as SLURM's external scheduler. 
+DPCS is a meta-scheduler with flexible scheduling algorithms that 
+suit our needs well. 
+It also provides the scalability required for this application.
+DPCS maintains pending job state internally and only transfers the 
+jobs to SLURM (or another underlying resources manager) only when 
+they are to begin execution. 
+By not transferring jobs to a particular resources manager earlier, 
+jobs as assured of being initiated on the first resource satisfying 
+their requirements, be that Linux cluster with SLURM or an IBM SP 
+with LoadLeveler (assuming a highly flexible application).
+This mode of operation may also be suitable for computational grid 
+schedulers.
 
 In a future release, the Job Manager will collect resource consumption
 information (CPU time used, CPU time allocated, and real memory used)
@@ -1019,7 +1029,7 @@ to {\tt slurmctld}.
 \slurmd\ accepts requests from \srun\ and \slurmctld\ to initiate
 and terminate user jobs. The initiate job request contains such
 information as real and effective user IDs, environment variables, working
-directory, task numbers, job credential, interconnect specifications and
+directory, task numbers, job step credential, interconnect specifications and
 authorization, core paths, SLURM job id, and the command line to execute.
 System specific programs can be executed on each allocated node prior
 to the initiation of a user job and after the termination of a user
@@ -1200,7 +1210,7 @@ manually run job steps via a script or in a sub-shell spawned by \srun .
 \centerline{\epsfig{file=../figures/connections.eps,scale=0.3}}
 \caption{\small Job initiation connections overview. 1. \srun\ connects to 
          \slurmctld\ requesting resources. 2. \slurmctld\ issues a response,
-	 with list of nodes and job credential. 3. \srun\ opens a listen
+	 with list of nodes and job step credential. 3. \srun\ opens a listen
 	 port for job IO connections, then sends a run job step
 	 request to \slurmd . 4. \slurmd initiates job step and connects
 	 back to \srun\ for stdout/err. }
@@ -1211,7 +1221,7 @@ Figure~\ref{connections} gives a high-level depiction of the connections
 that occur between SLURM components during a general interactive
 job startup.  \srun\ requests a resource allocation and job step
 initiation from the {\tt slurmctld}, which responds with the job id,
-list of allocated nodes, job credential, etc.  if the request is granted.
+list of allocated nodes, job step credential, etc.  if the request is granted.
 \srun\ then initializes a listen port for stdio connections, and connects
 to the \slurmd 's on the allocated nodes requesting that the remote
 processes be initiated. The \slurmd 's begin execution of the tasks and
@@ -1351,7 +1361,7 @@ initiates a job step on all nodes within the current job.
 An \srun\ executed from the sub-shell reads the environment and user
 options, then notify the controller that it is starting a job step under
 the current job. The \slurmctld\ registers the job step and responds
-with a job credential. \srun\ then initiates the job step using the same
+with a job step credential. \srun\ then initiates the job step using the same
 general method as described in the section on interactive job initiation.
 
 When the user exits the allocate sub-shell, the original \srun\ receives
@@ -1425,19 +1435,19 @@ use by each parallel job is planned for a future release.
 \section{Acknowledgments}
 
 \begin{itemize}
-\item Chris Dunlap for technical guidance
-\item Joey Ekstrom and Kevin Tew for their work developing the communications
-infrastructure and user tools
+\item Jay Windley of Linux Networx for his development of the plugin 
+mechanism and work on the security components
+\item Joey Ekstrom for his work developing the user tools
+\item Kevin Tew for his work developing the communications infrastructure
 \item Jim Garlick for his development of the Quadrics Elan interface and 
 technical guidance
 \item Gregg Hommes, Bob Wood and Phil Eckert for their help designing the 
 SLURM APIs
+\item Mark Seager and Greg Tomaschke for their support of this project
+\item Chris Dunlap for technical guidance
 \item David Jackson of Linux Networx for technical guidance
 \item Fabrizio Petrini of Los Alamos National Laboratory for his work to 
 integrate SLURM with STORM communications 
-\item Mark Seager and Greg Tomaschke for their support of this project
-\item Jay Windley of Linux Networx for his development of the plugin 
-mechanism and work on the security components
 \end{itemize}
 
 %\appendix
