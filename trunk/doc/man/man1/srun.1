@@ -97,12 +97,14 @@ Specify an alternate distribution method for remote processes.
 .TP
 .B block
 The block method of distribution will allocate processes in-order to
-the cpus on a node. 
+the cpus on a node. This is the default behavior if the number of tasks 
+exceeds the number of nodes requested.
 .TP
 .B cyclic
 The cyclic method distributes processes in a round-robin fashion across
 the allocated nodes. That is, process 1 will be allocated to the first
-node, process 2 to the second, and so on. This is the default behavior.
+node, process 2 to the second, and so on. This is the default behavior
+if the number of tasks is no larger than the number of nodes requested.
 .RE
 .TP
 \fB\-J\fR, \fB\-\-job\-name\fR=\fIjobname\fR
