@@ -93,8 +93,8 @@ dnl               [AC_MSG_ERROR([Error: Cannot find the pthread library])])
 ACX_PTHREAD([], AC_MSG_ERROR([Error: Cannot figure out how to use pthreads!]))
 AC_DEFINE_UNQUOTED(WITH_PTHREADS, $HAVE_PTHREAD, [Define if you have pthreads])
 AC_SUBST(WITH_PTHREADS)
-LDFLAGS="$LDFLAGS $PTHREAD_CFLAGS"
-CPPFLAGS="$CPPFLAGS $PTHREAD_CFLAGS"
+LDFLAGS="$LDFLAGS "
+CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 LIBS="$PTHREAD_LIBS $LIBS"
 
 SEMAPHORE_SOURCES=""
@@ -143,10 +143,10 @@ AC_ARG_ENABLE(debug,
 
 AC_MSG_RESULT(${with_slurm_debug=no})
 if test "x$with_slurm_debug" = "xtrue"; then 
-  CFLAGS="-g -Wall -Wpointer-arith"
+  CFLAGS="-g -Wall -Wpointer-arith $PTHREAD_CFLAGS"
   AC_DEFINE(DEBUG_SYSTEM, 1, [Define for extra debug messages.])
 else
-  CFLAGS="-g -Wall -Wpointer-arith"
+  CFLAGS="-g -Wall -Wpointer-arith $PTHREAD_CFLAGS"
 fi
 AM_CONDITIONAL(DEBUG_MODULES, test "x$with_slurm_debug" = "xtrue")
 
