@@ -71,10 +71,7 @@
 #include "src/srun/signals.h"
 #include "src/srun/sigstr.h"
 #include "src/srun/reattach.h"
-
-#ifdef HAVE_TOTALVIEW
-#  include "src/srun/attach.h"
-#endif
+#include "src/srun/attach.h"
 
 #define MAX_RETRIES 20
 
@@ -100,11 +97,7 @@ static int   _set_rlimit_env(void);
 static char *_sprint_task_cnt(job_t *job);
 static void  _switch_standalone(job_t *job);
 
-#if HAVE_TOTALVIEW
 int srun(int ac, char **av)
-#else
-int main(int ac, char **av)
-#endif  /* HAVE_TOTALVIEW */
 {
 	allocation_resp *resp;
 	job_t *job;

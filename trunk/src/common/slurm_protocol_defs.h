@@ -51,7 +51,7 @@
 /* used to define flags of the launch_tasks_request_msg_t.task_flags
  */
 enum task_flag_vals {
-	TASK_TOTALVIEW_DEBUG = 0x1,
+	TASK_PARALLEL_DEBUG = 0x1,
 	TASK_UNUSED1 = 0x2,
 	TASK_UNUSED2 = 0x4
 };

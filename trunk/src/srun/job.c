@@ -48,10 +48,7 @@
 #include "src/srun/opt.h"
 #include "src/srun/fname.h"
 #include "src/srun/signals.h"
-
-#if HAVE_TOTALVIEW
 #include "src/srun/attach.h"
-#endif
 
 
 /*
@@ -344,9 +341,7 @@ job_destroy(job_t *job, int error)
 		return;
 	}
 
-#ifdef HAVE_TOTALVIEW
-	if (error) tv_launch_failure();
-#endif
+	if (error) debugger_launch_failure();
 
 	job->removed = true;
 }

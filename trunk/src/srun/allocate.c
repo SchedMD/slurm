@@ -40,10 +40,7 @@
 #include "src/srun/allocate.h"
 #include "src/srun/msg.h"
 #include "src/srun/opt.h"
-
-#if HAVE_TOTALVIEW
-#  include "src/srun/attach.h"
-#endif
+#include "src/srun/attach.h"
 
 #define MAX_ALLOC_WAIT 60	/* seconds */
 #define MIN_ALLOC_WAIT  2	/* seconds */
@@ -169,9 +166,7 @@ _wait_for_resources(resource_allocation_response_msg_t **resp)
 		if (destroy_job) {
 			verbose("cancelling job %u", old_job.job_id);
 			slurm_complete_job(old_job.job_id, 0, 0);
-#ifdef HAVE_TOTALVIEW
-			tv_launch_failure();
-#endif
+			debugger_launch_failure();
 			exit(0);
 		}
 

@@ -150,10 +150,8 @@ launch(void *arg)
 		memcpy(&m->address, &job->slurmd_addr[i], sizeof(slurm_addr));
 		r->switch_job = job->switch_job;
 
-#ifdef HAVE_TOTALVIEW
-		if (opt.totalview)
-			r->task_flags |= TASK_TOTALVIEW_DEBUG;
-#endif
+		if (opt.parallel_debug)
+			r->task_flags |= TASK_PARALLEL_DEBUG;
 
 	}
 

@@ -550,7 +550,6 @@ _make_tmpdir(slurmd_job_t *job)
 static void 
 _pdebug_trace_process(slurmd_job_t *job, pid_t pid)
 {
-#if HAVE_TOTALVIEW
 	/*  If task to be debugged, wait for it to stop via
 	 *  child's ptrace(PTRACE_TRACEME), then SIGSTOP, and 
 	 *  ptrace(PTRACE_DETACH). This requires a kernel patch,
@@ -558,7 +557,7 @@ _pdebug_trace_process(slurmd_job_t *job, pid_t pid)
 	 *  If not, apply the kernel patch in etc/ptrace.patch
 	 */
 
-	if (job->task_flags & TASK_TOTALVIEW_DEBUG) {
+	if (job->task_flags & TASK_PARALLEL_DEBUG) {
 		int status;
 		waitpid(pid, &status, WUNTRACED);
 		if (kill(pid, SIGSTOP) < 0)
@@ -566,7 +565,6 @@ _pdebug_trace_process(slurmd_job_t *job, pid_t pid)
 		if (ptrace(PTRACE_DETACH, (long) pid, NULL, NULL))
 			error("ptrace(%lu): %m", (unsigned long) pid);
 	}
-#endif /* HAVE_TOTALVIEW */
 }
 
 /*
@@ -575,12 +573,10 @@ _pdebug_trace_process(slurmd_job_t *job, pid_t pid)
 static void
 _pdebug_stop_current(slurmd_job_t *job)
 {
-#if HAVE_TOTALVIEW
 	/* 
 	 * Stop the task on exec for TotalView to connect 
 	 */
-	if ( (job->task_flags & TASK_TOTALVIEW_DEBUG)
+	if ( (job->task_flags & TASK_PARALLEL_DEBUG)
 	     && (ptrace(PTRACE_TRACEME, 0, NULL, NULL) < 0) )
 		error("ptrace: %m");
-#endif
 }

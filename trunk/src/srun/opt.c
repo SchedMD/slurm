@@ -63,9 +63,7 @@
 
 #include "src/srun/env.h"
 #include "src/srun/opt.h"
-
-#ifdef HAVE_TOTALVIEW
-#  include "src/srun/attach.h"
+#include "src/srun/attach.h"
 
 /*
  *  Instantiate extern variables from attach.h
@@ -78,7 +76,6 @@
    int MPIR_i_am_starter;
    int MPIR_acquired_pre_main;
    char *totalview_jobid;
-#endif
 
 /* generic OPT_ definitions -- mainly for use with env vars  */
 #define OPT_NONE        0x00
@@ -147,9 +144,7 @@ static char *_search_path(char *, bool, int);
 
 static long  _to_bytes(const char *arg);
 
-#ifdef HAVE_TOTALVIEW
-   static bool _under_totalview(void);
-#endif
+static bool  _under_parallel_debugger(void);
 
 static void  _usage(void);
 static bool  _valid_node_list(char **node_list_pptr);
@@ -443,17 +438,14 @@ static void _opt_default()
 	
 	mode	= MODE_NORMAL;
 
-#ifdef HAVE_TOTALVIEW
 	/*
-	 * Reset some default values if running under TotalView:
+	 * Reset some default values if running under a parallel debugger
 	 */
-	if ((opt.totalview = _under_totalview())) {
+	if ((opt.parallel_debug = _under_parallel_debugger())) {
 		opt.max_launch_time = 120;
 		opt.max_threads     = 1;
 		opt.msg_timeout     = 15;
 	}
-
-#endif
 
 }
 
@@ -1295,13 +1287,11 @@ static void _opt_list()
 
 }
 
-#ifdef HAVE_TOTALVIEW
-/* Determine if srun is under the control of a TotalView debugger or not */
-static bool _under_totalview(void)
+/* Determine if srun is under the control of a parallel debugger or not */
+static bool _under_parallel_debugger (void)
 {
 	return (MPIR_being_debugged != 0);
 }
-#endif
 
 static void _usage(void)
 {

@@ -1,8 +1,8 @@
 # $Id$
 
 AUTOMAKE_OPTIONS = foreign
-
-SUBDIRS    = src testsuite doc
+ACLOCAL_AMFLAGS = -I auxdir
+SUBDIRS    = auxdir src testsuite doc 
 
 EXTRA_DIST =			\
 	Make-rpm.mk		\

@@ -6,15 +6,15 @@ dnl
 AC_INIT
 AC_PREREQ(2.52)
 AC_CONFIG_SRCDIR([configure.ac])
-AC_CONFIG_AUX_DIR(auxdir)
+AC_CONFIG_AUX_DIR([auxdir])
 AC_CANONICAL_TARGET([])
 
-AC_GPL_LICENSED
+X_AC_GPL_LICENSED
 
 #
 # Determine project/version from META file.
 # Sets PACKAGE, VERSION, SLURM_VERSION
-AC_SLURM_VERSION
+X_AC_SLURM_VERSION
 
 
 dnl Initialize Automake
@@ -52,21 +52,16 @@ AC_HEADER_STDC
 
 dnl Checks for structures.
 dnl
-AC_TRY_COMPILE([#include <sys/systemcfg.h>], 
-   [double x = _system_configuration.physmem;],
-   [AC_DEFINE(HAVE__SYSTEM_CONFIGURATION, 1,
-             [Define to 1 if you have the external variable,
-              _system_configuration with a member named physmem.])])
-
+X_AC__SYSTEM_CONFIGURATION
 
 dnl check to see if glibc's program_invocation_short_name is available:
 dnl
-AC_SLURM_PROGRAM_INVOCATION_SHORT_NAME
+X_AC_SLURM_PROGRAM_INVOCATION_SHORT_NAME
 
 
 dnl Checks for types.
 dnl
-AC_SLURM_BIGENDIAN
+X_AC_SLURM_BIGENDIAN
   
 
 dnl Checks for compiler characteristics.
@@ -110,7 +105,7 @@ case "$host" in
 esac
 AC_SUBST(CMD_LDFLAGS)
 
-AC_SLURM_SEMAPHORE
+X_AC_SLURM_SEMAPHORE
 
 dnl checks for system services.
 dnl
@@ -121,147 +116,55 @@ dnl
 
 dnl check for how to emulate setproctitle
 dnl
-AC_SLURM_SETPROCTITLE
+X_AC_SETPROCTITLE
 
 dnl check for debug compilation
 dnl
-AC_MSG_CHECKING(whether debug compilation of modules is enabled)
-AC_ARG_ENABLE(debug, 
-  AC_HELP_STRING([--enable-debug],[Enable debugging of individual modules]),
-  [ case "${enableval}" in
-     yes) with_slurm_debug=true ;;
-     no)  with_slurm_debug=false ;;
-     *) AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
-    esac
-  ]
-)
-
-AC_MSG_RESULT(${with_slurm_debug=no})
-if test "x$with_slurm_debug" = "xtrue"; then 
-  CFLAGS="-g -Wall -Wpointer-arith $CFLAGS"
-  AC_DEFINE(DEBUG_SYSTEM, 1, [Define for extra debug messages.])
-else
-  CFLAGS="-O2 -Wall -Wpointer-arith $CFLAGS"
-  AC_DEFINE(NDEBUG, 1, [Define for production compile of code])
-fi
-AM_CONDITIONAL(DEBUG_MODULES, test "x$with_slurm_debug" = "xtrue")
+X_AC_DEBUG
+AM_CONDITIONAL(DEBUG_MODULES, test "x$ac_debug" = "xtrue")
 
 
 dnl check for slurmd and slurmctld default ports
 dnl
-AC_MSG_CHECKING(for slurmctld default port)
-AC_ARG_WITH(slurmctld-port,
-  AC_HELP_STRING([--with-slurmctld-port=N],
-      [set slurmctld default port [[6817]]]),
-    [ if test `expr match "$withval" '[[0-9]]*$'` -gt 0; then
-        slurmctldport="$withval"
-      fi
-    ]
-)
-AC_MSG_RESULT(${slurmctldport=6817})
-AC_DEFINE_UNQUOTED(SLURMCTLD_PORT, [$slurmctldport],
-                   [Define the default port number for slurmctld])
-AC_SUBST(SLURMCTLD_PORT)
-
-AC_MSG_CHECKING(for slurmd default port)
-AC_ARG_WITH(slurmd-port,
-  AC_HELP_STRING([--with-slurmd-port=N],
-      [set slurmd default port [[6818]]]),
-    [ if test `expr match "$withval" '[[0-9]]*$'` -gt 0; then
-        slurmdport="$withval"
-      fi
-    ]
-)
-AC_MSG_RESULT(${slurmdport=6818})
-AC_DEFINE_UNQUOTED(SLURMD_PORT, [$slurmdport],
-                   [Define the default port number for slurmd])
-AC_SUBST(SLURMD_PORT)
+X_AC_SLURM_PORTS([6817], [6818])
 
 
 dnl check for whether to include Elan support
 dnl
-AC_ELAN
+X_AC_ELAN
 AM_CONDITIONAL(HAVE_ELAN, test "x$ac_have_elan" = "xyes")
 AC_SUBST(HAVE_ELAN)
 
 dnl Check for whether to include readline support
 dnl 
-savedLIBS="$LIBS"
-READLINE_LIBS="-lreadline -lncurses"
-LIBS="$READLINE_LIBS $LIBS"
-AC_CHECK_LIB([readline], [readline], [ readline_lib=yes ], [ readline_lib=no] )
-LIBS="$savedLIBS"
+X_AC_READLINE
 
-AC_MSG_CHECKING([whether to include readline support])
-AC_ARG_ENABLE(readline,
-  AC_HELP_STRING([--disable-readline], [disable readline support]),
-  [ readline=no  ],
-  [ if test x$readline_lib = xyes; then
-      readline=yes
-    else
-      readline=no
-    fi  ]
-)
-AC_MSG_RESULT(${readline})
-
-if test x$readline = xyes; then
-   AC_DEFINE(HAVE_READLINE, 1, [Define if you are compiling with readline])
-else
-   READLINE_LIBS=""
-fi
-
-AC_SUBST(READLINE_LIBS)
-
-dnl OpenSSL location (taken from openssh configure.ac)
+dnl 
 dnl
-AC_SLURM_WITH_SSL
+X_AC_SLURM_WITH_SSL
 
 
 dnl
 dnl Check for compilation of SLURM auth modules:
 dnl
-MUNGE_LIBS="-lmunge"
-savedLIBS="$LIBS"
-LIBS="$MUNGE_LIBS $LIBS"
 AC_CHECK_LIB(munge, munge_encode, [have_munge=yes], [have_munge=no])
-AC_SUBST(MUNGE_LIBS)
+if test "$have_munge" = "yes"; then
+  MUNGE_LIBS="-lmunge"
+  AC_SUBST(MUNGE_LIBS)
+fi
 AM_CONDITIONAL(WITH_MUNGE, test "x$have_munge" = "xyes")
-LIBS="$savedLIBS"
 
-AUTHD_CFLAGS=""
 AUTHD_LIBS="-lauth -le"
 savedLIBS="$LIBS"
 savedCFLAGS="$CFLAGS"
 LIBS="$SSL_LIBS $AUTHD_LIBS $LIBS"
-CFLAGS="$SSL_CPPFLAGS $CFLAGS $AUTHD_CFLAGS"
+CFLAGS="$SSL_CPPFLAGS $CFLAGS"
 AC_CHECK_LIB(auth, auth_init_credentials, [have_authd=yes], [have_authd=no])
 AC_SUBST(AUTHD_LIBS)
 AC_SUBST(AUTHD_CFLAGS)
 AM_CONDITIONAL(WITH_AUTHD, test "x$have_authd" = "xyes")
 LIBS="$savedLIBS"
 CFLAGS="$savedCFLAGS"
-
-
-dnl check for whether to include TotalView support
-dnl
-AC_MSG_CHECKING([Whether to include TotalView support])
-totalview=no
-AC_ARG_WITH(totalview,
-  AC_HELP_STRING([--with-totalview],[compile with TotalView support]),
-  [ totalview=yes 
-    AC_DEFINE(HAVE_TOTALVIEW, 1, [Define if you have TotalView support])
-    TOTALVIEW_LIBS="-ltvmpich"
-  ]
-)
-AC_MSG_RESULT(${totalview=no})
-if test x$totalview = xyes; then
-   savedLIBS="$LIBS"
-   LIBS="$TOTALVIEW_LIBS $LIBS"
-   AC_DEFINE(HAVE_TOTALVIEW, 1, [Define if you have TotalView support])
-   LIBS="$savedLIBS"
-   AC_SUBST(TOTALVIEW_LIBS)
-fi
-AM_CONDITIONAL(WITH_TOTALVIEW, test "x$with_totalview" = "xyes")
 
 
 #
@@ -277,6 +180,7 @@ AC_DEFINE(WITH_LSD_NOMEM_ERROR_FUNC, 1, [Have definition of lsd_nomem_error()])
 dnl All slurm Makefiles:
 
 AC_CONFIG_FILES([Makefile 
+		 auxdir/Makefile
 		 src/Makefile 
 		 src/api/Makefile 
 		 src/common/Makefile 
