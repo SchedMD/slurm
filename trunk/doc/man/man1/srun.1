@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "August 2003" "srun 0.2" "slurm components"
+.TH SRUN "1" "September 2003" "srun 0.2" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -48,7 +48,7 @@ run one process, nodes with 2 cpus will be allocated 2 processes, etc.
 The distribution of processes across nodes may be controlled using this
 option along with the \fB\-n\fR and \fB\-c\fR options.
 .TP
-\fB\-r\fR, \fB--relative\fR=\fIn\fR
+\fB\-r\fR, \fB\-\-relative\fR=\fIn\fR
 Run a job step relative to node \fIn\fR of the current allocation. 
 This option may be used to spread several job steps out among the
 nodes of the current job. If \fB-r\fR is used, the current job
@@ -56,7 +56,10 @@ step will begin at node \fIn\fR of the allocated nodelist, where
 the first node is considered node 0.  The \fB\-r\fR option is not 
 permitted along with \fB\-w\fR or \fB\-x\fR, and will be silently
 ignored when not running within a prior allocation (i.e. when
-SLURM_JOBID is not set). The default for \fIn\fR is 0.
+SLURM_JOBID is not set). The default for \fIn\fR is 0. If the 
+value of \fB\-\-nodes\fR exceeds the number of nodes identified 
+with the \fB\-\-relative\fR option, a warning message will be 
+printed and the \fB\-\-relative\fR option will take precedence.
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=\fIpartition\fR
 Request resources from partition "\fIpartition\fR." Partitions
