@@ -4,11 +4,12 @@ AUTOMAKE_OPTIONS = foreign
 
 SUBDIRS    = slurm src testsuite doc
 
-EXTRA_DIST =             		\
-	etc/slurm.conf.localhost 	\
-	etc/init.d.slurm \
-	autogen.sh      		\
-        Make-rpm.mk slurm.spec		\
+EXTRA_DIST =	\
+	etc/slurm.conf.example	\
+	etc/init.d.slurm	\
+	autogen.sh	\
+	Make-rpm.mk	\
+	slurm.spec	\
 	META
 
 MAINTAINERCLEANFILES = 			\

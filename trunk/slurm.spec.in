@@ -51,6 +51,7 @@ make
 DESTDIR="$RPM_BUILD_ROOT" make install
 
 install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/rc.d/init.d/slurm
+install -D -m755 etc/slurm.conf.example $RPM_BUILD_ROOT/etc/slurm.conf
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -58,15 +59,18 @@ rm -rf $RPM_BUILD_ROOT
 %files
 # where does slurm.conf belong ??? Or should be throw it in the doc directory?
 %defattr(-,root,root)
-%doc README ChangeLog 
-%attr(4755, root, root) %{_bindir}/scancel
-%attr(4755, root, root) %{_bindir}/scontrol
-%attr(4755, root, root) %{_bindir}/sinfo
-%attr(4755, root, root) %{_bindir}/squeue
-%attr(4755, root, root) %{_bindir}/srun 
-%attr(4755, root, root) %{_sbindir}/slurmcltd
-%attr(4755, root, root) %{_sbindir}/slurmd
-%attr(4755, root, root) /etc/init.d/slurm
+%doc README 
+%doc ChangeLog 
+%doc DISCLAIMER
+%attr(755, root, root) %{_bindir}/scancel
+%attr(755, root, root) %{_bindir}/scontrol
+%attr(755, root, root) %{_bindir}/sinfo
+%attr(755, root, root) %{_bindir}/squeue
+%attr(755, root, root) %{_bindir}/srun 
+%attr(755, root, root) %{_sbindir}/slurmcltd
+%attr(755, root, root) %{_sbindir}/slurmd
+%config(noreplace) %attr(755, root, root) /etc/rc.d/init.d/slurm
+%config(noreplace) %attr(755, root, root) /etc/slurm.conf
 %{_libdir}/*.so
 %{_mandir}/man1/*
 %{_mandir}/man5/*
