@@ -262,6 +262,7 @@ static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 	    (agent_arg_ptr->msg_type != REQUEST_PING) && 
 	    (agent_arg_ptr->msg_type != REQUEST_BATCH_JOB_LAUNCH) &&
 	    (agent_arg_ptr->msg_type != REQUEST_SHUTDOWN) &&
+	    (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE) &&
 	    (agent_arg_ptr->msg_type != REQUEST_UPDATE_JOB_TIME))
 		/* Add appropriate free msg type to agent() as needed */
 		fatal("agent passed invalid message type %d",

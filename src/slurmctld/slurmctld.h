@@ -702,6 +702,9 @@ extern int load_all_part_state ( void );
 /* make_node_idle - flag specified node as no longer being in use */
 extern void make_node_idle(struct node_record *node_ptr);
 
+/* msg_to_slurmd - send given msg_type every slurmd, no args */
+extern void msg_to_slurmd (slurm_msg_type_t msg_type);
+
 /*
  * node_name2bitmap - given a node name regular expression, build a bitmap 
  *	representation
@@ -890,9 +893,6 @@ extern void set_node_down (char *name);
 /* set_slurmd_addr - establish the slurm_addr for the slurmd on each node
  *	Uses common data structures. */
 extern void set_slurmd_addr (void);
-
-/* shutdown_slurmd - tell every slurmd to shutdown */
-extern void shutdown_slurmd (void);
 
 /*
  * signal_step_tasks - send specific signal to specific job step

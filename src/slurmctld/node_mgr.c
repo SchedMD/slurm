@@ -1406,8 +1406,8 @@ static void _dump_hash (void)
 }
 #endif
 
-/* shutdown_slurmd - tell every slurmd to shutdown */
-void shutdown_slurmd (void)
+/* msg_to_slurmd - send given msg_type every slurmd, no args */
+void msg_to_slurmd (slurm_msg_type_t msg_type)
 {
 	int i, pos;
 	shutdown_msg_t *shutdown_req;
@@ -1417,17 +1417,18 @@ void shutdown_slurmd (void)
 	pthread_attr_t kill_attr_agent;
 	pthread_t kill_thread_agent;
 
-	shutdown_req = xmalloc(sizeof(shutdown_msg_t));
-	shutdown_req->core = 0;
-
 	kill_agent_args = xmalloc (sizeof (agent_arg_t));
-	kill_agent_args->msg_type = REQUEST_SHUTDOWN;
-	kill_agent_args->msg_args = shutdown_req;
+	kill_agent_args->msg_type = msg_type;
 	kill_agent_args->retry = 0;
+	if (msg_type == REQUEST_SHUTDOWN) {
+ 		shutdown_req = xmalloc(sizeof(shutdown_msg_t));
+		shutdown_req->core = 0;
+		kill_agent_args->msg_args = shutdown_req;
+	}
 
 	for (i = 0; i < node_record_count; i++) {
 		if ((kill_agent_args->node_count+1) > kill_buf_rec_size) {
-			kill_buf_rec_size += 32;
+			kill_buf_rec_size += 64;
 			xrealloc ((kill_agent_args->slurm_addr), 
 			          (sizeof (struct sockaddr_in) * 
 				  kill_buf_rec_size));
@@ -1446,7 +1447,7 @@ void shutdown_slurmd (void)
 	if (kill_agent_args->node_count == 0)
 		xfree (kill_agent_args);
 	else {
-		debug ("Spawning slurmd shutdown agent");
+		debug ("Spawning slurmd msg(%d) agent", msg_type);
 		if (pthread_attr_init (&kill_attr_agent))
 			fatal ("pthread_attr_init error %m");
 		if (pthread_attr_setdetachstate (&kill_attr_agent, 
