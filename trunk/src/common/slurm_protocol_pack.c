@@ -71,7 +71,7 @@ void pack_io_stream_header ( slurm_io_stream_header_t * msg , void ** buffer , u
 	assert ( msg != NULL );
 
 	pack16( msg->version, buffer, length ) ;
-	packmem( msg->key, 16 , buffer, length ) ; 
+	packmem( msg->key, SLURM_SSL_SIGNATURE_LENGTH , buffer, length ) ; 
 	pack32( msg->task_id, buffer, length ) ;	
 	pack16( msg->type, buffer, length ) ;
 }
@@ -637,7 +637,7 @@ void pack_job_credential ( slurm_job_credential_t* msg , void ** buffer , uint32
 	pack16( (uint16_t) msg->user_id, buffer, length ) ;
 	packstr( msg->node_list, buffer, length ) ;
 	pack32( msg->experation_time, buffer, length ) ;	
-	packmem( msg->signature, 16 , buffer, length ) ; 
+	packmem( msg->signature, SLURM_SSL_SIGNATURE_LENGTH , buffer, length ) ; 
 }
 
 int unpack_job_credential( slurm_job_credential_t** msg , void ** buffer , uint32_t * length )
@@ -653,7 +653,7 @@ int unpack_job_credential( slurm_job_credential_t** msg , void ** buffer , uint3
 	unpack16( (uint16_t*) &(tmp_ptr->user_id), buffer, length ) ;
 	unpackstr_xmalloc ( &(tmp_ptr->node_list), &uint16_tmp,  ( void ** ) buffer , length ) ;
 	unpack32( (uint32_t*) &(tmp_ptr->experation_time), buffer, length ) ;	/* What are we going to do about time_t ? */
-	unpackmem( tmp_ptr->signature, 16 , buffer, length ) ; 
+	unpackmem( tmp_ptr->signature, & uint16_tmp , buffer, length ) ; 
 
 	*msg = tmp_ptr;
 	return 0;
