@@ -1110,12 +1110,15 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 
 	no_alloc = test_only || (!top_prio);
 	error_code = select_nodes(job_ptr, no_alloc);
-	if (error_code == ESLURM_NODES_BUSY) {
+	if ((error_code == ESLURM_NODES_BUSY) ||
+	    (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)) {
+		/* Not fatal error, but job can't be scheduled right now */
 		if (immediate) {
 			job_ptr->job_state = JOB_FAILED;
 			job_ptr->end_time = 0;
 		} else		/* job remains queued */
-			error_code = 0;
+			if (error_code == ESLURM_NODES_BUSY) 
+				error_code = SLURM_SUCCESS;
 		return error_code;
 	}
 
@@ -1305,7 +1308,7 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 		       int allocate, int will_run,
 		       struct job_record **job_rec_ptr, uid_t submit_uid)
 {
-	int error_code, i;
+	int error_code = SLURM_SUCCESS, i;
 	struct part_record *part_ptr;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 
@@ -1413,14 +1416,10 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 		error_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
 		goto cleanup;
 	}
-	if ((job_desc->min_nodes > part_ptr->total_nodes) ||
-	    (job_desc->min_nodes > part_ptr->max_nodes)) {
-		if (part_ptr->total_nodes > part_ptr->max_nodes)
-			i = part_ptr->max_nodes;
-		else
-			i = part_ptr->total_nodes;
+	if (job_desc->min_nodes > part_ptr->total_nodes) {
 		info("Job requested too many nodes (%d) of partition %s(%d)", 
-		     job_desc->min_nodes, part_ptr->name, i);
+		     job_desc->min_nodes, part_ptr->name, 
+		     part_ptr->total_nodes);
 		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
 		goto cleanup;
 	}
@@ -1430,15 +1429,13 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
 		goto cleanup;
 	}
-	if (job_desc->max_nodes > part_ptr->max_nodes) 
-		job_desc->max_nodes = part_ptr->max_nodes;
 
 
 	if ((error_code =_validate_job_create_req(job_desc)))
 		goto cleanup;
 
 	if (will_run) {
-		error_code = 0;
+		error_code = SLURM_SUCCESS;
 		goto cleanup;
 	}
 
@@ -1462,15 +1459,26 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 		(*job_rec_ptr)->batch_flag = 1;
 	} else
 		(*job_rec_ptr)->batch_flag = 0;
-
-	if (part_ptr->shared == SHARED_FORCE)	/* shared=force */
-		(*job_rec_ptr)->details->shared = 1;
-	else if (((*job_rec_ptr)->details->shared != 1) || 
-	         (part_ptr->shared == SHARED_NO))	/* can't share */
-		(*job_rec_ptr)->details->shared = 0;
-
 	*new_job_id = (*job_rec_ptr)->job_id;
-	return SLURM_SUCCESS;
+
+	/* Insure that requested partition is valid right now, 
+	 * otherwise leave job queued and provide warning code */
+	if (job_desc->min_nodes > part_ptr->max_nodes) {
+		info("Job %u requested too many nodes (%d) of partition %s(%d)",
+		     *new_job_id, job_desc->min_nodes, part_ptr->name, 
+		     part_ptr->max_nodes);
+		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+	} else if ((job_desc->max_nodes != 0) &&    /* no max_nodes for job */
+		   (job_desc->max_nodes < part_ptr->min_nodes)) {
+		info("Job %u requested too few nodes (%d) of partition %s(%d)",
+		     *new_job_id, job_desc->max_nodes, 
+		     part_ptr->name, part_ptr->min_nodes);
+		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+	} else if (part_ptr->state_up == 0) {
+		info("Job %u requested down partition %s", 
+		     *new_job_id, part_ptr->name);
+		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+	}
 
       cleanup:
 	FREE_NULL_BITMAP(req_bitmap);
@@ -1802,7 +1810,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 
 	strncpy(job_ptr->partition, part_ptr->name, MAX_NAME_LEN);
 	job_ptr->part_ptr = part_ptr;
-	if (job_desc->job_id != NO_VAL)
+	if (job_desc->job_id != NO_VAL)		/* already confirmed unique */
 		job_ptr->job_id = job_desc->job_id;
 	else
 		_set_job_id(job_ptr);
@@ -1817,11 +1825,12 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->time_limit = job_desc->time_limit;
 	job_ptr->alloc_sid  = job_desc->alloc_sid;
 	job_ptr->alloc_node = xstrdup(job_desc->alloc_node);
-	if ((job_desc->priority !=
-	     NO_VAL) /* also check submit UID is root */ )
+
+	if (job_desc->priority != NO_VAL) /* already confirmed submit_uid==0 */
 		job_ptr->priority = job_desc->priority;
 	else
 		_set_job_prio(job_ptr);
+
 	if (job_desc->kill_on_node_fail != (uint16_t) NO_VAL)
 		job_ptr->kill_on_node_fail = job_desc->kill_on_node_fail;
 
@@ -1967,7 +1976,7 @@ static void _job_timed_out(struct job_record *job_ptr)
 
 /* _validate_job_desc - validate that a job descriptor for job submit or 
  *	allocate has valid data, set values to defaults as required 
- * IN job_desc_msg - pointer to job descriptor
+ * IN/OUT job_desc_msg - pointer to job descriptor, modified as needed
  * IN allocate - if clear job to be queued, if set allocate for user now 
  * IN submit_uid - who request originated
  */
@@ -2019,6 +2028,9 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		if (dup_job_ptr)	/* Purge the record for re-use */
 			_purge_job_record(job_desc_msg->job_id);
 	}
+
+	if (submit_uid != 0)		/* only root can set job priority */
+		job_desc_msg->priority = NO_VAL;
 
 	if (job_desc_msg->num_procs == NO_VAL)
 		job_desc_msg->num_procs = 1;	/* default cpu count of 1 */

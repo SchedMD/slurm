@@ -1351,7 +1351,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	}
 
 	/* return result */
-	if (error_code) {
+	if ((error_code != SLURM_SUCCESS) &&
+	    (error_code != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)) {
 		info("_slurm_rpc_submit_batch_job time=%ld, error=%s",
 		     (long) (clock() - start_time),
 		     slurm_strerror(error_code));
@@ -1361,7 +1362,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		   "_slurm_rpc_submit_batch_job success for id=%u, time=%ld", 
 		   job_id, (long) (clock() - start_time));
 		/* send job_ID */
-		submit_msg.job_id = job_id;
+		submit_msg.job_id     = job_id;
+		submit_msg.error_code = error_code;
 		response_msg.msg_type = RESPONSE_SUBMIT_BATCH_JOB;
 		response_msg.data = &submit_msg;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
@@ -1382,14 +1384,14 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	char *node_list_ptr = NULL;
 	uint16_t num_cpu_groups = 0;
 	uint32_t *cpus_per_node = NULL, *cpu_count_reps = NULL;
-	uint32_t job_id;
+	uint32_t job_id = 0;
 	resource_allocation_response_msg_t alloc_msg;
 	/* Locks: Write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = { 
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 	uid_t uid;
-	uint16_t node_cnt;
-	slurm_addr *node_addr;
+	uint16_t node_cnt = 0;
+	slurm_addr *node_addr = NULL;
 
 	start_time = clock();
 	debug("Processing RPC: REQUEST_RESOURCE_ALLOCATION");
@@ -1403,6 +1405,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		error("Security violation, RESOURCE_ALLOCATE from uid %u",
 		      (unsigned int) uid);
 	}
+
 	if (error_code == SLURM_SUCCESS) {
 		int immediate = job_desc_msg->immediate;
 		lock_slurmctld(job_write_lock);
@@ -1415,7 +1418,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	}
 
 	/* return result */
-	if (error_code) {
+	if ((error_code != SLURM_SUCCESS) &&
+	    (error_code != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)) {
 		info("_slurm_rpc_allocate_resources time=%ld, error=%s ", 
 		     (long) (clock() - start_time), 
 		     slurm_strerror(error_code));
@@ -1426,14 +1430,14 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		   node_list_ptr, job_id, (long) (clock() - start_time));
 
 		/* send job_ID  and node_name_ptr */
-
-		alloc_msg.job_id = job_id;
-		alloc_msg.node_list = node_list_ptr;
-		alloc_msg.num_cpu_groups = num_cpu_groups;
-		alloc_msg.cpus_per_node = cpus_per_node;
 		alloc_msg.cpu_count_reps = cpu_count_reps;
-		alloc_msg.node_cnt = node_cnt;
-		alloc_msg.node_addr = node_addr;
+		alloc_msg.cpus_per_node  = cpus_per_node;
+		alloc_msg.error_code     = error_code;
+		alloc_msg.job_id         = job_id;
+		alloc_msg.node_addr      = node_addr;
+		alloc_msg.node_cnt       = node_cnt;
+		alloc_msg.node_list      = node_list_ptr;
+		alloc_msg.num_cpu_groups = num_cpu_groups;
 		response_msg.msg_type = RESPONSE_RESOURCE_ALLOCATION;
 		response_msg.data = &alloc_msg;
 
