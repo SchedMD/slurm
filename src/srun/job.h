@@ -26,8 +26,7 @@ typedef enum {
 	SRUN_HOST_INIT = 0,
 	SRUN_HOST_CONTACTED,
 	SRUN_HOST_UNREACHABLE,
-	SRUN_HOST_REPLIED,
-	SRUN_HOST_DONE
+	SRUN_HOST_REPLIED
 } host_state_t;
 
 typedef enum {

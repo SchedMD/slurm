@@ -263,10 +263,17 @@ static void * p_launch_task(void *args)
         print_launch_msg(msg_ptr);
 	if (slurm_send_only_node_msg(req_ptr) < 0) {	/* Has timeout */
 		error("task launch error on %s: %m", job_ptr->host[host_inx]);
-		job_ptr->host_state[host_inx] = SRUN_HOST_UNREACHABLE;
+		pthread_mutex_lock(&job_ptr->task_mutex);
+		if (job_ptr->host_state[host_inx] == SRUN_HOST_INIT)
+			job_ptr->host_state[host_inx] = SRUN_HOST_UNREACHABLE;
+		pthread_mutex_unlock(&job_ptr->task_mutex);
 		failure = 1;
-	} else
-		job_ptr->host_state[host_inx] = SRUN_HOST_CONTACTED;
+	} else {
+		pthread_mutex_lock(&job_ptr->task_mutex);
+		if (job_ptr->host_state[host_inx] == SRUN_HOST_INIT)
+			job_ptr->host_state[host_inx] = SRUN_HOST_CONTACTED;
+		pthread_mutex_unlock(&job_ptr->task_mutex);
+	}
 
 
 	pthread_mutex_lock(&active_mutex);

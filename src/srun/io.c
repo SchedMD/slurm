@@ -50,6 +50,7 @@
 #include "src/srun/opt.h"
 
 #define IO_BUFSIZ		2048
+#define MAX_MSG_WAIT_SEC	  60	/* max wait to confirm launches, sec */
 #define MAX_IO_WAIT_SEC		 600	/* max I/O idle, secs, warning msg */
 #define POLL_TIMEOUT_MSEC	 500	/* max wait for i/o poll, msec */
 
@@ -63,7 +64,8 @@ typedef struct fd_info {
 } fd_info_t;
 
 static time_t time_first_done = 0;
-static time_t time_last_io;
+static time_t time_last_io = 0;
+static time_t time_startup = 0;
 
 static void	_accept_io_stream(job_t *job, int i);
 static void	_bcast_stdin(int fd, job_t *job);	
@@ -244,15 +246,29 @@ static void _do_poll_timeout (job_t *job)
 {
 	int i, j;
 	static bool no_io_msg_sent = false;
+	static bool check_all_start = false;
+
+	if ((check_all_start == false) &&
+	    ((time(NULL) - time_startup) > MAX_MSG_WAIT_SEC)) {
+		check_all_start = true;
+		for (i = 0; i < opt.nprocs; i++) {
+			if (job->task_state[i] != SRUN_TASK_INIT)
+				continue;
+			error("Task %d never started, terminating job now", i);
+			/* report_task_status(job); */
+			update_job_state(job, SRUN_JOB_FAILED);
+			pthread_exit(0);
+		}
+	}
 
 	i = time(NULL) - time_last_io;
 	j = time(NULL) - time_first_done;
 	if (job->state == SRUN_JOB_FAILED)
 		pthread_exit(0);
-	else if (opt.max_wait && (j > opt.max_wait)) {
-		error("First task termination %d seconds ago", i);
+	else if (time_first_done && opt.max_wait && (j > opt.max_wait)) {
+		error("First task termination %d seconds ago", j);
 		error("Terminating remaining tasks now");
-		report_job_status(job);
+		/* report_task_status(job); */
 		update_job_state(job, SRUN_JOB_FAILED);
 		pthread_exit(0);
 	} else if (no_io_msg_sent)
@@ -284,8 +300,6 @@ static char *_host_state_name(host_state_t state_inx)
 			return "unreachable";
 		case SRUN_HOST_REPLIED:
 			return "replied";
-		case SRUN_HOST_DONE:		/* FIXME: not set anywhere */
-			return "done";
 		default:
 			return "unknown";
 	}
@@ -400,8 +414,13 @@ _accept_io_stream(job_t *job, int i)
 			error ("Invalid task_id %d from %s",
 			       hdr.task_id, buf);
 			continue;
-		} else 
-			job->task_state[hdr.task_id] = SRUN_TASK_RUNNING;
+		} else {
+			pthread_mutex_lock(&job->task_mutex);
+			if (job->task_state[hdr.task_id] == SRUN_TASK_INIT)
+				job->task_state[hdr.task_id] = 
+							SRUN_TASK_RUNNING;
+			pthread_mutex_unlock(&job->task_mutex);
+		}
 
 		fd_set_nonblocking(sd);
 		if (hdr.type == SLURM_IO_STREAM_INOUT)
