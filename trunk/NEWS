@@ -1,11 +1,12 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
-* Changes in SLURM 0.3.0-pre3 (not yet tagged or built)
+* Changes in SLURM 0.3.0-pre3
 =============================
  -- Fixes for reported problems:
    - slurm/328: Slurmd was restarting with a new shared memory segment and 
      losing track of jobs
+   - slurm/329: Job processing may be left running when one task dies
    - slurm/333: Slurmd fails to launch a job and deletes a step, due to 
      a race condition in shared memory management
    - slurm/334: Slurmd was getting a segv due to a race condition in shared 
@@ -35,6 +36,8 @@ documents those changes that are of interest to users and admins.
  -- Insure proper enforcement of node sharing by job
  -- Treat lack of SpoolDir or StateSaveDir as a fatal error
  -- Quickstart.html guide expanded
+ -- Increase maximum jobs steps per node from 16 to 64
+ -- Delete correct shared memory segment on slurmd -c (clean start)
 
 * Changes in SLURM 0.3.0-pre2
 =============================
