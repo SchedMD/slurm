@@ -2491,10 +2491,10 @@ update_job (job_desc_msg_t * job_specs, uid_t uid)
  *	actually running, if not clean up the job records and/or node records,
  *	call this function after validate_node_specs() sets the node state properly */
 void 
-validate_jobs_on_node ( char *node_name, uint32_t job_count, 
+validate_jobs_on_node ( char *node_name, uint32_t *job_count, 
 			uint32_t *job_id_ptr, uint16_t *step_id_ptr)
 {
-	int i, node_inx;
+	int i, node_inx, jobs_running = 0;
 	struct node_record *node_ptr;
 	struct job_record *job_ptr;
 
@@ -2506,13 +2506,13 @@ validate_jobs_on_node ( char *node_name, uint32_t job_count,
 	node_inx = node_ptr - node_record_table_ptr;
 
 	/* If no job is running here, ensure none are assigned to this node */
-	if (job_count == 0) {
-		 (void) kill_running_job_by_node_name (node_name);
+	if (*job_count == 0) {
+		(void) kill_running_job_by_node_name (node_name);
 		return;
 	}
 
 	/* Ensure that jobs which are running are really supposed to be there */
-	for (i=0; i<job_count; i++) {
+	for (i=0; i<*job_count; i++) {
 		job_ptr = find_job_record (job_id_ptr[i]);
 		if (job_ptr == NULL) {
 			/* FIXME: In the future try to let job run */
@@ -2525,10 +2525,11 @@ validate_jobs_on_node ( char *node_name, uint32_t job_count,
 		}
 
 		else if (job_ptr->job_state == JOB_RUNNING) {
-			if ( bit_test (job_ptr->node_bitmap, node_inx))
+			if ( bit_test (job_ptr->node_bitmap, node_inx)) {
+				jobs_running++;
 				debug3 ("Registered job_id %u on node %s ", 
 				       job_id_ptr[i], node_name);  /* All is well */
-			else {
+			} else {
 				error ("REGISTERED JOB_ID %u ON WRONG NODE %s ", 
 				       job_id_ptr[i], node_name);   /* Very bad */
 				signal_job_on_node (job_id_ptr[i], step_id_ptr[i], 
@@ -2558,6 +2559,12 @@ validate_jobs_on_node ( char *node_name, uint32_t job_count,
 			 * which would synchronize this */
 		}
 	}
+
+	if (jobs_running == 0) {	/* *job_count is > 0 */
+		error ("resetting job_count on node %s to zero", node_name);
+		*job_count = 0;
+	}
+
 	return;
 }
 

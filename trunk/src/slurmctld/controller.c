@@ -1731,17 +1731,17 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
 	if (error_code == 0) {
 		/* do RPC call */
 		lock_slurmctld (job_write_lock);
+		validate_jobs_on_node (
+			node_reg_stat_msg -> node_name ,
+			&node_reg_stat_msg -> job_count ,
+			node_reg_stat_msg -> job_id ,
+			node_reg_stat_msg -> step_id ) ;
 		error_code = validate_node_specs (
 			node_reg_stat_msg -> node_name ,
 			node_reg_stat_msg -> cpus ,
 			node_reg_stat_msg -> real_memory_size ,
 			node_reg_stat_msg -> temporary_disk_space ,
 			node_reg_stat_msg -> job_count ) ;
-		validate_jobs_on_node (
-			node_reg_stat_msg -> node_name ,
-			node_reg_stat_msg -> job_count ,
-			node_reg_stat_msg -> job_id ,
-			node_reg_stat_msg -> step_id ) ;
 		unlock_slurmctld (job_write_lock);
 	}
 
