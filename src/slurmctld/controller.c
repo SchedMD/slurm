@@ -121,7 +121,7 @@ inline static void  _slurm_rpc_dump_conf(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_nodes(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_partitions(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_jobs(slurm_msg_t * msg);
-inline static void  _slurm_rpc_job_step_cancel(slurm_msg_t * msg);
+inline static void  _slurm_rpc_job_step_kill(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_complete(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_create(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_get_info(slurm_msg_t * msg);
@@ -697,7 +697,7 @@ static void _slurmctld_req (slurm_msg_t * msg)
 		slurm_free_job_desc_msg(msg->data);
 		break;
 	case REQUEST_CANCEL_JOB_STEP:
-		_slurm_rpc_job_step_cancel(msg);
+		_slurm_rpc_job_step_kill(msg);
 		slurm_free_job_step_kill_msg(msg->data);
 		break;
 	case REQUEST_COMPLETE_JOB_STEP:
@@ -918,9 +918,9 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 	}
 }
 
-/* _slurm_rpc_job_step_cancel - process RPC to cancel an entire job or 
+/* _slurm_rpc_job_step_kill - process RPC to cancel an entire job or 
  * an individual job step */
-static void _slurm_rpc_job_step_cancel(slurm_msg_t * msg)
+static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 {
 	/* init */
 	int error_code = 0;
@@ -946,13 +946,13 @@ static void _slurm_rpc_job_step_cancel(slurm_msg_t * msg)
 		/* return result */
 		if (error_code) {
 			info(
-			   "_slurm_rpc_job_step_cancel error %d for %u, time=%ld", 
+			   "_slurm_rpc_job_step_kill error %d for %u, time=%ld", 
 			   error_code, job_step_kill_msg->job_id, 
 			   (long) (clock() - start_time));
 			slurm_send_rc_msg(msg, error_code);
 		} else {
 			info(
-			   "_slurm_rpc_job_step_cancel success for JobId=%u, time=%ld", 
+			   "_slurm_rpc_job_step_kill success for JobId=%u, time=%ld", 
 			   job_step_kill_msg->job_id, 
 			   (long) (clock() - start_time));
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
@@ -963,29 +963,27 @@ static void _slurm_rpc_job_step_cancel(slurm_msg_t * msg)
 
 		}
 	} else {
-		error_code = job_step_cancel(job_step_kill_msg->job_id,
+		error_code = job_step_signal(job_step_kill_msg->job_id,
 					     job_step_kill_msg->job_step_id,
+					     job_step_kill_msg->signal,
 					     uid);
 		unlock_slurmctld(job_write_lock);
 
 		/* return result */
 		if (error_code) {
 			info(
-			   "_slurm_rpc_job_step_cancel error %d for %u.%u, time=%ld", 
+			   "_slurm_rpc_job_step_kill error %d for %u.%u, time=%ld", 
 			   error_code, job_step_kill_msg->job_id, 
 			   job_step_kill_msg->job_step_id, 
 			   (long) (clock() - start_time));
 			slurm_send_rc_msg(msg, error_code);
 		} else {
 			info(
-			   "_slurm_rpc_job_step_cancel success for %u.%u, time=%ld", 
+			   "_slurm_rpc_job_step_kill success for %u.%u, time=%ld", 
 			   job_step_kill_msg->job_id, 
 			   job_step_kill_msg->job_step_id, 
 			   (long) (clock() - start_time));
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
-
-			/* Below function provides its own locking */
-			(void) dump_all_job_state();
 		}
 	}
 }

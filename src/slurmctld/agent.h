@@ -34,7 +34,7 @@
 
 #define AGENT_IS_THREAD  	1	/* set if agent itself a thread of 
 					 * slurmctld, 0 for function call */
-#define AGENT_THREAD_COUNT	20	/* maximum active agent threads */
+#define AGENT_THREAD_COUNT	10	/* maximum active agent threads */
 #define COMMAND_TIMEOUT 	5	/* seconds */
 
 typedef struct agent_arg {

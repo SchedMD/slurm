@@ -44,12 +44,14 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/slurm_errno.h"
+#include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer);
 static bitstr_t * _pick_step_nodes (struct job_record  *job_ptr, 
 				    step_specs *step_spec );
+static void _signal_step_tasks(struct step_record *step_ptr, uint16_t signal);
 
 /* 
  * create_step_record - create an empty step_record for the specified job.
@@ -192,18 +194,20 @@ find_step_record(struct job_record *job_ptr, uint16_t step_id)
 
 
 /* 
- * job_step_cancel - cancel the specified job step
+ * job_step_signal - signal the specified job step
  * IN job_id - id of the job to be cancelled
  * IN step_id - id of the job step to be cancelled
+ * IN signal - user id of user issuing the RPC
  * IN uid - user id of user issuing the RPC
  * RET 0 on success, otherwise ESLURM error code 
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-int job_step_cancel(uint32_t job_id, uint32_t step_id, uid_t uid)
+int job_step_signal(uint32_t job_id, uint32_t step_id, 
+		    uint16_t signal, uid_t uid)
 {
 	struct job_record *job_ptr;
-	int error_code;
+	struct step_record *step_ptr;
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -224,23 +228,81 @@ int job_step_cancel(uint32_t job_id, uint32_t step_id, uid_t uid)
 		return ESLURM_USER_ID_MISSING;
 	}
 
-	if (job_ptr->job_state == JOB_RUNNING) {
-		last_job_update = time(NULL);
-		error_code = delete_step_record(job_ptr, step_id);
-		if (error_code == ENOENT) {
-			info("job_step_cancel step %u.%u not found",
-			     job_id, step_id);
-			return ESLURM_ALREADY_DONE;
-		}
-
-		job_ptr->time_last_active = time(NULL);
-		return SLURM_SUCCESS;
+	step_ptr = find_step_record(job_ptr, (uint16_t)step_id);
+	if (step_ptr == NULL) {
+		info("job_step_cancel step %u.%u not found",
+		     job_id, step_id);
+		return ESLURM_ALREADY_DONE;
 	}
 
-	info("job_step_cancel: step %u.%u can't be cancelled from state=%s", 
-	     job_id, step_id, job_state_string(job_ptr->job_state));
-	return ESLURM_TRANSITION_STATE_NO_UPDATE;
+	_signal_step_tasks(step_ptr, signal);
+	return SLURM_SUCCESS;
 
+}
+
+static void _signal_step_tasks(struct step_record *step_ptr, uint16_t signal)
+{
+	int i;
+	kill_tasks_msg_t *kill_tasks_msg;
+	agent_arg_t *agent_args;
+	pthread_attr_t attr_agent;
+	pthread_t thread_agent;
+	int buf_rec_size = 0;
+
+	agent_args = xmalloc(sizeof(agent_arg_t));
+	agent_args->msg_type = REQUEST_KILL_TASKS;
+	agent_args->retry = 1;
+	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
+	kill_tasks_msg->job_id      = step_ptr->job_ptr->job_id;
+	kill_tasks_msg->job_step_id = step_ptr->step_id;
+	kill_tasks_msg->signal      = signal;
+
+	for (i = 0; i < node_record_count; i++) {
+		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
+			continue;
+		if ((agent_args->node_count + 1) > buf_rec_size) {
+			buf_rec_size += 32;
+			xrealloc((agent_args->slurm_addr),
+				 (sizeof(struct sockaddr_in) *
+				  buf_rec_size));
+			xrealloc((agent_args->node_names),
+				 (MAX_NAME_LEN * buf_rec_size));
+		}
+		agent_args->slurm_addr[agent_args->node_count] =
+		    node_record_table_ptr[i].slurm_addr;
+		strncpy(&agent_args->
+			node_names[MAX_NAME_LEN * agent_args->node_count],
+			node_record_table_ptr[i].name, MAX_NAME_LEN);
+		agent_args->node_count++;
+	}
+
+	if (agent_args->node_count == 0) {
+		xfree(kill_tasks_msg);
+		xfree(agent_args);
+		return;
+	}
+
+	agent_args->msg_args = kill_tasks_msg;
+	debug("Spawning signal agent");
+	if (pthread_attr_init(&attr_agent))
+		fatal("pthread_attr_init error %m");
+	if (pthread_attr_setdetachstate
+	    (&attr_agent, PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate error %m");
+#ifdef PTHREAD_SCOPE_SYSTEM
+	if (pthread_attr_setscope(&attr_agent, PTHREAD_SCOPE_SYSTEM))
+		error("pthread_attr_setscope error %m");
+#endif
+	if (pthread_create
+	    (&thread_agent, &attr_agent, agent, (void *) agent_args)) {
+		error("pthread_create error %m");
+		sleep(1);	/* sleep and try once more */
+		if (pthread_create
+		    (&thread_agent, &attr_agent, agent,
+		     (void *) agent_args))
+			fatal("pthread_create error %m");
+	}
+	return;
 }
 
 
