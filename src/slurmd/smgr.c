@@ -284,6 +284,20 @@ _exec_task(slurmd_job_t *job, int i)
 	exit(errno);
 }
 
+static void
+_smgr_sigset(sigset_t *setp)
+{
+	if (sigemptyset(setp) < 0)
+		error("sigemptyset: %m");
+	if (sigaddset(setp, SIGCHLD) < 0)
+		error("sigaddset(SIGCHLD): %m");
+	if (sigaddset(setp, SIGTERM) < 0)
+		error("sigaddset(SIGTERM): %m");
+	if (sigaddset(setp, SIGINT) < 0)
+		error("sigaddset(SIGINT): %m");
+	if (sigaddset(setp, SIGXCPU) < 0)
+		error("sigaddset(SIGXCPU): %m");
+}
 
 /*
  *  Block a set of signals so that session manager process
@@ -295,16 +309,7 @@ _block_smgr_signals(void)
 	int      e;
 	sigset_t set;
 
-	if (sigemptyset(&set) < 0)
-		error("sigemptyset: %m");
-	if (sigaddset(&set, SIGCHLD) < 0)
-		error("sigaddset(SIGCHLD): %m");
-	if (sigaddset(&set, SIGTERM) < 0)
-		error("sigaddset(SIGTERM): %m");
-	if (sigaddset(&set, SIGINT) < 0)
-		error("sigaddset(SIGINT): %m");
-	if (sigaddset(&set, SIGXCPU) < 0)
-		error("sigaddset(SIGXCPU): %m");
+	_smgr_sigset(&set);
 
 	if ((e = pthread_sigmask(SIG_BLOCK, &set, NULL)) < 0)
 		error("pthread_sigmask: %s", slurm_strerror(e));
@@ -323,10 +328,7 @@ _child_exited(void)
 	int      sig;
 	sigset_t set;
 
-	/*
-	 *  Get current mask of blocked signals
-	 */
-	xsignal_save_mask(&set);
+	_smgr_sigset(&set);
 
 	do {
 		sigwait(&set, &sig);
@@ -334,6 +336,7 @@ _child_exited(void)
 		case SIGXCPU: 
 			error("job exceeded timelimit"); 
 		case SIGCHLD: 
+			debug2("got SIGCHLD");
 			break;
 		default: 
 			debug("slurmd got signal %d", sig); break;
@@ -460,6 +463,7 @@ _local_taskid(slurmd_job_t *job, pid_t pid)
 		if (job->task[i]->pid == pid) 
 			return i;
 	}
+	debug("unknown pid %ld exited status 0x%04x %M", (long) pid);
 	return SLURM_ERROR;
 }
 
