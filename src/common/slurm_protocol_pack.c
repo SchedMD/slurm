@@ -513,7 +513,7 @@ void pack_node_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size
 	assert ( ( buffer_size ) != NULL ) ;
 	assert ( *buffer_size >= msg->data_size );
 
-	 memcpy ( *buf_ptr , msg->data , msg->data_size );
+	memcpy ( *buf_ptr , msg->data , msg->data_size );
 	((char*)*buf_ptr) += msg->data_size;
 	(*buffer_size) -= msg->data_size;
 }
@@ -521,10 +521,10 @@ void pack_node_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size
 int unpack_node_info_msg ( node_info_msg_t ** msg , void ** buf_ptr , int * buffer_size )
 {
 	int i;
-	node_table_t *node;
-	
+	node_info_t *node;
+
 	assert ( msg != NULL );
-	
+
 	*msg = xmalloc ( sizeof ( node_info_msg_t ) );
 	if ( *msg == NULL )
 		return ENOMEM ;
@@ -533,45 +533,45 @@ int unpack_node_info_msg ( node_info_msg_t ** msg , void ** buf_ptr , int * buff
 	unpack32 (&((*msg) -> record_count), buf_ptr, buffer_size);
 	unpack32 (&((*msg) -> last_update ) , buf_ptr, buffer_size);
 
-	node = (*msg) -> node_array = xmalloc ( sizeof ( node_table_t ) * (*msg)->record_count ) ;
+	node = (*msg) -> node_array = xmalloc ( sizeof ( node_info_t ) * (*msg)->record_count ) ;
 
 	/* load individual job info */
 	for (i = 0; i < (*msg)->record_count ; i++) {
-	unpack_node_table ( & node[i] , buf_ptr , buffer_size ) ;
+		unpack_node_info_members ( & node[i] , buf_ptr , buffer_size ) ;
 
 	}
 	return 0;
 }
 
 
-int unpack_node_table_msg ( node_table_msg_t ** node , void ** buf_ptr , int * buffer_size )
+int unpack_node_info ( node_info_t ** node , void ** buf_ptr , int * buffer_size )
 {
 	assert ( node != NULL );
 
-	*node = xmalloc ( sizeof(node_table_t) );
+	*node = xmalloc ( sizeof(node_info_t) );
 	if (node == NULL) {
 		return ENOMEM;
 	}
-	unpack_node_table ( *node , buf_ptr , buffer_size ) ;
+	unpack_node_info_members ( *node , buf_ptr , buffer_size ) ;
 	return 0 ;
 }
 
-int unpack_node_table ( node_table_msg_t * node , void ** buf_ptr , int * buffer_size )
+int unpack_node_info_members ( node_info_t * node , void ** buf_ptr , int * buffer_size )
 {
 	uint16_t uint16_tmp;
 
 	assert ( node != NULL );
 
-        unpackstr_xmalloc (&node->name, &uint16_tmp, buf_ptr, buffer_size);
-        unpack16  (&node->node_state, buf_ptr, buffer_size);
-        unpack32  (&node->cpus, buf_ptr, buffer_size);
-        unpack32  (&node->real_memory, buf_ptr, buffer_size);
-        unpack32  (&node->tmp_disk, buf_ptr, buffer_size);
-        unpack32  (&node->weight, buf_ptr, buffer_size);
-        unpackstr_xmalloc (&node->features, &uint16_tmp, buf_ptr, buffer_size);
+	unpackstr_xmalloc (&node->name, &uint16_tmp, buf_ptr, buffer_size);
+	unpack16  (&node->node_state, buf_ptr, buffer_size);
+	unpack32  (&node->cpus, buf_ptr, buffer_size);
+	unpack32  (&node->real_memory, buf_ptr, buffer_size);
+	unpack32  (&node->tmp_disk, buf_ptr, buffer_size);
+	unpack32  (&node->weight, buf_ptr, buffer_size);
+	unpackstr_xmalloc (&node->features, &uint16_tmp, buf_ptr, buffer_size);
 	unpackstr_xmalloc (&node->partition, &uint16_tmp, buf_ptr, buffer_size);
 
-        return 0;
+	return 0;
 }
 
 
@@ -788,7 +788,7 @@ void pack_partition_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer
 int unpack_partition_info_msg ( partition_info_msg_t ** msg , void ** buf_ptr , int * buffer_size )
 {
         int i;
-        partition_table_t *partition;
+        partition_info_t *partition;
 
         *msg = xmalloc ( sizeof ( partition_info_msg_t ) );
         if ( *msg == NULL )
@@ -798,28 +798,28 @@ int unpack_partition_info_msg ( partition_info_msg_t ** msg , void ** buf_ptr , 
         unpack32 (&((*msg) -> record_count), buf_ptr, buffer_size);
         unpack32 (&((*msg) -> last_update ) , buf_ptr, buffer_size);
 
-        partition = (*msg) -> partition_array = xmalloc ( sizeof ( partition_table_t ) * (*msg)->record_count ) ;
+        partition = (*msg) -> partition_array = xmalloc ( sizeof ( partition_info_t ) * (*msg)->record_count ) ;
 
         /* load individual job info */
         for (i = 0; i < (*msg)->record_count ; i++) {
-		unpack_partition_table ( & partition[i] , buf_ptr , buffer_size ) ;
+		unpack_partition_info_members ( & partition[i] , buf_ptr , buffer_size ) ;
 
         }
         return 0;
 }
 
 
-int unpack_partition_table_msg ( partition_table_msg_t ** part , void ** buf_ptr , int * buffer_size )
+int unpack_partition_info ( partition_info_t ** part , void ** buf_ptr , int * buffer_size )
 {
-		*part = xmalloc ( sizeof(partition_table_t) );
+		*part = xmalloc ( sizeof(partition_info_t) );
 		if (part == NULL) {
 			return ENOMEM;
 		}
-		unpack_partition_table ( *part , buf_ptr , buffer_size ) ;
+		unpack_partition_info_members ( *part , buf_ptr , buffer_size ) ;
 		return 0 ;
 }
 
-int unpack_partition_table ( partition_table_msg_t * part , void ** buf_ptr , int * buffer_size )
+int unpack_partition_info_members ( partition_info_t * part , void ** buf_ptr , int * buffer_size )
 {
 	uint16_t uint16_tmp;
 	char * node_inx_str;
@@ -927,7 +927,7 @@ void pack_job_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size 
 int unpack_job_info_msg ( job_info_msg_t ** msg , void ** buf_ptr , int * buffer_size )
 {
 	int i;
-	job_table_t *job;
+	job_info_t *job;
 	
 	*msg = xmalloc ( sizeof ( job_info_msg_t ) );
 	if ( *msg == NULL )
@@ -936,25 +936,25 @@ int unpack_job_info_msg ( job_info_msg_t ** msg , void ** buf_ptr , int * buffer
 	/* load buffer's header (data structure version and time) */
 	unpack32 (&((*msg) -> record_count), buf_ptr, buffer_size);
 	unpack32 (&((*msg) -> last_update ) , buf_ptr, buffer_size);
-	job = (*msg) -> job_array = xmalloc ( sizeof ( job_table_t ) * (*msg)->record_count ) ;
+	job = (*msg) -> job_array = xmalloc ( sizeof ( job_info_t ) * (*msg)->record_count ) ;
 
 	/* load individual job info */
 	for (i = 0; i < (*msg)->record_count ; i++) {
-		unpack_job_table ( & job[i] , buf_ptr , buffer_size ) ;
+		unpack_job_info_members ( & job[i] , buf_ptr , buffer_size ) ;
 	}
 	return 0;
 }
 
-int unpack_job_table_msg ( job_table_msg_t ** msg , void ** buf_ptr , int * buffer_size )
+int unpack_job_info ( job_info_t ** msg , void ** buf_ptr , int * buffer_size )
 {
-	*msg = xmalloc ( sizeof ( job_table_t ) ) ;
+	*msg = xmalloc ( sizeof ( job_info_t ) ) ;
 	if ( *msg == NULL )
 		return ENOMEM ;
-	unpack_job_table ( *msg , buf_ptr , buffer_size ) ;
+	unpack_job_info_members ( *msg , buf_ptr , buffer_size ) ;
 	return 0 ;
 }
 
-int unpack_job_table ( job_table_t * job , void ** buf_ptr , int * buffer_size )
+int unpack_job_info_members ( job_info_t * job , void ** buf_ptr , int * buffer_size )
 {
 	uint16_t uint16_tmp;
 	uint32_t uint32_tmp;
