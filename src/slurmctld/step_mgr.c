@@ -17,7 +17,7 @@
 
 #include "list.h"
 #include "pack.h"
-#include "slurm.h"
+#include "slurmctld.h"
 
 #define BUF_SIZE 1024
 

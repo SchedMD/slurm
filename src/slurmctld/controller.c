@@ -21,7 +21,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
-#include "slurm.h"
+#include "slurmctld.h"
 #include "pack.h"
 
 #define BUF_SIZE 1024

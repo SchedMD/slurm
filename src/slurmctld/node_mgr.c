@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "slurm.h"
+#include "slurmctld.h"
 
 #define BUF_SIZE 	1024
 #define SEPCHARS 	" \n\t"

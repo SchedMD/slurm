@@ -14,7 +14,7 @@
 #include <string.h>
 
 #include "list.h"
-#include "slurm.h"
+#include "slurmctld.h"
 
 struct job_queue {
 	int priority;
