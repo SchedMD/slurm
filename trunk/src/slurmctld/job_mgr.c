@@ -883,7 +883,7 @@ int kill_running_job_by_node_name(char *node_name)
 		    == 0)
 			continue;	/* job not on this node */
 
-		error("Running job_id %u on failed node node %s",
+		error("Running job_id %u on failed node %s",
 		      job_record_point->job_id, node_name);
 		job_count++;
 		if ((job_record_point->details == NULL) ||
@@ -2511,13 +2511,12 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 		return;
 	}
 
-	/* Ensure that jobs which are running are really supposed to be there */
+	/* Ensure that jobs running are really supposed to be there */
 	for (i = 0; i < *job_count; i++) {
 		job_ptr = find_job_record(job_id_ptr[i]);
 		if (job_ptr == NULL) {
-			/* FIXME: In the future try to let job run */
-			error("Orphan job_id %u reported on node %s",
-			      job_id_ptr[i], node_name);
+			error("Orphan job %u.%u reported on node %s",
+			      job_id_ptr[i], step_id_ptr[i], node_name);
 			_signal_job_on_node(job_id_ptr[i], step_id_ptr[i],
 					    SIGKILL, node_name);
 			/* We may well have pending purge job RPC to send 
@@ -2527,12 +2526,13 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 		else if (job_ptr->job_state == JOB_RUNNING) {
 			if (bit_test(job_ptr->node_bitmap, node_inx)) {
 				jobs_running++;
-				debug3("Registered job_id %u on node %s ",
-				       job_id_ptr[i], node_name);
+				debug3("Registered job %u.%u on node %s ",
+				       job_id_ptr[i], step_id_ptr[i], 
+				       node_name);
 			} else {
 				error
-				    ("REGISTERED JOB_ID %u ON WRONG NODE %s ",
-				     job_id_ptr[i], node_name);
+				    ("REGISTERED JOB %u.u ON WRONG NODE %s ",
+				     job_id_ptr[i], step_id_ptr[i], node_name);
 				_signal_job_on_node(job_id_ptr[i],
 						    step_id_ptr[i],
 						    SIGKILL, node_name);
@@ -2540,9 +2540,9 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 		}
 
 		else if (job_ptr->job_state == JOB_PENDING) {
-			/* FIXME: In the future try to let job run */
-			error("REGISTERED PENDING JOB_ID %u ON NODE %s ",
-			      job_id_ptr[i], node_name);
+			error("REGISTERED PENDING JOB %u.%u ON NODE %s ",
+			      job_id_ptr[i], step_id_ptr[i], node_name);
+			error("CODE DEVELOPMENT NEEDED HERE");
 			job_ptr->job_state = JOB_FAILED;
 			last_job_update = time(NULL);
 			job_ptr->end_time = time(NULL);
@@ -2553,8 +2553,8 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 
 		else {		/* else job is supposed to be done */
 			error
-			    ("Registered job_id %u in state %s on node %s ",
-			     job_id_ptr[i],
+			    ("Registered job %u.%u in state %s on node %s ",
+			     job_id_ptr[i], step_id_ptr[i], 
 			     job_state_string(job_ptr->job_state),
 			     node_name);
 			_signal_job_on_node(job_id_ptr[i], step_id_ptr[i],
