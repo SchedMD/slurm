@@ -1158,7 +1158,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 #endif
 		if (node_ptr->node_state == NODE_STATE_UNKNOWN) {
 			reset_job_priority();
-			info ("validate_node_specs: node %s has registered", 
+			debug("validate_node_specs: node %s has registered", 
 				node_name);
 			if (job_count)
 				node_ptr->node_state = NODE_STATE_ALLOCATED;
