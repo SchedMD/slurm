@@ -26,14 +26,24 @@
 
 #include <stdio.h>
 #include <sys/types.h>
-#include <elan3/elan3.h>
-#include <elan3/elanvp.h>
+
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
 
 #include "src/common/bitstring.h"
 #include "src/common/pack.h"
 
 #ifndef _QSW_INCLUDED
 #define _QSW_INCLUDED
+
+#if HAVE_LIBELANCTRL
+# include <elan/capability.h>
+#elif HAVE_LIBELAN3
+# include <elan3/elanvp.h>
+#else
+# error "Don't have either libelanctrl or libelan3!"
+#endif
 
 /* opaque data structures - no peeking! */
 typedef struct qsw_libstate 	*qsw_libstate_t;
