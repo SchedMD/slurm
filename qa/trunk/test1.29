@@ -12,7 +12,7 @@
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Moe Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
 # 
 # This file is part of SLURM, a resource management program.
@@ -45,7 +45,7 @@ set limit_core       943
 set limit_fsize      274515
 set limit_nofile     1386
 set limit_nproc      123
-set limit_stack      4591
+set limit_stack      2021
 set matches          0
 
 print_header $test_id
