@@ -28,11 +28,11 @@
 #include <errno.h>
 #include <string.h>
 
+#include <src/common/bitstring.h>
 #include <src/common/slurm_protocol_pack.h>
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/pack.h>
 #include <src/common/log.h>
-#include <src/common/nodelist.h>
 #include <src/common/xmalloc.h>
 
 
