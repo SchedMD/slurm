@@ -1088,7 +1088,7 @@ int _find_smallest_dim(int size, int dim)
  * IN - elongate: if true, will try to fit different geometries of
  *      same size requests
  * IN - contig: enforce contiguous regions constraint
- * IN - conn_type: connection type of request (RM_TORUS or RM_MESH)
+ * IN - conn_type: connection type of request (SELECT_TORUS or SELECT_MESH)
  * 
  * return SUCCESS of operation.
  */
@@ -1164,7 +1164,7 @@ int new_pa_request(pa_request_t* pa_request,
 				if(size2<=1) 
 					break;
 				
-				(int)sz = size2%DIM_SIZE[i];
+				sz = size2%DIM_SIZE[i];
 				if(!sz) {
 					pa_request->geometry[i] = DIM_SIZE[i];	
 					size2 /= DIM_SIZE[i];
@@ -1537,9 +1537,11 @@ int main(int argc, char** argv)
 		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
 			geo[i] = atoi(argv[i+1]);
 		}
-		new_pa_request(request, geo, -1, rotate, elongate, force_contig, RM_TORUS);
+		new_pa_request(request, geo, -1, rotate, elongate, 
+			force_contig, SELECT_TORUS);
 	} else if (argc == 2) {
-		new_pa_request(request, geo, atoi(argv[1]), rotate, elongate, force_contig, RM_TORUS);
+		new_pa_request(request, geo, atoi(argv[1]), rotate, 
+			elongate, force_contig, SELECT_TORUS);
 	} else {
 		printf(" usage: partition_allocator dimX dimY dimZ\n");
 		printf("    or: partition_allocator size\n");

@@ -657,7 +657,6 @@ sched_get_job_user_id( sched_obj_list_t job_data,
 		       char *type )
 {
 	// * This is probably not thread-safe.	
-	struct passwd *pwent;
 	if ( type ) *type = 's';
 
 	return uid_to_string( (uid_t) ( (struct job_record *)job_data->data )[ idx ].user_id );

@@ -341,9 +341,9 @@ extern int select_g_job_fini(struct job_record *job_ptr)
 #ifdef HAVE_BGL		/* node selection specific logic */
 static char *_job_conn_type_string(uint16_t inx)
 {
-	if (inx == RM_TORUS)
+	if (inx == SELECT_TORUS)
 		return "torus";
-	else if (inx == RM_MESH)
+	else if (inx == SELECT_MESH)
 		return "mesh";
 	else
 		return "nav";
@@ -351,7 +351,7 @@ static char *_job_conn_type_string(uint16_t inx)
 
 static char *_job_node_use_string(uint16_t inx)
 {
-	if (inx == RM_PARTITION_COPROCESSOR_MODE)
+	if (inx == SELECT_COPROCESSOR_MODE)
 		return "coprocessor";
 	else
 		return "virtual";

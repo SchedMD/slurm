@@ -534,26 +534,28 @@ error("DIM=%d, loc=%d i=%d", SYSTEM_DIMENSIONS, loc, i);
 /* Initialize all plugin variables */
 extern int init_bgl(void)
 {
-#ifdef USE_BGL_FILES
+#ifdef HAVE_BGL_FILES
 	int rc;
-	
-	// FIXME, this needs to be read in from conf file.
+
+#if 0	
+	/* FIXME: this needs to be read in from conf file. */
 	rc = rm_set_serial("BGL");
 	if (rc != STATUS_OK){
-		error("init_bgl: rm_set_serial failed");
+		error("init_bgl: rm_set_serial failed, errno=%d", rc);
 		return SLURM_ERROR;
 	}
+#endif
 
 	rc = rm_get_BGL(&bgl);
 	if (rc != STATUS_OK){
-		error("init_bgl: rm_get_BGL failed");
+		error("init_bgl: rm_get_BGL failed, errno=%d", rc);
 		return SLURM_ERROR;
 	}
 #endif
 	/** global variable */
 	bgl_conf_list = (List) list_create(_destroy_bgl_conf_record);
 
-	// for testing purposes
+	/* for testing purposes */
 	init_bgl_partition_num();
 
 	return SLURM_SUCCESS;

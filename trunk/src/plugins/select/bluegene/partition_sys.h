@@ -69,6 +69,6 @@ extern int int_array_size(ushort* part_geometry);
 extern void sort_int_array_by_dec_size(List configs);
 extern void sort_partitions_by_inc_size(List partitions);
 extern void sort_partitions_by_dec_size(List partitions);
-extern void init_bgl_partition_num();
+extern void init_bgl_partition_num(void);
 
 #endif /* _PARTITION_SYS_H_ */

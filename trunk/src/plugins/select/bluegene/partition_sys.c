@@ -41,7 +41,7 @@
 
 /****************************/
 /*   for testing purposes   */
-uint16_t BGL_PARTITION_NUMBER;
+uint16_t bgl_partition_number;
 /****************************/
 
 #ifdef _UNIT_TEST_
@@ -1025,7 +1025,8 @@ extern void debug(const char *fmt, ...)
 }
 #endif
 
-void init_bgl_partition_num()
+extern void init_bgl_partition_num(void)
 {
-	BGL_PARTITION_NUMBER = 0;
+	bgl_partition_number = 0;
 }
+

@@ -46,7 +46,6 @@
 
 #else
   typedef char *   pm_partition_id_t;
-  typedef uint16_t rm_connection_type_t;
   typedef uint16_t rm_partition_t;
   typedef uint16_t rm_partition_mode_t;
   typedef char *   rm_BGL_t;
