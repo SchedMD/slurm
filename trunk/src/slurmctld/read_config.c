@@ -912,8 +912,9 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 		base_state = node_record_table_ptr[i].node_state & 
 			     (~NODE_STATE_NO_RESPOND);
 		if (base_state == NODE_STATE_DOWN) {
+			time_t now = time(NULL);
 			job_ptr->job_state = JOB_NODE_FAIL | JOB_COMPLETING;
-			job_ptr->end_time = time(NULL);
+			job_ptr->end_time = MIN(job_ptr->end_time, now);
 			delete_all_step_records(job_ptr);
 		} else {
 	 		node_record_table_ptr[i].run_job_cnt++; /* NOTE:
