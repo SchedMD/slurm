@@ -495,6 +495,7 @@ parse_node_spec (char *in_line) {
 	struct node_record *node_record_point;
 	struct config_record *config_point = NULL;
 	hostlist_t host_list = NULL;
+	static char highest_node_name[MAX_NAME_LEN] = "";
 
 	node_name = state = feature = (char *) NULL;
 	cpus_val = real_memory_val = state_val = NO_VAL;
@@ -584,7 +585,13 @@ parse_node_spec (char *in_line) {
 			}	
 		}	
 
-		node_record_point = find_node_record (this_node_name);
+		if (strcmp (this_node_name, highest_node_name) <= 0)
+			node_record_point = find_node_record (this_node_name);
+		else {
+			strncpy (highest_node_name, this_node_name, MAX_NAME_LEN);
+			node_record_point = NULL;
+		}
+
 		if (node_record_point == NULL) {
 			node_record_point =
 				create_node_record (config_point, this_node_name);
