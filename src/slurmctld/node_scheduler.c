@@ -467,11 +467,11 @@ _pick_best_quadrics(bitstr_t * bitmap, bitstr_t * req_bitmap,
 	    max_nodes  && ((max_nodes - rem_nodes) >= min_nodes))
 		error_code = SLURM_SUCCESS;
 
-	FREE_NULL(consec_cpus);
-	FREE_NULL(consec_nodes);
-	FREE_NULL(consec_start);
-	FREE_NULL(consec_end);
-	FREE_NULL(consec_req);
+	xfree(consec_cpus);
+	xfree(consec_nodes);
+	xfree(consec_start);
+	xfree(consec_end);
+	xfree(consec_req);
 	return error_code;
 }
 
@@ -899,7 +899,7 @@ static int _build_node_list(struct job_record *job_ptr,
 	if (node_set_inx == 0) {
 		info("No nodes satisfy job %u requirements", 
 		     job_ptr->job_id);
-		FREE_NULL(node_set_ptr);
+		xfree(node_set_ptr);
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	}
 
