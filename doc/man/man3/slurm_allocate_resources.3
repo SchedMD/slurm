@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "July 2003" "Morris Jette" "Slurm job initiation functions"
+.TH "Slurm API" "3" "August 2003" "Morris Jette" "Slurm job initiation functions"
 .SH "NAME"
 slurm_allocate_resources, slurm_allocate_resources_and_run,
 slurm_confirm_allocation, 
@@ -193,6 +193,8 @@ jobs using between 1 and 32 nodes). Alternately, the job's time limit exceeds
 the partition's time limit. 
 .LP
 \fBESLURM_NODES_BUSY\fR the requested nodes are already in use. 
+.LP
+\fBESLURM_INVALID_FEATURE\fR the requested feature(s) does not exist. 
 .LP
 \fBESLURM_INVALID_JOB_ID\fR the requested job id does not exist. 
 .LP
