@@ -89,6 +89,8 @@ void	delete_job_desc_files (uint32_t job_id);
 void 	dump_job_state (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len);
 void 	dump_job_details_state (struct job_details *detail_ptr, void **buf_ptr, int *buf_len);
 void 	dump_job_step_state (struct step_record *step_ptr, void **buf_ptr, int *buf_len);
+int	job_create (job_desc_msg_t * job_specs, uint32_t *new_job_id, int allocate, 
+	    int will_run, struct job_record **job_rec_ptr, uid_t submit_uid);
 void	list_delete_job (void *job_entry);
 int	list_find_job_id (void *job_entry, void *key);
 int	list_find_job_old (void *job_entry, void *key);
@@ -96,81 +98,6 @@ int	top_priority (struct job_record *job_ptr);
 int 	validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate ) ;
 int	write_data_to_file ( char * file_name, char * data ) ;
 int	write_data_array_to_file ( char * file_name, char ** data, uint16_t size ) ;
-
-#if DEBUG_MODULE
-/* main is used here for module testing purposes only */
-	int
-main (int argc, char *argv[]) 
-{
-	int dump_size, error_code, error_count = 0, i;
-	time_t update_time = (time_t) NULL;
-	struct job_record * job_rec;
-	log_options_t opts = LOG_OPTS_STDERR_ONLY;
-	char *dump;
-	uint16_t tmp_id;
-	char update_spec[] = "TimeLimit=1234 Priority=123";
-
-	printf("initialize the database and create a few jobs\n");
-	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
-	error_code = init_job_conf ();
-	if (error_code) {
-		printf ("ERROR: init_job_conf error %d\n", error_code);
-		error_count++;
-	}
-	job_rec = create_job_record(&error_code);
-	if ((job_rec == NULL) || error_code) {
-		printf ("ERROR: create_job_record failure %d\n", error_code);
-		error_count++;
-		exit(error_count);
-	}
-	strcpy (job_rec->name, "Name1");
-	strcpy (job_rec->partition, "batch");
-	job_rec->details->num_nodes = 1;
-	job_rec->details->num_procs = 1;
-	set_job_id (job_rec);
-	set_job_prio (job_rec);
-	tmp_id = job_rec->job_id;
-
-	for (i=1; i<=4; i++) {
-		job_rec = create_job_record (&error_code);
-		if ((job_rec == NULL) || error_code) {
-			printf ("ERROR: create_job_record failure %d\n",error_code);
-			error_count++;
-			exit (error_count);
-		}
-		strcpy (job_rec->name, "Name2");
-		strcpy (job_rec->partition, "debug");
-		job_rec->details->num_nodes = i;
-		job_rec->details->num_procs = i;
-		set_job_id (job_rec);
-		set_job_prio (job_rec);
-	}
-
-	error_code = pack_all_jobs (&dump, &dump_size, &update_time);
-	if (error_code) {
-		printf ("ERROR: dump_all_job error %d\n", error_code);
-		error_count++;
-	}
-	if (dump)
-		xfree(dump);
-
-	job_rec = find_job_record (tmp_id);
-	if (job_rec == NULL) {
-		printf("find_job_record error 1\n");
-		error_count++;
-	}
-	else
-		printf ("found job %u\n", job_rec->job_id);
-
-	job_rec = find_job_record (tmp_id);
-	if (job_rec != NULL) {
-		printf ("find_job_record error 2\n");
-		error_count++;
-	}
-
-	exit (error_count);
-}
-#endif
 
 
 /* 
@@ -936,32 +863,33 @@ init_job_conf ()
 int
 immediate_job_launch (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list, 
 		uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps, 
-		int immediate , int will_run )
+		int immediate , int will_run, uid_t submit_uid )
 {
 	return job_allocate (job_specs, new_job_id, node_list, 
 				num_cpu_groups, cpus_per_node, cpu_count_reps, 
-				true , false , true );
+				true , false , true, submit_uid );
 }
 
 int 
 will_job_run (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list, 
 		uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps, 
-		int immediate , int will_run )
+		int immediate , int will_run, uid_t submit_uid )
 {
 	return job_allocate (job_specs, new_job_id, node_list, 
 				num_cpu_groups, cpus_per_node, cpu_count_reps, 
-				false , true , true );
+				false , true , true, submit_uid );
 }
 
 int 
 job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list, 
 	uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps, 
-	int immediate, int will_run, int allocate)
+	int immediate, int will_run, int allocate, uid_t submit_uid)
 {
 	int error_code, test_only;
 	struct job_record *job_ptr;
 
-	error_code = job_create (job_specs, new_job_id, allocate, will_run, &job_ptr);
+	error_code = job_create (job_specs, new_job_id, allocate, will_run, 
+		&job_ptr, submit_uid);
 	if (error_code)
 		return error_code;
 	if (job_ptr == NULL)
@@ -1138,7 +1066,7 @@ job_complete (uint32_t job_id, uid_t uid)
 
 int
 job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate, 
-		int will_run, struct job_record **job_rec_ptr)
+		int will_run, struct job_record **job_rec_ptr, uid_t submit_uid )
 {
 	int error_code, i; 
 	struct part_record *part_ptr;
@@ -1171,14 +1099,15 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 
 
 	/* can this user access this partition */
-	if (part_ptr->root_only && 0 /* confirm submit uid too */ ) {
-		info ("job_create: non-root job submission to partition %s", part_ptr->name);
+	if ( (part_ptr->root_only) && (submit_uid != 0) ) {
+		error ("job_create: non-root job submission to partition %s by uid %u", 
+			part_ptr->name, (unsigned int) submit_uid);
 		error_code = ESLURM_ACCESS_DENIED ;
 		return error_code;
 	}			
-	if (match_group (part_ptr->allow_groups, "") == 0) {
-		info ("job_create: job lacks group required of partition %s",
-				part_ptr->name);
+	if (validate_group (part_ptr, submit_uid) == 0) {
+		info ("job_create: job lacks group required of partition %s, uid %u",
+				part_ptr->name, (unsigned int) submit_uid);
 		error_code = ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP;
 		return error_code;
 	}

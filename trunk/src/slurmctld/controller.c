@@ -1105,9 +1105,7 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 	job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
 	/* Locks: Write job, read node, read partition */
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-#ifdef	HAVE_AUTHD
-	uid_t uid;
-#endif
+	uid_t uid = 0;
 
 	start_time = clock ();
 	debug ("Processing RPC: REQUEST_SUBMIT_BATCH_JOB");
@@ -1126,7 +1124,7 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 		lock_slurmctld (job_write_lock);
 		error_code = job_allocate (job_desc_msg, &job_id, (char **) NULL, 
 			(uint16_t *) NULL, (uint32_t **) NULL, (uint32_t **) NULL,
-			false, false, false);
+			false, false, false, uid );
 		unlock_slurmctld (job_write_lock);
 	}
 
@@ -1167,9 +1165,7 @@ slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 	resource_allocation_response_msg_t alloc_msg ;
 	/* Locks: Write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
-#ifdef	HAVE_AUTHD
-	uid_t uid;
-#endif
+	uid_t uid = 0;
 
 	start_time = clock ();
 	if (immediate)
@@ -1191,7 +1187,7 @@ slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 		lock_slurmctld (job_write_lock);
 		error_code = job_allocate (job_desc_msg, &job_id, 
 			&node_list_ptr, &num_cpu_groups, &cpus_per_node, &cpu_count_reps, 
-			immediate , false, true );
+			immediate , false, true, uid );
 		unlock_slurmctld (job_write_lock);
 	}
 
@@ -1243,9 +1239,8 @@ slurm_rpc_allocate_and_run ( slurm_msg_t * msg )
 	job_step_create_request_msg_t req_step_msg;
 	/* Locks: Write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
-#ifdef	HAVE_AUTHD
-	uid_t uid;
-#endif
+	uid_t uid = 0;
+
         start_time = clock ();
 	debug ("Processing RPC: REQUEST_ALLOCATE_AND_RUN_JOB_STEP");
 
@@ -1263,7 +1258,7 @@ slurm_rpc_allocate_and_run ( slurm_msg_t * msg )
 		lock_slurmctld (job_write_lock);
         	error_code = job_allocate(job_desc_msg, &job_id,
                         &node_list_ptr, &num_cpu_groups, &cpus_per_node, &cpu_count_reps,
-                        true , false, true );
+                        true , false, true, uid );
 	}
 
         /* return result */
@@ -1325,9 +1320,7 @@ void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 	char * node_list_ptr = NULL;
 	/* Locks: Write job, read node, read partition */
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-#ifdef	HAVE_AUTHD
-	uid_t uid;
-#endif
+	uid_t uid = 0;
 
 	start_time = clock ();
 	debug ("Processing RPC: REQUEST_JOB_WILL_RUN");
@@ -1347,7 +1340,7 @@ void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 		lock_slurmctld (job_write_lock);
 		error_code = job_allocate(job_desc_msg, &job_id, 
 			&node_list_ptr, &num_cpu_groups, &cpus_per_node, &cpu_count_reps, 
-			false , true, true );
+			false , true, true, uid );
 		unlock_slurmctld (job_write_lock);
 	}
 
