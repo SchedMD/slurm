@@ -1015,6 +1015,10 @@ _epilog_complete(uint32_t jobid, int rc)
 	req.job_id      = jobid;
 	req.return_code = rc;
 	req.node_name   = conf->node_name;
+	if (switch_g_alloc_node_info(&req.switch_nodeinfo))
+		error("switch_g_alloc_node_info: %m");
+	if (switch_g_build_node_info(req.switch_nodeinfo))
+		error("switch_g_build_node_info: %m");
 
 	msg.msg_type    = MESSAGE_EPILOG_COMPLETE;
 	msg.data        = &req;

@@ -378,6 +378,7 @@ void slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->node_name);
+		switch_g_free_node_info(&msg->switch_nodeinfo);
 		xfree(msg);
 	}
 }
