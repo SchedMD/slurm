@@ -1239,7 +1239,7 @@ _do_attach(struct io_info *io)
 		_io_client_attach(io->obj, NULL, t->in, io->job->objs);
 		break;
 	default:
-		fatal("Unknown client type %d in do_attach()", io->type);
+		error("Unknown client type %d in do_attach()", io->type);
 
 	}
 }

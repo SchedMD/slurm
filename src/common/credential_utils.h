@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  credential_utils.h - slurm authentication credential management functions
  *****************************************************************************
- *  Written by Jay Windley <jwindley@lnxi.com>, et. al.
+ *  Written by Kevin Tew <tewk@llnl.gov>, et. al.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -60,14 +60,14 @@ typedef struct credential_state {
  * IN list	- type List 
  * RET int	- zero or error code
  */
-extern int initialize_credential_state_list(List * list);
+int initialize_credential_state_list(List * list);
 
 /* destroy_credential_state_list
  * destroys a initialized list
  * IN list	- type List 
  * RET int	- zero or error code
  */
-extern int destroy_credential_state_list(List list);
+int destroy_credential_state_list(List list);
 
 /* print_credential
  * log a credential using info() function
@@ -78,14 +78,13 @@ void print_credential(slurm_job_credential_t * cred);
  * given a credential message and a verify_ctx containing the public key
  * this method verifies the credential and creates the necessary state  
  * objectin the credential_state_list
- * IN verfify_ctx		- slurm ssl public key ctx
- * IN credential		- credential to verify
- * IN credential_state_list	- list to add credential state object to 
- * RET int			- zero or error code
+ * IN ctx		- slurm ssl public key ctx
+ * IN cred		- credential to verify
+ * IN l			- list to add credential state object to 
+ * RET int		- zero or error code
  */
-extern int verify_credential(slurm_ssl_key_ctx_t * verfify_ctx,
-			     slurm_job_credential_t * credential,
-			     List credential_state_list);
+int verify_credential(slurm_ssl_key_ctx_t *ctx, slurm_job_credential_t *cred,
+		      List l);
 
 /* sign_credential
  * signs a credential before transmit
@@ -99,11 +98,11 @@ extern int sign_credential(slurm_ssl_key_ctx_t * sign_ctx,
 
 /* revoke_credential
  * expires a credential in the credential_state_list
- * IN revoke_msg	- revoke rpc message
- * IN list		- list to revoke credential state object in
- * RET int		- zero or error code
+ * IN msg	- revoke rpc message
+ * IN list	- list to revoke credential state object in
+ * RET int	- zero or error code
  */
-extern int revoke_credential(revoke_credential_msg_t * revoke_msg, List list);
+extern int revoke_credential(revoke_credential_msg_t * msg, List list);
 
 /* pack_credential_list
  * pack a list of credentials into a machine independent format buffer
@@ -129,4 +128,11 @@ extern int unpack_credential_list(List list, Buf buffer);
  */
 bool credential_is_cached(List state_list, uint32_t jobid);
 
-#endif
+/*
+ * Force expiration of expired credentials from the 
+ * state list (l).
+ */
+void  clear_expired_credentials(List l);
+
+#endif /* !_CREDENTIAL_UTILS_H */
+

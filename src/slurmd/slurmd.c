@@ -577,13 +577,20 @@ _slurmd_init()
 		setrlimit(RLIMIT_NOFILE,&rlim);
 	}
 
-	slurm_ssl_init();
-	slurm_init_verifier(&conf->vctx, conf->pubkey);
+	if (slurm_ssl_init() < 0) 
+		return SLURM_FAILURE;
+
+	if (slurm_init_verifier(&conf->vctx, conf->pubkey) < 0)
+		return SLURM_FAILURE;
+
 	_restore_cred_state(&conf->cred_state_list); 
+
 	if (conf->shm_cleanup)
 		shm_cleanup();
+
 	if (shm_init() < 0)
 		return SLURM_FAILURE;
+
 	return SLURM_SUCCESS;
 }
 
@@ -600,10 +607,8 @@ _restore_cred_state(List *list)
 	file_name = xstrdup(conf->spooldir);
 	xstrcat(file_name, "/cred_state");
 	cred_fd = open(file_name, O_RDONLY);
-	if (cred_fd < 0) {
-		info("open %s error %m", file_name);
+	if (cred_fd < 0) 
 		goto cleanup;
-	}
 
 	data_allocated = 1024;
 	data = xmalloc(data_allocated);
@@ -616,6 +621,10 @@ _restore_cred_state(List *list)
 	close(cred_fd);
 	buffer = create_buf(data, data_size);
 	unpack_credential_list(*list, buffer);
+
+	if (list_count(*list))
+		clear_expired_credentials(*list);
+
 	_list_recovered_creds(*list);
 
       cleanup:
@@ -640,10 +649,11 @@ static void _list_recovered_creds(List list)
 	}
 	list_iterator_destroy(iterator);
 
-	hostlist_ranged_string(l, 1024, buf);
+	if (hostlist_count(l)) {
+		hostlist_ranged_string(l, 1024, buf);
+		verbose("credentials recovered for %s", buf);
+	}
 	hostlist_destroy(l);
-
-	verbose("credentials recovered for %s", buf);
 }
 
 static int
@@ -667,6 +677,9 @@ int save_cred_state(List list)
 	int cred_fd = 0, error_code = SLURM_SUCCESS;
 	Buf buffer = NULL;
 	static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+	if (list_count(list))
+		clear_expired_credentials(list);
 
 	old_file = xstrdup(conf->spooldir);
 	xstrcat(old_file, "/cred_state.old");
@@ -781,6 +794,8 @@ _kill_old_slurmd(void)
 /* Reset slurmctld logging based upon configuration parameters */
 static void _update_logging(void) 
 {
+	log_options_t *o = &conf->log_opts;
+
 	/* 
 	 * Initialize debug level if not already set
 	 */
@@ -788,23 +803,23 @@ static void _update_logging(void)
 	    && (conf->cf.slurmd_debug != (uint16_t) NO_VAL) )
 		conf->debug_level = conf->cf.slurmd_debug; 
 
-	conf->log_opts.stderr_level  = conf->debug_level;
-	conf->log_opts.logfile_level = conf->debug_level;
-	conf->log_opts.syslog_level  = conf->debug_level;
+	o->stderr_level  = conf->debug_level;
+	o->logfile_level = conf->debug_level;
+	o->syslog_level  = conf->debug_level;
 
 	/*
 	 * If daemonizing, turn off stderr logging -- also, if
 	 * logging to a file, turn off syslog.
 	 *
 	 * Otherwise, if remaining in foreground, turn off logging
-	 * to syslog.
+	 * to syslog (but keep logfile level)
 	 */
 	if (conf->daemonize) {
-		conf->log_opts.stderr_level = LOG_LEVEL_QUIET;
+		o->stderr_level = LOG_LEVEL_QUIET;
 		if (conf->logfile)
-			conf->log_opts.syslog_level = LOG_LEVEL_QUIET;
-	} else
-		conf->log_opts.syslog_level = LOG_LEVEL_QUIET;
+			o->syslog_level = LOG_LEVEL_QUIET;
+	} else 
+		o->syslog_level  = LOG_LEVEL_QUIET;
 
 	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
 }

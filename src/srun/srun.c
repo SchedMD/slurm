@@ -187,9 +187,6 @@ srun(int ac, char **av)
 
 	/* job structure should now be filled in */
 
-	fd_set_blocking(STDOUT_FILENO);
-	fd_set_blocking(STDERR_FILENO);
-
 	if (msg_thr_create(job) < 0)
 		job_fatal(job, "Unable to create msg thread");
 

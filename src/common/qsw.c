@@ -287,6 +287,7 @@ qsw_copy_jobinfo(qsw_jobinfo_t j)
 		return NULL;
 	memcpy(new, j, sizeof(struct qsw_jobinfo));
 
+	return new;
 }
 
 /*
@@ -855,7 +856,10 @@ qsw_prgsignal(qsw_jobinfo_t jobinfo, int signum)
 	return 0;
 }
 
+#define _USE_ELAN3_CAPABILITY_STRING 1
 
+
+#ifndef _USE_ELAN3_CAPABILITY_STRING
 #define TRUNC_BITMAP 1
 static void
 _print_capbitmap(FILE *fp, ELAN_CAPABILITY *cap)
@@ -869,8 +873,8 @@ _print_capbitmap(FILE *fp, ELAN_CAPABILITY *cap)
 		fprintf(fp, "%c", BT_TEST(cap->Bitmap, bit) ? '1' : '0');
 	fprintf(fp, "\n");
 }
+#endif /* !_USE_ELAN3_CAPABILITY_STRING */
 
-#define _USE_ELAN3_CAPABILITY_STRING 1
 void
 qsw_print_jobinfo(FILE *fp, struct qsw_jobinfo *jobinfo)
 {

@@ -151,7 +151,13 @@ _set_iofds_nonblocking(job_t *job)
 	int i;
 	for (i = 0; i < job->niofds; i++) 
 		fd_set_nonblocking(job->iofd[i]);
-	fd_set_nonblocking(job->stdinfd);
+	/* 
+	 * Do not do this. Setting stdin nonblocking has the side
+	 * effect of setting stdout/stderr nonblocking, which is
+	 * not what we want. We should have similar functionality
+	 * with blocking stdin.
+	 */
+	/* fd_set_nonblocking(job->stdinfd); */
 }
 
 static void
@@ -170,15 +176,6 @@ _do_output(cbuf_t buf, FILE *out, int tasknum)
 	int  len     = 0;
 	int  tot     = 0;
 	char line[4096];
-
-	/* 
-	 * This here is a hack to ensure that output streams are
-	 * set blocking. Until I can figure out where stdout/err
-	 * are getting set to nonblocking I/O, this test should
-	 * remain here.
-	 */
-	if ((fcntl(fileno(out), F_GETFL, 0) & O_NONBLOCK)) 
-		fd_set_blocking(fileno(out));
 
 	while ((len = cbuf_read_line(buf, line, sizeof(line), 1))) {
 		int n = 0;

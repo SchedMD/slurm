@@ -74,9 +74,9 @@ tar rpm:
 	if test "$$proj" != "$$name"; then \
 	  echo "ERROR: PROJECT does not match metadata." 1>&2; exit 1; fi; \
 	ver=`perl -ne 'print,exit if s/^\s*VERSION:\s*(\S*).*/\1/i' $$meta`; \
-	rver="$$ver"; \
-	test "$$tag" = "HEAD" -o "$$tag" = "BASE" && ver="$$ver+"; \
 	rel=`perl -ne 'print,exit if s/^\s*RELEASE:\s*(\S*).*/\1/i' $$meta`; \
+	rver="$$ver"; \
+	test "$$tag" = "HEAD" && rel="`date +%Y%m%d%H%M`"; \
 	if test -z "$$rel"; then \
 	  pkg=$$name-$$ver; rel=1; else pkg=$$name-$$ver-$$rel; fi; \
         if test -x "$$tmp/$$proj/autogen.sh"; then \
