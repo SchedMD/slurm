@@ -30,7 +30,6 @@
 
 #include <ctype.h>
 #include <errno.h>
-#include <netdb.h>
 #include <stdio.h>
 #include <string.h>
 #include <syslog.h>
@@ -43,49 +42,23 @@
 #include <src/common/list.h>
 #include <src/common/macros.h>
 #include <src/common/parse_spec.h>
+#include <src/common/read_config.h>
 #include <src/common/xstring.h>
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 
 #define BUF_SIZE 1024
 
-static int	init_slurm_conf (void);
-static int	parse_config_spec (char *in_line);
+static int	init_all_slurm_conf (void);
 static int	parse_node_spec (char *in_line);
 static int	parse_part_spec (char *in_line);
+static void	set_config_defaults (slurm_ctl_conf_t *ctl_conf_ptr);
 #ifdef 	HAVE_LIBELAN3
 static void	validate_node_proc_count (void);
 #endif
 
 static char highest_node_name[MAX_NAME_LEN] = "";
 int node_record_count = 0;
-
-
-/* 
- * report_leftover - report any un-parsed (non-whitespace) characters on the
- * configuration input line (we over-write parsed characters with whitespace).
- * input: in_line - what is left of the configuration input line.
- *        line_num - line number of the configuration file.
- */
-static void
-report_leftover (char *in_line, int line_num)
-{
-	int bad_index, i;
-
-	bad_index = -1;
-	for (i = 0; i < strlen (in_line); i++) {
-		if (isspace ((int) in_line[i]) || (in_line[i] == '\n'))
-			continue;
-		bad_index = i;
-		break;
-	}
-
-	if (bad_index == -1)
-		return;
-	error ("report_leftover: ignored input on line %d of configuration: %s",
-			line_num, &in_line[bad_index]);
-	return;
-}
 
 
 /*
@@ -217,12 +190,14 @@ build_bitmaps ()
 
 
 /* 
- * init_slurm_conf - initialize or re-initialize the slurm configuration values.   
+ * init_all_slurm_conf - initialize or re-initialize the slurm configuration values.   
  * output: return value - 0 if no error, otherwise an error code
  */
 static int
-init_slurm_conf () {
+init_all_slurm_conf () {
 	int error_code;
+
+	init_slurm_conf (&slurmctld_conf);
 
 	if ((error_code = init_node_conf ()))
 		return error_code;
@@ -234,178 +209,6 @@ init_slurm_conf () {
 		return error_code;
 
 	strcpy(highest_node_name, "");
-	return 0;
-}
-
-
-/*
- * parse_config_spec - parse the overall configuration specifications, build table and set values
- * output: 0 if no error, error code otherwise
- */
-static int 
-parse_config_spec (char *in_line) 
-{
-	int error_code;
-	int fast_schedule = -1, hash_base = -1, heartbeat_interval = -1;
-	int inactive_limit = -1, kill_wait = -1;
-	int ret2service = -1, slurmctld_timeout = -1, slurmd_timeout = -1;
-	char *backup_addr = NULL, *backup_controller = NULL;
-	char *control_addr = NULL, *control_machine = NULL, *epilog = NULL;
-	char *prioritize = NULL, *prolog = NULL, *state_save_location = NULL, *tmp_fs = NULL;
-	char *slurmctld_port = NULL, *slurmd_port = NULL;
-	char *job_credential_private_key = NULL , *job_credential_public_certificate = NULL;
-	long first_job_id = 0;
-	struct servent *servent;
-	struct stat sbuf;
-
-	error_code = slurm_parser(in_line,
-		"BackupAddr=", 's', &backup_addr, 
-		"BackupController=", 's', &backup_controller, 
-		"ControlAddr=", 's', &control_addr, 
-		"ControlMachine=", 's', &control_machine, 
-		"Epilog=", 's', &epilog, 
-		"FastSchedule=", 'd', &fast_schedule,
-		"FirstJobId=", 'l', &first_job_id,
-		"HashBase=", 'd', &hash_base,
-		"HeartbeatInterval=", 'd', &heartbeat_interval,
-		"InactiveLimit=", 'd', &inactive_limit,
-		"KillWait=", 'd', &kill_wait,
-		"Prioritize=", 's', &prioritize,
-		"Prolog=", 's', &prolog,
-		"ReturnToService=", 'd', &ret2service,
-		"SlurmctldPort=", 's', &slurmctld_port,
-		"SlurmctldTimeout=", 'd', &slurmctld_timeout,
-		"SlurmdPort=", 's', &slurmd_port,
-		"SlurmdTimeout=", 'd', &slurmd_timeout,
-		"StateSaveLocation=", 's', &state_save_location, 
-		"TmpFS=", 's', &tmp_fs,
-		"JobCredentialPrivateKey=", 's', &job_credential_private_key,
-		"JobCredentialPublicCertificate=", 's', &job_credential_public_certificate,
-		"END");
-	if (error_code)
-		return error_code;
-
-	if ( backup_addr ) {
-		if ( slurmctld_conf.backup_addr )
-			xfree (slurmctld_conf.backup_addr);
-		slurmctld_conf.backup_addr = backup_addr;
-	} else if ( backup_controller ) {
-		if ( slurmctld_conf.backup_addr )
-			xfree (slurmctld_conf.backup_addr);
-		slurmctld_conf.backup_addr = xstrdup (backup_controller);
-	}
-
-	if ( backup_controller ) {
-		if ( slurmctld_conf.backup_controller )
-			xfree (slurmctld_conf.backup_controller);
-		slurmctld_conf.backup_controller = backup_controller;
-	}
-
-	if ( control_addr ) {
-		if ( slurmctld_conf.control_addr )
-			xfree (slurmctld_conf.control_addr);
-		slurmctld_conf.control_addr = control_addr;
-	} else if ( control_machine ) {
-		if ( slurmctld_conf.control_addr )
-			xfree (slurmctld_conf.control_addr);
-		slurmctld_conf.control_addr = xstrdup (control_machine);
-	}
-
-	if ( control_machine ) {
-		if ( slurmctld_conf.control_machine )
-			xfree (slurmctld_conf.control_machine);
-		slurmctld_conf.control_machine = control_machine;
-	}
-
-	if ( epilog ) {
-		if ( slurmctld_conf.epilog )
-			xfree (slurmctld_conf.epilog);
-		slurmctld_conf.epilog = epilog;
-	}
-
-	if ( fast_schedule != -1) 
-		slurmctld_conf.fast_schedule = fast_schedule;
-
-	if ( first_job_id ) 
-		slurmctld_conf.first_job_id = first_job_id;
-
-	if ( hash_base != -1) 
-		slurmctld_conf.hash_base = hash_base;
-
-	if ( heartbeat_interval != -1) 
-		slurmctld_conf.heartbeat_interval = heartbeat_interval;
-
-	if ( inactive_limit != -1) 
-		slurmctld_conf.inactive_limit = inactive_limit;
-
-	if ( kill_wait != -1) 
-		slurmctld_conf.kill_wait = kill_wait;
-
-	if ( prioritize ) {
-		if ( slurmctld_conf.prioritize )
-			xfree (slurmctld_conf.prioritize);
-		slurmctld_conf.prioritize = prioritize;
-	}
-
-	if ( prolog ) {
-		if ( slurmctld_conf.prolog )
-			xfree (slurmctld_conf.prolog);
-		slurmctld_conf.prolog = prolog;
-	}
-
-	if ( ret2service != -1) 
-		slurmctld_conf.ret2service = ret2service;
-
-	if ( slurmctld_port ) {
-		servent = getservbyname (slurmctld_port, NULL);
-		if (servent)
-			slurmctld_conf.slurmctld_port   = servent -> s_port;
-		else
-			slurmctld_conf.slurmctld_port   = strtol (slurmctld_port, (char **) NULL, 10);
-		endservent ();
-	}
-
-	if ( slurmctld_timeout != -1) 
-		slurmctld_conf.slurmctld_timeout = slurmctld_timeout;
-
-	if ( slurmd_port ) {
-		servent = getservbyname (slurmd_port, NULL);
-		if (servent)
-			slurmctld_conf.slurmd_port   = servent -> s_port;
-		else
-			slurmctld_conf.slurmd_port   = strtol (slurmd_port, (char **) NULL, 10);
-		endservent ();
-	}
-
-	if ( slurmd_timeout != -1) 
-		slurmctld_conf.slurmd_timeout = slurmd_timeout;
-
-	if ( state_save_location ) {
-		if ( slurmctld_conf.state_save_location )
-			xfree (slurmctld_conf.state_save_location);
-		slurmctld_conf.state_save_location = state_save_location;
-		if (stat (state_save_location, &sbuf) == -1)	/* create directory as needed */
-			(void) mkdir2 (state_save_location, 0744);
-	}
-
-	if ( tmp_fs ) {
-		if ( slurmctld_conf.tmp_fs )
-			xfree (slurmctld_conf.tmp_fs);
-		slurmctld_conf.tmp_fs = tmp_fs;
-	}
-	
-	if ( job_credential_public_certificate ) {
-		if (slurmctld_conf.job_credential_public_certificate)
-			xfree (slurmctld_conf.job_credential_public_certificate);
-		slurmctld_conf.job_credential_public_certificate = job_credential_public_certificate;
-	}
-
-	if ( job_credential_private_key ) {
-		if ( slurmctld_conf.job_credential_private_key )
-			xfree ( slurmctld_conf.job_credential_private_key ) ;
-		slurmctld_conf.job_credential_private_key = job_credential_private_key ;
-	}
-
 	return 0;
 }
 
@@ -804,7 +607,7 @@ read_slurm_conf (int recover) {
 	old_node_record_count = node_record_count;
 	old_node_table_ptr = node_record_table_ptr;	/* save node states for reconfig RPC */
 	node_record_table_ptr = NULL;
-	if ( (error_code = init_slurm_conf ()) ) {
+	if ( (error_code = init_all_slurm_conf ()) ) {
 		node_record_table_ptr = old_node_table_ptr;
 		return error_code;
 	}
@@ -850,7 +653,7 @@ read_slurm_conf (int recover) {
 		/* parse what is left */
 		
 		/* overall configuration parameters */
-		if ((error_code = parse_config_spec (in_line))) {
+		if ((error_code = parse_config_spec (in_line, &slurmctld_conf))) {
 			fclose (slurm_spec_file);
 			if (old_node_table_ptr)
 				xfree (old_node_table_ptr);
@@ -878,30 +681,8 @@ read_slurm_conf (int recover) {
 	}			
 	fclose (slurm_spec_file);
 
-	/* if values not set in configuration file, set defaults */
-	if (slurmctld_conf.backup_controller == NULL)
-		info ("read_slurm_conf: backup_controller value not specified.");
-	else if (strcmp("localhost", slurmctld_conf.backup_controller) == 0) {
-		xfree (slurmctld_conf.backup_controller);
-		slurmctld_conf.backup_controller = xmalloc (MAX_NAME_LEN);
-		if ( ( error_code = getnodename (slurmctld_conf.backup_controller, 
-		                                 MAX_NAME_LEN) ) ) 
-			fatal ("getnodename: %m");
-	}
-
-	if (slurmctld_conf.control_machine == NULL)
-		fatal ("read_slurm_conf: control_machine value not specified.");
-	else if (strcmp("localhost", slurmctld_conf.control_machine) == 0) {
-		xfree (slurmctld_conf.control_machine);
-		slurmctld_conf.control_machine = xmalloc (MAX_NAME_LEN);
-		if ( ( error_code = getnodename (slurmctld_conf.control_machine, 
-		                                 MAX_NAME_LEN) ) ) 
-			fatal ("getnodename: %m");
-	}
-
-	if (slurmctld_conf.backup_controller &&
-	    (strcmp(slurmctld_conf.control_machine, slurmctld_conf.backup_controller) == 0))
-		fatal ("read_slurm_conf: control_machine and backup_controller are identical");
+	validate_config (&slurmctld_conf);
+	set_config_defaults (&slurmctld_conf);
 
 	if (default_part_loc == NULL) {
 		error ("read_slurm_conf: default partition not set.");
@@ -997,6 +778,47 @@ sync_nodes_to_jobs (void)
 		info ("sync_nodes_to_jobs updated state of %d nodes", update_cnt);
 	return update_cnt;
 }
+
+static void
+set_config_defaults (slurm_ctl_conf_t *ctl_conf_ptr)
+{
+	if (ctl_conf_ptr->backup_controller == NULL)
+		info ("read_slurm_conf: backup_controller value not specified.");
+
+	if (ctl_conf_ptr->fast_schedule == (uint16_t) NO_VAL)
+		ctl_conf_ptr->fast_schedule = 1;
+
+	if (ctl_conf_ptr->first_job_id == (uint32_t) NO_VAL)
+		ctl_conf_ptr->first_job_id = 1;
+
+	if (ctl_conf_ptr->hash_base == (uint16_t) NO_VAL)
+		ctl_conf_ptr->hash_base = 10;
+
+	if (ctl_conf_ptr->heartbeat_interval == (uint16_t) NO_VAL)
+		ctl_conf_ptr->heartbeat_interval = 60;
+
+	if (ctl_conf_ptr->inactive_limit == (uint16_t) NO_VAL)
+		ctl_conf_ptr->inactive_limit = 0;		/* unlimited */
+
+	if (ctl_conf_ptr->kill_wait == (uint16_t) NO_VAL)
+		ctl_conf_ptr->kill_wait = 30;
+
+	if (ctl_conf_ptr->ret2service == (uint16_t) NO_VAL)
+		ctl_conf_ptr->ret2service = 0;
+
+	if (ctl_conf_ptr->slurmctld_timeout == (uint16_t) NO_VAL)
+		ctl_conf_ptr->slurmctld_timeout = 300;
+
+	if (ctl_conf_ptr->slurmd_timeout == (uint16_t) NO_VAL)
+		ctl_conf_ptr->slurmd_timeout = 300;
+
+	if (ctl_conf_ptr->state_save_location == NULL)
+		ctl_conf_ptr->state_save_location = xstrdup (DEFAULT_TMP_FS);
+
+	if (ctl_conf_ptr->tmp_fs == NULL)
+		ctl_conf_ptr->tmp_fs = xstrdup (DEFAULT_TMP_FS);
+}
+
 
 #ifdef 	HAVE_LIBELAN3
 /* Every node in a given partition must have the same processor count at present */
