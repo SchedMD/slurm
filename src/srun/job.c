@@ -575,17 +575,15 @@ int    job_resp_hack_for_step(resource_allocation_response_msg_t *resp)
 	}
 
 	/* Add nodes as specified */
+	total = _job_resp_add_nodes(req_bitmap, exc_bitmap, resp->node_cnt);
 	if (opt.nodes_set) {
-		total = _job_resp_add_nodes(req_bitmap, exc_bitmap, 
-		                                resp->node_cnt);
 		if (total < opt.min_nodes) {
 			error("More nodes requested (%d) than available (%d)",
 				opt.min_nodes, total);
 			return_code = 1;
 			goto cleanup;
 		}
-	} else
-		total = bit_set_count(req_bitmap);
+	}
 
 	if (total != resp->node_cnt)
 		_job_resp_hack(resp, req_bitmap);
@@ -613,7 +611,12 @@ _job_resp_add_nodes(bitstr_t *req_bitmap, bitstr_t *exc_bitmap, int node_cnt)
 {
 	int inx, offset;
 	int total = bit_set_count(req_bitmap);
-	int max_nodes = MAX(opt.min_nodes, opt.max_nodes);
+	int max_nodes;
+
+	if (opt.nodes_set)
+		max_nodes = MAX(opt.min_nodes, opt.max_nodes);
+	else
+		max_nodes = node_cnt;
 
 	/* work up from first allocated node to first excluded node */
 	offset = bit_ffs(req_bitmap);
