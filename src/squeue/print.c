@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, et. al.
+ *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Moe Jette <jette1@llnl.gov>, et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -85,13 +85,47 @@ int print_jobs_array( job_info_t* jobs, int size, List format )
 	if ( size > 0 )
 	{
 		int i = 0;
+		List job_list;
+		ListIterator job_iterator;
+		job_info_t *job_ptr;
+
+		job_list = list_create( NULL );
 		print_job_from_format( NULL, format );
-		for (; i<size; i++)
-		{
+
+		/* Filter out the jobs of interest */
+		for (; i<size; i++) {
 			if (filter_job( &jobs[i] ))
 				continue;
-			print_job_from_format( &jobs[i], format );
+			list_append( job_list, (void *)&jobs[i] );
 		}
+
+		/* Sort the jobs */
+		if (params.sort == NULL) {
+			params.sort = xmalloc( 6 );
+			strcat( params.sort, "P,t,p"); /* Partition, state, priority */
+		}
+		for (i=strlen( params.sort ); i>=0; i--) {
+			if (params.sort[i] == ',')
+				continue;
+			else if (params.sort[i] == 'i')
+				sort_job_by_job_id( job_list );
+			else if (params.sort[i] == 'p')
+				sort_job_by_priority( job_list );
+			else if (params.sort[i] == 'P')
+				sort_job_by_partition( job_list );
+			else if ((params.sort[i] == 't') || (params.sort[i] == 'T'))
+				sort_job_by_state( job_list );
+			else if ((params.sort[i] == 'u') || (params.sort[i] == 'U'))
+				sort_job_by_user( job_list );
+		}
+
+		/* Print the jobs of interest */
+		job_iterator = list_iterator_create( job_list );
+		while ( (job_ptr = list_next( job_iterator )) ) {
+			print_job_from_format( job_ptr, format );
+		}
+		list_iterator_destroy( job_iterator );
+		list_destroy( job_list );
 	}
 	else 
 		printf("No jobs found in system\n" );
@@ -105,14 +139,43 @@ int print_steps_array( job_step_info_t* steps, int size, List format )
 	if ( size > 0 )
 	{
 		int i=0;
+		List step_list;
+		ListIterator step_iterator;
+		job_step_info_t *step_ptr;
 
+		step_list = list_create( NULL );
 		print_step_from_format( NULL, format );
-		for (; i<size; i++ )
-		{
+
+		/* Filter out the jobs of interest */
+		for (; i<size; i++) {
 			if (filter_step( &steps[i] ))
 				continue;
-			print_step_from_format( &steps[i], format );
+			list_append( step_list, (void *)&steps[i] );
 		}
+
+		/* Sort the job steps */
+		if (params.sort == NULL) {
+			params.sort = xmalloc( 4 );
+			strcat( params.sort, "P,i"); /* Partition, id */
+		}
+		for (i=strlen( params.sort ); i>=0; i--) {
+			if (params.sort[i] == ',')
+				continue;
+			else if (params.sort[i] == 'i')
+				sort_step_by_job_step_id( step_list );
+			else if (params.sort[i] == 'P')
+				sort_step_by_partition( step_list );
+			else if ((params.sort[i] == 'u') || (params.sort[i] == 'U'))
+				sort_step_by_user( step_list );
+		}
+
+		/* Print the steps of interest */
+		step_iterator = list_iterator_create( step_list );
+		while ( (step_ptr = list_next( step_iterator )) ) {
+			print_step_from_format( step_ptr, format );
+		}
+		list_iterator_destroy( step_iterator );
+		list_destroy( step_list );
 	}
 	else 
 		printf("No job steps found in system\n" );
@@ -637,7 +700,8 @@ int _print_step_nodes( job_step_info_t* step, int width, bool right )
 	return SLURM_SUCCESS;
 }
 
-/* filter job records per input specifications, returns 1 if job should be filter out (not printed) */
+/* filter job records per input specifications, 
+ * returns 1 if job should be filter out (not printed) */
 static int filter_job( job_info_t * job )
 {
 	int filter;
@@ -711,7 +775,8 @@ static int filter_job( job_info_t * job )
 	return 0;
 }
 
-/* filter step records per input specifications, returns 1 if step should be filter out (not printed) */
+/* filter step records per input specifications, 
+ * returns 1 if step should be filter out (not printed) */
 static int filter_step( job_step_info_t * step )
 {
 	int filter;
@@ -778,4 +843,84 @@ static int filter_step( job_step_info_t * step )
 	}
 
 	return 0;
+}
+
+/*****************************************************************************
+ * Job Sort Functions
+ *****************************************************************************/
+/* sort lower to higher */
+int _sort_job_by_id( void* void1, void* void2 )
+{
+	job_info_t* job1 = (job_info_t*) void1;
+	job_info_t* job2 = (job_info_t*) void2;
+
+	return job1->job_id - job2->job_id;
+}
+
+/* sort higher to lower */
+int _sort_job_by_priority( void* void1, void* void2 )
+{
+	job_info_t* job1 = (job_info_t*) void1;
+	job_info_t* job2 = (job_info_t*) void2;
+
+	return (job2->priority - job1->priority);
+}
+
+int _sort_job_by_partition( void* void1, void* void2 )
+{
+	job_info_t* job1 = (job_info_t*) void1;
+	job_info_t* job2 = (job_info_t*) void2;
+
+	return strcmp( job1->partition, job2->partition);
+}
+
+int _sort_job_by_state( void* void1, void* void2 )
+{
+	job_info_t* job1 = (job_info_t*) void1;
+	job_info_t* job2 = (job_info_t*) void2;
+
+	return (job1->job_state - job2->job_state);
+}
+
+/* sort lower to higher */
+int _sort_job_by_user( void* void1, void* void2 )
+{
+	job_info_t* job1 = (job_info_t*) void1;
+	job_info_t* job2 = (job_info_t*) void2;
+
+	return (job1->user_id - job2->user_id);
+}
+
+/*****************************************************************************
+ * Step Sort Functions
+ *****************************************************************************/
+/* sort lower to higher */
+int _sort_step_by_id( void* void1, void* void2 )
+{
+	int i;
+	job_step_info_t* step1 = (job_step_info_t*) void1;
+	job_step_info_t* step2 = (job_step_info_t*) void2;
+
+	i = step1->job_id - step2->job_id;
+	if (i == 0)
+		return (step1->step_id - step2->step_id);
+	else
+		return i;
+}
+
+int _sort_step_by_partition( void* void1, void* void2 )
+{
+	job_step_info_t* step1 = (job_step_info_t*) void1;
+	job_step_info_t* step2 = (job_step_info_t*) void2;
+
+	return strcmp( step1->partition, step2->partition);
+}
+
+/* sort lower to higher */
+int _sort_step_by_user( void* void1, void* void2 )
+{
+	job_step_info_t* step1 = (job_step_info_t*) void1;
+	job_step_info_t* step2 = (job_step_info_t*) void2;
+
+	return (step1->user_id - step2->user_id);
 }

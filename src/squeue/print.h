@@ -169,4 +169,38 @@ int _print_step_user_name( job_step_info_t* step, int width, bool right_justify 
 int _print_step_start_time( job_step_info_t* step, int width, bool right_justify );
 int _print_step_nodes( job_step_info_t* step, int width, bool right_justify );
 
+/*****************************************************************************
+ * Job Sort Functions
+ *****************************************************************************/
+#define sort_job_by_job_id(list) \
+		list_sort(list,_sort_job_by_id)
+#define sort_job_by_priority(list) \
+		list_sort(list,_sort_job_by_priority)
+#define sort_job_by_partition(list) \
+		list_sort(list,_sort_job_by_partition)
+#define sort_job_by_state(list) \
+		list_sort(list,_sort_job_by_state)
+#define sort_job_by_user(list) \
+		list_sort(list,_sort_job_by_user)
+
+int _sort_job_by_id( void* void1, void* void2 );
+int _sort_job_by_priority( void* void1, void* void2 );
+int _sort_job_by_partition( void* void1, void* void2 );
+int _sort_job_by_state( void* void1, void* void2 );
+int _sort_job_by_user( void* void1, void* void2 );
+
+/*****************************************************************************
+ * Step Sort Functions
+ *****************************************************************************/
+#define sort_step_by_job_step_id(list) \
+		list_sort(list,_sort_step_by_id)
+#define sort_step_by_partition(list) \
+		list_sort(list,_sort_step_by_partition)
+#define sort_step_by_user(list) \
+		list_sort(list,_sort_step_by_user)
+
+int _sort_step_by_id( void* void1, void* void2 );
+int _sort_step_by_partition( void* void1, void* void2 );
+int _sort_step_by_user(  void* void1, void* void2 );
+
 #endif
