@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov>, et. al.
+ *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -28,6 +28,7 @@
 #include <pwd.h>
 #include <sys/types.h>
 
+#include "src/common/uid.h"
 #include "src/common/xstring.h"
 #include "src/squeue/print.h"
 #include "src/squeue/squeue.h"
@@ -440,13 +441,10 @@ static int _sort_job_by_user_name(void *void1, void *void2)
 	int diff;
 	job_info_t *job1 = (job_info_t *) void1;
 	job_info_t *job2 = (job_info_t *) void2;
-	struct passwd *user_info;
-	char *name1 = "", *name2 = "";
+	char *name1, *name2;
 
-	if ((user_info = getpwuid((uid_t) job1->user_id)))
-		name1 = user_info->pw_name;
-	if ((user_info = getpwuid((uid_t) job2->user_id)))
-		name2 = user_info->pw_name;
+	name1 = uid_to_string((uid_t) job1->user_id);
+	name2 = uid_to_string((uid_t) job2->user_id);
 	diff = strcmp(name1, name2);
 
 	if (reverse_order)
@@ -589,13 +587,10 @@ static int _sort_step_by_user_name(void *void1, void *void2)
 	int diff;
 	job_step_info_t *step1 = (job_step_info_t *) void1;
 	job_step_info_t *step2 = (job_step_info_t *) void2;
-	struct passwd *user_info;
-	char *name1 = "", *name2 = "";
+	char *name1, *name2;
 
-	if ((user_info = getpwuid((uid_t) step1->user_id)))
-		name1 = user_info->pw_name;
-	if ((user_info = getpwuid((uid_t) step2->user_id)))
-		name2 = user_info->pw_name;
+	name1 = uid_to_string((uid_t) step1->user_id);
+	name2 = uid_to_string((uid_t) step2->user_id);
 	diff = strcmp(name1, name2);
 
 	if (reverse_order)

@@ -28,6 +28,8 @@
 #ifndef __SLURM_UID_UTILITY_H__
 #define __SLURM_UID_UTILITY_H__
 
+#include <sys/types.h>
+
 /*
  * Return validated uid_t for string in ``name'' which contains
  *  either the UID number or user name
@@ -41,5 +43,10 @@ uid_t uid_from_string (char *name);
  * Same as uid_from_name(), but for group name/id.
  */
 gid_t gid_from_string (char *name);
+
+/* 
+ * Translate uid to user name
+ */
+char *uid_to_string (uid_t uid);
 
 #endif /*__SLURM_UID_UTILITY_H__*/

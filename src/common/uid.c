@@ -47,6 +47,19 @@ uid_from_string (char *name)
 	return pwd ? pwd->pw_uid : (uid_t) -1; 
 }
 
+char *
+uid_to_string (uid_t uid)
+{
+	struct passwd *pwd = NULL;
+
+	/* Suse Linux does not handle multiple users with UID=0 well */
+	if (uid == 0)
+		return "root";
+
+	pwd = getpwuid(uid);
+	return pwd ? pwd->pw_name : "nobody";
+}
+
 gid_t
 gid_from_string (char *name)
 {

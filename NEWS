@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- Fix srun bug when --input, --output and --error are all "none"
  -- Don't schedule jobs for user root if partition is DOWN
  -- Modify select/bluegene to honor job's required node list
+ -- Modify user name logic to explicitly set UID=0 to "root", 
+    Suse Linux was not handling multiple users with UID=0 well.
 
 * Changes in SLURM 0.4.0-pre3
 =============================

@@ -33,6 +33,7 @@
 
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
+#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 
@@ -659,8 +660,7 @@ sched_get_job_user_id( sched_obj_list_t job_data,
 	struct passwd *pwent;
 	if ( type ) *type = 's';
 
-	pwent = getpwuid( (uid_t) ( (struct job_record *)job_data->data )[ idx ].user_id );
-	return (void *) ( pwent ? pwent->pw_name : "nobody" );	
+	return uid_to_string( (uid_t) ( (struct job_record *)job_data->data )[ idx ].user_id );
 }
 
 /* ************************************************************************ */
