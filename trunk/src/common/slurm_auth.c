@@ -46,14 +46,16 @@
  */
 typedef struct slurm_auth_ops {
 	void *	(*alloc)	( void );
-	void	(*free)		( void *cred );
+	int	(*free)		( void *cred );
 	int	(*activate)	( void *cred, int secs );
 	int	(*verify)	( void *cred );
 	uid_t	(*get_uid)	( void *cred );
 	gid_t	(*get_gid)	( void *cred );
-	void	(*pack)		( void *cred, Buf buf );
+	int	(*pack)		( void *cred, Buf buf );
 	int	(*unpack)	( void *cred, Buf buf );
-	void	(*print)	( void *cred, FILE *fp );
+	int	(*print)	( void *cred, FILE *fp );
+	int	(*sa_errno)	( void *cred );
+	const char * (*sa_errstr) ( int slurm_errno );
 } slurm_auth_ops_t;
 
 /*
@@ -79,6 +81,7 @@ struct slurm_auth_context {
 	char *auth_type;
 	plugrack_t plugin_list;
 	plugin_handle_t	cur_plugin;
+	int auth_errno;
 	slurm_auth_ops_t ops;
 };
 
@@ -184,29 +187,60 @@ slurm_auth_context_t
 slurm_auth_context_create( const char *auth_type )
 {
 	slurm_auth_context_t c;
-  
+
 	if ( auth_type == NULL ) {
-		debug( "slurm_auth_context_create: no authentication type" );
+		debug3( "slurm_auth_context_create: no authentication type" );
 		return NULL;
 	}
 
 	c = (slurm_auth_context_t) xmalloc( sizeof( struct slurm_auth_context ) );
 
+	c->auth_errno = SLURM_SUCCESS;
+
 	/* Copy the authentication type. */
 	c->auth_type = strdup( auth_type );
 	if ( c->auth_type == NULL ) {
-		debug( "can't make local copy of authentication type" );
+		debug3( "can't make local copy of authentication type" );
 		xfree( c );
 		return NULL;
 	}
 
 	/* Plugin rack is demand-loaded on first reference. */
 	c->plugin_list = NULL;
-
 	c->cur_plugin = PLUGIN_INVALID_HANDLE;  
 
 	return c;
 }
+
+
+static const char *
+slurm_auth_generic_errstr( int slurm_errno )	 
+{
+	static struct {
+		int err;
+		const char *msg;
+	} generic_table[] = {
+		{ SLURM_SUCCESS, "no error" },
+		{ SLURM_ERROR, "unknown error" },
+		{ SLURM_AUTH_NOPLUGIN, "no authentication plugin installed" },
+		{ SLURM_AUTH_BADARG, "bad argument to plugin function" },
+		{ SLURM_AUTH_MEMORY, "memory management error" },
+		{ SLURM_AUTH_NOUSER, "no such user" },
+		{ SLURM_AUTH_EXPIRED, "authentication credential expired" },
+		{ SLURM_AUTH_INVALID, "authentication credential invalid" },
+		{ SLURM_AUTH_MISMATCH, "authentication type mismatch" },
+		{ 0, NULL }
+	};
+
+	int i;
+
+	for ( i = 0; ; ++i ) {
+		if ( generic_table[ i ].msg == NULL ) return NULL;
+		if ( generic_table[ i ].err == slurm_errno )
+			return generic_table[ i ].msg;
+	}
+}
+
 
 int
 slurm_auth_context_destroy( slurm_auth_context_t c )
@@ -272,12 +306,14 @@ c_slurm_auth_alloc( slurm_auth_context_t c )
 	}
 }
 
-void
+int
 c_slurm_auth_free( slurm_auth_context_t c, void *cred )
 {
-	if ( ( c == NULL ) || ( cred == NULL ) ) return;
+	if ( ( c == NULL ) || ( cred == NULL ) ) return SLURM_ERROR;
 	if ( c->ops.free ) {
-		(*(c->ops.free))( cred );
+		return (*(c->ops.free))( cred );
+	} else {
+		return SLURM_ERROR;
 	}
 }
 
@@ -326,13 +362,15 @@ c_slurm_auth_get_gid( slurm_auth_context_t c, void *cred )
 }
 
 
-void
+int
 c_slurm_auth_pack( slurm_auth_context_t c, void *cred, Buf buf )
 {
 	if ( ( c == NULL ) || ( cred == NULL ) || ( buf == NULL ) )
-		return;
+		return SLURM_ERROR;
 	if ( c->ops.pack ) {
-		(*(c->ops.pack))( cred, buf );
+		return (*(c->ops.pack))( cred, buf );
+	} else {
+		return SLURM_ERROR;
 	}
 }
 
@@ -349,16 +387,50 @@ c_slurm_auth_unpack( slurm_auth_context_t c, void *cred, Buf buf )
 	}
 }
 
-void
+int
 c_slurm_auth_print( slurm_auth_context_t c, void *cred, FILE *fp )
 {
 	if ( ( c == NULL ) || ( cred == NULL ) || ( fp == NULL ) )
-		return;
+		return SLURM_ERROR;
 	if ( c->ops.print ) {
-		(*(c->ops.print))( cred, fp );
+		return (*(c->ops.print))( cred, fp );
+	} else {
+		return SLURM_ERROR;
 	}
 }
 
+int
+c_slurm_auth_errno( slurm_auth_context_t c, void *cred )
+{
+	if ( ( c == NULL ) || ( cred == NULL ) ) {
+		return SLURM_ERROR;
+	}
+	if ( c->ops.sa_errno ) {
+		return (*(c->ops.sa_errno))( cred );
+	} else {
+		return SLURM_ERROR;
+	}
+}
+
+const char *
+c_slurm_auth_errstr( slurm_auth_context_t c, int slurm_errno )
+{
+	static char dflt[] = "Authentication context missing or malformed";
+	char *generic;
+	
+	if ( c == NULL ) {
+		return dflt;
+	}
+	if ( ( generic = (char *)
+		   slurm_auth_generic_errstr( slurm_errno ) ) != NULL ) {
+		return (const char *) generic;
+	}
+	if ( ! c->ops.sa_errstr ) {
+		return dflt;
+	} else {
+		return (*(c->ops.sa_errstr))( slurm_errno );
+	}
+}
 
 /*
  * Static bindings for the global authentication context.  The test
@@ -376,13 +448,13 @@ g_slurm_auth_alloc( void )
 	return (*(g_context->ops.alloc))();
 }
 
-void
+int
 g_slurm_auth_free( void *cred )
 {
 	if ( slurm_auth_init() < 0 )
-		return;
+		return SLURM_ERROR;
 
-	(*(g_context->ops.free))( cred );
+	return (*(g_context->ops.free))( cred );
 }
 
 int
@@ -421,13 +493,13 @@ g_slurm_auth_get_gid( void *cred )
 	return (*(g_context->ops.get_gid))( cred );
 }
 
-void
+int
 g_slurm_auth_pack( void *cred, Buf buf )
 {
 	if ( slurm_auth_init() < 0 )
-		return;
+		return SLURM_ERROR;
 	
-	(*(g_context->ops.pack))( cred, buf );
+	return (*(g_context->ops.pack))( cred, buf );
 }
 
 int
@@ -439,11 +511,37 @@ g_slurm_auth_unpack( void *cred, Buf buf )
 	return (*(g_context->ops.unpack))( cred, buf );
 }
 
-void
+int
 g_slurm_auth_print( void *cred, FILE *fp )
 {
 	if ( slurm_auth_init() < 0 )
-		return;
+		return SLURM_ERROR;
 	
-	(*(g_context->ops.print))( cred, fp );
+	return (*(g_context->ops.print))( cred, fp );
+}
+
+int
+g_slurm_auth_errno( void *cred )
+{
+	if ( slurm_auth_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_context->ops.sa_errno))( cred );
+}
+
+const char *
+g_slurm_auth_errstr( int slurm_errno )
+{
+	static char auth_init_msg[] = "authentication initialization failure";
+	char *generic;
+	
+	if ( slurm_auth_init() < 0 )
+		return auth_init_msg;
+
+	if ( ( generic = (char *)
+		   slurm_auth_generic_errstr( slurm_errno ) ) != NULL ) {
+		return generic;
+	}
+
+	return (*(g_context->ops.sa_errstr))( slurm_errno );
 }

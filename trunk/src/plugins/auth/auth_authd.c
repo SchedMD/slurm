@@ -64,6 +64,7 @@
 #endif
 
 #include <slurm/slurm_errno.h>
+#include "src/common/slurm_auth.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xassert.h"
 #include "src/common/pack.h"
@@ -76,7 +77,15 @@ const uint32_t plugin_version = 90;
 typedef struct _slurm_auth_credential {
 	credentials cred;
 	signature sig;
+	int cr_errno;
 } slurm_auth_credential_t;
+
+/* Plugin-global errno. */
+static int plugin_errno = SLURM_SUCCESS;
+
+enum {
+	SLURM_AUTH_UNPACK = SLURM_AUTH_FIRST_LOCAL_ERROR
+};
 
 /*
  * These come from /usr/include/auth.h which should be installed
@@ -217,20 +226,31 @@ slurm_auth_verify_signature( credentials *cred, signature *sig )
 slurm_auth_credential_t *
 slurm_auth_alloc( void )
 {
-	return (slurm_auth_credential_t *) xmalloc( sizeof( slurm_auth_credential_t ) );
+	slurm_auth_credential_t *cred = 
+		(slurm_auth_credential_t *)
+		xmalloc( sizeof( slurm_auth_credential_t ) );
+	cred->cr_errno = SLURM_SUCCESS;
+	return cred;
 }
 
-void
+int
 slurm_auth_free( slurm_auth_credential_t *cred )
 {
-	if ( cred != NULL ) xfree( cred );
+	if ( cred == NULL ) {
+		plugin_errno = SLURM_AUTH_BADARG;
+		return SLURM_ERROR;
+	}
+	xfree( cred );
+	return SLURM_SUCCESS;
 }
 
 int
 slurm_auth_activate( slurm_auth_credential_t *cred, int ttl )
 {
-	if ( cred == NULL ) return SLURM_ERROR;
-	if ( ttl < 1 ) return SLURM_ERROR;
+	if ( ( cred == NULL ) || ( ttl < 1 ) ) {
+		plugin_errno = SLURM_AUTH_BADARG;
+		return SLURM_ERROR;
+	}
 	
 	/* Initialize credential with our user and group. */
 	cred->cred.uid = geteuid();
@@ -242,6 +262,7 @@ slurm_auth_activate( slurm_auth_credential_t *cred, int ttl )
 
 	/* Sign the credential. */
 	if ( slurm_auth_get_signature( &cred->cred, &cred->sig ) < 0 ) {
+		cred->cr_errno = SLURM_AUTH_INVALID;
 		return SLURM_ERROR;
 	}
 
@@ -252,14 +273,27 @@ int
 slurm_auth_verify( slurm_auth_credential_t *cred )
 {
 	int rc;
+	time_t now;
 
-	if ( cred == NULL ) return SLURM_ERROR;
+	if ( cred == NULL ) {
+		plugin_errno = SLURM_AUTH_BADARG;
+		return SLURM_ERROR;
+	}
 	
 	rc = slurm_auth_verify_signature( &cred->cred, &cred->sig );
 	if ( rc < 0 ) {
+		cred->cr_errno = SLURM_AUTH_INVALID;
 		return SLURM_ERROR;
 	}
 
+	now = time( NULL );
+	if ( ( now < cred->cred.valid_from ) || ( now > cred->cred.valid_to ) ) {
+		cred->cr_errno = SLURM_AUTH_EXPIRED;
+		return SLURM_ERROR;
+	}
+
+	/* XXX check to see if user is valid on the system. */
+	
 	return SLURM_SUCCESS;
 }
 
@@ -267,7 +301,10 @@ slurm_auth_verify( slurm_auth_credential_t *cred )
 uid_t
 slurm_auth_get_uid( slurm_auth_credential_t *cred )
 {
-	xassert( cred );
+	if ( cred == NULL ) {
+		plugin_errno = SLURM_AUTH_BADARG;
+		return SLURM_AUTH_NOBODY;
+	}
 	return cred->cred.uid;
 }
 
@@ -275,17 +312,23 @@ slurm_auth_get_uid( slurm_auth_credential_t *cred )
 gid_t
 slurm_auth_get_gid( slurm_auth_credential_t *cred )
 {
-	xassert( cred );
+	if ( cred == NULL ) {
+		plugin_errno = SLURM_AUTH_BADARG;
+		return SLURM_AUTH_NOBODY;
+	}
 	return cred->cred.gid;
 }
 
 
-void
+int
 slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf )
 {
 	uint16_t sig_size = sizeof( signature );
 
-	if ( ( cred == NULL ) || ( buf == NULL ) ) return;
+	if ( ( cred == NULL ) || ( buf == NULL ) ) {
+		plugin_errno = SLURM_AUTH_BADARG;
+		return SLURM_ERROR;
+	}
 
 	/*
 	 * Marshall the plugin type and version for runtime sanity check.
@@ -300,6 +343,8 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf )
 	pack_time( cred->cred.valid_from, buf );
 	pack_time( cred->cred.valid_to, buf );
 	packmem( cred->sig.data, sig_size, buf );
+
+	return SLURM_SUCCESS;
 }
 
 
@@ -310,32 +355,60 @@ slurm_auth_unpack( slurm_auth_credential_t *cred, Buf buf )
 	uint32_t version;	
 	char *data;
 
-	if ( ( cred == NULL) || ( buf == NULL ) )
-		return SLURM_ERROR;
-
-	/* Check the plugin type. */
-	unpackmem_ptr( &data, &sig_size, buf );
-	if ( strcmp( data, plugin_type ) != 0 ) {
-		error( "authd plugin: authentication mismatch, got %s", data );
+	if ( ( cred == NULL) || ( buf == NULL ) ) {
+		plugin_errno = SLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
-	unpack32( &version, buf );
+
+	cred->cr_errno = SLURM_SUCCESS;
 	
-	unpack32( &cred->cred.uid, buf );
-	unpack32( &cred->cred.gid, buf );
-	unpack_time( &cred->cred.valid_from, buf );
-	unpack_time( &cred->cred.valid_to, buf );
-	unpackmem_ptr( &data, &sig_size, buf );
+	/* Check the plugin type. */
+	if ( unpackmem_ptr( &data, &sig_size, buf ) != SLURM_SUCCESS ) {
+		cred->cr_errno = SLURM_AUTH_UNPACK;
+		return SLURM_ERROR;
+	}
+	if ( strcmp( data, plugin_type ) != 0 ) {
+		cred->cr_errno = SLURM_AUTH_MISMATCH;
+		return SLURM_ERROR;
+	}
+
+	if ( unpack32( &version, buf ) != SLURM_SUCCESS ) {
+		cred->cr_errno = SLURM_AUTH_UNPACK;
+		return SLURM_ERROR;
+	}
+	if ( unpack32( &cred->cred.uid, buf ) != SLURM_SUCCESS ) {
+		cred->cr_errno = SLURM_AUTH_UNPACK;
+		return SLURM_ERROR;
+	}
+	if ( unpack32( &cred->cred.gid, buf ) != SLURM_SUCCESS ) {
+		cred->cr_errno = SLURM_AUTH_UNPACK;
+		return SLURM_ERROR;
+	}
+	if ( unpack_time( &cred->cred.valid_from, buf ) != SLURM_SUCCESS ) {
+		cred->cr_errno = SLURM_AUTH_UNPACK;
+		return SLURM_ERROR;
+	}
+	if ( unpack_time( &cred->cred.valid_to, buf ) != SLURM_SUCCESS ) {
+		cred->cr_errno = SLURM_AUTH_UNPACK;
+		return SLURM_ERROR;
+	}
+	if ( unpackmem_ptr( &data, &sig_size, buf ) != SLURM_SUCCESS ) {
+		cred->cr_errno = SLURM_AUTH_UNPACK;
+		return SLURM_ERROR;
+	}
 	memcpy( cred->sig.data, data, sizeof( signature ) );
 
 	return SLURM_SUCCESS;
 }
 
 
-void
+int
 slurm_auth_print( slurm_auth_credential_t *cred, FILE *fp )
 {
-	if ( cred == NULL ) return;
+	if ( cred == NULL ) {
+		plugin_errno = SLURM_AUTH_BADARG;
+		return SLURM_ERROR;
+	}
 
 	verbose( "BEGIN AUTHD CREDENTIAL\n" );
 	verbose( "   UID: %d", cred->cred.uid );
@@ -346,5 +419,36 @@ slurm_auth_print( slurm_auth_credential_t *cred, FILE *fp )
 			 cred->sig.data[ 0 ], cred->sig.data[ 1 ],
 			 cred->sig.data[ 2 ], cred->sig.data[ 3 ] );
 	verbose( "END AUTHD CREDENTIAL\n" );
+
+	return SLURM_SUCCESS;	
 }
 
+
+int
+slurm_auth_errno( slurm_auth_credential_t *cred )
+{
+	if ( cred == NULL )
+		return plugin_errno;
+	else
+		return cred->cr_errno;
+}
+
+
+const char *
+slurm_auth_errstr( int slurm_errno )
+{
+	static struct {
+		int err;
+		char *msg;
+	} tbl[] = {
+		{ SLURM_AUTH_UNPACK, "cannot unpack authentication type" },
+		{ 0, NULL }
+	};
+
+	int i;
+
+	for ( i = 0; ; ++i ) {
+		if ( tbl[ i ].msg == NULL ) return "unknown error";
+		if ( tbl[ i ].err == slurm_errno ) return tbl[ i ].msg;
+	}
+}

@@ -75,6 +75,18 @@
  *
  */
 
+enum {
+    SLURM_AUTH_NOPLUGIN,
+    SLURM_AUTH_BADARG,
+    SLURM_AUTH_MEMORY,
+    SLURM_AUTH_NOUSER,
+    SLURM_AUTH_EXPIRED,
+    SLURM_AUTH_INVALID,
+    SLURM_AUTH_MISMATCH,
+
+    SLURM_AUTH_FIRST_LOCAL_ERROR
+};
+
 /*
  * SLURM authentication context opaque type.
  */
@@ -108,14 +120,16 @@ int slurm_auth_context_destroy( slurm_auth_context_t ctxt );
  * exposing the API directly to avoid object lifetime issues.
  */
 void	*c_slurm_auth_alloc( slurm_auth_context_t c );
-void	c_slurm_auth_free( slurm_auth_context_t c, void *cred );
+int	c_slurm_auth_free( slurm_auth_context_t c, void *cred );
 int	c_slurm_auth_activate( slurm_auth_context_t c, void *cred, int secs );
 int	c_slurm_auth_verify( slurm_auth_context_t c, void *cred );
 uid_t	c_slurm_auth_get_uid( slurm_auth_context_t c, void *cred );
 gid_t	c_slurm_auth_get_gid( slurm_auth_context_t c, void *cred );
-void	c_slurm_auth_pack( slurm_auth_context_t c, void *cred, Buf buf );
+int	c_slurm_auth_pack( slurm_auth_context_t c, void *cred, Buf buf );
 int	c_slurm_auth_unpack( slurm_auth_context_t c, void *cred, Buf buf );
-void	c_slurm_auth_print( slurm_auth_context_t c, void *cred, FILE *fp );
+int	c_slurm_auth_print( slurm_auth_context_t c, void *cred, FILE *fp );
+int	c_slurm_auth_errno( slurm_auth_context_t c, void *cred );
+const char *c_slurm_auth_errstr( slurm_auth_context_t c, int slurm_errno );
 
 /*
  * Prepare the global context.
@@ -126,13 +140,15 @@ int slurm_auth_init( void );
  * Static bindings for the global authentication context.
  */
 void	*g_slurm_auth_alloc( void );
-void	g_slurm_auth_free( void *cred );
+int	g_slurm_auth_free( void *cred );
 int	g_slurm_auth_activate( void *cred, int secs );
 int	g_slurm_auth_verify( void *cred );
 uid_t	g_slurm_auth_get_uid( void *cred );
 gid_t	g_slurm_auth_get_gid( void *cred );
-void	g_slurm_auth_pack( void *cred, Buf buf );
+int	g_slurm_auth_pack( void *cred, Buf buf );
 int	g_slurm_auth_unpack( void *cred, Buf buf );
-void	g_slurm_auth_print( void *cred, FILE *fp );
+int	g_slurm_auth_print( void *cred, FILE *fp );
+int	g_slurm_auth_errno( void *cred );
+const char *g_slurm_auth_errstr( int slurm_errno );
 
 #endif /*__SLURM_AUTHENTICATION_H__*/

@@ -125,8 +125,27 @@ const uint32_t plugin_version	= 90;
 typedef struct _slurm_auth_credential {
 	uid_t uid;
 	gid_t gid;
+	int cr_errno;
 } slurm_auth_credential_t;
 
+/* A plugin-global errno. */
+static int plugin_errno = SLURM_SUCCESS;
+
+/*
+ * New errno values particular to this plugin.  We declare the first
+ * one to be SLURM_AUTH_FIRST_LOCAL_ERROR to avoid conflicting with
+ * the general ones.
+ */
+enum {
+	SLURM_AUTH_UNPACK_TYPE = SLURM_AUTH_FIRST_LOCAL_ERROR,
+	SLURM_AUTH_UNPACK_VERSION,
+	SLURM_AUTH_UNPACK_CRED
+};
+
+/*
+ * init() is called when the plugin is loaded, before any other functions
+ * are called.  Put global initialization here.
+ */
 void init ( void )
 {
 	debug("authentication==none");
@@ -145,17 +164,26 @@ void init ( void )
 slurm_auth_credential_t *
 slurm_auth_alloc( void )
 {
-	return ((slurm_auth_credential_t *) 
+	slurm_auth_credential_t *cred;
+
+	cred = ((slurm_auth_credential_t *) 
 		xmalloc( sizeof( slurm_auth_credential_t ) ));
+	cred->cr_errno = SLURM_SUCCESS;
+	return cred;
 }
 
 /*
  * Free a credential that was allocated with slurm_auth_alloc().
  */
-void
+int
 slurm_auth_free( slurm_auth_credential_t *cred )
 {
-	if ( cred != NULL ) xfree( cred );
+	if ( cred == NULL ) {
+		plugin_errno = SLURM_AUTH_MEMORY;
+		return SLURM_ERROR;
+	}
+	xfree( cred );
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -172,7 +200,10 @@ slurm_auth_free( slurm_auth_credential_t *cred )
 int
 slurm_auth_activate( slurm_auth_credential_t *cred, int secs )
 {
-	if ( cred == NULL ) return SLURM_ERROR;
+	if ( cred == NULL ) {
+		plugin_errno = SLURM_AUTH_BADARG;		
+		return SLURM_ERROR;
+	}
 	cred->uid = geteuid();
 	cred->gid = getegid();
 	return SLURM_SUCCESS;
@@ -201,6 +232,7 @@ uid_t
 slurm_auth_get_uid( slurm_auth_credential_t *cred )
 {
 	if ( cred == NULL ) {
+		plugin_errno = SLURM_AUTH_BADARG;
 		return SLURM_AUTH_NOBODY;
 	} else {
 		return cred->uid;
@@ -215,6 +247,7 @@ gid_t
 slurm_auth_get_gid( slurm_auth_credential_t *cred )
 {
 	if ( cred == NULL ) {
+		plugin_errno = SLURM_AUTH_BADARG;
 		return SLURM_AUTH_NOBODY;
 	} else {
 		return cred->gid;
@@ -225,12 +258,12 @@ slurm_auth_get_gid( slurm_auth_credential_t *cred )
  * Marshall a credential for transmission over the network, according to
  * SLURM's marshalling protocol.
  */
-void
+int
 slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf )
 {
 	if ( ( cred == NULL ) || ( buf == NULL ) ) {
-		error( "malformed slurm_auth_pack call in auth/none plugin" );
-		return;
+		plugin_errno = SLURM_AUTH_BADARG;
+		return SLURM_ERROR;
 	}
 	
 	/*
@@ -244,6 +277,8 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf )
 	 */
 	pack32( cred->uid, buf );
 	pack32( cred->gid, buf );
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -259,23 +294,27 @@ slurm_auth_unpack( slurm_auth_credential_t *cred, Buf buf )
 	uint16_t size;
 	
 	if ( ( cred == NULL ) || ( buf == NULL ) ) {
-		error( "malformed slurm_auth_unpack call in auth/none plugin" );
+		plugin_errno = SLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
+
+	cred->cr_errno = SLURM_SUCCESS;
 	
 	/*
 	 * Get the authentication type.
 	 */
 	if ( unpackmem_ptr( &tmpstr, &size, buf ) != SLURM_SUCCESS ) {
-		error( "cannot unpack authentication type: %m" );
+		cred->cr_errno = SLURM_AUTH_UNPACK_TYPE;
 		return SLURM_ERROR;
 	}
 	if ( strcmp( tmpstr, plugin_type ) != 0 ) {
-		error( "runtime authentication plugin type mismatch" );
-		error( "plugin expected 'auth/none' and got '%s'", tmpstr );
+		cred->cr_errno = SLURM_AUTH_MISMATCH;
 		return SLURM_ERROR;
 	}
-	if ( unpack32( &version, buf ) != SLURM_SUCCESS ) return SLURM_ERROR;
+	if ( unpack32( &version, buf ) != SLURM_SUCCESS ) {
+		cred->cr_errno = SLURM_AUTH_UNPACK_VERSION;
+		return SLURM_ERROR;
+	}
 
 	/*
 	 * We do it the hard way because we don't know anything about the
@@ -285,9 +324,15 @@ slurm_auth_unpack( slurm_auth_credential_t *cred, Buf buf )
 	 * clobbering if they really aren't.  This technique ensures a
 	 * warning at compile time if the sizes are incompatible.
 	 */
-	if ( unpack32( &tmpint, buf ) != SLURM_SUCCESS ) return SLURM_ERROR;
+	if ( unpack32( &tmpint, buf ) != SLURM_SUCCESS ) {
+		cred->cr_errno = SLURM_AUTH_UNPACK_CRED;
+		return SLURM_ERROR;
+	}
 	cred->uid = tmpint;
-	if ( unpack32( &tmpint, buf ) != SLURM_SUCCESS ) return SLURM_ERROR;
+	if ( unpack32( &tmpint, buf ) != SLURM_SUCCESS ) {
+		cred->cr_errno = SLURM_AUTH_UNPACK_CRED;
+		return SLURM_ERROR;
+	}
 	cred->gid = tmpint;
 
 	return SLURM_SUCCESS;
@@ -298,15 +343,60 @@ slurm_auth_unpack( slurm_auth_credential_t *cred, Buf buf )
  * credential for debugging or logging purposes.  The format is left
  * to the imagination of the plugin developer.
  */
-void
+int
 slurm_auth_print( slurm_auth_credential_t *cred, FILE *fp )
 {
 	if ( ( cred == NULL) || ( fp == NULL ) ) {
-		return;
+		plugin_errno = SLURM_AUTH_BADARG;
+		return SLURM_ERROR;
 	}
 
 	printf( "BEGIN SLURM BASIC AUTHENTICATION CREDENTIAL\n" );
 	printf( "\tUID = %d\n", cred->uid );
 	printf( "\tGID = %d\n", cred->gid );
 	printf( "END SLURM BASIC AUTHENTICATION CREDENTIAL\n" );
+
+	return SLURM_SUCCESS;
+}
+
+
+/*
+ * Return the errno.  If no credential is given, return the errno
+ * of the plugin.  This leads to possibly ambiguous situations, but
+ * there really isn't any easy way of dealing with that.
+ */
+int
+slurm_auth_errno( slurm_auth_credential_t *cred )
+{
+	if ( cred == NULL )
+		return plugin_errno;
+	else
+		return cred->cr_errno;
+}
+
+
+/*
+ * Return a string corresponding to an error.  We are responsible only for
+ * the errors we define here in the plugin.  The SLURM plugin wrappers
+ * take care of the API-mandated errors.
+ */
+const char *
+slurm_auth_errstr( int slurm_errno )
+{
+	static struct {
+		int err;
+		char *msg;
+	} tbl[] = {
+		{ SLURM_AUTH_UNPACK_TYPE, "cannot unpack authentication type" },
+		{ SLURM_AUTH_UNPACK_VERSION, "cannot unpack credential version" },
+		{ SLURM_AUTH_UNPACK_CRED, "cannot unpack credential" },
+		{ 0, NULL }
+	};
+
+	int i;
+
+	for ( i = 0; ; ++i ) {
+		if ( tbl[ i ].msg == NULL ) return "unknown error";
+		if ( tbl[ i ].err == slurm_errno ) return tbl[ i ].msg;
+	}
 }
