@@ -118,7 +118,6 @@ static void         _parse_commandline(int argc, char *argv[],
                                        slurm_ctl_conf_t *);
 inline static int   _report_locks_set(void);
 static void *       _service_connection(void *arg);
-static int          _set_slurmctld_state_loc(void);
 static int          _shutdown_backup_controller(int wait_time);
 static void *       _slurmctld_background(void *no_data);
 static void *       _slurmctld_rpc_mgr(void *no_data);
@@ -152,6 +151,11 @@ int main(int argc, char *argv[])
 		      SLURM_CONFIG_FILE);
 	update_logging();
 	_kill_old_slurmctld();
+	/* Insure that StateSaveLocation directory (if it already 
+	 *   exists) is owned by SlurmUser */
+	if (slurmctld_conf.state_save_location)
+		(void) chown(slurmctld_conf.state_save_location, 
+				slurmctld_conf.slurm_user_id, -1);
 
 	/* 
 	 * Need to create pidfile here in case we setuid() below
@@ -176,7 +180,7 @@ int main(int argc, char *argv[])
 	/* 
 	 * Create StateSaveLocation directory if necessary, and chdir() to it.
 	 */
-	if (_set_slurmctld_state_loc() < 0)
+	if (set_slurmctld_state_loc() < 0)
 		fatal("Unable to initialize StateSaveLocation");
 
 	if (daemonize) {
@@ -411,6 +415,7 @@ static void *_slurmctld_signal_hand(void *no_data)
 				      slurm_strerror(error_code));
 			else {
 				_update_cred_key();
+				set_slurmctld_state_loc();
 			}
 			unlock_slurmctld(config_write_lock);
 			break;
@@ -1053,11 +1058,10 @@ _init_pidfile(void)
 }
 
 /*
- * create state directory as needed and "cd" to it
- * NOTE: No need to lock the config data since we are still single-threaded 
+ * set_slurmctld_state_loc - create state directory as needed and "cd" to it
  */
-static int
-_set_slurmctld_state_loc(void)
+extern int
+set_slurmctld_state_loc(void)
 {
 	if ((mkdir(slurmctld_conf.state_save_location, 0755) < 0) && 
 	    (errno != EEXIST)) {
