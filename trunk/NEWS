@@ -5,6 +5,11 @@ documents those changes that are of interest to users and admins.
 ===============================
  -- Switch plugin added. Add "SwitchType=switch/elan" to slurm.conf for 
     systems with Quadrics Elan3 or Elan4 switches.
+ -- Don't tread DOWN nodes with too few CPUs as a fatal error on Elan
+ -- Major re-write of html documents
+ -- Updates to node pinging for large numbers of unresponsive nodes 
+ -- Explicitly set default action for SIGTERM (action on Thunder was 
+    to ignore SIGTERM)
 
 * Changes in SLURM 0.3.0.0-pre5
 ===============================
