@@ -78,7 +78,7 @@
 #define SHM_LOCKNAME	"/.slurm.lock"
 
 /* Increment SHM_VERSION if format changes */
-#define SHM_VERSION	1001
+#define SHM_VERSION	1004
 
 /* These macros convert shared memory pointers to local memory
  * pointers and back again. Pointers in shared memory are relative
@@ -188,12 +188,25 @@ void
 shm_cleanup(void)
 {
 	char *s;
+	key_t key;
 
 	if ((s = _create_ipc_name(SHM_LOCKNAME))) {
+		key = ftok(s, 1);
 		info("request to destroy shm lock `%s'", s);
 		if (sem_unlink(s) < 0)
 			error("sem_unlink: %m");
 		xfree(s);
+	} 
+	
+	/* This seems to be the only way to get a shared memory ID given
+	 *  a key, if you don't already know the size of the region.
+	 */
+	if ((shmid = shmget(key, 1, 0)) < 0) {
+		error ("Unable to get shmid: %m");
+	} 
+
+	if ((shmid > 0) && (shmctl(shmid, IPC_RMID, NULL) < 0)) {
+		error ("Unable to destroy existing shm segment");
 	}
 }
 
@@ -824,10 +837,26 @@ static int
 _shm_attach()
 {
 	int oflags = 0;
+	struct shmid_ds shmi;
 	key_t key = ftok(lockname, 1);
 
-	if ((shmid = shmget(key, sizeof(slurmd_shm_t), oflags)) < 0) 
+	if ((shmid = shmget(key, 1/* sizeof(slurmd_shm_t) */, oflags)) < 0) {
+		error("shmget: %m");
 		return SLURM_ERROR;
+	}
+
+	if (shmctl(shmid, IPC_STAT, &shmi) < 0) {
+		error ("shmctl: unable to get info for shm id %d", shmid);
+	}
+
+	if (shmi.shm_segsz != sizeof(slurmd_shm_t)) {
+		error("size for shm segment id %d is %dK, expected %dK",
+		      shmid, (shmi.shm_segsz/1024), 
+		      (sizeof(slurmd_shm_t)/1024));
+		error("You probably need to run with `-c' "
+			"or just delete old segment.");
+		slurm_seterrno_ret(EINVAL);
+	}
 
 	slurmd_shm = shmat(shmid, NULL, 0);
 	if (slurmd_shm == (void *)-1 || slurmd_shm == NULL) { 

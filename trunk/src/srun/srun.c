@@ -62,6 +62,7 @@
 #include "src/srun/launch.h"
 #include "src/srun/signals.h"
 #include "src/srun/reattach.h"
+#include "src/srun/allocate.h"
 #include "src/srun/opt.h"
 
 #include "src/srun/net.h"
@@ -74,30 +75,24 @@
 
 #define MAX_RETRIES 20
 
-typedef resource_allocation_response_msg_t         allocation_resp;
-typedef resource_allocation_and_run_response_msg_t alloc_run_resp;
-
 #define	TYPE_NOT_TEXT	0
 #define	TYPE_TEXT	1
 #define	TYPE_SCRIPT	2
 
 
+typedef resource_allocation_response_msg_t         allocation_resp;
+typedef resource_allocation_and_run_response_msg_t alloc_run_resp;
+
 /*
  * forward declaration of static funcs
  */
-static allocation_resp	*_allocate_nodes(void);
-static void              _print_job_information(allocation_resp *resp);
-static void		 _create_job_step(job_t *job);
-static inline bool 	 _job_all_done(job_t *job);
-static void		 _sig_kill_alloc(int signum);
-static char 		*_build_script (char *pathname, int file_type);
-static char 		*_get_shell (void);
-static int 		 _is_file_text (char *, char**);
-static int		 _run_batch_job (void);
-static allocation_resp	*_existing_allocation(void);
-static void		 _run_job_script(uint32_t jobid, uint32_t node_cnt);
-static int               _set_batch_script_env(uint32_t jobid, 
-					       uint32_t node_cnt);
+static void  _print_job_information(allocation_resp *resp);
+static char *_build_script (char *pathname, int file_type);
+static char *_get_shell (void);
+static int   _is_file_text (char *, char**);
+static int   _run_batch_job (void);
+static void  _run_job_script(uint32_t jobid, uint32_t node_cnt);
+static int   _set_batch_script_env(uint32_t jobid, uint32_t node_cnt);
 
 
 #ifdef HAVE_LIBELAN3
@@ -134,6 +129,8 @@ srun(int ac, char **av)
 		log_alter(logopt, 0, NULL);
 	}
 
+	sig_setup_sigmask();
+
 	/* now global "opt" should be filled in and available,
 	 * create a job from opt
 	 */
@@ -149,24 +146,24 @@ srun(int ac, char **av)
 		_qsw_standalone(job);
 #endif
 
-	} else if ( (resp = _existing_allocation()) ) {
+	} else if ( (resp = existing_allocation()) ) {
 		if (opt.allocate) {
 			error("job %u already has an allocation", resp->job_id);
 			exit(1);
 		}
 		job = job_create_allocation(resp); 
 		job->old_job = true;
-		_create_job_step(job);
+		create_job_step(job);
 		slurm_free_resource_allocation_response_msg(resp);
 
 	} else if (opt.allocate) {
-		if ( !(resp = _allocate_nodes()) ) 
+		if ( !(resp = allocate_nodes()) ) 
 			exit(1);
 		if (_verbose)
 			_print_job_information(resp);
 		job = job_create_allocation(resp); 
 		_run_job_script(resp->job_id, resp->node_cnt);
-		slurm_complete_job(resp->job_id, 0, 0);
+		job_destroy(job, 0);
 
 		debug ("Spawned srun shell terminated");
 		exit (0);
@@ -176,19 +173,17 @@ srun(int ac, char **av)
 		exit (0);
 
 	} else {
-		if ( !(resp = _allocate_nodes()) ) 
+		if ( !(resp = allocate_nodes()) ) 
 			exit(1);
 		if (_verbose)
 			_print_job_information(resp);
 
 		job = job_create_allocation(resp); 
-		_create_job_step(job);
+		create_job_step(job);
 		slurm_free_resource_allocation_response_msg(resp);
 	}
 
 	/* job structure should now be filled in */
-
-	sig_setup_sigmask();
 
 	if (msg_thr_create(job) < 0)
 		job_fatal(job, "Unable to create msg thread");
@@ -202,21 +197,22 @@ srun(int ac, char **av)
 	if (launch_thr_create(job) < 0)
 		job_fatal(job, "Unable to create launch thread: %m");
 
-	/* wait for job to terminate */
+	/* wait for job to terminate 
+	 */
 	slurm_mutex_lock(&job->state_mutex);
-	debug3("before main state loop: state = %d", job->state);
-	while (!_job_all_done(job)) 
+	while (job->state < SRUN_JOB_TERMINATED) 
 		pthread_cond_wait(&job->state_cond, &job->state_mutex);
 	slurm_mutex_unlock(&job->state_mutex);
 
-	/* job is now overdone, clean up  */
+	/* job is now overdone, clean up  
+	 */
 	if (job->state == SRUN_JOB_FAILED) {
 		info("sending SIGINT to job");
 		fwd_signal(job, SIGINT);
 	}
 
 	/* Tell slurmctld that job is done */
-	job_destroy(job);
+	job_destroy(job, 0);
 
 	/* wait for launch thread */
 	if (pthread_join(job->lid, NULL) < 0)
@@ -234,125 +230,6 @@ srun(int ac, char **av)
 
 	log_fini();
 	return 0;
-}
-
-/*
- * allocate nodes from slurm controller via slurm api
- * will xmalloc memory for allocation response, which caller must free
- *	initialization if set
- */
-static allocation_resp *
-_allocate_nodes(void)
-{
-	int rc, retries;
-	job_desc_msg_t job;
-	resource_allocation_response_msg_t *resp;
-	old_job_alloc_msg_t old_job;
-
-	slurm_init_job_desc_msg(&job);
-
-	job.contiguous     = opt.contiguous;
-	job.features       = opt.constraints;
-	job.immediate      = opt.immediate;
-	job.name           = opt.job_name;
-	job.req_nodes      = opt.nodelist;
-	job.exc_nodes      = opt.exc_nodes;
-	job.partition      = opt.partition;
-	job.min_nodes      = opt.min_nodes;
-	if (opt.max_nodes)
-		job.max_nodes      = opt.max_nodes;
-	job.num_tasks      = opt.nprocs;
-	job.user_id        = opt.uid;
-	if (opt.mincpus > -1)
-		job.min_procs = opt.mincpus;
-	if (opt.realmem > -1)
-		job.min_memory = opt.realmem;
-	if (opt.tmpdisk > -1)
-		job.min_tmp_disk = opt.tmpdisk;
-
-	if (opt.overcommit)
-		job.num_procs      = opt.min_nodes;
-	else
-		job.num_procs      = opt.nprocs * opt.cpus_per_task;
-
-	if (opt.no_kill)
- 		job.kill_on_node_fail	= 0;
-	if (opt.time_limit > -1)
-		job.time_limit		= opt.time_limit;
-	if (opt.share)
-		job.shared		= 1;
-
-	retries = 0;
-	while ((rc = slurm_allocate_resources(&job, &resp)) < 0) {
-		if ((slurm_get_errno() == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) 
-		    && (retries < MAX_RETRIES)) {
-			char *msg = "Slurm controller not responding, " 
-				    "sleeping and retrying";
-			if (retries == 0)
-				error (msg);
-			else
-				debug (msg);
-
-			sleep (++retries);
-		} else {
-			error("Unable to allocate resources: %m");
-			return NULL;
-		}			
-	}
-
-	if ((rc == 0) && (resp->node_list == NULL)) {
-		struct sigaction action, old_action;
-		int fake_job_id = (0 - resp->job_id);
-		info ("Job %u queued and waiting for resources", resp->job_id);
-		_sig_kill_alloc(fake_job_id);
-		action.sa_handler = &_sig_kill_alloc;
-		/* action.sa_flags   = SA_ONESHOT; */
-		sigaction(SIGINT, &action, &old_action);
-		old_job.job_id = resp->job_id;
-		old_job.uid = (uint32_t) getuid();
-		slurm_free_resource_allocation_response_msg (resp);
-		sleep (2);
-
-		/* Keep polling until the job is allocated resources */
-		while (slurm_confirm_allocation(&old_job, &resp) < 0) {
-			if (slurm_get_errno() == ESLURM_JOB_PENDING) {
-				debug3("Still waiting for allocation");
-				sleep (10);
-			} else {
-				error("Unable to confirm resource "
-				      "allocation for job %u: %m", 
-				      old_job.job_id);
-				exit (1);
-			}
-		}
-		sigaction(SIGINT, &old_action, NULL);
-	}
-	
-	return resp;
-}
-
-
-static void
-_sig_kill_alloc(int signum)
-{
-	static uint32_t job_id = 0;
-
-	if (signum == SIGINT) {			/* <Control-C> */
-		slurm_complete_job (job_id, 0, 0);
-#ifdef HAVE_TOTALVIEW
-		tv_launch_failure();
-#endif
-		exit (0);
-	} else if (signum < 0)
-		job_id = (uint32_t) (0 - signum); /* kluge to pass job id */
-	else
-		fatal ("_sig_kill_alloc called with invalid argument", signum);
-
-}
-
-static bool _job_all_done(job_t *job)
-{
-	return (job->state >= SRUN_JOB_TERMINATED);
 }
 
 
@@ -377,51 +254,6 @@ _qsw_standalone(job_t *job)
 
 }
 #endif /* HAVE_LIBELAN3 */
-
-static void 
-_create_job_step(job_t *job)
-{
-	job_step_create_request_msg_t req;
-	job_step_create_response_msg_t *resp;
-
-	req.job_id     = job->jobid;
-	req.user_id    = opt.uid;
-	req.node_count = job->nhosts;
-	if (opt.overcommit)
-		req.cpu_count  = job->nhosts;
-	else
-		req.cpu_count  = opt.nprocs * opt.cpus_per_task;
-	req.num_tasks  = opt.nprocs;
-	req.node_list  = job->nodelist;
-	req.relative   = false;
-
-	if (opt.distribution == SRUN_DIST_UNKNOWN) {
-		if (opt.nprocs <= job->nhosts)
-			opt.distribution = SRUN_DIST_CYCLIC;
-		else
-			opt.distribution = SRUN_DIST_BLOCK;
-	}
-	if (opt.distribution == SRUN_DIST_BLOCK)
-		req.task_dist  = SLURM_DIST_BLOCK;
-	else 	/* (opt.distribution == SRUN_DIST_CYCLIC) */
-		req.task_dist  = SLURM_DIST_CYCLIC;
-
-	if (slurm_job_step_create(&req, &resp) || (resp == NULL)) {
-		error("unable to create job step: %s", slurm_strerror(errno));
-		slurm_complete_job(job->jobid, 0, errno);
-#ifdef HAVE_TOTALVIEW
-		tv_launch_failure();
-#endif
-		exit(1);
-	}
-
-	job->stepid = resp->job_step_id;
-	job->cred   = resp->credentials;
-#ifdef HAVE_LIBELAN3	
-	job->qsw_job= resp->qsw_job;
-#endif
-
-}
 
 
 static void 
@@ -705,39 +537,6 @@ _build_script (char *fname, int file_type)
 	return buffer;
 }
 
-/* If this is a valid job then return a (psuedo) allocation response pointer, 
- * otherwise return NULL */
-static allocation_resp *
-_existing_allocation( void )
-{
-	char * jobid_str, *end_ptr;
-	uint32_t jobid_uint;
-	old_job_alloc_msg_t job;
-	allocation_resp *resp;
-
-	/* Load SLURM_JOBID environment variable */
-	jobid_str = getenv( "SLURM_JOBID" );
-	if (jobid_str == NULL)
-		return NULL;
-	jobid_uint = (uint32_t) strtoul( jobid_str, &end_ptr, 10 );
-	if (end_ptr[0] != '\0') {
-		error( "Invalid SLURM_JOBID environment variable: %s", 
-		       jobid_str );
-		exit( 1 );
-	}
-
-	/* Confirm that this job_id is legitimate */
-	job.job_id = jobid_uint;
-	job.uid = (uint32_t) getuid();
-
-	if (slurm_confirm_allocation(&job, &resp) == SLURM_FAILURE) {
-		error("Unable to confirm resource allocation for job %u: %s", 
-			jobid_uint, slurm_strerror(errno));
-		exit( 1 );
-	}
-
-	return resp;
-}
 
 static int
 _set_batch_script_env(uint32_t jobid, uint32_t node_cnt)

@@ -100,6 +100,8 @@ _job_create_internal(allocation_info_t *info)
 	 */
 	_set_nprocs(info);
 
+	debug2("creating job with %d tasks", opt.nprocs);
+
 	job = xmalloc(sizeof(*job));
 
 	slurm_mutex_init(&job->state_mutex);
@@ -313,19 +315,42 @@ void job_fatal(job_t *job, const char *msg)
 {
 	if (msg) error(msg);
 
-	job_destroy(job);
+	job_destroy(job, errno);
 
 	exit(1);
 }
 
 void 
-job_destroy(job_t *job)
+job_destroy(job_t *job, int error)
 {
 	if (job->old_job) {
 		debug("cancelling job step %u.%u", job->jobid, job->stepid);
-		slurm_complete_job_step(job->jobid, job->stepid, 0, 0);
+		slurm_complete_job_step(job->jobid, job->stepid, 0, error);
 	} else if (!opt.no_alloc) {
 		debug("cancelling job %u", job->jobid);
-		slurm_complete_job(job->jobid, 0, 0);
+		slurm_complete_job(job->jobid, 0, error);
+	} else {
+		debug("no allocation to cancel");
+		return;
 	}
+
+#ifdef HAVE_TOTALVIEW
+	if (error) tv_launch_failure();
+#endif
+}
+
+int
+job_active_tasks_on_host(job_t *job, int hostid)
+{
+	int i;
+	int retval = 0;
+
+	slurm_mutex_lock(&job->task_mutex);
+	for (i = 0; i < job->ntask[hostid]; i++) {
+		uint32_t tid = job->tids[hostid][i];
+		if (job->task_state[tid] == SRUN_TASK_RUNNING) 
+			retval++;
+	}
+	slurm_mutex_unlock(&job->task_mutex);
+	return retval;
 }

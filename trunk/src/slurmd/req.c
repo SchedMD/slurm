@@ -144,7 +144,6 @@ _launch_batch_job(batch_job_launch_msg_t *req, slurm_addr *cli)
 			break;
 		case 0: /* child runs job */
 			slurm_shutdown_msg_engine(conf->lfd);
-			list_destroy(conf->threads);
 			destroy_credential_state_list(conf->cred_state_list);
 			slurm_destroy_ssl_key_ctx(&conf->vctx);
 			slurm_ssl_destroy();
@@ -175,7 +174,6 @@ _launch_tasks(launch_tasks_request_msg_t *req, slurm_addr *cli)
 			break;
 		case 0: /* child runs job */
 			slurm_shutdown_msg_engine(conf->lfd);
-			list_destroy(conf->threads);
 			destroy_credential_state_list(conf->cred_state_list);
 			slurm_destroy_ssl_key_ctx(&conf->vctx);
 			slurm_ssl_destroy();

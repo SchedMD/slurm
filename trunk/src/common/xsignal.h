@@ -30,10 +30,17 @@
 
 #include <signal.h>
 
+typedef void SigFunc(int);
+
 /* 
  * Install a signal handler in the POSIX way, but with BSD signal() semantics
  */
-struct sigaction *xsignal(int signo, void (*handler)(int));
+SigFunc *xsignal(int signo, SigFunc *);
+
+/*
+ * Unblock a single signal
+ */
+int xsignal_unblock(int signo);
 
 /* 
  * Unblock all possible signals

@@ -204,6 +204,8 @@ static void
 update_running_tasks(job_t *job, uint32_t nodeid)
 {
 	int i;
+	debug2("updating %d running tasks for node %d", 
+			job->ntask[nodeid], nodeid);
 	slurm_mutex_lock(&job->task_mutex);
 	for (i = 0; i < job->ntask[nodeid]; i++) {
 		uint32_t tid = job->tids[nodeid][i];
@@ -314,10 +316,12 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 	/* 
 	 * store global task id information as returned from slurmd
 	 */
-	job->tids[resp->srun_node_id] = xmalloc(resp->ntasks * 
-						sizeof(uint32_t));
-	for (i = 0; i < resp->ntasks; i++)
+	job->tids[resp->srun_node_id]  = xmalloc( resp->ntasks * 
+						  sizeof(uint32_t) );
+	job->ntask[resp->srun_node_id] = resp->ntasks;      
+	for (i = 0; i < resp->ntasks; i++) {
 		job->tids[resp->srun_node_id][i] = resp->gids[i];
+	}
 
 #if HAVE_TOTALVIEW
 	if ((remote_argc == 0) && (resp->executable_name)) {

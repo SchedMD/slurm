@@ -79,7 +79,8 @@ _dist_block(job_t *job)
 	for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
 		for (j=0; (((j*opt.cpus_per_task)<job->cpus[i]) && 
 					(taskid<opt.nprocs)); j++) {
-			job->tids[i][j] = taskid++;
+			job->hostid[taskid] = i;
+			job->tids[i][j]     = taskid++;
 			job->ntask[i]++;
 		}
 	}
@@ -92,7 +93,8 @@ _dist_cyclic(job_t *job)
 	for (j=0; (taskid<opt.nprocs); j++) {	/* cycle counter */
 		for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
 			if (j < job->cpus[i]) {
-				job->tids[i][j] = taskid++;
+				job->hostid[taskid] = i;
+				job->tids[i][j]     = taskid++;
 				job->ntask[i]++;
 			}
 		}
@@ -131,7 +133,8 @@ launch(void *arg)
 	debug("sending to slurmd port %d", slurm_get_slurmd_port());
 
 	/* Build task id list for each host */
-	job->tids = xmalloc(job->nhosts * sizeof(uint32_t *));
+	job->tids   = xmalloc(job->nhosts * sizeof(uint32_t *));
+	job->hostid = xmalloc(opt.nprocs  * sizeof(uint32_t));
 	for (i = 0; i < job->nhosts; i++)
 		job->tids[i] = xmalloc(job->cpus[i] * sizeof(uint32_t));
 
@@ -275,7 +278,6 @@ _send_msg_rc(slurm_msg_t *msg)
 {
 	slurm_msg_t        resp;
 	return_code_msg_t *rcmsg   = NULL;
-	int                errcode = 0;
 	int		   rc      = 0;
 
        	if ((rc = slurm_send_recv_node_msg(msg, &resp)) < 0)

@@ -1,5 +1,29 @@
-/* an srun "job" */
-
+/*****************************************************************************\
+ * src/srun/job.h - specification of an srun "job"
+ * $Id$
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Mark Grondona <mgrondona@llnl.gov>.
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
 #ifndef _HAVE_JOB_H
 #define _HAVE_JOB_H
 
@@ -62,6 +86,7 @@ typedef struct srun_job {
 	int *cpus; 		/* number of processors on each host */
 	int *ntask; 		/* number of tasks to run on each host */
 	uint32_t **tids;	/* host id => task ids mapping    */
+	uint32_t *hostid;	/* task id => host id mapping     */
 
         slurm_addr *slurmd_addr;/* slurm_addr vector to slurmd's */
 
@@ -117,6 +142,8 @@ job_t * job_create_noalloc(void);
 job_t * job_create_allocation(resource_allocation_response_msg_t *resp);
 
 void    job_fatal(job_t *job, const char *msg);
-void    job_destroy(job_t *job);
+void    job_destroy(job_t *job, int error);
+
+int     job_active_tasks_on_host(job_t *job, int hostid);
 
 #endif /* !_HAVE_JOB_H */

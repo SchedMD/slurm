@@ -81,7 +81,7 @@ typedef struct slurmd_config {
 	int	      shm_cleanup:1;
 
 	List          cred_state_list;  /* credential stat list            */
-	List          threads;		/* list of active threads	   */
+
 	slurm_ssl_ctx vctx;		/* ssl context for cred utils      */
 	uid_t           slurm_user_id;	/* UID that slurmctld runs as      */
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
