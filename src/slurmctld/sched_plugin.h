@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Jay Windley <jwindley@lnxi.gov>
+ *  Written by Jay Windley <jwindley@lnxi.com>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
