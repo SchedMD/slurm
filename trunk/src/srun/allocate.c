@@ -157,12 +157,8 @@ _wait_for_resources(resource_allocation_response_msg_t **resp)
 	while (slurm_confirm_allocation(&old_job, resp) < 0) {
 		if (slurm_get_errno() == ESLURM_JOB_PENDING) {
 			debug3("Still waiting for allocation");
-#if 0			/* Generates warning on AIX, so do it the hard way */
-			sleep_time = MIN((++sleep_time), MAX_ALLOC_WAIT);
-#else
-			sleep_time++;
-			sleep_time = MIN(sleep_time, MAX_ALLOC_WAIT);
-#endif
+			if (sleep_time < MAX_ALLOC_WAIT)
+				++sleep_time;
 			sleep(sleep_time);
 		} else {
 			error("Unable to confirm resource allocation for "
