@@ -216,6 +216,11 @@ compiled.
 The port number on which slurmctld should listen for connection requests.
 This value is only used by the Maui Scheduler (see \fBSchedulerType\fR).
 .TP
+\fBSchedulerRootFilter\fR
+Identifies whether or not RootOnly partitions should be filtered from
+any external scheduling activities. Currently only used by the built-in
+backfill scheduling module "sched/backfill" (see \fBSchedulerType\fR).
+.TP
 \fBSchedulerType\fR
 Identifies the type of scheduler to be used. Acceptable values include 
 "sched/builtin" for the built-in FIFO scheduler, 

@@ -363,6 +363,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL;
 	xfree( ctl_conf_ptr->schedauth );
 	ctl_conf_ptr->schedport			= (uint16_t) NO_VAL;
+	ctl_conf_ptr->schedrootfltr		= (uint16_t) NO_VAL;
 	xfree( ctl_conf_ptr->schedtype );
 	xfree( ctl_conf_ptr->select_type );
 	ctl_conf_ptr->slurm_user_id		= (uint16_t) NO_VAL; 
@@ -410,7 +411,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	int fast_schedule = -1, hash_base, heartbeat_interval = -1;
 	int inactive_limit = -1, kill_wait = -1;
 	int ret2service = -1, slurmctld_timeout = -1, slurmd_timeout = -1;
-	int sched_port = -1;
+	int sched_port = -1, sched_rootfltr = -1;
 	int slurmctld_debug = -1, slurmd_debug = -1;
 	int max_job_cnt = -1, min_job_age = -1, wait_time = -1;
 	int slurmctld_port = -1, slurmd_port = -1;
@@ -461,6 +462,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"ReturnToService=", 'd', &ret2service,
 		"SchedulerAuth=", 's', &sched_auth,
 		"SchedulerPort=", 'd', &sched_port,
+		"SchedulerRootFilter=", 'd', &sched_rootfltr,
 		"SchedulerType=", 's', &sched_type,
 		"SelectType=", 's', &select_type,
 		"SlurmUser=", 's', &slurm_user,
@@ -688,6 +690,12 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 			error( "External scheduler port %d is invalid",
 			       sched_port );
 		ctl_conf_ptr->schedport = (uint16_t) sched_port;
+	}
+
+	if ( sched_rootfltr != -1 ) {
+		if ( ctl_conf_ptr->schedrootfltr != (uint16_t) NO_VAL)
+			error (MULTIPLE_VALUE_MSG, "SchedulerRootFilter");
+		ctl_conf_ptr->schedrootfltr = (uint16_t) sched_rootfltr;
 	}
 
 	if ( sched_type ) {
@@ -1146,6 +1154,9 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	if (ctl_conf_ptr->ret2service == (uint16_t) NO_VAL)
 		ctl_conf_ptr->ret2service = DEFAULT_RETURN_TO_SERVICE;
+
+	if (ctl_conf_ptr->schedrootfltr == (uint16_t) NO_VAL)
+		ctl_conf_ptr->schedrootfltr = DEFAULT_SCHEDROOTFILTER;
 
 	if (ctl_conf_ptr->schedtype == NULL)
 		ctl_conf_ptr->schedtype = xstrdup(DEFAULT_SCHEDTYPE);

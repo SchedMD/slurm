@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
     node registration (only when slurmd starts, not on periodic 
     registrtions).
  -- Add federation switch plugin.
+ -- Add new configuration keyword, SchedulerRootFilter, to control 
+    external scheduler control of RoolOnly partition (Chris Holmes, HP).
 
 * Changes in SLURM 0.4.7
 ========================
