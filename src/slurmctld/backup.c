@@ -49,6 +49,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
+#include "src/slurmctld/locks.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -56,6 +57,7 @@ static int          _background_process_msg(slurm_msg_t * msg);
 static void *       _background_rpc_mgr(void *no_data);
 static void *       _background_signal_hand(void *no_data);
 static int          _ping_controller(void);
+inline static void  _update_cred_key(void);
 
 /* Local variables */
 static bool     dump_core = false;
@@ -164,8 +166,12 @@ void run_backup(void)
  *	backup controller */
 static void *_background_signal_hand(void *no_data)
 {
-	int sig;
+	int sig, error_code;
 	sigset_t set;
+	/* Locks: Write configuration, job, node, and partition */
+	slurmctld_lock_t config_write_lock = { WRITE_LOCK, WRITE_LOCK,
+		WRITE_LOCK, WRITE_LOCK
+	};
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -184,6 +190,23 @@ static void *_background_signal_hand(void *no_data)
 			slurmctld_shutdown();
 			return NULL;	/* Normal termination */
 			break;
+		case SIGHUP:    /* kill -1 */
+			info("Reconfigure signal (SIGHUP) received");
+			/*
+			 * XXX - need to shut down the scheduler
+			 * plugin, re-read the configuration, and then
+			 * restart the (possibly new) plugin.
+			 */
+			lock_slurmctld(config_write_lock);
+			error_code = read_slurm_conf(0);
+			unlock_slurmctld(config_write_lock);
+			if (error_code)
+				error("read_slurm_conf: %s",
+					slurm_strerror(error_code));
+			else {
+				_update_cred_key();
+			}
+			break;
 		case SIGABRT:   /* abort */
 			info("SIGABRT received");
 			slurmctld_config.shutdown_time = time(NULL);
@@ -196,6 +219,13 @@ static void *_background_signal_hand(void *no_data)
 			error("Invalid signal (%d) received", sig);
 		}
 	}
+}
+
+/* Reset the job credential key based upon configuration parameters */
+static void _update_cred_key(void)
+{	
+	slurm_cred_ctx_key_update(slurmctld_config.cred_ctx, 
+			slurmctld_conf.job_credential_private_key);
 }
 
 /* _background_rpc_mgr - Read and process incoming RPCs to the background 

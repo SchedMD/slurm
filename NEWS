@@ -25,6 +25,7 @@ documents those changes that are of interest to users and admins.
     logging plugins added
  -- Added job and node state descriptions to the squeue and sinfo man pages
  -- Backup slurmctld to generate core file on SIGABRT
+ -- Backup slurmctld to re-read slurm.conf on SIGHUP
 
 * Changes in SLURM 0.3.0.0-pre6
 ===============================
