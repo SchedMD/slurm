@@ -314,6 +314,9 @@ extern void dump_job_desc(job_desc_msg_t * job_specs);
 /* dump_step_desc - dump the incoming step initiate request message */
 extern void dump_step_desc(step_specs *step_spec);
 
+/* find_first_node_record - find a record for first node in the bitmap */
+extern struct node_record *find_first_node_record (bitstr_t *node_bitmap);
+
 /*  find_job_record - return a pointer to the job record with the given job_id */
 extern struct job_record *find_job_record (uint32_t job_id);
 
