@@ -203,7 +203,7 @@ void
 print_build (char *build_param)
 {
 	int error_code;
-	slurm_ctl_conf_info_msg_t *old_slurm_ctl_conf_ptr = NULL;
+	static slurm_ctl_conf_info_msg_t *old_slurm_ctl_conf_ptr = NULL;
 	slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
 
 	if (old_slurm_ctl_conf_ptr) {
@@ -220,6 +220,7 @@ print_build (char *build_param)
 	}
 	else
 		error_code = slurm_load_ctl_conf ((time_t) NULL, &slurm_ctl_conf_ptr);
+
 	if (error_code) {
 		if (quiet_flag != 1)
 			printf ("slurm_load_build error %d\n", error_code);
