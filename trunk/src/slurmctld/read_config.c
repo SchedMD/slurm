@@ -813,31 +813,37 @@ static void _set_config_defaults(slurm_ctl_conf_t * ctl_conf_ptr)
 		   "read_slurm_conf: backup_controller value not specified.");
 
 	if (ctl_conf_ptr->fast_schedule == (uint16_t) NO_VAL)
-		ctl_conf_ptr->fast_schedule = 1;
+		ctl_conf_ptr->fast_schedule = DEFAULT_FAST_SCHEDULE;
 
 	if (ctl_conf_ptr->first_job_id == (uint32_t) NO_VAL)
-		ctl_conf_ptr->first_job_id = 1;
+		ctl_conf_ptr->first_job_id = DEFAULT_FIRST_JOB_ID;
 
 	if (ctl_conf_ptr->hash_base == (uint16_t) NO_VAL)
-		ctl_conf_ptr->hash_base = 10;
+		ctl_conf_ptr->hash_base = DEFAULT_HASH_BASE;
 
 	if (ctl_conf_ptr->heartbeat_interval == (uint16_t) NO_VAL)
-		ctl_conf_ptr->heartbeat_interval = 60;
+		ctl_conf_ptr->heartbeat_interval = DEFAULT_HEARTBEAT_INTERVAL;
 
 	if (ctl_conf_ptr->inactive_limit == (uint16_t) NO_VAL)
-		ctl_conf_ptr->inactive_limit = 0;	/* unlimited */
+		ctl_conf_ptr->inactive_limit = DEFAULT_INACTIVE_LIMIT;
 
 	if (ctl_conf_ptr->kill_wait == (uint16_t) NO_VAL)
-		ctl_conf_ptr->kill_wait = 30;
+		ctl_conf_ptr->kill_wait = DEFAULT_KILL_WAIT;
+
+	if (ctl_conf_ptr->max_job_cnt == (uint16_t) NO_VAL)
+		ctl_conf_ptr->max_job_cnt = DEFAULT_MAX_JOB_COUNT;
+
+	if (ctl_conf_ptr->min_job_age == (uint16_t) NO_VAL)
+		ctl_conf_ptr->min_job_age = DEFAULT_MIN_JOB_AGE;
 
 	if (ctl_conf_ptr->ret2service == (uint16_t) NO_VAL)
-		ctl_conf_ptr->ret2service = 0;
+		ctl_conf_ptr->ret2service = DEFAULT_RETURN_TO_SERVICE;
 
 	if (ctl_conf_ptr->slurmctld_timeout == (uint16_t) NO_VAL)
-		ctl_conf_ptr->slurmctld_timeout = 300;
+		ctl_conf_ptr->slurmctld_timeout = DEFAULT_SLURMCTLD_TIMEOUT;
 
 	if (ctl_conf_ptr->slurmd_timeout == (uint16_t) NO_VAL)
-		ctl_conf_ptr->slurmd_timeout = 300;
+		ctl_conf_ptr->slurmd_timeout = DEFAULT_SLURMD_TIMEOUT;
 
 	if (ctl_conf_ptr->state_save_location == NULL)
 		ctl_conf_ptr->state_save_location =
@@ -845,6 +851,9 @@ static void _set_config_defaults(slurm_ctl_conf_t * ctl_conf_ptr)
 
 	if (ctl_conf_ptr->tmp_fs == NULL)
 		ctl_conf_ptr->tmp_fs = xstrdup(DEFAULT_TMP_FS);
+
+	if (ctl_conf_ptr->wait_time == (uint16_t) NO_VAL)
+		ctl_conf_ptr->wait_time = DEFAULT_WAIT_TIME;
 }
 
 

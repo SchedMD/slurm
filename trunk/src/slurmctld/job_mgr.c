@@ -69,7 +69,7 @@
 #define STEP_FLAG 0xbbbb
 #define TOP_PRIORITY 0xffff0000	/* large, but leave headroom for higher */
 
-#define JOB_HASH_INX(_job_id)	(_job_id % MAX_JOB_COUNT)
+#define JOB_HASH_INX(_job_id)	(_job_id % DEFAULT_MAX_JOB_COUNT)
 
 #define YES_OR_NO(_in_string)	\
 		(( strcmp ((_in_string),"YES"))? \
@@ -83,8 +83,8 @@ time_t last_job_update;		/* time of last update to job records */
 static int default_prio = TOP_PRIORITY;
 static int job_count;		/* job's in the system */
 static long job_id_sequence = -1;	/* first job_id to assign new job */
-static struct job_record *job_hash[MAX_JOB_COUNT];
-static struct job_record *job_hash_over[MAX_JOB_COUNT];
+static struct job_record *job_hash[DEFAULT_MAX_JOB_COUNT];
+static struct job_record *job_hash_over[DEFAULT_MAX_JOB_COUNT];
 static int max_hash_over = 0;
 
 /* Local functions */
@@ -154,7 +154,7 @@ struct job_record *create_job_record(int *error_code)
 	struct job_record *job_record_point;
 	struct job_details *job_details_point;
 
-	if (job_count >= MAX_JOB_COUNT) {
+	if (job_count >= DEFAULT_MAX_JOB_COUNT) {
 		error("create_job_record: job_count exceeds limit");
 		*error_code = EAGAIN;
 		return NULL;
@@ -770,7 +770,7 @@ void _add_job_hash(struct job_record *job_ptr)
 
 	inx = JOB_HASH_INX(job_ptr->job_id);
 	if (job_hash[inx]) {
-		if (max_hash_over >= MAX_JOB_COUNT)
+		if (max_hash_over >= DEFAULT_MAX_JOB_COUNT)
 			fatal("Job hash table overflow");
 		job_hash_over[max_hash_over++] = job_ptr;
 	} else
@@ -2064,8 +2064,11 @@ static int _list_find_job_id(void *job_entry, void *key)
  */
 static int _list_find_job_old(void *job_entry, void *key)
 {
-	time_t min_age = time(NULL) - MIN_JOB_AGE;
+	time_t min_age = time(NULL) - slurmctld_conf.min_job_age;
 	struct job_record *job_ptr = (struct job_record *)job_entry;
+
+	if (slurmctld_conf.min_job_age == 0)
+		return 0;	/* No job record purging */
 
 	if (job_ptr->end_time > min_age)
 		return 0;	/* Too new to purge */

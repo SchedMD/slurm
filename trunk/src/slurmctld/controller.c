@@ -2058,6 +2058,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->job_credential_public_certificate = 
 			slurmctld_conf.job_credential_public_certificate;
 	conf_ptr->kill_wait           = slurmctld_conf.kill_wait;
+	conf_ptr->max_job_cnt         = slurmctld_conf.max_job_cnt;
+	conf_ptr->min_job_age         = slurmctld_conf.min_job_age;
 	conf_ptr->plugindir           = slurmctld_conf.plugindir;
 	conf_ptr->prioritize          = slurmctld_conf.prioritize;
 	conf_ptr->prolog              = slurmctld_conf.prolog;
@@ -2078,6 +2080,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->slurm_conf          = slurmctld_conf.slurm_conf;
 	conf_ptr->state_save_location = slurmctld_conf.state_save_location;
 	conf_ptr->tmp_fs              = slurmctld_conf.tmp_fs;
+	conf_ptr->wait_time           = slurmctld_conf.wait_time;
 	return;
 }
 

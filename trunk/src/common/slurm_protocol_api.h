@@ -99,6 +99,12 @@ short int inline slurm_get_slurmd_port(void);
  */
 uint32_t slurm_get_slurm_user_id(void);
 
+/* slurm_get_wait_time
+ * returns wait_time from slurmctld_conf object
+ * RET uint16_t        - wait_time
+ */
+uint16_t slurm_get_wait_time(void);
+
 /**********************************************************************\
  * general message management functions used by slurmctld, slurmd
 \**********************************************************************/

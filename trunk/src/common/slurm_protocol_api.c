@@ -105,6 +105,7 @@ int slurm_api_set_default_config()
                 goto cleanup;
 
         read_slurm_conf_ctl(&slurmctld_conf);
+
         if ((slurmctld_conf.control_addr == NULL) ||
             (slurmctld_conf.slurmctld_port == 0)) {
                 error("Unable to establish control machine or port");
@@ -155,6 +156,18 @@ uint32_t slurm_get_slurm_user_id(void)
                 slurm_api_set_default_config();
 
         return slurmctld_conf.slurm_user_id;
+}
+
+/* slurm_get_wait_time
+ * returns wait_time from slurmctld_conf object
+ * RET uint16_t        - wait_time
+ */
+uint16_t slurm_get_wait_time(void)
+{
+        if (slurmctld_conf.slurmd_port == 0)  /* ==0 if config unread */
+                slurm_api_set_default_config();
+
+        return slurmctld_conf.wait_time;
 }
 
 /**********************************************************************\

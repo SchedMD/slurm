@@ -112,6 +112,8 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
+	ctl_conf_ptr->max_job_cnt		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->min_job_age		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->prioritize);
 	xfree (ctl_conf_ptr->prolog);
@@ -133,6 +135,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->authtype );
 	xfree (ctl_conf_ptr->tmp_fs);
+	ctl_conf_ptr->wait_time			= (uint16_t) NO_VAL;
 	return;
 }
 
@@ -159,6 +162,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	int inactive_limit = -1, kill_wait = -1;
 	int ret2service = -1, slurmctld_timeout = -1, slurmd_timeout = -1;
 	int slurmctld_debug = -1, slurmd_debug = -1;
+	int max_job_cnt = -1, min_job_age = -1, wait_time = -1;
 	char *backup_addr = NULL, *backup_controller = NULL;
 	char *control_addr = NULL, *control_machine = NULL, *epilog = NULL;
 	char *prioritize = NULL, *prolog = NULL;
@@ -189,6 +193,8 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"JobCredentialPublicCertificate=", 's', 
 					&job_credential_public_certificate,
 		"KillWait=", 'd', &kill_wait,
+		"MaxJobCount=", 'd', &max_job_cnt,
+		"MinJobAge=", 'd', &min_job_age,
 		"PluginDir=", 's', &plugindir,
 		"Prioritize=", 's', &prioritize,
 		"Prolog=", 's', &prolog,
@@ -207,6 +213,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"SlurmdTimeout=", 'd', &slurmd_timeout,
 		"StateSaveLocation=", 's', &state_save_location,
 		"TmpFS=", 's', &tmp_fs,
+		"WaitTime=", 'd', &wait_time,
 		"END");
 
 	if (error_code)
@@ -294,6 +301,18 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		if ( ctl_conf_ptr->kill_wait != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "KillWait");
 		ctl_conf_ptr->kill_wait = kill_wait;
+	}
+
+	if ( max_job_cnt != -1) {
+		if ( ctl_conf_ptr->max_job_cnt != (uint16_t) NO_VAL)
+			error (MULTIPLE_VALUE_MSG, "MaxJobCount");
+		ctl_conf_ptr->max_job_cnt = max_job_cnt;
+	}
+
+	if ( min_job_age != -1) {
+		if ( ctl_conf_ptr->min_job_age != (uint16_t) NO_VAL)
+			error (MULTIPLE_VALUE_MSG, "MinJobAge");
+		ctl_conf_ptr->min_job_age = min_job_age;
 	}
 
 	if ( plugindir ) {
@@ -447,6 +466,12 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 			xfree (ctl_conf_ptr->tmp_fs);
 		}
 		ctl_conf_ptr->tmp_fs = tmp_fs;
+	}
+
+	if ( wait_time != -1) {
+		if ( ctl_conf_ptr->wait_time != (uint16_t) NO_VAL)
+			error (MULTIPLE_VALUE_MSG, "WaitTime");
+		ctl_conf_ptr->wait_time = wait_time;
 	}
 
 	if ( job_credential_private_key ) {
@@ -747,7 +772,10 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 		_normalize_debug_level(&ctl_conf_ptr->slurmd_debug);
 
 	if (ctl_conf_ptr->kill_wait == (uint16_t) NO_VAL)
-		ctl_conf_ptr->kill_wait = 30;
+		ctl_conf_ptr->kill_wait = DEFAULT_KILL_WAIT;
+
+	if (ctl_conf_ptr->wait_time == (uint16_t) NO_VAL)
+		ctl_conf_ptr->wait_time = DEFAULT_WAIT_TIME;
 }
 
 /* Normalize supplied debug level to be in range per log.h definitions */

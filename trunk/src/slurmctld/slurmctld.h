@@ -96,16 +96,18 @@
  * Update the group uid_t access list as needed */
 #define	PERIODIC_GROUP_CHECK	600
 
-/* Default temporary storage for slurm state and user files */
-#define DEFAULT_TMP_FS	"/tmp"
-
-/* Don't accept more jobs once there are MAX_JOB_COUNT in the system
- * This should prevent exhausting memory */
-#define MAX_JOB_COUNT 2000
-
-/* Purge OK for jobs over MIN_JOB_AGE seconds old (since completion)
- * This should prevent exhausting memory */
-#define MIN_JOB_AGE 300
+/* Default configuration configuration file values */
+#define DEFAULT_FAST_SCHEDULE       1
+#define DEFAULT_FIRST_JOB_ID        1
+#define DEFAULT_HASH_BASE           10
+#define DEFAULT_HEARTBEAT_INTERVAL  60
+#define DEFAULT_INACTIVE_LIMIT      0
+#define DEFAULT_MAX_JOB_COUNT       2000
+#define DEFAULT_MIN_JOB_AGE         300
+#define DEFAULT_RETURN_TO_SERVICE   0
+#define DEFAULT_SLURMCTLD_TIMEOUT   300
+#define DEFAULT_SLURMD_TIMEOUT      300
+#define DEFAULT_TMP_FS              "/tmp"
 
 extern slurm_ctl_conf_t slurmctld_conf;
 
