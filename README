@@ -25,3 +25,5 @@ The job initiation tool srun is not quite ready for use (as of 7/22/2002)
 
 NOTES:
 You should have autoconf version 2.52 or higher (see "autoconf -V").
+On the cluster dev[0-25].llnl.gov, do this by putting /usr/local/pkg/autoconf-2.53/bin
+at the begining of your search path.
