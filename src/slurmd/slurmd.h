@@ -46,7 +46,7 @@
 #include "src/common/log.h"
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/signature_utils.h"
+#include "src/common/slurm_cred.h"
 
 #ifndef __USE_XOPEN_EXTENDED
 extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
@@ -56,7 +56,6 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 /*
  * Global config type
  */
-typedef slurm_ssl_key_ctx_t slurm_ssl_ctx;
 typedef struct slurmd_config {
 
 	slurm_ctl_conf_t cf;            /* slurm.conf configuration        */
@@ -83,9 +82,8 @@ typedef struct slurmd_config {
 	int           daemonize:1;	/* daemonize flag	           */ 
 	int	      shm_cleanup:1;
 
-	List          cred_state_list;  /* credential stat list            */
+	slurm_cred_ctx_t vctx;          /* slurm_cred_t verifier context   */
 
-	slurm_ssl_ctx vctx;		/* ssl context for cred utils      */
 	uid_t           slurm_user_id;	/* UID that slurmctld runs as      */
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
 } slurmd_conf_t;
@@ -102,6 +100,6 @@ extern int send_registration_msg(uint32_t status);
  * IN list - list of credentials
  * RET int - zero or error code
  */
-extern int save_cred_state(List list);
+extern int save_cred_state(slurm_cred_ctx_t vctx);
 
 #endif /* !_SLURMD_H */

@@ -130,14 +130,14 @@ static int  _ctx_update_public_key(slurm_cred_ctx_t ctx, const char *path);
 static bool _exkey_is_valid(slurm_cred_ctx_t ctx);
 
 static cred_state_t * _cred_state_create(slurm_cred_ctx_t ctx, slurm_cred_t c);
-static job_state_t  * _job_state_create(slurm_cred_t c);
+static job_state_t  * _job_state_create(uint32_t jobid);
 static void           _cred_state_destroy(cred_state_t *cs);
 static void           _job_state_destroy(job_state_t   *js);
 
 static job_state_t  * _find_job_state(slurm_cred_ctx_t ctx, uint32_t jobid);
 
 static void _insert_cred_state(slurm_cred_ctx_t ctx, slurm_cred_t cred);
-static void _insert_job_state(slurm_cred_ctx_t ctx,  slurm_cred_t cred);
+static void _insert_job_state(slurm_cred_ctx_t ctx,  uint32_t jobid);
 static void _clear_expired_job_states(slurm_cred_ctx_t ctx);
 static void _clear_expired_credential_states(slurm_cred_ctx_t ctx);
 static void _verifier_ctx_init(slurm_cred_ctx_t ctx);
@@ -383,6 +383,19 @@ slurm_cred_jobid_cached(slurm_cred_ctx_t ctx, uint32_t jobid)
 	return (_find_job_state(ctx, jobid) != NULL);
 }
 
+int
+slurm_cred_insert_jobid(slurm_cred_ctx_t ctx, uint32_t jobid)
+{
+	xassert(ctx != NULL);
+	xassert(ctx->magic == CRED_CTX_MAGIC);
+	xassert(ctx->type  == SLURM_CRED_VERIFIER);
+
+	_clear_expired_job_states(ctx);
+
+	_insert_job_state(ctx, jobid);
+
+	return SLURM_SUCCESS;
+}
 
 int
 slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid)
@@ -782,7 +795,7 @@ _credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 	_clear_expired_job_states(ctx);
 
 	if (!(j = _find_job_state(ctx, cred->jobid))) 
-		_insert_job_state(ctx, cred);
+		_insert_job_state(ctx, cred->jobid);
 	else if (j->revoked)
 		return true;
 
@@ -804,19 +817,19 @@ _find_job_state(slurm_cred_ctx_t ctx, uint32_t jobid)
 
 
 static void
-_insert_job_state(slurm_cred_ctx_t ctx, slurm_cred_t cred)
+_insert_job_state(slurm_cred_ctx_t ctx, uint32_t jobid)
 {
-	job_state_t *j = _job_state_create(cred);
+	job_state_t *j = _job_state_create(jobid);
 	list_append(ctx->job_list, j);
 }
 
 
 static job_state_t *
-_job_state_create(slurm_cred_t cred)
+_job_state_create(uint32_t jobid)
 {
 	job_state_t *j = xmalloc(sizeof(*j));
 
-	j->jobid      = cred->jobid;
+	j->jobid      = jobid;
 	j->revoked    = false;
 	j->ctime      = time(NULL);
 	j->expiration = (time_t) -1;

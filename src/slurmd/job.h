@@ -43,7 +43,7 @@
 #define MAXHOSTNAMELEN	64
 #endif
 
-#define SLURM_KEY_SIZE	SLURM_SSL_SIGNATURE_LENGTH
+#define SLURM_KEY_SIZE	64
 typedef struct srun_key {
 	unsigned char data[SLURM_KEY_SIZE];
 } srun_key_t;
@@ -133,7 +133,7 @@ void job_kill(slurmd_job_t *job, int signal);
 
 void job_destroy(slurmd_job_t *job);
 
-struct srun_info * srun_info_create(void *keydata, slurm_addr *respaddr, 
+struct srun_info * srun_info_create(slurm_cred_t cred, slurm_addr *respaddr, 
 		                    slurm_addr *ioaddr);
 
 void  srun_info_destroy(struct srun_info *srun);

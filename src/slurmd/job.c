@@ -120,7 +120,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->ntasks  = msg->tasks_to_launch;
 	job->debug   = msg->slurmd_debug;
 
-	job->timelimit   = msg->credential->expiration_time;
+	job->timelimit   = (time_t) -1;
 	job->task_flags  = msg->task_flags;
 
 	job->envc    = msg->envc;
@@ -142,8 +142,8 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 
 	job->objs    = list_create((ListDelF) io_obj_destroy);
 
-	srun = srun_info_create((void *)msg->credential->signature, 
-			        &resp_addr, &io_addr);
+	srun = srun_info_create(msg->cred, &resp_addr, &io_addr);
+
 	srun->ofname = xstrdup(msg->ofname);
 	srun->efname = xstrdup(msg->efname);
 	srun->ifname = xstrdup(msg->ifname);
@@ -329,13 +329,25 @@ _array_free(int n, char ***array)
 
 
 struct srun_info *
-srun_info_create(void *keydata, slurm_addr *resp_addr, slurm_addr *ioaddr)
+srun_info_create(slurm_cred_t cred, slurm_addr *resp_addr, slurm_addr *ioaddr)
 {
+	char             *data = NULL;
+	int               len  = 0;
 	struct srun_info *srun = xmalloc(sizeof(*srun));
 	srun_key_t       *key  = xmalloc(sizeof(*key ));
 
-	if (keydata != NULL)
-		memcpy((void *) key->data, keydata, SLURM_KEY_SIZE);
+	slurm_cred_get_signature(cred, data, &len);
+
+	len = len > SLURM_KEY_SIZE ? SLURM_KEY_SIZE : len;
+
+	if (data != NULL) {
+		memcpy((void *) key->data, data, len);
+
+		if (len < SLURM_KEY_SIZE)
+			memset( (void *) (key->data + len), 0, 
+			        SLURM_KEY_SIZE - len           );
+	}
+
 	srun->key = key;
 
 	if (ioaddr != NULL)

@@ -34,9 +34,11 @@
 #include <string.h>
 #include <sys/param.h>
 #include <unistd.h>
+#include <stdlib.h>
 
-#include "src/common/credential_utils.h"
+#include "src/common/slurm_cred.h"
 #include "src/common/log.h"
+#include "src/common/hostlist.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xstring.h"
@@ -50,7 +52,6 @@
 #define MAXHOSTNAMELEN	64
 #endif
 
-static void _insert_fake_cred(uint32_t jobid, time_t timelimit);
 static bool _job_still_running(uint32_t job_id);
 static int  _kill_all_active_steps(uint32_t jobid, int sig);
 static int  _launch_tasks(launch_tasks_request_msg_t *, slurm_addr *);
@@ -59,7 +60,7 @@ static void _rpc_batch_job(slurm_msg_t *, slurm_addr *);
 static void _rpc_kill_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_timelimit(slurm_msg_t *, slurm_addr *);
 static void _rpc_reattach_tasks(slurm_msg_t *, slurm_addr *);
-static void _rpc_revoke_credential(slurm_msg_t *, slurm_addr *);
+static void _rpc_kill_job(slurm_msg_t *, slurm_addr *);
 static void _rpc_update_time(slurm_msg_t *, slurm_addr *);
 static void _rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr);
 static void _rpc_reconfig(slurm_msg_t *msg, slurm_addr *cli_addr);
@@ -88,14 +89,14 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 	case REQUEST_KILL_TIMELIMIT:
 		_rpc_timelimit(msg, cli);
 		slurm_free_timelimit_msg(msg->data);
-		break;
+		break; 
 	case REQUEST_REATTACH_TASKS:
 		_rpc_reattach_tasks(msg, cli);
 		slurm_free_reattach_tasks_request_msg(msg->data);
 		break;
-	case REQUEST_REVOKE_JOB_CREDENTIAL:
-		_rpc_revoke_credential(msg, cli);
-		slurm_free_revoke_credential_msg(msg->data);
+	case REQUEST_KILL_JOB:
+		_rpc_kill_job(msg, cli);
+		slurm_free_kill_job_msg(msg->data);
 		break;
 	case REQUEST_UPDATE_JOB_TIME:
 		_rpc_update_time(msg, cli);
@@ -153,9 +154,7 @@ _launch_batch_job(batch_job_launch_msg_t *req, slurm_addr *cli)
 			break;
 		case 0: /* child runs job */
 			slurm_shutdown_msg_engine(conf->lfd);
-			destroy_credential_state_list(conf->cred_state_list);
-			slurm_destroy_ssl_key_ctx(&conf->vctx);
-			slurm_ssl_destroy();
+			slurm_cred_ctx_destroy(conf->vctx);
 			rc = mgr_launch_batch_job(req, cli);
 			exit(rc);
 			/* NOTREACHED */
@@ -183,9 +182,7 @@ _launch_tasks(launch_tasks_request_msg_t *req, slurm_addr *cli)
 			break;
 		case 0: /* child runs job */
 			slurm_shutdown_msg_engine(conf->lfd);
-			destroy_credential_state_list(conf->cred_state_list);
-			slurm_destroy_ssl_key_ctx(&conf->vctx);
-			slurm_ssl_destroy();
+			slurm_cred_ctx_destroy(conf->vctx);
 			rc = mgr_launch_tasks(req, cli);
 			exit(rc);
 			/* NOTREACHED */
@@ -199,6 +196,51 @@ _launch_tasks(launch_tasks_request_msg_t *req, slurm_addr *cli)
 	return SLURM_SUCCESS;
 }
 				                                            
+static int
+_check_job_credential(slurm_cred_t cred, uint32_t jobid, 
+		      uint32_t stepid, uid_t uid)
+{
+	slurm_cred_arg_t arg;
+	hostset_t        hset = NULL;
+
+	if (slurm_cred_verify(conf->vctx, cred, &arg) < 0)
+		return SLURM_ERROR;
+
+	if ((arg.jobid != jobid) || (arg.stepid != stepid)) {
+		error("job credential for %d.%d, expected %d.%d",
+		      arg.jobid, arg.stepid, jobid, stepid); 
+		goto fail;
+	}
+
+	if (arg.uid != uid) {
+		error("job credential created for uid %ld, expected %ld",
+		      (long) arg.uid, (long) uid);
+		goto fail;
+	}
+
+	/*
+	 * Check that credential is valid for this host
+	 */
+	if (!(hset = hostset_create(arg.hostlist))) {
+		error("Unable to parse credential hostlist: `%s'", 
+		      arg.hostlist);
+		goto fail;
+	}
+
+	if (!hostset_within(hset, conf->hostname)) {
+		error("job credential invald for this host [%d.%d %ld %s]",
+		      arg.jobid, arg.stepid, (long) arg.uid, arg.hostlist);
+		goto fail;
+	}
+
+	return SLURM_SUCCESS;
+
+    fail:
+	if (hset) hostset_destroy(hset);
+	xfree(arg.hostlist);
+	slurm_seterrno_ret(ESLURMD_INVALID_JOB_CREDENTIAL);
+}
+
 
 static void 
 _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
@@ -208,12 +250,16 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	uint16_t port;
 	char     host[MAXHOSTNAMELEN];
 	uid_t    req_uid;
-	bool     super_user = false, run_prolog = false;
 	launch_tasks_request_msg_t *req = msg->data;
+	uint32_t jobid  = req->job_id;
+	uint32_t stepid = req->job_step_id;
+	bool     super_user = false, run_prolog = false;
 
 	req_uid = g_slurm_auth_get_uid(msg->cred);
+
 	if ((req_uid == conf->slurm_user_id) || (req_uid == 0))
 		super_user = true;
+
 	if ((super_user == false) && (req_uid != req->uid)) {
 		error("Security violation, launch task RCP from uid %u",
 		      (unsigned int) req_uid);
@@ -225,14 +271,12 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	info("launch task %u.%u request from %ld@%s", req->job_id, 
 	     req->job_step_id, req->uid, host);
 
-	if (!credential_is_cached(conf->cred_state_list, req->job_id)) 
+	if (!slurm_cred_jobid_cached(conf->vctx, req->job_id)) 
 		run_prolog = true;
 
-	rc = verify_credential(&conf->vctx, 
-			       req->credential, 
-			       conf->cred_state_list);
 
-	if ((rc != SLURM_SUCCESS) && (super_user == false)) {
+	if ( (_check_job_credential(req->cred, jobid, stepid, req_uid) < 0) 
+	    && (super_user == false) ) {
 		retval = errno;
 		error("Invalid credential from %ld@%s: %m", req_uid, host);
 		goto done;
@@ -251,7 +295,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
     done:
 	slurm_send_rc_msg(msg, retval);
 	if ((rc == SLURM_SUCCESS) && (retval == SLURM_SUCCESS))
-		save_cred_state(conf->cred_state_list);
+		save_cred_state(conf->vctx);
 	if (retval == ESLURMD_PROLOG_FAILED)
 		send_registration_msg(retval);	/* slurmctld makes node DOWN */
 }
@@ -268,25 +312,29 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 		error("Security violation, batch launch RPC from uid %u",
 		      (unsigned int) req_uid);
 		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
-	} else {
+		goto done;
+	} 
 
-		/* 
-		 * Run job prolog on this node
-		 */
-		if (_run_prolog(req->job_id, req->uid) != 0) {
-			error("[job %d] prolog failed", req->job_id);
-			rc = ESLURMD_PROLOG_FAILED;
-		} else {
-			_insert_fake_cred(req->job_id, (time_t) -1);
+	/* 
+	 * Run job prolog on this node
+	 */
+	if (_run_prolog(req->job_id, req->uid) != 0) {
+		error("[job %d] prolog failed", req->job_id);
+		rc = ESLURMD_PROLOG_FAILED;
+		goto done;
+	} 
+	
+	/*
+	 * Insert jobid into credential context to denote that
+	 * we've now "seen" an instance of the job
+	 */
+	slurm_cred_insert_jobid(conf->vctx, req->job_id);
 
-			info("Launching batch job %u for UID %d",
-					req->job_id, req->uid);
+	info("Launching batch job %u for UID %d", req->job_id, req->uid);
 
-			if (_launch_batch_job(req, cli) < 0)
-				rc = SLURM_FAILURE;
-		}
-	}
+	rc = _launch_batch_job(req, cli);
 
+    done:
 	slurm_send_rc_msg(msg, rc);
 }
 
@@ -389,9 +437,9 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 static void
 _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 {
-	uid_t             req_uid;
-	int               step_cnt;
-	revoke_credential_msg_t *req = (revoke_credential_msg_t *) msg->data;
+	uid_t           req_uid;
+	int             step_cnt;
+	kill_job_msg_t *req = msg->data;
 
 	req_uid = g_slurm_auth_get_uid(msg->cred);
 	if ((req_uid != conf->slurm_user_id) && (req_uid != 0)) {
@@ -402,11 +450,14 @@ _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 	}
 
 	step_cnt = _kill_all_active_steps(req->job_id, SIGXCPU);
+
 	info("Timeout for job=%u, step_cnt=%d, kill_wait=%u", 
 	     req->job_id, step_cnt, conf->cf.kill_wait);
+
 	if (step_cnt)
 		sleep(conf->cf.kill_wait);
-	_rpc_revoke_credential(msg, cli_addr); /* SIGKILL and send response */
+
+	_rpc_kill_job(msg, cli_addr); /* SIGKILL and send response */
 }
 
 static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
@@ -579,39 +630,48 @@ _job_still_running(uint32_t job_id)
 }
 
 static void 
-_rpc_revoke_credential(slurm_msg_t *msg, slurm_addr *cli)
+_rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 {
-	int   rc	  = SLURM_SUCCESS;
-	uid_t req_uid = g_slurm_auth_get_uid(msg->cred);
-	revoke_credential_msg_t *req = (revoke_credential_msg_t *) msg->data;
+	int             rc      = SLURM_SUCCESS;
+	kill_job_msg_t *req     = msg->data;
+	uid_t           req_uid = g_slurm_auth_get_uid(msg->cred);
 
+	/* 
+	 * check that requesting user ID is the SLURM UID
+	 */
 	if ((req_uid != conf->slurm_user_id) && (req_uid != 0)) {
 		error("Security violation, uid %u can't revoke credentials",
 		      (unsigned int) req_uid);
-		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-	} else {
-		if (revoke_credential(req, conf->cred_state_list) < 0)
-			error("revoking credential for job %d: %m", 
-			      req->job_id);
-		else {
-			debug("credential for job %d revoked", req->job_id);
-			save_cred_state(conf->cred_state_list);
-		}
+		rc = ESLURM_USER_ID_MISSING;
+		goto done;
 
-		/*
-		 * Now kill all steps associated with this job, they are
-		 * no longer allowed to be running
-		 */
-		if (_kill_all_active_steps(req->job_id, SIGKILL) != 0)
-			_wait_for_procs(req->job_id, req->job_uid);
-		if (_run_epilog(req->job_id, req->job_uid) != 0) {
-			error ("[job %d] epilog failed", req->job_id);
-			rc = ESLURMD_EPILOG_FAILED;
-		} else
-			debug("completed epilog for jobid %d", req->job_id);
+	} 
 
-		slurm_send_rc_msg(msg, rc);
+	/*
+	 * "revoke" all future credentials for this jobid
+	 */
+	if (slurm_cred_revoke(conf->vctx, req->job_id) < 0)
+		error("revoking credential for job %d: %m", req->job_id);
+	else {
+		debug("credential for job %d revoked", req->job_id);
+		save_cred_state(conf->vctx);
 	}
+
+	/*
+	 * Now kill all steps associated with this job, they are
+	 * no longer allowed to be running
+	 */
+	if (_kill_all_active_steps(req->job_id, SIGKILL) != 0)
+		_wait_for_procs(req->job_id, req->job_uid);
+
+	if (_run_epilog(req->job_id, req->job_uid) != 0) {
+		error ("[job %d] epilog failed", req->job_id);
+		rc = ESLURMD_EPILOG_FAILED;
+	} else
+		debug("completed epilog for jobid %d", req->job_id);
+	
+    done:
+	slurm_send_rc_msg(msg, rc);
 }
 
 static void
@@ -638,17 +698,16 @@ _rpc_update_time(slurm_msg_t *msg, slurm_addr *cli)
 		rc = ESLURM_USER_ID_MISSING;
 		error("Security violation, uid %u can't update time limit",
 		      (unsigned int) req_uid);
-	} else {
-		rc = shm_update_job_timelimit(req->job_id, 
-					      req->expiration_time);
-		if (rc < 0) {
-			error("updating lifetime for job %d: %m", 
-			      req->job_id);
-			rc = ESLURM_INVALID_JOB_ID;
-		} else
-			debug("reset job %d lifetime", req->job_id);
-	}
+		goto done;
+	} 
 
+	if (shm_update_job_timelimit(req->job_id, req->expiration_time) < 0) {
+		error("updating lifetime for job %d: %m", req->job_id);
+		rc = ESLURM_INVALID_JOB_ID;
+	} else
+		debug("reset job %d lifetime", req->job_id);
+
+    done:
 	slurm_send_rc_msg(msg, rc);
 }
 
@@ -674,21 +733,3 @@ _run_epilog(uint32_t jobid, uid_t uid)
 	return error_code;
 }
 
-/*
- * XXX: Move some of this functionality into credential_utils
- *
- */
-static void
-_insert_fake_cred(uint32_t jobid, time_t timelimit)
-{
-	credential_state_t *s = xmalloc(sizeof(*s));
-
-	debug2("inserting fake cred for job %d", jobid);
-
-	s->job_id          = jobid;
-	s->revoked         = false;
-	s->procs_allocated = 0;
-	s->total_procs     = 0;
-	s->expiration      = timelimit;
-	list_append(conf->cred_state_list, (void *) s);
-}
