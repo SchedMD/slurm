@@ -107,7 +107,7 @@ void * stdin_io_pipe_thread ( void * arg )
 	stdin_return:
 	free_circular_buffer ( cir_buf ) ;
 	close ( task_start->pipes[CHILD_IN_WR_PIPE] ) ;
-	pthread_exit ( NULL ) ;
+	//pthread_exit ( NULL ) ;
 }
 
 #define RECONNECT_RETRY_TIME 1
@@ -219,7 +219,7 @@ void * stdout_io_pipe_thread ( void * arg )
 	free_circular_buffer ( cir_buf ) ;
 	slurm_close_stream ( task_start->sockets[STDIN_OUT_SOCK] ) ;
 	close ( task_start->pipes[CHILD_OUT_RD_PIPE] ) ;
-	pthread_exit ( NULL ) ; 
+	//pthread_exit ( NULL ) ; 
 }
 
 void * stderr_io_pipe_thread ( void * arg )
@@ -330,6 +330,6 @@ void * stderr_io_pipe_thread ( void * arg )
 	free_circular_buffer ( cir_buf ) ;
 	slurm_close_stream ( task_start->sockets[SIG_STDERR_SOCK] ) ;
 	close ( task_start->pipes[CHILD_ERR_RD_PIPE] ) ;
-	pthread_exit ( NULL ) ; 
+	//pthread_exit ( NULL ) ; 
 }
 
