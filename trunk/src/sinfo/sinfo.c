@@ -50,6 +50,7 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
                              partition_info_t* part_ptr);
 static int  _query_server(partition_info_msg_t ** part_pptr,
 		node_info_msg_t ** node_pptr);
+static void _sort_hostlist(List sinfo_list);
 static int  _strcmp(char *data1, char *data2);
 static void _swap_char(char **from, char **to);
 static void _swap_node_rec(node_info_t *from_node, node_info_t *to_node);
@@ -160,9 +161,9 @@ static void _filter_nodes(node_info_msg_t *node_msg, int *node_rec_cnt)
 	int i, new_rec_cnt = 0;
 	hostlist_t hosts = NULL;
 
-	if ((params.nodes == NULL) && 
-	     (params.partition 	== NULL) && 
-	     (params.state_list == NULL)) {
+	if ((params.nodes      == NULL) && 
+	    (params.partition  == NULL) && 
+	    (params.state_list == NULL)) {
 		params.filtering = false;
 		/* Nothing to filter out */
 		*node_rec_cnt = node_msg->record_count;
@@ -255,7 +256,8 @@ static int _build_sinfo_data(List sinfo_list,
 	int j;
 
 	/* by default every partition is shown, even if no nodes */
-	if ((!params.filtering) && (!params.node_flag)) {
+	if ((!params.filtering) && (!params.node_flag) && 
+	    params.match_flags.partition_flag) {
 		for (j=0; j<partition_msg->record_count; j++) {
 			part_ptr = partition_msg->partition_array + j;
 			_create_sinfo(sinfo_list, part_ptr, NULL);
@@ -289,7 +291,19 @@ static int _build_sinfo_data(List sinfo_list,
 		list_iterator_destroy(i);
 	}
 
+	_sort_hostlist(sinfo_list);
 	return SLURM_SUCCESS;
+}
+
+static void _sort_hostlist(List sinfo_list)
+{
+	ListIterator i;
+	sinfo_data_t *sinfo_ptr;
+
+	i = list_iterator_create(sinfo_list);
+	while ((sinfo_ptr = list_next(i)))
+		hostlist_sort(sinfo_ptr->nodes);
+	list_iterator_destroy(i);
 }
 
 static bool _match_node_data(sinfo_data_t *sinfo_ptr, 
@@ -484,10 +498,12 @@ static void _sinfo_list_delete(void *data)
 /* like strcmp, but works with NULL pointers */
 static int _strcmp(char *data1, char *data2) 
 {
+	static char null_str[] = "(null)";
+
 	if (data1 == NULL)
-		data1 = "";
+		data1 = null_str;
 	if (data2 == NULL)
-		data2 = "";
+		data2 = null_str;
 	return strcmp(data1, data2);
 }
 
