@@ -114,6 +114,7 @@ enum {
 	ESLURM_BAD_DIST,
 	ESLURM_JOB_PENDING,
 	ESLURM_BAD_TASK_COUNT,
+	ESLURM_INVALID_JOB_CREDENTIAL,
 
 	/* Quadrics Elan routine error codes */
 	ENOSLURM =					3000,
