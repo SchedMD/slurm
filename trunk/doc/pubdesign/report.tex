@@ -74,8 +74,8 @@ but does assume that the entire cluster is within a single
 administrative domain with a common user base across the 
 entire cluster.
 
-\item {\em System administrator friendly}: SLURM is configured with a few
-simple configuration files and minimizes distributed state.  Its interfaces
+\item {\em System administrator friendly}: SLURM is configured a 
+simple configuration file and minimizes distributed state.  Its interfaces
 are usable by scripts and its behavior is highly deterministic.
 
 \end{itemize}
@@ -103,7 +103,7 @@ External schedulers and meta-batch systems can submit jobs to SLURM,
 order its queues, and monitor SLURM state through an application 
 programming interface (API).
 
-The central controller daemon, \slurmctld\, maintains the global state 
+The central controller daemon, {\tt slurmctld}, maintains the global state 
 and directs operations.
 Compute nodes simply run a \slurmd\ daemon (similar to a remote shell 
 daemon) to export control to SLURM.  
@@ -118,7 +118,7 @@ scheduler or meta-batch system to order its queues based upon site policy.
 
 SLURM clusters are space shared with different jobs executing 
 concurrently on (typically) different nodes. 
-Multiple jobs may be allocated the same node(s) 
+Multiple jobs may be allocated the same nodes 
 if the administrator has configured nodes for shared access and/or 
 the job has requested shared resources for improved responsiveness.
 SLURM does not directly perform gang scheduling (time-slicing 
@@ -261,7 +261,7 @@ priority is a simple sequence number providing FIFO ordering.
 An interface is provided for an external scheduler to establish a job's
 initial priority and API's are available to alter this priority through
 time for customers wishing a more sophisticated scheduling algorithm.
-The Job Manager is awakened on a periodical basis and whenever there
+The Job Manager is awakened on a periodic basis and whenever there
 is a change in state that might permit a job to begin running, such
 as job completion, job submission, partition {\em up} transition,
 node {\em up} transition, etc.  The Job Manager then makes a pass
@@ -298,7 +298,7 @@ both for \slurmctld\ and \slurmd\ requests.
 
 \begin{itemize}
 \item {\tt scancel}: Cancel a running or a pending job, subject to
-authentication. This command can also be used to sent an arbitrary 
+authentication. This command can also be used to send an arbitrary 
 signal to all processes associated with a job on all nodes.
 
 \item {\tt scontrol}: Perform privileged administrative commands
@@ -451,7 +451,7 @@ members of specific Unix groups using a ``AllowGroups'' specification.
 
 \subsection{Example:  Executing a Batch Job}
 
-In this exampe a user wishes to run a job in batch mode, in which \srun\ returns 
+In this example a user wishes to run a job in batch mode, in which \srun\ returns 
 immediately and the job executes ``in the background'' when resources
 are available.
 The job is a two-node run of script containing {\em mping}, a simple MPI application.
@@ -569,7 +569,7 @@ The \srun\ command authenticates the user to the controller and
 makes a request for a resource allocation {\em and} job step. The Job Manager
 responds with a list of nodes, a job credential, and interconnect
 resources on successful allocation. If resources are not immediately
-available, the request terminates or block depending upon user
+available, the request terminates or blocks depending upon user
 option.
 
 If the request is successful, \srun\ forwards the job run request
@@ -615,7 +615,7 @@ Each of these subsystems is described in detail below.
 
 \subsection{Node Management}
 
-Job ManagerJob ManagerJob ManagerThe node manager monitors the state of nodes.  
+The node manager monitors the state of nodes.  
 Node information monitored includes:
 
 \begin{itemize}
@@ -777,9 +777,9 @@ sets of contiguous nodes can be allocated to a job, the one which most
 closely fits the job's requirements will be used.  This technique will
 leave the largest continuous sets of nodes intact for jobs requiring them.
 
-The partition manager buildw a list of nodes to satisfy a job's
-request.  It also cachew the IP addresses of
-each node and provide this information to \srun\ at job initiation
+The partition manager builds a list of nodes to satisfy a job's
+request.  It also caches the IP addresses of
+each node and provides this information to \srun\ at job initiation
 time for improved performance.
 
 The failure of any node to respond to the partition manager only
@@ -895,7 +895,7 @@ node allocated to a job fails, the job may either continue execution or
 terminate depending upon its configuration.
 
 We are well aware this scheduling algorithm does satisfy the needs of many
-customers and provide the means for establishing other scheduling
+customers and we provide the means for establishing other scheduling
 algorithms. Before a newly arrived job is placed into the queue, it
 is assigned a priority that may be established by an administrator
 defined program ({\tt Prioritize} in the configuration file). 
@@ -1371,21 +1371,20 @@ launch an 8000 task job on 500 nodes.)
 
 \section{Future plans}
 
-As of December 2002, some work remains before we feel ready to 
-distributed SLURM for general use. Work needed at that time was 
-primarily in configurability, MPICH support, TotalView support, 
-scalability, fault-tolerance, job accounting, and testing. 
+As of January 2003, some work remains before we feel ready to 
+distribute SLURM for general use. Work needed at that time was 
+primarily in scalability, fault-tolerance, and testing. 
 We expect SLURM to begin production use on LLNL Linux clusters 
-in January 2003.
+in February 2003.
 
 Looking ahead, we anticipate porting SLURM to the  
 IBM Blue Gene\cite{BlueGene2002}
-in 2003. 
+in the fall of 2003. 
 Blue Gene has a different interconnect than any supported 
 by SLURM. 
 It also has a 3-D topography with restrictive allocation constraints.
 
-\section{Acknowledgements}
+\section{Acknowledgments}
 
 \begin{itemize}
 \item Chris Dunlap for technical guidance
@@ -1399,7 +1398,7 @@ SLURM APIs
 \item Fabrizio Petrini of Los Alamos National Laboratory for his work to 
 integrate SLURM with STORM communications 
 \item Mark Seager and Greg Tomaschke for their support of this project
-\item Jay Windly of Linux Networx for his work on the security components
+\item Jay Windley of Linux Networx for his work on the security components
 \end{itemize}
 
 \appendix
