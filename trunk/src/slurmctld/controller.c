@@ -360,7 +360,7 @@ slurm_rpc_job_cancel ( slurm_msg_t * msg )
 
 /* UpdateNode - */
 /* Update - modify node or partition configuration */
-	void 
+void 
 slurm_rpc_update_node ( slurm_msg_t * msg )
 {
 	/* init */
@@ -503,11 +503,47 @@ void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 	/* init */
 	int error_code;
 	clock_t start_time;
+	uint32_t job_id ;
+	job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
+	char * node_name_ptr = NULL;
 
 	start_time = clock ();
 
 	/* do RPC call */
-	error_code = EINVAL;
+	error_code = job_allocate(job_desc_msg, 	/* skip "Allocate" */
+			&job_id, &node_name_ptr, false , true );
+	
+	/* return result */
+	if (error_code)
+	{
+		info ("slurmctld_req: job_will_run error %d, time=%ld",
+				error_code, (long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , error_code );
+	}
+	else
+	{
+		info ("slurmctld_req: job_will_run success for , time=%ld",
+				(long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+	}
+
+}
+
+/* JobWillRun - determine if job with given configuration can be initiated now */
+void slurm_rpc_allocate_job_immediately ( slurm_msg_t * msg )
+{
+	/* init */
+	int error_code;
+	clock_t start_time;
+	uint32_t job_id ;
+	job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
+	char * node_name_ptr = NULL;
+
+	start_time = clock ();
+
+	/* do RPC call */
+	error_code = job_allocate(job_desc_msg, 	/* skip "Allocate" */
+			&job_id, &node_name_ptr, true , false );
 	
 	/* return result */
 	if (error_code)
