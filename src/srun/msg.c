@@ -69,6 +69,7 @@ static uint32_t slurm_user_id;
 #define _poll_wr_isset(pfd) ((pfd).revents & POLLOUT)
 #define _poll_err(pfd)      ((pfd).revents & POLLERR)
 
+#define POLL_TIMEOUT_MSEC	500
 
 static void
 _launch_handler(job_t *job, slurm_msg_t *resp)
@@ -212,7 +213,7 @@ _msg_thr_poll(job_t *job)
 {
 	struct pollfd *fds;
 	nfds_t nfds = job->njfds;
-	int i;
+	int i, rc;
 
 	fds = xmalloc(job->njfds * sizeof(*fds));
 
@@ -222,8 +223,14 @@ _msg_thr_poll(job_t *job)
 		_poll_set_rd(fds[i], job->jfd[i]);
 
 	while (1) {
+		while ((rc = poll(fds, nfds, POLL_TIMEOUT_MSEC)) <= 0) {
+			if (rc == 0) {	/* timeout */
+				if (job->state == SRUN_JOB_FAILED)
+					pthread_exit(0);
+				else
+					continue;
+			}
 
-		while (poll(fds, nfds, -1) < 0) {
 			switch (errno) {
 				case EINTR: continue;
 				case ENOMEM:

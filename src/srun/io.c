@@ -48,7 +48,8 @@
 #include "src/srun/net.h"
 #include "src/srun/opt.h"
 
-#define IO_BUFSIZ	2048
+#define IO_BUFSIZ		2048
+#define POLL_TIMEOUT_MSEC	500
 
 /* fd_info struct used in poll() loop to map fds back to task number,
  * appropriate output type (stdout/err), and original fd
@@ -123,7 +124,7 @@ _io_thr_poll(void *job_arg)
 	nfds_t nfds = 0;
 	int numfds = (opt.nprocs*2) + job->niofds + 2;
 	fd_info_t map[numfds];	/* map fd in pollfd array to fd info */
-	int i;
+	int i, rc;
 
 	xassert(job != NULL);
 
@@ -176,7 +177,14 @@ _io_thr_poll(void *job_arg)
 		if (eofcnt == opt.nprocs)
 			pthread_exit(0);
 
-		while (poll(fds, nfds, -1) < 0) {
+		while ((rc = poll(fds, nfds, POLL_TIMEOUT_MSEC)) <= 0) {
+			if (rc == 0) {	/* timeout */
+				if (job->state == SRUN_JOB_FAILED)
+					pthread_exit(0);
+				else
+					continue;
+			}
+
 			switch(errno) {
 				case EINTR:
 				case EAGAIN:

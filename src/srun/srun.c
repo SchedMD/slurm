@@ -258,12 +258,17 @@ main(int ac, char **av)
 	/* wait for job to terminate */
 	pthread_mutex_lock(&job->state_mutex);
 	debug3("before main state loop: state = %d", job->state);
-	while (job->state != SRUN_JOB_OVERDONE) {
+	while ((job->state != SRUN_JOB_OVERDONE) && 
+	       (job->state != SRUN_JOB_FAILED  )) {
 		pthread_cond_wait(&job->state_cond, &job->state_mutex);
 	}
 	pthread_mutex_unlock(&job->state_mutex);
 
 	/* job is now overdone, clean up  */
+	if (job->state == SRUN_JOB_FAILED) {
+		info("sending SIGINT to job");
+		fwd_signal(job, SIGINT);
+	}
 
 	/* kill launch thread */
 	pthread_kill(job->lid, SIGTERM);
@@ -274,7 +279,7 @@ main(int ac, char **av)
 	/* kill signal thread */
 	pthread_cancel(job->sigid);
 
-	/* wait for  stdio */
+	/* wait for stdio */
 	pthread_join(job->ioid, NULL);
 
 	if (old_job) {

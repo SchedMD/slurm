@@ -47,6 +47,7 @@ extern char **environ;
 static pthread_mutex_t active_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  active_cond  = PTHREAD_COND_INITIALIZER;
 static int             active = 0;
+static int             fail_launch_cnt = 0;
 
 typedef enum {DSH_NEW, DSH_ACTIVE, DSH_DONE, DSH_FAILED} state_t;
 
@@ -104,7 +105,6 @@ launch(void *arg)
 	uint32_t **task_ids;
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
-
 	if (gethostname(hostname, MAXHOSTNAMELEN) < 0)
 		error("gethostname: %m");
 
@@ -174,17 +174,24 @@ launch(void *arg)
 
 	p_launch(req_array_ptr, job);
 
-	debug("All task launch requests sent");
-	update_job_state(job, SRUN_JOB_STARTING);
-
 	for (i = 0; i < job->nhosts; i++)
 		xfree(task_ids[i]);
 	xfree(task_ids);
 	xfree(msg_array_ptr);
 	xfree(req_array_ptr);
 
-	return(void *)(0);
+	if (fail_launch_cnt) {
+		error("%d task launch requests failed, terminating job step", 
+		      fail_launch_cnt);
+		if (slurm_cancel_job_step(job->jobid, job->stepid))
+			error("slurm_cancel_job_step error %m");
+		update_job_state(job, SRUN_JOB_FAILED);
+	} else {
+		debug("All task launch requests sent");
+		update_job_state(job, SRUN_JOB_STARTING);
+	}
 
+	return(void *)(0);
 }
 
 /* p_launch - parallel (multi-threaded) task launcher */
@@ -250,16 +257,19 @@ static void * p_launch_task(void *args)
 				(launch_tasks_request_msg_t *) req_ptr->data;
 	job_t *job_ptr = task_info_ptr->job_ptr;
 	int host_inx = msg_ptr->srun_node_id;
+	int failure = 0;
 
 	debug3("launching on host %s", job_ptr->host[host_inx]);
         print_launch_msg(msg_ptr);
 	if (slurm_send_only_node_msg(req_ptr) < 0) {	/* Has timeout */
-		error("launch %s: %m", job_ptr->host[host_inx]);
+		error("task launch error on %s: %m", job_ptr->host[host_inx]);
 		job_ptr->host_state[host_inx] = SRUN_HOST_UNREACHABLE;
+		failure = 1;
 	}
 
 	pthread_mutex_lock(&active_mutex);
 	active--;
+	fail_launch_cnt += failure;
 	pthread_cond_signal(&active_cond);
 	pthread_mutex_unlock(&active_mutex);
 	xfree(args);
@@ -269,7 +279,7 @@ static void * p_launch_task(void *args)
 
 static void print_launch_msg(launch_tasks_request_msg_t *msg)
 {
-	debug3("%d.%d uid:%ld n:%ld `%s' %d [%d-%d]",
+	debug3("%d.%d uid:%ld n:%ld cwd:%s %d [%d-%d]",
 		msg->job_id, msg->job_step_id, (long) msg->uid, 
 		(long) msg->tasks_to_launch, msg->cwd, 
 		msg->srun_node_id, msg->global_task_ids[0],
