@@ -25,12 +25,3 @@ main(int ac, char **av)
 
 	exit(0);
 }
-
-static void 
-create_job_spec()
-{
-
-}
-
-
-
