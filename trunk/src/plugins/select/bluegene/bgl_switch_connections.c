@@ -45,6 +45,40 @@ static void _connect(rm_partition_t *my_part, rm_switch_t *my_switch,
 }
 
 /**
+ * connect the given switch up with the given connections
+ */
+static void configure_node_switchs(node_info_t *node_ptr, rm_partition_t *my_part,
+			     int first)
+{
+	rm_switch_t *my_switch;
+	pa_switch_t *switch_ptr;
+	rm_connection_t conn[PA_SYSTEM_DIMENSIONS];
+	int i, j;
+	
+	for(j=0;j<PA_SYSTEM_DIMENSIONS;j++) {
+		
+		for(i=0;i<3;i++) {
+			
+			
+			conn[i].p1 = RM_PORT_S0; 
+			conn[i].p2 = RM_PORT_S2;
+			conn[i].part_id = NULL;
+			conn[i].usage = RM_CONNECTION_USED;
+		}
+
+		rm_set_data(my_switch,RM_SwitchFirstConnection,conn1);
+		rm_set_data(my_switch,RM_SwitchSecondConnection,conn2);
+		rm_set_data(my_switch,RM_SwitchThirdConnection,conn3);
+	
+		if (first){
+			rm_set_data(my_part,RM_PartFirstSwitch,my_switch);
+		} else {
+			rm_set_data(my_part,RM_PartNextSwitch,my_switch);
+		}
+	}  
+}
+
+/**
  * connect the given switch up in the "A" pattern
  *       0  1
  *    /--|--|--\

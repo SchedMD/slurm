@@ -456,8 +456,8 @@ static int _parse_bgl_spec(char *in_line)
 {
 	int error_code = SLURM_SUCCESS;
 	char *nodes = NULL, *serial = NULL;
-	int conn_type = 0;
-	int node_use = 0;
+	char *conn_type = NULL;
+	char *node_use = NULL;
 	char *blrts_image = NULL,   *linux_image = NULL;
 	char *mloader_image = NULL, *ramdisk_image = NULL;
 	bgl_conf_record_t* new_record;
@@ -469,8 +469,8 @@ static int _parse_bgl_spec(char *in_line)
 				"Nodes=", 's', &nodes,
 				"RamDiskImage=", 's', &ramdisk_image,
 				"Serial=", 's', &serial,
-				"Type=", 'd', &conn_type,
-				"Use=", 'd', &node_use,
+				"Type=", 's', &conn_type,
+				"Use=", 's', &node_use,
 				"END");
 
 	if (error_code)
@@ -517,12 +517,12 @@ static int _parse_bgl_spec(char *in_line)
 	new_record->nodes = nodes;
 	nodes = NULL;	/* pointer moved, nothing left to xfree */
 	
-	if (!conn_type)
+	if (!conn_type || !strcmp(conn_type,"MESH"))
 		new_record->conn_type = SELECT_MESH;
 	else 
 		new_record->conn_type = SELECT_TORUS;
 	
-	if (!node_use)
+	if (!node_use || !strcmp(conn_type,"VIRTUAL"))
 		new_record->node_use = SELECT_VIRTUAL_NODE_MODE;
 	else 
 		new_record->node_use = SELECT_COPROCESSOR_MODE;
