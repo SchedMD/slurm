@@ -119,7 +119,7 @@ void switch_p_free_jobinfo ( switch_jobinfo_t switch_job )
 
 int switch_p_pack_jobinfo ( switch_jobinfo_t switch_job, Buf buffer )
 {
-	return SLURM_SUCCESS;
+	return 0;
 }
 
 int switch_p_unpack_jobinfo ( switch_jobinfo_t switch_job, Buf buffer )
@@ -237,7 +237,7 @@ extern int switch_p_build_node_info(switch_node_info_t switch_node)
 extern int switch_p_pack_node_info(switch_node_info_t switch_node, 
 	Buf buffer)
 {
-	return SLURM_SUCCESS;
+	return 0;
 }
 
 extern int switch_p_unpack_node_info(switch_node_info_t switch_node,
