@@ -837,6 +837,12 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	if (ctl_conf_ptr->wait_time == (uint16_t) NO_VAL)
 		ctl_conf_ptr->wait_time = DEFAULT_WAIT_TIME;
+
+	if (ctl_conf_ptr->authtype == NULL)
+		ctl_conf_ptr->authtype = xstrdup(DEFAULT_AUTH_TYPE);
+
+	if (ctl_conf_ptr->job_comp_type == NULL)
+		ctl_conf_ptr->job_comp_type = xstrdup(DEFAULT_JOB_COMP_TYPE);
 }
 
 /* Normalize supplied debug level to be in range per log.h definitions */
