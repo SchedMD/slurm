@@ -1,6 +1,6 @@
 /*
- * scontrol - Administration tool for SLURM. 
- * Provides interface to read, write, update, and configurations.
+ * scontrol - administration tool for slurm. 
+ * provides interface to read, write, update, and configurations.
  */
 
 #include <errno.h>
@@ -10,477 +10,575 @@
 #include "slurmlib.h"
 
 #define	BUF_SIZE 1024
-#define	MAX_INPUT_FIELDS 128
+#define	max_input_fields 128
 
-char *Command_Name;
-int Exit_Flag;		/* Program to terminate if =1 */
-int Quiet_Flag;		/* Quiet=1, verbose=-1, normal=0 */
-int Input_Words;	/* Number of words of input permitted */
+static char *command_name;
+static int exit_flag;			/* program to terminate if =1 */
+static int quiet_flag;			/* quiet=1, verbose=-1, normal=0 */
+static int input_words;		/* number of words of input permitted */
 
-void Dump_Command(int argc, char *argv[]);
-int  Get_Command(int *argc, char *argv[]);
-void Print_Build(char *build_param);
-void Print_Node(char *node_name);
-void Print_Node_List(char *node_list);
-void Print_Part(char *partition_name);
-int  Process_Command(int argc, char *argv[]);
-int  Update_It(int argc, char *argv[]);
-void Usage();
+void dump_command (int argc, char *argv[]);
+int get_command (int *argc, char *argv[]);
+void print_build (char *build_param);
+void print_node (char *node_name);
+void print_node_list (char *node_list);
+void print_part (char *partition_name);
+int process_command (int argc, char *argv[]);
+int update_it (int argc, char *argv[]);
+void usage ();
 
-main(int argc, char *argv[]) {
-    int Error_Code, i, Input_Field_Count;
-    char **Input_Fields;
+main (int argc, char *argv[]) {
+	int error_code, i, input_field_count;
+	char **input_fields;
 
-    Command_Name = argv[0];
-    Exit_Flag = 0;
-    Input_Field_Count = 0;
-    Quiet_Flag = 0;
-    if (argc > MAX_INPUT_FIELDS)	/* Bogus input, but let's continue anyway */
-	Input_Words = argc;
-    else
-	Input_Words = 128;
-    Input_Fields = (char **)malloc(sizeof(char *) * Input_Words);
-    for (i=1; i<argc; i++) {
-	if (strcmp(argv[i], "-q") == 0) {
-	    Quiet_Flag =  1;
-	} else if (strcmp(argv[i], "quiet") == 0) {
-	    Quiet_Flag = 1;
-	} else if (strcmp(argv[i], "-v") == 0) {
-	    Quiet_Flag = -1;
-	} else if (strcmp(argv[i], "verbose") == 0) {
-	    Quiet_Flag = -1;
-	} else {
-	    Input_Fields[Input_Field_Count++] = argv[i];
-	} /* else */
-    } /* for */
+	command_name = argv[0];
+	exit_flag = 0;
+	input_field_count = 0;
+	quiet_flag = 0;
+	if (argc > max_input_fields)	/* bogus input, but let's continue anyway */
+		input_words = argc;
+	else
+		input_words = 128;
+	input_fields = (char **) malloc (sizeof (char *) * input_words);
+	for (i = 1; i < argc; i++) {
+		if (strcmp (argv[i], "-q") == 0) {
+			quiet_flag = 1;
+		}
+		else if (strcmp (argv[i], "quiet") == 0) {
+			quiet_flag = 1;
+		}
+		else if (strcmp (argv[i], "-v") == 0) {
+			quiet_flag = -1;
+		}
+		else if (strcmp (argv[i], "verbose") == 0) {
+			quiet_flag = -1;
+		}
+		else {
+			input_fields[input_field_count++] = argv[i];
+		}		/* else */
+	}			
 
-    if (Input_Field_Count)
-	Exit_Flag = 1;
-    else
-	Error_Code = Get_Command(&Input_Field_Count, Input_Fields);
+	if (input_field_count)
+		exit_flag = 1;
+	else
+		error_code = get_command (&input_field_count, input_fields);
 
-    while (1) {
+	while (1) {
 #if DEBUG_MODULE
-	Dump_Command(Input_Field_Count, Input_Fields);
+		dump_command (input_field_count, input_fields);
 #endif
-	Error_Code = Process_Command(Input_Field_Count, Input_Fields);
-	if (Error_Code != 0) break;
-	if (Exit_Flag == 1) break;
-	Error_Code = Get_Command(&Input_Field_Count, Input_Fields);
-	if (Error_Code != 0) break;
-    } /* while */
+		error_code =
+			process_command (input_field_count, input_fields);
+		if (error_code != 0)
+			break;
+		if (exit_flag == 1)
+			break;
+		error_code = get_command (&input_field_count, input_fields);
+		if (error_code != 0)
+			break;
+	}			
 
-    exit(Error_Code);
-} /* main */
+	exit (error_code);
+}
 
 
 /*
- * Dump_Command - Dump the user's command
- * Input: argc - count of arguments
+ * dump_command - dump the user's command
+ * input: argc - count of arguments
  *        argv - the arguments
  */
-void Dump_Command(int argc, char *argv[]) {
-    int i;
+void
+dump_command (int argc, char *argv[]) {
+	int i;
 
-    for (i=0; i<argc; i++) {
-	printf("Arg %d:%s:\n", i, argv[i]);
-    } /* for */
-} /* Dump_Command */
+	for (i = 0; i < argc; i++) {
+		printf ("arg %d:%s:\n", i, argv[i]);
+	}			
+}
 
 
 /*
- * Get_Command - Get a command from the user
- * Input: argc - location to store count of arguments
+ * get_command - get a command from the user
+ * input: argc - location to store count of arguments
  *        argv - location to store the argument list
- * Output: returns error code, 0 if no problems
+ * output: returns error code, 0 if no problems
  */
-int Get_Command(int *argc, char **argv) {
-    static char *In_Line;
-    static int In_Line_Size = 0;
-    int In_Line_Pos = 0;
-    int Temp_Char, i;
+int get_command (int *argc, char **argv) {
+	static char *in_line;
+	static int in_line_size = 0;
+	int in_line_pos = 0;
+	int temp_char, i;
 
-    if (In_Line_Size == 0) {
-	In_Line_Size += BUF_SIZE;
-	In_Line = (char *)malloc(In_Line_Size);
-	if (In_Line == NULL) {
-	    fprintf(stderr, "%s: Error %d allocating memory\n", Command_Name, errno);
-	    In_Line_Size = 0;
-	    return ENOMEM;
-	} /* if */
-    } /* if */
-	
-    printf("scontrol: ");
-    *argc = 0;
-    In_Line_Pos = 0;
+	if (in_line_size == 0) {
+		in_line_size += BUF_SIZE;
+		in_line = (char *) malloc (in_line_size);
+		if (in_line == NULL) {
+			fprintf (stderr, "%s: error %d allocating memory\n",
+				 command_name, errno);
+			in_line_size = 0;
+			return ENOMEM;
+		}		
+	}			
 
-    while (1) {
-	Temp_Char = getc(stdin);
-	if (Temp_Char == EOF) break;
-	if (Temp_Char == (int)'\n') break;
-	if ((In_Line_Pos+2) >= In_Line_Size) {
-	    In_Line_Size += BUF_SIZE;
-	    In_Line = (char *)realloc(In_Line, In_Line_Size);
-	    if (In_Line == NULL) {
-		fprintf(stderr, "%s: Error %d allocating memory\n", Command_Name, errno);
-		In_Line_Size = 0;
-		return ENOMEM;
-	    } /* if */
-	} /* if */
-	In_Line[In_Line_Pos++] = (char)Temp_Char;
-    } /* while */
-    In_Line[In_Line_Pos] = (char)NULL;
+	printf ("scontrol: ");
+	*argc = 0;
+	in_line_pos = 0;
 
-    for (i=0; i<In_Line_Pos; i++) {
-	if (isspace((int)In_Line[i])) continue;
-	if (((*argc)+1) > MAX_INPUT_FIELDS) {	/* Really bogus input line */
-	    fprintf(stderr, "%s: Over %d fields in line: %s\n", Command_Name, Input_Words ,In_Line);
-	    return E2BIG;
-	} /* if */
-	argv[(*argc)++] = &In_Line[i];
-	for (i++ ; i<In_Line_Pos; i++) {
-	    if (!isspace((int)In_Line[i])) continue;
-	    In_Line[i] = (char)NULL;
-	    break;
-	} /* for */
-    } /* for */
-    return 0;
-} /* Get_Command */
+	while (1) {
+		temp_char = getc (stdin);
+		if (temp_char == EOF)
+			break;
+		if (temp_char == (int) '\n')
+			break;
+		if ((in_line_pos + 2) >= in_line_size) {
+			in_line_size += BUF_SIZE;
+			in_line = (char *) realloc (in_line, in_line_size);
+			if (in_line == NULL) {
+				fprintf (stderr,
+					 "%s: error %d allocating memory\n",
+					 command_name, errno);
+				in_line_size = 0;
+				return ENOMEM;
+			}	
+		}		
+		in_line[in_line_pos++] = (char) temp_char;
+	}			
+	in_line[in_line_pos] = (char) NULL;
+
+	for (i = 0; i < in_line_pos; i++) {
+		if (isspace ((int) in_line[i]))
+			continue;
+		if (((*argc) + 1) > max_input_fields) {	/* really bogus input line */
+			fprintf (stderr, "%s: over %d fields in line: %s\n",
+				 command_name, input_words, in_line);
+			return E2BIG;
+		}		
+		argv[(*argc)++] = &in_line[i];
+		for (i++; i < in_line_pos; i++) {
+			if (!isspace ((int) in_line[i]))
+				continue;
+			in_line[i] = (char) NULL;
+			break;
+		}		
+	}			
+	return 0;
+}
 
 
 /* 
- * Print_Build - Print the specified  build parameter and value 
- * Input: build_param - NULL to print all parameters and values
+ * print_build - print the specified build parameter and value 
+ * input: build_param - NULL to print all parameters and values
  */
-void Print_Build(char *build_param) {
-    char Req_Name[BUILD_SIZE], Next_Name[BUILD_SIZE], Value[BUILD_SIZE];
-    int Error_Code;
+void print_build (char *build_param) {
+	char req_name[BUILD_SIZE], next_name[BUILD_SIZE], value[BUILD_SIZE];
+	int error_code;
 
-    Error_Code = Load_Build();
-    if (Error_Code) {
-	if (Quiet_Flag != 1) printf("Load_Build error %d\n", Error_Code);
+	error_code = slurm_load_build ();
+	if (error_code) {
+		if (quiet_flag != 1)
+			printf ("slurm_load_build error %d\n", error_code);
+		return;
+	}			
+
+
+	if (build_param)
+		strncpy (req_name, build_param, BUILD_SIZE);
+	else
+		strcpy (req_name, "");	/* start at beginning of node list */
+
+	while (1) {
+		error_code = slurm_load_build_name (req_name, next_name, value);
+		if (error_code != 0) {
+			if (quiet_flag != 1) {
+				if (error_code == ENOENT)
+					printf ("no parameter %s found\n",
+						req_name);
+				else
+					printf ("error %d finding value for parameter %s\n", 
+						error_code, req_name);
+			}	
+			break;
+		}		
+		printf ("%s=%s\n", req_name, value);
+
+		if (build_param || (strlen (next_name) == 0))
+			break;
+		strcpy (req_name, next_name);
+	}			
+/*  slurm_free_build_info();		keep data for reuse, cleaned on exit */
+}
+
+/*
+ * print_node - print the specified node's information
+ * input: node_name - NULL to print all node information
+ * NOTE: call this only after executing load_node, called from print_node_list
+ */
+void
+print_node (char *node_name) {
+	int error_code, size, i;
+	char partition[MAX_NAME_LEN], node_state[MAX_NAME_LEN],
+		features[FEATURE_SIZE];
+	char req_name[MAX_NAME_LEN];	/* name of the partition */
+	char next_name[MAX_NAME_LEN];	/* name of the next partition */
+	int cpus, real_memory, tmp_disk, weight;
+	char *dump;
+	int dump_size;
+	time_t update_time;
+	unsigned *node_bitmap;	/* bitmap of nodes in partition */
+	int bitmap_size;	/* bytes in node_bitmap */
+
+	if (node_name)
+		strncpy (req_name, node_name, MAX_NAME_LEN);
+	else
+		strcpy (req_name, "");	/* start at beginning of node list */
+
+	while (1) {
+		error_code =
+			load_node_config (req_name, next_name, &cpus,
+					  &real_memory, &tmp_disk, &weight,
+					  features, partition, node_state);
+		if (error_code != 0) {
+			if (quiet_flag != 1) {
+				if (error_code == ENOENT)
+					printf ("no node %s found\n",
+						req_name);
+				else
+					printf ("error %d finding information for node %s\n", error_code, req_name);
+			}	
+			break;
+		}		
+		printf ("NodeName=%s CPUs=%d RealMemory=%d TmpDisk=%d ",
+			req_name, cpus, real_memory, tmp_disk);
+		printf ("State=%s Weight=%d Features=%s Partition=%s\n",
+			node_state, weight, features, partition);
+
+		if (node_name || (strlen (next_name) == 0))
+			break;
+		strcpy (req_name, next_name);
+	}			
+}
+
+
+/*
+ * print_node_list - print information about the supplied node list (or regular expression)
+ * input: node_list - print information about the supplied node list (or regular expression)
+ */
+void
+print_node_list (char *node_list) {
+	static time_t last_update_time = (time_t) NULL;
+	int start_inx, end_inx, count_inx, error_code, i;
+	char *str_ptr1, *str_ptr2, *format, *my_node_list,
+		this_node_name[BUF_SIZE];;
+
+	error_code = load_node (&last_update_time);
+	if (error_code) {
+		if (quiet_flag != 1)
+			printf ("load_node error %d\n", error_code);
+		return;
+	}			
+	if (quiet_flag == -1)
+		printf ("last_update_time=%ld\n", (long) last_update_time);
+
+	if (node_list == NULL) {
+		print_node (NULL);
+	}
+	else {
+		my_node_list = malloc (strlen (node_list) + 1);
+		if (my_node_list == NULL) {
+			if (quiet_flag != 1)
+				fprintf (stderr,
+					 "unable to allocate memory\n");
+			abort ();
+		}		
+
+		strcpy (my_node_list, node_list);
+		str_ptr2 = (char *) strtok_r (my_node_list, ",", &str_ptr1);
+		while (str_ptr2) {	/* break apart by comma separators */
+			error_code =
+				parse_node_name (str_ptr2, &format,
+						 &start_inx, &end_inx,
+						 &count_inx);
+			if (error_code) {
+				if (quiet_flag != 1)
+					fprintf (stderr,
+						 "invalid node name specification: %s\n",
+						 str_ptr2);
+				break;
+			}	
+			if (strlen (format) >= sizeof (this_node_name)) {
+				if (quiet_flag != 1)
+					fprintf (stderr,
+						 "invalid node name specification: %s\n",
+						 format);
+				free (format);
+				break;
+			}	
+			for (i = start_inx; i <= end_inx; i++) {
+				if (count_inx == 0)
+					strncpy (this_node_name, format,
+						 sizeof (this_node_name));
+				else
+					sprintf (this_node_name, format, i);
+				print_node (this_node_name);
+			}	
+			free (format);
+			str_ptr2 = (char *) strtok_r (NULL, ",", &str_ptr1);
+		}		
+		free (my_node_list);
+	}			/* else */
+
+/*  free_node_info();		keep data for reuse, cleaned on exit */
 	return;
-    } /* if */
+}
 
-
-    if (build_param) 
-	strncpy(Req_Name, build_param, BUILD_SIZE);
-    else
-	strcpy(Req_Name, "");	/* Start at beginning of node list */
-
-    while (1) {
-	Error_Code = Load_Build_Name(Req_Name, Next_Name, Value);
-	if (Error_Code != 0)  {
-	    if (Quiet_Flag != 1) {
-		if (Error_Code == ENOENT) 
-		    printf("No parameter %s found\n", Req_Name);
-		else
-		    printf("Error %d finding value for parameter %s\n", Error_Code, Req_Name);
-	    } /* if */
-	    break;
-	} /* if */
-	printf("%s=%s\n", Req_Name, Value);
-
-	if (build_param || (strlen(Next_Name) == 0)) break;
-	strcpy(Req_Name, Next_Name);
-    } /* while */
-/*  Free_Build_Info();		Keep data for reuse, cleaned on exit */
-} /* Print_Build */
 
 /*
- * Print_Node - Print the specified node's information
- * Input: node_name - NULL to print all node information
- * NOTE: Call this only after executing Load_Node, called from Print_Node_List
+ * print_part - print the specified partition's information
+ * input: partition_name - NULL to print all partition information
  */
-void Print_Node(char *node_name) {
-    int Error_Code, size, i;
-    char Partition[MAX_NAME_LEN], Node_State[MAX_NAME_LEN], Features[FEATURE_SIZE];
-    char Req_Name[MAX_NAME_LEN];	/* Name of the partition */
-    char Next_Name[MAX_NAME_LEN];	/* Name of the next partition */
-    int CPUs, RealMemory, TmpDisk, Weight;
-    char *Dump;
-    int Dump_Size;
-    time_t Update_Time;
-    unsigned *NodeBitMap;	/* Bitmap of nodes in partition */
-    int BitMapSize;		/* Bytes in NodeBitMap */
+void print_part (char *partition_name) {
+	static time_t last_update_time = (time_t) NULL;	/* time desired for data */
+	static char *yes_no[0] = { "NO", "YES" };
+	static char *up_down[0] = { "DOWN", "UP" };
+	char req_name[MAX_NAME_LEN];	/* name of the partition */
+	char next_name[MAX_NAME_LEN];	/* name of the next partition */
+	int max_time;			/* -1 if unlimited */
+	int max_nodes;			/* -1 if unlimited */
+	int total_nodes;		/* total number of nodes in the partition */
+	int total_cpus;			/* total number of cpus in the partition */
+	char nodes[FEATURE_SIZE];	/* names of nodes in partition */
+	char allow_groups[FEATURE_SIZE];/* NULL indicates all */
+	int key;			/* 1 if slurm distributed key is required */
+	int state_up;			/* 1 if state is up */
+	int shared;			/* 1 if partition can be shared */
+	int default_flag;		/* 1 if default partition */
+	int error_code;
 
-    if (node_name) 
-	strncpy(Req_Name, node_name, MAX_NAME_LEN);
-    else
-	strcpy(Req_Name, "");	/* Start at beginning of node list */
+	error_code = load_part (&last_update_time);
+	if (error_code) {
+		if (quiet_flag != 1)
+			printf ("load_part error %d\n", error_code);
+		return;
+	}			
+	if (quiet_flag == -1)
+		printf ("last_update_time=%ld\n", (long) last_update_time);
 
-    while (1) {
-	Error_Code = Load_Node_Config(Req_Name, Next_Name, &CPUs, &RealMemory, &TmpDisk, &Weight, 
-	    Features, Partition, Node_State);
-	if (Error_Code != 0)  {
-	    if (Quiet_Flag != 1) {
-		if (Error_Code == ENOENT) 
-		    printf("No node %s found\n", Req_Name);
-		else
-		    printf("Error %d finding information for node %s\n", Error_Code, Req_Name);
-	    } /* if */
-	    break;
-	} /* if */
-	printf("NodeName=%s CPUs=%d RealMemory=%d TmpDisk=%d ", 
-		Req_Name, CPUs, RealMemory, TmpDisk);
-	printf("State=%s Weight=%d Features=%s Partition=%s\n", 
-	  	Node_State, Weight, Features, Partition);
+	if (partition_name)
+		strncpy (req_name, partition_name, MAX_NAME_LEN);
+	else
+		strcpy (req_name, "");	/* start at beginning of partition list */
 
-	if (node_name || (strlen(Next_Name) == 0)) break;
-	strcpy(Req_Name, Next_Name);
-    } /* while */
-} /* Print_Node */
+	while (1) {
+		error_code =
+			load_part_name (req_name, next_name, &max_time,
+					&max_nodes, &total_nodes, &total_cpus,
+					&key, &state_up, &shared, &default_flag,
+					nodes, allow_groups);
+		if (error_code != 0) {
+			if (quiet_flag != 1) {
+				if (error_code == ENOENT)
+					printf ("no partition %s found\n",
+						req_name);
+				else
+					printf ("error %d finding information for partition %s\n", error_code, req_name);
+			}	
+			break;
+		}		
 
+		printf ("PartitionName=%s Nodes=%s  MaxTime=%d  MaxNodes=%d Default=%s ", 
+			req_name, nodes, max_time, max_nodes, yes_no[default_flag]);
+		printf ("Key=%s State=%s Shared=%s AllowGroups=%s ", 
+			yes_no[key], up_down[state_up], yes_no[shared], allow_groups);
+		printf ("TotalNodes=%d total_cpus=%d \n", total_nodes, total_cpus);
 
-/*
- * Print_Node_List - Print information about the supplied node list (or regular expression)
- * Input: node_list - Print information about the supplied node list (or regular expression)
- */
-void Print_Node_List(char *node_list) {
-    static time_t Last_Update_Time = (time_t)NULL;
-    int Start_Inx, End_Inx, Count_Inx, Error_Code, i;
-    char *str_ptr1, *str_ptr2, *Format, *My_Node_List, This_Node_Name[BUF_SIZE];;
-
-    Error_Code = Load_Node(&Last_Update_Time);
-    if (Error_Code) {
-	if (Quiet_Flag != 1) printf("Load_Node error %d\n", Error_Code);
-	return;
-    } /* if */
-    if (Quiet_Flag == -1) printf("Last_Update_Time=%ld\n", (long)Last_Update_Time);
-
-    if (node_list == NULL) {
-	Print_Node(NULL);
-    } else {
-	My_Node_List = malloc(strlen(node_list)+1);
-	if (My_Node_List == NULL) {
-	    if (Quiet_Flag != 1) fprintf(stderr, "Unable to allocate memory\n");
-	    abort();
-	} /* if */
-
-	strcpy(My_Node_List, node_list);
-	str_ptr2 = (char *)strtok_r(My_Node_List, ",", &str_ptr1);
-	while (str_ptr2) {	/* Break apart by comma separators */
-	    Error_Code = Parse_Node_Name(str_ptr2, &Format, &Start_Inx, &End_Inx, &Count_Inx);
-	    if (Error_Code) {
-		if (Quiet_Flag != 1) fprintf(stderr, "Invalid node name specification: %s\n", str_ptr2);
-		break;
-	    } /* if */ 
-	    if (strlen(Format) >= sizeof(This_Node_Name)) {
-		if (Quiet_Flag != 1) fprintf(stderr, "Invalid node name specification: %s\n", Format);
-		free(Format);
-		break;
-	    } /* if */
-	    for (i=Start_Inx; i<=End_Inx; i++) {
-		if (Count_Inx == 0) 
-		    strncpy(This_Node_Name, Format, sizeof(This_Node_Name));
-		else
-		    sprintf(This_Node_Name, Format, i);
-		Print_Node(This_Node_Name);
-	    } /* for */
-	    free(Format);
-	    str_ptr2 = (char *)strtok_r(NULL, ",", &str_ptr1);
-	} /* while */
-	free(My_Node_List);
-    } /* else */
-
-/*  Free_Node_Info();		Keep data for reuse, cleaned on exit */
-    return;
-} /* Print_Node_List */
+		if (partition_name || (strlen (next_name) == 0))
+			break;
+		strcpy (req_name, next_name);
+	}			
+/*  free_part_info(); 	keep data for reuse, cleaned on exit */
+}
 
 
 /*
- * Print_Part - Print the specified partition's information
- * Input: partition_name - NULL to print all partition information
- */
-void Print_Part(char *partition_name) {
-    static time_t Last_Update_Time  = (time_t)NULL;	/* Time desired for data */
-    static char *Yes_No[0] = {"NO", "YES"};
-    static char *Up_Down[0] = {"DOWN", "UP"};
-    char Req_Name[MAX_NAME_LEN];	/* Name of the partition */
-    char Next_Name[MAX_NAME_LEN];	/* Name of the next partition */
-    int MaxTime;			/* -1 if unlimited */
-    int MaxNodes;			/* -1 if unlimited */
-    int TotalNodes;			/* Total number of nodes in the partition */
-    int TotalCPUs;			/* Total number of CPUs in the partition */
-    char Nodes[FEATURE_SIZE];		/* Names of nodes in partition */
-    char AllowGroups[FEATURE_SIZE];	/* NULL indicates ALL */
-    int Key;    	 		/* 1 if SLURM distributed key is required for use of partition */
-    int StateUp;			/* 1 if state is UP */
-    int Shared;				/* 1 if partition can be shared */
-    int Default;			/* 1 if default partition */
-    int Error_Code;
-
-    Error_Code = Load_Part(&Last_Update_Time);
-    if (Error_Code) {
-	if (Quiet_Flag != 1) printf("Load_Part error %d\n", Error_Code);
-	return;
-    } /* if */
-    if (Quiet_Flag == -1) printf("Last_Update_Time=%ld\n", (long)Last_Update_Time);
-
-    if (partition_name) 
-	strncpy(Req_Name, partition_name, MAX_NAME_LEN);
-    else
-	strcpy(Req_Name, "");	/* Start at beginning of partition list */
-
-    while (1) {
-	Error_Code = Load_Part_Name(Req_Name, Next_Name, &MaxTime, &MaxNodes, 
-	    &TotalNodes, &TotalCPUs, &Key, &StateUp, &Shared, &Default, 
-	    Nodes, AllowGroups);
-	if (Error_Code != 0)  {
-	    if (Quiet_Flag != 1) {
-		if (Error_Code == ENOENT) 
-		    printf("No partition %s found\n", Req_Name);
-		else
-		    printf("Error %d finding information for partition %s\n", Error_Code, Req_Name);
-	    } /* if */
-	    break;
-	} /* if */
-
-	printf("PartitionName=%s Nodes=%s  MaxTime=%d  MaxNodes=%d Default=%s ", 
-	    Req_Name, Nodes, MaxTime, MaxNodes, Yes_No[Default]);
-	printf("Key=%s State=%s Shared=%s AllowGroups=%s TotalNodes=%d TotalCPUs=%d \n", 
-	    Yes_No[Key], Up_Down[StateUp], Yes_No[Shared], AllowGroups, TotalNodes, TotalCPUs);
-
-	if (partition_name || (strlen(Next_Name) == 0)) break;
-	strcpy(Req_Name, Next_Name);
-    } /* while */
-/*  Free_Part_Info(); 	Keep data for reuse, cleaned on exit */
-} /* Print_Part */
-
-
-/*
- * Process_Command - Process the user's command
- * Input: argc - count of arguments
+ * process_command - process the user's command
+ * input: argc - count of arguments
  *        argv - the arguments
- * Ourput: Return code is 0 or errno (ONLY for errors fatal to scontrol)
+ * ourput: return code is 0 or errno (only for errors fatal to scontrol)
  */
-int Process_Command(int argc, char *argv[]) {
-    int Error_Code;
+int
+process_command (int argc, char *argv[]) {
+	int error_code;
 
-    if ((strcmp(argv[0], "exit") == 0) || 
-        (strcmp(argv[0], "quit") == 0)) {
-	if (argc > 1) fprintf(stderr, "Too many arguments for keyword:%s\n", argv[0]);
-	Exit_Flag = 1;
+	if ((strcmp (argv[0], "exit") == 0) ||
+	    (strcmp (argv[0], "quit") == 0)) {
+		if (argc > 1)
+			fprintf (stderr,
+				 "too many arguments for keyword:%s\n",
+				 argv[0]);
+		exit_flag = 1;
 
-    } else if (strcmp(argv[0], "help") == 0) {
-	if (argc > 1) fprintf(stderr, "Too many arguments for keyword:%s\n", argv[0]);
-	Usage();
+	}
+	else if (strcmp (argv[0], "help") == 0) {
+		if (argc > 1)
+			fprintf (stderr,
+				 "too many arguments for keyword:%s\n",
+				 argv[0]);
+		usage ();
 
-    } else if (strcmp(argv[0], "quiet") == 0) {
-	if (argc > 1)  fprintf(stderr, "Too many arguments for keyword:%s\n", argv[0]);
-	Quiet_Flag = 1;
+	}
+	else if (strcmp (argv[0], "quiet") == 0) {
+		if (argc > 1)
+			fprintf (stderr,
+				 "too many arguments for keyword:%s\n",
+				 argv[0]);
+		quiet_flag = 1;
 
-    } else if (strncmp(argv[0], "reconfigure", 7) == 0) {
-	if (argc > 2) fprintf(stderr, "Too many arguments for keyword:%s\n", argv[0]);
-	Error_Code = Reconfigure();
-	if ((Error_Code != 0) && (Quiet_Flag != 1))
-	    fprintf(stderr, "Error %d from reconfigure\n", Error_Code);
+	}
+	else if (strncmp (argv[0], "reconfigure", 7) == 0) {
+		if (argc > 2)
+			fprintf (stderr,
+				 "too many arguments for keyword:%s\n",
+				 argv[0]);
+		error_code = reconfigure ();
+		if ((error_code != 0) && (quiet_flag != 1))
+			fprintf (stderr, "error %d from reconfigure\n",
+				 error_code);
 
-    } else if (strcmp(argv[0], "show") == 0) {
-	if (argc > 3) {
-	    if (Quiet_Flag != 1) fprintf(stderr, "Too many arguments for keyword:%s\n", argv[0]);
-	} else if (argc < 2) {
-	    if (Quiet_Flag != 1) fprintf(stderr, "Too few arguments for keyword:%s\n", argv[0]);
-	} else if (strncmp(argv[1],"build", 3) == 0) {
-	    if (argc > 2) 
-		Print_Build(argv[2]);
-	    else
-		Print_Build(NULL);
-	} else if (strncmp(argv[1],"jobs", 3) == 0) {
-	    if (Quiet_Flag != 1) printf("keyword:%s entity:%s command not yet implemented\n", argv[0], argv[1]);
-	} else if (strncmp(argv[1],"nodes", 3) == 0) {
-	    if (argc > 2) 
-		Print_Node_List(argv[2]);
-	    else
-		Print_Node_List(NULL);
-	} else if (strncmp(argv[1],"partitions", 3) == 0) {
-	    if (argc > 2) 
-		Print_Part(argv[2]);
-	    else
-		Print_Part(NULL);
-	} else if (Quiet_Flag != 1) {
-	    fprintf(stderr, "Invalid entity:%s for keyword:%s \n", argv[1], argv[0]);
-	} /* if */
+	}
+	else if (strcmp (argv[0], "show") == 0) {
+		if (argc > 3) {
+			if (quiet_flag != 1)
+				fprintf (stderr,
+					 "too many arguments for keyword:%s\n",
+					 argv[0]);
+		}
+		else if (argc < 2) {
+			if (quiet_flag != 1)
+				fprintf (stderr,
+					 "too few arguments for keyword:%s\n",
+					 argv[0]);
+		}
+		else if (strncmp (argv[1], "build", 3) == 0) {
+			if (argc > 2)
+				print_build (argv[2]);
+			else
+				print_build (NULL);
+		}
+		else if (strncmp (argv[1], "jobs", 3) == 0) {
+			if (quiet_flag != 1)
+				printf ("keyword:%s entity:%s command not yet implemented\n", argv[0], argv[1]);
+		}
+		else if (strncmp (argv[1], "nodes", 3) == 0) {
+			if (argc > 2)
+				print_node_list (argv[2]);
+			else
+				print_node_list (NULL);
+		}
+		else if (strncmp (argv[1], "partitions", 3) == 0) {
+			if (argc > 2)
+				print_part (argv[2]);
+			else
+				print_part (NULL);
+		}
+		else if (quiet_flag != 1) {
+			fprintf (stderr,
+				 "invalid entity:%s for keyword:%s \n",
+				 argv[1], argv[0]);
+		}		
 
-    } else if (strcmp(argv[0], "update") == 0) {
-	if (argc < 2) {
-	    fprintf(stderr, "Too few arguments for %s keyword\n", argv[0]);
-	    return 0;
-	} /* if */
-	Update_It((argc-1), &argv[1]);
+	}
+	else if (strcmp (argv[0], "update") == 0) {
+		if (argc < 2) {
+			fprintf (stderr, "too few arguments for %s keyword\n",
+				 argv[0]);
+			return 0;
+		}		
+		update_it ((argc - 1), &argv[1]);
 
-    } else if (strcmp(argv[0], "verbose") == 0) {
-	if (argc > 1) {
-	    fprintf(stderr, "Too many arguments for %s keyword\n", argv[0]);
-	} /* if */
-	Quiet_Flag = -1;
+	}
+	else if (strcmp (argv[0], "verbose") == 0) {
+		if (argc > 1) {
+			fprintf (stderr,
+				 "too many arguments for %s keyword\n",
+				 argv[0]);
+		}		
+		quiet_flag = -1;
 
-    } else if (strcmp(argv[0], "version") == 0) {
-	if (argc > 1) {
-	    fprintf(stderr, "Too many arguments for %s keyword\n", argv[0]);
-	} /* if */
-	printf("%s version 0.1\n", Command_Name);
+	}
+	else if (strcmp (argv[0], "version") == 0) {
+		if (argc > 1) {
+			fprintf (stderr,
+				 "too many arguments for %s keyword\n",
+				 argv[0]);
+		}		
+		printf ("%s version 0.1\n", command_name);
 
-    } else
-	fprintf(stderr, "Invalid keyword: %s\n", argv[0]);
+	}
+	else
+		fprintf (stderr, "invalid keyword: %s\n", argv[0]);
 
-    return 0;
-} /* Process_Command */
+	return 0;
+}
 
 
 /* 
- * Update_It - Update the SLURM configuration per the supplied arguments 
- * Input: argc - count of arguments
+ * update_it - update the slurm configuration per the supplied arguments 
+ * input: argc - count of arguments
  *        argv - list of arguments
- * Output: Returns 0 if no error, errno otherwise
+ * output: returns 0 if no error, errno otherwise
  */
-int  Update_It(int argc, char *argv[]) {
-    char *In_Line;
-    int Error_Code, i, In_Line_Size;
+int
+update_it (int argc, char *argv[]) {
+	char *in_line;
+	int error_code, i, in_line_size;
 
-    In_Line_Size = BUF_SIZE;
-    In_Line = (char *)malloc(In_Line_Size);
-    if (In_Line == NULL) {
-	fprintf(stderr, "%s: Error %d allocating memory\n", Command_Name, errno);
-	return ENOMEM;
-    } /* if */
-    strcpy(In_Line, "");
-	
-    for (i=0; i<argc; i++) {
-	if ((strlen(In_Line) + strlen(argv[i]) + 2) > In_Line_Size) {
-	    In_Line_Size += BUF_SIZE;
-	    In_Line = (char *)realloc(In_Line, In_Line_Size);
-	    if (In_Line == NULL) {
-		fprintf(stderr, "%s: Error %d allocating memory\n", Command_Name, errno);
+	in_line_size = BUF_SIZE;
+	in_line = (char *) malloc (in_line_size);
+	if (in_line == NULL) {
+		fprintf (stderr, "%s: error %d allocating memory\n",
+			 command_name, errno);
 		return ENOMEM;
-	    } /* if */
-	} /* if */
+	}			
+	strcpy (in_line, "");
 
-	strcat(In_Line, argv[i]);
-	strcat(In_Line, " ");
-    } /* for */
+	for (i = 0; i < argc; i++) {
+		if ((strlen (in_line) + strlen (argv[i]) + 2) > in_line_size) {
+			in_line_size += BUF_SIZE;
+			in_line = (char *) realloc (in_line, in_line_size);
+			if (in_line == NULL) {
+				fprintf (stderr,
+					 "%s: error %d allocating memory\n",
+					 command_name, errno);
+				return ENOMEM;
+			}	
+		}		
 
-    Error_Code = Update_Config(In_Line);
-    free(In_Line);
-    return Error_Code;
-} /* Update_It */
+		strcat (in_line, argv[i]);
+		strcat (in_line, " ");
+	}			
 
-/* Usage - Show the valid scontrol commands */
-void Usage() {
-    printf("%s [-q | -v] [<keyword>]\n", Command_Name);
-    printf("  -q is equivalent to the keyword \"quiet\" described below.\n");
-    printf("  -v is equivalent to the keyword \"verbose\" described below.\n");
-    printf("  <keyword> may be omitted from the execute line and %s will execute in interactive\n");
-    printf("    mode to process multiple keywords (i.e. commands). Valid <entity> values are:\n");
-    printf("    build, job, node, and partition. Node names may be sepcified using regular simple \n");
-    printf("    expressions. Valid <keyword> values are:\n");
-    printf("     exit                     Terminate this command.\n");
-    printf("     help                     Print this description of use.\n");
-    printf("     quiet                    Print no messages other than error messages.\n");
-    printf("     quit                     Terminate this command.\n");
-    printf("     reconfigure              Re-read configuration files.\n");
-    printf("     show <entity> [<ID>]     Display state of identified entity, default is all records.\n");
-    printf("     update <options>         Update configuration per configuration file format.\n");
-    printf("     verbose                  Enable detailed logging.\n");
-    printf("     version                  Display tool version number.\n");
-} /* Usage */
+	error_code = update_config (in_line);
+	free (in_line);
+	return error_code;
+}
+
+/* usage - show the valid scontrol commands */
+void
+usage () {
+	printf ("%s [-q | -v] [<keyword>]\n", command_name);
+	printf ("  -q is equivalent to the keyword \"quiet\" described below.\n");
+	printf ("  -v is equivalent to the keyword \"verbose\" described below.\n");
+	printf ("  <keyword> may be omitted from the execute line and %s will execute in interactive\n");
+	printf ("    mode to process multiple keywords (i.e. commands). valid <entity> values are:\n");
+	printf ("    build, job, node, and partition. node names may be sepcified using regular simple \n");
+	printf ("    expressions. valid <keyword> values are:\n");
+	printf ("     exit                     terminate this command.\n");
+	printf ("     help                     print this description of use.\n");
+	printf ("     quiet                    print no messages other than error messages.\n");
+	printf ("     quit                     terminate this command.\n");
+	printf ("     reconfigure              re-read configuration files.\n");
+	printf ("     show <entity> [<id>]     display state of identified entity, default is all records.\n");
+	printf ("     update <options>         update configuration per configuration file format.\n");
+	printf ("     verbose                  enable detailed logging.\n");
+	printf ("     version                  display tool version number.\n");
+}				/* usage */

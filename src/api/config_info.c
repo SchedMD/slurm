@@ -1,8 +1,8 @@
 /* 
- * partition_info.c - Get the partition information of SLURM
- * See slurm.h for documentation on external functions and data structures
+ * partition_info.c - get the partition information of slurm
+ * see slurm.h for documentation on external functions and data structures
  *
- * Author: Moe Jette, jette@llnl.gov
+ * author: moe jette, jette@llnl.gov
  */
 
 #ifdef HAVE_CONFIG_H
@@ -20,179 +20,227 @@
 #include "slurm.h"
 #include "slurmlib.h"
 
-char *Build_API_Buffer = NULL;
-int  Build_API_Buffer_Size = 0;
+static char *build_api_buffer = NULL;
+static int build_api_buffer_size = 0;
+static pthread_mutex_t build_api_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
-main(int argc, char * argv[]) {
-    char Req_Name[BUILD_SIZE], Next_Name[BUILD_SIZE], Value[BUILD_SIZE];
-    int Error_Code;
+main (int argc, char *argv[]) {
+	char req_name[BUILD_SIZE], next_name[BUILD_SIZE], value[BUILD_SIZE];
+	int error_code;
 
-    Error_Code = Load_Build();
-    if (Error_Code) {
-	printf("Load_Build error %d\n", Error_Code);
-	exit(1);
-    } /* if */
-    strcpy(Req_Name, "");	/* Start at beginning of build configuration list */
-    while (Error_Code == 0) {
-	Error_Code = Load_Build_Name(Req_Name, Next_Name, Value);
-	if (Error_Code != 0)  {
-	    printf("Load_Build_Name error %d finding %s\n", Error_Code, Req_Name);
-	    break;
-	} /* if */
+	error_code = slurm_load_build ();
+	if (error_code) {
+		printf ("slurm_load_build error %d\n", error_code);
+		exit (1);
+	}			
+	strcpy (req_name, "");	/* start at beginning of build configuration list */
+	while (error_code == 0) {
+		error_code = slurm_load_build_name (req_name, next_name, value);
+		if (error_code != 0) {
+			printf ("slurm_load_build_name error %d finding %s\n",
+				error_code, req_name);
+			break;
+		}		
 
-	printf("%s=%s\n", Req_Name, Value);
-	if (strlen(Next_Name) == 0) break;
-	strcpy(Req_Name, Next_Name);
-    } /* while */
-    Free_Build_Info();
-    exit(0);
-} /* main */
+		printf ("%s=%s\n", req_name, value);
+		if (strlen (next_name) == 0)
+			break;
+		strcpy (req_name, next_name);
+	}			
+	slurm_free_build_info ();
+	exit (0);
+}
 #endif
 
 
 /*
- * Free_Build_Info - Free the build information buffer (if allocated)
+ * slurm_free_build_info - free the build information buffer (if allocated)
+ * NOTE: buffer is loaded by load_build and used by load_build_name.
  */
-void Free_Build_Info(void) {
-    if (Build_API_Buffer) free(Build_API_Buffer);
-} /* Free_Build_Info */
+void slurm_free_build_info (void) {
+	pthread_mutex_lock(&build_api_mutex);
+	if (build_api_buffer)
+		free (build_api_buffer);
+	build_api_buffer = NULL;
+	pthread_mutex_unlock(&build_api_mutex);
+}
 
 
 /*
- * Load_Build - Update the build information buffer for use by info gathering APIs
- * Output: Returns 0 if no error, EINVAL if the buffer is invalid, ENOMEM if malloc failure
+ * slurm_load_build - update the build information buffer for use by info gathering APIs
+ * output: returns 0 if no error, EINVAL if the buffer is invalid, ENOMEM if malloc failure.
+ * NOTE: buffer is used by load_build_name and freed by free_build_info.
  */
-int Load_Build() {
-    int Buffer_Offset, Buffer_Size, Error_Code, In_Size, Version;
-    char *Buffer, *My_Line;
-    int sockfd;
-    struct sockaddr_in serv_addr;
-    unsigned long My_Time;
+int slurm_load_build () {
+	int buffer_offset, buffer_size, error_code, in_size, version;
+	char *buffer, *my_line;
+	int sockfd;
+	struct sockaddr_in serv_addr;
+	unsigned long my_time;
 
-    if (Build_API_Buffer) return 0;	/* Already loaded */
+	if (build_api_buffer)
+		return 0;	/* already loaded */
 
-    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) return EINVAL;
-    serv_addr.sin_family	= PF_INET;
-    serv_addr.sin_addr.s_addr	= inet_addr(SLURMCTLD_HOST);
-    serv_addr.sin_port  	= htons(SLURMCTLD_PORT);
-    if (connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-	close(sockfd); 
-	return EINVAL;
-    } /* if */
-    if (send(sockfd, "DumpBuild", 10, 0) < 10) {
-	close(sockfd); 
-	return EINVAL;
-    } /* if */
-    Buffer = NULL;
-    Buffer_Offset = 0;
-    Buffer_Size = 1024;
-    while (1) {
-    	Buffer = realloc(Buffer, Buffer_Size);
-	if (Buffer == NULL) {
-	    close(sockfd); 
-	    return ENOMEM;
-	} /* if */
-	In_Size = recv(sockfd, &Buffer[Buffer_Offset], (Buffer_Size-Buffer_Offset), 0);
-	if (In_Size <= 0) {	/* End if input */
-	    In_Size = 0; 
-	    break; 
-	} /* if */
-	Buffer_Offset +=  In_Size;
-	Buffer_Size += In_Size;
-    } /* while */
-    close(sockfd); 
-    Buffer_Size = Buffer_Offset + In_Size;
-    Buffer = realloc(Buffer, Buffer_Size);
-    if (Buffer == NULL) return ENOMEM;
+	if ((sockfd = socket (AF_INET, SOCK_STREAM, 0)) < 0)
+		return EINVAL;
+	serv_addr.sin_family = PF_INET;
+	serv_addr.sin_addr.s_addr = inet_addr (SLURMCTLD_HOST);
+	serv_addr.sin_port = htons (SLURMCTLD_PORT);
+	if (connect
+	    (sockfd, (struct sockaddr *) &serv_addr,
+	     sizeof (serv_addr)) < 0) {
+		close (sockfd);
+		return EINVAL;
+	}			
+	if (send (sockfd, "DumpBuild", 10, 0) < 10) {
+		close (sockfd);
+		return EINVAL;
+	}			
+	buffer = NULL;
+	buffer_offset = 0;
+	buffer_size = 1024;
+	while (1) {
+		buffer = realloc (buffer, buffer_size);
+		if (buffer == NULL) {
+			close (sockfd);
+			return ENOMEM;
+		}		
+		in_size =
+			recv (sockfd, &buffer[buffer_offset],
+			      (buffer_size - buffer_offset), 0);
+		if (in_size <= 0) {	/* end if input */
+			in_size = 0;
+			break;
+		}		
+		buffer_offset += in_size;
+		buffer_size += in_size;
+	}			
+	close (sockfd);
+	buffer_size = buffer_offset + in_size;
+	buffer = realloc (buffer, buffer_size);
+	if (buffer == NULL)
+		return ENOMEM;
 
-    Buffer_Offset = 0;
-    Error_Code = Read_Buffer(Buffer, &Buffer_Offset, Buffer_Size, &My_Line);
-    if ((Error_Code) || (strlen(My_Line) < strlen(HEAD_FORMAT))) {
+	buffer_offset = 0;
+	error_code =
+		read_buffer (buffer, &buffer_offset, buffer_size, &my_line);
+	if ((error_code) || (strlen (my_line) < strlen (HEAD_FORMAT))) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Load_Build: Node buffer lacks valid header\n");
+		fprintf (stderr,
+			 "load_build: node buffer lacks valid header\n");
 #else
-	syslog(LOG_ERR, "Load_Build: Node buffer lacks valid header\n");
+		syslog (LOG_ERR,
+			"load_build: node buffer lacks valid header\n");
 #endif
-	free(Buffer);
-	return EINVAL;
-    } /* if */
-    sscanf(My_Line, HEAD_FORMAT, &My_Time, &Version);
-    if (Version != BUILD_STRUCT_VERSION) {
+		free (buffer);
+		return EINVAL;
+	}			
+	sscanf (my_line, HEAD_FORMAT, &my_time, &version);
+	if (version != BUILD_STRUCT_VERSION) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Load_Build: expect version %d, read %d\n", BUILD_STRUCT_VERSION, Version);
+		fprintf (stderr, "load_build: expect version %d, read %d\n",
+			 BUILD_STRUCT_VERSION, version);
 #else
-	syslog(LOG_ERR, "Load_Build: expect version %d, read %d\n", BUILD_STRUCT_VERSION, Version);
+		syslog (LOG_ERR, "load_build: expect version %d, read %d\n",
+			BUILD_STRUCT_VERSION, version);
 #endif
-	free(Buffer);
-	return EINVAL;
-    } /* if */
+		free (buffer);
+		return EINVAL;
+	}			
 
-    Build_API_Buffer = Buffer;
-    Build_API_Buffer_Size = Buffer_Size;
-    return 0;
-} /* Load_Build */
+	pthread_mutex_lock(&build_api_mutex);
+	if (build_api_buffer) free(build_api_buffer);
+	build_api_buffer = buffer;
+	build_api_buffer_size = buffer_size;
+	pthread_mutex_unlock(&build_api_mutex);
+	return 0;
+}
 
 
 /* 
- * Load_Build_Name - Load the state information about the named build parameter
- * Input: Req_Name - Name of the parameter for which information is requested
+ * slurm_load_build_name - load the state information about the named build parameter
+ * input: req_name - name of the parameter for which information is requested
  *		     if "", then get info for the first parameter in list
- *        Next_Name - Location into which the name of the next parameter is 
+ *        next_name - location into which the name of the next parameter is 
  *                   stored, "" if no more
- *        Value - Pointer to location into which the information is to be stored
- * Output: Req_Name - The parameter's name is stored here
- *         Next_Name - The name of the next parameter in the list is stored here
- *         Value - The parameter's state information
- *         Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
- * NOTE:  Req_Name, Next_Name, and Value must be declared by caller with have 
+ *        value - pointer to location into which the information is to be stored
+ * output: req_name - the parameter's name is stored here
+ *         next_name - the name of the next parameter in the list is stored here
+ *         value - the parameter's state information
+ *         returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
+ * NOTE:  req_name, next_name, and value must be declared by caller with have 
  *        length BUILD_SIZE or larger
+ * NOTE: buffer is loaded by load_build and freed by free_build_info.
  */
-int Load_Build_Name(char *Req_Name, char *Next_Name, char *Value) {
-    int i, Error_Code, Version, Buffer_Offset;
-    static char Next_Build_Name[BUILD_SIZE] = "";
-    static Last_Buffer_Offset;
-    unsigned long My_Time;
-    char *My_Line;
-    char My_Build_Name[BUILD_SIZE], My_Build_Value[BUILD_SIZE];
+int slurm_load_build_name (char *req_name, char *next_name, char *value) {
+	int i, error_code, version, buffer_offset;
+	static char next_build_name[BUILD_SIZE] = "";
+	static last_buffer_offset;
+	unsigned long my_time;
+	char *my_line;
+	char my_build_name[BUILD_SIZE], my_build_value[BUILD_SIZE];
 
-    /* Load buffer's header (data structure version and time) */
-    Buffer_Offset = 0;
-    Error_Code = Read_Buffer(Build_API_Buffer, &Buffer_Offset, Build_API_Buffer_Size, &My_Line);
-    if (Error_Code) return Error_Code;
-    sscanf(My_Line, HEAD_FORMAT, &My_Time, &Version);
+	/* load buffer's header (data structure version and time) */
+	pthread_mutex_lock(&build_api_mutex);
+	buffer_offset = 0;
+	error_code =
+		read_buffer (build_api_buffer, &buffer_offset,
+			     build_api_buffer_size, &my_line);
+	if (error_code) {
+		pthread_mutex_unlock(&build_api_mutex);
+		return error_code;
+	}
+	sscanf (my_line, HEAD_FORMAT, &my_time, &version);
 
-    if ((strcmp(Req_Name, Next_Build_Name) == 0) && 
-         (strlen(Req_Name) != 0)) Buffer_Offset=Last_Buffer_Offset;
+	if ((strcmp (req_name, next_build_name) == 0) &&
+	    (strlen (req_name) != 0))
+		buffer_offset = last_buffer_offset;
 
-    while (1) {	
-	/* Load all info for next parameter */
-	Error_Code = Read_Buffer(Build_API_Buffer, &Buffer_Offset, Build_API_Buffer_Size, &My_Line);
-	if (Error_Code == EFAULT) break; /* End of buffer */
-	if (Error_Code) return Error_Code;
+	while (1) {
+		/* load all info for next parameter */
+		error_code =
+			read_buffer (build_api_buffer, &buffer_offset,
+				     build_api_buffer_size, &my_line);
+		if (error_code == EFAULT)
+			break;	/* end of buffer */
+		if (error_code) {
+			pthread_mutex_unlock(&build_api_mutex);
+			return error_code;
+		}
 
-	i=sscanf(My_Line, BUILD_STRUCT_FORMAT, My_Build_Name, My_Build_Value);
-	if (i == 1) strcpy(My_Build_Value, "");		/* empty string passed */
-	if (strlen(Req_Name) == 0)  strncpy(Req_Name, My_Build_Name, BUILD_SIZE);
+		i = sscanf (my_line, BUILD_STRUCT_FORMAT, my_build_name,
+			    my_build_value);
+		if (i == 1)
+			strcpy (my_build_value, "");	/* empty string passed */
+		if (strlen (req_name) == 0)
+			strncpy (req_name, my_build_name, BUILD_SIZE);
 
-	/* Check if this is requested parameter */ 
-	if (strcmp(Req_Name, My_Build_Name) != 0) continue;
+		/* check if this is requested parameter */
+		if (strcmp (req_name, my_build_name) != 0)
+			continue;
 
-	/*Load values to be returned */
-	strncpy(Value, My_Build_Value, BUILD_SIZE);
+		/*load values to be returned */
+		strncpy (value, my_build_value, BUILD_SIZE);
 
-	Last_Buffer_Offset = Buffer_Offset;
-	Error_Code = Read_Buffer(Build_API_Buffer, &Buffer_Offset, Build_API_Buffer_Size, &My_Line);
-	if (Error_Code) {	/* No more records */
-	    strcpy(Next_Build_Name, "");
-	    strcpy(Next_Name, "");
-	} else {
-	    sscanf(My_Line, BUILD_STRUCT_FORMAT, My_Build_Name, My_Build_Value);
-	    strncpy(Next_Build_Name, My_Build_Name, BUILD_SIZE);
-	    strncpy(Next_Name, My_Build_Name, BUILD_SIZE);
-	} /* else */
-	return 0;
-    } /* while */
-    return ENOENT;
-} /* Load_Build_Name */
+		last_buffer_offset = buffer_offset;
+		error_code =
+			read_buffer (build_api_buffer, &buffer_offset,
+				     build_api_buffer_size, &my_line);
+		if (error_code) {	/* no more records */
+			strcpy (next_build_name, "");
+			strcpy (next_name, "");
+		}
+		else {
+			sscanf (my_line, BUILD_STRUCT_FORMAT, my_build_name,
+				my_build_value);
+			strncpy (next_build_name, my_build_name, BUILD_SIZE);
+			strncpy (next_name, my_build_name, BUILD_SIZE);
+		}		
+		pthread_mutex_unlock(&build_api_mutex);
+		return 0;
+	}			
+	pthread_mutex_unlock(&build_api_mutex);
+	return ENOENT;
+}

@@ -1,12 +1,12 @@
 /*
- * read_config.c - Read the overall SLURM configuration file
- * See slurm.h for documentation on external functions and data structures
+ * read_config.c - read the overall slurm configuration file
+ * see slurm.h for documentation on external functions and data structures
  *
  * NOTE: DEBUG_MODULE mode test with execution line
- *	read_config ../../etc/SLURM.conf1
- *	read_config ../../etc/SLURM.conf1 1000
+ *	read_config ../../etc/slurm.conf1
+ *	read_config ../../etc/slurm.conf1 1000
  *
- * Author: Moe Jette, jette@llnl.gov
+ * author: moe jette, jette@llnl.gov
  */
 
 #ifdef HAVE_CONFIG_H
@@ -25,715 +25,919 @@
 #define BUF_SIZE 1024
 #define NO_VAL (-99)
 
-int 	Parse_Node_Spec(char *In_Line);
-int 	Parse_Part_Spec(char *In_Line);
+int parse_node_spec (char *in_line);
+int parse_part_spec (char *in_line);
 
-char *BackupController = NULL;
-char *ControlMachine  = NULL;
+char *backup_controller = NULL;
+char *control_machine = NULL;
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
-main(int argc, char * argv[]) {
-    int Error_Code, Start_Inx, End_Inx, Count_Inx;
-    char Out_Line[BUF_SIZE];
-    char *Format, *NodeName, *BitMap;
-    char *Partitions[] = {"login", "debug", "batch", "class", "END"};
-    struct Part_Record *Part_Ptr;
-    int cycles, i, found;
+main (int argc, char *argv[]) {
+	int error_code, start_inx, end_inx, count_inx;
+	char out_line[BUF_SIZE];
+	char *format, *node_name, *bitmap;
+	char *partitions[] = { "login", "debug", "batch", "class", "end" };
+	struct part_record *part_ptr;
+	int cycles, i, found;
 
-    if (argc > 3) {
-	printf("Usage: %s <in_file> <cnt>\n", argv[0]);
-	exit(1);
-    } /* if */
+	if (argc > 3) {
+		printf ("usage: %s <in_file> <cnt>\n", argv[0]);
+		exit (1);
+	}			
 
-    Error_Code = Init_SLURM_Conf();
-    if (Error_Code != 0) exit(Error_Code);
+	error_code = init_slurm_conf ();
+	if (error_code != 0)
+		exit (error_code);
 
-    if (argc >= 2) 
-	Error_Code = Read_SLURM_Conf(argv[1]);
-    else
-	Error_Code = Read_SLURM_Conf(SLURM_CONF);
+	if (argc >= 2)
+		error_code = read_slurm_conf (argv[1]);
+	else
+		error_code = read_slurm_conf (SLURM_CONF);
 
-    if (Error_Code) {
-	printf("Error %d from Read_SLURM_Conf\n", Error_Code);
-	exit(1);
-    } /* if */
+	if (error_code) {
+		printf ("error %d from read_slurm_conf\n", error_code);
+		exit (1);
+	}			
 
-    printf("ControlMachine=%s\n", ControlMachine);
-    printf("BackupController=%s\n", BackupController);
-    printf("\n");
+	printf ("ControlMachine=%s\n", control_machine);
+	printf ("BackupController=%s\n", backup_controller);
+	printf ("\n");
 
-    for (i=0; i<Node_Record_Count; i++) {
-	if (strlen(Node_Record_Table_Ptr[i].Name) == 0) continue;
-	printf("NodeName=%s ",      Node_Record_Table_Ptr[i].Name);
-	printf("NodeState=%s ",     Node_State_String[Node_Record_Table_Ptr[i].NodeState]);
-	printf("LastResponse=%ld ", (long)Node_Record_Table_Ptr[i].LastResponse);
+	for (i = 0; i < node_record_count; i++) {
+		if (strlen (node_record_table_ptr[i].name) == 0)
+			continue;
+		printf ("NodeName=%s ", node_record_table_ptr[i].name);
+		printf ("NodeState=%s ",
+			node_state_string[node_record_table_ptr[i].
+					  node_state]);
+		printf ("LastResponse=%ld ",
+			(long) node_record_table_ptr[i].last_response);
 
-	printf("CPUs=%d ",          Node_Record_Table_Ptr[i].CPUs);
-	printf("RealMemory=%d ",    Node_Record_Table_Ptr[i].RealMemory);
-	printf("TmpDisk=%d ",       Node_Record_Table_Ptr[i].TmpDisk);
-	printf("Weight=%d ",        Node_Record_Table_Ptr[i].Config_Ptr->Weight);
-	printf("Feature=%s\n",      Node_Record_Table_Ptr[i].Config_Ptr->Feature);
-    } /* for */
-    BitMap = BitMapPrint(Up_NodeBitMap);
-    printf("\nUp_NodeBitMap  =%s\n", BitMap);
-    free(BitMap);
-    BitMap = BitMapPrint(Idle_NodeBitMap);
-    printf("Idle_NodeBitMap=%s\n\n", BitMap);
-    free(BitMap);
+		printf ("CPUs=%d ", node_record_table_ptr[i].cpus);
+		printf ("RealMemory=%d ",
+			node_record_table_ptr[i].real_memory);
+		printf ("TmpDisk=%d ", node_record_table_ptr[i].tmp_disk);
+		printf ("Weight=%d ",
+			node_record_table_ptr[i].config_ptr->weight);
+		printf ("Feature=%s\n",
+			node_record_table_ptr[i].config_ptr->feature);
+	}			
+	bitmap = bitmap_print (up_node_bitmap);
+	printf ("\nup_node_bitmap  =%s\n", bitmap);
+	free (bitmap);
+	bitmap = bitmap_print (idle_node_bitmap);
+	printf ("idle_node_bitmap=%s\n\n", bitmap);
+	free (bitmap);
 
-    printf("Default_Part_Name=%s\n", Default_Part_Name);
-    found = 0;
-    for (i=0; ;i++) {
-	if (strcmp(Partitions[i], "END") == 0) {
-	    if (found) break;
-	    Part_Ptr = Default_Part_Loc;
-	} else {
-	    Part_Ptr = list_find_first(Part_List, &List_Find_Part, Partitions[i]);
-	    if (Part_Ptr == Default_Part_Loc) found = 1;
-	} /* else */
-	if (Part_Ptr == NULL) continue;
-	printf("PartitionName=%s ",     Part_Ptr->Name);
-	printf("MaxTime=%d ",           Part_Ptr->MaxTime);
-	printf("MaxNodes=%d ",          Part_Ptr->MaxNodes);
-	printf("Key=%d ",               Part_Ptr->Key);
-	printf("StateUp=%d ",           Part_Ptr->StateUp);
-	printf("Shared=%d ",            Part_Ptr->Shared);
-	printf("Nodes=%s ",             Part_Ptr->Nodes);
-	printf("TotalNodes=%d ",        Part_Ptr->TotalNodes);
-	printf("TotalCPUs=%d ",         Part_Ptr->TotalCPUs);
-	printf("AllowGroups=%s  ",      Part_Ptr->AllowGroups);
-	BitMap = BitMapPrint(Part_Ptr->NodeBitMap);
-	printf("NodeBitMap=%s\n",	BitMap);
-	if (BitMap) free(BitMap);
-    } /* for */
-    if (argc < 3) exit(0);
+	printf ("default_part_name=%s\n", default_part_name);
+	found = 0;
+	for (i = 0;; i++) {
+		if (strcmp (partitions[i], "end") == 0) {
+			if (found)
+				break;
+			part_ptr = default_part_loc;
+		}
+		else {
+			part_ptr =
+				list_find_first (part_list, &list_find_part,
+						 partitions[i]);
+			if (part_ptr == default_part_loc)
+				found = 1;
+		}		/* else */
+		if (part_ptr == NULL)
+			continue;
+		printf ("PartitionName=%s ", part_ptr->name);
+		printf ("MaxTime=%d ", part_ptr->max_time);
+		printf ("MaxNodes=%d ", part_ptr->max_nodes);
+		printf ("Key=%d ", part_ptr->key);
+		printf ("State=%d ", part_ptr->state_up);
+		printf ("Shared=%d ", part_ptr->shared);
+		printf ("Nodes=%s ", part_ptr->nodes);
+		printf ("AllowGroups=%s  ", part_ptr->allow_groups);
+		printf ("total_nodes=%d ", part_ptr->total_nodes);
+		printf ("total_cpus=%d ", part_ptr->total_cpus);
+		bitmap = bitmap_print (part_ptr->node_bitmap);
+		printf ("node_bitmap=%s\n", bitmap);
+		if (bitmap)
+			free (bitmap);
+	}			
+	if (argc < 3)
+		exit (0);
 
-    cycles = atoi(argv[2]);
-    printf("Let's reinitialize the database %d times. Run /bin/ps to get memory size.\n", cycles);
-    sleep(5);
-    for (i=0; i<cycles; i++) {
-	Error_Code = Init_SLURM_Conf();
-	if (Error_Code) {
-	    printf("Error %d from Init_SLURM_Conf\n", Error_Code);
-	    exit(Error_Code);
-	} /* if */
+	cycles = atoi (argv[2]);
+	printf ("let's reinitialize the database %d times. run /bin/ps to get memory size.\n", cycles);
+	sleep (5);
+	for (i = 0; i < cycles; i++) {
+		error_code = init_slurm_conf ();
+		if (error_code) {
+			printf ("error %d from init_slurm_conf\n",
+				error_code);
+			exit (error_code);
+		}		
 
-	Error_Code = Read_SLURM_Conf(argv[1]);
-	if (Error_Code) {
-	    printf("Error %d from Read_SLURM_Conf\n", Error_Code);
-	    exit(Error_Code);
-	} /* if */
-    } /* for */
-    printf("All done. Run /bin/ps again look for increase in memory size (leakage).\n");
-    sleep(10);
+		error_code = read_slurm_conf (argv[1]);
+		if (error_code) {
+			printf ("error %d from read_slurm_conf\n",
+				error_code);
+			exit (error_code);
+		}		
+	}			
+	printf ("all done. run /bin/ps again look for increase in memory size (leakage).\n");
+	sleep (10);
 
-    exit(0);
-} /* main */
+	exit (0);
+}
 #endif
 
 
 /*
- * Build_BitMaps - Build node bitmaps to define which nodes are in which 
- *    1) Partition  2) Configuration record  3) UP state  4) IDLE state
- *    Also sets values of TotalNodes and TotalCPUs for every partition.
- * Output: Returns 0 if no error, errno otherwise
+ * build_bitmaps - build node bitmaps to define which nodes are in which 
+ *    1) partition  2) configuration record  3) up state  4) idle state
+ *    also sets values of total_nodes and total_cpus for every partition.
+ * output: returns 0 if no error, errno otherwise
  */
-int Build_BitMaps() {
-    int i, j, size, Error_Code;
-    ListIterator Config_Record_Iterator;	/* For iterating through Config_Record */
-    ListIterator Part_Record_Iterator;		/* For iterating through Part_Record_List */
-    struct Config_Record *Config_Record_Point;	/* Pointer to Config_Record */
-    struct Part_Record *Part_Record_Point;	/* Pointer to Part_Record */
-    struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
-    unsigned *AllPart_NodeBitMap;
-    char *Format, This_Node_Name[BUF_SIZE];
-    int Start_Inx, End_Inx, Count_Inx;
-    char *My_Node_List, *str_ptr1, *str_ptr2;
+int build_bitmaps () {
+	int i, j, size, error_code;
+	ListIterator config_record_iterator;	/* for iterating through config_record */
+	ListIterator part_record_iterator;	/* for iterating through part_record_list */
+	struct config_record *config_record_point;	/* pointer to config_record */
+	struct part_record *part_record_point;	/* pointer to part_record */
+	struct node_record *node_record_point;	/* pointer to node_record */
+	unsigned *all_part_node_bitmap;
+	char *format, this_node_name[BUF_SIZE];
+	int start_inx, end_inx, count_inx;
+	char *my_node_list, *str_ptr1, *str_ptr2;
 
-    Error_Code = 0;
-    Last_Node_Update = time(NULL);
-    Last_Part_Update = time(NULL);
-    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / 
-		(sizeof(unsigned)*8); 	/* Unsigned int records in bitmap */
-    size *= 8;				/* Bytes in bitmap */
+	error_code = 0;
+	last_node_update = time (NULL);
+	last_part_update = time (NULL);
+	size = (node_record_count + (sizeof (unsigned) * 8) - 1) / (sizeof (unsigned) * 8);	
+				/* unsigned int records in bitmap */
+	size *= 8;		/* bytes in bitmap */
 
-    /* Initialize the Idle and Up bitmaps */
-    if (Idle_NodeBitMap) free(Idle_NodeBitMap);
-    if (Up_NodeBitMap)   free(Up_NodeBitMap);
-    Idle_NodeBitMap = (unsigned *)malloc(size);
-    Up_NodeBitMap   = (unsigned *)malloc(size);
-    if ((Idle_NodeBitMap == NULL) || (Up_NodeBitMap == NULL)) {
+	/* initialize the idle and up bitmaps */
+	if (idle_node_bitmap)
+		free (idle_node_bitmap);
+	if (up_node_bitmap)
+		free (up_node_bitmap);
+	idle_node_bitmap = (unsigned *) malloc (size);
+	up_node_bitmap = (unsigned *) malloc (size);
+	if ((idle_node_bitmap == NULL) || (up_node_bitmap == NULL)) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Build_BitMaps: unable to allocate memory\n");
+		fprintf (stderr,
+			 "build_bitmaps: unable to allocate memory\n");
 #else
-	syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
+		syslog (log_alert,
+			"build_bitmaps: unable to allocate memory\n");
 #endif
-	abort();
-    } /* if */
-    memset(Idle_NodeBitMap, 0, size);
-    memset(Up_NodeBitMap, 0, size);
+		abort ();
+	}			
+	memset (idle_node_bitmap, 0, size);
+	memset (up_node_bitmap, 0, size);
 
-    /* Initialize the configuration bitmaps */
-    Config_Record_Iterator = list_iterator_create(Config_List);
-    if (Config_Record_Iterator == NULL) {
+	/* initialize the configuration bitmaps */
+	config_record_iterator = list_iterator_create (config_list);
+	if (config_record_iterator == NULL) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Build_BitMaps: list_iterator_create unable to allocate memory\n");
+		fprintf (stderr,
+			 "build_bitmaps: list_iterator_create unable to allocate memory\n");
 #else
-	syslog(LOG_ALERT, "Build_BitMaps: list_iterator_create unable to allocate memory\n");
+		syslog (log_alert,
+			"build_bitmaps: list_iterator_create unable to allocate memory\n");
 #endif
-	abort();
-    } /* if */
-    while (Config_Record_Point = (struct Config_Record *)list_next(Config_Record_Iterator)) {
-	if (Config_Record_Point->NodeBitMap) free(Config_Record_Point->NodeBitMap);
-	Config_Record_Point->NodeBitMap = (unsigned *)malloc(size);
-	if (Config_Record_Point->NodeBitMap == NULL) {
+		abort ();
+	}			
+	while (config_record_point =
+	       (struct config_record *) list_next (config_record_iterator)) {
+		if (config_record_point->node_bitmap)
+			free (config_record_point->node_bitmap);
+		config_record_point->node_bitmap = (unsigned *) malloc (size);
+		if (config_record_point->node_bitmap == NULL) {
 #if DEBUG_SYSTEM
-	    fprintf(stderr, "Build_BitMaps: unable to allocate memory\n");
+			fprintf (stderr,
+				 "build_bitmaps: unable to allocate memory\n");
 #else
-	    syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
+			syslog (log_alert,
+				"build_bitmaps: unable to allocate memory\n");
 #endif
-	    abort();
-	} /* if */
-	memset(Config_Record_Point->NodeBitMap, 0, size);
-    } /* while */
-    list_iterator_destroy(Config_Record_Iterator);
+			abort ();
+		}		
+		memset (config_record_point->node_bitmap, 0, size);
+	}			
+	list_iterator_destroy (config_record_iterator);
 
-    /* Scan all nodes and identify which are UP and IDLE and their configuration */
-    for (i=0; i<Node_Record_Count; i++) {
-	if (strlen(Node_Record_Table_Ptr[i].Name) == 0) continue;	/* Defunct */
-	if (Node_Record_Table_Ptr[i].NodeState == STATE_IDLE) BitMapSet(Idle_NodeBitMap, i);
-	if (Node_Record_Table_Ptr[i].NodeState != STATE_DOWN) BitMapSet(Up_NodeBitMap, i);
-	if (Node_Record_Table_Ptr[i].Config_Ptr) 
-		BitMapSet(Node_Record_Table_Ptr[i].Config_Ptr->NodeBitMap, i);
-    } /* for */
+	/* scan all nodes and identify which are up and idle and their configuration */
+	for (i = 0; i < node_record_count; i++) {
+		if (strlen (node_record_table_ptr[i].name) == 0)
+			continue;	/* defunct */
+		if (node_record_table_ptr[i].node_state == STATE_IDLE)
+			bitmap_set (idle_node_bitmap, i);
+		if (node_record_table_ptr[i].node_state > STATE_DOWN)
+			bitmap_set (up_node_bitmap, i);
+		if (node_record_table_ptr[i].config_ptr)
+			bitmap_set (node_record_table_ptr[i].config_ptr->
+				    node_bitmap, i);
+	}			
 
-    /* Scan partition table and identify nodes in each */
-    AllPart_NodeBitMap = (unsigned *)malloc(size);
-    if (AllPart_NodeBitMap == NULL) {
+	/* scan partition table and identify nodes in each */
+	all_part_node_bitmap = (unsigned *) malloc (size);
+	if (all_part_node_bitmap == NULL) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Build_BitMaps: unable to allocate memory\n");
+		fprintf (stderr,
+			 "build_bitmaps: unable to allocate memory\n");
 #else
-	syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
+		syslog (log_alert,
+			"build_bitmaps: unable to allocate memory\n");
 #endif
-	abort();
-    } /* if */
-    memset(AllPart_NodeBitMap, 0, size);
-    Part_Record_Iterator = list_iterator_create(Part_List);
-    if (Part_Record_Iterator == NULL) {
+		abort ();
+	}			
+	memset (all_part_node_bitmap, 0, size);
+	part_record_iterator = list_iterator_create (part_list);
+	if (part_record_iterator == NULL) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Build_BitMaps: list_iterator_create unable to allocate memory\n");
+		fprintf (stderr,
+			 "build_bitmaps: list_iterator_create unable to allocate memory\n");
 #else
-	syslog(LOG_ALERT, "Build_BitMaps: list_iterator_create unable to allocate memory\n");
+		syslog (log_alert,
+			"build_bitmaps: list_iterator_create unable to allocate memory\n");
 #endif
-	abort();
-    } /* if */
-    while (Part_Record_Point = (struct Part_Record *)list_next(Part_Record_Iterator)) {
-	if (Part_Record_Point->NodeBitMap) free(Part_Record_Point->NodeBitMap);
-	Part_Record_Point->NodeBitMap = (unsigned *)malloc(size);
-	if (Part_Record_Point->NodeBitMap == NULL) {
+		abort ();
+	}			
+	while (part_record_point =
+	       (struct part_record *) list_next (part_record_iterator)) {
+		if (part_record_point->node_bitmap)
+			free (part_record_point->node_bitmap);
+		part_record_point->node_bitmap = (unsigned *) malloc (size);
+		if (part_record_point->node_bitmap == NULL) {
 #if DEBUG_SYSTEM
-	    fprintf(stderr, "Build_BitMaps: unable to allocate memory\n");
+			fprintf (stderr,
+				 "build_bitmaps: unable to allocate memory\n");
 #else
-	    syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
+			syslog (log_alert,
+				"build_bitmaps: unable to allocate memory\n");
 #endif
-	    abort();
-	} /* if */
-	memset(Part_Record_Point->NodeBitMap, 0, size);
+			abort ();
+		}		
+		memset (part_record_point->node_bitmap, 0, size);
 
-	/* Check for each node in the partition */
-	if ((Part_Record_Point->Nodes == NULL) || 
-	    (strlen(Part_Record_Point->Nodes) == 0)) continue;
-	My_Node_List = (char *)malloc(strlen(Part_Record_Point->Nodes)+1);
-	if (My_Node_List == NULL) {
+		/* check for each node in the partition */
+		if ((part_record_point->nodes == NULL) ||
+		    (strlen (part_record_point->nodes) == 0))
+			continue;
+		my_node_list =
+			(char *) malloc (strlen (part_record_point->nodes) +
+					 1);
+		if (my_node_list == NULL) {
 #if DEBUG_SYSTEM
-	    fprintf(stderr, "Build_BitMaps: unable to allocate memory\n");
+			fprintf (stderr,
+				 "build_bitmaps: unable to allocate memory\n");
 #else
-	    syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
+			syslog (log_alert,
+				"build_bitmaps: unable to allocate memory\n");
 #endif
-	    abort();
-	} /* if */
-	strcpy(My_Node_List, Part_Record_Point->Nodes);
-	str_ptr2 = (char *)strtok_r(My_Node_List, ",", &str_ptr1);
-	while (str_ptr2) {	/* Break apart by comma separators */
-	    Error_Code = Parse_Node_Name(str_ptr2, &Format, &Start_Inx, &End_Inx, &Count_Inx);
-	    if (Error_Code) continue;
-	    if (strlen(Format) >= sizeof(This_Node_Name)) {
+			abort ();
+		}		
+		strcpy (my_node_list, part_record_point->nodes);
+		str_ptr2 = (char *) strtok_r (my_node_list, ",", &str_ptr1);
+		while (str_ptr2) {	/* break apart by comma separators */
+			error_code =
+				parse_node_name (str_ptr2, &format,
+						 &start_inx, &end_inx,
+						 &count_inx);
+			if (error_code)
+				continue;
+			if (strlen (format) >= sizeof (this_node_name)) {
 #if DEBUG_SYSTEM
-		fprintf(stderr, "Build_BitMaps: Node name specification too long: %s\n", Format);
+				fprintf (stderr,
+					 "build_bitmaps: node name specification too long: %s\n",
+					 format);
 #else
-		syslog(LOG_ERR, "Build_BitMaps: Node name specification too long: %s\n", Format);
+				syslog (log_err,
+					"build_bitmaps: node name specification too long: %s\n",
+					format);
 #endif
-		free(Format);
-		continue;
-	    } /* if */
-	    for (i=Start_Inx; i<=End_Inx; i++) {
-		if (Count_Inx == 0) 
-		    strncpy(This_Node_Name, Format, sizeof(This_Node_Name));
-		else
-		    sprintf(This_Node_Name, Format, i);
-		Node_Record_Point = Find_Node_Record(This_Node_Name);
-		if (Node_Record_Point == NULL) {
+				free (format);
+				continue;
+			}	
+			for (i = start_inx; i <= end_inx; i++) {
+				if (count_inx == 0)
+					strncpy (this_node_name, format,
+						 sizeof (this_node_name));
+				else
+					sprintf (this_node_name, format, i);
+				node_record_point =
+					find_node_record (this_node_name);
+				if (node_record_point == NULL) {
 #if DEBUG_SYSTEM
-		    fprintf(stderr, "Build_BitMaps: Invalid node specified %s\n", This_Node_Name);
+					fprintf (stderr,
+						 "build_bitmaps: invalid node specified %s\n",
+						 this_node_name);
 #else
-		    syslog(LOG_ERR, "Build_BitMaps: Invalid node specified %s\n", This_Node_Name);
+					syslog (log_err,
+						"build_bitmaps: invalid node specified %s\n",
+						this_node_name);
 #endif
-		    continue;
-		} /* if */
-		j = Node_Record_Point - Node_Record_Table_Ptr;
-		if (BitMapValue(AllPart_NodeBitMap, j) == 1) {
+					continue;
+				}	
+				j = node_record_point - node_record_table_ptr;
+				if (bitmap_value (all_part_node_bitmap, j) ==
+				    1) {
 #if DEBUG_SYSTEM
-		    fprintf(stderr, "Build_BitMaps: Node %s defined in more than one partition\n", 
-			This_Node_Name);
-		    fprintf(stderr, "Build_BitMaps: Only the first partition's specification is honored\n");
+					fprintf (stderr,
+						 "build_bitmaps: node %s defined in more than one partition\n",
+						 this_node_name);
+					fprintf (stderr,
+						 "build_bitmaps: only the first partition's specification is honored\n");
 #else
-		    syslog(LOG_ERR, "Build_BitMaps: Node %s defined in more than one partition\n", 
-			This_Node_Name);
-		    syslog(LOG_ERR, "Build_BitMaps: Only the first partition's specification is honored\n");
+					syslog (log_err,
+						"build_bitmaps: node %s defined in more than one partition\n",
+						this_node_name);
+					syslog (log_err,
+						"build_bitmaps: only the first partition's specification is honored\n");
 #endif
-		} else {
-		    BitMapSet(Part_Record_Point->NodeBitMap, j);
-		    BitMapSet(AllPart_NodeBitMap, j);
-		    Part_Record_Point->TotalNodes++;
-		    Part_Record_Point->TotalCPUs += Node_Record_Point->CPUs;
-		    Node_Record_Point->Partition_Ptr = Part_Record_Point;
-		} /* else */
-	    } /* for */
-	    free(Format);
-	    str_ptr2 = (char *)strtok_r(NULL, ",", &str_ptr1);
-	} /* while (str_ptr2 */
-	free(My_Node_List);
-    } /* while (Part_Record_Point */
-    list_iterator_destroy(Part_Record_Iterator);
-    free(AllPart_NodeBitMap);
-    return Error_Code;
-} /* Build_BitMaps */
+				}
+				else {
+					bitmap_set (part_record_point->
+						    node_bitmap, j);
+					bitmap_set (all_part_node_bitmap, j);
+					part_record_point->total_nodes++;
+					part_record_point->total_cpus +=
+						node_record_point->cpus;
+					node_record_point->partition_ptr =
+						part_record_point;
+				}	/* else */
+			}	
+			free (format);
+			str_ptr2 = (char *) strtok_r (NULL, ",", &str_ptr1);
+		}		/* while (str_ptr2 */
+		free (my_node_list);
+	}			/* while (part_record_point */
+	list_iterator_destroy (part_record_iterator);
+	free (all_part_node_bitmap);
+	return error_code;
+}
 
 
 /* 
- * Init_SLURM_Conf - Initialize or re-initialize the SLURM configuration  
- *	values. This should be called before calling Read_SLURM_Conf.  
- * Output: return value - 0 if no error, otherwise an error code
+ * init_slurm_conf - initialize or re-initialize the slurm configuration  
+ *	values. this should be called before calling read_slurm_conf.  
+ * output: return value - 0 if no error, otherwise an error code
  */
-int Init_SLURM_Conf() {
-    int Error_Code;
+int init_slurm_conf () {
+	int error_code;
 
-    if (ControlMachine)   {
-	free(ControlMachine);
-	ControlMachine = NULL;
-    }
-    if (BackupController) {
- 	free(BackupController);
-	BackupController = NULL;
-    }
+	if (control_machine) {
+		free (control_machine);
+		control_machine = NULL;
+	}
+	if (backup_controller) {
+		free (backup_controller);
+		backup_controller = NULL;
+	}
 
-    Error_Code = Init_Node_Conf();
-    if (Error_Code) return Error_Code;
+	error_code = init_node_conf ();
+	if (error_code)
+		return error_code;
 
-    Error_Code = Init_Part_Conf();
-    if (Error_Code) return Error_Code;
+	error_code = init_part_conf ();
+	if (error_code)
+		return error_code;
 
-    return 0;
-} /* Init_SLURM_Conf */
+	return 0;
+}
 
 
 /* 
- * Parse_Node_Spec - Parse the node specification, build table and set values
- * Input:  In_Line line from the configuration file
- * Output: In_Line parsed keywords and values replaced by blanks
+ * parse_node_spec - parse the node specification, build table and set values
+ * input:  in_line line from the configuration file
+ * output: in_line parsed keywords and values replaced by blanks
  *         return value 0 if no error, error code otherwise
  */
-int Parse_Node_Spec (char *In_Line) {
-    char *NodeName, *State, *Feature, *Format, This_Node_Name[BUF_SIZE];
-    int Start_Inx, End_Inx, Count_Inx;
-    int Error_Code, i;
-    int State_Val, CPUs_Val, RealMemory_Val, TmpDisk_Val, Weight_Val;
-    struct Node_Record *Node_Record_Point;
-    struct Config_Record *Config_Point;
-    char *str_ptr1, *str_ptr2;
+int parse_node_spec (char *in_line) {
+	char *node_name, *state, *feature, *format, this_node_name[BUF_SIZE];
+	int start_inx, end_inx, count_inx;
+	int error_code, i;
+	int state_val, cpus_val, real_memory_val, tmp_disk_val, weight_val;
+	struct node_record *node_record_point;
+	struct config_record *config_point;
+	char *str_ptr1, *str_ptr2;
 
-    NodeName = State = Feature = (char *)NULL;
-    CPUs_Val = RealMemory_Val = State_Val = NO_VAL;
-    TmpDisk_Val = Weight_Val = NO_VAL;
-    if (Error_Code=Load_String(&NodeName, "NodeName=", In_Line))      return Error_Code;
-    if (NodeName == NULL) return 0;	/* No Node info */
+	node_name = state = feature = (char *) NULL;
+	cpus_val = real_memory_val = state_val = NO_VAL;
+	tmp_disk_val = weight_val = NO_VAL;
+	if (error_code = load_string (&node_name, "NodeName=", in_line))
+		return error_code;
+	if (node_name == NULL)
+		return 0;	/* no node info */
 
-    if (Error_Code == 0) Error_Code = Load_Integer(&CPUs_Val, "CPUs=", In_Line);
-    if (Error_Code == 0) Error_Code = Load_Integer(&RealMemory_Val, "RealMemory=", In_Line);
-    if (Error_Code == 0) Error_Code = Load_Integer(&TmpDisk_Val, "TmpDisk=", In_Line);
-    if (Error_Code == 0) Error_Code = Load_Integer(&Weight_Val, "Weight=", In_Line);
-    if (Error_Code != 0) {
-	free(NodeName);
-	return Error_Code;
-    } /* if */
+	if (error_code == 0)
+		error_code = load_integer (&cpus_val, "CPUs=", in_line);
+	if (error_code == 0)
+		error_code =
+			load_integer (&real_memory_val, "RealMemory=",
+				      in_line);
+	if (error_code == 0)
+		error_code =
+			load_integer (&tmp_disk_val, "TmpDisk=", in_line);
+	if (error_code == 0)
+		error_code = load_integer (&weight_val, "Weight=", in_line);
+	if (error_code != 0) {
+		free (node_name);
+		return error_code;
+	}			
 
-    if (Error_Code=Load_String (&State, "State=", In_Line))           return Error_Code;
-    if (State != NULL) {
-	for (i=0; i<=STATE_END; i++) {
-	    if (strcmp(Node_State_String[i], "END") == 0) break;
-	    if (strcmp(Node_State_String[i], State) == 0) {
-		State_Val = i;
-		break;
-	    } /* if */
-	} /* for */
-	if (State_Val == NO_VAL) {
+	if (error_code = load_string (&state, "State=", in_line))
+		return error_code;
+	if (state != NULL) {
+		for (i = 0; i <= STATE_END; i++) {
+			if (strcmp (node_state_string[i], "END") == 0)
+				break;
+			if (strcmp (node_state_string[i], state) == 0) {
+				state_val = i;
+				break;
+			}	
+		}		
+		if (state_val == NO_VAL) {
 #if DEBUG_SYSTEM
-	    fprintf(stderr, "Parse_Node_Spec: Invalid State %s for NodeName %s\n", State, NodeName);
+			fprintf (stderr,
+				 "parse_node_spec: invalid state %s for node_name %s\n",
+				 state, node_name);
 #else
-	    syslog(LOG_ERR, "Parse_Node_Spec: Invalid State %s for NodeName %s\n", State, NodeName);
+			syslog (log_err,
+				"parse_node_spec: invalid state %s for node_name %s\n",
+				state, node_name);
 #endif
-	    free(NodeName);
-	    free(State);
-	    return EINVAL;
-	} /* if */
-	free(State);
-    } /* if */
+			free (node_name);
+			free (state);
+			return EINVAL;
+		}		
+		free (state);
+	}			
 
-    Error_Code = Load_String (&Feature, "Feature=", In_Line);
-    if (Error_Code != 0) {
-	free(NodeName);
-	return Error_Code;
-    } /* if */
+	error_code = load_string (&feature, "Feature=", in_line);
+	if (error_code != 0) {
+		free (node_name);
+		return error_code;
+	}			
 
-    Error_Code = Parse_Node_Name(NodeName, &Format, &Start_Inx, &End_Inx, &Count_Inx);
-    if (Error_Code != 0) {
-	free(NodeName);
-	if (Feature) free(Feature);
-	return Error_Code;
-    } /* if */
-    if (Count_Inx == 0) { 	/* Execute below loop once */
-	Start_Inx = 0;
-	End_Inx = 0;
-    } /* if */
+	error_code =
+		parse_node_name (node_name, &format, &start_inx, &end_inx,
+				 &count_inx);
+	if (error_code != 0) {
+		free (node_name);
+		if (feature)
+			free (feature);
+		return error_code;
+	}			
+	if (count_inx == 0) {	/* execute below loop once */
+		start_inx = 0;
+		end_inx = 0;
+	}			
 
-    for (i=Start_Inx; i<=End_Inx; i++) {
-	if (Count_Inx == 0) {	/* Deal with comma separated node names here */
-	    if (i == Start_Inx)
-		str_ptr2 = strtok_r(Format, ",", &str_ptr1);
-	    else
-		str_ptr2 = strtok_r(NULL, ",", &str_ptr1);
-	    if (str_ptr2 == NULL) break;
-	    End_Inx++;
-	    strncpy(This_Node_Name, str_ptr2, sizeof(This_Node_Name));
-	} else
-	    sprintf(This_Node_Name, Format, i);
-	if (strlen(This_Node_Name) >= MAX_NAME_LEN) {
+	for (i = start_inx; i <= end_inx; i++) {
+		if (count_inx == 0) {	/* deal with comma separated node names here */
+			if (i == start_inx)
+				str_ptr2 = strtok_r (format, ",", &str_ptr1);
+			else
+				str_ptr2 = strtok_r (NULL, ",", &str_ptr1);
+			if (str_ptr2 == NULL)
+				break;
+			end_inx++;
+			strncpy (this_node_name, str_ptr2,
+				 sizeof (this_node_name));
+		}
+		else
+			sprintf (this_node_name, format, i);
+		if (strlen (this_node_name) >= MAX_NAME_LEN) {
 #if DEBUG_SYSTEM
-    	    fprintf(stderr, "Parse_Node_Spec: Node name %s too long\n", This_Node_Name);
+			fprintf (stderr,
+				 "parse_node_spec: node name %s too long\n",
+				 this_node_name);
 #else
-    	    syslog(LOG_ERR, "Parse_Node_Spec: Node name %s too long\n", This_Node_Name);
+			syslog (log_err,
+				"parse_node_spec: node name %s too long\n",
+				this_node_name);
 #endif
-	    if (i == Start_Inx) free(NodeName);
-	    if (Feature) free(Feature);		/* Can't use feature */
-	    Error_Code = EINVAL;
-	    break;
-	} /* if */
-	if (strcmp(NodeName, "DEFAULT") == 0) {
-	    if (i == Start_Inx)              free(NodeName);
-	    if (CPUs_Val != NO_VAL)          Default_Config_Record.CPUs = CPUs_Val;
-	    if (RealMemory_Val != NO_VAL)    Default_Config_Record.RealMemory = RealMemory_Val;
-	    if (TmpDisk_Val != NO_VAL)       Default_Config_Record.TmpDisk = TmpDisk_Val;
-	    if (Weight_Val != NO_VAL)        Default_Config_Record.Weight = Weight_Val;
-	    if (State_Val != NO_VAL)         Default_Node_Record.NodeState = State_Val;
-	    if (Feature) {
-		if (Default_Config_Record.Feature) free(Default_Config_Record.Feature);
-		Default_Config_Record.Feature = Feature;
-	    } /* if */
-	} else {
-	    if (i == Start_Inx) {
-		Config_Point = Create_Config_Record(&Error_Code);
-		if (Error_Code != 0) {
-		    if (Feature) free(Feature);	/* Can't use feature */
-		    break;
-		} /* if */
-		Config_Point->Nodes = NodeName;
-		if (CPUs_Val != NO_VAL)       Config_Point->CPUs = CPUs_Val;
-		if (RealMemory_Val != NO_VAL) Config_Point->RealMemory = RealMemory_Val;
-		if (TmpDisk_Val != NO_VAL)    Config_Point->TmpDisk = TmpDisk_Val;
-		if (Weight_Val != NO_VAL)     Config_Point->Weight = Weight_Val;
-		if (Feature) {
-		    if (Config_Point->Feature) free(Config_Point->Feature);
-		    Config_Point->Feature = Feature;
-		} /* if */
-	    } /* if */
+			if (i == start_inx)
+				free (node_name);
+			if (feature)
+				free (feature);	/* can't use feature */
+			error_code = EINVAL;
+			break;
+		}		
+		if (strcmp (node_name, "DEFAULT") == 0) {
+			if (i == start_inx)
+				free (node_name);
+			if (cpus_val != NO_VAL)
+				default_config_record.cpus = cpus_val;
+			if (real_memory_val != NO_VAL)
+				default_config_record.real_memory =
+					real_memory_val;
+			if (tmp_disk_val != NO_VAL)
+				default_config_record.tmp_disk = tmp_disk_val;
+			if (weight_val != NO_VAL)
+				default_config_record.weight = weight_val;
+			if (state_val != NO_VAL)
+				default_node_record.node_state = state_val;
+			if (feature) {
+				if (default_config_record.feature)
+					free (default_config_record.feature);
+				default_config_record.feature = feature;
+			}	
+		}
+		else {
+			if (i == start_inx) {
+				config_point =
+					create_config_record (&error_code);
+				if (error_code != 0) {
+					if (feature)
+						free (feature);	/* can't use feature */
+					break;
+				}	
+				config_point->nodes = node_name;
+				if (cpus_val != NO_VAL)
+					config_point->cpus = cpus_val;
+				if (real_memory_val != NO_VAL)
+					config_point->real_memory =
+						real_memory_val;
+				if (tmp_disk_val != NO_VAL)
+					config_point->tmp_disk = tmp_disk_val;
+				if (weight_val != NO_VAL)
+					config_point->weight = weight_val;
+				if (feature) {
+					if (config_point->feature)
+						free (config_point->feature);
+					config_point->feature = feature;
+				}	
+			}	
 
-	    Node_Record_Point = Find_Node_Record(This_Node_Name);
-	    if (Node_Record_Point == NULL) {
-		Node_Record_Point = Create_Node_Record(&Error_Code, Config_Point, This_Node_Name);
-		if (Error_Code != 0) break;
-		if (State_Val != NO_VAL)         Node_Record_Point->NodeState=State_Val;
-	    } else {
+			node_record_point = find_node_record (this_node_name);
+			if (node_record_point == NULL) {
+				node_record_point =
+					create_node_record (&error_code,
+							    config_point,
+							    this_node_name);
+				if (error_code != 0)
+					break;
+				if (state_val != NO_VAL)
+					node_record_point->node_state =
+						state_val;
+			}
+			else {
 #if DEBUG_SYSTEM
-		fprintf(stderr, "Parse_Node_Spec: Reconfiguration for node %s ignored.\n", 
-		    This_Node_Name);
+				fprintf (stderr,
+					 "parse_node_spec: reconfiguration for node %s ignored.\n",
+					 this_node_name);
 #else
-		syslog(LOG_ERR, "Parse_Node_Spec: Reconfiguration for node %s ignored.\n", 
-		    This_Node_Name);
+				syslog (log_err,
+					"parse_node_spec: reconfiguration for node %s ignored.\n",
+					this_node_name);
 #endif
-	    } /* else */
-	} /* else */
-    } /* for (i */
+			}	/* else */
+		}		/* else */
+	}			/* for (i */
 
-    /* Free allocated storage */
-    if (Format)  free(Format);
-    return Error_Code;
-} /* Parse_Node_Spec */
+	/* free allocated storage */
+	if (format)
+		free (format);
+	return error_code;
+}
 
 
 /*
- * Parse_Part_Spec - Parse the partition specification, build table and set values
- * Output: 0 if no error, error code otherwise
+ * parse_part_spec - parse the partition specification, build table and set values
+ * output: 0 if no error, error code otherwise
  */
-int Parse_Part_Spec (char *In_Line) {
-    int Line_Num;		/* Line number in input file */
-    char *AllowGroups, *Nodes, *PartitionName;
-    int MaxTime_Val, MaxNodes_Val, Key_Val, Default_Val, StateUp_Val, Shared_Val;
-    int Error_Code, i;
-    struct Part_Record *Part_Record_Point;
+int parse_part_spec (char *in_line) {
+	int line_num;		/* line number in input file */
+	char *allow_groups, *nodes, *partition_name;
+	int max_time_val, max_nodes_val, key_val, default_val, state_up_val,
+		shared_val;
+	int error_code, i;
+	struct part_record *part_record_point;
 
-    AllowGroups = Nodes = PartitionName = (char *)NULL;
-    MaxTime_Val = MaxNodes_Val = Key_Val = Default_Val = StateUp_Val = Shared_Val = NO_VAL;
+	allow_groups = nodes = partition_name = (char *) NULL;
+	max_time_val = max_nodes_val = key_val = default_val = state_up_val =
+		shared_val = NO_VAL;
 
-    if (Error_Code=Load_String(&PartitionName, "PartitionName=", In_Line))      return Error_Code;
-    if (PartitionName == NULL) return 0;	/* No partition info */
-	if (strlen(PartitionName) >= MAX_NAME_LEN) {
+	if (error_code =
+	    load_string (&partition_name, "PartitionName=", in_line))
+		return error_code;
+	if (partition_name == NULL)
+		return 0;	/* no partition info */
+	if (strlen (partition_name) >= MAX_NAME_LEN) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Parse_Part_Spec: Partition name %s too long\n", PartitionName);
+		fprintf (stderr,
+			 "parse_part_spec: partition name %s too long\n",
+			 partition_name);
 #else
-	syslog(LOG_ERR, "Parse_Part_Spec: Partition name %s too long\n", PartitionName);
+		syslog (log_err,
+			"parse_part_spec: partition name %s too long\n",
+			partition_name);
 #endif
-	free(PartitionName);
-	return EINVAL;
-    } /* if */
+		free (partition_name);
+		return EINVAL;
+	}			
 
-    if (Error_Code == 0)  Error_Code = Load_Integer(&MaxTime_Val,  "MaxTime=", In_Line);
-    if (Error_Code == 0)  Error_Code = Load_Integer(&MaxNodes_Val, "MaxNodes=", In_Line);
-    if (Error_Code == 0)  Error_Code = Load_Integer(&Default_Val,  "Default=NO", In_Line);
-    if (Default_Val == 1) Default_Val=0;
-    if (Error_Code == 0)  Error_Code = Load_Integer(&Default_Val,  "Default=YES", In_Line);
-    if (Error_Code == 0)  Error_Code = Load_Integer(&Shared_Val,   "Shared=NO", In_Line);
-    if (StateUp_Val == 1) Shared_Val=0;
-    if (Error_Code == 0)  Error_Code = Load_Integer(&Shared_Val,   "Shared=FORCE", In_Line);
-    if (StateUp_Val == 1) Shared_Val=2;
-    if (Error_Code == 0)  Error_Code = Load_Integer(&Shared_Val,   "Shared=YES", In_Line);
-    if (Error_Code == 0)  Error_Code = Load_Integer(&StateUp_Val,  "State=DOWN", In_Line);
-    if (StateUp_Val == 1) StateUp_Val=0;
-    if (Error_Code == 0)  Error_Code = Load_Integer(&StateUp_Val,  "State=UP", In_Line);
-    if (Error_Code == 0)  Error_Code = Load_Integer(&Key_Val,      "Key=NO", In_Line);
-    if (Key_Val == 1)     Key_Val=0;
-    if (Error_Code == 0)  Error_Code = Load_Integer(&Key_Val,      "Key=YES", In_Line);
-    if (Error_Code != 0) {
-	free(PartitionName);
-	return Error_Code;
-    } /* if */
+	if (error_code == 0)
+		error_code =
+			load_integer (&max_time_val, "MaxTime=", in_line);
+	if (error_code == 0)
+		error_code =
+			load_integer (&max_nodes_val, "MaxNodes=", in_line);
+	if (error_code == 0)
+		error_code =
+			load_integer (&default_val, "Default=NO", in_line);
+	if (default_val == 1)
+		default_val = 0;
+	if (error_code == 0)
+		error_code =
+			load_integer (&default_val, "Default=YES", in_line);
+	if (error_code == 0)
+		error_code = load_integer (&shared_val, "Shared=NO", in_line);
+	if (state_up_val == 1)
+		shared_val = 0;
+	if (error_code == 0)
+		error_code =
+			load_integer (&shared_val, "Shared=FORCE", in_line);
+	if (state_up_val == 1)
+		shared_val = 2;
+	if (error_code == 0)
+		error_code =
+			load_integer (&shared_val, "Shared=YES", in_line);
+	if (error_code == 0)
+		error_code =
+			load_integer (&state_up_val, "State=DOWN", in_line);
+	if (state_up_val == 1)
+		state_up_val = 0;
+	if (error_code == 0)
+		error_code =
+			load_integer (&state_up_val, "State=UP", in_line);
+	if (error_code == 0)
+		error_code = load_integer (&key_val, "Key=NO", in_line);
+	if (key_val == 1)
+		key_val = 0;
+	if (error_code == 0)
+		error_code = load_integer (&key_val, "Key=YES", in_line);
+	if (error_code != 0) {
+		free (partition_name);
+		return error_code;
+	}			
 
-    Error_Code = Load_String (&Nodes, "Nodes=", In_Line);
-    if (Error_Code) {
-	free(PartitionName);
-	return Error_Code;
-    } /* if */
+	error_code = load_string (&nodes, "Nodes=", in_line);
+	if (error_code) {
+		free (partition_name);
+		return error_code;
+	}			
 
-    Error_Code = Load_String (&AllowGroups, "AllowGroups=", In_Line);
-    if (Error_Code) {
-	free(PartitionName);
-	if (Nodes) free(Nodes);
-	return Error_Code;
-    } /* if */
+	error_code = load_string (&allow_groups, "AllowGroups=", in_line);
+	if (error_code) {
+		free (partition_name);
+		if (nodes)
+			free (nodes);
+		return error_code;
+	}			
 
-    if (strcmp(PartitionName, "DEFAULT") == 0) {
-	free(PartitionName);
-	if (MaxTime_Val  != NO_VAL)    Default_Part.MaxTime      = MaxTime_Val;
-	if (MaxNodes_Val != NO_VAL)    Default_Part.MaxNodes     = MaxNodes_Val;
-	if (Key_Val != NO_VAL)         Default_Part.Key          = Key_Val;
-	if (StateUp_Val  != NO_VAL)    Default_Part.StateUp      = StateUp_Val;
-	if (Shared_Val  != NO_VAL)     Default_Part.Shared       = Shared_Val;
-	if (AllowGroups) {
-	    if (Default_Part.AllowGroups) free(Default_Part.AllowGroups);
-	    Default_Part.AllowGroups = AllowGroups;
-	} /* if */
-	if (Nodes) {
-	    if (Default_Part.Nodes) free(Default_Part.Nodes);
-	    Default_Part.Nodes = Nodes;
-	} /* if */
+	if (strcmp (partition_name, "DEFAULT") == 0) {
+		free (partition_name);
+		if (max_time_val != NO_VAL)
+			default_part.max_time = max_time_val;
+		if (max_nodes_val != NO_VAL)
+			default_part.max_nodes = max_nodes_val;
+		if (key_val != NO_VAL)
+			default_part.key = key_val;
+		if (state_up_val != NO_VAL)
+			default_part.state_up = state_up_val;
+		if (shared_val != NO_VAL)
+			default_part.shared = shared_val;
+		if (allow_groups) {
+			if (default_part.allow_groups)
+				free (default_part.allow_groups);
+			default_part.allow_groups = allow_groups;
+		}		
+		if (nodes) {
+			if (default_part.nodes)
+				free (default_part.nodes);
+			default_part.nodes = nodes;
+		}		
+		return 0;
+	}			
+
+	part_record_point =
+		list_find_first (part_list, &list_find_part, partition_name);
+	if (part_record_point == NULL) {
+		part_record_point = create_part_record (&error_code);
+		if (error_code) {
+			free (partition_name);
+			if (nodes)
+				free (nodes);
+			if (allow_groups)
+				free (allow_groups);
+			return error_code;
+		}		
+		strcpy (part_record_point->name, partition_name);
+	}
+	else {
+#if DEBUG_SYSTEM
+		fprintf (stderr,
+			 "parse_part_spec: duplicate entry for partition %s\n",
+			 partition_name);
+#else
+		syslog (log_notice,
+			"parse_node_spec: duplicate entry for partition %s\n",
+			partition_name);
+#endif
+	}			/* else */
+	if (default_val == 1) {
+		if (strlen (default_part_name) > 0) {
+#if DEBUG_SYSTEM
+			fprintf (stderr,
+				 "parse_part_spec: changing default partition from %s to %s\n",
+				 default_part_name, partition_name);
+#else
+			syslog (log_notice,
+				"parse_node_spec: changing default partition from %s to %s\n",
+				default_part_name, partition_name);
+#endif
+		}		
+		strcpy (default_part_name, partition_name);
+		default_part_loc = part_record_point;
+	}			
+	if (max_time_val != NO_VAL)
+		part_record_point->max_time = max_time_val;
+	if (max_nodes_val != NO_VAL)
+		part_record_point->max_nodes = max_nodes_val;
+	if (key_val != NO_VAL)
+		part_record_point->key = key_val;
+	if (state_up_val != NO_VAL)
+		part_record_point->state_up = state_up_val;
+	if (shared_val != NO_VAL)
+		part_record_point->shared = shared_val;
+	if (allow_groups) {
+		if (part_record_point->allow_groups)
+			free (part_record_point->allow_groups);
+		part_record_point->allow_groups = allow_groups;
+	}			
+	if (nodes) {
+		if (part_record_point->nodes)
+			free (part_record_point->nodes);
+		part_record_point->nodes = nodes;
+	}			
+	free (partition_name);
 	return 0;
-    } /* if */
-
-    Part_Record_Point = list_find_first(Part_List, &List_Find_Part, PartitionName);
-    if (Part_Record_Point == NULL) {
-	Part_Record_Point = Create_Part_Record(&Error_Code);
-	if (Error_Code) {
-	    free(PartitionName);
-	    if (Nodes) free(Nodes);
-	    if (AllowGroups) free(AllowGroups);
-	    return Error_Code;
-	} /* if */
-	strcpy(Part_Record_Point->Name, PartitionName);
-    } else {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Parse_Part_Spec: duplicate entry for partition %s\n", PartitionName);
-#else
-	syslog(LOG_NOTICE, "Parse_Node_Spec: duplicate entry for partition %s\n", PartitionName);
-#endif
-    } /* else */
-    if (Default_Val  == 1) {
-	if (strlen(Default_Part_Name) > 0) {
-#if DEBUG_SYSTEM
-	    fprintf(stderr, "Parse_Part_Spec: changing default partition from %s to %s\n", 
-		    Default_Part_Name, PartitionName);
-#else
-	syslog(LOG_NOTICE, "Parse_Node_Spec: changing default partition from %s to %s\n", 
-		    Default_Part_Name, PartitionName);
-#endif
-	} /* if */
-	strcpy(Default_Part_Name, PartitionName);
-	Default_Part_Loc = Part_Record_Point;
-    } /* if */
-    if (MaxTime_Val  != NO_VAL)    Part_Record_Point->MaxTime      = MaxTime_Val;
-    if (MaxNodes_Val != NO_VAL)    Part_Record_Point->MaxNodes     = MaxNodes_Val;
-    if (Key_Val  != NO_VAL)        Part_Record_Point->Key          = Key_Val;
-    if (StateUp_Val  != NO_VAL)    Part_Record_Point->StateUp      = StateUp_Val;
-    if (Shared_Val  != NO_VAL)     Part_Record_Point->Shared       = Shared_Val;
-    if (AllowGroups) {
-	if (Part_Record_Point->AllowGroups) free(Part_Record_Point->AllowGroups);
-	Part_Record_Point->AllowGroups = AllowGroups;
-    } /* if */
-    if (Nodes) {
-	if (Part_Record_Point->Nodes) free(Part_Record_Point->Nodes);
-	Part_Record_Point->Nodes = Nodes;
-    } /* if */
-    free(PartitionName);
-    return 0;
-} /* Parse_Part_Spec */
+}
 
 
 /*
- * Read_SLURM_Conf - Load the SLURM configuration from the specified file. 
- * Call Init_SLURM_Conf before ever calling Read_SLURM_Conf.  
- * Read_SLURM_Conf can be called more than once if so desired.
- * Input: File_Name - Name of the file containing overall SLURM configuration information
- * Output: return - 0 if no error, otherwise an error code
+ * read_slurm_conf - load the slurm configuration from the specified file. 
+ * call init_slurm_conf before ever calling read_slurm_conf.  
+ * read_slurm_conf can be called more than once if so desired.
+ * input: file_name - name of the file containing overall slurm configuration information
+ * output: return - 0 if no error, otherwise an error code
  */
-int Read_SLURM_Conf (char *File_Name) {
-    FILE *SLURM_Spec_File;	/* Pointer to input data file */
-    int Line_Num;		/* Line number in input file */
-    char In_Line[BUF_SIZE];	/* Input line */
-    char Scratch[BUF_SIZE];	/* Scratch area for parsing the input line */
-    char *str_ptr1, *str_ptr2, *str_ptr3;
-    int i, j, Error_Code;
+int read_slurm_conf (char *file_name) {
+	FILE *slurm_spec_file;	/* pointer to input data file */
+	int line_num;		/* line number in input file */
+	char in_line[BUF_SIZE];	/* input line */
+	char scratch[BUF_SIZE];	/* scratch area for parsing the input line */
+	char *str_ptr1, *str_ptr2, *str_ptr3;
+	int i, j, error_code;
 
-    /* Initialization */
-    SLURM_Spec_File = fopen(File_Name, "r");
-    if (SLURM_Spec_File == NULL) {
+	/* initialization */
+	slurm_spec_file = fopen (file_name, "r");
+	if (slurm_spec_file == NULL) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Read_SLURM_Conf error %d opening file %s\n", errno, File_Name);
+		fprintf (stderr, "read_slurm_conf error %d opening file %s\n",
+			 errno, file_name);
 #else
-	syslog(LOG_ALERT, "Read_SLURM_Conf error %d opening file %s\n", errno, File_Name);
+		syslog (log_alert,
+			"read_slurm_conf error %d opening file %s\n", errno,
+			file_name);
 #endif
-	return errno;
-    } /* if */
-
-#if DEBUG_SYSTEM
-    fprintf(stderr, "Read_SLURM_Conf: Loading configuration from %s\n", File_Name);
-#else
-    syslog(LOG_NOTICE, "Read_SLURM_Conf: Loading configuration from %s\n", File_Name);
-#endif
-
-    /* Process the data file */
-    Line_Num = 0;
-    while (fgets(In_Line, BUF_SIZE, SLURM_Spec_File) != NULL) {
-	Line_Num++;
-	if (strlen(In_Line) >= (BUF_SIZE-1)) {
-#if DEBUG_SYSTEM
-	    fprintf(stderr, "Read_SLURM_Conf line %d, of input file %s too long\n", 
-		Line_Num, File_Name);
-#else
-	    syslog(LOG_ALERT, "Read_SLURM_Conf line %d, of input file %s too long\n", 
-		Line_Num, File_Name);
-#endif
-	    fclose(SLURM_Spec_File);
-	    return E2BIG;
-	    break;
-	} /* if */
-
-	/* Everything after a non-escaped "#" is a comment */
-	/* Replace comment flag "#" with an end of string (NULL) */
-	for (i=0; i<BUF_SIZE; i++) {
-	    if (In_Line[i] == (char)NULL) break;
-	    if (In_Line[i] != '#') continue;
-	    if ((i>0) && (In_Line[i-1]=='\\')) {	/* escaped "#" */
-		for (j=i; j<BUF_SIZE; j++) {
-		    In_Line[j-1] = In_Line[j];
-		} /* for */
-		continue;
-	    } /* if */
-	    In_Line[i] = (char)NULL;
-	    break;
-	} /* for */
-
-	/* Parse what is left */
-	/* Overall SLURM configuration parameters */
-	if (Error_Code=Load_String(&ControlMachine, "ControlMachine=", In_Line)) {
-	    fclose(SLURM_Spec_File);
-	    return Error_Code;
-	} /* if */
-	if (Error_Code=Load_String(&BackupController, "BackupController=", In_Line)) {
-	    fclose(SLURM_Spec_File);
-	    return Error_Code;
-	} /* if */
-
-	/* Node configuration parameters */
-	if (Error_Code=Parse_Node_Spec(In_Line)) {
-	    fclose(SLURM_Spec_File);
-	    return Error_Code;
-	} /* if */
-
-	/* Partition configuration parameters */
-	if (Error_Code=Parse_Part_Spec(In_Line)) {
-	    fclose(SLURM_Spec_File);
-	    return Error_Code;
-	} /* if */
-
-	/* Report any leftover strings on input line */
-	Report_Leftover(In_Line, Line_Num);
-    } /* while */
-    fclose(SLURM_Spec_File);
-
-    /* If values not set in configuration file, set defaults */
-    if (BackupController == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Read_SLURM_Conf: BackupController value not specified.\n");
-#else
-	syslog(LOG_WARNING, "Read_SLURM_Conf: BackupController value not specified.\n");
-#endif
-    } /* if */
-
-    if (ControlMachine == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Read_SLURM_Conf: ControlMachine value not specified.\n");
-#else
-	syslog(LOG_ALERT, "Read_SLURM_Conf: ControlMachine value not specified.\n");
-#endif
-	return EINVAL;
-    } /* if */
-
-    if (Default_Part_Loc == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Read_SLURM_Conf: Default partition not set.\n");
-#else
-	syslog(LOG_ALERT, "Read_SLURM_Conf: Default partition not set.\n");
-#endif
-	return EINVAL;
-    } /* if */
-    Rehash();
-    if (Error_Code=Build_BitMaps()) return Error_Code;
-    list_sort(Config_List, &List_Compare_Config);
+		return errno;
+	}			
 
 #if DEBUG_SYSTEM
-    fprintf(stderr, "Read_SLURM_Conf: Finished loading configuration\n");
+	fprintf (stderr, "read_slurm_conf: loading configuration from %s\n",
+		 file_name);
 #else
-    syslog(LOG_NOTICE, "Read_SLURM_Conf: Finished loading configuration\n");
+	syslog (log_notice,
+		"read_slurm_conf: loading configuration from %s\n",
+		file_name);
 #endif
 
-    return 0;
-} /* Read_SLURM_Conf */
+	/* process the data file */
+	line_num = 0;
+	while (fgets (in_line, BUF_SIZE, slurm_spec_file) != NULL) {
+		line_num++;
+		if (strlen (in_line) >= (BUF_SIZE - 1)) {
+#if DEBUG_SYSTEM
+			fprintf (stderr,
+				 "read_slurm_conf line %d, of input file %s too long\n",
+				 line_num, file_name);
+#else
+			syslog (log_alert,
+				"read_slurm_conf line %d, of input file %s too long\n",
+				line_num, file_name);
+#endif
+			fclose (slurm_spec_file);
+			return E2BIG;
+			break;
+		}		
+
+		/* everything after a non-escaped "#" is a comment */
+		/* replace comment flag "#" with an end of string (NULL) */
+		for (i = 0; i < BUF_SIZE; i++) {
+			if (in_line[i] == (char) NULL)
+				break;
+			if (in_line[i] != '#')
+				continue;
+			if ((i > 0) && (in_line[i - 1] == '\\')) {	/* escaped "#" */
+				for (j = i; j < BUF_SIZE; j++) {
+					in_line[j - 1] = in_line[j];
+				}	
+				continue;
+			}	
+			in_line[i] = (char) NULL;
+			break;
+		}		
+
+		/* parse what is left */
+		/* overall slurm configuration parameters */
+		if (error_code =
+		    load_string (&control_machine, "ControlMachine=",
+				 in_line)) {
+			fclose (slurm_spec_file);
+			return error_code;
+		}		
+		if (error_code =
+		    load_string (&backup_controller, "BackupController=",
+				 in_line)) {
+			fclose (slurm_spec_file);
+			return error_code;
+		}		
+
+		/* node configuration parameters */
+		if (error_code = parse_node_spec (in_line)) {
+			fclose (slurm_spec_file);
+			return error_code;
+		}		
+
+		/* partition configuration parameters */
+		if (error_code = parse_part_spec (in_line)) {
+			fclose (slurm_spec_file);
+			return error_code;
+		}		
+
+		/* report any leftover strings on input line */
+		report_leftover (in_line, line_num);
+	}			
+	fclose (slurm_spec_file);
+
+	/* if values not set in configuration file, set defaults */
+	if (backup_controller == NULL) {
+#if DEBUG_SYSTEM
+		fprintf (stderr,
+			 "read_slurm_conf: backup_controller value not specified.\n");
+#else
+		syslog (log_warning,
+			"read_slurm_conf: backup_controller value not specified.\n");
+#endif
+	}			
+
+	if (control_machine == NULL) {
+#if DEBUG_SYSTEM
+		fprintf (stderr,
+			 "read_slurm_conf: control_machine value not specified.\n");
+#else
+		syslog (log_alert,
+			"read_slurm_conf: control_machine value not specified.\n");
+#endif
+		return EINVAL;
+	}			
+
+	if (default_part_loc == NULL) {
+#if DEBUG_SYSTEM
+		fprintf (stderr,
+			 "read_slurm_conf: default partition not set.\n");
+#else
+		syslog (log_alert,
+			"read_slurm_conf: default partition not set.\n");
+#endif
+		return EINVAL;
+	}			
+	rehash ();
+	if (error_code = build_bitmaps ())
+		return error_code;
+	list_sort (config_list, &list_compare_config);
+
+#if DEBUG_SYSTEM
+	fprintf (stderr, "read_slurm_conf: finished loading configuration\n");
+#else
+	syslog (log_notice,
+		"read_slurm_conf: finished loading configuration\n");
+#endif
+
+	return 0;
+}
