@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "December 2003" "Morris Jette" "Slurm configuration file"
+.TH "slurm.conf" "5" "January 2004" "Morris Jette" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -24,7 +24,8 @@ The default value is "auth/none", which means the UID included in
 communication messages is not verified. 
 "auth/authd" indicates that Brett Chun's authd is to be used (see
 "http://www.theether.org/authd/" for more information).
-Slurmctld must be restarted for a change in this value to take effect.
+All SLURM daemons and commands must be restarted for a change in 
+\fBAuthType\fR to take effect (SLURM jobs can be preserved).
 .TP
 \fBBackupAddr\fR
 Name that \fBBackupController\fR should be referred to in 
@@ -107,6 +108,8 @@ stopped a debugger. The default value is unlimited (zero).
 Define the location where job completion records are to be logged. 
 The interpretation of this value depends upon the logging mechanism 
 specified by the \fBJobCompType\fR parameter. 
+Slurmctld must be reconfigured ("scontrol reconfig" or SIGHUP signal)
+for a change in \fBJobCompLoc\fR to take effect.
 .TP
 \fBJobCompType\fR
 Define the job completion logging mechanism type.
@@ -115,7 +118,7 @@ The default value is "jobcomp/none", which means that upon job completion
 the record of the job is purged from the system. 
 The value "jobcomp/filetxt" indicates that a record of the job should be 
 written to a text file specified by the \fBJobCompLoc\fR parameter.
-Slurmctld must be restared for a change in this value to take effect.
+Slurmctld must be restared for a change in \fBJobCompType\fR to take effect.
 .TP
 \fBJobCredentialPrivateKey\fR
 Fully qualified pathname of a file containing a private key used for 
@@ -184,7 +187,14 @@ Identifies the type of scheduler to be used. Acceptable values include
 "sched/backfill" for a backfill scheduling module to augment 
 the default FIFO scheduling, and 
 "sched/wiki" for the Wiki interface to the Maui Scheduler. 
-The default value is "sched/builtin". 
+The default value is "sched/builtin".
+Slurmctld must be restared for a change in \fBSchedulerType\fR to 
+take effect.
+In addition, when initially setting the value to "sched/wiki" 
+all pending jobs must have their priority set to zero (held).
+When changing the value from "sched/wiki", all pending jobs 
+should have their priority change from zero to some large number.
+The \fBscontrol\fR command can be used to change job priorities.
 .TP
 \fBSlurmUser\fR
 The name of the user that the \fBslurmctld\fR daemon executes as. 
@@ -274,6 +284,10 @@ Acceptable values include
 or termination (Myrinet, Ethernet, and InfiniBand),
 "switch/elan" for Quadrics Elan 3 or Elan 4 interconnect.
 The default value is "switch/none".
+All SLURM daemons and running jobs must be restared for a change in 
+\fBSwitchType\fR to take effect.
+If running jobs exist at the time slurmctld is restarted with a new 
+value of \fBSwitchType\fR, records of all jobs in any state may be lost.
 .TP
 \fBTmpFS\fR
 Fully qualified pathname of the file system available to user jobs for 
