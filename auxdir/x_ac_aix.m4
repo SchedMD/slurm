@@ -16,7 +16,7 @@ AC_DEFUN([X_AC_AIX],
 [
    case "$host" in
       *-*-aix*) LDFLAGS="$LDFLAGS -Wl,-brtl"      # permit run time linking
-            CMD_LDFLAGS="-Wl,-bgcbypass:1000" # keep all common functions
+            CMD_LDFLAGS="$LDFLAGS -Wl,-bgcbypass:1000" # keep all common functions
             LIB_LDFLAGS="$LDFLAGS -Wl,-G -Wl,-bnoentry -Wl,-bexpfull"
             SO_LDFLAGS=" $LDFLAGS -Wl,-G -Wl,-bnoentry -Wl,-bexpfull"
             ac_have_aix="yes"
