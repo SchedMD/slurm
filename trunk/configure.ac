@@ -46,6 +46,7 @@ dnl Initialize Automake
 dnl
 AM_INIT_AUTOMAKE(slurm, $VERSION)
 AM_CONFIG_HEADER(config.h)
+AM_CONFIG_HEADER(slurm/slurm.h)
 
 
 dnl Checks for programs.
