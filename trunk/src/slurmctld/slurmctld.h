@@ -1093,10 +1093,10 @@ extern int update_part (update_part_msg_t * part_desc );
  * validate_group - validate that the submit uid is authorized to run in 
  *	this partition
  * IN part_ptr - pointer to a partition
- * IN submit_uid - user submitting the job
+ * IN run_uid - user to run the job as
  * RET 1 if permitted to run, 0 otherwise
  */
-extern int validate_group (struct part_record *part_ptr, uid_t submit_uid);
+extern int validate_group (struct part_record *part_ptr, uid_t run_uid);
 
 /*
  * validate_jobs_on_node - validate that any jobs that should be on the node 

@@ -826,22 +826,22 @@ int update_part(update_part_msg_t * part_desc)
  * validate_group - validate that the submit uid is authorized to run in 
  *	this partition
  * IN part_ptr - pointer to a partition
- * IN submit_uid - user submitting the job
+ * IN run_uid - user to run the job as
  * RET 1 if permitted to run, 0 otherwise
  */
-int validate_group(struct part_record *part_ptr, uid_t submit_uid)
+extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 {
 	int i;
 
 	if (part_ptr->allow_groups == NULL)
 		return 1;	/* all users allowed */
-	if ((submit_uid == 0) || (submit_uid == getuid()))
+	if ((run_uid == 0) || (run_uid == getuid()))
 		return 1;	/* super-user can run anywhere */
 
 	if (part_ptr->allow_uids == NULL)
 		return 0;	/* no non-super-users in the list */
 	for (i = 0; part_ptr->allow_uids[i]; i++) {
-		if (part_ptr->allow_uids[i] == submit_uid)
+		if (part_ptr->allow_uids[i] == run_uid)
 			return 1;
 	}
 	return 0;		/* not in this group's list */
