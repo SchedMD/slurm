@@ -75,7 +75,7 @@ enum node_states {
  *	TotalProcs=<count>
  * NOTE: the calling function must free the allocated storage at node_list[0]
  */
-extern int slurm_allocate_resources (job_desc_msg_t * job_desc_msg , resource_allocation_response_msg_t * job_alloc_resp_msg, int immediate ) ;
+extern int slurm_allocate_resources (job_desc_msg_t * job_desc_msg , resource_allocation_response_msg_t ** job_alloc_resp_msg, int immediate ) ;
 
 /*
  * slurm_cancel - cancel the specified job 
@@ -208,7 +208,7 @@ extern int slurm_submit_batch_job (job_desc_msg_t * job_desc_msg );
  *	Shared=<YES|NO> TimeLimit=<minutes> TotalNodes=<count>
  *	TotalProcs=<count>
  */
-extern int slurm_will_run (char *spec);
+extern int slurm_job_will_run (job_desc_msg_t * job_desc_msg , resource_allocation_response_msg_t ** job_alloc_resp_msg );
 
 /* 
  * parse_node_name - parse the node name for regular expressions and return a sprintf format 
