@@ -144,7 +144,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 
 	/****** Line 6 ******/
 	fprintf ( out, "NodeList=%s ", job_ptr->nodes);
-	fprintf ( out, "NodeListIndecies=");
+	fprintf ( out, "NodeListIndicies=");
 	for (j = 0; job_ptr->node_inx; j++) {
 		if (j > 0)
 			fprintf( out, ",%d", job_ptr->node_inx[j]);
@@ -190,7 +190,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 
 	/****** Line 10 ******/
 	fprintf ( out, "ReqNodeList=%s ", job_ptr->req_nodes);
-	fprintf ( out, "ReqNodeListIndecies=");
+	fprintf ( out, "ReqNodeListIndicies=");
 	for (j = 0; job_ptr->req_node_inx; j++) {
 		if (j > 0)
 			fprintf( out, ",%d", job_ptr->req_node_inx[j]);
@@ -206,7 +206,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 
 	/****** Line 11 ******/
 	fprintf ( out, "ExcNodeList=%s ", job_ptr->exc_nodes);
-	fprintf ( out, "ExcNodeListIndecies=");
+	fprintf ( out, "ExcNodeListIndicies=");
 	for (j = 0; job_ptr->exc_node_inx; j++) {
 		if (j > 0)
 			fprintf( out, ",%d", job_ptr->exc_node_inx[j]);
