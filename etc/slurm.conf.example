@@ -171,6 +171,7 @@
 #
 # "jobcomp/none"    : no job logging, the default
 # "jobcomp/filetxt" : log job record to a text file
+# "jobcomp/script"  : execute an arbitrary script
 #
 # JobCompType=jobcomp/filetxt
 
