@@ -166,32 +166,32 @@ rm -rf $RPM_BUILD_ROOT
 #############################################################################
 
 %pre
-if [ -x /etc/rc.d/init.d/slurm ]; then
-    if /etc/rc.d/init.d/slurm status | grep -q running; then
-        /etc/rc.d/init.d/slurm stop
-    fi
-fi
+#if [ -x /etc/rc.d/init.d/slurm ]; then
+#    if /etc/rc.d/init.d/slurm status | grep -q running; then
+#        /etc/rc.d/init.d/slurm stop
+#    fi
+#fi
 
 %post
 /sbin/ldconfig %{_libdir}
-if [ -x /etc/rc.d/init.d/slurm ]; then
-    [ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
-    [ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
-    if ! /etc/rc.d/init.d/slurm status | grep -q running \
-      || ! /etc/rc.d/init.d/slurm test | grep -q  slurmctld; then
-        /etc/rc.d/init.d/slurm start
-    fi 
-fi
+#if [ -x /etc/rc.d/init.d/slurm ]; then
+#    [ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
+#    [ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
+#    if ! /etc/rc.d/init.d/slurm status | grep -q running \
+#      || ! /etc/rc.d/init.d/slurm test | grep -q  slurmctld; then
+#        /etc/rc.d/init.d/slurm start
+#    fi 
+#fi
 
 %preun
-if [ "$1" = 0 ]; then
-    if [ -x /etc/rc.d/init.d/slurm ]; then
-        [ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
-        if /etc/rc.d/init.d/slurm status | grep -q running; then
-            /etc/rc.d/init.d/slurm stop
-        fi
-    fi
-fi
+#if [ "$1" = 0 ]; then
+#    if [ -x /etc/rc.d/init.d/slurm ]; then
+#        [ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
+#        if /etc/rc.d/init.d/slurm status | grep -q running; then
+#            /etc/rc.d/init.d/slurm stop
+#        fi
+#    fi
+#fi
 
 %postun
 if [ "$1" = 0 ]; then
@@ -201,6 +201,8 @@ fi
 
 
 %changelog
+* Wed Aug 13 2003 Mark Grondona <mgrondona@llnl.gov>
+- do not stop and start slurm on install/upgrade/etc.
 * Thu Apr 10 2003 Mark Grondona <mgrondona@llnl.gov>
 - include html documentation in main package
 * Wed Mar 26 2003 Mark Grondona <mgrondona@llnl.gov>
