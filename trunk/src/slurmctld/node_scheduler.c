@@ -214,35 +214,48 @@ deallocate_nodes (struct job_record  * job_ptr)
 
 /* slurm_revoke_job_cred - send RPC for slurmd to revoke a credential */
 void
-slurm_revoke_job_cred (struct node_record * node_ptr, revoke_credential_msg_t * revoke_job_cred_ptr)
+slurm_revoke_job_cred(struct node_record *node_ptr, 
+		      revoke_credential_msg_t *revoke_job_cred_ptr)
 {
-	int msg_size ;
-	int rc ;
-	slurm_fd sockfd ;
-	slurm_msg_t request_msg ;
-	slurm_msg_t response_msg ;
-	return_code_msg_t * slurm_rc_msg ;
+	int msg_size;
+	int rc;
+	slurm_fd sockfd;
+	slurm_msg_t request_msg;
+	slurm_msg_t response_msg;
+	return_code_msg_t * slurm_rc_msg;
 
 	/* init message connection for message communication with slurmd */
-	if ( ( sockfd = slurm_open_msg_conn (& node_ptr -> slurm_addr) ) == SLURM_SOCKET_ERROR )
-		error ("slurm_revoke_job_cred/slurm_open_msg_conn error for %s", node_ptr->name);
+	if ((sockfd = slurm_open_msg_conn(&node_ptr->slurm_addr)) < 0) {
+		error("revoke_job_cred: unable to connect to %s: %m", 
+				node_ptr->name);
+		return;
+	}
 
 	/* send request message */
-	request_msg . msg_type = REQUEST_REVOKE_JOB_CREDENTIAL ;
-	request_msg . data = revoke_job_cred_ptr ; 
-	if ( ( rc = slurm_send_node_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR )
-		error ("slurm_revoke_job_cred/slurm_send_node_msg error for %s", node_ptr->name);
+	request_msg.msg_type = REQUEST_REVOKE_JOB_CREDENTIAL;
+	request_msg.data = revoke_job_cred_ptr; 
+	if ((rc = slurm_send_node_msg(sockfd, &request_msg)) < 0) {
+		error ("revoke_job_cred: unable to send revoke msg to %s: %m", 
+				node_ptr->name);
+		return;
+	}
 
 	/* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR )
-		error ("slurm_revoke_job_cred/slurm_receive_msg error for %s", node_ptr->name);
+	if ((msg_size = slurm_receive_msg(sockfd, &response_msg)) < 0) {
+		error ("revoke_job_cred: error in recv from %s: %m", 
+				node_ptr->name);
+		return;
+	}
 
 	/* shutdown message connection */
-	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR )
-		error ("slurm_revoke_job_cred/slurm_shutdown_msg_conn error for %s", node_ptr->name);
-	if ( msg_size )
-		error ("slurm_revoke_job_cred/msg_size error %d for %s", msg_size, node_ptr->name);
-		return;
+	if ((rc = slurm_shutdown_msg_conn(sockfd)) < 0)
+		error ("revoke_job_cred/shutdown_msg_conn error for %s", 
+				node_ptr->name);
+	if (msg_size)
+		error ("revoke_job_cred/msg_size error %d for %s", 
+				msg_size, node_ptr->name);
+	/* XXX: why was this here??? */
+	/* return; */
 
 	switch ( response_msg . msg_type )
 	{
