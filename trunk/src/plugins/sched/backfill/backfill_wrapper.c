@@ -51,6 +51,13 @@ static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 /**************************************************************************/
 int init( void )
 {
+#ifdef HAVE_BGL
+	/* backfill scheduling on Blue Gene is possible, 
+	 * but difficult and would require substantial 
+	 * software development to accomplish */
+	error("Backfill scheduler incompatable with Blue Gene");
+	return SLURM_ERROR;
+#else
 	pthread_attr_t attr;
 
 	verbose( "Backfill scheduler plugin loaded" );
@@ -69,6 +76,7 @@ int init( void )
 	pthread_mutex_unlock( &thread_flag_mutex );
 	
 	return SLURM_SUCCESS;
+#endif
 }
 
 /**************************************************************************/
