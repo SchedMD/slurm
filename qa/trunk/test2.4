@@ -20,16 +20,16 @@ print_header $test_id
 set matches     0
 spawn $scontrol  
 expect {
+	 -re "Slurmctld.primary/backup" {
+		incr matches
+		exp_continue
+	}
 	-re "scontrol: " {
 		if {$matches == 0} {
 			send "ping\n"
 		} else {
 			send "exit\n"
 		}
-		exp_continue
-	}
-	-re "Slurmctld.primary/backup" {
-		incr matches
 		exp_continue
 	}
 	timeout {
@@ -50,16 +50,16 @@ if {$matches != 1} {
 set matches     0
 spawn $scontrol  
 expect {
+	-re "Slurmctld.primary/backup" {
+		incr matches
+		 exp_continue
+	}
 	-re "scontrol: " {
 		if {$matches == 0} {
 			send "ping\n"
 		} else {
 			send "quit\n"
 		}
-		exp_continue
-	}
-	-re "Slurmctld.primary/backup" {
-		incr matches
 		exp_continue
 	}
 	timeout {
@@ -80,6 +80,10 @@ if {$matches != 1} {
 set matches     0
 spawn $scontrol  
 expect {
+	-re "Slurmctld.primary/backup" {
+		incr matches
+		exp_continue
+	}
 	-re "scontrol: " {
 		if {$matches == 0} {
 			send "ping\n"
@@ -90,10 +94,6 @@ expect {
 		if {$matches > 1} {
 			send "quit\n"
 		}
-		exp_continue
-	}
-	-re "Slurmctld.primary/backup" {
-		incr matches
 		exp_continue
 	}
 	timeout {
