@@ -70,7 +70,7 @@ int forward_io ( task_start_t * task_start )
 			break;
 		default :
 			stdout_io_pipe_thread ( task_start ) ;
-			exit( 0 ) ;
+			_exit( 0 ) ;
 			break ;
 	}
 	
@@ -119,13 +119,13 @@ int launch_task ( task_start_t * task_start )
 	{
 		case -1:
 			slurm_perror("fork");
-			exit(1);
+			return SLURM_ERROR ;
 			break;
 		case 0:
 			task_exec_thread ( task_start ) ;
-			exit(1);
-			break;
+			_exit(0);
 		default:
+			task_start -> pthread_id = pid ;
 			return SLURM_SUCCESS ;
 			break;
 			
