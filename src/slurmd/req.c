@@ -603,14 +603,14 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	}
 
 	if (step->state != SLURMD_JOB_STARTED) {
-		debug ("kill req for starting job step %d.%d", 
-		       step->jobid, step->stepid);
+		debug ("kill req for starting job step %u.%u",
+			req->job_id, req->job_step_id); 
 		rc = ESLURMD_JOB_NOTRUNNING;
 		goto done;
 	}
 
 	if (step->sid <= (pid_t) 0) {
-		debug ("step %ld.%d invalid in shm [mpid:%d sid:%d]", 
+		debug ("step %u.%u invalid in shm [mpid:%d sid:%d]", 
 			req->job_id, req->job_step_id, 
 			step->mpid, step->sid);
 		rc = ESLURMD_JOB_NOTRUNNING;
