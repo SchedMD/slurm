@@ -8,6 +8,24 @@ EXTRA_DIST = slurm.h libslurm.sym
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
+# libslurm version information : 
+#
+# Update this information before a public release only!
+# 
+# If library source code has changed at all increment rev
+# (current:rev:age) = (current:rev+1:age)
+#
+# If any interfaces have been added,removed, or changed increment current
+#  and set rev = 0;
+#
+# If any interfaces have been added increment age
+#
+# If any interfaces have been removed, set age = 0
+#
+current = 0
+rev     = 0
+age     = 0
+
 lib_LTLIBRARIES = libslurm.la
 
 libslurm_la_SOURCES =    \
@@ -31,7 +49,8 @@ include_HEADERS =	 \
 common_dir = $(top_builddir)/src/common
 
 libslurm_la_LIBADD        = $(common_dir)/libcommon.la
-libslurm_la_LDFLAGS       = -export-symbols $(srcdir)/libslurm.sym
+libslurm_la_LDFLAGS       = -export-symbols $(srcdir)/libslurm.sym \
+                            -version-info $(current):$(rev):$(age)
 libslurm_la_DEPENDENCIES  = $(srcdir)/libslurm.sym $(libslurm_la_LIBADD)
 
 force:
