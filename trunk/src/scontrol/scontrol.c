@@ -25,6 +25,7 @@
 #include <unistd.h>
 
 #include <src/api/slurm.h>
+#include <src/common/log.h>
 #include <src/common/nodelist.h>
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/xmalloc.h>
@@ -53,11 +54,14 @@ main (int argc, char *argv[])
 {
 	int error_code, i, input_field_count;
 	char **input_fields;
+	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 
 	command_name = argv[0];
 	exit_flag = 0;
 	input_field_count = 0;
 	quiet_flag = 0;
+	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
+
 	if (argc > max_input_fields)	/* bogus input, but let's continue anyway */
 		input_words = argc;
 	else
@@ -461,6 +465,9 @@ print_node_list (char *node_list)
 		}		
 		xfree (my_node_list);
 	}			
+/* Temporary logic to clean out immediately */
+slurm_free_node_info (old_node_info_ptr);
+old_node_info_ptr=NULL;
 	return;
 }
 
