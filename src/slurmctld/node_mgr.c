@@ -27,7 +27,7 @@
 List 	Config_List = NULL;		/* List of Config_Record entries */
 int	Node_Record_Count = 0;		/* Count of records in the Node Record Table */
 struct Node_Record *Node_Record_Table_Ptr = NULL; /* Location of the node records */
-char 	*Node_State_String[] = {"UNKNOWN", "IDLE", "STAGE_IN", "BUSY", "STAGE_OUT", "DOWN", "DRAINED", "DRAINING", "UP", "END"};
+char 	*Node_State_String[] = {"DOWN", "UNKNOWN", "IDLE", "STAGE_IN", "BUSY", "STAGE_OUT", "DRAINED", "DRAINING", "END"};
 int	*Hash_Table = NULL;		/* Table of hashed indicies into Node_Record */
 struct 	Config_Record Default_Config_Record;
 struct 	Node_Record   Default_Node_Record;
@@ -755,6 +755,7 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 	Buffer_Offset += sizeof(Node_Record_Table_Ptr[inx].Name);
 
 	i = (int)Node_Record_Table_Ptr[inx].NodeState;
+	if (i < 0) i = STATE_DOWN;
 	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
 	Buffer_Offset += sizeof(i);
 
@@ -1367,10 +1368,14 @@ int Update_Node(char *NodeName, char *Spec) {
 		break;
 	    } /* if */
 	    if (State_Val != NO_VAL) {
-		Node_Record_Point->NodeState = State_Val;
+		if ((State_Val == STATE_DOWN) &&
+		    (Node_Record_Point->NodeState != STATE_UNKNOWN))
+		    Node_Record_Point->NodeState = -(Node_Record_Point->NodeState);
+		else
+		    Node_Record_Point->NodeState = State_Val;
 		if (State_Val != STATE_IDLE) BitMapClear(Idle_NodeBitMap, 
 			(int)(Node_Record_Point-Node_Record_Table_Ptr));
-		if (State_Val != STATE_UP)   BitMapClear(Up_NodeBitMap, 
+		if (State_Val == STATE_DOWN)   BitMapClear(Up_NodeBitMap, 
 			(int)(Node_Record_Point-Node_Record_Table_Ptr));
 #if DEBUG_SYSTEM
 		fprintf(stderr, "Update_Node: Node %s state set to %s\n", 
@@ -1453,14 +1458,15 @@ int Validate_Node_Specs(char *NodeName, int CPUs, int RealMemory, int TmpDisk) {
 	Node_Ptr->NodeState = STATE_DOWN;
 	BitMapClear(Up_NodeBitMap, (Node_Ptr - Node_Record_Table_Ptr));
 
-    } else if ((Node_Ptr->NodeState == STATE_DOWN) || 
-               (Node_Ptr->NodeState == STATE_UNKNOWN)) {
+    } else {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Validate_Node_Specs: Setting node %s state to UP\n", NodeName);
+	fprintf(stderr, "Validate_Node_Specs: Node %s has registered\n", NodeName);
 #else
-	syslog(LOG_ERR, "Validate_Node_Specs: Setting node %s state to UP\n", NodeName);
+	syslog(LOG_ERR, "Validate_Node_Specs: Node %s has registered\n", NodeName);
 #endif
-	Node_Ptr->NodeState = STATE_UP;
+	if ((Node_Ptr->NodeState == STATE_DOWN) || 
+            (Node_Ptr->NodeState == STATE_UNKNOWN))	Node_Ptr->NodeState = STATE_IDLE;
+	if (Node_Ptr->NodeState < 0) 			Node_Ptr->NodeState = -(Node_Ptr->NodeState);
 	BitMapSet(Up_NodeBitMap, (Node_Ptr - Node_Record_Table_Ptr));
     } /* else */
 

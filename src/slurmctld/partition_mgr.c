@@ -67,7 +67,7 @@ main(int argc, char * argv[]) {
     int Shared;			/* 1 if partition can be shared */
     unsigned *NodeBitMap;	/* Bitmap of nodes in partition */
     int BitMapSize;		/* Bytes in NodeBitMap */
-    char Update_Spec[] = "MaxTime=34 MaxNodes=56 Key=NO State=DOWN Shared=YES";
+    char Update_Spec[] = "MaxTime=34 MaxNodes=56 Key=NO State=DOWN Shared=FORCE";
 
     Error_Code = Init_Node_Conf();
     if (Error_Code) printf("Init_Node_Conf error %d\n", Error_Code);
@@ -123,7 +123,7 @@ main(int argc, char * argv[]) {
     if (Part_Ptr->MaxNodes != 56) printf("ERROR: Update_Part MaxNodes not reset\n");
     if (Part_Ptr->Key != 0)       printf("ERROR: Update_Part Key not reset\n");
     if (Part_Ptr->StateUp != 0)   printf("ERROR: Update_Part StateUp not set\n");
-    if (Part_Ptr->Shared != 1)    printf("ERROR: Update_Part Shared not set\n");
+    if (Part_Ptr->Shared != 2)    printf("ERROR: Update_Part Shared not set\n");
 
     Node_Record_Count = 0;	/* Delete_Part_Record dies if node count is bad */
     Error_Code = Delete_Part_Record("Batch");
@@ -685,6 +685,9 @@ int Update_Part(char *PartitionName, char *Spec) {
     Error_Code = Load_Integer(&Shared_Val, "Shared=NO", Spec);
     if (Error_Code) return Error_Code;
     if (Shared_Val == 1) Shared_Val = 0;
+    Error_Code = Load_Integer(&Shared_Val, "Shared=FORCE", Spec);
+    if (Error_Code) return Error_Code;
+    if (Shared_Val == 1) Shared_Val = 2;
     Error_Code = Load_Integer(&Shared_Val, "Shared=YES", Spec);
     if (Error_Code) return Error_Code;
 

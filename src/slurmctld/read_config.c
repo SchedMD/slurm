@@ -522,6 +522,8 @@ int Parse_Part_Spec (char *In_Line) {
     if (Error_Code == 0)  Error_Code = Load_Integer(&Default_Val,  "Default=YES", In_Line);
     if (Error_Code == 0)  Error_Code = Load_Integer(&Shared_Val,   "Shared=NO", In_Line);
     if (StateUp_Val == 1) Shared_Val=0;
+    if (Error_Code == 0)  Error_Code = Load_Integer(&Shared_Val,   "Shared=FORCE", In_Line);
+    if (StateUp_Val == 1) Shared_Val=2;
     if (Error_Code == 0)  Error_Code = Load_Integer(&Shared_Val,   "Shared=YES", In_Line);
     if (Error_Code == 0)  Error_Code = Load_Integer(&StateUp_Val,  "State=DOWN", In_Line);
     if (StateUp_Val == 1) StateUp_Val=0;
