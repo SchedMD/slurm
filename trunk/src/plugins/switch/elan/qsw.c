@@ -47,7 +47,6 @@
 #include <limits.h>	/* INT_MAX */
 #include <stdio.h>
 
-
 #if HAVE_LIBELANCTRL
 # include <elan/elanctrl.h>
 # include <elan/capability.h>
@@ -287,6 +286,10 @@ qsw_fini(qsw_libstate_t savestate)
 		_copy_libstate(savestate, qsw_internal_state);
 	qsw_free_libstate(qsw_internal_state);
 	qsw_internal_state = NULL;
+	if (elanconf) {
+		elanhost_config_destroy(elanconf);
+		elanconf = NULL;
+	}
 	_unlock_qsw();
 }
 
