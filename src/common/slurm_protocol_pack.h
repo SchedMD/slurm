@@ -46,6 +46,7 @@
 /****************************/
 /* Message header functions */
 /****************************/
+
 /* pack_header
  * packs a slurm protocol header that proceeds every slurm message
  * IN header - the header structure to pack
@@ -67,6 +68,7 @@ extern int unpack_header ( header_t * header , Buf buffer );
 /****************************/
 /* Stream header functions  */
 /****************************/
+
 /* size_io_stream_header - get the size of an I/O stream header
  * RET number of bytes in an I/O steam header
  */
@@ -116,6 +118,7 @@ extern int unpack_msg ( slurm_msg_t * msgi , Buf buffer );
 /***************************************************************************/
 /* specific case statement Pack / Unpack methods for slurm protocol bodies */
 /***************************************************************************/
+
 /* pack_job_credential
  * packs a slurm job credential
  * IN cred - pointer to the credential
@@ -133,134 +136,22 @@ void pack_job_credential ( slurm_job_credential_t* cred , Buf buffer ) ;
  */
 int unpack_job_credential( slurm_job_credential_t** cred , Buf buffer ) ;
 
-
-
-
-
-void pack_job_desc ( job_desc_msg_t *job_desc_msg_ptr, Buf buffer );
-int unpack_job_desc ( job_desc_msg_t **job_desc_msg_ptr, Buf buffer );
-
-void pack_old_job_desc ( old_job_alloc_msg_t * job_desc_ptr, Buf buffer );
-int unpack_old_job_desc ( old_job_alloc_msg_t **job_desc_buffer_ptr, 
-                          Buf buffer );
-
-void pack_last_update ( last_update_msg_t * msg , Buf buffer );
-int unpack_last_update ( last_update_msg_t ** msg , Buf buffer );
-
-void pack_job_step_create_response_msg (  job_step_create_response_msg_t* msg , 
-                                          Buf buffer );
-int unpack_job_step_create_response_msg (job_step_create_response_msg_t** msg , 
-                                         Buf buffer );
-
-void pack_return_code ( return_code_msg_t * msg , Buf buffer );
-int unpack_return_code ( return_code_msg_t ** msg , Buf buffer );
-
-void pack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer );
-int unpack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t **build_buffer_ptr, 
-                            Buf buffer );
-
-void pack_buffer_msg ( slurm_msg_t * msg , Buf buffer );
-
-#define pack_job_info_msg(msg,buf)	pack_buffer_msg(msg,buf)
-#define pack_job_step_info_msg(msg,buf)	pack_buffer_msg(msg,buf)
-
-int unpack_job_info_msg ( job_info_msg_t ** msg , Buf buffer );
-int unpack_job_info ( job_info_t ** job , Buf buffer );
-
-int unpack_job_info_members ( job_info_t * job , Buf buffer );
-
-/* job_step_info messages 
- * the pack_job_step_info_members is to be used programs such as slurmctld 
- * which do not use the protocol structures internally.
+/* pack_job_step_info
+ * packs a slurm job steps info
+ * IN step - pointer to the job step info
+ * IN/OUT buffer - destination of the pack, contains pointers that are 
+ *			automatically updated
  */
 void pack_job_step_info ( job_step_info_t* step, Buf buffer );
-void pack_job_step_info_members(   uint32_t job_id, uint16_t step_id, 
+
+/* pack_job_step_info_members
+ * pack selected fields of the description of a job into a buffer
+ * IN job_id, step_id, user_id, start_time, partition, nodes - job info
+ * IN/OUT buffer - destination of the pack, contains pointers that are 
+ *			automatically updated
+ */ 
+void pack_job_step_info_members( uint32_t job_id, uint16_t step_id, 
 		uint32_t user_id, time_t start_time, char *partition, 
 		char *nodes, Buf buffer );
-int unpack_job_step_info ( job_step_info_t ** step , Buf buffer );
-
-
-void pack_partition_info_msg ( slurm_msg_t * msg, Buf buffer );
-int unpack_partition_info_msg ( partition_info_msg_t ** , Buf buffer );
-int unpack_partition_info ( partition_info_t ** part , Buf buffer );
-int unpack_partition_info_members ( partition_info_t * part , Buf buffer );
-
-void pack_cancel_job_msg ( job_id_msg_t * msg , Buf buffer );
-int unpack_cancel_job_msg ( job_id_msg_t ** msg_ptr , Buf buffer );
-
-/* job_step_id functions */
-void pack_job_step_id ( job_step_id_t * msg , Buf buffer );
-int unpack_job_step_id ( job_step_id_t ** msg_ptr , Buf buffer );
-
-/* job_step_id Macros for typedefs */
-#define pack_cancel_job_step_msg(msg,buffer)		\
-	pack_job_step_id(msg,buffer)
-#define unpack_cancel_job_step_msg(msg_ptr,buffer)	\
-	unpack_job_step_id(msg_ptr,buffer)
-#define pack_job_step_id_msg(msg,buffer)		\
-	pack_job_step_id(msg,buffer)
-#define unpack_job_step_id_msg(msg_ptr,buffer)		\
-	unpack_job_step_id(msg_ptr,buffer)
-#define pack_job_step_info_request_msg(msg,buffer)	\
-	pack_job_step_id(msg,buffer)
-#define unpack_job_step_info_request_msg(msg_ptr,buffer)\
-	unpack_job_step_id(msg_ptr,buffer)
-#define pack_job_info_request_msg(msg,buffer)		\
-	pack_job_step_id(msg,buffer)
-#define unpack_job_info_request_msg(msg_ptr,buffer)	\
-	unpack_job_step_id(msg_ptr,buffer)
-
-int unpack_job_step_info ( job_step_info_t ** step , Buf buffer );
-int unpack_job_step_info_members ( job_step_info_t * step , Buf buffer );
-int unpack_job_step_info_response_msg ( job_step_info_response_msg_t** msg, 
-                                        Buf buffer );
-
-void pack_complete_job_step ( complete_job_step_msg_t * msg , Buf buffer ) ;
-int  unpack_complete_job_step ( complete_job_step_msg_t ** msg_ptr , 
-                                Buf buffer ) ;
-
-void pack_cancel_tasks_msg ( kill_tasks_msg_t * msg , Buf buffer );
-int unpack_cancel_tasks_msg ( kill_tasks_msg_t ** msg_ptr , Buf buffer );
-
-void pack_partition_table_msg ( partition_desc_msg_t *  msg , Buf buffer );
-int unpack_partition_table_msg ( partition_desc_msg_t **  msg_ptr , Buf buffer );
-
-void pack_shutdown_msg ( shutdown_msg_t * msg , Buf buffer );
-int unpack_shutdown_msg ( shutdown_msg_t ** msg_ptr , Buf buffer );
-
-void pack_launch_tasks_request_msg ( launch_tasks_request_msg_t * msg , 
-                                     Buf buffer );
-int unpack_launch_tasks_request_msg ( launch_tasks_request_msg_t ** msg_ptr , 
-                                      Buf buffer );
-
-void pack_launch_tasks_response_msg ( launch_tasks_response_msg_t * msg , 
-                                      Buf buffer );
-int unpack_launch_tasks_response_msg ( launch_tasks_response_msg_t ** msg_ptr , 
-                                       Buf buffer );
-
-void pack_kill_tasks_msg ( kill_tasks_msg_t * msg , Buf buffer );
-int unpack_kill_tasks_msg ( kill_tasks_msg_t ** msg_ptr , Buf buffer );
-
-void pack_slurm_addr_array ( slurm_addr * slurm_address , uint16_t size_val, 
-                             Buf buffer );
-int  unpack_slurm_addr_array ( slurm_addr ** slurm_address , 
-                               uint16_t * size_val , Buf buffer );
-
-
-extern void pack_get_job_step_info ( job_step_info_request_msg_t * msg , 
-                                     Buf buffer );
-extern int unpack_get_job_step_info ( job_step_info_request_msg_t ** msg , 
-                                      Buf buffer );
-
-void pack_reattach_tasks_streams_msg ( 
-	reattach_tasks_streams_msg_t * msg , Buf buffer ) ;
-int unpack_reattach_tasks_streams_msg ( 
-	reattach_tasks_streams_msg_t ** msg_ptr , Buf buffer ) ;
-
-void pack_task_exit_msg ( task_exit_msg_t * msg , Buf buffer ) ;
-int unpack_task_exit_msg ( task_exit_msg_t ** msg_ptr , Buf buffer ) ;
-
-void pack_batch_job_launch ( batch_job_launch_msg_t* cred , Buf buffer ) ;
-int  unpack_batch_job_launch( batch_job_launch_msg_t** msg , Buf buffer ) ;
 
 #endif
