@@ -161,7 +161,7 @@ fname_free(void *name)
 int 
 fname_trunc_all(slurmd_job_t *job, const char *fmt)
 {
-	int i, rc;
+	int i, rc = SLURM_SUCCESS;
 	char *fname;
 	ListIterator filei;
 	List files = list_create((ListDelF)fname_free);
