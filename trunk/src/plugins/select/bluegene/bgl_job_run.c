@@ -133,6 +133,7 @@ static int _remove_job(db_job_id_t job_id)
 			return rc;
 		}
 	}
+	/* try once more... */
 	(void) rm_remove_job(job_id);
 	error("Failed to remove job %d from DB2", job_id);
 	return INTERNAL_ERROR;
@@ -150,17 +151,23 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 	else
 		info("Clearing partition %s owner", bgl_part_id);
 
-	/* Make partition state FREE */
+	/* Destroy the partition */
+	if ((rc = pm_destroy_partition(bgl_part_id)) != STATUS_OK) {
+		error("pm_destroy_partition(%s): %s", bgl_part_id,
+			bgl_err_str(rc));
+		return SLURM_ERROR;
+	}
+		
+	/* Wait for partition state to be FREE */
 	for (i=0; i<MAX_POLL_RETRIES; i++) {
-		if (i > 0)
-			sleep(POLL_INTERVAL);
+		sleep(POLL_INTERVAL);
 
 		/* find the partition */
 		if ((rc = rm_get_partition(bgl_part_id,  &part_elem)) != 
 				STATUS_OK) {
 			error("rm_get_partition(%s): %s", bgl_part_id, 
 				bgl_err_str(rc));
-			return rc;
+			return SLURM_ERROR;
 		}
 
 		/* find its state */
@@ -169,7 +176,7 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 			error("rm_get_data(RM_PartitionState): %s", 
 				bgl_err_str(rc));
 			(void) rm_free_partition(part_elem);
-			return rc;
+			return SLURM_ERROR;
 		}
 
 		if ((rc = rm_free_partition(part_elem)) != STATUS_OK)
@@ -177,33 +184,51 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 
 		if (part_state == RM_PARTITION_FREE)
 			break;
-		if ((i == 0)
-		&&  ((rc = pm_destroy_partition(bgl_part_id)) != STATUS_OK)) {
-			error("pm_destroy_partition(%s): %s", bgl_part_id, 
-				bgl_err_str(rc));
-			return rc;
-		}
 	}
 
 	if (part_state != RM_PARTITION_FREE) {
 		error("Could not free partition %s", bgl_part_id);
-		return INTERNAL_ERROR;
+		return SLURM_ERROR;
 	}
-	if ((rc = rm_set_part_owner(bgl_part_id, user)) != STATUS_OK)
+	if ((rc = rm_set_part_owner(bgl_part_id, user)) != STATUS_OK) {
 		error("rm_set_part_owner(%s,%s): %s", bgl_part_id, user,
 			bgl_err_str(rc));
+		return SLURM_ERROR;
+	}
 
-	return rc;
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Boot a partition. 
+ * NOTE: This function does not wait for the boot to complete.
+ * the slurm prolog script needs to perform the waiting.
+ */
+static int _boot_part(pm_partition_id_t bgl_part_id)
+{
+	int rc;
+
+	info("Booting partition %s", bgl_part_id);
+	if ((rc = pm_create_partition(bgl_part_id)) != STATUS_OK) {
+		error("pm_create_partition(%s): %s", 
+			bgl_part_id, bgl_err_str(rc));
+		return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
 }
 
 /* Perform job initiation work */
 extern void _start_agent(bgl_update_t *bgl_update_ptr)
 {
-	if (_set_part_owner(bgl_update_ptr->bgl_part_id, 
-			uid_to_string(bgl_update_ptr->uid)) != STATUS_OK) {
-		error("Could not change partition owner to start jobid=%u",
-			bgl_update_ptr->job_id);
-		sleep(1);	/* wait for the slurmd to begin the batch 
+	int rc;
+
+	rc = _set_part_owner(bgl_update_ptr->bgl_part_id,
+		uid_to_string(bgl_update_ptr->uid));
+	if (rc == SLURM_SUCCESS)
+		rc = _boot_part(bgl_update_ptr->bgl_part_id);
+	
+	if (rc != SLURM_SUCCESS) {
+		sleep(2);	/* wait for the slurmd to begin the batch 
 				 * script, slurm_fail_job() is a no-op if 
 				 * issued prior to the script initiation */
 		(void) slurm_fail_job(bgl_update_ptr->job_id);
