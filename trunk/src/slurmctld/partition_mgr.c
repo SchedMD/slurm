@@ -204,7 +204,9 @@ int build_part_bitmap (struct part_record *part_record_point)
 	if (error_code) {
 		if (old_bitmap)
 			bit_free (old_bitmap);
-		return error_code;
+		error ("build_part_bitmap: invalid node specified %s", 
+			part_record_point->nodes);
+		return ESLURM_INVALID_NODE_NAME_SPECIFIED;
 	}
 
 	for (i = 0; i < node_count; i++) {
@@ -215,7 +217,7 @@ int build_part_bitmap (struct part_record *part_record_point)
 			if (old_bitmap)
 				bit_free (old_bitmap);
 			xfree(node_list);
-			return EINVAL;
+			return ESLURM_INVALID_NODE_NAME_SPECIFIED;
 		}	
 		part_record_point->total_nodes++;
 		part_record_point->total_cpus += node_record_point->cpus;
@@ -592,7 +594,7 @@ update_part (update_part_msg_t * part_desc )
 	if ((part_desc -> name == NULL ) ||
 			(strlen (part_desc->name ) >= MAX_NAME_LEN)) {
 		error ("update_part: invalid partition name  %s", part_desc->name);
-		return ESLURM_PROTOCOL_INVALID_PARTITION_NAME ;
+		return ESLURM_INVALID_PARTITION_NAME ;
 	}			
 
 	error_code = 0;
@@ -655,18 +657,25 @@ update_part (update_part_msg_t * part_desc )
 	}			
 
 	if (part_desc->nodes != NULL) {
-		if (part_ptr->nodes)
-			xfree (part_ptr->nodes);
+		char *backup_node_list;
+		backup_node_list = part_ptr->nodes;
 		i = strlen(part_desc->nodes) + 1;
 		part_ptr->nodes = xmalloc(i);
 		strcpy ( part_ptr->nodes , part_desc->nodes ) ;
-		info ("update_part: setting nodes to %s for partition %s",
-				part_desc->nodes, part_desc->name);
 
-		/* now we need to update total_cpus, total_nodes, and node_bitmap */
 		error_code = build_part_bitmap (part_ptr);
-		if (error_code)
-			return error_code;
+		if (error_code) {
+			if (part_ptr->nodes)
+				xfree (part_ptr->nodes);
+			part_ptr->nodes = backup_node_list;
+		}
+		else {
+			info ("update_part: setting nodes to %s for partition %s",
+				part_desc->nodes, part_desc->name);
+			if (backup_node_list)
+				xfree(backup_node_list);
+		}
+		return error_code;
 	}			
 	return error_code;
 }
