@@ -1690,18 +1690,10 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 /* _slurm_rpc_ping - process ping RPC */
 static void _slurm_rpc_ping(slurm_msg_t * msg)
 {
-	/* init */
-	int error_code = SLURM_SUCCESS;
-	uid_t uid = g_slurm_auth_get_uid(msg->cred);
-
-	if ((uid != 0) && (uid != getuid())) {
-		error("Security violation, PING RPC from uid %u",
-		      (unsigned int) uid);
-		error_code = ESLURM_USER_ID_MISSING;
-	}
+	/* We could authenticate here, if desired */
 
 	/* return result */
-	slurm_send_rc_msg(msg, error_code);
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
 
 
@@ -2344,7 +2336,9 @@ static int _background_process_msg(slurm_msg_t * msg)
 	}
 
 	if (error_code == SLURM_SUCCESS) {
-		if (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE) {
+		if (msg->msg_type == REQUEST_PING) {
+			;
+		} else if (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE) {
 			debug3
 			    ("Performing RPC: REQUEST_SHUTDOWN_IMMEDIATE");
 		} else if (msg->msg_type == REQUEST_SHUTDOWN) {
