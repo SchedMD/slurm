@@ -39,7 +39,7 @@ dnl Checks for header files.
 dnl
 AC_CHECK_HEADERS(popt.h mcheck.h values.h socket.h sys/socket.h  \
                  stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
-                 stdlib.h dirent.h \
+                 stdlib.h dirent.h pthread.h \
 		 )
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
