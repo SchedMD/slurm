@@ -21,7 +21,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ SLURM_COMMUNICATIONS_SEND_ERROR,	"Message send failure" },
 	{ SLURM_COMMUNICATIONS_RECEIVE_ERROR,	"Message receive failure" },
 	{ SLURM_COMMUNICATIONS_SHUTDOWN_ERROR,	"Communication shutdown failure" },
-	{ SLURM_PROTOCOL_VERSION_ERROR,		"Protocol version has changed, re-link" },
+	{ SLURM_PROTOCOL_VERSION_ERROR,		"Protocol version has changed, re-link your code" },
 	{ SLURM_NO_CHANGE_IN_DATA, 		"Data has not changed since time specified" },
 
 	/* job_mgr.c/job_create */
