@@ -10,7 +10,7 @@
 #define FEATURE_SIZE	1024
 #define JOB_STRUCT_VERSION 1
 #define MAX_ID_LEN	32
-#define MAX_NAME_LEN	16
+#define MAX_NAME_LEN	1024 	/* gethostname in linux returns a FQ DNS name */
 #define NODE_STRUCT_VERSION 1
 #define PART_STRUCT_VERSION 1
 #define SLURMCTLD_HOST	"127.0.0.1"
@@ -54,61 +54,12 @@ enum node_states {
 	STATE_END		/* last entry in table */
 };
 
-struct build_table {
-	uint16_t backup_interval;/* slurmctld save state interval, seconds */
-	char *backup_location;	/* pathname of state save directory */
-	char *backup_machine;	/* name of slurmctld secondary server */
-	char *control_daemon;	/* pathname of slurmctld */
-	char *control_machine;	/* name of slurmctld primary server */
-	uint16_t controller_timeout; /* seconds for secondary slurmctld to take over */
-	char *epilog;		/* pathname of job epilog */
-	uint16_t fast_schedule;	/* 1 to *not* check configurations by node 
-				 * (only check configuration file, faster) */
-	uint16_t hash_base;	/* base used for hashing node table */
-	uint16_t heartbeat_interval; /* interval between node heartbeats, seconds */
-	char *init_program;	/* pathname of program to complete with exit 0 
- 				 * before slurmctld or slurmd start on that node */
-	uint16_t kill_wait;	/* seconds from SIGXCPU to SIGKILL on job termination */
-	char *prioritize;	/* pathname of program to set initial job priority */
-	char *prolog;		/* pathname of job prolog */
-	char *server_daemon;	/* pathame of slurmd */
-	uint16_t server_timeout;/* how long slurmctld waits for setting node DOWN */
-	char *slurm_conf;	/* pathname of slurm config file */
-	char *tmp_fs;		/* pathname of temporary file system */
-};
-
 struct build_buffer {
 	time_t last_update;	/* time of last buffer update */
 	void *raw_buffer_ptr;	/* raw network buffer info */
 	struct build_table *build_table_ptr;
 };
 
-struct job_table {
-	uint32_t job_id;	/* job ID */
-	char *name;		/* name of the job */
-	uint32_t user_id;	/* user the job runs as */
-	uint16_t job_state;	/* state of the job, see enum job_states */
-	uint32_t time_limit;	/* maximum run time in minutes or INFINITE */
-	time_t start_time;	/* time execution begins, actual or expected*/
-	time_t end_time;	/* time of termination, actual or expected */
-	uint32_t priority;	/* relative priority of the job */
-	char *nodes;		/* comma delimited list of nodes allocated to job */
-	int *node_inx;		/* list index pairs into node_table for *nodes:
-				   start_range_1, end_range_1, start_range_2, .., -1  */
-	char *partition;	/* name of assigned partition */
-	uint32_t num_procs;	/* number of processors required by job */
-	uint32_t num_nodes;	/* number of nodes required by job */
-	uint16_t shared;	/* 1 if job can share nodes with other jobs */
-	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
-	uint32_t min_procs;	/* minimum processors required per node */
-	uint32_t min_memory;	/* minimum real memory required per node */
-	uint32_t min_tmp_disk;	/* minimum temporary disk required per node */
-	char *req_nodes;	/* comma separated list of required nodes */
-	int *req_node_inx;	/* list index pairs into node_table for *req_nodes:
-				   start_range_1, end_range_1, start_range_2, .., -1  */
-	char *features;		/* comma separated list of required features */
-	char *job_script;	/* pathname of required script */
-};
 
 struct job_buffer {
 	time_t last_update;	/* time of last buffer update */
@@ -186,11 +137,21 @@ extern int slurm_allocate (char *spec, char **node_list, uint32_t *job_id);
  */
 extern int slurm_cancel (uint32_t job_id);
 
+
+/***************************
+ * build_info.c
+ ***************************/
+
 /*
  * slurm_free_build_info - free the build information buffer (if allocated)
  * NOTE: buffer is loaded by slurm_load_build.
  */
-extern void slurm_free_build_info (struct build_buffer *build_buffer_ptr);
+extern void slurm_free_build_info (struct build_table *build_table_ptr);
+/*
+ * slurm_pritn_build_info - prints the build information buffer (if allocated)
+ * NOTE: buffer is loaded by slurm_load_build.
+ */
+extern void slurm_print_build_info ( struct build_table * build_table_ptr ) ;
 
 /*
  * slurm_free_job_info - free the job information buffer (if allocated)
@@ -223,7 +184,7 @@ extern void slurm_free_part_info (struct part_buffer *part_buffer_ptr);
  * NOTE: the allocated memory at build_buffer_ptr freed by slurm_free_node_info.
  */
 extern int slurm_load_build (time_t update_time, 
-	struct build_buffer **build_buffer_ptr);
+	struct build_table **build_table_ptr);
 
 
 /*
