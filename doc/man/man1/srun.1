@@ -72,7 +72,8 @@ minutes. If the job's time limit exceeds the partition's time limit, the
 job will be left in a PENDING state. The default value is the partition's 
 time limit. When the time limit is reached, the job's processes are sent 
 SIGTERM followed by SIGKILL. The interval between signals is specified by 
-the SLURM configuration parameter \fBKillWait\fR.
+the SLURM configuration parameter \fBKillWait\fR. A time limit of 0 minutes
+indicates that an infinite timelimit should be used.
 .TP
 \fB\-D\fR, \fB\-\-chdir\fR=\fIpath\fR
 have the remote processes do a chdir to \fIpath\fR before beginning
