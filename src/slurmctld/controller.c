@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (daemonize) {
-		error_code = daemon(1, 0);
+		error_code = daemon(1, 1);
 		log_alter(log_opts, LOG_DAEMON, 
 			  slurmctld_conf.slurmctld_logfile);
 		if (error_code)
@@ -1733,10 +1733,9 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 	}
 	if (error_code == SLURM_SUCCESS) {  /* Stuff to do after unlock */
 		_update_cred_key();
-		if (daemonize) {
-			if (chdir(slurmctld_conf.state_save_location))
-				fatal("chdir to %s error %m",
-				      slurmctld_conf.state_save_location);
+		if (daemonize && chdir(slurmctld_conf.state_save_location) < 0) {
+			error("chdir to %s error %m",
+			      slurmctld_conf.state_save_location);
 		}
 	}
 
