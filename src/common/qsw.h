@@ -13,6 +13,7 @@ typedef struct qsw_jobinfo 	*qsw_jobinfo_t;
 
 #define QSW_LIBSTATE_PACK_MAX	12
 #define QSW_JOBINFO_PACK_MAX	120
+#define QSW_MAX_PROCS		1024
 
 /**
  ** Allocation and set up / tear down of jobinfo.
@@ -36,6 +37,9 @@ typedef struct qsw_jobinfo 	*qsw_jobinfo_t;
  *
  * qsw_libstate_t's are externally allocated and freed with the alloc/free
  * functions below.
+ *
+ * qsw_libstate_t's can be converted to/from a packed format which is suitable
+ * for transferring over the network using the pack/unpack functions.
  */
 int		qsw_alloc_libstate(qsw_libstate_t *lsp);
 void		qsw_free_libstate(qsw_libstate_t ls);
@@ -58,6 +62,9 @@ void 		qsw_fini(qsw_libstate_t savestate);
  *   cyclic_alloc - 0 if using "block" allocation, 1 if "cyclic" allocation
  * Note: the number of processes per node is expected to be 'nprocs' 
  * divided by the number of bits set in 'nodeset'.
+ *
+ * qsw_jobinfo_t's can be converted to/from a packed format which is suitable
+ * for transferring over the network using the pack/unpack functions.
  */
 
 int		qsw_alloc_jobinfo(qsw_jobinfo_t *jp);
@@ -68,5 +75,26 @@ int		qsw_unpack_jobinfo(qsw_jobinfo_t j, void *data, int len);
 
 int 		qsw_setup_jobinfo(qsw_jobinfo_t j, int nprocs, 
 			bitstr_t *nodeset, int cyclic_alloc);
+
+/**
+ ** Setup of execution environment for elan-enabled processes.
+ **/
+
+/*
+ * 1:			2:			3: (N instances)	4:
+ * unpack jobinfo 	qsw_prog_init		qsw_attach		setuid
+ * get uid from slurm	fork N processes	set environment		exec
+ * fork			wait N processes	fork
+ * waitpid		qsw_prog_fini		wait
+ * qsw_prog_reap	exit			exit
+ * exit
+ */
+
+int 		qsw_prog_reap(qsw_jobinfo_t jobinfo);
+
+int 		qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid);
+void 		qsw_prog_fini(qsw_jobinfo_t jobinfo);
+
+int 		qsw_attach(qsw_jobinfo_t jobinfo, int procnum);
 
 #endif /* _QSW_INCLUDED */

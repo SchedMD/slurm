@@ -194,6 +194,8 @@ qsw_init(qsw_libstate_t oldstate)
 {
 	qsw_libstate_t new;
 
+	assert(ELAN_MAX_VPS == QSW_MAX_PROCS);
+
 	assert(qsw_internal_state == NULL);
 	_srand_if_needed();
 	if (qsw_alloc_libstate(&new) < 0)
@@ -466,7 +468,7 @@ _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
  * Call this on the "client" process, e.g. pdsh, srun, slurctld, etc..
  */
 int
-qsw_create_jobinfo(qsw_jobinfo_t j, int nprocs, bitstr_t *nodeset, 
+qsw_setup_jobinfo(qsw_jobinfo_t j, int nprocs, bitstr_t *nodeset, 
 		int cyclic_alloc)
 {
 	int nnodes = bit_set_count(nodeset);
@@ -490,8 +492,38 @@ qsw_create_jobinfo(qsw_jobinfo_t j, int nprocs, bitstr_t *nodeset,
 	return 0;
 }
 
+/*
+ * Here are the necessary steps to set up to run an Elan MPI parallel program
+ * (set of processes) on a node (possibly one of many allocated to the prog):
+ *
+ * Process 1	Process 2	|	Process 3	Process 4
+ * read args			|
+ * fork	-------	rms_prgcreate	|
+ * waitpid 	elan3_create	|
+ * 		rms_prgaddcap	|
+ *		fork N procs ---+------	rms_setcap
+ *		wait all	|	setup RMS_ env	
+ *				|	fork ----------	setuid, etc.
+ *				|	wait		exec mpi process
+ *				|	exit
+ *		exit		|
+ * rms_prgdestroy		|
+ * exit				|     (one pair of processes per mpi proc!)
+ *
+ * - The first fork is required because rms_prgdestroy can't occur in the 
+ *   process that calls rms_prgcreate (since it is a member, ECHILD).
+ * - The second fork is required when running multiple processes per node 
+ *   because each process must announce its use of one of the hw contexts 
+ *   in the range allocated in the capability.
+ * - The third fork seems required after the rms_setcap or else elan3_attach
+ *   will fail with EINVAL.
+ */
+
+/*
+ * Process 1: issue the rms_prgdestroy for the job.
+ */
 int
-qsw_prog_reap(struct qsw_jobinfo *jobinfo)
+qsw_prog_reap(qsw_jobinfo_t jobinfo)
 {
 	if (rms_prgdestroy(jobinfo->j_prognum) < 0) {
 		/* sets errno */
@@ -500,8 +532,11 @@ qsw_prog_reap(struct qsw_jobinfo *jobinfo)
 	return 0;
 }
 
+/*
+ * Process 2: Destroy the context after children are dead.
+ */
 void
-qsw_prog_fini(struct qsw_jobinfo *jobinfo)
+qsw_prog_fini(qsw_jobinfo_t jobinfo)
 {
 	if (jobinfo->j_ctx) {
 		_elan3_fini(jobinfo->j_ctx);
@@ -509,8 +544,11 @@ qsw_prog_fini(struct qsw_jobinfo *jobinfo)
 	}
 }
 
+/*
+ * Process 2: Create the context and make capability available to children.
+ */
 int
-qsw_prog_init(struct qsw_jobinfo *jobinfo, uid_t uid)
+qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 {
 	int err;
 
@@ -538,8 +576,11 @@ fail:
 	return -1;
 }
 
+/*
+ * Process 3: Do the rms_setcap.
+ */
 int
-qsw_attach(struct qsw_jobinfo *jobinfo, int procnum)
+qsw_attach(qsw_jobinfo_t jobinfo, int procnum)
 {
 	/*
 	 * Assign elan hardware context to current process.
@@ -602,8 +643,8 @@ static void
 _safe_mkjob(qsw_jobinfo_t jp, int nprocs, bitstr_t *nodeset, 
 		int cyclic_alloc)
 {
-	if (qsw_create_jobinfo(jp, nprocs, nodeset, cyclic_alloc) < 0) {
-		perror("qsw_create_jobinfo");
+	if (qsw_setup_jobinfo(jp, nprocs, nodeset, cyclic_alloc) < 0) {
+		perror("qsw_setup_jobinfo");
 		exit(1);
 	}
 }
@@ -693,3 +734,4 @@ main(int argc, char *argv[])
 	exit(0);
 }
 #endif /* DEBUG_MODULE */
+
