@@ -95,9 +95,15 @@ int _init_status_pthread();
  */
 int init ( void )
 {
-	debug("init");
-	verbose("%s loading...", plugin_name);
+#ifndef HAVE_BGL
+	fatal("Plugin select/bluegene is illegal on non-BlueGene computers");
+#endif
+#if (SYSTEM_DIMENSIONS != 3)
+	fatal("SYSTEM_DIMENSIONS value invalid for Blue Gene (%d)",
+		SYSTEM_DIMENSIONS);
+#endif
 
+	verbose("%s loading...", plugin_name);
 	if (init_bgl())
 		return SLURM_ERROR;
 	
