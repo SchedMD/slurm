@@ -1,6 +1,38 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.3.0-pre3 (not yet tagged or built)
+=============================
+ -- Fixes for reported problems:
+   - slurm/328: Slurmd was restarting with a new shared memory segment and 
+     losing track of jobs
+   - slurm/333: Slurmd fails to launch a job and deletes a step, due to 
+     a race condition in shared memory management
+   - slurm/334: Slurmd was getting a segv due to a race condition in shared 
+     memory management
+   - slurm/342: Properly handle nodes being removed from configuration 
+     even when there are partitions, nodes, or job steps still associated 
+     with them
+ -- Srun properly terminates jobs/steps upon node failure (used to hang 
+    waiting for I/O completion)
+ -- Job time limits enforced even if InactiveLimit configured as zero
+ -- Support the sending of an arbitrary signal to a batch script (but not 
+    the processses in its job steps) 
+ -- Re-read slurm configuration file whenever changed, needed by users 
+    of SLURM APIs
+ -- Scancel was generating a assert failure
+ -- Slurmctld sends a launch response message upon scheduling of a queued
+    job (for immediate srun response)
+ -- Maui scheduler plugin added
+ -- Backfill scheduler plugin added
+ -- Batch scripts can now have arguments that are propogated
+ -- MPICH support added (via patch, not in SLURM CVS)
+ -- New SLURM environment variables added SLMR_CPUS_ON_NODE and 
+    SLURM_LAUNCH_NODE_IPADDR, these provide support needed for LAM/MPI
+    (version 7.0.4+)
+ -- The TMPDIR directory is created as needed before job launch
+ -- Do not create duplicate SLURM environment variables with the same name
+
 * Changes in SLURM 0.3.0-pre2
 =============================
  -- Fixes for reported problems:
