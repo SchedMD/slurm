@@ -2267,8 +2267,10 @@ size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	LOCK_HOSTLIST(hl);
 
 #ifdef HAVE_BGL		/* logic for block node description */
+	if (hl->nranges < 1)
+		goto notbox;	/* no data */
 	if (hl->hr[0]->width != 3)
-		goto notbox;
+		goto notbox;	/* not Blue Gene format */
 	_clear_grid();
 	for (i=0;i<hl->nranges;i++)
 		_set_grid(hl->hr[i]->lo, hl->hr[i]->hi);
