@@ -100,17 +100,19 @@ struct qsw_jobinfo {
 /* Copy library state */
 #define _copy_libstate(dest, src) do { 			\
 	assert((src)->ls_magic == QSW_LIBSTATE_MAGIC); 	\
-	assert((dest)->ls_magic == QSW_LIBSTATE_MAGIC); 	\
+	assert((dest)->ls_magic == QSW_LIBSTATE_MAGIC); \
 	memcpy(dest, src, sizeof(struct qsw_libstate));	\
 } while (0)
 
 /* Lock on library state */
 #define _lock_qsw() do {				\
-	int err = pthread_mutex_lock(&qsw_lock);	\
+	int err;					\
+	err = pthread_mutex_lock(&qsw_lock);		\
 	assert(err == 0);				\
 } while (0)
 #define _unlock_qsw() do {				\
-	int err = pthread_mutex_unlock(&qsw_lock);	\
+	int err;					\
+	err = pthread_mutex_unlock(&qsw_lock);		\
 	assert(err == 0);				\
 } while (0)
 
