@@ -1528,7 +1528,8 @@ void make_node_comp(struct node_record *node_ptr)
 		(node_ptr->run_job_cnt)--;
 	else
 		error("Node %s run_job_cnt underflow", node_ptr->name);
-	(node_ptr->comp_job_cnt)++;
+	if (base_state != NODE_STATE_DOWN)
+		(node_ptr->comp_job_cnt)++;	/* Don't verify  RPC */
 }
 
 /* _make_node_down - flag specified node as down */
