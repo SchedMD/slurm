@@ -17,6 +17,15 @@
 #define BUF_SIZE 1024
 #define SEPCHARS " \n\t"
 
+int 
+load_string (char **destination, char *keyword, char *in_line) ;
+int 
+load_long (long *destination, char *keyword, char *in_line) ;
+int
+load_integer (int *destination, char *keyword, char *in_line) ;
+int 
+load_float (float *destination, char *keyword, char *in_line) ;
+
 /* 
  * slurm_parser - parse the supplied specification into keyword/value pairs
  *	only the keywords supplied will be searched for. the supplied specification
