@@ -143,11 +143,9 @@ int count_cpus(unsigned *bitmap)
  */
 void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 {
-	int i, retries = 0;
+	int i;
 	kill_job_msg_t *kill_job;
 	agent_arg_t *agent_args;
-	pthread_attr_t attr_agent;
-	pthread_t thread_agent;
 	int buf_rec_size = 0, down_node_cnt = 0;
 	uint16_t base_state, no_resp_flag;
 
@@ -205,23 +203,7 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 	}
 
 	agent_args->msg_args = kill_job;
-	debug2("Spawning job kill agent");
-	if (pthread_attr_init(&attr_agent))
-		fatal("pthread_attr_init error %m");
-	if (pthread_attr_setdetachstate
-	    (&attr_agent, PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-	if (pthread_attr_setscope(&attr_agent, PTHREAD_SCOPE_SYSTEM))
-		error("pthread_attr_setscope error %m");
-#endif
-	while (pthread_create(&thread_agent, &attr_agent, agent, 
-			(void *) agent_args)) {
-		error("pthread_create error %m");
-		if (++retries > MAX_RETRIES)
-			fatal("Can't create pthread");
-		sleep(1);	/* sleep and try again */
-	}
+	agent_queue_request(agent_args);
 	return;
 }
 
@@ -1312,11 +1294,9 @@ static int _valid_features(char *requested, char *available)
  */
 extern void re_kill_job(struct job_record *job_ptr)
 {
-	int i, retries = 0;
+	int i;
 	kill_job_msg_t *kill_job;
 	agent_arg_t *agent_args;
-	pthread_attr_t attr_agent;
-	pthread_t thread_agent;
 	int buf_rec_size = 0;
 	hostlist_t kill_hostlist = hostlist_create("");
 	char host_str[64];
@@ -1382,22 +1362,6 @@ extern void re_kill_job(struct job_record *job_ptr)
 	hostlist_destroy(kill_hostlist);
 
 	agent_args->msg_args = kill_job;
-	debug2("Spawning job kill agent");
-	if (pthread_attr_init(&attr_agent))
-		fatal("pthread_attr_init error %m");
-	if (pthread_attr_setdetachstate
-	    (&attr_agent, PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-	if (pthread_attr_setscope(&attr_agent, PTHREAD_SCOPE_SYSTEM))
-		error("pthread_attr_setscope error %m");
-#endif
-	while (pthread_create(&thread_agent, &attr_agent, agent, 
-			(void *) agent_args)) {
-		error("pthread_create error %m");
-		if (++retries > MAX_RETRIES)
-			fatal("Can't create pthread");
-		sleep(1);	/* sleep and try again */
-	}
+	agent_queue_request(agent_args);
 	return;
 }

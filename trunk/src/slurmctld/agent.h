@@ -32,10 +32,14 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/slurmctld.h"
 
-#define AGENT_IS_THREAD  	1	/* set if agent itself a thread of 
+#define AGENT_IS_THREAD  	 1	/* set if agent itself a thread of 
 					 * slurmctld, 0 for function call */
-#define AGENT_THREAD_COUNT	10	/* maximum active agent threads */
+#define AGENT_THREAD_COUNT	10	/* maximum active threads per agent */
 #define COMMAND_TIMEOUT 	10	/* command requeue or error, seconds */
+#define MAX_AGENT_CNT		 7	/* maximum simultaneous agents, note 
+					 *   total thread count is product of
+					 *   MAX_AGENT_CNT and
+					 *   (AGENT_THREAD_COUNT + 2) */ 
 
 typedef struct agent_arg {
 	uint32_t	node_count;	/* number of nodes to communicate 
@@ -50,7 +54,8 @@ typedef struct agent_arg {
 
 /*
  * agent - party responsible for transmitting an common RPC in parallel 
- *	across a set of nodes
+ *	across a set of nodes. agent_queue_request() if immediate 
+ *	execution is not essential.
  * IN pointer to agent_arg_t, which is xfree'd (including slurm_addr, 
  *	node_names and msg_args) upon completion if AGENT_IS_THREAD is set
  * RET always NULL (function format just for use as pthread)
@@ -58,7 +63,8 @@ typedef struct agent_arg {
 extern void *agent (void *args);
 
 /*
- * agent_queue_request - put a request on the queue for later execution
+ * agent_queue_request - put a request on the queue for later execution or
+ *	execute now if not too busy
  * IN agent_arg_ptr - the request to enqueue
  */
 extern void agent_queue_request(agent_arg_t *agent_arg_ptr);
@@ -67,7 +73,8 @@ extern void agent_queue_request(agent_arg_t *agent_arg_ptr);
  * agent_retry - Agent for retrying pending RPCs. One pending request is 
  *	issued if it has been pending for at least min_wait seconds
  * IN min_wait - Minimum wait time between re-issue of a pending RPC
- * RET count of queued requests remaining
+ * RET count of queued requests remaining (zero if none are old enough 
+ * to re-issue)
  */
 extern int agent_retry (int min_wait);
 

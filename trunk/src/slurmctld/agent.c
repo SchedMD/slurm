@@ -72,11 +72,6 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
 
-#if COMMAND_TIMEOUT == 1
-#  define WDOG_POLL 		1	/* secs */
-#else
-#  define WDOG_POLL 		2	/* secs */
-#endif
 #define MAX_RETRIES	10
 
 typedef enum {
@@ -145,11 +140,17 @@ static void *_wdog(void *args);
 
 static pthread_mutex_t retry_mutex = PTHREAD_MUTEX_INITIALIZER;
 static List retry_list = NULL;		/* agent_arg_t list for retry */
+
+static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  agent_cnt_cond  = PTHREAD_COND_INITIALIZER;
+static int agent_cnt = 0;
+
 static bool run_scheduler = false;
 
 /*
  * agent - party responsible for transmitting an common RPC in parallel 
- *	across a set of nodes
+ *	across a set of nodes. Use agent_queue_request() if immediate 
+ *	execution is not essential.
  * IN pointer to agent_arg_t, which is xfree'd (including slurm_addr, 
  *	node_names and msg_args) upon completion if AGENT_IS_THREAD is set
  * RET always NULL (function format just for use as pthread)
@@ -163,6 +164,17 @@ void *agent(void *args)
 	agent_info_t *agent_info_ptr = NULL;
 	thd_t *thread_ptr;
 	task_info_t *task_specific_ptr;
+
+	slurm_mutex_lock(&agent_cnt_mutex);
+	while (1) {
+		if (agent_cnt < MAX_AGENT_CNT) {
+			agent_cnt++;
+			break;
+		} else {	/* wait for state change and retry */
+			pthread_cond_wait(&agent_cnt_cond, &agent_cnt_mutex);
+		}
+	}
+	slurm_mutex_unlock(&agent_cnt_mutex);
 
 	/* basic argument value tests */
 	if (_valid_agent_arg(agent_arg_ptr))
@@ -254,6 +266,17 @@ void *agent(void *args)
 		xfree(agent_info_ptr->thread_struct);
 		xfree(agent_info_ptr);
 	}
+
+	slurm_mutex_lock(&agent_cnt_mutex);
+	if (agent_cnt > 0)
+		agent_cnt--;
+	else
+		error("agent_cnt underflow");
+	if (agent_cnt < MAX_AGENT_CNT)
+		agent_retry(RPC_RETRY_INTERVAL);
+	slurm_mutex_unlock(&agent_cnt_mutex);
+	pthread_cond_broadcast(&agent_cnt_cond);
+
 	return NULL;
 }
 
@@ -334,7 +357,7 @@ static task_info_t *_make_task_data(agent_info_t *agent_info_ptr, int inx)
  * _wdog - Watchdog thread. Send SIGALRM to threads which have been active 
  *	for too long. 
  * IN args - pointer to agent_info_t with info on threads to watch
- * Sleep for WDOG_POLL seconds between polls.
+ * Sleep between polls with exponential times (from 0.125 to 1.0 second) 
  */
 static void *_wdog(void *args)
 {
@@ -343,6 +366,7 @@ static void *_wdog(void *args)
 	int i, max_delay = 0;
 	agent_info_t *agent_ptr = (agent_info_t *) args;
 	thd_t *thread_ptr = agent_ptr->thread_struct;
+	unsigned long usec = 125000;
 	time_t now;
 
 	if ( (agent_ptr->msg_type == SRUN_PING) ||
@@ -357,7 +381,8 @@ static void *_wdog(void *args)
 		no_resp_cnt = 0;	/* assume all threads respond */
 		retry_cnt   = 0;	/* assume no required retries */
 
-		sleep(WDOG_POLL);
+		usleep(usec);
+		usec = MIN((usec * 2), 1000000);
 		now = time(NULL);
 
 		slurm_mutex_lock(&agent_ptr->thread_mutex);
@@ -771,13 +796,19 @@ static void _list_delete_retry(void *retry_entry)
  * agent_retry - Agent for retrying pending RPCs. One pending request is 
  *	issued if it has been pending for at least min_wait seconds
  * IN min_wait - Minimum wait time between re-issue of a pending RPC
- * RET count of queued requests remaining (zero if none are old)
+ * RET count of queued requests remaining (zero if none are old enough 
+ * to re-issue)
  */
 extern int agent_retry (int min_wait)
 {
 	int list_size = 0;
 	time_t now = time(NULL);
 	queued_request_t *queued_req_ptr = NULL;
+
+	if (retry_list)
+		list_size = list_count(retry_list);
+	if (agent_cnt >= MAX_AGENT_CNT)		/* too much work already */
+		return list_size;
 
 	slurm_mutex_lock(&retry_mutex);
 	if (retry_list) {
@@ -788,9 +819,10 @@ extern int agent_retry (int min_wait)
 			if (age > min_wait) {
 				queued_req_ptr = (queued_request_t *) 
 					list_pop(retry_list);
-				list_size = list_count(retry_list);;
-			} else /* too new */
+			} else { /* too new */
 				queued_req_ptr = NULL;
+				list_size = 0;
+			}
 		}
 	}
 	slurm_mutex_unlock(&retry_mutex);
@@ -808,12 +840,30 @@ extern int agent_retry (int min_wait)
 }
 
 /*
- * agent_queue_request - put a new request on the queue for later execution
+ * agent_queue_request - put a new request on the queue for execution or
+ * 	execute now if not too busy
  * IN agent_arg_ptr - the request to enqueue
  */
 void agent_queue_request(agent_arg_t *agent_arg_ptr)
 {
 	queued_request_t *queued_req_ptr = NULL;
+
+	if (agent_cnt < MAX_AGENT_CNT) {	/* execute now */
+		pthread_attr_t attr_agent;
+		pthread_t thread_agent;
+		if (pthread_attr_init(&attr_agent))
+			fatal("pthread_attr_init error %m");
+		if (pthread_attr_setdetachstate
+				(&attr_agent, PTHREAD_CREATE_DETACHED))
+			error("pthread_attr_setdetachstate error %m");
+#ifdef PTHREAD_SCOPE_SYSTEM
+		if (pthread_attr_setscope(&attr_agent, PTHREAD_SCOPE_SYSTEM))
+			error("pthread_attr_setscope error %m");
+#endif
+		if (pthread_create(&thread_agent, &attr_agent,
+					agent, (void *) agent_arg_ptr) == 0)
+			return;
+	}
 
 	queued_req_ptr = xmalloc(sizeof(queued_request_t));
 	queued_req_ptr->agent_arg_ptr = agent_arg_ptr;
