@@ -12,6 +12,7 @@ HashBase=10
 HeartbeatInterval=60
 KillWait=30
 Prioritize=/usr/local/maui/priority
+ReturnToService=0
 SlurmctldPort=7002 SlurmdPort=7003
 SlurmctldTimeout=300 SlurmdTimeout=300
 StateSaveLocation=/tmp/slurm.state
