@@ -108,6 +108,7 @@ int fan_out_task_launch ( launch_tasks_request_msg_t * launch_msg )
 		/* can't release if this is the same process as the main daemon ie threads
 		 * this is needed if we use forks
 		 * rel_shmem ( shmem_ptr ) ; */
+	deallocate_job_step ( curr_job_step ) ;
 	return SLURM_SUCCESS ;
 }
 
