@@ -29,6 +29,7 @@
 #endif
 
 #include <errno.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -56,6 +57,7 @@ void slurmctld_req ( slurm_msg_t * msg );
 void fill_ctld_conf ( slurm_ctl_conf_t * build_ptr );
 void init_ctld_conf ( slurm_ctl_conf_t * build_ptr );
 void parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * );
+void *process_rpc ( void * req );
 inline static void slurm_rpc_dump_build ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_nodes ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_partitions ( slurm_msg_t * msg ) ;
@@ -76,17 +78,23 @@ void usage (char *prog_name);
 int 
 main (int argc, char *argv[]) 
 {
-	int error_code ;
+	int error_code;
+	pthread_t thread_id;
 	slurm_fd newsockfd;
         slurm_fd sockfd;
 	slurm_msg_t * msg = NULL ;
 	slurm_addr cli_addr ;
 	char node_name[MAX_NAME_LEN];
+	pthread_attr_t thread_attr;
 
 	/*
 	 * Establish initial configuration
 	 */
 	log_init(argv[0], log_opts, SYSLOG_FACILITY_DAEMON, NULL);
+	if (pthread_attr_init (&thread_attr))
+		fatal ("pthread_attr_init errno %d", errno);
+	if (pthread_attr_setdetachstate (&thread_attr, PTHREAD_CREATE_DETACHED))
+		fatal ("pthread_attr_setdetachstate errno %d", errno);
 
 	init_ctld_conf ( &slurmctld_conf );
 	init_locks ( );
@@ -126,8 +134,6 @@ main (int argc, char *argv[])
 		/* receive message call that must occur before thread spawn because in message 
 		 * implementation their is no connection and the message is the sign of a new connection */
 		msg = xmalloc ( sizeof ( slurm_msg_t ) ) ;	
-		if (msg == NULL)
-			return ENOMEM;
 		
 		if ( ( error_code = slurm_receive_msg ( newsockfd , msg ) ) == SLURM_SOCKET_ERROR )
 		{
@@ -136,15 +142,35 @@ main (int argc, char *argv[])
 		}
 
 		msg -> conn_fd = newsockfd ;	
-/************************* 
- * convert to pthread, tbd 
- *************************/
-		slurmctld_req ( msg );	/* process the request */
-		/* close should only be called when the stream implementation is being used 
-		 * the following call will be a no-op in the message implementation */
-		slurm_close_accepted_conn ( newsockfd ); /* close the new socket */
+
+		if (pthread_create ( &thread_id, &thread_attr, process_rpc, (void *) msg)) {
+			/* Do without threads on failure */
+			error ("pthread_create errno %d", errno);
+			slurmctld_req ( msg );	/* process the request */
+			/* close should only be called when the stream implementation is being used 
+			 * the following call will be a no-op in the message implementation */
+			slurm_close_accepted_conn ( newsockfd ); /* close the new socket */
+		}
 	}			
 	return 0 ;
+}
+
+/* process_rpc - process an RPC request and close the connection */
+void *
+process_rpc ( void * req )
+{
+	slurm_msg_t * msg;
+	slurm_fd newsockfd;
+
+	msg = (slurm_msg_t *) req;
+	newsockfd = msg -> conn_fd;
+	slurmctld_req ( msg );	/* process the request */
+
+	/* close should only be called when the stream implementation is being used 
+	 * the following call will be a no-op in the message implementation */
+	slurm_close_accepted_conn ( newsockfd ); /* close the new socket */
+
+	pthread_exit (NULL);
 }
 
 /* slurmctld_req - Process an individual RPC request */

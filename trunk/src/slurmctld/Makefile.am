@@ -3,6 +3,7 @@
 # Makefile for slurmctld
 
 AUTOMAKE_OPTIONS = foreign
+CLEANFILES = core.*
 
 INCLUDES = -I$(top_srcdir)/src/common
 CFLAGS = -g -Wall 
