@@ -569,6 +569,15 @@ process_command (int argc, char *argv[])
 		}		
 
 	}
+	else if (strncmp_i (argv[0], "shutdown", 5) == 0) {
+		if (argc > 2)
+			fprintf (stderr,
+				 "too many arguments for keyword:%s\n", argv[0]);
+		error_code = slurm_shutdown ();
+		if ((error_code != 0) && (quiet_flag != 1))
+			fprintf (stderr, "error %d from reconfigure\n", error_code);
+
+	}
 	else if (strcmp_i (argv[0], "update") == 0) {
 		if (argc < 2) {
 			fprintf (stderr, "too few arguments for %s keyword\n",
@@ -869,7 +878,8 @@ usage () {
 	printf ("     quit                     terminate this command.\n");
 	printf ("     reconfigure              re-read configuration files.\n");
 	printf ("     show <ENTITY> [<ID>]     display state of identified entity, default is all records.\n");
-	printf ("     update <SPECIFICATIONS>   update job, node, or partition configuration.\n");
+	printf ("     shutdown                 shutdown slurm controller.\n");
+	printf ("     update <SPECIFICATIONS>  update job, node, or partition configuration.\n");
 	printf ("     verbose                  enable detailed logging.\n");
 	printf ("     version                  display tool version number.\n");
 	printf ("  <ENTITY> may be \"config\", \"job\", \"node\", or \"partition\".\n");

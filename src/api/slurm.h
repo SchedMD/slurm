@@ -133,11 +133,12 @@ extern int slurm_submit_batch_job (job_desc_msg_t * job_desc_msg,
  */
 extern int slurm_job_will_run (job_desc_msg_t * job_desc_msg , resource_allocation_response_msg_t ** job_alloc_resp_msg );
 
-/* 
- * reconfigure - _ request that slurmctld re-read the configuration files
- * output: returns 0 on success, errno otherwise
- */
+/* slurm_reconfigure - request that slurmctld re-read the configuration files */
 extern int slurm_reconfigure ();
+
+/* 
+ * slurm_shutdown - request that slurmctld terminate gracefully */
+extern int slurm_shutdown ();
 
 /* update a job, node, or partition's configuration, root access only */ 
 extern int slurm_update_job ( job_desc_msg_t * job_msg ) ;

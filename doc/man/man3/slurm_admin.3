@@ -15,6 +15,8 @@ void \fBslurm_free_key\fR (
 slurm_key_t *\fBslurm_get_key\fR ( );
 .LP 
 int \fBslurm_reconfigure\fR ( );
+.LP 
+int \fBslurm_shutdown\fR ( );
 .LP
 int \fBslurm_update_job\fR (
 .br 
@@ -62,6 +64,8 @@ Specifies the pointer to a partition update request specification. See slurm.h f
 \fBslurm_init_part_desc_msg\fR Initialize the contents of a partition descriptor with default values. Execute this function before executing \fBslurm_update_part\fR.
 .LP 
 \fBslurm_reconfigure\fR Request that the Slurm controller re-read its configuration file. The new configuration parameters take effect immediately. This function may only be successfully executed by user root.
+.LP 
+\fBslurm_shutdown\fR Request that the Slurm controller save its state and terminate.
 .LP 
 \fBslurm_update_job\fR Request that the configuration of a job be updated. Note that most, but not all paramters of a job may be changed by this function. Initialize the data structure using the \fBslurm_init_job_desc_msg\fR function to avoid making unanticipated changes to a job's configuration. This function may only be successfully executed by user root.
 .LP 
