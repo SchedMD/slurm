@@ -303,6 +303,7 @@ struct job_record {
 	char *host;			/* host for srun communications */
 	char *account;			/* account number to charge */
 	uint32_t dependency;		/* defer until this job completes */
+	struct job_record *job_next;	/* next entry with same hash index */
 };
 
 struct 	step_record {
@@ -491,7 +492,7 @@ extern void dump_step_desc(step_specs *step_spec);
  * IN job_id - requested job's id
  * RET pointer to the job's record, NULL on error
  * global: job_list - global job list pointer
- *	job_hash, job_hash_over, max_hash_over - hash table into job records
+ *	job_hash - hash table into job records
  */
 extern struct job_record *find_job_record (uint32_t job_id);
 
@@ -992,8 +993,10 @@ extern void purge_old_job (void);
  */
 extern void re_kill_job(struct job_record *job_ptr);
 
-/* rehash_jobs - Create or rebuild the job rehash table. Actually for now we 
- * just preserve it */
+/*
+ * rehash_jobs - Create or rebuild the job hash table.
+ * NOTE: run lock_slurmctld before entry: Read config, write job
+ */
 extern void rehash_jobs(void);
 
 /* 
