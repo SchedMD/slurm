@@ -14,12 +14,13 @@
 #  include <inttypes.h>
 #endif  /*  HAVE_CONFIG_H */
 
+#include <sys/types.h>
+
 #include <src/common/slurm_protocol_common.h>
 #include <src/common/slurm_protocol_util.h>
 #include <src/common/slurm_protocol_defs.h>
 
 //WHAT ABOUT THESE INCLUDES
-#include <sys/time.h>
 
 /* high level routines */
 /* msg functions */
@@ -32,7 +33,8 @@ uint32_t slurm_shutdown_msg_engine ( slurm_fd open_fd ) ;
 /* stream functions */
 slurm_fd slurm_listen_stream ( slurm_addr * slurm_address ) ;
 slurm_fd slurm_accept_stream ( slurm_fd open_fd , slurm_addr * slurm_address ) ;
-slurm_fd slurm_open_stream ( slurm_addr * slurm_address )	;
+slurm_fd slurm_open_stream ( slurm_addr * slurm_address ) ;
+
 size_t slurm_write_stream ( slurm_fd open_fd , char * buffer , size_t size ) ;
 size_t slurm_read_stream ( slurm_fd open_fd , char * buffer , size_t size ) ;
 uint32_t slurm_close_stream ( slurm_fd open_fd ) ;

@@ -24,7 +24,17 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/time.h>
-#include <sys/socket.h>
+
+
+#if HAVE_SYS_SOCKET_H
+#  include <sys/socket.h>
+#else
+#  if HAVE_SOCKET_H
+#    include <socket.h>
+#  endif
+#endif
+
+
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
