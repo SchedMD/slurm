@@ -40,7 +40,7 @@ extern void get_job(void)
 
 	if (job_info_ptr) {
 		error_code = slurm_load_jobs(job_info_ptr->last_update,
-				&new_job_ptr, SHOW_ALL);
+				&new_job_ptr, 0);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_job_info_msg(job_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -48,7 +48,7 @@ extern void get_job(void)
 			new_job_ptr = job_info_ptr;
 		}
 	} else
-		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr, SHOW_ALL);
+		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr, 0);
 
 	if (error_code) {
 		if (quiet_flag != 1) {
@@ -92,7 +92,21 @@ extern void get_job(void)
 				 COLOR_PAIR(pa_system_ptr->
 					    fill_in_value[count].color));
 			count++;
+		} else {
+			job.num_nodes = job.req_nodes;
+			job.nodes = "(Resources)";
+			    (int) pa_system_ptr->fill_in_value[count].
+			    letter;
+			wattron(pa_system_ptr->text_win,
+				COLOR_PAIR(pa_system_ptr->
+					   fill_in_value[count].color));
+			_print_text_job(&job);
+			wattroff(pa_system_ptr->text_win,
+				 COLOR_PAIR(pa_system_ptr->
+					    fill_in_value[count].color));
+			count++;	
 		}
+		
 	}
 	job_info_ptr = new_job_ptr;
 	return;

@@ -104,7 +104,6 @@ static int _create_allocation(char *com, List allocated_partitions)
 	request->rotate = false;
 	request->elongate = false;
 	request->force_contig = false;
-	request->co_proc = true;
 	
 	while(i<len) {
 		
@@ -123,9 +122,6 @@ static int _create_allocation(char *com, List allocated_partitions)
 		} else if(!strncasecmp(com+i, "force", 5)) {
 			request->force_contig=true;				
 			i+=5;
-		} else if(!strncasecmp(com+i, "virtual", 7)) {
-			request->co_proc=false;				
-			i+=7;
 		} else if(i2<0 && (com[i] < 58 && com[i] > 47)) {
 			i2=i;
 			i++;
@@ -258,7 +254,6 @@ static int _alter_allocation(char *com, List allocated_partitions)
 	bool rotate = false;
 	bool elongate = false;
 	bool force_contig = false;
-	bool co_proc = true;
 		
 	while(i<len) {
 		
@@ -277,9 +272,6 @@ static int _alter_allocation(char *com, List allocated_partitions)
 		} else if(!strncasecmp(com+i, "force", 5)) {
 			force_contig=true;				
 			i+=5;
-		} else if(!strncasecmp(com+i, "virtual", 7)) {
-			co_proc=false;				
-			i+=7;
 		} else if(i2<0 && (com[i] < 58 && com[i] > 47)) {
 			i2=i;
 			i++;
@@ -353,7 +345,6 @@ static int _copy_allocation(char *com, List allocated_partitions)
 		request->rotate =allocated_part->request->rotate;
 		request->elongate = allocated_part->request->elongate;
 		request->force_contig = allocated_part->request->force_contig;
-		request->co_proc = allocated_part->request->co_proc;
 				
 		request->rotate_count= 0;
 		request->elongate_count = 0;
@@ -392,7 +383,6 @@ static int _save_allocation(char *com, List allocated_partitions)
 	char filename[20];
 	char save_string[255];
 	FILE *file_ptr;
-	char *co_proc;
 	char *conn_type;
 
 	ListIterator results_i;		
@@ -427,14 +417,10 @@ static int _save_allocation(char *com, List allocated_partitions)
 				conn_type = "TORUS";
 			else
 				conn_type = "MESH";
-			if(allocated_part->request->co_proc)
-				co_proc = "COPROCCESSOR";
-			else
-				co_proc = "VIRTUAL";
-			sprintf(save_string, "Nodes=bgl[%s] Type=%s Use=%s\n", 
+			
+			sprintf(save_string, "Nodes=bgl[%s] Type=%s\n", 
 				allocated_part->request->save_name, 
-				conn_type, 
-				co_proc);
+				conn_type);
 			
 			fputs (save_string,file_ptr);
 		}

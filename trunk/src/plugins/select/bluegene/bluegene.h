@@ -69,6 +69,7 @@ extern char *bluegene_blrts;
 extern char *bluegene_linux;
 extern char *bluegene_mloader;
 extern char *bluegene_ramdisk;
+extern char *change_numpsets;
 extern pa_system_t *pa_system_ptr;
 extern int DIM_SIZE[PA_SYSTEM_DIMENSIONS];
 

@@ -114,7 +114,7 @@ static int _post_allocate(bgl_record_t *bgl_record)
 {
 	int rc;
 	pm_partition_id_t part_id;
-	
+	char command[255];
 	/* Add partition record to the DB */
 	debug("adding partition\n");
 	rc = rm_add_partition(bgl_record->bgl_part);
@@ -127,7 +127,12 @@ static int _post_allocate(bgl_record_t *bgl_record)
 	/* Get back the new partition id */
 	rm_get_data(bgl_record->bgl_part, RM_PartitionID, &part_id);
 	bgl_record->bgl_part_id = xstrdup(part_id);
-
+	if(change_numpsets) {
+		memset(command,0,255);
+		sprintf(command,"%s %s", change_numpsets, part_id);
+		printf("%s\n",command);
+		system(command);
+	}
 	/* We are done with the partition */
 	rm_free_partition(bgl_record->bgl_part);
 
@@ -146,7 +151,7 @@ static int _post_allocate(bgl_record_t *bgl_record)
 /* 		return(-1); */
 /* 	} */
 /* 	rm_free_partition(bgl_record->bgl_part); */
-
+	
 	fflush(stdout);
 
 	return 0;
