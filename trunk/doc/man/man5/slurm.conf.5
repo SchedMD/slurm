@@ -208,6 +208,9 @@ Identifies the type of scheduler to be used. Acceptable values include
 the default FIFO scheduling, and 
 "sched/wiki" for the Wiki interface to the Maui Scheduler. 
 The default value is "sched/builtin".
+Backfill scheduling will initiate lower-priority jobs if doing 
+so does not delay the expected initiation time of any higher 
+priority job. 
 When initially setting the value to "sched/wiki", any pending jobs 
 must have their priority set to zero (held).
 When changing the value from "sched/wiki", all pending jobs 
