@@ -29,7 +29,7 @@
 /* This must be included first for AIX systems */
 #include "src/common/macros.h"
 
-#include <curses.h>
+//#include <curses.h>
 #include "src/common/read_config.h"
 #include "src/common/parse_spec.h"
 #include "src/slurmctld/proc_req.h"
@@ -146,6 +146,7 @@ typedef struct {
 	int color;
 	int indecies;
 	int state;
+	int conn_type;
 	
 } pa_node_t;
 
@@ -155,8 +156,8 @@ typedef struct {
 	int num_of_proc;
 	int resize_screen;
 
-	WINDOW *grid_win;
-	WINDOW *text_win;
+	//WINDOW *grid_win;
+	//WINDOW *text_win;
 
 	time_t now_time;
 
