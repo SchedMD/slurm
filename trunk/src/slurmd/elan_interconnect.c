@@ -41,6 +41,7 @@ int launch_tasks ( launch_tasks_request_msg_t * launch_msg )
 int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
 {
 	pid_t pid;
+	int i=0;
 
 	/* Process 1: */
 	switch ((pid = fork())) 
@@ -59,13 +60,16 @@ int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
 			while(true)
 			{
 			if (qsw_prgdestroy( launch_msg -> qsw_job ) < 0) {
+				
 				slurm_perror("qsw_prgdestroy");
-				debug ("qsw_prgdestroy %m errno: %i",errno);
+				debug ("qsw_prgdestroy iteration %i, %m errno: %i", i , errno);
 				sleep (1);
+				i++ ;
 				continue ;
 				return SLURM_ERROR ;
 			}
 			break ;
+			debug ("successfull qsw_prgdestroy");
 			}
 			return SLURM_SUCCESS ;
 	}
