@@ -399,7 +399,7 @@ static void *_slurmctld_signal_hand(void *no_data)
 	lock_slurmctld(config_read_lock);
 	while ( (create_pidfile(slurmctld_conf.slurmctld_pidfile) < 0) &&
 		(errno == EAGAIN) ) {
-		verbose("create_pidfile: %m");
+		verbose("Retrying create_pidfile: %m");
 		sleep(1);
 	}
 	unlock_slurmctld(config_read_lock);
