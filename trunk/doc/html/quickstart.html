@@ -318,6 +318,29 @@ PartitionName=pbatch Nodes=mcr[192-1151]
 </pre>
 
 <p>
+You will should create unique job credential keys for your site using 
+the program <a href="http://www.openssl.org">openssl</a>. 
+An example of how to do this is shown below. 
+Specify file names that match the values of JobCredentialPrivateKey and 
+JobCredentialPublicCertificate in your configuration file.
+<pre>
+openssl genrsa -out /usr/local/etc/slurm.key 1024
+openssl rsa -in /usr/local/etc/slurm.key -pubout -out /usr/local/etc/slurm.cert
+</pre>
+
+<p>
+SLURM does not use reserved ports to authenticate communication
+between components. You will need to have at least one "auth"
+plugin. Currently, only three authentication plugins are supported:
+<i>auth/none</i>, <i>auth/authd</i>, and <i>auth/munge</i>. 
+The <i>auth/none</i> plugin is built and used by default, but either 
+Brent Chun's <a href="http://www.theether.org/authd/">authd</a>, or Chris
+Dunlap's Munge should be installed in order to get properly authenticated
+communications.  The configure script in the top-level directory of this
+distribution will determine which authentication plugins may be built. 
+The configuration file specifies which of the available plugins will 
+be utilized.
+<p>
 A Portable Authentication Manager (PAM) module is available for SLURM 
 that can prevent a user from accessing a node which he has not been 
 allocated, if that mode of operation is desired.
