@@ -1,6 +1,5 @@
 /*****************************************************************************\
- *  partition_sys.c
- * 
+ *  partition_sys.c - component used for wiring up the partitions
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -1110,7 +1109,7 @@ void debug(const char *fmt, ...)
 }
 #endif
 
-void init_BGL_PARTITION_NUM()
+void init_bgl_partition_num()
 {
 	BGL_PARTITION_NUMBER = 0;
 }

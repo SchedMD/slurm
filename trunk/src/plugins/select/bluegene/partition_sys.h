@@ -1,6 +1,5 @@
 /*****************************************************************************\
- *  partition_sys.h
- * 
+ *  partition_sys.h - header for partition wiring component
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -55,19 +54,19 @@ typedef struct partition{
 int configure_switches(partition_t* partition);
 int partition_sys(List requests);
 
-void copy_partition(partition_t* A, partition_t* B);
+void copy_partition(partition_t* rec_a, partition_t* rec_b);
 void print_partition(partition_t* part);
 void print_list(List list);
 void print_sys_list(List list);
 
 int is_not_correct_dimension(ushort* cur_part, ushort* req);
-int is_partition_not_equals(partition_t* A, partition_t* B);
+int is_partition_not_equals(partition_t* rec_a, partition_t* rec_b);
 void rotate_part(const ushort* config, ushort** new_config);
 
 int int_array_size(ushort* part_geometry);
 void sort_int_array_by_dec_size(List configs);
 void sort_partitions_by_inc_size(List partitions);
 void sort_partitions_by_dec_size(List partitions);
-void init_BGL_PARTITION_NUM();
+void init_bgl_partition_num();
 
 #endif /* _PARTITION_SYS_H_ */
