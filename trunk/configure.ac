@@ -123,7 +123,10 @@ dnl checks for library functions.
 dnl
 AC_FUNC_MALLOC
 AC_FUNC_STRERROR_R
-AC_CHECK_FUNCS(strerror mtrace)
+AC_CHECK_FUNCS([strerror, mtrace, strsignal])
+
+AC_CHECK_DECLS([strsignal, sys_siglist])
+
 
 dnl AC_SEARCH_LIBS([pthread_create], [pthread c_r cr], [], 
 dnl               [AC_MSG_ERROR([Error: Cannot find the pthread library])])
