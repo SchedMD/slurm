@@ -69,6 +69,8 @@ extern int init_bgl(void)
 	int rc;
 	
 	rm_size3D_t bp_size;
+
+	info("Attempting to contact MMCS");
 	if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
 		fatal("init_bgl: rm_set_serial(): %s", bgl_err_str(rc));
 		return SLURM_ERROR;
