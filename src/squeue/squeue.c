@@ -116,7 +116,7 @@ _print_job ( void )
 
 	if (old_job_ptr) {
 		error_code = slurm_load_jobs (old_job_ptr->last_update, 
-		                              &new_job_ptr);
+				&new_job_ptr, params.all_flag);
 		if (error_code ==  SLURM_SUCCESS)
 			slurm_free_job_info_msg( old_job_ptr );
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -125,7 +125,8 @@ _print_job ( void )
 		}
 	}
 	else
-		error_code = slurm_load_jobs ((time_t) NULL, &new_job_ptr);
+		error_code = slurm_load_jobs ((time_t) NULL, &new_job_ptr,
+				params.all_flag);
 	if (error_code) {
 		slurm_perror ("slurm_load_jobs error");
 		return;
@@ -162,7 +163,7 @@ _print_job_steps( void )
 
 	if (old_step_ptr) {
 		error_code = slurm_get_job_steps (old_step_ptr->last_update, 
-		                                  0, 0, &new_step_ptr);
+				0, 0, &new_step_ptr, params.all_flag);
 		if (error_code ==  SLURM_SUCCESS)
 			slurm_free_job_step_info_response_msg( old_step_ptr );
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -172,7 +173,7 @@ _print_job_steps( void )
 	}
 	else
 		error_code = slurm_get_job_steps ((time_t) NULL, 0, 0, 
-		                                  &new_step_ptr);
+				&new_step_ptr, params.all_flag);
 	if (error_code) {
 		slurm_perror ("slurm_get_job_steps error");
 		return;

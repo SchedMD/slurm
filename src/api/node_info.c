@@ -112,18 +112,20 @@ slurm_print_node_table ( FILE * out, node_info_t * node_ptr, int one_liner )
  *	if changed since update_time 
  * IN update_time - time of current configuration data
  * IN node_info_msg_pptr - place to store a node configuration pointer
+ * IN show_all - if set then report even "hidden" partitions
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_node_info_msg
  */
-int
-slurm_load_node (time_t update_time, node_info_msg_t **resp)
+extern int slurm_load_node (time_t update_time, 
+		node_info_msg_t **resp, uint16_t show_all)
 {
         int rc;
         slurm_msg_t req_msg;
         slurm_msg_t resp_msg;
-        last_update_msg_t req;
+        node_info_request_msg_t req;
 
         req.last_update  = update_time;
+	req.show_all = show_all;
         req_msg.msg_type = REQUEST_NODE_INFO;
         req_msg.data     = &req;
 

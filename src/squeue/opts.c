@@ -50,6 +50,7 @@
 /* getopt_long options, integers but not characters */
 #define OPT_LONG_HELP  0x100
 #define OPT_LONG_USAGE 0x101
+#define OPT_LONG_HIDE	0x102
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -78,6 +79,7 @@ parse_command_line( int argc, char* argv[] )
 	int opt_char;
 	int option_index;
 	static struct option long_options[] = {
+		{"all",         no_argument,       0, 'a'},
 		{"noheader",   no_argument,       0, 'h'},
 		{"iterate",    required_argument, 0, 'i'},
 		{"jobs",       optional_argument, 0, 'j'},
@@ -92,16 +94,27 @@ parse_command_line( int argc, char* argv[] )
 		{"version",    no_argument,       0, 'V'},
 		{"help",       no_argument,       0, OPT_LONG_HELP},
 		{"usage",      no_argument,       0, OPT_LONG_USAGE},
+		{"hide",     no_argument, 0, OPT_LONG_HIDE},
 		{NULL,         0,                 0, 0}
 	};
 
-	while((opt_char = getopt_long(argc, argv, "hi:j::lo:p:s::S:t:u:vV",
+	if (getenv("SQUEUE_ALL"))
+		params.all_flag = true;
+	if ( ( env_val = getenv("SQUEUE_FORMAT") ) ) 
+		params.format = xstrdup(env_val);
+	if ( ( env_val = getenv("SQUEUE_SORT") ) )
+		params.sort = xstrdup(env_val);
+
+	while((opt_char = getopt_long(argc, argv, "ahi:j::lo:p:s::S:t:u:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
 				fprintf(stderr, "Try \"squeue --help\" "
 						"for more information\n");
 				exit(1);
+			case (int)'a':
+				params.all_flag = true;
+				break;
 			case (int)'h':
 				params.no_header = true;
 				break;
@@ -124,6 +137,7 @@ parse_command_line( int argc, char* argv[] )
 				params.long_list = true;
 				break;
 			case (int) 'o':
+				xfree(params.format);
 				params.format = xstrdup(optarg);
 				break;
 			case (int) 'p':
@@ -140,6 +154,7 @@ parse_command_line( int argc, char* argv[] )
 				params.step_flag = true;
 				break;
 			case (int) 'S':
+				xfree(params.sort);
 				params.sort = xstrdup(optarg);
 				break;
 			case (int) 't':
@@ -164,6 +179,9 @@ parse_command_line( int argc, char* argv[] )
 			case OPT_LONG_USAGE:
 				_usage();
 				exit(0);
+			case OPT_LONG_HIDE:
+				params.all_flag = false;
+				break;
 		}
 	}
 
@@ -187,19 +205,11 @@ parse_command_line( int argc, char* argv[] )
 		exit(1);
 	}
 
-	if ( ( params.format == NULL ) && 
-	     ( env_val = getenv("SQUEUE_FORMAT") ) ) 
-		params.format = xstrdup(env_val);
-
 	if ( ( params.partitions == NULL ) && 
 	     ( env_val = getenv("SQUEUE_PARTITION") ) ) {
 		params.partitions = xstrdup(env_val);
 		params.part_list = _build_part_list( params.partitions );
 	}
-
-	if ( ( params.sort == NULL ) && 
-	     ( env_val = getenv("SQUEUE_SORT") ) )
-		params.sort = xstrdup(env_val);
 
 	if ( ( params.states == NULL ) && 
 	     ( env_val = getenv("SQUEUE_STATES") ) ) {
@@ -225,7 +235,8 @@ static int   _max_procs_per_node(void)
 	int error_code, max_procs = 1;
 	node_info_msg_t *node_info_ptr = NULL;
 
-	error_code = slurm_load_node ((time_t) NULL, &node_info_ptr);
+	error_code = slurm_load_node ((time_t) NULL, &node_info_ptr,
+			params.all_flag);
 	if (error_code == SLURM_SUCCESS) {
 		int i;
 		node_info_t *node_ptr = node_info_ptr->node_array;
@@ -570,6 +581,7 @@ _print_options()
 	uint32_t *job_id;
 
 	printf( "-----------------------------\n" );
+	printf( "all        = %s\n", params.all_flag ? "true" : "false");
 	printf( "format     = %s\n", params.format );
 	printf( "iterate    = %d\n", params.iterate );
 	printf( "job_flag   = %d\n", params.job_flag );
@@ -834,30 +846,33 @@ static void _print_version(void)
 static void _usage(void)
 {
 	printf("Usage: squeue [-i seconds] [-S fields] [-t states] [-p partitions]\n");
-	printf("              [-o format] [-u user_name] [--usage] [-hjlsv]\n");
+	printf("              [-o format] [-u user_name] [--usage] [-ahjlsv]\n");
 }
 
 static void _help(void)
 {
-	printf("Usage: squeue [OPTIONS]\n");
-	printf("  -h, --noheader                  no headers on output\n");
-	printf("  -i, --iterate=seconds           specify an interation period\n");
-	printf("  -j, --jobs                      comma separated list of jobs\n");
-	printf("                                  to view, default is all\n");
-	printf("  -l, --long                      long report\n");
-	printf("  -o, --format=format             format specification\n");
-	printf("  -p, --partitions=partitions     comma separated list of partitions\n");
-	printf("                                  to view, default is all partitions\n");
-	printf("  -s, --steps                     comma separated list of job steps\n");
-	printf("                                  to view, default is all\n");
-	printf("  -S, --sort=fields               comma seperated list of fields to sort on\n");
-	printf("  -t, --states=states             comma seperated list of states to view,\n");
-	printf("                                  default is pending and running,\n");
-	printf("                                  '--states=all' reports all states\n");
-	printf("  -u, --user=user_name            comma separated list of users to view\n");
-	printf("  -v, --verbose                   verbosity level\n");
-	printf("  -V, --version                   output version information and exit\n");
-	printf("\nHelp options:\n");
-	printf("  --help                          show this help message\n");
-	printf("  --usage                         display a brief summary of squeue options\n");
+	printf("\
+Usage: squeue [OPTIONS]\n\
+  -a, --all                       display jobs in hidden partitions\n\
+  -h, --noheader                  no headers on output\n\
+  --hide                          do not display jobs in hidden partitions\n\
+  -i, --iterate=seconds           specify an interation period\n\
+  -j, --jobs                      comma separated list of jobs\n\
+                                  to view, default is all\n\
+  -l, --long                      long report\n\
+  -o, --format=format             format specification\n\
+  -p, --partitions=partitions     comma separated list of partitions\n\
+                                  to view, default is all partitions\n\
+  -s, --steps                     comma separated list of job steps\n\
+                                  to view, default is all\n\
+  -S, --sort=fields               comma seperated list of fields to sort on\n\
+  -t, --states=states             comma seperated list of states to view,\n\
+                                  default is pending and running,\n\
+                                  '--states=all' reports all states\n\
+  -u, --user=user_name            comma separated list of users to view\n\
+  -v, --verbose                   verbosity level\n\
+  -V, --version                   output version information and exit\n\
+\nHelp options:\n\
+  --help                          show this help message\n\
+  --usage                         display a brief summary of squeue options\n");
 }

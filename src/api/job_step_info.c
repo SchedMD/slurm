@@ -105,12 +105,13 @@ slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr,
  * IN step_id - get information for specific job step id, zero for all 
  *	job steps
  * IN job_info_msg_pptr - place to store a job configuration pointer
+ * IN show_all - if set then report even "hidden" partitions
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_job_step_info_response_msg
  */
 int
 slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id, 
-		     job_step_info_response_msg_t **resp)
+		     job_step_info_response_msg_t **resp, uint16_t show_all)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -118,10 +119,11 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 	job_step_info_request_msg_t req;
 
 	req.last_update  = update_time;
-	req.job_id       = job_id;
-	req.step_id      = step_id;
+	req.job_id	= job_id;
+	req.step_id	= step_id;
+	req.show_all	= show_all;
 	req_msg.msg_type = REQUEST_JOB_STEP_INFO;
-	req_msg.data     = &req;
+	req_msg.data	= &req;
 
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;

@@ -67,10 +67,12 @@
 #include "src/common/xstring.h"
 
 #define	BUF_SIZE        1024
+#define OPT_LONG_HIDE	0x102
 #define MAX_NAME_LEN      64
 #define	MAX_INPUT_FIELDS 128
 
 static char *command_name;
+static int all_flag;	/* display even hidden partitions */
 static int exit_code;	/* scontrol's exit code, =1 on any error at any time */
 static int exit_flag;	/* program to terminate if =1 */
 static int input_words;	/* number of words of input permitted */
@@ -81,7 +83,8 @@ static void	_delete_it (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
 static bool	_in_node_bit_list(int inx, int *node_list_array);
 static int 	_load_jobs (job_info_msg_t ** job_buffer_pptr);
-static int 	_load_nodes (node_info_msg_t ** node_buffer_pptr);
+static int 	_load_nodes (node_info_msg_t ** node_buffer_pptr, 
+			int load_all);
 static int 	_load_partitions (partition_info_msg_t **part_info_pptr);
 static void	_parse_conf_line (char *in_line, bool *any_slurmctld,
 				bool *have_slurmctld, bool *have_slurmd);
@@ -115,7 +118,9 @@ main (int argc, char *argv[])
 
 	int option_index;
 	static struct option long_options[] = {
+		{"all",      0, 0, 'a'},
 		{"help",     0, 0, 'h'},
+		{"hide",     0, 0, OPT_LONG_HIDE},
 		{"oneliner", 0, 0, 'o'},
 		{"quiet",    0, 0, 'q'},
 		{"usage",    0, 0, 'h'},
@@ -125,31 +130,49 @@ main (int argc, char *argv[])
 	};
 
 	command_name      = argv[0];
+	all_flag	= 0;
 	exit_code         = 0;
 	exit_flag         = 0;
 	input_field_count = 0;
 	quiet_flag        = 0;
 	log_init("scontrol", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	while((opt_char = getopt_long(argc, argv, "hoqvV",
+	if (getenv ("SCONTROL_ALL"))
+		all_flag= 1;
+
+	while((opt_char = getopt_long(argc, argv, "ahoqvV",
 			long_options, &option_index)) != -1) {
-		if (opt_char == (int)'h') {
+		switch (opt_char) {
+		case (int)'?':
+			fprintf(stderr, "Try \"scontrol --help\" for more information\n");
+			exit(1);
+			break;
+		case (int)'a':
+			all_flag = 1;
+			break;
+		case (int)'h':
 			_usage ();
 			exit(exit_code);
-		}
-		else if (opt_char == (int)'o')
+			break;
+		case OPT_LONG_HIDE:
+			all_flag = 0;
+			break;
+		case (int)'o':
 			one_liner = 1;
-		else if (opt_char == (int)'q')
+			break;
+		case (int)'q':
 			quiet_flag = 1;
-		else if (opt_char == (int)'v')
+			break;
+		case (int)'v':
 			quiet_flag = -1;
-		else if (opt_char == (int)'V') {
+			break;
+		case (int)'V':
 			_print_version();
 			exit(exit_code);
-		}
-		else {
+			break;
+		default:
 			exit_code = 1;
-			fprintf(stderr, "getopt error, returned %c", opt_char);
+			fprintf(stderr, "getopt error, returned %c\n", opt_char);
 			exit(exit_code);
 		}
 	}
@@ -298,42 +321,50 @@ static int
 _load_jobs (job_info_msg_t ** job_buffer_pptr) 
 {
 	int error_code;
-	static job_info_msg_t *old_job_buffer_ptr = NULL;
-	job_info_msg_t * job_buffer_ptr = NULL;
+	static job_info_msg_t *old_job_info_ptr = NULL;
+	static int last_all_flag = -1;
+	job_info_msg_t * job_info_ptr = NULL;
 
-	if (old_job_buffer_ptr) {
-		error_code = slurm_load_jobs (old_job_buffer_ptr->last_update, 
-					&job_buffer_ptr);
+	if (old_job_info_ptr) {
+		if (last_all_flag != all_flag)
+			old_job_info_ptr->last_update = (time_t) 0;
+		error_code = slurm_load_jobs (old_job_info_ptr->last_update, 
+					&job_info_ptr, all_flag);
 		if (error_code == SLURM_SUCCESS)
-			slurm_free_job_info_msg (old_job_buffer_ptr);
+			slurm_free_job_info_msg (old_job_info_ptr);
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
-			job_buffer_ptr = old_job_buffer_ptr;
+			job_info_ptr = old_job_info_ptr;
 			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1)
  				printf ("slurm_load_jobs no change in data\n");
 		}
 	}
 	else
-		error_code = slurm_load_jobs ((time_t) NULL, &job_buffer_ptr);
+		error_code = slurm_load_jobs ((time_t) NULL, &job_info_ptr,
+				all_flag);
 
 	if (error_code == SLURM_SUCCESS) {
-		old_job_buffer_ptr = job_buffer_ptr;
-		*job_buffer_pptr = job_buffer_ptr;
+		old_job_info_ptr = job_info_ptr;
+		last_all_flag = all_flag;
+		*job_buffer_pptr = job_info_ptr;
 	}
 
 	return error_code;
 }
-/* Load current job table information into *node_buffer_pptr */
+/* Load current node table information into *node_buffer_pptr */
 static int 
-_load_nodes (node_info_msg_t ** node_buffer_pptr) 
+_load_nodes (node_info_msg_t ** node_buffer_pptr, int load_all) 
 {
 	int error_code;
 	static node_info_msg_t *old_node_info_ptr = NULL;
+	static int last_all_flag = -1;
 	node_info_msg_t *node_info_ptr = NULL;
 
 	if (old_node_info_ptr) {
+		if (last_all_flag != load_all)
+			old_node_info_ptr->last_update = (time_t) 0;
 		error_code = slurm_load_node (old_node_info_ptr->last_update, 
-			&node_info_ptr);
+			&node_info_ptr, load_all);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_node_info_msg (old_node_info_ptr);
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -344,10 +375,12 @@ _load_nodes (node_info_msg_t ** node_buffer_pptr)
 		}
 	}
 	else
-		error_code = slurm_load_node ((time_t) NULL, &node_info_ptr);
+		error_code = slurm_load_node ((time_t) NULL, &node_info_ptr,
+				load_all);
 
 	if (error_code == SLURM_SUCCESS) {
 		old_node_info_ptr = node_info_ptr;
+		last_all_flag = load_all;
 		*node_buffer_pptr = node_info_ptr;
 	}
 
@@ -360,12 +393,15 @@ _load_partitions (partition_info_msg_t **part_buffer_pptr)
 {
 	int error_code;
 	static partition_info_msg_t *old_part_info_ptr = NULL;
+	static int last_all_flag = -1;
 	partition_info_msg_t *part_info_ptr = NULL;
 
 	if (old_part_info_ptr) {
+		if (last_all_flag != all_flag)
+			old_part_info_ptr->last_update = (time_t) 0;
 		error_code = slurm_load_partitions (
 						old_part_info_ptr->last_update,
-						&part_info_ptr);
+						&part_info_ptr, all_flag);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_partition_info_msg (old_part_info_ptr);
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -377,10 +413,11 @@ _load_partitions (partition_info_msg_t **part_buffer_pptr)
 	}
 	else
 		error_code = slurm_load_partitions ((time_t) NULL, 
-						    &part_info_ptr);
+						    &part_info_ptr, all_flag);
 
 	if (error_code == SLURM_SUCCESS) {
 		old_part_info_ptr = part_info_ptr;
+		last_all_flag = all_flag;
 		*part_buffer_pptr = part_info_ptr;
 	}
 
@@ -440,7 +477,9 @@ _print_completing (void)
 			slurm_perror ("slurm_load_jobs error");
 		return;
 	}
-	error_code = _load_nodes (&node_info_msg);
+	/* Must load all nodes including hidden for cross-index 
+	 * from job's node_inx to node table to work */
+	error_code = _load_nodes (&node_info_msg, 1);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
@@ -844,7 +883,7 @@ _print_node_list (char *node_list)
 	char *this_node_name;
 
 
-	error_code = _load_nodes(&node_info_ptr);
+	error_code = _load_nodes(&node_info_ptr, all_flag);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
@@ -958,6 +997,7 @@ _print_step (char *job_step_id_str)
 	job_step_info_t * job_step_ptr;
 	static uint32_t last_job_id = 0, last_step_id = 0;
 	static job_step_info_response_msg_t *old_job_step_info_ptr = NULL;
+	static int last_all_flag = -1;
 
 	if (job_step_id_str) {
 		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
@@ -969,9 +1009,12 @@ _print_step (char *job_step_id_str)
 
 	if ((old_job_step_info_ptr) &&
 	    (last_job_id == job_id) && (last_step_id == step_id)) {
+		if (last_all_flag != all_flag)
+			old_job_step_info_ptr->last_update = (time_t) 0;
 		error_code = slurm_get_job_steps ( 
 					old_job_step_info_ptr->last_update,
-					job_id, step_id, &job_step_info_ptr);
+					job_id, step_id, &job_step_info_ptr,
+					all_flag);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_job_step_info_response_msg (
 					old_job_step_info_ptr);
@@ -989,7 +1032,7 @@ _print_step (char *job_step_id_str)
 			old_job_step_info_ptr = NULL;
 		}
 		error_code = slurm_get_job_steps ( (time_t) 0, 
-					job_id, step_id, &job_step_info_ptr);
+					job_id, step_id, &job_step_info_ptr, all_flag);
 	}
 
 	if (error_code) {
@@ -1000,6 +1043,7 @@ _print_step (char *job_step_id_str)
 	}
 
 	old_job_step_info_ptr = job_step_info_ptr;
+	last_all_flag = all_flag;
 	last_job_id = job_id;
 	last_step_id = step_id;
 
@@ -1063,6 +1107,8 @@ _process_command (int argc, char *argv[])
 				slurm_perror ("slurm_shutdown error");
 		}
 	}
+	else if (strncasecmp (argv[0], "all", 3) == 0)
+		all_flag = 1;
 	else if (strncasecmp (argv[0], "completing", 1) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -1081,7 +1127,7 @@ _process_command (int argc, char *argv[])
 		}
 		exit_flag = 1;
 	}
-	else if (strncasecmp (argv[0], "help", 1) == 0) {
+	else if (strncasecmp (argv[0], "help", 2) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr, 
@@ -1090,6 +1136,8 @@ _process_command (int argc, char *argv[])
 		}
 		_usage ();
 	}
+	else if (strncasecmp (argv[0], "hide", 2) == 0)
+		all_flag = 0;
 	else if (strncasecmp (argv[0], "oneliner", 1) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -1573,6 +1621,20 @@ _update_part (int argc, char *argv[])
 				return 0;
 			}
 		}
+		else if (strncasecmp(argv[i], "Hidden=", 4) == 0) {
+			if (strcasecmp(&argv[i][7], "NO") == 0)
+				part_msg.hidden = 0;
+			else if (strcasecmp(&argv[i][7], "YES") == 0)
+				part_msg.hidden = 1;
+			else {
+				exit_code = 1;
+				fprintf (stderr, "Invalid input: %s\n", 
+					 argv[i]);
+				fprintf (stderr, 
+				         "Acceptable Hidden values are YES and NO\n");
+				return 0;
+			}
+		}
 		else if (strncasecmp(argv[i], "RootOnly=", 4) == 0) {
 			if (strcasecmp(&argv[i][9], "NO") == 0)
 				part_msg.root_only = 0;
@@ -1643,7 +1705,9 @@ _usage () {
 	printf ("\
 scontrol [<OPTION>] [<COMMAND>]                                            \n\
     Valid <OPTION> values are:                                            \n\
+     -a or --all: equivalent to \"all\" command                             \n\
      -h or --help: equivalent to \"help\" command                          \n\
+     --hide: equivalent to \"hide\" command                          \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
      -q or --quiet: equivalent to \"quite\" command                        \n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
@@ -1656,11 +1720,14 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
     Valid <COMMAND> values are:                                            \n\
      abort                    shutdown slurm controller immediately        \n\
                               generating a core file.                      \n\
+     all                      display information about all partitions, including\n\
+                              hidden partitions.                            \n\
      completing               display jobs in completing state along with  \n\
                               their completing or down nodes               \n\
      delete <SPECIFICATIONS>  delete the specified partition, kill its jobs\n\
      exit                     terminate scontrol                           \n\
      help                     print this description of use.               \n\
+     hide                     do not display information about hidden partitions.\n\
      oneliner                 report output one record per line.           \n\
      pidinfo <pid>            return slurm job information for given pid.  \n\
      ping                     print status of slurmctld daemons.           \n\

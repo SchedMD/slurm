@@ -65,11 +65,6 @@ void slurm_free_shutdown_msg(shutdown_msg_t * msg)
 	xfree(msg);
 }
 
-void slurm_free_job_step_id(job_step_id_t * msg)
-{
-	xfree(msg);
-}
-
 void slurm_free_old_job_alloc_msg(old_job_alloc_msg_t * msg)
 {
 	xfree(msg);
@@ -91,6 +86,29 @@ void slurm_free_job_id_response_msg(job_id_response_msg_t * msg)
 }
 
 void slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg)
+{
+	xfree(msg);
+}
+
+void slurm_free_job_info_request_msg(job_info_request_msg_t *msg)
+{
+	xfree(msg);
+}
+
+void slurm_free_job_step_info_request_msg(
+		job_step_info_request_msg_t *msg)
+{
+	xfree(msg);
+}
+
+void inline slurm_free_node_info_request_msg(
+		node_info_request_msg_t *msg)
+{
+	xfree(msg);
+}
+
+void inline slurm_free_part_info_request_msg(
+		part_info_request_msg_t *msg)
 {
 	xfree(msg);
 }

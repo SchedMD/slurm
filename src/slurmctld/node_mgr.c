@@ -689,17 +689,21 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
  *	in machine independent form (for network transmission)
  * OUT buffer_ptr - pointer to the stored data
  * OUT buffer_size - set to size of the buffer in bytes
+ * IN show_all - display all partitions if set
+ * IN uid - uid of user making request (for partition filtering)
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: the caller must xfree the buffer at *buffer_ptr
  * NOTE: change slurm_load_node() in api/node_info.c when data format changes
  * NOTE: READ lock_slurmctld config before entry
  */
-void pack_all_node (char **buffer_ptr, int *buffer_size) 
+extern void pack_all_node (char **buffer_ptr, int *buffer_size,
+		uint16_t show_all, uid_t uid)
 {
 	int inx;
 	uint32_t nodes_packed, tmp_offset;
 	Buf buffer;
 	time_t now = time(NULL);
+	struct node_record *node_ptr = node_record_table_ptr;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -712,14 +716,20 @@ void pack_all_node (char **buffer_ptr, int *buffer_size)
 	pack_time  (now, buffer);
 
 	/* write node records */
-	for (inx = 0; inx < node_record_count; inx++) {
-		xassert (node_record_table_ptr[inx].magic == NODE_MAGIC);
-		xassert (node_record_table_ptr[inx].config_ptr->magic ==  
+	part_filter_set(uid);
+	for (inx = 0; inx < node_record_count; inx++, node_ptr++) {
+		xassert (node_ptr->magic == NODE_MAGIC);
+		xassert (node_ptr->config_ptr->magic ==  
 			 CONFIG_MAGIC);
 
-		_pack_node(&node_record_table_ptr[inx], buffer);
+		if ((show_all == 0) && (node_ptr->partition_ptr) && 
+		    (node_ptr->partition_ptr->hidden))
+			continue;
+
+		_pack_node(node_ptr, buffer);
 		nodes_packed ++ ;
 	}
+	part_filter_clear();
 
 	tmp_offset = get_buf_offset (buffer);
 	set_buf_offset (buffer, 0);

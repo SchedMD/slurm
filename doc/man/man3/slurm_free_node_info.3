@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "September 2003" "Morris Jette" "Slurm node informational calls"
+.TH "Slurm API" "3" "April 2004" "Morris Jette" "Slurm node informational calls"
 .SH "NAME"
 slurm_free_node_info, slurm_load_node, 
 slurm_print_node_info_msg, slurm_print_node_table
@@ -19,7 +19,9 @@ int \fBslurm_load_node\fR (
 .br 
 	time_t \fIupdate_time\fP, 
 .br 
-	node_info_msg_t **\fInode_info_msg_pptr\fP
+	node_info_msg_t **\fInode_info_msg_pptr\fP,
+.br
+	uint16_t \fIshow_all\fP
 .br 
 );
 .LP 
@@ -67,6 +69,12 @@ Print one record per line if non-zero.
 .TP 
 \fIout_file\fP
 Specifies the file to print data to.
+.TP 
+\fIshow_all\fP
+Report information about all nodes if non-zero.
+Information about nodes in partitions that are configured as 
+hidden and partitions that the user's group is unable to utilize 
+are not reported by default.
 .TP 
 \fIupdate_time\fP
 For all of the following informational calls, if update_time is equal to 
@@ -126,7 +134,7 @@ int main (int argc, char *argv[])
 .br
 	if ( slurm_load_node ((time_t) NULL, 
 .br
-	                      &node_buffer_ptr) ) {
+	                      &node_buffer_ptr, 1) ) {
 .br
 		slurm_perror ("slurm_load_node error");
 .br
@@ -217,6 +225,11 @@ int main (int argc, char *argv[])
 	exit (0);
 .br 
 }
+
+.SH "NOTE"
+Some data structures contain index values to cross-reference each other. 
+If the \fIshow_all\fP argument is not set when getting this data, these index 
+values will be invalid.
 
 .SH "COPYING"
 Copyright (C) 2002 The Regents of the University of California.

@@ -103,9 +103,13 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr,
 	else
 		fprintf ( out, "State=DOWN ");
 	if (part_ptr->max_time == INFINITE)
-		fprintf ( out, "MaxTime=UNLIMITED");
+		fprintf ( out, "MaxTime=UNLIMITED ");
 	else
-		fprintf ( out, "MaxTime=%u", part_ptr->max_time);
+		fprintf ( out, "MaxTime=%u ", part_ptr->max_time);
+	if (part_ptr->hidden)
+		fprintf ( out, "Hidden=YES");
+	else
+		fprintf ( out, "Hidden=NO");
 	if (one_liner)
 		fprintf ( out, " ");
 	else
@@ -144,18 +148,20 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr,
  * IN update_time - time of current configuration data
  * IN partition_info_msg_pptr - place to store a partition configuration 
  *	pointer
+ * IN show_all - if set then report even "hidden" partitions
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_partition_info_msg
  */
-int
-slurm_load_partitions (time_t update_time, partition_info_msg_t **resp)
+extern int slurm_load_partitions (time_t update_time, 
+		partition_info_msg_t **resp, uint16_t show_all)
 {
         int rc;
         slurm_msg_t req_msg;
         slurm_msg_t resp_msg;
-        last_update_msg_t req;
+        part_info_request_msg_t req;
 
         req.last_update  = update_time;
+	req.show_all = show_all;
         req_msg.msg_type = REQUEST_PARTITION_INFO;
         req_msg.data     = &req;
 

@@ -559,13 +559,17 @@ static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer)
 
 /* 
  * pack_ctld_job_step_info_response_msg - packs job step info
- * IN - job_id and step_id - zero for all
+ * IN job_id - specific id or zero for all
+ * IN step_id - specific id or zero for all
+ * IN uid - user issuing request
+ * IN show_all - don't report data for hidden partitions unless set
  * OUT buffer - location to store data, pointers automatically advanced 
  * RET - 0 or error code
  * NOTE: MUST free_buf buffer
  */
-int pack_ctld_job_step_info_response_msg(uint32_t job_id, 
-				         uint32_t step_id, Buf buffer)
+extern int pack_ctld_job_step_info_response_msg(uint32_t job_id, 
+			uint32_t step_id, uid_t uid, 
+			uint16_t show_all, Buf buffer)
 {
 	ListIterator job_iterator;
 	ListIterator step_iterator;
@@ -578,12 +582,16 @@ int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 	pack_time(now, buffer);
 	pack32(steps_packed, buffer);	/* steps_packed placeholder */
 
+	part_filter_set(uid);
 	if (job_id == 0) {
 		/* Return all steps for all jobs */
 		job_iterator = list_iterator_create(job_list);
 		while ((job_ptr = 
 				(struct job_record *) 
 				list_next(job_iterator))) {
+			if ((show_all == 0) && (job_ptr->part_ptr) && 
+			    (job_ptr->part_ptr->hidden))
+				continue;
 			step_iterator =
 			    list_iterator_create(job_ptr->step_list);
 			while ((step_ptr =
@@ -599,6 +607,9 @@ int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 	} else if (step_id == 0) {
 		/* Return all steps for specific job_id */
 		job_ptr = find_job_record(job_id);
+		if ((show_all == 0) && (job_ptr->part_ptr) && 
+		    (job_ptr->part_ptr->hidden))
+			job_ptr = NULL;
 		if (job_ptr) {
 			step_iterator = 
 				list_iterator_create(job_ptr->step_list);
@@ -612,8 +623,11 @@ int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 		} else
 			error_code = ESLURM_INVALID_JOB_ID;
 	} else {
-		/* Return  step with give step_id/job_id */
+		/* Return data for specific job_id.step_id */
 		job_ptr = find_job_record(job_id);
+		if ((show_all == 0) && (job_ptr->part_ptr) && 
+		    (job_ptr->part_ptr->hidden))
+			job_ptr = NULL;
 		step_ptr = find_step_record(job_ptr, step_id);
 		if (step_ptr == NULL)
 			error_code = ESLURM_INVALID_JOB_ID;
@@ -622,6 +636,7 @@ int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 			steps_packed++;
 		}
 	}
+	part_filter_clear();
 
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);
