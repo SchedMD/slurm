@@ -528,6 +528,13 @@ parse_node_spec (char *in_line) {
 
 	first = 1;
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
+		if (strcmp (this_node_name, "localhost") == 0) {
+			free (this_node_name);
+			this_node_name = malloc (128);
+			if (this_node_name == NULL)
+				fatal ("memory allocation failure");
+			getnodename (this_node_name, 128);
+		}
 		if (strcmp (this_node_name, "DEFAULT") == 0) {
 			xfree(node_name);
 			node_name = NULL;
@@ -776,6 +783,13 @@ parse_part_spec (char *in_line) {
 	if (nodes) {
 		if (part_record_point->nodes)
 			xfree (part_record_point->nodes);
+		if (strcmp (nodes, "localhost") == 0) {
+			xfree (nodes);
+			nodes = xmalloc (128);
+			if (nodes == NULL)
+				fatal ("memory allocation failure");
+			getnodename (nodes, 128);
+		}
 		part_record_point->nodes = nodes;
 	}			
 	xfree (partition_name);
