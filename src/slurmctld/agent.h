@@ -33,32 +33,15 @@
 #include <src/slurmctld/slurmctld.h>
 
 #define AGENT_IS_THREAD  	1	/* set if agent itself a thread of slurmctld */
-#define AGENT_THREAD_COUNT	10	/* maximum active agent threads */
-#define COMMAND_TIMEOUT 	10	/* secs */
-#define INTR_TIME		1 	/* secs */
-#define WDOG_POLL 		2	/* secs */
+#define AGENT_THREAD_COUNT	20	/* maximum active agent threads */
+#define COMMAND_TIMEOUT 	5	/* seconds */
 
-typedef enum {DSH_NEW, DSH_ACTIVE, DSH_DONE, DSH_FAILED} state_t;
-
-typedef struct thd {
-        pthread_t	thread;			/* thread ID */
-        pthread_attr_t	attr;			/* thread attributes */
-        state_t		state;      		/* thread state */
-        time_t 		start;   		/* time stamp for start */
-        time_t 		finish;  		/* time stamp for finish */
-	struct sockaddr_in slurm_addr;		/* network address */
-	char node_name[MAX_NAME_LEN];		/* name of the node */
-} thd_t;
-
-typedef struct agent_info {
-	pthread_mutex_t	thread_mutex;		/* agent specific mutex */
-	pthread_cond_t	thread_cond;		/* agent specific condition */
-	uint32_t	thread_count;		/* number of threads records */
-	uint32_t	threads_active;		/* count of currently active threads */
-	thd_t 		*thread_struct;		/* thread structures */
+typedef struct agent_arg {
+	uint32_t	addr_count;		/* number of network addresses to communicate with */
+	struct sockaddr_in *slurm_addr;		/* array of network addresses */
 	slurm_msg_type_t msg_type;		/* RPC to be issued */
-	void		*msg_args;		/* RPC data to be used */
-} agent_info_t;
+	void		*msg_args;		/* RPC data to be transmitted */
+} agent_arg_t;
 
 void *agent (void *args);
 

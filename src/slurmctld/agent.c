@@ -1,5 +1,6 @@
 /*****************************************************************************\
- *  agent.c - parallel background communication functions
+ *  agent.c - parallel background communication functions. This is where  
+ *	logic could be placed for broadcast communications.
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -36,13 +37,14 @@
  *  agent as an pthread, process, or even a daemon on some other computer.
  *
  *  The main thread creates a separate thread for each node to be communicated 
- *  with. A special watchdog thread sends SIGLARM to any threads that have been 
- *  active (in DSH_ACTIVE state) for more than COMMAND_TIMEOUT seconds. 
+ *  with up to AGENT_THREAD_COUNT. A special watchdog thread sends SIGLARM to 
+ *  any threads that have been active (in DSH_ACTIVE state) for more than 
+ *  COMMAND_TIMEOUT seconds. 
  *  The agent responds to slurmctld via an RPC as required.
  *  For example, informing slurmctld that some node is not responding.
  *
- *  All the state for each thread is contained in thd_t struct, which is 
- *  passed to the agent upon startup and freed upon completion.
+ *  All the state for each thread is maintailed in thd_t struct, which is 
+ *  used by the watchdog thread as well as the communication threads.
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
@@ -60,6 +62,32 @@
 #include <src/common/xstring.h>
 #include <src/slurmctld/agent.h>
 
+#if COMMAND_TIMEOUT == 1
+#define WDOG_POLL 		1	/* secs */
+#else
+#define WDOG_POLL 		2	/* secs */
+#endif
+
+typedef enum {DSH_NEW, DSH_ACTIVE, DSH_DONE, DSH_FAILED} state_t;
+
+typedef struct thd {
+        pthread_t	thread;			/* thread ID */
+        pthread_attr_t	attr;			/* thread attributes */
+        state_t		state;      		/* thread state */
+        time_t 		time;   		/* time stamp for start or delta time */
+	struct sockaddr_in slurm_addr;		/* network address */
+} thd_t;
+
+typedef struct agent_info {
+	pthread_mutex_t	thread_mutex;		/* agent specific mutex */
+	pthread_cond_t	thread_cond;		/* agent specific condition */
+	uint32_t	thread_count;		/* number of threads records */
+	uint32_t	threads_active;		/* count of currently active threads */
+	thd_t 		*thread_struct;		/* thread structures */
+	slurm_msg_type_t msg_type;		/* RPC to be issued */
+	void		*msg_args;		/* RPC data to be used */
+} agent_info_t;
+
 typedef struct task_info {
 	pthread_mutex_t	*thread_mutex;		/* agent specific mutex */
 	pthread_cond_t	*thread_cond;		/* agent specific condition */
@@ -69,12 +97,12 @@ typedef struct task_info {
 	void		*msg_args;		/* RPC data to be used */
 } task_info_t;
 
-static void *thread_revoke_job_cred (void *args);
+static void *thread_per_node_rpc (void *args);
 static void *wdog (void *args);
 
 /*
- * agent - party responsible for performing some task in parallel across a set of nodes
- * input: pointer to agent_info_t, which is xfree'd upon completion if AGENT_IS_THREAD is set
+ * agent - party responsible for transmitting an common RPC in parallel across a set of nodes
+ * input: pointer to agent_arg_t, which is xfree'd upon completion if AGENT_IS_THREAD is set
  */
 void *
 agent (void *args)
@@ -82,94 +110,103 @@ agent (void *args)
 	int i, rc;
 	pthread_attr_t attr_wdog;
 	pthread_t thread_wdog;
-	agent_info_t *agent_ptr = (agent_info_t *) args;
-	thd_t *thread_ptr = agent_ptr->thread_struct;
+	agent_arg_t *agent_arg_ptr;
+	agent_info_t *agent_info_ptr = NULL;
+	thd_t *thread_ptr;
 	task_info_t *task_specific_ptr;
 
 	/* basic argument value tests */
-	if (agent_ptr->thread_count == 0)
+	if (agent_arg_ptr->addr_count == 0)
 		goto cleanup;
-	if (thread_ptr == NULL)
-		error ("agent_revoke_job_cred passed null thread_struct");
-	if (agent_ptr->msg_type != REQUEST_REVOKE_JOB_CREDENTIAL)
-		fatal ("agent_revoke_job_cred passed invaid message type %d", agent_ptr->msg_type);
+	if (agent_arg_ptr->slurm_addr == NULL)
+		error ("agent passed null address list");
+	if ((agent_arg_ptr->msg_type != REQUEST_REVOKE_JOB_CREDENTIAL) &&
+	    (agent_arg_ptr->msg_type != REQUEST_SHUTDOWN_IMMEDIATE))
+		fatal ("agent passed invaid message type %d", agent_arg_ptr->msg_type);
 
-	/* initialize the thread data structure */
-	if (pthread_mutex_init (&agent_ptr->thread_mutex, NULL))
-		fatal ("agent_revoke_job_cred passed invaid invalid thread_mutex address");
-	if (pthread_cond_init (&agent_ptr->thread_cond, NULL))
-		fatal ("agent_revoke_job_cred passed invaid invalid thread_cond address");
-	agent_ptr->threads_active = 0;
-	for (i = 0; i < agent_ptr->thread_count; i++) {
+	/* initialize the data structures */
+	agent_info_ptr = xmalloc (sizeof (agent_info_t));
+	thread_ptr = xmalloc (agent_arg_ptr->addr_count * sizeof (thd_t));
+	if (pthread_mutex_init (&agent_info_ptr->thread_mutex, NULL))
+		fatal ("agent: pthread_mutex_init errno %d", errno);
+	if (pthread_cond_init (&agent_info_ptr->thread_cond, NULL))
+		fatal ("agent: pthread_cond_init errno %d", errno);
+	agent_info_ptr->thread_count = agent_arg_ptr->addr_count;
+	agent_info_ptr->threads_active = 0;
+	agent_info_ptr->thread_struct = thread_ptr;
+	agent_info_ptr->msg_type = agent_arg_ptr->msg_type;
+	agent_info_ptr->msg_args = agent_arg_ptr->msg_args;
+	for (i = 0; i < agent_info_ptr->thread_count; i++) {
 		thread_ptr[i].state = DSH_NEW;
 	}
 
 	/* start the watchdog thread */
 	if (pthread_attr_init (&attr_wdog))
-		error ("pthread_attr_init errno %d", errno);
+		fatal ("agent: pthread_attr_init errno %d", errno);
 	if (pthread_attr_setdetachstate (&attr_wdog, PTHREAD_CREATE_DETACHED))
-		error ("pthread_attr_setdetachstate errno %d", errno);
+		error ("agent: pthread_attr_setdetachstate errno %d", errno);
 #ifdef PTHREAD_SCOPE_SYSTEM
-	pthread_attr_setscope (&attr_wdog, PTHREAD_SCOPE_SYSTEM);
+	if (pthread_attr_setscope (&attr_wdog, PTHREAD_SCOPE_SYSTEM))
+		error ("agent: pthread_attr_setscope errno %d", errno);
 #endif
-	if (pthread_create (&thread_wdog, &attr_wdog, wdog, args)) {
-		error ("pthread_create errno %d", errno);
+	if (pthread_create (&thread_wdog, &attr_wdog, wdog, (void *)agent_info_ptr)) {
+		error ("agent: pthread_create errno %d", errno);
 		sleep (1); /* sleep and try once more */
 		if (pthread_create (&thread_wdog, &attr_wdog, wdog, args))
-			fatal ("pthread_create errno %d", errno);
+			fatal ("agent: pthread_create errno %d", errno);
 	}
 
 	/* start all the other threads (at most AGENT_THREAD_COUNT active at once) */
-	for (i = 0; i < agent_ptr->thread_count; i++) {
+	for (i = 0; i < agent_info_ptr->thread_count; i++) {
 		
 		/* wait until "room" for another thread */	
-		pthread_mutex_lock (&agent_ptr->thread_mutex);
-     		if (AGENT_THREAD_COUNT == agent_ptr->threads_active)
-			pthread_cond_wait (&agent_ptr->thread_cond, &agent_ptr->thread_mutex);
+		pthread_mutex_lock (&agent_info_ptr->thread_mutex);
+     		if (AGENT_THREAD_COUNT == agent_info_ptr->threads_active)
+			pthread_cond_wait (&agent_info_ptr->thread_cond, &agent_info_ptr->thread_mutex);
  
 		/* create thread */
-		task_specific_ptr 			= malloc (sizeof (task_info_t));
-		task_specific_ptr->thread_mutex		= &agent_ptr->thread_mutex;
-		task_specific_ptr->thread_cond		= &agent_ptr->thread_cond;
-		task_specific_ptr->threads_active	= &agent_ptr->thread_count;
+		task_specific_ptr 			= xmalloc (sizeof (task_info_t));
+		task_specific_ptr->thread_mutex		= &agent_info_ptr->thread_mutex;
+		task_specific_ptr->thread_cond		= &agent_info_ptr->thread_cond;
+		task_specific_ptr->threads_active	= &agent_info_ptr->thread_count;
 		task_specific_ptr->thread_struct	= &thread_ptr[i];
-		task_specific_ptr->msg_type		= agent_ptr->msg_type;
-		task_specific_ptr->msg_args		= &agent_ptr->msg_args;
+		task_specific_ptr->msg_type		= agent_info_ptr->msg_type;
+		task_specific_ptr->msg_args		= &agent_info_ptr->msg_args;
 
 		pthread_attr_init (&thread_ptr[i].attr);
 		pthread_attr_setdetachstate (&thread_ptr[i].attr, PTHREAD_CREATE_JOINABLE);
 #ifdef PTHREAD_SCOPE_SYSTEM
 		pthread_attr_setscope (&thread_ptr[i].attr, PTHREAD_SCOPE_SYSTEM);
 #endif
-		if (agent_ptr->msg_type != REQUEST_REVOKE_JOB_CREDENTIAL) {
+		if (agent_info_ptr->msg_type != REQUEST_REVOKE_JOB_CREDENTIAL) {
 			rc = pthread_create (&thread_ptr[i].thread, &thread_ptr[i].attr, 
-				thread_revoke_job_cred, (void *) task_specific_ptr);
+				thread_per_node_rpc, (void *) task_specific_ptr);
 
-			agent_ptr->threads_active++;
-			pthread_mutex_unlock (&agent_ptr->thread_mutex);
+			agent_info_ptr->threads_active++;
+			pthread_mutex_unlock (&agent_info_ptr->thread_mutex);
 
 			if (rc) {
 				error ("pthread_create errno %d\n", errno);
 				/* execute task within this thread */
-				thread_revoke_job_cred ((void *) task_specific_ptr);
+				thread_per_node_rpc ((void *) task_specific_ptr);
 			}
 		}
         }
 
 	/* wait for termination of remaining threads */
-	pthread_mutex_lock(&agent_ptr->thread_mutex);
-     	while (agent_ptr->threads_active > 0)
-		pthread_cond_wait(&agent_ptr->thread_cond, &agent_ptr->thread_mutex);
+	pthread_mutex_lock(&agent_info_ptr->thread_mutex);
+     	while (agent_info_ptr->threads_active > 0)
+		pthread_cond_wait(&agent_info_ptr->thread_cond, &agent_info_ptr->thread_mutex);
 	pthread_join (thread_wdog, NULL);
 	return NULL;
 
 cleanup:
 #if AGENT_IS_THREAD
-	if (thread_ptr)
-		xfree (thread_ptr);
-	if (agent_ptr->msg_args)
-		xfree (agent_ptr->msg_args);
-	xfree (agent_ptr);
+	if (agent_arg_ptr->slurm_addr)
+		xfree (agent_arg_ptr->slurm_addr);
+	if (agent_arg_ptr->msg_args)
+		xfree (agent_arg_ptr->msg_args);
+	xfree (agent_arg_ptr);
 #endif
 	return NULL;
 }
@@ -185,10 +222,12 @@ wdog (void *args)
 	agent_info_t *agent_ptr = (agent_info_t *) args;
 	thd_t *thread_ptr = agent_ptr->thread_struct;
 	time_t min_start;
+	time_t max_time;
 
 	while (1) {
 		work_done = 1;	/* assume all threads complete for now */
 		fail_cnt = 0;	/* assume all threads complete sucessfully for now */
+		max_time = 0;
 		sleep (WDOG_POLL);
 		min_start = time(NULL) - COMMAND_TIMEOUT;
 
@@ -197,13 +236,15 @@ wdog (void *args)
 			switch (thread_ptr[i].state) {
 				case DSH_ACTIVE:
 					work_done = 0;
-					if (thread_ptr[i].start < min_start)
+					if (thread_ptr[i].time < min_start)
 						pthread_kill(thread_ptr[i].thread, SIGALRM);
 					break;
 				case DSH_NEW:
 					work_done = 0;
 					break;
 				case DSH_DONE:
+					if (max_time < thread_ptr[i].time)
+						max_time = thread_ptr[i].time;
 					break;
 				case DSH_FAILED:
 					fail_cnt++;
@@ -211,31 +252,38 @@ wdog (void *args)
 			}
 		}
 		pthread_mutex_unlock (&agent_ptr->thread_mutex);
-		if (work_done)
+		if (work_done) {
+			info ("max time used %ld msec", (long) max_time);
 			break;
+		}
 	}
 
 	/* Notify slurmctld of non-responding nodes */
 	if (fail_cnt) {
-		char *node_list_ptr;
+		struct sockaddr_in *slurm_addr;
 
+		slurm_addr = xmalloc (fail_cnt * sizeof (struct sockaddr_in));
+		fail_cnt = 0;
 		for (i = 0; i < agent_ptr->thread_count; i++) {
-			if (thread_ptr[i].state == DSH_FAILED)
-				xstrcat (node_list_ptr, thread_ptr[i].node_name);
+			if (thread_ptr[i].state != DSH_FAILED)
+				continue;
+			/* build a list of slurm_addr's */
+			slurm_addr[fail_cnt++] = thread_ptr[i].slurm_addr;
+
 		}
 
+		info ("agent/wdog: %d nodes failed to respond", fail_cnt);
 		/* send RPC */
-		/* the following nodes are not responding... */
 
-		xfree (node_list_ptr);
+		xfree (slurm_addr);
 	}
 
-	pthread_exit (NULL);
+	return (void *) NULL;
 }
 
-/* thread_revoke_job_cred - thread to revoke a credential on a collection of nodes */
+/* thread_per_node_rpc - thread to revoke a credential on a collection of nodes */
 static void *
-thread_revoke_job_cred (void *args)
+thread_per_node_rpc (void *args)
 {
 	sigset_t set;
 	int msg_size ;
@@ -250,7 +298,7 @@ thread_revoke_job_cred (void *args)
 
 	pthread_mutex_lock (task_ptr->thread_mutex);
 	thread_ptr->state = DSH_ACTIVE;
-	thread_ptr->start = time(NULL);
+	thread_ptr->time = time (NULL);
 	pthread_mutex_unlock (task_ptr->thread_mutex);
 
 	/* accept SIGALRM */
@@ -261,8 +309,7 @@ thread_revoke_job_cred (void *args)
 
 	/* init message connection for message communication with slurmd */
 	if ( ( sockfd = slurm_open_msg_conn (& thread_ptr->slurm_addr) ) == SLURM_SOCKET_ERROR ) {
-		error ("thread_revoke_job_cred/slurm_open_msg_conn error for %s", 
-			thread_ptr->node_name);
+		error ("thread_per_node_rpc/slurm_open_msg_conn errno %d", errno);
 		goto cleanup;
 	}
 
@@ -270,27 +317,23 @@ thread_revoke_job_cred (void *args)
 	request_msg . msg_type = task_ptr->msg_type ;
 	request_msg . data = task_ptr->msg_args ; 
 	if ( ( rc = slurm_send_node_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
-		error ("thread_revoke_job_cred/slurm_send_node_msg error for %s",
-			thread_ptr->node_name);
+		error ("thread_per_node_rpc/slurm_send_node_msg errno %d", errno);
 		goto cleanup;
 	}
 
 	/* receive message */
 	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR ) {
-		error ("thread_revoke_job_cred/slurm_receive_msg error for %s", 
-			thread_ptr->node_name);
+		error ("thread_per_node_rpc/slurm_receive_msg errno %d", errno);
 		goto cleanup;
 	}
 
 	/* shutdown message connection */
 	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR ) {
-		error ("thread_revoke_job_cred/slurm_shutdown_msg_conn error for %s", 
-			thread_ptr->node_name);
+		error ("thread_per_node_rpc/slurm_shutdown_msg_conn errno %d", errno);
 		goto cleanup;
 	}
 	if ( msg_size ) {
-		error ("thread_revoke_job_cred/msg_size error %d for %s", 
-			msg_size, thread_ptr->node_name);
+		error ("thread_per_node_rpc/msg_size error %d", msg_size);
 		goto cleanup;
 	}
 
@@ -301,27 +344,26 @@ thread_revoke_job_cred (void *args)
 			rc = slurm_rc_msg->return_code;
 			slurm_free_return_code_msg ( slurm_rc_msg );	
 			if (rc)
-				error ("thread_revoke_job_cred/rc error %d for %s", 
-					rc, thread_ptr->node_name);
+				error ("thread_per_node_rpc/rc error %d", rc);
 			else
 				thread_state = DSH_DONE;
 
 			break ;
 		default:
-			error ("thread_revoke_job_cred/msg_type error %d for %s",
-				response_msg.msg_type, thread_ptr->node_name);
+			error ("thread_per_node_rpc bad msg_type %d",response_msg.msg_type);
 			break ;
 	}
 
 cleanup:
 	pthread_mutex_lock (task_ptr->thread_mutex);
 	thread_ptr->state = thread_state;
-	thread_ptr->finish = time(NULL);
+	thread_ptr->time = time(NULL) - thread_ptr->time;
 
 	/* Signal completion so another thread can replace us */
 	(*task_ptr->threads_active)--;
 	pthread_cond_signal(task_ptr->thread_cond);
 	pthread_mutex_unlock (task_ptr->thread_mutex);
 
-	pthread_exit ((void *)NULL);
+	return (void *) NULL;
 }
+
