@@ -497,38 +497,11 @@ struct Node_Record *Create_Node_Record(int *Error_Code) {
 
 /*
  * Delete_Config_Record - Delete all configuration records
- * Output: Returns 0 if no error, ENOMEM otberwise
+ * Output: Returns 0 if no error, errno otherwise
  */
 int Delete_Config_Record() {
-    ListIterator Config_Record_Iterator;	/* For iterating through Config_List */
-    struct Config_Record *Config_Record_Point;	/* Pointer to Config_Record */
-
     Last_Node_Update = time(NULL);
-    Config_Record_Iterator = list_iterator_create(Config_List);
-    if (Config_Record_Iterator == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Delete_Config_Record: list_iterator_create unable to allocate memory\n");
-#else
-	syslog(LOG_ALERT, "Delete_Config_Record: list_iterator_create unable to allocate memory\n");
-#endif
-	return ENOMEM;
-    } /* if */
-
-    while (Config_Record_Point = (struct Config_Record *)list_next(Config_Record_Iterator)) {
-	if (Config_Record_Point->Feature)     free(Config_Record_Point->Feature);
-	if (Config_Record_Point->Nodes)       free(Config_Record_Point->Nodes);
-	if (Config_Record_Point->NodeBitMap)  free(Config_Record_Point->NodeBitMap);
-	if (list_delete(Config_Record_Iterator) != 1) {
-#if DEBUG_SYSTEM
-	    fprintf(stderr, "Delete_Config_Record: list_delete failure\n");
-#else
-	    syslog(LOG_ALERT, "Delete_Config_Record: list_delete failure\n");
-#endif
-	} else
-	    free(Config_Record_Point);
-    } /* while */
-
-    list_iterator_destroy(Config_Record_Iterator);
+    (void)list_delete_all(Config_List, &List_Find_Config, "UNIVERSAL_KEY");
     return 0;
 } /* Delete_Config_Record */
 
@@ -938,7 +911,7 @@ int Init_Node_Conf() {
     if (Config_List) 	/* Delete defunct configuration entries */
 	(void)Delete_Config_Record();
     else
-	Config_List = list_create(NULL);
+	Config_List = list_create(&List_Delete_Config);
 
     if (Config_List == NULL) {
 #if DEBUG_SYSTEM
@@ -950,6 +923,35 @@ int Init_Node_Conf() {
     } /* if */
     return 0;
 } /* Init_Node_Conf */
+
+
+/* List_Compare_Config - Compare two entry from the config list based upon weight, 
+ * see list.h for documentation */
+int List_Compare_Config(void *Config_Entry1, void *Config_Entry2) {
+    int Weight1, Weight2;
+    Weight1 = ((struct Config_Record *)Config_Entry1)->Weight;
+    Weight2 = ((struct Config_Record *)Config_Entry2)->Weight;
+    return (Weight1 - Weight2);
+} /* List_Compare_Config */
+
+
+/* List_Delete_Config - Delete an entry from the config list, see list.h for documentation */
+void List_Delete_Config(void *Config_Entry) {
+    struct Config_Record *Config_Record_Point;	/* Pointer to Config_Record */
+    Config_Record_Point = (struct Config_Record *)Config_Entry;
+    if (Config_Record_Point->Feature)     free(Config_Record_Point->Feature);
+    if (Config_Record_Point->Nodes)       free(Config_Record_Point->Nodes);
+    if (Config_Record_Point->NodeBitMap)  free(Config_Record_Point->NodeBitMap);
+    free(Config_Record_Point);
+} /* List_Delete_Config */
+
+
+/* List_Find_Config - Find an entry in the config list, see list.h for documentation 
+ * Key is partition name or "UNIVERSAL_KEY" for all config */
+int List_Find_Config(void *Config_Entry, void *key) {
+    if (strcmp(key, "UNIVERSAL_KEY") == 0) return 1;
+    return 0;
+} /* List_Find_Config */
 
 
 /* 

@@ -30,6 +30,9 @@ char	Default_Part_Name[MAX_NAME_LEN];	/* Name of default partition */
 struct	Part_Record *Default_Part_Loc = NULL;	/* Location of default partition */
 time_t	Last_Part_Update;			/* Time of last update to Part Records */
 
+void	List_Delete_Part(void *Part_Entry);
+int	List_Find_Part(void *Part_Entry, void *key);
+
 #if PROTOTYPE_API
 char *Part_API_Buffer = NULL;
 int  Part_API_Buffer_Size = 0;
@@ -100,9 +103,8 @@ main(int argc, char * argv[]) {
     else 
 	strcpy(Part_Ptr->Name, "Class");
 
-    Part_Ptr   = Find_Part_Record("Batch");
-    if (Part_Ptr == 0) 
-	printf("ERROR: Find_Part_Record failure\n");
+    Part_Ptr   = list_find_first(Part_List, &List_Find_Part, "Batch");
+    if (Part_Ptr == 0) printf("ERROR: list_find failure\n");
 
     Update_Time = (time_t)0;
     Error_Code = Dump_Part(&Dump, &Dump_Size, &Update_Time);
@@ -241,51 +243,21 @@ struct Part_Record *Create_Part_Record(int *Error_Code) {
  * Output: return 0 on success, errno otherwise
  */
 int Delete_Part_Record(char *name) {
-    ListIterator Part_Record_Iterator;		/* For iterating through Part_Record_List */
-    struct Part_Record *Part_Record_Point;	/* Pointer to Part_Record */
+    int i;
 
     Last_Part_Update = time(NULL);
-    Part_Record_Iterator = list_iterator_create(Part_List);
-    if (Part_Record_Iterator == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Delete_Part_Record: list_iterator_create unable to allocate memory\n");
-#else
-	syslog(LOG_ALERT, "Delete_Part_Record: list_iterator_create unable to allocate memory\n");
-#endif
-	return ENOMEM;
-    } /* if */
+    if (name == NULL) 
+	i = list_delete_all(Part_List, &List_Find_Part, "UNIVERSAL_KEY");
+    else
+	i = list_delete_all(Part_List, &List_Find_Part, name);
+    if ((name == NULL) || (i != 0)) return 0;
 
-    while (Part_Record_Point = (struct Part_Record *)list_next(Part_Record_Iterator)) {
-	if (name &&  (strcmp(Part_Record_Point->Name, name) != 0)) continue;
-	if (Part_Record_Point->AllowGroups) free(Part_Record_Point->AllowGroups);
-	if (Part_Record_Point->Nodes)       free(Part_Record_Point->Nodes);
-	if (Part_Record_Point->NodeBitMap)  free(Part_Record_Point->NodeBitMap);
-	if (list_delete(Part_Record_Iterator) != 1) {
 #if DEBUG_SYSTEM
-	    fprintf(stderr, "Delete_Part_Record: list_delete failure on %s\n", name);
+    fprintf(stderr, "Delete_Part_Record: Attempt to delete non-existent partition %s\n", name);
 #else
-	    syslog(LOG_ALERT, "Delete_Part_Record: list_delete failure on %s\n", name);
+    syslog(LOG_ERR, "Delete_Part_Record: Attempt to delete non-existent partition %s\n", name);
 #endif
-	    strcpy(Part_Record_Point->Name, "DEFUNCT");
-	} else
-	    free(Part_Record_Point);
-
-	if (name) {
-	    list_iterator_destroy(Part_Record_Iterator);
-	    return 0;
-	} /* if */
-    } /* while */
-
-    list_iterator_destroy(Part_Record_Iterator);
-    if (name) {		/* Could not find specific partition name */
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Delete_Part_Record: Attempt to delete non-existent partition %s\n", name);
-#else
-	syslog(LOG_ERR, "Delete_Part_Record: Attempt to delete non-existent partition %s\n", name);
-#endif
-	return ENOENT;
-    } else 
-	return 0;
+    return ENOENT;
 } /* Delete_Part_Record */
 
 
@@ -447,34 +419,6 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 
 
 /* 
- * Find_Part_Record - Find a record for node with specified name,
- * Input: name - name of the desired node 
- * Output: return pointer to node record or NULL if not found
- */
-struct Part_Record *Find_Part_Record(char *name) {
-    ListIterator Part_Record_Iterator;		/* For iterating through Part_Record_List */
-    struct Part_Record *Part_Record_Point;	/* Pointer to Part_Record */
-
-    Part_Record_Iterator = list_iterator_create(Part_List);
-    if (Part_Record_Iterator == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Find_Part_Record: list_iterator_create unable to allocate memory\n");
-#else
-	syslog(LOG_ALERT, "Find_Part_Record: list_iterator_create unable to allocate memory\n");
-#endif
-	return NULL;
-    } /* if */
-
-    while (Part_Record_Point = (struct Part_Record *)list_next(Part_Record_Iterator)) {
-	if (strcmp(Part_Record_Point->Name, name) == 0) break;
-    } /* while */
-
-    list_iterator_destroy(Part_Record_Iterator);
-    return Part_Record_Point;	/* Value is NULL at end of list */
-} /* Find_Part_Record */
-
-
-/* 
  * Init_Part_Conf - Initialize the partition configuration values. 
  * This should be called before creating any partition entries.
  * Output: return value - 0 if no error, otherwise an error code
@@ -482,6 +426,7 @@ struct Part_Record *Find_Part_Record(char *name) {
 int Init_Part_Conf() {
     Last_Part_Update = time(NULL);
 
+    strcpy(Default_Part.Name, "DEFAULT");
     Default_Part.AllowGroups = (char *)NULL;
     Default_Part.MaxTime     = -1;
     Default_Part.MaxNodes    = -1;
@@ -499,7 +444,7 @@ int Init_Part_Conf() {
     if (Part_List) 	/* Delete defunct partitions */
 	(void)Delete_Part_Record(NULL);
     else
-	Part_List = list_create(NULL);
+	Part_List = list_create(&List_Delete_Part);
 
     if (Part_List == NULL) {
 #if DEBUG_SYSTEM
@@ -515,6 +460,28 @@ int Init_Part_Conf() {
 
     return 0;
 } /* Init_Part_Conf */
+
+
+/* List_Delete_Part - Delete an entry from the partition list, see list.h for documentation */
+void List_Delete_Part(void *Part_Entry) {
+    struct Part_Record *Part_Record_Point;	/* Pointer to Part_Record */
+    Part_Record_Point = (struct Part_Record *)Part_Entry;
+    if (Part_Record_Point->AllowGroups) free(Part_Record_Point->AllowGroups);
+    if (Part_Record_Point->Nodes)       free(Part_Record_Point->Nodes);
+    if (Part_Record_Point->NodeBitMap)  free(Part_Record_Point->NodeBitMap);
+    free(Part_Entry);
+} /* List_Delete_Part */
+
+
+/* List_Find_Part - Find an entry in the partition list, see list.h for documentation 
+ * Key is partition name or "UNIVERSAL_KEY" for all partitions */
+int List_Find_Part(void *Part_Entry, void *key) {
+    struct Part_Record *Part_Record_Point;	/* Pointer to Part_Record */
+    if (strcmp(key, "UNIVERSAL_KEY") == 0) return 1;
+    Part_Record_Point = (struct Part_Record *)Part_Entry;
+    if (strcmp(Part_Record_Point->Name, (char *)key) == 0) return 1;
+    return 0;
+} /* List_Find_Part */
 
 
 #if PROTOTYPE_API

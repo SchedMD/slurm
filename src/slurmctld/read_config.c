@@ -44,17 +44,17 @@ main(int argc, char * argv[]) {
     char *Format, *NodeName, *BitMap;
     char *Partitions[] = {"login", "debug", "batch", "class", "END"};
     struct Part_Record *Part_Ptr;
-    int i, found;
+    int cycles, i, found;
 
-    if (argc > 2) {
-	printf("Usage: %s <in_file>\n", argv[0]);
+    if (argc > 3) {
+	printf("Usage: %s <in_file> <cnt>\n", argv[0]);
 	exit(0);
     } /* if */
 
     Error_Code = Init_SLURM_Conf();
     if (Error_Code != 0) exit(Error_Code);
 
-    if (argc == 2) 
+    if (argc >= 2) 
 	Error_Code = Read_SLURM_Conf(argv[1]);
     else
 	Error_Code = Read_SLURM_Conf(SLURM_CONF);
@@ -94,7 +94,7 @@ main(int argc, char * argv[]) {
 	    if (found) break;
 	    Part_Ptr = Default_Part_Loc;
 	} else {
-	    Part_Ptr = Find_Part_Record(Partitions[i]);
+	    Part_Ptr = list_find_first(Part_List, &List_Find_Part, Partitions[i]);
 	    if (Part_Ptr == Default_Part_Loc) found = 1;
 	} /* else */
 	if (Part_Ptr == NULL) continue;
@@ -111,10 +111,12 @@ main(int argc, char * argv[]) {
 	printf("NodeBitMap=%s\n",	BitMap);
 	if (BitMap) free(BitMap);
     } /* for */
+    if (argc < 3) exit(0);
 
-    printf("Let's reinitialize the database 1000 times. Run /bin/ps to get memory size.\n");
+    cycles = atoi(argv[2]);
+    printf("Let's reinitialize the database %d times. Run /bin/ps to get memory size.\n", cycles);
     sleep(10);
-    for (i=0; i<1000; i++) {
+    for (i=0; i<cycles; i++) {
 	Error_Code = Init_SLURM_Conf();
 	if (Error_Code != 0) exit(Error_Code);
 
@@ -658,7 +660,7 @@ int Parse_Part_Spec (char *In_Line) {
 	return 0;
     } /* if */
 
-    Part_Record_Point = Find_Part_Record(PartitionName);
+    Part_Record_Point = list_find_first(Part_List, &List_Find_Part, PartitionName);
     if (Part_Record_Point == NULL) {
 	Part_Record_Point = Create_Part_Record(&Error_Code);
 	if (Error_Code) {
@@ -817,6 +819,7 @@ int Read_SLURM_Conf (char *File_Name) {
 
     Rehash();
     if (Error_Code=Build_BitMaps()) return Error_Code;
+    list_sort(Config_List, &List_Compare_Config);
 
 #if DEBUG_SYSTEM
     fprintf(stderr, "Read_SLURM_Conf: Finished loading configuration\n");
