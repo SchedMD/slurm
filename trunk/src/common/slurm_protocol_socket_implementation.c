@@ -448,7 +448,7 @@ slurm_fd _slurm_open_stream(slurm_addr *addr)
                 rc = _slurm_connect(fd, (struct sockaddr const *)addr, sizeof(*addr));
                 if (rc >= 0)                    /* success */
                         break;
-                if ((errno != ECONNREFUSED) || (retry > PORT_RETRIES))
+                if ((errno != ECONNREFUSED) || (retry >= PORT_RETRIES))
                         goto error;
 
                 if ((_slurm_close_stream(fd) < 0) && (errno == EINTR))
