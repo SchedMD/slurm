@@ -96,7 +96,7 @@ int cir_buf_read_update ( circular_buffer_t * buf , unsigned int size )
 	/*if zero read, just return */
 	if ( size == 0 )
 	{
-		info ( "zero length read in cirular buffer" ) ;
+		debug( "zero length read in cirular buffer" ) ;
 		return SLURM_SUCCESS ;
 	}
 

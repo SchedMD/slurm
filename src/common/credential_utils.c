@@ -50,10 +50,10 @@ int verify_credential ( slurm_ssl_key_ctx_t * verify_ctx , slurm_job_credential_
 		error_code = SLURM_ERROR ;
 		goto return_ ;
 	}
-	
-        if ( ( error_code = getnodename ( this_node_name, MAX_NAME_LEN ) ) )
-		                fatal ("slurmd: errno %d from getnodename", errno);
-	
+
+	if ( ( error_code = getnodename ( this_node_name, MAX_NAME_LEN ) ) )
+		fatal ("slurmd: failed to get hostname %m from getnodename");
+
 	/*
 	if ( verify_node_name_list ( this_node_name , credential -> node_list ) ) 
 	{
@@ -75,6 +75,11 @@ int verify_credential ( slurm_ssl_key_ctx_t * verify_ctx , slurm_job_credential_
 	return error_code ;
 }
 
+int insert_expired_credential ( slurm_job_credential_t * credential , List list ) 
+{
+	return SLURM_SUCCESS ;
+}
+
 int is_credential_still_valid ( slurm_job_credential_t * credential , List list )
 {
 	ListIterator iterator ;
@@ -91,6 +96,18 @@ int is_credential_still_valid ( slurm_job_credential_t * credential , List list 
 
 int clear_expired_revoked_credentials ( List list )
 {
+	time_t now = time ( NULL ) ;
+	ListIterator iterator ;
+	iterator = list_iterator_create( list ) ;
+	/*revoked_credential_t * revoked_credential ;
+	while ( ( revoked_credential = list_next ( iterator ) ) )
+	{
+		if ( now + EXPIATION_WINDOW > revoked_credential -> expiration )
+		{
+			list_delete ( iterator ) ;
+		}
+	}
+	*/
 	return SLURM_SUCCESS ;
 }
 	
