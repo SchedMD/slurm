@@ -13,7 +13,7 @@ main (int argc, char *argv[])
 	static time_t last_update_time = (time_t) NULL;
 	int error_code, i;
 	node_info_msg_t * node_info_msg_ptr = NULL;
-	node_table_t * node_ptr = node_info_msg_ptr -> node_array ;
+	node_table_t * node_ptr ;
 
 	error_code = slurm_load_node (last_update_time, &node_info_msg_ptr);
 	if (error_code) {
@@ -23,6 +23,7 @@ main (int argc, char *argv[])
 
 	printf("Nodes updated at %d, record count %d\n",
 		node_info_msg_ptr ->last_update, node_info_msg_ptr->record_count);
+	node_ptr = node_info_msg_ptr -> node_array ;
 
 	for (i = 0; i < node_info_msg_ptr-> record_count; i++) 
 	{
