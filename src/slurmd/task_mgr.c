@@ -78,7 +78,7 @@ int fan_out_task_launch ( launch_tasks_request_msg_t * launch_msg )
 	if ( ( session_id = setsid () ) == SLURM_ERROR )
 	{
 		info ( "set sid failed" );
-		//if ( ( session_id = getsid (0) ) == SLURM_ERROR )
+		if ( ( session_id = getsid (0) ) == SLURM_ERROR )
 		{
 			info ( "getsid also failed" ) ;
 		}
@@ -169,19 +169,19 @@ void * task_exec_thread ( void * arg )
 				_exit ( SLURM_FAILURE ) ;
 			}
 
+			/* initgroups */
+			if ( ( rc = initgroups ( pwd ->pw_name , pwd -> pw_gid ) ) == SLURM_ERROR )
+			{
+				info ( "init groups failed " ) ;
+				_exit ( SLURM_FAILURE ) ;
+			}
+			
 			if ( ( rc = setuid ( launch_msg->uid ) ) == SLURM_ERROR ) 
 			{
 				info ( "set user id failed " ) ;
 				_exit ( SLURM_FAILURE ) ;
 			}
 			
-			/* initgroups */
-			/*if ( ( rc = initgroups ( pwd ->pw_name , pwd -> pw_gid ) ) == SLURM_ERROR )
-			{
-				info ( "init groups failed " ) ;
-				_exit ( SLURM_FAILURE ) ;
-			}
-			*/
 
 			/* run bash and cmdline */
 			debug( "cwd %s", launch_msg->cwd ) ;
