@@ -1026,6 +1026,7 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 	debug("Processing RPC: REQUEST_COMPLETE_JOB_STEP");
 	uid = slurm_auth_uid(msg->cred);
 	lock_slurmctld(job_write_lock);
+
 	/* do RPC call */
 	/* First set node down as needed on fatal error */
 	if (complete_job_step_msg->slurm_rc != SLURM_SUCCESS) {
@@ -1077,7 +1078,8 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 		error_code =
 		    job_step_complete(complete_job_step_msg->job_id,
 				      complete_job_step_msg->job_step_id,
-				      uid);
+				      uid, job_requeue,
+				      complete_job_step_msg->job_rc);
 		unlock_slurmctld(job_write_lock);
 
 		/* return result */
@@ -1502,7 +1504,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 	req_step_msg.node_count = INFINITE;
 	req_step_msg.cpu_count  = job_desc_msg->num_procs;
 	req_step_msg.num_tasks  = job_desc_msg->num_tasks;
-	error_code = step_create(&req_step_msg, &step_rec);
+	error_code = step_create(&req_step_msg, &step_rec, true);
 	/* note: no need to free step_rec, pointer to global job step record */
 	if (error_code) {
 		unlock_slurmctld(job_write_lock);
@@ -1841,7 +1843,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	if (error_code == 0) {
 		/* issue the RPC */
 		lock_slurmctld(job_write_lock);
-		error_code = step_create(req_step_msg, &step_rec);
+		error_code = step_create(req_step_msg, &step_rec, false);
 	}
 
 	/* return result */

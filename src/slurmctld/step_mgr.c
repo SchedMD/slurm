@@ -249,11 +249,14 @@ int job_step_cancel(uint32_t job_id, uint32_t step_id, uid_t uid)
  * IN job_id - id of the job to be completed
  * IN step_id - id of the job step to be completed
  * IN uid - user id of user issuing the RPC
+ * IN requeue - job should be run again if possible
+ * IN job_return_code - job's return code, if set then set state to JOB_FAILED
  * RET 0 on success, otherwise ESLURM error code 
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid)
+int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
+		      bool requeue, uint32_t job_return_code)
 {
 	struct job_record *job_ptr;
 	int error_code;
@@ -263,6 +266,9 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid)
 		info("job_step_complete: invalid job id %u", job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
+
+	if (job_ptr->kill_on_step_done)
+		return job_complete(job_id, uid, requeue, job_return_code);
 
 	if ((job_ptr->job_state == JOB_FAILED) ||
 	    (job_ptr->job_state == JOB_COMPLETE) ||
@@ -413,12 +419,14 @@ cleanup:
  *	according to the step_specs.
  * IN step_specs - job step specifications
  * OUT new_step_record - pointer to the new step_record (NULL on error)
+ * IN kill_job_when_step_done - if set kill the job on step completion
  * RET - 0 or error code
  * NOTE: don't free the returned step_record because that is managed through
  * 	the job.
  */
 int
-step_create ( step_specs *step_specs, struct step_record** new_step_record  )
+step_create ( step_specs *step_specs, struct step_record** new_step_record,
+	      bool kill_job_when_step_done )
 {
 	struct step_record *step_ptr;
 	struct job_record  *job_ptr;
@@ -450,6 +458,7 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 #endif
 
 	job_ptr->time_last_active = time(NULL);
+	job_ptr->kill_on_step_done = kill_job_when_step_done;
 	nodeset = _pick_step_nodes (job_ptr, step_specs);
 	if (nodeset == NULL)
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE ;

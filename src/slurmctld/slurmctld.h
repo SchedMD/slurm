@@ -224,6 +224,8 @@ struct job_record {
 	enum job_states job_state;	/* state of the job */
 	uint16_t kill_on_node_fail;	/* 1 if job should be killed on 
 					   node failure */
+	uint16_t kill_on_step_done;	/* 1 if job should be killed when 
+					   the job step completes */
 	char *nodes;			/*  list of nodes allocated to job */
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
 	uint32_t time_limit;		/* time_limit minutes or INFINITE */
@@ -597,12 +599,14 @@ extern int job_complete (uint32_t job_id, uid_t uid, bool requeue,
  * IN job_id - id of the job to be completed
  * IN step_id - id of the job step to be completed
  * IN uid - user id of user issuing the RPC
+ * IN requeue - job should be run again if possible
+ * IN job_return_code - job's return code, if set then set state to JOB_FAILED
  * RET 0 on success, otherwise ESLURM error code 
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
 extern int job_step_complete (uint32_t job_id, uint32_t job_step_id, 
-			uid_t uid);
+			uid_t uid, bool requeue, uint32_t job_return_code);
 
 /* 
  * job_time_limit - terminate jobs which have exceeded their time limit
@@ -853,11 +857,14 @@ extern void set_slurmd_addr (void);
  *	accoding to the step_specs.
  * IN step_specs - job step specifications
  * OUT new_step_record - pointer to the new step_record (NULL on error)
+ * IN kill_job_when_step_done - if set kill the job on step completion
  * RET - 0 or error code
  * NOTE: don't free the returned step_record because that is managed through
  * 	the job.
  */
-extern int step_create ( step_specs *step_specs, struct step_record** );
+extern int step_create ( step_specs *step_specs, 
+			 struct step_record** new_step_record,
+			 bool kill_job_when_step_done );
 
 /*
  * update_job - update a job's parameters per the supplied specifications
