@@ -20,8 +20,6 @@ LIBS=           -lc -lslurm
 COPTS=		$(CFLAGS) $(CPPFLAGS) $(DEFS)
 INSTALL=	/usr/bin/install -c
 OBJECTS =	pam_slurm.o hostlist.o
-SOURCES =	pam_slurm.c hostlist.c
-
 
 all: $(PAM_MODULE) tags
 
@@ -48,9 +46,6 @@ tags: *.[ch]
 
 .SUFFIXES:
 .SUFFIXES: .c .o .so
-
-#.c.o:	$(noinst_HEADERS)
-#	$(CC) $(COPTS) -fPIC -c $<
 
 .o.so:
 	$(CC) -nostdlib -shared -o $*.so $(OBJECTS) $(LIBS)
