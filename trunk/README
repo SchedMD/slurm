@@ -11,10 +11,10 @@ TO BUILD:
              running)
      "--prefix=" to specify a directory into which the slurm files are 
              to be installed
+     "--sysconfdir=" to specify the directory into which the 
+             slurm.conf file is placed
      "--with-elan" to support a Quadics Elan3 interconnect, defaults 
              to IP interconnect
-     "--with-slurm-conf=" to specify the directory into which the 
-             slurm.conf file is placed
      "--with-totalview" to support the Etnus TotalView debugger
 
 TO TEST:
