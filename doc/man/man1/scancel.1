@@ -4,12 +4,12 @@ scancel \- Used to signal jobs or job steps that are under the control of Slurm.
 .SH "SYNOPSIS"
 \fBscancel\fR [\fIOPTIONS\fR...] [\fIjob_id\fR[.\fIstep_id\fR]] [\fIjob_id\fR[.\fIstep_id\fR]...]
 .SH "DESCRIPTION"
-\fBscancel\fR is used to signal jobs or job steps. An arbitrary number of jobs 
-or job steps may be signalled using job specification used for filtering or a
+\fBscancel\fR is used to signal or cancel jobs or job steps. An arbitrary number 
+of jobs or job steps may be signaled using job specification filters or a
 space separated list of specific job and/or job step IDs. A job or job step 
-can only be signalled by the owner of that job or user root. If an attempt is 
+can only be signaled by the owner of that job or user root. If an attempt is 
 made by an unauthorized user to signal a job or job step, an error message will 
-be printed and the job will not be canceled. 
+be printed and the job will not be signaled. 
 .TP
 OPTIONS
 .TP
@@ -20,20 +20,20 @@ Print a help message describing the usage of scancel.
 Interactive mode. Confirm each job_id.step_id before performing the cancel operation.
 .TP
 \fB\-n\fR, \fB\-\-name\fR=\fIjob_name\fR
-The name of jobs to be canceled.
+The name of jobs to be signaled.
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=\fIpartition_name\fR
-The name of the partition from which jobs are to be canceled.
+The name of the partition from which jobs are to be signaled.
 .TP
 \fB\-s\fR, \fB\-\-signal\fR=\fIsignal_name\fR
 The name or number of the signal to be send. Default value is "KILL".
 .TP
 \fB\-t\fR, \fB\-\-state\fR=\fIjob_state_name\fR
-The state of the jobs are to be canceled. \fIjob_state_name\fR may have a value of 
+The state of the jobs are to be signaled. \fIjob_state_name\fR may have a value of 
 either "PENDING" or "RUNNING".
 .TP
 \fB\-u\fR, \fB\-\-user\fR=\fIuser_name\fR
-The name of the user whose jobs are to be canceled.
+The name of the user whose jobs are to be signaled.
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Print additional logging. Multiple v's increase logging detail. 
@@ -41,17 +41,19 @@ Print additional logging. Multiple v's increase logging detail.
 \fB\-V\fR, \fB\-\-Version\fR
 Print the version number of the scontrol command. 
 .TP
-NOTE: If multiple filters are supplied (e.g. \fB\-\-partition\fR and \fB\-\-name\fR) only the jobs satisfying all of the filtering options will be canceled.
-.TP
 ARGUMENTS
 .TP
 \fIjob_id\fP
-The Slurm job ID of the job to have one of its steps or the entire job canceled.
+The Slurm job ID of the job to have one of its steps or the entire job signaled.
 .TP
 \fIstep_id\fP
-The step ID of the job step to be canceled. If none is provided, then 
-all jobs steps associated with the provided job_id will be canceled along 
-with the job itself.
+The step ID of the job step to be signaled. If none is provided, then 
+all jobs steps associated with the provided job_id will be signaled.
+.SH "NOTES"
+.TP
+If multiple filters are supplied (e.g. \fB\-\-partition\fR and \fB\-\-name\fR) only the jobs satisfying all of the filtering options will be signaled.
+.TP
+If a signal value of "KILL" (the default value) is to be sent to an entire job, this will result in the job's termination and its resource allocation being released. 
 .SH "EXAMPLES"
 .TP
 Send SIGTERM to steps 1 and 3 of job 1234:
