@@ -28,6 +28,7 @@
 #  include <config.h>
 #endif
 
+#include <time.h>
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -56,7 +57,10 @@ create_step_record (struct job_record *job_ptr)
 	assert (job_ptr);
 	step_record_point = (struct step_record *) xmalloc (sizeof (struct step_record));
 
+	step_record_point->job_ptr = job_ptr; 
 	step_record_point->step_id = (job_ptr->next_step_id)++;
+	step_record_point->start_time = time( NULL ) ;
+
 	if (list_append (job_ptr->step_list, step_record_point) == NULL)
 		fatal ("create_step_record: unable to allocate memory");
 
