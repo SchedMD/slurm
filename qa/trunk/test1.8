@@ -132,6 +132,10 @@ if {[wait_for_file $file_err] == 0} {
 			set got_sleep_err 1
 			exp_continue
 		}
+		-re "Specify time as a positive integer.*\n" {
+			set got_sleep_err 1
+			exp_continue
+		}
 		eof {
 			wait
 		}
