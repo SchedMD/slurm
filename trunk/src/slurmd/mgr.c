@@ -630,7 +630,7 @@ _create_job_session(slurmd_job_t *job)
 
 	/*
 	 * If the created job terminates immediately, the shared memory
-	 * record can be purged before we canset the mpid and sid below.
+	 * record can be purged before we can set the mpid and sid below.
 	 * This does not truly indicate an error condition, but a rare 
 	 * timing anomaly. Thus we log the event using debug()
 	 */
