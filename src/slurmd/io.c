@@ -44,7 +44,7 @@ int forward_io ( task_start_t * task_start )
 #define STDIN_OUT_SOCK 0
 #define SIG_STDERR_SOCK 1 
 
-	posix_signal_pipe_ignore ( ) ;
+	//posix_signal_pipe_ignore ( ) ;
 
 	/* open stdout*/
 	connect_io_stream ( task_start , STDIN_OUT_SOCK ) ;
@@ -62,16 +62,7 @@ int forward_io ( task_start_t * task_start )
 	if ( pthread_create ( & task_start->io_pthread_id[STDERR_FILENO] , NULL , stderr_io_pipe_thread , task_start ) )
 		goto kill_stdout_thread;
 
-	/* threads have been detatched*/
 	
-	pthread_join ( task_start->io_pthread_id[STDERR_FILENO] , NULL ) ;
-	info ( "errexit" ) ;
-	pthread_join ( task_start->io_pthread_id[STDOUT_FILENO] , NULL ) ;
-	info ( "outexit" ) ;
-	/*pthread_join ( task_start->io_pthread_id[STDIN_FILENO] , NULL ) ;*/
-	pthread_cancel (  task_start->io_pthread_id[STDIN_FILENO] );
-	info ( "inexit" ) ;
-	/* thread join on stderr or stdout signifies task termination we should kill the stdin thread */
 	
 	goto return_label;
 
@@ -81,6 +72,19 @@ int forward_io ( task_start_t * task_start )
 		pthread_kill ( task_start->io_pthread_id[STDIN_FILENO] , SIGKILL );
 	return_label:
 	return SLURM_SUCCESS ;
+}
+
+int wait_on_io_threads ( task_start_t * task_start ) 
+{
+	/* threads have been detatched*/
+	pthread_join ( task_start->io_pthread_id[STDERR_FILENO] , NULL ) ;
+	info ( "errexit" ) ;
+	pthread_join ( task_start->io_pthread_id[STDOUT_FILENO] , NULL ) ;
+	info ( "outexit" ) ;
+	/*pthread_join ( task_start->io_pthread_id[STDIN_FILENO] , NULL ) ;*/
+	pthread_cancel (  task_start->io_pthread_id[STDIN_FILENO] );
+	info ( "inexit" ) ;
+	/* thread join on stderr or stdout signifies task termination we should kill the stdin thread */
 }
 
 void * stdin_io_pipe_thread ( void * arg )
@@ -279,6 +283,8 @@ void * stderr_io_pipe_thread ( void * arg )
 	circular_buffer_t * cir_buf ;
 
 	init_circular_buffer ( & cir_buf ) ;
+	
+	posix_signal_pipe_ignore ( ) ;
 	
 	while ( true )
 	{
