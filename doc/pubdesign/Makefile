@@ -13,14 +13,14 @@ REPORT = report
 TEX = ../common/llnlCoverPage.tex $(REPORT).tex 
 
 FIGDIR = ../figures
-FIGS = $(FIGDIR)/arch2.eps \
+FIGS = $(FIGDIR)/allocate-init.eps \
        $(FIGDIR)/arch.eps \
-       $(FIGDIR)/slurm-arch.eps \
-       $(FIGDIR)/entities.eps \
        $(FIGDIR)/connections.eps \
+       $(FIGDIR)/entities.eps \
        $(FIGDIR)/interactive-job-init.eps \
        $(FIGDIR)/queued-job-init.eps \
-       $(FIGDIR)/allocate-init.eps
+       $(FIGDIR)/slurm-arch.eps \
+       $(FIGDIR)/times.eps
 
 PLOTS = $(FIGDIR)/times.eps 
 
