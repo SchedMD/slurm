@@ -81,6 +81,14 @@ const char plugin_name[]       	= "Blue Gene node selection plugin";
 const char plugin_type[]       	= "select/bluegene";
 const uint32_t plugin_version	= 90;
 
+/** pthread stuff for updating BGL node status */
+static pthread_t bluegene_thread;
+static bool thread_running = false;
+static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/** initialize the status pthread */
+int _init_status_pthread();
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -91,15 +99,47 @@ int init ( void )
 	verbose("%s loading...", plugin_name);
 
 	if (init_bgl())
-		return SLURM_ERROR;		
+		return SLURM_ERROR;
+	
+	if (_init_status_pthread())
+		return SLURM_ERROR;
 
 	verbose("%s done loading, system ready for use.", plugin_name);
+	return SLURM_SUCCESS;
+}
+
+int _init_status_pthread()
+{
+	pthread_attr_t attr;
+
+	pthread_mutex_lock( &thread_flag_mutex );
+	if ( thread_running ) {
+		debug2( "Bluegene thread already running, not starting another" );
+		pthread_mutex_unlock( &thread_flag_mutex );
+		return SLURM_ERROR;
+	}
+
+	slurm_attr_init( &attr );
+	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
+	pthread_create( &bluegene_thread, &attr, bluegene_agent, NULL);
+	thread_running = true;
+	pthread_mutex_unlock( &thread_flag_mutex );
+
 	return SLURM_SUCCESS;
 }
 
 int fini ( void )
 {
 	debug("fini");
+
+	pthread_mutex_lock( &thread_flag_mutex );
+	if ( thread_running ) {
+		verbose( "Bluegene select plugin shutting down" );
+		pthread_cancel( bluegene_thread );
+		thread_running = false;
+	}
+	pthread_mutex_unlock( &thread_flag_mutex );
+
 	return SLURM_SUCCESS;
 }
 
