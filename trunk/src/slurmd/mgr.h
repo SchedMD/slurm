@@ -1,9 +1,9 @@
 /*****************************************************************************\
- *  cntl.h
+ * src/slurmd/mgr.c - job management functions for slurmd
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Kevin Tew <tew1@llnl.gov> et. al.
+ *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -20,21 +20,35 @@
  *  details.
  *  
  *  You should have received a copy of the GNU General Public License along
- *  with ConMan; if not, write to the Free Software Foundation, Inc.,
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
+#ifndef _MGR_H
+#define _MGR_H
 
-#ifndef _SLURMD_IO_H_
-#define _SLURMD_IO_H_
+#if HAVE_CONFIG_H
+#  include <config.h>
+#endif
 
-#include <src/slurmd/task_mgr.h>
+#include <src/common/slurm_protocol_defs.h>
 
-int launch_task(task_start_t * task_start);
+#include <src/slurmd/job.h>
 
-int wait_for_tasks(launch_tasks_request_msg_t * launch_msg,
-		   task_start_t ** task_start);
+/* Launch a job step on this node
+ */
+int mgr_launch_tasks(launch_tasks_request_msg_t *msg);
 
-int kill_launched_tasks(launch_tasks_request_msg_t * launch_msg,
-			task_start_t ** task_start, int i);
+/* Instance of a slurmd "job" or job step:
+ * We run:
+ *  interconnect_prepare()       : prepare node for interconnect (if any)
+ *  interconnect_init()          : initialize interconnect on node
+ *  fork() N tasks --> wait() --> interconnect_fini()
+ *   \
+ *    `--> interconnect_attach() : attach each proc to interconnect
+ *         interconnect_env()    : setup child environment 
+ *         exec()
+ */
+void slurmd_run_job(slurmd_job_t *job);
+void job_launch_tasks(slurmd_job_t *job);
 
-#endif /* !_SLURMD_IO_H_ */
+#endif

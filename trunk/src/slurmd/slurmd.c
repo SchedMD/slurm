@@ -20,7 +20,7 @@
  *  details.
  *  
  *  You should have received a copy of the GNU General Public License along
- *  with ConMan; if not, write to the Free Software Foundation, Inc.,
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
@@ -44,14 +44,14 @@
 #include <src/common/xstring.h>
 #include <src/common/list.h>
 #include <src/common/slurm_protocol_api.h>
-#include <src/common/util_signals.h>
 #include <src/common/log.h>
+#include <src/common/fd.h>
 
 #include <src/slurmd/batch_mgr.h>
 #include <src/slurmd/get_mach_stat.h>
 #include <src/slurmd/slurmd.h>
-#include <src/slurmd/task_mgr.h>
-#include <src/slurmd/shmem_struct.h>
+#include <src/slurmd/mgr.h>
+#include <src/slurmd/shm.h>
 #include <src/common/signature_utils.h>
 #include <src/common/credential_utils.h>
 
@@ -64,6 +64,7 @@ typedef struct slurmd_config {
 	log_options_t log_opts;
 	char *slurm_conf;
 	int daemonize;
+	slurm_fd serverfd;
 } slurmd_config_t;
 
 typedef struct connection_arg {
@@ -73,7 +74,6 @@ typedef struct connection_arg {
 time_t init_time;
 pid_t slurmd_pid;
 time_t shutdown_time = (time_t) 0;
-slurmd_shmem_t *shmem_seg;
 char hostname[MAX_NAME_LEN];
 slurm_ssl_key_ctx_t verify_ctx;
 List credential_state_list;
@@ -138,13 +138,14 @@ int main(int argc, char *argv[])
 	/* send registration message to slurmctld */
 	send_node_registration_status_msg();
 
-	/* block SIGHUP, SIGTERM, and SIGINT in all threads */
-	/* block_some_signals(); */
-
 	/* create attached thread to handle signals */
-	if (pthread_create(&sigthr, NULL, &slurmd_handle_signals, 
-			   (void *)NULL) != 0)
-		fatal("pthread_create: %m");
+	{ /* XXX fix this properly */
+		pthread_attr_t attr;
+		pthread_attr_init(&attr);
+		if (pthread_create(&sigthr, &attr, &slurmd_handle_signals, 
+					(void *)NULL) != 0)
+			fatal("pthread_create: %m");
+	}
 
 	slurmd_msg_engine((void *)NULL);
 
@@ -201,8 +202,7 @@ void *slurmd_handle_signals(void *args)
 int slurmd_init()
 {
 	slurmd_pid = getpid();
-	shmem_seg = get_shmem();
-	init_shmem(shmem_seg);
+	shm_init();
 	slurm_ssl_init();
 	slurm_init_verifier(&verify_ctx, public_cert_filename());
 	initialize_credential_state_list(&credential_state_list);
@@ -262,7 +262,7 @@ static char *public_cert_filename()
 int slurmd_destroy()
 {
 	destroy_credential_state_list(credential_state_list);
-	rel_shmem(shmem_seg);
+	shm_fini();
 	slurm_destroy_ssl_key_ctx(&verify_ctx);
 	slurm_ssl_destroy();
 	return SLURM_SUCCESS;
@@ -296,15 +296,20 @@ fill_in_node_registration_status_msg(slurm_node_registration_status_msg_t *
 	/* fill in data structure */
 	node_reg_msg->timestamp = time(NULL);
 	node_reg_msg->node_name = xstrdup(hostname);
+
 	get_procs(&node_reg_msg->cpus);
 	get_memory(&node_reg_msg->real_memory_size);
 	get_tmp_disk(&node_reg_msg->temporary_disk_space);
-/* FIXME: Need to set correct count of currently running job stepss and their ID's below */
-/* This is needed to more reliably recover from restarts of daemons */
+
+	/* FIXME: Need to set correct count of currently running job 
+	 * steps and their ID's below */
+        /* This is needed to more reliably recover from restarts of daemons */
+
 	node_reg_msg->job_count = 0;
 	node_reg_msg->job_id = NULL;
 	node_reg_msg->step_id = NULL;
-	info("Configuration name=%s cpus=%u real_memory=%u, tmp_disk=%u, job_count=%u",
+	info("Configuration name=%s cpus=%u real_memory=%u, "
+	     "tmp_disk=%u, job_count=%u",
 	     hostname, node_reg_msg->cpus,
 	     node_reg_msg->real_memory_size,
 	     node_reg_msg->temporary_disk_space,
@@ -330,6 +335,9 @@ void *slurmd_msg_engine(void *args)
 	    == SLURM_SOCKET_ERROR)
 		fatal("slurm_init_msg_engine_port: %m");
 
+	fd_set_close_on_exec((int) sockfd);
+	slurmd_conf.serverfd = sockfd;
+
 	if ((rc = pthread_attr_init(&thread_attr)))
 		error("pthread_attr_init returned %d", rc);
 
@@ -343,7 +351,8 @@ void *slurmd_msg_engine(void *args)
 		    xmalloc(sizeof(connection_arg_t));
 
 		/* accept needed for stream implementation 
-		 * is a no-op in mongo implementation that just passes sockfd to newsockfd
+		 * is a no-op in mongo implementation that just passes 
+		 * sockfd to newsockfd
 		 */
 		if ((newsockfd = slurm_accept_msg_conn(sockfd, &cli_addr)) == 
 				SLURM_SOCKET_ERROR) {
@@ -351,14 +360,15 @@ void *slurmd_msg_engine(void *args)
 			continue;
 		}
 
-		/* receive message call that must occur before thread spawn because in message 
-		 * implementation their is no connection and the message is the sign of a new connection */
+		/* receive message call that must occur before thread 
+		 * spawn because in message implementation their is no 
+		 * connection and the message is the sign of a new connection 
+		 */
 		conn_arg->newsockfd = newsockfd;
 
 		if (shutdown_time) {
 			service_connection((void *) conn_arg);
-			pthread_exit((void *) 0);
-
+			break;
 		}
 
 		if ((rc = pthread_create(&request_thread_id, 
@@ -369,6 +379,7 @@ void *slurmd_msg_engine(void *args)
 			error("slurmd_msg_engine: pthread_create: %m");
 			service_connection((void *) conn_arg);
 		}
+
 	}
 	slurm_shutdown_msg_engine(sockfd);
 	return NULL;
@@ -455,35 +466,60 @@ void slurmd_req(slurm_msg_t * msg)
 /* rpc methods */
 /******************************/
 
+static int _launch_tasks(launch_tasks_request_msg_t *req)
+{
+	pid_t pid;
+
+	switch ((pid = fork())) {
+	  case -1:
+		  error("launch_tasks: fork: %m");
+		  return SLURM_ERROR;
+		  break;
+	  case 0: /* child runs job */
+		  slurm_shutdown_msg_engine(slurmd_conf.serverfd);
+		  destroy_credential_state_list(credential_state_list);
+		  slurm_destroy_ssl_key_ctx(&verify_ctx);
+		  slurm_ssl_destroy();
+		  mgr_launch_tasks(req);
+		  break;
+	  default:
+		  verbose("created process %ld for job %d.%d", 
+				  pid, req->job_id, req->job_step_id);
+		  break;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 /* Launches tasks */
 void slurm_rpc_launch_tasks(slurm_msg_t * msg)
 {
 	/* init */
 	int rc = SLURM_SUCCESS;
 	clock_t start_time;
-	launch_tasks_request_msg_t *task_desc =
-	    (launch_tasks_request_msg_t *) msg->data;
 	slurm_msg_t resp_msg;
 	launch_tasks_response_msg_t task_resp;
+	launch_tasks_request_msg_t *req = 
+		(launch_tasks_request_msg_t *) msg->data;
 
 	start_time = clock();
 	info("slurmd_req: launch tasks message received");
-
-	slurm_print_launch_task_msg(task_desc);
+	slurm_print_launch_task_msg(req);
 
 	/* do RPC call */
 	/* test credentials */
-	/* rc =  */ verify_credential(&verify_ctx, task_desc->credential, 
+	/* rc =  */ verify_credential(&verify_ctx, req->credential, 
 			       credential_state_list);
 
+	if (rc == SLURM_SUCCESS)
+		rc = _launch_tasks(req);
 	task_resp.node_name = hostname;
-	task_resp.srun_node_id = task_desc->srun_node_id;
+	task_resp.srun_node_id = req->srun_node_id;
 
-	resp_msg.address = task_desc->response_addr;
+	resp_msg.address = req->response_addr;
 	resp_msg.data = &task_resp;
 	resp_msg.msg_type = RESPONSE_LAUNCH_TASKS;
 
-	
 	task_resp.return_code = rc; 
 
 	/* return result */
@@ -494,7 +530,6 @@ void slurm_rpc_launch_tasks(slurm_msg_t * msg)
 		info("slurmd_req: launch authorization completed "
 		     "successfully, time=%ld", (long) (clock() - start_time));
 		slurm_send_only_node_msg(&resp_msg);
-		launch_tasks(task_desc);
 	}
 }
 
@@ -507,23 +542,17 @@ void slurm_rpc_ping(slurm_msg_t * msg)
 /* Kills Launched Tasks */
 void slurm_rpc_kill_tasks(slurm_msg_t * msg)
 {
-	/* init */
-	int error_code;
-	clock_t start_time;
-	kill_tasks_msg_t *kill_tasks_msg = (kill_tasks_msg_t *) msg->data;
+	int rc;
+	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
 
-	start_time = clock();
-
-	/* do RPC call */
-	error_code = kill_tasks(kill_tasks_msg);
+	rc = shm_signal_step(req->job_id, req->job_step_id, req->signal);
 
 	/* return result */
-	if (error_code) {
-		error("slurmd_req: kill tasks error %d, time=%ld",
-		      error_code, (long) (clock() - start_time));
-		slurm_send_rc_msg(msg, error_code);
+	if (rc) {
+		error("slurmd_req: kill tasks error %d", rc);
+		slurm_send_rc_msg(msg, rc);
 	} else {
-		info("slurmd_req: kill tasks completed successfully, time=%ld", (long) (clock() - start_time));
+		verbose("slurmd_req: kill tasks completed");
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 }
@@ -539,7 +568,7 @@ void slurm_rpc_reattach_tasks_streams(slurm_msg_t * msg)
 	start_time = clock();
 
 	/* do RPC call */
-	error_code = reattach_tasks_streams(reattach_tasks_steams_msg);
+	/* error_code = reattach_tasks_streams(reattach_tasks_steams_msg);*/
 
 	/* return result */
 	if (error_code) {
@@ -556,22 +585,19 @@ void slurm_rpc_reattach_tasks_streams(slurm_msg_t * msg)
 void slurm_rpc_revoke_credential(slurm_msg_t * msg)
 {
 	/* init */
-	int error_code = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
 	clock_t start_time;
-	revoke_credential_msg_t *revoke_credential_msg =
-	    (revoke_credential_msg_t *) msg->data;
+	revoke_credential_msg_t *req = (revoke_credential_msg_t *) msg->data;
 
 	start_time = clock();
 
 	/* do RPC call */
-	error_code =
-	    revoke_credential(revoke_credential_msg,
-			      credential_state_list);
+	rc = revoke_credential(req, credential_state_list);
 
 	/* return result */
-	if (error_code) {
+	if (rc) {
 		error("slurmd_req:  error %m errno %d, time=%ld",
-		      error_code, (long) (clock() - start_time));
+		      rc, (long) (clock() - start_time));
 		slurm_send_rc_msg(msg, errno);
 	} else {
 		info("slurmd_req:  completed successfully, time=%ld",
@@ -607,7 +633,7 @@ int slurmd_shutdown()
 	return_code_msg_t *slurm_rc_msg;
 	slurm_addr slurmd_addr;
 
-	kill_all_tasks();
+	/* kill_all_tasks();*/
 
 	/* init message connection for message communication with controller */
 	slurm_set_addr_char(&slurmd_addr, slurm_get_slurmd_port(),
@@ -647,24 +673,16 @@ int slurmd_shutdown()
 
 void slurm_rpc_launch_batch_job(slurm_msg_t * msg)
 {
-	/* init */
-	int error_code = SLURM_SUCCESS;
-	clock_t start_time;
-	batch_job_launch_msg_t *batch_job_launch_msg = ( batch_job_launch_msg_t * ) msg->data ;
+	int rc;
+	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *) msg->data ;
 
-	start_time = clock();
+	rc = SLURM_SUCCESS; /* launch_batch_job(req); */
 
-	/* do RPC call */
-	error_code = launch_batch_job(batch_job_launch_msg);
-
-	/* return result */
-	if (error_code) {
-		error("slurmd_req:  error %d, time=%ld",
-		      error_code, (long) (clock() - start_time));
-		slurm_send_rc_msg(msg, error_code);
+	if (rc) {
+		error("slurmd_req:  error %d", rc);
+		slurm_send_rc_msg(msg, rc);
 	} else {
-		info("slurmd_req:  completed successfully, time=%ld",
-		     (long) (clock() - start_time));
+		info("slurmd_req:  completed successfully");
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 }
@@ -728,7 +746,7 @@ int parse_commandline_args(int argc, char **argv,
 			{0, 0, 0, 0}
 		};
 
-		c = getopt_long(argc, argv, "de:hf:l:s:", long_options,
+		c = getopt_long(argc, argv, "cde:hf:l:s:", long_options,
 				&option_index);
 		if (c == -1)
 			break;
@@ -780,6 +798,9 @@ int parse_commandline_args(int argc, char **argv,
 			}
 			slurmd_config->log_opts.syslog_level = errlev;
 			break;
+		case 'c':
+			shm_cleanup();
+			break;
 		case 0:
 			info("option %s", long_options[option_index].name);
 			if (optarg) {
@@ -797,14 +818,8 @@ int parse_commandline_args(int argc, char **argv,
 			digit_optind = this_option_optind;
 			info("option %c\n", c);
 			break;
-		case '?':
-			info("?? getopt returned character code 0%o ??",
-			     c);
-			break;
-
 		default:
-			info("?? getopt returned character code 0%o ??",
-			     c);
+			info("unknown option %c", c);
 			usage(argv[0]);
 			exit(1);
 		}
@@ -835,7 +850,7 @@ reset_cwd(void)
 	else {
 		if (chdir (dir))
 			error ("chdir to %s error %m", dir);
-debug ("chdir %s", dir);
+		debug ("chdir %s", dir);
 		xfree (dir);
 	}
 }

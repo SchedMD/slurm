@@ -1,11 +1,10 @@
 /*****************************************************************************\
- *  elan_interconnect.c - Demo the routines in common/qsw.c
- *  This can run mping on the local node (uses shared memory comms).
- *  ./runqsw /usr/lib/mpi-test/mping 1 1024
+ *  src/slurmd/elan_interconnect.c Elan interconnect implementation
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Kevin Tew <tew1@llnl.gov> et. al.
+ *  Written by Kevin Tew <tew1@llnl.gov> 
+ *         and Mark Grondona <mgrondona@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -22,11 +21,11 @@
  *  details.
  *  
  *  You should have received a copy of the GNU General Public License along
- *  with ConMan; if not, write to the Free Software Foundation, Inc.,
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#define HAVE_LIBELAN3 
+#include <src/slurmd/interconnect.h>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -43,21 +42,9 @@
 #include <src/common/qsw.h>
 #include <src/common/slurm_errno.h>
 #include <src/common/slurm_protocol_api.h>
-#include <src/slurmd/task_mgr.h>
 #include <src/slurmd/interconnect.h>
 #include <src/slurmd/setenvpf.h>
-
-
-
-/* exported module funtion to launch tasks */
-/*launch_tasks should really be named launch_job_step*/
-int 
-launch_tasks(launch_tasks_request_msg_t * launch_msg)
-{
-	pthread_atfork(NULL, NULL, pthread_fork_child_after);
-	debug("launch_tasks: calling interconnect_init()");
-	return interconnect_init(launch_msg);
-}
+#include <src/slurmd/shm.h>
 
 static int 
 _wait_and_destroy_prg(qsw_jobinfo_t qsw_job, pid_t pid)
@@ -65,10 +52,15 @@ _wait_and_destroy_prg(qsw_jobinfo_t qsw_job, pid_t pid)
 	int i = 0;
 	int sleeptime = 1;
 
+	shm_init();
+
 	debug3("waiting to destory program description...");
+  again:
 	if (waitpid(pid, NULL, 0) < 0) {
+		if (errno == EINTR)
+			goto again;
 		error("waitpid: %m");
-		return SLURM_ERROR;
+		exit(1);
 	}
 
 	while(qsw_prgdestroy(qsw_job) < 0) {
@@ -88,12 +80,16 @@ _wait_and_destroy_prg(qsw_jobinfo_t qsw_job, pid_t pid)
 		sleep(sleeptime*=2);
 	}
 
+	shm_fini();
+	exit(0);
 	return SLURM_SUCCESS;
 }
 
-/* Contains interconnect specific setup instructions and then calls 
- * fan_out_task_launch */
-int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
+/* 
+ * prepare node for interconnect use
+ */
+int 
+interconnect_init(slurmd_job_t *job)
 {
 	pid_t pid;
 
@@ -101,43 +97,44 @@ int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
 	switch ((pid = fork())) 
 	{
 		case -1:
-			error ("elan_interconnect_init fork(): %m");
+			error ("elan_interconnect_prepare fork(): %m");
 			return SLURM_ERROR ;
 		case 0: /* child falls thru */
 			break;
 		default: /* parent */
-			return _wait_and_destroy_prg(launch_msg->qsw_job, pid);
+			return _wait_and_destroy_prg(job->qsw_job, pid);
 	}
 
 	/* Process 2: */
 	debug("calling qsw_prog_init from process %ld", getpid());
-	if (qsw_prog_init(launch_msg->qsw_job, launch_msg->uid) < 0) {
+	if (qsw_prog_init(job->qsw_job, job->uid) < 0) {
 		error ("elan interconnect_init: qsw_prog_init: %m");
 		/* we may lose the following info if not logging to stderr */
-		qsw_print_jobinfo(stderr, launch_msg->qsw_job);
-		_exit(1) ;
+		qsw_print_jobinfo(stderr, job->qsw_job);
+		return SLURM_ERROR;
 	}
 	
-	fan_out_task_launch(launch_msg);
-	_exit(0);
-
-	return SLURM_ERROR; /* XXX: why? */
+	return SLURM_SUCCESS; 
 }
 
-int interconnect_set_capabilities(task_start_t * task_start)
+int 
+interconnect_fini(slurmd_job_t *job)
 {
-	pid_t pid;
-	int nodeid, nnodes, nprocs, procid; 
+	return SLURM_SUCCESS;
+}
+int 
+interconnect_attach(slurmd_job_t *job, int procid)
+{
+	int nodeid, nnodes, nprocs; 
 
-	nodeid = task_start->launch_msg->srun_node_id;
-	nnodes = task_start->launch_msg->nnodes;
-	procid = task_start->local_task_id;
-	nprocs = task_start->launch_msg->nprocs;
+	nodeid = job->nodeid;
+	nnodes = job->nnodes;
+	nprocs = job->nprocs;
 
 	debug3("nodeid=%d nnodes=%d procid=%d nprocs=%d", 
 	       nodeid, nnodes, procid, nprocs);
 	debug3("setting capability in process %ld", getpid());
-	if (qsw_setcap(task_start->launch_msg->qsw_job, procid) < 0) {
+	if (qsw_setcap(job->qsw_job, procid) < 0) {
 		error("qsw_setcap: %m");
 		return SLURM_ERROR;
 	}
@@ -148,25 +145,21 @@ int interconnect_set_capabilities(task_start_t * task_start)
 /*
  * Set environment variables needed by QSW MPICH / libelan.
  */
-int interconnect_env(char ***env, uint16_t *envc, int nodeid, int nnodes, 
-	             int procid, int nprocs)
+int interconnect_env(slurmd_job_t *job, int taskid)
 {
-	int cnt = *envc;
+	int cnt  = job->envc;
+	int rank = job->task[taskid]->gid; 
 
-	if (setenvpf(env, &cnt, "RMS_RANK=%d", procid) < 0)
+	if (setenvpf(&job->env, &cnt, "RMS_RANK=%d",   rank       ) < 0)
 		return -1;
-	if (setenvpf(env, &cnt, "RMS_NODEID=%d", nodeid) < 0)
+	if (setenvpf(&job->env, &cnt, "RMS_NODEID=%d", job->nodeid) < 0)
 		return -1;
-	if (setenvpf(env, &cnt, "RMS_PROCID=%d", procid) < 0)
+	if (setenvpf(&job->env, &cnt, "RMS_PROCID=%d", rank       ) < 0)
 		return -1;
-	if (setenvpf(env, &cnt, "RMS_NNODES=%d", nnodes) < 0)
+	if (setenvpf(&job->env, &cnt, "RMS_NNODES=%d", job->nnodes) < 0)
 		return -1;
-	if (setenvpf(env, &cnt, "RMS_NPROCS=%d", nprocs) < 0)
+	if (setenvpf(&job->env, &cnt, "RMS_NPROCS=%d", job->nprocs) < 0)
 		return -1;
 	return 0;
 }
 
-
-void pthread_fork_child()
-{
-}

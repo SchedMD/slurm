@@ -1,5 +1,6 @@
 /*****************************************************************************\
- * setenvpf.c - add an environment variable to environment vector
+ * src/slurmd/setenvpf.c - add an environment variable to environment vector
+ * $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -24,6 +25,10 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#if HAVE_CONFIG_H
+#  include <config.h>
+#endif 
+
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -34,7 +39,7 @@
  * xmalloc() extending *envp if necessary.
  *
  * envp		Pointer to environment array allocated with xmalloc()
- * envc		Pointer to current count of environment vars			 
+ * envc		Pointer to current count of environment vars
  * fmt		printf style format (e.g. "SLURM_NPROCS=%d")
  *
  */    
