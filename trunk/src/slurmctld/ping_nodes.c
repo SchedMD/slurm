@@ -156,8 +156,9 @@ void ping_nodes (void)
 		offset = 0;
 
 	for (i = 0; i < node_record_count; i++) {
-		struct node_record *node_ptr = &node_record_table_ptr[i];
+		struct node_record *node_ptr;
 
+		node_ptr = &node_record_table_ptr[i];
 		if (node_ptr->last_response >= still_live_time)
 			continue;
 
@@ -173,6 +174,11 @@ void ping_nodes (void)
 			set_node_down(node_ptr->name, "Not responding");
 			continue;
 		}
+
+#ifdef HAVE_BGL
+		if (i > 0)	/* Only one front-end node to ping/register */
+			break;
+#endif
 
 		if (node_ptr->last_response == (time_t)0) {
 			no_resp_flag = 1;
@@ -221,7 +227,6 @@ void ping_nodes (void)
 		strncpy (&ping_agent_args->node_names[pos],
 		         node_ptr->name, MAX_NAME_LEN);
 		ping_agent_args->node_count++;
-
 	}
 
 	if (ping_agent_args->node_count == 0)

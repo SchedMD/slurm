@@ -77,6 +77,8 @@ static int	_hash_index (char *name);
 static void 	_list_delete_config (void *config_entry);
 static int	_list_find_config (void *config_entry, void *key);
 static void 	_make_node_down(struct node_record *node_ptr);
+static void	_node_did_resp(struct node_record *node_ptr);
+static void	_node_not_resp (struct node_record *node_ptr, time_t msg_time);
 static void 	_pack_node (struct node_record *dump_node_ptr, Buf buffer);
 static void	_sync_bitmaps(struct node_record *node_ptr, int job_count);
 static bool 	_valid_node_state_change(enum node_states old, 
@@ -999,10 +1001,11 @@ static bool _valid_node_state_change(enum node_states old, enum node_states new)
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: READ lock_slurmctld config before entry
  */
-int 
+extern int 
 validate_node_specs (char *node_name, uint32_t cpus, 
 			uint32_t real_memory, uint32_t tmp_disk, 
-			uint32_t job_count, uint32_t status) {
+			uint32_t job_count, uint32_t status)
+{
 	int error_code;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
@@ -1122,6 +1125,169 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	return error_code;
 }
 
+/*
+ * validate_nodes_via_front_end - validate all nodes on a cluster as having
+ *	a valid configuration as soon as the front-end registers. Individual
+ *	nodes will not register with this configuration
+ * IN job_count - number of jobs which should be running on cluster
+ * IN job_id_ptr - pointer to array of job_ids that should be on cluster
+ * IN step_id_ptr - pointer to array of job step ids that should be on cluster
+ * IN status - cluster status code
+ * RET 0 if no error, SLURM error code otherwise
+ * global: node_record_table_ptr - pointer to global node table
+ * NOTE: READ lock_slurmctld config before entry
+ */
+extern int validate_nodes_via_front_end(uint32_t job_count, 
+			uint32_t *job_id_ptr, uint16_t *step_id_ptr,
+			uint32_t status)
+{
+	int error_code = 0, i, jobs_on_node;
+	bool updated_job = false;
+	struct job_record *job_ptr;
+	struct config_record *config_ptr;
+	struct node_record *node_ptr;
+	time_t now = time(NULL);
+	ListIterator job_iterator;
+
+	/* First validate the job info */
+	node_ptr = &node_record_table_ptr[0];	/* All msg send to node zero,
+				 * the front-end for the wholel cluster */
+	for (i = 0; i < job_count; i++) {
+		if ( (job_id_ptr[i] >= MIN_NOALLOC_JOBID) && 
+		     (job_id_ptr[i] <= MAX_NOALLOC_JOBID) ) {
+			info("NoAllocate job %u.%u reported",
+				job_id_ptr[i], step_id_ptr[i]);
+			continue;
+		}
+
+		job_ptr = find_job_record(job_id_ptr[i]);
+		if (job_ptr == NULL) {
+			error("Orphan job %u.%u reported",
+			      job_id_ptr[i], step_id_ptr[i]);
+			kill_job_on_node(job_id_ptr[i], node_ptr);
+		}
+
+		else if (job_ptr->job_state == JOB_RUNNING) {
+			debug3("Registered job %u.%u",
+			       job_id_ptr[i], step_id_ptr[i]);
+			if (job_ptr->batch_flag) {
+				/* NOTE: Used for purging defunct batch jobs */
+				job_ptr->time_last_active = now;
+			}
+		}
+
+		else if (job_ptr->job_state & JOB_COMPLETING) {
+			/* Re-send kill request as needed, 
+			 * not necessarily an error */
+			kill_job_on_node(job_id_ptr[i], node_ptr);
+		}
+
+
+		else if (job_ptr->job_state == JOB_PENDING) {
+			error("Registered PENDING job %u.%u",
+			      job_id_ptr[i], step_id_ptr[i]);
+			/* FIXME: Could possibly recover the job */
+			job_ptr->job_state = JOB_FAILED;
+			last_job_update    = now;
+			job_ptr->end_time  = now;
+			delete_job_details(job_ptr);
+			kill_job_on_node(job_id_ptr[i], node_ptr);
+			job_completion_logger(job_ptr);
+		}
+
+		else {		/* else job is supposed to be done */
+			error
+			    ("Registered job %u.%u in state %s",
+			     job_id_ptr[i], step_id_ptr[i], 
+			     job_state_string(job_ptr->job_state));
+			kill_job_on_node(job_id_ptr[i], node_ptr);
+		}
+	}
+
+	/* purge orphan batch jobs */
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if ((job_ptr->job_state != JOB_RUNNING) ||
+		    (job_ptr->batch_flag == 0)          ||
+		    (job_ptr->time_last_active == now))
+			continue;
+
+		info("Killing orphan batch job %u", job_ptr->job_id);
+		job_complete(job_ptr->job_id, 0, false, 0);
+	}
+	list_iterator_destroy(job_iterator);
+
+	/* Now validate the node info */
+	for (i=0; i<node_record_count; i++) {
+		node_ptr = &node_record_table_ptr[i];
+		config_ptr = node_ptr->config_ptr;
+		jobs_on_node = node_ptr->run_job_cnt + node_ptr->comp_job_cnt;
+		node_ptr->last_response = time (NULL);
+
+		if (node_ptr->node_state & NODE_STATE_NO_RESPOND) {
+			updated_job = true;
+			node_ptr->node_state &= (uint16_t) 
+					(~NODE_STATE_NO_RESPOND);
+		}
+
+		if (status == ESLURMD_PROLOG_FAILED) {
+			if ((node_ptr->node_state != NODE_STATE_DRAINING) &&
+			    (node_ptr->node_state != NODE_STATE_DRAINED)) {
+				updated_job = true;
+				error ("Prolog failure on node %s, state to DOWN",
+					node_ptr->name);
+				set_node_down(node_ptr->name, "Prolog failed");
+			}
+		} else {
+			if (node_ptr->node_state == NODE_STATE_UNKNOWN) {
+				updated_job = true;
+				debug("validate_node_specs: node %s has registered", 
+					node_ptr->name);
+				if (jobs_on_node)
+					node_ptr->node_state = NODE_STATE_ALLOCATED;
+				else
+					node_ptr->node_state = NODE_STATE_IDLE;
+				xfree(node_ptr->reason);
+			} else if (node_ptr->node_state == NODE_STATE_DRAINING) {
+				if (jobs_on_node== 0) {
+					updated_job = true;
+					node_ptr->node_state = NODE_STATE_DRAINED;
+				}
+			} else if (node_ptr->node_state == NODE_STATE_DRAINED) {
+				if (jobs_on_node != 0) {
+					updated_job = true;
+					node_ptr->node_state = NODE_STATE_DRAINING;
+				}
+			} else if ((node_ptr->node_state == NODE_STATE_DOWN) &&
+			           (slurmctld_conf.ret2service == 1)) {
+				updated_job = true;
+				if (jobs_on_node)
+					node_ptr->node_state = NODE_STATE_ALLOCATED;
+				else
+					node_ptr->node_state = NODE_STATE_IDLE;
+				info ("validate_node_specs: node %s returned to service", 
+				      node_ptr->name);
+				xfree(node_ptr->reason);
+			} else if ((node_ptr->node_state == NODE_STATE_ALLOCATED) &&
+				   (jobs_on_node == 0)) {	/* job vanished */
+				updated_job = true;
+				node_ptr->node_state = NODE_STATE_IDLE;
+			} else if ((node_ptr->node_state == NODE_STATE_COMPLETING) &&
+				   (jobs_on_node == 0)) {	/* job already done */
+				updated_job = true;
+				node_ptr->node_state = NODE_STATE_IDLE;
+			}
+			_sync_bitmaps(node_ptr, jobs_on_node);
+		}
+	}
+
+	if (updated_job) {
+		last_node_update = time (NULL);
+		reset_job_priority();
+	}
+	return error_code;;
+}
+
 /* Sync idle, share, and avail_node_bitmaps for a given node */
 static void _sync_bitmaps(struct node_record *node_ptr, int job_count)
 {
@@ -1153,20 +1319,33 @@ static void _sync_bitmaps(struct node_record *node_ptr, int job_count)
 void node_did_resp (char *name)
 {
 	struct node_record *node_ptr;
-	int node_inx;
-	uint16_t resp_state;
+#ifdef HAVE_BGL
+	int i;
 
+	for (i=0; i<node_record_count; i++) {
+		node_ptr = &node_record_table_ptr[i];
+		_node_did_resp(node_ptr);
+	}
+#else
 	node_ptr = find_node_record (name);
 	if (node_ptr == NULL) {
 		error ("node_did_resp unable to find node %s", name);
 		return;
 	}
+	_node_did_resp(node_ptr);
+#endif
+}
+
+static void _node_did_resp(struct node_record *node_ptr)
+{
+	int node_inx;
+	uint16_t resp_state;
 
 	node_inx = node_ptr - node_record_table_ptr;
 	node_ptr->last_response = time (NULL);
 	resp_state = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 	if (resp_state) {
-		info("Node %s now responding", name);
+		info("Node %s now responding", node_ptr->name);
 		last_node_update = time (NULL);
 		reset_job_priority();
 		node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
@@ -1181,7 +1360,8 @@ void node_did_resp (char *name)
 	    (strcmp(node_ptr->reason, "Not responding") == 0)) {
 		last_node_update = time (NULL);
 		node_ptr->node_state = NODE_STATE_IDLE;
-		info("node_did_resp: node %s returned to service", name);
+		info("node_did_resp: node %s returned to service", 
+			node_ptr->name);
 		xfree(node_ptr->reason);
 	}
 	if (node_ptr->node_state == NODE_STATE_IDLE) {
@@ -1205,24 +1385,38 @@ void node_did_resp (char *name)
 void node_not_resp (char *name, time_t msg_time)
 {
 	struct node_record *node_ptr;
+#ifdef HAVE_BGL
 	int i;
 
+	for (i=0; i<node_record_count; i++) {
+		node_ptr = &node_record_table_ptr[i];
+		_node_not_resp(node_ptr, msg_time);
+	}
+#else
 	node_ptr = find_node_record (name);
 	if (node_ptr == NULL) {
 		error ("node_not_resp unable to find node %s", name);
 		return;
 	}
+	_node_not_resp(node_ptr, msg_time);
+#endif
+}
+
+static void _node_not_resp (struct node_record *node_ptr, time_t msg_time)
+{
+	int i;
 
 	i = node_ptr - node_record_table_ptr;
 	if (node_ptr->node_state & NODE_STATE_NO_RESPOND)
 		return;		/* Already known to be not responding */
 
 	if (node_ptr->last_response >= msg_time) {
-		debug("node_not_resp: node %s responded since msg sent", name);
+		debug("node_not_resp: node %s responded since msg sent", 
+			node_ptr->name);
 		return;
 	}
 	last_node_update = time (NULL);
-	error ("Node %s not responding", name);
+	error ("Node %s not responding", node_ptr->name);
 	bit_clear (avail_node_bitmap, i);
 	node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 	return;
@@ -1364,6 +1558,11 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	}
 
 	for (i = 0; i < node_record_count; i++) {
+#ifdef HAVE_BGL
+		if (i > 0)
+			break;
+#endif
+
 		if ((kill_agent_args->node_count+1) > kill_buf_rec_size) {
 			kill_buf_rec_size += 64;
 			xrealloc ((kill_agent_args->slurm_addr), 
