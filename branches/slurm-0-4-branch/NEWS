@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.4.14
+========================
+ -- job state is kept on warm start of slurm
+
 * Changes in SLURM 0.4.13
 ========================
  -- epilog fix for bgl plugin
