@@ -98,7 +98,7 @@ if {$start_cnt < $job_cnt} {
 # Give the jobs a few seconds to get initiated, then kill them all
 #
 exec $bin_sleep $delay
-spawn $bin_id --user --name
+spawn $bin_id -un
 expect {
 	-re "($alpha_numeric)" {
 		set user_name $expect_out(1,string)
