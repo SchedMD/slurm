@@ -19,6 +19,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/types.h>
 #include "list.h"
 #include "slurmlib.h"
 #include "log.h"
@@ -52,15 +53,6 @@
 extern char *control_machine;	/* name of computer acting as slurm controller */
 extern char *backup_controller;	/* name of computer acting as slurm backup controller */
 
-/* NOTE: change JOB_STRUCT_VERSION value whenever the contents of "struct job_record" 
- * change with respect to the api structures  */
-#define JOB_STRUCT_VERSION 1
-struct job_record {
-	int job_id;
-	int user_id;
-	int max_time;		/* -1 if unlimited */
-};
-
 /* NOTE: change NODE_STRUCT_VERSION value whenever the contents of NODE_STRUCT_FORMAT change */
 #define NODE_STRUCT_VERSION 1
 #define NODE_STRUCT_FORMAT "NodeName=%s Atate=%s CPUs=%d RealMemory=%d TmpDisk=%d Weight=%d Feature=%s #Partition=%s\n"
@@ -81,7 +73,7 @@ extern List config_list;	/* list of config_record entries */
 /* last entry must be STATE_END, keep in sync with node_state_string    	*/
 /* any value less than or equal to zero is down. if a node was in state 	*/
 /* STATE_BUSY and stops responding, its state becomes -(STATE_BUSY), etc.	*/
-enum node_state {
+enum node_states {
 	STATE_DOWN,		/* node is not responding */
 	STATE_UNKNOWN,		/* node's initial state, unknown */
 	STATE_IDLE,		/* node idle and available for use */
@@ -90,21 +82,21 @@ enum node_state {
 	STATE_STAGE_OUT,	/* node has been allocated to a job, which has completed execution */
 	STATE_DRAINED,		/* node idle and not to be allocated future work */
 	STATE_DRAINING,		/* node in use, but not to be allocated future work */
-	STATE_END
-};				/* last entry in table */
+	STATE_END		/* last entry in table */
+};			
 /* last entry must be "end", keep in sync with node_state */
 extern char *node_state_string[];
 
 extern time_t last_bitmap_update;	/* time of last node creation or deletion */
-extern time_t last_node_update;	/* time of last update to node records */
+extern time_t last_node_update;		/* time of last update to node records */
 struct node_record {
-	unsigned magic;		/* magic cookie to test data integrity */
-	char name[MAX_NAME_LEN];/* name of the node. a null name indicates defunct node */
-	int node_state;		/* state of the node, see node_state above, negative if down */
-	time_t last_response;	/* last response from the node */
-	int cpus;		/* actual count of cpus running on the node */
-	int real_memory;	/* actual megabytes of real memory on the node */
-	int tmp_disk;		/* actual megabytes of total storage in TMP_FS file system */
+	unsigned magic;			/* magic cookie to test data integrity */
+	char name[MAX_NAME_LEN];	/* name of the node. a null name indicates defunct node */
+	enum node_states node_state;	/* state of the node, negative if down */
+	time_t last_response;		/* last response from the node */
+	int cpus;			/* actual count of cpus running on the node */
+	int real_memory;		/* actual megabytes of real memory on the node */
+	int tmp_disk;			/* actual megabytes of total disk in TMP_FS */
 	struct config_record *config_ptr;	/* configuration specification for this node */
 	struct part_record *partition_ptr;	/* partition for this node */
 };
@@ -140,6 +132,68 @@ extern struct part_record default_part;	/* default configuration values */
 extern char default_part_name[MAX_NAME_LEN];	/* name of default partition */
 extern struct part_record *default_part_loc;	/* location of default partition */
 
+/* NOTE: change JOB_STRUCT_VERSION value whenever the contents of JOB_STRUCT_FORMAT change */
+#define JOB_STRUCT_VERSION 1
+#define JOB_STRUCT_FORMAT1 "JobId=%s Partition=%s JobName=%s UID=%d Nodes=%s State=%s TimeLimit=%d StartTime=%lx EndTime=%lx Priority=%f\n"
+#define JOB_STRUCT_FORMAT2 "JobId=%s Partition=%s JobName=%s UID=%d Nodes=%s State=%s TimeLimit=%d StartTime=%lx EndTime=%lx Priority=%f NumProcs=%d NumNodes=%d ReqNodes=%s Features=%s Groups=%s Shared=%d Contiguous=%d MinProcs=%d MinMemory=%d MinTmpDisk=%d Dist=%d Script=%s ProcsPerTask=%d TotalProcs=%d\n"
+extern time_t last_job_update;	/* time of last update to part records */
+enum job_states {
+	JOB_PENDING,		/* queued waiting for initiation */
+	JOB_STAGE_IN,		/* allocated resources, not yet running */
+	JOB_RUNNING,		/* allocated resources and executing */
+	JOB_STAGE_OUT,		/* completed execution, nodes not yet released */
+	JOB_COMPLETE,		/* completed execution, nodes released */
+	JOB_END			/* last entry in table */
+};			
+/* last entry must be "end", keep in sync with node_state */
+extern char *job_state_string[];
+
+/* Don't accept more jobs once there are MAX_JOB_COUNT in the system */
+/* Purge OK for jobs over MIN_JOB_AGE minues old (since completion) */
+/* This should prevent exhausting memory */
+#define MAX_JOB_COUNT 1000
+#define MIN_JOB_AGE 10
+#define JOB_MAGIC 0xf0b7392c
+#define DETAILS_MAGIC 0xdea84e7
+extern int job_count;			/* number of jobs in the system */
+
+struct job_details {
+	unsigned magic;			/* magic cookie to test data integrity */
+	int num_procs;			/* minimum number of processors */
+	int num_nodes;			/* minimum number of nodes */
+	char *nodes;			/* required nodes */
+	char *features;			/* required features */
+	char *groups;			/* groups the user belongs to, partition filter */
+	int shared;			/* desires shared nodes, 1=true, 0=false */
+	int contiguous;			/* requires contiguous nodes, 1=true, 0=false */
+	int min_procs;			/* minimum processors per node, MB */
+	int min_memory;			/* minimum memory per node, MB */
+	int min_tmp_disk;		/* minimum temporary disk per node, MB */
+	int dist;			/* distribution of tasks, 0=fill, 0=cyclic */
+	char *job_script;		/* name of job script to execute */
+	int procs_per_task;		/* processors required per task */
+	int total_procs;		/* total number of allocated processors, for accounting */
+	time_t submit_time;		/* time of submission */
+};
+
+struct job_record {
+	char job_id[MAX_ID_LEN];	/* job ID */
+	unsigned magic;			/* magic cookie to test data integrity */
+	char name[MAX_NAME_LEN];	/* name of the job */
+	char partition[MAX_NAME_LEN];	/* name of the partition */
+	uid_t user_id;			/* user the job runs as */
+	enum job_states job_state;	/* state of the job */
+	char *nodes;			/* list of nodes allocated to the job */
+	int time_limit;			/* maximum run time in minutes */
+	time_t start_time;		/* time execution begins, actual or expected*/
+	time_t end_time;		/* time of termination, actual or expected */
+	float priority;			/* relative priority of the job */
+	struct job_details *details;	/* job details (set until job terminates) */
+};
+
+extern List job_list;			/* list of job_record entries */
+
+
 /*
  * bitmap2node_name - given a bitmap, build a node name list representation using 
  * 	regular expressions
@@ -161,6 +215,18 @@ extern int bitmap2node_name (bitstr_t *bitmap, char **node_list);
  * NOTE: the pointer returned is allocated memory that must be freed when no longer needed.
  */
 extern struct config_record *create_config_record (int *error_code);
+
+/* 
+ * create_job_record - create an empty job_record including job_details.
+ *	load its values with defaults (zeros, nulls, and magic cookie)
+ * input: error_code - location to store error value in
+ * output: error_code - set to zero if no error, errno otherwise
+ *         returns a pointer to the record or NULL if error
+ * global: job_list - global job list
+ *         job_count - number of jobs in the system
+ * NOTE: allocates memory that should be xfreed with list_delete_job
+ */
+extern struct job_record *create_job_record (int *error_code);
 
 /* 
  * create_node_record - create a node record
@@ -188,6 +254,14 @@ extern struct node_record *create_node_record (int *error_code,
 extern struct part_record *create_part_record (int *error_code);
 
 /* 
+ * delete_job_record - delete record for job with specified job_id
+ * input: job_id - job_id of the desired job
+ * output: return 0 on success, errno otherwise
+ * global: job_list - pointer to global job list
+ */
+extern int delete_job_record (char *job_id);
+
+/* 
  * delete_node_record - delete record for node with specified name
  *   to avoid invalidating the bitmaps and hash table, we just clear the name 
  *   set its state to STATE_DOWN
@@ -202,6 +276,25 @@ extern int delete_node_record (char *name);
  * output: return 0 on success, errno otherwise
  */
 extern int delete_part_record (char *name);
+
+/* 
+ * dump_all_job - dump all partition information to a buffer
+ * input: buffer_ptr - location into which a pointer to the data is to be stored.
+ *                     the data buffer is actually allocated by dump_part and the 
+ *                     calling function must xfree the storage.
+ *         buffer_size - location into which the size of the created buffer is in bytes
+ *         update_time - dump new data only if job records updated since time 
+ *                       specified, otherwise return empty buffer
+ *         detail - report job_detail only if set
+ * output: buffer_ptr - the pointer is set to the allocated buffer.
+ *         buffer_size - set to size of the buffer in bytes
+ *         update_time - set to time partition records last updated
+ *         returns 0 if no error, errno otherwise
+ * global: job_list - global list of job records
+ * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
+ */
+extern int dump_all_job (char **buffer_ptr, int *buffer_size, 
+	time_t * update_time, int detail);
 
 /* 
  * dump_all_node - dump all configuration and node information to a buffer
@@ -262,6 +355,14 @@ extern int  dump_node (struct node_record *dump_node_ptr, char *out_line, int ou
 extern int dump_part (struct part_record *part_record_point, char *out_line, int out_line_size);
 
 /* 
+ * find_job_record - return a pointer to the job record with the given job_id
+ * input: job_id - requested job's id
+ * output: pointer to the job's record, NULL on error
+ * global: job_list - global job list pointer
+ */
+extern struct job_record *find_job_record(char *job_id);
+
+/* 
  * find_node_record - find a record for node with specified name,
  * input: name - name of the desired node 
  * output: return pointer to node record or null if not found
@@ -274,6 +375,15 @@ extern struct node_record *find_node_record (char *name);
  * output: return pointer to node partition or null if not found
  */
 extern struct part_record *find_part_record (char *name);
+
+/* 
+ * init_job_conf - initialize the job configuration tables and values. 
+ * this should be called before creating any node or configuration entries.
+ * output: return value - 0 if no error, otherwise an error code
+ * global: last_node_update - time of last node table update
+ *	job_list - pointer to global job list
+ */
+extern int init_job_conf ();
 
 /* 
  * init_node_conf - initialize the node configuration values. 
@@ -289,6 +399,11 @@ extern int init_node_conf ();
  */
 extern int init_part_conf ();
 
+/* job_lock - lock the job information */
+extern void job_lock ();
+
+/* job_unlock - unlock the job information */
+extern void job_unlock ();
 
 /* list_compare_config - compare two entry from the config list based upon weight, 
  * see list.h for documentation */
@@ -307,6 +422,17 @@ extern void list_delete_part (void *part_entry);
 /* list_find_part - find an entry in the partition list, see list.h for documentation 
  * key is partition name or "universal_key" for all partitions */
 extern int list_find_part (void *part_entry, void *key);
+
+/*
+ * load_float - location into which result is stored
+ *        keyword - string to search for
+ *        in_line - string to search for keyword
+ * output: *destination - set to value, no change if value not found
+ *         in_line - the keyword and value (if present) are overwritten by spaces
+ *         return value - 0 if no error, otherwise an error code
+ * NOTE: in_line is overwritten, do not use a constant
+ */
+extern int  load_float (float *destination, char *keyword, char *in_line);
 
 /*
  * load_integer - parse a string for a keyword, value pair  
@@ -372,6 +498,12 @@ extern void part_lock ();
 /* part_unlock - unlock the partition information */
 extern void part_unlock ();
 
+/*
+ * purge_old_job - purge old job records. if memory space is needed. 
+ *	the jobs must have completed at least MIN_JOB_AGE minutes ago
+ */
+void purge_old_job (void);
+
 /* 
  * read_buffer - read a line from the specified buffer
  * input: buffer - pointer to read buffer, must be allocated by alloc()
@@ -402,6 +534,17 @@ extern int read_SLURM_CONF (char *file_name);
  * output: none
  */
 extern void report_leftover (char *in_line, int line_num);
+
+/*
+ * update_job - update a job's parameters
+ * input: job_id - job's id
+ *        spec - the updates to the job's specification 
+ * output: return - 0 if no error, otherwise an error code
+ * global: job_list - global list of job entries
+ * NOTE: the contents of spec are overwritten by white space
+ * NOTE: only the job's priority and time_limt may be changed once queued
+ */
+extern int update_job (char *job_id, char *spec);
 
 /* 
  * update_node - update the configuration data for one or more nodes
