@@ -1666,9 +1666,8 @@ static void _slurm_rpc_ping(slurm_msg_t * msg)
 {
 	/* init */
 	int error_code = SLURM_SUCCESS;
-	uid_t uid;
+	uid_t uid = slurm_auth_uid(msg->cred);
 
-	uid = slurm_auth_uid(msg->cred);
 	if ((uid != 0) && (uid != getuid())) {
 		error("Security violation, PING RPC from uid %u",
 		      (unsigned int) uid);
