@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324">
-<meta name="LLNLRandRdate" content="15 October 2004">
+<meta name="LLNLRandRdate" content="11 November 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -300,9 +300,15 @@ option for each daemon to execute them in the foreground and logging will be don
 to your terminal. The <span class="commandline">-v</span> option will log events 
 in more detail with more v's increasing the level of detail (e.g. <span class="commandline">-vvvvvv</span>). 
 You can use one window to execute <span class="commandline">slurmctld -D -vvvvvv</span>, 
-a second window to execute <span class="commandline">slurmd -D -vvvvv</span>, 
-and a third window to execute commands such as <span class="commandline">srun 
--N1 /bin/hostname</span> to confirm basic functionality.</p>
+a second window to execute <span class="commandline">slurmd -D -vvvvv</span>.
+You may see errors such as "Connection refused" or "Node X not responding" 
+while one daemon is operative and the other is being started, but the 
+daemons can be started in any order and proper communications will be 
+established once both daemons complete initialization. 
+You can use a third window to execute commands such as 
+<span class="commandline">srun -N1 /bin/hostname</span> to confirm 
+functionality.</p>
+
 <p>Another important option for the daemons is <span class="commandline">-c</span> 
 to clear previous state information. Without the <span class="commandline">-c</span> 
 option, the daemons will restore any previously saved state information: node 
@@ -449,7 +455,7 @@ in the NEWS file.
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-207187<br>
-Last modified 15 October 2004</p></td>
+Last modified 11 November 2004</p></td>
 </tr>
 </table>
 </td>
