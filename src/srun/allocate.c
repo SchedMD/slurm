@@ -48,7 +48,7 @@
 /*
  * Static Prototypes
  */
-static void  _wait_for_resources(resource_allocation_response_msg_t *resp);
+static void  _wait_for_resources(resource_allocation_response_msg_t **rp);
 static bool  _retry();
 static bool  _destroy_job(bool set);
 static void  _intr_handler(int signo);
@@ -67,7 +67,7 @@ allocate_nodes(void)
 	while ((rc = slurm_allocate_resources(j, &resp) < 0) && _retry()) {;}
 
 	if ((rc == 0) && (resp->node_list == NULL))
-		_wait_for_resources(resp);
+		_wait_for_resources(&resp);
 
 	job_desc_msg_destroy(j);
 
@@ -117,23 +117,24 @@ existing_allocation(void)
 
 
 static void
-_wait_for_resources(resource_allocation_response_msg_t *resp)
+_wait_for_resources(resource_allocation_response_msg_t **resp)
 {
 	SigFunc *old_handler;
 	old_job_alloc_msg_t old_job;
+	resource_allocation_response_msg_t *r = *resp;
 
-	info ("job %u queued and waiting for resources", resp->job_id);
+	info ("job %u queued and waiting for resources", r->job_id);
 
 	xsignal_unblock(SIGINT);
 	old_handler = xsignal(SIGINT,  _intr_handler);
 
-	old_job.job_id = resp->job_id;
+	old_job.job_id = r->job_id;
 	old_job.uid = (uint32_t) getuid();
-	slurm_free_resource_allocation_response_msg (resp);
+	slurm_free_resource_allocation_response_msg(r);
 	sleep (2);
 
 	/* Keep polling until the job is allocated resources */
-	while (slurm_confirm_allocation(&old_job, &resp) < 0) {
+	while (slurm_confirm_allocation(&old_job, resp) < 0) {
 		if (slurm_get_errno() == ESLURM_JOB_PENDING) {
 			debug3("Still waiting for allocation");
 			sleep(5);
