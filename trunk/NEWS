@@ -4,15 +4,16 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 0.2.16
 =========================
  -- Fixes for reported problems:
+   - slurm/265: Early termination of srun could cause job to remain in queue.
    - slurm/268: Slurmctld could deadlock if there was a delay in the 
      termination of a large node-count job. An EPILOG_COMPLETE RPC was 
-     added so that slurmd could notify slurmctld whenever the job termination 
-     was completed.
-   - slurm/270: Sinfo segfaulted if a configured not lacked a partition
-   - slurm/278: Scontrol sets exit code to one on any error in any command.
-     Otherwise the exit code is zero.
- -- Slurmd was sometimes killing itself if a KILL_JOB RPC was processed 
-    before the job was fully initiated (the job's pid was still zero).
+     added so that slurmd could notify slurmctld whenever the job 
+     termination was completed.
+   - slurm/270: Segfault in sinfo if a configured node lacked a partition.
+   - slurm/278: Exit code in scontrol did not indicate failure.
+ -- Fixed bug in slurmd that caused the daemon to occaisionally kill itself.
+ -- Fixed bug in srun when running with --no-allocate and >1 process per node.
+ -- Small fixes and updates for srun manual.
 
 * Changes in SLURM 0.2.15
 =========================
