@@ -176,6 +176,16 @@ extern int BitMapCount(unsigned *BitMap);
  */
 extern void BitMapFill(unsigned *BitMap);
 
+/*
+ * BitMapFit - Identify the nodes which best fit the Request count
+ * Input: BitMap - The bit map to search
+ *        Req_Nodes - Number of nodes required
+ *        Consecutive - Nodes must be consecutive is 1, otherwise 0
+ * Output: BitMap - Nodes NOT required to satisfy the request are cleared, other left set
+ *         Returns zero on success, EINVAL otherwise
+ */
+int BitMapFit(unsigned *BitMap, int Req_Nodes, int Consecutive);
+
 /* 
  * BitMapIsSuper - Report if one bitmap's contents are a superset of another
  * Input: BitMap1 and BitMap2 - The bitmaps to compare
