@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
    - slurm/459: Properly support partition's "Shared=force" configuration.
  -- Resync node state to DRAINED or DRAINING on restart in case job 
     and node state recovered are out of sync.
+ -- Added jobcomp/script plugin (execute script on job completion, 
+    from Nathan Huff, North Dakota State University).
  
 * Changes in SLURM 0.3.5
 ========================

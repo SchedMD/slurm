@@ -1,4 +1,4 @@
 # $Id$
 # Makefile for jobcomp plugins
 
-SUBDIRS = filetxt none
+SUBDIRS = filetxt none script
