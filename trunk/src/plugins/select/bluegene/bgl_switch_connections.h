@@ -25,7 +25,7 @@
 \*****************************************************************************/
 
 #ifndef _BGL_SWITCH_CONNECTIONS_H_
-#define
+#define _BGL_SWITCH_CONNECTIONS_H_
 
 /**
  * connect the given switch up in the "A" pattern
@@ -37,9 +37,8 @@
  *    \__|__|__/
  *       3  4
  */
-void connect_switch_A(rm_BGL_t *bgl, rm_partition_t *my_part, 
-		      rm_switch_t *my_switch,
-		      int first);
+extern void connect_switch_A(rm_BGL_t *bgl, rm_partition_t *my_part, 
+				rm_switch_t *my_switch, int first);
 
 /**
  * connect the given switch up in the "B" pattern
@@ -51,8 +50,8 @@ void connect_switch_A(rm_BGL_t *bgl, rm_partition_t *my_part,
  *    \__|__|__/
  *       3  4
  */
-void connect_switch_B(rm_BGL_t *bgl, rm_partition_t *my_part, rm_switch_t *my_switch,
-		      int first);
+extern void connect_switch_B(rm_BGL_t *bgl, rm_partition_t *my_part, 
+				rm_switch_t *my_switch, int first);
 
 /**
  * connect the given switch up in the "C" pattern
@@ -64,8 +63,8 @@ void connect_switch_B(rm_BGL_t *bgl, rm_partition_t *my_part, rm_switch_t *my_sw
  *    \__|__|__/
  *       3  4
  */
-void connect_switch_C(rm_BGL_t *bgl, rm_partition_t *my_part, rm_switch_t *my_switch,
-		      int first);
+extenn void connect_switch_C(rm_BGL_t *bgl, rm_partition_t *my_part, 
+				rm_switch_t *my_switch, int first);
 
 /**
  * connect the given switch up in the "D" pattern
@@ -77,8 +76,8 @@ void connect_switch_C(rm_BGL_t *bgl, rm_partition_t *my_part, rm_switch_t *my_sw
  *    \__|__|__/
  *       3  4
  */
-void connect_switch_D(rm_BGL_t *bgl, rm_partition_t *my_part, rm_switch_t *my_switch,
-		      int first);
+extern void connect_switch_D(rm_BGL_t *bgl, rm_partition_t *my_part, 
+				rm_switch_t *my_switch, int first);
 
 /**
  * connect the given switch up in the "E" pattern (loopback)
@@ -90,8 +89,8 @@ void connect_switch_D(rm_BGL_t *bgl, rm_partition_t *my_part, rm_switch_t *my_sw
  *    \__|__|__/
  *       3  4
  */
-void connect_switch_E(rm_BGL_t *bgl, rm_partition_t *my_part, rm_switch_t *my_switch,
-		      int first);
+extern void connect_switch_E(rm_BGL_t *bgl, rm_partition_t *my_part, 
+				rm_switch_t *my_switch, int first);
 
 /**
  * connect the given switch up in the "F" pattern (loopback)
@@ -103,8 +102,8 @@ void connect_switch_E(rm_BGL_t *bgl, rm_partition_t *my_part, rm_switch_t *my_sw
  *    \__|__|__/
  *       3  4
  */
-void connect_switch_F(rm_BGL_t *bgl, rm_partition_t *my_part, rm_switch_t *my_switch,
-		      int first);
+extern void connect_switch_F(rm_BGL_t *bgl, rm_partition_t *my_part, 
+				rm_switch_t *my_switch, int first);
 
 /**
  * connect the node to the next node (higher up number)
@@ -116,7 +115,7 @@ void connect_switch_F(rm_BGL_t *bgl, rm_partition_t *my_part, rm_switch_t *my_sw
  *    \__|__|__/
  *       3  4
  */
-void connect_next(rm_partition_t *my_part, rm_switch_t *my_switch);
+extern void connect_next(rm_partition_t *my_part, rm_switch_t *my_switch);
 
 /**
  * connect the given switch up to the previous node
@@ -128,6 +127,6 @@ void connect_next(rm_partition_t *my_part, rm_switch_t *my_switch);
  *    \__|__|__/
  *       3  4
  */
-void connect_prev(rm_partition_t *my_part, rm_switch_t *my_switch);
+extern void connect_prev(rm_partition_t *my_part, rm_switch_t *my_switch);
 
 #endif /* _BGL_SWITCH_CONNECTIONS_H_ */

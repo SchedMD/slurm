@@ -34,14 +34,26 @@
 #include "src/common/hostlist.h"
 #include "src/slurmctld/slurmctld.h"
 
-// #include "rm_api.h"
-#ifndef _RM_API_H__
-  typedef uint16_t pm_partition_id_t;
+#ifdef HAVE_BGL_FILES
+# include "rm_api.h"
+
+/*
+ * There is presently a huge amount of untested code to use the APIs.
+ * Surround the code with "#ifdef USE_BGL_FILES". When it is confirmed 
+ * to work, use "#ifdef HAVE_BGL_FILES" around the code using the APIs.
+ */
+/* #define USE_BGL_FILES 1 */ 
+
+#else
+  typedef char *   pm_partition_id_t;
+  typedef uint16_t rm_connection_type_t;
   typedef uint16_t rm_partition_t;
   typedef uint16_t rm_partition_mode_t;
-#else 
-  rm_BGL_t *bgl;
+  typedef char *   rm_BGL_t;
 #endif
+
+/* Global variables */
+rm_BGL_t *bgl;
 
 typedef int lifecycle_type_t;
 enum part_lifecycle {DYNAMIC, STATIC};
@@ -55,7 +67,7 @@ typedef struct bgl_record {
 	bitstr_t *bitmap;		/* bitmap of nodes for this partition */
 	struct partition* alloc_part;	/* the allocated partition   */
 	int size;			/* node count for the partitions */
-	rm_partition_t part_type;	/* Mesh or Torus or NAV		*/
+	rm_connection_type_t conn_type;/* Mesh or Torus or NAV */
 	rm_partition_mode_t node_use;	/* either COPROCESSOR or VIRTUAL */
 } bgl_record_t;
 
@@ -65,7 +77,7 @@ typedef struct bgl_record {
  */
 typedef struct bgl_conf_record{
 	char* nodes;
-	rm_partition_t part_type;
+	rm_connection_type_t conn_type;/* Mesh or Torus or NAV */
 	rm_partition_mode_t node_use;
 } bgl_conf_record_t;
 
@@ -104,7 +116,7 @@ extern void print_bgl_record(bgl_record_t* record);
 
 /* Return strings representing blue gene data types */
 extern char* convert_lifecycle(lifecycle_type_t lifecycle);
-extern char* convert_part_type(rm_partition_t pt);
+extern char* convert_conn_type(rm_connection_type_t conn_type);
 extern char* convert_node_use(rm_partition_mode_t pt);
 
 /* bluegene_agent - detached thread periodically updates status of bluegene nodes */
