@@ -243,7 +243,7 @@ int init( void )
 {
 	const arg_desc_t *desc;
 	
-	verbose( "authd authenticaiton module initializing" );
+	verbose( "authd authentication module initializing" );
 
 	if ( ( desc = slurm_auth_get_arg_desc() ) == NULL ) {
 		error( "unable to query SLURM for argument vector layout" );
