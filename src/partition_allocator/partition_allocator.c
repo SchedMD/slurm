@@ -53,7 +53,7 @@ int color_count = 0;
 /** internal helper functions */
 /** */
 static void _new_pa_node(pa_node_t *pa_node, 
-		int coordinates[PA_SYSTEM_DIMENSIONS]);
+		int *coord);
 /** */
 //static void _print_pa_node(pa_node_t* pa_node);
 /** */
@@ -79,11 +79,7 @@ static void _set_external_wires(int dim, int count, pa_node_t* source,
 			 pa_node_t* target_first, pa_node_t* target_second);
 /* */
 static char *_set_internal_wires(List nodes, int size, int conn_type);
-/* */
-#if 0
-static int _set_internal_port(pa_switch_t *curr_switch, int check_port, 
-			int *coord, int dim);
-#endif
+
 /* */
 static int _find_one_hop(pa_switch_t *curr_switch, int source_port, 
 			int *target, int *target2, int dim);
@@ -96,6 +92,8 @@ static int _set_best_path(void);
 static int _configure_dims(int *coord, int *start, int *end);
 /* */
 static int _set_one_dim(int *start, int *end, int *coord);
+
+static int _append_geo(int *geo, List geos, int rotate);
 
 /**
  * create a partition request.  Note that if the geometry is given,
@@ -117,116 +115,170 @@ int new_pa_request(pa_request_t* pa_request)
 	int i, i2, i3, picked, total_sz=1 , size2, size3;
 	float sz=1;
 	int checked[8];
+	int *geo_ptr;
+	int geo[PA_SYSTEM_DIMENSIONS] = {0,0,0};
+	ListIterator itr;
 	
 	pa_request->rotate_count= 0;
 	pa_request->elongate_count = 0;
+	pa_request->elongate_geos = list_create(NULL);
+	geo[X] = pa_request->geometry[X];
+	geo[Y] = pa_request->geometry[Y];
+	geo[Z] = pa_request->geometry[Z];
 		
-	
-	/* size will be overided by geometry size if given */
-	if (pa_request->geometry[0] != -1){
+	if(geo[0] != -1) { 
 		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
-			if ((pa_request->geometry[i] < 1) 
-			||  (pa_request->geometry[i] > DIM_SIZE[i])){
+			if ((geo[i] < 1) 
+			    ||  (geo[i] > DIM_SIZE[i])){
 				printf("new_pa_request Error, request geometry is invalid\n"); 
 				return 0;
 			}
 		}
-	} else {
+		_append_geo(geo, pa_request->elongate_geos, pa_request->rotate);
+		sz=0;
+	}
+	
+	if(pa_request->elongate || sz) {
+		sz=1;
 		/* decompose the size into a cubic geometry */
 		pa_request->rotate= 1;
 		pa_request->elongate = 1;		
 		
 		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++) { 
 			total_sz *= DIM_SIZE[i];
-			pa_request->geometry[i] = 1;
+			geo[i] = 1;
 		}
-	
-		if(pa_request->size==1)
+		
+		if(pa_request->size==1) {
+			_append_geo(geo, pa_request->elongate_geos, pa_request->rotate);
 			goto endit;
+		}
+		
+		if(pa_request->size<=DIM_SIZE[Y]) {
+			geo[X] = 1;
+			geo[Y] = pa_request->size;
+			geo[Z] = 1;
+			sz=pa_request->size;
+			_append_geo(geo, pa_request->elongate_geos, pa_request->rotate);
+		}
 		
 		if(pa_request->size>total_sz || pa_request->size<1) {
 			printf("new_pa_request ERROR, requested size must be\ngreater than 0 and less than %d.\n",total_sz);
 			return 0;			
 		}
- 		
+			
 	startagain:		
 		picked=0;
 		for(i=0;i<8;i++)
 			checked[i]=0;
+		
+		size3=pa_request->size;
+		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++) {
+			total_sz *= DIM_SIZE[i];
+			geo[i] = 1;
+		}
+	
+		sz = 1;
+		size3=pa_request->size;
+		picked=0;
+	tryagain:	
+		if(size3!=pa_request->size)
+			size2=size3;
+		else
+			size2=pa_request->size;
+		//messedup:
+		for (i=picked; i<PA_SYSTEM_DIMENSIONS; i++) { 
+			if(size2<=1) 
+				break;
+				
+			sz = size2%DIM_SIZE[i];
+			if(!sz) {
+				geo[i] = DIM_SIZE[i];	
+				size2 /= DIM_SIZE[i];
+			} else if (size2 > DIM_SIZE[i]){
+				for(i2=(DIM_SIZE[i]-1);i2>1;i2--) {
+					/* go through each number to see if the size 
+					   is divisable by a smaller number that is 
+					   good in the other dims. */
+					if (!(size2%i2) && !checked[i2]) {
+						size2 /= i2;
+							
+						if(i==0)
+							checked[i2]=1;
+							
+						if(i2<DIM_SIZE[i]) 
+							geo[i] = i2;
+						else 
+							goto tryagain;
+						if((i2-1)!=1 && i!=(PA_SYSTEM_DIMENSIONS-1))
+							break;
+					}		
+				}				
+				if(i2==1) {
+					pa_request->size +=1;
+					goto startagain;
+				}
+						
+			} else {
+				geo[i] = sz;	
+				break;
+			}					
+		}
+		
+		if((geo[X]*geo[Y]) <= DIM_SIZE[Y]) {
+			pa_request->geometry[X] = 1;
+			pa_request->geometry[Y] = geo[X] * geo[Y];
+			pa_request->geometry[Z] = geo[Z];	
+			_append_geo(pa_request->geometry, pa_request->elongate_geos, pa_request->rotate);		
+		}
+		if((geo[X]*geo[Z]) <= DIM_SIZE[Y]) {
+			pa_request->geometry[X] = 1;
+			pa_request->geometry[Y] = geo[Y];
+			pa_request->geometry[Z] = geo[X] * geo[Z];	
+			_append_geo(pa_request->geometry, pa_request->elongate_geos, pa_request->rotate);		
+	
+		}
+		_append_geo(geo, pa_request->elongate_geos, pa_request->rotate);
+	
 		/* see if We can find a cube or square root of the size to make an easy cube */
 		for(i=0;i<PA_SYSTEM_DIMENSIONS-1;i++) {
 			sz = powf((float)pa_request->size,(float)1/(PA_SYSTEM_DIMENSIONS-i));
 			if(pow(sz,(PA_SYSTEM_DIMENSIONS-i))==pa_request->size)
 				break;
 		}
-		size3=pa_request->size;
+	
 		if(i<PA_SYSTEM_DIMENSIONS-1) {
-			i3=i;
 			/* we found something that looks like a cube! */
-			for (i=0; i<PA_SYSTEM_DIMENSIONS-i3; i++) {  
-				if(sz<=DIM_SIZE[i]) {
-					pa_request->geometry[i] = sz;
-					size3 /= sz;
-					picked++;
-				} else 
-					goto tryagain;
-			}		
-		} else {
-			picked=0;
-		tryagain:	
-			if(size3!=pa_request->size)
-				size2=size3;
-			else
-				size2=pa_request->size;
-			//messedup:
-			for (i=picked; i<PA_SYSTEM_DIMENSIONS; i++) { 
-				if(size2<=1) 
-					break;
-				
-				sz = size2%DIM_SIZE[i];
-				if(!sz) {
-					pa_request->geometry[i] = DIM_SIZE[i];	
-					size2 /= DIM_SIZE[i];
-				} else if (size2 > DIM_SIZE[i]){
-					for(i2=(DIM_SIZE[i]-1);i2>1;i2--) {
-						/* go through each number to see if the size 
-						   is divisable by a smaller number that is 
-						   good in the other dims. */
-						if (!(size2%i2) && !checked[i2]) {
-							size2 /= i2;
-							
-							if(i==0)
-								checked[i2]=1;
-							
-							if(i2<DIM_SIZE[i]) 
-								pa_request->geometry[i] = i2;
-							else 
-								goto tryagain;
-							if((i2-1)!=1 && i!=(PA_SYSTEM_DIMENSIONS-1))
-							   break;
-						}		
-					}				
-					if(i2==1) {
-						pa_request->size +=1;
-						goto startagain;
-					}
-						
-				} else {
-					pa_request->geometry[i] = sz;	
-					break;
-				}					
-			}
-		}
-	}
+			i3=i;
+			for (i=0; i<i3; i++) 
+				geo[i] = 1;			
 			
+			for (i=i3; i<PA_SYSTEM_DIMENSIONS; i++)  
+				if(sz<=DIM_SIZE[i]) 
+					geo[i] = sz;				
+			
+			_append_geo(geo, pa_request->elongate_geos, pa_request->rotate);
+		} 
+	}
+	
+	itr = list_iterator_create(pa_request->elongate_geos);
+	geo_ptr = list_next(itr);
+	list_iterator_destroy(itr);
+	
+	if(geo_ptr == NULL)
+		return 0;
+
+	pa_request->elongate_count++;
+	pa_request->geometry[X] = geo_ptr[X];
+	pa_request->geometry[Y] = geo_ptr[Y];
+	pa_request->geometry[Z] = geo_ptr[Z];
+	printf("picking %d%d%d\n",pa_request->geometry[X],pa_request->geometry[Y],pa_request->geometry[Z]);
+		
 	sz=1;
 	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++)
 		sz *= pa_request->geometry[i];
 endit:
 	pa_request->size = sz;
-	
-	//printf("geometry: %d %d %d size = %d\n", pa_request->geometry[0],pa_request->geometry[1],pa_request->geometry[2], pa_request->size);
-		
 	return 1;
 }
 
@@ -235,8 +287,14 @@ endit:
  */
 void delete_pa_request(pa_request_t *pa_request)
 {
+	int *geo_ptr;
+
 	if(pa_request->save_name!=NULL)
 		xfree(pa_request->save_name);
+	
+	while((geo_ptr = list_pop(pa_request->elongate_geos)) != NULL)
+		xfree(geo_ptr);
+
 	xfree(pa_request);
 }
 
@@ -391,9 +449,6 @@ void pa_set_node_down(int c[PA_SYSTEM_DIMENSIONS])
 	printf("pa_set_node_down: node to set down: [%d%d%d]\n", c[0], c[1], c[2]); 
 #endif
 
-	/* first we make a copy of the current system */
-	// _backup_pa_system();
-
 	/* basically set the node as used */
 	pa_system_ptr->grid[c[0]][c[1]][c[2]].used = true;
 }
@@ -423,10 +478,10 @@ int allocate_part(pa_request_t* pa_request, List results)
 	
 	// _backup_pa_system();
 	if (_find_match(pa_request, results)){
-		//printf("hey I am returning 1\n");
+		printf("hey I am returning 1\n");
 		return 1;
 	} else {
-		//printf("hey I am returning 0\n");
+		printf("hey I am returning 0\n");
 		return 0;
 	}
 }
@@ -569,6 +624,20 @@ int set_bgl_part(List nodes, int size, int conn_type)
 	_set_internal_wires(nodes, size, conn_type);
 	return 1;
 }
+
+int reset_pa_system()
+{
+	int x, y, z;
+
+	for (x = 0; x < DIM_SIZE[X]; x++)
+		for (y = 0; y < DIM_SIZE[Y]; y++)
+			for (z = 0; z < DIM_SIZE[Z]; z++) {
+				int coord[PA_SYSTEM_DIMENSIONS] = {x,y,z};
+				_new_pa_node(&pa_system_ptr->grid[x][y][z], coord);
+			}
+				
+	return 1;
+}
 /* _init_grid - set values of every grid point */
 void init_grid(node_info_msg_t * node_info_ptr)
 {
@@ -588,7 +657,9 @@ void init_grid(node_info_msg_t * node_info_ptr)
 			for (z = 0; z < DIM_SIZE[Z]; z++) {
 				if(node_info_ptr!=NULL) {
 					node_ptr = &node_info_ptr->node_array[i];
-					node_base_state = (node_ptr->node_state) & (~NODE_STATE_NO_RESPOND);
+					node_base_state = 
+						(node_ptr->node_state) 
+						& (~NODE_STATE_NO_RESPOND);
 					pa_system_ptr->grid[x][y][z].color = 7;
 					if ((node_base_state == NODE_STATE_DOWN) || 
 					    (node_base_state == NODE_STATE_DRAINED) || 
@@ -616,8 +687,14 @@ void init_grid(node_info_msg_t * node_info_ptr)
 			}
 	z = 0;
 	for (x = 0; x < pa_system_ptr->num_of_proc; x++) {
-		y = x % (sizeof(letter_array) - 1);
-		pa_system_ptr->fill_in_value[x].letter = letter_array[y];
+		if (y == 91)
+			y = 97;
+		else if(y == 123)
+			y = 48;
+		else if(y == 58)
+			y = 65;
+		pa_system_ptr->fill_in_value[x].letter = y;
+
 		if(z == 4)
 			z++;
 		z = z % 7;
@@ -631,12 +708,11 @@ void init_grid(node_info_msg_t * node_info_ptr)
 }
 
 /** */
-static void _new_pa_node(pa_node_t *pa_node, int coord[PA_SYSTEM_DIMENSIONS])
+static void _new_pa_node(pa_node_t *pa_node, int *coord)
 {
 	int i,j;
 	pa_node->used = false;
-
-	// pa_node = (pa_node_t*) xmalloc(sizeof(pa_node_t));
+	
 	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
 		pa_node->coord[i] = coord[i];
 		
@@ -699,7 +775,7 @@ static void _create_pa_system(void)
 static void _delete_pa_system(void)
 {
 	int x, y;
-	
+
 	if (!pa_system_ptr){
 		return;
 	}
@@ -709,6 +785,7 @@ static void _delete_pa_system(void)
 			xfree(pa_system_ptr->grid[x][y]);
 		xfree(pa_system_ptr->grid[x]);
 	}
+
 	xfree(pa_system_ptr->grid);
 	xfree(pa_system_ptr->fill_in_value);
 	xfree(pa_system_ptr);
@@ -717,16 +794,20 @@ static void _delete_pa_system(void)
 static int _check_for_options(pa_request_t* pa_request) 
 {
 	int temp;
+	int set=0;
+	int *geo;
+	ListIterator itr;
+	
 	if(pa_request->rotate) {
-		//printf("Rotating! %d%d%d \n",pa_request->geometry[X],
-		//	pa_request->geometry[Y],pa_request->geometry[Z]);
+	rotate_again:
+		//printf("Rotating! %d\n",pa_request->rotate_count);
+		
 		if (pa_request->rotate_count==(PA_SYSTEM_DIMENSIONS-1)) {
-			//printf("Special!\n");
 			temp=pa_request->geometry[X];
 			pa_request->geometry[X]=pa_request->geometry[Z];
 			pa_request->geometry[Z]=temp;
 			pa_request->rotate_count++;
-			return 1;
+			set=1;
 		
 		} else if(pa_request->rotate_count<(PA_SYSTEM_DIMENSIONS*2)) {
 			temp=pa_request->geometry[X];
@@ -734,15 +815,46 @@ static int _check_for_options(pa_request_t* pa_request)
 			pa_request->geometry[Y]=pa_request->geometry[Z];
 			pa_request->geometry[Z]=temp;
 			pa_request->rotate_count++;
-			return 1;
+			set=1;
 		} else 
 			pa_request->rotate = false;
-		       
+		if(set) {
+			if(pa_request->geometry[X]<=DIM_SIZE[X] 
+			   && pa_request->geometry[Y]<=DIM_SIZE[Y]
+			   && pa_request->geometry[Z]<=DIM_SIZE[Z])			   
+				return 1;
+			else {
+				set = 0;
+				goto rotate_again;
+			}
+		}
 	}
-	if(pa_request->elongate && pa_request->elongate_count<PA_SYSTEM_DIMENSIONS) {
+	if(pa_request->elongate) {
+	elongate_again:
+		//printf("Elongating! %d\n",pa_request->elongate_count);
+		pa_request->rotate_count=0;
+		pa_request->rotate = true;
+		
+		set = 0;
+		itr = list_iterator_create(pa_request->elongate_geos);
+		for(set=0; set<=pa_request->elongate_count; set++)
+			geo = list_next(itr);
+		list_iterator_destroy(itr);
+		if(geo == NULL)
+			return 0;
 		pa_request->elongate_count++;
-		printf("Elongating! not working yet\n");
-		return 0;
+		pa_request->geometry[X] = geo[X];
+		pa_request->geometry[Y] = geo[Y];
+		pa_request->geometry[Z] = geo[Z];
+		if(pa_request->geometry[X]<=DIM_SIZE[X] 
+		   && pa_request->geometry[Y]<=DIM_SIZE[Y]
+		   && pa_request->geometry[Z]<=DIM_SIZE[Z]) {
+			printf("picking %d%d%d\n",pa_request->geometry[X],pa_request->geometry[Y],pa_request->geometry[Z]);
+	
+			return 1;
+		} else 				
+			goto elongate_again;
+		
 	}
 	return 0;
 }
@@ -754,119 +866,104 @@ static int _find_match(pa_request_t *pa_request, List results)
 {
 	int x=0, y=0, z=0;
 	int *geometry = pa_request->geometry;
-	int start_x=0, start_y=0, start_z=0;
-	int find_x=0, find_y=0, find_z=0;
+	int start[PA_SYSTEM_DIMENSIONS] = {0,0,0};
+	int find[PA_SYSTEM_DIMENSIONS] = {0,0,0};
 	pa_node_t* pa_node;
 	int found_one=0;
 	char *name=NULL;
 
 start_again:
-	//printf("starting looking for a grid of %d%d%d\n",pa_request->geometry[X],pa_request->geometry[Y],pa_request->geometry[Z]);
-	//printf("\n");
-	for (z=0; z<geometry[Z]; z++) {
+	for (x=0; x<geometry[X]; x++) {
 		for (y=0; y<geometry[Y]; y++) {			
-			for (x=0; x<geometry[X]; x++) {
-				pa_node = &pa_system_ptr->grid[find_x][find_y][find_z];
+			for (z=0; z<geometry[Z]; z++) {
+									
+				pa_node = &pa_system_ptr->grid[find[X]][find[Y]][find[Z]];
 				if (!_node_used(pa_node,geometry)) {
-					
-					//printf("Yeap, I found one at %d%d%d\n", find_x, find_y, find_z);
-					//_insert_result(results, pa_node);
+					//	printf("found at %d%d%d\n",find[X],find[Y],find[Z]);
 					list_append(results, pa_node);
-					find_x++;
+					find[Z]++;
 					found_one=1;
+					//printf("next %d%d%d\n",find[X],find[Y],find[Z]);
 				} else {
-					//printf("hey I am used! %d%d%d\n", find_x, find_y, find_z);
 					if(found_one) {
 						list_destroy(results);
 						results = list_create(NULL);
 						found_one=0;
 					}
-					if((DIM_SIZE[X]-find_x-1)>=geometry[X]) {
-						find_x++;
-						start_x=find_x;
+					
+					if((DIM_SIZE[Z]-find[Z]-1)>=geometry[Z]) {
+						find[Z]++;
+						start[Z]=find[Z];
 					} else {
-						find_x=0;
-						start_x=find_x;
-						if((DIM_SIZE[Y]-find_y-1)>=geometry[Y]) {
-						/* if(find_y<(DIM_SIZE[Y]-1)) { */
-							//find_y=0;
-							//printf("incrementing find_y from %d to %d\n",find_z,find_z+1);
-							find_y++;
-							start_y=find_y;
+						find[Z]=0;
+						start[Z]=find[Z];
+						if((DIM_SIZE[Y]-find[Y]-1)>=geometry[Y]) {
+							find[Y]++;
+							start[Y]=find[Y];
 						} else {
-							find_y=0;
-							start_y=find_y;						
-							if ((DIM_SIZE[Z]-find_z-1)>=geometry[Z]) {
-							/* if (find_z<(DIM_SIZE[Z]-1)) { */
-								find_z++;
-								start_z=find_z;
-							//printf("incrementing find_Z from %d to %d\n",find_y,find_y+1);
+							find[Y]=0;
+							start[Y]=find[Y];						
+							if ((DIM_SIZE[X]-find[X]-1)>=geometry[X]) {
+								find[X]++;
+								start[X]=find[X];
 							} else {
-								//printf("couldn't find it\n");
 								if(!_check_for_options(pa_request))
 									return 0;
 								else {
-									find_x=0;
-									find_y=0;
-									find_z=0;
-									start_x=0;
-									start_y=0;
-									start_z=0;
+									find[X]=0;
+									find[Y]=0;
+									find[Z]=0;
+									start[X]=0;
+									start[Y]=0;
+									start[Z]=0;
 									goto start_again;
 								}
 							}
 						}
-						//printf("x= %d, y= %d, z= %d\n", x, y, z);
 					}
 					goto start_again;
 				}		
 			}
-			//printf("looking at %d%d%d\n",x,y,z);
-			find_x=start_x;
+			find[Z]=start[Z];
 			if(y<(geometry[Y]-1)) {
-				if(find_y<(DIM_SIZE[Y]-1)) {
-					find_y++;
+				if(find[Y]<(DIM_SIZE[Y]-1)) {
+					find[Y]++;
 				} else {
 					if(!_check_for_options(pa_request))
 						return 0;
 					else {
-						find_x=0;
-						find_y=0;
-						find_z=0;
-						start_x=0;
-						start_y=0;
-						start_z=0;
+						find[X]=0;
+						find[Y]=0;
+						find[Z]=0;
+						start[X]=0;
+						start[Y]=0;
+						start[Z]=0;
 						goto start_again;
 					}
 				}
 			}
-		//start_y=find_y;
 		}
-		find_y=start_y;
-		if(z<(geometry[Z]-1)) {
-			if(find_z<(DIM_SIZE[Z]-1)) {
-				find_z++;
+		find[Y]=start[Y];
+		if(x<(geometry[X]-1)) {
+			if(find[X]<(DIM_SIZE[X]-1)) {
+				find[X]++;
 			} else {
 				if(!_check_for_options(pa_request))
 					return 0;
 				else {
-					find_x=0;
-					find_y=0;
-					find_z=0;
-					start_x=0;
-					start_y=0;
-					start_z=0;
+					find[X]=0;
+					find[Y]=0;
+					find[Z]=0;
+					start[X]=0;
+					start[Y]=0;
+					start[Z]=0;
 					goto start_again;
 				}
 			}
 		}
-		//start_z=find_z;
 	}
 
 	if(found_one) {
-		/** THIS IS where we might should call the graph
-		 * solver to see if the allocation can be wired,
-		 * before returning a definitive TRUE */
 		if(pa_request->conn_type==TORUS)
 			name = _set_internal_wires(results, pa_request->size, TORUS);
 		else
@@ -891,8 +988,6 @@ static bool _node_used(pa_node_t* pa_node, int *geometry)
 	int i=0;
 	pa_switch_t* pa_switch;
 	
-
-	/* printf("_node_used: node to check against %s %d\n", convert_dim(dim), cur_node_id); */
 	/* if we've used this node in another partition already */
 	if (!pa_node || pa_node->used)
 		return true;
@@ -1046,7 +1141,6 @@ static void _set_external_wires(int dim, int count, pa_node_t* source,
 static char *_set_internal_wires(List nodes, int size, int conn_type)
 {
 	pa_node_t* pa_node[size+1];
-	//pa_switch_t *next_switch; 
 	int count=0, i, set=0;
 	int *start;
 	int *end;
@@ -1062,10 +1156,8 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 		
 	start = pa_node[0]->coord;
 	end = pa_node[count-1]->coord;	
-	//printf("hey %d\n",count);
 	sprintf(name, "%d%d%dx%d%d%d",start[0],start[1],start[2],end[0],end[1],end[2]);
-	//printf("the name = %s\n",name);
-		
+			
 	for(i=0;i<count;i++) {
 		if(!pa_node[i]->used) {
 			if(size!=1)
@@ -1075,6 +1167,7 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 			if(pa_node[i]->letter == '.') {
 				pa_node[i]->letter =
 					pa_system_ptr->fill_in_value[color_count].letter;
+				
 				pa_node[i]->color =
 					pa_system_ptr->fill_in_value[color_count].color;
 				set=1;
@@ -1085,68 +1178,14 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 		}
 	}
 
-	//printf("Start = %d%d%d, End = %d%d%d\n",start[X],start[Y],start[Z],end[X],end[Y],end[Z]);
 	for(i=0;i<count;i++) {
 		_set_one_dim(start, end, pa_node[i]->coord);
 	}
 	if(set)
 		color_count++;		
-/* 	int i; */
-/* 	itr = list_iterator_create(nodes); */
-/* 	while((pa_node = (pa_node_t*) list_next(itr))){ */
-/* 		for(i=0;i<PA_SYSTEM_DIMENSIONS;i++) { */
-/* 			printf("dim %d O set %d -> %d - %d%d%d\n",i,pa_node->axis_switch[i].int_wire[0].port_tar, pa_node->axis_switch[i].ext_wire[pa_node->axis_switch[i].int_wire[0].port_tar].port_tar, pa_node->axis_switch[i].ext_wire[pa_node->axis_switch[i].int_wire[0].port_tar].node_tar[X],pa_node->axis_switch[i].ext_wire[pa_node->axis_switch[i].int_wire[0].port_tar].node_tar[Y],pa_node->axis_switch[i].ext_wire[pa_node->axis_switch[i].int_wire[0].port_tar].node_tar[Z]); */
-/* 			printf("dim %d 1 set %d -> %d - %d%d%d\n",i,pa_node->axis_switch[i].int_wire[1].port_tar, pa_node->axis_switch[i].ext_wire[pa_node->axis_switch[i].int_wire[1].port_tar].port_tar, pa_node->axis_switch[i].ext_wire[pa_node->axis_switch[i].int_wire[1].port_tar].node_tar[X],pa_node->axis_switch[i].ext_wire[pa_node->axis_switch[i].int_wire[1].port_tar].node_tar[Y],pa_node->axis_switch[i].ext_wire[pa_node->axis_switch[i].int_wire[1].port_tar].node_tar[Z]); */
-/* 		} */
-/* 		for(i=0;i<NUM_PORTS_PER_NODE;i++) { */
-/* 			printf("Port %d -> %d Used = %d\n",i,pa_node->axis_switch[X].int_wire[i].port_tar,pa_node->axis_switch[X].int_wire[i].used); */
-/* 		} */
-
-/* 	} */
-/* 	list_iterator_destroy(itr); */
 
 	return name;
 }				
-
-#if 0
-static int _set_internal_port(pa_switch_t *curr_switch, int check_port, 
-		int *coord, int dim) 
-{
-	pa_switch_t *next_switch; 
-	int port_tar;
-	int source_port=1;
-	int target_port=0;
-	int *node_tar;
-	
-	if(!(check_port%2)) {
-		source_port=0;
-		target_port=1;
-	}
-	
-	/* if(coord[X]==0 && coord[Y]==2 && coord[Z]==0) { */
-/* 		printf("1 hey I am messing with it right here! dim %d %d -> %d\n", dim,source_port,check_port); */
-/* 	} */
-	curr_switch->int_wire[source_port].used = 1;
-	curr_switch->int_wire[source_port].port_tar = check_port;
-	curr_switch->int_wire[check_port].used = 1;
-	curr_switch->int_wire[check_port].port_tar = source_port;
-	
-	node_tar = curr_switch->ext_wire[check_port].node_tar;
-	port_tar = curr_switch->ext_wire[check_port].port_tar;
-	next_switch = &pa_system_ptr->
-		grid[node_tar[X]][node_tar[Y]][node_tar[Z]].axis_switch[dim];
-	/* if(node_tar[X]==0 && node_tar[Y]==2 && node_tar[Z]==0) { */
-/* 		printf("1 %d%d%d hey I am messing with it right here! dim %d %d -> %d\n",coord[X], coord[Y], coord[Z], dim,source_port,check_port); */
-/* 		printf("2 hey I am messing with it right here! dim %d %d -> %d\n", dim,port_tar,target_port); */
-/* 	} */
-	next_switch->int_wire[port_tar].used = 1;
-	next_switch->int_wire[port_tar].port_tar = port_tar;
-	next_switch->int_wire[target_port].used = 1;
-	next_switch->int_wire[target_port].port_tar = port_tar;
-	
-	return 1;
-}
-#endif
 
 static int _find_one_hop(pa_switch_t *curr_switch, int source_port, 
 		int *target, int *target2, int dim) 
@@ -1169,8 +1208,6 @@ static int _find_one_hop(pa_switch_t *curr_switch, int source_port,
 		/* check to make sure it isn't used */
 		if(!curr_switch->int_wire[ports_to_try[i]].used) {
 			node_tar = curr_switch->ext_wire[ports_to_try[i]].node_tar;
-			/* if(dim==Z) */
-/* 				printf("I am at %d%d%d port %d looking at %d%d%d port %d, looking for %d%d%d port %d\n",curr_switch->int_wire[0].node_tar[X],curr_switch->int_wire[0].node_tar[Y],curr_switch->int_wire[0].node_tar[Z],source_port,node_tar[X],node_tar[Y],node_tar[Z],ports_to_try[i],target[X],target[Y],target[Z],target_port); */
 			if((node_tar[X]==target[X] && node_tar[Y]==target[Y] && node_tar[Z]==target[Z]) ||
 			   (node_tar[X]==target2[X] && node_tar[Y]==target2[Y] && node_tar[Z]==target2[Z])) {
 				curr_switch->int_wire[source_port].used = 1;
@@ -1185,23 +1222,11 @@ static int _find_one_hop(pa_switch_t *curr_switch, int source_port,
 				next_switch->int_wire[port_tar].port_tar = target_port;
 				next_switch->int_wire[target_port].used = 1;
 				next_switch->int_wire[target_port].port_tar = port_tar;
-				/* if(dim!=X) */
-/* 				printf("I choose this combo %d -> %d\n", source_port, ports_to_try[i]); */
 				return 1;
 			}		
 		}
 	}
-/* 	printf("suck, I didn't find it in one hop dim = %d from port %d\n",dim,source_port); */
-/* 	printf("targets from %d%d%d are %d%d%d and %d%d%d\n", */
-/* 	       node_tar[X], */
-/* 	       node_tar[Y], */
-/* 	       node_tar[Z], */
-/* 	       target[X], */
-/* 	       target[Y], */
-/* 	       target[Z], */
-/* 	       target2[X], */
-/* 	       target2[Y], */
-/* 	       target2[Z]); */
+
 	return 0;
 }
 
@@ -1246,13 +1271,7 @@ static int _find_best_path(pa_switch_t *start, int source_port, int *target,
 		//printf("count = %d\n",count);
 		itr = list_iterator_create(path);
 		while((path_switch = (pa_path_switch_t*) list_next(itr))){
-		/* 	if(dim == Y) */
-/* 				printf("%d%d%d %d - %d\n",  */
-/* 				       path_switch->geometry[X],  */
-/* 				       path_switch->geometry[Y],  */
-/* 				       path_switch->geometry[Z],  */
-/* 				       path_switch->in,   */
-/* 				       path_switch->out); */
+		
 			temp_switch = (pa_path_switch_t *) xmalloc(sizeof(pa_path_switch_t));
 			 
 			temp_switch->geometry[X] = path_switch->geometry[X];
@@ -1278,7 +1297,7 @@ static int _find_best_path(pa_switch_t *start, int source_port, int *target,
 		if(!start->int_wire[ports_to_try[i]].used) {
 			itr = list_iterator_create(path);
 			while((path_switch = (pa_path_switch_t*) list_next(itr))){
-				//printf("%d%d%d %d%d%d %d %d - %d\n", path_switch->geometry[X], path_switch->geometry[Y], path_switch->geometry[Z], node_src[X], node_src[Y], node_src[Z], ports_to_try[i], path_switch->in,  path_switch->out);
+				
 				if(((path_switch->geometry[X] == node_src[X]) && 
 				    (path_switch->geometry[Y] == node_src[Y]) && 
 				    (path_switch->geometry[Z] == node_tar[Z]))) {
@@ -1300,10 +1319,8 @@ static int _find_best_path(pa_switch_t *start, int source_port, int *target,
 				count++;
 				path_add->out = ports_to_try[i];
 				list_push(path, path_add);
-				//printf("%d%d%d %d - %d\n", path_add->geometry[X], path_add->geometry[Y], path_add->geometry[Z], path_add->in,  path_add->out);
 				_find_best_path(next_switch, port_tar, target, 
 						target2, dim, count);
-				//printf("popping %d%d%d %d - %d\n", path_add->geometry[X], path_add->geometry[Y], path_add->geometry[Z], path_add->in,  path_add->out);
 				while(list_pop(path) != path_add){
 				} 
 			}
@@ -1321,17 +1338,13 @@ static int _set_best_path(void)
 	
 	itr = list_iterator_create(best_path);
 	while((path_switch = (pa_path_switch_t*) list_next(itr))) {
-		//if(path_switch->dim==Z)
-		//printf("final %d%d%d %d - %d\n", path_switch->geometry[X], path_switch->geometry[Y], path_switch->geometry[Z], path_switch->in,  path_switch->out);
 		curr_switch = &pa_system_ptr->
 			grid
 			[path_switch->geometry[X]]
 			[path_switch->geometry[Y]]
 			[path_switch->geometry[Z]].  
 			axis_switch[path_switch->dim];
-		/* if(path_switch->geometry[X]==0 && path_switch->geometry[Y]==2 && path_switch->geometry[Z]==0) { */
-/* 			printf("hey I am messing with it right here! dim %d %d -> %d\n",path_switch->dim,path_switch->in,path_switch->out); */
-/* 		} */
+		
 	
 		curr_switch->int_wire[path_switch->in].used = 1;
 		curr_switch->int_wire[path_switch->in].port_tar = path_switch->out;
@@ -1406,7 +1419,8 @@ static int _configure_dims(int *coord, int *start, int *end)
 			
 		} else if(coord[dim]==(end[dim]-1)) {
 			/* if(dim == Y) { */
-/* 				printf("hey I am looking at %d%d%d as a target from %d%d%d\n",target[X],target[Y],target[Z],coord[X],coord[Y],coord[Z]); */
+/* 				printf("hey I am looking at %d%d%d as a target from %d%d%d\n",
+				target[X],target[Y],target[Z],coord[X],coord[Y],coord[Z]); */
 				
 /* 			} */
 			
@@ -1445,13 +1459,55 @@ static int _set_one_dim(int *start, int *end, int *coord)
 	}
 	return 1;
 }
+
+static int _append_geo(int *geometry, List geos, int rotate) 
+{
+	ListIterator itr;
+	int *geo_ptr;
+	int *geo;
+	int temp_geo;
+	int i, j;
+	geo = xmalloc(sizeof(int)*3);
+	
+	if(rotate) {
+		for (i = (PA_SYSTEM_DIMENSIONS - 1); i >= 0; i--) {
+			for (j = 1; j <= i; j++) {
+				if (geometry[j-1] > geometry[j]) {
+					temp_geo = geometry[j-1];
+					geometry[j-1] = geometry[j];
+					geometry[j] = temp_geo;
+				}
+			}
+		}
+	}
+	itr = list_iterator_create(geos);
+	while ((geo_ptr = list_next(itr)) != NULL) {
+		if(geometry[X] == geo_ptr[X]
+		   && geometry[Y] == geo_ptr[Y]
+		   && geometry[Z] == geo_ptr[Z])
+			break;
+		
+	}
+	list_iterator_destroy(itr);
+	
+	if(geo_ptr == NULL) { 
+		geo[X] = geometry[X];
+		geo[Y] = geometry[Y];
+		geo[Z] = geometry[Z];
+		
+		printf("pushing %d%d%d\n",geometry[X],geometry[Y],geometry[Z]);
+		list_append(geos, geo);
+	}
+	return 1;
+}
+
 //#define BUILD_EXE
 #ifdef BUILD_EXE
 /** */
 int main(int argc, char** argv)
 {
 	pa_request_t *request = (pa_request_t*) xmalloc(sizeof(pa_request_t)); 
-	time_t start, end;
+	
 	List results;
 //	List results2;
 //	int i,j;
@@ -1464,29 +1520,48 @@ int main(int argc, char** argv)
 	request->co_proc = true;
 	request->geometry[0]=-1;
 	//printf("geometry: %d %d %d size = %d\n", request->geometry[0], request->geometry[1], request->geometry[2], request->size);
-#ifdef HAVE_SLURM
-	error_code = slurm_load_node((time_t) NULL, &node_info_ptr, 0);
-	if (error_code) {
-		slurm_perror("slurm_load_node");
-		exit(0);
-	} else {
-		pa_init(node_info_ptr);
-        }
-/* #else */
-/* 	printf("This will only run on a BGL system right now.\n"); */
-/* 	exit(0); */
-#endif
+/* #ifdef HAVE_SLURM */
+/* 	error_code = slurm_load_node((time_t) NULL, &node_info_ptr, 0); */
+/* 	if (error_code) { */
+/* 		slurm_perror("slurm_load_node"); */
+/* 		exit(0); */
+/* 	} else { */
+/* 		pa_init(node_info_ptr); */
+/*         } */
+/* /\* #else *\/ */
+/* /\* 	printf("This will only run on a BGL system right now.\n"); *\/ */
+/* /\* 	exit(0); *\/ */
+/* #endif */
 	pa_init(NULL);
 	results = list_create(NULL);
-	request->geometry[0] = 1;
-	request->geometry[1] = 3;
-	request->geometry[2] = 1;	
-	request->size = -1; //atoi(argv[1]);
+	request->geometry[0] = -1;
+	request->size = 16; //atoi(argv[1]);
 	new_pa_request(request);
-	time(&start);
 	print_pa_request(request);
 	allocate_part(request, results);
-	time(&end);
+
+	results = list_create(NULL);
+	request->geometry[0] = -1;
+	request->size = 8; //atoi(argv[1]);
+	new_pa_request(request);
+	print_pa_request(request);
+	allocate_part(request, results);
+
+/* 	results = list_create(NULL); */
+/* 	request->geometry[0] = -1; */
+/* 	request->size = 12; //atoi(argv[1]); */
+/* 	new_pa_request(request); */
+/* 	print_pa_request(request); */
+/* 	allocate_part(request, results); */
+
+/* 	results = list_create(NULL); */
+/* 	request->geometry[0] = -1; */
+/* 	request->size = 4; //atoi(argv[1]); */
+/* 	new_pa_request(request); */
+/* 	print_pa_request(request); */
+/* 	if(!allocate_part(request, results)) */
+/* 		printf("Hey, I didn't allocate\n"); */
+	
 	//printf("allocate_part: %ld\n", (end-start));
 /* 	//list_destroy(results); */
 /* 	printf("name = %s\n",request->save_name);		 */
@@ -1539,27 +1614,34 @@ int main(int argc, char** argv)
 /* 	allocate_part(request, results); */
 /* 	list_destroy(results); */
 
-	int dim,j;
-	int x,y,z;
-	int startx=0;
-	int starty=0;
-	int startz=0;
-	int endx=0;
-	int endy=3;
-	int endz=0;
-	for(x=startx;x<=endx;x++) {
-		for(y=starty;y<=endy;y++) {
-			for(z=startz;z<=endz;z++) {
-				printf("Node %d%d%d Used = %d Letter = %c\n",x,y,z,pa_system_ptr->grid[x][y][z].used,pa_system_ptr->grid[x][y][z].letter);
-				for(dim=1;dim<2;dim++) {
-					printf("Dim %d\n",dim);
-					pa_switch_t *wire = &pa_system_ptr->grid[x][y][z].axis_switch[dim];
-					for(j=0;j<6;j++)
-						printf("\t%d -> %d -> %d Used = %d\n", j, wire->int_wire[j].port_tar, wire->ext_wire[wire->int_wire[j].port_tar].port_tar, wire->int_wire[j].used);
-				}
-			}
-		}
-	}
+/* 	int dim,j; */
+/* 	int x,y,z; */
+/* 	int startx=0; */
+/* 	int starty=0; */
+/* 	int startz=0; */
+/* 	int endx=0; */
+/* 	int endy=3; */
+/* 	int endz=0; */
+/* 	for(x=startx;x<=endx;x++) { */
+/* 		for(y=starty;y<=endy;y++) { */
+/* 			for(z=startz;z<=endz;z++) { */
+/* 				printf("Node %d%d%d Used = %d Letter = %c\n", */
+/* 				       x,y,z,pa_system_ptr->grid[x][y][z].used, */
+/* 				       pa_system_ptr->grid[x][y][z].letter); */
+/* 				for(dim=1;dim<2;dim++) { */
+/* 					printf("Dim %d\n",dim); */
+/* 					pa_switch_t *wire =  */
+/* 						&pa_system_ptr-> */
+/* 						grid[x][y][z].axis_switch[dim]; */
+/* 					for(j=0;j<6;j++) */
+/* 						printf("\t%d -> %d -> %d Used = %d\n",  */
+/* 						       j, wire->int_wire[j].port_tar,  */
+/* 						       wire->ext_wire[wire->int_wire[j].port_tar].port_tar,  */
+/* 						       wire->int_wire[j].used); */
+/* 				} */
+/* 			} */
+/* 		} */
+/* 	} */
 	list_destroy(results);
 	//list_destroy(results2);
 
@@ -1576,4 +1658,6 @@ int main(int argc, char** argv)
 	
 	return 0;
 }
+
+
 #endif

@@ -93,6 +93,7 @@ typedef struct {
 	bool elongate; 
 	bool force_contig;
 	bool co_proc;
+	List elongate_geos;
 } pa_request_t; 
 
 /** 
@@ -251,6 +252,8 @@ int alter_part(List nodes, int conn_type);
 int redo_part(List nodes, int conn_type, int new_count);
 
 int set_bgl_part(List nodes, int size, int conn_type);
+
+int reset_pa_system();
 
 void init_grid(node_info_msg_t *node_info_ptr);
 
