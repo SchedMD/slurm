@@ -901,7 +901,7 @@ int kill_running_job_by_node_name(char *node_name, bool step_test)
 				job_ptr->job_state = JOB_NODE_FAIL | 
 						     JOB_COMPLETING;
 				job_ptr->end_time = time(NULL);
-				deallocate_nodes(job_ptr);
+				deallocate_nodes(job_ptr, false);
 				delete_all_step_records(job_ptr);
 			} else {
 				/* Remove node from this job's list */
@@ -1204,15 +1204,15 @@ int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
 		list_iterator_destroy (step_record_iterator);
 
 		if (signal == SIGKILL) {
-			job_ptr->kill_on_step_done = KILL_IN_PROGRESS;
-			job_ptr->time_last_active = now;
+			job_ptr->kill_on_step_done &= KILL_IN_PROGRESS;
+			job_ptr->time_last_active   = now;
 			last_job_update = now;
 		}
 		if ((signal == SIGKILL) && (step_cnt == 0)) {
 			/* kill job with no active steps */
 			job_ptr->job_state = JOB_COMPLETE | JOB_COMPLETING;
-			job_ptr->end_time = now;
-			deallocate_nodes(job_ptr);
+			job_ptr->end_time  = now;
+			deallocate_nodes(job_ptr, false);
 		}
 		verbose("job_signal of running job %u successful", job_id);
 		return SLURM_SUCCESS;
@@ -1275,7 +1275,7 @@ job_complete(uint32_t job_id, uid_t uid, bool requeue,
 
 	last_job_update = now;
 	if (job_comp_flag) {	/* job was running */
-		deallocate_nodes(job_ptr);
+		deallocate_nodes(job_ptr, false);
 		verbose("job_complete for job id %u successful", job_id);
 	} else {
 		verbose("job_complete for job id %u successful", job_id);
@@ -1920,7 +1920,7 @@ void job_time_limit(void)
 			last_job_update = now;
 			job_ptr->end_time = time(NULL);
 			job_ptr->job_state = JOB_TIMEOUT | JOB_COMPLETING;
-			deallocate_nodes(job_ptr);
+			deallocate_nodes(job_ptr, false);
 			delete_all_step_records(job_ptr);
 			continue;
 		}
@@ -1951,17 +1951,17 @@ void job_time_limit(void)
 /* Terminate a job that has exhausted its time limit */
 static void _job_timed_out(struct job_record *job_ptr)
 {
-#if NEW_TIME_LIMIT_RPC
-	// FIXME
-	// SET UP AND ISSUE NEW RPC TO ALL ALLOCATED NODES,
-	// see deallocate_nodes code for template
-#else
-	job_signal(job_ptr->job_id, SIGKILL, 0);
-#endif
+	if (job_ptr == NULL)
+		fatal ("job_ptr == NULL");
 
 	job_ptr->time_last_active   = time(NULL);
 	job_ptr->job_state          = JOB_TIMEOUT | JOB_COMPLETING;
 	job_ptr->kill_on_step_done &= KILL_IN_PROGRESS;
+
+	if (job_ptr->details)
+		deallocate_nodes(job_ptr, true);
+	else
+		job_signal(job_ptr->job_id, SIGKILL, 0);
 	return;
 }
 

@@ -47,8 +47,9 @@
  *  All the state for each thread is maintained in thd_t struct, which is 
  *  used by the watchdog thread as well as the communication threads.
  *
- *  NOTE: REQUEST_REVOKE_JOB_CREDENTIAL responses are handled immediately 
- *  rather than in bulk upon completion of the RPC to all nodes
+ *  NOTE: REQUEST_REVOKE_JOB_CREDENTIAL  and REQUEST_KILL_TIMELIMIT responses 
+ *  are handled immediately rather than in bulk upon completion of the RPC 
+ *  to all nodes
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
@@ -260,6 +261,7 @@ static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 	if (agent_arg_ptr->node_names == NULL)
 		fatal("agent passed NULL node name list");
 	if ((agent_arg_ptr->msg_type != REQUEST_REVOKE_JOB_CREDENTIAL) &&
+	    (agent_arg_ptr->msg_type != REQUEST_KILL_TIMELIMIT) && 
 	    (agent_arg_ptr->msg_type != REQUEST_NODE_REGISTRATION_STATUS) && 
 	    (agent_arg_ptr->msg_type != REQUEST_KILL_TASKS) && 
 	    (agent_arg_ptr->msg_type != REQUEST_PING) && 
@@ -430,7 +432,8 @@ static void *_wdog(void *args)
 	unlock_slurmctld(node_write_lock);
 	/* attempt to schedule when all nodes registered, not 
 	 * after each node, the overhead would be too high */
-	if (agent_ptr->msg_type == REQUEST_REVOKE_JOB_CREDENTIAL) 
+	if ((agent_ptr->msg_type == REQUEST_KILL_TIMELIMIT) ||
+	    (agent_ptr->msg_type == REQUEST_REVOKE_JOB_CREDENTIAL))
 		schedule();
 #else
 	/* Build a list of all responding nodes and send it to slurmctld to 
@@ -548,7 +551,8 @@ static void *_thread_per_node_rpc(void *args)
 
 #if AGENT_IS_THREAD
 	/* SPECIAL CASE: Immediately mark node as IDLE */
-	if ((task_ptr->msg_type == REQUEST_REVOKE_JOB_CREDENTIAL) &&
+	if (((task_ptr->msg_type == REQUEST_KILL_TIMELIMIT) ||
+	     (task_ptr->msg_type == REQUEST_REVOKE_JOB_CREDENTIAL)) &&
 	    (node_ptr = find_node_record(thread_ptr->node_name))) {
 		revoke_credential_msg_t *revoke_job_cred;
 		revoke_job_cred = (revoke_credential_msg_t *)

@@ -125,12 +125,14 @@ int count_cpus(unsigned *bitmap)
 
 /*
  * deallocate_nodes - for a given job, deallocate its nodes and make 
- *	their state NODE_STATE_IDLE
+ *	their state NODE_STATE_COMPLETING
  * IN job_ptr - pointer to terminating job
+ * IN timeout - true of job exhausted time limit, send REQUEST_KILL_TIMELIMIT
+ *	RPC instead of REQUEST_REVOKE_JOB_CREDENTIAL
  * globals: node_record_count - number of nodes in the system
  *	node_record_table_ptr - pointer to global node table
  */
-void deallocate_nodes(struct job_record *job_ptr)
+void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 {
 	int i;
 	revoke_credential_msg_t *revoke_job_cred;
@@ -144,7 +146,10 @@ void deallocate_nodes(struct job_record *job_ptr)
 		fatal ("job_ptr->details == NULL");
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
-	agent_args->msg_type = REQUEST_REVOKE_JOB_CREDENTIAL;
+	if (timeout)
+		agent_args->msg_type = REQUEST_KILL_TIMELIMIT;
+	else
+		agent_args->msg_type = REQUEST_REVOKE_JOB_CREDENTIAL;
 	agent_args->retry = 1;
 	revoke_job_cred = xmalloc(sizeof(revoke_credential_msg_t));
 	last_node_update = time(NULL);

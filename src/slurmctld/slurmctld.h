@@ -397,12 +397,14 @@ extern struct step_record * create_step_record (struct job_record *job_ptr);
 
 /*
  * deallocate_nodes - for a given job, deallocate its nodes and make 
- *	their state NODE_STATE_IDLE
+ *	their state NODE_STATE_COMPLETING
  * IN job_ptr - pointer to terminating job
+ * IN timeout - true of job exhausted time limit, send REQUEST_KILL_TIMELIMIT
+ *	RPC instead of REQUEST_REVOKE_JOB_CREDENTIAL
  * globals: node_record_count - number of nodes in the system
  *	node_record_table_ptr - pointer to global node table
  */
-extern void deallocate_nodes (struct job_record  * job_ptr);
+extern void deallocate_nodes (struct job_record  * job_ptr, bool timeout);
 
 /* 
  * delete_all_step_records - delete all step record for specified job_ptr
