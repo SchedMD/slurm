@@ -44,7 +44,6 @@ Requires: slurm
 %package doc
 Summary: Extra documentation for SLURM.
 Group: Documentation
-BuildRequires: 
 
 %package auth-none
 Summary: SLURM auth NULL implementation (no authentication)
