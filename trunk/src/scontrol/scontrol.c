@@ -1512,6 +1512,12 @@ _update_job (int argc, char *argv[])
 			job_msg.req_nodes = &argv[i][12];
 		else if (strncasecmp(argv[i], "Features=", 9) == 0)
 			job_msg.features = &argv[i][9];
+		else if (strncasecmp(argv[i], "Account=", 8) == 0)
+			job_msg.account = &argv[i][8];
+		else if (strncasecmp(argv[i], "Dependency=", 11) == 0)
+			job_msg.dependency =
+				(uint32_t) strtol(&argv[i][11],
+					(char **) NULL, 10);
 		else {
 			exit_code = 1;
 			fprintf (stderr, "Invalid input: %s\n", argv[i]);

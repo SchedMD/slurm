@@ -1619,6 +1619,9 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 
 	safe_unpackstr_xmalloc(&job->nodes, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->partition, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&job->account, &uint16_tmp, buffer);
+	safe_unpack32(&job->dependency, buffer);
+
 	safe_unpackstr_xmalloc(&job->name, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->alloc_node, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&node_inx_str, &uint16_tmp, buffer);
@@ -1835,6 +1838,8 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 
 	packstr(job_desc_ptr->partition, buffer);
 	pack32(job_desc_ptr->priority, buffer);
+	pack32(job_desc_ptr->dependency, buffer);
+	packstr(job_desc_ptr->account, buffer);
 
 	packstr(job_desc_ptr->req_nodes, buffer);
 	packstr(job_desc_ptr->exc_nodes, buffer);
@@ -1895,6 +1900,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 
 	safe_unpackstr_xmalloc(&job_desc_ptr->partition, &uint16_tmp, buffer);
 	safe_unpack32(&job_desc_ptr->priority, buffer);
+	safe_unpack32(&job_desc_ptr->dependency, buffer);
+	safe_unpackstr_xmalloc(&job_desc_ptr->account, &uint16_tmp, buffer);
 
 	safe_unpackstr_xmalloc(&job_desc_ptr->req_nodes, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->exc_nodes, &uint16_tmp, buffer);

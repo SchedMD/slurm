@@ -165,7 +165,9 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Requested operation not supported on this system"	},
 	{ ESLURM_DISABLED,
 	  "Requested operation is presently disabled"		},
-
+	{ ESLURM_DEPENDENCY,
+	  "Immediate execution impossible, job dependency problem"},
+ 
 	/* slurmd error codes */
 
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN, 

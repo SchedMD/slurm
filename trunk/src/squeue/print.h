@@ -128,6 +128,10 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_exc_node_inx)
 #define job_format_add_features(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_features)
+#define job_format_add_account(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_account)
+#define job_format_add_dependency(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_dependency)
 
 /*****************************************************************************
  * Job Line Print Functions
@@ -191,6 +195,10 @@ int _print_job_req_node_inx(job_info_t * job, int width, bool right_justify,
 int _print_job_exc_node_inx(job_info_t * job, int width, bool right_justify, 
 			char* suffix);
 int _print_job_features(job_info_t * job, int width, bool right_justify, 
+			char* suffix);
+int _print_job_account(job_info_t * job, int width, bool right_justify,
+			char* suffix);
+int _print_job_dependency(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 
 /*****************************************************************************

@@ -376,6 +376,8 @@ static void _opt_default()
 	opt.job_name = NULL;
 	opt.jobid    = NO_VAL;
 	opt.mpi_type = MPI_UNKNOWN;
+	opt.dependency = NO_VAL;
+	opt.account  = NULL;
 
 	opt.distribution = SRUN_DIST_UNKNOWN;
 
@@ -455,6 +457,7 @@ struct env_vars {
 };
 
 env_vars_t env_vars[] = {
+  {"SLURM_ACCOUNT",       OPT_STRING,     &opt.account,       NULL           },
   {"SLURMD_DEBUG",        OPT_INT,        &opt.slurmd_debug,  NULL           }, 
   {"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set  },
   {"SLURM_CORE_FORMAT",   OPT_CORE,       NULL,               NULL,          },
@@ -613,11 +616,13 @@ static void _opt_args(int argc, char **argv)
 		{"output",        required_argument, 0, 'o'},
 		{"overcommit",    no_argument,       0, 'O'},
 		{"partition",     required_argument, 0, 'p'},
+		{"dependency",    required_argument, 0, 'P'},
 		{"relative",      required_argument, 0, 'r'},
 		{"share",         no_argument,       0, 's'},
 		{"time",          required_argument, 0, 't'},
 		{"threads",       required_argument, 0, 'T'},
 		{"unbuffered",    no_argument,       0, 'u'},
+		{"account",       required_argument, 0, 'U'},
 		{"verbose",       no_argument,       0, 'v'},
 		{"version",       no_argument,       0, 'V'},
 		{"nodelist",      required_argument, 0, 'w'},
@@ -645,7 +650,7 @@ static void _opt_args(int argc, char **argv)
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:Abc:C:d:D:e:Hi:IjJ:klm:n:N:"
-		"o:Op:Qr:st:T:uvVw:W:x:Zq";
+		"o:Op:P:Qr:st:T:uU:vVw:W:x:Zq";
 	char **rest = NULL;
 
 	opt.progname = xbasename(argv[0]);
@@ -764,10 +769,13 @@ static void _opt_args(int argc, char **argv)
 			xfree(opt.partition);
 			opt.partition = xstrdup(optarg);
 			break;
+		case (int)'P':
+			opt.dependency = _get_int(optarg, "dependency");
+			break;
 		case (int)'q':
 			opt.quit_on_intr = true;
 			break;
-		case 'Q':
+		case (int) 'Q':
 			opt.quiet++;
 			break;
 		case (int)'r':
@@ -786,6 +794,9 @@ static void _opt_args(int argc, char **argv)
 			break;
 		case (int)'u':
 			opt.unbuffered = true;
+			break;
+		case (int)'U':
+			opt.account = xstrdup(optarg);
 			break;
 		case (int)'v':
 			_verbose++;
@@ -1228,6 +1239,11 @@ static void _opt_list()
 	else
 		info("time_limit     : %d", opt.time_limit);
 	info("wait           : %d", opt.max_wait);
+	info("account        : %s", opt.account);
+	if (opt.dependency == NO_VAL)
+		info("dependency     : none");
+	else
+		info("dependency     : %u", opt.dependency);
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
@@ -1245,81 +1261,83 @@ static bool _under_parallel_debugger (void)
 
 static void _usage(void)
 {
- 	printf("\
-Usage: srun [-N nnodes] [-n ntasks] [-i in] [-i in] [-e err] [-e err]\n\
-            [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n\
-            [-D path] [--immediate] [--overcommit] [--no-kill]\n\
-            [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n\
-            [--jobid=id] [--batch] [--verbose] [--slurmd_debug=#]\n\
-            [--core=type] [-T threads] [-W sec] [--attach] [--join] \n\
-            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n\
-            [--mpi=type] [-w hosts...] [-x hosts...] \n\
-            executable [args...]\n");
+ 	printf(
+"Usage: srun [-N nnodes] [-n ntasks] [-i in] [-i in] [-e err] [-e err]\n"
+"            [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
+"            [-D path] [--immediate] [--overcommit] [--no-kill]\n"
+"            [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
+"            [--jobid=id] [--batch] [--verbose] [--slurmd_debug=#]\n"
+"            [--core=type] [-T threads] [-W sec] [--attach] [--join] \n"
+"            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
+"            [--mpi=type] [--account=name] [--dependency=jobid]\n"
+"            [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
 static void _help(void)
 {
-        printf ("\
-Usage: srun [OPTIONS...] executable [args...]\n\
-\n\
-Parallel run options:\n\
-  -n, --ntasks=ntasks         number of tasks to run\n\
-  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n\
-  -c, --cpus-per-task=ncpus   number of cpus required per task\n\
-  -i, --input=in              location of stdin redirection\n\
-  -o, --output=out            location of stdout redirection\n\
-  -e, --error=err             location of stderr redirection\n\
-  -r, --relative=n            run job step relative to node n of allocation\n\
-  -p, --partition=partition   partition requested\n\
-  -H, --hold                  submit job in held state\n\
-  -t, --time=minutes          time limit\n\
-  -D, --chdir=path            change remote current working directory\n\
-  -I, --immediate             exit if resources are not immediately available\n\
-  -O, --overcommit            overcommit resources\n\
-  -k, --no-kill               do not kill job on node failure\n\
-  -s, --share                 share nodes with other jobs\n\
-  -l, --label                 prepend task number to lines of stdout/err\n\
-  -u, --unbuffered            do not line-buffer stdout/err\n\
-  -m, --distribution=type     distribution method for processes to nodes\n\
-	                      (type = block|cyclic)\n\
-  -J, --job-name=jobname      name of job\n\
-      --jobid=id              run under already allocated job\n\
-      --mpi=type              type of MPI being used\n\
-  -b, --batch                 submit as batch job for later execution\n\
-  -T, --threads=threads       set srun launch fanout\n\
-  -W, --wait=sec              seconds to wait after first task exits\n\
-                              before killing job\n\
-  -q, --quit-on-interrupt     quit on single Ctrl-C\n\
-  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n\
-  -Q, --quiet                 quiet mode (suppress informational messages)\n\
-  -d, --slurmd-debug=level    slurmd debug level\n\
-      --core=type             change default corefile format type\n\
-                              (type=\"list\" to list of valid formats)\n\
-\n\
-Allocate only:\n\
-  -A, --allocate              allocate resources and spawn a shell\n\
-      --no-shell              don't spawn shell in allocate mode\n\
-\n\
-Attach to running job:\n\
-  -a, --attach=jobid          attach to running job with specified id\n\
-  -j, --join                  when used with --attach, allow forwarding of\n\
-                              signals and stdin.\n\
-\n\
-Constraint options:\n\
-      --mincpus=n             minimum number of cpus per node\n\
-      --mem=MB                minimum amount of real memory\n\
-      --tmp=MB                minimum amount of temporary disk\n\
-      --contiguous            demand a contiguous range of nodes\n\
-  -C, --constraint=list       specify a list of constraints\n\
-  -w, --nodelist=hosts...     request a specific list of hosts\n\
-  -x, --exclude=hosts...      exclude a specific list of hosts\n\
-  -Z, --no-allocate           don't allocate nodes (must supply -w)\n\
-\n\
-Help options:\n\
-      --help                  show this help message\n\
-      --usage                 display brief usage message\n\
-\n\
-Other options:\n\
-  -V, --version               output version information and exit\n");
+        printf (
+"Usage: srun [OPTIONS...] executable [args...]\n"
+"\n"
+"Parallel run options:\n"
+"  -n, --ntasks=ntasks         number of tasks to run\n"
+"  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
+"  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
+"  -i, --input=in              location of stdin redirection\n"
+"  -o, --output=out            location of stdout redirection\n"
+"  -e, --error=err             location of stderr redirection\n"
+"  -r, --relative=n            run job step relative to node n of allocation\n"
+"  -p, --partition=partition   partition requested\n"
+"  -H, --hold                  submit job in held state\n"
+"  -t, --time=minutes          time limit\n"
+"  -D, --chdir=path            change remote current working directory\n"
+"  -I, --immediate             exit if resources are not immediately available\n"
+"  -O, --overcommit            overcommit resources\n"
+"  -k, --no-kill               do not kill job on node failure\n"
+"  -s, --share                 share nodes with other jobs\n"
+"  -l, --label                 prepend task number to lines of stdout/err\n"
+"  -u, --unbuffered            do not line-buffer stdout/err\n"
+"  -m, --distribution=type     distribution method for processes to nodes\n"
+"                              (type = block|cyclic)\n"
+"  -J, --job-name=jobname      name of job\n"
+"      --jobid=id              run under already allocated job\n"
+"      --mpi=type              type of MPI being used\n"
+"  -b, --batch                 submit as batch job for later execution\n"
+"  -T, --threads=threads       set srun launch fanout\n"
+"  -W, --wait=sec              seconds to wait after first task exits\n"
+"                              before killing job\n"
+"  -q, --quit-on-interrupt     quit on single Ctrl-C\n"
+"  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
+"  -Q, --quiet                 quiet mode (suppress informational messages)\n"
+"  -d, --slurmd-debug=level    slurmd debug level\n"
+"      --core=type             change default corefile format type\n"
+"                              (type=\"list\" to list of valid formats)\n"
+"  -P, --dependency=jobid      defer job until specified jobid completes\n"
+"  -U, --account=name          charge job to specified account\n"
+"\n"
+"Allocate only:\n"
+"  -A, --allocate              allocate resources and spawn a shell\n"
+"      --no-shell              don't spawn shell in allocate mode\n"
+"\n"
+"Attach to running job:\n"
+"  -a, --attach=jobid          attach to running job with specified id\n"
+"  -j, --join                  when used with --attach, allow forwarding of\n"
+"                              signals and stdin.\n"
+"\n"
+"Constraint options:\n"
+"      --mincpus=n             minimum number of cpus per node\n"
+"      --mem=MB                minimum amount of real memory\n"
+"      --tmp=MB                minimum amount of temporary disk\n"
+"      --contiguous            demand a contiguous range of nodes\n"
+"  -C, --constraint=list       specify a list of constraints\n"
+"  -w, --nodelist=hosts...     request a specific list of hosts\n"
+"  -x, --exclude=hosts...      exclude a specific list of hosts\n"
+"  -Z, --no-allocate           don't allocate nodes (must supply -w)\n"
+"\n"
+"Help options:\n"
+"      --help                  show this help message\n"
+"      --usage                 display brief usage message\n"
+"\n"
+"Other options:\n"
+"  -V, --version               output version information and exit\n");
 
 }

@@ -135,6 +135,7 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->out);
 		xfree(msg->work_dir);
 		xfree(msg->host);
+		xfree(msg->account);
 		xfree(msg);
 	}
 }
@@ -180,6 +181,7 @@ void slurm_free_job_info(job_info_t * job)
 void slurm_free_job_info_members(job_info_t * job)
 {
 	if (job) {
+		xfree(job->account);
 		xfree(job->nodes);
 		xfree(job->partition);
 		xfree(job->name);

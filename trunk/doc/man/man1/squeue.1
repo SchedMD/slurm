@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "May 2004" "squeue 0.3" "Slurm components"
+.TH SQUEUE "1" "August 2004" "squeue 0.4" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -69,6 +69,9 @@ The field specifications available include:
 
 .RS
 .TP 4
+\fB%a\fR
+Account associated with the job
+.TP
 \fB%b\fR 
 Time at which the job began execution
 .TP
@@ -89,6 +92,10 @@ cluster contains nodes with varying processor counts.
 .TP
 \fB%e\fR 
 Time at which the job ended or is expected to end (based upon its time limit)
+.TP
+\fB%E\fR
+Job dependency. This job will not begin execution until the dependent job 
+completes. A value of zero implies this job has no dependencies.
 .TP
 \fB%f\fR 
 Features required by the job
