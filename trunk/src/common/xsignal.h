@@ -42,6 +42,16 @@ SigFunc *xsignal(int signo, SigFunc *);
  */
 int xsignal_unblock(int signo);
 
+/*
+ * Save current set of blocked signals into `set'
+ */
+int xsignal_save_mask(sigset_t *set);
+
+/*
+ * Restore the mask of blocked signals to `set'
+ */
+int xsignal_restore_mask(sigset_t *set);
+
 /* 
  * Unblock all possible signals
  */
