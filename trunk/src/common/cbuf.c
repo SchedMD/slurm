@@ -1,7 +1,7 @@
 /*****************************************************************************
  *  $Id$
  *****************************************************************************
- *  $LSDId: cbuf.c,v 1.11 2002/11/05 18:06:16 dun Exp $
+ *  $LSDId: cbuf.c,v 1.24 2002/11/26 20:38:59 dun Exp $
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -26,6 +26,7 @@
  *  Refer to "cbuf.h" for documentation on public functions.
  *****************************************************************************/
 
+
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif /* HAVE_CONFIG_H */
@@ -39,7 +40,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "src/common/cbuf.h"
+#include "cbuf.h"
 
 
 /*********************
@@ -81,7 +82,7 @@
  *  Constants  *
  ***************/
 
-#define CBUF_CHUNK      500
+#define CBUF_CHUNK      1000
 #define CBUF_MAGIC      0xDEADBEEF
 #define CBUF_MAGIC_LEN  (sizeof(unsigned long))
 
@@ -101,12 +102,14 @@ struct cbuf {
 #endif /* WITH_PTHREADS */
 
     int                 alloc;          /* num bytes malloc'd/realloc'd      */
-    int                 size;           /* num bytes of data allocated       */
     int                 minsize;        /* min bytes of data to allocate     */
     int                 maxsize;        /* max bytes of data to allocate     */
+    int                 size;           /* num bytes of data allocated       */
     int                 used;           /* num bytes of unread data          */
+    cbuf_overwrite_t    overwrite;      /* overwrite option behavior         */
     int                 i_in;           /* index to where data is written in */
     int                 i_out;          /* index to where data is read out   */
+    int                 i_rep;          /* index to where data is replayable */
     unsigned char      *data;           /* ptr to circular buffer of data    */
 };
 
@@ -117,7 +120,8 @@ typedef int (*cbuf_iof) (void *cbuf_data, void *arg, int len);
  *  Prototypes  *
  ****************/
 
-static int cbuf_find_line (cbuf_t cb);
+static int cbuf_find_replay_line (cbuf_t cb, int chars, int lines, int *nl);
+static int cbuf_find_unread_line (cbuf_t cb, int chars, int lines);
 
 static int cbuf_get_fd (void *dstbuf, int *psrcfd, int len);
 static int cbuf_get_mem (void *dstbuf, unsigned char **psrcbuf, int len);
@@ -126,9 +130,9 @@ static int cbuf_put_mem (void *srcbuf, unsigned char **pdstbuf, int len);
 
 static int cbuf_copier (cbuf_t src, cbuf_t dst, int len, int *ndropped);
 static int cbuf_dropper (cbuf_t cb, int len);
-static int cbuf_reader (cbuf_t cb, int len, cbuf_iof putf, void *dst);
-static int cbuf_replayer (cbuf_t cb, int len, cbuf_iof putf, void *dst);
-static int cbuf_writer (cbuf_t cb, int len, cbuf_iof getf, void *src,
+static int cbuf_reader (cbuf_t src, int len, cbuf_iof putf, void *dst);
+static int cbuf_replayer (cbuf_t src, int len, cbuf_iof putf, void *dst);
+static int cbuf_writer (cbuf_t dst, int len, cbuf_iof getf, void *src,
        int *ndropped);
 
 static int cbuf_grow (cbuf_t cb, int n);
@@ -231,7 +235,7 @@ cbuf_create (int minsize, int maxsize)
     cb->alloc = minsize + 1;
 #ifndef NDEBUG
     /*  Reserve space for the magic cookies used to protect the
-     *    cb->data[] array from underflow and overflow.
+     *    cbuf data[] array from underflow and overflow.
      */
     cb->alloc += 2 * CBUF_MAGIC_LEN;
 #endif /* !NDEBUG */
@@ -242,18 +246,19 @@ cbuf_create (int minsize, int maxsize)
         return(lsd_nomem_error(__FILE__, __LINE__, "cbuf data"));
     }
     cbuf_mutex_init(cb);
-    cb->size = minsize;
     cb->minsize = minsize;
     cb->maxsize = (maxsize > minsize) ? maxsize : minsize;
+    cb->size = minsize;
     cb->used = 0;
-    cb->i_in = cb->i_out = 0;
+    cb->overwrite = CBUF_WRAP_MANY;
+    cb->i_in = cb->i_out = cb->i_rep = 0;
 
 #ifndef NDEBUG
     /*  C is for cookie, that's good enough for me, yeah!
      *  The magic cookies are only defined during DEBUG code.
      *  The first "magic" cookie is at the top of the structure.
      *  Magic cookies are also placed at the top & bottom of the
-     *  cb->data[] array to catch buffer underflow & overflow errors.
+     *  cbuf data[] array to catch buffer underflow & overflow errors.
      */
     cb->data += CBUF_MAGIC_LEN;         /* jump forward past underflow magic */
     cb->magic = CBUF_MAGIC;
@@ -297,6 +302,61 @@ cbuf_destroy (cbuf_t cb)
 }
 
 
+int
+cbuf_opt_get (cbuf_t cb, cbuf_opt_t name, int *value)
+{
+    int rc = 0;
+
+    assert(cb != NULL);
+
+    if (value == NULL) {
+        errno = EINVAL;
+        return(-1);
+    }
+    cbuf_mutex_lock(cb);
+    assert(cbuf_is_valid(cb));
+    if (name == CBUF_OPT_OVERWRITE) {
+        *value = cb->overwrite;
+    }
+    else {
+        errno = EINVAL;
+        rc = -1;
+    }
+    cbuf_mutex_unlock(cb);
+    return(rc);
+}
+
+
+int
+cbuf_opt_set (cbuf_t cb, cbuf_opt_t name, int value)
+{
+    int rc = 0;
+
+    assert(cb != NULL);
+
+    cbuf_mutex_lock(cb);
+    assert(cbuf_is_valid(cb));
+    if (name == CBUF_OPT_OVERWRITE) {
+        if  (  (value == CBUF_NO_DROP)
+            || (value == CBUF_WRAP_ONCE)
+            || (value == CBUF_WRAP_MANY) ) {
+            cb->overwrite = value;
+        }
+        else {
+            errno = EINVAL;
+            rc = -1;
+        }
+    }
+    else {
+        errno = EINVAL;
+        rc = -1;
+    }
+    assert(cbuf_is_valid(cb));
+    cbuf_mutex_unlock(cb);
+    return(rc);
+}
+
+
 void
 cbuf_flush (cbuf_t cb)
 {
@@ -304,7 +364,7 @@ cbuf_flush (cbuf_t cb)
     cbuf_mutex_lock(cb);
     assert(cbuf_is_valid(cb));
     cb->used = 0;
-    cb->i_in = cb->i_out = 0;
+    cb->i_in = cb->i_out = cb->i_rep = 0;
     assert(cbuf_is_valid(cb));
     cbuf_mutex_unlock(cb);
     return;
@@ -342,14 +402,14 @@ cbuf_size (cbuf_t cb)
 int
 cbuf_free (cbuf_t cb)
 {
-    int free;
+    int nfree;
 
     assert(cb != NULL);
     cbuf_mutex_lock(cb);
     assert(cbuf_is_valid(cb));
-    free = cb->size - cb->used;
+    nfree = cb->size - cb->used;
     cbuf_mutex_unlock(cb);
-    return(free);
+    return(nfree);
 }
 
 
@@ -374,7 +434,7 @@ cbuf_drop (cbuf_t cb, int len)
 
     assert(cb != NULL);
 
-    if (len < 0) {
+    if (len < -1) {
         errno = EINVAL;
         return(-1);
     }
@@ -383,6 +443,10 @@ cbuf_drop (cbuf_t cb, int len)
     }
     cbuf_mutex_lock(cb);
     assert(cbuf_is_valid(cb));
+
+    if (len == -1) {
+        len = cb->used;
+    }
     n = MIN(len, cb->used);
     cbuf_dropper(cb, n);
     assert(cbuf_is_valid(cb));
@@ -394,11 +458,14 @@ cbuf_drop (cbuf_t cb, int len)
 int
 cbuf_copy (cbuf_t src, cbuf_t dst, int len, int *ndropped)
 {
-    int n;
+    int n = 0;
 
     assert(src != NULL);
     assert(dst != NULL);
 
+    if (ndropped) {
+        *ndropped = 0;
+    }
     if (src == dst) {
         errno = EINVAL;
         return(-1);
@@ -440,11 +507,14 @@ cbuf_copy (cbuf_t src, cbuf_t dst, int len, int *ndropped)
 int
 cbuf_move (cbuf_t src, cbuf_t dst, int len, int *ndropped)
 {
-    int n;
+    int n = 0;
 
     assert(src != NULL);
     assert(dst != NULL);
 
+    if (ndropped) {
+        *ndropped = 0;
+    }
     if (src == dst) {
         errno = EINVAL;
         return(-1);
@@ -487,11 +557,11 @@ cbuf_move (cbuf_t src, cbuf_t dst, int len, int *ndropped)
 
 
 int
-cbuf_peek (cbuf_t cb, void *dstbuf, int len)
+cbuf_peek (cbuf_t src, void *dstbuf, int len)
 {
     int n;
 
-    assert(cb != NULL);
+    assert(src != NULL);
 
     if ((dstbuf == NULL) || (len < 0)) {
         errno = EINVAL;
@@ -500,21 +570,21 @@ cbuf_peek (cbuf_t cb, void *dstbuf, int len)
     if (len == 0) {
         return(0);
     }
-    cbuf_mutex_lock(cb);
-    assert(cbuf_is_valid(cb));
-    n = cbuf_reader(cb, len, (cbuf_iof) cbuf_put_mem, &dstbuf);
-    assert(cbuf_is_valid(cb));
-    cbuf_mutex_unlock(cb);
+    cbuf_mutex_lock(src);
+    assert(cbuf_is_valid(src));
+    n = cbuf_reader(src, len, (cbuf_iof) cbuf_put_mem, &dstbuf);
+    assert(cbuf_is_valid(src));
+    cbuf_mutex_unlock(src);
     return(n);
 }
 
 
 int
-cbuf_read (cbuf_t cb, void *dstbuf, int len)
+cbuf_read (cbuf_t src, void *dstbuf, int len)
 {
     int n;
 
-    assert(cb != NULL);
+    assert(src != NULL);
 
     if ((dstbuf == NULL) || (len < 0)) {
         errno = EINVAL;
@@ -523,24 +593,24 @@ cbuf_read (cbuf_t cb, void *dstbuf, int len)
     if (len == 0) {
         return(0);
     }
-    cbuf_mutex_lock(cb);
-    assert(cbuf_is_valid(cb));
-    n = cbuf_reader(cb, len, (cbuf_iof) cbuf_put_mem, &dstbuf);
+    cbuf_mutex_lock(src);
+    assert(cbuf_is_valid(src));
+    n = cbuf_reader(src, len, (cbuf_iof) cbuf_put_mem, &dstbuf);
     if (n > 0) {
-        cbuf_dropper(cb, n);
+        cbuf_dropper(src, n);
     }
-    assert(cbuf_is_valid(cb));
-    cbuf_mutex_unlock(cb);
+    assert(cbuf_is_valid(src));
+    cbuf_mutex_unlock(src);
     return(n);
 }
 
 
 int
-cbuf_replay (cbuf_t cb, void *dstbuf, int len)
+cbuf_replay (cbuf_t src, void *dstbuf, int len)
 {
     int n;
 
-    assert(cb != NULL);
+    assert(src != NULL);
 
     if ((dstbuf == NULL) || (len < 0)) {
         errno = EINVAL;
@@ -549,300 +619,477 @@ cbuf_replay (cbuf_t cb, void *dstbuf, int len)
     if (len == 0) {
         return(0);
     }
-    cbuf_mutex_lock(cb);
-    assert(cbuf_is_valid(cb));
-    n = cbuf_replayer(cb, len, (cbuf_iof) cbuf_put_mem, &dstbuf);
-    assert(cbuf_is_valid(cb));
-    cbuf_mutex_unlock(cb);
+    cbuf_mutex_lock(src);
+    assert(cbuf_is_valid(src));
+    n = cbuf_replayer(src, len, (cbuf_iof) cbuf_put_mem, &dstbuf);
+    assert(cbuf_is_valid(src));
+    cbuf_mutex_unlock(src);
     return(n);
 }
 
 
 int
-cbuf_write (cbuf_t cb, const void *srcbuf, int len, int *ndropped)
+cbuf_write (cbuf_t dst, void *srcbuf, int len, int *ndropped)
 {
     int n;
 
-    assert(cb != NULL);
+    assert(dst != NULL);
 
+    if (ndropped) {
+        *ndropped = 0;
+    }
     if ((srcbuf == NULL) || (len < 0)) {
         errno = EINVAL;
         return(-1);
     }
-    if (ndropped) {
-        *ndropped = 0;
-    }
     if (len == 0) {
         return(0);
     }
-    cbuf_mutex_lock(cb);
-    assert(cbuf_is_valid(cb));
-    n = cbuf_writer(cb, len, (cbuf_iof) cbuf_get_mem, &srcbuf, ndropped);
-    assert(cbuf_is_valid(cb));
-    cbuf_mutex_unlock(cb);
+    cbuf_mutex_lock(dst);
+    assert(cbuf_is_valid(dst));
+    n = cbuf_writer(dst, len, (cbuf_iof) cbuf_get_mem, &srcbuf, ndropped);
+    assert(cbuf_is_valid(dst));
+    cbuf_mutex_unlock(dst);
     return(n);
 }
 
 
 int
-cbuf_peek_to_fd (cbuf_t cb, int dstfd, int len)
+cbuf_peek_to_fd (cbuf_t src, int dstfd, int len)
 {
     int n = 0;
 
-    assert(cb != NULL);
+    assert(src != NULL);
 
     if ((dstfd < 0) || (len < -1)) {
         errno = EINVAL;
         return(-1);
     }
-    cbuf_mutex_lock(cb);
-    assert(cbuf_is_valid(cb));
+    cbuf_mutex_lock(src);
+    assert(cbuf_is_valid(src));
     if (len == -1) {
-        len = cb->used;
+        len = src->used;
     }
     if (len > 0) {
-        n = cbuf_reader(cb, len, (cbuf_iof) cbuf_put_fd, &dstfd);
+        n = cbuf_reader(src, len, (cbuf_iof) cbuf_put_fd, &dstfd);
     }
-    assert(cbuf_is_valid(cb));
-    cbuf_mutex_unlock(cb);
+    assert(cbuf_is_valid(src));
+    cbuf_mutex_unlock(src);
     return(n);
 }
 
 
 int
-cbuf_read_to_fd (cbuf_t cb, int dstfd, int len)
+cbuf_read_to_fd (cbuf_t src, int dstfd, int len)
 {
     int n = 0;
 
-    assert(cb != NULL);
+    assert(src != NULL);
 
     if ((dstfd < 0) || (len < -1)) {
         errno = EINVAL;
         return(-1);
     }
-    cbuf_mutex_lock(cb);
-    assert(cbuf_is_valid(cb));
+    cbuf_mutex_lock(src);
+    assert(cbuf_is_valid(src));
     if (len == -1) {
-        len = cb->used;
+        len = src->used;
     }
     if (len > 0) {
-        n = cbuf_reader(cb, len, (cbuf_iof) cbuf_put_fd, &dstfd);
+        n = cbuf_reader(src, len, (cbuf_iof) cbuf_put_fd, &dstfd);
         if (n > 0) {
-            cbuf_dropper(cb, n);
+            cbuf_dropper(src, n);
         }
     }
-    assert(cbuf_is_valid(cb));
-    cbuf_mutex_unlock(cb);
+    assert(cbuf_is_valid(src));
+    cbuf_mutex_unlock(src);
     return(n);
 }
 
 
 int
-cbuf_replay_to_fd (cbuf_t cb, int dstfd, int len)
+cbuf_replay_to_fd (cbuf_t src, int dstfd, int len)
 {
     int n = 0;
 
-    assert(cb != NULL);
+    assert(src != NULL);
 
     if ((dstfd < 0) || (len < -1)) {
         errno = EINVAL;
         return(-1);
     }
-    cbuf_mutex_lock(cb);
-    assert(cbuf_is_valid(cb));
+    cbuf_mutex_lock(src);
+    assert(cbuf_is_valid(src));
     if (len == -1) {
-        len = cb->size - cb->used;
+        len = src->size - src->used;
     }
     if (len > 0) {
-        n = cbuf_replayer(cb, len, (cbuf_iof) cbuf_put_fd, &dstfd);
+        n = cbuf_replayer(src, len, (cbuf_iof) cbuf_put_fd, &dstfd);
     }
-    assert(cbuf_is_valid(cb));
-    cbuf_mutex_unlock(cb);
+    assert(cbuf_is_valid(src));
+    cbuf_mutex_unlock(src);
     return(n);
 }
 
 
 int
-cbuf_write_from_fd (cbuf_t cb, int srcfd, int len, int *ndropped)
+cbuf_write_from_fd (cbuf_t dst, int srcfd, int len, int *ndropped)
 {
     int n = 0;
 
-    assert(cb != NULL);
+    assert(dst != NULL);
 
+    if (ndropped) {
+        *ndropped = 0;
+    }
     if ((srcfd < 0) || (len < -1)) {
         errno = EINVAL;
         return(-1);
     }
+    cbuf_mutex_lock(dst);
+    assert(cbuf_is_valid(dst));
+    if (len == -1) {
+        /*
+         *  Try to use all of the free buffer space available for writing.
+         *    If it is all in use, try to grab another chunk and limit the
+         *    amount of data being overwritten.
+         */
+        len = dst->size - dst->used;
+        if (len == 0) {
+            len = MIN(dst->size, CBUF_CHUNK);
+        }
+    }
+    if (len > 0) {
+        n = cbuf_writer(dst, len, (cbuf_iof) cbuf_get_fd, &srcfd, ndropped);
+    }
+    assert(cbuf_is_valid(dst));
+    cbuf_mutex_unlock(dst);
+    return(n);
+}
+
+
+int
+cbuf_peek_line (cbuf_t src, char *dstbuf, int len, int lines)
+{
+    int n, m, l;
+    char *pdst;
+
+    assert(src != NULL);
+
+    if (((dstbuf == NULL) && (len != 0)) || (len < 0)) {
+        errno = EINVAL;
+        return(-1);
+    }
+    if (lines < -1) {
+        errno = EINVAL;
+        return(-1);
+    }
+    if (lines == 0) {
+        return(0);
+    }
+    cbuf_mutex_lock(src);
+    assert(cbuf_is_valid(src));
+    n = cbuf_find_unread_line(src, len - 1, lines);
+    if (n > 0) {
+        if (len > 0) {
+            m = MIN(n, len - 1);
+            if (m > 0) {
+                pdst = dstbuf;
+                l = cbuf_reader(src, m, (cbuf_iof) cbuf_put_mem, &pdst);
+                assert(l == m);
+            }
+            assert(m < len);
+            dstbuf[m] = '\0';
+        }
+    }
+    assert(cbuf_is_valid(src));
+    cbuf_mutex_unlock(src);
+    return(n);
+}
+
+
+int
+cbuf_read_line (cbuf_t src, char *dstbuf, int len, int lines)
+{
+    int n, m, l;
+    char *pdst;
+
+    assert(src != NULL);
+
+    if (((dstbuf == NULL) && (len != 0)) || (len < 0)) {
+        errno = EINVAL;
+        return(-1);
+    }
+    if (lines < -1) {
+        errno = EINVAL;
+        return(-1);
+    }
+    if (lines == 0) {
+        return(0);
+    }
+    cbuf_mutex_lock(src);
+    assert(cbuf_is_valid(src));
+    n = cbuf_find_unread_line(src, len - 1, lines);
+    if (n > 0) {
+        if (len > 0) {
+            m = MIN(n, len - 1);
+            if (m > 0) {
+                pdst = dstbuf;
+                l = cbuf_reader(src, m, (cbuf_iof) cbuf_put_mem, &pdst);
+                assert(l == m);
+            }
+            assert(m < len);
+            dstbuf[m] = '\0';
+        }
+        cbuf_dropper(src, n);
+    }
+    assert(cbuf_is_valid(src));
+    cbuf_mutex_unlock(src);
+    return(n);
+}
+
+
+int
+cbuf_replay_line (cbuf_t src, char *dstbuf, int len, int lines)
+{
+    int n, m, l;
+    int nl;
+    char *pdst;
+
+    assert(src != NULL);
+
+    if (((dstbuf == NULL) && (len != 0)) || (len < 0)) {
+        errno = EINVAL;
+        return(-1);
+    }
+    if (lines < -1) {
+        errno = EINVAL;
+        return(-1);
+    }
+    if (lines == 0) {
+        return(0);
+    }
+    cbuf_mutex_lock(src);
+    assert(cbuf_is_valid(src));
+    n = cbuf_find_replay_line(src, len - 1, lines, &nl);
+    assert((nl == 0) || (nl == 1));
+    if (n > 0) {
+        if (len > 0) {
+            m = MIN(n, len - 1 - nl);
+            m = MAX(m, 0);
+            if (m > 0) {
+                pdst = dstbuf;
+                l = cbuf_replayer(src, m, (cbuf_iof) cbuf_put_mem, &pdst);
+                assert(l == m);
+            }
+            /*  Append newline if needed and space allows.
+             */
+            if ((nl) && (len > 1)) {
+                dstbuf[m++] = '\n';
+            }
+            assert(m < len);
+            dstbuf[m] = '\0';
+            n += nl;
+        }
+    }
+    assert(cbuf_is_valid(src));
+    cbuf_mutex_unlock(src);
+    return(n);
+}
+
+
+int
+cbuf_write_line (cbuf_t dst, char *srcbuf, int *ndropped)
+{
+    int len;
+    int nfree, ncopy, n;
+    int ndrop = 0, d;
+    char *psrc = srcbuf;
+    char *newline = "\n";
+
+    assert(dst != NULL);
+
     if (ndropped) {
         *ndropped = 0;
     }
-    cbuf_mutex_lock(cb);
-    assert(cbuf_is_valid(cb));
-    /*
-     *  XXX: Is the current -1 len behavior such a good idea?
-     *       This prevents the buffer from both wrapping and growing.
+    if (srcbuf == NULL) {
+        errno = EINVAL;
+        return(-1);
+    }
+    /*  Compute number of bytes to effectively copy to dst cbuf.
+     *  Reserve space for the trailing newline if needed.
      */
-    if (len == -1) {
-        len = cb->size - cb->used;
+    len = ncopy = strlen(srcbuf);
+    if ((len == 0) || (srcbuf[len - 1] != '\n')) {
+        len++;
     }
-    if (len > 0) {
-        n = cbuf_writer(cb, len, (cbuf_iof) cbuf_get_fd, &srcfd, ndropped);
-    }
-    assert(cbuf_is_valid(cb));
-    cbuf_mutex_unlock(cb);
-    return(n);
-}
-
-
-int
-cbuf_get_line (cbuf_t cb, char *dst, int len)
-{
-    int n, m;
-    char *pdst;
-
-    assert(cb != NULL);
-
-    if (((dst == NULL) && (len != 0)) || (len < 0)) {
-        errno = EINVAL;
-        return(-1);
-    }
-    pdst = dst;
-    cbuf_mutex_lock(cb);
-    assert(cbuf_is_valid(cb));
-    n = cbuf_find_line(cb);
-    if (n > 0) {
-        if (len > 0) {
-            m = MIN(n, len - 1);
-            if (m > 0) {
-                n = cbuf_reader(cb, m, (cbuf_iof) cbuf_put_mem, &pdst);
-                assert(n == m);
-            }
-            dst[m] = '\0';
-        }
-        cbuf_dropper(cb, n);
-    }
-    assert(cbuf_is_valid(cb));
-    cbuf_mutex_unlock(cb);
-    return(n);
-}
-
-
-int
-cbuf_peek_line (cbuf_t cb, char *dst, int len)
-{
-    int n, m;
-    char *pdst;
-
-    assert(cb != NULL);
-
-    if (((dst == NULL) && (len != 0)) || (len < 0)) {
-        errno = EINVAL;
-        return(-1);
-    }
-    pdst = dst;
-    cbuf_mutex_lock(cb);
-    assert(cbuf_is_valid(cb));
-    n = cbuf_find_line(cb);
-    if (n > 0) {
-        if (len > 0) {
-            m = MIN(n, len - 1);
-            if (m > 0) {
-                n = cbuf_reader(cb, m, (cbuf_iof) cbuf_put_mem, &pdst);
-                assert(n == m);
-            }
-            dst[m] = '\0';
-        }
-    }
-    assert(cbuf_is_valid(cb));
-    cbuf_mutex_unlock(cb);
-    return(n);
-}
-
-
-int
-cbuf_put_line (cbuf_t cb, const char *src, int *ndropped)
-{
-    int len;
-    int nget, ngot, nfree, ndrop, n, d;
-    const char *psrc;
-    const char *newline = "\n";
-
-    assert(cb != NULL);
-
-    if (src == NULL) {
-        errno = EINVAL;
-        return(-1);
-    }
-    nget = len = strlen(src);
-    ngot = ndrop = 0;
-    psrc = src;
-
-    cbuf_mutex_lock(cb);
-    assert(cbuf_is_valid(cb));
+    cbuf_mutex_lock(dst);
+    assert(cbuf_is_valid(dst));
     /*
      *  Attempt to grow dst cbuf if necessary.
      */
-    nfree = cb->size - cb->used;
-    if ((len > nfree) && (cb->size < cb->maxsize)) {
-        nfree += cbuf_grow(cb, len - nfree);
+    nfree = dst->size - dst->used;
+    if ((len > nfree) && (dst->size < dst->maxsize)) {
+        nfree += cbuf_grow(dst, len - nfree);
     }
-    /*  Discard data that won't fit into dst cbuf.
+    /*  Determine if src will fit (or be made to fit) in dst cbuf.
      */
-    if (nget > cb->size) {
-        ndrop += nget - cb->size;
-        nget -= ndrop;
-        ngot += ndrop;
-        psrc += ndrop;
+    if (dst->overwrite == CBUF_NO_DROP) {
+        if (len > dst->size - dst->used) {
+            errno = ENOSPC;
+            len = -1;                   /* cannot return while mutex locked */
+        }
     }
-    /*  Write src data into dst cbuf.
-     */
-    if (nget > 0) {
-        n = cbuf_writer(cb, nget, (cbuf_iof) cbuf_get_mem, &psrc, &d);
-        assert(n == nget);
-        ngot += n;
-        ndrop += d;
+    else if (dst->overwrite == CBUF_WRAP_ONCE) {
+        if (len > dst->size) {
+            errno = ENOSPC;
+            len = -1;                   /* cannot return while mutex locked */
+        }
     }
-    /*  Append newline if needed.
-     */
-    if (src[len - 1] != '\n') {
-        n = cbuf_writer(cb, 1, (cbuf_iof) cbuf_get_mem, &newline, &d);
-        assert(n == 1);
-        ngot += n;
-        ndrop += d;
+    if (len > 0) {
+        /*
+         *  Discard data that won't fit in dst cbuf.
+         */
+        if (len > dst->size) {
+            ndrop += len - dst->size;
+            ncopy -= ndrop;
+            psrc += ndrop;
+        }
+        /*  Copy data from src string to dst cbuf.
+         */
+        if (ncopy > 0) {
+            n = cbuf_writer(dst, ncopy, (cbuf_iof) cbuf_get_mem, &psrc, &d);
+            assert(n == ncopy);
+            ndrop += d;
+        }
+        /*  Append newline if needed.
+         */
+        if (srcbuf[len - 1] != '\n') {
+            n = cbuf_writer(dst, 1, (cbuf_iof) cbuf_get_mem, &newline, &d);
+            assert(n == 1);
+            ndrop += d;
+        }
     }
-    assert(cbuf_is_valid(cb));
-    cbuf_mutex_unlock(cb);
-    assert((ngot == len) || (ngot == len + 1));
+    assert(cbuf_is_valid(dst));
+    cbuf_mutex_unlock(dst);
     if (ndropped) {
         *ndropped = ndrop;
     }
-    return(ngot);
+    return(len);
 }
 
 
 static int
-cbuf_find_line (cbuf_t cb)
+cbuf_find_replay_line (cbuf_t cb, int chars, int lines, int *nl)
 {
-/*  Returns the number of bytes up to and including the next newline or NUL.
+/*  Finds the specified number of lines from the replay region of the buffer.
+ *  If ([lines] > 0), returns the number of bytes comprising the line count
+ *    specified by [lines], or 0 if this number is not found (ie, all or none).
+ *  If ([lines] == -1), returns the number of bytes comprising the maximum line
+ *    count contained within the number of characters specified by [chars].
+ *  Only complete lines (ie, those terminated by a newline) are counted,
+ *    with once exception: the most recent line of replay data is treated
+ *    as a complete line regardless of the presence of a terminating newline.
+ *  Sets [nl] to '1' if a newline is required to terminate the replay data.
  */
-    int i, n;
-    unsigned char c;
+    int i, n, m;
 
     assert(cb != NULL);
+    assert(lines >= -1);
+    assert(nl != NULL);
     assert(cbuf_mutex_is_locked(cb));
 
+    *nl = 0;                            /* init in case of early return() */
+
+    if ((lines == 0) || ((lines <= -1) && (chars <= 0))) {
+        return(0);
+    }
+    if (lines > 0) {
+        chars = -1;                     /* chars parm not used if lines > 0 */
+    }
+    else {
+        ++chars;                        /* incr to allow for i's current \n */
+    }
+    /*  Since the most recent line of replay data is considered implicitly
+     *    terminated, decrement the char count to account for the newline
+     *    if one is not present, or increment the line count if one is.
+     */
+    if (cb->data[(cb->i_out + cb->size) % (cb->size + 1)] != '\n') {
+        *nl = 1;
+        --chars;
+    }
+    else if (lines > 0) {
+        ++lines;
+    }
+    n = m = 0;
     i = cb->i_out;
-    n = 1;
+    while (i != cb->i_rep) {
+        i = (i + cb->size) % (cb->size + 1); /* (i - 1 + (S+1)) % (S+1) */
+        ++n;
+        if (chars > 0) {
+            --chars;
+        }
+        if (cb->data[i] == '\n') {
+            if (lines > 0) {
+                --lines;
+            }
+            m = n - 1;                  /* do not include i's current \n */
+        }
+        if ((chars == 0) || (lines == 0)) {
+            break;
+        }
+    }
+    if (lines > 0) {
+        return(0);                      /* all or none, and not enough found */
+    }
+    return(m);
+}
+
+
+static int
+cbuf_find_unread_line (cbuf_t cb, int chars, int lines)
+{
+/*  Finds the specified number of lines from the unread region of the buffer.
+ *  If ([lines] > 0), returns the number of bytes comprising the line count
+ *    specified by [lines], or 0 if this number is not found (ie, all or none).
+ *  If ([lines] == -1), returns the number of bytes comprising the maximum line
+ *    count contained within the number of characters specified by [chars].
+ *  Only complete lines (ie, those terminated by a newline) are counted.
+ */
+    int i, n, m;
+
+    assert(cb != NULL);
+    assert(lines >= -1);
+    assert(cbuf_mutex_is_locked(cb));
+
+    if ((lines == 0) || ((lines <= -1) && (chars <= 0))) {
+        return(0);
+    }
+    if (lines > 0) {
+        chars = -1;                     /* chars parm not used if lines > 0 */
+    }
+    n = m = 0;
+    i = cb->i_out;
     while (i != cb->i_in) {
-        c = cb->data[i];
-        if ((c == '\n') || (c == '\0')) {
-            assert(n <= cb->used);
-            return(n);
+        ++n;
+        if (chars > 0) {
+            --chars;
+        }
+        if (cb->data[i] == '\n') {
+            if (lines > 0) {
+                --lines;
+            }
+            m = n;
+        }
+        if ((chars == 0) || (lines == 0)) {
+            break;
         }
         i = (i + 1) % (cb->size + 1);
-        n++;
     }
-    return(0);
+    if (lines > 0) {
+        return(0);                      /* all or none, and not enough found */
+    }
+    return(m);
 }
 
 
@@ -851,7 +1098,7 @@ cbuf_get_fd (void *dstbuf, int *psrcfd, int len)
 {
 /*  Copies data from the file referenced by the file descriptor
  *    pointed at by [psrcfd] into cbuf's [dstbuf].
- *  Returns the number of bytes read from the fd, 0 on EOF, or <0 on error.
+ *  Returns the number of bytes read from the fd, 0 on EOF, or -1 on error.
  */
     int n;
 
@@ -889,7 +1136,7 @@ cbuf_put_fd (void *srcbuf, int *pdstfd, int len)
 {
 /*  Copies data from cbuf's [srcbuf] into the file referenced
  *    by the file descriptor pointed at by [pdstfd].
- *  Returns the number of bytes written to the fd, or <0 on error.
+ *  Returns the number of bytes written to the fd, or -1 on error.
  */
     int n;
 
@@ -926,11 +1173,10 @@ static int
 cbuf_copier (cbuf_t src, cbuf_t dst, int len, int *ndropped)
 {
 /*  Copies up to [len] bytes from the [src] cbuf into the [dst] cbuf.
- *  Returns the number of bytes copied.  Sets [ndropped] (if not NULL)
- *    to the number of [dst] bytes overwritten.
+ *  Returns the number of bytes copied, or -1 on error (with errno set).
+ *  Sets [ndropped] (if not NULL) to the number of [dst] bytes overwritten.
  */
-    int nfree;
-    int n, m;
+    int ncopy, nfree, nleft, nrepl, n;
     int i_src, i_dst;
 
     assert(src != NULL);
@@ -939,34 +1185,69 @@ cbuf_copier (cbuf_t src, cbuf_t dst, int len, int *ndropped)
     assert(cbuf_mutex_is_locked(src));
     assert(cbuf_mutex_is_locked(dst));
 
+    /*  Bound len by the number of bytes available.
+     */
     len = MIN(len, src->used);
-    /*
-     *  Attempt to grow dst cbuf if necessary.
+    if (len == 0) {
+        return(0);
+    }
+    /*  Attempt to grow dst cbuf if necessary.
      */
     nfree = dst->size - dst->used;
     if ((len > nfree) && (dst->size < dst->maxsize)) {
         nfree += cbuf_grow(dst, len - nfree);
     }
-    n = len = MIN(len, dst->size);
+    /*  Compute number of bytes to effectively copy to dst cbuf.
+     */
+    if (dst->overwrite == CBUF_NO_DROP) {
+        len = MIN(len, dst->size - dst->used);
+        if (len == 0) {
+            errno = ENOSPC;
+            return(-1);
+        }
+    }
+    else if (dst->overwrite == CBUF_WRAP_ONCE) {
+        len = MIN(len, dst->size);
+    }
+    /*  Compute number of bytes that will be overwritten in dst cbuf.
+     */
     if (ndropped) {
         *ndropped = MAX(0, len - dst->size + dst->used);
     }
+    /*  Compute number of bytes to physically copy to dst cbuf.  This prevents
+     *    copying data that will overwritten if the cbuf wraps multiple times.
+     */
+    ncopy = len;
     i_src = src->i_out;
     i_dst = dst->i_in;
-    while (n > 0) {
-        m = MIN(((src->size + 1) - i_src), ((dst->size + 1) - i_dst));
-        m = MIN(m, n);
-        memcpy(&dst->data[i_dst], &src->data[i_src], m);
-        i_src = (i_src + m) % (src->size + 1);
-        i_dst = (i_dst + m) % (dst->size + 1);
-        n -= m;
+    if (ncopy > dst->size) {
+        n = ncopy - dst->size;
+        i_src = (i_src + n) % (src->size + 1);
+        ncopy -= n;
     }
-    if (len > 0) {
-        dst->i_in = (dst->i_in + len) % (dst->size + 1);
-        dst->used += len;
-        if (dst->used > dst->size) {
-            dst->used = dst->size;
-            dst->i_out = (dst->i_in + 1) % (dst->size + 1);
+    /*  Copy data from src cbuf to dst cbuf.
+     */
+    nleft = ncopy;
+    while (nleft > 0) {
+        n = MIN(((src->size + 1) - i_src), ((dst->size + 1) - i_dst));
+        n = MIN(n, nleft);
+        memcpy(&dst->data[i_dst], &src->data[i_src], n);
+        i_src = (i_src + n) % (src->size + 1);
+        i_dst = (i_dst + n) % (dst->size + 1);
+        nleft -= n;
+    }
+    /*  Update dst cbuf metadata.
+     */
+    if (ncopy > 0) {
+        nrepl = (dst->i_out - dst->i_rep + (dst->size + 1)) % (dst->size + 1);
+        dst->used = MIN(dst->used + ncopy, dst->size);
+        assert(i_dst == (dst->i_in + ncopy) % (dst->size + 1));
+        dst->i_in = i_dst;
+        if (ncopy > nfree - nrepl) {
+            dst->i_rep = (dst->i_in + 1) % (dst->size + 1);
+        }
+        if (ncopy > nfree) {
+            dst->i_out = dst->i_rep;
         }
     }
     return(len);
@@ -1000,139 +1281,201 @@ cbuf_dropper (cbuf_t cb, int len)
 
 
 static int
-cbuf_reader (cbuf_t cb, int len, cbuf_iof putf, void *dst)
+cbuf_reader (cbuf_t src, int len, cbuf_iof putf, void *dst)
 {
-/*  XXX: DOCUMENT ME.
+/*  Reads up to [len] bytes from [src] into the object pointed at by [dst].
+ *    The I/O function [putf] specifies how data is written into [dst].
+ *  Returns the number of bytes read, or -1 on error (with errno set).
+ *  Note that [dst] is a value-result parameter and will be "moved forward"
+ *    by the number of bytes written into it.
  */
-    int nget, ngot;
-    int shortput;
-    int n, m;
+    int nleft, n, m;
+    int i_src;
 
-    assert(cb != NULL);
+    assert(src != NULL);
     assert(len > 0);
     assert(putf != NULL);
     assert(dst != NULL);
-    assert(cbuf_mutex_is_locked(cb));
+    assert(cbuf_mutex_is_locked(src));
 
-    nget = MIN(len, cb->used);
-    ngot = 0;
-    shortput = 0;
-
-    n = MIN(nget, (cb->size + 1) - cb->i_out);
-    if (n > 0) {
-        m = putf(&cb->data[cb->i_out], dst, n);
-        if (m <= 0) {
-            return(m);
-        }
-        if (m != n) {
-            shortput = 1;
-        }
-        ngot += m;
-    }
-
-    n = nget - ngot;
-    if ((n > 0) && (!shortput)) {
-        m = putf(&cb->data[0], dst, n);
-        if (m > 0) {
-            ngot += m;
-        }
-    }
-    return(ngot);
-}
-
-
-static int
-cbuf_replayer (cbuf_t cb, int len, cbuf_iof putf, void *dst)
-{
-/*  XXX: DOCUMENT ME.
- */
-    assert(cb != NULL);
-    assert(len > 0);
-    assert(putf != NULL);
-    assert(dst != NULL);
-    assert(cbuf_mutex_is_locked(cb));
-
-    /*  FIXME: NOT IMPLEMENTED.
+    /*  Bound len by the number of bytes available.
      */
-    errno = ENOSYS;
-    return(-1);
+    len = MIN(len, src->used);
+    if (len == 0) {
+        return(0);
+    }
+    /*  Copy data from src cbuf to dst obj.  Do the cbuf hokey-pokey and
+     *    wrap-around the buffer at most once.  Break out if putf() returns
+     *    either an ERR or a short count.
+     */
+    i_src = src->i_out;
+    nleft = len;
+    m = 0;
+    while (nleft > 0) {
+        n = MIN(nleft, (src->size + 1) - i_src);
+        m = putf(&src->data[i_src], dst, n);
+        if (m > 0) {
+            nleft -= m;
+            i_src = (i_src + m) % (src->size + 1);
+        }
+        if (n != m) {
+            break;                      /* got ERR or "short" putf() */
+        }
+    }
+    /*  Compute number of bytes written to dst obj.
+     */
+    n = len - nleft;
+    assert((n >= 0) && (n <= len));
+    /*
+     *  If no data has been written, return the ERR reported by putf().
+     */
+    if (n == 0) {
+        return(m);
+    }
+    return(n);
 }
 
 
 static int
-cbuf_writer (cbuf_t cb, int len, cbuf_iof getf, void *src, int *ndropped)
+cbuf_replayer (cbuf_t src, int len, cbuf_iof putf, void *dst)
 {
-/*  XXX: DOCUMENT ME.
+/*  Replays up to [len] bytes from [src] into the object pointed at by [dst].
+ *    The I/O function [putf] specifies how data is written into [dst].
+ *  Returns the number of bytes replayed, or -1 on error (with errno set).
+ *  Note that [dst] is a value-result parameter and will be "moved forward"
+ *    by the number of bytes written into it.
  */
-    int nget, ngot, nfree;
-    int shortget;
-    int n, m;
+    int nleft, n, m;
+    int i_src;
 
-    assert(cb != NULL);
+    assert(src != NULL);
+    assert(len > 0);
+    assert(putf != NULL);
+    assert(dst != NULL);
+    assert(cbuf_mutex_is_locked(src));
+
+    /*  Bound len by the number of bytes available.
+     */
+    n = (src->i_out - src->i_rep + (src->size + 1)) % (src->size + 1);
+    len = MIN(len, n);
+    if (len == 0) {
+        return(0);
+    }
+    /*  Copy data from src cbuf to dst obj.  Do the cbuf hokey-pokey and
+     *    wrap-around the buffer at most once.  Break out if putf() returns
+     *    either an ERR or a short count.
+     */
+    i_src = (src->i_out - len + (src->size + 1)) % (src->size + 1);
+    nleft = len;
+    m = 0;
+    while (nleft > 0) {
+        n = MIN(nleft, (src->size + 1) - i_src);
+        m = putf(&src->data[i_src], dst, n);
+        if (m > 0) {
+            nleft -= m;
+            i_src = (i_src + m) % (src->size + 1);
+        }
+        if (n != m) {
+            break;                      /* got ERR or "short" putf() */
+        }
+    }
+    /*  Compute number of bytes written to dst obj.
+     */
+    n = len - nleft;
+    assert((n >= 0) && (n <= len));
+    /*
+     *  If no data has been written, return the ERR reported by putf().
+     */
+    if (n == 0) {
+        return(m);
+    }
+    return(n);
+}
+
+
+static int
+cbuf_writer (cbuf_t dst, int len, cbuf_iof getf, void *src, int *ndropped)
+{
+/*  Writes up to [len] bytes from the object pointed at by [src] into [dst].
+ *    The I/O function [getf] specifies how data is read from [src].
+ *  Returns the number of bytes written, or -1 on error (with errno set).
+ *  Sets [ndropped] (if not NULL) to the number of [dst] bytes overwritten.
+ *  Note that [src] is a value-result parameter and will be "moved forward"
+ *    by the number of bytes read from it.
+ */
+    int nfree, nleft, nrepl, n, m;
+    int i_dst;
+
+    assert(dst != NULL);
     assert(len > 0);
     assert(getf != NULL);
     assert(src != NULL);
-    assert(cbuf_mutex_is_locked(cb));
+    assert(cbuf_mutex_is_locked(dst));
 
     /*  Attempt to grow dst cbuf if necessary.
      */
-    nfree = cb->size - cb->used;
-    if ((len > nfree) && (cb->size < cb->maxsize)) {
-        nfree += cbuf_grow(cb, len - nfree);
+    nfree = dst->size - dst->used;
+    if ((len > nfree) && (dst->size < dst->maxsize)) {
+        nfree += cbuf_grow(dst, len - nfree);
     }
-    /*  Compute total number of bytes to attempt to write into buffer.
+    /*  Compute number of bytes to write to dst cbuf.
      */
-    nget = MIN(len, cb->size);
-    ngot = 0;
-    shortget = 0;
-
-    if (ndropped) {
-        *ndropped = 0;
-    }
-    /*  Copy first chunk of data (ie, up to the end of the buffer).
-     */
-    n = MIN(nget, (cb->size + 1) - cb->i_in);
-    if (n > 0) {
-        m = getf(&cb->data[cb->i_in], src, n);
-        if (m <= 0) {
-            return(m);                  /* got ERR or EOF */
+    if (dst->overwrite == CBUF_NO_DROP) {
+        len = MIN(len, dst->size - dst->used);
+        if (len == 0) {
+            errno = ENOSPC;
+            return(-1);
         }
-        if (m != n) {
-            shortget = 1;
-        }
-        cb->i_in += m;
-        cb->i_in %= (cb->size + 1);     /* the hokey-pokey cbuf wrap-around */
-        ngot += m;
     }
-
-    /*  Copy second chunk of data (ie, from the beginning of the buffer).
-     *  If the first getf() was short, the second getf() is not attempted.
-     *  If the second getf() returns EOF/ERR, it will be masked by the success
-     *    of the first getf().  This only occurs with get_fd, and the EOF/ERR
-     *    condition should be returned on the next invocation.
+    else if (dst->overwrite == CBUF_WRAP_ONCE) {
+        len = MIN(len, dst->size);
+    }
+    /*  Copy data from src obj to dst cbuf.  Do the cbuf hokey-pokey and
+     *    wrap-around the buffer as needed.  Break out if getf() returns
+     *    either an EOF/ERR or a short count.
      */
-    n = nget - ngot;
-    if ((n > 0) && (!shortget)) {
-        m = getf(&cb->data[0], src, n);
+    i_dst = dst->i_in;
+    nleft = len;
+    m = 0;
+    while (nleft > 0) {
+        n = MIN(nleft, (dst->size + 1) - i_dst);
+        m = getf(&dst->data[i_dst], src, n);
         if (m > 0) {
-            cb->i_in += m;              /* hokey-pokey not needed here */
-            ngot += m;
+            nleft -= m;
+            i_dst = (i_dst + m) % (dst->size + 1);
+        }
+        if (n != m) {
+            break;                      /* got EOF/ERR or "short" getf() */
         }
     }
-    /*  Check to see if any data in the circular-buffer was overwritten.
+    /*  Compute number of bytes written to dst cbuf.
      */
-    if (ngot > 0) {
-        cb->used += ngot;
-        if (cb->used > cb->size) {
-            cb->used = cb->size;
-            cb->i_out = (cb->i_in + 1) % (cb->size + 1);
+    n = len - nleft;
+    assert((n >= 0) && (n <= len));
+    /*
+     *  If no data has been written, return the EOF/ERR reported by getf().
+     */
+    if (n == 0) {
+        return(m);
+    }
+    /*  Update dst cbuf metadata.
+     */
+    if (n > 0) {
+        nrepl = (dst->i_out - dst->i_rep + (dst->size + 1)) % (dst->size + 1);
+        dst->used = MIN(dst->used + n, dst->size);
+        assert(i_dst == (dst->i_in + n) % (dst->size + 1));
+        dst->i_in = i_dst;
+        if (n > nfree - nrepl) {
+            dst->i_rep = (dst->i_in + 1) % (dst->size + 1);
+        }
+        if (n > nfree) {
+            dst->i_out = dst->i_rep;
         }
     }
-
     if (ndropped) {
-        *ndropped = MAX(0, ngot - nfree);
+        *ndropped = MAX(0, n - nfree);
     }
-    return(ngot);
+    return(n);
 }
 
 
@@ -1143,10 +1486,9 @@ cbuf_grow (cbuf_t cb, int n)
  *  Returns the number of bytes by which the buffer has grown (which may be
  *    less-than, equal-to, or greater-than the number of bytes requested).
  */
-    unsigned char *data;                /* tmp ptr to data buffer */
-    int size_old;                       /* size of buffer upon func entry */
-    int size_meta;                      /* size of sentinel & magic cookies */
-    int m;                              /* num bytes to realloc */
+    unsigned char *data;
+    int size_old, size_meta;
+    int m;
 
     assert(cb != NULL);
     assert(n > 0);
@@ -1156,7 +1498,7 @@ cbuf_grow (cbuf_t cb, int n)
         return(0);
     }
     size_old = cb->size;
-    size_meta = cb->alloc - cb->size;
+    size_meta = cb->alloc - cb->size;   /* size of sentinel & magic cookies */
     assert(size_meta > 0);
 
     /*  Attempt to grow data buffer by multiples of the chunk-size.
@@ -1173,11 +1515,10 @@ cbuf_grow (cbuf_t cb, int n)
 
     if (!(data = realloc(data, m))) {
         /*
-         *  XXX: Set flag to prevent regrowing when out of memory?
+         *  XXX: Set flag or somesuch to prevent regrowing when out of memory?
          */
         return(0);                      /* unable to grow data buffer */
     }
-
     cb->data = data;
     cb->alloc = m;
     cb->size = m - size_meta;
@@ -1192,19 +1533,22 @@ cbuf_grow (cbuf_t cb, int n)
     memcpy(cb->data + cb->size + 1, (void *) &cb->magic, CBUF_MAGIC_LEN);
 #endif /* !NDEBUG */
 
-    /*  If unread data wrapped-around the old buffer, move the first chunk
-     *    to the new end of the buffer so it wraps-around in the same manner.
-     *
-     *  XXX: What does this do to the replay buffer?
-     *       Replay data should be shifted as well.
+    /*  The memory containing replay and unread data must be contiguous modulo
+     *    the buffer size.  Additional memory must be inserted between where
+     *    new data is written in (i_in) and where replay data starts (i_rep).
+     *  If replay data wraps-around the old buffer, move it to the new end
+     *    of the buffer so it wraps-around in the same manner.
      */
-    if (cb->i_out > cb->i_in) {
-        n = (size_old + 1) - cb->i_out;
+    if (cb->i_rep > cb->i_in) {
+        n = (size_old + 1) - cb->i_rep;
         m = (cb->size + 1) - n;
-        memmove(cb->data + m, cb->data + cb->i_out, n);
-        cb->i_out = m;
-    }
+        memmove(cb->data + m, cb->data + cb->i_rep, n);
 
+        if (cb->i_out >= cb->i_rep) {
+            cb->i_out += m - cb->i_rep;
+        }
+        cb->i_rep = m;
+    }
     assert(cbuf_is_valid(cb));
     return(cb->size - size_old);
 }
@@ -1279,20 +1623,23 @@ cbuf_is_valid (cbuf_t cb)
     assert(cb->maxsize > 0);
     assert(cb->used >= 0);
     assert(cb->used <= cb->size);
+    assert(cb->overwrite == CBUF_NO_DROP
+        || cb->overwrite == CBUF_WRAP_ONCE
+        || cb->overwrite == CBUF_WRAP_MANY);
     assert(cb->i_in >= 0);
     assert(cb->i_in <= cb->size);
     assert(cb->i_out >= 0);
     assert(cb->i_out <= cb->size);
+    assert(cb->i_rep >= 0);
+    assert(cb->i_rep <= cb->size);
 
-    if (cb->i_in == cb->i_out) {
-        nfree = cb->size;
+    if (cb->i_in >= cb->i_out) {
+        assert((cb->i_rep > cb->i_in) || (cb->i_rep <= cb->i_out));
     }
-    else if (cb->i_in < cb->i_out) {
-        nfree = (cb->i_out - cb->i_in) - 1;
+    else /* if (cb->in < cb->i_out) */ {
+        assert((cb->i_rep > cb->i_in) && (cb->i_rep <= cb->i_out));
     }
-    else {
-        nfree = ((cb->size + 1) - cb->i_in) + cb->i_out - 1;
-    }
+    nfree = (cb->i_out - cb->i_in - 1 + (cb->size + 1)) % (cb->size + 1);
     assert(cb->size - cb->used == nfree);
 
     return(1);
