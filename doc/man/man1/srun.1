@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "November 2002" "srun 0.1" "slurm components"
+.TH SRUN "1" "December 2002" "srun 0.1" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -97,12 +97,12 @@ Specify an alternate distribution method for remote processes.
 .TP
 .B block
 The block method of distribution will allocate processes in-order to
-the cpus on a node. This is the default behavior.
+the cpus on a node. 
 .TP
 .B cyclic
 The cyclic method distributes processes in a round-robin fashion across
 the allocated nodes. That is, process 1 will be allocated to the first
-node, process 2 to the second, and so on.
+node, process 2 to the second, and so on. This is the default behavior.
 .RE
 .TP
 \fB\-J\fR, \fB\-\-job\-name\fR=\fIjobname\fR
@@ -370,6 +370,9 @@ SLURM_NNODES
 .TP
 SLURM_NPROCS
 \fB\-n, \-\-nprocs\fR=\fIn\fR
+.TP
+SLURM_OVERCOMMIT
+\fB\-o, \-\-overcommit\fR
 .TP
 SLURM_PARTITION
 \fB\-p, --partition\fR=\fIpartition\fR

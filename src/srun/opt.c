@@ -89,6 +89,7 @@
 #define OPT_TIME        0x17
 #define OPT_THREADS     0x18
 #define OPT_WAIT	0x19
+#define OPT_OVERCOMMIT	0x1a
 
 /* constraint type options */
 #define OPT_MINCPUS     0x50
@@ -262,6 +263,7 @@ env_vars_t env_vars[] = {
 	{"SLURM_NPROCS", OPT_INT, &opt.nprocs, &opt.nprocs_set},
 	{"SLURM_CPUS_PER_TASK", OPT_INT, &opt.cpus_per_task, &opt.cpus_set},
 	{"SLURM_NNODES", OPT_INT, &opt.nodes, &opt.nodes_set},
+	{"SLURM_OVERCOMMIT", OPT_OVERCOMMIT, NULL, NULL},
 	{"SLURM_PARTITION", OPT_STRING, &opt.partition, NULL},
 	{"SLURM_STDINMODE", OPT_INPUT, &opt.input, NULL},
 	{"SLURM_STDOUTMODE", OPT_OUTPUT, &opt.output, NULL},
@@ -660,6 +662,10 @@ static void _opt_env()
 						opt.distribution = dt;
 
 				}
+				break;
+
+			case OPT_OVERCOMMIT:
+				opt.overcommit = true;
 				break;
 
 			default:
