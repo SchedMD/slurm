@@ -8,9 +8,11 @@ int main ( int argc , char* argv[] )
 	slurm_addr      io_pipe_addrs[2] ;
 	slurm_addr      slurmd_addr ;
 	int             gids[1] ;
+	slurm_job_credential_t credential ;
+	
+	credential . node_list = "TESTING" ;
 	gids[1] = 9999 ;
-
-	slurm_set_addr_char ( & slurmd_addr , 7003 , "localhost" ) ;
+	slurm_set_addr_char ( & slurmd_addr , 7002 , "localhost" ) ;
 	request_msg . msg_type = REQUEST_LAUNCH_TASKS ;
 	request_msg . data = & launch_tasks_msg ;
 	request_msg . address = slurmd_addr ;
@@ -19,8 +21,8 @@ int main ( int argc , char* argv[] )
 	slurm_set_addr_char ( io_pipe_addrs + 1 , 7072 , "localhost" ) ;
 	launch_tasks_msg . job_id = 1000 ;
 	launch_tasks_msg . job_step_id = 2000 ;
-	launch_tasks_msg . uid = 8737 ;
-	launch_tasks_msg . credentials = NULL ;
+	launch_tasks_msg . uid = 8207 ;
+	launch_tasks_msg . credentials = & credential ;
 	launch_tasks_msg . tasks_to_launch = 1 ;
 	launch_tasks_msg . envc = 0 ;
 	launch_tasks_msg . env = NULL ;
