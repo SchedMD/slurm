@@ -23,7 +23,8 @@
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
-main (int argc, char *argv[]) {
+main (int argc, char *argv[])
+{
 	int error_code;
 	char *node_list, *job_id;
 
