@@ -41,9 +41,9 @@ TO TEST:
   Initiate "slurmd" on each compute server (it needs to run as root for 
      production, but can run as a normal user for testing - it will report 
      errors on the initgroups, seteuid, and setegid functions if not run 
-     as root, but if everything is run as the same user that's OK). For 
-     testing purposes you probably want to use several options: "-D" 
-     keep in foreground, "-c" clear state from previous executions, 
+     as root, but if everything is run as the same user most functionality
+     is OK). For testing purposes you probably want to use several options: 
+     "-D" keep in foreground, "-c" clear state from previous executions, 
      and possibly "-v" for verbose messages (more v's for more verbosity). 
      For example "slurmd -D -c -vvvvv". If using pdsh (parallel distributed 
      shell) to initiate slurmd on every node, the execute line would be 
