@@ -779,7 +779,7 @@ extern int read_bgl_conf(void)
 	if (!bluegene_ramdisk)
 		fatal("RamDiskImage not configured in bluegene.conf");
 	if (!change_numpsets)
-		fatal("change_numpsets not configured in bluegene.conf");
+		info("Warning: ChangeNumpsets not configured in bluegene.conf");
 
 	/* Check to see if the configs we have are correct */
 	if (!_validate_config_nodes()) { 
