@@ -1,4 +1,4 @@
-.TH SINFO "1" "March 2003" "sinfo 0.1" "Slurm components"
+.TH SINFO "1" "April 2003" "sinfo 0.1" "Slurm components"
 
 .SH "NAME"
 sinfo \- Used to view information of jobs located in the scheduling queue.
@@ -53,7 +53,12 @@ For example "linux[00-07]" would indicate eight nodes, "linux00" through "linux0
 The names of one or more comma separated partitions.
 .TP
 \fBstate\fR
-A valid node state. Possible values include: DOWN, UNKNOWN, IDLE, ALLOCATED, DRAINED, and DRAINING.
+A valid node state. Possible values include: ALLOC, ALLOCATED, COMP, 
+COMPLETING, DOWN, DRAIN, DRAINED, DRAINING, IDLE, UNK, and UNKNOWN.
+A "*" suffix may be appended to any of these states to search for 
+nodes in the specified state which are not responding. 
+By default nodes in the specified state are reported whether they are 
+responding or not.
 .TP
 \fBtime\fR
 Number of seconds to wait between each iteration.
@@ -86,17 +91,17 @@ Report basic system configuration:
 .br
 # ./sinfo
 .br
-PARTITION   NODES  STATE      CPUS      MEM     DISK  NODES
+PARTITION   NODES  STATE  CPUS MEMORY TMP_DISK  NODES
 .br
------------------------------------------------------------------
+----------------------------------------------------------
 .br
-debug          18  IDLE          2      128      512  dev[1-18]
+debug          18  IDLE      2    128      512  dev[1-18]
 .br
-debug           2  DRAINED       2      128      512  dev[19-20]
+debug           2  DRAIN     2    128      512  dev[19-20]
 .br
-pbatch         60  ALLOCATED     2      128      512  dev[21-80]
+pbatch         60  ALLOC     2    128      512  dev[21-80]
 .br
-pbatch         19  IDLE          2      128      512  dev[81-99]
+pbatch         19  IDLE      2    128      512  dev[81-99]
 .br
  
 .br
@@ -106,7 +111,7 @@ Report more complete information about the partition debug:
 .br
 PARTITION INFORMATION
 .br
-=================================================================
+============================================================
 .br
 debug
 .br
@@ -128,17 +133,17 @@ debug
 .br
 
 .br
-        NODES  STATE      CPUS      MEM     DISK  NODES
+        NODES  STATE  CPUS MEMORY TMP_DISK  NODES
 .br
-        -----------------------------------------------------------
+        ----------------------------------------------------
 .br
-           18  IDLE          2      128      512  dev[1-18]
+           18  IDLE      2    128      512  dev[1-18]
 .br
-            2  DRAINED       2      128      512  dev[19-20]
+            2  DRAIN     2    128      512  dev[19-20]
 .br
 
 .br
-=================================================================
+===========================================================+=
 .br
  
 .br
@@ -146,11 +151,11 @@ Report only those nodes that are in state DRAINED:
 .br
 # ./sinfo --state DRAINED
 .br
-PARTITION   NODES  STATE      CPUS      MEM     DISK  NODES
+PARTITION   NODES  STATE  CPUS  MEMORY TMP_DISK  NODES
 .br
------------------------------------------------------------------
+-----------------------------------------------------------
 .br
-debug           2  DRAINED       2      128      512  dev[19-20]
+debug           2  DRAIN     2     128      512  dev[19-20]
 .ec
 
 .SH "COPYING"
