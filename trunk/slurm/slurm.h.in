@@ -54,7 +54,7 @@
 #endif
 
 /* Define to 1 if you have the `elan3' library (-lelan3). */
-#undef HAVE_LIBELAN3
+#undef HAVE_ELAN
 
 /* Define to 1 if you have the <sys/socket.h> header file. */
 #undef HAVE_SYS_SOCKET_H
@@ -82,7 +82,7 @@ BEGIN_C_DECLS
 #endif
 
 /* Define qsw_jobinfo_t below to avoid including extraneous slurm headers */
-#ifdef	HAVE_LIBELAN3
+#ifdef	HAVE_ELAN
 #  ifndef __qsw_jobinfo_t_defined
 #    define  __qsw_jobinfo_t_defined
      typedef struct qsw_jobinfo *qsw_jobinfo_t;	/* opaque data type */
@@ -253,7 +253,7 @@ typedef struct job_step_create_response_msg {
 	uint32_t job_step_id;	/* assigned job step id */
 	char *node_list;	/* list of allocated nodes */
 	slurm_cred_t cred;      /* slurm job credential */
-#ifdef	HAVE_LIBELAN3
+#ifdef	HAVE_ELAN
 	qsw_jobinfo_t qsw_job;	/* Elan3 switch context, opaque data structure */
 #endif
 } job_step_create_response_msg_t;
@@ -340,7 +340,7 @@ typedef struct resource_allocation_and_run_response_msg {
 
 	uint32_t job_step_id;	/* assigned step id */
 	slurm_cred_t cred;      /* slurm job credential */
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	qsw_jobinfo_t qsw_job;	/* Elan3 switch context, opaque data type */
 #endif
 } resource_allocation_and_run_response_msg_t;
