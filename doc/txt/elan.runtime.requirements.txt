@@ -109,8 +109,6 @@ cap.Bitmap	The bitmap includes a bit for each possible process in the
 		the BT_SET macro is used to set the bits in the bitmap.
 		If a node in the LowNode - HighNode range is not allocated to
 		the program, its bits are clear.  
-		(XXX - while experimentally verified for block allocation,
-		this needs to be checked for cyclic allocation).
 
 The capability and the program description are passed to each node running
 the parallel program in such a way as to avoid exposing the UserKey to 
@@ -142,14 +140,15 @@ RMS_NODEID	Set to the node ID for this node, indexed relative to the
 		program , e.g. an eight node program would run on nodes 0 
 		through 7 regardless of the Elan ID of the nodes and whether 
 		or not they are contiguous. 
-		(XXX verify this bit about contiguous nodes)
 
 RMS_PROCID	Set to the process ID of this process, indexed relative 
 		to the program, e.g. a 16 process program would consist of
-		processes 0 through 15.
+		processes 0 through 15.  (If running two tasks per node
+		under block allocation, processes 0 and 1 would be allocated 
+		to node 0; if cyclic allocation, processes 0 and 8 would be
+		allocated to node 0).
 
-RMS_RANK	Set to the MPI rank for the process.  Same as RMS_PROCID
-		under block allocation.
+RMS_RANK	Set to the MPI rank for the process.  Same as RMS_PROCID.
 
 Finally, the process forks once more, and the parent waits for the child,
 while the child execs the MPI process.  
@@ -181,10 +180,9 @@ until we have test hardware, I suggest we leave it.  Infrastructure should
 be designed so it is possible to send >1 capability per program to nodes 
 running multirail.
 
-Pdsh 1.5+/qshell implements the above runtime for single rail, block allocation
-as a test.  Need to implement cyclic allocation to validate assumptions stated
-in this document.  Also, need to test with more complex applications than
-"mping".  See pdsh/qswutil.c for details.
+Pdsh 1.5+/qshell implements the above runtime for single rail as a test.
+as a test.  (XXX Need to test with more complex applications than "mping".  
+See pdsh/qswutil.c for details).
 
 How does execution of TotalView impact this design?
 
