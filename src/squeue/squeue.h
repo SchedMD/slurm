@@ -64,9 +64,9 @@ typedef struct job_step squeue_job_step_t;
 struct squeue_parameters {
 	bool job_flag;
 	bool step_flag;
-	bool iterate;
 	bool long_list;
 	bool no_header;
+	int  iterate;
 	int  max_procs;
 	int  verbose;
 
