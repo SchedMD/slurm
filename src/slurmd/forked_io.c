@@ -36,6 +36,7 @@
  ******************************************************************/			
 int forward_io ( task_start_t * task_start ) 
 {
+	pid_t cpid ;
 
 #define FORK_ERROR -1
 
@@ -46,48 +47,48 @@ int forward_io ( task_start_t * task_start )
 	/* open stderr*/
 	connect_io_stream ( task_start , SIG_STDERR_SOCK ) ;
 
-	task_start->io_pthread_id[STDIN_FILENO]	= fork () ;
-	switch ( task_start->io_pthread_id[STDIN_FILENO] )
+	switch ( ( cpid = fork () ) )
 	{
 		case FORK_ERROR :
 			goto return_label;
 			break;
 		case 0 :
+			task_start->io_pthread_id[STDIN_FILENO]	= cpid ;
 			break;
 		default :
 			stdin_io_pipe_thread ( task_start ) ;
 			_exit( 0 ) ;
 			break ;
 	}
-	
-	task_start->io_pthread_id[STDOUT_FILENO] = fork () ;
-	switch ( task_start->io_pthread_id[STDOUT_FILENO] )
+
+	switch ( ( cpid = fork () ) )
 	{
 		case FORK_ERROR :
 			goto kill_stdin_thread;
 			break;
 		case 0 :
+			task_start->io_pthread_id[STDOUT_FILENO] = cpid ;
 			break;
 		default :
 			stdout_io_pipe_thread ( task_start ) ;
 			_exit( 0 ) ;
 			break ;
 	}
-	
-	task_start->io_pthread_id[STDERR_FILENO] = fork () ;
-	switch ( task_start->io_pthread_id[STDERR_FILENO] )
+
+	switch ( ( cpid = fork ( ) ) )  
 	{
 		case FORK_ERROR :
 			goto kill_stdout_thread;
 			break;
 		case 0 :
+			task_start->io_pthread_id[STDERR_FILENO] = cpid ;
 			break;
 		default :
 			stderr_io_pipe_thread ( task_start ) ;
 			_exit( 0 ) ;
 			break ;
 	}
-	
+
 	goto return_label;
 
 	kill_stdout_thread:
