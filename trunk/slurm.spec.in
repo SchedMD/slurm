@@ -38,6 +38,11 @@ Summary: Development package for SLURM.
 Group: Development/System
 Requires: slurm
 
+%package auth-none
+Summary: SLURM auth NULL implementation (no authentication)
+Group: System Environment/Base
+Requires: slurm
+
 %package auth-authd
 Summary: SLURM auth implementation using Brent Chun's authd
 Group: System Environment/Base
@@ -67,6 +72,9 @@ partition management, job management, and scheduling modules.
 %description devel
 Development package for SLURM.  This package includes the header files
 and static libraries for the SLURM API.
+
+%description auth-none
+SLURM NULL authentication module
 
 %description auth-authd
 SLURM authentication module for Brent Chun's authd
@@ -136,7 +144,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/*
 %dir /etc/slurm
 %dir %{_libdir}/slurm
-%{_libdir}/slurm/auth_none.so
 %{_libdir}/slurm/jobcomp_none.so
 %{_libdir}/slurm/jobcomp_filetxt.so
 %{_libdir}/slurm/sched_backfill.so
@@ -153,6 +160,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libslurm.a
 %{_libdir}/libslurm.la
 %{_mandir}/man3/*
+#############################################################################
+
+#%if %(test -f %{_libdir}/slurm/auth_none.so && echo 1 || echo 0)
+%files auth-none
+%defattr(-,root,root)
+%{_libdir}/slurm/auth_none.so
+#%endif
 #############################################################################
 
 %if %(test -f %{_libdir}/slurm/auth_munge.so && echo 1 || echo 0)
@@ -219,7 +233,6 @@ fi
 %changelog
 * Tue Jan 27 2004 Moe Jette <jette@llnl.gov>
 - package slurm switch plugins - none and elan
-- clean-up handling of auth-none.so processing (part of main slurm RPM)
 * Thu Dec 11 2003 Mark Grondona <mgrondona@llnl.gov>
 - package slurm sched plugins 
 - removed jobcomp-filetxt package -- plugin now part of base package.
