@@ -69,8 +69,8 @@ typedef struct node_space_map {
 
 /*********************** local variables *********************/
 static bool altered_job = false;
+static bool new_work = false;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t  thread_cond       = PTHREAD_COND_INITIALIZER;
 
 static List pend_job_list = NULL;
 static List run_job_list  = NULL;
@@ -201,19 +201,23 @@ backfill_agent(void *args)
 extern void
 run_backfill (void)
 {
-	pthread_cond_signal( &thread_cond );
+	pthread_mutex_lock( &thread_flag_mutex );
+	new_work = true;
+	pthread_mutex_unlock( &thread_flag_mutex );
 }
 
 static bool
 _more_work (void)
 {
+	static bool rc;
 	pthread_mutex_lock( &thread_flag_mutex );
-	pthread_cond_wait( &thread_cond, &thread_flag_mutex );
+	rc = new_work;
+	new_work = false;
 	pthread_mutex_unlock( &thread_flag_mutex );
-	return true;
+	return rc;
 }
 
-/* Report if any changes occured to job, node or partition information */
+/* Report if any changes occurred to job, node or partition information */
 static bool
 _has_state_changed(void)
 {
@@ -477,14 +481,21 @@ static int
 _update_node_space_map(struct job_record *job_ptr)
 {
 	int i, j, min_nodes, nodes_needed;
+	time_t fini_time;
 
 	if (node_space_recs == 0)	/* no nodes now or in future */
 		return 0;
 	if (job_ptr->details == NULL)	/* pending job lacks details */
 		return 0;
 
+	if (job_ptr->time_limit == NO_VAL)
+		fini_time = time(NULL) + job_ptr->part_ptr->max_time;
+	else
+		fini_time = time(NULL) + job_ptr->time_limit;
 	min_nodes = node_space[0].idle_node_cnt;
 	for (i=1; i<node_space_recs; i++) {
+		if (node_space[i].time > fini_time)
+			break;
 		if (min_nodes > node_space[i].idle_node_cnt)
 			min_nodes = node_space[i].idle_node_cnt;
 	}
@@ -621,6 +632,7 @@ _change_prio(struct job_record *job_ptr, uint32_t prio)
 	info("backfill: set job %u to priority %u", job_ptr->job_id, prio);
 	job_ptr->priority = prio;
 	altered_job = true;
+	run_backfill();
 	last_job_update = time(NULL);
 }
 
