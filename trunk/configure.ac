@@ -24,20 +24,20 @@ AC_MSG_CHECKING(whether debug compilation of modules is enabled)
 AC_ARG_ENABLE(debug, 
   AC_HELP_STRING([--enable-debug],[Enable debugging of individual modules]),
   [ case "${enableval}" in
-     yes) debug=true ;;
-     no)  debug=false ;;
+     yes) with_slurm_debug=true ;;
+     no)  with_slurm_debug=false ;;
      *) AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
     esac
   ]
 )
-AC_MSG_RESULT(${debug=no})
-if test "x$debug" = "xtrue"; then 
+AC_MSG_RESULT(${with_slurm_debug=no})
+if test "x$with_slurm_debug" = "xtrue"; then 
   CFLAGS="${CFLAGS--g -O2 -Wall -Wpointer-arith}"
   AC_DEFINE(DEBUG_SYSTEM, 1, [Define for extra debug messages.])
 else
   CFLAGS="${CFLAGS--g -O2 -Wall -Wpointer-arith}"
 fi
-AM_CONDITIONAL(DEBUG_MODULES, test "x$debug" = "xtrue")
+AM_CONDITIONAL(DEBUG_MODULES, test "x$with_slurm_debug" = "xtrue")
 #
 
 # check for whether to include Elan support:
