@@ -603,6 +603,9 @@ SLURM_ACCOUNT
 SLURM_CPUS_PER_TASK
 \fB\-c, \-\-ncpus\-per\-task\fR=\fIn\fR
 .TP
+SLURM_CONN_TYPE
+\fB\-\-conn\-type\fR=(\fImesh|nav|torus\fR)
+.TP
 SLURM_CORE_FORMAT
 \fB\-\-core\fR=\fIformat\fR
 .TP
@@ -615,11 +618,20 @@ SLURMD_DEBUG
 SLURM_DISTRIBUTION
 \fB\-m, \-\-distribution\fR=(\fIblock|cyclic\fR)
 .TP
+SLURM_GEOMETRY
+\fB\-g, \-\-geometry\fR=\fIX,Y,Z\fR
+.TP
 SLURM_LABELIO
 \fB-l, --label\fR
 .TP
 SLURM_NNODES
 \fB\-N, \-\-nodes\fR=(\fIn|min-max\fR)
+.TP
+SLURM_NO_ROTATE
+\fB\-\-no\-rotate\fR
+.TP
+SLURM_NODE_USE
+\fB\-\-node\-use\fR=(\fIcoprocessor|virtual\fR)
 .TP
 SLURM_NPROCS
 \fB\-n, \-\-ntasks\fR=\fIn\fR

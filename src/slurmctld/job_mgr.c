@@ -1147,10 +1147,41 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	       dependency, job_specs->account);
 
 #ifdef HAVE_BGL
-	debug3("   conn_type=%u rotate=%u node_use=%u geometry=%u,%u,%u",
-		job_specs->conn_type, job_specs->rotate, job_specs->node_use,
-		job_specs->geometry[0], job_specs->geometry[1], 
-		job_specs->geometry[2]);
+{
+	char *conn_type, *rotate, *node_use;
+	int geometry[SYSTEM_DIMENSIONS];
+
+	if (job_specs->conn_type == RM_MESH)
+		conn_type = "MESH";
+	else if (job_specs->conn_type == RM_TORUS)
+		conn_type = "TORUS";
+	else 
+		conn_type = "NAV";
+
+	if (job_specs->rotate == 0)
+		rotate = "NO";
+	else
+		rotate = "YES";
+
+	if (job_specs->node_use == RM_VIRTUAL)
+		node_use = "VIRTUAL";
+	else
+		node_use = "COPROCESSOR";
+
+	if (job_specs->geometry[0] == (uint16_t) NO_VAL) {
+		geometry[0] = -1;
+		geometry[1] = -1;
+		geometry[2] = -1;
+	} else {
+		geometry[0] = job_specs->geometry[0];
+		geometry[1] = job_specs->geometry[1];
+		geometry[2] = job_specs->geometry[2];
+	}
+
+	debug3("   conn_type=%s rotate=%s node_use=%s geometry=%d,%d,%d",
+		conn_type, rotate, node_use,
+		geometry[0], geometry[1], geometry[2]);
+}
 #endif
 }
 
@@ -1653,6 +1684,21 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 
 	if (job_desc->min_nodes == NO_VAL)
 		job_desc->min_nodes = 1;
+#ifdef SYSTEM_DIMENSIONS
+	if ((job_desc->geometry[0] != (uint16_t) NO_VAL)
+	&&  (job_desc->geometry[0] != 0)) {
+		int i, tot = 1;
+		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+			tot *= job_desc->geometry[i];
+		if (job_desc->min_nodes > tot) {
+			info("MinNodes(%d) > GeometryNodes(%d)", 
+				job_desc->min_nodes, tot);
+			error_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
+			goto cleanup;
+		}
+		job_desc->min_nodes = tot;
+	}
+#endif
 	if (job_desc->max_nodes == NO_VAL)
 		job_desc->max_nodes = 0;
 	if (job_desc->num_procs > part_ptr->total_cpus) {
