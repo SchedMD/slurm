@@ -302,7 +302,7 @@ print_job (char * job_id_str)
 		if (job_id_str && job_id != job_ptr[i].job_id) 
 			continue;
 		print_cnt++;
-		slurm_print_job_table (stdout, & job_ptr[i] ) ;
+		slurm_print_job_info (stdout, & job_ptr[i] ) ;
 		if (job_id_str)
 			break;
 	}
