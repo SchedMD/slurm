@@ -55,7 +55,6 @@
 
 #ifdef HAVE_TOTALVIEW
 #  include "src/srun/attach.h"
-   static bool sent_task_cont = false;
 #endif
 
 #define LAUNCH_WAIT_SEC	 60	/* max wait to confirm launches, sec */
