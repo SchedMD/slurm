@@ -27,7 +27,7 @@
 #ifndef __SINFO_H__
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <ctype.h>
@@ -46,13 +46,12 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <src/api/slurm.h>
-#include <src/common/hostlist.h>
-#include <src/common/log.h>
-#include <src/common/slurm_protocol_api.h>
-#include <src/common/xmalloc.h>
-#include <src/common/list.h>
-#include <src/common/hostlist.h>
+#include "src/api/slurm.h"
+#include "src/common/hostlist.h"
+#include "src/common/list.h"
+#include "src/common/log.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
 
 
 #define MIN(x,y) (((x)<(y))?(x):(y))
@@ -69,6 +68,7 @@ struct sinfo_parameters {
 	bool line_wrap;
 	int verbose;
 	int iterate;
+	bool exact_match;
 };
 
 struct node_state_summary {
@@ -90,6 +90,6 @@ struct partition_summary {
 
 int parse_state( char* str, enum job_states* states );
 int parse_command_line( int argc, char* argv[] );
-void print_options();
+void print_options( void );
 
 #endif

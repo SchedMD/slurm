@@ -36,7 +36,7 @@ static char *command_name;
 struct sinfo_parameters params =
     {	partition_flag:false, partition:NULL, state_flag:false,
 	node_flag:false, node:NULL, summarize:false, long_output:false,
-	line_wrap:false, verbose:false, iterate:0
+	line_wrap:false, verbose:false, iterate:0, exact_match:false
 };
 
 /************
@@ -76,7 +76,7 @@ static int _print_str(char *number, int width, bool right);
 /* Display partition functions */
 static struct partition_summary *_find_partition_summary(List l, char *name);
 static struct node_state_summary *_find_node_state_summary(
-		List l, enum node_states state);
+		List l, node_info_t *ninfo);
 static List _setup_partition_summary(
 		partition_info_msg_t * part_ptr, node_info_msg_t * node_ptr);
 static void _print_partition_header(bool no_name);
@@ -397,13 +397,19 @@ static struct partition_summary *_find_partition_summary(List l, char *name)
 }
 
 static struct node_state_summary *
-_find_node_state_summary(List l, enum node_states state)
+_find_node_state_summary(List l, node_info_t *ninfo)
 {
 	ListIterator i = list_iterator_create(l);
 	struct node_state_summary *current;
 
 	while ((current = list_next(i)) != NULL) {
-		if (state == current->state)
+		if (ninfo->node_state != current->state)
+			continue;
+		if (params.exact_match == 0)
+			break;
+		if ((ninfo->cpus        == current->cpu_min) &&
+		    (ninfo->real_memory == current->ram_min) &&
+		    (ninfo->tmp_disk    == current->disk_min))
 			break;
 	}
 
@@ -443,10 +449,8 @@ _setup_partition_summary(partition_info_msg_t * part_ptr,
 			continue;
 		}
 
-		if ((node_sum =
-		     _find_node_state_summary(part_sum->states,
-					     (enum node_states) ninfo->
-					     node_state)) != NULL) {
+		if ((node_sum = 
+		     _find_node_state_summary(part_sum->states, ninfo))) {
 			node_sum->state =
 			    (enum node_states) ninfo->node_state;
 			node_sum->cpu_max =
@@ -497,11 +501,11 @@ _display_all_partition_summary(partition_info_msg_t * part_ptr,
 
 /* Formating for partiton display headers... */
 int part_sz_part = 10;
-int part_sz_num = 6;
-int part_sz_state = 10;
+int part_sz_num = 5;
+int part_sz_state = 9;
 int part_sz_cpus = 4;
-int part_sz_ram = 8;
-int part_sz_disk = 8;
+int part_sz_ram = 9;
+int part_sz_disk = 11;
 int part_sz_nodes = 0;
 
 static void _print_partition_header(bool no_name)
@@ -513,15 +517,16 @@ static void _print_partition_header(bool no_name)
 		printf(" ");
 	}
 	_print_str("NODES", part_sz_num, true);
-	printf("  ");
+	printf(" ");
 	_print_str("STATE", part_sz_state, false);
 	printf(" ");
 	_print_str("CPUS", part_sz_cpus, true);
 	printf(" ");
-	_print_str("MEM", part_sz_ram, true);
+	_print_str("MEMORY", part_sz_ram, true);
 	printf(" ");
-	_print_str("DISK", part_sz_disk, true);
-	_print_str("  NODES", part_sz_nodes, false);
+	_print_str("TMP_DISK", part_sz_disk, true);
+	printf(" ");
+	_print_str("NODES", part_sz_nodes, false);
 	printf("\n");
 	if (no_name == true)
 		printf
@@ -578,7 +583,7 @@ _display_partition_node_info(struct partition_summary *partition,
 			printf("\t");
 
 		_print_int(state_sum->node_count, part_sz_num, true);
-		printf("  ");
+		printf(" ");
 		_print_str(node_state_string(state_sum->state),
 			   part_sz_state, false);
 		printf(" ");
@@ -587,7 +592,7 @@ _display_partition_node_info(struct partition_summary *partition,
 		_print_str(ram_buf, part_sz_ram, true);
 		printf(" ");
 		_print_str(disk_buf, part_sz_disk, true);
-		printf("  ");
+		printf(" ");
 		_print_str(name_buf, part_sz_nodes, false);
 		printf("\n");
 		part_name = no_name;
