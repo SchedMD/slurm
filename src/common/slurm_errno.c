@@ -122,6 +122,7 @@ g" },
 	{ ESLURMD_EOF_ON_SOCKET, 			"Socket returned EOF, it was closed" },
 	{ ESLURMD_SOCKET_DISCONNECT, 			"Socket disconnected" },
 	{ ESLURMD_UNKNOWN_SOCKET_ERROR, 		"Unknown socket error / this is bad" },
+	{ ESLURMD_SIGNATURE_FIELD_TOO_SMALL, 		"Credential signature field is too small" },
 	/*
 	{ , "" },
 	*/
