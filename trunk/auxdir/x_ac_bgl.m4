@@ -50,8 +50,7 @@ AC_DEFUN([X_AC_BGL],
    done
 
    if test ! -z "$have_bgl_ar" -a ! -z "$have_bgl_hdr" -a ! -z "$have_db2" ; then
-      AC_DEFINE(HAVE_BGL, 1, [Define to 1 if emulating or running on Blue Gene s
-ystem])
+      AC_DEFINE(HAVE_BGL, 1, [Define to 1 if emulating or running on Blue Gene system])
       AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end o
 nly])
       ac_with_readline="no"
