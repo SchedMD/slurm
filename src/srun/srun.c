@@ -4,7 +4,8 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grondona <grondona@llnl.gov>, Moe Jette <jette1@llnl.gov>, et. al.
+ *  Written by Mark Grondona <grondona@llnl.gov>, 
+ *             Moe Jette <jette1@llnl.gov>, et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -257,6 +258,7 @@ main(int ac, char **av)
 		    (job->out[i] == IO_DONE))
 			n++;
 	}
+	verbose("end of job n = %d", n);
 	if (n < opt.nprocs)
 		pthread_join(job->ioid, NULL);
 	else
@@ -798,13 +800,28 @@ existing_allocation( void )
 /* allocation option specified, spawn a script and wait for it to exit */
 void run_job_script (uint32_t job_id)
 {
-	char jobid_str[16], *shell = NULL;
-	int i;
+	char *shell = NULL;
+	int   i;
 	pid_t child;
 
-	sprintf(jobid_str, "%u", job_id);
-	if (setenv("SLURM_JOBID", jobid_str, 1)) {
+	if (setenvf("SLURM_JOBID=%u", job_id)) {
 		error("Unable to set SLURM_JOBID environment variable");
+		return;
+	}
+
+	if (setenvf("SLURM_NNODES=%u", opt.nodes)) {
+		error("Unable to set SLURM_NNODES environment variable");
+		return;
+	}
+
+	if (setenvf("SLURM_NPROCS=%u", opt.nprocs)) {
+		error("Unable to set SLURM_NPROCS environment variable");
+		return;
+	}
+
+	if (setenvf("SLURM_DISTRIBUTION=%s", 
+		    opt.distribution == SRUN_DIST_BLOCK ?  "block" : "cyclic")) {
+		error("Unable to set SLURM_DISTRIBUTION environment variable");
 		return;
 	}
 
