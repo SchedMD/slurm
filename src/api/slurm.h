@@ -5,57 +5,11 @@
  * author: moe jette, jette@llnl.gov
  */
 
-#define BUILD_SIZE	128
-#define BUILD_STRUCT_VERSION 1
-#define FEATURE_SIZE	1024
-#define JOB_STRUCT_VERSION 1
 #define MAX_ID_LEN	32
 #define MAX_NAME_LEN	1024 	/* gethostname in linux returns a FQ DNS name */
-#define NODE_STRUCT_VERSION 1
-#define PART_STRUCT_VERSION 1
-#define SLURMCTLD_HOST	"127.0.0.1"
-#define SLURMCTLD_PORT	1544
-#define STATE_NO_RESPOND 0x8000
-#define STEP_STRUCT_VERSION 1
-
-/* INFINITE is used to identify unlimited configurations,  */
-/* eg. the maximum count of nodes any job may use in some partition */
-#define	INFINITE (0xffffffff)
 
 #include <src/common/slurm_protocol_defs.h>
 #include <stdio.h>
-
-/* last entry must be JOB_END	*/
-enum job_states {
-	JOB_PENDING,		/* queued waiting for initiation */
-	JOB_STAGE_IN,		/* allocated resources, not yet running */
-	JOB_RUNNING,		/* allocated resources and executing */
-	JOB_STAGE_OUT,		/* completed execution, nodes not yet released */
-	JOB_COMPLETE,		/* completed execution successfully, nodes released */
-	JOB_FAILED,		/* completed execution unsuccessfully, nodes released */
-	JOB_TIMEOUT,		/* terminated on reaching time limit, nodes released */
-	JOB_END			/* last entry in table */
-};
-
-enum task_dist {
-	DIST_BLOCK,		/* fill each node in turn */
-	DIST_CYCLE		/* one task each node, round-robin through nodes */
-};
-
-/* last entry must be STATE_END, keep in sync with node_state_string    	*/
-/* if a node ceases to respond, its last state is ORed with STATE_NO_RESPOND	*/
-enum node_states {
-	STATE_DOWN,		/* node is not responding */
-	STATE_UNKNOWN,		/* node's initial state, unknown */
-	STATE_IDLE,		/* node idle and available for use */
-	STATE_ALLOCATED,	/* node has been allocated, job not currently running */
-	STATE_STAGE_IN,		/* node has been allocated, job is starting execution */
-	STATE_RUNNING,		/* node has been allocated, job currently running */
-	STATE_STAGE_OUT,	/* node has been allocated, job is terminating */
-	STATE_DRAINED,		/* node idle and not to be allocated future work */
-	STATE_DRAINING,		/* node in use, but not to be allocated future work */
-	STATE_END		/* last entry in table */
-};
 
 /*
  * slurm_allocate - allocate nodes for a job with supplied contraints. 

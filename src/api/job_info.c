@@ -60,7 +60,7 @@ slurm_print_job_table ( FILE* out, job_table_t * job_ptr )
 {
 	int j;
 	fprintf ( out, "JobId=%u UserId=%u ", job_ptr->job_id, job_ptr->user_id);
-	fprintf ( out, "JobState=%u TimeLimit=%u ", job_ptr->job_state, job_ptr->time_limit);
+	fprintf ( out, "JobState=%s TimeLimit=%u ", job_state_string(job_ptr->job_state), job_ptr->time_limit);
 	fprintf ( out, "Priority=%u Partition=%s\n", job_ptr->priority, job_ptr->partition);
 	fprintf ( out, "   Name=%s NodeList=%s ", job_ptr->name, job_ptr->nodes);
 	fprintf ( out, "StartTime=%x EndTime=%x\n", (uint32_t) job_ptr->start_time, (uint32_t) job_ptr->end_time);
