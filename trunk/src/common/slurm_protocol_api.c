@@ -19,6 +19,7 @@
 /* #DEFINES */
 
 /* STATIC VARIABLES */
+/* default 
 static slurm_protocol_config_t proto_conf_default ;
 static slurm_protocol_config_t * proto_conf = & proto_conf_default ;
 
@@ -46,10 +47,10 @@ int slurm_api_set_default_config ( )
 	return SLURM_SUCCESS ;
 }
 
-int slurm_set_default_controllers ( char * primary_controller_hostname , char * secondary_controller_hostnme, uint16_t pri_port , uint16_t sec_port )
+int slurm_set_default_controllers ( char * primary_controller_hostname , char * secondary_controller_hostname, uint16_t pri_port , uint16_t sec_port )
 {
 	slurm_set_addr ( & proto_conf_default . primary_controller , pri_port , primary_controller_hostname ) ;
-	slurm_set_addr ( & proto_conf_default . secondary_controller , sec_port , secondary_controller_hostnme ) ;
+	slurm_set_addr ( & proto_conf_default . secondary_controller , sec_port , secondary_controller_hostname ) ;
 
 	return SLURM_SUCCESS ;
 }

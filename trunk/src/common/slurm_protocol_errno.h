@@ -49,13 +49,16 @@
 #define ESLURM_ACCESS_DENIED				-2202
 
 /* step_mgr.c */
-#define ESLURM_ACCESS_DENIED				-2301
+/* already defined above #define ESLURM_ACCESS_DENIED				-2301 */
 
 /* look up an errno value */
 extern char * slurm_strerror(int errnum);
 
 /* set an errno value */
 extern void slurm_seterrno(int errnum);
+
+/* set an errno value */
+extern inline int slurm_get_errno();
 
 /* print message: error string for current errno value */
 extern void slurm_perror(char *msg);

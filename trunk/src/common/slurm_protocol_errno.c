@@ -86,6 +86,15 @@ slurm_strerror(int errnum)
 }
 
 /*
+ * Get errno 
+ */
+int
+slurm_get_errno()
+{
+	return errno ;
+}
+
+/*
  * Set errno to the specified value.
  */
 void
