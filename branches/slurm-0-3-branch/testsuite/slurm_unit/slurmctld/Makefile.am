@@ -7,7 +7,6 @@ TESTS =
 # even if they can't be run stand-alone.
 check_PROGRAMS = \
 	security_2_2 \
-	security_2_4 \
 	$(TESTS) 
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
