@@ -30,11 +30,18 @@
 #  include "config.h"
 #endif
 
+#include <stdlib.h>
+#include <sys/stat.h>
+
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/partition_allocator/partition_allocator.h"
+
+//#include "bgl_job_place.h"
+//#include "bgl_job_run.h"
 
 #ifdef HAVE_BGL_FILES
 # include "rm_api.h"
@@ -64,6 +71,9 @@ extern char *bluegene_blrts;
 extern char *bluegene_linux;
 extern char *bluegene_mloader;
 extern char *bluegene_ramdisk;
+extern pa_system_t *pa_system_ptr;
+extern int DIM_SIZE[PA_SYSTEM_DIMENSIONS];
+
 extern List bgl_init_part_list; 	/* Initial bgl partition state */
 extern List bgl_list;			/* List of configured BGL blocks */
 extern bool agent_fini;
@@ -84,6 +94,21 @@ typedef struct bgl_record {
 	rm_connection_type_t conn_type;	/* Mesh or Torus or NAV */
 	rm_partition_mode_t node_use;	/* either COPROCESSOR or VIRTUAL */
 } bgl_record_t;
+/** 
+ * structure for use by partitioning algorithm to refer to the
+ * structural elements of the BGL partition system.
+ */
+typedef struct partition {
+	int bl_coord[SYSTEM_DIMENSIONS]; /* bottom left coordinates */
+	int tr_coord[SYSTEM_DIMENSIONS]; /* top right coordinates */
+	ushort dimensions[SYSTEM_DIMENSIONS]; /* X,Y,Z dimensions */
+	void* bgl_record_ptr;		/* pointer to referring bgl_record */
+	int size;
+	pm_partition_id_t bgl_part_id;	/* ID returned from CMCS	*/
+	ushort conn_type;	/* Type=Mesh/Torus/NAV		*/
+	ushort node_use;	/* Use=Virtual/Coprocessor	*/
+} partition_t;
+
 
 /*
  * bgl_conf_record is used to store the elements read from the bluegene.conf
@@ -93,19 +118,26 @@ typedef struct bgl_conf_record {
 	char* nodes;
 	rm_connection_type_t conn_type;/* Mesh or Torus or NAV */
 	rm_partition_mode_t node_use;
+	List bgl_part_list;
+	int size;
+	rm_partition_t *bgl_part;
 } bgl_conf_record_t;
 
+
+
+/* bluegene.c */
+/**********************************************/
 /* 
  * Read and process the bluegene.conf configuration file so to interpret what 
  * partitions are static/dynamic, torus/mesh, etc.
  */
-extern int read_bgl_conf(void);
+int read_bgl_conf(void);
 
 /* Initialize all plugin variables */
-extern int init_bgl(void);
+int init_bgl(void);
 
 /* Purge all plugin variables */
-extern void fini_bgl(void);
+void fini_bgl(void);
 
 /*
  * create_static_partitions - create the static partitions that will be used
@@ -114,28 +146,82 @@ extern void fini_bgl(void);
  *   configurations. Fill in bgl_part_id                 
  * RET - success of fitting all configurations
  */
-extern int create_static_partitions(List part_list);
+int create_static_partitions(List part_list);
 
 /* sort a list of bgl_records by size (node count) */
-extern void sort_bgl_record_inc_size(List records);
-extern void sort_bgl_record_dec_size(List records);
+void sort_bgl_record_inc_size(List records);
+/* void sort_bgl_record_dec_size(List records); */
 
 /* Log a bgl_record's contents */
-extern void print_bgl_record(bgl_record_t* record);
+void print_bgl_record(bgl_record_t* record);
 
 /* Return strings representing blue gene data types */
-extern char* convert_lifecycle(lifecycle_type_t lifecycle);
-extern char* convert_conn_type(rm_connection_type_t conn_type);
-extern char* convert_node_use(rm_partition_mode_t pt);
+char *convert_lifecycle(lifecycle_type_t lifecycle);
+char *convert_conn_type(rm_connection_type_t conn_type);
+char *convert_node_use(rm_partition_mode_t pt);
 
 /* bluegene_agent - detached thread periodically tests status of bluegene 
  * nodes and switches */
-extern void *bluegene_agent(void *args);
+void *bluegene_agent(void *args);
 
 /*
  * Convert a BGL API error code to a string
  * IN inx - error code from any of the BGL Bridge APIs
  * RET - string describing the error condition
  */
-extern char *bgl_err_str(status_t inx);
+char *bgl_err_str(status_t inx);
+
+/* partition_sys.c */
+/*****************************************************/
+int configure_partition(bgl_conf_record_t * bgl_conf_record);
+int read_bgl_partitions();
+
+/* state_test.c */
+/*****************************************************/
+
+/* Test for nodes that are DOWN in BlueGene database, 
+ * if so DRAIN them in SLURM */
+void test_down_nodes(void);
+
+/* Test for switches that are DOWN in BlueGene database,  
+ * if so DRAIN them in SLURM and configure their base partition DOWN */
+void test_down_switches(void);
+
+
+/* bgl_job_place.c */
+/*****************************************************/
+int submit_job(struct job_record *job_ptr, bitstr_t *bitmap,
+	       int min_nodes, int max_nodes);
+
+
+/* bgl_job_run.c */
+/*****************************************************/
+/*
+ * Perform any setup required to initiate a job
+ * job_ptr IN - pointer to the job being initiated
+ * RET - SLURM_SUCCESS or an error code 
+ *
+ * NOTE: This happens in parallel with srun and slurmd spawning 
+ * the job. A prolog script is expected to defer initiation of 
+ * the job script until the BGL block is available for use.
+ */
+int start_job(struct job_record *job_ptr);
+int sync_jobs(List job_list);
+
+/* 
+ * Perform any work required to terminate a job
+ * job_ptr IN - pointer to the job being terminated
+ * RET - SLURM_SUCCESS or an error code
+ *
+ * NOTE: This happens in parallel with srun and slurmd terminating
+ * the job. Insure that this function, mpirun and the epilog can 
+ * all deal with termination race conditions.
+ */
+int term_job(struct job_record *job_ptr);
+
+
+/* bgl_switch_connections.c */
+/*****************************************************/
+int configure_partition_switches(bgl_conf_record_t * bgl_conf_record);
+
 #endif /* _BLUEGENE_H_ */

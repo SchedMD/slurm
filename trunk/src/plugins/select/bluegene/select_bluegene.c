@@ -24,33 +24,6 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  endif
-#  if WITH_PTHREADS
-#    include <pthread.h>
-#  endif
-#endif
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
-
-#include "src/common/slurm_xlator.h"
-#include "src/common/xassert.h"
-#include "src/common/xmalloc.h"
-#include "src/slurmctld/slurmctld.h"
-#include "bgl_job_place.h"
-#include "bgl_job_run.h"
 #include "bluegene.h"
 
 /*
@@ -213,9 +186,7 @@ extern int fini ( void )
  extern int select_p_part_init(List part_list)
 {
 	xassert(part_list);
-	if (read_bgl_conf())
-		return SLURM_ERROR;
-
+	/*looking for partitions only I created */
 	if (create_static_partitions(part_list)) {
 		/* error in creating the static partitions, so
 		 * partitions referenced by submitted jobs won't

@@ -24,30 +24,8 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  endif
-#  if WITH_PTHREADS
-#    include <pthread.h>
-#  endif
-#endif
-
-#include <unistd.h>
-
-#include <slurm/slurm_errno.h>
-
-#include "src/common/list.h"
-#include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/uid.h"
-#include "src/common/xstring.h"
-#include "src/slurmctld/proc_req.h"
-#include "bgl_job_run.h"
 #include "bluegene.h"
 
 #ifdef HAVE_BGL_FILES
@@ -532,7 +510,7 @@ extern int term_job(struct job_record *job_ptr)
  * This can recover from slurmctld crashes when partition ownership
  * changes were queued
  */
-extern int sync_jobs(List job_list)
+int sync_jobs(List job_list)
 {
 #ifdef HAVE_BGL_FILES
 	ListIterator job_iterator, block_iterator;

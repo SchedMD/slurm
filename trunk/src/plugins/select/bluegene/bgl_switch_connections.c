@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Dan Phung <phung4@llnl.gov>
+ *  Written by Dan Phung <phung4@llnl.gov> and Danny Auble <da@llnl.gov>
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -24,321 +24,168 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-/**
- * connect the given switch up with the given connections
+#include "bluegene.h"
+
+#ifdef HAVE_BGL_FILES
+
+static int _get_bp_by_location(rm_BGL_t* my_bgl, int* cur_coord, rm_BP_t** bp);
+static int _set_switch(rm_switch_t* cur_switch, pa_connection_t *int_wire);
+
+/** 
+ * this is just stupid.  there are some implicit rules for where
+ * "NextBP" goes to, but we don't know, so we have to do this.
  */
-static void _connect(rm_partition_t *my_part, rm_switch_t *my_switch,
-		rm_connection_t *conn1, rm_connection_t *conn2, 
-		rm_connection_t *conn3, int first)
+static int _get_bp_by_location(rm_BGL_t* my_bgl, int* cur_coord, rm_BP_t** bp)
 {
-	if (first){
-		rm_set_data(my_switch,RM_SwitchFirstConnection,conn1);
-		rm_set_data(my_switch,RM_SwitchSecondConnection,conn2);
-		rm_set_data(my_switch,RM_SwitchThirdConnection,conn3);
-		rm_set_data(my_part,RM_PartFirstSwitch,my_switch);
-	} else {
-		rm_set_data(my_switch,RM_SwitchFirstConnection,conn1);
-		rm_set_data(my_switch,RM_SwitchSecondConnection,conn2);
-		rm_set_data(my_switch,RM_SwitchThirdConnection,conn3);
-		rm_set_data(my_part,RM_PartNextSwitch,my_switch);
-	}  
+	int i, bp_num;
+	rm_location_t loc;
+
+	rm_get_data(my_bgl, RM_BPNum, &bp_num);
+	rm_get_data(my_bgl, RM_FirstBP, bp);
+
+	for (i=0; i<bp_num; i++){
+		rm_get_data(*bp, RM_BPLoc, &loc);
+		//printf("%d%d%d %d%d%d\n",loc.X,loc.Y,loc.Z,cur_coord[X],cur_coord[Y],cur_coord[Z]); 
+		if ((loc.X == cur_coord[X])
+		&&  (loc.Y == cur_coord[Y])
+		&&  (loc.Z == cur_coord[Z])) {
+			return 1;
+		}
+		rm_get_data(my_bgl, RM_NextBP, bp);
+	}
+
+	// error("_get_bp_by_location: could not find specified bp.");
+	return 0;
+}
+
+static int _set_switch(rm_switch_t* cur_switch, pa_connection_t *int_wire)
+{
+	int firstconnect=1;
+	rm_connection_t conn;
+	int j;
+	int conn_num=0;
+	
+	for(j=0;j<NUM_PORTS_PER_NODE;j+=2) {
+		if(j==2)
+			j++;
+		if(int_wire[j].used) {
+			switch(int_wire[j].port_tar) {
+			case 1:
+				conn.p1 = RM_PORT_S1;
+				break;
+			case 2:
+				conn.p1 = RM_PORT_S2;
+				break;
+			case 4:
+				conn.p1 = RM_PORT_S4;
+				break;
+			}
+			switch(j) {
+			case 0:
+				conn.p2 = RM_PORT_S0; 
+				break;
+			case 3:
+				conn.p2 = RM_PORT_S3; 
+				break;
+			case 5:
+				conn.p2 = RM_PORT_S5; 
+				break;
+			}
+			conn.part_state = RM_PARTITION_READY;
+			//printf("Connecting %d - %d\n",j,int_wire[j].port_tar);
+			if(firstconnect) {
+				rm_set_data(cur_switch,RM_SwitchFirstConnection, &conn);
+				firstconnect=0;
+			} else 
+				rm_set_data(cur_switch,RM_SwitchNextConnection, &conn);   
+			conn_num++;
+		}		
+	}
+	//printf("conn_num = %d\n",conn_num);
+	rm_set_data(cur_switch, RM_SwitchConnNum, &conn_num);
+	return 1;
 }
 
 /**
  * connect the given switch up with the given connections
  */
-static void configure_node_switchs(node_info_t *node_ptr, rm_partition_t *my_part,
-			     int first)
+int configure_partition_switches(bgl_conf_record_t * bgl_conf_record)
 {
-	rm_switch_t *my_switch;
-	pa_switch_t *switch_ptr;
-	rm_connection_t conn[PA_SYSTEM_DIMENSIONS];
-	int i, j;
-	
-	for(j=0;j<PA_SYSTEM_DIMENSIONS;j++) {
+	int  i, j;
+	ListIterator itr;
+	pa_node_t* pa_node;
+	rm_BP_t *cur_bp;
+	rm_switch_t *cur_switch;
+	//char *name2;
+	char *bpid, *cur_bpid;
+	int switchnum = bgl_conf_record->size*3;
+	int found_bpid = 0;
+	int switch_count;
+	rm_location_t loc;
+	rm_set_data(bgl_conf_record->bgl_part,RM_PartitionSwitchNum,&switchnum); 
+	rm_set_data(bgl_conf_record->bgl_part,RM_PartitionBPNum,&bgl_conf_record->size); 
 		
-		for(i=0;i<3;i++) {
-			
-			
-			conn[i].p1 = RM_PORT_S0; 
-			conn[i].p2 = RM_PORT_S2;
-			conn[i].part_id = NULL;
-			conn[i].usage = RM_CONNECTION_USED;
+	itr = list_iterator_create(bgl_conf_record->bgl_part_list);
+	i=0;
+	while ((pa_node = (pa_node_t *) list_next(itr)) != NULL) {
+		//printf("Looking for %d%d%d\n",pa_node->coord[X],pa_node->coord[Y],pa_node->coord[Z]); 
+		
+		if (!_get_bp_by_location(bgl, pa_node->coord, &cur_bp)) {
+			return 0;
 		}
-
-		rm_set_data(my_switch,RM_SwitchFirstConnection,conn1);
-		rm_set_data(my_switch,RM_SwitchSecondConnection,conn2);
-		rm_set_data(my_switch,RM_SwitchThirdConnection,conn3);
-	
-		if (first){
-			rm_set_data(my_part,RM_PartFirstSwitch,my_switch);
+		rm_get_data(cur_bp, RM_BPLoc, &loc);
+		//printf("found %d%d%d %d%d%d\n",loc.X,loc.Y,loc.Z,pa_node->coord[X],pa_node->coord[Y],pa_node->coord[Z]); 
+		if (!i){
+			rm_set_data(bgl_conf_record->bgl_part, RM_PartitionFirstBP, cur_bp);
 		} else {
-			rm_set_data(my_part,RM_PartNextSwitch,my_switch);
+			rm_set_data(bgl_conf_record->bgl_part, RM_PartitionNextBP, cur_bp);
 		}
-	}  
-}
-
-/**
- * connect the given switch up in the "A" pattern
- *       0  1
- *    /--|--|--\
- *    |  /  \  |
- *  2 --/    \-- 5
- *    |  /--\  |
- *    \__|__|__/
- *       3  4
- */
-void connect_switch_A(rm_partition_t *my_part, rm_switch_t *my_switch,
-		      int first)
-{
-	rm_connection_t conn1, conn2, conn3;
-
-	conn1.p1 = RM_PORT_S0; 
-	conn1.p2 = RM_PORT_S2;
-	conn1.part_id = NULL;
-	conn1.usage = RM_CONNECTION_USED;
-
-	conn2.p1 = RM_PORT_S1; 
-	conn2.p2 = RM_PORT_S5;
-	conn2.part_id = NULL;
-	conn2.usage = RM_CONNECTION_USED;
-
-	conn3.p1 = RM_PORT_S3; 
-	conn3.p2 = RM_PORT_S4;
-	conn3.part_id = NULL;
-	conn3.usage = RM_CONNECTION_USED;
-
-	connect(my_part, my_switch, &conn1, &conn2, &conn3, first);
-}
-
-/**
- * connect the given switch up in the "B" pattern
- *       0  1
- *    /--|--|--\
- *    |  \  /  |
- *  2 ----\/---- 5
- *    |   /\   |
- *    \__|__|__/
- *       3  4
- */
-void connect_switch_B(rm_partition_t *my_part, rm_switch_t *my_switch,
-		      int first)
-{
-	rm_connection_t conn1, conn2, conn3;
-
-	conn1.p1 = RM_PORT_S0; 
-	conn1.p2 = RM_PORT_S4;
-	conn1.part_id = NULL;
-	conn1.usage = RM_CONNECTION_USED;
-
-	conn2.p1 = RM_PORT_S1; 
-	conn2.p2 = RM_PORT_S3;
-	conn2.part_id = NULL;
-	conn2.usage = RM_CONNECTION_USED;
-
-	conn3.p1 = RM_PORT_S2; 
-	conn3.p2 = RM_PORT_S5;
-	conn3.part_id = NULL;
-	conn3.usage = RM_CONNECTION_USED;
-  
-	connect(my_part, my_switch, &conn1, &conn2, &conn3, first);
-}
-
-/**
- * connect the given switch up in the "C" pattern
- *       0  1
- *    /--|--|--\
- *    |  \  \  |
- *  5 --\ \  \-- 2
- *    |  \ \   |
- *    \__|__|__/
- *       3  4
- */
-void connect_switch_C(rm_partition_t *my_part, rm_switch_t *my_switch,
-		      int first)
-{
-	rm_connection_t conn1, conn2, conn3;
-
-	conn1.p1 = RM_PORT_S0; 
-	conn1.p2 = RM_PORT_S4;
-	conn1.part_id = NULL;
-	conn1.usage = RM_CONNECTION_USED;
-
-	conn2.p1 = RM_PORT_S1; 
-	conn2.p2 = RM_PORT_S5;
-	conn2.part_id = NULL;
-	conn2.usage = RM_CONNECTION_USED;
-
-	conn3.p1 = RM_PORT_S2; 
-	conn3.p2 = RM_PORT_S3;
-	conn3.part_id = NULL;
-	conn3.usage = RM_CONNECTION_USED;
-  
-	connect(my_part, my_switch, &conn1, &conn2, &conn3, first);
-}
-
-/**
- * connect the given switch up in the "D" pattern
- *       0  1
- *    /--|--|--\
- *    |  /  /  |
- *  2 --/  / /-- 5
- *    |   / /  |
- *    \__|__|__/
- *       3  4
- */
-void connect_switch_D(rm_partition_t *my_part, rm_switch_t *my_switch,
-		      int first)
-{
-	rm_connection_t conn1, conn2, conn3;
-
-	conn1.p1 = RM_PORT_S0; 
-	conn1.p2 = RM_PORT_S2;
-	conn1.part_id = NULL;
-	conn1.usage = RM_CONNECTION_USED;
-
-	conn2.p1 = RM_PORT_S1;
-	conn2.p2 = RM_PORT_S3;
-	conn2.part_id = NULL;
-	conn2.usage = RM_CONNECTION_USED;
-
-	conn3.p1 = RM_PORT_S4; 
-	conn3.p2 = RM_PORT_S5;
-	conn3.part_id = NULL;
-	conn3.usage = RM_CONNECTION_USED;
-  
-	connect(my_part, my_switch, &conn1, &conn2, &conn3, first);
-}
-
-/**
- * connect the given switch up in the "E" pattern (loopback)
- *       0  1
- *    /--|--|--\
- *    |  \__/  |
- *  2 ---------- 5
- *    |  /--\  |
- *    \__|__|__/
- *       3  4
- */
-void connect_switch_E(rm_partition_t *my_part, rm_switch_t *my_switch,
-		      int first)
-{
-	rm_connection_t conn1, conn2, conn3;
-
-	conn1.p1 = RM_PORT_S0; 
-	conn1.p2 = RM_PORT_S1;
-	conn1.part_id = NULL;
-	conn1.usage = RM_CONNECTION_USED;
-
-	conn2.p1 = RM_PORT_S2; 
-	conn2.p2 = RM_PORT_S5;
-	conn2.part_id = NULL;
-	conn2.usage = RM_CONNECTION_USED;
-
-	conn3.p1 = RM_PORT_S3; 
-	conn3.p2 = RM_PORT_S4;
-	conn3.part_id = NULL;
-	conn3.usage = RM_CONNECTION_USED;
-  
-	connect(my_part, my_switch, &conn1, &conn2, &conn3, first);
-}
-
-/**
- * connect the given switch up in the "F" pattern (loopback)
- *       0  1
- *    /--|--|--\
- *    |  \__/  |
- *  2 --\    /-- 5
- *    |  \  /  |
- *    \__|__|__/
- *       3  4
- */
-void connect_switch_F(rm_partition_t *my_part, rm_switch_t *my_switch,
-		      int first)
-{
-	rm_connection_t conn1, conn2, conn3;
-
-	conn1.p1 = RM_PORT_S0; 
-	conn1.p2 = RM_PORT_S1;
-	conn1.part_id = NULL;
-	conn1.usage = RM_CONNECTION_USED;
-
-	conn2.p1 = RM_PORT_S2; 
-	conn2.p2 = RM_PORT_S3;
-	conn2.part_id = NULL;
-	conn2.usage = RM_CONNECTION_USED;
-
-	conn3.p1 = RM_PORT_S4; 
-	conn3.p2 = RM_PORT_S5;
-	conn3.part_id = NULL;
-	conn3.usage = RM_CONNECTION_USED;
-  
-	connect(my_part, my_switch, &conn1, &conn2, &conn3, first);
+		rm_get_data(cur_bp,RM_BPID,&bpid);
+		//printf("bp name = %s\n",(char *)bpid);
+		
+		rm_get_data(bgl, RM_SwitchNum, &switch_count);
+		rm_get_data(bgl, RM_FirstSwitch,&cur_switch);
+		found_bpid = 0;
+		for (i=0; i<switch_count; i++) {
+			rm_get_data(cur_switch, RM_SwitchBPID, &cur_bpid);
+			//printf("Bpid = %s, cur_bpid = %s\n",(char *)bpid, (char *)cur_bpid);
+			if (!strcasecmp((char *)bpid, (char *)cur_bpid)) {
+				found_bpid = 1;
+				break;
+			}
+			
+			rm_get_data(bgl,RM_NextSwitch,&cur_switch);
+		}
+		if(found_bpid) {
+	
+			for(j=0;j<PA_SYSTEM_DIMENSIONS;j++) {
+				//rm_get_data(cur_switch,RM_SwitchID,&name2);
+				//printf("dim %d\n",j);
+				if(j!=X) {
+					pa_node->axis_switch[j].int_wire[3].used = 0;
+					pa_node->axis_switch[j].int_wire[4].used = 0;
+				}
+				_set_switch(cur_switch, pa_node->axis_switch[j].int_wire);		
+				
+				if (!i){
+					rm_set_data(bgl_conf_record->bgl_part, RM_PartitionFirstSwitch, cur_switch);
+				} else {
+					rm_set_data(bgl_conf_record->bgl_part, RM_PartitionNextSwitch, cur_switch);
+				}
+				if(j!=X) {
+					pa_node->axis_switch[j].int_wire[3].used = 1;
+					pa_node->axis_switch[j].int_wire[4].used = 1;
+				}
+				i++;
+				rm_get_data(bgl,RM_NextSwitch,&cur_switch);
+				//rm_free_switch(cur_switch);
+			}
+		}
+	}
+	
+	//printf("done with switches\n");
+	return 1;	
 }
 
 
-/**
- * connect the node to the next node (higher up number)
- *       0  1
- *    /--|--|--\
- *    |    /   |
- *  2 -   /    - 5
- *    |  /     |
- *    \__|__|__/
- *       3  4
- */
-void connect_next(rm_partition_t *my_part, rm_switch_t *my_switch)
-{
-	rm_connection_t conn1, conn2, conn3;
-	int first = 0;
-
-	conn1.p1 = RM_PORT_S1;
-	conn1.p2 = RM_PORT_S3;
-	conn1.part_id = NULL;
-	conn1.usage = RM_CONNECTION_USED;
-
-	conn2.p1 = RM_PORT_S0; 
-	conn2.p2 = RM_PORT_S2;
-	conn2.part_id = NULL;
-	conn2.usage = RM_CONNECTION_NOT_USED;
-
-	conn3.p1 = RM_PORT_S4; 
-	conn3.p2 = RM_PORT_S5;
-	conn3.part_id = NULL;
-	conn3.usage = RM_CONNECTION_NOT_USED;
-
-	_connect(my_part, my_switch, &conn1, &conn2, &conn3, first);
-}
-
-/**
- * connect the given switch up to the previous node
- *       0  1
- *    /--|--|--\
- *    |  \     |
- *  2 -   \    - 5
- *    |    \   |
- *    \__|__|__/
- *       3  4
- */
-void connect_prev(rm_partition_t *my_part, rm_switch_t *my_switch)
-{
-	rm_connection_t conn1, conn2, conn3;
-	int first = 0;
-
-	conn1.p1 = RM_PORT_S0;
-	conn1.p2 = RM_PORT_S4;
-	conn1.part_id = NULL;
-	conn1.usage = RM_CONNECTION_USED;
-
-	conn2.p1 = RM_PORT_S2; 
-	conn2.p2 = RM_PORT_S3;
-	conn2.part_id = NULL;
-	conn2.usage = RM_CONNECTION_NOT_USED;
-
-	conn3.p1 = RM_PORT_S1; 
-	conn3.p2 = RM_PORT_S5;
-	conn3.part_id = NULL;
-	conn3.usage = RM_CONNECTION_NOT_USED;
-
-	connect(my_part, my_switch, &conn1, &conn2, &conn3, first);
-}
+#endif
