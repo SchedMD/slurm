@@ -757,7 +757,7 @@ void list_append_list( List to, List from )
 void 
 slurm_rpc_job_step_get_info ( slurm_msg_t * msg ) 
 {
-	int error_code;
+	int error_code = 0;
 	clock_t start_time;
 	List step_list = list_create( NULL );
 	void* resp_buffer = NULL;
