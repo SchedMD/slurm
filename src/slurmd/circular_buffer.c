@@ -47,6 +47,20 @@ int init_circular_buffer ( circular_buffer_t ** buf_ptr )
 	return SLURM_SUCCESS ;
 }
 
+void print_circular_buffer ( circular_buffer_t * buf )
+{
+	info ( "buffer  %X", buf -> buffer ) ;
+	info ( "start   %X", buf -> start ) ;
+	info ( "end     %X", buf -> end ) ;
+	info ( "head    %X", buf -> head ) ;
+	info ( "tail    %X", buf -> tail ) ;
+	info ( "rhead    %i", buf -> head - buf -> start ) ;
+	info ( "rtail    %i", buf -> tail - buf -> start ) ;
+	info ( "size    %i", buf -> buf_size ) ;
+	info ( "read s  %i", buf -> read_size  ) ;
+	info ( "write s %i", buf -> write_size ) ;
+}
+
 int read_update ( circular_buffer_t * buf , unsigned int size )
 {
 	/*if zero read, just return */
@@ -71,6 +85,7 @@ int read_update ( circular_buffer_t * buf , unsigned int size )
 	if ( buf->tail > buf->head ) /* CASE tail after head */
 	{
 		buf -> read_size = buf -> tail - buf -> head ;
+		buf -> write_size = buf -> end - buf -> tail ;
 	}
 	else if ( buf->tail < buf->head ) /* CASE tail befpre head */
 	{
@@ -85,11 +100,13 @@ int read_update ( circular_buffer_t * buf , unsigned int size )
 			{
 				buf -> head = buf -> start ;
 				buf -> read_size = buf -> tail - buf -> head ;
+				buf -> write_size = buf -> end - buf -> tail ;
 			}
 		}
 		else
 		{
 			buf -> read_size = buf -> end - buf -> head ;
+			buf -> write_size = buf -> head - buf -> tail ;
 		}
 	}
 	else if ( buf->tail == buf->head ) /* CASE head == tail */
@@ -138,16 +155,19 @@ int write_update ( circular_buffer_t * buf , unsigned int size )
 			{
 				buf -> tail = buf -> start ;
 				buf -> write_size = buf -> head - buf -> tail ;
+				buf -> read_size = buf -> end - buf -> head ;
 			}
 		}
 		else
 		{
 			buf -> write_size = buf -> end - buf -> tail ;
+			buf -> read_size = buf -> tail - buf -> head ;
 		}
 	}
 	else if ( buf->tail < buf->head ) /* CASE tail befpre head */
 	{
 		buf -> write_size = buf -> head - buf -> tail ;
+		buf -> read_size = buf -> end - buf -> head ;
 	}
 	else if ( buf->tail == buf->head ) /* CASE head == tail */
 	{
@@ -293,6 +313,8 @@ static int expand_buffer ( circular_buffer_t * buf )
 	buf -> tail = new_buffer + data_size ;
 	buf -> end = new_buffer + buf->buf_size + INCREMENTAL_BUFFER_SIZE ;
 	buf -> buf_size += INCREMENTAL_BUFFER_SIZE ;
+	buf -> read_size = data_size ;
+	buf -> write_size = buf -> end - buf-> tail ;
 
 	return SLURM_SUCCESS ;
 }
