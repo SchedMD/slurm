@@ -718,6 +718,8 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 	bool         found = false; 
 	pid_t	     mysid = getsid(req->job_pid);
 
+	if (mysid == -1)
+		error("getsid: %m");
 	while ((mysid != -1) && (s = list_next(i))) {
 		if (s->sid == mysid) {
 			resp.job_id = s->jobid;
