@@ -43,7 +43,7 @@
 #define PROLOG			""
 #define SERVER_DAEMON   	"/usr/local/slurm/slurmd.server"
 #define SERVER_TIMEOUT  	300
-#define SLURM_CONF		"/g/g0/jette/slurm/etc/slurm.conf2"
+#define SLURM_CONF		"../../etc/slurm.conf2"
 #define TMP_FS			"/tmp"
 
 #define HEAD_FORMAT "#time=%lu version=%d\n"
