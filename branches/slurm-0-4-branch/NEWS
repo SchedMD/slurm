@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.4.12
+========================
+ -- bug shot for new api calls.
+ -- added BridgeAPILogFile as an option for bluegene.conf file
+ 
 * Changes in SLURM 0.4.11
 ========================
  -- changed as many rm_get_partition() to rm_get_partitions_info as we could 

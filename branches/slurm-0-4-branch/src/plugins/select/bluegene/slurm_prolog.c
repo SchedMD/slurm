@@ -99,7 +99,7 @@ static void _wait_part_ready(char *part_name)
 	int i, j, rc1, rc2, num_parts;
 	rm_partition_t *part_ptr;
 	rm_partition_state_t state;
-	rm_partition_state_flag_t part_state = RM_PARTITION_READY+2;
+	rm_partition_state_flag_t part_state = 7;
 	int is_ready = 0;
 	char *name;
 	rm_partition_list_t *part_list;
@@ -129,13 +129,12 @@ static void _wait_part_ready(char *part_name)
 					rm_get_data(part_list, RM_PartListFirstPart, &part_ptr);
 				rm_get_data(part_ptr, RM_PartitionID, &name);
 				if(!strcasecmp(part_name, name)) {
-					is_ready = 1;
+					rc1 = rm_get_data(part_ptr, RM_PartitionState, &state);
 					break;
 				}
 			}
 			rm_free_partition_list(part_list);
-			if(is_ready)
-				break;
+			
 		} else {	       
 			rc1 = rm_get_partition(part_name, &part_ptr);
 			if (rc1 == PARTITION_NOT_FOUND)
@@ -173,11 +172,12 @@ static void _wait_part_ready(char *part_name)
 #if (_DEBUG > 1)
 			printf("\nstate=%s\n",_part_state_str(state));
 #endif
-			if ((state == RM_PARTITION_READY) 
-			    ||  (state == RM_PARTITION_ERROR)) {
-				is_ready = 1;
-				break;
-			}
+		}
+
+		if ((state == RM_PARTITION_READY) 
+		    ||  (state == RM_PARTITION_ERROR)) {
+			is_ready = 1;
+			break;
 		}
 	}
 #if _DEBUG
@@ -227,7 +227,7 @@ static void  _wait_part_owner(char *part_name, char *user_id)
 	char *name;
 	struct passwd *pw_ent;
 	int is_ready = 0;
-	rm_partition_state_flag_t part_state = RM_PARTITION_READY+2;
+	rm_partition_state_flag_t part_state = 7;
 	rm_partition_list_t *part_list;
 	
 	target_uid = atoi(user_id);

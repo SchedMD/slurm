@@ -15,6 +15,7 @@ BlrtsImage=/bgl/BlueLight/ppcfloor/bglsys/bin/rts_hw.rts
 LinuxImage=/bgl/BlueLight/ppcfloor/bglsys/bin/zImage.elf
 MloaderImage=/bgl/BlueLight/ppcfloor/bglsys/bin/mmcs-mloader.rts
 RamDiskImage=/bgl/BlueLight/ppcfloor/bglsys/bin/ramdisk.elf
+BridgeAPILogFile=/var/log/slurm/bridgeapi.log
 Numpsets=8
 BridgeAPIVerbose=0
 

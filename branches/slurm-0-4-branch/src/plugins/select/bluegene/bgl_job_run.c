@@ -256,8 +256,8 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 #else
 	int i=0, j, num_parts;
 	rm_partition_list_t *part_list;
-	//rm_partition_state_t part_state;
-	rm_partition_state_flag_t part_state = RM_PARTITION_FREE+2;
+	rm_partition_state_t state;
+	rm_partition_state_flag_t part_state = 7;
 	char *name;
 	int is_ready=0;
 	/* Wait for partition state to be FREE */
@@ -279,13 +279,14 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 				rm_get_data(part_list, RM_PartListFirstPart, &part_ptr);
 			rm_get_data(part_ptr, RM_PartitionID, &name);
 			if(!strcasecmp(bgl_part_id, name)) {
+				rc = rm_get_data(part_ptr, RM_PartitionState, &state);
 				is_ready = 1;
 				break;
 			}
 		}
 		rm_free_partition_list(part_list);
-		if(is_ready)
-			break;
+		if (state == RM_PARTITION_FREE)
+			break;	/* partition is now free */
 		/* /\* find the partition *\/ */
 /* 		if ((rc = rm_get_partition(bgl_part_id,  &part_ptr)) !=  */
 /* 				STATUS_OK) { */

@@ -744,7 +744,7 @@ static void _read_part_db2(void)
 	rm_connection_type_t conn_type;
 	rm_partition_mode_t node_use;
 	rm_partition_list_t *part_list;
-	rm_partition_state_flag_t state = 5;
+	rm_partition_state_flag_t state = 7;
 	
 	if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
 		error("rm_set_serial(): %d\n", rc);
