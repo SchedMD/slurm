@@ -11,6 +11,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <netdb.h>
 #include <stdio.h>
 #include <string.h>
 #include <syslog.h>
@@ -675,18 +676,21 @@ read_slurm_conf ( ) {
 	int i, j, error_code;
 	char *backup_controller = NULL, *control_machine = NULL, *epilog = NULL;
 	char *prioritize = NULL, *prolog = NULL, *state_save_location = NULL, *tmp_fs = NULL;
+	char *slurmctld_port = NULL, *slurmd_port = NULL;
 	int fast_schedule = 0, hash_base = 0, heartbeat_interval = 0, kill_wait = 0;
-	int slurmctld_port = 0, slurmctld_timeout = 0, slurmd_port = 0;
+	int slurmctld_timeout = 0;
 	int slurmd_timeout = 0;
 	long first_job_id = 0;
+	struct servent *servent;
 
 	/* initialization */
 	start_time = clock ();
-	slurm_spec_file = fopen (SLURM_CONFIG_FILE, "r");
+	slurm_spec_file = fopen (slurmctld_conf.slurm_conf, "r");
 	if (slurm_spec_file == NULL)
-		fatal ("read_slurm_conf error %d opening file %s", errno, SLURM_CONFIG_FILE);
+		fatal ("read_slurm_conf error %d opening file %s", 
+			errno, slurmctld_conf.slurm_conf);
 
-	info ("read_slurm_conf: loading configuration from %s", SLURM_CONFIG_FILE);
+	info ("read_slurm_conf: loading configuration from %s", slurmctld_conf.slurm_conf);
 
 	/* process the data file */
 	line_num = 0;
@@ -695,7 +699,7 @@ read_slurm_conf ( ) {
 		line_num++;
 		if (strlen (in_line) >= (BUF_SIZE - 1)) {
 			error ("read_slurm_conf line %d, of input file %s too long\n",
-				 line_num, SLURM_CONFIG_FILE);
+				 line_num, slurmctld_conf.slurm_conf);
 			fclose (slurm_spec_file);
 			return E2BIG;
 			break;
@@ -731,9 +735,9 @@ read_slurm_conf ( ) {
 			"KillWait=", 'd', &kill_wait,
 			"Prioritize=", 's', &prioritize,
 			"Prolog=", 's', &prolog,
-			"SlurmctldPort=", 'd', &slurmctld_port,
+			"SlurmctldPort=", 's', &slurmctld_port,
 			"SlurmctldTimeout=", 'd', &slurmctld_timeout,
-			"SlurmdPort=", 'd', &slurmd_port,
+			"SlurmdPort=", 's', &slurmd_port,
 			"SlurmdTimeout=", 'd', &slurmd_timeout,
 			"StateSaveLocation=", 's', &state_save_location, 
 			"TmpFS=", 's', &tmp_fs,
@@ -790,16 +794,24 @@ read_slurm_conf ( ) {
 			prolog = NULL;
 		}
 		if ( slurmctld_port ) {
-			slurmctld_conf.slurmctld_port = slurmctld_port;
-			slurmctld_port = 0;
+			servent = getservbyname (slurmctld_port, NULL);
+			if (servent)
+				slurmctld_conf.slurmctld_port   = servent -> s_port;
+			else
+			slurmctld_conf.slurmctld_port   = strtol (slurmctld_port, (char **) NULL, 10);
+			endservent ();
 		}
 		if ( slurmctld_timeout ) {
 			slurmctld_conf.slurmctld_timeout = slurmctld_timeout;
 			slurmctld_timeout = 0;
 		}
 		if ( slurmd_port ) {
-			slurmctld_conf.slurmd_port = slurmd_port;
-			slurmd_port = 0;
+			servent = getservbyname (slurmd_port, NULL);
+			if (servent)
+				slurmctld_conf.slurmd_port   = servent -> s_port;
+			else
+			slurmctld_conf.slurmd_port   = strtol (slurmd_port, (char **) NULL, 10);
+			endservent ();
 		}
 		if ( slurmd_timeout ) {
 			slurmctld_conf.slurmd_timeout = slurmd_timeout;

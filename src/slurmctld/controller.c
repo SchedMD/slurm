@@ -46,6 +46,7 @@
 #define BUF_SIZE 1024
 
 time_t init_time;
+log_options_t log_opts = LOG_OPTS_STDERR_ONLY ;
 slurm_ctl_conf_t slurmctld_conf;
 
 int msg_from_root (void);
@@ -66,9 +67,8 @@ inline static void slurm_rpc_update_node ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_update_partition ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_job_will_run ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_job_step_create( slurm_msg_t* msg ) ;	
-
 inline static void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate ) ;
-
+void usage (char *prog_name);
 
 int 
 main (int argc, char *argv[]) 
@@ -79,11 +79,9 @@ main (int argc, char *argv[])
 	slurm_msg_t * msg = NULL ;
 	slurm_addr cli_addr ;
 	char node_name[MAX_NAME_LEN];
-	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
-/*	log_options_t opts = { 1, LOG_LEVEL_DEBUG3,  LOG_LEVEL_QUIET, LOG_LEVEL_QUIET } ; */
 
 	init_time = time (NULL);
-	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
+	log_init(argv[0], log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	init_ctld_conf ( &slurmctld_conf );
 	parse_commandline ( argc, argv, &slurmctld_conf );
@@ -785,27 +783,19 @@ init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 	conf_ptr->state_save_location   = NULL ;
 	conf_ptr->tmp_fs            	= NULL ;
 
-#ifdef SLURMCTLD_PORT
 	servent = getservbyname (SLURMCTLD_PORT, NULL);
 	if (servent)
 		conf_ptr->slurmctld_port   = servent -> s_port;
 	else
 		conf_ptr->slurmctld_port   = strtol (SLURMCTLD_PORT, (char **) NULL, 10);
 	endservent ();
-#else
-	conf_ptr->slurmctld_port   	= 0 ;
-#endif
 
-#ifdef SLURMD_PORT
 	servent = getservbyname (SLURMD_PORT, NULL);
 	if (servent)
 		conf_ptr->slurmd_port   = servent -> s_port;
 	else
 		conf_ptr->slurmd_port   = strtol (SLURMD_PORT, (char **) NULL, 10);
 	endservent ();
-#else
-	conf_ptr->slurmd_port   	= 0 ;
-#endif
 }
 
 
@@ -839,30 +829,65 @@ extern int optind, opterr, optopt;
 void 
 parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * conf_ptr )
 {
-	int c = 0;
+	int c = 0, errlev;
 	opterr = 0;
 
-	while ((c = getopt (argc, argv, "b:c:f:s")) != -1)
+	while ((c = getopt (argc, argv, "e:f:hl:s:")) != -1)
 		switch (c)
 		{
-			case 'b':
-				conf_ptr->backup_controller = optarg;
-				printf("backup_controller = %s\n", conf_ptr->backup_controller );
+			case 'e':
+				errlev = strtol (optarg, (char **) NULL, 10);
+				if ((errlev < LOG_LEVEL_QUIET) || 
+				    (errlev > LOG_LEVEL_DEBUG3)) {
+					fprintf (stderr, "invalid errlev argument\n");
+					usage (argv[0]);
+					exit (1);
+				}
+				log_opts . stderr_level = errlev;
 				break;
-			case 'c':
-				conf_ptr->control_machine = optarg;
-				printf("control_machine = %s\n", conf_ptr->control_machine );
+			case 'h':
+				usage (argv[0]);
+				exit (0);
 				break;
 			case 'f':
 				slurmctld_conf.slurm_conf = optarg;
-				printf("slurmctrld.conf = %s\n", slurmctld_conf.slurm_conf );
+				printf("slurmctrld.slurm_conf = %s\n", slurmctld_conf.slurm_conf );
+				break;
+			case 'l':
+				errlev = strtol (optarg, (char **) NULL, 10);
+				if ((errlev < LOG_LEVEL_QUIET) || 
+				    (errlev > LOG_LEVEL_DEBUG3)) {
+					fprintf (stderr, "invalid errlev argument\n");
+					usage (argv[0]);
+					exit (1);
+				}
+				log_opts . logfile_level = errlev;
 				break;
 			case 's':
-				conf_ptr->fast_schedule = 1;
+				errlev = strtol (optarg, (char **) NULL, 10);
+				if ((errlev < LOG_LEVEL_QUIET) || 
+				    (errlev > LOG_LEVEL_DEBUG3)) {
+					fprintf (stderr, "invalid errlev argument\n");
+					usage (argv[0]);
+					exit (1);
+				}
+				log_opts . syslog_level = errlev;
 				break;
 			default:
-				abort ();
+				usage (argv[0]);
+				exit (1);
 		}
 
+	log_init(argv[0], log_opts, SYSLOG_FACILITY_DAEMON, NULL);
+}
 
+void
+usage (char *prog_name) 
+{
+	printf ("%s [OPTIONS]\n", prog_name);
+	printf ("  -e <errlev>  Set stderr logging to the specified level\n");
+	printf ("  -f <file>    Use specified configuration file name\n");
+	printf ("  -l <errlev>  Set logfile logging to the specified level\n");
+	printf ("  -s <errlev>  Set syslog logging to the specified level\n");
+	printf ("<errlev> is an integer between 0 and 7 with higher numbers providing more detail.\n");
 }
