@@ -369,6 +369,10 @@ extern int job_step_complete (uint32_t job_id, uint32_t job_step_id, uid_t uid);
 /* job_time_limit - enforce job time limits */
 extern void job_time_limit (void);
 
+/* kill_running_job_by_node_name - Given a node name, deallocate that job 
+ *	from the node or kill it */
+extern int kill_running_job_by_node_name (char *node_name);
+
 /* list_append_list - Appends the elements of from list onto the to list */
 extern void list_append_list( List to, List from );
 	
@@ -455,6 +459,9 @@ extern void pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_
  *	machine independent form (for network transmission)
  */
 extern void pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len);
+
+/* ping_nodes - check that all nodes and daemons are alive */
+extern void ping_nodes (void);
 
 /*
  * purge_old_job - purge old job records. if memory space is needed. 

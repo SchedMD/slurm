@@ -98,6 +98,7 @@ inline static void slurm_rpc_job_step_create( slurm_msg_t* msg ) ;
 inline static void slurm_rpc_job_step_get_info ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_job_will_run ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_node_registration ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_ping ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_reconfigure_controller ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_shutdown_controller ( slurm_msg_t * msg );
 inline static void slurm_rpc_shutdown_controller_immediate ( slurm_msg_t * msg );
@@ -378,15 +379,19 @@ slurmctld_background ( void * no_data )
 {
 	static time_t last_sched_time;
 	static time_t last_checkpoint_time;
+	static time_t last_ping_time;
 	static time_t last_timelimit_time;
 	time_t now;
 	/* Locks: Write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+	/* Locks: Write job, write node */
+	slurmctld_lock_t node_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	/* Locks: Write partition */
 	slurmctld_lock_t part_write_lock = { NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
 	/* Let the dust settle before doing work */
-	last_sched_time = last_checkpoint_time = last_timelimit_time = time (NULL);
+	last_sched_time = last_checkpoint_time = last_timelimit_time = 
+		last_ping_time = time (NULL);
 	(void) pthread_setcancelstate (PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype (PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	debug3 ("slurmctld_background pid = %u", getpid ());
@@ -396,7 +401,7 @@ slurmctld_background ( void * no_data )
 
 		now = time (NULL);
 
-		if ((now - last_timelimit_time) > PERIODIC_TIMEOUT) {
+		if (difftime (now, last_timelimit_time) > PERIODIC_TIMEOUT) {
 			last_timelimit_time = now;
 			debug ("Performing job time limit check");
 			lock_slurmctld (job_write_lock);
@@ -404,14 +409,22 @@ slurmctld_background ( void * no_data )
 			unlock_slurmctld (job_write_lock);
 		}
 
-		if ((now - last_timelimit_time) > PERIODIC_GROUP_CHECK) {
+		if (difftime (now, last_ping_time) >= slurmctld_conf.heartbeat_interval) {
+			last_ping_time = now;
+			debug ("Performing node ping");
+			lock_slurmctld (node_write_lock);
+			ping_nodes ();
+			unlock_slurmctld (node_write_lock);
+		}
+
+		if (difftime (now, last_timelimit_time) >= PERIODIC_GROUP_CHECK) {
 			last_timelimit_time = now;
 			lock_slurmctld (part_write_lock);
 			load_part_uid_allow_list ( 0 );
 			unlock_slurmctld (part_write_lock);
 		}
 
-		if ((now - last_sched_time) > PERIODIC_SCHEDULE) {
+		if (difftime (now, last_sched_time) >= PERIODIC_SCHEDULE) {
 			last_sched_time = now;
 			debug ("Performing purge of old job records");
 			lock_slurmctld (job_write_lock);
@@ -421,7 +434,8 @@ slurmctld_background ( void * no_data )
 				last_checkpoint_time = 0;	/* force state save */
 		}
 
-		if (shutdown_time || (now - last_checkpoint_time) > PERIODIC_CHECKPOINT) {
+		if (shutdown_time || 
+		    (difftime (now, last_checkpoint_time) >= PERIODIC_CHECKPOINT) ) {
 			if (shutdown_time) {	
 				/* wait for any RPC's to complete */
 				if (server_thread_count)
@@ -577,6 +591,9 @@ slurmctld_req ( slurm_msg_t * msg )
 			break;
 		case REQUEST_SHUTDOWN_IMMEDIATE:
 			slurm_rpc_shutdown_controller_immediate ( msg ) ;
+			break;
+		case REQUEST_PING:
+			slurm_rpc_ping ( msg ) ;
 			break;
 		case REQUEST_UPDATE_JOB:
 			slurm_rpc_update_job ( msg ) ;
@@ -1375,6 +1392,29 @@ void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
 }
+
+/* slurm_rpc_ping - process ping RPC */
+void 
+slurm_rpc_ping ( slurm_msg_t * msg )
+{
+	/* init */
+	int error_code = SLURM_SUCCESS;
+#ifdef HAVE_AUTHD
+	uid_t uid = 0;
+#endif
+
+#ifdef	HAVE_AUTHD
+	uid = slurm_auth_uid (msg->cred);
+	if ( (uid != 0) && (uid != getuid ()) ) {
+		error ("Security violation, PING RPC from uid %u", (unsigned int) uid);
+		error_code = ESLURM_USER_ID_MISSING;
+	}
+#endif
+
+	/* return result */
+	slurm_send_rc_msg ( msg , error_code );
+}
+
 
 /* slurm_rpc_reconfigure_controller - process RPC to re-initialize slurmctld from configuration file */
 void 

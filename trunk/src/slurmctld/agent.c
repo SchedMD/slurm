@@ -131,7 +131,8 @@ agent (void *args)
 		fatal ("agent passed NULL address list");
 	if (agent_arg_ptr->node_names == NULL)
 		fatal ("agent passed NULL node name list");
-	if (agent_arg_ptr->msg_type != REQUEST_REVOKE_JOB_CREDENTIAL)
+	if ((agent_arg_ptr->msg_type != REQUEST_REVOKE_JOB_CREDENTIAL) &&
+	    (agent_arg_ptr->msg_type != REQUEST_PING))
 		fatal ("agent passed invalid message type %d", agent_arg_ptr->msg_type);
 
 	/* initialize the data structures */
@@ -252,8 +253,8 @@ wdog (void *args)
 	agent_info_t *agent_ptr = (agent_info_t *) args;
 	thd_t *thread_ptr = agent_ptr->thread_struct;
 #if AGENT_IS_THREAD
-	/* Locks: Write node */
-	slurmctld_lock_t node_write_lock = { NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+	/* Locks: Write job and write node */
+	slurmctld_lock_t node_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 #else
 	int done_cnt;
 	char *slurm_names;

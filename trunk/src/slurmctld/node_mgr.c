@@ -35,6 +35,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -42,6 +43,7 @@
 
 #include <src/common/hostlist.h>
 #include <src/common/xstring.h>
+#include <src/slurmctld/agent.h>
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 
@@ -1089,6 +1091,13 @@ node_did_resp (char *name)
 	i = node_ptr - node_record_table_ptr;
 	last_node_update = time (NULL);
 	node_record_table_ptr[i].last_response = time (NULL);
+	node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
+	if (node_ptr->node_state == NODE_STATE_UNKNOWN)
+		node_ptr->node_state = NODE_STATE_IDLE;
+	if (node_ptr->node_state == NODE_STATE_IDLE)
+		bit_set (idle_node_bitmap, (node_ptr - node_record_table_ptr));
+	if (node_ptr->node_state != NODE_STATE_DOWN)
+		bit_set (up_node_bitmap, (node_ptr - node_record_table_ptr));
 	return;
 }
 
@@ -1106,11 +1115,79 @@ node_not_resp (char *name)
 	}
 
 	i = node_ptr - node_record_table_ptr;
+	if (node_record_table_ptr[i].node_state & NODE_STATE_NO_RESPOND)
+		return;		/* Already known to be not responding */
+
 	last_node_update = time (NULL);
 	error ("Node %s not responding", name);
 	bit_clear (up_node_bitmap, i);
 	bit_clear (idle_node_bitmap, i);
 	node_record_table_ptr[i].node_state |= NODE_STATE_NO_RESPOND;
+	kill_running_job_by_node_name (node_record_table_ptr[i].name);
 	return;
+}
+
+/* ping_nodes - check that all nodes and daemons are alive */
+void 
+ping_nodes (void)
+{
+	int i, age;
+	int buf_rec_size = 0;
+	time_t now;
+	agent_arg_t *agent_args;
+	pthread_attr_t attr_agent;
+	pthread_t thread_agent;
+
+	agent_args = xmalloc (sizeof (agent_arg_t));
+	agent_args->msg_type = REQUEST_PING;
+	now = time(NULL);
+	for (i = 0; i < node_record_count; i++) {
+		if (node_record_table_ptr[i].node_state == NODE_STATE_DOWN)
+			continue;
+
+		age = difftime (now, node_record_table_ptr[i].last_response);
+		if (age < slurmctld_conf.heartbeat_interval)
+			continue;
+
+		debug3 ("ping %s now", node_record_table_ptr[i].name);
+		if ((agent_args->addr_count+1) > buf_rec_size) {
+			buf_rec_size += 32;
+			xrealloc ((agent_args->slurm_addr), (sizeof (struct sockaddr_in) * buf_rec_size));
+			xrealloc ((agent_args->node_names), (MAX_NAME_LEN * buf_rec_size));
+		}
+		agent_args->slurm_addr[agent_args->addr_count] = node_record_table_ptr[i].slurm_addr;
+		strncpy (&agent_args->node_names[MAX_NAME_LEN*agent_args->addr_count],
+		         node_record_table_ptr[i].name, MAX_NAME_LEN);
+		agent_args->addr_count++;
+
+		if (age >= slurmctld_conf.slurmd_timeout) {
+			error ("node %s not responding", node_record_table_ptr[i].name);
+			last_node_update = time (NULL);
+			bit_clear (up_node_bitmap, i);
+			bit_clear (idle_node_bitmap, i);
+			node_record_table_ptr[i].node_state |= NODE_STATE_NO_RESPOND;
+			kill_running_job_by_node_name (node_record_table_ptr[i].name);
+		}
+	}
+
+	if (agent_args->addr_count == 0) {
+		xfree (agent_args);
+		return;
+	}
+	debug ("Spawning ping agent");
+	if (pthread_attr_init (&attr_agent))
+		fatal ("pthread_attr_init error %m");
+	if (pthread_attr_setdetachstate (&attr_agent, PTHREAD_CREATE_DETACHED))
+		error ("pthread_attr_setdetachstate error %m");
+#ifdef PTHREAD_SCOPE_SYSTEM
+	if (pthread_attr_setscope (&attr_agent, PTHREAD_SCOPE_SYSTEM))
+		error ("pthread_attr_setscope error %m");
+#endif
+	if (pthread_create (&thread_agent, &attr_agent, agent, (void *)agent_args)) {
+		error ("pthread_create error %m");
+		sleep (1); /* sleep and try once more */
+		if (pthread_create (&thread_agent, &attr_agent, agent, (void *)agent_args))
+			fatal ("pthread_create error %m");
+	}
 }
 
