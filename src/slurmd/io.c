@@ -61,6 +61,7 @@
 #include "src/slurmd/shm.h"
 #include "src/slurmd/io.h"
 #include "src/slurmd/fname.h"
+#include "src/slurmd/slurmd.h"
 
 typedef enum slurmd_io_tupe {
 	TASK_STDERR = 0,

@@ -142,6 +142,8 @@ static void _shm_clear_step(job_step_t *);
 static int  _shm_clear_stale_entries(void);
 static int  _shm_find_step(uint32_t, uint32_t);
 static bool _shm_sane(void);
+static int  _shm_validate(void);
+static bool _valid_slurmd_sid(pid_t sid);
 
 static task_t *     _shm_alloc_task(void);
 static task_t *     _shm_find_task_in_step(job_step_t *s, int taskid);
@@ -152,9 +154,15 @@ static job_step_t * _shm_copy_step(job_step_t *j);
  * already exists - otherwise create and attach
  */
 int
-shm_init(void)
+shm_init(bool startup)
 {
-	return _shm_lock_and_initialize();
+	int rc;
+
+	if ((rc = _shm_lock_and_initialize()) < 0)
+		return rc;
+	if (startup)
+		rc = _shm_validate();
+	return rc;
 }
 
 /* Detach from shared memory */
@@ -175,7 +183,7 @@ shm_fini(void)
 	for (i = 0; i < MAX_JOB_STEPS; i++) {
 		if (slurmd_shm->step[i].state > SLURMD_JOB_UNUSED) {
 			job_step_t *s = &slurmd_shm->step[i];
-			info ("Used shm slot: %u %u\n", s->jobid, s->stepid); 
+			info ("Used shm for job %u.%u\n", s->jobid, s->stepid); 
 		}
 	}
 
@@ -264,13 +272,12 @@ shm_step_still_running(uint32_t jobid, uint32_t stepid)
 
 	/*
 	 *  Consider a job step running if the step state is less 
-	 *   than STARTED or if s->sid has not yet been set. 
-	 *   If the state is >= STARTED, check for running processes 
-	 *   by attempting to signal the running session.
+	 *   than STARTED or if s->sid has not yet been set then 
+	 *   validate that the sid is a valid slurmd process. 
 	 */
 	if (  (s->state < SLURMD_JOB_STARTED)
 	   || (s->sid <= (pid_t) 0) 
-	   || (kill(-s->sid, 0) == 0) )
+	   || (_valid_slurmd_sid(s->sid)) )
 		retval = true;
 
     done:
@@ -895,7 +902,7 @@ _shm_clear_stale_entries(void)
 			continue;
 		
 		if ((s->sid > (pid_t) 0) && (kill(-s->sid, 0) != 0)) {
-			debug ("Clearing stale job %ld.%ld from shm",
+			debug ("Clearing stale job %u.%u from shm",
 					s->jobid, s->stepid);
 			_shm_clear_step(s);
 			count++;
@@ -1045,7 +1052,7 @@ _shm_reopen()
 	 */
 	_shm_lock();
 	if (slurmd_shm->version != SHM_VERSION) {
-		error("shm_init: Wrong version in shared memory");
+		error("_shm_reopen: Wrong version in shared memory");
 		retval = SLURM_FAILURE;
 	} else {
 		slurmd_shm->users++;
@@ -1053,7 +1060,7 @@ _shm_reopen()
 	}
 
 	_shm_unlock();
-	debug3("leaving shm_init()");
+	debug3("leaving _shm_reopen()");
 
 	return retval;
 }
@@ -1087,6 +1094,64 @@ _shm_lock_and_initialize()
 	else                        /* lock exists. Attach to shared memory */
 		return _shm_reopen();
 
+}
+
+/* Validate the shm contents (particilarly the pids) are valid */
+static int
+_shm_validate(void)
+{
+	int i;
+
+	_shm_lock();
+	for (i = 0; i < MAX_JOB_STEPS; i++) {
+		job_step_t *s = &slurmd_shm->step[i];
+		if (s->state == SLURMD_JOB_UNUSED)
+			continue;
+
+		/*
+		 * Consider a job step running if the step state is less
+		 * than STARTED or if s->sid has not yet been set.
+		 * If the state is >= STARTED, check for running processes
+		 * by attempting to signal the running session.
+		 */
+		if ((s->state >= SLURMD_JOB_STARTED) &&
+		    (s->sid   >  (pid_t) 0) &&
+		    (!_valid_slurmd_sid(s->sid))) {
+			info ("Clearing defunct job %u.%u sid %u from shm",
+					s->jobid, s->stepid, 
+					(unsigned int) s->sid);
+			_shm_clear_step(s);
+		} else
+			debug3 ("Preserving shm for job %u.%u",
+					s->jobid, s->stepid);
+	}
+
+	_shm_unlock();
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Confirm that the supplied sid belongs to a valid slurmd job manager. 
+ * For now just confirm the sid is still valid.
+ * Ideallly we want to test argv[0] of the process, but that is far
+ * more work and slurmd shared memory corruption has never been observed.
+ */
+static bool
+_valid_slurmd_sid(pid_t sid)
+{
+	pid_t session;
+	xassert(sid > (pid_t) 1);
+
+	/* Check for active session */
+	if (kill(-sid, 0) != 0)
+		return false;
+
+	/* Ensure that session leader's pid == sid */
+	session = getsid(sid);
+       	if ((session > (pid_t) 0) && (session != sid))
+		return false;
+
+	return true;
 }
 
 /*

@@ -663,7 +663,7 @@ _slurmd_init()
 	/*
 	 * Initialize slurmd shared memory
 	 */
-	if (shm_init() < 0)
+	if (shm_init(true) < 0)
 		return SLURM_FAILURE;
 
 	/* 
