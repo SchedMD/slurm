@@ -32,6 +32,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #if HAVE_INTTYPES_H
 #  include <inttypes.h>
@@ -46,35 +47,75 @@
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/xmalloc.h>
 
-void usage(char * command);
+#define MAX_CANCEL_RETRY 10
 
-int 
+int confirmation (uint32_t job_id, int has_step, uint32_t step_id);
+void job_cancel (char *name, int interactive);
+void usage (char * command);
+
+int
 main (int argc, char *argv[]) 
 {
-	int error_code = 0, i;
+	int interactive = 0, pos;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
+
+	if (argc < 2) {
+		usage (argv[0]);
+		exit (1);
+	}
+
+	log_init (argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
+
+	for (pos = 1; pos < argc; pos++) {
+		if (argv[pos][0] != '-')
+			break;
+		else if (strncmp (argv[pos], "-help", 2) == 0) 
+			usage (argv[0]);
+		else if (strcmp (argv[pos], "-i") == 0) 
+			interactive = 1;
+		else if (strcmp (argv[pos], "-v") == 0) 
+			printf ("Version 0.1\n");
+		else {
+			fprintf (stderr, "Invalid option %s\n", argv[pos]);
+			exit (1);
+		}
+	}
+
+	for ( ; pos<argc; pos++) {
+		job_cancel (argv[pos], interactive);
+	}
+
+	exit (0);
+}
+
+void
+job_cancel (char *name, int interactive)
+{
+	int error_code = 0, i;
 	long tmp_l;
 	uint32_t job_id, step_id;
 	char *next_str;
 
-	if (argc < 2) 
-		usage(argv[0]);
-
-	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
-
-	tmp_l = strtol(argv[1], &next_str, 10);
-	if (tmp_l <= 0)
-		usage(argv[0]);
+	tmp_l = strtol(name, &next_str, 10);
+	if (tmp_l <= 0) {
+		fprintf (stderr, "Invalid job_id %s\n", name);
+		exit (1);
+	}
 	job_id = tmp_l;
 
 	/* cancelling individual job step */
 	if (next_str[0] == '.') {
 		tmp_l = strtol(&next_str[1], NULL, 10);
-		if (tmp_l < 0)
-			usage(argv[0]);
+		if (tmp_l < 0) {
+			fprintf (stderr, "Invalid step_id %s\n", name);
+			exit (1);
+		}
 		step_id = tmp_l;
 
-		for (i=0; i<10; i++) {
+		if (interactive && (confirmation (job_id, 1, step_id) == 0 ))
+			return;
+
+		for (i=0; i<MAX_CANCEL_RETRY; i++) {
 			error_code = slurm_cancel_job_step (job_id, step_id);
 			if ((error_code == 0) || 
 			    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
@@ -84,9 +125,12 @@ main (int argc, char *argv[])
 		}
 	}
 
-	/* job only, no job step */
+	/* cancelling entire job, no job step */
 	else {
-		for (i=0; i<10; i++) {
+		if (interactive && (confirmation (job_id, 0, 0) == 0 ))
+			return;
+
+		for (i=0; i<MAX_CANCEL_RETRY; i++) {
 			error_code = slurm_cancel_job (job_id);
 			if ((error_code == 0) || 
 			    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
@@ -97,18 +141,35 @@ main (int argc, char *argv[])
 	}
 
 	if (error_code) {
-		printf ("slurm_cancel_job error %d %s\n",
-			errno, slurm_strerror(errno));
+		slurm_perror ("Cancel job error: ");
 		exit (1);
 	}
-	exit (0);
+}
+
+int 
+confirmation (uint32_t job_id, int has_step, uint32_t step_id)
+{
+	char in_line[128];
+
+	while (1) {
+		if (has_step)
+			printf ("Cancel job step %u.%u [y/n]? ", job_id, step_id);
+		else
+			printf ("Cancel job %u [y/n]? ", job_id);
+
+		fgets (in_line, sizeof (in_line), stdin);
+		if ((in_line[0] == 'y') || (in_line[0] == 'Y'))
+			return 1;
+		if ((in_line[0] == 'n') || (in_line[0] == 'N'))
+			return 0;
+	}
+
 }
 
 void
 usage(char *command) 
 {
-	printf ("Usage: %s job_id[.step_id]\n", command);
-	exit (1);
+	printf ("Usage: %s job_id[.step_id] [job_id[.step_id] ...]\n", command);
 }
 
 
