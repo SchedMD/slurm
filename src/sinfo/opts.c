@@ -79,7 +79,7 @@ int parse_command_line(int argc, char *argv[])
 
 	/* Declare the Options */
 	static const struct poptOption options[] = {
-		{"exact", 'e', POPT_ARG_NONE, &params.exact_match, OPT_EXACT,
+		{"exact", 'e', POPT_ARG_NONE, NULL, OPT_EXACT,
 			"group nodes only on exact match of configuration",
 			NULL},
 		{"iterate", 'i', POPT_ARG_INT, &params.iterate,
@@ -94,19 +94,19 @@ int parse_command_line(int argc, char *argv[])
 			"PARTITION"},
 		{"nodes", 'n', POPT_ARG_STRING, &params.nodes, OPT_NODES,
 			"report on specific node(s)", "NODES"},
-		{"Node", 'N', POPT_ARG_NONE, &params.node_flag, OPT_NODE,
+		{"Node", 'N', POPT_ARG_NONE, NULL, OPT_NODE,
 			"Node-centric format", NULL},
-		{"long", 'l', POPT_ARG_NONE, &params.long_output,
-			OPT_LONG, "long output - displays more information",
+		{"long", 'l', POPT_ARG_NONE, NULL, OPT_LONG, 
+			"long output - displays more information",
 			NULL},
 		{"sort", 'S', POPT_ARG_STRING, &params.sort, OPT_SORT,
 			"comma seperated list of fields to sort on", "fields"},
-		{"summarize", 's', POPT_ARG_NONE, &params.summarize,
-			OPT_SHORT,"report state summary only", NULL},
-		{"verbose", 'v', POPT_ARG_NONE, &params.verbose,
-			OPT_VERBOSE, "verbosity level", "level"},
-		{"noheader", 'h', POPT_ARG_NONE, &params.no_header, 
-			OPT_NO_HEAD, "no headers on output", NULL},
+		{"summarize", 's', POPT_ARG_NONE, NULL, OPT_SHORT,
+			"report state summary only", NULL},
+		{"verbose", 'v', POPT_ARG_NONE, NULL, OPT_VERBOSE, 
+			"verbosity level", "level"},
+		{"noheader", 'h', POPT_ARG_NONE, NULL, OPT_NO_HEAD, 
+			"no headers on output", NULL},
 		{"format", 'o', POPT_ARG_STRING, &params.format, OPT_FORMAT, 
 			"format specification", "format"},
 		{"version", 'V', POPT_ARG_NONE, 0, OPT_VERSION,
@@ -124,8 +124,26 @@ int parse_command_line(int argc, char *argv[])
 	while ((curr_opt = poptGetNextOpt(context)) > 0) {
 		switch ( curr_opt )
 		{
+			case OPT_EXACT:
+				params.exact_match = true;
+				break;
 			case OPT_NODE_STATE:
 				params.state_list = _build_state_list( params.states );
+				break;
+			case OPT_NODE:
+				params.node_flag = true;
+				break;
+			case OPT_LONG:
+				params.long_output = true;
+				break;
+			case OPT_SHORT:
+				params.summarize = true;
+				break;
+			case OPT_VERBOSE:
+				params.verbose++;
+				break;
+			case OPT_NO_HEAD:
+				params.no_header = true;
 				break;
 			case OPT_VERSION:
 				_print_version();

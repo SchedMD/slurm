@@ -86,17 +86,16 @@ parse_command_line( int argc, char* argv[] )
 
 		{"iterate", 'i', POPT_ARG_INT, &params.iterate, OPT_ITERATE,
 			"specify an interation period", "seconds"},
-		{"noheader", 'h', POPT_ARG_NONE, &params.no_header, 
-			OPT_NO_HEAD, "no headers on output", NULL},
-		{"jobs", 'j', POPT_ARG_NONE, &params.job_flag, OPT_JOBS_NONE, 
+		{"noheader", 'h', POPT_ARG_NONE, NULL, OPT_NO_HEAD, 
+			"no headers on output", NULL},
+		{"jobs", 'j', POPT_ARG_NONE, NULL, OPT_JOBS_NONE, 
 			"comma separated list of jobs to view, default is all", 
 			"job_id"},
-		{"steps", 's', POPT_ARG_NONE, &params.step_flag, 
-			OPT_STEPS_NONE, 
+		{"steps", 's', POPT_ARG_NONE, NULL, OPT_STEPS_NONE, 
 			"comma separated list of job steps to view, "
 			"default is all",
 			"job_step"},
-		{"long", 'l', POPT_ARG_NONE, &params.long_list, OPT_LONG, 
+		{"long", 'l', POPT_ARG_NONE, NULL, OPT_LONG, 
 			"long report", NULL},
 		{"sort", 'S', POPT_ARG_STRING, &params.sort, OPT_SORT,
 			"comma seperated list of fields to sort on", "fields"},
@@ -113,9 +112,9 @@ parse_command_line( int argc, char* argv[] )
 			"format specification", "format"},
 		{"user", 'u', POPT_ARG_STRING, &params.users, OPT_USERS,
 			"comma separated list of users to view", "user_name"},
-		{"verbose", 'v', POPT_ARG_NONE, &params.verbose, OPT_VERBOSE,
+		{"verbose", 'v', POPT_ARG_NONE, NULL, OPT_VERBOSE,
 			"verbosity level", NULL},
-		{"version", 'V', POPT_ARG_NONE, 0, OPT_VERSION,
+		{"version", 'V', POPT_ARG_NONE, NULL, OPT_VERSION,
 			"output version information and exit", NULL},
 		POPT_AUTOHELP
 		{NULL, '\0', 0, NULL, 0, NULL, NULL} /* end the list */
@@ -137,16 +136,24 @@ parse_command_line( int argc, char* argv[] )
 
 		switch ( curr_opt )
 		{
+			case OPT_NO_HEAD:
+				params.no_header = true;
+				break;
 			case OPT_JOBS_NONE:
 				if ( (opt_arg = poptGetArg(context)) != NULL )
 					params.jobs = (char*)opt_arg;
 				params.job_list = _build_job_list(params.jobs);
+				params.job_flag = true;
 				break;	
 			case OPT_STEPS_NONE:
 				if ( (opt_arg = poptGetArg( context )) != NULL )
 					params.steps = (char*)opt_arg;
 				params.step_list = _build_step_list( params.steps );
+				params.step_flag = true;
 				break;	
+			case OPT_LONG:
+				params.long_list = true;
+				break;
 			case OPT_STATES:
 				params.state_list = _build_state_list( params.states );
 				break;	
@@ -158,7 +165,7 @@ parse_command_line( int argc, char* argv[] )
 				params.user_list = _build_user_list( params.users );
 				break;
 			case OPT_VERBOSE:
-				params.verbose = true;
+				params.verbose++;
 				break;	
 			case OPT_VERSION:
 				_print_version();

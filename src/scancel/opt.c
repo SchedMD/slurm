@@ -76,7 +76,7 @@
 #endif
 
 struct poptOption options[] = {
-	{"interactive", 'i', POPT_ARG_NONE, &opt.interactive, OPT_INTERACTIVE,
+	{"interactive", 'i', POPT_ARG_NONE, NULL, OPT_INTERACTIVE,
 	 "confirm each job cancelation", },
 	{"name", 'n', POPT_ARG_STRING, NULL, OPT_NAME,
 	 "name of job", "name"},
@@ -88,7 +88,7 @@ struct poptOption options[] = {
 	 "name of job's state", "PENDING | RUNNING"},
 	{"user", 'u', POPT_ARG_STRING, NULL, OPT_USER,
 	 "name of job's owner", "name"},
-        {"verbose", 'v', 0, 0, OPT_VERBOSE,
+        {"verbose", 'v', POPT_ARG_NONE, NULL, OPT_VERBOSE,
 	 "verbose operation (multiple -v's increase verbosity)", },
 	{"version", 'V', POPT_ARG_NONE, NULL, OPT_VERSION,
 	 "report the current version", },
@@ -338,6 +338,10 @@ static void opt_args(int ac, char **av)
 		arg = poptGetOptArg(optctx);
 
 		switch (rc) {
+		case OPT_INTERACTIVE:
+			opt.interactive = true;
+			break;
+
 		case OPT_NAME:
 			opt.job_name = xstrdup(arg);
 			break;
