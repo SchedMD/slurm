@@ -45,11 +45,12 @@
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
-#include "src/common/qsw.h"
 #include "src/common/setenvpf.h"
 #include "src/common/switch.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/plugins/switch/qsw.h"
 
 #define BUF_SIZE 1024
 
