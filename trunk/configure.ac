@@ -153,7 +153,7 @@ AC_ARG_WITH(slurmctld-port,
     ]
 )
 AC_MSG_RESULT(${slurmctldport=6817})
-AC_DEFINE_UNQUOTED(SLURMCTLD_PORT, "$slurmctldport",
+AC_DEFINE_UNQUOTED(SLURMCTLD_PORT, [$slurmctldport],
                    [Define the default port number for slurmctld])
 AC_SUBST(SLURMCTLD_PORT)
 
@@ -167,7 +167,7 @@ AC_ARG_WITH(slurmd-port,
     ]
 )
 AC_MSG_RESULT(${slurmdport=6818})
-AC_DEFINE_UNQUOTED(SLURMD_PORT, "$slurmdport",
+AC_DEFINE_UNQUOTED(SLURMD_PORT, [$slurmdport],
                    [Define the default port number for slurmd])
 AC_SUBST(SLURMD_PORT)
 
