@@ -11,4 +11,4 @@ endif
 EXTRA_DIST = popt
 
 # add subdirs "scancel" and "squeue" as soon as something is there:
-SUBDIRS = $(popt_dirs) common api slurmctld slurmd srun scontrol 
+SUBDIRS = $(popt_dirs) common api slurmctld slurmd srun scontrol test
