@@ -537,12 +537,13 @@ slurm_fd slurm_accept_stream(slurm_fd open_fd, slurm_addr * slurm_address)
 
 /* slurm_open_stream
  * opens a client connection to stream server
- * IN slurm_address         - slurm_addr of the connection destination
+ * IN slurm_address     - slurm_addr of the connection destination
  * RET slurm_fd         - file descriptor of the connection created
+ * NOTE: Retry with various ports as needed if connection is refused
  */
 slurm_fd slurm_open_stream(slurm_addr * slurm_address)
 {
-        return _slurm_open_stream(slurm_address);
+        return _slurm_open_stream(slurm_address, true);
 }
 
 /* slurm_write_stream

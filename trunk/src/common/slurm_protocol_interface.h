@@ -61,6 +61,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 
+#include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_common.h"
 
@@ -196,9 +197,11 @@ slurm_fd _slurm_accept_stream ( slurm_fd open_fd ,
 /* _slurm_open_stream
  * opens a client connection to stream server
  * IN slurm_address 	- slurm_addr of the connection destination
+ * IN retry             - if true, retry as needed with various ports
+ *                        to avoid socket address collision
  * RET slurm_fd         - file descriptor of the connection created
  */
-slurm_fd _slurm_open_stream ( slurm_addr * slurm_address ) ;
+slurm_fd _slurm_open_stream ( slurm_addr * slurm_address, bool retry ) ;
 
 /* _slurm_get_stream_addr
  * esentially a encapsilated get_sockname  
