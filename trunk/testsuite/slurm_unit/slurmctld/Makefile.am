@@ -18,6 +18,7 @@ job_cancel_LDADD = $(top_builddir)/src/common/libcommon.la \
 		$(top_builddir)/src/api/libslurm.la
 
 LDADD   = $(top_builddir)/src/common/libcommon.la \
+		$(top_builddir)/src/common/libhostlist.la	\
 		$(top_builddir)/src/slurmctld/agent.o \
 		$(top_builddir)/src/slurmctld/job_scheduler.o \
 		$(top_builddir)/src/slurmctld/node_scheduler.o \
@@ -32,3 +33,6 @@ LDADD   = $(top_builddir)/src/common/libcommon.la \
 		$(top_builddir)/src/common/libcred.la \
 		$(SSL_LIBS)
 
+force :
+$(LDADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
