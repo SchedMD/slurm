@@ -208,28 +208,9 @@
 /* strlcpy.[ch] functions */
 #define	strlcpy			slurm_strlcpy
 
-/* switch.[ch] functions */
-#define	switch_init		slurm_switch_init
-#define	switch_save		slurm_switch_save
-#define	switch_restore		slurm_switch_restore
-#define	switch_no_frag		slurm_switch_no_frag
-#define	switch_get_errno	slurm_switch_get_errno
-#define	switch_strerror		slurm_switch_strerror
-#define	switch_alloc_jobinfo	slurm_switch_alloc_jobinfo
-#define	switch_build_jobinfo	slurm_switch_build_jobinfo
-#define	switch_copy_jobinfo	slurm_switch_copy_jobinfo
-#define	switch_free_jobinfo	slurm_switch_free_jobinfo
-#define	switch_pack_jobinfo	slurm_switch_pack_jobinfo
-#define	switch_unpack_jobinfo	slurm_switch_unpack_jobinfo
-#define	switch_print_jobinfo	slurm_switch_print_jobinfo
-#define	switch_sprint_jobinfo	slurm_switch_sprint_jobinfo
-#define	interconnect_node_init	slurm_interconnect_node_init
-#define	interconnect_node_fini	slurm_interconnect_node_fini
-#define	interconnect_preinit	slurm_interconnect_preinit
-#define	interconnect_init	slurm_interconnect_init
-#define	interconnect_fini	slurm_interconnect_fini
-#define	interconnect_postfini	slurm_interconnect_postfini
-#define	interconnect_attach	slurm_interconnect_attach
+/* switch.[ch] functions
+ * None exported today. 
+ * The header file used only for #define values. */
 
 /* xassert.[ch] functions */
 #define	__xassert_failed	slurm_xassert_failed

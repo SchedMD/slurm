@@ -38,32 +38,6 @@
 #include "src/common/xstring.h"
 
 /*
- * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
- * for details. 
- */
-strong_alias(switch_init,		slurm_switch_init);
-strong_alias(switch_save,		slurm_switch_save);
-strong_alias(switch_restore,		slurm_switch_restore);
-strong_alias(switch_no_frag,		slurm_switch_no_frag);
-strong_alias(switch_get_errno,		slurm_switch_get_errno);
-strong_alias(switch_strerror,		slurm_switch_strerror);
-strong_alias(switch_alloc_jobinfo,	slurm_switch_alloc_jobinfo);
-strong_alias(switch_build_jobinfo,	slurm_switch_build_jobinfo);
-strong_alias(switch_copy_jobinfo,	slurm_switch_copy_jobinfo);
-strong_alias(switch_free_jobinfo,	slurm_switch_free_jobinfo);
-strong_alias(switch_pack_jobinfo,	slurm_switch_pack_jobinfo);
-strong_alias(switch_unpack_jobinfo,	slurm_switch_unpack_jobinfo);
-strong_alias(switch_print_jobinfo,	slurm_switch_print_jobinfo);
-strong_alias(switch_sprint_jobinfo,	slurm_switch_sprint_jobinfo);
-strong_alias(interconnect_node_init,	slurm_interconnect_node_init);
-strong_alias(interconnect_node_fini,	slurm_interconnect_node_fini);
-strong_alias(interconnect_preinit,	slurm_interconnect_preinit);
-strong_alias(interconnect_init,		slurm_interconnect_init);
-strong_alias(interconnect_fini,		slurm_interconnect_fini);
-strong_alias(interconnect_postfini,	slurm_interconnect_postfini);
-strong_alias(interconnect_attach,	slurm_interconnect_attach);
-
-/*
  * WARNING:  Do not change the order of these fields or add additional
  * fields at the beginning of the structure.  If you do, job completion
  * logging plugins will stop working.  If you need to add fields, add them 
