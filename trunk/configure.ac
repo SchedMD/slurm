@@ -41,6 +41,7 @@ dnl
 AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
                  stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
                  stdlib.h dirent.h pthread.h sys/prctl.h \
+                 sysint.h inttypes.h termcap.h  \
 		 )
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
@@ -69,6 +70,7 @@ dnl
 AC_FUNC_MALLOC
 AC_FUNC_STRERROR_R
 AC_CHECK_FUNCS( \
+   hstrerror \
    strerror  \
    mtrace    \
    strsignal \ 
@@ -78,8 +80,7 @@ AC_CHECK_FUNCS( \
    setproctitle \
 )
 
-
-AC_CHECK_DECLS([strsignal, sys_siglist])
+AC_CHECK_DECLS([hstrerror, strsignal, sys_siglist])
 
 ACX_PTHREAD([], AC_MSG_ERROR([Error: Cannot figure out how to use pthreads!]))
 
@@ -159,6 +160,7 @@ AC_SUBST(SLURMD_PORT)
 
 dnl check for whether to include Elan support
 dnl
+AC_MSG_CHECKING(whether to include Elan support)
 savedLIBS="$LIBS"
 AC_CHECK_LIB([elanctrl], [elanctrl_open], 
              [ have_elanctrl=yes
@@ -196,13 +198,15 @@ AC_ARG_ENABLE(readline,
   [ readline=no  ],
   [ readline=yes ]
 )
+if test x$readline = xyes; then
+   AC_CHECK_LIB([readline], [readline], [], [ readline=no ])
+fi
 AC_MSG_RESULT(${readline})
 
 if test x$readline = xyes; then
    savedLIBS="$LIBS"
    READLINE_LIBS="-lreadline -lncurses"
    LIBS="$READLINE_LIBS $LIBS"
-   AC_CHECK_LIB([readline], [readline], [], AC_MSG_ERROR([Cannot find libreadline!]))
    AC_DEFINE(HAVE_READLINE, 1, [Define if you are compiling with readline])
    LIBS="$savedLIBS"
 else
