@@ -42,14 +42,14 @@
  * DO NOT change the name of this structure or its fields. The debugger knows
  * them, and will be confused if you change them.
  */
-struct MPIR_PROCDESC {
+typedef struct {
   char * host_name;           /* Something we can pass to inet_addr */
   char * executable_name;     /* The name of the image */
   int    pid;		      /* The pid of the process */
-};
+} MPIR_PROCDESC;
 
 /* Array of procdescs for debugging purposes */
-extern struct MPIR_PROCDESC *MPIR_proctable;
+extern MPIR_PROCDESC *MPIR_proctable;
 extern int MPIR_proctable_size;
 
 /* Various global variables which a debugger can use for 
