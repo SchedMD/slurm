@@ -17,9 +17,17 @@ pkglib_LTLIBRARIES = $(federation_lib)
 
 if HAVE_FEDERATION
 # Federation switch plugin.
-switch_federation_la_SOURCES = switch_federation.c federation.c
+switch_federation_la_SOURCES = \
+	federation.c federation.h \
+	federation_keys.h \
+	switch_federation.c 
 switch_federation_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 switch_federation_la_LIBADD = $(top_builddir)/src/common/libcommon.la 
 
+else
+EXTRA_switch_federation_la_SOURCES = \
+	federation.c federation.h \
+	federation_keys.h \
+	switch_federation.c
 endif
