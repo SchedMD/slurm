@@ -409,6 +409,16 @@ void slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * host
 	_slurm_get_addr ( slurm_address , port , host , buf_len ) ;
 }
 
+void slurm_pack_slurm_addr ( slurm_addr * slurm_address , void ** buffer , int * length )
+{
+	_slurm_pack_slurm_addr ( slurm_address , buffer , length ) ;
+}
+
+void slurm_pack_slurm_addr_no_alloc ( slurm_addr * slurm_address , void ** buffer , int * length )
+{
+	_slurm_pack_slurm_addr_no_alloc ( slurm_address , buffer , length ) ;
+}
+
 /************************/
 /***** slurm addr functions */
 /************************/
