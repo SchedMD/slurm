@@ -607,7 +607,12 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 		return NULL;
 	}
 
-	if (jobinfo->geometry[0] == (uint16_t) NO_VAL) {
+	if (jobinfo == NULL) {
+		if (mode != SELECT_PRINT_HEAD) {
+			error("select_g_sprint_jobinfo: jobinfo bad");
+			return NULL;
+		}
+	} else if (jobinfo->geometry[0] == (uint16_t) NO_VAL) {
 		for (i=0; i<SYSTEM_DIMENSIONS; i++)
 			geometry[i] = 0;
 	} else {
