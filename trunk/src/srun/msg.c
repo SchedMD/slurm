@@ -308,12 +308,13 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 		if (job->stepid == NO_VAL) { 
 			error ("Unable to attach to job %d: %s", 
 			       job->jobid, slurm_strerror(resp->return_code));
-			update_job_state(job, SRUN_JOB_FAILED);
 		} else {
 			error ("Unable to attach to step %d.%d on node %d: %s",
 			       job->jobid, job->stepid, resp->srun_node_id,
 			       slurm_strerror(resp->return_code));
 		}
+		update_job_state(job, SRUN_JOB_FAILED);
+		return;
 	}
 
 	/* 
