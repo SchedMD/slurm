@@ -80,9 +80,9 @@ The default value is "UNKNOWN".
 </dl>
 
 <p>
-Only the <b>Name</b> must be supplied in the configuration file; all other 
+Only the Name must be supplied in the configuration file; all other 
 items are optional.
-If you operate with more than one partition, <b>Partition</b> should also 
+If you operate with more than one partition, Partition should also 
 be specified. 
 Other configuration information can be established through communications 
 with the SLURM Daemon, slurmd actually running on each node.
@@ -173,8 +173,84 @@ If user controls are desired then set either AllowUsers or DenyUsers, but not bo
 If AllowUsers is set, then DenyUsers is ignored. 
 A <a href="#SamplePart">sample partition configuration file</a> is included at the end of this document.
 
-<h2>Commands</h2>
-To be developed and documented by Moe Jette.
+<h3>Job Configuration</h3>
+The job configuration format specified below is used for the SLURM daemons 
+to save state information. The format specified below is also used by the 
+slurm_admin administration tool to modify job state information: 
+<dl>
+<dt>Number
+<dd>Unique number by which the job can be referenced. This value 
+may not be changed by slurm_admin.
+<dt>Name
+<dd>Name by which the job may be referenced (e.g. "Simulation"). 
+This name can be specified by users when submitting their jobs.
+<dt>JobType
+<dd>Permitted job types values are "BATCH" and "INTERACTIVE". 
+<dt>MaxTime
+<dd>Maximum wall-time limit for the job in minutes. An "UNLIMITED"
+value is represented internally as -1.
+<dt>Nodes
+<dd>Comma separated list of nodes which are allocated to the job. 
+This value may not be changed by slurm_admin.
+<dt>State
+<dd>State of the job.  Possible values are "PENDING", "STARTING", 
+"RUNNING", and "ENDING". 
+<dt>User
+<dd>Name of the user executing this job.
+</dl>
+
+<h2>Slurm_admin Administration Tool</h2>
+The tool you will primarily use in the administration of SLURM is slurm_admin. 
+It provides the means of viewing and updating node and partition 
+configurations. It can also be used to update some job state 
+information. You can execute slurm_admin with a single command on 
+the execute line or it will query you for input and process those 
+commands on an interactive basis. The slurm_admin commands are shown below.
+A <a href="#SampleAdmin">sample slurm_admin session</a> with examples is appended.
+<dl>
+<dt>exit
+<dd>Terminate slurm_admin.
+<dt>help
+<dd>Display this list of slurm_admin commands and options.
+<dt>quiet
+<dd>Print no messages other than error messages.
+<dt>quit
+<dd>Terminate slurm_admin.
+<dt>reconfigure &lt;NodeName&gt;
+<dd>The SLURM daemons on the specified node are instructed to re-read 
+the configuration files. The default is that all daemons on all nodes 
+are reconfigured.
+<dt>restart &lt;NodeName&gt;
+<dd>The SLURM daemons on the specified node are stopped and restarted. 
+The default is that all daemons on all nodes are stopped and restarted. 
+All state information for the daemons are preserved.
+<dt>show &lt;entity&gt; &lt;ID&gt;
+<dd>Show the configuration for a given entity. Entity must 
+be "job", "node", or "partition". By default, state information 
+for all records is reported. If you only wish to see the 
+state of one entity record, specify either its ID number
+(assumed if entirely numberic) or its name. 
+<dt>start &lt;NodeName&gt;
+<dd>The SLURM daemons on the specified node are started as needed. 
+The default is that all daemons on all nodes are started.
+<dt>stop &lt;NodeName&gt;
+<dd>The SLURM daemons on the specified node are stopped. 
+The default is that all daemons on all nodes are stopped. 
+All state information for the daemons are preserved for 
+whenever the daemons are restarted. Note this will <b>not</b> 
+terminate any job executing on the node. You may set a 
+node's state to "DRAINING", set any running job's state to 
+"ENDING", wait for the job to terminate, then stop the 
+daemon on a node to leave no active jobs.
+<dt>update &lt;entity&gt; &lt;options&gt;
+<dd>Update the configuration for a given entity. Entity 
+must be "job", "node", or "partition". Options are of the same 
+format as the configuration files. 
+<dt>verbose
+<dd>Enable detailed logging of slurm_admin execution state information.
+<dt>version
+<dd>Display the slurm_admin tool version number.
+</dl>
 
 <h2>Miscellaneous</h2>
 It is advisable to start the ControlMachine before any other 
@@ -184,7 +260,7 @@ The hierarchical communications provides excellent scalability.
 Fault-tolerance will be built through mechanisms to save 
 and restore the database using local and global file systems. 
 
-<a name="SampleNode"><h2>Sample node configuration file</h2></a>
+<a name="SampleNode"><h2>Sample Node Configuration File</h2></a>
 <pre>
 # 
 # Sample sample.node.conf2
@@ -237,7 +313,7 @@ Name=lx31
 Name=lx32 
 </pre>
 
-<a name="SamplePart"><h2>Sample partition configuration file</h2></a>
+<a name="SamplePart"><h2>Sample Partition Configuration File</h2></a>
 <pre>
 # 
 # Example sample.part.conf2
@@ -250,9 +326,27 @@ Name=super   Number=3 JobType=ALL   MaxCpus=UNLIMITED MaxTime=UNLIMITED AllowUse
 Name=class   Number=4 JobType=ALL         MaxCpus=16  MaxTime=10        AllowUsers=student1,student2,student3
 </pre>
 
+<a name="SampleAdmin"><h2>Sample slurm_admin Execution</h2></a>
+<pre>
+# slurm_admin
+slurm_admin: reconfigure lx31
+slurm_admin: reconfigure lx32
+slurm_admin: update node Name=lx30 State=DRAINING
+slurm_admin: show job
+ID=1234 Name=Simulation JobType=BATCH MaxTime=100 Nodes=lx29,lx30 State=RUNNING User=grondo
+ID=1235 Name=MyBigTest  JobType=BATCH MaxTime=100 Nodes=lx20,lx21 State=RUNNING User=grondo
+slurm_admin: update job ID=1234 State=ENDING
+slurm_admin: show job 1234
+Job 1234 not found
+slurm_admin: stop lx30
+slurm_admin: show node lx30
+Name=lx30 Partition=0,3 State=DOWN OS=Linux.2.4.7-1 CPUs=16 Speed=345.0 RealMemory=2048 VirtualMemory=4096 TmpDisk=16384
+slurm_admin: quit
+</pre>
+
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/user.administrator.html
-<p>Last Modified December 21, 2001</p>
+<p>Last Modified January 3, 2002</p>
 <address>Maintained by Moe Jette <a href="mailto:jette@llnl.gov">
 jette1@llnl.gov</a></address>
 </body>
