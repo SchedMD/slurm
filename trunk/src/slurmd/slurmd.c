@@ -169,6 +169,9 @@ void *slurmd_handle_signals(void *args)
 	if (sigaddset(&set, SIGTERM))
 		error("sigaddset errno %d on SIGTERM", errno);
 
+	if (sigprocmask(SIG_BLOCK, &set, NULL) != 0)
+		fatal("sigprocmask: %m");
+
 	while (1) {
 		if ((error_code = sigwait(&set, &sig)))
 			error("sigwait errno %d\n", error_code);
