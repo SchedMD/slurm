@@ -139,6 +139,7 @@ static void _shm_task_copy(task_t *, task_t *);
 static void _shm_step_copy(job_step_t *, job_step_t *);
 static void _shm_clear_task(task_t *);
 static void _shm_clear_step(job_step_t *);
+static int  _shm_clear_stale_entries(void);
 static int  _shm_find_step(uint32_t, uint32_t);
 static bool _shm_sane(void);
 
@@ -377,17 +378,21 @@ shm_insert_step(job_step_t *step)
 		slurm_seterrno_ret(EEXIST);
 	}
 
+    again:
 	for (i = 0; i < MAX_JOB_STEPS; i++) {
 		if (slurmd_shm->step[i].state <= SLURMD_JOB_UNUSED)
 			break;
 	}
+
 	if (i == MAX_JOB_STEPS) {
+		if (_shm_clear_stale_entries() > 0)
+			goto again;
 		_shm_unlock();
 		slurm_seterrno_ret(ENOSPC);
-	} else {
-		_shm_step_copy(&slurmd_shm->step[i], step);
-		slurmd_shm->step[i].state = SLURMD_JOB_ALLOCATED;
 	}
+
+	_shm_step_copy(&slurmd_shm->step[i], step);
+	slurmd_shm->step[i].state = SLURMD_JOB_ALLOCATED;
 
 	_shm_unlock();
 	return SLURM_SUCCESS;
@@ -403,7 +408,7 @@ shm_delete_step(uint32_t jobid, uint32_t stepid)
 		slurm_seterrno_ret(ESRCH);
 	}
 	debug3("shm: found step %d.%d at %d", jobid, stepid, i);
-	_shm_clear_step(&slurmd_shm->step[i]);
+	_shm_clear_step(&slurmd_shm->step[i]); 
 	_shm_unlock();
 	return 0;
 }
@@ -869,6 +874,27 @@ _shm_clear_step(job_step_t *s)
 		debug3("going to clear task %d", t->id);
 		_shm_clear_task(t);
 	} while ((t = p));
+}
+
+static int
+_shm_clear_stale_entries(void)
+{
+	int i;
+	int count = 0;
+	for (i = 0; i < MAX_JOB_STEPS; i++) {
+		job_step_t *s = &slurmd_shm->step[i];
+		if (s->state == SLURMD_JOB_UNUSED) 
+			continue;
+		
+		if ((s->sid >= (pid_t) 0) && (kill(-s->sid, 0) != 0)) {
+			debug ("Clearing stale job %ld.%ld from shm",
+					s->jobid, s->stepid);
+			_shm_clear_step(s);
+			count++;
+		}
+	}
+
+	return count;
 }
 
 static int
