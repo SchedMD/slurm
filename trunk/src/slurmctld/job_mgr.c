@@ -928,7 +928,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 {
 	long job_id, min_procs, min_memory, min_tmp_disk, num_procs;
 	long min_nodes, max_nodes, time_limit, priority, contiguous;
-	long kill_on_node_fail, shared, task_dist;
+	long kill_on_node_fail, shared, task_dist, immediate;
 
 	if (job_specs == NULL)
 		return;
@@ -955,8 +955,9 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	    (job_specs->min_nodes != NO_VAL) ? job_specs->min_nodes : -1;
 	max_nodes =
 	    (job_specs->max_nodes != NO_VAL) ? job_specs->max_nodes : -1;
-	debug3("   num_procs=%ld min_nodes=%ld max_nodes=%ld",
-	       num_procs, min_nodes, max_nodes);
+	immediate = (job_specs->immediate == 0) ? 0 : 1;
+	debug3("   num_procs=%ld min_nodes=%ld max_nodes=%ld immediate=%ld",
+	       num_procs, min_nodes, max_nodes, immediate);
 
 	debug3("   req_nodes=%s exc_nodes=%s", 
 	       job_specs->req_nodes, job_specs->exc_nodes);
@@ -1068,8 +1069,13 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 
 	error_code = _job_create(job_specs, new_job_id, allocate, will_run,
 				 &job_ptr, submit_uid);
-	if (error_code)
+	if (error_code) {
+		if (immediate && job_ptr) {
+			job_ptr->job_state = JOB_FAILED;
+			job_ptr->end_time = 0;
+		}
 		return error_code;
+	}
 	if (job_ptr == NULL)
 		fatal("job_allocate: allocated job %u lacks record",
 		      new_job_id);
@@ -1297,6 +1303,7 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 	struct part_record *part_ptr;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 
+	*job_rec_ptr = (struct job_record *) NULL;
 	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid)))
 		return error_code;
 

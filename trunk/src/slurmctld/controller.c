@@ -1405,6 +1405,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	uid_t uid;
 	uint16_t node_cnt = 0;
 	slurm_addr *node_addr = NULL;
+	int immediate = job_desc_msg->immediate;
 
 	start_time = clock();
 	debug("Processing RPC: REQUEST_RESOURCE_ALLOCATION");
@@ -1420,7 +1421,6 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	}
 
 	if (error_code == SLURM_SUCCESS) {
-		int immediate = job_desc_msg->immediate;
 		lock_slurmctld(job_write_lock);
 		error_code = job_allocate(job_desc_msg, &job_id,
 					  &node_list_ptr, &num_cpu_groups,
@@ -1431,13 +1431,9 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	}
 
 	/* return result */
-	if ((error_code != SLURM_SUCCESS) &&
-	    (error_code != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)) {
-		info("_slurm_rpc_allocate_resources time=%ld, error=%s ", 
-		     (long) (clock() - start_time), 
-		     slurm_strerror(error_code));
-		slurm_send_rc_msg(msg, error_code);
-	} else {
+	if ((error_code == SLURM_SUCCESS) ||
+	    ((immediate == 0) && 
+	     (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE))) {
 		info(
 		   "_slurm_rpc_allocate_resources allocated nodes %s to JobId=%u, time=%ld", 
 		   node_list_ptr, job_id, (long) (clock() - start_time));
@@ -1456,6 +1452,11 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 		(void) dump_all_job_state();
+	} else {	/* Fatal error */
+		info("_slurm_rpc_allocate_resources time=%ld, error=%s ", 
+		     (long) (clock() - start_time), 
+		     slurm_strerror(error_code));
+		slurm_send_rc_msg(msg, error_code);
 	}
 }
 
