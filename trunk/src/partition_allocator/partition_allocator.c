@@ -40,6 +40,7 @@ pa_system_t *pa_system_ptr;
 List path;
 List best_path;
 int best_count;
+int color_count = 0;
 
 /** internal helper functions */
 /** */
@@ -106,6 +107,10 @@ int new_pa_request(pa_request_t* pa_request)
 	float sz=1;
 	int checked[8];
 	
+	pa_request->rotate_count= 0;
+	pa_request->elongate_count = 0;
+		
+	
 	/* size will be overided by geometry size if given */
 	if (pa_request->geometry[0] != -1){
 		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
@@ -116,6 +121,8 @@ int new_pa_request(pa_request_t* pa_request)
 		}
 	} else {
 		/* decompose the size into a cubic geometry */
+		pa_request->rotate= 1;
+		pa_request->elongate = 1;		
 		
 		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++) { 
 			total_sz *= DIM_SIZE[i];
@@ -207,9 +214,6 @@ endit:
 	pa_request->size = sz;
 	
 	//printf("geometry: %d %d %d size = %d\n", pa_request->geometry[0],pa_request->geometry[1],pa_request->geometry[2], pa_request->size);
-		
-	pa_request->rotate_count= 0;
-	pa_request->elongate_count = 0;
 		
 	return 1;
 }
@@ -419,7 +423,7 @@ int _reset_the_path(pa_switch_t *curr_switch, int source, int target, int dim)
  *
  * returns SLURM_SUCCESS if undo was successful.
  */
-int remove_part(List nodes)
+int remove_part(List nodes, int new_count)
 {
 	int dim;
 	pa_node_t* pa_node;
@@ -441,7 +445,7 @@ int remove_part(List nodes)
 			}
 		}
 	}
-				
+	color_count=new_count;			
 	return 1;
 }
 
@@ -486,7 +490,7 @@ int alter_part(List nodes, int conn_type)
  * be redone to make sure correct path will be used in the real system
  *
  */
-int redo_part(List nodes, int conn_type)
+int redo_part(List nodes, int conn_type, int new_count)
 {
 	int dim;
 	pa_node_t* pa_node;
@@ -498,6 +502,16 @@ int redo_part(List nodes, int conn_type)
 	results_i = list_iterator_create(nodes);
 	while ((pa_node = list_next(results_i)) != NULL) {
 		pa_node->used = false;
+		if(conn_type==TORUS) 
+			pa_node->letter = 
+				pa_system_ptr->fill_in_value[new_count].letter;
+		
+		else 
+			pa_node->letter =
+				pa_system_ptr->fill_in_value[new_count+32].letter;
+		
+		pa_node->color =
+			pa_system_ptr->fill_in_value[new_count].color;
 		
 		for(dim=0;dim<PA_SYSTEM_DIMENSIONS;dim++) {
 			curr_switch = &pa_node->axis_switch[dim];
@@ -511,7 +525,7 @@ int redo_part(List nodes, int conn_type)
 		}
 		size++;
 	}
-	
+	color_count++;
 	list_iterator_destroy(results_i);
 	name = _set_internal_wires(nodes, size, conn_type);
 	xfree(name);
@@ -982,7 +996,6 @@ char *_set_internal_wires(List nodes, int size, int conn_type)
 	int *start;
 	int *end;
 	char *name = (char *) xmalloc(sizeof(char)*8);
-	static int part_count=0;
 	ListIterator itr;
 
 	memset(name,0,8);		
@@ -1007,14 +1020,14 @@ char *_set_internal_wires(List nodes, int size, int conn_type)
 			if(pa_node[i]->letter == '.') {
 				if(conn_type==TORUS) 
 					pa_node[i]->letter =
-						pa_system_ptr->fill_in_value[part_count].letter;
+						pa_system_ptr->fill_in_value[color_count].letter;
 				
 				else 
 					pa_node[i]->letter =
-						pa_system_ptr->fill_in_value[part_count+32].letter;
+						pa_system_ptr->fill_in_value[color_count+32].letter;
 				
 				pa_node[i]->color =
-					pa_system_ptr->fill_in_value[part_count].color;
+					pa_system_ptr->fill_in_value[color_count].color;
 				set=1;
 			}
 		} else {
@@ -1028,7 +1041,7 @@ char *_set_internal_wires(List nodes, int size, int conn_type)
 		_set_one_dim(start, end, pa_node[i]->coord);
 	}
 	if(set)
-		part_count++;		
+		color_count++;		
 /* 	int i; */
 /* 	itr = list_iterator_create(nodes); */
 /* 	while((pa_node = (pa_node_t*) list_next(itr))){ */
@@ -1405,8 +1418,8 @@ int main(int argc, char** argv)
 	time(&end);
 	//printf("allocate_part: %ld\n", (end-start));
 	//list_destroy(results);
-	remove_part(results);
-	redo_part(results2, request->conn_type);
+	remove_part(results,color_count);
+	redo_part(results2, request->conn_type,color_count);
 /* 	results = list_create(NULL); */
 /* 	geo[0] = 2; */
 /* 	geo[1] = 2; */
