@@ -9,6 +9,7 @@
 #  include <config.h>
 #endif
 
+#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,6 +34,7 @@ int list_find_part (void *part_entry, void *key);
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
+int 
 main (int argc, char *argv[]) 
 {
 	int error_code, i;
@@ -40,18 +42,6 @@ main (int argc, char *argv[])
 	struct part_record *part_ptr;
 	char *dump;
 	int dump_size;
-	char req_name[MAX_NAME_LEN];	/* name of the partition */
-	char next_name[MAX_NAME_LEN];	/* name of the next partition */
-	int max_time;		/* -1 if unlimited */
-	int max_nodes;		/* -1 if unlimited */
-	int total_nodes;	/* total number of nodes in the partition */
-	int total_cpus;		/* total number of cpus in the partition */
-	char *nodes;		/* names of nodes in partition */
-	char *allow_groups;	/* NULL indicates all */
-	int key;		/* 1 if slurm distributed key is required for use of partition */
-	int state_up;		/* 1 if state is up */
-	int shared;		/* 1 if partition can be shared */
-	bitstr_t *node_bitmap;	/* bitmap of nodes in partition */
 	char update_spec[] =
 		"MaxTime=34 MaxNodes=56 Key=NO State=DOWN Shared=FORCE";
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
@@ -316,7 +306,7 @@ dump_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	ListIterator part_record_iterator;	/* for iterating through part_record list */
 	struct part_record *part_record_point;	/* pointer to part_record */
 	char *buffer;
-	int buffer_offset, buffer_allocated, error_code, i, record_size;
+	int buffer_offset, buffer_allocated, error_code;
 	char out_line[BUF_SIZE];
 
 	buffer_ptr[0] = NULL;
@@ -337,8 +327,8 @@ dump_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time)
 		goto cleanup;
 
 	/* write individual partition records */
-	while (part_record_point =
-	       (struct part_record *) list_next (part_record_iterator)) {
+	while ((part_record_point = 
+		(struct part_record *) list_next (part_record_iterator))) {
 		if (part_record_point->magic != PART_MAGIC)
 			fatal ("dump_all_part: data integrity is bad");
 
@@ -460,8 +450,8 @@ int init_part_conf ()
 
 	strcpy (default_part.name, "DEFAULT");
 	default_part.allow_groups = (char *) NULL;
-	default_part.max_time = -1;
-	default_part.max_nodes = -1;
+	default_part.max_time = INFINITE;
+	default_part.max_nodes = INFINITE;
 	default_part.key = 0;
 	default_part.state_up = 1;
 	default_part.shared = 0;
@@ -692,13 +682,19 @@ update_part (char *partition_name, char *spec)
 	if (max_time_val != NO_VAL) {
 		info ("update_part: setting max_time to %d for partition %s",
 			max_time_val, partition_name);
-		part_ptr->max_time = max_time_val;
+		if (max_time_val == -1)
+			part_ptr->max_time = INFINITE;
+		else
+			part_ptr->max_time = max_time_val;
 	}			
 
 	if (max_nodes_val != NO_VAL) {
 		info ("update_part: setting max_nodes to %d for partition %s",
 			max_nodes_val, partition_name);
-		part_ptr->max_nodes = max_nodes_val;
+		if (max_nodes_val == -1)
+			part_ptr->max_nodes = INFINITE;
+		else
+			part_ptr->max_nodes = max_nodes_val;
 	}			
 
 	if (key_val != NO_VAL) {

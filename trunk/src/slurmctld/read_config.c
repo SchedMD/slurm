@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <syslog.h>
+#include <unistd.h>
 
 #include "slurm.h"
 #include "list.h"
@@ -32,10 +33,10 @@ char *control_machine = NULL;
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
+int 
 main (int argc, char *argv[]) {
-	int error_code, start_inx, end_inx, count_inx;
-	char out_line[BUF_SIZE];
-	char *format, *node_name, bitmap[128];
+	int error_code;
+	char bitmap[128];
 	char *partitions[] = { "login", "debug", "batch", "class", "end" };
 	struct part_record *part_ptr;
 	int cycles, i, found;
@@ -189,8 +190,8 @@ build_bitmaps () {
 	if (config_record_iterator == NULL)
 		fatal ("build_bitmaps: list_iterator_create unable to allocate memory");
 	
-	while (config_record_point =
-	       (struct config_record *) list_next (config_record_iterator)) {
+	while ((config_record_point =
+	       (struct config_record *) list_next (config_record_iterator))) {
 		if (config_record_point->node_bitmap)
 			bit_free (config_record_point->node_bitmap);
 
@@ -220,7 +221,8 @@ build_bitmaps () {
 	if (part_record_iterator == NULL)
 		fatal ("build_bitmaps: list_iterator_create unable to allocate memory");
 
-	while (part_record_point = (struct part_record *) list_next (part_record_iterator)) {
+	while ((part_record_point = 
+		(struct part_record *) list_next (part_record_iterator))) {
 		if (part_record_point->node_bitmap)
 			bit_free (part_record_point->node_bitmap);
 		part_record_point->node_bitmap = (bitstr_t *) bit_alloc (node_record_count);	
@@ -287,13 +289,13 @@ init_slurm_conf () {
 		backup_controller = NULL;
 	}
 
-	if (error_code = init_node_conf ())
+	if ((error_code = init_node_conf ()))
 		return error_code;
 
-	if (error_code = init_part_conf ())
+	if ((error_code = init_part_conf ()))
 		return error_code;
 
-	if (error_code = init_job_conf ())
+	if ((error_code = init_job_conf ()))
 		return error_code;
 
 	return 0;
@@ -315,12 +317,12 @@ parse_node_spec (char *in_line) {
 	int error_code, i, node_count;
 	int state_val, cpus_val, real_memory_val, tmp_disk_val, weight_val;
 	struct node_record *node_record_point;
-	struct config_record *config_point;
+	struct config_record *config_point = NULL;
 
 	node_name = state = feature = node_list = (char *) NULL;
 	cpus_val = real_memory_val = state_val = NO_VAL;
 	tmp_disk_val = weight_val = NO_VAL;
-	if (error_code = load_string (&node_name, "NodeName=", in_line))
+	if ((error_code = load_string (&node_name, "NodeName=", in_line)))
 		return error_code;
 	if (node_name == NULL)
 		return 0;	/* no node info */
@@ -441,12 +443,11 @@ parse_node_spec (char *in_line) {
  */
 int 
 parse_part_spec (char *in_line) {
-	int line_num;		/* line number in input file */
 	char *allow_groups, *nodes, *partition_name;
 	char *default_str, *key_str, *shared_str, *state_str;
-	int max_time_val, max_nodes_val, key_val, default_val, state_val,
-		shared_val;
-	int error_code, i;
+	int max_time_val, max_nodes_val, key_val, default_val;
+	int state_val, shared_val;
+	int error_code;
 	struct part_record *part_record_point;
 
 	partition_name = (char *) NULL;
@@ -454,8 +455,8 @@ parse_part_spec (char *in_line) {
 	max_time_val = max_nodes_val = key_val = default_val = state_val =
 		shared_val = NO_VAL;
 
-	if (error_code =
-	    load_string (&partition_name, "PartitionName=", in_line))
+	if ((error_code =
+	    load_string (&partition_name, "PartitionName=", in_line)))
 		return error_code;
 	if (partition_name == NULL)
 		return 0;	/* no partition info */
@@ -641,8 +642,6 @@ read_slurm_conf (char *file_name) {
 	FILE *slurm_spec_file;	/* pointer to input data file */
 	int line_num;		/* line number in input file */
 	char in_line[BUF_SIZE];	/* input line */
-	char scratch[BUF_SIZE];	/* scratch area for parsing the input line */
-	char *str_ptr1, *str_ptr2, *str_ptr3;
 	int i, j, error_code;
 
 	/* initialization */
@@ -695,13 +694,13 @@ read_slurm_conf (char *file_name) {
 		}		
 
 		/* node configuration parameters */
-		if (error_code = parse_node_spec (in_line)) {
+		if ((error_code = parse_node_spec (in_line))) {
 			fclose (slurm_spec_file);
 			return error_code;
 		}		
 
 		/* partition configuration parameters */
-		if (error_code = parse_part_spec (in_line)) {
+		if ((error_code = parse_part_spec (in_line))) {
 			fclose (slurm_spec_file);
 			return error_code;
 		}		
@@ -725,7 +724,7 @@ read_slurm_conf (char *file_name) {
 		return EINVAL;
 	}			
 	rehash ();
-	if (error_code = build_bitmaps ())
+	if ((error_code = build_bitmaps ()))
 		return error_code;
 	list_sort (config_list, &list_compare_config);
 

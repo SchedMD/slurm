@@ -15,6 +15,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <syslog.h>
 
 #include "slurm.h"
@@ -22,9 +23,9 @@
 #define BUF_SIZE 1024
 
 struct node_set {		/* set of nodes with same configuration that could be allocated */
-	int cpus_per_node;
-	int nodes;
-	int weight;
+	uint32_t cpus_per_node;
+	uint32_t nodes;
+	uint32_t weight;
 	int feature;
 	bitstr_t *my_bitmap;
 };
@@ -32,18 +33,20 @@ struct node_set {		/* set of nodes with same configuration that could be allocat
 int pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
 		    int req_cpus, int consecutive);
 int pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
-		     bitstr_t **req_bitmap, int req_cpus, int req_nodes,
-		     int contiguous, int shared, int max_nodes);
+		     bitstr_t **req_bitmap, uint32_t req_cpus, uint32_t req_nodes,
+		     int contiguous, int shared, uint32_t max_nodes);
 int valid_features (char *requested, char *available);
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
+int 
 main (int argc, char *argv[]) 
 {
 	int error_code, line_num, i;
 	FILE *command_file;
 	char in_line[BUF_SIZE], *job_id, *node_list;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
+	clock_t start_time;
 
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 
@@ -101,6 +104,7 @@ main (int argc, char *argv[])
 	line_num = 0;
 	printf ("\n");
 	while (fgets (in_line, BUF_SIZE, command_file)) {
+		start_time = clock ();
 		job_id = node_list = NULL;
 		if (in_line[strlen (in_line) - 1] == '\n')
 			in_line[strlen (in_line) - 1] = (char) NULL;
@@ -109,21 +113,23 @@ main (int argc, char *argv[])
 		if (error_code) {
 			if (strncmp (in_line, "JobName=FAIL", 12) != 0)
 				printf ("ERROR:");
-			printf ("for job: %s\n", in_line, node_list);
-			printf ("node_scheduler: error %d from job_allocate on line %d\n\n", 
+			printf ("for job: %s\n", in_line);
+			printf ("node_scheduler: error %d from job_allocate on line %d\n", 
 				error_code, line_num);
 		}
 		else {
 			if (strncmp (in_line, "JobName=FAIL", 12) == 0)
 				printf ("ERROR: ");
-			printf ("for job: %s\n  nodes selected %s\n\n",
+			printf ("for job: %s\n  nodes selected %s\n",
 				in_line, node_list);
 			if (job_id)
 				xfree (job_id);
 			if (node_list)
 				xfree (node_list);
-		}		
-	}			
+		}
+		printf("time = %ld usec\n\n", (long) (clock() - start_time));
+	}
+	exit (0);		
 }
 #endif
 
@@ -141,7 +147,7 @@ allocate_nodes (unsigned *bitmap)
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test (bitmap, i) == 0)
 			continue;
-		node_record_table_ptr[i].node_state = STATE_STAGE_IN;
+		node_record_table_ptr[i].node_state = STATE_BUSY;
 		bit_clear (idle_node_bitmap, i);
 	}
 	return;
@@ -285,8 +291,8 @@ match_group (char *allow_groups, char *user_groups)
 
 
 /*
- * pick_best_quadrics - identify the nodes which best fit the req_nodes and req_cpus counts
- *	for a system with Quadrics elan interconnect.
+ * pick_best_quadrics - identify the nodes which best fit the req_nodes and 
+ *	req_cpus counts for a system with Quadrics elan interconnect.
  * 	"best" is defined as either single set of consecutive nodes satisfying 
  *	the request and leaving the minimum number of unused nodes OR 
  *	the fewest number of consecutive node sets
@@ -296,7 +302,8 @@ match_group (char *allow_groups, char *user_groups)
  *        req_nodes - number of nodes required
  *        req_cpus - number of cpus required
  *        consecutive - nodes must be consecutive is 1, otherwise 0
- * output: bitmap - nodes not required to satisfy the request are cleared, other left set
+ * output: bitmap - nodes not required to satisfy the request are cleared, 
+ *		other left set
  *         returns zero on success, EINVAL otherwise
  * globals: node_record_count - count of nodes configured
  *	node_record_table_ptr - pointer to global node table
@@ -314,8 +321,8 @@ pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
 	int *consec_req;	/* are nodes from this set required (in req_bitmap) */
 	int consec_index, consec_size;
 	int rem_cpus, rem_nodes;	/* remaining resources required */
-	int best_fit_nodes, best_fit_cpus, best_fit_req, best_fit_location,
-		best_fit_sufficient;
+	int best_fit_nodes, best_fit_cpus, best_fit_req;
+	int best_fit_location = 0, best_fit_sufficient;
 
 	if (bitmap == NULL)
 		fatal ("pick_best_quadrics: bitmap pointer is NULL\n");
@@ -339,10 +346,11 @@ pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
 				consec_start[consec_index] = index;
 			i = node_record_table_ptr[index].cpus;
 			if (req_bitmap && bit_test (req_bitmap, index)) {
-				if (consec_req[consec_index] == -1) /* first required node in set */
+				if (consec_req[consec_index] == -1) 
+					/* first required node in set */
 					consec_req[consec_index] = index; 
-				rem_cpus -= i;	/* reduce count of additional resources required */
-				rem_nodes--;	/* reduce count of additional resources required */
+				rem_cpus -= i;
+				rem_nodes--;
 			}
 			else {
 				bit_clear (bitmap, index);
@@ -351,7 +359,8 @@ pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
 			}	
 		}
 		else if (consec_nodes[consec_index] == 0) {
-			consec_req[consec_index] = -1;	/* already picked up any required nodes */
+			consec_req[consec_index] = -1;	
+			/* already picked up any required nodes */
 			/* re-use this record */
 		}
 		else {
@@ -455,7 +464,6 @@ pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
 		consec_nodes[best_fit_location] = 0;
 	}			
 
-      cleanup:
 	if (consec_cpus)
 		xfree (consec_cpus);
 	if (consec_nodes)
@@ -480,7 +488,8 @@ pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
  *        req_nodes - count of nodes required by the job
  *        contiguous - set to 1 if allocated nodes must be contiguous, 0 otherwise
  *        shared - set to 1 if nodes may be shared, 0 otherwise
- *        max_nodes - maximum number of nodes permitted for job, -1 for none (partition limit)
+ *        max_nodes - maximum number of nodes permitted for job, 
+ *		INFIITE for no limit (partition limit)
  * output: req_bitmap - pointer to bitmap of selected nodes
  *         returns 0 on success, EAGAIN if request can not be satisfied now, 
  *		EINVAL if request can never be satisfied (insufficient contiguous nodes)
@@ -488,22 +497,21 @@ pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
  */
 int
 pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
-		 bitstr_t **req_bitmap, int req_cpus, int req_nodes,
-		 int contiguous, int shared, int max_nodes) 
+		 bitstr_t **req_bitmap, uint32_t req_cpus, uint32_t req_nodes,
+		 int contiguous, int shared, uint32_t max_nodes) 
 {
-	int error_code, i, j, pick_code, size;
+	int error_code, i, j, pick_code;
 	int total_nodes, total_cpus;	/* total resources configured in partition */
 	int avail_nodes, avail_cpus;	/* resources available for use now */
 	bitstr_t *avail_bitmap, *total_bitmap;
 	int max_feature, min_feature;
-	int *cpus_per_node;
 	int avail_set, total_set, runable;
 
 	if (node_set_size == 0) {
 		info ("pick_best_nodes: empty node set for selection");
 		return EINVAL;
 	}
-	if ((max_nodes != -1) && (req_nodes > max_nodes)) {
+	if ((max_nodes != INFINITE) && (req_nodes > max_nodes)) {
 		info ("pick_best_nodes: more nodes required than possible in partition");
 		return EINVAL;
 	}
@@ -542,7 +550,7 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 			min_feature = node_set_ptr[i].feature;
 	}
 
-	runable = 0;		/* assume not runable until otherwise demonstrated */
+	runable = 0;	/* assume not runable until otherwise demonstrated */
 	for (j = min_feature; j <= max_feature; j++) {
 		avail_set = total_set = 0;
 		for (i = 0; i < node_set_size; i++) {
@@ -593,9 +601,10 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 				pick_best_quadrics (avail_bitmap, req_bitmap[0],
 						req_nodes, req_cpus,
 						contiguous);
-			if ((pick_code == 0) && (max_nodes != -1)
+			if ((pick_code == 0) && (max_nodes != INFINITE)
 			    && (bit_set_count (avail_bitmap) > max_nodes)) {
-				info ("pick_best_nodes: too many nodes selected");
+				info ("pick_best_nodes: too many nodes selected %u of %u",
+					bit_set_count (avail_bitmap), max_nodes);
 				error_code = EINVAL;
 				break;
 			}	
@@ -612,17 +621,18 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 		    (total_nodes > req_nodes) && (total_cpus > req_cpus) &&
 		    ((req_bitmap[0] == NULL)
 		     || (bit_super_set (req_bitmap[0], total_bitmap) == 1))
-		    && ((max_nodes == -1) || (req_nodes <= max_nodes))) {
+		    && ((max_nodes == INFINITE) || (req_nodes <= max_nodes))) {
 			/* determine if job could possibly run */
 			/* (if configured nodes all available) */
 			pick_code =
 				pick_best_quadrics (total_bitmap, req_bitmap[0],
 						req_nodes, req_cpus,
 						contiguous);
-			if ((pick_code == 0) && (max_nodes != -1)
-			    && (bit_set_count (avail_bitmap) > max_nodes)) {
+			if ((pick_code == 0) && (max_nodes != INFINITE)
+			    && (bit_set_count (total_bitmap) > max_nodes)) {
 				error_code = EINVAL;
-				info ("pick_best_nodes: too many nodes selected");
+				info ("pick_best_nodes: %u nodes selected, max is %u",
+					bit_set_count (avail_bitmap), max_nodes);
 			}
 			if (pick_code == 0)
 				runable = 1;
@@ -659,12 +669,13 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 int
 select_nodes (struct job_record *job_ptr) 
 {
-	int error_code, i, node_set_index, node_set_size;
+	int error_code, i, node_set_index, node_set_size = 0;
 	bitstr_t *req_bitmap, *scratch_bitmap;
-	ListIterator config_record_iterator;	/* for iterating through config_list */
+	ListIterator config_record_iterator;
 	struct config_record *config_record_point;
 	struct node_set *node_set_ptr;
 	struct part_record *part_ptr;
+	int tmp_feature, check_node_config;
 
 	req_bitmap = scratch_bitmap = NULL;
 	config_record_iterator = (ListIterator) NULL;
@@ -695,9 +706,8 @@ select_nodes (struct job_record *job_ptr)
 	if (config_record_iterator == NULL)
 		fatal ("select_nodes: ListIterator_create unable to allocate memory");
 
-	while (config_record_point =
-	       (struct config_record *) list_next (config_record_iterator)) {
-		int tmp_feature, check_node_config;
+	while ((config_record_point =
+	        (struct config_record *) list_next (config_record_iterator))) {
 
 		tmp_feature = valid_features (job_ptr->details->features,
 					config_record_point->feature);
@@ -819,8 +829,7 @@ select_nodes (struct job_record *job_ptr)
 		error ("bitmap2node_name error %d", error_code);
 		goto cleanup;
 	}
-	build_node_list (req_bitmap, job_ptr->details->dist, 
-		job_ptr->details->procs_per_task, 
+	build_node_list (req_bitmap, 
 		&job_ptr->details->node_list, 
 		&job_ptr->details->total_procs);
 	allocate_nodes (req_bitmap);
@@ -847,7 +856,8 @@ select_nodes (struct job_record *job_ptr)
 }
 
 
-/* valid_features - determine if the requested features are satisfied by those available
+/*
+ * valid_features - determine if the requested features are satisfied by those available
  * input: requested - requested features (by a job)
  *        available - available features (on a node)
  * output: returns 0 if request is not satisfied, otherwise an integer indicating 
@@ -862,7 +872,7 @@ valid_features (char *requested, char *available)
 	char *tmp_requested, *str_ptr1;
 	int bracket, found, i, option, position, result;
 	int last_op;		/* last operation 0 for or, 1 for and */
-	int save_op, save_result;	/* for bracket support */
+	int save_op = 0, save_result = 0;	/* for bracket support */
 
 	if (requested == NULL)
 		return 1;	/* no constraints */
