@@ -1,13 +1,6 @@
 /* 
  * Mach_Stat_Mgr.c - Manage the node specification information of SLURM
- *
- * External functions include:
- * int	Read_Node_Spec_Conf (char *File_Name);		Load node specification from specified file
- * int  Show_Node_Record (char *Node_Name, char *Node_Record);  Report full record for specified node name
- * int	Update_Node_Spec_Conf (char *Specification);	Update node record with given specification
- * int  Validate_Node_Spec (char *Specification);	Validate that the given node specification has  
- *							resources not less than in the node's record
- * int	Write_Node_Spec_Conf (char *File_Name);		Write static node record info to specified file
+ * See Mach_Stat_Mgr.h for documentation on external functions and data structures
  *
  * Author: Moe Jette, jette@llnl.gov
  */
@@ -18,54 +11,24 @@
 
 #include "config.h"
 #include "list.h"
+#include "Mach_Stat_Mgr.h"
 
 #define DEBUG_MODULE 1
-#define BUF_SIZE 1024
-#define MAX_NAME_LEN 128
-#define MAX_OS_LEN 20
-#define MAX_POOLS 32
 #define SEPCHARS " \n\t"
-
-enum Node_State {
-	STATE_UNKNOWN, 		/* Node's initial state, unknown */
-	STATE_IDLE, 		/* Node idle and available for use */
-	STATE_BUSY,		/* Node allocated to a job */
-	STATE_DOWN, 		/* Node unavailable */
-	STATE_DRAINED, 		/* Node idle and not to be allocated future work */
-	STATE_DRAINING,		/* Node in use, but not to be allocated future work */
-	STATE_END };		/* LAST ENTRY IN TABLE */
-char *Node_State_String[] = {"UNKNOWN", "IDLE", "BUSY", "DOWN", "DRAINED", "DRAINING", "END"};
-
-struct Node_Record {
-    char Name[MAX_NAME_LEN];
-    char OS[MAX_OS_LEN];
-    int CPUs;
-    float Speed;
-    int RealMemory;
-    int VirtualMemory;
-    int TmpDisk;
-    unsigned Pool:MAX_POOLS;
-    enum Node_State NodeState;
-    time_t LastResponse;
-};
 
 struct Node_Record  Default_Record;	/* Default values for node record */
 struct Node_Record  Node_Record_Read;	/* Node record being read */
-List   Node_Record_List;		/* List of Node_Records */
+List   Node_Record_List = NULL;		/* List of Node_Records */
 
+int	Delete_Record(char *name);
 struct Node_Record  *Duplicate_Record(char *name);
 int 	Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS, 
 	int *My_CPUs, int *Set_CPUs, float *My_Speed, int *Set_Speed,
 	int *My_RealMemory, int *Set_RealMemory, int *My_VirtualMemory, int *Set_VirtualMemory, 
 	int *My_TmpDisk, int *Set_TmpDisk, unsigned int *My_Pool, int *Set_Pool, 
-	enum Node_State *NodeState, int *Set_State);
+	enum Node_State *NodeState, int *Set_State, time_t *My_LastResponse, int *Set_LastResponse);
 void	Pool_String_To_Value (char *pool, unsigned int *Pool_Value, int *Error_Code);
 void 	Pool_Value_To_String(unsigned int pool, char *Pool_String, int Pool_String_size, char *node_name);
-int	Read_Node_Spec_Conf (char *File_Name);
-int 	Show_Node_Record (char *Node_Name, char *Node_Record);
-int	Update_Node_Spec_Conf (char *Specification);
-int 	Validate_Node_Spec (char *Specification);
-int	Write_Node_Spec_Conf (char *File_Name);
 
 #ifdef DEBUG_MODULE
 /* main is used here for testing purposes only */
@@ -78,14 +41,17 @@ main(int argc, char * argv[]) {
 	exit(0);
     } /* if */
     Error_Code = Read_Node_Spec_Conf(argv[1]);
-    if (Error_Code != 0) printf("Error %d from Read_Node_Spec_Conf", Error_Code);
+    if (Error_Code != 0) {
+	printf("Error %d from Read_Node_Spec_Conf", Error_Code);
+	exit(1);
+    } /* if */
 
     Error_Code = Update_Node_Spec_Conf("Name=mx01.llnl.gov CPUs=3 TmpDisk=12345");
     if (Error_Code != 0) printf("Error %d from Update_Node_Spec_Conf\n", Error_Code);
-    Error_Code = Update_Node_Spec_Conf("Name=mx03.llnl.gov CPUs=4 TmpDisk=16384 Pool=9");
+    Error_Code = Update_Node_Spec_Conf("Name=mx03.llnl.gov CPUs=4 TmpDisk=16384 Pool=9 State=IDLE LastResponse=123");
     if (Error_Code != 0) printf("Error %d from Update_Node_Spec_Conf\n", Error_Code);
 
-    Error_Code = Write_Node_Spec_Conf(argv[2]);
+    Error_Code = Write_Node_Spec_Conf(argv[2], 1);
     if (Error_Code != 0) printf("Error %d from Write_Node_Spec_Conf", Error_Code);
 
     Error_Code = Validate_Node_Spec("Name=mx03.llnl.gov CPUs=4 TmpDisk=22222");
@@ -99,6 +65,41 @@ main(int argc, char * argv[]) {
     exit(0);
 }
 #endif
+
+/* 
+ * Delete_Record - Find a record for node with specified name and delete it
+ * Input: name - name of the node
+ * Output: returns 0 on no error, otherwise errno
+ */
+int Delete_Record(char *name) {
+    int Error_Code;
+    ListIterator Node_Record_Iterator;		/* For iterating through Node_Record_List */
+    struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
+
+    Node_Record_Iterator = list_iterator_create(Node_Record_List);
+    if (Node_Record_Iterator == NULL) {
+#ifdef DEBUG_MODULE
+	fprintf(stderr, "Delete_Record:list_iterator_create unable to allocate memory\n");
+#else
+	syslog(LOG_ERR, "Delete_Record:list_iterator_create unable to allocate memory\n");
+#endif
+	return ENOMEM;
+    }
+
+    Error_Code = ENOENT;
+    while (Node_Record_Point = (struct Node_Record *)list_next(Node_Record_Iterator)) {
+	if (strcmp(Node_Record_Point->Name, name) == 0) {
+	    (void) list_remove(Node_Record_Iterator);
+	    free(Node_Record_Point);
+	    Error_Code = 0;
+	    break;
+	} /* if */
+    } /* while */
+
+    list_iterator_destroy(Node_Record_Iterator);
+    return Error_Code;
+} /* Delete_Record */
+
 
 /* 
  * Duplicate_Record - Find a record for node with specified name, return pointer or NULL if not found
@@ -134,7 +135,7 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
 	int *My_CPUs, int *Set_CPUs, float *My_Speed, int *Set_Speed,
 	int *My_RealMemory, int *Set_RealMemory, int *My_VirtualMemory, int *Set_VirtualMemory, 
 	int *My_TmpDisk, int *Set_TmpDisk, unsigned int *My_Pool, int *Set_Pool, 
-	enum Node_State *My_NodeState, int *Set_State) {
+	enum Node_State *My_NodeState, int *Set_State, time_t *My_LastResponse, int *Set_LastResponse) {
     char Scratch[BUF_SIZE];
     char *str_ptr1, *str_ptr2;
     int Error_Code, i;
@@ -149,6 +150,7 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
     *Set_TmpDisk       = 0;
     *Set_Pool          = 0;
     *Set_State         = 0;
+    *Set_LastResponse  = 0;
 
     if (Specification[0] == '#') return 0;
     if (strlen(Specification) >= BUF_SIZE) return E2BIG;
@@ -216,7 +218,7 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
 
     str_ptr1 = (char *)strstr(Specification, "State=");
     if (str_ptr1 != NULL) {
-	strcpy(Scratch, str_ptr1+5);
+	strcpy(Scratch, str_ptr1+6);
 	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
 	for (i=0; i<= STATE_END; i++) {
 	    if (strcmp(Node_State_String[i], "END") == 0) break;
@@ -226,6 +228,14 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
 		break;
 	    } /* if */
 	} /* for */
+    } /* if */
+
+    str_ptr1 = (char *)strstr(Specification, "LastResponse=");
+    if (str_ptr1 != NULL) {
+	strcpy(Scratch, str_ptr1+13);
+	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	*My_LastResponse = (time_t) strtol(str_ptr2, (char **)NULL, 10);
+	*Set_LastResponse = 1;
     } /* if */
 
     return Error_Code;
@@ -320,7 +330,10 @@ int Read_Node_Spec_Conf (char *File_Name) {
     int My_TmpDisk;
     unsigned int My_Pool;
     enum Node_State My_NodeState;
-    int Set_CPUs, Set_Speed, Set_RealMemory, Set_VirtualMemory, Set_TmpDisk, Set_Pool, Set_State;
+    time_t My_LastResponse;
+
+    int Set_CPUs, Set_Speed, Set_RealMemory, Set_VirtualMemory, Set_TmpDisk;
+    int Set_Pool, Set_State, Set_LastResponse;
 
     /* Initialization */
     Error_Code = 0;
@@ -364,7 +377,8 @@ int Read_Node_Spec_Conf (char *File_Name) {
 	Error_Code = Parse_Node_Spec(In_Line, My_Name, My_OS, 
 	    &My_CPUs, &Set_CPUs, &My_Speed, &Set_Speed,
 	    &My_RealMemory, &Set_RealMemory, &My_VirtualMemory, &Set_VirtualMemory, 
-	    &My_TmpDisk, &Set_TmpDisk, &My_Pool, &Set_Pool, &My_NodeState, &Set_State);
+	    &My_TmpDisk, &Set_TmpDisk, &My_Pool, &Set_Pool, &My_NodeState, &Set_State,
+	    &My_LastResponse, &Set_LastResponse);
 	if (Error_Code != 0) break;
 	if (strcmp("DEFAULT", My_Name) == 0) {
 	    if (strlen(My_OS) != 0)     strcpy(Default_Record.OS, My_OS);
@@ -441,6 +455,10 @@ int Read_Node_Spec_Conf (char *File_Name) {
 
 /*
  * Show_Node_Record - Dump the record for the specified node
+ * Input: Node_Name - Name of the node for which data is requested
+ *        Node_Record - Location into which the information is written, should be at least BUF_SIZE bytes long
+ * Output: Node_Record is filled
+ *         return - 0 if no error, otherwise errno
  */
     int Show_Node_Record (char *Node_Name, char *Node_Record) {
     struct Node_Record *Node_Record_Point;
@@ -450,8 +468,10 @@ int Read_Node_Spec_Conf (char *File_Name) {
     Node_Record_Point = Duplicate_Record(Node_Name);
     if (Node_Record_Point == NULL) return ENOENT;
     Pool_Value_To_String(Node_Record_Point->Pool, Out_Pool, sizeof(Out_Pool), Node_Record_Point->Name);
-    Node_Time = localtime(&Node_Record_Point->LastResponse);
-    strftime(Out_Time, sizeof(Out_Time), "%a%d%b@%H:%M:%S", Node_Time);
+/* Alternate, human readable, formatting shown below and commented out */
+/*    Node_Time = localtime(&Node_Record_Point->LastResponse); */
+/*    strftime(Out_Time, sizeof(Out_Time), "%a%d%b@%H:%M:%S", Node_Time); */
+    sprintf(Out_Time, "%ld", Node_Record_Point->LastResponse);
     if (sprintf(Node_Record, 
 	  "Name=%s OS=%s CPUs=%d Speed=%f RealMemory=%d VirtualMemory=%d TmpDisk=%d Pool=%s State=%s LastResponse=%s",
 	  Node_Record_Point->Name, Node_Record_Point->OS, Node_Record_Point->CPUs, 
@@ -464,9 +484,10 @@ int Read_Node_Spec_Conf (char *File_Name) {
 } /* Show_Node_Record */
 
 /*
- * Update_Node_Spec_Conf - Update the configuration for the given node, or create record as needed 
- * Input: specification - Standard configuration file input line
- * Output: return - 0 if no error, otherwise an error code
+ * Update_Node_Spec_Conf - Update the configuration for the given node, create record as needed 
+ *	NOTE: To delete a record, specify CPUs=0 in the configuration
+ * Input: Specification - Standard configuration file input line
+ * Output: return - 0 if no error, otherwise errno
  */
 int Update_Node_Spec_Conf (char *Specification) {
     struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
@@ -478,15 +499,18 @@ int Update_Node_Spec_Conf (char *Specification) {
     int My_VirtualMemory;
     int My_TmpDisk;
     unsigned int My_Pool;
-    enum Node_State My_NodeState;
+    enum Node_State My_State;
+    time_t My_LastResponse;
 
-    int Set_CPUs, Set_Speed, Set_RealMemory, Set_VirtualMemory, Set_TmpDisk, Set_Pool, Set_State;
+    int Set_CPUs, Set_Speed, Set_RealMemory, Set_VirtualMemory, Set_TmpDisk;
+    int Set_Pool, Set_State, Set_LastResponse;
     int Error_Code;
 
     Error_Code = Parse_Node_Spec(Specification, My_Name, My_OS, 
 	&My_CPUs, &Set_CPUs, &My_Speed, &Set_Speed,
 	&My_RealMemory, &Set_RealMemory, &My_VirtualMemory, &Set_VirtualMemory, 
-	&My_TmpDisk, &Set_TmpDisk, &My_Pool, &Set_Pool, &My_NodeState, &Set_State);
+	&My_TmpDisk, &Set_TmpDisk, &My_Pool, &Set_Pool, &My_State, &Set_State, 
+	&My_LastResponse, &Set_LastResponse);
     if (Error_Code != 0) return EINVAL;
 
     if (strlen(My_Name) == 0) {
@@ -531,6 +555,12 @@ int Update_Node_Spec_Conf (char *Specification) {
 
     } /* if */
 
+    
+    if ((Set_CPUs != 0) && (My_CPUs == 0)) {	/* Delete record */
+	return Delete_Record(My_Name);
+	return 0;
+    } /* if */
+
     strcpy(Node_Record_Point->Name, My_Name);
     if (strlen(My_OS) != 0)     strcpy(Node_Record_Point->OS, My_OS);
     if (Set_CPUs != 0)          Node_Record_Point->CPUs=My_CPUs;
@@ -539,7 +569,8 @@ int Update_Node_Spec_Conf (char *Specification) {
     if (Set_VirtualMemory != 0) Node_Record_Point->VirtualMemory=My_VirtualMemory;
     if (Set_TmpDisk != 0)       Node_Record_Point->TmpDisk=My_TmpDisk;
     if (Set_Pool != 0)          Node_Record_Point->Pool=My_Pool;
-    if (Set_State != 0)         Node_Record_Point->NodeState=My_Pool;
+    if (Set_State != 0)         Node_Record_Point->NodeState=My_State;
+    if (Set_LastResponse != 0)  Node_Record_Point->LastResponse=My_LastResponse;
 
     return 0;
 } /* Update_Node_Spec_Conf */
@@ -563,12 +594,15 @@ int Validate_Node_Spec (char *Specification) {
     int My_TmpDisk;
     unsigned My_Pool;
     enum Node_State My_NodeState;
-    int Set_CPUs, Set_Speed, Set_RealMemory, Set_VirtualMemory, Set_TmpDisk, Set_Pool, Set_State;
+    time_t My_LastResponse;
+    int Set_CPUs, Set_Speed, Set_RealMemory, Set_VirtualMemory, Set_TmpDisk;
+    int Set_Pool, Set_State, Set_LastResponse;
 
     Error_Code = Parse_Node_Spec(Specification, My_Name, My_OS, 
 	&My_CPUs, &Set_CPUs, &My_Speed, &Set_Speed,
 	&My_RealMemory, &Set_RealMemory, &My_VirtualMemory, &Set_VirtualMemory, 
-	&My_TmpDisk, &Set_TmpDisk, &My_Pool, &Set_Pool, &My_NodeState, &Set_State);
+	&My_TmpDisk, &Set_TmpDisk, &My_Pool, &Set_Pool, &My_NodeState, &Set_State,
+	&My_LastResponse, &Set_LastResponse);
     if (Error_Code != 0) return Error_Code;
     if (My_Name[0] == (char)NULL) return EINVAL;
 
@@ -593,12 +627,14 @@ int Validate_Node_Spec (char *Specification) {
 /*
  * Write_Node_Spec_Conf - Dump the node specification information into the specified file 
  * Input: File_Name - Name of the file containing node specification
+ *        Full_Dump - Full node record dump if equal to zero
  * Output: return - 0 if no error, otherwise an error code
  */
-int Write_Node_Spec_Conf (char *File_Name) {
+int Write_Node_Spec_Conf (char *File_Name, int Full_Dump) {
     FILE *Node_Spec_File;	/* Pointer to output data file */
     int Error_Code;		/* Error returns from system functions */
     char Out_Line[MAX_POOLS*4];	/* Temporary output information storage */
+    char Out_Buf[BUF_SIZE];	/* Temporary output information storage */
     int i;			/* Counter */
     time_t now;			/* Current time */
     ListIterator Node_Record_Iterator;		/* For iterating through Node_Record_List */
@@ -607,7 +643,7 @@ int Write_Node_Spec_Conf (char *File_Name) {
     /* Initialization */
     Error_Code = 0;
     Node_Record_Iterator = list_iterator_create(Node_Record_List);
-    if (Node_Record_Iterator == NULL) {
+   if (Node_Record_Iterator == NULL) {
 #ifdef DEBUG_MODULE
 	fprintf(stderr, "Write_Node_Spec_Conf:list_iterator_create unable to allocate memory\n");
 #else
@@ -637,11 +673,17 @@ int Write_Node_Spec_Conf (char *File_Name) {
     /* Process the data file */
     while (Node_Record_Point = (struct Node_Record *)list_next(Node_Record_Iterator)) {
 	Pool_Value_To_String(Node_Record_Point->Pool, Out_Line, sizeof(Out_Line), Node_Record_Point->Name);
+	if (Full_Dump == 1) {
+	    sprintf(Out_Buf, "State=%s, LastResponse=%ld\n", 
+		Node_State_String[Node_Record_Point->NodeState], Node_Record_Point->LastResponse); 
+	} else {
+	    strcpy(Out_Buf, "\n"); 
+	} /* else */
         if (fprintf(Node_Spec_File, 
-	  "Name=%s OS=%s CPUs=%d Speed=%f RealMemory=%d VirtualMemory=%d TmpDisk=%d Pool=%s\n",
+	  "Name=%s OS=%s CPUs=%d Speed=%f RealMemory=%d VirtualMemory=%d TmpDisk=%d Pool=%s %s",
 	  Node_Record_Point->Name, Node_Record_Point->OS, Node_Record_Point->CPUs, 
 	  Node_Record_Point->Speed, Node_Record_Point->RealMemory, 
-	  Node_Record_Point->VirtualMemory, Node_Record_Point->TmpDisk, Out_Line) <= 0) {
+	  Node_Record_Point->VirtualMemory, Node_Record_Point->TmpDisk, Out_Line, Out_Buf) <= 0) {
 	    if (Error_Code == 0) Error_Code = errno;
 #ifdef DEBUG_MODULE
 	    fprintf(stderr, "Write_Node_Spec_Conf error %d printing to file %s\n", errno, File_Name);
