@@ -51,7 +51,10 @@ and static libraries.
 %endif
 
 
-./configure --prefix=%{_prefix} --mandir=%{_mandir} --bindir=%{_bindir} --sbindir=%{_sbindir} --libdir=%{_libdir} --with-slurm-conf=/etc/slurm $WITHELAN $WITH_ELAN $WITH_AUTHD $WITH_TOTALVIEW
+./configure --prefix=%{_prefix} --mandir=%{_mandir} --bindir=%{_bindir} \
+            --sbindir=%{_sbindir} --libdir=%{_libdir}                   \
+            --with-slurm-conf=/etc/slurm --enable-debug                 \
+            $WITH_ELAN $WITH_AUTHD $WITH_TOTALVIEW
 make
 
 %install
@@ -76,7 +79,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 %{_mandir}/man5/*
 %{_mandir}/man8/*
-%config(noreplace) /etc/rc.d/init.d/slurm
+%config(replace) /etc/rc.d/init.d/slurm
 %config(noreplace) /etc/slurm/slurm.conf
 
 %files devel
