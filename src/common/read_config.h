@@ -42,6 +42,12 @@
  */
 extern void init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr);
 
+/* 
+ * free_slurm_conf - free all storage associated with a slurm_ctl_conf_t.   
+ * IN/OUT ctl_conf_ptr - pointer to data structure to be freed
+ */
+extern void free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr);
+
 /*
  * getnodename - equivalent to gethostname(), but return only the first 
  *      component of the fully qualified name (e.g. "linux123.foo.bar" 
