@@ -96,17 +96,6 @@ enum {
 const arg_desc_t *slurm_auth_get_arg_desc( void );
 
 /*
- * Marshal the arguments into a generic argument vector according to
- * the authentication argument layout.
- */
-void **slurm_auth_marshal_args( void *hosts, int timeout );
-
-/*
- * Free an argument list created by slurm_auth_marshal_args().
- */
-void slurm_auth_free_args( void **args );
-
-/*
  * SLURM authentication context opaque type.
  */
 typedef struct slurm_auth_context * slurm_auth_context_t;
@@ -142,9 +131,9 @@ int slurm_auth_init( void );
 /*
  * Static bindings for the global authentication context.
  */
-void	*g_slurm_auth_create( void *argv[] );
+void	*g_slurm_auth_create( void *hosts, int timeout );
 int	g_slurm_auth_destroy( void *cred );
-int	g_slurm_auth_verify( void *cred, void *argv[] );
+int	g_slurm_auth_verify( void *cred, void *hosts, int timeout );
 uid_t	g_slurm_auth_get_uid( void *cred );
 gid_t	g_slurm_auth_get_gid( void *cred );
 int	g_slurm_auth_pack( void *cred, Buf buf );
