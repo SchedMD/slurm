@@ -40,9 +40,12 @@
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
 
-/* slurm_print_node_info_msg - output information about all Slurm nodes */
+/*
+ * slurm_print_node_info_msg - output information about all Slurm nodes
+ *	based upon message as loaded using slurm_load_node
+ */
 void 
-slurm_print_node_info_msg ( FILE* out, node_info_msg_t * node_info_msg_ptr )
+slurm_print_node_info_msg ( FILE * out, node_info_msg_t * node_info_msg_ptr )
 {
 	int i;
 	node_info_t * node_ptr = node_info_msg_ptr -> node_array ;
@@ -59,12 +62,16 @@ slurm_print_node_info_msg ( FILE* out, node_info_msg_t * node_info_msg_ptr )
 }
 
 
-/* slurm_print_node_table - output information about a specific Slurm node */
+/*
+ * slurm_print_node_table - output information about a specific Slurm nodes
+ *	based upon message as loaded using slurm_load_node
+ */
 void
-slurm_print_node_table ( FILE* out, node_info_t * node_ptr )
+slurm_print_node_table ( FILE * out, node_info_t * node_ptr )
 {
 	fprintf ( out, "NodeName=%s State=%s CPUs=%u ", 
-		node_ptr->name, node_state_string(node_ptr->node_state), node_ptr->cpus);
+		node_ptr->name, node_state_string(node_ptr->node_state), 
+		node_ptr->cpus);
 	fprintf ( out, "RealMemory=%u TmpDisk=%u Weight=%u ", 
 		node_ptr->real_memory, node_ptr->tmp_disk, node_ptr->weight);
 	fprintf ( out, "Features=%s Partition=%s\n\n", 
@@ -72,7 +79,11 @@ slurm_print_node_table ( FILE* out, node_info_t * node_ptr )
 }
 
 
-/* slurm_load_node - issue RPC to get Slurm node state information if changed since update_time */
+/*
+ * slurm_load_node - issue RPC to get slurm all node configuration information 
+ *	if changed since update_time 
+ * NOTE: free the response using slurm_free_node_info_msg
+ */
 int
 slurm_load_node (time_t update_time, node_info_msg_t **node_info_msg_pptr)
 {
@@ -85,7 +96,8 @@ slurm_load_node (time_t update_time, node_info_msg_t **node_info_msg_pptr)
 	return_code_msg_t * slurm_rc_msg ;
 
         /* init message connection for message communication with controller */
-	if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( sockfd = slurm_open_controller_conn ( ) ) 
+				== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -94,19 +106,22 @@ slurm_load_node (time_t update_time, node_info_msg_t **node_info_msg_pptr)
         last_time_msg . last_update = update_time ;
         request_msg . msg_type = REQUEST_NODE_INFO ;
         request_msg . data = &last_time_msg ;
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
+				== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
         /* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) 
+				== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
         /* shutdown message connection */
-	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) 
+				== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SHUTDOWN_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
