@@ -397,7 +397,13 @@ extern int create_static_partitions(List part_list)
 	memset(bgl_record->nodes, 0, 13);
 	sprintf(bgl_record->nodes, "bgl[000x%d%d%d]", DIM_SIZE[X]-1,  DIM_SIZE[Y]-1, DIM_SIZE[Z]-1);
        	_process_nodes(bgl_record);
-	
+	itr = list_iterator_create(bgl_list);
+	while ((found_record = (bgl_record_t *) list_next(itr)) != NULL) {
+		if (!strcmp(bgl_record->nodes, found_record->nodes)) {
+			goto no_total;	/* don't reboot this one */
+		}
+	}
+
 	bgl_record->conn_type = SELECT_TORUS;
 	
 	set_bgl_part(bgl_record->bgl_part_list, 
@@ -426,8 +432,9 @@ extern int create_static_partitions(List part_list)
 	print_bgl_record(found_record);
 #endif
 	/*********************************************************/
-
+no_total:
 	rc = SLURM_SUCCESS;
+	list_iterator_destroy(itr);
 	
 	return rc;
 }
