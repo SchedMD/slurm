@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "September 2003" "Morris Jette" "Slurm job signal calls"
+.TH "Slurm API" "3" "November 2003" "Morris Jette" "Slurm job signal calls"
 .SH "NAME"
 slurm_kill_job, slurm_kill_job_step \- Slurm job signal calls
 .SH "SYNTAX"
@@ -35,10 +35,12 @@ Slurm job step id number.
 Signal to be sent to the job or job step.
 .SH "DESCRIPTION"
 .LP 
-\fBslurm_kill_job\fR Request that a signal be sent to a job and all of its job steps. If the job is pending, it will be terminated immediately.This function 
-may only be successfully executed by the job's owner or user root.
+\fBslurm_kill_job\fR Request that a signal be sent to all steps of the specified job. 
+If the job is pending and the signal is SIGKILL, the job will be terminated immediately.
+This function may only be successfully executed by the job's owner or user root.
 .LP 
-\fBslurm_kill_job_step\fR Request that a signal be sent to a specific job step. This function may only be successfully executed by the job's owner or user root.
+\fBslurm_kill_job_step\fR Request that a signal be sent to a specific job step. 
+This function may only be successfully executed by the job's owner or user root.
 .SH "RETURN VALUE"
 .LP
 On success, zero is returned. On error, -1 is returned, and Slurm error code is set appropriately.
