@@ -37,6 +37,7 @@
 int forward_io ( task_start_t * task_start ) 
 {
 	pid_t cpid ;
+	int * pipes = task_start -> pipes ;
 
 #define FORK_ERROR -1
 
@@ -53,6 +54,11 @@ int forward_io ( task_start_t * task_start )
 			goto return_label;
 			break;
 		case 0 : /*CHILD*/
+			close ( pipes[CHILD_IN_RD_PIPE] );
+			close ( pipes[CHILD_OUT_RD_PIPE] );
+			close ( pipes[CHILD_OUT_WR_PIPE] );
+			close ( pipes[CHILD_ERR_RD_PIPE] );
+			close ( pipes[CHILD_ERR_WR_PIPE] );
 			stdin_io_pipe_thread ( task_start ) ;
 			_exit( 0 ) ;
 			break;
@@ -67,6 +73,11 @@ int forward_io ( task_start_t * task_start )
 			goto kill_stdin_thread;
 			break;
 		case 0 : /*CHILD*/
+			close ( pipes[CHILD_IN_RD_PIPE] );
+			close ( pipes[CHILD_IN_WR_PIPE] );
+			close ( pipes[CHILD_OUT_WR_PIPE] );
+			close ( pipes[CHILD_ERR_RD_PIPE] );
+			close ( pipes[CHILD_ERR_WR_PIPE] );
 			stdout_io_pipe_thread ( task_start ) ;
 			_exit( 0 ) ;
 			break;
@@ -81,6 +92,11 @@ int forward_io ( task_start_t * task_start )
 			goto kill_stdout_thread;
 			break;
 		case 0 : /*CHILD*/
+			close ( pipes[CHILD_IN_RD_PIPE] );
+			close ( pipes[CHILD_IN_WR_PIPE] );
+			close ( pipes[CHILD_OUT_RD_PIPE] );
+			close ( pipes[CHILD_OUT_WR_PIPE] );
+			close ( pipes[CHILD_ERR_WR_PIPE] );
 			stderr_io_pipe_thread ( task_start ) ;
 			_exit( 0 ) ;
 			break;
@@ -91,11 +107,11 @@ int forward_io ( task_start_t * task_start )
 
 	goto return_label;
 
-	kill_stdout_thread:
-		kill ( task_start->io_pthread_id[STDOUT_FILENO] , SIGKILL );
-	kill_stdin_thread:
-		kill ( task_start->io_pthread_id[STDIN_FILENO] , SIGKILL );
-	return_label:
+kill_stdout_thread:
+	kill ( task_start->io_pthread_id[STDOUT_FILENO] , SIGKILL );
+kill_stdin_thread:
+	kill ( task_start->io_pthread_id[STDIN_FILENO] , SIGKILL );
+return_label:
 	return SLURM_SUCCESS ;
 }
 
