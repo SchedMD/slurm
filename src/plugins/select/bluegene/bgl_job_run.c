@@ -192,13 +192,6 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 	else
 		info("Clearing partition %s owner", bgl_part_id);
 
-	/* Destroy the partition */
-	if ((rc = pm_destroy_partition(bgl_part_id)) != STATUS_OK) {
-		error("pm_destroy_partition(%s): %s", bgl_part_id,
-			bgl_err_str(rc));
-		return SLURM_ERROR;
-	}
-		
 	/* Wait for partition state to be FREE */
 	for (i=0; i<MAX_POLL_RETRIES; i++) {
 		sleep(POLL_INTERVAL);
@@ -224,7 +217,15 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 			error("rm_free_partition(): %s", bgl_err_str(rc));
 
 		if (part_state == RM_PARTITION_FREE)
-			break;
+			break;	/* partition is now free */
+
+		/* Destroy the partition, only on first pass */
+		if ((i == 0)
+		&&  ((rc = pm_destroy_partition(bgl_part_id)) != STATUS_OK))  {
+			error("pm_destroy_partition(%s): %s", bgl_part_id,
+				bgl_err_str(rc));
+			return SLURM_ERROR;
+		}
 	}
 
 	if (part_state != RM_PARTITION_FREE) {
@@ -241,7 +242,7 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 }
 
 /*
- * Boot a partition. 
+ * Boot a partition. Partition state expected to be FREE upon entry. 
  * NOTE: This function does not wait for the boot to complete.
  * the slurm prolog script needs to perform the waiting.
  */
