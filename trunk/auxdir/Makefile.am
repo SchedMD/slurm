@@ -13,6 +13,7 @@ EXTRA_DIST = \
     x_ac_bgl.m4 \
     x_ac_debug.m4 \
     x_ac_elan.m4 \
+    x_ac_federation.m4 \
     x_ac_gpl_licensed.m4 \
     x_ac_ncurses.m4 \
     x_ac_ptrace.m4 \
