@@ -1,0 +1,17 @@
+This file describes changes in recent versions of SLURM. It primarily
+documents those changes that are of interest to users and admins. 
+
+
+* Changes in SLURM 0.2.0-pre2
+=============================
+
+ -- Fix for reconfigure when public/private key path is changed.
+ -- Shared memory fixes in slurmd. 
+   - fix for infinite semaphore incrementation bug.
+ -- Semaphore fixes in slurmctld.
+ -- Slurmctld now remembers which nodes have registered after recover.
+ -- Fixed reattach bug when tasks have exited.
+ -- Change directory to /tmp in slurmd if daemonizing.
+ -- Logfiles are reopened on reconfigure.
+
+$Id$
