@@ -1168,8 +1168,10 @@ ping_nodes (void)
 
 	ping_agent_args = xmalloc (sizeof (agent_arg_t));
 	ping_agent_args->msg_type = REQUEST_PING;
+	ping_agent_args->retry = 0;
 	reg_agent_args = xmalloc (sizeof (agent_arg_t));
 	reg_agent_args->msg_type = REQUEST_NODE_REGISTRATION_STATUS;
+	reg_agent_args->retry = 0;
 	now = time (NULL);
 
 	for (i = 0; i < node_record_count; i++) {

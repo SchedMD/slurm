@@ -122,6 +122,7 @@ deallocate_nodes (struct job_record  * job_ptr)
 
 	agent_args = xmalloc (sizeof (agent_arg_t));
 	agent_args->msg_type = REQUEST_REVOKE_JOB_CREDENTIAL;
+	agent_args->retry = 1;
 	revoke_job_cred = xmalloc (sizeof (revoke_credential_msg_t));
 	last_node_update = time (NULL);
 	revoke_job_cred->job_id = job_ptr->job_id;

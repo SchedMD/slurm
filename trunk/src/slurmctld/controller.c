@@ -47,6 +47,7 @@
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/macros.h>
 #include <src/common/xstring.h>
+#include <src/slurmctld/agent.h>
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 #include <src/common/credential_utils.h>
@@ -380,6 +381,7 @@ slurmctld_background ( void * no_data )
 	static time_t last_sched_time;
 	static time_t last_checkpoint_time;
 	static time_t last_ping_time;
+	static time_t last_rpc_retry_time;
 	static time_t last_timelimit_time;
 	time_t now;
 	/* Locks: Write job, write node, read partition */
@@ -391,7 +393,7 @@ slurmctld_background ( void * no_data )
 
 	/* Let the dust settle before doing work */
 	last_sched_time = last_checkpoint_time = last_timelimit_time = 
-		last_ping_time = time (NULL);
+		last_ping_time = last_rpc_retry_time = time (NULL);
 	(void) pthread_setcancelstate (PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype (PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	debug3 ("slurmctld_background pid = %u", getpid ());
@@ -415,6 +417,11 @@ slurmctld_background ( void * no_data )
 			lock_slurmctld (node_write_lock);
 			ping_nodes ();
 			unlock_slurmctld (node_write_lock);
+		}
+
+		if (difftime (now, last_rpc_retry_time) >= RPC_RETRY_INTERVAL) {
+			last_rpc_retry_time = now;
+			agent_retry (NULL);
 		}
 
 		if (difftime (now, last_timelimit_time) >= PERIODIC_GROUP_CHECK) {
