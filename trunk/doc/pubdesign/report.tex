@@ -195,7 +195,7 @@ copied'' to the {\tt srun} command during job execution.
 
 \subsubsection{Controller}
 
-Most SLURM state exists in the controller, {\tt slurmctld}. 
+Most SLURM state information exists in the controller, {\tt slurmctld}. 
 When {\tt slurmctld} starts, it reads its configuration from a file:
 {\tt /etc/slurmctld.conf}.  It also can read additional state from a 
 checkpoint file left over from a previous {\tt slurmctld}.
@@ -285,7 +285,7 @@ authentication.
 
 \item {\tt slurmadmin}: Perform privileged administrative commands
 such as draining a partition in preparation for maintenance, or terminating
-jobs.  Must be run as the root user.
+jobs.  It must be run as the root user.
 
 \end{itemize}
 
@@ -415,8 +415,6 @@ a SIGINT resulting from a Control-C), it is sent to each {\tt slurmd} which
 terminates the individual tasks and reports this to the job status manager,
 which cleans up the job.
 
-\marginpar{This is as far as I got in the ``big picture'' update --JG}
-
 \section{Controller Design}
 
 The controller will be modular and multi-threaded. 
@@ -453,21 +451,44 @@ Node information that we intend to monitor includes:
 \item Count of processors on the node
 \item Size of real memory on the node
 \item Size of temporary disk storage
-\item State of node (RUN, IDLE, DRAIN, etc.)
+\item State of node (RUN, IDLE, DRAINED, etc.)
+\item Weight (preference in being allocated work)
+\item Feature (arbitrary description)
 \end{itemize}
 
 The SLURM administrator could at a minimum specify a list of system node 
 names using a regular expression (e.g. "NodeName=linux[001-512] CPUs=4 
 RealMemory=1024 TmpDisk=4096"). 
-This would be considered the minimal node configuration values which are 
-acceptable for the node to enter into service.
+These values for CPUs, RealMemory, and TmpDisk would be considered the 
+minimal node configuration values which are acceptable for the node to 
+enter into service. 
+If a node registers with less resources, it will be placed in DOWN 
+state and the event will be logged. 
+Note the regular expression node name syntax permits even very large heterogeneous 
+clusters to be described in only a few lines. 
+In fact, a smaller number of unique configurations provides SLURM with 
+greater efficiency in scheduling work.
+
+The weight is used to order available nodes in assigning work to them. 
+In a heterogeneous cluster (e.g. larger memory or faster processors) 
+should be assigned a larger weight. 
+The units used are arbitrary and should reflect the priorities of that resource. 
+Pending jobs will be assigned the least capable nodes (i.e. lowest 
+weight) which satisfy their requirements. 
+This will tend to leave the more capable nodes to those jobs requiring 
+those capabilities. 
+
+The feature is an arbitrary string describing the node, such as a 
+particular software package or processor speed. 
+While the feature does not have a numeric value, one might include a numeric 
+value within the feature name (e.g. "1200MHz" or "16GB\_Swap").
 
 The partition manager will identify groups of nodes to be used for
 execution of user jobs. Data to be associated with a partition will include:
 \begin{itemize}
 \item Name
-\item Access controlled by key granted to key (so support external schedulers)
-\item List of associated nodes
+\item Access controlled by key granted to user root (to support external schedulers)
+\item List of associated nodes (may use regular expression)
 \item State of partition (UP or DOWN)
 \item Maximum time limit for any job
 \item Maximum nodes allocated to any single job
@@ -475,8 +496,8 @@ execution of user jobs. Data to be associated with a partition will include:
 \end{itemize}
 
 It will be possible to alter this data in real-time in order to effect the
-scheduling of pending jobs (currently executing jobs would continue). Unlike some
-other parallel job management systems, we believe this information can be
+scheduling of pending jobs (currently executing jobs would continue). 
+We believe this information can be
 confined to the SLURM control machine for better scalability. It would be used
 by the Job Manager (and possibly an external scheduler), which either exist only 
 on the control machine or communicate only with the control machine. An API to 
@@ -498,12 +519,44 @@ such a capability at a later time if so desired.
 Future enhancements could include constraining jobs to a specific CPU count 
 or memory size within a node, which could be used to space-share the node.
 
+Bit maps are used to indicate which nodes are up, idle, associated with 
+each partition, and associated with unique node configuration. 
+This technique permits scheduling decisions to be made by performing a 
+small number of tests followed by fast bit map manipulations. 
+A sample configuration file follows.
+
+\begin{verbatim}
+# 
+# Sample /etc/SLURM.conf
+# Author: John Doe
+# Date: 11/06/2001
+#
+ControlMachine=lx0001
+BackupController=lx0002
+#
+# Node Configurations
+#
+NodeName=DEFAULT TmpDisk=16384
+NodeName=lx[0001-0002] State=DRAINED
+NodeName=lx[0003-8000] CPUs=16 RealMemory=2048 Weight=16
+NodeName=lx[8001-9999] CPUs=32 RealMemory=4096 Weight=40 Feature=1200MHz
+#
+# Partition Configurations
+#
+PartitionName=DEFAULT MaxTime=30 MaxNodes=2
+PartitionName=login Nodes=lx[0001-0002] State=DOWN   # Don't schedule work here
+PartitionName=debug Nodes=lx[0003-0030] State=UP    Default=YES
+PartitionName=class Nodes=lx[0031-0040] AllowGroups=students,teachers
+PartitionName=batch Nodes=lx[0041-9999] MaxTime=UNLIMITED MaxNodes=4096 Key=YES
+\end{verbatim}
+
 \subsection{Job Manager}
 
 The core functions to be supported by the job manager include:
 \begin{itemize}
 \item Queue job request
-\item Order job queue (under control of external scheduler)
+\item Reset priority of jobs (for external scheduler to order queue)
+\item Allocate nodes to job
 \item Initiate job
 \item Will job run query (test if "Initiate job" request would succeed)
 \item Status job (including node list, memory and CPU use data)
@@ -543,7 +596,7 @@ DPCS\footnote{http://www.llnl.gov/icc/lc/dpcs/dpcs\_overview.html}.
 DPCS has flexible scheduling algorithms that suit our needs well and
 provide the scalability required for this application. Most of the resource
 accounting and some of the job management functions presently within DPCS would
-be moved into the proposed SLURM Job Management and Job Status components. 
+be moved into the proposed SLURM Job Management component. 
 DPCS will require some modification to operate within this new, richer
 environment. The DPCS Central Manager would also require porting to Linux. 
 
@@ -554,8 +607,9 @@ We are not contemplating making this database software available through SLURM,
 but might consider writing this data to an open source database if so desired.
 
 System specific scripts can be executed prior to the initiation of a user job
-and after the termination of a user job (e.g. prolog and epilog). These scripts
-can be used to establish an appropriate environment for the user (e.g. permit
+and after the termination of a user job (e.g. prolog and epilog). 
+These scripts are executed as user root and can be used to establish an 
+appropriate environment for the user (e.g. permit
 logins, disable logins, terminate "orphan" processes, etc.). 
 An API for all functions would be developed initially, followed by a  
 command-line tool utilizing the API. 
@@ -575,7 +629,7 @@ three.
 
 Slurmd is a multi-threaded daemon for managing user job and 
 monitoring system state. 
-Upon initiation it will read the /etc/SLURM.conf file, capture 
+Upon initiation it will read the /etc/slurmd.conf file, capture 
 system state, and await requests from the SLURM control daemon 
 (slurmctrld). 
 
@@ -589,8 +643,8 @@ Differences in resource utilization values from process table
 snapshot to snapshot will be accumulated. Slurmd will 
 insure these accumulated values are not decremented if resource 
 consumption for a user happens to decrease from snapshot to 
-snapshot, which would simply reflect the termination of some 
-processes.
+snapshot, which would simply reflect the termination of 
+one or more processes.
 Both the memory high-water marks will be recorded and the 
 integral of memory consumption (e.g. megabyte-hours).
 Resource consumption will be grouped by user ID and 
@@ -702,47 +756,6 @@ Phase three will add Quadrics Elan3 switch support and overall documentation.
 
 Phase four rounds out SLURM with job accounting, fault-tolerance, 
 and full integration with DPCS (Distributed Production Control System).
-
-
-\section{Costs}
-
-Very preliminary effort estimates are provided below. More research should
-still be performed to investigate the availability of open source code. More
-design work is also required to establish more accurate effort estimates.
-
-\begin{center}
-\begin{tabular}{|l|c|}\hline
-\multicolumn{2}{|c|}{\em I - Basic communication and node status} \\ \hline
-Communications Library             & 1.0 FTE month \\
-Machine Status Collection          & 1.0 FTE month \\
-Machine Status Manager             & 1.0 FTE month \\
-Machine Status Tool                & 0.5 FTE month \\
-{\em TOTAL Phase I}		   & {\em 3.5 FTE months} \\ \hline
-\multicolumn{2}{|c|}{\em II - Basic job initiation} \\ \hline
-Communications Library Enhancement & 1.0 FTE month \\
-Job Management Daemon              & 1.0 FTE month \\
-Job Manager                        & 2.0 FTE months \\
-Partition Manager                  & 1.0 FTE month \\
-{\em TOTAL Phase II}		   & {\em 5.0 FTE months} \\ \hline
-\multicolumn{2}{|c|}{\em III - Switch support and documentation} \\ \hline
-Communications Library Security    & 1.0 FTE month \\
-Job Status Daemon                  & 1.0 FTE month \\
-Basic Switch Daemon                & 2.0 FTE months \\
-MPI Interface to SLURM             & 2.0 FTE months \\
-Switch Health Monitor              & 2.0 FTE months \\
-User and Admin Documentation       & 1.0 FTE month \\
-DPCS uses SLURM Job Manager        & 1.0 FTE month \\
-{\em TOTAL Phase III}		   & {\em 10.0 FTE months} \\ \hline
-\multicolumn{2}{|c|}{\em IV - Switch health, and DPCS on Linux} \\ \hline
-Job Accounting                     & 1.5 FTE months \\
-Fault-tolerant SLURM Managers      & 3.0 FTE months \\
-Direct SLURM Switch Use (optional) & 2.0 FTE months \\
-DPCS uses SLURM Job Status         & 1.5 FTE months \\
-DPCS Controller on Linux           & 0.5 FTE months \\
-{\em TOTAL Phase IV}		   & {\em 8.5 FTE months} \\ \hline
-{\em GRAND TOTAL}		   & {\em 27.0 FTE months} \\ \hline
-\end{tabular}
-\end{center}
 
 \appendix
 \newpage
