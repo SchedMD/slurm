@@ -683,24 +683,31 @@ static int _set_rlimit_env(void)
 	int rc = SLURM_SUCCESS;
 	struct rlimit my_rlimit;
 
+#ifdef RLIMIT_FSIZE
 	if (getrlimit(RLIMIT_FSIZE, &my_rlimit) ||
 	    setenvf("SLURM_RLIMIT_FSIZE=%ld", (long)my_rlimit.rlim_cur)) {
 		error("Can't set SLURM_RLIMIT_FSIZE environment variable");
 		rc = SLURM_FAILURE;
 	}
+#endif
 
+#ifdef RLIMIT_CORE
 	if (getrlimit(RLIMIT_CORE, &my_rlimit) ||
 	    setenvf("SLURM_RLIMIT_CORE=%ld", (long)my_rlimit.rlim_cur)) {
 		error("Can't set SLURM_RLIMIT_CORE environment variable");
 		rc = SLURM_FAILURE;
 	}
+#endif
 
+#ifdef RLIMIT_NPROC
 	if (getrlimit(RLIMIT_NPROC, &my_rlimit) ||
 	    setenvf("SLURM_RLIMIT_NPROC=%ld", (long)my_rlimit.rlim_cur)) {
 		error("Can't set SLURM_RLIMIT_NPROC environment variable");
 		rc = SLURM_FAILURE;
 	}
+#endif
 
+#ifdef RLIMIT_NOFILE
 	if (getrlimit(RLIMIT_NOFILE, &my_rlimit) == 0) {
 		if (setenvf("SLURM_RLIMIT_NOFILE=%ld", 
 			    (long)my_rlimit.rlim_cur)) {
@@ -716,7 +723,7 @@ static int _set_rlimit_env(void)
 		error("Can't get RLIMIT_NOFILE value");
 		rc = SLURM_FAILURE;
 	}
-
+#endif
 
 	return rc;
 }
