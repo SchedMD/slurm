@@ -160,6 +160,11 @@ slurm_sched_context_destroy( slurm_sched_context_t *c )
 
 /* *********************************************************************** */
 /*  TAG(                        slurm_sched_init                        )  */
+/*                                                                         */
+/*  NOTE: The scheduler plugin can not be changed via reconfiguration      */
+/*        due to background threads, job priorities, etc. Slurmctld must   */
+/*        be restarted  and job priority changes may be required to change */
+/*        the scheduler type.                                              */
 /* *********************************************************************** */
 int
 slurm_sched_init( void )
@@ -169,8 +174,7 @@ slurm_sched_init( void )
 	
 	slurm_mutex_lock( &g_sched_context_lock );
 
-	if ( g_sched_context )
-		slurm_sched_context_destroy( g_sched_context );
+	if ( g_sched_context ) goto done;
 
 	sched_type = slurm_get_sched_type();
 	g_sched_context = slurm_sched_context_create( sched_type );
