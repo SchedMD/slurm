@@ -166,7 +166,7 @@ bool slurm_cred_jobid_cached(slurm_cred_ctx_t ctx, uint32_t jobid);
 /*
  * Add a jobid to the slurm credential context without inserting
  * a credential state. This is used by the verifier to track job ids
- * that it has seen, but not necessarily recieved a credential for.
+ * that it has seen, but not necessarily received a credential for.
  */
 int slurm_cred_insert_jobid(slurm_cred_ctx_t ctx, uint32_t jobid);
 
