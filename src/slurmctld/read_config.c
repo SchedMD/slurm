@@ -89,42 +89,41 @@ int node_record_count = 0;
  */
 static int _build_bitmaps(void)
 {
-	int i, j, error_code;
+	int i, j, error_code = SLURM_SUCCESS;
 	char *this_node_name;
-	ListIterator config_record_iterator;
-	ListIterator part_record_iterator;
-	struct config_record *config_record_point;
-	struct part_record *part_record_point;
-	struct node_record *node_record_point;
+	ListIterator config_iterator;
+	ListIterator part_iterator;
+	struct config_record *config_ptr;
+	struct part_record   *part_ptr;
+	struct node_record   *node_ptr;
 	bitstr_t *all_part_node_bitmap;
 	hostlist_t host_list;
 
-	error_code = 0;
 	last_node_update = time(NULL);
 	last_part_update = time(NULL);
 
 	/* initialize the idle and up bitmaps */
 	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(avail_node_bitmap);
-	idle_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
-	avail_node_bitmap   = (bitstr_t *) bit_alloc(node_record_count);
+	idle_node_bitmap  = (bitstr_t *) bit_alloc(node_record_count);
+	avail_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	if ((idle_node_bitmap  == NULL) ||
 	    (avail_node_bitmap == NULL)) 
 		fatal ("memory allocation failure");
 	/* initialize the configuration bitmaps */
-	config_record_iterator = list_iterator_create(config_list);
-	if (config_record_iterator == NULL)
+	config_iterator = list_iterator_create(config_list);
+	if (config_iterator == NULL)
 		fatal ("memory allocation failure");
 
-	while ((config_record_point = (struct config_record *)
-				      list_next(config_record_iterator))) {
-		FREE_NULL_BITMAP(config_record_point->node_bitmap);
-		config_record_point->node_bitmap =
+	while ((config_ptr = (struct config_record *)
+				      list_next(config_iterator))) {
+		FREE_NULL_BITMAP(config_ptr->node_bitmap);
+		config_ptr->node_bitmap =
 		    (bitstr_t *) bit_alloc(node_record_count);
-		if (config_record_point->node_bitmap == NULL)
+		if (config_ptr->node_bitmap == NULL)
 			fatal ("memory allocation failure");
 	}
-	list_iterator_destroy(config_record_iterator);
+	list_iterator_destroy(config_iterator);
 
 	/* scan all nodes and identify which are up, idle and 
 	 * their configuration */
@@ -156,59 +155,53 @@ static int _build_bitmaps(void)
 	all_part_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	if (all_part_node_bitmap == NULL)
 		fatal ("memory allocation failure");
-	part_record_iterator = list_iterator_create(part_list);
-	if (part_record_iterator == NULL)
+	part_iterator = list_iterator_create(part_list);
+	if (part_iterator == NULL)
 		fatal ("memory allocation failure");
 
-	while ((part_record_point =
-		(struct part_record *) list_next(part_record_iterator))) {
-		FREE_NULL_BITMAP(part_record_point->node_bitmap);
-		part_record_point->node_bitmap =
+	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
+		FREE_NULL_BITMAP(part_ptr->node_bitmap);
+		part_ptr->node_bitmap =
 		    (bitstr_t *) bit_alloc(node_record_count);
-		if (part_record_point->node_bitmap == NULL)
+		if (part_ptr->node_bitmap == NULL)
 			fatal ("memory allocation failure");
 
 		/* check for each node in the partition */
-		if ((part_record_point->nodes == NULL) ||
-		    (part_record_point->nodes[0] == '\0'))
+		if ((part_ptr->nodes == NULL) || (part_ptr->nodes[0] == '\0'))
 			continue;
 
-		if ((host_list =
-		     hostlist_create(part_record_point->nodes)) == NULL) {
+		if ((host_list = hostlist_create(part_ptr->nodes)) == NULL) {
 			error("hostlist_create error for %s, %m",
-			      part_record_point->nodes);
+			      part_ptr->nodes);
 			continue;
 		}
 
 		while ((this_node_name = hostlist_shift(host_list))) {
-			node_record_point =
-			    find_node_record(this_node_name);
-			if (node_record_point == NULL) {
+			node_ptr = find_node_record(this_node_name);
+			if (node_ptr == NULL) {
 				error("_build_bitmaps: invalid node name "
 					"specified %s", this_node_name);
 				free(this_node_name);
 				continue;
 			}
-			j = node_record_point - node_record_table_ptr;
+			j = node_ptr - node_record_table_ptr;
 			if (bit_test(all_part_node_bitmap, j) == 1) {
 				error("_build_bitmaps: node %s defined in "
 					"more than one partition", this_node_name);
 				error("_build_bitmaps: only the first "
 					"specification is honored");
 			} else {
-				bit_set(part_record_point->node_bitmap, j);
+				bit_set(part_ptr->node_bitmap, j);
 				bit_set(all_part_node_bitmap, j);
-				part_record_point->total_nodes++;
-				part_record_point->total_cpus +=
-				    node_record_point->cpus;
-				node_record_point->partition_ptr =
-				    part_record_point;
+				part_ptr->total_nodes++;
+				part_ptr->total_cpus += node_ptr->cpus;
+				node_ptr->partition_ptr = part_ptr;
 			}
 			free(this_node_name);
 		}
 		hostlist_destroy(host_list);
 	}
-	list_iterator_destroy(part_record_iterator);
+	list_iterator_destroy(part_iterator);
 	bit_free(all_part_node_bitmap);
 	return error_code;
 }
@@ -258,8 +251,8 @@ static int _parse_node_spec(char *in_line)
 	char *this_node_addr, *this_node_name;
 	int error_code, first, i;
 	int state_val, cpus_val, real_memory_val, tmp_disk_val, weight_val;
-	struct node_record *node_ptr;
-	struct config_record *config_point = NULL;
+	struct node_record   *node_ptr;
+	struct config_record *config_ptr = NULL;
 	hostlist_t addr_list = NULL, host_list = NULL;
 
 	node_addr = node_name = state = feature = (char *) NULL;
@@ -350,22 +343,20 @@ static int _parse_node_spec(char *in_line)
 
 		if (first == 1) {
 			first = 0;
-			config_point = create_config_record();
-			if (config_point->nodes)
-				free(config_point->nodes);
-			config_point->nodes = node_name;
+			config_ptr = create_config_record();
+			config_ptr->nodes = node_name;
 			if (cpus_val != NO_VAL)
-				config_point->cpus = cpus_val;
+				config_ptr->cpus = cpus_val;
 			if (real_memory_val != NO_VAL)
-				config_point->real_memory =
+				config_ptr->real_memory =
 						    real_memory_val;
 			if (tmp_disk_val != NO_VAL)
-				config_point->tmp_disk = tmp_disk_val;
+				config_ptr->tmp_disk = tmp_disk_val;
 			if (weight_val != NO_VAL)
-				config_point->weight = weight_val;
+				config_ptr->weight = weight_val;
 			if (feature) {
-				xfree(config_point->feature);
-				config_point->feature = feature;
+				xfree(config_ptr->feature);
+				config_ptr->feature = feature;
 				feature = NULL;
 			}
 		}
@@ -379,7 +370,7 @@ static int _parse_node_spec(char *in_line)
 		}
 
 		if (node_ptr == NULL) {
-			node_ptr = create_node_record(config_point, 
+			node_ptr = create_node_record(config_ptr, 
 			                              this_node_name);
 			if ((state_val != NO_VAL) &&
 			    (state_val != NODE_STATE_UNKNOWN))
@@ -449,7 +440,7 @@ static int _parse_part_spec(char *in_line)
 	int min_nodes_val = NO_VAL, root_val = NO_VAL, default_val = NO_VAL;
 	int state_val = NO_VAL, shared_val = NO_VAL;
 	int error_code;
-	struct part_record *part_record_point;
+	struct part_record *part_ptr;
 
 	if ((error_code =
 	     load_string(&partition_name, "PartitionName=", in_line)))
@@ -580,11 +571,10 @@ static int _parse_part_spec(char *in_line)
 		return 0;
 	}
 
-	part_record_point =
-	    list_find_first(part_list, &list_find_part, partition_name);
-	if (part_record_point == NULL) {
-		part_record_point = create_part_record();
-		strcpy(part_record_point->name, partition_name);
+	part_ptr = list_find_first(part_list, &list_find_part, partition_name);
+	if (part_ptr == NULL) {
+		part_ptr = create_part_record();
+		strcpy(part_ptr->name, partition_name);
 	} else {
 		info("_parse_node_spec: duplicate entry for partition %s",
 		     partition_name);
@@ -595,27 +585,27 @@ static int _parse_part_spec(char *in_line)
 				"from %s to %s", 
 				default_part_name, partition_name);
 		strcpy(default_part_name, partition_name);
-		default_part_loc = part_record_point;
+		default_part_loc = part_ptr;
 	}
 	if (max_time_val != NO_VAL)
-		part_record_point->max_time  = max_time_val;
+		part_ptr->max_time  = max_time_val;
 	if (max_nodes_val != NO_VAL)
-		part_record_point->max_nodes = max_nodes_val;
+		part_ptr->max_nodes = max_nodes_val;
 	if (min_nodes_val != NO_VAL)
-		part_record_point->min_nodes = min_nodes_val;
+		part_ptr->min_nodes = min_nodes_val;
 	if (root_val != NO_VAL)
-		part_record_point->root_only = root_val;
+		part_ptr->root_only = root_val;
 	if (state_val != NO_VAL)
-		part_record_point->state_up  = state_val;
+		part_ptr->state_up  = state_val;
 	if (shared_val != NO_VAL)
-		part_record_point->shared    = shared_val;
+		part_ptr->shared    = shared_val;
 	if (allow_groups) {
-		xfree(part_record_point->allow_groups);
-		part_record_point->allow_groups = allow_groups;
+		xfree(part_ptr->allow_groups);
+		part_ptr->allow_groups = allow_groups;
 		allow_groups = NULL;
 	}
 	if (nodes) {
-		xfree(part_record_point->nodes);
+		xfree(part_ptr->nodes);
 		if (strcmp(nodes, "localhost") == 0) {
 			xfree(nodes);
 			nodes = xmalloc(128);
@@ -623,7 +613,7 @@ static int _parse_part_spec(char *in_line)
 				fatal ("memory allocation failure");
 			getnodename(nodes, 128);
 		}
-		part_record_point->nodes = nodes;
+		part_ptr->nodes = nodes;
 		nodes = NULL;
 	}
 	xfree(partition_name);
