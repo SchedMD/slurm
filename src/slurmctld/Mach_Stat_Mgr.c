@@ -10,8 +10,9 @@
 
 #include "config.h"
 #include "list.h"
-#include "Mach_Stat_Mgr.h"
+#include "slurm.h"
 
+#define BUF_SIZE 1024
 #define DEBUG_MODULE 1
 #define SEPCHARS " \n\t"
 
@@ -28,19 +29,19 @@ void	Partition_String_To_Value (char *partition, unsigned int *Partition_Value, 
 void 	Partition_Value_To_String(unsigned int partition, char *Partition_String, int Partition_String_size, char *node_name);
 int	Tally_Node_CPUs(char *Node_List);
 
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 /* main is used here for testing purposes only */
 main(int argc, char * argv[]) {
     int Error_Code;
     char Out_Line[BUF_SIZE];
 
     if (argc < 4) {
-	printf("Usage: %s <in_file> <out_file1> <out_file2>\n", argv[0]);
+	printf("Usage: %s <in_file> <text_file> <raw_file>\n", argv[0]);
 	exit(0);
     } /* if */
     Error_Code = Read_Node_Spec_Conf(argv[1]);
     if (Error_Code != 0) {
-	printf("Error %d from Read_Node_Spec_Conf", Error_Code);
+	printf("Error %d from Read_Node_Spec_Conf\n", Error_Code);
 	exit(1);
     } /* if */
 
@@ -52,18 +53,18 @@ main(int argc, char * argv[]) {
     if (Error_Code != 0) printf("Error %d from Update_Node_Spec_Conf\n", Error_Code);
 
     Error_Code = Write_Node_Spec_Conf(argv[2], 1);
-    if (Error_Code != 0) printf("Error %d from Write_Node_Spec_Conf", Error_Code);
+    if (Error_Code != 0) printf("Error %d from Write_Node_Spec_Conf\n", Error_Code);
 
     Error_Code = Dump_Node_Records(argv[3]);
-    if (Error_Code != 0) printf("Error %d from Dump_Node_Records", Error_Code);
+    if (Error_Code != 0) printf("Error %d from Dump_Node_Records\n", Error_Code);
 
     Error_Code = Validate_Node_Spec("Name=mx03 CPUs=4 TmpDisk=22222");
-    if (Error_Code != 0) printf("Error %d from Validate_Node_Spec", Error_Code);
+    if (Error_Code != 0) printf("Error %d from Validate_Node_Spec\n", Error_Code);
     Error_Code = Validate_Node_Spec("Name=mx03 CPUs=3");
-    if (Error_Code == 0) printf("Error %d from Validate_Node_Spec", Error_Code);
+    if (Error_Code == 0) printf("Error %d from Validate_Node_Spec\n", Error_Code);
 
-    Error_Code = Show_Node_Record("mx03", Out_Line);
-    if (Error_Code != 0) printf("Error %d from Show_Node_Record", Error_Code);
+    Error_Code = Show_Node_Record("mx03", Out_Line, BUF_SIZE);
+    if (Error_Code != 0) printf("Error %d from Show_Node_Record\n", Error_Code);
     if (Error_Code == 0) printf("Show_Node_Record: %s\n", Out_Line);
 
     Error_Code = Tally_Node_CPUs("mx01,mx03 junk...");
@@ -85,7 +86,7 @@ int Delete_Node_Record(char *name) {
 
     Node_Record_Iterator = list_iterator_create(Node_Record_List);
     if (Node_Record_Iterator == NULL) {
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	fprintf(stderr, "Delete_Node_Record: list_iterator_create unable to allocate memory\n");
 #else
 	syslog(LOG_ERR, "Delete_Node_Record: list_iterator_create unable to allocate memory\n");
@@ -124,7 +125,7 @@ int Dump_Node_Records (char *File_Name) {
     Error_Code = 0;
     Node_Record_Iterator = list_iterator_create(Node_Record_List);
    if (Node_Record_Iterator == NULL) {
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	fprintf(stderr, "Dump_Node_Records: list_iterator_create unable to allocate memory\n");
 #else
 	syslog(LOG_ERR, "Dump_Node_Records: list_iterator_create unable to allocate memory\n");
@@ -133,7 +134,7 @@ int Dump_Node_Records (char *File_Name) {
     }
     Node_Spec_File = fopen(File_Name, "w");
     if (Node_Spec_File == NULL) {
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	fprintf(stderr, "Dump_Node_Records error %d opening file %s\n", errno, File_Name);
 #else
 	syslog(LOG_ERR, "Dump_Node_Records error %d opening file %s\n", errno, File_Name);
@@ -144,7 +145,7 @@ int Dump_Node_Records (char *File_Name) {
     i = NODE_STRUCT_VERSION;
     if (fwrite((void *)&i, sizeof(i), 1, Node_Spec_File) < 1) {
 	Error_Code = ferror(Node_Spec_File);
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	fprintf(stderr, "Dump_Node_Records error %d writing to file %s\n", Error_Code, File_Name);
 #else
 	syslog(LOG_ERR, "Dump_Node_Records error %d writing to file %s\n", Error_Code, File_Name);
@@ -155,7 +156,7 @@ int Dump_Node_Records (char *File_Name) {
     while (Node_Record_Point = (struct Node_Record *)list_next(Node_Record_Iterator)) {
 	if (fwrite((void *)Node_Record_Point, sizeof (struct Node_Record), 1, Node_Spec_File) < 1) {
 	    if (Error_Code == 0) Error_Code = ferror(Node_Spec_File);
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	    fprintf(stderr, "Dump_Node_Records error %d writing to file %s\n", Error_Code, File_Name);
 #else
 	    syslog(LOG_ERR, "Dump_Node_Records error %d writing to file %s\n", Error_Code, File_Name);
@@ -166,7 +167,7 @@ int Dump_Node_Records (char *File_Name) {
     /* Termination */
     if (fclose(Node_Spec_File) != 0) {
 	if (Error_Code == 0) Error_Code = errno;
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	fprintf(stderr, "Dump_Node_Records error %d closing file %s\n", errno, File_Name);
 #else
 	syslog(LOG_NOTICE, "Dump_Node_Records error %d closing file %s\n", errno, File_Name);
@@ -186,7 +187,7 @@ struct Node_Record *Find_Node_Record(char *name) {
 
     Node_Record_Iterator = list_iterator_create(Node_Record_List);
     if (Node_Record_Iterator == NULL) {
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	fprintf(stderr, "Find_Node_Record: list_iterator_create unable to allocate memory\n");
 #else
 	syslog(LOG_ERR, "Find_Node_Record: list_iterator_create unable to allocate memory\n");
@@ -212,7 +213,7 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
 	int *My_RealMemory, int *Set_RealMemory, int *My_VirtualMemory, int *Set_VirtualMemory, 
 	long *My_TmpDisk, int *Set_TmpDisk, unsigned int *My_Partition, int *Set_Partition, 
 	enum Node_State *My_NodeState, int *Set_State, time_t *My_LastResponse, int *Set_LastResponse) {
-    char Scratch[BUF_SIZE];
+    char *Scratch;
     char *str_ptr1, *str_ptr2;
     int Error_Code, i;
 
@@ -229,7 +230,16 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
     *Set_LastResponse  = 0;
 
     if (Specification[0] == '#') return 0;
-    if (strlen(Specification) >= BUF_SIZE) return E2BIG;
+    Scratch = malloc(strlen(Specification)+1);
+    if (Scratch == NULL) {
+#if DEBUG_MODULE
+    	fprintf(stderr, "Parse_Node_Spec: unable to allocate memory\n");
+#else
+    	syslog(LOG_ERR, "Parse_Node_Spec: unable to allocate memory\n");
+#endif
+	return ENOMEM;
+    } /* if */
+
     str_ptr1 = (char *)strstr(Specification, "Name=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+5);
@@ -314,6 +324,7 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
 	*Set_LastResponse = 1;
     } /* if */
 
+    free(Scratch);
     return Error_Code;
 } /* Parse_Node_Spec */
 
@@ -363,7 +374,7 @@ void Partition_Value_To_String(unsigned int partition, char *Partition_String, i
     Partition_String[0] = (char)NULL;
     Max_Partitions = MAX_PARTITION;
     if (Max_Partitions > 999999) {
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
     	fprintf(stderr, "Partition_Value_To_String error MAX_PARTITION configured over too large at %d\n", Max_Partitions);
 #else
     	syslog(LOG_ERR, "Partition_Value_To_String error MAX_PARTITION configured over too large at %d\n", Max_Partitions);
@@ -375,7 +386,7 @@ void Partition_Value_To_String(unsigned int partition, char *Partition_String, i
 	if ((partition & (1 << i)) == 0) continue;
 	sprintf(Tmp_String, "%d", i);
 	if ((strlen(Partition_String)+strlen(Tmp_String)+1) >= Partition_String_size) {
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
     	    fprintf(stderr, "Partition_Value_To_String Partition string overflow for node Name %s\n", node_name);
 #else
     	    syslog(LOG_ERR, "Partition_Value_To_String Partition string overflow for node Name %s\n", node_name);
@@ -418,10 +429,10 @@ int Read_Node_Spec_Conf (char *File_Name) {
     Error_Code = 0;
     Node_Spec_File = fopen(File_Name, "r");
     if (Node_Spec_File == NULL) {
-#ifdef DEBUG_MODULE
-	fprintf(stderr, "Read_Node_Spec_Conf error %d opening file %s\n", errno, File_Name);
+#if DEBUG_MODULE
+	fprintf(stderr, "Read_Node_Spec_Conf: error %d opening file %s\n", errno, File_Name);
 #else
-	syslog(LOG_ALERT, "Read_Node_Spec_Conf error %d opening file %s\n", errno, File_Name);
+	syslog(LOG_ALERT, "Read_Node_Spec_Conf: error %d opening file %s\n", errno, File_Name);
 #endif
 	return errno;
     } /* if */
@@ -442,11 +453,11 @@ int Read_Node_Spec_Conf (char *File_Name) {
     while (fgets(In_Line, BUF_SIZE, Node_Spec_File) != NULL) {
 	Line_Num++;
 	if (strlen(In_Line) >= (BUF_SIZE-1)) {
-#ifdef DEBUG_MODULE
-	    fprintf(stderr, "Read_Node_Spec_Conf line %d, of input file %s too long\n", 
+#if DEBUG_MODULE
+	    fprintf(stderr, "Read_Node_Spec_Conf: line %d, of input file %s too long\n", 
 		Line_Num, File_Name);
 #else
-	    syslog(LOG_ALERT, "Read_Node_Spec_Conf line %d, of input file %s too long\n", 
+	    syslog(LOG_ALERT, "Read_Node_Spec_Conf: line %d, of input file %s too long\n", 
 		Line_Num, File_Name);
 #endif
 	    Error_Code = E2BIG;
@@ -460,11 +471,11 @@ int Read_Node_Spec_Conf (char *File_Name) {
 	    &My_LastResponse, &Set_LastResponse);
 	if (Error_Code != 0) break;
 	if (strlen(My_Name) == 0) {
-#ifdef DEBUG_MODULE
-	    fprintf(stderr, "Read_Node_Spec_Conf line %d, of input file %s contains no Name\n", 
+#if DEBUG_MODULE
+	    fprintf(stderr, "Read_Node_Spec_Conf: line %d, of input file %s contains no Name\n", 
 		Line_Num, File_Name);
 #else
-	    syslog(LOG_ALERT, "Read_Node_Spec_Conf line %d, of input file %s contains no Name\n", 
+	    syslog(LOG_ALERT, "Read_Node_Spec_Conf: line %d, of input file %s contains no Name\n", 
 		Line_Num, File_Name);
 #endif
 	    Error_Code = EINVAL;
@@ -485,19 +496,19 @@ int Read_Node_Spec_Conf (char *File_Name) {
 	    if (Node_Record_Point == NULL) {
 		Node_Record_Point = (struct Node_Record *)malloc(sizeof(struct Node_Record));
 		if (Node_Record_Point == NULL) {
-#ifdef DEBUG_MODULE
-		    fprintf(stderr, "Read_Node_Spec_Conf malloc failure\n");
+#if DEBUG_MODULE
+		    fprintf(stderr, "Read_Node_Spec_Conf: malloc failure\n");
 #else
-		    syslog(LOG_ALERT, "Read_Node_Spec_Conf malloc failure\n");
+		    syslog(LOG_ALERT, "Read_Node_Spec_Conf: malloc failure\n");
 #endif
 		    Error_Code =  errno;
 		    break;
 		} /* if */
 		if (list_append(Node_Record_List, (void *)Node_Record_Point) == NULL) {
-#ifdef DEBUG_MODULE
-		    fprintf(stderr, "Read_Node_Spec_Conf list_append can not allocate memory\n");
+#if DEBUG_MODULE
+		    fprintf(stderr, "Read_Node_Spec_Conf: list_append can not allocate memory\n");
 #else
-		    syslog(LOG_ALERT, "Read_Node_Spec_Conf list_append can not allocate memory\n");
+		    syslog(LOG_ALERT, "Read_Node_Spec_Conf: list_append can not allocate memory\n");
 #endif
 		    Error_Code =  errno;
 		    break;
@@ -512,11 +523,11 @@ int Read_Node_Spec_Conf (char *File_Name) {
 		Node_Record_Point->Partition          = Default_Record.Partition;
 		Node_Record_Point->NodeState     = Default_Record.NodeState;
 	    } else {
-#ifdef DEBUG_MODULE
-		fprintf(stderr, "Read_Node_Spec_Conf duplicate data for %s, using latest information\n", 
+#if DEBUG_MODULE
+		fprintf(stderr, "Read_Node_Spec_Conf: duplicate data for %s, using latest information\n", 
 		    Node_Record_Read.Name);
 #else
-		syslog(LOG_NOTICE, "Read_Node_Spec_Conf duplicate data for %s, using latest information\n", 
+		syslog(LOG_NOTICE, "Read_Node_Spec_Conf: duplicate data for %s, using latest information\n", 
 		    Node_Record_Read.Name);
 #endif
 	    } /* else */
@@ -534,7 +545,7 @@ int Read_Node_Spec_Conf (char *File_Name) {
     /* Termination */
     if (fclose(Node_Spec_File) != 0) {
 	if (Error_Code == 0) Error_Code = errno;
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	fprintf(stderr, "Read_Node_Spec_Conf error %d closing file %s\n", errno, File_Name);
 #else
 	syslog(LOG_NOTICE, "Read_Node_Spec_Conf error %d closing file %s\n", errno, File_Name);
@@ -547,13 +558,14 @@ int Read_Node_Spec_Conf (char *File_Name) {
 /*
  * Show_Node_Record - Dump the record for the specified node
  * Input: Node_Name - Name of the node for which data is requested
- *        Node_Record - Location into which the information is written, should be at least BUF_SIZE bytes long
- * Output: Node_Record is filled
+ *        Node_Record - Location into which the information is written
+ *        Buf_Size - Size of Node_Record in bytes
+ * Output: Node_Record is filled in
  *         return - 0 if no error, otherwise errno
  */
-    int Show_Node_Record (char *Node_Name, char *Node_Record) {
+    int Show_Node_Record (char *Node_Name, char *Node_Record, int Buf_Size) {
     struct Node_Record *Node_Record_Point;
-    char Out_Partition[MAX_PARTITION*3], Out_Time[20];
+    char Out_Partition[MAX_PARTITION*3], Out_Time[20], Out_Line[BUF_SIZE];
     struct tm *Node_Time;
 
     Node_Record_Point = Find_Node_Record(Node_Name);
@@ -563,7 +575,7 @@ int Read_Node_Spec_Conf (char *File_Name) {
 /*    Node_Time = localtime(&Node_Record_Point->LastResponse); */
 /*    strftime(Out_Time, sizeof(Out_Time), "%a%d%b@%H:%M:%S", Node_Time); */
     sprintf(Out_Time, "%ld", Node_Record_Point->LastResponse);
-    if (sprintf(Node_Record, 
+    if (sprintf(Out_Line, 
 	  "Name=%s OS=%s CPUs=%d Speed=%f RealMemory=%d VirtualMemory=%d TmpDisk=%ld Partition=%s State=%s LastResponse=%s",
 	  Node_Record_Point->Name, Node_Record_Point->OS, Node_Record_Point->CPUs, 
 	  Node_Record_Point->Speed, Node_Record_Point->RealMemory, 
@@ -571,6 +583,8 @@ int Read_Node_Spec_Conf (char *File_Name) {
 	  Node_State_String[Node_Record_Point->NodeState], Out_Time) < 1) {
 	return EINVAL;
     } /* if */
+    if (strlen(Out_Line) >= Buf_Size) return E2BIG;
+    strcpy(Node_Record, Out_Line);
     return 0;
 } /* Show_Node_Record */
 
@@ -587,7 +601,7 @@ int Tally_Node_CPUs(char *Node_List) {
 
     Node_Record_Iterator = list_iterator_create(Node_Record_List);
     if (Node_Record_Iterator == NULL) {
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	fprintf(stderr, "Tally_Node_CPUs: list_iterator_create unable to allocate memory\n");
 #else
 	syslog(LOG_ERR, "Tally_Node_CPUs: list_iterator_create unable to allocate memory\n");
@@ -597,7 +611,7 @@ int Tally_Node_CPUs(char *Node_List) {
 
     str_ptr = malloc(strlen(Node_List)*sizeof(char *));
     if (str_ptr == NULL) {
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	fprintf(stderr, "Tally_Node_CPUs: unable to allocate memory\n");
 #else
 	syslog(LOG_ERR, "Tally_Node_CPUs: unable to allocate memory\n");
@@ -667,7 +681,7 @@ int Update_Node_Spec_Conf (char *Specification) {
     if (Error_Code != 0) return EINVAL;
 
     if (strlen(My_Name) == 0) {
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	fprintf(stderr, "Update_Node_Spec_Conf invalid input: %s\n", Specification);
 #else
 	syslog(LOG_ERR, "Update_Node_Spec_Conf invalid input: %s\n", Specification);
@@ -679,7 +693,7 @@ int Update_Node_Spec_Conf (char *Specification) {
     if (Node_Record_Point == NULL) {		/* Create new record as needed */
 	Node_Record_Point = (struct Node_Record *)malloc(sizeof(struct Node_Record));
 	if (Node_Record_Point == NULL) {
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	    fprintf(stderr, "Update_Node_Spec_Conf malloc failure\n");
 #else
 	    syslog(LOG_ERR, "Update_Node_Spec_Conf malloc failure\n");
@@ -687,7 +701,7 @@ int Update_Node_Spec_Conf (char *Specification) {
 	    return errno;
 	} /* if */
 	if (list_append(Node_Record_List, (void *)Node_Record_Point) == NULL) {
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	    fprintf(stderr, "Update_Node_Spec_Conf list_append can not allocate memory\n");
 #else
 	    syslog(LOG_ERR, "Update_Node_Spec_Conf list_append can not allocate memory\n");
@@ -797,7 +811,7 @@ int Write_Node_Spec_Conf (char *File_Name, int Full_Dump) {
     Error_Code = 0;
     Node_Record_Iterator = list_iterator_create(Node_Record_List);
    if (Node_Record_Iterator == NULL) {
-#ifdef DEBUG_MODULE
+#if DEBUG_MODULE
 	fprintf(stderr, "Write_Node_Spec_Conf: list_iterator_create unable to allocate memory\n");
 #else
 	syslog(LOG_ERR, "Write_Node_Spec_Conf: list_iterator_create unable to allocate memory\n");
@@ -806,20 +820,20 @@ int Write_Node_Spec_Conf (char *File_Name, int Full_Dump) {
     }
     Node_Spec_File = fopen(File_Name, "w");
     if (Node_Spec_File == NULL) {
-#ifdef DEBUG_MODULE
-	fprintf(stderr, "Write_Node_Spec_Conf error %d opening file %s\n", errno, File_Name);
+#if DEBUG_MODULE
+	fprintf(stderr, "Write_Node_Spec_Conf: error %d opening file %s\n", errno, File_Name);
 #else
-	syslog(LOG_ERR, "Write_Node_Spec_Conf error %d opening file %s\n", errno, File_Name);
+	syslog(LOG_ERR, "Write_Node_Spec_Conf: error %d opening file %s\n", errno, File_Name);
 #endif
 	return errno;
     } /* if */
     (void) time(&now);
     if (fprintf(Node_Spec_File, "#\n# Written by SLURM: %s#\n", ctime(&now)) <= 0) {
 	Error_Code = errno;
-#ifdef DEBUG_MODULE
-	fprintf(stderr, "Write_Node_Spec_Conf error %d printing to file %s\n", errno, File_Name);
+#if DEBUG_MODULE
+	fprintf(stderr, "Write_Node_Spec_Conf: error %d printing to file %s\n", errno, File_Name);
 #else
-	syslog(LOG_ERR, "Write_Node_Spec_Conf error %d printing to file %s\n", errno, File_Name);
+	syslog(LOG_ERR, "Write_Node_Spec_Conf: error %d printing to file %s\n", errno, File_Name);
 #endif
     } /* if */
 
@@ -838,10 +852,10 @@ int Write_Node_Spec_Conf (char *File_Name, int Full_Dump) {
 	  Node_Record_Point->Speed, Node_Record_Point->RealMemory, 
 	  Node_Record_Point->VirtualMemory, Node_Record_Point->TmpDisk, Out_Line, Out_Buf) <= 0) {
 	    if (Error_Code == 0) Error_Code = errno;
-#ifdef DEBUG_MODULE
-	    fprintf(stderr, "Write_Node_Spec_Conf error %d printing to file %s\n", errno, File_Name);
+#if DEBUG_MODULE
+	    fprintf(stderr, "Write_Node_Spec_Conf: error %d printing to file %s\n", errno, File_Name);
 #else
-	    syslog(LOG_ERR, "Write_Node_Spec_Conf error %d printing to file %s\n", errno, File_Name);
+	    syslog(LOG_ERR, "Write_Node_Spec_Conf: error %d printing to file %s\n", errno, File_Name);
 #endif
 	} /* if */
     } /* while */
@@ -849,10 +863,10 @@ int Write_Node_Spec_Conf (char *File_Name, int Full_Dump) {
     /* Termination */
     if (fclose(Node_Spec_File) != 0) {
 	if (Error_Code == 0) Error_Code = errno;
-#ifdef DEBUG_MODULE
-	fprintf(stderr, "Write_Node_Spec_Conf error %d closing file %s\n", errno, File_Name);
+#if DEBUG_MODULE
+	fprintf(stderr, "Write_Node_Spec_Conf: error %d closing file %s\n", errno, File_Name);
 #else
-	syslog(LOG_NOTICE, "Write_Node_Spec_Conf error %d closing file %s\n", errno, File_Name);
+	syslog(LOG_NOTICE, "Write_Node_Spec_Conf: error %d closing file %s\n", errno, File_Name);
 #endif
     } /* if */
     list_iterator_destroy(Node_Record_Iterator);
