@@ -53,8 +53,9 @@ int unpack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t **build_buffer_ptr, void *
 
 void pack_job_info_msg ( slurm_msg_t * msg , void ** buffer , int * buffer_size );
 int unpack_job_info_msg ( job_info_msg_t ** msg , void ** buffer , int * buffer_size );
-int unpack_job_table_msg ( job_table_t ** job , void ** buf_ptr , int * buffer_size );
-int unpack_job_table ( job_table_t * job , void ** buf_ptr , int * buffer_size );
+int unpack_job_info ( job_info_t ** job , void ** buf_ptr , int * buffer_size );
+
+int unpack_job_info_members ( job_info_t * job , void ** buf_ptr , int * buffer_size );
 
 /* job_step_info messages 
  * the pack_job_step_info_members is to be used programs such as slurmctld which do
@@ -69,13 +70,13 @@ int unpack_job_step_info ( job_step_info_t ** step , void ** buf_ptr , int * buf
 
 void pack_partition_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size );
 int unpack_partition_info_msg ( partition_info_msg_t ** , void ** buffer , int * buffer_size );
-int unpack_partition_table_msg ( partition_table_msg_t ** part , void ** buf_ptr , int * buffer_size );
-int unpack_partition_table ( partition_table_msg_t * part , void ** buf_ptr , int * buffer_size );
+int unpack_partition_info ( partition_info_t ** part , void ** buf_ptr , int * buffer_size );
+int unpack_partition_info_members ( partition_info_t * part , void ** buf_ptr , int * buffer_size );
 
 void pack_node_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size );
 int unpack_node_info_msg ( node_info_msg_t ** msg , void ** buf_ptr , int * buffer_size );
-int unpack_node_table_msg ( node_table_msg_t ** node , void ** buf_ptr , int * buffer_size );
-int unpack_node_table ( node_table_msg_t * node , void ** buf_ptr , int * buffer_size );
+int unpack_node_info ( node_info_t ** node , void ** buf_ptr , int * buffer_size );
+int unpack_node_info_members ( node_info_t * node , void ** buf_ptr , int * buffer_size );
 
 void pack_cancel_job_msg ( job_id_msg_t * msg , void ** buffer , uint32_t * length );
 int unpack_cancel_job_msg ( job_id_msg_t ** msg_ptr , void ** buffer , uint32_t * length );

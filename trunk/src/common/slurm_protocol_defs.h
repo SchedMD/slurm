@@ -272,7 +272,13 @@ typedef struct job_descriptor
 	char *work_dir;         /* fully qualified pathname of working directory */
 } job_descriptor_t ;
 
-typedef struct job_table {
+typedef struct job_step_id
+{
+	uint32_t job_id;
+	uint32_t job_step_id ;
+} job_step_id_t ;
+
+typedef struct job_info {
 	uint32_t job_id;	/* job ID */
 	char *name;		/* name of the job */
 	uint32_t user_id;	/* user the job runs as */
@@ -296,9 +302,9 @@ typedef struct job_table {
 	int *req_node_inx;	/* list index pairs into node_table for *req_nodes:
 				   start_range_1, end_range_1, start_range_2, .., -1  */
 	char *features;		/* comma separated list of required features */
-} job_table_t ; 
+} job_info_t ; 
 
-typedef struct node_table {
+typedef struct node_info {
 	char *name;		/* node name */
 	uint16_t node_state;	/* see node_state_string below for translation */
 	uint32_t cpus;		/* configured count of cpus running on the node */
@@ -307,9 +313,9 @@ typedef struct node_table {
 	uint32_t weight;	/* arbitrary priority of node for scheduling work on */
 	char *features;		/* arbitrary list of features associated with a node */
 	char *partition;	/* name of partition node configured to */
-} node_table_t ;
+} node_info_t ;
 
-typedef struct part_table {
+typedef struct partition_info {
         char *name;             /* name of the partition */
         uint32_t max_time;      /* minutes or INFINITE */
         uint32_t max_nodes;     /* per job or INFINITE */
@@ -323,9 +329,7 @@ typedef struct part_table {
         int *node_inx;          /* list index pairs into node_table:
                                    start_range_1, end_range_1, start_range_2, .., -1  */
         char *allow_groups;     /* comma delimited list of groups, null indicates all */
-} part_table_t;
-typedef struct part_table partition_desc_t ;
-typedef struct part_table partition_table_t ;
+} partition_info_t;
 
 /*****************************************************************************
  * Slurm API Protocol Data Structures
@@ -365,12 +369,6 @@ typedef struct job_id_msg
 	uint32_t job_id;
 } job_id_msg_t ;
 
-typedef struct job_step_id_msg 
-{
-	uint32_t job_id;
-	uint32_t job_step_id ;
-} job_step_id_msg_t ;
-
 typedef struct job_step_create_response_msg 
 {
 	uint32_t job_step_id;
@@ -391,12 +389,15 @@ typedef struct job_step_info_response_msg
 	job_step_info_t * job_steps;
 } job_step_info_response_msg_t ; 
 
+typedef struct job_step_id job_step_id_msg_t ;
+typedef struct job_step_id job_step_info_request_msg_t ;
+
 typedef struct job_table job_table_msg_t ;
 
 typedef struct job_info_msg {
 	uint32_t last_update;
 	uint32_t record_count;
-	job_table_t * job_array;
+	job_info_t * job_array;
 } job_info_msg_t ;
 
 
@@ -437,21 +438,18 @@ typedef struct launch_tasks_response_msg
 typedef struct node_info_msg {
 	uint32_t last_update;
 	uint32_t record_count;
-	node_table_t * node_array;
+	node_info_t * node_array;
 } node_info_msg_t ;
-
-typedef struct node_table node_table_msg_t ;
 
 typedef struct partition_info_msg {
 	uint32_t last_update;
 	uint32_t record_count;
-	partition_table_t * partition_array;
+	partition_info_t * partition_array;
 } partition_info_msg_t ;
 
 
-typedef struct part_table partition_desc_msg_t ;
-typedef struct part_table partition_table_msg_t ;
-typedef struct part_table update_part_msg_t ;
+typedef struct partition_info partition_desc_msg_t ;
+typedef struct partition_info update_part_msg_t ;
 
 typedef struct return_code_msg {
 	int32_t return_code;
@@ -515,7 +513,9 @@ typedef struct slurm_ctl_conf slurm_ctl_conf_info_msg_t ;
 /* free message functions */
 void inline slurm_free_last_update_msg ( last_update_msg_t * msg ) ;
 void inline slurm_free_return_code_msg ( return_code_msg_t * msg ) ;
-void inline slurm_free_job_step_id_msg ( job_step_id_msg_t * msg ) ;
+void inline slurm_free_job_step_id ( job_step_id_t * msg ) ;
+#define slurm_free_job_step_id_msg(msg) slurm_free_job_step_id((job_step_id_t*)(msg)) 
+#define slurm_free_job_step_info_request_msg(msg) slurm_free_job_step_id(msg) 
 
 void inline slurm_free_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr ) ;
 
@@ -525,21 +525,22 @@ void inline slurm_free_submit_response_response_msg( submit_response_msg_t * msg
 
 void inline slurm_free_node_registration_status_msg ( slurm_node_registration_status_msg_t * msg ) ;
 
-void inline slurm_free_job_info ( job_info_msg_t * msg ) ;
-void inline slurm_free_job_table ( job_table_t * job ) ;
-void inline slurm_free_job_table_msg ( job_table_t * job ) ;
+void inline slurm_free_job_info_msg ( job_info_msg_t * msg ) ;
+void inline slurm_free_job_info ( job_info_t * job ) ;
+void inline slurm_free_job_info_members ( job_info_t * job ) ;
 
 void inline slurm_free_job_step_info ( job_step_info_t * msg ) ;
 void inline slurm_free_job_step_info_memebers ( job_step_info_t * msg );
 void inline slurm_free_job_step_info_response_msg ( job_step_info_response_msg_t * msg ) ;
 
-void inline slurm_free_partition_info ( partition_info_msg_t * msg ) ;
-void inline slurm_free_partition_table ( partition_table_t * part ) ;
-void inline slurm_free_partition_table_msg ( partition_table_t * part ) ;
+void inline slurm_free_partition_info_msg ( partition_info_msg_t * msg ) ;
+void inline slurm_free_partition_info ( partition_info_t * part ) ;
+void inline slurm_free_partition_info_members ( partition_info_t * part ) ;
 
-void inline slurm_free_node_info ( node_info_msg_t * msg ) ;
-void inline slurm_free_node_table ( node_table_t * node ) ;
-void inline slurm_free_node_table_msg ( node_table_t * node ) ;
+void inline slurm_free_node_info_msg ( node_info_msg_t * msg ) ;
+void inline slurm_free_node_info ( node_info_t * node ) ;
+void inline slurm_free_node_info_members ( node_info_t * node ) ;
+
 void inline slurm_free_update_node_msg ( update_node_msg_t * msg ) ;
 void inline slurm_free_update_part_msg ( update_part_msg_t * msg ) ;
 void inline slurm_free_job_step_create_request_msg ( job_step_create_request_msg_t * msg );
