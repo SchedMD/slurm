@@ -34,6 +34,7 @@
 #include <string.h>
 #include <syslog.h>
 #include <sys/socket.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <unistd.h>
 
@@ -755,9 +756,19 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
 	}
 }
 
+/*
+ * init_ctld_conf - set default configuration parameters
+ * NOTE: slurmctld and slurmd ports are built thus:
+ *	if SLURMCTLD_PORT/SLURMD_PORT are set then
+ *		get the port number based upon a look-up in /etc/services
+ *		if the lookup fails, translate SLURMCTLD_PORT/SLURMD_PORT into a number
+ *	These port numbers are over-ridden if set in the configuration file
+ */
 void
 init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 {
+	struct servent *servent;
+
 	conf_ptr->last_update		= init_time ;
 	conf_ptr->backup_controller   	= NULL ;
 	conf_ptr->control_machine    	= NULL ;
@@ -773,6 +784,28 @@ init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 	conf_ptr->slurm_conf       	= SLURM_CONFIG_FILE ;
 	conf_ptr->state_save_location   = NULL ;
 	conf_ptr->tmp_fs            	= NULL ;
+
+#ifdef SLURMCTLD_PORT
+	servent = getservbyname (SLURMCTLD_PORT, NULL);
+	if (servent)
+		conf_ptr->slurmctld_port   = servent -> s_port;
+	else
+		conf_ptr->slurmctld_port   = strtol (SLURMCTLD_PORT, (char **) NULL, 10);
+	endservent ();
+#else
+	conf_ptr->slurmctld_port   	= 0 ;
+#endif
+
+#ifdef SLURMD_PORT
+	servent = getservbyname (SLURMD_PORT, NULL);
+	if (servent)
+		conf_ptr->slurmd_port   = servent -> s_port;
+	else
+		conf_ptr->slurmd_port   = strtol (SLURMD_PORT, (char **) NULL, 10);
+	endservent ();
+#else
+	conf_ptr->slurmd_port   	= 0 ;
+#endif
 }
 
 
@@ -789,9 +822,11 @@ fill_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 	conf_ptr->kill_wait         	= slurmctld_conf.kill_wait ;
 	conf_ptr->prioritize        	= slurmctld_conf.prioritize ;
 	conf_ptr->prolog            	= slurmctld_conf.prolog ;
+	conf_ptr->slurmctld_port   	= slurmctld_conf.slurmctld_port ;
 	conf_ptr->slurmctld_timeout   	= slurmctld_conf.slurmctld_timeout ;
+	conf_ptr->slurmd_port   	= slurmctld_conf.slurmd_port ;
 	conf_ptr->slurmd_timeout   	= slurmctld_conf.slurmd_timeout ;
-	conf_ptr->slurm_conf       	= SLURM_CONFIG_FILE ;
+	conf_ptr->slurm_conf       	= slurmctld_conf.slurm_conf ;
 	conf_ptr->state_save_location   = slurmctld_conf.state_save_location ;
 	conf_ptr->tmp_fs            	= slurmctld_conf.tmp_fs ;
 }

@@ -56,6 +56,14 @@ int slurm_api_set_default_config ( )
 	return SLURM_SUCCESS ;
 }
 
+/*
+ * read_slurm_port_config - get the slurmctld and slurmd port numbers
+ * NOTE: slurmctld and slurmd ports are built thus:
+ *	if SLURMCTLD_PORT/SLURMD_PORT are set then
+ *		get the port number based upon a look-up in /etc/services
+ *		if the lookup fails, translate SLURMCTLD_PORT/SLURMD_PORT into a number
+ *	These port numbers are over-ridden if set in the configuration file
+ */
 int read_slurm_port_config ( )
 {
 	FILE *slurm_spec_file;	/* pointer to input data file */
@@ -64,6 +72,29 @@ int read_slurm_port_config ( )
 	char * backup_controller = NULL;
 	int error_code, i, j, line_num = 0;
 	int slurmctld_port = 0, slurmd_port = 0;
+	struct servent *servent;
+
+#ifdef SLURMCTLD_PORT
+	servent = getservbyname (SLURMCTLD_PORT, NULL);
+	if (servent)
+		slurmctld_conf.slurmctld_port   = servent -> s_port;
+	else
+		slurmctld_conf.slurmctld_port   = strtol (SLURMCTLD_PORT, (char **) NULL, 10);
+	endservent ();
+#else
+	slurmctld_conf.slurmctld_port   	= 0 ;
+#endif
+
+#ifdef SLURMD_PORT
+	servent = getservbyname (SLURMD_PORT, NULL);
+	if (servent)
+		slurmctld_conf.slurmd_port   = servent -> s_port;
+	else
+		slurmctld_conf.slurmd_port   = strtol (SLURMD_PORT, (char **) NULL, 10);
+	endservent ();
+#else
+	slurmctld_conf.slurmd_port   	= 0 ;
+#endif
 
 	slurm_spec_file = fopen (SLURM_CONFIG_FILE, "r");
 	if (slurm_spec_file == NULL) {

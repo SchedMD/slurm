@@ -36,7 +36,7 @@ void slurm_print_ctl_conf ( FILE* out, slurm_ctl_conf_info_msg_t * slurm_ctl_con
 {
 	if ( slurm_ctl_conf_ptr == NULL )
 		return ;
-	fprintf(out, "Build updated at %lx\n", (time_t)slurm_ctl_conf_ptr->last_update);
+	fprintf(out, "Configuration updated at %lx\n", (time_t)slurm_ctl_conf_ptr->last_update);
 	fprintf(out, "BackupController  = %s\n", slurm_ctl_conf_ptr->backup_controller);
 	fprintf(out, "ControlMachine    = %s\n", slurm_ctl_conf_ptr->control_machine);
 	fprintf(out, "Epilog            = %s\n", slurm_ctl_conf_ptr->epilog);
