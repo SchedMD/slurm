@@ -773,30 +773,26 @@ int node_name2bitmap (char *node_names, bitstr_t **bitmap)
  *	in machine independent form (for network transmission)
  * OUT buffer_ptr - pointer to the stored data
  * OUT buffer_size - set to size of the buffer in bytes
- * IN/OUT update_time - dump new data only if partition records updated since 
- *	time specified, otherwise return empty buffer, set to time partition 
- *	records last updated
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: the caller must xfree the buffer at *buffer_ptr
  * NOTE: change slurm_load_node() in api/node_info.c when data format changes
  */
-void pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time) 
+void pack_all_node (char **buffer_ptr, int *buffer_size) 
 {
 	int inx;
 	uint32_t nodes_packed, tmp_offset;
 	Buf buffer;
+	time_t now = time(NULL);
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
-	if (*update_time == last_node_update)
-		return;
 
 	buffer = init_buf (BUF_SIZE*16);
 
 	/* write header: version and time */
 	nodes_packed = 0 ;
 	pack32  (nodes_packed, buffer);
-	pack_time  (last_node_update, buffer);
+	pack_time  (now, buffer);
 
 	/* write node records */
 	for (inx = 0; inx < node_record_count; inx++) {
@@ -814,7 +810,6 @@ void pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	pack32  ((uint32_t) nodes_packed, buffer);
 	set_buf_offset (buffer, tmp_offset);
 
-	*update_time = last_node_update;
 	*buffer_size = get_buf_offset (buffer);
 	buffer_ptr[0] = xfer_buf_data (buffer);
 }
