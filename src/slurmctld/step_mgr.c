@@ -45,7 +45,8 @@
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 
-bitstr_t * pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec );
+bitstr_t * pick_step_nodes (struct job_record  *job_ptr, 
+				step_specs *step_spec );
 
 /* 
  * create_step_record - create an empty step_record for the specified job.
@@ -59,7 +60,8 @@ create_step_record (struct job_record *job_ptr)
 	struct step_record *step_record_point;
 
 	assert (job_ptr);
-	step_record_point = (struct step_record *) xmalloc (sizeof (struct step_record));
+	step_record_point = 
+		(struct step_record *) xmalloc (sizeof (struct step_record));
 
 	step_record_point->job_ptr = job_ptr; 
 	step_record_point->step_id = (job_ptr->next_step_id)++;
@@ -102,7 +104,8 @@ delete_all_step_records (struct job_record *job_ptr)
 
 
 /* 
- * delete_step_record - delete record for job step for specified job_ptr and step_id
+ * delete_step_record - delete record for job step for specified job_ptr 
+*	and step_id
  * input: job_ptr - pointer to job table entry to have step record removed
  *	step_id - id of the desired job step
  * output: return 0 on success, errno otherwise
@@ -146,14 +149,17 @@ dump_step_desc(step_specs *step_spec)
 		return;
 
 	debug3("StepDesc: user_id=%u job_id=%u node_count=%u, cpu_count=%u\n", 
-		step_spec->user_id, step_spec->job_id, step_spec->node_count, step_spec->cpu_count);
+		step_spec->user_id, step_spec->job_id, 
+		step_spec->node_count, step_spec->cpu_count);
 	debug3("   relative=%u task_dist=%u node_list=%s\n", 
-		step_spec->relative, step_spec->task_dist, step_spec->node_list);
+		step_spec->relative, step_spec->task_dist, 
+		step_spec->node_list);
 }
 
 
 /* 
- * find_step_record - return a pointer to the step record with the given job_id and step_id
+ * find_step_record - return a pointer to the step record with the given 
+ *	job_id and step_id
  * input: job_ptr - pointer to job table entry to have step record added
  *	step_id - id of the desired job step
  * output: pointer to the job step's record, NULL on error
@@ -169,7 +175,8 @@ find_step_record(struct job_record *job_ptr, uint16_t step_id)
 
 	step_record_iterator = list_iterator_create (job_ptr->step_list);		
 
-	while ((step_record_point = (struct step_record *) list_next (step_record_iterator))) {
+	while ((step_record_point = 
+		(struct step_record *) list_next (step_record_iterator))) {
 		if (step_record_point->step_id == step_id) {
 			break;
 		}
@@ -199,13 +206,15 @@ pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 	nodes_avail = bit_copy (job_ptr->node_bitmap);
 	bit_and (nodes_avail, up_node_bitmap);
 
-	if ( step_spec->node_count == INFINITE)	/* return all available nodes */
+	if ( step_spec->node_count == INFINITE)	/* use all nodes */
 		return nodes_avail;
 
 	if (step_spec->node_list) {
-		error_code = node_name2bitmap (step_spec->node_list, &nodes_picked);
+		error_code = node_name2bitmap (step_spec->node_list, 
+						&nodes_picked);
 		if (error_code) {
-			info ("pick_step_nodes: invalid node list %s", step_spec->node_list);
+			info ("pick_step_nodes: invalid node list %s", 
+				step_spec->node_list);
 			goto cleanup;
 		}
 		if (bit_super_set (nodes_picked, job_ptr->node_bitmap) == 0) {
@@ -220,9 +229,11 @@ pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 		}
 	}
 	else if (step_spec->relative) {
-		/* Remove first (step_spec->relative) nodes from available list */
+		/* Remove first (step_spec->relative) nodes from  
+		 * available list */
 		bitstr_t *relative_nodes = NULL;
-		relative_nodes = bit_pick_cnt (nodes_avail, step_spec->relative);
+		relative_nodes = 
+			bit_pick_cnt (nodes_avail, step_spec->relative);
 		if (relative_nodes == NULL) {
 			info ("pick_step_nodes: Invalid relative value (%u) for job %u",
 				step_spec->relative, job_ptr->job_id);
@@ -235,12 +246,14 @@ pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 	else
 		nodes_picked = bit_alloc (bit_size (nodes_avail) );
 
-	/* if user specifies step needs a specific processor count and all nodes */
-	/* have the same processor count, just translate this to a node count */
+	/* if user specifies step needs a specific processor count and  */
+	/* all nodeshave the same processor count, just translate this to */
+	/* a node count */
 	if (step_spec->cpu_count && (job_ptr->num_cpu_groups == 1)) {
-		i = (step_spec->cpu_count + (job_ptr->cpus_per_node[0] - 1) ) / 
-								job_ptr->cpus_per_node[0];
-		step_spec->node_count = (i > step_spec->node_count) ? i : step_spec->node_count ;
+		i = (step_spec->cpu_count + (job_ptr->cpus_per_node[0] - 1) ) 
+				/ job_ptr->cpus_per_node[0];
+		step_spec->node_count = (i > step_spec->node_count) ? 
+						i : step_spec->node_count ;
 		step_spec->cpu_count = 0;
 	}
 
@@ -248,7 +261,8 @@ pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 		nodes_picked_cnt = bit_set_count(nodes_picked);
 		if (step_spec->node_count > nodes_picked_cnt) {
 			node_tmp = bit_pick_cnt(nodes_avail, 
-						(step_spec->node_count - nodes_picked_cnt));
+						(step_spec->node_count - 
+						 nodes_picked_cnt));
 			if (node_tmp == NULL)
 				goto cleanup;
 			bit_or  (nodes_picked, node_tmp);
@@ -270,7 +284,8 @@ pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 				if (bit_test (nodes_avail, i) != 1)
 					continue;
 				bit_set (nodes_picked, i);
-				cpus_picked_cnt += node_record_table_ptr[i].cpus;
+				cpus_picked_cnt += 
+					node_record_table_ptr[i].cpus;
 				if (cpus_picked_cnt >= step_spec->cpu_count)
 					break;
 			}
@@ -329,11 +344,8 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 	job_ptr->time_last_active = time(NULL);
 
 #ifdef HAVE_LIBELAN3
-	if (step_specs->task_dist == SLURM_DIST_CYCLIC)
-		step_specs->task_dist = ELAN_CAP_TYPE_CYCLIC;
-	else if (step_specs->task_dist == SLURM_DIST_BLOCK)
-		step_specs->task_dist = ELAN_CAP_TYPE_BLOCK;
-	else
+	if ((step_specs->task_dist != SLURM_DIST_CYCLIC) &&
+	    (step_specs->task_dist != SLURM_DIST_BLOCK))
 		return ESLURM_BAD_DIST;
 #endif
 
@@ -348,7 +360,8 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 
 	/* set the step_record values */
 	step_ptr->node_bitmap = nodeset;
-	step_ptr->cyclic_alloc = step_specs->task_dist;
+	step_ptr->cyclic_alloc = 
+		(uint16_t) (step_specs->task_dist == SLURM_DIST_CYCLIC);
 
 #ifdef HAVE_LIBELAN3
 	if (qsw_alloc_jobinfo (&step_ptr->qsw_job) < 0)
@@ -360,19 +373,22 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 		fatal ("step_create: bit_alloc error");
 	for (i = first; i <= last; i++) {
 		if (bit_test (step_ptr->node_bitmap, i)) {
-			node_id = qsw_getnodeid_byhost (node_record_table_ptr[i].name);
+			node_id = qsw_getnodeid_byhost (
+					node_record_table_ptr[i].name);
 			if (node_id >= 0)	/* no lookup error */
 				bit_set(nodeset, node_id);
 			else {
 				error ("qsw_getnodeid_byhost lookup failure on %s",
 				       node_record_table_ptr[i].name);
-				delete_step_record (job_ptr, step_ptr->step_id);
+				delete_step_record (job_ptr, 
+							step_ptr->step_id);
 				bit_free (nodeset);
 				return ESLURM_INTERCONNECT_FAILURE;
 			}
 		}
 	}
-	if (qsw_setup_jobinfo (step_ptr->qsw_job, nprocs, nodeset, step_ptr->cyclic_alloc) < 0) {
+	if (qsw_setup_jobinfo (step_ptr->qsw_job, nprocs, 
+				nodeset, step_ptr->cyclic_alloc) < 0) {
 		error ("step_create: qsw_setup_jobinfo error %m");
 		delete_step_record (job_ptr, step_ptr->step_id);
 		bit_free (nodeset);
@@ -402,7 +418,8 @@ step_count (struct job_record *job_ptr)
 
 	step_record_iterator = list_iterator_create (job_ptr->step_list);		
 
-	while ((step_record_point = (struct step_record *) list_next (step_record_iterator))) {
+	while ((step_record_point = (struct step_record *) 
+				list_next (step_record_iterator))) {
 		step_count++;
 	}		
 
