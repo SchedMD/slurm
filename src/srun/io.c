@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <signal.h>
 
 #include "src/common/fd.h"
 #include "src/common/log.h"
@@ -44,6 +45,7 @@
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xsignal.h"
 
 #include "src/srun/io.h"
 #include "src/srun/job.h"
@@ -102,6 +104,7 @@ static int	_validate_header(slurm_io_stream_header_t *hdr, job_t *job);
 /* True if an EOF needs to be broadcast to all tasks
  */
 static bool stdin_got_eof = false;
+static bool stdin_open    = true;
 
 static int 
 _do_task_output_poll(fd_info_t *info)
@@ -145,6 +148,7 @@ _set_iofds_nonblocking(job_t *job)
 	int i;
 	for (i = 0; i < job->niofds; i++) 
 		fd_set_nonblocking(job->iofd[i]);
+	fd_set_nonblocking(job->stdinfd);
 }
 
 static void
@@ -244,7 +248,7 @@ _io_thr_poll(void *job_arg)
 		int eofcnt = 0;
 		nfds = job->niofds; /* already have n ioport fds + stdin */
 
-		if ((job->stdinfd >= 0) && !stdin_got_eof) {
+		if ((job->stdinfd >= 0) && stdin_open) {
 			_poll_set_rd(fds[nfds], job->stdinfd);
 			nfds++;
 		}
@@ -325,7 +329,7 @@ _io_thr_poll(void *job_arg)
 			}
 		}
 
-		if ((job->stdinfd >= 0) && !stdin_got_eof) {
+		if ((job->stdinfd >= 0) && stdin_open) {
 		       	if (fds[i].revents)
 				_bcast_stdin(job->stdinfd, job);
 			++i;
@@ -560,6 +564,8 @@ io_thr_create(job_t *job)
 		return SLURM_ERROR;
 	}
 
+	xsignal(SIGTTIN, SIG_IGN);
+
 	pthread_attr_init(&attr);
 	if ((errno = pthread_create(&job->ioid, &attr, &io_thr, (void *) job)))
 		return SLURM_ERROR;
@@ -704,7 +710,6 @@ _do_task_input(job_t *job, int taskid)
 	if ( stdin_got_eof 
 	    && !job->stdin_eof[taskid] 
 	    && (cbuf_used(buf) == 0)   ) {
-		/* write(fd, &eot, 1); */
 		job->stdin_eof[taskid] = true;
 		shutdown(job->out[taskid], SHUT_WR); 
 		return 0;
@@ -723,10 +728,9 @@ _readx(int fd, char *buf, size_t maxbytes)
 {
 	size_t n;
 
-  again:
 	if ((n = read(fd, (void *) buf, maxbytes)) < 0) {
 		if (errno == EINTR)
-			goto again;
+			return -1;
 		if ((errno == EAGAIN) || 
 		    (errno == EWOULDBLOCK))
 			return -1;
@@ -781,6 +785,15 @@ _write_all(job_t *job, cbuf_t cb, char *buf, size_t len, int taskid)
 }
 
 static void
+_close_stdin(job_t *j)
+{
+	close(j->stdinfd); 
+	j->stdinfd = IO_DONE;
+	stdin_got_eof = true;
+	stdin_open    = false;
+}
+
+static void
 _bcast_stdin(int fd, job_t *job)
 {
 	int          i;
@@ -802,17 +815,19 @@ _bcast_stdin(int fd, job_t *job)
 	if (len == 0)
 		return;
 
-	if ((n = _readx(fd, buf, len)) <= 0) {
-		if (n == 0) { /* got EOF */
-			close(job->stdinfd); 
-			job->stdinfd = IO_DONE;
-			stdin_got_eof = true;
-			return;
-		 } else {
+	if ((n = _readx(fd, buf, len)) < 0) {
+		if (errno == EIO) {
+			stdin_open = false;
+			debug2("disabling stdin");
+		} else if (errno != EINTR)
 			error("error reading stdin. %m");
-			return;
-		}
+		return;
 	}
+
+	if (n == 0) {
+		_close_stdin(job);
+		return;
+	} 
 
 	if (job->ifname->type == IO_ONE) {
 		i = job->ifname->taskid;
@@ -851,3 +866,4 @@ static int _validate_header(slurm_io_stream_header_t *hdr, job_t *job)
 
 	return SLURM_SUCCESS;
 }
+
