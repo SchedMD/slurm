@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.2.27
+=========================
+ -- Fix for slurmd spinning when stdin buffers are full (gnats:434)
+ -- Forward stacksize limit to jobs.
+
 * Changes in SLURM 0.2.26
 =========================
  -- Add missing documentation for srun -q,--quit-on-interrupt flag.

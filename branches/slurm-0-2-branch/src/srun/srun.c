@@ -657,6 +657,12 @@ static int _set_rlimit_env(void)
 		rc = SLURM_FAILURE;
 	}
 
+	if (getrlimit(RLIMIT_STACK, &my_rlimit) ||
+	    setenvf("SLURM_RLIMIT_STACK=%ld", (long)my_rlimit.rlim_cur)) {
+		error("Can't set SLURM_RLIMIT_STACK environment variable");
+		rc = SLURM_FAILURE;
+	}
+
 	if (getrlimit(RLIMIT_CORE, &my_rlimit) ||
 	    setenvf("SLURM_RLIMIT_CORE=%ld", (long)my_rlimit.rlim_cur)) {
 		error("Can't set SLURM_RLIMIT_CORE environment variable");

@@ -55,6 +55,7 @@ static struct userlim ulims[] =
 	  { "SLURM_RLIMIT_FSIZE" , RLIMIT_FSIZE },
 	  { "SLURM_RLIMIT_NPROC" , RLIMIT_NPROC },
 	  { "SLURM_RLIMIT_NOFILE", RLIMIT_NOFILE},
+	  { "SLURM_RLIMIT_STACK",  RLIMIT_STACK },
 	  { NULL, 0 } 
 	};
 
