@@ -1,5 +1,5 @@
 # 
-# Sample /etc/SLURM.conf2
+# Sample /etc/slurm.conf2
 # Author: John Doe
 # Date: 11/06/2001
 #
@@ -10,8 +10,8 @@ BackupController=blue199.pacific.llnl.gov
 #
 NodeName=DEFAULT TmpDisk=16384 State=IDLE
 NodeName=lx[0001-0002] State=DRAINED
-NodeName=lx[0003-8000] CPUs=16 RealMemory=2048 Weight=16
-NodeName=lx[8001-9999] CPUs=32 RealMemory=4096 Weight=40 Feature=1200MHz
+NodeName=lx[0003-8000] Procs=16 RealMemory=2048 Weight=16
+NodeName=lx[8001-9999] Procs=32 RealMemory=4096 Weight=40 Feature=1200MHz
 #
 # Partition Configurations
 #
