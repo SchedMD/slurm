@@ -124,6 +124,9 @@ void * task_exec_thread ( void * arg )
 	struct passwd * pwd ;
 	int task_return_code ;
 	int local_errno ;
+	log_options_t log_opts_def = LOG_OPTS_STDERR_ONLY ;
+	char log_name_buffer[1024] ;
+	char * log_name = log_name_buffer ;
 
 	interconnect_set_capabilities ( task_start ) ;
 
@@ -138,7 +141,11 @@ void * task_exec_thread ( void * arg )
 		case FORK_ERROR:
 			break ;
 
-		case CHILD_PROCCESS:
+		case CHILD_PROCCESS:	
+			/* log init stuff */
+			snprintf ( log_name , 1024, "%s_%i", launch_msg->argv[0], launch_msg -> global_task_ids[ task_start -> local_task_id ]);
+			log_init( log_name , log_opts_def, SYSLOG_FACILITY_DAEMON, NULL);
+
 			unblock_all_signals ( ) ;
 
 			posix_signal_ignore (SIGTTOU); /* ignore tty output */
@@ -193,10 +200,14 @@ void * task_exec_thread ( void * arg )
 			
 		default: /*parent proccess */
 			task_start->exec_pid = cpid ;
-			setup_parent_pipes ( task_start->pipes ) ;
-			waitpid ( cpid , & task_return_code , 0 ) ;
-			cleanup_parent_pipes (  task_start->pipes ) ;
-			wait_on_io_threads ( task_start ) ;
+			/* order below is very important ie deadlock can occur if you mess with it*/
+			/* ask me how I know :) */
+			/* think once, twice, 10^100000000 times before changeing the below */
+			/*1*/setup_parent_pipes ( task_start->pipes ) ;
+			/*2*/waitpid ( cpid , & task_return_code , 0 ) ;
+			/*3*/wait_on_io_threads ( task_start ) ;
+			/*4*/cleanup_parent_pipes (  task_start->pipes ) ;
+			
 			send_task_exit_msg ( task_return_code , task_start ) ;
 			break;
 	}
@@ -312,5 +323,3 @@ int reattach_tasks_streams ( reattach_tasks_streams_msg_t * req_msg )
 	}
 	return error_code ;
 }
-
-
