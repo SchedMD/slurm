@@ -1,8 +1,8 @@
-/* $Id$ */
 /*****************************************************************************\
  *  xmalloc.c - enhanced malloc routines
  *  Started with Jim Garlick's xmalloc and tied into slurm log facility.
  *  Also added ability to print file, line, and function of caller.
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -51,12 +51,12 @@
 #  define MALLOC_UNLOCK()	
 #endif
 
-static void malloc_assert_failed(char *, const char *, int, 
-                                 const char *, const char *); 
 
 #if NDEBUG
-#  define xmalloc_assert  ((void)0)
+#  define xmalloc_assert(expr)  ((void) (0))
 #else
+static void malloc_assert_failed(char *, const char *, int, 
+                                 const char *, const char *); 
 #  define xmalloc_assert(expr)  _STMT_START {                                 \
           (expr) ? ((void)(0)) :                                              \
           malloc_assert_failed(__STRING(expr), file, line, func,              \
@@ -246,6 +246,7 @@ void _xfree(void **item, const char *file, int line, const char *func)
 	}
 }
 
+#ifndef NDEBUG
 static void malloc_assert_failed(char *expr, const char *file, 
 		                 int line, const char *caller, const char *func)
 {
@@ -253,3 +254,4 @@ static void malloc_assert_failed(char *expr, const char *file,
 	      func, file, line, caller, expr);
 	abort();
 }
+#endif

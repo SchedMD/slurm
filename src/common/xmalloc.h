@@ -1,9 +1,9 @@
-/* $Id$ */
 /*****************************************************************************\
  *  xmalloc.h - enhanced malloc routines for slurm
  *  - default: never return if errors are encountered.
  *  - attempt to report file, line, and calling function on assertion failure
  *  - use configurable slurm log facility for reporting errors
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -97,7 +97,7 @@ void *_xrealloc(void **p, size_t newsize,
 	       const char *file, int line, const char *func);
 int  _try_xrealloc(void **p, size_t newsize,
 		   const char *file, int line, const char *func);
-int _xsize(void *p, const char *file, int line, const char *func);
+int  _xsize(void *p, const char *file, int line, const char *func);
 
 #define XMALLOC_MAGIC 0x42
 

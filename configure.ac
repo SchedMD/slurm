@@ -181,7 +181,8 @@ if test "x$with_slurm_debug" = "xtrue"; then
   CFLAGS="-g -Wall -Wpointer-arith $PTHREAD_CFLAGS"
   AC_DEFINE(DEBUG_SYSTEM, 1, [Define for extra debug messages.])
 else
-  CFLAGS="-g -Wall -Wpointer-arith $PTHREAD_CFLAGS"
+  CFLAGS="-O2 -Wall -Wpointer-arith $PTHREAD_CFLAGS"
+  AC_DEFINE(NDEBUG, 1, [Define for production compile of code])
 fi
 AM_CONDITIONAL(DEBUG_MODULES, test "x$with_slurm_debug" = "xtrue")
 

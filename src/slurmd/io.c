@@ -118,7 +118,6 @@ static int    _io_prepare_tasks(slurmd_job_t *);
 static void * _io_thr(void *);
 static int    _io_write_header(struct io_info *, srun_info_t *);
 static void   _io_connect_objs(io_obj_t *, io_obj_t *);
-static int    _validate_io_list(List objList);
 static int    _shutdown_task_obj(struct io_info *t);
 static int    find_obj(void *obj, void *key);
 /* static int    find_fd(void *obj, void *key); */
@@ -204,6 +203,11 @@ struct io_operations connecting_client_ops = {
         handle_error:   &_client_error,
 	handle_close:   &_obj_close
 };
+
+
+#ifndef NDEBUG
+static int    _validate_io_list(List objList);
+#endif /* NDEBUG */
 
 /* 
  * Empty SIGHUP handler used to interrupt EIO thread 
@@ -601,7 +605,7 @@ _open_output_file(slurmd_job_t *job, task_info_t *t, char *fmt,
 	} 
 	xfree(fname);
 
-	_validate_io_list(job->objs);
+	xassert(_validate_io_list(job->objs));
 
 	return fd;
 }
@@ -1303,7 +1307,7 @@ _shutdown_task_obj(struct io_info *t)
 		r->eof = 1;
 	list_iterator_destroy(i);
 
-	_validate_io_list(t->job->objs);	
+	xassert(_validate_io_list(t->job->objs));	
 
 	return 0;
 }
