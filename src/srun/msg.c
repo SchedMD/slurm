@@ -69,6 +69,7 @@ static void	_accept_msg_connection(job_t *job, int fdnum);
 static void	_confirm_launch_complete(job_t *job);
 static void 	_exit_handler(job_t *job, slurm_msg_t *exit_msg);
 static void	_handle_msg(job_t *job, slurm_msg_t *msg);
+static inline bool _job_msg_done(job_t *job);
 static void	_launch_handler(job_t *job, slurm_msg_t *resp);
 static void 	_msg_thr_poll(job_t *job);
 static void	_set_jfds_nonblocking(job_t *job);
@@ -167,6 +168,15 @@ void MPIR_Breakpoint(void)
 	/* This just notifies TotalView that some event of interest occured */ 
 }
 #endif
+
+static bool _job_msg_done(job_t *job)
+{
+	if ((job->state == SRUN_JOB_DETACHED) ||
+	    (job->state == SRUN_JOB_OVERDONE))
+		return true;
+	else
+		return false;
+}
 
 static void
 _process_launch_resp(job_t *job, launch_tasks_response_msg_t *msg)
@@ -493,12 +503,11 @@ _msg_thr_poll(job_t *job)
 		_poll_set_rd(fds[i], job->jfd[i]);
 	time_first_launch = time(NULL);
 
-	while (1) {
-		while ((rc = poll(fds, nfds, POLL_TIMEOUT_MSEC)) <= 0) {
+	while (!_job_msg_done(job)) {
+		while ((!_job_msg_done(job)) &&
+		       ((rc = poll(fds, nfds, POLL_TIMEOUT_MSEC)) <= 0)) {
 			if (rc == 0) {	/* timeout */
-				if (job->state == SRUN_JOB_FAILED)
-					pthread_exit(0);
-				else if (check_launch_msg_sent)
+				if (check_launch_msg_sent)
 					;
 				else if ((time(NULL) - time_first_launch) > 
 				         LAUNCH_WAIT_SEC) {

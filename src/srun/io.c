@@ -75,6 +75,7 @@ static int	_do_task_output(int *fd, FILE *out, cbuf_t buf, int tasknum);
 static int 	_do_task_output_poll(fd_info_t *info);
 static int      _do_task_input(job_t *job, int taskid);
 static int 	_do_task_input_poll(job_t *job, fd_info_t *info);
+static inline bool _job_io_done(job_t *job);
 static int	_handle_pollerr(fd_info_t *info);
 static char *	_host_state_name(host_state_t state_inx);
 static ssize_t	_readn(int fd, void *buf, size_t nbytes);
@@ -237,7 +238,7 @@ _io_thr_poll(void *job_arg)
 	for (i = 0; i < job->niofds; i++) 
 		_poll_set_rd(fds[i], job->iofd[i]);
 
-	while (1) {
+	while (!_job_io_done(job)) {
 		int eofcnt = 0;
 		nfds = job->niofds; /* already have n ioport fds + stdin */
 
@@ -292,7 +293,8 @@ _io_thr_poll(void *job_arg)
 			pthread_exit(0);
 		}
 
-		while ((rc = poll(fds, nfds, POLL_TIMEOUT_MSEC)) <= 0) {
+		while ((!_job_io_done(job)) && 
+		       ((rc = poll(fds, nfds, POLL_TIMEOUT_MSEC)) <= 0)) {
 			if (rc == 0) {	/* timeout */
 				_do_poll_timeout(job);
 				continue;
@@ -342,6 +344,7 @@ _io_thr_poll(void *job_arg)
 		}
 	}
 	xfree(fds);
+	return NULL;
 }
 
 static void _do_poll_timeout (job_t *job)
@@ -409,6 +412,15 @@ static char *_host_state_name(host_state_t state_inx)
 		default:
 			return "unknown";
 	}
+}
+
+static bool _job_io_done(job_t *job)
+{
+	if ((job->state == SRUN_JOB_DETACHED) ||
+	    (job->state == SRUN_JOB_OVERDONE))
+		return true;
+	else
+		return false;
 }
 
 void report_task_status(job_t *job)
