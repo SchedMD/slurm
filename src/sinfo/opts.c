@@ -24,7 +24,16 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#include <popt.h>
+#if HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
+#if HAVE_POPT_H
+#  include <popt.h>
+#else
+#  include <src/popt/popt.h>
+#endif
+
 #include <src/sinfo/sinfo.h>
 
 #define OPT_SUMMARIZE 	0x01
@@ -49,7 +58,7 @@ parse_command_line( int argc, char* argv[] )
 	/* { long-option, short-option, argument type, variable address, option tag, docstr, argstr } */
 
 	poptContext context;
-	char next_opt, curr_opt;
+	int next_opt, curr_opt;
 	int rc = 0;
 
 	/* Declare the Options */

@@ -16,7 +16,7 @@ enum { SLURM_OPENSSL_SIGNED = 1 };
 enum { SLURM_OPENSSL_VERIFIED = 1 };
 
 typedef struct slurm_ssl_key_ctx {
-	enum key_type;
+	enum key_type key_type;
 	unsigned int key_length;
 	union key {
 		EVP_PKEY *private;

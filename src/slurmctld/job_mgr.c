@@ -171,12 +171,12 @@ delete_job_details (struct job_record *job_entry)
 		bit_free(job_entry->details->req_node_bitmap);
 	if (job_entry->details->features)
 		xfree(job_entry->details->features);
-	if (job_entry->details->stderr)
-		xfree(job_entry->details->stderr);
-	if (job_entry->details->stdin)
-		xfree(job_entry->details->stdin);
-	if (job_entry->details->stdout)
-		xfree(job_entry->details->stdout);
+	if (job_entry->details->err)
+		xfree(job_entry->details->err);
+	if (job_entry->details->in)
+		xfree(job_entry->details->in);
+	if (job_entry->details->out)
+		xfree(job_entry->details->out);
 	if (job_entry->details->work_dir)
 		xfree(job_entry->details->work_dir);
 	xfree(job_entry->details);
@@ -367,29 +367,29 @@ dump_job_details_state (struct job_details *detail_ptr, Buf buffer)
 		packstr (tmp_str, buffer);
 	}
 
-	if (detail_ptr->stderr == NULL ||
-			strlen (detail_ptr->stderr) < MAX_STR_PACK)
-		packstr (detail_ptr->stderr, buffer);
+	if (detail_ptr->err == NULL ||
+			strlen (detail_ptr->err) < MAX_STR_PACK)
+		packstr (detail_ptr->err, buffer);
 	else {
-		strncpy(tmp_str, detail_ptr->stderr, MAX_STR_PACK);
+		strncpy(tmp_str, detail_ptr->err, MAX_STR_PACK);
 		tmp_str[MAX_STR_PACK-1] = (char) NULL;
 		packstr (tmp_str, buffer);
 	}
 
-	if (detail_ptr->stdin == NULL ||
-			strlen (detail_ptr->stdin) < MAX_STR_PACK)
-		packstr (detail_ptr->stdin, buffer);
+	if (detail_ptr->in == NULL ||
+			strlen (detail_ptr->in) < MAX_STR_PACK)
+		packstr (detail_ptr->in, buffer);
 	else {
-		strncpy(tmp_str, detail_ptr->stdin, MAX_STR_PACK);
+		strncpy(tmp_str, detail_ptr->in, MAX_STR_PACK);
 		tmp_str[MAX_STR_PACK-1] = (char) NULL;
 		packstr (tmp_str, buffer);
 	}
 
-	if (detail_ptr->stdout == NULL ||
-			strlen (detail_ptr->stdout) < MAX_STR_PACK)
-		packstr (detail_ptr->stdout, buffer);
+	if (detail_ptr->out == NULL ||
+			strlen (detail_ptr->out) < MAX_STR_PACK)
+		packstr (detail_ptr->out, buffer);
 	else {
-		strncpy(tmp_str, detail_ptr->stdout, MAX_STR_PACK);
+		strncpy(tmp_str, detail_ptr->out, MAX_STR_PACK);
 		tmp_str[MAX_STR_PACK-1] = (char) NULL;
 		packstr (tmp_str, buffer);
 	}
@@ -444,7 +444,7 @@ load_job_state ( void )
 	uint32_t num_procs, num_nodes, min_procs, min_memory, min_tmp_disk, submit_time;
 	uint16_t shared, contiguous, kill_on_node_fail, name_len, batch_flag;
 	char *req_nodes = NULL, *features = NULL;
-	char  *stderr = NULL, *stdin = NULL, *stdout = NULL, *work_dir = NULL;
+	char  *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	slurm_job_credential_t *credential_ptr = NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
@@ -536,9 +536,9 @@ load_job_state ( void )
 
 			safe_unpackstr_xmalloc (&req_nodes, &name_len, buffer);
 			safe_unpackstr_xmalloc (&features, &name_len, buffer);
-			safe_unpackstr_xmalloc (&stderr, &name_len, buffer);
-			safe_unpackstr_xmalloc (&stdin, &name_len, buffer);
-			safe_unpackstr_xmalloc (&stdout, &name_len, buffer);
+			safe_unpackstr_xmalloc (&err, &name_len, buffer);
+			safe_unpackstr_xmalloc (&in, &name_len, buffer);
+			safe_unpackstr_xmalloc (&out, &name_len, buffer);
 			safe_unpackstr_xmalloc (&work_dir, &name_len, buffer);
 
 			/* validity test as possible */
@@ -552,12 +552,12 @@ load_job_state ( void )
 					xfree (req_nodes);
 				if (features)
 					xfree (features);
-				if (stderr)
-					xfree (stderr);
-				if (stdin)
-					xfree (stdin);
-				if (stdout)
-					xfree (stdout);
+				if (err)
+					xfree (err);
+				if (in)
+					xfree (in);
+				if (out)
+					xfree (out);
 				if (work_dir)
 					xfree (work_dir);
 				error_code = EINVAL;
@@ -637,9 +637,9 @@ load_job_state ( void )
 			job_ptr->details->req_nodes = req_nodes; req_nodes = NULL;
 			job_ptr->details->req_node_bitmap = req_node_bitmap; req_node_bitmap = NULL;
 			job_ptr->details->features = features; features = NULL;
-			job_ptr->details->stderr = stderr; stderr = NULL;
-			job_ptr->details->stdin = stdin; stdin = NULL;
-			job_ptr->details->stdout = stdout; stdout = NULL;
+			job_ptr->details->err = err; err = NULL;
+			job_ptr->details->in = in; in = NULL;
+			job_ptr->details->out = out; out = NULL;
 			job_ptr->details->work_dir = work_dir; work_dir = NULL;
 			memcpy (&job_ptr->details->credential, credential_ptr, 
 					sizeof (job_ptr->details->credential));
@@ -717,17 +717,17 @@ cleanup:
 			xfree (features); 
 			features = NULL; 
 		}
-		if (stderr) {
-			xfree (stderr); 
-			stderr = NULL; 
+		if (err) {
+			xfree (err); 
+			err = NULL; 
 		}
-		if (stdin) {
-			xfree (stdin); 
-			stdin = NULL; 
+		if (in) {
+			xfree (in); 
+			in = NULL; 
 		}
-		if (stdout) {
-			xfree (stdout);	
-			stdout = NULL; 
+		if (out) {
+			xfree (out);	
+			out = NULL; 
 		}
 		if (work_dir) {
 			xfree (work_dir); 
@@ -914,8 +914,8 @@ dump_job_desc(job_desc_msg_t * job_specs)
 			job_specs->environment[0], job_specs->environment[1],
 			job_specs->environment[2]);
 
-	debug3("   stdin=%s stdout=%s stderr=%s work_dir=%s", 
-		job_specs->stdin, job_specs->stdout, job_specs->stderr, 
+	debug3("   in=%s out=%s err=%s work_dir=%s", 
+		job_specs->in, job_specs->out, job_specs->err, 
 		job_specs->work_dir);
 
 }
@@ -1265,18 +1265,18 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 
 	/* Perform some size checks on strings we store to prevent malicious user */
 	/* from filling slurmctld's memory */
-	if (job_desc->stderr && (strlen (job_desc->stderr) > BUF_SIZE)) {
-		info ("job_create: strlen(stderr) too big (%d)", strlen (job_desc->stderr));
+	if (job_desc->err && (strlen (job_desc->err) > BUF_SIZE)) {
+		info ("job_create: strlen(err) too big (%d)", strlen (job_desc->err));
 		error_code = ESLURM_PATHNAME_TOO_LONG;
 		goto cleanup;
 	}
-	if (job_desc->stdin && (strlen (job_desc->stdin) > BUF_SIZE)) {
-		info ("job_create: strlen(stdin) too big (%d)", strlen (job_desc->stdin));
+	if (job_desc->in && (strlen (job_desc->in) > BUF_SIZE)) {
+		info ("job_create: strlen(in) too big (%d)", strlen (job_desc->in));
 		error_code = ESLURM_PATHNAME_TOO_LONG;
 		goto cleanup;
 	}
-	if (job_desc->stdout && (strlen (job_desc->stdout) > BUF_SIZE)) {
-		info ("job_create: strlen(stdout) too big (%d)", strlen (job_desc->stdout));
+	if (job_desc->out && (strlen (job_desc->out) > BUF_SIZE)) {
+		info ("job_create: strlen(out) too big (%d)", strlen (job_desc->out));
 		error_code = ESLURM_PATHNAME_TOO_LONG;
 		goto cleanup;
 	}
@@ -1668,12 +1668,12 @@ copy_job_desc_to_job_record ( job_desc_msg_t * job_desc ,
 		detail_ptr->min_memory = job_desc->min_memory;
 	if (job_desc->min_tmp_disk != NO_VAL)
 		detail_ptr->min_tmp_disk = job_desc->min_tmp_disk;
-	if (job_desc->stderr)
-		detail_ptr->stderr = xstrdup ( job_desc->stderr );
-	if (job_desc->stdin)
-		detail_ptr->stdin = xstrdup ( job_desc->stdin );
-	if (job_desc->stdout)
-		detail_ptr->stdout = xstrdup ( job_desc->stdout );
+	if (job_desc->err)
+		detail_ptr->err = xstrdup ( job_desc->err );
+	if (job_desc->in)
+		detail_ptr->in = xstrdup ( job_desc->in );
+	if (job_desc->out)
+		detail_ptr->out = xstrdup ( job_desc->out );
 	if (job_desc->work_dir)
 		detail_ptr->work_dir = xstrdup ( job_desc->work_dir );
 

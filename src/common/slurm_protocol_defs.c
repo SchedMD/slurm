@@ -113,12 +113,12 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 			xfree(msg->req_nodes);
 		if (msg->script)
 			xfree(msg->script);
-		if (msg->stderr)
-			xfree(msg->stderr);
-		if (msg->stdin)
-			xfree(msg->stdin);
-		if (msg->stdout)
-			xfree(msg->stdout);
+		if (msg->err)
+			xfree(msg->err);
+		if (msg->in)
+			xfree(msg->in);
+		if (msg->out)
+			xfree(msg->out);
 		if (msg->work_dir)
 			xfree(msg->work_dir);
 		xfree(msg);
@@ -134,12 +134,12 @@ void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 			xfree(msg->nodes);
 		if (msg->script)
 			xfree(msg->script);
-		if (msg->stderr)
-			xfree(msg->stderr);
-		if (msg->stdin)
-			xfree(msg->stdin);
-		if (msg->stdout)
-			xfree(msg->stdout);
+		if (msg->err)
+			xfree(msg->err);
+		if (msg->in)
+			xfree(msg->in);
+		if (msg->out)
+			xfree(msg->out);
 		if (msg->work_dir)
 			xfree(msg->work_dir);
 
@@ -550,9 +550,9 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->time_limit  = SLURM_JOB_DESC_DEFAULT_TIME_LIMIT;
 	job_desc_msg->num_procs   = SLURM_JOB_DESC_DEFAULT_NUM_PROCS;
 	job_desc_msg->num_nodes   = SLURM_JOB_DESC_DEFAULT_NUM_NODES;
-	job_desc_msg->stderr      = NULL;
-	job_desc_msg->stdin       = NULL;
-	job_desc_msg->stdout      = NULL;
+	job_desc_msg->err         = NULL;
+	job_desc_msg->in          = NULL;
+	job_desc_msg->out         = NULL;
 	job_desc_msg->user_id     = SLURM_JOB_DESC_DEFAULT_USER_ID;
 	job_desc_msg->work_dir    = SLURM_JOB_DESC_DEFAULT_WORKING_DIR;
 }

@@ -5,6 +5,8 @@ AUTOMAKE_OPTIONS = foreign
 
 sbin_PROGRAMS = slurmd 
 
+INCLUDES = $(SSL_CPPFLAGS)
+
 if WITH_ELAN
 interconnect_lib = libelan_interconnect.la
 noinst_LTLIBRARIES = 		\
@@ -21,6 +23,7 @@ LDADD = $(top_srcdir)/src/common/libcommon.la \
 	$(SSL_LIBS)
 
 slurmd_LDADD = $(LDADD) $(interconnect_lib)
+
 	
 common_sources = 	        \
 	slurmd.c 	        \
