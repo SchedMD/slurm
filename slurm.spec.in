@@ -197,7 +197,7 @@ fi
 
 
 %changelog
-* Thu Apr 10 2003
+* Thu Apr 10 2003 Mark Grondona <mgrondona@llnl.gov>
 - include html documentation in main package
 * Wed Mar 26 2003 Mark Grondona <mgrondona@llnl.gov>
 - unconditionally build auth-none subpackage
