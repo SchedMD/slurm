@@ -1009,6 +1009,7 @@ _job_still_running(uint32_t job_id)
 static int
 _epilog_complete(uint32_t jobid, int rc)
 {
+	int                    ret = SLURM_SUCCESS;
 	slurm_msg_t            msg;
 	epilog_complete_msg_t  req;
 
@@ -1025,11 +1026,12 @@ _epilog_complete(uint32_t jobid, int rc)
 
 	if (slurm_send_only_controller_msg(&msg) < 0) {
 		error("Unable to send epilog complete message: %m");
-		return SLURM_ERROR;
-	}
-	debug ("Job %u: sent epilog complete msg: rc = %d", jobid, rc);
+		ret = SLURM_ERROR;
+	} else
+		debug ("Job %u: sent epilog complete msg: rc = %d", jobid, rc);
 
-	return SLURM_SUCCESS;
+	switch_g_free_node_info(&req.switch_nodeinfo);
+	return ret;
 }
 
 static void 
