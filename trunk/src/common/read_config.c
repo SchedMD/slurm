@@ -111,7 +111,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->inactive_limit		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
-	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
+	ctl_conf_ptr->kill_wait			= (uint16_t) 30;
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->prioritize);
 	xfree (ctl_conf_ptr->prolog);
