@@ -231,7 +231,7 @@ static int _destroy_bgl_bp_list(List bgl_bp_list)
 /**
  * connect the given switch up with the given connections
  */
-int configure_partition_switches(bgl_record_t * bgl_record)
+extern int configure_partition_switches(bgl_record_t * bgl_record)
 {
 	int i;
 	ListIterator itr, switch_itr, bgl_itr;
@@ -296,8 +296,10 @@ int configure_partition_switches(bgl_record_t * bgl_record)
 		list_iterator_destroy(itr);
 	}
 	list_iterator_destroy(bgl_itr);
-	rm_set_data(bgl_record->bgl_part,RM_PartitionBPNum,&bgl_record->bp_count);
-	rm_set_data(bgl_record->bgl_part,RM_PartitionSwitchNum,&bgl_record->switch_count);
+	rm_set_data(bgl_record->bgl_part, RM_PartitionBPNum,
+		&bgl_record->bp_count);
+	rm_set_data(bgl_record->bgl_part, RM_PartitionSwitchNum,
+		&bgl_record->switch_count);
 	
 	first_bp = 1;
 	first_switch = 1;
@@ -311,10 +313,12 @@ int configure_partition_switches(bgl_record_t * bgl_record)
 		
 		if(bgl_bp->used) {
 			if (first_bp){
-				rm_set_data(bgl_record->bgl_part, RM_PartitionFirstBP, curr_bp);
+				rm_set_data(bgl_record->bgl_part, 
+					RM_PartitionFirstBP, curr_bp);
 				first_bp = 0;
 			} else {
-				rm_set_data(bgl_record->bgl_part, RM_PartitionNextBP, curr_bp);
+				rm_set_data(bgl_record->bgl_part,
+					RM_PartitionNextBP, curr_bp);
 			}
 		}
 		rm_get_data(curr_bp, RM_BPID, &bpid);
@@ -339,9 +343,11 @@ int configure_partition_switches(bgl_record_t * bgl_record)
 					
 			switch_itr = list_iterator_create(bgl_bp->switch_list);
 			while((bgl_switch = list_next(switch_itr)) != NULL) {
-				rm_get_data(coord_switch[bgl_switch->dim],RM_SwitchID,&name2);
+				rm_get_data(coord_switch[bgl_switch->dim],
+					RM_SwitchID,&name2);
 								
-				_add_switch_conns(coord_switch[bgl_switch->dim], bgl_switch);
+				_add_switch_conns(coord_switch[bgl_switch->dim],
+					bgl_switch);
 				
 				if (first_switch){
 					rm_set_data(bgl_record->bgl_part,
