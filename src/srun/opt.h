@@ -23,10 +23,7 @@
 #  include <popt.h>
 #endif
 
-#ifndef _BOOL_DEFINED
-#define _BOOL_DEFINED
-typedef enum {false, true} bool;
-#endif
+#include <src/common/macros.h> /* true and false */
 
 #define MAX_USERNAME	9
 
@@ -48,14 +45,14 @@ enum modes {
 enum modes mode;
 
 enum distribution_t {
-	DIST_UNKNOWN	= 0,
-	DIST_BLOCK 	= 1, 
-	DIST_CYCLIC 	= 2
+	SRUN_DIST_BLOCK 	= 0, 
+	SRUN_DIST_CYCLIC 	= 1,
+	SRUN_DIST_UNKNOWN 	= 2
 };
 
-#define format_distribution_t(t) (t == DIST_BLOCK) ? "block" : \
-			                   (t == DIST_CYCLIC) ? "cyclic" : \
-					   "unknown"
+#define format_distribution_t(t) (t == SRUN_DIST_BLOCK) ? "block" :   \
+		                 (t == SRUN_DIST_CYCLIC) ? "cyclic" : \
+			         "unknown"
 
 enum io_t {
 	IO_NORMAL 	= 0,
