@@ -245,7 +245,8 @@ _parse_format( char* format )
 		exit( 1 );
 	}
 	if (format[0] != '%') {
-		fprintf( stderr, "Invalid format specification: %s\n", format );
+		fprintf( stderr, "Invalid format specification: %s\n", 
+			 format );
 		exit( 1 );
 	}
 	field_size = strlen( format );
@@ -262,7 +263,8 @@ _parse_format( char* format )
 		if (params.step_flag) {
 			if      (field[0] == 'i')
 				step_format_add_id( params.format_list, 
-				                    field_size, right_justify );
+				                    field_size, 
+						    right_justify );
 			else if (field[0] == 'N')
 				step_format_add_nodes( params.format_list, 
 				                       field_size, 
