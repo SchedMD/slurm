@@ -215,8 +215,8 @@ rm -rf $RPM_BUILD_ROOT
 %files bluegene
 %defattr(-,root,root)
 %doc etc/bluegene.conf.example
-%{_bindir}/epilog
-%{_bindir}/prolog
+%{_bindir}/slurm_epilog
+%{_bindir}/slurm_prolog
 %{_libdir}/slurm/select_bluegene.so
 %config(noreplace) /etc/slurm/bluegene.conf
 #############################################################################
@@ -269,7 +269,7 @@ fi
 %changelog
 * Thu Feb 24 2005 Morris Jette <jette1@llnl.gov>
 - added bluegene.conf.example to distribution
-- added epilog and prolog to bluegene package
+- added slurm_epilog and slurm_prolog to bluegene package
 * Thu Feb 10 2005 Morris Jette <jette1@llnl.gov>
 - disable rpm build termination if unpackaged files found (suse rpm bug)
 * Wed Jan 02 2005 Morris Jette <jette1@llnl.gov>
