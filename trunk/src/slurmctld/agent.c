@@ -67,6 +67,12 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 
+#define FREE_NULL(_X)			\
+	do {				\
+		if (_X) xfree (_X);	\
+		_X	= NULL; 	\
+	} while (0)
+
 #if COMMAND_TIMEOUT == 1
 #  define WDOG_POLL 		1	/* secs */
 #else
@@ -245,10 +251,8 @@ void *agent(void *args)
       cleanup:
 #if AGENT_IS_THREAD
 	if (agent_arg_ptr) {
-		if (agent_arg_ptr->slurm_addr)
-			xfree(agent_arg_ptr->slurm_addr);
-		if (agent_arg_ptr->node_names)
-			xfree(agent_arg_ptr->node_names);
+		FREE_NULL(agent_arg_ptr->slurm_addr);
+		FREE_NULL(agent_arg_ptr->node_names);
 		if (agent_arg_ptr->msg_args) {
 			if (agent_arg_ptr->msg_type ==
 			    REQUEST_BATCH_JOB_LAUNCH)
@@ -262,8 +266,7 @@ void *agent(void *args)
 #endif
 
 	if (agent_info_ptr) {
-		if (agent_info_ptr->thread_struct)
-			xfree(agent_info_ptr->thread_struct);
+		FREE_NULL(agent_info_ptr->thread_struct);
 		xfree(agent_info_ptr);
 	}
 	return NULL;
@@ -610,13 +613,10 @@ static void _list_delete_retry(void *retry_entry)
 	agent_arg_t *agent_arg_ptr;	/* pointer to part_record */
 
 	agent_arg_ptr = (agent_arg_t *) retry_entry;
-	if (agent_arg_ptr->slurm_addr)
-		xfree(agent_arg_ptr->slurm_addr);
-	if (agent_arg_ptr->node_names)
-		xfree(agent_arg_ptr->node_names);
+	FREE_NULL(agent_arg_ptr->slurm_addr);
+	FREE_NULL(agent_arg_ptr->node_names);
 #if AGENT_IS_THREAD
-	if (agent_arg_ptr->msg_args)
-		xfree(agent_arg_ptr->msg_args);
+	FREE_NULL(agent_arg_ptr->msg_args);
 #endif
 	xfree(agent_arg_ptr);
 }
@@ -710,11 +710,8 @@ static void _slurmctld_free_job_launch_msg(batch_job_launch_msg_t * msg)
 {
 	if (msg) {
 		if (msg->environment) {
-			if (msg->environment[0])
-				xfree(msg->environment[0]);
-
-			xfree(msg->environment);
-			msg->environment = NULL;
+			FREE_NULL(msg->environment[0]);
+			FREE_NULL(msg->environment);
 		}
 		slurm_free_job_launch_msg(msg);
 	}
