@@ -27,18 +27,18 @@ main (int argc, char *argv[]) {
 	char *node_list;
 
 	error_code = slurm_allocate
-		("JobName=job01 TotalNodes=400 TotalCPUs=1000 NodeList=lx[3000-3003] Partition=batch MinMemory=1024 MinTmpDisk=2034 Groups=students,employee MinCPUs=4 Contiguous Key=1234",
+		("User=1500 Script=/bin/hostname JobName=job01 TotalNodes=400 TotalProcs=1000 ReqNodes=lx[3000-3003] Partition=batch MinRealMemory=1024 MinTmpDisk=2034 Groups=students,employee MinProcs=4 Contiguous=YES Key=1234",
 		 &node_list);
 	if (error_code)
 		printf ("allocate error %d\n", error_code);
 	else {
 		printf ("allocate nodes %s\n", node_list);
 		free (node_list);
-	}			/* else */
+	}
 
 	while (1) {
 		error_code = slurm_allocate
-			("JobName=more TotalCPUs=4000 Partition=batch Key=1234 ",
+			("User=1500 Script=/bin/hostname JobName=more TotalProcs=4000 Partition=batch Key=1234 ",
 			 &node_list);
 		if (error_code) {
 			printf ("allocate error %d\n", error_code);
@@ -47,12 +47,12 @@ main (int argc, char *argv[]) {
 		else {
 			printf ("allocate nodes %s\n", node_list);
 			free (node_list);
-		}		/* else */
-	}			/* while */
+		}
+	}
 
 	while (1) {
 		error_code = slurm_allocate
-			("JobName=more TotalCPUs=40 Partition=batch Key=1234 ",
+			("User=1500 Script=/bin/hostname JobName=more TotalProcs=40 Partition=batch Key=1234 ",
 			 &node_list);
 		if (error_code) {
 			printf ("allocate error %d\n", error_code);
@@ -61,8 +61,8 @@ main (int argc, char *argv[]) {
 		else {
 			printf ("allocate nodes %s\n", node_list);
 			free (node_list);
-		}		/* else */
-	}			/* while */
+		}
+	}
 
 	exit (0);
 }
@@ -76,10 +76,14 @@ main (int argc, char *argv[]) {
  * output: node_list - list of allocated nodes
  *         returns 0 if no error, EINVAL if the request is invalid, 
  *			EAGAIN if the request can not be satisfied at present
- * NOTE: acceptable specifications include: JobName=<name> NodeList=<list>, 
- *	Features=<features>, Groups=<groups>, Partition=<part_name>, Contiguous, 
- *	TotalCPUs=<number>, TotalNodes=<number>, MinCPUs=<number>, 
- *	MinMemory=<number>, MinTmpDisk=<number>, Key=<number>, Shared=<0|1>
+ * NOTE: required specifications include: User=<uid> Script=<pathname>
+ *	optional specifications include: Contiguous=<YES|NO> 
+ *	Distribution=<BLOCK|CYCLE> Features=<features> Groups=<groups>
+ *	JobId=<id> JobName=<name> Key=<credential> MinProcs=<count>
+ *	MinRealMemory=<MB> MinTmpDisk=<MB> Partition=<part_name>
+ *	Priority=<float> ProcsPerTask=<count> ReqNodes=<node_list>
+ *	Shared=<YES|NO> TimeLimit=<minutes> TotalNodes=<count>
+ *	TotalProcs=<count>
  * NOTE: the calling function must free the allocated storage at node_list[0]
  */
 int
@@ -107,12 +111,12 @@ slurm_allocate (char *spec, char **node_list) {
 	     sizeof (serv_addr)) < 0) {
 		close (sockfd);
 		return EAGAIN;
-	}			/* if */
+	}			
 	if (send (sockfd, request_msg, strlen (request_msg) + 1, 0) <
 	    strlen (request_msg)) {
 		close (sockfd);
 		return EAGAIN;
-	}			/* if */
+	}			
 
 	buffer = NULL;
 	buffer_offset = 0;
@@ -122,14 +126,14 @@ slurm_allocate (char *spec, char **node_list) {
 		if (buffer == NULL) {
 			close (sockfd);
 			return EAGAIN;
-		}		/* if */
+		}		
 		in_size =
 			recv (sockfd, &buffer[buffer_offset],
 			      (buffer_size - buffer_offset), 0);
 		if (in_size <= 0) {	/* end if input */
 			in_size = 0;
 			break;
-		}		/* if */
+		}		
 		buffer_offset += in_size;
 		buffer_size += in_size;
 	}			/* while */
@@ -142,11 +146,11 @@ slurm_allocate (char *spec, char **node_list) {
 	if (strcmp (buffer, "EAGAIN") == 0) {
 		free (buffer);
 		return EAGAIN;
-	}			/* if */
+	}			
 	if (strcmp (buffer, "EINVAL") == 0) {
 		free (buffer);
 		return EINVAL;
-	}			/* if */
+	}			
 	node_list[0] = buffer;
 	return 0;
 }
