@@ -56,6 +56,7 @@
 #  include "src/common/getopt.h"
 #endif
 
+#include "src/common/macros.h"
 #include <slurm/slurm.h>
 
 #include "src/common/slurm_protocol_api.h"
@@ -102,10 +103,10 @@ extern int quiet_flag;
 
 
 void init_grid(node_info_msg_t * node_info_ptr);
-int set_grid(int start, int end, int count);
-int set_grid_bgl(int startx, int starty, int startz, int endx, int endy,
-		 int endz, int count);
-void print_grid();
+extern int set_grid(int start, int end, int count);
+extern int set_grid_bgl(int startx, int starty, int startz, 
+		int endx, int endy, int endz, int count, bool lower);
+extern void print_grid(void);
 
 void parse_command_line(int argc, char *argv[]);
 void snprint_time(char *buf, size_t buf_size, time_t time);

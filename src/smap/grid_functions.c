@@ -27,29 +27,39 @@
 
 #include "src/smap/smap.h"
 
-
-int set_grid(int start, int end, int count)
+extern int set_grid(int start, int end, int count)
 {
 	int x, y, z;
-	for (y = DIM_SIZE[Y] - 1; y >= 0; y--)
-		for (z = 0; z < DIM_SIZE[Z]; z++)
+
+	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
+		for (z = 0; z < DIM_SIZE[Z]; z++) {
 			for (x = 0; x < DIM_SIZE[X]; x++) {
-				if (pa_system_ptr->grid[x][y][z].indecies >= start && pa_system_ptr->grid[x][y][z].indecies <= end) {
-					if (pa_system_ptr->grid[x][y][z].state != NODE_STATE_DOWN || pa_system_ptr->grid[x][y][z].state != NODE_STATE_DRAINED || pa_system_ptr->grid[x][y][z].state != NODE_STATE_DRAINING) {
-						pa_system_ptr->grid[x][y][z].letter = pa_system_ptr->fill_in_value[count].letter;
-						pa_system_ptr->grid[x][y][z].color = pa_system_ptr->fill_in_value[count].color;
-					}
-				}
+				if ((pa_system_ptr->grid[x][y][z].indecies < start)
+				||  (pa_system_ptr->grid[x][y][z].indecies > end)) 
+					continue;
+				if ((pa_system_ptr->grid[x][y][z].state == NODE_STATE_DOWN)
+				||  (pa_system_ptr->grid[x][y][z].state == NODE_STATE_DRAINED)
+				||  (pa_system_ptr->grid[x][y][z].state == NODE_STATE_DRAINING))
+					continue;
+
+				pa_system_ptr->grid[x][y][z].letter = 
+					pa_system_ptr->
+					fill_in_value[count].letter;
+				pa_system_ptr->grid[x][y][z].color = 
+					pa_system_ptr->
+					fill_in_value[count].color;
 			}
+		}
+	}
 
 	return 1;
 }
 
-int set_grid_bgl(int startx, int starty, int startz, int endx, int endy,
-		 int endz, int count)
+extern int set_grid_bgl(int startx, int starty, int startz, 
+		int endx, int endy, int endz, int count, bool lower)
 {
 	int x, y, z;
-	int i = 0;
+	int i = 0, offset;
 	assert(endx < DIM_SIZE[X]);
 	assert(startx >= 0);
 	assert(endy < DIM_SIZE[Y]);
@@ -58,19 +68,31 @@ int set_grid_bgl(int startx, int starty, int startz, int endx, int endy,
 	assert(startz >= 0);
 	assert(count < pa_system_ptr->num_of_proc);
 	assert(count >= 0);
-	for (x = startx; x <= endx; x++)
-		for (y = starty; y <= endy; y++)
+
+	if (lower)
+		offset = 32;
+	else
+		offset = 0;
+
+	for (x = startx; x <= endx; x++) {
+		for (y = starty; y <= endy; y++) {
 			for (z = startz; z <= endz; z++) {
-				pa_system_ptr->grid[x][y][z].letter = pa_system_ptr->fill_in_value[count].letter;
-				pa_system_ptr->grid[x][y][z].color = pa_system_ptr->fill_in_value[count].color;
+				pa_system_ptr->grid[x][y][z].letter = 
+					pa_system_ptr->
+					fill_in_value[count].letter + offset;
+				pa_system_ptr->grid[x][y][z].color = 
+					pa_system_ptr->
+					fill_in_value[count].color;
 				i++;
 			}
+		}
+	}
 
 	return i;
 }
 
-/* _print_grid - print values of every grid point */
-void print_grid(void)
+/* print_grid - print values of every grid point */
+extern void print_grid(void)
 {
 	int x, y, z, i = 0, offset = DIM_SIZE[Z];
 	int grid_xcord, grid_ycord = 2;
