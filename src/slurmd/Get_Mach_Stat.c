@@ -21,13 +21,13 @@
 
 #include "slurm.h"
 
-#define DEBUG_MODULE 0
+#define DEBUG_MODULE 1
 #define DEBUG_SYSTEM 1
 
 int Get_CPUs(int *CPUs);
 int Get_Mach_Name(char *Node_Name);
 int Get_Memory(int *RealMemory);
-int Get_TmpDisk(long *TmpDisk);
+int Get_TmpDisk(int *TmpDisk);
 #ifdef USE_OS_NAME
 int Get_OS_Name(char *OS_Name);
 #endif
@@ -39,17 +39,18 @@ int Get_Speed(float *Speed);
 /* main is used here for testing purposes only */
 main(int argc, char * argv[]) {
     int Error_Code;
-    struct Node_Record This_Node;
+    struct Config_Record This_Node;
+    char NodeName[MAX_NAME_LEN];
 
-    Error_Code = Get_Mach_Name(This_Node.Name);
+    Error_Code = Get_Mach_Name(NodeName);
     if (Error_Code != 0) exit(1);    /* The show is all over without a node name */
 
     Error_Code += Get_CPUs(&This_Node.CPUs);
     Error_Code += Get_Memory(&This_Node.RealMemory);
     Error_Code += Get_TmpDisk(&This_Node.TmpDisk);
 
-    printf("NodeName=%s CPUs=%d RealMemory=%d TmpDisk=%ld\n", 
-	This_Node.Name, This_Node.CPUs, This_Node.RealMemory, This_Node.TmpDisk);
+    printf("NodeName=%s CPUs=%d RealMemory=%d TmpDisk=%d\n", 
+	NodeName, This_Node.CPUs, This_Node.RealMemory, This_Node.TmpDisk);
     if (Error_Code != 0) printf("Get_Mach_Stat Errors encountered, Error_Code=%d\n", Error_Code);
     exit (Error_Code);
 } /* main */
@@ -70,7 +71,7 @@ int Get_CPUs(int *CPUs) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Get_CPUs: error running sysconf(_SC_NPROCESSORS_ONLN)\n");
 #else
-	syslog(LOG_ERR, "Get_CPUs: error running sysconf(_SC_NPROCESSORS_ONLN)\n");
+	syslog(LOG_ALERT, "Get_CPUs: error running sysconf(_SC_NPROCESSORS_ONLN)\n");
 #endif
 	return EINVAL;
     } /* if */
@@ -105,7 +106,7 @@ int Get_OS_Name(char *OS_Name) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Get_OS_Name: OS name too long\n");
 #else
-	syslog(LOG_WARNING, "Get_OS_Name: OS name too long\n");
+	syslog(LOG_ALERT, "Get_OS_Name: OS name too long\n");
 #endif
 	return Error_Code;
     } /* if */
@@ -131,7 +132,7 @@ int Get_Mach_Name(char *Node_Name) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Get_Mach_Name: gethostname error %d\n", Error_Code);
 #else
-	syslog(LOG_ERR, "Get_Mach_Name: gethostname error %d\n", Error_Code);
+	syslog(LOG_ALERT, "Get_Mach_Name: gethostname error %d\n", Error_Code);
 #endif
     } /* if */
 
@@ -155,7 +156,7 @@ int Get_Memory(int *RealMemory) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Get_Memory: error %d opening /proc/meminfo\n", errno);
 #else
-	syslog(LOG_ERR, "Get_Memory: error %d opening /proc/meminfo\n", errno);
+	syslog(LOG_ALERT, "Get_Memory: error %d opening /proc/meminfo\n", errno);
 #endif
 	return errno;
     } /* if */
@@ -195,7 +196,7 @@ int Get_Speed(float *Speed) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Get_Speed: error %d opening /proc/cpuinfo\n", errno);
 #else
-	syslog(LOG_ERR, "Get_Speed: error %d opening /proc/cpuinfo\n", errno);
+	syslog(LOG_ALERT, "Get_Speed: error %d opening /proc/cpuinfo\n", errno);
 #endif
 	return errno;
     } /* if */
@@ -221,7 +222,7 @@ int Get_Speed(float *Speed) {
  * Output: TmpDisk - filled in with disk space size in MB, zero if error
  *         return code - 0 if no error, otherwise errno
  */
-int Get_TmpDisk(long *TmpDisk) {
+int Get_TmpDisk(int *TmpDisk) {
     struct statfs Stat_Buf;
     long   Total_Size;
     int Error_Code, i;
@@ -239,7 +240,7 @@ int Get_TmpDisk(long *TmpDisk) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Get_TmpDisk: error %d executing statfs on %s\n", errno, TMP_FS);
 #else
-	syslog(LOG_ERR, "Get_TmpDisk: error %d executing statfs on %sp\n", errno, TMP_FS);
+	syslog(LOG_ALERT, "Get_TmpDisk: error %d executing statfs on %sp\n", errno, TMP_FS);
 #endif
     } /* else */
 
