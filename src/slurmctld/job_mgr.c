@@ -32,7 +32,7 @@
 #define block_or_cycle(in_string) \
 		(strcmp((in_string),"BLOCK")? \
 			(strcmp((in_string),"CYCLE")? \
-				-1 : DIST_CYCLE ) : DIST_BLOCK ) 
+				-1 : SLURM_JOB_DESC_CYCLE ) : SLURM_JOB_DESC_BLOCK ) 
 
 #define yes_or_no(in_string) \
 		(( strcmp ((in_string),"YES"))? \
@@ -386,7 +386,7 @@ job_allocate (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list
 				new_job_id);
 	last_job_update = time (NULL);
 
-	if (immediate && top_priority(job_ptr) != 0) {
+	if (immediate && top_priority(job_ptr) != 1) {
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->end_time  = 0;
 		return ESLURM_NOT_TOP_PRIORITY; 
@@ -676,7 +676,12 @@ int validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate )
 		return ESLURM_JOB_NAME_TOO_LONG;
 	}	
 	if (job_desc_msg->contiguous == NO_VAL)
-		job_desc_msg->contiguous = SLURM_JOB_DESC_DEFAULT_CONTIGUOUS ;		/* default not contiguous */
+		job_desc_msg->contiguous = SLURM_JOB_DESC_NONCONTIGUOUS ;
+	if (job_desc_msg->shared == NO_VAL)
+		job_desc_msg->shared = SLURM_JOB_DESC_NOT_SHARED ;
+	if (job_desc_msg->dist == NO_VAL)
+		job_desc_msg->shared = SLURM_JOB_DESC_BLOCK ;
+
 	if (job_desc_msg->job_id != NO_VAL && find_job_record ((uint32_t) job_desc_msg->job_id))
 	{
 		info  ("job_create: Duplicate job id %d", job_desc_msg->job_id);
@@ -1274,6 +1279,7 @@ top_priority (struct job_record *job_ptr) {
 			continue;
 		if (job_record_point->priority >  job_ptr->priority &&
 				job_record_point->part_ptr == job_ptr->part_ptr) {
+printf("p1=%u,p2=%u\n",job_record_point->priority,job_ptr->priority);
 			top = 0;
 			break;
 		}
