@@ -59,6 +59,7 @@
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define CRED_LIFE         60	/* Job credential lifetime in seconds */
@@ -551,16 +552,17 @@ static void *_slurmctld_background(void *no_data)
 
 		if (difftime(now, last_timelimit_time) >= PERIODIC_TIMEOUT) {
 			last_timelimit_time = now;
-			debug("Performing job time limit check");
+			debug2("Performing job time limit check");
 			lock_slurmctld(job_write_lock);
 			job_time_limit();
 			unlock_slurmctld(job_write_lock);
 		}
 
-		if (difftime(now, last_ping_time) >=
-		    slurmctld_conf.heartbeat_interval) {
+		if ((difftime(now, last_ping_time) >=
+		     slurmctld_conf.heartbeat_interval) &&
+		    (is_ping_done())) {
 			last_ping_time = now;
-			debug("Performing node ping");
+			debug2("Performing node ping");
 			lock_slurmctld(node_write_lock);
 			ping_nodes();
 			unlock_slurmctld(node_write_lock);
@@ -580,7 +582,7 @@ static void *_slurmctld_background(void *no_data)
 
 		if (difftime(now, last_sched_time) >= PERIODIC_SCHEDULE) {
 			last_sched_time = now;
-			debug("Performing purge of old job records");
+			debug2("Performing purge of old job records");
 			lock_slurmctld(job_write_lock);
 			purge_old_job();	/* remove defunct job recs */
 			unlock_slurmctld(job_write_lock);

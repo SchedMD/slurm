@@ -72,6 +72,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/ping_nodes.h"
 
 #if COMMAND_TIMEOUT == 1
 #  define WDOG_POLL 		1	/* secs */
@@ -440,6 +441,9 @@ static void *_wdog(void *args)
 	if ((agent_ptr->msg_type == REQUEST_KILL_TIMELIMIT) ||
 	    (agent_ptr->msg_type == REQUEST_KILL_JOB))
 		schedule();
+	else if ((agent_ptr->msg_type == REQUEST_PING) ||
+	         (agent_ptr->msg_type == REQUEST_NODE_REGISTRATION_STATUS))
+		ping_end();
 #else
 	/* Build a list of all responding nodes and send it to slurmctld to 
 	 * update time stamps */
@@ -461,7 +465,7 @@ static void *_wdog(void *args)
 	xfree(slurm_addr);
 #endif
 	if (max_delay)
-		debug("agent maximum delay %d seconds", max_delay);
+		debug2("agent maximum delay %d seconds", max_delay);
 
 	slurm_mutex_unlock(&agent_ptr->thread_mutex);
 	return (void *) NULL;

@@ -16,20 +16,22 @@ slurmctld_LDADD = 					\
 
 
 slurmctld_SOURCES = 	\
+	agent.c  	\
 	agent.h		\
 	backup.c	\
-	locks.h  	\
-	slurmctld.h	\
-	agent.c		\
 	controller.c 	\
 	job_mgr.c 	\
 	job_scheduler.c \
 	locks.c   	\
+	locks.h  	\
 	node_mgr.c 	\
 	node_scheduler.c\
 	partition_mgr.c \
-	proc_req.c \
+	ping_nodes.c	\
+	ping_nodes.h	\
+	proc_req.c	\
 	read_config.c	\
+	slurmctld.h	\
 	step_mgr.c
 
 slurmctld_LDFLAGS = -export-dynamic
