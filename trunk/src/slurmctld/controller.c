@@ -55,6 +55,7 @@
 log_options_t log_opts = LOG_OPTS_STDERR_ONLY ;
 slurm_ctl_conf_t slurmctld_conf;
 time_t shutdown_time = (time_t)0;
+static pthread_mutex_t  thread_count_lock = PTHREAD_MUTEX_INITIALIZER;    
 int server_thread_count = 0;
 pid_t slurmctld_pid;
 
@@ -140,7 +141,9 @@ main (int argc, char *argv[])
 		fatal ("pthread_create errno %d", errno);
 
 	/* create attached thread to process RPCs */
+	pthread_mutex_lock(&thread_count_lock);
 	server_thread_count++;
+	pthread_mutex_unlock(&thread_count_lock);
 	if (pthread_attr_init (&thread_attr_rpc))
 		fatal ("pthread_attr_init errno %d", errno);
 	if (pthread_create ( &thread_id_rpc, &thread_attr_rpc, slurmctld_rpc_mgr, NULL))
@@ -224,7 +227,9 @@ slurmctld_rpc_mgr ( void * no_data )
 			continue ;
 		}
 		conn_arg -> newsockfd = newsockfd ;
+		pthread_mutex_lock(&thread_count_lock);
 		server_thread_count++;
+		pthread_mutex_unlock(&thread_count_lock);
 		if (server_thread_count > MAX_SERVER_THREAD_COUNT) {
 			info ("Warning: server_thread_count is %d, over system limit", server_thread_count);
 			no_thread = 1;
@@ -246,7 +251,9 @@ slurmctld_rpc_mgr ( void * no_data )
 	}
 
 	debug3 ("slurmctld_rpc_mgr shutting down");
+	pthread_mutex_lock(&thread_count_lock);
 	server_thread_count--;
+	pthread_mutex_unlock(&thread_count_lock);
 	pthread_exit ((void *)0);
 }
 
@@ -277,7 +284,9 @@ void * service_connection ( void * arg )
 	slurm_close_accepted_conn ( newsockfd ); /* close the new socket */
 
 	xfree ( arg ) ;
+	pthread_mutex_lock(&thread_count_lock);
 	server_thread_count--;
+	pthread_mutex_unlock(&thread_count_lock);
 	return return_code ;	
 }
 
@@ -948,7 +957,6 @@ slurm_rpc_shutdown_controller ( slurm_msg_t * msg )
 {
 	/* do RPC call */
 /* must be user root */
-/*	shutdown_time = time (NULL); leaves master and possibly rpc_mgr around */
 	if (shutdown_time)
 		debug3 ("slurm_rpc_shutdown_controller again");
 	else {
