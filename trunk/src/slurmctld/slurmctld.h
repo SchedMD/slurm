@@ -67,6 +67,10 @@
 		if (_X) bit_free (_X);	\
 		_X	= NULL; 	\
 	} while (0)
+#define IS_JOB_FINISHED(_X)		\
+	((_X->job_state & (~JOB_COMPLETING)) > JOB_RUNNING)
+#define IS_JOB_PENDING(_X)		\
+	((_X->job_state & (~JOB_COMPLETING)) == JOB_PENDING)
 
 /*****************************************************************************\
  *  GENERAL CONFIGURATION parameters and data structures
@@ -144,7 +148,8 @@ struct node_record {
 	struct part_record *partition_ptr; /* partition for this node */
 	char comm_name[MAX_NAME_LEN];	/* communications path name to node */
 	slurm_addr slurm_addr;		/* network address */
-	uint16_t job_cnt;		/* count of jobs allocated to node */
+	uint16_t comp_job_cnt;		/* count of jobs completing on node */
+	uint16_t run_job_cnt;		/* count of jobs running on node */
 };
 
 extern struct node_record *node_record_table_ptr;  /* ptr to node records */
@@ -237,10 +242,7 @@ struct job_record {
 	struct part_record *part_ptr;	/* pointer to the partition record */
 	uint16_t batch_flag;		/* 1 if batch job (with script) */
 	uint32_t user_id;		/* user the job runs as */
-	enum job_states job_state;	/* state of the job, NOTE: state
-					 * JOB_COMPLETING is set in pack_job 
-					 * when (job state > JOB_RUNNING) &&
-					 * (node_count > 0), its artificial */
+	enum job_states job_state;	/* state of the job */
 	uint16_t kill_on_node_fail;	/* 1 if job should be killed on 
 					   node failure */
 	uint16_t kill_on_step_done;	/* 1 if job should be killed when 
@@ -321,11 +323,9 @@ extern char * bitmap2node_name (bitstr_t *bitmap) ;
 void build_job_cred(struct job_record *job_ptr);
 
 /*
- * build_node_details - set cpu counts and addresses for allocated nodes
+ * build_node_details - set cpu counts and addresses for allocated nodes:
+ *	cpu_count_reps, cpus_per_node, node_addr, node_cnt, num_cpu_groups
  * IN job_ptr - pointer to a job record
- * NOTE: the arrays cpus_per_node, cpu_count_reps and node_addr in the job 
- *	details record are allocated by build_node_details and must be 
- *	xfreed by the caller, preferably using delete_job_details
  */
 extern void build_node_details (struct job_record *job_ptr);
 
@@ -417,16 +417,6 @@ extern void delete_all_step_records (struct job_record *job_ptr);
  * IN job_entry - pointer to job_record to clear the record of
  */
 extern void  delete_job_details (struct job_record *job_entry);
-
-/* 
- * delete_node_record - delete the node record for a node with specified name
- *   to avoid invalidating the bitmaps and hash table, we just clear the name 
- *   set its state to NODE_STATE_DOWN
- * IN name - name of the desired node
- * RET 0 on success, errno otherwise
- * global: node_record_table_ptr - pointer to global node table
- */
-extern int delete_node_record (char *name);
 
 /* 
  * delete_step_record - delete record for job step for specified job_ptr 
@@ -711,8 +701,13 @@ extern void make_node_alloc(struct node_record *node_ptr);
 /* make_node_comp - flag specified node as completing a job */
 extern void make_node_comp(struct node_record *node_ptr);
 
-/* make_node_idle - flag specified node as no longer being in use */
-extern void make_node_idle(struct node_record *node_ptr);
+/*
+ * make_node_idle - flag specified node as having completed a job
+ * IN node_ptr - pointer to node reporting job completion
+ * IN job_ptr - pointer to job that just completed
+ */
+extern void make_node_idle(struct node_record *node_ptr, 
+			   struct job_record *job_ptr);
 
 /* msg_to_slurmd - send given msg_type every slurmd, no args */
 extern void msg_to_slurmd (slurm_msg_type_t msg_type);

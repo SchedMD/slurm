@@ -37,6 +37,7 @@
 
 #include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/xassert.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
@@ -77,8 +78,7 @@ static int _build_job_queue(struct job_queue **job_queue)
 			continue;
 		if (job_record_point->priority == 0)	/* held */
 			continue;
-		if (job_record_point->magic != JOB_MAGIC)
-			fatal("prio_order_job: data integrity is bad");
+		xassert (job_record_point->magic == JOB_MAGIC);
 		if (job_buffer_size <= job_queue_size) {
 			job_buffer_size += 50;
 			xrealloc(my_job_queue, job_buffer_size *
@@ -139,8 +139,8 @@ int schedule(void)
 		error_code = select_nodes(job_ptr, false);
 		if (error_code == ESLURM_NODES_BUSY) {
 			xrealloc(failed_parts,
-				 (failed_part_cnt +
-				  1) * sizeof(struct part_record *));
+				 (failed_part_cnt + 1) * 
+				 sizeof(struct part_record *));
 			failed_parts[failed_part_cnt++] =
 			    job_ptr->part_ptr;
 		} else if (error_code == SLURM_SUCCESS) {	

@@ -43,6 +43,7 @@
 
 #include "src/common/hostlist.h"
 #include "src/common/pack.h"
+#include "src/common/xassert.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
@@ -198,34 +199,33 @@ char * bitmap2node_name (bitstr_t *bitmap)
  */
 struct config_record * create_config_record (void) 
 {
-	struct config_record *config_point;
+	struct config_record *config_ptr;
 
 	last_node_update = time (NULL);
-	config_point =
-		(struct config_record *)
-		xmalloc (sizeof (struct config_record));
+	config_ptr = (struct config_record *)
+		     xmalloc (sizeof (struct config_record));
 
 	/* set default values */
-	config_point->cpus = default_config_record.cpus;
-	config_point->real_memory = default_config_record.real_memory;
-	config_point->tmp_disk = default_config_record.tmp_disk;
-	config_point->weight = default_config_record.weight;
-	config_point->nodes = NULL;
-	config_point->node_bitmap = NULL;
-	config_point->magic = CONFIG_MAGIC;
+	config_ptr->cpus = default_config_record.cpus;
+	config_ptr->real_memory = default_config_record.real_memory;
+	config_ptr->tmp_disk = default_config_record.tmp_disk;
+	config_ptr->weight = default_config_record.weight;
+	config_ptr->nodes = NULL;
+	config_ptr->node_bitmap = NULL;
+	xassert (config_ptr->magic = CONFIG_MAGIC);  /* set value */
 	if (default_config_record.feature) {
-		config_point->feature =
+		config_ptr->feature =
 			(char *)
 			xmalloc (strlen (default_config_record.feature) + 1);
-		strcpy (config_point->feature, default_config_record.feature);
+		strcpy (config_ptr->feature, default_config_record.feature);
 	}
 	else
-		config_point->feature = (char *) NULL;
+		config_ptr->feature = (char *) NULL;
 
-	if (list_append(config_list, config_point) == NULL)
+	if (list_append(config_list, config_ptr) == NULL)
 		fatal ("create_config_record: unable to allocate memory");
 
-	return config_point;
+	return config_ptr;
 }
 
 
@@ -279,7 +279,7 @@ create_node_record (struct config_record *config_point, char *node_name)
 	node_record_point->cpus = config_point->cpus;
 	node_record_point->real_memory = config_point->real_memory;
 	node_record_point->tmp_disk = config_point->tmp_disk;
-	node_record_point->magic = NODE_MAGIC;
+	xassert (node_record_point->magic = NODE_MAGIC)  /* set value */;
 	last_bitmap_update = time (NULL);
 	return node_record_point;
 }
@@ -295,37 +295,6 @@ static int _delete_config_record (void)
 	last_node_update = time (NULL);
 	(void) list_delete_all (config_list, &_list_find_config,
 				"universal_key");
-	return SLURM_SUCCESS;
-}
-
-
-/* 
- * delete_node_record - delete the node record for a node with specified name
- *   to avoid invalidating the bitmaps and hash table, we just clear the name 
- *   set its state to NODE_STATE_DOWN
- * IN name - name of the desired node
- * RET 0 on success, errno otherwise
- * global: node_record_table_ptr - pointer to global node table
- */
-int delete_node_record (char *name) 
-{
-	struct node_record *node_record_point;	/* pointer to node_record */
-
-	last_node_update = time (NULL);
-	node_record_point = find_node_record (name);
-	if (node_record_point == (struct node_record *) NULL) {
-		error("delete_node_record: can't delete non-existent node %s", 
-		      name);
-		return ENOENT;
-	}  
-
-	if (node_record_point->partition_ptr) {
-		(node_record_point->partition_ptr->total_nodes)--;
-		(node_record_point->partition_ptr->total_cpus) -=
-			node_record_point->cpus;
-	}
-	strcpy (node_record_point->name, "");
-	_make_node_down(node_record_point);
 	return SLURM_SUCCESS;
 }
 
@@ -346,10 +315,9 @@ int dump_all_node_state ( void )
 	/* write node records to buffer */
 	lock_slurmctld (node_read_lock);
 	for (inx = 0; inx < node_record_count; inx++) {
-		if ((node_record_table_ptr[inx].magic != NODE_MAGIC) ||
-		    (node_record_table_ptr[inx].config_ptr->magic != 
-							CONFIG_MAGIC))
-			fatal ("dump_all_node_state: data integrity is bad");
+		xassert (node_record_table_ptr[inx].magic == NODE_MAGIC);
+		xassert (node_record_table_ptr[inx].config_ptr->magic == 
+			 CONFIG_MAGIC);
 
 		_dump_node_state (&node_record_table_ptr[inx], buffer);
 	}
@@ -651,7 +619,7 @@ int init_node_conf (void)
 		config_list = list_create (&_list_delete_config);
 
 	if (config_list == NULL)
-		fatal ("init_node_conf: list_create can not allocate memory");
+		fatal ("memory allocation failure");
 	return SLURM_SUCCESS;
 }
 
@@ -671,13 +639,16 @@ int list_compare_config (void *config_entry1, void *config_entry2)
  *	see list.h for documentation */
 static void _list_delete_config (void *config_entry) 
 {
-	struct config_record *config_record_point;
+	struct config_record *config_ptr = (struct config_record *) 
+					   config_entry;
 
-	config_record_point = (struct config_record *) config_entry;
-	xfree (config_record_point->feature);
-	xfree (config_record_point->nodes);
-	FREE_NULL_BITMAP (config_record_point->node_bitmap);
-	xfree (config_record_point);
+	if (config_ptr == NULL)
+		fatal ("_list_delete_config: config_ptr == NULL");
+	xassert(config_ptr->magic == CONFIG_MAGIC);
+	xfree (config_ptr->feature);
+	xfree (config_ptr->nodes);
+	FREE_NULL_BITMAP (config_ptr->node_bitmap);
+	xfree (config_ptr);
 }
 
 
@@ -727,8 +698,8 @@ int node_name2bitmap (char *node_names, bitstr_t **bitmap)
 	}
 
 	my_bitmap = (bitstr_t *) bit_alloc (node_record_count);
-	if (my_bitmap == NULL)
-		fatal("bit_alloc memory allocation failure");
+	if (my_bitmap == 0)
+		fatal ("memory allocation failure");
 
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		node_record_point = find_node_record (this_node_name);
@@ -780,10 +751,9 @@ void pack_all_node (char **buffer_ptr, int *buffer_size)
 
 	/* write node records */
 	for (inx = 0; inx < node_record_count; inx++) {
-		if ((node_record_table_ptr[inx].magic != NODE_MAGIC) ||
-		    (node_record_table_ptr[inx].config_ptr->magic != 
-							CONFIG_MAGIC))
-			fatal ("pack_all_node: data integrity is bad");
+		xassert (node_record_table_ptr[inx].magic == NODE_MAGIC);
+		xassert (node_record_table_ptr[inx].config_ptr->magic ==  
+			 CONFIG_MAGIC);
 
 		_pack_node(&node_record_table_ptr[inx], buffer);
 		nodes_packed ++ ;
@@ -1222,8 +1192,8 @@ void set_node_down (char *name)
 		return;
 	}
 
-	_make_node_down(node_ptr);
 	(void) kill_running_job_by_node_name(name, false);
+	_make_node_down(node_ptr);
 
 	return;
 }
@@ -1269,9 +1239,9 @@ void ping_nodes (void)
 		    (base_state != NODE_STATE_DOWN)) {
 			error ("Node %s not responding, setting DOWN", 
 			       node_record_table_ptr[i].name);
-			_make_node_down(&node_record_table_ptr[i]);
 			kill_running_job_by_node_name (
 					node_record_table_ptr[i].name, false);
+			_make_node_down(&node_record_table_ptr[i]);
 			continue;
 		}
 
@@ -1480,13 +1450,15 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 void make_node_alloc(struct node_record *node_ptr)
 {
 	int inx = node_ptr - node_record_table_ptr;
-	uint16_t no_resp_flag;
+	uint16_t no_resp_flag, base_state;
 
 	last_node_update = time (NULL);
-	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
-	node_ptr->node_state = NODE_STATE_ALLOCATED | no_resp_flag;
-	(node_ptr->job_cnt)++;
+	(node_ptr->run_job_cnt)++;
 	bit_clear(idle_node_bitmap, inx);
+	base_state   = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
+	no_resp_flag = node_ptr->node_state &   NODE_STATE_NO_RESPOND ;
+	if (base_state != NODE_STATE_COMPLETING)
+		node_ptr->node_state = NODE_STATE_ALLOCATED | no_resp_flag;
 }
 
 /* make_node_comp - flag specified node as completing a job */
@@ -1496,7 +1468,7 @@ void make_node_comp(struct node_record *node_ptr)
 
 	last_node_update = time (NULL);
 	base_state   = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
-	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
+	no_resp_flag = node_ptr->node_state &   NODE_STATE_NO_RESPOND;
 	if ((base_state == NODE_STATE_DOWN) ||
 	    (base_state == NODE_STATE_DRAINED) ||
 	    (base_state == NODE_STATE_DRAINING)) {
@@ -1506,6 +1478,12 @@ void make_node_comp(struct node_record *node_ptr)
 	} else {
 		node_ptr->node_state = NODE_STATE_COMPLETING | no_resp_flag;
 	}
+
+	if (node_ptr->run_job_cnt)
+		(node_ptr->run_job_cnt)--;
+	else
+		error("Node %s run_job_cnt underflow", node_ptr->name);
+	(node_ptr->comp_job_cnt)++;
 }
 
 /* _make_node_down - flag specified node as down */
@@ -1517,28 +1495,55 @@ static void _make_node_down(struct node_record *node_ptr)
 	last_node_update = time (NULL);
 	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 	node_ptr->node_state = NODE_STATE_DOWN | no_resp_flag;
-	node_ptr->job_cnt = 0;
 	bit_clear (up_node_bitmap, inx);
 	bit_clear (idle_node_bitmap, inx);
 }
 
-/* make_node_idle - flag specified node as having completed a job */
-void make_node_idle(struct node_record *node_ptr)
+/*
+ * make_node_idle - flag specified node as having completed a job
+ * IN node_ptr - pointer to node reporting job completion
+ * IN job_ptr - pointer to job that just completed
+ */
+void make_node_idle(struct node_record *node_ptr, 
+		    struct job_record *job_ptr)
 {
 	int inx = node_ptr - node_record_table_ptr;
 	uint16_t no_resp_flag, base_state;
+
+	if ((job_ptr) &&			/* Specific job completed */
+	    (bit_test(job_ptr->node_bitmap, inx))) {	/* Not a replay */
+		last_job_update = time (NULL);
+		bit_clear(job_ptr->node_bitmap, inx);
+		if (job_ptr->node_cnt) {
+			if ((--job_ptr->node_cnt) == 0)
+				job_ptr->job_state &= (~JOB_COMPLETING);
+		} else {
+			error("node_cnt underflow on job_id %u", 
+			      job_ptr->job_id);
+		}
+
+		if (node_ptr->comp_job_cnt)
+			(node_ptr->comp_job_cnt)--;
+		else
+			error("Node %s comp_job_cnt underflow, job_id %u", 
+			      node_ptr->name, job_ptr->job_id);
+		if (node_ptr->comp_job_cnt > 0) 
+			return;		/* More jobs completing */
+	}
 
 	last_node_update = time (NULL);
 	base_state   = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
 	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 	if ((base_state == NODE_STATE_DOWN) ||
 	    (base_state == NODE_STATE_DRAINED)) {
-		debug3("Node %s being left in state %s", 
-		       node_state_string((enum node_states)node_ptr->name));
+		debug3("Node %s being left in state %s", node_ptr->name, 
+		       node_state_string((enum node_states)base_state));
 	} else if (base_state == NODE_STATE_DRAINING) {
 		node_ptr->node_state = NODE_STATE_DRAINED;
 		bit_clear(idle_node_bitmap, inx);
 		bit_clear(up_node_bitmap, inx);
+	} else if (node_ptr->run_job_cnt) {
+		node_ptr->node_state = NODE_STATE_ALLOCATED | no_resp_flag;
 	} else {
 		node_ptr->node_state = NODE_STATE_IDLE | no_resp_flag;
 		if (no_resp_flag == 0)

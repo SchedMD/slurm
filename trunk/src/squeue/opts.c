@@ -190,7 +190,7 @@ parse_command_line( int argc, char* argv[] )
 }
 
 /*
- * _parse_state - convert state name string to numeric value
+ * _parse_state - convert job state name string to numeric value
  * IN str - state name
  * OUT states - enum job_states value corresponding to str
  * RET 0 or error code
@@ -211,13 +211,20 @@ _parse_state( char* str, enum job_states* states )
 			return SLURM_SUCCESS;
 		}	
 	}
-	
+	if ((strcasecmp(job_state_string(JOB_COMPLETING), str) == 0) ||
+	    (strcasecmp(job_state_string_compact(JOB_COMPLETING),str) == 0)) {
+		*states = JOB_COMPLETING;
+		return SLURM_SUCCESS;
+	}	
+
 	fprintf (stderr, "Invalid job state specified: %s\n", str);
 	state_names = xstrdup(job_state_string(0));
 	for (i=1; i<JOB_END; i++) {
 		xstrcat(state_names, ",");
 		xstrcat(state_names, job_state_string(i));
 	}
+	xstrcat(state_names, ",");
+	xstrcat(state_names, job_state_string(JOB_COMPLETING));
 	fprintf (stderr, "Valid job states include: %s\n", state_names);
 	xfree (state_names);
 	return SLURM_ERROR;
@@ -557,8 +564,8 @@ _build_part_list( char* str )
 }
 
 /*
- * _build_state_list - build a list of node states
- * IN str - comma separated list of node states
+ * _build_state_list - build a list of job states
+ * IN str - comma separated list of job states
  * RET List of enum job_states values
  */
 static List 
@@ -594,7 +601,7 @@ _build_state_list( char* str )
 }
 
 /*
- * _build_all_states_list - build a list containing all possible node states
+ * _build_all_states_list - build a list containing all possible job states
  * RET List of enum job_states values
  */
 static List 
@@ -610,6 +617,9 @@ _build_all_states_list( void )
 		*state_id = ( enum job_states ) i;
 		list_append( my_list, state_id );
 	}
+	state_id = xmalloc( sizeof( enum job_states ) );
+	*state_id = ( enum job_states ) JOB_COMPLETING;
+	list_append( my_list, state_id );
 	return my_list;
 
 }

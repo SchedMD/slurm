@@ -40,6 +40,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/hostlist.h"
+#include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/slurmctld.h"
@@ -137,6 +138,10 @@ void deallocate_nodes(struct job_record *job_ptr)
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
 	int buf_rec_size = 0;
+	if (job_ptr == NULL)
+		fatal ("job_ptr == NULL");
+	if (job_ptr->details == NULL)
+		fatal ("job_ptr->details == NULL");
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_REVOKE_JOB_CREDENTIAL;
@@ -275,7 +280,7 @@ _pick_best_quadrics(bitstr_t * bitmap, bitstr_t * req_bitmap,
 	int best_fit_location = 0, best_fit_sufficient;
 
 	if (bitmap == NULL)
-		fatal("_pick_best_quadrics: bitmap pointer is NULL");
+		fatal ("_pick_best_quadrics: bitmap == NULL");
 
 	consec_index = 0;
 	consec_size  = 50;	/* start allocation for 50 sets of 
@@ -702,9 +707,8 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 	struct part_record *part_ptr = job_ptr->part_ptr;
 
 	if (job_ptr == NULL)
-		fatal("select_nodes: NULL job pointer value");
-	if (job_ptr->magic != JOB_MAGIC)
-		fatal("select_nodes: bad job pointer value");
+		fatal ("select_nodes: job_ptr == NULL");
+	xassert (job_ptr->magic == JOB_MAGIC);
 
 	/* insure that partition exists and is up */
 	if (part_ptr == NULL) {
@@ -761,8 +765,8 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 
 	/* assign the nodes and stage_in the job */
 	job_ptr->nodes = bitmap2node_name(req_bitmap);
-	allocate_nodes(req_bitmap);
 	job_ptr->node_bitmap = req_bitmap;
+	allocate_nodes(job_ptr->node_bitmap);
 	build_node_details(job_ptr);
 	req_bitmap = NULL;
 	job_ptr->job_state = JOB_RUNNING;
@@ -944,11 +948,9 @@ static int _nodes_in_sets(bitstr_t *req_bitmap,
 }
 
 /*
- * build_node_details - set cpu counts and addresses for allocated nodes
+ * build_node_details - set cpu counts and addresses for allocated nodes:
+ *	cpu_count_reps, cpus_per_node, node_addr, node_cnt, num_cpu_groups
  * IN job_ptr - pointer to a job record
- * NOTE: the arrays cpus_per_node, cpu_count_reps and node_addr in the job 
- *	details record are allocated by build_node_details and must be 
- *	xfreed by the caller, preferably using delete_job_details
  */
 void build_node_details(struct job_record *job_ptr)
 {

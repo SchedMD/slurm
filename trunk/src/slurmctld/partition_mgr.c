@@ -170,43 +170,43 @@ static int _build_part_bitmap(struct part_record *part_record_point)
  */
 struct part_record *create_part_record(void)
 {
-	struct part_record *part_record_point;
+	struct part_record *part_ptr;
 
 	last_part_update = time(NULL);
 
-	part_record_point =
+	part_ptr =
 	    (struct part_record *) xmalloc(sizeof(struct part_record));
 
-	strcpy(part_record_point->name, "DEFAULT");
-	part_record_point->max_time = default_part.max_time;
-	part_record_point->max_nodes = default_part.max_nodes;
-	part_record_point->root_only = default_part.root_only;
-	part_record_point->state_up = default_part.state_up;
-	part_record_point->shared = default_part.shared;
-	part_record_point->total_nodes = default_part.total_nodes;
-	part_record_point->total_cpus = default_part.total_cpus;
-	part_record_point->node_bitmap = NULL;
-	part_record_point->magic = PART_MAGIC;
+	strcpy(part_ptr->name, "DEFAULT");
+	part_ptr->max_time    = default_part.max_time;
+	part_ptr->max_nodes   = default_part.max_nodes;
+	part_ptr->root_only   = default_part.root_only;
+	part_ptr->state_up    = default_part.state_up;
+	part_ptr->shared      = default_part.shared;
+	part_ptr->total_nodes = default_part.total_nodes;
+	part_ptr->total_cpus  = default_part.total_cpus;
+	part_ptr->node_bitmap = NULL;
+	xassert (part_ptr->magic = PART_MAGIC);  /* set value */
 
 	if (default_part.allow_groups) {
-		part_record_point->allow_groups =
+		part_ptr->allow_groups =
 		    (char *) xmalloc(strlen(default_part.allow_groups) + 1);
-		strcpy(part_record_point->allow_groups,
+		strcpy(part_ptr->allow_groups,
 		       default_part.allow_groups);
 	} else
-		part_record_point->allow_groups = NULL;
+		part_ptr->allow_groups = NULL;
 
 	if (default_part.nodes) {
-		part_record_point->nodes =
+		part_ptr->nodes =
 		    (char *) xmalloc(strlen(default_part.nodes) + 1);
-		strcpy(part_record_point->nodes, default_part.nodes);
+		strcpy(part_ptr->nodes, default_part.nodes);
 	} else
-		part_record_point->nodes = NULL;
+		part_ptr->nodes = NULL;
 
-	if (list_append(part_list, part_record_point) == NULL)
+	if (list_append(part_list, part_ptr) == NULL)
 		fatal("create_part_record: unable to allocate memory");
 
-	return part_record_point;
+	return part_ptr;
 }
 
 
@@ -256,8 +256,7 @@ int dump_all_part_state(void)
 	part_record_iterator = list_iterator_create(part_list);
 	while ((part_record_point =
 		(struct part_record *) list_next(part_record_iterator))) {
-		if (part_record_point->magic != PART_MAGIC)
-			fatal("dump_all_part_state: data integrity is bad");
+		xassert (part_record_point->magic == PART_MAGIC);
 		_dump_part_state(part_record_point, buffer);
 	}
 	list_iterator_destroy(part_record_iterator);
@@ -407,8 +406,8 @@ int load_all_part_state(void)
 		}
 
 		/* find record and perform update */
-		part_ptr =
-		    list_find_first(part_list, &list_find_part, part_name);
+		part_ptr = list_find_first(part_list, &list_find_part, 
+					   part_name);
 
 		if (part_ptr) {
 			part_ptr->max_time = max_time;
@@ -467,13 +466,13 @@ int init_part_conf(void)
 	last_part_update = time(NULL);
 
 	strcpy(default_part.name, "DEFAULT");
-	default_part.max_time = INFINITE;
-	default_part.max_nodes = INFINITE;
-	default_part.root_only = 0;
-	default_part.state_up = 1;
-	default_part.shared = SHARED_NO;
+	default_part.max_time    = INFINITE;
+	default_part.max_nodes   = INFINITE;
+	default_part.root_only   = 0;
+	default_part.state_up    = 1;
+	default_part.shared      = SHARED_NO;
 	default_part.total_nodes = 0;
-	default_part.total_cpus = 0;
+	default_part.total_cpus  = 0;
 	xfree(default_part.nodes);
 	xfree(default_part.allow_groups);
 	xfree(default_part.allow_uids);
@@ -485,9 +484,7 @@ int init_part_conf(void)
 		part_list = list_create(&_list_delete_part);
 
 	if (part_list == NULL)
-		fatal
-		    ("init_part_conf: list_create can not allocate memory");
-
+		fatal ("memory allocation failure");
 
 	strcpy(default_part_name, "");
 	default_part_loc = (struct part_record *) NULL;
@@ -573,8 +570,7 @@ pack_all_part(char **buffer_ptr, int *buffer_size)
 	part_record_iterator = list_iterator_create(part_list);
 	while ((part_record_point =
 		(struct part_record *) list_next(part_record_iterator))) {
-		if (part_record_point->magic != PART_MAGIC)
-			fatal("pack_all_part: data integrity is bad");
+		xassert (part_record_point->magic == PART_MAGIC);
 
 		pack_part(part_record_point, buffer);
 		parts_packed++;

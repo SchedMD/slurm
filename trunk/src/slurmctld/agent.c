@@ -477,6 +477,7 @@ static void *_thread_per_node_rpc(void *args)
 	state_t thread_state = DSH_NO_RESP;
 	sigset_t set;
 #if AGENT_IS_THREAD
+	struct node_record *node_ptr;
 	/* Locks: Write write node */
 	slurmctld_lock_t node_write_lock =
 	    { NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
@@ -545,26 +546,31 @@ static void *_thread_per_node_rpc(void *args)
 		goto cleanup;
 	}
 
+#if AGENT_IS_THREAD
+	/* SPECIAL CASE: Immediately mark node as IDLE */
+	if ((task_ptr->msg_type == REQUEST_REVOKE_JOB_CREDENTIAL) &&
+	    (node_ptr = find_node_record(thread_ptr->node_name))) {
+		revoke_credential_msg_t *revoke_job_cred;
+		revoke_job_cred = (revoke_credential_msg_t *)
+				   task_ptr->msg_args_ptr;
+		node_ptr = find_node_record(thread_ptr->node_name);
+		debug3("Revoke on node %s job_id %u",
+		       thread_ptr->node_name, revoke_job_cred->job_id);
+		lock_slurmctld(node_write_lock);
+		make_node_idle(node_ptr, 
+			       find_job_record(revoke_job_cred->job_id));
+		unlock_slurmctld(node_write_lock);
+		/* scheduler(); Overhead too high, 
+		 * only do when last node registers */
+	}
+#endif
+
 	switch (response_msg->msg_type) {
 	case RESPONSE_SLURM_RC:
 		slurm_rc_msg = (return_code_msg_t *) response_msg->data;
 		rc = slurm_rc_msg->return_code;
 		slurm_free_return_code_msg(slurm_rc_msg);
 		if (rc == 0) {
-#if AGENT_IS_THREAD
-			/* SPECIAL CASE: Immediately mark node as idle */
-			if ((task_ptr->msg_type == 
-			     REQUEST_REVOKE_JOB_CREDENTIAL) &&
-			    (rc == SLURM_SUCCESS)) {
-				lock_slurmctld(node_write_lock);
-				make_node_idle(
-					find_node_record(
-					thread_ptr->node_name));
-				unlock_slurmctld(node_write_lock);
-				/* scheduler(); Overhead too high, 
-				 * do when last node registers */
-			}
-#endif
 			debug3("agent processed RPC to node %s",
 			       thread_ptr->node_name);
 			thread_state = DSH_DONE;
