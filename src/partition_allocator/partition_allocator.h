@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Dan Phung <phung4@llnl.gov>
+ *  Written by Dan Phung <phung4@llnl.gov>, Danny Auble <da@llnl.gov>
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -26,13 +26,15 @@
 
 #ifndef _PARTITION_ALLOCATOR_H_
 #define _PARTITION_ALLOCATOR_H_
+/* This must be included first for AIX systems */
+#include "src/common/macros.h"
 
+#include <curses.h>
 #include "src/common/read_config.h"
 #include "src/common/parse_spec.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/common/list.h"
 #include "src/common/bitstring.h"
-#include "src/common/macros.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
@@ -48,6 +50,16 @@ enum {X, Y, Z};
 /* */
 enum {MESH, TORUS};
 
+/** 
+ * structure that holds switch path information for finding the wiring 
+ * path without setting the configuration.
+ *
+ * - geometry - node location
+ * - dim      - Which Axis it is on
+ * - in       - ingress port.
+ * - out      - egress port.
+ * 
+ */
 typedef struct {
 	int geometry[PA_SYSTEM_DIMENSIONS];
 	int dim;
@@ -55,6 +67,20 @@ typedef struct {
 	int out;
 } pa_path_switch_t; 
 
+/** 
+ * structure that holds the configuration settings for each request
+ * 
+ * - letter            - filled in after the request is fulfilled
+ * - geometry          - request size
+ * - size              - node count for request
+ * - conn_type         - MESH or TORUS
+ * - rotate_count      - when rotating we keep a count so we aren't in an infinate loop.
+ * - elongate_count    - when elongating we keep a count so we aren't in an infinate loop.
+ * - rotate            - weather to allow rotating or not.
+ * - elongate          - weather to allow elongating or not.
+ * - force_contig      - weather to allow force contiguous or not.
+ * 
+ */
 typedef struct {
 	int geometry[PA_SYSTEM_DIMENSIONS];
 	int size; 
@@ -66,6 +92,18 @@ typedef struct {
 	bool force_contig;
 } pa_request_t; 
 
+/** 
+ * structure that holds the configuration settings for each connection
+ * 
+ * - port_tar - which port the connection is going to
+ *              interanlly - always going to something within the switch.
+ *              exteranlly - always going to the next hop outside the switch.
+ * - node_tar - coords of where the next hop is externally
+ *              interanlly - nothing.
+ *              exteranlly - location of next hop.
+ * - used     - weather or not the connection is used.
+ * 
+ */
 typedef struct 
 {
 	/* target port */ 
@@ -79,10 +117,11 @@ typedef struct
 } pa_connection_t;
 /** 
  * structure that holds the configuration settings for each switch
- * 
- * - dimension
- * - from node, to node
- * - from port, to port
+ * which pretty much means the wiring information 
+ * - int_wire - keeps details of where the wires are attached
+ *   interanlly.
+ * - ext_wire - keeps details of where the wires are attached
+ *   exteranlly.
  * 
  */
 typedef struct
@@ -92,10 +131,8 @@ typedef struct
 
 } pa_switch_t;
 
-/** 
- * pa_node: node within the allocation system.  Note that this node is
- * hard coded for 1d-3d only!  (just have the higher order dims as
- * null if you want lower dimensions).
+/*
+ * pa_node_t: node within the allocation system.
  */
 typedef struct {
 	/* set if using this node in a partition*/
@@ -104,12 +141,27 @@ typedef struct {
 	/* coordinates */
 	int coord[PA_SYSTEM_DIMENSIONS];
 	pa_switch_t axis_switch[PA_SYSTEM_DIMENSIONS];
+	char letter;
+	int color;
+	int indecies;
+	int state;
 	
 } pa_node_t;
 
 typedef struct {
+	int xcord;
+	int ycord;
+	int num_of_proc;
+	int resize_screen;
+
+	WINDOW *grid_win;
+	WINDOW *text_win;
+
+	time_t now_time;
+
 	/* made to hold info about a system, which right now is only a grid of pa_nodes*/
 	pa_node_t ***grid;
+	pa_node_t *fill_in_value;
 } pa_system_t;
 /**
  * create a partition request.  Note that if the geometry is given,
@@ -124,8 +176,8 @@ typedef struct {
  * IN - rotate: if true, allows rotation of partition during fit
  * IN - elongate: if true, will try to fit different geometries of
  *      same size requests
- * IN - conn_type: connection type of request (TORUS or MESH)
  * IN - contig: enforce contiguous regions constraint
+ * IN - conn_type: connection type of request (TORUS or MESH)
  * 
  * return success of allocation/validation of params
  */
@@ -178,11 +230,26 @@ void set_node_down(int c[PA_SYSTEM_DIMENSIONS]);
 int allocate_part(pa_request_t* pa_request, List results);
 
 /** 
- * Doh!  Admin made a boo boo.  Note: Undo only has one history
- * element, so two consecutive undo's will fail.
- * 
- * returns SLURM_SUCCESS if undo was successful.
+ * Admin wants to remove a previous allocation.
+ * will allow Admin to delete a previous allocation retrival by letter code.
  */
-int undo_last_allocatation();
+int remove_part();
+
+/** 
+ * Admin wants to change something about a previous allocation. 
+ * will allow Admin to change previous allocation by giving the 
+ * letter code for the allocation and the variable to alter
+ *
+ */
+int alter_part();
+
+/** 
+ * After a partition is deleted or altered following allocations must
+ * be redone to make sure correct path will be used in the real system
+ *
+ */
+int redo_part();
+
+void init_grid(node_info_msg_t * node_info_ptr);
 
 #endif /* _PARTITION_ALLOCATOR_H_ */

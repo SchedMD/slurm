@@ -24,30 +24,7 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
-
-#if HAVE_GETOPT_H
-#  include <getopt.h>
-#else
-#  include "src/common/getopt.h"
-#endif
-
-#include <stdlib.h>
-#include <unistd.h>
-
-#include "src/common/xstring.h"
 #include "src/smap/smap.h"
-
-/* getopt_long options, integers but not characters */
-#define OPT_LONG_HELP  0x100
-#define OPT_LONG_USAGE 0x101
-#define OPT_LONG_HIDE	0x102
 
 /* FUNCTIONS */
 static void _help(void);
@@ -57,7 +34,7 @@ static void _usage(void);
 /*
  * parse_command_line, fill in params data structure with data
  */
-extern void parse_command_line(int argc, char *argv[])
+void parse_command_line(int argc, char *argv[])
 {
 	int opt_char;
 	int option_index;
@@ -121,7 +98,39 @@ extern void parse_command_line(int argc, char *argv[])
 
 }
 
+void snprint_time(char *buf, size_t buf_size, time_t time)
+{
+	if (time == INFINITE) {
+		snprintf(buf, buf_size, "UNLIMITED");
+	} else {
+		long days, hours, minutes, seconds;
+		seconds = time % 60;
+		minutes = (time / 60) % 60;
+		hours = (time / 3600) % 24;
+		days = time / 86400;
 
+		if (days)
+			snprintf(buf, buf_size,
+				"%ld:%2.2ld:%2.2ld:%2.2ld",
+				days, hours, minutes, seconds);
+		else if (hours)
+			snprintf(buf, buf_size,
+				"%ld:%2.2ld:%2.2ld", 
+				hours, minutes, seconds);
+		else
+			snprintf(buf, buf_size,
+				"%ld:%2.2ld", minutes,seconds);
+	}
+}
+
+void print_date()
+{
+	pa_system_ptr->now_time = time(NULL);
+	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+		  pa_system_ptr->xcord, "%s",
+		  ctime(&pa_system_ptr->now_time));
+	pa_system_ptr->ycord++;
+}
 
 static void _print_version(void)
 {

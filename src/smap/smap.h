@@ -27,21 +27,21 @@
 #ifndef _SMAP_H
 #define _SMAP_H
 
+#ifndef _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+
 #if HAVE_CONFIG_H
 #  include "config.h"
 #endif
 
-/* This must be included first for AIX systems */
-#include "src/common/macros.h"
 
 #include <pwd.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <unistd.h>
-#include <curses.h>
 
 #if HAVE_INTTYPES_H
 #  include <inttypes.h>
@@ -51,17 +51,28 @@
 #  endif
 #endif				/* HAVE_INTTYPES_H */
 
+#if HAVE_GETOPT_H
+#  include <getopt.h>
+#else
+#  include "src/common/getopt.h"
+#endif
+
 #include <slurm/slurm.h>
 
-#include "src/common/xstring.h"
-#include "src/common/xmalloc.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/partition_allocator/partition_allocator.h"
 
+/* getopt_long options, integers but not characters */
+#define OPT_LONG_HELP  0x100
+#define OPT_LONG_USAGE 0x101
+#define OPT_LONG_HIDE	0x102
+
 enum { JOBS, SLURMPART, BGLPART, COMMANDS };
 
+typedef void (*sighandler_t) (int);
+
 /* Input parameters */
-struct smap_parameters {
+typedef struct {
 	//Both
 	bool all_flag;
 	bool no_header;
@@ -81,38 +92,13 @@ struct smap_parameters {
 
 	int node_field_size;
 
-};
+} smap_parameters_t;
 
-extern struct smap_parameters params;
+extern smap_parameters_t params;
+extern int DIM_SIZE[PA_SYSTEM_DIMENSIONS];
+void parse_command_line(int argc, char *argv[]);
 
-extern void parse_command_line(int argc, char *argv[]);
-
-typedef struct {
-	char letter;
-	int color;
-	int indecies;
-	int state;
-} axis;
-
-typedef struct {
-	int xcord;
-	int ycord;
-	int X;
-	int Y;
-	int Z;
-	int num_of_proc;
-	int resize_screen;
-
-	WINDOW *grid_win;
-	WINDOW *text_win;
-
-	time_t now_time;
-
-	axis ***grid;
-	axis *fill_in_value;
-} smap_info;
-
-extern smap_info *smap_info_ptr;
+extern pa_system_t *pa_system_ptr;
 extern int quiet_flag;
 
 
@@ -120,13 +106,14 @@ void init_grid(node_info_msg_t * node_info_ptr);
 int set_grid(int start, int end, int count);
 int set_grid_bgl(int startx, int starty, int startz, int endx, int endy,
 		 int endz, int count);
-void print_grid(void);
+void print_grid();
 
-void print_date(void);
-extern void snprint_time(char *buf, size_t buf_size, time_t time);
+void parse_command_line(int argc, char *argv[]);
+void snprint_time(char *buf, size_t buf_size, time_t time);
+void print_date();
 
-void get_part(void);
-void get_job(void);
-void get_command(void);
+void get_part();
+void get_job();
+void get_command();
 
 #endif
