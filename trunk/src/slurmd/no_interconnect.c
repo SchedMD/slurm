@@ -25,6 +25,9 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#include <sys/types.h>
+#include <signal.h>
+
 #include <src/slurmd/interconnect.h>
 #include <src/slurmd/setenvpf.h>
 
