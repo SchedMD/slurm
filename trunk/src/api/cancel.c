@@ -36,7 +36,7 @@ main (int argc, char *argv[])
 	}
 
 	for (i=1; i<argc; i++) {
-		error_code = slurm_cancel ((uint16_t) atoi(argv[i]));
+		error_code = slurm_cancel ((uint32_t) atoi(argv[i]));
 		if (error_code != 0)
 			printf ("slurm_cancel error %d for job %s\n", 
 				error_code, argv[i]);
@@ -54,7 +54,7 @@ main (int argc, char *argv[])
  *			EAGAIN if the request can not be satisfied at present
  */
 int
-slurm_cancel (uint16_t job_id) 
+slurm_cancel (uint32_t job_id) 
 {
 	int buffer_offset, buffer_size, in_size;
 	char *request_msg, *buffer, id_str[20];

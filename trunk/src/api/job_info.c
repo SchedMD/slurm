@@ -213,7 +213,7 @@ slurm_load_job (time_t update_time, struct job_buffer **job_buffer_ptr)
 			free (buffer);
 			return ENOMEM;
 		}
-		unpack16  (&job[i].job_id, &buf_ptr, &buffer_size);
+		unpack32  (&job[i].job_id, &buf_ptr, &buffer_size);
 		unpack32  (&job[i].user_id, &buf_ptr, &buffer_size);
 		unpack16  (&job[i].job_state, &buf_ptr, &buffer_size);
 		unpack32  (&job[i].time_limit, &buf_ptr, &buffer_size);

@@ -30,7 +30,7 @@ main (int argc, char *argv[])
 {
 	int error_code;
 	char *node_list;
-	uint16_t job_id;
+	uint32_t job_id;
 
 	error_code = slurm_allocate
 		("User=1500 JobName=job01 TotalNodes=400 TotalProcs=1000 ReqNodes=lx[3000-3003] Partition=batch MinRealMemory=1024 MinTmpDisk=2034 Groups=students,employee MinProcs=4 Contiguous=YES Key=1234",
@@ -94,7 +94,7 @@ main (int argc, char *argv[])
  * NOTE: the calling function must free the allocated storage at node_list[0]
  */
 int
-slurm_allocate (char *spec, char **node_list, uint16_t *job_id) 
+slurm_allocate (char *spec, char **node_list, uint32_t *job_id) 
 {
 	int buffer_offset, buffer_size, in_size;
 	char *request_msg, *buffer, *job_id_ptr;
@@ -161,9 +161,8 @@ slurm_allocate (char *spec, char **node_list, uint16_t *job_id)
 		return EINVAL;
 	}
 	job_id_ptr = strchr(buffer, (int) ' ');
-	if (job_id_ptr != NULL) {
-		*job_id = (uint16_t) atoi (&job_id_ptr[1]);
-	}
+	if (job_id_ptr != NULL) 
+		*job_id = (uint32_t) strtol (&job_id_ptr[1], (char **)NULL, 10);
 	node_list[0] = buffer;
 	return 0;
 }

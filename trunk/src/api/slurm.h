@@ -84,7 +84,7 @@ struct build_buffer {
 };
 
 struct job_table {
-	uint16_t job_id;	/* job ID */
+	uint32_t job_id;	/* job ID */
 	char *name;		/* name of the job */
 	uint32_t user_id;	/* user the job runs as */
 	uint16_t job_state;	/* state of the job, see enum job_states */
@@ -176,7 +176,7 @@ struct part_buffer {
  *	TotalProcs=<count>
  * NOTE: the calling function must free the allocated storage at node_list[0]
  */
-extern int slurm_allocate (char *spec, char **node_list, uint16_t *job_id);
+extern int slurm_allocate (char *spec, char **node_list, uint32_t *job_id);
 
 /*
  * slurm_cancel - cancel the specified job 
@@ -184,7 +184,7 @@ extern int slurm_allocate (char *spec, char **node_list, uint16_t *job_id);
  * output: returns 0 if no error, EINVAL if the request is invalid, 
  *			EAGAIN if the request can not be satisfied at present
  */
-extern int slurm_cancel (uint16_t job_id);
+extern int slurm_cancel (uint32_t job_id);
 
 /*
  * slurm_free_build_info - free the build information buffer (if allocated)
@@ -284,17 +284,15 @@ extern int slurm_load_part (time_t update_time, struct part_buffer **part_buffer
  *	Shared=<YES|NO> TimeLimit=<minutes> TotalNodes=<count>
  *	TotalProcs=<count> Immediate=<YES|NO>
  */
-extern int slurm_submit (char *spec, uint16_t *job_id);
+extern int slurm_submit (char *spec, uint32_t *job_id);
 
 /*
  * slurm_will_run - determine if a job would execute immediately 
  *	if submitted. 
  * input: spec - specification of the job's constraints
- *	job_id - place to store id of submitted job
  * output: returns 0 if job would run now, EINVAL if the request 
  *		would never run, EAGAIN if job would run later
- * NOTE: required specification include: Script=<script_path_name>
- *	User=<uid>
+ * NOTE: required specification include: User=<uid>
  * NOTE: optional specifications include: Contiguous=<YES|NO> 
  *	Features=<features> Groups=<groups>
  *	Key=<key> MinProcs=<count> 
@@ -303,7 +301,7 @@ extern int slurm_submit (char *spec, uint16_t *job_id);
  *	Shared=<YES|NO> TimeLimit=<minutes> TotalNodes=<count>
  *	TotalProcs=<count>
  */
-extern int slurm_will_run (char *spec, uint16_t *job_id);
+extern int slurm_will_run (char *spec);
 
 /* 
  * parse_node_name - parse the node name for regular expressions and return a sprintf format 
