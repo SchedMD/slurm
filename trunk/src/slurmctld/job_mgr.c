@@ -1216,7 +1216,8 @@ job_complete(uint32_t job_id, uid_t uid, bool requeue,
 
 	if ((job_ptr->job_state == JOB_FAILED) ||
 	    (job_ptr->job_state == JOB_COMPLETE) ||
-	    (job_ptr->job_state == JOB_TIMEOUT))
+	    (job_ptr->job_state == JOB_TIMEOUT) ||
+	    (job_ptr->job_state == JOB_NODE_FAIL))
 		return ESLURM_ALREADY_DONE;
 
 	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
