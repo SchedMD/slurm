@@ -112,7 +112,7 @@ static int _remove_job(db_job_id_t job_id)
 		if ((rc = rm_get_job(job_id, &job_rec)) != STATUS_OK) {
 			if (rc == JOB_NOT_FOUND) {
 				debug("job %d removed from MMCS", job_id);
-				return  STATUS_OK;
+				return STATUS_OK;
 			} 
 
 			error("rm_get_job(%d): %s", job_id, 
@@ -125,7 +125,7 @@ static int _remove_job(db_job_id_t job_id)
 			(void) rm_free_job(job_rec);
 			if (rc == JOB_NOT_FOUND) {
 				debug("job %d not found in MMCS", job_id);
-				rc = STATUS_OK;
+				return STATUS_OK;
 			} 
 
 			error("rm_get_data(RM_JobState) for jobid=%d "
@@ -137,9 +137,9 @@ static int _remove_job(db_job_id_t job_id)
 
 		//debug("job %d is in state %d", job_id, job_state);
 		/* Cancel or remove the job */
-		if(job_state == RM_JOB_TERMINATED 
-		   || job_state == RM_JOB_KILLED
-		   || job_state == RM_JOB_DYING) {
+		if(job_state != RM_JOB_TERMINATED
+		   && job_state != RM_JOB_KILLED
+		   && job_state != RM_JOB_DYING) {
 			(void) jm_signal_job(job_id, SIGKILL);
 			(void) jm_cancel_job(job_id);
 		}
