@@ -242,6 +242,12 @@ void slurm_free_resource_allocation_response_msg ( resource_allocation_response_
 	}
 }
 
+void slurm_free_submit_response_response_msg ( submit_response_msg_t * msg )
+{
+	if ( msg )
+		xfree ( msg ) ;
+}
+
 void slurm_free_node_registration_status_msg ( slurm_node_registration_status_msg_t * msg )
 {
 	if ( msg )
