@@ -25,7 +25,6 @@ int
 main( int argc, char* argv[])
 {
 	job_step_create_request_msg_t request = {  5, 5, 4, 4, 4 , 0, SLURM_DIST_CYCLIC, "" }; 
-	resource_allocation_response_msg_t* resp_msg ;
 
 	slurm_msg_t request_msg ;
 	slurm_msg_t response_msg;
@@ -64,10 +63,9 @@ main( int argc, char* argv[])
     /* print the elan stuff */
 #endif
 
-
+		slurm_free_job_step_create_response_msg ( msg );
 	}
 
-	slurm_free_resource_allocation_response_msg ( resp_msg );
 	return SLURM_SUCCESS ;
 }
 
