@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * complete.c - note the completion a slurm job or job step
+ *  complete.c - note the completion a slurm job or job step
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

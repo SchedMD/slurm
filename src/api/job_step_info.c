@@ -55,8 +55,6 @@ slurm_print_job_step_info_msg ( FILE* out, job_step_info_response_msg_t * job_st
 void
 slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr )
 {
-	int j;
-
 	fprintf ( out, "JobId=%u StepId=%u UserId=%u ", 
 		job_step_ptr->job_id, job_step_ptr->step_id, job_step_ptr->user_id);
 	fprintf ( out, "StartTime=%ld Partition=%s Nodes=%s\n\n", 
