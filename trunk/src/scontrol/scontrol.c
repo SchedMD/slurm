@@ -235,7 +235,7 @@ print_build (char *build_param)
 			 &slurm_ctl_conf_ptr);
 		if (error_code == 0)
 			slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
-		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
+		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			slurm_ctl_conf_ptr = old_slurm_ctl_conf_ptr;
 			error_code = 0;
 			if (quiet_flag == -1)
@@ -247,8 +247,7 @@ print_build (char *build_param)
 
 	if (error_code) {
 		if (quiet_flag != 1)
-			printf ("slurm_load_ctl_conf error %d %s\n",
-				errno, slurm_strerror(errno));
+			slurm_perror ("slurm_load_ctl_conf error");
 		return;
 	}
 	old_slurm_ctl_conf_ptr = slurm_ctl_conf_ptr;
@@ -339,19 +338,18 @@ print_job (char * job_id_str)
 					&job_buffer_ptr);
 		if (error_code == 0)
 			slurm_free_job_info (old_job_buffer_ptr);
-		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
+		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			job_buffer_ptr = old_job_buffer_ptr;
 			error_code = 0;
 			if (quiet_flag == -1)
-				printf ("slurm_free_job_info no change in data\n");
+ 				printf ("slurm_free_job_info no change in data\n");
 		}
 	}
 	else
 		error_code = slurm_load_jobs ((time_t) NULL, &job_buffer_ptr);
 	if (error_code) {
 		if (quiet_flag != 1)
-			printf ("slurm_load_job error %d %s\n", 
-				errno, slurm_strerror(errno));
+			slurm_perror ("slurm_load_jobs error");
 		return;
 	}
 	else if (error_code == 0)
@@ -439,7 +437,7 @@ print_node_list (char *node_list)
 			&node_info_ptr);
 		if (error_code == 0)
 			slurm_free_node_info (old_node_info_ptr);
-		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
+		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			node_info_ptr = old_node_info_ptr;
 			error_code = 0;
 			if (quiet_flag == -1)
@@ -451,8 +449,7 @@ print_node_list (char *node_list)
 		error_code = slurm_load_node ((time_t) NULL, &node_info_ptr);
 	if (error_code) {
 		if (quiet_flag != 1)
-			printf ("slurm_load_node error %d %s\n", 
-				errno, slurm_strerror(errno));
+			slurm_perror ("slurm_load_node error");
 		return;
 	}
 	else if (error_code == 0)
@@ -503,7 +500,7 @@ print_part (char *partition_name)
 		if (error_code == 0) {
 			slurm_free_partition_info (old_part_info_ptr);
 		}
-		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
+		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			part_info_ptr = old_part_info_ptr;
 			error_code = 0;
 			if (quiet_flag == -1)
@@ -514,8 +511,7 @@ print_part (char *partition_name)
 		error_code = slurm_load_partitions ((time_t) NULL, &part_info_ptr);
 	if (error_code > 0) {
 		if (quiet_flag != 1)
-			printf ("slurm_load_part error %d %s\n", 
-				errno, slurm_strerror(errno));
+			slurm_perror ("slurm_load_partitions error");
 		return;
 	}
 	else
@@ -772,8 +768,10 @@ update_job (int argc, char *argv[])
 		}
 	}
 
-	error_code = slurm_update_job(&job_msg);
-	return error_code;
+	if (slurm_update_job(&job_msg))
+		return slurm_get_errno ();
+	else
+		return 0;
 }
 
 /* 
@@ -821,8 +819,10 @@ update_node (int argc, char *argv[])
 		}
 	}
 
-	error_code = slurm_update_node(&node_msg);
-	return error_code;
+	if (slurm_update_node(&node_msg))
+		return slurm_get_errno ();
+	else
+		return 0;
 }
 
 /* 
@@ -910,8 +910,10 @@ update_part (int argc, char *argv[])
 		}
 	}
 
-	error_code = slurm_update_partition(&part_msg);
-	return error_code;
+	if (slurm_update_partition(&part_msg))
+		return slurm_get_errno ();
+	else
+		return 0;
 }
 
 /* usage - show the valid scontrol commands */
