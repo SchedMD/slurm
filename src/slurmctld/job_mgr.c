@@ -1625,7 +1625,7 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 	/* Insure that requested partition is valid right now, 
 	 * otherwise leave job queued and provide warning code */
 	if ((job_desc->user_id == 0) ||
-	    (job_desc->user_id == getuid()))
+	    (job_desc->user_id == slurmctld_conf.slurm_user_id))
 		super_user = true;
 	if ((!super_user) && 
 	    (job_desc->min_nodes > part_ptr->max_nodes)) {
@@ -2746,7 +2746,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		      job_specs->job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
-	if ((uid == 0) || (uid == getuid()))
+	if ((uid == 0) || (uid == slurmctld_conf.slurm_user_id))
 		super_user = 1;
 	if ((job_ptr->user_id != uid) && (super_user == 0)) {
 		error("Security violation, JOB_UPDATE RPC from uid %d",
@@ -3146,7 +3146,8 @@ old_job_info(uint32_t uid, uint32_t job_id, char **node_list,
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
-	if ((uid != 0) && (job_ptr->user_id != uid))
+	if ((job_ptr->user_id != uid) && 
+	    (uid != 0) && (uid != slurmctld_conf.slurm_user_id))
 		return ESLURM_ACCESS_DENIED;
 	if (IS_JOB_PENDING(job_ptr))
 		return ESLURM_JOB_PENDING;
