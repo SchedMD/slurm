@@ -102,8 +102,14 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 	char * size_buffer = size_buffer_temp ;
 	unsigned int size_buffer_len = 8 ;
 
+	struct sigaction newaction ;
+	struct sigaction oldaction ;
+
+	newaction . sa_handler = SIG_IGN ;
+
 	/* ignore SIGPIPE so that send can return a error code if the other side closes the socket */
-	signal(SIGPIPE, SIG_IGN);
+	//signal(SIGPIPE, SIG_IGN);
+	sigaction(SIGPIPE, &newaction , & oldaction );
 
 	pack32 (  size , ( void ** ) & size_buffer , & size_buffer_len ) ;
 
@@ -122,7 +128,8 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 		return SLURM_PROTOCOL_ERROR ;
 	}
 
-	signal(SIGPIPE, SIG_DFL);
+	//signal(SIGPIPE, SIG_DFL);
+	sigaction(SIGPIPE, &oldaction , & newaction );
 	return send_len ;
 }
 
