@@ -55,7 +55,7 @@ List bgl_sys_free = NULL;
 /* global system = list of allocated partitions */
 List bgl_sys_allocated = NULL;
 
-static void _init_sys(partition_t*);
+void _init_sys(partition_t*);
 
 #ifdef USE_BGL_FILES
    char *BGL_MLOADER_IMAGE = "/bgl/edi/build/bglsys/bin/mmcs-mloader.rts";
@@ -73,25 +73,26 @@ static void _init_sys(partition_t*);
     * OUT - bp: will point to BP at location loc
     * OUT - rc: error code (0 = success)
     */
-   static int  _get_bp(rm_element_t *bp, rm_location_t *loc);
-   static int  _is_not_equals_all_coord (int* rec_a, int* rec_b);
-   static int  _is_not_equals_some_coord(int* rec_a, int* rec_b);
-   static void _pre_allocate(rm_partition_t* my_part, 
-		rm_connection_type_t part_conn);
-   static int _post_allocate(rm_partition_t *my_part, 
+   int  _get_bp(rm_element_t *bp, rm_location_t *loc);
+   int  _is_not_equals_all_coord (int* rec_a, int* rec_b);
+   int  _is_not_equals_some_coord(int* rec_a, int* rec_b);
+   void _pre_allocate(rm_partition_t* my_part, 
+		      rm_connection_type_t part_conn);
+   int _post_allocate(rm_partition_t *my_part, 
 		pm_partition_id_t *part_id);
-   static int _get_switch_list(partition_t* partition, List* switch_list);
-   static int _get_bp_by_location(int* cur_coord, rm_BP_t** bp);
+int _get_switch_list(int cur_coord[SYSTEM_DIMENSIONS], List* switch_list);
+     // int _get_switch_list(partition_t* partition, List* switch_list);
+int _get_bp_by_location(rm_BGL_t* my_bgl, int* cur_coord, rm_BP_t** bp);
 #endif
 
-static int _create_bgl_partitions(List requests);
+int _create_bgl_partitions(List requests);
 
-static int _break_up_partition(List sys, partition_t* partition_to_break, 
+int _break_up_partition(List sys, partition_t* partition_to_break, 
 		int index);
-static int _fit_request(List sys, List allocated, uint16_t* request);
+int _fit_request(List sys, List allocated, uint16_t* request);
 
-static void _int_array_destroy(void* object);
-static int _int_array_cmpf(uint16_t* rec_a, uint16_t* rec_b);
+void _int_array_destroy(void* object);
+int _int_array_cmpf(uint16_t* rec_a, uint16_t* rec_b);
 
 #ifdef _UNIT_TESTS_
   extern void debug(const char *fmt, ...);
@@ -170,7 +171,7 @@ int partition_sys(List requests)
  * IN - requests: List <partition_t*> to wire up.
  * 
  */
-static int _create_bgl_partitions(List requests)
+int _create_bgl_partitions(List requests)
 {
 	partition_t* cur_partition;	
 	ListIterator itr;
@@ -522,8 +523,10 @@ extern int configure_switches(partition_t* partition)
 	bgl_record_t* bgl_rec;
 	int cur_coord[SYSTEM_DIMENSIONS]; 
 	pm_partition_id_t* bgl_part_id;
+	List switch_list;
+	ListIterator itr;
 #ifdef USE_BGL_FILES
-	rm_switch_t* my_switch;
+	rm_switch_t* cur_switch;
 	rm_partition_t *bgl_part;
 
 	_pre_allocate(bgl_part, partition->conn_type);
@@ -569,8 +572,6 @@ extern int configure_switches(partition_t* partition)
 				/** below, we wire up each all three switches of each BP **/
 				/* SPECIAL CASE FIRST BP */
 				if (!_is_not_equals_some_coord(cur_coord, partition->bl_coord)){
-					List switch_list;
-					ListIterator itr;
 
 					if (!_get_switch_list(cur_coord, &switch_list)){
 						error("configure_switches, error in getting bgl switch");
@@ -596,12 +597,14 @@ extern int configure_switches(partition_t* partition)
 							 * must be wired so....
 							 */
 							if (first == 1){
-								connect_next(bgl_part, cur_switch, first);
+								// connect_next(bgl_part, cur_switch, first);
+								connect_next(bgl_part, cur_switch);
 								first = 0;
 							}
 						} else {
 							if (first == 1){
-								connect_next(bgl_part, cur_switch, first);
+								// connect_next(bgl_part, cur_switch, first);
+								connect_next(bgl_part, cur_switch);
 								first = 0;
 							}
 						}
@@ -620,11 +623,11 @@ extern int configure_switches(partition_t* partition)
 					
 				/* NORMAL CASE, IN BETWEEN */
 				} else {
-					if (_get_switch_list(cur_coord, switch_list)){
+					if (_get_switch_list(cur_coord, &switch_list)){
 						error("configure_switches, error in getting bgl switch");
 					}
 				}
-`				
+								
 #else /* FOR DEBUGGING PURPOSES */
 #ifdef DEBUG_ALLOCATE
 				/***** DEBUG SPECIFIC (PRINT OUT RESULTS) ******/ 
@@ -811,7 +814,7 @@ void rotate_part(const uint16_t* config, uint16_t** new_config)
  * this should really go out and get BGL specific information
  * 
  */
-static void _init_sys(partition_t *part)
+void _init_sys(partition_t *part)
 {
 	/* initialize the system wide partition */
 	bgl_sys_free = list_create((ListDelF) _int_array_destroy);
@@ -846,21 +849,21 @@ static void _init_sys(partition_t *part)
 /** 
  * initialize the BGL partition in the resource manager 
  */
-static void _pre_allocate(rm_partition_t *my_part, 
-		rm_connection_type_t part_conn)
+void _pre_allocate(rm_partition_t *my_part, 
+		   rm_connection_type_t part_conn)
 {
 	rm_new_partition(&my_part); /* new partition to be added */
 	rm_set_data(my_part, RM_PartitionMloaderImg, BGL_MLOADER_IMAGE);
 	rm_set_data(my_part, RM_PartitionBlrtsImg,  BGL_BLRTS_IMAGE);
 	rm_set_data(my_part, RM_PartitionLinuxImg, BGL_LINUX_IMAGE);
 	rm_set_data(my_part, RM_PartitionRamdiskImg, BGL_RAMDISK_IMAGE);
-	rm_set_data(my_part, RM_PartitionConnection, part_conn);
+	rm_set_data(my_part, RM_PartitionConnection, &part_conn);
 }
 
 /** 
  * add the partition record to the DB and boot it up!
  */
-static int _post_allocate(rm_partition_t *my_part, pm_partition_id_t *part_id)
+int _post_allocate(rm_partition_t *my_part, pm_partition_id_t *part_id)
 {
 	int rc;
 	rm_partition_state_t state;
@@ -877,56 +880,56 @@ static int _post_allocate(rm_partition_t *my_part, pm_partition_id_t *part_id)
 
 	//Initiate boot of the partition
 	debug("Booting Partition %s", part_id);
-	rc = pm_create_partition(part_id);
+	rc = pm_create_partition(*part_id);
 	if (rc != STATUS_OK) {
 		error("Error booting_partition partition");
 		return(-1);
 	}
 
 	/* Wait for Partition to be booted */
-	rc = rm_get_partition(part_id, &my_part);
+	rc = rm_get_partition(*part_id, &my_part);
 	if (rc != STATUS_OK) {
 		error("Error in GetPartition");
 		return(-1);
 	}
 
 	rm_get_data(my_part, RM_PartitionState, &state);
-	error("Partition %s state = %s. Waiting...", part_id, 
-		convert_partition_state(state));
 	fflush(stdout);
+
+	return 0;
 }
 
 /** 
  * get switch of the BP of these coordinates
  */
-int _get_switch_list(int* cur_coord, List* switch_list)
+int _get_switch_list(int cur_coord[SYSTEM_DIMENSIONS], List* switch_list)
 {
 	int switch_num, i;
 	rm_BP_t * bp;
 	rm_bp_id_t *cur_bpid, *bpid;
-	rm_switch_t* bgl_switch;
+	rm_switch_t* cur_switch;
 	int found_bpid;
 
-	*switch_list = list_create(rm_free_switch);
+	*switch_list = list_create(NULL);
 	
-	if (_get_bp_by_location(cur_coord, &bp)) {
+	if (_get_bp_by_location(bgl, cur_coord, &bp)) {
 		return SLURM_ERROR;
 	}
 	
 	rm_get_data(bp, RM_BPID, &bpid);
 	
 	rm_get_data(bgl, RM_SwitchNum, &switch_num);
-	rm_get_data(my_bgl,RM_FirstSwitch,&my_switch);
+	rm_get_data(bgl,RM_FirstSwitch,&cur_switch);
 	found_bpid = 0;
-	for (i=0; i<SwitchNum; i++) {
-		rm_get_data(my_switch, RM_SwitchBPID, &cur_bpid);
+	for (i=0; i<switch_num; i++) {
+		rm_get_data(cur_switch, RM_SwitchBPID, &cur_bpid);
 		/** FIXME is there an equality function for BPID? */
 		if (*bpid == *cur_bpid){
 			found_bpid = 1;
 			break;
 		}
 
-		rm_get_data(my_bgl,RM_NextSwitch,&my_switch);
+		rm_get_data(bgl,RM_NextSwitch,&cur_switch);
 	}
 
 	if (found_bpid){
@@ -935,14 +938,14 @@ int _get_switch_list(int* cur_coord, List* switch_list)
 		 * get these three switches in a row, and they should be XYZ
 		 */
 
-		list_push(*switch_list, my_switch);
+		list_push(*switch_list, cur_switch);
 		for (i=0; i<2; i++){
-			rm_get_data(my_bgl,RM_NextSwitch,&my_switch);
+			rm_get_data(bgl,RM_NextSwitch,&cur_switch);
 			/* i'm just going to check here again for my sanity*/
 			if (*bpid != *cur_bpid)
 				break;
 			
-			list_push(*switch_list, my_switch);
+			list_push(*switch_list, cur_switch);
 		}
 		
 		return SLURM_SUCCESS;
@@ -965,7 +968,7 @@ void rm_switch_t_destroy(void* object)
  * this is just stupid.  there are some implicit rules for where
  * "NextBP" goes to, but we don't know, so we have to do this.
  */
-static int _get_bp_by_location(rm_BGL_t* my_bgl, int* cur_coord, rm_BP_t** bp)
+int _get_bp_by_location(rm_BGL_t* my_bgl, int* cur_coord, rm_BP_t** bp)
 {
 	int i, bp_num;
 	rm_location_t loc;
@@ -992,7 +995,7 @@ static int _get_bp_by_location(rm_BGL_t* my_bgl, int* cur_coord, rm_BP_t** bp)
  * 
  * returns 0 if equals, 1 if not equals
  */
-static int _is_not_equals_some_coord(int* rec_a, int* rec_b)
+int _is_not_equals_some_coord(int* rec_a, int* rec_b)
 {
 	int i;
 	for (i=0; i<SYSTEM_DIMENSIONS; i++){
@@ -1007,7 +1010,7 @@ static int _is_not_equals_some_coord(int* rec_a, int* rec_b)
  * 
  * returns 0 if equals, 1 if not equals
  */
-static int _is_not_equals_all_coord(int* rec_a, int* rec_b)
+int _is_not_equals_all_coord(int* rec_a, int* rec_b)
 {
 	int i;
 	for (i=0; i<SYSTEM_DIMENSIONS; i++){

@@ -42,7 +42,7 @@
  * Surround the code with "#ifdef USE_BGL_FILES". When it is confirmed 
  * to work, use "#ifdef HAVE_BGL_FILES" around the code using the APIs.
  */
-/* #define USE_BGL_FILES 1 */ 
+/* #define USE_BGL_FILES 1 */
 
 #else
   enum rm_connection_type {RM_MESH, RM_TORUS, RM_NAV};

@@ -276,7 +276,7 @@ void connect_next(rm_partition_t *my_part, rm_switch_t *my_switch)
 	conn3.part_id = NULL;
 	conn3.usage = RM_CONNECTION_NOT_USED;
 
-	connect(my_part, my_switch, &conn1, &conn2, &conn3, first);
+	_connect(my_part, my_switch, &conn1, &conn2, &conn3, first);
 }
 
 /**
