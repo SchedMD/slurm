@@ -95,21 +95,21 @@ typedef struct task_info {
 /*
  * forward declaration of static funcs
  */
-static allocation_resp	*allocate_nodes(void);
-static void              print_job_information(allocation_resp *resp);
-static void		 create_job_step(job_t *job);
-static void		 sigterm_handler(int signum);
-static void		 sig_kill_alloc(int signum);
-void *                   sig_thr(void *arg);
-static char 		*build_script (char *pathname, int file_type);
-static char 		*get_shell (void);
-static int 		 is_file_text (char *fname, char** shell_ptr);
-static int		 run_batch_job (void);
-static allocation_resp	*existing_allocation(void);
-static void		 run_job_script(uint32_t jobid);
-static void 		 fwd_signal(job_t *job, int signo);
-static void 		 p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job);
-static void 		*p_signal_task(void *args);
+static allocation_resp	*_allocate_nodes(void);
+static void              _print_job_information(allocation_resp *resp);
+static void		 _create_job_step(job_t *job);
+static void		 _sigterm_handler(int signum);
+static void		 _sig_kill_alloc(int signum);
+void *                   _sig_thr(void *arg);
+static char 		*_build_script (char *pathname, int file_type);
+static char 		*_get_shell (void);
+static int 		 _is_file_text (char *fname, char** shell_ptr);
+static int		 _run_batch_job (void);
+static allocation_resp	*_existing_allocation(void);
+static void		 _run_job_script(uint32_t jobid);
+static void 		 _fwd_signal(job_t *job, int signo);
+static void 		 _p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job);
+static void 		*_p_signal_task(void *args);
 static int               _set_batch_script_env(uint32_t jobid);
 
 #ifdef HAVE_LIBELAN3
@@ -156,7 +156,7 @@ main(int ac, char **av)
 	 * create a job from opt
 	 */
 	if (opt.batch) {
-		if (run_batch_job())
+		if (_run_batch_job())
 			exit (1);
 		exit (0);
 	} else if (opt.no_alloc) {
@@ -165,35 +165,35 @@ main(int ac, char **av)
 #ifdef HAVE_LIBELAN3
 		qsw_standalone(job);
 #endif
-	} else if ( (resp = existing_allocation()) ) {
+	} else if ( (resp = _existing_allocation()) ) {
 		old_job = true;
 		job = job_create(resp); 
-		create_job_step(job);
+		_create_job_step(job);
 		slurm_free_resource_allocation_response_msg(resp);
 	} else if (opt.allocate) {
-		if ( !(resp = allocate_nodes()) ) 
+		if ( !(resp = _allocate_nodes()) ) 
 			exit(1);
 		job = job_create(resp); 
 		if (_verbose || _debug)
-			print_job_information(resp);
+			_print_job_information(resp);
 		else
 			printf("jobid %u\n", resp->job_id); 
-		run_job_script(resp->job_id);
+		_run_job_script(resp->job_id);
 		slurm_complete_job(resp->job_id, 0, 0);
 
 		if (_verbose || _debug)
 			info ("Spawned srun shell terminated");
 		exit (0);
 	} else {
-		if ( !(resp = allocate_nodes()) ) 
+		if ( !(resp = _allocate_nodes()) ) 
 			exit(1);
 		if (_verbose || _debug)
-			print_job_information(resp);
+			_print_job_information(resp);
 		else
 			printf("jobid %u\n", resp->job_id); 
 
 		job = job_create(resp); 
-		create_job_step(job);
+		_create_job_step(job);
 		slurm_free_resource_allocation_response_msg(resp);
 	}
 
@@ -204,7 +204,7 @@ main(int ac, char **av)
 	sigaddset(&sigset, SIGSTOP);
 	if (sigprocmask(SIG_BLOCK, &sigset, NULL) != 0)
 		fatal("sigprocmask: %m");
-	action.sa_handler = &sigterm_handler;
+	action.sa_handler = &_sigterm_handler;
 	action.sa_flags   = 0;
 	sigaction(SIGTERM, &action, NULL);
 
@@ -244,7 +244,7 @@ main(int ac, char **av)
 	debug("Started IO server thread (%d)\n", job->ioid);
 
 	/* spawn signal thread */
-	if ((errno = pthread_create(&job->sigid, &attr, &sig_thr, 
+	if ((errno = pthread_create(&job->sigid, &attr, &_sig_thr, 
 	                            (void *) job)))
 		fatal("Unable to create signals thread. %m");
 	debug("Started signals thread (%d)", job->sigid);
@@ -267,7 +267,7 @@ main(int ac, char **av)
 	/* job is now overdone, clean up  */
 	if (job->state == SRUN_JOB_FAILED) {
 		info("sending SIGINT to job");
-		fwd_signal(job, SIGINT);
+		_fwd_signal(job, SIGINT);
 	}
 
 	/* kill launch thread */
@@ -298,7 +298,7 @@ main(int ac, char **av)
  * will xmalloc memory for allocation response, which caller must free
  */
 static allocation_resp *
-allocate_nodes(void)
+_allocate_nodes(void)
 {
 	int rc, retries;
 	job_desc_msg_t job;
@@ -360,8 +360,8 @@ allocate_nodes(void)
 		struct sigaction action, old_action;
 		int fake_job_id = (0 - resp->job_id);
 		info ("Job %u queued and waiting for resources", resp->job_id);
-		sig_kill_alloc(fake_job_id);
-		action.sa_handler = &sig_kill_alloc;
+		_sig_kill_alloc(fake_job_id);
+		action.sa_handler = &_sig_kill_alloc;
 		/* action.sa_flags   = SA_ONESHOT; */
 		sigaction(SIGINT, &action, &old_action);
 		old_job.job_id = resp->job_id;
@@ -387,7 +387,7 @@ allocate_nodes(void)
 }
 
 static void
-sig_kill_alloc(int signum)
+_sig_kill_alloc(int signum)
 {
 	static uint32_t job_id = 0;
 
@@ -397,7 +397,7 @@ sig_kill_alloc(int signum)
 	} else if (signum < 0)
 		job_id = (uint32_t) (0 - signum); /* kluge to pass job id */
 	else
-		fatal ("sig_kill_alloc called with invalid argument", signum);
+		fatal ("_sig_kill_alloc called with invalid argument", signum);
 
 }
 
@@ -426,7 +426,7 @@ qsw_standalone(job_t *job)
 #endif /* HAVE_LIBELAN3 */
 
 static void 
-create_job_step(job_t *job)
+_create_job_step(job_t *job)
 {
 	job_step_create_request_msg_t req;
 	job_step_create_response_msg_t *resp;
@@ -472,7 +472,7 @@ create_job_step(job_t *job)
 
 
 static void 
-print_job_information(allocation_resp *resp)
+_print_job_information(allocation_resp *resp)
 {
 	int i;
 	printf("jobid %d: `%s', cpu counts: ", resp->job_id, resp->node_list);
@@ -485,7 +485,7 @@ print_job_information(allocation_resp *resp)
 }
 
 static void
-sigterm_handler(int signum)
+_sigterm_handler(int signum)
 {
 	if (signum == SIGTERM) {
 		pthread_exit(0);
@@ -494,8 +494,8 @@ sigterm_handler(int signum)
 
 
 /* simple signal handling thread */
-void *
-sig_thr(void *arg)
+static void *
+_sig_thr(void *arg)
 {
 	job_t *job = (job_t *)arg;
 	sigset_t set;
@@ -519,7 +519,7 @@ sig_thr(void *arg)
 				  if (job->state != SRUN_JOB_OVERDONE) {
 					  info("sending Ctrl-C to job");
 					  last_intr = time(NULL);
-					  fwd_signal(job, signo);
+					  _fwd_signal(job, signo);
 				  } else
 					  info("attempting cleanup");
 
@@ -537,7 +537,7 @@ sig_thr(void *arg)
 			  }
 			  break;
 		  default:
-			  fwd_signal(job, signo);
+			  _fwd_signal(job, signo);
 			  break;
 		}
 	}
@@ -546,7 +546,7 @@ sig_thr(void *arg)
 }
 
 static void 
-fwd_signal(job_t *job, int signo)
+_fwd_signal(job_t *job, int signo)
 {
 	int i;
 	slurm_msg_t *req_array_ptr;
@@ -573,14 +573,14 @@ fwd_signal(job_t *job, int signo)
 		       &job->slurmd_addr[i], sizeof(slurm_addr));
 	}
 
-	p_fwd_signal(req_array_ptr, job);
+	_p_fwd_signal(req_array_ptr, job);
 
 	debug("All tasks have been signalled");
 	xfree(req_array_ptr);
 }
 
-/* p_fwd_signal - parallel (multi-threaded) task signaller */
-static void p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job)
+/* _p_fwd_signal - parallel (multi-threaded) task signaller */
+static void _p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job)
 {
 	int i;
 	task_info_t *task_info_ptr;
@@ -615,11 +615,11 @@ static void p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job)
 #endif
 		while ( pthread_create (&thread_ptr[i].thread, 
 		                        &thread_ptr[i].attr, 
-		                        p_signal_task, 
+		                        _p_signal_task, 
 		                        (void *) task_info_ptr) ) {
 			error ("pthread_create error %m");
 			/* just run it under this thread */
-			p_signal_task((void *) task_info_ptr);
+			_p_signal_task((void *) task_info_ptr);
 		}
 	}
 
@@ -632,8 +632,8 @@ static void p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job)
 	xfree(thread_ptr);
 }
 
-/* p_signal_task - parallelized signal of a specific task */
-static void * p_signal_task(void *args)
+/* _p_signal_task - parallelized signal of a specific task */
+static void * _p_signal_task(void *args)
 {
 	task_info_t *task_info_ptr = (task_info_t *)args;
 	slurm_msg_t *req_ptr = task_info_ptr->req_ptr;
@@ -657,7 +657,7 @@ static void * p_signal_task(void *args)
 
 /* submit a batch job and return error code */
 static int
-run_batch_job(void)
+_run_batch_job(void)
 {
 	int file_type, rc, retries;
 	job_desc_msg_t job;
@@ -667,12 +667,12 @@ run_batch_job(void)
 
 	if ((remote_argc == 0) || (remote_argv[0] == NULL))
 		return 1;
-	file_type = is_file_text (remote_argv[0], NULL);
+	file_type = _is_file_text (remote_argv[0], NULL);
 	if (file_type == TYPE_NOT_TEXT) {
 		error ("file %s is not script", remote_argv[0]);
 		return 1;
 	}
-	job_script = build_script (remote_argv[0], file_type);
+	job_script = _build_script (remote_argv[0], file_type);
 	if (job_script == NULL) {
 		error ("unable to build script from file %s", remote_argv[0]);
 		return 1;
@@ -755,10 +755,10 @@ run_batch_job(void)
 	return rc;
 }
 
-/* get_shell - return a string containing the default shell for this user
+/* _get_shell - return a string containing the default shell for this user
  * NOTE: This function is NOT reentrant (see getpwuid_r if needed) */
-char *
-get_shell (void)
+static char *
+_get_shell (void)
 {
 	struct passwd *pw_ent_ptr;
 
@@ -766,15 +766,15 @@ get_shell (void)
 	return pw_ent_ptr->pw_shell;
 }
 
-/* is_file_text - determine if specified file is a script
+/* _is_file_text - determine if specified file is a script
  * shell_ptr - if not NULL, set to pointer to pathname of specified shell 
  *		(if any, ie. return code of 2)
  *	return 0 if the specified file can not be read or does not contain text
  *	returns 2 if file contains text starting with "#!", otherwise
  *	returns 1 if file contains text, but lacks "#!" header 
  */
-int
-is_file_text (char *fname, char **shell_ptr)
+static int
+_is_file_text (char *fname, char **shell_ptr)
 {
 	int buf_size, fd, i;
 	int rc = 1;	/* initially assume the file contains text */
@@ -827,8 +827,8 @@ is_file_text (char *fname, char **shell_ptr)
 }
 
 /* allocate and build a string containing a script for a batch job */
-char *
-build_script (char *fname, int file_type)
+static char *
+_build_script (char *fname, int file_type)
 {
 	char *buffer, *shell;
 	int buf_size, buf_used = 0, fd, data_size, i;
@@ -843,7 +843,7 @@ build_script (char *fname, int file_type)
 	buffer = xmalloc (buf_size);
 	buf_used = 0;
 	if (file_type != TYPE_SCRIPT) {
-		shell = get_shell();
+		shell = _get_shell();
 		strcpy (buffer, "#!");
 		strcat (buffer, shell);
 		strcat (buffer, "\n");
@@ -871,7 +871,7 @@ build_script (char *fname, int file_type)
 /* If this is a valid job then return a (psuedo) allocation response pointer, 
  * otherwise return NULL */
 static allocation_resp *
-existing_allocation( void )
+_existing_allocation( void )
 {
 	char * jobid_str, *end_ptr;
 	uint32_t jobid_uint;
@@ -935,7 +935,7 @@ _set_batch_script_env(uint32_t jobid)
 }
 
 /* allocation option specified, spawn a script and wait for it to exit */
-void run_job_script (uint32_t jobid)
+static void _run_job_script (uint32_t jobid)
 {
 	char *shell = NULL;
 	int   i;
@@ -947,9 +947,9 @@ void run_job_script (uint32_t jobid)
 	/* determine shell from script (if any) or user default */
 	if (remote_argc) {
 		char ** new_argv;
-		(void) is_file_text (remote_argv[0], &shell);
+		(void) _is_file_text (remote_argv[0], &shell);
 		if (shell == NULL)
-			shell = get_shell ();	/* user's default shell */
+			shell = _get_shell ();	/* user's default shell */
 		new_argv = (char **) xmalloc ((remote_argc + 2) * 
 						sizeof(char *));
 		new_argv[0] = xstrdup (shell);
@@ -959,7 +959,7 @@ void run_job_script (uint32_t jobid)
 		remote_argc++;
 		remote_argv = new_argv;
 	} else {
-		shell = get_shell ();	/* user's default shell */
+		shell = _get_shell ();	/* user's default shell */
 		remote_argc = 1;
 		remote_argv = (char **) xmalloc((remote_argc + 1) * 
 						sizeof(char *));

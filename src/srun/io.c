@@ -29,10 +29,11 @@
 #include <sys/select.h>
 #include <sys/poll.h>
 #include <arpa/inet.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
+#include <time.h>
 
 #include "src/common/fd.h"
 #include "src/common/log.h"
@@ -49,7 +50,8 @@
 #include "src/srun/opt.h"
 
 #define IO_BUFSIZ		2048
-#define POLL_TIMEOUT_MSEC	500
+#define MAX_IO_WAIT_SEC		 600	/* max I/O idle, secs, warning msg */
+#define POLL_TIMEOUT_MSEC	 500	/* max wait for i/o poll, msec */
 
 /* fd_info struct used in poll() loop to map fds back to task number,
  * appropriate output type (stdout/err), and original fd
@@ -59,6 +61,8 @@ typedef struct fd_info {
 	int *fd; 	/* pointer to fd in job->out/err array 	*/
 	FILE *fp;	/* fp on which to write output		*/
 } fd_info_t;
+
+time_t time_last_io;
 
 static void _accept_io_stream(job_t *job, int i);
 static int  _do_task_output_poll(fd_info_t *info);
@@ -125,6 +129,7 @@ _io_thr_poll(void *job_arg)
 	int numfds = (opt.nprocs*2) + job->niofds + 2;
 	fd_info_t map[numfds];	/* map fd in pollfd array to fd info */
 	int i, rc;
+	bool no_io_msg_sent = false;
 
 	xassert(job != NULL);
 
@@ -179,10 +184,17 @@ _io_thr_poll(void *job_arg)
 
 		while ((rc = poll(fds, nfds, POLL_TIMEOUT_MSEC)) <= 0) {
 			if (rc == 0) {	/* timeout */
+				i = time(NULL)-time_last_io;
 				if (job->state == SRUN_JOB_FAILED)
 					pthread_exit(0);
-				else
+				else if (no_io_msg_sent)
 					continue;
+				else if (i > MAX_IO_WAIT_SEC) {
+					info("Warning: No I/O in %d seconds",
+					     MAX_IO_WAIT_SEC);
+					no_io_msg_sent = true; 
+					continue;
+				}
 			}
 
 			switch(errno) {
@@ -200,6 +212,7 @@ _io_thr_poll(void *job_arg)
 			}
 		}
 
+		time_last_io = time(NULL);
 		for (i = 0; i < job->niofds; i++) {
 			if (fds[i].revents) {
 				if (fds[i].revents & POLLERR)
