@@ -24,9 +24,17 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
 #include <stdlib.h>
 #include <math.h>
 #include "partition_allocator.h"
+
+#ifdef HAVE_BGL_FILES
+# include "rm_api.h"
+#endif
 
 #define DEBUG_PA
 #define BEST_COUNT_INIT 10;
@@ -305,13 +313,29 @@ void pa_init(node_info_msg_t *node_info_ptr)
 		DIM_SIZE[Z]++;
 		pa_system_ptr->num_of_proc = node_info_ptr->record_count;
         } 
-	
-	if(DIM_SIZE[X]==0 && DIM_SIZE[X]==0 && DIM_SIZE[X]==0) {
-		printf("You need to give me the dimensions\nto set up the system. using 2x4x4\n");
-		DIM_SIZE[X] = 8;
-		DIM_SIZE[Y] = 4;
-		DIM_SIZE[Z] = 4;
-		
+
+#ifdef HAVE_BGL_FILES
+	if ((DIM_SIZE[X]==0) && (DIM_SIZE[X]==0) && (DIM_SIZE[X]==0)) {
+		static rm_BGL_t *bgl = NULL;
+		rm_size3D_t bp_size;
+		if (bgl == NULL) {
+			rm_set_serial(BGL_SERIAL);
+			rm_get_BGL(&bgl);
+		}
+		if ((bgl != NULL)
+		&&  (rm_get_data(bgl, RM_Msize, &bp_size) == STATUS_OK)) {
+			DIM_SIZE[X]=bp_size.X;
+			DIM_SIZE[Y]=bp_size.Y;
+			DIM_SIZE[Z]=bp_size.Z;
+		}
+		slurm_rm_free_BGL(bgl);
+	}
+#endif
+	if ((DIM_SIZE[X]==0) && (DIM_SIZE[X]==0) && (DIM_SIZE[X]==0)) {
+		printf("Setting default system dimensions\n");
+		DIM_SIZE[X]=8;
+		DIM_SIZE[Y]=4;
+		DIM_SIZE[Z]=4;
 	}
 
 	if(!pa_system_ptr->num_of_proc)
