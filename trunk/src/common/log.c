@@ -174,6 +174,12 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 				xstrcat(buf, va_arg(ap, char *));
 				break;
 
+			case 'f':	/* "%f" => float (actually double)  */
+				snprintf(tmp2, sizeof(tmp2), "%f", 
+					 va_arg(ap, double));
+				xstrcat(buf, tmp2);
+				break;
+
 			default:	/* try to handle the rest  */
 
 				/* back up to `%' char */
