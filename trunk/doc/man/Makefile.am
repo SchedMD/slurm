@@ -26,6 +26,7 @@ man3_MANS = man3/hostlist_create.3 \
 	man3/slurm_free_resource_allocation_and_run_response_msg.3 \
 	man3/slurm_free_resource_allocation_response_msg.3 \
 	man3/slurm_free_submit_response_response_msg.3 \
+	man3/slurm_get_end_time.3 \
 	man3/slurm_get_errno.3 \
 	man3/slurm_get_job_steps.3 \
 	man3/slurm_init_job_desc_msg.3 \
