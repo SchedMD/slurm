@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.3.6
+========================
+ -- Resync node state to DRAINED or DRAINING on restart in case job 
+    and node state recovered are out of sync.
+
 * Changes in SLURM 0.3.5
 ========================
  -- Fix "SLURM_RLIMIT_* not found in environment" error message when
