@@ -85,6 +85,7 @@ int wait_on_io_threads ( task_start_t * task_start )
 	pthread_cancel (  task_start->io_pthread_id[STDIN_FILENO] );
 	info ( "inexit" ) ;
 	/* thread join on stderr or stdout signifies task termination we should kill the stdin thread */
+	return SLURM_SUCCESS ;
 }
 
 void * stdin_io_pipe_thread ( void * arg )

@@ -648,6 +648,30 @@ int slurm_send_recv_controller_msg ( slurm_msg_t * request_msg , slurm_msg_t * r
         return SLURM_SUCCESS ;
 }
 
+int slurm_send_recv_node_msg ( slurm_msg_t * request_msg , slurm_msg_t * response_msg )
+{
+        int msg_size ;
+        int rc ;
+        slurm_fd sockfd ;
+
+        /* init message connection for message communication with controller */
+        if ( ( sockfd = slurm_open_msg_conn ( & request_msg -> address ) ) == SLURM_SOCKET_ERROR )
+                return SLURM_SOCKET_ERROR ;
+
+        /* send request message */
+        if ( ( rc = slurm_send_node_msg ( sockfd , request_msg ) ) == SLURM_SOCKET_ERROR )
+                return SLURM_SOCKET_ERROR ;
+
+        /* receive message */
+        if ( ( msg_size = slurm_receive_msg ( sockfd , response_msg ) ) == SLURM_SOCKET_ERROR )
+                return SLURM_SOCKET_ERROR ;
+        /* shutdown message connection */
+        if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR )
+                return SLURM_SOCKET_ERROR ;
+
+        return SLURM_SUCCESS ;
+}
+
 int slurm_send_only_controller_msg ( slurm_msg_t * request_msg )
 {
         int rc ;
