@@ -62,6 +62,11 @@ enum distribution_t {
 	SRUN_DIST_UNKNOWN 	= 2
 };
 
+enum mpi_t {
+	MPI_UNKNOWN     = 0,
+	MPI_LAM         = 1
+};
+
 #define format_distribution_t(t) (t == SRUN_DIST_BLOCK) ? "block" :   \
 		                 (t == SRUN_DIST_CYCLIC) ? "cyclic" : \
 			         "unknown"
@@ -99,6 +104,7 @@ typedef struct srun_options {
 		distribution;	/* --distribution=, -m dist	*/
 	char *job_name;		/* --job-name=,     -J name	*/
 	unsigned int jobid;     /* --jobid=jobid                */
+	enum mpi_t mpi_type;	/* --mpi=type			*/
 
 	char *ofname;		/* --output -o filename         */
 	char *ifname;		/* --input  -i filename         */

@@ -93,6 +93,7 @@ static int   _run_batch_job (void);
 static void  _run_job_script(job_t *job);
 static int   _set_batch_script_env(job_t *job);
 static int   _set_rlimit_env(void);
+static char *_sprint_task_cnt(job_t *job);
 static void  _switch_standalone(job_t *job);
 
 #if HAVE_TOTALVIEW
@@ -103,6 +104,7 @@ int main(int ac, char **av)
 {
 	allocation_resp *resp;
 	job_t *job;
+	char *task_cnt;
 
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
@@ -192,6 +194,8 @@ int main(int ac, char **av)
 	setenvf("SLURM_JOBID=%u",    job->jobid);
 	setenvf("SLURM_NPROCS=%d",   opt.nprocs);
 	setenvf("SLURM_NNODES=%d",   job->nhosts);
+	setenvf("SLURM_TASKS_PER_NODE=%s", (task_cnt = _sprint_task_cnt(job)));
+	xfree(task_cnt);
 
 	if (msg_thr_create(job) < 0)
 		job_fatal(job, "Unable to create msg thread");
@@ -250,6 +254,35 @@ int main(int ac, char **av)
 	exit(job_rc(job));
 }
 
+static char *
+_sprint_task_cnt(job_t *job)
+{
+	int i, last_val, last_cnt;
+	char *task_str = xstrdup("");
+	char tmp[16];
+	
+	last_val = job->ntask[0];
+	last_cnt = 1;
+	for (i=1; i<job->nhosts; i++) {
+		if (last_val == job->ntask[i])
+			last_cnt++;
+		else {
+			if (last_cnt > 1)
+				sprintf(tmp, "%d(x%d),", last_val, last_cnt);
+			else
+				sprintf(tmp, "%d,", last_val);
+			xstrcat(task_str, tmp);
+			last_val = job->ntask[i];
+			last_cnt = 1;
+		}
+	}
+	if (last_cnt > 1)
+		sprintf(tmp, "%d(x%d)", last_val, last_cnt);
+	else
+		sprintf(tmp, "%d", last_val);
+	xstrcat(task_str, tmp);
+	return task_str;
+}
 
 static void
 _switch_standalone(job_t *job)
@@ -570,7 +603,7 @@ static int
 _set_batch_script_env(job_t *job)
 {
 	int rc = SLURM_SUCCESS;
-	char *dist = NULL;
+	char *dist = NULL, *task_cnt;
 
 	if (job->jobid > 0) {
 		if (setenvf("SLURM_JOBID=%u", job->jobid)) {
@@ -633,6 +666,12 @@ _set_batch_script_env(job_t *job)
 		error("Unable to set SLURM_LABELIO environment variable");
 		rc = SLURM_FAILURE;
 	}
+
+	if (setenvf("SLURM_TASKS_PER_NODE=%s", (task_cnt = _sprint_task_cnt(job)))) {
+		error("Unable to set SLURM_TASKS_PER_NODE environment variable");
+		rc = SLURM_FAILURE;
+	}
+	xfree(task_cnt);
 
 	return rc;
 }

@@ -330,7 +330,8 @@ _setup_pollfds(job_t *job, struct pollfd *fds, fd_info_t *map)
 
 	/* exit if we have received EOF on all streams */
 	if (eofcnt) {
-		if (eofcnt == opt.nprocs) {
+		if ( (eofcnt == opt.nprocs) ||
+		     ((opt.mpi_type == MPI_LAM) && (eofcnt == job->nhosts)) ) {
 			debug("got EOF on all streams");
 			_flush_io(job);
 			pthread_exit(0);

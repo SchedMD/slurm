@@ -74,6 +74,8 @@ typedef struct allocation_info {
 /*
  * Prototypes:
  */
+static void       _dist_block(job_t *job);
+static void       _dist_cyclic(job_t *job);
 static inline int _estimate_nports(int nclients, int cli_per_port);
 static int        _compute_task_count(allocation_info_t *info);
 static void       _set_nprocs(allocation_info_t *info);
@@ -93,6 +95,74 @@ static char *     _task_state_name(task_state_t state_inx);
 static char *     _host_state_name(host_state_t state_inx);
 static char *     _normalize_hostlist(const char *hostlist);
 
+
+/* to effectively deal with heterogeneous nodes, we fake a cyclic 
+ * distribution to figure out how many tasks go on each node and 
+ * then make those assignments in a block fashion */
+static void
+_dist_block(job_t *job)
+{
+	int i, j, taskid = 0;
+	bool over_subscribe = false;
+
+	/* figure out how many tasks go to each node */
+	for (j=0; (taskid<opt.nprocs); j++) {   /* cycle counter */
+		bool space_remaining = false;
+		for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
+			if ((j<job->cpus[i]) || over_subscribe) {
+				taskid++;
+				job->ntask[i]++;
+				if ((j+1) < job->cpus[i])
+					space_remaining = true;
+			}
+		}
+		if (!space_remaining)
+			over_subscribe = true;
+	}
+
+	/* now distribute the tasks */
+	taskid = 0;
+	for (i=0; i < job->nhosts; i++) {
+		for (j=0; j<job->ntask[i]; j++) {
+			job->hostid[taskid] = i;
+			job->tids[i][j]     = taskid++;
+		}
+	}
+}
+
+/* distribute tasks across available nodes: allocate tasks to nodes 
+ * in a cyclic fashion using available processors. once all available 
+ * processors are allocated, continue to allocate task over-subscribing
+ * nodes as needed. for example
+ * cpus per node        4  2  4  2
+ *                     -- -- -- --
+ * task distribution:   0  1  2  3
+ *                      4  5  6  7
+ *                      8     9
+ *                     10    11     all processors allocated now
+ *                     12 13 14 15  etc.
+ */
+static void
+_dist_cyclic(job_t *job)
+{
+	int i, j, taskid = 0;
+	bool over_subscribe = false;
+
+	for (j=0; (taskid<opt.nprocs); j++) {   /* cycle counter */
+		bool space_remaining = false;
+		for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
+			if ((j<job->cpus[i]) || over_subscribe) {
+				job->hostid[taskid]         = i;
+				job->tids[i][job->ntask[i]] = taskid++;
+				job->ntask[i]++;
+				if ((j+1) < job->cpus[i])
+					space_remaining = true;
+			}
+		}
+		if (!space_remaining)
+			over_subscribe = true;
+	}
+}
 
 /*
  * Create an srun job structure from a resource allocation response msg
@@ -490,6 +560,28 @@ _job_create_internal(allocation_info_t *info)
 			cpu_cnt = 0;
 		}
 	}
+
+	/* Build task id list for each host */
+	job->tids   = xmalloc(job->nhosts * sizeof(uint32_t *));
+	job->hostid = xmalloc(opt.nprocs  * sizeof(uint32_t));
+	for (i = 0; i < job->nhosts; i++) {
+		if (opt.overcommit)
+			job->tids[i] = xmalloc(opt.nprocs * sizeof(uint32_t));
+		else
+			job->tids[i] = xmalloc(job->cpus[i] * sizeof(uint32_t));
+	}
+
+	if (opt.distribution == SRUN_DIST_UNKNOWN) {
+		if (opt.nprocs <= job->nhosts)
+			opt.distribution = SRUN_DIST_CYCLIC;
+		else
+			opt.distribution = SRUN_DIST_BLOCK;
+	}
+
+	if (opt.distribution == SRUN_DIST_BLOCK)
+		_dist_block(job);
+	else
+		_dist_cyclic(job);
 
 	job_update_io_fnames(job);
 

@@ -97,6 +97,7 @@
 #define LONG_OPT_CONT     0x109
 #define LONG_OPT_UID      0x10a
 #define LONG_OPT_GID      0x10b
+#define LONG_OPT_MPI      0x10c
 
 /*---- forward declarations of static functions  ----*/
 
@@ -386,6 +387,7 @@ static void _opt_default()
 
 	opt.job_name = NULL;
 	opt.jobid    = NO_VAL;
+	opt.mpi_type = MPI_UNKNOWN;
 
 	opt.distribution = SRUN_DIST_UNKNOWN;
 
@@ -631,6 +633,7 @@ static void _opt_args(int argc, char **argv)
 		{"contiguous",       no_argument,       0, LONG_OPT_CONT},
 		{"mincpus",          required_argument, 0, LONG_OPT_MINCPU},
 		{"mem",              required_argument, 0, LONG_OPT_MEM},
+		{"mpi",              required_argument, 0, LONG_OPT_MPI},
 		{"tmp",              required_argument, 0, LONG_OPT_TMP},
 		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 		{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
@@ -816,6 +819,10 @@ static void _opt_args(int argc, char **argv)
 				      optarg);
 				exit(1);
 			}
+			break;
+		case LONG_OPT_MPI:
+			if (strncasecmp(optarg, "lam",  3) == 0)
+			       opt.mpi_type = MPI_LAM;	
 			break;
 		case LONG_OPT_TMP:
 			opt.tmpdisk = _to_bytes(optarg);
@@ -1266,7 +1273,7 @@ static void _usage(void)
 	printf("            [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n");
 	printf("            [--jobid=id] [--batch] [--verbose] [--slurmd_debug=#]\n");
 	printf("            [-T threads] [-W sec] [--attach] [--join] [--contiguous]\n");
-	printf("            [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list] \n");
+	printf("            [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list] [--mpi=type]\n");
 	printf("            [-w hosts...] [-x hosts...] [--usage] [OPTIONS...] \n");
  	printf("            executable [args...]\n");
 }
@@ -1299,6 +1306,7 @@ static void _help(void)
 	printf("                                (type = block|cyclic)\n");
 	printf("  -J, --job-name=jobname        name of job\n");
 	printf("      --jobid=id                run under already allocated job\n");
+	printf("      --mpi=type                type of MPI being used\n");
 	printf("  -b, --batch                   submit as batch job for later execution\n");
 	printf("  -v, --verbose                 verbose operation (multiple -v's\n");
 	printf("                                increase verbosity)\n");
