@@ -113,6 +113,7 @@ int wait_on_io_threads ( task_start_t * task_start )
 	kill ( task_start->io_pthread_id[STDIN_FILENO] , SIGKILL );
 	info ( "%i: inexit pid: %i " , task_start -> local_task_id , task_start->io_pthread_id[STDIN_FILENO] ) ;
 	/* thread join on stderr or stdout signifies task termination we should kill the stdin thread */
+	info ( "leaving wait_on_io_threads" ) ;
 	return SLURM_SUCCESS ;
 }
 
