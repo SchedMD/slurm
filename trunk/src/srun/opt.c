@@ -524,7 +524,7 @@ static void opt_default()
 	opt.nprocs_set = false;
 	opt.cpus_per_task = 1;
 	opt.cpus_set = false;
-	opt.nodes = 0; /* nodes need not be set */
+	opt.nodes = 1;
 	opt.nodes_set = false;
 	opt.time_limit = -1;
 	opt.partition = NULL;
