@@ -507,6 +507,7 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	int      rc = SLURM_SUCCESS;
 	uid_t    req_uid = g_slurm_auth_get_uid(msg->cred);
 	char    *bgl_part_id = NULL;
+	bool	replied = false;
 
 	if (!_slurm_authorized_user(req_uid)) {
 		error("Security violation, batch launch RPC from uid %u",
@@ -520,6 +521,14 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	 */
 	select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_PART_ID, 
 			&bgl_part_id);
+
+#ifdef HAVE_BGL_FILES
+	/* BlueGene prolog waits for partition boot and is very slow,
+	 * just reply now */
+	slurm_send_rc_msg(msg, rc);
+	replied = true;
+#endif
+
 	rc = _run_prolog(req->job_id, req->uid, bgl_part_id);
 	xfree(bgl_part_id);
 	if (rc != 0) {
@@ -539,7 +548,8 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	rc = _launch_batch_job(req, cli);
 
     done:
-	slurm_send_rc_msg(msg, rc);
+	if (!replied)
+		slurm_send_rc_msg(msg, rc);
 }
 
 static void
