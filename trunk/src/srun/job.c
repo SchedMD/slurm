@@ -22,6 +22,10 @@ job_create(resource_allocation_response_msg_t *resp)
 	job_t *job = (job_t *) xmalloc(sizeof(*job));
 
 
+	pthread_mutex_init(&job->state_mutex, NULL);
+	pthread_cond_init(&job->state_cond, NULL);
+	job->state = SRUN_JOB_INIT;
+
 	if (resp != NULL) {
 		job->nodelist = xstrdup(resp->node_list);
 	        hl = hostlist_create(resp->node_list);
@@ -54,6 +58,13 @@ job_create(resource_allocation_response_msg_t *resp)
 	job->out   = (int *)   xmalloc(opt.nprocs * sizeof(int)   );
 	job->err   = (int *)   xmalloc(opt.nprocs * sizeof(int)   );
 
+	/* ntask job states and statii */
+	job->task_status = (int *) xmalloc(opt.nprocs * sizeof(int));
+	job->task_state  = 
+		(task_state_t *) xmalloc(opt.nprocs * sizeof(task_state_t));
+
+	pthread_mutex_init(&job->task_mutex, NULL);
+
 	ntask = opt.nprocs;
 	tph   = ntask / job->nhosts; /* expect trucation of result here */
 
@@ -71,8 +82,6 @@ job_create(resource_allocation_response_msg_t *resp)
 		/* XXX: temporary, need function to lay out tasks later */
 		job->ntask[i] = (ntask - tph) > 0 ? tph : ntask; 
 	}
-
-	job->lastfd = -1;
 
 	return job;
 }

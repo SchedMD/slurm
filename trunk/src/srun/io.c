@@ -34,8 +34,12 @@ void *io_thr(void *job_arg)
 	fd_set rset, wset;
 	int maxfd;
 	int i, m;
+	struct timeval tv;
 
 	xassert(job != NULL);
+
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	if (fcntl(job->iofd, F_SETFL, O_NONBLOCK) < 0)
 		error("Unable to set nonblocking I/O on fd\n");
@@ -62,7 +66,9 @@ void *io_thr(void *job_arg)
 				FD_SET(job->err[i], &rset);
 		}
 
-		while ((m = select(maxfd+1, &rset, NULL, NULL, NULL)) < 0) {
+		tv.tv_sec  = 0;
+		tv.tv_usec = 500;
+		while ((m = select(maxfd+1, &rset, NULL, NULL, &tv)) < 0) {
 			if (errno != EINTR)
 				fatal("Unable to handle I/O: %m", errno);
 		}	

@@ -14,19 +14,22 @@
 #include "job.h"
 #include "opt.h"
 
+extern char **environ;
 
 /* number of active threads */
+/*
 static pthread_mutex_t active_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  active_cond  = PTHREAD_COND_INITIALIZER;
 static int             active = 0;
+static int timeout;
+*/
 
 
 /* array of nnodes launch threads initialize in launch() */
-static launch_thr_t *thr;
-
-static int timeout;
+/* static launch_thr_t *thr; */
 
 static void print_launch_msg(launch_tasks_request_msg_t *msg);
+static int  envcount(char **env);
 
 void *
 launch(void *arg)
@@ -36,6 +39,11 @@ launch(void *arg)
 	job_t *job = (job_t *) arg;
 	int i, j, taskid;
 	char hostname[MAXHOSTNAMELEN];
+
+	pthread_mutex_lock(&job->state_mutex);
+	job->state = SRUN_JOB_LAUNCHING;
+	pthread_cond_signal(&job->state_cond);
+	pthread_mutex_unlock(&job->state_mutex);
 
 	if (read_slurm_port_config() < 0)
 		error("read_slurm_port_config: %d", slurm_strerror(errno));
@@ -56,8 +64,8 @@ launch(void *arg)
 	msg.argv = remote_argv;
 	msg.credential = job->cred;
 	msg.job_step_id = 0;
-	msg.envc = 0;
-	msg.env = NULL;
+	msg.envc = envcount(environ);
+	msg.env = environ;
 	msg.cwd = opt.cwd;
 	slurm_set_addr_char(&msg.response_addr, 
 		 	    ntohs(job->jaddr.sin_port), hostname);
@@ -84,7 +92,13 @@ launch(void *arg)
 		xfree(msg.global_task_ids);
 	}
 
-	return 1;
+	pthread_mutex_lock(&job->state_mutex);
+	job->state = SRUN_JOB_STARTING;
+	pthread_cond_signal(&job->state_cond);
+	pthread_mutex_unlock(&job->state_mutex);
+
+
+	return(void *)(0);
 
 }
 
@@ -100,4 +114,13 @@ static void print_launch_msg(launch_tasks_request_msg_t *msg)
 	debug("cwd    = `%s'", msg->cwd); 
 	for (i = 0; i < msg->tasks_to_launch; i++)
 		debug("global_task_id[%d] = %d\n", i, msg->global_task_ids[i]);
+}
+
+static int
+envcount(char **environ)
+{
+	int envc = 0;
+	while (environ[envc] != NULL)
+		envc++;
+	return envc;
 }
