@@ -791,9 +791,20 @@ static int
 _set_slurmd_spooldir(void)
 {
 	debug3("initializing slurmd spool directory");
-	if ((mkdir(conf->spooldir, 0755) < 0) && (errno != EEXIST)) {
-		error("mkdir(%s): %m", conf->spooldir);
-		return SLURM_ERROR;
+
+	if (mkdir(conf->spooldir, 0755) < 0) {
+		if (errno != EEXIST) {
+			error("mkdir(%s): %m", conf->spooldir);
+			return SLURM_ERROR;
+		}
+
+		/* 
+		 * Ensure spool directory permissions are correct.
+		 */
+		if (chmod(conf->spooldir, 0755) < 0) {
+			error("chmod(%s, 0755): %m", conf->spooldir);
+			return SLURM_ERROR;
+		}
 	}
 
 	return SLURM_SUCCESS;
