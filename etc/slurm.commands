@@ -1,23 +1,23 @@
 DumpNode   LastUpdate=1234
-Allocate   JobName=Job01 TotalNodes=400 NodeList=lx[3000-3003] Partition=batch Key=1234
+Allocate   JobName=Job01 TotalNodes=400 ReqNodes=lx[3000-3003] Partition=batch Key=1234
 Allocate   JobName=Job02 TotalNodes=400 Partition=batch Key=1234
 Update     NodeName=lx3000,lx3003 State=DRAINING
 Allocate   JobName=Job03 TotalNodes=500 Partition=batch Key=1234
 Allocate   JobName=Job04 TotalNodes=600 Partition=batch Key=1234
 Allocate   JobName=Job05 TotalNodes=4000 Partition=batch Key=1234
 Allocate   JobName=Job06 TotalNodes=1000 Partition=batch Key=1234
-Allocate   JobName=Job07 TotalCPUs=3000 Partition=batch Key=1234
-Allocate   JobName=Job08 MinCPUs=30 TotalCPUs=60 Partition=batch Key=1234
-Allocate   JobName=Job08 TotalNodes=2 TotalCPUs=128 Partition=batch Key=1234
+Allocate   JobName=Job07 TotalProcs=3000 Partition=batch Key=1234
+Allocate   JobName=Job08 MinProcs=30 TotalProcs=60 Partition=batch Key=1234
+Allocate   JobName=Job08 TotalNodes=2 TotalProcs=128 Partition=batch Key=1234
 Update     PartitionName=class AllowGroups=students,teachers MaxTime=20 MaxNodes=4
 Update     PartitionName=debug State=DOWN
 Update     PartitionName=batch Key=NO Nodes=lx[0100-9999]
 Reconfigure
-NodeConfig NodeName=lx1234 CPUs=16 RealMemory=2048 TmpDisk=16384
+NodeConfig NodeName=lx1234 Procs=16 RealMemory=2048 TmpDisk=16384
 DumpPart   LastUpdate=5678
 Expect     errors from here on ...
-NodeConfig NodeName=lx1235 CPUs=1 RealMemory=2 TmpDisk=3
-NodeConfig CPUs=1 RealMemory=2 TmpDisk=3
+NodeConfig NodeName=lx1235 Procs=1 RealMemory=2 TmpDisk=3
+NodeConfig Procs=1 RealMemory=2 TmpDisk=3
 Update     PartitionName=debug State=DOWN MoreStuff
 Update     PartitionName=debug State=OTHER MoreStuff
 Update     PartitionName=debug State=OTHER MoreStuff
