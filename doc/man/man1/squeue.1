@@ -76,13 +76,17 @@ Account associated with the job
 Time at which the job began execution
 .TP
 \fB%c\fR 
-Minimum number of CPUs (processors) requested by the job
+Minimum number of CPUs (processors) per node requested by the job.
+This reports the value of the \fBsrun --mincpus\fR option with a 
+default value of zero.
 .TP
 \fB%C\fR 
-Number of CPUs (processors) allocated to the job or job step
+Number of CPUs (processors) requested to the job or job step.
+This reports the value of the \fBsrun --ntasks\fR option with a
+default value of zero.
 .TP
 \fB%d\fR 
-Minimum size of temporary disk space (in MB) requested by the job
+Minimum size of temporary disk space (in MB) requested by the job.
 .TP
 \fB%D\fR 
 Number of nodes allocated to the job or the minimum number of nodes 
@@ -95,7 +99,7 @@ Time at which the job ended or is expected to end (based upon its time limit)
 .TP
 \fB%E\fR
 Job dependency. This job will not begin execution until the dependent job 
-completes. A value of zero implies this job has no dependencies.
+completes.  A value of zero implies this job has no dependencies.
 .TP
 \fB%f\fR 
 Features required by the job
@@ -136,7 +140,7 @@ nodes that have not yet been returned to service. This may result
 in the node count being greater than the number of listed nodes.
 .TP
 \fB%o\fR
-Minimum number of nodes requested by the job
+Minimum number of nodes requested by the job.
 .TP
 \fB%O\fR
 Are contiguous nodes requested by the job
@@ -390,7 +394,7 @@ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 .SH "SEE ALSO"
-\fBscancel\fR(1), \fBscontrol\fR(1), \fBsinfo\fR(1),
+\fBscancel\fR(1), \fBscontrol\fR(1), \fBsinfo\fR(1), \fBsrun\fR(1),
 \fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3),
 \fBslurm_load_node\fR(3), 
 \fBslurm_load_partitions\fR(3)
