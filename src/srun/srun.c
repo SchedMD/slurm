@@ -101,8 +101,6 @@ typedef struct task_info {
 static allocation_resp	*_allocate_nodes(void);
 static void              _print_job_information(allocation_resp *resp);
 static void		 _create_job_step(job_t *job);
-static void		 _job_step_record(job_t *job, 
-			                  alloc_run_resp *run_resp);
 static void		 _sigterm_handler(int signum);
 static void		 _sig_kill_alloc(int signum);
 static void *            _sig_thr(void *arg);
@@ -171,14 +169,14 @@ main(int ac, char **av)
 
 	} else if (opt.no_alloc) {
 		info("do not allocate resources");
-		job = job_create(NULL); 
+		job = job_create_noalloc(); 
 #ifdef HAVE_LIBELAN3
 		_qsw_standalone(job);
 #endif
 
 	} else if ( (resp = _existing_allocation()) ) {
 		old_job = true;
-		job = job_create(resp); 
+		job = job_create_allocation(resp); 
 		_create_job_step(job);
 		slurm_free_resource_allocation_response_msg(resp);
 
@@ -187,7 +185,7 @@ main(int ac, char **av)
 			exit(1);
 		if (_verbose || _debug)
 			_print_job_information(resp);
-		job = job_create(resp); 
+		job = job_create_allocation(resp); 
 		_run_job_script(resp->job_id);
 		slurm_complete_job(resp->job_id, 0, 0);
 
@@ -204,7 +202,7 @@ main(int ac, char **av)
 		if (_verbose || _debug)
 			_print_job_information(resp);
 
-		job = job_create(resp); 
+		job = job_create_allocation(resp); 
 		_create_job_step(job);
 		slurm_free_resource_allocation_response_msg(resp);
 	}
@@ -452,19 +450,6 @@ _create_job_step(job_t *job)
 	job->cred   = resp->credentials;
 #ifdef HAVE_LIBELAN3	
 	job->qsw_job= resp->qsw_job;
-#endif
-
-}
-
-static void 
-_job_step_record(job_t *job, alloc_run_resp *run_resp)
-{
-	job->stepid = run_resp->job_step_id;
-	job->cred   = run_resp->credentials;
-	run_resp->credentials = NULL;	/* Don't free it */
-#ifdef	HAVE_LIBELAN3	
-	job->qsw_job= run_resp->qsw_job;
-	run_resp->qsw_job = NULL;	/* Don't free it */
 #endif
 
 }

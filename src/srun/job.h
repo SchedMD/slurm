@@ -37,6 +37,7 @@ typedef enum {
 	SRUN_TASK_INIT = 0,
 	SRUN_TASK_RUNNING,
 	SRUN_TASK_FAILED,
+	SRUN_TASK_IO_WAIT,
 	SRUN_TASK_EXITED
 } task_state_t;
 
@@ -102,8 +103,10 @@ typedef struct srun_job {
 
 } job_t;
 
-job_t * job_create(resource_allocation_response_msg_t *resp);
 void    update_job_state(job_t *job, job_state_t newstate);
+
+job_t * job_create_noalloc(void);
+job_t * job_create_allocation(resource_allocation_response_msg_t *resp);
 
 
 #endif /* !_HAVE_JOB_H */

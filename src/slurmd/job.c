@@ -162,7 +162,7 @@ static char *
 _mkfilename(slurmd_job_t *job, const char *name)
 {
 	if (name == NULL) 
-		return fname_create(job, "job%j.out", 0);
+		return fname_create(job, "slurm-%j.out", 0);
 	else
 		return fname_create(job, name, 0);
 }
@@ -215,8 +215,7 @@ static void
 _job_init_task_info(slurmd_job_t *job, uint32_t *gid)
 {
 	int          i;
-	int          n    = job->ntasks;
-	srun_info_t *srun = (srun_info_t *) list_peek(job->sruns);
+	int          n = job->ntasks;
 
 	job->task = (task_info_t **) xmalloc(n * sizeof(task_info_t *));
 

@@ -103,7 +103,7 @@ static bool stdin_got_eof = false;
 static int 
 _do_task_output_poll(fd_info_t *info)
 {
-	return _do_task_output(info->fd, info->fp, info->buf, info->taskid);
+      	return _do_task_output(info->fd, info->fp, info->buf, info->taskid);
 }
 
 static int
@@ -138,6 +138,39 @@ _set_iofds_nonblocking(job_t *job)
 	int i;
 	for (i = 0; i < job->niofds; i++) 
 		fd_set_nonblocking(job->iofd[i]);
+}
+
+static void
+_update_task_state(job_t *job, int taskid)
+{	
+	slurm_mutex_lock(&job->task_mutex);
+	if (job->task_state[taskid] == SRUN_TASK_IO_WAIT)
+		job->task_state[taskid] = SRUN_TASK_EXITED;
+	slurm_mutex_unlock(&job->task_mutex);
+}
+
+static void
+_do_output(cbuf_t buf, FILE *out, int tasknum)
+{
+	int len;
+	char line[4096];
+
+	while ((len = cbuf_read_line(buf, line, sizeof(line), 1))) {
+		if (opt.labelio)
+			fprintf(out, "%0*d: ", fmt_width, tasknum);
+		fputs(line, out);
+		fflush(out);
+	}
+}
+
+static void
+_flush_io(job_t *job)
+{
+	int i;
+	for (i = 0; i < opt.nprocs; i++) {
+		_do_output(job->outbuf[i], job->outstream, i);
+		_do_output(job->errbuf[i], job->errstream, i);
+	}
 }
 
 static void *
@@ -218,15 +251,18 @@ _io_thr_poll(void *job_arg)
 			}
 
 			if (   (job->out[i] == IO_DONE) 
-			    && (job->err[i] == IO_DONE) )
+			    && (job->err[i] == IO_DONE) ) {
 				eofcnt++;
+				_update_task_state(job, i);
+			}
 		}
 
 		/* exit if we have received EOF on all streams */
 		if (eofcnt) {
-			if (eofcnt == opt.nprocs)
+			if (eofcnt == opt.nprocs) {
+				_flush_io(job);
 				pthread_exit(0);
-			if (time_first_done == 0)
+			} if (time_first_done == 0)
 				time_first_done = time(NULL);
 		}
 
@@ -340,40 +376,46 @@ static char *_host_state_name(host_state_t state_inx)
 
 void report_task_status(job_t *job)
 {
-	int i, j;
-	int first_task, last_task;
-	task_state_t current_state;
+	int i;
+	char buf[1024];
+	hostlist_t hl[5];
+
+	for (i = 0; i < 5; i++)
+		hl[i] = hostlist_create(NULL);
 
 	for (i = 0; i < opt.nprocs; i++) {
-		current_state = job->task_state[i];
-		first_task = last_task = i;
-		for (j = (i+1); j < opt.nprocs; j++) {
-			if (current_state == job->task_state[j])
-				last_task = j;
-			else
-				break;
-		}
-		if (first_task == last_task)
-			info("task:%d state:%s\n", first_task, 
-			     _task_state_name(current_state));
-		else
-			info("tasks:%d-%d state:%s\n", first_task,  
-			     last_task, _task_state_name(current_state));
-		i = last_task;
+		int state = job->task_state[i];
+		if ((state == SRUN_TASK_EXITED) 
+		    && ((job->err[i] > 0) || (job->out[i] > 0)))
+			state = 4;
+		snprintf(buf, 256, "task%d", i);
+		hostlist_push(hl[state], buf); 
 	}
+
+	for (i = 0; i< 5; i++) {
+		if (hostlist_count(hl[i]) > 0) {
+			hostlist_ranged_string(hl[i], 1024, buf);
+			info("%s: %s", buf, _task_state_name(i));
+		}
+
+		hostlist_destroy(hl[i]);
+	}
+
 }
 
 static char *_task_state_name(task_state_t state_inx)
 {
 	switch (state_inx) {
 		case SRUN_TASK_INIT:
-			return "initial";
+			return "initializing";
 		case SRUN_TASK_RUNNING:
 			return "running";
 		case SRUN_TASK_FAILED:
 			return "failed";
 		case SRUN_TASK_EXITED:
 			return "exited";
+		case SRUN_TASK_IO_WAIT:
+			return "waiting for io";
 		default:
 			return "unknown";
 	}
@@ -607,7 +649,7 @@ _do_task_input(job_t *job, int taskid)
 	}
 
 	if ((len = cbuf_read_to_fd(buf, fd, -1)) < 0) 
-		error ("writing stdin data; %m");
+		error ("writing stdin data: %m");
 
 	return len;
 }
@@ -657,6 +699,20 @@ _readn(int fd, void *buf, size_t nbytes)
 }
 
 static void
+_write_all(job_t *job, cbuf_t cb, char *buf, size_t len, int taskid)
+{
+	int n = 0;
+
+    again:
+	n = cbuf_write(cb, buf, len, NULL);
+	if ((n < len) && (job->out[taskid] > 0)) {
+		error("cbuf_write returned %d", n);
+		_do_task_input(job, taskid);
+		goto again;
+	}
+}
+
+static void
 _bcast_stdin(int fd, job_t *job)
 {
 	int i;
@@ -677,11 +733,12 @@ _bcast_stdin(int fd, job_t *job)
 
 	if (job->ifname->type == IO_ONE) {
 		i = job->ifname->taskid;
-		cbuf_write(job->inbuf[i], buf, len, NULL);
+		_write_all(job, job->inbuf[i], buf, len, i);
 	} else {
 		for (i = 0; i < opt.nprocs; i++) 
-			cbuf_write(job->inbuf[i], buf, len, NULL);
+			_write_all(job, job->inbuf[i], buf, len, i);
 	}
+
 	return;
 }
 

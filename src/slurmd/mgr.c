@@ -71,6 +71,29 @@ static int  _unblock_all_signals(void);
 static int  _send_exit_msg(int rc, task_info_t *t);
 static int  _complete_job(slurmd_job_t *job, int rc, int status);
 
+static void
+_setargs(slurmd_job_t *job, char **argv, int argc)
+{
+	int i;
+	size_t len = 0;
+	char *name = NULL;
+
+	for (i = 1; i < argc; i++) 
+		len += strlen(argv[0]) + 1;
+
+	xstrfmtcat(name, "slurmd [%d.%d]", job->jobid, job->stepid); 
+
+	if (len < strlen(name))
+		goto done;
+
+	memset(argv[0], 0, len);
+	strncpy(argv[0], name, strlen(name));
+
+    done:
+	xfree(name);
+	return;
+}
+
 /* Launch a job step on this node
  */
 int
@@ -85,9 +108,10 @@ mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli)
 	if (!(job = job_create(msg, cli)))
 		goto error;
 
+	_setargs(job, *conf->argv, *conf->argc);
+
 	verbose("running job step %d.%d for %s", 
 		job->jobid, job->stepid, job->pwd->pw_name);
-
 
 	/* Run job's tasks and wait for all tasks to exit.
 	 */

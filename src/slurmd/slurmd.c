@@ -91,6 +91,7 @@ static void       _create_conf();
 static void       _init_conf();
 static void       _print_conf();
 static void       _read_config();
+static void       _wait_for_all_threads();
 static void       _set_slurmd_spooldir(void);
 static void       _usage();
 static void       _handle_connection(slurm_fd fd, slurm_addr *client);
@@ -116,13 +117,16 @@ main (int argc, char *argv[])
 	if (conf->daemonize) 
 		daemon(0,0);
 
+	conf->argv = &argv;
+	conf->argc = &argc;
+
 	create_pidfile(conf->pidfile);
 	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
 	_print_conf();
 	info("%s started on %T", xbasename(argv[0]));
 	_create_msg_socket();
 	conf->pid = getpid();
-	
+
 	if (_slurmd_init() < 0)
 		exit(1);
 
@@ -134,6 +138,8 @@ main (int argc, char *argv[])
 	xsignal(SIGHUP,  &_hup_handler );
 
 	_msg_engine();
+
+	_wait_for_all_threads();
 
 	_slurmd_fini();
 
@@ -187,6 +193,21 @@ static void
 _tid_free(pthread_t *tid)
 {
 	xfree(tid);
+}
+
+static void
+_wait_for_all_threads()
+{
+	ListIterator i;
+	pthread_t *ptid;
+
+	debug("Cancelling %d running threads", list_count(conf->threads));
+
+	i = list_iterator_create(conf->threads);
+	while ((ptid = list_next(i))) {
+		pthread_cancel(*ptid);
+	}
+	list_iterator_destroy(i);
 }
 
 static void

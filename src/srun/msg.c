@@ -48,6 +48,7 @@
 
 #include "src/srun/job.h"
 #include "src/srun/opt.h"
+#include "src/srun/io.h"
 
 #ifdef HAVE_TOTALVIEW
 #include "src/srun/attach.h"
@@ -178,32 +179,32 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 	task_exit_msg_t *msg = (task_exit_msg_t *) exit_msg->data;
 
 	for (i=0; i<msg->num_tasks; i++) {
-		if ((msg->task_id_list[i] < 0) || 
-		    (msg->task_id_list[i] >= opt.nprocs)) {
-			error("task exit resp has bad task_id %d",
-			      msg->task_id_list[i]);
+		uint32_t taskid = msg->task_id_list[i];
+
+		if ((taskid < 0) || (taskid >= opt.nprocs)) {
+			error("task exit resp has bad task_id %d", taskid);
 			return;
 		}
 
 		if (msg->return_code)
 			verbose("task %d from node %s exited with status %d",  
-			        msg->task_id_list[i], 
-			        _taskid2hostname(msg->task_id_list[i], job), 
+			        taskid, _taskid2hostname(taskid, job), 
 			        msg->return_code);
 		else
-			debug2("task %d exited with status 0",  
-			       msg->task_id_list[i]);
+			debug2("task %d exited with status 0",  taskid);
 
-		pthread_mutex_lock(&job->task_mutex);
-		job->tstatus[msg->task_id_list[i]] = msg->return_code;
-		if (msg->return_code) {
-			job->task_state[msg->task_id_list[i]] = 
-						SRUN_TASK_FAILED;
-		} else {
-			job->task_state[msg->task_id_list[i]] = 
-						SRUN_TASK_EXITED;
+		slurm_mutex_lock(&job->task_mutex);
+		job->tstatus[taskid] = msg->return_code;
+		if (msg->return_code) 
+			job->task_state[taskid] = SRUN_TASK_FAILED;
+		else {
+			if (   (job->err[taskid] != IO_DONE) 
+			    || (job->out[taskid] != IO_DONE) )
+				job->task_state[taskid] = SRUN_TASK_IO_WAIT;
+			else
+				job->task_state[taskid] = SRUN_TASK_EXITED;
 		}
-		pthread_mutex_unlock(&job->task_mutex);
+		slurm_mutex_unlock(&job->task_mutex);
 
 		tasks_exited++;
 		if (tasks_exited == opt.nprocs) {
