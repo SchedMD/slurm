@@ -268,7 +268,10 @@ void slurm_free_launch_tasks_response_msg(launch_tasks_response_msg_t *
 
 void slurm_free_kill_job_msg(kill_job_msg_t * msg)
 {
-	xfree(msg);
+	if (msg) {
+		select_g_free_jobinfo(&msg->select_jobinfo);
+		xfree(msg);
+	}
 }
 
 void slurm_free_update_job_time_msg(job_time_msg_t * msg)

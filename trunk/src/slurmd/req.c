@@ -41,6 +41,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/node_select.c"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
@@ -77,8 +78,8 @@ static void _rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr);
 static void _rpc_reconfig(slurm_msg_t *msg, slurm_addr *cli_addr);
 static void _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *);
 static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
-static int  _run_prolog(uint32_t jobid, uid_t uid);
-static int  _run_epilog(uint32_t jobid, uid_t uid);
+static int  _run_prolog(uint32_t jobid, uid_t uid, char *bgl_part_id);
+static int  _run_epilog(uint32_t jobid, uid_t uid, char *bgl_part_id);
 static int  _spawn_task(spawn_task_request_msg_t *, slurm_addr *,
 			slurm_addr *);
 
@@ -395,7 +396,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	/* xassert(slurm_cred_jobid_cached(conf->vctx, req->job_id));*/
 
 	/* Run job prolog if necessary */
-	if (run_prolog && (_run_prolog(req->job_id, req->uid) != 0)) {
+	if (run_prolog && (_run_prolog(req->job_id, req->uid, NULL) != 0)) {
 		error("[job %u] prolog failed", req->job_id);
 		errnum = ESLURMD_PROLOG_FAILED;
 		goto done;
@@ -469,7 +470,7 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 	/* xassert(slurm_cred_jobid_cached(conf->vctx, req->job_id));*/
 
 	/* Run job prolog if necessary */
-	if (run_prolog && (_run_prolog(req->job_id, req->uid) != 0)) {
+	if (run_prolog && (_run_prolog(req->job_id, req->uid, NULL) != 0)) {
 		error("[job %u] prolog failed", req->job_id);
 		errnum = ESLURMD_PROLOG_FAILED;
 		goto done;
@@ -505,6 +506,7 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
 	int      rc = SLURM_SUCCESS;
 	uid_t    req_uid = g_slurm_auth_get_uid(msg->cred);
+	char    *bgl_part_id = NULL;
 
 	if (!_slurm_authorized_user(req_uid)) {
 		error("Security violation, batch launch RPC from uid %u",
@@ -516,7 +518,11 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	/* 
 	 * Run job prolog on this node
 	 */
-	if (_run_prolog(req->job_id, req->uid) != 0) {
+	select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_PART_ID, 
+			&bgl_part_id);
+	rc = _run_prolog(req->job_id, req->uid, bgl_part_id);
+	xfree(bgl_part_id);
+	if (rc != 0) {
 		error("[job %u] prolog failed", req->job_id);
 		rc = ESLURMD_PROLOG_FAILED;
 		goto done;
@@ -966,6 +972,7 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	uid_t           uid    = g_slurm_auth_get_uid(msg->cred);
 	int             nsteps = 0;
 	int		delay;
+	char           *bgl_part_id = NULL;
 
 	/* 
 	 * check that requesting user ID is the SLURM UID
@@ -1055,8 +1062,11 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	}
 
 	save_cred_state(conf->vctx);
-
-	if (_run_epilog(req->job_id, req->job_uid) != 0) {
+	select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_PART_ID,
+		&bgl_part_id);
+	rc = _run_epilog(req->job_id, req->job_uid, bgl_part_id);
+	xfree(bgl_part_id);
+	if (rc != 0) {
 		error ("[job %u] epilog failed", req->job_id);
 		rc = ESLURMD_EPILOG_FAILED;
 	} else
@@ -1169,23 +1179,23 @@ _rpc_update_time(slurm_msg_t *msg, slurm_addr *cli)
 }
 
 static int 
-_run_prolog(uint32_t jobid, uid_t uid)
+_run_prolog(uint32_t jobid, uid_t uid, char *bgl_part_id)
 {
 	int error_code;
 
 	slurm_mutex_lock(&conf->config_mutex);
-	error_code = run_script(true, conf->prolog, jobid, uid);
+	error_code = run_script(true, conf->prolog, jobid, uid, bgl_part_id);
 	slurm_mutex_unlock(&conf->config_mutex);
 	return error_code;
 }
 
 static int 
-_run_epilog(uint32_t jobid, uid_t uid)
+_run_epilog(uint32_t jobid, uid_t uid, char *bgl_part_id)
 {
 	int error_code;
 
 	slurm_mutex_lock(&conf->config_mutex);
-	error_code = run_script(false, conf->epilog, jobid, uid);
+	error_code = run_script(false, conf->epilog, jobid, uid, bgl_part_id);
 	slurm_mutex_unlock(&conf->config_mutex);
 	return error_code;
 }

@@ -168,6 +168,8 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 	last_node_update = time(NULL);
 	kill_job->job_id = job_ptr->job_id;
 	kill_job->job_uid = job_ptr->user_id;
+	kill_job->select_jobinfo = select_g_copy_jobinfo(
+			job_ptr->select_jobinfo);
 
 	for (i = 0; i < node_record_count; i++) {
 		struct node_record *node_ptr = &node_record_table_ptr[i];
@@ -1149,6 +1151,8 @@ extern void re_kill_job(struct job_record *job_ptr)
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
 	kill_job->job_id = job_ptr->job_id;
 	kill_job->job_uid = job_ptr->user_id;
+	kill_job->select_jobinfo = select_g_copy_jobinfo(
+			job_ptr->select_jobinfo);
 
 	for (i = 0; i < node_record_count; i++) {
 		struct node_record *node_ptr = &node_record_table_ptr[i];
