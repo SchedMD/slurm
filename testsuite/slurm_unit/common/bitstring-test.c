@@ -1,6 +1,6 @@
 /* Test of src/bitstring.c 
  */
-
+#include <stdlib.h>
 #include <src/common/bitstring.h>
 #include <sys/time.h>
 #include <testsuite/dejagnu.h>
