@@ -15,6 +15,7 @@ documents those changes that are of interest to users and admins.
  -- Convert all user commands from use of popt library to getopt_long()
  -- If TotalView support is requested, srun exports "totalview_jobid"
     variable for `%J' expansion in TV bulk launch string.
+ -- Fix several locking bugs in slurmd IO layer.
  -- Throttle back repetitious error messages in slurmd to avoid filling
     slurm logfiles.
 
