@@ -26,7 +26,7 @@ static slurm_errtab_t slurm_errtab[] = {
 
 	/* job_mgr.c/job_create */
 	{ ESLURM_INVALID_PARTITION_SPECIFIED, 	"Invalid partition name specified" },
-	{ ESLURM_DEFAULT_PATITION_NOT_SET, 	"System default partition not set" },
+	{ ESLURM_DEFAULT_PARTITION_NOT_SET, 	"System default partition not set" },
 	{ ESLURM_JOB_MISSING_PARTITION_KEY, 	"Key must be specified to use this partition" },
 	{ ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP,	"User's group not permitted to use this partition" },
 	{ ESLURM_REQUESTED_NODES_NOT_IN_PARTITION, "Requested nodes not in this partition" },

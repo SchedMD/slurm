@@ -513,7 +513,7 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 	else {
 		if (default_part_loc == NULL) {
 			error ("job_create: default partition not set.");
-			error_code = ESLURM_DEFAULT_PATITION_NOT_SET;
+			error_code = ESLURM_DEFAULT_PARTITION_NOT_SET;
 			return error_code ;
 		}		
 		part_ptr = default_part_loc;
