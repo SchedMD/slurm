@@ -4,13 +4,13 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 0.3.0.0-pre10 (not tagged yet)
 ================================
  -- Fix bugs in support of slurmctld "-f" option (specify different 
-    slurm.conf pathname)
- -- Remove slurmd "-f"
- -- Several documenation changes for slurm administrators
- -- Convert shared object plugins to use only functions with prefix
-    of "slurm_" to avoid linking conflicts with applications using 
-    SLURM library
- -- New srun options -Q, --quiet to suppress informational messages.
+    slurm.conf pathname).
+ -- Remove slurmd "-f" option.
+ -- Several documenation changes for slurm administrators.
+ -- On ELF systems, export only slurm_* functions from slurm API and 
+    ensure plugins use only slurm_ prefixed functions (created aliases
+    where necessary).
+ -- New srun option -Q, --quiet to suppress informational messages.
  -- Fix bug in slurmctld's building of nodelist for job (failed if 
     more than one numeric field in node name).
  -- Change "scontrol completing" and "sinfo" to use job's node bitmap
