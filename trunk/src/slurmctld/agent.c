@@ -113,6 +113,7 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count);
 static void _slurmctld_free_job_launch_msg(batch_job_launch_msg_t * msg);
 static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr);
 static void *_thread_per_node_rpc(void *args);
+static int   _valid_agent_arg(agent_arg_t *agent_arg_ptr);
 static void *_wdog(void *args);
 static void _xsignal(int signal, void (*handler) (int));
 
@@ -137,20 +138,8 @@ void *agent(void *args)
 	task_info_t *task_specific_ptr;
 
 	/* basic argument value tests */
-	if (agent_arg_ptr == NULL)
-		fatal("agent NULL argument");
-	if (agent_arg_ptr->node_count == 0)
-		goto cleanup;	/* no messages to be sent */
-	if (agent_arg_ptr->slurm_addr == NULL)
-		fatal("agent passed NULL address list");
-	if (agent_arg_ptr->node_names == NULL)
-		fatal("agent passed NULL node name list");
-	if ((agent_arg_ptr->msg_type != REQUEST_REVOKE_JOB_CREDENTIAL) &&
-	    (agent_arg_ptr->msg_type != REQUEST_NODE_REGISTRATION_STATUS)
-	    && (agent_arg_ptr->msg_type != REQUEST_PING)
-	    && (agent_arg_ptr->msg_type != REQUEST_BATCH_JOB_LAUNCH))
-		fatal("agent passed invalid message type %d",
-		      agent_arg_ptr->msg_type);
+	if (_valid_agent_arg(agent_arg_ptr))
+		goto cleanup;
 
 	/* initialize the data structures */
 	agent_info_ptr = xmalloc(sizeof(agent_info_t));
@@ -278,6 +267,27 @@ void *agent(void *args)
 		xfree(agent_info_ptr);
 	}
 	return NULL;
+}
+
+/* Basic validity test of agent argument */
+static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
+{
+	if (agent_arg_ptr == NULL)
+		fatal("agent NULL argument");
+	if (agent_arg_ptr->node_count == 0)
+		return SLURM_FAILURE;	/* no messages to be sent */
+	if (agent_arg_ptr->slurm_addr == NULL)
+		fatal("agent passed NULL address list");
+	if (agent_arg_ptr->node_names == NULL)
+		fatal("agent passed NULL node name list");
+	if ((agent_arg_ptr->msg_type != REQUEST_REVOKE_JOB_CREDENTIAL) &&
+	    (agent_arg_ptr->msg_type != REQUEST_NODE_REGISTRATION_STATUS) && 
+	    (agent_arg_ptr->msg_type != REQUEST_KILL_TASKS) && 
+	    (agent_arg_ptr->msg_type != REQUEST_PING) && 
+	    (agent_arg_ptr->msg_type != REQUEST_BATCH_JOB_LAUNCH))
+		fatal("agent passed invalid message type %d",
+		      agent_arg_ptr->msg_type);
+	return SLURM_SUCCESS;
 }
 
 /* 

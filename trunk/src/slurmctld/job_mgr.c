@@ -56,6 +56,7 @@
 #include "src/common/slurm_errno.h"
 #include "src/common/xstring.h"
 
+#include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -122,7 +123,8 @@ static void _read_data_from_file(char *file_name, char **data);
 static void _set_job_id(struct job_record *job_ptr);
 static void _set_job_prio(struct job_record *job_ptr);
 static void _signal_job_on_node(uint32_t job_id, uint16_t step_id,
-				int signum, char *node_name);
+				int signum, struct node_record *node_ptr);
+static void _spawn_signal_agent(agent_arg_t *agent_info);
 static bool _top_priority(struct job_record *job_ptr);
 static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate);
 static int  _validate_job_create_req(job_desc_msg_t * job_desc);
@@ -991,9 +993,9 @@ int init_job_conf(void)
 		job_count = 0;
 		job_list = list_create(&_list_delete_job);
 		if (job_list == NULL)
-			fatal
-			    ("init_job_conf: list_create can not allocate memory");
+			fatal("init_job_conf: No memory");
 	}
+
 	last_job_update = time(NULL);
 	return SLURM_SUCCESS;
 }
@@ -1270,6 +1272,7 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 		}
 		part_ptr = default_part_loc;
 	}
+
 	if (job_desc->time_limit == NO_VAL)
 		/* Default time_limit is partition maximum */
 		job_desc->time_limit = part_ptr->max_time;
@@ -2518,7 +2521,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 			error("Orphan job %u.%u reported on node %s",
 			      job_id_ptr[i], step_id_ptr[i], node_name);
 			_signal_job_on_node(job_id_ptr[i], step_id_ptr[i],
-					    SIGKILL, node_name);
+					    SIGKILL, node_ptr);
 			/* We may well have pending purge job RPC to send 
 			 * slurmd, which would synchronize this */
 		}
@@ -2531,24 +2534,24 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 				       node_name);
 			} else {
 				error
-				    ("REGISTERED JOB %u.u ON WRONG NODE %s ",
+				    ("Registered job %u.u on wrong node %s ",
 				     job_id_ptr[i], step_id_ptr[i], node_name);
 				_signal_job_on_node(job_id_ptr[i],
 						    step_id_ptr[i],
-						    SIGKILL, node_name);
+						    SIGKILL, node_ptr);
 			}
 		}
 
 		else if (job_ptr->job_state == JOB_PENDING) {
-			error("REGISTERED PENDING JOB %u.%u ON NODE %s ",
+			error("Registered PENDING job %u.%u on node %s ",
 			      job_id_ptr[i], step_id_ptr[i], node_name);
-			error("CODE DEVELOPMENT NEEDED HERE");
+			/* FIXME: Could possibly recover the job */
 			job_ptr->job_state = JOB_FAILED;
 			last_job_update = time(NULL);
 			job_ptr->end_time = time(NULL);
 			delete_job_details(job_ptr);
 			_signal_job_on_node(job_id_ptr[i], step_id_ptr[i],
-					    SIGKILL, node_name);
+					    SIGKILL, node_ptr);
 		}
 
 		else {		/* else job is supposed to be done */
@@ -2558,7 +2561,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 			     job_state_string(job_ptr->job_state),
 			     node_name);
 			_signal_job_on_node(job_id_ptr[i], step_id_ptr[i],
-					    SIGKILL, node_name);
+					    SIGKILL, node_ptr);
 			/* We may well have pending purge job RPC to send 
 			 * slurmd, which would synchronize this */
 		}
@@ -2576,12 +2579,51 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
  *	and node_name */
 static void
 _signal_job_on_node(uint32_t job_id, uint16_t step_id, int signum,
-		    char *node_name)
+		    struct node_record *node_ptr)
 {
-	/* FIXME: add code to send RPC to specified node */
-	debug("Signal %d send to job %u.%u on node %s",
-	      signum, job_id, step_id, node_name);
-	error("CODE DEVELOPMENT NEEDED HERE");
+	agent_arg_t *agent_info;
+	kill_tasks_msg_t *signal_req;
+
+	debug("Sending %d signal to job %u.%u on node %s",
+	      signum, job_id, step_id, node_ptr->name);
+
+	signal_req = xmalloc(sizeof(kill_tasks_msg_t));
+	signal_req->job_id	= job_id;
+	signal_req->job_step_id	= step_id;
+	signal_req->signal	= signum;
+
+	agent_info = xmalloc(sizeof(agent_arg_t));
+	agent_info->node_count	= 1;
+	agent_info->retry	= 0;
+	agent_info->slurm_addr	= xmalloc(sizeof(slurm_addr));
+	memcpy(agent_info->slurm_addr, 
+	       &node_ptr->slurm_addr, sizeof(slurm_addr));
+	agent_info->node_names	= xmalloc(MAX_NAME_LEN);
+	strncpy(agent_info->node_names, node_ptr->comm_name, MAX_NAME_LEN);
+	agent_info->msg_type	= REQUEST_KILL_TASKS;
+	agent_info->msg_args	= signal_req;
+
+	_spawn_signal_agent(agent_info);
+}
+
+static void _spawn_signal_agent(agent_arg_t *agent_info)
+{
+	pthread_attr_t kill_attr_agent;
+	pthread_t kill_thread_agent;
+	if (pthread_attr_init (&kill_attr_agent))
+		fatal ("pthread_attr_init error %m");
+	if (pthread_attr_setdetachstate (&kill_attr_agent, 
+					 PTHREAD_CREATE_DETACHED))
+		error ("pthread_attr_setdetachstate error %m");
+#ifdef PTHREAD_SCOPE_SYSTEM
+	if (pthread_attr_setscope (&kill_attr_agent, PTHREAD_SCOPE_SYSTEM))
+		error ("pthread_attr_setscope error %m");
+#endif
+	if (pthread_create (&kill_thread_agent, &kill_attr_agent, 
+				agent, (void *)agent_info)) {
+		error ("pthread_create error %m");
+		agent((void *)agent_info);
+	}
 }
 
 

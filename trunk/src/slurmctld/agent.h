@@ -41,7 +41,7 @@ typedef struct agent_arg {
 	uint32_t	node_count;	/* number of nodes to communicate 
 					 * with */
 	uint16_t	retry;		/* if set, keep trying */
-	slurm_addr *slurm_addr;		/* array of network addresses */
+	slurm_addr	*slurm_addr;	/* array of network addresses */
 	char		*node_names;	/* array with MAX_NAME_LEN bytes
 					 * per node */
 	slurm_msg_type_t msg_type;	/* RPC to be issued */
