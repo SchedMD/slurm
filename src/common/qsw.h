@@ -20,11 +20,11 @@ struct qsw_jobinfo {
 	ELAN_CAPABILITY j_cap;
 };
 
-int qsw_init(struct qsw_libstate *ls);
-void qsw_fini(struct qsw_libstate *ls);
-int qsw_create_jobinfo(struct qsw_jobinfo **jp, int nprocs, bitstr_t *nodeset, 
-			int cyclic_alloc);
-void qsw_destroy_jobinfo(struct qsw_jobinfo *jp);
+int 	qsw_init(struct qsw_libstate *ls);
+void 	qsw_fini(struct qsw_libstate *ls);
+int 	qsw_create_jobinfo(struct qsw_jobinfo **jp, int nprocs, 
+		bitstr_t *nodeset, int cyclic_alloc);
+void 	qsw_destroy_jobinfo(struct qsw_jobinfo *jp);
 
 
 #endif /* _QSW_INCLUDED */
