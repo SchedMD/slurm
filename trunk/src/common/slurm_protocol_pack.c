@@ -84,7 +84,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_RESOURCE_ALLOCATION :
 		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : 
 		case RESPONSE_JOB_WILL_RUN :
-			pack_job_allocation_response_msg ( ( resource_allocation_response_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;
+			pack_resource_allocation_response_msg ( ( resource_allocation_response_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_UPDATE_NODE :
 			pack_update_node_msg ( ( update_node_msg_t * ) msg-> data , ( void ** ) buffer , buf_len ) ;
@@ -198,7 +198,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_RESOURCE_ALLOCATION :
 		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : 
 		case RESPONSE_JOB_WILL_RUN :
-			unpack_job_allocation_response_msg ( ( resource_allocation_response_msg_t ** ) & ( msg -> data ) , ( void ** ) buffer , buf_len ) ;
+			unpack_resource_allocation_response_msg ( ( resource_allocation_response_msg_t ** ) & ( msg -> data ) , ( void ** ) buffer , buf_len ) ;
 			break ;
 
 		case REQUEST_UPDATE_NODE :
@@ -289,30 +289,6 @@ int unpack_update_node_msg ( update_node_msg_t ** msg , void ** buffer , uint32_
 	return 0 ;
 }
 
-void pack_job_allocation_response_msg ( resource_allocation_response_msg_t * msg, void ** buffer , uint32_t * length )
-{
-	pack32 ( msg -> job_id , ( void ** ) buffer , length ) ;
-	packstr ( msg -> node_list , ( void ** ) buffer , length ) ;
-}
-
-int unpack_job_allocation_response_msg ( resource_allocation_response_msg_t ** msg , void ** buffer , uint32_t * length )
-{
-	uint16_t uint16_tmp;
-	resource_allocation_response_msg_t * tmp_ptr ;
-	/* alloc memory for structure */	
-	tmp_ptr = xmalloc ( sizeof ( resource_allocation_response_msg_t ) ) ;
-	if (tmp_ptr == NULL) 
-	{
-		return ENOMEM;
-	}
-
-	/* load the data values */
-	unpack32 ( & tmp_ptr -> job_id , ( void ** ) buffer , length ) ;
-	unpackstr_xmalloc ( & tmp_ptr -> node_list , &uint16_tmp,  ( void ** ) buffer , length ) ;
-	*msg = tmp_ptr ;
-	return 0 ;
-}
-
 void pack_node_registration_status_msg ( slurm_node_registration_status_msg_t * msg, void ** buffer , uint32_t * length )
 {
 	pack32 ( msg -> timestamp , ( void ** ) buffer , length ) ;
@@ -341,6 +317,36 @@ int unpack_node_registration_status_msg ( slurm_node_registration_status_msg_t *
 	unpack32 ( & node_reg_ptr -> real_memory_size , ( void ** ) buffer , length ) ;
 	unpack32 ( & node_reg_ptr -> temporary_disk_space , ( void ** ) buffer , length ) ;
 	*msg = node_reg_ptr ;
+	return 0 ;
+}
+
+void pack_resource_allocation_response_msg ( resource_allocation_response_msg_t * msg, void ** buffer , int * length )
+{
+	pack32 ( msg->job_id , ( void ** ) buffer , length ) ;
+	packstr ( msg->node_list , ( void ** ) buffer , length ) ;
+	pack16 ( msg->num_cpu_groups , ( void ** ) buffer , length ) ;
+	packint_array ( msg->cpus_per_node, msg->num_cpu_groups , ( void ** ) buffer  , length ) ;
+	packint_array ( msg->cpu_count_reps, msg->num_cpu_groups, ( void ** ) buffer  , length ) ;
+}
+
+int unpack_resource_allocation_response_msg ( resource_allocation_response_msg_t ** msg , void ** buffer , int * length )
+{
+	uint16_t uint16_tmp;
+	resource_allocation_response_msg_t * tmp_ptr ;
+	/* alloc memory for structure */	
+	tmp_ptr = xmalloc ( sizeof ( resource_allocation_response_msg_t ) ) ;
+	if (tmp_ptr == NULL) 
+	{
+		return ENOMEM;
+	}
+
+	/* load the data values */
+	unpack32 ( & tmp_ptr -> job_id , ( void ** ) buffer , length ) ;
+	unpackstr_xmalloc ( & tmp_ptr -> node_list , &uint16_tmp,  ( void ** ) buffer , length ) ;
+	unpack16 ( & tmp_ptr -> num_cpu_groups , ( void ** ) buffer , length ) ;
+	unpackint_array ( &tmp_ptr->cpus_per_node, &uint16_tmp, ( void ** ) buffer  , length ) ;
+	unpackint_array ( &tmp_ptr->cpu_count_reps,&uint16_tmp,  ( void ** ) buffer  , length ) ;
+	*msg = tmp_ptr ;
 	return 0 ;
 }
 

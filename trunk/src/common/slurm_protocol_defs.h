@@ -169,8 +169,9 @@ typedef struct resource_allocation_response_msg
 {
 	uint32_t job_id;
 	char* node_list;
-	uint32_t* cpus_per_node;
-	uint32_t* cpu_count_reps;
+	int16_t num_cpu_groups;
+	int32_t* cpus_per_node;
+	int32_t* cpu_count_reps;
 } resource_allocation_response_msg_t ;
 
 typedef struct job_desc_msg {   /* Job descriptor for submit, allocate, and update requests */

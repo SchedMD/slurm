@@ -46,7 +46,34 @@ _unpack32(uint32_t *valp, void **bufp, int *lenp)
 	(size_t)*bufp += sizeof(nl);
 	*lenp -= sizeof(nl);
 }
+
+/* Given a int ptr, it will pack an array of size_val
+ */
+void
+_pack32array(uint32_t *valp, uint16_t size_val, void **bufp, int *lenp)
+{
+	int i=0;
+	uint16_t nl = htons(size_val);
+	_pack16( nl, bufp, lenp );
+
+	for ( i=0; i < size_val; i++ ) {
+		_pack32( *(valp + i ), bufp, lenp );
+	}
+}
+
+/* Given a int ptr, it will pack an array of size_val
+ */
+void
+_unpack32array( uint32_t **valp, uint16_t* size_val, void **bufp, int *lenp)
+{
+	int i=0;
+	_unpack16( size_val, bufp, lenp );
+	valp = xmalloc( (*size_val) * sizeof( uint32_t ) );
 	
+	for ( i=0; i < *size_val; i++ ) {
+		_unpack32( valp + i , bufp, lenp );
+	}
+}	
 /*
  * Given a 16-bit integer in host byte order, convert to network byte order
  * and store at 'bufp'.  Advance bufp by 2 bytes, decrement lenp by 2 bytes.
@@ -99,6 +126,8 @@ _packmem(char *valp, uint16_t size_val, void **bufp, int *lenp)
 	*lenp -= size_val;
 
 }
+
+
 
 
 /*
@@ -161,7 +190,8 @@ _unpackmem_xmalloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
 		*valp = NULL;
 
 }
-	/*
+
+/*
  * Given 'bufp' pointing to a network byte order 32-bit integer
  * (size) and an arbitrary data string, return a pointer to the 
  * data string in 'valp'.  Also return the sizes of 'valp' in bytes. 
