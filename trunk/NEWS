@@ -3,8 +3,10 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.4.6
 ========================
- -- smap now works on non-BGL systems
- -- took tv.h out of partition_allocator so it would work withn driver 080 from IBM
+ -- smap now works on non-BGL systems.
+ -- took tv.h out of partition_allocator so it would work withn driver 080 from IBM.
+ -- updated slurmd signal handling to prevent possible user killing of daemon.
+
 * Changes in SLURM 0.4.5
 ========================
  -- Change sinfo default time limit field to have 10 bytes (up from 9).
