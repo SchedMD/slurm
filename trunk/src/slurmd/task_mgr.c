@@ -160,14 +160,14 @@ int forward_io ( task_start_t * task_arg )
 	{
 		local_errno = errno ;	
 		info ( "error opening socket to srun to pipe stdout errno %i" , local_errno ) ;
-		pthread_exit ( 0 ) ;
+//		pthread_exit ( 0 ) ;
 	}
 	
 	if ( ( task_arg->sockets[SIG_STDERR_SOCK] = slurm_open_stream ( &( task_arg -> err_dest ) ) ) == SLURM_PROTOCOL_ERROR )
 	{
 		local_errno = errno ;	
 		info ( "error opening socket to srun to pipe stdout errno %i" , local_errno ) ;
-		pthread_exit ( 0 ) ;
+//		pthread_exit ( 0 ) ;
 	}
 	
 	/* spawn io pipe threads */
