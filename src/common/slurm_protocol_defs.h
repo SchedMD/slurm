@@ -266,7 +266,8 @@ typedef struct launch_tasks_response_msg {
 } launch_tasks_response_msg_t;
 
 typedef struct task_ext_msg {
-	uint32_t task_id;
+	uint32_t num_tasks;
+	uint32_t *task_id_list;
 	uint32_t return_code;
 } task_exit_msg_t;
 

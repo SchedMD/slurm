@@ -781,6 +781,7 @@ _unpack_resource_allocation_response_msg(resource_allocation_response_msg_t
 					 ** msg, Buf buffer)
 {
 	uint16_t uint16_tmp;
+	uint32_t uint32_tmp;
 	resource_allocation_response_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
@@ -799,10 +800,10 @@ _unpack_resource_allocation_response_msg(resource_allocation_response_msg_t
 		tmp_ptr->cpu_count_reps = (uint32_t *)
 		    xmalloc(sizeof(uint32_t) * tmp_ptr->num_cpu_groups);
 		safe_unpack32_array((uint32_t **) &
-				    (tmp_ptr->cpus_per_node), &uint16_tmp,
+				    (tmp_ptr->cpus_per_node), &uint32_tmp,
 				    buffer);
 		safe_unpack32_array((uint32_t **) &
-				    (tmp_ptr->cpu_count_reps), &uint16_tmp,
+				    (tmp_ptr->cpu_count_reps), &uint32_tmp,
 				    buffer);
 	} else {
 		tmp_ptr->cpus_per_node = NULL;
@@ -857,6 +858,7 @@ static int
  _unpack_resource_allocation_and_run_response_msg
     (resource_allocation_and_run_response_msg_t ** msg, Buf buffer) {
 	uint16_t uint16_tmp;
+	uint32_t uint32_tmp;
 	resource_allocation_and_run_response_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
@@ -875,11 +877,11 @@ static int
 		tmp_ptr->cpu_count_reps = (uint32_t *)
 		    xmalloc(sizeof(uint32_t) * tmp_ptr->num_cpu_groups);
 		safe_unpack32_array((uint32_t **) &
-				    (tmp_ptr->cpus_per_node), &uint16_tmp,
-				    buffer);
+				    (tmp_ptr->cpus_per_node), 
+				    &uint32_tmp, buffer);
 		safe_unpack32_array((uint32_t **) &
-				    (tmp_ptr->cpu_count_reps), &uint16_tmp,
-				    buffer);
+				    (tmp_ptr->cpu_count_reps), 
+				    &uint32_tmp, buffer);
 	}
 
 	safe_unpack32(&tmp_ptr->job_step_id, buffer);
@@ -1914,20 +1916,24 @@ _unpack_reattach_tasks_response_msg(reattach_tasks_response_msg_t ** msg_ptr,
 static void
 _pack_task_exit_msg(task_exit_msg_t * msg, Buf buffer)
 {
-	pack32(msg->task_id, buffer);
 	pack32(msg->return_code, buffer);
+	pack32(msg->num_tasks, buffer);
+	pack32_array(msg->task_id_list,
+		     msg->num_tasks, buffer);
 }
 
 static int
 _unpack_task_exit_msg(task_exit_msg_t ** msg_ptr, Buf buffer)
 {
 	task_exit_msg_t *msg;
+	uint32_t uint32_tmp;
 
 	msg = xmalloc(sizeof(task_exit_msg_t));
 	*msg_ptr = msg;
 
-	safe_unpack32(&msg->task_id, buffer);
 	safe_unpack32(&msg->return_code, buffer);
+	safe_unpack32(&msg->num_tasks, buffer);
+	safe_unpack32_array(&msg->task_id_list, &uint32_tmp, buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:
@@ -1991,7 +1997,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	packstr(msg->efname, buffer);
 	packstr(msg->ifname, buffer);
 	pack32_array(msg->global_task_ids,
-		     (uint16_t) msg->tasks_to_launch, buffer);
+		     msg->tasks_to_launch, buffer);
 #ifdef HAVE_LIBELAN3
 	qsw_pack_jobinfo(msg->qsw_job, buffer);
 #endif
@@ -2002,6 +2008,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 				 msg_ptr, Buf buffer)
 {
 	uint16_t uint16_tmp;
+	uint32_t uint32_tmp;
 	launch_tasks_request_msg_t *msg;
 
 	msg = xmalloc(sizeof(launch_tasks_request_msg_t));
@@ -2025,7 +2032,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	safe_unpackstr_xmalloc(&msg->ofname, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg->efname, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg->ifname, &uint16_tmp, buffer);
-	safe_unpack32_array(&msg->global_task_ids, &uint16_tmp, buffer);
+	safe_unpack32_array(&msg->global_task_ids, &uint32_tmp, buffer);
 
 #ifdef HAVE_LIBELAN3
 	qsw_alloc_jobinfo(&msg->qsw_job);
