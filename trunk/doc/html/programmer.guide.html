@@ -177,12 +177,20 @@ such a capability at a later time if so desired.
 <h2>To Do</h2>
 <ul>
 <li>We need to build up a reasonable Makefile.</li>
-<li>How do we interface with TotalView</li>
+<li>How do we interface with TotalView?</li>
+<li>If we develop a simple scheduler (outside of DPCS), the addition of 
+parameters makes things get really complex very quickly. Trying to 
+map jobs onto consecuitve nodes in particular is difficult. To keep 
+things simple, we probably just want to something simple like FCFS 
+or trying to start jobs in priority order.</li>
+<li>Deadlines: MCR to be built in July 2002, accepted August 2002.</li>
+<li>SLURM needs to use switch for timely distribution of executable and 
+stdin files.</li>
 </ul>
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/programmer.guide.html
-<p>Last Modified January 15, 2002</p>
+<p>Last Modified January 18, 2002</p>
 <address>Maintained by Moe Jette <a href="mailto:jette@llnl.gov">
 jette1@llnl.gov</a></address>
 </body>
