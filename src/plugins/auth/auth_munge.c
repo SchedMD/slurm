@@ -441,7 +441,6 @@ static int
 _decode_cred(char *m, slurm_auth_credential_t *c)
 {
 	int retry = 2;
-	sigset_t set, oset;
 	munge_err_t e;
 	munge_ctx_t ctx;
 
@@ -457,18 +456,6 @@ _decode_cred(char *m, slurm_auth_credential_t *c)
 		error("munge_ctx_create failure");
 		return SLURM_ERROR;
 	}
-
-	/*
-	 *  Block all signals to allow munge_decode() to proceed
-	 *   uninterrupted. (Testing for gnats slurm/223)
-	 */
-	sigemptyset(&oset);	/* for clean valgrind */
-	sigfillset(&set);
-	sigdelset(&set, SIGABRT);
-	sigdelset(&set, SIGSEGV);
-	sigdelset(&set, SIGILL);
-	if (pthread_sigmask(SIG_SETMASK, &set, &oset) < 0) 
-		error("pthread_sigmask: %m");
 
     again:
 	if ((e = munge_decode(m, ctx, &c->buf, &c->len, &c->uid, &c->gid))) {
@@ -491,9 +478,6 @@ _decode_cred(char *m, slurm_auth_credential_t *c)
 	c->verified = true;
 
      done:
-	if (pthread_sigmask(SIG_SETMASK, &oset, NULL) < 0) 
-		error("pthread_sigmask: %m");
-
 	munge_ctx_destroy(ctx);
 
 	return e ? SLURM_ERROR : SLURM_SUCCESS;
