@@ -571,7 +571,7 @@ int unpack_job_table ( job_table_t * job , void ** buf_ptr , int * buffer_size )
 	if (node_inx_str == NULL)
 		job->req_node_inx = bitfmt2int("");
 	else {
-		job->node_inx = bitfmt2int(node_inx_str);
+		job->req_node_inx = bitfmt2int(node_inx_str);
 		xfree ( node_inx_str );
 	}
 	unpackstr_xmalloc (&job->features, &uint16_tmp, buf_ptr, buffer_size);
