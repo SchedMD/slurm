@@ -4,6 +4,7 @@
 #include <src/slurmctld/slurmctld.h>
 #include <testsuite/dejagnu.h>
 
+slurm_ctl_conf_t slurmctld_conf;
 int
 main (int argc, char *argv[]) 
 {
