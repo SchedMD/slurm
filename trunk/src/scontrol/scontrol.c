@@ -486,11 +486,16 @@ void
 print_step (char *job_step_id_str)
 {
 	int error_code, i, print_cnt=0;
-	uint32_t job_id = 0;
-	uint16_t step_id = 0;
+	uint32_t job_id = 0, step_id = 0;
 	char *next_str;
 	job_step_info_response_msg_t *job_step_info_ptr;
 	job_step_info_t * job_step_ptr;
+
+	if (job_step_id_str) {
+		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
+		if (next_str[0] == '.')
+			step_id = (uint32_t) strtol (&next_str[1], NULL, 10);
+	}
 
 	error_code = slurm_get_job_steps ( job_id, step_id, &job_step_info_ptr);
 	if (error_code) {
@@ -501,12 +506,6 @@ print_step (char *job_step_id_str)
 	
 	if (quiet_flag == -1)
 		printf ("last_update_time=%ld,\n", (long) job_step_info_ptr->last_update);
-
-	if (job_step_id_str) {
-		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
-		if (next_str[0] == '.')
-			step_id = (uint32_t) strtol (&next_str[1], NULL, 10);
-	}
 
 	job_step_ptr = job_step_info_ptr->job_steps ;
 	for (i = 0; i < job_step_info_ptr->job_step_count; i++) {
@@ -520,7 +519,7 @@ print_step (char *job_step_id_str)
 			break;
 	}
 
-	if ((print_cnt == 0) && (quiet_flag != 1)) {
+	if ((job_step_info_ptr->job_step_count == 0) && (quiet_flag != 1)) {
 		if (job_step_info_ptr->job_step_count)
 			printf ("Job step %u.%u not found\n", job_id, step_id);
 		else
@@ -634,7 +633,7 @@ process_command (int argc, char *argv[])
 				 "too many arguments for keyword:%s\n", argv[0]);
 		error_code = slurm_shutdown ();
 		if ((error_code != 0) && (quiet_flag != 1))
-			fprintf (stderr, "error %d from reconfigure\n", error_code);
+			fprintf (stderr, "error %d from shutdown\n", error_code);
 
 	}
 	else if (strcmp_i (argv[0], "update") == 0) {
