@@ -21,7 +21,7 @@ print_header $test_id
 set timeout $max_job_delay
 spawn $srun -N1 -t1 $bin_env
 expect {
-	-re "SLURM_($alpha_under)=($number)" {
+	-re "SLURM_($alpha_under)=($alpha_numeric)" {
                 if {[string compare $expect_out(1,string) "JOBID"] == 0 &&
 		    $expect_out(2,string) > 0} {
 			incr matches
@@ -52,6 +52,16 @@ expect {
 			incr matches
 			exp_continue
 		}
+		if {[string compare $expect_out(1,string) "LAUNCH_NODE_IPADDR"] == 0 &&
+		    $expect_out(2,string) > 0} {
+			incr matches
+			exp_continue
+		}
+		if {[string compare $expect_out(1,string) "NODELIST"] == 0 &&
+		    $expect_out(2,string) > 0} {
+			incr matches
+			exp_continue
+		}
 		exp_continue
 	}
 	timeout {
@@ -65,8 +75,8 @@ expect {
 	}
 }
 
-if {$matches != 6} {
-	send_user "\nFAILURE: Not all SLURM environment variables set ($matches of 6)\n"
+if {$matches != 8} {
+	send_user "\nFAILURE: Not all SLURM environment variables set ($matches of 8)\n"
 	set exit_code 1
 }
 
