@@ -46,7 +46,6 @@
 static int   _load_long (long *destination, char *keyword, char *in_line) ;
 static int   _load_integer (int *destination, char *keyword, char *in_line) ;
 static int   _load_float (float *destination, char *keyword, char *in_line) ;
-static void  _remove_quotes (char **destination) ;
 static char *_strcasestr(char *haystack, char *needle);
 
 /* 
@@ -278,43 +277,30 @@ load_string  (char **destination, char *keyword, char *in_line)
 
 	str_ptr1 = (char *) _strcasestr (in_line, keyword);
 	if (str_ptr1 != NULL) {
+		int quoted = 0;
 		str_len1 = strlen (keyword);
-		strcpy (scratch, str_ptr1 + str_len1);
-		if ((scratch[0] == (char) NULL) || 
-		    (isspace ((int) scratch[0]))) {	
-			/* keyword with no value set */
+		if (str_ptr1[str_len1] == '"')
+			quoted = 1;
+		strcpy (scratch, str_ptr1 + str_len1 + quoted);
+		if (quoted)
+			str_ptr2 = strtok_r (scratch, "\042\n", &str_ptr3);
+		else
+			str_ptr2 = strtok_r (scratch, SEPCHARS, &str_ptr3);
+		if ((str_ptr2 == NULL) ||
+		    ((str_len2 = strlen (str_ptr2))== 0)){
 			info ("load_string : keyword %s lacks value", 
 			      keyword);
 			return EINVAL;
 		}
-		str_ptr2 = (char *) strtok_r (scratch, SEPCHARS, &str_ptr3);
-		str_len2 = strlen (str_ptr2);
-		if (destination[0] != NULL)
-			xfree (destination[0]);
+		xfree (destination[0]);
 		destination[0] = (char *) xmalloc (str_len2 + 1);
 		strcpy (destination[0], str_ptr2);
-		for (i = 0; i < (str_len1 + str_len2); i++) {
+		for (i = 0; i < (str_len1 + str_len2 + quoted); i++)
 			str_ptr1[i] = ' ';
-		}
-		if (destination[0][0] == '"')
-			_remove_quotes (destination) ;
+		if (quoted && (str_ptr1[i] == '"'))
+			str_ptr1[i] = ' ';
 	}
 	return 0;
-}
-
-/* give a string starting and ending with '"', remove the quotes */
-static void
-_remove_quotes (char **destination)
-{
-	int i;
-
-	for (i=0; ; i++) {
-		destination[0][i] = destination[0][i+1];
-		if (destination[0][i] == '"')
-			destination[0][i] = '\0';
-		if (destination[0][i] == '\0')
-			break;
-	}
 }
 
 /* case insensitve version of strstr() */
