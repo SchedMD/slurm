@@ -49,6 +49,7 @@ int init_circular_buffer ( circular_buffer_t ** buf_ptr )
 
 void print_circular_buffer ( circular_buffer_t * buf )
 {
+	info ( "" ) ;
 	info ( "buffer  %X", buf -> buffer ) ;
 	info ( "start   %X", buf -> start ) ;
 	info ( "end     %X", buf -> end ) ;
@@ -61,7 +62,7 @@ void print_circular_buffer ( circular_buffer_t * buf )
 	info ( "write s %i", buf -> write_size ) ;
 }
 
-int read_update ( circular_buffer_t * buf , unsigned int size )
+int cir_buf_read_update ( circular_buffer_t * buf , unsigned int size )
 {
 	/*if zero read, just return */
 	if ( size == 0 )
@@ -121,7 +122,7 @@ int read_update ( circular_buffer_t * buf , unsigned int size )
 	return SLURM_SUCCESS ;
 }
 
-int write_update ( circular_buffer_t * buf , unsigned int size )
+int cir_buf_write_update ( circular_buffer_t * buf , unsigned int size )
 {
 	/*if zero read, just return */
 	if ( size == 0 )
@@ -164,7 +165,7 @@ int write_update ( circular_buffer_t * buf , unsigned int size )
 			buf -> read_size = buf -> tail - buf -> head ;
 		}
 	}
-	else if ( buf->tail < buf->head ) /* CASE tail befpre head */
+	else if ( buf->tail < buf->head ) /* CASE tail before head */
 	{
 		buf -> write_size = buf -> head - buf -> tail ;
 		buf -> read_size = buf -> end - buf -> head ;

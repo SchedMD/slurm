@@ -16,18 +16,18 @@ int main ( int argc , char ** argv )
 	
 	info ( "init") ;
 	print_circular_buffer ( cir1 ) ;
-	write_update ( cir1 , 8192 ) ;
-	info ( "write 8k") ;
+	cir_buf_write_update ( cir1 , 8192 ) ;
+	info ( "cir_buf_write 8k") ;
 	print_circular_buffer ( cir1 ) ;
-	read_update ( cir1 , 8192 ) ;
-	info ( "read 8k") ;
+	cir_buf_read_update ( cir1 , 8192 ) ;
+	info ( "cir_buf_read 8k") ;
 	print_circular_buffer ( cir1 ) ;
 
-	write_update ( cir1 , 8192 ) ;
-	info ( "write 8k") ;
+	cir_buf_write_update ( cir1 , 8192 ) ;
+	info ( "cir_buf_write 8k") ;
 	print_circular_buffer ( cir1 ) ;
-	read_update ( cir1 , 8192 ) ;
-	info ( "read 8k") ;
+	cir_buf_read_update ( cir1 , 8192 ) ;
+	info ( "cir_buf_read 8k") ;
 	print_circular_buffer ( cir1 ) ;
 	
 	free_circular_buffer ( cir1 ) ;
@@ -38,31 +38,31 @@ int main ( int argc , char ** argv )
 	
 	info ( "init") ;
 	print_circular_buffer ( cir1 ) ;
-	write_update ( cir1 , 8192 ) ;
-	info ( "write 8k") ;
+	cir_buf_write_update ( cir1 , 8192 ) ;
+	info ( "cir_buf_write 8k") ;
 	print_circular_buffer ( cir1 ) ;
-	read_update ( cir1 , 8192 ) ;
-	info ( "read 8k") ;
-	print_circular_buffer ( cir1 ) ;
-	
-	write_update ( cir1 , 6 * 1024 ) ;
-	info ( "write 6k") ;
-	print_circular_buffer ( cir1 ) ;
-	read_update ( cir1 , 4 * 1024 ) ;
-	info ( "read 4k") ;
+	cir_buf_read_update ( cir1 , 8192 ) ;
+	info ( "cir_buf_read 8k") ;
 	print_circular_buffer ( cir1 ) ;
 	
-	write_update ( cir1 , 2 * 1024 ) ;
-	info ( "write 2k") ;
+	cir_buf_write_update ( cir1 , 6 * 1024 ) ;
+	info ( "cir_buf_write 6k") ;
 	print_circular_buffer ( cir1 ) ;
-	write_update ( cir1 , 2 * 1024 ) ;
-	info ( "write 2k") ;
+	cir_buf_read_update ( cir1 , 4 * 1024 ) ;
+	info ( "cir_buf_read 4k") ;
 	print_circular_buffer ( cir1 ) ;
-	write_update ( cir1 , 2 * 1024 ) ;
-	info ( "write 2k") ;
+	
+	cir_buf_write_update ( cir1 , 2 * 1024 ) ;
+	info ( "cir_buf_write 2k") ;
 	print_circular_buffer ( cir1 ) ;
-	read_update ( cir1 , 8 * 1024 ) ;
-	info ( "read 8k") ;
+	cir_buf_write_update ( cir1 , 2 * 1024 ) ;
+	info ( "cir_buf_write 2k") ;
+	print_circular_buffer ( cir1 ) ;
+	cir_buf_write_update ( cir1 , 2 * 1024 ) ;
+	info ( "cir_buf_write 2k") ;
+	print_circular_buffer ( cir1 ) ;
+	cir_buf_read_update ( cir1 , 8 * 1024 ) ;
+	info ( "cir_buf_read 8k") ;
 	print_circular_buffer ( cir1 ) ;
 	
 	free_circular_buffer ( cir1 ) ;

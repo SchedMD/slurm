@@ -15,6 +15,6 @@ typedef struct circular_buffer
 int init_circular_buffer ( circular_buffer_t ** buf_ptr ) ;
 void free_circular_buffer ( circular_buffer_t * buf_ptr ) ;
 void print_circular_buffer ( circular_buffer_t * buf_ptr ) ;
-int read_update ( circular_buffer_t * buf , unsigned int size ) ;
-int write_update ( circular_buffer_t * buf , unsigned int size ) ;
+int cir_buf_read_update ( circular_buffer_t * buf , unsigned int size ) ;
+int cir_buf_write_update ( circular_buffer_t * buf , unsigned int size ) ;
 #endif
