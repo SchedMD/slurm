@@ -2,6 +2,7 @@
 # Makefile.am for graph_solver
 
 AUTOMAKE_OPTIONS = foreign
+CLEANFILES = core.*
 
 INCLUDES = -I$(top_srcdir) $(BGL_INCLUDES)
 
@@ -14,8 +15,8 @@ INCLUDES = -I$(top_srcdir) $(BGL_INCLUDES)
 # 	$(top_builddir)/src/common/libcommon.la -lpthread \
 # 	$(top_builddir)/src/api/libslurm.la
 
-# partition_allocator_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
-# CFLAGS = -DBUILD_EXE
+# partition_allocator_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS) $(BGL_LDFLAGS)
+# CPPFLAGS = -DBUILD_EXE
 
 # making a .la
 noinst_LTLIBRARIES = libpartition_allocator.la 
@@ -33,9 +34,9 @@ libpartition_allocator_la_DEPENDENCIES  = \
 	$(top_builddir)/src/common/libcommon.la 
 ####
 
-#force:
-#$(convenience_libs) : force
-#	@cd `dirname $@` && $(MAKE) `basename $@`
+# force:
+# $(convenience_libs) : force
+# 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 
 #########
