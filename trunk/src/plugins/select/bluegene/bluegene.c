@@ -683,7 +683,16 @@ static int _delete_old_partitions(void)
 			      part_name);
 			continue;
 		}
+		debug("removing the jobs on partition %s\n",
+		      (char *)part_name);
+		term_jobs_on_part(part_name);
+		
+		debug("destroying %s\n",(char *)part_name);
+		rc = bgl_free_partition(part_name);
+		
 		rm_remove_partition(part_name);
+		debug("done\n");
+		
 		//sleep(3);
 		//debug("Removed Freed Partition %s",part_name);
 	}

@@ -135,8 +135,11 @@ static int _remove_job(db_job_id_t job_id)
 
 		/* Cancel or remove the job */
 		if (job_state == RM_JOB_RUNNING) {
-			(void) jm_signal_job(job_id, SIGKILL);
+			debug("I am sending the signal to job %d\n",job_id);
+			jm_signal_job(job_id, SIGKILL);
+			debug("I just sent the signal to job %d\n",job_id);
 			rc = jm_cancel_job(job_id);
+			debug("I just tried to cancel job %d\n",job_id);
 		} else
 			rc = rm_remove_job(job_id);
 		if (rc != STATUS_OK) {
