@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ===============================
  -- Fixes for reported problems:
    - slurm/381: Hold jobs requesting more resources than partition limit
+   - slurm/387: Jobs lost and nodes DOWN on slurmctld restart
  -- Add support for getting node's real memory size on AIX
  -- Sinfo sort partitions in slurm.conf order, new sort option ("#P")
  -- Document how to gracefully change plugin values
