@@ -297,6 +297,14 @@ static void  _init_config(void)
 		rlim.rlim_cur = rlim.rlim_max;
 		(void) setrlimit(RLIMIT_CORE, &rlim);
 	}
+	if (getrlimit(RLIMIT_STACK, &rlim) == 0) {
+		/* slurmctld can spawn lots of pthreads. 
+		 * Set the (per thread) stack size to a 
+		 * more "reasonable" value to avoid running 
+		 * out of virtual memory and dying */
+		rlim.rlim_cur = 1024 * 1024;
+		(void) setrlimit(RLIMIT_STACK, &rlim);
+	}
 
 	slurmctld_config.daemonize      = DEFAULT_DAEMONIZE;
 	slurmctld_config.resume_backup  = false;
