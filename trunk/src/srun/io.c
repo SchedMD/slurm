@@ -120,16 +120,20 @@ _handle_pollerr(fd_info_t *info)
 	socklen_t size = sizeof(int);
 	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&err, &size) < 0)
 		error("_handle_error_poll: getsockopt: %m");
-	else if (err) {
-		if ((err != EPIPE) && (err != ECONNRESET))
-			error("poll error on fd %d: %s", fd, slurm_strerror(err));
-		_close_stream(info->fd, info->fp, info->taskid);  
-	}
 
-	if (*info->fd > 0)
-		return _do_task_output_poll(info);
-	else 
-		return 0;
+	if (err)
+		debug3("%d: poll error on fd %d: %s", 
+			info->taskid, fd, slurm_strerror(err));
+	else
+		debug3("%d: fd %d got hangup", info->taskid, fd);
+
+	/* _do_task_output() should read EOF and close output
+	 * stream if necessary. This way, any remaining data
+	 * is read.
+	 */
+	_do_task_output(info->fd, info->fp, info->buf, info->taskid);
+
+	return 0;
 }
 
 static void
@@ -161,15 +165,26 @@ _do_output(cbuf_t buf, FILE *out, int tasknum)
 		fputs(line, out);
 		fflush(out);
 	}
+
+	if ((len = cbuf_used(buf)))
+		error ("Unable to print %d bytes output data", len);
 }
 
 static void
 _flush_io(job_t *job)
 {
 	int i;
+
+	debug3("flushing all io");
 	for (i = 0; i < opt.nprocs; i++) {
+
 		_do_output(job->outbuf[i], job->outstream, i);
+		if (job->out[i] != IO_DONE)
+			_close_stream(&job->out[i], stdout, i);
+
 		_do_output(job->errbuf[i], job->errstream, i);
+		if (job->err[i] != IO_DONE)
+			_close_stream(&job->err[i], stderr, i);
 	}
 }
 
@@ -232,7 +247,7 @@ _io_thr_poll(void *job_arg)
 
 				if ( (cbuf_used(job->inbuf[i]) > 0) 
 				    || (stdin_got_eof && !job->stdin_eof[i]))
-					_poll_set_wr(fds[nfds], job->out[i]);
+					fds[nfds].events |= POLLOUT;
 
 				map[nfds].taskid = i;
 				map[nfds].fd     = &job->out[i];
@@ -266,8 +281,11 @@ _io_thr_poll(void *job_arg)
 				time_first_done = time(NULL);
 		}
 
-		if (job->state == SRUN_JOB_FAILED)
+		if (job->state == SRUN_JOB_FAILED) {
+			debug3("job state is failed");
+			_flush_io(job);
 			pthread_exit(0);
+		}
 
 		while ((rc = poll(fds, nfds, POLL_TIMEOUT_MSEC)) <= 0) {
 			if (rc == 0) {	/* timeout */
@@ -304,9 +322,7 @@ _io_thr_poll(void *job_arg)
 		for ( ; i < nfds; i++) {
 			unsigned short revents = fds[i].revents;
 			xassert(!(revents & POLLNVAL));
-			if (   (revents & POLLERR) 
-			    || (revents & POLLHUP) 
-			    || (revents & POLLNVAL))
+			if ((revents & POLLERR) || (revents & POLLHUP)) 
 				_handle_pollerr(&map[i]);
 
 			if ((revents & POLLIN) && (*map[i].fd > 0)) 
@@ -331,9 +347,10 @@ static void _do_poll_timeout (job_t *job)
 	}
 
 	age = time(NULL) - time_first_done;
-	if (job->state == SRUN_JOB_FAILED)
+	if (job->state == SRUN_JOB_FAILED) {
+		debug3("job failed, exiting IO thread");
 		pthread_exit(0);
-	else if (time_first_done && opt.max_wait && 
+	} else if (time_first_done && opt.max_wait && 
 		 (age >= opt.max_wait)
 		) {
 		error("First task terminated %d seconds ago", age);
@@ -523,7 +540,7 @@ _accept_io_stream(job_t *job, int i)
 	int len = size_io_stream_header();
 	int j;
 	int fd = job->iofd[i];
-	debug("Activity on IO server port %d fd %d", i, fd);
+	debug2("Activity on IO server port %d fd %d", i, fd);
 
 	for (j = 0; j < 15; i++) {
 		int sd, size_read;
@@ -589,7 +606,7 @@ _accept_io_stream(job_t *job, int i)
 		else
 			job->err[hdr.task_id] = sd;
 
-		debug("accepted %s connection from %s task %ld, sd=%d", 
+		debug2("accepted %s connection from %s task %ld, sd=%d", 
 				(hdr.type ? "stderr" : "stdout"), 
 				buf, hdr.task_id, sd                   );
 	}
@@ -600,7 +617,7 @@ static int
 _close_stream(int *fd, FILE *out, int tasknum)
 {	
 	int retval;
-	debug("%d: <%s disconnected>", tasknum, 
+	debug2("%d: <%s disconnected>", tasknum, 
 			out == stdout ? "stdout" : "stderr");
 	fflush(out);
 	retval = shutdown(*fd, SHUT_RDWR);
@@ -650,6 +667,8 @@ _do_task_input(job_t *job, int taskid)
 
 	if ((len = cbuf_read_to_fd(buf, fd, -1)) < 0) 
 		error ("writing stdin data: %m");
+
+	debug3("wrote %d bytes to task %d stdin", len, taskid);
 
 	return len;
 }
@@ -702,25 +721,44 @@ static void
 _write_all(job_t *job, cbuf_t cb, char *buf, size_t len, int taskid)
 {
 	int n = 0;
+	int dropped = 0;
 
     again:
-	n = cbuf_write(cb, buf, len, NULL);
+	n = cbuf_write(cb, buf, len, &dropped);
 	if ((n < len) && (job->out[taskid] > 0)) {
 		error("cbuf_write returned %d", n);
 		_do_task_input(job, taskid);
 		goto again;
 	}
+
+	if (dropped)
+		error ("Dropped %d bytes stdin data", dropped);
 }
 
 static void
 _bcast_stdin(int fd, job_t *job)
 {
-	int i;
-	size_t len;
-	char buf[4096];
+	int          i;
+	char         buf[4096];
+	ssize_t      len = sizeof(buf);
+	ssize_t      n   = 0;
 
-	if ((len = _readx(fd, buf, 4096)) <= 0) {
-		if (len == 0) { /* got EOF */
+	if (job->ifname->type == IO_ONE) {
+		i = job->ifname->taskid;
+		if (cbuf_free(job->inbuf[i]) < len)
+			len = cbuf_free(job->inbuf[i]);
+	} else {
+		for (i = 0; i < opt.nprocs; i++) {
+			if (cbuf_free(job->inbuf[i]) < len)
+				len = cbuf_free(job->inbuf[i]);
+		}
+	}
+
+	if (len == 0)
+		return;
+
+	if ((n = _readx(fd, buf, len)) <= 0) {
+		if (n == 0) { /* got EOF */
 			close(job->stdinfd);
 			job->stdinfd = IO_DONE;
 			stdin_got_eof = true;
@@ -733,10 +771,10 @@ _bcast_stdin(int fd, job_t *job)
 
 	if (job->ifname->type == IO_ONE) {
 		i = job->ifname->taskid;
-		_write_all(job, job->inbuf[i], buf, len, i);
+		_write_all(job, job->inbuf[i], buf, n, i);
 	} else {
 		for (i = 0; i < opt.nprocs; i++) 
-			_write_all(job, job->inbuf[i], buf, len, i);
+			_write_all(job, job->inbuf[i], buf, n, i);
 	}
 
 	return;
