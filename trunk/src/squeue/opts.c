@@ -49,15 +49,15 @@ parse_command_line( int argc, char* argv[] )
 {
 	/* { long-option, short-option, argument type, variable address, option tag, docstr, argstr } */
 
-	poptContext context, job_context, step_context ;
-	char next_opt;
+	poptContext context;
+	char next_opt, curr_opt;
 	int rc = 0;
 
 	/* Declare the Options */
 	static const struct poptOption options[] = 
 	{
-		{"jobs", 'j', POPT_ARG_NONE, NULL, OPT_JOBS_NONE, "job to view", "job_id"},
-		{"job-steps", 's', POPT_ARG_NONE, NULL, OPT_STEPS_NONE, "job_step to list.  No job_step implies all job_steps" , "job_step_id"},
+		{"jobs", 'j', POPT_ARG_NONE, &params.job_flag, OPT_JOBS_NONE, "job to view", "job_id"},
+		{"job-steps", 's', POPT_ARG_NONE, &params.step_flag, OPT_STEPS_NONE, "job_step to list.  No job_step implies all job_steps" , "job_step_id"},
 		{"states", 't', POPT_ARG_STRING, &states, OPT_STATES, "comma seperated list of states to view", "states"},
 		{"partitions", 'p', POPT_ARG_STRING, &partitions, OPT_PARTITIONS,"partitions", "partitions"},
 		{"format", 'o', POPT_ARG_STRING, &params.format, OPT_FORMAT, "format string", "format string"},
@@ -66,32 +66,27 @@ parse_command_line( int argc, char* argv[] )
 		{NULL, '\0', 0, NULL, 0, NULL, NULL} /* end the list */
 	};
 
-	static const struct poptOption job_options[] = 
-	{
-		{"jobs", 'j', POPT_ARG_STRING, &params.jobs, OPT_JOBS, "job to view", "job_id"},
-		{NULL, '\0', 0, NULL, 0, NULL, NULL} /* end the list */
-	};
-
-	static const struct poptOption step_options[] = 
-	{
-		{"job-steps", 's', POPT_ARG_STRING, &params.steps, OPT_STEPS, "job_step to list.  No job_step implies all job_steps" , "job_step_id"},
-		{NULL, '\0', 0, NULL, 0, NULL, NULL} /* end the list */
-	};
-
 	/* Initial the popt contexts */
 	context = poptGetContext(NULL, argc, (const char**)argv, options, 0);
-	job_context = poptGetContext( NULL, argc, (const char**)argv, job_options, 0);
-	step_context = poptGetContext( NULL, argc, (const char**)argv, step_options, 0);
+	next_opt = poptGetNextOpt(context); 
 
-	while ( ( next_opt = poptGetNextOpt(context) ) > -1  )
+	while ( next_opt > -1  )
 	{
-		switch ( next_opt )
+		const char* opt_arg = NULL;
+		curr_opt = next_opt;
+		next_opt = poptGetNextOpt(context);
+
+		switch ( curr_opt )
 		{
 			case OPT_JOBS_NONE:
-				params.job_flag = true;
+				/* Eventually I will want to parse these and form a list */
+				if ( (opt_arg = poptGetArg( context )) != NULL )
+					params.jobs = opt_arg;
 				break;	
 			case OPT_STEPS_NONE:
-				params.step_flag = true;
+				/* Eventually I will want to parse these and form a list */
+				if ( (opt_arg = poptGetArg( context )) != NULL )
+					params.steps = opt_arg;
 				break;	
 			case OPT_STATES:
 				if ( parse_state( states, &params.state ) != SLURM_SUCCESS )
@@ -104,35 +99,35 @@ parse_command_line( int argc, char* argv[] )
 				params.partitions = partitions;	
 				break;	
 			case OPT_FORMAT:
-				break;	
+				/*parse_format_string( params.format );*/
+				break;
 			case OPT_VERBOSE:
 				params.verbose = true;
 				break;	
 			default:
 				break;	
 		}
-	}
-	/* Check for specified jobs / steps */
-	while ( ( next_opt = poptGetNextOpt(job_context) ) != -1 )
-		if ( next_opt < -1 && next_opt != POPT_ERROR_NOARG && next_opt != POPT_ERROR_BADOPT )
-		{	
-			rc = next_opt;
-			printf("%s\n", poptStrerror( rc ));
-		}
-	if ( params.job_flag && params.jobs != NULL )
-		params.jobs = ( params.jobs[0] == '-' ) ? NULL : params.jobs;
-
-
-	while ( (next_opt = poptGetNextOpt(step_context) ) != -1 )
-		if ( next_opt < -1 && next_opt != POPT_ERROR_NOARG && next_opt != POPT_ERROR_BADOPT )
+		if ( (opt_arg = poptGetArg( context )) != NULL )
 		{
-			rc = next_opt;
-			printf("%s\n", poptStrerror( rc ));
+			fprintf(stderr, "%s: %s \"%s\"\n", argv[0], poptStrerror(POPT_ERROR_BADOPT), opt_arg);
+			exit (1);
 		}
-	if ( params.step_flag && params.steps != NULL )
-		params.steps = ( params.steps[0] == '-' ) ? NULL : params.steps;
+		if ( curr_opt < 0 )
+		{
+			fprintf(stderr, "%s: \"%s\" %s\n", argv[0], poptBadOption(context, POPT_BADOPTION_NOALIAS), poptStrerror(next_opt));
 
-	
+			exit (1);
+		}
+
+
+	}
+	if ( next_opt < -1 )
+	{
+		fprintf(stderr, "%s: \"%s\" %s\n", argv[0], poptBadOption(context, POPT_BADOPTION_NOALIAS), poptStrerror(next_opt));
+		exit (1);
+	}
+
+
 	return rc;
 }
 
