@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <src/common/log.h>
 
 int main ( int argc , char * argv[] )
 {
@@ -16,10 +15,6 @@ int main ( int argc , char * argv[] )
 	slurm_addr peer_address ;
 
 	slurm_msg_type_t msg_type;
-
-        log_options_t log_opts = LOG_OPTS_INITIALIZER;
-
-        log_opts.stderr_level = LOG_LEVEL_DEBUG;
 
 	unsigned int buffer_len = 1024 ;
 	char buf_temp [ buffer_len ] ;
