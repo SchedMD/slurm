@@ -19,13 +19,13 @@ uid_t
 uid_from_name( char *name )
 {
 	struct passwd *p = getpwnam( name );
-	return p ? p->pw_uid : 0;
+	return p ? p->pw_uid : NFS_NOBODY;
 }
 
 gid_t
 gid_from_name( char *name )
 {
 	struct group *g = getgrnam( name );
-	return g ? g->gr_gid : 0;
+	return g ? g->gr_gid : NFS_NOBODY;
 }
 
