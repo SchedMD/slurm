@@ -72,7 +72,7 @@ static int _print_rest(void *object, void *arg);
 
 void get_part(void)
 {
-	int error_code, i, j, count = 0;
+	int error_code, i, j, recs, count = 0;
 	static partition_info_msg_t *part_info_ptr = NULL, *new_part_ptr;
 	partition_info_t part;
 	char node_entry[13];
@@ -94,24 +94,25 @@ void get_part(void)
 	}
 	if (error_code) {
 		if (quiet_flag != 1) {
-			wclear(pa_system_ptr->text_win);
-			pa_system_ptr->ycord =
-				pa_system_ptr->text_win->_maxy / 2;
-			pa_system_ptr->xcord =
-				pa_system_ptr->text_win->_maxx;
 			mvwprintw(pa_system_ptr->text_win,
 				pa_system_ptr->ycord, 1,
-				"slurm_load_partitions error");
+				"slurm_load_partitions: %s",
+				slurm_strerror(slurm_get_errno()));
+			pa_system_ptr->ycord++;
 		}
-		return;
 	}
 
 	if (params.display == BGLPART)
 		_read_part_db2();
 
-	if (new_part_ptr->record_count && !params.no_header)
+	if (!params.no_header)
 		_print_header_part();
-	for (i = 0; i < new_part_ptr->record_count; i++) {
+
+	if (new_part_ptr)
+		recs = new_part_ptr->record_count;
+	else
+		recs = 0;
+	for (i = 0; i < recs; i++) {
 		j = 0;
 		part = new_part_ptr->partition_array[i];
 		
@@ -238,10 +239,11 @@ static int _print_text_part(partition_info_t * part_ptr,
 	int width = 0;
 	char *nodes, time_buf[20];
 
+	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+		pa_system_ptr->xcord, "%c", part_ptr->root_only);
+	pa_system_ptr->xcord += 4;
+
 	if (part_ptr->name) {
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			pa_system_ptr->xcord, "%c", part_ptr->root_only);
-		pa_system_ptr->xcord += 4;
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			pa_system_ptr->xcord, "%.9s", part_ptr->name);
 		pa_system_ptr->xcord += 10;
@@ -265,7 +267,7 @@ static int _print_text_part(partition_info_t * part_ptr,
 			time_buf);
 		pa_system_ptr->xcord += 11;
 	} else
-		pa_system_ptr->xcord += 32;
+		pa_system_ptr->xcord += 28;
 
 	if (params.display == BGLPART) {
 		if (db2_info_ptr) {
@@ -331,10 +333,6 @@ static int _print_text_part(partition_info_t * part_ptr,
 		pa_system_ptr->xcord++;
 
 		i++;
-	}
-
-	/* FIXME: Report any BGL Blocks not reported above */
-	if (params.display == BGLPART) {
 	}
 
 	pa_system_ptr->xcord = 1;
@@ -446,11 +444,14 @@ static int _print_rest(void *object, void *arg)
 	int *count = (int *) arg;
 	int start, startx, starty, startz, endx, endy, endz;
 	partition_info_t part;
+	hostlist_t hostlist;
+	hostlist_iterator_t host_iter;
+	char *host_name;
 
 	if (block_ptr->printed)
 		return SLURM_SUCCESS;
 
-	if (block_ptr->nodes[3] == '[') {
+	if (block_ptr->nodes[11] == ']') {	/* "bgl[###x###]" */
 		start = atoi(block_ptr->nodes + 4);
 		startx = start / 100;
 		starty = (start % 100) / 10;
@@ -459,32 +460,54 @@ static int _print_rest(void *object, void *arg)
 		endx = start / 100;
 		endy = (start % 100) / 10;
 		endz = (start % 10);
-	} else {
-		start = atoi(block_ptr->nodes + 3);
-		startx = endx = start / 100;
-		starty = endy = (start % 100) / 10;
-		startz = endz = (start % 10);
+		set_grid_bgl(startx, starty, startz,
+			endx, endy, endz, *count);
+	} else {				/* any other format */
+		hostlist_t hostlist;
+		hostlist_iterator_t host_iter;
+		char *host_name;
+
+		part.total_nodes = 0;
+		hostlist  = hostlist_create(block_ptr->nodes);
+		host_iter = hostlist_iterator_create(hostlist);
+		while ((host_name = hostlist_next(host_iter))) {
+			part.total_nodes++;
+			start = atoi(host_name + 3);
+			startx = endx = start / 100;
+			starty = endy = (start % 100) / 10;
+			startz = endz = (start % 10);
+			set_grid_bgl(startx, starty, startz,
+				endx, endy, endz, *count);
+			free(host_name);
+		}
+		hostlist_iterator_destroy(host_iter);
+		hostlist_destroy(hostlist);
 	}
 
 	part.name = NULL;
 	part.allow_groups = block_ptr->nodes;
-	part.total_nodes =  set_grid_bgl(startx, starty, startz, 
-			endx, endy, endz, *count);
 	part.root_only = (int) pa_system_ptr->fill_in_value[*count].letter;
+	if (block_ptr->bgl_conn_type == SELECT_TORUS)
+		part.root_only += 32;
+	wattron(pa_system_ptr->text_win, 
+		COLOR_PAIR(pa_system_ptr->fill_in_value[*count].color));
 	_print_text_part(&part, block_ptr);
+	wattroff(pa_system_ptr->text_win,
+		COLOR_PAIR(pa_system_ptr->fill_in_value[*count].color));
+	(*count)++;
 	return SLURM_SUCCESS;
 }
 #ifdef HAVE_BGL_FILES
 static int _post_block_read(void *object, void *arg)
 {
 	db2_block_info_t *block_ptr = (db2_block_info_t *) object;
-	int i = 64;
+	int len = 1024;
 
-	block_ptr->nodes = xmalloc(i);
-	while (hostlist_ranged_string(block_ptr->hostlist, i, block_ptr->nodes)
-			< 0) {
-		i *= 2;
-		xrealloc(block_ptr->nodes, i);
+	block_ptr->nodes = xmalloc(len);
+	while (hostlist_ranged_string(block_ptr->hostlist, len, 
+			block_ptr->nodes) < 0) {
+		len *= 2;
+		xrealloc(block_ptr->nodes, len);
 	}
 
 #if _DEBUG
