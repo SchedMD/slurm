@@ -451,7 +451,7 @@ print_node_list (char *node_list)
 		str_ptr2 = (char *) strtok_r (my_node_list, ",", &str_ptr1);
 		while (str_ptr2) {	/* break apart by comma separators */
 			error_code =
-				parse_node_name (str_ptr2, &format,
+				parse_node_names (str_ptr2, &format,
 						 &start_inx, &end_inx,
 						 &count_inx);
 			if (error_code) {

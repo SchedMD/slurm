@@ -8,7 +8,7 @@
 #ifndef _NODELIST_H
 #define _NODELIST_H
 
-int * bitfmt2int (char *bit_str_ptr);
-int parse_node_name(char *name, char **fmt, int *start, int *end, int *count); 
+extern int * bitfmt2int (char *bit_str_ptr);
+extern int parse_node_names(char *name, char **fmt, int *start, int *end, int *count); 
 
 #endif /* !_NODELIST_H */
