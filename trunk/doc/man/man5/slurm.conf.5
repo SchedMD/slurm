@@ -32,7 +32,7 @@ may also be used as a compute server if so desired. It will come into service
 as a controller only upon the failure of ControlMachine and will revert 
 to a "standby" mode when the ControlMachine becomes available once again. 
 This should be a node name without the full domain name (e.g. "lx0002"). 
-While not essential, it is highly recommended that you specify a backup controller.
+While not essential, it is recommended that you specify a backup controller.
 .TP
 \fBControlAddr\fR
 Name that \fBControlMachine\fR should be referred to in 
@@ -49,7 +49,7 @@ This should be a node name without the full domain name (e.g. "lx0001").
 This value must be specified.
 .TP
 \fBEpilog\fR
-Fully qualified pathname of a program to execute as user root on every 
+Fully qualified pathname of a script to execute as user root on every 
 node when a user's job completes (e.g. "/usr/local/slurm/epilog"). This may 
 be used to purge files, disable user login, etc. By default there is no epilog.
 .TP
@@ -98,8 +98,8 @@ authentication by Slurm daemons.
 The interval, in seconds, given to a job's processes between the 
 SIGTERM and SIGKILL signals upon reaching its time limit. 
 If the job fails to terminate gracefully 
-in the interval specified, it will be forcably terminated. The default 
-value is 30 seconds.
+in the interval specified, it will be forcably terminated. 
+The default value is 30 seconds.
 .TP
 \fBPrioritize\fR
 Fully qualified pathname of a program to execute in order to establish 
@@ -108,7 +108,7 @@ prioritization program and each job gets a priority lower than that of
 any existing jobs.
 .TP
 \fBProlog\fR
-Fully qualified pathname of a program to execute as user root on every 
+Fully qualified pathname of a script to execute as user root on every 
 node when a user's job begins execution (e.g. "/usr/local/slurm/prolog"). 
 This may be used to purge files, enable user login, etc. By default there 
 is no prolog.
@@ -120,19 +120,21 @@ means that a node will remain DOWN until a system administrator explicitly
 makes it available for use.
 .TP
 \fBSlurmUser\fR
-The name of the user that the \fBslurmctld\fR daemon executes as. For security 
-purposes a user other than "root" may be used. 
+The name of the user that the \fBslurmctld\fR daemon executes as. 
+For security purposes, a user other than "root" is recommended. 
 .TP
 \fBSlurmctldDebug\fR
-The level of detail to provide \fBslurmctld\fR daemon's logs. Specify a 
-value between 0 and 7 with larger numbers indicating greater detail. The 
-default value is 3.
+The level of detail to provide \fBslurmctld\fR daemon's logs. 
+Values from 0 to 7 are legal, with `0' being "quiet" operation and `7' being insanely verbose.
+The default value is 3.
 .TP
 \fBSlurmctldLogFile\fR
 Fully qualified pathname of a file into which the \fBslurmctld\fR daemon's logs are written.
+The default value is none (performs logging via syslog).
 .TP
 \fBSlurmctldPidFile\fR
 Fully qualified pathname of a file into which the  \fBslurmctld\fR daemon may write its process id. This may be used for automated signal processing.
+The default value is "/var/run/slurmctld.pid".
 .TP
 \fBSlurmctldPort\fR
 The port number that the SLURM controller, \fBslurmctld\fR, listens 
@@ -141,20 +143,22 @@ build time.
 .TP
 \fBSlurmctldTimeout\fR
 The interval, in seconds, that the backup controller waits for the 
-primary controller to respond before assuming control. The default value 
-is 300 seconds.
+primary controller to respond before assuming control. 
+The default value is 300 seconds.
 .TP
 \fBSlurmdDebug\fR
-The level of detail to provide \fBslurmd\fR daemon's logs. Specify a 
-value between 0 and 7 with larger numbers indicating greater detail. The 
-default value is 3.
+The level of detail to provide \fBslurmd\fR daemon's logs. 
+Values from 0 to 7 are legal, with `0' being "quiet" operation and `7' being insanely verbose.
+The default value is 3.
 .TP
 \fBSlurmdLogFile\fR
 Fully qualified pathname of a file into which the  \fBslurmd\fR daemon's logs are written.
+The default value is none (performs logging via syslog).
 .TP
 \fBSlurmdPidFile\fR
 Fully qualified pathname of a file into which the  \fBslurmd\fR daemon may write 
 its process id. This may be used for automated signal processing.
+The default value is "/var/run/slurmd.pid".
 .TP
 \fBSlurmdPort\fR
 The port number that the SLURM compute node daemon, \fBslurmd\fR, listens 
@@ -162,12 +166,13 @@ to for work. The default value is SLURMD_PORT as established at system
 build time.
 .TP
 \fBSlurmdSpoolDir\fR
-Fully qualified pathname of a file into which the \fBslurmd\fR daemon's state information is written.
+Fully qualified pathname of a file into which the \fBslurmd\fR daemon's state information is written. This must be a common pathname for all nodes, but should represent a file which is local to each node (reference a local file
+system). The default value is "/tmp/slurmd".
 .TP
 \fBSlurmdTimeout\fR
 The interval, in seconds, that the SLURM controller waits for \fBslurmd\fR 
-to respond before configuring that node's state to DOWN. The default value 
-is 300 seconds.
+to respond before configuring that node's state to DOWN. 
+The default value is 300 seconds.
 .TP
 \fBStateSaveLocation\fR
 Fully qualified pathname of a directory into which the slurm controller, 
@@ -178,8 +183,7 @@ into this directory.
 .TP
 \fBTmpFS\fR
 Fully qualified pathname of the file system available to user jobs for 
-temporary storage. This parameter is used in establishing a node's \fBTmpDisk\fR
-space. The default value is "/tmp".
+temporary storage. This parameter is used in establishing a node's \fBTmpDisk\fR space. The default value is "/tmp".
 .LP
 The configuration of nodes (or machines) to be managed by Slurm is 
 also specified in \fB/etc/slurm.conf\fR. 
@@ -472,4 +476,5 @@ details.
 .SH "SEE ALSO"
 .LP
 \fBgethostbyname\fR(3), \fBgroup\fR(5), \fBhostname\fR(1), 
-\fBscontrol\fR(1), \fBslurmctld\fR(8), \fBslurmd\fR(8) 
+\fBscontrol\fR(1), \fBslurmctld\fR(8), \fBslurmd\fR(8),
+\fBsyslog\fR(2)
