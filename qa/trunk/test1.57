@@ -118,6 +118,7 @@ if {$exit_code != 0} {
 # Get two nodes relative (starting at) node 0
 #
 set matches 0
+
 send "$srun -l -N2 -n2 --relative=0 $bin_hostname\n"
 expect {
 	-re "0: ($alpha_numeric)" {
@@ -208,11 +209,16 @@ if {$matches < 2} {
 
 #
 # Get two nodes relative (starting at) node 3
-# Since there is only one node left, it gets silently oversubscribed
+# Since there is only one node left, we check for a warning message
 #
 set matches 0
+set warning 0
 send "$srun -l -N2 -n2 --relative=3 $bin_hostname\n"
 expect {
+	-re "Warning:" {
+		set warning 1
+		exp_continue
+	}
 	-re "0: ($alpha_numeric)" {
 		if {[string compare $expect_out(1,string) $host_3] == 0} {
 			incr matches
@@ -250,6 +256,10 @@ expect {
 }
 if {$matches < 2} {
 	send_user "\nFAILURE: required nodes failed to respond\n"
+	set exit_code   1
+}
+if {$warning < 1} {
+	send_user "\nFAILURE: warning message missing for inconsistent node count\n"
 	set exit_code   1
 }
 
