@@ -1172,14 +1172,14 @@ void node_not_resp (char *name)
 	}
 
 	i = node_ptr - node_record_table_ptr;
-	if (node_record_table_ptr[i].node_state & NODE_STATE_NO_RESPOND)
+	if (node_ptr->node_state & NODE_STATE_NO_RESPOND)
 		return;		/* Already known to be not responding */
 
 	last_node_update = time (NULL);
 	error ("Node %s not responding", name);
 	bit_clear (up_node_bitmap, i);
 	bit_clear (idle_node_bitmap, i);
-	node_record_table_ptr[i].node_state |= NODE_STATE_NO_RESPOND;
+	node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 	return;
 }
 
@@ -1252,7 +1252,7 @@ void ping_nodes (void)
 			node_record_table_ptr[i].last_response = 
 						slurmctld_conf.last_update;
 
-		/* Request a node registration if its state is UNKNOWN  
+		/* Request a node registration if its state is UNKNOWN or DOWN 
 		 * and periodically otherwise (about every 17th ping) */
 		if ((base_state == NODE_STATE_UNKNOWN) || 
 		    (base_state == NODE_STATE_DOWN   ) || force_reg) {
