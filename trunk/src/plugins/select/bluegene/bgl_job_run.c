@@ -72,10 +72,10 @@ static int agent_cnt = 0;
 static void	_bgl_list_del(void *x);
 static void	_block_list_elem_del(void *x);
 static int	_boot_part(pm_partition_id_t bgl_part_id);
-static void	_excise_block(List block_list, pm_partition_id_t bgl_part_id);
+static int	_excise_block(List block_list, pm_partition_id_t bgl_part_id, 
+				char *nodes);
 static List	_get_all_blocks(void);
 static char *	_get_part_owner(pm_partition_id_t bgl_part_id);
-static int	_match_block_name(void *x, void *key);
 static void *	_part_agent(void *args);
 static void	_part_op(bgl_update_t *bgl_update_ptr);
 static int	_remove_job(db_job_id_t job_id);
@@ -461,16 +461,6 @@ static void _block_list_elem_del(void *x)
 	xfree(x);
 }
 
-static int _match_block_name(void *x, void *key)
-{
-	pm_partition_id_t elem    = (pm_partition_id_t) x;
-	pm_partition_id_t part_id = (pm_partition_id_t) key;
-
-	if (strcmp(elem, part_id) == 0)
-		return 1;	/* part_id matches */
-	return 0;
-}
-
 /* get a list of all BGL blocks with owners */
 static List _get_all_blocks(void)
 {
@@ -498,9 +488,27 @@ static List _get_all_blocks(void)
 }
 
 /* remove a BGL block from the given list */
-static void _excise_block(List block_list, pm_partition_id_t bgl_part_id)
+static int _excise_block(List block_list, pm_partition_id_t bgl_part_id,
+		char *nodes)
 {
-	list_delete_all(block_list, _match_block_name, bgl_part_id);
+	int rc = SLURM_ERROR;
+	ListIterator iter = list_iterator_create(block_list);
+	bgl_record_t *block;
+	xassert(iter);
+
+	while (block = list_next(iter)) {
+		if (strcmp(block->bgl_part_id, bgl_part_id))
+			continue;
+		if (strcmp(block->nodes, nodes))	/* changed bglblock */
+			break;
+
+		/* exact match of name and node list */
+		rc = SLURM_SUCCESS;
+		(void) list_remove(iter);
+	}
+
+	list_iterator_destroy(iter);
+	return rc;
 }
 #endif
 
@@ -614,6 +622,15 @@ extern int sync_jobs(List job_list)
 			continue;
 		select_g_get_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_PART_ID, &bgl_part_id);
+
+		if (_excise_block(block_list, bgl_part_id, job_ptr->nodes)
+				!= SLURM_SUCCESS) {
+			error("Kill job %u belongs to defunct bglblock %s",
+				job_ptr->job_id, bgl_part_id);
+			job_ptr->job_state = JOB_FAILED | JOB_COMPLETING;
+			continue;
+		}
+
 		debug3("Queue sync of job %u in BGL partition %s",
 			job_ptr->job_id, bgl_part_id);
 		bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
@@ -622,7 +639,6 @@ extern int sync_jobs(List job_list)
 		bgl_update_ptr->job_id = job_ptr->job_id;
 		bgl_update_ptr->bgl_part_id = xstrdup(bgl_part_id);
 		_part_op(bgl_update_ptr);
-		_excise_block(block_list, bgl_part_id);
 	}
 	list_iterator_destroy(job_iterator);
 
