@@ -226,7 +226,8 @@ print_build (char *build_param)
 
 	if (error_code) {
 		if (quiet_flag != 1)
-			printf ("slurm_load_build error %d\n", error_code);
+			printf ("slurm_load_ctl_conf error %d %s\n",
+				error_code, slurm_strerror(error_code));
 		return;
 	}
 	old_slurm_ctl_conf_ptr = slurm_ctl_conf_ptr;
@@ -328,7 +329,8 @@ print_job (char * job_id_str)
 		error_code = slurm_load_jobs ((time_t) NULL, &job_buffer_ptr);
 	if (error_code) {
 		if (quiet_flag != 1)
-			printf ("slurm_load_job error %d\n", error_code);
+			printf ("slurm_load_job error %d %s\n", 
+				error_code, slurm_strerror(error_code));
 		return;
 	}
 	else if (error_code == 0)
@@ -414,7 +416,8 @@ print_node_list (char *node_list)
 		error_code = slurm_load_node ((time_t) NULL, &node_info_ptr);
 	if (error_code) {
 		if (quiet_flag != 1)
-			printf ("load_node error %d\n", error_code);
+			printf ("slurm_load_node error %d %s\n", 
+				error_code, slurm_strerror(error_code));
 		return;
 	}
 	else if (error_code == 0)
@@ -506,7 +509,8 @@ print_part (char *partition_name)
 		error_code = slurm_load_partitions ((time_t) NULL, &part_info_ptr);
 	if (error_code > 0) {
 		if (quiet_flag != 1)
-			printf ("slurm_load_part error %d\n", error_code);
+			printf ("slurm_load_part error %d %s\n", 
+				error_code, slurm_strerror(error_code));
 		return;
 	}
 	else
@@ -686,7 +690,8 @@ update_it (int argc, char *argv[])
 		error_code = EINVAL;
 	}
 	else if (error_code) {
-		printf("errorno=%d\n",error_code);
+		printf ("slurm_update error %d %s\n", 
+			error_code, slurm_strerror(error_code));
 	}
 	return error_code;
 }
