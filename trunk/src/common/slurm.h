@@ -62,17 +62,18 @@ struct Config_Record {
 };
 extern List Config_List;		/* List of Config_Record entries */
 
-/* Last entry must be STATE_END, keep in sync with Node_State_String */
+/* Last entry must be STATE_END, keep in sync with Node_State_String    	*/
+/* Any value less than or equal to zero is down. If a node was in state 	*/
+/* STATE_BUSY and stops responding, its state becomes -(STATE_BUSY), etc.	*/
 enum Node_State {
+	STATE_DOWN,		/* Node is not responding */
 	STATE_UNKNOWN, 		/* Node's initial state, unknown */
 	STATE_IDLE, 		/* Node idle and available for use */
 	STATE_STAGE_IN, 	/* Node has been allocated to a job, which has not yet begun execution */
 	STATE_BUSY,		/* Node allocated to a job and that job is actively running */
 	STATE_STAGE_OUT,	/* Node has been allocated to a job, which has completed execution */
-	STATE_DOWN, 		/* Node unavailable */
 	STATE_DRAINED, 		/* Node idle and not to be allocated future work */
 	STATE_DRAINING,		/* Node in use, but not to be allocated future work */
-	STATE_UP,		/* Node in up, more specific state info unavailable */
 	STATE_END };		/* LAST ENTRY IN TABLE */
 /* Last entry must be "END", keep in sync with Node_State */
 extern char *Node_State_String[];
@@ -80,7 +81,7 @@ extern char *Node_State_String[];
 extern time_t Last_Node_Update;		/* Time of last update to Node Records */
 struct Node_Record {
     char Name[MAX_NAME_LEN];		/* Name of the node. A NULL name indicates defunct node */
-    enum Node_State NodeState;		/* State of the node */
+    int NodeState;			/* State of the node, see Node_State above, negative if down */
     time_t LastResponse;		/* Last response from the node */
     int CPUs;				/* Actual count of CPUs running on the node */
     int RealMemory;			/* Actual megabytes of real memory on the node */
@@ -107,8 +108,8 @@ struct Part_Record {
     int TotalNodes;		/* Total number of nodes in the partition */
     int TotalCPUs;		/* Total number of CPUs in the partition */
     unsigned Key:1;		/* 1 if SLURM distributed key is required for use of partition */
-    unsigned Shared:1;		/* 1 if more than one job can execute at a time in the partition */
-    unsigned StateUp:1;		/* 1 if state is UP */
+    unsigned Shared:2;		/* 1 if more than one job can execute on a node, 2 if required */
+    unsigned StateUp:1;		/* 1 if state is UP, 0 if DOWN */
     char *Nodes;		/* Names of nodes in partition */
     char *AllowGroups;		/* NULL indicates ALL */
     unsigned *NodeBitMap;	/* Bitmap of nodes in partition */

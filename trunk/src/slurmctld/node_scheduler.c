@@ -586,7 +586,7 @@ int Select_Nodes(char *Job_Specs, char **Node_List) {
 	    Error_Code = EAGAIN;  /* No memory */
 	    goto cleanup;
 	} /* if */
-	if (Contiguous != NO_VAL) BitMapFill(Req_BitMap);
+	if (Contiguous == 1) BitMapFill(Req_BitMap);
 	if (BitMapIsSuper(Req_BitMap, Part_Ptr->NodeBitMap) != 1) {
 #if DEBUG_SYSTEM
 	    fprintf(stderr, "Select_Nodes: Requested nodes %s not in partition %s\n", 
@@ -599,7 +599,10 @@ int Select_Nodes(char *Job_Specs, char **Node_List) {
 	    goto cleanup;
 	} /* if */
     } /* if */
-    if ((Shared != 1) || (Part_Ptr->Shared != 1)) Shared = 0;
+    if (Part_Ptr->Shared == 2)
+	Shared = 1;
+    else if ((Shared != 1) || (Part_Ptr->Shared == 0)) 
+	Shared = 0;
 
 
     /* Pick up nodes from the Weight ordered configuration list */
