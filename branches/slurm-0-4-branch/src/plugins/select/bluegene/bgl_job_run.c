@@ -414,7 +414,8 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 	rm_element_t *job_elem;
 	pm_partition_id_t part_id;
 	db_job_id_t job_id;
-	printf("getting the job info\n");
+
+	//debug("getting the job info");
 	live_states = JOB_ALL_FLAG & (~RM_JOB_TERMINATED) & (~RM_JOB_KILLED);
 	if ((rc = rm_get_jobs(live_states, &job_list)) != STATUS_OK) {
 		error("rm_get_jobs(): %s", bgl_err_str(rc));
@@ -426,7 +427,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		jobs = 0;
 	} else if (jobs > 300)
 		fatal("Active job count (%d) invalid, restart MMCS", jobs);
-	printf("job count %d\n",jobs);
+	//debug("job count %d",jobs);
 		
 	for (i=0; i<jobs; i++) {		
 		if (i) {
@@ -455,7 +456,8 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 				part_id, bgl_err_str(rc));
 			continue;
 		}
-		printf("looking at partition %s looking for %s\n",part_id, bgl_update_ptr->bgl_part_id);
+		//debug("looking at partition %s looking for %s\n",
+		//	part_id, bgl_update_ptr->bgl_part_id);
 		if (strcmp(part_id, bgl_update_ptr->bgl_part_id) != 0)
 			continue;
 		if ((rc = rm_get_data(job_elem, RM_JobDBJobID, &job_id))
@@ -464,7 +466,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 				bgl_err_str(rc));
 			continue;
 		}
-		printf("got job_idr %d\n",job_id);
+		//debug("got job_id %d",job_id);
 		_remove_job(job_id);
 	}
 
@@ -642,12 +644,13 @@ extern int start_job(struct job_record *job_ptr)
 
 #ifdef HAVE_BGL_FILES
 /*
- * Perform any work required to terminate a jobs on a partition
+ * Perform any work required to terminate a jobs on a partition.
  * bgl_part_id IN - partition name
  * RET - SLURM_SUCCESS or an error code
  *
- * NOTE: This happens when new partitions are created and we 
- * need to clean up jobs on them.
+ * NOTE: The job is killed before the function returns. This can take 
+ * many seconds. Do not call from slurmctld  or any other entity that 
+ * can not wait.
  */
 int term_jobs_on_part(pm_partition_id_t bgl_part_id)
 {
@@ -688,8 +691,7 @@ int term_job(struct job_record *job_ptr)
 		SELECT_DATA_PART_ID, &(bgl_update_ptr->bgl_part_id));
 	info("Queue termination of job %u in BGL partition %s",
 		job_ptr->job_id, bgl_update_ptr->bgl_part_id);
-	_term_agent(bgl_update_ptr);
-//_part_op(bgl_update_ptr);
+	_part_op(bgl_update_ptr);
 #endif
 	return rc;
 }
