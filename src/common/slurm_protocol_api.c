@@ -143,12 +143,24 @@ int slurm_api_set_default_config()
  * returns slurmd port from slurmctld_conf object
  * RET short int	- slurmd port
  */
-short int slurm_get_slurmd_port()
+short int slurm_get_slurmd_port(void)
 {
-	if (slurmctld_conf.slurmd_port == 0)
+	if (slurmctld_conf.slurmd_port == 0)  /* ==0 if config unread */
 		slurm_api_set_default_config();
 
 	return slurmctld_conf.slurmd_port;
+}
+
+/* slurm_get_slurm_user_id
+ * returns slurmd uid from slurmctld_conf object
+ * RET uint32_t	- slurm user id
+ */
+uint32_t slurm_get_slurm_user_id(void)
+{
+	if (slurmctld_conf.slurmd_port == 0)  /* ==0 if config unread */
+		slurm_api_set_default_config();
+
+	return slurmctld_conf.slurm_user_id;
 }
 
 /**********************************************************************\
