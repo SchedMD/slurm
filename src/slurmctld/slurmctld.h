@@ -164,7 +164,7 @@ extern time_t last_step_update;	*//* time of last update to job steps */
 
 extern int job_count;			/* number of jobs in the system */
 
-/* job_details - specification of a job's constraints, not required after initiation */
+/* job_details - specification of a job's constraints */
 struct job_details {
 	uint32_t magic;			/* magic cookie to test data integrity */
 	uint32_t num_procs;		/* minimum number of processors */
@@ -175,6 +175,7 @@ struct job_details {
 	char *features;			/* required features */
 	uint16_t shared;		/* 1 if more than one job can execute on a node */
 	uint16_t contiguous;		/* requires contiguous nodes, 1=true, 0=false */
+	uint16_t kill_on_node_fail;	/* 1 if job should be killed on on failure */
 	uint32_t min_procs;		/* minimum processors per node, MB */
 	uint32_t min_memory;		/* minimum memory per node, MB */
 	uint32_t min_tmp_disk;		/* minimum temporary disk per node, MB */
@@ -318,6 +319,10 @@ extern struct node_record *find_node_record (char *name);
 /* find_part_record - find a record for partition with specified name */
 extern struct part_record *find_part_record (char *name);
 
+/* find_running_job_by_node_name - Given a node name, return a pointer to any 
+ *	job currently running on that node */
+extern struct job_record *find_running_job_by_node_name (char *node_name);
+
 /* find_step_record - return a pointer to the step record with the given job_id and step_id */
 extern struct step_record * find_step_record(struct job_record *job_ptr, uint16_t step_id);
 
@@ -398,6 +403,9 @@ int mkdir2 (char * path, int modes);
 
 /* node_name2bitmap - given a node name regular expression, build a bitmap representation */
 extern int node_name2bitmap (char *node_names, bitstr_t **bitmap);
+
+/* node_did_resp - record that the specified node is responding */
+extern void node_did_resp (char *name);
 
 /* node_not_resp - record that the specified node is not responding */
 extern void node_not_resp (char *name);
@@ -503,6 +511,11 @@ extern int update_node ( update_node_msg_t * update_node_msg )  ;
 
 /* update_part - update a partition's configuration data per the supplied specification */
 extern int update_part (update_part_msg_t * part_desc );
+
+/* validate_jobs_on_node - validate that any jobs that should be on the node are 
+ *	actually running, if not clean up the job records and/or node records,
+ *	call this function after validate_node_specs() sets the node state properly */
+extern void validate_jobs_on_node ( char *node_name, uint32_t job_count, uint32_t *job_id_ptr);
 
 /* validate_group - validate that the submit uid is authorized to run in this partition */
 extern int validate_group (struct part_record *part_ptr, uid_t submit_uid);

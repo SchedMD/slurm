@@ -100,8 +100,10 @@ typedef struct task_info {
 	void		*msg_args_ptr;		/* pointer to RPC data to be used */
 } task_info_t;
 
+static void alarm_handler(int dummy);
 static void *thread_per_node_rpc (void *args);
 static void *wdog (void *args);
+static void xsignal(int signal, void (*handler)(int));
 
 /*
  * agent - party responsible for transmitting an common RPC in parallel across a set 
@@ -312,6 +314,15 @@ wdog (void *args)
 		xfree (slurm_addr);
 #endif
 	}
+#if AGENT_IS_THREAD
+	/* Update last_response on responding nodes */
+	lock_slurmctld (node_write_lock);
+	for (i = 0; i < agent_ptr->thread_count; i++) {
+		if (thread_ptr[i].state == DSH_DONE)
+			node_did_resp (thread_ptr[i].node_name);
+	}
+	unlock_slurmctld (node_write_lock);
+#endif
 	if (max_delay)
 		debug ("agent maximum delay %d seconds", max_delay);
 
@@ -324,7 +335,6 @@ wdog (void *args)
 static void *
 thread_per_node_rpc (void *args)
 {
-	sigset_t set;
 	int msg_size ;
 	int rc ;
 	slurm_fd sockfd ;
@@ -334,14 +344,16 @@ thread_per_node_rpc (void *args)
 	task_info_t *task_ptr = (task_info_t *) args;
 	thd_t *thread_ptr = task_ptr->thread_struct_ptr;
 	state_t thread_state  = DSH_FAILED;
+	sigset_t set;
 
-	/* accept SIGALRM */
+	/* set up SIGALRM handler */
 	if (sigemptyset (&set))
 		error ("sigemptyset error: %m");
 	if (sigaddset (&set, SIGALRM))
 		error ("sigaddset error on SIGALRM: %m");
 	if (sigprocmask (SIG_UNBLOCK, &set, NULL) != 0)
-		error ("sigprocmask error: %m");
+		fatal ("sigprocmask error: %m");
+	xsignal(SIGALRM, alarm_handler);
 
 	if (args == NULL)
 		fatal ("thread_per_node_rpc has NULL argument");
@@ -412,5 +424,29 @@ cleanup:
 
 	xfree (args);
 	return (void *) NULL;
+}
+
+/*
+ * Emulate signal() but with BSD semantics (i.e. don't restore signal to
+ * SIGDFL prior to executing handler).
+ */
+static void xsignal(int signal, void (*handler)(int))
+{
+	struct sigaction sa, old_sa;
+
+	sa.sa_handler = handler;
+        sigemptyset(&sa.sa_mask);
+        sigaddset(&sa.sa_mask, signal);
+	sa.sa_flags = 0;
+	sigaction(signal, &sa, &old_sa);
+}
+
+/*
+ * SIGALRM handler.  This is just a stub because we are really interested
+ * in interrupting connect() in k4cmd/rcmd or select() in rsh() below and
+ * causing them to return EINTR.
+ */
+static void alarm_handler(int dummy)
+{
 }
 
