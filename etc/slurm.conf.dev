@@ -21,7 +21,7 @@ JobCredentialPublicCertificate=public.cert
 #
 # Node Configurations
 #
-NodeName=DEFAULT Procs=2 RealMemory=2000 TmpDisk=64000 State=IDLE
+NodeName=DEFAULT Procs=2 RealMemory=2000 TmpDisk=64000 State=UNKNOWN
 NodeName=dev[0-25] Weight=16
 #
 # Partition Configurations

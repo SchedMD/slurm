@@ -214,7 +214,8 @@ report_leftover (char *in_line, int line_num)
  *	part_list - pointer to global partition list
  */
 int 
-build_bitmaps () {
+build_bitmaps () 
+{
 	int i, j, error_code;
 	char  *this_node_name;
 	ListIterator config_record_iterator;	/* for iterating through config_record */
@@ -244,8 +245,7 @@ build_bitmaps () {
 	if (config_record_iterator == NULL)
 		fatal ("build_bitmaps: list_iterator_create unable to allocate memory");
 	
-	while ((config_record_point =
-	       (struct config_record *) list_next (config_record_iterator))) {
+	while ((config_record_point = (struct config_record *) list_next (config_record_iterator))) {
 		if (config_record_point->node_bitmap)
 			bit_free (config_record_point->node_bitmap);
 
@@ -262,6 +262,7 @@ build_bitmaps () {
 		if (node_record_table_ptr[i].node_state == NODE_STATE_IDLE)
 			bit_set (idle_node_bitmap, i);
 		if ((node_record_table_ptr[i].node_state != NODE_STATE_DOWN) &&
+		    (node_record_table_ptr[i].node_state != NODE_STATE_UNKNOWN) &&
 		    ((node_record_table_ptr[i].node_state & NODE_STATE_NO_RESPOND) == 0))
 			bit_set (up_node_bitmap, i);
 		if (node_record_table_ptr[i].config_ptr)
@@ -276,8 +277,7 @@ build_bitmaps () {
 	if (part_record_iterator == NULL)
 		fatal ("build_bitmaps: list_iterator_create unable to allocate memory");
 
-	while ((part_record_point = 
-		(struct part_record *) list_next (part_record_iterator))) {
+	while ((part_record_point = (struct part_record *) list_next (part_record_iterator))) {
 		if (part_record_point->node_bitmap)
 			bit_free (part_record_point->node_bitmap);
 		part_record_point->node_bitmap = (bitstr_t *) bit_alloc (node_record_count);	

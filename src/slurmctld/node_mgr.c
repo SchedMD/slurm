@@ -1181,20 +1181,16 @@ update_node ( update_node_msg_t * update_node_msg )
 		if (state_val != NO_VAL) {
 			if (state_val == NODE_STATE_DOWN) {
 				bit_clear (up_node_bitmap,
-					      (int) (node_record_point - 
-						node_record_table_ptr));
+					      (int) (node_record_point - node_record_table_ptr));
 				bit_clear (idle_node_bitmap,
-					      (int) (node_record_point - 
-						node_record_table_ptr));
+					      (int) (node_record_point - node_record_table_ptr));
 			}
 			else if (state_val != NODE_STATE_IDLE)
 				bit_clear (idle_node_bitmap,
-					      (int) (node_record_point - 
-						node_record_table_ptr));
+					      (int) (node_record_point - node_record_table_ptr));
 			else	/* (state_val == NODE_STATE_IDLE) */
 				bit_set (idle_node_bitmap,
-					      (int) (node_record_point - 
-						node_record_table_ptr));
+					      (int) (node_record_point - node_record_table_ptr));
 
 			node_record_point->node_state = state_val;
 			info ("update_node: node %s state set to %s",
@@ -1234,7 +1230,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		unlock_slurmctld (node_write_lock);
 		return ENOENT;
 	}
-	node_ptr->last_response = time (NULL);
+	node_ptr->last_response = last_node_update = time (NULL);
 
 	config_ptr = node_ptr->config_ptr;
 	error_code = 0;
@@ -1269,8 +1265,10 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	else {
 		info ("validate_node_specs: node %s has registered", node_name);
 		node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
-		if (node_ptr->node_state == NODE_STATE_UNKNOWN)
+		if (node_ptr->node_state == NODE_STATE_UNKNOWN) {
 			node_ptr->node_state = NODE_STATE_IDLE;
+			bit_set (idle_node_bitmap, (node_ptr - node_record_table_ptr));
+		}
 		if (node_ptr->node_state != NODE_STATE_DOWN)
 			bit_set (up_node_bitmap, (node_ptr - node_record_table_ptr));
 	}
