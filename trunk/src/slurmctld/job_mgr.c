@@ -112,11 +112,13 @@ static int  _job_create(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		        int allocate, int will_run,
 		        struct job_record **job_rec_ptr, uid_t submit_uid);
 static void _list_delete_job(void *job_entry);
+static int  _list_find_job_id(void *job_entry, void *key);
 static int  _list_find_job_old(void *job_entry, void *key);
 static int  _load_job_details(struct job_record *job_ptr, Buf buffer);
 static int  _load_job_state(Buf buffer);
 static int  _load_step_state(struct job_record *job_ptr, Buf buffer);
 static void _pack_job_details(struct job_details *detail_ptr, Buf buffer);
+static int  _purge_job_record(uint32_t job_id);
 static void _read_data_array_from_file(char *file_name, char ***data,
 				       uint16_t * size);
 static void _read_data_from_file(char *file_name, char **data);
@@ -128,7 +130,8 @@ static void _signal_job_on_node(uint32_t job_id, uint16_t step_id,
 static void _spawn_signal_agent(agent_arg_t *agent_info);
 static bool _top_priority(struct job_record *job_ptr);
 static int  _validate_job_create_req(job_desc_msg_t * job_desc);
-static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate);
+static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
+				uid_t submit_uid);
 static void _validate_job_files(List batch_dirs);
 static int  _write_data_to_file(char *file_name, char *data);
 static int  _write_data_array_to_file(char *file_name, char **data,
@@ -1266,7 +1269,7 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 	struct part_record *part_ptr;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 
-	if ((error_code = _validate_job_desc(job_desc, allocate)))
+	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid)))
 		return error_code;
 
 	/* find selected partition */
@@ -1443,22 +1446,22 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 static int _validate_job_create_req(job_desc_msg_t * job_desc)
 {
 	if (job_desc->err && (strlen(job_desc->err) > BUF_SIZE)) {
-		info("_job_create: strlen(err) too big (%d)",
+		info("_validate_job_create_req: strlen(err) too big (%d)",
 		     strlen(job_desc->err));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
 	if (job_desc->in && (strlen(job_desc->in) > BUF_SIZE)) {
-		info("_job_create: strlen(in) too big (%d)",
+		info("_validate_job_create_req: strlen(in) too big (%d)",
 		     strlen(job_desc->in));
 		return  ESLURM_PATHNAME_TOO_LONG;
 	}
 	if (job_desc->out && (strlen(job_desc->out) > BUF_SIZE)) {
-		info("_job_create: strlen(out) too big (%d)",
+		info("_validate_job_create_req: strlen(out) too big (%d)",
 		     strlen(job_desc->out));
 		return  ESLURM_PATHNAME_TOO_LONG;
 	}
 	if (job_desc->work_dir && (strlen(job_desc->work_dir) > BUF_SIZE)) {
-		info("_job_create: strlen(work_dir) too big (%d)",
+		info("_validate_job_create_req: strlen(work_dir) too big (%d)",
 		     strlen(job_desc->work_dir));
 		return  ESLURM_PATHNAME_TOO_LONG;
 	}
@@ -1914,27 +1917,29 @@ void job_time_limit(void)
  *	allocate has valid data, set values to defaults as required 
  * IN job_desc_msg - pointer to job descriptor
  * IN allocate - if clear job to be queued, if set allocate for user now 
+ * IN submit_uid - who request originated
  */
-static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate)
+static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate, 
+			      uid_t submit_uid)
 {
 	if ((job_desc_msg->num_procs == NO_VAL) &&
 	    (job_desc_msg->min_nodes == NO_VAL) &&
 	    (job_desc_msg->req_nodes == NULL)) {
-		info("_job_create: job failed to specify num_procs, min_nodes or req_nodes");
+		info("_validate_job_desc: job failed to specify num_procs, min_nodes or req_nodes");
 		return ESLURM_JOB_MISSING_SIZE_SPECIFICATION;
 	}
 	if ((allocate == SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0) &&
 	    (job_desc_msg->script == NULL)) {
-		info("_job_create: job failed to specify Script");
+		info("_validate_job_desc: job failed to specify Script");
 		return ESLURM_JOB_SCRIPT_MISSING;
 	}
 	if (job_desc_msg->user_id == NO_VAL) {
-		info("_job_create: job failed to specify User");
+		info("_validate_job_desc: job failed to specify User");
 		return ESLURM_USER_ID_MISSING;
 	}
 	if ((job_desc_msg->name) &&
 	    (strlen(job_desc_msg->name) > MAX_NAME_LEN)) {
-		info("_job_create: job name %s too long",
+		info("_validate_job_desc: job name %s too long",
 		     job_desc_msg->name);
 		return ESLURM_JOB_NAME_TOO_LONG;
 	}
@@ -1945,20 +1950,33 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate)
 	if (job_desc_msg->shared == (uint16_t) NO_VAL)
 		job_desc_msg->shared = 0;
 
-	if ((job_desc_msg->job_id != NO_VAL) &&
-	    (find_job_record((uint32_t) job_desc_msg->job_id))) {
-		info("_job_create: Duplicate job id %d",
-		     job_desc_msg->job_id);
-		return ESLURM_DUPLICATE_JOB_ID;
+	if (job_desc_msg->job_id != NO_VAL) {
+		struct job_record *dup_job_ptr;
+		if ((submit_uid != 0) && 
+		    (submit_uid != slurmctld_conf.slurm_user_id)) {
+			info("attempt by uid %u to set job_id", submit_uid);
+			return ESLURM_DUPLICATE_JOB_ID;
+		}
+		dup_job_ptr = find_job_record((uint32_t) job_desc_msg->job_id);
+		if (dup_job_ptr && 
+		    ((dup_job_ptr->job_state == JOB_PENDING) ||
+		     (dup_job_ptr->job_state == JOB_RUNNING))) {
+			info("attempt re-use active job_id %u", 
+			     job_desc_msg->job_id);
+			return ESLURM_DUPLICATE_JOB_ID;
+		}
+		if (dup_job_ptr)	/* Purge the record for re-use */
+			_purge_job_record(job_desc_msg->job_id);
 	}
+
 	if (job_desc_msg->num_procs == NO_VAL)
 		job_desc_msg->num_procs = 1;	/* default cpu count of 1 */
 	if (job_desc_msg->min_nodes == NO_VAL)
 		job_desc_msg->min_nodes = 1;	/* default node count of 1 */
 	if (job_desc_msg->min_memory == NO_VAL)
-		job_desc_msg->min_memory = 1;	/* default 1 MB mem per node */
+		job_desc_msg->min_memory = 1;	/* default 1MB mem per node */
 	if (job_desc_msg->min_tmp_disk == NO_VAL)
-		job_desc_msg->min_tmp_disk = 1;	/* default 1 MB disk per node */
+		job_desc_msg->min_tmp_disk = 1;	/* default 1MB disk per node */
 	if (job_desc_msg->shared == (uint16_t) NO_VAL)
 		job_desc_msg->shared = 0;	/* default not shared nodes */
 	if (job_desc_msg->min_procs == NO_VAL)
@@ -2017,11 +2035,27 @@ static void _list_delete_job(void *job_entry)
 
 
 /*
- * _list_find_job_old - find an entry in the job list,  
+ * _list_find_job_id - find specific job_id entry in the job list,  
+ *	see common/list.h for documentation, key is job_id_ptr 
+ * global- job_list - the global partition list
+ */
+static int _list_find_job_id(void *job_entry, void *key)
+{
+	uint32_t *job_id_ptr = (uint32_t *) key;
+
+	if (((struct job_record *) job_entry)->job_id == *job_id_ptr)
+		return 1;
+	else
+		return 0;
+}
+
+
+/*
+ * _list_find_job_old - find old entries in the job list,  
  *	see common/list.h for documentation, key is ignored 
  * global- job_list - the global partition list
  */
-int _list_find_job_old(void *job_entry, void *key)
+static int _list_find_job_old(void *job_entry, void *key)
 {
 	time_t min_age;
 
@@ -2181,6 +2215,18 @@ void purge_old_job(void)
 		info("purge_old_job: purged %d old job records", i);
 		last_job_update = time(NULL);
 	}
+}
+
+
+/*
+ * _purge_job_record - purge specific job record
+ * IN job_id - job_id of job record to be purged
+ * RET int - count of job's purged
+ * global: job_list - global job table
+ */
+static int _purge_job_record(uint32_t job_id)
+{
+	return list_delete_all(job_list, &_list_find_job_id, (void *) &job_id);
 }
 
 
