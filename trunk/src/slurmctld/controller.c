@@ -45,6 +45,7 @@
 #include <src/common/hostlist.h>
 #include <src/common/log.h>
 #include <src/common/pack.h>
+#include <src/common/read_config.h>
 #include <src/common/slurm_auth.h>
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/macros.h>
@@ -59,6 +60,10 @@
 #define DEFAULT_RECOVER 0
 #define MAX_SERVER_THREAD_COUNT 20
 #define MEM_LEAK_TEST 0
+
+#ifndef MAX
+#  define MAX(x,y) (((x) >= (y)) ? (x) : (y))
+#endif /* !MAX */
 
 /* Log to stderr and syslog until becomes a daemon */
 log_options_t log_opts = { 1, LOG_LEVEL_INFO,  LOG_LEVEL_INFO, LOG_LEVEL_QUIET } ;
@@ -78,7 +83,6 @@ int recover = DEFAULT_RECOVER;
 int msg_from_root (void);
 void slurmctld_req ( slurm_msg_t * msg );
 void fill_ctld_conf ( slurm_ctl_conf_t * build_ptr );
-void init_ctld_conf ( slurm_ctl_conf_t * build_ptr );
 void parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * );
 static int ping_controller ( void );
 inline int report_locks_set ( void );
@@ -139,7 +143,7 @@ main (int argc, char *argv[])
 	thread_id_main = pthread_self();
 
 	slurmctld_pid = getpid ( );
-	init_ctld_conf ( &slurmctld_conf );
+	slurmctld_conf.slurm_conf = xstrdup(SLURM_CONFIG_FILE);
 	parse_commandline ( argc, argv, &slurmctld_conf );
 	if (daemonize) {
 		error_code = daemon (0, 0);
@@ -148,13 +152,25 @@ main (int argc, char *argv[])
 	}
 	init_locks ( );
 
-	if (getrlimit(RLIMIT_NOFILE,&rlim) == 0) {
+	if (getrlimit(RLIMIT_NOFILE, &rlim) == 0) {
 		rlim.rlim_cur = rlim.rlim_max;
-		setrlimit(RLIMIT_NOFILE,&rlim);
+		setrlimit (RLIMIT_NOFILE,&rlim);
 	}
 
 	if ( ( error_code = read_slurm_conf (recover)) ) 
-		fatal ("read_slurm_conf error %d reading %s", error_code, SLURM_CONFIG_FILE);
+		fatal ("read_slurm_conf error %d reading %s", 
+			error_code, SLURM_CONFIG_FILE);
+
+	if (slurmctld_conf.slurmctld_logfile) {
+		debug ("Routing all log messages to %s", slurmctld_conf.slurmctld_logfile);
+		log_opts.logfile_level = MAX (log_opts.logfile_level, log_opts.stderr_level);
+		log_opts.logfile_level = MAX (log_opts.logfile_level, log_opts.syslog_level);
+		log_opts.stderr_level  = LOG_LEVEL_QUIET;
+		log_opts.syslog_level  = LOG_LEVEL_QUIET;
+		log_init (argv[0], log_opts, SYSLOG_FACILITY_DAEMON,
+			 slurmctld_conf.slurmctld_logfile);
+	}
+
 	if (daemonize) {
 		if (chdir (slurmctld_conf.state_save_location))
 			fatal ("chdir to %s error %m", slurmctld_conf.state_save_location);
@@ -1831,58 +1847,6 @@ slurmctld_shutdown ()
 	}
 
         return SLURM_PROTOCOL_SUCCESS ;
-}
-
-/*
- * init_ctld_conf - set default configuration parameters
- * NOTE: slurmctld and slurmd ports are built thus:
- *	if SLURMCTLD_PORT/SLURMD_PORT are set then
- *		get the port number based upon a look-up in /etc/services
- *		if the lookup fails, translate SLURMCTLD_PORT/SLURMD_PORT into a number
- *	These port numbers are overridden if set in the configuration file
- */
-void
-init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
-{
-	struct servent *servent;
-
-	conf_ptr->last_update		= time (NULL) ;
-	conf_ptr->backup_addr   	= NULL ;
-	conf_ptr->backup_controller   	= NULL ;
-	conf_ptr->control_addr    	= NULL ;
-	conf_ptr->control_machine    	= NULL ;
-	conf_ptr->epilog           	= NULL ;
-	conf_ptr->fast_schedule     	= 1 ;
-	conf_ptr->first_job_id     	= 1 ;
-	conf_ptr->hash_base         	= 10 ;
-	conf_ptr->heartbeat_interval	= 30;
-	conf_ptr->inactive_limit	= 0;		/* unlimited */
-	conf_ptr->kill_wait         	= 30 ;
-	conf_ptr->prioritize        	= NULL ;
-	conf_ptr->prolog            	= NULL ;
-	conf_ptr->ret2service           = 0 ;
-	conf_ptr->slurmctld_logfile   	= NULL ;
-	conf_ptr->slurmctld_timeout   	= 300 ;
-	conf_ptr->slurmd_logfile   	= NULL ;
-	conf_ptr->slurmd_spooldir   	= NULL ;
-	conf_ptr->slurmd_timeout   	= 300 ;
-	conf_ptr->slurm_conf       	= SLURM_CONFIG_FILE ;
-	conf_ptr->state_save_location   = xstrdup (DEFAULT_TMP_FS) ;
-	conf_ptr->tmp_fs            	= xstrdup (DEFAULT_TMP_FS) ;
-
-	servent = getservbyname (SLURMCTLD_PORT, NULL);
-	if (servent)
-		conf_ptr->slurmctld_port   = servent -> s_port;
-	else
-		conf_ptr->slurmctld_port   = strtol (SLURMCTLD_PORT, (char **) NULL, 10);
-	endservent ();
-
-	servent = getservbyname (SLURMD_PORT, NULL);
-	if (servent)
-		conf_ptr->slurmd_port   = servent -> s_port;
-	else
-		conf_ptr->slurmd_port   = strtol (SLURMD_PORT, (char **) NULL, 10);
-	endservent ();
 }
 
 
