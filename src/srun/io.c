@@ -79,6 +79,7 @@ static int	_handle_pollerr(fd_info_t *info);
 static char *	_host_state_name(host_state_t state_inx);
 static ssize_t	_readn(int fd, void *buf, size_t nbytes);
 static ssize_t	_readx(int fd, char *buf, size_t maxbytes);
+static char *   _taskid2hostname(int task_id, job_t * job);
 static char *	_task_state_name(task_state_t state_inx);
 static int	_validate_header(slurm_io_stream_header_t *hdr, job_t *job);
 
@@ -207,8 +208,8 @@ _io_thr_poll(void *job_arg)
 				if ((job->out[i] == IO_DONE) && 
 				    (job->err[i] == IO_DONE))
 					continue;
-				error("Task %d terminated abnormally", i);
-				/* report_task_status(job); */
+				error("Task %d on node %s terminated abnormally",
+				      i, _taskid2hostname(i, job));
 				update_job_state(job, SRUN_JOB_FAILED);
 			}
 			pthread_exit(0);
@@ -274,8 +275,8 @@ static void _do_poll_timeout (job_t *job)
 		for (i = 0; i < opt.nprocs; i++) {
 			if (job->task_state[i] != SRUN_TASK_INIT)
 				continue;
-			error("Task %d never started, terminating job now", i);
-			/* report_task_status(job); */
+			error("Task %d on node %s never started, terminating job", 
+			      i, _taskid2hostname(i, job));
 			update_job_state(job, SRUN_JOB_FAILED);
 			pthread_exit(0);
 		}
@@ -289,7 +290,7 @@ static void _do_poll_timeout (job_t *job)
 	else if (time_first_done && opt.max_wait && (j > opt.max_wait)) {
 		error("First task termination %d seconds ago", j);
 		error("Terminating remaining tasks now");
-		/* report_task_status(job); */
+		report_task_status(job);
 		update_job_state(job, SRUN_JOB_FAILED);
 		pthread_exit(0);
 	} else if (no_io_msg_sent)
@@ -342,13 +343,18 @@ void report_task_status(job_t *job)
 				break;
 		}
 		if (first_task == last_task)
-			info ("task:%d state:%s", first_task, 
-			      _task_state_name(current_state));
+			printf("task:%d state:%s\n", first_task, 
+			       _task_state_name(current_state));
 		else
-			info ("tasks:%d-%d state:%s", first_task, last_task, 
-			      _task_state_name(current_state));
+			printf("tasks:%d-%d state:%s\n", first_task,  
+			       last_task, _task_state_name(current_state));
 		i = last_task;
 	}
+}
+
+static char *   _taskid2hostname(int task_id, job_t * job)
+{
+	return "TBD";
 }
 
 static char *_task_state_name(task_state_t state_inx)
