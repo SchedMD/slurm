@@ -174,7 +174,7 @@
 #   be the fully qualified pathname of a file into which text 
 #   records are appended.
 #
-# JobCompLoc = /var/log/slurm.job.log
+# JobCompLoc=/var/log/slurm.job.log
 
 #
 # o Define the places to look for SLURM plugins.  This is a
