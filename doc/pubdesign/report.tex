@@ -32,9 +32,9 @@ SLURM\footnote{A tip of the hat to Matt Groening and creators of {\em Futurama},
 where Slurm is the highly addictive soda-like beverage made from worm
 excrement.} (Simple Linux Utility for Resource Management) 
 is a resource managment 
-system suitable for use on large Linux clusters.  After surveying resource
-managers available for Linux (see Appendix~\ref{survey}) and finding none
-that were simple, highly scalable, and portable to different cluster 
+system suitable for use on Linux clusters, large and small.  After surveying 
+resource managers available for Linux (see Appendix~\ref{survey}) and finding 
+none that were simple, highly scalable, and portable to different cluster 
 architectures and interconnects, the authors set out to design a new system.
 
 The result is a resource management system with the following general
@@ -130,12 +130,21 @@ tools that perform these functions.
 
 \section{Architecture}
 
-As described in the preceeding section, SLURM consists of a central
+\begin{figure}
+\epsfig{file=arch.eps,width=6in}
+\caption{SLURM Architecture}
+\label{arch}
+\end{figure}
+
+As depicted in Figure~\ref{arch}, SLURM consists of a central
 {\tt slurmctrld} daemon\footnote{The controller has has an optional failover
 twin on another node.}, a {\tt slurmd} daemon running on each compute node, 
-and a set of command line utilities.
+and a four command line utilities: {\tt srun}, {\tt scancel}, {\tt squeue},
+and {\tt slurmadmin}.
 
-This structure can be further broken down into subsystems:
+The majority of SLURM technology is concentrated in the controller, with 
+the {\tt slurmd}'s simply carrying commands issued by the controller.
+The controller is depicted in Figure~\ref{controller}:
 
 \begin{itemize}
 \item {\em Machine and job status}: Monitor and record the state of each 

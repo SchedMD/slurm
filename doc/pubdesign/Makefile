@@ -11,7 +11,7 @@
 REPORT = report
 
 TEX = llnl.tex $(REPORT).tex
-FIGS =
+FIGS = arch.eps
 PLOTS = 
 BIB = project.bib
 
