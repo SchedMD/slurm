@@ -103,7 +103,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
 
 	fprintf ( out, "   MinProcs=%u MinMemory=%u ",  
 		job_ptr->min_procs, job_ptr->min_memory);
-	fprintf ( out, "Features=%s  MinTmpDisk=%u\n", 
+	fprintf ( out, "Features=%s MinTmpDisk=%u\n", 
 		job_ptr->features, job_ptr->min_tmp_disk);
 
 	fprintf ( out, "   ReqNodeList=%s ", job_ptr->req_nodes);
