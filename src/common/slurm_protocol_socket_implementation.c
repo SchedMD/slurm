@@ -240,7 +240,10 @@ ssize_t _slurm_msg_sendto_timeout ( slurm_fd open_fd, char *buffer , size_t size
 
 	while ( true )
 	{
-		if ( ( send_len = _slurm_send_timeout ( open_fd , &usize , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , timeout ) )  == SLURM_PROTOCOL_ERROR )
+		if ( ( send_len = _slurm_send_timeout ( open_fd , 
+					(char *) &usize , sizeof ( uint32_t ) , 
+					SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , timeout ) )  == 
+						SLURM_PROTOCOL_ERROR )
 		{
 			if ( errno ==  EINTR )
 				continue ;

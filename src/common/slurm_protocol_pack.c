@@ -141,6 +141,9 @@ int pack_msg ( slurm_msg_t const * msg , Buf buffer )
 		case REQUEST_ALLOCATION_AND_RUN_JOB_STEP :
 			pack_job_desc ( (job_desc_msg_t * )  msg -> data , buffer )  ;
 			break ;
+		case REQUEST_OLD_JOB_RESOURCE_ALLOCATION :
+			pack_old_job_desc ( (old_job_alloc_msg_t * )  msg -> data , buffer )  ;
+			break ;
 		case REQUEST_NODE_REGISTRATION_STATUS :
 		case REQUEST_RECONFIGURE :
 		case REQUEST_SHUTDOWN_IMMEDIATE :
@@ -286,6 +289,9 @@ int unpack_msg ( slurm_msg_t * msg , Buf buffer )
 		case REQUEST_JOB_WILL_RUN : 
 		case REQUEST_ALLOCATION_AND_RUN_JOB_STEP : 
 			unpack_job_desc ( ( job_desc_msg_t **) & ( msg-> data ), buffer ) ;
+			break ;
+		case REQUEST_OLD_JOB_RESOURCE_ALLOCATION :
+			unpack_old_job_desc ( (old_job_alloc_msg_t * ) & ( msg -> data ), buffer )  ;
 			break ;
 		case REQUEST_NODE_REGISTRATION_STATUS :
 		case REQUEST_RECONFIGURE :
@@ -1110,8 +1116,6 @@ int unpack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t **build_buffer_ptr, Buf bu
 void pack_job_desc ( job_desc_msg_t * job_desc_ptr, Buf buffer )
 {	
 	/* load the data values */
-	/* unpack timestamp of snapshot */
-
 	pack16 (job_desc_ptr->contiguous, buffer);
 	pack16 (job_desc_ptr->kill_on_node_fail, buffer);
 	packstr (job_desc_ptr->features, buffer);
@@ -1162,7 +1166,6 @@ int unpack_job_desc ( job_desc_msg_t **job_desc_buffer_ptr, Buf buffer )
 	}
 
 	/* load the data values */
-	/* unpack timestamp of snapshot */
 
 	unpack16 (&job_desc_ptr->contiguous, buffer);
 	unpack16 (&job_desc_ptr->kill_on_node_fail, buffer);
@@ -1193,6 +1196,32 @@ int unpack_job_desc ( job_desc_msg_t **job_desc_buffer_ptr, Buf buffer )
 	unpack32 (&job_desc_ptr->num_nodes, buffer);
 	unpack32 (&job_desc_ptr->user_id, buffer);
 
+	*job_desc_buffer_ptr = job_desc_ptr ;
+	return 0 ;
+}
+
+void pack_old_job_desc ( old_job_alloc_msg_t * job_desc_ptr, Buf buffer )
+{	
+	/* load the data values */
+	pack32 (job_desc_ptr->job_id, buffer);
+	pack32 (job_desc_ptr->uid, buffer);
+}
+
+int unpack_old_job_desc ( old_job_alloc_msg_t **job_desc_buffer_ptr, Buf buffer )
+{	
+	old_job_alloc_msg_t * job_desc_ptr ;
+
+	/* alloc memory for structure */
+	job_desc_ptr = xmalloc ( sizeof ( old_job_alloc_msg_t ) ) ;
+	if (job_desc_ptr== NULL) 
+	{
+		*job_desc_buffer_ptr = NULL ;
+		return ENOMEM ;
+	}
+
+	/* load the data values */
+	unpack32 (&job_desc_ptr->job_id, buffer);
+	unpack32 (&job_desc_ptr->uid, buffer);
 	*job_desc_buffer_ptr = job_desc_ptr ;
 	return 0 ;
 }

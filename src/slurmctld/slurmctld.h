@@ -434,6 +434,10 @@ extern void node_did_resp (char *name);
 /* node_not_resp - record that the specified node is not responding */
 extern void node_not_resp (char *name);
 
+/* old_job_info - get details about an existing job allocation */
+extern int old_job_info (uint32_t uid, uint32_t job_id, char **node_list, 
+	uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps);
+
 /* 
  * pack_all_jobs - dump all job information for all jobs in 
  *	machine independent form (for network transmission)

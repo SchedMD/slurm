@@ -149,6 +149,7 @@ typedef enum {
 	REQUEST_REVOKE_JOB_CREDENTIAL,
 	REQUEST_ALLOCATION_AND_RUN_JOB_STEP,
 	RESPONSE_ALLOCATION_AND_RUN_JOB_STEP,
+	REQUEST_OLD_JOB_RESOURCE_ALLOCATION,
 
 	REQUEST_JOB_STEP_CREATE = 5001,
 	RESPONSE_JOB_STEP_CREATE,
@@ -495,6 +496,10 @@ typedef struct reattach_tasks_streams_msg {
 	uint32_t *global_task_ids;
 } reattach_tasks_streams_msg_t;
 
+typedef struct old_job_alloc_msg {
+	uint32_t job_id;
+	uint32_t uid;
+} old_job_alloc_msg_t;
 
 typedef struct resource_allocation_response_msg {
 	uint32_t job_id;
