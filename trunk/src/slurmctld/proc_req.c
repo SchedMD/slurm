@@ -753,6 +753,9 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 				job_step_kill_msg->job_id, 
 				job_step_kill_msg->job_step_id, TIME_STR);
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
+
+			/* Below function provides its own locking */
+			(void) dump_all_job_state();
 		}
 	}
 }
@@ -771,6 +774,7 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 	};
 	uid_t uid;
 	bool job_requeue = false;
+	bool dump_job = false, dump_node = false;
 
 	/* init */
 	START_TIMER;
@@ -806,6 +810,8 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 			error_code = update_node(&update_node_msg);
 			if (complete_job_step_msg->job_rc != SLURM_SUCCESS)
 				job_requeue = true;
+			dump_job = true;
+			dump_node = true;
 		}
 	}
 
@@ -827,8 +833,7 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 			debug2("_slurm_rpc_job_step_complete JobId=%u %s", 
 				complete_job_step_msg->job_id, TIME_STR);
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
-			schedule();	/* Has own locking */
-			(void) dump_all_job_state();	/* Has own locking */
+			dump_job = true;
 		}
 	} else {
 		error_code =
@@ -851,9 +856,13 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 				complete_job_step_msg->job_id, 
 				complete_job_step_msg->job_step_id, TIME_STR);
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
-			(void) dump_all_job_state();	/* Has own locking */
+			dump_job = true;
 		}
 	}
+	if (dump_job)
+		(void) dump_all_job_state();	/* Has own locking */
+	if (dump_node)
+		(void) dump_all_node_state();	/* Has own locking */
 }
 
 /* _slurm_rpc_job_step_create - process RPC to creates/registers a job step 
