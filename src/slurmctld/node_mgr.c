@@ -946,6 +946,7 @@ pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	int buf_len, buffer_allocated, buffer_offset = 0, error_code, inx;
 	char *buffer;
 	void *buf_ptr;
+	int nodes_packed;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -958,7 +959,8 @@ pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	buf_len = buffer_allocated;
 
 	/* write haeader: version and time */
-	pack32  ((uint32_t) NODE_STRUCT_VERSION, &buf_ptr, &buf_len);
+	nodes_packed = 0 ;
+	pack32  ((uint32_t) nodes_packed, &buf_ptr, &buf_len);
 	pack32  ((uint32_t) last_node_update, &buf_ptr, &buf_len);
 
 	/* write node records */
@@ -968,14 +970,19 @@ pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time)
 			fatal ("pack_all_node: data integrity is bad");
 
 		error_code = pack_node(&node_record_table_ptr[inx], &buf_ptr, &buf_len);
-		if (error_code != 0) continue;
-		if (buf_len > BUF_SIZE) 
+		if (error_code != 0) 
 			continue;
+		if (buf_len > BUF_SIZE) 
+		{
+			nodes_packed ++ ;
+			continue;
+		}
 		buffer_allocated += (BUF_SIZE*16);
 		buf_len += (BUF_SIZE*16);
 		buffer_offset = (char *)buf_ptr - buffer;
 		xrealloc(buffer, buffer_allocated);
 		buf_ptr = buffer + buffer_offset;
+		nodes_packed ++ ;
 	}
 
 	buffer_offset = (char *)buf_ptr - buffer;
@@ -984,6 +991,12 @@ pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	buffer_ptr[0] = buffer;
 	*buffer_size = buffer_offset;
 	*update_time = last_node_update;
+
+        /* put in the real record count in the message body header */
+        buf_ptr = buffer;
+        buf_len = buffer_allocated;
+        pack32  ((uint32_t) nodes_packed, &buf_ptr, &buf_len);
+
 	return 0;
 }
 
