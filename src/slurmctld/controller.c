@@ -43,6 +43,7 @@
 #include <src/common/hostlist.h>
 #include <src/common/log.h>
 #include <src/common/pack.h>
+#include <src/common/slurm_auth.h>
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/macros.h>
 #include <src/common/xstring.h>
@@ -50,7 +51,6 @@
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 #include <src/common/credential_utils.h>
-#include <src/common/slurm_auth.h>
 
 #define BUF_SIZE 1024
 #define DEFAULT_DAEMONIZE 0
@@ -79,7 +79,6 @@ void fill_ctld_conf ( slurm_ctl_conf_t * build_ptr );
 void init_ctld_conf ( slurm_ctl_conf_t * build_ptr );
 void parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * );
 static int ping_controller ( void );
-void *process_rpc ( void * req );
 inline int report_locks_set ( void );
 static void run_backup ( void );
 inline static void save_all_state ( void );
@@ -341,7 +340,8 @@ slurmctld_rpc_mgr ( void * no_data )
 		}
 		else if (shutdown_time)
 			no_thread = 1;
-		else if (pthread_create ( &thread_id_rpc_req, &thread_attr_rpc_req, service_connection, (void *) conn_arg )) {
+		else if (pthread_create ( &thread_id_rpc_req, &thread_attr_rpc_req, 
+		                          service_connection, (void *) conn_arg )) {
 			error ("pthread_create error %m");
 			no_thread = 1;
 		}
@@ -376,7 +376,6 @@ void * service_connection ( void * arg )
 	if ( ( error_code = slurm_receive_msg ( newsockfd , msg ) ) == SLURM_SOCKET_ERROR )
 	{
 		error ("slurm_receive_msg error %m");
-		slurm_free_msg ( msg ) ;
 	}
 	else {
 		if (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE)
@@ -389,6 +388,7 @@ void * service_connection ( void * arg )
 	 * the following call will be a no-op in a message/mongo implementation */
 	slurm_close_accepted_conn ( newsockfd ); /* close the new socket */
 
+	slurm_free_msg ( msg ) ;
 	xfree ( arg ) ;
 	pthread_mutex_lock(&thread_count_lock);
 	server_thread_count--;
@@ -557,24 +557,6 @@ report_locks_set ( void )
 	return lock_count;
 }
 
-/* process_rpc - process an RPC request and close the connection */
-void *
-process_rpc ( void * req )
-{
-	slurm_msg_t * msg;
-	slurm_fd newsockfd;
-
-	msg = (slurm_msg_t *) req;
-	newsockfd = msg -> conn_fd;
-	slurmctld_req ( msg );	/* process the request */
-
-	/* close should only be called when the stream implementation is being used 
-	 * the following call will be a no-op in the message implementation */
-	slurm_close_accepted_conn ( newsockfd ); /* close the new socket */
-
-	pthread_exit (NULL);
-}
-
 /* slurmctld_req - Process an individual RPC request */
 void
 slurmctld_req ( slurm_msg_t * msg )
@@ -674,7 +656,6 @@ slurmctld_req ( slurm_msg_t * msg )
 			slurm_send_rc_msg ( msg , EINVAL );
 			break;
 	}
-	slurm_free_msg ( msg ) ;
 }
 
 /* slurm_rpc_dump_build - process RPC for Slurm configuration information */
@@ -2120,7 +2101,7 @@ background_signal_hand ( void * no_data )
 	}
 }
 
-/* background_rpc_mgr - Read and process incoming RPCs */
+/* background_rpc_mgr - Read and process incoming RPCs to the background controller (that's us) */
 void *
 background_rpc_mgr ( void * no_data ) 
 {
