@@ -239,7 +239,7 @@ AC_SUBST(MUNGE_LIBS)
 AM_CONDITIONAL(WITH_MUNGE, test "x$have_munge" = "xyes")
 
 AUTHD_CFLAGS=""
-AUTHD_LIBS="-lauth"
+AUTHD_LIBS="-lauth -le"
 savedLIBS="$LIBS"
 savedCFLAGS="$CFLAGS"
 LIBS="$SSL_LIBS $AUTHD_LIBS $LIBS"
