@@ -332,16 +332,21 @@ int dump_all_node_state ( void )
 		error ("Can't save state, error creating file %s %m", 
 		       new_file);
 		error_code = errno;
-	}
-	else {
-		if (write (log_fd, get_buf_data(buffer), 
-		           get_buf_offset(buffer)) != 
-					get_buf_offset(buffer)) {
-			error ("Can't save state, error writing file %s %m", 
-			       new_file);
-			error_code = errno;
+	} else {
+		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		char *data = (char *)get_buf_data(buffer);
+
+		while (nwrite > 0) {
+			amount = write(log_fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				error_code = errno;
+				break;
+			}
+			nwrite -= amount;
+			pos    += amount;
 		}
-		close (log_fd);
+		close(log_fd);
 	}
 	if (error_code) 
 		(void) unlink (new_file);
