@@ -357,15 +357,29 @@ char *node_state_string(enum node_states inx)
 char *node_state_string_compact(enum node_states inx)
 {
 	static char *node_state_string[] = {
-		"DN",
-		"UN",
-		"I",
-		"AL",
-		"DD",
-		"DG",
-		"CM",
+		"DOWN",
+		"UNK",
+		"IDLE",
+		"ALLOC",
+		"DRAIN",
+		"DRAIN",
+		"COMP",
 		"END"
 	};
-	inx = (uint16_t) (inx & (~NODE_STATE_NO_RESPOND));
-	return node_state_string[inx];
+	static char *node_no_resp_string[] = {
+		"DOWN*",
+		"UNK*",
+		"IDLE*",
+		"ALLOC*",
+		"DRAIN*",
+		"DRAIN*",
+		"COMP*",
+		"END"
+	};
+	if (inx & NODE_STATE_NO_RESPOND) {
+		inx = (uint16_t) (inx & (~NODE_STATE_NO_RESPOND));
+		return node_no_resp_string[inx];
+	}
+	else
+		return node_state_string[inx];
 }
