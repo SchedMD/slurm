@@ -120,18 +120,17 @@ main (int argc, char *argv[])
 	 * Establish initial configuration
 	 */
 	log_init(argv[0], log_opts, SYSLOG_FACILITY_DAEMON, NULL);
+	thread_id_main = pthread_self();
+	fatal_add_cleanup_job (slurmctld_cleanup, NULL);
+
+	slurmctld_pid = getpid ( );
+	init_ctld_conf ( &slurmctld_conf );
 	parse_commandline ( argc, argv, &slurmctld_conf );
 	if (daemonize) {
 		error_code = daemon (0, 0);
 		if (error_code)
 			error ("daemon errno %d", errno);
 	}
-
-	thread_id_main = pthread_self();
-	fatal_add_cleanup_job (slurmctld_cleanup, NULL);
-
-	slurmctld_pid = getpid ( );
-	init_ctld_conf ( &slurmctld_conf );
 	init_locks ( );
 
 	if ( ( error_code = read_slurm_conf ()) ) 
@@ -1386,9 +1385,10 @@ void
 parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * conf_ptr )
 {
 	int c = 0, errlev;
-	opterr = 0;
+	char *log_file = NULL;
 
-	while ((c = getopt (argc, argv, "de:f:hl:s:")) != -1)
+	opterr = 0;
+	while ((c = getopt (argc, argv, "de:f:hl:L:s:")) != -1)
 		switch (c)
 		{
 			case 'd':
@@ -1411,7 +1411,6 @@ parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * conf_ptr )
 				break;
 			case 'f':
 				slurmctld_conf.slurm_conf = optarg;
-				printf("slurmctrld.slurm_conf = %s\n", slurmctld_conf.slurm_conf );
 				break;
 			case 'l':
 				errlev = strtol (optarg, (char **) NULL, 10);
@@ -1422,6 +1421,9 @@ parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * conf_ptr )
 					exit (1);
 				}
 				log_opts . logfile_level = errlev;
+				break;
+			case 'L':
+				log_file = optarg;
 				break;
 			case 's':
 				errlev = strtol (optarg, (char **) NULL, 10);
@@ -1438,7 +1440,7 @@ parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * conf_ptr )
 				exit (1);
 		}
 
-	log_init(argv[0], log_opts, SYSLOG_FACILITY_DAEMON, NULL);
+	log_init(argv[0], log_opts, SYSLOG_FACILITY_DAEMON, log_file);
 }
 
 /* usage - print a message describing the command line arguments of slurmctld */
@@ -1451,6 +1453,7 @@ usage (char *prog_name)
 	printf ("  -f <file>    Use specified configuration file name\n");
 	printf ("  -h           Print a help message describing usage\n");
 	printf ("  -l <errlev>  Set logfile logging to the specified level\n");
+	printf ("  -L <file>    Set logfile to the supplied file name\n");
 	printf ("  -s <errlev>  Set syslog logging to the specified level\n");
 	printf ("<errlev> is an integer between 0 and 7 with higher numbers providing more detail.\n");
 }
