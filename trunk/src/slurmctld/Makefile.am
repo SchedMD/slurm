@@ -38,6 +38,8 @@ slurmctld_SOURCES = 	\
 	slurmctld.h	\
 	srun_comm.c	\
 	srun_comm.h	\
+	state_save.c	\
+	state_save.h	\
 	step_mgr.c
 
 slurmctld_LDFLAGS = -export-dynamic

@@ -115,11 +115,13 @@ typedef struct slurmctld_config {
 #ifdef WITH_PTHREADS
 	pthread_mutex_t thread_count_lock;
 	pthread_t thread_id_main;
+	pthread_t thread_id_save;
 	pthread_t thread_id_sig;
 	pthread_t thread_id_rpc;
 #else
 	int thread_count_lock;
 	int thread_id_main;
+	int thread_id_save;
 	int thread_id_sig;
 	int thread_id_rpc;
 #endif
