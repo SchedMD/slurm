@@ -111,8 +111,6 @@ void get_command(void)
 			i2=-1;
 			/*********/
 
-			mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord, "%s", com->str);
-			
 			while(i<len) {
 				
 				while(com->str[i-1]!=' ' && i<len) {
@@ -132,10 +130,7 @@ void get_command(void)
 					i+=5;
 				} else if(i2<0 && (com->str[i] < 58 && com->str[i] > 47)) {
 					i2=i;
-					smap_info_ptr->ycord++;
-					mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
-						  smap_info_ptr->xcord, "yes i2 = %d i= %d",i2, i);
-					wrefresh(smap_info_ptr->text_win);
+					i++;
 				} else {
 					i++;
 				}
@@ -186,7 +181,11 @@ void get_command(void)
 				smap_info_ptr->ycord++;
 				mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
 					  smap_info_ptr->xcord, "input is Create with geo of X=%d Y=%d Z=%d Size=%d Torus=%d Rotate=%d",geo[0],geo[1],geo[2],i,torus, rotate);
+				request = (pa_request_t*) xmalloc(sizeof(pa_request_t));
+				results = list_create(NULL);
+				
 				new_pa_request(request, geo, i, rotate, elongate, force_contig, torus);
+
 				if (!allocate_part(request, &results)){
 					printf("allocate failure for %d%d%d\n", 
 					       geo[0], geo[1], geo[2]);
@@ -202,9 +201,9 @@ void get_command(void)
 					smap_info_ptr->grid[x][y][z].color = smap_info_ptr->fill_in_value[count].color;
 					}
 				count++;
-				
-				
+								
 				delete_pa_request(request);
+				//list_destroy(results);
 			}
 
 		} else if (!strncmp(com->str, "save", 4)) {
@@ -212,7 +211,7 @@ void get_command(void)
 				  smap_info_ptr->ycord,
 				  smap_info_ptr->xcord, "%s", com->str);
 		}
-		smap_info_ptr->ycord++;
+		//smap_info_ptr->ycord++;
 		//wattron(smap_info_ptr->text_win, COLOR_PAIR(smap_info_ptr->fill_in_value[count].color));
 		//print_text_command(&com);
 		//wattroff(smap_info_ptr->text_win, COLOR_PAIR(smap_info_ptr->fill_in_value[count].color));
