@@ -56,17 +56,8 @@
  *  want to include here since we are using the new
  *  version-nonspecific libelanctrl.
  *  (XXX: What is the equivalent in libelanctrl?)
- *
- * slurm/482: the elan USER context range is now split
- *  into two segments, regular user context and RMS 
- *  context ranges. Do not allow a context range
- *  (lowcontext -- highcontext) to span these two segments,
- *  as this will generate and elan initialization error
- *  when MPI tries to attach to the capability. For now,
- *  restrict SLURM's range to the RMS one (starting at 0x400)
- * 
  */
-# define ELAN_USER_BASE_CONTEXT_NUM    0x400 /* act. RMS_BASE_CONTEXT_NUM */
+# define ELAN_USER_BASE_CONTEXT_NUM    0x020
 # define ELAN_USER_TOP_CONTEXT_NUM     0x7ff
 
 # define Version      cap_version
