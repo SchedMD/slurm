@@ -80,7 +80,7 @@ unblock_all_signals(void)
 		error("sigfillset: %m");
 		return SLURM_ERROR;
 	}
-	if (sigprocmask(SIG_UNBLOCK, &set, NULL)) {
+	if (pthread_sigmask(SIG_UNBLOCK, &set, NULL)) {
 		error("sigprocmask: %m");
 		return SLURM_ERROR;
 	}
