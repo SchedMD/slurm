@@ -327,7 +327,7 @@ static void _opt_list(void);
 /* search PATH for command 
  * returns full path
  */
-static char * _search_path(char *, bool);
+static char * _search_path(char *, bool, int);
 
 static void _print_version(void);
 static bool _valid_node_list(char **node_list_pptr);
@@ -896,9 +896,11 @@ static void _opt_args(int ac, char **av)
 
 
 	if (remote_argc > 0) {
+		char *cmd       = remote_argv[0];
 		bool search_cwd = (opt.batch || opt.allocate);
+		int  mode       = (search_cwd) ? R_OK : R_OK | X_OK;
 
-		if ((fullpath = _search_path(remote_argv[0], search_cwd))) {
+		if ((fullpath = _search_path(cmd, search_cwd, mode))) {
 			free(remote_argv[0]);
 			remote_argv[0] = fullpath;
 		} 
@@ -1056,21 +1058,22 @@ _create_path_list(void)
 }
 
 static char *
-_search_path(char *cmd, bool check_current_dir)
+_search_path(char *cmd, bool check_current_dir, int access_mode)
 {
-	List l = _create_path_list();
-	ListIterator i = list_iterator_create(l);
+	List         l        = _create_path_list();
+	ListIterator i        = NULL;
 	char *path, *fullpath = NULL;
 
 	if (check_current_dir) 
 		list_prepend(l, xstrdup(opt.cwd));
 
+	i = list_iterator_create(l);
 	while ((path = list_next(i))) {
 		xstrcat(fullpath, path);
 		xstrcatchar(fullpath, '/');
 		xstrcat(fullpath, cmd);
 
-		if (access(fullpath, R_OK | X_OK) == 0)
+		if (access(fullpath, access_mode) == 0)
 			goto done;
 
 		xfree(fullpath);
