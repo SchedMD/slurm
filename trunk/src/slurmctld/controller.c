@@ -166,7 +166,7 @@ slurmctld_req ( slurm_msg_t * msg )
 			slurm_rpc_submit_batch_job ( msg ) ;
 			slurm_free_job_desc_msg ( msg -> data ) ; 
 			break;
-		case REQUEST_NODE_REGISTRATION_STATUS:
+		case MESSAGE_NODE_REGISTRATION_STATUS:
 			slurm_rpc_register_node_status ( msg ) ;
 			slurm_free_node_registration_status_msg ( msg -> data ) ;
 			break;
@@ -649,27 +649,25 @@ slurm_rpc_register_node_status ( slurm_msg_t * msg )
 	/* init */
 	int error_code;
 	clock_t start_time;
-	char * node_name_ptr = NULL;
 	slurm_node_registration_status_msg_t * reg_msg = ( slurm_node_registration_status_msg_t * ) msg -> data ;
 	start_time = clock ();
 
 	/* do RPC call */
+	error_code = 0 ;
 
 	/* return result */
 	if (error_code)
 	{
 		error ("slurmctld_req: register error %d on node %s, time=%ld",
-				error_code, node_name_ptr, (long) (clock () - start_time));
+				error_code, reg_msg->node_name, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
 		info ("slurmctld_req: registured node %s, time=%ld",
-				node_name_ptr, (long) (clock () - start_time));
+				reg_msg->node_name, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
-	if (node_name_ptr)
-		xfree (node_name_ptr);
 
 }
 
