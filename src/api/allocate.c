@@ -28,6 +28,7 @@ slurm_allocate_resources (job_desc_msg_t * job_desc_msg , resource_allocation_re
 	slurm_msg_t request_msg ;
 	slurm_msg_t response_msg ;
 	return_code_msg_t * slurm_rc_msg ;
+	resource_allocation_response_msg_t * slurm_alloc_msg;
 
 	/* init message connection for message communication with controller */
 	if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR )
@@ -63,6 +64,11 @@ slurm_allocate_resources (job_desc_msg_t * job_desc_msg , resource_allocation_re
 			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
 			return (int) slurm_rc_msg->return_code;
 			break ;
+		case RESPONSE_RESOURCE_ALLOCATION:
+			slurm_alloc_msg = ( resource_allocation_response_msg_t * ) response_msg . data ;
+			job_desc_msg->job_id = slurm_alloc_msg->job_id;
+			return 0;
+			break ;
 		default:
 			return SLURM_UNEXPECTED_MSG_ERROR ;
 			break ;
@@ -79,6 +85,7 @@ int slurm_job_will_run (job_desc_msg_t * job_desc_msg , resource_allocation_resp
 	slurm_msg_t request_msg ;
 	slurm_msg_t response_msg ;
 	return_code_msg_t * slurm_rc_msg ;
+	resource_allocation_response_msg_t * slurm_alloc_msg;
 
 	/* init message connection for message communication with controller */
 	if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR )
@@ -103,6 +110,11 @@ int slurm_job_will_run (job_desc_msg_t * job_desc_msg , resource_allocation_resp
 		case RESPONSE_SLURM_RC:
 			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
 			return (int) slurm_rc_msg->return_code;
+			break ;
+		case RESPONSE_JOB_WILL_RUN:
+			slurm_alloc_msg = ( resource_allocation_response_msg_t * ) response_msg . data ;
+			job_desc_msg->job_id = slurm_alloc_msg->job_id;
+			return 0;
 			break ;
 		default:
 			return SLURM_UNEXPECTED_MSG_ERROR ;
