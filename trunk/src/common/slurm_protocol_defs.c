@@ -344,6 +344,8 @@ slurm_free_node_registration_status_msg
 	if (msg) {
 		if (msg->node_name)
 			xfree(msg->node_name);
+		if (msg->job_id)
+			xfree(msg->job_id);
 		xfree(msg);
 	}
 }
