@@ -77,7 +77,7 @@ main (int argc, char *argv[])
 		for (i=0; i<10; i++) {
 			error_code = slurm_cancel_job_step (job_id, step_id);
 			if ((error_code == 0) || 
-			    (errno != fBESLURM_TRANSITION_STATE_NO_UPDATE))
+			    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
 				break;
 			printf ("Job is in transistional state, retrying\n");
 			sleep ( 5 + i );
@@ -89,7 +89,7 @@ main (int argc, char *argv[])
 		for (i=0; i<10; i++) {
 			error_code = slurm_cancel_job (job_id);
 			if ((error_code == 0) || 
-			    (errno != fBESLURM_TRANSITION_STATE_NO_UPDATE))
+			    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
 				break;
 			printf ("Job is in transistional state, retrying\n");
 			sleep ( 5 + i );
