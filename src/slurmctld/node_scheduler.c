@@ -950,6 +950,7 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 	/* assign the nodes and stage_in the job */
 	job_ptr->nodes = bitmap2node_name(req_bitmap);
 	job_ptr->node_bitmap = req_bitmap;
+	job_ptr->details->shared = shared;
 	allocate_nodes(job_ptr);
 	build_node_details(job_ptr);
 	req_bitmap = NULL;
