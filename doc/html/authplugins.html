@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324">
-<meta name="LLNLRandRdate" content="2 May 2004">
+<meta name="LLNLRandRdate" content="8 June 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -68,7 +68,7 @@ authentication service. This may be used for testing purposes, but is not suitab
 production use due to lack of effective security.</li>
 <li><b>authd</b>&#151;Brett Chun's Linux authd.</li>
 <li><b>munge</b>&#151;LLNL's munge protocol (recommended plugin for production use).</li>
-<li><b>krb5</b>&#151;Kerberos 5 (not implemented as of 2 May 2004).</li>
+<li><b>krb5</b>&#151;Kerberos 5 (not implemented as of 8 June 2004).</li>
 </ul>
 <p>The <span class="commandline">plugin_name</span> and <span class="commandline">plugin_version</span> 
 symbols required by the SLURM Plugin API require no specialization for authentication. 
@@ -118,7 +118,7 @@ be stubbed.</p>
 <p class="commandline">void *slurm_auth_alloc (void);</p>
 <p style="margin-left:.2in"><b>Description</b>: Allocates from the free store 
 an anonymous credential object and returns a pointer to it. The pointer should 
-be valid until passed to <span class="commandline">slurm_auth_free()</span> for 
+be valid until passed to <span class="commandline">slurm_auth_destroy()</span> for 
 disposal. The credential is not expected to be in a usable state until it is activated 
 by <span class="commandline">slurm_auth_activate()</span>. SLURM will not pass 
 credentials to the API which have not been allocated by this function.</p>
@@ -126,7 +126,7 @@ credentials to the API which have not been allocated by this function.</p>
 <p style="margin-left:.2in"><b>Returns</b>: A pointer to a newly allocated credential 
 if successful. On failure, the plugin should return NULL and set its errno to 
 an appropriate value to indicate the reason for failure.</p>
-<p class="commandline">int slurm_auth_free (void *cr);</p>
+<p class="commandline">int slurm_auth_destroy (void *cr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Deallocates a credential that 
 was allocated with <span class="commandline">slurm_auth_alloc()</span> and any 
 associated storage that has been allocated for it during its use.</p>
@@ -220,7 +220,7 @@ from which the credential should be unpacked.</p>
 successfully unpacked. In case of failure, the function should return SLURM_ERROR 
 and set errno appropriately to indicate the cause of the failure. If the function 
 fails, no assumptions are made about the state of the credential except its suitability 
-for destruction via <span class="commandline">slurm_auth_free()</span>.</p>
+for destruction via <span class="commandline">slurm_auth_destroy()</span>.</p>
 <p class="commandline">int slurm_auth_print (void *cr, FILE *fp);</p>
 <p style="margin-left:.2in"><b>Description</b>: Writes a human-readable representation 
 of the credential to a standard I/O stream. There are no strict API constraints 
@@ -267,7 +267,7 @@ to maintain data format compatibility across different versions of the plugin.</
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-204324<br>
-Last modified 2 May 2004</p></td>
+Last modified 8 June 2004</p></td>
 </tr>
 </table>
 </td>
