@@ -311,6 +311,7 @@ AC_CONFIG_FILES([Makefile
 		 src/sinfo/Makefile
 		 src/plugins/Makefile
 		 src/plugins/auth/Makefile
+		 src/plugins/jobcomp/Makefile
 		 doc/Makefile
 		 doc/man/Makefile
 		 testsuite/Makefile
