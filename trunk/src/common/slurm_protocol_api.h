@@ -36,7 +36,7 @@ slurm_fd slurm_accept_msg_conn ( slurm_fd open_fd , slurm_addr * slurm_address )
 int slurm_close_accepted_conn ( slurm_fd open_fd ) ;
 int slurm_shutdown_msg_engine ( slurm_fd open_fd ) ;
 
-int slurm_receive_msg ( slurm_fd open_fd , slurm_addr * source_address , slurm_msg_t ** msg ) ; 
+int slurm_receive_msg ( slurm_fd open_fd , slurm_msg_t * msg ) ; 
 
 slurm_fd slurm_open_controller_conn ( ) ;
 slurm_fd slurm_open_msg_conn ( slurm_addr * slurm_address ) ;
@@ -63,8 +63,8 @@ int slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slur
 int slurm_send_controller_buffer ( slurm_fd open_fd , slurm_msg_type_t msg_type , char * data_buffer , size_t buf_len ) ;
 int slurm_send_node_buffer ( slurm_fd open_fd , slurm_addr * destination_address , slurm_msg_type_t msg_type , char * data_buffer , size_t buf_len ) ;
 
-int slurm_send_controller_msg ( slurm_fd open_fd , slurm_msg_type_t msg_type , slurm_msg_t const * msg ) ;
-int slurm_send_node_msg ( slurm_fd open_fd , slurm_addr * slurm_address , slurm_msg_type_t msg_type , slurm_msg_t const * msg ) ;
+int slurm_send_controller_msg ( slurm_fd open_fd , slurm_msg_t * msg ) ;
+int slurm_send_node_msg ( slurm_fd open_fd , slurm_msg_t * msg ) ;
 
 /* Address Conversion Functions */
 
