@@ -50,6 +50,7 @@
 #define OPT_LONG   	    0x0c
 #define OPT_SORT   	    0x0d
 #define OPT_NO_HEAD   	0x0e
+#define OPT_VERSION     0x0f
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -63,6 +64,7 @@ static int   _parse_state( char* str, enum job_states* states );
 static void  _parse_token( char *token, char *field, int *field_size, 
                            bool *right_justify, char **suffix);
 static void  _print_options( void );
+static void  _print_version( void );
 
 /*
  * parse_command_line
@@ -112,6 +114,8 @@ parse_command_line( int argc, char* argv[] )
 			"comma separated list of users to view", "user_name"},
 		{"verbose", 'v', POPT_ARG_NONE, &params.verbose, OPT_VERBOSE,
 			"verbosity level", NULL},
+		{"version", 'V', POPT_ARG_NONE, 0, OPT_VERSION,
+			"output version information and exit", NULL},
 		POPT_AUTOHELP
 		{NULL, '\0', 0, NULL, 0, NULL, NULL} /* end the list */
 	};
@@ -154,6 +158,10 @@ parse_command_line( int argc, char* argv[] )
 				break;
 			case OPT_VERBOSE:
 				params.verbose = true;
+				break;	
+			case OPT_VERSION:
+				_print_version();
+				exit(0);
 				break;	
 			default:
 				break;	
@@ -818,5 +826,10 @@ _build_user_list( char* str )
 		user = strtok_r (NULL, ",", &tmp_char);
 	}
 	return my_list;
+}
+
+static void _print_version(void)
+{
+	printf("%s %s\n", PACKAGE, SLURM_VERSION);
 }
 
