@@ -42,8 +42,7 @@ sched_wiki_la_SOURCES =	../agent.cpp		\
 sched_wiki_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 if HAVE_AIX
-sched_wiki_la_LIBADD = -lstdc++ \
-			$(top_builddir)/src/common/libcommon.la   \
+sched_wiki_la_LIBADD =	$(top_builddir)/src/common/libcommon.la   \
 			$(top_builddir)/src/api/libslurm.la
 else
 sched_wiki_la_LIBADD = -lstdc++ \
