@@ -16,11 +16,13 @@
 #ifndef _HAVE_SLURM_H
 #define _HAVE_SLURM_H
 
+#include <pthread.h>
 #include <stdlib.h>
 #include <time.h>
 #include "list.h"
+#include "slurmlib.h"
 
-#define MAX_NAME_LEN 16		/* Maximum length of partition or node name */
+#define DEBUG_SYSTEM 1
 
 #define BACKUP_INTERVAL		60
 #define BACKUP_LOCATION		"/usr/local/SLURM/Slurm.state"
@@ -55,7 +57,9 @@ struct Job_Record {
 #define CONFIG_MAGIC 'C'
 #define NODE_MAGIC   'N'
 struct Config_Record {
+#if DEBUG_SYSTEM
     char Magic;			/* Magic cookie to test data integrity */
+#endif
     int CPUs;			/* Count of CPUs running on the node */
     int RealMemory;		/* Megabytes of real memory on the node */
     int TmpDisk;		/* Megabytes of total storage in TMP_FS file system */
@@ -85,7 +89,9 @@ extern char *Node_State_String[];
 extern time_t Last_BitMap_Update;	/* Time of last node creation or deletion */
 extern time_t Last_Node_Update;		/* Time of last update to Node Records */
 struct Node_Record {
+#if DEBUG_SYSTEM
     char Magic;				/* Magic cookie to test data integrity */
+#endif
     char Name[MAX_NAME_LEN];		/* Name of the node. A NULL name indicates defunct node */
     int NodeState;			/* State of the node, see Node_State above, negative if down */
     time_t LastResponse;		/* Last response from the node */
@@ -107,9 +113,11 @@ extern struct 	Node_Record Default_Node_Record;
  * change with respect to the API structures */
 #define PART_STRUCT_VERSION 1
 #define PART_MAGIC 'P'
-extern time_t Last_Part_Update;		/* Time of last update to Part Records */
+extern time_t Last_Part_Update;	/* Time of last update to Part Records */
 struct Part_Record {
+#if DEBUG_SYSTEM
     char Magic;			/* Magic cookie to test data integrity */
+#endif
     char Name[MAX_NAME_LEN];	/* Name of the partition */
     int MaxTime;		/* -1 if unlimited */
     int MaxNodes;		/* -1 if unlimited */
@@ -136,7 +144,7 @@ extern struct Part_Record *Default_Part_Loc;	/* Location of default partition */
  * NOTE: Consider returning the node list as a regular expression if helpful
  * NOTE: The caller must free memory at Node_List when no longer required
  */
-int BitMap2NodeName(unsigned *BitMap, char **Node_List);
+extern int BitMap2NodeName(unsigned *BitMap, char **Node_List);
 
 /*
  * BitMapAND - AND two bitmaps together
@@ -281,6 +289,23 @@ extern int Delete_Part_Record(char *name);
 extern int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time);
 
 /* 
+ * Dump_Part - Dump all partition information to a buffer
+ * Input: Buffer_Ptr - Location into which a pointer to the data is to be stored.
+ *                     The data buffer is actually allocated by Dump_Part and the 
+ *                     calling function must free the storage.
+ *         Buffer_Size - Location into which the size of the created buffer is in bytes
+ *         Update_Time - Dump new data only if partition records updated since time 
+ *                       specified, otherwise return empty buffer
+ * Output: Buffer_Ptr - The pointer is set to the allocated buffer.
+ *         Buffer_Size - Set to size of the buffer in bytes
+ *         Update_Time - set to time partition records last updated
+ *         Returns 0 if no error, errno otherwise
+ * NOTE: In this prototype, the buffer at *Buffer_Ptr must be freed by the caller
+ * NOTE: This is a prototype for a function to ship data partition to an API.
+ */
+int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time);
+
+/* 
  * Find_Node_Record - Find a record for node with specified name,
  * Input: name - name of the desired node 
  * Output: return pointer to node record or NULL if not found
@@ -356,6 +381,12 @@ extern int Load_Integer(int *destination, char *keyword, char *In_Line);
  */
 extern int Load_String(char **destination, char *keyword, char *In_Line);
 
+/* Node_Lock - Lock the node and configuration information */
+extern void Node_Lock();
+
+/* Node_Unlock - Unlock the node and configuration information */
+extern void Node_Unlock();
+
 /*
  * NodeName2BitMap - Given a node list, build a bitmap representation
  * Input: Node_List - List of nodes
@@ -378,6 +409,12 @@ int NodeName2BitMap(char *Node_List, unsigned **BitMap);
  * NOTE: The calling program must execute free(Format) when the storage location is no longer needed
  */
 extern int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx, int *Count_Inx);
+
+/* Part_Lock - Lock the partition information */
+void Part_Lock();
+
+/* Part_Unlock - Unlock the partition information */
+void Part_Unlock();
 
 /* 
  * Read_Array - Read the specified value from the specified buffer
