@@ -53,6 +53,9 @@
 #include <src/common/xmalloc.h>
 #include <src/common/list.h>
 
+
+#define MIN(x,y) (((x)<(y))?(x):(y))
+
 struct sinfo_parameters {
 	bool partition_flag;
 	const char* partition;
@@ -63,6 +66,22 @@ struct sinfo_parameters {
 	bool long_output;
 	bool line_wrap;
 	int verbose;
+};
+
+struct node_state_summary {
+	enum node_states state;
+	uint32_t node_count;
+	uint32_t cpu_min;
+	uint32_t cpu_max;
+	uint32_t ram_min;
+	uint32_t ram_max;
+	uint32_t disk_min;
+	uint32_t disk_max;
+};
+
+struct partition_summary {
+	partition_info_t* info;
+	List states;
 };
 
 int parse_state( char* str, enum job_states* states );
