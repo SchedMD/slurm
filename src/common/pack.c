@@ -109,6 +109,33 @@ _unpack16(uint16_t *valp, void **bufp, int *lenp)
 }
 
 /*
+ * Given a 8-bit integer in host byte order, convert to network byte order
+ * and store at 'bufp'.  Advance bufp by 2 bytes, decrement lenp by 2 bytes.
+ */
+void
+_pack8(uint8_t val, void **bufp, int *lenp)
+{
+	*((uint8_t*)*bufp) = val ;
+
+	(size_t)*bufp += sizeof(val);
+	*lenp -= sizeof(val);
+}
+
+/*
+ * Given 'bufp' pointing to a network byte order 16-bit integer,
+ * store a host integer at 'valp'.  Advance bufp by 2 bytes, decrement
+ * lenp by 2 bytes.
+ */
+void
+_unpack8(uint8_t *valp, void **bufp, int *lenp)
+{
+	*valp = *((uint8_t*)*bufp);
+
+	(size_t)*bufp += sizeof(*valp);
+	*lenp -= sizeof(*valp);
+}
+
+/*
  * Given a pointer to memory (valp) and a size (size_val), convert 
  * size_val to network byte order and store at 'bufp' followed by 
  * the data at valp. Advance bufp and decrement lenp by 4 bytes 
