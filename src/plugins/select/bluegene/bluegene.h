@@ -63,7 +63,7 @@ extern char *bluegene_blrts;
 extern char *bluegene_linux;
 extern char *bluegene_mloader;
 extern char *bluegene_ramdisk;
-extern char *bluegene_serialL;
+extern char *bluegene_serial;
 extern List bgl_init_part_list; 	/* Initial bgl partition state */
 
 typedef int lifecycle_type_t;
@@ -82,11 +82,11 @@ typedef struct bgl_record {
 	rm_partition_mode_t node_use;	/* either COPROCESSOR or VIRTUAL */
 } bgl_record_t;
 
-/** 
+/*
  * bgl_conf_record is used to store the elements read from the config
  * file from init().
  */
-typedef struct bgl_conf_record{
+typedef struct bgl_conf_record {
 	char* nodes;
 	rm_connection_type_t conn_type;/* Mesh or Torus or NAV */
 	rm_partition_mode_t node_use;
@@ -94,8 +94,7 @@ typedef struct bgl_conf_record{
 
 /* 
  * Read and process the bluegene.conf configuration file so to interpret what 
- * partitions are static, dynamic, etc.
- * 
+ * partitions are static/dynamic, torus/mesh, etc.
  */
 extern int read_bgl_conf(void);
 

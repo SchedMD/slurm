@@ -243,7 +243,7 @@ static void _process_config(void)
 
 	itr = list_iterator_create(bgl_list);
 	while ((bgl_part = (bgl_record_t*) list_next(itr))) {
-		/** 
+		/*
 		 * _parse_request() will fill up the partition_t's
 		 * bl_coord, tr_coord, dimensions, and size
 		 */
@@ -253,7 +253,7 @@ static void _process_config(void)
 			error("_process_config: error parsing request %s", 
 				bgl_part->nodes);
 		else {
-			/** 
+			/* 
 			 * bgl_part->conn_type should have been extracted in
 			 * copy_slurm_partition_list
 			 */
@@ -356,6 +356,10 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 	return rc;
 }
 
+/*
+ * Read and process the bluegene.conf configuration file so to interpret what
+ * partitions are static/dynamic, torus/mesh, etc.
+ */
 extern int read_bgl_conf(void)
 {
 	DEF_TIMERS;
@@ -609,7 +613,7 @@ static bgl_conf_record_t* _find_config_by_nodes(char* nodes)
 				nodes);
 }
 
-/** nodes example: 000x111 */
+/* Compare node list in bgl_conf_record against node list string */
 static int _listfindf_conf_part_record(bgl_conf_record_t* record, char *nodes)
 {
 	return (!strcasecmp(record->nodes, nodes));
@@ -737,9 +741,6 @@ extern int init_bgl(void)
 		bp_size.X, bp_size.Y, bp_size.Z);
 #endif
 
-	/* FIXME: for testing purposes */
-	init_bgl_partition_num();
-
 	info("BlueGene plugin loaded successfully");
 
 	return SLURM_SUCCESS;
@@ -756,6 +757,25 @@ extern void fini_bgl(void)
 		list_destroy(bgl_conf_list);
 		bgl_conf_list = NULL;
 	}
+	if (bgl_init_part_list) {
+		list_destroy(bgl_init_part_list);
+		bgl_init_part_list = NULL;
+	}
+
+	xfree(bluegene_blrts);
+	xfree(bluegene_linux);
+	xfree(bluegene_mloader);
+	xfree(bluegene_ramdisk);
+	xfree(bluegene_serial);
+
+#ifdef USE_BGL_FILES
+/* FIXME: rm_free_BGL() is consistenly generating a segfault, even 
+ * immediately following a rm_get_BGL() - Jette 11/22/04 */
+	if (bgl) {
+		rm_free_BGL(bgl);
+		bgl = NULL;
+	}
+#endif
 }
 
 extern void print_bgl_record(bgl_record_t* record)
@@ -833,7 +853,7 @@ extern char* convert_node_use(rm_partition_mode_t pt)
 	return "";
 }
 
-/** 
+/*
  * finds the best match for a given job request 
  * 
  * IN - int spec right now holds the place for some type of
@@ -926,13 +946,14 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		/* check the connection type specified matches */
 		/***********************************************/
 		if ((conn_type != record->conn_type)
-		&& (conn_type != RM_NAV)) {
-			debug("bgl partition %s conn-type not usable", record->nodes);
+		&&  (conn_type != RM_NAV)) {
+			debug("bgl partition %s conn-type not usable", 
+				record->nodes);
 			continue;
 		} 
 
 		/***********************************************/
-		/* check the node_use specified matches */
+		/* check the node_use specified matches        */
 		/***********************************************/
 		if (node_use != record->node_use) {
 			debug("bgl partition %s node-use not usable", record->nodes);
@@ -1083,6 +1104,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 static void _update_bgl_node_bitmap(void)
 {
 #ifdef USE_BGL_FILES
+/* Original logic from Dan Phung */
 	int bp_num,i;
 	rm_BP_t *my_bp;
 	rm_BP_state_t bp_state;
