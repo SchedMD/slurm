@@ -71,7 +71,6 @@ main (int argc, char *argv[])
 	for (job_count = 1 ; job_count <max_jobs;  job_count++) {
 		slurm_init_job_desc_msg( &job_mesg );
 		job_mesg. contiguous = 1;
-		job_mesg. groups = ("students,employee\0");
 		job_mesg. name = ("more.big\0");
 		job_mesg. min_procs = 4;
 		job_mesg. min_memory = 1024;
