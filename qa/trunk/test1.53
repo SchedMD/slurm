@@ -29,12 +29,17 @@ set host_2_name      ""
 set host_0_num       0
 set host_1_num       0
 set host_2_num       0
+set waiting          0
 set timeout $max_job_delay
 spawn $srun -N3 --contiguous -l -t1 $bin_hostname  
 expect {
 	-re "More processors requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exit $exit_code
+	}
+	-re "waiting" {
+		set waiting 1
+		exp_continue
 	}
 	-re "0: ($alpha)($number)" {
 		set host_0_name $expect_out(1,string)
@@ -52,9 +57,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
 		kill_srun
-		exit 1
+		if {$waiting == 1} {
+			send_user "\nWARNING: srun still not responding, quiting\n"
+			exit 0
+		} else {
+			send_user "\nFAILURE: srun not responding\n"
+			exit 1
+		}
 	}
 	eof {
 	}
