@@ -11,9 +11,22 @@ AUTOMAKE_OPTIONS = foreign
 
 noinst_LIBRARIES = libcommon.a
 
-libcommon_a_SOURCES = bits_bytes.c list.c
+libcommon_a_SOURCES = 	xmalloc.c 	\
+		      	xassert.c	\
+		      	xstring.c	\
+		      	strlcpy.c	\
+                      	list.c  	\
+		      	log.c		\
+		      	bits_bytes.c
 
-noinst_HEADERS = list.h slurm.h slurmlib.h
+noinst_HEADERS = 	xmalloc.h 	\
+		 	xassert.h 	\
+		 	xstring.h	\
+		 	list.h 		\
+		 	log.h 		\
+		 	strlcpy.h	\
+		 	slurm.h 	\
+		 	slurmlib.h
 
 # target specific CFLAGS do not work until automake 1.5, use explicit rules
 # for now. If we ever move to 1.5, the CFLAGS defs below should work in
