@@ -905,7 +905,9 @@ static void _slurmctld_free_job_launch_msg(batch_job_launch_msg_t * msg)
 			xfree(msg->environment[0]);
 			xfree(msg->environment);
 		}
+#ifdef HAVE_BGL
 		xfree(msg->bgl_part_id);
+#endif
 		slurm_free_job_launch_msg(msg);
 	}
 }
