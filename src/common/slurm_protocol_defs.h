@@ -249,7 +249,7 @@ typedef struct job_step_create_response_msg
 	
 } job_step_create_response_msg_t; 
 
-typedef struct launch_tasks_msg
+typedef struct launch_tasks_request_msg
 {
 	uint32_t job_id ;
 	uint32_t job_step_id ;
@@ -263,7 +263,13 @@ typedef struct launch_tasks_msg
 	slurm_addr response_addr ;
 	slurm_addr * streams;
 	uint32_t * global_task_ids;
-} launch_tasks_msg_t ;
+} launch_tasks_request_msg_t ;
+
+typedef struct launch_tasks_response_msg
+{
+	uint32_t return_code;
+	char * node_name ;
+} launch_tasks_response_msg_t ;
 
 typedef struct reattach_tasks_streams_msg
 {
@@ -470,7 +476,8 @@ void inline slurm_free_update_node_msg ( update_node_msg_t * msg ) ;
 void inline slurm_free_update_part_msg ( update_part_msg_t * msg ) ;
 void inline slurm_free_job_step_create_request_msg ( job_step_create_request_msg_t * msg );
 void inline slurm_free_job_step_create_response_msg ( job_step_create_response_msg_t * msg );
-void inline slurm_free_launch_tasks_msg ( launch_tasks_msg_t * msg ) ;
+void inline slurm_free_launch_tasks_request_msg ( launch_tasks_request_msg_t * msg ) ;
+void inline slurm_free_launch_tasks_response_msg ( launch_tasks_response_msg_t * msg ) ;
 void inline slurm_free_kill_tasks_msg ( kill_tasks_msg_t * msg ) ;
 
 extern char *job_dist_string(uint16_t inx);

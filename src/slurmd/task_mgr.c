@@ -45,8 +45,8 @@ global variables
 /* prototypes */
 void slurm_free_task ( void * _task ) ;
 int kill_task ( task_t * task ) ;
-int interconnect_init ( launch_tasks_msg_t * launch_msg );
-int fan_out_task_launch ( launch_tasks_msg_t * launch_msg );
+int interconnect_init ( launch_tasks_request_msg_t * launch_msg );
+int fan_out_task_launch ( launch_tasks_request_msg_t * launch_msg );
 void * task_exec_thread ( void * arg ) ;
 int init_parent_pipes ( int * pipes ) ;
 void setup_parent_pipes ( int * pipes ) ; 
@@ -68,19 +68,19 @@ int setup_task_env  (task_start_t * task_start ) ;
 
 /* exported module funtion to launch tasks */
 /*launch_tasks should really be named launch_job_step*/
-int launch_tasks ( launch_tasks_msg_t * launch_msg )
+int launch_tasks ( launch_tasks_request_msg_t * launch_msg )
 {
 	return interconnect_init ( launch_msg );
 }
 
 /* Contains interconnect specific setup instructions and then calls 
  * fan_out_task_launch */
-int interconnect_init ( launch_tasks_msg_t * launch_msg )
+int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
 {
 	return fan_out_task_launch ( launch_msg ) ;
 }
 
-int fan_out_task_launch ( launch_tasks_msg_t * launch_msg )
+int fan_out_task_launch ( launch_tasks_request_msg_t * launch_msg )
 {
 	int i ;
 	int rc ;
@@ -452,7 +452,7 @@ void * stderr_io_pipe_thread ( void * arg )
 void * task_exec_thread ( void * arg )
 {
 	task_start_t * task_start = ( task_start_t * ) arg ;
-	launch_tasks_msg_t * launch_msg = task_start -> launch_msg ;
+	launch_tasks_request_msg_t * launch_msg = task_start -> launch_msg ;
 	int * pipes = task_start->pipes ;
 	int rc ;
 	int cpid ;

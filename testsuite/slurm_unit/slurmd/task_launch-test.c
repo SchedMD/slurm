@@ -4,7 +4,7 @@ int main ( int argc , char* argv[] )
 {
 	slurm_msg_t request_msg ;
 	slurm_msg_t response_msg ;
-        launch_tasks_msg_t launch_tasks_msg ;
+        launch_tasks_request_msg_t launch_tasks_msg ;
 	slurm_addr      io_pipe_addrs[2] ;
 	slurm_addr      slurmd_addr ;
 	int             gids[1] ;

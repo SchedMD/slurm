@@ -5,7 +5,7 @@
 int main ( int argc , char ** argv )
 {
 	
-	launch_tasks_msg_t launch_tasks_msg ;
+	launch_tasks_request_msg_t launch_tasks_msg ;
 	slurm_addr	io_pipe_addrs[2] ;
 	int		gids[1] ;
 	gids[1] = 9999 ;

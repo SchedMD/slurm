@@ -22,7 +22,7 @@
 #define SLURMD_IO_MAX_BUFFER_SIZE 4096
 
 /* function prototypes */
-int launch_tasks ( launch_tasks_msg_t * launch_msg ) ;
+int launch_tasks ( launch_tasks_request_msg_t * launch_msg ) ;
 int kill_tasks ( kill_tasks_msg_t * kill_task_msg ) ;
 int reattach_tasks_streams ( reattach_tasks_streams_msg_t * req_msg ) ;
 
@@ -37,7 +37,7 @@ typedef struct task_start
 	/*io threads ids*/
 	pthread_t		io_pthread_id[SLURMD_NUMBER_OF_IO_THREADS];
 	int			io_thread_return[SLURMD_NUMBER_OF_IO_THREADS];
-	launch_tasks_msg_t * 	launch_msg;
+	launch_tasks_request_msg_t * 	launch_msg;
 	int			pipes[6];
 	int			sockets[2];
 	int			local_task_id;
