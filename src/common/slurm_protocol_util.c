@@ -11,7 +11,7 @@ uint32_t check_header_version( header_t * header)
 {
 	if ( header -> version != SLURM_PROTOCOL_VERSION )
 	{
-		info ( "Invalid Protocol Version %d ", header -> version ) ;
+		error ( "Invalid Protocol Version %d ", header -> version ) ;
 		return SLURM_PROTOCOL_VERSION_ERROR ;
 	}
 	return SLURM_PROTOCOL_SUCCESS ;
@@ -30,7 +30,7 @@ uint32_t check_io_stream_header_version( slurm_io_stream_header_t * header)
 {
 	if ( header -> version != SLURM_PROTOCOL_VERSION )
 	{
-		info ( "Invalid Protocol Version %d ", header -> version ) ;
+		error ( "Invalid Protocol Version %d ", header -> version ) ;
 		return SLURM_PROTOCOL_VERSION_ERROR ;
 	}
 	return SLURM_PROTOCOL_SUCCESS ;

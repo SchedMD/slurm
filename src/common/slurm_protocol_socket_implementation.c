@@ -79,12 +79,12 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 		}
 		else if ( recv_len == 0 )
 		{
-			info ( "Error receiving length of datagram.  errno %i", errno ) ;
+			error ( "Error receiving length of datagram.  errno %i", errno ) ;
 			return SLURM_PROTOCOL_ERROR ;
 		}
 		else 
 		{
-			fatal ( "We don't handle negative return codes > -1") ;
+			error ( "We don't handle negative return codes > -1") ;
 		}
 	}
 	unpack32 ( & transmit_size , ( void ** ) & size_buffer , & size_buffer_len ) ;
@@ -101,7 +101,7 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 			}
 			else
 			{
-				info ( "Error receiving datagram.  errno %i", errno ) ;
+				error ( "Error receiving datagram.  errno %i", errno ) ;
 				return SLURM_PROTOCOL_ERROR ;
 			}
 			return recv_len ;
@@ -113,12 +113,12 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 		}
 		else if ( recv_len == 0 )
 		{
-			info ( "Error receiving datagram.  errno %i", errno ) ;
+			error ( "Error receiving datagram.  errno %i", errno ) ;
 			return SLURM_PROTOCOL_ERROR ;
 		}
 		else 
 		{
-			fatal ( "We don't handle negative return codes > -1") ;
+			error ( "We don't handle negative return codes > -1") ;
 		}
 	}
 	
@@ -186,7 +186,7 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 		}
 		else if ( send_len != size )
 		{
-			info ( "_slurm_msg_sendto only transmitted %i of %i bytes", send_len , size ) ;
+			error ( "_slurm_msg_sendto only transmitted %i of %i bytes", send_len , size ) ;
 			sigaction(SIGPIPE, &oldaction , &newaction);
 			return SLURM_PROTOCOL_ERROR ;
 		}
@@ -212,24 +212,24 @@ slurm_fd _slurm_listen_stream ( slurm_addr * slurm_address )
 	const int one = 1;
 	if ( ( connection_fd =_slurm_create_socket ( SLURM_STREAM ) ) == SLURM_SOCKET_ERROR )
 	{
-		info ( "Error creating slurm stream socket: errno %i", errno ) ;
+		error ( "Error creating slurm stream socket: errno %i", errno ) ;
 		return connection_fd ;
 	}
 
 	if ( ( rc = _slurm_setsockopt(connection_fd , SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one) ) ) ) {
-		info ("setsockopt SO_REUSEADDR");
+		error ("setsockopt SO_REUSEADDR failed");
 		return rc ;
 	}
 
 	if ( ( rc = _slurm_bind ( connection_fd , ( struct sockaddr const * ) slurm_address , sizeof ( slurm_addr ) ) ) == SLURM_SOCKET_ERROR )
 	{
-		info ( "Error binding slurm stream socket: errno %i" , errno ) ;
+		error ( "Error binding slurm stream socket: errno %i" , errno ) ;
 		return rc ;
 	}
 
 	if ( ( rc = _slurm_listen ( connection_fd , SLURM_PROTOCOL_DEFAULT_LISTEN_BACKLOG ) ) == SLURM_SOCKET_ERROR )
 	{
-		info ( "Error listening on slurm stream socket: errno %i" , errno ) ;
+		error ( "Error listening on slurm stream socket: errno %i" , errno ) ;
 		return rc ;
 	}
 
@@ -242,7 +242,7 @@ slurm_fd _slurm_accept_stream ( slurm_fd open_fd , slurm_addr * slurm_address )
 	slurm_fd connection_fd ;
 	if ( ( connection_fd = _slurm_accept ( open_fd , ( struct sockaddr * ) slurm_address , & addr_len ) ) == SLURM_SOCKET_ERROR )
 	{
-		info ( "Error accepting slurm stream socket: errno %i", errno ) ;
+		error ( "Error accepting slurm stream socket: errno %i", errno ) ;
 	}
 	return connection_fd ;
 
@@ -254,13 +254,13 @@ slurm_fd _slurm_open_stream ( slurm_addr * slurm_address )
 	slurm_fd connection_fd ;
 	if ( ( connection_fd =_slurm_create_socket ( SLURM_STREAM ) ) == SLURM_SOCKET_ERROR )
 	{
-		info ( "Error creating slurm stream socket: errno %i", errno ) ;
+		error ( "Error creating slurm stream socket: errno %i", errno ) ;
 		return connection_fd ;
 	}
 
 	if ( ( rc = _slurm_connect ( connection_fd , ( struct sockaddr const * ) slurm_address , sizeof ( slurm_addr ) ) ) == SLURM_SOCKET_ERROR )
 	{
-		info ( "Error connecting on slurm stream socket: errno %i" , errno ) ;
+		error ( "Error connecting on slurm stream socket: errno %i" , errno ) ;
 		return rc ;
 	}
 
