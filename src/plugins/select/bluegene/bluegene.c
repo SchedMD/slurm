@@ -56,8 +56,7 @@ extern int init_bgl(void)
 {
 #ifdef HAVE_BGL_FILES
 	int rc;
-	rm_BGL_t *bgl;		/* DB2 pointer */
-
+	
 	rm_size3D_t bp_size;
 	if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
 		fatal("init_bgl: rm_set_serial(): %s", bgl_err_str(rc));
@@ -78,7 +77,6 @@ extern int init_bgl(void)
 	DIM_SIZE[X]=bp_size.X;
 	DIM_SIZE[Y]=bp_size.Y;
 	DIM_SIZE[Z]=bp_size.Z;
-	rm_free_BGL(bgl);
 #endif
 	pa_init(NULL);
 
@@ -90,6 +88,24 @@ extern int init_bgl(void)
 /* Purge all plugin variables */
 extern void fini_bgl(void)
 {
+	/* pm_partition_id_t part_id; */
+/* 	bgl_record_t *record; */
+/* 	ListIterator itr; */
+	
+/* 	itr = list_iterator_create(bgl_list); */
+/* 	while ((record = (bgl_record_t*) list_next(itr))) { */
+/* 		part_id=record->bgl_part_id; */
+/* 		debug("removing the jobs on partition %s\n", */
+/* 		      (char *)part_id); */
+/* 		term_jobs_on_part(part_id); */
+		
+/* 		debug("destroying %s\n",(char *)part_id); */
+/* 		bgl_free_partition(part_id); */
+		
+/* 		rm_remove_partition(part_id); */
+/* 		debug("done\n"); */
+/* 	} */
+	
 	_set_bgl_lists();
 	
 	if (bgl_list) {
@@ -112,6 +128,10 @@ extern void fini_bgl(void)
 	xfree(bluegene_mloader);
 	xfree(bluegene_ramdisk);
 
+#ifdef HAVE_BGL_FILES
+	if(bgl)
+		rm_free_BGL(bgl);
+#endif	
 	pa_fini();
 }
 
@@ -331,6 +351,49 @@ extern int create_static_partitions(List part_list)
 	return rc;
 }
 
+extern int bgl_free_partition(pm_partition_id_t part_id)
+{
+	rm_partition_state_t state;
+	rm_partition_t *my_part;
+	int rc;
+
+        if ((rc = rm_get_partition(part_id, &my_part))
+	    != STATUS_OK) {
+		error("couldn't get the partition in bgl_free_partition");
+	} else {
+		rm_get_data(my_part, RM_PartitionState, &state);
+		if(state != RM_PARTITION_FREE)
+			pm_destroy_partition(part_id);
+			
+		rm_get_data(my_part, RM_PartitionState, &state);
+		while ((state != RM_PARTITION_FREE) 
+		       && (state != RM_PARTITION_ERROR)){
+			debug(".");
+			rc=rm_free_partition(my_part);
+			if(rc!=STATUS_OK){
+				error("Error freeing partition\n");
+				return(-1);
+			}
+			sleep(3);
+			rc=rm_get_partition(part_id,&my_part);
+			if(rc!=STATUS_OK) {
+				error("Error in GetPartition\n");
+				return(-1);
+			}
+			rm_get_data(my_part, RM_PartitionState,
+				    &state);
+		}
+		//Free memory allocated to mypart
+		rc=rm_free_partition(my_part);
+		if(rc!=STATUS_OK){
+			error("Error freeing partition\n");
+			return(-1);
+		}
+		
+	}
+	return SLURM_SUCCESS;
+}
+
 static int _addto_node_list(bgl_record_t *bgl_record, int *start, int *end)
 {
 	int node_count=0;
@@ -458,14 +521,12 @@ static int _bgl_record_cmpf_inc(bgl_record_t* rec_a, bgl_record_t* rec_b)
 }
 
 
-
 static int _delete_old_partitions(void)
 {
 #ifdef HAVE_BGL_FILES
 	int rc;
 	ListIterator itr_curr, itr_found;
 	bgl_record_t *found_record, *init_record;
-	rm_partition_state_t state;
         pm_partition_id_t part_id;
 	rm_partition_t *my_part;
 	int part_number, lowest_part=300;
@@ -479,6 +540,7 @@ static int _delete_old_partitions(void)
 		if(part_number<lowest_part)
 			lowest_part = part_number;
 	}
+	list_iterator_destroy(itr_curr);
 	if(lowest_part != 101) {
 	/* 	rm_get_partitions(RM_PARTITION_FREE, &part_list); */
 /* 		rm_get_data(part_list, RM_PartListSize, &size); */
@@ -502,17 +564,17 @@ static int _delete_old_partitions(void)
 		for(part_number=101; part_number<lowest_part; part_number++) {
 			memset(part_name,0,7);
 			sprintf(part_name, "RMP%d", part_number);
-			debug("Checking if Partition %s is free",part_name);
+			//debug("Checking if Partition %s is free",part_name);
 			if ((rc = rm_get_partition(part_name, &my_part))
 			    != STATUS_OK) {
-				debug("Above error is ok. "
+				info("Above error is ok. "
 					"Partition %s doesn't exist.",
 					part_name);
 				break;
 			}
 			rm_remove_partition(part_name);
-			sleep(3);
-			debug("Removed Freed Partition %s",part_name);
+			//sleep(3);
+			//debug("Removed Freed Partition %s",part_name);
 		}
 	}
 	
@@ -529,48 +591,16 @@ static int _delete_old_partitions(void)
 		}
 		list_iterator_destroy(itr_found);
 		if(found_record == NULL) {
-			if ((rc = rm_get_partition(part_id, &my_part))
-			    != STATUS_OK) {
-			} else {
-				
-				debug("removing the jobs on partition %s\n",
-					(char *)part_id);
-				term_jobs_on_part(part_id);
-
-				debug("destroying %s\n",(char *)part_id);
-				rm_get_data(my_part, RM_PartitionState, &state);
-				if(state != RM_PARTITION_FREE)
-					pm_destroy_partition(part_id);
 			
-				rm_get_data(my_part, RM_PartitionState, &state);
-				while ((state != RM_PARTITION_FREE) 
-				       && (state != RM_PARTITION_ERROR)){
-					debug(".");
-					rc=rm_free_partition(my_part);
-					if(rc!=STATUS_OK){
-						error("Error freeing partition\n");
-						return(-1);
-					}
-					sleep(3);
-					rc=rm_get_partition(part_id,&my_part);
-					if(rc!=STATUS_OK) {
-						error("Error in GetPartition\n");
-						return(-1);
-					}
-					rm_get_data(my_part, RM_PartitionState,
-						&state);
-					//Free memory allocated to mypart
-				}
-				rm_remove_partition(part_id);
-				sleep(3);
-				debug("done\n");
-				
-				rc=rm_free_partition(my_part);
-				if(rc!=STATUS_OK){
-					error("Error freeing partition\n");
-					return(-1);
-				}				
-			}	
+			debug("removing the jobs on partition %s\n",
+			      (char *)part_id);
+			term_jobs_on_part(part_id);
+			
+			debug("destroying %s\n",(char *)part_id);
+			rc = bgl_free_partition(part_id);
+			
+			rm_remove_partition(part_id);
+			debug("done\n");			
 		}
 	}
 	//exit(0);
