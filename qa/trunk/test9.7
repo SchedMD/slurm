@@ -34,17 +34,18 @@ set timeout [expr $max_job_delay * $interations * $task_cnt]
 for {set inx 0} {$inx < $task_cnt} {incr inx} {
 	expect {
 		-i $task_id($inx)
-		"########## EXIT_CODE ($number) ########## " {
-			if {expect_out(1,string) == 0} {
-				incr success_cnt
-			}
+		"########## EXIT_CODE 0 ##########" {
+			incr success_cnt
 		}
 	}
 }
 
+if {$success_cnt != $task_cnt} {
+	send_user "\nFAILURE: Only $success_cnt of $task_cnt tests passed\n"
+	set exit_code 1
+}
+
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
-} else {
-	send_user "\nFAILURE: Only $success_cnt of $task_cnt tests passed\n"
 }
 exit $exit_code
