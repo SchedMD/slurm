@@ -579,7 +579,7 @@ static void _set_bgl_lists()
 
 static int _validate_config_nodes(void)
 {
-	int rc = 1;
+	int rc = SLURM_ERROR;
 #ifdef HAVE_BGL_FILES
 	int i=0;
 	bgl_record_t* record;	/* records from configuration files */
@@ -589,7 +589,7 @@ static int _validate_config_nodes(void)
 	
 	/* read current bgl partition info into bgl_curr_part_list */
 	if (read_bgl_partitions() == SLURM_ERROR)
-		return -1;
+		return SLURM_ERROR;
 
 	itr_conf = list_iterator_create(bgl_list);
 	while ((record = (bgl_record_t*) list_next(itr_conf))) {
@@ -613,7 +613,7 @@ static int _validate_config_nodes(void)
 		list_iterator_destroy(itr_curr);
 		if (!record->bgl_part_id) {
 			info("BGL PartitionID:NONE Nodes:%s", record->nodes);
-			rc = 0;
+			rc = SLURM_SUCCESS;
 		} else {
 			list_push(bgl_found_part_list, record);
 			info("BGL PartitionID:%s Nodes:%s Conn:%s Mode:%s",
@@ -625,7 +625,7 @@ static int _validate_config_nodes(void)
 	
 	list_iterator_destroy(itr_conf);
 	if(list_count(bgl_list) != list_count(bgl_curr_part_list))
-		rc = 0;
+		rc = SLURM_SUCCESS;
 #endif
 
 	return rc;

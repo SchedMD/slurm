@@ -129,7 +129,7 @@ static int _remove_job(db_job_id_t job_id)
 			} else
 				error("rm_get_data(RM_JobState) for jobid=%d "
 					"%s", job_id, bgl_err_str(rc));
-			rm_free_job(job_rec);
+			(void) rm_free_job(job_rec);
 			return rc;
 		}
 		if ((rc = rm_free_job(job_rec)) != STATUS_OK)
@@ -137,11 +137,8 @@ static int _remove_job(db_job_id_t job_id)
 
 		/* Cancel or remove the job */
 		if (job_state == RM_JOB_RUNNING) {
-			debug("I am sending the signal to job %d\n",job_id);
 			jm_signal_job(job_id, SIGKILL);
-			debug("I just sent the signal to job %d\n",job_id);
 			rc = jm_cancel_job(job_id);
-			debug("I just tried to cancel job %d\n",job_id);
 		} else
 			rc = rm_remove_job(job_id);
 		if (rc != STATUS_OK) {
@@ -200,8 +197,10 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 
 #ifdef USE_BGL_FILES
 
-/* Also, remove logic to boot partitions. BGLblocks should be allocated via 
- * MMCSconsole to user nobody and bluegene.conf set at slurmctld boot time */
+/* Logic shown below is the type of code we want to use to change the 
+ * owner of an existing bglblock - without rebooting it. This logic 
+ * does not work as of driver 040 2/17/2005.
+ */
 
 	int err_ret = SLURM_SUCCESS;
 
@@ -228,7 +227,8 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 	rm_partition_state_t part_state;
 	/* Wait for partition state to be FREE */
 	for (i=0; i<MAX_POLL_RETRIES; i++) {
-		sleep(POLL_INTERVAL);
+		if (i > 0)
+			sleep(POLL_INTERVAL);
 
 		/* find the partition */
 		if ((rc = rm_get_partition(bgl_part_id,  &part_elem)) != 
@@ -272,16 +272,6 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 			bgl_err_str(rc));
 		return SLURM_ERROR;
 	}
-
-	/*
-	 * FIXME:
-	 * There appears to be a race condition if this call is issued more 
-	 * than once in quick succession, even with different partition names.
-	 * The BGL API seems to over-write the owner name and use it for 
-	 * multiple bglblocks. Remove this logic when the bug has been 
-	 * addressed. 9 Feb 2005, API driver 020
-	 */
-	sleep(1);
 
 	return SLURM_SUCCESS;
 #endif
@@ -531,13 +521,10 @@ static int _excise_block(List block_list, pm_partition_id_t bgl_part_id,
 	bgl_record_t *block;
 	xassert(iter);
 
-	info("Hey I am here\n");
 	while ((block = list_next(iter))) {
 		rc = SLURM_ERROR;
-		info("%s %s\n", block->bgl_part_id, bgl_part_id);
 		if (strcmp(block->bgl_part_id, bgl_part_id))
 			continue;
-		info("%s %s\n", block->nodes, nodes);
 		if (strcmp(block->nodes, nodes)) {	/* changed bglblock */
 			error("bgl_part_id:%s old_nodes:%s new_nodes:%s",
 				bgl_part_id, nodes, block->nodes);
