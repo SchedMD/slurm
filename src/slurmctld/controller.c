@@ -59,7 +59,6 @@ inline static void slurm_rpc_job_cancel ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_submit_batch_job ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_reconfigure_controller ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_node_registration ( slurm_msg_t * msg ) ;
-inline static void slurm_rpc_register_node_status ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_update_job ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_update_node ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_update_partition ( slurm_msg_t * msg ) ;
@@ -178,7 +177,7 @@ slurmctld_req ( slurm_msg_t * msg )
 			slurm_free_job_desc_msg ( msg -> data ) ; 
 			break;
 		case MESSAGE_NODE_REGISTRATION_STATUS:
-			slurm_rpc_register_node_status ( msg ) ;
+			slurm_rpc_node_registration ( msg ) ;
 			slurm_free_node_registration_status_msg ( msg -> data ) ;
 			break;
 		case REQUEST_RECONFIGURE:
@@ -375,6 +374,7 @@ slurm_rpc_job_cancel ( slurm_msg_t * msg )
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
 
+	schedule();
 }
 
 void 
@@ -405,6 +405,8 @@ slurm_rpc_update_job ( slurm_msg_t * msg )
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
+
+	schedule();
 }
 
 void 
@@ -438,6 +440,8 @@ slurm_rpc_update_node ( slurm_msg_t * msg )
 	}
 	if (update_node_msg_ptr->node_names)
 		xfree (update_node_msg_ptr->node_names);
+
+	schedule();
 }
 
 void 
@@ -471,6 +475,8 @@ slurm_rpc_update_partition ( slurm_msg_t * msg )
 		xfree (part_desc_ptr->nodes);
 	if (part_desc_ptr->allow_groups)
 		xfree (part_desc_ptr->allow_groups);
+
+	schedule();
 }
 
 void
@@ -620,9 +626,10 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
 
+	schedule();
 }
 
-/* NodeConfig - determine if a node's actual configuration satisfies the
+/* slurm_rpc_node_registration - determine if a node's actual configuration satisfies the
  * configured specification */
 void 
 slurm_rpc_node_registration ( slurm_msg_t * msg )
@@ -630,7 +637,8 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
 	/* init */
 	int error_code;
 	clock_t start_time;
-	slurm_node_registration_status_msg_t * node_reg_stat_msg = ( slurm_node_registration_status_msg_t * ) msg-> data ;
+	slurm_node_registration_status_msg_t * node_reg_stat_msg = 
+			( slurm_node_registration_status_msg_t * ) msg-> data ;
 
 	start_time = clock ();
 
@@ -646,47 +654,17 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
 	/* return result */
 	if (error_code)
 	{
-		error ("slurmctld_req: node_config error %d for %s, time=%ld",
-				error_code, node_reg_stat_msg -> node_name, (long) (clock () - start_time));
+		error ("slurmctld_req: validate_node_specs error %d for %s, time=%ld",
+			error_code, node_reg_stat_msg -> node_name, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("slurmctld_req: node_config for %s, time=%ld",
-				node_reg_stat_msg -> node_name, (long) (clock () - start_time));
+		info ("slurmctld_req: validate_node_specs for %s, time=%ld",
+			node_reg_stat_msg -> node_name, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
 }
-
-/* This may be the same as above if so remove please KBT */
-void 
-slurm_rpc_register_node_status ( slurm_msg_t * msg )
-{
-	/* init */
-	int error_code;
-	clock_t start_time;
-	slurm_node_registration_status_msg_t * reg_msg = ( slurm_node_registration_status_msg_t * ) msg -> data ;
-	start_time = clock ();
-
-	/* do RPC call */
-	error_code = 0 ;
-
-	/* return result */
-	if (error_code)
-	{
-		error ("slurmctld_req: register error %d on node %s, time=%ld",
-				error_code, reg_msg->node_name, (long) (clock () - start_time));
-		slurm_send_rc_msg ( msg , error_code );
-	}
-	else
-	{
-		info ("slurmctld_req: registured node %s, time=%ld",
-				reg_msg->node_name, (long) (clock () - start_time));
-		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
-	}
-
-}
-
 
 void
 init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
