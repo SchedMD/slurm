@@ -536,6 +536,15 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 		/* Check only shared object files. */
 		if ( ! _so_file( e->d_name) ) continue;
 
+		/* file's prefix must match specified major_type
+		 * to avoid having some program try to open a 
+		 * plugin designed for a different program and 
+		 * discovering undefined symbols */
+		if (	rack->major_type &&
+			strncmp( rack->major_type, e->d_name, 
+				strlen( rack->major_type ) ) )
+			continue;
+			
                 /* See if we should be paranoid about this file. */
                 if (!accept_path_paranoia( rack,
                                            fq_path,
