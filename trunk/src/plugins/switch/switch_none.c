@@ -75,6 +75,7 @@ const uint32_t plugin_version   = 90;
  */
 int init ( void )
 {
+	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
 
