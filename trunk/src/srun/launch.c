@@ -105,7 +105,7 @@ launch(void *arg)
 	/* Build task id list for each host */
 	task_ids = (uint32_t **) xmalloc(job->nhosts * sizeof(uint32_t *));
 	for (i = 0; i < job->nhosts; i++)
-		task_ids[i] = (uint32_t *) xmalloc(job->ntask[i]*sizeof(uint32_t));
+		task_ids[i] = (uint32_t *) xmalloc(job->cpus[i]*sizeof(uint32_t));
 	taskid = 0;
 	if (opt.distribution == SRUN_DIST_BLOCK) {
 		for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
