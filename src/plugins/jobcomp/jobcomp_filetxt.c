@@ -86,7 +86,7 @@ static int plugin_errno = SLURM_SUCCESS;
 /* File descriptor used for logging */
 static pthread_mutex_t  file_lock = PTHREAD_MUTEX_INITIALIZER;
 static char *           log_name  = NULL;
-
+static int              job_comp_fd = -1;
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -104,7 +104,6 @@ int init ( void )
 int slurm_jobcomp_set_location ( char * location )
 {
 	int rc = SLURM_SUCCESS;
-	int job_comp_fd = -1;
 
 	if (location == NULL) {
 		plugin_errno = EACCES;
@@ -112,6 +111,8 @@ int slurm_jobcomp_set_location ( char * location )
 	}
 
 	slurm_mutex_lock( &file_lock );
+	if (job_comp_fd >= 0)
+		close(job_comp_fd);
 	job_comp_fd = open(location, O_WRONLY | O_CREAT | O_APPEND, 0644);
 	if (job_comp_fd == -1) {
 		error("open %s: %m", location);
@@ -119,7 +120,6 @@ int slurm_jobcomp_set_location ( char * location )
 		rc = SLURM_ERROR;
 	} else {
 		fchmod(job_comp_fd, 0644);
-		close(job_comp_fd);
 		xfree(log_name);
 		log_name = xstrdup(location);
 	}
@@ -171,55 +171,44 @@ int slurm_jobcomp_log_record ( uint32_t job_id, uint32_t user_id,
 		time_t end_time, char *node_list)
 {
 	int rc = SLURM_SUCCESS;
-	int job_comp_fd = -1;
+	char job_rec[256];
+	char usr_str[32], start_str[32], end_str[32], lim_str[32];
+	size_t offset = 0, tot_size, wrote;
 
-	if (!log_name) {
-		error("JobCompLoc configuration parameter not set");
+	if ((log_name == NULL) || (job_comp_fd < 0)) {
+		error("JobCompLoc log file %s not open", log_name);
 		return SLURM_ERROR;
 	}
 
 	slurm_mutex_lock( &file_lock );
-	job_comp_fd = open(log_name, O_WRONLY | O_CREAT | O_APPEND, 0644);
-	if (job_comp_fd == -1) {
-		error("open %s: %m", log_name);
-		plugin_errno = errno;
-		rc = SLURM_ERROR;
-	} else {
-		char job_rec[256];
-		char usr_str[32], start_str[32], end_str[32], lim_str[32];
-		size_t offset = 0, tot_size, wrote;
+	_get_user_name(user_id, usr_str, sizeof(usr_str));
+	if (time_limit == INFINITE)
+		strcpy(lim_str, "UNLIMITED");
+	else
+		snprintf(lim_str, sizeof(lim_str), "%lu", 
+				(unsigned long) time_limit);
+	_make_time_str(&start_time, start_str, sizeof(start_str));
+	_make_time_str(&end_time,   end_str,   sizeof(end_str));
+	snprintf(job_rec, sizeof(job_rec), JOB_FORMAT,
+			(unsigned long) job_id, usr_str, 
+			(unsigned long) user_id, job_name, 
+			job_state, partition, lim_str, start_str, 
+			end_str, node_list);
+	tot_size = (strlen(job_rec) + 1);
 
-		fchmod(job_comp_fd, 0644);
-		_get_user_name(user_id, usr_str, sizeof(usr_str));
-		if (time_limit == INFINITE)
-			strcpy(lim_str, "UNLIMITED");
-		else
-			snprintf(lim_str, sizeof(lim_str), "%lu", 
-					(unsigned long) time_limit);
-		_make_time_str(&start_time, start_str, sizeof(start_str));
-		_make_time_str(&end_time,   end_str,   sizeof(end_str));
-		snprintf(job_rec, sizeof(job_rec), JOB_FORMAT,
-				(unsigned long) job_id, usr_str, 
-				(unsigned long) user_id, job_name, 
-				job_state, partition, lim_str, start_str, 
-				end_str, node_list);
-		tot_size = (strlen(job_rec) + 1);
-
-		while ( offset < tot_size ) {
-			wrote = write(job_comp_fd, job_rec + offset,
-				tot_size - offset);
-			if (wrote == -1) {
-				if (errno == EAGAIN)
-					continue;
-				else {
-					plugin_errno = errno;
-					rc = SLURM_ERROR;
-					break;
-				}
+	while ( offset < tot_size ) {
+		wrote = write(job_comp_fd, job_rec + offset,
+			tot_size - offset);
+		if (wrote == -1) {
+			if (errno == EAGAIN)
+				continue;
+			else {
+				plugin_errno = errno;
+				rc = SLURM_ERROR;
+				break;
 			}
-			offset += wrote;
 		}
-		close(job_comp_fd);
+		offset += wrote;
 	}
 	slurm_mutex_unlock( &file_lock );
 	return rc;
@@ -232,5 +221,7 @@ int slurm_jobcomp_get_errno( void )
 
 int fini ( void )
 {
+	if (job_comp_fd >= 0)
+		close(job_comp_fd);
 	return SLURM_SUCCESS;
 }
