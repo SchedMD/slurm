@@ -254,8 +254,8 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf )
 	/*
 	 * Pack the data values.
 	 */
-	pack32( cred->uid, buf );
-	pack32( cred->gid, buf );
+	pack32( (uint32_t) cred->uid, buf );
+	pack32( (uint32_t) cred->gid, buf );
 
 	return SLURM_SUCCESS;
 }
@@ -269,7 +269,7 @@ slurm_auth_unpack( Buf buf )
 {
 	slurm_auth_credential_t *cred;
 	char *tmpstr;
-	int32_t tmpint;
+	uint32_t tmpint;
 	uint32_t version;
 	uint16_t size;
 	
@@ -341,8 +341,8 @@ slurm_auth_print( slurm_auth_credential_t *cred, FILE *fp )
 	}
 
 	printf( "BEGIN SLURM BASIC AUTHENTICATION CREDENTIAL\n" );
-	printf( "\tUID = %d\n", cred->uid );
-	printf( "\tGID = %d\n", cred->gid );
+	printf( "\tUID = %u\n", cred->uid );
+	printf( "\tGID = %u\n", cred->gid );
 	printf( "END SLURM BASIC AUTHENTICATION CREDENTIAL\n" );
 
 	return SLURM_SUCCESS;
