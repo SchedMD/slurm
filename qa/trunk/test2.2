@@ -25,11 +25,11 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re shutdown" {
+	-re "reconfigure  " {
 		incr matches
 		exp_continue
 	}
-	-re "version" {
+	-re "version  " {
 		incr matches
 		exp_continue
 	}
