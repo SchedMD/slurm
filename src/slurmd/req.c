@@ -52,10 +52,12 @@
 
 static void _insert_fake_cred(uint32_t jobid, time_t timelimit);
 static bool _job_still_running(uint32_t job_id);
+static int  _kill_all_active_steps(uint32_t jobid, int sig);
 static int  _launch_tasks(launch_tasks_request_msg_t *, slurm_addr *);
 static void _rpc_launch_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_batch_job(slurm_msg_t *, slurm_addr *);
 static void _rpc_kill_tasks(slurm_msg_t *, slurm_addr *);
+static void _rpc_timelimit(slurm_msg_t *, slurm_addr *);
 static void _rpc_reattach_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_revoke_credential(slurm_msg_t *, slurm_addr *);
 static void _rpc_update_time(slurm_msg_t *, slurm_addr *);
@@ -81,6 +83,10 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 	case REQUEST_KILL_TASKS:
 		_rpc_kill_tasks(msg, cli);
 		slurm_free_kill_tasks_msg(msg->data);
+		break;
+	case REQUEST_KILL_TIMELIMIT:
+		_rpc_timelimit(msg, cli);
+		slurm_free_timelimit_msg(msg->data);
 		break;
 	case REQUEST_REATTACH_TASKS:
 		_rpc_reattach_tasks(msg, cli);
@@ -331,7 +337,7 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 {
 	int               rc = SLURM_SUCCESS;
 	uid_t             req_uid;
-	job_step_t       *step;
+	job_step_t       *step = NULL;
 	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
 
 	if (!(step = shm_get_step(req->job_id, req->job_step_id))) {
@@ -363,7 +369,6 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	if (killpg(step->sid, req->signal) < 0)
 		rc = errno;
 
-	shm_free_step(step);
 	if (rc == SLURM_SUCCESS)
 		verbose("Sent signal %d to %u.%u", 
 			req->signal, req->job_id, req->job_step_id);
@@ -373,7 +378,35 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 			slurm_strerror(rc));
 
   done:
+	if (step)
+		shm_free_step(step);
 	slurm_send_rc_msg(msg, rc);
+}
+
+/* For the specified job_id: Send SIGXCPU, reply to slurmctld, 
+	sleep(configured kill_wait), then send SIGKILL */
+static void
+_rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
+{
+	uid_t             req_uid;
+	int               step_cnt;
+	revoke_credential_msg_t *req = (revoke_credential_msg_t *) msg->data;
+
+	req_uid = g_slurm_auth_get_uid(msg->cred);
+	if ((req_uid != conf->slurm_user_id) && (req_uid != 0)) {
+		error("Security violation, uid %u can't revoke credentials",
+		      (unsigned int) req_uid);
+		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		return;
+	}
+
+	step_cnt = _kill_all_active_steps(req->job_id, SIGXCPU);
+	info("Timeout for job=%u, step_cnt=%d, kill_wait=%u", 
+	     req->job_id, step_cnt, conf->cf.kill_wait);
+	if (step_cnt)
+		sleep(1);
+//		sleep(conf->cf.kill_wait);
+	_rpc_revoke_credential(msg, cli_addr); /* SIGKILL and send response */
 }
 
 static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
@@ -519,6 +552,9 @@ _kill_all_active_steps(uint32_t jobid, int sig)
 		}
 	}
 	list_destroy(steps);
+	if (step_cnt == 0)
+		debug2("No steps in jobid %d to send signal %d",
+		       jobid, sig);
 	return step_cnt;
 }
 
@@ -571,7 +607,9 @@ _rpc_revoke_credential(slurm_msg_t *msg, slurm_addr *cli)
 		if (_run_epilog(req->job_id, req->job_uid) != 0) {
 			error ("[job %d] epilog failed", req->job_id);
 			rc = ESLURMD_EPILOG_FAILED;
-		}
+		} else
+			debug("completed epilog for jobid %d", req->job_id);
+
 		slurm_send_rc_msg(msg, rc);
 	}
 }
