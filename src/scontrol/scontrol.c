@@ -79,6 +79,7 @@ static int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 
 static void	_delete_it (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
+static bool	_in_node_bit_list(int inx, int *node_list_array);
 static int 	_load_jobs (job_info_msg_t ** job_buffer_pptr);
 static int 	_load_nodes (node_info_msg_t ** node_buffer_pptr);
 static int 	_load_partitions (partition_info_msg_t **part_info_pptr);
@@ -469,12 +470,12 @@ _print_completing_job(job_info_t *job_ptr, node_info_msg_t *node_info_msg)
 
 	node_info = node_info_msg->node_array;
 	for (i=0; i<node_info_msg->record_count; i++) {
-		if (hostlist_find(all_nodes, node_info[i].name) == -1)
-			continue;	/* node not assigned to this job */
 		node_state = node_info[i].node_state & (~NODE_STATE_NO_RESPOND);
-		if (node_state == NODE_STATE_COMPLETING)
+		if ((node_state == NODE_STATE_COMPLETING) && 
+		    (_in_node_bit_list(i, job_ptr->node_inx)))
 			hostlist_push_host(comp_nodes, node_info[i].name);
-		if (node_state == NODE_STATE_DOWN)
+		else if ((node_state == NODE_STATE_DOWN) &&
+			 (hostlist_find(all_nodes, node_info[i].name) != -1))
 			hostlist_push_host(down_nodes, node_info[i].name);
 	}
 
@@ -490,6 +491,29 @@ _print_completing_job(job_info_t *job_ptr, node_info_msg_t *node_info_msg)
 	hostlist_destroy(all_nodes);
 	hostlist_destroy(comp_nodes);
 	hostlist_destroy(down_nodes);
+}
+
+/*
+ * Determine if a node index is in a node list pair array. 
+ * RET -  true if specified index is in the array
+ */
+static bool
+_in_node_bit_list(int inx, int *node_list_array)
+{
+	int i;
+	bool rc = false;
+
+	for (i=0; ; i+=2) {
+		if (node_list_array[i] == -1)
+			break;
+		if ((inx >= node_list_array[i]) &&
+		    (inx <= node_list_array[i+1])) {
+			rc = true;
+			break;
+		}
+	}
+
+	return rc;
 }
 
 /* 
