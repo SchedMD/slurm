@@ -46,9 +46,11 @@
  *	based upon message as loaded using slurm_load_node
  * IN out - file to write to
  * IN node_info_msg_ptr - node information message pointer
+ * IN one_liner - print as a single line if true
  */
 void 
-slurm_print_node_info_msg ( FILE * out, node_info_msg_t * node_info_msg_ptr )
+slurm_print_node_info_msg ( FILE * out, node_info_msg_t * node_info_msg_ptr, 
+			    int one_liner )
 {
 	int i;
 	node_info_t * node_ptr = node_info_msg_ptr -> node_array ;
@@ -58,9 +60,8 @@ slurm_print_node_info_msg ( FILE * out, node_info_msg_t * node_info_msg_ptr )
 	fprintf( out, "Node data as of %s, record count %d\n",
 		time_str, node_info_msg_ptr->record_count);
 
-	for (i = 0; i < node_info_msg_ptr-> record_count; i++) 
-	{
-		slurm_print_node_table ( out, & node_ptr[i] ) ;
+	for (i = 0; i < node_info_msg_ptr-> record_count; i++) {
+		slurm_print_node_table ( out, & node_ptr[i], one_liner ) ;
 	}
 }
 
@@ -70,16 +71,24 @@ slurm_print_node_info_msg ( FILE * out, node_info_msg_t * node_info_msg_ptr )
  *	based upon message as loaded using slurm_load_node
  * IN out - file to write to
  * IN node_ptr - an individual node information record pointer
+ * IN one_liner - print as a single line if true
  */
 void
-slurm_print_node_table ( FILE * out, node_info_t * node_ptr )
+slurm_print_node_table ( FILE * out, node_info_t * node_ptr, int one_liner )
 {
+	/****** Line 1 ******/
 	fprintf ( out, "NodeName=%s State=%s CPUs=%u ", 
 		node_ptr->name, node_state_string(node_ptr->node_state), 
 		node_ptr->cpus);
-	fprintf ( out, "RealMemory=%u TmpDisk=%u\n", 
+	fprintf ( out, "RealMemory=%u TmpDisk=%u", 
 		node_ptr->real_memory, node_ptr->tmp_disk);
-	fprintf ( out, "   Weight=%u Partition=%s Features=%s \n\n", 
+	if (one_liner)
+		fprintf ( out, " ");
+	else
+		fprintf ( out, "\n   ");
+
+	/****** Line 2 ******/
+	fprintf ( out, "Weight=%u Partition=%s Features=%s\n\n", 
 		node_ptr->weight, node_ptr->partition, node_ptr->features);
 }
 

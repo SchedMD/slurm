@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "January 2003" "Morris Jette" "Slurm node informational calls"
+.TH "Slurm API" "3" "April 2003" "Morris Jette" "Slurm node informational calls"
 .SH "NAME"
 slurm_free_node_info, slurm_load_node, 
 slurm_print_node_info_msg, slurm_print_node_table
@@ -27,7 +27,9 @@ void \fBslurm_print_node_info_msg\fR (
 .br
 	FILE *\fIout_file\fp,
 .br
-	node_info_msg_t *\fInode_info_msg_ptr\fP
+	node_info_msg_t *\fInode_info_msg_ptr\fP,
+.br
+	int \fIone_linerfP
 .br 
 );
 .LP 
@@ -35,7 +37,9 @@ void \fBslurm_print_node_table\fR (
 .br
 	FILE *\fIout_file\fp,
 .br
-	node_info_t *\fInode_ptr\fP
+	node_info_t *\fInode_ptr\fP,
+.br
+	int \fIone_linerfP
 .br 
 );
 .SH "ARGUMENTS"
@@ -57,6 +61,9 @@ Specifies the pointer to the structure created by \fBslurm_load_node\fR.
 \fInode_ptr\fP
 Specifies a pointer to a single node records from the \fInode_info_msg_ptr\fP 
 data structure.
+.TP 
+\fIone_liner\fP
+Print one record per line if non-zero.
 .TP 
 \fIout_file\fP
 Specifies the file to print data to.

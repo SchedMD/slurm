@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "January 2003" "Morris Jette" "Slurm partition information reporting functions"
+.TH "Slurm API" "3" "April 2003" "Morris Jette" "Slurm partition information reporting functions"
 .SH "NAME"
 slurm_free_partition_info, slurm_load_partitions, 
 slurm_print_partition_info, slurm_print_partition_info_msg
@@ -27,7 +27,9 @@ void \fBslurm_print_partition_info\fR (
 .br
 	FILE *\fIout_file\fp,
 .br
-	partition_info_t *\fIpartition_ptr\fP
+	partition_info_t *\fIpartition_ptr\fP,
+.br
+	int \fIone_linerfP
 .br 
 );
 .LP 
@@ -35,11 +37,16 @@ void \fBslurm_print_partition_info_msg\fR (
 .br
 	FILE *\fIout_file\fp,
 .br
-	partition_info_msg_t *\fIpartition_info_msg_ptr\fP
+	partition_info_msg_t *\fIpartition_info_msg_ptr\fP,
+.br
+	int \fIone_linerfP
 .br 
 );
 .SH "ARGUMENTS"
 .LP 
+.TP 
+\fIone_liner\fP
+Print one record per line if non-zero.
 .TP 
 \fIout_file\fP
 Specifies the file to print data to.

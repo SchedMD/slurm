@@ -41,9 +41,10 @@
  *	partitions based upon message as loaded using slurm_load_partitions
  * IN out - file to write to
  * IN part_info_ptr - partitions information message pointer
+ * IN one_liner - print as a single line if true
  */
 void slurm_print_partition_info_msg ( FILE* out, 
-		partition_info_msg_t * part_info_ptr )
+		partition_info_msg_t * part_info_ptr, int one_liner )
 {
 	int i ;
 	partition_info_t * part_ptr = part_info_ptr->partition_array ;
@@ -54,7 +55,7 @@ void slurm_print_partition_info_msg ( FILE* out,
 		time_str, part_info_ptr->record_count);
 
 	for (i = 0; i < part_info_ptr->record_count; i++) {
-		slurm_print_partition_info ( out, & part_ptr[i] ) ;
+		slurm_print_partition_info ( out, & part_ptr[i], one_liner ) ;
 	}
 
 }
@@ -64,23 +65,31 @@ void slurm_print_partition_info_msg ( FILE* out,
  *	partition based upon message as loaded using slurm_load_partitions
  * IN out - file to write to
  * IN part_ptr - an individual partition information record pointer
+ * IN one_liner - print as a single line if true
  */
-void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr )
+void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr, 
+				  int one_liner )
 {
 	int j ;
 
+	/****** Line 1 ******/
 	fprintf ( out, "PartitionName=%s ", part_ptr->name);
 	fprintf ( out, "TotalNodes=%u ", part_ptr->total_nodes);
 	fprintf ( out, "TotalCPUs=%u ", part_ptr->total_cpus);
 	if (part_ptr->root_only)
-		fprintf ( out, "RootOnly=YES\n");
+		fprintf ( out, "RootOnly=YES");
 	else
-		fprintf ( out, "RootOnly=NO\n");
+		fprintf ( out, "RootOnly=NO");
+	if (one_liner)
+		fprintf ( out, " ");
+	else
+		fprintf ( out, "\n   ");
 
+	/****** Line 2 ******/
 	if (part_ptr->default_part)
-		fprintf ( out, "   Default=YES ");
+		fprintf ( out, "Default=YES ");
 	else
-		fprintf ( out, "   Default=NO ");
+		fprintf ( out, "Default=NO ");
 	if (part_ptr->shared == SHARED_NO)
 		fprintf ( out, "Shared=NO ");
 	else if (part_ptr->shared == SHARED_YES)
@@ -92,18 +101,28 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr )
 	else
 		fprintf ( out, "State=DOWN ");
 	if (part_ptr->max_time == INFINITE)
-		fprintf ( out, "MaxTime=UNLIMITED\n");
+		fprintf ( out, "MaxTime=UNLIMITED");
 	else
-		fprintf ( out, "MaxTime=%u\n", part_ptr->max_time);
+		fprintf ( out, "MaxTime=%u", part_ptr->max_time);
+	if (one_liner)
+		fprintf ( out, " ");
+	else
+		fprintf ( out, "\n   ");
 
-	fprintf ( out, "   MinNodes=%u ", part_ptr->min_nodes);
+	/****** Line 3 ******/
+	fprintf ( out, "MinNodes=%u ", part_ptr->min_nodes);
 	if (part_ptr->max_nodes == INFINITE)
 		fprintf ( out, "MaxNodes=UNLIMITED ");
 	else
 		fprintf ( out, "MaxNodes=%u ", part_ptr->max_nodes);
-	fprintf ( out, "AllowGroups=%s\n", part_ptr->allow_groups);
+	fprintf ( out, "AllowGroups=%s", part_ptr->allow_groups);
+	if (one_liner)
+		fprintf ( out, " ");
+	else
+		fprintf ( out, "\n   ");
 
-	fprintf ( out, "   Nodes=%s NodeIndecies=", part_ptr->nodes);
+	/****** Line 4 ******/
+	fprintf ( out, "Nodes=%s NodeIndecies=", part_ptr->nodes);
 	for (j = 0; part_ptr->node_inx; j++) {
 		if (j > 0)
 			fprintf( out, ",%d", part_ptr->node_inx[j]);
