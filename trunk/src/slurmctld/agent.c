@@ -599,8 +599,8 @@ static void *_thread_per_node_rpc(void *args)
 
 	/* Signal completion so another thread can replace us */
 	(*task_ptr->threads_active_ptr)--;
-	pthread_cond_signal(task_ptr->thread_cond_ptr);
 	slurm_mutex_unlock(task_ptr->thread_mutex_ptr);
+	pthread_cond_signal(task_ptr->thread_cond_ptr);
 
 	xfree(args);
 	return (void *) NULL;
