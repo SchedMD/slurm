@@ -45,7 +45,7 @@ int wait_for_tasks ( launch_tasks_request_msg_t * launch_msg , task_start_t ** t
 	for ( i = 0 ; i < launch_msg->tasks_to_launch ; i ++ )
 	{
 		rc = pthread_join( task_start[i]->pthread_id , NULL )  ;
-		debug3 ( "fan_out_task_launch: thread %i pthread_id %i joined " , i , task_start[i]->pthread_id ) ;
+		debug3 ( "wait for tasks: thread %i pthread_id %i joined " , i , task_start[i]->pthread_id ) ;
 	}
 	return SLURM_SUCCESS ;
 }

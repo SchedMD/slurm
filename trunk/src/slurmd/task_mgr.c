@@ -66,6 +66,7 @@ int fan_out_task_launch(launch_tasks_request_msg_t * launch_msg)
 	 */
 	task_start_t *task_start[launch_msg->tasks_to_launch];
 
+	debug3("entered fan_out_task_launch()");
 	debug("msg->job_step_id = %d", launch_msg->job_step_id);
 
 	if ((session_id = setsid()) == SLURM_ERROR) {
@@ -78,6 +79,7 @@ int fan_out_task_launch(launch_tasks_request_msg_t * launch_msg)
 	curr_job_step->session_id = session_id;
 
 
+	debug3("going to launch %d tasks", launch_msg->tasks_to_launch);
 	/* launch requested number of threads 
 	 */
 	for (i = 0; i < launch_msg->tasks_to_launch; i++) {
@@ -90,6 +92,7 @@ int fan_out_task_launch(launch_tasks_request_msg_t * launch_msg)
 		task_start[i]->local_task_id = i;
 		task_start[i]->io_streams_dest = launch_msg->streams;
 
+		debug("going to launch task %d", i);
 		if (launch_task(task_start[i])) {
 			error("launch_task error ");
 			goto kill_tasks_label;
@@ -346,16 +349,7 @@ int reattach_tasks_streams(reattach_tasks_streams_msg_t * req_msg)
 	return error_code;
 }
 
-void pthread_fork_before(void)
-{
-}
-
-void pthread_fork_parent_after(void)
-{
-}
-
 void pthread_fork_child_after(void)
 {
-	log_options_t log_opts_def = LOG_OPTS_STDERR_ONLY;
-	log_init("slurmd", log_opts_def, SYSLOG_FACILITY_DAEMON, NULL);
+	log_reinit();
 }

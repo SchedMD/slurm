@@ -170,6 +170,11 @@ int log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile)
 	return rc;
 }
 
+int log_reinit()
+{
+	pthread_mutex_init(&log_lock, NULL);
+}
+
 /* reinitialize log data structures. Like log_init, but do not init
  * the log mutex
  */
