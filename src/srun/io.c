@@ -34,6 +34,8 @@ typedef struct fd_info {
 
 static void _accept_io_stream(job_t *job, int i);
 static int  _do_task_output_poll(fd_info_t *info);
+static int  _shutdown_fd_poll(fd_info_t *info);
+static int  _close_stream(int *fd, FILE *out, int tasknum);
 static int  _do_task_output(int *fd, FILE *out, int tasknum);
 static void _bcast_stdin(int fd, job_t *job);	
 static int  _readx(int fd, char *buf, size_t maxbytes);
@@ -58,6 +60,12 @@ static int
 _do_task_output_poll(fd_info_t *info)
 {
 	return _do_task_output(info->fd, info->fp, info->taskid);
+}
+
+static int 
+_shutdown_fd_poll(fd_info_t *info)
+{
+	return _close_stream(info->fd, info->fp, info->taskid);
 }
 
 static void
@@ -131,6 +139,7 @@ _io_thr_poll(void *job_arg)
 		while (poll(fds, nfds, -1) < 0) {
 			switch(errno) {
 				case EINTR:
+ 				case EAGAIN:
 					continue;
 					break;
 				case ENOMEM:
@@ -153,8 +162,13 @@ _io_thr_poll(void *job_arg)
 
 		for (; i < nfds; i++) {
 			unsigned short revents = fds[i].revents;
-			if (revents & POLLERR)
-				error("poll error on fd %d: %m", fds[i].fd);
+			xassert(!(revents & POLLNVAL));
+			if (revents & POLLERR || revents & POLLHUP) {
+				error("poll error condition on fd %d", 
+						fds[i].fd);
+				_shutdown_fd_poll(&map[i]);
+			}
+
 			else if (revents & POLLIN) {
 				_do_task_output_poll(&map[i]);
 			} 
@@ -295,6 +309,17 @@ _accept_io_stream(job_t *job, int i)
 }
 
 static int
+_close_stream(int *fd, FILE *out, int tasknum)
+{	
+	debug("%d: <%s disconnected>", tasknum, 
+	       out == stdout ? "stdout" : "stderr");
+	fflush(out);
+	shutdown(*fd, SHUT_RDWR);
+	close(*fd);
+	*fd = IO_DONE;
+}
+
+static int
 _do_task_output(int *fd, FILE *out, int tasknum)
 {
 	char buf[IO_BUFSIZ];
@@ -303,12 +328,7 @@ _do_task_output(int *fd, FILE *out, int tasknum)
 
 
 	if ((len = _readx(*fd, buf, IO_BUFSIZ)) <= 0) {
-		debug("%d: <%s disconnected>", tasknum, 
-				out == stdout ? "stdout" : "stderr");
-		fflush(out);
-		shutdown(*fd, SHUT_RDWR);
-		close(*fd);
-		*fd = IO_DONE;
+		_close_stream(fd, out, tasknum);
 	}
 
 	p = buf;
