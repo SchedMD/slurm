@@ -40,19 +40,21 @@ and static libraries for the SLURM API.
 
 %build
 %if %{_with_elan}
-	WITH_ELAN=--with-elan
+	WITHELAN=--with-elan
 %endif
 %if %{_with_authd}
-	WITH_AUTHD=--with-authd
+	WITHAUTHD=--with-authd
 %endif
 %if %{_with_totalview}
-	WITH_TOTALVIEW=--with-totalview
+	WITHTV=--with-totalview
 %endif
 
+PFX_FIX=--program-prefix=%{?_program_prefix:%{_program_prefix}} 
 
-%configure  --program-prefix=%{?_program_prefix:%{_program_prefix}} \
-            --with-slurm-conf=/etc/slurm --enable-debug             \
-            $WITH_ELAN $WITH_AUTHD $WITH_TOTALVIEW
+WITHCONF=--with-slurm-conf=/etc/slurm
+
+%configure --enable-debug $PFX_FIX $WITHCONF $WITHELAN $WITHAUTHD $WITHTV
+
 make
 
 %install
@@ -113,6 +115,11 @@ if [ "$1" = 0 ]; then
             /etc/rc.d/init.d/slurm stop
         fi
     fi
+fi
+
+%postun
+if [ "$1" = 0 ]; then
+    /sbin/ldconfig %{_libdir}
 fi
 
 
