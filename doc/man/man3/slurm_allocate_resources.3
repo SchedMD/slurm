@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "September 2003" "Morris Jette" "Slurm job initiation functions"
+.TH "Slurm API" "3" "February 2005" "Morris Jette" "Slurm job initiation functions"
 .SH "NAME"
 slurm_allocate_resources, slurm_allocate_resources_and_run,
 slurm_confirm_allocation, 
@@ -61,8 +61,6 @@ void \fBslurm_init_job_desc_msg\fR (
 int \fBslurm_job_will_run\fR (
 .br 
 	job_desc_msg_t *\fIjob_desc_msg_ptr\fP,
-.br 
-	resource_allocation_response_msg_t **\fIslurm_alloc_msg_pptr\fP 
 .br 
 );
 .LP
@@ -134,7 +132,8 @@ root.
 in response to a call of the function \fBslurm_allocate_resources_and_run\fR.
 .LP 
 \fBslurm_free_resource_allocation_response_msg\fR Release the storage generated in response 
-to a call of the function \fBslurm_allocate_resources\fR, \fBslurm_confirm_allocation\fR or \fBslurm_job_will_run\fR.
+to a call of the function \fBslurm_allocate_resources\fR, or
+\fBslurm_confirm_allocation\fR.
 .LP 
 \fBslurm_free_submit_response_msg\fR Release the storage generated in response 
 to a call of the function \fBslurm_submit_batch_job\fR.
@@ -143,9 +142,6 @@ to a call of the function \fBslurm_submit_batch_job\fR.
 Execute this function before issuing a request to submit or modify a job.
 .LP 
 \fBslurm_job_will_run\fR Determine if the supplied job description could be executed immediately. 
-If successful, a list of the available nodes and their configurations will be returned. Always 
-release the response message when no longer required using the function 
-\fBslurm_free_resource_allocation_response_msg\fR.
 .LP 
 \fBslurm_submit_batch_job\fR Submit a job for later execution. Note that if 
 the job's requested node count or time allocation are outside of the partition's limits then a job entry will be created, a warning indication will be placed in the \fIerror_code\fP field of the response message, and the job will be left queued until the partition's limits are changed and resources are available.  Always release the response message when no 

@@ -73,13 +73,10 @@ int
 allocate_test(void)
 {
 	int rc;
-	resource_allocation_response_msg_t *resp = NULL;
 	job_desc_msg_t *j = job_desc_msg_create_from_opts (NULL);
 
-	rc = slurm_job_will_run(j, &resp);
+	rc = slurm_job_will_run(j);
 	job_desc_msg_destroy(j);
-	slurm_free_resource_allocation_response_msg(resp);
-
 	return rc;
 }
 

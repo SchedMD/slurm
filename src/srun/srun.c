@@ -142,7 +142,7 @@ int srun(int ac, char **av)
 	} else if (opt.test_only) {
 		int rc = allocate_test();
 		if (rc) {
-			slurm_perror("slurm_job_will_run");
+			slurm_perror("allocation failure");
 			exit (1);
 		}
 		info("allocation success");

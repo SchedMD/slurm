@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by moe jette <jette1@llnl.gov>.
+ *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -110,38 +110,23 @@ slurm_allocate_resources (job_desc_msg_t *req,
  * slurm_job_will_run - determine if a job would execute immediately if 
  *	submitted now
  * IN job_desc_msg - description of resource allocation request
- * OUT slurm_alloc_msg - response to request
  * RET 0 on success or slurm error code
- * NOTE: free the allocated using slurm_free_resource_allocation_response_msg
  */
-int slurm_job_will_run (job_desc_msg_t *req, 
-		        resource_allocation_response_msg_t **resp)
+int slurm_job_will_run (job_desc_msg_t *req)
 {
 	slurm_msg_t req_msg;
-	slurm_msg_t resp_msg;
+	int rc;
 
 	/* req.immediate = true;    implicit */
 
 	req_msg.msg_type = REQUEST_JOB_WILL_RUN;
 	req_msg.data     = req; 
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0)
 		return SLURM_SOCKET_ERROR;
 
-	slurm_free_cred(resp_msg.cred);
-	switch (resp_msg.msg_type) {
-	case RESPONSE_SLURM_RC:
-		if (_handle_rc_msg(&resp_msg) < 0)
-			return SLURM_PROTOCOL_ERROR;
-		*resp = NULL;
-		break;
-	case RESPONSE_JOB_WILL_RUN:
-		*resp = (resource_allocation_response_msg_t *) resp_msg.data;
-		break;
-	default:
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
-		break ;
-	}
+	if (rc)
+		slurm_seterrno_ret(rc);
 
 	return SLURM_PROTOCOL_SUCCESS;
 }
