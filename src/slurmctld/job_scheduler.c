@@ -199,7 +199,7 @@ static void _sort_job_queue(struct job_queue *job_queue, int job_queue_size)
 	}
 }
 
-/* _launch_job - send an RPC to a slurmd to initiate a job 
+/* _launch_job - send an RPC to a slurmd to initiate a batch job 
  * IN job_ptr - pointer to job that will be initiated
  */
 static void _launch_job(struct job_record *job_ptr)
