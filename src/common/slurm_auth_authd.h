@@ -27,7 +27,7 @@
 #ifndef __SLURM_AUTH_IMPL_H__
 #define __SLURM_AUTH_IMPL_H__
 
-#include <auth.h>
+#include <src/common/auth.h>
 
 /* Each implementation must define this structure. */
 typedef struct slurm_client_credentials {
