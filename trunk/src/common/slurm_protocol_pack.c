@@ -1655,7 +1655,7 @@ int unpack_launch_tasks_request_msg ( launch_tasks_request_msg_t ** msg_ptr , Bu
 
 #ifdef HAVE_LIBELAN3
 	qsw_alloc_jobinfo(&msg->qsw_job);
-	if (qsw_unpack_jobinfo(msg->qsw_job, (void **) buffer) < 0) {
+	if (qsw_unpack_jobinfo(msg->qsw_job, buffer) < 0) {
 		error("qsw_unpack_jobinfo: %m");
 		goto unpack_error;
 	}
