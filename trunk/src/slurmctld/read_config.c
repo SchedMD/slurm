@@ -59,7 +59,7 @@ main (int argc, char *argv[]) {
 
 	if (error_code) {
 		printf ("error %d from read_slurm_conf\n", error_code);
-		exit (1);
+		exit (error_code);
 	}			
 
 	printf ("ControlMachine=%s\n", control_machine);

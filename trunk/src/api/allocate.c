@@ -13,6 +13,7 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
 #include <sys/socket.h>
@@ -20,7 +21,6 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "slurm.h"
 #include "slurmlib.h"
 
 #if DEBUG_MODULE
@@ -34,10 +34,8 @@ main (int argc, char *argv[])
 	error_code = slurm_allocate
 		("User=1500 Script=/bin/hostname JobName=job01 TotalNodes=400 TotalProcs=1000 ReqNodes=lx[3000-3003] Partition=batch MinRealMemory=1024 MinTmpDisk=2034 Groups=students,employee MinProcs=4 Contiguous=YES Key=1234",
 		 &node_list, &job_id);
-	if (error_code) {
+	if (error_code)
 		printf ("allocate error %d\n", error_code);
-		exit (error_code);
-	}
 	else {
 		printf ("allocate nodes %s to job %s\n", node_list, job_id);
 		free (node_list);

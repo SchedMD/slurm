@@ -40,11 +40,13 @@ main (int argc, char *argv[])
 		exit (error_code);
 	}
 
-	printf("Updated at %lx, record count %d\n",
+	printf("Updated at %lx, record count %u\n",
 		node_buffer_ptr->last_update, node_buffer_ptr->node_count);
 	node_ptr = node_buffer_ptr->node_table_ptr;
 
 	for (i = 0; i < node_buffer_ptr->node_count; i++) {
+		/* to limit output we print only the first 10 entries, 
+		 * last 1 entry, and every 200th entry */
 		if ((i < 10) || (i % 200 == 0) || 
 		    ((i + 1)  == node_buffer_ptr->node_count)) {
 			printf ("NodeName=%s CPUs=%u ", 

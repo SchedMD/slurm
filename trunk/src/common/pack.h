@@ -86,7 +86,7 @@ void	_unpackmem_xmalloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp
 	assert(sizeof(size_valp) == sizeof(uint16_t *));\
 	assert((bufp) != NULL && *(bufp) != NULL);	\
         assert((lenp) != NULL);				\
-        assert(*(lenp) >= sizeof(uint32_t));		\
+        assert(*(lenp) >= sizeof(uint16_t));		\
 	_unpackmem_ptr(valp,(uint16_t *)size_valp,bufp,lenp);\
 } while (0)
 
@@ -97,7 +97,7 @@ void	_unpackmem_xmalloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp
 	assert(sizeof(size_valp) == sizeof(uint16_t *));\
 	assert((bufp) != NULL && *(bufp) != NULL);	\
         assert((lenp) != NULL);				\
-        assert(*(lenp) >= sizeof(uint32_t));		\
+        assert(*(lenp) >= sizeof(uint16_t));		\
 	_unpackmem_xmalloc(valp,(uint16_t *)size_valp,bufp,lenp);\
 } while (0)
 

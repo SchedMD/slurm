@@ -53,7 +53,7 @@ extern char *backup_controller;	/* name of computer acting as slurm backup contr
 
 #define CONFIG_MAGIC 0xc065eded
 #define NODE_MAGIC   0x0de575ed
-#define NO_VAL   (-9812)
+#define NO_VAL	     0x7f7f7f7f
 struct config_record {
 	uint32_t magic;		/* magic cookie to test data integrity */
 	uint32_t cpus;		/* count of cpus running on the node */
@@ -72,7 +72,7 @@ extern char *node_state_string[];
 extern time_t last_bitmap_update;	/* time of last node creation or deletion */
 extern time_t last_node_update;		/* time of last update to node records */
 struct node_record {
-	unsigned magic;			/* magic cookie to test data integrity */
+	uint32_t magic;			/* magic cookie to test data integrity */
 	char name[MAX_NAME_LEN];	/* name of the node. a null name indicates defunct node */
 	int node_state;			/* enum node_states, negative if down */
 	time_t last_response;		/* last response from the node */
@@ -113,24 +113,8 @@ extern char default_part_name[MAX_NAME_LEN];	/* name of default partition */
 extern struct part_record *default_part_loc;	/* location of default partition */
 
 /* NOTE: change JOB_STRUCT_VERSION value whenever the contents of JOB_STRUCT_FORMAT change */
-#define JOB_STRUCT_VERSION 1
-#define JOB_STRUCT_FORMAT1 "JobId=%s Partition=%s JobName=%s UID=%d Nodes=%s State=%s TimeLimit=%d StartTime=%lx EndTime=%lx Priority=%d\n"
-#define JOB_STRUCT_FORMAT2 "JobId=%s Partition=%s JobName=%s UID=%d Nodes=%s State=%s TimeLimit=%d StartTime=%lx EndTime=%lx Priority=%d TotalProcs=%d TotalNodes=%d ReqNodes=%s Features=%s Shared=%d Contiguous=%d MinProcs=%d MinMemory=%d MinTmpDisk=%d Distribution=%d Script=%s ProcsPerTask=%d TotalProcs=%d\n"
 extern time_t last_job_update;	/* time of last update to part records */
-enum job_states {
-	JOB_PENDING,		/* queued waiting for initiation */
-	JOB_STAGE_IN,		/* allocated resources, not yet running */
-	JOB_RUNNING,		/* allocated resources and executing */
-	JOB_STAGE_OUT,		/* completed execution, nodes not yet released */
-	JOB_COMPLETE,		/* completed execution successfully, nodes released */
-	JOB_FAILED,		/* completed execution unsuccessfully, nodes released */
-	JOB_TIMEOUT,		/* terminated on reaching time limit, nodes released */
-	JOB_END			/* last entry in table */
-};
-enum task_dist {
-	DIST_BLOCK,		/* fill each node in turn */
-	DIST_CYCLE		/* one task each node, round-robin through nodes */
-};	
+
 /* last entry must be "end", keep in sync with node_state */
 extern char *job_state_string[];
 
@@ -149,14 +133,14 @@ struct job_details {
 	uint32_t num_nodes;		/* minimum number of nodes */
 	char *nodes;			/* required nodes */
 	char *features;			/* required features */
-	unsigned shared:2;		/* 1 if more than one job can execute on a node */
-	unsigned contiguous:1;		/* requires contiguous nodes, 1=true, 0=false */
+	uint16_t shared;		/* 1 if more than one job can execute on a node */
+	uint16_t contiguous;		/* requires contiguous nodes, 1=true, 0=false */
 	uint32_t min_procs;		/* minimum processors per node, MB */
 	uint32_t min_memory;		/* minimum memory per node, MB */
 	uint32_t min_tmp_disk;		/* minimum temporary disk per node, MB */
 	enum task_dist dist;		/* distribution of tasks, 0=fill, 0=cyclic */
 	char *job_script;		/* name of job script to execute */
-	uint32_t procs_per_task;	/* processors required per task */
+	uint16_t procs_per_task;	/* processors required per task */
 	uint32_t total_procs;		/* total number of allocated processors, for accounting */
 	char *node_list;		/* comma separated assigned node list (by task) */
 	time_t submit_time;		/* time of submission */
@@ -306,25 +290,6 @@ extern int delete_node_record (char *name);
  * output: return 0 on success, errno otherwise
  */
 extern int delete_part_record (char *name);
-
-/* 
- * dump_all_job - dump all partition information to a buffer
- * input: buffer_ptr - location into which a pointer to the data is to be stored.
- *                     the data buffer is actually allocated by dump_part and the 
- *                     calling function must xfree the storage.
- *         buffer_size - location into which the size of the created buffer is in bytes
- *         update_time - dump new data only if job records updated since time 
- *                       specified, otherwise return empty buffer
- *         detail - report job_detail only if set
- * output: buffer_ptr - the pointer is set to the allocated buffer.
- *         buffer_size - set to size of the buffer in bytes
- *         update_time - set to time partition records last updated
- *         returns 0 if no error, errno otherwise
- * global: job_list - global list of job records
- * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
- */
-extern int dump_all_job (char **buffer_ptr, int *buffer_size, 
-	time_t * update_time, int detail);
 
 /* 
  * find_job_record - return a pointer to the job record with the given job_id
@@ -546,6 +511,26 @@ extern int node_name2bitmap (char *node_names, bitstr_t **bitmap);
 extern int  node_name2list (char *node_names, char **node_list, int *node_count);
 
 /* 
+ * pack_all_jobs - dump all job information for all jobs in 
+ *	machine independent form (for network transmission)
+ * input: buffer_ptr - location into which a pointer to the data is to be stored.
+ *                     the calling function must xfree the storage.
+ *         buffer_size - location into which the size of the created buffer is in bytes
+ *         update_time - dump new data only if job records updated since time 
+ *                       specified, otherwise return empty buffer
+ * output: buffer_ptr - the pointer is set to the allocated buffer.
+ *         buffer_size - set to size of the buffer in bytes
+ *         update_time - set to time partition records last updated
+ *         returns 0 if no error, errno otherwise
+ * global: job_list - global list of job records
+ * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
+ * NOTE: change JOB_STRUCT_VERSION in common/slurmlib.h whenever the format changes
+ * NOTE: change slurm_load_job() in api/job_info.c whenever the data format changes
+ */
+extern int pack_all_jobs (char **buffer_ptr, int *buffer_size, 
+	time_t * update_time);
+
+/* 
  * pack_all_node - dump all configuration and node information for all nodes in 
  *	machine independent form (for network transmission)
  * input: buffer_ptr - location into which a pointer to the data is to be stored.
@@ -581,6 +566,20 @@ extern int pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_t
  * NOTE: change slurm_load_part() in api/part_info.c whenever the data format changes
  */
 extern int pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time);
+
+/* 
+ * pack_job - dump all configuration information about a specific job in 
+ *	machine independent form (for network transmission)
+ * input:  dump_job_ptr - pointer to job for which information is requested
+ *	buf_ptr - buffer for job information 
+ *	buf_len - byte size of buffer
+ * output: buf_ptr - advanced to end of data written
+ *	buf_len - byte size remaining in buffer
+ *	return 0 if no error, 1 if buffer too small
+ * NOTE: change JOB_STRUCT_VERSION in common/slurmlib.h whenever the format changes
+ * NOTE: change slurm_load_job() in api/job_info.c whenever the data format changes
+ */
+extern int pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len);
 
 /* 
  * pack_node - dump all configuration information about a specific node in 

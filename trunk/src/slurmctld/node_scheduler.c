@@ -22,7 +22,7 @@
 
 #define BUF_SIZE 1024
 
-struct node_set {		/* set of nodes with same configuration that could be allocated */
+struct node_set {		/* set of nodes with same configuration */
 	uint32_t cpus_per_node;
 	uint32_t nodes;
 	uint32_t weight;
@@ -42,7 +42,7 @@ int valid_features (char *requested, char *available);
 int 
 main (int argc, char *argv[]) 
 {
-	int error_code, line_num, i;
+	int error_code, error_count = 0, line_num, i;
 	FILE *command_file;
 	char in_line[BUF_SIZE], *job_id, *node_list;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
@@ -60,14 +60,16 @@ main (int argc, char *argv[])
 	if (error_code) {
 		printf ("controller: error %d from init_slurm_conf\n",
 			error_code);
-		exit (error_code);
+		error_count++;
+		exit (error_count);
 	}			
 
 	error_code = read_slurm_conf (argv[1]);
 	if (error_code) {
 		printf ("controller: error %d from read_slurm_conf\n",
 			error_code);
-		exit (error_code);
+		error_count++;
+		exit (error_count);
 	}			
 
 	/* mark everything up and idle for testing */
@@ -79,27 +81,40 @@ main (int argc, char *argv[])
 		fprintf (stderr,
 			 "node_scheduler: error %d opening command file %s\n",
 			 errno, argv[2]);
-		exit (1);
+		error_count++;
+		exit (error_count);
 	}			
 
 	i = valid_features ("fs1&fs2", "fs1");
-	if (i != 0)
+	if (i != 0) {
 		printf ("valid_features error 1\n");
+		error_count++;
+	}
 	i = valid_features ("fs1|fs2", "fs1");
-	if (i != 1)
+	if (i != 1) {
 		printf ("valid_features error 2\n");
+		error_count++;
+	}
 	i = valid_features ("fs1|fs2&fs3", "fs1,fs3");
-	if (i != 1)
+	if (i != 1) {
 		printf ("valid_features error 3\n");
+		error_count++;
+	}
 	i = valid_features ("[fs1|fs2]&fs3", "fs2,fs3");
-	if (i != 2)
+	if (i != 2) {
 		printf ("valid_features error 4\n");
+		error_count++;
+	}
 	i = valid_features ("fs0&[fs1|fs2]&fs3", "fs2,fs3");
-	if (i != 0)
+	if (i != 0) {
 		printf ("valid_features error 5\n");
+		error_count++;
+	}
 	i = valid_features ("fs3&[fs1|fs2]&fs3", "fs2,fs3");
-	if (i != 2)
+	if (i != 2) {
 		printf ("valid_features error 6\n");
+		error_count++;
+	}
 
 	line_num = 0;
 	printf ("\n");
@@ -111,15 +126,19 @@ main (int argc, char *argv[])
 		line_num++;
 		error_code = job_allocate(in_line, &job_id, &node_list);
 		if (error_code) {
-			if (strncmp (in_line, "JobName=FAIL", 12) != 0)
+			if (strncmp (in_line, "JobName=FAIL", 12) != 0) {
 				printf ("ERROR:");
+				error_count++;
+			}
 			printf ("for job: %s\n", in_line);
 			printf ("node_scheduler: error %d from job_allocate on line %d\n", 
 				error_code, line_num);
 		}
 		else {
-			if (strncmp (in_line, "JobName=FAIL", 12) == 0)
+			if (strncmp (in_line, "JobName=FAIL", 12) == 0) {
 				printf ("ERROR: ");
+				error_count++;
+			}
 			printf ("for job: %s\n  nodes selected %s\n",
 				in_line, node_list);
 			if (job_id)
@@ -129,7 +148,7 @@ main (int argc, char *argv[])
 		}
 		printf("time = %ld usec\n\n", (long) (clock() - start_time));
 	}
-	exit (0);		
+	exit (error_count);		
 }
 #endif
 
@@ -835,8 +854,11 @@ select_nodes (struct job_record *job_ptr)
 	allocate_nodes (req_bitmap);
 	job_ptr->job_state = JOB_STAGE_IN;
 	job_ptr->start_time = time(NULL);
-	if (job_ptr->time_limit >= 0)
-		job_ptr->end_time = time(NULL) + (job_ptr->time_limit * 60);
+	if (job_ptr->time_limit == INFINITE)
+		job_ptr->end_time = INFINITE;
+	else
+		job_ptr->end_time = 
+			job_ptr->start_time + (job_ptr->time_limit * 60);
 
       cleanup:
 	if (req_bitmap)

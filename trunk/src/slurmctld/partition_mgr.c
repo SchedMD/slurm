@@ -37,7 +37,7 @@ int list_find_part (void *part_entry, void *key);
 int 
 main (int argc, char *argv[]) 
 {
-	int error_code, i;
+	int error_code, error_count;
 	time_t update_time;
 	struct part_record *part_ptr;
 	char *dump;
@@ -46,13 +46,18 @@ main (int argc, char *argv[])
 		"MaxTime=34 MaxNodes=56 Key=NO State=DOWN Shared=FORCE";
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 
+	error_count = 0;
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 	error_code = init_node_conf ();
-	if (error_code)
+	if (error_code) {
 		printf ("init_node_conf error %d\n", error_code);
+		error_count++;
+	}
 	error_code = init_part_conf ();
-	if (error_code)
+	if (error_code) {
 		printf ("init_part_conf error %d\n", error_code);
+		error_count++;
+	}
 	default_part.max_time = 223344;
 	default_part.max_nodes = 556677;
 	default_part.total_nodes = 4;
@@ -62,20 +67,34 @@ main (int argc, char *argv[])
 
 	printf ("create some partitions and test defaults\n");
 	part_ptr = create_part_record ();
-	if (part_ptr->max_time != 223344)
+	if (part_ptr->max_time != 223344) {
 		printf ("ERROR: partition default max_time not set\n");
-	if (part_ptr->max_nodes != 556677)
+		error_count++;
+	}
+	if (part_ptr->max_nodes != 556677) {
 		printf ("ERROR: partition default max_nodes not set\n");
-	if (part_ptr->total_nodes != 4)
+		error_count++;
+	}
+	if (part_ptr->total_nodes != 4) {
 		printf ("ERROR: partition default total_nodes not set\n");
-	if (part_ptr->total_cpus != 16)
+		error_count++;
+	}
+	if (part_ptr->total_cpus != 16) {
 		printf ("ERROR: partition default max_nodes not set\n");
-	if (part_ptr->key != 1)
+		error_count++;
+	}
+	if (part_ptr->key != 1) {
 		printf ("ERROR: partition default key not set\n");
-	if (part_ptr->state_up != 1)
+		error_count++;
+	}
+	if (part_ptr->state_up != 1) {
 		printf ("ERROR: partition default state_up not set\n");
-	if (part_ptr->shared != 0)
+		error_count++;
+	}
+	if (part_ptr->shared != 0) {
 		printf ("ERROR: partition default shared not set\n");
+		error_count++;
+	}
 	strcpy (part_ptr->name, "interactive");
 	part_ptr->nodes = "lx[01-04]";
 	part_ptr->allow_groups = "students";
@@ -88,46 +107,58 @@ main (int argc, char *argv[])
 	strcpy (part_ptr->name, "class");
 
 	update_time = (time_t) 0;
-	error_code = dump_all_part (&dump, &dump_size, &update_time);
-	if (error_code)
-		printf ("ERROR: dump_part error %d\n", error_code);
-	else {
-		printf("\ndump of partition info:\n");
-		for (i=0; i<dump_size; ) {
-			printf("%s", &dump[i]);
-			i += strlen(&dump[i]) + 1;
-		}
-		printf("\n");
+	error_code = pack_all_part (&dump, &dump_size, &update_time);
+	if (error_code) {
+		printf ("ERROR: pack_part error %d\n", error_code);
+		error_count++;
 	}
 
 	error_code = update_part ("batch", update_spec);
-	if (error_code)
+	if (error_code) {
 		printf ("ERROR: update_part error %d\n", error_code);
+		error_count++;
+	}
 
 	part_ptr = find_part_record ("batch");
-	if (part_ptr == NULL)
+	if (part_ptr == NULL) {
 		printf ("ERROR: list_find failure\n");
-	if (part_ptr->max_time != 34)
+		error_count++;
+	}
+	if (part_ptr->max_time != 34) {
 		printf ("ERROR: update_part max_time not reset\n");
-	if (part_ptr->max_nodes != 56)
+		error_count++;
+	}
+	if (part_ptr->max_nodes != 56) {
 		printf ("ERROR: update_part max_nodes not reset\n");
-	if (part_ptr->key != 0)
+		error_count++;
+	}
+	if (part_ptr->key != 0) {
 		printf ("ERROR: update_part key not reset\n");
-	if (part_ptr->state_up != 0)
+		error_count++;
+	}
+	if (part_ptr->state_up != 0) {
 		printf ("ERROR: update_part state_up not set\n");
-	if (part_ptr->shared != 2)
+		error_count++;
+	}
+	if (part_ptr->shared != 2) {
 		printf ("ERROR: update_part shared not set\n");
+		error_count++;
+	}
 
 	node_record_count = 0;	/* delete_part_record dies if node count is bad */
 	error_code = delete_part_record ("batch");
-	if (error_code != 0)
+	if (error_code != 0) {
 		printf ("delete_part_record error1 %d\n", error_code);
+		error_count++;
+	}
 	printf ("NOTE: we expect delete_part_record to report not finding a record for batch\n");
 	error_code = delete_part_record ("batch");
-	if (error_code != ENOENT)
+	if (error_code != ENOENT) {
 		printf ("ERROR: delete_part_record error2 %d\n", error_code);
+		error_count++;
+	}
 
-	exit (0);
+	exit (error_count);
 }
 #endif
 
@@ -477,29 +508,13 @@ int
 pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len) 
 {
 	uint16_t default_part_flag;
-	uint16_t group_size, name_size, node_size;
-
-	if (part_record_point->name)
-		name_size = strlen(part_record_point->name) + 1;
-	else
-		name_size = 0;
-
-	if (part_record_point->allow_groups)
-		group_size = strlen(part_record_point->allow_groups) + 1;
-	else
-		group_size = 0;
-
-	if (part_record_point->nodes)
-		node_size = strlen(part_record_point->nodes) + 1;
-	else
-		node_size = 0;
 
 	if (default_part_loc == part_record_point)
 		default_part_flag = 1;
 	else
 		default_part_flag = 0;
 
-	packstr (part_record_point->name, name_size, buf_ptr, buf_len);
+	packstr (part_record_point->name, buf_ptr, buf_len);
 	pack32  (part_record_point->max_time, buf_ptr, buf_len);
 	pack32  (part_record_point->max_nodes, buf_ptr, buf_len);
 	pack32  (part_record_point->total_nodes, buf_ptr, buf_len);
@@ -508,8 +523,8 @@ pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len)
 	pack16  ((uint16_t)part_record_point->key, buf_ptr, buf_len);
 	pack16  ((uint16_t)part_record_point->shared, buf_ptr, buf_len);
 	pack16  ((uint16_t)part_record_point->state_up, buf_ptr, buf_len);
-	packstr (part_record_point->allow_groups, group_size, buf_ptr, buf_len);
-	packstr (part_record_point->nodes, node_size, buf_ptr, buf_len);
+	packstr (part_record_point->allow_groups, buf_ptr, buf_len);
+	packstr (part_record_point->nodes, buf_ptr, buf_len);
 
 	return 0;
 }
