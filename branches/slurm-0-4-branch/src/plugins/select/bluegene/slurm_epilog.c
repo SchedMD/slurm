@@ -48,6 +48,7 @@ int main(int argc, char *argv[])
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <strings.h>
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
 
 #define _DEBUG 0
@@ -83,11 +84,14 @@ int main(int argc, char *argv[])
 static void  _wait_part_owner(char *part_name, char *user_id)
 {
 	uid_t target_uid;
-	int i, rc1, rc2;
+	int i, j, rc1, num_parts;
 	rm_partition_t *part_ptr;
 	char *name;
 	struct passwd *pw_ent;
-
+	int is_ready = 0;
+	rm_partition_state_flag_t part_state = RM_PARTITION_READY+2;
+	rm_partition_list_t *part_list;
+	
 	target_uid = atoi(user_id);
 
 #if _DEBUG
@@ -102,36 +106,72 @@ static void  _wait_part_owner(char *part_name, char *user_id)
 			printf(".");
 #endif
 		}
-		if ((rc1 = rm_get_partition(part_name, &part_ptr)) != 
-				STATUS_OK) {
-			fprintf(stderr, "rm_get_partition(%s) errno=%d\n",
-				part_name, rc1);
-			return;
-		}
-		rc1 = rm_get_data(part_ptr, RM_PartitionUserName, &name);
-		rc2 = rm_free_partition(part_ptr);
-		if (rc1 != STATUS_OK) {
-			fprintf(stderr,
-				"rm_get_data(%s, RM_PartitionUserName) "
-				"errno=%d\n", part_name, rc1);
-			return;
-		}
-		if (rc2 != STATUS_OK)
-			fprintf(stderr, "rm_free_partition() errno=%d\n", rc2);
 
-		/* Now test this owner */
-		if (name[0] == '\0')
-			break;
-		if ((pw_ent = getpwnam(name)) == NULL) {
-			fprintf(stderr, "getpwnam(%s) errno=%d\n", part_name, 
-				errno);
-			continue;
+		if ((rc1 = rm_get_partitions_info(part_state, &part_list))
+		    != STATUS_OK) {
+			fprintf(stderr, "rm_get_partitions() errno=%d\n", 
+				rc1);
+				
 		}
+		rm_get_data(part_list, RM_PartListSize, &num_parts);
+		for(j=0; j<num_parts; j++) {
+			if(j)
+				rm_get_data(part_list, RM_PartListNextPart, &part_ptr);
+			else
+				rm_get_data(part_list, RM_PartListFirstPart, &part_ptr);
+			rm_get_data(part_ptr, RM_PartitionID, &name);
+			if(!strcasecmp(part_name, name)) {
+				rc1 = rm_get_data(part_ptr, RM_PartitionUserName, &name);
+				if (name[0] == '\0')
+					continue;
+				if ((pw_ent = getpwnam(name)) == NULL) {
+					fprintf(stderr, "getpwnam(%s) errno=%d\n", name, 
+						errno);
+					continue;
+				}
 #if (_DEBUG > 1)
-		printf("\nowner = %s(%d)\n", name, pw_ent->pw_uid);
+				printf("\nowner = %s(%d)\n", name, pw_ent->pw_uid);
 #endif
-		if (pw_ent->pw_uid != target_uid)
+				if (pw_ent->pw_uid == target_uid) {
+					is_ready = 1;
+					break;
+				}
+			}
+		}
+		rm_free_partition_list(part_list);
+		if(is_ready)
 			break;
+
+		/* if ((rc1 = rm_get_partition(part_name, &part_ptr)) !=  */
+/* 				STATUS_OK) { */
+/* 			fprintf(stderr, "rm_get_partition(%s) errno=%d\n", */
+/* 				part_name, rc1); */
+/* 			return; */
+/* 		} */
+/* 		rc1 = rm_get_data(part_ptr, RM_PartitionUserName, &name); */
+/* 		rc2 = rm_free_partition(part_ptr); */
+/* 		if (rc1 != STATUS_OK) { */
+/* 			fprintf(stderr, */
+/* 				"rm_get_data(%s, RM_PartitionUserName) " */
+/* 				"errno=%d\n", part_name, rc1); */
+/* 			return; */
+/* 		} */
+/* 		if (rc2 != STATUS_OK) */
+/* 			fprintf(stderr, "rm_free_partition() errno=%d\n", rc2); */
+
+/* 		/\* Now test this owner *\/ */
+/* 		if (name[0] == '\0') */
+/* 			break; */
+/* 		if ((pw_ent = getpwnam(name)) == NULL) { */
+/* 			fprintf(stderr, "getpwnam(%s) errno=%d\n", part_name,  */
+/* 				errno); */
+/* 			continue; */
+/* 		} */
+/* #if (_DEBUG > 1) */
+/* 		printf("\nowner = %s(%d)\n", name, pw_ent->pw_uid); */
+/* #endif */
+/* 		if (pw_ent->pw_uid != target_uid) */
+/* 			break; */
 	}
 
 #if _DEBUG
