@@ -83,7 +83,6 @@ expect {
 	-re "PartitionName=($alpha_numeric) " {
 		if {[string compare $part_name ""] == 0} {
 			set part_name $expect_out(1,string)
-			set part_old_state ""
 		}
 		exp_continue
 	}
