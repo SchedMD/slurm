@@ -159,9 +159,12 @@ simple regular expressions (e.g. "lx[10-20]"). This specification is required.
 .TP
 \fIState\fP=<state>
 Identify the state to be assigned to the node. Possible values are  "NoResp", 
-"DOWN", "IDLE", "DRAINED", "DRAINING", and "ALLOCATED". The "NoResp" state 
-will only set the "NoResp" flag for a node without changing its underlying 
-state.
+"DOWN", "IDLE", "DRAIN", "DRAINED", "DRAINING", and "ALLOCATED". 
+To drain a node specify "DRAIN", "DRAINED", or "DRAINING".
+SLURM will automatically set it to the appropriate value of either 
+"DRAINING" or "DRAINED" depending if the node is allocated or not.
+The "NoResp" state will only set the "NoResp" flag for a node without
+changing its underlying state.
 .TP
 \fBSPECIFICATIONS FOR UPDATE COMMAND, PARTITIONS\fR
 .TP

@@ -307,6 +307,9 @@ scontrol: update JobId=477 Priority=0
 </pre>
 <p>
 Print the state of node <i>adev13</i> and drain it.
+To drain a node specify a new state of "DRAIN", "DRAINED", or "DRAINING".
+SLURM will automatically set it to the appropriate value of either "DRAINING"
+or "DRAINED" depending if the node is allocated or not.
 Return it to service later.
 <pre>
 adev0: scontrol
