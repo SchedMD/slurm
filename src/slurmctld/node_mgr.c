@@ -1373,7 +1373,7 @@ static void _dump_hash (void)
 		if ((inx >= node_record_count) ||
 		    (strlen (node_record_table_ptr[inx].name) == 0))
 			continue;
-		debug ("hash:%d:%s", i, node_record_table_ptr[inx].name);
+		debug3("hash:%d:%s", i, node_record_table_ptr[inx].name);
 	}
 }
 #endif
