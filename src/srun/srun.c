@@ -423,6 +423,17 @@ _alloc_nodes_step(void)
 	if (opt.share)
 		job.shared		= 1;
 
+	if (opt.distribution == SRUN_DIST_UNKNOWN) {
+		if (opt.nprocs <= opt.nodes)
+			opt.distribution = SRUN_DIST_CYCLIC;
+		else
+			opt.distribution = SRUN_DIST_BLOCK;
+	}
+	if (opt.distribution == SRUN_DIST_BLOCK)
+		job.task_dist  = SLURM_DIST_BLOCK;
+	else 	/* (opt.distribution == SRUN_DIST_CYCLIC) */
+		job.task_dist  = SLURM_DIST_CYCLIC;
+
 	if (slurm_allocate_resources_and_run(&job, &resp) == SLURM_FAILURE)
 		return NULL;
 

@@ -1450,8 +1450,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 	job_step_create_request_msg_t req_step_msg;
 	/* Locks: Write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
-		WRITE_LOCK, READ_LOCK
-	};
+		WRITE_LOCK, READ_LOCK };
 	uid_t uid;
 	uint16_t node_cnt;
 	slurm_addr *node_addr;
@@ -1495,6 +1494,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 	req_step_msg.node_count = INFINITE;
 	req_step_msg.cpu_count  = job_desc_msg->num_procs;
 	req_step_msg.num_tasks  = job_desc_msg->num_tasks;
+	req_step_msg.task_dist  = job_desc_msg->task_dist;
 	error_code = step_create(&req_step_msg, &step_rec, true);
 	/* note: no need to free step_rec, pointer to global job step record */
 	if (error_code) {

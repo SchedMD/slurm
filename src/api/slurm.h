@@ -148,6 +148,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * default NONE */
 	uint16_t shared;	/* 1 if job can share nodes with other jobs,
 				 * 0 otherwise */
+	uint16_t task_dist;	/* see enum task_dist_state, used only for
+				 * slurm_allocate_resources_and_run() */
 	uint32_t time_limit;	/* maximum run time in minutes, default is
 				 * partition limit */
 	uint32_t num_procs;	/* total count of processors required, 
