@@ -590,7 +590,7 @@ log_flush()
 void
 lsd_fatal_error(char *file, int line, char *msg)
 {
-	fatal("%s:%d %s: %m", file, line, msg);
+	error("%s:%d %s: %m", file, line, msg);
 }
 
 void *
@@ -614,11 +614,7 @@ void fatal(const char *fmt, ...)
 	log_flush();
 	fatal_cleanup();
 
-#ifndef NDEBUG
-	abort();
-#else
 	exit(1);
-#endif
 }
 
 void error(const char *fmt, ...)
