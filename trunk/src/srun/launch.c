@@ -92,9 +92,10 @@ launch(void *arg)
 
 		debug2("launching on host %s", job->host[i]);
                 print_launch_msg(&msg);
-		if (slurm_send_only_node_msg(&req) < 0)
-			error("Unable to send launch request: %s",
-					slurm_strerror(errno));
+		if (slurm_send_only_node_msg(&req) < 0) {
+			error("%s: %m", job->host[i]);
+			job->host_state[i] = SRUN_HOST_UNREACHABLE;
+		}
 
 		xfree(msg.global_task_ids);
 	}

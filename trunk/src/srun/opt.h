@@ -18,11 +18,7 @@
 #include <getopt.h>
 */
 
-#ifndef HAVE_POPT_H
-#  include <src/popt/popt.h>
-#else 
-#  include <popt.h>
-#endif
+#include <popt.h>
 
 #include <src/common/macros.h> /* true and false */
 
