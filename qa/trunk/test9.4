@@ -88,12 +88,12 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 		set file_out_glob "test$test_id.$tsk.output"
 		wait_for_file $file_out_glob
 		set stdout_lines [get_line_cnt $file_out_glob]
-		if {$stdout_lines == 0} {
+		if {$stdout_lines != $stdin_lines} {
 			exec $bin_sleep 1
 			set stdout_lines [get_line_cnt $file_out_glob]
 		}
 		if {$stdout_lines != $stdin_lines} {
-			send_user "\nFAILURE:stdout is missing output\n"
+			send_user "\nFAILURE:stdout is incomplete\n"
 			set exit_code 1
 		} else {
 			incr success_cnt

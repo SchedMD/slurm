@@ -78,6 +78,10 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 	}
 	set stdout_lines [get_line_cnt $file_out]
 	if {$stdout_lines != $stdout_target} {
+		exec $bin_sleep 1
+		set stdout_lines [get_line_cnt $file_out]
+	}
+	if {$stdout_lines != $stdout_target} {
 		send_user "\nFAILURE:stdout is missing output\n"
 		set exit_code 1
 	} else {
