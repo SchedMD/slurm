@@ -1895,6 +1895,7 @@ _pack_reattach_tasks_response_msg(reattach_tasks_response_msg_t * msg,
 				  Buf buffer)
 {
 	packstr(msg->node_name,   buffer);
+	packstr(msg->executable_name, buffer);
 	pack32(msg->return_code,  buffer);
 	pack32(msg->srun_node_id, buffer);
 	pack32(msg->ntasks,       buffer);
@@ -1912,6 +1913,7 @@ _unpack_reattach_tasks_response_msg(reattach_tasks_response_msg_t ** msg_ptr,
 	*msg_ptr = msg;
 
 	safe_unpackstr_xmalloc(&msg->node_name, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&msg->executable_name, &uint16_tmp, buffer);
 	safe_unpack32(&msg->return_code,  buffer);
 	safe_unpack32(&msg->srun_node_id, buffer);
 	safe_unpack32(&msg->ntasks,       buffer);
