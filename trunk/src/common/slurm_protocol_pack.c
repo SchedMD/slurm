@@ -814,6 +814,7 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 	for (i = 0; i < msg->job_count; i++) {
 		pack16(msg->step_id[i], buffer);
 	}
+	switch_g_pack_node_info(msg->switch_nodeinfo, buffer);
 }
 
 static int
@@ -848,12 +849,18 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 	for (i = 0; i < node_reg_ptr->job_count; i++) {
 		safe_unpack16(&node_reg_ptr->step_id[i], buffer);
 	}
+
+	if (switch_g_alloc_node_info(&node_reg_ptr->switch_nodeinfo)
+	||  switch_g_pack_node_info(node_reg_ptr->switch_nodeinfo, buffer))
+		goto unpack_error;
+
 	return SLURM_SUCCESS;
 
       unpack_error:
 	xfree(node_reg_ptr->node_name);
 	xfree(node_reg_ptr->job_id);
 	xfree(node_reg_ptr->step_id);
+	switch_g_free_node_info(&node_reg_ptr->switch_nodeinfo);
 	xfree(node_reg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;

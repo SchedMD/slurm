@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette@llnl.gov>.
+ *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -57,6 +57,8 @@ typedef struct slurm_switch_ops {
 						Buf buffer );
 	int          (*unpack_jobinfo)    ( switch_jobinfo_t jobinfo, 
 						Buf buffer );
+	int          (*get_jobinfo)       ( switch_jobinfo_t switch_job,
+						int key, void *data);
 	void         (*print_jobinfo)     ( FILE *fp, 
 						switch_jobinfo_t jobinfo );
 	char *       (*string_jobinfo)    ( switch_jobinfo_t jobinfo, 
@@ -77,6 +79,17 @@ typedef struct slurm_switch_ops {
 						uint32_t nprocs, uint32_t rank);
 	char *	     (*switch_strerror)   ( int errnum );
 	int          (*switch_errno)      ( void );
+	int          (*alloc_nodeinfo)    ( switch_node_info_t *nodeinfo );
+	int          (*build_nodeinfo)    ( switch_node_info_t nodeinfo );
+	int          (*pack_nodeinfo)     ( switch_node_info_t nodeinfo,
+						Buf buffer );
+	int          (*unpack_nodeinfo)   ( switch_node_info_t nodeinfo,
+						Buf buffer );
+	int          (*free_nodeinfo)     ( switch_node_info_t *nodeinfo );
+	char *       (*sprintf_nodeinfo)  ( switch_node_info_t nodeinfo,
+						char *buf, size_t size );
+	int          (*job_complete)      ( switch_jobinfo_t jobinfo,
+						char *nodelist );
 } slurm_switch_ops_t;
 
 struct slurm_switch_context {
@@ -158,6 +171,7 @@ _slurm_switch_get_ops( slurm_switch_context_t c )
 		"switch_p_free_jobinfo",
 		"switch_p_pack_jobinfo",
 		"switch_p_unpack_jobinfo",
+		"switch_p_get_jobinfo",
 		"switch_p_print_jobinfo",
 		"switch_p_sprint_jobinfo",
 		"switch_p_node_init",
@@ -168,7 +182,14 @@ _slurm_switch_get_ops( slurm_switch_context_t c )
 		"switch_p_job_postfini",
 		"switch_p_job_attach",
 		"switch_p_strerror",
-		"switch_p_get_errno"
+		"switch_p_get_errno",
+		"switch_p_alloc_node_info",
+		"switch_p_build_node_info",
+		"switch_p_pack_node_info",
+		"switch_p_unpack_node_info",
+		"switch_p_free_node_info",
+		"switch_p_sprintf_node_info",
+		"switch_p_job_complete"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -315,6 +336,15 @@ extern int switch_unpack_jobinfo(switch_jobinfo_t jobinfo, Buf buffer)
 	return (*(g_context->ops.unpack_jobinfo))( jobinfo, buffer );
 }
 
+extern int  switch_g_get_jobinfo(switch_jobinfo_t jobinfo, 
+	int data_type, void *data)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_context->ops.get_jobinfo))( jobinfo, data_type, data);
+}
+
 extern void switch_print_jobinfo(FILE *fp, switch_jobinfo_t jobinfo)
 {
 	if ( switch_init() < 0 )
@@ -407,4 +437,69 @@ extern char *switch_strerror(int errnum)
 		return NULL;
 
 	return (*(g_context->ops.switch_strerror))( errnum );
+}
+
+
+/*
+ * node switch state monitoring functions
+ * required for IBM Federation switch 
+ */
+extern int switch_g_alloc_node_info(switch_node_info_t *switch_node)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_context->ops.alloc_nodeinfo))( switch_node );
+}
+
+extern int switch_g_build_node_info(switch_node_info_t switch_node)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_context->ops.build_nodeinfo))( switch_node );
+}
+
+extern int switch_g_pack_node_info(switch_node_info_t switch_node, 
+	Buf buffer)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_context->ops.pack_nodeinfo))( switch_node, buffer );
+}
+
+extern int switch_g_unpack_node_info(switch_node_info_t switch_node,
+	Buf buffer)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_context->ops.unpack_nodeinfo))( switch_node, buffer );
+}
+
+extern int switch_g_free_node_info(switch_node_info_t *switch_node)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_context->ops.free_nodeinfo))( switch_node );
+}
+
+extern char*switch_g_sprintf_node_info(switch_node_info_t switch_node,
+	char *buf, size_t size)
+{
+	if ( switch_init() < 0 )
+		return NULL;
+
+	return (*(g_context->ops.sprintf_nodeinfo))( switch_node, buf, size );
+}
+
+extern int switch_g_job_complete(switch_jobinfo_t jobinfo,
+	char *nodelist)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_context->ops.job_complete))( jobinfo, nodelist );
 }

@@ -46,6 +46,7 @@
 #include "src/common/log.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
+#include "src/common/switch.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/xsignal.h"
@@ -392,6 +393,11 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	get_tmp_disk(&msg->temporary_disk_space, conf->cf.tmp_fs);
 	debug3("Procs=%u RealMemory=%u, TmpDisk=%u", msg->cpus, 
 	       msg->real_memory_size, msg->temporary_disk_space);
+
+	if (switch_g_alloc_node_info(&msg->switch_nodeinfo))
+		error("switch_g_alloc_node_info: %m");
+	if (switch_g_build_node_info(msg->switch_nodeinfo))
+		error("switch_g_build_node_info: %m");
 
 	steps          = shm_get_steps();
 	msg->job_count = list_count(steps);
