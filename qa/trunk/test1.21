@@ -40,6 +40,10 @@ expect {
 		send "exit\n"
 		exp_continue
 	}
+	-re "error: First task exited" {
+		send_user "This error is expected, no worries\n"
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		kill_srun
@@ -47,6 +51,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 

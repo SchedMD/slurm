@@ -22,6 +22,7 @@ set timeout $max_job_delay
 spawn $srun -N1 /bin/false
 expect {
 	-re "exit code 1" {
+		send_user "This error is expected, no worries\n"
 		incr matches
 		exp_continue
 	}

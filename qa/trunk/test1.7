@@ -32,6 +32,7 @@ set timeout [expr $max_job_delay + $sleep_time]
 spawn $srun -t1 $bin_sleep $sleep_time
 expect {
 	-re "job exceeded timelimit" {
+		send_user "This error is expected, no worries\n"
 		incr timed_out
 		exp_continue
 	}
@@ -42,6 +43,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 
@@ -59,6 +61,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 		incr completions
 	}
 }

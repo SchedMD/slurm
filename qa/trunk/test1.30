@@ -21,10 +21,12 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 	spawn $srun --immediate -N$node_cnt -c1 -t2 $bin_hostname
 	expect {
 		-re "Immediate execution impossible" {
+			send_user "This error is expected, no worries\n"
 			set node_cnt 0
 			exp_continue
 		}
 		-re "Unable to allocate resources" {
+			send_user "This error is expected, no worries\n"
 			set node_cnt 0
 			exp_continue
 		}
@@ -35,6 +37,7 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 			exp_continue
 		}
 		eof {
+			wait
 		}
 	}
 }

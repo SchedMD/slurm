@@ -24,6 +24,7 @@ set timeout $max_job_delay
 spawn $srun -N1 -l --constraint=invalid,constraint -t1 $bin_hostname  
 expect {
 	-re "configuration is not available" {
+		send_user "This error is expected, no worries\n"
 		set err_msg 1
 		exp_continue
 	}
@@ -38,6 +39,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 

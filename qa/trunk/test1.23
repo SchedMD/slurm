@@ -25,6 +25,7 @@ set timeout $max_job_delay
 spawn $srun -N1 -l --mincpus=999999 -t1 $bin_hostname  
 expect {
 	-re "configuration is not available" {
+		send_user "This error is expected, no worries\n"
 		set err_msg 1
 		exp_continue
 	}
@@ -39,6 +40,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 
@@ -69,6 +71,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 
@@ -86,6 +89,7 @@ set timeout $max_job_delay
 spawn $srun -N1 -l --mem=999999 -t1 $bin_hostname  
 expect {
 	-re "configuration is not available" {
+		send_user "This error is expected, no worries\n"
 		set err_msg 1
 		exp_continue
 	}
@@ -100,6 +104,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 
@@ -130,6 +135,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 
@@ -147,6 +153,7 @@ set timeout $max_job_delay
 spawn $srun -N1 -l --tmp=999999999 -t1 $bin_hostname  
 expect {
 	-re "configuration is not available" {
+		send_user "This error is expected, no worries\n"
 		set err_msg 1
 		exp_continue
 	}
@@ -161,6 +168,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 
@@ -191,6 +199,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 
