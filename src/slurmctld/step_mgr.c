@@ -88,26 +88,25 @@ create_step_record (struct job_record *job_ptr)
 void 
 delete_all_step_records (struct job_record *job_ptr) 
 {
-	ListIterator step_record_iterator;
-	struct step_record *step_record_point;
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
 
 	xassert(job_ptr);
-	step_record_iterator = list_iterator_create (job_ptr->step_list);
+	step_iterator = list_iterator_create (job_ptr->step_list);
 
 	last_job_update = time(NULL);
-	while ((step_record_point = 
-		(struct step_record *) list_next (step_record_iterator))) {
-		list_remove (step_record_iterator);
+	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		list_remove (step_iterator);
 #ifdef HAVE_ELAN
-		qsw_free_jobinfo (step_record_point->qsw_job);
+		qsw_free_jobinfo (step_ptr->qsw_job);
 #endif
-		xfree(step_record_point->host);
-		xfree(step_record_point->step_node_list);
-		FREE_NULL_BITMAP(step_record_point->step_node_bitmap);
-		xfree(step_record_point);
+		xfree(step_ptr->host);
+		xfree(step_ptr->step_node_list);
+		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
+		xfree(step_ptr);
 	}		
 
-	list_iterator_destroy (step_record_iterator);
+	list_iterator_destroy (step_iterator);
 }
 
 
@@ -121,32 +120,31 @@ delete_all_step_records (struct job_record *job_ptr)
 int 
 delete_step_record (struct job_record *job_ptr, uint32_t step_id) 
 {
-	ListIterator step_record_iterator;
-	struct step_record *step_record_point;
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
 	int error_code;
 
 	xassert(job_ptr);
 	error_code = ENOENT;
-	step_record_iterator = list_iterator_create (job_ptr->step_list);		
+	step_iterator = list_iterator_create (job_ptr->step_list);		
 
 	last_job_update = time(NULL);
-	while ((step_record_point = 
-		(struct step_record *) list_next (step_record_iterator))) {
-		if (step_record_point->step_id == step_id) {
-			list_remove (step_record_iterator);
+	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		if (step_ptr->step_id == step_id) {
+			list_remove (step_iterator);
 #ifdef HAVE_ELAN
-			qsw_free_jobinfo (step_record_point->qsw_job);
+			qsw_free_jobinfo (step_ptr->qsw_job);
 #endif
-			xfree(step_record_point->host);
-			xfree(step_record_point->step_node_list);
-			FREE_NULL_BITMAP(step_record_point->step_node_bitmap);
-			xfree(step_record_point);
+			xfree(step_ptr->host);
+			xfree(step_ptr->step_node_list);
+			FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
+			xfree(step_ptr);
 			error_code = 0;
 			break;
 		}
 	}		
 
-	list_iterator_destroy (step_record_iterator);
+	list_iterator_destroy (step_iterator);
 	return error_code;
 }
 
@@ -383,7 +381,7 @@ _pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 		return nodes_avail;
 
 	if (step_spec->node_list) {
-		error_code = node_name2bitmap (step_spec->node_list, 
+		error_code = node_name2bitmap (step_spec->node_list, false, 
 						&nodes_picked);
 		if (error_code) {
 			info ("_pick_step_nodes: invalid node list %s", 
@@ -391,12 +389,13 @@ _pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 			goto cleanup;
 		}
 		if (bit_super_set (nodes_picked, job_ptr->node_bitmap) == 0) {
-			info ("_pick_step_nodes: requested nodes %s not part of job %u",
+			info ("_pick_step_nodes: requested nodes %s not part "
+				"of job %u", 
 				step_spec->node_list, job_ptr->job_id);
 			goto cleanup;
 		}
 		if (bit_super_set (nodes_picked, avail_node_bitmap) == 0) {
-			info ("_pick_step_nodes: some requested node %s are down",
+			info ("_pick_step_nodes: some requested node %s down",
 				step_spec->node_list);
 			goto cleanup;
 		}

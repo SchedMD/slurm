@@ -439,7 +439,6 @@ static int _load_job_state(Buf buffer)
 	uint16_t kill_on_node_fail, kill_on_step_done, name_len, port;
 	char *nodes = NULL, *partition = NULL, *name = NULL;
 	char *alloc_node = NULL, *host = NULL;
-	bitstr_t *node_bitmap = NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	int error_code;
@@ -483,16 +482,12 @@ static int _load_job_state(Buf buffer)
 		      job_id, kill_on_node_fail);
 		goto unpack_error;
 	}
-	if ((nodes) && (node_name2bitmap(nodes, &node_bitmap))) {
-		error("_load_job_state: invalid nodes (%s) for job_id %u",
-		      nodes, job_id);
-		goto unpack_error;
-	}
 	part_ptr = find_part_record (partition);
 	if (part_ptr == NULL) {
-		error("Invalid partition (%s) for job_id %u", 
-		     partition, job_id);
-		goto unpack_error;
+		verbose("Invalid partition (%s) for job_id %u", 
+			partition, job_id);
+		/* not a fatal error, partition could have been removed, 
+		 * reset_job_bitmaps() will clean-up this job */
 	}
 
 	job_ptr = find_job_record(job_id);
@@ -537,9 +532,6 @@ static int _load_job_state(Buf buffer)
 	xfree(job_ptr->alloc_node);
 	job_ptr->alloc_node = alloc_node;
 	alloc_node          = NULL;	/* reused, nothing left to free */
-	FREE_NULL_BITMAP(job_ptr->node_bitmap);
-	job_ptr->node_bitmap  = node_bitmap;
-	node_bitmap           = NULL;
 	strncpy(job_ptr->partition, partition, MAX_NAME_LEN);
 	xfree(partition);
 	job_ptr->part_ptr = part_ptr;
@@ -568,7 +560,6 @@ static int _load_job_state(Buf buffer)
 	xfree(partition);
 	xfree(name);
 	xfree(alloc_node);
-	FREE_NULL_BITMAP(node_bitmap);
 	return SLURM_FAILURE;
 }
 
@@ -611,7 +602,6 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	char *req_nodes = NULL, *exc_nodes = NULL, *features = NULL;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	char **argv = (char **) NULL;
-	bitstr_t *req_node_bitmap = NULL, *exc_node_bitmap = NULL;
 	uint32_t num_procs, min_nodes, max_nodes, min_procs;
 	uint16_t argc = 0, shared, contiguous, name_len;
 	uint32_t min_memory, min_tmp_disk, total_procs;
@@ -649,23 +639,11 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 		      job_ptr->job_id, shared, contiguous);
 		goto unpack_error;
 	}
-	if ((req_nodes) && (node_name2bitmap(req_nodes, &req_node_bitmap))) {
-		error("Invalid req_nodes (%s) for job_id %u",
-		      req_nodes, job_ptr->job_id);
-		goto unpack_error;
-	}
-	if ((exc_nodes) && (node_name2bitmap(exc_nodes, &exc_node_bitmap))) {
-		error("Invalid exc_nodes (%s) for job_id %u",
-		      exc_nodes, job_ptr->job_id);
-		goto unpack_error;
-	}
 
 
 	/* free any left-over detail data */
 	xfree(job_ptr->details->req_nodes);
-	FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
 	xfree(job_ptr->details->exc_nodes);
-	FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
 	xfree(job_ptr->details->features);
 	xfree(job_ptr->details->err);
 	xfree(job_ptr->details->in);
@@ -687,9 +665,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->min_tmp_disk = min_tmp_disk;
 	job_ptr->details->submit_time = submit_time;
 	job_ptr->details->req_nodes = req_nodes;
-	job_ptr->details->req_node_bitmap = req_node_bitmap;
 	job_ptr->details->exc_nodes = exc_nodes;
-	job_ptr->details->exc_node_bitmap = exc_node_bitmap;
 	job_ptr->details->features = features;
 	job_ptr->details->err = err;
 	job_ptr->details->in = in;
@@ -703,8 +679,6 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
       unpack_error:
 	xfree(req_nodes);
 	xfree(exc_nodes);
-	FREE_NULL_BITMAP(req_node_bitmap);
-	FREE_NULL_BITMAP(exc_node_bitmap);
 	xfree(features);
 	xfree(err);
 	xfree(in);
@@ -768,7 +742,6 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 
 	/* free any left-over values */
 	xfree(step_ptr->step_node_list);
-	FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
 
 	/* set new values */
 	step_ptr->step_id      = step_id;
@@ -779,9 +752,6 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	host = NULL;		/* re-used, nothing left to free */
 	step_ptr->start_time   = start_time;
 	step_ptr->step_node_list = step_node_list;
-	if (step_node_list)
-		(void) node_name2bitmap(step_node_list, 
-					&(step_ptr->step_node_bitmap));
 	step_node_list = NULL;	/* re-used, nothing left to free */
 	step_ptr->time_last_active = time(NULL);
 #ifdef HAVE_ELAN
@@ -1541,14 +1511,10 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 
 	/* insure that selected nodes are in this partition */
 	if (job_desc->req_nodes) {
-		error_code = node_name2bitmap(job_desc->req_nodes, 
+		error_code = node_name2bitmap(job_desc->req_nodes, false,  
 					      &req_bitmap);
-		if (error_code == EINVAL) {
+		if (error_code) {
 			error_code = ESLURM_INVALID_NODE_NAME;
-			goto cleanup;
-		}
-		if (error_code != 0) {
-			error_code = EAGAIN;	/* no memory */
 			goto cleanup;
 		}
 		if (job_desc->contiguous)
@@ -1568,14 +1534,14 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 			job_desc->min_nodes = i;
 	}
 	if (job_desc->exc_nodes) {
-		error_code = node_name2bitmap(job_desc->exc_nodes, 
+		error_code = node_name2bitmap(job_desc->exc_nodes, false,
 					      &exc_bitmap);
-		if (error_code == EINVAL) {
+		if (error_code) {
 			error_code = ESLURM_INVALID_NODE_NAME;
 			goto cleanup;
 		}
 	}
-	if ((exc_bitmap != NULL) && (req_bitmap != NULL)) {
+	if (exc_bitmap && req_bitmap) {
 		bitstr_t *tmp_bitmap = NULL;
 		bitoff_t first_set;
 		tmp_bitmap = bit_copy(exc_bitmap);
@@ -2538,7 +2504,8 @@ void reset_job_bitmaps(void)
 
 		FREE_NULL_BITMAP(job_ptr->node_bitmap);
 		if ((job_ptr->nodes) && 
-		    (node_name2bitmap(job_ptr->nodes, &job_ptr->node_bitmap))) {
+		    (node_name2bitmap(job_ptr->nodes, false, 
+				      &job_ptr->node_bitmap))) {
 			error("Invalid nodes (%s) for job_id %u", 
 		    	      job_ptr->nodes, job_ptr->job_id);
 			job_fail = true;
@@ -2581,7 +2548,7 @@ static int _reset_detail_bitmaps(struct job_record *job_ptr)
 
 	FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
 	if ((job_ptr->details->req_nodes) && 
-	    (node_name2bitmap(job_ptr->details->req_nodes, 
+	    (node_name2bitmap(job_ptr->details->req_nodes, false,  
 			      &job_ptr->details->req_node_bitmap))) {
 		error("Invalid req_nodes (%s) for job_id %u", 
 	    	      job_ptr->details->req_nodes, job_ptr->job_id);
@@ -2590,7 +2557,7 @@ static int _reset_detail_bitmaps(struct job_record *job_ptr)
 
 	FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
 	if ((job_ptr->details->exc_nodes) && 
-	    (node_name2bitmap(job_ptr->details->exc_nodes, 
+	    (node_name2bitmap(job_ptr->details->exc_nodes, true,
 			      &job_ptr->details->exc_node_bitmap))) {
 		error("Invalid exc_nodes (%s) for job_id %u", 
 	    	      job_ptr->details->exc_nodes, job_ptr->job_id);
@@ -2607,8 +2574,9 @@ static void _reset_step_bitmaps(struct job_record *job_ptr)
 
 	step_iterator = list_iterator_create (job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
 		if ((step_ptr->step_node_list) && 		
-		    (node_name2bitmap(step_ptr->step_node_list, 
+		    (node_name2bitmap(step_ptr->step_node_list, false, 
 			      &step_ptr->step_node_bitmap))) {
 			error("Invalid step_node_list (%s) for step_id %u.%u", 
 	   	 	      step_ptr->step_node_list, 
@@ -2947,8 +2915,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->req_nodes && detail_ptr) {
 		if (super_user) {
-			if (node_name2bitmap
-			    (job_specs->req_nodes, &req_bitmap)) {
+			if (node_name2bitmap(job_specs->req_nodes, false, 
+						&req_bitmap)) {
 				error("Invalid node list for job_update: %s",
 					job_specs->req_nodes);
 				FREE_NULL_BITMAP(req_bitmap);

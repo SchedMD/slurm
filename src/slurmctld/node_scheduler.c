@@ -1319,7 +1319,8 @@ extern void re_kill_job(struct job_record *job_ptr)
 
 	for (i = 0; i < node_record_count; i++) {
 		struct node_record *node_ptr = &node_record_table_ptr[i];
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
+		if ((job_ptr->node_bitmap == NULL) ||
+		    (bit_test(job_ptr->node_bitmap, i) == 0))
 			continue;
 		if ((node_ptr->node_state & (~NODE_STATE_NO_RESPOND))
 				== NODE_STATE_DOWN) {
@@ -1340,8 +1341,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 		if ((agent_args->node_count + 1) > buf_rec_size) {
 			buf_rec_size += 32;
 			xrealloc((agent_args->slurm_addr),
-				 (sizeof(struct sockaddr_in) *
-				  buf_rec_size));
+				 (sizeof(struct sockaddr_in) * buf_rec_size));
 			xrealloc((agent_args->node_names),
 				 (MAX_NAME_LEN * buf_rec_size));
 		}
