@@ -17,6 +17,7 @@
 
 #include <src/common/bitstring.h>
 #include <src/common/qsw.h>
+#include <src/common/xerrno.h>
 
 /*
  * Set a variable in the callers environment.  Args are printf style.
@@ -72,17 +73,17 @@ slurmd(qsw_jobinfo_t job, uid_t uid, int nodeid, int nprocs, char *cmdbuf)
 	/* Process 1: */
 	switch ((pid = fork())) {
 		case -1:
-			perror("fork");
+			xperror("fork");
 			exit(1);
 		case 0: /* child falls thru */
 			break;
 		default: /* parent */
 			if (waitpid(pid, NULL, 0) < 0) {
-				perror("wait");
+				xperror("wait");
 				exit(1);
 			}
-			if (qsw_prog_reap(job) < 0) {
-				perror("qsw_prog_reap");
+			if (qsw_prgdestroy(job) < 0) {
+				xperror("qsw_prgdestroy");
 				exit(1);
 			}
 			exit(0);
@@ -90,13 +91,13 @@ slurmd(qsw_jobinfo_t job, uid_t uid, int nodeid, int nprocs, char *cmdbuf)
 
 	/* Process 2: */
 	if (qsw_prog_init(job, uid) < 0) {
-		perror("qsw_prog_init");
+		xperror("qsw_prog_init");
 		exit(1);
 	}
 	for (i = 0; i < nprocs; i++) {
 		cpid[i] = fork();
 		if (cpid[i] < 0) {
-			perror("fork");
+			xperror("fork");
 			exit(1);
 		} else if (cpid[i] == 0)
 			break;
@@ -109,7 +110,7 @@ slurmd(qsw_jobinfo_t job, uid_t uid, int nodeid, int nprocs, char *cmdbuf)
 		while (waiting > 0) {
 			pid = waitpid(0, NULL, 0);
 			if (pid < 0) {
-				perror("waitpid");
+				xperror("waitpid");
 				exit(1);
 			}
 			for (j = 0; j < nprocs; j++) {
@@ -121,25 +122,25 @@ slurmd(qsw_jobinfo_t job, uid_t uid, int nodeid, int nprocs, char *cmdbuf)
 	}
 
 	/* Process 3: (there are nprocs instances of us) */
-	if (qsw_attach(job, i) < 0) {
-		perror("qsw_attach");
+	if (qsw_setcap(job, i) < 0) {
+		xperror("qsw_setcap");
 		exit(1);
 	}
 	if (do_env(i, nodeid, nprocs) < 0) {
-		perror("do_env");
+		xperror("do_env");
 		exit(1);
 	}
 
 	pid = fork();
 	switch (pid) {
 		case -1:        /* error */
-			perror("fork");
+			xperror("fork");
 			exit(1);
 		case 0:         /* child falls thru */
 			break;
 		default:        /* parent */
 			if (waitpid(pid, NULL, 0) < 0) {
-				perror("waitpid");
+				xperror("waitpid");
 				exit(1);
 			}
 			exit(0);
@@ -148,11 +149,11 @@ slurmd(qsw_jobinfo_t job, uid_t uid, int nodeid, int nprocs, char *cmdbuf)
 
 	/* Process 4: execs the job */
 	if (setuid(uid) < 0) {
-		perror("setuid");
+		xperror("setuid");
 		exit(1);
 	}
 	execl("/bin/bash", "bash", "-c", cmdbuf, 0);
-	perror("execl");
+	xperror("execl");
 	exit(1);
 }
 
@@ -173,7 +174,7 @@ main(int argc, char *argv[])
 	qsw_jobinfo_t job;
 	int c;
 	int nprocs = 0;
-	int nodeid = qsw_getnodeid();
+	int nodeid = -1;
 	uid_t uid = getuid();
 	bitstr_t bit_decl(nodeset, 128);
 	char cmdbuf[1024] = { 0 }; 
@@ -201,8 +202,10 @@ main(int argc, char *argv[])
 	if (nprocs == 0)
 		nprocs = 2;
 	if (nodeid < 0) {
-		fprintf(stderr, "runqsw: could not determine elan address\n");
-		exit(1);
+		if ((nodeid = qsw_getnodeid()) < 0) {
+			xperror("qsw_getnodeid");
+			exit(1);
+		}
 	}
 	while (optind < argc)
 		sprintf(cmdbuf + strlen(cmdbuf), "%s ", argv[optind++]);
@@ -216,11 +219,11 @@ main(int argc, char *argv[])
 	 * qsw_init to establish a persistant state in the library.
 	 */
 	if (qsw_alloc_jobinfo(&job) < 0) {
-		perror("qsw_alloc_jobinfo");
+		xperror("qsw_alloc_jobinfo");
 		exit(1);
 	}
 	if (qsw_setup_jobinfo(job, nprocs, nodeset, 0) < 0) {
-		perror("qsw_setup_jobinfo");
+		xperror("qsw_setup_jobinfo");
 		exit(1);
 	}
 

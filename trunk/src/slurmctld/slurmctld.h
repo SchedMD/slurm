@@ -26,6 +26,9 @@
 #include "bitstring.h"
 #include "xmalloc.h"
 #include "pack.h"
+#ifdef HAVE_LIBELAN3
+#include "qsw.h"
+#endif
 #include <src/api/slurm.h>
 
 #define DEBUG_SYSTEM 1
