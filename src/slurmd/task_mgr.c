@@ -194,11 +194,16 @@ void * task_exec_thread ( void * arg )
 			/* ask me how I know :) */
 			/* think once, twice, 10^100000000 times before changeing the below */
 			/*1*/setup_parent_pipes ( task_start->pipes ) ;
+			info ( "before waitpid ") ;
 			/*2*/waitpid ( cpid , & task_return_code , 0 ) ;
+			info ( "before wait_on_io_threads " ) ;
 			/*3*/wait_on_io_threads ( task_start ) ;
+			info ( "before cleanup_parent_pipes " ) ;
 			/*4*/cleanup_parent_pipes (  task_start->pipes ) ;
+			info ( "before end_task_exit_msg" ) ;
 			
 			send_task_exit_msg ( task_return_code , task_start ) ;
+			info ( "task_exec_thread done" ) ;
 			break;
 	}
 	return ( void * ) SLURM_SUCCESS ;
