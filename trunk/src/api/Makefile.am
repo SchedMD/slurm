@@ -4,7 +4,6 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-EXTRA_DIST = libslurm.sym
 
 INCLUDES = -I$(top_srcdir)
 
@@ -22,7 +21,7 @@ INCLUDES = -I$(top_srcdir)
 #
 # If any interfaces have been removed, set age = 0
 #
-current = 0
+current = 1
 rev     = 0
 age     = 0
 
@@ -41,16 +40,20 @@ libslurm_la_SOURCES =    \
 	partition_info.c \
 	submit.c         \
 	reconfigure.c    \
-	update_config.c   
+	update_config.c  
 
 common_dir = $(top_builddir)/src/common
 
 libslurm_la_LIBADD         = $(common_dir)/libcommon.la -lpthread
 
-libslurm_la_LDFLAGS        = -export-symbols $(srcdir)/libslurm.sym \
+libslurm_la_LDFLAGS        = -export-symbols libslurm.sym \
 		             -version-info $(current):$(rev):$(age)
 
-libslurm_la_DEPENDENCIES  = $(srcdir)/libslurm.sym $(common_dir)/libcommon.la
+libslurm_la_DEPENDENCIES   = libslurm.sym $(common_dir)/libcommon.la
+
+
+libslurm.sym : $(top_builddir)/slurm/slurm.h 
+	sed -n 's/^extern.* \(slurm[^ ]*\).*$$/\1/p' $< >libslurm.sym
 
 force:
 $(libslurm_la_LIBADD) : force
