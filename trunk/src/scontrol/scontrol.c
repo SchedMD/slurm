@@ -735,12 +735,13 @@ static void _parse_conf_line (char *in_line, bool *any_slurmctld,
 {
 	int error_code;
 	char *backup_controller = NULL, *control_machine = NULL;
-	char *node_name = NULL;
+	char *node_name = NULL, *node_addr = NULL;
 	static char *this_host = NULL;
 
 	error_code = slurm_parser (in_line,
 		"BackupController=", 's', &backup_controller,
 		"ControlMachine=", 's', &control_machine,
+		"NodeAddr=", 's', &node_addr,
 		"NodeName=", 's', &node_name,
 		"END");
 	if (error_code) {
@@ -782,6 +783,14 @@ static void _parse_conf_line (char *in_line, bool *any_slurmctld,
 		hostlist_destroy(node_list);
 		xfree(node_name);
 	}
+#if HAVE_FRONT_END
+	if (node_addr) {
+		if ((strcmp(node_addr, this_host) == 0)
+		||  (strcasecmp(node_addr, "localhost") == 0))
+			*have_slurmd = true;
+	}
+#endif
+	xfree(node_addr);
 }
 
 /*
