@@ -10,7 +10,7 @@ interconnect_lib = libno_interconnect.a
 endif
 
 sbin_PROGRAMS = slurmd
-noinst_LIBRARIES = libelan_interconnect.a libno_interconnect.a
+noinst_LIBRARIES = libelan_interconnect.a libno_interconnect.a libforked_io.a  libthreaded_io.a
 
 LDADD = $(top_srcdir)/src/common/libcommon.la \
 	$(SSL_LIBS) libno_interconnect.a
@@ -24,11 +24,16 @@ slurmd_SOURCES = slurmd.c \
 		circular_buffer.c \
 		credential_utils.c \
 		signature_utils.c \
-		io.c \
+		threaded_io.c \
 		pipes.c \
 		locks.c \
+		reconnect_utils.c \
+		io_threads.c \
 		$(interconnect_lib)
 
+libforked_io_a_SOURCES =  forked_io.c reconnect_utils.c io_threads.c 
+libthreaded_io_a_SOURCES =  threaded_io.c reconnect_utils.c io_threads.c 
+
 libelan_interconnect_a_SOURCES =  elan_interconnect.c
-libno_interconnect_a_SOURCES =  no_interconnect.c
+libno_interconnect_a_SOURCES =  no_interconnect.c 
 

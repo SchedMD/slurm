@@ -7,39 +7,31 @@
 #include <src/slurmd/io.h>
 void setup_parent_pipes ( int * pipes )
 {
-	close ( pipes[CHILD_IN_RD] ) ;
-	close ( pipes[CHILD_OUT_WR] ) ;
-	close ( pipes[CHILD_ERR_WR] ) ;
+	close ( pipes[CHILD_IN_RD_PIPE] ) ;
+	close ( pipes[CHILD_OUT_WR_PIPE] ) ;
+	close ( pipes[CHILD_ERR_WR_PIPE] ) ;
 }
 
 void cleanup_parent_pipes ( int * pipes )
 {
-	
-/*
-	close ( pipes[CHILD_IN_RD] ) ;
-	close ( pipes[CHILD_OUT_WR] ) ;
-	close ( pipes[CHILD_ERR_WR] ) ;
-*/
-//	info ( " %i , %i , %i ", pipes[CHILD_IN_RD] , pipes[CHILD_OUT_WR] , pipes[CHILD_ERR_WR] ) ;	
-	close ( pipes[CHILD_IN_WR] ) ;
-	close ( pipes[CHILD_OUT_RD] ) ;
-	close ( pipes[CHILD_ERR_RD] ) ;
-//	info ( " %i , %i , %i ", pipes[CHILD_IN_WR] , pipes[CHILD_OUT_RD] , pipes[CHILD_ERR_RD] ) ;	
+	close ( pipes[CHILD_IN_WR_PIPE] ) ;
+	close ( pipes[CHILD_OUT_RD_PIPE] ) ;
+	close ( pipes[CHILD_ERR_RD_PIPE] ) ;
 }
 
 int init_parent_pipes ( int * pipes )
 {
 	int rc ;
 	/* open pipes to be used in dup after fork */
-	if( ( rc = pipe ( & pipes[CHILD_IN] ) ) ) 
+	if( ( rc = pipe ( & pipes[CHILD_IN_PIPE] ) ) ) 
 	{
 		return ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN ;
 	}
-	if( ( rc = pipe ( & pipes[CHILD_OUT] ) ) ) 
+	if( ( rc = pipe ( & pipes[CHILD_OUT_PIPE] ) ) ) 
 	{
 		return ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN ;
 	}
-	if( ( rc = pipe ( & pipes[CHILD_ERR] ) ) ) 
+	if( ( rc = pipe ( & pipes[CHILD_ERR_PIPE] ) ) ) 
 	{
 		return ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN ;
 	}
@@ -53,35 +45,35 @@ int setup_child_pipes ( int * pipes )
 
 	/*dup stdin*/
 	//close ( STDIN_FILENO );
-	if ( SLURM_ERROR == ( error_code |= dup2 ( pipes[CHILD_IN_RD] , STDIN_FILENO ) ) ) 
+	if ( SLURM_ERROR == ( error_code |= dup2 ( pipes[CHILD_IN_RD_PIPE] , STDIN_FILENO ) ) ) 
 	{
 		local_errno = errno ;
 		error ("dup failed on child standard in pipe, %m errno %i" , local_errno );
 		//return error_code ;
 	}
-	close ( pipes[CHILD_IN_RD] );
-	close ( pipes[CHILD_IN_WR] );
+	close ( pipes[CHILD_IN_RD_PIPE] );
+	close ( pipes[CHILD_IN_WR_PIPE] );
 
 	/*dup stdout*/
 	//close ( STDOUT_FILENO );
-	if ( SLURM_ERROR == ( error_code |= dup2 ( pipes[CHILD_OUT_WR] , STDOUT_FILENO ) ) ) 
+	if ( SLURM_ERROR == ( error_code |= dup2 ( pipes[CHILD_OUT_WR_PIPE] , STDOUT_FILENO ) ) ) 
 	{
 		local_errno = errno ;
 		error ("dup failed on child standard out pipe, %m errno %i" , local_errno );
 		//return error_code ;
 	}
-	close ( pipes[CHILD_OUT_RD] );
-	close ( pipes[CHILD_OUT_WR] );
+	close ( pipes[CHILD_OUT_RD_PIPE] );
+	close ( pipes[CHILD_OUT_WR_PIPE] );
 
 	/*dup stderr*/
 	//close ( STDERR_FILENO );
-	if ( SLURM_ERROR == ( error_code |= dup2 ( pipes[CHILD_ERR_WR] , STDERR_FILENO ) ) ) 
+	if ( SLURM_ERROR == ( error_code |= dup2 ( pipes[CHILD_ERR_WR_PIPE] , STDERR_FILENO ) ) ) 
 	{
 		local_errno = errno ;
 		error ("dup failed on child standard err pipe, %m errno %i" , local_errno );
 		//return error_code ;
 	}
-	close ( pipes[CHILD_ERR_RD] );
-	close ( pipes[CHILD_ERR_WR] );
+	close ( pipes[CHILD_ERR_RD_PIPE] );
+	close ( pipes[CHILD_ERR_WR_PIPE] );
 	return error_code ;
 }
