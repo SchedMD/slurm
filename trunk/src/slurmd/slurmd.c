@@ -52,7 +52,6 @@
 
 time_t init_time;
 slurmd_shmem_t * shmem_seg ;
-static slurm_ctl_conf_t slurmctld_conf;
 
 /* function prototypes */
 void * request_thread ( void * arg ) ;
@@ -150,7 +149,7 @@ int slurmd_msg_engine ( void * args )
 	if ( ( error_code = read_slurm_port_config ( ) ) )
 		fatal ("slurmd: error reading configuration file \n", error_code);
 
-	if ( ( sockfd = slurm_init_msg_engine_port ( slurmctld_conf.slurmd_port ) )
+	if ( ( sockfd = slurm_init_msg_engine_port ( slurm_get_slurmd_port ( ) ) )
 			 == SLURM_SOCKET_ERROR )
 		fatal ("slurmd: error starting message engine \n", errno);
 #ifdef PTHREAD_IMPL

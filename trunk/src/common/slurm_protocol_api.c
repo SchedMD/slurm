@@ -35,7 +35,7 @@ int slurm_set_api_config ( slurm_protocol_config_t * protocol_conf )
 
 slurm_protocol_config_t * slurm_get_api_config ( )
 {
-	return NULL ;
+	return proto_conf ;
 }
 
 int slurm_api_set_default_config ( )
@@ -652,4 +652,9 @@ int slurm_send_only_node_msg ( slurm_msg_t * request_msg )
                 return SLURM_SOCKET_ERROR ;
 
         return SLURM_SUCCESS ;
+}
+
+short int slurm_get_slurmd_port ( )
+{
+	return slurmctld_conf . slurmctld_port ;
 }

@@ -5,7 +5,8 @@ AUTOMAKE_OPTIONS = foreign
 
 sbin_PROGRAMS = slurmd
 
-LDADD = $(top_srcdir)/src/common/libcommon.la 
+LDADD = $(top_srcdir)/src/common/libcommon.la \
+	$(SSL_LIBS)
 
 
 slurmd_SOURCES = slurmd.c \

@@ -160,4 +160,5 @@ int slurm_send_recv_controller_msg ( slurm_msg_t * request_msg , slurm_msg_t * r
 int slurm_send_only_controller_msg ( slurm_msg_t * request_msg ) ;
 int slurm_send_only_node_msg ( slurm_msg_t * request_msg ) ;
 
+short int inline slurm_get_slurmd_port ( ) ;
 #endif
