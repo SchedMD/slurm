@@ -175,18 +175,17 @@ main(int ac, char **av)
 		if ( !(resp = _allocate_nodes()) ) 
 			exit(1);
 		job = job_create(resp); 
-		if (_verbose || _debug)
+		if (_debug)
 			_print_job_information(resp);
 		_run_job_script(resp->job_id);
 		slurm_complete_job(resp->job_id, 0, 0);
 
-		if (_verbose || _debug)
-			info ("Spawned srun shell terminated");
+		debug ("Spawned srun shell terminated");
 		exit (0);
 	} else {
 		if ( !(resp = _allocate_nodes()) ) 
 			exit(1);
-		if (_verbose || _debug)
+		if (_debug)
 			_print_job_information(resp);
 
 		job = job_create(resp); 

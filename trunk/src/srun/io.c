@@ -404,7 +404,7 @@ _accept_io_stream(job_t *job, int i)
 	int len = size_io_stream_header();
 	int j;
 	int fd = job->iofd[i];
-	verbose("Activity on IO server port %d fd %d", i, fd);
+	debug("Activity on IO server port %d fd %d", i, fd);
 
 	for (j = 0; j < 15; i++) {
 		int sd, size_read;
@@ -470,7 +470,7 @@ _accept_io_stream(job_t *job, int i)
 		else
 			job->err[hdr.task_id] = sd;
 
-		verbose("accepted %s connection from %s task %ld, sd=%d", 
+		debug("accepted %s connection from %s task %ld, sd=%d", 
 				(hdr.type ? "stderr" : "stdout"), 
 				buf, hdr.task_id, sd                   );
 	}
