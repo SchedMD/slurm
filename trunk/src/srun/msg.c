@@ -46,6 +46,7 @@
 #include "src/common/fd.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
@@ -763,7 +764,7 @@ msg_thr_create(job_t *job)
 		      ntohs(((struct sockaddr_in)job->jaddr[i]).sin_port));
 	}
 
-	pthread_attr_init(&attr);
+	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	if ((errno = pthread_create(&job->jtid, &attr, &msg_thr, 
 			            (void *)job)))

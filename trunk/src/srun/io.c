@@ -538,7 +538,7 @@ io_thr_create(job_t *job)
 
 	xsignal(SIGTTIN, SIG_IGN);
 
-	pthread_attr_init(&attr);
+	slurm_attr_init(&attr);
 	if ((errno = pthread_create(&job->ioid, &attr, &io_thr, (void *) job)))
 		return SLURM_ERROR;
 

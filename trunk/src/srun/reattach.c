@@ -41,6 +41,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/log.h"
 #include "src/common/list.h"
+#include "src/common/macros.h"
 #include "src/common/hostlist.h"
 #include "src/common/slurm_protocol_api.h"
 
@@ -328,30 +329,6 @@ _attach_to_job(job_t *job)
 	return SLURM_SUCCESS;
 }
 
-static int
-_attr_init(pthread_attr_t *attr)
-{
-	int detached = PTHREAD_CREATE_DETACHED;
-	if ((errno = pthread_attr_init(attr)) < 0) {
-		error("pthread_attr_init: %m");
-		return SLURM_ERROR;
-	}
-
-	if ((errno = pthread_attr_setdetachstate(attr, detached)) < 0) {
-		error("pthread_attr_setdetachstate: %m");
-		return SLURM_ERROR;
-	}
-
-#ifdef PTHREAD_SCOPE_SYSTEM
-	if (pthread_attr_setscope(attr, PTHREAD_SCOPE_SYSTEM) < 0) {
-		error("pthread_attr_setscope: %m");
-		return SLURM_ERROR;
-	}
-#endif
-
-	return SLURM_SUCCESS;
-}
-
 static void
 _p_reattach(slurm_msg_t *msg, job_t *job)
 {
@@ -370,8 +347,10 @@ _p_reattach(slurm_msg_t *msg, job_t *job)
 		thd[i].msg = &msg[i];
 		thd[i].job = job;
 
-		if (_attr_init(&thd[i].attr) < 0) 
-			exit(1);
+		slurm_attr_init(&thd[i].attr);
+		if (pthread_attr_setdetachstate(&thd[i].attr,
+				PTHREAD_CREATE_DETACHED ) < 0)
+			fatal("pthread_attr_setdetachstate: %m");
 
 		if (pthread_create( &thd[i].thread, &thd[i].attr,
 				    _p_reattach_task, (void *) &thd[i])) {
