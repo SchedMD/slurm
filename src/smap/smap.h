@@ -113,10 +113,6 @@ typedef struct {
 extern smap_parameters_t params;
 extern int DIM_SIZE[PA_SYSTEM_DIMENSIONS];
 
-#ifdef HAVE_BGL_FILES
-rm_BGL_t *bgl;
-#endif		
-
 void parse_command_line(int argc, char *argv[]);
 
 extern pa_system_t *pa_system_ptr;

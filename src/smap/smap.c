@@ -64,6 +64,7 @@ int main(int argc, char *argv[])
 	error_code = slurm_load_node((time_t) NULL, &node_info_ptr, 0);
 	if (error_code) {
 #ifdef HAVE_BGL_FILES
+		rm_BGL_t *bgl;
 		rm_size3D_t bp_size;
 		if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
 			fatal("init_bgl: rm_set_serial(): %s", bgl_err_str(rc));
