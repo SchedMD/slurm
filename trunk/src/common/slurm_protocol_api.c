@@ -113,7 +113,7 @@ int slurm_api_set_default_config()
         slurm_mutex_lock(&config_lock);
         if (stat(SLURM_CONFIG_FILE, &config_stat) < 0) {
                 error("Can't stat %s: %m", SLURM_CONFIG_FILE);
-                rc =SLURM_ERROR;
+                rc = SLURM_ERROR;
                 goto cleanup;
         }
         if ((last_config_update == config_stat.st_mtime) &&
@@ -128,7 +128,7 @@ int slurm_api_set_default_config()
         if ((slurmctld_conf.control_addr == NULL) ||
             (slurmctld_conf.slurmctld_port == 0)) {
                 error("Unable to establish control machine or port");
-                rc =SLURM_ERROR;
+                rc = SLURM_ERROR;
                 goto cleanup;
         }
 
@@ -137,7 +137,7 @@ int slurm_api_set_default_config()
                        slurmctld_conf.control_addr);
         if (proto_conf_default.primary_controller.sin_port == 0) {
                 error("Unable to establish control machine address");
-                rc =SLURM_ERROR;
+                rc = SLURM_ERROR;
                 goto cleanup;
         }
 
@@ -158,8 +158,21 @@ int slurm_api_set_default_config()
 void slurm_api_clear_config(void)
 {
         slurm_mutex_lock(&config_lock);
+        slurmctld_conf.slurmd_port = 0;
         free_slurm_conf(&slurmctld_conf);
         slurm_mutex_unlock(&config_lock);
+}
+
+/* update internal configuration data structure as needed.
+ * exit with lock set */
+static inline void _lock_update_config()
+{
+        slurm_mutex_lock(&config_lock);
+        if (slurmctld_conf.slurmd_port == 0) {  /* ==0 if config unread */
+                slurm_mutex_unlock(&config_lock);
+                slurm_api_set_default_config();
+                slurm_mutex_lock(&config_lock);
+        }
 }
 
 /* slurm_get_plugin_dir
@@ -168,10 +181,12 @@ void slurm_api_clear_config(void)
  */
 char *slurm_get_plugin_dir(void)
 {
-        if (slurmctld_conf.slurmd_port == 0)  /* ==0 if config unread */
-                slurm_api_set_default_config();
+        char *plugin_dir;
 
-        return xstrdup(slurmctld_conf.plugindir);
+        _lock_update_config();
+        plugin_dir = xstrdup(slurmctld_conf.plugindir);
+        slurm_mutex_unlock(&config_lock);
+        return plugin_dir;
 }
 
 /* slurm_get_auth_type
@@ -180,10 +195,12 @@ char *slurm_get_plugin_dir(void)
  */
 char *slurm_get_auth_type(void)
 {
-        if (slurmctld_conf.slurmd_port == 0)  /* ==0 if config unread */
-                slurm_api_set_default_config();
+        char *auth_type;
 
-        return xstrdup(slurmctld_conf.authtype);
+        _lock_update_config();
+        auth_type = xstrdup(slurmctld_conf.authtype);
+        slurm_mutex_unlock(&config_lock);
+        return auth_type;
 }
 
 /* slurm_get_jobcomp_type
@@ -192,22 +209,26 @@ char *slurm_get_auth_type(void)
  */
 char *slurm_get_jobcomp_type(void)
 {
-        if (slurmctld_conf.slurmd_port == 0)  /* ==0 if config unread */
-                slurm_api_set_default_config();
+        char *jobcomp_type;
 
-        return xstrdup(slurmctld_conf.job_comp_type);
+        _lock_update_config();
+        jobcomp_type = xstrdup(slurmctld_conf.job_comp_type);
+        slurm_mutex_unlock(&config_lock);
+        return jobcomp_type;
 }
 
 /* slurm_get_slurmd_port
  * returns slurmd port from slurmctld_conf object
- * RET short int        - slurmd port
+ * RET uint16_t        - slurmd port
  */
-short int slurm_get_slurmd_port(void)
+uint16_t slurm_get_slurmd_port(void)
 {
-        if (slurmctld_conf.slurmd_port == 0)  /* ==0 if config unread */
-                slurm_api_set_default_config();
+        uint16_t slurmd_port;
 
-        return slurmctld_conf.slurmd_port;
+        _lock_update_config();
+        slurmd_port = slurmctld_conf.slurmd_port;
+        slurm_mutex_unlock(&config_lock);
+        return slurmd_port;
 }
 
 /* slurm_get_slurm_user_id
@@ -216,10 +237,12 @@ short int slurm_get_slurmd_port(void)
  */
 uint32_t slurm_get_slurm_user_id(void)
 {
-        if (slurmctld_conf.slurmd_port == 0)  /* ==0 if config unread */
-                slurm_api_set_default_config();
+        uint32_t slurm_uid;
 
-        return slurmctld_conf.slurm_user_id;
+        _lock_update_config();
+        slurm_uid = slurmctld_conf.slurm_user_id;
+        slurm_mutex_unlock(&config_lock);
+        return slurm_uid;
 }
 
 /* slurm_get_sched_type
@@ -228,10 +251,12 @@ uint32_t slurm_get_slurm_user_id(void)
  */
 char *slurm_get_sched_type(void)
 {
-        if (slurmctld_conf.slurmd_port == 0)  /* ==0 if config unread */
-                slurm_api_set_default_config();
+        char *sched_type;
 
-        return xstrdup(slurmctld_conf.schedtype);
+        _lock_update_config();
+        sched_type = xstrdup(slurmctld_conf.schedtype);
+        slurm_mutex_unlock(&config_lock);
+        return sched_type;
 }
 
 /* slurm_get_switch_type
@@ -240,10 +265,12 @@ char *slurm_get_sched_type(void)
  */
 char *slurm_get_switch_type(void)
 {
-        if (slurmctld_conf.slurmd_port == 0)  /* ==0 if config unread */
-                slurm_api_set_default_config();
+        char *switch_type;
 
-        return xstrdup(slurmctld_conf.switch_type);
+        _lock_update_config();
+        switch_type = xstrdup(slurmctld_conf.switch_type);
+        slurm_mutex_unlock(&config_lock);
+        return switch_type;
 }
 
 /* slurm_get_wait_time
@@ -252,10 +279,12 @@ char *slurm_get_switch_type(void)
  */
 uint16_t slurm_get_wait_time(void)
 {
-        if (slurmctld_conf.slurmd_port == 0)  /* ==0 if config unread */
-                slurm_api_set_default_config();
+        uint16_t wait_time;
 
-        return slurmctld_conf.wait_time;
+        _lock_update_config();
+        wait_time = slurmctld_conf.wait_time;
+        slurm_mutex_unlock(&config_lock);
+        return wait_time;
 }
 
 /* Change general slurm communication errors to slurmctld specific errors */
