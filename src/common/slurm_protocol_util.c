@@ -1,6 +1,7 @@
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/slurm_protocol_common.h>
 #include <src/common/slurm_protocol_util.h>
+#include <src/common/log.h>
 
 /* checks to see that the specified header was sent from a node running the same version of the protocol as the current node */
 uint32_t check_header_version( header_t * header)

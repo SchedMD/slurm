@@ -197,6 +197,6 @@ typedef struct slurm_msg
 {
 	slurm_msg_type_t msg_type ;
 	slurm_addr address ;
-	void * msg ;
+	void * data ;
 } slurm_msg_t ;
 #endif

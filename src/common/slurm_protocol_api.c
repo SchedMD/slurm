@@ -123,17 +123,16 @@ int slurm_close_accepted_conn ( slurm_fd open_fd )
  * msg 		- a slurm msg struct
  * int		- size of msg received in bytes before being unpacked
  */
-int slurm_receive_msg ( slurm_fd open_fd , slurm_addr * source_address , slurm_msg_t ** msg ) 
+int slurm_receive_msg ( slurm_fd open_fd , slurm_msg_t * msg ) 
 {
 	char buftemp[MAX_MESSAGE_BUFFER_SIZE] ;
 	char * buffer = buftemp ;
 	header_t header ;
-	slurm_msg_t * new_msg ;
 	int rc ;
 	unsigned int unpack_len ;
 	unsigned int receive_len = MAX_MESSAGE_BUFFER_SIZE ;
 
-	if ( ( rc = _slurm_msg_recvfrom ( open_fd , buffer , receive_len, NO_SEND_RECV_FLAGS , source_address ) ) == SLURM_SOCKET_ERROR ) 
+	if ( ( rc = _slurm_msg_recvfrom ( open_fd , buffer , receive_len, NO_SEND_RECV_FLAGS , & msg->address ) ) == SLURM_SOCKET_ERROR ) 
 	{
 		debug ( "Error recieving msg socket: errno %i\n", errno ) ;
 		return rc ;
@@ -141,7 +140,7 @@ int slurm_receive_msg ( slurm_fd open_fd , slurm_addr * source_address , slurm_m
 
 	/* unpack header */
 	unpack_len = rc ;
-	unpack_header ( & buffer , & unpack_len , & header ) ;
+	unpack_header ( &header , & buffer , & unpack_len ) ;
 
 	if ( (rc = check_header_version ( & header ) ) < 0 ) 
 	{
@@ -149,11 +148,9 @@ int slurm_receive_msg ( slurm_fd open_fd , slurm_addr * source_address , slurm_m
 	}
 
 	/* unpack msg body */
-	new_msg = xmalloc ( sizeof ( slurm_msg_t ) ) ;
-	new_msg -> msg_type = header . msg_type ;
-	unpack_msg ( & buffer , & unpack_len , new_msg ) ;
+	msg -> msg_type = header . msg_type ;
+	unpack_msg ( msg , & buffer , & unpack_len ) ;
 
-	*msg = new_msg ;	
 	return rc ;
 }
 
@@ -166,7 +163,7 @@ int slurm_receive_msg ( slurm_fd open_fd , slurm_addr * source_address , slurm_m
  * msg	- a slurm msg struct
  * int	- size of msg sent in bytes
  */
-int slurm_send_controller_msg ( slurm_fd open_fd , slurm_msg_type_t msg_type , slurm_msg_t const * msg )
+int slurm_send_controller_msg ( slurm_fd open_fd , slurm_msg_t * msg )
 {
 	int rc ;
 	slurm_addr primary_destination_address ;
@@ -177,11 +174,12 @@ int slurm_send_controller_msg ( slurm_fd open_fd , slurm_msg_type_t msg_type , s
 	slurm_set_addr ( & secondary_destination_address , SLURM_PORT , SECONDARY_SLURM_CONTROLLER ) ;
 	
 	/* try to send to primary first then secondary */	
-	if ( (rc = slurm_send_node_msg ( open_fd , & primary_destination_address , msg_type , msg ) ) == SLURM_SOCKET_ERROR )
+	msg -> address = primary_destination_address ;
+	if ( (rc = slurm_send_node_msg ( open_fd , msg ) ) == SLURM_SOCKET_ERROR )
 	{
 		debug ( "Send message to primary controller failed" ) ;
-		
-		if ( (rc = slurm_send_node_msg ( open_fd , & secondary_destination_address , msg_type , msg ) ) ==  SLURM_SOCKET_ERROR )	
+		msg -> address = secondary_destination_address ;
+		if ( (rc = slurm_send_node_msg ( open_fd , msg ) ) ==  SLURM_SOCKET_ERROR )	
 		{
 			debug ( "Send messge to secondary controller failed" ) ;
 		}
@@ -197,7 +195,7 @@ int slurm_send_controller_msg ( slurm_fd open_fd , slurm_msg_type_t msg_type , s
  * msg			- a slurm msg struct
  * int		- size of msg sent in bytes
  */
-int slurm_send_node_msg ( slurm_fd open_fd , slurm_addr * destination_address , slurm_msg_type_t msg_type , slurm_msg_t const * msg )
+int slurm_send_node_msg ( slurm_fd open_fd ,  slurm_msg_t * msg )
 {
 	char buf_temp[MAX_MESSAGE_BUFFER_SIZE] ;
 	char * buffer = buf_temp ;
@@ -206,17 +204,17 @@ int slurm_send_node_msg ( slurm_fd open_fd , slurm_addr * destination_address , 
 	unsigned int pack_len ;
 
 	/* initheader */
-	init_header ( & header , msg_type , SLURM_PROTOCOL_NO_FLAGS ) ;
+	init_header ( & header , msg->msg_type , SLURM_PROTOCOL_NO_FLAGS ) ;
 
 	/* pack header */
 	pack_len = MAX_MESSAGE_BUFFER_SIZE ;
-	pack_header ( & buffer , & pack_len , & header ) ;
+	pack_header ( &header , & buffer , & pack_len ) ;
 
 	/* pack msg */
-	pack_msg ( & buffer , & pack_len , msg ) ;
+	pack_msg ( msg , & buffer , & pack_len ) ;
 
 	/* send msg */
-	if (  ( rc = _slurm_msg_sendto ( open_fd , buf_temp , MAX_MESSAGE_BUFFER_SIZE - pack_len , NO_SEND_RECV_FLAGS , destination_address ) ) == SLURM_SOCKET_ERROR )
+	if (  ( rc = _slurm_msg_sendto ( open_fd , buf_temp , MAX_MESSAGE_BUFFER_SIZE - pack_len , NO_SEND_RECV_FLAGS , &msg->address ) ) == SLURM_SOCKET_ERROR )
 	{
 		debug ( "Error sending msg socket: errno %i\n", errno ) ;
 	}
@@ -251,7 +249,7 @@ int slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slur
 	/* unpack header */
 	bytes_read = rc ;
 	unpack_len = rc ;
-	unpack_header ( & buffer , & unpack_len , & header ) ;
+	unpack_header ( &header , & buffer , & unpack_len ) ;
 
 	rc = check_header_version ( & header ) ;
 	if ( rc < 0 ) return rc ;
@@ -313,7 +311,7 @@ int slurm_send_node_buffer ( slurm_fd open_fd , slurm_addr * destination_address
 
 	/* pack header */
 	pack_len = MAX_MESSAGE_BUFFER_SIZE ;
-	pack_header ( & buffer , & pack_len , & header ) ;
+	pack_header ( &header, & buffer , & pack_len ) ;
 
 	/* pack msg */
 	memcpy ( buffer , data_buffer , buf_len ) ;
@@ -381,4 +379,14 @@ void slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , char * h
 void slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * host , unsigned int buf_len )
 {
 	_slurm_get_addr ( slurm_address , port , host , buf_len ) ;
+}
+
+/* slurm msg type */
+void slurm_msg_destroy ( slurm_msg_t * location , int destroy_data )
+{
+	if ( destroy_data )
+	{
+		free ( location->data ) ;
+	}
+	free ( location ) ;
 }

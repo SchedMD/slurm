@@ -7,7 +7,7 @@
 #include <src/common/log.h>
 #include <src/slurmctld/slurmctld.h>
 
-void pack_header ( char ** buffer , uint32_t * length , header_t * header )
+void pack_header ( header_t * header, char ** buffer , uint32_t * length )
 {
 	pack16 ( header -> version , ( void ** ) buffer , length ) ;
 	pack16 ( header -> flags , ( void ** ) buffer , length ) ;
@@ -15,7 +15,7 @@ void pack_header ( char ** buffer , uint32_t * length , header_t * header )
 	pack32 ( header -> body_length , ( void ** ) buffer , length ) ;
 }
 
-void unpack_header ( char ** buffer , uint32_t * length , header_t * header )
+void unpack_header ( header_t * header , char ** buffer , uint32_t * length )
 {
 	unpack16 ( & header -> version , ( void ** ) buffer , length ) ;
 	unpack16 ( & header -> flags , ( void ** ) buffer , length ) ;
@@ -23,7 +23,7 @@ void unpack_header ( char ** buffer , uint32_t * length , header_t * header )
 	unpack32 ( & header -> body_length , ( void ** ) buffer , length ) ;
 }
 
-void pack_msg ( char ** buffer , uint32_t * buf_len , slurm_msg_t const * msg )
+int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 {
 	switch ( msg -> msg_type )
 	{
@@ -33,6 +33,7 @@ void pack_msg ( char ** buffer , uint32_t * buf_len , slurm_msg_t const * msg )
 			break ;
 		case REQUEST_RESOURCE_ALLOCATION :
 		case REQUEST_SUBMIT_BATCH_JOB :
+			pack_job_desc ( (job_desc_t * )  msg -> data , ( void ** ) buffer , buf_len )  ;
 			break ;
 		case RESPONSE_RESOURCE_ALLOCATION :
 			break ;
@@ -86,14 +87,16 @@ void pack_msg ( char ** buffer , uint32_t * buf_len , slurm_msg_t const * msg )
 			break ;
 		default :
 			debug ( "No pack method for msg type %i",  msg -> msg_type ) ;
+			return EINVAL ;
 			break;
 		
 	}
+	return 0 ;
 }
 
-void unpack_msg ( char ** buffer , uint32_t * buf_len , slurm_msg_t * msg )
+int unpack_msg ( slurm_msg_t * msg ,char ** buffer , uint32_t * buf_len )
 {
-	switch ( msg -> msg_type )
+	switch ( msg-> msg_type )
 	{
 		case REQUEST_NODE_REGISRATION_STATUS :
 			break ;
@@ -101,6 +104,7 @@ void unpack_msg ( char ** buffer , uint32_t * buf_len , slurm_msg_t * msg )
 			break ;
 		case REQUEST_RESOURCE_ALLOCATION :
 		case REQUEST_SUBMIT_BATCH_JOB :
+			unpack_job_desc ( ( job_desc_t **) & ( msg-> data ), ( void ** ) buffer , buf_len ) ;
 			break ;
 		case RESPONSE_RESOURCE_ALLOCATION :
 			break ;
@@ -154,19 +158,21 @@ void unpack_msg ( char ** buffer , uint32_t * buf_len , slurm_msg_t * msg )
 			break ;
 		default :
 			debug ( "No pack method for msg type %i",  msg -> msg_type ) ;
+			return EINVAL ;
 			break;
 		
 	}
+	return 0 ;
 }
 
-void pack_node_registration_status_msg ( char ** buffer , uint32_t * length , node_registration_status_msg_t * msg )
+void pack_node_registration_status_msg ( node_registration_status_msg_t * msg, char ** buffer , uint32_t * length )
 {
 	pack32 ( msg -> timestamp , ( void ** ) buffer , length ) ;
 	pack32 ( msg -> memory_size , ( void ** ) buffer , length ) ;
 	pack32 ( msg -> temporary_disk_space , ( void ** ) buffer , length ) ;
 }
 
-void unpack_node_registration_status_msg ( char ** buffer , uint32_t * length , node_registration_status_msg_t * msg )
+void unpack_node_registration_status_msg ( node_registration_status_msg_t * msg , char ** buffer , uint32_t * length )
 {
 	unpack32 ( & msg -> timestamp , ( void ** ) buffer , length ) ;
 	unpack32 ( & msg -> memory_size , ( void ** ) buffer , length ) ;
@@ -223,84 +229,78 @@ int unpack_build_info ( struct build_buffer **build_buffer_ptr, void * buffer , 
 	return 0;
 }
 
-int pack_job_desc ( job_desc_t *job_desc_ptr, void * buffer , int buf_len )
+void pack_job_desc ( job_desc_t * job_desc_ptr, void ** buf_ptr , int * buffer_size )
 {	
-	void * buf_ptr;
-	int buffer_size = buf_len ;
-	
 	/* load the data values */
 	/* unpack timestamp of snapshot */
-	buf_ptr = buffer ;
 
-	pack16 (job_desc_ptr->contiguous, &buf_ptr, &buffer_size);
-	packstr (job_desc_ptr->features, &buf_ptr, &buffer_size);
-	packstr (job_desc_ptr->groups, &buf_ptr, &buffer_size);
-	pack32 (job_desc_ptr->job_id, &buf_ptr, &buffer_size);
-	packstr (job_desc_ptr->name, &buf_ptr, &buffer_size);
-	packmem (job_desc_ptr->partition_key, 32, &buf_ptr, &buffer_size);
+	pack16 (job_desc_ptr->contiguous, buf_ptr, buffer_size);
+	packstr (job_desc_ptr->features, buf_ptr, buffer_size);
+	packstr (job_desc_ptr->groups, buf_ptr, buffer_size);
+	pack32 (job_desc_ptr->job_id, buf_ptr, buffer_size);
+	packstr (job_desc_ptr->name, buf_ptr, buffer_size);
+	packmem (job_desc_ptr->partition_key, 32, buf_ptr, buffer_size);
 	
-	pack32 (job_desc_ptr->min_procs, &buf_ptr, &buffer_size);
-	pack32 (job_desc_ptr->min_memory, &buf_ptr, &buffer_size);
-	pack32 (job_desc_ptr->min_tmp_disk, &buf_ptr, &buffer_size);
+	pack32 (job_desc_ptr->min_procs, buf_ptr, buffer_size);
+	pack32 (job_desc_ptr->min_memory, buf_ptr, buffer_size);
+	pack32 (job_desc_ptr->min_tmp_disk, buf_ptr, buffer_size);
 	
-	packstr (job_desc_ptr->partition, &buf_ptr, &buffer_size);
-	pack32 (job_desc_ptr->priority, &buf_ptr, &buffer_size);
+	packstr (job_desc_ptr->partition, buf_ptr, buffer_size);
+	pack32 (job_desc_ptr->priority, buf_ptr, buffer_size);
 	
-	packstr (job_desc_ptr->partition, &buf_ptr, &buffer_size);
-	packstr (job_desc_ptr->partition, &buf_ptr, &buffer_size);
-	pack16 (job_desc_ptr->shared, &buf_ptr, &buffer_size);
+	packstr (job_desc_ptr->partition, buf_ptr, buffer_size);
+	packstr (job_desc_ptr->partition, buf_ptr, buffer_size);
+	pack16 (job_desc_ptr->shared, buf_ptr, buffer_size);
 
-	pack32 (job_desc_ptr->time_limit, &buf_ptr, &buffer_size);
+	pack32 (job_desc_ptr->time_limit, buf_ptr, buffer_size);
 	
-	pack32 (job_desc_ptr->num_procs, &buf_ptr, &buffer_size);
-	pack32 (job_desc_ptr->num_nodes, &buf_ptr, &buffer_size);
-	pack32 (job_desc_ptr->user_id, &buf_ptr, &buffer_size);
+	pack32 (job_desc_ptr->num_procs, buf_ptr, buffer_size);
+	pack32 (job_desc_ptr->num_nodes, buf_ptr, buffer_size);
+	pack32 (job_desc_ptr->user_id, buf_ptr, buffer_size);
 
-	return buf_len - buffer_size ;
 }
 
-int unpack_job_desc ( job_desc_t **job_desc_buffer_ptr, void * buffer , int buffer_size )
+void unpack_job_desc ( job_desc_t **job_desc_buffer_ptr, void ** buf_ptr , int * buffer_size )
 {	
 	uint16_t uint16_tmp;
-	void * buf_ptr;
 	job_desc_t * job_desc_ptr ;
 
 	/* alloc memory for structure */
 	job_desc_ptr = malloc ( sizeof ( job_desc_t ) ) ;
 	if (job_desc_ptr== NULL) 
 	{
-		return ENOMEM;
+		*job_desc_buffer_ptr = NULL ;
+		return ;
 	}
 
 	/* load the data values */
 	/* unpack timestamp of snapshot */
-	buf_ptr = buffer ;
 
-	unpack16 (&job_desc_ptr->contiguous, &buf_ptr, &buffer_size);
-	unpackstr_ptr (&job_desc_ptr->features, &uint16_tmp, &buf_ptr, &buffer_size);
-	unpackstr_ptr (&job_desc_ptr->groups, &uint16_tmp, &buf_ptr, &buffer_size);
-	unpack32 (&job_desc_ptr->job_id, &buf_ptr, &buffer_size);
-	unpackstr_ptr (&job_desc_ptr->name, &uint16_tmp, &buf_ptr, &buffer_size);
-	unpackmem_ptr ( ( char ** ) &job_desc_ptr->partition_key, &uint16_tmp, &buf_ptr, &buffer_size);
+	unpack16 (&job_desc_ptr->contiguous, buf_ptr, buffer_size);
+	unpackstr_ptr (&job_desc_ptr->features, &uint16_tmp, buf_ptr, buffer_size);
+	unpackstr_ptr (&job_desc_ptr->groups, &uint16_tmp, buf_ptr, buffer_size);
+	unpack32 (&job_desc_ptr->job_id, buf_ptr, buffer_size);
+	unpackstr_ptr (&job_desc_ptr->name, &uint16_tmp, buf_ptr, buffer_size);
+	unpackmem_ptr ( ( char ** ) &job_desc_ptr->partition_key, &uint16_tmp, buf_ptr, buffer_size);
 	
-	unpack32 (&job_desc_ptr->min_procs, &buf_ptr, &buffer_size);
-	unpack32 (&job_desc_ptr->min_memory, &buf_ptr, &buffer_size);
-	unpack32 (&job_desc_ptr->min_tmp_disk, &buf_ptr, &buffer_size);
+	unpack32 (&job_desc_ptr->min_procs, buf_ptr, buffer_size);
+	unpack32 (&job_desc_ptr->min_memory, buf_ptr, buffer_size);
+	unpack32 (&job_desc_ptr->min_tmp_disk, buf_ptr, buffer_size);
 	
-	unpackstr_ptr (&job_desc_ptr->partition, &uint16_tmp, &buf_ptr, &buffer_size);
-	unpack32 (&job_desc_ptr->priority, &buf_ptr, &buffer_size);
+	unpackstr_ptr (&job_desc_ptr->partition, &uint16_tmp, buf_ptr, buffer_size);
+	unpack32 (&job_desc_ptr->priority, buf_ptr, buffer_size);
 	
-	unpackstr_ptr (&job_desc_ptr->partition, &uint16_tmp, &buf_ptr, &buffer_size);
-	unpackstr_ptr (&job_desc_ptr->partition, &uint16_tmp, &buf_ptr, &buffer_size);
-	unpack16 (&job_desc_ptr->shared, &buf_ptr, &buffer_size);
+	unpackstr_ptr (&job_desc_ptr->partition, &uint16_tmp, buf_ptr, buffer_size);
+	unpackstr_ptr (&job_desc_ptr->partition, &uint16_tmp, buf_ptr, buffer_size);
+	unpack16 (&job_desc_ptr->shared, buf_ptr, buffer_size);
 	
-	unpack32 (&job_desc_ptr->time_limit, &buf_ptr, &buffer_size);
+	unpack32 (&job_desc_ptr->time_limit, buf_ptr, buffer_size);
 	
-	unpack32 (&job_desc_ptr->num_procs, &buf_ptr, &buffer_size);
-	unpack32 (&job_desc_ptr->num_nodes, &buf_ptr, &buffer_size);
-	unpack32 (&job_desc_ptr->user_id, &buf_ptr, &buffer_size);
-	
-	return 0;
+	unpack32 (&job_desc_ptr->num_procs, buf_ptr, buffer_size);
+	unpack32 (&job_desc_ptr->num_nodes, buf_ptr, buffer_size);
+	unpack32 (&job_desc_ptr->user_id, buf_ptr, buffer_size);
+
+	*job_desc_buffer_ptr = job_desc_ptr ;
 }
 
 /* template 
