@@ -36,14 +36,12 @@ main (int argc, char *argv[]) {
 	char *dump;
 	int dump_size;
 	time_t update_time;
-	unsigned *node_bitmap;	/* bitmap of nodes in partition */
-	int bitmap_size;	/* bytes in node_bitmap */
 
 	error_code = load_node (&last_update_time);
 	if (error_code)
 		printf ("load_node error %d\n", error_code);
 
-	strcpy (req_name, "");	/* start at beginning of partition list */
+	strcpy (req_name, "");	/* start at beginning of node list */
 	for (i = 1;; i++) {
 		error_code =
 			load_node_config (req_name, next_name, &cpus,
@@ -86,11 +84,12 @@ free_node_info (void)
 
 
 /*
- * load_node - load the supplied node information buffer for use by info gathering apis if
- *	node records have changed since the time specified. 
+ * load_node - load the supplied node information buffer for use by info gathering
+ *	APIs if node records have changed since the time specified. 
  * input: buffer - pointer to node information buffer
  *        buffer_size - size of buffer
- * output: returns 0 if no error, EINVAL if the buffer is invalid, ENOMEM if malloc failure
+ * output: returns 0 if no error, EINVAL if the buffer is invalid, 
+ *		ENOMEM if malloc failure
  * NOTE: buffer is used by load_node_config and freed by free_node_info.
  */
 int
@@ -131,7 +130,7 @@ load_node (time_t * last_update_time) {
 		in_size =
 			recv (sockfd, &buffer[buffer_offset],
 			      (buffer_size - buffer_offset), 0);
-		if (in_size <= 0) {	/* end if input */
+		if (in_size <= 0) {	/* end of input */
 			in_size = 0;
 			break;
 		}		
@@ -267,7 +266,7 @@ load_node_config (char *req_name, char *next_name, int *cpus,
 			sscanf (my_line, "NodeName=%s", my_node_name);
 			strncpy (next_name_value, my_node_name, MAX_NAME_LEN);
 			strncpy (next_name, my_node_name, MAX_NAME_LEN);
-		}		/* else */
+		}
 		return 0;
 	}			
 	return ENOENT;
