@@ -136,8 +136,8 @@ typedef enum {
 	RESPONSE_LAUNCH_TASKS,
 	MESSAGE_TASK_EXIT,
 	REQUEST_KILL_TASKS,
-	REQUEST_REATTACH_TASKS_STREAMS,
-	RESPONSE_REATTACH_TASKS_STREAMS,
+	REQUEST_REATTACH_TASKS,
+	RESPONSE_REATTACH_TASKS,
 
 	RESPONSE_SLURM_RC = 8001,
 	MESSAGE_UPLOAD_ACCOUNTING_INFO,
@@ -282,15 +282,22 @@ typedef struct revoke_credential_msg {
 	char signature[SLURM_SSL_SIGNATURE_LENGTH];
 } revoke_credential_msg_t;
 
-typedef struct reattach_tasks_streams_msg {
-	uint32_t job_id;
-	uint32_t job_step_id;
-	uint32_t uid;
-	slurm_job_credential_t *credential;
-	uint32_t tasks_to_reattach;
-	slurm_addr streams;
-	uint32_t *global_task_ids;
-} reattach_tasks_streams_msg_t;
+typedef struct reattach_tasks_request_msg {
+	uint32_t  job_id;
+	uint32_t  job_step_id;
+	uint32_t  srun_node_id;
+	uint16_t  resp_port;
+	uint16_t  io_port;
+	char     *ofname;
+	char     *efname;
+	char     *ifname;
+	char      key[SLURM_SSL_SIGNATURE_LENGTH];
+} reattach_tasks_request_msg_t;
+
+typedef struct reattach_tasks_response_msg {
+	uint32_t return_code;
+	uint32_t srun_node_id;
+} reattach_tasks_response_msg_t;
 
 typedef struct batch_job_launch_msg {
 	uint32_t job_id;
@@ -304,7 +311,7 @@ typedef struct batch_job_launch_msg {
 	char *work_dir;		/* full pathname of working directory */
 	uint16_t argc;
 	char **argv;
-	uint16_t envc;	        /* element count in environment */
+	uint16_t envc;		/* element count in environment */
 	char **environment;	/* environment variables to set for job, 
 				 *   name=value pairs, one per line */
 } batch_job_launch_msg_t;
@@ -337,13 +344,14 @@ void inline slurm_free_job_step_id(job_step_id_t * msg);
 #define slurm_free_job_info_request_msg(msg) \
 	slurm_free_job_step_id(msg)
 
-void inline slurm_free_shutdown_msg (shutdown_msg_t * msg);
+void inline slurm_free_shutdown_msg(shutdown_msg_t * msg);
 
 void inline slurm_free_job_desc_msg(job_desc_msg_t * msg);
 void inline slurm_free_job_complete_msg(complete_job_step_msg_t * msg);
 
-void inline slurm_free_node_registration_status_msg (
-			slurm_node_registration_status_msg_t * msg);
+void inline
+slurm_free_node_registration_status_msg(slurm_node_registration_status_msg_t *
+					msg);
 
 void inline slurm_free_job_info(job_info_t * job);
 void inline slurm_free_job_info_members(job_info_t * job);
@@ -352,18 +360,21 @@ void inline slurm_free_job_launch_msg(batch_job_launch_msg_t * msg);
 
 void inline slurm_free_update_node_msg(update_node_msg_t * msg);
 void inline slurm_free_update_part_msg(update_part_msg_t * msg);
-void inline slurm_free_job_step_create_request_msg(
-			job_step_create_request_msg_t * msg);
-void inline slurm_free_launch_tasks_request_msg(
-			launch_tasks_request_msg_t * msg);
-void inline slurm_free_launch_tasks_response_msg(
-			launch_tasks_response_msg_t * msg);
+void inline
+slurm_free_job_step_create_request_msg(job_step_create_request_msg_t * msg);
+void inline slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t *
+						msg);
+void inline slurm_free_launch_tasks_response_msg(launch_tasks_response_msg_t *
+						 msg);
 void inline slurm_free_task_exit_msg(task_exit_msg_t * msg);
 void inline slurm_free_kill_tasks_msg(kill_tasks_msg_t * msg);
-void inline slurm_free_reattach_tasks_streams_msg(
-			reattach_tasks_streams_msg_t * msg);
-void inline slurm_free_revoke_credential_msg(
-			revoke_credential_msg_t * msg);
+
+void inline 
+slurm_free_reattach_tasks_request_msg(reattach_tasks_request_msg_t * msg);
+void inline
+slurm_free_reattach_tasks_response_msg(reattach_tasks_response_msg_t * msg);
+
+void inline slurm_free_revoke_credential_msg(revoke_credential_msg_t * msg);
 
 extern char *job_dist_string(uint16_t inx);
 extern char *job_state_string(enum job_states inx);
