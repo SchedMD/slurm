@@ -37,7 +37,10 @@ to a call of the function \fBslurm_job_step_create\fR.
 .LP
 \fBslurm_job_step_create\fR Initialize a job step including the allocation of nodes to 
 it from those already allocate to that job. Always release the response message when no 
-longer required using the function \fBslurm_free_job_step_create_response_msg\fR.
+longer required using the function \fBslurm_free_job_step_create_response_msg\fR. 
+The list of host names returned may be matched to their data in the proper order by 
+using the functions \fBhostlist_create\fR, \fBhostlist_shift\fR, and 
+\fBhostlist_destroy\fR.
 .SH "RETURN VALUE"
 .LP
 On success, zero is returned. On error, -1 is returned, and Slurm error code is set appropriately.
@@ -73,6 +76,7 @@ FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 .SH "SEE ALSO"
 .LP 
+\fBhostlist_create\fR(3), \fBhostlist_shift\fR(3), \fBhostlist_destroy\fR(3), 
 \fBsrun\fR(1), 
 \fBslurm_allocate_resources_and_run\fR(3), 
 \fBslurm_get_errno\fR(3), \fBslurm_perror\fR(3), \fBslurm_strerror\fR(3)
