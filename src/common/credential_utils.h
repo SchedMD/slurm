@@ -123,4 +123,10 @@ extern void pack_credential_list(List list, Buf buffer);
  */ 
 extern int unpack_credential_list(List list, Buf buffer);
 
+/*
+ * Returns true if credential for job id jobid is already cached in the
+ * credential state list
+ */
+bool credential_is_cached(List state_list, uint32_t jobid);
+
 #endif

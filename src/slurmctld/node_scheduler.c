@@ -143,6 +143,7 @@ void deallocate_nodes(struct job_record *job_ptr)
 	revoke_job_cred = xmalloc(sizeof(revoke_credential_msg_t));
 	last_node_update = time(NULL);
 	revoke_job_cred->job_id = job_ptr->job_id;
+	revoke_job_cred->job_uid = job_ptr->user_id;
 	revoke_job_cred->expiration_time =
 	    job_ptr->details->credential.expiration_time;
 	memset((void *) revoke_job_cred->signature, 0,

@@ -232,6 +232,10 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Slurmd could not execve batch job"			},
 	{ ESLURMD_IO_ERROR,
 	  "Slurmd could not connect IO"			        },
+	{ ESLURMD_PROLOG_FAILED,
+	  "Job prolog failed"			        	},
+	{ ESLURMD_EPILOG_FAILED,
+	  "Job epilog failed"			        	},
 
 	/* slurmd errors in user batch job */
 	{ ESCRIPT_CHDIR_FAILED,

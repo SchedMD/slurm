@@ -37,6 +37,15 @@
 /* Launch a job step on this node
  */
 int mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *client);
+
+/* 
+ * Launch batch script on this node
+ */
 int mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *client);
+
+/*
+ * Run epilog or prolog on this node
+ */
+int run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid);
 
 #endif

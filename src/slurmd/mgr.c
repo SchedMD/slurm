@@ -254,7 +254,10 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	if (!(job = job_batch_job_create(msg))) 
 		goto cleanup2;
 
-	job_update_shm(job);
+	/*
+	 * This is now done in _run_job() 
+	 */
+	/* job_update_shm(job); */
 
 	_setargs(job, *conf->argv, *conf->argc);
 
@@ -838,3 +841,54 @@ _slurmd_job_log_init(slurmd_job_t *job)
 	log_init(argv0, conf->log_opts, 0, NULL);
 }
 
+int 
+run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid)
+{
+	int status;
+	pid_t cpid;
+	char *name = prolog ? "prolog" : "epilog";
+
+	if (path == NULL || path[0] == '\0')
+		return 0;
+
+	debug("[job %d] attempting to run %s [%s]", jobid, name, path);
+
+	if (access(path, R_OK | X_OK) < 0) {
+		debug("Not running %s [%s]: %m", name, path);
+		return 0;
+	}
+
+	if ((cpid = fork()) < 0) {
+		error ("executing %s: fork: %m", name);
+		return -1;
+	}
+	if (cpid == 0) {
+		char *argv[4];
+		char **env;
+		int envc = 0;
+
+
+		env = xmalloc(sizeof(char *));
+
+		argv[0] = xstrdup(path);
+		argv[1] = NULL;
+
+		env[0]  = NULL;
+		setenvpf(&env, &envc, "SLURM_JOBID=%u", jobid);
+		setenvpf(&env, &envc, "SLURM_UID=%u",   uid);
+
+		execve(path, argv, env);
+		error("help! %m");
+		exit(127);
+	}
+
+	do {
+		if (waitpid(cpid, &status, 0) < 0) {
+			if (errno != EINTR)
+				return -1;
+		} else
+			return status;
+	} while(1);
+
+	/* NOTREACHED */
+}
