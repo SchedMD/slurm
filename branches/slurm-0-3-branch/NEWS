@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Fixes for reported problems:
    - slurm/512: Let job steps run on DRAINING nodes
+   - slurm/513: Gracefully deal with UIDs missing from passwd file
  -- Create new allocation as needed for debugger in case old allocation
     has been purged
  -- Fix bug in scheduling jobs when a processor count is specified 
