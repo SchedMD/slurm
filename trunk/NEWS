@@ -1,6 +1,24 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.2.13
+=========================
+ -- Fixes for reported problems:
+   - Fixed bug in slurmctld where "drained" nodes would go back into
+     the "idle" state under some conditions (slurm/228).
+   - Added possible fix for slurm/229: "slurmd occasionally fails
+     to reap all children."
+ -- Fixed memory leak in auth_munge plugin.
+ -- Added fix to slurmctld to allow arbitrarily large job specifications
+    to be saved and recovered in the state file.
+ -- Allow "updates" in the configuration file of previously defined
+    node state and reason. 
+ -- On "forceful termination" of a running job step, srun now exits
+    unconditionally, instead of waiting for all I/O.
+ -- Slurmctld now uses pidfile to kill old daemon when a new one is started.
+ -- Addition of new daemon "slurm_tv_clean" used to clean up jobs orphaned
+    due to use of the TotalView parallel debugger.
+
 * Changes in SLURM 0.2.12
 =========================
  -- Fixes for reported problems:
