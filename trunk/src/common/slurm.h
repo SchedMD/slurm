@@ -19,7 +19,7 @@
 #include <time.h>
 #include "list.h"
 
-#define MAX_NAME_LEN 32		/* Maximum length of partition or node name */
+#define MAX_NAME_LEN 16		/* Maximum length of partition or node name */
 
 #define BACKUP_INTERVAL		60
 #define BACKUP_LOCATION		"/usr/local/SLURM/Slurm.state"
@@ -106,7 +106,7 @@ struct Part_Record {
     char *AllowGroups;		/* NULL indicates ALL */
     unsigned *NodeBitMap;	/* Bitmap of nodes in partition */
 };
-List Part_List;			/* List of Part_Record entries */
+extern List Part_List;		/* List of Part_Record entries */
 extern struct	Part_Record Default_Part;		/* Default configuration values */
 extern char Default_Part_Name[MAX_NAME_LEN];	/* Name of default partition */
 extern struct Part_Record *Default_Part_Loc;	/* Location of default partition */
@@ -237,6 +237,25 @@ extern int Init_Node_Conf();
  * Output: return value - 0 if no error, otherwise an error code
  */
 extern int Init_Part_Conf();
+
+
+/* List_Compare_Config - Compare two entry from the config list based upon weight, 
+ * see list.h for documentation */
+extern int List_Compare_Config(void *Config_Entry1, void *Config_Entry2);
+
+/* List_Delete_Config - Delete an entry from the configuration list, see list.h for documentation */
+extern void List_Delete_Config(void *Config_Entry);
+
+/* List_Find_Config - Find an entry in the configuration list, see list.h for documentation 
+ * Key is partition name or "UNIVERSAL_KEY" for all configuration */
+extern int List_Find_Config(void *Config_Entry, void *key);
+
+/* List_Delete_Part - Delete an entry from the partition list, see list.h for documentation */
+extern void List_Delete_Part(void *Part_Entry);
+
+/* List_Find_Part - Find an entry in the partition list, see list.h for documentation 
+ * Key is partition name or "UNIVERSAL_KEY" for all partitions */
+extern int List_Find_Part(void *Part_Entry, void *key);
 
 /* 
  * Parse_Node_Name - Parse the node name for regular expressions and return a sprintf format 
