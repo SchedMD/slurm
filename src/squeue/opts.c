@@ -501,6 +501,7 @@ _print_options()
 	printf( "step_flag %d\n", params.step_flag );
 	printf( "jobs %s\n", params.jobs );
 	printf( "partitions %s\n", params.partitions ) ;
+	printf( "sort %s\n", params.sort ) ;
 	printf( "states %s\n", params.states ) ;
 	printf( "steps %s\n", params.steps );	
 	printf( "users %s\n", params.users );	

@@ -216,6 +216,8 @@ int _print_step_nodes(job_step_info_t * step, int width,
  *****************************************************************************/
 #define sort_job_by_job_id(list) \
 		list_sort(list,_sort_job_by_id)
+#define sort_job_by_job_name(list) \
+		list_sort(list,_sort_job_by_name)
 #define sort_job_by_priority(list) \
 		list_sort(list,_sort_job_by_priority)
 #define sort_job_by_partition(list) \
@@ -226,6 +228,7 @@ int _print_step_nodes(job_step_info_t * step, int width,
 		list_sort(list,_sort_job_by_user)
 
 int _sort_job_by_id(void *void1, void *void2);
+int _sort_job_by_name(void *void1, void *void2);
 int _sort_job_by_priority(void *void1, void *void2);
 int _sort_job_by_partition(void *void1, void *void2);
 int _sort_job_by_state(void *void1, void *void2);
