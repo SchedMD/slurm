@@ -352,9 +352,29 @@ void report_task_status(job_t *job)
 	}
 }
 
-static char *   _taskid2hostname(int task_id, job_t * job)
+static char *   _taskid2hostname (int task_id, job_t * job)
 {
-	return "TBD";
+	int i, j, id = 0;
+
+	if (opt.distribution == SRUN_DIST_BLOCK) {
+		for (i=0; ((i<job->nhosts) && (id<opt.nprocs)); i++) {
+			id += job->ntask[i];
+			if (task_id < id)
+				return job->host[i];
+		}
+
+	} else {	/* cyclic */
+		for (j=0; (id<opt.nprocs); j++) {	/* cycle counter */
+			for (i=0; ((i<job->nhosts) && (id<opt.nprocs)); i++) {
+				if (j >= job->cpus[i])
+					continue;
+				if (task_id == (id++))
+					return job->host[i];
+			}
+		}
+	}
+
+	return "Unknown";
 }
 
 static char *_task_state_name(task_state_t state_inx)
