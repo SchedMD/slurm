@@ -635,7 +635,7 @@ static void _read_part_db2(void)
 			/* Add node name to existing BGL partition record */
 			hostlist_push(block_ptr->hostlist, bgl_node);
 		}
-#ifdef _DEBUG
+#if _DEBUG
 		fprintf(stderr, "part=%s, node=%s conn=%s mode=%s\n", 
 			part_id, bgl_node, 
 			_convert_conn_type(block_ptr->bgl_conn_type),
@@ -646,20 +646,7 @@ static void _read_part_db2(void)
 	/* perform post-processing for each bluegene partition */
 	list_for_each(block_list, _post_block_read, NULL);
 
-	/* We can't free the data on single base partition system 
-	 * without wires, could also be a problem with old drivers.
-	 * this fails with driver level 410. */
-	if ((rc = rm_get_data(bgl, RM_SwitchNum, &i)) != STATUS_OK) {
-		fprintf(stderr, "rm_get_data(RM_SwitchNum): %s\n",
-			bgl_err_str(rc));
-		return;
-	}
-	if (i == 0)
-		return;
-	if ((rc = rm_free_BGL(bgl)) != STATUS_OK)
-		fprintf(stderr, "rm_free_BGL(): %s\n", bgl_err_str(rc));
-	else
-		bgl = NULL;
+	slurm_rm_free_BGL(bgl);
 #endif
 }
 
