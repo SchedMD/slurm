@@ -72,7 +72,7 @@ int main ( int argc , char * argv[] )
 
 	/* read thread */
 	pthread_t read_pth ;
-	int16_t port;
+	int16_t port = 0;
 
 	if (argc > 1)
 		port = atoi( argv[1] ) ;
