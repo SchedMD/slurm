@@ -162,7 +162,7 @@ slurm_sched_plugin_schedule( void )
 //  TAG(                   slurm_sched_plugin_initial_priority              ) 
 // **************************************************************************
 extern "C" u_int32_t
-slurm_sched_plugin_initial_priority( void )
+slurm_sched_plugin_initial_priority( u_int32_t max_prio )
 {
 	// *
 	// Wiki is a polling scheduler, so the initial priority is

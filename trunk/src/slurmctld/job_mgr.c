@@ -73,7 +73,7 @@ List job_list = NULL;		/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
 
 /* Local variables */
-static int    default_prio = TOP_PRIORITY;
+static uint32_t maximum_prio = TOP_PRIORITY;
 static int    hash_table_size = 0;
 static int    job_count = 0;        /* job's in the system */
 static long   job_id_sequence = -1; /* first job_id to assign new job */
@@ -504,8 +504,8 @@ static int _load_job_state(Buf buffer)
 		_add_job_hash(job_ptr);
 	}
 
-	if ((default_prio >= priority) && (priority > 1))
-		default_prio = priority - 1;
+	if ((maximum_prio >= priority) && (priority > 1))
+		maximum_prio = priority;
 	if (job_id_sequence <= job_id)
 		job_id_sequence = job_id + 1;
 
@@ -2614,7 +2614,9 @@ static void _set_job_prio(struct job_record *job_ptr)
 {
 	xassert(job_ptr);
 	xassert (job_ptr->magic == JOB_MAGIC);
-	job_ptr->priority = slurm_sched_initial_priority();
+	job_ptr->priority = slurm_sched_initial_priority(maximum_prio);
+	if (job_ptr->priority > 0)
+		maximum_prio = MIN(job_ptr->priority, maximum_prio);
 }
 
 

@@ -24,7 +24,7 @@ int slurm_sched_schedule( void );
 /*
  * Supply the initial SLURM priority for a newly-submitted job.
  */
-u_int32_t slurm_sched_initial_priority( void );
+u_int32_t slurm_sched_initial_priority( u_int32_t max_prio );
 
 /*
  **************************************************************************
