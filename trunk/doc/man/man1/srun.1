@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "June 2003" "srun 0.1" "slurm components"
+.TH SRUN "1" "August 2003" "srun 0.2" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -230,10 +230,17 @@ Specify a minimum amount of virtual memory.
 Specify a minimum amount of temporary disk space.
 .TP
 \fB\-C\fR, \fB\-\-constraint\fR=\fIlist\fR
-Specify a list of constraints. The \fIlist\fR of constraints is
-a comma separated list of features that have been assigned to the
-nodes by the slurm administrator. If no nodes have the requested
-feature, then the job will be rejected by the slurm job manager.
+Specify a list of constraints. 
+The constraints are features that have been assigned to the nodes by 
+the slurm administrator. 
+The \fIlist\fR of constraints may include multiple features separated 
+by commas, in which case all nodes must have all listed features 
+(i.e. the features are ANDed together). 
+Alternately the features may be separated by a vertical bar, '|', 
+in which case all nodes have must have at least one of the listed 
+features (i.e. the features are ORed together). 
+If no nodes have the requested features, then the job will be rejected 
+by the slurm job manager.
 .TP
 \fB\-\-contiguous\fR
 Demand a contiguous range of nodes. The default is "yes". Specify
