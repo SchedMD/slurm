@@ -95,7 +95,7 @@ extern void get_job(void)
 		} else if((job.job_state == JOB_PENDING)) {
 
 			//job.num_nodes = job.req_nodes;
-			job.nodes = "(Resources)";
+			job.nodes = "waiting...";
 			job.num_procs = (int) pa_system_ptr->fill_in_value[count].
 				letter;
 			wattron(pa_system_ptr->text_win,
@@ -176,10 +176,12 @@ static int _print_text_job(job_info_t * job_ptr)
 		  pa_system_ptr->xcord, "%.2s",
 		  job_state_string_compact(job_ptr->job_state));
 	pa_system_ptr->xcord += 3;
-	time = pa_system_ptr->now_time - job_ptr->start_time;
-
-	time = pa_system_ptr->now_time - job_ptr->start_time;
-	snprint_time(time_buf, sizeof(time_buf), time);
+	if(!strcasecmp(job_ptr->nodes,"waiting...")) {
+		sprintf(time_buf,"0:00:00");
+	} else {
+		time = pa_system_ptr->now_time - job_ptr->start_time;
+		snprint_time(time_buf, sizeof(time_buf), time);
+	}
 	width = strlen(time_buf);
 	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 		pa_system_ptr->xcord + (10 - width), "%s",
