@@ -600,14 +600,14 @@ extern void part_filter_clear(void)
  *	machine independent form (for network transmission)
  * OUT buffer_ptr - the pointer is set to the allocated buffer.
  * OUT buffer_size - set to size of the buffer in bytes
- * IN show_all - display all partitions if set
+ * IN show_flags - partition filtering options
  * IN uid - uid of user making request (for partition filtering)
  * global: part_list - global list of partition records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change slurm_load_part() in api/part_info.c if data format changes
  */
 extern void pack_all_part(char **buffer_ptr, int *buffer_size, 
-		uint16_t show_all, uid_t uid)
+		uint16_t show_flags, uid_t uid)
 {
 	ListIterator part_iterator;
 	struct part_record *part_ptr;
@@ -629,7 +629,7 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 	part_iterator = list_iterator_create(part_list);
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		xassert (part_ptr->magic == PART_MAGIC);
-		if ((show_all == 0) &&
+		if (((show_flags & SHOW_ALL) == 0) &&
 		    ((part_ptr->hidden) || (validate_group (part_ptr, uid) == 0)))
 			continue;
 		pack_part(part_ptr, buffer);

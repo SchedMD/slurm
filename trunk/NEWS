@@ -1,7 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
-* Changes in SLURM 0.3.2 (not yet tagged)
+* Changes in SLURM 0.3.3 (not tagged yet)
+========================
+
+* Changes in SLURM 0.3.2
 ========================
  -- The srun command wakes immeditely upon resource allocation (via new RPC)
     rather than polling.
@@ -11,6 +14,8 @@ documents those changes that are of interest to users and admins.
     to slurmctld.
  -- Add "slurm_" prefix to slurm's hostlist_ function man pages.
  -- More AIX support added.
+ -- Change get info calls from using show_all to more general show_flags
+    with #define for SHOW_ALL flag. 
 
 * Changes in SLURM 0.3.1
 ========================

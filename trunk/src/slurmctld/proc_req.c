@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette@llnl.gov>, Kevin Tew <tew1@llnl.gov>, et. al.
+ *  Written by Morris Jette <jette@llnl.gov>, Kevin Tew <tew1@llnl.gov>, et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -629,7 +629,7 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
 		pack_all_jobs(&dump, &dump_size, 
-				job_info_request_msg->show_all, 
+				job_info_request_msg->show_flags, 
 				g_slurm_auth_get_uid(msg->cred));
 		unlock_slurmctld(job_read_lock);
 		END_TIMER;
@@ -670,7 +670,7 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 		debug2("_slurm_rpc_dump_nodes, no change");
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
-		pack_all_node(&dump, &dump_size, node_req_msg->show_all, 
+		pack_all_node(&dump, &dump_size, node_req_msg->show_flags, 
 				g_slurm_auth_get_uid(msg->cred));
 		unlock_slurmctld(node_read_lock);
 		END_TIMER;
@@ -710,7 +710,7 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 		debug2("_slurm_rpc_dump_partitions, no change");
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
-		pack_all_part(&dump, &dump_size, part_req_msg->show_all, 
+		pack_all_part(&dump, &dump_size, part_req_msg->show_flags, 
 				g_slurm_auth_get_uid(msg->cred));
 		unlock_slurmctld(part_read_lock);
 		END_TIMER;
@@ -1041,7 +1041,7 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 		uid_t uid = g_slurm_auth_get_uid(msg->cred);
 		error_code = pack_ctld_job_step_info_response_msg(
 				request->job_id, request->step_id, 
-				uid, request->show_all, buffer);
+				uid, request->show_flags, buffer);
 		unlock_slurmctld(job_read_lock);
 		END_TIMER;
 		if (error_code) {

@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov> et. al.
+ *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -148,12 +148,12 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr,
  * IN update_time - time of current configuration data
  * IN partition_info_msg_pptr - place to store a partition configuration 
  *	pointer
- * IN show_all - if set then report even "hidden" partitions
+ * IN show_flags - partition filtering options
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_partition_info_msg
  */
 extern int slurm_load_partitions (time_t update_time, 
-		partition_info_msg_t **resp, uint16_t show_all)
+		partition_info_msg_t **resp, uint16_t show_flags)
 {
         int rc;
         slurm_msg_t req_msg;
@@ -161,7 +161,7 @@ extern int slurm_load_partitions (time_t update_time,
         part_info_request_msg_t req;
 
         req.last_update  = update_time;
-	req.show_all = show_all;
+	req.show_flags   = show_flags;
         req_msg.msg_type = REQUEST_PARTITION_INFO;
         req_msg.data     = &req;
 

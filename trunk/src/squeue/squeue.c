@@ -3,7 +3,8 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Moe Jette <jette1@llnl.gov>
+ *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, 
+ *             Morris Jette <jette1@llnl.gov>, et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -113,10 +114,14 @@ _print_job ( void )
 {
 	static job_info_msg_t * old_job_ptr = NULL, * new_job_ptr;
 	int error_code;
+	uint16_t show_flags = 0;
 
+	if (params.all_flag)
+		show_flags |= SHOW_ALL;
+ 
 	if (old_job_ptr) {
 		error_code = slurm_load_jobs (old_job_ptr->last_update, 
-				&new_job_ptr, params.all_flag);
+				&new_job_ptr, show_flags);
 		if (error_code ==  SLURM_SUCCESS)
 			slurm_free_job_info_msg( old_job_ptr );
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -126,7 +131,7 @@ _print_job ( void )
 	}
 	else
 		error_code = slurm_load_jobs ((time_t) NULL, &new_job_ptr,
-				params.all_flag);
+				show_flags);
 	if (error_code) {
 		slurm_perror ("slurm_load_jobs error");
 		return;
@@ -160,10 +165,14 @@ _print_job_steps( void )
 	int error_code;
 	static job_step_info_response_msg_t * old_step_ptr = NULL;
 	static job_step_info_response_msg_t  * new_step_ptr;
+	uint16_t show_flags = 0;
+
+	if (params.all_flag)
+		show_flags |= SHOW_ALL;
 
 	if (old_step_ptr) {
 		error_code = slurm_get_job_steps (old_step_ptr->last_update, 
-				0, 0, &new_step_ptr, params.all_flag);
+				0, 0, &new_step_ptr, show_flags);
 		if (error_code ==  SLURM_SUCCESS)
 			slurm_free_job_step_info_response_msg( old_step_ptr );
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -173,7 +182,7 @@ _print_job_steps( void )
 	}
 	else
 		error_code = slurm_get_job_steps ((time_t) NULL, 0, 0, 
-				&new_step_ptr, params.all_flag);
+				&new_step_ptr, show_flags);
 	if (error_code) {
 		slurm_perror ("slurm_get_job_steps error");
 		return;

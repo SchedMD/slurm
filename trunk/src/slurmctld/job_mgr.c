@@ -2338,7 +2338,7 @@ static int _list_find_job_old(void *job_entry, void *key)
  *	machine independent form (for network transmission)
  * OUT buffer_ptr - the pointer is set to the allocated buffer.
  * OUT buffer_size - set to size of the buffer in bytes
- * IN show_all - display all partitions if set
+ * IN show_flags - job filtering options
  * IN uid - uid of user making request (for partition filtering)
  * global: job_list - global list of job records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
@@ -2346,7 +2346,7 @@ static int _list_find_job_old(void *job_entry, void *key)
  *	whenever the data format changes
  */
 extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
-		uint16_t show_all, uid_t uid)
+		uint16_t show_flags, uid_t uid)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
@@ -2370,7 +2370,8 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 
-		if ((show_all == 0) && (job_ptr->part_ptr) && 
+		if (((show_flags & SHOW_ALL) == 0) &&
+		    (job_ptr->part_ptr) && 
 		    (job_ptr->part_ptr->hidden))
 			continue;
 

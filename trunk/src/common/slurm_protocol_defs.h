@@ -191,24 +191,24 @@ typedef struct job_step_id job_step_id_msg_t;
 
 typedef struct job_info_request_msg {
 	time_t last_update;
-	uint16_t show_all;
+	uint16_t show_flags;
 } job_info_request_msg_t;
 
 typedef struct job_step_info_request_msg {
 	time_t last_update;
 	uint32_t job_id;
 	uint32_t step_id;
-	uint16_t show_all;
+	uint16_t show_flags;
 } job_step_info_request_msg_t;
 
 typedef struct node_info_request_msg {
 	time_t last_update;
-	uint16_t show_all;
+	uint16_t show_flags;
 } node_info_request_msg_t;
 
 typedef struct part_info_request_msg {
 	time_t last_update;
-	uint16_t show_all;
+	uint16_t show_flags;
 } part_info_request_msg_t;
 
 typedef struct complete_job_step_msg {
