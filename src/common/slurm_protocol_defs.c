@@ -146,12 +146,14 @@ void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		if (msg->argv)
 			xfree(msg->argv);
 
-		for (i = 0; i < msg->env_size; i++) {
-			if (msg->environment[i])
-				xfree(msg->environment[i]);
-		}
-		if (msg->environment)
+		if (msg->environment) {
+			for (i = 0; i < msg->env_size; i++) {
+				if (msg->environment[i])
+					xfree(msg->environment[i]);
+			}
 			xfree(msg->environment);
+		}
+
 		xfree(msg);
 	}
 }
