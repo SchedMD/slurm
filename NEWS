@@ -1,6 +1,13 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.2.4
+==========================
+ -- Fix for file descriptor leak in slurmctld.
+ -- auth_munge plugin now prints credential info on decode failure.
+ -- Minor changes to scancel interface.
+ -- Filename format option "%J" now works again for srun --output and --error.
+ 
 * Changes in SLURM 0.2.3
 ==========================
  -- Fix bug in srun when using per-task files for stderr.
