@@ -14,7 +14,7 @@ io_lib = libthreaded_io.la
 endif
 
 #sbin_PROGRAMS = slurmd slurmd_nbio slurmd_elan
-sbin_PROGRAMS = slurmd slurmd_nbio
+sbin_PROGRAMS = slurmd slurmd_nbio slurmd_fork_nbio
 
 noinst_LTLIBRARIES = libelan_interconnect.la \
 		libno_interconnect.la \
@@ -31,6 +31,7 @@ LDADD = $(top_srcdir)/src/common/libcommon.la \
 
 slurmd_LDADD = $(process_lib) $(io_lib) $(LDADD) $(interconnect_lib)
 slurmd_nbio_LDADD = $(process_lib) libnb_io.la $(LDADD) $(interconnect_lib)
+slurmd_fork_nbio_LDADD = libforked.la libnb_io.la $(LDADD) $(interconnect_lib)
 	
 common_sources = slurmd.c \
 		get_mach_stat.c \
@@ -44,6 +45,7 @@ common_sources = slurmd.c \
 
 slurmd_SOURCES = $(common_sources)
 slurmd_nbio_SOURCES = $(common_sources)
+slurmd_fork_nbio_SOURCES = $(common_sources)
 
 #slurmd_elan_LDADD = libforked.la libforked_io.la  $(LDADD) libelan_interconnect.la
 #slurmd_elan_SOURCES = $(common_sources)
