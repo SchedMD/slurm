@@ -12,7 +12,6 @@ sbin_PROGRAMS = slurmctld
 slurmctld_LDADD = 					\
 	$(top_builddir)/src/common/libcommon.la    	\
 	$(top_builddir)/src/common/libhostlist.la      	\
-	$(top_builddir)/src/api/libslurm.la		\
 	$(top_builddir)/src/common/libdaemonize.la 
 
 
