@@ -1302,7 +1302,7 @@ fed_unpack_jobinfo(fed_jobinfo_t *j, Buf buf)
 		slurm_seterrno_ret(ENOMEM);
 	unpackmem(tmp_index, &size, buf);
 	if(size != (j->table_size * FED_ADAPTERLEN))
-		goto unpack_error:
+		goto unpack_error;
 	j->lid_index = tmp_index;
 	
 	return SLURM_SUCCESS;
