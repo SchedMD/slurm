@@ -375,7 +375,7 @@ int inline slurm_unpack_slurm_addr_no_alloc(slurm_addr * slurm_address,
  * IN request_msg	- slurm_msg the request msg
  * IN rc 		- the return_code to send back to the client
  */
-void slurm_send_rc_msg(slurm_msg_t * request_msg, int rc);
+int slurm_send_rc_msg(slurm_msg_t * request_msg, int rc);
 
 /* slurm_send_recv_controller_msg
  * opens a connection to the controller, sends the controller a message, 

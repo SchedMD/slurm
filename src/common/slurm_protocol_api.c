@@ -721,7 +721,7 @@ int slurm_unpack_slurm_addr_no_alloc(slurm_addr * slurm_address,
  * IN request_msg        - slurm_msg the request msg
  * IN rc                 - the return_code to send back to the client
  */
-void slurm_send_rc_msg(slurm_msg_t *msg, int rc)
+int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 {
         slurm_msg_t resp_msg;
         return_code_msg_t rc_msg;
@@ -733,7 +733,7 @@ void slurm_send_rc_msg(slurm_msg_t *msg, int rc)
         resp_msg.data     = &rc_msg;
 
         /* send message */
-        slurm_send_node_msg(msg->conn_fd, &resp_msg);
+        return slurm_send_node_msg(msg->conn_fd, &resp_msg);
 }
 
 /*
@@ -861,8 +861,6 @@ static int _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int *rc,
 
         if (msg.msg_type != RESPONSE_SLURM_RC) 
                 slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
-
-        verbose("got rc msg");
 
         *rc = ((return_code_msg_t *) msg.data)->return_code;
         slurm_free_return_code_msg(msg.data);
