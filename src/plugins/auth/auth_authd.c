@@ -232,36 +232,14 @@ slurm_auth_verify_signature( credentials *cred, signature *sig )
 }
 
 slurm_auth_credential_t *
-slurm_auth_alloc( void )
+slurm_auth_create( void )
 {
+	int ttl = authd_ttl;
 	slurm_auth_credential_t *cred = 
 		(slurm_auth_credential_t *)
 		xmalloc( sizeof( slurm_auth_credential_t ) );
 	cred->cr_errno = SLURM_SUCCESS;
-	return cred;
-}
 
-int
-slurm_auth_free( slurm_auth_credential_t *cred )
-{
-	if ( cred == NULL ) {
-		plugin_errno = SLURM_AUTH_BADARG;
-		return SLURM_ERROR;
-	}
-	xfree( cred );
-	return SLURM_SUCCESS;
-}
-
-int
-slurm_auth_activate( slurm_auth_credential_t *cred )
-{
-	int ttl = authd_ttl;
-	
-	if ( cred == NULL ) {
-		plugin_errno = SLURM_AUTH_BADARG;
-		return SLURM_ERROR;
-	}
-	
 	/* Initialize credential with our user and group. */
 	cred->cred.uid = geteuid();
 	cred->cred.gid = getegid();
@@ -287,10 +265,22 @@ slurm_auth_activate( slurm_auth_credential_t *cred )
 
 	/* Sign the credential. */
 	if ( slurm_auth_get_signature( &cred->cred, &cred->sig ) < 0 ) {
-		cred->cr_errno = SLURM_AUTH_INVALID;
+		plugin_errno = SLURM_AUTH_INVALID;
+		xfree( cred );
+		return NULL;
+	}
+	
+	return cred;
+}
+
+int
+slurm_auth_destroy( slurm_auth_credential_t *cred )
+{
+	if ( cred == NULL ) {
+		plugin_errno = SLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
-
+	xfree( cred );
 	return SLURM_SUCCESS;
 }
 
@@ -373,57 +363,67 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf )
 }
 
 
-int
-slurm_auth_unpack( slurm_auth_credential_t *cred, Buf buf )
+slurm_auth_credential_t *
+slurm_auth_unpack( Buf buf )
 {
+	slurm_auth_credential_t *cred;
 	uint16_t sig_size; /* ignored */
 	uint32_t version;	
 	char *data;
 
-	if ( ( cred == NULL) || ( buf == NULL ) ) {
+	if ( buf == NULL ) {
 		plugin_errno = SLURM_AUTH_BADARG;
-		return SLURM_ERROR;
+		return NULL;
 	}
 
-	cred->cr_errno = SLURM_SUCCESS;
 	
 	/* Check the plugin type. */
 	if ( unpackmem_ptr( &data, &sig_size, buf ) != SLURM_SUCCESS ) {
-		cred->cr_errno = SLURM_AUTH_UNPACK;
-		return SLURM_ERROR;
+		plugin_errno = SLURM_AUTH_UNPACK;
+		return NULL;
 	}
 	if ( strcmp( data, plugin_type ) != 0 ) {
-		cred->cr_errno = SLURM_AUTH_MISMATCH;
-		return SLURM_ERROR;
+		plugin_errno = SLURM_AUTH_MISMATCH;
+		return NULL;
 	}
 
 	if ( unpack32( &version, buf ) != SLURM_SUCCESS ) {
-		cred->cr_errno = SLURM_AUTH_UNPACK;
-		return SLURM_ERROR;
+		plugin_errno = SLURM_AUTH_UNPACK;
+		return NULL;
 	}
+
+	/* Allocate a credential. */
+	cred = (slurm_auth_credential_t *)
+		xmalloc( sizeof( slurm_auth_credential_t ) );
+	cred->cr_errno = SLURM_SUCCESS;
+
 	if ( unpack32( &cred->cred.uid, buf ) != SLURM_SUCCESS ) {
-		cred->cr_errno = SLURM_AUTH_UNPACK;
-		return SLURM_ERROR;
+		plugin_errno = SLURM_AUTH_UNPACK;
+		goto unpack_error;
 	}
 	if ( unpack32( &cred->cred.gid, buf ) != SLURM_SUCCESS ) {
-		cred->cr_errno = SLURM_AUTH_UNPACK;
-		return SLURM_ERROR;
+		plugin_errno = SLURM_AUTH_UNPACK;
+		goto unpack_error;
 	}
 	if ( unpack_time( &cred->cred.valid_from, buf ) != SLURM_SUCCESS ) {
-		cred->cr_errno = SLURM_AUTH_UNPACK;
-		return SLURM_ERROR;
+		plugin_errno = SLURM_AUTH_UNPACK;
+		goto unpack_error;
 	}
 	if ( unpack_time( &cred->cred.valid_to, buf ) != SLURM_SUCCESS ) {
-		cred->cr_errno = SLURM_AUTH_UNPACK;
-		return SLURM_ERROR;
+		plugin_errno = SLURM_AUTH_UNPACK;
+		goto unpack_error;
 	}
 	if ( unpackmem_ptr( &data, &sig_size, buf ) != SLURM_SUCCESS ) {
-		cred->cr_errno = SLURM_AUTH_UNPACK;
-		return SLURM_ERROR;
+		plugin_errno = SLURM_AUTH_UNPACK;
+		goto unpack_error;
 	}
 	memcpy( cred->sig.data, data, sizeof( signature ) );
 
-	return SLURM_SUCCESS;
+	return cred;
+
+ unpack_error:
+	xfree( cred );
+	return NULL;
 }
 
 
