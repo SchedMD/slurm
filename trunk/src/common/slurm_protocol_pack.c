@@ -211,6 +211,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_GET_KEY :
 			break ;
 		case MESSAGE_TASK_EXIT :
+			pack_task_exit_msg ( ( task_exit_msg_t * ) msg -> data , (void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_BATCH_JOB_LAUNCH :
 			break ;
@@ -358,6 +359,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_GET_KEY :
 			break ;
 		case MESSAGE_TASK_EXIT :
+			unpack_task_exit_msg ( ( task_exit_msg_t ** ) & (msg->data )  , ( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_BATCH_JOB_LAUNCH :
 			break ;
