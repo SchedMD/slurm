@@ -186,6 +186,16 @@ In order to support the concept of jobs requiring consecutive nodes,
 nodes should be place in this file in consecutive order.
 The size of each line in the file is limited to 1024 characters.
 A <a href="#SampleNode">sample node configuration file</a> is included at the end of this document.
+<p>
+SLURM uses a hash table in order to locate table entries rapidly. 
+If you can name the nodes such that they have a sequence number 
+with the same number of digits using a base-ten numbering system, 
+each table entry can be directly accessed without searching. This 
+is especially important in clusters having very large numbers of 
+nodes. For example, name nodes lx01, lx02, lx03, lx04, lx05, lx06, 
+lx07, lx08, lx09, lx10, lx11, lx12, lx13, lx14, lx15, lx16 for 
+best performance. If the leading zeros are not present (e.g "lx4" 
+instead of "lx04" in the example), performance will be reduced.
 
 <h3>Partition Configuration</h3>
 The partition configuration permits you to establish different job 
@@ -477,7 +487,7 @@ Remove node lx30 from service, removing jobs as needed:
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/user.administrator.html
-<p>Last Modified January 15, 2002</p>
+<p>Last Modified January 22, 2002</p>
 <address>Maintained by Moe Jette <a href="mailto:jette@llnl.gov">
 jette1@llnl.gov</a></address>
 </body>
