@@ -25,10 +25,9 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <pthread.h>
 
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
@@ -55,7 +54,7 @@ typedef struct slurm_jobcomp_ops {
 } slurm_jobcomp_ops_t;
 
 /*
- * A global authentication context.  "Global" in the sense that there's
+ * A global job completion context.  "Global" in the sense that there's
  * only one, with static bindings.  We don't export it.
  */
 
@@ -107,7 +106,7 @@ _slurm_jobcomp_context_create( const char *jobcomp_type)
 	slurm_jobcomp_context_t c;
 
 	if ( jobcomp_type == NULL ) {
-		debug3( "_slurm_jobcomp_context_create: no authentication type" );
+		debug3( "_slurm_jobcomp_context_create: no jobcomp type" );
 		return NULL;
 	}
 
@@ -115,10 +114,10 @@ _slurm_jobcomp_context_create( const char *jobcomp_type)
 
 	c->jobcomp_errno = SLURM_SUCCESS;
 
-	/* Copy the job completion authentication type. */
+	/* Copy the job completion job completion type. */
 	c->jobcomp_type = xstrdup( jobcomp_type );
 	if ( c->jobcomp_type == NULL ) {
-		debug3( "can't make local copy of authentication type" );
+		debug3( "can't make local copy of jobcomp type" );
 		xfree( c );
 		return NULL; 
 	}
@@ -157,7 +156,7 @@ _slurm_jobcomp_get_ops( slurm_jobcomp_context_t c )
 {
         /*
          * These strings must be kept in the same order as the fields
-         * declared for slurm_auth_ops_t.
+         * declared for slurm_jobcomp_ops_t.
          */
 	static const char *syms[] = {
 		"slurm_jobcomp_set_location",
@@ -218,7 +217,7 @@ g_slurm_jobcomp_init( char *jobcomp_loc )
 	}
 
 	if ( _slurm_jobcomp_get_ops( g_context ) == NULL ) {
-		verbose( "cannot resolve plugin operations" );
+		verbose( "cannot resolve job completion plugin operations" );
 		_slurm_jobcomp_context_destroy( g_context );
 		g_context = NULL;
 		retval = SLURM_ERROR;
