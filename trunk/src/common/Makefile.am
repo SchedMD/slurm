@@ -73,5 +73,5 @@ libeio_la_SOURCES = 	   \
 EXTRA_libcommon_la_SOURCES = \
 	qsw.c qsw.h
 
-libcommon_la_LIBADD   = $(SSL_LIBS) $(ELAN_LIBS)
+libcommon_la_LIBADD   = $(SSL_LIBS) $(ELAN_LIBS) -ldl
 libcommon_la_LDFLAGS  = $(SSL_LDFLAGS)	

@@ -67,7 +67,14 @@ dnl checks for library functions.
 dnl
 AC_FUNC_MALLOC
 AC_FUNC_STRERROR_R
-AC_CHECK_FUNCS([strerror, mtrace, strsignal])
+AC_CHECK_FUNCS( \
+   strerror  \
+   mtrace    \
+   strsignal \ 
+   inet_aton \
+   inet_ntop \
+   inet_pton \
+)
 
 AC_CHECK_DECLS([strsignal, sys_siglist])
 
