@@ -331,7 +331,7 @@ void * service_connection ( void * arg )
 
 	if ( ( error_code = slurm_receive_msg ( newsockfd , msg ) ) == SLURM_SOCKET_ERROR )
 	{
-		error ("slurmd: error %d from accept", errno);
+		error ("slurmd: service_connection: %m errno: %d from slurm_receive_msg", errno);
 		slurm_free_msg ( msg ) ;
 	}
 	else
