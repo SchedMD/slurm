@@ -483,7 +483,7 @@ static void *_wdog(void *args)
  */
 static void *_thread_per_node_rpc(void *args)
 {
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, timeout = 0;
 	slurm_msg_t msg;
 	task_info_t *task_ptr = (task_info_t *) args;
 	thd_t *thread_ptr = task_ptr->thread_struct_ptr;
@@ -512,15 +512,15 @@ static void *_thread_per_node_rpc(void *args)
 	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
 
-	if (is_kill_msg) 
+	if (is_kill_msg) {
 		/* Extend time that this thread is allowed to exist.  */
-		thread_ptr->end_time = thread_ptr->start_time +
-					slurmctld_conf.kill_wait + 2;
-	else
+		timeout = slurmctld_conf.kill_wait + 2;
+		thread_ptr->end_time = thread_ptr->start_time + timeout;
+	} else
 		thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT; 
 
 	if (task_ptr->get_reply) {
-		if (slurm_send_recv_rc_msg(&msg, &rc, 0) < 0) {
+		if (slurm_send_recv_rc_msg(&msg, &rc, timeout) < 0) {
 			error("agent: %s: %m", thread_ptr->node_name);
 			goto cleanup;
 		}
