@@ -2044,20 +2044,16 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
  */
 static char *_copy_nodelist_no_dup(char *node_list)
 {
-	int   new_size = 64;
-	char *new_str;
+	char buf[8192];
+
 	hostlist_t hl = hostlist_create(node_list);
 	if (hl == NULL)
 		return NULL;
-
 	hostlist_uniq(hl);
-	new_str = xmalloc(new_size);
-	while (hostlist_ranged_string(hl, new_size, new_str) == -1) {
-		new_size *= 2;
-		xrealloc(new_str, new_size);
-	}
+	hostlist_ranged_string(hl, 8192, buf);
 	hostlist_destroy(hl);
-	return new_str;
+
+	return xstrdup(buf);
 }
 
 /* 
