@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "September 2002" "scontrol 0.1" "Slurm components"
+.TH SCONTROL "1" "October 2002" "scontrol 0.1" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -19,7 +19,7 @@ and options are case-insensitive, although node names and partition names
 are case-sensitive (node names "LX" and "lx" are distinct).
 
 .TP
-OPTIONS
+\fBOPTIONS\fR
 .TP
 \fB-h\fR
 Print a help message describing the usage of scontrol.
@@ -31,7 +31,7 @@ Print no warning or informational messages, only fatal error messages.
 Print detailed event logging. This includes time-stamps on data structures, 
 record counts, etc.
 .TP
-COMMAND
+\fBCOMMANDS\fR
 .TP
 \fIabort\fP
 Instruct the Slurm controller to terminate immediately and generate a core file.
@@ -92,7 +92,103 @@ Display the version number of scontrol being executed.
 .TP
 \fI!!\fP
 Repeat the last command executed.
-
+.TP
+\fBSPECIFICATIONS FOR UPDATE COMMAND, JOBS\fR
+.TP
+\fIContiguous\fP=<yes|no>
+Set the job's requirement for contiguous (consecutive) nodes to be allocated. 
+Possible values are"YES" and "NO".
+.TP
+\fIFeatures\fP=<features>
+Set the job's required features on nodes specified value. Multiple values 
+may be comma separated if all features are required (AND operation) or 
+separated by "|" if any of the specified features are required (OR operation).
+.TP
+\fIJobId\fP=<id>
+Identify the job to be updated. This specification is required.
+.TP
+\fIMinMemory\fP=<megabytes>
+Set the job's minimum real memory required per nodes to the specified value.
+.TP
+\fIMinProcs\fP=<count>
+Set the job's minimum number of processors per nodes to the specified value.
+.TP
+\fIMinTmpDisk\fP=<megabytes>
+Set the job's minimum temporary disk space required per nodes to the specified value.
+.TP
+\fIName\fP=<name>
+Set the job's name to the specified value.
+.TP
+\fIPartition\fP=<name>
+Set the job's partition to the specified value.
+.TP
+\fIPriority\fP=<minutes>
+Set the job's priority to the specified value.
+.TP
+\fIReqNodeList\fP=<nodes>
+Set the job's list of required node. Multiple node names may be specified using 
+simple regular expressions (e.g. "lx[10-20]"). 
+.TP
+\fIReqNodes\fP=<count>
+Set the job's count of required nodes to the specified value.
+.TP
+\fIReqProcs\fP=<count>
+Set the job's count of required processors to the specified value.
+.TP
+\fIShared\fP=<yes|no>
+Set the job's ability to share nodes with other jobs. Possible values are
+"YES" and "NO".
+.TP
+\fITimeLimit\fP=<minutes>
+Set the job's time limit to the specified value.
+.TP
+\fBSPECIFICATIONS FOR UPDATE COMMAND, NODES\fR
+.TP
+\fINodeName\fP=<name>
+Identify the node(s) to be updated. Multiple node names may be specified using 
+simple regular expressions (e.g. "lx[10-20]"). This specification is required.
+.TP
+\fIState\fP=<state>
+Identify the state to be assigned to the node. Possible values are "DOWN", "IDLE", 
+"DRAINED", "DRAINING", and "ALLOCATED".
+.TP
+\fBSPECIFICATIONS FOR UPDATE COMMAND, PARTITIONS\fR
+.TP
+\fIAllowGroups\fP=<name>
+Identify the user groups which may use this partition. Multiple groups 
+may be specified in a comma separated list. 
+.TP
+\fIDefault\fP=<yes|no>
+Specify if this partition is to be used by jobs which do not explicitly 
+identify a partition to use. Possible values are"YES" and "NO".
+.TP
+\fINodes\fP=<name>
+Identify the node(s) to be associated with this partition. Multiple node names 
+may be specified using simple regular expressions (e.g. "lx[10-20]"). 
+Note that jobs may only be associated with one partition at any time.
+.TP
+\fIPartitionName\fP=<name>
+Identify the partition to be updated. This specification is required.
+.TP
+\fIRootOnly\fP=<yes|no>
+Specify if only allocation requests initiated by user root will be satisfied. 
+This can be used to restrict control of the partition to some meta-scheduler. 
+Possible values are"YES" and "NO".
+.TP
+\fIShared\fP=<yes|no|force>
+Specify if nodes in this partition can be shared by multiple jobs. 
+Possible values are"YES", "NO" and "FORCE".
+.TP
+\fIState\fP=<up|down>
+Specify if jobs can be allocated nodes in this partition. 
+Possible values are"UP" and "DOWN".
+If a partition allocated nodes to running jobs, those jobs will continue 
+execution even after the partition's state is set to "DOWN". The jobs 
+must be explicitly cancelled to force their termination.
+.TP
+\fIMaxNodes\fP=<count>
+Set the maximum number of nodes which will be allocated to any single job 
+in the partition. Specify a number or "INFINITE".
 .SH "EXAMPLE"
 .eo
 .br 
@@ -148,6 +244,7 @@ details.
 .LP
 /etc/slurm.conf
 .SH "SEE ALSO"
+\fBscancel\fR(1), \fBsinfo\fR(1), \fBsqueue\fR(1), 
 \fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3), 
 \fBslurm_load_partitions\fR(3), 
 \fBslurm_reconfigure\fR(3), \fBslurm_shutdown\fR(3), 
