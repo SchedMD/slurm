@@ -39,7 +39,6 @@ void get_command(void)
 {
 	command_info_t *com = xmalloc(sizeof(command_info_t));
 	static node_info_msg_t *node_info_ptr;
-	node_info_t *node_ptr;
 	int text_height, text_width, text_starty, text_startx, error_code;
 	WINDOW *command_win;
 
