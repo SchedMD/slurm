@@ -47,6 +47,11 @@ void fd_set_nonblocking(int fd);
  *  Sets the file descriptor (fd) for non-blocking I/O.
  */
 
+void fd_set_blocking(int fd);
+/*
+ * Sets the file descriptor (fd) for blocking I/O.
+ */
+
 int fd_get_read_lock(int fd);
 /*
  *  Obtain a read lock on the file specified by (fd).

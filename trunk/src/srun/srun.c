@@ -47,6 +47,7 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
@@ -104,6 +105,7 @@ srun(int ac, char **av)
 	struct rlimit rlim;
 
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
+
 
 	log_init(xbasename(av[0]), logopt, 0, NULL);
 
@@ -183,6 +185,9 @@ srun(int ac, char **av)
 	}
 
 	/* job structure should now be filled in */
+
+	fd_set_blocking(STDOUT_FILENO);
+	fd_set_blocking(STDERR_FILENO);
 
 	if (msg_thr_create(job) < 0)
 		job_fatal(job, "Unable to create msg thread");
