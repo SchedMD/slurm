@@ -145,11 +145,12 @@ int main(int argc, char *argv[])
 	slurmctld_pid = getpid();
 	_parse_commandline(argc, argv, &slurmctld_conf);
 	init_locks();
+	slurm_api_set_conf_file(slurmctld_conf.slurm_conf);
 
 	/* Get SlurmctldPidFile for _kill_old_slurmctld */
 	if ((error_code = read_slurm_conf_ctl (&slurmctld_conf)))
 		fatal("read_slurm_conf_ctl reading %s: %s",
-		      SLURM_CONFIG_FILE, slurm_strerror(error_code));
+		      slurmctld_conf.slurm_conf, slurm_strerror(error_code));
 	update_logging();
 	_kill_old_slurmctld();
 
@@ -230,7 +231,7 @@ int main(int argc, char *argv[])
 			/* Now recover the remaining state information */
 			if ((error_code = read_slurm_conf(recover))) {
 				fatal("read_slurm_conf reading %s: %s",
-					SLURM_CONFIG_FILE,
+					slurmctld_conf.slurm_conf,
 					slurm_strerror(error_code));
 			}
 		} else {
