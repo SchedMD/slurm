@@ -14,7 +14,6 @@ endif
 noinst_LTLIBRARIES = 	\
 	libcommon.la 	\
 	libdaemonize.la \
-	libcred.la	\
 	libhostlist.la	\
         libeio.la
 
@@ -36,6 +35,8 @@ libcommon_la_SOURCES = 			\
 	plugin.c plugin.h		\
 	plugrack.c plugrack.h		\
 	read_config.c read_config.h	\
+	slurm_cred.h       		\
+	slurm_cred.c			\
 	slurm_errno.c			\
 	slurm_protocol_api.c		\
 	slurm_protocol_api.h		\
@@ -59,9 +60,6 @@ libdaemonize_la_SOURCES =  \
 	daemonize.h        \
 	fd.c fd.h
 
-libcred_la_SOURCES =       \
-	slurm_cred.h       \
-	slurm_cred.c       
 
 libhostlist_la_SOURCES   = \
 	hostlist.c hostlist.h
@@ -73,5 +71,4 @@ EXTRA_libcommon_la_SOURCES = \
 	qsw.c qsw.h
 
 libcommon_la_LIBADD   = $(SSL_LIBS) $(ELAN_LIBS)
-libcred_la_LIBADD     = $(SSL_LIBS) 
-libcred_la_LDFLAGS    = $(SSL_LDFLAGS)	
+libcommon_la_LDFLAGS  = $(SSL_LDFLAGS)	
