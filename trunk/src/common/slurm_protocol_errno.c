@@ -41,6 +41,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_INVALID_JOB_ID,		"Invalid job id specified" },
 	{ ESLURM_INVALID_NODE_NAMES,		"Invalid node name specified" },
 	{ ESLURM_INVALID_PARTITION,		"Invalid partition name specified" },
+	{ ESLURM_TRANSISTION_STATE_NO_UPDATE,	"Job can not be altered now, try again later" },
+	{ ESLURM_ALREADY_DONE,			"Job/step already completed" },
 
 	/* partition_mgr.c/update_part */
 	{ ESLURM_INVALID_PARTITION_NAME,	"Invalid partition name specified" },
