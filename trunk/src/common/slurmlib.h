@@ -13,8 +13,8 @@
 #define MAX_NAME_LEN	16
 #define NODE_STRUCT_VERSION 1
 #define PART_STRUCT_VERSION 1
-#define SLURMCTLD_HOST	"134.9.55.42"
-#define SLURMCTLD_PORT	1543
+#define SLURMCTLD_HOST	"127.0.0.1"
+#define SLURMCTLD_PORT	1544
 #define STATE_NO_RESPOND 0x8000
 #define STEP_STRUCT_VERSION 1
 
@@ -45,7 +45,10 @@ enum node_states {
 	STATE_DOWN,		/* node is not responding */
 	STATE_UNKNOWN,		/* node's initial state, unknown */
 	STATE_IDLE,		/* node idle and available for use */
-	STATE_BUSY,		/* node has been allocated, job currently */
+	STATE_ALLOCATED,	/* node has been allocated, job not currently running */
+	STATE_STAGE_IN,		/* node has been allocated, job is starting execution */
+	STATE_RUNNING,		/* node has been allocated, job currently running */
+	STATE_STAGE_OUT,	/* node has been allocated, job is terminating */
 	STATE_DRAINED,		/* node idle and not to be allocated future work */
 	STATE_DRAINING,		/* node in use, but not to be allocated future work */
 	STATE_END		/* last entry in table */
@@ -323,7 +326,7 @@ extern int parse_node_name (char *node_name, char **format, int *start_inx,
 extern int reconfigure ();
 
 /* 
- * update_config - _ request that slurmctld update its configuration per request
+ * update_config - request that slurmctld update its configuration per request
  * input: a line containing configuration information per the configuration file format
  * output: returns 0 on success, errno otherwise
  */
