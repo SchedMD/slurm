@@ -327,8 +327,7 @@ allocate_nodes(void)
 	}
 
 	if ((rc == 0) && (resp->node_list == NULL)) {
-		if (_verbose || _debug)
-			info ("Job %u queued and waiting for resources", resp->job_id);
+		info ("Job %u queued and waiting for resources", resp->job_id);
 		old_job.job_id = resp->job_id;
 		old_job.uid = (uint32_t) getuid();
 		slurm_free_resource_allocation_response_msg (resp);
