@@ -1120,6 +1120,8 @@ void pack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr, void ** buf_pt
 	packstr (build_ptr->slurm_conf, buf_ptr, buffer_size);
 	packstr (build_ptr->state_save_location, buf_ptr, buffer_size);
 	packstr (build_ptr->tmp_fs, buf_ptr, buffer_size);
+	packstr (build_ptr->job_credential_private_key, buf_ptr, buffer_size);
+	packstr (build_ptr->job_credential_public_certificate, buf_ptr, buffer_size);
 }
 
 int unpack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t **build_buffer_ptr, void ** buffer , int * buffer_size )
@@ -1148,6 +1150,8 @@ int unpack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t **build_buffer_ptr, void *
 	unpackstr_xmalloc (&build_ptr->slurm_conf, &uint16_tmp, buffer, buffer_size);
 	unpackstr_xmalloc (&build_ptr->state_save_location, &uint16_tmp, buffer, buffer_size);
 	unpackstr_xmalloc (&build_ptr->tmp_fs, &uint16_tmp, buffer, buffer_size);
+	unpackstr_xmalloc (&build_ptr->job_credential_private_key, &uint16_tmp, buffer, buffer_size);
+	unpackstr_xmalloc (&build_ptr->job_credential_public_certificate, &uint16_tmp, buffer, buffer_size);
 	*build_buffer_ptr = build_ptr ;
 	return 0 ;
 }

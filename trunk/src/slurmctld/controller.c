@@ -50,6 +50,8 @@
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 
+#include <src/slurmd/credential_utils.h>
+
 #define BUF_SIZE 1024
 #define MAX_SERVER_THREAD_COUNT 20
 
@@ -63,6 +65,7 @@ pid_t slurmctld_pid;
 pthread_t thread_id_bg = (pthread_t)0;
 pthread_t thread_id_main = (pthread_t)0;
 pthread_t thread_id_rpc = (pthread_t)0;
+extern slurm_ssl_key_ctx_t sign_ctx ;
 int daemonize = 0;
 
 int msg_from_root (void);
@@ -144,6 +147,10 @@ main (int argc, char *argv[])
 			node_name, slurmctld_conf.control_machine, 
 			slurmctld_conf.backup_controller);
 
+	/* init ssl job credential stuff*/
+        slurm_ssl_init ( ) ;
+	slurm_init_signer ( & sign_ctx , slurmctld_conf . job_credential_private_key ) ;
+		
 	/* block all signals for now */
 	if (sigfillset (&set))
 		error ("sigfillset errno %d", errno);
@@ -185,6 +192,11 @@ main (int argc, char *argv[])
 				shutdown_time = time (NULL);
 				/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
 				slurm_shutdown ();
+				/* ssl clean up
+				*/
+				slurm_destroy_ssl_key_ctx ( & sign_ctx ) ;
+				slurm_ssl_destroy ( ) ;
+
 				pthread_join (thread_id_rpc, NULL);
 				/* thread_id_bg waits for all RPCs to complete */
 				pthread_join (thread_id_bg, NULL);
@@ -1174,13 +1186,13 @@ slurm_rpc_job_step_create( slurm_msg_t* msg )
 	else
 	{
 		/* FIXME Needs to be fixed to really work with a credential */
-		slurm_job_credential_t cred = { 1,1,"test",start_time, "signature"} ;
+		//slurm_job_credential_t cred = { 1,1,"test",start_time, "signature"} ;
 		info ("slurm_rpc_job_step_create success time=%ld",
 				(long) (clock () - start_time));
 		
 		job_step_resp.job_step_id = step_rec->step_id;
 		job_step_resp.node_list = bitmap2node_name( step_rec->node_bitmap );
-		job_step_resp.credentials = &cred;
+		job_step_resp.credentials = & step_rec-> job_ptr-> details-> credential ;
 				
 #ifdef HAVE_LIBELAN3
 	/* FIXME */

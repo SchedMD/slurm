@@ -21,7 +21,9 @@ bin_PROGRAMS = slurmctld
 
 noinst_PROGRAMS = $(test_modules)
 
-LDADD = $(top_srcdir)/src/common/libcommon.la
+LDADD = $(top_srcdir)/src/common/libcommon.la \
+	$(top_srcdir)/src/slurmd/libcredential_utils.la \
+	$(SSL_LIBS)
 
 slurmctld_SOURCES = 	\
 	locks.h  	\
@@ -35,7 +37,7 @@ slurmctld_SOURCES = 	\
 	partition_mgr.c \
 	read_config.c	\
 	step_mgr.c \
-	pack.c
+	pack.c 
 
 
 
