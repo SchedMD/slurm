@@ -17,6 +17,7 @@ documents those changes that are of interest to users and admins.
     to identify nodes associated with that particular job that are 
     still processing job completion. This will work properly for 
     shared nodes.
+ -- Set SLURM_DISTRIBUTION environment varible for user tasks.
 
 * Changes in SLURM 0.3.0.0-pre9
 ===============================
