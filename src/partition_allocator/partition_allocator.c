@@ -1148,15 +1148,10 @@ int new_pa_request(pa_request_t** pa_request,
 {
 	int i, sz=1;
 
-	if (!_initialized){
-		printf("Error, configuration not initialized, call init_configuration first\n");
-		return 1;
-	}
-
 	*pa_request = (pa_request_t*) xmalloc(sizeof(pa_request_t));
 	(*pa_request)->geometry = (int*) xmalloc(sizeof(int)* PA_SYSTEM_DIMENSIONS);
 	/* size will be overided by geometry size if given */
-	if (geometry[0]){
+	if (geometry[0] != -1){
 		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
 			if (geometry[i] < 1 || geometry[i] > DIM_SIZE[i]){
 				printf("new_pa_request Error, request geometry is invalid\n"); 
@@ -1173,7 +1168,7 @@ int new_pa_request(pa_request_t** pa_request,
 		/* decompose the size into a cubic geometry */
 		int i;
 		if ( ((size%2) != 0 || size < 1) && size != 1){
-			printf("allocate_part_by_size ERROR, requested size must be greater than "
+			printf("new_pa_request ERROR, requested size must be greater than "
 			       "0 and a power of 2 (of course, size 1 is allowed)\n");
 			return 1;
 		}
@@ -1183,10 +1178,11 @@ int new_pa_request(pa_request_t** pa_request,
 				(*pa_request)->geometry[i] = 1;
 		} else {
 			int literal = size / pow(2,(PA_SYSTEM_DIMENSIONS-1));
-			for (i=0; i<PA_SYSTEM_DIMENSIONS; i++)
+			for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
 				(*pa_request)->geometry[i] = literal;
+			printf("parsed geometry: %d\n", (*pa_request)->geometry[i]);}
 		}
-
+		
 		(*pa_request)->size = size;
 	}
 	(*pa_request)->conn_type = conn_type;
@@ -1324,6 +1320,11 @@ void pa_fini()
 #ifdef DEBUG_PA
 	printf("pa_fini()\n");
 #endif
+
+	if (!_initialized){
+		return;
+	}
+
 	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++) {
 		list_destroy(_conf_result_list[i]);
 	}
@@ -1413,52 +1414,49 @@ int undo_last_allocatation()
 /** */
 int main(int argc, char** argv)
 {
-	
-	pa_init();
-
-	/*
-	ListIterator itr;
-	conf_result_t* conf_result;
-
-	itr = list_iterator_create(_pa_system[1][2][1].conf_result_list[0]);
-	while((conf_result = (conf_result_t*) list_next(itr))){
-		print_conf_result(conf_result);
-	}
-	list_iterator_destroy(itr);
-	*/
-
-	/*
-	  int dead_node1[3] = {0,0,0};
-	  int dead_node2[3] = {1,0,0};
-	set_node_down(dead_node1);
-	set_node_down(dead_node2);
-	printf("done setting node down\n");
-	*/
-	
-	int geo[3] = {2,2,2};
+	int geo[3];
 	bool rotate = false;
 	bool elongate = false;
 	bool force_contig = true;
 	List results;
 	pa_request_t* request; 
-	new_pa_request(&request, geo, -1, rotate, elongate, force_contig, RM_TORUS);
-	
-	// int i;
-	// for (i=0; i<8; i++){
-	// _print_pa_system();
-	if (allocate_part(request, &results)){
-		printf("allocate success for %d%d%d\n", 
-		       geo[0], geo[1], geo[2]);
-		// _print_results(results);
-		list_destroy(results);
-	}
-	// }
 
+	if (argc == 4){
+		int i;
+		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
+			geo[i] = atoi(argv[i+1]);
+		}
+		printf("allocating by geometry: %d %d %d\n", geo[0], geo[1], geo[2]);
+		new_pa_request(&request, geo, -1, rotate, elongate, force_contig, RM_TORUS);
+	} else if (argc == 2) {
+		int size;
+		size = atoi(argv[1]);
+		geo[0] = -1;
+		printf("allocating by size: %d\n", size);
+		new_pa_request(&request, geo, size, rotate, elongate, force_contig, RM_TORUS);
+	} else {
+		printf(" usage: partition_allocator dimX dimY dimZ\n");
+		printf("    or: partition_allocator size\n");
+		printf(" tries to allocate the given geometry request \n");
+		exit(0);
+	}
+
+	pa_init();
+	/*
+	  int dead_node1[3] = {0,0,0};
+	  int dead_node2[3] = {1,0,0};
+	  set_node_down(dead_node1);
+	  set_node_down(dead_node2);
+	  printf("done setting node down\n");
+	*/
+	
 	if (allocate_part(request, &results)){
-		printf("allocate success for %d%d%d\n", 
-		       geo[0], geo[1], geo[2]);
+		printf("allocation succeeded\n");
+		       
 		// _print_results(results);
 		list_destroy(results);
+	} else {
+		printf("request failed\n");
 	}
 
 	delete_pa_request(request);
