@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324"
-<meta name="LLNLRandRdate" content="18 February 2004">
+<meta name="LLNLRandRdate" content="23 July 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -57,6 +57,15 @@ structure:Laboratories and Other Field Facilities">
 <p> This document describes SLURM scheduler plugins and the API that defines 
 them. It is intended as a resource to programmers wishing to write their own SLURM 
 scheduler plugins. This is version 0 of the API.</p>
+
+<p>It is noteworthy that two different models are used for job scheduling.
+The <b>backfill</b> scheduler lets SLURM establish the initial job priority
+and can periodically alter job priorities to change their order within the queue.
+The <b>wiki</b> scheduler establishes an initial priority of zero (held) for
+all jobs. These jobs only begin execution when the <b>wiki</b> scheduler 
+explicitly raises the their priority (releasing them). 
+Developers may use the model that best fits their needs.</p>
+
 <p>SLURM scheduler plugins are SLURM plugins that implement the SLURM scheduler
 API described herein. They must conform to the SLURM Plugin API with the following 
 specifications:</p>
@@ -160,7 +169,7 @@ to implement a particular API version using the mechanism outlined for SLURM plu
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-204324<br>
-Last modified February 18, 2004</p></td>
+Last modified July 23, 2004</p></td>
 </tr>
 </table>
 </td>
