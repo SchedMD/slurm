@@ -49,7 +49,7 @@ if {[info exists mpi_ping] == 0} {
 	exit 0
 }
 if {[file executable $mpi_ping] == 0} {
-	send_user "\nWARNING: $mpi_ping does not exists\n"
+	send_user "\nWARNING: $mpi_ping does not exist\n"
 	exit 0
 }
 
