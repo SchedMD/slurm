@@ -1073,6 +1073,25 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	return error_code;
 }
 
+/* node_did_resp - record that the specified node is responding */
+void 
+node_did_resp (char *name)
+{
+	struct node_record *node_ptr;
+	int i;
+
+	node_ptr = find_node_record (name);
+	if (node_ptr == NULL) {
+		error ("node_not_resp unable to find node %s", name);
+		return;
+	}
+
+	i = node_ptr - node_record_table_ptr;
+	last_node_update = time (NULL);
+	node_record_table_ptr[i].last_response = time (NULL);
+	return;
+}
+
 /* node_not_resp - record that the specified node is not responding */
 void 
 node_not_resp (char *name)

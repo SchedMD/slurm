@@ -361,6 +361,7 @@ dump_job_details_state (struct job_details *detail_ptr, void **buf_ptr, int *buf
 	pack32  ((uint32_t) detail_ptr->num_nodes, buf_ptr, buf_len);
 	pack16  ((uint16_t) detail_ptr->shared, buf_ptr, buf_len);
 	pack16  ((uint16_t) detail_ptr->contiguous, buf_ptr, buf_len);
+	pack16  ((uint16_t) detail_ptr->kill_on_node_fail, buf_ptr, buf_len);
 
 	pack32  ((uint32_t) detail_ptr->min_procs, buf_ptr, buf_len);
 	pack32  ((uint32_t) detail_ptr->min_memory, buf_ptr, buf_len);
@@ -463,7 +464,7 @@ load_job_state ( void )
 	uint16_t job_state, next_step_id, details;
 	char *nodes = NULL, *partition = NULL, *name = NULL;
 	uint32_t num_procs, num_nodes, min_procs, min_memory, min_tmp_disk, submit_time;
-	uint16_t shared, contiguous, name_len;
+	uint16_t shared, contiguous, kill_on_node_fail, name_len;
 	char *req_nodes = NULL, *features = NULL;
 	char  *stderr = NULL, *stdin = NULL, *stdout = NULL, *work_dir = NULL;
 	slurm_job_credential_t *credential_ptr = NULL;
@@ -535,6 +536,7 @@ load_job_state ( void )
 			safe_unpack32 (&num_nodes, &buf_ptr, &buffer_size);
 			safe_unpack16 (&shared, &buf_ptr, &buffer_size);
 			safe_unpack16 (&contiguous, &buf_ptr, &buffer_size);
+			safe_unpack16 (&kill_on_node_fail, &buf_ptr, &buffer_size);
 
 			safe_unpack32 (&min_procs, &buf_ptr, &buffer_size);
 			safe_unpack32 (&min_memory, &buf_ptr, &buffer_size);
@@ -612,6 +614,8 @@ load_job_state ( void )
 			job_ptr->details->num_nodes = num_nodes;
 			job_ptr->details->shared = shared;
 			job_ptr->details->contiguous = contiguous;
+			job_ptr->details->kill_on_node_fail = kill_on_node_fail;
+			job_ptr->details->kill_on_node_fail = 1;
 			job_ptr->details->min_procs = min_procs;
 			job_ptr->details->min_memory = min_memory;
 			job_ptr->details->min_tmp_disk = min_tmp_disk;
@@ -757,13 +761,86 @@ find_job_record(uint32_t job_id)
 	return NULL;
 }
 
+/* find_running_job_by_node_name - Given a node name, return a pointer to any 
+ *	job currently running on that node */
+struct job_record *
+find_running_job_by_node_name (char *node_name)
+{
+	ListIterator job_record_iterator;
+	struct job_record *job_record_point;
+	struct node_record *node_record_point;
+	int bit_position;
+
+	node_record_point = find_node_record (node_name);
+	if (node_record_point == NULL)	/* No such node */
+		return NULL;
+	bit_position = node_record_point - node_record_table_ptr;
+
+	job_record_iterator = list_iterator_create (job_list);		
+	while ((job_record_point = (struct job_record *) list_next (job_record_iterator))) {
+		if ( (job_record_point->job_state != JOB_STAGE_IN) && 
+		     (job_record_point->job_state != JOB_RUNNING) && 
+		     (job_record_point->job_state != JOB_STAGE_OUT) )
+			continue;	/* job not active */
+		if (bit_test (job_record_point->node_bitmap, bit_position))
+			break;		/* found job here */
+	}		
+	list_iterator_destroy (job_record_iterator);
+
+	return job_record_point;
+}
+
+/* kill_running_job_by_node_name - Given a node name, deallocate that job 
+ *	from the node or kill it */
+int
+kill_running_job_by_node_name (char *node_name)
+{
+	ListIterator job_record_iterator;
+	struct job_record *job_record_point;
+	struct node_record *node_record_point;
+	int bit_position;
+	int job_count = 1;
+
+	node_record_point = find_node_record (node_name);
+	if (node_record_point == NULL)	/* No such node */
+		return 0;
+	bit_position = node_record_point - node_record_table_ptr;
+
+	job_record_iterator = list_iterator_create (job_list);		
+	while ((job_record_point = (struct job_record *) list_next (job_record_iterator))) {
+		if ( (job_record_point->job_state != JOB_STAGE_IN) && 
+		     (job_record_point->job_state != JOB_RUNNING) && 
+		     (job_record_point->job_state != JOB_STAGE_OUT) )
+			continue;	/* job not active */
+		if (bit_test (job_record_point->node_bitmap, bit_position) == 0)
+			continue;	/* job not on this node */
+
+		error ("Running job_id %u vanished from node %s",
+			job_record_point->job_id, node_name);
+		job_count++;
+		if ( (job_record_point->details == NULL) || 
+		     (job_record_point->details->kill_on_node_fail)) {
+			last_job_update = time (NULL);
+			job_record_point->job_state = JOB_NODE_FAIL;
+			job_record_point->end_time = time(NULL);
+			deallocate_nodes (job_record_point);
+			delete_job_details(job_record_point);
+		}
+	}		
+	list_iterator_destroy (job_record_iterator);
+
+	return job_count;
+}
+
+
 
 /* dump_job_desc - dump the incoming job submit request message */
 void
 dump_job_desc(job_desc_msg_t * job_specs)
 {
 	long job_id, min_procs, min_memory, min_tmp_disk, num_procs;
-	long num_nodes, time_limit, priority, contiguous, shared;
+	long num_nodes, time_limit, priority, contiguous;
+	long kill_on_node_fail, shared;
 
 	if (job_specs == NULL) 
 		return;
@@ -786,13 +863,16 @@ dump_job_desc(job_desc_msg_t * job_specs)
 
 	time_limit = (job_specs->time_limit != NO_VAL) ? job_specs->time_limit : -1 ;
 	priority = (job_specs->priority != NO_VAL) ? job_specs->priority : -1 ;
-	contiguous = (job_specs->contiguous != (uint16_t) NO_VAL) ? job_specs->contiguous : -1 ;
+	contiguous = (job_specs->contiguous != (uint16_t) NO_VAL) ? 
+			job_specs->contiguous : -1 ;
+	kill_on_node_fail = (job_specs->kill_on_node_fail != (uint16_t) NO_VAL) ? 
+			job_specs->kill_on_node_fail : -1 ;
 	shared = (job_specs->shared != (uint16_t) NO_VAL) ? job_specs->shared : -1 ;
 	debug3("   time_limit=%ld priority=%ld contiguous=%ld shared=%ld", 
 		time_limit, priority, contiguous, shared);
 
-	debug3("   script=\"%s\"", 
-		job_specs->script);
+	debug3("   kill_on_node_fail=%ld script=\"%s\"", 
+		kill_on_node_fail, job_specs->script);
 
 	if (job_specs->env_size == 1)
 		debug3("   environment=\"%s\"", job_specs->environment[0]);
@@ -1409,6 +1489,8 @@ copy_job_desc_to_job_record ( job_desc_msg_t * job_desc ,
 		detail_ptr->shared = job_desc->shared;
 	if (job_desc->contiguous != NO_VAL)
 		detail_ptr->contiguous = job_desc->contiguous;
+	if (job_desc->kill_on_node_fail != NO_VAL)
+		detail_ptr->kill_on_node_fail = job_desc->kill_on_node_fail;
 	if (job_desc->min_procs != NO_VAL)
 		detail_ptr->min_procs = job_desc->min_procs;
 	if (job_desc->min_memory != NO_VAL)
@@ -1557,7 +1639,8 @@ job_time_limit (void)
 		if ((job_ptr->job_state == JOB_PENDING) ||
 		    (job_ptr->job_state == JOB_FAILED) ||
 		    (job_ptr->job_state == JOB_COMPLETE) ||
-		    (job_ptr->job_state == JOB_TIMEOUT))
+		    (job_ptr->job_state == JOB_TIMEOUT) ||
+		    (job_ptr->job_state == JOB_NODE_FAIL))
 			continue;
 		last_job_update = now;
 		info ("Time limit exhausted for job_id %u, terminated", job_ptr->job_id);
@@ -1595,6 +1678,8 @@ validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate )
 	}	
 	if (job_desc_msg->contiguous == NO_VAL)
 		job_desc_msg->contiguous = 0 ;
+	if (job_desc_msg->kill_on_node_fail == NO_VAL)
+		job_desc_msg->kill_on_node_fail = 1 ;
 	if (job_desc_msg->shared == NO_VAL)
 		job_desc_msg->shared =  0 ;
 
@@ -2167,6 +2252,12 @@ update_job (job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
+	if (job_specs -> kill_on_node_fail != (uint16_t) NO_VAL && detail_ptr) {
+		detail_ptr -> kill_on_node_fail = job_specs -> kill_on_node_fail;
+		info ("update_job: setting kill_on_node_fail to %u for job_id %u",
+			job_specs -> kill_on_node_fail, job_specs -> job_id);
+	}
+
 	if (job_specs -> features && detail_ptr) {
 		if ( super_user ) {
 			if (detail_ptr -> features)
@@ -2234,4 +2325,49 @@ update_job (job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	return error_code;
+}
+
+/* validate_jobs_on_node - validate that any jobs that should be on the node are 
+ *	actually running, if not clean up the job records and/or node records,
+ *	call this function after validate_node_specs() sets the node state properly */
+void
+validate_jobs_on_node ( char *node_name, uint32_t job_count, uint32_t *job_id_ptr)
+{
+	int i;
+	struct node_record *node_ptr;
+	struct job_record *job_ptr;
+
+	node_ptr = find_node_record (node_name);
+	if (node_ptr == NULL)
+		return;
+
+	/* If no job is running here, ensure none are assigned to this node */
+	if (job_count == 0) {
+		 (void) kill_running_job_by_node_name (node_name);
+		return;
+	}
+
+	/* Ensure that jobs which are running are really supposed to be there */
+	for (i=0; i<job_count; i++) {
+		job_ptr = find_job_record (job_id_ptr[i]);
+		if (job_ptr == NULL) {
+			error ("Orphan job_id %u reported on node %s", 
+			       job_id_ptr[i], node_name);
+			continue;
+		}
+
+		if ( (job_ptr->job_state == JOB_STAGE_IN) ||
+		     (job_ptr->job_state == JOB_RUNNING) ||
+		     (job_ptr->job_state == JOB_STAGE_OUT) ) {
+			debug ("Registered job_id %u on node %s ", 
+			       job_id_ptr[i], node_name);
+			continue;	/* All is well */
+		}
+		error ("Registered job_id %u in state %s on node %s ", 
+			job_id_ptr[i], 
+		        job_state_string (job_ptr->job_state), node_name);
+		job_ptr->job_state = JOB_NODE_FAIL;
+/* FIXME: Add code to kill job on this node */	
+	}
+	return;
 }

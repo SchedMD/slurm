@@ -118,6 +118,7 @@ main (int argc, char *argv[])
 	int error_code;
 	char node_name[MAX_NAME_LEN];
 	pthread_attr_t thread_attr_sig, thread_attr_rpc;
+	sigset_t set;
 
 	/*
 	 * Establish initial configuration
@@ -155,7 +156,15 @@ main (int argc, char *argv[])
 	/* init ssl job credential stuff */
         slurm_ssl_init ( ) ;
 	slurm_init_signer ( &sign_ctx, slurmctld_conf.job_credential_private_key ) ;
-		
+
+	/* Block SIGALRM everyone not explicitly enabled */
+	if (sigemptyset (&set))
+		error ("sigemptyset error: %m");
+	if (sigaddset (&set, SIGALRM))
+		error ("sigaddset error on SIGALRM: %m");
+	if (sigprocmask (SIG_BLOCK, &set, NULL) != 0)
+		fatal ("sigprocmask error: %m");
+
 	/*
 	 * create attached thread signal handling
 	 */
@@ -481,7 +490,7 @@ report_locks_set ( void )
 
 	lock_count = strlen (config) + strlen (job) + strlen (node) + strlen (partition);
 	if (lock_count > 0)
-		error ("The following locks were left set config:%s, job:%s, node:%s, part:%s",
+		error ("The following locks were left set config:%s, job:%s, node:%s, partition:%s",
 			config, job, node, partition);
 	return lock_count;
 }
@@ -1559,12 +1568,12 @@ void
 slurm_rpc_node_registration ( slurm_msg_t * msg )
 {
 	/* init */
-	int error_code = 0, i;
+	int error_code = 0;
 	clock_t start_time;
 	slurm_node_registration_status_msg_t * node_reg_stat_msg = 
 			( slurm_node_registration_status_msg_t * ) msg-> data ;
-	/* Locks: Write node */
-	slurmctld_lock_t node_write_lock = { NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+	/* Locks: Write job and node */
+	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 #ifdef	HAVE_AUTHD
 	uid_t uid = 0;
 #endif
@@ -1580,16 +1589,17 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
 #endif
 	if (error_code == 0) {
 		/* do RPC call */
-		lock_slurmctld (node_write_lock);
+		lock_slurmctld (job_write_lock);
 		error_code = validate_node_specs (
 			node_reg_stat_msg -> node_name ,
 			node_reg_stat_msg -> cpus ,
 			node_reg_stat_msg -> real_memory_size ,
 			node_reg_stat_msg -> temporary_disk_space ) ;
-		unlock_slurmctld (node_write_lock);
-		for (i=0; i<node_reg_stat_msg->job_count; i++) {
-			debug ("Register with job_id %u", node_reg_stat_msg->job_id[i]);
-		}
+		validate_jobs_on_node (
+			node_reg_stat_msg -> node_name ,
+			node_reg_stat_msg -> job_count ,
+			node_reg_stat_msg -> job_id ) ;
+		unlock_slurmctld (job_write_lock);
 	}
 
 	/* return result */
