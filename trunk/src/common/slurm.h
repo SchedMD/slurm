@@ -25,7 +25,7 @@
 #define DEFAULT_CONTROL_DAEMON  "/usr/local/SLURM/Slurmd.Control"
 #define DEFAULT_SERVER_DAEMON   "/usr/local/SLURM/Slurmd"
 
-char *Administrators;		/* List of SLURM administrators *
+char *Administrators;		/* List of SLURM administrators */
 char *ControlMachine;		/* Name of computer acting as SLURM controller */
 char *BackupController;		/* Name of computer acting as SLURM backup controller */
 char *NodeSpecConf;		/* Location of SLURM node configuration file */
