@@ -523,7 +523,7 @@ static void _usage( void )
 
 static void _help( void )
 {
-	printf("Usage: sinfo [options]\n");
+	printf("Usage: sinfo [OPTIONS]\n");
 	printf("  -e, --exact                   group nodes only on exact match of\n");
 	printf("                                configuration\n");
 	printf("  -h, --noheader                no headers on output\n");
