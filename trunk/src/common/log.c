@@ -35,6 +35,7 @@
 #include <src/common/xmalloc.h>
 #include <src/common/xassert.h>
 #include <src/common/xstring.h>
+#include <src/common/safeopen.h>
 
 #ifndef LINEBUFSIZE
 #  define LINEBUFSIZE 256
@@ -85,7 +86,6 @@ extern char * program_invocation_short_name;
 int log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 {
 	int rc = 0;
-	char *errmsg;
 
 	pthread_mutex_lock(&log_lock);
 
@@ -106,20 +106,27 @@ int log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 		log->facility = fac;
 
 	if (LOGFILE_LEVEL > LOG_LEVEL_QUIET) {
-		log->logfp = fopen(logfile, "a");
-		if (!log->logfp) {
+		FILE *fp; 
+
+		fp = safeopen(logfile, "a", SAFEOPEN_LINK_OK);
+
+		if (!fp) {
+			char *errmsg = NULL;
+			pthread_mutex_unlock(&log_lock);
 			xstrerrorcat(errmsg);
 			fprintf(stderr, "%s: log_init(): Unable to open logfile"
-					"`%s': %s", prog, logfile, errmsg);
+					"`%s': %s\n", prog, logfile, errmsg);
 			xfree(errmsg);
 			rc = errno;
-		}
+			goto out;
+		} else
+			log->logfp = fp;
 	}
 
 	log->initialized = 1;
 
 	pthread_mutex_unlock(&log_lock);
-
+ out:
 	return rc;
 }
 
