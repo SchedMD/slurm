@@ -534,7 +534,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			total_nodes = bit_set_count(*req_bitmap);
 		if (req_cpus != 0)
 			total_cpus = count_cpus(*req_bitmap);
-		if (total_nodes > max_nodes) {
+		if ((max_nodes != 0) &&
+		    (total_nodes > max_nodes)) {
 			info("_pick_best_nodes: required nodes exceed limit");
 			return EINVAL;
 		}
