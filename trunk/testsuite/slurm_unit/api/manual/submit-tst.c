@@ -34,7 +34,7 @@ main (int argc, char *argv[])
 
 	error_code = slurm_submit_batch_job( &job_mesg, &resp_msg );
 	if (error_code) {
-		printf ("submit error %d\n", error_code);
+		printf ("submit error %d\n", errno);
 		return (error_code);
 	}
 	else
@@ -43,7 +43,7 @@ main (int argc, char *argv[])
 	if (argc > 1) 
 		count = atoi (argv[1]);
 	else
-		count = 5;
+		count = 1;
 
 	for (i=1; i<count; i++) {
 		slurm_init_job_desc_msg( &job_mesg );
@@ -64,7 +64,7 @@ main (int argc, char *argv[])
 		job_mesg. user_id = 1500;
 		error_code = slurm_submit_batch_job( &job_mesg, &resp_msg );
 		if (error_code) {
-			printf ("submit error %d\n", error_code);
+			printf ("submit error %d\n", errno);
 			break;
 		}
 		else {
@@ -72,5 +72,5 @@ main (int argc, char *argv[])
 		}
 	}
 
-	return (error_code);
+	exit (error_code);
 }

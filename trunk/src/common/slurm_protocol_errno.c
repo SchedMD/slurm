@@ -17,6 +17,10 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ 0, 					"" },
 	{ -1, 					"" },
 	{ SLURM_UNEXPECTED_MSG_ERROR, 		"Unexpected message recieved" },
+	{ SLURM_COMMUNICATIONS_CONNECTION_ERROR,"Communication connection failure" },
+	{ SLURM_COMMUNICATIONS_SEND_ERROR,	"Message send failure" },
+	{ SLURM_COMMUNICATIONS_RECEIVE_ERROR,	"Message receive failure" },
+	{ SLURM_COMMUNICATIONS_SHUTDOWN_ERROR,	"Communication shutdown failure" },
 	{ SLURM_PROTOCOL_VERSION_ERROR,		"Protocol version has changed, re-link" },
 	{ SLURM_NO_CHANGE_IN_DATA, 		"Data has not changed since time specified" },
 
