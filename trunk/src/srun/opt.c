@@ -58,7 +58,6 @@
    int MPIR_proctable_size;
    VOLATILE int MPIR_debug_state;
    VOLATILE int MPIR_debug_gate;
-   char * MPIR_debug_abort_string;
    int MPIR_being_debugged;
    int MPIR_i_am_starter;
    int MPIR_acquired_pre_main;

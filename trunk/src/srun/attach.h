@@ -60,7 +60,6 @@ extern int MPIR_proctable_size;
  */
 extern VOLATILE int MPIR_debug_state;
 extern VOLATILE int MPIR_debug_gate;
-extern char * MPIR_debug_abort_string;
 extern int          MPIR_being_debugged; /* Cause extra info on internal state
 					  * to be maintained
 					  */
