@@ -213,6 +213,7 @@ qsw_init(qsw_libstate_t oldstate)
 /*
  * Finalize use of this library.  If 'savestate' is non-NULL, final
  * state is copied there before it is destroyed.
+ *   savestate (OUT)	place to put state
  */
 void
 qsw_fini(qsw_libstate_t savestate)
@@ -394,7 +395,6 @@ _generate_hwcontext(int num)
 	}
 	return new;
 }
-
 
 /*
  * Initialize the elan capability for this job.
