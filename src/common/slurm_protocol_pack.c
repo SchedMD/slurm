@@ -267,7 +267,13 @@ int unpack_node_registration_status_msg ( node_registration_status_msg_t ** msg 
 
 void pack_node_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size )
 {	
-	memcpy ( *buf_ptr , msg->data , msg->data_size );
+	assert ( msg != NULL );
+	assert (  sizeof(*msg) == sizeof(slurm_msg_t) ) ;
+	assert ( buf_ptr != NULL && (*buf_ptr) != NULL ) ;
+	assert ( ( buffer_size ) != NULL ) ;
+	assert ( *buffer_size >= msg->data_size );
+
+	 memcpy ( *buf_ptr , msg->data , msg->data_size );
 	(*buf_ptr) += msg->data_size;
 	(*buffer_size) -= msg->data_size;
 }
@@ -324,6 +330,12 @@ int unpack_node_table ( node_table_msg_t * node , void ** buf_ptr , int * buffer
 
 void pack_partition_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size )
 {	
+	assert ( msg != NULL );
+	assert (  sizeof(*msg) == sizeof(slurm_msg_t) ) ;
+	assert ( buf_ptr != NULL && (*buf_ptr) != NULL ) ;
+	assert ( (buffer_size) != NULL ) ;
+	assert ( *buffer_size >= msg->data_size );
+
 	memcpy ( *buf_ptr , msg->data , msg->data_size );
 	(*buf_ptr) += msg->data_size;
 	(*buffer_size) -= msg->data_size;
@@ -398,6 +410,12 @@ int unpack_partition_table ( partition_table_msg_t * part , void ** buf_ptr , in
 
 void pack_job_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size )
 {	
+	assert ( msg != NULL );
+	assert (  sizeof(*msg) == sizeof(slurm_msg_t) ) ;
+	assert ( buf_ptr != NULL && (*buf_ptr) != NULL ) ;
+	assert ( (buffer_size) != NULL ) ;
+	assert ( *buffer_size >= msg->data_size );
+
 	memcpy ( *buf_ptr , msg->data , msg->data_size );
 	(*buf_ptr) += msg->data_size;
 	(*buffer_size) -= msg->data_size;
