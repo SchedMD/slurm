@@ -32,7 +32,7 @@ main (int argc, char *argv[])
 	char *node_list, *job_id;
 
 	error_code = slurm_allocate
-		("User=1500 Script=/bin/hostname JobName=job01 TotalNodes=400 TotalProcs=1000 ReqNodes=lx[3000-3003] Partition=batch MinRealMemory=1024 MinTmpDisk=2034 Groups=students,employee MinProcs=4 Contiguous=YES Key=1234",
+		("User=1500 JobName=job01 TotalNodes=400 TotalProcs=1000 ReqNodes=lx[3000-3003] Partition=batch MinRealMemory=1024 MinTmpDisk=2034 Groups=students,employee MinProcs=4 Contiguous=YES Key=1234",
 		 &node_list, &job_id);
 	if (error_code)
 		printf ("allocate error %d\n", error_code);
@@ -44,7 +44,7 @@ main (int argc, char *argv[])
 
 	while (1) {
 		error_code = slurm_allocate
-			("User=1500 Script=/bin/hostname JobName=more TotalProcs=4000 Partition=batch Key=1234 ",
+			("User=1500 JobName=more TotalProcs=4000 Partition=batch Key=1234 ",
 			 &node_list, &job_id);
 		if (error_code) {
 			printf ("allocate error %d\n", error_code);
@@ -59,7 +59,7 @@ main (int argc, char *argv[])
 
 	while (1) {
 		error_code = slurm_allocate
-			("User=1500 Script=/bin/hostname JobName=more TotalProcs=40 Partition=batch Key=1234 ",
+			("User=1500 JobName=more TotalProcs=40 Partition=batch Key=1234 ",
 			 &node_list, &job_id);
 		if (error_code) {
 			printf ("allocate error %d\n", error_code);
@@ -84,7 +84,7 @@ main (int argc, char *argv[])
  * output: job_id - node_list - list of allocated nodes
  *         returns 0 if no error, EINVAL if the request is invalid, 
  *			EAGAIN if the request can not be satisfied at present
- * NOTE: required specifications include: User=<uid> Script=<pathname>
+ * NOTE: required specifications include: User=<uid>
  *	optional specifications include: Contiguous=<YES|NO> 
  *	Distribution=<BLOCK|CYCLE> Features=<features> Groups=<groups>
  *	JobId=<id> JobName=<name> Key=<credential> MinProcs=<count>

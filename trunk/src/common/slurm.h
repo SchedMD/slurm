@@ -74,7 +74,7 @@ extern time_t last_node_update;		/* time of last update to node records */
 struct node_record {
 	uint32_t magic;			/* magic cookie to test data integrity */
 	char name[MAX_NAME_LEN];	/* name of the node. a null name indicates defunct node */
-	int node_state;			/* enum node_states, negative if down */
+	uint16_t node_state;		/* enum node_states, ORed with STATE_NO_RESPOND if down */
 	time_t last_response;		/* last response from the node */
 	uint32_t cpus;			/* actual count of cpus running on the node */
 	uint32_t real_memory;		/* actual megabytes of real memory on the node */
@@ -398,12 +398,13 @@ extern int job_cancel (char * job_id);
  *	new_job_id - location for storing new job's id
  * output: new_job_id - the job's ID
  *	returns 0 on success, EINVAL if specification is invalid
+ *	allocate - if set, job allocation only (no script required)
  * globals: job_list - pointer to global job list 
  *	list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
  * NOTE: the calling program must xfree the memory pointed to by new_job_id
  */
-extern int job_create (char *job_specs, char **new_job_id);
+extern int job_create (char *job_specs, char **new_job_id, int allocate);
 
 /* job_lock - lock the job information */
 extern void job_lock ();

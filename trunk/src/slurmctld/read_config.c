@@ -207,7 +207,8 @@ build_bitmaps () {
 			continue;	/* defunct */
 		if (node_record_table_ptr[i].node_state == STATE_IDLE)
 			bit_set (idle_node_bitmap, i);
-		if (node_record_table_ptr[i].node_state > STATE_DOWN)
+		if ((node_record_table_ptr[i].node_state != STATE_DOWN) &&
+		    ((node_record_table_ptr[i].node_state & STATE_NO_RESPOND) == 0))
 			bit_set (up_node_bitmap, i);
 		if (node_record_table_ptr[i].config_ptr)
 			bit_set (node_record_table_ptr[i].config_ptr->node_bitmap, i);

@@ -68,6 +68,7 @@ main (int argc, char *argv[])
  *	job_id - place to store id of submitted job
  * output: job_id - the job's id
  *	returns 0 if no error, EINVAL if the request is invalid
+ * NOTE: the caller must free the storage at job_id[0]
  * NOTE: required specification include: Script=<script_path_name>
  *	User=<uid>
  * NOTE: optional specifications include: Contiguous=<YES|NO> 
@@ -76,7 +77,7 @@ main (int argc, char *argv[])
  *	MinRealMemory=<MB> MinTmpDisk=<MB> Partition=<part_name>
  *	Priority=<integer> ProcsPerTask=<count> ReqNodes=<node_list>
  *	Shared=<YES|NO> TimeLimit=<minutes> TotalNodes=<count>
- *	TotalProcs=<count>
+ *	TotalProcs=<count> Immediate=<YES|NO>
  */
 int
 slurm_submit (char *spec, char **job_id)
