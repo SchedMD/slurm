@@ -61,24 +61,19 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %doc README 
 %doc DISCLAIMER
-%doc COPYIN
-%attr(755, root, root) %{_bindir}/scancel
-%attr(755, root, root) %{_bindir}/scontrol
-%attr(755, root, root) %{_bindir}/sinfo
-%attr(755, root, root) %{_bindir}/squeue
-%attr(755, root, root) %{_bindir}/srun 
-%attr(755, root, root) %{_sbindir}/slurmctld
-%attr(755, root, root) %{_sbindir}/slurmd
+%doc COPYING
+%attr(755, root, root) %{_bindir}/*
+%attr(755, root, root) %{_sbindir}/*
 %config(noreplace) %attr(755, root, root) /etc/rc.d/init.d/slurm
 %config(noreplace) %attr(755, root, root) /etc/slurm.conf
-%{_libdir}/*.so
+%{_libdir}/*.so*
 %{_mandir}/man1/*
 %{_mandir}/man5/*
 %{_mandir}/man8/*
 
 %files devel
 %defattr(-,root,root)
-%{_prefix}/include/slurm.h
+%{_prefix}/include/slurm/*
 %{_libdir}/libslurm.a
 %{_libdir}/libslurm.la
 %{_mandir}/man3/*
@@ -91,6 +86,7 @@ if [ -x /etc/rc.d/init.d/slurm ]; then
 fi
 
 %post
+ldconfig %{_libdir}
 if [ -x /etc/rc.d/init.d/slurm ]; then
 	[ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
 	[ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
