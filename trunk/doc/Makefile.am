@@ -2,12 +2,15 @@
 
 SUBDIRS = man 
 
+htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
 
-EXTRA_DIST = \
+html_DATA = \
 	html/arch.png \
 	html/entities.png \
+	html/quickstart.html
+
+EXTRA_DIST = \
 	html/programmer.guide.html \
-	html/quickstart.html \
 	html/plugins.html \
 	html/authplugins.html \
 	html/slurm.png 
