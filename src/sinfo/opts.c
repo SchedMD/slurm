@@ -36,7 +36,6 @@
 
 #include "src/sinfo/sinfo.h"
 
-#define OPT_SUMMARIZE 	0x01
 #define OPT_NODE_STATE 	0x02
 #define OPT_PARTITION	0x03
 #define OPT_NODE     	0x04
@@ -59,31 +58,29 @@ int parse_command_line(int argc, char *argv[])
 	   option tag, docstr, argstr } */
 
 	poptContext context;
-	int next_opt, curr_opt;
+	int curr_opt;
 	int rc = 0;
 
 	/* Declare the Options */
 	static const struct poptOption options[] = {
 		{"exact", 'e', POPT_ARG_NONE, &params.exact_match, OPT_EXACT,
-		 "group node only on exact match of configuration",NULL},
+		 "group nodes only on exact match of configuration",NULL},
 		{"iterate", 'i', POPT_ARG_INT, &params.iterate,
 		 OPT_ITERATE, "specify an interation period", "seconds"},
 		{"state", 't', POPT_ARG_STRING, &temp_state,
 		 OPT_NODE_STATE, "specify the what state of nodes to view",
 		 "node_state"},
-		{"partition", 'p', POPT_ARG_NONE, &params.partition_flag,
-		 OPT_PARTITION,
-		 "show partition information and optionally specify a specific partition",
-		 "PARTITION"},
-		{"node", 'n', POPT_ARG_NONE, &params.node_flag, OPT_NODE,
-		 "specify a specific node", "NODE"},
+		{"partition", 'p', POPT_ARG_STRING, &params.partition,
+		 OPT_PARTITION, "report on specific partition", "PARTITION"},
+		{"nodes", 'n', POPT_ARG_STRING, &params.nodes, OPT_NODE,
+		 "report on specific node(s)", "NODES"},
+		{"Node", 'N', POPT_ARG_NONE, &params.node_flag, OPT_FORMAT,
+		 "Node-centric format", NULL},
 		{"long", 'l', POPT_ARG_NONE, &params.long_output,
 		 OPT_FORMAT, "long output - displays more information",
 		 NULL},
 		{"summarize", 's', POPT_ARG_NONE, &params.summarize,
-		 OPT_VERBOSE,
-		 "summarize partitition information, do not show individual nodes",
-		 NULL},
+		 OPT_FORMAT,"report state summary only", NULL},
 		{"verbose", 'v', POPT_ARG_NONE, &params.verbose,
 		 OPT_VERBOSE, "verbosity level", "level"},
 		POPT_AUTOHELP 
@@ -94,28 +91,10 @@ int parse_command_line(int argc, char *argv[])
 	context = poptGetContext("sinfo", argc, (const char **) argv,
 				 options, POPT_CONTEXT_POSIXMEHARDER);
 
-	poptSetOtherOptionHelp(context, "[-elns]");
+	poptSetOtherOptionHelp(context, "[-elNsv]");
 
-	next_opt = poptGetNextOpt(context);
-
-	while (next_opt > -1) {
-		const char *opt_arg = NULL;
-		curr_opt = next_opt;
-		next_opt = poptGetNextOpt(context);
-
-		switch (curr_opt) {
-		case OPT_PARTITION:
-			if ((opt_arg = poptGetArg(context)) != NULL) {
-				params.partition = (char *) opt_arg;
-			}
-			break;
-
-		case OPT_NODE:
-			if ((opt_arg = poptGetArg(context)) != NULL) {
-				params.node = (char *) opt_arg;
-			}
-			break;
-		case OPT_NODE_STATE:
+	while ((curr_opt = poptGetNextOpt(context)) > 0) {
+		if (curr_opt == OPT_NODE_STATE) {
 			params.state_flag = true;
 			if (_parse_state(temp_state, &params.state)
 			    == SLURM_ERROR) {
@@ -124,31 +103,13 @@ int parse_command_line(int argc, char *argv[])
 					argv[0], temp_state);
 				exit(1);
 			}
-			break;
-
-		default:
-			break;
 		}
-		if ((opt_arg = poptGetArg(context)) != NULL) {
-			fprintf(stderr, "%s: %s \"%s\"\n", argv[0],
-				poptStrerror(POPT_ERROR_BADOPT), opt_arg);
-			exit(1);
-		}
-		if (curr_opt < 0) {
-			fprintf(stderr, "%s: \"%s\" %s\n", argv[0],
-				poptBadOption(context,
-					      POPT_BADOPTION_NOALIAS),
-				poptStrerror(next_opt));
-
-			exit(1);
-		}
-
 	}
-	if (next_opt < -1) {
+	if (curr_opt < -1) {
 		const char *bad_opt;
 		bad_opt = poptBadOption(context, POPT_BADOPTION_NOALIAS);
 		fprintf(stderr, "bad argument %s: %s\n", bad_opt,
-			poptStrerror(next_opt));
+			poptStrerror(curr_opt));
 		fprintf(stderr, "Try \"%s --help\" for more information\n",
 			argv[0]);
 		exit(1);
@@ -201,18 +162,22 @@ static int _parse_state(char *str, enum node_states *states)
 /* print the parameters specified */
 void print_options( void )
 {
+	char *node_state;
+	
+	if (params.state_flag)
+		node_state = node_state_string(params.state);
+	else
+		node_state = "N/A";
+
 	printf("-----------------------------\n");
-	printf("partition(%s) = %s\n",
-	       (params.partition_flag ? "true" : "false"),
-	       params.partition);
-	printf("node(%s)  = %s\n", (params.node_flag ? "true" : "false"),
-	       params.node);
-	printf("state(%s) = %s\n", (params.state_flag ? "true" : "false"),
-	       node_state_string(params.state));
-	printf("summarize = %s\n", params.summarize ? "true" : "false");
-	printf("exact     = %d\n", params.exact_match);
-	printf("verbose   = %d\n", params.verbose);
-	printf("long output = %s\n",
-	       params.long_output ? "true" : "false");
+	printf("exact       = %d\n", params.exact_match);
+	printf("long format = %s\n", params.long_output ? "true" : "false");
+	printf("nodes       = %s\n", params.nodes ? params.nodes : "N/A");
+	printf("Node format = %s\n", params.node_flag   ? "true" : "false");
+	printf("partition   = %s\n", params.partition ? 
+				     params.partition: "N/A");
+	printf("state       = %s\n", node_state);
+	printf("summarize   = %s\n", params.summarize   ? "true" : "false");
+	printf("verbose     = %d\n", params.verbose);
 	printf("-----------------------------\n\n");
 }

@@ -57,12 +57,11 @@
 #define MIN(x,y) (((x)<(y))?(x):(y))
 
 struct sinfo_parameters {
-	bool partition_flag;
 	char* partition;
 	bool state_flag;
 	enum node_states state;
 	bool node_flag;
-	char* node;
+	char* nodes;
 	bool summarize;
 	bool long_output;
 	bool line_wrap;
@@ -75,12 +74,6 @@ struct node_state_summary {
 	hostlist_t nodes;
 	enum node_states state;
 	uint32_t node_count;
-	uint32_t cpu_min;
-	uint32_t cpu_max;
-	uint32_t ram_min;
-	uint32_t ram_max;
-	uint32_t disk_min;
-	uint32_t disk_max;
 };
 
 struct partition_summary {
