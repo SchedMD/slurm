@@ -1090,7 +1090,7 @@ sched_cancel_job( const uint32_t job_id )
 	 */
 	debug3( "Scheduler plugin requested cancellation of job %u", job_id );
 	lock_slurmctld( job_write_lock );
-	rc = job_signal( job_id, SIGKILL, getuid() );
+	rc = job_signal( job_id, SIGKILL, 0, getuid() );
 	unlock_slurmctld( job_write_lock );
 
 	return rc;
