@@ -2326,22 +2326,19 @@ static void *_background_rpc_mgr(void *no_data)
 static int _background_process_msg(slurm_msg_t * msg)
 {
 	int error_code = SLURM_SUCCESS;
-	uid_t uid;
-	bool super_user = false;
 
-	uid = g_slurm_auth_get_uid(msg->cred);
-	if ((uid == 0) || (uid == getuid()))
-		super_user = true;
+	if (msg->msg_type != REQUEST_PING) {
+		bool super_user = false;
+		uid_t uid = g_slurm_auth_get_uid(msg->cred);
+		if ((uid == 0) || (uid == getuid()))
+			super_user = true;
 
-	if (error_code == SLURM_SUCCESS) {
-		if (msg->msg_type == REQUEST_PING) {
-			;
-		} else if (super_user && 
-			   (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE)) {
-			debug3("Performing RPC: REQUEST_SHUTDOWN_IMMEDIATE");
+		if (super_user && 
+		    (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE)) {
+			info("Performing RPC: REQUEST_SHUTDOWN_IMMEDIATE");
 		} else if (super_user && 
 			   (msg->msg_type == REQUEST_SHUTDOWN)) {
-			debug("Performing RPC: REQUEST_SHUTDOWN");
+			info("Performing RPC: REQUEST_SHUTDOWN");
 			pthread_kill(thread_id_sig, SIGTERM);
 		} else if (super_user && 
 			   (msg->msg_type == REQUEST_CONTROL)) {
