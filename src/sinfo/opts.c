@@ -56,7 +56,7 @@ parse_command_line( int argc, char* argv[] )
 	static const struct poptOption options[] = 
 	{
 		{"iterate", 'i', POPT_ARG_INT, &params.iterate, OPT_ITERATE, "specify an interation period", "seconds"},
-		{"state", 't', POPT_ARG_STRING, &temp_state, OPT_NODE_STATE, "specify the what state of nodes to view", "NODE_STATE"},
+		{"state", 't', POPT_ARG_STRING, &temp_state, OPT_NODE_STATE, "specify the what state of nodes to view", "node_state"},
 		{"partition", 'p', POPT_ARG_NONE, &params.partition_flag, OPT_PARTITION,"show partition information and optionally specify a specific partition", "PARTITION"},
 		{"node", 'n', POPT_ARG_NONE, &params.node_flag, OPT_NODE, "specify a specific node", "NODE"},
 		{"long", 'l', POPT_ARG_NONE, &params.long_output, OPT_FORMAT, "long output - displays more information", NULL},
@@ -67,7 +67,10 @@ parse_command_line( int argc, char* argv[] )
 	};
 
 	/* Initial the popt contexts */
-	context = poptGetContext(NULL, argc, (const char**)argv, options, 0);
+	context = poptGetContext("sinfo", argc, (const char**)argv, 
+				options, POPT_CONTEXT_POSIXMEHARDER);
+
+	poptSetOtherOptionHelp(context, "[-lns]");
 
 	next_opt = poptGetNextOpt(context);
 
@@ -121,7 +124,12 @@ parse_command_line( int argc, char* argv[] )
 	}
 	if ( next_opt < -1 )
 	{
-		fprintf(stderr, "%s: \"%s\" %s\n", argv[0], poptBadOption(context, POPT_BADOPTION_NOALIAS), poptStrerror(next_opt));
+		const char *bad_opt;
+		bad_opt = poptBadOption(context, POPT_BADOPTION_NOALIAS);
+		if (strcmp (bad_opt, "-h"))
+			error("bad argument %s: %s", bad_opt, poptStrerror(next_opt));
+		poptPrintUsage(context, stderr, 0);
+
 		exit (1);
 	}
 
