@@ -59,7 +59,7 @@ void _delete_allocated_parts(List allocated_partitions)
 
 int _create_allocation(command_info_t *com, List allocated_partitions)
 {
-	int torus=MESH, i=6, i2=0, i3=0, geo[PA_SYSTEM_DIMENSIONS], x,y,z;
+	int torus=MESH, i=6, i2=-1, i3=0, geo[PA_SYSTEM_DIMENSIONS] = {-1,-1,-1}, x,y,z;
 	static int count=0;
 	int len = strlen(com->str);
 	
@@ -70,20 +70,10 @@ int _create_allocation(command_info_t *com, List allocated_partitions)
 	bool rotate = false;
 	bool elongate = false;
 	bool force_contig = false;
+	bool co_proc = false;
 	List results;
 	ListIterator results_i;
 	
-	/*defaults*/
-	geo[0] = -1;
-	geo[1] = -1;
-	geo[2] = -1;
-	torus=MESH;
-	rotate = false;
-	elongate = false;
-	force_contig = true;
-	i2=-1;
-	/*********/
-		
 	while(i<len) {
 		
 		while(com->str[i-1]!=' ' && i<len) {
@@ -99,8 +89,11 @@ int _create_allocation(command_info_t *com, List allocated_partitions)
 			elongate=true;
 			i+=8;
 		} else if(!strncmp(com->str+i, "force", 5)) {
-			force_contig=false;				
+			force_contig=true;				
 			i+=5;
+		} else if(!strncmp(com->str+i, "proc", 4)) {
+			co_proc=true;				
+			i+=4;
 		} else if(i2<0 && (com->str[i] < 58 && com->str[i] > 47)) {
 			i2=i;
 			i++;
@@ -163,7 +156,7 @@ int _create_allocation(command_info_t *com, List allocated_partitions)
 		request = (pa_request_t*) xmalloc(sizeof(pa_request_t));
 		results = list_create(NULL);
 		
-		if(!new_pa_request(request, geo, i, rotate, elongate, force_contig, torus)) {
+		if(!new_pa_request(request, geo, i, rotate, elongate, force_contig, co_proc, torus)) {
 			mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 				  pa_system_ptr->xcord,"Problems with request for %d%d%d", geo[0], geo[1], geo[2]);
 			pa_system_ptr->ycord++;
@@ -192,7 +185,10 @@ int _create_allocation(command_info_t *com, List allocated_partitions)
 					x = current->coord[0]; 
 					y = current->coord[1]; 
 					z = current->coord[2]; 
-					pa_system_ptr->grid[x][y][z].letter = pa_system_ptr->fill_in_value[count].letter;
+					if(torus==TORUS) 
+						pa_system_ptr->grid[x][y][z].letter = pa_system_ptr->fill_in_value[count].letter;
+					else 
+						pa_system_ptr->grid[x][y][z].letter = pa_system_ptr->fill_in_value[count+32].letter;
 					pa_system_ptr->grid[x][y][z].color = pa_system_ptr->fill_in_value[count].color;
 				}
 				

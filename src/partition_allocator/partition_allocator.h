@@ -90,6 +90,7 @@ typedef struct {
 	bool rotate;
 	bool elongate; 
 	bool force_contig;
+	bool co_proc;
 } pa_request_t; 
 
 /** 
@@ -111,9 +112,7 @@ typedef struct
 
 	/* target label */
 	int node_tar[PA_SYSTEM_DIMENSIONS];
-	int used;
-	
-	
+	int used;	
 } pa_connection_t;
 /** 
  * structure that holds the configuration settings for each switch
@@ -184,7 +183,7 @@ typedef struct {
 int new_pa_request(pa_request_t* pa_request, 
 		    int geometry[PA_SYSTEM_DIMENSIONS], int size, 
 		    bool rotate, bool elongate, 
-		    bool force_contig, int conn_type);
+		    bool force_contig, bool co_proc, int conn_type);
 
 /**
  * delete a partition request 
@@ -250,6 +249,6 @@ int alter_part();
  */
 int redo_part();
 
-void init_grid(node_info_msg_t * node_info_ptr);
+void init_grid(node_info_msg_t *node_info_ptr);
 
 #endif /* _PARTITION_ALLOCATOR_H_ */

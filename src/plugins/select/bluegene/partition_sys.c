@@ -1054,7 +1054,7 @@ extern int read_bgl_partitions(void)
 		rm_get_data(bp_ptr, RM_BPPartID, &part_id);
 
 /* FIXME: part_id not returned on LLNL_128_16 system */
-part_id = "LLNL_128_16";
+		part_id = "LLNL_128_16";
 		if (!part_id || (part_id[0] == '\0')) {
 			info("Node %s in blue gene partition NONE",
 				node_name_tmp);

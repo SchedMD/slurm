@@ -9,9 +9,7 @@ INCLUDES = -I$(top_srcdir) -I
 bin_PROGRAMS = smap
 
 smap_LDADD =					  \
-	$(top_builddir)/src/common/libcommon.la   \
-	$(top_builddir)/src/partition_allocator/libpartition_allocator.la  \
-	$(top_builddir)/src/api/libslurm.la
+	$(top_builddir)/src/partition_allocator/libpartition_allocator.la 
 
 noinst_HEADERS = smap.h 
 smap_SOURCES = smap.c job_functions.c partition_functions.c configure_functions.c grid_functions.c opts.c
