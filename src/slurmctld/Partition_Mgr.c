@@ -4,6 +4,11 @@
  *
  * Author: Moe Jette, jette@llnl.gov
  */
+
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,8 +19,6 @@
 #include "slurm.h"
 
 #define BUF_SIZE 1024
-#define DEBUG_MODULE 0
-#define DEBUG_SYSTEM 1
 #define SEPCHARS " \n\t"
 
 struct	Part_Record Default_Part;		/* Default configuration values */

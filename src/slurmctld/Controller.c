@@ -4,17 +4,20 @@
  *
  * Author: Moe Jette, jette@llnl.gov
  */
+
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <syslog.h>
 
-#include "list.h"
-#include "slurm.h"
+#include <list.h>
+#include <slurm.h>
 
 #define BUF_SIZE 1024
-#define DEBUG_MODULE 1
-#define DEBUG_SYSTEM 1
 #define SEPCHARS " \n\t"
 
 int OS_Comp(char *OS_1, char *OS_2);

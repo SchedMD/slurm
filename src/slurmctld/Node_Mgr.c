@@ -4,6 +4,11 @@
  *
  * Author: Moe Jette, jette@llnl.gov
  */
+
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif 
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,8 +17,6 @@
 #include "list.h"
 #include "slurm.h"
 
-#define DEBUG_MODULE 	0
-#define DEBUG_SYSTEM 	1
 #define NODE_BUF_SIZE 	1024
 #define SEPCHARS 	" \n\t"
 
