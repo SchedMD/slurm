@@ -38,7 +38,8 @@
 #include <signal.h>
 
 
-#include <src/common/log.c>
+#include <src/common/log.h>
+#include <src/common/xstring.h>
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
 
@@ -90,7 +91,7 @@ main(int ac, char **av)
 		if (_verbose) 
 			logopt.stderr_level+=_verbose;
 		logopt.prefix_level = 1;
-		log_init(xbasename(av[0]), logopt, 0, NULL);
+		log_alter(logopt, 0, NULL);
 	}
 
 	/* now global "opt" should be filled in and available,
@@ -384,8 +385,10 @@ fwd_signal(job_t *job, int signo)
 	msg.signal      = (uint32_t) signo;
 
 	for (i = 0; i < job->nhosts; i++) {
-		if (job->host_state[i] != SRUN_HOST_REPLIED)
+		if (job->host_state[i] != SRUN_HOST_REPLIED) {
+			debug2("%s has not yet replied\n", job->host[i]);
 			continue;
+		}
 
 		slurm_set_addr_uint(&req.address, slurm_get_slurmd_port(),
 				ntohl(job->iaddr[i]));

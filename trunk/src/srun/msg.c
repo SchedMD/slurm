@@ -27,7 +27,7 @@ _launch_handler(job_t *job, slurm_msg_t *resp)
 		return;
 	} else {
 		
-		if (msg->srun_node_id > 0 && msg->srun_node_id < job->nhosts)
+		if (msg->srun_node_id >= 0 && msg->srun_node_id < job->nhosts)
 			job->host_state[msg->srun_node_id] = 
 				SRUN_HOST_REPLIED;
 	}
