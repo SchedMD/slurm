@@ -983,7 +983,6 @@ extern int drain_nodes ( char *nodes, char *reason )
 
 	last_node_update = time (NULL);
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
-		int err_code = 0;
 		node_ptr = find_node_record (this_node_name);
 		node_inx = node_ptr - node_record_table_ptr;
 		if (node_ptr == NULL) {
@@ -1212,6 +1211,9 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 	struct node_record *node_ptr;
 	time_t now = time(NULL);
 	ListIterator job_iterator;
+	hostlist_t return_hostlist = NULL, reg_hostlist = NULL;
+	hostlist_t prolog_hostlist = NULL;
+	char host_str[64];
 
 	/* First validate the job info */
 	node_ptr = &node_record_table_ptr[0];	/* All msg send to node zero,
@@ -1249,7 +1251,7 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 
 		else if (job_ptr->job_state == JOB_PENDING) {
 			error("Registered PENDING job %u.%u",
-			      job_id_ptr[i], step_id_ptr[i]);
+				job_id_ptr[i], step_id_ptr[i]);
 			/* FIXME: Could possibly recover the job */
 			job_ptr->job_state = JOB_FAILED;
 			last_job_update    = now;
@@ -1260,10 +1262,9 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 		}
 
 		else {		/* else job is supposed to be done */
-			error
-			    ("Registered job %u.%u in state %s",
-			     job_id_ptr[i], step_id_ptr[i], 
-			     job_state_string(job_ptr->job_state));
+			error("Registered job %u.%u in state %s",
+				job_id_ptr[i], step_id_ptr[i], 
+				job_state_string(job_ptr->job_state));
 			kill_job_on_node(job_id_ptr[i], node_ptr);
 		}
 	}
@@ -1298,15 +1299,24 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 			if ((node_ptr->node_state != NODE_STATE_DRAINING) &&
 			    (node_ptr->node_state != NODE_STATE_DRAINED)) {
 				updated_job = true;
-				error ("Prolog failure on node %s, state to DOWN",
-					node_ptr->name);
+				if (prolog_hostlist)
+					(void) hostlist_push_host(
+						prolog_hostlist, 
+						node_ptr->name);
+				else
+					prolog_hostlist = hostlist_create(
+						node_ptr->name);
 				set_node_down(node_ptr->name, "Prolog failed");
 			}
 		} else {
 			if (node_ptr->node_state == NODE_STATE_UNKNOWN) {
 				updated_job = true;
-				debug("validate_node_specs: node %s has registered", 
-					node_ptr->name);
+				if (reg_hostlist)
+					(void) hostlist_push_host(
+						reg_hostlist, node_ptr->name);
+				else
+					reg_hostlist = hostlist_create(
+						node_ptr->name);
 				if (jobs_on_node)
 					node_ptr->node_state = NODE_STATE_ALLOCATED;
 				else
@@ -1329,8 +1339,12 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 					node_ptr->node_state = NODE_STATE_ALLOCATED;
 				else
 					node_ptr->node_state = NODE_STATE_IDLE;
-				info ("validate_node_specs: node %s returned to service", 
-				      node_ptr->name);
+				if (return_hostlist)
+					(void) hostlist_push_host(
+						return_hostlist, node_ptr->name);
+				else
+					return_hostlist = hostlist_create(
+						node_ptr->name);
 				xfree(node_ptr->reason);
 			} else if ((node_ptr->node_state == NODE_STATE_ALLOCATED) &&
 				   (jobs_on_node == 0)) {	/* job vanished */
@@ -1343,6 +1357,28 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 			}
 			_sync_bitmaps(node_ptr, jobs_on_node);
 		}
+	}
+
+	if (prolog_hostlist) {
+		hostlist_uniq(prolog_hostlist);
+		hostlist_ranged_string(prolog_hostlist, sizeof(host_str),
+			host_str);
+		error("Prolog failure on nodes %s, set to DOWN", host_str);
+		hostlist_destroy(prolog_hostlist);
+	}
+	if (reg_hostlist) {
+		hostlist_uniq(reg_hostlist);
+		hostlist_ranged_string(reg_hostlist, sizeof(host_str),
+			host_str);
+		debug("Nodes %s have registerd", host_str);
+		hostlist_destroy(reg_hostlist);
+	}
+	if (return_hostlist) {
+		hostlist_uniq(return_hostlist);
+		hostlist_ranged_string(return_hostlist, sizeof(host_str),
+			host_str);
+		info("Nodes %s returned to service", host_str);
+		hostlist_destroy(return_hostlist);
 	}
 
 	if (updated_job) {
@@ -1451,17 +1487,25 @@ void node_not_resp (char *name, time_t msg_time)
 	struct node_record *node_ptr;
 #ifdef HAVE_BGL		/* only front-end node */
 	int i;
+	char host_str[64];
+	hostlist_t no_resp_hostlist = hostlist_create("");
 
 	for (i=0; i<node_record_count; i++) {
 		node_ptr = &node_record_table_ptr[i];
+		(void) hostlist_push_host(no_resp_hostlist, node_ptr->name);
 		_node_not_resp(node_ptr, msg_time);
 	}
+	hostlist_uniq(no_resp_hostlist);
+	hostlist_ranged_string(no_resp_hostlist, sizeof(host_str), host_str);
+	error("Nodes %s not responding", host_str);
+	hostlist_destroy(no_resp_hostlist);
 #else
 	node_ptr = find_node_record (name);
 	if (node_ptr == NULL) {
 		error ("node_not_resp unable to find node %s", name);
 		return;
 	}
+	error("Node %s not responding", node_ptr->name);
 	_node_not_resp(node_ptr, msg_time);
 #endif
 }
@@ -1480,7 +1524,6 @@ static void _node_not_resp (struct node_record *node_ptr, time_t msg_time)
 		return;
 	}
 	last_node_update = time (NULL);
-	error ("Node %s not responding", node_ptr->name);
 	bit_clear (avail_node_bitmap, i);
 	node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 	return;
