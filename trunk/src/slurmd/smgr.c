@@ -37,6 +37,7 @@
 #include <pwd.h>
 #include <grp.h>
 #include <string.h>
+#include <assert.h>
 
 #if HAVE_STDLIB_H
 #  include <stdlib.h>
@@ -89,6 +90,20 @@ static void  _pdebug_trace_process(slurmd_job_t *job, pid_t pid);
 static void  _pdebug_stop_current(slurmd_job_t *job);
 
 /*
+ *  Dummy handler for SIGCHLD. 
+ *
+ *  We need this handler to work around what may be a bug in
+ *   RedHat 9 based kernel/glibc. If no handler is installed for
+ *   any signal that is, by default, ignored, then the signal
+ *   will not be delivered even if that signal is currently blocked.
+ *
+ *  Since we block SIGCHLD, this handler should never actually
+ *   get invoked. Assert this fact.
+ */
+static void _chld_handler(int signo) { assert(signo != SIGCHLD); }
+
+
+/*
  * Create the slurmd session manager process
  */
 pid_t 
@@ -118,6 +133,11 @@ static void
 _session_mgr(slurmd_job_t *job)
 {
 	xassert(job != NULL);
+
+	/* 
+	 * Install dummy SIGCHLD handler (see comments above)
+	 */
+	xsignal(SIGCHLD, &_chld_handler);
 
 	/*
 	 * Call interconnect_init() before becoming user
