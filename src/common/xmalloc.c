@@ -55,6 +55,7 @@ void *_xmalloc(size_t size, const char *file, int line, const char *func)
 	void *new;
 	int *p;
 
+
 	xmalloc_assert(size >= 0 && size <= INT_MAX);
 	MALLOC_LOCK();
 	p = (int *)malloc(size + 2*sizeof(int));
@@ -214,9 +215,8 @@ int _xsize(void *item, const char *file, int line, const char *func)
  */
 void _xfree(void **item, const char *file, int line, const char *func)
 {
-	int *p = (int *)*item - 2;
-
 	if (*item != NULL) {
+		int *p = (int *)*item - 2;
 		/* magic cookie still there? */
 		xmalloc_assert(p[0] == XMALLOC_MAGIC);	
 		MALLOC_LOCK();
