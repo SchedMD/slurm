@@ -501,6 +501,7 @@ void pack_resource_allocation_and_run_response_msg ( resource_allocation_and_run
 	pack_job_credential( msg->credentials, ( void ** ) buffer , length ) ;
 #ifdef HAVE_LIBELAN3
 	/* put the elan3 stuff here */	
+	slurm_qsw_pack_jobinfo( msg -> qsw_job , (void ** ) buffer , length) ;
 #endif
 }
 
@@ -536,6 +537,7 @@ int unpack_resource_allocation_and_run_response_msg ( resource_allocation_and_ru
 	unpack_job_credential( &tmp_ptr->credentials, ( void ** ) buffer , length ) ;
 #ifdef HAVE_LIBELAN3
 	/* put the elan3 stuff here */	
+	slurm_qsw_unpack_jobinfo(& msg -> qsw_job , (void **) data, length ) ;
 #endif
 
 	*msg = tmp_ptr ;
@@ -774,6 +776,31 @@ int unpack_job_credential( slurm_job_credential_t** msg , void ** buffer , uint3
 
 #ifdef HAVE_LIBELAN3
 /* I'm pretty sure this isn't how I want to do this... */
+void slurm_qsw_pack_jobinfo(qsw_jobinfo_t j, void **data, int * len)
+{
+	int packlen ;
+	packlen = qsw_pack_jobinfo(j, *data, *len) ;
+	if ( packlen > 0 )
+	{
+		*len -= packlen ;
+		*data += packlen ;
+	}
+}
+
+int slurm_qsw_unpack_jobinfo(qsw_jobinfo_t * j, void **data, int *len)
+{
+	int packlen ;
+	/* *j = xmalloc ( sizeof ( struct qsw_jobinfo )  ) ; */
+	qsw_alloc_jobinfo( *j ) ;
+	packlen = qsw_unpack_jobinfo ( *j , *data , * len ) ;
+	if ( packlen > 0 )
+	{
+		*len -= packlen ;
+		*data += packlen ;
+	}
+	return 0 ;
+}
+
 void pack_qsw_jobinfo( qsw_jobinfo *msg, void ** buffer , uint32_t * length )
 {
 	int len = qsw_pack_jobinfo ( msg , *buf_ptr, *buf_len);
@@ -808,6 +835,7 @@ void pack_job_step_create_response_msg (  job_step_create_response_msg_t* msg , 
 	pack_job_credential( msg->credentials, ( void ** ) buffer , length ) ;
 #ifdef HAVE_LIBELAN3
 	/* put the elan3 stuff here */	
+	slurm_qsw_pack_jobinfo( msg -> qsw_job , (void ** ) buffer , length) ;
 #endif
  	
 }
@@ -828,6 +856,7 @@ int unpack_job_step_create_response_msg (job_step_create_response_msg_t** msg , 
 	*msg = tmp_ptr;
 #ifdef HAVE_LIBELAN3
 	/* put the elan3 stuff here */	
+	slurm_qsw_unpack_jobinfo(& msg -> qsw_job , (void **) data, length ) ;
 #endif
 	return 0;
 }
@@ -1351,6 +1380,7 @@ void pack_launch_tasks_request_msg ( launch_tasks_request_msg_t * msg , void ** 
 	pack32_array ( msg -> global_task_ids , ( uint16_t ) msg -> tasks_to_launch , buffer , length ) ;
 #ifdef HAVE_LIBELAN3
 	/* put the elan3 stuff here */	
+	slurm_qsw_pack_jobinfo( msg -> qsw_job , (void ** ) buffer , length) ;
 #endif
 }
 
@@ -1379,6 +1409,7 @@ int unpack_launch_tasks_request_msg ( launch_tasks_request_msg_t ** msg_ptr , vo
 	unpack32_array ( & msg -> global_task_ids , & uint16_tmp , buffer , length ) ;
 #ifdef HAVE_LIBELAN3
 	/* put the elan3 stuff here */	
+	slurm_qsw_unpack_jobinfo(& msg -> qsw_job , (void **) data, length ) ;
 #endif
 	*msg_ptr = msg ;
 	return 0 ;
