@@ -65,11 +65,11 @@ Jobs can be submitted for immediate or later execution (e.g. batch).
 srun has a wide variety of options to specify resource requirements 
 including: minimum and maximum node count, processor count, specific 
 nodes to use or not use, and specific node characteristics (so much 
-memory, disk space, or certain required features). 
+memory, disk space, certain required features, etc). 
 Besides securing a resource allocation, srun is used to initiate
 job steps.
 These job steps can execute sequentially or in parallel on independent 
-or common nodes within the job's node allocation.
+or shared nodes within the job's node allocation.
 <p>
 <b>scancel</b> is used to cancel a pending or running job or job step. 
 It can also be used to send an arbitrary signal to all processes 
@@ -90,7 +90,7 @@ pending jobs in priority order.
 <h2>Daemons</h2>
 
 <b>slurmctld</b> is sometimes called the <i>controller</i> daemon. 
-It orchestrates all SLURM activities including: queuing of job, 
+It orchestrates SLURM activities including: queuing of job, 
 monitoring node state, and allocating resources (nodes) to jobs. 
 There is an optional backup controller that automatically assumes 
 control in the event the primary controller fails. 
@@ -98,7 +98,7 @@ The primary controller resumes control whenever
 it is restored to service. The controller saves its state to disk 
 whenever there is a change. This state can be recovered by the controller 
 at startup time. <b>slurmctld</b> would typically execute as a 
-special user specifically for this purpose (not user <i>root</i>). 
+special user specifically for this purpose (not user root). 
 <p>
 The <b>slurmd</b> daemon executes on every compute node.
 It resembles a remote shell daemon to export control to SLURM.
@@ -182,7 +182,7 @@ adev0: squeue
   JobId Partition Name     User     St TimeLim Prio Nodes            
 </pre>
 <p>
-Get the slurm partition and node status.
+Get the SLURM partition and node status.
 <pre>
 adev0: sinfo
 PARTITION  NODES STATE     CPUS    MEMORY    TMP_DISK NODES
@@ -273,7 +273,7 @@ Print detailed state of all jobs in the system.
 <pre>
 adev0: scontrol
 scontrol: show job
-JobId=475 UserId=6885 Name=sleep JobState=COMPLETED
+JobId=475 UserId=bob(6885) Name=sleep JobState=COMPLETED
    Priority=4294901286 Partition=batch BatchFlag=0
    AllocNode:Sid=adevi:21432 TimeLimit=UNLIMITED
    StartTime=03/19-12:53:41 EndTime=03/19-12:53:59
@@ -282,7 +282,7 @@ JobId=475 UserId=6885 Name=sleep JobState=COMPLETED
    MinProcs=0 MinMemory=0 Features=(null) MinTmpDisk=0
    ReqNodeList=(null) ReqNodeListIndecies=-1
 
-JobId=476 UserId=6885 Name=sleep JobState=RUNNING
+JobId=476 UserId=bob(6885) Name=sleep JobState=RUNNING
    Priority=4294901285 Partition=batch BatchFlag=0
    AllocNode:Sid=adevi:21432 TimeLimit=UNLIMITED
    StartTime=03/19-12:54:01 EndTime=NONE
@@ -298,7 +298,7 @@ in <i>pending</i> state).
 <pre>
 adev0: scontrol
 scontrol: show job 477
-JobId=477 UserId=6885 Name=sleep JobState=PENDING
+JobId=477 UserId=bob(6885) Name=sleep JobState=PENDING
    Priority=4294901286 Partition=batch BatchFlag=0
    <i>more data removed....</i>
 scontrol: update JobId=477 Priority=0
@@ -365,7 +365,7 @@ adev0: scontrol shutdown
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/quick.start.guide.html
-<p>Last Modified March 19, 2003</p>
+<p>Last Modified March 20, 2003</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
