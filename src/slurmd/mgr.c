@@ -36,6 +36,7 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/param.h>
+#include <sys/poll.h>
 #include <sys/ptrace.h>
 #include <unistd.h>
 #include <pwd.h>
