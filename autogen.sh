@@ -63,6 +63,9 @@ if test $DIE -eq 1; then
     exit 1
 fi
 
+# make sure that auxdir exists
+mkdir auxdir 2>/dev/null
+
 echo "running libtoolize --automake --copy ..."
 libtoolize --automake --copy
 echo "running aclocal $ACLOCAL_FLAGS ... "
