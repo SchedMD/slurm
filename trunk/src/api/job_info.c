@@ -14,21 +14,9 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <syslog.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
 
-#include "pack.h"
 #include "slurm.h"
-#include "nodelist.h"
-
 #include <src/common/slurm_protocol_api.h>
-void slurm_print_job_table ( job_table_t * job_ptr );
-void slurm_print_job_info_msg ( job_info_msg_t * job_info_msg_ptr ) ;
-int unpack_job_table ( job_table_t * job , void ** buf_ptr , int * buffer_size ) ;
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
@@ -37,37 +25,38 @@ main (int argc, char *argv[])
 {
 	static time_t last_update_time = (time_t) NULL;
 	int error_code;
-	job_info_msg_t ** job_info_msg_ptr = NULL;
-	job_table_t *job_ptr = NULL;
+	job_info_msg_t * job_info_msg_ptr = NULL;
 
-	error_code = slurm_load_job (last_update_time, job_info_msg_ptr);
+	error_code = slurm_load_jobs (last_update_time, &job_info_msg_ptr);
 	if (error_code) {
 		printf ("slurm_load_job error %d\n", error_code);
 		exit (error_code);
 	}
 
-	printf("Jobs updated at %lx, record count %d\n",
-		(*job_info_msg_ptr) ->last_update, (*job_info_msg_ptr)->record_count);
-	job_ptr = (*job_info_msg_ptr)->job_array;
+	slurm_print_job_info_msg ( job_info_msg_ptr ) ;
 
-	slurm_print_job_info_msg ( (*job_info_msg_ptr) ) ;
-
-	slurm_free_job_info ( (*job_info_msg_ptr) ) ;
+	slurm_free_job_info ( job_info_msg_ptr ) ;
 	exit (0);
 }
 #endif
 
+/* print the entire job_info_msg */
 void 
 slurm_print_job_info_msg ( job_info_msg_t * job_info_msg_ptr )
 {
 	int i;
 	job_table_t * job_ptr = job_info_msg_ptr -> job_array ;
+
+	printf("Jobs updated at %d, record count %d\n",
+		job_info_msg_ptr ->last_update, job_info_msg_ptr->record_count);
+
 	for (i = 0; i < job_info_msg_ptr-> record_count; i++) 
 	{
 		slurm_print_job_table ( & job_ptr[i] ) ;
 	}
 }
 
+/* print an individual job_table row */
 void
 slurm_print_job_table (job_table_t * job_ptr )
 {
@@ -108,10 +97,6 @@ slurm_print_job_table (job_table_t * job_ptr )
 }
 
 /*
- * slurm_free_job_info - free the job information buffer (if allocated)
- * NOTE: buffer is loaded by load_job.
- */
-/*
  * slurm_load_job - load the supplied job information buffer for use by info 
  *	gathering APIs if job records have changed since the time specified. 
  * input: update_time - time of last update
@@ -121,10 +106,10 @@ slurm_print_job_table (job_table_t * job_ptr )
  *		0 if update with no error, 
  *		EINVAL if the buffer (version or otherwise) is invalid, 
  *		ENOMEM if malloc failure
- * NOTE: the allocated memory at job_buffer_ptr freed by slurm_free_job_info.
+ * NOTE: the allocated memory at job_info_msg_pptr freed by slurm_free_job_info.
  */
 int
-slurm_load_job (time_t update_time, job_info_msg_t **job_info_msg_pptr)
+slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr)
 {
         int msg_size ;
         int rc ;
@@ -169,93 +154,3 @@ slurm_load_job (time_t update_time, job_info_msg_t **job_info_msg_pptr)
         return SLURM_SUCCESS ;
 }
 
-int unpack_job_info_msg ( job_info_msg_t ** msg , void ** buf_ptr , int * buffer_size )
-{
-	int uint32_record_count ;
-	int i;
-	job_table_t *job;
-	
-	*msg = malloc ( sizeof ( job_info_msg_t ) );
-	if ( *msg == NULL )
-		return ENOMEM ;
-
-
-	/* load buffer's header (data structure version and time) */
-	unpack32 (&((*msg) -> last_update ) , buf_ptr, buffer_size);
-	unpack32 (&((*msg) -> record_count), buf_ptr, buffer_size);
-
-	job = (*msg) -> job_array = malloc ( sizeof ( job_table_t ) * uint32_record_count ) ;
-
-	/* load individual job info */
-	job = NULL;
-	for (i = 0; buffer_size > 0; i++) {
-	unpack_job_table ( & job[i] , buf_ptr , buffer_size ) ;
-
-	}
-	return 0;
-}
-
-int unpack_job_table_msg ( job_table_msg_t ** msg , void ** buf_ptr , int * buffer_size )
-{
-	*msg = malloc ( sizeof ( job_table_t ) ) ;
-	if ( *msg == NULL )
-		return ENOMEM ;
-	unpack_job_table ( *msg , buf_ptr , buffer_size ) ;
-	return 0 ;
-}
-
-int unpack_job_table ( job_table_t * job , void ** buf_ptr , int * buffer_size )
-{
-	uint16_t uint16_tmp;
-	uint32_t uint32_tmp;
-	char * node_inx_str;
-
-	unpack32  (&job->job_id, buf_ptr, buffer_size);
-	unpack32  (&job->user_id, buf_ptr, buffer_size);
-	unpack16  (&job->job_state, buf_ptr, buffer_size);
-	unpack32  (&job->time_limit, buf_ptr, buffer_size);
-
-	unpack32  (&uint32_tmp, buf_ptr, buffer_size);
-	job->start_time = (time_t) uint32_tmp;
-	unpack32  (&uint32_tmp, buf_ptr, buffer_size);
-	job->end_time = (time_t) uint32_tmp;
-	unpack32  (&job->priority, buf_ptr, buffer_size);
-
-	unpackstr_ptr_malloc (&job->nodes, &uint16_tmp, buf_ptr, buffer_size);
-	if (job->nodes == NULL)
-		job->nodes = "";
-	unpackstr_ptr_malloc (&job->partition, &uint16_tmp, buf_ptr, buffer_size);
-	if (job->partition == NULL)
-		job->partition = "";
-	unpackstr_ptr_malloc (&job->name, &uint16_tmp, buf_ptr, buffer_size);
-	if (job->name == NULL)
-		job->name = "";
-	unpackstr_ptr (&node_inx_str, &uint16_tmp, buf_ptr, buffer_size);
-	if (node_inx_str == NULL)
-		node_inx_str = "";
-	job->node_inx = bitfmt2int(node_inx_str);
-
-	unpack32  (&job->num_procs, buf_ptr, buffer_size);
-	unpack32  (&job->num_nodes, buf_ptr, buffer_size);
-	unpack16  (&job->shared, buf_ptr, buffer_size);
-	unpack16  (&job->contiguous, buf_ptr, buffer_size);
-
-	unpack32  (&job->min_procs, buf_ptr, buffer_size);
-	unpack32  (&job->min_memory, buf_ptr, buffer_size);
-	unpack32  (&job->min_tmp_disk, buf_ptr, buffer_size);
-
-	unpackstr_ptr_malloc (&job->req_nodes, &uint16_tmp, buf_ptr, buffer_size);
-	if (job->req_nodes == NULL)
-		job->req_nodes = "";
-	unpackstr_ptr (&node_inx_str, &uint16_tmp, buf_ptr, buffer_size);
-	if (node_inx_str == NULL)
-		node_inx_str = "";
-	job->req_node_inx = bitfmt2int(node_inx_str);
-	unpackstr_ptr_malloc (&job->features, &uint16_tmp, buf_ptr, buffer_size);
-	if (job->features == NULL)
-		job->features = "";
-	unpackstr_ptr_malloc (&job->job_script, &uint16_tmp, buf_ptr, buffer_size);
-	if (job->job_script == NULL)
-		job->job_script = "";
-	return 0 ;
-}

@@ -151,7 +151,7 @@ extern int slurm_cancel (uint32_t job_id);
  */
 extern void slurm_free_build_info (struct build_table *build_table_ptr);
 /*
- * slurm_pritn_build_info - prints the build information buffer (if allocated)
+ * slurm_print_build_info - prints the build information buffer (if allocated)
  * NOTE: buffer is loaded by slurm_load_build.
  */
 extern void slurm_print_build_info ( FILE * out, struct build_table * build_table_ptr ) ;
@@ -161,6 +161,17 @@ extern void slurm_print_build_info ( FILE * out, struct build_table * build_tabl
  * NOTE: buffer is loaded by load_job.
  */
 extern void slurm_free_job_info (job_info_msg_t * job_buffer_ptr);
+
+/*
+ * slurm_print_job_table - prints the job table object (if allocated)
+ */
+extern void slurm_print_job_table ( job_table_t * job_ptr );
+
+/* 
+ * slurm_print_build_info - prints the build information buffer (if allocated)
+ * NOTE: buffer is loaded by slurm_load_job_info .
+ */
+extern void slurm_print_job_info_msg ( job_info_msg_t * job_info_msg_ptr ) ;
 
 /*
  * slurm_free_node_info - free the node information buffer (if allocated)
@@ -202,7 +213,7 @@ extern int slurm_load_build (time_t update_time,
  *		ENOMEM if malloc failure
  * NOTE: the allocated memory at job_buffer_ptr freed by slurm_free_job_info.
  */
-extern int slurm_load_job (time_t update_time, job_info_msg_t **job_info_msg_ptr);
+extern int slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_ptr);
 
 /*
  * slurm_load_node - load the supplied node information buffer for use by info 
