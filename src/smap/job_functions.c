@@ -28,10 +28,10 @@
 #include "src/common/uid.h"
 #include "src/smap/smap.h"
 
-void print_header_job(void);
-int print_text_job(job_info_t * job_ptr);
+static void _print_header_job(void);
+static int  _print_text_job(job_info_t * job_ptr);
 
-void get_job()
+extern void get_job(void)
 {
 	int error_code = -1, i, j, count = 0;
 
@@ -54,20 +54,16 @@ void get_job()
 
 	if (error_code)
 		if (quiet_flag != 1) {
-			wclear(pa_system_ptr->text_win);
-			pa_system_ptr->ycord =
-			    pa_system_ptr->text_win->_maxy / 2;
-			pa_system_ptr->xcord =
-			    pa_system_ptr->text_win->_maxx;
 			mvwprintw(pa_system_ptr->text_win,
-				  pa_system_ptr->ycord, 1,
-				  "slurm_load_job");
-
+				pa_system_ptr->ycord, 1,
+				"slurm_load_job: %s", 
+				slurm_strerror(slurm_get_errno()));
+			pa_system_ptr->ycord++;
 			return;
 		}
 
 	if (new_job_ptr->record_count && !params.no_header)
-		print_header_job();
+		_print_header_job();
 	for (i = 0; i < new_job_ptr->record_count; i++) {
 		job = new_job_ptr->job_array[i];
 		if (job.node_inx[0] != -1) {
@@ -87,7 +83,7 @@ void get_job()
 			wattron(pa_system_ptr->text_win,
 				COLOR_PAIR(pa_system_ptr->
 					   fill_in_value[count].color));
-			print_text_job(&job);
+			_print_text_job(&job);
 			wattroff(pa_system_ptr->text_win,
 				 COLOR_PAIR(pa_system_ptr->
 					    fill_in_value[count].color));
@@ -98,7 +94,7 @@ void get_job()
 	return;
 }
 
-void print_header_job(void)
+static void _print_header_job(void)
 {
 	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 		  pa_system_ptr->xcord, "ID");
@@ -131,7 +127,7 @@ void print_header_job(void)
 
 }
 
-int print_text_job(job_info_t * job_ptr)
+static int _print_text_job(job_info_t * job_ptr)
 {
 	time_t time;
 	int printed = 0;

@@ -126,6 +126,7 @@ static int _sync_partitions(void)
 {
 	int rc = SLURM_SUCCESS;
 
+#if 0
 	/* Check if partitions configured in SLURM are already configured on
 	 * the system */
 	if ((rc = _validate_config_nodes())) {
@@ -133,6 +134,7 @@ static int _sync_partitions(void)
 		 * configure from scratch */
 		rc = _wire_bgl_partitions();
 	}
+#endif
 
 	return rc;
 }
@@ -686,21 +688,18 @@ extern int init_bgl(void)
 	read_bgl_conf();
 
 #ifdef HAVE_BGL_FILES
-	rc = rm_set_serial(bluegene_serial);
-	if (rc != STATUS_OK){
-		fatal("init_bgl: rm_set_serial failed, errno=%d", rc);
+	if ((rc = rm_set_serial(bluegene_serial)) != STATUS_OK) {
+		fatal("init_bgl: rm_set_serial(): %s", bgl_err_str(rc));
 		return SLURM_ERROR;
 	}
 	
-	rc = rm_get_BGL(&bgl);
-	if (rc != STATUS_OK){
-		fatal("init_bgl: rm_get_BGL failed, errno=%d", rc);
+	if ((rc = rm_get_BGL(&bgl)) != STATUS_OK) {
+		fatal("init_bgl: rm_get_BGL(): %s", bgl_err_str(rc));
 		return SLURM_ERROR;
 	}
 
-	rc = rm_get_data(bgl, RM_Msize, &bp_size);
-	if (rc != STATUS_OK) {
-		fatal("init_bgl: rm_get_data failed, errno=%d", rc);
+	if ((rc = rm_get_data(bgl, RM_Msize, &bp_size)) != STATUS_OK) {
+		fatal("init_bgl: rm_get_data(): %s", bgl_err_str(rc));
 		return SLURM_ERROR;
 	}
 	verbose("BlueGene configured with %d x %d x %d base partitions",

@@ -304,7 +304,13 @@ void pa_init(node_info_msg_t *node_info_ptr)
 		DIM_SIZE[Y]++;
 		DIM_SIZE[Z]++;
 		pa_system_ptr->num_of_proc = node_info_ptr->record_count;
-        }
+        } else {
+		/* Set up a reasonable configuration size */
+		DIM_SIZE[X] = 2;
+		DIM_SIZE[Y] = 4;
+		DIM_SIZE[Z] = 4;
+	}
+	pa_system_ptr->num_of_proc = DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z];
 	if(DIM_SIZE[X]==0 && DIM_SIZE[X]==0 && DIM_SIZE[X]==0) {
 		printf("You need to give me the dimensions\nto set up the system.\n");
 		return;
