@@ -191,13 +191,17 @@ int
 job_rc(job_t *job)
 {
 	int i;
+	int rc;
 
 	if (job->rc) return(job->rc);
 
 	for (i = 0; i < opt.nprocs; i++) 
 		job->rc |= job->tstatus[i];
 
-	job->rc = WEXITSTATUS(job->rc);
+	if ((rc = WEXITSTATUS(job->rc)))
+		job->rc = rc;
+	else if (WIFSIGNALED(job->rc))
+		job->rc = 128 + WTERMSIG(job->rc);
 
 	return(job->rc);
 }
