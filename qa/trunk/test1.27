@@ -41,7 +41,7 @@ print_header $test_id
 # Spawn a job via srun to print environment variables
 #
 set timeout $max_job_delay
-spawn $srun -N1 -t1 $bin_env
+spawn $srun -N1 -n1 -t1 $bin_env
 expect {
 	-re "SLURM_($alpha_under)=($alpha_numeric)" {
                 if {[string compare $expect_out(1,string) "JOBID"] == 0 &&
@@ -107,7 +107,7 @@ expect {
 }
 
 if {$matches != 10} {
-	send_user "\nFAILURE: Not all SLURM environment variables set ($matches of 9)\n"
+	send_user "\nFAILURE: Not all SLURM environment variables set ($matches of 10)\n"
 	set exit_code 1
 }
 
