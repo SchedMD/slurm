@@ -2,13 +2,13 @@
 # Simple SLURM stress test
 # Usage: <prog> <sleep_time> <iterations>
 # Default is 1 second sleep and 3 iterations
-if [ $# -gt 1 ]; then
+if [ $# -gt 0 ]; then
 	sleep_time=$1
 else
 	sleep_time=1
 fi
 
-if [ $# -gt 3 ]; then
+if [ $# -gt 1 ]; then
 	iterations=$2
 else
 	iterations=3
