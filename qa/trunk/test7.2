@@ -11,7 +11,7 @@
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Moe Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
 # 
 # This file is part of SLURM, a resource management program.
@@ -40,10 +40,29 @@ set file_prog_get    "test$test_id.prog"
 print_header $test_id
 
 #
+# Determine if this is AIX (for appropriate build line)
+#
+set aix 0
+spawn $bin_uname
+expect {
+        -re "AIX" {
+                set aix 1
+                exp_continue
+        }
+        eof {
+                wait
+        }
+}
+
+#
 # Delete left-over program and rebuild it.
 #
 exec $bin_rm -f $file_prog_get
-exec $bin_cc ${file_prog_get}.c -g -pthread -o $file_prog_get -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm
+if {$aix == 0} {
+	exec $bin_cc ${file_prog_get}.c -g -pthread -o $file_prog_get -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm
+} else {
+	exec $bin_cc ${file_prog_get}.c -g -pthread -o $file_prog_get -I${slurm_dir}/include -L${slurm_dir}/lib -lslurm
+}
 exec $bin_chmod 700 $file_prog_get
 
 #

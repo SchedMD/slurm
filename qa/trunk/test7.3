@@ -41,6 +41,21 @@ set test_prog   "test$test_id.prog"
 print_header $test_id
 
 #
+# Determine if this is AIX (for appropriate build line)
+#
+set aix 0
+spawn $bin_uname
+expect {
+	-re "AIX" {
+		set aix 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+
+#
 # Delete left-over programs and rebuild them 
 #
 exec $bin_rm -f $io_prog $test_prog
@@ -48,7 +63,11 @@ exec $bin_rm -f $io_prog $test_prog
 exec $bin_make $io_prog
 exec $bin_chmod 700 $io_prog
 
-exec $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm
+if {$aix == 0} {
+	exec $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm
+} else {
+	exec $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include  -L${slurm_dir}/lib -lslurm
+}
 exec $bin_chmod 700 $test_prog
 
 #
