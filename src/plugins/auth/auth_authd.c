@@ -385,8 +385,8 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf )
 	packmem( (char *) plugin_type, strlen( plugin_type ) + 1, buf );
 	pack32( plugin_version, buf );
 	
-	pack32( cred->cred.uid, buf );
-	pack32( cred->cred.gid, buf );
+	pack32( (uint32_t) cred->cred.uid, buf );
+	pack32( (uint32_t) cred->cred.gid, buf );
 	pack_time( cred->cred.valid_from, buf );
 	pack_time( cred->cred.valid_to, buf );
 	packmem( cred->sig.data, sig_size, buf );
@@ -400,7 +400,7 @@ slurm_auth_unpack( Buf buf )
 {
 	slurm_auth_credential_t *cred;
 	uint16_t sig_size; /* ignored */
-	uint32_t version;	
+	uint32_t version, tmpint;	
 	char *data;
 
 	if ( buf == NULL ) {
@@ -433,14 +433,16 @@ slurm_auth_unpack( Buf buf )
 		xmalloc( sizeof( slurm_auth_credential_t ) );
 	cred->cr_errno = SLURM_SUCCESS;
 
-	if ( unpack32( &cred->cred.uid, buf ) != SLURM_SUCCESS ) {
+	if ( unpack32( &tmpint, buf ) != SLURM_SUCCESS ) {
 		plugin_errno = SLURM_AUTH_UNPACK;
 		goto unpack_error;
 	}
-	if ( unpack32( &cred->cred.gid, buf ) != SLURM_SUCCESS ) {
+	cred->cred.uid = tmpint;
+	if ( unpack32( &tmpint, buf ) != SLURM_SUCCESS ) {
 		plugin_errno = SLURM_AUTH_UNPACK;
 		goto unpack_error;
 	}
+	cred->cred.gid = tmpint;
 	if ( unpack_time( &cred->cred.valid_from, buf ) != SLURM_SUCCESS ) {
 		plugin_errno = SLURM_AUTH_UNPACK;
 		goto unpack_error;
@@ -472,8 +474,8 @@ slurm_auth_print( slurm_auth_credential_t *cred, FILE *fp )
 	}
 
 	verbose( "BEGIN AUTHD CREDENTIAL\n" );
-	verbose( "   UID: %d", cred->cred.uid );
-	verbose( "   GID: %d", cred->cred.gid );
+	verbose( "   UID: %u", cred->cred.uid );
+	verbose( "   GID: %u", cred->cred.gid );
 	verbose( "   Valid from: %s", ctime( &cred->cred.valid_from ) );
 	verbose( "   Valid to: %s", ctime( &cred->cred.valid_to ) );
 	verbose( "   Signature: 0x%02x%02x%02x%02x ...\n",
