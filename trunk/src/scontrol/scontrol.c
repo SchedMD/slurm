@@ -1518,6 +1518,74 @@ _update_job (int argc, char *argv[])
 			job_msg.dependency =
 				(uint32_t) strtol(&argv[i][11],
 					(char **) NULL, 10);
+#ifdef HAVE_BGL
+		else if (strncasecmp(argv[i], "Geometry=", 9) == 0) {
+			char* token, *delimiter = ",x", *next_ptr;
+			int j, rc = 0;
+			char* geometry_tmp = xstrdup(&argv[i][9]);
+			char* original_ptr = geometry_tmp;
+			token = strtok_r(geometry_tmp, delimiter, &next_ptr);
+			for (j=0; j<SYSTEM_DIMENSIONS; j++) {
+				if (token == NULL) {
+					error("insufficient dimensions in Geometry");
+					rc = -1;
+					break;
+				}
+				job_msg.geometry[j] = atoi(token);
+				if (job_msg.geometry[j] <= 0) {
+					error("invalid --geometry argument");
+					rc = -1;
+					break;
+				}
+				geometry_tmp = next_ptr;
+				token = strtok_r(geometry_tmp, delimiter, &next_ptr);
+			}
+			if (token != NULL) {
+				error("too many dimensions in Geometry");
+				rc = -1;
+			}
+
+			if (original_ptr)
+				xfree(original_ptr);
+			if (rc != 0) {
+				for (j=0; j<SYSTEM_DIMENSIONS; j++)
+					job_msg.geometry[j] = (uint16_t) NO_VAL;
+				exit_code = 1;
+			}
+		}
+		else if (strncasecmp(argv[i], "Rotate=", 7) == 0) {
+			if (strcasecmp(&argv[i][7], "yes") == 0)
+				job_msg.rotate = 1;
+			else if (strcasecmp(&argv[i][7], "no") == 0)
+				job_msg.rotate = 0;
+			else
+				job_msg.rotate = 
+					(uint32_t) strtol(&argv[i][7], 
+						(char **) NULL, 10);
+		}
+		else if (strncasecmp(argv[i], "Connection=", 11) == 0) {
+			if (strcasecmp(&argv[i][11], "torus") == 0)
+				job_msg.conn_type = RM_TORUS;
+			else if (strcasecmp(&argv[i][11], "mesh") == 0)
+				job_msg.conn_type = RM_MESH;
+			else if (strcasecmp(&argv[i][11], "nav") == 0)
+				job_msg.conn_type = RM_NAV;
+			else
+				job_msg.conn_type = 
+					(uint16_t) strtol(&argv[i][11], 
+							(char **) NULL, 10);
+		}
+		else if (strncasecmp(argv[i], "NodeUse=", 8) == 0) {
+			if (strcasecmp(&argv[i][8], "virtual") == 0)
+				job_msg.node_use = RM_VIRTUAL;
+			else if (strcasecmp(&argv[i][8], "coprocessor") == 0)
+				job_msg.node_use = RM_COPROCESSOR;
+			else
+				job_msg.node_use = 
+					(uint16_t) strtol(&argv[i][8], 
+							(char **) NULL, 10);
+		}
+#endif
 		else {
 			exit_code = 1;
 			fprintf (stderr, "Invalid input: %s\n", argv[i]);
