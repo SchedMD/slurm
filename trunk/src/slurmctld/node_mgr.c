@@ -1228,6 +1228,12 @@ void node_did_resp (char *name)
 	}
 	if (node_ptr->node_state == NODE_STATE_UNKNOWN)
 		node_ptr->node_state = NODE_STATE_IDLE;
+	if ((node_ptr->node_state == NODE_STATE_DOWN) &&
+	    (slurmctld_conf.ret2service == 1)) {
+		node_ptr->node_state = NODE_STATE_IDLE;
+		info("node_did_resp: node %s returned to service", name);
+		xfree(node_ptr->reason);
+	}
 	if (node_ptr->node_state == NODE_STATE_IDLE)
 		bit_set (idle_node_bitmap, node_inx);
 	if ((node_ptr->node_state == NODE_STATE_DOWN)     ||
