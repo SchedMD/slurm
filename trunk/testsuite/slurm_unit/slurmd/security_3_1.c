@@ -22,23 +22,24 @@ static void _usage(char *prog_name);
 int main(int argc, char *argv[])
 {
 	batch_job_launch_msg_t launch_msg;
-	int uid, jid;
+	int uid;
+	uint32_t jid;
 
-	if (argc != 3) {
+	if (argc != 2) {
 		_usage(argv[0]);
 		exit(1);
 	}
 
 	_detailed_logs(argv[0]);
 	uid = getuid();
-	jid = atoi(argv[1]);
+	jid = 0xffffff;
 	printf("Trying to run job %d on node %s as user %u\n",
-		jid, argv[2], uid);
+		jid, argv[1], uid);
 
 	/* Initialization of data structures */
 	launch_msg.job_id	= jid;
 	launch_msg.uid		= uid;
-	launch_msg.nodes	= argv[2];
+	launch_msg.nodes	= argv[1];
 	launch_msg.err		= "/dev/null";
 	launch_msg.in		= "/dev/null";
 	launch_msg.out		= "/dev/null";
@@ -49,9 +50,10 @@ int main(int argc, char *argv[])
 	launch_msg.envc 	= 0;
 	launch_msg.environment 	= NULL;
 
-	if (_send_launch_msg(&launch_msg) == SLURM_SUCCESS)
+	if (_send_launch_msg(&launch_msg) == SLURM_SUCCESS) {
+		printf("Now check SlurmdLog for an error message.\n");
 		exit(0);
-	else
+	} else
 		exit(1);
 }
 
@@ -119,18 +121,20 @@ static int _report_results(slurm_msg_t *response_msg_ptr)
 		return SLURM_ERROR;
 	}
 
-	printf("SUCCESS!");
+	printf("Authentication failure (as expected).\n");
 	return SLURM_SUCCESS;
 }
 
 static void _detailed_logs(char *prog_name) 
 {
+#if DEBUG
 	log_options_t logopts = LOG_OPTS_STDERR_ONLY;
 	logopts.stderr_level = LOG_LEVEL_DEBUG3;
 	log_init(prog_name, logopts, SYSLOG_FACILITY_DAEMON, NULL);
+#endif
 }
 
 static void _usage(char *prog_name)
 {
-	printf("Usage: %s job_id host_name\n", prog_name);
+	printf("Usage: %s host_name\n", prog_name);
 }
