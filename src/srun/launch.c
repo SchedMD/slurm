@@ -222,8 +222,12 @@ static void _join_attached_threads (int nthreads, thd_t *th)
 {
 	int i;
 	void *retval;
-	for (i = 0; i < nthreads; i++)
-		pthread_join (th[i].thread, &retval);
+	if (!opt.parallel_debug)
+		return;
+	for (i = 0; i < nthreads; i++) {
+		if (th[i].thread != (pthread_t) NULL)
+			pthread_join (th[i].thread, &retval);
+	}
 	return;
 }
 
@@ -294,6 +298,7 @@ static void _p_launch(slurm_msg_t *req, job_t *job)
 		if (job->ntask[i] == 0)	{	/* No tasks for this node */
 			debug("Node %s is unused",job->host[i]);
 			job->host_state[i] = SRUN_HOST_REPLIED;
+			thd[i].thread = (pthread_t) NULL;
 			continue;
 		}
 

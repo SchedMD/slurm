@@ -115,13 +115,13 @@ DESTDIR="$RPM_BUILD_ROOT" make install
 install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/rc.d/init.d/slurm
 install -D -m644 etc/slurm.conf.example $RPM_BUILD_ROOT/etc/slurm/slurm.conf
 # Delete unpackaged files:
-rm -f $RPM_BUILD_ROOT/usr/lib/slurm/*.{a,la}
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
 
 # Build file lists for optional plugin packages
 for plugin in auth_munge auth_authd switch_elan; do
    LIST=./${plugin}.files
    touch $LIST
-   test -f $RPM_BUILD_ROOT/usr/lib/slurm/${plugin}.so &&
+   test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/${plugin}.so &&
      echo %{_libdir}/slurm/${plugin}.so > $LIST
 done
 

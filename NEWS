@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Create new allocation as needed for debugger in case old allocation 
     has been purged
  -- Add Blue Gene User Guide to html documents
+ -- Fix srun bug that could cause seg fault with --no-shell option if not 
+    running under a debugger
 
 * Changes in SLURM 0.4.0-pre2
 =============================
