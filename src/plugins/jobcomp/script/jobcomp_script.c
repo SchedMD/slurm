@@ -97,7 +97,7 @@ static pthread_t script_thread = 0;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t job_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t job_list_cond = PTHREAD_COND_INITIALIZER;
-
+static int agent_exit = 0;
 
 /*
  * Check if the script exists and if we can execute it.
@@ -264,19 +264,22 @@ void *script_agent (void *args) {
 	char user_id_str[32],job_id_str[32], nodes_cache[1];
 	char start_str[32], end_str[32], lim_str[32];
 	char submit_str[32], *batch_str;
-	char * argvp[] = {script,NULL};
+	char * argvp[] = {script, NULL};
 	int status;
 	char ** envp, * nodes;
 	job_record job;
 
 	while(1) {
 		pthread_mutex_lock(&job_list_mutex);
-		while(list_is_empty(job_list) != 0) {
-			pthread_cond_wait(&job_list_cond,&job_list_mutex);
+		while ((list_is_empty(job_list) != 0) && (agent_exit == 0)) {
+			pthread_cond_wait(&job_list_cond, &job_list_mutex);
+		}
+		if (agent_exit) {
+			pthread_mutex_unlock(&job_list_mutex);
+			return NULL;
 		}
 		job = (job_record)list_pop(job_list);
 		pthread_mutex_unlock(&job_list_mutex);
-		
 
 		snprintf(user_id_str,sizeof(user_id_str),"%u",job->user_id);
 		snprintf(job_id_str,sizeof(job_id_str),"%u",job->job_id);
@@ -443,34 +446,40 @@ char *slurm_jobcomp_strerror( int errnum )
 	return error_str;
 }
 
-static void _cancel_thread (pthread_t thread_id)
+static int _wait_for_thread (pthread_t thread_id)
 {
 	int i;
 
 	for (i=0; i<4; i++) {
-		if (pthread_cancel(thread_id))
-			return;
+		if (pthread_kill(thread_id, 0))
+			return SLURM_SUCCESS;
 		usleep(1000);
 	}
 	error("Could not kill jobcomp script pthread");
+	return SLURM_ERROR;
 }
 
 /* Called when script unloads */
 int fini ( void )
 {
+	int rc = SLURM_SUCCESS;
+
 	pthread_mutex_lock(&thread_flag_mutex);
-	if(script_thread) {
+	if (script_thread) {
 		verbose("Script Job Completion plugin shutting down");
-		_cancel_thread(script_thread);
+		agent_exit = 1;
+		pthread_cond_broadcast(&job_list_cond);
+		rc = _wait_for_thread(script_thread);
 		script_thread = 0;
 	}
 	pthread_mutex_unlock(&thread_flag_mutex);
 
 	xfree(script);
+	if (rc == SLURM_SUCCESS) {
+		pthread_mutex_lock(&job_list_mutex);
+		list_destroy(job_list);
+		pthread_mutex_unlock(&job_list_mutex);
+	}
 
-	pthread_mutex_lock(&job_list_mutex);
-	list_destroy(job_list);
-	pthread_mutex_unlock(&job_list_mutex);
-
-	return SLURM_SUCCESS;
+	return rc;
 }
