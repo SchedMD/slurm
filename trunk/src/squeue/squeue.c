@@ -131,10 +131,10 @@ _print_job ( void )
 
 	if (params.format == NULL) {
 		if (params.long_list)
-			params.format = "%.7i %.9P %.8j %.8u %.8T %.9M %.9l "
+			params.format = "%.7i %.9P %.8j %.8u %.8T %.10M %.9l "
 			                "%.6D %N";
 		else
-			params.format = "%.7i %.9P %.8j %.8u  %.2t %.9M %.6D %N";
+			params.format = "%.7i %.9P %.8j %.8u  %.2t %.10M %.6D %N";
 	}
 	if (params.format_list == NULL)
 		parse_format(params.format);
