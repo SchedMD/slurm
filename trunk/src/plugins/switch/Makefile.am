@@ -1,4 +1,4 @@
 # $Id$
 # Makefile for switch plugins
 
-SUBDIRS = elan none
+SUBDIRS = elan none federation
