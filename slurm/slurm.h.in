@@ -53,6 +53,9 @@
 # define PARAMS(protos)	()
 #endif
 
+/* Define to 1 if you have Blue Gene system support. */
+#undef HAVE_BGL
+
 /* Define to 1 if you have the `elan3' library (-lelan3). */
 #undef HAVE_ELAN
 
