@@ -118,10 +118,10 @@ AC_ARG_ENABLE(debug,
 
 AC_MSG_RESULT(${with_slurm_debug=no})
 if test "x$with_slurm_debug" = "xtrue"; then 
-  CFLAGS="-g -Wall -Wpointer-arith -fno-strict-aliasing $CFLAGS"
+  CFLAGS="-g -Wall -Wpointer-arith $CFLAGS"
   AC_DEFINE(DEBUG_SYSTEM, 1, [Define for extra debug messages.])
 else
-  CFLAGS="-O2 -Wall -Wpointer-arith -fno-strict-aliasing $CFLAGS"
+  CFLAGS="-O2 -Wall -Wpointer-arith $CFLAGS"
   AC_DEFINE(NDEBUG, 1, [Define for production compile of code])
 fi
 AM_CONDITIONAL(DEBUG_MODULES, test "x$with_slurm_debug" = "xtrue")
@@ -192,23 +192,26 @@ AC_SUBST(ELAN_LIBS)
 
 dnl Check for whether to include readline support
 dnl 
+savedLIBS="$LIBS"
+READLINE_LIBS="-lreadline -lncurses"
+LIBS="$READLINE_LIBS $LIBS"
+AC_CHECK_LIB([readline], [readline], [ readline_lib=yes ], [ readline_lib=no] )
+LIBS="$savedLIBS"
+
 AC_MSG_CHECKING([whether to include readline support])
 AC_ARG_ENABLE(readline,
   AC_HELP_STRING([--disable-readline], [disable readline support]),
   [ readline=no  ],
-  [ readline=yes ]
+  [ if test x$readline_lib = xyes; then
+      readline=yes
+    else
+      readline=no
+    fi  ]
 )
-if test x$readline = xyes; then
-   AC_CHECK_LIB([readline], [readline], [], [ readline=no ])
-fi
 AC_MSG_RESULT(${readline})
 
 if test x$readline = xyes; then
-   savedLIBS="$LIBS"
-   READLINE_LIBS="-lreadline -lncurses"
-   LIBS="$READLINE_LIBS $LIBS"
    AC_DEFINE(HAVE_READLINE, 1, [Define if you are compiling with readline])
-   LIBS="$savedLIBS"
 else
    READLINE_LIBS=""
 fi
