@@ -31,8 +31,9 @@
 #include <errno.h>
 #include <signal.h>
 
+#include <slurm/slurm_errno.h>
+
 #include "src/common/log.h"
-#include "src/common/slurm_errno.h"
 #include "src/common/xsignal.h"
 
 

@@ -46,6 +46,8 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
+#include <slurm/slurm_errno.h>
+
 #include "src/common/credential_utils.h"
 #include "src/common/daemonize.h"
 #include "src/common/hostlist.h"
@@ -55,7 +57,6 @@
 #include "src/common/qsw.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
-#include "src/common/slurm_errno.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xstring.h"
 

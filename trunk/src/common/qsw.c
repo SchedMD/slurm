@@ -50,11 +50,12 @@
 #include <elan3/elanvp.h>
 #include <rms/rmscall.h>
 
+#include <slurm/slurm_errno.h>
+
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
 #include "src/common/qsw.h"
-#include "src/common/slurm_errno.h"
 
 /*
  * Definitions local to this module.

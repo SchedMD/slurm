@@ -33,12 +33,13 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include "src/common/xmalloc.h"
+#include <slurm/slurm_errno.h>
+
+include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
 #include "src/common/qsw.h"
-#include "src/common/slurm_errno.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/slurmd/interconnect.h"
 #include "src/slurmd/setenvpf.h"

@@ -14,7 +14,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
-#include "src/slurm/slurm.h"
+#include <slurm/slurm.h>
 #include "src/common/slurm_protocol_api.h"
 
 #include "get_resp.h"

@@ -31,8 +31,9 @@
 #include <errno.h>
 #include <stdio.h>
 
+#include <slurm/slurm.h>
+
 #include "src/common/slurm_protocol_api.h"
-#include "src/slurm/slurm.h"
 
 /*
  * slurm_init_job_desc_msg - initialize job descriptor with 

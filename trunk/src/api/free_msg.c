@@ -31,9 +31,10 @@
 #include <errno.h>
 #include <stdio.h>
 
+#include <slurm/slurm.h>
+
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
-#include "src/slurm/slurm.h"
 
 static void _free_all_job_info (job_info_msg_t *msg);
 static void _slurm_free_job_info_members (job_info_t * job);

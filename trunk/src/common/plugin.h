@@ -40,7 +40,7 @@
 #  include <inttypes.h>
 #endif /* HAVE_CONFIG_H */
 
-#include "src/common/slurm_errno.h"
+#include <slurm/slurm_errno.h>
 
 /*
  * These symbols are required to be defined in any plugin managed by

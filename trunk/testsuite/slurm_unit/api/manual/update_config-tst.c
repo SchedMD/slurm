@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "src/slurm/slurm.h"
+#include <slurm/slurm.h>
 #include "testsuite/dejagnu.h"
 
 #ifndef true

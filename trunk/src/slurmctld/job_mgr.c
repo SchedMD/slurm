@@ -51,10 +51,11 @@
 #  define BUF_SIZE 1024
 #endif
 
+#include <slurm/slurm_errno.h>
+
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
-#include "src/common/slurm_errno.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/agent.h"
@@ -2295,7 +2296,7 @@ static bool _top_priority(struct job_record *job_ptr)
  * update_job - update a job's parameters per the supplied specifications
  * IN job_specs - a job's specification
  * IN uid - uid of user issuing RPC
- * RET returns an error code from common/slurm_errno.h
+ * RET returns an error code from slurm_errno.h
  * global: job_list - global list of job entries
  *	last_job_update - time of last job table update
  */

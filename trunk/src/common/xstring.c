@@ -47,11 +47,12 @@ char *strerror_r(int, char *, int);
 
 #include <stdarg.h>
 
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
+#include <slurm/slurm_errno.h>
+
 #include "src/common/strlcpy.h"
 #include "src/common/xassert.h"
-#include "src/common/slurm_errno.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #define XFGETS_CHUNKSIZE 64
 

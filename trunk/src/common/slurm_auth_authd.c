@@ -51,11 +51,12 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#include "src/common/slurm_errno.h"
-#include "src/common/xmalloc.h"
-#include "src/common/pack.h"
+#include <slurm/slurm_errno.h>
+
 #include "src/common/log.h"
+#include "src/common/pack.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/xmalloc.h"
 
 #define UNIX_PATH_MAX 108    /* Cribbed from /usr/include/linux/un.h */
 

@@ -33,11 +33,11 @@
 
 #include <netinet/in.h>
 
+#include <slurm/slurm.h>
+
 #include "src/common/cbuf.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/slurm/slurm.h"
-
 #include "src/srun/fname.h"
 
 typedef enum {

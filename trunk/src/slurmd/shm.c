@@ -58,11 +58,12 @@
 #include <stdlib.h>
 #include <signal.h>
 
+#include <slurm/slurm_errno.h>
+
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xassert.h"
-#include "src/common/slurm_errno.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmd/slurmd.h"

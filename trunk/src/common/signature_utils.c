@@ -7,12 +7,13 @@
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
 
-#include "src/common/log.h"
-#include "src/common/xmalloc.h"
-#include "src/common/slurm_errno.h"
-#include "src/common/slurm_protocol_api.h"
+#include <slurm/slurm_errno.h>
+
 #include "src/common/credential_utils.h"
+#include "src/common/log.h"
 #include "src/common/signature_utils.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
 
 
 int slurm_ssl_init()

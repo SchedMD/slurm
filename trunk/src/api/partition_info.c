@@ -32,9 +32,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "src/common/slurm_protocol_api.h"
-#include "src/slurm/slurm.h"
+#include <slurm/slurm.h>
 
+#include "src/common/slurm_protocol_api.h"
 
 /*
  * slurm_print_partition_info_msg - output information about all Slurm 

@@ -61,8 +61,7 @@ libcommon_la_SOURCES = 			\
         $(auth_sources)
 
 include_HEADERS =	\
-	hostlist.h	\
-	slurm_errno.h
+	hostlist.h
 
 libdaemonize_la_SOURCES =  \
 	daemonize.c        \

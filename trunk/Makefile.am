@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS    = src testsuite doc
+SUBDIRS    = slurm src testsuite doc
 
 EXTRA_DIST =             		\
 	etc/slurm.conf.localhost 	\

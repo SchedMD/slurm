@@ -36,12 +36,13 @@
 #include <signal.h>
 #include <string.h>
 
+#include <slurm/slurm_errno.h>
+
 #include "src/common/log.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
-#include "src/common/slurm_errno.h"
-#include "src/common/slurm_protocol_defs.h"
-#include "src/common/slurm_protocol_api.h"
 
 #include "src/srun/job.h"
 #include "src/srun/io.h"

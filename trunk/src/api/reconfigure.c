@@ -34,8 +34,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <slurm/slurm.h>
+
 #include "src/common/slurm_protocol_api.h"
-#include "src/slurm/slurm.h"
 
 static int _send_message_controller (	enum controller_id dest, 
 					slurm_msg_t *request_msg );
