@@ -82,7 +82,6 @@ main (int argc, char *argv[])
 		job_mesg. min_procs = 4;
 		job_mesg. min_memory = 1024;
 		job_mesg. min_tmp_disk = 2034;
-		job_mesg. partition = "batch\0";
 		job_mesg. priority = 100;
 		job_mesg. shared = 0;
 		job_mesg. time_limit = 200;

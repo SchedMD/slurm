@@ -23,7 +23,6 @@ main (int argc, char *argv[])
 	job_mesg. min_procs = 1;
 	job_mesg. min_memory = 100;
 	job_mesg. min_tmp_disk = 200;
-	job_mesg. partition = "debug";
 	job_mesg. priority = 100;
 	job_mesg. shared = 0;
 	job_mesg. time_limit = 100;
