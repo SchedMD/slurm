@@ -16,7 +16,7 @@
 AC_DEFUN([X_AC_SLURM_WITH_SSL], [
 
   ac_slurm_with_ssl=no
-  ssl_default_dirs="/usr/local/openssl /usr/lib/openssl    \
+  ssl_default_dirs="/usr/local/openssl64 /usr/local/openssl /usr/lib/openssl    \
                     /usr/local/ssl /usr/lib/ssl /usr/local \
                     /usr/pkg /opt /opt/openssl /usr/local/tools/gnu/aix_5_64"
   
