@@ -15,3 +15,13 @@ Wed Feb 13 04:23:26 PST 2002 garlick
 
 Wed Feb 20 09:07:59 PST 2002 garlick
 	Split out "related work" appendix to ../survey
+
+Mon Jun 10 16:18:05 PDT 2002 grondo
+	Added Job Initiation Design overview and related figures.
+
+	Added draft section on srun with table of command line options.
+
+	Added a "SLURM Entities" diagram to aid in explanation of parititions,
+	nodes, jobs, and job steps.
+
+	Other minor cleanup.
