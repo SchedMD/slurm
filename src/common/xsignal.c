@@ -72,11 +72,12 @@ xsignal_unblock(int signo)
 	return SLURM_SUCCESS;
 }
 
+
 static int
-_sigmask_block(sigset_t *set, sigset_t *oset)
+_sig_setmask(sigset_t *set, sigset_t *oset)
 {
-	if (pthread_sigmask(SIG_BLOCK, set, oset) < 0) {
-		error("pthread_sigmask: %m");
+	if (pthread_sigmask(SIG_SETMASK, set, oset) < 0) {
+		error("pthread_sigmask(SETMASK): %m");
 		return SLURM_ERROR;
 	}
 
@@ -86,13 +87,13 @@ _sigmask_block(sigset_t *set, sigset_t *oset)
 int
 xsignal_save_mask(sigset_t *set)
 {
-	return _sigmask_block(NULL, set);
+	return _sig_setmask(NULL, set);
 }
 
 int
 xsignal_restore_mask(sigset_t *set)
 {
-	return _sigmask_block(set, NULL);
+	return _sig_setmask(set, NULL);
 }
 
 
