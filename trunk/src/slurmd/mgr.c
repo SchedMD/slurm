@@ -74,7 +74,7 @@
 #include "src/slurmd/smgr.h"
 #include "src/slurmd/io.h"
 #include "src/slurmd/shm.h"
-
+#include "src/slurmd/proctrack.h"
 
 /* 
  * Map session manager exit status to slurm errno:
