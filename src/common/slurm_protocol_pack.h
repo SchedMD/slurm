@@ -27,9 +27,9 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len ) ;
 int unpack_msg ( slurm_msg_t * msgi , char ** buffer , uint32_t * buf_len ) ;
 
 /* specific Pack / Unpack methods for slurm protocol bodies */
-void pack_node_registration_status_msg ( node_registration_status_msg_t * msg , char ** buffer , uint32_t * length ) ;
+void pack_node_registration_status_msg ( slurm_node_registration_status_msg_t * msg , void ** buffer , uint32_t * length ) ;
 
-int unpack_node_registration_status_msg (node_registration_status_msg_t ** msg ,  char ** buffer , uint32_t * length ) ;
+int unpack_node_registration_status_msg ( slurm_node_registration_status_msg_t ** msg ,  void ** buffer , uint32_t * length ) ;
 
 void pack_job_desc ( job_desc_msg_t *job_desc_msg_ptr, void ** buffer , int * buf_len ) ;
 int unpack_job_desc ( job_desc_msg_t **job_desc_msg_ptr, void ** buffer , int * buffer_size ) ;
@@ -58,7 +58,7 @@ int unpack_node_info_msg ( node_info_msg_t ** msg , void ** buf_ptr , int * buff
 int unpack_node_table_msg ( node_table_msg_t ** node , void ** buf_ptr , int * buffer_size ) ;
 int unpack_node_table ( node_table_msg_t * node , void ** buf_ptr , int * buffer_size ) ;
 
-void pack_job_allocation_response_msg ( job_allocation_response_msg_t * msg, char ** buffer , uint32_t * length ) ;
+void pack_job_allocation_response_msg ( job_allocation_response_msg_t * msg, void ** buffer , uint32_t * length ) ;
 
-int unpack_job_allocation_response_msg ( job_allocation_response_msg_t ** msg , char ** buffer , uint32_t * length ) ;
+int unpack_job_allocation_response_msg ( job_allocation_response_msg_t ** msg , void ** buffer , uint32_t * length ) ;
 #endif

@@ -204,6 +204,23 @@ void slurm_free_job_allocation_response_msg ( job_allocation_response_msg_t * jo
 	}	
 }
 
+void slurm_free_node_registration_status_msg ( slurm_node_registration_status_msg_t * msg )
+{
+	if ( msg )
+	{
+		if ( msg -> node_name )
+			xfree ( msg -> node_name ) ;
+		xfree ( msg ) ;
+	}
+}
+
+
+/**********************
+***********************
+Init functions
+***********************
+**********************/
+
 
 void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg )
 {
