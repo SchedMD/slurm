@@ -19,7 +19,7 @@
 #include "pack.h"
 #include "slurmctld.h"
 #include "xstring.h"
-#include <src/common/slurm_errno.h>
+#include <src/common/slurm_protocol_errno.h>
 
 #define BUF_SIZE 1024
 #define MAX_STR_PACK 128

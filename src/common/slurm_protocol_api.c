@@ -143,12 +143,6 @@ int slurm_receive_msg ( slurm_fd open_fd , slurm_msg_t * msg )
 		info ( "Error recieving msg socket: errno %i\n", errno ) ;
 		return rc ;
 	}
-#if 0
-printf("read %d,%d bytes\n",receive_len,unpack_len);
-for (i=0; i<30; i++) 
-printf("%c=%x ",buffer[i],(int)buffer[i]);
-printf("\n");
-#endif
 
 	/* unpack header */
 	unpack_len = rc ;
@@ -208,7 +202,7 @@ int slurm_send_node_msg ( slurm_fd open_fd ,  slurm_msg_t * msg )
 	char buf_temp[SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE] ;
 	char * buffer = buf_temp ;
 	header_t header ;
-	int rc ;
+	int i, rc ;
 	unsigned int pack_len ;
 
 	/* initheader */
@@ -252,12 +246,6 @@ int slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slur
 		info ( "Error recieving msg socket: errno %i\n", errno ) ;
 		return rc ;
 	}
-#if 0
-printf("read %d,%d bytes\n",receive_len,unpack_len);
-for (i=0; i<30; i++) 
-printf("%c=%x ",buffer[i],(int)buffer[i]);
-printf("\n");
-#endif
 
 	/* unpack header */
 	unpack_len = rc ;

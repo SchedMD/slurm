@@ -465,9 +465,6 @@ print_node_list (char *node_list)
 		}		
 		xfree (my_node_list);
 	}			
-/* Temporary logic to clean out immediately */
-slurm_free_node_info (old_node_info_ptr);
-old_node_info_ptr=NULL;
 	return;
 }
 
@@ -488,7 +485,7 @@ print_part (char *partition_name)
 		error_code = slurm_load_partitions (old_part_info_ptr->last_update, 
 					&part_info_ptr);
 		if (error_code == 0) {
-/*			slurm_free_partition_info (old_part_info_ptr); */
+			slurm_free_partition_info (old_part_info_ptr);
 		}
 		else if (error_code == SLURM_NO_CHANGE_IN_DATA) {
 			part_info_ptr = old_part_info_ptr;
@@ -519,9 +516,6 @@ print_part (char *partition_name)
 		if (partition_name)
 			break;
 	}
-/* Temporary logic to clean out immediately */
-slurm_free_partition_info (old_part_info_ptr);
-old_part_info_ptr=NULL;
 }
 
 

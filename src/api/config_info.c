@@ -77,7 +77,7 @@ slurm_load_build (time_t update_time, struct build_table **build_table_ptr )
                         break ;
                 case RESPONSE_SLURM_RC:
                         rc_msg = ( return_code_msg_t * ) response_msg . data ; 
-			return rc_msg->return_code ;
+			return (int) rc_msg->return_code ;
                         break ;
                 default:
 			return SLURM_UNEXPECTED_MSG_ERROR ;
