@@ -3,8 +3,14 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.4.0-pre2
 =============================
+ -- Fixes for reported problems:
+   - slurm/477: Signal of batch job script (scancel -b) fixed
  -- NOTE: "startclean" when transitioning from version 0.4.0-pre1, JOBS ARE LOST
- -- Preserve job's requested processor count info after job is initiated
+ -- Preserve job's requested processor count info after job is initiated 
+    (for viewing by squeue and scontrol)
+ -- Added a lots of Blue Gene/L support logic: slurmd executes on a single 
+    node to front-end the 512-CPU base-partitions (Blue Gene/L's nodes)
+ -- srun cancels created job if job step creation fails
 
 * Changes in SLURM 0.4.0-pre1
 =============================
