@@ -34,6 +34,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <string.h>
 #include <sys/poll.h>
 #include <time.h>
@@ -50,9 +51,11 @@
 #include "src/srun/job.h"
 #include "src/srun/opt.h"
 #include "src/srun/io.h"
+#include "src/srun/signals.h"
 
 #ifdef HAVE_TOTALVIEW
 #  include "src/srun/attach.h"
+   static bool sent_task_cont = false;
 #endif
 
 #define LAUNCH_WAIT_SEC	 60	/* max wait to confirm launches, sec */
@@ -485,6 +488,13 @@ _msg_thr_poll(job_t *job)
 
 	while (1) {
 		while ((rc = poll(fds, nfds, POLL_TIMEOUT_MSEC)) <= 0) {
+#ifdef HAVE_TOTALVIEW
+			if (MPIR_being_debugged && MPIR_debug_gate &&
+			    (!sent_task_cont)) {
+				sent_task_cont = true;
+				fwd_signal(job, SIGCONT);
+			}
+#endif
 			if (rc == 0) {	/* timeout */
 				if (job->state == SRUN_JOB_FAILED)
 					pthread_exit(0);
