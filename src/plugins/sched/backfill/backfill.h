@@ -26,3 +26,7 @@
 
 /* backfill_agent - detached thread periodically attempts to backfill jobs */
 extern void *backfill_agent(void *args);
+
+/* trigger the attempt of a backfill */
+extern void run_backfill (void);
+

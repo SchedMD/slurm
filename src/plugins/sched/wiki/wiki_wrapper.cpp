@@ -172,3 +172,12 @@ slurm_sched_plugin_initial_priority( u_int32_t max_prio )
 	// *
 	return 0;
 }
+
+// **************************************************************************
+//  TAG(                slurm_sched_plugin_job_is_pending                   ) 
+// **************************************************************************
+extern "C" void slurm_sched_plugin_job_is_pending( void )
+{
+	// Wiki does not respond to pending job
+}
+

@@ -41,6 +41,7 @@
 typedef struct slurm_sched_ops {
 	int		(*schedule)		( void );
 	u_int32_t	(*initial_priority)	( u_int32_t );
+	void            (*job_is_pending)     	( void );
 } slurm_sched_ops_t;
 
 
@@ -111,7 +112,8 @@ slurm_sched_get_ops( slurm_sched_context_t *c )
 	 */
 	static const char *syms[] = {
 		"slurm_sched_plugin_schedule",
-		"slurm_sched_plugin_initial_priority"
+		"slurm_sched_plugin_initial_priority",
+		"slurm_sched_plugin_job_is_pending"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -247,3 +249,15 @@ slurm_sched_initial_priority( u_int32_t max_prio )
 
 	return (*(g_sched_context->ops.initial_priority))( max_prio );
 }
+/* *********************************************************************** */
+/*  TAG(                   slurm_sched_job_is_pending                   )  */
+/* *********************************************************************** */
+void
+slurm_sched_job_is_pending( void )
+{
+	if ( slurm_sched_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_sched_context->ops.job_is_pending))();
+}
+

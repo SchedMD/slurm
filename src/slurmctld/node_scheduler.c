@@ -44,6 +44,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE 1024
@@ -903,10 +904,12 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 			       job_ptr->job_id);
 			job_ptr->priority = 1;	/* Move to end of queue */
 			last_job_update = time(NULL);
-		}
+		} else if (error_code == ESLURM_NODES_BUSY)
+			slurm_sched_job_is_pending();
 		goto cleanup;
 	}
-	if (test_only) {
+	if (test_only) {	/* set if job not highest priority */
+		slurm_sched_job_is_pending();
 		error_code = SLURM_SUCCESS;
 		goto cleanup;
 	}

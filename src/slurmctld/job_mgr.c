@@ -1343,6 +1343,10 @@ int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
 				signal_step_tasks(step_ptr, signal);
 			}
 			list_iterator_destroy (step_record_iterator);
+/* FIXME:
+			if (job_ptr->batch_flag)
+				_signal_batch_job(job_ptr, signal);
+ */
 		}
 		verbose("job_signal %u of running job %u successful", 
 			signal, job_id);

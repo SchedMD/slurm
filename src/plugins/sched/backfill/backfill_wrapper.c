@@ -104,3 +104,10 @@ slurm_sched_plugin_initial_priority( u_int32_t max_prio )
 		return 1;
 }
 
+/**************************************************************************/
+/* TAG(              slurm_sched_plugin_job_is_pending                  ) */
+/**************************************************************************/
+void slurm_sched_plugin_job_is_pending( void )
+{
+	run_backfill();
+}
