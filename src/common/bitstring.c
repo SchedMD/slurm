@@ -422,7 +422,7 @@ bit_copy(bitstr_t *b)
 	_assert_bitstr_valid(b);
 
 	newsize_bits  = bit_size(b);
-	newsize_words = (newsize_bits + 7) / 8;
+	newsize_words = (newsize_bits + BITSTR_MAXPOS) / 8;
 	new = bit_alloc(newsize_bits);
 	if (new)
 		memcpy(&new[BITSTR_OVERHEAD], 
