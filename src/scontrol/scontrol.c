@@ -24,6 +24,7 @@ static int input_words;		/* number of words of input permitted */
 void dump_command (int argc, char *argv[]);
 int get_command (int *argc, char *argv[]);
 void print_build (char *build_param);
+void print_job (char *job_id);
 void print_node (char *node_name, struct node_buffer *node_buffer_ptr);
 void print_node_list (char *node_list);
 void print_part (char *partition_name);
@@ -267,6 +268,80 @@ print_build (char *build_param)
 		printf ("TMP_FS  	= %s\n", build_table_ptr->tmp_fs);
 }
 
+
+/*
+ * print_job - print the specified job's information
+ * input: job_id - NULL to print information about all jobs
+ */
+void 
+print_job (char *job_id) 
+{
+	int error_code, i;
+	static struct job_buffer *old_job_buffer_ptr = NULL;
+	struct job_buffer *job_buffer_ptr = NULL;
+	struct job_table *job_ptr = NULL;
+
+	if (old_job_buffer_ptr) {
+		error_code = slurm_load_job (old_job_buffer_ptr->last_update, 
+					&job_buffer_ptr);
+		if (error_code == 0)
+			slurm_free_job_info (old_job_buffer_ptr);
+		else if (error_code == -1)
+			job_buffer_ptr = old_job_buffer_ptr;
+	}
+	else
+		error_code = slurm_load_job ((time_t) NULL, &job_buffer_ptr);
+	if (error_code > 0) {
+		if (quiet_flag != 1)
+			printf ("slurm_load_job error %d\n", error_code);
+		return;
+	}
+	else if (error_code == 0)
+		old_job_buffer_ptr = job_buffer_ptr;
+
+	if (quiet_flag == -1)
+		printf ("last_update_time=%ld\n", (long) job_buffer_ptr->last_update);
+
+	job_ptr = job_buffer_ptr->job_table_ptr;
+	for (i = 0; i < job_buffer_ptr->job_count; i++) {
+		if (job_id && 
+		    strcmp (job_id, job_ptr[i].job_id) != 0)
+			continue;
+
+		printf ("JobId=%s UserId=%u ", 
+			job_ptr[i].job_id, job_ptr[i].user_id);
+		printf ("JobState=%u TimeLimit=%u ", 
+			job_ptr[i].job_state, job_ptr[i].time_limit);
+		printf ("Priority=%u Partition=%s\n", 
+			job_ptr[i].priority, job_ptr[i].partition);
+
+		printf ("   Name=%s NodeList=%s ", 
+			job_ptr[i].name, job_ptr[i].nodes);
+		printf ("StartTime=%x EndTime=%x\n", 
+			(uint32_t) job_ptr[i].start_time, 
+			(uint32_t) job_ptr[i].end_time);
+
+		printf ("   ReqProcs=%u ReqNodes=%u ",
+			job_ptr[i].num_procs, job_ptr[i].num_nodes);
+		printf ("Shared=%u Contiguous=%u\n",
+			job_ptr[i].shared, job_ptr[i].contiguous);
+
+		printf ("   MinProcs=%u MinMemory=%u ",
+			job_ptr[i].min_procs, job_ptr[i].min_memory);
+		printf ("MinTmpDisk=%u\n",
+			job_ptr[i].min_tmp_disk);
+
+		printf ("   ReqNodeList=%s Features=%s ",
+			job_ptr[i].req_nodes, job_ptr[i].features);
+		printf ("JobScript=%s\n\n",
+			job_ptr[i].job_script);
+
+		if (job_id)
+			break;
+	}
+}
+
+
 /*
  * print_node - print the specified node's information
  * input: node_name - NULL to print all node information
@@ -397,7 +472,7 @@ print_node_list (char *node_list)
 
 /*
  * print_part - print the specified partition's information
- * input: partition_name - NULL to print all partition information
+ * input: partition_name - NULL to print information about all partition 
  */
 void 
 print_part (char *partition_name) 
@@ -419,7 +494,7 @@ print_part (char *partition_name)
 		error_code = slurm_load_part ((time_t) NULL, &part_buffer_ptr);
 	if (error_code > 0) {
 		if (quiet_flag != 1)
-			printf ("load_part error %d\n", error_code);
+			printf ("slurm_load_part error %d\n", error_code);
 		return;
 	}
 	else if (error_code == 0)
@@ -518,8 +593,10 @@ process_command (int argc, char *argv[])
 				print_build (NULL);
 		}
 		else if (strncmp (argv[1], "jobs", 3) == 0) {
-			if (quiet_flag != 1)
-				printf ("keyword:%s entity:%s command not yet implemented\n", argv[0], argv[1]);
+			if (argc > 2)
+				print_job (argv[2]);
+			else
+				print_job (NULL);
 		}
 		else if (strncmp (argv[1], "nodes", 3) == 0) {
 			if (argc > 2)
