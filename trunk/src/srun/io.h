@@ -6,8 +6,9 @@
 #define WAITING_FOR_IO -1
 #define IO_DONE -9
 
-extern void *io_thr(void *arg);
-extern void report_job_status(job_t *job);
-extern void report_task_status(job_t *job);
+void *io_thr(void *arg);
+int   io_thr_create(job_t *job);
+void  report_job_status(job_t *job);
+void  report_task_status(job_t *job);
 
 #endif /* !_HAVE_IO_H */
