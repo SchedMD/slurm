@@ -117,6 +117,7 @@ static int  _job_create(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		        struct job_record **job_rec_ptr, uid_t submit_uid);
 static void _list_delete_job(void *job_entry);
 static int  _list_find_job_old(void *job_entry, void *key);
+static void _pack_job_details(struct job_details *detail_ptr, Buf buffer);
 static void _read_data_array_from_file(char *file_name, char ***data,
 				       uint16_t * size);
 static void _read_data_from_file(char *file_name, char **data);
@@ -126,6 +127,7 @@ static void _signal_job_on_node(uint32_t job_id, uint16_t step_id,
 				int signum, struct node_record *node_ptr);
 static void _spawn_signal_agent(agent_arg_t *agent_info);
 static bool _top_priority(struct job_record *job_ptr);
+static int  _unload_step_state(struct job_record *job_ptr, Buf buffer);
 static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate);
 static int  _validate_job_create_req(job_desc_msg_t * job_desc);
 static int  _write_data_to_file(char *file_name, char *data);
@@ -697,51 +699,8 @@ int load_job_state(void)
 
 		safe_unpack16(&step_flag, buffer);
 		while (step_flag == STEP_FLAG) {
-			struct step_record *step_ptr;
-			uint16_t step_id, cyclic_alloc;
-			uint32_t num_tasks;
-			time_t start_time;
-			char *node_list;
-
-			safe_unpack16(&step_id, buffer);
-			safe_unpack16(&cyclic_alloc, buffer);
-			safe_unpack32(&num_tasks, buffer);
-			safe_unpack_time(&start_time, buffer);
-			safe_unpackstr_xmalloc(&node_list, &name_len,
-					       buffer);
-
-			/* validity test as possible */
-			if (cyclic_alloc > 1) {
-				error
-				    ("Invalid data for job %u.%u: cyclic_alloc=%u",
-				     job_id, step_id, cyclic_alloc);
-				error
-				    ("No more job data will be processed from the checkpoint file");
-				error_code = EINVAL;
-				break;
-			}
-
-			step_ptr = create_step_record(job_ptr);
-			if (step_ptr == NULL)
-				break;
-			step_ptr->step_id = step_id;
-			step_ptr->cyclic_alloc = cyclic_alloc;
-			step_ptr->num_tasks = num_tasks;
-			step_ptr->start_time = start_time;
-			info("recovered job step %u.%u", job_id, step_id);
-			if (node_list) {
-				(void) node_name2bitmap(node_list,
-							&(step_ptr->
-							  node_bitmap));
-				xfree(node_list);
-			}
-#ifdef HAVE_LIBELAN3
-			qsw_alloc_jobinfo(&step_ptr->qsw_job);
-			if (qsw_unpack_jobinfo(step_ptr->qsw_job, buffer)) {
-				qsw_free_jobinfo(step_ptr->qsw_job);
+			if ((error_code = _unload_step_state(job_ptr, buffer)))
 				goto unpack_error;
-			}
-#endif
 			safe_unpack16(&step_flag, buffer);
 		}
 		if (error_code)
@@ -779,6 +738,54 @@ int load_job_state(void)
 	FREE_NULL(work_dir);
 	free_buf(buffer);
 	return EFAULT;
+}
+
+/* Unpack a job step state information from a buffer */
+static int _unload_step_state(struct job_record *job_ptr, Buf buffer)
+{
+	struct step_record *step_ptr;
+	uint16_t step_id, cyclic_alloc, name_len;
+	uint32_t num_tasks;
+	time_t start_time;
+	char *node_list = NULL;
+
+	safe_unpack16(&step_id, buffer);
+	safe_unpack16(&cyclic_alloc, buffer);
+	safe_unpack32(&num_tasks, buffer);
+	safe_unpack_time(&start_time, buffer);
+	safe_unpackstr_xmalloc(&node_list, &name_len, buffer);
+
+	/* validity test as possible */
+	if (cyclic_alloc > 1) {
+		error("Invalid data for job %u.%u: cyclic_alloc=%u",
+		      job_ptr->job_id, step_id, cyclic_alloc);
+		return SLURM_FAILURE;
+	}
+
+	step_ptr = create_step_record(job_ptr);
+	if (step_ptr == NULL)
+		return SLURM_FAILURE;
+	step_ptr->step_id = step_id;
+	step_ptr->cyclic_alloc = cyclic_alloc;
+	step_ptr->num_tasks = num_tasks;
+	step_ptr->start_time = start_time;
+	info("recovered job step %u.%u", job_ptr->job_id, step_id);
+	if (node_list) {
+		(void) node_name2bitmap(node_list, &(step_ptr->node_bitmap));
+		FREE_NULL(node_list);
+	}
+#ifdef HAVE_LIBELAN3
+	qsw_alloc_jobinfo(&step_ptr->qsw_job);
+	if (qsw_unpack_jobinfo(step_ptr->qsw_job, buffer)) {
+		qsw_free_jobinfo(step_ptr->qsw_job);
+		return SLURM_FAILURE;
+	}
+#endif
+	return SLURM_SUCCESS;
+
+      unpack_error:
+	FREE_NULL(node_list);
+	return SLURM_FAILURE;
 }
 
 /* _add_job_hash - add a job hash entry for given job record, job_id must  
@@ -2057,9 +2064,16 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 		packstr(NULL, buffer);
 
 	detail_ptr = dump_job_ptr->details;
-	if (detail_ptr && dump_job_ptr->job_state == JOB_PENDING) {
-		if (detail_ptr->magic != DETAILS_MAGIC)
-			fatal("dump_all_job: job detail integrity is bad");
+	if (detail_ptr && dump_job_ptr->job_state == JOB_PENDING)
+		_pack_job_details(detail_ptr, buffer);
+	else
+		_pack_job_details(NULL, buffer);
+}
+
+static void _pack_job_details(struct job_details *detail_ptr, Buf buffer)
+{
+	if (detail_ptr) {
+		char tmp_str[MAX_STR_PACK];
 		pack32((uint32_t) detail_ptr->num_procs, buffer);
 		pack32((uint32_t) detail_ptr->num_nodes, buffer);
 		pack16((uint16_t) detail_ptr->shared, buffer);
@@ -2095,7 +2109,9 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 			tmp_str[MAX_STR_PACK - 1] = (char) NULL;
 			packstr(tmp_str, buffer);
 		}
-	} else {
+	} 
+
+	else {
 		pack32((uint32_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
 		pack16((uint16_t) 0, buffer);
@@ -2110,7 +2126,6 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 		packstr(NULL, buffer);
 	}
 }
-
 /*
  * purge_old_job - purge old job records. 
  *	the jobs must have completed at least MIN_JOB_AGE minutes ago
