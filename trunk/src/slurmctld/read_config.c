@@ -34,6 +34,7 @@ int node_record_count = 0;
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
+#include <sys/resource.h>
 int 
 main (int argc, char *argv[]) {
 	int error_code;
@@ -42,6 +43,7 @@ main (int argc, char *argv[]) {
 	struct part_record *part_ptr;
 	int cycles, i, found;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
+	struct rusage begin_usage, end_usage;
 
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 	if (argc > 3) {
@@ -50,8 +52,10 @@ main (int argc, char *argv[]) {
 	}			
 
 	error_code = init_slurm_conf ();
-	if (error_code != 0)
+	if (error_code != 0) {
+		printf ("ERROR %d from init_slurm_conf\n", error_code);
 		exit (error_code);
+	}
 
 	if (argc >= 2)
 		error_code = read_slurm_conf (argv[1]);
@@ -59,7 +63,7 @@ main (int argc, char *argv[]) {
 		error_code = read_slurm_conf (SLURM_CONF);
 
 	if (error_code) {
-		printf ("error %d from read_slurm_conf\n", error_code);
+		printf ("ERROR %d from read_slurm_conf\n", error_code);
 		exit (error_code);
 	}			
 
@@ -125,27 +129,33 @@ main (int argc, char *argv[]) {
 		exit (0);
 
 	cycles = atoi (argv[2]);
-	printf ("let's reinitialize the database %d times. run /bin/ps to get memory size.\n", cycles);
-	sleep (5);
+	printf ("let's reinitialize the database %d times.\n", cycles);
+	if (getrusage (RUSAGE_SELF, &begin_usage))
+		printf ("ERROR %d from getrusage\n", errno);
 	for (i = 0; i < cycles; i++) {
 		error_code = init_slurm_conf ();
 		if (error_code) {
-			printf ("error %d from init_slurm_conf\n",
+			printf ("ERROR %d from init_slurm_conf\n",
 				error_code);
 			exit (error_code);
 		}		
 
 		error_code = read_slurm_conf (argv[1]);
 		if (error_code) {
-			printf ("error %d from read_slurm_conf\n",
+			printf ("ERROR %d from read_slurm_conf\n",
 				error_code);
 			exit (error_code);
 		}		
 	}			
-	printf ("all done. run /bin/ps again look for increase in memory size (leakage).\n");
-	sleep (10);
+	if (getrusage (RUSAGE_SELF, &end_usage))
+		printf ("error %d from getrusage\n", errno);
+	i = (int) (end_usage.ru_maxrss - begin_usage.ru_maxrss);
+	if (i > 0) {
+	    printf ("ERROR: Change in maximum RSS is %d.\n", i);
+	    error_code = ENOMEM;
+	}
 
-	exit (0);
+	exit (error_code);
 }
 #endif
 
