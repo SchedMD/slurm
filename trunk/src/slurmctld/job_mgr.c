@@ -877,11 +877,9 @@ dump_job_desc(job_desc_msg_t * job_specs)
 			job_specs->environment[0], job_specs->environment[1],
 			job_specs->environment[2]);
 
-	debug3("   stdin=%s stdout=%s stderr=%s work_dir=%s groups=%s", 
+	debug3("   stdin=%s stdout=%s stderr=%s work_dir=%s", 
 		job_specs->stdin, job_specs->stdout, job_specs->stderr, 
-		job_specs->work_dir, job_specs->groups);
-
-/*	debug3("   partition_key=%?\n", job_specs->partition_key); */
+		job_specs->work_dir);
 
 }
 
@@ -1178,7 +1176,7 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 		error_code = ESLURM_ACCESS_DENIED ;
 		return error_code;
 	}			
-	if (match_group (part_ptr->allow_groups, job_desc->groups) == 0) {
+	if (match_group (part_ptr->allow_groups, "") == 0) {
 		info ("job_create: job lacks group required of partition %s",
 				part_ptr->name);
 		error_code = ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP;

@@ -250,9 +250,6 @@ typedef struct job_descriptor {	/* Job descriptor for submit, allocate, and upda
 				   *   name=value pairs, one per line */
 	uint16_t env_size;	/* element count in environment */
 	char *features;		/* comma separated list of required features, default NONE */
-	char *groups;		/* comma separated list of groups the user can access,
-				 * default set output of "/usr/bin/groups" by API,
-				 * can only be set if user is root */
 	uint32_t job_id;	/* job ID, default set by SLURM */
 	char *name;		/* name of the job, default "" */
 	uint32_t min_procs;	/* minimum processors required per node, default=0 */
@@ -613,7 +610,6 @@ extern char *node_state_string_compact(enum node_states inx);
 #define SLURM_JOB_DESC_DEFAULT_ENVIRONMENT	((char **) NULL)
 #define SLURM_JOB_DESC_DEFAULT_ENV_SIZE 	0
 #define SLURM_JOB_DESC_DEFAULT_FEATURES		NULL
-#define SLURM_JOB_DESC_DEFAULT_GROUPS		NULL
 #define SLURM_JOB_DESC_DEFAULT_JOB_ID		NO_VAL
 #define SLURM_JOB_DESC_DEFAULT_JOB_NAME 	NULL
 #define SLURM_JOB_DESC_DEFAULT_MIN_PROCS	NO_VAL
