@@ -147,6 +147,7 @@ typedef struct srun_options {
 	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* --nodelist=node1,node2,...	*/
 	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
+	char *relative;		/* --relative -r N              */
 	bool no_alloc;		/* --no-allocate, -Z		*/
 	int  max_launch_time;   /* Undocumented                 */
 	int  max_exit_timeout;  /* Undocumented                 */

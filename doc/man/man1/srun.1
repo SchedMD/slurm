@@ -48,6 +48,16 @@ run one process, nodes with 2 cpus will be allocated 2 processes, etc.
 The distribution of processes across nodes may be controlled using this
 option along with the \fB\-n\fR and \fB\-c\fR options.
 .TP
+\fB\-r\fR, \fB--relative\fR=\fIn\fR
+Run a job step relative to node \fIn\fR of the current allocation. 
+This option may be used to spread several job steps out among the
+nodes of the current job. If \fB-r\fR is used, the current job
+step will begin at node \fIn\fR of the allocated nodelist, where
+the first node is considered node 0.  The \fB\-r\fR option is not 
+permitted along with \fB\-w\fR or \fB\-x\fR, and will be silently
+ignored when not running within a prior allocation (i.e. when
+SLURM_JOBID is not set). The default for \fIn\fR is 0.
+.TP
 \fB\-p\fR, \fB\-\-partition\fR=\fIpartition\fR
 Request resources from partition "\fIpartition\fR." Partitions
 are created by the slurm administrator.
@@ -489,6 +499,9 @@ SLURMD_DEBUG
 SLURM_DISTRIBUTION
 \fB\-m, \-\-distribution\fR=(\fIblock|cyclic\fR)
 .TP
+SLURM_LABELIO
+\fB-l, --label\fR
+.TP
 SLURM_NNODES
 \fB\-N, \-\-nodes\fR=(\fIn|min-max\fR)
 .TP
@@ -575,9 +588,22 @@ This simple example demonstrates the execution of the command \fBhostname\fR
 in eight tasks. At least eight processors will be allocated to the job 
 (the same as the task count) on however many nodes are required to satisfy 
 the request. The output of each task will be proceeded with its task number.
-.br
-> srun \-n8 \-l hostname
+(The machine "dev" in the example below has a total of two CPUs per node)
 
+.nf
+
+> srun \-n8 \-l hostname
+0: dev0
+1: dev0
+2: dev1
+3: dev1
+4: dev2
+5: dev2
+6: dev3
+7: dev3
+
+.fi
+.PP
 This example demonstrates how one might submit a script for later 
 execution (batch mode). The script will be initiated when resources 
 are available and no higher priority job is pending for the same 
@@ -585,40 +611,87 @@ partition. The script will execute on 4 nodes with one task per node
 implicit. Note that the script executes on one node. For the script 
 to utilize all allocated nodes, it must execute the \fBsrun\fR command 
 or an MPI program.
-.br
-> cat my_script
-.br
-#!/bin/csh
-.br
+
+.nf
+
+> cat test.sh
+#!/bin/sh
 date
-.br
 srun \-l hostname
-.br
-> srun \-N4 \-b my_script
 
+> srun \-N4 \-b test.sh
+srun: jobid 42 submitted
 
+.fi
+.PP
+The output of test.sh would be found in the default output file
+"slurm-42.out."
+.PP
+The srun \fB-r\fR option is used within a job script
+to run two job steps on disjoint nodes in the following
+example. The script is run using allocate mode instead
+of as a batch job in this case.
+
+.nf
+
+> cat test.sh
+#!/bin/sh
+echo $SLURM_NODELIST
+srun -lN2 -r2 hostname
+srun -lN2 hostname
+
+> srun -A -N4 test.sh
+dev[7-10]
+0: dev9
+1: dev10
+0: dev7
+1: dev8
+
+.fi
+.PP
+The follwing script runs two job steps in parallel 
+within an allocated set of nodes. 
+
+.nf
+
+> cat test.sh
+#!/bin/bash
+srun -lN2 -n4 -r 2 sleep 60 &
+srun -lN2 -r 0 sleep 60 &
+sleep 1
+squeue
+squeue -s
+wait
+
+> srun -A -N4 test.sh
+  JOBID PARTITION     NAME     USER  ST      TIME  NODES NODELIST
+  65641     batch  test.sh   grondo   R      0:01      4 dev[7-10]
+
+STEPID     PARTITION     USER      TIME NODELIST
+65641.0        batch   grondo      0:01 dev[7-8]
+65641.1        batch   grondo      0:01 dev[9-10]
+
+.fi
+.PP
 This example demonstrates how one executes a simple MPICH job
 in the event that MPICH has not been configured to automatically 
 set the required parameters (this is the worst cases scenario). 
 We use \fBsrun\fR to build a list of machines (nodes) to be used by 
 \fBmpirun\fR in its required format. A sample command line and 
 the script to be executed follow.
-.br
-> cat my_script
-#!/bin/csh
-.br
-srun /bin/hostname >nodes
-.br
-mpirun \-np $SLURM_NPROCS \-machinefile nodes /bin/hostname
-.br
-rm node_list
-.br
-> srun \-N2 \-n4 my_script
 
-If MPICH is configured to directly use SLURM, the execute line is 
-the much simpler:
-.br
-> mpirun \-np 4 /bin/hostname
+.nf
+
+> cat test.sh
+#!/bin/sh
+PROCFILE="nodes.$SLURM_JOBID"
+srun -o $PROCFILE /bin/hostname
+mpirun -np $SLURM_NPROCS -machinefile $PROCFILE /bin/hostname
+rm $PROCFILE
+
+> srun -AN2 -n4 test.sh
+
+.fi 
 
 .SH "BUGS"
 If the number of processors per node allocated to a job is not evenly 
