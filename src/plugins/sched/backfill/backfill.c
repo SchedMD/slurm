@@ -6,10 +6,17 @@
  *  effect the expected initiation of any higher priority job. We do not alter
  *  a job's required or excluded node list, so this is a conservative 
  *  algorithm.
+ *
+ *  For example, consider a cluster "lx[01-08]" with one job executing on 
+ *  nodes "lx[01-04]". The highest priority pending job requires five nodes 
+ *  including "lx05". The next highest priority pending job requires any 
+ *  three nodes. Without explicitly forcing the second job to use nodes 
+ *  "lx[06-08]", we can't start it without possibly delaying the higher 
+ *  priority job.
  *****************************************************************************
  *  Copyright (C) 2003 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov>
+ *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
