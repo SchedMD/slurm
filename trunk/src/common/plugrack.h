@@ -27,6 +27,8 @@
 #ifndef __PLUGRACK_H__
 #define __PLUGRACK_H__
 
+#include <sys/types.h>
+
 #include "src/common/plugin.h"
 #include "src/common/list.h"
 
