@@ -149,6 +149,7 @@ job_create_noalloc(void)
 	*/
 	hostlist_destroy(hl);
 
+	cpn = opt.nprocs / info->nnodes;
 	info->cpus_per_node  = &cpn;
 	info->cpu_count_reps = &opt.nprocs;
 	info->addrs          = NULL; 
