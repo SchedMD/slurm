@@ -64,7 +64,7 @@
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_common.h"
 
-#define SLURM_MESSGE_TIMEOUT_MSEC_STATIC 5000
+#define SLURM_MESSGE_TIMEOUT_MSEC_STATIC 2000
 
 /****************\
  **  Data Types  **
@@ -123,18 +123,22 @@ slurm_fd _slurm_open_msg_conn ( slurm_addr * slurm_address ) ;
 
 /* _slurm_msg_recvfrom
  * Get message over the given connection, default timeout value
- * IN open_fd - an open file descriptor
- * OUT buffer - loaded with data
- * IN size - size of buffer in bytes
- * IN flags - communication specific flags
+ * IN  fd     - an open file descriptor
+ * OUT pbuf   - xmalloc'd buffer, loaded with message data
+ * OUT buflen - size of allocated buffer in bytes
+ * IN  flags  - communication specific flags
+ *
  * RET number of bytes read
  */
-ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , 
-			size_t size , uint32_t flags ) ;
-/* _slurm_msg_recvfrom_timeout is identical to _slurm_msg_recvfrom except
- * IN timeout - maximum time to wait for a message in milliseconds */
-ssize_t _slurm_msg_recvfrom_timeout ( slurm_fd open_fd, char *buffer , 
-			size_t size , uint32_t flags, int timeout) ;
+ssize_t _slurm_msg_recvfrom(slurm_fd fd, char **pbuf, size_t *buflen, 
+		            uint32_t flags);
+
+/* _slurm_msg_recvfrom_timeout reads len bytes from file descriptor fd
+ * timing out after `timeout' milliseconds.
+ *
+ */ 
+ssize_t _slurm_msg_recvfrom_timeout(slurm_fd fd, char **buf, size_t *len, 
+		                    uint32_t flags, int timeout);
 
 /* _slurm_msg_sendto
  * Send message over the given connection, default timeout value

@@ -155,17 +155,6 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg);
  * send message functions
 \**********************************************************************/
 
-/* sends a slurm_protocol msg to the slurmctld based on location 
- *	information retrieved from the slurmd.conf. if unable to contant 
- *	the primary slurmctld attempts will be made to contact the backup 
- *	controller
- * 
- * IN open_fd	- file descriptor to send msg on
- * IN msg	- a slurm msg struct to be sent
- * RET int	- size of msg sent in bytes
- */
-int slurm_send_controller_msg(slurm_fd open_fd, slurm_msg_t * msg);
-
 /* sends a message to an arbitrary node
  *
  * IN open_fd		- file descriptor to send msg on
@@ -404,6 +393,17 @@ int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
  */
 int slurm_send_recv_node_msg(slurm_msg_t * request_msg,
 			     slurm_msg_t * response_msg);
+
+/*
+ *  Open a connection to req->address, send message and receive 
+ *    a "return code" message, returning return code in "rc"
+ */
+int slurm_send_recv_rc_msg(slurm_msg_t *req, int *rc);
+
+/*
+ *  Same as above, but send to controller
+ */
+int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc);
 
 /* slurm_send_only_controller_msg
  * opens a connection to the controller, sends the node a message then, 
