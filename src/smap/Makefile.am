@@ -10,6 +10,7 @@ bin_PROGRAMS = smap
 
 smap_LDADD =					  \
 	$(top_builddir)/src/common/libcommon.la   \
+	$(top_builddir)/src/partition_allocator/libpartition_allocator.la  \
 	$(top_builddir)/src/api/libslurm.la
 
 noinst_HEADERS = smap.h 

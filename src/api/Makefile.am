@@ -85,6 +85,6 @@ $(VERSION_SCRIPT) :
 	 echo "   slurm_*;"; \
 	 echo "  local: *;"; \
 	 echo "};") > $(VERSION_SCRIPT)
-	
+
 DISTCLEANFILES = \
 	$(VERSION_SCRIPT)

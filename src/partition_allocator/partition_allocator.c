@@ -27,7 +27,7 @@
 #include <stdlib.h> // for exit(int);
 #include "partition_allocator.h"
 #include "graph_solver.h"
-#include "math.h"
+#include <math.h>
 
 // #define AUBLE_STUB
 #define DEBUG_PA
@@ -980,7 +980,7 @@ void print_pa_request(struct pa_request* pa_request)
  * 
  * return: success or error of the intialization.
  */
-void init()
+void partition_allocator_init()
 {
 	int i, num_nodes;
 	List switch_config_list;
@@ -1034,7 +1034,7 @@ void fini()
  * 
  * IN c: coordinate of the node to put down
  */
-void set_node_down(int* c)
+void set_node_down(int c[3])
 {
 	if (!_initialized){
 		printf("Error, configuration not initialized, call init_configuration first\n");
@@ -1120,7 +1120,7 @@ int allocate_part(pa_request_t* pa_request, List* results)
 int main(int argc, char** argv)
 {
 	
-	init();
+	partition_allocator_init();
 
 	/*
 	ListIterator itr;

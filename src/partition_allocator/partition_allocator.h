@@ -31,6 +31,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/macros.h"
 
+extern bool _initialized;
 struct pa_request;
 /**
  * create a partition request.  Note that if the geometry is given,
@@ -73,7 +74,7 @@ void print_pa_request(struct pa_request* pa_request);
  * 
  * return: success or error of the intialization.
  */
-void init();
+void partition_allocator_init();
 /** 
  * destroy all the internal (global) data structs.
  */
@@ -84,7 +85,7 @@ void fini();
  * 
  * IN c: coordinate of the node to put down
  */
-void set_node_down(int* c);
+void set_node_down(int c[3]);
 
 /** 
  * Try to allocate a partition.
