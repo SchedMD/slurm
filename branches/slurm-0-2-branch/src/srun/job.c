@@ -250,6 +250,7 @@ job_destroy(job_t *job, int error)
 {
 	if (job->old_job) {
 		debug("cancelling job step %u.%u", job->jobid, job->stepid);
+		slurm_kill_job_step(job->jobid, job->stepid, SIGKILL);
 		slurm_complete_job_step(job->jobid, job->stepid, 0, error);
 	} else if (!opt.no_alloc) {
 		debug("cancelling job %u", job->jobid);
