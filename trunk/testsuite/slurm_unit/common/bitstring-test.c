@@ -5,7 +5,6 @@
 #include <sys/time.h>
 #include <testsuite/dejagnu.h>
 
-
 /* Test for failure: 
 */
 #define TEST(_tst, _msg) do {			\
@@ -97,7 +96,7 @@ main(int argc, char *argv[])
 
 		bit_not(bs1);
 		TEST(!bit_test(bs1, 100), "not");
-		TEST(!bit_test(bs1, 12), "not");
+		TEST(bit_test(bs1, 12), "not");
 
 		bit_free(bs1);
 		bit_free(bs2);

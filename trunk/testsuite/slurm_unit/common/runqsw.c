@@ -15,11 +15,9 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include <src/common/bitstring.h>
-#include <src/common/pack.h>
-#include <src/common/qsw.h>
-#include <slurm/slurm_errno.h>
-#include <src/common/macros.h>
+#include "src/plugins/switch/elan/qsw.h"
+#include "slurm/slurm_errno.h"
+#include "src/common/slurm_xlator.h"
 
 /* Boolean option to pack/unpack jobinfo struct
  * (good test for qsw pack routines)
