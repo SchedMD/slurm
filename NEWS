@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.3.0.0-pre7 (not tagged yet)
 ===============================
+ -- Fixes for reported problems:
+   - slurm/381: Hold jobs requesting more resources than partition limit
  -- Add support for getting node's real memory size on AIX
  -- Sinfo sort partitions in slurm.conf order, new sort option ("#P")
  -- Document how to gracefully change plugin values
