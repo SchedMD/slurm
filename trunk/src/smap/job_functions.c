@@ -25,6 +25,7 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#include "src/common/uid.h"
 #include "src/smap/smap.h"
 
 void print_header_job(void);
@@ -138,7 +139,6 @@ int print_text_job(job_info_t * job_ptr)
 	int prefixlen;
 	int i = 0;
 	int width = 0;
-	struct passwd *user = NULL;
 	char time_buf[20];
 
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
