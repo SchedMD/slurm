@@ -143,13 +143,16 @@ int inline slurm_shutdown_msg_engine(slurm_fd open_fd);
 \**********************************************************************/
 
 /*
- * NOTE: memory is allocated for the returned msg and must be freed at 
- *	some point using the slurm_free_functions
- * IN open_fd 		- file descriptor to receive msg on
- * OUT msg 		- a slurm_msg struct to be filled in by the function
- * RET int		- size of msg received in bytes before being unpacked
+ *  Receive a slurm message on the open slurm descriptor "fd" waiting
+ *    at most "timeout" seconds for the message data. If timeout is
+ *    zero, a default timeout is used. Memory for the message data
+ *    (msg->data) is allocated from within this function, and must be
+ *    freed at some point using one of the slurm_free* functions.
+ *
+ *  Returns SLURM_SUCCESS if an entire message is successfully 
+ *    received. Otherwise SLURM_ERROR is returned.
  */
-int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg);
+int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout);
 
 /**********************************************************************\
  * send message functions
@@ -392,13 +395,13 @@ int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
  * RET int 		- return code
  */
 int slurm_send_recv_node_msg(slurm_msg_t * request_msg,
-			     slurm_msg_t * response_msg);
+			     slurm_msg_t * response_msg, int timeout);
 
 /*
  *  Open a connection to req->address, send message and receive 
  *    a "return code" message, returning return code in "rc"
  */
-int slurm_send_recv_rc_msg(slurm_msg_t *req, int *rc);
+int slurm_send_recv_rc_msg(slurm_msg_t *req, int *rc, int timeout);
 
 /*
  *  Same as above, but send to controller

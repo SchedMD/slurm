@@ -277,24 +277,10 @@ static void _p_launch(slurm_msg_t *req_array_ptr, job_t *job)
 static int
 _send_msg_rc(slurm_msg_t *msg)
 {
-	slurm_msg_t        resp;
-	return_code_msg_t *rcmsg   = NULL;
-	int		   rc      = 0;
+	int rc = 0;
 
-       	if ((rc = slurm_send_recv_node_msg(msg, &resp)) < 0) 
-		return rc;
-
-	switch (resp.msg_type) {
-	case RESPONSE_SLURM_RC:
-		rcmsg = resp.data;
-		rc = rcmsg->return_code;
-		slurm_free_return_code_msg(rcmsg);
-		break;
-	default:
-		error("recvd msg type %d. expected %d", resp.msg_type, 
-				RESPONSE_SLURM_RC);
-		rc = SLURM_UNEXPECTED_MSG_ERROR;
-	}
+       	if ((rc = slurm_send_recv_rc_msg(msg, &rc, 0)) < 0) 
+		return SLURM_ERROR;
 
 	slurm_seterrno_ret (rc);
 }

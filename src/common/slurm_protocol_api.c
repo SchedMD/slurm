@@ -57,6 +57,7 @@
 
 /* #DEFINES */
 #define _DEBUG        0
+#define SLURM_DEFAULT_TIMEOUT 2000
 
 /* STATIC VARIABLES */
 static pthread_mutex_t config_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -309,7 +310,7 @@ int slurm_close_accepted_conn(slurm_fd open_fd)
  * OUT msg                 - a slurm_msg struct to be filled in by the function
  * RET int                - size of msg received in bytes before being unpacked
  */
-int slurm_receive_msg(slurm_fd fd, slurm_msg_t * msg)
+int slurm_receive_msg(slurm_fd fd, slurm_msg_t * msg, int timeout)
 {
         char *buf = NULL;
         size_t buflen = 0;
@@ -319,13 +320,20 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t * msg)
         void *auth_cred;
         Buf buffer;
 
+        xassert(fd >= 0);
+
+        if ((timeout*=1000) == 0)
+                timeout = SLURM_DEFAULT_TIMEOUT;
+
         /*
          * Receive a msg. slurm_msg_recvfrom() will read the message
          *  length and allocate space on the heap for a buffer containing
          *  the message. 
          */
-        if (_slurm_msg_recvfrom(fd, &buf, &buflen, 0) < 0)
+        if (_slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
+                error("recvfrom_timeout: %m");
                 return SLURM_ERROR;
+        }
 
 #if        _DEBUG
          _print_data (buftemp,rc);
@@ -454,6 +462,9 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
         rc = _slurm_msg_sendto( fd, get_buf_data(buffer), 
                                 get_buf_offset(buffer),
                                 SLURM_PROTOCOL_NO_SEND_RECV_FLAGS );
+
+        if (rc < 0) 
+                error("slurm_msg_sendto: %m");
 
         free_buf(buffer);
         return rc;
@@ -710,42 +721,43 @@ int slurm_unpack_slurm_addr_no_alloc(slurm_addr * slurm_address,
  * IN request_msg        - slurm_msg the request msg
  * IN rc                 - the return_code to send back to the client
  */
-void slurm_send_rc_msg(slurm_msg_t * request_msg, int rc)
+void slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 {
-        slurm_msg_t response_msg;
+        slurm_msg_t resp_msg;
         return_code_msg_t rc_msg;
 
-        /* no change */
         rc_msg.return_code = rc;
-        /* init response_msg structure */
-        response_msg.address = request_msg->address;
-        response_msg.msg_type = RESPONSE_SLURM_RC;
-        response_msg.data = &rc_msg;
+
+        resp_msg.address  = msg->address;
+        resp_msg.msg_type = RESPONSE_SLURM_RC;
+        resp_msg.data     = &rc_msg;
 
         /* send message */
-        slurm_send_node_msg(request_msg->conn_fd, &response_msg);
+        slurm_send_node_msg(msg->conn_fd, &resp_msg);
 }
 
 /*
  * Send and recv a slurm request and response on the open slurm descriptor
  */
 static int 
-_send_and_recv_msg(slurm_fd fd, slurm_msg_t *req, slurm_msg_t *resp)
+_send_and_recv_msg(slurm_fd fd, slurm_msg_t *req, slurm_msg_t *resp,
+                   int timeout)
 {
-        int rc = SLURM_SUCCESS;
+        int err = SLURM_SUCCESS;
 
         if (  (slurm_send_node_msg(fd, req) < 0)
-           || (slurm_receive_msg(fd, resp)  < 0) ) 
-                rc = SLURM_ERROR;
+           || (slurm_receive_msg(fd, resp, timeout)  < 0) ) 
+                err = errno;
 
         /* 
          *  Attempt to close an open connection
          */
         if (slurm_shutdown_msg_conn(fd) < 0)
-                rc = SLURM_ERROR;
+                return SLURM_ERROR;
 
-        return rc;
+        if (err) slurm_seterrno_ret(err);
 
+        return SLURM_SUCCESS;
 }
 
 /* slurm_send_recv_controller_msg
@@ -762,7 +774,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
         if ((fd = slurm_open_controller_conn()) < 0) 
                 return SLURM_SOCKET_ERROR;
 
-        return _send_and_recv_msg(fd, req, resp);
+        return _send_and_recv_msg(fd, req, resp, 0);
 }
 
 /* slurm_send_recv_node_msg
@@ -772,14 +784,14 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
  * OUT response_msg        - slurm_msg response
  * RET int                 - return code
  */
-int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp)
+int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 {
         slurm_fd fd = -1;
 
         if ((fd = slurm_open_msg_conn(&req->address)) < 0)
                 return SLURM_SOCKET_ERROR;
 
-        return _send_and_recv_msg(fd, req, resp);
+        return _send_and_recv_msg(fd, req, resp, timeout);
 
 }
 
@@ -836,15 +848,15 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
  *  Send message and recv "return code" message on an already open
  *    slurm file descriptor
  */
-static int _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int *rc)
+static int _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int *rc,
+                             int timeout)
 {
         int                retval = SLURM_SUCCESS;
         slurm_msg_t        msg;
  
-        retval = _send_and_recv_msg(fd, req, &msg);
-        slurm_shutdown_msg_conn(fd); 
+        retval = _send_and_recv_msg(fd, req, &msg, timeout);
 
-        if (retval != SLURM_SUCCESS)
+        if (retval != SLURM_SUCCESS) 
                 goto done;
 
         if (msg.msg_type != RESPONSE_SLURM_RC) 
@@ -862,14 +874,14 @@ static int _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int *rc)
  *    Then read back an "rc" message returning the "return_code" specified
  *    in the response in the "rc" parameter.
  */
-int slurm_send_recv_rc_msg(slurm_msg_t *req, int *rc)
+int slurm_send_recv_rc_msg(slurm_msg_t *req, int *rc, int timeout)
 {
         slurm_fd fd = -1;
 
-        if ((fd = slurm_open_msg_conn(&req->address)) < 0)
+        if ((fd = slurm_open_msg_conn(&req->address)) < 0) 
                 return SLURM_SOCKET_ERROR;
 
-        return _send_recv_rc_msg(fd, req, rc);
+        return _send_recv_rc_msg(fd, req, rc, timeout);
 }
 
 /*
@@ -882,7 +894,7 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
         if ((fd = slurm_open_controller_conn()) < 0)
                 return SLURM_SOCKET_ERROR;
 
-        return _send_recv_rc_msg(fd, req, rc);
+        return _send_recv_rc_msg(fd, req, rc, 0);
 }
 
 /*

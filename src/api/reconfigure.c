@@ -126,7 +126,7 @@ _send_message_controller (enum controller_id dest, slurm_msg_t *req)
 	if (slurm_send_node_msg(fd, req) < 0) 
 		slurm_seterrno_ret(SLURM_COMMUNICATIONS_SEND_ERROR);
 
-	if ((rc = slurm_receive_msg(fd, &resp_msg)) < 0)
+	if ((rc = slurm_receive_msg(fd, &resp_msg, 0)) < 0)
 		slurm_seterrno_ret(SLURM_COMMUNICATIONS_RECEIVE_ERROR);
 
 	if (slurm_shutdown_msg_conn(fd) != SLURM_SUCCESS)

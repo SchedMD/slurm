@@ -142,19 +142,19 @@ slurm_load_ctl_conf (time_t update_time, slurm_ctl_conf_t **confp)
 	req_msg.msg_type = REQUEST_BUILD_INFO;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0) 
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
 	case RESPONSE_BUILD_INFO:
 		*confp = (slurm_ctl_conf_info_msg_t *) resp_msg.data; 
-		break ;
+		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
 		slurm_free_return_code_msg(resp_msg.data);	
 		if (rc) 
 			slurm_seterrno_ret(rc);
-		break ;
+		break;
 	default:
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 		break;
