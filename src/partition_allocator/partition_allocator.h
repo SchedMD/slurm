@@ -53,6 +53,30 @@ typedef struct {
 	bool force_contig;
 } pa_request_t; 
 
+typedef struct 
+{
+	/* target port */ 
+	int port_tar;
+
+	/* target label */
+	int node_tar[PA_SYSTEM_DIMENSIONS];
+	
+	
+} pa_connection_t;
+/** 
+ * structure that holds the configuration settings for each switch
+ * 
+ * - dimension
+ * - from node, to node
+ * - from port, to port
+ * 
+ */
+typedef struct
+{
+	pa_connection_t wire[NUM_PORTS_PER_NODE];
+
+} pa_switch_t;
+
 /** 
  * pa_node: node within the allocation system.  Note that this node is
  * hard coded for 1d-3d only!  (just have the higher order dims as
@@ -64,12 +88,12 @@ typedef struct {
 
 	/* coordinates */
 	int coord[PA_SYSTEM_DIMENSIONS];
-
+	pa_switch_t axis_switch[PA_SYSTEM_DIMENSIONS];
 	/* shallow copy of the conf_results.  initialized and used as
 	 * array of Lists accessed by dimension, ie conf_result_list[dim]
 	 */
 	List conf_result_list[PA_SYSTEM_DIMENSIONS]; 
-	port_t ports[NUM_PORTS_PER_NODE];
+	
 } pa_node_t;
 
 typedef struct {
@@ -162,5 +186,9 @@ int undo_last_allocatation();
  * NOTE, memory for returned string must be xfree'd by caller
  */
 char* get_conf_result_str(List pa_node_list);
+
+int _create_config_even(pa_node_t ***grid);
+void _switch_config(pa_node_t* source, pa_node_t* target, int dim, int port_src, int port_tar);
+void _set_up_ports(int dim, int count, pa_node_t* source, pa_node_t* target_1, pa_node_t* target_2, pa_node_t* target_first, pa_node_t* target_second);
 
 #endif /* _PARTITION_ALLOCATOR_H_ */

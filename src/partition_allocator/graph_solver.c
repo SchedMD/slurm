@@ -174,8 +174,8 @@ int gs_init(List port_config_list, int num_nodes)
 	while ((switch_config = (switch_config_t*) list_next(itr))){
 		new_connection(&conn);
 		conn->place = EXTERNAL;
-		switch_src = get_switch(switch_config->node_src, switch_config->dim);
-		switch_tar = get_switch(switch_config->node_tar, switch_config->dim);
+/* 		switch_src = get_switch(switch_config->node_src, switch_config->dim); */
+/* 		switch_tar = get_switch(switch_config->node_tar, switch_config->dim); */
 
 		if (!switch_src || ! switch_tar){
 			printf("Error, external switch configuration failed\n");
@@ -1460,58 +1460,59 @@ int _get_connection_partition(connection_t* conn, List partition_list)
 void create_config_9_2d(List configs)
 {
 	switch_config_t* conf;
-	
+	conf = (switch_config_t*) xmalloc(sizeof(switch_config_t));
+
 	/** 
 	 * remember that connections are bidirectional, so we only
 	 * have a connection between nodes once
 	 */
 	/* first X row */
-	new_switch_config(&conf, NO_VAL, X, 0, 3, 1, 4);
+	new_switch_config(conf, NO_VAL, X, 0, 3, 1, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 0, 4, 2, 3);
+	new_switch_config(conf, NO_VAL, X, 0, 4, 2, 3);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 1, 3, 2, 4);
+	new_switch_config(conf, NO_VAL, X, 1, 3, 2, 4);
 	list_append(configs, conf);
 
 	/* second X row */
-	new_switch_config(&conf, NO_VAL, X, 3, 3, 4, 4);
+	new_switch_config(conf, NO_VAL, X, 3, 3, 4, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 3, 4, 5, 3);
+	new_switch_config(conf, NO_VAL, X, 3, 4, 5, 3);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 4, 3, 5, 4);
+	new_switch_config(conf, NO_VAL, X, 4, 3, 5, 4);
 	list_append(configs, conf);
 
 	/* third X row */
-	new_switch_config(&conf, NO_VAL, X, 6, 3, 7, 4);
+	new_switch_config(conf, NO_VAL, X, 6, 3, 7, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 6, 4, 8, 3);
+	new_switch_config(conf, NO_VAL, X, 6, 4, 8, 3);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 7, 3, 8, 4);
+	new_switch_config(conf, NO_VAL, X, 7, 3, 8, 4);
 	list_append(configs, conf);
 
 	/* first Y column */
 
-	new_switch_config(&conf, NO_VAL, Y, 0, 3, 3, 4);
+	new_switch_config(conf, NO_VAL, Y, 0, 3, 3, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, Y, 0, 4, 6, 3);
+	new_switch_config(conf, NO_VAL, Y, 0, 4, 6, 3);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, Y, 3, 3, 6, 4);
+	new_switch_config(conf, NO_VAL, Y, 3, 3, 6, 4);
 	list_append(configs, conf);
 
 	/* second Y column */
-	new_switch_config(&conf, NO_VAL, Y, 1, 3, 4, 4);
+	new_switch_config(conf, NO_VAL, Y, 1, 3, 4, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, Y, 1, 4, 7, 3);
+	new_switch_config(conf, NO_VAL, Y, 1, 4, 7, 3);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, Y, 4, 3, 7, 4);
+	new_switch_config(conf, NO_VAL, Y, 4, 3, 7, 4);
 	list_append(configs, conf);
 
 	/* third Y column */
-	new_switch_config(&conf, NO_VAL, Y, 2, 3, 5, 4);
+	new_switch_config(conf, NO_VAL, Y, 2, 3, 5, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, Y, 2, 4, 8, 3);
+	new_switch_config(conf, NO_VAL, Y, 2, 4, 8, 3);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, Y, 5, 3, 8, 4);
+	new_switch_config(conf, NO_VAL, Y, 5, 3, 8, 4);
 	list_append(configs, conf);
 }
 
@@ -1519,13 +1520,14 @@ void create_config_9_2d(List configs)
 void create_config_3_1d(List configs)
 {
 	switch_config_t* conf;
+	conf = (switch_config_t*) xmalloc(sizeof(switch_config_t));
 
 	/* first X row */
-	new_switch_config(&conf, NO_VAL, X, 0, 3, 1, 4);
+	new_switch_config(conf, NO_VAL, X, 0, 3, 1, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 0, 4, 2, 3);
+	new_switch_config(conf, NO_VAL, X, 0, 4, 2, 3);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 1, 3, 2, 4);
+	new_switch_config(conf, NO_VAL, X, 1, 3, 2, 4);
 	list_append(configs, conf);
 
 }
@@ -1534,34 +1536,35 @@ void create_config_3_1d(List configs)
 void create_config_4_2d(List configs)
 {
 	switch_config_t* conf;
-	
+	conf = (switch_config_t*) xmalloc(sizeof(switch_config_t));
+
 	/** 
 	 * remember that connections are bidirectional, so we only
 	 * have a connection between nodes once
 	 */
 	/* first X row */
-	new_switch_config(&conf, NO_VAL, X, 0, 3, 1, 4);
+	new_switch_config(conf, NO_VAL, X, 0, 3, 1, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 0, 4, 1, 3);
+	new_switch_config(conf, NO_VAL, X, 0, 4, 1, 3);
 	list_append(configs, conf);
 
 	/* second X row */
-	new_switch_config(&conf, NO_VAL, X, 2, 3, 3, 4);
+	new_switch_config(conf, NO_VAL, X, 2, 3, 3, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 2, 4, 3, 3);
+	new_switch_config(conf, NO_VAL, X, 2, 4, 3, 3);
 	list_append(configs, conf);
 
 
 	/* first Y column */
-	new_switch_config(&conf, NO_VAL, Y, 0, 3, 2, 4);
+	new_switch_config(conf, NO_VAL, Y, 0, 3, 2, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, Y, 0, 4, 2, 3);
+	new_switch_config(conf, NO_VAL, Y, 0, 4, 2, 3);
 	list_append(configs, conf);
 
 	/* second Y column */
-	new_switch_config(&conf, NO_VAL, Y, 1, 3, 3, 4);
+	new_switch_config(conf, NO_VAL, Y, 1, 3, 3, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, Y, 1, 4, 3, 3);
+	new_switch_config(conf, NO_VAL, Y, 1, 4, 3, 3);
 	list_append(configs, conf);
 }
 
@@ -1569,19 +1572,20 @@ void create_config_4_2d(List configs)
 void create_config_4_1d(List configs)
 {
 	switch_config_t* conf;
-	
+	conf = (switch_config_t*) xmalloc(sizeof(switch_config_t));
+
 	/** 
 	 * remember that connections are bidirectional, so we only
 	 * have a connection between nodes once
 	 */
 	/* first X row */
-	new_switch_config(&conf, NO_VAL, X, 0, 3, 1, 4);
+	new_switch_config(conf, NO_VAL, X, 0, 3, 1, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 1, 3, 2, 4);
+	new_switch_config(conf, NO_VAL, X, 1, 3, 2, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 2, 3, 3, 4);
+	new_switch_config(conf, NO_VAL, X, 2, 3, 3, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 3, 3, 0, 4);
+	new_switch_config(conf, NO_VAL, X, 3, 3, 0, 4);
 	list_append(configs, conf);
 }
 
@@ -1589,49 +1593,50 @@ void create_config_4_1d(List configs)
 void create_config_8_1d(List configs)
 {
 	switch_config_t* conf;
-	
+	conf = (switch_config_t*) xmalloc(sizeof(switch_config_t));
+
 	/** 
 	 * remember that connections are bidirectional, so we only
 	 * have one connection between nodes
 	 */
 	/* top row, horizontal connections */
-	new_switch_config(&conf, NO_VAL, X, 0, 3, 2, 4);
+	new_switch_config(conf, NO_VAL, X, 0, 3, 2, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 2, 3, 4, 4);
+	new_switch_config(conf, NO_VAL, X, 2, 3, 4, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 4, 3, 6, 4);
+	new_switch_config(conf, NO_VAL, X, 4, 3, 6, 4);
 	list_append(configs, conf);
 
 	/* bottom row, horizontal connections */
-	new_switch_config(&conf, NO_VAL, X, 1, 4, 3, 3);
+	new_switch_config(conf, NO_VAL, X, 1, 4, 3, 3);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 3, 4, 5, 3);
+	new_switch_config(conf, NO_VAL, X, 3, 4, 5, 3);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 5, 4, 7, 3);
+	new_switch_config(conf, NO_VAL, X, 5, 4, 7, 3);
 	list_append(configs, conf);
 
 	/* 1st column, vertical connections */
-	new_switch_config(&conf, NO_VAL, X, 0, 2, 1, 5);
+	new_switch_config(conf, NO_VAL, X, 0, 2, 1, 5);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 1, 3, 0, 4);
+	new_switch_config(conf, NO_VAL, X, 1, 3, 0, 4);
 	list_append(configs, conf);
 
 	/* 2nd column, vertical connections */
-	new_switch_config(&conf, NO_VAL, X, 2, 2, 3, 5);
+	new_switch_config(conf, NO_VAL, X, 2, 2, 3, 5);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 3, 2, 2, 5);
+	new_switch_config(conf, NO_VAL, X, 3, 2, 2, 5);
 	list_append(configs, conf);
 
 	/* 3rd column, vertical connections */
-	new_switch_config(&conf, NO_VAL, X, 4, 2, 5, 5);
+	new_switch_config(conf, NO_VAL, X, 4, 2, 5, 5);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 5, 2, 4, 5);
+	new_switch_config(conf, NO_VAL, X, 5, 2, 4, 5);
 	list_append(configs, conf);
 
 	/* 4th column, vertical connections */
-	new_switch_config(&conf, NO_VAL, X, 6, 3, 7, 4);
+	new_switch_config(conf, NO_VAL, X, 6, 3, 7, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 7, 2, 6, 5);
+	new_switch_config(conf, NO_VAL, X, 7, 2, 6, 5);
 	list_append(configs, conf);
 }
 
@@ -1640,84 +1645,85 @@ void create_config_8_1d(List configs)
 void create_config_8_3d(List configs)
 {
 	switch_config_t* conf;
-	
+	conf = (switch_config_t*) xmalloc(sizeof(switch_config_t));
+
 	/** 
 	 * remember that connections are bidirectional, so we only
 	 * have a connection between nodes once
 	 */
 	/****************************************/
 	/* first X row Z0 */
-	new_switch_config(&conf, NO_VAL, X, 0, 3, 1, 4);
+	new_switch_config(conf, NO_VAL, X, 0, 3, 1, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 0, 4, 1, 3);
+	new_switch_config(conf, NO_VAL, X, 0, 4, 1, 3);
 	list_append(configs, conf);
 
 	/* second X row Z0*/
-	new_switch_config(&conf, NO_VAL, X, 2, 3, 3, 4);
+	new_switch_config(conf, NO_VAL, X, 2, 3, 3, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 2, 4, 3, 3);
+	new_switch_config(conf, NO_VAL, X, 2, 4, 3, 3);
 	list_append(configs, conf);
 
 
 	/* first X row Z1 */
-	new_switch_config(&conf, NO_VAL, X, 4, 3, 5, 4);
+	new_switch_config(conf, NO_VAL, X, 4, 3, 5, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 4, 4, 5, 3);
+	new_switch_config(conf, NO_VAL, X, 4, 4, 5, 3);
 	list_append(configs, conf);
 
 	/* second X row Z1 */
-	new_switch_config(&conf, NO_VAL, X, 6, 3, 7, 4);
+	new_switch_config(conf, NO_VAL, X, 6, 3, 7, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 6, 4, 7, 3);
+	new_switch_config(conf, NO_VAL, X, 6, 4, 7, 3);
 	list_append(configs, conf);
 
 	/****************************************/
 	/* first Y column Z0 */
-	new_switch_config(&conf, NO_VAL, Y, 0, 3, 2, 4);
+	new_switch_config(conf, NO_VAL, Y, 0, 3, 2, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, Y, 0, 4, 2, 3);
+	new_switch_config(conf, NO_VAL, Y, 0, 4, 2, 3);
 	list_append(configs, conf);
 
 	/* second Y column Z0 */
-	new_switch_config(&conf, NO_VAL, Y, 1, 3, 3, 4);
+	new_switch_config(conf, NO_VAL, Y, 1, 3, 3, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, Y, 1, 4, 3, 3);
+	new_switch_config(conf, NO_VAL, Y, 1, 4, 3, 3);
 	list_append(configs, conf);
 
 	/* first Y column Z1 */
-	new_switch_config(&conf, NO_VAL, Y, 4, 3, 6, 4);
+	new_switch_config(conf, NO_VAL, Y, 4, 3, 6, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, Y, 4, 4, 6, 3);
+	new_switch_config(conf, NO_VAL, Y, 4, 4, 6, 3);
 	list_append(configs, conf);
 
 	/* second Y column Z1 */
-	new_switch_config(&conf, NO_VAL, Y, 5, 3, 7, 4);
+	new_switch_config(conf, NO_VAL, Y, 5, 3, 7, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, Y, 5, 4, 7, 3);
+	new_switch_config(conf, NO_VAL, Y, 5, 4, 7, 3);
 	list_append(configs, conf);
 
 	/****************************************/
 	/*  */
-	new_switch_config(&conf, NO_VAL, Z, 0, 3, 4, 4);
+	new_switch_config(conf, NO_VAL, Z, 0, 3, 4, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, Z, 0, 4, 4, 3);
-	list_append(configs, conf);
-
-	/*  */
-	new_switch_config(&conf, NO_VAL, Z, 1, 3, 5, 4);
-	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, Z, 1, 4, 5, 3);
+	new_switch_config(conf, NO_VAL, Z, 0, 4, 4, 3);
 	list_append(configs, conf);
 
 	/*  */
-	new_switch_config(&conf, NO_VAL, Z, 2, 3, 6, 4);
+	new_switch_config(conf, NO_VAL, Z, 1, 3, 5, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, Z, 2, 4, 6, 3);
+	new_switch_config(conf, NO_VAL, Z, 1, 4, 5, 3);
 	list_append(configs, conf);
 
 	/*  */
-	new_switch_config(&conf, NO_VAL, Z, 3, 3, 7, 4);
+	new_switch_config(conf, NO_VAL, Z, 2, 3, 6, 4);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, Z, 3, 4, 7, 3);
+	new_switch_config(conf, NO_VAL, Z, 2, 4, 6, 3);
+	list_append(configs, conf);
+
+	/*  */
+	new_switch_config(conf, NO_VAL, Z, 3, 3, 7, 4);
+	list_append(configs, conf);
+	new_switch_config(conf, NO_VAL, Z, 3, 4, 7, 3);
 	list_append(configs, conf);
 }
