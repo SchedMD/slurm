@@ -62,7 +62,6 @@ static int exit_flag;			/* program to terminate if =1 */
 static int quiet_flag;			/* quiet=1, verbose=-1, normal=0 */
 static int input_words;			/* number of words of input permitted */
 
-void	dump_command (int argc, char *argv[]);
 int	get_command (int *argc, char *argv[]);
 void	print_config (char *config_param);
 void	print_job (char * job_id_str);
@@ -116,9 +115,6 @@ main (int argc, char *argv[])
 		error_code = get_command (&input_field_count, input_fields);
 
 	while (error_code == 0) {
-#if DEBUG_MODULE > 1
-		dump_command (input_field_count, input_fields);
-#endif
 		error_code = process_command (input_field_count, input_fields);
 		if (error_code != 0)
 			break;
@@ -128,26 +124,6 @@ main (int argc, char *argv[])
 	}			
 
 	exit (error_code);
-}
-
-
-/*
- * dump_command - dump the user's command
- * input: argc - count of arguments
- *        argv - the arguments
- */
-void
-dump_command (int argc, char *argv[]) 
-{
-	int i, j;
-
-	for (i = 0; i < argc; i++) {
-		printf ("arg %d:%s:", i, argv[i]);
-		for (j = 0; argv[i][j] ; j++) {
-			printf ("%2x ", (unsigned)argv[i][j]);
-		}
-		printf ("\n");
-	}			
 }
 
 
