@@ -1,10 +1,9 @@
 /*****************************************************************************\
- * src/srun/msg.h - message traffic between srun and slurmd routines
- * $Id$
+ *  srun_comm.h - definitions srun communications
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grondona <mgrondona@llnl.gov>.
+ *  Written by Moe Jette <jette@llnl.gov> et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -25,20 +24,34 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#include "src/srun/job.h"
+#ifndef _HAVE_SRUN_COMM_H
+#define _HAVE_SRUN_COMM_H
 
-#ifndef _HAVE_MSG_H
-#define _HAVE_MSG_H
+#include <sys/types.h>
+#include <time.h>
 
-void *msg_thr(void *arg);
-int   msg_thr_create(job_t *job);
-void  slurmctld_msg_init(void);
+/*
+ * srun_node_fail - notify srun of a node's failure
+ * IN job_id    - id of job to notify
+ * IN node_name - name of failed node
+ */
+extern void srun_node_fail (uint32_t job_id, char *node_name);
 
-typedef struct slurmctld_communication_addr {
-	char *hostname;
-	uint16_t port;
-} slurmctld_comm_addr_t;
+/* srun_ping - ping all srun commands that have not been heard from recently */
+extern void srun_ping (void);
 
-slurmctld_comm_addr_t slurmctld_comm_addr;
+/*
+ * srun_response - note that srun has responded
+ * IN job_id  - id of job responding
+ * IN step_id - id of step responding or NO_VAL if not a step
+ */
+extern void srun_response(uint32_t job_id, uint32_t step_id);
 
-#endif /* !_HAVE_MSG_H */
+/*
+ * srun_timeout - notify srun of a job's timeout
+ * IN job_id  - if of job to notify
+ * IN timeout - when job is scheduled to be killed
+ */
+extern void srun_timeout (uint32_t job_id, time_t timeout);
+
+#endif /* !_HAVE_SRUN_COMM_H */

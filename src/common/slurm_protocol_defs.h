@@ -136,6 +136,10 @@ typedef enum {
 	REQUEST_KILL_JOB,
 	MESSAGE_EPILOG_COMPLETE,
 
+	SRUN_PING = 7001,
+	SRUN_TIMEOUT,
+	SRUN_NODE_FAIL,
+
 	RESPONSE_SLURM_RC = 8001,
 	MESSAGE_UPLOAD_ACCOUNTING_INFO,
 } slurm_msg_type_t;
@@ -335,6 +339,23 @@ typedef struct job_id_response_msg {
 	uint32_t job_id;	/* slurm job_id */
 } job_id_response_msg_t;
 
+typedef struct srun_ping_msg {
+	uint32_t job_id;	/* slurm job_id */
+	uint32_t step_id;	/* step_id or NO_VAL */
+} srun_ping_msg_t;
+
+typedef struct srun_node_fail_msg {
+	uint32_t job_id;	/* slurm job_id */
+	uint32_t step_id;	/* step_id or NO_VAL */
+	char *nodelist;		/* name of failed node(s) */
+} srun_node_fail_msg_t;
+
+typedef struct srun_timeout_msg {
+	uint32_t job_id;	/* slurm job_id */
+	uint32_t step_id;	/* step_id or NO_VAL */
+	time_t   timeout;	/* when job scheduled to be killed */
+} srun_timeout_msg_t;
+
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
@@ -407,6 +428,10 @@ void inline slurm_free_update_job_time_msg(job_time_msg_t * msg);
 void inline slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg);
 
 void inline slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg);
+
+void inline slurm_free_srun_ping_msg(srun_ping_msg_t * msg);
+void inline slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg);
+void inline slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg);
 
 extern char *job_dist_string(uint16_t inx);
 extern char *job_state_string(enum job_states inx);

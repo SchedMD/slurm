@@ -70,6 +70,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/srun_comm.h"
 
 #if COMMAND_TIMEOUT == 1
 #  define WDOG_POLL 		1	/* secs */
@@ -131,6 +132,9 @@ static inline void _comm_err(char *node_name);
 static void _list_delete_retry(void *retry_entry);
 static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr);
 static task_info_t *_make_task_data(agent_info_t *agent_info_ptr, int inx);
+static void _notify_slurmctld_jobs(agent_info_t *agent_ptr);
+static void _notify_slurmctld_nodes(agent_info_t *agent_ptr, 
+		int no_resp_cnt, int retry_cnt);
 static void _purge_agent_args(agent_arg_t *agent_arg_ptr);
 static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count);
 static void _slurmctld_free_job_launch_msg(batch_job_launch_msg_t * msg);
@@ -259,7 +263,10 @@ static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 	xassert(agent_arg_ptr);
 	xassert(agent_arg_ptr->slurm_addr);
 	xassert(agent_arg_ptr->node_names);
-	xassert((agent_arg_ptr->msg_type == REQUEST_KILL_JOB) ||
+	xassert((agent_arg_ptr->msg_type == SRUN_PING) ||
+		(agent_arg_ptr->msg_type == SRUN_TIMEOUT) || 
+		(agent_arg_ptr->msg_type == SRUN_NODE_FAIL) || 
+		(agent_arg_ptr->msg_type == REQUEST_KILL_JOB) || 
 		(agent_arg_ptr->msg_type == REQUEST_KILL_TIMELIMIT) || 
 		(agent_arg_ptr->msg_type == REQUEST_UPDATE_JOB_TIME) ||
 		(agent_arg_ptr->msg_type == REQUEST_KILL_TASKS) || 
@@ -331,19 +338,16 @@ static task_info_t *_make_task_data(agent_info_t *agent_info_ptr, int inx)
 static void *_wdog(void *args)
 {
 	int fail_cnt, no_resp_cnt, retry_cnt;
-	bool work_done;
+	bool work_done, srun_agent = false;
 	int i, max_delay = 0;
 	agent_info_t *agent_ptr = (agent_info_t *) args;
 	thd_t *thread_ptr = agent_ptr->thread_struct;
 	time_t now;
-#if AGENT_IS_THREAD
-	/* Locks: Write job and write node */
-	slurmctld_lock_t node_write_lock =
-	    { NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
-#else
-	int done_cnt;
-	char *slurm_names;
-#endif
+
+	if ( (agent_ptr->msg_type == SRUN_PING) ||
+	     (agent_ptr->msg_type == SRUN_TIMEOUT) ||
+	     (agent_ptr->msg_type == SRUN_NODE_FAIL) )
+		srun_agent = true;
 
 	while (1) {
 		work_done   = true;	/* assume all threads complete */
@@ -388,6 +392,67 @@ static void *_wdog(void *args)
 		slurm_mutex_unlock(&agent_ptr->thread_mutex);
 	}
 
+	if (srun_agent)
+		_notify_slurmctld_jobs(agent_ptr);
+	else
+		_notify_slurmctld_nodes(agent_ptr, no_resp_cnt, retry_cnt);
+
+	if (max_delay)
+		debug2("agent maximum delay %d seconds", max_delay);
+
+	slurm_mutex_unlock(&agent_ptr->thread_mutex);
+	return (void *) NULL;
+}
+
+static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
+{
+#if AGENT_IS_THREAD
+	/* Locks: Write job */
+	slurmctld_lock_t job_write_lock =
+	    { NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+#endif
+	uint32_t job_id = 0, step_id = 0;
+	thd_t *thread_ptr = agent_ptr->thread_struct;
+
+	if        (agent_ptr->msg_type == SRUN_PING) {
+		srun_ping_msg_t *msg = *agent_ptr->msg_args_pptr;
+		job_id  = msg->job_id;
+		step_id = msg->step_id;
+	} else if (agent_ptr->msg_type == SRUN_TIMEOUT) {
+		srun_timeout_msg_t *msg = *agent_ptr->msg_args_pptr;
+		job_id  = msg->job_id;
+		step_id = msg->step_id;
+	} else if (agent_ptr->msg_type == SRUN_NODE_FAIL) {
+		srun_node_fail_msg_t *msg = *agent_ptr->msg_args_pptr;
+		job_id  = msg->job_id;
+		step_id = msg->step_id;
+	} else {
+		error("_notify_slurmctld_jobs invalid msg_type %u",
+			agent_ptr->msg_type);
+		return;
+	}
+
+#if AGENT_IS_THREAD
+	lock_slurmctld(job_write_lock);
+	if  (thread_ptr[0].state == DSH_DONE)
+		srun_response(job_id, step_id);
+	unlock_slurmctld(job_write_lock);
+#else
+	fatal("Code development needed here if agent is not thread");
+#endif
+}
+
+static void _notify_slurmctld_nodes(agent_info_t *agent_ptr, 
+		int no_resp_cnt, int retry_cnt)
+{
+#if AGENT_IS_THREAD
+	/* Locks: Write job and write node */
+	slurmctld_lock_t node_write_lock =
+	    { NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+#endif
+	thd_t *thread_ptr = agent_ptr->thread_struct;
+	int i;
+
 	/* Notify slurmctld of non-responding nodes */
 	if (no_resp_cnt) {
 #if AGENT_IS_THREAD
@@ -408,34 +473,14 @@ static void *_wdog(void *args)
 		}
 		unlock_slurmctld(node_write_lock);
 #else
-		/* Build a list of all non-responding nodes and send 
-		 * it to slurmctld */
-		slurm_names = xmalloc(fail_cnt * MAX_NAME_LEN);
-		fail_cnt = 0;
-		for (i = 0; i < agent_ptr->thread_count; i++) {
-			if (thread_ptr[i].state == DSH_NO_RESP) {
-				strncpy(&slurm_names
-					[MAX_NAME_LEN * fail_cnt],
-					thread_ptr[i].node_name,
-					MAX_NAME_LEN);
-				error
-				    ("agent/_wdog: node %s failed to respond",
-				     thread_ptr[i].node_name);
-				fail_cnt++;
-			}
-		}
-
-		/* send RPC */
 		fatal("Code development needed here if agent is not thread");
-
-		xfree(slurm_names);
 #endif
 	}
 	if (retry_cnt && agent_ptr->retry)
 		_queue_agent_retry(agent_ptr, retry_cnt);
 
-#if AGENT_IS_THREAD
 	/* Update last_response on responding nodes */
+#if AGENT_IS_THREAD
 	lock_slurmctld(node_write_lock);
 	for (i = 0; i < agent_ptr->thread_count; i++) {
 		if (thread_ptr[i].state == DSH_FAILED)
@@ -454,30 +499,8 @@ static void *_wdog(void *args)
 	    (agent_ptr->msg_type == REQUEST_NODE_REGISTRATION_STATUS))
 		ping_end();
 #else
-	/* Build a list of all responding nodes and send it to slurmctld to 
-	 * update time stamps */
-	done_cnt = agent_ptr->thread_count - fail_cnt - no_resp_cnt;
-	slurm_names = xmalloc(done_cnt * MAX_NAME_LEN);
-	done_cnt = 0;
-	for (i = 0; i < agent_ptr->thread_count; i++) {
-		if (thread_ptr[i].state == DSH_DONE)
-			strncpy(&slurm_names[MAX_NAME_LEN * done_cnt],
-				thread_ptr[i].node_name, MAX_NAME_LEN);
-			done_cnt++;
-		}
-	}
-	/* need support for node failures here too */
-
-	/* send RPC */
 	fatal("Code development needed here if agent is not thread");
-
-	xfree(slurm_addr);
 #endif
-	if (max_delay)
-		debug2("agent maximum delay %d seconds", max_delay);
-
-	slurm_mutex_unlock(&agent_ptr->thread_mutex);
-	return (void *) NULL;
 }
 
 /* Report a communications error for specified node */
@@ -501,7 +524,7 @@ static void *_thread_per_node_rpc(void *args)
 	thd_t *thread_ptr = task_ptr->thread_struct_ptr;
 	state_t thread_state = DSH_NO_RESP;
 	slurm_msg_type_t msg_type = task_ptr->msg_type;
-	bool is_kill_msg;
+	bool is_kill_msg, srun_agent;
 #if AGENT_IS_THREAD
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = { 
@@ -514,8 +537,11 @@ static void *_thread_per_node_rpc(void *args)
 	thread_ptr->start_time = time(NULL);
 	slurm_mutex_unlock(task_ptr->thread_mutex_ptr);
 
-	is_kill_msg = ((msg_type == REQUEST_KILL_TIMELIMIT) ||
-	               (msg_type == REQUEST_KILL_JOB)     );
+	is_kill_msg = (	(msg_type == REQUEST_KILL_TIMELIMIT) ||
+			(msg_type == REQUEST_KILL_JOB)     );
+	srun_agent = (	(msg_type == SRUN_PING)    ||
+			(msg_type == SRUN_TIMEOUT) ||
+			(msg_type == SRUN_NODE_FAIL) );
 
 	/* send request message */
 	msg.address  = thread_ptr->slurm_addr;
@@ -525,7 +551,8 @@ static void *_thread_per_node_rpc(void *args)
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT; 
 	if (task_ptr->get_reply) {
 		if (slurm_send_recv_rc_msg(&msg, &rc, timeout) < 0) {
-			_comm_err(thread_ptr->node_name);
+			if (!srun_agent)
+				_comm_err(thread_ptr->node_name);
 			goto cleanup;
 		}
 	} else {
@@ -770,7 +797,7 @@ static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr)
 	if (agent_arg_ptr == NULL)
 		return;
 
-	debug2("Spawning RPC retry agent for msg_type %u", 
+	debug2("Spawning RPC agent for msg_type %u", 
 	       agent_arg_ptr->msg_type);
 	if (pthread_attr_init(&attr_agent))
 		fatal("pthread_attr_init error %m");

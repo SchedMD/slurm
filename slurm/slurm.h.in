@@ -199,6 +199,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t alloc_sid;	/* local sid making resource allocation request
 				 * NOTE: Normally set by slurm_submit* or 
 				 * slurm_allocate* function */
+	uint16_t port;		/* port to contact initiating srun */
+	char *host;		/* host to contact initiating srun */
 } job_desc_msg_t;
 
 typedef struct job_info {
@@ -252,6 +254,8 @@ typedef struct job_step_specs {
 	uint32_t num_tasks;	/* number of tasks required */
 	uint16_t relative;	/* first node to use of job's allocation */
 	uint16_t task_dist;	/* see enum task_dist_state */
+	uint16_t port;		/* port to contact initiating srun */
+	char *host;		/* host to contact initiating srun */
 	char *node_list;	/* list of required nodes */
 } job_step_create_request_msg_t;
 

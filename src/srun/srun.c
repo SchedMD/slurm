@@ -128,6 +128,8 @@ int main(int ac, char **av)
 		log_alter(logopt, 0, NULL);
 	}
 
+	/* Set up slurmctld message handler */
+	slurmctld_msg_init();
 
 	/* now global "opt" should be filled in and available,
 	 * create a job from opt

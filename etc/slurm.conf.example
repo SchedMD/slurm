@@ -177,9 +177,9 @@
 #    "HeartbeatInterval": The interval, in seconds, at which the SLURM
 #                         controller tests the status of other daemons.
 #
-#    "InactiveLimit"    : The interval, in seconds, a job is permitted to
-#                         be inactive (no active job steps) before it is
-#                         terminated.
+#    "InactiveLimit"    : The interval, in seconds, a job or job step is 
+#                         permitted to be inactive (srun command not responding)
+#                         before being terminated.
 #
 #    "MinJobAge"        : The time, in seconds, after a job completes before
 #                         its record is purged from the active slurmctld data.

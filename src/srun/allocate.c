@@ -35,8 +35,10 @@
 #include "src/common/macros.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
+#include "src/common/xstring.h"
 
 #include "src/srun/allocate.h"
+#include "src/srun/msg.h"
 #include "src/srun/opt.h"
 
 #if HAVE_TOTALVIEW
@@ -252,13 +254,21 @@ job_desc_msg_create(void)
 	if (opt.share)
 		j->shared              = 1;
 
+	if (slurmctld_comm_addr.port) {
+		j->host = xstrdup(slurmctld_comm_addr.hostname);
+		j->port = slurmctld_comm_addr.port;
+	}
+
 	return (j);
 }
 
 void
 job_desc_msg_destroy(job_desc_msg_t *j)
 {
-	xfree(j);
+	if (j) {
+		xfree(j->host);
+		xfree(j);
+	}
 }
 
 static job_step_create_request_msg_t *
@@ -287,13 +297,21 @@ _step_req_create(job_t *j)
 		break;
 	}
 
+	if (slurmctld_comm_addr.port) {
+		r->host = xstrdup(slurmctld_comm_addr.hostname);
+		r->port = slurmctld_comm_addr.port;
+	}
+
 	return(r);
 }
 
 static void
 _step_req_destroy(job_step_create_request_msg_t *r)
 {
-	xfree(r);
+	if (r) {
+		xfree(r->host);
+		xfree(r);
+	}
 }
 
 void

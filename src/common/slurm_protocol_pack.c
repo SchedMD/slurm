@@ -205,6 +205,16 @@ static void _pack_job_step_kill_msg(job_step_kill_msg_t * msg, Buf buffer);
 static int  _unpack_job_step_kill_msg(job_step_kill_msg_t ** msg_ptr, 
 				      Buf buffer);
 
+static void _pack_srun_ping_msg(srun_ping_msg_t * msg, Buf buffer);
+static int  _unpack_srun_ping_msg(srun_ping_msg_t ** msg_ptr, Buf buffer);
+
+static void _pack_srun_node_fail_msg(srun_node_fail_msg_t * msg, Buf buffer);
+static int  _unpack_srun_node_fail_msg(srun_node_fail_msg_t ** msg_ptr, 
+					Buf buffer);
+
+static void _pack_srun_timeout_msg(srun_timeout_msg_t * msg, Buf buffer);
+static int  _unpack_srun_timeout_msg(srun_timeout_msg_t ** msg_ptr, Buf buffer);
+
 static void _pack_buffer_msg(slurm_msg_t * msg, Buf buffer);
 
 /* pack_header
@@ -438,6 +448,16 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				(job_id_response_msg_t *)msg->data,
 				buffer);
 		 break;
+	 case SRUN_PING:
+		_pack_srun_ping_msg((srun_ping_msg_t *)msg->data, buffer);
+		break;
+	 case SRUN_NODE_FAIL:
+		_pack_srun_node_fail_msg((srun_node_fail_msg_t *)msg->data, 
+				buffer);
+		break;
+	 case SRUN_TIMEOUT:
+		_pack_srun_timeout_msg((srun_timeout_msg_t *)msg->data, buffer);
+		break;
 	 default:
 		 debug("No pack method for msg type %i", msg->msg_type);
 		 return EINVAL;
@@ -659,6 +679,18 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 				(job_id_response_msg_t **) & msg->data,
 				buffer);
 		 break;
+	 case SRUN_PING:
+		rc = _unpack_srun_ping_msg((srun_ping_msg_t **) & msg->data, 
+				buffer);
+		break;
+	 case SRUN_NODE_FAIL:
+		rc = _unpack_srun_node_fail_msg((srun_node_fail_msg_t **)
+				& msg->data, buffer);
+		break;
+	 case SRUN_TIMEOUT:
+		rc = _unpack_srun_timeout_msg((srun_timeout_msg_t **)
+				& msg->data, buffer);
+		break;
 	 default:
 		 debug("No unpack method for msg type %i", msg->msg_type);
 		 return EINVAL;
@@ -1119,6 +1151,8 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 
 	pack16(msg->relative, buffer);
 	pack16(msg->task_dist, buffer);
+	pack16(msg->port, buffer);
+	packstr(msg->host, buffer);
 	packstr(msg->node_list, buffer);
 }
 
@@ -1142,11 +1176,14 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 
 	safe_unpack16(&(tmp_ptr->relative), buffer);
 	safe_unpack16(&(tmp_ptr->task_dist), buffer);
+	safe_unpack16(&(tmp_ptr->port), buffer);
+	safe_unpackstr_xmalloc(&(tmp_ptr->host), &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->node_list), &uint16_tmp, buffer);
 
 	return SLURM_SUCCESS;
 
       unpack_error:
+	xfree(tmp_ptr->host);
 	xfree(tmp_ptr->node_list);
 	xfree(tmp_ptr);
 	*msg = NULL;
@@ -1762,6 +1799,8 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	pack32(job_desc_ptr->user_id, buffer);
 	pack32(job_desc_ptr->group_id, buffer);
 
+	pack16(job_desc_ptr->port, buffer);
+	packstr(job_desc_ptr->host, buffer);
 }
 
 /* _unpack_job_desc_msg
@@ -1819,6 +1858,9 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpack32(&job_desc_ptr->user_id, buffer);
 	safe_unpack32(&job_desc_ptr->group_id, buffer);
 
+	safe_unpack16(&job_desc_ptr->port, buffer);
+	safe_unpackstr_xmalloc(&job_desc_ptr->host, &uint16_tmp, buffer);
+
 	return SLURM_SUCCESS;
 
       unpack_error:
@@ -1832,6 +1874,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	xfree(job_desc_ptr->in);
 	xfree(job_desc_ptr->out);
 	xfree(job_desc_ptr->work_dir);
+	xfree(job_desc_ptr->host);
 	xfree(job_desc_ptr);
 	*job_desc_buffer_ptr = NULL;
 	return SLURM_ERROR;
@@ -2497,6 +2540,97 @@ _unpack_job_id_response_msg(job_id_response_msg_t ** msg, Buf buffer)
       unpack_error:
 	xfree(tmp_ptr);
 	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_srun_ping_msg(srun_ping_msg_t * msg, Buf buffer)
+{
+	assert ( msg != NULL );
+
+	pack32 ( msg ->job_id  , buffer ) ;
+	pack32 ( msg ->step_id , buffer ) ;
+}
+
+static int  
+_unpack_srun_ping_msg(srun_ping_msg_t ** msg_ptr, Buf buffer)
+{
+	srun_ping_msg_t * msg;
+	assert ( msg_ptr != NULL );
+
+	msg = xmalloc ( sizeof (srun_ping_msg_t) ) ;
+	*msg_ptr = msg;
+
+	safe_unpack32 ( & msg->job_id  , buffer ) ;
+	safe_unpack32 ( & msg->step_id , buffer ) ;
+	return SLURM_SUCCESS;
+
+    unpack_error:
+	*msg_ptr = NULL;
+	xfree(msg);
+	return SLURM_ERROR;
+}
+
+static void 
+_pack_srun_node_fail_msg(srun_node_fail_msg_t * msg, Buf buffer)
+{
+	assert ( msg != NULL );
+
+	pack32 ( msg ->job_id  , buffer ) ;
+	pack32 ( msg ->step_id , buffer ) ;
+	packstr ( msg ->nodelist, buffer ) ;
+}
+
+static int 
+_unpack_srun_node_fail_msg(srun_node_fail_msg_t ** msg_ptr, Buf buffer)
+{
+	uint16_t uint16_tmp;
+	srun_node_fail_msg_t * msg;
+	assert ( msg_ptr != NULL );
+
+	msg = xmalloc ( sizeof (srun_node_fail_msg_t) ) ;
+	*msg_ptr = msg;
+
+	safe_unpack32 ( & msg->job_id  , buffer ) ;
+	safe_unpack32 ( & msg->step_id , buffer ) ;
+	safe_unpackstr_xmalloc ( & msg->nodelist, &uint16_tmp, buffer);
+
+	return SLURM_SUCCESS;
+
+    unpack_error:
+	*msg_ptr = NULL;
+	xfree( msg->nodelist );
+	xfree( msg );
+	return SLURM_ERROR;
+}
+
+static void
+_pack_srun_timeout_msg(srun_timeout_msg_t * msg, Buf buffer)
+{
+	assert ( msg != NULL );
+
+	pack32 ( msg -> job_id  , buffer ) ;
+	pack32 ( msg -> step_id , buffer ) ;
+	pack_time ( msg -> timeout, buffer );
+}
+
+static int  
+_unpack_srun_timeout_msg(srun_timeout_msg_t ** msg_ptr, Buf buffer)
+{
+	srun_timeout_msg_t * msg;
+	assert ( msg_ptr != NULL );
+
+	msg = xmalloc ( sizeof (srun_timeout_msg_t) ) ;
+	*msg_ptr = msg ;
+
+	safe_unpack32 ( & msg -> job_id  , buffer ) ;
+	safe_unpack32 ( & msg -> step_id , buffer ) ;
+	safe_unpack_time ( & msg -> timeout , buffer );
+	return SLURM_SUCCESS;
+
+    unpack_error:
+	*msg_ptr = NULL;
+	xfree(msg);
 	return SLURM_ERROR;
 }
 

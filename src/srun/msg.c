@@ -46,6 +46,7 @@
 #include "src/common/fd.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -55,6 +56,7 @@
 #include "src/srun/job.h"
 #include "src/srun/opt.h"
 #include "src/srun/io.h"
+#include "src/srun/msg.h"
 #include "src/srun/signals.h"
 #include "src/srun/sigstr.h"
 
@@ -68,6 +70,8 @@
 
 static int    tasks_exited     = 0;
 static uid_t  slurm_uid;
+static slurm_fd slurmctld_fd   = (slurm_fd) NULL;
+
 
 
 /*
@@ -85,6 +89,8 @@ static void 	_msg_thr_poll(job_t *job);
 static void	_set_jfds_nonblocking(job_t *job);
 static void     _print_pid_list(const char *host, int ntasks, 
 				uint32_t *pid, char *executable_name);
+static void     _timeout_handler(time_t timeout);
+static void     _node_fail_handler(char *nodelist);
 
 #define _poll_set_rd(_pfd, _fd) do {    \
 	(_pfd).fd = _fd;                \
@@ -150,6 +156,38 @@ void MPIR_Breakpoint(void)
 	/* This just notifies TotalView that some event of interest occured */ 
 }
 #endif
+
+/*
+ * Job has been notified of it's approaching time limit. 
+ * Job will be killed shortly after timeout.
+ * This RPC can arrive multiple times with the same or updated timeouts.
+ * FIXME: We may want to signal the job or perform other action for this.
+ * FIXME: How much lead time do we want for this message? Some jobs may 
+ *	require tens of minutes to gracefully terminate.
+ */
+static void _timeout_handler(time_t timeout)
+{
+	static time_t last_timeout = 0;
+
+	if (timeout != last_timeout) {
+		last_timeout = timeout;
+		verbose("job time limit to be reached at %s", 
+				ctime(&timeout));
+	}
+}
+
+/*
+ * Job has been notified of a node's failure (at least the node's slurmd 
+ * has stopped responding to slurmctld). It is possible that the user's 
+ * job is continuing to execute on the specified nodes, but quite possibly 
+ * not. The job will continue to execute given the --no-kill option. 
+ * Otherwise all of the job's tasks and the job itself are killed..
+ * FIXME: How should srun deal with this notification?
+ */
+static void _node_fail_handler(char *nodelist)
+{
+	error("Node failure on %s", nodelist);
+}
 
 static bool _job_msg_done(job_t *job)
 {
@@ -445,6 +483,8 @@ _handle_msg(job_t *job, slurm_msg_t *msg)
 {
 	uid_t req_uid = g_slurm_auth_get_uid(msg->cred);
 	uid_t uid     = getuid();
+	srun_timeout_msg_t *to;
+	srun_node_fail_msg_t *nf;
 
 	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
 		error ("Security violation, slurm message from uid %u", 
@@ -463,9 +503,26 @@ _handle_msg(job_t *job, slurm_msg_t *msg)
 			slurm_free_task_exit_msg(msg->data);
 			break;
 		case RESPONSE_REATTACH_TASKS:
-			debug2("recvd reattach response\n");
+			debug2("recvd reattach response");
 			_reattach_handler(job, msg);
 			slurm_free_reattach_tasks_response_msg(msg->data);
+			break;
+		case SRUN_PING:
+			debug3("slurmctld ping received");
+			slurm_send_rc_msg(msg, SLURM_SUCCESS);
+			slurm_free_srun_ping_msg(msg->data);
+			break;
+		case SRUN_TIMEOUT:
+			to = msg->data;
+			_timeout_handler(to->timeout);
+			slurm_send_rc_msg(msg, SLURM_SUCCESS);
+			slurm_free_srun_timeout_msg(msg->data);
+			break;
+		case SRUN_NODE_FAIL:
+			nf = msg->data;
+			_node_fail_handler(nf->nodelist);
+			slurm_send_rc_msg(msg, SLURM_SUCCESS);
+			slurm_free_srun_node_fail_msg(msg->data);
 			break;
 		default:
 			error("received spurious message type: %d\n",
@@ -476,17 +533,23 @@ _handle_msg(job_t *job, slurm_msg_t *msg)
 	return;
 }
 
+/* NOTE: One extra FD for incoming slurmctld messages */
 static void
 _accept_msg_connection(job_t *job, int fdnum)
 {
-	slurm_fd fd;
+	slurm_fd     fd = (slurm_fd) NULL;
 	slurm_msg_t *msg = NULL;
 	slurm_addr   cli_addr;
 	char         host[256];
 	short        port;
 	int          timeout = 0;	/* slurm default value */
 
-	if ((fd = slurm_accept_msg_conn(job->jfd[fdnum], &cli_addr)) < 0) {
+	if (fdnum < job->njfds)
+		fd = slurm_accept_msg_conn(job->jfd[fdnum], &cli_addr);
+	else
+		fd = slurm_accept_msg_conn(slurmctld_fd, &cli_addr);
+
+	if (fd < 0) {
 		error("Unable to accept connection: %m");
 		return;
 	}
@@ -517,6 +580,7 @@ _accept_msg_connection(job_t *job, int fdnum)
 	return;
 }
 
+
 static void
 _set_jfds_nonblocking(job_t *job)
 {
@@ -527,11 +591,12 @@ _set_jfds_nonblocking(job_t *job)
 
 /*
  *  Call poll() with a timeout. (timeout argument is in seconds)
+ * NOTE: One extra FD for incoming slurmctld messages
  */
 static int
 _do_poll(job_t *job, struct pollfd *fds, int timeout)
 {
-	nfds_t nfds = job->njfds;
+	nfds_t nfds = (job->njfds + 1);
 	int rc;
 
 	while ((rc = poll(fds, nfds, timeout * 1000)) < 0) {
@@ -597,18 +662,20 @@ _do_poll_timeout(job_t *job)
 	}
 }
 
+/* NOTE: One extra FD for incoming slurmctld messages */
 static void 
 _msg_thr_poll(job_t *job)
 {
 	struct pollfd *fds;
 	int i;
 
-	fds = xmalloc(job->njfds * sizeof(*fds));
+	fds = xmalloc((job->njfds + 1) * sizeof(*fds));
 
 	_set_jfds_nonblocking(job);
 
 	for (i = 0; i < job->njfds; i++)
 		_poll_set_rd(fds[i], job->jfd[i]);
+	_poll_set_rd(fds[i], slurmctld_fd);
 
 	while (!_job_msg_done(job)) {
 
@@ -617,7 +684,7 @@ _msg_thr_poll(job_t *job)
 			continue;
 		}
 
-		for (i = 0; i < job->njfds; i++) {
+		for (i = 0; i < (job->njfds + 1) ; i++) {
 			unsigned short revents = fds[i].revents;
 			if ((revents & POLLERR) || 
 			    (revents & POLLHUP) ||
@@ -687,6 +754,30 @@ _print_pid_list(const char *host, int ntasks, uint32_t *pid,
 		hostlist_ranged_string(pids, sizeof(buf), buf);
 		verbose("%s: %s %s", host, executable_name, buf);
 	}
+}
+
+/* Set up port to handle messages from slurmctld */
+extern void slurmctld_msg_init(void)
+{
+	slurm_addr slurm_address;
+	char hostname[64];
+	uint16_t port;
+
+	if ((slurmctld_fd = slurm_init_msg_engine_port(0)) < 0)
+		fatal("slurm_init_msg_engine_port error %m");
+	if (slurm_get_stream_addr(slurmctld_fd, &slurm_address) < 0)
+		fatal("slurm_get_stream_addr error %m");
+	fd_set_nonblocking(slurmctld_fd);
+	/* hostname is not set, so slurm_get_addr fails
+	slurm_get_addr(&slurm_address, &port, hostname, sizeof(hostname)); */
+	port = slurm_address.sin_port;
+	getnodename(hostname, sizeof(hostname));
+	slurmctld_comm_addr.hostname = xstrdup(hostname);
+	slurmctld_comm_addr.port     = ntohs(port);
+	debug2("slurmctld messasges to host=%s,port=%u", 
+			slurmctld_comm_addr.hostname, 
+			slurmctld_comm_addr.port);
+
 }
 
 

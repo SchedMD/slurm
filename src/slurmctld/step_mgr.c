@@ -44,6 +44,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
@@ -91,7 +92,7 @@ delete_all_step_records (struct job_record *job_ptr)
 	struct step_record *step_record_point;
 
 	xassert(job_ptr);
-	step_record_iterator = list_iterator_create (job_ptr->step_list);		
+	step_record_iterator = list_iterator_create (job_ptr->step_list);
 
 	last_job_update = time(NULL);
 	while ((step_record_point = 
@@ -100,6 +101,7 @@ delete_all_step_records (struct job_record *job_ptr)
 #ifdef HAVE_ELAN
 		qsw_free_jobinfo (step_record_point->qsw_job);
 #endif
+		xfree(step_record_point->host);
 		xfree(step_record_point->step_node_list);
 		FREE_NULL_BITMAP(step_record_point->step_node_bitmap);
 		xfree(step_record_point);
@@ -135,6 +137,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 #ifdef HAVE_ELAN
 			qsw_free_jobinfo (step_record_point->qsw_job);
 #endif
+			xfree(step_record_point->host);
 			xfree(step_record_point->step_node_list);
 			FREE_NULL_BITMAP(step_record_point->step_node_bitmap);
 			xfree(step_record_point);
@@ -164,6 +167,8 @@ dump_step_desc(step_specs *step_spec)
 	debug3("   num_tasks=%u relative=%u task_dist=%u node_list=%s", 
 		step_spec->num_tasks, step_spec->relative, 
 		step_spec->task_dist, step_spec->node_list);
+	debug3("   host=%s port=%u", 
+		step_spec->host, step_spec->port);
 }
 
 
@@ -237,7 +242,6 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 
 	signal_step_tasks(step_ptr, signal);
 	return SLURM_SUCCESS;
-
 }
 
 /*
@@ -493,6 +497,7 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 	struct job_record  *job_ptr;
 	bitstr_t *nodeset;
 	int node_count;
+	time_t now = time(NULL);
 #ifdef HAVE_ELAN
 	int first, last, i, node_id;
 	int node_set_size = QSW_MAX_TASKS; /* overkill but safe */
@@ -525,7 +530,7 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 		return ESLURM_ALREADY_DONE;
 	job_ptr->kill_on_step_done = kill_job_when_step_done;
 
-	job_ptr->time_last_active = time(NULL);
+	job_ptr->time_last_active = now;
 	nodeset = _pick_step_nodes (job_ptr, step_specs);
 	if (nodeset == NULL)
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE ;
@@ -555,6 +560,9 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 	step_ptr->cyclic_alloc = 
 		(uint16_t) (step_specs->task_dist == SLURM_DIST_CYCLIC);
 	step_ptr->num_tasks = step_specs->num_tasks;
+	step_ptr->time_last_active = now;
+	step_ptr->port = step_specs->port;
+	step_ptr->host = xstrdup(step_specs->host);
 
 #ifdef HAVE_ELAN
 	if (qsw_alloc_jobinfo (&step_ptr->qsw_job) < 0)

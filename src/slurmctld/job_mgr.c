@@ -57,6 +57,7 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/srun_comm.h"
 
 #define DETAILS_FLAG 0xdddd
 #define MAX_RETRIES  10
@@ -374,7 +375,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 {
 	struct job_details *detail_ptr;
 	ListIterator step_record_iterator;
-	struct step_record *step_record_ptr;
+	struct step_record *step_ptr;
 
 	/* Dump basic job info */
 	pack32(dump_job_ptr->job_id, buffer);
@@ -391,7 +392,9 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->kill_on_node_fail, buffer);
 	pack16(dump_job_ptr->kill_on_step_done, buffer);
 	pack16(dump_job_ptr->batch_flag, buffer);
+	pack16(dump_job_ptr->port, buffer);
 
+	packstr(dump_job_ptr->host, buffer);
 	packstr(dump_job_ptr->nodes, buffer);
 	packstr(dump_job_ptr->partition, buffer);
 	packstr(dump_job_ptr->name, buffer);
@@ -409,11 +412,11 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	/* Dump job steps */
 	step_record_iterator =
 	    list_iterator_create(dump_job_ptr->step_list);
-	while ((step_record_ptr =
-		(struct step_record *) list_next(step_record_iterator))) {
+	while ((step_ptr = (struct step_record *) 
+				list_next(step_record_iterator))) {
 		pack16((uint16_t) STEP_FLAG, buffer);
-		_dump_job_step_state(step_record_ptr, buffer);
-	};
+		_dump_job_step_state(step_ptr, buffer);
+	}
 	list_iterator_destroy(step_record_iterator);
 	pack16((uint16_t) 0, buffer);	/* no step flag */
 }
@@ -424,9 +427,9 @@ static int _load_job_state(Buf buffer)
 	uint32_t job_id, user_id, time_limit, priority, alloc_sid;
 	time_t start_time, end_time;
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
-	uint16_t kill_on_node_fail, kill_on_step_done, name_len;
+	uint16_t kill_on_node_fail, kill_on_step_done, name_len, port;
 	char *nodes = NULL, *partition = NULL, *name = NULL;
-	char *alloc_node = NULL;
+	char *alloc_node = NULL, *host = NULL;
 	bitstr_t *node_bitmap = NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
@@ -446,7 +449,9 @@ static int _load_job_state(Buf buffer)
 	safe_unpack16(&kill_on_node_fail, buffer);
 	safe_unpack16(&kill_on_step_done, buffer);
 	safe_unpack16(&batch_flag, buffer);
+	safe_unpack16(&port, buffer);
 
+	safe_unpackstr_xmalloc(&host, &name_len, buffer);
 	safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
 	safe_unpackstr_xmalloc(&partition, &name_len, buffer);
 	safe_unpackstr_xmalloc(&name, &name_len, buffer);
@@ -532,6 +537,8 @@ static int _load_job_state(Buf buffer)
 	job_ptr->kill_on_node_fail = kill_on_node_fail;
 	job_ptr->kill_on_step_done = kill_on_step_done;
 	job_ptr->batch_flag        = batch_flag;
+	job_ptr->port              = port;
+	job_ptr->host              = host;
 	build_node_details(job_ptr);	/* set: num_cpu_groups, cpus_per_node, 
 					 *	cpu_count_reps, node_cnt, and
 					 *	node_addr */
@@ -547,6 +554,7 @@ static int _load_job_state(Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
+	xfree(host);
 	xfree(nodes);
 	xfree(partition);
 	xfree(name);
@@ -694,9 +702,10 @@ static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 {
 	pack16((uint16_t) step_ptr->step_id, buffer);
 	pack16((uint16_t) step_ptr->cyclic_alloc, buffer);
+	pack16(step_ptr->port, buffer);
 	pack32(step_ptr->num_tasks, buffer);
 	pack_time(step_ptr->start_time, buffer);
-
+	packstr(step_ptr->host,  buffer);
 	packstr(step_ptr->step_node_list,  buffer);
 #ifdef HAVE_ELAN
 	qsw_pack_jobinfo(step_ptr->qsw_job, buffer);
@@ -707,15 +716,17 @@ static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 {
 	struct step_record *step_ptr;
-	uint16_t step_id, cyclic_alloc, name_len;
+	uint16_t step_id, cyclic_alloc, name_len, port;
 	uint32_t num_tasks;
 	time_t start_time;
-	char *step_node_list = NULL;
+	char *step_node_list = NULL, *host = NULL;
 
 	safe_unpack16(&step_id, buffer);
 	safe_unpack16(&cyclic_alloc, buffer);
+	safe_unpack16(&port, buffer);
 	safe_unpack32(&num_tasks, buffer);
 	safe_unpack_time(&start_time, buffer);
+	safe_unpackstr_xmalloc(&host, &name_len, buffer);
 	safe_unpackstr_xmalloc(&step_node_list, &name_len, buffer);
 
 	/* validity test as possible */
@@ -739,12 +750,16 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_ptr->step_id      = step_id;
 	step_ptr->cyclic_alloc = cyclic_alloc;
 	step_ptr->num_tasks    = num_tasks;
+	step_ptr->port         = port;
+	step_ptr->host         = host;
+	host = NULL;		/* re-used, nothing left to free */
 	step_ptr->start_time   = start_time;
 	step_ptr->step_node_list = step_node_list;
 	if (step_node_list)
 		(void) node_name2bitmap(step_node_list, 
 					&(step_ptr->step_node_bitmap));
 	step_node_list = NULL;	/* re-used, nothing left to free */
+	step_ptr->time_last_active = time(NULL);
 #ifdef HAVE_ELAN
 	qsw_alloc_jobinfo(&step_ptr->qsw_job);
 	if (qsw_unpack_jobinfo(step_ptr->qsw_job, buffer)) {
@@ -756,6 +771,7 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
+	xfree(host);
 	xfree(step_node_list);
 	return SLURM_FAILURE;
 }
@@ -927,6 +943,7 @@ int kill_running_job_by_node_name(char *node_name, bool step_test)
 				continue;
 
 			job_count++;
+			srun_node_fail(job_ptr->job_id, node_name);
 			if ((job_ptr->details == NULL) ||
 			    (job_ptr->kill_on_node_fail) ||
 			    (job_ptr->node_cnt <= 1)) {
@@ -993,9 +1010,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 			(long) job_specs->min_memory : -1L;
 	min_tmp_disk = (job_specs->min_tmp_disk != NO_VAL) ? 
 			(long) job_specs->min_tmp_disk : -1L;
-	debug3
-	    ("   min_procs=%ld min_memory=%ld min_tmp_disk=%ld features=%s",
-	     min_procs, min_memory, min_tmp_disk, job_specs->features);
+	debug3("   min_procs=%ld min_memory=%ld min_tmp_disk=%ld features=%s",
+	       min_procs, min_memory, min_tmp_disk, job_specs->features);
 
 	num_procs = (job_specs->num_procs != NO_VAL) ? 
 			(long) job_specs->num_procs : -1L;
@@ -1048,6 +1064,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	       job_specs->work_dir,
 	       job_specs->alloc_node, job_specs->alloc_sid);
 
+	debug3("   host=%s port=%u",
+	       job_specs->host, job_specs->port);
 }
 
 
@@ -1908,6 +1926,10 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	if (job_desc->kill_on_node_fail != (uint16_t) NO_VAL)
 		job_ptr->kill_on_node_fail = job_desc->kill_on_node_fail;
 
+	job_ptr->port = job_desc->port;
+	job_ptr->host = xstrdup(job_desc->host);
+	job_ptr->time_last_active = time(NULL);
+
 	detail_ptr = job_ptr->details;
 	detail_ptr->num_procs = job_desc->num_procs;
 	detail_ptr->min_nodes = job_desc->min_nodes;
@@ -1981,46 +2003,64 @@ static char *_copy_nodelist_no_dup(char *node_list)
  */
 void job_time_limit(void)
 {
-	ListIterator job_record_iterator;
+	ListIterator job_iterator;
 	struct job_record *job_ptr;
-	time_t now;
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
+	time_t now = time(NULL);
+	time_t old = now - slurmctld_conf.inactive_limit;
 
-	now = time(NULL);
-	job_record_iterator = list_iterator_create(job_list);
+	if (slurmctld_conf.inactive_limit == 0)
+		return;		/* no purging of inactive jobs/steps */
+
+	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr =
-		(struct job_record *) list_next(job_record_iterator))) {
+		(struct job_record *) list_next(job_iterator))) {
 		bool inactive_flag = false;
 		xassert (job_ptr->magic == JOB_MAGIC);
 		if (job_ptr->job_state != JOB_RUNNING)
 			continue;
 
-		if (slurmctld_conf.inactive_limit) {
-			if (job_ptr->step_list &&
-			    (list_count(job_ptr->step_list) > 0))
-				job_ptr->time_last_active = now;
-			else if ((job_ptr->time_last_active +
-				  slurmctld_conf.inactive_limit) <= now) {
-				/* job inactive, kill it */
-				job_ptr->end_time   = now;
-				job_ptr->time_limit = 1;
-				inactive_flag       = true;
-			}
+		if (job_ptr->time_last_active <= old) {
+			/* job inactive, kill it */
+			job_ptr->end_time   = now;
+			job_ptr->time_limit = 1;
+			inactive_flag       = true;
 		}
-		if ((job_ptr->time_limit == INFINITE) ||
-		    (job_ptr->end_time > now))
+		if ((job_ptr->time_limit != INFINITE) &&
+		    (job_ptr->end_time <= now)) {
+			last_job_update = now;
+			if (inactive_flag)
+				info("Inactivity time limit reached for JobId=%u",
+				     job_ptr->job_id);
+			else
+				info("Time limit exhausted for JobId=%u",
+				     job_ptr->job_id);
+			_job_timed_out(job_ptr);
 			continue;
+		}
 
-		last_job_update = now;
-		if (inactive_flag)
-			info("Inactivity time limit reached for JobId=%u",
-			     job_ptr->job_id);
-		else
-			info("Time limit exhausted for JobId=%u",
-			     job_ptr->job_id);
-		_job_timed_out(job_ptr);
+		/* test for and purge inactive job steps */
+		step_iterator = list_iterator_create(job_ptr->step_list);
+		while ((step_ptr = (struct step_record *) 
+				list_next(step_iterator))) {
+			if (step_ptr->time_last_active > old)
+				continue;
+			last_job_update = now;
+			info("Inactivity time limit reached for StepId=%u.%u",
+				job_ptr->job_id, step_ptr->step_id);
+			job_step_signal(job_ptr->job_id, step_ptr->step_id, 
+		    		SIGKILL, 0);
+			job_step_complete(job_ptr->job_id, step_ptr->step_id,
+				0, false, 0);
+		}	
+		list_iterator_destroy(step_iterator);
+
+		if (job_ptr->end_time <= (now + 60)) 
+			srun_timeout (job_ptr->job_id, job_ptr->end_time);
 	}
 
-	list_iterator_destroy(job_record_iterator);
+	list_iterator_destroy(job_iterator);
 }
 
 /* Terminate a job that has exhausted its time limit */
@@ -2154,6 +2194,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->cpus_per_node);
 	xfree(job_ptr->cpu_count_reps);
 	xfree(job_ptr->node_addr);
+	xfree(job_ptr->host);
 	if (job_ptr->step_list) {
 		delete_all_step_records(job_ptr);
 		list_destroy(job_ptr->step_list);
@@ -2843,7 +2884,6 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 	int i, node_inx, jobs_on_node;
 	struct node_record *node_ptr;
 	struct job_record *job_ptr;
-	time_t now = time(NULL);
 
 	node_ptr = find_node_record(node_name);
 	if (node_ptr == NULL) {
@@ -2873,9 +2913,6 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 				debug3("Registered job %u.%u on node %s ",
 				       job_id_ptr[i], step_id_ptr[i], 
 				       node_name);
-				if ((job_ptr->batch_flag) &&
-				    (node_inx == bit_ffs(job_ptr->node_bitmap)))
-					job_ptr->time_last_active = now;
 			} else {
 				error
 				    ("Registered job %u.u on wrong node %s ",
@@ -2914,7 +2951,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 
 	jobs_on_node = node_ptr->run_job_cnt + node_ptr->comp_job_cnt;
 	if (jobs_on_node)
-		_purge_lost_batch_jobs(node_inx, now);
+		_purge_lost_batch_jobs(node_inx, time(NULL));
 
 	if (jobs_on_node != *job_count) {
 		/* slurmd will not know of a job unless the job has
