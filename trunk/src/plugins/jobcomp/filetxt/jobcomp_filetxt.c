@@ -52,8 +52,14 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
-#define JOB_FORMAT "JobId=%lu UserId=%s(%lu) Name=%s JobState=%s Partition=%s"\
-		" TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s\n"
+#ifdef HAVE_BGL
+#  define JOB_FORMAT "JobId=%lu UserId=%s(%lu) Name=%s JobState=%s Partition=%s "\
+		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s "\
+		"Geometry=%ux%ux%u Rotate=%u ConnType=%s NodeUse=%s\n"
+#else
+#  define JOB_FORMAT "JobId=%lu UserId=%s(%lu) Name=%s JobState=%s Partition=%s "\
+		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s\n"
+#endif
  
 /* Type for error string table entries */
 typedef struct {
@@ -217,7 +223,14 @@ int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 			(unsigned long) job_ptr->user_id, job_ptr->name, 
 			job_state_string(job_state), 
 			job_ptr->partition, lim_str, start_str, 
-			end_str, job_ptr->nodes);
+			end_str, job_ptr->nodes
+#ifdef HAVE_BGL
+			, job_ptr->geometry[0], job_ptr->geometry[1], 
+			job_ptr->geometry[2], job_ptr->rotate,
+			job_conn_type_string(job_ptr->conn_type),
+			job_node_use_string(job_ptr->node_use)
+#endif
+			);
 	tot_size = strlen(job_rec);
 
 	while ( offset < tot_size ) {
