@@ -312,14 +312,32 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 	job_id_request_msg_t *req = (job_id_request_msg_t *) msg->data;
 	slurm_msg_t           resp_msg;
 	job_id_response_msg_t resp;
+	List         steps = shm_get_steps();
+	ListIterator i     = list_iterator_create(steps);
+	job_step_t  *s     = NULL;  
+	bool        found  = false; 
 
-	error("_rpc_pid2jid pid=%u, code stub only", req->job_pid);
-	resp.job_id           = 1234;	/* dummy value for testing */
+	while ((s = list_next(i))) {
+		if (s->sid == req->job_pid) {
+			resp.job_id = s->jobid;
+			found = true;
+			break;
+		}
+	}
+	list_destroy(steps);
 
-	resp_msg.address      = msg->address;
-	resp_msg.msg_type     = RESPONSE_JOB_ID;
-	resp_msg.data         = &resp;
-	slurm_send_node_msg(msg->conn_fd, &resp_msg);
+	if (found) {
+		resp_msg.address      = msg->address;
+		resp_msg.msg_type     = RESPONSE_JOB_ID;
+		resp_msg.data         = &resp;
+		slurm_send_node_msg(msg->conn_fd, &resp_msg);
+	} else {
+		/* We could possibly scan the proc table and figure 
+		 * out which job this pid belongs to, but for now 
+		 * we only handle the job's top level pid */
+		info("_rpc_pid2jid: pid(%u) not found", req->job_pid);
+		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
+	}
 }
 
 

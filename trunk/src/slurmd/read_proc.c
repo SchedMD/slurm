@@ -42,6 +42,7 @@
 #include <unistd.h>
 
 #include "src/common/log.h"
+#include "src/common/xmalloc.h"
 
 #define SESSION_RECS 50
 
@@ -61,10 +62,9 @@ struct sess_record *session_ptr;
 
 #define BUF_SIZE 1024
 #define DEBUG_MODULE 0 
-#define DEBUG_SYSTEM 1
 
 int dump_proc(int uid, int sid);
-int init_proc();
+void init_proc(void);
 int parse_proc_stat(char* proc_stat, int *session, 
 		long unsigned *time, long *resident_set_size);
 int read_proc();
@@ -84,11 +84,7 @@ main(int argc, char * argv[])
 	else
 		uid = -1;
 	iterations = atoi (argv[1]);
-	error_code = init_proc ();
-	if (error_code != 0) {
-		printf("Error %d from init_proc\n", error_code);
-		exit(1);
-	} 
+	init_proc ();
 
 	for (i=0; i<iterations; i++) {
 		if (i > 0) {
@@ -100,11 +96,7 @@ main(int argc, char * argv[])
 			printf ("Error %d from read_proc\n", error_code);
 			exit (1);
 		} 
-		error_code = dump_proc (uid, -1);
-		if (error_code != 0) {
-			printf ("Error %d from dump_proc\n", error_code);
-			exit (1);
-		} 
+		dump_proc (uid, -1);
 	}
 	exit (0);
 }
@@ -112,15 +104,16 @@ main(int argc, char * argv[])
 
 
 /*
- * dump_proc - Print the contents of the Process table
- * Input: uid - optional UID filter, enter -1 if no uid filter
- * 	sid - optional session ID filter, enter -1 if no SID filter
- * Output: Return code is zero or errno
+ * dump_proc - Print the contents of the process table
+ * IN uid - optional UID filter, enter -1 if no uid filter
+ * IN sid - optional session ID filter, enter -1 if no SID filter
+ * RET - count of records printed
  */
 int 
 dump_proc(int uid, int sid) 
 {
 	struct sess_record *s_ptr;
+	int count = 0;
 
 	for (s_ptr=session_ptr; s_ptr<(session_ptr+sess_rec_cnt); s_ptr++) {
 		if (s_ptr->iteration == -1) 
@@ -129,61 +122,57 @@ dump_proc(int uid, int sid)
 			continue;
 		if ((sid != -1) && (sid != s_ptr->session))
 			continue;
-		printf ("uid=%d session=%d time=%lu resident_set_size=%ld iteration=%d processes=%d\n", 
+		printf ("uid=%d session=%d time=%lu resident_set_size=%ld ", 
 			s_ptr->uid, s_ptr->session, s_ptr->time, 
-			s_ptr->resident_set_size, s_ptr->iteration, s_ptr->processes);
+			s_ptr->resident_set_size);
+		printf ("iteration=%d processes=%d\n", 
+			s_ptr->iteration, s_ptr->processes);
+		count++;
 	}
-	return 0;
+	return count;
 }
 
 
 /*
- * init_proc - Initialize the sess_record data structure OR increase size as needed
- * Input: none
- * Output: Return code is zero or errno
+ * init_proc - Initialize the sess_record data structure or increase size 
+ *	as needed
  */
-int 
-init_proc() 
+void 
+init_proc (void) 
 {
 	struct sess_record *s_ptr;
 
 	if (sess_rec_cnt == 0)
 		session_ptr = (struct sess_record *) 
-			malloc (sizeof (struct sess_record) * SESSION_RECS);
+			xmalloc (sizeof (struct sess_record) * SESSION_RECS);
 	else
-		session_ptr = (struct sess_record *)
-			realloc (session_ptr, sizeof (struct sess_record) * 
+		xrealloc (session_ptr, sizeof (struct sess_record) * 
 				(sess_rec_cnt+SESSION_RECS));
-
-	if (session_ptr == NULL) {
-		error ("init_proc: unable to allocate memory\n");
-		exit(1);
-	} 
 
 	for (s_ptr= (session_ptr+sess_rec_cnt); 
 	     s_ptr<(session_ptr+sess_rec_cnt+SESSION_RECS); s_ptr++) {
 		s_ptr->iteration = -1;
 	} 
 	sess_rec_cnt += SESSION_RECS;
-	return 0;
 }
 
 
 /*
  * parse_proc_stat - Break out all of a process' information from the stat file
- * Input: proc_stat - Process status info read from /proc/<pid>/stat
- *	session - Location into which the session ID is written
- *	time - Location into which total user and system time (in seconds) is written
- *	resident_set_size - Location into which the Resident Set Size is written
- * Output: Exit code is zero or errno
- *	Fill in contents of session, time, and resident_set_size
+ * IN proc_stat - Process status info read from /proc/<pid>/stat
+ * OUT session - Location into which the session ID is written
+ * OUT time - Location into which total user and system time (in seconds) 
+ *	is written
+ * OUT resident_set_size - Location into which the Resident Set Size is written
+ * RET - zero or errno code
  */
 int 
 parse_proc_stat(char* proc_stat, int *session, long unsigned *time, 
-	long *resident_set_size) {
+		long *resident_set_size) {
 	int pid, ppid, pgrp, tty, tpgid;
 	char cmd[16], state[1];
-	long unsigned flags, min_flt, cmin_flt, maj_flt, cmaj_flt, utime, stime;
+	long unsigned flags, min_flt, cmin_flt, maj_flt, cmaj_flt;
+	long unsigned utime, stime;
 	long cutime, cstime, priority, nice, timeout, it_real_value;
 	long unsigned start_time, vsize;
 	long unsigned resident_set_size_rlim, start_code, end_code;
@@ -218,16 +207,16 @@ parse_proc_stat(char* proc_stat, int *session, long unsigned *time,
 		resident_set_size,
 		&resident_set_size_rlim, &start_code, &end_code, 
 		&start_stack, &kstk_esp, &kstk_eip,
-/*		&signal, &blocked, &sig_ignore, &sig_catch,   */ /* can't use */
+/*		&signal, &blocked, &sig_ignore, &sig_catch, */ /* can't use */
 		&w_chan, &n_swap, &sn_swap /* , &Exit_signal  */, &l_proc);
 	*time = (utime + stime) / hertz;
 	return 0;
 }
 
 /* 
- * read_proc - Read into a table key information about every process on the system
- * Input: none
- * Output: Return code is zero or errno
+ * read_proc - Read into a table key information about every process on 
+ *	the system
+ * RET - zero or errno code
  */
 int 
 read_proc() 
@@ -247,18 +236,16 @@ read_proc()
 		hertz = sysconf(_SC_CLK_TCK);
 		if (hertz == 0) {
 			error ("read_proc: unable to get clock rate\n");
-			hertz = 100;
+			hertz = 100;	/* default on many systems */
 		} 
 	} 
 	proc_stat_size = BUF_SIZE;
-	proc_stat = (char *) malloc(proc_stat_size);
-	if (proc_stat == NULL) {
-		error ("read_proc: unable to allocate memory\n");
-		return ENOMEM;
-	} 
+	proc_stat = (char *) xmalloc(proc_stat_size);
 	proc_fs = opendir("/proc");
-	if (proc_fs == NULL)
-		error ("read_proc: opendir unable to open /proc, errno=%d\n", errno);
+	if (proc_fs == NULL) {
+		error ("read_proc: opendir unable to open /proc %m\n");
+		return errno;
+	}
 	iteration++;
 
 	/* Read the entries */
@@ -279,13 +266,7 @@ read_proc()
 		while ((n = read(proc_fd, proc_stat, proc_stat_size)) > 0) {
 			if (n < (proc_stat_size-1)) break;
 			proc_stat_size += BUF_SIZE;
-			proc_stat = (char *)realloc(proc_stat, proc_stat_size);
-			if (proc_stat == NULL) {
-				error ("read_proc: unable to allocate memory\n");
-				close(proc_fd);
-				closedir(proc_fs);
-				return ENOMEM;
-			} 
+			xrealloc(proc_stat, proc_stat_size);
 			if (lseek(proc_fd, (off_t) 0, SEEK_SET) != 0) 
 				break;
 		}
@@ -294,10 +275,12 @@ read_proc()
 		if (n <= 0) 
 			continue;
 		uid = buffer.st_uid;
-		parse_proc_stat (proc_stat, &session, &time, &resident_set_size);
+		parse_proc_stat (proc_stat, &session, &time, 
+				 &resident_set_size);
 		found = 0;
 		sess_free = NULL;
-		for (s_ptr=session_ptr; s_ptr<(session_ptr+sess_rec_cnt); s_ptr++) {
+		for (s_ptr=session_ptr; s_ptr<(session_ptr+sess_rec_cnt); 
+		     s_ptr++) {
 			if (s_ptr->iteration == -1) {
 				if (sess_free == NULL) 
 					sess_free = s_ptr;
@@ -319,10 +302,10 @@ read_proc()
 		} 
 		if (found == 0) {
 			if (sess_free == NULL) {
-				if (init_proc() != 0)
-					exit(1); /* no memory, we're dead */
+				init_proc();
 				for (s_ptr=session_ptr; 
-				     s_ptr<(session_ptr+sess_rec_cnt); s_ptr++) {
+				     s_ptr<(session_ptr+sess_rec_cnt); 
+				     s_ptr++) {
 					if (s_ptr->iteration != -1) 
 						continue;
 					sess_free = s_ptr;
@@ -330,7 +313,7 @@ read_proc()
 				} 
 				if (sess_free == NULL) {
 					error ("read_proc: Internal error\n");
-					exit(1);
+					return EINVAL;
 				} 
 			} 
 			sess_free->iteration = iteration;
@@ -340,10 +323,10 @@ read_proc()
 			sess_free->time      = time;
 			sess_free->uid       = uid;
 		} 
-	} /* while */
+	}
 
 	/* Termination */
-	free(proc_stat);
+	xfree(proc_stat);
 	closedir(proc_fs);
 	for (s_ptr=session_ptr; s_ptr<(session_ptr+sess_rec_cnt); s_ptr++) {
 		if (s_ptr->iteration != iteration) 
