@@ -13,9 +13,12 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
 #include <syslog.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 #include "slurm.h"
 #include "slurmlib.h"
@@ -25,17 +28,15 @@ int node_api_buffer_size = 0;
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
+int
 main (int argc, char *argv[]) {
 	static time_t last_update_time = (time_t) NULL;
-	int error_code, size, i;
+	int error_code, i;
 	char partition[MAX_NAME_LEN], node_state[MAX_NAME_LEN],
 		features[FEATURE_SIZE];
 	char req_name[MAX_NAME_LEN];	/* name of the partition */
 	char next_name[MAX_NAME_LEN];	/* name of the next partition */
 	int cpus, real_memory, tmp_disk, weight;
-	char *dump;
-	int dump_size;
-	time_t update_time;
 
 	error_code = load_node (&last_update_time);
 	if (error_code)
@@ -50,7 +51,7 @@ main (int argc, char *argv[]) {
 		if (error_code != 0) {
 			printf ("load_node_config error %d on %s\n",
 				error_code, req_name);
-			break;
+			exit (1);
 		}		
 		if ((i < 10) || (i % 100 == 0)) {
 			printf ("found NodeName=%s CPUs=%d RealMemory=%d TmpDisk=%d ", 
@@ -202,11 +203,11 @@ int
 load_node_config (char *req_name, char *next_name, int *cpus,
 		  int *real_memory, int *tmp_disk, int *weight,
 		  char *features, char *partition, char *node_state) {
-	int i, error_code, version, buffer_offset, my_weight;
+	int error_code, version, buffer_offset, my_weight;
 	static time_t last_update_time, update_time;
 	struct node_record my_node;
 	static char next_name_value[MAX_NAME_LEN];
-	static last_buffer_offset;
+	static int last_buffer_offset;
 	char my_node_name[MAX_NAME_LEN], *my_line;
 	unsigned long my_time;
 

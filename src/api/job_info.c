@@ -13,9 +13,12 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
 #include <syslog.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 #include "slurm.h"
 #include "slurmlib.h"
@@ -25,12 +28,11 @@ int job_api_buffer_size = 0;
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
-main (int argc, char *argv[]) {
+int 
+main (int argc, char *argv[]) 
+{
 	static time_t last_update_time = (time_t) NULL;
-	int error_code, size, i;
-	char *dump;
-	int dump_size;
-	time_t update_time;
+	int error_code, i;
 	char req_name[MAX_ID_LEN];	/* name of the job_id */
 	char next_name[MAX_ID_LEN];	/* name of the next job_id */
 	char job_name[MAX_NAME_LEN], partition[MAX_NAME_LEN];
@@ -40,8 +42,10 @@ main (int argc, char *argv[]) {
 	int priority;
 
 	error_code = load_job (&last_update_time);
-	if (error_code)
+	if (error_code) {
 		printf ("load_job error %d\n", error_code);
+		exit (error_code);
+	}
 
 	strcpy (req_name, "");	/* start at beginning of job list */
 	for (i = 1;; i++) {
@@ -73,7 +77,7 @@ main (int argc, char *argv[]) {
 		strcpy (req_name, next_name);
 	}			
 	free_job_info ();
-	exit (0);
+	exit (error_code);
 }
 #endif
 
@@ -215,11 +219,11 @@ load_job_config (char *req_name, char *next_name, char *job_name,
 		time_t *end_time, int *priority)
 
 {
-	int i, error_code, version, buffer_offset, my_user_id;
+	int error_code, version, buffer_offset, my_user_id;
 	static time_t last_update_time, update_time;
 	struct job_record my_job;
 	static char next_job_id_value[MAX_ID_LEN];
-	static last_buffer_offset;
+	static int last_buffer_offset;
 	char my_job_id[MAX_ID_LEN], *my_line;
 	unsigned long my_time;
 	long my_start_time, my_end_time;

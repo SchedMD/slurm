@@ -17,12 +17,15 @@
 #include <syslog.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 #include "slurm.h"
 #include "slurmlib.h"
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
+int 
 main (int argc, char *argv[])
 {
 	int error_code;
@@ -31,8 +34,10 @@ main (int argc, char *argv[])
 	error_code = slurm_allocate
 		("User=1500 Script=/bin/hostname JobName=job01 TotalNodes=400 TotalProcs=1000 ReqNodes=lx[3000-3003] Partition=batch MinRealMemory=1024 MinTmpDisk=2034 Groups=students,employee MinProcs=4 Contiguous=YES Key=1234",
 		 &node_list, &job_id);
-	if (error_code)
+	if (error_code) {
 		printf ("allocate error %d\n", error_code);
+		exit (error_code);
+	}
 	else {
 		printf ("allocate nodes %s to job %s\n", node_list, job_id);
 		free (node_list);
@@ -93,8 +98,9 @@ main (int argc, char *argv[])
  *	and job_id[0]
  */
 int
-slurm_allocate (char *spec, char **node_list, char **job_id) {
-	int buffer_offset, buffer_size, error_code, in_size;
+slurm_allocate (char *spec, char **node_list, char **job_id) 
+{
+	int buffer_offset, buffer_size, in_size;
 	char *request_msg, *buffer, *job_id_ptr;
 	int sockfd;
 	struct sockaddr_in serv_addr;

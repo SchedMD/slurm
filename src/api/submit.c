@@ -13,24 +13,31 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
 #include <syslog.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 #include "slurm.h"
 #include "slurmlib.h"
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
-main (int argc, char *argv[]) {
+int 
+main (int argc, char *argv[]) 
+{
 	int error_code, i;
 	char *job_id;
 
 	error_code = slurm_submit
 		("User=1500 Script=/bin/hostname JobName=job01 TotalNodes=400 TotalProcs=1000 ReqNodes=lx[3000-3003] Partition=batch MinRealMemory=1024 MinTmpDisk=2034 Groups=students,employee MinProcs=4 Contiguous=YES Key=1234",
 		 &job_id);
-	if (error_code)
+	if (error_code) {
 		printf ("submit error %d\n", error_code);
+		exit (error_code);
+	}
 	else {
 		printf ("job %s submitted\n", job_id);
 		free (job_id);
@@ -50,7 +57,7 @@ main (int argc, char *argv[]) {
 		}
 	}
 
-	exit (0);
+	exit (error_code);
 }
 #endif
 
@@ -72,8 +79,9 @@ main (int argc, char *argv[]) {
  *	TotalProcs=<count>
  */
 int
-slurm_submit (char *spec, char **job_id) {
-	int buffer_offset, buffer_size, error_code, in_size;
+slurm_submit (char *spec, char **job_id)
+{
+	int buffer_offset, buffer_size, in_size;
 	char *request_msg, *buffer;
 	int sockfd;
 	struct sockaddr_in serv_addr;

@@ -16,6 +16,8 @@
 #include <syslog.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 #include "slurm.h"
 #include "slurmlib.h"
@@ -25,6 +27,7 @@ int part_api_buffer_size = 0;
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
+int
 main (int argc, char *argv[]) {
 	static time_t last_update_time = (time_t) NULL;
 	int error_code;
@@ -56,11 +59,11 @@ main (int argc, char *argv[]) {
 		if (error_code != 0) {
 			printf ("load_part_name error %d finding %s\n",
 				error_code, req_name);
-			break;
+			exit(1);
 		}		
 
 		printf ("found partition NodeName=%s Nodes=%s MaxTime=%d MaxNodes=%d\n", 
-			req_name, nodes, max_time, max_nodes, default_flag);
+			req_name, nodes, max_time, max_nodes);
 		printf ("  Default=%d TotalNodes=%d TotalCPUs=%d Key=%d StateUp=%d\n", 
 			default_flag, total_nodes, total_cpus, key, state_up);
 		printf ("  Shared=%d AllowGroups=%s\n", shared, allow_groups);
@@ -202,14 +205,14 @@ load_part_name (char *req_name, char *next_name, int *max_time,
 		int *max_nodes, int *total_nodes, int *total_cpus, int *key,
 		int *state_up, int *shared, int *default_flag, char *nodes,
 		char *allow_groups) {
-	int i, error_code, version, buffer_offset;
+	int error_code, version, buffer_offset;
 	static time_t last_update_time, update_time;
 	struct part_record my_part;
 	static char next_name_value[MAX_NAME_LEN];
 	char my_part_name[MAX_NAME_LEN], my_key[MAX_NAME_LEN],
 		my_default[MAX_NAME_LEN];
 	char my_shared[MAX_NAME_LEN], my_state[MAX_NAME_LEN], *my_line;
-	static last_buffer_offset;
+	static int last_buffer_offset;
 	unsigned long my_time;
 
 	/* load buffer's header (data structure version and time) */

@@ -17,15 +17,18 @@
 #include <syslog.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 #include "slurm.h"
 #include "slurmlib.h"
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
-main (int argc, char *argv[]) {
-	int error_code, i;
-	char job_id[128];
+int 
+main (int argc, char *argv[]) 
+{
+	int error_code = 0, i;
 
 	if (argc < 2) {
 		printf ("Usage: %s job_id\n", argv[0]);
@@ -39,7 +42,7 @@ main (int argc, char *argv[]) {
 				error_code, argv[i]);
 	}
 
-	exit (0);
+	exit (error_code);
 }
 #endif
 
@@ -51,8 +54,9 @@ main (int argc, char *argv[]) {
  *			EAGAIN if the request can not be satisfied at present
  */
 int
-slurm_cancel (char *job_id) {
-	int buffer_offset, buffer_size, error_code, in_size;
+slurm_cancel (char *job_id) 
+{
+	int buffer_offset, buffer_size, in_size;
 	char *request_msg, *buffer;
 	int sockfd;
 	struct sockaddr_in serv_addr;
