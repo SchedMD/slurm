@@ -117,6 +117,7 @@ intend to collect on the nodes includes:
 \item Size of virtual memory on the node
 \item Size of local disk storage
 \item Operating System version
+\item Partition(s) serving
 \item State of node (RUN, IDLE, DRAIN, etc.)
 \item Cumulative CPU use (by job, kernel and daemons, possibly reporting 
 both user and system time independently)
@@ -125,6 +126,13 @@ both user and system time independently)
 \item Virtual Memory Size (by job, kernel and daemons)
 \item Local disk storage use (total by all users)
 \end{itemize}
+
+The SLURM administrator could specify at a minimum a list of system node 
+names. If he requires more than one partition, that should also be specified. 
+He may also specify the anticipated node configurations (CPU count, real 
+memory size, etc.). He could alternately let the individual nodes register 
+their configurations into the database and save that as a baseline configuration 
+in order to note discrepancies when nodes register on future SLURM initiations.
 
 This information is readily available through system calls and reading the
 process table. DPCS daemons to collect the above data are available as models. 
@@ -185,9 +193,10 @@ be moved into the proposed SLURM Job Management and Job Status components.
 DPCS will require some modification to operate within this new, richer
 environment. The DPCS Central Manager would also require porting to Linux. It
 would be simple for other schedulers including Maui, PBS, LSF, and Globus 
-to operate on the SLURM infrastructure, if so desired. 
+to operate on the SLURM infrastructure, if so desired. In may in fact be 
+desirable to create a very simple batch system for some customers.
 
-The DPCS also writes job accounting records to Unix files. Presently, these are
+The DPCS writes job accounting records to Unix files. Presently, these are
 moved to a machine with the Sybase database. This data can be accessed via
 command-line and web interfaces with Kerberos authentication and authorization.
 We are not contemplating making this database software available through SLURM,
@@ -219,8 +228,9 @@ Since scheduling decisions are being provided by the scheduling component,
 there is no concept of submitting a job to be queued. The concept of gang
 scheduling, or time-slicing for parallel jobs, is supported by the preempt and
 resume functions. Automatic time-sharing of parallel jobs will not be
-supported. Explicit node selection will be optionally specified as part of the
-resume functions. Automatic time-sharing of parallel jobs will not be
+supported. Explicit node selection will be optionally specified as part 
+of the initiate job and resume job functions. Automatic time-sharing of 
+parallel jobs will not be
 supported. Explicit node selection will be optionally specified as part of the
 will job run and initiate job functions. An API for all functions would be
 developed initially followed by a  command-line tool utilizing the API. Future
@@ -299,12 +309,11 @@ design work is also required to establish more accurate effort estimates.
 \begin{tabular}{|l|c|}\hline
 \multicolumn{2}{|c|}{\em I - Basic communication and node status} \\ \hline
 Communications Library          & 1.0 FTE month \\
-Machine Status Daemon           & 1.5 FTE month \\
+Machine Status Daemon           & 1.0 FTE month \\
 Machine Status Manager          & 1.0 FTE month \\
 Machine Status Tool             & 0.5 FTE month \\
 Overlord Daemon                 & 1.0 FTE month \\
-Logging Library                 & 0.5 FTE month \\
-{\em TOTAL Phase I}		& {\em 5.5 FTE months} \\ \hline
+{\em TOTAL Phase I}		& {\em 4.5 FTE months} \\ \hline
 \multicolumn{2}{|c|}{\em II - Parallel job, switch and partition management} \\ \hline
 Basic Switch Daemon             & 2.0 FTE month \\
 Job Management Daemon           & 1.0 FTE month \\
@@ -321,7 +330,7 @@ DPCS Controller on Linux        & 0.5 FTE months \\
 Fault-tolerant SLURM Managers   & 3.0 FTE months \\
 Direct SLURM Switch Use         & 2.0 FTE months \\
 {\em TOTAL Phase III}		& {\em 8.0 FTE months} \\ \hline
-{\em GRAND TOTAL}		& {\em 25.5 FTE months} \\ \hline
+{\em GRAND TOTAL}		& {\em 24.5 FTE months} \\ \hline
 \end{tabular}
 \end{center}
 
