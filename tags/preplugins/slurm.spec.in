@@ -1,0 +1,129 @@
+# $Id$
+
+Name: @PROJECT@
+Version: @VERSION@
+Release: @RELEASE@
+
+Summary: Simple Linux Utility for Resource Management
+
+License: GPL 
+Group: System Environment/Base
+Source: %{name}-%{version}-%{release}.tgz
+Requires: readline popt
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
+
+%define _with_authd 1
+%define _with_elan  1
+%define _with_totalview 1
+
+%package devel
+Summary: Development package for SLURM.
+Group: System Environment/Base
+Requires: slurm
+
+
+%description 
+SLURM is a simple resource management system which manages
+exclusive access to a set of compute resources and distrubutes
+work to those resources. Included in this package are the SLURM
+controller, compute node daemon, and all clients necessary to
+access SLURM functionality.
+
+
+%description devel
+Development package for SLURM.  This package includes the header files
+and static libraries for the SLURM API.
+
+
+%prep
+%setup -n %{name}-%{version}-%{release}
+
+%build
+%if %{_with_elan}
+	WITHELAN=--with-elan
+%endif
+%if %{_with_authd}
+	WITHAUTHD=--with-authd
+%endif
+%if %{_with_totalview}
+	WITHTV=--with-totalview
+%endif
+
+PFX_FIX=--program-prefix=%{?_program_prefix:%{_program_prefix}} 
+
+WITHCONF=--with-slurm-conf=/etc/slurm
+
+%configure --enable-debug $PFX_FIX $WITHCONF $WITHELAN $WITHAUTHD $WITHTV
+
+make
+
+%install
+rm -rf "$RPM_BUILD_ROOT"
+mkdir -p "$RPM_BUILD_ROOT"
+DESTDIR="$RPM_BUILD_ROOT" make install
+
+install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/rc.d/init.d/slurm
+install -D -m644 etc/slurm.conf.example $RPM_BUILD_ROOT/etc/slurm/slurm.conf
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-,root,root,0755)
+%doc README 
+%doc DISCLAIMER
+%doc COPYING
+%doc etc/slurm.conf.example
+%{_bindir}/*
+%{_sbindir}/*
+%{_libdir}/*.so*
+%{_mandir}/man1/*
+%{_mandir}/man5/*
+%{_mandir}/man8/*
+%config(noreplace) /etc/rc.d/init.d/slurm
+%config(noreplace) /etc/slurm/slurm.conf
+
+%files devel
+%defattr(-,root,root)
+%{_prefix}/include/slurm/*
+%{_libdir}/libslurm.a
+%{_libdir}/libslurm.la
+%{_mandir}/man3/*
+
+%pre
+if [ -x /etc/rc.d/init.d/slurm ]; then
+    if /etc/rc.d/init.d/slurm status | grep -q running; then
+        /etc/rc.d/init.d/slurm stop
+    fi
+fi
+
+%post
+/sbin/ldconfig %{_libdir}
+if [ -x /etc/rc.d/init.d/slurm ]; then
+    [ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
+    [ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
+    if ! /etc/rc.d/init.d/slurm status | grep -q running; then
+        /etc/rc.d/init.d/slurm start
+    fi
+fi
+
+%preun
+if [ "$1" = 0 ]; then
+    if [ -x /etc/rc.d/init.d/slurm ]; then
+        [ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
+        if /etc/rc.d/init.d/slurm status | grep -q running; then
+            /etc/rc.d/init.d/slurm stop
+        fi
+    fi
+fi
+
+%postun
+if [ "$1" = 0 ]; then
+    /sbin/ldconfig %{_libdir}
+fi
+
+
+%changelog
+* Sat Jan 26 2003 Joey Ekstrom <jcekstrom@llnl.gov> 
+- Started spec file
+-
