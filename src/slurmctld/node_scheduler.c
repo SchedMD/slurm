@@ -59,6 +59,8 @@ static void _add_node_set_info(struct node_set *node_set_ptr,
 static int  _build_node_list(struct job_record *job_ptr, 
 			     struct node_set **node_set_pptr,
 			     int *node_set_size);
+static bool _enough_nodes(int avail_nodes, int rem_nodes, int min_nodes,
+			  int max_nodes);
 static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				 struct job_details *detail_ptr);
 static int _match_feature(char *seek, char *available);
@@ -410,8 +412,10 @@ _pick_best_quadrics(bitstr_t * bitmap, bitstr_t * req_bitmap,
 		}
 		if (best_fit_nodes == 0)
 			break;
-		if (consecutive && ((best_fit_nodes < rem_nodes)
-				    || (best_fit_cpus < rem_cpus)))
+		if (consecutive && 
+		    ((best_fit_cpus < rem_cpus) ||
+		     (!_enough_nodes(best_fit_nodes, rem_nodes, 
+				     min_nodes, max_nodes))))
 			break;	/* no hole large enough */
 		if (best_fit_req != -1) {
 			/* This collection of nodes includes required ones
@@ -449,7 +453,8 @@ _pick_best_quadrics(bitstr_t * bitmap, bitstr_t * req_bitmap,
 				rem_cpus -= node_record_table_ptr[i].cpus;
 			}
 		}
-		if ((rem_nodes <= 0) && (rem_cpus <= 0)) {
+		if (consecutive || 
+		    ((rem_nodes <= 0) && (rem_cpus <= 0))) {
 			error_code = SLURM_SUCCESS;
 			break;
 		}
@@ -466,6 +471,19 @@ _pick_best_quadrics(bitstr_t * bitmap, bitstr_t * req_bitmap,
 	FREE_NULL(consec_end);
 	FREE_NULL(consec_req);
 	return error_code;
+}
+
+static bool 
+_enough_nodes(int avail_nodes, int rem_nodes, int min_nodes, int max_nodes)
+{
+	int needed_nodes;
+
+	if (max_nodes)
+		needed_nodes = rem_nodes + min_nodes - max_nodes;
+	else
+		needed_nodes = rem_nodes;
+
+	return(avail_nodes >= needed_nodes);
 }
 
 
