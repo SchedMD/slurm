@@ -59,7 +59,7 @@ uint32_t slurm_receive_message ( slurm_fd open_fd , slurm_addr * source_address 
 	{
 		if ( debug )
 		{
-			fprintf( stderr, "Error recieving message socket: errno %i", errno ) ;
+			fprintf( stderr, "Error recieving message socket: errno %i\n", errno ) ;
 		}
 		return rc ;
 	}
@@ -118,7 +118,7 @@ uint32_t slurm_send_node_message ( slurm_fd open_fd , slurm_addr * destination_a
 	{
 		if ( debug )
 		{
-			fprintf( stderr, "Error sending message socket: errno %i", errno ) ;
+			fprintf( stderr, "Error sending message socket: errno %i\n", errno ) ;
 		}
 		return rc ;
 	}

@@ -25,7 +25,7 @@ ssize_t _slurm_message_recvfrom ( slurm_fd open_fd, char *buffer , size_t size ,
 	connection_fd = _slurm_accept_stream ( open_fd , slurm_address ) ;
 	if ( connection_fd == SLURM_SOCKET_ERROR )
 	{
-		fprintf ( stderr , "Error opening stream socket to receive message datagram emulation layer" ) ;
+		fprintf ( stderr , "Error opening stream socket to receive message datagram emulation layeri\n" ) ;
 		return connection_fd ;
 	}
 	recv_len = _slurm_recv ( connection_fd , buffer , size , NO_SEND_RECV_FLAGS ) ;
@@ -40,7 +40,7 @@ ssize_t _slurm_message_sendto ( slurm_fd open_fd, char *buffer , size_t size , u
 	connection_fd = _slurm_open_stream ( slurm_address ) ;
 	if ( connection_fd == SLURM_SOCKET_ERROR )
 	{
-		fprintf ( stderr , "Error opening stream socket to send message datagram emulation layer" ) ;
+		fprintf ( stderr , "Error opening stream socket to send message datagram emulation layer\n" ) ;
 		return connection_fd ;
 	}
 	send_len = _slurm_send ( connection_fd ,  buffer , size , NO_SEND_RECV_FLAGS ) ;
@@ -62,7 +62,7 @@ uint32_t _slurm_listen_stream ( slurm_addr * slurm_address )
 	{
 		if ( debug )
 		{
-			fprintf( stderr, "Error creating slurm stream socket: errno %i", errno ) ;
+			fprintf( stderr, "Error creating slurm stream socket: errno %i\n", errno ) ;
 		}
 		return rc ;
 	}
@@ -76,7 +76,7 @@ uint32_t _slurm_listen_stream ( slurm_addr * slurm_address )
 	{
 		if ( debug )
 		{
-			fprintf( stderr, "Error binding slurm stream socket: errno %i" , errno ) ;
+			fprintf( stderr, "Error binding slurm stream socket: errno %i\n" , errno ) ;
 		}
 		return rc ;
 	}
@@ -86,7 +86,7 @@ uint32_t _slurm_listen_stream ( slurm_addr * slurm_address )
 	{
 		if ( debug )
 		{
-			fprintf( stderr, "Error listening on slurm stream socket: errno %i" , errno ) ;
+			fprintf( stderr, "Error listening on slurm stream socket: errno %i\n" , errno ) ;
 		}
 		return rc ;
 	}
@@ -104,7 +104,7 @@ uint32_t _slurm_accept_stream ( slurm_fd open_fd , slurm_addr * slurm_address )
 	{
 		if ( debug )
 		{
-			fprintf( stderr, "Error accpeting slurm stream socket: errno %i", errno ) ;
+			fprintf( stderr, "Error accpeting slurm stream socket: errno %i\n", errno ) ;
 		}
 		return rc ;
 	}
@@ -125,7 +125,7 @@ uint32_t _slurm_open_stream ( slurm_addr * slurm_address )
 	{
 		if ( debug )
 		{
-			fprintf( stderr, "Error creating slurm stream socket: errno %i", errno ) ;
+			fprintf( stderr, "Error creating slurm stream socket: errno %i\n", errno ) ;
 		}
 		return rc ;
 	}
@@ -139,7 +139,7 @@ uint32_t _slurm_open_stream ( slurm_addr * slurm_address )
 	{
 		if ( debug )
 		{
-			fprintf( stderr, "Error listening on slurm stream socket: errno %i" , errno ) ;
+			fprintf( stderr, "Error listening on slurm stream socket: errno %i\n" , errno ) ;
 		}
 		return rc ;
 	}
@@ -296,6 +296,11 @@ extern int _slurm_accept (int __fd, __SOCKADDR_ARG __addr, socklen_t *__restrict
 extern int _slurm_shutdown (int __fd, int __how)
 {
 	return shutdown ( __fd , __how );
+}
+
+extern int _slurm_close (int __fd )
+{
+	return close ( __fd ) ;
 }
 
 /*
