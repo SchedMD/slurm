@@ -1,11 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
-* Changes in SLURM 0.4.1 (under development)
+* Changes in SLURM 0.4.1
 ========================
  -- BlueGene plugin kills jobs running in defunct bglblock on restart.
  -- Smap displays pending jobs now, in addition to running and completing jobs.
- -- Remove node use from bluegene.conf file, create both coprocessor and 
+ -- Remove node "use=" from bluegene.conf file, create both coprocessor and 
     virtual bglblocks for now (later create just one and use API to change 
     it when such an API is available).
  -- Add "ChangeNumpsets" parameter to bluegene.conf to use script to 
