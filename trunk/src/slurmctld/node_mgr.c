@@ -523,16 +523,16 @@ dump_hash ()
 }
 
 
-/* 
- * dump_all_node_state - save the state of all nodes to file
- */
+/* dump_all_node_state - save the state of all nodes to file */
 int
 dump_all_node_state ( void )
 {
 	int buf_len, buffer_allocated, buffer_offset = 0, error_code = 0, inx, log_fd;
 	char *buffer;
-	char *old_file, *new_file, *reg_file;
 	void *buf_ptr;
+	char *old_file, *new_file, *reg_file;
+	/* Locks: Read config and node */
+	slurmctld_lock_t node_read_lock = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 
 	old_file = xstrdup (slurmctld_conf.state_save_location);
 	xstrcat (old_file, "/node_state.old");
@@ -548,6 +548,7 @@ dump_all_node_state ( void )
 	pack32  ((uint32_t) time (NULL), &buf_ptr, &buf_len);
 
 	/* write node records to buffer */
+	lock_slurmctld (node_read_lock);
 	for (inx = 0; inx < node_record_count; inx++) {
 		if ((node_record_table_ptr[inx].magic != NODE_MAGIC) ||
 		    (node_record_table_ptr[inx].config_ptr->magic != CONFIG_MAGIC))
@@ -570,6 +571,7 @@ dump_all_node_state ( void )
 	xstrcat (reg_file, "/node_state");
 	new_file = xstrdup (slurmctld_conf.state_save_location);
 	xstrcat (new_file, "/node_state.new");
+	unlock_slurmctld (node_read_lock);
 	lock_state_files ();
 	log_fd = creat (new_file, 0600);
 	if (log_fd == 0) {
@@ -594,6 +596,7 @@ dump_all_node_state ( void )
 		(void) unlink (new_file);
 	}
 	xfree (old_file);
+	xfree (reg_file);
 	xfree (new_file);
 	unlock_state_files ();
 
@@ -628,11 +631,11 @@ load_node_state ( void )
 {
 	char *node_name, *state_file;
 	int buffer_allocated, buffer_used = 0, error_code = 0;
-	int state_fd;
 	uint16_t node_state, name_len;
 	uint32_t time, cpus, real_memory, tmp_disk;
 	struct node_record *node_ptr;
 	uint32_t buffer_size = 0;
+	int state_fd;
 	char *buffer;
 	void *buf_ptr;
 
@@ -642,7 +645,7 @@ load_node_state ( void )
 	lock_state_files ();
 	state_fd = open (state_file, O_RDONLY);
 	if (state_fd < 0) {
-		info ("No node_state file (%s) to recover", state_file);
+		info ("No node state file (%s) to recover", state_file);
 		error_code = ENOENT;
 	}
 	else {

@@ -35,9 +35,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include <src/common/hostlist.h>
 #include <src/common/list.h>
+#include <src/common/xstring.h>
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 
@@ -317,21 +322,18 @@ delete_part_record (char *name)
 }
 
 
-/* 
- * dump_all_part_state - save the state of all partitions to file
- */
+/* dump_all_part_state - save the state of all partitions to file */
 int
 dump_all_part_state ( void )
 {
 	ListIterator part_record_iterator;
 	struct part_record *part_record_point;
-	int buf_len, buffer_allocated, buffer_offset = 0;
+	int buf_len, buffer_allocated, buffer_offset = 0, error_code = 0, log_fd;
 	char *buffer;
 	void *buf_ptr;
+	char *old_file, *new_file, *reg_file;
 	/* Locks: Read partition */
-	slurmctld_lock_t part_read_lock = { NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
-
-	lock_slurmctld (part_read_lock);
+	slurmctld_lock_t part_read_lock = { READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
 	buffer_allocated = (BUF_SIZE*16);
 	buffer = xmalloc(buffer_allocated);
@@ -342,6 +344,7 @@ dump_all_part_state ( void )
 	pack32  ((uint32_t) time (NULL), &buf_ptr, &buf_len);
 
 	/* write partition records to buffer */
+	lock_slurmctld (part_read_lock);
 	part_record_iterator = list_iterator_create (part_list);		
 	while ((part_record_point = (struct part_record *) list_next (part_record_iterator))) {
 		if (part_record_point->magic != PART_MAGIC)
@@ -357,11 +360,41 @@ dump_all_part_state ( void )
 		buf_ptr = buffer + buffer_offset;
 	}			
 	list_iterator_destroy (part_record_iterator);
-	unlock_slurmctld (part_read_lock);
 
 	/* write the buffer to file */
+	old_file = xstrdup (slurmctld_conf.state_save_location);
+	xstrcat (old_file, "/part_state.old");
+	reg_file = xstrdup (slurmctld_conf.state_save_location);
+	xstrcat (reg_file, "/part_state");
+	new_file = xstrdup (slurmctld_conf.state_save_location);
+	xstrcat (new_file, "/part_state.new");
+	unlock_slurmctld (part_read_lock);
 	lock_state_files ();
-
+	log_fd = creat (new_file, 0600);
+	if (log_fd == 0) {
+		error ("Create error %d on file %s, can't save state", errno, new_file);
+		error_code = errno;
+	}
+	else {
+		buf_len = buffer_allocated - buf_len;
+		if (write (log_fd, buffer, buf_len) != buf_len) {
+			error ("Write error %d on file %s, can't save state", errno, new_file);
+			error_code = errno;
+		}
+		close (log_fd);
+	}
+	if (error_code) 
+		(void) unlink (new_file);
+	else {	/* file shuffle */
+		(void) unlink (old_file);
+		(void) link (reg_file, old_file);
+		(void) unlink (reg_file);
+		(void) link (new_file, reg_file);
+		(void) unlink (new_file);
+	}
+	xfree (old_file);
+	xfree (reg_file);
+	xfree (new_file);
 	unlock_state_files ();
 
 	xfree (buffer);
@@ -406,18 +439,47 @@ dump_part_state (struct part_record *part_record_point, void **buf_ptr, int *buf
 int
 load_part_state ( void )
 {
-	char *part_name, *allow_groups, *nodes;
-	uint32_t dump_time, max_time, max_nodes;
+	char *part_name, *allow_groups, *nodes, *state_file;
+	uint32_t time, max_time, max_nodes;
 	uint16_t name_len, def_part_flag, root_only, shared, state_up;
 	struct part_record *part_ptr;
 	uint32_t buffer_size;
+	int buffer_allocated, buffer_used = 0, error_code = 0;
+	int state_fd;
+	char *buffer;
 	void *buf_ptr;
 
 	/* read the file */
+	state_file = xstrdup (slurmctld_conf.state_save_location);
+	xstrcat (state_file, "/part_state");
 	lock_state_files ();
-	unpack32 (&dump_time, &buf_ptr, &buffer_size);
+	state_fd = open (state_file, O_RDONLY);
+	if (state_fd < 0) {
+		info ("No partition state file (%s) to recover", state_file);
+		error_code = ENOENT;
+	}
+	else {
+		buffer_allocated = BUF_SIZE;
+		buffer = xmalloc(buffer_allocated);
+		buf_ptr = buffer;
+		while ((buffer_used = read (state_fd, buf_ptr, BUF_SIZE)) == BUF_SIZE) {
+			buffer_size += buffer_used;
+			buffer_allocated += BUF_SIZE;
+			xrealloc(buffer, buffer_allocated);
+			buf_ptr = (void *) (buffer + buffer_size);
+		}
+		buffer_size += buffer_used;
+		close (state_fd);
+		if (buffer_used < 0) 
+			error ("Read error %d on %s", errno, state_file);
+	}
+	xfree (state_file);
+	unlock_state_files ();
 
-	while (1) {
+	if (buffer_size > sizeof (uint32_t))
+		unpack32 (&time, &buf_ptr, &buffer_size);
+
+	while (buffer_size >= (6 *sizeof (uint32_t))) {
 		unpackstr_xmalloc (&part_name, &name_len, &buf_ptr, &buffer_size);
 		unpack32 (&max_time, &buf_ptr, &buffer_size);
 		unpack32 (&max_nodes, &buf_ptr, &buffer_size);
@@ -432,8 +494,7 @@ load_part_state ( void )
 		part_ptr = list_find_first (part_list, &list_find_part, part_name);
 
 		if (part_ptr == NULL) {
-			error ("load_part_state: partition %s removed from configuration file.",
-				part_name);
+			info ("load_part_state: partition %s removed from configuration file.", part_name);
 		}
 		else {
 			part_ptr->max_time = max_time;
@@ -450,13 +511,13 @@ load_part_state ( void )
 			part_ptr->allow_groups = allow_groups;
 			if (part_ptr->nodes)
 				xfree (part_ptr->nodes);
-			part_ptr->allow_groups = nodes;
+			part_ptr->nodes = nodes;
 		}		
 
 		if (part_name)
 			xfree (part_name);
 	}
-	unlock_state_files ();
+	return error_code;
 }
 
 /* 

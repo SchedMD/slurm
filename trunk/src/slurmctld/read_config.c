@@ -949,6 +949,7 @@ read_slurm_conf (int recover) {
 
 	if (recover) {
 		(void) load_node_state ();
+		(void) load_part_state ();
 	}
 
 	if ((error_code = build_bitmaps ())) {

@@ -75,7 +75,7 @@ void fill_ctld_conf ( slurm_ctl_conf_t * build_ptr );
 void init_ctld_conf ( slurm_ctl_conf_t * build_ptr );
 void parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * );
 void *process_rpc ( void * req );
-void report_locks_set ( void );
+inline int report_locks_set ( void );
 inline static void save_all_state ( void );
 void *slurmctld_background ( void * no_data );
 void slurmctld_cleanup (void *context);
@@ -329,8 +329,6 @@ slurmctld_background ( void * no_data )
 	time_t now;
 	/* Locks: Write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
-	/* Locks: Read config, write job, write node, write partition */
-	slurmctld_lock_t state_write_lock = { READ_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 
 	while (shutdown_time == 0) {
 		sleep (1);
@@ -361,16 +359,15 @@ slurmctld_background ( void * no_data )
 					sleep (1);
 				if (server_thread_count)
 					info ("warning: shutting down with server_thread_count of %d", server_thread_count);
-				report_locks_set ( );
-				last_checkpoint_time = now;
-				/* don't lock to insure checkpoint never blocks */
-				save_all_state ( );
+				if (report_locks_set ( ) == 0) {
+					last_checkpoint_time = now;
+					save_all_state ( );
+				} else
+					error ("unable to save state due to set semaphores");
 			}
 			else {
 				last_checkpoint_time = now;
-				lock_slurmctld (state_write_lock);
 				save_all_state ( );
-				unlock_slurmctld (state_write_lock);
 			}
 		}
 
@@ -387,15 +384,17 @@ save_all_state ( void )
 
 	start_time = clock ();
 	dump_all_node_state ( );
+	dump_all_part_state ( );
 	info ("save_all_state complete, time=%ld", (long) (clock () - start_time));
 }
 
-/* report_locks_set - report any slurmctld locks left set */
-void
+/* report_locks_set - report any slurmctld locks left set, return count */
+int
 report_locks_set ( void )
 {
 	slurmctld_lock_flags_t lock_flags;
 	char config[4]="", job[4]="", node[4]="", partition[4]="";
+	int lock_count;
 
 	get_lock_values (&lock_flags);
 
@@ -415,9 +414,11 @@ report_locks_set ( void )
 	if (lock_flags.entity[write_lock (PART_LOCK)]) strcat (partition, "W");
 	if (lock_flags.entity[write_wait_lock (PART_LOCK)]) strcat (partition, "P");
 
-	if ((strlen (config) + strlen (job) + strlen (node) + strlen (partition)) > 0)
+	lock_count = strlen (config) + strlen (job) + strlen (node) + strlen (partition);
+	if (lock_count > 0)
 		error ("The following locks were left set config:%s, job:%s, node:%s, part:%s",
 			config, job, node, partition);
+	return lock_count;
 }
 
 /* process_rpc - process an RPC request and close the connection */
@@ -1399,12 +1400,15 @@ parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * conf_ptr )
 	char *log_file = NULL;
 
 	opterr = 0;
-	while ((c = getopt (argc, argv, "de:f:hl:L:rs:")) != -1)
+	while ((c = getopt (argc, argv, "dDe:f:hl:L:rs:")) != -1)
 		switch (c)
 		{
 			case 'd':
 				daemonize = 1;
 				log_opts . stderr_level = LOG_LEVEL_QUIET;
+				break;
+			case 'D':
+				daemonize = 0;
 				break;
 			case 'e':
 				errlev = strtol (optarg, (char **) NULL, 10);
@@ -1463,6 +1467,7 @@ usage (char *prog_name)
 {
 	printf ("%s [OPTIONS]\n", prog_name);
 	printf ("  -d           Become a daemon\n");
+	printf ("  -D           Debug mode, do not become a daemon, stay in the foreground\n");
 	printf ("  -e <errlev>  Set stderr logging to the specified level\n");
 	printf ("  -f <file>    Use specified configuration file name\n");
 	printf ("  -h           Print a help message describing usage\n");
