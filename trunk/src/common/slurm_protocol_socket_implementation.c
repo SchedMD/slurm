@@ -774,13 +774,17 @@ void _slurm_set_addr ( slurm_addr * slurm_address , uint16_t port , char * host 
 }
 void _slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , char * host )
 {
-	struct hostent * host_info = gethostbyname ( host ) ;
-	if (host_info == NULL) {
-		error ("gethostbyname failure on %s", host);
-		slurm_address->sin_family = 0;
-		slurm_address->sin_port = 0;
+	struct hostent * host_info; 
+	if (host != NULL) {
+		host_info = gethostbyname ( host ) ;
+		if (host_info == NULL) {
+			error ("gethostbyname failure on %s", host);
+			slurm_address->sin_family = 0;
+			slurm_address->sin_port = 0;
+		}
+		memcpy ( & slurm_address -> sin_addr . s_addr , 
+			host_info -> h_addr , host_info -> h_length ) ;
 	}
-	memcpy ( & slurm_address -> sin_addr . s_addr , host_info -> h_addr , host_info -> h_length ) ;
 	slurm_address -> sin_family = AF_SLURM ;
 	slurm_address -> sin_port = htons ( port ) ;
 }

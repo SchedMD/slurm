@@ -204,7 +204,6 @@ static void *
 _io_thr(void *arg)
 {
 	slurmd_job_t *job = (slurmd_job_t *) arg;
-	log_reinit();
 	io_handle_events(job->objs);
 	verbose("IO handler exited");
 	return (void *)1;
@@ -721,7 +720,7 @@ _write(io_obj_t *obj, List objs)
 	if (io->disconnected)
 		return 0;
 
-	verbose("Need to write %ld bytes to %s %d", 
+	debug3("Need to write %ld bytes to %s %d", 
 		cbuf_used(io->buf), _io_str[io->type], io->id);
 
 
@@ -748,7 +747,7 @@ _write(io_obj_t *obj, List objs)
 		return -1;
 	}
 
-	verbose("Wrote %d bytes to %s %d", 
+	debug3("Wrote %d bytes to %s %d", 
 		 n, _io_str[io->type], io->id);
 
 	return 0;
@@ -802,11 +801,11 @@ _task_read(io_obj_t *obj, List objs)
 				t->id, obj->fd, errno);
 		return -1;
 	}
-	verbose("read %d bytes from %s %d", 
+	debug3("read %d bytes from %s %d", 
 		n, _io_str[t->type], t->id);
 
 	if (n == 0) {  /* got eof */
-		verbose("got eof on task %ld", t->id);
+		debug3("got eof on task %ld", t->id);
 		_shutdown_task_obj(t);
 		close(obj->fd);
 		obj->fd = -1;
@@ -819,7 +818,7 @@ _task_read(io_obj_t *obj, List objs)
 	i = list_iterator_create(t->readers);
 	while((r = list_next(i))) {
 		n = cbuf_write(r->buf, (void *) buf, n, NULL);
-		verbose("wrote %ld bytes into %s buf", n, 
+		debug3("wrote %ld bytes into %s buf", n, 
 				_io_str[r->type]);
 	}
 	list_iterator_destroy(i);
@@ -870,7 +869,7 @@ _client_read(io_obj_t *obj, List objs)
 			client->id);
 
 	if (n == 0)  { /* got eof, disconnect this client */
-		verbose("client %d closed connection", client->id);
+		debug3("client %d closed connection", client->id);
 		if (!client->disconnected)
 			_io_disconnect_client(client);
 		xassert(_validate_io_list(objs));

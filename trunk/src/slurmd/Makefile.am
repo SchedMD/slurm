@@ -26,10 +26,13 @@ slurmd_LDADD = $(LDADD) $(interconnect_lib)
 
 	
 common_sources = 	        \
-	slurmd.c 	        \
-	mgr.c			\
+	slurmd.c slurmd.h       \
+	req.c req.h		\
+	mgr.c mgr.h		\
 	get_mach_stat.c         \
+	get_mach_stat.h		\
 	read_proc.c 	        \
+	read_proc.h 	        \
 	job.c job.h		\
 	io.c io.h		\
 	semaphore.c semaphore.h	\

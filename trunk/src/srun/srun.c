@@ -193,6 +193,7 @@ main(int ac, char **av)
 			fatal("unable to initialize stdio server port: %m");
 		debug("initialized stdio server port %d\n", 
 				ntohs(job->ioport[i]));
+		net_set_low_water(job->iofd[i], 140);
 	}
 
 	pthread_attr_init(&attr);
@@ -245,7 +246,7 @@ main(int ac, char **av)
 	}
 
 	/* kill signal thread */
-	pthread_kill(job->sigid, SIGTERM);
+	pthread_cancel(job->sigid);
 
 	/* wait for  stdio */
 	n = 0;
@@ -476,11 +477,13 @@ sig_thr(void *arg)
 	int signo;
 
 	while (1) {
-		sigemptyset(&set);
-		sigaddset(&set, SIGABRT);
-		sigaddset(&set, SIGSEGV);
-		sigaddset(&set, SIGQUIT);
-		sigaddset(&set, SIGINT);
+		sigfillset(&set);
+		sigdelset(&set, SIGABRT);
+		sigdelset(&set, SIGSEGV);
+		sigdelset(&set, SIGQUIT);
+		sigdelset(&set, SIGUSR1);
+		sigdelset(&set, SIGUSR2);
+		pthread_sigmask(SIG_BLOCK, &set, NULL);
 		sigwait(&set, &signo);
 		debug2("recvd signal %d", signo);
 		switch (signo) {

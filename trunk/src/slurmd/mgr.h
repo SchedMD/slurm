@@ -36,7 +36,7 @@
 
 /* Launch a job step on this node
  */
-int mgr_launch_tasks(launch_tasks_request_msg_t *msg);
+int mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *client);
 
 /* Instance of a slurmd "job" or job step:
  * We run:

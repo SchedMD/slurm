@@ -1,26 +1,24 @@
 /*****************************************************************************\
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2001-2002 The Regents of the University of California.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Chris Dunlap <cdunlap@llnl.gov>.
- *  UCRL-CODE-2002-009.
  *  
- *  This file is part of ConMan, a remote console management program.
- *  For details, see <http://www.llnl.gov/linux/conman/>.
+ *  This file is from LSD-Tools, the LLNL Software Development Toolbox.
  *  
- *  ConMan is free software; you can redistribute it and/or modify it under
+ *  LSD-Tools is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *  
- *  ConMan is distributed in the hope that it will be useful, but WITHOUT ANY
- *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- *  details.
+ *  LSD-Tools is distributed in the hope that it will be useful, but WITHOUT
+ *  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ *  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ *  more details.
  *  
  *  You should have received a copy of the GNU General Public License along
- *  with ConMan; if not, write to the Free Software Foundation, Inc.,
+ *  with LSD-Tools; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
@@ -47,6 +45,9 @@
  *  linker will expect to find an external Out-Of-Memory Function.
  *
  *  If WITH_PTHREADS is defined, these routines will be thread-safe.
+ *
+ *  XXX: Buffer shrinking not implemented yet.
+ *  XXX: Adaptive chunksize not implemented yet.
  */
 
 
@@ -116,6 +117,7 @@ int cbuf_peek (cbuf_t cb, void *dstbuf, int len);
 /*
  *  Reads up to 'len' bytes of data from 'cb' into the buffer 'dstbuf',
  *    but does not consume the data read from the cbuf.
+ *  The "peek" can be committed to the cbuf via a call to cbuf_drop().
  *  Returns the number of bytes read, or <0 on error (with errno set).
  */
 
@@ -130,9 +132,10 @@ int cbuf_replay (cbuf_t cb, void *dstbuf, int len);
  *  Replays up to 'len' bytes of previously read data from 'cb' into the
  *    buffer 'dstbuf'.
  *  Returns the number of bytes replayed, or <0 on error (with errno set).
+ *  XXX: Not implemented yet.
  */
 
-int cbuf_write (cbuf_t cb, void *srcbuf, int len, int *dropped);
+int cbuf_write (cbuf_t cb, const void *srcbuf, int len, int *dropped);
 /*
  *  Writes up to 'len' bytes of data from the buffer 'srcbuf' into 'cb'.
  *  Returns the number of bytes written, or <0 on error (with errno set).
@@ -144,6 +147,7 @@ int cbuf_peek_to_fd (cbuf_t cb, int dstfd, int len);
  *  Reads up to 'len' bytes of data from 'cb' into the file referenced by the
  *    file descriptor 'dstfd', but does not consume the data read from the
  *    cbuf.  If 'len' is -1, it will be set to cbuf_used().
+ *  The "peek" can be committed to the cbuf via a call to cbuf_drop().
  *  Returns the number of bytes read, or <0 on error (with errno set).
  */
 
@@ -160,6 +164,7 @@ int cbuf_replay_to_fd (cbuf_t cb, int dstfd, int len);
  *    referenced by the file descriptor 'dstfd'.  If 'len' is -1, it will be
  *    set to the maximum number of bytes available for replay.
  *  Returns the number of bytes replayed, or <0 on error (with errno set).
+ *  XXX: Not implemented yet.
  */
 
 int cbuf_write_from_fd (cbuf_t cb, int srcfd, int len, int *dropped);
@@ -171,29 +176,33 @@ int cbuf_write_from_fd (cbuf_t cb, int srcfd, int len, int *dropped);
  *    Sets 'dropped' (if not NULL) to the number of bytes of data overwritten.
  */
 
-int cbuf_gets (cbuf_t cb, char *dst, int len);
+int cbuf_get_line (cbuf_t cb, char *dst, int len);
 /*
  *  Reads a line of data from 'cb' into the buffer 'dst'.  Reading stops after
- *    a newline which is also stored in the 'dst' buffer.  The buffer will
- *    always be NUL-terminated and contain at most 'len - 1' characters.
- *  Returns the strlen of the line on success; truncation occurred if >= 'len'.
- *    Returns 0 if a newline is not found; no data is consumed in this case.
- *    Returns <0 on error (with errno set).
+ *    a newline or NUL which is also written into the 'dst' buffer.  The buffer
+ *    will be NUL-terminated and contain at most 'len - 1' characters.  If
+ *    'len' is 0, the line will be discarded from the cbuf and nothing will be
+ *    written into the 'dst' buffer.
+ *  Returns the line strlen on success; if >= 'len', truncation occurred and
+ *    the excess line data was discarded.  Returns 0 if a newline is not found;
+ *    no data is consumed in this case.  Returns <0 on error (with errno set).
  */
 
-int cbuf_peeks (cbuf_t cb, char *dst, int len);
+int cbuf_peek_line (cbuf_t cb, char *dst, int len);
 /*
  *  Reads a line of data from 'cb' into the buffer 'dst', but does not consume
- *    the data read from the cbuf.  Reading stops after a newline which is also
- *    stored in the 'dst' buffer.  The buffer will always be NUL-terminated and
- *    contain at most 'len - 1' characters.
+ *    the data read from the cbuf.  Reading stops after a newline or NUL which
+ *    is also written into the 'dst' buffer.  The buffer will be NUL-terminated
+ *    and contain at most 'len - 1' characters.
+ *  The "peek" can be committed to the cbuf via a call to cbuf_drop().
  *  Returns the strlen of the line on success; truncation occurred if >= 'len'.
  *    Returns 0 if a newline is not found, or <0 on error (with errno set).
  */
 
-int cbuf_puts (cbuf_t cb, char *src, int *dropped);
+int cbuf_put_line (cbuf_t cb, const char *src, int *dropped);
 /*
- *  Writes the NUL-terminated string 'src' into 'cb'.
+ *  Writes the NUL-terminated string 'src' into 'cb'.  A newline will be
+ *    appended to the cbuf if 'src' does not contain a trailing newline.
  *  Returns the number of characters written, or <0 or error (with errno set).
  *    Sets 'dropped' (if not NULL) to the number of bytes of data overwritten.
  */

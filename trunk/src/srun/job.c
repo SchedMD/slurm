@@ -67,7 +67,8 @@ job_create(resource_allocation_response_msg_t *resp)
 		job->nodelist = xstrdup(opt.nodelist);
 debug("nodelist=%s",job->nodelist);
 		hl = hostlist_create(opt.nodelist);
-		job->jobid = 1;
+		srand48(getpid());
+		job->jobid = (uint32_t) (lrand48() % 65550L + 1L);
 		ncpu = 1;
 		if (opt.nprocs <= 1)
 			opt.nprocs = hostlist_count(hl);

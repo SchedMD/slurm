@@ -1366,9 +1366,9 @@ int unpack_task_exit_msg ( task_exit_msg_t ** msg_ptr , Buf buffer )
 
 void pack_launch_tasks_response_msg ( launch_tasks_response_msg_t * msg , Buf buffer )
 {
-	pack32 ( msg -> return_code , buffer ) ;
+	pack32  ( msg -> return_code , buffer ) ;
 	packstr ( msg -> node_name , buffer ) ;
-	pack32 ( msg -> srun_node_id , buffer ) ;
+	pack32  ( msg -> srun_node_id , buffer ) ;
 }
 
 int unpack_launch_tasks_response_msg ( launch_tasks_response_msg_t ** msg_ptr , Buf buffer )
@@ -1403,9 +1403,9 @@ void pack_launch_tasks_request_msg ( launch_tasks_request_msg_t * msg , Buf buff
 	packstring_array ( msg -> env , msg -> envc , buffer ) ;
 	packstr ( msg -> cwd , buffer ) ;
 	packstring_array ( msg -> argv , msg -> argc , buffer ) ;
-	slurm_pack_slurm_addr ( & msg -> response_addr , buffer ) ;
-	slurm_pack_slurm_addr ( & msg -> streams , buffer ) ;
-	pack32_array ( msg -> global_task_ids , ( uint16_t ) msg -> tasks_to_launch , buffer ) ;
+	pack16 (  msg -> resp_port , buffer ) ;
+	pack16 (  msg -> io_port , buffer ) ;
+	pack32_array ( msg -> global_task_ids , (uint16_t) msg -> tasks_to_launch , buffer ) ;
 #ifdef HAVE_LIBELAN3
 	qsw_pack_jobinfo( msg -> qsw_job , buffer ) ;
 #endif
@@ -1417,8 +1417,7 @@ int unpack_launch_tasks_request_msg ( launch_tasks_request_msg_t ** msg_ptr , Bu
 	launch_tasks_request_msg_t * msg ;
 
 	msg = xmalloc ( sizeof ( launch_tasks_request_msg_t ) ) ;
-	if (msg == NULL) 
-	{
+	if (msg == NULL) {
 		*msg_ptr = NULL ;
 		return ENOMEM ;
 	}
@@ -1434,8 +1433,8 @@ int unpack_launch_tasks_request_msg ( launch_tasks_request_msg_t ** msg_ptr , Bu
 	unpackstring_array ( & msg -> env , & msg -> envc , buffer ) ;
 	unpackstr_xmalloc ( & msg -> cwd , & uint16_tmp , buffer ) ;
 	unpackstring_array ( & msg -> argv , & msg->argc , buffer ) ;
-	slurm_unpack_slurm_addr_no_alloc ( & msg -> response_addr , buffer ) ;
-	slurm_unpack_slurm_addr_no_alloc ( & msg -> streams , buffer ) ;
+	unpack16 ( & msg -> resp_port , buffer  ) ;
+	unpack16 ( & msg -> io_port , buffer  ) ;
 	unpack32_array ( & msg -> global_task_ids , & uint16_tmp , buffer ) ;
 
 #ifdef HAVE_LIBELAN3

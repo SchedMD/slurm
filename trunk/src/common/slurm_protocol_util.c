@@ -194,7 +194,6 @@ void slurm_print_job_credential(FILE * stream,
 void slurm_print_launch_task_msg(launch_tasks_request_msg_t * msg)
 {
 	int i;
-	char addrbuf[256];
 	debug3("job_id: %i", msg->job_id);
 	debug3("job_step_id: %i", msg->job_step_id);
 	debug3("uid: %i", msg->uid);
@@ -209,11 +208,8 @@ void slurm_print_launch_task_msg(launch_tasks_request_msg_t * msg)
 	for (i = 0; i < msg->argc; i++) {
 		debug3("argv[%i]: %s", i, msg->argv[i]);
 	}
-	slurm_print_slurm_addr(&msg->response_addr, addrbuf,
-			       sizeof(addrbuf));
-	debug3("msg -> response_addr = %s", addrbuf);
-	slurm_print_slurm_addr(&msg->streams, addrbuf, sizeof(addrbuf));
-	debug3("msg -> streams = %s", addrbuf);
+	debug3("msg -> resp_port = %d", msg->resp_port);
+	debug3("msg -> io_port   = %d", msg->io_port);
 
 	for (i = 0; i < msg->tasks_to_launch; i++) {
 		debug3("global_task_id[%i]: %i ", i,

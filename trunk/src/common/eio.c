@@ -95,7 +95,6 @@ _poll_internal(struct pollfd *pfds, unsigned int nfds)
 			return -1;
 		}
 	}
-	verbose("poll returned %d");
 	return n;
 }
 

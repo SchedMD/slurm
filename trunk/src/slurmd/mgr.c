@@ -56,21 +56,19 @@ static int _send_exit_msg(int rc, task_info_t *t);
 /* Launch a job step on this node
  */
 int
-mgr_launch_tasks(launch_tasks_request_msg_t *msg)
+mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli)
 {
 	slurmd_job_t *job;
-
-	log_reinit();
 
 	/* New process, so we must reinit shm */
 	if (shm_init() < 0) 
 		return SLURM_ERROR;
 
-	if (!(job = job_create(msg)))
+	if (!(job = job_create(msg, cli)))
 		return SLURM_ERROR;
 
 	slurmd_run_job(job); 
-	debug2("%ld returned from slurmd_run_job()", getpid());
+	job_debug2(job, "%ld returned from slurmd_run_job()", getpid());
 	shm_fini();
 	exit(0); 
 	return 0; /* not reached */
@@ -101,7 +99,7 @@ slurmd_run_job(slurmd_job_t *job)
 	shm_fini();
 
 	if (interconnect_init(job) == SLURM_ERROR) {
-		error("interconnect_init failed");
+		job_error(job, "interconnect_init failed");
 		rc = 2;
 		shm_init();
 		goto done;
@@ -109,8 +107,9 @@ slurmd_run_job(slurmd_job_t *job)
 
 	/* Reattach to shared memory after interconnect is initialized
 	 */
+	job_verbose(job, "%ld reattaching to shm", getpid());
 	if (shm_init() < 0) {
-		error("shm_init: %m");
+		job_error(job, "unable to reattach to shm: %m");
 		rc = 1;
 		goto done;
 	}
@@ -120,16 +119,16 @@ slurmd_run_job(slurmd_job_t *job)
 	 */
 	/* Option: connect slurmd stderr to srun local task 0: stderr? */
 	if (io_spawn_handler(job) == SLURM_ERROR) {
-		error("unable to spawn io handler");
+		job_error(job, "unable to spawn io handler");
 		rc = 3;
 		goto done;
 	}
 
 	job_launch_tasks(job);
-	verbose("job %d.%d complete, waiting on IO", job->jobid, job->stepid);
+	job_verbose(job, "job complete, waiting on IO");
 	io_close_all(job);
 	pthread_join(job->ioid, NULL);
-	verbose("job %d.%d IO complete", job->jobid, job->stepid);
+	job_verbose(job, "IO complete");
 
   done:
 	interconnect_fini(job); /* ignore errors        */
@@ -164,7 +163,7 @@ _wait_for_all_tasks(slurmd_job_t *job)
 		int status;
 		pid_t pid = waitpid(0, &status, 0);
 		if (pid < (pid_t) 0) {
-			error("waitpid: %m");
+			job_error(job, "waitpid: %m");
 			/* job_cleanup() */
 		}
 		for (i = 0; i < job->ntasks; i++) {
@@ -249,22 +248,22 @@ job_launch_tasks(slurmd_job_t *job)
 	pid_t sid;
 	int i;
 
-	debug3("%ld entered job_launch_tasks", getpid());
+	job_debug3(job, "%ld entered job_launch_tasks", getpid());
 
 	xsignal(SIGPIPE, SIG_IGN);
 
-	if ((sid = setsid()) < (pid_t) 0) 
-		error("setsid: %m");
+	if ((sid = setsid()) < (pid_t) 0) {
+		job_error(job, "setsid: %m");
+	}
 
 	if (shm_update_step_sid(job->jobid, job->stepid, sid) < 0)
-		error("shm_update_step_sid: %m");
+		job_error(job, "shm_update_step_sid: %m");
 	
-	debug2("invoking %d tasks for job %d.%d", job->ntasks, job->jobid,
-			job->stepid);
+	job_debug2(job, "invoking %d tasks", job->ntasks);
 
 	for (i = 0; i < job->ntasks; i++) {
 		task_t t;
-		verbose("going to fork task %d", i);
+		job_debug2(job, "going to fork task %d", i);
 		t.id = i;
 		t.global_id = job->task[i]->gid;
 		t.ppid      = getpid();
@@ -280,12 +279,12 @@ job_launch_tasks(slurmd_job_t *job)
 
 		job->task[i]->pid = t.pid;
 
-		debug2("%ld: forked child process %ld for task %d", 
+		job_debug2(job, "%ld: forked child process %ld for task %d", 
 				getpid(), (long) t.pid, i);  
-		debug2("going to add task %d to shm", i);
+		job_debug2(job, "going to add task %d to shm", i);
 		if (shm_add_task(job->jobid, job->stepid, &t) < 0)
-			error("shm_add_task: %m");
-		debug2("task %d added to shm", i);
+			job_error(job, "shm_add_task: %m");
+		job_debug2(job, "task %d added to shm", i);
 
 	}
 

@@ -73,7 +73,7 @@ launch(void *arg)
 	if (gethostname(hostname, MAXHOSTNAMELEN) < 0)
 		error("gethostname: %m");
 
-	debug("going to launch %d tasks on %d hosts\n", opt.nprocs, job->nhosts);
+	debug("going to launch %d tasks on %d hosts", opt.nprocs, job->nhosts);
 
 	/* thr = (launch_thr_t *) xmalloc(opt.nprocs * sizeof(*thr)); */
 
@@ -122,17 +122,12 @@ launch(void *arg)
 	}
 
 	for (i = 0; i < job->nhosts; i++) {
-		unsigned short port;
 
 		msg.tasks_to_launch = job->ntask[i];
 		msg.global_task_ids = task_ids[i];
-		msg.srun_node_id = (uint32_t)i;
-
-		port = ntohs(job->ioport[i%job->niofds]);
-		slurm_set_addr_char(&msg.streams, port, hostname); 
-
-		port = ntohs(job->jaddr[i%job->njfds].sin_port);
-		slurm_set_addr_char(&msg.response_addr, port, hostname);
+		msg.srun_node_id    = (uint32_t)i;
+		msg.io_port         = ntohs(job->ioport[i%job->niofds]);
+		msg.resp_port       = ntohs(job->jaddr[i%job->njfds].sin_port);
 
 		memcpy(&req.address, &job->slurmd_addr[i], sizeof(slurm_addr));
 
@@ -142,11 +137,10 @@ launch(void *arg)
 			error("%s: %m", job->host[i]);
 			job->host_state[i] = SRUN_HOST_UNREACHABLE;
 		}
+		xfree(task_ids[i]);
 
-		xfree(msg.global_task_ids);
 	}
 	xfree(task_ids);
-
 
 	update_job_state(job, SRUN_JOB_STARTING);
 
@@ -158,14 +152,15 @@ launch(void *arg)
 static void print_launch_msg(launch_tasks_request_msg_t *msg)
 {
 	int i;
-	debug("jobid  = %ld" , msg->job_id);
-	debug("stepid = %ld" , msg->job_step_id);
-	debug("uid    = %ld" , msg->uid);
-	debug("ntasks = %ld" , msg->tasks_to_launch);
-	debug("envc   = %d"  , msg->envc);
-	debug("cwd    = `%s'", msg->cwd); 
-	for (i = 0; i < msg->tasks_to_launch; i++)
-		debug("global_task_id[%d] = %d\n", i, msg->global_task_ids[i]);
+	char buf[4096];
+	int len = 0;
+
+	len = snprintf(buf, 4096, "%d.%d uid:%ld n:%ld `%s' %d [%d-%d]",
+			msg->job_id, msg->job_step_id, msg->uid, 
+			msg->tasks_to_launch, msg->cwd, msg->srun_node_id,
+			msg->global_task_ids[0],
+			msg->global_task_ids[msg->tasks_to_launch-1]);
+	debug3("%s", buf);
 }
 
 static int

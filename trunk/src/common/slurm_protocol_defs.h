@@ -221,7 +221,8 @@ typedef struct {
 	uid_t user_id;
 	char *node_list;
 	time_t expiration_time;
-	char signature[SLURM_SSL_SIGNATURE_LENGTH];	/* What are we going to do here? */
+	char signature[SLURM_SSL_SIGNATURE_LENGTH];	
+	/* What are we going to do here? */
 } slurm_job_credential_t;
 
 typedef struct {
@@ -429,25 +430,26 @@ typedef struct last_update_msg {
 } last_update_msg_t;
 
 typedef struct launch_tasks_request_msg {
-	uint32_t job_id;
-	uint32_t job_step_id;
-	uint32_t nnodes;	/* number of nodes in this job step       */
-	uint32_t nprocs;	/* number of processes in this job step   */
-	uint32_t uid;
-	uint32_t srun_node_id;	/* node id of this node (relative to job) */
+	uint32_t  job_id;
+	uint32_t  job_step_id;
+	uint32_t  nnodes;	/* number of nodes in this job step       */
+	uint32_t  nprocs;	/* number of processes in this job step   */
+	uint32_t  uid;
+	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
+	uint32_t  tasks_to_launch;
+	uint16_t  envc;
+	uint16_t  argc;
+	char    **env;
+	char    **argv;
+	char     *cwd;
+	uint16_t  resp_port;
+	uint16_t  io_port;
+	uint32_t *global_task_ids;
 
 	slurm_job_credential_t *credential;	/* job credential            */
-	uint32_t tasks_to_launch;
-	uint16_t envc;
-	char **env;
-	char *cwd;
-	uint16_t argc;
-	char **argv;
-	slurm_addr response_addr;
-	slurm_addr streams;
-	uint32_t *global_task_ids;
+
 #ifdef HAVE_LIBELAN3
-	qsw_jobinfo_t qsw_job;	/* Elan3 switch context, opaque data structure */
+	qsw_jobinfo_t qsw_job;	/* Elan3 switch context */
 #endif
 } launch_tasks_request_msg_t;
 

@@ -56,7 +56,7 @@ typedef struct srun_job {
 	pthread_t jtid;		/* job control thread id 	  */
 	int njfds;		/* number of job control info fds */
 	slurm_fd *jfd;		/* job control info fd   	  */
-	slurm_addr *jaddr;	/* job control info port 	  */
+	slurm_addr *jaddr;	/* job control info ports 	  */
 
 	pthread_t ioid;		/* stdio thread id 		  */
 	int niofds;		/* Number of IO fds  		  */
