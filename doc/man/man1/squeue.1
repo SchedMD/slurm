@@ -19,7 +19,7 @@ Print a help message describing the usage of \fBsqueue\fR.
 \fB\-h\fR, \fB\-\-noheader\fR
 Do not print a header on the output.
 .TP
-\fB\-i\fR, \fB\-\-iterate\fR
+\fB\-i <seconds>\fR, \fB\-\-iterate=<seconds>\fR
 Repeatedly gather and report the requested information at the interval
 specified (in seconds).
 .TP
@@ -32,7 +32,7 @@ Defaults to all jobs.
 Report more of the available information for the selected jobs or job steps, 
 subject to any constraints specified.
 .TP
-\fB\-o\fR, \fB\-\-format\fR
+\fB\-o <output_format>\fR, \fB\-\-format=<output_format>\fR
 Specify the information to be displayed.  
 The default format for jobs is "%.7i %9P %8j %8u %2t %.9M %.6D %N".
 If the \fB\-\-long\fR option is specified, the default job format is 
@@ -100,7 +100,7 @@ between 0.0 and 1.0
 \fB\-v\fR
 Display all job information.
 .TP
-\fB\-p\fR, \fB\-\-partition\fR
+\fB\-p <part_list>\fR, \fB\-\-partition=<part_list>\fR
 Specify the partitions of the jobs or steps to view. Accepts a comma separated 
 list of partition names.
 .TP
@@ -109,7 +109,7 @@ Specify the job steps to view.  This flag indicates that a comma separated list
 of job steps to view follows without an equal sign (see examples).
 The job step format is "job_id.step_id". Defaults to all job steps.
 .TP
-\fB\-S\fR, \fB\-\-sort\fR
+\fB\-S <sort_list>\fR, \fB\-\-sort=<sort_list>\fR
 Specifies the sorting order of job's or job step's records for printing. 
 Accepts a comma separated list of field identifiers using the single letter 
 codes used for output formatting. For example, "\-\-sort=P,U" will sort the
@@ -118,13 +118,13 @@ The default sorting order for jobs is job state then priority.
 The default sorting order for job steps is partition name.
 Note that sorting is not supported for all fields at this time.
 .TP
-\fB\-t\fR, \fB\-\-states\fR
+\fB\-t <state_list>\fR, \fB\-\-states=<state_list>\fR
 Specify the states of jobs to view.  Accepts a comma separated list of
 state names or "all". If "all" is specified then jobs of all states will be 
 reported. If no state is specified then pending, running, and completing
  jobs are reported.
 .TP
-\fB\-u\fR, \fB\-\-users\fR
+\fB\-u <user_list>\fR, \fB\-\-users=<user_list>\fR
 Specifies a comma separated list of users whose jobs or job steps are to be
 reported.
 .TP
@@ -135,22 +135,22 @@ Report details of squeues actions.
 .PP
 Some \fBsqueue\fR options may be set via environment variables. These 
 environment variables, along with their corresponding options, are listed 
-below. (Note: commandline options will always override these settings)
+below. (Note: Commandline options will always override these settings.)
 .TP 20
 SQUEUE_FORMAT
-\fB\-o, \-\-format\fR
+\fB\-o <output_format>, \-\-format=<output_format>\fR
 .TP
 SQUEUE_PARTITION
-\fB\-p, \-\-partition\fR
+\fB\-p <part_list>, \-\-partition=<part_list>\fR
 .TP
 SQUEUE_SORT
-\fB\-S, \-\-sort\fR
+\fB\-S <sort_list>, \-\-sort=<sort_list>\fR
 .TP
 SQUEUE_STATES
-\fB\-t, \-\-states\fR
+\fB\-t <state_list>, \-\-states=<state_list>\fR
 .TP
 SQUEUE_USERS
-\fB\-u, \-\-users\fR
+\fB\-u <user_list>, \-\-users=<user_list>\fR
 
 .SH "EXAMPLES"
 .eo
