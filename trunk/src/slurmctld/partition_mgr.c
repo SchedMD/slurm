@@ -182,6 +182,7 @@ int Build_Part_BitMap(struct Part_Record *Part_Record_Point) {
     int Start_Inx, End_Inx, Count_Inx;
     int i, j, Error_Code, size;
     char *str_ptr1, *str_ptr2, *Format, *My_Node_List, This_Node_Name[BUF_SIZE];
+    unsigned *Old_BitMap;
     struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
 
     Format = My_Node_List = NULL;
@@ -201,10 +202,15 @@ int Build_Part_BitMap(struct Part_Record *Part_Record_Point) {
 #endif
 	    return ENOMEM;
 	} /* if */
-    } /* if */
+	Old_BitMap = NULL;
+    } else
+	Old_BitMap = BitMapCopy(Part_Record_Point->NodeBitMap);
     memset(Part_Record_Point->NodeBitMap, 0, size);
 
-    if (Part_Record_Point->Nodes == NULL) return 0;
+    if (Part_Record_Point->Nodes == NULL) {
+	if (Old_BitMap) free(Old_BitMap);
+	return 0;
+    } /* if */
     My_Node_List = malloc(strlen(Part_Record_Point->Nodes)+1);
     if (My_Node_List == NULL) {
 #if DEBUG_SYSTEM
@@ -212,6 +218,7 @@ int Build_Part_BitMap(struct Part_Record *Part_Record_Point) {
 #else
 	syslog(LOG_ALERT, "Build_Part_BitMap: unable to allocate memory\n");
 #endif
+	if (Old_BitMap) free(Old_BitMap);
 	return ENOMEM;
     } /* if */
 
@@ -220,6 +227,7 @@ int Build_Part_BitMap(struct Part_Record *Part_Record_Point) {
 	Error_Code = Parse_Node_Name(str_ptr2, &Format, &Start_Inx, &End_Inx, &Count_Inx);
 	if (Error_Code) {
 	    free(My_Node_List);
+	    if (Old_BitMap) free(Old_BitMap);
 	    return EINVAL;
 	} /* if */
 	if (strlen(Format) >= sizeof(This_Node_Name)) {
@@ -230,6 +238,7 @@ int Build_Part_BitMap(struct Part_Record *Part_Record_Point) {
 #endif
 	    free(My_Node_List);
 	    free(Format);
+	    if (Old_BitMap) free(Old_BitMap);
 	    return EINVAL;
 	} /* if */
 	for (i=Start_Inx; i<=End_Inx; i++) {
@@ -246,6 +255,7 @@ int Build_Part_BitMap(struct Part_Record *Part_Record_Point) {
 #endif
 		free(My_Node_List);
 		free(Format);
+		if (Old_BitMap) free(Old_BitMap);
 		return EINVAL;
 	    } /* if */
 	    BitMapSet(Part_Record_Point->NodeBitMap, 
@@ -253,12 +263,20 @@ int Build_Part_BitMap(struct Part_Record *Part_Record_Point) {
 	    Part_Record_Point->TotalNodes++;
 	    Part_Record_Point->TotalCPUs += Node_Record_Point->CPUs;
 	    Node_Record_Point->Partition_Ptr = Part_Record_Point;
+	    BitMapClear(Old_BitMap, (int)(Node_Record_Point - Node_Record_Table_Ptr));
 	} /* for */
 	str_ptr2 = (char *)strtok_r(NULL, ",", &str_ptr1);
     } /* while */
 
+    /* Unlink nodes removed from the partition */
+    for (i=0; i<Node_Record_Count; i++) {
+	if (BitMapValue(Old_BitMap, i) == 0) continue;
+	(Node_Record_Table_Ptr+i)->Partition_Ptr = NULL;
+    } /* for */
+
     if(My_Node_List) free(My_Node_List);
     if(Format) free(Format);
+    if (Old_BitMap) free(Old_BitMap);
     return 0;
 } /* Build_Part_BitMap */
 
