@@ -3,7 +3,7 @@ TO BUILD:
   > ./autogen.sh
   > ./configure [OPTIONS]
   > make
-  > make install
+  > make install  <or> make rpm tag=Head
 
   OPTIONS:
      "--enable-debug" to run the daemons in debug mode (more validity 
@@ -11,8 +11,6 @@ TO BUILD:
              running)
      "--prefix=" to specify a directory into which the slurm files are 
              to be installed
-     "--with-authd" to use authd for authentication, defaults to no 
-             authentication
      "--with-elan" to support a Quadics Elan3 interconnect, defaults 
              to IP interconnect
      "--with-slurm-conf=" to specify the directory into which the 
