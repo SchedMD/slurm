@@ -166,7 +166,7 @@ slurmctld_req ( slurm_msg_t * msg )
 			slurm_rpc_submit_batch_job ( msg ) ;
 			slurm_free_job_desc_msg ( msg -> data ) ; 
 			break;
-		case REQUEST_NODE_REGISRATION_STATUS:
+		case REQUEST_NODE_REGISTRATION_STATUS:
 			slurm_rpc_register_node_status ( msg ) ;
 			slurm_free_node_registration_status_msg ( msg -> data ) ;
 			break;
