@@ -810,6 +810,7 @@ void schedule();
 /*
  * select_nodes - select and allocate nodes to a specific job
  * input: job_ptr - pointer to the job record
+ *	test_only - do not allocate nodes, just confirm they could be allocated now
  * output: returns 0 on success, EINVAL if not possible to satisfy request, 
  *		or EAGAIN if resources are presently busy
  *	job_ptr->nodes is set to the node list (on success)
@@ -817,7 +818,7 @@ void schedule();
  *	default_part_loc - pointer to default partition 
  *	config_list - global list of node configuration info
  */
-extern int select_nodes (struct job_record *job_ptr);
+extern int select_nodes (struct job_record *job_ptr, int test_only);
 
 /* 
  * slurm_parser - parse the supplied specification into keyword/value pairs

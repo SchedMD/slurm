@@ -345,13 +345,17 @@ job_allocate (char *job_specs, uint32_t *new_job_id, char **node_list)
 		return EAGAIN; 
 	}
 
-	error_code = select_nodes(job_ptr);
+	error_code = select_nodes(job_ptr, will_run);
 	if (error_code) {
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->end_time  = 0;
 		return EAGAIN; 
 	}
 
+	if (will_run) {			/* job would run now */
+		job_ptr->job_state = JOB_FAILED;
+		job_ptr->end_time  = 0;
+	}
 	node_list[0] = xmalloc (strlen(job_ptr->nodes) + 1);
 	strcpy(node_list[0], job_ptr->nodes);
 	return 0;
