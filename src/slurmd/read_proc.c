@@ -38,7 +38,7 @@ struct sess_record {
 struct sess_record *session_ptr;
 
 #define BUF_SIZE 1024
-#define DEBUG_MODULE 1
+#define DEBUG_MODULE 0 
 #define DEBUG_SYSTEM 1
 
 int dump_proc(int uid, int sid);
