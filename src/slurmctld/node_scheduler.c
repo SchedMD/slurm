@@ -170,7 +170,7 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 			continue;
 		base_state = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
 		no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
-		if ((base_state == NODE_STATE_DOWN) || no_resp_flag) {
+		if (base_state == NODE_STATE_DOWN) {
 			/* Issue the KILL RPC, but don't verify response */
 			down_node_cnt++;
 			bit_clear(job_ptr->node_bitmap, i);
@@ -1319,6 +1319,18 @@ extern void re_kill_job(struct job_record *job_ptr)
 		struct node_record *node_ptr = &node_record_table_ptr[i];
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
+		if ((node_ptr->node_state & (~NODE_STATE_NO_RESPOND))
+				== NODE_STATE_DOWN) {
+			/* Consider job already completed */
+			bit_clear(job_ptr->node_bitmap, i);
+			if (node_ptr->comp_job_cnt)
+				(node_ptr->comp_job_cnt)--;
+			if ((--job_ptr->node_cnt) == 0) {
+				delete_all_step_records(job_ptr);
+				job_ptr->job_state &= (~JOB_COMPLETING);
+			}
+			continue;
+		}
 		if (node_ptr->node_state & NODE_STATE_NO_RESPOND)
 			continue;
 		(void) hostlist_push_host(kill_hostlist, node_ptr->name);
