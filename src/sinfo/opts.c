@@ -141,7 +141,7 @@ parse_state( char* str, enum node_states* states )
 
 	for (i = 0; i <= NODE_STATE_END; i++) {
 		if (strcasecmp (node_state_string(i), "END") == 0)
-			return SLURM_ERROR;
+			break;
 
 		if (strcasecmp (node_state_string(i), str) == 0) {
 			*states = i;
