@@ -15,8 +15,8 @@ Time       Maximum execution period of the job. This execution may be
            provided in more than one piece via gang scheduling (job preemption). 
            The default value is unlimited, which is indicated with a value of -1.
 CPUs       Count of CPUs desired, default value is 1
-Nodes      Explicit comma separated list of desired nodes. This is optional. 
+NodeList   Explicit comma separated list of desired nodes. This is optional. 
            If specified, the CPUs parameter will be computed and all partition  
            configuration specifications must still be satisfied. These nodes need  
            not be in a single partition.
-JobType    INTERACTIVE or BATCH (required)
+JobType    INTERACTIVE, BATCH, or ALL (required)
