@@ -14,9 +14,7 @@ includes a scalable, general-purpose communication infrastructure.
 SLURM requires no kernel modifications and is relatively self-contained.
 
 <h2>Components</h2>
-<b>config.h</b> is just used to define "out_of_memory" for list.c.
-<p>
-<b>errors.h</b> is needed for config.h
+<b>Controller.c</b> Primary SLURM daemon to execute on server machine.
 <p>
 <b>Get_Mach_Stat.c</b> gets the machine's status and configuration. 
 This includes: operating system version, size of real memory, size 
@@ -36,6 +34,9 @@ cluster managed by SLURM.
 <b>Partition_Mgr.c</b> reads, writes, records, updates, and otherwise 
 manages the state information associated with partitions in the 
 cluster managed by SLURM.
+<p>
+<b>Slurm_Admin.c</b> administration tool for reading, writing, and 
+updating SLURM configuration.
 
 <h2>Design Issues</h2>
 Most modules are constructed with a some simple, built-in tests. 
@@ -68,7 +69,6 @@ such a capability at a later time if so desired.
 
 <h2>To Do</h2>
 <ul>
-<li>We probably want to move into list.h only what is need from config.h and errors.h.</li>
 <li>We need to build up a reasonable Makefile.</li>
 <li>The node selection process for contiguous nodes in Controller.c selects 
 the first fit. Best fit would probably be better. For now, 
@@ -77,7 +77,7 @@ higher-level scheduler will insure that no job suffers from starvation.</li>
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/programmer.guide.html
-<p>Last Modified December 21, 2001</p>
+<p>Last Modified January 4, 2002</p>
 <address>Maintained by Moe Jette <a href="mailto:jette@llnl.gov">
 jette1@llnl.gov</a></address>
 </body>
