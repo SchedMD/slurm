@@ -101,7 +101,7 @@ typedef struct {
 #endif /* WITH_PTHREADS */
 static log_t            *log = NULL;
 
-#define LOG_INITIALIZED ((log != NULL) && log->initialized)
+#define LOG_INITIALIZED ((log != NULL) && (log->initialized))
 
 /* define a default argv0 */
 #if HAVE_PROGRAM_INVOCATION_SHORT_NAME

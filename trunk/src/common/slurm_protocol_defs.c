@@ -56,6 +56,11 @@ void slurm_free_job_step_id(job_step_id_t * msg)
 	xfree(msg);
 }
 
+void slurm_free_old_job_alloc_msg(old_job_alloc_msg_t * msg)
+{
+	xfree(msg);
+}
+
 void slurm_free_return_code_msg(return_code_msg_t * msg)
 {
 	xfree(msg);

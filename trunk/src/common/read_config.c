@@ -313,6 +313,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 			ctl_conf_ptr->slurmctld_port = strtol (slurmctld_port, 
 							(char **) NULL, 10);
 		endservent ();
+		xfree(slurmctld_port);
 	}
 
 	if ( slurmctld_timeout != -1) {
@@ -339,6 +340,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 			ctl_conf_ptr->slurmd_port = strtol (slurmd_port,  
 							(char **) NULL, 10);
 		endservent ();
+		xfree(slurmd_port);
 	}
 
 	if ( slurmd_spooldir ) {
