@@ -395,9 +395,13 @@ extern int create_static_partitions(List part_list)
 	
 	bgl_record->nodes = xmalloc(sizeof(char)*13);
 	memset(bgl_record->nodes, 0, 13);
-	sprintf(bgl_record->nodes, "bgl[000x%d%d%d]", DIM_SIZE[X]-1,  DIM_SIZE[Y]-1, DIM_SIZE[Z]-1);
+	if(DIM_SIZE[X]==1 && DIM_SIZE[Y]==1 && DIM_SIZE[Z]==1)
+		sprintf(bgl_record->nodes, "bgl000");
+       	else
+		sprintf(bgl_record->nodes, "bgl[000x%d%d%d]", DIM_SIZE[X]-1,  DIM_SIZE[Y]-1, DIM_SIZE[Z]-1);
        	itr = list_iterator_create(bgl_list);
 	while ((found_record = (bgl_record_t *) list_next(itr)) != NULL) {
+		printf("%s ?= %s\n",bgl_record->nodes, found_record->nodes);
 		if (!strcmp(bgl_record->nodes, found_record->nodes)) {
 			goto no_total;	/* don't reboot this one */
 		}
