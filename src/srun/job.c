@@ -106,6 +106,7 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 	return (job);
 }
 
+
 /* 
  * Create an srun job structure w/out an allocation response msg.
  * (i.e. use the command line options)
@@ -448,13 +449,19 @@ _job_create_internal(allocation_info_t *info)
 		}
 	}
 
-	job->ifname = fname_create(job, opt.ifname);
-	job->ofname = fname_create(job, opt.ofname);
-	job->efname = opt.efname ? fname_create(job, opt.efname) : job->ofname;
+	job_update_io_fnames(job);
 
 	hostlist_destroy(hl);
 
 	return job;
+}
+
+void
+job_update_io_fnames(job_t *job)
+{
+	job->ifname = fname_create(job, opt.ifname);
+	job->ofname = fname_create(job, opt.ofname);
+	job->efname = opt.efname ? fname_create(job, opt.efname) : job->ofname;
 }
 
 static void
