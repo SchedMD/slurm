@@ -64,7 +64,6 @@ extern char *bluegene_blrts;
 extern char *bluegene_linux;
 extern char *bluegene_mloader;
 extern char *bluegene_ramdisk;
-extern char *bluegene_serial;
 extern List bgl_init_part_list; 	/* Initial bgl partition state */
 extern List bgl_list;			/* List of configured BGL blocks */
 extern bool agent_fini;

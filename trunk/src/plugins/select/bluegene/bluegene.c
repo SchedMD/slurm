@@ -50,7 +50,6 @@
 
 #define BUFSIZE 4096
 #define BITSIZE 128
-#define DEFAULT_BLUEGENE_SERIAL "BGL"
 #define NODE_POLL_TIME 60	/* poll CMCS node state every 60 secs */
 #define SWITCH_POLL_TIME 90	/* poll CMCS switch state every 90 secs */
 
@@ -63,7 +62,7 @@ List bgl_conf_list = NULL;              /* list of bgl_conf_record entries */
 rm_BGL_t *bgl;
 List bgl_list = NULL;			/* list of bgl_record entries */
 char *bluegene_blrts = NULL, *bluegene_linux = NULL, *bluegene_mloader = NULL;
-char *bluegene_ramdisk = NULL, *bluegene_serial = NULL;
+char *bluegene_ramdisk = NULL;
 bool agent_fini = false;
 
 /* some local functions */
@@ -433,8 +432,6 @@ extern int read_bgl_conf(void)
 		fatal("MloaderImage not configured in bluegene.conf");
 	if (!bluegene_ramdisk)
 		fatal("RamDiskImage not configured in bluegene.conf");
-	if (!bluegene_serial)
-		bluegene_serial = xstrdup(DEFAULT_BLUEGENE_SERIAL);
 	END_TIMER;
 	debug("read_bgl_conf: finished loading configuration %s", TIME_STR);
 	
@@ -458,9 +455,7 @@ extern int read_bgl_conf(void)
 static int _parse_bgl_spec(char *in_line)
 {
 	int error_code = SLURM_SUCCESS;
-	char *nodes = NULL, *serial = NULL;
-	char *conn_type = NULL;
-	char *node_use = NULL;
+	char *nodes = NULL, *conn_type = NULL, *node_use = NULL;
 	char *blrts_image = NULL,   *linux_image = NULL;
 	char *mloader_image = NULL, *ramdisk_image = NULL;
 	bgl_conf_record_t* new_record;
@@ -471,7 +466,6 @@ static int _parse_bgl_spec(char *in_line)
 				"MloaderImage=", 's', &mloader_image,
 				"Nodes=", 's', &nodes,
 				"RamDiskImage=", 's', &ramdisk_image,
-				"Serial=", 's', &serial,
 				"Type=", 's', &conn_type,
 				"Use=", 's', &node_use,
 				"END");
@@ -499,11 +493,6 @@ static int _parse_bgl_spec(char *in_line)
 		xfree(bluegene_ramdisk);
 		bluegene_ramdisk = ramdisk_image;
 		ramdisk_image = NULL;	/* nothing left to xfree */
-	}
-	if (serial) {
-		xfree(bluegene_serial);
-		bluegene_serial = serial;
-		serial = NULL;	/* nothing left to xfree */
 	}
 
 	/* Process node information */
@@ -687,7 +676,7 @@ extern int init_bgl(void)
 	read_bgl_conf();
 
 #ifdef HAVE_BGL_FILES
-	if ((rc = rm_set_serial(bluegene_serial)) != STATUS_OK) {
+	if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
 		fatal("init_bgl: rm_set_serial(): %s", bgl_err_str(rc));
 		return SLURM_ERROR;
 	}
@@ -730,15 +719,10 @@ extern void fini_bgl(void)
 	xfree(bluegene_linux);
 	xfree(bluegene_mloader);
 	xfree(bluegene_ramdisk);
-	xfree(bluegene_serial);
 
-#ifdef USE_BGL_FILES
-/* FIXME: rm_free_BGL() is consistenly generating a segfault, even 
- * immediately following a rm_get_BGL() - Jette 11/22/04 */
-	if (bgl) {
-		rm_free_BGL(bgl);
-		bgl = NULL;
-	}
+#ifdef HAVE_BGL_FILES
+	if (bgl)
+		slurm_rm_free_BGL(bgl);
 #endif
 }
 
