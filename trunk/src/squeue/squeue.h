@@ -66,6 +66,7 @@ struct squeue_parameters {
 	bool step_flag;
 	bool iterate;
 	bool long_list;
+	bool no_header;
 	int verbose;
 
 	char* jobs;
