@@ -71,7 +71,7 @@ BackupController=lx02
 <p>
 The node configuration permits you to identify the nodes (or machines) 
 to be managed by SLURM. You may also identify the 
-characteristics of the node in the configuration file. SLURM operates 
+characteristics of the nodes in the configuration file. SLURM operates 
 in a heterogeneous environment and users are able to specify resource 
 requirements for each job 
 The node configuration specifies the following information: 
@@ -140,9 +140,10 @@ The default value is 1.
 All things being equal, jobs will be allocated the nodes with 
 the lowest weight which satisfies their requirements. 
 For example, a heterogeneous collection of nodes might 
-be placed into a single partition. It might be preferable 
-to allocate smaller memory nodes to a job rather than larger 
-memory nodes if either will satisfy its requirements. 
+be placed into a single partition for greater system
+utilization, responsiveness and capability. It would be 
+preferable to allocate smaller memory nodes rather than larger 
+memory nodes if either will satisfy a job's requirements. 
 The units of weight are arbitrary, but larger weights 
 should be assigned to nodes with more CPUs, memory, 
 disk space, higher processor speed, etc.
@@ -159,7 +160,11 @@ Nodes which register to the system with less than the configured resources
 avoid scheduling jobs on them. 
 The resources checked at node registration time are: CPUs, 
 RealMemory and TmpDisk. 
-The default values for each node can be specified with a record in which 
+While baseline values for each of these can be established 
+in the configuration file, the actual values upon node 
+registration are recorded and these actual values are 
+used for scheduling purposes.
+Default values can be specified with a record in which 
 "NodeName" is "DEFAULT". 
 The default entry values will apply only to lines following it in the 
 configuration file and the default values can be reset multiple times 
@@ -168,9 +173,9 @@ The "NodeName="  specification must be placed on every line
 describing the configuration of nodes. 
 Each nodes configuration must be specified on a single line 
 rather than having the various values established on multiple lines. 
-In fact, it is generally possible <i>and desirable</i> to define the 
+In fact, it is generally possible and desirable to define the 
 configurations of all nodes in only a few lines.
-This convension permits significant optimization in the scheduling 
+This convention permits significant optimization in the scheduling 
 of larger clusters. 
 The field descriptors above are case sensitive. 
 In order to support the concept of jobs requiring consecutive nodes
@@ -222,7 +227,7 @@ or "0" which processes mixed alpha-numeric without sequence numbers.
 The default value of HASH_BASE is "10".
 If you use a naming convention lacking a sequence number, it may be 
 desirable to review the hashing function Hash_Index in the 
-Mach_Stat_Mgr.c module. This is especially important in clusters having 
+node_mgr.c module. This is especially important in clusters having 
 large numbers of nodes.  The sequence numbers can start at any 
 desired number, but should contain consecutive numbers. The 
 sequence number portion may contain leading zeros for a consistent 
@@ -284,26 +289,28 @@ but have no resources (possibly on a temporary basis).
 <dd>Name by which the partition may be referenced (e.g. "Interactive"). 
 This name can be specified by users when submitting jobs.
 
+<dt>Shared
+<dd>Ability of the partition to execute more than one job at a 
+time on each node. Shared nodes will offer unpredictable performance 
+for application programs, but can provide higher system utilization 
+and responsiveness than otherwise possible. 
+Possible values are "YES" and "NO". The default value is "NO".
+
 <dt>State
 <dd>State of partition or availability for use.  Possible values 
 are "UP" or "DOWN". The default value is "UP".
 
 </dl>
 <p>
-Only the PartitionName must be supplied in the configuration file.
-It is recommended that configuration file contain information 
-about one partition per line. If more than one line is used to 
-describe the configuration of a partition, specify the "PartitionName=" 
-on each line.
-The field descriptors above are case sensitive. 
-The default values for each partition can be specified with a record in which 
-"PartitionName" is "DEFAULT" if other default values are desired. 
+Only the PartitionName must be supplied in the configuration file. 
+Other parameters will assume default values if not specified. 
+The default values can be specified with a record in which 
+"PartitionName" is "DEFAULT" if non-standard default values are desired. 
 The default entry values will apply only to lines following it in the 
 configuration file and the default values can be reset multiple times 
 in the configuration file with multiple entries where "PartitionName=DEFAULT". 
-When a PartitionName specification exists on two separate lines 
-in the configuration, only values explicitly set in the second 
-or subsequent lines will be set (SLURM will not re-apply default values).
+The configuration of one partition should be specified per line.
+The field descriptors above are case sensitive. 
 The size of each line in the file is limited to 1024 characters.
 A sample SLURM configuration file (partition information only) follows.
 <p>
@@ -344,8 +351,19 @@ be contiguous.
 
 <dt>Features
 <dd>Required features of nodes to be allocated to this job. 
-Features may be combined using "|" for OR, "&amp;" for and, and 
-parenthesis. For example, "Features=((1000MHz|1200MHz)&amp;CoolTool)".
+Features may be combined using "|" for OR, "&amp;" for AND,  
+parenthesis and square brackets. 
+For example, "Features=((1000MHz|1200MHz)&amp;CoolTool)".
+Square brackets are used to identify alternate features, 
+but ones that must apply to every node allocated to the job. 
+For example, some clusters are configured with more than 
+one parallel file system. These parallel file systems 
+may be accessible only to a subset of the nodes in a cluster. 
+The application may not care which parallel file system 
+is used, but all nodes allocated to it must be in the
+subset of nodes assessing a single parallel file system. 
+This might be specified with a specification of 
+"Features=[PFS1|PFS2|PFS3|PFS3]".
 
 <dt>Group
 <dd>Comma separated list of group names to which the user belongs.
@@ -355,13 +373,6 @@ parenthesis. For example, "Features=((1000MHz|1200MHz)&amp;CoolTool)".
 <dt>Name
 <dd>Name by which the job may be referenced (e.g. "Simulation"). 
 This name can be specified by users when submitting their jobs.
-
-<dt>NodeCount
-<dd>Minimum total number of nodes to be allocated to the job.
-
-<dt>Number
-<dd>Unique number by which the job can be referenced. This value 
-may not be changed by slurm_admin.
 
 <dt>MaxTime
 <dd>Maximum wall-time limit for the job in minutes. An "UNLIMITED"
@@ -376,9 +387,18 @@ value is represented internally as -1.
 <dt>MinTmpDisk
 <dd>Minimum number of megabytes of temporary disk storage per node.
 
-<dt>Nodes
+<dt>NodeCount
+<dd>Minimum total number of nodes to be allocated to the job.
+
+<dt>NodeList
 <dd>Comma separated list of nodes which are allocated to the job. 
-This value may not be changed by slurm_admin.
+The nodes may be specified using regular expressions (e.g.
+"lx[10-20],lx[33-40]".
+This value may not be changed by slurm_admin. 
+
+<dt>Number
+<dd>Unique number by which the job can be referenced. This value 
+may not be changed by slurm_admin.
 
 <dt>Partition
 <dd>Name of the partition in which this job should execute.
@@ -581,7 +601,7 @@ Remove node lx30 from service, removing jobs as needed:
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/admin.guide.html
-<p>Last Modified March 5, 2002</p>
+<p>Last Modified March 12, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
