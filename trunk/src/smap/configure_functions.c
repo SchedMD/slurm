@@ -48,6 +48,7 @@ void get_command(void)
 	List results;
 	pa_request_t * request; 
 				
+	pa_init();
 	text_height = smap_info_ptr->text_win->_maxy;	// - smap_info_ptr->text_win->_begy;
 	text_width = smap_info_ptr->text_win->_maxx;	// - smap_info_ptr->text_win->_begx;
 	text_starty = smap_info_ptr->text_win->_begy;
@@ -87,13 +88,9 @@ void get_command(void)
 			endwin();
 			exit(0);
 		} else if (!strncmp(com->str, "resume", 6)) {
-			mvwprintw(smap_info_ptr->text_win,
-				  smap_info_ptr->ycord,
-				  smap_info_ptr->xcord, "%s", com->str);
+			mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord, "%s", com->str);
 		} else if (!strncmp(com->str, "drain", 5)) {
-			mvwprintw(smap_info_ptr->text_win,
-				  smap_info_ptr->ycord,
-				  smap_info_ptr->xcord, "%s", com->str);
+			mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord, "%s", com->str);
 		} else if (!strncmp(com->str, "create", 6)) {
 			/*defaults*/
 			geo[0] = -1;
@@ -106,8 +103,7 @@ void get_command(void)
 			i=6;
 			/*********/
 
-			mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
-				  smap_info_ptr->xcord, "%s", com->str);
+			mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord, "%s", com->str);
 			while(com->str[i]!='\0') {
 				
 				while(com->str[i-1]!=' ' && com->str[i]!='\0') {
@@ -131,6 +127,7 @@ void get_command(void)
 					force_contig=false;				
 					i+=5;
 				}
+
 			}
 
 			if(!i2) {
@@ -150,12 +147,12 @@ void get_command(void)
 				}
 				new_pa_request(&request, geo, i, rotate, elongate, force_contig, torus);
 				if (!allocate_part(request, &results)){
-					printf("allocate success for %d%d%d\n", 
+					printf("allocate failure for %d%d%d\n", 
 					       geo[0], geo[1], geo[2]);
 					list_destroy(results);
 				}
+				
 			}
-
 
 		} else if (!strncmp(com->str, "save", 4)) {
 			mvwprintw(smap_info_ptr->text_win,

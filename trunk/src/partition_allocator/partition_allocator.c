@@ -1127,7 +1127,7 @@ int main(int argc, char** argv)
 	// int i;
 	// for (i=0; i<8; i++){
 	// _print_pa_system();
-	if (!allocate_part(request, &results)){
+	if (allocate_part(request, &results)){
 		printf("allocate success for %d%d%d\n", 
 		       geo[0], geo[1], geo[2]);
 		// _print_results(results);
@@ -1135,8 +1135,8 @@ int main(int argc, char** argv)
 	}
 	// }
 
-	if (!allocate_part(request, &results)){
-		printf("allocate success for %d%d%d\n", 
+	if (allocate_part(request, &results)){
+		printf("I allocated it success for %d%d%d\n", 
 		       geo[0], geo[1], geo[2]);
 		// _print_results(results);
 		list_destroy(results);
