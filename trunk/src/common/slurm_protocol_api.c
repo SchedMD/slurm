@@ -382,9 +382,7 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	}
 
 	/* unpack cred */
-	if (header.cred_length <= remaining_buf(buffer)) {
-		slurm_auth_unpack_credentials( &creds, buffer );
-	} else 
+	if (slurm_auth_unpack_credentials( &creds, buffer ) )
 		slurm_seterrno_ret(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
 
 	/* verify credentials */
@@ -399,9 +397,8 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 
 	/* unpack msg body */
 	msg->msg_type = header.msg_type;
-	if (header.body_length <= remaining_buf(buffer)) 
-		unpack_msg(msg, buffer);
-	else 
+	if ((header.body_length > remaining_buf(buffer)) ||
+	    (unpack_msg(msg, buffer) != SLURM_SUCCESS))
 		slurm_seterrno_ret(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
 
 cleanup:
@@ -711,9 +708,9 @@ void slurm_pack_slurm_addr(slurm_addr * slurm_address, Buf buffer)
 	_slurm_pack_slurm_addr(slurm_address, buffer);
 }
 
-void slurm_unpack_slurm_addr_no_alloc(slurm_addr * slurm_address, Buf buffer)
+int slurm_unpack_slurm_addr_no_alloc(slurm_addr * slurm_address, Buf buffer)
 {
-	_slurm_unpack_slurm_addr_no_alloc(slurm_address, buffer);
+	return _slurm_unpack_slurm_addr_no_alloc(slurm_address, buffer);
 }
 
 void slurm_print_slurm_addr(slurm_addr * address, char *buf, size_t n)

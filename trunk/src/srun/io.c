@@ -331,7 +331,8 @@ _accept_io_stream(job_t *job, int i)
 		msgbuf = xmalloc(len);
 		_readn(sd, msgbuf, len); 
 		buffer = create_buf(msgbuf, len);
-		unpack_io_stream_header(&hdr, buffer); 
+		if (unpack_io_stream_header(&hdr, buffer))
+			error ("Bad stream header read");
 		free_buf(buffer); /* NOTE: this frees msgbuf */
 
 		/* Assign new fds arbitrarily for now, until slurmd

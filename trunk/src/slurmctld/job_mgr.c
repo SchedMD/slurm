@@ -102,6 +102,7 @@ int	top_priority (struct job_record *job_ptr);
 int 	validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate ) ;
 int	write_data_to_file ( char * file_name, char * data ) ;
 int	write_data_array_to_file ( char * file_name, char ** data, uint16_t size ) ;
+static inline void x_clear (void * arg);
 
 /* 
  * create_job_record - create an empty job_record including job_details.
@@ -480,8 +481,7 @@ load_job_state ( void )
 		job_id_sequence = slurmctld_conf . first_job_id;
 
 	buffer = create_buf (data, data_size);
-	if (data_size >= sizeof (time_t))
-		unpack_time (&buf_time, buffer);
+	safe_unpack_time (&buf_time, buffer);
 
 	while (remaining_buf (buffer) > 0) {
 		safe_unpack32 (&job_id, buffer);
@@ -489,8 +489,8 @@ load_job_state ( void )
 		safe_unpack32 (&time_limit, buffer);
 		safe_unpack32 (&priority, buffer);
 
-		unpack_time (&start_time, buffer);
-		unpack_time (&end_time, buffer);
+		safe_unpack_time (&start_time, buffer);
+		safe_unpack_time (&end_time, buffer);
 		safe_unpack16 (&job_state, buffer);
 		safe_unpack16 (&next_step_id, buffer);
 		safe_unpack16 (&kill_on_node_fail, buffer);
@@ -505,12 +505,9 @@ load_job_state ( void )
 			error ("Invalid data for job %u: job_state=%u, kill_on_node_fail=%u",
 				job_id, job_state, kill_on_node_fail);
 			error ("No more job data will be processed from the checkpoint file");
-			if (nodes)
-				xfree (nodes);
-			if (partition)
-				xfree (partition);
-			if (name)
-				xfree (name);
+			x_clear (nodes);
+			x_clear (partition);
+			x_clear (name);
 			error_code = EINVAL;
 			break;
 		}
@@ -548,18 +545,12 @@ load_job_state ( void )
 				error ("Invalid data for job %u: shared=%u, contiguous=%u, batch_flag=%u",
 					job_id, shared, contiguous, batch_flag);
 				error ("No more job data will be processed from the checkpoint file");
-				if (req_nodes)
-					xfree (req_nodes);
-				if (features)
-					xfree (features);
-				if (err)
-					xfree (err);
-				if (in)
-					xfree (in);
-				if (out)
-					xfree (out);
-				if (work_dir)
-					xfree (work_dir);
+				x_clear (req_nodes);
+				x_clear (features);
+				x_clear (err);
+				x_clear (in);
+				x_clear (out);
+				x_clear (work_dir);
 				error_code = EINVAL;
 				break;
 			}
@@ -654,7 +645,7 @@ load_job_state ( void )
 
 			safe_unpack16 (&step_id, buffer);
 			safe_unpack16 (&cyclic_alloc, buffer);
-			unpack_time (&start_time, buffer);
+			safe_unpack_time (&start_time, buffer);
 			safe_unpackstr_xmalloc (&node_list, &name_len, buffer);
 
 			/* validity test as possible */
@@ -678,10 +669,12 @@ load_job_state ( void )
 				xfree (node_list);
 			}
 #ifdef HAVE_LIBELAN3
-			if (remaining_buf (buffer) < QSW_PACK_SIZE)
-				goto unpack_error;
 			qsw_alloc_jobinfo(&step_ptr->qsw_job);
-			qsw_unpack_jobinfo(step_ptr->qsw_job, buffer);
+			if (qsw_unpack_jobinfo(step_ptr->qsw_job, buffer)) {
+				qsw_free_jobinfo(step_ptr->qsw_job);
+				goto unpack_error;
+			}
+				
 #endif
 			safe_unpack16 (&step_flag, buffer);
 		}
@@ -689,49 +682,22 @@ load_job_state ( void )
 			break;
 
 cleanup:
-		if (nodes) {
-			xfree (nodes); 
-			nodes = NULL; 
-		}
-		if (partition) {
-			xfree (partition); 
-			partition = NULL;
-		}
-		if (name) {
-			xfree (name);
-			name = NULL; 
-		}
+		x_clear (nodes);
+		x_clear (partition);
+		x_clear (name);
+		x_clear (req_nodes);
+		x_clear (features);
+		x_clear (err);
+		x_clear (in);
+		x_clear (out);
+		x_clear (work_dir);
 		if (node_bitmap) {
 			bit_free (node_bitmap); 
 			node_bitmap = NULL; 
 		}
-		if (req_nodes) {
-			xfree (req_nodes); 
-			req_nodes = NULL; 
-		}
 		if (req_node_bitmap) {
 			bit_free (req_node_bitmap); 
 			req_node_bitmap = NULL; 
-		}
-		if (features) {
-			xfree (features); 
-			features = NULL; 
-		}
-		if (err) {
-			xfree (err); 
-			err = NULL; 
-		}
-		if (in) {
-			xfree (in); 
-			in = NULL; 
-		}
-		if (out) {
-			xfree (out);	
-			out = NULL; 
-		}
-		if (work_dir) {
-			xfree (work_dir); 
-			work_dir = NULL; 
 		}
 		if (credential_ptr) {
 			xfree (credential_ptr); 
@@ -744,6 +710,15 @@ cleanup:
 
 unpack_error:
 	error ("Incomplete job data checkpoint file.  State not completely restored");
+	x_clear (nodes);
+	x_clear (partition);
+	x_clear (name);
+	x_clear (req_nodes);
+	x_clear (features);
+	x_clear (err);
+	x_clear (in);
+	x_clear (out);
+	x_clear (work_dir);
 	free_buf (buffer);
 	return EFAULT;
 }
@@ -2613,3 +2588,10 @@ old_job_info (uint32_t uid, uint32_t job_id, char **node_list,
 }
 
 
+static inline void x_clear (void * arg)
+{
+	if (arg) {
+		xfree (arg);
+		arg = NULL;
+	}
+}

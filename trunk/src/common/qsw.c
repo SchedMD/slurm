@@ -180,14 +180,18 @@ qsw_unpack_libstate(qsw_libstate_t ls, Buf buffer)
 	assert(ls->ls_magic == QSW_LIBSTATE_MAGIC);
 	offset = get_buf_offset(buffer);
 
-	unpack32(&ls->ls_magic, buffer);
-	unpack32(&ls->ls_prognum, buffer);
-	unpack32(&ls->ls_hwcontext, buffer);
+	safe_unpack32(&ls->ls_magic, buffer);
+	safe_unpack32(&ls->ls_prognum, buffer);
+	safe_unpack32(&ls->ls_hwcontext, buffer);
 
 	if (ls->ls_magic != QSW_LIBSTATE_MAGIC)
-		slurm_seterrno_ret(EBADMAGIC_QSWLIBSTATE); /* corrupted libstate */
+		goto unpack_error;
 
-	return (get_buf_offset(buffer) - offset); 
+	return SLURM_SUCCESS; 
+
+    unpack_error:
+	slurm_seterrno_ret(EBADMAGIC_QSWLIBSTATE); /* corrupted libstate */
+	return SLURM_ERROR;
 }
 
 /*
@@ -331,27 +335,31 @@ qsw_unpack_jobinfo(qsw_jobinfo_t j, Buf buffer)
 	assert(j->j_magic == QSW_JOBINFO_MAGIC);
 	offset = get_buf_offset(buffer);
  
-	unpack32(&j->j_magic, 		buffer);
-	unpack32(&j->j_prognum, 	buffer);
+	safe_unpack32(&j->j_magic, 		buffer);
+	safe_unpack32(&j->j_prognum, 		buffer);
 	for (i = 0; i < 4; i++)
-		unpack32(&j->j_cap.UserKey.Values[i], buffer);
-	unpack16(&j->j_cap.Type, 	buffer);
-	unpack16(&j->j_cap.padding, 	buffer);	    
-	unpack32(&j->j_cap.Version,	buffer); 	    
-	unpack32(&j->j_cap.LowContext, 	buffer);
-	unpack32(&j->j_cap.HighContext, buffer);
-	unpack32(&j->j_cap.MyContext,	buffer);
-	unpack32(&j->j_cap.LowNode, 	buffer);
-	unpack32(&j->j_cap.HighNode,    buffer);
-	unpack32(&j->j_cap.Entries, 	buffer);
-	unpack32(&j->j_cap.RailMask, 	buffer);
+		safe_unpack32(&j->j_cap.UserKey.Values[i], buffer);
+	safe_unpack16(&j->j_cap.Type,		buffer);
+	safe_unpack16(&j->j_cap.padding, 	buffer);	    
+	safe_unpack32(&j->j_cap.Version,	buffer); 	    
+	safe_unpack32(&j->j_cap.LowContext, 	buffer);
+	safe_unpack32(&j->j_cap.HighContext,	buffer);
+	safe_unpack32(&j->j_cap.MyContext,	buffer);
+	safe_unpack32(&j->j_cap.LowNode, 	buffer);
+	safe_unpack32(&j->j_cap.HighNode,	buffer);
+	safe_unpack32(&j->j_cap.Entries, 	buffer);
+	safe_unpack32(&j->j_cap.RailMask, 	buffer);
 	for (i = 0; i < ELAN_BITMAPSIZE; i++)
-		unpack32(&j->j_cap.Bitmap[i], buffer);
+		safe_unpack32(&j->j_cap.Bitmap[i], buffer);
 	
 	if (j->j_magic != QSW_JOBINFO_MAGIC)
-		slurm_seterrno_ret(EBADMAGIC_QSWJOBINFO);
+		goto unpack_error;
 
-	return (get_buf_offset(buffer) - offset);
+	return SLURM_SUCCESS;
+
+    unpack_error:
+	slurm_seterrno_ret(EBADMAGIC_QSWJOBINFO);
+	return SLURM_ERROR;
 }
 
 /*
