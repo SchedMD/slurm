@@ -74,8 +74,9 @@ int create_static_partitions(List part_list)
 	int start[PA_SYSTEM_DIMENSIONS];
 	int end[PA_SYSTEM_DIMENSIONS];
 	bgl_conf_record_t *bgl_conf_record;
-	
-	pm_partition_id_t part_id;
+	rm_partition_state_t state;
+        
+	pm_partition_id_t part_id[10];
 	rm_partition_t *my_part;
 	int i;
 	rm_BP_t * bp;
@@ -113,32 +114,57 @@ int create_static_partitions(List part_list)
 
 		/* If not, delete all existing partitions and jobs then
 		 * configure from scratch */
-	part_id="RMP101";
-	bp_num=1;
+	part_id[0]="RMP101";
+	part_id[1]="RMP102";
+	part_id[2]="RMP103";
+	part_id[3]="RMP104";
+	part_id[4]="RMP105";
+	part_id[5]="RMP106";
+	bp_num=6;
 	//rm_get_data(bgl, RM_BPNum, &bp_num);
 	//rm_get_data(bgl, RM_FirstBP, &bp);
-		for (i=0; i<bp_num; i++){
-			//	rm_get_data(bp, RM_BPPartID, &part_id);
-			if ((rc = rm_get_partition(part_id, &my_part))
-			    != STATUS_OK) {
-				error("rm_get_partition(%s): %s",
-				      part_id, bgl_err_str(rc));
-				rc = SLURM_ERROR;
-				continue;
-			}
+	for (i=0; i<bp_num; i++){
+		//	rm_get_data(bp, RM_BPPartID, &part_id);
+		if ((rc = rm_get_partition(part_id[i], &my_part))
+		    != STATUS_OK) {
+					
+		} else {
 
-			rm_get_data(my_part, RM_PartitionUserName, &name);
-			printf("user name for %s is %s\n",part_id,name);
-			if(!strcmp(name,"")) {
-				printf("destroying %s\n",(char *)part_id);
-				pm_destroy_partition(part_id);
-				rm_remove_partition(part_id);
-				printf("done\n");
+		rm_get_data(my_part, RM_PartitionUserName, &name);
+		//printf("user name for %s is %s\n",part_id[i],name);
+		//if(!strcmp(name,"")) {
+		printf("destroying %s\n",(char *)part_id[i]);
+		rm_get_data(my_part, RM_PartitionState, &state);
+		if(state != RM_PARTITION_FREE)
+			pm_destroy_partition(part_id[i]);
+		
+		rm_get_data(my_part, RM_PartitionState, &state);
+		while ((state != RM_PARTITION_FREE) && (state != RM_PARTITION_ERROR)){
+			printf(".");
+			rc=rm_free_partition(my_part);
+			if(rc!=STATUS_OK){
+				printf("Error freeing partition\n");
+				return(-1);
 			}
-			//rm_get_data(bgl, RM_NextBP, &bp);	
+			sleep(3);
+			rc=rm_get_partition(part_id[i],&my_part);
+			if(rc!=STATUS_OK){
+				printf("Error in GetPartition\n");
+				return(-1);
+			}
+			rm_get_data(my_part, RM_PartitionState, &state);
+			//Free memory allocated to mypart
+			
 		}
+		rm_remove_partition(part_id[i]);
+		sleep(3);
+		printf("done\n");
+		//}
+		//rm_get_data(bgl, RM_NextBP, &bp);
+		}	
+	}
 	
-		itr = list_iterator_create(bgl_conf_list);
+	itr = list_iterator_create(bgl_conf_list);
 		while ((bgl_conf_record = (bgl_conf_record_t *) list_next(itr)) != NULL) {
 			j=0;
 			while (bgl_conf_record->nodes[j] != '\0') {

@@ -413,7 +413,7 @@ static List _get_all_blocks(void)
 
 	if (!ret_list)
 		fatal("malloc error");
-
+	
 	itr = list_iterator_create(bgl_init_part_list);
 	while ((block_ptr = (bgl_record_t *) list_next(itr))) {
 		if ((block_ptr->owner_name == NULL)
