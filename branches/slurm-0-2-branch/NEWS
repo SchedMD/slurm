@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
  -- Applied various fixes for memory leaks.
  -- Remove logic preventing DPCS from allocating jobs with more than 
     eight node segments. Fix for DPCS should now be in production.
+ -- Changed compact string for DRAINING state to "drng" from "drain."
 
 * Changes in SLURM 0.2.21
 =========================
