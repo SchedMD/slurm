@@ -35,7 +35,7 @@
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
 
-/* slurm_cancel_job - cancel a job and all of its steps */
+/* slurm_cancel_job - cancel an existing job and all of its steps */
 int 
 slurm_cancel_job ( uint32_t job_id )
 {
