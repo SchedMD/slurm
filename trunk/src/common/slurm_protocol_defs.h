@@ -168,13 +168,13 @@ typedef struct slurm_protocol_header
 	uint32_t body_length ;
 } header_t ;
 
-typedef struct slurm_stream_io_header
+typedef struct slurm_io_stream_header
 {
 	uint16_t version ; /*version/magic number*/
 	char key[16] ;
 	uint32_t task_id ;
 	uint16_t type ;
-} slurm_stream_io_header ;
+} slurm_io_stream_header_t ;
 
 /* Job credential */
 typedef struct slurm_job_credential
@@ -256,12 +256,13 @@ typedef struct launch_tasks_request_msg
 	uint32_t job_id ;
 	uint32_t job_step_id ;
 	uint32_t uid ;
-	slurm_job_credential_t* credentials;
+	slurm_job_credential_t* credential;
 	uint32_t tasks_to_launch ;
 	uint16_t envc ;
 	char ** env ;
 	char * cwd ;
-	char * cmd_line ;
+	uint16_t argc;
+	char ** argv;
 	slurm_addr response_addr ;
 	slurm_addr streams;
 	uint32_t * global_task_ids;
@@ -278,7 +279,7 @@ typedef struct reattach_tasks_streams_msg
 	uint32_t job_id ;
 	uint32_t job_step_id ;
 	uint32_t uid ;
-	slurm_job_credential_t* credentials;
+	slurm_job_credential_t* credential;
 	uint32_t tasks_to_reattach ;
 	slurm_addr streams;
 	uint32_t * global_task_ids;
