@@ -120,8 +120,7 @@ agent (void *args)
 		goto cleanup;
 	if (agent_arg_ptr->slurm_addr == NULL)
 		error ("agent passed null address list");
-	if ((agent_arg_ptr->msg_type != REQUEST_REVOKE_JOB_CREDENTIAL) &&
-	    (agent_arg_ptr->msg_type != REQUEST_SHUTDOWN_IMMEDIATE))
+	if (agent_arg_ptr->msg_type != REQUEST_REVOKE_JOB_CREDENTIAL)
 		fatal ("agent passed invaid message type %d", agent_arg_ptr->msg_type);
 
 	/* initialize the data structures */
