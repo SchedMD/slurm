@@ -129,45 +129,50 @@ _print_job ( void )
 	if (params.format_list == NULL) {
 		int out_size = 0;
 		params.format_list = list_create( NULL );
-		job_format_add_job_id( params.format_list, 7, true );
+		job_format_add_job_id( params.format_list, 7, true, " " );
 		out_size += (7 + 1);
-		job_format_add_partition( params.format_list, 9, false );
+		job_format_add_partition( params.format_list, 9, false, " " );
 		out_size += (9 + 1);
-		job_format_add_name( params.format_list, 8, false );
+		job_format_add_name( params.format_list, 8, false, " " );
 		out_size += (8 + 1);
-		job_format_add_user_name( params.format_list, 8, false );
+		job_format_add_user_name( params.format_list, 8, false, " " );
 		out_size += (8 + 1);
 		if (params.long_list) {
 			job_format_add_job_state( params.format_list, 
-			                          8, false );
+			                          8, false, " " );
 			out_size += (8 + 1);
 		} else {
 			job_format_add_job_state_compact( params.format_list, 
-			                                  2, false );
+			                                  2, false, " " );
 			out_size += (2 + 1);
 		}
-		job_format_add_time_limit( params.format_list, 7, true );
+		job_format_add_time_limit( params.format_list, 7, true, " " );
 		out_size += (7 + 1);
 		if (params.long_list) {
-			job_format_add_priority( params.format_list, 10, true );
+			job_format_add_priority( params.format_list, 10, 
+						 true, " " );
 			out_size += (10 + 1);
-			job_format_add_start_time( params.format_list,11,false);
+			job_format_add_start_time( params.format_list,11,
+						   false, " ");
 			out_size += (11 + 1);
-			job_format_add_end_time( params.format_list, 11, false);
+			job_format_add_end_time( params.format_list, 11,
+						 false, " ");
 			out_size += (11 + 1);
 		} else {
-			job_format_add_priority( params.format_list, 4, true );
+			job_format_add_priority( params.format_list, 4, 
+						 true, " " );
 			out_size += (4 + 1);
 		}
 		/* Leave nodes at the end, length is highly variable */
 		if (params.long_list) {
-			job_format_add_nodes( params.format_list, 0, false );
+			job_format_add_nodes( params.format_list, 0, 
+					      false, NULL );
 		} else {
 			out_size  = max_line_size - out_size - 1;
 			if (out_size < 8)
 				out_size = 8;
 			job_format_add_nodes( params.format_list, out_size, 
-			                      false );
+			                      false, NULL );
 		}
 	}
 
@@ -211,28 +216,30 @@ _print_job_steps( void )
 	if (params.format_list == NULL) {
 		int out_size = 0;
 		params.format_list = list_create( NULL );
-		step_format_add_id( params.format_list, 10, false );
+		step_format_add_id( params.format_list, 10, false, " " );
 		out_size += (10 + 1);
-		step_format_add_partition( params.format_list, 9, false );
+		step_format_add_partition( params.format_list, 9, false, " " );
 		out_size += (9 + 1);
-		step_format_add_user_name( params.format_list, 8, false );
+		step_format_add_user_name( params.format_list, 8, false, " " );
 		out_size += (8 + 1);
-		step_format_add_start_time( params.format_list, 11, false );
+		step_format_add_start_time( params.format_list, 11, 
+					    false, " " );
 		out_size += (11 + 1);
 		if (params.long_list) {
-			step_format_add_nodes( params.format_list, 0, false );
+			step_format_add_nodes( params.format_list, 0, 
+					       false, NULL );
 		} else {
 			out_size  = max_line_size - out_size - 1;
 			if (out_size < 8)
 				out_size = 8;
 			step_format_add_nodes( params.format_list, out_size, 
-			                       false );
+			                       false, NULL );
 		}
 	}
 		
 	print_steps_array( new_step_ptr->job_steps, 
-			new_step_ptr->job_step_count, 
-			params.format_list );
+			   new_step_ptr->job_step_count, 
+			   params.format_list );
 	return;
 }
 

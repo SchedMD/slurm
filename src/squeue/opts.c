@@ -47,19 +47,21 @@
 #define OPT_USERS   	0x0b
 #define OPT_LONG   	0x0c
 #define OPT_SORT   	0x0d
+#define OPT_NO_HEAD   	0x0e
 
 /* FUNCTIONS */
-static List _build_job_list( char* str );
-static List _build_part_list( char* str );
-static List _build_state_list( char* str );
-static List _build_all_states_list( void );
-static List _build_step_list( char* str );
-static List _build_user_list( char* str );
-static int  _parse_state( char* str, enum job_states* states );
-static void _parse_token( char *token, char *field, int *field_size, 
-                          bool *right_justify);
-static int  _parse_format( char* );
-static void _print_options( void );
+static List  _build_job_list( char* str );
+static List  _build_part_list( char* str );
+static List  _build_state_list( char* str );
+static List  _build_all_states_list( void );
+static List  _build_step_list( char* str );
+static List  _build_user_list( char* str );
+static char *_get_prefix(char *token);
+static int   _parse_state( char* str, enum job_states* states );
+static void  _parse_token( char *token, char *field, int *field_size, 
+                           bool *right_justify, char **suffix);
+static int   _parse_format( char* );
+static void  _print_options( void );
 
 /*
  * parse_command_line
@@ -79,6 +81,8 @@ parse_command_line( int argc, char* argv[] )
 
 		{"iterate", 'i', POPT_ARG_INT, &params.iterate, OPT_ITERATE,
 			"specify an interation period", "seconds"},
+		{"noheader", 'h', POPT_ARG_NONE, &params.no_header, 
+			OPT_NO_HEAD, "no headers on output", NULL},
 		{"jobs", 'j', POPT_ARG_NONE, &params.job_flag, OPT_JOBS_NONE, 
 			"comma separated list of jobs to view, default is all", 
 			"job_id"},
@@ -114,7 +118,7 @@ parse_command_line( int argc, char* argv[] )
 	context = poptGetContext("squeue", argc, (const char**)argv, 
 				options, POPT_CONTEXT_POSIXMEHARDER);
 
-	poptSetOtherOptionHelp(context, "[-jlsv]");
+	poptSetOtherOptionHelp(context, "[-hjlsv]");
 
 	next_opt = poptGetNextOpt(context); 
 
@@ -237,54 +241,63 @@ _parse_format( char* format )
 {
 	int field_size;
 	bool right_justify;
-	char *token, *tmp_char, *tmp_format;
+	char *prefix, *suffix, *token, *tmp_char, *tmp_format;
 	char field[1];
 
 	if (format == NULL) {
 		fprintf( stderr, "Format option lacks specification\n" );
 		exit( 1 );
 	}
-	if (format[0] != '%') {
-		fprintf( stderr, "Invalid format specification: %s\n", 
-			 format );
-		exit( 1 );
+
+	params.format_list = list_create( NULL );
+	if ((prefix = _get_prefix(format))) {
+		if (params.step_flag)
+			step_format_add_prefix( params.format_list, 0, 0, 
+						prefix); 
+		else
+			job_format_add_prefix( params.format_list, 0, 0, 
+					       prefix);
 	}
+
 	field_size = strlen( format );
 	tmp_format = xmalloc( field_size + 1 );
 	strcpy( tmp_format, format );
 
-	params.format_list = list_create( NULL );
 	token = strtok_r( tmp_format, "%", &tmp_char);
 	if (token && (format[0] != '%'))	/* toss header */
 		token = strtok_r( NULL, "%", &tmp_char );
 	while (token) {
-		_parse_token( token, field, &field_size, &right_justify);
-
+		_parse_token( token, field, &field_size, &right_justify, 
+			      &suffix);
 		if (params.step_flag) {
 			if      (field[0] == 'i')
 				step_format_add_id( params.format_list, 
 				                    field_size, 
-						    right_justify );
+						    right_justify, suffix );
 			else if (field[0] == 'N')
 				step_format_add_nodes( params.format_list, 
 				                       field_size, 
-				                       right_justify );
+				                       right_justify, suffix );
 			else if (field[0] == 'P')
 				step_format_add_partition( params.format_list, 
 				                           field_size, 
-				                           right_justify );
+				                           right_justify, 
+				                           suffix );
 			else if (field[0] == 'S')
 				step_format_add_start_time( params.format_list, 
 				                            field_size, 
-				                            right_justify );
+				                            right_justify, 
+				                            suffix );
 			else if (field[0] == 'U')
 				step_format_add_user_id( params.format_list, 
 				                         field_size, 
-				                         right_justify );
+				                         right_justify, 
+				                         suffix );
 			else if (field[0] == 'u')
 				step_format_add_user_name( params.format_list, 
 				                           field_size, 
-				                           right_justify );
+				                           right_justify, 
+				                           suffix );
 			else
 				fprintf( 
 				   stderr, 
@@ -294,92 +307,112 @@ _parse_format( char* format )
 			if      (field[0] == 'b')
 				job_format_add_start_time( params.format_list, 
 				                           field_size, 
-				                           right_justify );
+				                           right_justify, 
+				                           suffix  );
 			else if (field[0] == 'c')
 				job_format_add_min_procs( params.format_list, 
 				                          field_size, 
-				                          right_justify );
+				                          right_justify, 
+				                          suffix  );
 			else if (field[0] == 'C')
 				job_format_add_num_procs( params.format_list, 
 				                          field_size, 
-				                          right_justify );
+				                          right_justify, 
+				                          suffix  );
 			else if (field[0] == 'd')
 				job_format_add_min_tmp_disk( params.format_list, 
 				                             field_size, 
-				                             right_justify );
+				                             right_justify, 
+				                             suffix  );
 			else if (field[0] == 'e')
 				job_format_add_end_time( params.format_list, 
 				                         field_size, 
-				                         right_justify );
+				                         right_justify, 
+				                         suffix );
 			else if (field[0] == 'f')
 				job_format_add_features( params.format_list, 
 				                         field_size, 
-				                         right_justify );
+				                         right_justify, 
+				                         suffix );
 			else if (field[0] == 'h')
 				job_format_add_shared( params.format_list, 
 				                       field_size, 
-				                       right_justify );
+				                       right_justify, 
+				                       suffix );
 			else if (field[0] == 'i')
 				job_format_add_job_id( params.format_list, 
 				                       field_size, 
-				                       right_justify );
+				                       right_justify, 
+				                       suffix );
 			else if (field[0] == 'j')
 				job_format_add_name( params.format_list, 
 				                     field_size, 
-				                     right_justify );
+				                     right_justify, suffix );
 			else if (field[0] == 'l')
 				job_format_add_time_limit( params.format_list, 
 				                           field_size, 
-				                           right_justify );
+				                           right_justify, 
+				                           suffix );
 			else if (field[0] == 'm')
 				job_format_add_min_memory( params.format_list, 
 				                           field_size, 
-				                           right_justify );
+				                           right_justify, 
+				                           suffix );
 			else if (field[0] == 'n')
 				job_format_add_req_nodes( params.format_list, 
 				                          field_size, 
-				                          right_justify );
+				                          right_justify, 
+				                          suffix );
 			else if (field[0] == 'N')
 				job_format_add_nodes( params.format_list, 
 				                      field_size, 
-				                      right_justify );
+				                      right_justify, suffix );
 			else if (field[0] == 'o')
 				job_format_add_num_nodes( params.format_list, 
 				                          field_size, 
-				                          right_justify );
+				                          right_justify, 
+				                          suffix );
 			else if (field[0] == 'O')
 				job_format_add_contiguous( params.format_list, 
 				                           field_size, 
-				                           right_justify );
+				                           right_justify, 
+				                           suffix );
 			else if (field[0] == 'p')
 				job_format_add_priority( params.format_list, 
 				                         field_size, 
-				                         right_justify );
+				                         right_justify, 
+				                         suffix );
 			else if (field[0] == 'P')
 				job_format_add_partition( params.format_list, 
 				                          field_size, 
-				                          right_justify );
+				                          right_justify, 
+				                          suffix );
 			else if (field[0] == 'S')
 				job_format_add_start_time( params.format_list, 
 				                           field_size, 
-				                           right_justify );
+				                           right_justify, 
+				                           suffix );
 			else if (field[0] == 't')
 				job_format_add_job_state_compact( 
 							params.format_list, 
 							field_size, 
-							right_justify );
+							right_justify, 
+				                        suffix );
 			else if (field[0] == 'T')
 				job_format_add_job_state( params.format_list, 
 				                          field_size, 
-				                          right_justify );
+				                          right_justify, 
+				                          suffix );
 			else if (field[0] == 'U')
 				job_format_add_user_id( params.format_list, 
 				                        field_size, 
-				                        right_justify );
+				                        right_justify, 
+				                        suffix );
 			else if (field[0] == 'u')
 				job_format_add_user_name( params.format_list, 
 				                          field_size, 
-				                          right_justify );
+				                          right_justify, 
+				                          suffix );
 			else 
 				fprintf( 
 				   stderr, 
@@ -393,14 +426,41 @@ _parse_format( char* format )
 	return SLURM_SUCCESS;
 }
 
+/* Take a format specification and copy out it's prefix
+ * IN/OUT token - input specification, everything before "%" is removed
+ * RET - everything before "%" in the token
+ */
+static char *
+_get_prefix( char *token )
+{
+	char *pos, *prefix;
+
+	if (token == NULL) 
+		return NULL;
+
+	pos = strchr(token, (int) '%');
+	if (pos == NULL)	/* everything is prefix */
+		return xstrdup(token);
+	if (pos == token)	/* no prefix */
+		return NULL;
+
+	pos[0] = '\0';		/* some prefix */
+	prefix = xstrdup(token);
+	pos[0] = '%';
+	memmove(token, pos, (strlen(pos)+1));
+	return prefix;
+}
+
 /* Take a format specification and break it into its components
  * IN token - input specification without leading "%", eg. ".5u"
  * OUT field - the letter code for the data type
  * OUT field_size - byte count
  * OUT right_justify - true of field to be right justified
+ * OUT suffix - tring containing everthing after the field specification
  */
 static void
-_parse_token( char *token, char *field, int *field_size, bool *right_justify)
+_parse_token( char *token, char *field, int *field_size, bool *right_justify, 
+	      char **suffix)
 {
 	int i = 0;
 
@@ -418,11 +478,7 @@ _parse_token( char *token, char *field, int *field_size, bool *right_justify)
 
 	field[0] = token[i++];
 
-	if (token[i] != '\0') {
-		fprintf( stderr, 
-		         "Extraneous format specification '%s' ignored\n", 
-		         &token[i]);
-	}
+	*suffix = xstrdup(&token[i]);
 }
 
 /* print the parameters specified */
