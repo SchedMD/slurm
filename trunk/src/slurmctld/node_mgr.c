@@ -14,10 +14,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <src/common/hostlist.h>
 #include <src/slurmctld/slurmctld.h>
 
 #define BUF_SIZE 	1024
-#define SEPCHARS 	" \n\t"
 
 List config_list = NULL;		/* list of config_record entries */
 struct node_record *node_record_table_ptr = NULL;	/* location of the node records */
@@ -142,17 +142,6 @@ main (int argc, char *argv[])
 		error_count++;
 	}
 	node_ptr = create_node_record (config_ptr, "lx04");
-
-	error_code = node_name2list (node_names, &node_list, &node_count);
-	if (error_code) {
-		printf ("ERROR: node_name2list error %d\n", error_code);
-		error_count++;
-	}
-	printf("node_name2list for %s generates\n  ", node_names);
-	for (i = 0; i < node_count; i++)
-		printf("%s ", &node_list[i*MAX_NAME_LEN]);
-	printf("\n");
-	xfree(node_list);
 
 	error_code = node_name2bitmap ("lx[01-02],lx04", &map3);
 	if (error_code) {
@@ -732,10 +721,10 @@ node_lock ()
 int 
 node_name2bitmap (char *node_names, bitstr_t **bitmap) 
 {
-	int error_code, i, node_count;
-	char *node_list;
 	struct node_record *node_record_point;
+	char *this_node_name;
 	bitstr_t *my_bitmap;
+	hostlist_t host_list;
 
 	bitmap[0] = NULL;
 	if (node_names == NULL) {
@@ -747,20 +736,20 @@ node_name2bitmap (char *node_names, bitstr_t **bitmap)
 		return EINVAL;
 	}
 
-	error_code = node_name2list(node_names, &node_list, &node_count);
-	if (error_code)
-		return error_code;
+	if ( (host_list = hostlist_create (node_names)) == NULL) {
+		error ("hostlist_create errno %d on %s", errno, node_names);
+		return EINVAL;
+	}
 
 	my_bitmap = (bitstr_t *) bit_alloc (node_record_count);
 	if (my_bitmap == NULL)
 		fatal("bit_alloc memory allocation failure");
 
-	for (i = 0; i < node_count; i++) {
-		node_record_point = find_node_record (&node_list[i*MAX_NAME_LEN]);
+	while ( (this_node_name = hostlist_shift (host_list)) ) {
+		node_record_point = find_node_record (this_node_name);
 		if (node_record_point == NULL) {
-			error ("node_name2bitmap: invalid node specified %s",
-				&node_list[i*MAX_NAME_LEN]);
-			xfree (node_list);
+			error ("node_name2bitmap: invalid node specified %s",this_node_name);
+			hostlist_destroy (host_list);
 			bit_free (my_bitmap);
 			return EINVAL;
 		}
@@ -768,88 +757,8 @@ node_name2bitmap (char *node_names, bitstr_t **bitmap)
 			    (bitoff_t) (node_record_point - node_record_table_ptr));
 	}
 
-	xfree (node_list);
+	hostlist_destroy (host_list);
 	bitmap[0] = my_bitmap;
-	return 0;
-}
-
-
-/* 
- * node_name2list - given a node name regular expression, build an array of individual 
- *                  node names
- * input: node_names - list of nodes
- *	  node_list - location into which the list is placed
- *        node_count - location into which a node count is passed
- * output: node_list - an array of node names, each of size MAX_NAME_LEN
- *         node_count - the number of entries in node_list
- *         returns 0 if no error, otherwise EINVAL or enomem
- * global: node_record_table_ptr - pointer to global node table
- * NOTE: the caller must xfree memory at node_list when no longer required iff no error
- */
-int 
-node_name2list (char *node_names, char **node_list, int *node_count) 
-{
-	char *str_ptr1, *str_ptr2, *buffer, *format, *my_node_list,this_node_name[BUF_SIZE];
-	int error_code, start_inx, end_inx, count_inx;
-	int i, buf_recs, buf_rec_inx;
-
-	*node_count = 0;
-	buf_rec_inx = 0;
-	buf_recs = 200;
-	node_list[0] = NULL;
-	buffer = xmalloc(buf_recs * MAX_NAME_LEN);
-
-	my_node_list = xmalloc (strlen (node_names) + 1);
-	strcpy (my_node_list, node_names);
-	str_ptr2 = (char *) strtok_r (my_node_list, ",", &str_ptr1);
-
-	while (str_ptr2) {	/* break apart by comma separators */
-		error_code =
-			parse_node_name (str_ptr2, &format, &start_inx,
-					 &end_inx, &count_inx);
-		if (error_code) {
-			xfree(buffer);
-			xfree (my_node_list);
-			return error_code;
-		}
-		if (strlen (format) >= sizeof (this_node_name)) {
-			error ("node_name2list: node name specification too long: %s",
-				format);
-			xfree(buffer);
-			xfree (my_node_list);
-			xfree (format);
-			return ESLURM_INVALID_NODE_NAME;
-		}
-		for (i = start_inx; i <= end_inx; i++) {
-			if (count_inx == 0)
-				strncpy (this_node_name, format,
-					 sizeof (this_node_name));
-			else
-				sprintf (this_node_name, format, i);
-			if (strlen (this_node_name) > MAX_NAME_LEN) {
-				error ("node_name2list: node name specification too long: %s",
-					this_node_name);
-				xfree(buffer);
-				xfree (my_node_list);
-				xfree (format);
-				return ESLURM_INVALID_NODE_NAME;
-			}
-			if ((buf_rec_inx+1) >= buf_recs) {
-				buf_recs += 200;
-				xrealloc(buffer, (buf_recs * MAX_NAME_LEN));
-			}
-			strncpy(&buffer[buf_rec_inx * MAX_NAME_LEN],
-				this_node_name, MAX_NAME_LEN);
-			buf_rec_inx++;
-			
-		}
-		xfree (format);
-		str_ptr2 = (char *) strtok_r (NULL, ",", &str_ptr1);
-	}
-
-	xfree (my_node_list);
-	*node_count = buf_rec_inx;
-	node_list[0] = buffer;
 	return 0;
 }
 
@@ -976,114 +885,6 @@ pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len)
 
 
 /* 
- * parse_node_name - parse the node name for regular expressions and return a 
- *                   sprintf format generate multiple node names as needed.
- * input: node_name - node name to parse
- * output: format - sprintf format for generating names
- *         start_inx - first index to used
- *         end_inx - last index value to use
- *         count_inx - number of index values to use (will be zero if none)
- *         return 0 if no error, error code otherwise
- * NOTE: the calling program must execute xfree(format) when the storage location 
- *       is no longer needed
- */
-int 
-parse_node_name (char *node_name, char **format, int *start_inx, int *end_inx,
-		 int *count_inx) 
-{
-	int base, format_pos, precision, i;
-	char type[1];
-
-	i = strlen (node_name);
-	format[0] = (char *) xmalloc (i + 1);
-
-	*start_inx = 0;
-	*end_inx = 0;
-	*count_inx = 0;
-	format_pos = 0;
-	base = 0;
-	format[0][format_pos] = (char) NULL;
-	i = 0;
-	while (1) {
-		if (node_name[i] == (char) NULL)
-			break;
-		if (node_name[i] == '\\') {
-			if (node_name[++i] == (char) NULL)
-				break;
-			format[0][format_pos++] = node_name[i++];
-		}
-		else if (node_name[i] == '[') {	/* '[' preceeding number range */
-			if (node_name[++i] == (char) NULL)
-				break;
-			if (base != 0) {
-				error ("parse_node_name: invalid '[' in node name %s\n",
-					node_name);
-				xfree (format[0]);
-				return EINVAL;
-			}
-			if (node_name[i] == 'o') {
-				type[0] = node_name[i++];
-				base = 8;
-			}
-			else {
-				type[0] = 'd';
-				base = 10;
-			}
-			precision = 0;
-			while (1) {
-				if ((node_name[i] >= '0')
-				    && (node_name[i] <= '9')) {
-					*start_inx =
-						((*start_inx) * base) +
-						(int) (node_name[i++] - '0');
-					precision++;
-					continue;
-				}
-				if (node_name[i] == '-') {	/* '-' between numbers */
-					i++;
-					break;
-				}
-				error ("parse_node_name: invalid '%c' in node name %s\n",
-					 node_name[i], node_name);
-				xfree (format[0]);
-				return EINVAL;
-			}
-			while (1) {
-				if ((node_name[i] >= '0')
-				    && (node_name[i] <= '9')) {
-					*end_inx =
-						((*end_inx) * base) +
-						(int) (node_name[i++] - '0');
-					continue;
-				}
-				if (node_name[i] == ']') {	/* ']' terminating number range */
-					i++;
-					break;
-				}
-				error ("parse_node_name: invalid '%c' in node name %s\n",
-					 node_name[i], node_name);
-				xfree (format[0]);
-				return EINVAL;
-			}
-			*count_inx = (*end_inx - *start_inx) + 1;
-			format[0][format_pos++] = '%';
-			format[0][format_pos++] = '.';
-			if (precision > 9)
-				format[0][format_pos++] =
-					'0' + (precision / 10);
-			format[0][format_pos++] = '0' + (precision % 10);
-			format[0][format_pos++] = type[0];
-		}
-		else {
-			format[0][format_pos++] = node_name[i++];
-		}
-	}
-	format[0][format_pos] = (char) NULL;
-	return 0;
-}
-
-
-/* 
  * rehash - build a hash table of the node_record entries. this is a large hash table 
  * to permit the immediate finding of a record based only upon its name without regards 
  * to the number. there should be no need for a search. the algorithm is optimized for 
@@ -1162,12 +963,10 @@ split_node_name (char *name, char *prefix, char *suffix, int *index,
 int 
 update_node ( update_node_msg_t * update_node_msg ) 
 {
-	int error_code;
-	int i;
-	int node_count;
-	char  *node_list ;
-	int state_val;
+	int error_code = 0, state_val;
+	char  *this_node_name ;
 	struct node_record *node_record_point;
+	hostlist_t host_list;
 
 	if (update_node_msg -> node_names == NULL ) {
 		error ("update_node: invalid node name  %s\n", update_node_msg -> node_names );
@@ -1176,15 +975,17 @@ update_node ( update_node_msg_t * update_node_msg )
 
 	state_val = update_node_msg -> node_state ; 
 	
-	error_code = node_name2list( update_node_msg -> node_names, &node_list, &node_count);
-	if (error_code)
-		return error_code;
+	if ( (host_list = hostlist_create (update_node_msg -> node_names)) == NULL) {
+		error ("hostlist_create errno %d on %s", errno, update_node_msg -> node_names);
+		return ESLURM_INVALID_NODE_NAME;
+	}
 
 	last_node_update = time (NULL);
-	for (i = 0; i < node_count; i++) {
-		node_record_point = find_node_record (&node_list[i*MAX_NAME_LEN]);
+	while ( (this_node_name = hostlist_shift (host_list)) ) {
+		node_record_point = find_node_record (this_node_name);
 		if (node_record_point == NULL) {
-			error ("update_node: node name %s does not exist, can not be updated", &node_list[i*MAX_NAME_LEN]);
+			error ("update_node: node name %s does not exist, can not be updated", 
+				this_node_name);
 			error_code = ESLURM_INVALID_NODE_NAME;
 			break;
 		}
@@ -1209,12 +1010,11 @@ update_node ( update_node_msg_t * update_node_msg )
 
 			node_record_point->node_state = state_val;
 			info ("update_node: node %s state set to %s",
-				&node_list[i*MAX_NAME_LEN], 
-				node_state_string(state_val));
+				this_node_name, node_state_string(state_val));
 		}
 	}
 
-	xfree (node_list);
+	hostlist_destroy (host_list);
 	return error_code;
 }
 

@@ -132,20 +132,6 @@ extern int slurm_submit_batch_job (job_desc_msg_t * job_desc_msg,
 extern int slurm_job_will_run (job_desc_msg_t * job_desc_msg , resource_allocation_response_msg_t ** job_alloc_resp_msg );
 
 /* 
- * parse_node_name - parse the node name for regular expressions and return a sprintf format 
- * generate multiple node names as needed.
- * input: node_name - node name to parse
- * output: format - sprintf format for generating names
- *         start_inx - first index to used
- *         end_inx - last index value to use
- *         count_inx - number of index values to use (will be zero if none)
- *         return 0 if no error, error code otherwise
- * NOTE: the calling program must execute free(format) when the storage location is no longer needed
- */
-extern int parse_node_name (char *node_name, char **format, int *start_inx,
-			    int *end_inx, int *count_inx);
-
-/* 
  * reconfigure - _ request that slurmctld re-read the configuration files
  * output: returns 0 on success, errno otherwise
  */
