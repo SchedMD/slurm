@@ -1120,7 +1120,8 @@ job_complete (uint32_t job_id, uid_t uid)
 		verbose ("job_complete for job id %u successful", job_id);
 	} 
 	else {
-		error ("job_complete for job id %u from bad state", job_id, job_ptr->job_state);
+		error ("job_complete for job id %u from bad state", 
+		       job_id, job_ptr->job_state);
 	}
 
 	last_job_update = time (NULL);

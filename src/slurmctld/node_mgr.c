@@ -963,7 +963,8 @@ update_node ( update_node_msg_t * update_node_msg )
 	hostlist_t host_list;
 
 	if (update_node_msg -> node_names == NULL ) {
-		error ("update_node: invalid node name  %s\n", update_node_msg -> node_names );
+		error ("update_node: invalid node name  %s\n", 
+		       update_node_msg -> node_names );
 		return ESLURM_INVALID_NODE_NAME;
 	}
 
