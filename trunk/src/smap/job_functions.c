@@ -139,7 +139,6 @@ int print_text_job(job_info_t * job_ptr)
 	int i = 0;
 	int width = 0;
 	struct passwd *user = NULL;
-	long days, hours, minutes, seconds;
 	char time_buf[20];
 
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
@@ -164,22 +163,8 @@ int print_text_job(job_info_t * job_ptr)
 	smap_info_ptr->xcord += 3;
 	time = smap_info_ptr->now_time - job_ptr->start_time;
 
-	seconds = time % 60;
-	minutes = (time / 60) % 60;
-	hours = (time / 3600) % 24;
-	days = time / 86400;
-
-	if (days)
-		snprintf(time_buf, sizeof(time_buf),
-			"%ld:%2.2ld:%2.2ld:%2.2ld",
-			days, hours, minutes, seconds);
-	else if (hours)
-		snprintf(time_buf, sizeof(time_buf),
-			"%ld:%2.2ld:%2.2ld", 
-			hours, minutes, seconds);
-	else
-		snprintf(time_buf, sizeof(time_buf),
-			"%ld:%2.2ld", minutes,seconds);
+	time = smap_info_ptr->now_time - job_ptr->start_time;
+	snprint_time(time_buf, sizeof(time_buf), time);
 	width = strlen(time_buf);
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
 		smap_info_ptr->xcord + (10 - width), "%s",

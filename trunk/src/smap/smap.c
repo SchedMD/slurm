@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  smap.c - Report overall state the system
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -216,6 +216,31 @@ void print_date(void)
 		  smap_info_ptr->xcord, "%s",
 		  ctime(&smap_info_ptr->now_time));
 	smap_info_ptr->ycord++;
+}
+
+extern void snprint_time(char *buf, size_t buf_size, time_t time)
+{
+	if (time == INFINITE) {
+		snprintf(buf, buf_size, "UNLIMITED");
+	} else {
+		long days, hours, minutes, seconds;
+		seconds = time % 60;
+		minutes = (time / 60) % 60;
+		hours = (time / 3600) % 24;
+		days = time / 86400;
+
+		if (days)
+			snprintf(buf, buf_size,
+				"%ld:%2.2ld:%2.2ld:%2.2ld",
+				days, hours, minutes, seconds);
+		else if (hours)
+			snprintf(buf, buf_size,
+				"%ld:%2.2ld:%2.2ld", 
+				hours, minutes, seconds);
+		else
+			snprintf(buf, buf_size,
+				"%ld:%2.2ld", minutes,seconds);
+	}
 }
 
 int _get_option(void)
