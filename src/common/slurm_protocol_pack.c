@@ -129,6 +129,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_NODE_REGISTRATION_STATUS :
 		case REQUEST_RECONFIGURE :
 		case REQUEST_SHUTDOWN :
+		case REQUEST_SHUTDOWN_IMMEDIATE :
 			/* Message contains no body/information */
 			break ;
 		case RESPONSE_SUBMIT_BATCH_JOB:
@@ -270,6 +271,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_NODE_REGISTRATION_STATUS :
 		case REQUEST_RECONFIGURE :
 		case REQUEST_SHUTDOWN :
+		case REQUEST_SHUTDOWN_IMMEDIATE :
 			/* Message contains no body/information */
 			break ;
 		case RESPONSE_SUBMIT_BATCH_JOB :
