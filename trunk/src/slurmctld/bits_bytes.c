@@ -22,6 +22,10 @@
 
 #define BUF_SIZE 1024
 #define SEPCHARS " \n\t"
+/* Tag fields of data structures dumped to API (jobs, partitions, nodes, etc.) */
+/* This is useful for API debugging, especially when changing formats */
+#define TAG_SIZE 8
+
 
 #if DEBUG_MODULE
 int	Node_Record_Count = 0;		/* Count of records in the Node Record Table */
@@ -33,6 +37,8 @@ main(int argc, char * argv[]) {
     int  Error_Code, Int_Found, i, size;
     char *String_Found;
     unsigned *Map1, *Map2, *Map3;
+    char *Buffer;
+    int Buffer_Offset, Buffer_Size;
 
     printf("Testing string manipulation functions...\n");
     strcpy(In_Line, "Test1=UNLIMITED Test2=1234 Test3 LeftOver Test4=My,String");
@@ -108,6 +114,33 @@ main(int argc, char * argv[]) {
     printf("BitMapPrint #6 Map1 shows %s\n", Out_Line);
     size = BitMapCount(Map1);
     if (size != 19) printf("ERROR: BitMapCount error, %d\n", size);
+
+    printf("\n\nTesting buffer I/O functions...\n");
+    Buffer = NULL;
+    Buffer_Offset = Buffer_Size= 0;
+    size = 123;
+    Error_Code = Write_Value(&Buffer, &Buffer_Offset, &Buffer_Size, "Val1", &size, sizeof(int));
+    if (Error_Code) printf("Write_Value error on Test1\n");
+    Error_Code = Write_Value(&Buffer, &Buffer_Offset, &Buffer_Size, "Val2", Map1, 8);
+    if (Error_Code) printf("Write_Value error on Test2\n");
+    size = 45;
+    Error_Code = Write_Value(&Buffer, &Buffer_Offset, &Buffer_Size, "Val3", &size, sizeof(int));
+    if (Error_Code) printf("Write_Value error on Test4\n");
+    Error_Code = Write_Value(&Buffer, &Buffer_Offset, &Buffer_Size, "EndRec", &size, 0);
+    if (Error_Code) printf("Write_Value error on Test4\n");
+    size = 124;
+    Error_Code = Write_Value(&Buffer, &Buffer_Offset, &Buffer_Size, "Val1", &size, sizeof(int));
+    if (Error_Code) printf("Write_Value error on Test5\n");
+    Buffer_Offset = 0;
+    Error_Code = Read_Value(Buffer, &Buffer_Offset, Buffer_Size, "Val1", &size);
+    if (Error_Code || (size != 123)) printf("Read_Value error on Test1\n");
+    Error_Code = Read_Array(Buffer, &Buffer_Offset, Buffer_Size, "Val2", (void**)&Map2);
+    if (Error_Code || (strncmp((char *)Map1, (char *)Map2,1) != 0)) 
+	printf("Read_Array error on Test1\n");
+    Error_Code = Read_Tag(Buffer, &Buffer_Offset, Buffer_Size, "EndRec");
+    if (Error_Code) printf("Read_Tag error on Test4\n");
+    Error_Code = Read_Value(Buffer, &Buffer_Offset, Buffer_Size, "Val1", &size);
+    if (Error_Code || (size != 124)) printf("Read_Value error on Test2\n");
     exit(0);
 } /* main */
 #endif
@@ -541,6 +574,125 @@ int Load_String(char **destination, char *keyword, char *In_Line) {
 } /* Load_String */
 
 
+/* 
+ * Read_Array - Read the specified value from the specified buffer
+ * Input: Buffer - Pointer to read buffer, must be allocated by alloc()
+ *        Buffer_Offset - Byte offset in Buffer, read location
+ *        Buffer_Size - Byte size of Buffer
+ *        Tag - Unique identification for information
+ *        Value - Pointer to value to be loaded with POINTER TO ARRAY, NOT THE VALUE
+ * Output: Buffer_Offset - Incremented by  size of size plus the Value size itself
+ *         Value - Set to the buffer contents or location
+ *         Returns 0 if no error or EFAULT on end of buffer, EINVAL on bad tag 
+ */
+int Read_Array(char *Buffer, int *Buffer_Offset, int Buffer_Size, 
+		char *Tag, void **Value) {
+    char Read_Tag[TAG_SIZE], Err_Msg[128];
+    int size;
+
+    if ((*Buffer_Offset + TAG_SIZE + sizeof(int)) > Buffer_Size) {
+	return EFAULT;
+    } /* if */
+
+    memcpy(Read_Tag, &Buffer[*Buffer_Offset], TAG_SIZE);
+    (*Buffer_Offset) += TAG_SIZE;
+    if (strncmp(Read_Tag, Tag, TAG_SIZE) != 0) {
+	sprintf(Err_Msg, "Write_Value: Bad tag in buffer, expected %%.%ds, read %%.%ds\n", 
+		TAG_SIZE, TAG_SIZE);
+#if DEBUG_SYSTEM
+	fprintf(stderr, Err_Msg, Tag, Read_Tag);
+#else
+	syslog(LOG_ERR, Err_Msg, Tag, Read_Tag);
+#endif
+	return EINVAL;
+    } /* if */
+
+    memcpy(&size, &Buffer[*Buffer_Offset], sizeof(size));
+    (*Buffer_Offset) += sizeof(size);
+    if ((*Buffer_Offset + size) > Buffer_Size) {
+	return EFAULT;
+    } /* if */
+
+    if (size)
+	Value[0] = &Buffer[*Buffer_Offset];
+    else
+	Value[0] = NULL;
+    (*Buffer_Offset) += size;
+    return 0;
+} /* Read_Array */
+
+
+/* 
+ * Read_Tag - Read the specified buffer up to and including the specified tag
+ *            Used to reach end of a record type
+ * Input: Buffer - Pointer to read buffer, must be allocated by alloc()
+ *        Buffer_Offset - Byte offset in Buffer, read location
+ *        Buffer_Size - Byte size of Buffer
+ *        Tag - Unique identification for information
+ * Output: Buffer_Offset - Incremented by  size of size plus the Value size itself
+ *         Returns 0 if no error or EFAULT on end of buffer, EINVAL on bad tag 
+ */
+int Read_Tag(char *Buffer, int *Buffer_Offset, int Buffer_Size, char *Tag) {
+    char Read_Tag[TAG_SIZE], Err_Msg[128];
+    int size;
+
+    while ((*Buffer_Offset + TAG_SIZE + sizeof(int)) <= Buffer_Size) {
+	memcpy(Read_Tag, &Buffer[*Buffer_Offset], TAG_SIZE);
+	(*Buffer_Offset) += TAG_SIZE;
+
+	memcpy(&size, &Buffer[*Buffer_Offset], sizeof(size));
+	(*Buffer_Offset) += (sizeof(size) + size);
+
+	if (strncmp(Read_Tag, Tag, TAG_SIZE) == 0) return 0;
+    } /* while */
+    return EFAULT;
+} /* Read_Tag */
+
+
+/* 
+ * Read_Value - Read the specified value from the specified buffer
+ * Input: Buffer - Pointer to read buffer, must be allocated by alloc()
+ *        Buffer_Offset - Byte offset in Buffer, read location
+ *        Buffer_Size - Byte size of Buffer
+ *        Tag - Unique identification for information
+ *        Value - Pointer to value to be loaded, If pointer to pointer, set Copy=0
+ * Output: Buffer_Offset - Incremented by  size of size plus the Value size itself
+ *         Value - Set to the buffer contents or location
+ *         Returns 0 if no error or EFAULT on end of buffer, EINVAL on bad tag 
+ */
+int Read_Value(char *Buffer, int *Buffer_Offset, int Buffer_Size, 
+		char *Tag, void *Value) {
+    char Read_Tag[TAG_SIZE], Err_Msg[128];
+    int size;
+
+    if ((*Buffer_Offset + TAG_SIZE + sizeof(int)) > Buffer_Size) {
+	return EFAULT;
+    } /* if */
+
+    memcpy(Read_Tag, &Buffer[*Buffer_Offset], TAG_SIZE);
+    (*Buffer_Offset) += TAG_SIZE;
+    if (strncmp(Read_Tag, Tag, TAG_SIZE) != 0) {
+	sprintf(Err_Msg, "Write_Value: Bad tag in buffer, expected %%.%ds, read %%.%ds\n", 
+		TAG_SIZE, TAG_SIZE);
+#if DEBUG_SYSTEM
+	fprintf(stderr, Err_Msg, Tag, Read_Tag);
+#else
+	syslog(LOG_ERR, Err_Msg, Tag, Read_Tag);
+#endif
+	return EINVAL;
+    } /* if */
+
+    memcpy(&size, &Buffer[*Buffer_Offset], sizeof(size));
+    (*Buffer_Offset) += sizeof(size);
+    if ((*Buffer_Offset + size) > Buffer_Size) {
+	return EFAULT;
+    } /* if */
+
+    memcpy(Value, &Buffer[*Buffer_Offset], size);
+    (*Buffer_Offset) += size;
+    return 0;
+} /* Read_Value */
+
 
 /* 
  * Report_Leftover - Report any un-parsed (non-whitespace) characters on the
@@ -569,3 +721,45 @@ void Report_Leftover(char *In_Line, int Line_Num) {
 #endif
     return;
 } /* Report_Leftover */
+
+
+/* 
+ * Write_Value - Write the specified value and its size to the specified buffer, 
+ *               enlarging the buffer as needed
+ * Input: Buffer - Pointer to write buffer, must be allocated by alloc()
+ *        Buffer_Offset - Byte offset in Buffer, write location
+ *        Buffer_Size - Byte size of Buffer
+ *        Tag - Unique identification for information type
+ *        Value - Pointer to value to be writen
+ *        Value_Size - Byte size of Value (may be int, long, etc.)
+ * Output: Buffer - Value is written here, buffer may be relocated by realloc()
+ *         Buffer_Offset - Incremented by Value_Size
+ *         Returns 0 if no error or ENOMEM on realloc failure 
+ */
+int Write_Value(char **Buffer, int *Buffer_Offset, int *Buffer_Size, 
+		char *Tag, void *Value, int Value_Size) {
+    if ((*Buffer_Offset + TAG_SIZE + sizeof(int) + Value_Size) >= *Buffer_Size) {
+	(*Buffer_Size) += Value_Size + 8096;
+	Buffer[0] = realloc(Buffer[0], *Buffer_Size);
+	if (Buffer[0] == NULL) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Write_Value: unable to allocate memory\n");
+#else
+	    syslog(LOG_ALERT, "Write_Value: unable to allocate memory\n");
+#endif
+	    return ENOMEM;
+	} /* if */
+    } /* if */
+
+    memcpy(Buffer[0]+(*Buffer_Offset), Tag, TAG_SIZE);
+    (*Buffer_Offset) += TAG_SIZE;
+
+    memcpy(Buffer[0]+(*Buffer_Offset), &Value_Size, sizeof(Value_Size));
+    (*Buffer_Offset) += sizeof(Value_Size);
+    if (Value_Size == 0) return 0;
+
+    memcpy(Buffer[0]+(*Buffer_Offset), Value, Value_Size);
+    (*Buffer_Offset) += Value_Size;
+    return 0;
+} /* Write_Value */
+
