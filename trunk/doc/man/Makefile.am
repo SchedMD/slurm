@@ -32,6 +32,8 @@ man3_MANS = man3/hostlist_create.3 \
 	man3/slurm_init_part_desc_msg.3 \
 	man3/slurm_job_step_create.3 \
 	man3/slurm_job_will_run.3 \
+	man3/slurm_kill_job.3 \
+	man3/slurm_kill_job_step.3 \
 	man3/slurm_load_ctl_conf.3 \
 	man3/slurm_load_jobs.3 \
 	man3/slurm_load_node.3 \
