@@ -647,7 +647,7 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 	}
 
 	if (ctl_conf_ptr->control_machine == NULL)
-		fatal ("read_slurm_conf: ControlMachine not specified.");
+		fatal ("validate_config: ControlMachine not specified.");
 	else if (strcmp("localhost", ctl_conf_ptr->control_machine) == 0) {
 		xfree (ctl_conf_ptr->control_machine);
 		ctl_conf_ptr->control_machine = xmalloc (MAX_NAME_LEN);
