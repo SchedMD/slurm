@@ -187,6 +187,20 @@ int log_alter(log_options_t opt, log_facility_t fac, char *logfile)
 	return rc;
 }
 
+/* return the FILE * of the current logfile (stderr if logging to stderr)
+ */
+FILE *log_fp(void)
+{
+	FILE *fp;
+	pthread_mutex_lock(&log_lock);
+	if (log->logfp)
+		fp = log->logfp;
+	else
+		fp = stderr;
+	pthread_mutex_unlock(&log_lock);
+	return fp;
+}
+
 /* return a heap allocated string formed from fmt and ap arglist
  * returned string is allocated with xmalloc, so must free with xfree.
  * 
