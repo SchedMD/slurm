@@ -1954,13 +1954,15 @@ static void _job_timed_out(struct job_record *job_ptr)
 	if (job_ptr == NULL)
 		fatal ("job_ptr == NULL");
 
-	job_ptr->time_last_active   = time(NULL);
-	job_ptr->job_state          = JOB_TIMEOUT | JOB_COMPLETING;
-	job_ptr->kill_on_step_done &= KILL_IN_PROGRESS;
-
-	if (job_ptr->details)
+	if (job_ptr->details) {
+		time_t now      = time(NULL);
+		last_job_update = now;
+		job_ptr->end_time           = now;
+		job_ptr->time_last_active   = now;
+		job_ptr->job_state          = JOB_TIMEOUT | JOB_COMPLETING;
+		job_ptr->kill_on_step_done &= KILL_IN_PROGRESS;
 		deallocate_nodes(job_ptr, true);
-	else
+	} else
 		job_signal(job_ptr->job_id, SIGKILL, 0);
 	return;
 }
@@ -2114,7 +2116,8 @@ static int _list_find_job_old(void *job_entry, void *key)
 	if (job_ptr->end_time > min_age)
 		return 0;	/* Too new to purge */
 
-	if (!(IS_JOB_FINISHED(job_ptr)))
+	if ((!(IS_JOB_FINISHED(job_ptr))) ||
+	    (job_ptr->job_state & JOB_COMPLETING))
 		return 0;	/* Still active, can't purge */
 
 	return 1;

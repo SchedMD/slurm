@@ -1131,13 +1131,13 @@ void node_did_resp (char *name)
 
 	node_ptr = find_node_record (name);
 	if (node_ptr == NULL) {
-		error ("node_not_resp unable to find node %s", name);
+		error ("node_did_resp unable to find node %s", name);
 		return;
 	}
 
 	node_inx = node_ptr - node_record_table_ptr;
 	last_node_update = time (NULL);
-	node_record_table_ptr[node_inx].last_response = time (NULL);
+	node_ptr->last_response = time (NULL);
 	resp_state = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 	node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
 	if (node_ptr->node_state == NODE_STATE_UNKNOWN)
@@ -1150,6 +1150,8 @@ void node_did_resp (char *name)
 			retry_pending (name);
 		}
 	}
+	if (resp_state)
+		info("Node %s now responding", name);
 	if (node_ptr->node_state != NODE_STATE_DOWN)
 		bit_set (up_node_bitmap, node_inx);
 	return;
@@ -1426,7 +1428,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	if (kill_agent_args->node_count == 0)
 		xfree (kill_agent_args);
 	else {
-		debug ("Spawning slurmd msg(%d) agent", msg_type);
+		debug ("Spawning agent msg_type=%d", msg_type);
 		if (pthread_attr_init (&kill_attr_agent))
 			fatal ("pthread_attr_init error %m");
 		if (pthread_attr_setdetachstate (&kill_attr_agent, 
