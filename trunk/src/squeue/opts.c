@@ -219,6 +219,8 @@ _parse_state( char* str, enum job_states* states )
 	return SLURM_ERROR;
 }
 
+/* Take the user's format specification and use it to build build the 
+ *	format specifications (internalize it to print.c data structures) */
 static int 
 _parse_format( char* format )
 {
@@ -378,6 +380,12 @@ _parse_format( char* format )
 	return SLURM_SUCCESS;
 }
 
+/* Take a format specification and break it into its components
+ * IN token - input specification without leading "%", eg. ".5u"
+ * OUT field - the letter code for the data type
+ * OUT field_size - byte count
+ * OUT right_justify - true of field to be right justified
+ */
 static void
 _parse_token( char *token, char *field, int *field_size, bool *right_justify)
 {
@@ -404,6 +412,7 @@ _parse_token( char *token, char *field, int *field_size, bool *right_justify)
 	}
 }
 
+/* print the parameters specified */
 static void
 _print_options()
 {
@@ -481,6 +490,11 @@ _print_options()
 } ;
 
 
+/*
+ * _build_job_list- build a list of job_ids
+ * IN str - comma separated list of job_ids
+ * RET List of job_ids (uint32_t)
+ */
 static List 
 _build_job_list( char* str )
 {
@@ -596,6 +610,11 @@ _build_all_states_list( void )
 
 }
 
+/*
+ * _build_step_list- build a list of job/step_ids
+ * IN str - comma separated list of job_id.step_ids
+ * RET List of job/step_ids (structure of uint32_t's)
+ */
 static List 
 _build_step_list( char* str )
 {
@@ -637,6 +656,11 @@ _build_step_list( char* str )
 	return my_list;
 }
 
+/*
+ * _build_user_list- build a list of UIDs
+ * IN str - comma separated list of user names
+ * RET List of UIDs (uint32_t)
+ */
 static List 
 _build_user_list( char* str )
 {
