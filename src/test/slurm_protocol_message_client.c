@@ -13,8 +13,7 @@ int32_t main ( int32_t argc , char * argv[] )
 	/* declare address structures */
 	slurm_addr worker_address ;
 	slurm_addr peer_address ;
-
-	slurm_msg_type_t msg_type;
+	slurm_msg_type_t msg_type ;
 
 	uint32_t buffer_len = 1024 ;
 	char buf_temp [ buffer_len ] ;
@@ -26,17 +25,16 @@ int32_t main ( int32_t argc , char * argv[] )
 	/* init address sturctures */
 	slurm_set_addr_uint ( & worker_address , 7001 , 0x7f000001 ) ;
 	/* open and listen on socket */
-	worker_socket = slurm_init_msg_engine ( & worker_address ) ;
+	worker_socket = slurm_open_msg_conn ( & worker_address ) ;
 
-	msg_type = 1 ;
-	slurm_set_addr_uint ( & peer_address , 7000 , 0x7f000001 ) ;
-	length_io = slurm_send_node_buffer ( worker_socket , & peer_address, msg_type , test_send , test_send_len ) ;
-	printf ( "Bytes Sent %i\n", length_io ) ;
-	
-	length_io = slurm_receive_buffer ( worker_socket , & peer_address, & msg_type ,  buffer , buffer_len ) ;
+	length_io = slurm_receive_buffer ( worker_socket , & peer_address, & msg_type , buffer , buffer_len ) ;
 	printf ( "Bytes Recieved %i\n", length_io ) ;
 
-	slurm_shutdown_msg_engine ( worker_socket ) ;
+	msg_type = 1 ;
+	length_io = slurm_send_node_buffer ( worker_socket , & peer_address, msg_type , test_send , test_send_len ) ;
+	printf ( "Bytes Sent %i\n", length_io ) ;
+
+	slurm_shutdown_msg_conn ( worker_socket ) ;
 
 	return 0 ;
 }
