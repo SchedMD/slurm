@@ -43,27 +43,27 @@ int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
 	{
 		case -1:
 			slurm_perror("fork");
-			exit(1);
+			return SLURM_ERROR ;
 		case 0: /* child falls thru */
 			break;
 		default: /* parent */
 			if (waitpid(pid, NULL, 0) < 0) 
 			{
 				slurm_perror("wait");
-				exit(1);
+				return SLURM_ERROR ;
 			}
 			if (qsw_prgdestroy( launch_msg -> qsw_job ) < 0) {
 				slurm_perror("qsw_prgdestroy");
-				exit(1);
+				return SLURM_ERROR ;
 			}
-			exit(0);
+			return SLURM_SUCCESS ;
 	}
 
 	/* Process 2: */
 	if (qsw_prog_init(launch_msg -> qsw_job , launch_msg -> uid) < 0) 
 	{
 		slurm_perror("qsw_prog_init");
-		exit(1);
+		return SLURM_ERROR ;
 	}
 	
 	return fan_out_task_launch ( launch_msg ) ;
@@ -78,18 +78,18 @@ int interconnect_set_capabilities ( task_start_t * task_start )
 
 	if (qsw_setcap( task_start -> launch_msg -> qsw_job, i) < 0) {
 		slurm_perror("qsw_setcap");
-		exit(1);
+		return SLURM_ERROR ;
 	}
 	if (do_env(i, nodeid, nprocs) < 0) {
 		slurm_perror("do_env");
-		exit(1);
+		return SLURM_ERROR ;
 	}
 
 	pid = fork();
 	switch (pid) {
 		case -1:        /* error */
 			slurm_perror("fork");
-			exit(1);
+			return SLURM_ERROR ;
 		case 0:         /* child falls thru */
 			return SLURM_SUCCESS ;
 			break;
@@ -97,9 +97,9 @@ int interconnect_set_capabilities ( task_start_t * task_start )
 			if (waitpid(pid, NULL, 0) < 0) 
 			{
 				slurm_perror("waitpid");
-				exit(1);
+				return SLURM_ERROR ;
 			}
-			exit(0);
+			return SLURM_SUCCESS ;
 	}
 }
 
