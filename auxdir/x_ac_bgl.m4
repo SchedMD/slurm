@@ -33,30 +33,43 @@ AC_DEFUN([X_AC_BGL],
          fi
 
          have_bgl_ar=yes
-         BGL_LDFLAGS="$BGL_LDFLAGS -Wl,-rpath $bgl_dir/lib -Wl,-L$bgl_dir/lib -Wl,-whole-archive -Wl,-lbglbridge -Wl,-no-whole-archive $bgl_dir/lib/bglbootload.a $bgl_dir/lib/bglsp440supt.a -lbgldb -lbglmachine -ltableapi -lexpat -lbglsp"
+         bgl_ldflags="$bgl_ldflags -Wl,-rpath $bgl_dir/lib -Wl,-L$bgl_dir/lib -Wl,-whole-archive -Wl,-lbglbridge -Wl,-no-whole-archive $bgl_dir/lib/bglbootload.a $bgl_dir/lib/bglsp440supt.a -lbgldb -lbglmachine -ltableapi -lexpat -lbglsp"
       fi
 
       # Search for required DB2 library in the directory
       if test -z "$have_db2" -a -f "$bgl_dir/lib/libdb2.so" ; then
          have_db2=yes
-         BGL_LDFLAGS="$BGL_LDFLAGS -Wl,-rpath $bgl_dir/lib -L$bgl_dir/lib -ldb2"
+         bgl_ldflags="$bgl_ldflags -Wl,-rpath $bgl_dir/lib -L$bgl_dir/lib -ldb2"
       fi
 
       # Search for headers in the directory
       if test -z "$have_bgl_hdr" -a -f "$bgl_dir/include/rm_api.h" ; then
          have_bgl_hdr=yes
-         BGL_INCLUDES="-I$bgl_dir/include"
+         bgl_includes="-I$bgl_dir/include"
       fi
    done
 
-   AC_SUBST(BGL_INCLUDES)
-   AC_SUBST(BGL_LDFLAGS)
-
    if test ! -z "$have_bgl_ar" -a ! -z "$have_bgl_hdr" -a ! -z "$have_db2" ; then
+      AC_DEFINE(HAVE_BGL, 1, [Define to 1 if emulating or running on Blue Gene s
+ystem])
+      AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end o
+nly])
       ac_with_readline="no"
 
-      AC_DEFINE(HAVE_BGL, 1, [Define to 1 if emulating or running on Blue Gene system])
-      AC_DEFINE(HAVE_BGL_FILES, 1, [Define to 1 if have Blue Gene files])
-      AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
+      saved_LDFLAGS="$LDFLAGS"
+      LDFLAGS="$saved_LDFLAGS $bgl_ldflags"
+      AC_TRY_LINK(
+	[ int rm_set_serial(char *); ],
+	[ rm_set_serial(""); ],
+	have_bgl_files=yes, [])
+      LDFLAGS="$saved_LDFLAGS"
    fi
+   if test ! -z "$have_bgl_files" ; then
+      BGL_INCLUDES="$bgl_includes"
+      BGL_LDFLAGS="$bgl_ldflags"
+      AC_DEFINE(HAVE_BGL_FILES, 1, [Define to 1 if have Blue Gene files])
+   fi
+
+   AC_SUBST(BGL_INCLUDES)
+   AC_SUBST(BGL_LDFLAGS)
 ])
