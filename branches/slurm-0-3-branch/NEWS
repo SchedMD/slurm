@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Move startup script from "/etc/rc.d/init.d/slurm" to "/etc/init.d/slurm"
  -- Avoid creating orphaned process group when starting job processes.
+ -- Remove calls in auth/munge plugin deprecated by munge-0.4.
 
 * Changes in SLURM 0.3.9
 ========================
