@@ -40,6 +40,7 @@
 #  include <inttypes.h>
 #endif				/*  HAVE_CONFIG_H */
 
+#include <pthread.h>
 #include <sys/types.h>
 
 #include "src/common/log.h"
@@ -83,6 +84,7 @@ typedef struct slurmd_config {
 	List          threads;		/* list of active threads	   */
 	slurm_ssl_ctx vctx;		/* ssl context for cred utils      */
 	uid_t           slurm_user_id;	/* UID that slurmctld runs as      */
+	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
 } slurmd_conf_t;
 
 slurmd_conf_t * conf;

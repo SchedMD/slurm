@@ -385,6 +385,7 @@ _read_config()
 {
 	read_slurm_conf_ctl(&slurmctld_conf);
 
+	slurm_mutex_lock(&conf->config_mutex);
 	if (conf->conffile == NULL)
 		_free_and_set(&conf->conffile,   slurmctld_conf.slurm_conf);
 
@@ -399,6 +400,7 @@ _read_config()
 		      xstrdup(slurmctld_conf.slurmd_spooldir));
 	_free_and_set(&conf->pidfile,    
 		      xstrdup(slurmctld_conf.slurmd_pidfile));
+	slurm_mutex_unlock(&conf->config_mutex);
 }
 
 static void
@@ -408,18 +410,19 @@ _reconfigure(void)
 	_update_logging();
 	_print_conf();
 
-	/* FIXME: We need mutex on conf data for epilog and prolog */
-	/* FIXME: is is reasonable to reset other parameters? */
+	slurm_mutex_lock(&conf->config_mutex);
 	if (conf->conffile == NULL)
 		_free_and_set(&conf->conffile,   slurmctld_conf.slurm_conf);
 	conf->slurm_user_id =		 slurmctld_conf.slurm_user_id;
 	_free_and_set(&conf->epilog,     xstrdup(slurmctld_conf.epilog));
 	_free_and_set(&conf->prolog,     xstrdup(slurmctld_conf.prolog));
+	slurm_mutex_unlock(&conf->config_mutex);
 }
 
 static void
 _print_conf()
 {
+	slurm_mutex_lock(&conf->config_mutex);
 	debug3("Confile     = `%s'",     conf->conffile);
 	debug3("Debug       = %d",       slurmctld_conf.slurmd_debug);
 	debug3("Epilog      = `%s'",     conf->epilog);
@@ -431,7 +434,7 @@ _print_conf()
 	debug3("Spool Dir   = `%s'",     conf->spooldir);
 	debug3("Pid File    = `%s'",     conf->pidfile);
 	debug3("Slurm UID   = %u",       conf->slurm_user_id);
-
+	slurm_mutex_unlock(&conf->config_mutex);
 }
 
 static void 
@@ -464,6 +467,7 @@ _init_conf()
 	conf->pidfile   = xstrdup(DEFAULT_PIDFILE);
 	conf->spooldir	= xstrdup(DEFAULT_SPOOLDIR);
 	conf->debug_level =  0;
+	slurm_mutex_init(&conf->config_mutex);
 	return;
 }
 
