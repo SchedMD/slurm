@@ -263,7 +263,7 @@ typedef struct launch_tasks_request_msg
 	char * cwd ;
 	char * cmd_line ;
 	slurm_addr response_addr ;
-	slurm_addr * streams;
+	slurm_addr streams;
 	uint32_t * global_task_ids;
 } launch_tasks_request_msg_t ;
 
@@ -280,7 +280,7 @@ typedef struct reattach_tasks_streams_msg
 	uint32_t uid ;
 	slurm_job_credential_t* credentials;
 	uint32_t tasks_to_reattach ;
-	slurm_addr * streams;
+	slurm_addr streams;
 	uint32_t * global_task_ids;
 } reattach_tasks_streams_msg_t ;
 
