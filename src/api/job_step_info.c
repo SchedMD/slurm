@@ -63,7 +63,7 @@ slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr )
 
 /* slurm_load_job_steps - issue RPC to get Slurm job_step state information */
 int
-slurm_get_job_steps ( uint32_t job_id, uint32_t step_id, job_step_info_response_msg_t **step_response_pptr)
+slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id, job_step_info_response_msg_t **step_response_pptr)
 {
 	int msg_size ;
 	int rc ;
@@ -81,8 +81,9 @@ slurm_get_job_steps ( uint32_t job_id, uint32_t step_id, job_step_info_response_
 	}
 
 	/* send request message */
+	step_request . last_update = update_time ;
 	step_request . job_id = job_id ;
-	step_request . job_step_id = step_id ;
+	step_request . step_id = step_id ;
 	request_msg . msg_type = REQUEST_JOB_STEP_INFO ;
 	request_msg . data = &step_request;
 	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {

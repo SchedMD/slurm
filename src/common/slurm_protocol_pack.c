@@ -175,9 +175,12 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_KILL_TASKS :
 			pack_cancel_tasks_msg ( ( kill_tasks_msg_t * ) msg->data , ( void ** ) buffer , buf_len ) ;
 			break ;
+		case REQUEST_JOB_STEP_INFO :
+			pack_get_job_step_info ( ( job_step_info_request_msg_t * ) msg->data , 
+				( void ** ) buffer , buf_len ) ;
+			break ;
 		/********  job_step_id_t Messages  ********/
 		case REQUEST_JOB_INFO :
-		case REQUEST_JOB_STEP_INFO :
 		case REQUEST_CANCEL_JOB_STEP :
 		case REQUEST_COMPLETE_JOB_STEP :
 			pack_job_step_id ( ( job_step_id_t * ) msg->data , 
@@ -321,9 +324,12 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 			unpack_cancel_tasks_msg ( ( kill_tasks_msg_t ** ) & ( msg->data ) , 
 				( void ** ) buffer , buf_len ) ;
 			break ;
+		case REQUEST_JOB_STEP_INFO :
+			unpack_get_job_step_info ( ( job_step_info_request_msg_t ** ) & ( msg->data ) , 
+				( void ** ) buffer , buf_len ) ;
+			break ;
 		/********  job_step_id_t Messages  ********/
 		case REQUEST_JOB_INFO :
-		case REQUEST_JOB_STEP_INFO :
 		case REQUEST_CANCEL_JOB_STEP :
 		case REQUEST_COMPLETE_JOB_STEP :
 			unpack_job_step_id ( ( job_step_id_t ** ) & ( msg->data ) , 
@@ -1471,6 +1477,30 @@ int unpack_job_step_id ( job_step_id_t ** msg_ptr , void ** buffer , uint32_t * 
 	return 0 ;
 }
 
+void pack_get_job_step_info ( job_step_info_request_msg_t * msg , void ** buffer , uint32_t * length )
+{
+	pack32 ( msg -> last_update , buffer , length ) ;
+	pack32 ( msg -> job_id , buffer , length ) ;
+	pack32 ( msg -> step_id , buffer , length ) ;
+}
+
+int unpack_get_job_step_info ( job_step_info_request_msg_t ** msg , void ** buffer , uint32_t * length )
+{
+        job_step_info_request_msg_t * job_step_info ;
+
+        job_step_info = xmalloc ( sizeof ( job_step_info_request_msg_t ) ) ;
+        if ( job_step_info == NULL)
+        {
+                *msg = NULL ;
+                return ENOMEM ;
+        }
+
+	unpack32 ( & job_step_info -> last_update , buffer , length ) ;
+	unpack32 ( & job_step_info -> job_id , buffer , length ) ;
+	unpack32 ( & job_step_info -> step_id , buffer , length ) ;
+	*msg = job_step_info ;
+	return 0 ;
+}
 
 
 /* template 

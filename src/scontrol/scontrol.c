@@ -485,7 +485,7 @@ print_part (char *partition_name)
 void 
 print_step (char *job_step_id_str)
 {
-	int error_code, i, print_cnt=0;
+	int error_code, i;
 	uint32_t job_id = 0, step_id = 0;
 	char *next_str;
 	job_step_info_response_msg_t *job_step_info_ptr;
@@ -497,7 +497,7 @@ print_step (char *job_step_id_str)
 			step_id = (uint32_t) strtol (&next_str[1], NULL, 10);
 	}
 
-	error_code = slurm_get_job_steps ( job_id, step_id, &job_step_info_ptr);
+	error_code = slurm_get_job_steps ( (time_t) 0, job_id, step_id, &job_step_info_ptr);
 	if (error_code) {
 		if (quiet_flag != 1)
 			slurm_perror ("slurm_get_job_steps error");
@@ -505,18 +505,11 @@ print_step (char *job_step_id_str)
 	}
 	
 	if (quiet_flag == -1)
-		printf ("last_update_time=%ld,\n", (long) job_step_info_ptr->last_update);
+		printf ("last_update_time=%ld\n", (long) job_step_info_ptr->last_update);
 
 	job_step_ptr = job_step_info_ptr->job_steps ;
 	for (i = 0; i < job_step_info_ptr->job_step_count; i++) {
-		if (job_step_id_str && job_id != job_step_ptr[i].job_id) 
-			continue;
-		if (job_step_id_str && step_id != job_step_ptr[i].step_id) 
-			continue;
-		print_cnt++;
 		slurm_print_job_step_info (stdout, & job_step_ptr[i] ) ;
-		if (job_step_id_str)
-			break;
 	}
 
 	if ((job_step_info_ptr->job_step_count == 0) && (quiet_flag != 1)) {

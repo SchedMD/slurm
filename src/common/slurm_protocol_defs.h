@@ -388,9 +388,13 @@ typedef struct job_step_info_response_msg
 } job_step_info_response_msg_t ; 
 
 typedef struct job_step_id job_step_id_msg_t ;
-typedef struct job_step_id job_step_info_request_msg_t ;
 typedef struct job_step_id job_info_request_msg_t ;
 
+typedef struct job_step_info_request_msg {
+	uint32_t last_update;
+	uint32_t job_id ;
+	uint32_t step_id ;
+} job_step_info_request_msg_t ;
 
 typedef struct job_info_msg {
 	uint32_t last_update;
