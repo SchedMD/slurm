@@ -46,10 +46,7 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 
 	if (++tasks_exited == opt.nprocs) {
 		debug2("all tasks exited");
-		pthread_mutex_lock(&job->state_mutex);
-		job->state = SRUN_JOB_OVERDONE;
-		pthread_cond_signal(&job->state_cond);
-		pthread_mutex_unlock(&job->state_mutex);
+		update_job_state(job, SRUN_JOB_OVERDONE);
 	}
 
 }

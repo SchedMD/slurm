@@ -113,3 +113,15 @@ job_create(resource_allocation_response_msg_t *resp)
 
 	return job;
 }
+
+void
+update_job_state(job_t *job, job_state_t state)
+{
+	pthread_mutex_lock(&job->state_mutex);
+	if (job->state < state) {
+		job->state = state;
+		pthread_cond_signal(&job->state_cond);
+	}
+	pthread_mutex_unlock(&job->state_mutex);
+}
+

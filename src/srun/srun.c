@@ -171,6 +171,8 @@ main(int ac, char **av)
 	debug("Started launch thread (%d)", job->lid);
 
 	/* wait for job to terminate */
+	xassert(pthread_mutex_lock(&job->state_mutex) == 0);
+	debug3("before main state loop: state = %d", job->state);
 	while (job->state != SRUN_JOB_OVERDONE) {
 		pthread_cond_wait(&job->state_cond, &job->state_mutex);
 		debug3("main thread woke up, state is now %d", job->state);
@@ -354,8 +356,6 @@ sig_thr(void *arg)
 	time_t last_intr = 0;
 	bool suddendeath = false;
 	int signo;
-	struct sigaction action;
-
 
 	while (1) {
 		sigfillset(&set);
