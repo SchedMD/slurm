@@ -46,6 +46,12 @@ extern int slurm_cancel (char *job_id);
 extern void slurm_free_build_info (void);
 
 /*
+ * free_job_info - free the job information buffer (if allocated)
+ * NOTE: buffer is loaded by load_job and used by load_job_name.
+ */
+extern void free_job_info (void);
+
+/*
  * free_node_info - free the node information buffer (if allocated)
  * NOTE: buffer is loaded by load_node and used by load_node_name.
  */
@@ -82,6 +88,17 @@ extern int slurm_load_build ();
 extern int slurm_load_build_name (char *req_name, char *next_name, char *value);
 
 /*
+ * load_job - load the supplied job information buffer for use by info gathering 
+ *	APIs if job records have changed since the time specified. 
+ * input: buffer - pointer to job information buffer
+ *        buffer_size - size of buffer
+ * output: returns 0 if no error, EINVAL if the buffer is invalid,
+ *		 ENOMEM if malloc failure
+ * NOTE: buffer is used by load_job_config and freed by free_job_info.
+ */
+extern int load_job (time_t * last_update_time);
+
+/*
  * load_node - load the supplied node information buffer for use by info gathering APIs if
  *	node records have changed since the time specified. 
  * input: buffer - pointer to node information buffer
@@ -90,6 +107,27 @@ extern int slurm_load_build_name (char *req_name, char *next_name, char *value);
  * NOTE: buffer is used by load_node_config and freed by free_node_info.
  */
 extern int load_node (time_t * last_update_time);
+
+/* 
+ * load_job_config - load the state information about the named job
+ * input: req_name - job_id of the job for which information is requested
+ *		     if "", then get info for the first job in list
+ *        next_name - location into which the name of the next job_id is 
+ *                   stored, "" if no more
+ *        job_name, etc. - pointers into which the information is to be stored
+ * output: next_name - job_id of the next job in the list
+ *         job_name, etc. - the job's state information
+ *         returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
+ * NOTE:  req_name and next_name must be declared by the caller and 
+ *		have length MAX_ID_LEN or larger
+ * NOTE:  job_name, partition, and job_state must be declared by the caller and 
+ *		have length MAX_NAME_LEN or larger
+ * NOTE: buffer is loaded by load_job and freed by free_job_info.
+ */
+extern int load_job_config (char *req_name, char *next_name, char *job_name,
+		char *partition, int *user_id, char *job_state, 
+		char *node_list, int *time_limit, time_t *start_time, 
+		time_t *end_time, float *priority);
 
 /* 
  * load_node_config - load the state information about the named node

@@ -144,7 +144,9 @@ enum job_states {
 	JOB_STAGE_IN,		/* allocated resources, not yet running */
 	JOB_RUNNING,		/* allocated resources and executing */
 	JOB_STAGE_OUT,		/* completed execution, nodes not yet released */
-	JOB_COMPLETE,		/* completed execution, nodes released */
+	JOB_COMPLETE,		/* completed execution successfully, nodes released */
+	JOB_FAILED,		/* completed execution unsuccessfully, nodes released */
+	JOB_TIMEOUT,		/* terminated on reaching time limit, nodes released */
 	JOB_END			/* last entry in table */
 };			
 /* last entry must be "end", keep in sync with node_state */
