@@ -51,6 +51,9 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_util.h"
 
+#define MIN_NOALLOC_JOBID ((uint32_t) 0xffff0000)
+#define MAX_NOALLOC_JOBID ((uint32_t) 0xfffffffd)
+
 enum controller_id {
 	PRIMARY_CONTROLLER = 1,
 	SECONDARY_CONTROLLER = 2

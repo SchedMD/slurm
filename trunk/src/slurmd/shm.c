@@ -175,7 +175,7 @@ shm_fini(void)
 	for (i = 0; i < MAX_JOB_STEPS; i++) {
 		if (slurmd_shm->step[i].state > SLURMD_JOB_UNUSED) {
 			job_step_t *s = &slurmd_shm->step[i];
-			info ("Used shm slot: %d %d\n", s->jobid, s->stepid); 
+			info ("Used shm slot: %u %u\n", s->jobid, s->stepid); 
 		}
 	}
 
