@@ -243,7 +243,7 @@ parse_config_spec (char *in_line)
 {
 	int error_code;
 	int fast_schedule = 0, hash_base = 0, heartbeat_interval = 0, kill_wait = 0;
-	int slurmctld_timeout = 0, slurmd_timeout = 0;
+	int ret2service = 0, slurmctld_timeout = 0, slurmd_timeout = 0;
 	char *backup_controller = NULL, *control_machine = NULL, *epilog = NULL;
 	char *prioritize = NULL, *prolog = NULL, *state_save_location = NULL, *tmp_fs = NULL;
 	char *slurmctld_port = NULL, *slurmd_port = NULL;
@@ -263,6 +263,7 @@ parse_config_spec (char *in_line)
 		"KillWait=", 'd', &kill_wait,
 		"Prioritize=", 's', &prioritize,
 		"Prolog=", 's', &prolog,
+		"ReturnToService=", 'd', &ret2service,
 		"SlurmctldPort=", 's', &slurmctld_port,
 		"SlurmctldTimeout=", 'd', &slurmctld_timeout,
 		"SlurmdPort=", 's', &slurmd_port,
@@ -319,6 +320,9 @@ parse_config_spec (char *in_line)
 			xfree (slurmctld_conf.prolog);
 		slurmctld_conf.prolog = prolog;
 	}
+
+	if ( ret2service ) 
+		slurmctld_conf.ret2service = ret2service;
 
 	if ( slurmctld_port ) {
 		servent = getservbyname (slurmctld_port, NULL);

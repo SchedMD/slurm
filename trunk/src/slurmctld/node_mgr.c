@@ -1008,7 +1008,7 @@ update_node ( update_node_msg_t * update_node_msg )
  */
 int 
 validate_node_specs (char *node_name, uint32_t cpus, 
-			uint32_t real_memory, uint32_t tmp_disk) {
+			uint32_t real_memory, uint32_t tmp_disk, uint32_t job_count) {
 	int error_code;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
@@ -1055,6 +1055,16 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
 		if (node_ptr->node_state == NODE_STATE_UNKNOWN)
 			node_ptr->node_state = NODE_STATE_IDLE;
+		else if ((node_ptr->node_state == NODE_STATE_DOWN) &&
+		         (slurmctld_conf.ret2service == 1)) {
+			if (job_count)
+				node_ptr->node_state = NODE_STATE_ALLOCATED;
+			else
+				node_ptr->node_state = NODE_STATE_IDLE;
+			info ("validate_node_specs: node %s returned to service", node_name);
+			resp_state = 1;	/* just started responding */
+		}
+
 		if (node_ptr->node_state == NODE_STATE_IDLE) {
 			bit_set (idle_node_bitmap, (node_ptr - node_record_table_ptr));
 			if (resp_state)	{

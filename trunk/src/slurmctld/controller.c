@@ -1667,7 +1667,8 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
 			node_reg_stat_msg -> node_name ,
 			node_reg_stat_msg -> cpus ,
 			node_reg_stat_msg -> real_memory_size ,
-			node_reg_stat_msg -> temporary_disk_space ) ;
+			node_reg_stat_msg -> temporary_disk_space ,
+			node_reg_stat_msg -> job_count ) ;
 		validate_jobs_on_node (
 			node_reg_stat_msg -> node_name ,
 			node_reg_stat_msg -> job_count ,
@@ -1750,6 +1751,7 @@ init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 	conf_ptr->kill_wait         	= 30 ;
 	conf_ptr->prioritize        	= NULL ;
 	conf_ptr->prolog            	= NULL ;
+	conf_ptr->ret2service           = 0 ;
 	conf_ptr->slurmctld_timeout   	= 300 ;
 	conf_ptr->slurmd_timeout   	= 300 ;
 	conf_ptr->slurm_conf       	= SLURM_CONFIG_FILE ;
@@ -1785,6 +1787,7 @@ fill_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 	conf_ptr->kill_wait         	= slurmctld_conf.kill_wait ;
 	conf_ptr->prioritize        	= slurmctld_conf.prioritize ;
 	conf_ptr->prolog            	= slurmctld_conf.prolog ;
+	conf_ptr->ret2service           = slurmctld_conf.ret2service ;
 	conf_ptr->slurmctld_port   	= slurmctld_conf.slurmctld_port ;
 	conf_ptr->slurmctld_timeout   	= slurmctld_conf.slurmctld_timeout ;
 	conf_ptr->slurmd_port   	= slurmctld_conf.slurmd_port ;
