@@ -3,7 +3,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = -I$(top_srcdir)
+INCLUDES = -I$(top_srcdir) $(BGL_INCLUDES)
 
 #to build the executable
 # noinst_PROGRAMS = partition_allocator
