@@ -68,7 +68,7 @@ controller.
 
 \item {\em Secure}: SLURM employs crypto technology to authenticate 
 users to services and services to services.  
-A Kerberos V / DCE infrastructure can be utillized if available.
+A Kerberos v5 infrastructure can be utillized if available.
 SLURM does not assume that its networks are physically secure.
 
 \item {\em System administrator friendly}: SLURM is configured with a few
@@ -82,7 +82,7 @@ are scriptable and its behavior is highly deterministic.
 As a cluster resource manager, SLURM has three key functions.  First,
 it allocates exclusive access to resources (compute nodes) to users for 
 some duration of time so they can perform work.  Second, it provides 
-a framework for starting up, executing, and monitoring work (normally a 
+a framework for starting, executing, and monitoring work (normally a 
 parallel job) on the set of allocated nodes.  Finally, it arbitrates 
 conflicting requests for resources by managing batch queues.
 
@@ -110,12 +110,12 @@ whistles needed to implement complex site policy.
 SLURM does however provide a sufficiently sophisticated API for an external 
 scheduler or metabatch system to order its queues based on site policy.
 
-SLURM is not a gang scheduler and does not support time sharing of compute
-nodes.  SLURM clusters are space shared, and parallel jobs are always 
-assigned whole nodes.  SLURM will not preempt an executing job to run a 
-higher priority one (since it has no concept of priorities), but it is 
-possible for an external scheduler to terminate jobs and requeue them in a 
-different order via the API.
+SLURM clusters are space shared, and parallel jobs are always 
+assigned whole nodes.  SLURM does not support gang scheduling (time-slicing 
+of parallel jobs). However, the explicit preemption and later resumption 
+of a job under the direction of an external metabatch system may be supported 
+in the future. At present, an external scheduler may terminate jobs and 
+requeue them in a different order via the API. 
 
 SLURM is not a metabatch system like Globus or DPCS (Distributed Production 
 Control System).  SLURM supports resource management across a single cluster.
@@ -154,10 +154,6 @@ Figure~\ref{archdetail} exposes the subsystems that are implemented within
 the {\tt slurmd} and {\tt slurmctld} daemons.  These subsystems are explained
 in more detail below.
 
-\marginpar{Moe - could you update figure~\ref{archdetail} to move
-switch manager to controller, add stream copy service to slurmd, and
-change job management to process manager in slurmd?  Thanks --JG}  
-
 \subsubsection{Slurmd}
 
 The {\tt slurmd} running
@@ -165,7 +161,7 @@ on each compute node can be compared to a remote shell daemon:  it waits
 for work, executes the work, returns status, then waits for more work.  
 It also asynchronously exchanges node and job status with the controller.  
 It never communicates with other compute nodes and the only job information 
-it has at any given time pertains to the currently executing job, if any.
+it has at any given time pertains to the currently executing job.
 
 {\tt slurmd} reads its configuration from a file: {\tt /etc/slurmd.conf}
 and has three major components:
@@ -175,10 +171,11 @@ and has three major components:
 requests for machine and job state information, and send asynchronous 
 reports of some state changes (e.g. {\tt slurmd} startup, process 
 termination) to the controller.
-Job status includes accounting information which may be required by
-an external metabatch system such as DPCS.
+Job status includes CPU, real-memory and virtual memory consumption 
+information for all processes including user processes, system daemons, 
+and the kernel. 
 
-\item{\em Process Manager}:  Start, monitor, and clean up after
+\item{\em Process Manager}:  Start, monitor,signal, and clean up after
 a set of processes belonging to a parallel job, as dictated by the
 controller.  Starting a process may include executing a prolog script, 
 setting process limits, setting real and effective
@@ -217,32 +214,42 @@ Notify the partition manager when nodes change state.
 
 \item {\em Partition Manager}:  Manage partition membership, partition
 status ({\tt slurmadmin} may be used to set
-partitions to {\em up}, {\em down}, or {\em drain} status), and
+partitions to {\em up}, or {\em down} status), and
 act as a resource allocator for the job manager, where the resources 
 are whole nodes.  The partition manager also interacts with the machine 
 status manager to maintain an accurate notion of what resources it has 
 available.
 
-\item {\em Scheduler}: Determine the order in which jobs are executed.
-When jobs are first submitted, they are placed in the job queue and the 
-scheduler is called to perform any reordering of the queue dictated by 
-its policy.  The default scheduler implements FIFO with backfill.
-The default may be replaced with an external scheduler which implements
-other policies.  
+\item {\em Scheduler}: Allocates resources to jobs based upon machine and 
+partition status information. Requests to the scheduler come from the 
+Job Manager.
 
-\item {\em Job Manager}:  Manage the job queue.
+\item {\em Job Manager}: Accepts user job requests and (if applicable) 
+places pending jobs in a priority ordered queue. By default the job 
+priority will be a simple age based algorithm providing FCFS ordering. 
+An interface is provided for an external scheduler to establish 
+a job's initial priority and API's are available to alter this priority 
+through time for customers wishing a more sophisticated algorithm.
 The job manager is awakened whenever there is a change in state that 
 might permit a job to begin running, such as job completion, job submission, 
 partition {\em up} transition, or node {\em up} transition.
 When awakened, the job manager makes one pass through the job queue and
 performs any cleanup associated with completed jobs.
 The job manager then makes a second pass through the job queue and
-starts jobs until a partition manager resource allocation fails.
-On allocation failure, the job manager goes back to sleep.
+starts jobs until a resource allocation fails. 
+When a resource allocation failure occures, the Job Manager establishes 
+a time when the job might be exected to begin execution. 
+Lower priority jobs in the queue will be allocated resources on that 
+partition only if they will complete prior to the expected initiation 
+time of the higher priority job (backfill scheduling).
+After completing the scheduling cycle, the job manager goes back to sleep.
 
 \item {\em Job Status Manager}:
-Poll {\tt slurmd}'s on compute nodes that are running jobs.
-When the job status manager detects that one or more nodes have completed 
+Poll {\tt slurmd}'s on compute nodes that are running jobs. 
+The job status manager will record resource consumption by each job as 
+well as job status (e.g. when execution begins or ends on each node). 
+When the job status manager detects that all nodes associated with a 
+job have completed 
 their work, it initiates cleanup by marking the job as {\em completed} 
 and awakening the job manager.  The job status manager is closely related to
 the machine status manager.
@@ -263,7 +270,7 @@ The command line utilities primarily interact with the controller.
 The utilities find the host:port of the controller by reading a configuration 
 file: {\tt /etc/slurm.conf}.
 They authenticate to the controller using a method selected at compile
-time, initially either Kerberos V or ...?
+time, initially either Kerberos v5 or ...?
 
 \marginpar{Chris help me out here on the authentication --JG}
 
@@ -336,11 +343,10 @@ success to the user's shell:
 srun: tinymem-42
 \end{verbatim}
 
-The controller calls the scheduler to reorder the batch queue and awakens the 
-job manager.
+The controller awakens the job manager.
 The job manager scans for completed jobs, finds none, then tries to run
 jobs starting at the head of the job queue.  It finds {\em tinymem-42}
-and makes a successful request to the partition manager to allocate 
+and makes a successful request to the scheduling to allocate 
 two nodes from the {\em tinymem} partition: {\em dev6} and {\em dev7}.
 
 The job manager sends a copy of the environment, current working directory,
@@ -369,18 +375,18 @@ accumulates the application's output:
   1 pinged   0:  1048576 bytes   4682.97 uSec   223.91 MB/s              
 \end{verbatim}
 
-When the tasks complete, the {\tt slurmd}'s on the two compute nodes notify
-the job status manager, which changes the job status to {\em complete} and 
+When all tasks complete, the {\tt slurmd}'s on the two compute nodes notify
+the job status manager, which changes the job status to {\em stage_out} and 
 awakens the job manager.  The job manager discovers the completed job in
 its first pass through the queue and begins cleanup.
-First it ensures that all tasks have completed by telling the {\tt slurmd}'s
-to terminate the job if it is still running.
-Next it retrieves the stdout/stderr spool files from the stream copy service
+It retrieves the stdout/stderr spool files from the stream copy service
 of each {\tt slurmd} and merges them into a single report, 
 which it stores in the user's {\tt srun} directory.
+It directs the slurmd daemon on each of the nodes formerly assigned to the 
+job to execute the epilog commands (if any).
+Finally, the job manager releases resources and changes the job's state to 
+{\em complete}. The records of a job's existence will eventually be purged.
 
-Finally, the job manager frees resources back to the partition manager and
-the job is removed from the job queue.
 
 \subsection{Example:  Executing an Interactive Job}
 
@@ -607,11 +613,11 @@ command-line and web interfaces with Kerberos authentication and authorization.
 We are not contemplating making this database software available through SLURM,
 but might consider writing this data to an open source database if so desired.
 
-\subsection{Slurmd}
+\section{Slurmd}
 
-\subsection{Command Line Utilities}
+\section{Command Line Utilities}
 
-\subsection{Infrastructure: Communications Library}
+\section{Infrastructure: Communications Library}
 
 \begin{figure}[htb]
 \centerline{\epsfig{file=LCM.communicate.eps,scale=0.5}}
