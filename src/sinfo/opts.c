@@ -71,6 +71,7 @@ extern void parse_command_line(int argc, char *argv[])
 	int opt_char;
 	int option_index;
 	static struct option long_options[] = {
+		{"dead",      no_argument,       0, 'd'},
 		{"exact",     no_argument,       0, 'e'},
 		{"noheader",  no_argument,       0, 'h'},
 		{"iterate",   required_argument, 0, 'i'},
@@ -79,6 +80,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"Node",      no_argument,       0, 'N'},
 		{"format",    required_argument, 0, 'o'},
 		{"partition", required_argument, 0, 'p'},
+		{"responding",no_argument,       0, 'r'},
 		{"summarize", no_argument,       0, 's'},
 		{"sort",      required_argument, 0, 'S'},
 		{"states",    required_argument, 0, 't'},
@@ -88,12 +90,15 @@ extern void parse_command_line(int argc, char *argv[])
 		{"usage",     no_argument,       0, OPT_LONG_USAGE}
 	};
 
-	while((opt_char = getopt_long(argc, argv, "ehi:ln:No:p:sS:t:vV",
+	while((opt_char = getopt_long(argc, argv, "dehi:ln:No:p:rsS:t:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
 				fprintf(stderr, "Try \"sinfo --help\" for more information\n");
 				exit(1);
+				break;
+			case (int)'d':
+				params.dead_nodes = true;
 				break;
 			case (int)'e':
 				params.exact_match = true;
@@ -124,6 +129,9 @@ extern void parse_command_line(int argc, char *argv[])
 				break;
 			case (int) 'p':
 				params.partition = xstrdup(optarg);
+				break;
+			case (int) 'r':
+				params.responding_nodes = true;
 				break;
 			case (int) 's':
 				params.summarize = true;
@@ -184,7 +192,8 @@ extern void parse_command_line(int argc, char *argv[])
 	}
 	_parse_format( params.format );
 
-	if (params.nodes || params.partition || params.state_list)
+	if (params.dead_nodes || params.nodes || params.partition || 
+	   		params.responding_nodes ||params.state_list)
 		params.filtering = true;
 
 	if (params.verbose)
@@ -252,16 +261,24 @@ _build_all_states_list( void )
 static int
 _parse_state( char* str, uint16_t* states )
 {	
-	int i;
+	int i, len;
+	uint16_t no_resp;
 	char *state_names;
 
+	len = strlen(str);
+	if (str[len - 1] == '*') {
+		no_resp = NODE_STATE_NO_RESPOND;
+		len--;
+	} else
+		no_resp = 0;
+
 	for (i = 0; i<NODE_STATE_END; i++) {
-		if (strcasecmp (node_state_string(i), str) == 0) {
-			*states = i;
+		if (strncasecmp (node_state_string(i), str, len) == 0) {
+			*states = (i | no_resp);
 			return SLURM_SUCCESS;
 		}	
-		if (strcasecmp (node_state_string_compact(i), str) == 0) {
-			*states = i;
+		if (strncasecmp (node_state_string_compact(i), str, len) == 0) {
+			*states = (i | no_resp);
 			return SLURM_SUCCESS;
 		}	
 	}
@@ -482,6 +499,7 @@ _parse_token( char *token, char *field, int *field_size, bool *right_justify,
 void _print_options( void )
 {
 	printf("-----------------------------\n");
+	printf("dead        = %s\n", params.dead_nodes ? "true" : "false");
 	printf("exact       = %d\n", params.exact_match);
 	printf("filtering   = %s\n", params.filtering ? "true" : "false");
 	printf("format      = %s\n", params.format);
@@ -494,6 +512,8 @@ void _print_options( void )
 	printf("nodes       = %s\n", params.nodes ? params.nodes : "n/a");
 	printf("partition   = %s\n", params.partition ? 
 					params.partition: "n/a");
+	printf("responding  = %s\n", params.responding_nodes ?
+					"true" : "false");
 	printf("states      = %s\n", params.states);
 	printf("sort        = %s\n", params.sort);
 	printf("summarize   = %s\n", params.summarize   ? "true" : "false");
@@ -539,12 +559,13 @@ static void _print_version(void)
 static void _usage( void )
 {
 	printf("Usage: sinfo [-i seconds] [-t node_state] [-p PARTITION] [-n NODES]\n");
-	printf("             [-S fields] [-o format] [--usage] [-elNsv]\n");
+	printf("             [-S fields] [-o format] [--usage] [-delNrsv]\n");
 }
 
 static void _help( void )
 {
 	printf("Usage: sinfo [OPTIONS]\n");
+	printf("  -d, --dead                    show only non-responding nodes\n");
 	printf("  -e, --exact                   group nodes only on exact match of\n");
 	printf("                                configuration\n");
 	printf("  -h, --noheader                no headers on output\n");
@@ -554,6 +575,7 @@ static void _help( void )
 	printf("  -N, --Node                    Node-centric format\n");
 	printf("  -o, --format=format           format specification\n");
 	printf("  -p, --partition=PARTITION     report on specific partition\n");
+	printf("  -r, --responding              report only responding nodes\n");
 	printf("  -s, --summarize               report state summary only\n");
 	printf("  -S, --sort=fields             comma seperated list of fields to sort on\n");
 	printf("  -t, --states=node_state       specify the what states of nodes to view\n");

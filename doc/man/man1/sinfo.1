@@ -1,4 +1,4 @@
-.TH SINFO "1" "February 2004" "sinfo 0.3" "Slurm components"
+.TH SINFO "1" "March 2004" "sinfo 0.3" "Slurm components"
 
 .SH "NAME"
 sinfo \- Used to view information about Slurm nodes and partitions.
@@ -16,6 +16,9 @@ Print a message describing all \fBsinfo\fR options.
 .TP
 \fB\-\-usage\fR
 Print a brief message listing the \fBsinfo\fR options.
+.TP
+\fB\-d\fR, \fB\-\-dead\fR
+If set only report state information for non-responding (dead) nodes.
 .TP
 \fB\-e\fR, \fB\-\-exact\fR
 If set, do not group node information on multiple nodes unless their 
@@ -109,6 +112,9 @@ the different node states will be placed on separate lines.
 .br 
 \fB%<Number><*>\fR size of field
 .TP
+\fB\-r\fR, \fB\-\-responding\fR
+If set only report state information for responding nodes.
+.TP
 \fB\-s\fR , \fB\-\-summarize\fR
 List only a partition state summary with no node state details.
 This is ignored if the \fB\-\-format\fR option is specified.
@@ -138,9 +144,11 @@ insensitive.
 Possible values include: ALLOC, ALLOCATED, COMP, 
 COMPLETING, DOWN, DRAIN, DRAINED, DRAINING, IDLE, UNK, and UNKNOWN.
 A "*" suffix may be appended to any of these states to search for 
-nodes in the specified state which are not responding. 
+nodes in the specified state which are not responding.
 By default nodes in the specified state are reported whether they are 
 responding or not.
+Also note the \fB\-\-dead\fR and \fB\-\-responding\fR options for
+filtering nodes by state.
 .TP
 \fB\-p <partition>\fR, \fB\-\-partition=<partition>\fR
 Print information only about the specified partition.  
