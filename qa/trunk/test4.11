@@ -1,8 +1,7 @@
 #!/usr/bin/expect
 #
 # Purpose: Test of SLURM functionality
-#          Check sinfo node information filtering (--state and --nodes  
-#          options).
+#          Check sinfo reason info for nodes (--list-reasons option).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -17,10 +16,10 @@ set matches      0
 print_header $test_id
 
 #
-# Check the sinfo --list-reason option output
+# Check the sinfo --list-reasons option output
 #
  
-spawn $sinfo --list-reason
+spawn $sinfo --list-reasons
 expect {
 	-re "REASON *NODELIST" {
 		incr matches
