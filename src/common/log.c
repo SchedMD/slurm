@@ -203,7 +203,7 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 		log->logfp = fp;
 	}
 
-	if (fileno(log->logfp) < 0)
+	if (log->logfp && (fileno(log->logfp) < 0))
 		log->logfp = NULL;
 
 	log->initialized = 1;
