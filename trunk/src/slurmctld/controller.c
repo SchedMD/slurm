@@ -254,6 +254,11 @@ int main(int argc, char *argv[])
 			fatal("pthread_create error %m");
 
 		_slurmctld_background(NULL);	/* could run as pthread */
+
+		/* termination of controller */
+		pthread_join(slurmctld_config.thread_id_sig, NULL);
+		pthread_join(slurmctld_config.thread_id_rpc, NULL);
+		switch_state_fini();
 		if (slurmctld_config.resume_backup == false)
 			break;
 	}
@@ -350,8 +355,6 @@ static void *_slurmctld_signal_hand(void *no_data)
 			slurmctld_config.shutdown_time = time(NULL);
 			/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
 			slurmctld_shutdown();
-			pthread_join(slurmctld_config.thread_id_rpc, NULL);
-			switch_state_fini();
 			return NULL;	/* Normal termination */
 			break;
 		case SIGHUP:	/* kill -1 */
