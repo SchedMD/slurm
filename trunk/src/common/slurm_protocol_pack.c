@@ -73,7 +73,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_RESOURCE_ALLOCATION :
 		case REQUEST_SUBMIT_BATCH_JOB :
 		case REQUEST_IMMEDIATE_RESOURCE_ALLOCATION : 
-		case REQUEST_WILL_JOB_RUN : 
+		case REQUEST_JOB_WILL_RUN : 
 			pack_job_desc ( (job_desc_msg_t * )  msg -> data , ( void ** ) buffer , buf_len )  ;
 			break ;
 		case REQUEST_NODE_REGISRATION_STATUS :
@@ -82,7 +82,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 			break ;
 		case RESPONSE_RESOURCE_ALLOCATION :
 		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : 
-		case RESPONSE_WILL_JOB_RUN :
+		case RESPONSE_JOB_WILL_RUN :
 			pack_job_allocation_response_msg ( ( job_allocation_response_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;
 			break ;
 
@@ -176,7 +176,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_RESOURCE_ALLOCATION :
 		case REQUEST_SUBMIT_BATCH_JOB :
 		case REQUEST_IMMEDIATE_RESOURCE_ALLOCATION : 
-		case REQUEST_WILL_JOB_RUN : 
+		case REQUEST_JOB_WILL_RUN : 
 			unpack_job_desc ( ( job_desc_msg_t **) & ( msg-> data ), ( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_NODE_REGISRATION_STATUS :
@@ -185,7 +185,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 			break ;
 		case RESPONSE_RESOURCE_ALLOCATION :
 		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : 
-		case RESPONSE_WILL_JOB_RUN :
+		case RESPONSE_JOB_WILL_RUN :
 			unpack_job_allocation_response_msg ( ( job_allocation_response_msg_t ** ) & ( msg -> data ) , ( void ** ) buffer , buf_len ) ;
 			break ;
 
