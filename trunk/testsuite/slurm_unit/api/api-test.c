@@ -7,7 +7,7 @@
 #include <testsuite/dejagnu.h>
 
 /* main is used here for testing purposes only */
-int 
+/*int 
 allocate_c (int argc, char *argv[])
 {
 	int error_code;
@@ -55,7 +55,6 @@ allocate_c (int argc, char *argv[])
 	return (0);
 }
 
-/* main is used here for testing purposes only */
 int 
 cancel_c (int argc, char *argv[]) 
 {
@@ -76,7 +75,6 @@ cancel_c (int argc, char *argv[])
 	return (error_code);
 }
 
-/* main is used here for testing purposes only */
 int 
 job_info_c (int argc, char *argv[]) 
 {
@@ -96,7 +94,6 @@ job_info_c (int argc, char *argv[])
 	return (0);
 }
 
-/* main is used here for testing purposes only */
 int
 node_info_c (int argc, char *argv[]) 
 {
@@ -118,7 +115,7 @@ node_info_c (int argc, char *argv[])
 	{
 		/* to limit output we print only the first 10 entries, 
 		 * last 1 entry, and every 200th entry */
-		if ((i < 10) || (i % 200 == 0) || 
+/*		if ((i < 10) || (i % 200 == 0) || 
 		    ((i + 1)  == node_info_msg_ptr-> record_count)) {
 			slurm_print_node_table ( & node_ptr[i] ) ;
 		}
@@ -130,7 +127,6 @@ node_info_c (int argc, char *argv[])
 	return (0);
 }
 
-/* main is used here for module testing purposes only */
 int
 partition_info_c (int argc, char *argv[]) 
 {
@@ -152,7 +148,6 @@ partition_info_c (int argc, char *argv[])
 	return (0);
 }
 
-/* main is used here for module testing purposes only */
 int 
 reconfigure_c (int argc, char *argv[]) {
 	int i, count, error_code;
@@ -172,7 +167,6 @@ reconfigure_c (int argc, char *argv[]) {
 	return (0);
 }
 
-/* main is used here for testing purposes only */
 int 
 submit_c (int argc, char *argv[]) 
 {
@@ -210,7 +204,6 @@ submit_c (int argc, char *argv[])
 	return (error_code);
 }
 
-/* main is used here for module testing purposes only */
 int
 update_config_c (int argc, char *argv[]) {
 	int error_code;
@@ -235,7 +228,7 @@ update_config_c (int argc, char *argv[]) {
 	return (error_code);
 }
 
-
+*/
 int
 main ( int argc, char* argv[] )
 {
