@@ -89,6 +89,7 @@ static void	_print_node (char *node_name, node_info_msg_t *node_info_ptr);
 static void	_print_node_list (char *node_list);
 static void	_print_part (char *partition_name);
 static void	_print_step (char *job_step_id_str);
+static void     _print_version( void );
 static int	_process_command (int argc, char *argv[]);
 static void	_update_it (int argc, char *argv[]);
 static int	_update_job (int argc, char *argv[]);
@@ -103,13 +104,23 @@ main (int argc, char *argv[])
 	char **input_fields;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 
+	int option_index;
+	static struct option long_options[] = {
+		{"help", 0, 0, 'h'},
+		{"oneliner", 0, 0, 'o'},
+		{"quiet", 0, 0, 'q'},
+		{"verbose", 0, 0, 'v'},
+		{"version", 0, 0, 'V'},
+	};
+
 	command_name = argv[0];
 	exit_flag = 0;
 	input_field_count = 0;
 	quiet_flag = 0;
 	log_init("scontrol", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	while((opt_char = getopt(argc, argv, "hoqv")) != -1) {
+	while((opt_char = getopt_long(argc, argv, "hoqvV",
+			long_options, &option_index)) != -1) {
 		if (opt_char == (int)'h') {
 			_usage ();
 			exit(0);
@@ -120,6 +131,10 @@ main (int argc, char *argv[])
 			quiet_flag = 1;
 		else if (opt_char == (int)'v')
 			quiet_flag = -1;
+		else if (opt_char == (int)'V') {
+			_print_version();
+			return 0;
+		}
 		else {
 			fprintf(stderr, "getopt error, returned %c", opt_char);
 			return 1;
@@ -154,6 +169,12 @@ main (int argc, char *argv[])
 
 	exit (error_code);
 }
+
+static void _print_version(void)
+{
+	printf("%s %s\n", PACKAGE, SLURM_VERSION);
+}
+
 
 #if !HAVE_READLINE
 /*
@@ -1083,7 +1104,7 @@ _process_command (int argc, char *argv[])
 				 "too many arguments for %s keyword\n",
 				 argv[0]);
 		}		
-		printf ("%s (%s %s)\n", command_name, PACKAGE, SLURM_VERSION);
+		_print_version();
 
 	}
 	else
@@ -1421,10 +1442,13 @@ _update_part (int argc, char *argv[])
 void
 _usage () {
 	printf ("\
-scontrol [-q | -v] [<COMMAND>]                                             \n\
-  -o one-liner: put one record per line.                                   \n\
-  -q is equivalent to the keyword \"quiet\" described below.               \n\
-  -v is equivalent to the keyword \"verbose\" described below.             \n\
+scontrol [<OPTION>] [<COMMAND>]                                            \n\
+    Valid <COMMAND> values are:                                            \n\
+     -h or --help: equivalent to \"help\" command                          \n\
+     -o or --oneliner: equivalent to \"oneliner\" command                  \n\
+     -q or --quiet: equivalent to \"quite\" command                        \n\
+     -v or --verbose: equivalent to \"verbose\" command                    \n\
+     -V or --version: equivalent to \"version\" command                    \n\
                                                                            \n\
   <keyword> may be omitted from the execute line and scontrol will execute \n\
   in interactive mode. It will process commands as entered until explicitly\n\
@@ -1437,6 +1461,7 @@ scontrol [-q | -v] [<COMMAND>]                                             \n\
                               their completing or down nodes               \n\
      exit                     terminate scontrol                           \n\
      help                     print this description of use.               \n\
+     oneliner                 report output one record per line.           \n\
      pid2jid <pid>            return slurm job id for given pid.           \n\
      ping                     print status of slurmctld daemons.           \n\
      quiet                    print no messages other than error messages. \n\
