@@ -311,6 +311,7 @@ _do_task_output(int *fd, FILE *out, int tasknum)
 
 	if ((len = _readx(*fd, buf, IO_BUFSIZ)) <= 0) {
 		_close_stream(fd, out, tasknum);
+		return len;
 	}
 	buf[IO_BUFSIZ] = '\0';
 
