@@ -38,6 +38,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
+#include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/eio.h"
 #include "src/common/slurm_protocol_api.h"
