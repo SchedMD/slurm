@@ -36,7 +36,7 @@ AC_DEFINE_UNQUOTED(SLURM_MINOR, "$SLURM_MINOR",
 AC_SUBST(SLURM_MINOR)
 
 SLURM_MICRO="`perl -ne 'print,exit if s/^\s*MICRO:\s*(\S*).*/\1/i' $srcdir/META`"
-AC_DEFINE_UNQUOTED(SLURM_MINOR, "$SLURM_MICRO", 
+AC_DEFINE_UNQUOTED(SLURM_MICRO, "$SLURM_MICRO", 
                    [Define the project's minor version.])
 AC_SUBST(SLURM_MINOR)
 
@@ -45,10 +45,14 @@ RELEASE="`perl -ne 'print,exit if s/^\s*RELEASE:\s*(\S*).*/\1/i' $srcdir/META`"
 AC_DEFINE_UNQUOTED(RELEASE, "$RELEASE", [Define the project's release.])
 AC_SUBST(RELEASE)
 
-SLURM_RELEASE="`echo $RELEASE | sed -n 's/^.*\.//p'`"
+SLURM_RELEASE="`echo $RELEASE | sed 's/^.*\.//'`"
 
 # Define the version string
-SLURM_VERSION="$SLURM_MAJOR.$SLURM_MINOR.$SLURM_MICRO$SLURM_RELEASE"
+SLURM_VERSION="$SLURM_MAJOR.$SLURM_MINOR.$SLURM_MICRO-$SLURM_RELEASE"
+
+# If this is a prerelease or CVS snapshot, append the release
+test $SLURM_RELEASE != "1" || SLURM_VERSION="$SLURM_VERSION-$SLURM_RELEASE"
+
 AC_DEFINE_UNQUOTED(SLURM_VERSION, "$SLURM_VERSION", 
 		   [Define the project's version string.])
 AC_SUBST(SLURM_VERSION)
