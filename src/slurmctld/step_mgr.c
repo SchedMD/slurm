@@ -213,8 +213,9 @@ int job_step_cancel(uint32_t job_id, uint32_t step_id, uid_t uid)
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	if ((job_ptr->job_state == JOB_FAILED) ||
-	    (job_ptr->job_state == JOB_COMPLETE) ||
+	if ((job_ptr->job_state == JOB_FAILED)    ||
+	    (job_ptr->job_state == JOB_COMPLETE)  ||
+	    (job_ptr->job_state == JOB_NODE_FAIL) ||
 	    (job_ptr->job_state == JOB_TIMEOUT))
 		return ESLURM_ALREADY_DONE;
 
