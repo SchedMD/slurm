@@ -184,7 +184,9 @@ int fill_in_node_registration_status_msg ( slurm_node_registration_status_msg_t 
 	get_procs ( & node_reg_msg -> cpus );
 	get_memory ( & node_reg_msg -> real_memory_size ) ;
 	get_tmp_disk ( & node_reg_msg -> temporary_disk_space ) ;
-
+	info ("Configuration name=%s cpus=%u real_memory=%u, tmp_disk=%u", 
+		node_name, node_reg_msg -> cpus, 
+		node_reg_msg -> real_memory_size, node_reg_msg -> temporary_disk_space);
 	return SLURM_SUCCESS ;
 }
 
