@@ -88,6 +88,7 @@ courier_t::read_bytes( char *buf, const size_t size )
 	ptr = buf;
 	while ( bytes_remaining > 0 ) {
 		bytes_read = read( m_fd, ptr, bytes_remaining );
+		if ( bytes_read == 0 ) return 0;
 		if ( bytes_read < 0 ) return 0;
 		bytes_remaining -= bytes_read;
 		ptr += bytes_read;
