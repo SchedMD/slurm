@@ -368,6 +368,7 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 	int node_set_size = QSW_MAX_TASKS; /* overkill but safe */
 #endif
 
+	*new_step_record = NULL;
 	job_ptr = find_job_record (step_specs->job_id);
 	if (job_ptr == NULL) 
 		return ESLURM_INVALID_JOB_ID ;

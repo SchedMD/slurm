@@ -1049,8 +1049,8 @@ slurm_rpc_allocate_and_run ( slurm_msg_t * msg )
 	req_step_msg . node_count = INFINITE;
 	error_code = step_create ( &req_step_msg, &step_rec );
 	/* note: no need to free step_rec, pointer to global job step record */
-	if ( step_rec == NULL ) {
-		info ("slurm_rpc_allocate_and_run error %d creating job step, , time=%ld",
+	if ( error_code ) {
+		info ("slurm_rpc_allocate_and_run error %d creating job step, time=%ld",
 			error_code,  (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
@@ -1187,10 +1187,10 @@ slurm_rpc_job_step_create( slurm_msg_t* msg )
 	error_code = step_create ( req_step_msg, &step_rec );
 
 	/* return result */
-	if ( step_rec == NULL )
+	if ( error_code )
 	{
-		info ("slurm_rpc_job_step_create error %s  time=%ld", slurm_strerror( error_code ), 
-				(long) (clock () - start_time));
+		info ("slurm_rpc_job_step_create error %s, time=%ld", 
+			slurm_strerror( error_code ), (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
