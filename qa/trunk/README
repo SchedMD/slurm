@@ -155,6 +155,7 @@ test3.2    Validate scontrol update command for partitions.
 test3.3    Validate scontrol update command for nodes.
 test3.4    Validate scontrol update command for jobs.
 test3.5    Validate scontrol create and delete of partition.
+test3.6    Testing of hidden partitions.
 UNTESTED   "scontrol abort"    would stop slurm 
 UNTESTED   "scontrol shutdown" would stop slurm
 
