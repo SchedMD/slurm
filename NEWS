@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
  -- Make "scontrol show daemons" function properly on front-end system 
     (e.g. Blue Gene)
  -- Fix srun bug when --input, --output and --error are all "none"
+ -- Don't schedule jobs for user root if partition is DOWN
 
 * Changes in SLURM 0.4.0-pre3
 =============================
