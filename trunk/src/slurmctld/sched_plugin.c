@@ -28,7 +28,7 @@
 
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
-#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -58,47 +58,6 @@ typedef struct slurm_sched_context {
 
 static slurm_sched_context_t	*g_sched_context = NULL;
 static pthread_mutex_t		g_sched_context_lock = PTHREAD_MUTEX_INITIALIZER;
-static slurm_ctl_conf_t     conf;
-static pthread_mutex_t      config_lock  = PTHREAD_MUTEX_INITIALIZER;
-
-
-/* ************************************************************************ */
-/*  TAG(                        get_plugin_dir                           )  */
-/* ************************************************************************ */
-static char *
-get_plugin_dir( void )
-{
-	slurm_mutex_lock( &config_lock );
-	if ( conf.slurmd_port == 0 ) {
-		read_slurm_conf_ctl( &conf );
-	}
-	if ( conf.plugindir == NULL ) {
-		conf.plugindir = xstrdup( SLURM_PLUGIN_PATH );
-	}
-	slurm_mutex_unlock( &config_lock );
-
-        verbose( "Reading scheduling plugins from %s", conf.plugindir );
-	return conf.plugindir;
-}
-
-
-/* ************************************************************************ */
-/*  TAG(                        get_sched_type                           )  */
-/* ************************************************************************ */
-static char *
-get_sched_type( void )
-{
-	slurm_mutex_lock( &config_lock );
-	if ( conf.slurmd_port == 0 ) {
-		read_slurm_conf_ctl( &conf );
-	}
-	if ( conf.schedtype == NULL ) {
-		conf.schedtype = xstrdup( DEFAULT_SCHEDTYPE );
-	}
-	slurm_mutex_unlock( &config_lock );
-
-	return conf.schedtype;
-}
 
 
 /* ************************************************************************ */
@@ -119,6 +78,7 @@ slurm_sched_get_ops( slurm_sched_context_t *c )
 
 	/* Get plugin list. */
 	if ( c->plugin_list == NULL ) {
+		char *plugin_dir;
 		c->plugin_list = plugrack_create();
 		if ( c->plugin_list == NULL ) {
 			error( "cannot create plugin manager" );
@@ -128,7 +88,9 @@ slurm_sched_get_ops( slurm_sched_context_t *c )
 		plugrack_set_paranoia( c->plugin_list,
 				       PLUGRACK_PARANOIA_NONE,
 				       0 );
-		plugrack_read_dir( c->plugin_list, get_plugin_dir() );
+		plugin_dir = slurm_get_plugin_dir();
+		plugrack_read_dir( c->plugin_list, plugin_dir );
+		xfree(plugin_dir);
 	}
 
 	c->cur_plugin = plugrack_use_by_type( c->plugin_list, c->sched_type );
@@ -142,7 +104,7 @@ slurm_sched_get_ops( slurm_sched_context_t *c )
 			      n_syms,
 			      syms,
 			      (void **) &c->ops ) < n_syms ) {
-		verbose( "incomplete scheduling plugin" );
+		error( "incomplete scheduling plugin detected" );
 		return NULL;
 	}
 
@@ -199,21 +161,23 @@ int
 slurm_sched_init( void )
 {
 	int retval = SLURM_SUCCESS;
+	char *sched_type = NULL;
 	
 	slurm_mutex_lock( &g_sched_context_lock );
 
 	if ( g_sched_context ) goto done;
 
-	g_sched_context = slurm_sched_context_create( get_sched_type() );
+	sched_type = slurm_get_sched_type();
+	g_sched_context = slurm_sched_context_create( sched_type );
 	if ( g_sched_context == NULL ) {
-		verbose( "cannot create scheduler context for %s",
-			 get_sched_type() );
+		error( "cannot create scheduler context for %s",
+			 sched_type );
 		retval = SLURM_ERROR;
 		goto done;
 	}
 
 	if ( slurm_sched_get_ops( g_sched_context ) == NULL ) {
-		verbose( "cannot resolve scheduler plugin operations" );
+		error( "cannot resolve scheduler plugin operations" );
 		slurm_sched_context_destroy( g_sched_context );
 		g_sched_context = NULL;
 		retval = SLURM_ERROR;
@@ -221,6 +185,7 @@ slurm_sched_init( void )
 
  done:
 	slurm_mutex_unlock( &g_sched_context_lock );
+	xfree(sched_type);
 	return retval;
 }
 
@@ -258,6 +223,6 @@ slurm_sched_job_is_pending( void )
 	if ( slurm_sched_init() < 0 )
 		return;
 
-	return (*(g_sched_context->ops.job_is_pending))();
+	(*(g_sched_context->ops.job_is_pending))();
 }
 

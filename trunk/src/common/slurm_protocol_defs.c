@@ -546,6 +546,7 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->slurmd_spooldir);
 		xfree(config_ptr->slurm_conf);
 		xfree(config_ptr->state_save_location);
+		xfree(config_ptr->switch_type);
 		xfree(config_ptr->tmp_fs);
 		xfree(config_ptr);
 	}

@@ -305,8 +305,6 @@ int main(int argc, char *argv[])
 	node_fini();
 	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
 	free_slurm_conf(&slurmctld_conf);
-	slurm_auth_fini();
-	g_slurm_jobcomp_fini();
 #endif
 	log_fini();
 
