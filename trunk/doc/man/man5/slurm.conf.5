@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "October 2002" "Morris Jette" "Slurm configuration file"
+.TH "slurm.conf" "5" "November 2002" "Morris Jette" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -119,6 +119,9 @@ upon registration. The default value is 0, which
 means that a node will remain DOWN until a system administrator explicitly 
 makes it available for use.
 .TP
+\fBSlurmctldLogFile\fR
+Fully qualified pathname of a file into which the \fBslurmctld\fR daemon's  logs are written.
+.TP
 \fBSlurmctldPort\fR
 The port number that the SLURM controller, \fBslurmctld\fR, listens 
 to for work. The default value is SLURMCTLD_PORT as established at system 
@@ -129,10 +132,16 @@ The interval, in seconds, that the backup controller waits for the
 primary controller to respond before assuming control. The default value 
 is 300 seconds.
 .TP
+\fBSlurmdLogFile\fR
+Fully qualified pathname of a file into whichthe  \fBslurmd\fR daemon's logs are written.
+.TP
 \fBSlurmdPort\fR
 The port number that the SLURM compute node daemon, \fBslurmd\fR, listens 
 to for work. The default value is SLURMD_PORT as established at system 
 build time.
+.TP
+\fBSlurmdSpoolDir\fR
+Fully qualified pathname of a file into which the \fBslurmd\fR daemon's state information is written.
 .TP
 \fBSlurmdTimeout\fR
 The interval, in seconds, that the SLURM controller waits for \fBslurmd\fR 
@@ -376,9 +385,15 @@ Prioritize=/usr/local/maui/priority
 .br
 ReturnToService=0
 .br
+SlurmctldLogFile=/var/log/slurmctld.log
+.br
+SlurmdLogFile=/var/log/slurmd.log
+.br
 SlurmctldPort=7002 SlurmdPort=7003
 .br
 SlurmctldTimeout=300 SlurmdTimeout=300
+.br
+SlurmdSpoolDir=/usr/local/slurm/slurmd.spool
 .br
 StateSaveLocation=/usr/local/slurm/slurm.state
 .br
@@ -408,7 +423,7 @@ NodeName=dev[0-25] NodeAddr=edev[0-25] Weight=16
 .br
 PartitionName=DEFAULT MaxTime=30 MaxNodes=10
 .br
-PartitionName=debug Nodes=dev[0-8,18-25] State=UP    Default=YES
+PartitionName=debug Nodes=dev[0-8,18-25] State=UP Default=YES
 .br
 PartitionName=batch Nodes=dev[9-17] State=UP
 .ec
