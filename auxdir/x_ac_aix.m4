@@ -8,7 +8,8 @@
 #    AC_AIX
 #
 #  DESCRIPTION:
-#    Check for AIX operating system and sets parameters accordingly
+#    Check for AIX operating system and sets parameters accordingly, 
+#    also define HAVE_AIX if appropriate
 ##*****************************************************************************
 
 
@@ -21,6 +22,7 @@ AC_DEFUN([X_AC_AIX],
             SO_LDFLAGS=" $LDFLAGS -Wl,-G -Wl,-bnoentry -Wl,-bexpfull"
             ac_have_aix="yes"
             ac_with_readline="no"
+            AC_DEFINE(HAVE_AIX, 1, [Define to 1 for AIX operating system])
             AC_DEFINE(USE_ALIAS, 0, 
                       [Define slurm_ prefix function aliases for plusins]) ;;
       *)    AC_DEFINE(USE_ALIAS, 1, 
