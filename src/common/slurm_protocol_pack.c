@@ -67,7 +67,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_NODE_INFO:
 			pack_node_info_msg ( ( slurm_msg_t * ) msg , (void ** ) buffer , buf_len ) ;
 			break ;
-		case MESSAGE_NODE_REGISRATION_STATUS :
+		case MESSAGE_NODE_REGISTRATION_STATUS :
 			pack_node_registration_status_msg ( ( slurm_node_registration_status_msg_t * ) msg , ( void ** ) buffer , buf_len );
 			break ;
 		case REQUEST_RESOURCE_ALLOCATION :
@@ -76,7 +76,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_JOB_WILL_RUN : 
 			pack_job_desc ( (job_desc_msg_t * )  msg -> data , ( void ** ) buffer , buf_len )  ;
 			break ;
-		case REQUEST_NODE_REGISRATION_STATUS :
+		case REQUEST_NODE_REGISTRATION_STATUS :
 		case REQUEST_RECONFIGURE :
 			/* Message contains no body/information */
 			break ;
@@ -170,7 +170,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_NODE_INFO:
 			unpack_node_info_msg ( ( node_info_msg_t ** ) &(msg -> data) , (void ** ) buffer , buf_len ) ;
 			break;
-		case MESSAGE_NODE_REGISRATION_STATUS :
+		case MESSAGE_NODE_REGISTRATION_STATUS :
 			unpack_node_registration_status_msg ( ( slurm_node_registration_status_msg_t ** ) &( msg -> data ), ( void ** ) buffer , buf_len );
 			break ;
 		case REQUEST_RESOURCE_ALLOCATION :
@@ -179,7 +179,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_JOB_WILL_RUN : 
 			unpack_job_desc ( ( job_desc_msg_t **) & ( msg-> data ), ( void ** ) buffer , buf_len ) ;
 			break ;
-		case REQUEST_NODE_REGISRATION_STATUS :
+		case REQUEST_NODE_REGISTRATION_STATUS :
 		case REQUEST_RECONFIGURE :
 			/* Message contains no body/information */
 			break ;
