@@ -239,6 +239,13 @@ void slurm_free_revoke_credential_msg(revoke_credential_msg_t * msg)
 	}
 }
 
+void slurm_free_update_job_time_msg(job_time_msg_t * msg)
+{
+	if (msg) {
+		xfree(msg);
+	}
+}
+
 void slurm_free_task_exit_msg(task_exit_msg_t * msg)
 {
 	if (msg) {

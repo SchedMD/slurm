@@ -92,6 +92,9 @@ static void _pack_revoke_credential_msg(revoke_credential_msg_t * msg,
 static int _unpack_revoke_credential_msg(revoke_credential_msg_t ** msg,
 					 Buf buffer);
 
+static void _pack_update_job_time_msg(job_time_msg_t * msg, Buf buffer);
+static int _unpack_update_job_time_msg(job_time_msg_t ** msg, Buf buffer);
+
 static void
  _pack_job_step_create_response_msg(job_step_create_response_msg_t * msg,
 				    Buf buffer);
@@ -402,6 +405,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		 _pack_revoke_credential_msg((revoke_credential_msg_t *)
 					     msg->data, buffer);
 		 break;
+	 case REQUEST_UPDATE_JOB_TIME:
+		 _pack_update_job_time_msg((job_time_msg_t *)
+					     msg->data, buffer);
+		 break;
 	 case REQUEST_SIGNAL_JOB:
 		 break;
 	 case REQUEST_SIGNAL_JOB_STEP:
@@ -592,6 +599,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	 case REQUEST_REVOKE_JOB_CREDENTIAL:
 		 rc = _unpack_revoke_credential_msg(
 					(revoke_credential_msg_t **)
+					& (msg->data), buffer);
+		 break;
+	 case REQUEST_UPDATE_JOB_TIME:
+		 rc = _unpack_update_job_time_msg(
+					(job_time_msg_t **)
 					& (msg->data), buffer);
 		 break;
 	 case REQUEST_SIGNAL_JOB:
@@ -1127,7 +1139,7 @@ _pack_revoke_credential_msg(revoke_credential_msg_t * msg, Buf buffer)
 	assert(msg != NULL);
 
 	pack32(msg->job_id, buffer);
-	pack32((uint32_t) msg->expiration_time, buffer);
+	pack_time(msg->expiration_time, buffer);
 	packmem_array(msg->signature,
 		      (uint32_t) SLURM_SSL_SIGNATURE_LENGTH, buffer);
 }
@@ -1143,10 +1155,39 @@ _unpack_revoke_credential_msg(revoke_credential_msg_t ** msg, Buf buffer)
 	*msg = tmp_ptr;
 
 	safe_unpack32(&(tmp_ptr->job_id), buffer);
-	safe_unpack32((uint32_t *) & (tmp_ptr->expiration_time), buffer);
+	safe_unpack_time(& (tmp_ptr->expiration_time), buffer);
 	safe_unpackmem_array(tmp_ptr->signature,
 			     (uint32_t) SLURM_SSL_SIGNATURE_LENGTH, buffer);
 
+	return SLURM_SUCCESS;
+
+      unpack_error:
+	xfree(tmp_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_update_job_time_msg(job_time_msg_t * msg, Buf buffer)
+{
+	assert(msg != NULL);
+
+	pack32(msg->job_id, buffer);
+	pack_time((uint32_t) msg->expiration_time, buffer);
+}
+
+static int
+_unpack_update_job_time_msg(job_time_msg_t ** msg, Buf buffer)
+{
+	job_time_msg_t *tmp_ptr;
+
+	/* alloc memory for structure */
+	assert(msg);
+	tmp_ptr = xmalloc(sizeof(job_time_msg_t));
+	*msg = tmp_ptr;
+
+	safe_unpack32(&(tmp_ptr->job_id), buffer);
+	safe_unpack_time(& (tmp_ptr->expiration_time), buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:
