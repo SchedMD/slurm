@@ -389,12 +389,12 @@ int load_all_part_state(void)
 		if ((def_part_flag > 1) ||
 		    (root_only > 1) ||
 		    (shared > SHARED_FORCE) || (state_up > 1)) {
-			error
-			    ("Invalid data for partition %s: def_part_flag=%u, root_only=%u, shared=%u, state_up=%u",
-			     part_name, def_part_flag, root_only, shared,
-			     state_up);
-			error
-			    ("No more partition data will be processed from the checkpoint file");
+			error("Invalid data for partition %s: def_part_flag=%u, "
+				"root_only=%u, shared=%u, state_up=%u",
+				part_name, def_part_flag, root_only, shared,
+				state_up);
+			error("No more partition data will be processed from "
+				"the checkpoint file");
 			xfree(part_name);
 			error_code = EINVAL;
 			break;
@@ -420,8 +420,8 @@ int load_all_part_state(void)
 			xfree(part_ptr->nodes);
 			part_ptr->nodes = nodes;
 		} else {
-			info("load_all_part_state: partition %s removed from configuration file", 
-			     part_name);
+			info("load_all_part_state: partition %s removed from "
+				"configuration file", part_name);
 		}
 
 		xfree(part_name);
@@ -431,8 +431,8 @@ int load_all_part_state(void)
 	return error_code;
 
       unpack_error:
-	error
-	    ("Incomplete partition data checkpoint file.  State not completely restored");
+	error("Incomplete partition data checkpoint file. "
+		"State not completely restored");
 	free_buf(buffer);
 	return EFAULT;
 }
