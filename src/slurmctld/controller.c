@@ -3,8 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette@llnl.gov> 
- *             Kevin Tew <tew1@llnl.gov> et. al.
+ *  Written by Moe Jette <jette@llnl.gov>, Kevin Tew <tew1@llnl.gov> et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -61,6 +60,7 @@ inline static void slurm_rpc_submit_batch_job ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_reconfigure_controller ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_node_registration ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_register_node_status ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_update_job ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_update_node ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_update_partition ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_job_will_run ( slurm_msg_t * msg ) ;
@@ -183,6 +183,10 @@ slurmctld_req ( slurm_msg_t * msg )
 			break;
 		case REQUEST_RECONFIGURE:
 			slurm_rpc_reconfigure_controller ( msg ) ;
+			break;
+		case REQUEST_UPDATE_JOB:
+			slurm_rpc_update_job ( msg ) ;
+			slurm_free_job_desc_msg ( msg -> data ) ;
 			break;
 		case REQUEST_UPDATE_NODE:
 			slurm_rpc_update_node ( msg ) ;
@@ -371,6 +375,36 @@ slurm_rpc_job_cancel ( slurm_msg_t * msg )
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
 
+}
+
+void 
+slurm_rpc_update_job ( slurm_msg_t * msg )
+{
+	/* init */
+	int error_code;
+	clock_t start_time;
+	job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
+
+	start_time = clock ();
+		
+	/* do RPC call */
+	error_code = update_job ( job_desc_msg );
+
+	/* return result */
+	if (error_code)
+	{
+		error ("slurmctld_req: update error %d on job id %u, time=%ld",
+				error_code, job_desc_msg->job_id, 
+				(long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , error_code );
+	}
+	else
+	{
+		info ("slurmctld_req: updated job id %u, time=%ld",
+				job_desc_msg->job_id, 
+				(long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+	}
 }
 
 void 
