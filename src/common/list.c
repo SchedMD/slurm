@@ -820,6 +820,20 @@ list_free_aux (void *x, void *pfreelist)
     return;
 }
 
+#ifdef WITH_PTHREADS
+static void
+list_reinit_mutexes (void)
+{
+	list_mutex_init(&list_free_lock);
+}
+void list_install_atfork_handlers (void)
+{
+	int err;
+	if ((err = pthread_atfork(NULL, NULL, &list_reinit_mutexes)))
+		lsd_fatal_error(__FILE__, __LINE__, "list atfork install");
+	return;
+}
+#endif
 
 #ifndef NDEBUG
 #ifdef WITH_PTHREADS
