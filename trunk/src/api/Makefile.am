@@ -60,16 +60,7 @@ libslurm_la_LDFLAGS        = \
 	-version-info $(current):$(rev):$(age) \
 	$(OTHER_FLAGS)
 
-libslurm_la_DEPENDENCIES   = libslurm.sym $(common_dir)/libcommon.la
-
-# WARNING: on AIX   "$*" is set, but "$<" is not
-#          on Linux "$<" is set, but "$*" is not
-#          we put both in to make it build in both places
-libslurm.sym : $(top_builddir)/slurm/slurm.h 
-	sed -n 's/^extern.* \(slurm[a-zA-Z0-9_]*\).*$$/\1/p' $< $* >libslurm.sym
-
-distclean-local: 
-	-rm libslurm.sym
+libslurm_la_DEPENDENCIES   = $(common_dir)/libcommon.la
 
 force:
 $(libslurm_la_LIBADD) : force
@@ -77,6 +68,7 @@ $(libslurm_la_LIBADD) : force
 
 $(VERSION_SCRIPT) :
 	(echo "{ global:";   \
+	 echo "   BNR_*;";   \
 	 echo "   slurm_*;"; \
 	 echo "  local: *;"; \
 	 echo "};") > $(VERSION_SCRIPT)
