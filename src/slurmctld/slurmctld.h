@@ -62,12 +62,6 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 
-#define FREE_NULL(_X)			\
-	do {				\
-		if (_X) xfree (_X);	\
-		_X	= NULL; 	\
-	} while (0)
-
 #define FREE_NULL_BITMAP(_X)		\
 	do {				\
 		if (_X) bit_free (_X);	\

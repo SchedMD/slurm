@@ -474,9 +474,9 @@ int init_part_conf(void)
 	default_part.shared = SHARED_NO;
 	default_part.total_nodes = 0;
 	default_part.total_cpus = 0;
-	FREE_NULL(default_part.nodes);
-	FREE_NULL(default_part.allow_groups);
-	FREE_NULL(default_part.allow_uids);
+	xfree(default_part.nodes);
+	xfree(default_part.allow_groups);
+	xfree(default_part.allow_uids);
 	FREE_NULL_BITMAP(default_part.node_bitmap);
 
 	if (part_list)		/* delete defunct partitions */

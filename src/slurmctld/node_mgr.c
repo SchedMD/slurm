@@ -625,8 +625,8 @@ int init_node_conf (void)
 	last_node_update = time (NULL);
 
 	node_record_count = 0;
-	FREE_NULL (node_record_table_ptr);
-	FREE_NULL (hash_table);
+	xfree(node_record_table_ptr);
+	xfree(hash_table);
 
 	strcpy (default_node_record.name, "DEFAULT");
 	default_node_record.node_state = NODE_STATE_UNKNOWN;
@@ -640,8 +640,8 @@ int init_node_conf (void)
 	default_config_record.real_memory = 1;
 	default_config_record.tmp_disk = 1;
 	default_config_record.weight = 1;
-	FREE_NULL (default_config_record.feature);
-	FREE_NULL(default_config_record.nodes);
+	xfree(default_config_record.feature);
+	xfree(default_config_record.nodes);
 	FREE_NULL_BITMAP (default_config_record.node_bitmap);
 
 	if (config_list)	/* delete defunct configuration entries */
