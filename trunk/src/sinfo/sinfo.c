@@ -32,8 +32,7 @@
  * Global Variables *
  ********************/
 static char *command_name;
-struct sinfo_parameters params;
-int quiet_flag=0;
+struct sinfo_parameters params = { partition_flag:false, partition:NULL, state_flag:false, node_flag:false, node:NULL, summarize:false, long_output:false, line_wrap:false, verbose:false };
 
 /************
  * Funtions *
@@ -45,10 +44,8 @@ int query_server( partition_info_msg_t ** part_pptr, node_info_msg_t ** node_ppt
 
 int build_min_max_string( char* buffer, int max, int min );
 
-void display_partition_info_long( List partitions );
-void display_partition_info( List partitions );
-void display_all_partition_summary( partition_info_msg_t* part_ptr, node_info_msg_t* node_ptr );
-void display_partition_summarys ( List partitions );
+/* Node Functions */
+void display_all_nodes( node_info_msg_t* node_msg );
 void display_nodes_list( List nodes );
 void display_nodes_list_long( List nodes );
 int get_node_index( char* name );
@@ -56,8 +53,14 @@ char* get_node_prefix( char* name, char* buffer );
 char* node_name_string_from_list( List nodes, char* buffer );
 
 List group_node_list( node_info_msg_t* msg );
-void display_all_nodes( node_info_msg_t* node_msg );
 
+/* Partition Functions */
+void display_all_partition_summary( partition_info_msg_t* part_ptr, node_info_msg_t* node_ptr );
+void display_partition_info_long( struct partition_summary* partition );
+void display_partition_node_info( struct partition_summary* partition, bool print_name );
+void display_all_partition_summary( partition_info_msg_t* part_ptr, node_info_msg_t* node_ptr );
+void display_all_partition_info_long( List partitions );
+void display_partition_summarys ( List partitions );
 
 int 
 main (int argc, char *argv[]) 
@@ -67,7 +70,6 @@ main (int argc, char *argv[])
 	node_info_msg_t* node_msg = NULL;
 
 	command_name = argv[0];
-	quiet_flag = 0;
 
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line( argc, argv );
@@ -79,10 +81,12 @@ main (int argc, char *argv[])
 	if ( params.node_flag )
 		display_all_nodes( node_msg );
 	
-	if ( params.partition_flag )
+	else if ( params.partition_flag )
 		display_all_partition_summary( partition_msg, node_msg );
-
-
+/*		display_all_partition_info_long( partition_msg, node_msg );
+*/
+	else
+		display_all_partition_summary( partition_msg, node_msg );
 	exit (0);
 }
 
@@ -121,13 +125,15 @@ void display_all_nodes( node_info_msg_t* node_msg )
 	printf( display_line );
 
 
-	if ( params.long_output == true )
+	if ( params.long_output == true || params.node != NULL )
 	{
 		List nodes = list_create( NULL );
 		int i = 0;
 
 		for ( ; i < node_msg->record_count; i++ )
-			list_append( nodes, &node_msg->node_array[i] );
+			if ( ( params.node == NULL || strcmp( node_msg->node_array[i].name, params.node) == 0 )
+					&& ( params.state_flag == false || node_msg->node_array[i].node_state == params.state ) )
+				list_append( nodes, &node_msg->node_array[i] );
 		
 		display_nodes_list_long( nodes );
 
@@ -184,6 +190,7 @@ display_nodes_list_long( List nodes )
 {
 	/*int console_width = atoi( getenv( "COLUMNS" ) );*/
 	int console_width = 80;
+	int count = 0;
 	char line[BUFSIZ];
 	char format[32];
 	ListIterator i = list_iterator_create( nodes );
@@ -191,6 +198,8 @@ display_nodes_list_long( List nodes )
 
 	while ( ( curr = list_next( i ) ) != NULL )
 	{
+		if ( params.partition != NULL && strcmp( params.partition, curr-> partition) )
+			continue;
 
 		snprintf(line, BUFSIZ, display_node_format,
 				curr->name,
@@ -209,10 +218,10 @@ display_nodes_list_long( List nodes )
 			snprintf(format, 32, "%%.%ds\n", MAX(80,console_width) );
 			printf( format, line );
 		}
-		
+		count++;	
 	}
 	printf( "-- %.8s NODES LISTED --\n\n",
-			 int_to_str( list_count( nodes ) ) );
+			 int_to_str( count ));
 
 }
 
@@ -227,6 +236,11 @@ group_node_list( node_info_msg_t* msg )
 	{
 		ListIterator list_i = list_iterator_create( node_lists );
 		List curr_list = NULL;
+
+		if (  params.partition != NULL && strcmp( params.partition, nodes[i].partition ) )
+			continue;
+		if ( params.state_flag == true && nodes[i].node_state != params.state )
+			continue;
 
 		while ( (curr_list = list_next(list_i)) != NULL )
 		{
@@ -299,8 +313,8 @@ find_node_state_summary( List l, enum node_states state )
 	return NULL;
 }
 
-void 
-display_all_partition_summary( partition_info_msg_t* part_ptr, node_info_msg_t* node_ptr )
+List
+setup_partition_summary( partition_info_msg_t* part_ptr, node_info_msg_t* node_ptr )
 {
 	int i=0;
 	List partitions = list_create( NULL );
@@ -351,20 +365,24 @@ display_all_partition_summary( partition_info_msg_t* part_ptr, node_info_msg_t* 
 			list_append( part_sum->states, node_sum );
 		}
 	}
+	
+	return partitions;
+}
 
-	display_partition_summarys( partitions );
+void 
+display_all_partition_summary( partition_info_msg_t* part_ptr, node_info_msg_t* node_ptr )
+{
+	List partitions = setup_partition_summary( part_ptr, node_ptr );
+	if ( params.long_output )
+		display_all_partition_info_long( partitions );		
+	else display_partition_summarys( partitions );
+	list_destroy( partitions );
 }
 
 void 
 display_partition_summarys ( List partitions ) 
 {
 	const char* format_header = "%10s %8s %10s %8s %15s %15s\n"; 
-	const char* format =        "%10s %8d %10s %8s %15s %15s\n"; 
-	char cpu_buf[64];
-	char ram_buf[64];
-	char disk_buf[64];
-	char* no_name = "";
-
 	struct partition_summary* partition ;
 	ListIterator part_i = list_iterator_create( partitions );
 
@@ -373,35 +391,80 @@ display_partition_summarys ( List partitions )
 
 	while ( (partition = list_next( part_i ) ) != NULL )
 	{
-		ListIterator node_i = list_iterator_create( partition->states );
-		struct node_state_summary* state_sum = NULL;
-		char* part_name = partition->info->name;
-		while ( ( state_sum = list_next(node_i) ) != NULL )
-		{
-			build_min_max_string( cpu_buf, state_sum->cpu_min, state_sum->cpu_max );
-			build_min_max_string( ram_buf, state_sum->ram_min, state_sum->ram_max );
-			build_min_max_string( disk_buf, state_sum->disk_min, state_sum->disk_max );
-			printf( format, part_name, state_sum->node_count, node_state_string( state_sum->state), cpu_buf, ram_buf, disk_buf ); 
-			part_name = no_name;
-		}
-		printf("\n");
+		if ( params.partition == NULL || strcmp( partition->info->name, params.partition ) == 0 )
+			display_partition_node_info( partition, true );
 	}
 }
 
 
-
 void
-display_partition_info( List partitions )
+display_partition_node_info( struct partition_summary* partition, bool print_name )
 {
+	char* no_name = "";
+	char cpu_buf[64];
+	char ram_buf[64];
+	char disk_buf[64];
 
+	const char* format_name =  "%10s %8d %10s %8s %15s %15s\n"; 
+	const char* format =  "\t%8d %10s %8s %15s %15s\n"; 
+
+	ListIterator node_i = list_iterator_create( partition->states );
+	struct node_state_summary* state_sum = NULL;
+	char* part_name = partition->info->name ;
+
+	while ( ( state_sum = list_next(node_i) ) != NULL )
+	{
+		build_min_max_string( cpu_buf, state_sum->cpu_min, state_sum->cpu_max );
+		build_min_max_string( ram_buf, state_sum->ram_min, state_sum->ram_max );
+		build_min_max_string( disk_buf, state_sum->disk_min, state_sum->disk_max );
+		if ( print_name  == true )
+			printf( format_name, part_name, state_sum->node_count, node_state_string( state_sum->state), cpu_buf, ram_buf, disk_buf );
+		else printf( format, state_sum->node_count, node_state_string( state_sum->state), cpu_buf, ram_buf, disk_buf ); 
+		part_name = no_name;
+	}
 }
 
 
+void
+display_all_partition_info_long( List partitions )
+{
+	struct partition_summary* partition ;
+	ListIterator part_i = list_iterator_create( partitions );
+
+	while ( (partition = list_next( part_i ) ) != NULL )
+	{
+		if ( params.partition == NULL || strcmp( partition->info->name, params.partition ) == 0 )
+			display_partition_info_long( partition );
+		printf("\n");
+	}
+}
 
 void
-display_partition_info_long( List partitions )
+display_partition_info_long( struct partition_summary* partition )
 {
+	const char* format_header = "\t%8s %10s %8s %15s %15s\n"; 
+/*	const char* format =        "\t%8d %10s %8s %15s %15s\n"; 
+*/
+	partition_info_t* part = partition->info ;
+	
+	printf( "================================================================================\n" );
+	printf("%s\n", part->name );
+	printf("\tcurrent state     = %s\n", part->state_up ? "UP" : "DOWN" );
+	printf("\tdefault partition = %s\n", part->default_part ? "YES" : "NO" );
+	printf("\ttotal nodes       = %d\n", part->total_nodes );
+	printf("\ttotal cpus        = %d\n", part->total_cpus );
+	if ( part->max_time == -1 ) 
+		printf("\tmax jobtime       = NONE\n" );
+	else printf("\tmax jobtime       = %d\n", part->max_time );
+	printf("\tmax nodes/job     = %d\n", part->max_nodes );
+	printf("\troot only         = %s\n", part->root_only ? "YES" : "NO" );
+	printf("\tshare nodes       = %s\n", part->shared == 2 ? "ALWAYS" : part->shared ? "YES" : "NO" );
 
+	printf("\n");
+	printf( format_header, "#Nodes", "Node State", "CPUs", "Memory", "TmpDisk" ); 
+	printf( "\t------------------------------------------------------------------------\n");
+	display_partition_node_info( partition, false );
+	
 }
 
 /* node_name_string_from_list - analyzes a list of node_info_t* and 

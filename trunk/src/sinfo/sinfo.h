@@ -59,7 +59,8 @@
 struct sinfo_parameters {
 	bool partition_flag;
 	const char* partition;
-	const char* state;
+	bool state_flag;
+	enum node_states state;
 	bool node_flag;
 	const char* node;
 	bool summarize;
