@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "December 2002" "srun 0.1" "slurm components"
+.TH SRUN "1" "January 2003" "srun 0.1" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -66,7 +66,7 @@ will block until resources become available.
 \fB\-k\fR, \fB\-\-kill-off\fR
 Do not automatically terminate a job of one of the nodes it has been allocated 
 fails. The job will assume all responsibilities for fault-tolerance. The 
-default action is to termniate the job upon node failure.
+default action is to terminate the job upon node failure.
 .TP
 \fB\-s\fR, \fB\-\-share\fR
 The job can share nodes with other running jobs. This may result in faster job 
@@ -148,7 +148,7 @@ current working directory, see \fB\-o\fR for other IO options).
 \fIexecutable\fR must be specified using either a fully qualified 
 pathname or its pathname will be relative to the current working directory. 
 The search path will not be used to locate the file. \fIexecutable\fR 
-will be interpretted by the user's default shell unless the file begins 
+will be interpreted by the user's default shell unless the file begins 
 with "#!" followed by the fully qualified pathname of a valid shell.
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
@@ -313,7 +313,7 @@ stdin is broadcast to all remote tasks.
 (This is the default behavior)
 .TP
 \fBnone\fR
-stdout and stderr is not recieved from any task. 
+stdout and stderr is not received from any task. 
 stdin is not sent to any task (stdin is closed).
 .TP
 \fItaskid\fR
@@ -336,7 +336,7 @@ allows for a format string to be used to generate the named IO file
 described above. The following list of format specifiers may be
 used in the format string to generate a filename that will be
 unique to a given jobid, stepid, node, or task. In each case, 
-the appropiate number of files are opened and associated with
+the appropriate number of files are opened and associated with
 the corresponding tasks.
 .RS 10
 .TP
@@ -480,7 +480,7 @@ the tasks it is controlling with a few exceptions. The escape sequence
 \fB<control-c>\fR will report the state of all tasks associated with 
 the \fBsrun\fR command. If \fB<control-c>\fR is entered twice within 
 one second, then the associated SIGINT signal will be sent to all tasks.
-If a third \fB<control-c>\fB is recieved, the job will be forcefully
+If a third \fB<control-c>\fR is received, the job will be forcefully
 terminated without waiting for remote tasks to exit.
 
 The escape sequence \fB<control-z>\fR is presently ignored. Our intent 
@@ -510,8 +510,8 @@ output to the desired file. Execute \fBmpirun \-\-help\fR for more options.
 .SH "EXAMPLES"
 This simple example demonstrates the execution of the command \fBhostname\fR
 in eight tasks. At least eight processors will be allocated to the job 
-(the same as the task count) on however many nodes are required to satify 
-the request. The output of each task will be preceeded with its task number.
+(the same as the task count) on however many nodes are required to satisfy 
+the request. The output of each task will be proceeded with its task number.
 .br
 > srun \-n8 \-l hostname
 
@@ -535,7 +535,7 @@ srun \-l hostname
 
 
 This example demonstrates how one executes a simple MPICH job
-in the event that MPICH has not been configurated to automatically 
+in the event that MPICH has not been configured to automatically 
 set the required parameters (this is the worst cases scenario). 
 We use \fBsrun\fR to build a list of machines (nodes) to be used by 
 \fBmpirun\fR in its required format. A sample command line and 
