@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in scheduling jobs when a processor count is specified 
     and FastSchedule=0 and the cluster is heterogeneous.
  -- Fix srun bug when --input, --output and --error are all "none"
+ -- Allow single task id to be selected with --input, --output, and --error.
 
 * Changes in SLURM 0.3.7
 ========================

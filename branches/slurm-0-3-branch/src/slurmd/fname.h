@@ -31,5 +31,6 @@
 
 char *fname_create(slurmd_job_t *job, const char *fmt, int taskid);
 int   fname_trunc_all(slurmd_job_t *job, const char *fmt);
+int   fname_single_task_io (const char *fmt);
 
 #endif /* !_SLURMD_FNAME_H */
