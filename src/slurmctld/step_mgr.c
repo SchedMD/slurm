@@ -36,7 +36,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef HAVE_LIBELAN3
+#include <elan3/elanvp.h>
+#endif
+
 #include <src/common/bitstring.h>
+#include <src/common/slurm_errno.h>
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 

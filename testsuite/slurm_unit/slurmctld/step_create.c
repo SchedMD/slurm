@@ -24,7 +24,7 @@ void report_results(resource_allocation_response_msg_t* resp_msg);
 int
 main( int argc, char* argv[])
 {
-	job_step_create_request_msg_t request = {   5, 5, 4,4 , 0, "" }; 
+	job_step_create_request_msg_t request = {   5, 5, 4,4 , 0, SLURM_DIST_CYCLIC, "" }; 
 	resource_allocation_response_msg_t* resp_msg ;
 
 	slurm_msg_t request_msg ;
@@ -54,7 +54,7 @@ main( int argc, char* argv[])
 		job_step_create_response_msg_t* msg = (job_step_create_response_msg_t *) response_msg.data ;
 		printf("job_step_id = %u\n ", msg->	job_step_id );
 		printf("node_list = %s\n", msg->node_list );
-		printf("credentials:\n\tjob_id = %u\n\tuser_id = %u\n\tnode_list = %s\n\texpiration_time = %lu\n\tsignature = %u\n\n", 
+		printf("credentials:\n\tjob_id = %u\n\tuser_id = %u\n\tnode_list = %s\n\texpiration_time = %lu\n\tsignature = %s\n\n", 
 					msg->credentials->job_id, 
 					msg->credentials->user_id, 
 					msg->credentials->node_list, 
