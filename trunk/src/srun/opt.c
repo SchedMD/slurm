@@ -426,6 +426,9 @@ static void _opt_default()
 	opt.max_exit_timeout= 60; /* Warn user 60 seconds after task exit */
 	opt.msg_timeout     = 5;  /* Default launch msg timeout           */
 
+	opt.euid	    = NULL;
+	opt.egid	    = NULL;
+	
 	mode	= MODE_NORMAL;
 
 #ifdef HAVE_TOTALVIEW
@@ -910,7 +913,7 @@ static bool _opt_verify(void)
 	if ( getuid() == 0 ) {
 		if ( opt.euid ) {
 			euid = _become_user( opt.euid, opt.egid );
-			if ( euid ) {
+			if ( euid != NFS_NOBODY ) {
 				opt.uid = euid;
 				strncpy( opt.user, opt.euid, MAX_USERNAME );
 			} else {
