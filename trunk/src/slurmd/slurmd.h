@@ -93,13 +93,19 @@ slurmd_conf_t * conf;
 /* Send node registration message with status to controller
  * IN status - same values slurm error codes (for node shutdown)
  */
-extern int send_registration_msg(uint32_t status);
+int send_registration_msg(uint32_t status);
 
 /*
  * save_cred_state - save the current credential list to a file
  * IN list - list of credentials
  * RET int - zero or error code
  */
-extern int save_cred_state(slurm_cred_ctx_t vctx);
+int save_cred_state(slurm_cred_ctx_t vctx);
+
+/*
+ * Same as slurm_get_addr but protected by pthread_atfork handlers
+ */
+void slurmd_get_addr(slurm_addr *a, uint16_t *port, char *buf, uint32_t len);
+
 
 #endif /* !_SLURMD_H */

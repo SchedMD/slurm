@@ -538,7 +538,7 @@ io_prepare_clients(slurmd_job_t *job)
 	if (srun->ioaddr.sin_addr.s_addr) {
 		char         host[256];
 		short        port;
-		slurm_get_addr(&srun->ioaddr, &port, host, sizeof(host));
+		slurmd_get_addr(&srun->ioaddr, &port, host, sizeof(host));
 		debug2("connecting IO back to %s:%d", host, ntohs(port));
 	} 
 

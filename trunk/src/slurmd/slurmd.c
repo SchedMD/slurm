@@ -84,6 +84,8 @@ static int             active_threads = 0;
 static pthread_mutex_t active_mutex   = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  active_cond    = PTHREAD_COND_INITIALIZER;
 
+static pthread_mutex_t fork_mutex     = PTHREAD_MUTEX_INITIALIZER;
+
 
 
 /*
@@ -115,6 +117,9 @@ static void      _handle_connection(slurm_fd fd, slurm_addr *client);
 static void     *_service_connection(void *);
 static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
 static void      _update_logging(void);
+static void      _atfork_prepare(void);
+static void      _atfork_final(void);
+static void      _install_fork_handlers(void);
 
 
 int 
@@ -174,6 +179,9 @@ main (int argc, char *argv[])
 	xsignal(SIGTERM, &_term_handler);
 	xsignal(SIGINT,  &_term_handler);
 	xsignal(SIGHUP,  &_hup_handler );
+
+	_install_fork_handlers();
+	list_install_atfork_handlers();
 
 	_msg_engine();
 
@@ -317,7 +325,8 @@ _service_connection(void *arg)
 		msg->conn_fd = con->fd;
 		slurmd_req(msg, con->cli_addr);
 	}
-	slurm_close_accepted_conn(con->fd);	
+	if (slurm_close_accepted_conn(con->fd) < 0)
+		error ("close(%d): %m", con->fd);
 
 	xfree(con);
 	_decrement_thd_count();
@@ -722,7 +731,7 @@ _slurmd_fini()
 int save_cred_state(slurm_cred_ctx_t ctx)
 {
 	char *old_file, *new_file, *reg_file;
-	int cred_fd = 0, error_code = SLURM_SUCCESS;
+	int cred_fd = -1, error_code = SLURM_SUCCESS;
 	Buf buffer = NULL;
 	static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -734,9 +743,8 @@ int save_cred_state(slurm_cred_ctx_t ctx)
 	xstrcat(new_file, "/cred_state.new");
 
 	slurm_mutex_lock(&state_mutex);
-	cred_fd = creat(new_file, 0600);
-	if (cred_fd == 0) {
-		error("creat %s error %m", new_file);
+	if ((cred_fd = creat(new_file, 0600)) < 0) {
+		error("creat(%s): %m", new_file);
 		error_code = errno;
 		goto cleanup;
 	}
@@ -762,7 +770,7 @@ int save_cred_state(slurm_cred_ctx_t ctx)
 	xfree(new_file);
 	if (buffer)
 		free_buf(buffer);
-	if (cred_fd)
+	if (cred_fd > 0)
 		close(cred_fd);
 	return error_code;
 }
@@ -882,3 +890,38 @@ static void _update_logging(void)
 
 	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
 }
+
+/*
+ *  Lock the fork mutex to protext fork-critical regions
+ */
+static void _atfork_prepare(void)
+{
+	slurm_mutex_lock(&fork_mutex);
+}
+
+/*
+ *  Unlock  fork mutex to allow fork-critical functions to continue
+ */
+static void _atfork_final(void)
+{
+	slurm_mutex_unlock(&fork_mutex);
+}
+
+static void _install_fork_handlers(void) 
+{
+	int err;
+
+	err = pthread_atfork(&_atfork_prepare, &_atfork_final, &_atfork_final);
+	if (err) error ("pthread_atfork: %m");
+
+	return;
+}
+
+void slurmd_get_addr(slurm_addr *a, uint16_t *port, char *buf, uint32_t len) 
+{
+	slurm_mutex_lock(&fork_mutex);
+	slurm_get_addr(a, port, buf, len);
+	slurm_mutex_unlock(&fork_mutex);
+	return;
+}
+
