@@ -1,0 +1,116 @@
+.TH SCONTROL "1" "August 2002" "squeue 0.1" "Slurm components"
+
+.SH "NAME"
+squeue \- Used to view information of jobs located in the scheduling queue.
+
+.SH "SYNOPSIS"
+\fBsqueue\fR [\fIOPTIONS\fR...] 
+.SH "DESCRIPTION"
+\fBsqueue\fR is used to view job and job step information for jobs managed by 
+\fBslurmctld\fR. 
+
+.TP
+OPTIONS
+.TP
+\fB-?\fR, \fB--help\fR
+Print a help message describing the usage of \fBsqueue\fR.
+.TP
+\fB-j\fR, \fB--job\fR
+Specify the jobs to view.  This takes a comma seperated list of jobs to view.
+.TP
+\fB-s\fR, \fB--job-steps\fR
+View job step information, not job information.
+.TP
+\fB-t\fR, \fB--state\fR
+Specify the state of jobs to view, or if no state is specified, entries are 
+sorted according to state information.  This option is ignored if the \fB-j\fR
+option is used.
+.TP
+\fB-p\fR, \fB--partition\fR
+Specify the partition of the jobs to view, or if no partition is specified,
+entries are sorted according to partitions.  This option is ignored if the 
+\fB-j\fR option is used.
+.TP
+\fB-o\fR, \fB--format\fR
+Specify the format and job information displayed.  This format closely resembles
+printf, where:
+
+\fB%i\fR job id
+.br
+\fB%n\fR job name
+.br
+\fB%u\fR user
+.br
+\fB%P\fR partition
+.br
+\fB%s\fR job state compact form
+.br
+\fB%S\fR job state extended form
+.br
+\fB%l\fR time limit / wall clock
+.br
+\fB%t\fR start time
+.br
+\fB%e\fR end time
+.br
+\fB%p\fR priority
+.br
+\fB%c\fR number of cpus
+.br
+\fB%n\fR number of nodes
+.br
+\fB%h\fR nodes are shared?
+.br
+\fB%h\fR nodes are contiguous
+.br
+\fB%f\fR features
+.br
+\fB%N\fR list of nodes
+.br
+\fB%R\fR list of requested nodes
+.br
+\fB%mc\fR minimum cpus 
+.br
+\fB%mm\fR minimum memory
+.br
+\fB%md\fR minimum temporary disk space
+.br
+\fB%.<*>\fR right justification of the field
+.br 
+\fB%<Number><*>\fR size of field
+.TP
+\fB-v\fR
+Display all job information.  
+.SH "EXAMPLE"
+.eo
+squeue -f '%i%.10n%20N'
+.br
+would print the jobs in the following format:
+PUT THE EXAMPLE HERE...
+.br 
+Figure out how to format the example...
+.br 
+.ec
+
+.SH "COPYING"
+Copyright (C) 2002 The Regents of the University of California.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+UCRL-CODE-2002-040.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <http://www.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+.SH "SEE ALSO"
+\fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3), 
+\fBslurm_load_partitions\fR(3), 
+\fBslurm_reconfigure\fR(3), \fBslurm_shutdown\fR(3), 
+\fBslurm_update_job\fR(3), \fBslurm_update_node\fR(3), \fBslurm_update_partition\fR(3)
