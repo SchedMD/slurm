@@ -91,7 +91,7 @@ typedef bitstr_t bitoff_t;
 	(name)[_bitstr_words(nbits)] = { BITSTR_MAGIC_STACK, (nbits) }
 
 /* compat with Vixie macros */
-bitstr_t *bit_allocbit_alloc(bitoff_t nbits);
+bitstr_t *bit_alloc(bitoff_t nbits);
 int bit_test(bitstr_t *b, bitoff_t bit);
 void bit_set(bitstr_t *b, bitoff_t bit);
 void bit_clear(bitstr_t *b, bitoff_t bit);
@@ -105,6 +105,7 @@ bitoff_t bit_ffs(bitstr_t *b);
 /* new */
 void	bit_free(bitstr_t *b);
 bitstr_t *bit_realloc(bitstr_t *b, bitoff_t nbits);
+bitoff_t bit_size(bitstr_t *b);
 void	bit_and(bitstr_t *b1, bitstr_t *b2);
 void	bit_or(bitstr_t *b1, bitstr_t *b2);
 int	bit_set_count(bitstr_t *b);

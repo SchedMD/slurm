@@ -59,7 +59,7 @@ bit_realloc(bitstr_t *b, bitoff_t nbits)
 
 /* 
  * Free a bitstr.
- *   bp (IN/OUT)	bitstr to be freed
+ *   b (IN/OUT)	bitstr to be freed
  */ 
 void
 bit_free(bitstr_t *b)
@@ -69,7 +69,19 @@ bit_free(bitstr_t *b)
 	_bitstr_magic(b) = 0;
 	free(b);
 }
-				
+
+/*
+ * Return the number of possible bits in a bitstring.
+ *   b (IN)		bitstring to check
+ *   RETURN		number of bits allocated
+ */
+bitoff_t
+bit_size(bitstr_t *b)
+{
+	_assert_bitstr_valid(b);
+	return _bitstr_bits(b);
+}
+
 /* 
  * Is bit N of bitstring b set? 
  *   b (IN)		bitstring to test
@@ -338,19 +350,14 @@ bit_or(bitstr_t *b1, bitstr_t *b2) {
 bitstr_t *
 bit_copy(bitstr_t *b)
 {
-	bitoff_t bit;
 	bitstr_t *new;
+	int newsize;
 
 	_assert_bitstr_valid(b);
 
-	new = (bitstr_t *)malloc(_bitstr_words(_bitstr_bits(b)) * sizeof(bitstr_t));
-	if (new) {
-		_bitstr_magic(new) = BITSTR_MAGIC;
-		_bitstr_bits(new)  = _bitstr_bits(b);
-
-		memcpy(&new[_bit_word(0)], 
-		       &b[_bit_word(0)], _bitstr_bits(b)/8);
-	}
+	newsize = _bitstr_words(_bitstr_bits(b)) * sizeof(bitstr_t);
+	if ((new = (bitstr_t *)malloc(newsize)))
+		memcpy(new, b, newsize);
 
 	return new;
 }
