@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =============================
  -- select/bluegene plugin confirms db.properties file in $sysconfdir
     and copies it to StateSaveLocation (slurmctld's working directory)
+ -- select/bluegene plugin confirms environment variable required for 
+    DB2 interaction are set (execute "db2profile" script before slurmctld)
  -- slurmd to always give jobs KillWait time between SIGTERM and SIGKILL
     at termination
  -- set job's start_time and end_time = now rather than leaving zero if 

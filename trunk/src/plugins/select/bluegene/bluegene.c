@@ -536,6 +536,7 @@ extern int init_bgl(void)
 {
 #ifdef HAVE_BGL_FILES
 	int rc;
+	rm_size3D_t bp_size;
 
 	/* FIXME: this needs to be read in from conf file. */
 	rc = rm_set_serial("BGL");
@@ -543,15 +544,20 @@ extern int init_bgl(void)
 		error("init_bgl: rm_set_serial failed, errno=%d", rc);
 		return SLURM_ERROR;
 	}
-#endif
 
-#ifdef USE_BGL_FILES
-/* This requires the existence of "./db.properties" file */
 	rc = rm_get_BGL(&bgl);
 	if (rc != STATUS_OK){
-		error("init_bgl: rm_get_BGL failed, errno=%d", rc);
+		fatal("init_bgl: rm_get_BGL failed, errno=%d", rc);
 		return SLURM_ERROR;
 	}
+
+	rc = rm_get_data(bgl, RM_Msize, &bp_size);
+	if (rc != STATUS_OK) {
+		fatal("init_bgl: rm_get_data failed, errno=%d", rc);
+		return SLURM_ERROR;
+	}
+	verbose("BlueGene configured with %d x %d x %d base partitions",
+		bp_size.X, bp_size.Y, bp_size.Z);
 #endif
 	/** global variable */
 	bgl_conf_list = (List) list_create(_destroy_bgl_conf_record);

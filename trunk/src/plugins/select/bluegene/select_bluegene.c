@@ -38,6 +38,7 @@
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -105,6 +106,11 @@ extern int init ( void )
 	fatal("SYSTEM_DIMENSIONS value (%d) invalid for Blue Gene",
 		SYSTEM_DIMENSIONS);
 #endif
+#ifdef HAVE_BGL_FILES
+	if (!getenv("CLASSPATH") || !getenv("DB2INSTANCE") 
+	||  !getenv("VWSPATH"))
+		fatal("db2profile has not been run to setup DB2 environment");
+#endif
 
 	_init_db_properties();
 
@@ -136,10 +142,12 @@ static void _init_db_properties(void)
 		fatal("getcwd: %m");
 	strcat(db_prop_new_loc, "/db.properties");
 
+#ifdef HAVE_BGL_FILES
 	(void) unlink(db_prop_new_loc);
 	if (symlink(db_prop_orig_loc, db_prop_new_loc))
-		error("symlink(%s,%s): %m", db_prop_orig_loc, db_prop_new_loc);
+		fatal("symlink(%s,%s): %m", db_prop_orig_loc, db_prop_new_loc);
 	debug("symlink(%s,\n\t%s)", db_prop_orig_loc, db_prop_new_loc);
+#endif
 
 	xfree(db_prop_orig_loc);
 }
