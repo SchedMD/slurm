@@ -512,6 +512,8 @@ typedef struct slurm_ctl_conf {
 	char *schedtype;	/* type of scheduler to use */
 	char *schedauth;	/* credential for scheduler (if needed) */
 	uint16_t schedport;	/* port for scheduler connection */
+	uint16_t schedrootfltr; /* 1 if rootOnly partitions should be
+				 * filtered from scheduling (if needed) */
 	char *select_type;	/* type of node selector to use */
 	uint16_t slurm_user_id;	/* uid of slurm_user_name */
 	char *slurm_user_name;	/* user that slurmctld runs as */

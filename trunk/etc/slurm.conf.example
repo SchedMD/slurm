@@ -161,9 +161,17 @@
 #			   which slurmctld should listen for connection
 #			   requests.
 #
+# "SchedulerRootFilter"	 : for schedulers that support it (currently only
+#			   sched/backfill). If set to '1' then scheduler
+#			   will filter and avoid RootOnly partitions (let
+#			   root user or process schedule these partitions).
+#			   Otherwise scheduler will treat RootOnly
+#			   partitions as any other standard partition.
+#
 # SchedulerType=sched/wiki
 # SchedulerAuth=42
 # SchedulerPort=7321
+# SchedulerRootFilter=0	# default is '1'
 
 
 #

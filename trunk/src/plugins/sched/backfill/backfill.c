@@ -157,10 +157,13 @@ backfill_agent(void *args)
 {
 	struct timeval tv1, tv2;
 	char tv_str[20];
+	bool filter_root = false;
 	/* Read config, node, and partitions; Write jobs */
 	slurmctld_lock_t all_locks = {
 		READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 
+	if (sched_get_root_filter())
+		filter_root = true;
 	while (1) {
 		sleep(SLEEP_TIME);      /* don't run continuously */
 		if (!_more_work())
@@ -176,10 +179,11 @@ backfill_agent(void *args)
 			part_iterator = list_iterator_create(part_list);
 			while ((part_ptr = (struct part_record *) 
 						list_next(part_iterator))) {
-				if ( ((part_ptr->root_only)    ||
-				      (part_ptr->shared)       ||
+				if ( ((part_ptr->shared)       ||
 				      (part_ptr->state_up == 0)) )
 				 	continue; /* not under our control */
+				if ((part_ptr->root_only) && filter_root)
+					continue;
 				_attempt_backfill(part_ptr);
 			}
 			list_iterator_destroy(part_iterator);

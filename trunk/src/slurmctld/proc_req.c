@@ -271,6 +271,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->ret2service         = slurmctld_conf.ret2service;
 	conf_ptr->schedauth           = xstrdup(slurmctld_conf.schedauth);
 	conf_ptr->schedport           = slurmctld_conf.schedport;
+	conf_ptr->schedrootfltr       = slurmctld_conf.schedrootfltr;
 	conf_ptr->schedtype           = xstrdup(slurmctld_conf.schedtype);
 	conf_ptr->select_type         = xstrdup(slurmctld_conf.select_type);
 	conf_ptr->slurm_user_id       = slurmctld_conf.slurm_user_id;

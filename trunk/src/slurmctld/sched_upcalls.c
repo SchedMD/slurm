@@ -176,6 +176,24 @@ sched_get_auth( void )
 }
 
 /* ************************************************************************ */
+/*  TAG(                     sched_get_root_filter                       )  */
+/* ************************************************************************ */
+const u_int16_t
+sched_get_root_filter( void )
+{
+	u_int16_t root_filter;
+	/* Locks: Read config */
+	slurmctld_lock_t config_read_lock = { 
+		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+
+	lock_slurmctld(config_read_lock);
+	root_filter = slurmctld_conf.schedrootfltr;
+	unlock_slurmctld(config_read_lock);
+
+	return root_filter;
+}
+
+/* ************************************************************************ */
 /*  TAG(                     sched_get_obj_count                         )  */
 /* ************************************************************************ */
 int32_t sched_get_obj_count( sched_obj_list_t list )
