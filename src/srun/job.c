@@ -78,8 +78,8 @@ job_create(resource_allocation_response_msg_t *resp)
 
 	job->host  = (char **) xmalloc(job->nhosts * sizeof(char *));
 	job->slurmd_addr = (slurm_addr *) xmalloc(job->nhosts * sizeof(slurm_addr));
-	job->cpus = (int *)   xmalloc(job->nhosts * sizeof(int *) );
-	job->ntask = (int *)   xmalloc(job->nhosts * sizeof(int *) );
+	job->cpus = (int *)   xmalloc(job->nhosts * sizeof(int) );
+	job->ntask = (int *)   xmalloc(job->nhosts * sizeof(int) );
 
 	/* Compute number of file descriptors / Ports needed for Job 
 	 * control info server
