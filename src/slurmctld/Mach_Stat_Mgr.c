@@ -7,7 +7,6 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 
 #include "config.h"
 #include "list.h"
@@ -63,7 +62,7 @@ main(int argc, char * argv[]) {
     if (Error_Code != 0) printf("Error %d from Show_Node_Record", Error_Code);
     if (Error_Code == 0) printf("Show_Node_Record: %s\n", Out_Line);
     exit(0);
-}
+} /* main */
 #endif
 
 /* 
@@ -79,9 +78,9 @@ int Delete_Record(char *name) {
     Node_Record_Iterator = list_iterator_create(Node_Record_List);
     if (Node_Record_Iterator == NULL) {
 #ifdef DEBUG_MODULE
-	fprintf(stderr, "Delete_Record:list_iterator_create unable to allocate memory\n");
+	fprintf(stderr, "Delete_Record: list_iterator_create unable to allocate memory\n");
 #else
-	syslog(LOG_ERR, "Delete_Record:list_iterator_create unable to allocate memory\n");
+	syslog(LOG_ERR, "Delete_Record: list_iterator_create unable to allocate memory\n");
 #endif
 	return ENOMEM;
     }
