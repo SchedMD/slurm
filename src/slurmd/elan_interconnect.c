@@ -97,7 +97,7 @@ int interconnect_set_capabilities ( task_start_t * task_start )
 			return SLURM_ERROR ;
 		case 0:         /* child falls thru */
 			return SLURM_SUCCESS ;
-			break;
+			_exit( 0 );
 		default:        /* parent */
 			if (waitpid(pid, NULL, 0) < 0) 
 			{
