@@ -62,7 +62,8 @@
 
 #define BUF_SIZE         2048
 #define DEFAULT_DEBUG    0
-#define DEFAULT_PIDFILE  "/var/run/slurm_tv_clean.pid"
+#define DEFAULT_LOG_FILE  NULL
+#define DEFAULT_PID_FILE  "/var/run/slurm_tv_clean.pid"
 #define SLEEP_SECONDS    30
 #define SRUN_COMMAND     "srun"
 #define DEFAULT_VERBOSE  0
@@ -86,9 +87,11 @@ typedef struct {
 struct {
 	int   debug;
 	int   verbose;
+	char *log_file;
 	char *pid_file;
 } config;
 static int term_flag = 0;
+static log_options_t log_opts = LOG_OPTS_INITIALIZER;
 
 static void _cancel_defunct_jobs(List job_list);
 static void _delete_jobs(void *x);
@@ -111,12 +114,12 @@ static int  _tv_cmd_cmp(char *proc_cmd);
 static void _update_job(List job_list, proc_rec_t *srun_ptr, 
 		proc_rec_t *tv_ptr);
 static int  _update_job_recs(List srun_list, List tv_list, List job_list);
+static void _update_logging(void);
 static void _usage (void);
 
 int main(int argc, char *argv[])
 {
 	/* Log to stderr and syslog until becomes a daemon */
-	log_options_t log_opts = LOG_OPTS_INITIALIZER;
 	List job_list, srun_list, tv_list;
 	int pid_fd;
 
@@ -124,16 +127,9 @@ int main(int argc, char *argv[])
 	log_init(argv[0], log_opts, LOG_DAEMON, NULL);
 	if (_parse_command_line(argc, argv))
 		return 1;
-	if (config.debug) {
-		log_opts.stderr_level += config.verbose;
-		log_opts.syslog_level = LOG_LEVEL_QUIET;
-	} else {
-		log_opts.stderr_level = LOG_LEVEL_QUIET;
-		log_opts.syslog_level += config.verbose;
-		if (daemon(1, 1)) 
-			error("daemon error %m");
-	}
-	(void) log_alter(log_opts, LOG_DAEMON, NULL);
+	_update_logging();
+	if ((config.debug == 0) && (daemon(1, 1)))
+		error("daemon error %m");
 	_kill_old_tv_clean();
 	pid_fd = create_pidfile(config.pid_file);
 
@@ -170,17 +166,20 @@ static int _parse_command_line(int argc, char *argv[])
 	static struct option long_options[] = {
 		{"debug",   0, 0, 'D'},
 		{"help",    0, 0, 'h'},
+		{"logfile", 1, 0, 'L'},
 		{"pidfile", 1, 0, 'p'},
+		{"usage",   0, 0, 'u'},
 		{"verbose", 0, 0, 'v'},
 		{"version", 0, 0, 'V'},
 	};
 	int opt_char, option_index;
 
 	config.debug    = DEFAULT_DEBUG;
-	config.pid_file = DEFAULT_PIDFILE;
+	config.log_file = DEFAULT_LOG_FILE;
+	config.pid_file = DEFAULT_PID_FILE;
 	config.verbose  = DEFAULT_VERBOSE;
 
-	while((opt_char = getopt_long(argc, argv, "Dhp:vV",
+	while((opt_char = getopt_long(argc, argv, "DhL:p:uvV",
 			long_options, &option_index)) != -1) {
 		if      (opt_char == (int)'D')
 			config.debug++;
@@ -188,8 +187,14 @@ static int _parse_command_line(int argc, char *argv[])
 			_usage ();
 			exit(0);
 		}
+		else if (opt_char == (int)'L')
+			config.log_file = xstrdup(optarg);
 		else if (opt_char == (int)'p')
 			config.pid_file = xstrdup(optarg);
+		else if (opt_char == (int)'u') {
+			_usage ();
+			exit(0);
+		}
 		else if (opt_char == (int)'v')
 			config.verbose++;
 		else if (opt_char == (int)'V') {
@@ -197,7 +202,7 @@ static int _parse_command_line(int argc, char *argv[])
 			exit(0);
 		}
 		else {
-			fprintf(stderr, "getopt error, returned %c", opt_char);
+			fprintf(stderr, "getopt error, returned %c\n", opt_char);
 			return 1;
 		}
 	}
@@ -205,6 +210,8 @@ static int _parse_command_line(int argc, char *argv[])
 	if (config.debug) {
 		printf("--------------\n");
 		printf("debug   = %d\n", config.debug);
+		printf("logfile = %s\n", config.log_file);
+		printf("pidfile = %s\n", config.pid_file);
 		printf("verbose = %d\n", config.verbose);
 		printf("--------------\n");
 	}
@@ -213,12 +220,41 @@ static int _parse_command_line(int argc, char *argv[])
 
 static void _usage (void)
 {
-	printf("slurm_tv_clean [-D] [-h] [-v] [-V]\n");
+	printf("Usage: slurm_tv_clean [OPTIONS]");
+	printf("  -D          Run daemon in foreground.\n");
+	printf("  -h          Print this help message.\n");
+	printf("  -L logfile  Log messages to the specified file.\n");
+	printf("  -p pidfile  Log daemon's pid to the specified file.\n");
+	printf("  -u          Print this help message.\n");
+	printf("  -v          Verbose mode. Multiple -v's increase verbosity.\n");
+	printf("  -V          Print version and exit.\n");
 }
 
 static void _print_version(void)
 {
 	printf("%s %s\n", PACKAGE, SLURM_VERSION);
+}
+
+static void _update_logging(void)
+{
+	int log_level = LOG_LEVEL_INFO;
+
+	if (config.verbose) {
+		log_level = MIN(
+			(LOG_LEVEL_INFO + config.verbose), LOG_LEVEL_DEBUG3);
+	}
+
+	log_opts.logfile_level = log_level;
+	log_opts.stderr_level  = log_level;
+	log_opts.syslog_level  = log_level;
+
+	if (!config.debug) {
+		log_opts.stderr_level  = LOG_LEVEL_QUIET;
+		if (config.log_file)
+			log_opts.syslog_level = LOG_LEVEL_QUIET;
+	}
+
+	(void) log_alter(log_opts, SYSLOG_FACILITY_DAEMON, config.log_file);
 }
 
 /* Kill the currently running slurm_tv_clean */
