@@ -74,6 +74,12 @@ slurm_ssl_key_ctx_t sign_ctx;
 		_X	= NULL; 	\
 	} while (0)
 
+#define FREE_NULL_BITMAP(_X)			\
+	do {				\
+		if (_X) bit_free (_X);	\
+		_X	= NULL; 	\
+	} while (0)
+
 #define JOB_HASH_INX(_job_id)	(_job_id % MAX_JOB_COUNT)
 
 #define YES_OR_NO(_in_string)	\
@@ -92,6 +98,7 @@ static struct job_record *job_hash[MAX_JOB_COUNT];
 static struct job_record *job_hash_over[MAX_JOB_COUNT];
 static int max_hash_over = 0;
 
+/* Local functions */
 static void _add_job_hash(struct job_record *job_ptr);
 static int _copy_job_desc_to_file(job_desc_msg_t * job_desc,
 				  uint32_t job_id);
@@ -118,6 +125,7 @@ static void _signal_job_on_node(uint32_t job_id, uint16_t step_id,
 				int signum, char *node_name);
 static int _top_priority(struct job_record *job_ptr);
 static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate);
+static int _validate_job_create_req(job_desc_msg_t * job_desc);
 static int _write_data_to_file(char *file_name, char *data);
 static int _write_data_array_to_file(char *file_name, char **data,
 				     uint16_t size);
@@ -183,20 +191,13 @@ void delete_job_details(struct job_record *job_entry)
 	if (job_entry->details->magic != DETAILS_MAGIC)
 		fatal
 		    ("delete_job_details: passed invalid job details pointer");
-	if (job_entry->details->req_nodes)
-		xfree(job_entry->details->req_nodes);
-	if (job_entry->details->req_node_bitmap)
-		bit_free(job_entry->details->req_node_bitmap);
-	if (job_entry->details->features)
-		xfree(job_entry->details->features);
-	if (job_entry->details->err)
-		xfree(job_entry->details->err);
-	if (job_entry->details->in)
-		xfree(job_entry->details->in);
-	if (job_entry->details->out)
-		xfree(job_entry->details->out);
-	if (job_entry->details->work_dir)
-		xfree(job_entry->details->work_dir);
+	FREE_NULL(job_entry->details->req_nodes);
+	FREE_NULL_BITMAP(job_entry->details->req_node_bitmap);
+	FREE_NULL(job_entry->details->features);
+	FREE_NULL(job_entry->details->err);
+	FREE_NULL(job_entry->details->in);
+	FREE_NULL(job_entry->details->out);
+	FREE_NULL(job_entry->details->work_dir);
 	xfree(job_entry->details);
 	job_entry->details = NULL;
 }
@@ -610,7 +611,8 @@ int load_job_state(void)
 			    list_find_first(part_list, &list_find_part,
 					    partition);
 			if (part_ptr == NULL) {
-				info("load_job_state: invalid partition (%s) for job_id %u", partition, job_id);
+				info("load_job_state: invalid partition (%s) for job_id %u", 
+				     partition, job_id);
 				error_code = EINVAL;
 				goto cleanup;
 			}
@@ -740,26 +742,17 @@ int load_job_state(void)
 		FREE_NULL(in);
 		FREE_NULL(out);
 		FREE_NULL(work_dir);
-		if (node_bitmap) {
-			bit_free(node_bitmap);
-			node_bitmap = NULL;
-		}
-		if (req_node_bitmap) {
-			bit_free(req_node_bitmap);
-			req_node_bitmap = NULL;
-		}
-		if (credential_ptr) {
-			xfree(credential_ptr);
-			credential_ptr = NULL;
-		}
+		FREE_NULL_BITMAP(node_bitmap);
+		FREE_NULL_BITMAP(req_node_bitmap);
+		FREE_NULL(credential_ptr);
 	}
 
 	free_buf(buffer);
 	return error_code;
 
       unpack_error:
-	error
-	    ("Incomplete job data checkpoint file.  State not completely restored");
+	error("Incomplete job data checkpoint file");
+	error("Job state not completely restored");
 	FREE_NULL(nodes);
 	FREE_NULL(partition);
 	FREE_NULL(name);
@@ -1311,7 +1304,8 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 	}
 	if (job_desc->num_procs > part_ptr->total_cpus) {
 		info("_job_create: too many cpus (%d) requested of partition %s(%d)", 
-		     job_desc->num_procs, part_ptr->name, part_ptr->total_cpus);
+		     job_desc->num_procs, part_ptr->name, 
+		     part_ptr->total_cpus);
 		error_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
 		goto cleanup;
 	}
@@ -1327,33 +1321,8 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 		goto cleanup;
 	}
 
-	/* Perform some size checks on strings we store to prevent
-	 * malicious user filling slurmctld's memory */
-
-	if (job_desc->err && (strlen(job_desc->err) > BUF_SIZE)) {
-		info("_job_create: strlen(err) too big (%d)",
-		     strlen(job_desc->err));
-		error_code = ESLURM_PATHNAME_TOO_LONG;
+	if ((error_code =_validate_job_create_req(job_desc)))
 		goto cleanup;
-	}
-	if (job_desc->in && (strlen(job_desc->in) > BUF_SIZE)) {
-		info("_job_create: strlen(in) too big (%d)",
-		     strlen(job_desc->in));
-		error_code = ESLURM_PATHNAME_TOO_LONG;
-		goto cleanup;
-	}
-	if (job_desc->out && (strlen(job_desc->out) > BUF_SIZE)) {
-		info("_job_create: strlen(out) too big (%d)",
-		     strlen(job_desc->out));
-		error_code = ESLURM_PATHNAME_TOO_LONG;
-		goto cleanup;
-	}
-	if (job_desc->work_dir && (strlen(job_desc->work_dir) > BUF_SIZE)) {
-		info("_job_create: strlen(work_dir) too big (%d)",
-		     strlen(job_desc->work_dir));
-		error_code = ESLURM_PATHNAME_TOO_LONG;
-		goto cleanup;
-	}
 
 	if (will_run) {
 		error_code = 0;
@@ -1390,9 +1359,36 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 	return SLURM_SUCCESS;
 
       cleanup:
-	if (req_bitmap)
-		bit_free(req_bitmap);
+	FREE_NULL_BITMAP(req_bitmap);
 	return error_code;
+}
+
+/* Perform some size checks on strings we store to prevent
+ * malicious user filling slurmctld's memory
+ * RET 0 or error code */
+static int _validate_job_create_req(job_desc_msg_t * job_desc)
+{
+	if (job_desc->err && (strlen(job_desc->err) > BUF_SIZE)) {
+		info("_job_create: strlen(err) too big (%d)",
+		     strlen(job_desc->err));
+		return ESLURM_PATHNAME_TOO_LONG;
+	}
+	if (job_desc->in && (strlen(job_desc->in) > BUF_SIZE)) {
+		info("_job_create: strlen(in) too big (%d)",
+		     strlen(job_desc->in));
+		return  ESLURM_PATHNAME_TOO_LONG;
+	}
+	if (job_desc->out && (strlen(job_desc->out) > BUF_SIZE)) {
+		info("_job_create: strlen(out) too big (%d)",
+		     strlen(job_desc->out));
+		return  ESLURM_PATHNAME_TOO_LONG;
+	}
+	if (job_desc->work_dir && (strlen(job_desc->work_dir) > BUF_SIZE)) {
+		info("_job_create: strlen(work_dir) too big (%d)",
+		     strlen(job_desc->work_dir));
+		return  ESLURM_PATHNAME_TOO_LONG;
+	}
+	return SLURM_SUCCESS;
 }
 
 /* _copy_job_desc_to_file - copy the job script and environment from the RPC  
@@ -1898,12 +1894,9 @@ static void _list_delete_job(void *job_entry)
 
 	delete_job_details(job_record_point);
 
-	if (job_record_point->nodes)
-		xfree(job_record_point->nodes);
-	if (job_record_point->node_bitmap)
-		bit_free(job_record_point->node_bitmap);
-	if (job_record_point->node_addr)
-		xfree(job_record_point->node_addr);
+	FREE_NULL(job_record_point->nodes);
+	FREE_NULL_BITMAP(job_record_point->node_bitmap);
+	FREE_NULL(job_record_point->node_addr);
 	if (job_record_point->step_list) {
 		delete_all_step_records(job_record_point);
 		list_destroy(job_record_point->step_list);
@@ -2122,8 +2115,7 @@ void reset_job_bitmaps(void)
 		(struct job_record *) list_next(job_record_iterator))) {
 		if (job_record_point->magic != JOB_MAGIC)
 			fatal("dump_all_job: job integrity is bad");
-		if (job_record_point->node_bitmap)
-			bit_free(job_record_point->node_bitmap);
+		FREE_NULL_BITMAP(job_record_point->node_bitmap);
 		if (job_record_point->nodes) {
 			node_name2bitmap(job_record_point->nodes,
 					 &job_record_point->node_bitmap);
@@ -2135,9 +2127,7 @@ void reset_job_bitmaps(void)
 
 		if (job_record_point->details == NULL)
 			continue;
-		if (job_record_point->details->req_node_bitmap)
-			bit_free(job_record_point->details->
-				 req_node_bitmap);
+		FREE_NULL_BITMAP(job_record_point->details->req_node_bitmap);
 		if (job_record_point->details->req_nodes)
 			node_name2bitmap(job_record_point->details->
 					 req_nodes,
@@ -2387,8 +2377,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->features && detail_ptr) {
 		if (super_user) {
-			if (detail_ptr->features)
-				xfree(detail_ptr->features);
+			FREE_NULL(detail_ptr->features);
 			detail_ptr->features = job_specs->features;
 			info("update_job: setting features to %s for job_id %u", 
 			     job_specs->features, job_specs->job_id);
@@ -2431,19 +2420,15 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				error
 				    ("Invalid node list specified for job_update: %s",
 				     job_specs->req_nodes);
-				if (req_bitmap)
-					bit_free(req_bitmap);
+				FREE_NULL_BITMAP(req_bitmap);
 				req_bitmap = NULL;
 				error_code = ESLURM_INVALID_NODE_NAME;
 			}
 			if (req_bitmap) {
-				if (detail_ptr->req_nodes)
-					xfree(detail_ptr->req_nodes);
+				FREE_NULL(detail_ptr->req_nodes);
 				detail_ptr->req_nodes =
 				    job_specs->req_nodes;
-				if (detail_ptr->req_node_bitmap)
-					bit_free(detail_ptr->
-						 req_node_bitmap);
+				FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
 				detail_ptr->req_node_bitmap = req_bitmap;
 				info("update_job: setting req_nodes to %s for job_id %u", 
 				     job_specs->req_nodes, job_specs->job_id);
