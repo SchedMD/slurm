@@ -45,7 +45,7 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
                  stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
                  stdlib.h dirent.h pthread.h sys/prctl.h \
                  sysint.h inttypes.h termcap.h netdb.h sys/socket.h  \
-                 sys/systemcfg.h curses.h\
+                 sys/systemcfg.h ncurses.h curses.h\
 		 )
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
@@ -105,6 +105,7 @@ LIBS="$PTHREAD_LIBS $LIBS"
 X_AC_AIX
 X_AC_BGL
 X_AC_SLURM_SEMAPHORE
+X_AC_NCURSES
 
 dnl checks for system services.
 dnl

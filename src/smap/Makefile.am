@@ -4,7 +4,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-LIBS=-lcurses
+LIBS=-l$(NCURSES)
 INCLUDES = -I$(top_srcdir) -I 
 bin_PROGRAMS = smap
 
