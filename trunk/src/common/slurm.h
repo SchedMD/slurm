@@ -324,9 +324,10 @@ extern struct part_record *find_part_record (char *name);
 
 /* 
  * init_job_conf - initialize the job configuration tables and values. 
- * this should be called before creating any node or configuration entries.
+ *	this should be called after creating node information, but 
+ *	before creating any job entries.
  * output: return value - 0 if no error, otherwise an error code
- * global: last_node_update - time of last node table update
+ * global: last_job_update - time of last job table update
  *	job_list - pointer to global job list
  */
 extern int init_job_conf ();
@@ -692,6 +693,16 @@ extern void rehash ();
  * output: none
  */
 extern void report_leftover (char *in_line, int line_num);
+
+
+/* 
+ * reset_job_bitmaps - reestablish bitmaps for existing jobs. 
+ *	this should be called after rebuilding node information, 
+ *	but before using any job entries.
+ * global: last_job_update - time of last job table update
+ *	job_list - pointer to global job list
+ */
+extern void reset_job_bitmaps ();
 
 /* 
  * schedule - attempt to schedule all pending jobs
