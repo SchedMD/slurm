@@ -183,6 +183,17 @@ static int _parse_state(char *str, enum node_states *states)
 			*states = i | NODE_STATE_NO_RESPOND;
 			return SLURM_SUCCESS;
 		}
+
+		if (strcasecmp(node_state_string_compact(i), str) == 0) {
+			*states = i;
+			return SLURM_SUCCESS;
+		}
+
+		if (strcasecmp(node_state_string_compact(i | 
+			       NODE_STATE_NO_RESPOND), str) == 0) {
+			*states = i | NODE_STATE_NO_RESPOND;
+			return SLURM_SUCCESS;
+		}
 	}
 	return SLURM_ERROR;
 }
