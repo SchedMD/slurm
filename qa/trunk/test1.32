@@ -74,17 +74,17 @@ expect {
 	-re "WAITING" {
 		if {$matches == 0} {
 			set matches 1
+#			exec $bin_kill -USR1 $srun_pid
+			exec $bin_pkill -USR1 -u $uid srun
 		}
-#		exec $bin_kill -USR1 $srun_pid
-		exec $bin_pkill -USR1 -u $uid srun
 		exp_continue
 	}
 	-re "SIGUSR1" {
 		if {$matches == 1} {
 			set matches 2
+#			exec $bin_kill -USR2 $srun_pid
+			exec $bin_pkill -USR2 -u $uid srun
 		}
-#		exec $bin_kill -USR2 $srun_pid
-		exec $bin_pkill -USR2 -u $uid srun
 		exp_continue
 	}
 	-re "SIGUSR2" {
