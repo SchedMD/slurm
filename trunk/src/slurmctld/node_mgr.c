@@ -95,7 +95,8 @@ char * bitmap2node_name (bitstr_t *bitmap)
 	char prefix[MAX_NAME_LEN], suffix[MAX_NAME_LEN];
 	char format[MAX_NAME_LEN], temp[MAX_NAME_LEN];
 	char last_prefix[MAX_NAME_LEN], last_suffix[MAX_NAME_LEN];
-	int first_index = 0, last_index = 0, index, first_digits, last_digits;
+	int first_index = 0, last_index = 0, index;
+	int first_digits = 0, last_digits = 0;
 
 	if (bitmap == NULL) {
 		node_list_ptr = xmalloc (1);	/* returns ptr to "\0" */
@@ -484,7 +485,7 @@ int load_all_node_state ( void )
 			node_ptr->cpus = cpus;
 			node_ptr->real_memory = real_memory;
 			node_ptr->tmp_disk = tmp_disk;
-			node_ptr->last_response = time (NULL);
+			node_ptr->last_response = (time_t) 0;
 		} else {
 			error ("Node %s has vanished from configuration", 
 			       node_name);
@@ -1258,7 +1259,8 @@ void ping_nodes (void)
 		if (age < slurmctld_conf.heartbeat_interval)
 			continue;
 
-		if ((age >= slurmctld_conf.slurmd_timeout) &&
+		if ((node_record_table_ptr[i].last_response != (time_t)0) &&
+		    (age >= slurmctld_conf.slurmd_timeout) &&
 		    (base_state != NODE_STATE_DOWN)) {
 			error ("Node %s not responding, setting DOWN", 
 			       node_record_table_ptr[i].name);
@@ -1294,6 +1296,9 @@ void ping_nodes (void)
 		}
 
 		debug3 ("ping %s now", node_record_table_ptr[i].name);
+		if (node_record_table_ptr[i].last_response == (time_t)0)
+			node_record_table_ptr[i].last_response = now;
+
 		if ((ping_agent_args->node_count+1) > ping_buf_rec_size) {
 			ping_buf_rec_size += 32;
 			xrealloc ((ping_agent_args->slurm_addr), 
