@@ -45,15 +45,18 @@ API connected to tasks such as authentication, interconnect fabric,
 task scheduling, etc.
 A set of functions is defined for use by all of the different 
 infrastructures of a particular variety. 
-When a slurm daemon is initiated, it reads the configuration 
+When a SLURM daemon is initiated, it reads the configuration 
 file to determine which of the available plugins should be used. 
 For details, see <a href="plugins.html">plugins.html</a> and
 <a href="authplugins.html">authplugins.html</a>.
 <p>
 Our intent is to make more full use of the plugin mechanism in the future. 
-Only the authentication mechanism uses a plugin in the initial release, 
-but interconnect, job prioritization, and node allocation (for topgraphy 
-differences) will be converted to plugins for greater system flexibility.
+Work is underway to support scheduling through a plugin, with the 
+<a href="http://supercluster.org/maui">Maui Scheduler</a> 
+and FIFO plugin modules initially available. 
+Work is also underway to support additional interconnects via a plugin 
+with support for Myrinet being added to the currently supported Quadrics 
+Elan3 and TCP/IP communications.
 
 <h2>Directory Structure</h2>
 
@@ -79,7 +82,7 @@ make
 <p>
 Copyright and disclaimer information are in the files <i>COPYING</i> and <i>DISCLAIMER</i>.
 
-All of the top-level subdirectories are describe below.
+All of the top-level subdirectories are described below.
 <dl>
 
 <dt>auxdir
@@ -96,7 +99,7 @@ All of the top-level subdirectories are describe below.
 Placing these header files in this location makes for better code portability. 
 
 <dt>src
-<dd>Contains all source code and header files not in the slurm subdirectory 
+<dd>Contains all source code and header files not in the "slurm" subdirectory 
 described above.
 
 <dt>testsuite
@@ -170,7 +173,7 @@ Several configuration files are included in the <i>etc</i> subdirectory.
 <i>slurm.conf.example</i> includes a description of all configuration 
 options and default settings. See <i>doc/man/man5/slurm.conf.5</i> for 
 more details.
-<i>init.d.slurm</i> is a script that determines which slurm daemon(s) 
+<i>init.d.slurm</i> is a script that determines which SLURM daemon(s) 
 should execute on any node based upon the configuration file contents. 
 This can be used as part of a daemon startup/shutdown mechanism.
 
@@ -181,9 +184,14 @@ Some of these tests directly test modules in the daemons.
 Other tests are more general and exercise API functionality. 
 Be aware that some of these tests are dated and some no longer function. 
 
+We also have a set of Expect SLURM tests available as a separate 
+distribution. These tests are executed after SLURM has been installed 
+and the daemons initiated. About 100 test scripts exercise all SLURM 
+commands and options including stress tests. 
+
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/programmer.guide.html
-<p>Last Modified March 18, 2003</p>
+<p>Last Modified July 4, 2003</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
