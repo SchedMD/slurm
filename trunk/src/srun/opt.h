@@ -154,8 +154,9 @@ typedef struct srun_options {
 	int  max_launch_time;   /* Undocumented                 */
 	int  max_exit_timeout;  /* Undocumented                 */
 	int  msg_timeout;       /* Undocumented                 */
+	char *network;		/* --network=			*/
 
-	int geometry[SYSTEM_DIMENSIONS]; /* --geometry, -g */
+	int geometry[SYSTEM_DIMENSIONS]; /* --geometry, -g	*/
 	bool no_rotate;		/* --no_rotate, -R		*/
 	int conn_type;		/* --conn-type 			*/
 	int node_use;		/* --node-use			*/

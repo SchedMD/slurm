@@ -99,6 +99,7 @@
 #define LONG_OPT_CONNTYPE 0x111
 #define LONG_OPT_NODE_USE 0x112
 #define LONG_OPT_TEST_ONLY 0x113
+#define LONG_OPT_NETWORK  0x114
 
 /*---- forward declarations of static functions  ----*/
 
@@ -774,6 +775,7 @@ static void _opt_args(int argc, char **argv)
 		{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
 		{"node-use",         required_argument, 0, LONG_OPT_NODE_USE},
 		{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
+		{"network",          required_argument, 0, LONG_OPT_NETWORK},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:klm:n:N:"
@@ -1043,6 +1045,10 @@ static void _opt_args(int argc, char **argv)
 			break;
 		case LONG_OPT_TEST_ONLY:
 			opt.test_only = true;
+			break;
+		case LONG_OPT_NETWORK:
+			xfree(opt.network);
+			opt.network = xstrdup(optarg);
 			break;
 		}
 	}
@@ -1425,6 +1431,7 @@ static void _opt_list()
 		info("rotate         : no");
 	else
 		info("rotate         : yes");
+	info("network        : %s", opt.network);
 	str = print_commandline();
 	info("remote command : `%s'", str);
 	xfree(str);
