@@ -60,21 +60,21 @@ static int exit_flag;			/* program to terminate if =1 */
 static int quiet_flag;			/* quiet=1, verbose=-1, normal=0 */
 static int input_words;			/* number of words of input permitted */
 
-void dump_command (int argc, char *argv[]);
-int get_command (int *argc, char *argv[]);
-void print_config (char *config_param);
-void print_job (char * job_id_str);
-void print_node (char *node_name, node_info_msg_t *node_info_ptr);
-void print_node_list (char *node_list);
-void print_part (char *partition_name);
-int process_command (int argc, char *argv[]);
-int strcmp_i (const char *s1, const char *s2);
-int strncmp_i (const char *s1, const char *s2, int len);
-int update_it (int argc, char *argv[]);
-int update_job (int argc, char *argv[]);
-int update_node (int argc, char *argv[]);
-int update_part (int argc, char *argv[]);
-void usage ();
+void	dump_command (int argc, char *argv[]);
+int	get_command (int *argc, char *argv[]);
+void	print_config (char *config_param);
+void	print_job (char * job_id_str);
+void	print_node (char *node_name, node_info_msg_t *node_info_ptr);
+void	print_node_list (char *node_list);
+void	print_part (char *partition_name);
+int	process_command (int argc, char *argv[]);
+int	strcmp_i (const char *s1, const char *s2);
+int	strncmp_i (const char *s1, const char *s2, int len);
+void	update_it (int argc, char *argv[]);
+int	update_job (int argc, char *argv[]);
+int	update_node (int argc, char *argv[]);
+int	update_part (int argc, char *argv[]);
+void	usage ();
 
 int 
 main (int argc, char *argv[]) 
@@ -607,9 +607,9 @@ process_command (int argc, char *argv[])
  * update_it - update the slurm configuration per the supplied arguments 
  * input: argc - count of arguments
  *        argv - list of arguments
- * output: returns 0 if no error, errno otherwise
+ * output: returns 0 if no slurm error, errno otherwise
  */
-int
+void
 update_it (int argc, char *argv[]) 
 {
 	int error_code, i;
@@ -634,20 +634,18 @@ update_it (int argc, char *argv[])
 	if (i >= argc) {	
 		printf("No valid entity in update command\n");
 		printf("Input line must include \"NodeName\", \"PartitionName\", or \"JobId\"\n");
-		error_code = EINVAL;
 	}
 	else if (error_code) {
-		printf ("slurm_update error %d %s\n", 
-			errno, slurm_strerror(errno));
+		printf ("slurm_update error %d %s\n", errno, slurm_strerror(errno));
 	}
-	return error_code;
 }
 
 /* 
  * update_job - update the slurm job configuration per the supplied arguments 
  * input: argc - count of arguments
  *        argv - list of arguments
- * output: returns 0 if no error, errno otherwise
+ * output: returns 0 if no slurm error, errno otherwise. parsing error prints 
+ *			error message and returns 0
  */
 int
 update_job (int argc, char *argv[]) 
@@ -702,7 +700,7 @@ update_job (int argc, char *argv[])
 		else {
 			fprintf (stderr, "Invalid input: %s\n", argv[i]);
 			fprintf (stderr, "Request aborted\n");
-			return EINVAL;
+			return 0;
 		}
 	}
 
@@ -716,7 +714,8 @@ update_job (int argc, char *argv[])
  * update_node - update the slurm node configuration per the supplied arguments 
  * input: argc - count of arguments
  *        argv - list of arguments
- * output: returns 0 if no error, errno otherwise
+ * output: returns 0 if no slurm error, errno otherwise. parsing error prints 
+ *			error message and returns 0
  */
 int
 update_node (int argc, char *argv[]) 
@@ -741,7 +740,7 @@ update_node (int argc, char *argv[])
 						fprintf (stderr, "%s ", node_state_string(k));
 					}
 					fprintf (stderr, "\n");
-					return EINVAL;
+					return 0;
 				}
 				if (strcmp_i (node_state_string(j), &argv[i][6]) == 0) {
 					state_val = (uint16_t) j;
@@ -753,7 +752,7 @@ update_node (int argc, char *argv[])
 		else {
 			fprintf (stderr, "Invalid input: %s\n", argv[i]);
 			fprintf (stderr, "Request aborted\n");
-			return EINVAL;
+			return 0;
 		}
 	}
 
@@ -767,7 +766,8 @@ update_node (int argc, char *argv[])
  * update_part - update the slurm partition configuration per the supplied arguments 
  * input: argc - count of arguments
  *        argv - list of arguments
- * output: returns 0 if no error, errno otherwise
+ * output: returns 0 if no slurm error, errno otherwise. parsing error prints 
+ *			error message and returns 0
  */
 int
 update_part (int argc, char *argv[]) 
@@ -799,7 +799,7 @@ update_part (int argc, char *argv[])
 			else {
 				fprintf (stderr, "Invalid input: %s\n", argv[i]);
 				fprintf (stderr, "Acceptable Default values are YES and NO\n");
-				return EINVAL;
+				return 0;
 			}
 		}
 		else if (strncmp_i(argv[i], "Key=", 4) == 0) {
@@ -810,7 +810,7 @@ update_part (int argc, char *argv[])
 			else {
 				fprintf (stderr, "Invalid input: %s\n", argv[i]);
 				fprintf (stderr, "Acceptable Key values are YES and NO\n");
-				return EINVAL;
+				return 0;
 			}
 		}
 		else if (strncmp_i(argv[i], "Shared=", 7) == 0) {
@@ -823,7 +823,7 @@ update_part (int argc, char *argv[])
 			else {
 				fprintf (stderr, "Invalid input: %s\n", argv[i]);
 				fprintf (stderr, "Acceptable Shared values are YES, NO and FORCE\n");
-				return EINVAL;
+				return 0;
 			}
 		}
 		else if (strncmp_i(argv[i], "State=", 6) == 0) {
@@ -834,7 +834,7 @@ update_part (int argc, char *argv[])
 			else {
 				fprintf (stderr, "Invalid input: %s\n", argv[i]);
 				fprintf (stderr, "Acceptable State values are UP and DOWN\n");
-				return EINVAL;
+				return 0;
 			}
 		}
 		else if (strncmp_i(argv[i], "Nodes=", 6) == 0)
@@ -844,7 +844,7 @@ update_part (int argc, char *argv[])
 		else {
 			fprintf (stderr, "Invalid input: %s\n", argv[i]);
 			fprintf (stderr, "Request aborted\n");
-			return EINVAL;
+			return 0;
 		}
 	}
 
