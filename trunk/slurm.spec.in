@@ -12,7 +12,6 @@ Source: %{name}-%{version}-%{release}.tgz
 Requires: readline popt
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 
-%define _with_authd 1
 %define _with_elan  1
 %define _with_totalview 1
 
@@ -22,6 +21,19 @@ Group: System Environment/Base
 Requires: slurm
 
 
+# Authentication plugin sub-packages: 
+# XXX: How to conditionally build these?
+#
+%package auth-authd
+Summary: SLURM auth implementation using Brent Chun's authd
+Group: System Environment/Base
+Requires: slurm authd
+
+%package auth-munge
+Summary: SLURM auth implementation using Chris Dunlap's Munge
+Group: System Environment/Base
+Requires: slurm munge
+
 %description 
 SLURM is a simple resource management system which manages
 exclusive access to a set of compute resources and distrubutes
@@ -29,11 +41,15 @@ work to those resources. Included in this package are the SLURM
 controller, compute node daemon, and all clients necessary to
 access SLURM functionality.
 
-
 %description devel
 Development package for SLURM.  This package includes the header files
 and static libraries for the SLURM API.
 
+%description auth-authd
+SLURM authentication module for Brent Chun's authd
+
+%description auth-munge
+SLURM authentication module for Chris Dunlap's Munge
 
 %prep
 %setup -n %{name}-%{version}-%{release}
@@ -41,9 +57,6 @@ and static libraries for the SLURM API.
 %build
 %if %{_with_elan}
 	WITHELAN=--with-elan
-%endif
-%if %{_with_authd}
-	WITHAUTHD=--with-authd
 %endif
 %if %{_with_totalview}
 	WITHTV=--with-totalview
@@ -53,7 +66,7 @@ PFX_FIX=--program-prefix=%{?_program_prefix:%{_program_prefix}}
 
 WITHCONF=--with-slurm-conf=/etc/slurm
 
-%configure --enable-debug $PFX_FIX $WITHCONF $WITHELAN $WITHAUTHD $WITHTV
+%configure --enable-debug $PFX_FIX $WITHCONF $WITHELAN $WITHTV
 
 make
 
@@ -77,6 +90,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/*
 %{_sbindir}/*
 %{_libdir}/*.so*
+%{_libdir}/slurm/auth_none.so
 %{_mandir}/man1/*
 %{_mandir}/man5/*
 %{_mandir}/man8/*
@@ -89,6 +103,14 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libslurm.a
 %{_libdir}/libslurm.la
 %{_mandir}/man3/*
+
+%files auth-authd
+%defattr(-,root,root)
+%{_libdir}/slurm/auth_authd.so
+
+%files auth-munge
+%defattr(-,root,root)
+%{_libdir}/slurm/auth_munge.so
 
 %pre
 if [ -x /etc/rc.d/init.d/slurm ]; then
