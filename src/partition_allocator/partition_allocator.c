@@ -33,7 +33,7 @@
 #include "partition_allocator.h"
 
 #ifdef HAVE_BGL_FILES
-# include "rm_api.h"
+# include "src/plugins/select/bluegene/wrap_rm_api.h"
 #endif
 
 #define DEBUG_PA

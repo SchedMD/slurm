@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include "rm_api.h"
+#include "src/plugins/select/bluegene/wrap_rm_api.h"
 
 #define _DEBUG 0
 #define MAX_RETRIES 20			/* max retry count in polling */
