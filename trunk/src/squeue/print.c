@@ -9,6 +9,9 @@
 
 #include "print.h"
 
+/*****************************************************************************
+ * Global Print Functions
+ *****************************************************************************/
 int
 _create_format( char* buffer, const char* type, int width, bool left_justify )
 {
@@ -43,6 +46,9 @@ _print_time( time_t t, int level, int width, bool left_justify )
 	return SLURM_SUCCESS;
 }
 
+/*****************************************************************************
+ * Job Print Functions
+ *****************************************************************************/
 int 
 print_jobs_from_list( List list, job_info_t* job  )
 {
@@ -496,6 +502,40 @@ _print_job_features( job_info_t* job, int width, bool left_justify )
 	return SLURM_SUCCESS;
 }
 
+
+/*****************************************************************************
+ * Job Step  Print Functions
+ *****************************************************************************/
+int 
+print_steps_from_list( List list, job_step_info_t* job_step  )
+{
+	ListIterator i = list_iterator_create( list );
+	step_format_t* current;
+
+	while ( (current = (step_format_t*) list_next(i)) != NULL)
+	{
+		if ( current->function( job_step, current->width, current->left_justify ) 
+				!= SLURM_SUCCESS )
+			return SLURM_ERROR;
+		
+	}
+	printf("\n");
+	return SLURM_SUCCESS;
+}
+
+int
+step_format_add_function ( List list, int width, bool left_justify, 
+		int (*function)(job_step_info_t*,int,bool) )
+{
+	step_format_t* tmp = (step_format_t*) xmalloc(sizeof(step_format_t));	
+	tmp->function = function;
+	tmp->width = width;
+	tmp->left_justify = left_justify;
+
+	/* FIXME: Check for error */
+	list_append( list, tmp );
+	return SLURM_SUCCESS;
+}
 
 int _print_step_id( job_step_info_t* step, int width, bool left_justify )
 {
