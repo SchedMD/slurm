@@ -329,6 +329,8 @@ static void *_slurmctld_signal_hand(void *no_data)
 			if (error_code)
 				error("read_slurm_conf error %d",
 				      error_code);
+			else 
+				_update_logging();
 			break;
 		case SIGABRT:	/* abort */
 			fatal("SIGABRT received");

@@ -675,7 +675,7 @@ static void _list_delete_config (void *config_entry)
 	config_record_point = (struct config_record *) config_entry;
 	FREE_NULL (config_record_point->feature);
 	FREE_NULL (config_record_point->nodes);
-	FREE_NULL (config_record_point->node_bitmap);
+	FREE_NULL_BITMAP (config_record_point->node_bitmap);
 	xfree (config_record_point);
 }
 
