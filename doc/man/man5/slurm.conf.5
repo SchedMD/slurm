@@ -17,11 +17,12 @@ The size of each line in the file is limited to 1024 characters.
 The overall configuration parameters available include:
 .TP
 \fBBackupAddr\fR
-The name of the machine where SLURM control functions are 
-executed in the event that \fBControlMachine\fR fails. 
-This should be a node name as returned by the hostname command, 
-without the full domain name (e.g. "lx0001"). 
-By default the \fBBackupAddr\fR will be identical in value to 
+Name that \fBBackupController\fR should be referred to in 
+establishing a communications path. This name will 
+be used as an argument to the gethostbyname() function for 
+identification. For example, "elx0000" might be used to designate 
+the ethernet address for node "lx0000". 
+ByBy default the \fBBackupAddr\fR will be identical in value to 
 \fBBackupController\fR.
 .TP
 \fBBackupController\fR
@@ -34,9 +35,11 @@ This should be a node name without the full domain name (e.g. "lx0002").
 While not essential, it is highly recommended that you specify a backup controller.
 .TP
 \fBControlAddr\fR
-The name of the machine where SLURM control functions are executed. 
-This should be a node name as returned by the hostname command, 
-without the full domain name (e.g. "lx0001"). 
+Name that \fBControlMachine\fR should be referred to in 
+establishing a communications path. This name will 
+be used as an argument to the gethostbyname() function for 
+identification. For example, "elx0000" might be used to designate 
+the ethernet address for node "lx0000". 
 By default the \fBControlAddr\fR will be identical in value to 
 \fBControlMachine\fR.
 .TP
@@ -216,7 +219,7 @@ for example, processor speed.
 By default a node has no features.
 .TP
 \fBNodeAddr\fR
-Name that a node should be refered to in establishing 
+Name that a node should be referred to in establishing 
 a communications path. This name will be used as an 
 argument to the gethostbyname() function for identification. 
 For example, "elx0012" might be used to designate 
