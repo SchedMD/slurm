@@ -189,7 +189,6 @@ parse_command_line( int argc, char* argv[] )
 		i = strlen(env_val);
 		params.format = xmalloc(i);
 		strcpy(params.format, env_val);
-		env_val = NULL;
 	}
 
 	if ( ( params.partitions == NULL ) && 
@@ -198,7 +197,6 @@ parse_command_line( int argc, char* argv[] )
 		params.partitions = xmalloc(i);
 		strcpy(params.partitions, env_val);
 		params.part_list = _build_part_list( params.partitions );
-		env_val = NULL;
 	}
 
 	if ( ( params.sort == NULL ) && 
@@ -206,7 +204,6 @@ parse_command_line( int argc, char* argv[] )
 		i = strlen(env_val);
 		params.sort = xmalloc(i);
 		strcpy(params.sort, env_val);
-		env_val = NULL;
 	}	
 
 	if ( ( params.states == NULL ) && 
@@ -215,7 +212,6 @@ parse_command_line( int argc, char* argv[] )
 		params.states = xmalloc(i);
 		strcpy(params.states, env_val);
 		params.state_list = _build_state_list( params.states );
-		env_val = NULL;
 	}
 
 	if ( ( params.users == NULL ) && 
@@ -224,7 +220,6 @@ parse_command_line( int argc, char* argv[] )
 		params.users = xmalloc(i);
 		strcpy(params.users, env_val);
 		params.user_list = _build_user_list( params.users );
-		env_val = NULL;
 	}
 
 	if ( params.format )
