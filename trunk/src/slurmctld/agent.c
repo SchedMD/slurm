@@ -168,7 +168,7 @@ void *agent(void *args)
 	if (_valid_agent_arg(agent_arg_ptr))
 		goto cleanup;
 
-	xsignal(SIGALRM, _alarm_handler);
+	xsignal(SIGCONT, _alarm_handler);
 
 	/* initialize the agent data structures */
 	agent_info_ptr = _make_agent_info(agent_arg_ptr);
@@ -331,8 +331,9 @@ static task_info_t *_make_task_data(agent_info_t *agent_info_ptr, int inx)
 }
 
 /* 
- * _wdog - Watchdog thread. Send SIGALRM to threads which have been active 
- *	for too long.
+ * _wdog - Watchdog thread. Send SIGCONT to threads which have been active 
+ *	for too long. This used to be SIGALRM, but that caused problems for 
+ *	the socket communications poll() and its use of SIGALRM on some systems.
  * IN args - pointer to agent_info_t with info on threads to watch
  * Sleep for WDOG_POLL seconds between polls.
  */
@@ -369,7 +370,7 @@ static void *_wdog(void *args)
 					debug3("agent thread %lu timed out\n", 
 					       (unsigned long) thread_ptr[i].thread);
 					if (pthread_kill(thread_ptr[i].thread,
-						     SIGALRM) == ESRCH)
+						     SIGCONT) == ESRCH)
 						thread_ptr[i].state = DSH_FAILED;
 				}
 				break;
@@ -412,7 +413,6 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 	/* Locks: Write job */
 	slurmctld_lock_t job_write_lock =
 	    { NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
-#endif
 	uint32_t job_id = 0, step_id = 0;
 	thd_t *thread_ptr = agent_ptr->thread_struct;
 
@@ -439,7 +439,6 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 		return;
 	}
 
-#if AGENT_IS_THREAD
 	lock_slurmctld(job_write_lock);
 	if  (thread_ptr[0].state == DSH_DONE)
 		srun_response(job_id, step_id);
@@ -536,13 +535,11 @@ static void *_thread_per_node_rpc(void *args)
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = { 
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+	/* Locks: Read job */
+	slurmctld_lock_t job_read_lock = {
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 #endif
 	xassert(args != NULL);
-
-	slurm_mutex_lock(task_ptr->thread_mutex_ptr);
-	thread_ptr->state = DSH_ACTIVE;
-	thread_ptr->start_time = time(NULL);
-	slurm_mutex_unlock(task_ptr->thread_mutex_ptr);
 
 	is_kill_msg = (	(msg_type == REQUEST_KILL_TIMELIMIT) ||
 			(msg_type == REQUEST_KILL_JOB)     );
@@ -550,6 +547,50 @@ static void *_thread_per_node_rpc(void *args)
 			(msg_type == SRUN_TIMEOUT) ||
 			(msg_type == RESPONSE_RESOURCE_ALLOCATION) ||
 			(msg_type == SRUN_NODE_FAIL) );
+
+	thread_ptr->start_time = time(NULL);
+
+	/* don't try to communicate with defunct job */
+#if AGENT_IS_THREAD
+	if (srun_agent) {
+		uint32_t          job_id   = 0;
+		enum job_states    state   = JOB_END;
+		struct job_record *job_ptr = NULL;
+
+		if (msg_type == SRUN_PING) {
+			srun_ping_msg_t *msg = task_ptr->msg_args_ptr;
+			job_id  = msg->job_id;
+		} else if (msg_type == SRUN_TIMEOUT) {
+			srun_timeout_msg_t *msg = task_ptr->msg_args_ptr;
+			job_id  = msg->job_id;
+		} else if (msg_type == SRUN_NODE_FAIL) {
+			srun_node_fail_msg_t *msg = task_ptr->msg_args_ptr;
+			job_id  = msg->job_id;
+		} else if (msg_type == RESPONSE_RESOURCE_ALLOCATION) {
+			resource_allocation_response_msg_t *msg = 
+				task_ptr->msg_args_ptr;
+			job_id  = msg->job_id;
+		}
+		lock_slurmctld(job_read_lock);
+		if (job_id)
+			job_ptr = find_job_record(job_id);
+		if (job_ptr)
+			state = job_ptr->job_state;	
+		unlock_slurmctld(job_read_lock);
+		if ((state == JOB_RUNNING) ||
+		    ((state & JOB_COMPLETING) && (msg_type == SRUN_NODE_FAIL))) {
+			; /* proceed with the communication */
+		} else {	
+			thread_state = DSH_DONE;
+			goto cleanup;
+		}
+	}
+#endif
+
+	slurm_mutex_lock(task_ptr->thread_mutex_ptr);
+	thread_ptr->state = DSH_ACTIVE;
+	slurm_mutex_unlock(task_ptr->thread_mutex_ptr);
+
 
 	/* send request message */
 	msg.address  = thread_ptr->slurm_addr;
@@ -649,12 +690,12 @@ static void *_thread_per_node_rpc(void *args)
 }
 
 /*
- * SIGALRM handler.  We are really interested in interrupting hung communictions 
+ * SIGCONT handler.  We are really interested in interrupting hung communictions 
  * and causing them to return EINTR. Multiple interupts might be required.
  */
 static void _alarm_handler(int dummy)
 {
-	xsignal(SIGALRM, _alarm_handler);
+	xsignal(SIGCONT, _alarm_handler);
 }
 
 
