@@ -19,8 +19,7 @@ EXTRA_DIST =			\
 	ChangeLog		\
 	META
 	
-slurmincludedir=$(includedir)/slurm
-slurminclude_HEADERS =		\
+pkginclude_HEADERS =		\
 	slurm/slurm.h 		\
 	slurm/slurm_errno.h
 
