@@ -256,7 +256,7 @@ void
 slurm_sched_job_is_pending( void )
 {
 	if ( slurm_sched_init() < 0 )
-		return SLURM_ERROR;
+		return;
 
 	return (*(g_sched_context->ops.job_is_pending))();
 }
