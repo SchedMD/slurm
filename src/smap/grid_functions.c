@@ -32,17 +32,18 @@ void init_grid(node_info_msg_t * node_info_ptr)
 {
 	node_info_t *node_ptr;
 	int x, y, z, i = 0;
+	uint16_t node_base_state;
+
 	for (x = 0; x < smap_info_ptr->X; x++)
 		for (y = 0; y < smap_info_ptr->Y; y++)
 			for (z = 0; z < smap_info_ptr->Z; z++) {
 				node_ptr = &node_info_ptr->node_array[i];
-
+				node_base_state = (node_ptr->node_state) &
+					(~NODE_STATE_NO_RESPOND);
 				smap_info_ptr->grid[x][y][z].color = 7;
-				if (node_ptr->node_state == NODE_STATE_DOWN
-				    || node_ptr->node_state ==
-				    NODE_STATE_DRAINED
-				    || node_ptr->node_state ==
-				    NODE_STATE_DRAINING) {
+				if ((node_base_state == NODE_STATE_DOWN)
+				||  (node_base_state == NODE_STATE_DRAINED)
+				||  (node_base_state == NODE_STATE_DRAINING)) {
 					smap_info_ptr->grid[x][y][z].
 					    color = 0;
 					smap_info_ptr->grid[x][y][z].

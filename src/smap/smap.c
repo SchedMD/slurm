@@ -80,7 +80,6 @@ int main(int argc, char *argv[])
 	} else {
 		for (i = 0; i < node_info_ptr->record_count; i++) {
 			node_ptr = &node_info_ptr->node_array[i];
-			node_ptr->node_state = NODE_STATE_DRAINED;
 			start = atoi(node_ptr->name + 3);
 			temp = start / 100;
 			if (smap_info_ptr->X < temp)
