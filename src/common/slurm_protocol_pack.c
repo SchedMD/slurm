@@ -76,6 +76,8 @@ void unpack_header ( header_t * header , Buf buffer )
 	unpack32 ( & header -> body_length , buffer ) ;
 }
 
+/* SLURM_IO_HEADER_SIZE is the packed data structure size,	*\
+\*	not necessarily sizeof(slurm_io_stream_header_t)	*/
 void pack_io_stream_header ( slurm_io_stream_header_t * msg , Buf buffer )
 {
 	uint32_t tmp=SLURM_SSL_SIGNATURE_LENGTH;

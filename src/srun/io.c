@@ -281,7 +281,6 @@ _accept_io_stream(job_t *job, int i)
 		int size = sizeof(addr);
 		char buf[INET_ADDRSTRLEN];
 		slurm_io_stream_header_t hdr;
-		uint32_t len = sizeof(hdr) - 4;
 		char *msgbuf;
 		Buf buffer;
 
@@ -298,9 +297,9 @@ _accept_io_stream(job_t *job, int i)
 		sin = (struct sockaddr_in *) &addr;
 		inet_ntop(AF_INET, &sin->sin_addr, buf, INET_ADDRSTRLEN);
 
-		msgbuf = xmalloc(len);
-		_readn(sd, msgbuf, len); 
-		buffer = create_buf(msgbuf, len);
+		msgbuf = xmalloc(SLURM_IO_HEADER_SIZE);
+		_readn(sd, msgbuf, SLURM_IO_HEADER_SIZE); 
+		buffer = create_buf(msgbuf, SLURM_IO_HEADER_SIZE);
 		unpack_io_stream_header(&hdr, buffer); 
 		free_buf(buffer); /* NOTE: this frees msgbuf */
 
