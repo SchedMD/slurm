@@ -458,6 +458,54 @@ total number of processes in the current job
 SLURM_NODELIST
 list of nodes that the slurm job is executing on.
 
+.SH "MPI SUPPORT"
+On computers with a Quadrics interconnect, \fBsrun\fR directly supports 
+the Quadrics version of MPI without modification. Applications build 
+using the Quadrics MPI library will communicate directly over the 
+Quadrics interconnect without any special \fBsrun\fR options.
+
+Users may also use MPICH on any computer where that is available. 
+The \fBmpirun\fR command may need to be provided with information 
+on its command line identifying the resources to be used. The 
+installer of the MPICH software may configure it to perform these 
+steps automatically. At worst, you must specify two parameters:
+.TP
+\fB\-np SLURM_NPROCS\fR
+number of processors to run on
+.TP
+\fB\-machinefile <machinefile>\fR
+list of computers on which to execute. This list can be constructed 
+executing the command \fBsrun /bin/hostname\fR and writing its standard 
+output to the desired file. Execute \fBmpirun \-\-help\fR for more options.
+
+.SH "EXAMPLES"
+.eo
+This example demonstrates how one executes a simple MPICH job
+in the event that it has not been configurated to automatically 
+set the required parameters (again, this is the worst cases scenario). 
+We use \fBsrun\fR to build a list of machines (nodes) to be used by 
+\fBmpirun\fR in its required format. A sample command line and 
+the script to be executed follow.
+.br
+> cat my_script
+#!/bin/csh
+.br
+srun /bin/hostname >nodes
+.br
+mpirun -np $SLURM_NPROCS -machinefile nodes /bin/hostname
+.br
+rm node_list
+.br
+> srun -N2 -n4 my_script
+.ec
+
+.eo
+If MPICH is configured to directly use SLURM, the execute line is 
+the much simpler:
+.br
+> mpirun -np 4 /bin/hostname
+.ec
+
 .SH "BUGS"
 If the number of processors per node allocated to a job is not evenly 
 divisible by the value of \fBcpus\-per\-node\fR, tasks may be initiated 
