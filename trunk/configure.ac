@@ -74,7 +74,9 @@ AC_CHECK_FUNCS( \
    inet_aton \
    inet_ntop \
    inet_pton \
+   setproctitle \
 )
+
 
 AC_CHECK_DECLS([strsignal, sys_siglist])
 
@@ -89,12 +91,17 @@ LIBS="$PTHREAD_LIBS $LIBS"
 AC_SLURM_SEMAPHORE
 AC_SLURM_USE_INCLUDED_POPT
 
+
 dnl checks for system services.
 dnl
 
 
 dnl checks for system-specific stuff.
 dnl
+
+dnl check for how to emulate setproctitle
+dnl
+AC_SLURM_SETPROCTITLE
 
 dnl check for debug compilation
 dnl
