@@ -86,8 +86,8 @@
 #define	PERIODIC_TIMEOUT	60
 
 /* Release a job's allocation if it does not terminate gracefully in
- * JOB_KILL_TIMEOUT seconds */
-#define	JOB_KILL_TIMEOUT	60
+ * JOB_KILL_TIMEOUT seconds, leave time for large core file write */
+#define	JOB_KILL_TIMEOUT	300
 
 /* Pathname of group file record for checking update times */
 #define GROUP_FILE	"/etc/group"
