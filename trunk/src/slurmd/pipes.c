@@ -14,9 +14,17 @@ void setup_parent_pipes ( int * pipes )
 
 void cleanup_parent_pipes ( int * pipes )
 {
+	
+/*
+	close ( pipes[CHILD_IN_RD] ) ;
+	close ( pipes[CHILD_OUT_WR] ) ;
+	close ( pipes[CHILD_ERR_WR] ) ;
+*/
+//	info ( " %i , %i , %i ", pipes[CHILD_IN_RD] , pipes[CHILD_OUT_WR] , pipes[CHILD_ERR_WR] ) ;	
 	close ( pipes[CHILD_IN_WR] ) ;
 	close ( pipes[CHILD_OUT_RD] ) ;
 	close ( pipes[CHILD_ERR_RD] ) ;
+//	info ( " %i , %i , %i ", pipes[CHILD_IN_WR] , pipes[CHILD_OUT_RD] , pipes[CHILD_ERR_RD] ) ;	
 }
 
 int init_parent_pipes ( int * pipes )
