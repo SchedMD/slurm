@@ -1024,13 +1024,14 @@ int update_node ( update_node_msg_t * update_node_msg )
  * IN cpus - number of cpus measured
  * IN real_memory - mega_bytes of real_memory measured
  * IN tmp_disk - mega_bytes of tmp_disk measured
+ * IN status - node status code
  * RET 0 if no error, ENOENT if no such node, EINVAL if values too low
  * global: node_record_table_ptr - pointer to global node table
  */
 int 
 validate_node_specs (char *node_name, uint32_t cpus, 
 			uint32_t real_memory, uint32_t tmp_disk, 
-			uint32_t job_count) {
+			uint32_t job_count, uint32_t status) {
 	int error_code;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
@@ -1071,11 +1072,12 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	if (error_code) {
 		error ("validate_node_specs: setting node %s state to DOWN",
 			node_name);
-		node_ptr->node_state = NODE_STATE_DOWN;
-		bit_clear (up_node_bitmap, (node_ptr - node_record_table_ptr));
-
-	}
-	else {
+		set_node_down(node_name);
+	} else if (status == ESLURMD_PROLOG_FAILED) {
+		error ("Prolog failure on node %s, state to DOWN",
+			node_name);
+		set_node_down(node_name);
+	} else {
 		info ("validate_node_specs: node %s has registered", 
 		      node_name);
 		node_ptr->cpus = cpus;
