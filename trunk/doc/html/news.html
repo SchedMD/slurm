@@ -9,11 +9,11 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-201790">
-<meta name="LLNLRandRdate" content="12 January 2004">
+<meta name="LLNLRandRdate" content="19 April 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
-content="This document is copyrighted U.S.
+content="This document is copyrighted U.S
 Department of Energy under Contract W-7405-Eng-48">
 <meta name="Author" content="Moe Jette">
 <meta name="email" content="jette@llnl.gov">
@@ -56,10 +56,8 @@ structure:Laboratories and Other Field Facilities">
 <p>We expect to make SLURM Version 0.3 available in the first quarter of 2004. 
 Major enhancements include: 
 <ul>
-<li>Scheduler plugin developed for backfill scheduling and <a href="http://supercluster.org/maui">The 
-Maui Scheduler</a>.</li>
-<li>I/O streams for all tasks on a node are transmitted through one pair of sockets 
-instead of distinct sockets for each task. This improves performance and scalability.</li>
+<li>Scheduler plugin developed for backfill scheduling and <a href="http://supercluster.org/maui">
+The Maui Scheduler</a>.</li>
 <li>Support for <a href="http://www.lam-mpi.org/">LAM/MPI</a> is provided.</li>
 <li>The interconnect/switch logic has been moved to a plugin.</li>
 <li>Load-leveling performed to distribute workload across shared nodes.</li>
@@ -69,19 +67,23 @@ instead of distinct sockets for each task. This improves performance and scalabi
 <li>An arbitrary signal may be sent to a batch script (and not its processes).</li>
 <li>Batch scripts can have arguments that are propagated.</li>
 </ul>
-<p>For a complete list of enhancements in SLURM version 0.3, please see the NEWS 
+<p>Note the addition of several new configuration parameters: JobCompLoc,
+JobCompType, SchedulerAuth, SchedulerPort, SchedulerType, and SwitchType.
+For a complete list of enhancements in SLURM version 0.3, please see the NEWS 
 file with the code distribution.</p>
 <h3>Major Updates in SLURM Version 0.4</h3>
 <p>We expect to make SLURM Version 0.4 available in the second quarter of 2004. 
 Major enhancements include: 
 <ul>
 <li>Support for the AIX operating system.</li>
-<li>Support for the IBM Federation switch.</li>
+<li>I/O streams for all tasks on a node are transmitted through one pair of sockets 
+instead of distinct sockets for each task. This improves performance and scalability.</li>
 </ul>
 <h3>Major Updates in SLURM Version 0.5 and beyond</h3>
 <p> Detailed plans for release dates and contents of future SLURM releases have 
 not been finalized. Development planned in the immediate future includes: 
 <ul>
+<li>Support for the IBM Federation Switch.</li>
 <li>Support of various MPI types via a plugin mechanism.</li>
 <li>Permit resource allocations (jobs) to change size.</li>
 <li>Manage consumable resources on a per-node (e.g,. memory, disk space) and system-wide 
@@ -96,7 +98,7 @@ system.</li>
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-201790<br>
-Last modified January 15, 2004</p></td>
+Last modified April 19, 2004</p></td>
 </tr>
 </table>
 </td>
