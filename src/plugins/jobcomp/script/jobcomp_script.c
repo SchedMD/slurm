@@ -26,16 +26,23 @@
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
+#  if HAVE_INTTYPES_H
+#    include <inttypes.h>
+#  endif
+#  if HAVE_STDINT_H
+#    include <stdint.h>
+#  endif
+#  if HAVE_SYS_TYPES_H
+#    include <sys/types.h>
+#  endif
+#else
+#  include <inttypes.h>
 #endif
-
-#include <stdint.h>
-#include <inttypes.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <paths.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <slurm/slurm.h>
@@ -124,7 +131,9 @@ static char ** _create_environment(char *job, char *user, char *job_name,
 	len += strlen(start)+7;
 	len += strlen(end)+5;
 	len += strlen(node_list)+7;
+#ifdef	_PATH_STDPATH
 	len += strlen(_PATH_STDPATH)+6;
+#endif
 	len += (11*sizeof(char *));
 
 	if(!(envptr = (char **)try_xmalloc(len))) return NULL;
@@ -185,6 +194,7 @@ static char ** _create_environment(char *job, char *user, char *job_name,
 	memcpy(ptr,node_list,strlen(node_list)+1);
 	ptr += strlen(node_list)+1;
 
+#ifdef	_PATH_STDPATH
 	envptr[9] = ptr;
 	memcpy(ptr,"PATH=",5);
 	ptr += 5;
@@ -192,6 +202,9 @@ static char ** _create_environment(char *job, char *user, char *job_name,
 	ptr += strlen(_PATH_STDPATH)+1;
 
 	envptr[10] = NULL;
+#else
+	envptr[9] = NULL;
+#endif
 	
 	return envptr;
 }
@@ -210,8 +223,8 @@ int slurm_jobcomp_log_record ( uint32_t job_id, uint32_t user_id, char *job_name
 	debug3("Entering slurm_jobcomp_log_record");
 	snprintf(user_id_str,sizeof(user_id_str),"%u",user_id);
 	snprintf(job_id_str,sizeof(job_id_str),"%u",job_id);
-	snprintf(start_str, sizeof(start_str),"%lu",start);
-	snprintf(end_str, sizeof(end_str),"%lu",end_time);
+	snprintf(start_str, sizeof(start_str),"%lu",(long unsigned int) start);
+	snprintf(end_str, sizeof(end_str),"%lu",(long unsigned int) end_time);
 	nodes_cache[0] = '\0';
 
 	if (time_limit == INFINITE) {
