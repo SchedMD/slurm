@@ -159,19 +159,21 @@ int parse_command_line(int argc, char *argv[])
 
 	if ( params.format == NULL ) {
 		if ( params.summarize ) 
-			params.format = "%9P %5a %.9l %15F %N";
+			params.format = "%9P %.5a %.9l %.15F %N";
 		else if ( params.node_flag ) {
 			params.node_field_flag = true;	/* compute size later */
 			if ( params.long_output ) {
-				params.format = "%N %.5D %9P %11T %.4c %.6m %.8d %.6w %8f %20R";
+				params.format = "%N %.5D %.9P %.11T %.4c "
+					        "%.6m %.8d %.6w %.8f %20R";
 			} else {
-				params.format = "%N %.5D %9P %6t";
+				params.format = "%N %.5D %.9P %6t";
 			}
 		} else {
 			if ( params.long_output )
-				params.format = "%9P %5a %.9l %.8s %4r %5h %10g %.5D %11T %N";
+				params.format = "%9P %.5a %.9l %.8s %.4r %.5h "
+					        "%.10g %.5D %.11T %N";
 			else
-				params.format = "%9P %5a %.9l %.5D %6t %N";
+				params.format = "%9P %.5a %.9l %.5D %.6t %N";
 		}
 	}
 	_parse_format( params.format );
