@@ -85,6 +85,10 @@
 /* Check for jobs reaching their time limit every PERIODIC_TIMEOUT seconds */
 #define	PERIODIC_TIMEOUT	60
 
+/* Release a job's allocation if it does not terminate gracefully in
+ * JOB_KILL_TIMEOUT seconds */
+#define	JOB_KILL_TIMEOUT	60
+
 /* Pathname of group file record for checking update times */
 #define GROUP_FILE	"/etc/group"
 
@@ -192,6 +196,8 @@ extern time_t last_job_update;	/* time of last update to part records */
 #define DETAILS_MAGIC 0xdea84e7
 #define JOB_MAGIC 0xf0b7392c
 #define STEP_MAGIC 0xce593bc1
+#define KILL_ON_STEP_DONE	1
+#define KILL_IN_PROGRESS	2
 
 extern int job_count;			/* number of jobs in the system */
 
@@ -234,7 +240,8 @@ struct job_record {
 	uint16_t kill_on_node_fail;	/* 1 if job should be killed on 
 					   node failure */
 	uint16_t kill_on_step_done;	/* 1 if job should be killed when 
-					   the job step completes */
+					   the job step completes, 2 if kill
+					   in progress */
 	char *nodes;			/*  list of nodes allocated to job */
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
 	uint32_t time_limit;		/* time_limit minutes or INFINITE */
