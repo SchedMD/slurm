@@ -1,7 +1,5 @@
 #!/usr/bin/perl
 
-while(1)
-{
 open OUT, ">test.out" ;
 print OUT `date`;
 print "TESTING\n" ;
@@ -31,4 +29,3 @@ print OUT "ONOTESTING\n" ;
 print OUT "ONOTESTING\n" ;
 print OUT "ONOTESTING\n" ;
 close OUT ;
-}
