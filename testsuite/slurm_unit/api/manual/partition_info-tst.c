@@ -24,7 +24,7 @@ main (int argc, char *argv[])
 		(time_t) part_info_ptr->last_update, 
 		part_info_ptr->record_count);
 
-	slurm_print_partition_info_msg ( stdout, part_info_ptr );
+	slurm_print_partition_info_msg ( stdout, part_info_ptr, 0 );
 	slurm_free_partition_info_msg (part_info_ptr);
 	return (0);
 }
