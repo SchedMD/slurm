@@ -46,7 +46,6 @@
 #include <src/common/macros.h>
 #include <src/common/xassert.h>
 #include <src/common/slurm_protocol_common.h>
-#include <src/common/slurm_auth.h>
 
 
 /* used to define the size of the credential.signature size
