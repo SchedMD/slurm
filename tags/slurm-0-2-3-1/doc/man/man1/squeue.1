@@ -1,0 +1,185 @@
+.TH SQUEUE "1" "May 2003" "squeue 0.1" "Slurm components"
+
+.SH "NAME"
+squeue \- Used to view information of jobs located in the scheduling queue.
+
+.SH "SYNOPSIS"
+\fBsqueue\fR [\fIOPTIONS\fR...] 
+
+.SH "DESCRIPTION"
+\fBsqueue\fR is used to view job and job step information for jobs managed by 
+\fBslurmctld\fR. 
+
+.TP
+OPTIONS
+.TP
+\fB\-?\fR, \fB\-\-help\fR
+Print a help message describing the usage of \fBsqueue\fR.
+.TP
+\fB\-h\fR, \fB\-\-noheader\fR
+Do not print a header on the output.
+.TP
+\fB\-i\fR, \fB\-\-iterate\fR
+Repeatedly gather and report the requested information at the interval
+specified (in seconds).
+.TP
+\fB\-j\fR, \fB\-\-jobs\fR
+Specify the jobs to view.  This takes a comma separated list of jobs to view.
+Defaults to all jobs.
+.TP
+\fB\-l\fR, \fB\-\-long\fR
+Report more of the available information for the selected jobs or job steps, 
+subject to any constraints specified.
+.TP
+\fB\-o\fR, \fB\-\-format\fR
+Specify the information to be displayed.  
+The default format for jobs is "%.7i %9P %8j %8u %2t %.8l %.4p %#N", where "#" 
+represents a number limiting output to the window size.
+If the \fB\-\-long\fR option is specified, the default job format is 
+"%.7i %9P %8j %8u %8T %.8l %.10p %11S %11e %N".
+The default format for job steps is "%.10i %9P %8u %11S %#N", where "#" 
+represents a number limiting output to the window size.
+If the \fB\-\-long\fR option is specified, the default job step format 
+is "%.10i %9P %8u %11S %N".
+
+The field specifications available include: 
+.br
+\fB%b\fR Time at which the job began execution
+.br
+\fB%c\fR Minimum number of CPUs (processors) requested by the job
+.br
+\fB%C\fR Number of CPUs (processors) allocated to the job or job step
+.br
+\fB%d\fR Minimum size of temporary disk space (in MB) requested by the job
+.br
+\fB%e\fR Time at which the job ended or is expected to end (based upon its time
+limit)
+.br
+\fB%f\fR Features required by the job
+.br
+\fB%h\fR Can the nodes allocated to the job be shared with other jobs
+.br
+\fB%i\fR Job or job step id
+.br
+\fB%j\fR Job name
+.br
+\fB%l\fR Time limit of the job (in minutes). The value may be "NOT_SET" 
+if not yet established or "UNLIMITED" for no limit.
+.br
+\fB%m\fR Minimum size of memory (in MB) requested by the job
+.br
+\fB%n\fR List of node names explicitly requested by the job
+.br
+\fB%N\fR List of nodes allocated to the job or job step
+.br
+\fB%o\fR Minimum number of nodes requested by the job
+.br
+\fB%O\fR Are contiguous nodes requested by the job
+.br
+\fB%p\fR Priority of the job (converted to a floating point number between 0.0 and 1.0
+.br
+\fB%P\fR Partition of the job or job step
+.br
+\fB%S\fR Start time of the job or job step
+.br
+\fB%t\fR Job state, compact form
+.br
+\fB%T\fR Job state, extended form
+.br
+\fB%U\fR User id
+.br
+\fB%u\fR User name
+.br
+\fB%.<*>\fR right justification of the field
+.br 
+\fB%<Number><*>\fR size of field
+.TP
+\fB\-v\fR
+Display all job information.
+.TP
+\fB\-p\fR, \fB\-\-partition\fR
+Specify the partitions of the jobs or steps to view. Accepts a comma separated 
+list of partition names.
+.TP
+\fB\-s\fR, \fB\-\-steps\fR
+Specify the job steps to view.  This takes a comma separated list of job steps
+to view in the format "job_id.step_id". Defaults to all job steps.
+.TP
+\fB\-S\fR, \fB\-\-sort\fR
+Specifies the sorting order of job's or job step's records for printing. 
+Accepts a comma separated list of field identifiers using the single letter 
+codes used for output formatting. For example, "\-\-sort=P,U" will sort the
+records by partition name then by user id. 
+The default sorting order for jobs is job state then priority. 
+The default sorting order for job steps is partition name.
+Note that sorting is not supported for all fields at this time.
+.TP
+\fB\-t\fR, \fB\-\-states\fR
+Specify the states of jobs to view.  Accepts a comma separated list of
+state names or "all". If "all" is specified then jobs of all states will be 
+reported. If no state is specified, pending and running jobs are reported.
+.TP
+\fB\-u\fR, \fB\-\-users\fR
+Specifies a comma separated list of users whose jobs or job steps are to be
+reported.
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Report details of squeues actions.
+
+
+.SH "EXAMPLES"
+.eo
+Print the jobs scheduled in the debug partition and in the 
+COMPLETED state in the format with six right justified digits for 
+the job id followed by the priority with an arbitrary fields size:
+.br
+# squeue -p debug -t COMPLETED -o "%.6i %p"
+.br
+ JOBID PRIORITY
+.br
+----------------
+.br
+ 65543 99993 
+.br
+ 65544 99992 
+.br
+ 65545 99991 
+.ec
+
+.eo
+Print the job steps in the debug partition sorted by user:
+.br
+# squeue -s -p debug -S u
+.br
+ STEPID     PARTITION   USER      START_TIME    NODES
+.br
+-----------------------------------------------------------
+.br
+ 65552.1    debug       alice     10/14-11:02   dev[1-4]
+.br
+ 65562.2    debug       bob       10/14-11:54   dev22
+.br
+ 65550.1    debug       candice   10/14-11:18   dev[6-12]
+.ec
+
+.SH "COPYING"
+Copyright (C) 2002 The Regents of the University of California.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+UCRL-CODE-2002-040.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <http://www.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+.SH "SEE ALSO"
+\fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3),
+\fBslurm_load_node\fR(3), 
+\fBslurm_load_partitions\fR(3)
