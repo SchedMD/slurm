@@ -37,6 +37,7 @@
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
 
+static int send_message_controller ( enum controller_id dest, slurm_msg_t *request_msg );
 
 /* slurm_reconfigure - issue RPC to have slurmctld reload its configuration file */
 int
@@ -101,26 +102,38 @@ slurm_reconfigure ()
 int
 slurm_shutdown (uint16_t core)
 {
-	int msg_size ;
 	int rc ;
-	slurm_fd sockfd ;
 	slurm_msg_t request_msg ;
-	slurm_msg_t response_msg ;
-	return_code_msg_t * slurm_rc_msg ;
 	shutdown_msg_t shutdown_msg ;
 
-        /* init message connection for message communication with controller */
-	if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
-
-	/* send request message */
+	/* build shutdown request message */
 	shutdown_msg . core = core ;
 	request_msg . msg_type = REQUEST_SHUTDOWN ;
 	request_msg . data = &shutdown_msg;
 
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
+	/* explicity send the message to both primary and backup controllers */
+	(void) send_message_controller ( SECONDARY_CONTROLLER, &request_msg );
+	rc = send_message_controller ( PRIMARY_CONTROLLER,   &request_msg );
+
+	return rc;
+}
+
+int
+send_message_controller ( enum controller_id dest, slurm_msg_t *request_msg ) 
+{
+	int rc, msg_size ;
+	slurm_fd sockfd ;
+	slurm_msg_t response_msg ;
+	return_code_msg_t * slurm_rc_msg ;
+
+        /* init message connection for message communication with controller */
+	sockfd = slurm_open_controller_conn_spec ( dest );
+	if ( sockfd == SLURM_SOCKET_ERROR ) {
+		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
+		return SLURM_SOCKET_ERROR ;
+	}
+
+	if ( ( rc = slurm_send_controller_msg ( sockfd , request_msg ) ) == SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
