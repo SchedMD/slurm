@@ -81,23 +81,25 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->hash_base			= (uint16_t) NO_VAL;
 	ctl_conf_ptr->heartbeat_interval	= (uint16_t) NO_VAL;
 	ctl_conf_ptr->inactive_limit		= (uint16_t) NO_VAL;
+	FREE_NULL (ctl_conf_ptr->job_credential_private_key);
+	FREE_NULL (ctl_conf_ptr->job_credential_public_certificate);
 	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
 	FREE_NULL (ctl_conf_ptr->prioritize);
 	FREE_NULL (ctl_conf_ptr->prolog);
 	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL; 
-	FREE_NULL (ctl_conf_ptr->slurmctld_logfile);
 	ctl_conf_ptr->slurm_user_id		= (uint16_t) NO_VAL; 
 	FREE_NULL (ctl_conf_ptr->slurm_user_name);
+	FREE_NULL (ctl_conf_ptr->slurmctld_logfile);
+	FREE_NULL (ctl_conf_ptr->slurmctld_pidfile);
 	ctl_conf_ptr->slurmctld_port		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->slurmctld_timeout		= (uint16_t) NO_VAL;
 	FREE_NULL (ctl_conf_ptr->slurmd_logfile);
+	FREE_NULL (ctl_conf_ptr->slurmd_pidfile);
 	ctl_conf_ptr->slurmd_port		= (uint32_t) NO_VAL;
 	FREE_NULL (ctl_conf_ptr->slurmd_spooldir);
 	ctl_conf_ptr->slurmd_timeout		= (uint16_t) NO_VAL;
 	FREE_NULL (ctl_conf_ptr->state_save_location);
 	FREE_NULL (ctl_conf_ptr->tmp_fs);
-	FREE_NULL (ctl_conf_ptr->job_credential_private_key);
-	FREE_NULL (ctl_conf_ptr->job_credential_public_certificate);
 	return;
 }
 
@@ -127,7 +129,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	char *control_addr = NULL, *control_machine = NULL, *epilog = NULL;
 	char *prioritize = NULL, *prolog = NULL;
 	char *state_save_location = NULL, *tmp_fs = NULL;
-	char *slurm_user = NULL;
+	char *slurm_user = NULL, *slurmctld_pidfile = NULL;
 	char *slurmctld_logfile = NULL, *slurmctld_port = NULL;
 	char *slurmd_logfile = NULL, *slurmd_port = NULL;
 	char *slurmd_spooldir = NULL, *slurmd_pidfile = NULL;
@@ -156,6 +158,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"ReturnToService=", 'd', &ret2service,
 		"SlurmUser=", 's', &slurm_user,
 		"SlurmctldLogFile=", 's', &slurmctld_logfile,
+		"SlurmctldPidFile=", 's', &slurmctld_pidfile,
 		"SlurmctldPort=", 's', &slurmctld_port,
 		"SlurmctldTimeout=", 'd', &slurmctld_timeout,
 		"SlurmdLogFile=", 's', &slurmd_logfile,
@@ -282,6 +285,14 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 			ctl_conf_ptr->slurm_user_name = slurm_user;
 			ctl_conf_ptr->slurm_user_id = slurm_passwd->pw_uid;
 		}
+	}
+
+	if ( slurmctld_pidfile ) {
+		if ( ctl_conf_ptr->slurmctld_pidfile ) {
+			error (MULTIPLE_VALUE_MSG, "SlurmctldPidFile");
+			xfree (ctl_conf_ptr->slurmctld_pidfile);
+		}
+		ctl_conf_ptr->slurmctld_pidfile = slurmctld_pidfile;
 	}
 
 	if ( slurmctld_logfile ) {

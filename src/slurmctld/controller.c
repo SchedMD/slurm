@@ -1977,6 +1977,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->control_machine = slurmctld_conf.control_machine;
 	conf_ptr->epilog = slurmctld_conf.epilog;
 	conf_ptr->fast_schedule = slurmctld_conf.fast_schedule;
+	conf_ptr->first_job_id = slurmctld_conf.first_job_id;
 	conf_ptr->hash_base = slurmctld_conf.hash_base;
 	conf_ptr->heartbeat_interval = slurmctld_conf.heartbeat_interval;
 	conf_ptr->inactive_limit = slurmctld_conf.inactive_limit;
@@ -1991,12 +1992,13 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->slurm_user_id = slurmctld_conf.slurm_user_id;
 	conf_ptr->slurm_user_name = slurmctld_conf.slurm_user_name;
 	conf_ptr->slurmctld_logfile = slurmctld_conf.slurmctld_logfile;
+	conf_ptr->slurmctld_pidfile = slurmctld_conf.slurmctld_pidfile;
 	conf_ptr->slurmctld_port = slurmctld_conf.slurmctld_port;
 	conf_ptr->slurmctld_timeout = slurmctld_conf.slurmctld_timeout;
 	conf_ptr->slurmd_logfile = slurmctld_conf.slurmd_logfile;
-	conf_ptr->slurmd_spooldir = slurmctld_conf.slurmd_spooldir;
 	conf_ptr->slurmd_pidfile = slurmctld_conf.slurmd_pidfile;
 	conf_ptr->slurmd_port = slurmctld_conf.slurmd_port;
+	conf_ptr->slurmd_spooldir = slurmctld_conf.slurmd_spooldir;
 	conf_ptr->slurmd_timeout = slurmctld_conf.slurmd_timeout;
 	conf_ptr->slurm_conf = slurmctld_conf.slurm_conf;
 	conf_ptr->state_save_location = slurmctld_conf.state_save_location;

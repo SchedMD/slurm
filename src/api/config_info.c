@@ -62,12 +62,18 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->epilog);
 	fprintf(out, "FastSchedule      = %u\n", 
 		slurm_ctl_conf_ptr->fast_schedule);
+	fprintf(out, "FirstJobId        = %u\n", 
+		slurm_ctl_conf_ptr->first_job_id);
 	fprintf(out, "NodeHashBase      = %u\n", 
 		slurm_ctl_conf_ptr->hash_base);
 	fprintf(out, "HeartbeatInterval = %u\n", 
 		slurm_ctl_conf_ptr->heartbeat_interval);
 	fprintf(out, "InactiveLimit     = %u\n", 
 		slurm_ctl_conf_ptr->inactive_limit);
+	fprintf(out, "CredPrivateKey    = %s\n", 
+		slurm_ctl_conf_ptr->job_credential_private_key);
+	fprintf(out, "CredPubliceKey    = %s\n", 
+		slurm_ctl_conf_ptr->job_credential_public_certificate);
 	fprintf(out, "KillWait          = %u\n", 
 		slurm_ctl_conf_ptr->kill_wait);
 	fprintf(out, "Prioritize        = %s\n", 
@@ -81,10 +87,18 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->slurm_user_id);
 	fprintf(out, "SlurmctldLogFile  = %s\n", 
 		slurm_ctl_conf_ptr->slurmctld_logfile);
+	fprintf(out, "SlurmctldPidFile  = %s\n", 
+		slurm_ctl_conf_ptr->slurmctld_pidfile);
+	fprintf(out, "SlurmctldPort     = %u\n", 
+		slurm_ctl_conf_ptr->slurmctld_port);
 	fprintf(out, "SlurmctldTimeout  = %u\n", 
 		slurm_ctl_conf_ptr->slurmctld_timeout);
 	fprintf(out, "SlurmdLogFile     = %s\n", 
 		slurm_ctl_conf_ptr->slurmd_logfile);
+	fprintf(out, "SlurmdPidFile     = %s\n", 
+		slurm_ctl_conf_ptr->slurmd_pidfile);
+	fprintf(out, "SlurmdPort        = %u\n", 
+		slurm_ctl_conf_ptr->slurmd_port);
 	fprintf(out, "SlurmdSpoolDir    = %s\n", 
 		slurm_ctl_conf_ptr->slurmd_spooldir);
 	fprintf(out, "SlurmdTimeout     = %u\n", 

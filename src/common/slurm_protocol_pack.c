@@ -1567,31 +1567,44 @@ static void _pack_slurm_ctl_conf_msg (
 		slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer )
 {	
 	pack_time (build_ptr->last_update, buffer);
+
 	packstr (build_ptr->backup_addr, buffer);
 	packstr (build_ptr->backup_controller, buffer);
 	packstr (build_ptr->control_addr, buffer);
 	packstr (build_ptr->control_machine, buffer);
+
 	packstr (build_ptr->epilog, buffer);
 	pack16 (build_ptr->fast_schedule, buffer);
+	pack32 (build_ptr->first_job_id, buffer);
 	pack16 (build_ptr->hash_base, buffer);
 	pack16 (build_ptr->heartbeat_interval, buffer);
 	pack16 (build_ptr->inactive_limit, buffer);
+
+	packstr (build_ptr->job_credential_private_key, buffer);
+	packstr (build_ptr->job_credential_public_certificate, buffer);
+
 	pack16 (build_ptr->kill_wait, buffer);
 	packstr (build_ptr->prioritize, buffer);
 	packstr (build_ptr->prolog, buffer);
 	pack16 (build_ptr->ret2service, buffer);
+
 	pack16 (build_ptr->slurm_user_id, buffer);
 	packstr (build_ptr->slurm_user_name, buffer);
+
 	packstr (build_ptr->slurmctld_logfile, buffer);
+	packstr (build_ptr->slurmctld_pidfile, buffer);
+	pack32 (build_ptr->slurmctld_port, buffer);
 	pack16 (build_ptr->slurmctld_timeout, buffer);
+
 	packstr (build_ptr->slurmd_logfile, buffer);
+	packstr (build_ptr->slurmd_pidfile, buffer);
+	pack32 (build_ptr->slurmd_port, buffer);
 	packstr (build_ptr->slurmd_spooldir, buffer);
 	pack16 (build_ptr->slurmd_timeout, buffer);
+
 	packstr (build_ptr->slurm_conf, buffer);
 	packstr (build_ptr->state_save_location, buffer);
 	packstr (build_ptr->tmp_fs, buffer);
-	packstr (build_ptr->job_credential_private_key, buffer);
-	packstr (build_ptr->job_credential_public_certificate, buffer);
 }
 
 static int _unpack_slurm_ctl_conf_msg ( 
@@ -1607,6 +1620,7 @@ static int _unpack_slurm_ctl_conf_msg (
 	/* load the data values */
 	/* unpack timestamp of snapshot */
 	safe_unpack_time (&build_ptr->last_update, buffer);
+
 	safe_unpackstr_xmalloc (&build_ptr->backup_addr, &uint16_tmp, 
 	                        buffer);
 	safe_unpackstr_xmalloc (&build_ptr->backup_controller, 
@@ -1615,38 +1629,53 @@ static int _unpack_slurm_ctl_conf_msg (
 	                        buffer);
 	safe_unpackstr_xmalloc (&build_ptr->control_machine, 
 	                        &uint16_tmp, buffer);
+
+
 	safe_unpackstr_xmalloc (&build_ptr->epilog, &uint16_tmp, 
 	                        buffer);
 	safe_unpack16 (&build_ptr->fast_schedule, buffer);
+	safe_unpack32 (&build_ptr->first_job_id, buffer);
 	safe_unpack16 (&build_ptr->hash_base, buffer);
 	safe_unpack16 (&build_ptr->heartbeat_interval, buffer);
 	safe_unpack16 (&build_ptr->inactive_limit, buffer);
+
+	safe_unpackstr_xmalloc (&build_ptr->job_credential_private_key, 
+	                        &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc (&build_ptr->job_credential_public_certificate, 
+	                        &uint16_tmp, buffer);
+
 	safe_unpack16 (&build_ptr->kill_wait, buffer);
 	safe_unpackstr_xmalloc (&build_ptr->prioritize, &uint16_tmp, 
 	                        buffer);
 	safe_unpackstr_xmalloc (&build_ptr->prolog, &uint16_tmp, 
 	                        buffer);
 	safe_unpack16 (&build_ptr->ret2service, buffer);
+
 	safe_unpack16 (&build_ptr->slurm_user_id, buffer);
 	safe_unpackstr_xmalloc (&build_ptr->slurm_user_name, 
 	                        &uint16_tmp, buffer);
+
 	safe_unpackstr_xmalloc (&build_ptr->slurmctld_logfile, 
 	                        &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc (&build_ptr->slurmctld_pidfile, 
+	                        &uint16_tmp, buffer);
+	safe_unpack32 (&build_ptr->slurmctld_port, buffer);
 	safe_unpack16 (&build_ptr->slurmctld_timeout, buffer);
+
 	safe_unpackstr_xmalloc (&build_ptr->slurmd_logfile, &uint16_tmp, 
 	                        buffer);
+	safe_unpackstr_xmalloc (&build_ptr->slurmd_pidfile, &uint16_tmp, 
+	                        buffer);
+	safe_unpack32 (&build_ptr->slurmd_port, buffer);
 	safe_unpackstr_xmalloc (&build_ptr->slurmd_spooldir, &uint16_tmp, 
 	                        buffer);
 	safe_unpack16 (&build_ptr->slurmd_timeout, buffer);
+
 	safe_unpackstr_xmalloc (&build_ptr->slurm_conf, &uint16_tmp, 
 	                        buffer);
 	safe_unpackstr_xmalloc (&build_ptr->state_save_location, 
 	                        &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc (&build_ptr->tmp_fs, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc (&build_ptr->job_credential_private_key, 
-	                        &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc (&build_ptr->job_credential_public_certificate, 
-	                        &uint16_tmp, buffer);
 	return SLURM_SUCCESS ;
 
     unpack_error:

@@ -346,6 +346,7 @@ typedef struct slurm_ctl_conf {
 	uint16_t slurm_user_id;	/* uid of slurm_user_name */
 	char *slurm_user_name;	/* user that slurmctld runs as */
 	char *slurmctld_logfile;/* where slurmctld error log gets written */
+	char *slurmctld_pidfile;/* where to put slurmctld pidfile         */
 	uint32_t slurmctld_port;/* default communications port to slurmctld */
 	uint16_t slurmctld_timeout;/* seconds that backup controller waits 
 				 * on non-responding primarly controller */
