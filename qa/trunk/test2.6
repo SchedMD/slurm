@@ -7,6 +7,11 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 #
+# NOTE: The interaction processing is a bit strange to deal with the 
+# behavior of readline() in RedHat 9, that keeps printing the prompt 
+# for each keystroke.
+#
+
 source ./globals
 
 set test_id     "2.6"
@@ -15,39 +20,40 @@ set exit_code   0
 print_header $test_id
 
 #
-# Report all slurm partitions with quite and verbose options
+# Report all slurm partitions with verbose option
 #
 set iteration     0
 set matches       0
-set part_name   ""
+set part_name     ""
+set verb_sent     0
+set show_sent     0
+set quit_sent     0
 spawn $scontrol
 expect {
 	-re "scontrol: " {
 		if {$iteration == 0} {
-			send "verbose\n"
+			if {$verb_sent == 0} {
+				send "verbose\n"
+				set verb_sent 1
+				incr iteration
+			}
+		} elseif {$iteration == 1} {
+			if {$show_sent == 0} {
+				send "show partition\n"
+				set show_sent 1
+				incr iteration
+			}
+		} elseif {$iteration == 2} {
+			if {$quit_sent == 0} {
+				send "quit\n"
+				set quit_sent 1
+				incr iteration
+			}
 		}
-		if {$iteration == 1} {
-			send "show partition\n"
-		}
-		if {$iteration == 2} {
-			send "quiet\n"
-		}
-		if {$iteration == 3} {
-			send "show partition\n"
-		}
-		if {$iteration == 4} {
-			send "quit\n"
-		}
-		incr iteration
 		exp_continue
 	}
 	-re "last_update_time" {
-		if {$iteration == 2} {
-			incr matches
-		} else {
-			send_user "\nFAILURE: verbose format failure\n"
-			set exit_code 1
-		}
+		incr matches
 		exp_continue
 	}
 	-re "Default=YES" {
@@ -61,7 +67,61 @@ expect {
 	eof {
 	}
 }
-if {$matches !=3} {
+if {$matches != 2} {
+	send_user "\nFAILURE: scontrol show partition command failed\n"
+	set exit_code 1
+}
+
+#
+# Report all slurm partitions with quiet option
+#
+set iteration     0
+set matches       0
+set part_name     ""
+set quiet_sent     0
+set show_sent     0
+set quit_sent     0
+spawn $scontrol
+expect {
+	-re "scontrol: " {
+		if {$iteration == 0} {
+			if {$quiet_sent == 0} {
+				send "quiet\n"
+				set quiet_sent 1
+				incr iteration
+			}
+		} elseif {$iteration == 1} {
+			if {$show_sent == 0} {
+				send "show partition\n"
+				set show_sent 1
+				incr iteration
+			}
+		} elseif {$iteration == 2} {
+			if {$quit_sent == 0} {
+				send "quit\n"
+				set quit_sent 1
+				incr iteration
+			}
+		}
+		exp_continue
+	}
+	-re "last_update_time" {
+		send_user "\nFAILURE: quiet format failure\n:
+		set exit_code 1
+		exp_continue
+	}
+	-re "Default=YES" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+	}
+}
+if {$matches != 1} {
 	send_user "\nFAILURE: scontrol show partition command failed\n"
 	set exit_code 1
 }
