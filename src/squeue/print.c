@@ -294,7 +294,7 @@ int print_job_from_format(job_info_t * job, List list)
 {
 	ListIterator i = list_iterator_create(list);
 	job_format_t *current;
-	int total_width = 0, inx;
+	int total_width = 0;
 
 	while ((current = (job_format_t *) list_next(i)) != NULL) {
 		if (current->
@@ -310,12 +310,15 @@ int print_job_from_format(job_info_t * job, List list)
 	list_iterator_destroy(i);
 
 	printf("\n");
+#if 0
 	if (job == NULL) {
+		int inx;
 		/* one-origin for no trailing space */
 		for (inx=1; inx<total_width; inx++)
 			printf("-");
 		printf("\n");
 	}
+#endif
 	return SLURM_SUCCESS;
 }
 
@@ -697,7 +700,7 @@ int print_step_from_format(job_step_info_t * job_step, List list)
 {
 	ListIterator i = list_iterator_create(list);
 	step_format_t *current;
-	int total_width = 0, inx;
+	int total_width = 0;
 
 	while ((current = (step_format_t *) list_next(i)) != NULL) {
 		if (current->
@@ -712,12 +715,15 @@ int print_step_from_format(job_step_info_t * job_step, List list)
 	}
 	list_iterator_destroy(i);
 	printf("\n");
+#if 0 
 	if (job_step == NULL) {
+		int inx;
 		/* one-origin for no trailing space */
 		for (inx=1; inx<total_width; inx++)
 			printf("-");
 		printf("\n");
 	}
+#endif 
 	return SLURM_SUCCESS;
 }
 

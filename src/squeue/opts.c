@@ -75,7 +75,7 @@ parse_command_line( int argc, char* argv[] )
 	poptContext context;
 	char next_opt, curr_opt;
 	char *env_val = NULL;
-	int i = 0, rc = 0;
+	int rc = 0;
 
 	/* Declare the Options */
 	static const struct poptOption options[] = 
@@ -192,40 +192,28 @@ parse_command_line( int argc, char* argv[] )
 	}
 
 	if ( ( params.format == NULL ) && 
-	     ( env_val = getenv("SQUEUE_FORMAT") ) ) {
-		i = strlen(env_val);
-		params.format = xmalloc(i);
-		strcpy(params.format, env_val);
-	}
+	     ( env_val = getenv("SQUEUE_FORMAT") ) ) 
+		params.format = xstrdup(env_val);
 
 	if ( ( params.partitions == NULL ) && 
 	     ( env_val = getenv("SQUEUE_PARTITION") ) ) {
-		i = strlen(env_val);
-		params.partitions = xmalloc(i);
-		strcpy(params.partitions, env_val);
+		params.partitions = xstrdup(env_val);
 		params.part_list = _build_part_list( params.partitions );
 	}
 
 	if ( ( params.sort == NULL ) && 
-	     ( env_val = getenv("SQUEUE_SORT") ) ) {
-		i = strlen(env_val);
-		params.sort = xmalloc(i);
-		strcpy(params.sort, env_val);
-	}	
+	     ( env_val = getenv("SQUEUE_SORT") ) )
+		params.sort = xstrdup(env_val);
 
 	if ( ( params.states == NULL ) && 
 	     ( env_val = getenv("SQUEUE_STATES") ) ) {
-		i = strlen(env_val);
-		params.states = xmalloc(i);
-		strcpy(params.states, env_val);
+		params.states = xstrdup(env_val);
 		params.state_list = _build_state_list( params.states );
 	}
 
 	if ( ( params.users == NULL ) && 
 	     ( env_val = getenv("SQUEUE_USERS") ) ) {
-		i = strlen(env_val);
-		params.users = xmalloc(i);
-		strcpy(params.users, env_val);
+		params.users = xstrdup(env_val);
 		params.user_list = _build_user_list( params.users );
 	}
 
@@ -695,7 +683,6 @@ _build_state_list( char* str )
 {
 	List my_list;
 	char *state, *tmp_char, *my_state_list;
-	int i;
 	enum job_states *state_id;
 
 	if ( str == NULL)
@@ -704,9 +691,7 @@ _build_state_list( char* str )
 		return _build_all_states_list ();
 
 	my_list = list_create( NULL );
-	i = strlen( str );
-	my_state_list = xmalloc( i+1 );
-	strcpy( my_state_list, str );
+	my_state_list = xstrdup( str );
 	state = strtok_r( my_state_list, ",", &tmp_char );
 	while (state) 
 	{
@@ -763,9 +748,7 @@ _build_step_list( char* str )
 	if ( str == NULL)
 		return NULL;
 	my_list = list_create( NULL );
-	i = strlen( str );
-	my_step_list = xmalloc( i+1 );
-	strcpy( my_step_list, str );
+	my_step_list = xstrdup( str );
 	step = strtok_r( my_step_list, ",", &tmp_char );
 	while (step) 
 	{
@@ -802,16 +785,13 @@ _build_user_list( char* str )
 {
 	List my_list;
 	char *user, *tmp_char, *my_user_list;
-	int i;
 	uint32_t *uid;
 	struct passwd *passwd_ptr;
 
 	if ( str == NULL)
 		return NULL;
 	my_list = list_create( NULL );
-	i = strlen( str );
-	my_user_list = xmalloc( i+1 );
-	strcpy( my_user_list, str );
+	my_user_list = xstrdup( str );
 	user = strtok_r( my_user_list, ",", &tmp_char );
 	while (user) 
 	{
