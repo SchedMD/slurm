@@ -713,11 +713,11 @@ static void *_slurmctld_background(void *no_data)
 		 * A network or security problem could result in 
 		 * the backup controller assuming control even 
 		 * while the real primary controller is running */
-		if (slurmctld_conf.slurmctld_timeout &&
-		    slurmctld_conf.backup_addr       &&
-		    slurmctld_conf.backup_addr[0]    &&
+		if (slurmctld_conf.slurmctld_timeout   &&
+		    slurmctld_conf.backup_addr         &&
+		    slurmctld_conf.backup_addr[0]      &&
 		    (difftime(now, last_assert_primary_time) >=
-		     slurmctld_conf.slurmd_timeout)  &&
+		     slurmctld_conf.slurmctld_timeout) &&
 		    node_name && slurmctld_conf.backup_controller &&
 		    strcmp(node_name, slurmctld_conf.backup_controller)) {
 			last_assert_primary_time = now;
