@@ -714,8 +714,8 @@ _print_job (char * job_id_str)
 	
 	if (quiet_flag == -1) {
 		char time_str[16];
-		make_time_str ((time_t *)&job_buffer_ptr->last_update, 
-				time_str);
+		slurm_make_time_str ((time_t *)&job_buffer_ptr->last_update, 
+				     time_str);
 		printf ("last_update_time=%s, records=%d\n", 
 			time_str, job_buffer_ptr->record_count);
 	}
@@ -814,8 +814,8 @@ _print_node_list (char *node_list)
 
 	if (quiet_flag == -1) {
 		char time_str[16];
-		make_time_str ((time_t *)&node_info_ptr->last_update, 
-			       time_str);
+		slurm_make_time_str ((time_t *)&node_info_ptr->last_update, 
+			             time_str);
 		printf ("last_update_time=%s, records=%d\n", 
 			time_str, node_info_ptr->record_count);
 	}
@@ -873,7 +873,7 @@ _print_part (char *partition_name)
 
 	if (quiet_flag == -1) {
 		char time_str[16];
-		make_time_str ((time_t *)&part_info_ptr->last_update, 
+		slurm_make_time_str ((time_t *)&part_info_ptr->last_update, 
 			       time_str);
 		printf ("last_update_time=%s, records=%d\n", 
 			time_str, part_info_ptr->record_count);
@@ -965,8 +965,8 @@ _print_step (char *job_step_id_str)
 
 	if (quiet_flag == -1) {
 		char time_str[16];
-		make_time_str ((time_t *)&job_step_info_ptr->last_update, 
-			       time_str);
+		slurm_make_time_str ((time_t *)&job_step_info_ptr->last_update, 
+			             time_str);
 		printf ("last_update_time=%s, records=%d\n", 
 			time_str, job_step_info_ptr->job_step_count);
 	}

@@ -50,7 +50,8 @@ void slurm_print_ctl_conf ( FILE* out,
 	if ( slurm_ctl_conf_ptr == NULL )
 		return ;
 
-	make_time_str ((time_t *)&slurm_ctl_conf_ptr->last_update, time_str);
+	slurm_make_time_str ((time_t *)&slurm_ctl_conf_ptr->last_update, 
+			     time_str);
 	fprintf(out, "Configuration data as of %s\n", time_str);
 	fprintf(out, "AuthType          = %s\n", 
 		slurm_ctl_conf_ptr->authtype);

@@ -56,7 +56,7 @@ slurm_print_job_info_msg ( FILE* out, job_info_msg_t *jinfo, int one_liner )
 	job_info_t *job_ptr = jinfo->job_array;
 	char time_str[16];
 
-	make_time_str ((time_t *)&jinfo->last_update, time_str);
+	slurm_make_time_str ((time_t *)&jinfo->last_update, time_str);
 	fprintf( out, "Job data as of %s, record count %d\n",
 		 time_str, jinfo->record_count);
 
@@ -130,13 +130,13 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 		fprintf ( out, "\n   ");
 
 	/****** Line 5 ******/
-	make_time_str ((time_t *)&job_ptr->start_time, time_str);
+	slurm_make_time_str ((time_t *)&job_ptr->start_time, time_str);
 	fprintf ( out, "StartTime=%s EndTime=", time_str);
 	if ((job_ptr->time_limit == INFINITE) && 
 	    (job_ptr->end_time > time(NULL)))
 		fprintf ( out, "NONE");
 	else {
-		make_time_str ((time_t *)&job_ptr->end_time, time_str);
+		slurm_make_time_str ((time_t *)&job_ptr->end_time, time_str);
 		fprintf ( out, "%s", time_str);
 	}
 	if (one_liner)
@@ -216,7 +216,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
  * OUT string - pointer user defined buffer
  */
 extern void
-make_time_str (time_t *time, char *string)
+slurm_make_time_str (time_t *time, char *string)
 {
 	struct tm time_tm;
 
