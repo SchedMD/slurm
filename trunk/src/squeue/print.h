@@ -27,8 +27,8 @@
 #ifndef _SQUEUE_PRINT_H_
 #define _SQUEUE_PRINT_H_
 
-#include "src/api/slurm.h"
 #include "src/common/list.h"
+#include "src/slurm/slurm.h"
 
 #define FORMAT_STRING_SIZE 32
 

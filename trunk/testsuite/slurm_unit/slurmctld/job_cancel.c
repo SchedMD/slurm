@@ -1,7 +1,7 @@
 
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <errno.h>
@@ -14,8 +14,8 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
-#include <src/api/slurm.h>
-#include <src/common/slurm_protocol_api.h>
+#include "src/slurm/slurm.h"
+#include "src/common/slurm_protocol_api.h"
 
 #include "get_resp.h"
 

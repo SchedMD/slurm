@@ -43,11 +43,10 @@
 #  include <inttypes.h>
 #endif				/*  HAVE_CONFIG_H */
 
-#include "src/api/slurm.h"
 #include "src/common/macros.h"
-#include "src/common/xassert.h"
 #include "src/common/slurm_protocol_common.h"
-
+#include "src/common/xassert.h"
+#include "src/slurm/slurm.h"
 
 /* used to define the type of the io_stream_header_t.type
  */

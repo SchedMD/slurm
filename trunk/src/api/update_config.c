@@ -32,8 +32,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "src/api/slurm.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/slurm/slurm.h"
 
 static int _slurm_update (void * data, slurm_msg_type_t msg_type);
 

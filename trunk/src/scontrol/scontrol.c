@@ -52,14 +52,14 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "src/api/slurm.h"
+#include "src/common/cbuf.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/parse_spec.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/cbuf.h"
+#include "src/slurm/slurm.h"
 
 #define	BUF_SIZE 1024
 #define MAX_NAME_LEN 64

@@ -3,7 +3,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/api $(POPT_INCLUDES)
+INCLUDES = -I$(top_srcdir) $(POPT_INCLUDES)
 
 bin_PROGRAMS = scancel
 

@@ -46,13 +46,12 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "src/api/slurm.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
-
+#include "src/slurm/slurm.h"
 
 #define MIN(x,y) (((x)<(y))?(x):(y))
 

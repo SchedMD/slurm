@@ -6,15 +6,19 @@ noinst_HEADERS  = get_resp.h
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 job_step_test_LDADD = $(top_builddir)/src/common/libcommon.la \
+		$(top_builddir)/src/common/libhostlist.la \
 		$(top_builddir)/src/api/libslurm.la
 
 step_create_LDADD = $(top_builddir)/src/common/libcommon.la \
+		$(top_builddir)/src/common/libhostlist.la \
 		$(top_builddir)/src/api/libslurm.la
 
 job_add_LDADD = $(top_builddir)/src/common/libcommon.la \
+		$(top_builddir)/src/common/libhostlist.la \
 		$(top_builddir)/src/api/libslurm.la
 
 job_cancel_LDADD = $(top_builddir)/src/common/libcommon.la \
+		$(top_builddir)/src/common/libhostlist.la \
 		$(top_builddir)/src/api/libslurm.la
 
 LDADD   = $(top_builddir)/src/common/libcommon.la \
@@ -31,6 +35,7 @@ LDADD   = $(top_builddir)/src/common/libcommon.la \
 		$(top_builddir)/src/slurmctld/read_config.o \
 		$(top_builddir)/src/api/libslurm.la \
 		$(top_builddir)/src/common/libcred.la \
+		$(top_builddir)/src/common/libhostlist.la \
 		$(SSL_LIBS)
 
 force :

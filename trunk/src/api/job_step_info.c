@@ -26,15 +26,15 @@
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <src/api/slurm.h>
-#include <src/common/slurm_protocol_api.h>
+#include "src/common/slurm_protocol_api.h"
+#include "src/slurm/slurm.h"
 
 /*
  * slurm_print_job_step_info_msg - output information about all Slurm 

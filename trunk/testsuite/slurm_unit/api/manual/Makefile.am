@@ -13,4 +13,5 @@ noinst_PROGRAMS = cancel-tst \
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common 
 LDADD    = $(top_builddir)/src/common/libcommon.la \
+	   $(top_builddir)/src/common/libhostlist.la \
 	   $(top_builddir)/src/api/libslurm.la

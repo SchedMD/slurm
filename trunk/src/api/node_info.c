@@ -37,8 +37,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "src/api/slurm.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/slurm/slurm.h"
 
 /*
  * slurm_print_node_info_msg - output information about all Slurm nodes
