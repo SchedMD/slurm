@@ -962,7 +962,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 		}
 
 		if (state_val != NO_VAL) {
-			base_state = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
+			base_state = node_ptr->node_state & 
+			             (~NODE_STATE_NO_RESPOND);
 			if (!_valid_node_state_change(base_state, state_val)) {
 				info ("Invalid node state transition requested "
 					"for node %s from=%s to=%s",
@@ -1000,7 +1001,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 				bit_clear (avail_node_bitmap, node_inx);
 			}
 			else {
-				info ("Invalid node state specified %d", state_val);
+				info ("Invalid node state specified %d", 
+					state_val);
 				err_code = 1;
 				error_code = ESLURM_INVALID_NODE_STATE;
 			}
@@ -1010,7 +1012,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 				               NODE_STATE_NO_RESPOND;
 				node_ptr->node_state = state_val | no_resp_flag;
 				info ("update_node: node %s state set to %s",
-					this_node_name, node_state_string(state_val));
+					this_node_name, 
+					node_state_string(state_val));
 			}
 		}
 
@@ -1121,7 +1124,10 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	}
 	node_ptr->tmp_disk = tmp_disk;
 
-	node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
+	if (node_ptr->node_state & NODE_STATE_NO_RESPOND) {
+		reset_job_priority();
+		node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
+	}
 	if (error_code) {
 		if ((node_ptr->node_state != NODE_STATE_DRAINING) &&
 		    (node_ptr->node_state != NODE_STATE_DRAINED)) {
@@ -1213,13 +1219,15 @@ void node_did_resp (char *name)
 	last_node_update = time (NULL);
 	node_ptr->last_response = time (NULL);
 	resp_state = node_ptr->node_state & NODE_STATE_NO_RESPOND;
-	node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
+	if (resp_state) {
+		info("Node %s now responding", name);
+		reset_job_priority();
+		node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
+	}
 	if (node_ptr->node_state == NODE_STATE_UNKNOWN)
 		node_ptr->node_state = NODE_STATE_IDLE;
 	if (node_ptr->node_state == NODE_STATE_IDLE)
 		bit_set (idle_node_bitmap, node_inx);
-	if (resp_state)
-		info("Node %s now responding", name);
 	if ((node_ptr->node_state == NODE_STATE_DOWN)     ||
 	    (node_ptr->node_state == NODE_STATE_DRAINING) ||
 	    (node_ptr->node_state == NODE_STATE_DRAINED))
