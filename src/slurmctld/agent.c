@@ -466,7 +466,7 @@ _thread_per_node_rpc (void *args)
 			rc = slurm_rc_msg->return_code;
 			slurm_free_return_code_msg ( slurm_rc_msg );	
 			if (rc)
-				error ("_thread_per_node_rpc/rc error %s", 
+				error ("_thread_per_node_rpc/rc error: %s", 
 				       slurm_strerror (rc));	/* Don't use %m */
 			else {
 				debug3 ("agent sucessfully processed RPC to node %s", 
