@@ -223,9 +223,11 @@ the job. By default only errors are displayed.
 .TP
 \fB\-W\fR, \fB\-\-wait\fR=\fIseconds\fR
 Specify how long to wait after the first task terminates before terminating 
-all remaining tasks. The default value is unlimited. This can be useful to 
-insure that a job is terminated in a timely fashion in the event that one 
-or more tasks terminate prematurely.
+all remaining tasks. A value of 0 indicates an unlimited wait (a warning will
+be issued after 60 seconds). The default value is set by the WaitTime 
+parameter in the slurm configuration file (see \fBslurm.conf(5)\fR). This 
+option can be useful to insure that a job is terminated in a timely fashion 
+in the event that one or more tasks terminate prematurely.
 .TP
 \fB\-q\fR, \fB\-\-quit-on-interrupt\fR
 Quit immediately on single SIGINT (Ctrl-C). Use of this option
