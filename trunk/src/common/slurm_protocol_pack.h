@@ -147,4 +147,10 @@ int unpack_task_exit_msg ( task_exit_msg_t ** msg_ptr , void ** buffer , uint32_
 
 void pack_job_credential ( slurm_job_credential_t* cred , void ** buffer , uint32_t * length ) ;
 int unpack_job_credential( slurm_job_credential_t** msg , void ** buffer , uint32_t * length ) ;
+
+#ifdef HAVE_LIBELAN3
+void		slurm_qsw_pack_jobinfo(qsw_jobinfo_t j, void **data, int * len) ;
+int		slurm_qsw_unpack_jobinfo(qsw_jobinfo_t * j, void **data, int *len) ;
+#endif
+
 #endif
