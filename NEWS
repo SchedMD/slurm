@@ -1,6 +1,17 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.2.2
+==========================
+ -- Fixes for reported problems:
+   - Execution of script allocate mode fails in some cases. (gnats:161)
+   - Errors using per-task input files with Elan support. (gnats:162)
+   - srun doesn't handle all environment variables properly. (gnats:164)
+ -- Parallel job is now terminated if a task is killed by a signal.
+ -- Exit status of srun is set based on exit codes of tasks.
+ -- Redesign of sinfo interface and options.
+ -- Shutdown of slurmctld no longer propagates shutdown to all nodes.
+
 * Changes in SLURM 0.2.1
 ===========================
  -- Fix bug where reconfigure request to slurmctld killed the daemon.
