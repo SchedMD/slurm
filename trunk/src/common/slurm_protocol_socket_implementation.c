@@ -97,14 +97,14 @@ uint32_t _slurm_listen_stream ( slurm_addr * slurm_address )
 uint32_t _slurm_accept_stream ( slurm_fd open_fd , slurm_addr * slurm_address )
 {
 	uint32_t rc ;
-	uint32_t addr_len ;
+	uint32_t addr_len = sizeof ( slurm_addr ) ;
 	slurm_fd connection_fd ;
 	rc =_slurm_accept ( open_fd , ( struct sockaddr * ) slurm_address , & addr_len ) ;
 	if ( rc == SLURM_SOCKET_ERROR )
 	{
 		if ( debug )
 		{
-			fprintf( stderr, "Error accpeting slurm stream socket: errno %i\n", errno ) ;
+			fprintf( stderr, "Error accepting slurm stream socket: errno %i\n", errno ) ;
 		}
 		return rc ;
 	}
