@@ -44,7 +44,8 @@ void split_node_name (char *name, char *prefix, char *suffix, int *index,
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
-main (int argc, char *argv[]) {
+main (int argc, char *argv[]) 
+{
 	int error_code, node_count, i;
 	char *out_line;
 	bitstr_t *map1, *map2, *map3;
@@ -159,7 +160,7 @@ main (int argc, char *argv[]) {
 		printf ("ERROR: validate_node_specs error1\n");
 	error_code = dump_all_node (&dump, &dump_size, &update_time);
 	if (error_code)
-		printf ("ERROR: dump_node error %d\n", error_code);
+		printf ("ERROR: dump_all_node error %d\n", error_code);
 	if (dump)
 		xfree(dump);
 
@@ -205,7 +206,8 @@ main (int argc, char *argv[]) {
  * NOTE: the caller must xfree the memory at node_list when no longer required
  */
 int 
-bitmap2node_name (bitstr_t *bitmap, char **node_list) {
+bitmap2node_name (bitstr_t *bitmap, char **node_list) 
+{
 	int error_code, node_list_size, i;
 	struct node_record *node_ptr;
 	char prefix[MAX_NAME_LEN], suffix[MAX_NAME_LEN];
@@ -309,7 +311,8 @@ bitmap2node_name (bitstr_t *bitmap, char **node_list) {
  *	to deletet all configuration records
  */
 struct config_record * 
-create_config_record (int *error_code) {
+create_config_record (int *error_code) 
+{
 	struct config_record *config_point;
 
 	last_node_update = time (NULL);
@@ -356,7 +359,8 @@ create_config_record (int *error_code) {
  */
 struct node_record * 
 create_node_record (int *error_code, struct config_record *config_point,
-		    char *node_name) {
+		    char *node_name) 
+{
 	struct node_record *node_record_point;
 	int old_buffer_size, new_buffer_size;
 
@@ -405,7 +409,9 @@ create_node_record (int *error_code, struct config_record *config_point,
  * output: returns 0 if no error, errno otherwise
  * global: config_list - list of all configuration records
  */
-int delete_config_record () {
+int 
+delete_config_record () 
+{
 	last_node_update = time (NULL);
 	(void) list_delete_all (config_list, &list_find_config,
 				"universal_key");
@@ -417,19 +423,19 @@ int delete_config_record () {
  * delete_node_record - delete record for node with specified name
  *   to avoid invalidating the bitmaps and hash table, we just clear the name 
  *   set its state to STATE_DOWN
- * input: name - name of the desired node, delete all nodes if pointer is NULL
+ * input: name - name of the desired node
  * output: return 0 on success, errno otherwise
  * global: node_record_table_ptr - pointer to global node table
  */
 int 
-delete_node_record (char *name) {
+delete_node_record (char *name) 
+{
 	struct node_record *node_record_point;	/* pointer to node_record */
 
 	last_node_update = time (NULL);
 	node_record_point = find_node_record (name);
 	if (node_record_point == (struct node_record *) NULL) {
-		error ("delete_node_record: attempt to delete non-existent node %s",
-			name);
+		error ("delete_node_record: attempt to delete non-existent node %s", name);
 		return ENOENT;
 	}  
 
@@ -451,7 +457,8 @@ delete_node_record (char *name) {
  *         hash_table - table of hash indecies
  */
 void 
-dump_hash () {
+dump_hash () 
+{
 	int i;
 
 	if (hash_table == NULL)
@@ -481,7 +488,8 @@ dump_hash () {
  * NOTE: the caller must xfree the buffer at *buffer_ptr when no longer required
  */
 int 
-dump_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time) {
+dump_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time) 
+{
 	char *buffer;
 	int buffer_offset, buffer_allocated, error_code, i, inx;
 	char out_line[BUF_SIZE], *feature, *partition;
@@ -540,7 +548,8 @@ dump_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time) {
  *       and make the corresponding changes to load_node_config in api/node_info.c
  */
 int 
-dump_node (struct node_record *dump_node_ptr, char *out_line, int out_line_size) {
+dump_node (struct node_record *dump_node_ptr, char *out_line, int out_line_size) 
+{
 	int state;
 	char *feature, *partition;
 
@@ -586,7 +595,8 @@ dump_node (struct node_record *dump_node_ptr, char *out_line, int out_line_size)
  *         hash_table - table of hash indecies
  */
 struct node_record * 
-find_node_record (char *name) {
+find_node_record (char *name) 
+{
 	struct node_record *node_record_point;	/* pointer to node_record */
 	int i;
 
@@ -624,7 +634,8 @@ find_node_record (char *name) {
  * global: hash_table - table of hash indecies
  */
 int 
-hash_index (char *name) {
+hash_index (char *name) 
+{
 	int i, inx, tmp;
 
 	if (node_record_count == 0)
@@ -677,16 +688,18 @@ hash_index (char *name) {
 
 
 /* 
- * init_node_conf - initialize the node configuration values. 
+ * init_node_conf - initialize the node configuration tables and values. 
  * this should be called before creating any node or configuration entries.
  * output: return value - 0 if no error, otherwise an error code
  * global: node_record_table_ptr - pointer to global node table
  *         default_node_record - default values for node records
  *         default_config_record - default values for configuration records
  *         hash_table - table of hash indecies
+ *         last_node_update - time of last node table update
  */
 int 
-init_node_conf () {
+init_node_conf () 
+{
 	last_node_update = time (NULL);
 
 	node_record_count = 0;
@@ -735,7 +748,8 @@ init_node_conf () {
 /* list_compare_config - compare two entry from the config list based upon weight, 
  * see list.h for documentation */
 int 
-list_compare_config (void *config_entry1, void *config_entry2) {
+list_compare_config (void *config_entry1, void *config_entry2) 
+{
 	int weight1, weight2;
 	weight1 = ((struct config_record *) config_entry1)->weight;
 	weight2 = ((struct config_record *) config_entry2)->weight;
@@ -745,7 +759,8 @@ list_compare_config (void *config_entry1, void *config_entry2) {
 
 /* list_delete_config - delete an entry from the config list, see list.h for documentation */
 void 
-list_delete_config (void *config_entry) {
+list_delete_config (void *config_entry) 
+{
 	struct config_record *config_record_point;	/* pointer to config_record */
 	config_record_point = (struct config_record *) config_entry;
 	if (config_record_point->feature)
@@ -761,7 +776,8 @@ list_delete_config (void *config_entry) {
 /* list_find_config - find an entry in the config list, see list.h for documentation 
  * key is partition name or "universal_key" for all config */
 int 
-list_find_config (void *config_entry, void *key) {
+list_find_config (void *config_entry, void *key) 
+{
 	if (strcmp (key, "universal_key") == 0)
 		return 1;
 	return 0;
@@ -772,7 +788,8 @@ list_find_config (void *config_entry, void *key) {
  * global: node_mutex - semaphore for the global node information
  */
 void 
-node_lock () {
+node_lock () 
+{
 	int error_code;
 	error_code = pthread_mutex_lock (&node_mutex);
 	if (error_code)
@@ -791,7 +808,8 @@ node_lock () {
  * NOTE: the caller must xfree memory at bitmap when no longer required
  */
 int 
-node_name2bitmap (char *node_names, bitstr_t **bitmap) {
+node_name2bitmap (char *node_names, bitstr_t **bitmap) 
+{
 	int error_code, i, node_count;
 	char *node_list;
 	struct node_record *node_record_point;
@@ -847,7 +865,8 @@ node_name2bitmap (char *node_names, bitstr_t **bitmap) {
  * NOTE: the caller must xfree memory at node_list when no longer required iff no error
  */
 int 
-node_name2list (char *node_names, char **node_list, int *node_count) {
+node_name2list (char *node_names, char **node_list, int *node_count) 
+{
 	char *str_ptr1, *str_ptr2, *buffer, *format, *my_node_list,this_node_name[BUF_SIZE];
 	int error_code, start_inx, end_inx, count_inx;
 	int i, buf_recs, buf_rec_inx;
@@ -917,7 +936,8 @@ node_name2list (char *node_names, char **node_list, int *node_count) {
  * global: node_mutex - semaphore for the global node information
  */
 void 
-node_unlock () {
+node_unlock () 
+{
 	int error_code;
 	error_code = pthread_mutex_unlock (&node_mutex);
 	if (error_code)
@@ -937,7 +957,8 @@ node_unlock () {
  * NOTE: allocates memory for hash_table
  */
 void 
-rehash () {
+rehash () 
+{
 	struct node_record *node_record_point;	/* pointer to node_record */
 	int i, inx;
 
@@ -965,7 +986,8 @@ rehash () {
  */
 void 
 split_node_name (char *name, char *prefix, char *suffix, int *index,
-		 int *digits) {
+		 int *digits) 
+{
 	int i;
 	char tmp[2];
 
@@ -1005,7 +1027,8 @@ split_node_name (char *name, char *prefix, char *suffix, int *index,
  * NOTE: the contents of spec are overwritten by white space
  */
 int 
-update_node (char *node_names, char *spec) {
+update_node (char *node_names, char *spec) 
+{
 	int bad_index, error_code, i, node_count;
 	char  *node_list, *state;
 	int state_val;

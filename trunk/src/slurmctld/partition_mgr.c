@@ -25,7 +25,7 @@ struct part_record default_part;	/* default configuration values */
 List part_list = NULL;			/* partition list */
 char default_part_name[MAX_NAME_LEN];	/* name of default partition */
 struct part_record *default_part_loc = NULL;	/* location of default partition */
-time_t last_part_update;		/* time of last update to part records */
+time_t last_part_update;		/* time of last update to partition records */
 static pthread_mutex_t part_mutex = PTHREAD_MUTEX_INITIALIZER;	/* lock for partition info */
 
 int build_part_bitmap (struct part_record *part_record_point);
@@ -34,7 +34,8 @@ int list_find_part (void *part_entry, void *key);
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
-main (int argc, char *argv[]) {
+main (int argc, char *argv[]) 
+{
 	int error_code;
 	time_t update_time;
 	struct part_record *part_ptr;
@@ -152,7 +153,8 @@ main (int argc, char *argv[]) {
  * NOTE: this does not report nodes defined in more than one partition. this is checked only  
  *	upon reading the configuration file, not on an update
  */
-int build_part_bitmap (struct part_record *part_record_point) {
+int build_part_bitmap (struct part_record *part_record_point) 
+{
 	int i, error_code, node_count;
 	char *node_list;
 	bitstr_t *old_bitmap;
@@ -228,7 +230,8 @@ int build_part_bitmap (struct part_record *part_record_point) {
  * NOTE: the record's values are initialized to those of default_part
  * NOTE: allocates memory that should be xfreed with delete_part_record
  */
-struct part_record * create_part_record (int *error_code) {
+struct part_record * create_part_record (int *error_code) 
+{
 	struct part_record *part_record_point;
 
 	*error_code = 0;
@@ -278,7 +281,8 @@ struct part_record * create_part_record (int *error_code) {
  * output: return 0 on success, errno otherwise
  * global: part_list - global partition list
  */
-int delete_part_record (char *name) {
+int delete_part_record (char *name) 
+{
 	int i;
 
 	last_part_update = time (NULL);
@@ -312,8 +316,9 @@ int delete_part_record (char *name) {
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  */
 int 
-dump_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time) {
-	ListIterator part_record_iterator;	/* for iterating through part_record_list */
+dump_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time) 
+{
+	ListIterator part_record_iterator;	/* for iterating through part_record list */
 	struct part_record *part_record_point;	/* pointer to part_record */
 	char *buffer;
 	int buffer_offset, buffer_allocated, error_code, i, record_size;
@@ -329,18 +334,18 @@ dump_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time) {
 
 	part_record_iterator = list_iterator_create (part_list);		
 
-	/* write haeader, version and time */
+	/* write header, version and time */
 	sprintf (out_line, HEAD_FORMAT, (unsigned long) last_part_update,
 		 PART_STRUCT_VERSION);
 	if (write_buffer
 	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
 		goto cleanup;
 
-	/* write partition records */
+	/* write individual partition records */
 	while (part_record_point =
 	       (struct part_record *) list_next (part_record_iterator)) {
 		if (part_record_point->magic != PART_MAGIC)
-			fatal ("dump_part: data integrity is bad");
+			fatal ("dump_all_part: data integrity is bad");
 
 		error_code = dump_part(part_record_point, out_line, BUF_SIZE);
 		if (error_code != 0) continue;
@@ -377,7 +382,8 @@ dump_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time) {
  *       and make the corresponding changes to load_part_config in api/partition_info.c
  */
 int 
-dump_part (struct part_record *part_record_point, char *out_line, int out_line_size) {
+dump_part (struct part_record *part_record_point, char *out_line, int out_line_size) 
+{
 	char *nodes, *default_flag, *key, *state, *allow_groups, *shared;
 
 	if (part_record_point->nodes)
@@ -441,7 +447,8 @@ dump_part (struct part_record *part_record_point, char *out_line, int out_line_s
  * global: default_part - default partition values
  *         part_list - global partition list
  */
-int init_part_conf () {
+int init_part_conf () 
+{
 	last_part_update = time (NULL);
 
 	strcpy (default_part.name, "DEFAULT");
@@ -479,19 +486,20 @@ int init_part_conf () {
 }
 
 /*
- * list_delete_part - delete an entry from the global partition list, see 
- *	common/list.h for documentation
+ * list_delete_part - delete an entry from the global partition list, 
+ *	see common/list.h for documentation
  * global: node_record_count - count of nodes in the system
  *         node_record_table_ptr - pointer to global node table
  */
-void list_delete_part (void *part_entry) {
+void 
+list_delete_part (void *part_entry) 
+{
 	struct part_record *part_record_point;	/* pointer to part_record */
 	int i;
 
 	part_record_point = (struct part_record *) part_entry;
 	for (i = 0; i < node_record_count; i++) {
-		if (node_record_table_ptr[i].partition_ptr !=
-		    part_record_point)
+		if (node_record_table_ptr[i].partition_ptr != part_record_point)
 			continue;
 		node_record_table_ptr[i].partition_ptr = NULL;
 	}			
@@ -505,18 +513,21 @@ void list_delete_part (void *part_entry) {
 }
 
 
-/* list_find_part - find an entry in the partition list, see list.h for documentation 
+/*
+ * list_find_part - find an entry in the partition list, see common/list.h for documentation,
  *	key is partition name or "universal_key" for all partitions 
  * global- part_list - the global partition list
  */
-int list_find_part (void *part_entry, void *key) {
-	struct part_record *part_record_point;	/* pointer to part_record */
-
+int 
+list_find_part (void *part_entry, void *key) 
+{
 	if (strcmp (key, "universal_key") == 0)
 		return 1;
-	part_record_point = (struct part_record *) part_entry;
-	if (strncmp (part_record_point->name, (char *) key, MAX_NAME_LEN) == 0)
+
+	if (strncmp (((struct part_record *) part_entry)->name, 
+	    (char *) key, MAX_NAME_LEN) == 0)
 		return 1;
+
 	return 0;
 }
 
@@ -524,7 +535,9 @@ int list_find_part (void *part_entry, void *key) {
 /* part_lock - lock the partition information 
  * global: part_mutex - semaphore for the partition table
  */
-void part_lock () {
+void 
+part_lock () 
+{
 	int error_code;
 	error_code = pthread_mutex_lock (&part_mutex);
 	if (error_code)
@@ -536,7 +549,9 @@ void part_lock () {
 /* part_unlock - unlock the partition information 
  * global: part_mutex - semaphore for the partition table
  */
-void part_unlock () {
+void 
+part_unlock () 
+{
 	int error_code;
 	error_code = pthread_mutex_unlock (&part_mutex);
 	if (error_code)
@@ -552,7 +567,9 @@ void part_unlock () {
  * global: part_list - list of partition entries
  * NOTE: the contents of spec are overwritten by white space
  */
-int update_part (char *partition_name, char *spec) {
+int 
+update_part (char *partition_name, char *spec) 
+{
 	int error_code;
 	struct part_record *part_ptr;
 	int max_time_val, max_nodes_val, key_val, state_val, shared_val, default_val;
@@ -566,9 +583,8 @@ int update_part (char *partition_name, char *spec) {
 	}			
 
 	allow_groups = nodes = NULL;
-	part_ptr =
-		list_find_first (part_list, &list_find_part, partition_name);
-	if (part_ptr == 0) {
+	part_ptr = list_find_first (part_list, &list_find_part, partition_name);
+	if (part_ptr == NULL) {
 		error ("update_part: partition %s does not exist, being created.",
 			partition_name);
 		part_ptr = create_part_record (&error_code);
