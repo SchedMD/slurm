@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.4.0
+=======================
+ -- Minor tweak to init.d/slurm for BlueGene systems.
+
 * Changes in SLURM 0.4.0-pre11
 ==============================
  -- Add new srun option "--test-only" for testing slurm_job_will_run API.

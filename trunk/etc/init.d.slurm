@@ -50,6 +50,12 @@ else
    RETVAL=0
 fi
 
+# We can not use a starter program without losing environment 
+# variables that are critical on Blue Gene systems
+if [ -d /bgl/BlueLight/ppcfloor ]; then
+   STARTPROC=""
+fi
+
 # Source slurm specific configuration
 if [ -f /etc/sysconfig/slurm ] ; then
     . /etc/sysconfig/slurm
