@@ -302,8 +302,8 @@ static void _display_all_nodes(node_info_msg_t * node_msg, int node_rec_cnt)
 
 static void _set_node_field_sizes(List nodes)
 {
-	int node_cnt, len;
-	char node_names[1024];
+	int name_len = 1024, node_cnt, len;
+	char *name_buf;
 	List current;
 	ListIterator i = list_iterator_create(nodes);
 
@@ -320,13 +320,18 @@ static void _set_node_field_sizes(List nodes)
 		node_sz_state	= NODE_SIZE_STATE;
 
 	node_sz_name      = NODE_SIZE_NAME;
+	name_buf          = malloc(name_len);
 	while ((current = list_next(i)) != NULL) {
-		_node_name_string_from_list(current, node_names, 
-					sizeof(node_names), &node_cnt);
-		len = strlen(node_names);
+		while (_node_name_string_from_list(current, name_buf, 
+						name_len, &node_cnt)) {
+			name_len *= 2;
+ 			name_buf  = realloc(name_buf, name_len);
+		}
+		len = strlen(name_buf);
 		if (len > node_sz_name)
 			node_sz_name = len;
 	}
+	free(name_buf);
 	list_iterator_destroy(i);
 }
 
