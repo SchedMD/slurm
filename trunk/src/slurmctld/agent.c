@@ -496,7 +496,8 @@ static void *_thread_per_node_rpc(void *args)
 	msg.data     = task_ptr->msg_args_ptr;
 
 	if (task_ptr->msg_type == REQUEST_KILL_TIMELIMIT) 
-		timeout = slurmctld_conf.kill_wait;
+		timeout = slurmctld_conf.kill_wait + 2;  /* 2 extra seconds 
+							   for slurmd reply */
 
 	if (slurm_send_recv_rc_msg(&msg, &rc, timeout) < 0) {
 		error("agent: %s: %m", thread_ptr->node_name);
