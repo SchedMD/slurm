@@ -180,6 +180,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Kill task failed"					},
 	{ ESLURMD_INVALID_JOB_CREDENTIAL, 
 	  "Invalid job credential"				},
+	{ ESLURMD_CREDENTIAL_REVOKED, 
+	  "Job credential revoked" },
 	{ ESLURMD_CREATE_BATCH_DIR_ERROR,
 	  "Slurmd could not create a batch directory"		},
 	{ ESLURMD_MODIFY_BATCH_DIR_ERROR,
