@@ -57,8 +57,8 @@ List bgl_sys_free = NULL;
 /* global system = list of allocated partitions */
 List bgl_sys_allocated = NULL;
 
-/* Initial bgl partition state information */
-List bgl_init_part_list = NULL;
+/* Global variables */
+List bgl_init_part_list = NULL;	/* Initial bgl partition state */
 
 static void _init_sys(partition_t*);
 
@@ -528,16 +528,16 @@ extern int configure_switches(partition_t* partition)
 	bgl_record_t* bgl_rec;
 	int cur_coord[SYSTEM_DIMENSIONS]; 
 	pm_partition_id_t bgl_part_id;
+#ifdef USE_BGL_FILES
 	List switch_list;
 	ListIterator itr;
-#ifdef USE_BGL_FILES
 	rm_switch_t* cur_switch;
 	rm_partition_t *bgl_part;
 
 	_pre_allocate(bgl_part, partition->conn_type);
 #endif
 
-	if (partition == NULL){
+	if (!partition) {
 		return 1;
 	}
 
@@ -675,7 +675,6 @@ extern int configure_switches(partition_t* partition)
 	partition->bgl_part_id = xstrdup(bgl_part_id);
 
 #else 
-
 	bgl_part_id = "LLNL_128_16";
 	bgl_rec = (bgl_record_t*) partition->bgl_record_ptr;
 	bgl_rec->bgl_part_id   = xstrdup(bgl_part_id);
@@ -1121,8 +1120,6 @@ static int _post_bgl_init_read(void *object, void *arg)
 		xrealloc(bgl_part_ptr->nodes, i);
 	}
 
-bgl_part_ptr->slurm_part_id = xstrdup("TBD");
-	
 	print_bgl_record(bgl_part_ptr);
 
 	return SLURM_SUCCESS;

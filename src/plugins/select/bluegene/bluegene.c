@@ -69,24 +69,27 @@ _STMT_START {	\
 } _STMT_END
 
  /** some local functions */
+static int  _bgl_record_cmpf_inc(bgl_record_t* rec_a, bgl_record_t* rec_b);
+static int  _bgl_record_cmpf_dec(bgl_record_t* rec_a, bgl_record_t* rec_b);
 static int  _copy_slurm_partition_list(List slurm_part_list);
-static int _find_best_partition_match(struct job_record* job_ptr, 
+static void _destroy_bgl_conf_record(void* object);
+static void _destroy_bgl_record(void* object);
+static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
+				char *tv_str, int len_tv_str);
+static int  _find_best_partition_match(struct job_record* job_ptr, 
 				bitstr_t* slurm_part_bitmap,
 				int min_nodes, int max_nodes,
 				int spec, bgl_record_t** found_bgl_record);
-static int _parse_request(char* request_string, partition_t** request);
-static int _wire_bgl_partitions(void);
-static int _bgl_record_cmpf_inc(bgl_record_t* rec_a, bgl_record_t* rec_b);
-static int _bgl_record_cmpf_dec(bgl_record_t* rec_a, bgl_record_t* rec_b);
-static void _destroy_bgl_record(void* object);
-static void _destroy_bgl_conf_record(void* object);
+static bgl_conf_record_t* 
+            _find_config_by_nodes(char* nodes);
+static int  _listfindf_conf_part_record(bgl_conf_record_t* record, char *nodes);
+static int  _parse_bgl_spec(char *in_line);
+static int  _parse_request(char* request_string, partition_t** request);
 static void _process_config(void);
-static int _parse_bgl_spec(char *in_line);
-static bgl_conf_record_t* _find_config_by_nodes(char* nodes);
-static int _listfindf_conf_part_record(bgl_conf_record_t* record, char *nodes);
+static int  _sync_partitions(void);
 static void _update_bgl_node_bitmap(void);
-static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
-		char *tv_str, int len_tv_str);
+static int  _validate_config_nodes(void);
+static int  _wire_bgl_partitions(void);
 
 /* Rotate a geometry array through six permutations */
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
@@ -96,11 +99,11 @@ static char *_convert_bp_state(rm_BP_state_t state);
 static void _set_bp_node_state(rm_BP_state_t state, rm_element_t *element);
 #endif
 
-/**
+/*
  * create_static_partitions - create the static partitions that will be used
- * for scheduling.  
- * IN - (global, from slurmctld): the system and desired partition configurations 
- * OUT - (global, to slurmctld): Table of partitionIDs to geometries
+ *   for scheduling.  
+ * IN/OUT part_list - (global, from slurmctld): SLURM's partition 
+ *   configurations. Fill in bgl_part_id 
  * RET - success of fitting all configurations
  */
 extern int create_static_partitions(List part_list)
@@ -114,33 +117,103 @@ extern int create_static_partitions(List part_list)
 	} else
 		bgl_list = list_create(_destroy_bgl_record);
 
-	/** copy the slurm conf partition info, this will fill in bgl_list */
+	/* copy the slurm.conf partition info from slurmctld into bgl_list */
 	if ((rc = _copy_slurm_partition_list(part_list)))
 		return rc;
 
+	/* syncronize slurm.conf and bluegene.conf data */
 	_process_config();
-	/* after reading in the configuration, we have a list of partition 
-	 * requests (List <int*>) that we can use to partition up the system
+
+	/* 
+	 * After reading in the configuration, we have a list of partition 
+	 * requests configurations that we can use to partition up the system. 
+	 * We also have the current BGL state information. Sync the two up,
+	 * rewire and create partitions as needed.
 	 */
-	if ((rc = _wire_bgl_partitions()))
+	if ((rc = _sync_partitions()))
 		return rc;
 
 	return rc;
 }
 
-/**
- * IN - requests: list of bgl_record(s)
+/* Synchronize the actual bluegene partitions to that configured in SLURM */ 
+static int _sync_partitions(void)
+{
+	int rc = SLURM_SUCCESS;
+
+	/* Check if partitions configured in SLURM are already configured on
+	 * the system */
+	if ((rc = _validate_config_nodes())) {
+		/* If not, delete all existing partitions and jobs then
+		 * configure from scratch */
+		rc = _wire_bgl_partitions();
+	}
+
+	return rc;
+}
+
+/*
+ * Match slurm configuration information with current BGL partition 
+ * configuration. Return SLURM_SUCCESS if they match, else an error 
+ * code. Writes bgl_partition_id into bgl_list records.
  */
+static int  _validate_config_nodes(void)
+{
+	int rc = SLURM_SUCCESS;
+#ifdef HAVE_BGL_FILES
+	bgl_record_t* conf_record;	/* records from configuration files */
+	bgl_record_t* init_record;	/* records from actual BGL config */
+	ListIterator itr_conf, itr_init;
+	char nodes[1024];
+
+	/* read current bgl partition info into bgl_init_part_list */
+	if ((rc = read_bgl_partitions()))
+		return rc;
+
+	itr_conf = list_iterator_create(bgl_list);
+	while ((conf_record = (bgl_record_t*) list_next(itr_conf))) {
+		/* translate hostlist to ranged string for consistent format */
+		(void) hostlist_ranged_string(conf_record->hostlist, 
+			sizeof(nodes), nodes);
+        	/* search here */
+		itr_init = list_iterator_create(bgl_init_part_list);
+		while ((init_record = (bgl_record_t*) list_next(itr_init))) {
+			if (strcmp(nodes, init_record->nodes))
+				continue;	/* wrong nodes */
+			if ((conf_record->conn_type != init_record->conn_type)
+			||  (conf_record->node_use  != init_record->node_use))
+				break;		/* must reconfig this part */
+			conf_record->bgl_part_id = xstrdup(init_record->
+					bgl_part_id);
+			break;
+		}
+		if (!conf_record->bgl_part_id) {
+			info("BGL PartitionID:NONE Nodes %s", nodes);
+			rc = EINVAL;
+		} else {
+			info("BGL PartitionID:%s Nodes:%s Conn:%s Mode:%s",
+				conf_record->bgl_part_id, nodes,  
+				convert_conn_type(conf_record->conn_type),
+				convert_node_use(conf_record->node_use));
+		}
+		list_iterator_destroy(itr_init);
+	}
+	list_iterator_destroy(itr_conf);
+#endif
+
+	return rc;
+}
+
+/* Current blue gene partitions do not match the configuration, 
+ * rewire everything and recreate the partitions */
 static int _wire_bgl_partitions(void)
 {
 	int rc = SLURM_SUCCESS;
+#ifdef USE_BGL_FILES
+/* orignial logic from Dan Phung */
 	bgl_record_t* cur_record;
 	partition_t* cur_partition;
 	ListIterator itr;
-
-	/* read current bgl partition info */
-	if ((rc = read_bgl_partitions()))
-		return rc;
 
 	itr = list_iterator_create(bgl_list);
 	while ((cur_record = (bgl_record_t*) list_next(itr))) {
@@ -149,11 +222,14 @@ static int _wire_bgl_partitions(void)
 			error("error on cur_record %s", cur_record->nodes);
 	}	
 	list_iterator_destroy(itr);
-
+#else
+	error("FIXME: Add logic to re-wire partitions");
+	rc = EINVAL;
+#endif
 	return rc;
 }
 
-/** 
+/*
  * process the slurm configuration to interpret BGL specific semantics: 
  * if MaxNodes == MinNodes == size (Nodes), = static partition, otherwise
  * creates a List of allocation requests made up of partition_t's (see 
@@ -190,9 +266,10 @@ static void _process_config(void)
 	list_iterator_destroy(itr);
 }
 
-/* copy the current partition info that was read in from slurm.conf so
- * that we can maintain our own separate table of bgl_part_id to
- * slurm_part_id.
+/* 
+ * Copy the current partition info that slurmctld read from slurm.conf
+ * so that we can maintain our own separate table in bgl_list. Note that
+ * read_bgl_conf() has already been executed and read bluegene.conf.
  */
 static int _copy_slurm_partition_list(List slurm_part_list)
 {
@@ -203,7 +280,7 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 	int rc = SLURM_SUCCESS;
 
 	itr = list_iterator_create(slurm_part_list);
-	/** 
+	/* 
 	 * try to find the corresponding bgl_conf_record for the
 	 * nodes specified in the slurm_part_list, but if not
 	 * found, _find_conn_type will default to RM_MESH
@@ -211,7 +288,7 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 	while ((slurm_part = (struct part_record *) list_next(itr))) {
 		/* no need to create record for slurm partition without nodes */
 		if ((slurm_part->nodes == NULL)
-		|| (slurm_part->nodes[0] == '\0'))
+		||  (slurm_part->nodes[0] == '\0'))
 			continue;
 		nodes_tmp = xstrdup(slurm_part->nodes);
 		orig_ptr = nodes_tmp;
@@ -221,10 +298,10 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 		debug("_copy_slurm_partition_list parse:%s, token[0]:%s", 
 			slurm_part->nodes, cur_nodes);
 #endif
-		/** 
+		/* 
 		 * for each of the slurm partitions, there may be
 		 * several bgl partitions, so we need to find how to
-		 * wire each of those bgl partitions.
+		 * wire each of those bluegene partitions.
 		 */
 		while (cur_nodes != NULL) {
 			bgl_conf_record_t *config_ptr;
@@ -255,9 +332,9 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 				goto cleanup;
 			}
 
-#if 0	/* Future use */
+#if 0	/* Possible future use */
 			if ((slurm_part->min_nodes != slurm_part->max_nodes)
-			|| (bgl_record->size != slurm_part->max_nodes))
+			||  (bgl_record->size != slurm_part->max_nodes))
 				bgl_record->part_lifecycle = DYNAMIC;
 			else
 #endif
@@ -521,7 +598,7 @@ static void _destroy_bgl_conf_record(void* object)
 	}
 }
 
-/** 
+/* 
  * search through the list of nodes, types to find the partition 
  * containing the given nodes
  */
@@ -538,8 +615,8 @@ static int _listfindf_conf_part_record(bgl_conf_record_t* record, char *nodes)
 	return (!strcasecmp(record->nodes, nodes));
 }
 
-/** 
- * parses the request_string
+/* 
+ * Convert a character into its numeric equivalent or -1 on error
  */
 static int _char2num(char in)
 {
@@ -549,6 +626,12 @@ static int _char2num(char in)
 	return i;
 }
 
+/*
+ * Translate a node list into numeric locations in the BGL node matric
+ * IN request_string - node list, must be in the form "bgl[123x456]"
+ * OUT request_result - allocated data structure (must be xfreed) that 
+ *   notes end-points in a node block
+ */
 static int _parse_request(char* request_string, partition_t** request_result)
 {
 	int loc = 0, i,j, rc = SLURM_ERROR;
@@ -975,17 +1058,12 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 		return SLURM_ERROR;
 	} else {
 		/* now we place the part_id into the env of the script to run */
-		// FIXME, create a fake bgl part id string
-		/* since the bgl_part_id is a number, (most likely single digit), 
-		 * we'll create an LLNL_#, i.e. LLNL_4 = 6 chars + 1 for NULL
-		 */
 		char bgl_part_id[BITSIZE];
-#ifdef USE_BGL_FILES
+#ifdef HAVE_BGL_FILES
 		snprintf(bgl_part_id, BITSIZE, "%s", record->bgl_part_id);
 #else
-		snprintf(bgl_part_id, BITSIZE, "LLNL_128_16");
+		snprintf(bgl_part_id, BITSIZE, "UNDEFINED");
 #endif
-		debug("found fake bgl_part_id %s", bgl_part_id);
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_PART_ID, bgl_part_id);
 	}
