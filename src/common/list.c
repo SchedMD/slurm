@@ -44,6 +44,7 @@
 #define LIST_ALLOC	10
 #define LIST_MAGIC 	0xDEADBEEF
 #define LIST_DESTROYED	0xDEEDDEED
+#define ITER_MAGIC	0x1EAD1EEF
 #define ITER_DESTROYED	0x1EED1EED
 
 /****************\
@@ -181,7 +182,7 @@ void list_destroy(List l)
     assert(l->magic == LIST_MAGIC);
     i = l->iNext;
     while (i) {
-        assert(i->magic == LIST_MAGIC);
+        assert(i->magic == ITER_MAGIC);
         iTmp = i->iNext;
         assert(i->magic = LIST_DESTROYED);	/* clear magic via assert abuse */
         list_iterator_free(i);
@@ -340,7 +341,7 @@ void list_sort(List l, ListCmpF f)
         l->tail = pp;
 
         for (i=l->iNext; i; i=i->iNext) {
-            assert(i->magic == LIST_MAGIC);
+            assert(i->magic == ITER_MAGIC);
             i->pos = i->list->head;
             i->prev = &i->list->head;
         }
@@ -424,15 +425,15 @@ ListIterator list_iterator_create(List l)
     assert(l != NULL);
     if (!(i = list_iterator_alloc()))
         return(out_of_memory());
-    i->list = l;
     list_mutex_lock(&l->mutex);
+    i->list = l;
     assert(l->magic == LIST_MAGIC);
     i->pos = l->head;
     i->prev = &l->head;
     i->iNext = l->iNext;
     l->iNext = i;
+    assert(i->magic = ITER_MAGIC);	/* set magic via assert abuse */
     list_mutex_unlock(&l->mutex);
-    assert(i->magic = LIST_MAGIC);	/* set magic via assert abuse */
     return(i);
 }
 
@@ -440,7 +441,7 @@ ListIterator list_iterator_create(List l)
 void list_iterator_reset(ListIterator i)
 {
     assert(i != NULL);
-    assert(i->magic == LIST_MAGIC);
+    assert(i->magic == ITER_MAGIC);
     list_mutex_lock(&i->list->mutex);
     assert(i->list->magic == LIST_MAGIC);
     i->pos = i->list->head;
@@ -455,19 +456,19 @@ void list_iterator_destroy(ListIterator i)
     ListIterator *pi;
 
     assert(i != NULL);
-    assert(i->magic == LIST_MAGIC);
+    assert(i->magic == ITER_MAGIC);
     list_mutex_lock(&i->list->mutex);
     assert(i->list->magic == LIST_MAGIC);
     for (pi=&i->list->iNext; *pi; pi=&(*pi)->iNext) {
-        assert((*pi)->magic == LIST_MAGIC);
+        assert((*pi)->magic == ITER_MAGIC);
         if (*pi == i) {
             *pi = (*pi)->iNext;
             break;
         }
     }
-    list_mutex_unlock(&i->list->mutex);
     assert(i->magic = ITER_DESTROYED);		/* clear magic via assert abuse */
     list_iterator_free(i);
+    list_mutex_unlock(&i->list->mutex);
     return;
 }
 
@@ -477,7 +478,7 @@ void * list_next(ListIterator i)
     ListNode p;
 
     assert(i != NULL);
-    assert(i->magic == LIST_MAGIC);
+    assert(i->magic == ITER_MAGIC);
     list_mutex_lock(&i->list->mutex);
     assert(i->list->magic == LIST_MAGIC);
     if ((p = i->pos))
@@ -495,7 +496,7 @@ void * list_insert(ListIterator i, void *x)
 
     assert(i != NULL);
     assert(x != NULL);
-    assert(i->magic == LIST_MAGIC);
+    assert(i->magic == ITER_MAGIC);
     list_mutex_lock(&i->list->mutex);
     assert(i->list->magic == LIST_MAGIC);
     v = list_node_create(i->list, i->prev, x);
@@ -511,7 +512,7 @@ void * list_find(ListIterator i, ListFindF f, void *key)
     assert(i != NULL);
     assert(f != NULL);
     assert(key != NULL);
-    assert(i->magic == LIST_MAGIC);
+    assert(i->magic == ITER_MAGIC);
     while ((v=list_next(i)) && !f(v,key)) {;}
     return(v);
 }
@@ -522,7 +523,7 @@ void * list_remove(ListIterator i)
     void *v = NULL;
 
     assert(i != NULL);
-    assert(i->magic == LIST_MAGIC);
+    assert(i->magic == ITER_MAGIC);
     list_mutex_lock(&i->list->mutex);
     assert(i->list->magic == LIST_MAGIC);
     if (*i->prev != i->pos)
@@ -537,7 +538,7 @@ int list_delete(ListIterator i)
     void *v;
 
     assert(i != NULL);
-    assert(i->magic == LIST_MAGIC);
+    assert(i->magic == ITER_MAGIC);
     if ((v = list_remove(i))) {
         if (i->list->fDel)
             i->list->fDel(v);
@@ -569,7 +570,7 @@ static void * list_node_create(List l, ListNode *pp, void *x)
     *pp = p;
     l->count++;
     for (i=l->iNext; i; i=i->iNext) {
-        assert(i->magic == LIST_MAGIC);
+        assert(i->magic == ITER_MAGIC);
         if (i->prev == pp)
             i->prev = &p->next;
         else if (i->pos == p->next)
@@ -602,7 +603,7 @@ static void * list_node_destroy(List l, ListNode *pp)
         l->tail = pp;
     l->count--;
     for (i=l->iNext; i; i=i->iNext) {
-        assert(i->magic == LIST_MAGIC);
+        assert(i->magic == ITER_MAGIC);
         if (i->pos == p)
             i->pos = p->next, i->prev = pp;
         else if (i->prev == &p->next)

@@ -117,10 +117,12 @@ int revoke_credential(revoke_credential_msg_t *msg, List list)
 		if (msg->job_id == credential_state->job_id) {
 			credential_state->revoked = true;
 			credential_state->revoke_time = now;
+			list_iterator_destroy(iterator);
 			return SLURM_SUCCESS;
 		}
 	}
 	insert_revoked_credential_state(msg, list);
+	list_iterator_destroy(iterator);
 	return SLURM_SUCCESS;
 }
 
@@ -136,6 +138,7 @@ is_credential_still_valid(slurm_job_credential_t * credential, List list)
 
 	while ((credential_state = list_next(iterator))) {
 		if (credential->job_id == credential_state->job_id) {
+			list_iterator_destroy(iterator);
 			if (credential_state->revoked) 
 				return ESLURMD_CREDENTIAL_REVOKED;
 			/* only allows one launch this is a problem but 
@@ -146,13 +149,13 @@ is_credential_still_valid(slurm_job_credential_t * credential, List list)
 			credential_state->revoked = true;
 
 			/* credential_state and is good */
-
 			return SLURM_SUCCESS;
 		}
 	}
 	/* credential_state does not exist */
 	insert_credential_state(credential, list);
 
+	list_iterator_destroy(iterator);
 	return SLURM_SUCCESS;
 }
 
@@ -167,6 +170,7 @@ int clear_expired_revoked_credentials(List list)
 		if (now + EXPIRATION_WINDOW > credential_state->expiration) 
 			list_delete(iterator);
 	}
+	list_iterator_destroy(iterator);
 	return SLURM_SUCCESS;
 }
 
