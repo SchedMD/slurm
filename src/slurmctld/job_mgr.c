@@ -480,7 +480,7 @@ load_job_state ( void )
 		job_id_sequence = slurmctld_conf . first_job_id;
 
 	buffer = create_buf (data, data_size);
-	if (data_size > sizeof (time_t))
+	if (data_size >= sizeof (time_t))
 		unpack_time (&buf_time, buffer);
 
 	while (remaining_buf (buffer) > 0) {

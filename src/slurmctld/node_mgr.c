@@ -457,7 +457,7 @@ load_node_state ( void )
 	unlock_state_files ();
 
 	buffer = create_buf (data, data_size);
-	if (data_size > sizeof (uint32_t))
+	if (data_size >= sizeof (time_t))
 		unpack_time (&time_stamp, buffer);
 
 	while (remaining_buf (buffer) > 0) {
