@@ -609,21 +609,12 @@ extern bool is_node_resp (char *name);
  * job_allocate - create job_records for the suppied job specification and 
  *	allocate nodes for it.
  * IN job_specs - job specifications
- * IN node_list - location for storing new job's allocated nodes
  * IN immediate - if set then either initiate the job immediately or fail
  * IN will_run - don't initiate the job if set, just test if it could run 
  *	now or later
  * IN allocate - resource allocation request if set, not a full job
- * OUT new_job_id - the new job's ID
- * OUT num_cpu_groups - number of cpu groups (elements in cpus_per_node 
- *	and cpu_count_reps)
- * OUT cpus_per_node - pointer to array of numbers of cpus on each node 
- *	allocate
- * OUT cpu_count_reps - pointer to array of numbers of consecutive nodes 
- *	having same cpu count
- * OUT node_list - list of nodes allocated to the job
- * OUT node_cnt - number of allocated nodes
- * OUT node_addr - slurm_addr's for the allocated nodes
+ * IN submit_uid -uid of user issuing the request
+ * OUT job_pptr - set to pointer to job record
  * RET 0 or an error code. If the job would only be able to execute with 
  *	some change in partition configuration then 
  *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE is returned
@@ -632,13 +623,11 @@ extern bool is_node_resp (char *name);
  *	and cpu_count_reps={4,2,2}
  * globals: job_list - pointer to global job list 
  *	list_part - global list of partition info
- *	default_part_loc - pointer to default partition 
+ *	default_part_loc - pointer to default partition
+ * NOTE: lock_slurmctld on entry: Read config Write job, Write node, Read part
  */
-extern int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
-	     char **node_list, uint16_t * num_cpu_groups,
-	     uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps,
-	     int immediate, int will_run, int allocate, uid_t submit_uid,
-	     uint16_t * node_cnt, slurm_addr ** node_addr);
+extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run, 
+		int allocate, uid_t submit_uid, struct job_record **job_pptr);
 
 /* log the completion of the specified job */
 extern void job_completion_logger(struct job_record  *job_ptr);
@@ -887,12 +876,10 @@ extern void node_not_resp (char *name, time_t msg_time);
  * old_job_info - get details about an existing job allocation
  * IN uid - job issuing the code
  * IN job_id - ID of job for which info is requested
- * OUT everything else - the job's detains
+ * OUT job_pptr - set to pointer to job record
  */
-extern int old_job_info (uint32_t uid, uint32_t job_id, char **node_list, 
-	uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, 
-	uint32_t ** cpu_count_reps,
-	uint16_t * node_cnt, slurm_addr ** node_addr);
+extern int old_job_info(uint32_t uid, uint32_t job_id, 
+		struct job_record **job_pptr);
 
 
 /* 
@@ -1103,6 +1090,14 @@ extern void signal_step_tasks(struct step_record *step_ptr, uint16_t signal);
  * RET 0 or error code
  */
 extern int slurmctld_shutdown(void);
+
+/*
+ * slurm_drain_nodes - process a request to drain a list of nodes
+ * node_list IN - list of nodes to drain
+ * reason IN - reason to drain the nodes
+ * RET SLURM_SUCCESS or error code
+ */
+extern int slurm_drain_nodes(char *node_list, char *reason);
 
 /*
  * step_create - creates a step_record in step_specs->job_id, sets up the

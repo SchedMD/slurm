@@ -841,7 +841,7 @@ void set_slurmd_addr (void)
 /* 
  * update_node - update the configuration data for one or more nodes
  * IN update_node_msg - update node request
- * RET 0 or error code
+ * RET SLURM_SUCCESS or error code
  * global: node_record_table_ptr - pointer to global node table
  */
 int update_node ( update_node_msg_t * update_node_msg ) 

@@ -97,8 +97,7 @@ static void _excise_node_from_job(struct job_record *job_ptr,
 static int  _find_batch_dir(void *x, void *key);
 static void _get_batch_job_dir_ids(List batch_dirs);
 static void _job_timed_out(struct job_record *job_ptr);
-static int  _job_create(job_desc_msg_t * job_specs, uint32_t * new_job_id,
-		        int allocate, int will_run,
+static int  _job_create(job_desc_msg_t * job_specs, int allocate, int will_run,
 		        struct job_record **job_rec_ptr, uid_t submit_uid);
 static void _list_delete_job(void *job_entry);
 static int  _list_find_job_id(void *job_entry, void *key);
@@ -1237,21 +1236,12 @@ extern void rehash_jobs(void)
  * job_allocate - create job_records for the suppied job specification and 
  *	allocate nodes for it.
  * IN job_specs - job specifications
- * IN node_list - location for storing new job's allocated nodes
  * IN immediate - if set then either initiate the job immediately or fail
  * IN will_run - don't initiate the job if set, just test if it could run 
  *	now or later
  * IN allocate - resource allocation request if set, not a full job
- * OUT new_job_id - the new job's ID
- * OUT num_cpu_groups - number of cpu groups (elements in cpus_per_node 
- *	and cpu_count_reps)
- * OUT cpus_per_node - pointer to array of numbers of cpus on each node 
- *	allocate
- * OUT cpu_count_reps - pointer to array of numbers of consecutive nodes 
- *	having same cpu count
- * OUT node_list - list of nodes allocated to the job
- * OUT node_cnt - number of allocated nodes
- * OUT node_addr - slurm_addr's for the allocated nodes
+ * IN submit_uid -uid of user issuing the request
+ * OUT job_pptr - set to pointer to job record
  * RET 0 or an error code. If the job would only be able to execute with 
  *	some change in partition configuration then 
  *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE is returned
@@ -1263,18 +1253,16 @@ extern void rehash_jobs(void)
  *	default_part_loc - pointer to default partition
  * NOTE: lock_slurmctld on entry: Read config Write job, Write node, Read part
  */
-int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
-		 char **node_list, uint16_t * num_cpu_groups,
-		 uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps,
-		 int immediate, int will_run, int allocate,
-		 uid_t submit_uid, uint16_t * node_cnt,
-		 slurm_addr ** node_addr)
+extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run, 
+		int allocate, uid_t submit_uid, struct job_record **job_pptr)
 {
 	int error_code;
 	bool no_alloc, top_prio, test_only, too_fragmented, independent;
 	struct job_record *job_ptr;
-	error_code = _job_create(job_specs, new_job_id, allocate, will_run,
+	error_code = _job_create(job_specs, allocate, will_run,
 				 &job_ptr, submit_uid);
+	*job_pptr = job_ptr;
+
 	if (error_code) {
 		if (immediate && job_ptr) {
 			job_ptr->job_state = JOB_FAILED;
@@ -1284,9 +1272,7 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		}
 		return error_code;
 	}
-	if (job_ptr == NULL)
-		fatal("job_allocate: allocated job %u lacks record",
-		      new_job_id);
+	xassert(job_ptr);
 
 	independent = job_independent(job_ptr);
 
@@ -1322,22 +1308,8 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 	}
 
 	test_only = will_run || (allocate == 0);
-	if (!test_only) {
-		/* Some of these pointers are NULL on submit */
-		if (num_cpu_groups)
-			*num_cpu_groups = 0;
-		if (node_list)
-			*node_list = NULL;
-		if (cpus_per_node)
-			*cpus_per_node = NULL;
-		if (cpu_count_reps)
-			*cpu_count_reps = NULL;
-		if (node_cnt)
-			*node_cnt = 0;
-		if (node_addr)
-			*node_addr = (slurm_addr *) NULL;
+	if (!test_only)
 		last_job_update = time(NULL);
-	}
 
 	no_alloc = test_only || too_fragmented || 
 			(!top_prio) || (!independent);
@@ -1369,21 +1341,6 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->start_time = 0;
 		job_ptr->end_time   = 0;
-	}
-
-	if (!no_alloc) {
-		if (node_list)
-			*node_list = job_ptr->nodes;
-		if (num_cpu_groups)
-			*num_cpu_groups = job_ptr->num_cpu_groups;
-		if (cpus_per_node)
-			*cpus_per_node = job_ptr->cpus_per_node;
-		if (cpu_count_reps)
-			*cpu_count_reps = job_ptr->cpu_count_reps;
-		if (node_cnt)
-			*node_cnt = job_ptr->node_cnt;
-		if (node_addr)
-			*node_addr = job_ptr->node_addr;
 	}
 
 	return SLURM_SUCCESS;
@@ -1575,7 +1532,6 @@ job_complete(uint32_t job_id, uid_t uid, bool requeue,
  * input: job_specs - job specifications
  * IN allocate - resource allocation request if set rather than job submit
  * IN will_run - job is not to be created, test of validity only
- * OUT new_job_id - the job's ID
  * OUT job_pptr - pointer to the job (NULL on error)
  * RET 0 on success, otherwise ESLURM error code. If the job would only be
  *	able to execute with some change in partition configuration then
@@ -1586,8 +1542,7 @@ job_complete(uint32_t job_id, uid_t uid, bool requeue,
  *	job_hash - hash table into job records
  */
 
-static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
-		       int allocate, int will_run,
+static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		       struct job_record **job_pptr, uid_t submit_uid)
 {
 	int error_code = SLURM_SUCCESS, i;
@@ -1760,7 +1715,6 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 		(*job_pptr)->batch_flag = 1;
 	} else
 		(*job_pptr)->batch_flag = 0;
-	*new_job_id = (*job_pptr)->job_id;
 
 	/* Insure that requested partition is valid right now, 
 	 * otherwise leave job queued and provide warning code */
@@ -1772,19 +1726,20 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 	if ((!super_user) && 
 	    (job_desc->min_nodes > part_ptr->max_nodes)) {
 		info("Job %u requested too many nodes (%d) of "
-			"partition %s(%d)", *new_job_id, job_desc->min_nodes, 
+			"partition %s(%d)", 
+			(*job_pptr)->job_id, job_desc->min_nodes, 
 			part_ptr->name, part_ptr->max_nodes);
 		fail_reason = WAIT_PART_NODE_LIMIT;
 	} else if ((!super_user) &&
 	           (job_desc->max_nodes != 0) &&    /* no max_nodes for job */
 		   (job_desc->max_nodes < part_ptr->min_nodes)) {
 		info("Job %u requested too few nodes (%d) of partition %s(%d)",
-		     *new_job_id, job_desc->max_nodes, 
-		     part_ptr->name, part_ptr->min_nodes);
+			(*job_pptr)->job_id, job_desc->max_nodes, 
+			part_ptr->name, part_ptr->min_nodes);
 		fail_reason = WAIT_PART_NODE_LIMIT;
 	} else if (part_ptr->state_up == 0) {
 		info("Job %u requested down partition %s", 
-		     *new_job_id, part_ptr->name);
+			(*job_pptr)->job_id, part_ptr->name);
 		fail_reason = WAIT_PART_STATE;
 	}
 	if (fail_reason != WAIT_NO_REASON) {
@@ -3382,13 +3337,10 @@ kill_job_on_node(uint32_t job_id, struct node_record *node_ptr)
  * old_job_info - get details about an existing job allocation
  * IN uid - job issuing the code
  * IN job_id - ID of job for which info is requested
- * OUT everything else - the job's details
+ * OUT job_pptr - set to pointer to job record
  */
-int
-old_job_info(uint32_t uid, uint32_t job_id, char **node_list,
-	     uint16_t * num_cpu_groups, uint32_t ** cpus_per_node,
-	     uint32_t ** cpu_count_reps, uint16_t * node_cnt,
-	     slurm_addr ** node_addr)
+extern int
+old_job_info(uint32_t uid, uint32_t job_id, struct job_record **job_pptr)
 {
 	struct job_record *job_ptr;
 
@@ -3403,18 +3355,7 @@ old_job_info(uint32_t uid, uint32_t job_id, char **node_list,
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 
-	if (node_list)
-		*node_list = job_ptr->nodes;
-	if (num_cpu_groups)
-		*num_cpu_groups = job_ptr->num_cpu_groups;
-	if (cpus_per_node)
-		*cpus_per_node = job_ptr->cpus_per_node;
-	if (cpu_count_reps)
-		*cpu_count_reps = job_ptr->cpu_count_reps;
-	if (node_cnt)
-		*node_cnt = job_ptr->node_cnt;
-	if (node_addr)
-		*node_addr = job_ptr->node_addr;
+	*job_pptr = job_ptr;
 	return SLURM_SUCCESS;
 }
 

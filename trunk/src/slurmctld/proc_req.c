@@ -358,19 +358,14 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	slurm_msg_t response_msg;
 	DEF_TIMERS;
 	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
-	char *node_list_ptr = NULL;
-	uint16_t num_cpu_groups = 0;
-	uint32_t *cpus_per_node = NULL, *cpu_count_reps = NULL;
-	uint32_t job_id = 0;
 	resource_allocation_response_msg_t alloc_msg;
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = { 
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 	uid_t uid;
-	uint16_t node_cnt = 0;
-	slurm_addr *node_addr = NULL;
 	int immediate = job_desc_msg->immediate;
 	bool do_unlock = false;
+	struct job_record *job_ptr;
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_RESOURCE_ALLOCATION");
@@ -387,11 +382,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		do_unlock = true;
 		lock_slurmctld(job_write_lock);
-		error_code = job_allocate(job_desc_msg, &job_id,
-					  &node_list_ptr, &num_cpu_groups,
-					  &cpus_per_node, &cpu_count_reps,
-					  immediate, false, true, uid,
-					  &node_cnt, &node_addr);
+		error_code = job_allocate(job_desc_msg,
+				immediate, false, true, uid, &job_ptr);
 		/* unlock after finished using the job structure data */
 		END_TIMER;
 	}
@@ -400,29 +392,30 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	if ((error_code == SLURM_SUCCESS) ||
 	    ((immediate == 0) && 
 	     (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE))) {
+		xassert(job_ptr);
 		info("_slurm_rpc_allocate_resources JobId=%u NodeList=%s %s",
-			job_id, node_list_ptr, TIME_STR);
+			job_ptr->job_id, job_ptr->nodes, TIME_STR);
 
 		/* send job_ID  and node_name_ptr */
 		alloc_msg.cpu_count_reps = xmalloc(sizeof(uint32_t) *
-				num_cpu_groups);
-		memcpy(alloc_msg.cpu_count_reps, cpu_count_reps,
-				(sizeof(uint32_t) * num_cpu_groups));
+				job_ptr->num_cpu_groups);
+		memcpy(alloc_msg.cpu_count_reps, job_ptr->cpu_count_reps,
+				(sizeof(uint32_t) * job_ptr->num_cpu_groups));
 		alloc_msg.cpus_per_node  = xmalloc(sizeof(uint32_t) *
-				num_cpu_groups);
-		memcpy(alloc_msg.cpus_per_node, cpus_per_node,
-				(sizeof(uint32_t) * num_cpu_groups));
+				job_ptr->num_cpu_groups);
+		memcpy(alloc_msg.cpus_per_node, job_ptr->cpus_per_node,
+				(sizeof(uint32_t) * job_ptr->num_cpu_groups));
 		alloc_msg.error_code     = error_code;
-		alloc_msg.job_id         = job_id;
+		alloc_msg.job_id         = job_ptr->job_id;
 		alloc_msg.node_addr      = xmalloc(sizeof(slurm_addr) *
-				node_cnt);
-		memcpy(alloc_msg.node_addr, node_addr, 
-				(sizeof(slurm_addr) * node_cnt));
-		alloc_msg.node_cnt       = node_cnt;
-		alloc_msg.node_list      = xstrdup(node_list_ptr);
-		alloc_msg.num_cpu_groups = num_cpu_groups;
+				job_ptr->node_cnt);
+		memcpy(alloc_msg.node_addr, job_ptr->node_addr, 
+				(sizeof(slurm_addr) * job_ptr->node_cnt));
+		alloc_msg.node_cnt       = job_ptr->node_cnt;
+		alloc_msg.node_list      = xstrdup(job_ptr->nodes);
+		alloc_msg.num_cpu_groups = job_ptr->num_cpu_groups;
 #ifdef HAVE_BGL
-		alloc_msg.bgl_part_id    = xstrdup(DEFAULT_BGL_PART_ID);
+		alloc_msg.bgl_part_id    = xstrdup(job_ptr->bgl_part_id);
 #endif
 		unlock_slurmctld(job_write_lock);
 
@@ -430,7 +423,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		response_msg.data = &alloc_msg;
 
 		if (slurm_send_node_msg(msg->conn_fd, &response_msg) < 0)
-			_kill_job_on_msg_fail(job_id);
+			_kill_job_on_msg_fail(job_ptr->job_id);
 		xfree(alloc_msg.cpu_count_reps);
 		xfree(alloc_msg.cpus_per_node);
 		xfree(alloc_msg.node_addr);
@@ -458,20 +451,15 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 	slurm_msg_t response_msg;
 	DEF_TIMERS;
 	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
-	char *node_list_ptr = NULL;
-	uint16_t num_cpu_groups = 0;
-	uint32_t *cpus_per_node = NULL, *cpu_count_reps = NULL;
-	uint32_t job_id;
 	resource_allocation_and_run_response_msg_t alloc_msg;
 	struct step_record *step_rec;
+	struct job_record *job_ptr;
 	slurm_cred_t slurm_cred;
 	job_step_create_request_msg_t req_step_msg;
 	/* Locks: Write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = { 
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 	uid_t uid;
-	uint16_t node_cnt;
-	slurm_addr *node_addr;
 	int immediate = true;   /* implicit job_desc_msg->immediate == true */
 
 	START_TIMER;
@@ -497,11 +485,8 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 #endif
 
 	lock_slurmctld(job_write_lock);
-	error_code = job_allocate(job_desc_msg, &job_id,
-				  &node_list_ptr, &num_cpu_groups,
-				  &cpus_per_node, &cpu_count_reps,
-				  immediate, false, true, uid,
-				  &node_cnt, &node_addr);
+	error_code = job_allocate(job_desc_msg, 
+			immediate, false, true, uid, &job_ptr);
 
 	/* return result */
 	if (error_code) {
@@ -512,7 +497,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 		return;
 	}
 
-	req_step_msg.job_id     = job_id;
+	req_step_msg.job_id     = job_ptr->job_id;
 	req_step_msg.user_id    = job_desc_msg->user_id;
 #ifdef HAVE_BGL
 	req_step_msg.node_count = 1;
@@ -531,7 +516,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 
 	/* note: no need to free step_rec, pointer to global job step record */
 	if (error_code) {
-		job_complete(job_id, job_desc_msg->user_id, false, 0);
+		job_complete(job_ptr->job_id, job_desc_msg->user_id, false, 0);
 		unlock_slurmctld(job_write_lock);
 		info("_slurm_rpc_allocate_and_run creating job step: %s",
 			slurm_strerror(error_code));
@@ -539,17 +524,17 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 	} else {
 
 		info("_slurm_rpc_allocate_and_run JobId=%u NodeList=%s %s", 
-			job_id, node_list_ptr, TIME_STR);
+			job_ptr->job_id, job_ptr->nodes, TIME_STR);
 
 		/* send job_ID  and node_name_ptr */
-		alloc_msg.job_id         = job_id;
-		alloc_msg.node_list      = node_list_ptr;
-		alloc_msg.num_cpu_groups = num_cpu_groups;
-		alloc_msg.cpus_per_node  = cpus_per_node;
-		alloc_msg.cpu_count_reps = cpu_count_reps;
+		alloc_msg.job_id         = job_ptr->job_id;
+		alloc_msg.node_list      = job_ptr->nodes;
+		alloc_msg.num_cpu_groups = job_ptr->num_cpu_groups;
+		alloc_msg.cpus_per_node  = job_ptr->cpus_per_node;
+		alloc_msg.cpu_count_reps = job_ptr->cpu_count_reps;
 		alloc_msg.job_step_id    = step_rec->step_id;
-		alloc_msg.node_cnt       = node_cnt;
-		alloc_msg.node_addr      = node_addr;
+		alloc_msg.node_cnt       = job_ptr->node_cnt;
+		alloc_msg.node_addr      = job_ptr->node_addr;
 		alloc_msg.cred           = slurm_cred;
 		alloc_msg.switch_job     = switch_copy_jobinfo(
 						step_rec->switch_job);
@@ -558,7 +543,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 		response_msg.data = &alloc_msg;
 
 		if (slurm_send_node_msg(msg->conn_fd, &response_msg) < 0)
-			_kill_job_on_msg_fail(job_id);
+			_kill_job_on_msg_fail(job_ptr->job_id);
 		slurm_cred_destroy(slurm_cred);
 		switch_free_jobinfo(alloc_msg.switch_job);
 		schedule_job_save();	/* has own locks */
@@ -1089,11 +1074,8 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	/* init */
 	DEF_TIMERS;
 	int error_code = SLURM_SUCCESS;
-	uint16_t num_cpu_groups = 0;
-	uint32_t *cpus_per_node = NULL, *cpu_count_reps = NULL;
-	uint32_t job_id;
+	struct job_record *job_ptr;
 	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
-	char *node_list_ptr = NULL;
 	/* Locks: Write job, read node, read partition */
 	slurmctld_lock_t job_write_lock = { 
 		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
@@ -1113,11 +1095,8 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 
 	if (error_code == SLURM_SUCCESS) {
 		lock_slurmctld(job_write_lock);
-		error_code = job_allocate(job_desc_msg, &job_id,
-					  &node_list_ptr, &num_cpu_groups,
-					  &cpus_per_node, &cpu_count_reps,
-					  false, true, true, uid, NULL,
-					  NULL);
+		error_code = job_allocate(job_desc_msg, 
+				false, true, true, uid, &job_ptr);
 		unlock_slurmctld(job_write_lock);
 		END_TIMER;
 	}
@@ -1201,18 +1180,14 @@ static void _slurm_rpc_old_job_alloc(slurm_msg_t * msg)
 {
 	int error_code = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
+	struct job_record *job_ptr;
 	DEF_TIMERS;
 	old_job_alloc_msg_t *job_desc_msg =
 	    (old_job_alloc_msg_t *) msg->data;
-	char *node_list_ptr = NULL;
-	uint16_t num_cpu_groups = 0;
-	uint32_t *cpus_per_node = NULL, *cpu_count_reps = NULL;
 	resource_allocation_response_msg_t alloc_msg;
 	/* Locks: Read job, read node */
 	slurmctld_lock_t job_read_lock = { 
 		NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
-	uint16_t node_cnt;
-	slurm_addr *node_addr;
 	uid_t uid;
 	bool do_unlock = false;
 
@@ -1230,15 +1205,12 @@ static void _slurm_rpc_old_job_alloc(slurm_msg_t * msg)
 		do_unlock = true;
 		lock_slurmctld(job_read_lock);
 		error_code = old_job_info(job_desc_msg->uid,
-					  job_desc_msg->job_id,
-					  &node_list_ptr, &num_cpu_groups,
-					  &cpus_per_node, &cpu_count_reps,
-					  &node_cnt, &node_addr);
+					  job_desc_msg->job_id, &job_ptr);
 		END_TIMER;
 	}
 
 	/* return result */
-	if (error_code) {
+	if (error_code || (job_ptr == NULL)) {
 		if (do_unlock)
 			unlock_slurmctld(job_read_lock);
 		debug2("_slurm_rpc_old_job_alloc: JobId=%u, uid=%u: %s",
@@ -1247,28 +1219,29 @@ static void _slurm_rpc_old_job_alloc(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		debug2("_slurm_rpc_old_job_alloc JobId=%u NodeList=%s %s",
-			job_desc_msg->job_id, node_list_ptr, TIME_STR);
+			job_desc_msg->job_id, job_ptr->nodes, TIME_STR);
 
 		/* send job_ID  and node_name_ptr */
 		alloc_msg.cpu_count_reps = xmalloc(sizeof(uint32_t) *
-				num_cpu_groups);
-		memcpy(alloc_msg.cpu_count_reps, cpu_count_reps,
-				(sizeof(uint32_t) * num_cpu_groups));
+				job_ptr->num_cpu_groups);
+		memcpy(alloc_msg.cpu_count_reps, 
+				job_ptr->cpu_count_reps,
+				(sizeof(uint32_t) * job_ptr->num_cpu_groups));
 		alloc_msg.cpus_per_node  = xmalloc(sizeof(uint32_t) *
-				num_cpu_groups);
-		memcpy(alloc_msg.cpus_per_node, cpus_per_node,
-				(sizeof(uint32_t) * num_cpu_groups));
+				job_ptr->num_cpu_groups);
+		memcpy(alloc_msg.cpus_per_node, job_ptr->cpus_per_node,
+				(sizeof(uint32_t) * job_ptr->num_cpu_groups));
 		alloc_msg.error_code     = error_code;
 		alloc_msg.job_id         = job_desc_msg->job_id;
 		alloc_msg.node_addr      = xmalloc(sizeof(slurm_addr) *
-				node_cnt);
-		memcpy(alloc_msg.node_addr, node_addr,
-				(sizeof(slurm_addr) * node_cnt));
-		alloc_msg.node_cnt       = node_cnt;
-		alloc_msg.node_list      = xstrdup(node_list_ptr);
-		alloc_msg.num_cpu_groups = num_cpu_groups;
+				job_ptr->node_cnt);
+		memcpy(alloc_msg.node_addr, job_ptr->node_addr,
+				(sizeof(slurm_addr) * job_ptr->node_cnt));
+		alloc_msg.node_cnt       = job_ptr->node_cnt;
+		alloc_msg.node_list      = xstrdup(job_ptr->nodes);
+		alloc_msg.num_cpu_groups = job_ptr->num_cpu_groups;
 #ifdef HAVE_BGL
-		alloc_msg.bgl_part_id    = xstrdup(DEFAULT_BGL_PART_ID);
+		alloc_msg.bgl_part_id    = xstrdup(job_ptr->bgl_part_id);
 #endif
 		unlock_slurmctld(job_read_lock);
 
@@ -1444,7 +1417,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	/* init */
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
-	uint32_t job_id;
+	struct job_record *job_ptr;
 	slurm_msg_t response_msg;
 	submit_response_msg_t submit_msg;
 	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
@@ -1467,12 +1440,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	}
 	if (error_code == SLURM_SUCCESS) {
 		lock_slurmctld(job_write_lock);
-		error_code = job_allocate(job_desc_msg, &job_id,
-					  (char **) NULL,
-					  (uint16_t *) NULL,
-					  (uint32_t **) NULL,
-					  (uint32_t **) NULL, false, false,
-					  false, uid, NULL, NULL);
+		error_code = job_allocate(job_desc_msg, false, false,
+					  false, uid, &job_ptr);
 		unlock_slurmctld(job_write_lock);
 		END_TIMER;
 	}
@@ -1481,14 +1450,13 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	if ((error_code != SLURM_SUCCESS) &&
 	    (error_code != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)) {
 		info("_slurm_rpc_submit_batch_job: %s",
-		     slurm_strerror(error_code));
+			slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		info(
-		   "_slurm_rpc_submit_batch_job JobId=%u %s", 
-		   job_id, TIME_STR);
+		info("_slurm_rpc_submit_batch_job JobId=%u %s", 
+			job_ptr->job_id, TIME_STR);
 		/* send job_ID */
-		submit_msg.job_id     = job_id;
+		submit_msg.job_id     = job_ptr->job_id;
 		submit_msg.error_code = error_code;
 		response_msg.msg_type = RESPONSE_SUBMIT_BATCH_JOB;
 		response_msg.data = &submit_msg;
@@ -1536,6 +1504,31 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 		schedule_job_save();
 		schedule_node_save();
 	}
+}
+
+/*
+ * slurm_drain_nodes - process a request to drain a list of nodes
+ * node_list IN - list of nodes to drain
+ * reason IN - reason to drain the nodes
+ * RET SLURM_SUCCESS or error code
+ */
+extern int slurm_drain_nodes(char *node_list, char *reason)
+{
+	int error_code;
+	update_node_msg_t update_node_msg;
+	/* Locks: Write  node */
+	slurmctld_lock_t node_write_lock = { 
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+
+	update_node_msg.node_names = node_list;
+	update_node_msg.node_state = NODE_STATE_DRAINED;
+	update_node_msg.reason = reason;
+
+	lock_slurmctld(node_write_lock);
+	error_code = update_node(&update_node_msg);
+	unlock_slurmctld(node_write_lock);
+
+	return error_code;
 }
 
 /* _slurm_rpc_update_node - process RPC to update the configuration of a 
