@@ -78,6 +78,7 @@
 #else
 #  define WDOG_POLL 		2	/* secs */
 #endif
+#define MAX_RETRIES	10
 
 typedef enum {
 	DSH_NEW,        /* Request not yet started */
@@ -146,7 +147,7 @@ static List retry_list = NULL;		/* agent_arg_t list for retry */
  */
 void *agent(void *args)
 {
-	int i, rc;
+	int i, rc, retries = 0;
 	pthread_attr_t attr_wdog;
 	pthread_t thread_wdog;
 	agent_arg_t *agent_arg_ptr = args;
@@ -174,12 +175,12 @@ void *agent(void *args)
 	if (pthread_attr_setscope(&attr_wdog, PTHREAD_SCOPE_SYSTEM))
 		error("pthread_attr_setscope error %m");
 #endif
-	if (pthread_create(&thread_wdog, &attr_wdog, _wdog,
-			   (void *) agent_info_ptr)) {
+	while (pthread_create(&thread_wdog, &attr_wdog, _wdog,
+				(void *) agent_info_ptr)) {
 		error("pthread_create error %m");
-		sleep(1);	/* sleep and try once more */
-		if (pthread_create(&thread_wdog, &attr_wdog, _wdog, args))
-			fatal("pthread_create error %m");
+		if (++retries > MAX_RETRIES)
+			fatal("Can't create pthread");
+		sleep(1);	/* sleep and again */
 	}
 #if 	AGENT_THREAD_COUNT < 1
 	fatal("AGENT_THREAD_COUNT value is invalid");
@@ -750,6 +751,7 @@ void retry_pending(char *node_name)
 /* _spawn_retry_agent - pthread_crate an agent for the given task */
 static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr)
 {
+	int retries = 0;
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
 
@@ -767,13 +769,12 @@ static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr)
 	if (pthread_attr_setscope(&attr_agent, PTHREAD_SCOPE_SYSTEM))
 		error("pthread_attr_setscope error %m");
 #endif
-	if (pthread_create(&thread_agent, &attr_agent,
-			   agent, (void *) agent_arg_ptr)) {
+	while (pthread_create(&thread_agent, &attr_agent,
+			agent, (void *) agent_arg_ptr)) {
 		error("pthread_create error %m");
-		sleep(1);	/* sleep and try once more */
-		if (pthread_create(&thread_agent, &attr_agent,
-				   agent, (void *) agent_arg_ptr))
-			fatal("pthread_create error %m");
+		if (++retries > MAX_RETRIES)
+			fatal("Can't create pthread");
+		sleep(1);	/* sleep and try again */
 	}
 }
 

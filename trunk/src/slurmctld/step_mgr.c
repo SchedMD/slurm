@@ -48,6 +48,8 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
+#define MAX_RETRIES 10
+
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer);
 static bitstr_t * _pick_step_nodes (struct job_record  *job_ptr, 
 				    step_specs *step_spec );
@@ -248,7 +250,7 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
  */
 void signal_step_tasks(struct step_record *step_ptr, uint16_t signal)
 {
-	int i;
+	int i, retries = 0;
 	kill_tasks_msg_t *kill_tasks_msg;
 	agent_arg_t *agent_args;
 	pthread_attr_t attr_agent;
@@ -299,14 +301,12 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal)
 	if (pthread_attr_setscope(&attr_agent, PTHREAD_SCOPE_SYSTEM))
 		error("pthread_attr_setscope error %m");
 #endif
-	if (pthread_create
-	    (&thread_agent, &attr_agent, agent, (void *) agent_args)) {
+	while (pthread_create(&thread_agent, &attr_agent, agent, 
+			(void *) agent_args)) {
 		error("pthread_create error %m");
-		sleep(1);	/* sleep and try once more */
-		if (pthread_create
-		    (&thread_agent, &attr_agent, agent,
-		     (void *) agent_args))
-			fatal("pthread_create error %m");
+		if (++retries > MAX_RETRIES)
+			fatal("Can't create pthread");
+		sleep(1);	/* sleep and try again */
 	}
 	return;
 }

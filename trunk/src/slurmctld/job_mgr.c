@@ -64,6 +64,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 #define DETAILS_FLAG 0xdddd
+#define MAX_RETRIES  10
 #define MAX_STR_PACK 1024
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
 #define STEP_FLAG 0xbbbb
@@ -3002,7 +3003,7 @@ _xmit_new_end_time(struct job_record *job_ptr)
 	agent_arg_t *agent_args;
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
-	int buf_rec_size = 0, i;
+	int buf_rec_size = 0, i, retries = 0;
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_UPDATE_JOB_TIME;
@@ -3041,14 +3042,12 @@ _xmit_new_end_time(struct job_record *job_ptr)
 	if (pthread_attr_setscope(&attr_agent, PTHREAD_SCOPE_SYSTEM))
 		error("pthread_attr_setscope error %m");
 #endif
-	if (pthread_create
-	    (&thread_agent, &attr_agent, agent, (void *) agent_args)) {
+	while (pthread_create(&thread_agent, &attr_agent, agent, 
+			(void *) agent_args)) {
 		error("pthread_create error %m");
-		sleep(1);	/* sleep and try once more */
-		if (pthread_create
-		    (&thread_agent, &attr_agent, agent,
-		     (void *) agent_args))
-			fatal("pthread_create error %m");
+		if (++retries > MAX_RETRIES)
+			fatal("Can't create pthread");
+		sleep(1);	/* sleep and try again */
 	}
 	return;
 }
