@@ -30,9 +30,12 @@
 #endif
 
 #include <stdlib.h>
+#include <sys/poll.h>
 
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/slurm_auth.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -44,13 +47,19 @@
 #include "src/srun/attach.h"
 
 #define MAX_ALLOC_WAIT 60	/* seconds */
-#define MIN_ALLOC_WAIT  2	/* seconds */
+#define MIN_ALLOC_WAIT  5	/* seconds */
 #define MAX_RETRIES    10
 
 /*
  * Static Prototypes
  */
-static void  _wait_for_resources(resource_allocation_response_msg_t **rp);
+static int   _accept_msg_connection(slurm_fd slurmctld_fd,
+		resource_allocation_response_msg_t **resp);
+static int   _handle_msg(slurm_msg_t *msg, \
+		resource_allocation_response_msg_t **resp);
+static int   _wait_for_alloc_rpc(int sleep_time,
+		resource_allocation_response_msg_t **resp);
+static void  _wait_for_resources(resource_allocation_response_msg_t **resp);
 static bool  _retry();
 static void  _intr_handler(int signo);
 
@@ -149,10 +158,13 @@ _wait_for_resources(resource_allocation_response_msg_t **resp)
 	old_job.job_id = r->job_id;
 	old_job.uid = (uint32_t) getuid();
 	slurm_free_resource_allocation_response_msg(r);
-	sleep (sleep_time);
 
 	/* Keep polling until the job is allocated resources */
-	while (slurm_confirm_allocation(&old_job, resp) < 0) {
+	while (1) {
+		if (_wait_for_alloc_rpc(sleep_time, resp) > 0)
+			break;
+		if (slurm_confirm_allocation(&old_job, resp) >= 0)
+			break;
 		if (slurm_get_errno() == ESLURM_JOB_PENDING) {
 			debug3("Still waiting for allocation");
 			if (sleep_time < MAX_ALLOC_WAIT)
@@ -175,7 +187,125 @@ _wait_for_resources(resource_allocation_response_msg_t **resp)
 	info ("job %u has been allocated resources", (*resp)->job_id);
 }
 
+/* Wait up to sleep_time for RPC from slurmctld indicating resource allocation
+ * has occured.
+ * IN sleep_time: delay in seconds
+ * OUT resp: resource allocation response message
+ * RET 1 if resp is filled in, 0 otherwise */
+static int
+_wait_for_alloc_rpc(int sleep_time, resource_allocation_response_msg_t **resp)
+{
+	struct pollfd fds[1];
+	slurm_fd slurmctld_fd;
+	int rc, wait_msec = sleep_time * 1000;
 
+	slurmctld_fd = slurmctld_msg_init();
+	if (slurmctld_fd < 0) {
+		sleep(sleep_time);
+		return 0;
+	}
+
+	fds[0].fd = slurmctld_fd;
+	fds[0].events = POLLIN;
+
+	while ((rc = poll(fds, 1, wait_msec)) < 0) {
+		switch (errno) {
+			case EAGAIN:
+			case EINTR:
+				continue;
+			case ENOMEM:
+			case EINVAL:
+			case EFAULT:
+				fatal("poll: %m");
+			default:
+				error("poll: %m. Continuing...");
+		}
+	}
+
+	rc = 0;
+	if (fds[0].revents & POLLIN)
+		rc = _accept_msg_connection(slurmctld_fd, resp);
+	return rc;
+}
+
+/* Accept RPC from slurmctld and process it.
+ * IN slurmctld_fd: file descriptor for slurmctld communications
+ * OUT resp: resource allocation response message
+ * RET 1 if resp is filled in, 0 otherwise */
+static int 
+_accept_msg_connection(slurm_fd slurmctld_fd, 
+		resource_allocation_response_msg_t **resp)
+{
+	slurm_fd     fd;
+	slurm_msg_t *msg = NULL;
+	slurm_addr   cli_addr;
+	char         host[256];
+	short        port;
+	int          rc = 0;
+
+	fd = slurm_accept_msg_conn(slurmctld_fd, &cli_addr);
+	if (fd < 0) {
+		error("Unable to accept connection: %m");
+		return rc;
+	}
+
+	slurm_get_addr(&cli_addr, &port, host, sizeof(host));
+	debug2("got message connection from %s:%d", host, ntohs(port));
+
+	msg = xmalloc(sizeof(*msg));
+
+  again:
+	if (slurm_receive_msg(fd, msg, 0) < 0) {
+		if (errno == EINTR)
+			goto again;
+		error("slurm_receive_msg[%s]: %m", host);
+		xfree(msg);
+	} else {
+		msg->conn_fd = fd;
+		rc = _handle_msg(msg, resp); /* handle_msg frees msg */
+	}
+
+	slurm_close_accepted_conn(fd);
+	return rc;
+}
+
+/* process RPC from slurmctld
+ * IN msg: message recieved
+ * OUT resp: resource allocation response message
+ * RET 1 if resp is filled in, 0 otherwise */
+static int
+_handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
+{
+	uid_t req_uid   = g_slurm_auth_get_uid(msg->cred);
+	uid_t uid       = getuid();
+	uid_t slurm_uid = (uid_t) slurm_get_slurm_user_id();
+	int rc = 0;
+
+	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
+		error ("Security violation, slurm message from uid %u",
+			(unsigned int) req_uid);
+		return 0;
+	}
+
+	switch (msg->msg_type) {
+		case SRUN_PING:
+			debug3("slurmctld ping received");
+			slurm_send_rc_msg(msg, SLURM_SUCCESS);
+			slurm_free_srun_ping_msg(msg->data);
+			break;
+		case RESPONSE_RESOURCE_ALLOCATION:
+			debug2("resource allocation response received");
+			slurm_send_rc_msg(msg, SLURM_SUCCESS);
+			*resp = msg->data;
+			rc = 1;
+			break;
+		default:
+			error("received spurious message type: %d\n",
+				 msg->msg_type);
+	}
+	slurm_free_msg(msg);
+	return rc;
+}
 
 static bool
 _retry()
@@ -262,16 +392,16 @@ job_desc_msg_create_from_opts (char *script)
 		j->shared              = 1;
 
 	j->port = slurmctld_comm_addr.port;
-	if (slurmctld_comm_addr.hostname) 
+	if (slurmctld_comm_addr.hostname)
 		j->host = xstrdup(slurmctld_comm_addr.hostname);
 	else
 		j->host = NULL;
 
 	if (script) {
 		/*
-  		 * If script is set then we are building a request for
+		 * If script is set then we are building a request for
 		 *  a batch job
-  		 */
+		 */
 		xassert (opt.batch);
 
 		j->environment = environ;

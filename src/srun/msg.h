@@ -30,9 +30,9 @@
 #ifndef _HAVE_MSG_H
 #define _HAVE_MSG_H
 
-void *msg_thr(void *arg);
-int   msg_thr_create(job_t *job);
-void  slurmctld_msg_init(void);
+void     *msg_thr(void *arg);
+int       msg_thr_create(job_t *job);
+slurm_fd  slurmctld_msg_init(void);
 
 typedef struct slurmctld_communication_addr {
 	char *hostname;

@@ -63,7 +63,6 @@ static void _srun_agent_launch(slurm_addr *addr, char *host,
  */
 extern void srun_allocate (uint32_t job_id)
 {
-#if SRUN_LAUNCH_MSG
 	struct job_record *job_ptr = find_job_record (job_id);
 
 	xassert(job_ptr);
@@ -94,7 +93,6 @@ extern void srun_allocate (uint32_t job_id)
 		_srun_agent_launch(addr, job_ptr->host, 
 				RESPONSE_RESOURCE_ALLOCATION, msg_arg);
 	}
-# endif
 }
 
 /*
