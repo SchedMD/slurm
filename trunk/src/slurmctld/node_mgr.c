@@ -21,7 +21,7 @@
 #include "slurm.h"
 
 #define BUF_SIZE 	1024
-#define NO_VAL	 	-99
+#define NO_VAL	 	(-99)
 #define SEPCHARS 	" \n\t"
 
 List 	Config_List = NULL;		/* List of Config_Record entries */
@@ -40,6 +40,7 @@ int	Delete_Config_Record();
 void	Dump_Hash();
 int 	Hash_Index(char *name);
 void 	Rehash();
+void	Split_Node_Name(char *Name, char *Prefix, char *Suffix, int *Index, int *Digits);
 
 #if PROTOTYPE_API
 char *Node_API_Buffer = NULL;
@@ -138,8 +139,8 @@ main(int argc, char * argv[]) {
     if (Error_Code) printf("ERROR: NodeName2BitMap error %d\n", Error_Code);
     Error_Code = BitMap2NodeName(Map1, &Out_Line);
     if (Error_Code) printf("ERROR: BitMap2NodeName error %d\n", Error_Code);
-    if (strcmp(Out_Line, "lx01,lx02,lx04") != 0) 
-	printf("ERROR: BitMap2NodeName results bad %s vs %s\n", Out_Line, "lx01,lx02,lx04");
+    if (strcmp(Out_Line, "lx[01-02],lx04") != 0) 
+	printf("ERROR: BitMap2NodeName results bad %s vs %s\n", Out_Line, "lx[01-02],lx04");
     free(Map1);
     free(Out_Line);
 
@@ -259,8 +260,12 @@ main(int argc, char * argv[]) {
  * NOTE: The caller must free memory at Node_List when no longer required
  */
 int BitMap2NodeName(unsigned *BitMap, char **Node_List) {
-    int Error_Code, Node_List_Size, i, empty;
+    int Error_Code, Node_List_Size, i;
     struct Node_Record *Node_Ptr;
+    char Prefix[MAX_NAME_LEN], Suffix[MAX_NAME_LEN];
+    char Format[MAX_NAME_LEN], Temp[MAX_NAME_LEN];
+    char Last_Prefix[MAX_NAME_LEN], Last_Suffix[MAX_NAME_LEN];
+    int  First_Index, Last_Index, Index, Digits;
     unsigned mask;
 
     Node_List[0] = NULL;
@@ -285,10 +290,10 @@ int BitMap2NodeName(unsigned *BitMap, char **Node_List) {
     } /* if */
     strcpy(Node_List[0], "");
 
-    empty = 1;
+    strcpy(Last_Prefix, "");
+    strcpy(Last_Suffix, "");
     for (i=0; i<Node_Record_Count; i++) {
-	if (BitMapValue(BitMap, i) == 0) continue;
-	if (Node_List_Size < strlen(Node_List[0])+strlen((Node_Record_Table_Ptr+i)->Name)+1) {
+	if (Node_List_Size < (strlen(Node_List[0])+MAX_NAME_LEN*3)) {
 	    Node_List_Size += BUF_SIZE;
 	    Node_List[0] = realloc(Node_List[0], Node_List_Size);
 	    if (Node_List[0] == NULL) {
@@ -300,10 +305,62 @@ int BitMap2NodeName(unsigned *BitMap, char **Node_List) {
 		return ENOMEM;
 	    } /* if */
 	} /* if need more memory */
-	if (empty == 0) strcat(Node_List[0], ","); 
-	empty = 0;
-	strcat(Node_List[0], (Node_Record_Table_Ptr+i)->Name);
+	if (BitMapValue(BitMap, i) == 0) continue;
+	Split_Node_Name((Node_Record_Table_Ptr+i)->Name, Prefix, Suffix, &Index, &Digits);
+	if ((Index == (Last_Index+1)) && 		/* Next in sequence */
+	    (strcmp(Last_Prefix, Prefix) == 0) &&
+	    (strcmp(Last_Suffix, Suffix) == 0)) {
+	    Last_Index = Index;
+	    continue;
+	} /* if */
+	if ((strlen(Last_Prefix) != 0) || 		/* End of a sequence */
+	    (strlen(Last_Suffix) != 0)) {
+	    if (strlen(Node_List[0]) > 0) strcat(Node_List[0],",");
+	    strcat(Node_List[0], Last_Prefix);
+	    if (First_Index != Last_Index) strcat(Node_List[0], "[");
+	    strcpy(Format, "%0");
+	    sprintf(&Format[2], "%dd", Digits);
+	    sprintf(Temp, Format, First_Index);
+	    strcat(Node_List[0], Temp);
+	    if (First_Index != Last_Index) {
+		strcat(Node_List[0], "-");
+		strcpy(Format, "%0");
+		sprintf(&Format[2], "%dd]", Digits);
+		sprintf(Temp, Format, Last_Index);
+		strcat(Node_List[0], Temp);
+	    } /* if */
+	    strcat(Node_List[0], Last_Suffix);
+	    strcpy(Last_Prefix, "");
+	    strcpy(Last_Suffix, "");
+	} /* if */
+	if (Index == NO_VAL) {
+	    if (strlen(Node_List[0]) > 0) strcat(Node_List[0],",");
+	    strcat(Node_List[0], (Node_Record_Table_Ptr+i)->Name);
+	} else {
+	    strcpy(Last_Prefix, Prefix);
+	    strcpy(Last_Suffix, Suffix);
+	    First_Index = Last_Index = Index;
+	} /* else */
     } /* for */
+
+    if ((strlen(Last_Prefix) != 0) || 		/* End of a sequence */
+	(strlen(Last_Suffix) != 0)) {
+	if (strlen(Node_List[0]) > 0) strcat(Node_List[0],",");
+	strcat(Node_List[0], Last_Prefix);
+	if (First_Index != Last_Index) strcat(Node_List[0], "[");
+	strcpy(Format, "%0");
+	sprintf(&Format[2], "%dd", Digits);
+	sprintf(Temp, Format, First_Index);
+	strcat(Node_List[0], Temp);
+	if (First_Index != Last_Index) {
+	    strcat(Node_List[0], "-");
+	    strcpy(Format, "%0");
+	    sprintf(&Format[2], "%dd]", Digits);
+	    sprintf(Temp, Format, Last_Index);
+	    strcat(Node_List[0], Temp);
+	} /* if */
+	strcat(Node_List[0], Last_Suffix);
+    } /* if */
     Node_List[0] = realloc(Node_List[0], strlen(Node_List[0])+1);
     return 0;
 } /* BitMap2NodeName */
@@ -1119,6 +1176,42 @@ void Rehash() {
     } /* for */
 
 } /* Rehash */
+
+/* 
+ * Split_Node_Name - Split a node name into prefix, suffix, and index value 
+ * Input: Name - The node name to parse
+ *        Prefix, Suffix, Index, Digits - Location into which to store node name's constituents
+ * Output: Prefix, Suffix, Index - The node name's constituents 
+ *         Index - Index, defaults to NO_VAL
+ *         Digits - Number of digits in the index, defaults to NO_VAL
+ */
+void Split_Node_Name(char *Name, char *Prefix, char *Suffix, int *Index, int *Digits) {
+    int i;
+    char Tmp[2];
+
+    strcpy(Prefix, "");
+    strcpy(Suffix, "");
+    *Index  = NO_VAL;
+    *Digits = NO_VAL;
+    Tmp[1] = (char)NULL;
+    for (i=0; ; i++) {
+	if (Name[i] == (char)NULL) break;
+	if ((Name[i] >= '0') && (Name[i] <= '9')) {
+	    if (*Index  == NO_VAL) {
+		*Index  = *Digits = 0;
+	    } /* if */
+	    (*Digits)++;
+	    *Index = (*Index * 10) + (Name[i] - '0');
+	} else {
+	    Tmp[0] = Name[i];
+	    if (*Index  == NO_VAL)
+		strcat(Prefix, Tmp);
+	    else 
+		strcat(Suffix, Tmp);
+	} /* else */
+    } /* for */
+    return;
+} /* Split_Node_Name */
 
 
 /* 
