@@ -97,6 +97,7 @@ main(int ac, char **av)
 	pthread_attr_t attr, ioattr;
 	struct sigaction action;
 	int n, i;
+	bool old_job = false;
 
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
@@ -130,6 +131,7 @@ main(int ac, char **av)
 		qsw_standalone(job);
 #endif
 	} else if ( (resp = existing_allocation()) ) {
+		old_job = true;
 		job = job_create(resp); 
 		create_job_step(job);
 		slurm_free_resource_allocation_response_msg(resp);
@@ -221,8 +223,11 @@ main(int ac, char **av)
 	/* kill msg server thread */
 	pthread_kill(job->jtid, SIGTERM);
 
-	if (!opt.no_alloc) {
-		debug("cancelling job %d", job->jobid);
+	if (old_job) {
+		debug("cancelling job step %u.%u", job->jobid, job->stepid);
+		slurm_complete_job_step(job->jobid, job->stepid);
+	} else if (!opt.no_alloc) {
+		debug("cancelling job %u", job->jobid);
 		slurm_complete_job(job->jobid);
 	}
 
