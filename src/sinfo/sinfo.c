@@ -181,6 +181,8 @@ static int _build_sinfo_data(List sinfo_list,
 			continue;
 
 		part_ptr = _find_part(node_ptr->partition, partition_msg);
+		if ( ! part_ptr )
+			continue;
 		i = list_iterator_create(sinfo_list);
 		/* test if node can be added to existing sinfo_data entry */
 		while ((sinfo_ptr = list_next(i))) {
