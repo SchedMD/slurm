@@ -35,6 +35,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include <src/common/list.h>
 #include <src/common/macros.h>
@@ -63,12 +67,17 @@ static struct job_record *job_hash[MAX_JOB_COUNT];
 static struct job_record *job_hash_over[MAX_JOB_COUNT];
 static int max_hash_over = 0;
 
+int 	copy_job_desc_to_file ( job_desc_msg_t * job_desc , uint32_t job_id ) ;
+int 	copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , struct job_record ** job_ptr , struct part_record *part_ptr, bitstr_t *req_bitmap) ;
+void	delete_job_desc_files (uint32_t job_id);
 void	list_delete_job (void *job_entry);
 int	list_find_job_id (void *job_entry, void *key);
 int	list_find_job_old (void *job_entry, void *key);
+int 	mkdir2 (char * path, int modes);
+int 	rmdir2 (char * path);
 int	top_priority (struct job_record *job_ptr);
-int 	copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , struct job_record ** job_ptr , struct part_record *part_ptr, bitstr_t *req_bitmap) ;
 int 	validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate ) ;
+int	write_data_to_file ( char * file_name, char * data ) ;
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
@@ -98,8 +107,6 @@ main (int argc, char *argv[])
 	}
 	strcpy (job_rec->name, "Name1");
 	strcpy (job_rec->partition, "batch");
-	job_rec->details->job_script = xmalloc(20);
-	strcpy (job_rec->details->job_script, "/bin/hostname");
 	job_rec->details->num_nodes = 1;
 	job_rec->details->num_procs = 1;
 	set_job_id (job_rec);
@@ -115,8 +122,6 @@ main (int argc, char *argv[])
 		}
 		strcpy (job_rec->name, "Name2");
 		strcpy (job_rec->partition, "debug");
-		job_rec->details->job_script = xmalloc(20);
-		strcpy (job_rec->details->job_script, "/bin/hostname");
 		job_rec->details->num_nodes = i;
 		job_rec->details->num_procs = i;
 		set_job_id (job_rec);
@@ -144,8 +149,7 @@ main (int argc, char *argv[])
 		error_count++;
 	}
 	else
-		printf ("found job %u, script=%s\n", 
-				job_rec->job_id, job_rec->details->job_script);
+		printf ("found job %u\n", job_rec->job_id);
 
 	job_rec = find_job_record (tmp_id);
 	if (job_rec != NULL) {
@@ -217,18 +221,53 @@ delete_job_details (struct job_record *job_entry)
 	if (job_entry->details == NULL) 
 		return;
 
+	delete_job_desc_files (job_entry->job_id);
 	if (job_entry->details->magic != DETAILS_MAGIC)
 		fatal ("list_delete_job: passed invalid job details pointer");
-	if (job_entry->details->job_script)
-		xfree(job_entry->details->job_script);
 	if (job_entry->details->req_nodes)
 		xfree(job_entry->details->req_nodes);
 	if (job_entry->details->req_node_bitmap)
 		bit_free(job_entry->details->req_node_bitmap);
 	if (job_entry->details->features)
 		xfree(job_entry->details->features);
+	if (job_entry->details->stderr)
+		xfree(job_entry->details->stderr);
+	if (job_entry->details->stdin)
+		xfree(job_entry->details->stdin);
+	if (job_entry->details->stdout)
+		xfree(job_entry->details->stdout);
+	if (job_entry->details->work_dir)
+		xfree(job_entry->details->work_dir);
 	xfree(job_entry->details);
 	job_entry->details = NULL;
+}
+
+/* delete_job_desc_files - delete job descriptor related files */
+void
+delete_job_desc_files (uint32_t job_id) 
+{
+	char *dir_name, job_dir[20], *file_name;
+	struct stat sbuf;
+
+	dir_name = xstrdup (slurmctld_conf . state_save_location);
+	if (dir_name == NULL)
+		fatal ("Memory exhausted");
+	sprintf (job_dir, "/job.%d", job_id);
+	xstrcat (dir_name, job_dir);
+
+	file_name = xstrdup (dir_name);
+	xstrcat (file_name, "/environment");
+	(void) unlink (file_name);
+	xfree (file_name);
+
+	file_name = xstrdup (dir_name);
+	xstrcat (file_name, "/script");
+	(void) unlink (file_name);
+	xfree (file_name);
+
+	if (stat (dir_name, &sbuf) == 0)	/* remove job directory as needed */
+		(void) rmdir2 (dir_name);
+	xfree (dir_name);
 }
 
 /* 
@@ -289,11 +328,18 @@ dump_job_desc(job_desc_msg_t * job_specs)
 	priority = (job_specs->priority != NO_VAL) ? job_specs->priority : -1 ;
 	contiguous = (job_specs->contiguous != (uint16_t) NO_VAL) ? job_specs->contiguous : -1 ;
 	shared = (job_specs->shared != (uint16_t) NO_VAL) ? job_specs->shared : -1 ;
-	debug3("   time_limit=%ld priority=%ld contiguous=%ld shared=%ld features=%s", 
-		time_limit, priority, contiguous, shared, job_specs->features);
+	debug3("   time_limit=%ld priority=%ld contiguous=%ld shared=%ld", 
+		time_limit, priority, contiguous, shared);
 
-	debug3("   job_script=%s groups=%s", 
-		job_specs->job_script, job_specs->groups);
+	debug3("   script=\"%s\"", 
+		job_specs->script);
+
+	debug3("   environment=\"%s\"", 
+		job_specs->environment);
+
+	debug3("   stdin=%s stdout=%s stderr=%s work_dir=%s groups=%s", 
+		job_specs->stdin, job_specs->stdout, job_specs->stderr, 
+		job_specs->work_dir, job_specs->groups);
 
 /*	debug3("   partition_key=%?\n", job_specs->partition_key); */
 
@@ -482,7 +528,7 @@ job_cancel (uint32_t job_id)
  *	will_run - job is not to be created, test of validity only
  *	job_rec_ptr - place to park pointer to the job (or NULL)
  * output: new_job_id - the job's ID
- *	returns 0 on success, EINVAL if specification is invalid
+ *	returns 0 on success, otherwise ESLURM error code
  *	allocate - if set, job allocation only (no script required)
  *	will_run - if set then test only, don't create a job entry
  *	job_rec_ptr - pointer to the job (if not passed a NULL)
@@ -582,6 +628,29 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 		goto cleanup;
 	}
 
+	/* Perform some size checks on strings we store to prevent malicious user */
+	/* from filling slurmctld's memory */
+	if (job_desc->stderr && (strlen (job_desc->stderr) > BUF_SIZE)) {
+		info ("job_create: strlen(stderr) too big (%d)", strlen (job_desc->stderr));
+		error_code = ESLURM_PATHNAME_TOO_LONG;
+		goto cleanup;
+	}
+	if (job_desc->stdin && (strlen (job_desc->stdin) > BUF_SIZE)) {
+		info ("job_create: strlen(stdin) too big (%d)", strlen (job_desc->stdin));
+		error_code = ESLURM_PATHNAME_TOO_LONG;
+		goto cleanup;
+	}
+	if (job_desc->stdout && (strlen (job_desc->stdout) > BUF_SIZE)) {
+		info ("job_create: strlen(stdout) too big (%d)", strlen (job_desc->stdout));
+		error_code = ESLURM_PATHNAME_TOO_LONG;
+		goto cleanup;
+	}
+	if (job_desc->work_dir && (strlen (job_desc->work_dir) > BUF_SIZE)) {
+		info ("job_create: strlen(work_dir) too big (%d)", strlen (job_desc->work_dir));
+		error_code = ESLURM_PATHNAME_TOO_LONG;
+		goto cleanup;
+	}
+
 	if (will_run) {
 		error_code = 0;
 		goto cleanup;
@@ -590,6 +659,11 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 	if ( ( error_code = copy_job_desc_to_job_record ( job_desc , job_rec_ptr , part_ptr , 
 							req_bitmap ) ) )  {
 		error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY ;
+		goto cleanup ;
+	}
+
+	if ( ( error_code = copy_job_desc_to_file ( job_desc , (*job_rec_ptr)->job_id ) ) )  {
+		error_code = ESLURM_WRITING_TO_FILE ;
 		goto cleanup ;
 	}
 
@@ -606,6 +680,126 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 		if ( req_bitmap )
 			bit_free (req_bitmap);
 		return error_code ;
+}
+
+/* copy_job_desc_to_file - copy the job script and environment from the RPC structure 
+ *	into a file */
+int 
+copy_job_desc_to_file ( job_desc_msg_t * job_desc , uint32_t job_id )
+{
+	int error_code = 0;
+	char *dir_name, job_dir[20], *file_name;
+	struct stat sbuf;
+
+	/* Create state_save_location directory */
+	dir_name = xstrdup (slurmctld_conf . state_save_location);
+	if (dir_name == NULL)
+		fatal ("Memory exhausted");
+	if (stat (dir_name, &sbuf) == -1)	/* create base directory as needed */
+		(void) mkdir2 (dir_name, 0744);
+
+	/* Create job_id specific directory */
+	sprintf (job_dir, "/job.%d", job_id);
+	xstrcat (dir_name, job_dir);
+	if (stat (dir_name, &sbuf) == -1) {	/* create job specific directory as needed */
+		if (mkdir2 (dir_name, 0700))
+			error ("mkdir2 errno=%d on %s", errno, dir_name);
+	}
+
+	/* Create environment file, and write data to it */
+	file_name = xstrdup (dir_name);
+	xstrcat (file_name, "/environment");
+	error_code = write_data_to_file (file_name, job_desc->environment);
+	xfree (file_name);
+
+	/* Create script file */
+	file_name = xstrdup (dir_name);
+	xstrcat (file_name, "/script");
+	error_code = write_data_to_file (file_name, job_desc->script);
+	xfree (file_name);
+
+	xfree (dir_name);
+	return error_code;
+}
+
+/* mkdir2 - create a directory, does system call if root, runs mkdir otherwise */
+int 
+mkdir2 (char * path, int modes) 
+{
+	char *cmd;
+	int error_code;
+
+	if (getuid() == 0) {
+		if (mknod (path, S_IFDIR | modes, 0))
+			return errno;
+	}
+
+	else {
+		cmd = xstrdup ("/bin/mkdir ");
+		xstrcat (cmd, path);
+		error_code = system (cmd);
+		xfree (cmd);
+		if (error_code)
+			return error_code;
+		(void) chmod (path, modes);
+	}
+
+	return 0;
+}
+
+/* rmdir2 - Remove a directory, does system call if root, runs rmdir otherwise */
+int 
+rmdir2 (char * path) 
+{
+	char *cmd;
+	int error_code;
+
+	if (getuid() == 0) {
+		if (unlink (path))
+			return errno;
+	}
+
+	else {
+		cmd = xstrdup ("/bin/rmdir ");
+		xstrcat (cmd, path);
+		error_code = system (cmd);
+		xfree (cmd);
+		if (error_code)
+			return error_code;
+	}
+
+	return 0;
+}
+
+/* Create file with specified name and write the supplied data to it */
+int
+write_data_to_file ( char * file_name, char * data ) 
+{
+	int fd, pos, nwrite;
+
+	if (data == NULL) {
+		(void) unlink (file_name);
+		return 0;
+	}
+
+	fd = creat (file_name, 0600);
+	if (fd < 0) {
+		error ("create file %s errno %d", file_name, errno);
+		return ESLURM_WRITING_TO_FILE;
+	}
+
+	nwrite = strlen(data) + 1;
+	pos = 0;
+	while (nwrite > 0) {
+		pos = write (fd, &data[pos], nwrite);
+		if (pos < 0) {
+			error ("write file %s errno %d", file_name, errno);
+			return ESLURM_WRITING_TO_FILE;
+		}
+		nwrite -= pos;
+	}
+	close (fd);
+	return 0;
 }
 
 /* copy_job_desc_to_job_record - copy the job descriptor from the RPC structure 
@@ -664,8 +858,15 @@ copy_job_desc_to_job_record ( job_desc_msg_t * job_desc ,
 		detail_ptr->min_memory = job_desc->min_memory;
 	if (job_desc->min_tmp_disk != NO_VAL)
 		detail_ptr->min_tmp_disk = job_desc->min_tmp_disk;
-	if (job_desc->job_script)
-		detail_ptr->job_script = xstrdup ( job_desc->job_script );
+	if (job_desc->stderr)
+		detail_ptr->stderr = xstrdup ( job_desc->stderr );
+	if (job_desc->stdin)
+		detail_ptr->stdin = xstrdup ( job_desc->stdin );
+	if (job_desc->stdout)
+		detail_ptr->stdout = xstrdup ( job_desc->stdout );
+	if (job_desc->work_dir)
+		detail_ptr->work_dir = xstrdup ( job_desc->work_dir );
+
 	/* job_ptr->nodes		*leave as NULL pointer for now */
 	/* job_ptr->start_time		*leave as NULL pointer for now */
 	/* job_ptr->end_time		*leave as NULL pointer for now */
@@ -727,7 +928,7 @@ validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate )
 		return ESLURM_JOB_MISSING_SIZE_SPECIFICATION;
 	}
 	if (allocate == SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 && 
-	    job_desc_msg->job_script == NULL) {
+	    job_desc_msg->script == NULL) {
 		info ("job_create: job failed to specify Script");
 		return ESLURM_JOB_SCRIPT_MISSING;
 	}			
@@ -1032,15 +1233,6 @@ pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 			tmp_str[MAX_STR_PACK-1] = (char) NULL;
 			packstr (tmp_str, buf_ptr, buf_len);
 		}
-
-		if (detail_ptr->job_script == NULL ||
-				strlen (detail_ptr->job_script) < MAX_STR_PACK)
-			packstr (detail_ptr->job_script, buf_ptr, buf_len);
-		else {
-			strncpy(tmp_str, detail_ptr->job_script, MAX_STR_PACK);
-			tmp_str[MAX_STR_PACK-1] = (char) NULL;
-			packstr (tmp_str, buf_ptr, buf_len);
-		}
 	}
 	else {
 		pack32  ((uint32_t) 0, buf_ptr, buf_len);
@@ -1052,7 +1244,6 @@ pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 		pack32  ((uint32_t) 0, buf_ptr, buf_len);
 		pack32  ((uint32_t) 0, buf_ptr, buf_len);
 
-		packstr (NULL, buf_ptr, buf_len);
 		packstr (NULL, buf_ptr, buf_len);
 		packstr (NULL, buf_ptr, buf_len);
 		packstr (NULL, buf_ptr, buf_len);

@@ -77,6 +77,8 @@ void slurm_free_job_desc_msg ( job_desc_msg_t * msg )
 {
 	if ( msg )
 	{
+		if ( msg->environment )
+			xfree ( msg->environment ) ;
 		if ( msg->features )
 			xfree ( msg->features ) ;
 		if ( msg->groups )
@@ -89,8 +91,16 @@ void slurm_free_job_desc_msg ( job_desc_msg_t * msg )
 			xfree ( msg->partition ) ;
 		if ( msg->req_nodes )
 			xfree ( msg->req_nodes ) ;
-		if ( msg->job_script )
-			xfree ( msg->job_script ) ;
+		if ( msg->script )
+			xfree ( msg->script ) ;
+		if ( msg->stderr )
+			xfree ( msg->stderr ) ;
+		if ( msg->stdin )
+			xfree ( msg->stdin ) ;
+		if ( msg->stdout )
+			xfree ( msg->stdout ) ;
+		if ( msg->work_dir )
+			xfree ( msg->work_dir ) ;
 		xfree ( msg ) ;
 	}
 }
@@ -174,8 +184,6 @@ void slurm_free_job_table ( job_table_t * job )
 			xfree (job->req_nodes) ;
 		if ( job->features )
 			xfree (job->features) ;
-		if ( job->job_script )
-			xfree (job->job_script) ;
 		xfree (job->req_node_inx) ;
 	}
 }
@@ -357,6 +365,7 @@ void slurm_free_kill_tasks_msg ( kill_tasks_msg_t * msg )
 void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg )
 {
 	job_desc_msg -> contiguous = (uint16_t) SLURM_JOB_DESC_DEFAULT_CONTIGUOUS ;
+	job_desc_msg -> environment = SLURM_JOB_DESC_DEFAULT_ENVIRONMENT ;
 	job_desc_msg -> features = SLURM_JOB_DESC_DEFAULT_FEATURES ;
 	job_desc_msg -> groups = SLURM_JOB_DESC_DEFAULT_GROUPS ; /* will be set by api */
 	job_desc_msg -> job_id = SLURM_JOB_DESC_DEFAULT_JOB_ID ; /* will be set by api */
@@ -368,12 +377,16 @@ void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg )
 	job_desc_msg -> partition = SLURM_JOB_DESC_DEFAULT_PARTITION ;
 	job_desc_msg -> priority = SLURM_JOB_DESC_DEFAULT_PRIORITY ;
 	job_desc_msg -> req_nodes = SLURM_JOB_DESC_DEFAULT_REQ_NODES ;
-	job_desc_msg -> job_script = SLURM_JOB_DESC_DEFAULT_JOB_SCRIPT ;
+	job_desc_msg -> script = SLURM_JOB_DESC_DEFAULT_JOB_SCRIPT ;
 	job_desc_msg -> shared = (uint16_t) SLURM_JOB_DESC_DEFAULT_SHARED ;
 	job_desc_msg -> time_limit = SLURM_JOB_DESC_DEFAULT_TIME_LIMIT ;
 	job_desc_msg -> num_procs = SLURM_JOB_DESC_DEFAULT_NUM_PROCS ;
 	job_desc_msg -> num_nodes = SLURM_JOB_DESC_DEFAULT_NUM_NODES ;
+	job_desc_msg -> stderr = NULL ;
+	job_desc_msg -> stdin = NULL ;
+	job_desc_msg -> stdout = NULL ;
 	job_desc_msg -> user_id = SLURM_JOB_DESC_DEFAULT_USER_ID ;
+	job_desc_msg -> work_dir = SLURM_JOB_DESC_DEFAULT_WORKING_DIR ;
 }
 
 void slurm_init_part_desc_msg ( update_part_msg_t * update_part_msg )

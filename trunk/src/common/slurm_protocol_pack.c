@@ -827,7 +827,6 @@ int unpack_job_table ( job_table_t * job , void ** buf_ptr , int * buffer_size )
 		xfree ( node_inx_str );
 	}
 	unpackstr_xmalloc (&job->features, &uint16_tmp, buf_ptr, buffer_size);
-	unpackstr_xmalloc (&job->job_script, &uint16_tmp, buf_ptr, buffer_size);
 	return 0 ;
 }
 
@@ -915,9 +914,15 @@ void pack_job_desc ( job_desc_msg_t * job_desc_ptr, void ** buf_ptr , int * buff
 	pack32 (job_desc_ptr->priority, buf_ptr, buffer_size);
 	
 	packstr (job_desc_ptr->req_nodes, buf_ptr, buffer_size);
-	packstr (job_desc_ptr->job_script, buf_ptr, buffer_size);
-	pack16 (job_desc_ptr->shared, buf_ptr, buffer_size);
+	packstr (job_desc_ptr->environment, buf_ptr, buffer_size);
+	packstr (job_desc_ptr->script, buf_ptr, buffer_size);
 
+	packstr (job_desc_ptr->stderr, buf_ptr, buffer_size);
+	packstr (job_desc_ptr->stdin, buf_ptr, buffer_size);
+	packstr (job_desc_ptr->stdout, buf_ptr, buffer_size);
+	packstr (job_desc_ptr->work_dir, buf_ptr, buffer_size);
+
+	pack16 (job_desc_ptr->shared, buf_ptr, buffer_size);
 	pack32 (job_desc_ptr->time_limit, buf_ptr, buffer_size);
 	
 	pack32 (job_desc_ptr->num_procs, buf_ptr, buffer_size);
@@ -964,9 +969,15 @@ int unpack_job_desc ( job_desc_msg_t **job_desc_buffer_ptr, void ** buf_ptr , in
 	unpack32 (&job_desc_ptr->priority, buf_ptr, buffer_size);
 	
 	unpackstr_xmalloc (&job_desc_ptr->req_nodes, &uint16_tmp, buf_ptr, buffer_size);
-	unpackstr_xmalloc (&job_desc_ptr->job_script, &uint16_tmp, buf_ptr, buffer_size);
-	unpack16 (&job_desc_ptr->shared, buf_ptr, buffer_size);
-	
+	unpackstr_xmalloc (&job_desc_ptr->environment, &uint16_tmp, buf_ptr, buffer_size);
+	unpackstr_xmalloc (&job_desc_ptr->script, &uint16_tmp, buf_ptr, buffer_size);
+
+	unpackstr_xmalloc (&job_desc_ptr->stderr, &uint16_tmp, buf_ptr, buffer_size);
+	unpackstr_xmalloc (&job_desc_ptr->stdin, &uint16_tmp, buf_ptr, buffer_size);
+	unpackstr_xmalloc (&job_desc_ptr->stdout, &uint16_tmp, buf_ptr, buffer_size);
+	unpackstr_xmalloc (&job_desc_ptr->work_dir, &uint16_tmp, buf_ptr, buffer_size);
+
+	unpack16 (&job_desc_ptr->shared, buf_ptr, buffer_size);	
 	unpack32 (&job_desc_ptr->time_limit, buf_ptr, buffer_size);
 	
 	unpack32 (&job_desc_ptr->num_procs, buf_ptr, buffer_size);

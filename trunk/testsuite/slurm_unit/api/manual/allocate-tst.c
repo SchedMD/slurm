@@ -57,7 +57,6 @@ main (int argc, char *argv[])
 	job_mesg. partition = "batch\0";
 	job_mesg. priority = 100;
 	job_mesg. req_nodes = "lx[3000-3003]\0";
-	job_mesg. job_script = "/bin/hostname\0";
 	job_mesg. shared = 0;
 	job_mesg. time_limit = 200;
 	job_mesg. num_procs = 1000;
@@ -83,7 +82,6 @@ main (int argc, char *argv[])
 		job_mesg. min_tmp_disk = 2034;
 		job_mesg. partition = "batch\0";
 		job_mesg. priority = 100;
-		job_mesg. job_script = "/bin/hostname\0";
 		job_mesg. shared = 0;
 		job_mesg. time_limit = 200;
 		job_mesg. num_procs = 4000;
