@@ -64,7 +64,7 @@ int init( void )
 
 	slurm_attr_init( &attr );
 	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
-	pthread_create( &backfill_thread, NULL, backfill_agent, NULL);
+	pthread_create( &backfill_thread, &attr, backfill_agent, NULL);
 	thread_running = true;
 	pthread_mutex_unlock( &thread_flag_mutex );
 	
