@@ -963,13 +963,6 @@ extern void set_node_down (char *name, char *reason);
 extern void set_slurmd_addr (void);
 
 /*
- * Tell the backup_controller to relinquish control, primary control_machine 
- *	has resumed operation
- * RET 0 or an error code 
- */
-extern int shutdown_backup_controller(void);
-
-/*
  * signal_step_tasks - send specific signal to specific job step
  * IN step_ptr - step record pointer
  * IN signal - signal to send
