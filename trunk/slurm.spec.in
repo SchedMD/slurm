@@ -1,31 +1,39 @@
+# $Id$
+
 Name: @PROJECT@
 Version: @VERSION@
 Release: @RELEASE@
+
 Summary: Simple Linux Utility for Resource Management
-License: GPL - Copyright (C) 2002 The Regents of the University of California.  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).  UCRL-CODE-2002-040.
+
+License: GPL 
 Group: System Environment/Base
 Source: %{name}-%{version}-%{release}.tgz
-Requires: authd libreadline libpopt
+Requires: readline popt
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 
 %define _with_authd 0
 %define _with_elan 0
 %define _with_totalview 0
 
-
 %package devel
-Summary: Devel package for SLURM.
+Summary: Development package for SLURM.
 Group: System Environment/Base
 Requires: slurm
 
 
 %description 
-The common slurm package, which includes the base libraries, client utilitues for SLURM, slurmd, and slurmctld.
-Slurmd  is the compute node daemon of Slurm. It monitors all tasks running on the compute node , accepts work (tasks), launches tasks, and kills running tasks upon request.
-Slurmctld  is  the central management daemon of Slurm. It monitors all other Slurm daemons and resources, accepts work (jobs), and allocates resources to those jobs.
+The common slurm package, which includes the base libraries, client
+utilitues for SLURM, slurmd, and slurmctld.  Slurmd  is the compute node
+daemon of Slurm. It monitors all tasks running on the compute node ,
+accepts work (tasks), launches tasks, and kills running tasks upon
+request.  Slurmctld  is  the central management daemon of Slurm. It
+monitors all other Slurm daemons and resources, accepts work (jobs),
+and allocates resources to those jobs.
 
 %description devel
-Development package for SLURM.  This package includes the header files and static libraries.
+Development package for SLURM.  This package includes the header files
+and static libraries.
 
 
 %prep
@@ -47,29 +55,29 @@ Development package for SLURM.  This package includes the header files and stati
 make
 
 %install
-
+rm -rf "$RPM_BUILD_ROOT"
+mkdir -p "$RPM_BUILD_ROOT"
 DESTDIR="$RPM_BUILD_ROOT" make install
 
 install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/rc.d/init.d/slurm
-install -D -m755 etc/slurm.conf.example $RPM_BUILD_ROOT/etc/slurm.conf
+install -D -m644 etc/slurm.conf.example $RPM_BUILD_ROOT/etc/slurm/slurm.conf
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %files
-# where does slurm.conf belong ??? Or should be throw it in the doc directory?
-%defattr(-,root,root)
+%defattr(-,root,root,0755)
 %doc README 
 %doc DISCLAIMER
 %doc COPYING
-%attr(755, root, root) %{_bindir}/*
-%attr(755, root, root) %{_sbindir}/*
-%config(noreplace) %attr(755, root, root) /etc/rc.d/init.d/slurm
-%config(noreplace) %attr(755, root, root) /etc/slurm.conf
+%{_bindir}/*
+%{_sbindir}/*
 %{_libdir}/*.so*
 %{_mandir}/man1/*
 %{_mandir}/man5/*
 %{_mandir}/man8/*
+%config(noreplace) /etc/rc.d/init.d/slurm
+%config(noreplace) /etc/slurm/slurm.conf
 
 %files devel
 %defattr(-,root,root)
@@ -86,7 +94,7 @@ if [ -x /etc/rc.d/init.d/slurm ]; then
 fi
 
 %post
-ldconfig %{_libdir}
+/sbin/ldconfig %{_libdir}
 if [ -x /etc/rc.d/init.d/slurm ]; then
 	[ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
 	[ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
