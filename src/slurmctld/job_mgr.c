@@ -814,12 +814,13 @@ struct job_record *find_running_job_by_node_name(char *node_name)
 }
 
 /*
- * kill_running_job_by_node_name - Given a node name, deallocate that job 
- *	from the node or kill it 
+ * kill_running_job_by_node_name - Given a node name, deallocate jobs 
+ *	from the node or kill them 
  * IN node_name - name of a node
+ * IN step_test - if true, only kill the job if a step is running on the node
  * RET number of killed jobs
  */
-int kill_running_job_by_node_name(char *node_name)
+int kill_running_job_by_node_name(char *node_name, bool step_test)
 {
 	ListIterator job_record_iterator;
 	struct job_record *job_record_point;
@@ -839,7 +840,9 @@ int kill_running_job_by_node_name(char *node_name)
 			continue;	/* job not active */
 		if (!bit_test(job_record_point->node_bitmap, bit_position))
 			continue;	/* job not on this node */
-
+		if (step_test && 
+		    (step_on_node(job_record_point, node_record_point) == 0))
+			continue;
 		error("Running job_id %u on failed node %s",
 		      job_record_point->job_id, node_name);
 		job_count++;
@@ -2528,7 +2531,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 
 	/* If no job is running here, ensure none are assigned to this node */
 	if (*job_count == 0) {
-		(void) kill_running_job_by_node_name(node_name);
+		(void) kill_running_job_by_node_name(node_name, true);
 		return;
 	}
 

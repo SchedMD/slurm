@@ -179,7 +179,6 @@ find_step_record(struct job_record *job_ptr, uint16_t step_id)
 		return NULL;
 
 	step_record_iterator = list_iterator_create (job_ptr->step_list);		
-
 	while ((step_record_point = 
 		(struct step_record *) list_next (step_record_iterator))) {
 		if (step_record_point->step_id == step_id) {
@@ -614,4 +613,36 @@ int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 	set_buf_offset(buffer, tmp_offset);
 
 	return error_code;
+}
+
+/* 
+ * step_on_node - determine if the specified job has any job steps allocated to 
+ * 	the specified node 
+ * IN job_ptr - pointer to an active job record
+ * IN node_ptr - pointer to a node record
+ * RET true of job has step on the node, false otherwise 
+ */
+bool step_on_node(struct job_record  *job_ptr, struct node_record *node_ptr)
+{
+	ListIterator step_record_iterator;
+	struct step_record *step_record_point;
+	bool found = false;
+	int bit_position;
+
+	if ((job_ptr == NULL) || (node_ptr == NULL))
+		return false;
+
+	bit_position = node_ptr - node_record_table_ptr;
+	step_record_iterator = list_iterator_create (job_ptr->step_list);		
+	while ((step_record_point = 
+		(struct step_record *) list_next (step_record_iterator))) {
+		if (bit_test(step_record_point->step_node_bitmap, 
+			     bit_position)) {
+			found = true;
+			break;
+		}
+	}		
+
+	list_iterator_destroy (step_record_iterator);
+	return found;
 }
