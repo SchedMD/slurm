@@ -2345,6 +2345,13 @@ static void _reset_step_bitmaps(struct job_record *job_ptr)
 	return;
 }
 
+/* update first assigned job id as needed on reconfigure */
+void reset_first_job_id(void)
+{
+	if (job_id_sequence < slurmctld_conf.first_job_id)
+		job_id_sequence = slurmctld_conf.first_job_id;
+}
+
 /*
  * _set_job_id - set a default job_id, insure that it is unique
  * IN job_ptr - pointer to the job_record

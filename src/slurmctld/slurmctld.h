@@ -834,6 +834,9 @@ extern int  read_slurm_conf (int recover);
  */
 extern void rehash (void);
 
+/* update first assigned job id as needed on reconfigure */
+extern void reset_first_job_id(void);
+
 /* 
  * reset_job_bitmaps - reestablish bitmaps for existing jobs. 
  *	this should be called after rebuilding node information, 
