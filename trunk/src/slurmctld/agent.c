@@ -80,7 +80,7 @@
 #endif
 
 typedef enum { DSH_NEW, DSH_ACTIVE, DSH_DONE, DSH_NO_RESP, 
-	       DSH_FAILED } state_t;
+	       DSH_FAILED, DSH_JOB_HUNG } state_t;
 
 typedef struct thd {
 	pthread_t thread;		/* thread ID */
@@ -329,7 +329,7 @@ static task_info_t *_make_task_data(agent_info_t *agent_info_ptr, int inx)
  */
 static void *_wdog(void *args)
 {
-	int fail_cnt, no_resp_cnt;
+	int fail_cnt, no_resp_cnt, retry_cnt = 0;
 	bool work_done;
 	int i, delay, max_delay = 0;
 	agent_info_t *agent_ptr = (agent_info_t *) args;
@@ -374,9 +374,13 @@ static void *_wdog(void *args)
 				break;
 			case DSH_NO_RESP:
 				no_resp_cnt++;
+				retry_cnt++;
 				break;
 			case DSH_FAILED:
 				fail_cnt++;
+				break;
+			case DSH_JOB_HUNG:
+				retry_cnt++;
 				break;
 			}
 		}
@@ -419,16 +423,18 @@ static void *_wdog(void *args)
 
 		xfree(slurm_names);
 #endif
-		if (agent_ptr->retry)
-			_queue_agent_retry(agent_ptr, no_resp_cnt);
 	}
+	if (retry_cnt && agent_ptr->retry)
+		_queue_agent_retry(agent_ptr, retry_cnt);
+
 #if AGENT_IS_THREAD
 	/* Update last_response on responding nodes */
 	lock_slurmctld(node_write_lock);
 	for (i = 0; i < agent_ptr->thread_count; i++) {
 		if (thread_ptr[i].state == DSH_FAILED)
 			set_node_down(thread_ptr[i].node_name);
-		if (thread_ptr[i].state == DSH_DONE)
+		if ((thread_ptr[i].state == DSH_DONE) ||
+		    (thread_ptr[i].state == DSH_JOB_HUNG))
 			node_did_resp(thread_ptr[i].node_name);
 	}
 	unlock_slurmctld(node_write_lock);
@@ -476,6 +482,8 @@ static void *_thread_per_node_rpc(void *args)
 	task_info_t *task_ptr = (task_info_t *) args;
 	thd_t *thread_ptr = task_ptr->thread_struct_ptr;
 	state_t thread_state = DSH_NO_RESP;
+	slurm_msg_type_t msg_type = task_ptr->msg_type;
+	bool is_kill_msg;
 
 #if AGENT_IS_THREAD
 	struct node_record *node_ptr;
@@ -490,14 +498,20 @@ static void *_thread_per_node_rpc(void *args)
 	thread_ptr->time = time(NULL);
 	slurm_mutex_unlock(task_ptr->thread_mutex_ptr);
 
+	is_kill_msg = (  (msg_type == REQUEST_KILL_TIMELIMIT)
+	              || (msg_type == REQUEST_KILL_JOB)      );
+
 	/* send request message */
 	msg.address  = thread_ptr->slurm_addr;
-	msg.msg_type = task_ptr->msg_type;
+	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
 
-	if (task_ptr->msg_type == REQUEST_KILL_TIMELIMIT) 
-		timeout = slurmctld_conf.kill_wait + 2;  /* 2 extra seconds 
-							   for slurmd reply */
+	if (is_kill_msg) { 
+		timeout = slurmctld_conf.kill_wait + 2;  
+
+		/* Extend time that this thread is allowed to exist.  */
+		thread_ptr->time = time(NULL) + timeout;
+	}
 
 	if (task_ptr->get_reply) {
 		if (slurm_send_recv_rc_msg(&msg, &rc, timeout) < 0) {
@@ -512,12 +526,12 @@ static void *_thread_per_node_rpc(void *args)
 		goto cleanup;
 	}
 
-
 #if AGENT_IS_THREAD
 	/* SPECIAL CASE: Immediately mark node as IDLE on job kill reply */
-	if ((task_ptr->msg_type == REQUEST_KILL_TIMELIMIT) ||
-	     (task_ptr->msg_type == REQUEST_KILL_JOB)) {
+	if (is_kill_msg && (rc != ESLURMD_KILL_JOB_FAILED)) {
+
 		lock_slurmctld(node_write_lock);
+
 		if ((node_ptr = find_node_record(thread_ptr->node_name))) {
 			kill_job_msg_t *kill_job;
 			kill_job = (kill_job_msg_t *) task_ptr->msg_args_ptr;
@@ -529,7 +543,7 @@ static void *_thread_per_node_rpc(void *args)
 			 * only do when last node registers */
 		}
 		unlock_slurmctld(node_write_lock);
-	}
+	} 
 #endif
 
 	switch (rc) {
@@ -553,10 +567,15 @@ static void *_thread_per_node_rpc(void *args)
 		       thread_ptr->node_name, "Invalid Job Id");
 		thread_state = DSH_DONE;
 		break;
-
+	case ESLURMD_KILL_JOB_FAILED:		/* non-killable process */
+		info("agent KILL_JOB RPC to node %s FAILED",
+		       thread_ptr->node_name);
+		thread_state = DSH_JOB_HUNG;
+		break;
 	default:
-		error("agent error from host %s: %s", 
-		      thread_ptr->node_name, slurm_strerror(rc));
+		error("agent error from host %s for msg type %d: %s", 
+		      thread_ptr->node_name, task_ptr->msg_type, 
+		      slurm_strerror(rc));
 		thread_state = DSH_DONE;
 	}
 
@@ -611,7 +630,8 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 
 	j = 0;
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
-		if (thread_ptr[i].state != DSH_NO_RESP)
+		if ( (thread_ptr[i].state != DSH_NO_RESP)
+		   && (thread_ptr[i].state != DSH_JOB_HUNG) )
 			continue;
 		agent_arg_ptr->slurm_addr[j] = thread_ptr[i].slurm_addr;
 		strncpy(&agent_arg_ptr->node_names[j * MAX_NAME_LEN],
