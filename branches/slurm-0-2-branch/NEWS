@@ -1,6 +1,14 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.2.26
+=========================
+ -- Add missing documentation for srun -q,--quit-on-interrupt flag.
+ -- Add new sinfo option -R,--list-reasons for listing down nodes along
+    with their REASON field.
+ -- Add new sinfo options -r,--responding and -d,--dead for filtering
+    responding or non-responding nodes in output.
+
 * Changes in SLURM 0.2.25
 =========================
  -- Fixes for reported problems:
