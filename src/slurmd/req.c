@@ -690,19 +690,17 @@ _kill_all_active_steps(uint32_t jobid, int sig)
 			continue;
 		}
 
+		/* XXX?
+		 * We don't send anything but SIGKILL to batch jobs
+		 */
 		if ((s->stepid == NO_VAL) && (sig != SIGKILL))
 			continue;
 
 		step_cnt++;
-		if (s->stepid == NO_VAL) {
-			debug2("sending signal %d to job %u (pg:%d)", 
-			       sig, jobid, s->sid);
-			if (kill(-s->sid, sig) < 0)
-				error("kill jid %d sid %d: %m", 
-				      s->jobid, s->sid);
-		} else {
-			shm_signal_step(jobid, s->stepid, sig); 
-		}
+		debug2("signal %d to job %u (pg:%d)", sig, jobid, s->sid);
+
+		if (kill(-s->sid, sig) < 0)
+			error("kill jid %d sid %d: %m", s->jobid, s->sid);
 	}
 	list_destroy(steps);
 	if (step_cnt == 0)
