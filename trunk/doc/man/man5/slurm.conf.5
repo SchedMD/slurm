@@ -265,6 +265,11 @@ of larger clusters.
 In order to support the concept of jobs requiring consecutive nodes
 on some architectures, 
 node specifications should be place in this file in consecutive order.
+If a specific node name is listed more than once in the configuration 
+file only its "State" and "Reason" fields may be reset. 
+This may be useful to record the state of nodes which are temporarily 
+in a DOWN or DRAINED state without altering permanent configuration 
+information as shown in the example.
 The node configuration specifies the following information: 
 .TP
 \fBNodeName\fR
@@ -507,7 +512,9 @@ NodeName=DEFAULT State=UNKNOWN
 .br
 NodeName=dev[0-25] NodeAddr=edev[0-25] Weight=16
 .br
-NodeName=dev26 State=DOWN Reason="power,ETA=Dec25"
+# Update records for specific DOWN nodes
+.br
+NodeName=dev20 State=DOWN Reason="power,ETA=Dec25"
 .br
 #
 .br
