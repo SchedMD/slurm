@@ -32,6 +32,7 @@
 #include <stdlib.h>
 
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 
