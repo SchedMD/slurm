@@ -1271,15 +1271,17 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 	}
 
 	if (msg->msg_type == REQUEST_CONTROL) {
-		/* wait for workload to dry up before sending reply */
-		for (i = 0; ((i < 10) && (slurmctld_config.
-				server_thread_count > 1)); i++) {
+		/* Wait for workload to dry up before sending reply.
+		 * One thread should remain, this one. */
+		for (i = 1; i < CONTROL_TIMEOUT; i++) {
+			if (slurmctld_config.server_thread_count <= 1)
+				break;
 			sleep(1);
 		}
 		if (slurmctld_config.server_thread_count > 1)
-			error("shutting down with server_thread_count=%d",
+			error("REQUEST_CONTROL reply with %d active threads",
 				slurmctld_config.server_thread_count);
-		save_all_state();
+		/* save_all_state();	performed by _slurmctld_background */
 	}
 	slurm_send_rc_msg(msg, error_code);
 	if ((error_code == SLURM_SUCCESS) && core_arg)

@@ -101,6 +101,9 @@
  * Update the group uid_t access list as needed */
 #define	PERIODIC_GROUP_CHECK	600
 
+/* Seconds to wait for backup controller response to REQUEST_CONTROL RPC */
+#define CONTROL_TIMEOUT 4
+
 /* Default configuration configuration file values */
 #define DEFAULT_FAST_SCHEDULE       1
 #define DEFAULT_FIRST_JOB_ID        1
