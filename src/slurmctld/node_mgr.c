@@ -1036,7 +1036,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
 	uint16_t resp_state;
-	char *reason_down;
+	char *reason_down = NULL;
 
 	node_ptr = find_node_record (node_name);
 	if (node_ptr == NULL)
@@ -1261,6 +1261,26 @@ bool is_node_down (char *name)
 	if (base_state == NODE_STATE_DOWN)
 		return true;
 	return false;
+}
+
+/*
+ * is_node_resp - determine if the specified node's state is responding
+ * IN name - name of the node
+ * RET true if node exists and is responding, otherwise false 
+ */
+bool is_node_resp (char *name)
+{
+	struct node_record *node_ptr;
+
+	node_ptr = find_node_record (name);
+	if (node_ptr == NULL) {
+		error ("is_node_resp unable to find node %s", name);
+		return false;
+	}
+
+	if (node_ptr->node_state & NODE_STATE_NO_RESPOND)
+		return false;
+	return true;
 }
 
 /*
