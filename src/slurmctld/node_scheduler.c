@@ -1043,7 +1043,7 @@ static int _build_node_list(struct job_record *job_ptr,
 			bit_and(node_set_ptr[node_set_inx].my_bitmap,
 				exc_node_mask);
 		node_set_ptr[node_set_inx].nodes =
-		    bit_set_count(node_set_ptr[node_set_inx].my_bitmap);
+			bit_set_count(node_set_ptr[node_set_inx].my_bitmap);
 		if (check_node_config && 
 		    (node_set_ptr[node_set_inx].nodes != 0))
 			_filter_nodes_in_set(&node_set_ptr[node_set_inx], 
@@ -1086,33 +1086,41 @@ static int _build_node_list(struct job_record *job_ptr,
 /* Remove from the node set any nodes which lack sufficient resources 
  *	to satisfy the job's request */
 static void _filter_nodes_in_set(struct node_set *node_set_ptr,
-				 struct job_details *detail_ptr)
+				 struct job_details *job_con)
 {
 	int i;
 
-	for (i = 0; i < node_record_count; i++) {
-		if (bit_test(node_set_ptr->my_bitmap, i) == 0)
-			continue;
+	if (slurmctld_conf.fast_schedule) {	/* test config records */
+		struct config_record *node_con = NULL;
+		for (i = 0; i < node_record_count; i++) {
+			if (bit_test(node_set_ptr->my_bitmap, i) == 0)
+				continue;
+			node_con = node_record_table_ptr[i].config_ptr;
+			if ((job_con->min_procs    <= node_con->cpus)        &&
+			    (job_con->min_memory   <= node_con->real_memory) &&
+			    (job_con->min_tmp_disk <= node_con->tmp_disk))
+				continue;
 
-		if (slurmctld_conf.fast_schedule) {
-			if (detail_ptr->min_procs <=
-			    node_record_table_ptr[i].config_ptr->cpus)
-				continue;
-		} else {
-			if (detail_ptr->min_procs <=
-			    node_record_table_ptr[i].cpus)
-				continue;
+			bit_clear(node_set_ptr->my_bitmap, i);
+			if ((--(node_set_ptr->nodes)) == 0)
+				break;
 		}
 
-		if ((detail_ptr->min_memory <=
-		     node_record_table_ptr[i].real_memory) && 
-		    (detail_ptr->min_tmp_disk <=
-		     node_record_table_ptr[i].tmp_disk))
-			continue;
+	} else {	/* fast_schedule == 0, test individual node records */
+		struct node_record   *node_ptr = NULL;
+		for (i = 0; i < node_record_count; i++) {
+			if (bit_test(node_set_ptr->my_bitmap, i) == 0)
+				continue;
+			node_ptr = &node_record_table_ptr[i];
+			if ((job_con->min_procs    <= node_ptr->cpus)        &&
+			    (job_con->min_memory   <= node_ptr->real_memory) &&
+			    (job_con->min_tmp_disk <= node_ptr->tmp_disk))
+				continue;
 
-		bit_clear(node_set_ptr->my_bitmap, i);
-		if ((--(node_set_ptr->nodes)) == 0)
-			break;
+			bit_clear(node_set_ptr->my_bitmap, i);
+			if ((--(node_set_ptr->nodes)) == 0)
+				break;
+		}
 	}
 }
 
