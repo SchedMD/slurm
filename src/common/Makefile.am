@@ -15,7 +15,7 @@ else
 elan_sources = 
 endif
 
-noinst_LTLIBRARIES = 	libcommon.la
+noinst_LTLIBRARIES = 	libcommon.la libdaemonize.la
 
 libcommon_la_SOURCES = 	xmalloc.c 	\
 		      	xassert.c	\
@@ -60,6 +60,8 @@ noinst_HEADERS = 	xmalloc.h 	\
 			slurm_errno.h		\
 			qsw.h			\
 			util_signals.h
+
+libdaemonize_la_SOURCES =	daemonize.c
 
 EXTRA_libcommon_la_SOURCES =		\
 			qsw.c

@@ -29,6 +29,7 @@
 #endif
 
 #include <unistd.h>
+#include <fcntl.h>
 
 #include <src/common/macros.h>
 #include <src/common/log.h>
