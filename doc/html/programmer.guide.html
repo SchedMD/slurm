@@ -18,7 +18,7 @@ The <b>Job Initiator</b> (JI) is the tool used by the customer to initiate
 a job. The job initiator can execute on any computer in the cluser. Its 
 request is sent to the <b>controller</b> executing on the <b>control machine</b>. 
 <p>
-The controller orchestrates all SLURM activities including: accepting the 
+The controller (<b>ControlDaemon</b>) orchestrates all SLURM activities including: accepting the 
 job initiation request, allocating nodes to the job, enforcing partition
 constraints, enforcing job limits, and general record keeping. The three 
 primary components (threads) of the controller are the <b>Partition Manager</b> (PM), 
@@ -29,14 +29,75 @@ and enforces its limits. Since all of these functions are critical to the
 overall SLURM operation, a <b>backup controler</b> assumes thsse responsibilities
 in the event of control machine failure.
 <p>
-The final component of interest is the <b>Job Shepherd</b> (JS). The 
-job shepherd executes on each of the compute server nodes and initiates 
+The final component of interest is the <b>Job Shepherd</b> (JS), which is 
+part of the <b>ServerDaemon</b>. The ServerDaemon executes on every SLURM 
+compute server.  The job shepherd initiates 
 the job's tasks. It allocates switch resources. It also monitors job 
 state and resources utilization. Finally, it delivers signals to the 
 processes as needed.
 <p align=center>
 <img src="SLURM.components.gif">
-Figure 1: SLURM components
+<p>Figure 1: SLURM components
+<p>
+Interconnecting all of these components is a highly scalable and reliable 
+communications library. The general mode of operation is for each every 
+node to initiate <b>MasterDaemon</b>. This daemon will in turn 
+execute any defined <b>InitProgram</b> to insure the node is fully ready 
+for service. MasterDaemon will subsequently initiate <b>ControlDaemon</b>
+and/or <b>ServerDaemon</b> as defined in the SLURM configuration file 
+and terminate itself.
+<p>
+The ControlDaemon will read the node and partition information from 
+the appropriate SLURM configuration files. It will then contact each 
+ServerDaemon to gather current job and system state information. 
+The <b>BackupController</b> will ping the ControlDaemon periodically 
+to insure that it is operative. If the ControlDaemon failes to respond 
+for a period specified as <b>ControllerTimeout</b>, the BackupController
+will assume those responsibilities. The original ControlDaemon will 
+re-assume those responsibilities when returned to service. 
+Whenever the machine responsible for control responsibilities changes, 
+it must notify every other SLURM daemon to insure that messages are 
+routed in an appropriate fashion.
+<p>
+The Job Initiator will contact the ControlDaemon in order to be allocated 
+appropriate resources as possible, including authorization for 
+interconnect use. The Job Initiator itself will be responsible 
+for distributing the program, environment variables, identification of 
+the current directory, standard input, etc. Standard output and standard 
+error from the program will be transmitted to the Job Initiator. Should 
+the Job Initiator terminate prior to the parallel job's termination 
+(for example, if the node fails), the ControlDaemon will initiate a 
+new Job Initiator. While the new Job Initiator will not be capable of 
+transmitting additional standard input data, it will log the standard 
+output and error data.
+<p>
+ServerDaemon's Job Shepherd will initiate the user program's tasks 
+and monitor their state. The ServerDaemon will also monitor and report 
+overall node state information periodically to the ControlDaemon. 
+Should any node associated with a user task fail (ServerDaemon 
+fails to respond within <b>ServerTimeout<b>), the entire application 
+will be terminated by the Job Initiator.
+
+<h2>Communications Summary</h2>
+BackupController pings ControlDaemon periodically and assumes 
+control after ControllerTimeout. When there is a change in the 
+node on which the ControlDaemon executes, all SLURM daemons are 
+notified in order to route their messages appropriately.
+<p>
+ControlDaemon collects state information from ServerDaemon. If there 
+have been no communcations for a while, it pings the ServerDaemon. 
+If there is no response within ServerTimeout, the node is considered 
+DOWN and unavailable for use. The appropriate Job Initiator is also 
+notified in order to terminate the job. The ControlDaemon also processes 
+administrator and user requests.
+<p>
+The ServerDaemon wait for work requests from the Job Initiators. 
+It spawns user tasks as required. It transfers standard input, output 
+and error as required. It reports job and system state information 
+as requested by the Job Initiator and ControlDaemon.
+
+<h2>Authentication and Authorization</h2>
+TBD
 
 <h2>Code Modules</h2>
 <dl>
@@ -65,6 +126,9 @@ manages the state information associated with partitions in the
 cluster managed by SLURM. This module is the Partition Manager component.
 <dt>Read_Config.c
 <dd>Module reads overall SLURM configuration file.
+<dt>Read_Proc.c
+<dd>Module reads system process table state. Used to determine job state 
+including resource usage.
 <dt>Slurm_Admin.c
 <dd>Administration tool for reading, writing, and updating SLURM configuration.
 </dl>
@@ -101,12 +165,12 @@ such a capability at a later time if so desired.
 <h2>To Do</h2>
 <ul>
 <li>We need to build up a reasonable Makefile.</li>
-</li>
+<li>How do we interface with TotalView</li>
 </ul>
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/programmer.guide.html
-<p>Last Modified January 11, 2002</p>
+<p>Last Modified January 15, 2002</p>
 <address>Maintained by Moe Jette <a href="mailto:jette@llnl.gov">
 jette1@llnl.gov</a></address>
 </body>
