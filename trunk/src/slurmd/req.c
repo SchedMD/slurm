@@ -477,8 +477,17 @@ _rpc_ping(slurm_msg_t *msg, slurm_addr *cli_addr)
 		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
 	}
 
-	/* return result */
-	slurm_send_rc_msg(msg, rc);
+	/* Return result. If the reply can't be sent this indicates that
+	 * 1. The network is broken OR
+	 * 2. slurmctld has died    OR
+	 * 3. slurmd was paged out due to full memory
+	 * If the reply request fails, we send an registration message to 
+	 * slurmctld in hopes of avoiding having the node set DOWN due to
+	 * slurmd paging and not being able to respond in a timely fashion. */
+	if (slurm_send_rc_msg(msg, rc)) {
+		error("Error responding to ping: %m");
+		send_registration_msg(SLURM_SUCCESS);
+	}
 	return rc;
 }
 

@@ -6,6 +6,9 @@ documents those changes that are of interest to users and admins.
  -- Srun wakes immeditely upon resource allocation (via new RPC) 
     rather than polling.
  -- Deamons log current version number at startup
+ -- If slurmd can't respond to ping (e.g. paging is keeping it from 
+    responding in a timely fashion) then send a registration RPC
+    to slurmctld
 
 * Changes in SLURM 0.3.1
 ========================
