@@ -77,7 +77,7 @@ AUTHD:
 http://www.theether.org/authd/
 
 MUNGE:
-[ To be determined ]
+http://www.llnl.gov/linux/munge/
 
 
 CONFIGURATION
@@ -127,7 +127,7 @@ PROBLEMS
 --------
 
 If you experience problems compiling, installing, or running SLURM
-please send email to either Moe Jette <jette@llnl.gov> or Mark Grondona
+please send email to either Morris Jette <jette@llnl.gov> or Mark Grondona
 <mgrondona@llnl.gov>.
 
 $Id$
