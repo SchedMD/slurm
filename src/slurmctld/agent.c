@@ -29,9 +29,9 @@
  *
  *  The functions below permit slurm to initiate parallel tasks as a 
  *  detached thread and let the functions below make sure the work happens. 
- *  For example, when a job step completes slurmctld needs to revoke  
- *  credentials for that job step on every node to which it was allocated.  
- *  We don't want to hang slurmctld's primary function (the job complete RPC)  
+ *  For example, when a job's time limit is to be changed slurmctld needs 
+ *  to notify the slurmd on every node to which the job was allocated.  
+ *  We don't want to hang slurmctld's primary function (the job update RPC)  
  *  to perform this work, so it just initiates an agent to perform the work.  
  *  The agent is passed all details required to perform the work, so it will 
  *  be possible to execute the agent as an pthread, process, or even a daemon 
@@ -47,8 +47,8 @@
  *  All the state for each thread is maintained in thd_t struct, which is 
  *  used by the watchdog thread as well as the communication threads.
  *
- *  NOTE: REQUEST_REVOKE_JOB_CREDENTIAL  and REQUEST_KILL_TIMELIMIT responses 
- *  are handled immediately rather than in bulk upon completion of the RPC 
+ *  NOTE: REQUEST_KILL_JOB  and REQUEST_KILL_TIMELIMIT responses are 
+ *  handled immediately rather than in bulk upon completion of the RPC 
  *  to all nodes
 \*****************************************************************************/
 
@@ -260,7 +260,7 @@ static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 		fatal("agent passed NULL address list");
 	if (agent_arg_ptr->node_names == NULL)
 		fatal("agent passed NULL node name list");
-	if ((agent_arg_ptr->msg_type != REQUEST_REVOKE_JOB_CREDENTIAL) &&
+	if ((agent_arg_ptr->msg_type != REQUEST_KILL_JOB) &&
 	    (agent_arg_ptr->msg_type != REQUEST_KILL_TIMELIMIT) && 
 	    (agent_arg_ptr->msg_type != REQUEST_NODE_REGISTRATION_STATUS) && 
 	    (agent_arg_ptr->msg_type != REQUEST_KILL_TASKS) && 
@@ -434,7 +434,7 @@ static void *_wdog(void *args)
 	/* attempt to schedule when all nodes registered, not 
 	 * after each node, the overhead would be too high */
 	if ((agent_ptr->msg_type == REQUEST_KILL_TIMELIMIT) ||
-	    (agent_ptr->msg_type == REQUEST_REVOKE_JOB_CREDENTIAL))
+	    (agent_ptr->msg_type == REQUEST_KILL_JOB))
 		schedule();
 #else
 	/* Build a list of all responding nodes and send it to slurmctld to 
@@ -464,8 +464,7 @@ static void *_wdog(void *args)
 }
 
 /*
- * _thread_per_node_rpc - thread to revoke a credential on a collection 
- *	of nodes
+ * _thread_per_node_rpc - thread to issue an RPC on a collection of nodes
  * IN/OUT args - pointer to task_info_t, xfree'd on completion
  */
 static void *_thread_per_node_rpc(void *args)
@@ -567,17 +566,15 @@ static void *_thread_per_node_rpc(void *args)
 #if AGENT_IS_THREAD
 	/* SPECIAL CASE: Immediately mark node as IDLE */
 	if (((task_ptr->msg_type == REQUEST_KILL_TIMELIMIT) ||
-	     (task_ptr->msg_type == REQUEST_REVOKE_JOB_CREDENTIAL)) &&
+	     (task_ptr->msg_type == REQUEST_KILL_JOB)) &&
 	    (node_ptr = find_node_record(thread_ptr->node_name))) {
-		revoke_credential_msg_t *revoke_job_cred;
-		revoke_job_cred = (revoke_credential_msg_t *)
-				   task_ptr->msg_args_ptr;
+		kill_job_msg_t *kill_job;
+		kill_job = (kill_job_msg_t *) task_ptr->msg_args_ptr;
 		node_ptr = find_node_record(thread_ptr->node_name);
-		debug3("Revoke on node %s job_id %u",
-		       thread_ptr->node_name, revoke_job_cred->job_id);
+		debug3("Kill job_id %u on node %s ",
+		       kill_job->job_id, thread_ptr->node_name);
 		lock_slurmctld(node_write_lock);
-		make_node_idle(node_ptr, 
-			       find_job_record(revoke_job_cred->job_id));
+		make_node_idle(node_ptr, find_job_record(kill_job->job_id));
 		unlock_slurmctld(node_write_lock);
 		/* scheduler(); Overhead too high, 
 		 * only do when last node registers */

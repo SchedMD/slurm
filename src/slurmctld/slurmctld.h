@@ -221,7 +221,6 @@ struct job_details {
 	char *exc_nodes;		/* excluded nodes */
 	bitstr_t *req_node_bitmap;	/* bitmap of required nodes */
 	bitstr_t *exc_node_bitmap;	/* bitmap of excluded nodes */
-	slurm_job_credential_t	credential;	/* job credential */
 	char *features;			/* required features */
 	uint16_t shared;		/* set node can be shared*/
 	uint16_t contiguous;		/* set if requires contiguous nodes */
@@ -320,13 +319,6 @@ extern void  allocate_nodes (unsigned *bitmap);
 extern char * bitmap2node_name (bitstr_t *bitmap) ;
 
 /*
- * build_job_cred - build a credential for a job, only valid after 
- *	allocation made
- * IN job_ptr - pointer to the job record 
- */
-void build_job_cred(struct job_record *job_ptr);
-
-/*
  * build_node_details - set cpu counts and addresses for allocated nodes:
  *	cpu_count_reps, cpus_per_node, node_addr, node_cnt, num_cpu_groups
  * IN job_ptr - pointer to a job record
@@ -404,7 +396,7 @@ extern struct step_record * create_step_record (struct job_record *job_ptr);
  *	their state NODE_STATE_COMPLETING
  * IN job_ptr - pointer to terminating job
  * IN timeout - true of job exhausted time limit, send REQUEST_KILL_TIMELIMIT
- *	RPC instead of REQUEST_REVOKE_JOB_CREDENTIAL
+ *	RPC instead of REQUEST_JOB_KILL
  * globals: node_record_count - number of nodes in the system
  *	node_record_table_ptr - pointer to global node table
  */

@@ -128,14 +128,14 @@ int count_cpus(unsigned *bitmap)
  *	their state NODE_STATE_COMPLETING
  * IN job_ptr - pointer to terminating job
  * IN timeout - true of job exhausted time limit, send REQUEST_KILL_TIMELIMIT
- *	RPC instead of REQUEST_REVOKE_JOB_CREDENTIAL
+ *	RPC instead of REQUEST_KILL_JOB
  * globals: node_record_count - number of nodes in the system
  *	node_record_table_ptr - pointer to global node table
  */
 void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 {
 	int i;
-	revoke_credential_msg_t *revoke_job_cred;
+	kill_job_msg_t *kill_job;
 	agent_arg_t *agent_args;
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
@@ -149,16 +149,12 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 	if (timeout)
 		agent_args->msg_type = REQUEST_KILL_TIMELIMIT;
 	else
-		agent_args->msg_type = REQUEST_REVOKE_JOB_CREDENTIAL;
+		agent_args->msg_type = REQUEST_KILL_JOB;
 	agent_args->retry = 1;
-	revoke_job_cred = xmalloc(sizeof(revoke_credential_msg_t));
+	kill_job = xmalloc(sizeof(kill_job_msg_t));
 	last_node_update = time(NULL);
-	revoke_job_cred->job_id = job_ptr->job_id;
-	revoke_job_cred->job_uid = job_ptr->user_id;
-	revoke_job_cred->expiration_time =
-	    job_ptr->details->credential.expiration_time;
-	memset((void *) revoke_job_cred->signature, 0,
-	       sizeof(revoke_job_cred->signature));
+	kill_job->job_id = job_ptr->job_id;
+	kill_job->job_uid = job_ptr->user_id;
 
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
@@ -181,15 +177,14 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 	}
 
 	if (agent_args->node_count == 0) {
-		error("Job %u allocated no nodes on for credential revoke",
+		error("Job %u allocated no nodes to be killed on",
 		      job_ptr->job_id);
-		xfree(revoke_job_cred);
 		xfree(agent_args);
 		return;
 	}
 
-	agent_args->msg_args = revoke_job_cred;
-	debug("Spawning revoke credential agent");
+	agent_args->msg_args = kill_job;
+	debug2("Spawning job kill agent");
 	if (pthread_attr_init(&attr_agent))
 		fatal("pthread_attr_init error %m");
 	if (pthread_attr_setdetachstate
@@ -798,7 +793,6 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 	else
 		job_ptr->end_time = job_ptr->start_time + 
 				    (job_ptr->time_limit * 60);   /* secs */
-	build_job_cred(job_ptr); /* uses end_time set above */
 
       cleanup:
 	FREE_NULL_BITMAP(req_bitmap);

@@ -849,7 +849,7 @@ static int _sync_nodes_to_jobs(void)
 }
 
 /* For jobs which are in state COMPLETING, deallocate the nodes and 
- * issue the RPC to revoke credentials */
+ * issue the RPC to kill the job */
 static int _sync_nodes_to_comp_job(void)
 {
 	struct job_record *job_ptr;
@@ -862,8 +862,7 @@ static int _sync_nodes_to_comp_job(void)
 		if ((job_ptr->node_bitmap) &&
 		    (job_ptr->job_state & JOB_COMPLETING)) {
 			update_cnt++;
-			info("Revoking credentials for job_id %u",
-			     job_ptr->job_id);
+			info("Killing job_id %u", job_ptr->job_id);
 			deallocate_nodes(job_ptr, false);
 		}
 	}
