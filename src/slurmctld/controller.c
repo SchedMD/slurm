@@ -35,7 +35,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
-#include <sys/socket.h>
 #include <sys/types.h>
 #include <netdb.h>
 #include <netinet/in.h>

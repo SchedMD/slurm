@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_protocol_interface.j - mid-level slurm communication definitions
+ *  slurm_protocol_interface.h - mid-level slurm communication definitions
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -23,7 +23,6 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
-
 
 #ifndef _SLURM_PROTOCOL_INTERFACE_H
 #define _SLURM_PROTOCOL_INTERFACE_H
