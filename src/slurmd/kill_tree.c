@@ -53,6 +53,7 @@ typedef struct xppid_s {
 	struct xppid_s *next;
 } xppid_t;
 
+#define MAX_NAME_LEN 64
 #define HASH_LEN 64
 static xppid_t **hashtbl;
 
@@ -103,7 +104,7 @@ static void _build_hashtbl()
 {
 	DIR *dir;
 	struct dirent *de;
-	char path[NAME_MAX], *endptr, *num, rbuf[1024];
+	char path[MAX_NAME_LEN], *endptr, *num, rbuf[1024];
 	int fd;
 	long pid, ppid;
 
@@ -119,7 +120,7 @@ static void _build_hashtbl()
 		strtol(num, &endptr, 10);
 		if (endptr == NULL || *endptr != 0)
 			continue;
-		sprintf(path, "/proc/%s/stat", num);
+		snprintf(path, MAX_NAME_LEN, "/proc/%s/stat", num);
 		if ((fd = open(path, O_RDONLY)) < 0) {
 			continue;
 		}
