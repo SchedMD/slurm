@@ -106,6 +106,7 @@
 #define OPT_OVERCOMMIT	0x1a
 #define OPT_HOLD	0x1b
 #define OPT_RELATIVE    0x1c
+#define OPT_JOBID       0x1d
 
 /* constraint type options */
 #define OPT_MINCPUS     0x50
@@ -223,6 +224,8 @@ struct poptOption runTable[] = {
 	{"job-name", 'J', POPT_ARG_STRING, &opt.job_name, 0,
 	 "name of job",
 	 "jobname"},
+	{"jobid", '\0',   POPT_ARG_INT, NULL, OPT_JOBID, 
+         "run under already allocated job", "id" },
 	{"output", 'o', POPT_ARG_STRING, 0, OPT_OUTPUT,
 	 "location of stdout redirection",
 	 "out"},
@@ -245,10 +248,12 @@ struct poptOption runTable[] = {
 	{"wait", 'W', POPT_ARG_INT, &opt.max_wait, OPT_WAIT,
 	 "seconds to wait after first task ends before killing job",
 	 "sec"},
-	{"max-launch-time", '\0', POPT_ARG_INT | POPT_ARGFLAG_DOC_HIDDEN, 
-	  &opt.max_launch_time, 0, NULL, NULL },
+	{"max-launch-time",  '\0', POPT_ARG_INT | POPT_ARGFLAG_DOC_HIDDEN, 
+	  &opt.max_launch_time,  0, NULL, NULL },
 	{"max-exit-timeout", '\0', POPT_ARG_INT | POPT_ARGFLAG_DOC_HIDDEN, 
 	  &opt.max_exit_timeout, 0, NULL, NULL },
+	{"msg-timeout",      '\0', POPT_ARG_INT | POPT_ARGFLAG_DOC_HIDDEN, 
+	  &opt.msg_timeout,      0, NULL, NULL },
 	POPT_TABLEEND
 };
 
@@ -565,6 +570,7 @@ static void _opt_default()
 	opt.max_threads = MAX_THREADS;
 
 	opt.job_name = NULL;
+	opt.jobid    = NO_VAL;
 
 	opt.distribution = SRUN_DIST_UNKNOWN;
 
@@ -580,9 +586,6 @@ static void _opt_default()
 	opt.batch = false;
 	opt.share = false;
 	opt.no_kill = false;
-#ifdef HAVE_TOTALVIEW
-	opt.totalview = _under_totalview();
-#endif
 
 	opt.immediate	= false;
 
@@ -606,8 +609,21 @@ static void _opt_default()
 	opt.exc_nodes	    = NULL;
 	opt.max_launch_time = 60; /* 60 seconds to launch job             */
 	opt.max_exit_timeout= 60; /* Warn user 60 seconds after task exit */
+	opt.msg_timeout     = 2;  /* Default launch msg timeout           */
 
 	mode	= MODE_NORMAL;
+
+#ifdef HAVE_TOTALVIEW
+	/*
+	 * Reset some default values if running under TotalView:
+	 */
+	if ((opt.totalview = _under_totalview())) {
+		opt.max_launch_time = 120;
+		opt.max_threads     = 1;
+		opt.msg_timeout     = 15;
+	}
+
+#endif
 
 }
 
@@ -630,6 +646,7 @@ struct env_vars {
 };
 
 env_vars_t env_vars[] = {
+	{"SLURM_JOBID",         OPT_INT, &opt.jobid,         NULL           },
 	{"SLURM_NPROCS",        OPT_INT, &opt.nprocs,        &opt.nprocs_set},
 	{"SLURM_CPUS_PER_TASK", OPT_INT, &opt.cpus_per_task, &opt.cpus_set  },
 	{"SLURM_PARTITION",     OPT_STRING,  &opt.partition, NULL           },
@@ -735,7 +752,7 @@ _get_int(const char *arg, const char *what)
 	char *p;
 	long int result = strtol(arg, &p, 10);
 
-	if (*p != '\0') {
+	if ((*p != '\0') || (result < 0L)) {
 		error ("Invalid numeric value \"%s\" for %s.", arg, what);
 		exit(1);
 	}
@@ -864,6 +881,10 @@ static void _opt_args(int ac, char **av)
 				poptPrintUsage(optctx, stderr, 0);
 				exit(1);
 			}
+			break;
+
+		case OPT_JOBID:
+			opt.jobid = _get_int(arg, "jobid");
 			break;
 
 		case OPT_REALMEM:

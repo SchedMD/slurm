@@ -98,27 +98,17 @@ allocate_nodes(void)
 	return resp;
 }
 
-/* Return jobid from environment
- *
+/* 
  * Returns jobid if SLURM_JOBID was set in the user's environment
- * else returns 0
+ *  or if --jobid option was given, else returns 0
  */
 uint32_t
 jobid_from_env(void)
 {
-	char *p, *q;
-	uint32_t jobid;
-
-	if (!(p = getenv("SLURM_JOBID")))
-		return 0;
-
-	jobid = (uint32_t) strtoul(p, &q, 10);
-	if (*q != '\0') {
-		error ("Invalid value for SLURM_JOBID: `%s'", p);
-		return 0;
-	} 
-
-	return jobid;
+	if (opt.jobid != NO_VAL)
+		return ((uint32_t) opt.jobid);
+	else 
+		return (0);
 }
 
 resource_allocation_response_msg_t *
