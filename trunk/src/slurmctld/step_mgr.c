@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * step_mgr.c - manage the job step information of slurm
+ *  step_mgr.c - manage the job step information of slurm
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -69,8 +69,39 @@ create_step_record (struct job_record *job_ptr)
 
 
 /* 
- * delete_step_record - delete record for job step for specified job_ptr and step_id
+ * delete_all_step_records - delete all step record for specified job_ptr
  * input: job_ptr - pointer to job table entry to have step record added
+ * output: return 0 on success, errno otherwise
+ */
+void 
+delete_all_step_records (struct job_record *job_ptr) 
+{
+	ListIterator step_record_iterator;
+	struct step_record *step_record_point;
+
+	assert (job_ptr);
+	step_record_iterator = list_iterator_create (job_ptr->step_list);		
+
+	while ((step_record_point = 
+		(struct step_record *) list_next (step_record_iterator))) {
+		list_remove (step_record_iterator);
+#ifdef HAVE_LIBELAN3
+		qsw_free_jobinfo (step_record_point->qsw_job);
+#endif
+		if (step_record_point->node_bitmap)
+			bit_free (step_record_point->node_bitmap);
+		xfree (step_record_point);
+	}		
+
+	list_iterator_destroy (step_record_iterator);
+	list_destroy (job_ptr->step_list);
+	job_ptr->step_list = NULL;
+}
+
+
+/* 
+ * delete_step_record - delete record for job step for specified job_ptr and step_id
+ * input: job_ptr - pointer to job table entry to have step record removed
  *	step_id - id of the desired job step
  * output: return 0 on success, errno otherwise
  */

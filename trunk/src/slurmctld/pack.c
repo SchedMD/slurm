@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by moe jette <jette1@llnl.gov>, Joseph Ekstrom (ekstrom1@llnl.gov)
+ *  Written by Moe Jette <jette1@llnl.gov>, Joseph Ekstrom (ekstrom1@llnl.gov)
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -63,12 +63,14 @@ inline void buffer_realloc( void** buffer, void** current, int* size, int* len_l
 void
 pack_ctld_job_step_info( struct  step_record* step, void **buf_ptr, int *buf_len)
 {
-	char node_list[BUF_SIZE];
+	char *node_list;
 
 	if (step->node_bitmap) 
-		bit_fmt (node_list, BUF_SIZE, step->node_bitmap);
-	else
+		node_list = bitmap2node_name (step->node_bitmap);
+	else {
+		node_list = xmalloc(1);
 		node_list[0] = '\0';
+	}
 
 	pack_job_step_info_members(
 				step->job_ptr->job_id,
@@ -80,6 +82,7 @@ pack_ctld_job_step_info( struct  step_record* step, void **buf_ptr, int *buf_len
 				buf_ptr,
 				buf_len
 			);
+	xfree (node_list);
 }
 
 /* pack_ctld_job_step_info_reponse_msg - packs the message
@@ -96,12 +99,11 @@ pack_ctld_job_step_info_reponse_msg( List steps, void** buffer_base, int* buffer
 	int buffer_size = BUF_SIZE * REALLOC_MULTIPLIER;
 	int current_size = buffer_size;
 	void* current = NULL;
-	time_t current_time = time(NULL);
 	uint32_t list_size = list_count(steps);
 	current = *buffer_base = xmalloc( buffer_size );
 
-	pack32( current_time, &current, &current_size ); /* FIXME What am I really suppose to put as the time?*/
-	debug("job_step_count = %u\n", list_size);
+	debug3("job_step_count = %u\n", list_size);
+	pack32( last_job_update, &current, &current_size );
 	pack32( list_size , &current, &current_size );
 
 	/* Pack the Steps */

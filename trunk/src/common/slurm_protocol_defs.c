@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * slurm_protocol_defs.c - functions for initializing and releasing 
+ *  slurm_protocol_defs.c - functions for initializing and releasing 
  *	storage for RPC data structures
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.

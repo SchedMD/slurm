@@ -214,7 +214,7 @@ delete_job_details (struct job_record *job_entry)
 
 	delete_job_desc_files (job_entry->job_id);
 	if (job_entry->details->magic != DETAILS_MAGIC)
-		fatal ("list_delete_job: passed invalid job details pointer");
+		fatal ("delete_job_details: passed invalid job details pointer");
 	if (job_entry->details->req_nodes)
 		xfree(job_entry->details->req_nodes);
 	if (job_entry->details->req_node_bitmap)
@@ -1201,11 +1201,11 @@ list_delete_job (void *job_entry)
 	delete_job_details (job_record_point);
 
 	if (job_record_point->nodes)
-		xfree(job_record_point->nodes);
+		xfree (job_record_point->nodes);
 	if (job_record_point->node_bitmap)
-		bit_free(job_record_point->node_bitmap);
+		bit_free (job_record_point->node_bitmap);
 	if (job_record_point->step_list)
-		list_destroy(job_record_point->step_list);
+		delete_all_step_records (job_record_point);
 	job_count--;
 	xfree(job_record_point);
 }

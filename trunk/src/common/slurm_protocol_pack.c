@@ -1,5 +1,5 @@
 /****************************************************************************\
- * slurm_protocol_pack.c - functions to pack and unpack structures for RPCs
+ *  slurm_protocol_pack.c - functions to pack and unpack structures for RPCs
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

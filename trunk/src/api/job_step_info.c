@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  job_info.c - get/print the job step state information of slurm
+ *  job_step_info.c - get/print the job step state information of slurm
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * slurmctld.h - definitions of functions and structures for slurmcltd use
+ *  slurmctld.h - definitions of functions and structures for slurmcltd use
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -241,18 +241,15 @@ extern struct part_record *create_part_record (void);
 extern struct step_record * create_step_record (struct job_record *job_ptr);
 
 /* deallocate_nodes - for a given job, deallocate its nodes and make their state IDLE */
-void deallocate_nodes (struct job_record  * job_ptr);
+extern void deallocate_nodes (struct job_record  * job_ptr);
 
-/* 
- * delete_job_details - delete a job's detail record and clear it's pointer
- */
+/* delete_all_step_records - delete all step record for specified job_ptr */
+extern void delete_all_step_records (struct job_record *job_ptr);
+
+/* delete_job_details - delete a job's detail record and clear it's pointer */
 extern void  delete_job_details (struct job_record *job_entry);
 
-/* 
- * delete_node_record - delete record for node with specified name
- *   to avoid invalidating the bitmaps and hash table, we just clear the name 
- *   set its state to STATE_DOWN
- */
+/* delete_node_record - delete record for node with specified name */
 extern int delete_node_record (char *name);
 
 /* delete_part_record - delete record for partition with specified name */
