@@ -221,6 +221,7 @@ int Build_Part_BitMap(struct Part_Record *Part_Record_Point) {
 	if (Old_BitMap) free(Old_BitMap);
 	return ENOMEM;
     } /* if */
+    strcpy(My_Node_List, Part_Record_Point->Nodes);
 
     str_ptr2 = (char *)strtok_r(My_Node_List, ",", &str_ptr1);
     while (str_ptr2) {	/* Break apart by comma separators */

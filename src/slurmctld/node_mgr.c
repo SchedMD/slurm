@@ -600,7 +600,7 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 	return ENOMEM;
     } /* if */
 
-    /* Write haeader, version and time */
+    /* Write haeader: version and time */
     Buffer_Offset = 0;
     i = CONFIG_STRUCT_VERSION;
     memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
@@ -734,8 +734,8 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 
     /* Write node records */
     for (inx=0; inx<Node_Record_Count; inx++) {
-	if (strlen((Node_Record_Table_Ptr+inx)->Name) == 0) continue;
-	Record_Size = MAX_NAME_LEN + 2 * sizeof(int);
+	if (strlen(Node_Record_Table_Ptr[inx].Name) == 0) continue;
+	Record_Size = MAX_NAME_LEN + 5 * sizeof(int);
 	if ((Buffer_Offset+Record_Size) >= Buffer_Allocated) { /* Need larger buffer */
 	    Buffer_Allocated += (Record_Size + BUF_SIZE);
 	    Buffer = realloc(Buffer, Buffer_Allocated);
@@ -750,29 +750,29 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 	    } /* if */
 	} /* if */
 
-	memcpy(Buffer+Buffer_Offset, (Node_Record_Table_Ptr+inx)->Name, 
-		sizeof((Node_Record_Table_Ptr+inx)->Name)); 
-	Buffer_Offset += sizeof((Node_Record_Table_Ptr+inx)->Name);
+	memcpy(Buffer+Buffer_Offset, Node_Record_Table_Ptr[inx].Name, 
+		sizeof(Node_Record_Table_Ptr[inx].Name)); 
+	Buffer_Offset += sizeof(Node_Record_Table_Ptr[inx].Name);
 
-	i = (int)(Node_Record_Table_Ptr+inx)->NodeState;
+	i = (int)Node_Record_Table_Ptr[inx].NodeState;
 	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
 	Buffer_Offset += sizeof(i);
 
-	i = (Node_Record_Table_Ptr+inx)->CPUs;
+	i = Node_Record_Table_Ptr[inx].CPUs;
 	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
 	Buffer_Offset += sizeof(i);
 
-	i = (Node_Record_Table_Ptr+inx)->RealMemory;
+	i = Node_Record_Table_Ptr[inx].RealMemory;
 	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
 	Buffer_Offset += sizeof(i);
 
-	i = (Node_Record_Table_Ptr+inx)->TmpDisk;
+	i = Node_Record_Table_Ptr[inx].TmpDisk;
 	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
 	Buffer_Offset += sizeof(i);
 
 	for (i=0; i<Config_Spec_List_Cnt; i++) {
 	    if (Config_Spec_List[i].Config_Record_Point ==
-		(Node_Record_Table_Ptr+inx)->Config_Ptr) break;
+		Node_Record_Table_Ptr[inx].Config_Ptr) break;
 	} /* for (i */
 	if (i < Config_Spec_List_Cnt) 
 	    i++;
@@ -1368,6 +1368,10 @@ int Update_Node(char *NodeName, char *Spec) {
 	    } /* if */
 	    if (State_Val != NO_VAL) {
 		Node_Record_Point->NodeState = State_Val;
+		if (State_Val != STATE_IDLE) BitMapClear(Idle_NodeBitMap, 
+			(int)(Node_Record_Point-Node_Record_Table_Ptr));
+		if (State_Val != STATE_UP)   BitMapClear(Up_NodeBitMap, 
+			(int)(Node_Record_Point-Node_Record_Table_Ptr));
 #if DEBUG_SYSTEM
 		fprintf(stderr, "Update_Node: Node %s state set to %s\n", 
 			This_Node_Name, Node_State_String[State_Val]);
