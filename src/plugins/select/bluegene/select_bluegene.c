@@ -40,8 +40,19 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/list.h"
+#include "src/common/plugin.h"
+
+#include "src/common/slurm_xlator.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/slurmctld/slurmctld.h"
+
+#ifdef WITH_PTHREADS
+#  include <pthread.h>
+#endif /* WITH_PTHREADS */
+
+#include "slurm/slurm_errno.h"
+#include "bluegene.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -81,11 +92,19 @@ const uint32_t plugin_version	= 90;
  */
 int init ( void )
 {
+	debug("init");
+	verbose("%s loading...", plugin_name);
+
+	if (init_bgl())
+		return SLURM_ERROR;		
+
+	verbose("%s done loading, system ready for use.", plugin_name);
 	return SLURM_SUCCESS;
 }
 
 int fini ( void )
 {
+	debug("fini");
 	return SLURM_SUCCESS;
 }
 
@@ -94,18 +113,49 @@ int fini ( void )
  * node selection API.
  */
 
+/** 
+ * this is called periodically by slurmctld when 
+ * - new nodes are added 
+ * - new configuration file is loaded
+ */
+extern int select_p_part_init(List part_list)
+{ 
+	debug("select_p_part_init");
+	/** isn't the part_list already accessible to me? */
+	slurm_part_list = part_list;
+
+	if (read_bgl_conf())
+		return SLURM_ERROR;
+
+	/* create_static_partitions */
+	if (create_static_partitions()){
+		/* error in creating the static partitions, so
+		 * partitions referenced by submitted jobs won't
+		 * correspond to actual slurm partitions/bgl
+		 * partitions.
+		 */
+		fatal("Error, could not create the static partitions");
+		return 1;
+	}
+
+	return SLURM_SUCCESS; 
+}
+
 extern int select_p_state_save(char *dir_name)
 {
+	debug("select_p_state_save");
 	return SLURM_SUCCESS;
 }
 
 extern int select_p_state_restore(char *dir_name)
 {
+	debug("select_p_state_restore");
 	return SLURM_SUCCESS;
 }
 
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
+	debug("select_p_node_init");
 	if (node_ptr == NULL) {
 		error("select_p_node_init: node_ptr == NULL");
 		return SLURM_ERROR;
@@ -116,13 +166,10 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		return SLURM_ERROR;
 	}
 
-	error("select/bluegene plugin not yet functional");
-	return SLURM_ERROR;
-}
-
-
-extern int select_p_part_init(List part_list)
-{
+	// error("select/bluegene plugin not yet functional");
+	debug("select_p_node_init should be doing a system wide status "
+	      "check on all the nodes to updated the system bitmap.");
+	// return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
 
@@ -145,19 +192,36 @@ extern int select_p_part_init(List part_list)
  *	select_p_job_test is called
  */
 extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-		int min_nodes, int max_nodes)
+			     int min_nodes, int max_nodes)
 {
-	error("select/bluegene plugin not yet functional");
-	return SLURM_ERROR;
+	debug("select_p_job_test");
+	debug("select/bluegene plugin in alpha development");
+
+
+	/* bgl partition test - is there a partition where we have:
+	 * 1) geometery requested
+	 * 2) min/max nodes (BPs) requested
+	 * 3) type? (TORUS is harder than MESH to fulfill)...HOW TO TEST?!?!!
+	 * 
+	 * note: we don't have to worry about security at this level
+	 * b/c the SLURM partition logic will handle access rights.
+	 */
+
+	if (submit_job(job_ptr, bitmap, min_nodes, max_nodes)){
+		return SLURM_ERROR;
+	} else {
+		return SLURM_SUCCESS;
+	}
 }
 
 extern int select_p_job_init(struct job_record *job_ptr)
 {
+	debug("select_p_job_init");
 	return SLURM_SUCCESS;
 }
 
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
+	debug("select_p_job_fini");
 	return SLURM_SUCCESS;
 }
-
