@@ -15,12 +15,12 @@ source ./globals
 
 set test_id          "1.19"
 set exit_code        0
-set file_err_j       "test$test_id.%j.error"
+set file_err_j       "test$test_id.j.%j.error"
 set file_in          "test$test_id.input"
-set file_out_J       "test$test_id.%J.output"
-set file_out_n       "test$test_id.%n.output"
-set file_out_s       "test$test_id.%s.output"
-set file_out_t       "test$test_id.%t.output"
+set file_out_J       "test$test_id.J.%J.output"
+set file_out_n       "test$test_id.n.%n.output"
+set file_out_s       "test$test_id.s.%s.output"
+set file_out_t       "test$test_id.t.%t.output"
 set job_id           0
 set task_cnt         5
 
@@ -31,7 +31,7 @@ print_header $test_id
 # and confirm they are created
 #
 for {set task_id 0} {$task_id < $task_cnt} {incr task_id} {
-	set file_out_t_glob  "test$test_id.$task_id.output"
+	set file_out_t_glob  "test$test_id.t.$task_id.output"
 	exec $bin_rm -f $file_out_t_glob
 }
 set timeout $max_job_delay
@@ -44,8 +44,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		kill_srun
-		set exit_code 1
-		exp_continue
+		exit 1
 	}
 	eof {
 		wait
@@ -57,7 +56,7 @@ if {$job_id == 0} {
 }
 set file_cnt 0
 for {set task_id 0} {$task_id < $task_cnt} {incr task_id} {
-	set file_out_t_glob  "test$test_id.$task_id.output"
+	set file_out_t_glob  "test$test_id.t.$task_id.output"
 	if {[wait_for_file $file_out_t_glob] != 0} {
 		set exit_code 1
 	}
@@ -98,8 +97,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		kill_srun
-		set exit_code 1
-		exp_continue
+		exit 1
 	}
 	eof {
 		wait
@@ -114,7 +112,7 @@ if {$srun_exit == 0} {
 	set exit_code 1
 }
 
-set file_err_j_glob  "test$test_id.$job_id.error"
+set file_err_j_glob  "test$test_id.j.$job_id.error"
 set file_cnt    0
 spawn $bin_rm -i $file_err_j_glob
 expect {
@@ -146,8 +144,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		kill_srun
-		set exit_code 1
-		exp_continue
+		exit 1
 	}
 	eof {
 		wait
@@ -159,11 +156,11 @@ if {$job_id == 0} {
 }
 set file_cnt 0
 set task_id  0
-set file_out_t_glob  "test$test_id.$job_id.$task_id.output"
-if {[wait_for_file $file_out_t_glob] != 0} {
+set file_out_J_glob  "test$test_id.J.$job_id.$task_id.output"
+if {[wait_for_file $file_out_J_glob] != 0} {
 	set exit_code 1
 }
-spawn $bin_rm -i $file_out_t_glob
+spawn $bin_rm -i $file_out_J_glob
 expect {
 	-re "remove .*?" {
 		send "y\n"
@@ -183,6 +180,10 @@ if {$file_cnt != 1} {
 # Spawn a shell via srun that includes "node_id" (%n) in stdout
 #  file name and confirm it is created
 #
+set node_id 0
+set file_out_n_glob  "test$test_id.n.$node_id.output"
+exec $bin_rm -f $file_out_n_glob
+
 set job_id   0
 spawn $srun --output=$file_out_n -N1 -c1 -O -v -t1 $bin_hostname
 expect {
@@ -193,8 +194,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		kill_srun
-		set exit_code 1
-		exp_continue
+		exit 1
 	}
 	eof {
 		wait
@@ -206,11 +206,13 @@ if {$job_id == 0} {
 }
 set file_cnt 0
 for {set node_id 0} {$node_id < 2} {incr node_id} {
-	set file_out_n_glob  "test$test_id.$node_id.output"
+	set file_out_n_glob  "test$test_id.n.$node_id.output"
 
 	if {($node_id == 0) && ([wait_for_file $file_out_n_glob] != 0)} {
 		send_user "\nFAILURE: Missing file $file_out_n_glob\n"
 		set exit_code 1
+	} else {
+		exec $bin_sleep 1
 	}
 	if [file exists $file_out_n_glob] {
 		spawn $bin_rm -i $file_out_n_glob
@@ -242,6 +244,11 @@ exec echo "$srun --output=$file_out_s $bin_hostname" >>$file_in
 exec echo "$srun --output=$file_out_s $bin_hostname" >>$file_in
 exec $bin_chmod 700 $file_in
 
+for {set step_id 0} {$step_id < 4} {incr step_id} {
+	set file_out_s_glob  "test$test_id.s.$step_id.output"
+	exec $bin_rm -f $file_out_s_glob
+}
+
 set job_id   0
 spawn $srun --batch --output=/dev/null -N1-4 -c1 -O -t1 $file_in
 expect {
@@ -252,8 +259,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		kill_srun
-		set exit_code 1
-		exp_continue
+		exit 1
 	}
 	eof {
 		wait
@@ -272,11 +278,13 @@ exec $bin_rm -f $file_in
 
 set file_cnt 0
 for {set step_id 0} {$step_id < 3} {incr step_id} {
-	set file_out_s_glob  "test$test_id.$step_id.output"
+	set file_out_s_glob  "test$test_id.s.$step_id.output"
 
-	if {($step_id == 0) && ([wait_for_file $file_out_s_glob] != 0)} {
+	if {($step_id < 2) && ([wait_for_file $file_out_s_glob] != 0)} {
 		send_user "\nFAILURE: Missing file $file_out_s_glob\n"
 		set exit_code 1
+	} else {
+		exec $bin_sleep 1
 	}
 	if [file exists $file_out_s_glob] {
 		spawn $bin_rm -i $file_out_s_glob
@@ -294,7 +302,7 @@ for {set step_id 0} {$step_id < 3} {incr step_id} {
 }
 
 if {$file_cnt != 2} {
-	send_user "\nFAILURE: file format of %s in stdout failed\n"
+	send_user "\nFAILURE: file format of %s in stdout failed($file_cnt)\n"
 	set exit_code 1
 }
 
