@@ -297,22 +297,26 @@ _rpc_revoke_credential(slurm_msg_t *msg, slurm_addr *cli)
 	uid_t req_uid = slurm_auth_uid(msg->cred);
 	revoke_credential_msg_t *req = (revoke_credential_msg_t *) msg->data;
 
-	/* XXX Need to check uid for authorization to revoke
-	 * credential. 
-	 */
-	
-	rc = revoke_credential(req, conf->cred_state_list);
+	if ((req_uid != 0) && (req_uid != getuid())) {
+		rc = ESLURM_USER_ID_MISSING;
+		error
+		    ("Security violation, uid %u can't set node down",
+		     (unsigned int) req_uid);
+	} else {
+		rc = revoke_credential(req, conf->cred_state_list);
 
-	/*
-	 * Now kill all steps associated with this job, they are
-	 * no longer allowed to be running
-	 */
-	_kill_all_active_steps(req->job_id);
+		/*
+		 * Now kill all steps associated with this job, they are
+		 * no longer allowed to be running
+		 */
+		_kill_all_active_steps(req->job_id);
+
+		if (rc < 0)
+			error("revoking credential for job %d: %m", 
+			      req->job_id);
+		else
+			debug("credential for job %d revoked", req->job_id);
+	}
 
 	slurm_send_rc_msg(msg, rc);
-
-	if (rc < 0)
-		error("revoking credential for job %d: %m", req->job_id);
-	else
-		debug("credential for job %d revoked", req->job_id);
 }
