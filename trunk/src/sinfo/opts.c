@@ -517,7 +517,7 @@ static void _print_version(void)
 
 static void _usage( void )
 {
-	printf("Usage sinfo [-i seconds] [-t node_state] [-p PARTITION] [-n NODES]\n");
+	printf("Usage: sinfo [-i seconds] [-t node_state] [-p PARTITION] [-n NODES]\n");
 	printf("            [-S fields] [-o format] [--usage] [-elNsv]\n");
 }
 
