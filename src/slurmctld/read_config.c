@@ -92,10 +92,8 @@ static int _build_bitmaps(void)
 	last_part_update = time(NULL);
 
 	/* initialize the idle and up bitmaps */
-	if (idle_node_bitmap)
-		bit_free(idle_node_bitmap);
-	if (up_node_bitmap)
-		bit_free(up_node_bitmap);
+	FREE_NULL_BITMAP(idle_node_bitmap);
+	FREE_NULL_BITMAP(up_node_bitmap);
 	idle_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	up_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	if ((idle_node_bitmap == NULL) || (up_node_bitmap == NULL))
@@ -110,8 +108,7 @@ static int _build_bitmaps(void)
 	while ((config_record_point =
 		(struct config_record *)
 		list_next(config_record_iterator))) {
-		if (config_record_point->node_bitmap)
-			bit_free(config_record_point->node_bitmap);
+		FREE_NULL_BITMAP(config_record_point->node_bitmap);
 
 		config_record_point->node_bitmap =
 		    (bitstr_t *) bit_alloc(node_record_count);
@@ -156,8 +153,7 @@ static int _build_bitmaps(void)
 
 	while ((part_record_point =
 		(struct part_record *) list_next(part_record_iterator))) {
-		if (part_record_point->node_bitmap)
-			bit_free(part_record_point->node_bitmap);
+		FREE_NULL_BITMAP(part_record_point->node_bitmap);
 		part_record_point->node_bitmap =
 		    (bitstr_t *) bit_alloc(node_record_count);
 		if (part_record_point->node_bitmap == NULL)
@@ -321,7 +317,7 @@ static int _parse_node_spec(char *in_line)
 			getnodename(this_node_name, 128);
 		}
 		if (strcasecmp(this_node_name, "DEFAULT") == 0) {
-			xfree(node_name);
+			FREE_NULL(node_name);
 			node_name = NULL;
 			if (cpus_val != NO_VAL)
 				default_config_record.cpus = cpus_val;
@@ -336,9 +332,7 @@ static int _parse_node_spec(char *in_line)
 			if (state_val != NO_VAL)
 				default_node_record.node_state = state_val;
 			if (feature) {
-				if (default_config_record.feature)
-					xfree(default_config_record.
-					      feature);
+				FREE_NULL(default_config_record.feature);
 				default_config_record.feature = feature;
 				feature = NULL;
 			}
@@ -362,8 +356,7 @@ static int _parse_node_spec(char *in_line)
 			if (weight_val != NO_VAL)
 				config_point->weight = weight_val;
 			if (feature) {
-				if (config_point->feature)
-					xfree(config_point->feature);
+				FREE_NULL(config_point->feature);
 				config_point->feature = feature;
 				feature = NULL;
 			}
@@ -407,23 +400,18 @@ static int _parse_node_spec(char *in_line)
 		free(this_node_name);
 	}
 
-	/* xfree allocated storage */
-	if (node_addr)
-		xfree(node_addr);
+	/* free allocated storage */
+	FREE_NULL(node_addr);
 	if (addr_list)
 		hostlist_destroy(addr_list);
 	hostlist_destroy(host_list);
 	return error_code;
 
       cleanup:
-	if (node_addr)
-		xfree(node_addr);
-	if (node_name)
-		xfree(node_name);
-	if (feature)
-		xfree(feature);
-	if (state)
-		xfree(state);
+	FREE_NULL(node_addr);
+	FREE_NULL(node_name);
+	FREE_NULL(feature);
+	FREE_NULL(state);
 	return error_code;
 }
 
@@ -461,7 +449,7 @@ static int _parse_part_spec(char *in_line)
 	if (strlen(partition_name) >= MAX_NAME_LEN) {
 		error("_parse_part_spec: partition name %s too long",
 		      partition_name);
-		xfree(partition_name);
+		FREE_NULL(partition_name);
 		return EINVAL;
 	}
 
@@ -543,7 +531,7 @@ static int _parse_part_spec(char *in_line)
 	}
 
 	if (strcasecmp(partition_name, "DEFAULT") == 0) {
-		xfree(partition_name);
+		FREE_NULL(partition_name);
 		if (max_time_val != NO_VAL)
 			default_part.max_time = max_time_val;
 		if (max_nodes_val != NO_VAL)
@@ -555,14 +543,12 @@ static int _parse_part_spec(char *in_line)
 		if (shared_val != NO_VAL)
 			default_part.shared = shared_val;
 		if (allow_groups) {
-			if (default_part.allow_groups)
-				xfree(default_part.allow_groups);
+			FREE_NULL(default_part.allow_groups);
 			default_part.allow_groups = allow_groups;
 			allow_groups = NULL;
 		}
 		if (nodes) {
-			if (default_part.nodes)
-				xfree(default_part.nodes);
+			FREE_NULL(default_part.nodes);
 			default_part.nodes = nodes;
 			nodes = NULL;
 		}
@@ -597,16 +583,14 @@ static int _parse_part_spec(char *in_line)
 	if (shared_val != NO_VAL)
 		part_record_point->shared = shared_val;
 	if (allow_groups) {
-		if (part_record_point->allow_groups)
-			xfree(part_record_point->allow_groups);
+		FREE_NULL(part_record_point->allow_groups);
 		part_record_point->allow_groups = allow_groups;
 		allow_groups = NULL;
 	}
 	if (nodes) {
-		if (part_record_point->nodes)
-			xfree(part_record_point->nodes);
+		FREE_NULL(part_record_point->nodes);
 		if (strcmp(nodes, "localhost") == 0) {
-			xfree(nodes);
+			FREE_NULL(nodes);
 			nodes = xmalloc(128);
 			if (nodes == NULL)
 				fatal("memory allocation failure");
@@ -615,24 +599,17 @@ static int _parse_part_spec(char *in_line)
 		part_record_point->nodes = nodes;
 		nodes = NULL;
 	}
-	xfree(partition_name);
+	FREE_NULL(partition_name);
 	return 0;
 
       cleanup:
-	if (allow_groups)
-		xfree(allow_groups);
-	if (default_str)
-		xfree(default_str);
-	if (root_str)
-		xfree(root_str);
-	if (nodes)
-		xfree(nodes);
-	if (partition_name)
-		xfree(partition_name);
-	if (shared_str)
-		xfree(shared_str);
-	if (state_str)
-		xfree(state_str);
+	FREE_NULL(allow_groups);
+	FREE_NULL(default_str);
+	FREE_NULL(root_str);
+	FREE_NULL(nodes);
+	FREE_NULL(partition_name);
+	FREE_NULL(shared_str);
+	FREE_NULL(state_str);
 	return error_code;
 }
 
@@ -654,6 +631,8 @@ int read_slurm_conf(int recover)
 	int old_node_record_count;
 	struct node_record *old_node_table_ptr;
 	struct node_record *node_record_point;
+	char *old_logfile = slurmctld_conf.slurmctld_logfile;
+	uint16_t old_slurmctld_debug = slurmctld_conf.slurmctld_debug;
 
 	/* initialization */
 	start_time = clock();
@@ -682,8 +661,7 @@ int read_slurm_conf(int recover)
 			error
 			    ("read_slurm_conf line %d, of input file %s too long",
 			     line_num, slurmctld_conf.slurm_conf);
-			if (old_node_table_ptr)
-				xfree(old_node_table_ptr);
+			FREE_NULL(old_node_table_ptr);
 			fclose(slurm_spec_file);
 			return E2BIG;
 			break;
@@ -713,24 +691,21 @@ int read_slurm_conf(int recover)
 		if ((error_code =
 		     parse_config_spec(in_line, &slurmctld_conf))) {
 			fclose(slurm_spec_file);
-			if (old_node_table_ptr)
-				xfree(old_node_table_ptr);
+			FREE_NULL(old_node_table_ptr);
 			return error_code;
 		}
 
 		/* node configuration parameters */
 		if ((error_code = _parse_node_spec(in_line))) {
 			fclose(slurm_spec_file);
-			if (old_node_table_ptr)
-				xfree(old_node_table_ptr);
+			FREE_NULL(old_node_table_ptr);
 			return error_code;
 		}
 
 		/* partition configuration parameters */
 		if ((error_code = _parse_part_spec(in_line))) {
 			fclose(slurm_spec_file);
-			if (old_node_table_ptr)
-				xfree(old_node_table_ptr);
+			FREE_NULL(old_node_table_ptr);
 			return error_code;
 		}
 
@@ -739,20 +714,27 @@ int read_slurm_conf(int recover)
 	}
 	fclose(slurm_spec_file);
 
+	/* preserve command line values for logfile and debug level */
+	if (old_logfile) {
+		FREE_NULL(slurmctld_conf.slurmctld_logfile);
+		slurmctld_conf.slurmctld_logfile = old_logfile;
+	}
+	if (old_slurmctld_debug  && 
+	    (slurmctld_conf.slurmctld_debug == (uint16_t)NO_VAL))
+		slurmctld_conf.slurmctld_debug = old_slurmctld_debug;
+
 	validate_config(&slurmctld_conf);
 	_set_config_defaults(&slurmctld_conf);
 
 	if (default_part_loc == NULL) {
 		error("read_slurm_conf: default partition not set.");
-		if (old_node_table_ptr)
-			xfree(old_node_table_ptr);
+		FREE_NULL(old_node_table_ptr);
 		return EINVAL;
 	}
 
 	if (node_record_count < 1) {
 		error("read_slurm_conf: no nodes configured.");
-		if (old_node_table_ptr)
-			xfree(old_node_table_ptr);
+		FREE_NULL(old_node_table_ptr);
 		return EINVAL;
 	}
 
@@ -766,7 +748,7 @@ int read_slurm_conf(int recover)
 				node_record_point->node_state =
 				    old_node_table_ptr[i].node_state;
 		}
-		xfree(old_node_table_ptr);
+		FREE_NULL(old_node_table_ptr);
 	}
 	set_slurmd_addr();
 

@@ -98,7 +98,7 @@ delete_all_step_records (struct job_record *job_ptr)
 #endif
 		FREE_NULL(step_record_point->step_node_list);
 		FREE_NULL_BITMAP(step_record_point->step_node_bitmap);
-		xfree (step_record_point);
+		FREE_NULL(step_record_point);
 	}		
 
 	list_iterator_destroy (step_record_iterator);
@@ -132,7 +132,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 #endif
 			FREE_NULL(step_record_point->step_node_list);
 			FREE_NULL_BITMAP(step_record_point->step_node_bitmap);
-			xfree (step_record_point);
+			FREE_NULL(step_record_point);
 			error_code = 0;
 			break;
 		}
