@@ -2,8 +2,7 @@ Name: @PROJECT@
 Version: @VERSION@
 Release: @RELEASE@
 Summary: Simple Linux Utility for Resource Management
-Copyright: Copyright (C) 2002 The Regents of the University of California.  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).  UCRL-CODE-2002-040.
-License: GPL
+License: GPL - Copyright (C) 2002 The Regents of the University of California.  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).  UCRL-CODE-2002-040.
 Group: System Environment/Base
 Source: %{name}-%{version}-%{release}.tgz
 Requires: authd libreadline libpopt
