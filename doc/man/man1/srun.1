@@ -19,14 +19,11 @@ clusters managed by SLURM.
 parallel run options
 .TP
 \fB\-n\fR, \fB\-\-nprocs\fR=\fInprocs\fR
-Specify the number of processes to run. Request that
-.B srun
-allocate \fInprocs\fR processes. Specification of the number of processes
-per node may be achieved with the
-.B -c
-and
-.B -N
-options. If unspecified, the default is one process.
+Specify the number of processes to run. Request that \fBsrun\fR
+allocate \fInprocs\fR processes. Specification of the number of 
+processes per node may be achieved with the \fB\-c\fR and \fB\-N\fR
+options. The default is one process per node unless \fB\-c\fR 
+explicitly specifies otherwise.
 .TP
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR=\fIncpus\fR
 Request that \fIncpus\fR be allocated \fBper process\fR. This may be
