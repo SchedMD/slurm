@@ -910,8 +910,8 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 		response_msg . msg_type = RESPONSE_SUBMIT_BATCH_JOB ;
 		response_msg . data = & submit_msg ;
 		slurm_send_node_msg ( msg->conn_fd , & response_msg ) ;
+		schedule();
 	}
-	schedule();
 }
 
 /* slurm_rpc_allocate_resources:  process RPC to allocate resources for a job */
