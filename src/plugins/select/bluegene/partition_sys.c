@@ -165,7 +165,7 @@ extern int configure_partition(bgl_record_t *bgl_record)
 }
 
 /*
- * Download from CMCS the initial BGL partition information
+ * Download from MMCS the initial BGL partition information
  */
 int read_bgl_partitions()
 {
