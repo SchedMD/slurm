@@ -163,23 +163,47 @@ static int _remove_job(db_job_id_t job_id)
 /* Get the owner of an existing partition. Caller must xfree() return value. */
 static char *_get_part_owner(pm_partition_id_t bgl_part_id)
 {
-	int rc;
+	int rc, i, j, num_parts;
 	char *owner, *cur_owner;
-	rm_partition_t * part_elem;
-
-	if ((rc = rm_get_partition(bgl_part_id,  &part_elem)) != STATUS_OK) {
-		error("rm_get_partition(%s): %s", bgl_part_id, bgl_err_str(rc));
-		return NULL;
+	rm_partition_t *part_ptr;
+	rm_partition_list_t *part_list;
+	
+	for(i=2;i<6;i++) {
+		if ((rc = rm_get_partitions_info(i, &part_list))
+		    != STATUS_OK) {
+			error("rm_get_partitions() errno=%s\n", 
+			      bgl_err_str(rc));
+			
+		}
+		rm_get_data(part_list, RM_PartListSize, &num_parts);
+		for(j=0; j<num_parts; j++) {
+			if(j)
+				rm_get_data(part_list, RM_PartListNextPart, &part_ptr);
+			else
+				rm_get_data(part_list, RM_PartListFirstPart, &part_ptr);
+			rm_get_data(part_ptr, RM_PartitionID, &owner);
+			if(!strcasecmp(bgl_part_id, owner)) {
+				rc = rm_get_data(part_ptr, RM_PartitionUserName, &owner);
+				break;
+			}
+		}
+		rm_free_partition_list(part_list);
+		if(j<num_parts)
+			break;
 	}
-	if ((rc = rm_get_data(part_elem, RM_PartitionUserName, &owner)) != 
-			STATUS_OK) {
-		error("rm_get_data(RM_PartitionUserName): %s", bgl_err_str(rc));
-		(void) rm_free_partition(part_elem);
-		return NULL;
-	}
+	/* if ((rc = rm_get_partition(bgl_part_id,  &part_ptr)) != STATUS_OK) { */
+/* 		error("rm_get_partition(%s): %s", bgl_part_id, bgl_err_str(rc)); */
+/* 		return NULL; */
+/* 	} */
+/* 	if ((rc = rm_get_data(part_ptr, RM_PartitionUserName, &owner)) !=  */
+/* 			STATUS_OK) { */
+/* 		error("rm_get_data(RM_PartitionUserName): %s", bgl_err_str(rc)); */
+/* 		(void) rm_free_partition(part_ptr); */
+/* 		return NULL; */
+/* 	} */
 	cur_owner = xstrdup(owner);
-	if ((rc = rm_free_partition(part_elem)) != STATUS_OK)
-		error("rm_free_partition(): %s", bgl_err_str(rc));
+	/* if ((rc = rm_free_partition(part_ptr)) != STATUS_OK) */
+/* 		error("rm_free_partition(): %s", bgl_err_str(rc)); */
 	return cur_owner;
 }
 
@@ -187,7 +211,7 @@ static char *_get_part_owner(pm_partition_id_t bgl_part_id)
 static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 {
 	int rc;
-	rm_partition_t * part_elem;
+	rm_partition_t * part_ptr;
 	
 	if (user && user[0])
 		info("Setting partition %s owner to %s", bgl_part_id, user);
@@ -205,7 +229,7 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 	int err_ret = SLURM_SUCCESS;
 
 /* 	find the partition */
-	if ((rc = rm_get_partition(bgl_part_id,  &part_elem)) != STATUS_OK) {
+	if ((rc = rm_get_partition(bgl_part_id,  &part_ptr)) != STATUS_OK) {
 		error("rm_get_partition(%s): %s", bgl_part_id, bgl_err_str(rc));
 		return SLURM_ERROR;
 	}
@@ -218,47 +242,72 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 	}
 	
 
-/* 	if ((rc = rm_set_data(part_elem, RM_PartitionUserName, &user)) */
+/* 	if ((rc = rm_set_data(part_ptr, RM_PartitionUserName, &user)) */
 /* 			!= STATUS_OK) { */
 /* 		error("rm_set_date(%s, RM_PartitionUserName): %s", bgl_part_id, */
 /* 			bgl_err_str(rc)); */
 /* 		err_ret = SLURM_ERROR; */
 /* 	} */
 
-	if ((rc = rm_free_partition(part_elem)) != STATUS_OK)
+	if ((rc = rm_free_partition(part_ptr)) != STATUS_OK)
 		error("rm_free_partition(): %s", bgl_err_str(rc));
 
 	return err_ret;
 #else
-	int i=0;
-	rm_partition_state_t part_state;
+	int i=0, j, num_parts;
+	rm_partition_list_t *part_list;
+	//rm_partition_state_t part_state;
+	rm_partition_state_flag_t part_state = RM_PARTITION_FREE+2;
+	char *name;
+	int is_ready=0;
 	/* Wait for partition state to be FREE */
 	for (i=0; i<MAX_POLL_RETRIES; i++) {
 		if (i > 0)
 			sleep(POLL_INTERVAL);
 
-		/* find the partition */
-		if ((rc = rm_get_partition(bgl_part_id,  &part_elem)) != 
-				STATUS_OK) {
-			error("rm_get_partition(%s): %s", bgl_part_id, 
+		if ((rc = rm_get_partitions_info(part_state, &part_list))
+		    != STATUS_OK) {
+			error("rm_get_partitions() errno=%s\n", 
 				bgl_err_str(rc));
-			return SLURM_ERROR;
+			
 		}
-
-		/* find its state */
-		rc = rm_get_data(part_elem, RM_PartitionState, &part_state);
-		if (rc != STATUS_OK) {
-			error("rm_get_data(RM_PartitionState): %s", 
-				bgl_err_str(rc));
-			(void) rm_free_partition(part_elem);
-			return SLURM_ERROR;
+		rm_get_data(part_list, RM_PartListSize, &num_parts);
+		for(j=0; j<num_parts; j++) {
+			if(j)
+				rm_get_data(part_list, RM_PartListNextPart, &part_ptr);
+			else
+				rm_get_data(part_list, RM_PartListFirstPart, &part_ptr);
+			rm_get_data(part_ptr, RM_PartitionID, &name);
+			if(!strcasecmp(bgl_part_id, name)) {
+				is_ready = 1;
+				break;
+			}
 		}
+		rm_free_partition_list(part_list);
+		if(is_ready)
+			break;
+		/* /\* find the partition *\/ */
+/* 		if ((rc = rm_get_partition(bgl_part_id,  &part_ptr)) !=  */
+/* 				STATUS_OK) { */
+/* 			error("rm_get_partition(%s): %s", bgl_part_id,  */
+/* 				bgl_err_str(rc)); */
+/* 			return SLURM_ERROR; */
+/* 		} */
 
-		if ((rc = rm_free_partition(part_elem)) != STATUS_OK)
-			error("rm_free_partition(): %s", bgl_err_str(rc));
+/* 		/\* find its state *\/ */
+/* 		rc = rm_get_data(part_ptr, RM_PartitionState, &part_state); */
+/* 		if (rc != STATUS_OK) { */
+/* 			error("rm_get_data(RM_PartitionState): %s",  */
+/* 				bgl_err_str(rc)); */
+/* 			(void) rm_free_partition(part_ptr); */
+/* 			return SLURM_ERROR; */
+/* 		} */
 
-		if (part_state == RM_PARTITION_FREE)
-			break;	/* partition is now free */
+/* 		if ((rc = rm_free_partition(part_ptr)) != STATUS_OK) */
+/* 			error("rm_free_partition(): %s", bgl_err_str(rc)); */
+
+/* 		if (part_state == RM_PARTITION_FREE) */
+/* 			break;	/\* partition is now free *\/ */
 
 		/* Destroy the partition, only on first pass */
 		if ((i == 0)
@@ -269,7 +318,12 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 		}
 	}
 
-	if (part_state != RM_PARTITION_FREE) {
+	/* if (part_state != RM_PARTITION_FREE) { */
+/* 		error("Could not free partition %s", bgl_part_id); */
+/* 		return SLURM_ERROR; */
+/* 	} */
+
+	if (!is_ready) {
 		error("Could not free partition %s", bgl_part_id);
 		return SLURM_ERROR;
 	}

@@ -112,7 +112,7 @@ static int _post_allocate(bgl_record_t *bgl_record)
 {
 	int rc;
 	pm_partition_id_t part_id;
-	char command[255];
+	//char command[255];
 	/* Add partition record to the DB */
 	debug("adding partition\n");
 	
@@ -186,8 +186,11 @@ int read_bgl_partitions()
 #ifndef USE_BGL_FILE
 	int *coord;
 	char *bp_id;
-	int part_number, lowest_part=300;
-	char part_name[7];
+	int part_number, part_count;
+	char *part_name;
+	rm_partition_list_t *part_list;
+	rm_partition_state_flag_t state = 5;
+	
 #endif
 
 	/* This code is here to blow add partitions after we get the 
@@ -199,9 +202,23 @@ int read_bgl_partitions()
 		error("rm_set_serial(): %d\n", rc);
 		return SLURM_ERROR;
 	}			
-	for(part_number=101; part_number<lowest_part; part_number++) {
-		memset(part_name,0,7);
-		sprintf(part_name, "RMP%d", part_number);
+	if ((rc = rm_get_partitions_info(state, &part_list))
+	    != STATUS_OK) {
+		error("rm_get_partitions(): %s",
+		      bgl_err_str(rc));
+		return SLURM_ERROR;
+		
+	}
+	
+	rm_get_data(part_list, RM_PartListSize, &part_count);
+	
+	rm_get_data(part_list, RM_PartListFirstPart, &part_ptr);
+	
+	for(part_number=0; part_number<part_count; part_number++) {
+		rm_get_data(part_ptr, RM_PartitionID, &part_name);
+		if(strncmp("RMP",part_name,3))
+			goto next_partition;
+		
 		//debug("Checking if Partition %s is free",part_name);
 		if ((rc = rm_get_partition(part_name, &part_ptr))
 		    != STATUS_OK) {
@@ -309,16 +326,22 @@ int read_bgl_partitions()
 				
 		bgl_record->part_lifecycle = STATIC;
 				
+	next_partition:
+		/* if ((rc = rm_free_partition(part_ptr)) != STATUS_OK) { */
+/* 		} */
+		rm_get_data(part_list, RM_PartListNextPart, &part_ptr);
 
-		if ((rm_rc = rm_free_partition(part_ptr))
-		    != STATUS_OK) {
-			error("rm_free_partition(): %s",
-			      bgl_err_str(rm_rc));
-		}
+		/* if ((rm_rc = rm_free_partition(part_ptr)) */
+/* 		    != STATUS_OK) { */
+/* 			error("rm_free_partition(): %s", */
+/* 			      bgl_err_str(rm_rc)); */
+/* 		} */
 
 		//sleep(3);
 		//debug("Removed Freed Partition %s",part_name);
 	}
+	rm_free_partition_list(part_list);
+		
 //#endif
 #else
 	if ((rc = rm_get_BGL(&bgl)) != STATUS_OK) {
