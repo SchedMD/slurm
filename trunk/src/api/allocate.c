@@ -191,7 +191,8 @@ slurm_allocate_resources_and_run (job_desc_msg_t *req,
 		*resp = NULL;
 		break ;
 	case RESPONSE_ALLOCATION_AND_RUN_JOB_STEP:
-		*resp = resp_msg.data;
+		*resp = (resource_allocation_and_run_response_msg_t *) 
+			resp_msg.data;
 		break;
 	default:
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
