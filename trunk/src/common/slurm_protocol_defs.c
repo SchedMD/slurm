@@ -498,7 +498,7 @@ void slurm_init_part_desc_msg ( update_part_msg_t * update_part_msg )
 }
 
 char *
-job_state_string(uint16_t inx) 
+job_state_string( enum job_states inx) 
 {
 	static char *job_state_string[] = {
 		"PENDING", 
@@ -514,7 +514,23 @@ job_state_string(uint16_t inx)
 }
 
 char *
-node_state_string(uint16_t inx) 
+job_state_string_compact( enum job_states inx) 
+{
+	static char *job_state_string[] = {
+		"PD", 
+		"SI", 
+		"R", 
+		"SO", 
+		"C", 
+		"F", 
+		"TO", 
+		"END" 
+	};
+	return job_state_string[inx];
+}
+
+char *
+node_state_string( enum node_states inx) 
 {
 	static char *node_state_string[] = {
 		"DOWN", 
@@ -523,6 +539,21 @@ node_state_string(uint16_t inx)
 		"ALLOCATED", 
 		"DRAINED", 
 		"DRAINING", 
+		"END" 
+	};
+	return node_state_string[inx];
+}
+	
+char *
+node_state_string_compact( enum node_states inx) 
+{
+	static char *node_state_string[] = {
+		"DN", 
+		"UN", 
+		"I", 
+		"AL", 
+		"DD", 
+		"DG", 
 		"END" 
 	};
 	return node_state_string[inx];

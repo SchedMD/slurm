@@ -576,8 +576,10 @@ void inline slurm_free_reattach_tasks_streams_msg ( reattach_tasks_streams_msg_t
 void inline slurm_free_revoke_credential_msg ( revoke_credential_msg_t * msg ) ;
 
 extern char *job_dist_string(uint16_t inx);
-extern char *job_state_string(uint16_t inx);
-extern char *node_state_string(uint16_t inx);
+extern char *job_state_string(enum job_states inx);
+extern char *job_state_string_compact(enum job_states inx);
+extern char *node_state_string(enum node_states inx);
+extern char *node_state_string_compact(enum node_states inx);
 
 #define SLURM_JOB_DESC_DEFAULT_CONTIGUOUS	NO_VAL
 #define SLURM_JOB_DESC_DEFAULT_ENVIRONMENT	((char **) NULL)
