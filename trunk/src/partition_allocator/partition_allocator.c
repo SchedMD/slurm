@@ -524,11 +524,10 @@ int _find_first_match(pa_request_t* pa_request, List* results)
 	for (x=0; x<DIM_SIZE[X]; x++){
 		cur_dim = X;
 		cur_node_id = x;
-		
 
 		if (found_count[cur_dim] != geometry[cur_dim]){
 			pa_node_t* pa_node = &_pa_system_ptr->grid[x][y][z];
-			printf("address of pa_node %d%d%d(%s) 0x%p\n", x,y,z, convert_dim(cur_dim), pa_node);
+			// printf("address of pa_node %d%d%d(%s) 0x%p\n", x,y,z, convert_dim(cur_dim), pa_node);
 			match_found = _check_pa_node(pa_node);
 			if (match_found){
 				/* now we recursively snake down the remaining dimensions 
@@ -539,12 +538,12 @@ int _find_first_match(pa_request_t* pa_request, List* results)
 				if (remaining_OK){
 					/* insert the pa_node_t* into the List of results */
 					_insert_result(*results, pa_node);
-#ifdef DEBUG_PA
-					 printf("_find_first_match: found match for %s = %d%d%d\n",
-						convert_dim(cur_dim), x,y,z); 
-#endif
-						
 					found_count[cur_dim]++;
+#ifdef DEBUG_PA
+					printf("_find_first_match: found match for %s = %d%d%d\n",
+					       convert_dim(cur_dim), x,y,z); 
+					printf("<found %d geometry %d>\n", found_count[cur_dim], geometry[cur_dim]);
+#endif
 					if (found_count[cur_dim] == geometry[cur_dim]){
 #ifdef DEBUG_PA
 						printf("_find_first_match: found full match for %s dimension\n", 
@@ -614,7 +613,8 @@ int _find_first_match(pa_request_t* pa_request, List* results)
  * 
  * 
  */
-bool _find_first_match_aux(pa_request_t* pa_request, int dim2check, int var_dim,
+bool _find_first_match_aux(pa_request_t* pa_request, 
+			   int dim2check, int var_dim,
 			   int dimA, int dimB, List* results)
 {
 	int i=0;
@@ -635,7 +635,6 @@ bool _find_first_match_aux(pa_request_t* pa_request, int dim2check, int var_dim,
 			a = dimA;
 			b = i;
 			c = dimB;
-
 		} else {
 			a = dimA;
 			b = dimB;
@@ -666,8 +665,18 @@ bool _find_first_match_aux(pa_request_t* pa_request, int dim2check, int var_dim,
 					// convert_dim(dim2check), pa_node->coord[0], pa_node->coord[1], pa_node->coord[2]); 
 #endif
 					
-					found_count[dim2check]++;
-					if (found_count[dim2check] == geometry[dim2check]){
+					// found_count[dim2check]++;
+					found_count[var_dim]++;
+#ifdef DEBUG_PA
+					if (var_dim == Z && match_found){
+						printf("var_dim %d dim2check %d\n", var_dim, dim2check);
+						printf("match found for Z\n");
+						printf("found_count %d\n", found_count[var_dim]);
+					}
+					printf("dim %d <found %d geometry %d>\n", var_dim, found_count[var_dim], geometry[var_dim]);
+#endif
+					if (found_count[var_dim] == geometry[var_dim]){
+					// if (found_count[dim2check] == geometry[dim2check]){
 #ifdef DEBUG_PA
 						; // printf("_find_first_match_aux: found full match for %s dimension\n", convert_dim(dim2check));
 #endif
@@ -1055,7 +1064,6 @@ void _reset_pa_system()
 	
 	/* after that's done, we should be left with the top
 	 * of the stack which was the original pa_system */
-	// 999
 	// _pa_system = *pa_system;
 	set_ptr(_pa_system_ptr, pa_system);
 }
@@ -1271,7 +1279,6 @@ void pa_init()
 /* 	filenames[Y] = "Y_dim_torus.conf"; */
 /* 	filenames[Z] = "Z_dim_torus.conf"; */
 
-	// 999
 	// filenames[X] = getenv("X_DIM_CONF");
 	// filenames[Y] = getenv("Y_DIM_CONF");
 	// filenames[Z] = getenv("Z_DIM_CONF");
@@ -1371,11 +1378,11 @@ void set_node_down(int c[PA_SYSTEM_DIMENSIONS])
 #endif
 
 	/* first we make a copy of the current system */
-	// 999
 	// _backup_pa_system();
 
 	/* basically set the node as NULL */
-	_delete_pa_node(&_pa_system_ptr->grid[c[0]][c[1]][c[2]]);
+	_pa_system_ptr->grid[c[0]][c[1]][c[2]].used = true;
+	// _delete_pa_node(&_pa_system_ptr->grid[c[0]][c[1]][c[2]]);
 }
 
 /** 
@@ -1404,7 +1411,6 @@ int allocate_part(pa_request_t* pa_request, List* results)
 	print_pa_request(pa_request);
 #endif
 
-	// 999
 	// _backup_pa_system();
 	if (!_find_first_match(pa_request, results))
 		return 1;
@@ -1426,7 +1432,6 @@ int undo_last_allocatation()
 		return SLURM_ERROR;
 	} else {
 		_delete_pa_system(_pa_system_ptr);
-		// 999 
 		// _pa_system = *pa_system;
 		set_ptr(_pa_system_ptr, pa_system);
 	}
@@ -1543,15 +1548,17 @@ int main(int argc, char** argv)
 	  set_node_down(dead_node2);
 	  printf("done setting node down\n");
 	*/
+	  int dead_node1[3] = {0,0,0};
+	  set_node_down(dead_node1);
 	
-	time(&start);
+	// time(&start);
 	if (allocate_part(request, &results)){
 		ListIterator itr;
 
-		printf("allocation succeeded\n");
+		printf("<allocation succeeded>\n");
 		       
-		itr = list_iterator_create(results);
-		printf("results: \n");
+/* 		itr = list_iterator_create(results); */
+/* 		printf("results: \n"); */
 		/*
 		pa_node_t* result;
 		while((result = (pa_node_t*) list_next(itr))){
@@ -1562,23 +1569,22 @@ int main(int argc, char** argv)
 		}
 		printf("\n");
 		*/
-		char* result = get_conf_result_str(results);
-		printf("results: %s\n", result);
-		xfree(result);
-		printf("results: %s\n", result);
+/* 		char* result = get_conf_result_str(results); */
+/* 		printf("results: %s\n", result); */
+/* 		xfree(result); */
+/* 		printf("results: %s\n", result); */
 		list_destroy(results);
 		// _print_results(results);
 	} else {
 		printf("request failed\n");
 	}
-	time(&end);
-	printf("allocate: %ld\n", (end-start));
+	// time(&end);
+	// printf("allocate: %ld\n", (end-start));
 
-
-	time(&start);
+	// time(&start);
 	pa_fini();
-	time(&end);
-	printf("fini: %ld\n", (end-start));
+	// time(&end);
+	// printf("fini: %ld\n", (end-start));
 
 	delete_pa_request(request);
 
