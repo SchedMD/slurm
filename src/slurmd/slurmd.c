@@ -256,6 +256,7 @@ void slurm_rpc_launch_tasks ( slurm_msg_t * msg )
 	launch_tasks_msg_t * task_desc = ( launch_tasks_msg_t * ) msg->data ;
 
 	start_time = clock ();
+	info ("slurmd_req: launch tasks message received");
 
 	/* do RPC call */
 	error_code = launch_tasks ( task_desc );
