@@ -34,6 +34,7 @@
 #define PURE_ALPHA_SORT 0
 
 static bool reverse_order;
+static bool part_order;		/* order same as in part table */
 
 static int _sort_by_avail(void *void1, void *void2);
 static int _sort_by_cpus(void *void1, void *void2);
@@ -64,16 +65,21 @@ void sort_sinfo_list(List sinfo_list)
 		if (params.node_flag)
 			params.sort = xstrdup("N");
 		else
-			params.sort = xstrdup("P,-t");
+			params.sort = xstrdup("#P,-t");
 	}
 
 	for (i=(strlen(params.sort)-1); i >= 0; i--) {
 		reverse_order = false;
-		if ((params.sort[i] == ',') || 
-		    (params.sort[i] == '+') || params.sort[i] == '-')
+		part_order    = false;
+
+		if ((params.sort[i] == ',') || (params.sort[i] == '#') ||  
+		    (params.sort[i] == '+') || (params.sort[i] == '-'))
 			continue;
 		if ((i > 0) && (params.sort[i-1] == '-'))
 			reverse_order = true;
+		if ((i > 0) && (params.sort[i-1] == '#'))
+                        part_order = true;
+
 		if      (params.sort[i] == 'a')
 				list_sort(sinfo_list, _sort_by_avail);
 		else if (params.sort[i] == 'A')
@@ -341,11 +347,15 @@ static int _sort_by_partition(void *void1, void *void2)
 	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
 	char *val1 = "", *val2 = "";
 
-	if (sinfo1->part_info && sinfo1->part_info->name)
-		val1 = sinfo1->part_info->name;
-	if (sinfo2->part_info && sinfo2->part_info->name)
-		val2 = sinfo2->part_info->name;
-	diff = strcmp(val1, val2);
+	if (part_order) {
+		diff = sinfo1->part_inx - sinfo2->part_inx;
+	} else {
+		if (sinfo1->part_info && sinfo1->part_info->name)
+			val1 = sinfo1->part_info->name;
+		if (sinfo2->part_info && sinfo2->part_info->name)
+			val2 = sinfo2->part_info->name;
+		diff = strcmp(val1, val2);
+	}
 
 	if (reverse_order)
 		diff = -diff;

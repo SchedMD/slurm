@@ -80,6 +80,7 @@ typedef struct {
 	/* part_info contains partition, avail, max_time, job_size, 
 	 * root, share, groups */
 	partition_info_t* part_info;
+	uint16_t part_inx;
 } sinfo_data_t;
 
 /* Identify what fields must match for a node's information to be 
