@@ -1,7 +1,18 @@
 #ifndef _SLURM_PROTOCOL_DEFS_H
 #define _SLURM_PROTOCOL_DEFS_H
-#include <stdint.h>
- 
+
+#if HAVE_CONFIG_H
+#  include <config.h>
+#  if HAVE_INTTYPES_H
+#    include <inttypes.h>
+#  else
+#    if HAVE_STDINT_H
+#      include <stdint.h>
+#    endif
+#  endif  /* HAVE_INTTYPES_H */
+#else   /* !HAVE_CONFIG_H */
+#  include <inttypes.h>
+#endif  /*  HAVE_CONFIG_H */
 
 /* true, false */
 #define true -1
@@ -87,20 +98,20 @@ typedef struct slurm_protocol_header
 {
 	uint16_t version ;
 	uint16_t flags ;
-	uint16_t message_type ;
+	uint16_t msg_type ;
 	uint32_t body_length ;
 } header_t ;
 
-typedef struct slurm_node_registration_status_message
+typedef struct slurm_node_registration_status_msg
 {
 	uint32_t timestamp ;
 	uint32_t memory_size ;
  	uint32_t temporary_disk_space ;
-} node_registration_status_message_t ;
+} node_registration_status_msg_t ;
 
-typedef struct slurm_message
+typedef struct slurm_msg
 {
-	uint16_t message_type ;
-	void * message ;
-} slurm_message_t ;
+	uint16_t msg_type ;
+	void * msg ;
+} slurm_msg_t ;
 #endif

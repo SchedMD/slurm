@@ -4,6 +4,7 @@
 #include <src/common/slurm_protocol_interface.h>
 #include <src/common/slurm_protocol_common.h>
 #include <src/common/slurm_protocol_defs.h>
+#include <src/common/log.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
@@ -12,23 +13,22 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-extern int debug ;
+#include <string.h>
 
 /* high level calls */
-uint32_t _slurm_init_message_engine ( slurm_addr * slurm_address )
+uint32_t _slurm_init_msg_engine ( slurm_addr * slurm_address )
 {
 	return _slurm_listen_stream ( slurm_address ) ;
 }
 
-ssize_t _slurm_message_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address )
+ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address )
 {
 	slurm_fd connection_fd ;
 	size_t recv_len ;
 	connection_fd = _slurm_accept_stream ( open_fd , slurm_address ) ;
 	if ( connection_fd == SLURM_SOCKET_ERROR )
 	{
-		fprintf ( stderr , "Error opening stream socket to receive message datagram emulation layeri\n" ) ;
+		debug ( "Error opening stream socket to receive msg datagram emulation layeri\n" ) ;
 		return connection_fd ;
 	}
 	recv_len = _slurm_recv ( connection_fd , buffer , size , NO_SEND_RECV_FLAGS ) ;
@@ -36,14 +36,14 @@ ssize_t _slurm_message_recvfrom ( slurm_fd open_fd, char *buffer , size_t size ,
 	return recv_len ;
 }
 
-ssize_t _slurm_message_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address )
+ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address )
 {
 	slurm_fd connection_fd ;
 	size_t send_len ;
 	connection_fd = _slurm_open_stream ( slurm_address ) ;
 	if ( connection_fd == SLURM_SOCKET_ERROR )
 	{
-		fprintf ( stderr , "Error opening stream socket to send message datagram emulation layer\n" ) ;
+		debug ( "Error opening stream socket to send msg datagram emulation layer\n" ) ;
 		return connection_fd ;
 	}
 	send_len = _slurm_send ( connection_fd ,  buffer , size , NO_SEND_RECV_FLAGS ) ;
@@ -51,7 +51,7 @@ ssize_t _slurm_message_sendto ( slurm_fd open_fd, char *buffer , size_t size , u
 	return send_len ;
 }
 
-uint32_t _slurm_shutdown_message_engine ( slurm_fd open_fd )
+uint32_t _slurm_shutdown_msg_engine ( slurm_fd open_fd )
 {
 	return _slurm_close ( open_fd ) ;
 }
@@ -63,10 +63,7 @@ uint32_t _slurm_listen_stream ( slurm_addr * slurm_address )
 	rc =_slurm_create_socket ( SLURM_STREAM ) ;
 	if ( rc == SLURM_SOCKET_ERROR )
 	{
-		if ( debug )
-		{
-			fprintf( stderr, "Error creating slurm stream socket: errno %i\n", errno ) ;
-		}
+		debug( "Error creating slurm stream socket: errno %i\n", errno ) ;
 		return rc ;
 	}
 	else
@@ -77,20 +74,14 @@ uint32_t _slurm_listen_stream ( slurm_addr * slurm_address )
 	rc = _slurm_bind ( connection_fd , ( struct sockaddr const * ) slurm_address , sizeof ( slurm_addr ) ) ;
 	if ( rc == SLURM_SOCKET_ERROR )
 	{
-		if ( debug )
-		{
-			fprintf( stderr, "Error binding slurm stream socket: errno %i\n" , errno ) ;
-		}
+		debug( "Error binding slurm stream socket: errno %i\n" , errno ) ;
 		return rc ;
 	}
 
 	rc = _slurm_listen ( connection_fd , DEFAULT_LISTEN_BACKLOG ) ;
 	if ( rc == SLURM_SOCKET_ERROR )
 	{
-		if ( debug )
-		{
-			fprintf( stderr, "Error listening on slurm stream socket: errno %i\n" , errno ) ;
-		}
+		debug( "Error listening on slurm stream socket: errno %i\n" , errno ) ;
 		return rc ;
 	}
 
@@ -105,10 +96,7 @@ uint32_t _slurm_accept_stream ( slurm_fd open_fd , slurm_addr * slurm_address )
 	rc =_slurm_accept ( open_fd , ( struct sockaddr * ) slurm_address , & addr_len ) ;
 	if ( rc == SLURM_SOCKET_ERROR )
 	{
-		if ( debug )
-		{
-			fprintf( stderr, "Error accepting slurm stream socket: errno %i\n", errno ) ;
-		}
+		debug( "Error accepting slurm stream socket: errno %i\n", errno ) ;
 		return rc ;
 	}
 	else
@@ -126,10 +114,7 @@ uint32_t _slurm_open_stream ( slurm_addr * slurm_address )
 	rc =_slurm_create_socket ( SLURM_STREAM ) ;
 	if ( rc == SLURM_SOCKET_ERROR )
 	{
-		if ( debug )
-		{
-			fprintf( stderr, "Error creating slurm stream socket: errno %i\n", errno ) ;
-		}
+		debug( "Error creating slurm stream socket: errno %i\n", errno ) ;
 		return rc ;
 	}
 	else
@@ -140,10 +125,7 @@ uint32_t _slurm_open_stream ( slurm_addr * slurm_address )
 	rc = _slurm_connect ( connection_fd , ( struct sockaddr const * ) slurm_address , sizeof ( slurm_addr ) ) ;
 	if ( rc == SLURM_SOCKET_ERROR )
 	{
-		if ( debug )
-		{
-			fprintf( stderr, "Error listening on slurm stream socket: errno %i\n" , errno ) ;
-		}
+		debug( "Error listening on slurm stream socket: errno %i\n" , errno ) ;
 		return rc ;
 	}
 
@@ -241,18 +223,18 @@ extern ssize_t _slurm_recvfrom (int __fd, void *__restrict __buf, size_t __n, in
 	return recvfrom ( __fd , __buf , __n , __flags , __addr, __addr_len) ;
 }
 
-/* Send a message described MESSAGE on socket FD.
+/* Send a msg described MESSAGE on socket FD.
  *    Returns the number of bytes sent, or -1 for errors.  */
-extern ssize_t _slurm_sendmsg (int __fd, __const struct msghdr *__message, int __flags)
+extern ssize_t _slurm_sendmsg (int __fd, __const struct msghdr *__msg, int __flags)
 {
-	return sendmsg ( __fd , __message , __flags ) ;
+	return sendmsg ( __fd , __msg , __flags ) ;
 }
 
-/* Send a message described MESSAGE on socket FD.
+/* Send a msg described MESSAGE on socket FD.
  * Returns the number of bytes read or -1 for errors.  */
-extern ssize_t _slurm_recvmsg (int __fd, struct msghdr *__message, int __flags)
+extern ssize_t _slurm_recvmsg (int __fd, struct msghdr *__msg, int __flags)
 {
-	return recvmsg ( __fd , __message , __flags );
+	return recvmsg ( __fd , __msg , __flags );
 }
 
 /* Put the current value for socket FD's option OPTNAME at protocol level LEVEL
@@ -350,3 +332,30 @@ extern int _slurm_ioctl(int d, int request, ...)
 }
 */
 
+/* sets the fields of a slurm_addr */
+void _slurm_set_addr_uint ( slurm_addr * slurm_address , uint16_t port , uint32_t ip_address )
+{
+	slurm_address -> family = AF_SLURM ;
+	slurm_address -> port = htons ( port ) ;
+	slurm_address -> address = htonl ( ip_address ) ;
+}
+
+/* sets the fields of a slurm_addr */
+void _slurm_set_addr ( slurm_addr * slurm_address , uint16_t port , char * host )
+{
+	_slurm_set_addr_char ( slurm_address , port , host ) ;		
+}
+void _slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , char * host )
+{
+	struct hostent * host_info = gethostbyname ( host ) ;
+	memcpy ( & slurm_address -> address , & host_info -> h_addr , host_info -> h_length ) ;
+	slurm_address -> family = AF_SLURM ;
+	slurm_address -> port = htons ( port ) ;
+}
+
+void _slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * host , uint32_t buf_len )
+{
+	struct hostent * host_info = gethostbyaddr ( ( char * ) &( slurm_address -> address) , sizeof ( slurm_address ->  address ) , AF_SLURM ) ;
+	*port = slurm_address -> port ;
+	strncpy ( host , host_info -> h_name , buf_len ) ;
+}

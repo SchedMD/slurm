@@ -2,13 +2,11 @@
 #include <src/common/pack.h>
 #include <stdio.h>
 
-extern int debug ;
-
 void pack_header ( char ** buffer , uint32_t * length , header_t * header )
 {
 	pack16 ( header -> version , ( void ** ) buffer , length ) ;
 	pack16 ( header -> flags , ( void ** ) buffer , length ) ;
-	pack16 ( header -> message_type , ( void ** ) buffer , length ) ;
+	pack16 ( header -> msg_type , ( void ** ) buffer , length ) ;
 	pack32 ( header -> body_length , ( void ** ) buffer , length ) ;
 }
 
@@ -16,13 +14,13 @@ void unpack_header ( char ** buffer , uint32_t * length , header_t * header )
 {
 	unpack16 ( & header -> version , ( void ** ) buffer , length ) ;
 	unpack16 ( & header -> flags , ( void ** ) buffer , length ) ;
-	unpack16 ( & header -> message_type , ( void ** ) buffer , length ) ;
+	unpack16 ( & header -> msg_type , ( void ** ) buffer , length ) ;
 	unpack32 ( & header -> body_length , ( void ** ) buffer , length ) ;
 }
 
-void pack_message ( char ** buffer , uint32_t * buf_len , slurm_message_t const * message )
+void pack_msg ( char ** buffer , uint32_t * buf_len , slurm_msg_t const * msg )
 {
-	switch ( message -> message_type )
+	switch ( msg -> msg_type )
 	{
 		case REQUEST_NODE_REGISRATION_STATUS :
 			break ;
@@ -82,46 +80,43 @@ void pack_message ( char ** buffer , uint32_t * buf_len , slurm_message_t const 
 		case MESSAGE_UPLOAD_ACCOUNTING_INFO :
 			break ;
 		default :
-			if ( debug )
-			{
-				fprintf ( stderr , "No pack method for message type %i",  message -> message_type ) ;
-			}
+			debug ( stderr , "No pack method for msg type %i",  msg -> msg_type ) ;
 			break;
 		
 	}
 }
 
-void unpack_message ( char ** buffer , uint32_t * buf_len , slurm_message_t * message )
+void unpack_msg ( char ** buffer , uint32_t * buf_len , slurm_msg_t * msg )
 {
-	switch ( message -> message_type )
+	switch ( msg -> msg_type )
 	{
 	}
 }
 
-void pack_node_registration_status_message ( char ** buffer , uint32_t * length , node_registration_status_message_t * message )
+void pack_node_registration_status_msg ( char ** buffer , uint32_t * length , node_registration_status_msg_t * msg )
 {
-	pack32 ( message -> timestamp , ( void ** ) buffer , length ) ;
-	pack32 ( message -> memory_size , ( void ** ) buffer , length ) ;
-	pack32 ( message -> temporary_disk_space , ( void ** ) buffer , length ) ;
+	pack32 ( msg -> timestamp , ( void ** ) buffer , length ) ;
+	pack32 ( msg -> memory_size , ( void ** ) buffer , length ) ;
+	pack32 ( msg -> temporary_disk_space , ( void ** ) buffer , length ) ;
 }
 
-void unpack_node_registration_status_message ( char ** buffer , uint32_t * length , node_registration_status_message_t * message )
+void unpack_node_registration_status_msg ( char ** buffer , uint32_t * length , node_registration_status_msg_t * msg )
 {
-	unpack32 ( & message -> timestamp , ( void ** ) buffer , length ) ;
-	unpack32 ( & message -> memory_size , ( void ** ) buffer , length ) ;
-	unpack32 ( & message -> temporary_disk_space , ( void ** ) buffer , length ) ;
+	unpack32 ( & msg -> timestamp , ( void ** ) buffer , length ) ;
+	unpack32 ( & msg -> memory_size , ( void ** ) buffer , length ) ;
+	unpack32 ( & msg -> temporary_disk_space , ( void ** ) buffer , length ) ;
 }
 
 /* template 
-void pack_ ( char ** buffer , uint32_t * length , * message )
+void pack_ ( char ** buffer , uint32_t * length , * msg )
 {
-	pack16 ( message -> , buffer , length ) ;
-	pack32 ( message -> , buffer , length ) ;
+	pack16 ( msg -> , buffer , length ) ;
+	pack32 ( msg -> , buffer , length ) ;
 }
 
 void unpack_ ( char ** buffer , uint32_t * length , * messge )
 {
-	unpack16 ( & message -> , buffer , length ) ;
-	unpack32 ( & message -> , buffer , length ) ;
+	unpack16 ( & msg -> , buffer , length ) ;
+	unpack32 ( & msg -> , buffer , length ) ;
 }
 */

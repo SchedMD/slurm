@@ -1,19 +1,33 @@
 #ifndef _SLURM_PROTOCOL_API_H
 #define _SLURM_PROTOCOL_API_H
 
-#include <sys/time.h>
-#include <stdint.h>
+#if HAVE_CONFIG_H
+#  include <config.h>
+#  if HAVE_INTTYPES_H
+#    include <inttypes.h>
+#  else
+#    if HAVE_STDINT_H
+#      include <stdint.h>
+#    endif
+#  endif  /* HAVE_INTTYPES_H */
+#else   /* !HAVE_CONFIG_H */
+#  include <inttypes.h>
+#endif  /*  HAVE_CONFIG_H */
+
 #include <src/common/slurm_protocol_common.h>
 #include <src/common/slurm_protocol_util.h>
 #include <src/common/slurm_protocol_defs.h>
 
-/* high level routines */
-/* message functions */
-slurm_fd slurm_init_message_engine ( slurm_addr * slurm_address ) ;
-uint32_t slurm_receive_message ( slurm_fd open_fd , slurm_addr * source_address , slurm_message_t ** message ) ; 
-uint32_t slurm_shutdown_message_engine ( slurm_fd open_fd ) ;
+//WHAT ABOUT THESE INCLUDES
+#include <sys/time.h>
 
-/* send message functions */
+/* high level routines */
+/* msg functions */
+slurm_fd slurm_init_msg_engine ( slurm_addr * slurm_address ) ;
+uint32_t slurm_receive_msg ( slurm_fd open_fd , slurm_addr * source_address , slurm_msg_t ** msg ) ; 
+uint32_t slurm_shutdown_msg_engine ( slurm_fd open_fd ) ;
+
+/* send msg functions */
 
 /* stream functions */
 slurm_fd slurm_listen_stream ( slurm_addr * slurm_address ) ;
@@ -26,12 +40,17 @@ uint32_t slurm_close_stream ( slurm_fd open_fd ) ;
 
 
 /* Low level routines */
-/* message functions */
+/* msg functions */
 
-uint32_t slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slurm_message_type_t * message_type , char * data_buffer , size_t buf_len ) ;
-uint32_t slurm_send_server_buffer ( slurm_fd open_fd , slurm_message_type_t message_type , char * data_buffer , size_t buf_len ) ;
-uint32_t slurm_send_node_buffer ( slurm_fd open_fd , slurm_addr * destination_address , slurm_message_type_t message_type , char * data_buffer , size_t buf_len ) ;
+uint32_t slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slurm_msg_type_t * msg_type , char * data_buffer , size_t buf_len ) ;
+uint32_t slurm_send_controller_buffer ( slurm_fd open_fd , slurm_msg_type_t msg_type , char * data_buffer , size_t buf_len ) ;
+uint32_t slurm_send_node_buffer ( slurm_fd open_fd , slurm_addr * destination_address , slurm_msg_type_t msg_type , char * data_buffer , size_t buf_len ) ;
 
-uint32_t slurm_send_server_message ( slurm_fd open_fd , slurm_message_type_t message_type , slurm_message_t const * message ) ;
-uint32_t slurm_send_node_message ( slurm_fd open_fd , slurm_addr * slurm_address , slurm_message_type_t message_type , slurm_message_t const * message ) ;
+uint32_t slurm_send_controller_msg ( slurm_fd open_fd , slurm_msg_type_t msg_type , slurm_msg_t const * msg ) ;
+uint32_t slurm_send_node_msg ( slurm_fd open_fd , slurm_addr * slurm_address , slurm_msg_type_t msg_type , slurm_msg_t const * msg ) ;
+
+void slurm_set_addr_uint ( slurm_addr * slurm_address , uint16_t port , uint32_t ip_address ) ;
+void slurm_set_addr ( slurm_addr * slurm_address , uint16_t port , char * host ) ;
+void slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , char * host ) ;
+void slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * host , uint32_t buf_len ) ;
 #endif
