@@ -92,8 +92,8 @@ char* convert_lifecycle(lifecycle_type_t lifecycle);
 /** */
 char* convert_part_type(rm_partition_t* pt);
 
-/** */
-void update_bgl_node_bitmap(bitstr_t* bitmap);
+/* bluegene_agent - detached thread periodically updates status of bluegene nodes */
+extern void *bluegene_agent(void *args);
 
 
 #endif /* _BLUEGENE_H_ */

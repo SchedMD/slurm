@@ -34,7 +34,9 @@
 #include "src/common/hostlist.h"
 
 #define RANGE_MAX 8192
-#define BUF_SIZE 4096
+#define BUFSIZE 4096
+#define BITSIZE 128
+#define SLEEP_TIME 3 /* BLUEGENE_PTHREAD checks every 3 secs */
 
 char* bgl_conf = BLUEGENE_CONFIG_FILE;
 
@@ -52,8 +54,6 @@ int _get_request_dimensions(int* bl, int* tr, uint16_t** dim);
 int _extract_range(char* request, char** result);
 /** */
 int _wire_bgl_partitions();
-/** */
-void _get_bitmap(hostlist_t* hostlist, bitstr_t* bitmap);
 /** */
 int _bgl_record_cmpf_inc(bgl_record_t* A, bgl_record_t* B);
 /** */
@@ -80,6 +80,11 @@ int _find_part_type(char* nodes, rm_partition_t** return_part_type);
 int _listfindf_conf_part_record(bgl_conf_record_t* record, char *nodes);
 /** */
 int _compute_part_size(char* nodes);
+/** */
+void _update_bgl_node_bitmap();
+/** */
+static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
+		char *tv_str, int len_tv_str);
 
 /**
  * create_static_partitions - create the static partitions that will be used
@@ -280,7 +285,7 @@ int read_bgl_conf()
 	DEF_TIMERS;
 	FILE *bgl_spec_file;	/* pointer to input data file */
 	int line_num;		/* line number in input file */
-	char in_line[BUF_SIZE];	/* input line */
+	char in_line[BUFSIZE];	/* input line */
 	int i, j, error_code;
 
 	/* initialization */
@@ -293,9 +298,9 @@ int read_bgl_conf()
 
 	/* process the data file */
 	line_num = 0;
-	while (fgets(in_line, BUF_SIZE, bgl_spec_file) != NULL) {
+	while (fgets(in_line, BUFSIZE, bgl_spec_file) != NULL) {
 		line_num++;
-		if (strlen(in_line) >= (BUF_SIZE - 1)) {
+		if (strlen(in_line) >= (BUFSIZE - 1)) {
 			error("_read_bgl_config line %d, of input file %s "
 			      "too long", 
 			      line_num, bgl_conf);
@@ -307,13 +312,13 @@ int read_bgl_conf()
 		/* everything after a non-escaped "#" is a comment */
 		/* replace comment flag "#" with an end of string (NULL) */
 		/* escape sequence "\#" translated to "#" */
-		for (i = 0; i < BUF_SIZE; i++) {
+		for (i = 0; i < BUFSIZE; i++) {
 			if (in_line[i] == (char) NULL)
 				break;
 			if (in_line[i] != '#')
 				continue;
 			if ((i > 0) && (in_line[i - 1] == '\\')) {
-				for (j = i; j < BUF_SIZE; j++) {
+				for (j = i; j < BUFSIZE; j++) {
 					in_line[j - 1] = in_line[j];
 				}
 				continue;
@@ -760,9 +765,8 @@ void print_bgl_record(bgl_record_t* record)
 	}
 
 	if (record->bitmap){
-		int bitsize = 128;
-		char* bitstring = (char*) xmalloc(sizeof(char)*bitsize);
-		bit_fmt(bitstring, bitsize, record->bitmap);
+		char* bitstring = (char*) xmalloc(sizeof(char)*BITSIZE);
+		bit_fmt(bitstring, BITSIZE, record->bitmap);
 		debug("\tbitmap: %s", bitstring);
 		xfree(bitstring);
 	}
@@ -1032,9 +1036,8 @@ int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
  */
 void _print_bitmap(bitstr_t* bitmap)
 {
-	int bitsize = 128;
-	char* bitstring = (char*) xmalloc(sizeof(char)*bitsize);
-	bit_fmt(bitstring, bitsize, bitmap);
+	char* bitstring = (char*) xmalloc(sizeof(char)*BITSIZE);
+	bit_fmt(bitstring, BITSIZE, bitmap);
 	debug("bitmap:\t%s", bitstring);
 	xfree(bitstring);
 	bitstring = NULL;
@@ -1045,10 +1048,10 @@ void _print_bitmap(bitstr_t* bitmap)
  * 
  * hmm, so it seems here we have to parse through the entire list of
  * base partitions to update our system.  so since we have to go
- * through the list anyways, we should have instant access (O(1)) to
- * the nodelist that we have to update.
+ * through the list anyways, we would like to have instant O(1) access
+ * to the nodelist that we need to update.
  */
-void update_bgl_node_bitmap(bitstr_t* bitmap)
+void _update_bgl_node_bitmap()
 {
 #ifdef _RM_API_H__
 	int bp_num,wire_num,switch_num,i;
@@ -1056,8 +1059,19 @@ void update_bgl_node_bitmap(bitstr_t* bitmap)
 	rm_switch_t *my_switch;
 	rm_wire_t *my_wire;
 	rm_BP_state_t bp_state;
+	rm_location_t BPLoc;
 	// rm_size3D_t bp_size,size_in_bp,m_size;
 	// rm_size3D_t bp_size,size_in_bp,m_size;
+	char* reason = NULL;
+	char* down_node_list = NULL;
+	char* bgl_down_node = NULL;
+	char* slurm_down_node = NULL;
+
+	bgl_down_node = xmalloc(sizeof(char) * BUFSIZE);
+	slurm_down_node = xmalloc(sizeof(char) * BUFSIZE);
+	/** FIXME: dunno if we have to do this, but i'm reserving mem just to be safe */
+	down_node_list = xmalloc(sizeof(char) * BUFSIZE);
+	down_node_list[0] = '\0';
 
 	if (!bgl){
 		error("error, BGL is not initialized");
@@ -1080,14 +1094,38 @@ void update_bgl_node_bitmap(bitstr_t* bitmap)
 		
 		// is this blocking call?
 		rm_get_data(my_bp,RM_BPState,&bp_state);
-		rm_get_data(my_bp,RM_BPState,&bp_state);
+		rm_get_data(my_bp,RM_BPLoc,&BPLoc);
 		/* from here we either update the node or bitmap
 		   entry */
+		/** translate the location to the "node name" */
+		xstrfmtcat(bgl_down_node, "bgl%d%d%d", BPLoc.X, BPLoc.Y, BPLoc.Z);
+		debug("update bgl node bitmap: %s loc(%s) is in state %s", 
+		      BPID, 
+		      bgl_down_node,
+		      convert_bp_state(RM_BPState));
 		// convert_partition_state(BPPartState);
 		// BPID,convert_bp_state(BPState),BPLoc.X,BPLoc.Y,BPLoc.Z,BPPartID
-		    
- 
+
+		if (RM_BPState == RM_BP_DOWN){
+			/* now we have to convert the BGL BP to a node
+			 * that slurm knows about = comma separated
+			 * node list
+			 */
+			if (done_node_list[0] != '\0')
+				xstrcat(down_node_list,",");
+			xstrcat(down_node_list, bgl_down_node);
+		}
 	}
+	if (!down_node_list){
+		reason = xstrdup("bluegene_select: RM_BP_DOWN");
+		slurm_drain_nodes(down_node_list, reason);
+		xfree(reason);
+	}
+
+ cleanup:
+	xfree(bgl_down_node);
+	xfree(slurm_down_node);
+	xfree(down_node_list);
 	  
 #endif
 }
@@ -1110,7 +1148,6 @@ char *convert_bp_state(rm_BP_state_t state){
 	}
 };
 
-
 /** */
 void set_bp_node_state(rm_BP_state_t state, node_record node){
 	switch(state){ 
@@ -1129,3 +1166,45 @@ void set_bp_node_state(rm_BP_state_t state, node_record node){
 	}
 };
 #endif
+
+/*
+ * bluegene_agent - detached thread periodically updates status of
+ * bluegene nodes. 
+ * 
+ * NOTE: I don't grab any locks here because slurm_drain_nodes grabs
+ * the necessary locks.
+ */
+extern void *
+bluegene_agent(void *args)
+{
+	struct timeval tv1, tv2;
+	char tv_str[20];
+	while (1) {
+		sleep(SLEEP_TIME);      /* don't run continuously */
+
+		gettimeofday(&tv1, NULL);
+		_update_bgl_node_bitmap();
+
+		gettimeofday(&tv2, NULL);
+		_diff_tv_str(&tv1, &tv2, tv_str, 20);
+#if DEBUG
+		info("Bluegene status update: completed, %s", tv_str);
+#endif
+	}
+}
+
+/*
+ * _diff_tv_str - build a string showing the time difference between two times
+ * IN tv1 - start of event
+ * IN tv2 - end of event
+ * OUT tv_str - place to put delta time in format "usec=%ld"
+ * IN len_tv_str - size of tv_str in bytes
+ */
+static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
+		char *tv_str, int len_tv_str)
+{
+	long delta_t;
+	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
+	delta_t +=  tv2->tv_usec - tv1->tv_usec;
+	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
+}
