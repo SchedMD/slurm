@@ -423,8 +423,12 @@ static void
 _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
 		bitstr_t *nodeset, int cyclic_alloc)
 {
-	int i;
-	int procs_per_node = nprocs / nnodes;
+	int i, node_num, full_node_cnt, min_procs_per_node, max_procs_per_node;
+
+	/* Task count may not be identical for all nodes */
+	full_node_cnt = nprocs % nnodes;
+	min_procs_per_node = nprocs / nnodes;
+	max_procs_per_node = (nprocs + nnodes - 1) / nnodes;
 
 	_srand_if_needed();
 
@@ -444,8 +448,8 @@ _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
 		cap->UserKey.Values[i] = lrand48();
 
 	/* set up hardware context range */
-	cap->LowContext = _generate_hwcontext(procs_per_node);
-	cap->HighContext = cap->LowContext + procs_per_node - 1;
+	cap->LowContext = _generate_hwcontext(max_procs_per_node);
+	cap->HighContext = cap->LowContext + max_procs_per_node - 1;
 	/* Note: not necessary to initialize cap->MyContext */
 
 	/* set the range of nodes to be used and number of processes */
@@ -474,14 +478,19 @@ _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
 	 * two processes on node 4) and bits 4,5 (corresponding to the two 
 	 * processes running on node 6) are set.  
 	 */
+	node_num = 0;
 	for (i = cap->LowNode; i <= cap->HighNode; i++) {
 		if (bit_test(nodeset, i)) {
-			int j, proc0;
+			int j, proc0, task_cnt;
 
-			for (j = 0; j < procs_per_node; j++) {
-				proc0 = (i - cap->LowNode) * procs_per_node;
-				assert(proc0 + j < sizeof(cap->Bitmap)*8);
-				BT_SET(cap->Bitmap, proc0 + j);
+			if (node_num++ < full_node_cnt)
+				task_cnt = max_procs_per_node;
+			else
+				task_cnt = min_procs_per_node;
+			for (j = 0; j < task_cnt; j++) {
+				proc0 = (i - cap->LowNode) * max_procs_per_node;
+				assert((proc0 + j) < (sizeof(cap->Bitmap) * 8));
+				BT_SET(cap->Bitmap, (proc0 + j));
 			}
 		}
 	}
@@ -503,8 +512,7 @@ qsw_setup_jobinfo(qsw_jobinfo_t j, int nprocs, bitstr_t *nodeset,
 
 	/* sanity check on args */
 	/* Note: ELAN_MAX_VPS is 512 on "old" Elan driver, 16384 on new. */
-	if (nprocs <= 0 || nprocs > ELAN_MAX_VPS || nnodes <= 0 
-			|| (nprocs % nnodes) != 0) {
+	if ((nprocs <= 0) || (nprocs > ELAN_MAX_VPS) || (nnodes <= 0)) {
 		slurm_seterrno_ret(EINVAL);
 	}
       
