@@ -129,7 +129,7 @@ typedef struct _slurm_auth_credential {
 
 void init ( void )
 {
-	printf( "hello\n" );
+	debug("authentication==none");
 }
 
 /*
@@ -145,7 +145,8 @@ void init ( void )
 slurm_auth_credential_t *
 slurm_auth_alloc( void )
 {
-	return (slurm_auth_credential_t *) xmalloc( sizeof( slurm_auth_credential_t ) );
+	return ((slurm_auth_credential_t *) 
+		xmalloc( sizeof( slurm_auth_credential_t ) ));
 }
 
 /*
