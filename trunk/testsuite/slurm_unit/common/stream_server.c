@@ -1,18 +1,16 @@
 #include <netinet/in.h>
 #include <src/common/slurm_protocol_api.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>
-#include <error.h>
 
 extern int errno;
 void* read2stdout_thread( void* arg )
 {
-	uint32_t buffer_len = 1024*1024 ;
-	int32_t bytes_read ;
+	unsigned int buffer_len = 1024*1024 ;
+	int bytes_read ;
 	char buffer[ buffer_len ] ;
 	slurm_fd fd = (slurm_fd) arg ;
 
@@ -28,11 +26,11 @@ void* read2stdout_thread( void* arg )
 
 void stdout2socket_loop( slurm_fd fd )
 {
-	uint32_t buffer_len = 1024*1024 ;
-	int32_t bytes_read ;
+	unsigned int buffer_len = 1024*1024 ;
+	int bytes_read ;
 	char buffer[ buffer_len ] ;
 	char* current = buffer;
-	int32_t curr_size = 0 ;
+	int curr_size = 0 ;
 	while (1)
 	{
 		if( (bytes_read = read(0, current, buffer_len - curr_size ) ) < 0 )
@@ -56,7 +54,7 @@ void stdout2socket_loop( slurm_fd fd )
 	}
 }
 
-int32_t main ( int32_t argc , char * argv[] )
+int main ( int argc , char * argv[] )
 {
 	/* declare file descriptors */
 	slurm_fd listen_socket ;
