@@ -136,12 +136,12 @@ main(int argc, char * argv[]) {
     Error_Code = Load_Part(Dump, Dump_Size);
     if (Error_Code) printf("Load_Part error %d\n", Error_Code);
     strcpy(Req_Name, "");	/* Start at beginning of partition list */
-    while (1) {
+    while (Error_Code == 0) {
 	Error_Code = Load_Part_Name(Req_Name, Next_Name, &MaxTime, &MaxNodes, 
 	    &TotalNodes, &TotalCPUs, &Key, &StateUp, &Shared,
 	    &Nodes, &AllowGroups, &NodeBitMap, &BitMapSize);
 	if (Error_Code != 0)  {
-	    printf("Load_Part_Name error %d\n", Error_Code);
+	    printf("Load_Part_Name error %d finding %s\n", Error_Code, Req_Name);
 	    break;
 	} /* if */
 	if (MaxTime != 223344) 
@@ -410,7 +410,7 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     ListIterator Part_Record_Iterator;		/* For iterating through Part_Record_List */
     struct Part_Record *Part_Record_Point;	/* Pointer to Part_Record */
     char *Buffer;
-    int Buffer_Offset, Buffer_Allocated, i, Record_Size;
+    int Buffer_Offset, Buffer_Allocated, i, Record_Size, My_BitMap_Size;
 
     Buffer_Ptr[0] = NULL;
     *Buffer_Size = 0;
@@ -426,112 +426,74 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 	return ENOMEM;
     } /* if */
 
-    Buffer_Allocated = BUF_SIZE;
-    Buffer = malloc(Buffer_Allocated);
-    if (Buffer == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Dump_Part: unable to allocate memory\n");
-#else
-	syslog(LOG_ALERT, "Dump_Part: unable to allocate memory\n");
-#endif
-	list_iterator_destroy(Part_Record_Iterator);
-	return ENOMEM;
-    } /* if */
+    Buffer = NULL;
+    Buffer_Offset = 0;
+    Buffer_Allocated = 0;
 
     /* Write haeader, version and time */
-    Buffer_Offset = 0;
     i = PART_STRUCT_VERSION;
-    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-    Buffer_Offset += sizeof(i);
-    memcpy(Buffer+Buffer_Offset, &Last_Part_Update, sizeof(Last_Part_Update));
-    Buffer_Offset += sizeof(Last_Part_Update);
+    if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "PartVersion", 
+	&i, sizeof(i))) goto cleanup;
+    if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "UpdateTime", 
+	&Last_Part_Update, sizeof(Last_Part_Update))) goto cleanup;
+    My_BitMap_Size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
+    My_BitMap_Size *= sizeof(unsigned);
+    if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "BitMapSize", 
+	&My_BitMap_Size, sizeof(My_BitMap_Size))) goto cleanup;
+
 
     /* Write partition records */
     while (Part_Record_Point = (struct Part_Record *)list_next(Part_Record_Iterator)) {
-	Record_Size = sizeof(struct Part_Record) + 		/* Has some extra space */
-		(3 * sizeof(int)) +
-		((Node_Record_Count + (sizeof(unsigned)*8) - 1) / 8);
-	if (Part_Record_Point->Nodes)       Record_Size+=strlen(Part_Record_Point->Nodes)+1;
-	if (Part_Record_Point->AllowGroups) Record_Size+=strlen(Part_Record_Point->AllowGroups)+1;
+	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "PartName", 
+		Part_Record_Point->Name, sizeof(Part_Record_Point->Name))) goto cleanup;
 
-	if ((Buffer_Offset+Record_Size) >= Buffer_Allocated) { /* Need larger buffer */
-	    Buffer_Allocated += (Record_Size + BUF_SIZE);
-	    Buffer = realloc(Buffer, Buffer_Allocated);
-	    if (Buffer == NULL) {
-#if DEBUG_SYSTEM
-		fprintf(stderr, "Dump_Part: unable to allocate memory\n");
-#else
-		syslog(LOG_ALERT, "Dump_Part: unable to allocate memory\n");
-#endif
-		list_iterator_destroy(Part_Record_Iterator);
-		return ENOMEM;
-	    } /* if */
-	} /* if */
+	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "MaxTime", 
+		&Part_Record_Point->MaxTime, sizeof(Part_Record_Point->MaxTime))) goto cleanup;
 
-	memcpy(Buffer+Buffer_Offset, Part_Record_Point->Name, sizeof(Part_Record_Point->Name)); 
-	Buffer_Offset += sizeof(Part_Record_Point->Name);
+	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "MaxNodes", 
+		&Part_Record_Point->MaxNodes, sizeof(Part_Record_Point->MaxNodes))) goto cleanup;
 
-	memcpy(Buffer+Buffer_Offset, &Part_Record_Point->MaxTime, sizeof(Part_Record_Point->MaxTime)); 
-	Buffer_Offset += sizeof(Part_Record_Point->MaxTime);
+	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "TotalNodes", 
+		&Part_Record_Point->TotalNodes, sizeof(Part_Record_Point->TotalNodes))) goto cleanup;
 
-	memcpy(Buffer+Buffer_Offset, &Part_Record_Point->MaxNodes, sizeof(Part_Record_Point->MaxNodes)); 
-	Buffer_Offset += sizeof(Part_Record_Point->MaxNodes);
+	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "TotalCPUs", 
+		&Part_Record_Point->TotalCPUs, sizeof(Part_Record_Point->TotalCPUs))) goto cleanup;
 
-	memcpy(Buffer+Buffer_Offset, &Part_Record_Point->TotalNodes, sizeof(Part_Record_Point->TotalNodes)); 
-	Buffer_Offset += sizeof(Part_Record_Point->TotalNodes);
+	i = Part_Record_Point->Key;
+	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "Key", 
+		&i, sizeof(i))) goto cleanup;
 
-	memcpy(Buffer+Buffer_Offset, &Part_Record_Point->TotalCPUs, sizeof(Part_Record_Point->TotalCPUs)); 
-	Buffer_Offset += sizeof(Part_Record_Point->TotalCPUs);
+	i = Part_Record_Point->StateUp;
+	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "StateUp",
+		&i, sizeof(i))) goto cleanup;
 
-	i = (int)Part_Record_Point->Key;
-	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	Buffer_Offset += sizeof(i);
+	i = Part_Record_Point->Shared;
+	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "Shared",
+		&i, sizeof(i))) goto cleanup;
 
-	i = (int)Part_Record_Point->StateUp;
-	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	Buffer_Offset += sizeof(i);
-
-	i = (int)Part_Record_Point->Shared;
-	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	Buffer_Offset += sizeof(i);
-
-	if (Part_Record_Point->Nodes) {
+	if (Part_Record_Point->Nodes) 
 	    i = strlen(Part_Record_Point->Nodes) + 1;
-	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	    Buffer_Offset += sizeof(i);
-	    memcpy(Buffer+Buffer_Offset, Part_Record_Point->Nodes, i); 
-	    Buffer_Offset += i;
-	} else {
+	else
 	    i = 0;
-	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	    Buffer_Offset += sizeof(i);
-	} /* else */
+	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "NodeList", 
+		Part_Record_Point->Nodes, i)) goto cleanup;
 
-	if (Part_Record_Point->AllowGroups) {
+	if (Part_Record_Point->AllowGroups) 
 	    i = strlen(Part_Record_Point->AllowGroups) + 1;
-	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	    Buffer_Offset += sizeof(i);
-	    memcpy(Buffer+Buffer_Offset, Part_Record_Point->AllowGroups, i); 
-	    Buffer_Offset += i;
-	} else {
+	else
 	    i = 0;
-	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	    Buffer_Offset += sizeof(i);
-	} /* else */
+	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "AllowGroups", 
+		Part_Record_Point->AllowGroups, i)) goto cleanup;
 
-	if ((Node_Record_Count > 0) && (Part_Record_Point->NodeBitMap)){
-	    i = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
-	    i *= sizeof(unsigned);
-	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	    Buffer_Offset += sizeof(i);
-	    memcpy(Buffer+Buffer_Offset, Part_Record_Point->NodeBitMap, i); 
-	    Buffer_Offset += i;
-	} else {
+	if ((Node_Record_Count > 0) && (Part_Record_Point->NodeBitMap)) {
+	    i = My_BitMap_Size;
+	} else
 	    i = 0;
-	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	    Buffer_Offset += sizeof(i);
-	} /* else */
+	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "NodeBitMap", 
+		Part_Record_Point->NodeBitMap, i)) goto cleanup;
 
+	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "EndPart", 
+		"", 0)) goto cleanup;
     } /* while */
 
     list_iterator_destroy(Part_Record_Iterator);
@@ -549,6 +511,10 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     *Buffer_Size = Buffer_Offset;
     *Update_Time = Last_Part_Update;
     return 0;
+
+cleanup:
+    list_iterator_destroy(Part_Record_Iterator);
+    return ENOMEM;
 } /* Dump_Part */
 
 
@@ -827,12 +793,26 @@ int Update_Part(char *PartitionName, char *Spec) {
  * Output: Returns 0 if no error, EINVAL if the buffer is invalid
  */
 int Load_Part(char *Buffer, int Buffer_Size) {
-    int Version;
+    int Buffer_Offset, Error_Code, Version;
 
-    if (Buffer_Size < 2*sizeof(int)) return EINVAL;	/* Too small to be legitimate */
-
-    memcpy(&Version, Buffer, sizeof(Version));
-    if (Version != PART_STRUCT_VERSION) return EINVAL;	/* Incompatable versions */
+    Buffer_Offset = 0;
+    Error_Code = Read_Value(Buffer, &Buffer_Offset, Buffer_Size, "PartVersion", &Version);
+    if (Error_Code) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Load_Part: Partition buffer lacks valid header\n");
+#else
+	syslog(LOG_ERR, "Load_Part: Partition buffer lacks valid header\n");
+#endif
+	return EINVAL;
+    } /* if */
+    if (Version != PART_STRUCT_VERSION) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Load_Part: expect version %d, read %d\n", PART_STRUCT_VERSION, Version);
+#else
+	syslog(LOG_ERR, "Load_Part: expect version %d, read %d\n", PART_STRUCT_VERSION, Version);
+#endif
+	return EINVAL;
+    } /* if */
 
     Part_API_Buffer = Buffer;
     Part_API_Buffer_Size = Buffer_Size;
@@ -856,76 +836,64 @@ int Load_Part(char *Buffer, int Buffer_Size) {
 int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes, 
 	int *TotalNodes, int *TotalCPUs, int *Key, int *StateUp, int *Shared,
 	char **Nodes, char **AllowGroups, unsigned **NodeBitMap, int *BitMap_Size) {
-    int i, Version;
+    int i, Error_Code, Version, Buffer_Offset;
     time_t Update_Time;
-    char *Buffer_Loc;
     struct Part_Record My_Part;
     int My_BitMap_Size;
+    char Next_Name_Value[MAX_NAME_LEN];
 
     /* Load buffer's header */
-    Buffer_Loc = Part_API_Buffer;
-    memcpy(&Version, Buffer_Loc, sizeof(Version));
-    Buffer_Loc += sizeof(Version);
-    memcpy(&Update_Time, Buffer_Loc, sizeof(Update_Time));
-    Buffer_Loc += sizeof(Update_Time);
+    Buffer_Offset = 0;
+    if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
+		"PartVersion", &Version)) return Error_Code;
+    if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size,
+		"UpdateTime", &Update_Time)) return Error_Code;
+    if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size,
+		"BitMapSize", &My_BitMap_Size)) return Error_Code;
 
-    while ((Buffer_Loc+(sizeof(int)*9)) <= (Part_API_Buffer+Part_API_Buffer_Size)) {	
+    while (1) {	
 	/* Load all info for next partition */
-	memcpy(My_Part.Name, Buffer_Loc, sizeof(My_Part.Name)); 
-	Buffer_Loc += sizeof(My_Part.Name);
+	Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
+		"PartName", &My_Part.Name);
+	if (Error_Code == EFAULT) break; /* End of buffer */
+	if (Error_Code) return Error_Code;
 	if (strlen(Req_Name) == 0)  strcpy(Req_Name,My_Part.Name);
 
-	memcpy(&My_Part.MaxTime, Buffer_Loc, sizeof(My_Part.MaxTime)); 
-	Buffer_Loc += sizeof(My_Part.MaxTime);
+	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
+		"MaxTime", &My_Part.MaxTime)) return Error_Code;
 
-	memcpy(&My_Part.MaxNodes, Buffer_Loc, sizeof(My_Part.MaxNodes)); 
-	Buffer_Loc += sizeof(My_Part.MaxNodes);
+	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
+		"MaxNodes", &My_Part.MaxNodes)) return Error_Code;
 
-	memcpy(&My_Part.TotalNodes, Buffer_Loc, sizeof(My_Part.TotalNodes)); 
-	Buffer_Loc += sizeof(My_Part.TotalNodes);
+	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
+		"TotalNodes", &My_Part.TotalNodes)) return Error_Code;
 
-	memcpy(&My_Part.TotalCPUs, Buffer_Loc, sizeof(My_Part.TotalCPUs)); 
-	Buffer_Loc += sizeof(My_Part.TotalCPUs);
+	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
+		"TotalCPUs", &My_Part.TotalCPUs)) return Error_Code;
 
-	memcpy(&i, Buffer_Loc, sizeof(i)); 
-	Buffer_Loc += sizeof(i);
+	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
+		"Key", &i)) return Error_Code;
 	My_Part.Key = i;
 
-	memcpy(&i, Buffer_Loc, sizeof(i)); 
-	Buffer_Loc += sizeof(i);
+	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
+		"StateUp", &i)) return Error_Code;
 	My_Part.StateUp = i;
 
-	memcpy(&i, Buffer_Loc, sizeof(i)); 
-	Buffer_Loc += sizeof(i);
+	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
+		"Shared", &i)) return Error_Code;
 	My_Part.Shared = i;
 
-	memcpy(&i, Buffer_Loc, sizeof(i)); 
-	Buffer_Loc += sizeof(i);
-	if ((Buffer_Loc+i) > (Part_API_Buffer+Part_API_Buffer_Size)) return EINVAL;
-	if (i)
-	    My_Part.Nodes = Buffer_Loc;
-	else
-	    My_Part.Nodes = NULL;
-	Buffer_Loc += i;
+	if (Error_Code = Read_Array(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
+		"NodeList", (void **)&My_Part.Nodes)) return Error_Code;
 
-	memcpy(&i, Buffer_Loc, sizeof(i)); 
-	Buffer_Loc += sizeof(i);
-	if ((Buffer_Loc+i) > (Part_API_Buffer+Part_API_Buffer_Size)) return EINVAL;
-	if (i)
-	    My_Part.AllowGroups = Buffer_Loc;
-	else
-	    My_Part.AllowGroups = NULL;
-	Buffer_Loc += i;
+	if (Error_Code = Read_Array(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
+		"AllowGroups", (void **)&My_Part.AllowGroups)) return Error_Code;
 
-	memcpy(&i, Buffer_Loc, sizeof(i)); 
-	Buffer_Loc += sizeof(i);
-	if ((Buffer_Loc+i) > (Part_API_Buffer+Part_API_Buffer_Size)) return EINVAL;
-	if (i)
-	    My_Part.NodeBitMap = (unsigned *)Buffer_Loc;
-	else
-	    My_Part.NodeBitMap = NULL;
-	Buffer_Loc += i;
-	My_BitMap_Size = i;
+	if (Error_Code = Read_Array(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
+		"NodeBitMap", (void **)&My_Part.NodeBitMap)) return Error_Code;
+
+	if (Error_Code = Read_Tag(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
+		"EndPart")) return Error_Code;
 
 	/* Check if this is requested partition */ 
 	if (strcmp(Req_Name, My_Part.Name) != 0) continue;
@@ -941,12 +909,17 @@ int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes,
 	Nodes[0]	= My_Part.Nodes;
 	AllowGroups[0]	= My_Part.AllowGroups;
 	NodeBitMap[0]	= My_Part.NodeBitMap;
-	*BitMap_Size	= My_BitMap_Size;
+	if (My_Part.NodeBitMap == NULL)
+	    *BitMap_Size = 0;
+	else
+	    *BitMap_Size = My_BitMap_Size;
 
-	if ((Buffer_Loc+sizeof(My_Part.Name)) > (Part_API_Buffer+Part_API_Buffer_Size))
+	Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
+		"PartName", &Next_Name_Value);
+	if (Error_Code) 	/* No more records or bad tag */
 	    strcpy(Next_Name, "");
 	else
-	    strcpy(Next_Name, Buffer_Loc);
+	    strcpy(Next_Name, Next_Name_Value);
 	return 0;
     } /* while */
     return ENOENT;
