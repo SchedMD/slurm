@@ -583,7 +583,7 @@ shm_update_step_addrs(uint32_t jobid, uint32_t stepid,
 		job_step_t *s = &slurmd_shm->step[i];
 
 		/* Only allow one addr update at a time */
-		if ( 1 || !s->io_update) {
+		if (!s->io_update) {
 			s->ioaddr    = *ioaddr;
 			s->respaddr  = *respaddr;
 			memcpy(s->key.data, keydata, SLURM_KEY_SIZE);
