@@ -67,22 +67,22 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
 
 	switch (rot_cnt) {
 		case 0:		/* ABC -> ACB */
-			SWAP(req_geometry[1], req_geometry[2], tmp);
+			SWAP(req_geometry[Y], req_geometry[Z], tmp);
 			break;
 		case 1:		/* ACB -> CAB */
-			SWAP(req_geometry[0], req_geometry[1], tmp);
+			SWAP(req_geometry[X], req_geometry[Y], tmp);
 			break;
 		case 2:		/* CAB -> CBA */
-			SWAP(req_geometry[1], req_geometry[2], tmp);
+			SWAP(req_geometry[Y], req_geometry[Z], tmp);
 			break;
 		case 3:		/* CBA -> BCA */
-			SWAP(req_geometry[0], req_geometry[1], tmp);
+			SWAP(req_geometry[X], req_geometry[Y], tmp);
 			break;
 		case 4:		/* BCA -> BAC */
-			SWAP(req_geometry[1], req_geometry[2], tmp);
+			SWAP(req_geometry[Y], req_geometry[Z], tmp);
 			break;
 		case 5:		/* BAC -> ABC */
-			SWAP(req_geometry[0], req_geometry[1], tmp);
+			SWAP(req_geometry[X], req_geometry[Y], tmp);
 			break;
 	}
 }
@@ -207,6 +207,8 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 					match = true;
 					break;
 				}
+				if (!rotate)
+					break;
 				_rotate_geo(req_geometry, rot_cnt);
 			}
 
