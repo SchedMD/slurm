@@ -34,12 +34,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "list.h"
-#include "pack.h"
-#include "slurmctld.h"
-#include "xstring.h"
-#include <src/common/slurm_protocol_errno.h>
+#include <src/slurmctld/slurmctld.h>
+#include <src/common/list.h>
 #include <src/common/macros.h>
+#include <src/common/pack.h>
+#include <src/common/slurm_protocol_errno.h>
+#include <src/common/xstring.h>
 
 #define BUF_SIZE 1024
 #define MAX_STR_PACK 128
@@ -215,6 +215,7 @@ create_job_record (int *error_code)
 
 /* 
  * delete_job_details - delete a job's detail record and clear it's pointer
+ *	this information can be deleted as soon as the job is allocated resources
  * input: job_entry - pointer to job_record to clear the record of
  */
 void 
@@ -375,8 +376,8 @@ init_job_conf ()
 
 
 /*
- * job_allocate - parse the suppied job specification, create job_records for it, 
- *	and allocate nodes for it. if the job can not be immediately allocated 
+ * job_allocate - create job_records for the suppied job specification and allocate 
+ *	nodes for it. if "immediate" is set and the job can not be immediately allocated 
  *	nodes, EAGAIN will be returned
  * input: job_specs - job specifications
  *	new_job_id - location for storing new job's id
@@ -659,6 +660,7 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 			bit_free (req_bitmap);
 		return error_code ;
 }
+
 /* copy_job_desc_to_job_record - copy the job descriptor from the RPC structure 
  *	into the actual slurmctld job record */
 int 
@@ -1084,146 +1086,6 @@ pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 		packstr (NULL, buf_ptr, buf_len);
 	}
 }
-
-
-/* 
- * parse_job_specs - pick the appropriate fields out of a job request specification
- * input: job_specs - string containing the specification
- *        req_features, etc. - pointers to storage for the specifications
- * output: req_features, etc. - the job's specifications
- *         returns 0 if no error, errno otherwise
- * NOTE: the calling function must xfree memory at req_features[0], req_node_list[0],
- *	job_name[0], req_group[0], and req_partition[0]
- */
-int 
-parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
-		char **job_name, char **req_group, char **req_partition,
-		int *contiguous, int *req_cpus, int *req_nodes,
-		int *min_cpus, int *min_memory, int *min_tmp_disk, int *key,
-		int *shared, int *dist, char **script, int *time_limit, 
-		int *procs_per_task, long *job_id, int *priority, 
-		int *user_id) {
-	int bad_index, error_code, i;
-	char *temp_specs, *contiguous_str, *dist_str, *shared_str;
-
-	req_features[0] = req_node_list[0] = req_group[0] = NULL;
-	req_partition[0] = job_name[0] = script[0] = NULL;
-	contiguous_str = shared_str = dist_str = NULL;
-	*contiguous = *req_cpus = *req_nodes = *min_cpus = NO_VAL;
-	*min_memory = *min_tmp_disk = *time_limit = NO_VAL;
-	*dist = *key = *shared = *procs_per_task = *user_id = NO_VAL;
-	*job_id = *priority = NO_VAL;
-
-	temp_specs = xmalloc (strlen (job_specs) + 1);
-	strcpy (temp_specs, job_specs);
-
-	error_code = slurm_parser(temp_specs,
-			"Contiguous=", 's', &contiguous_str, 
-			"Distribution=", 's', &dist_str, 
-			"Features=", 's', req_features, 
-			"Groups=", 's', req_group, 
-			"JobId=", 'l', job_id, 
-			"JobName=", 's', job_name, 
-			"Key=", 'd', key, 
-			"MinProcs=", 'd', min_cpus, 
-			"MinRealMemory=", 'd', min_memory, 
-			"MinTmpDisk=", 'd', min_tmp_disk, 
-			"Partition=", 's', req_partition, 
-			"Priority=", 'd', priority, 
-			"ProcsPerTask=", 'd', procs_per_task, 
-			"ReqNodes=", 's', req_node_list, 
-			"Script=", 's', script, 
-			"Shared=", 's', shared_str, 
-			"TimeLimit=", 'd', time_limit, 
-			"TotalNodes=", 'd', req_nodes, 
-			"TotalProcs=", 'd', req_cpus, 
-			"User=", 'd', user_id,
-			"END");
-
-	if (error_code)
-		goto cleanup;
-
-	if (contiguous_str) {
-		i = yes_or_no (contiguous_str);
-		if (i == -1) {
-			error ("parse_job_specs: invalid Contiguous value");
-			goto cleanup;
-		}
-		*contiguous = i;
-	}
-
-	if (dist_str) {
-		i = (int) block_or_cycle (dist_str);
-		if (i == -1) {
-			error ("parse_job_specs: invalid Distribution value");
-			goto cleanup;
-		}
-		*dist = i;
-	}
-
-	if (shared_str) {
-		i = yes_or_no (shared_str);
-		if (i == -1) {
-			error ("parse_job_specs: invalid Shared value");
-			goto cleanup;
-		}
-		*shared = i;
-	}
-
-	bad_index = -1;
-	for (i = 0; i < strlen (temp_specs); i++) {
-		if (isspace ((int) temp_specs[i]) || (temp_specs[i] == '\n'))
-			continue;
-		bad_index = i;
-		break;
-	}			
-
-	if (bad_index != -1) {
-		error ("parse_job_specs: bad job specification input: %s",
-				&temp_specs[bad_index]);
-		error_code = EINVAL;
-	}			
-
-	if (error_code)
-		goto cleanup;
-
-	xfree (temp_specs);
-	if (contiguous_str)
-		xfree (contiguous_str);
-	if (dist_str)
-		xfree (dist_str);
-	if (shared_str)
-		xfree (shared_str);
-	return error_code;
-
-cleanup:
-	xfree (temp_specs);
-	if (contiguous_str)
-		xfree (contiguous_str);
-	if (job_name[0])
-		xfree (job_name[0]);
-	if (req_features[0])
-		xfree (req_features[0]);
-	if (req_node_list[0])
-		xfree (req_node_list[0]);
-	if (req_group[0])
-		xfree (req_group[0]);
-	if (req_partition[0])
-		xfree (req_partition[0]);
-	if (script[0])
-		xfree (script[0]);
-	if (contiguous_str)
-		xfree (contiguous_str);
-	if (dist_str)
-		xfree (dist_str);
-	if (shared_str)
-		xfree (shared_str);
-	req_features[0] = req_node_list[0] = req_group[0] = NULL;
-	req_partition[0] = job_name[0] = script[0] = NULL;
-	return error_code;
-}
-
-
 /*
  * purge_old_job - purge old job records. 
  *	the jobs must have completed at least MIN_JOB_AGE minutes ago
@@ -1292,9 +1154,7 @@ void
 set_job_id (struct job_record *job_ptr)
 {
 	static uint32_t id_sequence = FIRST_JOB_ID;
-#ifdef HUGE_JOB_ID
 	uint32_t new_id;
-#endif
 
 	if ((job_ptr == NULL) || 
 			(job_ptr->magic != JOB_MAGIC)) 
@@ -1303,7 +1163,6 @@ set_job_id (struct job_record *job_ptr)
 		fatal ("set_job_id: partition not set");
 
 	/* Include below code only if fear of rolling over 32 bit job IDs */
-#ifdef HUGE_JOB_ID
 	while (1) {
 		new_id = id_sequence++;
 		if (find_job_record(new_id) == NULL) {
@@ -1311,9 +1170,6 @@ set_job_id (struct job_record *job_ptr)
 			break;
 		}
 	}
-#else
-	job_ptr->job_id = id_sequence++;
-#endif
 }
 
 
