@@ -446,7 +446,7 @@ static void opt_default()
 
 
 	if ((getcwd(buf, MAXPATHLEN)) == NULL) 
-		fatal("getcwd failed");
+		fatal("getcwd failed: %m");
 	opt.cwd = strdup(buf);
 
 	opt.progname = NULL;
