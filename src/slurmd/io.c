@@ -635,7 +635,8 @@ _io_write_header(struct io_info *client, srun_info_t *srun)
 	hdr.version = SLURM_PROTOCOL_VERSION;
 	memcpy(hdr.key, srun->key->data, SLURM_SSL_SIGNATURE_LENGTH);
 	hdr.task_id = client->id;
-	hdr.type    = client->type == CLIENT_STDOUT ? 0 : 1;
+	hdr.type    = client->type == CLIENT_STDOUT ? 
+					SLURM_IO_STREAM_INOUT : SLURM_IO_STREAM_SIGERR;
 
 	pack_io_stream_header(&hdr, buffer);
 
