@@ -32,8 +32,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <src/common/bitstring.h>
-#include <src/common/xmalloc.h>
+#include "src/common/bitstring.h"
+#include "src/common/xmalloc.h"
 
 /* 
  * Allocate a bitstring.
@@ -155,11 +155,11 @@ bit_nset(bitstr_t *b, bitoff_t start, bitoff_t stop)
 	_assert_bit_valid(b, start);
 	_assert_bit_valid(b, stop);
 
-	while (start <= stop && start % 8 > 0) 		/* partial first byte? */
+	while (start <= stop && start % 8 > 0) 	     /* partial first byte? */
 		bit_set(b, start++);
-	while (stop >= start && (stop+1) % 8 > 0)	/* partial last byte? */
+	while (stop >= start && (stop+1) % 8 > 0)    /* partial last byte? */
 		bit_set(b, stop--);
-	if (stop > start) {				/* now do whole bytes */
+	if (stop > start) {                          /* now do whole bytes */
 		assert((stop-start+1) % 8 == 0);
 		memset(_bit_byteaddr(b, start), 0xff, (stop-start+1) / 8);
 	}
@@ -325,7 +325,8 @@ bit_super_set(bitstr_t *b1, bitstr_t *b2)  {
 	assert(_bitstr_bits(b1) == _bitstr_bits(b2));
 
 	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t)*8) {
-		if (b1[_bit_word(bit)] != (b1[_bit_word(bit)] & b2[_bit_word(bit)]))
+		if (b1[_bit_word(bit)] != (b1[_bit_word(bit)] & 
+		                           b2[_bit_word(bit)]))
 			return 0;
 	}
 
@@ -395,7 +396,8 @@ bit_copy(bitstr_t *b)
 	newsize_words = (newsize_bits + 7) / 8;
 	new = bit_alloc(newsize_bits);
 	if (new)
-		memcpy(&new[BITSTR_OVERHEAD], &b[BITSTR_OVERHEAD], newsize_words);
+		memcpy(&new[BITSTR_OVERHEAD], 
+		       &b[BITSTR_OVERHEAD], newsize_words);
 
 	return new;
 }
@@ -554,11 +556,13 @@ bit_fmt(char *str, int len, bitstr_t *b)
 			while (bit+1 < _bitstr_bits(b) && bit_test(b, bit+1))
 				bit++;
 			if (bit == start)	/* add single bit position */
-				ret = snprintf(str+strlen(str), len-strlen(str),
-						BITSTR_SINGLE_FMT, start);
+				ret = snprintf(str+strlen(str), 
+				               len-strlen(str),
+				               BITSTR_SINGLE_FMT, start);
 			else 			/* add bit position range */
-				ret = snprintf(str+strlen(str), len-strlen(str),
-						BITSTR_RANGE_FMT, start, bit);
+				ret = snprintf(str+strlen(str), 
+				               len-strlen(str),
+				               BITSTR_RANGE_FMT, start, bit);
 			assert(ret != -1);
 		}
 		bit++;
