@@ -245,13 +245,11 @@ int main(int ac, char **av)
 	/* Tell slurmctld that job is done */
 	job_destroy(job, 0);
 
-	/* kill msg server thread */
-	pthread_kill(job->jtid,  SIGTERM);
-
-	/* kill signal thread */
-	/* pthread_kill(job->sigid, SIGTERM); */
-
 	log_fini();
+
+	/* 
+	 *  Let exit() clean up remaining threads.
+	 */
 
 	exit(job_rc(job));
 }
