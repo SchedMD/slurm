@@ -13,8 +13,8 @@ sinfo_LDADD =					  \
 	$(top_builddir)/src/api/libslurm.la 	  \
 	$(POPT_LIBS)
 
-noinst_HEADERS = sinfo.h
-sinfo_SOURCES = sinfo.c opts.c 
+noinst_HEADERS = sinfo.h print.h
+sinfo_SOURCES = sinfo.c opts.c print.c
 
 force:
 $(sinfo_LDADD) : force
