@@ -32,6 +32,7 @@
 #include <src/common/bitstring.h>
 #include <src/common/slurm_protocol_pack.h>
 #include <src/common/slurm_protocol_api.h>
+#include <src/common/slurm_protocol_defs.h>
 #include <src/common/slurm_auth.h>
 #include <src/common/pack.h>
 #include <src/common/log.h>
@@ -88,22 +89,20 @@ int size_io_stream_header (void)
 
 void pack_io_stream_header ( slurm_io_stream_header_t * msg , Buf buffer )
 {	/* must match un/pack_io_stream_header and size_io_stream_header */
-	uint32_t tmp=SLURM_SSL_SIGNATURE_LENGTH;
-	
+
 	assert ( msg != NULL );
 
 	pack16( msg->version, buffer ) ;
-	packmem_array( msg->key, tmp, buffer ) ; 
+	packmem_array( msg->key, (uint32_t) SLURM_SSL_SIGNATURE_LENGTH, buffer ) ; 
 	pack32( msg->task_id, buffer ) ;	
 	pack16( msg->type, buffer ) ;
 }
 
 int unpack_io_stream_header ( slurm_io_stream_header_t * msg , Buf buffer )
 {	/* must match un/pack_io_stream_header and size_io_stream_header */
-	uint32_t tmp=SLURM_SSL_SIGNATURE_LENGTH;
-	
+
 	safe_unpack16( & msg->version, buffer ) ;
-	safe_unpackmem_array( msg->key, tmp , buffer ) ; 
+	safe_unpackmem_array( msg->key, (uint32_t) SLURM_SSL_SIGNATURE_LENGTH , buffer ) ; 
 	safe_unpack32( & msg->task_id, buffer ) ;	
 	safe_unpack16( & msg->type, buffer ) ;
 	return SLURM_SUCCESS;
@@ -410,7 +409,7 @@ int unpack_msg ( slurm_msg_t * msg , Buf buffer )
 	}
 
 	if (rc)
-		error("Malformed RPC of type %u recieved", msg->msg_type);
+		error("Malformed RPC of type %u received", msg->msg_type);
 	return rc ;
 }
 
@@ -849,12 +848,11 @@ void pack_revoke_credential_msg ( revoke_credential_msg_t* msg , Buf buffer )
 
 	pack32( msg->job_id, buffer ) ;
 	pack32( ( uint32_t ) msg->expiration_time, buffer ) ;
-	packmem( msg->signature, (uint16_t) SLURM_SSL_SIGNATURE_LENGTH , buffer ) ; 
+	packmem_array( msg->signature, (uint32_t) SLURM_SSL_SIGNATURE_LENGTH , buffer ) ; 
 }
 
 int unpack_revoke_credential_msg ( revoke_credential_msg_t** msg , Buf buffer )
 {
-	uint16_t uint16_tmp;
 	revoke_credential_msg_t* tmp_ptr ;
 
 	/* alloc memory for structure */	
@@ -864,7 +862,8 @@ int unpack_revoke_credential_msg ( revoke_credential_msg_t** msg , Buf buffer )
 
 	safe_unpack32( &(tmp_ptr->job_id), buffer ) ;
 	safe_unpack32( (uint32_t*) &(tmp_ptr->expiration_time), buffer ) ;
-	safe_unpackmem( tmp_ptr->signature, & uint16_tmp , buffer ) ; 
+	safe_unpackmem_array( tmp_ptr->signature, 
+	                      (uint32_t) SLURM_SSL_SIGNATURE_LENGTH , buffer ) ; 
 
 	return SLURM_SUCCESS;
 
@@ -876,21 +875,18 @@ int unpack_revoke_credential_msg ( revoke_credential_msg_t** msg , Buf buffer )
 
 void pack_job_credential ( slurm_job_credential_t* cred , Buf buffer )
 {
-	int i=0;
 	assert ( cred != NULL );
 
 	pack32( cred->job_id, buffer ) ;
 	pack16( (uint16_t) cred->user_id, buffer ) ;
 	packstr( cred->node_list, buffer ) ;
-	pack_time( cred->expiration_time, buffer ) ;	
-	for ( i = 0; i < sizeof( cred->signature ); i++ ) /* this is a fixed size array */
-		pack8( cred->signature[i], buffer ); 
+	pack_time( cred->expiration_time, buffer ) ;
+	packmem_array( cred->signature, (uint32_t) SLURM_SSL_SIGNATURE_LENGTH , buffer ) ; 
 }
 
 int unpack_job_credential( slurm_job_credential_t** msg , Buf buffer )
 {
 	uint16_t uint16_tmp;
-	int i = 0;
 	slurm_job_credential_t* tmp_ptr ;
 
 	/* alloc memory for structure */	
@@ -901,9 +897,9 @@ int unpack_job_credential( slurm_job_credential_t** msg , Buf buffer )
 	safe_unpack16( (uint16_t*) &(tmp_ptr->user_id), buffer ) ;
 	safe_unpackstr_xmalloc ( &(tmp_ptr->node_list), &uint16_tmp,  buffer ) ;
 	safe_unpack_time( &(tmp_ptr->expiration_time), buffer ) ;
-	for ( i = 0; i < sizeof( tmp_ptr->signature ); i++ ) /* this is a fixed size array */
-		safe_unpack8( (uint8_t*)(tmp_ptr->signature + i), buffer ); 
-	
+	safe_unpackmem_array( tmp_ptr->signature, 
+	                      (uint32_t) SLURM_SSL_SIGNATURE_LENGTH , buffer ) ; 
+
 	return SLURM_SUCCESS;
 
     unpack_error:
