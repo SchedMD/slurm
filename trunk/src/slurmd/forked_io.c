@@ -52,12 +52,12 @@ int forward_io ( task_start_t * task_start )
 		case FORK_ERROR :
 			goto return_label;
 			break;
-		case 0 :
-			task_start->io_pthread_id[STDIN_FILENO]	= cpid ;
-			break;
-		default :
+		case 0 : /*CHILD*/
 			stdin_io_pipe_thread ( task_start ) ;
 			_exit( 0 ) ;
+			break;
+		default : /*PARENT*/
+			task_start->io_pthread_id[STDIN_FILENO]	= cpid ;
 			break ;
 	}
 
@@ -66,12 +66,12 @@ int forward_io ( task_start_t * task_start )
 		case FORK_ERROR :
 			goto kill_stdin_thread;
 			break;
-		case 0 :
-			task_start->io_pthread_id[STDOUT_FILENO] = cpid ;
-			break;
-		default :
+		case 0 : /*CHILD*/
 			stdout_io_pipe_thread ( task_start ) ;
 			_exit( 0 ) ;
+			break;
+		default : /*PARENT*/
+			task_start->io_pthread_id[STDOUT_FILENO] = cpid ;
 			break ;
 	}
 
@@ -80,12 +80,12 @@ int forward_io ( task_start_t * task_start )
 		case FORK_ERROR :
 			goto kill_stdout_thread;
 			break;
-		case 0 :
-			task_start->io_pthread_id[STDERR_FILENO] = cpid ;
-			break;
-		default :
+		case 0 : /*CHILD*/
 			stderr_io_pipe_thread ( task_start ) ;
 			_exit( 0 ) ;
+			break;
+		default : /*PARENT*/
+			task_start->io_pthread_id[STDERR_FILENO] = cpid ;
 			break ;
 	}
 
