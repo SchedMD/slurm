@@ -186,11 +186,13 @@ int main(int argc, char *argv[])
 	 *                    SLURM_CRED_OPT_EXPIRY_WINDOW, CRED_LIFE);
 	 */
 
-	/* Block SIGALRM everyone not explicitly enabled */
+	/* Block SIGALRM and SIGPIPE for everyone not explicitly enabled */
 	if (sigemptyset(&set))
 		error("sigemptyset error: %m");
 	if (sigaddset(&set, SIGALRM))
 		error("sigaddset error on SIGALRM: %m");
+	if (sigaddset(&set, SIGPIPE))
+		error("sigaddset error on SIGPIPE: %m");
 	if (sigprocmask(SIG_BLOCK, &set, NULL) != 0)
 		fatal("sigprocmask error: %m");
 
