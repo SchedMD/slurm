@@ -31,17 +31,21 @@
 
 /* exported module funtion to launch tasks */
 /*launch_tasks should really be named launch_job_step*/
-int launch_tasks ( launch_tasks_request_msg_t * launch_msg )
+int 
+launch_tasks(launch_tasks_request_msg_t * launch_msg)
 {
-	pthread_atfork ( NULL , NULL , pthread_fork_child_after ) ;
-	return interconnect_init ( launch_msg );
+	pthread_atfork(NULL, NULL, pthread_fork_child_after);
+	debug("launch_tasks: calling interconnect_init()");
+	return interconnect_init(launch_msg);
 }
 
-int _wait_and_destroy_prg(qsw_jobinfo_t qsw_job, pid_t pid)
+static int 
+_wait_and_destroy_prg(qsw_jobinfo_t qsw_job, pid_t pid)
 {
 	int i = 0;
 	int sleeptime = 1;
 
+	debug3("waiting to destory program description...");
 	if (waitpid(pid, NULL, 0) < 0) {
 		error("waitpid: %m");
 		return SLURM_ERROR;
@@ -77,7 +81,7 @@ int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
 	switch ((pid = fork())) 
 	{
 		case -1:
-			error ("elan interconnect_init fork error %m errno: %i",errno);
+			error ("elan_interconnect_init fork(): %m");
 			return SLURM_ERROR ;
 		case 0: /* child falls thru */
 			break;
@@ -86,19 +90,21 @@ int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
 	}
 
 	/* Process 2: */
-	info("qsw_prog_init called from process %ld", getpid());
-	if (qsw_prog_init(launch_msg->qsw_job, launch_msg->uid) < 0) 
-	{
-		error ("elan interconnect_init qsw_prog_init error %m errno: %i",errno);
+	debug("calling qsw_prog_init from process %ld", getpid());
+	if (qsw_prog_init(launch_msg->qsw_job, launch_msg->uid) < 0) {
+		error ("elan interconnect_init: qsw_prog_init: %m");
+		/* we may lose the following info if not logging to stderr */
+		qsw_print_jobinfo(stderr, launch_msg->qsw_job);
 		_exit(1) ;
 	}
 	
-	fan_out_task_launch ( launch_msg ) ;
-	_exit(0) ;
-	return SLURM_ERROR ;
+	fan_out_task_launch(launch_msg);
+	_exit(0);
+
+	return SLURM_ERROR; /* XXX: why? */
 }
 
-int interconnect_set_capabilities ( task_start_t * task_start )
+int interconnect_set_capabilities(task_start_t * task_start)
 {
 	pid_t pid;
 	int nodeid, nnodes, nprocs, procid; 
@@ -108,30 +114,29 @@ int interconnect_set_capabilities ( task_start_t * task_start )
 	procid = task_start->local_task_id;
 	nprocs = task_start->launch_msg->nprocs;
 
-	info("nodeid=%d nnodes=%d procid=%d nprocs=%d", 
-			nodeid, nnodes, procid, nprocs);
-	info("setting capability in process %ld", getpid());
-
-	if (qsw_setcap( task_start -> launch_msg -> qsw_job, procid) < 0) {
-		slurm_perror("qsw_setcap");
+	debug3("nodeid=%d nnodes=%d procid=%d nprocs=%d", 
+	       nodeid, nnodes, procid, nprocs);
+	debug3("setting capability in process %ld", getpid());
+	if (qsw_setcap(task_start->launch_msg->qsw_job, procid) < 0) {
+		error("qsw_setcap: %m");
 		return SLURM_ERROR ;
 	}
 
 	pid = fork();
 	switch (pid) {
 		case -1:        /* error */
-			slurm_perror("fork");
+			error("set_capabilities: fork: %m");
 			return SLURM_ERROR ;
 		case 0:         /* child falls thru */
 			return SLURM_SUCCESS ;
 		default:        /* parent */
-			if (waitpid(pid, NULL, 0) < 0) 
-			{
-				slurm_perror("waitpid");
-				return SLURM_ERROR ;
+			if (waitpid(pid, NULL, 0) < 0) {
+				error("set_capabilities: waitpid: %m");
+				return SLURM_ERROR;
 			}
-			_exit ( 0 ) ;
-			return SLURM_SUCCESS ;
+			_exit(0); /* XXX; why does parent exit here but return
+				          above on an error from waitpid??     */
+			return SLURM_SUCCESS; /* huh? */
 	}
 }
 
@@ -155,6 +160,6 @@ int interconnect_env(char ***env, int *envc, int nodeid, int nnodes,
 }
 
 
-void pthread_fork_child ( )
+void pthread_fork_child()
 {
 }
