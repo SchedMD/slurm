@@ -191,8 +191,9 @@ int switch_p_job_postfini ( switch_jobinfo_t jobinfo, uid_t pgid,
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_attach ( switch_jobinfo_t jobinfo, char ***env, int nodeid, 
-			int procid, int nnodes, int nprocs, gid_t gid )
+int switch_p_job_attach ( switch_jobinfo_t jobinfo, char ***env, 
+			uint32_t nodeid, uint32_t procid, uint32_t nnodes, 
+			uint32_t nprocs, uint32_t rank )
 {
 	return SLURM_SUCCESS;
 }

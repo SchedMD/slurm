@@ -72,9 +72,9 @@ typedef struct slurm_switch_ops {
 						uint32_t job_id, 
 						uint32_t step_id );
 	int          (*job_attach)        ( switch_jobinfo_t jobinfo, 
-						char ***env, int nodeid, 
-						int procid, int nnodes, 
-						int nprocs, gid_t gid);
+						char ***env, uint32_t nodeid, 
+						uint32_t procid, uint32_t nnodes, 
+						uint32_t nprocs, uint32_t rank);
 } slurm_switch_ops_t;
 
 struct slurm_switch_context {
@@ -379,8 +379,8 @@ extern int interconnect_postfini(switch_jobinfo_t jobinfo, uid_t pgid,
 }
 
 extern int interconnect_attach(switch_jobinfo_t jobinfo, char ***env,
-		int nodeid, int procid, int nnodes, int nprocs,
-		gid_t gid)
+		uint32_t nodeid, uint32_t procid, uint32_t nnodes, 
+		uint32_t nprocs, uint32_t gid)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;

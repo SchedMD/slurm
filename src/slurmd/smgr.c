@@ -300,7 +300,7 @@ _exec_task(slurmd_job_t *job, int i)
 
 	if (!job->batch) {
 		if (interconnect_attach(job->switch_job, &job->env,
-				job->nodeid, i, job->nnodes,
+				job->nodeid, (uint32_t) i, job->nnodes,
 				job->nprocs, job->task[i]->gid) < 0) {
 			error("Unable to attach to interconnect: %m");
 			exit(1);

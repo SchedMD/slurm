@@ -222,7 +222,7 @@ extern int interconnect_postfini(switch_jobinfo_t jobinfo, uid_t pgid,
  * interconnect specific environment variables here)
  */
 extern int interconnect_attach(switch_jobinfo_t jobinfo, char ***env,
-		int nodeid, int procid, int nnodes, int nprocs,
-		gid_t gid);
+		uint32_t nodeid, uint32_t procid, uint32_t nnodes, 
+		uint32_t nprocs, uint32_t rank);
 
 #endif /* _SWITCH_H */
