@@ -52,7 +52,7 @@
  * IN header - the message header received
  * RET - SLURM error code
  */
-extern uint32_t check_header_version(header_t * header);
+extern int check_header_version(header_t * header);
 
 /*
  * init_header - simple function to create a header, always insuring that 

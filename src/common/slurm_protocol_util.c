@@ -40,7 +40,7 @@
  * IN header - the message header received
  * RET - SLURM error code
  */
-uint32_t check_header_version(header_t * header)
+int check_header_version(header_t * header)
 {
 	if (header->version != SLURM_PROTOCOL_VERSION) {
 		debug("Invalid Protocol Version %d", header->version);
