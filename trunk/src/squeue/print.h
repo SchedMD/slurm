@@ -24,9 +24,14 @@ typedef struct step_format {
 	bool left_justify;
 } step_format_t;
 
+int print_jobs_list( List jobs, List format );
+int print_steps_list( List steps, List format );
 
-int print_jobs_from_list( List list, job_info_t* job );
-int print_steps_from_list( List list, job_step_info_t* job_step );
+int print_jobs_array( job_info_t* jobs, int size, List format );
+int print_steps_array( job_step_info_t* steps, int size, List format );
+
+int print_job_from_format( job_info_t* job, List list );
+int print_step_from_format( job_step_info_t* job_step, List list );
 
 /*****************************************************************************
  * Job Line Format Options
@@ -42,6 +47,8 @@ int job_format_add_function ( List list, int width, bool left_justify,
 		job_format_add_function(list,wid,left,_print_job_user_name)
 #define job_format_add_job_state(list,wid,left) \
 		job_format_add_function(list,wid,left,_print_job_job_state)
+#define job_format_add_job_state_compact(list,wid,left) \
+		job_format_add_function(list,wid,left,_print_job_job_state_compact)
 #define job_format_add_time_limit(list,wid,left) \
 		job_format_add_function(list,wid,left,_print_job_time_limit)
 #define job_format_add_start_time(list,wid,left) \
@@ -85,6 +92,7 @@ int _print_job_name( job_info_t* job, int width, bool left_justify );
 int _print_job_user_id( job_info_t* job, int width, bool left_justify );
 int _print_job_user_name( job_info_t* job, int width, bool left_justify );
 int _print_job_job_state( job_info_t* job, int width, bool left_justify );
+int _print_job_job_state_compact( job_info_t* job, int width, bool left_justify );
 int _print_job_time_limit( job_info_t* job, int width, bool left_justify );
 int _print_job_start_time( job_info_t* job, int width, bool left_justify );
 int _print_job_end_time( job_info_t* job, int width, bool left_justify );
