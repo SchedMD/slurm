@@ -122,6 +122,7 @@ typedef struct srun_options {
 	bool no_kill;		/* --no-kill, -k		*/
 	bool share;		/* --share,   -s		*/
 	int  max_wait;		/* --wait,    -W		*/
+	bool quit_on_intr;      /* --quit-on-interrupt, -q      */
 #ifdef HAVE_TOTALVIEW
 	bool totalview;		/* srun controlled by TotalView	*/
 #endif
