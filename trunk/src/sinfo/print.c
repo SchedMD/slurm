@@ -425,9 +425,12 @@ int _print_prefix(sinfo_data_t * job, int width, bool right_justify,
 int _print_reason(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
-	if (sinfo_data)
-		_print_str(sinfo_data->reason, width, right_justify, true);
-	else
+	if (sinfo_data) {
+		char * reason = sinfo_data->reason ? sinfo_data->reason:"none";
+		if (strncmp(reason, "(null)", 6) == 0) 
+			reason = "none";
+		_print_str(reason, width, right_justify, true);
+	} else
 		_print_str("REASON", width, right_justify, true);
 
 	if (suffix)
