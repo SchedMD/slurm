@@ -1419,7 +1419,7 @@ static void _sync_bitmaps(struct node_record *node_ptr, int job_count)
 void node_did_resp (char *name)
 {
 	struct node_record *node_ptr;
-#ifdef HAVE_BGL		/* only front-end node */
+#ifdef HAVE_FRONT_END		/* Fake all other nodes */
 	int i;
 
 	for (i=0; i<node_record_count; i++) {
@@ -1485,7 +1485,7 @@ static void _node_did_resp(struct node_record *node_ptr)
 void node_not_resp (char *name, time_t msg_time)
 {
 	struct node_record *node_ptr;
-#ifdef HAVE_BGL		/* only front-end node */
+#ifdef HAVE_FRONT_END		/* Fake all other nodes */
 	int i;
 	char host_str[64];
 	hostlist_t no_resp_hostlist = hostlist_create("");
@@ -1681,7 +1681,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 		strncpy (&kill_agent_args->node_names[pos],
 		         node_record_table_ptr[i].name, MAX_NAME_LEN);
 		kill_agent_args->node_count++;
-#ifdef HAVE_BGL		/* only done one front-end node */
+#ifdef HAVE_FRONT_END		/* Operate only on front-end */
 		break;
 #endif
 	}

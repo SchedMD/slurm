@@ -182,7 +182,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 			job_ptr->node_cnt--;
 		}
 		make_node_comp(node_ptr, job_ptr);
-#ifdef HAVE_BGL		/* Only operate on front-end node */
+#ifdef HAVE_FRONT_END		/* Operate only on front-end */
 		if (agent_args->node_count > 0)
 			continue;
 #endif
@@ -1168,7 +1168,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 		if (node_ptr->node_state & NODE_STATE_NO_RESPOND)
 			continue;
 		(void) hostlist_push_host(kill_hostlist, node_ptr->name);
-#ifdef HAVE_BGL			/* only do one front-end node */
+#ifdef HAVE_FRONT_END		/* Operate only on front-end */
 		if (agent_args->node_count > 0)
 			continue;
 #endif

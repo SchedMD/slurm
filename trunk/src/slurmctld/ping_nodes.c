@@ -184,7 +184,7 @@ void ping_nodes (void)
 			node_ptr->last_response = slurmctld_conf.last_update;
 		}
 
-#ifdef HAVE_BGL			/* Only one front-end node */
+#ifdef HAVE_FRONT_END		/* Operate only on front-end */
 		if (i > 0)
 			continue;
 #endif
