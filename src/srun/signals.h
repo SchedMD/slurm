@@ -30,6 +30,7 @@
 #include "src/srun/job.h"
 
 void sig_setup_sigmask(void);
+int  sig_unblock_signals(void);
 int  sig_thr_create(job_t *job);
 void fwd_signal(job_t *job, int signal);
 

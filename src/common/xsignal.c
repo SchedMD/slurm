@@ -35,6 +35,7 @@
 
 #include "src/common/log.h"
 #include "src/common/xsignal.h"
+#include "src/common/xassert.h"
 
 
 SigFunc *
@@ -51,36 +52,37 @@ xsignal(int signo, SigFunc *f)
 	return (old_sa.sa_handler);
 }
 
-int 
-xsignal_unblock(int signo)
+
+/*
+ *  Wrapper for pthread_sigmask.
+ */
+static int
+_sigmask(int how, sigset_t *set, sigset_t *oset)
 {
 	int err;
-	sigset_t set;
-	if (sigemptyset(&set) < 0) {
-		error("sigemptyset: %m");
-		return SLURM_ERROR;
-	}
-	if (sigaddset(&set, signo) < 0) {
-		error("sigaddset: %m");
-		return SLURM_ERROR;
-	}
 
-	if ((err = pthread_sigmask(SIG_UNBLOCK, &set, NULL)) < 0) {
-		error("sigprocmask: %s", slurm_strerror(err));
-		return SLURM_ERROR;
-	}
+	if ((err = pthread_sigmask(how, set, oset)))
+		return error ("pthread_sigmask: %s", slurm_strerror(err));
 
 	return SLURM_SUCCESS;
 }
 
 
-static int
-_sig_setmask(sigset_t *set, sigset_t *oset)
+/*  
+ *  Fill in the sigset_t with the list of signals in the
+ *   the (zero-terminated) array of signals `sigarray.'
+ */
+int
+xsignal_sigset_create(int sigarray[], sigset_t *setp)
 {
-	int err = pthread_sigmask(SIG_SETMASK, set, oset);
-	if (err) {
-		error("pthread_sigmask(SETMASK): %s", slurm_strerror(err));
-		return SLURM_ERROR;
+	int i = 0, sig;
+
+	if (sigemptyset(setp) < 0)
+		error("sigemptyset: %m");
+
+	while ((sig = sigarray[i++])) {
+		if (sigaddset(setp, sig) < 0)
+			return error ("sigaddset(%d): %m", sig);
 	}
 
 	return SLURM_SUCCESS;
@@ -89,27 +91,38 @@ _sig_setmask(sigset_t *set, sigset_t *oset)
 int
 xsignal_save_mask(sigset_t *set)
 {
-	return _sig_setmask(NULL, set);
+	return _sigmask(SIG_SETMASK, NULL, set);
 }
 
 int
-xsignal_restore_mask(sigset_t *set)
+xsignal_set_mask(sigset_t *set)
 {
-	return _sig_setmask(set, NULL);
+	return _sigmask(SIG_SETMASK, set, NULL);
 }
 
-
 int
-unblock_all_signals(void)
+xsignal_block(int sigarray[])
 {
 	sigset_t set;
-	if (sigfillset(&set)) {
-		error("sigfillset: %m");
+
+	xassert(sigarray != NULL);
+
+	if (xsignal_sigset_create(sigarray, &set) < 0)
 		return SLURM_ERROR;
-	}
-	if (pthread_sigmask(SIG_UNBLOCK, &set, NULL)) {
-		error("sigprocmask: %m");
-		return SLURM_ERROR;
-	}
-	return SLURM_SUCCESS;
+
+	return _sigmask(SIG_BLOCK, &set, NULL);
 }
+
+int
+xsignal_unblock(int sigarray[])
+{
+	sigset_t set;
+
+	xassert(sigarray != NULL);
+
+	if (xsignal_sigset_create(sigarray, &set) < 0)
+		return SLURM_ERROR;
+
+	return _sigmask(SIG_UNBLOCK, &set, NULL);
+}
+

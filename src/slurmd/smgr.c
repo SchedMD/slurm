@@ -59,19 +59,27 @@
 #include "src/slurmd/io.h"
 
 /*
+ * Static list of signals to block in this process
+ *  *Must be zero-terminated*
+ */
+static int smgr_sigarray[] = {
+	SIGINT,  SIGTERM, SIGCHLD, 
+	SIGUSR1, SIGUSR2, SIGTSTP,
+	SIGQUIT, SIGPIPE, SIGALRM, 0
+};
+
+/*
  * Static prototype definitions.
  */
 static void  _session_mgr(slurmd_job_t *job);
 static int   _exec_all_tasks(slurmd_job_t *job);
 static void  _exec_task(slurmd_job_t *job, int i);
 static int   _become_user(slurmd_job_t *job);
-static int   _block_smgr_signals(void);
 static int   _child_exited(void);
 static void  _wait_for_all_tasks(slurmd_job_t *job);
 static int   _local_taskid(slurmd_job_t *job, pid_t pid);
 static int   _send_exit_status(slurmd_job_t *job, pid_t pid, int status);
 static char *_signame(int signo);
-static int   _unblock_all_signals(void);
 static void  _cleanup_file_descriptors(slurmd_job_t *job);
 static int   _setup_env(slurmd_job_t *job, int taskid);
 
@@ -212,7 +220,14 @@ _exec_all_tasks(slurmd_job_t *job)
 	xassert(job != NULL);
 	xassert(fd >= 0);
 
-	_block_smgr_signals();
+	/*
+	 *  Block signals for this process before exec-ing
+	 *   user tasks. Esp. important to block SIGCHLD until
+	 *   we're ready to handle it.
+	 */
+	if (xsignal_block(smgr_sigarray) < 0)
+		return error ("Unable to block signals");
+
 
 	for (i = 0; i < job->ntasks; i++) {
 		pid_t pid = fork();
@@ -225,7 +240,7 @@ _exec_all_tasks(slurmd_job_t *job)
 
 		/* Parent continues: 
 		 */
-		verbose("task %d (%ld) started %M", job->task[i]->gid, pid); 
+		info ("task %d (%ld) started %M", job->task[i]->gid, pid); 
 
 		/* 
 		 * Send pid to job manager
@@ -251,7 +266,7 @@ _exec_all_tasks(slurmd_job_t *job)
 static void
 _exec_task(slurmd_job_t *job, int i)
 {
-	if (_unblock_all_signals() < 0) {
+	if (xsignal_unblock(smgr_sigarray) < 0) {
 		error("unable to unblock signals");
 		exit(1);
 	}
@@ -284,42 +299,6 @@ _exec_task(slurmd_job_t *job, int i)
 }
 
 /*
- *  Create the set of signals to be blocked by the slurmd
- *    session manager (smgr).
- */
-static void
-_smgr_sigset(sigset_t *setp)
-{
-	if (sigemptyset(setp) < 0)
-		error("sigemptyset: %m");
-	if (sigaddset(setp, SIGCHLD) < 0)
-		error("sigaddset(SIGCHLD): %m");
-	if (sigaddset(setp, SIGTERM) < 0)
-		error("sigaddset(SIGTERM): %m");
-	if (sigaddset(setp, SIGINT) < 0)
-		error("sigaddset(SIGINT): %m");
-	if (sigaddset(setp, SIGXCPU) < 0)
-		error("sigaddset(SIGXCPU): %m");
-}
-
-/*
- *  Block a set of signals from this process.
- */
-static int
-_block_smgr_signals(void)
-{
-	int      e;
-	sigset_t set;
-
-	_smgr_sigset(&set);
-
-	if ((e = pthread_sigmask(SIG_BLOCK, &set, NULL)) < 0)
-		error("pthread_sigmask: %s", slurm_strerror(e));
-
-	return e ? SLURM_ERROR : SLURM_SUCCESS;
-}
-
-/*
  *  Translate a signal number to recognizable signal name.
  *    Returns signal name or "signal <num>" 
  */
@@ -344,6 +323,8 @@ _signame(int signo)
 	for (i = 0; ; i++) {
 		if ( sigtbl[i].s_num == signo )
 			return sigtbl[i].s_name;
+		if ( sigtbl[i].s_num == 0 )
+			break;
 	}
 
 	snprintf(str, 9, "signal %d", signo);
@@ -362,7 +343,7 @@ _child_exited(void)
 	sigset_t set;
 
 	for (;;) {
-		_smgr_sigset(&set);
+		xsignal_sigset_create(smgr_sigarray, &set);
 		sigwait(&set, &sig);
 
 		debug2 ("slurmd caught %s", _signame(sig));
@@ -450,12 +431,12 @@ _send_exit_status(slurmd_job_t *job, pid_t pid, int status)
 		return 0;
 	e.status = status;
 
-	verbose ( "task %*d (%ld) exited status 0x%04x %M", 
-	          _wid(job->ntasks), 
-		  job->task[e.taskid]->gid, 
-		  pid, 
-		  status
-		 );
+	info ( "task %*d (%ld) exited status 0x%04x %M", 
+	        _wid(job->ntasks), 
+	        job->task[e.taskid]->gid, 
+	        pid, 
+	        status
+	     );
 
 	while (((rc = fd_write_n(fd, &e, len)) <= 0) && retry--) {;}
 
@@ -548,21 +529,3 @@ _pdebug_stop_current(slurmd_job_t *job)
 		error("ptrace: %m");
 #endif
 }
-
-
-static int
-_unblock_all_signals(void)
-{
-	sigset_t set;
-	if (sigfillset(&set)) {
-		error("sigfillset: %m");
-		return SLURM_ERROR;
-	}
-	if (sigprocmask(SIG_UNBLOCK, &set, NULL)) {
-		error("sigprocmask: %m");
-		return SLURM_ERROR;
-	}
-	return SLURM_SUCCESS;
-}
-
-

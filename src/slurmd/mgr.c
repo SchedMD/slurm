@@ -85,6 +85,15 @@ static int exit_errno[] =
 
 #define MAX_SMGR_EXIT_STATUS 6
 
+/*
+ *  List of signals to block in this process
+ */
+static int mgr_sigarray[] = {
+	SIGINT,  SIGTERM, SIGTSTP,
+	SIGQUIT, SIGPIPE, SIGUSR1,
+	SIGUSR2, SIGALRM, 0
+};
+
 
 /* 
  * Prototypes
@@ -98,7 +107,6 @@ static void _set_job_log_prefix(slurmd_job_t *job);
 static int  _setup_io(slurmd_job_t *job);
 static int  _drop_privileges(struct passwd *pwd);
 static int  _reclaim_privileges(struct passwd *pwd);
-static int  _block_most_signals(void);
 static void _send_launch_resp(slurmd_job_t *job, int rc);
 static void _slurmd_job_log_init(slurmd_job_t *job);
 static int  _update_shm_task_info(slurmd_job_t *job);
@@ -398,7 +406,7 @@ _job_mgr(slurmd_job_t *job)
 		goto fail1;
 	}
 
-	_block_most_signals();
+	xsignal_block(mgr_sigarray);
 	xsignal(SIGHUP, _hup_handler);
 
 	if ((rc = _setup_io(job))) 
@@ -1016,30 +1024,6 @@ _reclaim_privileges(struct passwd *pwd)
 }
 
 
-static int
-_block_most_signals(void)
-{
-	sigset_t set;
-	if (sigemptyset(&set) < 0) {
-		error("sigemptyset: %m");
-		return SLURM_ERROR;
-	}
-	sigaddset(&set, SIGINT);
-	sigaddset(&set, SIGTERM);
-	/* sigaddset(&set, SIGSTOP); */
-	sigaddset(&set, SIGTSTP);
-	sigaddset(&set, SIGQUIT);
-	sigaddset(&set, SIGPIPE);
-	sigaddset(&set, SIGUSR1);
-	sigaddset(&set, SIGUSR2);
-	sigaddset(&set, SIGALRM);
-	if (sigprocmask(SIG_BLOCK, &set, NULL) < 0) {
-		error("sigprocmask: %m");
-		return SLURM_ERROR;
-	}
-
-	return SLURM_SUCCESS;
-}
 
 
 static void
