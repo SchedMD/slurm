@@ -1,0 +1,41 @@
+Record below the origins of code imported into SLURM from any source. 
+This is critical to insure SLURM can be properly licensed. A sample
+entry follows.
+
+Origin:		http://www.UNI.edu/whatever/sample.[ch]
+Date:		5/23/02
+Destination:	src/directory/sample.[ch]
+License:	GPL, UNI copyright, UNI patent, etc. (list all)
+Imported by:	Joe Slurm
+Notes:  	modules to do whatever
+
+======================================================================
+
+Origin: 	
+Date:    	
+Destination:	
+License: 	
+Imported by:	
+Notes:    	
+
+Origin: 	
+Date:    	
+Destination:	
+License: 	
+Imported by:	
+Notes:    	
+
+Origin: 	
+Date:    	
+Destination:	
+License: 	
+Imported by:	
+Notes:    	
+
+Origin: 	
+Date:    	
+Destination:	
+License: 	
+Imported by:	
+Notes:    	
+
