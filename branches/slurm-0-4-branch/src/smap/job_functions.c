@@ -98,6 +98,7 @@ extern void get_job(void)
 				 COLOR_PAIR(pa_system_ptr->
 					    fill_in_value[count].color));
 			count++;
+			
 		} else if((job.job_state == JOB_PENDING)) {
 			//count--;
 			job.nodes = "waiting...";
@@ -113,6 +114,8 @@ extern void get_job(void)
 			count++;	
 			
 		}
+		if(count==128)
+			count=0;
 		
 	}
 

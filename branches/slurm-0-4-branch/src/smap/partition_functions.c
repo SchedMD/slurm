@@ -132,7 +132,8 @@ void get_slurm_part(void)
 		count++;
 			
 	}
-
+	if(count==128)
+		count=0;
 	if (params.commandline && params.iterate)
 		printf("\n");
 	
