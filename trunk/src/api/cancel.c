@@ -1,9 +1,10 @@
 /*****************************************************************************\
- * cancel.c - cancel a slurm job or job step
+ *  cancel.c - cancel a slurm job or job step
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by moe jette <jette1@llnl.gov>.
+ *  Written by Moe Jette <jette1@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -49,75 +50,30 @@ slurm_kill_job ( uint32_t job_id, uint16_t signal )
 }
 
 /*
- * slurm_kill_job_step - send the specified signal to an existing job step
- * IN job_id - the job's id
- * IN step_id - the job step's id
- * IN signal - signal number
- * RET 0 on success or slurm error code
+ *  Kill a job step with job id "job_id" and step id "step_id", optionally
+ *    sending the processes in the job step a signal "signal"
+ *
  */
 int 
-slurm_kill_job_step ( uint32_t job_id, uint32_t step_id, uint16_t signal )
+slurm_kill_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 {
-	int msg_size ;
-	int rc ;
-	slurm_fd sockfd ;
-	slurm_msg_t request_msg ;
-	slurm_msg_t response_msg ;
-	job_step_kill_msg_t job_step_kill_msg ;
-	return_code_msg_t * slurm_rc_msg ;
+	int rc;
+	slurm_msg_t msg;
+	job_step_kill_msg_t req;
 
-	/* init message connection for message communication with controller */
-	if ( ( sockfd = slurm_open_controller_conn ( ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
+	/* 
+	 * Request message:
+	 */
+	req.job_id      = job_id;
+	req.job_step_id = step_id;
+	req.signal      = signal;
+	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
+        msg.data        = &req;
 
-	/* send request message */
-	job_step_kill_msg . job_id      = job_id ;
-	job_step_kill_msg . job_step_id = step_id ;
-	job_step_kill_msg . signal      = signal ;
-	request_msg . msg_type = REQUEST_CANCEL_JOB_STEP ;
-	request_msg . data = &job_step_kill_msg ;
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
+	if (slurm_send_recv_controller_rc_msg(&msg, &rc) < 0)
+		return SLURM_FAILURE;
 
-	/* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
+	if (rc) slurm_seterrno_ret(rc);
 
-	/* shutdown message connection */
-	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_SHUTDOWN_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
-	if ( msg_size )
-		return msg_size;
-
-	switch ( response_msg . msg_type )
-	{
-		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = 
-				( return_code_msg_t * ) response_msg . data ;
-			rc = slurm_rc_msg->return_code;
-			slurm_free_return_code_msg ( slurm_rc_msg );	
-			if (rc) {
-				slurm_seterrno ( rc );
-				return SLURM_PROTOCOL_ERROR;
-			}
-			break ;
-		default:
-			slurm_seterrno ( SLURM_UNEXPECTED_MSG_ERROR );
-			return SLURM_PROTOCOL_ERROR;
-			break ;
-	}
-
-	return SLURM_PROTOCOL_SUCCESS ;
+	return SLURM_SUCCESS;
 }

@@ -1,6 +1,7 @@
 /*****************************************************************************\
  *  reconfigure.c - request that slurmctld shutdown or re-read the 
- *	configuration files
+ *	            configuration files
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -49,64 +50,17 @@ static int _send_message_controller (	enum controller_id dest,
 int
 slurm_reconfigure ( void )
 {
-	int msg_size ;
-	int rc ;
-	slurm_fd sockfd ;
-	slurm_msg_t request_msg ;
-	slurm_msg_t response_msg ;
-	return_code_msg_t * slurm_rc_msg ;
+	int rc;
+	slurm_msg_t req;
 
-        /* init message connection for message communication with controller */
-	if ( ( sockfd = slurm_open_controller_conn ( ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
+	req.msg_type = REQUEST_RECONFIGURE;
 
-	/* send request message */
-	request_msg . msg_type = REQUEST_RECONFIGURE ;
+	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
+		return SLURM_ERROR;
 
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
+	if (rc) slurm_seterrno_ret(rc);
 
-	/* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
-
-	/* shutdown message connection */
-	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_SHUTDOWN_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
-	if ( msg_size )
-		return msg_size;
-
-	switch ( response_msg . msg_type )
-	{
-		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = 
-				(return_code_msg_t *) response_msg.data ;
-			rc = slurm_rc_msg->return_code;
-			slurm_free_return_code_msg ( slurm_rc_msg );	
-			if (rc) {
-				slurm_seterrno ( rc );
-				return SLURM_PROTOCOL_ERROR;
-			}
-			break ;
-		default:
-			slurm_seterrno ( SLURM_UNEXPECTED_MSG_ERROR );
-			return SLURM_PROTOCOL_ERROR;
-			break ;
-	}
-
-        return SLURM_PROTOCOL_SUCCESS ;
+	return SLURM_PROTOCOL_SUCCESS;
 }
 
 /*
@@ -144,77 +98,49 @@ slurm_ping (int primary)
 int
 slurm_shutdown (uint16_t core)
 {
-	int rc ;
-	slurm_msg_t request_msg ;
-	shutdown_msg_t shutdown_msg ;
+	slurm_msg_t req_msg;
+	shutdown_msg_t shutdown_msg;
 
-	/* build shutdown request message */
-	shutdown_msg . core = core ;
-	request_msg . msg_type = REQUEST_SHUTDOWN ;
-	request_msg . data = &shutdown_msg;
+	shutdown_msg.core = core;
+	req_msg.msg_type  = REQUEST_SHUTDOWN;
+	req_msg.data      = &shutdown_msg;
 
-	/* explicity send the message to both primary and backup controllers */
-	(void) _send_message_controller ( SECONDARY_CONTROLLER, &request_msg );
-	rc = _send_message_controller ( PRIMARY_CONTROLLER,   &request_msg );
-
-	return rc;
+	/* 
+	 * Explicity send the message to both primary 
+	 *   and backup controllers 
+	 */
+	(void) _send_message_controller(SECONDARY_CONTROLLER, &req_msg);
+	return _send_message_controller(PRIMARY_CONTROLLER,   &req_msg);
 }
 
 int
-_send_message_controller ( enum controller_id dest, slurm_msg_t *request_msg ) 
+_send_message_controller (enum controller_id dest, slurm_msg_t *req) 
 {
-	int rc, msg_size ;
-	slurm_fd sockfd ;
-	slurm_msg_t response_msg ;
-	return_code_msg_t * slurm_rc_msg ;
+	int rc;
+	slurm_fd fd = -1;
+	slurm_msg_t resp_msg ;
 
-        /* init message connection for message communication with controller */
-	sockfd = slurm_open_controller_conn_spec ( dest );
-	if ( sockfd == SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
+	if ((fd = slurm_open_controller_conn_spec(dest)) < 0)
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 
-	if ( ( rc = slurm_send_controller_msg ( sockfd , request_msg ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
+	if (slurm_send_node_msg(fd, req) < 0) 
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_SEND_ERROR);
 
-	/* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
+	if ((rc = slurm_receive_msg(fd, &resp_msg)) < 0)
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_RECEIVE_ERROR);
 
-	/* shutdown message connection */
-	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_SHUTDOWN_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
-	if ( msg_size )
-		return msg_size;
+	if (slurm_shutdown_msg_conn(fd) != SLURM_SUCCESS)
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_SHUTDOWN_ERROR);
 
-	switch ( response_msg . msg_type )
-	{
-		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = 
-				( return_code_msg_t * ) response_msg . data ;
-			rc = slurm_rc_msg->return_code;
-			slurm_free_return_code_msg ( slurm_rc_msg );	
-			if (rc) {
-				slurm_seterrno ( rc );
-				return SLURM_PROTOCOL_ERROR;
-			}
-			break ;
-		default:
-			slurm_seterrno ( SLURM_UNEXPECTED_MSG_ERROR );
-			return SLURM_PROTOCOL_ERROR;
-			break ;
-	}
+	if (resp_msg.msg_type != RESPONSE_SLURM_RC)
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 
-        return SLURM_PROTOCOL_SUCCESS ;
+	rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+
+	slurm_free_return_code_msg(resp_msg.data);
+
+	if (rc) slurm_seterrno_ret(rc);
+
+        return SLURM_PROTOCOL_SUCCESS;
 }
 

@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  partition_info.c - get/print the partition state information of slurm
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -146,73 +147,35 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr,
  * NOTE: free the response using slurm_free_partition_info_msg
  */
 int
-slurm_load_partitions (time_t update_time, 
-		partition_info_msg_t **partition_info_msg_pptr)
+slurm_load_partitions (time_t update_time, partition_info_msg_t **resp)
 {
-        int msg_size ;
-        int rc ;
-        slurm_fd sockfd ;
-        slurm_msg_t request_msg ;
-        slurm_msg_t response_msg ;
-        last_update_msg_t last_time_msg ;
-	return_code_msg_t * slurm_rc_msg ;
+        int rc;
+        slurm_msg_t req_msg;
+        slurm_msg_t resp_msg;
+        last_update_msg_t req;
 
-        /* init message connection for message communication with controller */
-	if ( ( sockfd = slurm_open_controller_conn ( ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
-		return SLURM_SOCKET_ERROR ;
+        req.last_update  = update_time;
+        req_msg.msg_type = REQUEST_PARTITION_INFO;
+        req_msg.data     = &req;
+
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+		return SLURM_ERROR;
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_PARTITION_INFO:
+		*resp = (partition_info_msg_t *) resp_msg.data;
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);	
+		if (rc) 
+			slurm_seterrno_ret(rc);
+		*resp = NULL;
+		break;
+	default:
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
 	}
 
-        /* send request message */
-        last_time_msg . last_update = update_time ;
-        request_msg . msg_type = REQUEST_PARTITION_INFO ;
-        request_msg . data = &last_time_msg ;
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
-
-        /* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
-
-        /* shutdown message connection */
-	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_SHUTDOWN_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
-	if ( msg_size )
-		return msg_size;
-
-	switch ( response_msg . msg_type )
-	{
-		case RESPONSE_PARTITION_INFO:
-        		*partition_info_msg_pptr = 
-				( partition_info_msg_t * ) 
-				response_msg . data ;
-			return SLURM_SUCCESS ;
-			break ;
-		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = 
-				( return_code_msg_t * ) response_msg . data ;
-			rc = slurm_rc_msg->return_code;
-			slurm_free_return_code_msg ( slurm_rc_msg );	
-			if (rc) {
-				slurm_seterrno ( rc );
-				return SLURM_PROTOCOL_ERROR;
-			}
-			break ;
-		default:
-			slurm_seterrno ( SLURM_UNEXPECTED_MSG_ERROR );
-			return SLURM_PROTOCOL_ERROR;
-			break ;
-	}
-
-	return SLURM_PROTOCOL_SUCCESS ;
+	return SLURM_PROTOCOL_SUCCESS;
 }
