@@ -121,6 +121,11 @@ typedef struct task_info {
 	void *msg_args_ptr;		/* ptr to RPC data to be used */
 } task_info_t;
 
+typedef struct queued_request {
+	agent_arg_t* agent_arg_ptr;	/* The queued request */
+	time_t       last_attempt;	/* Time of last xmit attempt */
+} queued_request_t;
+
 static void _alarm_handler(int dummy);
 static inline void _comm_err(char *node_name);
 static void _list_delete_retry(void *retry_entry);
@@ -624,6 +629,7 @@ static void _alarm_handler(int dummy)
 static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 {
 	agent_arg_t *agent_arg_ptr;
+	queued_request_t *queued_req_ptr = NULL;
 	thd_t *thread_ptr = agent_info_ptr->thread_struct;
 	int i, j;
 
@@ -656,17 +662,20 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 			count, j);
 		agent_arg_ptr->node_count = j;
 	}
-	debug2("Queue RPC msg_type=%u, count=%d for retry", 
+	debug2("Queue RPC msg_type=%u, nodes=%d for retry", 
 	       agent_arg_ptr->msg_type, j);
 
 	/* add the requeust to a list */
+	queued_req_ptr = xmalloc(sizeof(queued_request_t));
+	queued_req_ptr->agent_arg_ptr = agent_arg_ptr;
+	queued_req_ptr->last_attempt  = time(NULL);
 	slurm_mutex_lock(&retry_mutex);
 	if (retry_list == NULL) {
 		retry_list = list_create(&_list_delete_retry);
 		if (retry_list == NULL)
 			fatal("list_create failed");
 	}
-	if (list_enqueue(retry_list, (void *) agent_arg_ptr) == 0)
+	if (list_append(retry_list, (void *) queued_req_ptr) == 0)
 		fatal("list_append failed");
 	slurm_mutex_unlock(&retry_mutex);
 }
@@ -677,89 +686,80 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
  */
 static void _list_delete_retry(void *retry_entry)
 {
-	agent_arg_t *agent_arg_ptr;	/* pointer to part_record */
+	queued_request_t *queued_req_ptr;
 
-	agent_arg_ptr = (agent_arg_t *) retry_entry;
-	xfree(agent_arg_ptr->slurm_addr);
-	xfree(agent_arg_ptr->node_names);
-#if AGENT_IS_THREAD
-	xfree(agent_arg_ptr->msg_args);
-#endif
-	xfree(agent_arg_ptr);
+	if (! retry_entry)
+		return;
+
+	queued_req_ptr = (queued_request_t *) retry_entry;
+	_purge_agent_args(queued_req_ptr->agent_arg_ptr);
+	xfree(queued_req_ptr);
 }
 
 
 /*
- * agent_retry - Agent for retrying pending RPCs (top one on the queue), 
- * IN args - unused
- * RET count of queued requests
+ * agent_retry - Agent for retrying pending RPCs. One pending request is 
+ *	issued if it has been pending for at least min_wait seconds
+ * IN min_wait - Minimum wait time between re-issue of a pending RPC
+ * RET count of queued requests remaining
  */
-int agent_retry (void *args)
-
+extern int agent_retry (int min_wait)
 {
 	int list_size = 0;
-	agent_arg_t *agent_arg_ptr = NULL;
+	time_t now = time(NULL);
+	queued_request_t *queued_req_ptr = NULL;
 
 	slurm_mutex_lock(&retry_mutex);
 	if (retry_list) {
+		double age = 0;
 		list_size = list_count(retry_list);
-		agent_arg_ptr = (agent_arg_t *) list_dequeue(retry_list);
+		queued_req_ptr = (queued_request_t *) list_peek(retry_list);
+		if (queued_req_ptr) {
+			age = difftime(now, queued_req_ptr->last_attempt);
+			if (age > min_wait)
+				queued_req_ptr = (queued_request_t *) 
+					list_pop(retry_list);
+			else /* too new */
+				queued_req_ptr = NULL;
+		}
 	}
 	slurm_mutex_unlock(&retry_mutex);
 
-	if (agent_arg_ptr)
-		_spawn_retry_agent(agent_arg_ptr);
+	if (queued_req_ptr) {
+		agent_arg_t *agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
+		xfree(queued_req_ptr);
+		if (agent_arg_ptr)
+			_spawn_retry_agent(agent_arg_ptr);
+		else
+			error("agent_retry found record with no agent_args");
+	}
 
 	return list_size;
 }
 
 /*
- * agent_queue_request - put a request on the queue for later execution
+ * agent_queue_request - put a new request on the queue for later execution
  * IN agent_arg_ptr - the request to enqueue
  */
 void agent_queue_request(agent_arg_t *agent_arg_ptr)
 {
+	queued_request_t *queued_req_ptr = NULL;
+
+	queued_req_ptr = xmalloc(sizeof(queued_request_t));
+	queued_req_ptr->agent_arg_ptr = agent_arg_ptr;
+/*	queued_req_ptr->last_attempt  = 0; Implicit */
+
 	slurm_mutex_lock(&retry_mutex);
 	if (retry_list == NULL) {
 		retry_list = list_create(&_list_delete_retry);
 		if (retry_list == NULL)
 			fatal("list_create failed");
 	}
-	list_enqueue(retry_list, (void *)agent_arg_ptr);
+	list_prepend(retry_list, (void *)queued_req_ptr);
 	slurm_mutex_unlock(&retry_mutex);
 }
 
-/* retry_pending - retry all pending RPCs for the given node name
- * IN node_name - name of a node to executing pending RPCs for */
-void retry_pending(char *node_name)
-{
-	int list_size = 0, i, j, found;
-	agent_arg_t *agent_arg_ptr = NULL;
-
-	slurm_mutex_lock(&retry_mutex);
-	if (retry_list) {
-		list_size = list_count(retry_list);
-	}
-	for (i = 0; i < list_size; i++) {
-		agent_arg_ptr = (agent_arg_t *) list_dequeue(retry_list);
-		found = 0;
-		for (j = 0; j < agent_arg_ptr->node_count; j++) {
-			if (strncmp
-			    (&agent_arg_ptr->node_names[j * MAX_NAME_LEN],
-			     node_name, MAX_NAME_LEN))
-				continue;
-			found = 1;
-			break;
-		}
-		if (found)	/* issue this RPC */
-			_spawn_retry_agent(agent_arg_ptr);
-		else		/* put the RPC back on the queue */
-			list_enqueue(retry_list, (void *) agent_arg_ptr);
-	}
-	slurm_mutex_unlock(&retry_mutex);
-}
-
-/* _spawn_retry_agent - pthread_crate an agent for the given task */
+/* _spawn_retry_agent - pthread_create an agent for the given task */
 static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr)
 {
 	int retries = 0;
@@ -808,17 +808,13 @@ static void _slurmctld_free_job_launch_msg(batch_job_launch_msg_t * msg)
 /* agent_purge - purge all pending RPC requests */
 void agent_purge(void)
 {
-#if AGENT_IS_THREAD
-	agent_arg_t *agent_arg_ptr = NULL;
-
 	if (retry_list == NULL)
 		return;
 
 	slurm_mutex_lock(&retry_mutex);
-	while ((agent_arg_ptr = (agent_arg_t *) list_dequeue(retry_list)))
-		_purge_agent_args(agent_arg_ptr);
+	list_destroy(retry_list);
+	retry_list = NULL;
 	slurm_mutex_unlock(&retry_mutex);
-#endif
 }
 
 static void _purge_agent_args(agent_arg_t *agent_arg_ptr)

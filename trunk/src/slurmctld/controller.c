@@ -569,7 +569,6 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_checkpoint_time;
 	static time_t last_group_time;
 	static time_t last_ping_time;
-	static time_t last_rpc_retry_time;
 	static time_t last_timelimit_time;
 	time_t now;
 	/* Locks: Write job, write node, read partition */
@@ -587,7 +586,7 @@ static void *_slurmctld_background(void *no_data)
 	/* Let the dust settle before doing work */
 	now = time(NULL);
 	last_sched_time = last_checkpoint_time = last_group_time = now;
-	last_timelimit_time = last_rpc_retry_time = now;
+	last_timelimit_time = now;
 	last_ping_time = now + (time_t)MIN_CHECKIN_TIME -
 			 (time_t)slurmctld_conf.heartbeat_interval;
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -634,15 +633,7 @@ static void *_slurmctld_background(void *no_data)
 			unlock_slurmctld(node_write_lock);
 		}
 
-		if (difftime(now, last_rpc_retry_time) >= RPC_RETRY_INTERVAL) {
-			if (agent_retry(NULL) <= 5) {
-				/* FIXME: Make this timer based */
-				/* if there are more than a few requests, 
-				 * don't reset the timer, re-issue one 
-				 * request per loop */
-				last_rpc_retry_time = now;
-			}
-		}
+		(void) agent_retry(RPC_RETRY_INTERVAL);
 
 		if (difftime(now, last_group_time) >= PERIODIC_GROUP_CHECK) {
 			last_group_time = now;
