@@ -3414,6 +3414,9 @@ _xmit_new_end_time(struct job_record *job_ptr)
 			node_names[MAX_NAME_LEN * agent_args->node_count],
 			node_record_table_ptr[i].name, MAX_NAME_LEN);
 		agent_args->node_count++;
+#ifdef HAVE_BGL
+		break;	/* only do one front-end node */
+#endif
 	}
 
 	agent_args->msg_args = job_time_msg_ptr;

@@ -177,7 +177,7 @@ void ping_nodes (void)
 
 #ifdef HAVE_BGL
 		if (i > 0)	/* Only one front-end node to ping/register */
-			break;
+			continue;
 #endif
 
 		if (node_ptr->last_response == (time_t)0) {
