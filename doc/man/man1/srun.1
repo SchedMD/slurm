@@ -88,7 +88,9 @@ will block until resources become available.
 \fB\-k\fR, \fB\-\-no-kill\fR
 Do not automatically terminate a job of one of the nodes it has been allocated 
 fails. The job will assume all responsibilities for fault-tolerance. The 
-default action is to terminate the job upon node failure.
+default action is to terminate job upon node failure. Note that
+\fB\-\-batch\fR jobs will be re-queued if a node failure occurs in the 
+process of initiating it.
 .TP
 \fB\-s\fR, \fB\-\-share\fR
 The job can share nodes with other running jobs. This may result in faster job 
@@ -192,6 +194,8 @@ pathname or its pathname will be relative to the current working directory.
 The search path will not be used to locate the file. \fIexecutable\fR 
 will be interpreted by the user's default shell unless the file begins 
 with "#!" followed by the fully qualified pathname of a valid shell.
+Note that batch jobs will be re\-queued if a node fails while it is being 
+initiated. 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 verbose operation. Multiple \fB-v\fR's will further increase the verbosity of
