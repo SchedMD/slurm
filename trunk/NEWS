@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Fix slurmctld handling of heterogeneous processor count on elan 
     switch (was setting DRAINED nodes in state DRAINING).
+ -- Fix sinfo -R, --list-reasons to list all relevant node states.
 
 * Changes in SLURM 0.3.2
 ========================
