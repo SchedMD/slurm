@@ -38,11 +38,15 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
 #include "src/slurmctld/slurmctld.h"
 #include "bluegene.h"
 
@@ -83,7 +87,10 @@ static pthread_t bluegene_thread = 0;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /** initialize the status pthread */
-static int _init_status_pthread();
+static int _init_status_pthread(void);
+
+/* initialize the db.properties file, link into current working directory */
+static void _init_db_properties(void);
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -99,6 +106,8 @@ extern int init ( void )
 		SYSTEM_DIMENSIONS);
 #endif
 
+	_init_db_properties();
+
 	verbose("%s loading...", plugin_name);
 	if (init_bgl() || _init_status_pthread())
 		return SLURM_ERROR;
@@ -106,7 +115,36 @@ extern int init ( void )
 	return SLURM_SUCCESS;
 }
 
-static int _init_status_pthread()
+static void _init_db_properties(void)
+{
+	char *db_prop_orig_loc, db_prop_new_loc[512];
+	int orig_sz;
+	char *tmp_char;
+
+	if ((slurmctld_conf.slurm_conf == NULL)
+	||  ((orig_sz = strlen(slurmctld_conf.slurm_conf)) == 0))
+		fatal("SLURM_CONFIG_FILE undefined");
+	db_prop_orig_loc = xmalloc(orig_sz + 20);
+
+	strcpy(db_prop_orig_loc, slurmctld_conf.slurm_conf);
+	tmp_char = strrchr(db_prop_orig_loc, (int) '/');
+	if (tmp_char)
+		tmp_char[1] = '\0';	/* after last '/' */
+	strcat(db_prop_orig_loc, "db.properties");
+
+	if (getcwd(db_prop_new_loc, (sizeof(db_prop_new_loc) - 20)) == NULL)
+		fatal("getcwd: %m");
+	strcat(db_prop_new_loc, "/db.properties");
+
+	(void) unlink(db_prop_new_loc);
+	if (symlink(db_prop_orig_loc, db_prop_new_loc))
+		error("symlink(%s,%s): %m", db_prop_orig_loc, db_prop_new_loc);
+	debug("symlink(%s,\n\t%s)", db_prop_orig_loc, db_prop_new_loc);
+
+	xfree(db_prop_orig_loc);
+}
+
+static int _init_status_pthread(void)
 {
 	pthread_attr_t attr;
 
