@@ -281,7 +281,7 @@ int main(int argc, char *argv[])
 #endif
 	log_fini();
 
-	return SLURM_SUCCESS;
+	exit(0);
 }
 
 /* initialization of common slurmctld configuration */
