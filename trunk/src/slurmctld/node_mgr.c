@@ -803,7 +803,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer)
 
 
 /* 
- * rehash - build a hash table of the node_record entries. this is a large 
+ * rehash_node - build a hash table of the node_record entries. this is a large 
  *	hash table to permit the immediate finding of a record based only 
  *	upon its name without regards to their number. there should be no 
  *	need for a search. 
@@ -811,7 +811,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer)
  *         hash_table - table of hash indecies
  * NOTE: manages memory for hash_table
  */
-void rehash (void) 
+void rehash_node (void) 
 {
 	int i, inx;
 
