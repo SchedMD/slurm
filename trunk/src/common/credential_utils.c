@@ -37,7 +37,7 @@ int sign_credential ( slurm_ssl_key_ctx_t * sign_ctx , slurm_job_credential_t * 
 	int buf_size = sizeof ( buffer ) ;
 	int size = sizeof ( buffer ) ;
 	int error_code = SLURM_SUCCESS ;
-	int signature_size ;
+	int signature_size = SLURM_SSL_SIGNATURE_LENGTH ;
 	
 	pack_job_credential ( credential , (void ** ) & buf_ptr , & size ) ;
 	if ( slurm_ssl_sign ( sign_ctx , buffer , buf_size - size - SLURM_SSL_SIGNATURE_LENGTH , credential -> signature , & signature_size ) )
