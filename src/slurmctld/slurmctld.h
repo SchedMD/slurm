@@ -141,6 +141,7 @@ struct job_details {
 	uint32_t num_nodes;		/* minimum number of nodes */
 	char *req_nodes;		/* required nodes */
 	bitstr_t *req_node_bitmap;	/* bitmap of required nodes */
+	slurm_job_credential_t	credential;	/* job credential */
 	char *features;			/* required features */
 	uint16_t shared;		/* 1 if more than one job can execute on a node */
 	uint16_t contiguous;		/* requires contiguous nodes, 1=true, 0=false */

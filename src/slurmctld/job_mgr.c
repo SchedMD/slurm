@@ -48,6 +48,9 @@
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 
+#include <src/slurmd/credential_utils.h>
+slurm_ssl_key_ctx_t sign_ctx ;
+
 #define BUF_SIZE 1024
 #define MAX_STR_PACK 128
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
@@ -975,6 +978,16 @@ copy_job_desc_to_job_record ( job_desc_msg_t * job_desc ,
 	/* job_ptr->start_time		*leave as NULL pointer for now */
 	/* job_ptr->end_time		*leave as NULL pointer for now */
 	/* detail_ptr->total_procs	*leave as NULL pointer for now */
+
+	/* job credential */
+	detail_ptr->credential . job_id = job_ptr->job_id ;
+	detail_ptr->credential . user_id = job_ptr->user_id ;
+	detail_ptr->credential . node_list = xstrdup ( job_ptr->nodes ) ;
+	detail_ptr->credential . expiration_time = job_ptr->end_time;
+	if ( sign_credential ( & sign_ctx , & detail_ptr->credential ) )
+	{
+		
+	}
 
 	*job_rec_ptr = job_ptr;
 	return 0;

@@ -358,6 +358,7 @@ parse_config_spec (char *in_line)
 	char *backup_controller = NULL, *control_machine = NULL, *epilog = NULL;
 	char *prioritize = NULL, *prolog = NULL, *state_save_location = NULL, *tmp_fs = NULL;
 	char *slurmctld_port = NULL, *slurmd_port = NULL;
+	char *job_credential_private_key = NULL , *job_credential_public_certificate = NULL;
 	long first_job_id = 0;
 	struct servent *servent;
 
@@ -378,6 +379,8 @@ parse_config_spec (char *in_line)
 		"SlurmdTimeout=", 'd', &slurmd_timeout,
 		"StateSaveLocation=", 's', &state_save_location, 
 		"TmpFS=", 's', &tmp_fs,
+		"JobCredentialPrivateKey=", 's', &job_credential_private_key,
+		"JobCredentialPublicCertificate=", 's', &job_credential_public_certificate,
 		"END");
 	if (error_code)
 		return error_code;
@@ -458,6 +461,18 @@ parse_config_spec (char *in_line)
 		if ( slurmctld_conf.tmp_fs )
 			xfree (slurmctld_conf.tmp_fs);
 		slurmctld_conf.tmp_fs = tmp_fs;
+	}
+	
+	if ( job_credential_public_certificate ) {
+		if (slurmctld_conf.job_credential_public_certificate)
+			xfree (slurmctld_conf.job_credential_public_certificate);
+		slurmctld_conf.job_credential_public_certificate = job_credential_public_certificate;
+	}
+
+	if ( job_credential_private_key ) {
+		if ( slurmctld_conf.job_credential_private_key )
+			xfree ( job_credential_private_key ) ;
+		slurmctld_conf.job_credential_private_key = job_credential_private_key ;
 	}
 
 	return 0;

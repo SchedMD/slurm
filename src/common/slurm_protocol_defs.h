@@ -353,6 +353,8 @@ struct slurm_ctl_conf {
 	char *slurm_conf;	/* pathname of slurm config file */
 	char *state_save_location;	/* pathname of state save directory */
 	char *tmp_fs;		/* pathname of temporary file system */
+	char *job_credential_private_key;	/* path to private key */
+	char *job_credential_public_certificate;	/* path to public certificate */
 } ;
 
 typedef struct slurm_ctl_conf slurm_ctl_conf_t ;

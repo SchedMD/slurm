@@ -26,5 +26,7 @@ LDADD   = $(top_srcdir)/src/common/libcommon.la \
 		$(top_srcdir)/src/slurmctld/locks.o \
 		$(top_srcdir)/src/common/parse_spec.o  \
 		$(top_srcdir)/src/slurmctld/read_config.o \
-		$(top_srcdir)/src/api/libslurm.la
+		$(top_srcdir)/src/api/libslurm.la \
+		$(top_srcdir)/src/slurmd/libcredential_utils.la \
+		$(SSL_LIBS)
 
