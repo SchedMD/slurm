@@ -78,6 +78,7 @@ static int  _run_prolog(uint32_t jobid, uid_t uid);
 static int  _run_epilog(uint32_t jobid, uid_t uid);
 static int  _wait_for_procs(uint32_t job_id);
 
+static pthread_mutex_t launch_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void
 slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
@@ -86,12 +87,16 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 
 	switch(msg->msg_type) {
 	case REQUEST_BATCH_JOB_LAUNCH:
+		slurm_mutex_lock(&launch_mutex);
 		_rpc_batch_job(msg, cli);
 		slurm_free_job_launch_msg(msg->data);
+		slurm_mutex_unlock(&launch_mutex);
 		break;
 	case REQUEST_LAUNCH_TASKS:
+		slurm_mutex_lock(&launch_mutex);
 		_rpc_launch_tasks(msg, cli);
 		slurm_free_launch_tasks_request_msg(msg->data);
+		slurm_mutex_unlock(&launch_mutex);
 		break;
 	case REQUEST_KILL_TASKS:
 		_rpc_kill_tasks(msg, cli);
