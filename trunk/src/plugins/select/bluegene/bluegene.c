@@ -230,7 +230,7 @@ int _copy_slurm_partition_list()
 			}
 
 			bgl_record->nodes = xstrdup(cur_nodes);
-			bgl_record->slurm_part_id = slurm_part->name;
+			bgl_record->slurm_part_id = xstrdup(slurm_part->name);
 			bgl_record->part_type = (rm_partition_t*) xmalloc(sizeof(rm_partition_t));
 			if (!bgl_record->part_type){
 				error("_copy_slurm_partition_list: not enough memory for bgl_record->part_type");
