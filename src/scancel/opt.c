@@ -72,8 +72,9 @@ struct signv {
  *
  */
 
-/* 
- * fill in default options  */
+static void _help(void);
+
+/* fill in default options  */
 static void _opt_default(void);
 
 /* set options based upon env vars  */
@@ -266,8 +267,6 @@ static void _opt_args(int argc, char **argv)
 	int opt_char;
 	int option_index;
 	static struct option long_options[] = {
-		{"help",        no_argument,       0, 'H'},
-		{"usage",       no_argument,       0, 'H'},
 		{"interactive", no_argument,       0, 'i'},
 		{"name",        required_argument, 0, 'n'},
 		{"partition",   required_argument, 0, 'p'},
@@ -275,19 +274,17 @@ static void _opt_args(int argc, char **argv)
 		{"state",       required_argument, 0, 't'},
 		{"user",        required_argument, 0, 'u'},
 		{"verbose",     no_argument,       0, 'v'},
-		{"version",     no_argument,       0, 'V'}
+		{"version",     no_argument,       0, 'V'},
+		{"help",        no_argument,       0, '1'},
+		{"usage",       no_argument,       0, '2'}
 	};
 
-	while((opt_char = getopt_long(argc, argv, "Hin:p:s:t:u:vV",
+	while((opt_char = getopt_long(argc, argv, "in:p:s:t:u:vV12",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
-				_usage();
+				fprintf(stderr, "Try \"scancel --help\" for more information\n");
 				exit(1);
-				break;
-			case (int)'H':
-				_usage();
-				exit(0);
 				break;
 			case (int)'i':
 				opt.interactive = true;
@@ -313,7 +310,12 @@ static void _opt_args(int argc, char **argv)
 			case (int)'V':
 				_print_version();
 				exit(0);
-				break;
+			case (int)'1':
+				_help();
+				exit(0);
+			case (int)'2':
+				_usage();
+				exit(0);
 		}
 	}
 
@@ -423,24 +425,24 @@ static void _opt_list(void)
 
 static void _usage(void)
 {
-	printf("Usage: scancel [options]\n");
-	printf("  -h, --noheader                  no headers on output\n");
-	printf("  -i, --iterate=seconds           specify an interation period\n");
-	printf("  -j, --jobs                      comma separated list of jobs to view,\n");
-	printf("                                  default is all\n");
-	printf("  -l, --long                      long report\n");
-	printf("  -o, --format=format             format specification\n");
-	printf("  -p, --partitions=partitions     comma separated list of partitions to view,\n");
-	printf("                                  default is all partitions\n");
-	printf("  -s, --steps                     comma separated list of job steps to view,\n");
-	printf("                                  default is all\n");
-	printf("  -S, --sort=fields               comma seperated list of fields to sort on\n");
-	printf("  -t, --states=states             comma seperated list of states to view,\n");
+	printf("Usage: scancel [-n job_name] [-u user] [-p partition] [-s name | integer]\n");
+	printf("               [-t PENDING | RUNNING] [--usage] [-v] [-V] [job_id[.step_id]]\n");
+}
+
+static void _help(void)
+{
+	printf("Usage: scancel [options] [job_id[.step_id]]\n");
+	printf("  -i, --interactive               require response from user for each job\n");
+	printf("  -n, --name=job_name             name of job to be signalled\n");
+	printf("  -p, --partitions=partitions     comma separated list of partitions with jobs\n");
+	printf("                                  to signal, default is all partitions\n");
+	printf("  -s, --signal=name | integer     signal to send to job, default is SIGKILL\n");
+	printf("  -t, --states=states             states to jobs to cancel,\n");
 	printf("                                  default is pending and running,\n");
-	printf("                                  '--states=all' reports on all states\n");
-	printf("  -u, --user=user_name            comma separated list of users to view\n");
+	printf("  -u, --user=user                 name or id of user to have jobs cancelled\n");
 	printf("  -v, --verbose                   verbosity level\n");
 	printf("  -V, --version                   output version information and exit\n");
 	printf("\nHelp options:\n");
-	printf("  -H, --help, --usage             show this help message\n");
+	printf("  --help                          show this help message\n");
+	printf("  --usage                         display brief usage message\n");
 }
