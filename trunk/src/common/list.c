@@ -1,5 +1,7 @@
 /*****************************************************************************
- *  $Id: list.c,v 1.26 2002/12/04 18:58:52 dun Exp $
+ *  $Id: list.c,v 1.28 2003/05/20 23:53:22 dun Exp $
+ *****************************************************************************
+ *  $LSDId: list.c,v 1.28 2003/05/20 23:53:22 dun Exp $
  *****************************************************************************
  *  Copyright (C) 2001-2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -732,7 +734,8 @@ list_alloc (void)
 static void
 list_free (List l)
 {
-    return(list_free_aux(l, &list_free_lists));
+    list_free_aux(l, &list_free_lists);
+    return;
 }
 
 
@@ -746,7 +749,8 @@ list_node_alloc (void)
 static void
 list_node_free (ListNode p)
 {
-    return(list_free_aux(p, &list_free_nodes));
+    list_free_aux(p, &list_free_nodes);
+    return;
 }
 
 
@@ -760,7 +764,8 @@ list_iterator_alloc (void)
 static void
 list_iterator_free (ListIterator i)
 {
-    return(list_free_aux(i, &list_free_iterators));
+    list_free_aux(i, &list_free_iterators);
+    return;
 }
 
 

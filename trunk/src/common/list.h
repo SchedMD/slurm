@@ -1,5 +1,7 @@
 /*****************************************************************************
- *  $Id: list.h,v 1.13 2002/12/04 18:58:52 dun Exp $
+ *  $Id: list.h,v 1.14 2002/12/11 19:00:36 dun Exp $
+ *****************************************************************************
+ *  $LSDId: list.h,v 1.14 2002/12/11 19:00:36 dun Exp $
  *****************************************************************************
  *  Copyright (C) 2001-2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -23,8 +25,8 @@
  *****************************************************************************/
 
 
-#ifndef _LSD_LIST_H
-#define _LSD_LIST_H
+#ifndef LSD_LIST_H
+#define LSD_LIST_H
 
 
 /***********
@@ -278,4 +280,4 @@ int list_delete (ListIterator i);
  */
 
 
-#endif /* !_LSD_LIST_H */
+#endif /* !LSD_LIST_H */

@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  $Id$
  *****************************************************************************
- *  $LSDId: hostlist.c,v 1.6 2003/05/27 22:47:32 grondo Exp $
+ *  $LSDId: hostlist.c,v 1.7 2003/06/03 21:06:06 grondo Exp $
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -1920,7 +1920,7 @@ static int _attempt_range_join(hostlist_t hl, int loc)
 
 void hostlist_uniq(hostlist_t hl)
 {
-    int i;
+    int i = 1;
     hostlist_iterator_t hli;
     LOCK_HOSTLIST(hl);
     if (hl->nranges <= 1) {
@@ -1928,8 +1928,11 @@ void hostlist_uniq(hostlist_t hl)
         return;
     }
     qsort(hl->hr, hl->nranges, sizeof(hostrange_t), &_cmp);
-    for (i = hl->nranges - 1; i > 0; i--)
-        _attempt_range_join(hl, i);
+
+    while (i < hl->nranges) {
+        if (_attempt_range_join(hl, i) < 0) /* No range join occurred */
+            i++;
+    }
 
     /* reset all iterators */
     for (hli = hl->ilist; hli; hli = hli->next)
@@ -1992,7 +1995,7 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
 
     len = snprintf(buf, n, "%s", hr[i]->prefix);
 
-    if (bracket_needed && len < n && len > 0)
+    if (bracket_needed && len < n && len >= 0)
         buf[len++] = '[';
 
     do {
