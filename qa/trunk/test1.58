@@ -101,6 +101,10 @@ expect {
 		set no_start 1
 		exp_continue
 	}
+	-re "Unable to submit batch job" {
+		set no_start 1
+		exp_continue
+	}
 	-re "Unable to contact" {
 		send_user "\nFAILURE: slurm appears to be down\n"
 		exit 1
@@ -116,14 +120,16 @@ expect {
 	}
 }
 
+if {$no_start != 0} {
+	send_user "\nWARNING: partition too small for test\n"
+	if {$job_id != 0} {
+		cancel_job $job_id
+	}
+	exit 0
+}
 if {$job_id == 0} {
 	send_user "\nFAILURE: batch submit failure\n"
 	exit 1
-}
-if {$no_start != 0} {
-	send_user "\nWARNING: partition too small for test\n"
-	cancel_job $job_id
-	exit 0
 }
 
 #
