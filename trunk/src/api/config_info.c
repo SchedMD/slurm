@@ -147,7 +147,8 @@ slurm_load_ctl_conf (time_t update_time, slurm_ctl_conf_t **confp)
 
 	switch (resp_msg.msg_type) {
 	case RESPONSE_BUILD_INFO:
-		*confp = (slurm_ctl_conf_info_msg_t *) resp_msg.data; 
+		*confp = (slurm_ctl_conf_info_msg_t *) resp_msg.data;
+		slurm_free_cred(resp_msg.cred);
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
