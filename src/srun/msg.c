@@ -150,7 +150,7 @@ _handle_msg(job_t *job, slurm_msg_t *msg)
 			_exit_handler(job, msg);
 			slurm_free_task_exit_msg(msg->data);
 			break;
-		case RESPONSE_REATTACH_TASKS_STREAMS:
+		case RESPONSE_REATTACH_TASKS:
 			debug("recvd reattach response\n");
 			break;
 		default:
