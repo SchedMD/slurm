@@ -1002,6 +1002,11 @@ extern int select_nodes (struct job_record *job_ptr, bool test_only);
  */
 extern void set_node_down (char *name, char *reason);
 
+/*
+ * set_slurmctld_state_loc - create state directory as needed and "cd" to it
+ */
+extern int set_slurmctld_state_loc(void);
+
 /* set_slurmd_addr - establish the slurm_addr for the slurmd on each node
  *	Uses common data structures. */
 extern void set_slurmd_addr (void);

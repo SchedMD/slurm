@@ -1296,11 +1296,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		error_code = read_slurm_conf(0);
 		if (error_code == SLURM_SUCCESS) {
 			_update_cred_key();
-			if (slurmctld_config.daemonize &&
-			    chdir(slurmctld_conf.state_save_location) < 0) {
-				error("chdir to %s error %m",
-					slurmctld_conf.state_save_location);
-			}
+			set_slurmctld_state_loc();
 		}
 		unlock_slurmctld(config_write_lock);
 		if (error_code == SLURM_SUCCESS) {

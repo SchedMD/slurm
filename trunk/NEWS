@@ -1,7 +1,7 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
-* Changes in SLURM 0.3.0.0-pre8 (not tagged yet)
+* Changes in SLURM 0.3.0.0-pre8
 ===============================
  -- Queue outgoing message traffic rather than immediately spawning 
     pthreads (under heavy load this resulted in hundreds of pthreads 
@@ -11,6 +11,9 @@ documents those changes that are of interest to users and admins.
     for filtering node states.
  -- Fix bug in sinfo to properly process specified state filter including
     "*" suffix for non-responding nodes.
+ -- Explicitly set the owner of StateSaveLocation to SlurmUser on 
+    slurmctld startup
+ -- Create StateSaveLocation directory if changes via slurmctld reconfig
 
 * Changes in SLURM 0.3.0.0-pre7
 ===============================
