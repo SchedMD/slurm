@@ -298,7 +298,14 @@ extern void select_p_unpack_all_partitions(char **buffer_ptr, int *buffer_size)
 	safe_unpack_time(&now, buffer);
 
 unpack_error:
-
+	if(bgl_list) {
+		while ((bgl_record = list_pop(bgl_list)) != NULL) {
+			destroy_bgl_record(bgl_record);		
+		}
+	} else {
+		bgl_list = list_create(destroy_bgl_record);
+	}
+		
 	for(i=0;i<partitions_packed;i++) {
 		bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
 		list_push(bgl_list, bgl_record);
