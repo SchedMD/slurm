@@ -76,11 +76,6 @@ void slurm_free_job_id_response_msg(job_id_response_msg_t * msg)
 	xfree(msg);
 }
 
-void slurm_free_batch_resp_msg(batch_launch_response_msg_t * msg)
-{
-	xfree(msg);
-}
-
 void slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg)
 {
 	xfree(msg);
@@ -91,6 +86,7 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 	int i;
 
 	if (msg) {
+		xfree(msg->alloc_node);
 		for (i = 0; i < msg->env_size; i++) {
 			xfree(msg->environment[i]);
 		}
