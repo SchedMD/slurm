@@ -249,18 +249,23 @@ struct Node_Record *Find_Node_Record(char *name) {
 } /* Find_Node_Record */
 
 
-/* Hash_Index - Return a hash table index for the given node name */
+/* 
+ * Hash_Index - Return a hash table index for the given node name 
+ * This code is optimized for names containing a base-ten suffix (e.g. "lx04")
+ * Input: The node's name
+ * Output: Return code is the hash table index
+ */
 int Hash_Index(char *name) {
     int i, inx, tmp;
 
-    if (Node_Count == 0) return 0;	/* Degenerate case */
+    if (Node_Count == 0) return 0;		/* Degenerate case */
     inx = 0;
     for (i=0; ;i++) { 
 	tmp = (int) name[i];
-	if (tmp == 0) break;	/* end if string */
+	if (tmp == 0) break;			/* end if string */
 	if (tmp < (int)'0') continue;
-	if (tmp > (int)'9') continue;
-	inx = (inx * 10) + (tmp - (int)'0');
+	if (tmp > (int)'9') continue;		/* Change to '7' for octal */
+	inx = (inx * 10) + (tmp - (int)'0');	/* Change multiplier to eight for base eight */
     } /* for */
     inx = inx % Node_Count;
     return inx;
@@ -655,10 +660,9 @@ int Read_Node_Spec_Conf (char *File_Name) {
  * Rehash - Build a hash table of the Node_Record entries. This is a large hash table 
  * to permit the immediate finding of a record based only upon its name without regards 
  * to the number. There should be no need for a search. The algorithm is optimized for 
- * node names with a common prefix followed by a base-ten sequence number. All names 
- * should have the same number of digits (e.g. "lx01" rather than "lx1" for a cluster 
- * having 10 to 99 nodes). If you have a large cluster and use a different naming convention, 
- * this function should be re-written.
+ * node names with a base-ten sequence number suffix. If you have a large cluster and 
+ * use a different naming convention, this function along with the Hash_Index function 
+ * should be re-written.
  */
 void Rehash() {
     ListIterator Node_Record_Iterator;		/* For iterating through Node_Record_List */
