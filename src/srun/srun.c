@@ -75,6 +75,7 @@ main(int ac, char **av)
 	allocation_resp *resp;
 	job_t *job;
 	struct sigaction action;
+	int i;
 
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
@@ -189,10 +190,14 @@ main(int ac, char **av)
 	/* kill signal thread */
 	pthread_kill(job->sigid, SIGTERM);
 
-	/* flush stdio and kill io thread */
-	fflush(stderr);
-	fflush(stdout);
-	pthread_kill(job->ioid, SIGTERM);
+	/* wait for  stdio */
+	for (i = 0; i < opt.nprocs; i++) {
+		if (job->out[i] == -1)
+			job->out[i] = -9;
+		if (job->err[i] == -1)
+			job->err[i] = -9;
+	}
+	pthread_join(job->ioid, NULL);
 
 	exit(0);
 }
