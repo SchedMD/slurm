@@ -125,8 +125,13 @@ existing_allocation(void)
 	job.uid = getuid();
 
 	if (slurm_confirm_allocation(&job, &resp) < 0) {
-		error("Unable to confirm resource allocation for job %u: %m",
-		      job.job_id);
+		if (errno == ESLURM_ALREADY_DONE) 
+			error ("SLURM job %u has expired.", job.job_id); 
+		else
+			error ("Unable to confirm allocation for job %u: %m",
+			      job.job_id);
+		info ("Check SLURM_JOBID environment variable " 
+		      "for expired or invalid job.");
 		exit(1);
 	}
 
