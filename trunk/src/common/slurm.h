@@ -13,6 +13,9 @@
  * See the SLURM administrator guide for more details.
  */
 
+#ifndef _HAVE_SLURM_H
+#define _HAVE_SLURM_H
+
 #include <time.h>
 #include "list.h"
 
@@ -254,3 +257,4 @@ extern int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *E
  */
 extern int Read_SLURM_Conf (char *File_Name);
 
+#endif /* !_HAVE_SLURM_H */
