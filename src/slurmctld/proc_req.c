@@ -65,6 +65,7 @@
 
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static inline bool 	_is_super_user(uid_t uid);
+static void         _kill_job_on_msg_fail(uint32_t job_id);
 static int          _make_step_cred(struct step_record *step_rec, 
 				    slurm_cred_t *slurm_cred);
 inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
@@ -271,6 +272,22 @@ static inline bool _is_super_user(uid_t uid)
 		return false;
 }
 
+/* _kill_job_on_msg_fail - The request to create a job record successed, 
+ *	but the reply message to srun failed. We kill the job to avoid 
+ *	leaving it orphaned */
+static void _kill_job_on_msg_fail(uint32_t job_id)
+{
+	/* Locks: Write job, write node */
+	slurmctld_lock_t job_write_lock = { 
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+
+	error("Job allocate response msg send failure, killing JobId=%u",
+		job_id);
+	lock_slurmctld(job_write_lock);
+	job_complete(job_id, 0, false, 0);
+	unlock_slurmctld(job_write_lock);
+}
+
 /* create a credential for a given job step, return error code */
 static int _make_step_cred(struct step_record *step_rec, 
 			   slurm_cred_t *slurm_cred)
@@ -355,7 +372,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		response_msg.msg_type = RESPONSE_RESOURCE_ALLOCATION;
 		response_msg.data = &alloc_msg;
 
-		slurm_send_node_msg(msg->conn_fd, &response_msg);
+		if (slurm_send_node_msg(msg->conn_fd, &response_msg) < 0)
+			_kill_job_on_msg_fail(job_id);
 		(void) dump_all_job_state();
 	} else {	/* allocate error */
 		info("_slurm_rpc_allocate_resources: %s ", 
@@ -459,7 +477,8 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 		response_msg.msg_type = RESPONSE_ALLOCATION_AND_RUN_JOB_STEP;
 		response_msg.data = &alloc_msg;
 
-		slurm_send_node_msg(msg->conn_fd, &response_msg);
+		if (slurm_send_node_msg(msg->conn_fd, &response_msg) < 0)
+			_kill_job_on_msg_fail(job_id);
 		slurm_cred_destroy(slurm_cred);
 #ifdef HAVE_LIBELAN3
 		qsw_free_jobinfo(alloc_msg.qsw_job);
