@@ -26,7 +26,7 @@
 \*****************************************************************************/
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #if HAVE_SYS_TYPES_H
@@ -44,20 +44,21 @@
 #  include <stdlib.h>
 #endif
 
-#include <src/common/log.h>
-#include <src/common/cbuf.h>
-#include <src/common/xsignal.h>
-#include <src/common/xstring.h>
-#include <src/common/xmalloc.h>
-#include <src/common/safeopen.h>
-#include <src/common/hostlist.h>
+#include "src/common/cbuf.h"
+#include "src/common/hostlist.h"
+#include "src/common/log.h"
+#include "src/common/safeopen.h"
+#include "src/common/slurm_errno.h"
+#include "src/common/xsignal.h"
+#include "src/common/xstring.h"
+#include "src/common/xmalloc.h"
 
-#include <src/slurmd/slurmd.h>
-#include <src/slurmd/setenvpf.h>
-#include <src/slurmd/mgr.h>
-#include <src/slurmd/io.h>
-#include <src/slurmd/shm.h>
-#include <src/slurmd/interconnect.h>
+#include "src/slurmd/slurmd.h"
+#include "src/slurmd/setenvpf.h"
+#include "src/slurmd/mgr.h"
+#include "src/slurmd/io.h"
+#include "src/slurmd/shm.h"
+#include "src/slurmd/interconnect.h"
 
 static int  _run_job(slurmd_job_t *job);
 static int  _run_batch_job(slurmd_job_t *job);
@@ -317,13 +318,16 @@ _complete_job(slurmd_job_t *job)
 	slurm_fd           sock;
 	slurm_msg_t        msg;
 	slurm_msg_t        resp_msg;
-	job_step_id_msg_t  req;
+	complete_job_step_msg_t  req;
 	return_code_msg_t *resp;
 
-	req.job_id   = job->jobid;
-	req.job_step_id  = NO_VAL; 
-	msg.msg_type = REQUEST_COMPLETE_JOB_STEP;
-	msg.data     = &req;	
+	req.job_id	= job->jobid;
+	req.job_step_id	= NO_VAL; 
+	req.job_rc	= 0; 
+	req.slurm_rc	= SLURM_SUCCESS; 
+	req.node_name	= conf->hostname;
+	msg.msg_type	= REQUEST_COMPLETE_JOB_STEP;
+	msg.data	= &req;	
 
 	if ((sock = slurm_open_controller_conn()) < 0) {
 		error("unable to open connection to controller");
