@@ -8,9 +8,6 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 #
-# Note:    This script generates and then deletes files in the working directory 
-#          named test1.14.input, test1.14.output, and test1.14.error
-#
 source ./globals
 
 set test_id              "1.14"
