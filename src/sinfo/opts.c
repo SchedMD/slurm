@@ -56,7 +56,9 @@ static List  _build_all_states_list( void );
 static char *_get_prefix(char *token);
 static void  _help( void );
 static int   _parse_format( char* );
-static int   _parse_state(char *str, uint16_t *states);
+static bool  _node_state_equal (int state_id, const char *state_str);
+static int   _node_state_id (char *str);
+static const char * _node_state_list (void);
 static void  _parse_token( char *token, char *field, int *field_size, 
                            bool *right_justify, char **suffix);
 static void  _print_options( void );
@@ -160,8 +162,10 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		case (int) 't':
 			params.states = xstrdup(optarg);
-			params.state_list = 
-				_build_state_list(params.states);
+			if (!(params.state_list = _build_state_list(optarg))) {
+				error ("valid states: %s", _node_state_list ());
+				exit (1);
+			}
 			break;
 		case (int) 'v':
 			params.verbose++;
@@ -209,7 +213,8 @@ extern void parse_command_line(int argc, char *argv[])
 
 	if (params.list_reasons && (params.state_list == NULL)) {
 		params.states = xstrdup ("down,drain,draining");
-		params.state_list = _build_state_list (params.states);
+		if (!(params.state_list = _build_state_list (params.states)))
+			fatal ("Unable to build state list for -R!");
 	}
 
 	if (params.dead_nodes || params.nodes || params.partition || 
@@ -220,36 +225,62 @@ extern void parse_command_line(int argc, char *argv[])
 		_print_options();
 }
 
+static char *
+_next_tok (char *sep, char **str)
+{
+	char *tok;
+
+        /* push str past any leading separators */
+        while ((**str != '\0') && (strchr(sep, **str) != '\0'))
+                (*str)++;
+
+        if (**str == '\0')
+                return NULL;
+
+        /* assign token ptr */
+        tok = *str;
+
+        /* push str past token and leave pointing to first separator */
+        while ((**str != '\0') && (strchr(sep, **str) == '\0'))
+                (*str)++;
+
+        /* nullify consecutive separators and push str beyond them */
+        while ((**str != '\0') && (strchr(sep, **str) != '\0'))
+                *(*str)++ = '\0';
+
+        return (tok);
+}
+
 /*
  * _build_state_list - build a list of job states
  * IN str - comma separated list of job states
  * RET List of enum job_states values
  */
 static List 
-_build_state_list( char* str )
+_build_state_list (char *state_str)
 {
-	List my_list;
-	char *state, *tmp_char, *my_state_list;
-	uint16_t *state_id;
+	List state_ids;
+	char *orig, *str, *state;
 
-	if ( str == NULL)
+	if (state_str == NULL)
 		return NULL;
-	if ( strcasecmp( str, "all" ) == 0 )
+	if (strcasecmp (state_str, "all") == 0 )
 		return _build_all_states_list ();
 
-	my_list = list_create( NULL );
-	my_state_list = xstrdup( str );
-	state = strtok_r( my_state_list, ",", &tmp_char );
-	while (state) 
-	{
-		state_id = xmalloc( sizeof( uint16_t ) );
-		if ( _parse_state( state, state_id ) != SLURM_SUCCESS )
-			exit( 1 );
-		list_append( my_list, state_id );
-		state = strtok_r( NULL, ",", &tmp_char );
+	orig = str = xstrdup (state_str);
+	state_ids = list_create (NULL);
+
+	while ((state = _next_tok (",", &str))) {
+		int *id = xmalloc (sizeof (*id));
+		if ((*id = _node_state_id (state)) < 0) {
+			error ("Bad state string: \"%s\"", state);
+			return (NULL);
+		}
+		list_append (state_ids, id);
 	}
-	xfree( my_state_list );
-	return my_list;
+
+	xfree (orig);
+	return (state_ids);
 }
 
 /*
@@ -272,46 +303,55 @@ _build_all_states_list( void )
 	return my_list;
 }
 
+static const char *
+_node_state_list (void)
+{
+	int i;
+	static char *all_states = NULL; 
+
+	if (all_states) return (all_states);
+
+	all_states = xstrdup (node_state_string_compact (0));
+	for (i = 1; i < NODE_STATE_END; i++) {
+		xstrcat (all_states, ",");
+		xstrcat (all_states, node_state_string_compact(i));
+	}
+
+	for (i = 0; i < strlen (all_states); i++)
+		all_states[i] = tolower (all_states[i]);
+
+	return (all_states);
+}
+
+
+static bool
+_node_state_equal (int i, const char *str)
+{
+	int len = strlen (str);
+
+	if (  (strncasecmp (node_state_string_compact(i), str, len) == 0) 
+	   || (strncasecmp (node_state_string(i),         str, len) == 0)) 
+		return (true);
+
+	return (false);
+}
+
 /*
  * _parse_state - convert node state name string to numeric value
  * IN str - state name
  * OUT states - node_state value corresponding to str
  * RET 0 or error code
  */
-static int
-_parse_state( char* str, uint16_t* states )
+static int 
+_node_state_id (char *str)
 {	
-	int i, len;
-	uint16_t no_resp;
-	char *state_names;
-
-	len = strlen(str);
-	if (str[len - 1] == '*') {
-		no_resp = NODE_STATE_NO_RESPOND;
-		len--;
-	} else
-		no_resp = 0;
-
-	for (i = 0; i<NODE_STATE_END; i++) {
-		if (strncasecmp (node_state_string(i), str, len) == 0) {
-			*states = (i | no_resp);
-			return SLURM_SUCCESS;
-		}	
-		if (strncasecmp (node_state_string_compact(i), str, len) == 0) {
-			*states = (i | no_resp);
-			return SLURM_SUCCESS;
-		}	
+	int i;
+	for (i = 0; i < NODE_STATE_END; i++) {
+		if (_node_state_equal (i, str))
+			return (i);
 	}
 
-	fprintf (stderr, "Invalid node state specified: %s\n", str);
-	state_names = xstrdup(node_state_string(0));
-	for (i=1; i<NODE_STATE_END; i++) {
-		xstrcat(state_names, ",");
-		xstrcat(state_names, node_state_string(i));
-	}
-	fprintf (stderr, "Valid node states include: %s\n", state_names);
-	xfree (state_names);
-	return SLURM_ERROR;
+	return (-1);
 }
 
 /* Take the user's format specification and use it to build build the 
