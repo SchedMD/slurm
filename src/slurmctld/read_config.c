@@ -680,7 +680,8 @@ static int _parse_part_spec(char *in_line)
 		     partition_name);
 	}
 	if (default_val == 1) {
-		if (strlen(default_part_name) > 0)
+		if ((strlen(default_part_name) > 0)
+		&&  strcmp(default_part_name,partition_name))
 			info("_parse_part_spec: changing default partition "
 				"from %s to %s", 
 				default_part_name, partition_name);
