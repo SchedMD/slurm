@@ -115,6 +115,10 @@ extern void get_job(void)
 		}
 		
 	}
+
+	if (params.commandline && params.iterate)
+		printf("\n");
+
 	job_info_ptr = new_job_ptr;
 	return;
 }

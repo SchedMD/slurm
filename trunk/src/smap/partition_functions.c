@@ -130,6 +130,9 @@ void get_slurm_part(void)
 		count++;
 			
 	}
+
+	if (params.commandline && params.iterate)
+		printf("\n");
 	
 	part_info_ptr = new_part_ptr;
 	return;
@@ -229,6 +232,9 @@ void get_bgl_part(void)
 		list_iterator_destroy(itr);
 	}
 
+	if (params.commandline && params.iterate)
+		printf("\n");
+
 	part_info_ptr = new_part_ptr;
 	return;
 }
@@ -276,7 +282,7 @@ static void _print_header_part(void)
 		pa_system_ptr->xcord = 1;
 		pa_system_ptr->ycord++;
 	} else {
-		printf("\nID\t");
+		printf("ID\t");
 		printf("PARTITION\t");
 		if (params.display != BGLPART) {
 			printf("AVAIL\t");
