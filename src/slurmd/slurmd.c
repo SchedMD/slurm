@@ -71,7 +71,6 @@
 #define MAX_THREADS		64
 
 #define DEFAULT_SPOOLDIR	"/var/spool/slurmd"
-#define DEFAULT_PIDFILE		"/var/run/slurmd.pid"
 
 typedef struct connection {
 	slurm_fd fd;
@@ -510,7 +509,7 @@ _init_conf()
 	conf->shm_cleanup =  0;
 	conf->log_opts    = lopts;
 	conf->debug_level = LOG_LEVEL_INFO;
-	conf->pidfile     = xstrdup(DEFAULT_PIDFILE);
+	conf->pidfile     = xstrdup(DEFAULT_SLURMD_PIDFILE);
 	conf->spooldir	  = xstrdup(DEFAULT_SPOOLDIR);
 
 	slurm_mutex_init(&conf->config_mutex);

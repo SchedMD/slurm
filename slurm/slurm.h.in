@@ -97,8 +97,6 @@ BEGIN_C_DECLS
 /* eg. the maximum count of nodes any job may use in some partition */
 #define	INFINITE (0xffffffff)
 #define NO_VAL	 (0xfffffffe)
-#define DEFAULT_KILL_WAIT  30
-#define DEFAULT_WAIT_TIME   0
 #define MAX_TASKS_PER_NODE 64
 
 /* last entry must be JOB_END, keep in sync with job_state_string and 

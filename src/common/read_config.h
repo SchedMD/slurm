@@ -30,6 +30,11 @@
 
 #include "src/common/slurm_protocol_defs.h"
 
+#define DEFAULT_KILL_WAIT           30
+#define DEFAULT_SLURMCTLD_PIDFILE   "/var/run/slurmctld.pid"
+#define DEFAULT_SLURMD_PIDFILE      "/var/run/slurmd.pid"
+#define DEFAULT_WAIT_TIME           0
+
 /* 
  * init_slurm_conf - initialize or re-initialize the slurm configuration 
  *	values.   
