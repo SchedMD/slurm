@@ -14,6 +14,5 @@ jobcomp_filetxt_la_SOURCES = jobcomp_filetxt.c
 jobcomp_filetxt_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 if HAVE_AIX
-jobcomp_filetxt_la_LIBADD  =	$(top_builddir)/src/common/libcommon.la   \
-				$(top_builddir)/src/api/libslurm.la
+jobcomp_filetxt_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
 endif

@@ -12,8 +12,7 @@ if HAVE_AIX
 pkglib_LTLIBRARIES = checkpoint_aix.la
 checkpoint_aix_la_SOURCES = checkpoint_aix.c
 checkpoint_aix_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-checkpoint_aix_la_LIBADD  = $(top_builddir)/src/common/libcommon.la   \
-			$(top_builddir)/src/api/libslurm.la
+checkpoint_aix_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
 else
 EXTRA_checkpoint_aix_la_SOURCES =  checkpoint_aix.c
 endif
