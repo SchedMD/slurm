@@ -9,7 +9,7 @@
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Moe Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
 # 
 # This file is part of SLURM, a resource management program.
@@ -225,7 +225,7 @@ expect {
 # started its job steps. Check the squeue job step filter option
 #
 wait_for_job $job_id1 "RUNNING"
-exec $bin_sleep 5
+exec $bin_sleep 10
 set job_found 0
 spawn $squeue --format=%i --steps $job_id1.0 
 expect {
