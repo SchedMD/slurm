@@ -1405,7 +1405,8 @@ _task_read(io_obj_t *obj, List objs)
 static int 
 _task_error(io_obj_t *obj, List objs)
 {
-	int size, err;
+	int err;
+	socklen_t size;
 	struct io_info *t = (struct io_info *) obj->arg;
 	xassert(t->magic == IO_MAGIC);
 

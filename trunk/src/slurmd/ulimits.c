@@ -51,10 +51,19 @@ struct userlim {
  * get/setrlimit resource number.
  */
 static struct userlim ulims[] =
-        { { "SLURM_RLIMIT_CORE"  , RLIMIT_CORE  },
+	{
+#ifdef RLIMIT_CORE
+          { "SLURM_RLIMIT_CORE"  , RLIMIT_CORE  },
+#endif
+#ifdef RLIMIT_FSIZE
 	  { "SLURM_RLIMIT_FSIZE" , RLIMIT_FSIZE },
+#endif
+#ifdef RLIMIT_NPROC
 	  { "SLURM_RLIMIT_NPROC" , RLIMIT_NPROC },
+#endif
+#ifdef RLIMIT_NOFILE
 	  { "SLURM_RLIMIT_NOFILE", RLIMIT_NOFILE},
+#endif
 	  { NULL, 0 } 
 	};
 

@@ -30,6 +30,8 @@
 #  include "config.h"
 #endif
 
+#define _USE_IRS 1	/* Required for AIX and hstrerror() */
+
 #include <unistd.h>
 #include <string.h>
 #include <netdb.h>
@@ -471,7 +473,7 @@ slurm_fd _slurm_open_stream(slurm_addr *addr, bool retry)
 
 int _slurm_get_stream_addr(slurm_fd fd, slurm_addr *addr )
 {
-        int size = sizeof(addr);
+        socklen_t size = sizeof(addr);
         return _slurm_getsockname(fd, (struct sockaddr *)addr, &size);
 }
 

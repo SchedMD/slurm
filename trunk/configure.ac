@@ -41,7 +41,7 @@ dnl
 AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
                  stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
                  stdlib.h dirent.h pthread.h sys/prctl.h \
-                 sysint.h inttypes.h termcap.h  \
+                 sysint.h inttypes.h termcap.h netdb.h sys/socket.h  \
 		 )
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
