@@ -192,6 +192,31 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 	else
 		info("Clearing partition %s owner", bgl_part_id);
 
+#ifdef USE_BGL_FILES
+/* Also, remove logic to boot partitions. BGLblocks should be allocated via 
+ * MMCSconsole to user nobody and bluegene.conf set at slurmctld boot time */
+
+	int err_ret = SLURM_SUCCESS;
+
+	/* find the partition */
+	if ((rc = rm_get_partition(bgl_part_id,  &part_elem)) != STATUS_OK) {
+		error("rm_get_partition(%s): %s", bgl_part_id, bgl_err_str(rc));
+		return SLURM_ERROR;
+	}
+
+	/* set its owner */
+	if ((rc = rm_set_data(part_elem, RM_PartitionUserName, &user))
+			!= STATUS_OK) {
+		error("rm_set_date(%s, RM_PartitionUserName): %s", bgl_part_id,
+			bgl_err_str(rc));
+		err_ret = SLURM_ERROR;
+	}
+
+	if ((rc = rm_free_partition(part_elem)) != STATUS_OK)
+		error("rm_free_partition(): %s", bgl_err_str(rc));
+
+	return err_ret;
+#else
 	/* Wait for partition state to be FREE */
 	for (i=0; i<MAX_POLL_RETRIES; i++) {
 		sleep(POLL_INTERVAL);
@@ -240,6 +265,7 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 	}
 
 	return SLURM_SUCCESS;
+#endif
 }
 
 /*
@@ -349,7 +375,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 	}
 
 	/* Change the block's owner */
-	_set_part_owner(bgl_update_ptr->bgl_part_id, "");
+	_set_part_owner(bgl_update_ptr->bgl_part_id, "nobody");
 
 	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
 		error("rm_free_job_list(): %s", bgl_err_str(rc));
