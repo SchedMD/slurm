@@ -375,7 +375,8 @@ int find_all_tori(List conf_result_list)
 	 printf("ALL DONE\n");
 	 */
 
-	_print_results(conf_result_list);
+	// 999
+	// _print_results(conf_result_list);
 
 	return SUCCESS;
 }
@@ -632,9 +633,7 @@ void _insert_results(List conf_result_list, List result_partitions, List current
 	}
 	list_iterator_destroy(itr);
 	
-	// if ((has_large_part && found_torus && p1_all_toroidal) || part_size == list_count(global_sys->node_list)){
-	if ((has_large_part && p1_all_toroidal) || part_size == list_count(global_sys->node_list)){
-		// if (has_large_part && found_torus && p1_all_toroidal){
+	if (has_large_part && found_torus && p1_all_toroidal){
 		conf_data_t* conf_data;
 		conf_result_t* conf_result;
 		port_conf_t* port_conf, *port_conf_copy;
