@@ -1341,7 +1341,7 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
  * NOTE: the caller must insure that the buffer is sufficiently large to hold 
  *	 the data being written (space remaining at least BUF_SIZE)
  */
-	void 
+void 
 pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len) 
 {
 	char tmp_str[MAX_STR_PACK];
