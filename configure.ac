@@ -133,7 +133,7 @@ dnl check for slurmd and slurmctld default ports
 dnl
 AC_MSG_CHECKING(for slurmctld default port)
 AC_ARG_WITH(slurmctld-port,
-  AC_HELP_STRING([--with-slurmctld-port=PORT],
+  AC_HELP_STRING([--with-slurmctld-port=N],
       [set slurmctld default port [[6817]]]),
     [ if test `expr match "$withval" '[[0-9]]*$'` -gt 0; then
         slurmctldport="$withval"
@@ -147,7 +147,7 @@ AC_SUBST(SLURMCTLD_PORT)
 
 AC_MSG_CHECKING(for slurmd default port)
 AC_ARG_WITH(slurmd-port,
-  AC_HELP_STRING([--with-slurmd-port=PORT],
+  AC_HELP_STRING([--with-slurmd-port=N],
       [set slurmd default port [[6818]]]),
     [ if test `expr match "$withval" '[[0-9]]*$'` -gt 0; then
         slurmdport="$withval"
