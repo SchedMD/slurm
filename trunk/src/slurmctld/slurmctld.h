@@ -883,6 +883,10 @@ extern int select_nodes (struct job_record *job_ptr, bool test_only);
  */
 extern int set_batch_job_sid(uid_t uid, uint32_t job_id, uint32_t batch_sid);
 
+/* set_node_down - make the specified node's state DOWN 
+ * IN name - name of the node */
+extern void set_node_down (char *name);
+
 /* set_slurmd_addr - establish the slurm_addr for the slurmd on each node
  *	Uses common data structures. */
 extern void set_slurmd_addr (void);
