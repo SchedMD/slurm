@@ -199,8 +199,8 @@ _get_job_info(srun_step_t *s)
 
 	for (i = 0; i < resp->record_count; i++) {
 		job = &resp->job_array[i];
-		if (job->job_id != s->jobid)
-			continue;
+		if (job->job_id == s->jobid)
+			break;
 	}
 
 	if (job == NULL) {

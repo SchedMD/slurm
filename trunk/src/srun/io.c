@@ -388,7 +388,7 @@ _stdin_open(char *filename)
 	xassert(filename != NULL);
 
 	if ((fd = open(filename, flags, 0644)) < 0) {
-		error ("Unable to open `%s': %m", filename);
+		error ("Unable to open `%s' for stdin: %m", filename);
 		return -1;
 	}
 	fd_set_nonblocking(fd);
@@ -400,8 +400,11 @@ static FILE *
 _fopen(char *filename)
 {
 	FILE *fp;
+
+	xassert(filename != NULL);
+
 	if (!(fp = fopen(filename, "w"))) 
-		error ("Unable to open file `%s': %m", filename);
+		error ("Unable to open file `%s' for writing: %m", filename);
 
 	return fp;
 }
@@ -420,7 +423,7 @@ _open_streams(job_t *job)
 		job->outstream = stdout;
 
 	if ((job->efname->type != IO_PER_TASK) && job->efname->name)
-		job->errstream = _fopen(job->ifname->name);
+		job->errstream = _fopen(job->efname->name);
 	else
 		job->errstream = stderr;
 
