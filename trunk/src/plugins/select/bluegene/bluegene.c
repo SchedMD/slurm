@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  bluegene.c - blue gene node allocation module. 
+ *  bluegene.c - blue gene node configuration processing module. 
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

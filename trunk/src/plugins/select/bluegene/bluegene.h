@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  bluegene.h - header for blue gene node allocation plugin. 
+ *  bluegene.h - header for blue gene configuration processing module. 
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -85,8 +85,8 @@ typedef struct bgl_record {
 } bgl_record_t;
 
 /*
- * bgl_conf_record is used to store the elements read from the config
- * file from init().
+ * bgl_conf_record is used to store the elements read from the bluegene.conf
+ * file and is loaded by init().
  */
 typedef struct bgl_conf_record {
 	char* nodes;
@@ -115,10 +115,6 @@ extern void fini_bgl(void);
  */
 extern int create_static_partitions(List part_list);
 
-/* Try to find resources for a given job request */
-extern int submit_job(struct job_record *job_ptr, bitstr_t *bitmap,
-	       int min_nodes, int max_nodes);
-
 /* sort a list of bgl_records by size (node count) */
 extern void sort_bgl_record_inc_size(List records);
 extern void sort_bgl_record_dec_size(List records);
@@ -131,7 +127,8 @@ extern char* convert_lifecycle(lifecycle_type_t lifecycle);
 extern char* convert_conn_type(rm_connection_type_t conn_type);
 extern char* convert_node_use(rm_partition_mode_t pt);
 
-/* bluegene_agent - detached thread periodically updates status of bluegene nodes */
+/* bluegene_agent - detached thread periodically tests status of bluegene 
+ * nodes and switches */
 extern void *bluegene_agent(void *args);
 
 #endif /* _BLUEGENE_H_ */
