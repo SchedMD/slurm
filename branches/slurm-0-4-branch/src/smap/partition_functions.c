@@ -56,7 +56,7 @@ static char *_part_state_str(rm_partition_state_t state);
 static int  _print_text_part(partition_info_t *part_ptr, 
 			     db2_block_info_t *db2_info_ptr);
 static void _read_part_db2(void);
-#if HAVE_BGL_FILES
+#ifdef HAVE_BGL_FILES
 static int _set_start_finish(db2_block_info_t *db2_info_ptr);
 #endif
 static int _in_slurm_partition(db2_block_info_t *db2_info_ptr, int *first, int *last);
@@ -765,7 +765,7 @@ static void _read_part_db2(void)
 	
 	if ((rc = rm_get_partitions_info(state, &part_list))
 	    != STATUS_OK) {
-		error("rm_get_partitions(): %s",
+		error("rm_get_partitions_info(): %s",
 		      bgl_err_str(rc));
 		return;
 		

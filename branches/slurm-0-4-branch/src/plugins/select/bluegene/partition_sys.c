@@ -194,7 +194,7 @@ int read_bgl_partitions()
 	}			
 	if ((rc = rm_get_partitions_info(state, &part_list))
 			!= STATUS_OK) {
-		error("rm_get_partitions(): %s", bgl_err_str(rc));
+		error("rm_get_partitions_info(): %s", bgl_err_str(rc));
 		return SLURM_ERROR;
 		
 	}

@@ -42,7 +42,7 @@
 #define BIG_MAX 9999
 #define BUFSIZE 4096
 
-#if HAVE_BGL
+#ifdef HAVE_BGL
 #define PA_SYSTEM_DIMENSIONS 3
 #else
 #define PA_SYSTEM_DIMENSIONS 1
@@ -170,7 +170,7 @@ typedef struct {
 	time_t now_time;
 
 	/* made to hold info about a system, which right now is only a grid of pa_nodes*/
-#if HAVE_BGL
+#ifdef HAVE_BGL
 	pa_node_t ***grid;
 #else
 	pa_node_t *grid;

@@ -439,7 +439,7 @@ static rm_partition_state_t _get_state_partition(pm_partition_id_t part_id)
 		
 	if ((rc = rm_get_partitions_info(part_state, &part_list))
 	    != STATUS_OK) {
-		error("rm_get_partitions(): %s\n", bgl_err_str(rc));
+		error("rm_get_partitions_info(): %s\n", bgl_err_str(rc));
 		return state;	
 	}
 

@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
 		signal(SIGWINCH, (sighandler_t) _resize_handler);
 		initscr();
 		
-#if HAVE_BGL
+#ifdef HAVE_BGL
 		height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
 		width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
 		if (COLS < (75 + width) || LINES < height) {
@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
 		max_display = pa_system_ptr->grid_win->_maxy*pa_system_ptr->grid_win->_maxx;
 		//scrollok(pa_system_ptr->grid_win, TRUE);
 		
-#if HAVE_BGL
+#ifdef HAVE_BGL
 		startx = width;
 		COLS -= 2;
 		width = COLS - width;
@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
 		case SLURMPART:
 			get_slurm_part();
 			break;
-#if HAVE_BGL
+#ifdef HAVE_BGL
 		case COMMANDS:
 			get_command();
 			break;
@@ -281,7 +281,7 @@ int main(int argc, char *argv[])
 
 static int _get_option()
 {
-	char ch;
+	int ch;
 
 	ch = getch();
 	switch (ch) {
@@ -293,7 +293,7 @@ static int _get_option()
 		params.display = JOBS;
 		return 1;
 		break;
-#if HAVE_BGL
+#ifdef HAVE_BGL
 	case 'b':
 		params.display = BGLPART;
 		return 1;
@@ -334,6 +334,7 @@ static int _get_option()
 static void *_resize_handler(int sig)
 {
 	int startx=0, starty=0;
+	int height, width;
 	pa_system_ptr->ycord = 1;
 	
 	delwin(pa_system_ptr->grid_win);
@@ -342,13 +343,13 @@ static void *_resize_handler(int sig)
 	endwin();
 	initscr();
 
-#if HAVE_BGL
-	int height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
-	int width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
+#ifdef HAVE_BGL
+	height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
+	width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
 	if (COLS < (75 + width) || LINES < height) {
 #else
-	int height = 10;
-	int width = COLS;
+	height = 10;
+	width = COLS;
 	if (COLS < 75 || LINES < height) {
 #endif
 
@@ -362,7 +363,7 @@ static void *_resize_handler(int sig)
 	max_display = pa_system_ptr->grid_win->_maxy*
 		pa_system_ptr->grid_win->_maxx;
 		
-#if HAVE_BGL
+#ifdef HAVE_BGL
 	startx = width;
 	COLS -= 2;
 	width = COLS - width;
@@ -384,7 +385,7 @@ static void *_resize_handler(int sig)
 	case SLURMPART:
 		get_slurm_part();
 		break;
-#if HAVE_BGL
+#ifdef HAVE_BGL
 	case COMMANDS:
 		get_command();
 		break;

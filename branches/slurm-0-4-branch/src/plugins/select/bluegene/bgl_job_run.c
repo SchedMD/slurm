@@ -265,7 +265,7 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 
 		if ((rc = rm_get_partitions_info(part_state, &part_list))
 				!= STATUS_OK) {
-			error("rm_get_partitions(): %s", bgl_err_str(rc));
+			error("rm_get_partitions_info(): %s", bgl_err_str(rc));
 			continue;
 		}
 

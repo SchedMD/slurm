@@ -144,7 +144,7 @@ static void _print_header_job(void)
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "PARTITION");
 		pa_system_ptr->xcord += 10;
-#if HAVE_BGL
+#ifdef HAVE_BGL
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "BGL_BLOCK");
 		pa_system_ptr->xcord += 10;
@@ -172,7 +172,7 @@ static void _print_header_job(void)
 		printf("ID\t");
 		printf("JOBID\t");
 		printf("PARTITION\t");
-#if HAVE_BGL
+#ifdef HAVE_BGL
 		printf("BGL_BLOCK\t");
 #endif
 		printf("USER\t");
@@ -204,7 +204,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "%.10s", job_ptr->partition);
 		pa_system_ptr->xcord += 10;
-#if HAVE_BGL
+#ifdef HAVE_BGL
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "%.10s", 
 			  select_g_sprint_jobinfo(job_ptr->select_jobinfo, 
@@ -265,7 +265,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		printf("%c\t", job_ptr->num_procs);
 		printf("%d\t", job_ptr->job_id);
 		printf("%s\t", job_ptr->partition);
-#if HAVE_BGL
+#ifdef HAVE_BGL
 		printf("%s\t", 
 		       select_g_sprint_jobinfo(job_ptr->select_jobinfo, 
 					       time_buf, 
