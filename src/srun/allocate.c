@@ -107,7 +107,8 @@ existing_allocation(void)
 	job.uid = getuid();
 
 	if (slurm_confirm_allocation(&job, &resp) < 0) {
-		error("Unable to confirm resource allocation for job %u: %m");
+		error("Unable to confirm resource allocation for job %u: %m",
+		      job.job_id);
 		exit(1);
 	}
 
