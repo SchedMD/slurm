@@ -45,7 +45,6 @@
 #include "src/common/log.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
-#include "src/common/safeopen.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/xsignal.h"
@@ -697,10 +696,9 @@ _restore_cred_state(slurm_cred_ctx_t ctx)
 	int cred_fd, data_allocated, data_read = 0;
 	Buf buffer = NULL;
 
-	(void) mkdir_parent(conf->spooldir, 0755);
 	if ( (mkdir(conf->spooldir, 0755) < 0) 
 	   && (errno != EEXIST) ) {
-		error("mkdir(%s): %m", conf->spooldir);
+		fatal("mkdir(%s): %m", conf->spooldir);
 		return SLURM_ERROR;
 	}
 
@@ -831,10 +829,9 @@ _set_slurmd_spooldir(void)
 {
 	debug3("initializing slurmd spool directory");
 
-	(void) mkdir_parent(conf->spooldir, 0755);
 	if (mkdir(conf->spooldir, 0755) < 0) {
 		if (errno != EEXIST) {
-			error("mkdir(%s): %m", conf->spooldir);
+			fatal("mkdir(%s): %m", conf->spooldir);
 			return SLURM_ERROR;
 		}
 
