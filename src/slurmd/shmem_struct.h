@@ -54,4 +54,6 @@ void * alloc_task ( slurmd_shmem_t * shmem , job_step_t * job_step ) ;
 int find_job_id_for_session ( slurmd_shmem_t * shmem , int session_id ) ;
 /* clears a job_step and associated task list for future use */
 int deallocate_job_step ( job_step_t * jobstep ) ;
+/* find a particular job_step */
+void * find_job_step ( slurmd_shmem_t * shmem , int job_id , int job_step_id ) ;
 #endif
