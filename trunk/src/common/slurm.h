@@ -39,7 +39,8 @@
 extern char *ControlMachine;	/* Name of computer acting as SLURM controller */
 extern char *BackupController;	/* Name of computer acting as SLURM backup controller */
 
-/* NOTE: Change JOB_STRUCT_VERSION value whenever the contents of "struct Job_Record" change */
+/* NOTE: Change JOB_STRUCT_VERSION value whenever the contents of "struct Job_Record" 
+ * change with respect to the API structures  */
 #define JOB_STRUCT_VERSION 1
 struct Job_Record {
     int Job_Id;
@@ -47,7 +48,8 @@ struct Job_Record {
     int MaxTime;		/* -1 if unlimited */
 };
 
-/* NOTE: Change CONFIG_STRUCT_VERSION value whenever the contents of "struct Config_Record" change */
+/* NOTE: Change CONFIG_STRUCT_VERSION value whenever the contents of 
+ * "struct Config_Record" or "struct Node_Record" change with respect to the API structures */
 #define CONFIG_STRUCT_VERSION 1
 struct Config_Record {
     int CPUs;			/* Count of CPUs running on the node */
@@ -73,8 +75,6 @@ enum Node_State {
 	STATE_END };		/* LAST ENTRY IN TABLE */
 extern char *Node_State_String[];
 
-/* NOTE: Change NODE_STRUCT_VERSION value whenever the contents of "struct Node_Record" change */
-#define NODE_STRUCT_VERSION 1
 extern time_t Last_Node_Update;		/* Time of last update to Node Records */
 struct Node_Record {
     char Name[MAX_NAME_LEN];		/* Name of the node. A NULL name indicates defunct node */
@@ -90,18 +90,20 @@ extern unsigned *Idle_NodeBitMap;	/* Bitmap of nodes are IDLE */
 extern struct 	Config_Record Default_Config_Record;
 extern struct 	Node_Record Default_Node_Record;
 
-/* NOTE: Change PART_STRUCT_VERSION value whenever the contents of "struct Node_Record" change */
+/* NOTE: Change PART_STRUCT_VERSION value whenever the contents of "struct Node_Record" 
+ * change with respect to the API structures */
 #define PART_STRUCT_VERSION 1
+extern time_t Last_Part_Update;		/* Time of last update to Part Records */
 struct Part_Record {
     char Name[MAX_NAME_LEN];	/* Name of the partition */
     int MaxTime;		/* -1 if unlimited */
     int MaxNodes;		/* -1 if unlimited */
     int TotalNodes;		/* Total number of nodes in the partition */
     int TotalCPUs;		/* Total number of CPUs in the partition */
-    char *Nodes;		/* Names of nodes in partition */
-    char *AllowGroups;		/* NULL indicates ALL */
     unsigned Key:1;		/* 1 if SLURM distributed key is required for use of partition */
     unsigned StateUp:1;		/* 1 if state is UP */
+    char *Nodes;		/* Names of nodes in partition */
+    char *AllowGroups;		/* NULL indicates ALL */
     unsigned *NodeBitMap;	/* Bitmap of nodes in partition */
 };
 List Part_List;			/* List of Part_Record entries */
@@ -179,6 +181,7 @@ extern struct Config_Record *Create_Config_Record(int *Error_Code);
  * Output: Error_Code - Set to zero if no error, errno otherwise
  *         Returns a pointer to the record or NULL if error
  * NOTE The record's values are initialized to those of Default_Node_Record
+ * NOTE: Allocates memory that should be freed with Delete_Part_Record
  */
 extern struct Node_Record *Create_Node_Record(int *Error_Code);
 
