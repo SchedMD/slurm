@@ -169,7 +169,7 @@ a job is allocated to the requesting user, under which the user may
 manually run job steps via a script or in a sub-shell spawned by \srun .
 
 \begin{figure}[tb]
-\centerline{\epsfig{file=figures/connections.eps,scale=0.5}}
+\centerline{\epsfig{file=../figures/connections.eps,scale=0.5}}
 \caption{\small Job initiation connections overview. 1. The \srun\ connects to
          \slurmctld\ requesting resources. 2. \slurmctld\ issues a response,
          with list of nodes and job credential. 3. The \srun\ opens a listen
@@ -194,7 +194,7 @@ the other initiation modes are described in more detail below.
 \subsubsection{Interactive mode initiation}
 
 \begin{figure}[tb]
-\centerline{\epsfig{file=figures/interactive-job-init.eps,scale=0.5} }
+\centerline{\epsfig{file=../figures/interactive-job-init.eps,scale=0.5} }
 \caption{\small Interactive job initiation. \srun\ simultaneously allocates
 nodes
          and a job step from \slurmctld\ then sends a run request to all
@@ -247,7 +247,7 @@ successfully, the nodes are returned to the partition.
 \subsubsection{Batch mode initiation}
 
 \begin{figure}[tb]
-\centerline{\epsfig{file=figures/queued-job-init.eps,scale=0.5} }
+\centerline{\epsfig{file=../figures/queued-job-init.eps,scale=0.5} }
 \caption{\small Queued job initiation.
          \slurmctld\ initiates the user's job as a batch script on one node.
          Batch script contains an srun call which initiates parallel tasks
@@ -285,7 +285,7 @@ the nodes are returned to the partition.
 \subsubsection{Allocate mode initiation}
 
 \begin{figure}[tb]
-\centerline{\epsfig{file=figures/allocate-init.eps,scale=0.5} }
+\centerline{\epsfig{file=../figures/allocate-init.eps,scale=0.5} }
 \caption{\small Job initiation in allocate mode. Resources are allocated and
          \srun\ spawns a shell with access to the resources. When user runs
          an \srun\ from within the shell, the a job step is initiated under
