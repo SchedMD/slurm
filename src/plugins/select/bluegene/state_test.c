@@ -41,73 +41,66 @@
 
 #ifdef HAVE_BGL_FILES
 /* Find the specified BlueGene node ID and configure it down in CMCS */
-static void _configure_node_down(rm_bp_id_t bp_id)
+static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bgl)
 {
-	int bp_num, i, rc1, rc2, rc3;
+	int bp_num, i, rc;
 	rm_bp_id_t bpid;
 	rm_BP_t *my_bp;
 	rm_location_t bp_loc;
 	rm_BP_state_t bp_state;
 	char bgl_down_node[128];
 
-	if (!bgl) {
-		error("error, BGL is not initialized");
-		return;
-	}
-
-	if ((rc1 = rm_get_data(bgl, RM_BPNum, &bp_num)) != STATUS_OK) {
-		error("rm_get_data(RM_BPNum) errno=%d", rc1);
-		return;
+	if ((rc = rm_get_data(bgl, RM_BPNum, &bp_num)) != STATUS_OK) {
+		error("rm_get_data(RM_BPNum): %s", bgl_err_str(rc));
+		bp_num = 0;
 	}
 
 	for (i=0; i<bp_num; i++) {
 		if (i) {
-			if ((rc1 = rm_get_data(bgl, RM_NextBP, &my_bp)) != 
+			if ((rc = rm_get_data(bgl, RM_NextBP, &my_bp)) != 
 					STATUS_OK) {
-				error("rm_get_data(RM_NextBP) errno=%d", rc1);
+				error("rm_get_data(RM_NextBP): %s", 
+					bgl_err_str(rc));
 				continue;
 			}
 		} else {
-			if ((rc1 = rm_get_data(bgl, RM_FirstBP, &my_bp)) != 
+			if ((rc = rm_get_data(bgl, RM_FirstBP, &my_bp)) != 
 					STATUS_OK) {
-				error("rm_get_data(RM_FirstBP) errno=%d", rc1);
+				error("rm_get_data(RM_FirstBP): %s", 
+					bgl_err_str(rc));
 				continue;
 			}
 		}
-		rc1 = rc2 = rc3 = STATUS_OK;
-		if (((rc1 = rm_get_data(my_bp, RM_BPID, &bpid)) != STATUS_OK)
-		||  (strcmp(bpid, bpid) != 0)
-		||  ((rc2 = rm_get_data(my_bp, RM_BPLoc, &bp_loc)) != STATUS_OK)
-		||  ((rc3 = rm_get_data(my_bp, RM_BPState, &bp_state)) != STATUS_OK)
-		||  (bp_state == RM_BP_DOWN)) {		/* already down */
-			if (rc1 != STATUS_OK)
-				error("rm_get_data(RM_BPID) errno=%d", rc1);
-			if (rc2 != STATUS_OK)
-				error("rm_get_data(RM_BPLoc) errno=%d", rc2);
-			if (rc3 != STATUS_OK)
-				error("rm_get_data(RM_BPState) errno=%d", rc3);
-#ifdef USE_BGL_FILES
-/* FIXME: rm_free_BP is consistenly generating a segfault */
-			if ((rc1 = rm_free_BP(my_bp)) != STATUS_OK)
-				error("rm_free_BP() errno=%d", rc1);
-#endif
+
+		if ((rc = rm_get_data(my_bp, RM_BPID, &bpid)) != STATUS_OK) {
+			error("rm_get_data(RM_BPID): %s", bgl_err_str(rc));
 			continue;
 		}
+		if (strcmp(bp_id, bpid) != 0)	/* different base partition */
+			continue;
+		if ((rc = rm_get_data(my_bp, RM_BPLoc, &bp_loc)) != STATUS_OK) {
+			error("rm_get_data(RM_BPLoc): %s", bgl_err_str(rc));
+			continue;
+		}
+		if ((rc = rm_get_data(my_bp, RM_BPState, &bp_state)) 
+				!= STATUS_OK) {
+			error("rm_get_data(RM_BPState): %s", bgl_err_str(rc));
+			continue;
+		}
+		if  (bp_state == RM_BP_DOWN) 		/* already down */
+			continue;
+
 		snprintf(bgl_down_node, sizeof(bgl_down_node), "bgl%d%d%d",
 			bp_loc.X, bp_loc.Y, bp_loc.Z);
 #ifdef USE_BGL_FILES
-		if ((rc = rm_set_data(my_bp, RM_BPState, RM_BP_DOWN)) 
+		if ((rc1 = rm_set_data(my_bp, RM_BPState, RM_BP_DOWN)) 
 				!= STATUS_OK)
 			error("switch for node %s is bad, could not set down, "
-				"rm_set_data(RM_BPState) errno=%d",
-				bgl_down_node, rc);
+				"rm_set_data(RM_BPState): %s",
+				bgl_down_node, bgl_err_str(rc1));
 		else
 			info("switch for node %s is bad, set down", 
 				bgl_down_node);
-
-/* FIXME: rm_free_BP is consistenly generating a segfault */
-		if ((rc = rm_free_BP(my_bp)) != STATUS_OK)
-			error("rm_free_BP errno=%d", rc);
 #else
 		info("switch for node %s is bad, set down", bgl_down_node);
 #endif
@@ -138,53 +131,56 @@ static char *_convert_bp_state(rm_BP_state_t state)
 extern void test_down_nodes(void)
 {
 #ifdef HAVE_BGL_FILES
-	int bp_num, i, rc1, rc2;
+	int bp_num, i, rc;
 	rm_BP_t *my_bp;
 	rm_BP_state_t bp_state;
 	rm_location_t bp_loc;
 	char down_node_list[BUFSIZE];
 	char bgl_down_node[128];
 
-	if (!bgl) {
-		error("error, BGL is not initialized");
+#ifdef USE_BGL_FILES
+	rm_BGL_t *bgl;
+	/* rm_free_BGL() causes seg-fault with 410 drivers and we can't
+	 * affort this memory leak */
+	if ((rc = rm_get_BGL(&bgl)) != STATUS_OK) {
+		error("rm_get_BGL(): %s", bgl_err_str(rc));
 		return;
 	}
+#endif
 
+	debug("running test_down_nodes");
 	down_node_list[0] = '\0';
-	if ((rc1 = rm_get_data(bgl, RM_BPNum, &bp_num)) != STATUS_OK) {
-		error("rm_get_data(RM_BPNum) errno=%d", rc1);
-		return;
+	if ((rc = rm_get_data(bgl, RM_BPNum, &bp_num)) != STATUS_OK) {
+		error("rm_get_data(RM_BPNum): %s", bgl_err_str(rc));
+		bp_num = 0;
 	}
 	for (i=0; i<bp_num; i++) {
 		if (i) {
-			if ((rc1 = rm_get_data(bgl, RM_NextBP, &my_bp)) 
+			if ((rc = rm_get_data(bgl, RM_NextBP, &my_bp)) 
 					!= STATUS_OK) {
-				error("rm_get_data(RM_NextBP) errno=%d", rc1);
+				error("rm_get_data(RM_NextBP): %s", 
+					bgl_err_str(rc));
 				continue;
 			}
 		} else {
-			if ((rc1 = rm_get_data(bgl, RM_FirstBP, &my_bp)) 
+			if ((rc = rm_get_data(bgl, RM_FirstBP, &my_bp)) 
 					!= STATUS_OK) {
-				error("rm_get_data(RM_FirstBP) errno=%d", rc1);
+				error("rm_get_data(RM_FirstBP): %s", 
+					bgl_err_str(rc));
 				continue;
 			}
 		}
 
-		rc2 = STATUS_OK;
-		if (((rc1 = rm_get_data(my_bp, RM_BPState, &bp_state)) 
-				!= STATUS_OK)
-		||  (bp_state != RM_BP_DOWN)
-		||  ((rc2 = rm_get_data(my_bp, RM_BPLoc, &bp_loc)) 
-				!= STATUS_OK)) {
-			if (rc1 != STATUS_OK)
-				error("rm_get_data(RM_BPState) errno=%d", rc1);
-			else if (rc2 != STATUS_OK)
-				error("rm_get_data(RM_BPLoc) errno=%d", rc2);
-#ifdef USE_BGL_FILES
-/* FIXME: rm_free_BP is consistenly generating a segfault */
-			if ((rc = rm_free_BP(my_bp)) != STATUS_OK)
-				error("rm_free_BP() errno=%d", rc);
-#endif
+		if ((rc = rm_get_data(my_bp, RM_BPState, &bp_state)) 
+				!= STATUS_OK) {
+			error("rm_get_data(RM_BPState): %s", bgl_err_str(rc));
+			continue;
+		}
+		if  (bp_state != RM_BP_DOWN)
+			continue;
+		if ((rc = rm_get_data(my_bp, RM_BPLoc, &bp_loc)) 
+				!= STATUS_OK) {
+			error("rm_get_data(RM_BPLoc): %s", bgl_err_str(rc));
 			continue;
 		}
 
@@ -199,12 +195,11 @@ extern void test_down_nodes(void)
 			strcat(down_node_list, bgl_down_node);
 		} else
 			error("down_node_list overflow");
-#ifdef USE_BGL_FILES
-/* FIXME: rm_free_BP is consistenly generating a segfault */
-		if ((rc = rm_free_BP(my_bp)) != STATUS_OK)
-			error("rm_free_BP() errno=%d", rc);
-#endif
 	}
+#ifdef USE_BGL_FILES
+	/* Causes seg-fault with 410 drivers */
+	rm_free_BGL(bgl);
+#endif
 
 	if (down_node_list[0]) {
 		char reason[128];
@@ -219,59 +214,66 @@ extern void test_down_nodes(void)
 }
 
 /* Test for switches that are DOWN in BlueGene database, 
- * if so DRAIN them in SLURM and configure their base partition DOWN */
+ * when found DRAIN them in SLURM and configure their base partition DOWN */
 extern void test_down_switches(void)
 {
 #ifdef HAVE_BGL_FILES
-	int switch_num, i, rc1, rc2;
+	int switch_num, i, rc;
 	rm_switch_t *my_switch;
 	rm_bp_id_t bp_id;
 	rm_switch_state_t switch_state;
 
-	if (!bgl) {
-		error("error, BGL is not initialized");
+#ifdef USE_BGL_FILES
+	rm_BGL_t *bgl;
+	/* rm_free_BGL() causes seg-fault with 410 drivers and we can't 
+	 * affort this memory leak */
+	if ((rc = rm_get_BGL(&bgl)) != STATUS_OK) {
+		error("rm_get_BGL(): %s", bgl_err_str(rc));
 		return;
 	}
+#endif
 
-	if ((rc1 = rm_get_data(bgl, RM_SwitchNum, &switch_num)) != STATUS_OK) {
-		error("rm_get_data(RM_SwitchNum) errno=%d", rc1);
-		return;
+	debug2("running test_down_switches");
+	if ((rc = rm_get_data(bgl, RM_SwitchNum, &switch_num)) != STATUS_OK) {
+		error("rm_get_data(RM_SwitchNum): %s", bgl_err_str(rc));
+		switch_num = 0;
 	}
 	for (i=0; i<switch_num; i++) {
 		if (i) {
-			if ((rc1 = rm_get_data(bgl, RM_NextSwitch, &my_switch))
+			if ((rc = rm_get_data(bgl, RM_NextSwitch, &my_switch))
 					!= STATUS_OK) {
-				error("rm_get_data(RM_NextSwitch) errno=%d", 
-					rc1);
+				error("rm_get_data(RM_NextSwitch): %s", 
+					bgl_err_str(rc));
 				continue;
 			}
 		} else {
-			if ((rc1 = rm_get_data(bgl, RM_FirstSwitch, &my_switch))
+			if ((rc = rm_get_data(bgl, RM_FirstSwitch, &my_switch))
 					!= STATUS_OK) {
-				error("rm_get_data(RM_FirstSwitch) errno=%d",
-					rc1);
+				error("rm_get_data(RM_FirstSwitch): %s",
+					bgl_err_str(rc));
 				continue;
 			}
 		}
 
-		rc1 = rc2 = STATUS_OK;
-		if (((rc1 = rm_get_data(my_switch, RM_SwitchState, 
-				&switch_state)) == STATUS_OK)
-		&&  (switch_state == RM_SWITCH_DOWN)
-		&&  ((rc2 = rm_get_data(my_switch, RM_SwitchBPID, &bp_id)) 
-				== STATUS_OK)) {
-			_configure_node_down(bp_id);
+		if ((rc = rm_get_data(my_switch, RM_SwitchState, 
+				&switch_state)) != STATUS_OK) {
+			error("rm_get_data(RM_SwitchState): %s",
+				bgl_err_str(rc));
+			continue;
 		}
-		if (rc1 != STATUS_OK)
-			error("rm_get_data(RM_SwitchBPID) errno=%d", rc1);
-		if (rc2 != STATUS_OK)
-			error("rm_get_data(RM_SwitchBPID) errno=%d", rc2);
-
-#ifdef USE_BGL_FILES
-/* FIXME: rm_free_switch() is consistenly generating a segfault */
-		if ((rc = rm_free_switch(my_switch)) != STATUS_OK)
-			error("rm_free_switch() errno=%d", rc);
-#endif
+		if (switch_state != RM_SWITCH_DOWN)
+			continue;
+		if ((rc = rm_get_data(my_switch, RM_SwitchBPID, &bp_id)) 
+				!= STATUS_OK) {
+			error("rm_get_data(RM_SwitchBPID): %s",
+				bgl_err_str(rc));
+			continue;
+		}
+		_configure_node_down(bp_id, bgl);
 	}
+#ifdef USE_BGL_FILES
+	/* Causes seg-fault with 410 drivers */
+	rm_free_BGL(bgl);
+#endif
 #endif
 }

@@ -94,7 +94,8 @@ static int _remove_job(db_job_id_t job_id)
 				debug("job %d removed from DB2", job_id);
 				rc = STATUS_OK;
 			} else
-				error("rm_get_job(%d) errno=%d", job_id, rc);
+				error("rm_get_job(%d): %s", job_id, 
+					bgl_err_str(rc));
 			return rc;
 		}
 
@@ -105,11 +106,12 @@ static int _remove_job(db_job_id_t job_id)
 				rc = STATUS_OK;
 			} else
 				error("rm_get_data(RM_JobState) for jobid=%d "
-					"errno=%d", job_id, rc);
+					"%s", job_id, bgl_err_str(rc));
 			rm_free_job(job_rec);
 			return rc;
 		}
-		rm_free_job(job_rec);
+		if ((rc = rm_free_job(job_rec)) != STATUS_OK)
+			error("rm_free_job: %s", bgl_err_str(rc));
 
 		/* Cancel or remove the job */
 		if (job_state == RM_JOB_RUNNING)
@@ -121,9 +123,11 @@ static int _remove_job(db_job_id_t job_id)
 				debug("job %d removed from DB2", job_id);
 				rc = STATUS_OK;
 			} else if (job_state == RM_JOB_RUNNING)
-				error("jm_cancel_job(%d) errno=%d", job_id, rc);
+				error("jm_cancel_job(%d): %s", job_id, 
+					bgl_err_str(rc));
 			else
-				error("rm_remove_job(%d) errno=%d", job_id, rc);
+				error("rm_remove_job(%d): %s", job_id, 
+					bgl_err_str(rc));
 			return rc;
 		}
 	}
@@ -152,28 +156,35 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 		/* find the partition */
 		if ((rc = rm_get_partition(bgl_part_id,  &part_elem)) != 
 				STATUS_OK) {
-			error("rm_get_partition(%s) errno=%d", bgl_part_id, rc);
+			error("rm_get_partition(%s): %s", bgl_part_id, 
+				bgl_err_str(rc));
 			return rc;
 		}
 
 		/* find its state */
 		rc = rm_get_data(part_elem, RM_PartitionState, &part_state);
-		(void) rm_free_partition(part_elem);
 		if (rc != STATUS_OK) {
-			error("rm_get_data(RM_PartitionState) errno=%d", rc);
+			error("rm_get_data(RM_PartitionState): %s", 
+				bgl_err_str(rc));
+			(void) rm_free_partition(part_elem);
 			return rc;
 		}
+
+		if ((rc = rm_free_partition(part_elem)) != STATUS_OK)
+			error("rm_free_partition(): %s", bgl_err_str(rc));
+
 		if (part_state == RM_PARTITION_FREE)
 			break;
 #ifdef USE_BGL_FILES
 		if ((i == 0)
 		&&  ((rc = pm_destroy_partition(bgl_part_id)) != STATUS_OK)) {
-			error("pm_destroy_partition(%s) errno=%d", 
-				bgl_part_id, rc);
+			error("pm_destroy_partition(%s): %s", bgl_part_id, 
+				bgl_err_str(rc));
 			return rc;
 		}
 #else
-		break;
+		error("Could not free partition %s", bgl_part_id);
+		return STATUS_OK;	/* just continue the job */
 #endif
 	}
 
@@ -183,13 +194,14 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 	}
 #ifdef USE_BGL_FILES
 	if ((rc = rm_set_part_owner(bgl_part_id, user)) != STATUS_OK)
-		error("rm_set_part_owner(%s,%s) errno=%d", bgl_part_id, user);
+		error("rm_set_part_owner(%s,%s): %s", bgl_part_id, user,
+			bgl_err_str(rc));
 #endif
 	return rc;
 }
 
 /* Perform job initiation work */
-static void _start_agent(bgl_update_t *bgl_update_ptr)
+extern void _start_agent(bgl_update_t *bgl_update_ptr)
 {
 	if (_set_part_owner(bgl_update_ptr->bgl_part_id, 
 			uid_to_string(bgl_update_ptr->uid)) != STATUS_OK) {
@@ -211,13 +223,13 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 
 	live_states = JOB_ALL_FLAG & (~RM_JOB_TERMINATED) & (~RM_JOB_KILLED);
 	if ((rc = rm_get_jobs(live_states, &job_list)) != STATUS_OK) {
-		error("rm_get_jobs() errno=%d", rc);
+		error("rm_get_jobs(): %s", bgl_err_str(rc));
 		return;
 	}
 
 	if ((rc = rm_get_data(job_list, RM_JobListSize, &jobs)) != STATUS_OK) {
-		error("rm_get_data(RM_JobListSize) errno=%d", rc);
-		return;
+		error("rm_get_data(RM_JobListSize): %s", bgl_err_str(rc));
+		jobs = 0;
 	}
 
 #ifdef USE_BGL_FILES
@@ -228,38 +240,41 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		if (i) {
 			if ((rc = rm_get_data(job_list, RM_JobListNextPart, 
 					&job_elem)) != STATUS_OK) {
-				error("rm_get_data(RM_JobListNextPart) " 
-					"errno=%d", rc);
+				error("rm_get_data(RM_JobListNextPart): %s", 
+					bgl_err_str(rc));
 				continue;
 			}
 		} else {
 			if ((rc = rm_get_data(job_list, RM_JobListFirstPart, 
 					&job_elem)) != STATUS_OK) {
-				error("rm_get_data(RM_JobListFirstPart) "
-					"errno=%d", rc);
+				error("rm_get_data(RM_JobListFirstPart): %s"
+					bgl_err_str(rc));
 				continue;
 			}
 		}
-		if ((rc = rm_get_data(job_elem, RM_JobPartitionID, &part_id)
+		if ((rc = rm_get_data(job_elem, RM_JobPartitionID, &part_id))
 				!= STATUS_OK) {
-			error("rm_get_data(RM_JobPartitionID) errno=%d", rc);
+			error("rm_get_data(RM_JobPartitionID): %s", 
+				bgl_err_str(rc));
 			continue;
 		}
 		if (strcmp(part_id, bgl_update_ptr->bgl_part_id) != 0)
 			continue;
-		if ((rc = rm_get_data(job_elem, RM_JobDBJobID, &job_id)
+		if ((rc = rm_get_data(job_elem, RM_JobDBJobID, &job_id))
 				!= STATUS_OK) {
-			error("rm_get_data(RM_JobDBJobID) errno=%d", rc);
+			error("rm_get_data(RM_JobDBJobID): %s", 
+				bgl_err_str(rc));
 			continue;
 		}
 		(void) _remove_job(job_id);
 	}
-	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
-		error("rm_free_job_list() errno=%d", rc);
-
 #endif
+
 	/* Change the block's owner */
 	_set_part_owner(bgl_update_ptr->bgl_part_id, "");
+
+	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
+		error("rm_free_job_list(): %s", bgl_err_str(rc));
 }
 
 /* Process requests off the bgl_update_list queue and exit when done */
@@ -298,6 +313,10 @@ static void _part_op(bgl_update_t *bgl_update_ptr)
 		int retries = 0;
 		agent_cnt = 1;
 		slurm_attr_init(&attr_agent);
+		if (pthread_attr_setdetachstate(&attr_agent, 
+				PTHREAD_CREATE_JOINABLE))
+			error("pthread_attr_setdetachstate error %m");
+
 		while (pthread_create(&thread_agent, &attr_agent, _part_agent,
 				NULL)) {
 			error("pthread_create error %m");
