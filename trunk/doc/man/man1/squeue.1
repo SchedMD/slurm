@@ -18,10 +18,10 @@ Print a help message describing the usage of \fBsqueue\fR.
 .TP
 \fB\-o\fR, \fB\-\-format\fR
 Specify the information to be displayed.  
-The default format for jobs is "%.10i%9P%8u%2t%.9l%.9p%#N", where "#" limits 
+The default format for jobs is "%.7i%9P%8j%8u%2t%.9l%.4p%#N", where "#" limits 
 output to the window size.
 If the \fB\-\-long\fR option is specified, the default job format is 
-"%.10i%9P%8u%8T%.9ll%.9p%11S%11e%N".
+"%.7i%9P%8j%8u%8T%.9l%.10p%11S%11e%N".
 The default format for job steps is "%.10i%9P%8u%11S%#N", where "#" limits 
 output to the window size. 
 If the \fB\-\-long\fR option is specified, the default job step format 
@@ -56,9 +56,9 @@ limit)
 .br
 \fB%N\fR List of nodes allocated to the job or job step
 .br
-\fB%o\fR Number of nodes required by the job
+\fB%o\fR Minimum number of nodes requested by the job
 .br
-\fB%O\fR Are contiguous nodes required by the job
+\fB%O\fR Are contiguous nodes requested by the job
 .br
 \fB%p\fR Priority of the job (converted to a floating point number between 0.0 and 1.0
 .br
