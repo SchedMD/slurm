@@ -16,6 +16,7 @@
 #ifndef _HAVE_SLURM_H
 #define _HAVE_SLURM_H
 
+#include <stdlib.h>
 #include <time.h>
 #include "list.h"
 
