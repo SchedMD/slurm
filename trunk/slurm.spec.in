@@ -41,10 +41,6 @@ Summary: Development package for SLURM.
 Group: Development/System
 Requires: slurm
 
-%package doc
-Summary: Extra documentation for SLURM.
-Group: Documentation
-
 %package auth-none
 Summary: SLURM auth NULL implementation (no authentication)
 Group: System Environment/Base
@@ -69,10 +65,6 @@ partition management, job management, and scheduling modules.
 %description devel
 Development package for SLURM.  This package includes the header files
 and static libraries for the SLURM API.
-
-%description doc
-Extra documentation for SLURM.  This package contains some HTML
-documentation for SLURM users and administrators.
 
 %description auth-none
 SLURM NULL authentication module 
@@ -114,6 +106,7 @@ DESTDIR="$RPM_BUILD_ROOT" make install
 
 install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/rc.d/init.d/slurm
 install -D -m644 etc/slurm.conf.example $RPM_BUILD_ROOT/etc/slurm/slurm.conf
+
 #############################################################################
 
 %clean
@@ -122,17 +115,20 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,0755)
-%doc ChangeLog
+%doc AUTHORS
+%doc NEWS
 %doc README 
 %doc DISCLAIMER
 %doc COPYING
 %doc etc/slurm.conf.example
+%doc doc/html
 %{_bindir}/*
 %{_sbindir}/*
 %{_libdir}/*.so*
 %{_mandir}/man1/*
 %{_mandir}/man5/*
 %{_mandir}/man8/*
+%dir /etc/slurm
 %config(noreplace) /etc/rc.d/init.d/slurm
 %config(noreplace) /etc/slurm/slurm.conf
 #############################################################################
@@ -143,14 +139,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libslurm.a
 %{_libdir}/libslurm.la
 %{_mandir}/man3/*
-#############################################################################
-
-#
-# Docs to come later
-#
-#%files doc
-#%defattr(-,root,root)
-#doc/html/*
 #############################################################################
 
 #%if %(test -f %{_libdir}/slurm/auth_none.so && echo 1 || echo 0)
@@ -209,8 +197,9 @@ fi
 
 
 %changelog
+* Thu Apr 10 2003
+- include html documentation in main package
 * Wed Mar 26 2003 Mark Grondona <mgrondona@llnl.gov>
-- place docs into subpackage (no extra docs right now)
 - unconditionally build auth-none subpackage
 * Fri Mar 21 2003 Mark Grondona <mgrondona@llnl.gov>
 - allow debug builds when %debug macro is defined
