@@ -480,6 +480,15 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return;
 	}
+#ifdef HAVE_BGL
+	/* non-super users not permitted to run job steps on BGL */
+	if (!_is_super_user(uid)) {
+		info("Attempt to execute job step by uid=%u", 
+			(unsigned int) uid);
+		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
+		return;
+	}
+#endif
 
 	lock_slurmctld(job_write_lock);
 	error_code = job_allocate(job_desc_msg, &job_id,
@@ -956,10 +965,21 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	dump_step_desc(req_step_msg);
 	uid = g_slurm_auth_get_uid(msg->cred);
 	if ( (uid != req_step_msg->user_id) && (!_is_super_user(uid)) ) {
-		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, JOB_STEP_CREATE RPC from uid=%u",
 			(unsigned int) uid);
+		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		return;
 	}
+
+#ifdef HAVE_BGL
+	/* non-super users not permitted to run job steps on BGL */
+	if (!_is_super_user(uid)) {
+		info("Attempt to execute job step by uid=%u",
+			(unsigned int) uid);
+		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
+		return;
+	}
+#endif
 
 	if (error_code == SLURM_SUCCESS) {
 		/* issue the RPC */
