@@ -48,6 +48,7 @@
 log_options_t log_opts = LOG_OPTS_STDERR_ONLY ;
 slurm_ctl_conf_t slurmctld_conf;
 
+int getnodename (char *name, size_t len);
 int msg_from_root (void);
 void slurmctld_req ( slurm_msg_t * msg );
 void fill_ctld_conf ( slurm_ctl_conf_t * build_ptr );
@@ -88,8 +89,8 @@ main (int argc, char *argv[])
 		fatal ("slurmctld: init_slurm_conf error %d", error_code);
 	if ( ( error_code = read_slurm_conf ()) ) 
 		fatal ("slurmctld: error %d from read_slurm_conf reading %s", error_code, SLURM_CONFIG_FILE);
-	if ( ( error_code = gethostname (node_name, MAX_NAME_LEN) ) ) 
-		fatal ("slurmctld: errno %d from gethostname", errno);
+	if ( ( error_code = getnodename (node_name, MAX_NAME_LEN) ) ) 
+		fatal ("slurmctld: errno %d from getnodename", errno);
 
 	if ( strcmp (node_name, slurmctld_conf.control_machine) &&  
 	     strcmp (node_name, slurmctld_conf.backup_controller) &&
@@ -888,4 +889,30 @@ usage (char *prog_name)
 	printf ("  -l <errlev>  Set logfile logging to the specified level\n");
 	printf ("  -s <errlev>  Set syslog logging to the specified level\n");
 	printf ("<errlev> is an integer between 0 and 7 with higher numbers providing more detail.\n");
+}
+
+/* getnodename - equivalent to gethostname, but return only the first component of the fully 
+ *	qualified name (e.g. "linux123.foo.bar" becomes "linux123") */
+int
+getnodename (char *name, size_t len)
+{
+	int error_code, name_len;
+	char *dot_ptr, path_name[1024];
+
+	error_code = gethostname (path_name, sizeof(path_name));
+	if (error_code)
+		return error_code;
+
+	dot_ptr = strchr (path_name, '.');
+	if (dot_ptr == NULL)
+		dot_ptr = path_name + strlen(path_name);
+	else
+		dot_ptr[0] = '\0';
+
+	name_len = (dot_ptr - path_name);
+	if (name_len > len)
+		return ENAMETOOLONG;
+
+	strcpy (name, path_name);
+	return 0;
 }

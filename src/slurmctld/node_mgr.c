@@ -553,45 +553,48 @@ hash_index (char *name)
 		return 0;	/* degenerate case */
 	inx = 0;
 
-#if ( HASH_BASE == 10 )
-	for (i = 0;; i++) {
-		tmp = (int) name[i];
-		if (tmp == 0)
-			break;	/* end if string */
-		if ((tmp >= (int) '0') && (tmp <= (int) '9'))
-			inx = (inx * HASH_BASE) + (tmp - (int) '0');
-	}
-#elif ( HASH_BASE == 8 )
-	for (i = 0;; i++) {
-		tmp = (int) name[i];
-		if (tmp == 0)
-			break;	/* end if string */
-		if ((tmp >= (int) '0') && (tmp <= (int) '7'))
-			inx = (inx * HASH_BASE) + (tmp - (int) '0');
+	if ( slurmctld_conf.hash_base == 10 ) {
+		for (i = 0;; i++) {
+			tmp = (int) name[i];
+			if (tmp == 0)
+				break;	/* end if string */
+			if ((tmp >= (int) '0') && (tmp <= (int) '9'))
+				inx = (inx * slurmctld_conf.hash_base) + (tmp - (int) '0');
+		}
 	}
 
-#else
-	for (i = 0; i < 5; i++) {
-		tmp = (int) name[i];
-		if (tmp == 0)
-			break;	/* end if string */
-		if ((tmp >= (int) '0') && (tmp <= (int) '9')) {	/* value 0-9 */
-			tmp -= (int) '0';
+	else if ( slurmctld_conf.hash_base == 8 ) {
+		for (i = 0;; i++) {
+			tmp = (int) name[i];
+			if (tmp == 0)
+				break;	/* end if string */
+			if ((tmp >= (int) '0') && (tmp <= (int) '7'))
+				inx = (inx * slurmctld_conf.hash_base) + (tmp - (int) '0');
 		}
-		else if ((tmp >= (int) 'a') && (tmp <= (int) 'z')) {	/* value 10-35 */
-			tmp -= (int) 'a';
-			tmp += 10;
-		}
-		else if ((tmp >= (int) 'a') && (tmp <= (int) 'z')) {	/* value 10-35 */
-			tmp -= (int) 'a';
-			tmp += 10;
-		}
-		else {
-			tmp = 36;
-		}
-		inx = (inx * 37) + tmp;
 	}
-#endif
+
+	else {
+		for (i = 0; i < 5; i++) {
+			tmp = (int) name[i];
+			if (tmp == 0)
+				break;	/* end if string */
+			if ((tmp >= (int) '0') && (tmp <= (int) '9')) {	/* value 0-9 */
+				tmp -= (int) '0';
+				}
+			else if ((tmp >= (int) 'a') && (tmp <= (int) 'z')) {	/* value 10-35 */
+				tmp -= (int) 'a';
+				tmp += 10;
+			}
+			else if ((tmp >= (int) 'a') && (tmp <= (int) 'z')) {	/* value 10-35 */
+				tmp -= (int) 'a';
+				tmp += 10;
+			}
+			else {
+				tmp = 36;
+			}
+			inx = (inx * 37) + tmp;
+		}
+	}
 
 	inx = inx % node_record_count;
 	return inx;
