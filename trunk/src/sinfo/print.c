@@ -3,7 +3,8 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Moe Jette <jette1@llnl.gov>
+ *  Written by Joey Ekstrom <ekstrom1@llnl.gov> and 
+ *  Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -401,8 +402,12 @@ int _print_partition(sinfo_data_t * sinfo_data, int width,
 		else {
 			char *tmp;
 			tmp = xstrdup(sinfo_data->part_info->name);
-			if (sinfo_data->part_info->default_part)
-				xstrcat(tmp, "*");
+			if (sinfo_data->part_info->default_part) {
+				if (strlen(tmp) < width)
+					xstrcat(tmp, "*");
+				else
+					tmp[width-1] = '*';
+			}
 			_print_str(tmp, width, right_justify, true);
 			xfree(tmp);
 		}
