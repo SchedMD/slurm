@@ -262,7 +262,7 @@ _msg_thr_poll(job_t *job)
 	while (1) {
 		while ((rc = poll(fds, nfds, POLL_TIMEOUT_MSEC)) <= 0) {
 			if (rc == 0) {	/* timeout */
-				i = time(NULL)-time_last_msg;
+				i = time(NULL) - time_last_msg;
 				if (job->state == SRUN_JOB_FAILED)
 					pthread_exit(0);
 				else if (check_launch_msg_sent)
