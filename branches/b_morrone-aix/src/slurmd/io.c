@@ -231,20 +231,11 @@ struct io_operations connecting_client_ops = {
 static int    _validate_io_list(List objList);
 #endif /* NDEBUG */
 
-/* 
- * Empty SIGHUP handler used to interrupt EIO thread 
- * system calls
- */
-static void
-_hup_handler(int sig) {;}
-
 int
 io_spawn_handler(slurmd_job_t *job) 
 {
 	pthread_attr_t attr;
 
-	xsignal(SIGHUP, &_hup_handler);
-	
 	if (io_init_pipes(job) == SLURM_FAILURE) {
 		error("io_handler: init_pipes failed: %m");
 		return SLURM_FAILURE;
@@ -396,6 +387,16 @@ static void *
 _io_thr(void *arg)
 {
 	slurmd_job_t *job = (slurmd_job_t *) arg;
+	sigset_t set;
+
+	/* A SIGHUP signal signals a reattach to the mgr thread.  We need
+	 * to block SIGHUP from being delivered to this thread so the mgr
+	 * thread will see the signal.
+	 */
+	sigemptyset(&set);
+	sigaddset(&set, SIGHUP);
+	pthread_sigmask(SIG_BLOCK, &set, NULL);
+
 	debug("IO handler started pid=%lu", (unsigned long) getpid());
 	io_handle_events(job->eio, job->objs);
 	debug("IO handler exited");
