@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "October 2002" "Morris Jette" "Slurm job information reporting functions"
+.TH "Slurm API" "3" "January 2003" "Morris Jette" "Slurm job information reporting functions"
 .SH "NAME"
 slurm_free_job_info_msg, slurm_load_jobs, 
 slurm_print_job_info, slurm_print_job_info_msg
@@ -8,6 +8,8 @@ slurm_print_job_info, slurm_print_job_info_msg
 #include <stdio.h>
 .br
 #include <slurm.h>
+.br
+#include <sys/types.h>
 .LP
 void \fBslurm_free_job_info_msg\fR (
 .br 
@@ -23,9 +25,17 @@ int \fBslurm_load_jobs\fR (
 .br 
 );
 .LP 
+int \fBslurm_pid2jobid\fR (
+.br
+	pid_t \fIjob_pid\fP,
+.br
+	uint32_t *\fIjob_id_ptr\fP
+.br 
+);
+.LP 
 void \fBslurm_print_job_info\fR (
 .br
-	FILE *\fIout_file\fp,
+	FILE *\fIout_file\fP,
 .br
 	job_info_t *\fIjob_ptr\fP
 .br 
@@ -33,7 +43,7 @@ void \fBslurm_print_job_info\fR (
 .LP 
 void \fBslurm_print_job_info_msg\fR (
 .br
-	FILE *\fIout_file\fp,
+	FILE *\fIout_file\fP,
 .br
 	job_info_msg_t *\fIjob_info_msg_ptr\fP
 .br 
@@ -51,14 +61,20 @@ of integers with pairs of start and end index number into the node information
 records and the data is terminated with a value of -1. See slurm.h for full details 
 on the data structure's contents. 
 .TP 
+\fIjob_id_ptr\fP
+Specifies a pointer to a storage location into which a Slurm job id may be placed.
+.TP 
 \fIjob_info_msg_ptr\fP
 Specifies the pointer to the structure created by \fBslurm_load_jobs\fR. 
+.TP 
+\fIjob_pid\fP
+Specifies a process id of some process on the current node.
 .TP
 \fIjob_ptr\fP
 Specifies a pointer to a single job records from the \fIjob_info_msg_ptr\fP data 
 structure.
 .TP 
-\fIout_file\
+\fIout_file\fP
 Specifies the file to print data to.
 .TP 
 \fIupdate_time\fP
@@ -69,6 +85,8 @@ For all of the following informational calls, if update_time is equal to or grea
 function.
 .LP 
 \fBslurm_load_jobs\fR Returns a job_info_msg_t that contains an update time, record count, and array of job_table records for all jobs.
+.LP 
+\fBslurm_pid2jobid\fR Returns a Slurm job id corresponding to the supplied local process id.
 .LP 
 \fBslurm_print_job_info\fR Prints the contents of the data structure describing a 
 single job records from the data loaded by the \fBslurm_load_node\fR function.
@@ -88,6 +106,8 @@ On success, zero is returned. On error, -1 is returned, and Slurm error code is 
 #include <stdio.h>
 .br
 #include <slurm.h>
+.br
+#include <sys/types.h>
 .LP 
 int main (int argc, char *argv[])
 .br 
@@ -98,6 +118,8 @@ int main (int argc, char *argv[])
 	job_info_msg_t	* job_info_msg = NULL;
 .br
 	job_info_t * job_ptr;
+.br
+	uint32_t job_id;
 .LP
 	/* get and dump some job information */
 .br
@@ -127,7 +149,7 @@ int main (int argc, char *argv[])
 .LP
 	/* The hardest way. */
 .br
-	printf ("Jobs updated at %lx, record count %d\n",
+	printf ("Jobs updated at %lx, record count %d\\n",
 .br
 	        job_buffer_ptr->last_update, 
 .br
@@ -135,7 +157,7 @@ int main (int argc, char *argv[])
 .br
 	for (i = 0; i < job_buffer_ptr->record_count; i++) {
 .br
-		printf ("JobId=%u UserId=%u\n", 
+		printf ("JobId=%u UserId=%u\\n", 
 .br
 			job_buffer_ptr->job_array[i].job_id, 
 .br
@@ -144,6 +166,14 @@ int main (int argc, char *argv[])
 	}			
 .LP
 	slurm_free_job_info_msg (job_buffer_ptr);
+.LP
+	if (slurm_pid2jobid (getpid(), &job_id))
+.br
+		slurm_perror ("slurm_load_jobs error");
+.br
+	else
+.br
+		printf ("Slurm job id = %u\\n", job_id);
 .br
 	exit (0);
 .br 

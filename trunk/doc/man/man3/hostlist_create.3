@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "November 2002" "Morris Jette" "Slurm host list support functions"
+.TH "Slurm API" "3" "January 2003" "Morris Jette" "Slurm host list support functions"
 .SH "NAME"
 hostlist_create \- Slurm host list support functions
 .SH "SYNTAX"
@@ -81,7 +81,7 @@ int main (int argc, char *argv[])
 .br
 	if (my_hostlist == NULL) {
 .br
-		fprintf (stderr, "No memory\n");
+		fprintf (stderr, "No memory\\n");
 .br
 		exit (1);
 .br
@@ -89,7 +89,7 @@ int main (int argc, char *argv[])
 .LP
 	while ( (host = hostlist_shift(my_hostlist)) )
 .br
-		printf ("host = %s\n", host); 
+		printf ("host = %s\\n", host); 
 .LP
 	hostlist_destroy (my_hostlist) ;
 .br
