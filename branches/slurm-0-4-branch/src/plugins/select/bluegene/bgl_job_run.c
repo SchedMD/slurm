@@ -56,7 +56,7 @@
 #define MAX_PTHREAD_RETRIES  1
 #define POLL_INTERVAL        2
 
-#define KILL_PARTS_ON_REBOOT 1	/* FIXME: Temporaroy */
+#define KILL_PARTS_ON_REBOOT 0	/* FIXME: Temporaroy */
 
 enum update_op {START_OP, TERM_OP, SYNC_OP};
 
@@ -257,7 +257,7 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 	int i=0, j, num_parts;
 	rm_partition_list_t *part_list;
 	rm_partition_state_t state;
-	rm_partition_state_flag_t part_state = RM_PARTITION_ALL;
+	rm_partition_state_flag_t part_state = PARTITION_ALL_FLAG;
 	char *name;
 	int is_ready=0;
 	/* Wait for partition state to be FREE */
@@ -650,7 +650,7 @@ int term_jobs_on_part(pm_partition_id_t bgl_part_id)
 	bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
 	bgl_update_ptr->op = TERM_OP;
 	bgl_update_ptr->bgl_part_id = xstrdup(bgl_part_id);
-	_part_op(bgl_update_ptr);
+	_term_agent(bgl_update_ptr);
 	
 	return rc;
 }

@@ -107,6 +107,7 @@ log_options_t log_opts = LOG_OPTS_INITIALIZER;
 /* Global variables */
 slurm_ctl_conf_t   slurmctld_conf;
 slurmctld_config_t slurmctld_config;
+int bgl_recover = DEFAULT_RECOVER;
 
 /* Local variables */
 static int	daemonize = DEFAULT_DAEMONIZE;
@@ -916,6 +917,7 @@ static void _parse_commandline(int argc, char *argv[],
 		switch (c) {
 		case 'c':
 			recover = 0;
+			bgl_recover = 0;
 			break;
 		case 'd':
 			daemonize = 1;
@@ -935,6 +937,7 @@ static void _parse_commandline(int argc, char *argv[],
 			break;
 		case 'r':
 			recover = 1;
+			bgl_recover = 1;
 			break;
 		case 'v':
 			debug_level++;
