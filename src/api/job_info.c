@@ -217,6 +217,8 @@ slurm_load_job (time_t update_time, struct job_buffer **job_buffer_ptr)
 		}
 		unpackstr_ptr (&job[i].job_id, &uint16_tmp, 
 			&buf_ptr, &buffer_size);
+		if (job[i].job_id == NULL)
+			job[i].job_id = "";
 		unpack32  (&job[i].user_id, &buf_ptr, &buffer_size);
 		unpack16  (&job[i].job_state, &buf_ptr, &buffer_size);
 		unpack32  (&job[i].time_limit, &buf_ptr, &buffer_size);
@@ -229,12 +231,20 @@ slurm_load_job (time_t update_time, struct job_buffer **job_buffer_ptr)
 
 		unpackstr_ptr (&job[i].nodes, &uint16_tmp, 
 			&buf_ptr, &buffer_size);
+		if (job[i].nodes == NULL)
+			job[i].nodes = "";
 		unpackstr_ptr (&job[i].partition, &uint16_tmp, 
 			&buf_ptr, &buffer_size);
+		if (job[i].partition == NULL)
+			job[i].partition = "";
 		unpackstr_ptr (&job[i].name, &uint16_tmp, 
 			&buf_ptr, &buffer_size);
+		if (job[i].name == NULL)
+			job[i].name = "";
 		unpackstr_ptr (&node_inx_str, &uint16_tmp, 
 			&buf_ptr, &buffer_size);
+		if (node_inx_str == NULL)
+			node_inx_str = "";
 		job[i].node_inx = bitfmt2int(node_inx_str);
 
 		unpack32  (&job[i].num_procs, &buf_ptr, &buffer_size);
@@ -248,13 +258,21 @@ slurm_load_job (time_t update_time, struct job_buffer **job_buffer_ptr)
 
 		unpackstr_ptr (&job[i].req_nodes, &uint16_tmp, 
 			&buf_ptr, &buffer_size);
+		if (job[i].req_nodes == NULL)
+			job[i].req_nodes = "";
 		unpackstr_ptr (&node_inx_str, &uint16_tmp, 
 			&buf_ptr, &buffer_size);
+		if (node_inx_str == NULL)
+			node_inx_str = "";
 		job[i].req_node_inx = bitfmt2int(node_inx_str);
 		unpackstr_ptr (&job[i].features, &uint16_tmp, 
 			&buf_ptr, &buffer_size);
+		if (job[i].features == NULL)
+			job[i].features = "";
 		unpackstr_ptr (&job[i].job_script, &uint16_tmp, 
 			&buf_ptr, &buffer_size);
+		if (job[i].job_script == NULL)
+			job[i].job_script = "";
 	}
 
 	*job_buffer_ptr = malloc (sizeof (struct job_buffer));

@@ -43,9 +43,11 @@ int main (int argc, char *argv[])
         len_buf = sizeof(buffer);
         pack16(test16, &bufp, &len_buf);
         pack32(test32, &bufp, &len_buf);
+
         packstr(testbytes, &bufp, &len_buf);
         packstr(teststring, &bufp, &len_buf);
 	packstr(nullstr, &bufp, &len_buf);
+
 	packstr("literal", &bufp, &len_buf);
 	packstr("", &bufp, &len_buf);
         printf("wrote %d bytes\n", len_buf);
@@ -66,7 +68,7 @@ int main (int argc, char *argv[])
 	xfree(outstring);
 
 	unpackstr_xmalloc(&nullstr, &byte_cnt, &bufp, &len_buf);
-	TEST(strcmp(nullstr, "") != 0, "un/packstr of null string failed.");
+	TEST(nullstr != NULL, "un/packstr of null string failed.");
 
 	unpackstr_xmalloc(&outstring, &byte_cnt, &bufp, &len_buf);
 	TEST(strcmp("literal", outstring) != 0, 
