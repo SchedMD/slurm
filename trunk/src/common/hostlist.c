@@ -112,7 +112,7 @@ struct hostlist {
 #define HOSTLIST_MAGIC	57005
 	int magic;
 #endif
-#if	WITH_PTHREADS
+#ifdef	WITH_PTHREADS
 	pthread_mutex_t mutex;
 #endif				/* WITH_PTHREADS */
 
