@@ -226,6 +226,37 @@ However, synchronized clocks will permit easier analysis of
 SLURM logs from multiple nodes.
 
 
+<h3>Building and Installing</h3>
+
+Basic instructions to build and install SLURM are shown below.
+See the <i>INSTALL</i> file for more details. 
+
+<ol>
+<li>cd to the directory containign the SLURM source and type 
+<i>./configure</i> with appropriate options.
+<li>Type <i>make</i> to compile SLURM
+<li> Type <i>make install</i> to install the programs, documentation, 
+libaries, header files, etc.
+</ol>
+
+The most commonly used arguments to the <i>configure</i> command include:
+<dl>
+<dt>--enable-debug
+<dd>Enable debugging of individual modules
+<dt>--prefix=<i>PREFIX</i>
+<dd>Install architecture-independent files in PREFIX, default 
+value is <i>/usr/local</i>
+<dt>--sysconfdir=<i>DIR</i>
+<dd>Specify location of SLURM configuration file
+<dt>--with-elan
+<dd>Ccompile with support for the Quadrics Elan switch (see
+<a href="http://www.quadrics.com">http://www.quadrics.com</a>)
+<dt>--with-totalview
+<dd>compile with support for the TotalView debugger (see 
+<a href="http://www.etnus.com/">http://www.etnus.com</a>)
+</dl>
+
+
 <h3>Configuration</h3>
 
 The SLURM configuration file includes a wide variety of
