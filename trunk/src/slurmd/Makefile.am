@@ -44,7 +44,10 @@ slurmd_SOURCES = $(common_sources) $(interconnect_sources)
 
 slurmd_LDFLAGS = -export-dynamic
 
-EXTRA_slurmd_SOURCES = no_interconnect.c elan_interconnect.c
+EXTRA_slurmd_SOURCES = \
+	no_interconnect.c 	\
+	elan_interconnect.c	\
+	elanhosts.c elanhosts.h
 
 force:
 $(slurmd_LDADD) : force
