@@ -1,0 +1,20 @@
+#!/usr/local/bin/bash
+#
+# This shell processes usleep commands as required by the test scripts 
+# on systems lacking the usleep command (e.g. AIX). It does not 
+# interpret all usleep options, only those required for these tests.
+#
+# Read command line options
+if [ $# -ge 1 ]; then
+	usec=$1
+	sec=$(($usec/1000000))
+else
+	usec=1
+	sec=1
+fi
+# Validate command line options
+if [ $sec -lt 1 ]; then
+	sec=1
+fi
+# Find the appropriate processes and signal them
+sleep $sec
