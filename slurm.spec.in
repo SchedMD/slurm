@@ -125,7 +125,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/*
 %{_sbindir}/*
 %{_libdir}/*.so*
-%{_libdir}/src/*
+%{_libdir}/slurm/src/*
 %{_mandir}/man1/*
 %{_mandir}/man5/*
 %{_mandir}/man8/*
