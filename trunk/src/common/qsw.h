@@ -50,8 +50,8 @@ void 		qsw_fini(qsw_libstate_t savestate);
 int		qsw_alloc_jobinfo(qsw_jobinfo_t *jp);
 void		qsw_free_jobinfo(qsw_jobinfo_t j);
 
-int		qsw_pack_libstate(qsw_libstate_t ls, void **data, int *len);
-int		qsw_unpack_jobinfo(qsw_libstate_t ls, void **data, int *len);
+int		qsw_pack_jobinfo(qsw_jobinfo_t j, void **data, int *len);
+int		qsw_unpack_jobinfo(qsw_jobinfo_t j, void **data, int *len);
 
 int 		qsw_setup_jobinfo(qsw_jobinfo_t j, int nprocs, 
 			bitstr_t *nodeset, int cyclic_alloc);

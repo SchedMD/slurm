@@ -420,9 +420,12 @@ typedef struct launch_tasks_request_msg
 {
 	uint32_t job_id ;
 	uint32_t job_step_id ;
+	uint32_t nnodes ; 	/* number of nodes in this job step       */
+	uint32_t nprocs ;	/* number of processes in this job step   */
 	uint32_t uid ;
-	uint32_t srun_node_id ;
-	slurm_job_credential_t* credential;
+	uint32_t srun_node_id ; /* node id of this node (relative to job) */
+
+	slurm_job_credential_t * credential; /* job credential            */
 	uint32_t tasks_to_launch ;
 	uint16_t envc ;
 	char ** env ;

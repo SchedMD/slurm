@@ -506,7 +506,7 @@ void pack_resource_allocation_and_run_response_msg ( resource_allocation_and_run
 	pack32 ( msg -> job_step_id , ( void ** ) buffer , length ) ;
 	pack_job_credential( msg->credentials, ( void ** ) buffer , length ) ;
 #ifdef HAVE_LIBELAN3
-	slurm_qsw_pack_jobinfo( msg -> qsw_job , (void ** ) buffer , length) ;
+	qsw_pack_jobinfo( msg -> qsw_job , (void ** ) buffer , length) ;
 #endif
 }
 
@@ -541,7 +541,8 @@ int unpack_resource_allocation_and_run_response_msg ( resource_allocation_and_ru
 	unpack32 ( &tmp_ptr -> job_step_id, ( void ** ) buffer , length ) ;
 	unpack_job_credential( &tmp_ptr->credentials, ( void ** ) buffer , length ) ;
 #ifdef HAVE_LIBELAN3
-	slurm_qsw_unpack_jobinfo(& tmp_ptr -> qsw_job , (void **) buffer , length ) ;
+	qsw_alloc_jobinfo(&tmp_ptr->qsw_job);
+	qsw_unpack_jobinfo(tmp_ptr->qsw_job , (void **) buffer , length ) ;
 #endif
 
 	*msg = tmp_ptr ;
@@ -778,33 +779,6 @@ int unpack_job_credential( slurm_job_credential_t** msg , void ** buffer , uint3
 	return 0;
 }
 
-#ifdef HAVE_LIBELAN3
-void slurm_qsw_pack_jobinfo(qsw_jobinfo_t j, void **data, int * len)
-{
-	int packlen ;
-	packlen = qsw_pack_jobinfo(j, *data, *len) ;
-	if ( packlen > 0 )
-	{
-		*len -= packlen ;
-		((char *) *data) += packlen ;
-	}
-}
-
-int slurm_qsw_unpack_jobinfo(qsw_jobinfo_t * j, void **data, int *len)
-{
-	int packlen ;
-	/* *j = xmalloc ( sizeof ( struct qsw_jobinfo )  ) ; */
-	qsw_alloc_jobinfo( j ) ;
-	packlen = qsw_unpack_jobinfo ( *j , *data , * len ) ;
-	if ( packlen > 0 )
-	{
-		*len -= packlen ;
-		((char *) *data) += packlen ;
-	}
-	return 0 ;
-}
-#endif
-
 void pack_job_step_create_response_msg (  job_step_create_response_msg_t* msg , void ** buffer , uint32_t * length )
 {
 	assert ( msg != NULL );
@@ -813,7 +787,7 @@ void pack_job_step_create_response_msg (  job_step_create_response_msg_t* msg , 
 	packstr ( msg -> node_list, ( void ** ) buffer , length ) ;
 	pack_job_credential( msg->credentials, ( void ** ) buffer , length ) ;
 #ifdef HAVE_LIBELAN3
-	slurm_qsw_pack_jobinfo( msg -> qsw_job , (void ** ) buffer , length) ;
+	qsw_pack_jobinfo(msg->qsw_job , (void ** ) buffer , length) ;
 #endif
  	
 }
@@ -833,7 +807,8 @@ int unpack_job_step_create_response_msg (job_step_create_response_msg_t** msg , 
 
 	*msg = tmp_ptr;
 #ifdef HAVE_LIBELAN3
-	slurm_qsw_unpack_jobinfo(& tmp_ptr -> qsw_job , (void **) buffer , length ) ;
+	qsw_alloc_jobinfo(&tmp_ptr->qsw_job);
+	qsw_unpack_jobinfo( tmp_ptr -> qsw_job , (void **) buffer , length ) ;
 #endif
 	return 0;
 }
@@ -1352,6 +1327,8 @@ void pack_launch_tasks_request_msg ( launch_tasks_request_msg_t * msg , void ** 
 {
 	pack32 ( msg -> job_id , buffer , length ) ;
 	pack32 ( msg -> job_step_id , buffer , length ) ;
+	pack32 ( msg -> nnodes, buffer, length ) ;
+	pack32 ( msg -> nprocs, buffer, length ) ;
 	pack32 ( msg -> uid , buffer , length ) ;
 	pack32 ( msg -> srun_node_id , buffer , length ) ;
 	pack_job_credential ( msg -> credential , buffer , length ) ;
@@ -1363,7 +1340,7 @@ void pack_launch_tasks_request_msg ( launch_tasks_request_msg_t * msg , void ** 
 	slurm_pack_slurm_addr ( & msg -> streams , buffer , length ) ;
 	pack32_array ( msg -> global_task_ids , ( uint16_t ) msg -> tasks_to_launch , buffer , length ) ;
 #ifdef HAVE_LIBELAN3
-	slurm_qsw_pack_jobinfo( msg -> qsw_job , (void ** ) buffer , length) ;
+	qsw_pack_jobinfo( msg -> qsw_job , (void ** ) buffer , length) ;
 #endif
 }
 
@@ -1381,6 +1358,8 @@ int unpack_launch_tasks_request_msg ( launch_tasks_request_msg_t ** msg_ptr , vo
 
 	unpack32 ( & msg -> job_id , buffer , length ) ;
 	unpack32 ( & msg -> job_step_id , buffer , length ) ;
+	unpack32 ( & msg -> nnodes, buffer, length ) ;
+	unpack32 ( & msg -> nprocs, buffer, length ) ;
 	unpack32 ( & msg -> uid , buffer , length ) ;
 	unpack32 ( & msg -> srun_node_id , buffer , length ) ;
 	unpack_job_credential( & msg -> credential ,  buffer , length ) ;
@@ -1392,7 +1371,8 @@ int unpack_launch_tasks_request_msg ( launch_tasks_request_msg_t ** msg_ptr , vo
 	slurm_unpack_slurm_addr_no_alloc ( & msg -> streams , buffer , length ) ;
 	unpack32_array ( & msg -> global_task_ids , & uint16_tmp , buffer , length ) ;
 #ifdef HAVE_LIBELAN3
-	slurm_qsw_unpack_jobinfo(& msg -> qsw_job , (void **) buffer , length ) ;
+	qsw_alloc_jobinfo(&msg->qsw_job);
+	qsw_unpack_jobinfo(msg -> qsw_job , (void **) buffer , length ) ;
 #endif
 	*msg_ptr = msg ;
 	return 0 ;

@@ -175,7 +175,7 @@ main(int ac, char **av)
 	}
 
 	/* job is now overdone, blow this popsicle stand  */
-	
+
 	if (!opt.no_alloc)
 		slurm_complete_job(job->jobid);
 
@@ -284,8 +284,10 @@ create_job_step(job_t *job)
 	req_msg.msg_type = REQUEST_JOB_STEP_CREATE;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0) {
 		error("unable to create job step: %s", slurm_strerror(errno));
+		exit(1);
+	}
 
 	if (resp_msg.msg_type == RESPONSE_SLURM_RC) {
 		return_code_msg_t *rcmsg = (return_code_msg_t *) resp_msg.data;
@@ -330,7 +332,8 @@ sig_thr(void *arg)
 {
 	job_t *job = (job_t *)arg;
 	sigset_t set;
-	static time_t last_intr = 0;
+	time_t last_intr = 0;
+	bool suddendeath = false;
 	int signo;
 	struct sigaction action;
 
@@ -356,6 +359,7 @@ sig_thr(void *arg)
 				  job->state = SRUN_JOB_OVERDONE;
 				  pthread_cond_signal(&job->state_cond);
 				  pthread_mutex_unlock(&job->state_mutex);
+				  suddendeath = true;
 			  }
 			  break;
 		  default:
