@@ -123,11 +123,11 @@ static void _set_job_id(struct job_record *job_ptr);
 static void _set_job_prio(struct job_record *job_ptr);
 static void _signal_job_on_node(uint32_t job_id, uint16_t step_id,
 				int signum, char *node_name);
-static int _top_priority(struct job_record *job_ptr);
-static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate);
-static int _validate_job_create_req(job_desc_msg_t * job_desc);
-static int _write_data_to_file(char *file_name, char *data);
-static int _write_data_array_to_file(char *file_name, char **data,
+static bool _top_priority(struct job_record *job_ptr);
+static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate);
+static int  _validate_job_create_req(job_desc_msg_t * job_desc);
+static int  _write_data_to_file(char *file_name, char *data);
+static int  _write_data_array_to_file(char *file_name, char **data,
 				     uint16_t size);
 
 /* 
@@ -1032,7 +1032,8 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		 uid_t submit_uid, uint16_t * node_cnt,
 		 slurm_addr ** node_addr)
 {
-	int error_code, test_only;
+	int error_code;
+	bool no_alloc, top_prio, test_only;
 	struct job_record *job_ptr;
 
 	error_code = _job_create(job_specs, new_job_id, allocate, will_run,
@@ -1043,14 +1044,15 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		fatal("job_allocate: allocated job %u lacks record",
 		      new_job_id);
 
-	if (immediate && _top_priority(job_ptr) != 1) {
+	top_prio = _top_priority(job_ptr);
+	if (immediate && (!top_prio)) {
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->end_time = 0;
 		return ESLURM_NOT_TOP_PRIORITY;
 	}
 
 	test_only = will_run || (allocate == 0);
-	if (test_only == 0) {
+	if (!test_only) {
 		/* Some of these pointers are NULL on submit */
 		if (num_cpu_groups)
 			*num_cpu_groups = 0;
@@ -1067,7 +1069,8 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		last_job_update = time(NULL);
 	}
 
-	error_code = select_nodes(job_ptr, test_only);
+	no_alloc = test_only || (!top_prio);
+	error_code = select_nodes(job_ptr, no_alloc);
 	if (error_code == ESLURM_NODES_BUSY) {
 		if (immediate) {
 			job_ptr->job_state = JOB_FAILED;
@@ -1088,7 +1091,7 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		job_ptr->end_time = 0;
 	}
 
-	if (test_only == 0) {
+	if (!no_alloc) {
 		if (node_list)
 			*node_list = job_ptr->nodes;
 		if (num_cpu_groups)
@@ -1102,6 +1105,7 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		if (node_addr)
 			*node_addr = job_ptr->node_addr;
 	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -2210,15 +2214,18 @@ static void _set_job_prio(struct job_record *job_ptr)
  * _top_priority - determine if any other job for this partition has a 
  *	higher priority than specified job
  * IN job_ptr - pointer to selected partition
- * RET 1 if selected job has highest priority, 0 otherwise
+ * RET true if selected job has highest priority
  */
-static int _top_priority(struct job_record *job_ptr)
+static bool _top_priority(struct job_record *job_ptr)
 {
 	ListIterator job_record_iterator;
 	struct job_record *job_record_point;
-	int top;
+	bool top;
 
-	top = 1;		/* assume top priority until found otherwise */
+	if (job_ptr->priority == 0)	/* held */
+		return false;
+
+	top = true;		/* assume top priority until found otherwise */
 	job_record_iterator = list_iterator_create(job_list);
 	while ((job_record_point =
 		(struct job_record *) list_next(job_record_iterator))) {
@@ -2228,9 +2235,9 @@ static int _top_priority(struct job_record *job_ptr)
 			continue;
 		if (job_record_point->job_state != JOB_PENDING)
 			continue;
-		if (job_record_point->priority > job_ptr->priority &&
-		    job_record_point->part_ptr == job_ptr->part_ptr) {
-			top = 0;
+		if ((job_record_point->priority > job_ptr->priority) &&
+		    (job_record_point->part_ptr == job_ptr->part_ptr)) {
+			top = false;
 			break;
 		}
 	}

@@ -442,7 +442,9 @@ static void *_thread_per_node_rpc(void *args)
 	/* init message connection for message communication */
 	if ((sockfd = slurm_open_msg_conn(&thread_ptr->slurm_addr))
 	    == SLURM_SOCKET_ERROR) {
-		error("_thread_per_node_rpc/slurm_open_msg_conn error %m");
+		error(
+		    "_thread_per_node_rpc/slurm_open_msg_conn to host %s: %m",
+		    thread_ptr->node_name);
 		goto cleanup;
 	}
 
@@ -451,25 +453,31 @@ static void *_thread_per_node_rpc(void *args)
 	request_msg.data = task_ptr->msg_args_ptr;
 	if ((rc = slurm_send_node_msg(sockfd, &request_msg))
 	    == SLURM_SOCKET_ERROR) {
-		error("_thread_per_node_rpc/slurm_send_node_msg error %m");
+		error(
+		    "_thread_per_node_rpc/slurm_send_node_msg to host %s: %m",
+		    thread_ptr->node_name);
 		goto cleanup;
 	}
 
 	/* receive message */
 	if ((msg_size = slurm_receive_msg(sockfd, &response_msg))
 	    == SLURM_SOCKET_ERROR) {
-		error("_thread_per_node_rpc/slurm_receive_msg error %m");
+		error(
+		    "_thread_per_node_rpc/slurm_receive_msg to host %s: %m",
+		    thread_ptr->node_name);
 		goto cleanup;
 	}
 
 	/* shutdown message connection */
 	if ((rc = slurm_shutdown_msg_conn(sockfd)) == SLURM_SOCKET_ERROR) {
-		error
-		    ("_thread_per_node_rpc/slurm_shutdown_msg_conn error %m");
+		error(
+		    "_thread_per_node_rpc/slurm_shutdown_msg_conn to host %s: %m",
+		    thread_ptr->node_name);
 		goto cleanup;
 	}
 	if (msg_size) {
-		error("_thread_per_node_rpc/msg_size error %d", msg_size);
+		error("_thread_per_node_rpc/msg_size to host %s error %d", 
+		      thread_ptr->node_name, msg_size);
 		goto cleanup;
 	}
 
@@ -479,7 +487,8 @@ static void *_thread_per_node_rpc(void *args)
 		rc = slurm_rc_msg->return_code;
 		slurm_free_return_code_msg(slurm_rc_msg);
 		if (rc)
-			error("_thread_per_node_rpc/rc error: %s", 
+			error("_thread_per_node_rpc/rc error from host %s: %s",
+			      thread_ptr->node_name,
 			      slurm_strerror(rc));	/* Don't use %m */
 		else {
 			debug3
@@ -489,8 +498,8 @@ static void *_thread_per_node_rpc(void *args)
 		thread_state = DSH_DONE;
 		break;
 	default:
-		error("_thread_per_node_rpc bad msg_type %d",
-		      response_msg.msg_type);
+		error("_thread_per_node_rpc from host %s, bad msg_type %d",
+		      thread_ptr->node_name, response_msg.msg_type);
 		break;
 	}
 
