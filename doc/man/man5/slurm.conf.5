@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "August 2004" "slurm.conf 0.4" "Slurm configuration file"
+.TH "slurm.conf" "5" "September 2004" "slurm.conf 0.4" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -88,6 +88,9 @@ is significantly lower than the number of nodes, setting FastSchedule to
 (The scheduler can just check the values in a few configuration records 
 instead of possibly thousands of node records. If a job can't be initiated 
 immediately, the scheduler may execute these tests repeatedly.)
+Note that on systems with hyper-threading, the processor count 
+reported by the node will be twice the actually processor count. 
+Consider which value you want to be used for scheduling purposes.
 .TP
 \fBFirstJobId\fR
 The job id to be used for the first submitted to SLURM without a 
