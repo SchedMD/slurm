@@ -265,7 +265,7 @@ int main(int argc, char *argv[])
 		else if (slurmctld_conf.control_machine &&
 			 (strcmp(node_name, slurmctld_conf.control_machine) 
 			  == 0))
-			debug3("Running primary controller");
+			debug("Running primary controller");
 		else {
 			error
 			    ("this host (%s) not valid controller (%s or %s)",
@@ -2213,8 +2213,12 @@ static void _run_backup(void)
 			 slurmctld_conf.slurmctld_timeout)
 			break;
 	}
-	if (shutdown_time != 0)
+	if (shutdown_time != 0) {
+		pthread_join(thread_id_sig, NULL);
+		info("BackupController terminating");
+		log_fini();
 		exit(0);
+	}
 
 	error
 	    ("ControlMachine %s not responding, BackupController %s taking over",
