@@ -99,7 +99,6 @@ typedef struct task_info {
  * forward declaration of static funcs
  */
 static allocation_resp	*_allocate_nodes(void);
-static alloc_run_resp	*_alloc_nodes_step(void);
 static void              _print_job_information(allocation_resp *resp);
 static void		 _create_job_step(job_t *job);
 static void		 _job_step_record(job_t *job, 
@@ -117,8 +116,6 @@ static void 		 _fwd_signal(job_t *job, int signo);
 static void 		 _p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job);
 static void 		*_p_signal_task(void *args);
 static int               _set_batch_script_env(uint32_t jobid);
-static void 		 _xlate_allocrun2alloc_resp(alloc_run_resp *run_resp, 
-						    allocation_resp *resp);
 
 #ifdef HAVE_LIBELAN3
 #  include "src/common/qsw.h"
@@ -196,17 +193,6 @@ main(int ac, char **av)
 	} else if (mode == MODE_ATTACH) {
 		reattach();
 		exit (0);
-
-	} else if ((run_resp = _alloc_nodes_step()) != NULL) {
-		debug("doing combined alloc and run"); /* Eliminates an RPC */
-		resp = xmalloc(sizeof(*resp));
-		_xlate_allocrun2alloc_resp(run_resp, resp);
-		if (_verbose || _debug)
-			_print_job_information(resp);
-		job = job_create(resp); 
-		xfree(resp);
-		_job_step_record(job, run_resp);
-		slurm_free_resource_allocation_and_run_response_msg(run_resp);
 
 	} else {
 		if ( !(resp = _allocate_nodes()) ) 
@@ -377,66 +363,6 @@ _allocate_nodes(void)
 			}
 		}
 		sigaction(SIGINT, &old_action, NULL);
-	}
-
-	return resp;
-}
-
-/*
- * allocate nodes and initiate a job step from slurm controller via slurm api
- * will xmalloc memory for allocation response, which caller must free
- *	initialization if set
- */
-static alloc_run_resp *
-_alloc_nodes_step(void)
-{
-	job_desc_msg_t job;
-	resource_allocation_and_run_response_msg_t *resp;
-
-	slurm_init_job_desc_msg(&job);
-
-	job.contiguous     = opt.contiguous;
-	job.features       = opt.constraints;
-	job.immediate      = opt.immediate;
-	job.name           = opt.job_name;
-	job.req_nodes      = opt.nodelist;
-	job.partition      = opt.partition;
-	job.num_nodes      = opt.nodes;
-	job.num_tasks      = opt.nprocs;
-	job.user_id        = opt.uid;
-	if (opt.mincpus > -1)
-		job.min_procs = opt.mincpus;
-	if (opt.realmem > -1)
-		job.min_memory = opt.realmem;
-	if (opt.tmpdisk > -1)
-		job.min_tmp_disk = opt.tmpdisk;
-
-	if (opt.overcommit)
-		job.num_procs      = opt.nodes;
-	else
-		job.num_procs      = opt.nprocs * opt.cpus_per_task;
-
-	if (opt.fail_kill)
- 		job.kill_on_node_fail	= 0;
-	if (opt.time_limit > -1)
-		job.time_limit		= opt.time_limit;
-	if (opt.share)
-		job.shared		= 1;
-
-	if (opt.distribution == SRUN_DIST_UNKNOWN) {
-		if (opt.nprocs <= opt.nodes)
-			opt.distribution = SRUN_DIST_CYCLIC;
-		else
-			opt.distribution = SRUN_DIST_BLOCK;
-	}
-	if (opt.distribution == SRUN_DIST_BLOCK)
-		job.task_dist  = SLURM_DIST_BLOCK;
-	else 	/* (opt.distribution == SRUN_DIST_CYCLIC) */
-		job.task_dist  = SLURM_DIST_CYCLIC;
-
-	if (slurm_allocate_resources_and_run(&job, &resp) == SLURM_FAILURE) {
-		debug("slurm_allocate_resources_and_run error %m");
-		return NULL;
 	}
 
 	return resp;
@@ -1082,18 +1008,4 @@ static void _run_job_script (uint32_t jobid)
 		error("Unable to clear SLURM_JOBID environment variable");
 		return;
 	}
-}
-
-/* translate a resource_allocation_and_run_response_msg_t into a 
- *	resource_allocation_response_msg_t */
-static void
-_xlate_allocrun2alloc_resp(alloc_run_resp *run_resp, allocation_resp *resp)
-{
-	resp->job_id		= run_resp->job_id;
-	resp->node_list		= run_resp->node_list;
-	resp->num_cpu_groups	= run_resp->num_cpu_groups;
-	resp->cpus_per_node	= run_resp->cpus_per_node;
-	resp->cpu_count_reps	= run_resp->cpu_count_reps;
-	resp->node_cnt		= run_resp->node_cnt;
-	resp->node_addr		= run_resp->node_addr;
 }
