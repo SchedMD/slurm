@@ -136,11 +136,15 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 				return SLURM_PROTOCOL_ERROR ;
 			}
 		}
-		else
+		else if ( send_len != sizeof ( uint32_t ) )
 		{
 			error ( "Error sending length of datagram" ) ;
 			sigaction(SIGPIPE, &oldaction , &newaction);
 			return SLURM_PROTOCOL_ERROR ;
+		}
+		else
+		{
+			break ;
 		}
 	}
 	while ( true )
@@ -163,6 +167,10 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 			info ( "_slurm_msg_sendto only transmitted %i of %i bytes", send_len , size ) ;
 			signal(SIGPIPE, SIG_DFL);
 			return SLURM_PROTOCOL_ERROR ;
+		}
+		else
+		{
+			break ;
 		}
 	}
 
