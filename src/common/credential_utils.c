@@ -209,23 +209,55 @@ clear_expired_credentials(List l)
 	_clear_expired_revoked_credentials(l);
 }
 
+/*
+ * This function is not thread-safe. However, it should only
+ * be used from _clear_expired_revoked_credentials(), below,
+ * which is only called from a single thread.
+ */
+static char *
+_cred_string(uint32_t jobid)
+{
+	static char buf[256];
+	snprintf(buf, sizeof(buf), "job%d", jobid);
+	return buf;
+}
+
+static void
+_print_expired_list(hostlist_t hl)
+{
+	char buf[1024];
+
+	xassert(hl != NULL);
+
+	if (!hostlist_count(hl))
+		return;
+
+	hostlist_ranged_string(hl, sizeof(buf), buf);
+	debug2("expired credentials for: %s", buf);
+}
+
 static int 
 _clear_expired_revoked_credentials(List list)
 {
 	time_t now = time(NULL);
 	ListIterator iterator;
 	credential_state_t *s;
+	hostlist_t hl = hostlist_create(NULL);
 
 	debug2("clearing expired credentials");
 
 	iterator = list_iterator_create(list);
 	while ((s = list_next(iterator))) {
 		if (now > (s->expiration + EXPIRATION_WINDOW) ) {
-			debug2("expiring credential for job %d", s->job_id);
+			hostlist_push(hl, _cred_string(s->job_id));
 			list_delete(iterator);
 		}
 	}
 	list_iterator_destroy(iterator);
+
+	_print_expired_list(hl);
+	hostlist_destroy(hl);
+
 	return SLURM_SUCCESS;
 }
 
