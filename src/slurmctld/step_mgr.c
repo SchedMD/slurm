@@ -37,7 +37,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 #  include "src/common/qsw.h"
 #endif
 
@@ -97,7 +97,7 @@ delete_all_step_records (struct job_record *job_ptr)
 	while ((step_record_point = 
 		(struct step_record *) list_next (step_record_iterator))) {
 		list_remove (step_record_iterator);
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 		qsw_free_jobinfo (step_record_point->qsw_job);
 #endif
 		xfree(step_record_point->step_node_list);
@@ -132,7 +132,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 		(struct step_record *) list_next (step_record_iterator))) {
 		if (step_record_point->step_id == step_id) {
 			list_remove (step_record_iterator);
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 			qsw_free_jobinfo (step_record_point->qsw_job);
 #endif
 			xfree(step_record_point->step_node_list);
@@ -493,7 +493,7 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 	struct job_record  *job_ptr;
 	bitstr_t *nodeset;
 	int node_count;
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	int first, last, i, node_id;
 	int node_set_size = QSW_MAX_TASKS; /* overkill but safe */
 #endif
@@ -514,7 +514,7 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 	    (job_ptr->end_time <= time(NULL)))
 		return ESLURM_ALREADY_DONE;
 
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	if ((step_specs->task_dist != SLURM_DIST_CYCLIC) &&
 	    (step_specs->task_dist != SLURM_DIST_BLOCK))
 		return ESLURM_BAD_DIST;
@@ -540,7 +540,7 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 	if ((step_specs->num_tasks < 1) ||
 	    (step_specs->num_tasks > (node_count*MAX_TASKS_PER_NODE)))
 		return ESLURM_BAD_TASK_COUNT;
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	if (step_specs->num_tasks > node_set_size)
 		return ESLURM_BAD_TASK_COUNT;
 #endif
@@ -556,7 +556,7 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 		(uint16_t) (step_specs->task_dist == SLURM_DIST_CYCLIC);
 	step_ptr->num_tasks = step_specs->num_tasks;
 
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	if (qsw_alloc_jobinfo (&step_ptr->qsw_job) < 0)
 		fatal ("step_create: qsw_alloc_jobinfo error");
 	first = bit_ffs (step_ptr->step_node_bitmap);

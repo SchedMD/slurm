@@ -93,7 +93,7 @@ static void  _run_job_script(job_t *job);
 static int   _set_batch_script_env(job_t *job);
 static int   _set_rlimit_env(void);
 
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 #  include "src/common/qsw.h"
    static void _qsw_standalone(job_t *job);
 #endif
@@ -141,7 +141,7 @@ int main(int ac, char **av)
 		info("do not allocate resources");
 		sig_setup_sigmask();
 		job = job_create_noalloc(); 
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 		_qsw_standalone(job);
 #endif
 
@@ -257,7 +257,7 @@ int main(int ac, char **av)
 }
 
 
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 static void
 _qsw_standalone(job_t *job)
 {
@@ -278,7 +278,7 @@ _qsw_standalone(job_t *job)
 		fatal("qsw_setup_jobinfo: %m");
 
 }
-#endif /* HAVE_LIBELAN3 */
+#endif /* HAVE_ELAN */
 
 
 static void 

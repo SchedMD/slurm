@@ -144,7 +144,7 @@ int schedule(void)
 	    { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
 	lock_slurmctld(job_write_lock);
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	/* Avoid resource fragmentation if important */
 	if (job_is_completing()) {
 		unlock_slurmctld(job_write_lock);

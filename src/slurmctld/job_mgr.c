@@ -41,9 +41,8 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#ifdef HAVE_LIBELAN3
-#  include <elan3/elan3.h>
-#  include <elan3/elanvp.h>
+#ifdef HAVE_ELAN
+#  include "src/common/qsw.h"
 #  define BUF_SIZE (1024 + QSW_PACK_SIZE)
 #else
 #  define BUF_SIZE 1024
@@ -696,7 +695,7 @@ static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	pack_time(step_ptr->start_time, buffer);
 
 	packstr(step_ptr->step_node_list,  buffer);
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	qsw_pack_jobinfo(step_ptr->qsw_job, buffer);
 #endif
 }
@@ -743,7 +742,7 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 		(void) node_name2bitmap(step_node_list, 
 					&(step_ptr->step_node_bitmap));
 	step_node_list = NULL;	/* re-used, nothing left to free */
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	qsw_alloc_jobinfo(&step_ptr->qsw_job);
 	if (qsw_unpack_jobinfo(step_ptr->qsw_job, buffer)) {
 		qsw_free_jobinfo(step_ptr->qsw_job);
@@ -1084,7 +1083,7 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 	int error_code;
 	bool no_alloc, top_prio, test_only;
 	struct job_record *job_ptr;
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	bool pick_nodes = _slurm_picks_nodes(job_specs);
 #endif
 	error_code = _job_create(job_specs, new_job_id, allocate, will_run,
@@ -1102,7 +1101,7 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		      new_job_id);
 
 	top_prio = _top_priority(job_ptr);
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	/* Avoid resource fragmentation if important */
 	if (top_prio && pick_nodes && job_is_completing())
 		top_prio = false;	/* Don't scheduled job right now */

@@ -65,7 +65,7 @@ static void _set_config_defaults(slurm_ctl_conf_t * ctl_conf_ptr);
 static int  _sync_nodes_to_comp_job(void);
 static int  _sync_nodes_to_jobs(void);
 static int  _sync_nodes_to_active_job(struct job_record *job_ptr);
-#ifdef 	HAVE_LIBELAN3
+#ifdef 	HAVE_ELAN
 static void _validate_node_proc_count(void);
 #endif
 
@@ -787,7 +787,7 @@ int read_slurm_conf(int recover)
 
 	if ((error_code = _build_bitmaps()))
 		return error_code;
-#ifdef 	HAVE_LIBELAN3
+#ifdef 	HAVE_ELAN
 	_validate_node_proc_count();
 #endif
 	(void) _sync_nodes_to_comp_job();
@@ -981,7 +981,7 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 	return cnt;
 }
 
-#ifdef 	HAVE_LIBELAN3
+#ifdef 	HAVE_ELAN
 /* Every node in a given partition must have the same processor count 
  * at present, this function insure it */
 static void _validate_node_proc_count(void)
@@ -1029,7 +1029,7 @@ static void _validate_node_proc_count(void)
 int switch_state_begin(int recover)
 {
 	int error_code = SLURM_SUCCESS;
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	qsw_libstate_t old_state = NULL;
 	Buf buffer = NULL;
 	char *qsw_state_file = NULL, *data = NULL;
@@ -1081,7 +1081,7 @@ int switch_state_begin(int recover)
 		error_code = qsw_init(old_state);
 	if (old_state)
 		qsw_free_libstate(old_state);
-#endif				/* HAVE_LIBELAN3 */
+#endif				/* HAVE_ELAN */
 	return error_code;
 }
 
@@ -1092,7 +1092,7 @@ int switch_state_begin(int recover)
 int switch_state_fini(void)
 {
 	int error_code = SLURM_SUCCESS;
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	qsw_libstate_t old_state = NULL;
 	Buf buffer = NULL;
 	char *qsw_state_file = NULL;
@@ -1127,6 +1127,6 @@ int switch_state_fini(void)
 		free_buf(buffer);
 	if (old_state)
 		qsw_free_libstate(old_state);
-#endif				/* HAVE_LIBELAN3 */
+#endif				/* HAVE_ELAN */
 	return error_code;
 }

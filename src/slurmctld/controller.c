@@ -54,7 +54,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
-#if HAVE_LIBELAN3
+#if HAVE_ELAN
 #  include "src/common/qsw.h"
 #endif
 

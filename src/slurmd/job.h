@@ -109,7 +109,7 @@ typedef struct slurmd_job {
 	char         **env;    /* job environment                           */
 	char         **argv;   /* job argument vector                       */
 	char          *cwd;    /* path to current working directory         */
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	qsw_jobinfo_t qsw_job; /* Elan-specific job information             */
 #endif
 	uid_t         uid;     /* user id for job                           */
