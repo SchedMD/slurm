@@ -48,7 +48,7 @@
 #define OPT_ITERATE   	0x08
 #define OPT_EXACT   	0x09
 #define OPT_LONG    	0x0a
-#define OPT_SHORT  		0x0b
+#define OPT_SHORT  	0x0b
 #define OPT_NO_HEAD   	0x0c
 #define OPT_VERSION     0x0d
 #define OPT_SORT    	0x0e
@@ -163,7 +163,7 @@ int parse_command_line(int argc, char *argv[])
 		else if ( params.node_flag ) {
 			params.node_field_flag = true;	/* compute size later */
 			if ( params.long_output ) {
-				params.format = "%N %.5D %9P %11T %.4c %.6m %.8d %.6w %8f";
+				params.format = "%N %.5D %9P %11T %.4c %.6m %.8d %.6w %8f %20R";
 			} else {
 				params.format = "%N %.5D %9P %6t";
 			}
@@ -367,6 +367,12 @@ _parse_format( char* format )
 		} else if (field[0] == 'r') {
 			params.match_flags.root_flag = true;
 			format_add_root( params.format_list, 
+					field_size, 
+					right_justify, 
+					suffix );
+		} else if (field[0] == 'R') {
+			params.match_flags.reason_flag = true;
+			format_add_reason( params.format_list, 
 					field_size, 
 					right_justify, 
 					suffix );

@@ -301,6 +301,11 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr,
 	    (_strcmp(node_ptr->features, sinfo_ptr->features)))
 		return false;
 
+	if (sinfo_ptr->nodes &&
+	    params.match_flags.reason_flag &&
+	    (_strcmp(node_ptr->reason, sinfo_ptr->reason)))
+		return false;
+
 	if (params.match_flags.state_flag &&
 	    (node_ptr->node_state != sinfo_ptr->node_state))
 		return false;
@@ -369,6 +374,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, partition_info_t* part_ptr,
 	if (sinfo_ptr->nodes_tot == 0) {	/* first node added */
 		sinfo_ptr->node_state = node_ptr->node_state;
 		sinfo_ptr->features   = node_ptr->features;
+		sinfo_ptr->reason     = node_ptr->reason;
 		sinfo_ptr->min_cpus   = node_ptr->cpus;
 		sinfo_ptr->max_cpus   = node_ptr->cpus;
 		sinfo_ptr->min_disk   = node_ptr->tmp_disk;
@@ -443,6 +449,7 @@ static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr,
 		sinfo_ptr->max_weight = node_ptr->weight;
 
 		sinfo_ptr->features = node_ptr->features;
+		sinfo_ptr->reason   = node_ptr->reason;
 
 		sinfo_ptr->nodes = hostlist_create(node_ptr->name);
 	} else {

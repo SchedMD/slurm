@@ -47,6 +47,7 @@ static int _sort_by_node_list(void *void1, void *void2);
 static int _sort_by_nodes_at(void *void1, void *void2);
 static int _sort_by_nodes(void *void1, void *void2);
 static int _sort_by_partition(void *void1, void *void2);
+static int _sort_by_reason(void *void1, void *void2);
 static int _sort_by_root(void *void1, void *void2);
 static int _sort_by_share(void *void1, void *void2);
 static int _sort_by_state(void *void1, void *void2);
@@ -101,6 +102,8 @@ void sort_sinfo_list(List sinfo_list)
 				list_sort(sinfo_list, _sort_by_partition);
 		else if (params.sort[i] == 'r')
 				list_sort(sinfo_list, _sort_by_root);
+		else if (params.sort[i] == 'R')
+				list_sort(sinfo_list, _sort_by_reason);
 		else if (params.sort[i] == 's')
 				list_sort(sinfo_list, _sort_by_job_size);
 		else if (params.sort[i] == 't')
@@ -252,7 +255,7 @@ static int _sort_by_memory(void *void1, void *void2)
 
 static int _sort_by_node_list(void *void1, void *void2)
 {
-	int diff;
+	int diff = 0;
 	sinfo_data_t *sinfo1 = (sinfo_data_t *) void1;
 	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
 	char *val1, *val2;
@@ -276,8 +279,11 @@ static int _sort_by_node_list(void *void1, void *void2)
 	diff = strcmp(val1, val2);
 #else
 	for (inx=0; ; inx++) {
-		if (val1[inx] == val2[inx])
+		if (val1[inx] == val2[inx]) {
+			if (val1[inx] == '\0')
+				break;
 			continue;
+		}
 		if ((isdigit((int)val1[inx])) &&
 		    (isdigit((int)val2[inx]))) {
 			int num1, num2;
@@ -337,6 +343,24 @@ static int _sort_by_partition(void *void1, void *void2)
 		val1 = sinfo1->part_info->name;
 	if (sinfo2->part_info && sinfo2->part_info->name)
 		val2 = sinfo2->part_info->name;
+	diff = strcmp(val1, val2);
+
+	if (reverse_order)
+		diff = -diff;
+	return diff;
+}
+
+static int _sort_by_reason(void *void1, void *void2)
+{
+	int diff;
+	sinfo_data_t *sinfo1 = (sinfo_data_t *) void1;
+	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
+	char *val1 = "", *val2 = "";
+
+	if (sinfo1->reason)
+		val1 = sinfo1->reason;
+	if (sinfo2->reason)
+		val2 = sinfo2->reason;
 	diff = strcmp(val1, val2);
 
 	if (reverse_order)
