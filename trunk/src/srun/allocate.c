@@ -328,9 +328,7 @@ create_job_step(job_t *job)
 
 	job->stepid  = resp->job_step_id;
 	job->cred    = resp->cred;
-#ifdef HAVE_ELAN
-	job->qsw_job = resp->qsw_job;
-#endif
+	job->switch_job = resp->switch_job;
 	/* 
 	 * Recreate filenames which may depend upon step id
 	 */

@@ -128,9 +128,7 @@ typedef struct srun_job {
 	task_state_t *task_state; /* ntask task states */
 	pthread_mutex_t task_mutex;
 
-#ifdef HAVE_ELAN
-	qsw_jobinfo_t qsw_job;
-#endif
+	switch_jobinfo_t switch_job;
 	io_filename_t *ifname;
 	io_filename_t *ofname;
 	io_filename_t *efname;

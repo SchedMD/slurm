@@ -51,6 +51,7 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/switch.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -92,12 +93,7 @@ static int   _run_batch_job (void);
 static void  _run_job_script(job_t *job);
 static int   _set_batch_script_env(job_t *job);
 static int   _set_rlimit_env(void);
-
-#ifdef HAVE_ELAN
-#  include "src/common/qsw.h"
-   static void _qsw_standalone(job_t *job);
-#endif
-
+static void  _switch_standalone(job_t *job);
 
 #if HAVE_TOTALVIEW
 int srun(int ac, char **av)
@@ -143,9 +139,7 @@ int main(int ac, char **av)
 		info("do not allocate resources");
 		sig_setup_sigmask();
 		job = job_create_noalloc(); 
-#ifdef HAVE_ELAN
-		_qsw_standalone(job);
-#endif
+		_switch_standalone(job);
 
 	} else if ( (resp = existing_allocation()) ) {
 		if (opt.allocate) {
@@ -257,27 +251,17 @@ int main(int ac, char **av)
 }
 
 
-#ifdef HAVE_ELAN
 static void
-_qsw_standalone(job_t *job)
+_switch_standalone(job_t *job)
 {
-	int i;
-	bitstr_t bit_decl(nodeset, QSW_MAX_TASKS);
-	bool cyclic = (opt.distribution == SRUN_DIST_CYCLIC);
+	int cyclic = (opt.distribution == SRUN_DIST_CYCLIC);
 
-	for (i = 0; i < job->nhosts; i++) {
-		int nodeid;
-		if ((nodeid = qsw_getnodeid_byhost(job->host[i])) < 0)
-			fatal("qsw_getnodeid_byhost: %m");
-		bit_set(nodeset, nodeid);
-	}
-
-	if (qsw_alloc_jobinfo(&job->qsw_job) < 0)
-		fatal("qsw_alloc_jobinfo: %m");
-	if (qsw_setup_jobinfo(job->qsw_job, opt.nprocs, nodeset, cyclic) < 0)
-		fatal("qsw_setup_jobinfo: %m");
+	if (switch_alloc_jobinfo(&job->switch_job) < 0)
+		fatal("switch_alloc_jobinfo: %m");
+	if (switch_build_jobinfo(job->switch_job, job->nodelist, opt.nprocs, 
+				cyclic) < 0)
+		fatal("switch_build_jobinfo: %m");
 }
-#endif /* HAVE_ELAN */
 
 
 static void 

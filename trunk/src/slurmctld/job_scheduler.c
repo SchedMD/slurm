@@ -146,13 +146,11 @@ int schedule(void)
 	    { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
 	lock_slurmctld(job_write_lock);
-#ifdef HAVE_ELAN
 	/* Avoid resource fragmentation if important */
-	if (job_is_completing()) {
+	if (switch_no_frag() && job_is_completing()) {
 		unlock_slurmctld(job_write_lock);
 		return SLURM_SUCCESS;
 	}
-#endif
 	debug("Running job scheduler");
 	job_queue_size = _build_job_queue(&job_queue);
 	if (job_queue_size == 0) {

@@ -41,15 +41,12 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#ifdef HAVE_ELAN
-#  include "src/common/qsw.h"
-#endif
-
 #include <slurm/slurm_errno.h>
 
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/switch.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
@@ -707,9 +704,7 @@ static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	pack_time(step_ptr->start_time, buffer);
 	packstr(step_ptr->host,  buffer);
 	packstr(step_ptr->step_node_list,  buffer);
-#ifdef HAVE_ELAN
-	qsw_pack_jobinfo(step_ptr->qsw_job, buffer);
-#endif
+	switch_pack_jobinfo(step_ptr->switch_job, buffer);
 }
 
 /* Unpack job step state information from a buffer */
@@ -756,13 +751,11 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_ptr->step_node_list = step_node_list;
 	step_node_list = NULL;	/* re-used, nothing left to free */
 	step_ptr->time_last_active = time(NULL);
-#ifdef HAVE_ELAN
-	qsw_alloc_jobinfo(&step_ptr->qsw_job);
-	if (qsw_unpack_jobinfo(step_ptr->qsw_job, buffer)) {
-		qsw_free_jobinfo(step_ptr->qsw_job);
+	switch_alloc_jobinfo(&step_ptr->switch_job);
+	if (switch_unpack_jobinfo(step_ptr->switch_job, buffer)) {
+		switch_free_jobinfo(step_ptr->switch_job);
 		goto unpack_error;
 	}
-#endif
 	info("recovered job step %u.%u", job_ptr->job_id, step_id);
 	return SLURM_SUCCESS;
 
@@ -1174,11 +1167,9 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		      new_job_id);
 
 	top_prio = _top_priority(job_ptr);
-#ifdef HAVE_ELAN
 	/* Avoid resource fragmentation if important */
-	if (top_prio && job_is_completing())
+	if (switch_no_frag() && top_prio && job_is_completing())
 		top_prio = false;	/* Don't scheduled job right now */
-#endif
 	if (immediate && (!top_prio)) {
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->start_time = 0;

@@ -56,12 +56,9 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/switch.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-
-#if HAVE_ELAN
-#  include "src/common/qsw.h"
-#endif
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"

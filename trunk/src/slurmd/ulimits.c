@@ -35,10 +35,10 @@
 #include <string.h>
 
 #include "src/common/log.h"
+#include "src/common/setenvpf.h" /* For unsetenvp() */
 #include "src/common/xmalloc.h"
 
 #include "src/slurmd/job.h"
-#include "src/slurmd/setenvpf.h" /* For unsetenvp() */
 
 struct userlim {
 	char *var;

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * src/slurmd/setenvpf.h - environment vector manipulation
+ * src/common/setenvpf.h - environment vector manipulation
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

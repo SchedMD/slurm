@@ -36,9 +36,6 @@
 #      include <stdint.h>
 #    endif
 #  endif			/* HAVE_INTTYPES_H */
-#  if HAVE_ELAN
-#    include <src/common/qsw.h>
-#  endif
 #else				/* !HAVE_CONFIG_H */
 #  include <inttypes.h>
 #endif				/*  HAVE_CONFIG_H */
@@ -47,6 +44,7 @@
 
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_common.h"
+#include "src/common/switch.h"
 #include "src/common/xassert.h"
 
 
@@ -258,10 +256,7 @@ typedef struct launch_tasks_request_msg {
 	int32_t   slurmd_debug; /* remote slurmd debug level */
 
 	slurm_cred_t cred;	/* job credential            */
-
-#ifdef HAVE_ELAN
-	qsw_jobinfo_t qsw_job;	/* Elan3 switch context */
-#endif
+	switch_jobinfo_t switch_job;	/* switch credential for the job */
 } launch_tasks_request_msg_t;
 
 typedef struct launch_tasks_response_msg {

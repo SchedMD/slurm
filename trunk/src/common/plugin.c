@@ -60,7 +60,8 @@ plugin_peek( const char *fq_path,
 		}
 	} else {
 		dlclose( plug );
-		error( "%s: not a SLURM plugin", fq_path );
+		/* could be vestigial library, don't treat as an error */
+		verbose( "%s: not a SLURM plugin", fq_path );
 		return SLURM_ERROR;
 	}
 	if ( ( version = (uint32_t *) dlsym( plug, PLUGIN_VERSION ) ) != NULL ) {
@@ -69,7 +70,8 @@ plugin_peek( const char *fq_path,
 		}
 	} else {
 		dlclose( plug );
-		error( "%s: not a SLURM plugin", fq_path );
+		/* could be vestigial library, don't treat as an error */
+		verbose( "%s: not a SLURM plugin", fq_path );
 		return SLURM_ERROR;
 	}
 
@@ -93,7 +95,7 @@ plugin_load_from_file( const char *fq_path )
          */
         plug = dlopen( fq_path, RTLD_NOW );
         if ( plug == NULL ) {
-		debug2( "plugin_load_from_file: dlopen(%s): %s",
+		debug( "plugin_load_from_file: dlopen(%s): %s",
 			fq_path,
 			dlerror() );
                 return PLUGIN_INVALID_HANDLE;
@@ -103,6 +105,7 @@ plugin_load_from_file( const char *fq_path )
         if ( ( dlsym( plug, PLUGIN_NAME ) == NULL ) ||
              ( dlsym( plug, PLUGIN_TYPE ) == NULL ) ||
              ( dlsym( plug, PLUGIN_VERSION ) == NULL ) ) {
+		debug( "plugin_load_from_file: invalid symbol");
                 /* slurm_seterrno( SLURM_PLUGIN_SYMBOLS ); */
                 return PLUGIN_INVALID_HANDLE;
         }
@@ -113,7 +116,8 @@ plugin_load_from_file( const char *fq_path )
          */
         if ( ( init = dlsym( plug, "init" ) ) != NULL ) {
                 if ( (*init)() != 0 ) {
-			debug( "plugin_load_from_file(%s): init() returned SLURM_ERROR", fq_path );
+			debug( "plugin_load_from_file(%s): init() returned SLURM_ERROR", 
+				fq_path );
                         (void) dlclose( plug );
                         return PLUGIN_INVALID_HANDLE;
                 }

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * src/slurmd/setenvpf.c - add an environment variable to environment vector
+ * src/common/setenvpf.c - add an environment variable to environment vector
  * $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
