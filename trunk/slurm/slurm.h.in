@@ -122,6 +122,7 @@ enum node_states {
 	NODE_STATE_ALLOCATED,	/* node has been allocated to a job */
 	NODE_STATE_DRAINED,	/* node idle and not to be allocated work */
 	NODE_STATE_DRAINING,	/* node in use, but not to be allocated work */
+	NODE_STATE_COMPLETING,	/* node is completing allocated job */
 	NODE_STATE_END		/* last entry in table */
 };
 #define NODE_STATE_NO_RESPOND (0x8000)

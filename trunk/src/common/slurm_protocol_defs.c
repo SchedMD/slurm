@@ -323,20 +323,22 @@ char *node_state_string(enum node_states inx)
 		"ALLOCATED",
 		"DRAINED",
 		"DRAINING",
+		"COMPLETING",
 		"END"
 	};
-	static char *node_down_string[] = {
+	static char *node_no_resp_string[] = {
 		"NoResp+DOWN",
 		"NoResp+UNKNOWN",
 		"NoResp+IDLE",
 		"NoResp+ALLOCATED",
 		"NoResp+DRAINED",
 		"NoResp+DRAINING",
+		"NoResp+COMPLETING",
 		"END"
 	};
 	if (inx & NODE_STATE_NO_RESPOND) {
 		inx = (uint16_t) (inx & (~NODE_STATE_NO_RESPOND));
-		return node_down_string[inx];
+		return node_no_resp_string[inx];
 	}
 	else
 		return node_state_string[inx];
@@ -351,6 +353,7 @@ char *node_state_string_compact(enum node_states inx)
 		"AL",
 		"DD",
 		"DG",
+		"CM",
 		"END"
 	};
 	inx = (uint16_t) (inx & (~NODE_STATE_NO_RESPOND));
