@@ -20,6 +20,7 @@
 #include <syslog.h>
 #include <unistd.h>
 
+#include <src/common/hostlist.h>
 #include <src/common/list.h>
 #include <src/common/macros.h>
 #include <src/slurmctld/slurmctld.h>
@@ -214,14 +215,15 @@ report_leftover (char *in_line, int line_num)
  */
 int 
 build_bitmaps () {
-	int i, j, error_code, node_count;
-	char  *node_list;
+	int i, j, error_code;
+	char  *this_node_name;
 	ListIterator config_record_iterator;	/* for iterating through config_record */
 	ListIterator part_record_iterator;	/* for iterating through part_record_list */
 	struct config_record *config_record_point;	/* pointer to config_record */
 	struct part_record *part_record_point;	/* pointer to part_record */
 	struct node_record *node_record_point;	/* pointer to node_record */
 	bitstr_t *all_part_node_bitmap;
+	hostlist_t host_list;
 
 	error_code = 0;
 	last_node_update = time (NULL);
@@ -287,34 +289,33 @@ build_bitmaps () {
 		    (strlen (part_record_point->nodes) == 0))
 			continue;
 
-		error_code = node_name2list(part_record_point->nodes, 
-						&node_list, &node_count);
-		if (error_code)
+		if ( (host_list = hostlist_create (part_record_point->nodes)) == NULL) {
+			error ("hostlist_create errno %d on %s", errno, part_record_point->nodes);
 			continue;
+		}
 
-		for (i = 0; i < node_count; i++) {
-			node_record_point = find_node_record (&node_list[i*MAX_NAME_LEN]);
+		while ( (this_node_name = hostlist_shift (host_list)) ) {
+			node_record_point = find_node_record (this_node_name);
 			if (node_record_point == NULL) {
 				error ("build_bitmaps: invalid node name specified %s",
-					&node_list[i*MAX_NAME_LEN]);
+					this_node_name);
 				continue;
 			}	
 			j = node_record_point - node_record_table_ptr;
 			if (bit_test (all_part_node_bitmap, j) == 1) {
 				error ("build_bitmaps: node %s defined in more than one partition",
-					 &node_list[i*MAX_NAME_LEN]);
+					 this_node_name);
 				error ("build_bitmaps: only the first specification is honored");
 			}
 			else {
 				bit_set (part_record_point->node_bitmap, j);
 				bit_set (all_part_node_bitmap, j);
 				part_record_point->total_nodes++;
-				part_record_point->total_cpus +=
-					node_record_point->cpus;
+				part_record_point->total_cpus += node_record_point->cpus;
 				node_record_point->partition_ptr = part_record_point;
 			}
 		}	
-		xfree (node_list);
+		hostlist_destroy (host_list);
 	}
 	list_iterator_destroy (part_record_iterator);
 	bit_free (all_part_node_bitmap);
@@ -357,13 +358,14 @@ init_slurm_conf () {
  */
 int
 parse_node_spec (char *in_line) {
-	char *node_name, *state, *feature, *node_list;
-	int error_code, i, node_count;
+	char *node_name, *state, *feature, *this_node_name;
+	int error_code, first, i;
 	int state_val, cpus_val, real_memory_val, tmp_disk_val, weight_val;
 	struct node_record *node_record_point;
 	struct config_record *config_point = NULL;
+	hostlist_t host_list = NULL;
 
-	node_name = state = feature = node_list = (char *) NULL;
+	node_name = state = feature = (char *) NULL;
 	cpus_val = real_memory_val = state_val = NO_VAL;
 	tmp_disk_val = weight_val = NO_VAL;
 	if ((error_code = load_string (&node_name, "NodeName=", in_line)))
@@ -401,12 +403,15 @@ parse_node_spec (char *in_line) {
 		}	
 	}			
 
-	error_code = node_name2list(node_name, &node_list, &node_count);
-	if (error_code)
+	if ( (host_list = hostlist_create (node_name)) == NULL) {
+		error ("hostlist_create errno %d on %s", errno, node_name);
+		error_code = errno;
 		goto cleanup;
+	}
 
-	for (i = 0; i < node_count; i++) {
-		if (strcmp (&node_list[i*MAX_NAME_LEN], "DEFAULT") == 0) {
+	first = 1;
+	while ( (this_node_name = hostlist_shift (host_list)) ) {
+		if (strcmp (this_node_name, "DEFAULT") == 0) {
 			xfree(node_name);
 			node_name = NULL;
 			if (cpus_val != NO_VAL)
@@ -427,7 +432,8 @@ parse_node_spec (char *in_line) {
 			break;
 		}
 
-		if (i == 0) {
+		if (first == 1) {
+			first = 0;
 			config_point = create_config_record ();
 			if (config_point->nodes)
 				free(config_point->nodes);	
@@ -447,25 +453,23 @@ parse_node_spec (char *in_line) {
 			}	
 		}	
 
-		node_record_point = find_node_record (&node_list[i*MAX_NAME_LEN]);
+		node_record_point = find_node_record (this_node_name);
 		if (node_record_point == NULL) {
 			node_record_point =
-				create_node_record (config_point, 
-							&node_list[i*MAX_NAME_LEN]);
+				create_node_record (config_point, this_node_name);
 			if (state_val != NO_VAL)
 				node_record_point->node_state = state_val;
 		}
 		else {
 			error ("parse_node_spec: reconfiguration for node %s ignored.",
-				&node_list[i*MAX_NAME_LEN]);
+				this_node_name);
 		}		
 	}
 
 	/* xfree allocated storage */
 	if (state)
 		xfree(state);
-	if (node_list)
-		xfree (node_list);
+	hostlist_destroy (host_list);
 	return error_code;
 
       cleanup:

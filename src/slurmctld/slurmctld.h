@@ -541,19 +541,6 @@ extern void node_unlock ();
 extern int node_name2bitmap (char *node_names, bitstr_t **bitmap);
 
 /* 
- * node_name2list - given a node name regular expression, build an 
- *	array of node names
- * input: node_names - list of nodes
- *	  node_list - location into which the list is placed
- *        node_count - location into which a node count is passed
- * output: node_list - an array of node names, each of size MAX_NAME_LEN
- *         node_count - the number of entries in node_list
- *         returns 0 if no error, otherwise EINVAL or enomem
- * NOTE: the caller must xfree memory at node_list when no longer required iff no error
- */
-extern int  node_name2list (char *node_names, char **node_list, int *node_count);
-
-/* 
  * pack_all_jobs - dump all job information for all jobs in 
  *	machine independent form (for network transmission) */
 extern void pack_all_jobs (char **buffer_ptr, int *buffer_size, 
@@ -594,8 +581,6 @@ extern void pack_part (struct part_record *part_record_point, void **buf_ptr, in
  *	machine independent form (for network transmission) */
 extern void pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len);
 
-extern int parse_node_name(char *name, char **fmt, int *start, int *end, int *count); 
-
 /* part_lock - lock the partition information */
 extern void part_lock ();
 
@@ -607,19 +592,6 @@ extern void part_unlock ();
  *	the jobs must have completed at least MIN_JOB_AGE minutes ago
  */
 void purge_old_job (void);
-
-/* 
- * read_buffer - read a line from the specified buffer
- * input: buffer - pointer to read buffer, must be allocated by alloc()
- *        buffer_offset - byte offset in buffer, read location
- *        buffer_size - byte size of buffer
- *        line - pointer to location to be loaded with pointer to the line
- * output: buffer_offset - incremented by  size of size plus the value size itself
- *         line - set to pointer to the line
- *         returns 0 if no error or efault on end of buffer, einval on bad tag 
- */
-extern int read_buffer (char *buffer, int *buffer_offset, int buffer_size,
-			char **line);
 
 /*
  * read_slurm_conf - load the slurm configuration from the specified file. 
@@ -766,20 +738,6 @@ extern int update_part (update_part_msg_t * part_desc );
 extern int validate_node_specs (char *node_name,
 				uint32_t cpus, uint32_t real_memory, 
 				uint32_t tmp_disk);
-
-/* 
- * write_buffer - write the specified line to the specified buffer, 
- *               enlarging the buffer as needed
- * input: buffer - pointer to write buffer, must be allocated by alloc()
- *        buffer_offset - byte offset in buffer, write location
- *        buffer_size - byte size of buffer
- *        line - pointer to data to be writen
- * output: buffer - value is written here, buffer may be relocated by realloc()
- *         buffer_offset - incremented by value_size
- *         returns 0 if no error or errno otherwise 
- */
-extern int write_buffer (char **buffer, int *buffer_offset, int *buffer_size,
-			 char *line);
 
 /*
  * yes_or_no - map string into integer

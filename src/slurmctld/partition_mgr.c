@@ -15,11 +15,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "list.h"
-#include "slurmctld.h"
+#include <src/common/hostlist.h>
+#include <src/common/list.h>
+#include <src/slurmctld/slurmctld.h>
 
 #define BUF_SIZE 1024
-#define SEPCHARS " \n\t"
 
 struct part_record default_part;	/* default configuration values */
 List part_list = NULL;			/* partition list */
@@ -175,10 +175,11 @@ main (int argc, char *argv[])
  */
 int build_part_bitmap (struct part_record *part_record_point) 
 {
-	int i, error_code, node_count, update_nodes;
-	char *node_list;
+	int i, update_nodes;
+	char  *this_node_name ;
 	bitstr_t *old_bitmap;
 	struct node_record *node_record_point;	/* pointer to node_record */
+	hostlist_t host_list;
 
 	part_record_point->total_cpus = 0;
 	part_record_point->total_nodes = 0;
@@ -200,23 +201,20 @@ int build_part_bitmap (struct part_record *part_record_point)
 		return 0;
 	}
 
-	error_code = node_name2list(part_record_point->nodes, &node_list, &node_count);
-	if (error_code) {
+	if ( (host_list = hostlist_create (part_record_point->nodes)) == NULL) {
 		if (old_bitmap)
 			bit_free (old_bitmap);
-		error ("build_part_bitmap: invalid node specified %s", 
-			part_record_point->nodes);
+		error ("hostlist_create errno %d on %s", errno, part_record_point->nodes);
 		return ESLURM_INVALID_NODE_NAME;
 	}
 
-	for (i = 0; i < node_count; i++) {
-		node_record_point = find_node_record (&node_list[i*MAX_NAME_LEN]);
+	while ( (this_node_name = hostlist_shift (host_list)) ) {
+		node_record_point = find_node_record (this_node_name);
 		if (node_record_point == NULL) {
-			error ("build_part_bitmap: invalid node specified %s",
-				&node_list[i*MAX_NAME_LEN]);
+			error ("build_part_bitmap: invalid node specified %s", this_node_name);
 			if (old_bitmap)
 				bit_free (old_bitmap);
-			xfree(node_list);
+			hostlist_destroy (host_list);
 			return ESLURM_INVALID_NODE_NAME;
 		}	
 		part_record_point->total_nodes++;
@@ -228,7 +226,7 @@ int build_part_bitmap (struct part_record *part_record_point)
 		bit_set (part_record_point->node_bitmap,
 			    (int) (node_record_point - node_record_table_ptr));
 	}
-	xfree(node_list);
+	hostlist_destroy (host_list);
 
 	/* unlink nodes removed from the partition */
 	if (old_bitmap) {
