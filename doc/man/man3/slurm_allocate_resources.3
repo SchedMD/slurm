@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "October 2002" "Morris Jette" "Slurm job initiation functions"
+.TH "Slurm API" "3" "November 2002" "Morris Jette" "Slurm job initiation functions"
 .SH "NAME"
 slurm_allocate_resources, slurm_allocate_resources_and_run,
 slurm_confirm_allocation, 
@@ -126,6 +126,9 @@ the function \fBslurm_free_resource_allocation_response_msg\fR.
 including the initiation of a job step to span the full allocation. If successful, 
 job and job step records are created. Always release the response message when no 
 longer required using the function \fBslurm_free_resource_allocation_and_run_response_msg\fR.
+The list of host names returned may be matched to their data in the proper order by 
+using the functions \fBhostlist_create\fR, \fBhostlist_shift\fR, and 
+\fBhostlist_destroy\fR.
 .LP 
 \fBslurm_confirm_allocation\fR Return detailed information on a specific existing job 
 allocation.  This function may only be successfully executed by the job's owner or user 
@@ -284,6 +287,7 @@ FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 .SH "SEE ALSO"
 .LP 
+\fBhostlist_create\fR(3), \fBhostlist_shift\fR(3), \fBhostlist_destroy\fR(3), 
 \fBscancel\fR(1), \fBsrun\fR(1), \fBslurm_free_job_info\fR(3), 
 \fBslurm_get_errno\fR(3), \fBslurm_load_jobs\fR(3), 
 \fBslurm_perror\fR(3), \fBslurm_strerror\fR(3)
