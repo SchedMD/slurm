@@ -238,11 +238,11 @@ static int _verify_conn_type(const char *arg)
 	int len = strlen(arg);
 
 	if (!strncasecmp(arg, "MESH", len))
-		return RM_MESH;
+		return SELECT_MESH;
 	else if (!strncasecmp(arg, "TORUS", len))
-		return RM_TORUS;
+		return SELECT_TORUS;
 	else if (!strncasecmp(arg, "NAV", len))
-		return RM_NAV;
+		return SELECT_NAV;
 
 	error("invalid --conn-type argument %s ignored.", arg);
 	return -1;
@@ -257,9 +257,9 @@ static int _verify_node_use(const char *arg)
 	int len = strlen(arg);
 
 	if (!strncasecmp(arg, "VIRTUAL", len))
-		return RM_PARTITION_VIRTUAL_NODE_MODE;
+		return SELECT_VIRTUAL_NODE_MODE;
 	else if (!strncasecmp(arg, "COPROCESSOR", len))
-		return RM_PARTITION_COPROCESSOR_MODE;
+		return SELECT_COPROCESSOR_MODE;
 
 	error("invalid --node-use argument %s ignored.", arg);
 	return -1;

@@ -161,14 +161,14 @@ enum job_wait_reason {
 #endif
 
 enum connection_type {
-	RM_MESH, 		/* nodes wired in mesh */
-	RM_TORUS, 		/* nodes wired in torus */
-	RM_NAV			/* nodes wired in torus else mesh */
+	SELECT_MESH, 		/* nodes wired in mesh */
+	SELECT_TORUS, 		/* nodes wired in torus */
+	SELECT_NAV		/* nodes wired in torus else mesh */
 };
 
 enum node_use_type {
-	RM_PARTITION_COPROCESSOR_MODE, /* use extra processor for communications */
-	RM_PARTITION_VIRTUAL_NODE_MODE	/* application uses both processors */
+	SELECT_COPROCESSOR_MODE,/* use extra processor for communications */
+	SELECT_VIRTUAL_NODE_MODE/* application uses both processors */
 };
 
 enum select_data_type {

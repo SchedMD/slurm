@@ -2296,9 +2296,9 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	}
 #endif
 	if (job_desc_msg->conn_type == (uint16_t) NO_VAL)
-		job_desc_msg->conn_type = RM_NAV;  /* try TORUS, then MESH */
+		job_desc_msg->conn_type = SELECT_NAV;  /* try TORUS, then MESH */
 	if (job_desc_msg->node_use == (uint16_t) NO_VAL)
-		job_desc_msg->node_use = RM_PARTITION_COPROCESSOR_MODE;
+		job_desc_msg->node_use = SELECT_COPROCESSOR_MODE;
 	if (job_desc_msg->rotate == (uint16_t) NO_VAL)
 		job_desc_msg->rotate = true;    /* default to allow rotate */
 

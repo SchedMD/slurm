@@ -605,12 +605,12 @@ int add_connection_to_partition(connection_t* conn, partition_t* part)
 		if (conn->place == INTERNAL){
 			if (conn->ep0->conn_ext == NULL || 
 			    conn->ep1->conn_ext == NULL) {
-				part->conn_type = RM_MESH;
+				part->conn_type = SELECT_MESH;
 			}
 		} else {
 			if (conn->ep0->conn_int == NULL || 
 			    conn->ep1->conn_int == NULL) {
-				part->conn_type = RM_MESH;
+				part->conn_type = SELECT_MESH;
 			}
 		}
 	} 

@@ -622,11 +622,11 @@ void _insert_results(List conf_result_list, List result_partitions, List current
 		part_size = list_count(part->node_list);
 		if (part_size >= LARGE_PART){
 			has_large_part = true;
-			if (part->conn_type == RM_TORUS){
+			if (part->conn_type == SELECT_TORUS){
 				found_torus = true;
 			}
 		}
-		if (part_size == 1 && part->conn_type != RM_TORUS){
+		if (part_size == 1 && part->conn_type != SELECT_TORUS){
 			p1_all_toroidal = false;
 			break;
 		}
@@ -1422,7 +1422,7 @@ void _init_local_partition(List result_partitions)
 	part_itr = list_iterator_create(global_sys->partition_list);
 	while ((old_part = (partition_t*) list_next(part_itr))){
 		copy_partition(old_part, &new_part);
-		new_part->conn_type = RM_TORUS;
+		new_part->conn_type = SELECT_TORUS;
 		list_append(result_partitions, new_part);
 	}
 	list_iterator_destroy(part_itr);

@@ -1477,11 +1477,11 @@ _update_job (int argc, char *argv[])
 		}
 		else if (strncasecmp(argv[i], "Connection=", 11) == 0) {
 			if (strcasecmp(&argv[i][11], "torus") == 0)
-				job_msg.conn_type = RM_TORUS;
+				job_msg.conn_type = SELECT_TORUS;
 			else if (strcasecmp(&argv[i][11], "mesh") == 0)
-				job_msg.conn_type = RM_MESH;
+				job_msg.conn_type = SELECT_MESH;
 			else if (strcasecmp(&argv[i][11], "nav") == 0)
-				job_msg.conn_type = RM_NAV;
+				job_msg.conn_type = SELECT_NAV;
 			else
 				job_msg.conn_type = 
 					(uint16_t) strtol(&argv[i][11], 
@@ -1489,9 +1489,9 @@ _update_job (int argc, char *argv[])
 		}
 		else if (strncasecmp(argv[i], "NodeUse=", 8) == 0) {
 			if (strcasecmp(&argv[i][8], "virtual") == 0)
-				job_msg.node_use = RM_PARTITION_VIRTUAL_NODE_MODE;
+				job_msg.node_use = SELECT_VIRTUAL_NODE_MODE;
 			else if (strcasecmp(&argv[i][8], "coprocessor") == 0)
-				job_msg.node_use = RM_PARTITION_COPROCESSOR_MODE;
+				job_msg.node_use = SELECT_COPROCESSOR_MODE;
 			else
 				job_msg.node_use = 
 					(uint16_t) strtol(&argv[i][8], 
