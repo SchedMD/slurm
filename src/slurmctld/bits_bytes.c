@@ -607,8 +607,7 @@ void Report_Leftover(char *In_Line, int Line_Num) {
 
     Bad_Index = -1;
     for (i=0; i<strlen(In_Line); i++) {
-	if (In_Line[i] == '\n') In_Line[i]=' ';
-	if (isspace((int)In_Line[i])) continue;
+	if (isspace((int)In_Line[i]) || (In_Line[i] == '\n')) continue;
 	Bad_Index=i;
 	break;
     } /* if */

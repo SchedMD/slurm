@@ -259,7 +259,7 @@ main(int argc, char * argv[]) {
  * NOTE: The caller must free memory at Node_List when no longer required
  */
 int BitMap2NodeName(unsigned *BitMap, char **Node_List) {
-    int Error_Code, Node_List_Size, size, word, bit, record;
+    int Error_Code, Node_List_Size, i, empty;
     struct Node_Record *Node_Ptr;
     unsigned mask;
 
@@ -274,9 +274,6 @@ int BitMap2NodeName(unsigned *BitMap, char **Node_List) {
 	return EINVAL;
     } /* if */
 
-    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / 8;	/* Bytes */
-    size /= sizeof(unsigned);			/* Count of unsigned's */
-    record = -1;
     Node_List[0] = malloc(BUF_SIZE);
     if (Node_List[0] == NULL) {
 #if DEBUG_SYSTEM
@@ -288,27 +285,25 @@ int BitMap2NodeName(unsigned *BitMap, char **Node_List) {
     } /* if */
     strcpy(Node_List[0], "");
 
-    for (word=0; word<size; word++) {
-	for (bit=0; bit<(sizeof(unsigned)*8); bit++) {
-	    mask = (0x1 << ((sizeof(unsigned)*8)-1-bit));
-	    record++;
-	    if ((BitMap[word] & mask) == 0) continue;
-	    if (Node_List_Size < strlen(Node_List[0])+strlen((Node_Record_Table_Ptr+record)->Name)+1) {
-		Node_List_Size += BUF_SIZE;
-		Node_List[0] = realloc(Node_List[0], Node_List_Size);
-		if (Node_List[0] == NULL) {
+    empty = 1;
+    for (i=0; i<Node_Record_Count; i++) {
+	if (BitMapValue(BitMap, i) == 0) continue;
+	if (Node_List_Size < strlen(Node_List[0])+strlen((Node_Record_Table_Ptr+i)->Name)+1) {
+	    Node_List_Size += BUF_SIZE;
+	    Node_List[0] = realloc(Node_List[0], Node_List_Size);
+	    if (Node_List[0] == NULL) {
 #if DEBUG_SYSTEM
-		    fprintf(stderr, "BitMap2NodeName: Can not allocate memory\n");
+		fprintf(stderr, "BitMap2NodeName: Can not allocate memory\n");
 #else
-		    syslog(LOG_ALERT, "BitMap2NodeName: Can not allocate memory\n");
+		syslog(LOG_ALERT, "BitMap2NodeName: Can not allocate memory\n");
 #endif
-		    return ENOMEM;
-		} /* if */
-	    } /* if need more memory */
-	    if (strlen(Node_List[0]) > 0) strcat(Node_List[0], ",");
-	    strcat(Node_List[0], (Node_Record_Table_Ptr+record)->Name);
-	} /* for (bit */
-    } /* for (word */
+		return ENOMEM;
+	    } /* if */
+	} /* if need more memory */
+	if (empty == 0) strcat(Node_List[0], ","); 
+	empty = 0;
+	strcat(Node_List[0], (Node_Record_Table_Ptr+i)->Name);
+    } /* for */
     Node_List[0] = realloc(Node_List[0], strlen(Node_List[0])+1);
     return 0;
 } /* BitMap2NodeName */
