@@ -281,6 +281,12 @@ _exec_task(slurmd_job_t *job, int i)
 	exit(errno);
 }
 
+static sig_atomic_t timelimit_exceeded = 0;
+static
+_xcpu_handler()
+{
+	timelimit_exceeded = 1;
+}
 
 
 /* wait for N tasks to exit, reporting exit status back to slurmd mgr
@@ -295,12 +301,16 @@ _wait_for_all_tasks(slurmd_job_t *job)
 	int id = 0;
 	int fd = job->fdpair[1];
 
+	xsignal(SIGXCPU, _xcpu_handler);
+
 	while (waiting > 0) {
 		int status  = 0;
 		pid_t pid;
 
 		if ((pid = waitpid(0, &status, 0)) < (pid_t) 0) {
-			if (errno != EINTR)
+			if ((errno == EINTR) && (timelimit_exceeded))
+				error("job exceeded timelimit");
+			else
 				error("waitpid: %m");
 			continue;
 		}
