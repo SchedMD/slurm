@@ -158,6 +158,11 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 		return NULL;
 	}
 
+	fd_set_close_on_exec(job->fdpair[0]);
+	fd_set_close_on_exec(job->fdpair[1]);
+
+	job->smgr_status = -1;
+
 	return job;
 }
 
@@ -218,6 +223,10 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 		error("pipe: %m");
 		return NULL;
 	}
+	fd_set_close_on_exec(job->fdpair[0]);
+	fd_set_close_on_exec(job->fdpair[1]);
+
+	job->smgr_status = -1;
 
 	_job_init_task_info(job, &global_taskid);
 

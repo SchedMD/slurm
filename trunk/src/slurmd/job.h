@@ -115,8 +115,9 @@ typedef struct slurmd_job {
 	List 	       sruns; /* List of sruns                              */
 	pthread_t      ioid;  /* pthread id of IO thread                    */
 
-	pid_t          jmgr_pid;   /* job manager pid                       */
-	pid_t          smgr_pid;   /* session manager pid                   */
+	pid_t          jmgr_pid;     /* job manager pid                     */
+	pid_t          smgr_pid;     /* session manager pid                 */
+	int            smgr_status;  /* session manager status              */
 
 	int            fdpair[2];  /* file descriptor pair for              */
 	                           /* communication between slurmds         */

@@ -349,7 +349,7 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	       goto done;
 	}
 
-	/* Special case some signals to avoid harming job's slurmd shepherd */
+	/* Special case some signals to avoid harming job's slurmd shepherd 
 	if ((req->signal == SIGSTOP) || (req->signal == SIGCONT) || 
 	    (req->signal == SIGKILL))
 		rc = shm_signal_step(req->job_id, req->job_step_id, 
@@ -357,7 +357,12 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	else {
 		if (killpg(step->sid, req->signal) < 0)
 			rc = errno;
-	}
+	} 
+	 */
+
+	if (killpg(step->sid, req->signal) < 0)
+		rc = errno;
+
 	shm_free_step(step);
 	if (rc == SLURM_SUCCESS)
 		verbose("Sent signal %d to %u.%u", 

@@ -62,26 +62,35 @@ int slurm_ssl_destroy()
 
 int slurm_init_signer(slurm_ssl_key_ctx_t * ctx, char *path)
 {
-	FILE *fp;
+	FILE     *fp = NULL;
+	EVP_PKEY *pk = NULL;
+	int       rc = SLURM_SUCCESS;
 
 	if (!(fp = fopen(path, "r"))) {
 		error ("can't open key file '%s' : %m", path);
 		return SLURM_ERROR;
 	};
 
-	ctx->key.private = NULL;
-	if (!PEM_read_PrivateKey(fp, &ctx->key.private, NULL, NULL)) {
+	if (PEM_read_PrivateKey(fp, &pk, NULL, NULL)) 
+		ctx->key.private = pk;
+	else {
 		error ("PEM_read_PrivateKey [%s]: %m", path);
-		slurm_seterrno_ret(ESLURMD_OPENSSL_ERROR);
+		rc = SLURM_ERROR;
 	}
 	fclose(fp);
 
-	return SLURM_SUCCESS;
+	if (pk && (EVP_PKEY_size(pk) > SLURM_SSL_SIGNATURE_LENGTH)) {
+		error ("slurm_ssl_sign: key size too large");
+		rc = SLURM_ERROR;
+	}
+
+	return rc;
 }
 
 int slurm_init_verifier(slurm_ssl_key_ctx_t * ctx, char *path)
 {
 	FILE *fp = NULL;
+	int   rc = SLURM_SUCCESS;
 
 	if ((fp = fopen(path, "r")) == NULL) {
 		error ("can't open certificate file '%s' : %m ", path);
@@ -91,11 +100,11 @@ int slurm_init_verifier(slurm_ssl_key_ctx_t * ctx, char *path)
 	ctx->key.public = NULL;
 	if (!PEM_read_PUBKEY(fp, &ctx->key.public, NULL, NULL)) {
 		error("PEM_read_PUBKEY[%s]: %m",path);
-		slurm_seterrno_ret(ESLURMD_OPENSSL_ERROR);
+		rc = SLURM_ERROR;
 	}
 	fclose(fp);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 int slurm_destroy_ssl_key_ctx(slurm_ssl_key_ctx_t * ctx)
@@ -111,8 +120,6 @@ slurm_ssl_sign(slurm_ssl_key_ctx_t *ctx,
 {
 	EVP_MD_CTX ectx;
 
-	if (EVP_PKEY_size(ctx->key.private) > SLURM_SSL_SIGNATURE_LENGTH) 
-		slurm_seterrno_ret(ESLURMD_SIGNATURE_FIELD_TOO_SMALL);
 
 	EVP_SignInit(&ectx, EVP_sha1());
 
@@ -120,7 +127,7 @@ slurm_ssl_sign(slurm_ssl_key_ctx_t *ctx,
 
 	if (!EVP_SignFinal(&ectx, sig, siglen, ctx->key.private)) {
 		ERR_print_errors_fp(log_fp()); 
-		slurm_seterrno_ret(ESLURMD_OPENSSL_ERROR);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -139,7 +146,7 @@ slurm_ssl_verify(slurm_ssl_key_ctx_t * ctx,
 	if (!EVP_VerifyFinal(&ectx, sig, siglen, ctx->key.public)) {
 		error("EVP_VerifyFinal: %s", 
 		      ERR_error_string(ERR_get_error(), NULL));
-		slurm_seterrno_ret(ESLURMD_OPENSSL_ERROR);
+		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;
 }

@@ -319,11 +319,14 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 	/* 
 	 * store global task id information as returned from slurmd
 	 */
-	job->tids[resp->srun_node_id]  = xmalloc( resp->ntasks * 
-						  sizeof(uint32_t) );
+	job->tids[resp->srun_node_id]  = 
+		xmalloc( resp->ntasks * sizeof(uint32_t) );
+
 	job->ntask[resp->srun_node_id] = resp->ntasks;      
+
 	for (i = 0; i < resp->ntasks; i++) {
 		job->tids[resp->srun_node_id][i] = resp->gids[i];
+		job->hostid[resp->gids[i]]       = resp->srun_node_id;
 	}
 
 #if HAVE_TOTALVIEW
