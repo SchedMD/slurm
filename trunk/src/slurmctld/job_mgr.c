@@ -377,7 +377,7 @@ void _dump_job_details_state(struct job_details *detail_ptr, Buf buffer)
 	pack_job_credential(&detail_ptr->credential, buffer);
 
 	pack32((uint32_t) detail_ptr->num_procs, buffer);
-	pack32((uint32_t) detail_ptr->num_nodes, buffer);
+	pack32((uint32_t) detail_ptr->min_nodes, buffer);
 
 	pack16((uint16_t) detail_ptr->shared, buffer);
 	pack16((uint16_t) detail_ptr->contiguous, buffer);
@@ -480,7 +480,7 @@ int load_job_state(void)
 	time_t buf_time, start_time, end_time, submit_time;
 	uint16_t job_state, next_step_id, details;
 	char *nodes = NULL, *partition = NULL, *name = NULL;
-	uint32_t num_procs, num_nodes, min_procs, min_memory, min_tmp_disk;
+	uint32_t num_procs, min_nodes, min_procs, min_memory, min_tmp_disk;
 	uint16_t shared, contiguous, batch_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done, name_len;
 	char *req_nodes = NULL, *features = NULL;
@@ -567,7 +567,7 @@ int load_job_state(void)
 				goto unpack_error;
 
 			safe_unpack32(&num_procs, buffer);
-			safe_unpack32(&num_nodes, buffer);
+			safe_unpack32(&min_nodes, buffer);
 
 			safe_unpack16(&shared, buffer);
 			safe_unpack16(&contiguous, buffer);
@@ -678,7 +678,7 @@ int load_job_state(void)
 
 		if (details == DETAILS_FLAG) {
 			job_ptr->details->num_procs = num_procs;
-			job_ptr->details->num_nodes = num_nodes;
+			job_ptr->details->min_nodes = min_nodes;
 			job_ptr->details->shared = shared;
 			job_ptr->details->contiguous = contiguous;
 			job_ptr->details->min_procs = min_procs;
@@ -950,7 +950,7 @@ static void _excise_node_from_job(struct job_record *job_record_ptr,
 void dump_job_desc(job_desc_msg_t * job_specs)
 {
 	long job_id, min_procs, min_memory, min_tmp_disk, num_procs;
-	long num_nodes, time_limit, priority, contiguous;
+	long min_nodes, max_nodes, time_limit, priority, contiguous;
 	long kill_on_node_fail, shared;
 
 	if (job_specs == NULL)
@@ -974,10 +974,15 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 
 	num_procs =
 	    (job_specs->num_procs != NO_VAL) ? job_specs->num_procs : -1;
-	num_nodes =
-	    (job_specs->num_nodes != NO_VAL) ? job_specs->num_nodes : -1;
-	debug3("   num_procs=%ld num_nodes=%ld req_nodes=%s", num_procs,
-	       num_nodes, job_specs->req_nodes);
+	min_nodes =
+	    (job_specs->min_nodes != NO_VAL) ? job_specs->min_nodes : -1;
+	max_nodes =
+	    (job_specs->max_nodes != NO_VAL) ? job_specs->max_nodes : -1;
+	debug3("   num_procs=%ld min_nodes=%ld max_nodes=%ld",
+	       num_procs, min_nodes, max_nodes);
+
+	debug3("   req_nodes=%s exc_nodes=%s", 
+	       job_specs->req_nodes, job_specs->exc_nodes);
 
 	time_limit =
 	    (job_specs->time_limit != NO_VAL) ? job_specs->time_limit : -1;
@@ -1357,24 +1362,24 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 		if (i > job_desc->num_procs)
 			job_desc->num_procs = i;
 		i = bit_set_count(req_bitmap);
-		if (i > job_desc->num_nodes)
-			job_desc->num_nodes = i;
+		if (i > job_desc->min_nodes)
+			job_desc->min_nodes = i;
 	}
-	if (job_desc->num_procs > part_ptr->total_cpus) {
+	if (job_desc->min_nodes > part_ptr->total_cpus) {
 		info("_job_create: too many cpus (%d) requested of partition %s(%d)", 
-		     job_desc->num_procs, part_ptr->name, 
+		     job_desc->min_nodes, part_ptr->name, 
 		     part_ptr->total_cpus);
 		error_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
 		goto cleanup;
 	}
-	if ((job_desc->num_nodes > part_ptr->total_nodes) ||
-	    (job_desc->num_nodes > part_ptr->max_nodes)) {
+	if ((job_desc->min_nodes > part_ptr->total_nodes) ||
+	    (job_desc->min_nodes > part_ptr->max_nodes)) {
 		if (part_ptr->total_nodes > part_ptr->max_nodes)
 			i = part_ptr->max_nodes;
 		else
 			i = part_ptr->total_nodes;
 		info("_job_create: too many nodes (%d) requested of partition %s(%d)", 
-		     job_desc->num_nodes, part_ptr->name, i);
+		     job_desc->min_nodes, part_ptr->name, i);
 		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
 		goto cleanup;
 	}
@@ -1766,7 +1771,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 
 	detail_ptr = job_ptr->details;
 	detail_ptr->num_procs = job_desc->num_procs;
-	detail_ptr->num_nodes = job_desc->num_nodes;
+	detail_ptr->min_nodes = job_desc->min_nodes;
 	if (job_desc->req_nodes) {
 		detail_ptr->req_nodes = xstrdup(job_desc->req_nodes);
 		detail_ptr->req_node_bitmap = req_bitmap;
@@ -1879,9 +1884,9 @@ void job_time_limit(void)
 static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate)
 {
 	if ((job_desc_msg->num_procs == NO_VAL) &&
-	    (job_desc_msg->num_nodes == NO_VAL) &&
+	    (job_desc_msg->min_nodes == NO_VAL) &&
 	    (job_desc_msg->req_nodes == NULL)) {
-		info("_job_create: job failed to specify ReqNodes, TotalNodes or TotalProcs");
+		info("_job_create: job failed to specify num_procs, min_nodes or req_nodes");
 		return ESLURM_JOB_MISSING_SIZE_SPECIFICATION;
 	}
 	if ((allocate == SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0) &&
@@ -1914,8 +1919,8 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate)
 	}
 	if (job_desc_msg->num_procs == NO_VAL)
 		job_desc_msg->num_procs = 1;	/* default cpu count of 1 */
-	if (job_desc_msg->num_nodes == NO_VAL)
-		job_desc_msg->num_nodes = 1;	/* default node count of 1 */
+	if (job_desc_msg->min_nodes == NO_VAL)
+		job_desc_msg->min_nodes = 1;	/* default node count of 1 */
 	if (job_desc_msg->min_memory == NO_VAL)
 		job_desc_msg->min_memory = 1;	/* default 1 MB mem per node */
 	if (job_desc_msg->min_tmp_disk == NO_VAL)
@@ -2101,7 +2106,7 @@ static void _pack_job_details(struct job_details *detail_ptr, Buf buffer)
 	if (detail_ptr) {
 		char tmp_str[MAX_STR_PACK];
 		pack32((uint32_t) detail_ptr->num_procs, buffer);
-		pack32((uint32_t) detail_ptr->num_nodes, buffer);
+		pack32((uint32_t) detail_ptr->min_nodes, buffer);
 		pack16((uint16_t) detail_ptr->shared, buffer);
 		pack16((uint16_t) detail_ptr->contiguous, buffer);
 
@@ -2413,14 +2418,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->num_nodes != NO_VAL && detail_ptr) {
+	if (job_specs->min_nodes != NO_VAL && detail_ptr) {
 		if (super_user ||
-		    (detail_ptr->num_nodes > job_specs->num_nodes)) {
-			detail_ptr->num_nodes = job_specs->num_nodes;
-			info("update_job: setting num_nodes to %u for job_id %u", 
-			     job_specs->num_nodes, job_specs->job_id);
+		    (detail_ptr->min_nodes > job_specs->min_nodes)) {
+			detail_ptr->min_nodes = job_specs->min_nodes;
+			info("update_job: setting min_nodes to %u for job_id %u", 
+			     job_specs->min_nodes, job_specs->job_id);
 		} else {
-			error("Attempt to increase num_nodes for job %u",
+			error("Attempt to increase min_nodes for job %u",
 			      job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}

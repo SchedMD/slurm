@@ -194,8 +194,10 @@ extern int job_count;			/* number of jobs in the system */
 struct job_details {
 	uint32_t magic;			/* magic cookie for data integrity */
 	uint32_t num_procs;		/* minimum number of processors */
-	uint32_t num_nodes;		/* minimum number of nodes */
+	uint32_t min_nodes;		/* minimum number of nodes */
+	uint32_t max_nodes;		/* maximum number of nodes */
 	char *req_nodes;		/* required nodes */
+	char *exc_nodes;		/* excluded nodes */
 	bitstr_t *req_node_bitmap;	/* bitmap of required nodes */
 	slurm_job_credential_t	credential;	/* job credential */
 	char *features;			/* required features */
