@@ -13,12 +13,20 @@
 [ -f /etc/rc.d/init.d/functions ] || exit 0
 . /etc/rc.d/init.d/functions
 
+# Source slurm specific configuration
+if [ -f /etc/sysconfig/slurm ] ; then
+    . /etc/sysconfig/slurm
+else
+    SLURMCTLD_OPTIONS="-c"
+    SLURMD_OPTIONS="-c"
+    DAEMONS=`scontrol show daemons`
+    echo $DAEMONS | grep -q slurmctld
+    CONTROLLER=$?
+    echo $DAEMONS | grep -q slurmd
+    SERVER=$?
+fi
+
 RETVAL=0
-DAEMONS=`scontrol show daemons`
-echo $DAEMONS | grep -q slurmctld
-CONTROLLER=$?
-echo $DAEMONS | grep -q slurmd
-SERVER=$?
 
 #
 # The pathname substitution in daemon command assumes prefix and
@@ -31,14 +39,14 @@ case "$1" in
     start)
         if [ $CONTROLLER -eq 0 ]; then
             echo -n "Starting slurmctld: "
-            daemon /usr/local/slurm/sbin/slurmctld
+            daemon /usr/local/slurm/sbin/slurmctld $SLURMCTLD_OPTIONS
             RETVAL=$?
             [ $RETVAL -eq 0 ] && touch /var/lock/subsys/slurmctld
             echo
 	fi
         if [ $SERVER -eq 0 ]; then
             echo -n "Starting slurmd: "
-            daemon /usr/local/slurm/sbin/slurmd
+            daemon /usr/local/slurm/sbin/slurmd $SLURMD_OPTIONS
             RETVALS=$?
             [ $RETVALS -eq 0 ] && touch /var/lock/subsys/slurmd
             RETVAL=$(($RETVAL + $RETVALS))
