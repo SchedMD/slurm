@@ -130,7 +130,7 @@ typedef struct slurmctld_config {
 
 extern slurmctld_config_t slurmctld_config;
 extern slurm_ctl_conf_t slurmctld_conf;
-extern int bgl_recover;
+extern int bgl_recover;		/* state recovery mode */
 
 /*****************************************************************************\
  *  NODE parameters and data structures
