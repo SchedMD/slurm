@@ -17,9 +17,6 @@ struct qsw_libstate {
 struct qsw_jobinfo {
 	int             j_magic;
 	int             j_prognum;
-	bitstr_t       *j_nodeset;
-	int             j_nprocs;
-	int             j_cyclic_alloc;
 	ELAN_CAPABILITY j_cap;
 };
 

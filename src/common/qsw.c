@@ -41,6 +41,10 @@
 #define QSW_PRG_START  		1
 #define QSW_PRG_END    		INT_MAX
 
+/* we allocate elan hardware context numbers in this range */
+#define QSW_CTX_START		ELAN_USER_BASE_CONTEXT_NUM
+#define QSW_CTX_END		ELAN_USER_TOP_CONTEXT_NUM
+
 /*
  * Macros
  */
@@ -93,7 +97,7 @@ qsw_init(struct qsw_libstate *oldstate)
 	else {
 		new->ls_magic = QSW_CKPT_MAGIC;
 		new->ls_prognum = QSW_PRG_START;
-		new->ls_hwcontext = ELAN_USER_BASE_CONTEXT_NUM;
+		new->ls_hwcontext = QSW_CTX_START;
 	}
 	qsw_internal_state = new;
 	return 0;
@@ -115,34 +119,12 @@ qsw_fini(struct qsw_libstate *savestate)
 }
 
 /*
- * There are (nprocs * nnodes) significant bits in the mask, each representing 
- * a process slot.  Bits are off for process slots corresponding to unallocated
- * nodes.  For example, if nodes 4 and 6 are running two processes per node,
- * bits 0,1 (corresponding to the two processes on node 4) and bits 4,5
- * (corresponding to the two processes running on node 6) are set.
- */
-static void
-_setcapbitmap(ELAN_CAPABILITY *cap, int procs_per_node, bitstr_t *nodeset)
-{
-	int i, j, proc0;
-
-	for (i = 0; i < bit_size(nodeset); i++) {
-		if (bit_test(nodeset, i)) {
-			for (j = 0; j < procs_per_node; j++) {
-				proc0 = (i - cap->LowNode) * procs_per_node;
-				assert(proc0 + j < sizeof(cap->Bitmap)*8);
-				BT_SET(cap->Bitmap, proc0 + j);
-			}
-		}
-	}
-}
-
-/*
- * Allocate a program description number.  The program description is the key 
- * abstraction maintained by the rms.o kernel module.  It is like an 
- * inescapable process group.  If the library is initialized, we allocate 
- * these consecutively, otherwise we generate a random one, assuming we are 
- * being called by a transient program like pdsh.  Ref: rms_prgcreate(3).
+ * Allocate a program description number.  Program descriptions, which are the
+ * key abstraction maintained by the rms.o kernel module,  must be unique
+ * per node.  It is like an inescapable process group.  If the library is 
+ * initialized, we allocate these consecutively, otherwise we generate a 
+ * random one, assuming we are being called by a transient program like pdsh.  
+ * Ref: rms_prgcreate(3).
  */
 static int
 _generate_prognum(void)
@@ -164,57 +146,49 @@ _generate_prognum(void)
 }
 
 /*
- * Elan hardware context numbers must be unique per node.
- * One is allocated to each parallel process.  In order for processes 
- * on the same node to communicate, they must use contexts in the 
- * hi-lo range of a common capability.
+ * Elan hardware context numbers must be unique per node.  One is allocated 
+ * to each parallel process.  In order for processes on the same node to 
+ * communicate, they must use contexts in the hi-lo range of a common 
+ * capability.
  * If the library is initialized, we allocate these consecutively, otherwise 
  * we generate a random one, assuming we are being called by a transient 
  * program like pdsh.  Ref: rms_setcap(3).
  */
 static int
-_generate_hwcontext(void)
+_generate_hwcontext(int num)
 {
 	int new;
 
 	if (qsw_internal_state) {
+		if (qsw_internal_state->ls_hwcontext + num - 1 > QSW_CTX_END)
+			qsw_internal_state->ls_hwcontext = QSW_CTX_START;
 		new = qsw_internal_state->ls_hwcontext;
-		if (new == ELAN_USER_TOP_CONTEXT_NUM)
-			qsw_internal_state->ls_hwcontext = ELAN_USER_BASE_CONTEXT_NUM;
-		else
-			qsw_internal_state->ls_hwcontext++;
+		qsw_internal_state->ls_hwcontext += num;
 	} else {
 		_srand_if_needed();
-		new = lrand48() % (ELAN_USER_TOP_CONTEXT_NUM - ELAN_USER_BASE_CONTEXT_NUM + 1);
-		new +=  ELAN_USER_BASE_CONTEXT_NUM;
+		new = lrand48() % (QSW_CTX_END - QSW_CTX_START + 1);
+		new +=  QSW_CTX_START;
 	}
 	return new;
 }
 
+
 /*
- * UserKey is 128 bits of randomness which should be kept private.
+ * Initialize the elan capability for this job.
  */
-static void
-_generate_capkey(ELAN_USERKEY *key)
-{
-	int i;
-
-	_srand_if_needed();
-        for (i = 0; i < 4; i++)
-		key->Values[i] = lrand48();
-}
-
 static void
 _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
 		bitstr_t *nodeset, int cyclic_alloc)
 {
+	int i;
 	int procs_per_node = nprocs / nnodes;
 
-	/*
-	 * Initialize for single rail and either block or cyclic allocation.  
-	 * Set ELAN_CAP_TYPE_BROADCASTABLE later if appropriate.
-	 */
+	_srand_if_needed();
+
+	/* start with a clean slate */
 	elan3_nullcap(cap);
+
+	/* initialize for single rail and either block or cyclic allocation */
 	if (cyclic_alloc)
 		cap->Type = ELAN_CAP_TYPE_CYCLIC;
 	else
@@ -222,27 +196,47 @@ _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
 	cap->Type |= ELAN_CAP_TYPE_MULTI_RAIL;
 	cap->RailMask = 1;
 
-	_generate_capkey(&cap->UserKey);
+	/* UserKey is 128 bits of randomness which should be kept private */
+        for (i = 0; i < 4; i++)
+		key->Values[i] = lrand48();
 
-	cap->LowContext = _generate_hwcontext();
+	/* set up hardware context range */
+	cap->LowContext = _generate_hwcontext(procs_per_node);
 	cap->HighContext = cap->LowContext + procs_per_node - 1;
-	/* not necessary to initialize cap->MyContext */
+	/* Note: not necessary to initialize cap->MyContext */
 
+	/* set the range of nodes to be used and number of processes */
 	cap->LowNode = bit_ffs(nodeset);
 	assert(cap->LowNode != -1);
 	cap->HighNode = bit_fls(nodeset);
 	assert(cap->HighNode != -1);
-
-	/* set up cap->Bitmap to describe the mapping of processes to nodes */
-	_setcapbitmap(cap, procs_per_node, nodeset);
-
-	/* 
-	 * Set cap->Entries and add broadcast bit to cap->type based on 
-	 * cap->HighNode and cap->LowNode values set above.
-	 */
 	cap->Entries = nprocs;
-	if (abs(cap->HighNode - cap->LowNode) == cap->Entries)
+
+	/* set the hw broadcast bit if consecutive nodes */
+	if (abs(cap->HighNode - cap->LowNode) == nnodes)
 		cap->Type |= ELAN_CAP_TYPE_BROADCASTABLE;
+
+	/*
+	 * Set up cap->Bitmap, which describes the mapping of processes to 
+	 * the nodes in the range of cap->LowNode - cap->Highnode.
+	 * There are (nprocs * nnodes) significant bits in the mask, each 
+ 	 * representing a process slot.  Bits are off for process slots 
+	 * corresponding to unallocated nodes.  For example, if nodes 4 and 6 
+	 * are running two processes per node, bits 0,1 (corresponding to the 
+	 * two processes on node 4) and bits 4,5 (corresponding to the two 
+	 * processes running on node 6) are set.  
+	 */
+	for (i = 0; i < bit_size(nodeset); i++) {
+		if (bit_test(nodeset, i)) {
+			int j, proc0;
+
+			for (j = 0; j < procs_per_node; j++) {
+				proc0 = (i - cap->LowNode) * procs_per_node;
+				assert(proc0 + j < sizeof(cap->Bitmap)*8);
+				BT_SET(cap->Bitmap, proc0 + j);
+			}
+		}
+	}
 }
 
 /*
@@ -260,7 +254,8 @@ qsw_create_jobinfo(struct qsw_jobinfo **jp, int nprocs, bitstr_t *nodeset,
 
 	/* sanity check on args */
 	if (nprocs <= 0 || nprocs > ELAN_MAX_VPS
-			|| nnodes == 0 || nprocs % nnodes != 0) {
+			|| nnodes == 0 
+			|| nprocs % nnodes != 0) {
 		errno = EINVAL;
 		return -1;
 	}
@@ -272,10 +267,9 @@ qsw_create_jobinfo(struct qsw_jobinfo **jp, int nprocs, bitstr_t *nodeset,
 		return -1;
 	}
 
+	/* initialize jobinfo */
 	new->j_magic = QSW_JOBINFO_MAGIC;
-	new->j_nprocs = nprocs;
 	new->j_prognum = _generate_prognum();
-	new->j_nodeset = bit_copy(nodeset);
 	_init_elan_capability(&new->j_cap, nprocs, nnodes, nodeset, 
 			cyclic_alloc);
 
@@ -291,7 +285,6 @@ void
 qsw_destroy_jobinfo(struct qsw_jobinfo *jobinfo)
 {
 	assert(jobinfo->j_magic == QSW_JOBINFO_MAGIC);
-	bit_free(jobinfo->j_nodeset);
 	jobinfo->j_magic = 0;
 	free(jobinfo);
 }
@@ -318,14 +311,9 @@ qsw_attach(struct qsw_jobinfo *jobinfo, int procnum)
 static void
 _dump_jobinfo(struct qsw_jobinfo *jobinfo)
 {
-	char tmpstr[1024];
-
 	assert(jobinfo->j_magic == QSW_JOBINFO_MAGIC);
 	printf("__________________\n");
 	printf("jobinfo.prognum=%d\n", jobinfo->j_prognum);
-	printf("jobinfo.nprocs=%d\n", jobinfo->j_nprocs);
-	bit_fmt(tmpstr, sizeof(tmpstr), jobinfo->j_nodeset);
-	printf("jobinfo.nodeset=[%s]\n", tmpstr);
 	printf("------------------\n");
 }
 
