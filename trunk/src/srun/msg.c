@@ -171,11 +171,7 @@ void MPIR_Breakpoint(void)
 
 static bool _job_msg_done(job_t *job)
 {
-	if ((job->state == SRUN_JOB_DETACHED) ||
-	    (job->state == SRUN_JOB_OVERDONE))
-		return true;
-	else
-		return false;
+	return (job->state >= SRUN_JOB_TERMINATED);
 }
 
 static void
@@ -233,7 +229,7 @@ update_failed_tasks(job_t *job, uint32_t nodeid)
 
 	if (tasks_exited == opt.nprocs) {
 		debug2("all tasks exited");
-		update_job_state(job, SRUN_JOB_OVERDONE);
+		update_job_state(job, SRUN_JOB_TERMINATED);
 	}
 		
 }
@@ -336,11 +332,6 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 
 	update_running_tasks(job, resp->srun_node_id);
 
-	/* 
-	   if (job->stepid == NO_VAL)
-	   update_job_state(job, SRUN_JOB_OVERDONE);
-	 */
-
 }
 
 static void 
@@ -380,7 +371,7 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 		tasks_exited++;
 		if (tasks_exited == opt.nprocs) {
 			debug2("All tasks exited");
-			update_job_state(job, SRUN_JOB_OVERDONE);
+			update_job_state(job, SRUN_JOB_TERMINATED);
 		}
 	}
 }

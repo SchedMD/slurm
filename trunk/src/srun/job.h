@@ -17,14 +17,17 @@
 #include "src/srun/fname.h"
 
 typedef enum {
-	SRUN_JOB_INIT = 0,
-	SRUN_JOB_LAUNCHING,
-	SRUN_JOB_STARTING,
-	SRUN_JOB_RUNNING,
-	SRUN_JOB_FAILED,
-	SRUN_JOB_TERMINATING,
-	SRUN_JOB_OVERDONE,
-	SRUN_JOB_DETACHED
+	SRUN_JOB_INIT = 0,         /* Job's initial state                   */
+	SRUN_JOB_LAUNCHING,        /* Launch thread is running              */
+	SRUN_JOB_STARTING,         /* Launch thread is complete             */
+	SRUN_JOB_RUNNING,          /* Launch thread complete                */
+	SRUN_JOB_TERMINATING,      /* Once first task terminates            */
+	SRUN_JOB_TERMINATED,       /* All tasks terminated (may have IO)    */
+	SRUN_JOB_WAITING_ON_IO,    /* All tasks terminated; waiting for IO  */
+	SRUN_JOB_FORCETERM,        /* Forced termination of IO thread       */
+	SRUN_JOB_DONE,             /* tasks and IO complete                 */
+	SRUN_JOB_DETACHED,         /* Detached IO from job (Not used now)   */
+	SRUN_JOB_FAILED,           /* Job failed for some reason            */
 } job_state_t;
 
 typedef enum {

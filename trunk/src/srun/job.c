@@ -303,7 +303,7 @@ job_force_termination(job_t *job)
 		update_job_state(job, SRUN_JOB_DETACHED); 	
 	} else {
 		info ("forcing job termination");
-		update_job_state(job, SRUN_JOB_OVERDONE);
+		update_job_state(job, SRUN_JOB_FORCETERM);
 	}
 
 	pthread_kill(job->ioid,  SIGHUP);
