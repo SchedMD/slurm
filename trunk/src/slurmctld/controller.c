@@ -100,6 +100,7 @@ inline static void slurm_rpc_job_step_create( slurm_msg_t* msg ) ;
 inline static void slurm_rpc_job_step_get_info ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_job_will_run ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_node_registration ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_old_job_alloc ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_ping ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_reconfigure_controller ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_shutdown_controller ( slurm_msg_t * msg );
@@ -592,6 +593,9 @@ slurmctld_req ( slurm_msg_t * msg )
 		case REQUEST_ALLOCATION_AND_RUN_JOB_STEP :
 			slurm_rpc_allocate_and_run ( msg );
 			slurm_free_job_desc_msg ( msg -> data ) ;
+			break;
+		case REQUEST_OLD_JOB_RESOURCE_ALLOCATION :
+			slurm_rpc_old_job_alloc ( msg );
 			break;
 		case REQUEST_JOB_WILL_RUN :
 			slurm_rpc_job_will_run ( msg -> data ) ;
@@ -1374,6 +1378,68 @@ slurm_rpc_allocate_and_run ( slurm_msg_t * msg )
 	}
 }
 
+/* slurm_rpc_old_job_alloc - process RPC to get details on existing job */
+void slurm_rpc_old_job_alloc ( slurm_msg_t * msg )
+{
+	int error_code = 0;
+	slurm_msg_t response_msg ;
+	clock_t start_time;
+	old_job_alloc_msg_t * job_desc_msg = ( old_job_alloc_msg_t * ) msg-> data ;
+	char * node_list_ptr = NULL;
+	uint16_t num_cpu_groups = 0;
+	uint32_t * cpus_per_node = NULL, * cpu_count_reps = NULL;
+	resource_allocation_response_msg_t alloc_msg ;
+	/* Locks: Read job, read node */
+	slurmctld_lock_t job_read_lock = { NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
+	uid_t uid = 0;
+
+	start_time = clock ();
+	debug ("Processing RPC: REQUEST_OLD_JOB_RESOURCE_ALLOCATION");
+
+	/* do RPC call */
+#ifdef	HAVE_AUTHD
+	uid = slurm_auth_uid (msg->cred);
+	if ( (uid != job_desc_msg->uid) && 
+	     (uid != 0) && (uid != getuid ()) ) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error ("Security violation, RESOURCE_ALLOCATE from uid %u", (unsigned int) uid);
+	}	
+#endif
+	if (error_code == 0) {
+		lock_slurmctld (job_read_lock);
+		error_code = old_job_info (job_desc_msg->uid, job_desc_msg->job_id, 
+			&node_list_ptr, &num_cpu_groups, &cpus_per_node, &cpu_count_reps );
+		unlock_slurmctld (job_read_lock);
+	}
+
+	/* return result */
+	if (error_code)
+	{
+		info ("slurm_rpc_old_job_alloc error %d getting info, job=%u, uid=%u, time=%ld",
+				error_code, job_desc_msg->job_id, job_desc_msg->uid,
+				(long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , error_code );
+	}
+	else
+	{
+		info ("slurm_rpc_old_job_alloc job=%u has nodes %s, time=%ld",
+				job_desc_msg->job_id, node_list_ptr,  	
+				(long) (clock () - start_time));
+		
+		/* send job_ID  and node_name_ptr */
+
+		alloc_msg . job_id = job_desc_msg->job_id ;
+		alloc_msg . node_list = node_list_ptr ;
+		alloc_msg . num_cpu_groups = num_cpu_groups;
+		alloc_msg . cpus_per_node  = cpus_per_node;
+		alloc_msg . cpu_count_reps = cpu_count_reps;
+		response_msg . msg_type = RESPONSE_RESOURCE_ALLOCATION ;
+		response_msg . data =  & alloc_msg ;
+
+		slurm_send_node_msg ( msg->conn_fd , & response_msg ) ;
+		(void) dump_all_job_state ( );
+	}
+}
 
 /* slurm_rpc_job_will_run - process RPC to determine if job with given configuration can be initiated */
 void slurm_rpc_job_will_run ( slurm_msg_t * msg )

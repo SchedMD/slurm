@@ -39,6 +39,7 @@ extern void make_time_str (time_t *time, char *string);
  */
 extern int slurm_allocate_resources (job_desc_msg_t * job_desc_msg , resource_allocation_response_msg_t ** job_alloc_resp_msg, int immediate ) ;
 extern int slurm_allocate_resources_and_run (job_desc_msg_t * job_desc_msg , 			resource_allocation_and_run_response_msg_t ** slurm_alloc_msg );
+extern int slurm_confirm_allocation (old_job_alloc_msg_t * job_desc_msg , resource_allocation_response_msg_t ** slurm_alloc_msg ) ;
 
 extern int slurm_cancel_job (uint32_t job_id);
 extern int slurm_cancel_job_step (uint32_t job_id, uint32_t step_id);

@@ -64,6 +64,9 @@ int unpack_node_registration_status_msg ( slurm_node_registration_status_msg_t *
 void pack_job_desc ( job_desc_msg_t *job_desc_msg_ptr, Buf buffer );
 int unpack_job_desc ( job_desc_msg_t **job_desc_msg_ptr, Buf buffer );
 
+void pack_old_job_desc ( old_job_alloc_msg_t * job_desc_ptr, Buf buffer );
+int unpack_old_job_desc ( old_job_alloc_msg_t **job_desc_buffer_ptr, Buf buffer );
+
 void pack_last_update ( last_update_msg_t * msg , Buf buffer );
 int unpack_last_update ( last_update_msg_t ** msg , Buf buffer );
 

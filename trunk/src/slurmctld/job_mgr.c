@@ -2519,3 +2519,29 @@ signal_job_on_node (uint32_t job_id, uint16_t step_id, int signum, char *node_na
 		signum, job_id, step_id, node_name);
 	error ("CODE DEVELOPMENT NEEDED HERE");
 }
+
+
+/* old_job_info - get details about an existing job allocation */
+int
+old_job_info (uint32_t uid, uint32_t job_id, char **node_list, 
+	uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps)
+{
+	struct job_record *job_ptr;
+
+	job_ptr = find_job_record (job_id);
+	if (job_ptr == NULL)
+		return ESLURM_INVALID_JOB_ID;
+	if ((uid != 0) && (job_ptr->user_id != uid))
+		return ESLURM_ACCESS_DENIED;
+	if ((job_ptr->job_state != JOB_STAGE_IN) && 
+	    (job_ptr->job_state != JOB_RUNNING))
+		return ESLURM_ALREADY_DONE;
+
+	node_list[0]      = job_ptr->nodes;
+	*num_cpu_groups   = job_ptr->num_cpu_groups;
+	cpus_per_node[0]  = job_ptr->cpus_per_node;
+	cpu_count_reps[0] = job_ptr->cpu_count_reps;
+	return SLURM_SUCCESS;
+}
+
+
