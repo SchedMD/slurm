@@ -1,6 +1,13 @@
 AUTOMAKE_OPTIONS = foreign
 
-check_PROGRAMS = security_3_1
+# TESTS identifies programs that can run stand-alone at "make check" time.
+TESTS =
+
+# check_PROGRAMS identifies programs that can be built at "make check" time, 
+# even if they can't be run stand-alone.
+check_PROGRAMS = \
+	security_3_1 \
+	$(TESTS) 
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
