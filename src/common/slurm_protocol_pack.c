@@ -163,11 +163,13 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_KILL_TASKS :
 			pack_cancel_tasks_msg ( ( kill_tasks_msg_t * ) msg->data , ( void ** ) buffer , buf_len ) ;
 			break ;
-
 		case REQUEST_CANCEL_JOB_STEP :
 		case REQUEST_COMPLETE_JOB_STEP :
 			pack_cancel_job_step_msg ( ( job_step_id_msg_t * ) msg->data , 
 				( void ** ) buffer , buf_len ) ;
+			break ;
+		case REQUEST_REVOKE_JOB_CREDENTIAL :
+			pack_revoke_credential_msg ( ( revoke_credential_msg_t * ) msg->data , ( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_SIGNAL_JOB :
 			break ;
@@ -208,13 +210,11 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_SLURM_RC:
 			pack_return_code ( ( return_code_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;
 			break;
-
 		case RESPONSE_JOB_STEP_CREATE:
 			pack_job_step_create_response_msg(( job_step_create_response_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;	
 			break;
 		case REQUEST_JOB_STEP_CREATE:
 			pack_job_step_create_request_msg(( job_step_create_request_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;	
-		
 			break;
 		default :
 			error ( "No pack method for msg type %i",  msg -> msg_type ) ;
@@ -308,6 +308,9 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 			unpack_cancel_job_step_msg ( ( job_step_id_msg_t ** ) & ( msg->data ) , 
 				( void ** ) buffer , buf_len ) ;
 			break ;
+		case REQUEST_REVOKE_JOB_CREDENTIAL :
+			unpack_revoke_credential_msg ( ( revoke_credential_msg_t ** ) & ( msg->data ) , ( void ** ) buffer , buf_len ) ;
+			break ;
 		case REQUEST_SIGNAL_JOB :
 			break ;
 		case REQUEST_SIGNAL_JOB_STEP :
@@ -352,12 +355,11 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 			break;
 		case REQUEST_JOB_STEP_CREATE:
 			unpack_job_step_create_request_msg(( job_step_create_request_msg_t ** ) &msg -> data , ( void ** ) buffer , buf_len ) ;	
-		
 			break;
 			default :
-			debug ( "No pack method for msg type %i",  msg -> msg_type ) ;
-			return EINVAL ;
-			break;
+				debug ( "No pack method for msg type %i",  msg -> msg_type ) ;
+				return EINVAL ;
+				break;
 		
 	}
 	return 0 ;
@@ -624,6 +626,30 @@ int unpack_job_step_create_request_msg ( job_step_create_request_msg_t** msg , v
 	unpack32 ( &( tmp_ptr -> cpu_count), ( void ** ) buffer , length ) ;
 	unpack16 ( &( tmp_ptr -> relative), ( void ** ) buffer , length ) ;
 	unpackstr_xmalloc ( &( tmp_ptr -> node_list ), &uint16_tmp,  ( void ** ) buffer , length ) ;
+
+	*msg = tmp_ptr;
+	return 0;
+}
+
+void pack_revoke_credential_msg ( revoke_credential_msg_t* msg , void ** buffer , uint32_t * length )
+{
+	assert ( msg != NULL );
+
+	pack32( msg->job_id, buffer, length ) ;
+	packmem( msg->signature, SLURM_SSL_SIGNATURE_LENGTH , buffer, length ) ; 
+}
+
+int unpack_revoke_credential_msg ( revoke_credential_msg_t** msg , void ** buffer , uint32_t * length )
+{
+	uint16_t uint16_tmp;
+	revoke_credential_msg_t* tmp_ptr ;
+	/* alloc memory for structure */	
+	tmp_ptr = xmalloc ( sizeof ( slurm_job_credential_t ) ) ;
+	if (tmp_ptr == NULL) 
+		return ENOMEM;
+
+	unpack32( &(tmp_ptr->job_id), buffer, length ) ;
+	unpackmem( tmp_ptr->signature, & uint16_tmp , buffer, length ) ; 
 
 	*msg = tmp_ptr;
 	return 0;
@@ -1238,6 +1264,8 @@ int unpack_cancel_job_step_msg ( job_step_id_msg_t ** msg_ptr , void ** buffer ,
 	*msg_ptr = msg ;
 	return 0 ;
 }
+
+
 
 /* template 
 void pack_ ( * msg , void ** buffer , uint32_t * length )

@@ -16,9 +16,6 @@
 
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/slurm_protocol_common.h>
-#define SLURM_SSL_SIGNATURE_LENGTH 16
-#define SLURM_IO_STREAM_INOUT 0
-#define SLURM_IO_STREAM_SIGERR 1
 
 uint32_t check_header_version( header_t * header) ;
 void init_header ( header_t * header , slurm_msg_type_t msg_type , uint16_t flags ) ;
