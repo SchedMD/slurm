@@ -345,15 +345,14 @@ int slurm_close_accepted_conn(slurm_fd open_fd)
 /*
  * NOTE: memory is allocated for the returned msg and must be freed at 
  *        some point using the slurm_free_functions
- * IN open_fd                 - file descriptor to receive msg on
- * OUT msg                 - a slurm_msg struct to be filled in by the function
- * RET int                - size of msg received in bytes before being unpacked
+ * IN open_fd	- file descriptor to receive msg on
+ * OUT msg	- a slurm_msg struct to be filled in by the function
+ * RET int	- size of msg received in bytes before being unpacked
  */
 int slurm_receive_msg(slurm_fd fd, slurm_msg_t * msg, int timeout)
 {
         char *buf = NULL;
         size_t buflen = 0;
-        
         header_t header;
         int rc;
         void *auth_cred;
@@ -372,17 +371,17 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t * msg, int timeout)
         if (_slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) 
                 return SLURM_ERROR;
 
-#if        _DEBUG
-         _print_data (buftemp,rc);
+#if	_DEBUG
+	_print_data (buftemp,rc);
 #endif
         buffer = create_buf(buf, buflen);
 
         unpack_header(&header, buffer);
 
         if (check_header_version(&header) < 0) {
-                free_buf(buffer);
-                slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
-        }
+		free_buf(buffer);
+		slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
+	}
 
         if ((auth_cred = g_slurm_auth_unpack(buffer)) == NULL) {
                 error( "authentication: %s ",
@@ -405,11 +404,11 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t * msg, int timeout)
          * Unpack message body 
          */
         msg->msg_type = header.msg_type;
-        if ( (header.body_length > remaining_buf(buffer)) 
-           || (unpack_msg(msg, buffer) != SLURM_SUCCESS)  ) {
+        if ( (header.body_length > remaining_buf(buffer)) ||
+             (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
                 (void) g_slurm_auth_destroy(auth_cred);
                 free_buf(buffer);
-                slurm_seterrno_ret(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
+		slurm_seterrno_ret(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
         }
 
         msg->cred = (void *) auth_cred;
