@@ -460,10 +460,10 @@ int load_all_node_state ( void )
 
 	while (remaining_buf (buffer) > 0) {
 		safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
-		safe_unpack16 (&node_state, buffer);
-		safe_unpack32 (&cpus, buffer);
+		safe_unpack16 (&node_state,  buffer);
+		safe_unpack32 (&cpus,        buffer);
 		safe_unpack32 (&real_memory, buffer);
-		safe_unpack32 (&tmp_disk, buffer);
+		safe_unpack32 (&tmp_disk,    buffer);
 
 		/* validity test as possible */
 		if ((cpus == 0) || 
@@ -1059,8 +1059,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	error_code = 0;
 
 	if (cpus < config_ptr->cpus) {
-		error ("validate_node_specs: node %s has low cpu count %u", 
-		       node_name, cpus);
+		error ("Node %s has low cpu count %u", node_name, cpus);
 		error_code = EINVAL;
 	}
 	node_ptr->cpus = cpus;
@@ -1069,22 +1068,21 @@ validate_node_specs (char *node_name, uint32_t cpus,
 						(cpus - config_ptr->cpus);
 
 	if (real_memory < config_ptr->real_memory) {
-		error ("validate_node_specs: node %s has low real_memory size %u", 
+		error ("Node %s has low real_memory size %u", 
 		       node_name, real_memory);
 		error_code = EINVAL;
 	}
 	node_ptr->real_memory = real_memory;
 
 	if (tmp_disk < config_ptr->tmp_disk) {
-		error ("validate_node_specs: node %s has low tmp_disk size %u",
+		error ("Node %s has low tmp_disk size %u",
 		       node_name, tmp_disk);
 		error_code = EINVAL;
 	}
 	node_ptr->tmp_disk = tmp_disk;
 
 	if (error_code) {
-		error ("validate_node_specs: setting node %s state to DOWN",
-			node_name);
+		error ("Setting node %s state to DOWN", node_name);
 		set_node_down(node_name);
 	} else if (status == ESLURMD_PROLOG_FAILED) {
 		error ("Prolog failure on node %s, state to DOWN",
@@ -1101,7 +1099,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		 * processor count at present */
 		if ((slurmctld_conf.fast_schedule == 0) &&
 		    (node_ptr->config_ptr->cpus != cpus)) {
-			error ("Node %s has processor count inconsistent with rest of partition",
+			error ("Node %s processor count inconsistent with rest of partition",
 				node_name);
 			return EINVAL;		/* leave node down */
 		}
@@ -1489,29 +1487,45 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 }
 
 
+/* make_node_alloc - flag specified node as allocated to a job */
+void make_node_alloc(struct node_record *node_ptr)
+{
+	int inx = node_ptr - node_record_table_ptr;
+	uint16_t no_resp_flag;
+
+	last_node_update = time (NULL);
+	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
+	node_ptr->node_state = NODE_STATE_ALLOCATED | no_resp_flag;
+	(node_ptr->job_cnt)++;
+	bit_clear(idle_node_bitmap, inx);
+}
+
 /* make_node_comp - flag specified node as completing a job */
 void make_node_comp(struct node_record *node_ptr)
 {
 	uint16_t no_resp_flag, base_state;
 
+	last_node_update = time (NULL);
 	base_state   = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
 	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 	if ((base_state == NODE_STATE_DOWN) ||
 	    (base_state == NODE_STATE_DRAINED) ||
 	    (base_state == NODE_STATE_DRAINING)) {
-		debug3("Node %s being left in state %s", 
-		       node_state_string((enum node_states)node_ptr->name));
+		debug3("Node %s being left in state %s", node_ptr->name, 
+		       node_state_string((enum node_states)
+					 node_ptr->node_state));
 	} else {
 		node_ptr->node_state = NODE_STATE_COMPLETING | no_resp_flag;
 	}
 }
 
-/* make_node_idle - flag specified node as no longer being in use */
+/* make_node_idle - flag specified node as having completed a job */
 void make_node_idle(struct node_record *node_ptr)
 {
 	int inx = node_ptr - node_record_table_ptr;
 	uint16_t no_resp_flag, base_state;
 
+	last_node_update = time (NULL);
 	base_state   = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
 	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;

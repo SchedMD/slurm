@@ -122,7 +122,7 @@ struct config_record {
 	uint32_t real_memory;	/* MB real memory on the node */
 	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
 	uint32_t weight;	/* arbitrary priority of node for 
-				   scheduling work on */
+				 * scheduling work on */
 	char *feature;		/* arbitrary list of features associated */
 	char *nodes;		/* name of nodes with this configuration */
 	bitstr_t *node_bitmap;	/* bitmap of nodes with this configuration */
@@ -134,8 +134,8 @@ struct node_record {
 	uint32_t magic;			/* magic cookie for data integrity */
 	char name[MAX_NAME_LEN];	/* name of the node. NULL==defunct */
 	uint16_t node_state;		/* enum node_states, ORed with 
-					   NODE_STATE_NO_RESPOND if not 
-					   responding */
+					 * NODE_STATE_NO_RESPOND if not 
+					 * responding */
 	time_t last_response;		/* last response from the node */
 	uint32_t cpus;			/* count of cpus on the node */
 	uint32_t real_memory;		/* MB real memory on the node */
@@ -144,15 +144,16 @@ struct node_record {
 	struct part_record *partition_ptr; /* partition for this node */
 	char comm_name[MAX_NAME_LEN];	/* communications path name to node */
 	slurm_addr slurm_addr;		/* network address */
+	uint16_t job_cnt;		/* count of jobs allocated to node */
 };
 
 extern struct node_record *node_record_table_ptr;  /* ptr to node records */
 extern time_t last_bitmap_update;	/* time of last node creation or 
-					   deletion */
+					 * deletion */
 extern time_t last_node_update;		/* time of last node record update */
 extern int node_record_count;		/* count in node_record_table_ptr */
 extern int *hash_table;			/* table of hashed indicies into 
-					   node_record_table_ptr */
+					 * node_record_table_ptr */
 extern bitstr_t *up_node_bitmap;	/* bitmap of nodes are up */
 extern bitstr_t *idle_node_bitmap;	/* bitmap of nodes are idle */
 extern struct config_record default_config_record;
@@ -236,7 +237,10 @@ struct job_record {
 	struct part_record *part_ptr;	/* pointer to the partition record */
 	uint16_t batch_flag;		/* 1 if batch job (with script) */
 	uint32_t user_id;		/* user the job runs as */
-	enum job_states job_state;	/* state of the job */
+	enum job_states job_state;	/* state of the job, NOTE: state
+					 * JOB_COMPLETING is set in pack_job 
+					 * when (job state > JOB_RUNNING) &&
+					 * (node_count > 0), its artificial */
 	uint16_t kill_on_node_fail;	/* 1 if job should be killed on 
 					   node failure */
 	uint16_t kill_on_step_done;	/* 1 if job should be killed when 
@@ -700,6 +704,9 @@ extern void load_part_uid_allow_list ( int force );
  *	file data.
  */
 extern int load_all_part_state ( void );
+
+/* make_node_alloc - flag specified node as allocated to a job */
+extern void make_node_alloc(struct node_record *node_ptr);
 
 /* make_node_comp - flag specified node as completing a job */
 extern void make_node_comp(struct node_record *node_ptr);

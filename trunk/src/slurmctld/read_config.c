@@ -125,11 +125,11 @@ static int _build_bitmaps(void)
 		if (node_record_table_ptr[i].name[0] == '\0')
 			continue;	/* defunct */
 		base_state =
-		    node_record_table_ptr[i].
-		    node_state & (~NODE_STATE_NO_RESPOND);
+		    node_record_table_ptr[i].node_state & 
+		    (~NODE_STATE_NO_RESPOND);
 		no_resp_flag =
-		    node_record_table_ptr[i].
-		    node_state & NODE_STATE_NO_RESPOND;
+		    node_record_table_ptr[i].node_state & 
+		    NODE_STATE_NO_RESPOND;
 		if (base_state == NODE_STATE_IDLE)
 			bit_set(idle_node_bitmap, i);
 		if ((base_state != NODE_STATE_DOWN) &&
@@ -284,9 +284,10 @@ static int _parse_node_spec(char *in_line)
 				break;
 			}
 		}
-		if (state_val == NO_VAL) {
+		if ((state_val == NO_VAL) ||
+		    (state_val == NODE_STATE_COMPLETING)) {
 			error
-			    ("_parse_node_spec: invalid state %s for node_name %s",
+			    ("_parse_node_spec: invalid initial state %s for node %s",
 			     state, node_name);
 			error_code = EINVAL;
 			goto cleanup;
@@ -374,8 +375,8 @@ static int _parse_node_spec(char *in_line)
 			node_record_point =
 			    create_node_record(config_point,
 					       this_node_name);
-			if ((state_val != NO_VAL)
-			    && (state_val != NODE_STATE_UNKNOWN))
+			if ((state_val != NO_VAL) &&
+			    (state_val != NODE_STATE_UNKNOWN))
 				node_record_point->node_state = state_val;
 			node_record_point->last_response = (time_t) 0;
 			if (node_addr)
@@ -827,32 +828,27 @@ static int _sync_nodes_to_jobs(void)
 	struct job_record *job_ptr;
 	ListIterator job_record_iterator;
 	int i, update_cnt = 0;
+	uint16_t no_resp_flag;
 
 	job_record_iterator = list_iterator_create(job_list);
 	while ((job_ptr =
 		(struct job_record *) list_next(job_record_iterator))) {
-		if ((job_ptr->job_state == JOB_PENDING)
-		    || (job_ptr->job_state == JOB_COMPLETE)
-		    || (job_ptr->job_state == JOB_FAILED)
-		    || (job_ptr->job_state == JOB_TIMEOUT))
+		if (job_ptr->job_state > JOB_COMPLETING)
 			continue;
 		if (job_ptr->node_bitmap == NULL)
 			continue;
 		for (i = 0; i < node_record_count; i++) {
 			if (bit_test(job_ptr->node_bitmap, i) == 0)
 				continue;
+			node_record_table_ptr[i].job_cnt++;
 			if (node_record_table_ptr[i].node_state ==
 			    NODE_STATE_ALLOCATED)
 				continue;	/* already in proper state */
 			update_cnt++;
-			if (node_record_table_ptr[i].
-			    node_state & NODE_STATE_NO_RESPOND)
-				node_record_table_ptr[i].node_state =
-				    NODE_STATE_ALLOCATED |
-				    NODE_STATE_NO_RESPOND;
-			else
-				node_record_table_ptr[i].node_state =
-				    NODE_STATE_ALLOCATED;
+			no_resp_flag = node_record_table_ptr[i].node_state & 
+				       NODE_STATE_NO_RESPOND;
+			node_record_table_ptr[i].node_state =
+				    NODE_STATE_ALLOCATED | no_resp_flag;
 		}
 	}
 	if (update_cnt)

@@ -94,10 +94,8 @@ void allocate_nodes(unsigned *bitmap)
 	last_node_update = time(NULL);
 
 	for (i = 0; i < node_record_count; i++) {
-		if (bit_test(bitmap, i) == 0)
-			continue;
-		node_record_table_ptr[i].node_state = NODE_STATE_ALLOCATED;
-		bit_clear(idle_node_bitmap, i);
+		if (bit_test(bitmap, i))
+			make_node_alloc(&node_record_table_ptr[i]);
 	}
 	return;
 }
