@@ -436,7 +436,10 @@ job_update_shm(slurmd_job_t *job)
 	s.mpid      = (pid_t) 0;
 	s.sid       = (pid_t) 0;
 	s.io_update = false;
-	s.state     = SLURMD_JOB_STARTING;
+	/*
+	 * State not set in shm_insert_step()
+	 * s.state     = SLURMD_JOB_STARTING;
+	 */
 
 	if (shm_insert_step(&s) < 0) 
 		return SLURM_ERROR;
@@ -445,6 +448,8 @@ job_update_shm(slurmd_job_t *job)
 		debug("updated shm with job %u", job->jobid);
 	else
 		debug("updated shm with step %u.%u", job->jobid, job->stepid);
+
+	job_update_state(job, SLURMD_JOB_STARTING);
 
 	return SLURM_SUCCESS;
 }
