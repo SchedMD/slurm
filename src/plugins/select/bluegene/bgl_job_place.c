@@ -45,7 +45,6 @@
 
 #define BUFSIZE 4096
 #define BITSIZE 128
-#define DEFAULT_BLUEGENE_SERIAL "BGL"
 
 #define _DEBUG 0
 
@@ -233,7 +232,8 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 			if (record->size == target_size)
 				break;
 		}
-	}	
+	}
+	list_iterator_destroy(itr);
 	
 	/* set the bitmap and do other allocation activities */
 	if (*found_bgl_record) {

@@ -40,7 +40,7 @@
 #define BUFSIZE 4096
 
 #ifdef HAVE_BGL_FILES
-/* Find the specified BlueGene node ID and configure it down in CMCS */
+/* Find the specified BlueGene node ID and configure it down in MMCS */
 static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bgl)
 {
 	int bp_num, i, rc;
@@ -201,7 +201,7 @@ extern void test_down_nodes(void)
 		time_t now = time(NULL);
 		struct tm * time_ptr = localtime(&now);
 		strftime(reason, sizeof(reason), 
-			"bluegene_select: CMCS state DOWN [SLURM@%b %d %H:%M]", 
+			"bluegene_select: MMCS state DOWN [SLURM@%b %d %H:%M]", 
 			time_ptr);
 		slurm_drain_nodes(down_node_list, reason);
 	}

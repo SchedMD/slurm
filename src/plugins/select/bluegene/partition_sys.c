@@ -118,7 +118,7 @@ static int  _post_bgl_init_read(void *object, void *arg);
  * OUT - partid_list: list of BGL partition id's 
  * OUT - return code of success
  * 
- * SIDE EFFECT: calls BGL CMCS API that changes the DB2 and
+ * SIDE EFFECT: calls BGL MMCS API that changes the DB2 and
  * essentially wires up the system
  */
 extern int partition_sys(List requests)
@@ -1024,7 +1024,7 @@ extern void debug(const char *fmt, ...)
 #endif
 
 /*
- * Download from CMCS the initial BGL partition information
+ * Download from MMCS the initial BGL partition information
  */
 extern int read_bgl_partitions(void)
 {

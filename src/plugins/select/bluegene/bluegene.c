@@ -50,8 +50,8 @@
 
 #define BUFSIZE 4096
 #define BITSIZE 128
-#define NODE_POLL_TIME 60	/* poll CMCS node state every 60 secs */
-#define SWITCH_POLL_TIME 90	/* poll CMCS switch state every 90 secs */
+#define NODE_POLL_TIME 120	/* poll MMCS node state every 120 secs */
+#define SWITCH_POLL_TIME 180	/* poll MMCS switch state every 180 secs */
 
 #define _DEBUG 0
 
