@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * slurm_auth_imple.h - authentication implementation for Brent Chun's authd
+ * slurm_auth_authd.h - authentication implementation for Brent Chun's authd
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -25,7 +25,11 @@
 \*****************************************************************************/
 
 #if HAVE_CONFIG_H
-#include <config.h>
+#  include <config.h>
+#endif
+
+#if HAVE_AUTHD
+#  include <auth.h>
 #endif
 
 #include <stdio.h>
@@ -33,9 +37,12 @@
 #include <string.h>
 #include <pwd.h>
 #include <grp.h>
-#include <openssl/rsa.h>
-#include <openssl/pem.h>
-#include <openssl/err.h>
+
+#if HAVE_SSL
+#  include <openssl/rsa.h>
+#  include <openssl/pem.h>
+#  include <openssl/err.h>
+#endif
 
 /*
  * Because authd's authentication scheme relies on determining the
@@ -47,19 +54,15 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#include <src/common/slurm_authentication.h>
+#include <src/common/slurm_auth.h>
 #include <src/common/slurm_errno.h>
 #include <src/common/xmalloc.h>
 #include <src/common/pack.h>
+#include <src/common/log.h>
 
 #define UNIX_PATH_MAX 108    /* Cribbed from /usr/include/linux/un.h */
 
 static int slurm_sign_auth_credentials( slurm_auth_credentials_t *cred );
-#ifdef HAVE_AUTHD
-static int open_authd_connection( void );
-static int read_bytes( int fd, void *buf, size_t len );
-static int write_bytes( int fd, void *buf, size_t len );
-#endif
 
 slurm_auth_credentials_t *
 slurm_auth_alloc_credentials( void )
@@ -85,7 +88,6 @@ slurm_auth_activate_credentials( slurm_auth_credentials_t *cred,
  * built on top of its author's convenience library, which we
  * don't want to require for SLURM users.
  */
-  
 	/* Initialize credentials with our user and group IDs. */
 	cred->creds.uid = getuid();
 	cred->creds.gid = getgid();
@@ -103,41 +105,7 @@ int
 slurm_auth_verify_credentials( slurm_auth_credentials_t *cred )
 {
 #ifdef HAVE_AUTHD
-	FILE *f;
-	RSA *pub;
-	int rc;
-	time_t now;
-
-	/* Open public key file.  XXX - want to configify this. */
-	if ( ( f = fopen( AUTH_PUB_KEY, "r" ) ) == NULL ) {
-		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
-	}
-
-	/* Read key. */
-	pub = PEM_read_RSA_PUBKEY( f, NULL, NULL, NULL );
-	fclose( f );
-	if ( pub == NULL ) return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
-
-	/* Verify signature. */
-	ERR_load_crypto_strings();
-	rc = RSA_verify( 0,
-			 (unsigned char *) &cred->creds,
-			 sizeof( credentials ),
-			 cred->sig.data,
-			 AUTH_RSA_SIGLEN,
-			 pub );
-	RSA_free( pub );
-
-	/* RSA verification failed. */
-	if ( rc == 0 ) return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
-
-	/* See if credential has expired. */
-	now = time( NULL );
-	if ( ( now >= cred->creds.valid_from )
-	     && ( now <= cred->creds.valid_to ) )
-		return SLURM_SUCCESS;
-	else
-		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
+	return auth_verify_signature(&cred->creds, &cred->sig);
 #else
 	return SLURM_SUCCESS;
 #endif
@@ -176,7 +144,7 @@ void slurm_auth_unpack_credentials( slurm_auth_credentials_t **cred_ptr,
 	uint16_t dummy;
 	char *data;
 	slurm_auth_credentials_t *cred = xmalloc ( sizeof ( slurm_auth_credentials_t ) ) ;
-  
+
 	unpack32( &cred->creds.uid, buffer, length );
 	unpack32( &cred->creds.gid, buffer, length );
 	unpack32( (uint32_t *) &cred->creds.valid_from, buffer, length );
@@ -184,6 +152,7 @@ void slurm_auth_unpack_credentials( slurm_auth_credentials_t **cred_ptr,
 	unpackmem_ptr( &data, &dummy, buffer, length );
 	memcpy( cred->sig.data, data, sizeof( signature ) );
 	*cred_ptr = cred ;
+
 }
 
 
@@ -191,30 +160,7 @@ static int
 slurm_sign_auth_credentials( slurm_auth_credentials_t *cred )
 {
 #ifdef HAVE_AUTHD
-	int fd;
-
-	/* Open connection to authd. */
-	fd = open_authd_connection();
-	if ( fd < 0 ) return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
-
-	/* Write credentials to socket. */
-	if ( write_bytes( fd,
-			  &cred->creds,
-			  sizeof( credentials ) ) != SLURM_SUCCESS ) {
-		close( fd );
-		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
-	}
-  
-	/* Read response. */
-	if ( read_bytes( fd,
-			 &cred->sig,
-			 sizeof( signature ) ) != SLURM_SUCCESS ) {
-		close( fd );
-		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
-	}
-  
-	close( fd );
-	return SLURM_SUCCESS;
+	return auth_get_signature(&cred->creds, &cred->sig);
 #else
 	return SLURM_SUCCESS;
 #endif
@@ -253,77 +199,3 @@ slurm_auth_print_credentials( slurm_auth_credentials_t *cred )
 	printf( "\n-- END CLIENT CREDENTIALS\n" );
 }
 #endif /*DEBUG*/
-
-#ifdef HAVE_AUTHD
-static int
-open_authd_connection( void )
-{
-	int sock;
-	char auth_sock_path[ UNIX_PATH_MAX ];
-	struct sockaddr_un cl_addr;
-	struct sockaddr_un sv_addr;
-
-	sprintf( auth_sock_path, AUTH_SOCK_PATH, getpid() );
-
-	sock = socket( AF_UNIX, SOCK_STREAM, 0 );
-	if ( sock < 0 ) return SLURM_ERROR;
-
-	cl_addr.sun_family = AF_UNIX;
-	memset( cl_addr.sun_path, 0, UNIX_PATH_MAX );
-	strncpy( &cl_addr.sun_path[ 1 ], auth_sock_path, UNIX_PATH_MAX - 1 );
-	if ( bind( sock,
-		   (struct sockaddr *) &cl_addr,
-		   sizeof( struct sockaddr_un ) ) < 0 ) {
-		close( sock );
-		return SLURM_ERROR;
-	}
-
-	sv_addr.sun_family = AF_UNIX;
-	memset( sv_addr.sun_path, 0, UNIX_PATH_MAX );
-	strncpy( &sv_addr.sun_path[ 1 ], AUTHD_SOCK_PATH, UNIX_PATH_MAX - 1 );
-	if ( connect( sock,
-		      (struct sockaddr *) &sv_addr,
-		      sizeof( struct sockaddr_un ) ) < 0 ) {
-		close( sock );
-		return SLURM_ERROR;
-	}
-
-	return sock;
-}
-
-static int read_bytes( int fd, void *buf, size_t n_bytes )
-{
-	size_t bytes_accumulated = 0;
-	ssize_t bytes_read;
-
-	while ( bytes_accumulated < n_bytes ) {
-		bytes_read = read( fd,
-				   (void *) ((unsigned long) buf +
-					     (unsigned long) bytes_accumulated ),
-				   n_bytes - bytes_accumulated );
-		if ( bytes_read == 0 ) return 0;
-		if ( bytes_read < 0 ) return -1;
-		bytes_accumulated += bytes_read;
-	}
-
-	return 0;
-}
-
-static int write_bytes( int fd, void *buf, size_t n_bytes )
-{
-	size_t bytes_disposed = 0;
-	ssize_t bytes_written;
-
-	while ( bytes_disposed < n_bytes ) {
-		bytes_written = write( fd,
-				       (void *) ((unsigned long) buf +
-						 (unsigned long) bytes_disposed ),
-				       n_bytes - bytes_disposed );
-		if ( bytes_written < 0 ) return -1;
-		bytes_disposed += bytes_written;
-	}
-
-	return 0;
-}
-
-#endif

@@ -8,7 +8,7 @@
 /* for sendto and recvfrom commands */
 #define SLURM_PROTOCOL_NO_SEND_RECV_FLAGS 0
 /* for accpet commands */
-#define SLURM_PROTOCOL_DEFAULT_LISTEN_BACKLOG 10
+#define SLURM_PROTOCOL_DEFAULT_LISTEN_BACKLOG 128
 /* used in interface methods */
 #define SLURM_PROTOCOL_FUNCTION_NOT_IMPLEMENTED -2 
 /* max slurm message send and receive buffer size

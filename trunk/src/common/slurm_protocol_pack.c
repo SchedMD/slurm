@@ -32,7 +32,7 @@
 #include <src/common/bitstring.h>
 #include <src/common/slurm_protocol_pack.h>
 #include <src/common/slurm_protocol_api.h>
-#include <src/common/slurm_authentication.h>
+#include <src/common/slurm_auth.h>
 #include <src/common/pack.h>
 #include <src/common/log.h>
 #include <src/common/xmalloc.h>
@@ -501,6 +501,7 @@ int unpack_resource_allocation_response_msg ( resource_allocation_response_msg_t
 		tmp_ptr->cpu_count_reps = NULL;
 	}
 	*msg = tmp_ptr ;
+	info("job id is %ld", tmp_ptr->job_id);
 	return 0 ;
 }
 
