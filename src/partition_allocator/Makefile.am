@@ -9,7 +9,7 @@ INCLUDES = -I$(top_srcdir) $(BGL_INCLUDES)
 #to build the executable
 # noinst_PROGRAMS = partition_allocator
 
-# partition_allocator_SOURCES = partition_allocator.c partition_allocator.h
+# partition_allocator_SOURCES = partition_allocator.c partition_allocator.h tv.h
 
 # partition_allocator_LDADD = \
 # 	$(top_builddir)/src/common/libcommon.la -lpthread \
@@ -21,7 +21,8 @@ INCLUDES = -I$(top_srcdir) $(BGL_INCLUDES)
 # making a .la
 noinst_LTLIBRARIES = libpartition_allocator.la 
 libpartition_allocator_la_SOURCES =    \
-	partition_allocator.c partition_allocator.h
+	partition_allocator.c partition_allocator.h \
+	tv.h
 
 libpartition_allocator_la_LIBADD  =  \
 	$(top_builddir)/src/common/libcommon.la -lpthread \
