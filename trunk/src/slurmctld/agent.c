@@ -224,8 +224,8 @@ void *agent(void *args)
       cleanup:
 #if AGENT_IS_THREAD
 	if (agent_arg_ptr) {
-		FREE_NULL(agent_arg_ptr->slurm_addr);
-		FREE_NULL(agent_arg_ptr->node_names);
+		xfree(agent_arg_ptr->slurm_addr);
+		xfree(agent_arg_ptr->node_names);
 		if (agent_arg_ptr->msg_args) {
 			if (agent_arg_ptr->msg_type ==
 			    REQUEST_BATCH_JOB_LAUNCH)
@@ -239,7 +239,7 @@ void *agent(void *args)
 #endif
 
 	if (agent_info_ptr) {
-		FREE_NULL(agent_info_ptr->thread_struct);
+		xfree(agent_info_ptr->thread_struct);
 		xfree(agent_info_ptr);
 	}
 	return NULL;
@@ -660,10 +660,10 @@ static void _list_delete_retry(void *retry_entry)
 	agent_arg_t *agent_arg_ptr;	/* pointer to part_record */
 
 	agent_arg_ptr = (agent_arg_t *) retry_entry;
-	FREE_NULL(agent_arg_ptr->slurm_addr);
-	FREE_NULL(agent_arg_ptr->node_names);
+	xfree(agent_arg_ptr->slurm_addr);
+	xfree(agent_arg_ptr->node_names);
 #if AGENT_IS_THREAD
-	FREE_NULL(agent_arg_ptr->msg_args);
+	xfree(agent_arg_ptr->msg_args);
 #endif
 	xfree(agent_arg_ptr);
 }
@@ -757,8 +757,8 @@ static void _slurmctld_free_job_launch_msg(batch_job_launch_msg_t * msg)
 {
 	if (msg) {
 		if (msg->environment) {
-			FREE_NULL(msg->environment[0]);
-			FREE_NULL(msg->environment);
+			xfree(msg->environment[0]);
+			xfree(msg->environment);
 		}
 		slurm_free_job_launch_msg(msg);
 	}

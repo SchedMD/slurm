@@ -586,8 +586,8 @@ static void *_slurmctld_background(void *no_data)
 
 	if (config_list)
 		list_destroy(config_list);
-	FREE_NULL(node_record_table_ptr);
-	FREE_NULL(hash_table);
+	xfree(node_record_table_ptr);
+	xfree(hash_table);
 
 	agent_purge();
 #endif
@@ -838,7 +838,7 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 		info("_slurm_rpc_dump_jobs, size=%d, time=%ld",
 		     dump_size, (long) (clock() - start_time));
-		FREE_NULL(dump);
+		xfree(dump);
 	}
 }
 
@@ -878,7 +878,7 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 		info("_slurm_rpc_dump_nodes, size=%d, time=%ld",
 		     dump_size, (long) (clock() - start_time));
-		FREE_NULL(dump);
+		xfree(dump);
 	}
 }
 
@@ -918,7 +918,7 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 		info("_slurm_rpc_dump_partitions, size=%d, time=%ld",
 		     dump_size, (long) (clock() - start_time));
-		FREE_NULL(dump);
+		xfree(dump);
 	}
 }
 
@@ -2498,7 +2498,7 @@ static void _update_logging(void)
 		log_opts.syslog_level  = slurmctld_conf.slurmctld_debug;
 	}
 	if (debug_logfile) {
-		FREE_NULL(slurmctld_conf.slurmctld_logfile);
+		xfree(slurmctld_conf.slurmctld_logfile);
 		slurmctld_conf.slurmctld_logfile = xstrdup(debug_logfile);
 	}
 
