@@ -544,6 +544,11 @@ slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid)
 		goto error;
 	}
 
+	if (j->revoked == true) {
+		slurm_seterrno(EEXIST);
+		goto error;
+	}
+
 	j->revoked     = true;
 	j->expiration  = time(NULL) + ctx->expiry_window;
 
