@@ -77,8 +77,9 @@ main (int argc, char *argv[])
 		fatal ("slurmctld: error %d from read_slurm_conf reading %s", error_code, SLURM_CONF);
 	if ( ( error_code = gethostname (node_name, MAX_NAME_LEN) ) ) 
 		fatal ("slurmctld: errno %d from gethostname", errno);
-	if ( ( strcmp (node_name, control_machine) ) )
-	       	fatal ("slurmctld: this machine (%s) is not the primary control machine (%s)", node_name, control_machine);
+	if ( strcmp (node_name, control_machine) &&  strcmp (node_name, backup_controller) )
+	       	fatal ("slurmctld: this machine (%s) is not the primary (%s) or backup (%s) controller", 
+			node_name, control_machine, backup_controller);
 
 	
 	if ( ( sockfd = slurm_init_msg_engine_port ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
