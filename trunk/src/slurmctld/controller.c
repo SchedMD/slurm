@@ -90,8 +90,6 @@ main (int argc, char *argv[])
 	init_ctld_conf ( &slurmctld_conf );
 	parse_commandline ( argc, argv, &slurmctld_conf );
 
-	if ( ( error_code = init_slurm_conf () ) ) 
-		fatal ("init_slurm_conf error %d", error_code);
 	if ( ( error_code = read_slurm_conf ()) ) 
 		fatal ("read_slurm_conf error %d reading %s", error_code, SLURM_CONFIG_FILE);
 	if ( ( error_code = getnodename (node_name, MAX_NAME_LEN) ) ) 
@@ -522,7 +520,6 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 	/* init */
 	int error_code;
 	clock_t start_time;
-	struct job_record *job_rec_ptr;
 	uint32_t job_id ;
 	slurm_msg_t response_msg ;
 	submit_response_msg_t submit_msg ;
@@ -532,7 +529,9 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 
 	/* do RPC call */
 	dump_job_desc(job_desc_msg);
-	error_code = job_create(job_desc_msg, &job_id, 0, 0, &job_rec_ptr);
+	error_code = job_allocate (job_desc_msg, &job_id, (char **) NULL, 
+		(uint16_t *) NULL, (uint32_t **) NULL, (uint32_t **) NULL,
+		false, false, false);
 
 	/* return result */
 	if (error_code)
@@ -555,7 +554,8 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 }
 
 /* slurm_rpc_allocate_resources:  process RPC to allocate resources for a job */
-void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
+void 
+slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 {
 	/* init */
 	int error_code;
@@ -571,10 +571,10 @@ void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 	start_time = clock ();
 
 	/* do RPC call */
-	dump_job_desc(job_desc_msg);
+	dump_job_desc (job_desc_msg);
 	error_code = job_allocate(job_desc_msg, &job_id, 
 			&node_list_ptr, &num_cpu_groups, &cpus_per_node, &cpu_count_reps, 
-			immediate , false );
+			immediate , false, true );
 
 	/* return result */
 	if (error_code)
@@ -622,7 +622,7 @@ void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 	dump_job_desc(job_desc_msg);
 	error_code = job_allocate(job_desc_msg, &job_id, 
 			&node_list_ptr, &num_cpu_groups, &cpus_per_node, &cpu_count_reps, 
-			false , true );
+			false , true, true );
 	
 	/* return result */
 	if (error_code)
@@ -650,10 +650,7 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 	start_time = clock ();
 
 	/* do RPC call */
-	error_code = init_slurm_conf ();
-	if (error_code == 0)
-		error_code = read_slurm_conf ( );
-	reset_job_bitmaps ();
+	error_code = read_slurm_conf ( );
 
 	/* return result */
 	if (error_code)
@@ -664,6 +661,7 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 	}
 	else
 	{
+		reset_job_bitmaps ();
 		info ("slurm_rpc_reconfigure_controller completed successfully, time=%ld", 
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );

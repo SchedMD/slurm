@@ -284,19 +284,13 @@ extern int init_node_conf ();
  */
 extern int init_part_conf ();
 
-/* 
- * init_slurm_conf - initialize or re-initialize the slurm configuration  
- *	values. this should be called before calling read_slurm_conf.  
- */
-extern int init_slurm_conf ();
-
 /* is_key_valid report if the supplied partition key is valid */
 extern int  is_key_valid (void * key);
 
 /* job_allocate - allocate resource for the supplied job specifications */
 extern int job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list, 
 	uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps, 
-	int immediate, int will_run);
+	int immediate, int will_run, int allocate);
 
 /* job_cancel - cancel the specified job */
 extern int job_cancel (uint32_t job_id);

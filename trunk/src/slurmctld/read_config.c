@@ -44,6 +44,7 @@
 
 #define BUF_SIZE 1024
 
+int init_slurm_conf ();
 int parse_config_spec (char *in_line);
 int parse_node_spec (char *in_line);
 int parse_part_spec (char *in_line);
@@ -71,13 +72,7 @@ main (int argc, char *argv[]) {
 		exit (1);
 	}			
 
-	error_code = init_slurm_conf ();
-	if (error_code != 0) {
-		printf ("ERROR %d from init_slurm_conf\n", error_code);
-		exit (error_code);
-	}
 	error_code = read_slurm_conf ( );
-
 	if (error_code) {
 		printf ("ERROR %d from read_slurm_conf\n", error_code);
 		exit (error_code);
@@ -153,13 +148,6 @@ main (int argc, char *argv[]) {
 		sleep (5);
 	}
 	for (i = 0; i < cycles; i++) {
-		error_code = init_slurm_conf ();
-		if (error_code) {
-			printf ("ERROR %d from init_slurm_conf\n",
-				error_code);
-			exit (error_code);
-		}		
-
 		error_code = read_slurm_conf ( );
 		if (error_code) {
 			printf ("ERROR %d from read_slurm_conf\n",
@@ -335,8 +323,7 @@ build_bitmaps () {
 
 
 /* 
- * init_slurm_conf - initialize or re-initialize the slurm configuration  
- *	values. this should be called before calling read_slurm_conf.  
+ * init_slurm_conf - initialize or re-initialize the slurm configuration values.   
  * output: return value - 0 if no error, otherwise an error code
  */
 int
@@ -816,7 +803,6 @@ parse_part_spec (char *in_line) {
  * read_slurm_conf - load the slurm configuration from the configured file. 
  * read_slurm_conf can be called more than once if so desired.
  * output: return - 0 if no error, otherwise an error code
- * NOTE: call init_slurm_conf before ever calling read_slurm_conf.  
  */
 int 
 read_slurm_conf ( ) {
@@ -828,6 +814,9 @@ read_slurm_conf ( ) {
 
 	/* initialization */
 	start_time = clock ();
+	if ( (error_code = init_slurm_conf ()) )
+		return error_code;
+
 	slurm_spec_file = fopen (slurmctld_conf.slurm_conf, "r");
 	if (slurm_spec_file == NULL)
 		fatal ("read_slurm_conf error %d opening file %s", 
