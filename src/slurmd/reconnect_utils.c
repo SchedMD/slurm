@@ -104,3 +104,23 @@ ssize_t write_EINTR(int fd, void *buf, size_t count)
 	}
 }
 
+struct timeval timeval_diff ( struct timeval * last , struct timeval * first )
+{
+	struct timeval temp ;
+	double lastd = last -> tv_sec * 1000000 + last -> tv_usec ;
+	double firstd = first -> tv_sec * 1000000 + first -> tv_usec ;
+	double diffd = lastd - firstd ;
+	temp . tv_sec = diffd / 1000000 ;
+	temp . tv_usec = ( long long ) diffd % 1000000 ;
+	return temp ;
+}
+
+double timeval_diffd ( struct timeval * last , struct timeval * first , struct timeval * remaining )
+{
+	double lastd = last -> tv_sec * 1000000 + last -> tv_usec ;
+	double firstd = first -> tv_sec * 1000000 + first -> tv_usec ;
+	double diffd = lastd - firstd ;
+	remaining -> tv_sec = diffd / 1000000 ;
+	remaining -> tv_usec = ( long long ) diffd % 1000000 ;
+	return diffd ;
+}

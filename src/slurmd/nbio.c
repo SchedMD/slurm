@@ -21,6 +21,7 @@
 #include <src/slurmd/reconnect_utils.h>
 #include <src/slurmd/io.h>
 #include <src/slurmd/pipes.h>
+#include <src/slurmd/nbio.h>
 
 #define RECONNECT_TIMEOUT_SECONDS 1
 #define RECONNECT_TIMEOUT_MICROSECONDS 0
@@ -62,6 +63,7 @@ typedef struct nbio_attr
 	int reconnect_flags [2] ;
 	time_t reconnect_timers [2] ;
 	int max_fd ;
+	struct timeval select_timer ;
 } nbio_attr_t ;
 
 typedef struct io_debug
@@ -71,6 +73,10 @@ typedef struct io_debug
 	int global_task_id ;
 } io_debug_t ;
 
+/* TODO
+ * timers on reconnect
+ * line oriented code
+ */
 int nbio_set_init ( nbio_attr_t * nbio_attr , slurm_fd_set * set_ptr ) ;
 int memcpy_sets ( slurm_fd_set * init_set , slurm_fd_set * next_set ) ;
 int write_task_socket ( circular_buffer_t * cir_buf, slurm_fd write_fd , io_debug_t * dbg ) ;
@@ -81,6 +87,7 @@ int error_task_pipe ( nbio_attr_t * nbio_attr , int fd_index ) ;
 int error_task_socket ( nbio_attr_t * nbio_attr , int fd_index ) ;
 int set_max_fd ( nbio_attr_t * nbio_attr ) ;
 int nbio_cleanup ( nbio_attr_t * nbio_attr ) ;
+int reconnect (  nbio_attr_t * nbio_attr ) ;
 
 int init_io_debug ( io_debug_t * io_dbg , task_start_t * task_start , char * name )
 {
@@ -105,7 +112,13 @@ int init_nbio_attr ( nbio_attr_t * nbio_attr , task_start_t * task_start )
 	init_circular_buffer ( & nbio_attr -> out_cir_buf ) ;
 	init_circular_buffer ( & nbio_attr -> err_cir_buf ) ;
 	nbio_set_init (  nbio_attr , nbio_attr -> init_set ) ;
-	for ( i=0 ; i < 2 ; i ++ ) { nbio_attr -> reconnect_flags[i] = RECONNECT ; }
+	for ( i=0 ; i < 2 ; i ++ ) 
+	{ 
+		nbio_attr -> reconnect_flags[i] = RECONNECT ; 
+		nbio_attr -> reconnect_timers[i] = 0 ;
+	}
+	nbio_attr -> select_timer . tv_sec = RECONNECT_TIMEOUT_SECONDS ;
+	nbio_attr -> select_timer . tv_usec = RECONNECT_TIMEOUT_MICROSECONDS ;
 	return SLURM_SUCCESS ;
 }
 
@@ -124,16 +137,15 @@ void * do_nbio ( void * arg )
 	posix_signal_pipe_ignore ( ) ;
 	init_nbio_attr ( & nbio_attr , task_start ) ;
 
+	reconnect ( & nbio_attr ) ;
+
 	while ( true ) 
 	{
-		struct timeval select_timer ;
 		int rc ;
-		select_timer . tv_sec = RECONNECT_TIMEOUT_SECONDS ;
-		select_timer . tv_usec = RECONNECT_TIMEOUT_MICROSECONDS ;
 
 		set_max_fd ( & nbio_attr ) ;
 
-		rc = slurm_select ( nbio_attr . max_fd , & nbio_attr . init_set[RD_SET] , & nbio_attr . init_set[WR_SET] , & nbio_attr . init_set[ER_SET] , NULL ) ;
+		rc = slurm_select ( nbio_attr . max_fd , & nbio_attr . init_set[RD_SET] , & nbio_attr . init_set[WR_SET] , & nbio_attr . init_set[ER_SET] , & nbio_attr . select_timer ) ;
 		if ( rc == SLURM_ERROR)
 		{
 			debug3 ( "select errror %m errno: %i", errno ) ;
@@ -141,7 +153,12 @@ void * do_nbio ( void * arg )
 		}
 		else if  ( rc == 0 )
 		{
-			
+			reconnect ( & nbio_attr ) ;
+			if ( nbio_attr . out_cir_buf -> read_size > 0 ) { slurm_FD_SET ( nbio_attr . fd [IN_OUT_FD] , & nbio_attr . init_set [WR_SET] ); }
+			if ( nbio_attr . err_cir_buf -> read_size > 0 ) { slurm_FD_SET ( nbio_attr . fd [SIG_ERR_FD] , & nbio_attr . init_set [WR_SET] ); }
+			nbio_attr . select_timer . tv_sec = RECONNECT_TIMEOUT_SECONDS ;
+			nbio_attr . select_timer . tv_usec = RECONNECT_TIMEOUT_MICROSECONDS ;
+			continue ;
 		}
 		else if ( rc < 0 )
 		{
@@ -152,8 +169,6 @@ void * do_nbio ( void * arg )
 		{
 			break ;
 		}
-		
-		reconnect ( ) ;
 
 		nbio_set_init ( & nbio_attr , nbio_attr . next_set ) ;
 
@@ -529,3 +544,25 @@ int nbio_cleanup ( nbio_attr_t * nbio_attr )
 
 	return SLURM_SUCCESS ;
 }
+
+int reconnect (  nbio_attr_t * nbio_attr )
+{
+	if ( nbio_attr -> reconnect_flags[IN_OUT_FD] == RECONNECT )
+	{
+		slurm_close_stream ( nbio_attr -> fd [IN_OUT_FD] ) ;
+		if ( connect_io_stream ( nbio_attr -> task_start , STDIN_OUT_SOCK ) > 0 )
+		{
+			nbio_attr -> reconnect_flags[IN_OUT_FD] = CONNECTED ;
+		}
+	}
+	if (  nbio_attr -> reconnect_flags[SIG_ERR_FD] == RECONNECT )
+	{
+		slurm_close_stream ( nbio_attr -> fd [SIG_ERR_FD] ) ;
+		if ( connect_io_stream ( nbio_attr -> task_start , SIG_STDERR_SOCK ) > 0 )
+		{
+			nbio_attr -> reconnect_flags[SIG_ERR_FD] = CONNECTED ;
+		}
+	}
+	return SLURM_SUCCESS ;
+}
+
