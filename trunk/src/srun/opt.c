@@ -105,6 +105,7 @@
 #define OPT_WAIT	0x19
 #define OPT_OVERCOMMIT	0x1a
 #define OPT_HOLD	0x1b
+#define OPT_RELATIVE    0x1c
 
 /* constraint type options */
 #define OPT_MINCPUS     0x50
@@ -181,8 +182,11 @@ struct poptOption runTable[] = {
 	 "number of cpus required per task",
 	 "ncpus"},
 	{"nodes", 'N', POPT_ARG_STRING, 0, OPT_NODES,
-	 "number of nodes on which to run (nnodes = count|min-max)",
+	 "number of nodes on which to run (nnodes = min[-max])",
 	 "nnodes"},
+	{"relative", 'r', POPT_ARG_STRING, &opt.relative, OPT_RELATIVE,
+	 "run job step relative to node n of allocation",
+	 "n"},
 	{"partition", 'p', POPT_ARG_STRING, &opt.partition, OPT_PARTITION,
 	 "partition requested",
 	 "partition"},
@@ -626,12 +630,12 @@ struct env_vars {
 };
 
 env_vars_t env_vars[] = {
-	{"SLURMD_DEBUG",        OPT_INT, &opt.slurmd_debug,  NULL           }, 
 	{"SLURM_NPROCS",        OPT_INT, &opt.nprocs,        &opt.nprocs_set},
 	{"SLURM_CPUS_PER_TASK", OPT_INT, &opt.cpus_per_task, &opt.cpus_set  },
 	{"SLURM_PARTITION",     OPT_STRING,  &opt.partition, NULL           },
 	{"SLURM_IMMEDIATE",     OPT_INT,     &opt.immediate, NULL           },
 	{"SLURM_DEBUG",         OPT_DEBUG,       NULL,       NULL           },
+	{"SLURMD_DEBUG",        OPT_INT, &opt.slurmd_debug,  NULL           }, 
 	{"SLURM_NNODES",        OPT_NODES,       NULL,       NULL           },
 	{"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT,  NULL,       NULL           },
 	{"SLURM_DISTRIBUTION",  OPT_DISTRIB,     NULL,       NULL           },
@@ -948,7 +952,6 @@ _opt_verify(poptContext optctx)
 {
 	bool verified = true;
 
-
 	if (opt.slurmd_debug + LOG_LEVEL_ERROR > LOG_LEVEL_DEBUG2)
 		opt.slurmd_debug = LOG_LEVEL_DEBUG2 - LOG_LEVEL_ERROR;
 
@@ -959,6 +962,17 @@ _opt_verify(poptContext optctx)
 
 	if (opt.no_alloc && opt.exc_nodes) {
 		error("can not specify --exclude list with -Z, --no-allocate.");
+		verified = false;
+	}
+
+	if (opt.no_alloc && opt.relative) {
+		error("do not specify -r,--relative with -Z,--no-allocate.");
+		verified = false;
+	}
+
+	if (opt.relative && (opt.exc_nodes || opt.nodelist)) {
+		error("-r,--relative not allowed with "
+		      "-w,--nodelist or -x,--exclude.");
 		verified = false;
 	}
 
@@ -1017,15 +1031,18 @@ _opt_verify(poptContext optctx)
 
 		} else if (opt.nodes_set && opt.nprocs_set) {
 
-			/* make sure # of procs >= min_nodes */
+			/* 
+			 *  make sure # of procs >= min_nodes 
+			 */
 			if (opt.nprocs < opt.min_nodes) {
-				error("Warning: can't run %d processes on %d " 
+
+				info ("Warning: can't run %d processes on %d " 
 				      "nodes, setting nnodes to %d", 
-				      opt.nprocs, opt.min_nodes, 
-				      opt.min_nodes);
+				      opt.nprocs, opt.min_nodes, opt.nprocs);
+
 				opt.min_nodes = opt.nprocs;
-				if (opt.max_nodes && 
-				    (opt.min_nodes > opt.max_nodes))
+				if (   opt.max_nodes 
+				   && (opt.min_nodes > opt.max_nodes) )
 					opt.max_nodes = opt.min_nodes;
 			}
 

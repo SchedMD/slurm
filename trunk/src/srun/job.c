@@ -47,6 +47,7 @@
 #include "src/srun/job.h"
 #include "src/srun/opt.h"
 #include "src/srun/fname.h"
+#include "src/srun/signals.h"
 
 #if HAVE_TOTALVIEW
 #include "src/srun/attach.h"
@@ -100,21 +101,21 @@ job_t *
 job_create_allocation(resource_allocation_response_msg_t *resp)
 {
 	job_t *job;
-	allocation_info_t *info = xmalloc(sizeof(*info));
+	allocation_info_t *i = xmalloc(sizeof(*i));
 
-	info->nodelist       = _normalize_hostlist(resp->node_list);
-	info->nnodes	     = resp->node_cnt;
-	info->jobid          = resp->job_id;
-	info->stepid         = NO_VAL;
-	info->num_cpu_groups = resp->num_cpu_groups;
-	info->cpus_per_node  = resp->cpus_per_node;
-	info->cpu_count_reps = resp->cpu_count_reps;
-	info->addrs          = resp->node_addr;
+	i->nodelist       = _normalize_hostlist(resp->node_list);
+	i->nnodes	  = resp->node_cnt;
+	i->jobid          = resp->job_id;
+	i->stepid         = NO_VAL;
+	i->num_cpu_groups = resp->num_cpu_groups;
+	i->cpus_per_node  = resp->cpus_per_node;
+	i->cpu_count_reps = resp->cpu_count_reps;
+	i->addrs          = resp->node_addr;
 
-	job = _job_create_internal(info);
+	job = _job_create_internal(i);
 
-	xfree(info->nodelist);
-	xfree(info);
+	xfree(i->nodelist);
+	xfree(i);
 
 	return (job);
 }
@@ -253,7 +254,8 @@ job_destroy(job_t *job, int error)
 		debug("cancelling job %u", job->jobid);
 		slurm_complete_job(job->jobid, 0, error);
 	} else {
-		debug("no allocation to cancel");
+		debug("no allocation to cancel, killing remote tasks");
+		fwd_signal(job, SIGKILL); 
 		return;
 	}
 
@@ -545,6 +547,148 @@ _host_state_name(host_state_t state_inx)
 	}
 }
 
+
+/*
+ *  Returns the first integer pushed onto the hostlist hl.
+ *   Returns -2 when hostlist is empty, -1 if strtoul fails.
+ */
+static int 
+_hostlist_shift_int(hostlist_t hl)
+{
+	char *str = hostlist_shift(hl);
+	char *p = NULL;
+	unsigned long n;
+
+	if (!str) return (-2);
+
+	n = strtoul(str, &p, 10);
+	if ((n < 0) || (*p != '\0')) {
+		free(str);
+		return -1;
+	}
+		
+	free(str);
+
+	return ((int) n);
+}
+
+/*
+ *  Returns a ranged string representation of hostlist hl
+ *   string is allocated with xmalloc() and must be freed with xfree()
+ */
+static char *
+_hostlist_string_create(hostlist_t hl)
+{
+	int  len = 4096;
+	char *buf = xmalloc(len*sizeof(char));
+
+	while (hostlist_ranged_string(hl, len, buf) < 0)
+		xrealloc(buf, (len+=4096)*sizeof(char));
+
+	return buf;
+}
+
+/*
+ *  Applies the setting of opt.relative to the hostlist given
+ *
+ */
+static char *
+_relative_hosts(hostlist_t hl)
+{
+	int n = 0;
+	hostlist_t rl, rlist;
+	char *relnodes = NULL;
+
+	xassert (opt.relative);
+
+	if (!(rl = hostlist_create(opt.relative))) 
+		return NULL;
+
+	rlist = hostlist_create(NULL); 
+
+	if (hostlist_count(rl) == 1) {
+		int i;
+		int origin  = _hostlist_shift_int(rl);
+		int horizon = MIN(opt.min_nodes, hostlist_count(hl));
+
+		for (i = 0; i < horizon; i++) {
+			char *host = hostlist_nth(hl, i+origin);
+			hostlist_push_host(rlist, host);
+			free (host);
+		}
+
+		goto done;
+	}
+
+	while ((n = _hostlist_shift_int(rl)) > -2) {
+		char *host;
+
+		if (n < 0) {
+			hostlist_destroy(rlist);
+			hostlist_destroy(rl);
+			return NULL;
+		}
+
+		host = hostlist_nth(hl, n);
+	        hostlist_push_host(rlist, host);
+		free (host);
+	}
+
+    done:
+	relnodes = _hostlist_string_create(rlist);
+
+	/*
+	 *  Reset min nodes to the minimum of the new count of available
+	 *   hosts and the existing value. This means that requesting
+	 *   relative nodes is, in effect, deselecting nodes outside
+	 *   the relative set.
+	 *
+	 *  This will allow proper srun options to fall naturally
+	 *   out of use of the relative option.
+	 */
+	opt.min_nodes = MIN(opt.min_nodes, hostlist_count(rlist));
+
+	hostlist_destroy(rlist);
+	hostlist_destroy(rl);
+	return relnodes;
+}
+
+/*
+ *  Apply the user option -r, --relative to the allocation response.
+ *   Exits program on error parsing relative option.
+ *
+ */
+static void
+_apply_relative_option(resource_allocation_response_msg_t *resp,
+                       bitstr_t *reqbits)
+{
+	bitstr_t *relbits = NULL;
+	char *relnodes    = NULL;
+	hostlist_t hl     = NULL;
+
+	if (!opt.relative)
+		return;
+
+	hl = hostlist_create(resp->node_list);
+
+	if (!(relnodes = _relative_hosts(hl))) {
+		error ("Bad argument to -r,--relative: `%s'", opt.relative);
+		exit (1);
+	}
+
+	relbits  = bit_alloc(resp->node_cnt);
+
+	_job_resp_bitmap(hl, relnodes, reqbits);
+	_job_resp_hack(resp, reqbits);
+
+	hostlist_destroy (hl);
+	xfree (relnodes);
+	bit_free (relbits);
+
+	return;
+}
+
+
 /* The below functions are used to support job steps *\
 \* with different allocations than the parent job.   */
 int    job_resp_hack_for_step(resource_allocation_response_msg_t *resp)
@@ -554,6 +698,13 @@ int    job_resp_hack_for_step(resource_allocation_response_msg_t *resp)
 	int return_code = 0, total;
 
 	req_bitmap = bit_alloc(resp->node_cnt);
+	exc_bitmap = bit_alloc(resp->node_cnt);
+
+	/*
+	 *  Apply -r, --relative option first
+	 */
+	_apply_relative_option(resp, req_bitmap);
+
 	if (opt.nodelist && 
 	    _job_resp_bitmap(resp_nodes, opt.nodelist, req_bitmap)) {
 		error("Required nodes (%s) missing from job's allocation (%s)",
@@ -562,7 +713,6 @@ int    job_resp_hack_for_step(resource_allocation_response_msg_t *resp)
 		goto cleanup;
 	}
 
-	exc_bitmap = bit_alloc(resp->node_cnt);
 	if (opt.exc_nodes) {
 		bitstr_t *tmp_bitmap;
 		int overlap;
@@ -572,8 +722,9 @@ int    job_resp_hack_for_step(resource_allocation_response_msg_t *resp)
 		overlap = bit_set_count(tmp_bitmap);
 		bit_free(tmp_bitmap);
 		if (overlap > 0) {
-			error("Duplicates in hostlist (%s) and exclude list (%s)",
-				opt.nodelist, opt.exc_nodes);
+			error("Duplicates in hostlist (%s) "
+			      "and exclude list (%s)",
+			      opt.nodelist, opt.exc_nodes);
 			return_code = 1;
 			goto cleanup;
 		}
@@ -587,7 +738,7 @@ int    job_resp_hack_for_step(resource_allocation_response_msg_t *resp)
 				opt.min_nodes, total);
 			return_code = 1;
 			goto cleanup;
-		}
+		} 
 	}
 
 	if (total != resp->node_cnt)
@@ -736,8 +887,9 @@ _job_resp_hack(resource_allocation_response_msg_t *resp, bitstr_t *req_bitmap)
 		memcpy(new_node_addr+new_inx, resp->node_addr+old_inx, 
 		       sizeof(slurm_addr));
 
-		new_cpus_per_node[new_inx]  = _job_resp_cpus(
-				resp->cpus_per_node, resp->cpu_count_reps, old_inx);
+		new_cpus_per_node[new_inx]  = 
+			_job_resp_cpus(resp->cpus_per_node, 
+			               resp->cpu_count_reps, old_inx);
 		new_cpu_count_reps[new_inx] = 1;
 		new_inx++;
 	}

@@ -215,13 +215,12 @@ int main(int ac, char **av)
 
 	/* job is now overdone, clean up  
 	 *
-	 * If job "failed" send SIGKILL to any remaining tasks.
 	 * If job is "forcefully terminated" exit immediately.
 	 *
 	 */
 	if (job->state == SRUN_JOB_FAILED) {
 		info("Terminating job");
-		fwd_signal(job, SIGKILL);
+		job_destroy(job, 0);
 	} else if (job->state == SRUN_JOB_FORCETERM) {
 		job_destroy(job, 0);
 		exit(1);
