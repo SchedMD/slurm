@@ -41,6 +41,7 @@
 #define DEFAULT_MAX_JOB_COUNT       2000
 #define DEFAULT_MIN_JOB_AGE         300
 #define DEFAULT_RETURN_TO_SERVICE   0
+#define DEFAULT_SCHEDTYPE           "sched/builtin"
 #define DEFAULT_SLURMCTLD_PIDFILE   "/var/run/slurmctld.pid"
 #define DEFAULT_SLURMCTLD_TIMEOUT   300
 #define DEFAULT_SLURMD_PIDFILE      "/var/run/slurmd.pid"

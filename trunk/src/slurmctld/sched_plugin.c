@@ -28,10 +28,11 @@
 
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
+#include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "sched_plugin.h"
+#include "src/slurmctld/sched_plugin.h"
 
 
 /* ************************************************************************ */
@@ -91,7 +92,7 @@ get_sched_type( void )
 		read_slurm_conf_ctl( &conf );
 	}
 	if ( conf.schedtype == NULL ) {
-		conf.schedtype = xstrdup( "sched/builtin" );
+		conf.schedtype = xstrdup( DEFAULT_SCHEDTYPE );
 	}
 	slurm_mutex_unlock( &config_lock );
 

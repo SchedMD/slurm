@@ -200,7 +200,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	int max_job_cnt = -1, min_job_age = -1, wait_time = -1;
 	char *backup_addr = NULL, *backup_controller = NULL;
 	char *control_addr = NULL, *control_machine = NULL, *epilog = NULL;
-	char *prioritize = NULL, *prolog = NULL;
+	char *prolog = NULL;
 	char *sched_type = NULL, *sched_auth = NULL;
 	char *state_save_location = NULL, *tmp_fs = NULL;
 	char *slurm_user = NULL, *slurmctld_pidfile = NULL;
@@ -859,6 +859,9 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	if (ctl_conf_ptr->ret2service == (uint16_t) NO_VAL)
 		ctl_conf_ptr->ret2service = DEFAULT_RETURN_TO_SERVICE;
+
+	if (ctl_conf_ptr->schedtype == NULL)
+		ctl_conf_ptr->schedtype = xstrdup(DEFAULT_SCHEDTYPE);
 
 	if (ctl_conf_ptr->slurm_user_name == NULL) {
 		ctl_conf_ptr->slurm_user_name = xstrdup("root");
