@@ -646,7 +646,12 @@ _relative_hosts(hostlist_t hl)
 	 *  This will allow proper srun options to fall naturally
 	 *   out of use of the relative option.
 	 */
-	opt.min_nodes = MIN(opt.min_nodes, hostlist_count(rlist));
+	n = hostlist_count(rlist);
+	if (n < opt.min_nodes) {
+		info("Warning: Only %d node(s) beyond relative location "
+			"specified, resetting nnodes to %d", n, n);
+		opt.min_nodes = n;
+	}
 
 	hostlist_destroy(rlist);
 	hostlist_destroy(rl);
