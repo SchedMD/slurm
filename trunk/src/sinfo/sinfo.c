@@ -229,6 +229,7 @@ static void _swap_node_rec(node_info_t *from_node, node_info_t *to_node)
 		_swap_char(&from_node->name,      &to_node->name);
 		_swap_char(&from_node->features,  &to_node->features);
 		_swap_char(&from_node->partition, &to_node->partition);
+		_swap_char(&from_node->reason,    &to_node->reason);
 		to_node->node_state	= from_node->node_state;
 		to_node->cpus		= from_node->cpus;
 		to_node->real_memory	= from_node->real_memory;
