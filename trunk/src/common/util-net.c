@@ -43,7 +43,7 @@
 
 #include "src/common/strlcpy.h"
 #include "src/common/util-net.h"
-#include "src/common/wrapper.h"
+#include "src/common/macros.h"
 
 
 #ifndef INET_ADDRSTRLEN
@@ -73,12 +73,12 @@ struct hostent * get_host_by_name(const char *name,
     assert(name != NULL);
     assert(buf != NULL);
 
-    x_pthread_mutex_lock(&hostentLock);
+    slurm_mutex_lock(&hostentLock);
     if ((hptr = gethostbyname(name)))
         n = copy_hostent(hptr, buf, buflen);
     if (h_err)
         *h_err = h_errno;
-    x_pthread_mutex_unlock(&hostentLock);
+    slurm_mutex_unlock(&hostentLock);
 
     if (n < 0) {
         errno = ERANGE;
@@ -100,12 +100,12 @@ struct hostent * get_host_by_addr(const char *addr, int len, int type,
     assert(addr != NULL);
     assert(buf != NULL);
 
-    x_pthread_mutex_lock(&hostentLock);
+    slurm_mutex_lock(&hostentLock);
     if ((hptr = gethostbyaddr(addr, len, type)))
         n = copy_hostent(hptr, buf, buflen);
     if (h_err)
         *h_err = h_errno;
-    x_pthread_mutex_unlock(&hostentLock);
+    slurm_mutex_unlock(&hostentLock);
 
     if (n < 0) {
         errno = ERANGE;
