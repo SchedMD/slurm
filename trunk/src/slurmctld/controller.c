@@ -954,6 +954,7 @@ slurm_rpc_update_job ( slurm_msg_t * msg )
 	job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
 	/* Locks: Write job, read node, read partition */
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+	int uid = 0;
 
 	start_time = clock ();
 	debug ("Processing RPC: REQUEST_UPDATE_JOB");
@@ -961,7 +962,10 @@ slurm_rpc_update_job ( slurm_msg_t * msg )
 	unlock_slurmctld (job_write_lock);
 
 	/* do RPC call */
-	error_code = update_job ( job_desc_msg );
+#ifdef	HAVE_AUTHD
+	uid = slurm_auth_uid (msg->cred);
+#endif
+	error_code = update_job ( job_desc_msg, uid );
 
 	/* return result */
 	if (error_code)
@@ -988,21 +992,32 @@ void
 slurm_rpc_update_node ( slurm_msg_t * msg )
 {
 	/* init */
-	int error_code;
+	int error_code = 0;
 	clock_t start_time;
 	update_node_msg_t * update_node_msg_ptr ;
 	/* Locks: Write node */
 	slurmctld_lock_t node_write_lock = { NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+#ifdef	HAVE_AUTHD
+	int uid;
+#endif
 
 	start_time = clock ();
 	debug ("Processing RPC: REQUEST_UPDATE_NODE");
-	lock_slurmctld (node_write_lock);
+#ifdef	HAVE_AUTHD
+	uid = slurm_auth_uid (msg->cred);
+	if (uid != 0) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error ("Security violation, UPDATE_NODE RPC from uid %d", uid);
+	}
+#endif
 
-	update_node_msg_ptr = (update_node_msg_t * ) msg-> data ;
-	
-	/* do RPC call */
-	error_code = update_node ( update_node_msg_ptr );
-	unlock_slurmctld (node_write_lock);
+	if (error_code == 0) {
+		/* do RPC call */
+		lock_slurmctld (node_write_lock);
+		update_node_msg_ptr = (update_node_msg_t * ) msg-> data ;
+		error_code = update_node ( update_node_msg_ptr );
+		unlock_slurmctld (node_write_lock);
+	}
 
 	/* return result */
 	if (error_code)
@@ -1031,19 +1046,31 @@ void
 slurm_rpc_update_partition ( slurm_msg_t * msg )
 {
 	/* init */
-	int error_code;
+	int error_code = 0;
 	clock_t start_time;
 	update_part_msg_t * part_desc_ptr = (update_part_msg_t * ) msg-> data ;
 	/* Locks: Read node, write partition */
 	slurmctld_lock_t part_write_lock = { NO_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK };
+#ifdef	HAVE_AUTHD
+	int uid;
+#endif
 
 	start_time = clock ();
 	debug ("Processing RPC: REQUEST_UPDATE_PARTITION");
-	lock_slurmctld (part_write_lock);
+#ifdef	HAVE_AUTHD
+	uid = slurm_auth_uid (msg->cred);
+	if (uid != 0) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error ("Security violation, UPDATE_PARTITION RPC from uid %d", uid);
+	}
+#endif
 
-	/* do RPC call */
-	error_code = update_part ( part_desc_ptr );
-	unlock_slurmctld (part_write_lock);
+	if (error_code == 0) {
+		/* do RPC call */
+		lock_slurmctld (part_write_lock);
+		error_code = update_part ( part_desc_ptr );
+		unlock_slurmctld (part_write_lock);
+	}
 
 	/* return result */
 	if (error_code)
@@ -1092,7 +1119,7 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 	if ((uid != job_desc_msg->user_id) &&
 	    (uid != 0)) {
 		error_code = ESLURM_USER_ID_MISSING;
-		error ("Bogus SUBMIT_JOB from uid %d", uid);
+		error ("Security violation, SUBMIT_JOB from uid %d", uid);
 	}
 #endif
 	if (error_code == 0) {
@@ -1455,12 +1482,12 @@ slurm_rpc_shutdown_controller_immediate ( slurm_msg_t * msg )
 	if (error_code == 0)
 		debug ("Performing RPC: REQUEST_SHUTDOWN_IMMEDIATE");
 }
-/* slurm_rpc_create_job_step - process RPC to creates/registers a job step with the step_mgr */
+/* slurm_rpc_job_step_create - process RPC to creates/registers a job step with the step_mgr */
 void 
 slurm_rpc_job_step_create( slurm_msg_t* msg )
 {
 	/* init */
-	int error_code;
+	int error_code = 0;
 	clock_t start_time;
 
 	slurm_msg_t resp;
@@ -1470,14 +1497,27 @@ slurm_rpc_job_step_create( slurm_msg_t* msg )
 			( job_step_create_request_msg_t* ) msg-> data ;
 	/* Locks: Write jobs, read nodes */
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
+#ifdef	HAVE_AUTHD
+	int uid;
+#endif
 
 	start_time = clock ();
 	debug ("Processing RPC: REQUEST_JOB_STEP_CREATE");
-
-	/* issue the RPC */
 	dump_step_desc ( req_step_msg );
-	lock_slurmctld (job_write_lock);
-	error_code = step_create ( req_step_msg, &step_rec );
+#ifdef	HAVE_AUTHD
+	uid = slurm_auth_uid (msg->cred);
+	if ((uid != req_step_msg->user_id) &&
+	    (uid != 0)) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error ("Security violation, JOB_STEP_CREATE RPC from uid %d", uid);
+	}
+#endif
+
+	if (error_code == 0) {
+		/* issue the RPC */
+		lock_slurmctld (job_write_lock);
+		error_code = step_create ( req_step_msg, &step_rec );
+	}
 
 	/* return result */
 	if ( error_code )
