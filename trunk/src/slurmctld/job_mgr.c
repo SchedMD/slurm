@@ -420,6 +420,17 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->alloc_node, buffer);
 	packstr(dump_job_ptr->account, buffer);
 
+#ifdef HAVE_BGL
+{
+	int i;
+	pack16(dump_job_ptr->conn_type, buffer);
+	pack16(dump_job_ptr->rotate, buffer);
+	pack16(dump_job_ptr->node_use, buffer);
+	for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		pack16(dump_job_ptr->geometry[i], buffer);
+}
+#endif
+
 	/* Dump job details, if available */
 	detail_ptr = dump_job_ptr->details;
 	if (detail_ptr) {
@@ -450,6 +461,10 @@ static int _load_job_state(Buf buffer)
 	uint16_t kill_on_node_fail, kill_on_step_done, name_len, port;
 	char *nodes = NULL, *partition = NULL, *name = NULL;
 	char *alloc_node = NULL, *host = NULL, *account = NULL;
+#ifdef HAVE_BGL
+	int i;
+	uint16_t conn_type, node_use, rotate, geometry[SYSTEM_DIMENSIONS];
+#endif
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	int error_code;
@@ -480,7 +495,38 @@ static int _load_job_state(Buf buffer)
 	safe_unpackstr_xmalloc(&alloc_node, &name_len, buffer);
 	safe_unpackstr_xmalloc(&account, &name_len, buffer);
 
+#ifdef HAVE_BGL
+	safe_unpack16(&conn_type, buffer);
+	safe_unpack16(&rotate, buffer);
+	safe_unpack16(&node_use, buffer);
+	for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		safe_unpack16(&geometry[i], buffer);
+#endif
+
 	/* validity test as possible */
+#ifdef HAVE_BGL
+	if ((conn_type != RM_MESH)
+	&&  (conn_type != RM_TORUS)
+	&&  (conn_type != RM_NAV)) {
+		error("Invalid data for job %u: conn_type=%u",
+			job_id, conn_type);
+		goto unpack_error;
+	}
+
+	if (rotate > 1) {
+		error("Invalid data for job %u: rotate=%u",
+			job_id, rotate);
+		goto unpack_error;
+	}
+
+	if ((node_use != RM_VIRTUAL)
+	&&  (node_use != RM_COPROCESSOR)) {
+		error("Invalid data for job %u: node_use=%u",
+			job_id, node_use);
+		goto unpack_error;
+	}
+#endif
+
 	if (((job_state & (~JOB_COMPLETING)) >= JOB_END) || 
 	    (batch_flag > 1)) {
 		error("Invalid data for job %u: job_state=%u batch_flag=%u",
@@ -560,6 +606,13 @@ static int _load_job_state(Buf buffer)
 	job_ptr->batch_flag        = batch_flag;
 	job_ptr->port              = port;
 	job_ptr->host              = host;
+#ifdef HAVE_BGL
+	job_ptr->conn_type         = conn_type;
+	job_ptr->rotate            = rotate;
+	job_ptr->node_use          = node_use;
+	for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		job_ptr->geometry[i] = geometry[i];
+#endif
 	build_node_details(job_ptr);	/* set: num_cpu_groups, cpus_per_node, 
 					 *	cpu_count_reps, node_cnt, and
 					 *	node_addr */
@@ -1092,6 +1145,13 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	debug3("   host=%s port=%u dependency=%ld account=%s",
 	       job_specs->host, job_specs->port,
 	       dependency, job_specs->account);
+
+#ifdef HAVE_BGL
+	debug3("   conn_type=%u rotate=%u node_use=%u geometry=%u,%u,%u",
+		job_specs->conn_type, job_specs->rotate, job_specs->node_use,
+		job_specs->geometry[0], job_specs->geometry[1], 
+		job_specs->geometry[2]);
+#endif
 }
 
 
@@ -2089,15 +2149,20 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->out = xstrdup(job_desc->out);
 	if (job_desc->work_dir)
 		detail_ptr->work_dir = xstrdup(job_desc->work_dir);
-	if (job_desc->geometry){
-		int i=0;
-		for (; i<SYSTEM_DIMENSIONS; i++)
+#ifdef HAVE_BGL
+	if (SYSTEM_DIMENSIONS
+	&&  (job_desc->geometry[0] != (uint16_t) NO_VAL)) {
+		int i;
+		for (i=0; i<SYSTEM_DIMENSIONS; i++)
 			job_ptr->geometry[i] = job_desc->geometry[i];
 	}
-	if (job_desc->type)
-		job_ptr->type = job_desc->type;
-	if (job_desc->rotate)
+	if (job_desc->conn_type != (uint16_t) NO_VAL)
+		job_ptr->conn_type = job_desc->conn_type;
+	if (job_desc->rotate != (uint16_t) NO_VAL)
 		job_ptr->rotate = job_desc->rotate;
+	if (job_desc->node_use != (uint16_t) NO_VAL)
+		job_ptr->node_use = job_desc->node_use;
+#endif
 
 	*job_rec_ptr = job_ptr;
 	return SLURM_SUCCESS;
@@ -2283,13 +2348,17 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		job_desc_msg->shared = 0;	/* default not shared nodes */
 	if (job_desc_msg->min_procs == NO_VAL)
 		job_desc_msg->min_procs = 1;	/* default 1 cpu per node */
-	if (job_desc_msg->geometry[0] == (uint16_t) NO_VAL)
-		job_desc_msg->geometry[0] = 0;  /* this will indicate that geometry doesn't matter */
-	if (job_desc_msg->type == (uint16_t) NO_VAL)
-		job_desc_msg->type = RM_NAV;    /* default to try TORUS, then MESH */
+#ifdef HAVE_BGL 
+	if (job_desc_msg->geometry[0] == (uint16_t) NO_VAL) {
+		int i;	/* geometry doesn't matter */
+		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+			job_desc_msg->geometry[i] = 0;
+	}
+	if (job_desc_msg->conn_type == (uint16_t) NO_VAL)
+		job_desc_msg->conn_type = RM_NAV;  /* try TORUS, then MESH */
 	if (job_desc_msg->rotate == (uint16_t) NO_VAL)
 		job_desc_msg->rotate = true;    /* default to allow rotate */
-	debug("validate after job_mgr type %d rotate %d RM_NAV %d NOVAL %d", job_desc_msg->type, job_desc_msg->rotate, RM_NAV, NO_VAL);
+#endif
 
 	return SLURM_SUCCESS;
 }
@@ -2479,6 +2548,16 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	pack_bit_fmt(dump_job_ptr->node_bitmap, buffer);
 	pack32(dump_job_ptr->num_procs, buffer);
 
+#ifdef HAVE_BGL
+{
+	int i;
+	pack16(dump_job_ptr->conn_type, buffer);
+	pack16(dump_job_ptr->rotate, buffer);
+	pack16(dump_job_ptr->node_use, buffer);
+	for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		pack16(dump_job_ptr->geometry[i], buffer);
+}
+#endif
 	detail_ptr = dump_job_ptr->details;
 	if (detail_ptr && dump_job_ptr->job_state == JOB_PENDING)
 		_pack_job_details(detail_ptr, buffer);
@@ -3053,19 +3132,22 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_ptr->dependency = job_specs->dependency;
 	}
 
-	if (job_specs->geometry[0] != NO_VAL) {
+#ifdef HAVE_BGL
+	if (job_specs->geometry[0] != (uint16_t) NO_VAL) {
 		int i;
 		for (i=0; i<SYSTEM_DIMENSIONS; i++)
 			job_ptr->geometry[i] = job_specs->geometry[i];
 	}
 
-	if (job_specs->type != NO_VAL) {
-		job_ptr->type = job_specs->type;
-	}
+	if (job_specs->conn_type != (uint16_t) NO_VAL)
+		job_ptr->conn_type = job_specs->conn_type;
 
-	if (job_specs->rotate != NO_VAL) {
+	if (job_specs->rotate != (uint16_t) NO_VAL)
 		job_ptr->rotate = job_specs->rotate;
-	}
+
+	if (job_specs->node_use != (uint16_t) NO_VAL)
+		job_ptr->node_use = job_specs->node_use;
+#endif
 
 	return error_code;
 }

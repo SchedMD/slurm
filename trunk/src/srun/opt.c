@@ -92,7 +92,9 @@
 #define LONG_OPT_CORE	  0x10e
 #define LONG_OPT_NOSHELL  0x10f
 #define LONG_OPT_DEBUG_TS 0x110
-#define LONG_OPT_TYPE	  0x111
+#define LONG_OPT_CONNTYPE 0x111
+#define LONG_OPT_NODE_USE 0x112
+
 /*---- forward declarations of static functions  ----*/
 
 typedef struct env_vars env_vars_t;
@@ -137,6 +139,9 @@ static void  _usage(void);
 static bool  _valid_node_list(char **node_list_pptr);
 static enum  distribution_t _verify_dist_type(const char *arg);
 static bool  _verify_node_count(const char *arg, int *min, int *max);
+static int   _verify_geometry(const char *arg, int *geometry);
+static int   _verify_conn_type(const char *arg);
+static int   _verify_node_use(const char *arg);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
@@ -217,6 +222,76 @@ static enum distribution_t _verify_dist_type(const char *arg)
 		result = SRUN_DIST_BLOCK;
 
 	return result;
+}
+
+/*
+ * verify that a connection type in arg is of known form
+ * returns the connection_type or -1 if not recognized
+ */
+static int _verify_conn_type(const char *arg)
+{
+	if (!strcasecmp(arg, "MESH"))
+		return RM_MESH;
+	else if (!strcasecmp(arg, "TORUS"))
+		return RM_TORUS;
+	else if (!strcasecmp(arg, "NAV"))
+		return RM_NAV;
+
+	error("invalid --conn-type argument %s ignored.", arg);
+	return -1;
+}
+
+/*
+ * verify that a node usage type in arg is of known form
+ * returns the node_use_type or -1 if not recognized
+ */
+static int _verify_node_use(const char *arg)
+{
+	if (!strcasecmp(arg, "VIRTUAL"))
+		return RM_VIRTUAL;
+	else if (!strcasecmp(arg, "COPROCESSOR"))
+		return RM_COPROCESSOR;
+
+	error("invalid --node-use argument %s ignored.", arg);
+	return -1;
+}
+
+/*
+ * verify geometry arguments, must have proper count
+ * returns -1 on error, 0 otherwise
+ */
+static int _verify_geometry(const char *arg, int *geometry)
+{
+	char* token, *delimiter = ",x", *next_ptr;
+	int i, rc = 0;
+	char* geometry_tmp = xstrdup(arg);
+	char* original_ptr = geometry_tmp;
+
+	token = strtok_r(geometry_tmp, delimiter, &next_ptr);
+	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+		if (token == NULL) {
+			error("insufficient dimensions in --geometry");
+			rc = -1;
+			break;
+		}
+		geometry[i] = atoi(token);
+		if (geometry[i] <= 0) {
+			error("invalid --geometry argument");
+			rc = -1;
+			break;
+		}
+		geometry_tmp = next_ptr;
+		token = strtok_r(geometry_tmp, delimiter, &next_ptr);
+	}
+	if (token != NULL) {
+		error("too many dimensions in --geometry");
+		rc = -1;
+	}
+
+	if (original_ptr)
+		xfree(original_ptr);
+
+	return rc;
 }
 
 /* 
@@ -349,6 +424,7 @@ static void _opt_default()
 {
 	char buf[MAXPATHLEN + 1];
 	struct passwd *pw;
+	int i;
 
 	if ((pw = getpwuid(getuid())) != NULL) {
 		strncpy(opt.user, pw->pw_name, MAX_USERNAME);
@@ -423,9 +499,11 @@ static void _opt_default()
 	opt.max_exit_timeout= 60; /* Warn user 60 seconds after task exit */
 	opt.msg_timeout     = 5;  /* Default launch msg timeout           */
 
-	opt.geometry	    = NULL;
-	opt.rotate	    = (uint16_t) NO_VAL;
-	opt.type	    = NULL;
+	for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		opt.geometry[i]	    = -1;
+	opt.no_rotate	    = false;
+	opt.conn_type	    = -1;
+	opt.node_use        = -1;
 
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
@@ -608,6 +686,7 @@ static void _opt_args(int argc, char **argv)
 		{"slurmd-debug",  required_argument, 0, 'd'},
 		{"chdir",         required_argument, 0, 'D'},
 		{"error",         required_argument, 0, 'e'},
+		{"geometry",      required_argument, 0, 'g'},
 		{"hold",          no_argument,       0, 'H'},
 		{"input",         required_argument, 0, 'i'},
 		{"immediate",     no_argument,       0, 'I'},
@@ -622,7 +701,10 @@ static void _opt_args(int argc, char **argv)
 		{"overcommit",    no_argument,       0, 'O'},
 		{"partition",     required_argument, 0, 'p'},
 		{"dependency",    required_argument, 0, 'P'},
+		{"quit-on-interrupt", no_argument,   0, 'q'},
+		{"quiet",            no_argument,    0, 'Q'},
 		{"relative",      required_argument, 0, 'r'},
+		{"no-rotate",     no_argument,       0, 'R'},
 		{"share",         no_argument,       0, 's'},
 		{"time",          required_argument, 0, 't'},
 		{"threads",       required_argument, 0, 'T'},
@@ -634,11 +716,6 @@ static void _opt_args(int argc, char **argv)
 		{"wait",          required_argument, 0, 'W'},
 		{"exclude",       required_argument, 0, 'x'},
 		{"no-allocate",   no_argument,       0, 'Z'},
-		{"geometry",	  required_argument, 0, 'g'}, 
-		{"rotate",	  required_argument, 0, 'R'}, 
-		{"conn-type",	  required_argument, 0, LONG_OPT_TYPE},
-		{"quit-on-interrupt", no_argument,   0, 'q'},
-		{"quiet",            no_argument,    0, 'Q'},
 		{"contiguous",       no_argument,       0, LONG_OPT_CONT},
 		{"core",             required_argument, 0, LONG_OPT_CORE},
 		{"mincpus",          required_argument, 0, LONG_OPT_MINCPU},
@@ -655,10 +732,12 @@ static void _opt_args(int argc, char **argv)
 		{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 		{"help",             no_argument,       0, LONG_OPT_HELP},
 		{"usage",            no_argument,       0, LONG_OPT_USAGE},
+		{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
+		{"node-use",         required_argument, 0, LONG_OPT_NODE_USE},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+a:Abc:C:d:D:e:Hi:IjJ:klm:n:N:"
-		"o:Op:P:Qr:st:T:uU:vVw:W:x:Zqg:R:";
+	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:klm:n:N:"
+		"o:Op:P:qQr:R:st:T:uU:vVw:W:x:Z";
 	char **rest = NULL;
 
 	opt.progname = xbasename(argv[0]);
@@ -720,8 +799,8 @@ static void _opt_args(int argc, char **argv)
 			opt.efname = xstrdup(optarg);
 			break;
 		case (int)'g':
-			xfree(opt.geometry);
-			opt.geometry = xstrdup(optarg);
+			if (_verify_geometry(optarg, opt.geometry))
+				exit(1);
 			break;
 		case (int)'H':
 			opt.hold = true;
@@ -795,7 +874,7 @@ static void _opt_args(int argc, char **argv)
 			opt.relative = xstrdup(optarg);
 			break;
 		case (int)'R':
-			opt.rotate = _get_int(optarg, "rotate");
+			opt.no_rotate = true;
 			break;
 		case (int)'s':
 			opt.share = true;
@@ -913,9 +992,11 @@ static void _opt_args(int argc, char **argv)
 		case LONG_OPT_USAGE:
 			_usage();
 			exit(0);
-		case LONG_OPT_TYPE:
-			xfree(opt.type);
-			opt.type = xstrdup(optarg);
+		case LONG_OPT_CONNTYPE:
+			opt.conn_type = _verify_conn_type(optarg);
+			break;
+		case LONG_OPT_NODE_USE:
+			opt.node_use = _verify_node_use(optarg);
 			break;
 		}
 	}
@@ -1096,60 +1177,6 @@ static bool _opt_verify(void)
 
 	if (opt.noshell && !opt.allocate) {
 		error ("--no-shell only valid with -A (--allocate)");
-		verified = false;
-	}
-
-	/* 
-	 * -geometry must be less than or equal to SYSTEM_DIMENSIONS
-	 */
-	if (opt.geometry != NULL){
-	  char* delimiter = ",x", *next_ptr;
-	  char* geometry_str = xstrdup(opt.geometry);
-	  char* token = strtok_r(geometry_str, delimiter, &next_ptr);
-	  
-	  /* X-dimension */
-	  if (!token || atoi(token) > X_DIMENSION){
-		  error("_opt_verify: specified geometry not enough dimensions or X dimension too big");
-		  verified = false;
-	  }
-	  geometry_str = next_ptr;
-	  token = strtok_r(geometry_str, delimiter, &next_ptr);
-	  
-	  /* Y-dimension */
-	  if (!token || atoi(token) > Y_DIMENSION){
-		  error("_opt_verify: specified geometry not enough dimensions or Y dimension too big");
-		  verified = false;
-	  }
-	  geometry_str = next_ptr;
-	  token = strtok_r(geometry_str, delimiter, &next_ptr);
-
-	  /* Z-dimension */
-	  if (!token || atoi(token) > Z_DIMENSION){
-		  error("_opt_verify: specified geometry not enough dimensions or Z dimension too big");
-		  verified = false;
-	  }
-	  geometry_str = next_ptr;
-	  token = strtok_r(geometry_str, delimiter, &next_ptr);
-
-	  /* if we've read through SYSTEM_DIMENSIONS, and still have
-	     more tokens, then we have too many */
-	  if (token != NULL) {
-		  error("_opt_verify: specified geometry exceeds number of dimensions in system.");
-		  verified = false;
-	  }
-	}
-	
-	if (opt.type && 
-	    strcasecmp(opt.type,"MESH") &&
-	    strcasecmp(opt.type,"TORUS") &&
-	    strcasecmp(opt.type,"NAV")){
-		error("_opt_verify: specified conn-type \"%s\" invalid.", opt.type);
-		verified = false;
-	}
-
-	if (opt.rotate != true && opt.rotate != false){
-		error("_opt_verify: rotate <%d> must be either %d or %d for false or true, respectively.",
-		      opt.rotate, false, true);
 		verified = false;
 	}
 
@@ -1343,6 +1370,10 @@ static void _usage(void)
 "            [--core=type] [-T threads] [-W sec] [--attach] [--join] \n"
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "            [--mpi=type] [--account=name] [--dependency=jobid]\n"
+#ifdef HAVE_BGL
+"            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
+"            [--node-use=type]\n"
+#endif
 "            [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -1406,6 +1437,15 @@ static void _help(void)
 "  -x, --exclude=hosts...      exclude a specific list of hosts\n"
 "  -Z, --no-allocate           don't allocate nodes (must supply -w)\n"
 "\n"
+#ifdef HAVE_BGL
+  "Blue Gene related options:\n"
+  "  -g, --geometry=XxYxZ        geometry constraints of the job\n"
+  "  -R, --no-rotate             disable geometry rotation\n"
+  "      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
+  "                              if not set, then tries to fit TORUS else MESH\n"
+  "      --node-use=type         mode of node use VIRTUAL or COPROCESSOR\n"
+"\n"
+#endif
 "Help options:\n"
 "      --help                  show this help message\n"
 "      --usage                 display brief usage message\n"
@@ -1413,11 +1453,6 @@ static void _help(void)
 "Other options:\n"
 "  -V, --version               output version information and exit\n"
 "\n"
-"BGL related options:\n"
-"  -g, --geometry              geometry constraints of the job.\n"
-"  -R, --rotate                allow geometry rotation (default=true)\n"
-"      --conn-type             constraint on type of connection (Mesh/Torus).\n"
-"                              If not set, then tries to fit Torus else Mesh.\n"
 );
 
 }

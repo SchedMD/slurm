@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "August 2004" "srun 0.4" "slurm components"
+.TH SRUN "1" "September 2004" "srun 0.4" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -344,19 +344,31 @@ allocated to this job. The host list will be assumed to be a filename
 if it contains a "/"character.
 
 .PP
-BGL related options
+The following options support Blue Gene systems, but may be 
+applicable to other systems as well.
 .TP
-\fB\-\-geometry\fR, \fB-g\fR
-Specify the geometry requirements for the job.
+\fB\--g\fR, fB\-\-geometry\fR=\fIXxYxZ\fR
+Specify the geometry requirements for the job. The three numbers 
+represent the required geometry giving dimensions in the X, Y and 
+Z directions. For example "\-\-geometry=2x3x4", specifies a block 
+of nodes having 2 x 3 x 4 = 24 nodes (actually base partions on 
+Blue Gene).
 .TP
-\fB\-\-conn-type\fR
-Require the partition connection type to be of a certain type.  The
-possible options are Mesh, Torus, or Nav.  If Nav, or if not set, then
-SLURM will try to fit a Torus else Mesh.
+\fB\-\-conn\-type\fR=\fItype\fR
+Require the partition connection type to be of a certain type.  
+On Blue Gene the acceptable of \fItype\fR are MESH, TORUS and NAV.  
+If NAV, or if not set, then SLURM will try to fit a TORUS else MESH.
 .TP
-\fB\-\-rotate\fR, \fB-R\fR
-Specify whether SLURM is allowed to rotate the job request in order to
-fit an appropriate partition.
+\fB\-R\fR, \fB\-\-no-rotate\fR
+Disables rotation of the job's requested geometry in order to fit an 
+appropriate partition.
+.TP
+\fB\-\-mode\fR=\fItype\fR
+Specify the mode of node operation. 
+On Blue Gene the acceptable of \fItype\fR are VIRTUAL (applications 
+to use both processors on each c\-node) and COPROCESSOR (second 
+processor on each c\-node is dedicated to communications support, 
+the default).
 
 .PP
 Help options

@@ -218,6 +218,31 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 		if (job_ptr->exc_node_inx[j] == -1)
 			break;
 	}
+
+#ifdef HAVE_BGL
+	/****** Line 12 ******/
+	if (one_liner)
+		fprintf ( out, " ");
+	else
+		fprintf ( out, "\n   ");
+	fprintf ( out, "Geometry=%ux%ux%u ",  job_ptr->geometry[0],
+		job_ptr->geometry[1], job_ptr->geometry[2]);
+	if (job_ptr->conn_type == RM_MESH)
+		fprintf ( out, "Connection=MESH ");
+	else if (job_ptr->conn_type == RM_TORUS)
+		fprintf ( out, "Connection=TORUS ");
+	else
+		fprintf ( out, "Connection=NAV ");
+	if (job_ptr->rotate)
+		fprintf ( out, "Rotate=YES ");
+	else
+		fprintf ( out, "Rotate=NO ");
+	if (job_ptr->node_use == RM_VIRTUAL)
+		 fprintf ( out, "NodeUse=VIRTUAL ");
+	else
+		fprintf ( out, "NodeUse=COPROCESSOR ");
+#endif
+
 	fprintf( out, "\n\n");
 }
 

@@ -43,6 +43,8 @@
  */
 void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 {
+	int i;
+
 	job_desc_msg->account     = NULL;
 	job_desc_msg->alloc_node  = NULL;
 	job_desc_msg->alloc_sid   = NO_VAL;
@@ -79,9 +81,11 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->work_dir    = NULL;
 	job_desc_msg->host        = NULL;
 	job_desc_msg->port        = 0;
-	job_desc_msg->geometry[0] = NO_VAL;
-	job_desc_msg->type        = NO_VAL;
-	job_desc_msg->rotate      = NO_VAL;
+	for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		job_desc_msg->geometry[i] = (uint16_t) NO_VAL;
+	job_desc_msg->conn_type   = (uint16_t) NO_VAL;
+	job_desc_msg->rotate      = (uint16_t) NO_VAL;
+	job_desc_msg->node_use    = (uint16_t) NO_VAL;
 }
 
 /*
