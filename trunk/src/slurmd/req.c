@@ -943,7 +943,8 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	if (!_slurm_authorized_user(uid)) {
 		error("Security violation: kill_job(%ld) from uid %ld",
 		      req->job_id, (long) uid);
-		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		if (msg->conn_fd >= 0)
+			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return;
 	} 
 
@@ -955,7 +956,8 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	 *   then exit this thread.
 	 */
 	if (_waiter_init (req->job_id) < 0) {
-		slurm_send_rc_msg (msg, SLURM_SUCCESS);
+		if (msg->conn_fd >= 0)
+			slurm_send_rc_msg (msg, SLURM_SUCCESS);
 		return;
 	}
 
@@ -979,7 +981,9 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	 *    request.
 	 */
 	if ((nsteps == 0) && !conf->epilog && (msg->conn_fd >= 0)) {
-		slurm_send_rc_msg(msg, ESLURMD_KILL_JOB_ALREADY_COMPLETE);
+		if (msg->conn_fd >= 0)
+			slurm_send_rc_msg(msg, 
+				ESLURMD_KILL_JOB_ALREADY_COMPLETE);
 		slurm_cred_begin_expiration(conf->vctx, req->job_id);
 		_waiter_complete(req->job_id);
 		return;
