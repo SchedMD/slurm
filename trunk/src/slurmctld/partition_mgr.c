@@ -581,196 +581,89 @@ part_unlock ()
  * NOTE: the contents of spec are overwritten by white space
  */
 int 
-update_part (char *partition_name, char *spec) 
+update_part (partition_desc_t * part_desc ) 
 {
 	int error_code;
 	struct part_record *part_ptr;
-	int max_time_val, max_nodes_val, key_val, state_val, shared_val, default_val;
-	char *allow_groups, *default_str, *key_str, *nodes, *shared_str, *state_str;
-	int bad_index, i;
 
-	if ((strcmp (partition_name, "DEFAULT") == 0) ||
-	    (strlen (partition_name) >= MAX_NAME_LEN)) {
-		error ("update_part: invalid partition name  %s", partition_name);
-		return EINVAL;
+	if ((part_desc -> name = NULL ) ||
+			(strlen (part_desc->name ) >= MAX_NAME_LEN)) {
+		error ("update_part: invalid partition name  %s", part_desc->name);
+		return ESLURM_PROTOCOL_INVALID_PARTITION_NAME ;
 	}			
 
-	allow_groups = nodes = NULL;
-	part_ptr = list_find_first (part_list, &list_find_part, partition_name);
+	part_ptr = list_find_first (part_list, &list_find_part, part_desc->name);
+
 	if (part_ptr == NULL) {
 		error ("update_part: partition %s does not exist, being created.",
-			partition_name);
+				part_desc->name);
 		part_ptr = create_part_record ();
-		strcpy(part_ptr->name, partition_name);
-	}			
-
-	default_val = key_val = max_time_val = max_nodes_val = NO_VAL;
-	shared_val = state_val = NO_VAL;
-	allow_groups = default_str = key_str = nodes = shared_str = NULL;
-	state_str = NULL;
-	error_code = slurm_parser(spec,
-		"AllowGroups=", 's', &allow_groups, 
-		"Default=", 's', &default_str, 
-		"Key=", 's', &key_str, 
-		"MaxTime=", 'd', &max_time_val, 
-		"MaxNodes=", 'd', &max_nodes_val, 
-		"Nodes=", 's', &nodes, 
-		"Shared=", 's', &shared_str, 
-		"State=", 's', &state_str, 
-		"END");
-
-	if (error_code)
-		goto cleanup;
-
-	if (default_str) {
-		if (strcmp(default_str, "YES") == 0)
-			default_val = 1;
-		else if (strcmp(default_str, "NO") == 0)
-			default_val = 0;
-		else {
-			error ("update_part: ignored partition %s update, bad state %s",
-			    partition_name, default_str);
-			error_code = EINVAL;
-			goto cleanup;
-		}
-	}
-
-	if (key_str) {
-		if (strcmp(key_str, "YES") == 0)
-			key_val = 1;
-		else if (strcmp(key_str, "NO") == 0)
-			key_val = 0;
-		else {
-			error ("update_part: ignored partition %s update, bad key %s",
-			    partition_name, key_str);
-			error_code = EINVAL;
-			goto cleanup;
-		}
-	}
-
-	if (shared_str) {
-		if (strcmp(shared_str, "YES") == 0)
-			shared_val = 1;
-		else if (strcmp(shared_str, "NO") == 0)
-			shared_val = 0;
-		else if (strcmp(shared_str, "FORCE") == 0)
-			shared_val = 2;
-		else {
-			error ("update_part: ignored partition %s update, bad shared %s",
-			    partition_name, shared_str);
-			error_code = EINVAL;
-			goto cleanup;
-		}
-	}
-
-	if (state_str) {
-		if (strcmp(state_str, "UP") == 0)
-			state_val = 1;
-		else if (strcmp(state_str, "DOWN") == 0)
-			state_val = 0;
-		else {
-			error ("update_part: ignored partition %s update, bad state %s",
-			    partition_name, state_str);
-			error_code = EINVAL;
-			goto cleanup;
-		}
-	}
-
-	bad_index = -1;
-	for (i = 0; i < strlen (spec); i++) {
-		if (spec[i] == '\n')
-			spec[i] = ' ';
-		if (isspace ((int) spec[i]))
-			continue;
-		bad_index = i;
-		break;
-	}			
-
-	if (bad_index != -1) {
-		error ("update_part: ignored partition %s update specification: %s",
-			partition_name, &spec[bad_index]);
-		if (allow_groups) xfree(allow_groups);
-		if (nodes) xfree(nodes);
-		return EINVAL;
+		strcpy(part_ptr->name, part_desc->name );
 	}			
 
 	last_part_update = time (NULL);
-	if (max_time_val != NO_VAL) {
+	if (part_desc->max_time != NO_VAL) {
 		info ("update_part: setting max_time to %d for partition %s",
-			max_time_val, partition_name);
-		if (max_time_val == -1)
+				part_desc->max_time, part_desc->name);
+		if (part_desc->max_time == -1)
 			part_ptr->max_time = INFINITE;
 		else
-			part_ptr->max_time = max_time_val;
+			part_ptr->max_time = part_desc->max_time;
 	}			
 
-	if (max_nodes_val != NO_VAL) {
+	if (part_desc->max_nodes != NO_VAL) {
 		info ("update_part: setting max_nodes to %d for partition %s",
-			max_nodes_val, partition_name);
-		if (max_nodes_val == -1)
+				part_desc->max_nodes, part_desc->name);
+		if (part_ptr->max_nodes == -1)
 			part_ptr->max_nodes = INFINITE;
 		else
-			part_ptr->max_nodes = max_nodes_val;
+			part_ptr->max_nodes = part_desc->max_nodes;
 	}			
 
-	if (key_val != NO_VAL) {
+	if (part_desc->key != NO_VAL) {
 		info ("update_part: setting key to %d for partition %s",
-			key_val, partition_name);
-		part_ptr->key = key_val;
+				part_desc->key, part_desc->name);
+		part_ptr->key = part_desc->key;
 	}			
 
-	if (state_val != NO_VAL) {
+	if (part_desc->state_up != NO_VAL) {
 		info ("update_part: setting state_up to %d for partition %s",
-			state_val, partition_name);
-		part_ptr->state_up = state_val;
+				part_desc->state_up, part_desc->name);
+		part_ptr->state_up = part_desc->state_up;
 	}			
 
-	if (shared_val != NO_VAL) {
+	if (part_desc->shared != NO_VAL) {
 		info ("update_part: setting shared to %d for partition %s",
-			shared_val, partition_name);
-		part_ptr->shared = shared_val;
+				part_desc->shared, part_desc->name);
+		part_ptr->shared = part_desc->shared;
 	}			
 
-	if (default_val == 1) {
+	if (part_desc->default_part == 1) {
 		info ("update_part: changing default partition from %s to %s",
-			default_part_name, partition_name);
-		strcpy (default_part_name, partition_name);
+				default_part_name, part_desc->name);
+		strcpy (default_part_name, part_desc->name);
 		default_part_loc = part_ptr;
 	}			
 
-	if (allow_groups != NULL) {
+	if (part_desc->allow_groups != NULL) {
 		if (part_ptr->allow_groups)
 			xfree (part_ptr->allow_groups);
-		part_ptr->allow_groups = allow_groups;
+		strcpy ( part_ptr->allow_groups , part_desc->allow_groups ) ;
 		info ("update_part: setting allow_groups to %s for partition %s",
-			allow_groups, partition_name);
+				part_desc->allow_groups, part_desc->name);
 	}			
 
-	if (nodes != NULL) {
+	if (part_desc->nodes != NULL) {
 		if (part_ptr->nodes)
 			xfree (part_ptr->nodes);
-		part_ptr->nodes = nodes;
+		strcpy ( part_ptr->nodes , part_desc->nodes ) ;
 		info ("update_part: setting nodes to %s for partition %s",
-			nodes, partition_name);
+				part_desc->nodes, part_desc->name);
+
 		/* now we need to update total_cpus, total_nodes, and node_bitmap */
 		error_code = build_part_bitmap (part_ptr);
 		if (error_code)
 			return error_code;
 	}			
-	return error_code;
-
-      cleanup:
-	if (allow_groups)
-		xfree(allow_groups);
-	if (default_str)
-		xfree(default_str);
-	if (key_str)
-		xfree(key_str);
-	if (nodes)
-		xfree(nodes);
-	if (shared_str)
-		xfree(shared_str);
-	if (state_str)
-		xfree(state_str);
 	return error_code;
 }

@@ -813,7 +813,7 @@ extern int update_node ( update_node_msg_t * update_node_msg )  ;
  * output:  return - 0 if no error, otherwise an error code
  * NOTE: the contents of spec are overwritten by white space
  */
-extern int update_part (char *partition_name, char *spec);
+extern int update_part ( partition_desc_t * part_desc );
 
 /*
  * validate_node_specs - validate the node's specifications as valid, 
