@@ -75,7 +75,7 @@
 #define MIN_CHECKIN_TIME  3	/* Nodes have this number of seconds to 
 				 * check-in before we ping them */
 #define MEM_LEAK_TEST	  0	/* Running memory leak test if set */
-
+#define SHUTDOWN_WAIT     2   /* Time to wait for backup server shutdown */
 
 /* Log to stderr and syslog until becomes a daemon */
 log_options_t log_opts = LOG_OPTS_INITIALIZER;
@@ -90,6 +90,7 @@ static int	debug_level = 0;
 static char	*debug_logfile = NULL;
 static bool     dump_core = false;
 static int	recover   = DEFAULT_RECOVER;
+static char     node_name[MAX_NAME_LEN];
 static pthread_cond_t server_thread_cond = PTHREAD_COND_INITIALIZER;
 static pid_t	slurmctld_pid;
 /*
@@ -111,7 +112,7 @@ static void         _parse_commandline(int argc, char *argv[],
 inline static int   _report_locks_set(void);
 static void *       _service_connection(void *arg);
 static int          _set_slurmctld_state_loc(void);
-static int          _shutdown_backup_controller(void);
+static int          _shutdown_backup_controller(int wait_time);
 static void *       _slurmctld_background(void *no_data);
 static void *       _slurmctld_rpc_mgr(void *no_data);
 static void *       _slurmctld_signal_hand(void *no_data);
@@ -127,7 +128,6 @@ typedef struct connection_arg {
 int main(int argc, char *argv[])
 {
 	int error_code;
-	char node_name[MAX_NAME_LEN];
 	pthread_attr_t thread_attr_sig, thread_attr_rpc;
 
 	/*
@@ -209,14 +209,13 @@ int main(int argc, char *argv[])
 		} else if (slurmctld_conf.control_machine &&
 			 (strcmp(node_name, slurmctld_conf.control_machine) 
 			  == 0)) {
-			(void) _shutdown_backup_controller();
+			(void) _shutdown_backup_controller(SHUTDOWN_WAIT);
 			/* Now recover the remaining state information */
 			if ((error_code = read_slurm_conf(recover))) {
 				error("read_slurm_conf reading %s: %m",
 					SLURM_CONFIG_FILE);
 				abort();
 			}
-			info("Running primary controller");
 		} else {
 			error
 			    ("this host (%s) not valid controller (%s or %s)",
@@ -224,6 +223,7 @@ int main(int argc, char *argv[])
 			     slurmctld_conf.backup_controller);
 			exit(0);
 		}
+		info("Running primary controller");
 
 		if (switch_state_begin(recover)) {
 			error("switch_state_begin: %m");
@@ -550,7 +550,9 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_group_time;
 	static time_t last_ping_time;
 	static time_t last_timelimit_time;
+	static time_t last_assert_primary_time;
 	time_t now;
+
 	/* Locks: Write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
 		WRITE_LOCK, READ_LOCK
@@ -566,7 +568,7 @@ static void *_slurmctld_background(void *no_data)
 	/* Let the dust settle before doing work */
 	now = time(NULL);
 	last_sched_time = last_checkpoint_time = last_group_time = now;
-	last_timelimit_time = now;
+	last_timelimit_time = last_assert_primary_time = now;
 	last_ping_time = now + (time_t)MIN_CHECKIN_TIME -
 			 (time_t)slurmctld_conf.heartbeat_interval;
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -638,6 +640,21 @@ static void *_slurmctld_background(void *no_data)
 			last_checkpoint_time = now;
 			debug2("Performing full system state save");
 			save_all_state();
+		}
+
+		/* Reassert this machine as the primary controller.
+		 * A network or security problem could result in 
+		 * the backup controller assuming control even 
+		 * while the real primary controller is running */
+		if (slurmctld_conf.slurmctld_timeout &&
+		    slurmctld_conf.backup_addr       &&
+		    slurmctld_conf.backup_addr[0]    &&
+		    (difftime(now, last_assert_primary_time) >=
+		     slurmctld_conf.slurmctld_timeout)  &&
+		    node_name && slurmctld_conf.backup_controller &&
+		    strcmp(node_name, slurmctld_conf.backup_controller)) {
+			last_assert_primary_time = now;
+			(void) _shutdown_backup_controller(0);
 		}
 
 	}
@@ -834,9 +851,10 @@ static void _usage(char *prog_name)
 /*
  * Tell the backup_controller to relinquish control, primary control_machine 
  *	has resumed operation
+ * wait_time - How long to wait for backup controller to write state, seconds
  * RET 0 or an error code 
  */
-static int _shutdown_backup_controller(void)
+static int _shutdown_backup_controller(int wait_time)
 {
 	int rc;
 	slurm_msg_t req;
@@ -856,7 +874,7 @@ static int _shutdown_backup_controller(void)
 
 	if (slurm_send_recv_rc_msg(&req, &rc, CONTROL_TIMEOUT) < 0) {
 		error("shutdown_backup:send/recv: %m");
-		return SLURM_SOCKET_ERROR;
+		return SLURM_ERROR;
 	}
 
 	if (rc) {
@@ -870,7 +888,8 @@ static int _shutdown_backup_controller(void)
 	 * not presently the case (it returns when no other work is pending,  
 	 * so the state save should occur right away). We sleep for a while   
 	 * here and give the backup controller time to shutdown */
-	sleep(2);
+	if (wait_time)
+		sleep(wait_time);
 
 	return SLURM_PROTOCOL_SUCCESS;
 }
