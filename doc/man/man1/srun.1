@@ -34,15 +34,16 @@ useful if the job will be multithreaded and requires more than one cpu
 per task for optimal performance. The default is one cpu per process.
 .TP
 \fB\-N\fR, \fB\-\-nodes\fR=\fInnodes\fR
-Request that \fInnodes\fR nodes be allocated to this job. The default
+Request that \fInnodes\fR nodes be allocated to this job. \fInnodes\fR
+may be either a specific number or a minimum and maximum node count 
+separated by a hyphen (e.g. "\-\-nodes=2\-4"). Note that the environment 
+variable \fBSLURM_NNODES\fR will be set to the count of nodes actually 
+allocated to the job. See the \fBENVIRONMENT VARIABLES \fR section 
+for more information. The default
 is to allocate one cpu per process, such that nodes with one cpu will
 run one process, nodes with 2 cpus will be allocated 2 processes, etc.
 The distribution of processes across nodes may be controlled using this
-option along with the
-.B -n
-and
-.B -c
-options.
+option along with the \fB\-n\fR and \fB\-c\fR options.
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=\fIpartition\fR
 Request resources from partition "\fIpartition\fR." Partitions
@@ -64,8 +65,8 @@ will block until resources become available.
 .TP
 \fB\-k\fR, \fB\-\-kill-off\fR
 Do not automatically terminate a job of one of the nodes it has been allocated 
-fails. The job will assume all responsibilities for fault-tolerance. The default 
-action is to termniate the job upon node failure.
+fails. The job will assume all responsibilities for fault-tolerance. The 
+default action is to termniate the job upon node failure.
 .TP
 \fB\-s\fR, \fB\-\-share\fR
 The job can share nodes with other running jobs. This may result in faster job 
@@ -222,11 +223,17 @@ demand a contiguous range of nodes. The default is on. Specify
 --contiguous=no if a contiguous range of nodes is not a constraint.
 .TP
 \fB\-w\fR, \fB\-\-nodelist\fR=\fIhost1,host2,...\fR or \fIfilename\fR
-request a specific list of hosts. The job will contain \fIat least\fR
+Request a specific list of hosts. The job will contain \fIat least\fR
 these hosts. The list may be specified as a comma-separated list of
 hosts, a range of hosts (host[1-5,7,...] for example), or a filename.
 The host list will be assumed to be a filename if it contains a "/"
 character.
+.TP
+\fB\-x\fR, \fB\-\-exclude\fR=\fIhost1,host2,...\fR or \fIfilename\fR
+Request that a specific list of hosts not be included in the resources 
+allocated to this job. The host list will be assumed to be a filename 
+if it contains a "/"character.
+
 .PP
 Help options
 .TP
@@ -426,7 +433,7 @@ SLURM_DISTRIBUTION
 \fB\-m, \-\-distribution\fR=(\fIblock|cyclic\fR)
 .TP
 SLURM_NNODES
-\fB\-N, \-\-nodes\fR=\fIn\fR
+\fB\-N, \-\-nodes\fR=(\fIn|min-max\fR)
 .TP
 SLURM_NPROCS
 \fB\-n, \-\-nprocs\fR=\fIn\fR
