@@ -840,7 +840,7 @@ select_nodes (struct job_record *job_ptr, int test_only)
 	allocate_nodes (req_bitmap);
 	job_ptr->node_bitmap = req_bitmap;
 	req_bitmap = NULL;
-	job_ptr->job_state = JOB_STAGE_IN;
+	job_ptr->job_state = JOB_RUNNING;
 	job_ptr->start_time = job_ptr->time_last_active = time(NULL);
 	if (job_ptr->time_limit == INFINITE)
 		job_ptr->end_time = INFINITE;
