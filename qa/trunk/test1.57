@@ -39,6 +39,11 @@ expect {
 		exec $bin_rm -f $file_in
 		exit $exit_code
 	}
+	-re "configuration not available" {
+		send_user "WARNING: partition too small for test"
+		kill_srun
+		exit 0
+	}
 	"$prompt" {
 		send_user "Job initiated\n"
 	}
