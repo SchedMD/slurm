@@ -9,9 +9,7 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
-pkglib_LTLIBRARIES = sched_wiki.la
-
-sched_wiki_la_SOURCES =	../agent.cpp		\
+wiki_src =		../agent.cpp		\
 			../agent.h		\
 			../comparator.h		\
 			../condition.h		\
@@ -39,12 +37,13 @@ sched_wiki_la_SOURCES =	../agent.cpp		\
 			wiki_status.cpp		\
 			wiki_wrapper.cpp
 
-sched_wiki_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 if HAVE_AIX
-sched_wiki_la_LIBADD =	$(top_builddir)/src/common/libcommon.la   \
-			$(top_builddir)/src/api/libslurm.la
+EXTRA_sched_wiki_la_SOURCES = $(wiki_src)
 else
-sched_wiki_la_LIBADD = -lstdc++ \
+pkglib_LTLIBRARIES    = sched_wiki.la
+sched_wiki_la_SOURCES = $(wiki_src)
+sched_wiki_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+sched_wiki_la_LIBADD  = -lstdc++ \
 			$(top_builddir)/src/api/libslurm.la
 endif
