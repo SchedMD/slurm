@@ -183,9 +183,11 @@ int read_bgl_partitions()
 	rm_partition_t *part_ptr;
 	char node_name_tmp[7], *owner_name;
 	bgl_record_t *bgl_record;
+#if USE_BGL_FILE
 	int part_number, lowest_part=300;
 	char part_name[7];
-	
+#endif
+
 	/* This code is here to blow add partitions after we get the 
 	   system to return correct location information
 	*/
