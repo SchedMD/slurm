@@ -351,24 +351,26 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 
 	/* verify credentials */
 	if ((rc = slurm_auth_verify_credentials(creds)) != SLURM_SUCCESS) {
+		slurm_auth_free_credentials(creds);
 		free_buf(buffer);
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
-
-	msg->cred_type = header.cred_type;
-	msg->cred_size = header.cred_length;
-	msg->cred = (void *) creds;
 
 	/* unpack msg body */
 	msg->msg_type = header.msg_type;
 	if ((header.body_length > remaining_buf(buffer)) ||
 	    (unpack_msg(msg, buffer) != SLURM_SUCCESS)) {
+		slurm_auth_free_credentials(creds);
 		free_buf(buffer);
 		slurm_seterrno_ret(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
 	}
 
+	msg->cred = (void *) creds;
+	msg->cred_type = header.cred_type;
+	msg->cred_size = header.cred_length;
+
 	free_buf(buffer);
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 /**********************************************************************\
