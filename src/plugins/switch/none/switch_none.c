@@ -51,17 +51,15 @@
  *      <application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "jobcomp" for SLURM job completion logging) and <method>
- * is a description of how this plugin satisfies that application.  SLURM will
- * only load job completion logging plugins if the plugin_type string has a 
- * prefix of "jobcomp/".
+ * the plugin (e.g., "switch" for SLURM switch) and <method> is a description 
+ * of how this plugin satisfies that application.  SLURM will only load
+ * a switch plugin if the plugin_type string has a prefix of "switch/".
  *
  * plugin_version - an unsigned 32-bit integer giving the version number
  * of the plugin.  If major and minor revisions are desired, the major
  * version number may be multiplied by a suitable magnitude constant such
  * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum versions for their plugins as the job completion logging API 
- * matures.
+ * minimum versions for their plugins as this API matures.
  */
 const char plugin_name[]        = "switch NONE plugin";
 const char plugin_type[]        = "switch/none";
