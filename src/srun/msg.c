@@ -37,6 +37,7 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/poll.h>
+#include <sys/wait.h>
 #include <time.h>
 
 #include <slurm/slurm_errno.h>
@@ -54,6 +55,7 @@
 #include "src/srun/opt.h"
 #include "src/srun/io.h"
 #include "src/srun/signals.h"
+#include "src/srun/sigstr.h"
 
 #ifdef HAVE_TOTALVIEW
 #  include "src/srun/attach.h"
@@ -341,6 +343,35 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 
 }
 
+
+static void 
+_print_exit_status(hostlist_t hl, int status)
+{
+	char buf[1024];
+	char *corestr = "";
+
+	xassert(hl != NULL);
+
+	hostlist_ranged_string(hl, sizeof(buf), buf);
+
+	if (status == 0) {
+		verbose("%s: Done", buf);
+		return;
+	}
+
+#ifdef WCOREDUMP
+	if (WCOREDUMP(status))
+		corestr = " (core dumped)";
+#endif
+
+	if (WIFSIGNALED(status))
+		error("%s: %s%s", buf, sigstr(status), corestr); 
+	else
+		error("%s: Exit %d", buf, WEXITSTATUS(status));
+
+	return;
+}
+
 static void 
 _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 {
@@ -381,8 +412,8 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 		}
 	}
 
-	hostlist_ranged_string(hl, sizeof(buf), buf);
-	verbose("%s exited with status %d", buf, status);
+	_print_exit_status(hl, status);
+
 	hostlist_destroy(hl);
 }
 
