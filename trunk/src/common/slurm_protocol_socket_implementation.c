@@ -9,6 +9,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <stdio.h>
 
 #if HAVE_SYS_SOCKET_H
 #  include <sys/socket.h>
@@ -511,6 +512,14 @@ void _slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * hos
 	*port = slurm_address -> sin_port ;
 	strncpy ( host , host_info -> h_name , buf_len ) ;
 }
+
+void _slurm_print_slurm_addr ( FILE * stream , slurm_addr * address )
+{
+	fprintf ( stream , "family %x\n", ntohl ( address -> sin_family ) ) ;
+	fprintf ( stream , "addr %x\n", ntohl ( address -> sin_addr.s_addr ) ) ;
+	fprintf ( stream , "port %x\n", ntohs ( address -> sin_port ) ) ;
+}
+	
 
 void _slurm_pack_slurm_addr ( slurm_addr * slurm_address , void ** buffer , int * length )
 {

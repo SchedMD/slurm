@@ -21,7 +21,7 @@
 
 /* LINUX SPECIFIC */
 /* this is the slurm equivalent of the operating system file descriptor, which in linux is just an int */
-typedef uint32_t slurm_fd ;
+typedef int32_t slurm_fd ;
 
 /* this is the slurm equivalent of the BSD sockets sockaddr */
 typedef struct sockaddr_in slurm_addr ; 

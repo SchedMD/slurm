@@ -275,7 +275,7 @@ int slurm_receive_msg ( slurm_fd open_fd , slurm_msg_t * msg )
 	if ( ( rc = _slurm_msg_recvfrom ( open_fd , buffer , receive_len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , & (msg)->address ) ) == SLURM_SOCKET_ERROR ) 
 	{
 		int local_errno = errno ;
-		debug ( "Error receiving msg socket: errno %i", errno ) ;
+		debug ( "Error receiving msg socket: errno %i", local_errno ) ;
 		return rc ;
 	}
 
@@ -598,6 +598,11 @@ void slurm_pack_slurm_addr ( slurm_addr * slurm_address , void ** buffer , int *
 void slurm_unpack_slurm_addr_no_alloc ( slurm_addr * slurm_address , void ** buffer , int * length )
 {
 	_slurm_unpack_slurm_addr_no_alloc ( slurm_address , buffer , length ) ;
+}
+
+void slurm_print_slurm_addr ( FILE * stream , slurm_addr * address )
+{
+	_slurm_print_slurm_addr ( stream , address ) ;
 }
 
 /*******************************************/

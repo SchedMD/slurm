@@ -122,4 +122,7 @@ int unpack_reattach_tasks_streams_msg ( reattach_tasks_streams_msg_t ** msg_ptr 
 
 void pack_revoke_credential_msg ( revoke_credential_msg_t* msg , void ** buffer , uint32_t * length ) ;
 int unpack_revoke_credential_msg ( revoke_credential_msg_t** msg , void ** buffer , uint32_t * length ) ;
+
+void pack_io_stream_header ( slurm_io_stream_header_t * msg , void ** buffer , uint32_t * length ) ;
+void unpack_io_stream_header ( slurm_io_stream_header_t * msg , void ** buffer , uint32_t * length ) ;
 #endif

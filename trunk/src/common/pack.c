@@ -334,3 +334,34 @@ _unpackstrarray (char ***valp, uint16_t *size_valp, void **bufp, int *lenp)
 		*valp = NULL;
 
 }
+
+/*
+ * Given a pointer to memory (valp) and a size (size_val), 
+ * store  the data at valp. Advance bufp and decrement lenp by  (size of size_val) 
+ */
+void
+_packmem_array(char *valp, uint16_t size_val, void **bufp, int *lenp)
+{
+	memcpy(*bufp, valp, size_val);
+	(size_t)*bufp += size_val;
+	*lenp -= size_val;
+}
+
+/*
+ * Given 'bufp' pointing to a network byte order 32-bit integer
+ * (size) and an arbitrary data string, return a pointer to the 
+ * data string in 'valp'.  Also return the sizes of 'valp' in bytes. 
+ * Advance bufp and decrement lenp by 4 bytes (size of memory 
+ * size records) plus the actual buffer size.
+ */
+void
+_unpackmem_array(char *valp, uint16_t size_valp, void **bufp, int *lenp)
+{
+	if (size_valp > 0) {
+		memcpy ( valp, *bufp, size_valp);
+		(size_t)*bufp += size_valp;
+		*lenp -= size_valp;
+	}
+	else
+		*valp = 0 ;
+}
