@@ -116,6 +116,8 @@ struct _plugrack {
 
 #define PLUGRACK_UID_NOBODY                99        /* RedHat's, anyway. */
 
+static int _plugrack_read_single_dir( plugrack_t rack, char *dir );
+
 /*
  * Destructor function for the List code.  This should entirely
  * clean up a plugin_entry_t.
@@ -418,10 +420,40 @@ plugrack_add_plugin_file( plugrack_t rack, const char *fq_path )
 }
 
 
+/* test for the plugin in the various colon separated directories */
+int
+plugrack_read_dir( plugrack_t rack, const char *dir )
+{
+	char *head, *dir_array;
+	int i, rc = SLURM_SUCCESS;
+
+	if ( ( ! rack ) || (! dir ) )
+		return SLURM_ERROR;
+
+	dir_array = alloca( strlen( dir ) + 1 );
+	xassert( dir_array );
+	strcpy( dir_array, dir );
+	head = dir_array;
+	for (i=0; ; i++) {
+		if (dir_array[i] == '\0') {
+			if ( _plugrack_read_single_dir( rack, head ) ==
+			     SLURM_ERROR)
+				rc = SLURM_ERROR;
+			break;
+		}
+		else if (dir_array[i] == ':') {
+			dir_array[i] = '\0';
+			if ( _plugrack_read_single_dir( rack, head ) ==
+			     SLURM_ERROR)
+				rc = SLURM_ERROR;
+			head = dir_array + i + 1;
+		}
+	}
+	return rc;
+}
 
 int
-plugrack_read_dir( plugrack_t rack,
-                   const char *dir )
+_plugrack_read_single_dir( plugrack_t rack, char *dir )
 {
         char *fq_path;
         char *tail;
@@ -431,9 +463,6 @@ plugrack_read_dir( plugrack_t rack,
 	static const size_t type_len = 64;
 	char plugin_type[ type_len ];
 
-        if ( ! rack ) return SLURM_ERROR;
-        if ( ! dir ) return SLURM_ERROR;
-  
         /* Allocate a buffer for fully-qualified path names. */
         fq_path = alloca( strlen( dir ) + NAME_MAX + 1 );
         xassert( fq_path );
