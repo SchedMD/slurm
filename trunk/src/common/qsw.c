@@ -255,7 +255,7 @@ qsw_fini(qsw_libstate_t savestate)
 
 /*
  * Allocate a qsw_jobinfo_t.
- *   jsp (IN)		store pointer to new instantiation here
+ *   jp (IN)		store pointer to new instantiation here
  *   RETURN		0 on success, -1 on failure (sets errno)
  */
 int
@@ -271,6 +271,21 @@ qsw_alloc_jobinfo(qsw_jobinfo_t *jp)
 	new->j_ctx = NULL;
 	*jp = new;
 	return 0;
+}
+
+/*
+ * Make a copy of a qsw_jobinfo_t.
+ *   j (IN)		qsw_jobinfo_t to be copied
+ *   RETURN		qsw_jobinfo_t on success, NULL on failure
+ */
+qsw_jobinfo_t
+qsw_copy_jobinfo(qsw_jobinfo_t j)
+{
+	qsw_jobinfo_t new; 
+	if (qsw_alloc_jobinfo(&new))
+		return NULL;
+	memcpy(new, j, sizeof(struct qsw_jobinfo));
+
 }
 
 /*

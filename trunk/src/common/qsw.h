@@ -57,6 +57,7 @@ int 		qsw_init(qsw_libstate_t restorestate);
 void 		qsw_fini(qsw_libstate_t savestate);
 
 int		qsw_alloc_jobinfo(qsw_jobinfo_t *jp);
+qsw_jobinfo_t	qsw_copy_jobinfo(qsw_jobinfo_t j);
 void		qsw_free_jobinfo(qsw_jobinfo_t j);
 
 int		qsw_pack_jobinfo(qsw_jobinfo_t j, Buf buffer);
