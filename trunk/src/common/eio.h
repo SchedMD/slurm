@@ -27,8 +27,8 @@
 #ifndef _EIO_H
 #define _EIO_H 1
 
-#include <src/common/list.h>
-#include <src/common/macros.h>
+#include "src/common/list.h"
+#include "src/common/macros.h"
 
 typedef struct io_obj io_obj_t;
 
