@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
  -- Convert shared object plugins to use only functions with prefix
     of "slurm_" to avoid linking conflicts with applications using 
     SLURM library
+ -- New srun options -Q, --quiet to suppress informational messages.
 
 * Changes in SLURM 0.3.0.0-pre9
 ===============================
