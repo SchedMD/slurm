@@ -195,29 +195,10 @@ void slurm_free_node_table ( node_table_t * node )
 }
 
 
-#define SLURM_JOB_DESC_NONCONTIGUOUS		0
-#define SLURM_JOB_DESC_CONTIGUOUS		1 
-#define SLURM_JOB_DESC_DEFAULT_FEATURES		"NONE"
-#define SLURM_JOB_DESC_DEFAULT_GROUPS		"SET_BY_API"
-#define SLURM_JOB_DESC_DEFAULT_JOB_ID		0
-#define SLURM_JOB_DESC_DEFAULT_JOB_NAME 	NULL
-#define SLURM_JOB_DESC_DEFAULT_PARITION_KEY	NULL
-#define SLURM_JOB_DESC_DEFAULT_MIN_PROCS	0
-#define SLURM_JOB_DESC_DEFAULT_MIN_MEMORY	0
-#define SLURM_JOB_DESC_DEFAULT_MIN_TMP_DISK	0
-#define SLURM_JOB_DESC_DEFAULT_PARTITION	NULL
-#define SLURM_JOB_DESC_DEFAULT_PRIORITY		0xfffffffe
-#define SLURM_JOB_DESC_DEFAULT_REQ_NODES	NULL
-#define SLURM_JOB_DESC_DEFAULT_JOB_SCRIPT	NULL
-#define SLURM_JOB_DESC_DEFAULT_SHARED		0
-#define SLURM_JOB_DESC_DEFAULT_TIME_LIMIT	0xfffffffe
-#define SLURM_JOB_DESC_DEFAULT_NUM_PROCS	0
-#define SLURM_JOB_DESC_DEFAULT_NUM_NODES	0
-#define SLURM_JOB_DESC_DEFAULT_USER_ID		0 
 
 void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg )
 {
-	job_desc_msg -> contiguous = SLURM_JOB_DESC_NONCONTIGUOUS ;
+	job_desc_msg -> contiguous = SLURM_JOB_DESC_DEFAULT_CONTIGUOUS ;
 	job_desc_msg -> features = SLURM_JOB_DESC_DEFAULT_FEATURES ;
 	job_desc_msg -> groups = SLURM_JOB_DESC_DEFAULT_GROUPS ; /* will be set by api */
 	job_desc_msg -> job_id = SLURM_JOB_DESC_DEFAULT_JOB_ID ; /* will be set by api */

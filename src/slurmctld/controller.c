@@ -475,7 +475,7 @@ void slurm_rpc_allocate_resources ( slurm_msg_t * msg )
 
 	/* do RPC call */
 	error_code = job_allocate(job_desc_msg, 	/* skip "Allocate" */
-			&job_id, &node_name_ptr);
+			&job_id, &node_name_ptr, false , false );
 
 	/* return result */
 	if (error_code)

@@ -594,6 +594,8 @@ void pack_job_desc ( job_desc_msg_t * job_desc_ptr, void ** buf_ptr , int * buff
 	
 	pack32 (job_desc_ptr->num_procs, buf_ptr, buffer_size);
 	pack32 (job_desc_ptr->num_nodes, buf_ptr, buffer_size);
+	pack32 (job_desc_ptr->dist, buf_ptr, buffer_size);
+	pack32 (job_desc_ptr->procs_per_task, buf_ptr, buffer_size);
 	pack32 (job_desc_ptr->user_id, buf_ptr, buffer_size);
 
 }
@@ -642,6 +644,8 @@ int unpack_job_desc ( job_desc_msg_t **job_desc_buffer_ptr, void ** buf_ptr , in
 	
 	unpack32 (&job_desc_ptr->num_procs, buf_ptr, buffer_size);
 	unpack32 (&job_desc_ptr->num_nodes, buf_ptr, buffer_size);
+	unpack32 (&job_desc_ptr->dist, buf_ptr, buffer_size);
+	unpack32 (&job_desc_ptr->procs_per_task, buf_ptr, buffer_size);
 	unpack32 (&job_desc_ptr->user_id, buf_ptr, buffer_size);
 
 	*job_desc_buffer_ptr = job_desc_ptr ;
