@@ -103,6 +103,7 @@ struct Part_Record {
     int TotalNodes;		/* Total number of nodes in the partition */
     int TotalCPUs;		/* Total number of CPUs in the partition */
     unsigned Key:1;		/* 1 if SLURM distributed key is required for use of partition */
+    unsigned Shared:1;		/* 1 if more than one job can execute at a time in the partition */
     unsigned StateUp:1;		/* 1 if state is UP */
     char *Nodes;		/* Names of nodes in partition */
     char *AllowGroups;		/* NULL indicates ALL */
