@@ -274,6 +274,7 @@ allocate_nodes(void)
 	int rc, retries;
 	job_desc_msg_t job;
 	resource_allocation_response_msg_t *resp;
+	old_job_alloc_msg_t old_job;
 
 	slurm_init_job_desc_msg(&job);
 
@@ -325,9 +326,23 @@ allocate_nodes(void)
 		}			
 	}
 
-	if (resp->node_list == NULL) {
-		info("No nodes allocated. exiting");
-		return NULL;
+	if ((rc == 0) && (resp->node_list == NULL)) {
+		if (_verbose || _debug)
+			info ("Job %u queued and waiting for resources", resp->job_id);
+		old_job.job_id = resp->job_id;
+		old_job.uid = (uint32_t) getuid();
+		slurm_free_resource_allocation_response_msg (resp);
+		sleep (2);
+		/* Keep polling until the job is allocated resources */
+		while (slurm_confirm_allocation(&old_job, &resp) == SLURM_FAILURE) {
+			if (slurm_get_errno() == ESLURM_JOB_PENDING)
+				sleep (10);
+			else {
+				error("Unable to confirm resource allocation for job %u: %s", 
+					old_job.job_id, slurm_strerror(errno));
+				exit (1);
+			}
+		}
 	}
 
 	return resp;
