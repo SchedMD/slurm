@@ -68,8 +68,12 @@ void slurm_free_return_code_msg(return_code_msg_t * msg)
 void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * build_ptr)
 {
 	if (build_ptr) {
+		if (build_ptr->backup_addr)
+			xfree(build_ptr->backup_addr);
 		if (build_ptr->backup_controller)
 			xfree(build_ptr->backup_controller);
+		if (build_ptr->control_addr)
+			xfree(build_ptr->control_addr);
 		if (build_ptr->control_machine)
 			xfree(build_ptr->control_machine);
 		if (build_ptr->epilog)

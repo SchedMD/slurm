@@ -343,7 +343,9 @@ typedef struct partition_info {
 
 struct slurm_ctl_conf {
 	uint32_t last_update;	/* last update time of the build parameters */
+	char *backup_addr;	/* comm path of slurmctld secondary server */
 	char *backup_controller;	/* name of slurmctld secondary server */
+	char *control_addr;	/* comm path of slurmctld primary server */
 	char *control_machine;	/* name of slurmctld primary server */
 	char *epilog;		/* pathname of job epilog */
 	uint32_t first_job_id;	/* first slurm generated job_id to assign */

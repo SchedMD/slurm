@@ -123,6 +123,7 @@ struct node_record {
 	uint32_t tmp_disk;		/* actual megabytes of total disk in TMP_FS */
 	struct config_record *config_ptr;	/* configuration specification for this node */
 	struct part_record *partition_ptr;	/* partition for this node */
+	char comm_name[MAX_NAME_LEN];	/* communications path name of the node */
 	struct sockaddr_in slurm_addr;	/* network address */
 };
 extern struct node_record *node_record_table_ptr;	/* location of the node records */
