@@ -47,7 +47,7 @@ int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_
 /** */
 int _parse_request(char* request_string, partition_t** request);
 /** */
-int _get_request_dimensions(int* bl, int* tr, int** dim);
+int _get_request_dimensions(int* bl, int* tr, uint16_t** dim);
 /** */
 int _extract_range(char* request, char** result);
 /** */
@@ -218,7 +218,6 @@ static int _copy_slurm_partition_list()
 			bgl_record->nodes = strdup(cur_nodes);
 			bgl_record->slurm_part_id = slurm_part->name;
 			bgl_record->part_type = (rm_partition_t*) malloc(sizeof(rm_partition_t));
-			bgl_record->used = 0;
 			if (!bgl_record->part_type){
 				error("_copy_slurm_partition_list: not enough memory for bgl_record->part_type");
 				err = 1;
@@ -526,7 +525,8 @@ int char2intptr(char* request, int** bl, int** tr)
 int _parse_request(char* request_string, partition_t** request)
 {
 	char* range;
-	int *bl=NULL, *tr=NULL, *dim=NULL;
+	int *bl=NULL, *tr=NULL;
+	uint16_t *dim=NULL;
 	int i;
 	(*request) = (partition_t*) malloc(sizeof(partition_t));
 	if (!(*request)) {
@@ -563,7 +563,7 @@ int _parse_request(char* request_string, partition_t** request)
 	return SLURM_ERROR;
 }
 
-int _get_request_dimensions(int* bl, int* tr, int** dim)
+int _get_request_dimensions(int* bl, int* tr, uint16_t** dim)
 {
 	int i;
 	/*
@@ -574,7 +574,7 @@ int _get_request_dimensions(int* bl, int* tr, int** dim)
 		return SLURM_ERROR;
 	}
 		
-	*dim = (int*) malloc(sizeof(int)*SYSTEM_DIMENSIONS);
+	*dim = (uint16_t*) malloc(sizeof(uint16_t) * SYSTEM_DIMENSIONS);
 	if (!(*dim)) {
 		error("get_request_dimensions: not enough memory for dim");
 		return SLURM_ERROR;
@@ -738,8 +738,7 @@ int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_
 	ListIterator itr;
 	bgl_record_t* record;
 	int i, num_dim_best, cur_dim_match;
-	int* geometry = NULL;
-	bitstr_t* bitcpy;
+	uint16_t* geometry = NULL;
 	sort_bgl_record_inc_size(bgl_list);
 
 	/** this is where we should have the control flow depending on
@@ -752,15 +751,16 @@ int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_
 	 * dims should be favored over the MESH and the dims, but
 	 * foremost is the correct num of dims. 
 	 */
+	debug("number of partitions to check: %d", list_count(bgl_list));
 	while ((record = (bgl_record_t*) list_next(itr))) {
+		debug("- - - - - - - - - - - - -");
+		debug("check partition <%s>", record->slurm_part_id);
+		debug("- - - - - - - - - - - - -");
 		if (!record){
 			error("FIXME: well, bad bad bad..."); 
 			continue;
 		}
-		if (record->used){
-			debug("this record used");
-			continue;
-		}
+		debug("A");
 		/** 
 		 * first we check against the bitmap to see 
 		 * if this partition can be used for this job.
@@ -774,55 +774,39 @@ int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_
 		 */
 		debug("- - - - - - - - - - - - -");
 		debug("check partition bitmap");
-		debug("- - - - - - - - - - - - -");
-		bitcpy = bit_copy(record->bitmap);
-		debug("copy before");
-		// 0000 0011
-		_print_bitmap(bitcpy);
-		/* this fxn mutates first argument */
-		// 0000 0011 & 0000 0000 => 0000 0000
-		// 0000 0011 | 0000 0000 => 0000 0011
-		bit_and(bitcpy, slurm_part_bitmap);
-		debug("slurm bit");
-		_print_bitmap(slurm_part_bitmap);
-		debug("copy after");
-		_print_bitmap(bitcpy);
-		debug("bgl");
 		_print_bitmap(record->bitmap);
-		debug("equals? %d", (bit_equal(bitcpy, record->bitmap)));
-		if (!bit_equal(bitcpy, record->bitmap)){
+		debug("superset? %d", (bit_super_set(record->bitmap, slurm_part_bitmap)));
+		if (!bit_super_set(record->bitmap, slurm_part_bitmap)){
 			debug("bgl partition %s unusable", record->nodes);
 			continue;
 		}
-		/** ?? FIXME */
-		bit_free(bitcpy);
 		
-		debug("This partition matched!!!");
 		debug("- - - - - - - - - - - - -");
 		/*******************************************/
 		/** check that the number of nodes match   */
 		/*******************************************/
-		debug("nodes num match: max %d min %d record_num_nodes %d",
-		      max_nodes, min_nodes, record->size);
+		// debug("nodes num match: max %d min %d record_num_nodes %d",
+		// max_nodes, min_nodes, record->size);
  		if (record->size < min_nodes || (max_nodes != 0 && record->size > max_nodes)){
 			error("debug request num nodes doesn't fit"); 
 			continue;
 		}
-
+		debug("C");
 		/***********************************************/
 		/* check the connection type specified matches */
 		/***********************************************/
-		debug("part type match %s ? %s", convert_part_type(&job_ptr->type), 
-		      convert_part_type(record->part_type));
+		// debug("part type match %s ? %s", convert_part_type(&job_ptr->type), 
+		// convert_part_type(record->part_type));
 		if (!record->part_type){
 			error("find_best_partition_match record->part_type is NULL"); 
 			continue;
 		}
+		debug("job type %d", job_ptr->type);
 		if (job_ptr->type != *(record->part_type) &&
 		    job_ptr->type != RM_NAV){
 			continue;
 		} 
-			
+		debug("E");
 		/*****************************************/
 		/** match up geometry as "best" possible */
 		/*****************************************/
@@ -831,10 +815,12 @@ int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_
 			found_bgl_record = record;
 			break;
 		}
+		debug("F");
 		if (job_ptr->rotate)
 			rotate_part(job_ptr->geometry, &geometry); 
 		
 		cur_dim_match = 0;
+		debug("G");
 		for (i=0; i<SYSTEM_DIMENSIONS; i++){
 			if (!record->alloc_part) {
 				error("warning, bgl_record %s has not found a home...",
@@ -857,30 +843,15 @@ int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_
 			if (num_dim_best == SYSTEM_DIMENSIONS)
 					break;
 		}
+		debug("H");
 	}	
-
+	
 	/** set the bitmap and do other allocation activities */
 	if (found_bgl_record){
-		bitcpy = bit_copy(found_bgl_record->bitmap);
 		debug("phung: SUCCESS! found partition %s <%s>", 
 		      found_bgl_record->slurm_part_id, found_bgl_record->nodes);
-		found_bgl_record->used = 1;
+		bit_and(slurm_part_bitmap, found_bgl_record->bitmap);
 		debug("- - - - - - - - - - - - -");
-		debug("setting return bitmap");
-		debug("- - - - - - - - - - - - -");
-		// bit_not(bitcpy);
-		bit_not(slurm_part_bitmap);
-		debug("not copy: ");
-		_print_bitmap(bitcpy);
-		debug("slurm before: ");
-		_print_bitmap(slurm_part_bitmap);
-		bit_or(slurm_part_bitmap, bitcpy);
-		debug("slurm after: ");
-		_print_bitmap(slurm_part_bitmap);
-
-		debug("- - - - - - - - - - - - -");
-		/** ?? FIXME */
-		bit_free(bitcpy);
 		return SLURM_SUCCESS;
 	}
 	
@@ -949,17 +920,17 @@ int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 	ListIterator itr;
 	bgl_record_t* record;
 	debug("bluegene::submit_job");
-
+	/*
 	itr = list_iterator_create(bgl_list);
 	while ((record = (bgl_record_t*) list_next(itr))) {
 		print_bgl_record(record);
 	}
-
-	debug("job request");
+	*/
+	debug("******** job request ********");
 	debug("geometry:\t%d %d %d", job_ptr->geometry[0], job_ptr->geometry[1], job_ptr->geometry[2]);
 	debug("type:\t%s", convert_part_type(&job_ptr->type));
 	debug("rotate:\t%d", job_ptr->rotate);
-	debug("min_nodes:\t %d", min_nodes);
+	debug("min_nodes:\t%d", min_nodes);
 	debug("max_nodes:\t%d", max_nodes);
 	_print_bitmap(slurm_part_bitmap);
 	
@@ -1045,8 +1016,3 @@ char *convert_bp_state(rm_BP_state_t state){
   }
 };
 #endif
-
-int _bitmap_notequals(bitstr_t* A, bitstr_t* B)
-{
-	return !(bit_super_set(A, B) && bit_super_set(B, A));
-}

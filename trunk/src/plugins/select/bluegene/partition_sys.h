@@ -40,15 +40,15 @@
 typedef struct partition{
 	int bl_coord[SYSTEM_DIMENSIONS]; /* bottom left coordinates */
 	int tr_coord[SYSTEM_DIMENSIONS]; /* top right coordinates */
-	int dimensions[SYSTEM_DIMENSIONS]; /* X,Y,Z dimensions */
+	ushort dimensions[SYSTEM_DIMENSIONS]; /* X,Y,Z dimensions */
 	void* bgl_record_ptr;		/* pointer to referring bgl_record */
 	int size;
 #ifdef _RM_API_H__
 	pm_partition_id_t* bgl_part_id;	/* ID returned from CMCS	*/
-	rm_partition_t* part_type;	/* Type=Mesh/Torus/		*/
+
 #else
-	int* bgl_part_id;	/* ID returned from CMCS	*/
-	int* part_type;	/* Type=Mesh/Torus/		*/
+	ushort* bgl_part_id;	/* ID returned from CMCS	*/
+	ushort* part_type;	/* Type=Mesh/Torus/		*/
 #endif
 } partition_t;
 
@@ -60,11 +60,11 @@ void printPartition(partition_t* part);
 void printList(List list);
 void printSysList(List list);
 
-int isNotCorrectDimension(int* cur_part, int* req);
+int isNotCorrectDimension(ushort* cur_part, ushort* req);
 int isPartitionNotEquals(partition_t* A, partition_t* B);
-void rotate_part(const int* config, int** new_config);
+void rotate_part(const ushort* config, ushort** new_config);
 
-int intArray_size(int* part_geometry);
+int intArray_size(ushort* part_geometry);
 void sortIntArrayByDecSize(List configs);
 void sortPartitionsByIncSize(List partitions);
 void sortPartitionsByDecSize(List partitions);
