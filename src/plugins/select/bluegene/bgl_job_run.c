@@ -204,19 +204,26 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 
 	int err_ret = SLURM_SUCCESS;
 
-	/* find the partition */
+/* 	find the partition */
 	if ((rc = rm_get_partition(bgl_part_id,  &part_elem)) != STATUS_OK) {
 		error("rm_get_partition(%s): %s", bgl_part_id, bgl_err_str(rc));
 		return SLURM_ERROR;
 	}
 
-	/* set its owner */
-	if ((rc = rm_set_data(part_elem, RM_PartitionUserName, &user))
-			!= STATUS_OK) {
-		error("rm_set_date(%s, RM_PartitionUserName): %s", bgl_part_id,
+/* 	/\* set its owner *\/ */
+	if ((rc = rm_set_part_owner(bgl_part_id, user)) != STATUS_OK) {
+		error("rm_set_part_owner(%s,%s): %s", bgl_part_id, user,
 			bgl_err_str(rc));
-		err_ret = SLURM_ERROR;
+		return SLURM_ERROR;
 	}
+	
+
+/* 	if ((rc = rm_set_data(part_elem, RM_PartitionUserName, &user)) */
+/* 			!= STATUS_OK) { */
+/* 		error("rm_set_date(%s, RM_PartitionUserName): %s", bgl_part_id, */
+/* 			bgl_err_str(rc)); */
+/* 		err_ret = SLURM_ERROR; */
+/* 	} */
 
 	if ((rc = rm_free_partition(part_elem)) != STATUS_OK)
 		error("rm_free_partition(): %s", bgl_err_str(rc));

@@ -35,13 +35,6 @@
 #  include "config.h"
 #endif
 
-#include <pwd.h>
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
 #if HAVE_INTTYPES_H
 #  include <inttypes.h>
 #else				/* !HAVE_INTTYPES_H */
@@ -56,14 +49,20 @@
 #  include "src/common/getopt.h"
 #endif
 
- 
-#include "src/common/macros.h"
-#include <slurm/slurm.h>
+#include <stdlib.h>
+#include <pwd.h>
+#include <ctype.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
-#include "src/common/slurm_protocol_api.h"
 #include "src/common/bitstring.h"
-#include "src/slurmctld/slurmctld.h"
+#include "src/common/hostlist.h"
+#include "src/common/list.h"
+#include "src/common/macros.h"
+//#include "src/slurmctld/slurmctld.h"
 #include "src/partition_allocator/partition_allocator.h"
+#include "src/common/slurm_protocol_api.h"
 
 #ifdef HAVE_BGL_FILES
 # include "rm_api.h"
@@ -104,10 +103,11 @@ typedef struct {
 	int display;
 
 	bool long_output;
+	bool commandline;
 
 	char *nodes;
 	char *partition;
-
+	
 	int node_field_size;
 
 } smap_parameters_t;
@@ -123,7 +123,7 @@ extern int quiet_flag;
 
 void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid(int start, int end, int count);
-extern int set_grid_bgl(int *start, int *end, int count);
+extern int set_grid_bgl(int *start, int *end, int count, int set);
 extern void print_grid(void);
 
 void parse_command_line(int argc, char *argv[]);

@@ -276,4 +276,9 @@ void init_grid(node_info_msg_t *node_info_ptr);
  */
 int *find_bp_loc(char* bp_id);
 
+/**
+ * find a rack/midplace location 
+ */
+char *find_bp_rack_mid(char* xyz);
+
 #endif /* _PARTITION_ALLOCATOR_H_ */

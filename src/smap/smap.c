@@ -62,24 +62,22 @@ int main(int argc, char *argv[])
 	parse_command_line(argc, argv);
 #ifdef HAVE_BGL
 	error_code = slurm_load_node((time_t) NULL, &node_info_ptr, 0);
+
 	if (error_code) {
 #ifdef HAVE_BGL_FILES
 		int rc;
 		rm_BGL_t *bgl;
 		rm_size3D_t bp_size;
 		if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
-			fatal("init_bgl: rm_set_serial(): %s", bgl_err_str(rc));
-			return SLURM_ERROR;
+			exit(-1);
 		}
 		
 		if ((rc = rm_get_BGL(&bgl)) != STATUS_OK) {
-			fatal("init_bgl: rm_get_BGL(): %s", bgl_err_str(rc));
-			return SLURM_ERROR;
+			exit(-1);
 		}
 		
 		if ((rc = rm_get_data(bgl, RM_Msize, &bp_size)) != STATUS_OK) {
-			fatal("init_bgl: rm_get_data(): %s", bgl_err_str(rc));
-			return SLURM_ERROR;
+			exit(-1);
 		}
 		verbose("BlueGene configured with %d x %d x %d base partitions",
 			bp_size.X, bp_size.Y, bp_size.Z);
@@ -88,60 +86,92 @@ int main(int argc, char *argv[])
 		DIM_SIZE[Z]=bp_size.Z;
 		rm_free_BGL(bgl);
 #else
-     		slurm_perror("slurm_load_node");
+		slurm_perror("slurm_load_node");
 		exit(0);
 #endif
 		pa_init(NULL);
 	} else {
 		pa_init(node_info_ptr);
-        }
-#else
-     		error("This will only run on a BGL system right now.\n");
-		exit(0);
-#endif
-
-	height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
-	width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
+	}
 	
-	signal(SIGWINCH, (sighandler_t) _resize_handler);
-
-	initscr();
-	if (COLS < (75 + width) || LINES < height) {
-		endwin();
-		error("Screen is too small make sure the screen is at least %dx%d\n"
-			"Right now it is %dx%d\n", 75 + width, height, COLS, LINES);
+#else
+	error("This will only run on a BGL system right now.\n");
+	exit(0);
+#endif
+	if(params.partition) {
+		if(params.partition[0] == 'r')
+			params.partition[0] = 'R';
+		if(params.partition[0] != 'R') {
+			char *rack_mid = find_bp_rack_mid(params.partition);
+			if(rack_mid)
+				printf("X=%c Y=%c Z=%c resolves to %s\n",
+				       params.partition[X],
+				       params.partition[Y],
+				       params.partition[Z], 
+				       rack_mid);
+			else
+				printf("X=%c Y=%c Z=%c has no resolve\n",
+				       params.partition[X],
+				       params.partition[Y],
+				       params.partition[Z]);
+			
+		} else {
+			int *coord = find_bp_loc(params.partition);
+			if(coord)
+				printf("%s resolves to X=%d Y=%d Z=%d\n",
+				       params.partition,
+				       coord[X],
+				       coord[Y],
+				       coord[Z]);
+			else
+				printf("%s has no resolve.\n", params.partition);
+		}
 		exit(0);
 	}
-	raw();
-	keypad(stdscr, TRUE);
-	noecho();
-	cbreak();
-	curs_set(1);
-	nodelay(stdscr, TRUE);
-	start_color();
-	
-	pa_system_ptr->grid_win = newwin(height, width, starty, startx);
-	box(pa_system_ptr->grid_win, 0, 0);
-
-	startx = width;
-	COLS -= 2;
-	width = COLS - width;
-	height = LINES;
-	pa_system_ptr->text_win = newwin(height, width, starty, startx);
-	box(pa_system_ptr->text_win, 0, 0);
-	wrefresh(pa_system_ptr->text_win);
-	wrefresh(pa_system_ptr->grid_win);
-	
+	if(!params.commandline) {
+		height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
+		width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
+			
+		signal(SIGWINCH, (sighandler_t) _resize_handler);
+			
+		initscr();
+		if (COLS < (75 + width) || LINES < height) {
+			endwin();
+			error("Screen is too small make sure the screen is at least %dx%d\n"
+			      "Right now it is %dx%d\n", 75 + width, height, COLS, LINES);
+			exit(0);
+		}
+			
+		raw();
+		keypad(stdscr, TRUE);
+		noecho();
+		cbreak();
+		curs_set(1);
+		nodelay(stdscr, TRUE);
+		start_color();
+			
+		pa_system_ptr->grid_win = newwin(height, width, starty, startx);
+		box(pa_system_ptr->grid_win, 0, 0);
+			
+		startx = width;
+		COLS -= 2;
+		width = COLS - width;
+		height = LINES;
+		pa_system_ptr->text_win = newwin(height, width, starty, startx);
+		box(pa_system_ptr->text_win, 0, 0);
+	}
 	while (!end) {
-		_get_option();
-	      redraw:
-
-		init_grid(node_info_ptr);
-		wclear(pa_system_ptr->text_win);
-		wclear(pa_system_ptr->grid_win);        
-		pa_system_ptr->xcord = 1;
-		pa_system_ptr->ycord = 1;
-
+		if(!params.commandline) {
+			_get_option();
+		redraw:
+			
+			init_grid(node_info_ptr);
+			wclear(pa_system_ptr->text_win);
+			wclear(pa_system_ptr->grid_win);        
+			
+			pa_system_ptr->xcord = 1;
+			pa_system_ptr->ycord = 1;
+		}
 		print_date();
 		switch (params.display) {
 		case JOBS:
@@ -157,22 +187,27 @@ int main(int argc, char *argv[])
 			get_slurm_part();
 			break;
 		}
-
-		print_grid();
-		box(pa_system_ptr->text_win, 0, 0);
-		box(pa_system_ptr->grid_win, 0, 0);
-		wrefresh(pa_system_ptr->text_win);
-		wrefresh(pa_system_ptr->grid_win);
-
+			
+		if(!params.commandline) {
+			print_grid();
+			move(0,0);
+			box(pa_system_ptr->text_win, 0, 0);
+			box(pa_system_ptr->grid_win, 0, 0);
+			wnoutrefresh(pa_system_ptr->text_win);
+			wnoutrefresh(pa_system_ptr->grid_win);
+			doupdate();
+		}
 		if (params.iterate) {
 			for (i = 0; i < params.iterate; i++) {
 
 				sleep(1);
-				if (_get_option())
-					goto redraw;
-				else if (pa_system_ptr->resize_screen) {
-					pa_system_ptr->resize_screen = 0;
-					goto redraw;
+				if(!params.commandline) {
+					if (_get_option())
+						goto redraw;
+					else if (pa_system_ptr->resize_screen) {
+						pa_system_ptr->resize_screen = 0;
+						goto redraw;
+					}
 				}
 			}
 		} else
@@ -181,7 +216,8 @@ int main(int argc, char *argv[])
 
 	nodelay(stdscr, FALSE);
 	getch();
-	endwin();
+	if (params.iterate) 
+		endwin();
 	pa_fini();
         
 	exit(0);
@@ -234,7 +270,7 @@ void *_resize_handler(int sig)
 	if (COLS < (75 + width) || LINES < height) {
 		endwin();
 		error("Screen is too small make sure the screen is at least %dx%d\n"
-			"Right now it is %dx%d\n", 75 + width, height, COLS, LINES);
+		      "Right now it is %dx%d\n", 75 + width, height, COLS, LINES);
 		exit(0);
 	}
 	
@@ -262,8 +298,9 @@ void *_resize_handler(int sig)
 	print_grid();
 	box(pa_system_ptr->text_win, 0, 0);
 	box(pa_system_ptr->grid_win, 0, 0);
-	wrefresh(pa_system_ptr->text_win);
-	wrefresh(pa_system_ptr->grid_win);
+	wnoutrefresh(pa_system_ptr->text_win);
+	wnoutrefresh(pa_system_ptr->grid_win);
+	doupdate();
 	pa_system_ptr->resize_screen = 1;
 	return NULL;
 }

@@ -38,6 +38,7 @@ typedef struct {
 static void	_delete_allocated_parts(List allocated_partitions);
 static allocated_part_t *_make_request(pa_request_t *request);
 static int	_create_allocation(char *com, List allocated_partitions);
+static int	_resolve(char *com);
 static int	_remove_allocation(char *com, List allocated_partitions);
 static int	_alter_allocation(char *com, List allocated_partitions);
 static int	_copy_allocation(char *com, List allocated_partitions);
@@ -199,6 +200,40 @@ static int _create_allocation(char *com, List allocated_partitions)
 		}
 	}
 	
+	return 1;
+}
+
+static int _resolve(char *com)
+{
+	int i=0;
+	while(com[i-1] != ' ' && com[i] != '\0')
+		i++;
+	if(com[i] == 'r')
+		com[0] = 'R';
+	
+	memset(error_string,0,255);		
+	if(com[i] != 'R') {
+		char *rack_mid = find_bp_rack_mid(com+i);
+		if(rack_mid)
+			sprintf(error_string, "X=%c Y=%c Z=%c resolves to %s\n",
+				com[X+i],com[Y+i],com[Z+i], rack_mid);
+		else
+			sprintf(error_string, "X=%c Y=%c Z=%c has no resolve\n",
+				       params.partition[X],
+				       params.partition[Y],
+				       params.partition[Z]);
+		
+	} else {
+		int *coord = find_bp_loc(com+i);
+		if(coord)
+			sprintf(error_string, "%s resolves to X=%d Y=%d Z=%d\n",
+				com+i,coord[X],coord[Y],coord[Z]);
+		else
+			sprintf(error_string, "%s has no resolve.\n", 
+				params.partition);	
+	}
+	wnoutrefresh(pa_system_ptr->text_win);
+	doupdate();
 	return 1;
 }
 
@@ -556,6 +591,11 @@ void get_command(void)
 	List allocated_partitions;
 	ListIterator results_i;
 		
+	if(params.commandline) {
+		printf("Configure won't work with commandline mode.\n");
+		printf("Please remove the -c from the commandline.\n");
+		exit(0);
+	}
 	allocated_partitions = list_create(NULL);
 				
 	text_width = pa_system_ptr->text_win->_maxx;	// - pa_system_ptr->text_win->_begx;
@@ -596,8 +636,9 @@ void get_command(void)
 		}
 		list_iterator_destroy(results_i);
 		
-		wrefresh(pa_system_ptr->text_win);
-		wrefresh(pa_system_ptr->grid_win);
+		wnoutrefresh(pa_system_ptr->text_win);
+		wnoutrefresh(pa_system_ptr->grid_win);
+		doupdate();
 		wclear(command_win);
 		box(command_win, 0, 0);
 		mvwprintw(command_win, 0, 3,
@@ -610,6 +651,9 @@ void get_command(void)
 			_delete_allocated_parts(allocated_partitions);
 			pa_fini();
 			exit(0);
+		} else if (!strncasecmp(com, "resolve", 7) ||
+			   !strncasecmp(com, "r ", 2)) {
+			_resolve(com);
 		} else if (!strncasecmp(com, "resume", 6)) {
 			mvwprintw(pa_system_ptr->text_win,
 				pa_system_ptr->ycord,

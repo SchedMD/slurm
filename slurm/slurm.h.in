@@ -184,7 +184,8 @@ enum select_data_type {
 enum select_print_mode {
 	SELECT_PRINT_HEAD,	/* Print just the header */
 	SELECT_PRINT_DATA,	/* Print just the data */
-	SELECT_PRINT_MIXED	/* Print "field=value" */
+	SELECT_PRINT_MIXED,	/* Print "field=value" */
+	SELECT_PRINT_BGL_ID	/* Print just the BGL_ID */
 };
 
 /* Possible task distributions across the nodes */

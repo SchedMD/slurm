@@ -27,3 +27,5 @@ bin_PROGRAMS = slurm_prolog slurm_epilog
 
 slurm_prolog_SOURCES = slurm_prolog.c
 slurm_epilog_SOURCES = slurm_epilog.c
+slurm_prolog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BGL_LDFLAGS)
+slurm_epilog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BGL_LDFLAGS)
