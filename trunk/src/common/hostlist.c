@@ -256,7 +256,7 @@ static int           hostname_suffix_width(hostname_t);
 static hostrange_t   hostrange_new(void);
 static hostrange_t   hostrange_create_single(const char *);
 static hostrange_t   hostrange_create(char *, unsigned long, unsigned long,
-int);
+				int);
 static unsigned long hostrange_count(hostrange_t);
 static hostrange_t   hostrange_copy(hostrange_t);
 static void          hostrange_destroy(hostrange_t);
@@ -271,8 +271,8 @@ static char *        hostrange_shift(hostrange_t);
 static int           hostrange_join(hostrange_t, hostrange_t);
 static hostrange_t   hostrange_intersect(hostrange_t, hostrange_t);
 static int           hostrange_hn_within(hostrange_t, hostname_t);
-static size_t        hostrange_to_string(hostrange_t hr, size_t, char *, char
-*);
+static size_t        hostrange_to_string(hostrange_t hr, size_t, char *, 
+				char *);
 static size_t        hostrange_numstr(hostrange_t, size_t, char *);
 
 static hostlist_t  hostlist_new(void);
