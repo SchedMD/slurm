@@ -245,7 +245,7 @@ _job_fake_cred(job_t *job)
 job_t *
 job_create_noalloc(void)
 {
-	job_t *job;
+	job_t *job = NULL;
 	allocation_info_t *info = xmalloc(sizeof(*info));
 	int cpn     = 1;
 	int i;
