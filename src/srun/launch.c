@@ -66,7 +66,8 @@ static void   _dist_block(job_t *job, uint32_t **task_ids);
 static void   _dist_cyclic(job_t *job, uint32_t **task_ids);
 static void   _p_launch(slurm_msg_t *req_array_ptr, job_t *job);
 static void * _p_launch_task(void *args);
-static void   _print_launch_msg(launch_tasks_request_msg_t *msg);
+static void   _print_launch_msg(launch_tasks_request_msg_t *msg, 
+		                char * hostname);
 static int    _envcount(char **env);
 
 static void
@@ -261,8 +262,8 @@ static void * _p_launch_task(void *args)
 	int host_inx = msg_ptr->srun_node_id;
 	int failure = 0;
 
-	debug3("launching on host %s", job_ptr->host[host_inx]);
-        _print_launch_msg(msg_ptr);
+	if (_verbose || _debug)
+	        _print_launch_msg(msg_ptr, job_ptr->host[host_inx]);
 	if (slurm_send_only_node_msg(req_ptr) < 0) {	/* Has timeout */
 		error("task launch error on %s: %m", job_ptr->host[host_inx]);
 		pthread_mutex_lock(&job_ptr->task_mutex);
@@ -288,13 +289,35 @@ static void * _p_launch_task(void *args)
 }
 
 
-static void _print_launch_msg(launch_tasks_request_msg_t *msg)
+static void 
+_print_launch_msg(launch_tasks_request_msg_t *msg, char * hostname)
 {
-	debug3("%d.%d uid:%ld n:%ld cwd:%s %d [%d-%d]",
-		msg->job_id, msg->job_step_id, (long) msg->uid, 
-		(long) msg->tasks_to_launch, msg->cwd, 
-		msg->srun_node_id, msg->global_task_ids[0],
-		msg->global_task_ids[msg->tasks_to_launch-1]);
+	int i;
+	char tmp_str[10], task_list[4096];
+
+	if (opt.distribution == SRUN_DIST_BLOCK) {
+		sprintf(task_list, "%u-%u", 
+		        msg->global_task_ids[0],
+			msg->global_task_ids[(msg->tasks_to_launch-1)]);
+	} else {
+		for (i=0; i<msg->tasks_to_launch; i++) {
+			sprintf(tmp_str, ",%u", msg->global_task_ids[i]);
+			if (i == 0)
+				strcpy(task_list, &tmp_str[1]);
+			else if ((strlen(tmp_str) + strlen(task_list)) < 
+			         sizeof(task_list))
+				strcat(task_list, tmp_str);
+			else
+				break;
+		}
+	}
+
+	printf("launching %u.%u on host %s, %u tasks: %s\n", 
+		msg->job_id, msg->job_step_id, hostname, 
+		msg->tasks_to_launch, task_list);
+
+	debug3("uid:%ld cwd:%s %d",
+		(long) msg->uid, msg->cwd, msg->srun_node_id);
 }
 
 static int
