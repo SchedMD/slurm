@@ -204,6 +204,29 @@ static int _check_pending_threads(thd_t *thd, int count)
 	return 0;
 }
 
+/*
+ * When running under parallel debugger, do not create threads in 
+ *  detached state, as this seems to confuse TotalView specifically
+ */
+static void _set_attr_detached (pthread_attr_t *attr)
+{
+	int err;
+	if (!opt.parallel_debug)
+		return;
+	if ((err = pthread_attr_setdetachstate(attr, PTHREAD_CREATE_DETACHED)))
+		error ("pthread_attr_setdetachstate: %s", slurm_strerror(err));
+	return;
+}
+
+static void _join_attached_threads (int nthreads, thd_t *th)
+{
+	int i;
+	void *retval;
+	for (i = 0; i < nthreads; i++)
+		pthread_join (th[i].thread, &retval);
+	return;
+}
+
 
 static void _spawn_launch_thr(thd_t *th)
 {
@@ -211,9 +234,7 @@ static void _spawn_launch_thr(thd_t *th)
 	int err = 0;
 
 	slurm_attr_init (&attr);
-	err = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	if (err)
-		error ("pthread_attr_setdetachstate: %s", slurm_strerror(err));
+	_set_attr_detached (&attr);
 
 	err = pthread_create(&th->thread, &attr, _p_launch_task, (void *)th);
 	if (err) {
@@ -296,6 +317,12 @@ static void _p_launch(slurm_msg_t *req, job_t *job)
 	while (active > 0) 
 		_wait_on_active(thd, job);
 	pthread_mutex_unlock(&active_mutex);
+
+	/*
+	 * Need to join with all attached threads if running
+	 *  under parallel debugger
+	 */
+	_join_attached_threads (job->nhosts, thd);
 
 	/*
 	 * xsignal_restore_mask(&set);

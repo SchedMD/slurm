@@ -234,7 +234,12 @@ _sig_thr(void *arg)
 
 		xsignal_sigset_create(srun_sigarray, &set);
 
-		sigwait(&set, &signo);
+		if (sigwait(&set, &signo) < 0) {
+			if (errno != EINTR) 
+				error ("sigwait: %m");
+			continue;
+		}
+
 		debug2("recvd signal %d", signo);
 		switch (signo) {
 		  case SIGINT:
