@@ -77,10 +77,10 @@ slurm_print_node_table ( FILE * out, node_info_t * node_ptr )
 	fprintf ( out, "NodeName=%s State=%s CPUs=%u ", 
 		node_ptr->name, node_state_string(node_ptr->node_state), 
 		node_ptr->cpus);
-	fprintf ( out, "RealMemory=%u TmpDisk=%u Weight=%u ", 
-		node_ptr->real_memory, node_ptr->tmp_disk, node_ptr->weight);
-	fprintf ( out, "Features=%s Partition=%s\n\n", 
-		node_ptr->features, node_ptr->partition);
+	fprintf ( out, "RealMemory=%u TmpDisk=%u\n", 
+		node_ptr->real_memory, node_ptr->tmp_disk);
+	fprintf ( out, "   Weight=%u Partition=%s Features=%s \n\n", 
+		node_ptr->weight, node_ptr->partition, node_ptr->features);
 }
 
 
