@@ -28,6 +28,7 @@
 #include <termcap.h>
 #include <termios.h>
 
+#include "src/common/xstring.h"
 #include "src/squeue/squeue.h"
 
 /********************
@@ -50,7 +51,7 @@ main (int argc, char *argv[])
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 
-	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
+	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line( argc, argv );
 	max_line_size = _get_window_width( );
 	

@@ -46,6 +46,7 @@
 
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 #include "src/scancel/scancel.h"
 
@@ -66,7 +67,7 @@ main (int argc, char *argv[])
 {
 	log_options_t log_opts = LOG_OPTS_STDERR_ONLY ;
 
-	log_init ("scancel", log_opts, SYSLOG_FACILITY_DAEMON, NULL);
+	log_init (xbasename(argv[0]), log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 	initialize_and_process_args(argc, argv);
 	if (opt.verbose) {
 		log_opts.stderr_level += opt.verbose;

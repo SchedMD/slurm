@@ -62,7 +62,6 @@ parse_command_line( int argc, char* argv[] )
 {
 	char *env_val = NULL;
 	int opt_char;
-	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 	int option_index;
 	static struct option long_options[] = {
 		{"noheader",   no_argument,       0, 'h'},
@@ -80,8 +79,6 @@ parse_command_line( int argc, char* argv[] )
 		{"verbose",    no_argument,       0, 'v'},
 		{"version",    no_argument,       0, 'V'}
 	};
-
-	log_init("sinfo", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	while((opt_char = getopt_long(argc, argv, "hHi:j::lo:p:s::S:t:u:vV",
 			long_options, &option_index)) != -1) {
