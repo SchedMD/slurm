@@ -524,7 +524,6 @@ static int _delete_old_partitions()
 		}
 		list_iterator_destroy(itr_found);
 		if(found_record == NULL) {
-			printf("this is the id %s\n",part_id);
 			if ((rc = rm_get_partition(part_id, &my_part))
 			    != STATUS_OK) {
 			} else {
