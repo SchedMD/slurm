@@ -17,8 +17,8 @@ ACMAJOR=2
 ACMINOR=52
 
 AMMAJOR=1
-AMMINOR=4
-AMPATCH=4
+AMMINOR=6
+AMPATCH=2
 
 (autoconf --version 2>&1 | \
  perl -n0e "(/(\d+)\.(\d+)/ && \$1>=$ACMAJOR && \$2>=$ACMINOR) || exit 1") || {
@@ -41,7 +41,7 @@ amtest="
 
 (automake --version 2>&1 | perl -n0e "$amtest" ) || {
     echo
-    echo "Error: You must have \`automake' version $AMMAJOR.$AMMINOR-p$AMPATCH or greater"
+    echo "Error: You must have \`automake' version $AMMAJOR.$AMMINOR.$AMPATCH or greater"
     echo "installed to run $0. Get the latest version from"
     echo "ftp://ftp.gnu.org/pub/gnu/automake/"
     echo
