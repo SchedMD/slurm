@@ -268,11 +268,12 @@ _unpackstrarray (char ***valp, uint16_t *size_valp, void **bufp, int *lenp)
 	*lenp -= sizeof(nl);
 
 	if (*size_valp > 0) {
-		*valp = xmalloc(sizeof ( char * ) * *size_valp ) ;
+		*valp = xmalloc(sizeof ( char * ) * ( *size_valp +1 ) ) ;
 		for ( i = 0 ; i < *size_valp ; i ++ )
 		{
 			unpackstr_xmalloc ( & (*valp)[i] , & uint16_tmp , bufp , lenp ) ;
 		}
+		(*valp)[i] = NULL ; /* NULL terminated array so that execle can detect end of array */
 	}
 	else
 		*valp = NULL;
