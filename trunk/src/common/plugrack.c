@@ -69,6 +69,7 @@ char *strchr(), *strrchr();
 #  include <sys/stat.h>
 #endif /* HAVE_CONFIG_H */
 
+#include "src/common/macros.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -120,6 +121,7 @@ struct _plugrack {
 #define PLUGRACK_UID_NOBODY                99        /* RedHat's, anyway. */
 
 static int _plugrack_read_single_dir( plugrack_t rack, char *dir );
+static bool _so_file( char *pathname );
 
 /*
  * Destructor function for the List code.  This should entirely
@@ -531,6 +533,9 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
                 if ( stat( fq_path, &st ) < 0 ) continue;
                 if ( ! S_ISREG( st.st_mode ) ) continue;
 
+		/* Check only shared object files. */
+		if ( ! _so_file( e->d_name) ) continue;
+
                 /* See if we should be paranoid about this file. */
                 if (!accept_path_paranoia( rack,
                                            fq_path,
@@ -564,6 +569,24 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 
 	free( fq_path );
         return SLURM_SUCCESS;
+}
+
+/* Return TRUE if the specified pathname is recognized as that of a shared 
+ * object (i.e. containing ".so") */
+static bool
+_so_file ( char *file_name )
+{
+	int i;
+
+	if (file_name == NULL) 
+		return false;
+
+	for (i=0; file_name[i] ;i++) {
+		if ( (file_name[i] == '.') && (file_name[i+1] == 's') && 
+				(file_name[i+2] == 'o') )
+			return true;
+	}
+	return false;
 }
 
 int
