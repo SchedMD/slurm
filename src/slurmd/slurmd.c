@@ -281,6 +281,7 @@ void slurm_rpc_launch_tasks ( slurm_msg_t * msg )
 
 	resp_msg . address = task_desc -> response_addr ;	
 	resp_msg . data = & task_resp ;
+	resp_msg . msg_type = RESPONSE_LAUNCH_TASKS ;
 	
 
 	/* return result */
