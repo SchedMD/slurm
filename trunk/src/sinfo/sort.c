@@ -263,18 +263,20 @@ static int _sort_by_node_list(void *void1, void *void2)
 	int inx;
 #endif
 
-	hostlist_sort(sinfo1->nodes);
-	hostlist_sort(sinfo2->nodes);
 	val1 = hostlist_shift(sinfo1->nodes);
-	if (val1)
+	if (val1) {
 		hostlist_push_host(sinfo1->nodes, val1);
-	else
+		hostlist_sort(sinfo1->nodes);
+	} else
 		val1 = "";
+
 	val2 = hostlist_shift(sinfo2->nodes);
-	if (val2)
+	if (val2) {
 		hostlist_push_host(sinfo2->nodes, val2);
-	else
+		hostlist_sort(sinfo2->nodes);
+	} else
 		val2 = "";
+
 #if	PURE_ALPHA_SORT
 	diff = strcmp(val1, val2);
 #else
