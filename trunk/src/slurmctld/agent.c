@@ -58,6 +58,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <slurm/slurm.h>
+
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -273,7 +275,8 @@ static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 		(agent_arg_ptr->msg_type == REQUEST_PING) || 
 		(agent_arg_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH) || 
 		(agent_arg_ptr->msg_type == REQUEST_SHUTDOWN) || 
-		(agent_arg_ptr->msg_type == REQUEST_RECONFIGURE) || 
+		(agent_arg_ptr->msg_type == REQUEST_RECONFIGURE) ||
+	        (agent_arg_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION) ||	
 		(agent_arg_ptr->msg_type == REQUEST_NODE_REGISTRATION_STATUS));
 
 	if (agent_arg_ptr->node_count == 0)
@@ -346,6 +349,7 @@ static void *_wdog(void *args)
 
 	if ( (agent_ptr->msg_type == SRUN_PING) ||
 	     (agent_ptr->msg_type == SRUN_TIMEOUT) ||
+	     (agent_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION) ||
 	     (agent_ptr->msg_type == SRUN_NODE_FAIL) )
 		srun_agent = true;
 
@@ -426,6 +430,11 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 		srun_node_fail_msg_t *msg = *agent_ptr->msg_args_pptr;
 		job_id  = msg->job_id;
 		step_id = msg->step_id;
+	} else if (agent_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION) {
+		resource_allocation_response_msg_t *msg =
+			*agent_ptr->msg_args_pptr;
+		job_id  = msg->job_id;
+		step_id = NO_VAL;
 	} else {
 		error("_notify_slurmctld_jobs invalid msg_type %u",
 			agent_ptr->msg_type);
@@ -541,6 +550,7 @@ static void *_thread_per_node_rpc(void *args)
 			(msg_type == REQUEST_KILL_JOB)     );
 	srun_agent = (	(msg_type == SRUN_PING)    ||
 			(msg_type == SRUN_TIMEOUT) ||
+			(msg_type == RESPONSE_RESOURCE_ALLOCATION) ||
 			(msg_type == SRUN_NODE_FAIL) );
 
 	/* send request message */
@@ -855,8 +865,12 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 	if (agent_arg_ptr->msg_args) {
 		if (agent_arg_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH)
 			_slurmctld_free_job_launch_msg(agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == 
+				RESPONSE_RESOURCE_ALLOCATION)
+			slurm_free_resource_allocation_response_msg(
+					agent_arg_ptr->msg_args);
 		else
 			xfree(agent_arg_ptr->msg_args);
-		}
+	}
 	xfree(agent_arg_ptr);
 }

@@ -42,6 +42,7 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/srun_comm.h"
 
 #define MAX_RETRIES 10
 
@@ -184,6 +185,7 @@ int schedule(void)
 			last_job_update = time(NULL);
 			info("schedule: JobId=%u NodeList=%s",
 			     job_ptr->job_id, job_ptr->nodes);
+			srun_allocate(job_ptr->job_id);
 			if (job_ptr->batch_flag)
 				_launch_job(job_ptr);
 			job_cnt++;

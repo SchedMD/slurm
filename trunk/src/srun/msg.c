@@ -524,6 +524,11 @@ _handle_msg(job_t *job, slurm_msg_t *msg)
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			slurm_free_srun_node_fail_msg(msg->data);
 			break;
+		case RESPONSE_RESOURCE_ALLOCATION:
+			debug3("resource allocation response received");
+			slurm_send_rc_msg(msg, SLURM_SUCCESS);
+			slurm_free_resource_allocation_response_msg(msg->data);
+			break;
 		default:
 			error("received spurious message type: %d\n",
 					msg->msg_type);

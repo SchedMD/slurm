@@ -36,6 +36,10 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/slurmctld.h"
 
+/* Launch the srun request. Note that retry is always zero since 
+ * we don't want to clog the system up with messages destined for 
+ * defunct srun processes 
+ */ 
 static void _srun_agent_launch(slurm_addr *addr, char *host,
 		slurm_msg_type_t type, void *msg_args)
 {
@@ -49,6 +53,44 @@ static void _srun_agent_launch(slurm_addr *addr, char *host,
 	agent_args->msg_type   = type;
 	agent_args->msg_args   = msg_args;
 	agent_queue_request(agent_args);
+}
+
+/*
+ * srun_allocate - notify srun of a resource allocation
+ * IN job_id - id of the job allocated resource
+ */
+extern void srun_allocate (uint32_t job_id)
+{
+	struct job_record *job_ptr = find_job_record (job_id);
+
+	xassert(job_ptr);
+	if (job_ptr->port && job_ptr->host && job_ptr->host[0]) {
+		slurm_addr * addr;
+		resource_allocation_response_msg_t *msg_arg;
+
+		addr = xmalloc(sizeof(struct sockaddr_in));
+		slurm_set_addr(addr, job_ptr->port, job_ptr->host);
+		msg_arg = xmalloc(sizeof(resource_allocation_response_msg_t));
+		msg_arg->job_id 	= job_ptr->job_id;
+		msg_arg->node_list	= xstrdup(job_ptr->nodes);
+		msg_arg->num_cpu_groups	= job_ptr->num_cpu_groups;
+		msg_arg->cpus_per_node  = xmalloc(sizeof(uint32_t) *
+				job_ptr->num_cpu_groups);
+		memcpy(msg_arg->cpus_per_node, job_ptr->cpus_per_node,
+				(sizeof(uint32_t) * job_ptr->num_cpu_groups));
+		msg_arg->cpu_count_reps  = xmalloc(sizeof(uint32_t) *
+				job_ptr->num_cpu_groups);
+		memcpy(msg_arg->cpu_count_reps, job_ptr->cpu_count_reps,
+				(sizeof(uint32_t) * job_ptr->num_cpu_groups));
+		msg_arg->node_cnt	= job_ptr->node_cnt;
+		msg_arg->node_addr      = xmalloc(sizeof (slurm_addr) *
+				job_ptr->node_cnt);
+		memcpy(msg_arg->node_addr, job_ptr->node_addr,
+				(sizeof(slurm_addr) * job_ptr->node_cnt));
+		msg_arg->error_code	= SLURM_SUCCESS;
+		_srun_agent_launch(addr, job_ptr->host, 
+				RESPONSE_RESOURCE_ALLOCATION, msg_arg);
+	}
 }
 
 /*
@@ -81,7 +123,8 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 		msg_arg->job_id   = job_id;
 		msg_arg->step_id  = NO_VAL;
 		msg_arg->nodelist = xstrdup(node_name);
-		_srun_agent_launch(addr, job_ptr->host, SRUN_NODE_FAIL, msg_arg);
+		_srun_agent_launch(addr, job_ptr->host, SRUN_NODE_FAIL, 
+				msg_arg);
 	}
 
 
@@ -184,7 +227,8 @@ extern void srun_timeout (uint32_t job_id, time_t timeout)
 		msg_arg->job_id   = job_id;
 		msg_arg->step_id  = NO_VAL;
 		msg_arg->timeout = timeout;
-		_srun_agent_launch(addr, job_ptr->host, SRUN_TIMEOUT, msg_arg);
+		_srun_agent_launch(addr, job_ptr->host, SRUN_TIMEOUT, 
+				msg_arg);
 	}
 
 
@@ -201,7 +245,8 @@ extern void srun_timeout (uint32_t job_id, time_t timeout)
 		msg_arg->job_id   = job_ptr->job_id;
 		msg_arg->step_id  = step_ptr->step_id;
 		msg_arg->timeout  = timeout;
-		_srun_agent_launch(addr, step_ptr->host, SRUN_TIMEOUT, msg_arg);
+		_srun_agent_launch(addr, step_ptr->host, SRUN_TIMEOUT, 
+				msg_arg);
 	}	
 	list_iterator_destroy(step_record_iterator);
 }
@@ -225,3 +270,4 @@ extern void srun_response(uint32_t job_id, uint32_t step_id)
 	    ((step_ptr = find_step_record(job_ptr, (uint16_t) step_id))))
 		step_ptr->time_last_active = now;
 }
+
