@@ -233,14 +233,14 @@ slurmctld_rpc_mgr ( void * no_data )
 
 	/* threads to process individual RPC's are detached */
 	if (pthread_attr_init (&thread_attr_rpc_req))
-		fatal ("pthread_attr_init errno %d", errno);
+		fatal ("pthread_attr_init errno %m %d", errno);
 	if (pthread_attr_setdetachstate (&thread_attr_rpc_req, PTHREAD_CREATE_DETACHED))
-		fatal ("pthread_attr_setdetachstate errno %d", errno);
+		fatal ("pthread_attr_setdetachstate errno %m %d", errno);
 
 	/* initialize port for RPCs */
 	if ( ( sockfd = slurm_init_msg_engine_port ( slurmctld_conf . slurmctld_port ) ) 
 			== SLURM_SOCKET_ERROR )
-		fatal ("slurm_init_msg_engine_port error %d \n", errno);
+		fatal ("slurm_init_msg_engine_port error %m %d \n", errno);
 
 	/*
 	 * Procss incoming RPCs indefinitely
@@ -253,7 +253,7 @@ slurmctld_rpc_mgr ( void * no_data )
 		 */
 		if ( ( newsockfd = slurm_accept_msg_conn ( sockfd , & cli_addr ) ) == SLURM_SOCKET_ERROR )
 		{
-			error ("slurm_accept_msg_conn error %d", errno) ;
+			error ("slurm_accept_msg_conn error %m %d", errno) ;
 			continue ;
 		}
 		conn_arg -> newsockfd = newsockfd ;
@@ -267,7 +267,7 @@ slurmctld_rpc_mgr ( void * no_data )
 		else if (shutdown_time)
 			no_thread = 1;
 		else if (pthread_create ( &thread_id_rpc_req, &thread_attr_rpc_req, service_connection, (void *) conn_arg )) {
-			error ("pthread_create errno %d", errno);
+			error ("pthread_create errno %m %d", errno);
 			no_thread = 1;
 		}
 		else

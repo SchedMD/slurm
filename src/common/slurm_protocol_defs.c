@@ -296,8 +296,7 @@ void slurm_free_resource_allocation_and_run_response_msg ( resource_allocation_a
 		if (msg->credentials )
 			xfree( msg->credentials );
 #		ifdef HAVE_LIBELAN3
-		if ( msg->qsw_job )
-			xfree( msg->qsw_job );
+		qsw_free_jobinfo ( msg->qsw_job );
 #		endif
 		xfree ( msg ) ;
 	}
@@ -362,8 +361,7 @@ void slurm_free_job_step_create_response_msg ( job_step_create_response_msg_t * 
 			xfree( msg->credentials );
 
 #		ifdef HAVE_LIBELAN3
-		if ( msg->qsw_job )
-			xfree( msg->qsw_job );
+		qsw_free_jobinfo ( msg->qsw_job );
 #		endif
 
 		xfree( msg );
@@ -426,6 +424,10 @@ void slurm_free_launch_tasks_request_msg ( launch_tasks_request_msg_t * msg )
 		}
 		if ( msg -> global_task_ids )
 			xfree ( msg -> global_task_ids );
+#		ifdef HAVE_LIBELAN3
+		qsw_free_jobinfo ( msg->qsw_job );
+#		endif
+
 		xfree ( msg ) ;
 	}
 } 
