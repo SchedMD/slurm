@@ -2,7 +2,7 @@
 #
 # Purpose: Test of SLURM functionality
 #          Confirm node selection from within a job step on existing allocation
-#          (--nodelist and --exclude options).
+#          (--nodelist, --exclude, --nodes and --nprocs options).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "WARNING: ..." with an explanation of why the test can't be made, OR
@@ -69,7 +69,7 @@ expect {
 		exp_continue
 	}
 	"$prompt" {
-		send_user "Got host names\n"
+		send_user "srun completed\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -102,17 +102,17 @@ if {$exit_code != 0} {
 set matches 0
 send "$srun -l -N1 -n1 --exclude=$host_0 $bin_hostname\n"
 expect {
-	"0: $host_0" {
-		send_user "\nFAILURE: wrong node responded\n"
-		set exit_code   1	
-		exp_continue
-	}
-	"0: $host_1" {
-		incr matches
+	-re "0: ($alpha_numeric)" {
+		if {[string compare $expect_out(1,string) $host_1] == 0} {
+			incr matches
+		} else {
+			send_user "\nFAILURE: wrong node responded\n"
+			set exit_code   1	
+		}
 		exp_continue
 	}
 	"$prompt" {
-		send_user "Got host names\n"
+		send_user "srun completed\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -133,17 +133,17 @@ if {$matches == 0} {
 set matches 0
 send "$srun -l -N1 -n1 --exclude=$host_1 $bin_hostname\n"
 expect {
-	"0: $host_0" {
-		incr matches
-		exp_continue
-	}
-	"0: $host_1" {
-		send_user "\nFAILURE: wrong node responded\n"
-		set exit_code   1	
+	-re "0: ($alpha_numeric)" {
+		if {[string compare $expect_out(1,string) $host_0] == 0} {
+			incr matches
+		} else {
+			send_user "\nFAILURE: wrong node responded\n"
+			set exit_code   1	
+		}
 		exp_continue
 	}
 	"$prompt" {
-		send_user "Got host names\n"
+		send_user "srun completed\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -164,17 +164,17 @@ if {$matches == 0} {
 set matches 0
 send "$srun -l -N1 -n1 --nodelist=$host_0 $bin_hostname\n"
 expect {
-	"0: $host_0" {
-		incr matches
-		exp_continue
-	}
-	"0: $host_1" {
-		send_user "\nFAILURE: wrong node responded\n"
-		set exit_code   1	
+	-re "0: ($alpha_numeric)" {
+		if {[string compare $expect_out(1,string) $host_0] == 0} {
+			incr matches
+		} else {
+			send_user "\nFAILURE: wrong node responded\n"
+			set exit_code   1	
+		}
 		exp_continue
 	}
 	"$prompt" {
-		send_user "Got host names\n"
+		send_user "srun completed\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -195,17 +195,17 @@ if {$matches == 0} {
 set matches 0
 send "$srun -l -N1 -n1 --nodelist=$host_1 $bin_hostname\n"
 expect {
-	"0: $host_0" {
-		send_user "\nFAILURE: wrong node responded\n"
-		set exit_code   1	
-		exp_continue
-	}
-	"0: $host_1" {
-		incr matches
+	-re "0: ($alpha_numeric)" {
+		if {[string compare $expect_out(1,string) $host_1] == 0} {
+			incr matches
+		} else {
+			send_user "\nFAILURE: wrong node responded\n"
+			set exit_code   1	
+		}
 		exp_continue
 	}
 	"$prompt" {
-		send_user "Got host names\n"
+		send_user "srun completed\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -217,6 +217,151 @@ expect {
 }
 if {$matches == 0} {
 	send_user "\nFAILURE: required node failed to respond\n"
+	set exit_code   1
+}
+
+#
+# Error test: Overlapping include/exclude node list
+#
+set matches 0
+send "$srun -l -N1 -n1 --nodelist=$host_0 --exclude=$host_0 $bin_hostname\n"
+expect {
+	-re "0: ($alpha_numeric)" {
+		send_user "\nFAILURE: wrong node responded\n"
+		set exit_code   1
+		exp_continue
+	}
+	"error:" {
+		send_user "No worries, this error was expected.\n"
+		incr matches
+		exp_continue
+	}
+	"$prompt" {
+		send_user "srun completed\n"
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		kill_srun
+		exit 1
+	}
+	eof {
+	}
+}
+if {$matches == 0} {
+	send_user "\nFAILURE: No error for overlapping include/exclude node list\n"
+	set exit_code   1
+}
+
+#
+# Error test: Exceed node count
+#
+set matches 0
+send "$srun -l -N3 -n3 -O $bin_hostname\n"
+expect {
+	-re "0: ($alpha_numeric)" {
+		send_user "\nFAILURE: wrong node responded\n"
+		set exit_code   1
+		exp_continue
+	}
+	"error:" {
+		send_user "No worries, this error was expected.\n"
+		incr matches
+		exp_continue
+	}
+	"$prompt" {
+		send_user "srun completed\n"
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		kill_srun
+		exit 1
+	}
+	eof {
+	}
+}
+if {$matches == 0} {
+	send_user "\nFAILURE: No error for exceeding node count\n"
+	set exit_code   1
+}
+
+#
+# Run with fewer nodes
+#
+set test_0      ""
+set test_1      ""
+send "$srun -l -N1-1 -n2 -O $bin_hostname\n"
+expect {
+	-re "0: ($alpha_numeric)" {
+		set test_0 $expect_out(1,string)
+		exp_continue
+	}
+	-re "1: ($alpha_numeric)" {
+		set test_1 $expect_out(1,string)
+		exp_continue
+	}
+	"$prompt" {
+		send_user "srun completed\n"
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		kill_srun
+		exit 1
+	}
+	eof {
+	}
+}
+if {[string compare $test_0 $test_1] != 0} {
+	send_user "\nFAILURE: Multiple nodes responded, should be only one\n"
+	set exit_code   1
+}
+
+#
+# Error test: Exceed task count, first get the processor count then exceed it
+#
+set processors 1
+send "$srun -l -c1 $bin_hostname\n"
+expect {
+	-re "($number): ($alpha_numeric)" {
+		incr processors
+		exp_continue
+	}
+	"$prompt" {
+		send_user "srun completed\n"
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		kill_srun
+		exit 1
+	}
+	eof {
+	}
+}
+set matches 0
+send "$srun -l -n $processors $bin_hostname\n"
+expect {
+	-re "0: ($alpha_numeric)" {
+		send_user "\nFAILURE: wrong node responded\n"
+		set exit_code   1
+		exp_continue
+	}
+	"error:" {
+		send_user "No worries, this error was expected.\n"
+		incr matches
+		exp_continue
+	}
+	"$prompt" {
+		send_user "srun completed\n"
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		kill_srun
+		exit 1
+	}
+	eof {
+	}
+}
+if {$matches == 0} {
+	send_user "\nFAILURE: No error for exceeding processor count\n"
 	set exit_code   1
 }
 
