@@ -22,7 +22,7 @@ BIB = project.bib
 %.eps: %.obj
 	tgif -print -eps $<
 %.ps: %.dvi
-	dvips -t letter -o $(@F) $(<F)
+	dvips -K -t letter -o $(@F) $(<F)
 %.pdf: %.dvi
 	dvipdf $< $@ 
 
