@@ -195,8 +195,6 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 
 #ifdef USE_BGL_FILES
 
-// FIX: the else clause in this is wrong.
-
 /* Also, remove logic to boot partitions. BGLblocks should be allocated via 
  * MMCSconsole to user nobody and bluegene.conf set at slurmctld boot time */
 
@@ -269,6 +267,16 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 			bgl_err_str(rc));
 		return SLURM_ERROR;
 	}
+
+	/*
+	 * FIXME:
+	 * There appears to be a race condition if this call is issued more 
+	 * than once in quick succession, even with different partition names.
+	 * The BGL API seems to over-write the owner name and use it for 
+	 * multiple bglblocks. Remove this logic when the bug has been 
+	 * addressed. 9 Feb 2005, API driver 020
+	 */
+	sleep(1);
 
 	return SLURM_SUCCESS;
 #endif
