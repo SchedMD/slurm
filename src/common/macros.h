@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * src/slurmd/macros.c - some standard macros for slurm
+ * src/common/macros.h - some standard macros for slurm
  * $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
