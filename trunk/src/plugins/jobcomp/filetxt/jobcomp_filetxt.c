@@ -218,7 +218,7 @@ int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 			job_state_string(job_state), 
 			job_ptr->partition, lim_str, start_str, 
 			end_str, job_ptr->nodes);
-	tot_size = (strlen(job_rec) + 1);
+	tot_size = strlen(job_rec);
 
 	while ( offset < tot_size ) {
 		wrote = write(job_comp_fd, job_rec + offset,
