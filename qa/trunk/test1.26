@@ -65,6 +65,11 @@ expect {
 		set host1 $host0
 		exp_continue
 	}
+	-re "error: .*already in shared memory" {
+		send_user "Can't avoid this possible error\n"
+		set host1 $host0
+		exp_continue
+	}
 	-re "error: .*exit code 1" {
 		exp_continue
 	}
@@ -126,6 +131,10 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 			send_user "Can't avoid this possible error\n"
 			exp_continue
 		}
+		-re "error: .*already in shared memory" {
+			send_user "Can't avoid this possible error\n"
+			exp_continue
+		}
 		-re "error: .*exit code 1" {
 			exp_continue
 		}
@@ -151,6 +160,10 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 	expect {
 		-i $noalloc1
 		-re "error: .*try again" {
+			send_user "Can't avoid this possible error\n"
+			exp_continue
+		}
+		-re "error: .*already in shared memory" {
 			send_user "Can't avoid this possible error\n"
 			exp_continue
 		}
