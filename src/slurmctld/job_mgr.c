@@ -1347,8 +1347,6 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
 	bitoff_t i;
 	kill_tasks_msg_t *kill_tasks_msg;
 	agent_arg_t *agent_args;
-	pthread_attr_t attr_agent;
-	pthread_t thread_agent;
 
 	xassert(job_ptr);
 	i = bit_ffs(job_ptr->node_bitmap);
@@ -1373,20 +1371,7 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
 	kill_tasks_msg->signal      = signal;
 
 	agent_args->msg_args = kill_tasks_msg;
-	debug2("Spawning batch signal agent");
-	if (pthread_attr_init(&attr_agent))
-		fatal("pthread_attr_init error %m");
-	if (pthread_attr_setdetachstate(&attr_agent, PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-	if (pthread_attr_setscope(&attr_agent, PTHREAD_SCOPE_SYSTEM))
-		error("pthread_attr_setscope error %m");
-#endif
-	if (pthread_create(&thread_agent, &attr_agent, agent,
-				(void *) agent_args)) {
-		error("pthread_create error %m");
-		agent_queue_request(agent_args);
-	}
+	agent_queue_request(agent_args);
 	return;
 }
 
@@ -2307,7 +2292,7 @@ static int _list_find_job_id(void *job_entry, void *key)
 static int _list_find_job_old(void *job_entry, void *key)
 {
 	time_t now      = time(NULL);
-	time_t kill_age = now - slurmctld_conf.kill_wait;
+	time_t kill_age = now - (slurmctld_conf.kill_wait * 2);
 	time_t min_age  = now - slurmctld_conf.min_job_age;
 	struct job_record *job_ptr = (struct job_record *)job_entry;
 
@@ -3008,7 +2993,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 				       node_name);
 			} else {
 				error
-				    ("Registered job %u.u on wrong node %s ",
+				    ("Registered job %u.%u on wrong node %s ",
 				     job_id_ptr[i], step_id_ptr[i], node_name);
 				_kill_job_on_node(job_id_ptr[i], node_ptr);
 			}
@@ -3281,9 +3266,7 @@ _xmit_new_end_time(struct job_record *job_ptr)
 {
 	job_time_msg_t *job_time_msg_ptr;
 	agent_arg_t *agent_args;
-	pthread_attr_t attr_agent;
-	pthread_t thread_agent;
-	int buf_rec_size = 0, i, retries = 0;
+	int buf_rec_size = 0, i;
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_UPDATE_JOB_TIME;
@@ -3312,23 +3295,7 @@ _xmit_new_end_time(struct job_record *job_ptr)
 	}
 
 	agent_args->msg_args = job_time_msg_ptr;
-	debug("Spawning job time limit update agent");
-	if (pthread_attr_init(&attr_agent))
-		fatal("pthread_attr_init error %m");
-	if (pthread_attr_setdetachstate
-	    (&attr_agent, PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-	if (pthread_attr_setscope(&attr_agent, PTHREAD_SCOPE_SYSTEM))
-		error("pthread_attr_setscope error %m");
-#endif
-	while (pthread_create(&thread_agent, &attr_agent, agent, 
-			(void *) agent_args)) {
-		error("pthread_create error %m");
-		if (++retries > MAX_RETRIES)
-			fatal("Can't create pthread");
-		sleep(1);	/* sleep and try again */
-	}
+	agent_queue_request(agent_args);
 	return;
 }
 

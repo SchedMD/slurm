@@ -246,9 +246,6 @@ static void _launch_job(struct job_record *job_ptr)
 	batch_job_launch_msg_t *launch_msg_ptr;
 	agent_arg_t *agent_arg_ptr;
 	struct node_record *node_ptr;
-	pthread_attr_t attr_agent;
-	pthread_t thread_agent;
-	int retries = 0;
 
 	node_ptr = find_first_node_record(job_ptr->node_bitmap);
 	if (node_ptr == NULL)
@@ -283,23 +280,7 @@ static void _launch_job(struct job_record *job_ptr)
 	agent_arg_ptr->msg_args = (void *) launch_msg_ptr;
 
 	/* Launch the RPC via agent */
-	debug3("Spawning job launch agent for job_id %u", job_ptr->job_id);
-	if (pthread_attr_init(&attr_agent))
-		fatal("pthread_attr_init error %m");
-	if (pthread_attr_setdetachstate
-	    (&attr_agent, PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-	if (pthread_attr_setscope(&attr_agent, PTHREAD_SCOPE_SYSTEM))
-		error("pthread_attr_setscope error %m");
-#endif
-	while (pthread_create(&thread_agent, &attr_agent,
-			   agent, (void *) agent_arg_ptr)) {
-		error("pthread_create error %m");
-		if (++retries > MAX_RETRIES)
-			fatal("Can't create pthread");
-		sleep(1);	/* sleep and try again */
-	}
+	agent_queue_request(agent_arg_ptr);
 }
 
 static char **
