@@ -31,6 +31,7 @@ LDADD = $(top_srcdir)/src/common/libcommon.la \
 slurmd_LDADD = $(process_lib) $(io_lib) $(LDADD) $(interconnect_lib)
 	
 common_sources = slurmd.c \
+		batch_mgr.c \
 		get_mach_stat.c \
 		read_proc.c \
 		task_mgr.c \

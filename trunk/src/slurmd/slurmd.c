@@ -47,6 +47,7 @@
 #include <src/common/util_signals.h>
 #include <src/common/log.h>
 
+#include <src/slurmd/batch_mgr.h>
 #include <src/slurmd/get_mach_stat.h>
 #include <src/slurmd/slurmd.h>
 #include <src/slurmd/task_mgr.h>
@@ -87,6 +88,7 @@ static void *slurmd_msg_engine(void *args);
 inline static int send_node_registration_status_msg();
 
 inline static void slurm_rpc_kill_tasks(slurm_msg_t * msg);
+inline static void slurm_rpc_launch_batch_job(slurm_msg_t * msg);
 inline static void slurm_rpc_launch_tasks(slurm_msg_t * msg);
 inline static void slurm_rpc_ping(slurm_msg_t * msg);
 inline static void slurm_rpc_reattach_tasks_streams(slurm_msg_t * msg);
@@ -406,6 +408,10 @@ void slurmd_req(slurm_msg_t * msg)
 {
 
 	switch (msg->msg_type) {
+	case REQUEST_BATCH_JOB_LAUNCH:
+		slurm_rpc_launch_batch_job(msg);
+		slurm_free_job_launch_msg(msg->data);
+		break;
 	case REQUEST_LAUNCH_TASKS:
 		slurm_rpc_launch_tasks(msg);
 		slurm_free_launch_tasks_request_msg(msg->data);
@@ -637,6 +643,30 @@ int slurmd_shutdown()
 	}
 
 	return SLURM_PROTOCOL_SUCCESS;
+}
+
+void slurm_rpc_launch_batch_job(slurm_msg_t * msg)
+{
+	/* init */
+	int error_code = SLURM_SUCCESS;
+	clock_t start_time;
+	batch_job_launch_msg_t *batch_job_launch_msg = ( batch_job_launch_msg_t * ) msg->data ;
+
+	start_time = clock();
+
+	/* do RPC call */
+	error_code = launch_batch_job(batch_job_launch_msg);
+
+	/* return result */
+	if (error_code) {
+		error("slurmd_req:  error %d, time=%ld",
+		      error_code, (long) (clock() - start_time));
+		slurm_send_rc_msg(msg, error_code);
+	} else {
+		info("slurmd_req:  completed successfully, time=%ld",
+		     (long) (clock() - start_time));
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	}
 }
 
 void slurm_rpc_slurmd_template(slurm_msg_t * msg)
