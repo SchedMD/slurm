@@ -370,7 +370,7 @@ void inline slurm_free_old_job_alloc_msg(old_job_alloc_msg_t * msg);
 #define slurm_free_job_info_request_msg(msg) \
 	slurm_free_job_step_id(msg)
 #define	slurm_free_timelimit_msg(msg) \
-	slurm_free_revoke_credential_msg(msg)
+	slurm_free_kill_job_msg(msg)
 
 void inline slurm_free_shutdown_msg(shutdown_msg_t * msg);
 
