@@ -29,8 +29,13 @@
 #include "partition_allocator.h"
 #include "graph_solver.h"
 
+#define EQUAL_ADDRESS(a,b) \
+_STMT_START {		\
+	(a) = (b);	\
+} _STMT_END
+
 int DIM_SIZE[PA_SYSTEM_DIMENSIONS] = {8,4,4};
-// #define DEBUG_PA
+#define DEBUG_PA
 
 /**
  * These lists hold the partition data and corresponding
@@ -73,6 +78,8 @@ void _create_pa_system(pa_system_t* pa_system, List* conf_result_list);
 void _print_pa_system(pa_system_t pa_system);
 /* */
 void _delete_pa_system(void* object);
+/* */
+void _delete_pa_system_ptr(void* object);
 /* */
 void _copy_pa_system(pa_system_t source, pa_system_t* target);
 /* */
@@ -123,6 +130,8 @@ int _tokenize_port_conf(char* source, char* delimiter,
 			List port_conf_list);
 /** */
 void _reset_pa_system();
+/** */
+void set_ptr(void* A, void* B);
 
 /** */
 void _new_pa_node(pa_node_t* pa_node, int* coord)
@@ -254,6 +263,30 @@ void _delete_pa_system(void* object)
 	xfree(pa_system);
 }
 
+/** */
+void _delete_pa_system_ptr(void* object)
+{
+	int x, y, z;
+	pa_system_t* pa_system = (pa_system_t*) object;
+	
+	if (!pa_system){
+		return;
+	}
+	
+	for (x=0; x<DIM_SIZE[X]; x++){
+		for (y=0; y<DIM_SIZE[Y]; y++){
+			for (z=0; z<DIM_SIZE[Z]; z++){
+				// _delete_pa_node(&(pa_system[x][y][z]));
+			}			
+			// pa_node_t* A = &(*pa_system)[x][y];
+			// xfree(pa_system[x][y]);
+			// xfree(*A);
+		}
+		// xfree((*pa_system)[x]);
+	}
+	// xfree(*pa_system);
+}
+
 /* */
 void _copy_pa_system(pa_system_t source, pa_system_t* target)
 {
@@ -279,15 +312,18 @@ void _copy_pa_system(pa_system_t source, pa_system_t* target)
 	}
 }
 
+void set_ptr(void* A, void* B)
+{
+	A = B;
+}
+
 void _backup_pa_system()
 {
-	pa_system_t new_system;
-	// new_system = (pa_system_t*) xmalloc(sizeof(pa_system_t));
-	
-	list_push(_pa_system_list, _pa_system);
-	_copy_pa_system(_pa_system, &new_system);
-	_pa_system = new_system;
-
+	pa_system_t* new_system;
+	new_system = (pa_system_t*) xmalloc(sizeof(pa_system_t));
+	_copy_pa_system(_pa_system, new_system);
+	list_push(_pa_system_list, &_pa_system);
+	set_ptr(&_pa_system, new_system);
 }
 
 /** load the partition configuration from file */
@@ -591,41 +627,7 @@ int _find_first_match(pa_request_t* pa_request, List* results)
 		}
 		
 	} /* X dimension for loop for */
-	/* if we've gone past a whole row/column/z-thingy..and
-	 * still haven't found a match, we need to start over
-	 * on the matching.
-	 */
-	/*
-	if (found_count[X] != geometry[X]) {
-#ifdef DEBUG_PA
-		printf("_find_first_match: match NOT found for X dimension,"
-		       " resetting previous results\n"); 
-#endif
-		for (k=0; k<PA_SYSTEM_DIMENSIONS; k++){
-			found_count[k] = 0;
-		}
-		list_destroy(*results);
-		*results = list_create(NULL);
-	}
-	*/
 	} /* Y dimension for loop */
-	/* if we've gone past a whole row/column/z-thingy..and
-	 * still haven't found a match, we need to start over
-	 * on the matching.
-	 */
-	/*
-	if (found_count[Y] != geometry[Y]) {
-#ifdef DEBUG_PA
-		printf("_find_first_match: match NOT found for Y dimension,"
-		       " resetting previous results\n"); 
-#endif
-		for (k=0; k<PA_SYSTEM_DIMENSIONS; k++){
-			found_count[k] = 0;
-		}
-		list_destroy(*results);
-		*results = list_create(NULL);
-	}
-	*/
 	} /* Z dimension for loop*/
 	
  done:
@@ -641,6 +643,7 @@ int _find_first_match(pa_request_t* pa_request, List* results)
 		_process_results(*results, pa_request);
 		// _print_results(*results);
 
+		return 0;
 	} else {
 		list_destroy(*results);
 #ifdef DEBUG_PA
@@ -648,9 +651,8 @@ int _find_first_match(pa_request_t* pa_request, List* results)
 		       "find match for request %d%d%d\n",
 		       geometry[X], geometry[Y], geometry[Z]);
 #endif
+		return 1;
 	}
-	
-	return 0;
 }
 
 /**
@@ -1103,7 +1105,9 @@ void _reset_pa_system()
 	
 	/* after that's done, we should be left with the top
 	 * of the stack which was the original pa_system */
-	_pa_system = *pa_system;
+	// 999
+	// _pa_system = *pa_system;
+	set_ptr(&_pa_system, pa_system);
 }
 
 /**
@@ -1237,17 +1241,23 @@ void pa_init()
 	}
 
 	/* see if we can load in the filenames from the env */
-	filenames[X] = "X_alt_dim_torus.conf";
+
+	filenames[X] = "Y_dim_torus.conf";
 	filenames[Y] = "Y_dim_torus.conf";
 	filenames[Z] = "Z_dim_torus.conf";
-	
+
+	// 999
+	// filenames[X] = getenv("X_DIM_CONF");
+	// filenames[Y] = getenv("Y_DIM_CONF");
+	// filenames[Z] = getenv("Z_DIM_CONF");
+
 	/* create the X configuration (8 nodes) */
 	if (filenames[X]){
 		time_t start, end;
 		time(&start);
 		_load_part_config(filenames[X], _conf_result_list[X]);
 		time(&end);
-		error("loading file time: %ld\n", (end-start));
+		printf("loading file time: %ld\n", (end-start));
 	} else {
 		switch_config_list = list_create(delete_gen);
 		create_config_8_1d(switch_config_list);
@@ -1288,6 +1298,7 @@ void pa_init()
 
 	_create_pa_system(&_pa_system, _conf_result_list);
 	_pa_system_list = list_create(_delete_pa_system);
+	// _pa_system_list = list_create(_delete_pa_system_ptr);
 	_initialized = true;
 	
 	// whenever we make a change, we do this: 
@@ -1338,7 +1349,7 @@ void set_node_down(int c[PA_SYSTEM_DIMENSIONS])
 
 	/* first we make a copy of the current system */
 	// 999
-	//_backup_pa_system();
+	// _backup_pa_system();
 
 	/* basically set the node as NULL */
 	_delete_pa_node(&(_pa_system[c[0]][c[1]][c[2]]));
@@ -1372,8 +1383,10 @@ int allocate_part(pa_request_t* pa_request, List* results)
 
 	// 999
 	// _backup_pa_system();
-	_find_first_match(pa_request, results);
-	return 1;
+	if (!_find_first_match(pa_request, results))
+		return 1;
+	else 
+		return 0;
 }
 
 /** 
@@ -1390,7 +1403,9 @@ int undo_last_allocatation()
 		return SLURM_ERROR;
 	} else {
 		_delete_pa_system(_pa_system);
-		_pa_system = *pa_system;
+		// 999 
+		// _pa_system = *pa_system;
+		set_ptr(&_pa_system, pa_system);
 	}
 	return SLURM_SUCCESS;
 }
@@ -1431,7 +1446,7 @@ int main(int argc, char** argv)
 	time(&start);
 	pa_init();
 	time(&end);
-	error("init: %ld\n", (end-start));
+	printf("init: %ld\n", (end-start));
 	/*
 	  int dead_node1[3] = {0,0,0};
 	  int dead_node2[3] = {1,0,0};
@@ -1440,7 +1455,8 @@ int main(int argc, char** argv)
 	  printf("done setting node down\n");
 	*/
 	
-
+	int i=0;
+	for (; i<8; i++){
 	time(&start);
 	if (allocate_part(request, &results)){
 		ListIterator itr;
@@ -1462,14 +1478,15 @@ int main(int argc, char** argv)
 		printf("request failed\n");
 	}
 	time(&end);
-	error("allocate: %ld\n", (end-start));
+	printf("allocate: %ld\n", (end-start));
+	}
 
 	time(&start);
 	pa_fini();
 	time(&end);
-	error("fini: %ld\n", (end-start));
+	printf("fini: %ld\n", (end-start));
 
-	
+	delete_pa_request(request);
 
 	return 0;
 }
