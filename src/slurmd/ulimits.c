@@ -36,6 +36,7 @@
 
 #include "src/common/log.h"
 #include "src/common/setenvpf.h" /* For unsetenvp() */
+#include "src/common/strlcpy.h"
 #include "src/common/xmalloc.h"
 
 #include "src/slurmd/job.h"
