@@ -61,7 +61,7 @@
 
 static bool _slurm_authorized_user(uid_t uid);
 static bool _job_still_running(uint32_t job_id);
-static int  _kill_all_active_steps(uint32_t jobid, int sig);
+static int  _kill_all_active_steps(uint32_t jobid, int sig, bool batch);
 static int  _launch_tasks(launch_tasks_request_msg_t *, slurm_addr *);
 static void _rpc_launch_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_spawn_task(slurm_msg_t *, slurm_addr *);
@@ -675,7 +675,7 @@ _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 	}
 
 	/*
-	 *  Indicate to slurmctld that we've recieved the message
+	 *  Indicate to slurmctld that we've received the message
 	 */
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	slurm_close_accepted_conn(msg->conn_fd);
@@ -687,7 +687,7 @@ _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 	 */
 	_kill_running_session_mgrs(req->job_id, SIGXCPU, "SIGXCPU");
 
-	nsteps = _kill_all_active_steps(req->job_id, SIGTERM);
+	nsteps = _kill_all_active_steps(req->job_id, SIGTERM, false);
 
 	verbose( "Job %u: timeout: sent SIGTERM to %d active steps", 
 	         req->job_id, nsteps );
@@ -846,9 +846,15 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 
 }
 
-
+/*
+ * _kill_all_active_steps - signals all steps of a job
+ * jobid IN - id of job to signal
+ * sig   IN - signal to send
+ * batch IN - if true signal batch script, otherwise skip it
+ * RET count of signaled job steps (plus batch script, if applicable)
+ */
 static int
-_kill_all_active_steps(uint32_t jobid, int sig)
+_kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 {
 	List         steps = shm_get_steps();
 	ListIterator i     = list_iterator_create(steps);
@@ -864,10 +870,7 @@ _kill_all_active_steps(uint32_t jobid, int sig)
 			continue;
 		}
 
-		/* XXX?
-		 * We don't send anything but SIGKILL to batch jobs
-		 */
-		if ((s->stepid == NO_VAL) && (sig != SIGKILL))
+		if ((s->stepid == NO_VAL) && (!batch))
 			continue;
 
 		step_cnt++;
@@ -972,15 +975,15 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 		debug("credential for job %u revoked", req->job_id);
 	}
 
-	nsteps = _kill_all_active_steps(req->job_id, SIGTERM);
+	nsteps = _kill_all_active_steps(req->job_id, SIGTERM, true);
 
 	/*
-	 *  If there are currently no active job steps, and no
+	 *  If there are currently no active job steps and no
 	 *    configured epilog to run, bypass asynchronous reply and
 	 *    notify slurmctld that we have already completed this
 	 *    request.
 	 */
-	if ((nsteps == 0) && !conf->epilog && (msg->conn_fd >= 0)) {
+	if ((nsteps == 0) && !conf->epilog) {
 		if (msg->conn_fd >= 0)
 			slurm_send_rc_msg(msg, 
 				ESLURMD_KILL_JOB_ALREADY_COMPLETE);
@@ -1005,7 +1008,7 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	 *  Check for corpses
 	 */
 	if ( !_pause_for_job_completion (req->job_id, 5)
-	   && _kill_all_active_steps(req->job_id, SIGKILL) ) {
+	   && _kill_all_active_steps(req->job_id, SIGKILL, true) ) {
 		/*
 		 *  Block until all user processes are complete.
 		 */
