@@ -53,6 +53,7 @@ libcommon_la_SOURCES = 			\
 	uid.c uid.h			\
 	util-net.c util-net.h		\
 	slurm_auth.c slurm_auth.h	\
+	slurm_jobcomp.c slurm_jobcomp.h	\
 	arg_desc.c arg_desc.h		\
 	macros.h			\
 	$(elan_sources) 

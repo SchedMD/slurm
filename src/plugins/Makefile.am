@@ -1,2 +1,2 @@
-SUBDIRS = auth
+SUBDIRS = auth jobcomp
 
