@@ -38,18 +38,97 @@ SLURM management.
 <p>
 The following parameters may be specified:
 <dl>
-<dt>ControlMachine
-<dd>The name of the machine where SLURM control functions are executed 
-(e.g. "lx0001"). This value must be specified.
-
 <dt>BackupController
 <dd>The name of the machine where SLURM control functions are to be 
-executed in the event that ControlMachine fails (e.g. "lx0002"). This node
+executed in the event that ControlMachine fails . This node
 may also be used as a compute server if so desired. It will come into service 
 as a controller only upon the failure of ControlMachine and will revert 
 to a "standby" mode when the ControlMachine becomes available once again. 
-While not essential, it is highly recommended that you specify a backup 
-controller.
+This should be a node name without the full domain name (e.g. "lx0002"). 
+While not essential, it is highly recommended that you specify a backup controller.
+
+<dt>ControlMachine
+<dd>The name of the machine where SLURM control functions are executed. 
+This should be a node name without the full domain name (e.g. "lx0001"). 
+This value must be specified.
+
+<dt>Epilog
+<dd>Fully qualified pathname of a program to execute as user root on every 
+node when a user's job completes (e.g. "/usr/local/slurm/epilog"). This may 
+be used to purge files, disable user login, etc. By default there is no epilog.
+
+<dt>FastSchedule
+<dd>If set to 1, then consider the configuration of each node to be that 
+specified in the configuration file. If set to 0, then base scheduling 
+decisions upon the actual configuration of each node. If the number of 
+node configuration entries in the configuration file is signficantly 
+lower than the number of nodes, setting FastSchedule to 1 will permit 
+much faster scheduling decisions to be made. The default value is 1.
+
+<dt>FirstJobId
+<dd>The job id to be used for the first submitted to SLURM without a 
+specific requested value. Job id values generated will incremented by 1 
+for each subsequent job. The default value is 0.
+
+<dt>HashBase
+<dd>If the node names include a sequence number, this value defines the 
+base to be used in building a hash table based upon node name. Value of 8 
+and 10 are recognized for octal and decimal sequence numbers respectively.
+The value of zero is also recognized for node names lacking a sequence number. 
+The default value is 10.
+
+<dt>HeartbeatInterval
+<dd>The interval, in seconds, at which the SLURM controller tests the 
+status of other nodes. The default value is 30 seconds.
+
+<dt>KillWait
+<dd>The interval, in seconds, given to a job's processes between the 
+SIGTERM and SIGKILL signals. If the job fails to terminate gracefully 
+in the interval specified, it will be forcably terminated. The default 
+value is 30 seconds.
+
+<dt>Prioritize
+<dd>Fully qualified pathname of a program to execute in order to establish 
+the initial priority of a newly submitted job. By default there is no 
+prioritization program and each job gets a priority lower than that of 
+any existing jobs.
+
+<dt>Prolog
+<dd>Fully qualified pathname of a program to execute as user root on every 
+node when a user's job begins execution (e.g. "/usr/local/slurm/prolog"). 
+This may be used to purge files, enable user login, etc. By default there 
+is no prolog.
+
+<dt>SlurmctldPort
+<dd>The port number that the SLURM controller, <i>slurmctld</i>, listens 
+to for work. The default value is SLURMCTLD_PORT as established at system 
+build time.
+
+<dt>SlurmctldTimeout
+<dd>The interval, in seconds, that the backup controller waits for the 
+primary controller to respond before assuming control. The default value 
+is 300 seconds.
+
+<dt>SlurmdPort
+<dd>The port number that the SLURM compute node daemon, <i>slurmd</i>, listens 
+to for work. The default value is SLURMD_PORT as established at system 
+build time.
+
+<dt>SlurmdTimeout
+<dd>The interval, in seconds, that the SLURM controller waits for <i>slurmd</i> 
+to respond before configuring that node's state to DOWN. The default value 
+is 300 seconds.
+
+<dt>StateSaveLocation
+<dd>Fully qualified pathname of a directory into which the slurm controller, 
+<i>slurmctld</i>, saves its state (e.g. "/usr/local/slurm/checkpoint"). SLURM 
+state will saved here to recover from system failures. The default value is "/tmp".
+
+<dt>TmpFS
+<dd>Fully qualified pathname of the file system available to user jobs for 
+temporary storage. This parameter is used in establishing a node's <i>TmpDisk</i>
+space. The default value is "/tmp".
+
 </dl>
 Any text after "#" until the end of the line in the configuration file 
 will be considered a comment. 
@@ -63,10 +142,18 @@ The size of each line in the file is limited to 1024 characters.
 A sample SLURM configuration file (without node or partition information)
 follows.
 <pre>
-# /etc/SLURM.conf
-# Built by John Doe, 1/29/2002
-ControlMachine=lx0001
-BackupController=lx0002
+ControlMachine=lx0001 BackupController=lx0002
+Epilog=/usr/local/slurm/epilog Prolog=/usr/local/slurm/prolog
+FastSchedule=1
+FirstJobId=65536
+HashBase=10
+HeartbeatInterval=60
+KillWait=30
+Prioritize=/usr/local/maui/priority
+SlurmctldPort=7002 SlurmdPort=7003
+SlurmctldTimeout=300 SlurmdTimeout=300
+StateSaveLocation=/tmp/slurm.state
+TmpFS=/tmp
 </pre>
 <p>
 The node configuration permits you to identify the nodes (or machines) 
@@ -82,13 +169,10 @@ The node configuration specifies the following information:
 <a name="NodeExp">A simple regular expression may optionally 
 be used to specify ranges 
 of nodes to avoid building a configuration file with thousands 
-of entries. The real expression can contain one  
-pair of square brackets optionally followed by "o"
-for octal (the default is decimal) followed by 
-a number followed by a "-" followed by another number. 
-SLURM considers every number in the specified range to 
-identify a valid node. Some possible NodeName values include:
-"solo", "lx[00-64]", "linux[0-64]", and "slurm[o00-77]".</a> 
+of entries. The regular expression can contain one  
+pair of square brackets with a sequence of comma separated 
+numbers and/or ranges of numbers separated by a "-"
+(e.g. "linux[0-64,128]", or "lx[15,18,32-33]").</a> 
 If the NodeName is "DEFAULT", the values specified 
 with that record will apply to subsequent node specifications   
 unless explicitly set to other values in that node record or 
@@ -115,7 +199,7 @@ The default value is 1.
 <dd>Number of processors on the node (e.g. "2").
 The default value is 1.
 
-dt>State
+<dt>State
 <dd>State of the node with respect to the initiation of user jobs. 
 Acceptable values are "DOWN", "UNKNOWN", "IDLE", and "DRAINING". 
 The <a href="#NodeStates">node states</a> are fully described below. 
@@ -123,16 +207,15 @@ The default value is "UNKNOWN".
 
 <dt>TmpDisk
 <dd>Total size of temporary disk storage in TMP_FS in MegaBytes 
-(e.g. "16384"). TMP_FS (for "Temporary File System") 
-identifies the location which jobs should use for temporary storage. The
-value of TMP_FS is set at SLURM build time. 
+(e.g. "16384"). TmpFS (for "Temporary File System") 
+identifies the location which jobs should use for temporary storage. 
 Note this does not indicate the amount of free 
 space available to the user on the node, only the total file 
 system size. The system administration should insure this file 
 system is purged as needed so that user jobs have access to 
 most of this space. 
-The PROLOG and/or EPILOG programs (specified at build time) might 
-be used to insure the file system is kept clean. 
+The Prolog and/or Epilog programs (specified in the configuration file) 
+might be used to insure the file system is kept clean. 
 The default value is 1.
 
 <dt>Weight
@@ -167,8 +250,9 @@ The resources checked at node registration time are: Procs,
 RealMemory and TmpDisk. 
 While baseline values for each of these can be established 
 in the configuration file, the actual values upon node 
-registration are recorded and these actual values are 
-used for scheduling purposes.
+registration are recorded and these actual values may be 
+used for scheduling purposes (depending upon the value of 
+<i>FastSchedule</i> in the configuration file.
 Default values can be specified with a record in which 
 "NodeName" is "DEFAULT". 
 The default entry values will apply only to lines following it in the 
@@ -191,8 +275,7 @@ The size of each line in the file is limited to 1024 characters.
 <a name="NodeStates">The node states have the following meanings:</a>
 <dl>
 <dt>BUSY
-<dd>The node has been allocated work (one or more user jobs) and is 
-processing it. 
+<dd>The node has been allocated work (one or more user jobs). 
 
 <dt>DOWN
 <dd>The node is unavailable for use. It has been explicitly configured 
@@ -216,14 +299,6 @@ prepare some nodes for maintenance work.
 <dt>IDLE
 <dd>The node is idle and available for use.
 
-<dt>STAGE_IN
-<dd>The node has been allocated to a job, which is being prepared for 
-the job's execution.
-
-<dt>STAGE_OUT
-<dd>The has been allocated to a job, which has completed execution. 
-The node is performing job termination work.
-
 <dt>UNKNOWN
 <dd>Default initial node state upon startup of SLURM.
 An attempt will be made to contact the node and acquire current state information.
@@ -232,14 +307,14 @@ An attempt will be made to contact the node and acquire current state informatio
 <p>
 SLURM uses a hash table in order to locate table entries rapidly. 
 Each table entry can be directly accessed without any searching
-if the name contains a sequence number suffix. SLURM can be built 
-with the HASH_BASE set at build time to indicate the hashing algorithm. 
+if the name contains a sequence number suffix. The value of 
+<i>HashBase</i> in the configuration file specifies the hashing algorithm. 
 Possible contains values are "10" and "8" for names containing 
 decimal and octal sequence numbers respectively
 or "0" which processes mixed alpha-numeric without sequence numbers. 
-The default value of HASH_BASE is "10".
+The default value of <i>HashBase</i> is "10".
 If you use a naming convention lacking a sequence number, it may be 
-desirable to review the hashing function Hash_Index in the 
+desirable to review the hashing function <i>hash_index</i> in the 
 node_mgr.c module. This is especially important in clusters having 
 large numbers of nodes.  The sequence numbers can start at any 
 desired number, but should contain consecutive numbers. The 
@@ -360,7 +435,6 @@ at the end of this document.
 The job configuration format specified below is used by the 
 scontrol administration tool to modify job state information: 
 <dl>
-
 <dt>Contiguous
 <dd>Determine if the nodes allocated to the job must be contiguous.
 Acceptable values are "YES" and "NO" with the default being "NO".
@@ -369,7 +443,7 @@ Acceptable values are "YES" and "NO" with the default being "NO".
 <dd>Required features of nodes to be allocated to this job. 
 Features may be combined using "|" for OR, "&amp;" for AND,  
 and square brackets. 
-For example, "Features=1000MHz|1200MHz&amp;CoolTool)".
+For example, "Features=1000MHz|1200MHz&amp;CoolTool".
 The feature list is processes left to right except for 
 the grouping by brackets.
 Square brackets are used to identify alternate features, 
@@ -383,79 +457,51 @@ subset of nodes assessing a single parallel file system.
 This might be specified with a specification of 
 "Features=[PFS1|PFS2|PFS3|PFS4]".
 
-<dt>Groups
-<dd>Comma separated list of group names to which the user belongs.
-
 <dt>JobName
 <dd>Name to be associated with the job
 
 <dt>JobId
-<dd>Identification for the job. By default this is the partition's 
-name, followed by a period, followed by a sequence number (e.g. 
-"batch.1234").
+<dd>Identification for the job, a sequence number. 
 
-<dt>Key
-<dd>Key granted to user root for optional access control to partitions.
-<dt>Name
-<dd>Name by which the job may be referenced (e.g. "Simulation"). 
-This name can be specified by users when submitting their jobs.
-
-<dt>MaxTime
-<dd>Maximum wall-time limit for the job in minutes. An "UNLIMITED"
-value is represented internally as -1.
+<dt>MinMemory
+<dd>Minimum number of megabytes of real memory per node.
 
 <dt>MinProcs
 <dd>Minimum number of processors per node.
-
-<dt>MinRealMemory
-<dd>Minimum number of megabytes of real memory per node.
 
 <dt>MinTmpDisk
 <dd>Minimum number of megabytes of temporary disk storage per node.
 
 <dt>ReqNodes
-<dd>Comma separated list of nodes which must be allocated to the job. 
-The nodes may be specified using regular expressions (e.g.
-"lx[0010-0020],lx[0033-0040]".
-This value may not be changed by scontrol. 
+<dd>The total number of nodes required to execute this job.
 
-<dt>Number
-<dd>Unique number by which the job can be referenced. This value 
-may not be changed by scontrol.
+<dt>ReqNodeList
+<dd>A comma separated list of nodes to be allocated to the job. 
+The nodes may be specified using regular expressions (e.g.
+"lx[0010-0020,0033-0040]" or "baker,charlie,delta").
+
+<dt>ReqProcs
+<dd>The total number of processors required to execute this job.
 
 <dt>Partition
 <dd>Name of the partition in which this job should execute.
 
 <dt>Priority
-<dd>Floating point priority of the pending job. The value may 
+<dd>Integer priority of the pending job. The value may 
 be specified by user root initiated jobs, otherwise SLURM will 
 select a value. Generally, higher priority jobs will be initiated 
-before lower priority jobs. Backfill scheduling will permit 
-lower priority jobs to be initiated before higher priority jobs 
-only if doing so will not delay the anticipated initiation time 
-of the higher priority job .
-
-<dt>Script
-<dd>Pathname of the script to be executed for the job. 
-The script will typically contain "srun" commands to initiate 
-the parallel commands.
+before lower priority jobs. 
 
 <dt>Shared
-<dd>Job can share nodes with other jobs. Possible values are 1
-and 0 for YES and NO respectively.
+<dd>Job can share nodes with other jobs. Possible values are YES and NO.
 
 <dt>State
 <dd>State of the job.  Possible values are "PENDING", "STARTING", 
 "RUNNING", and "ENDING". 
 
-<dt>TotalNodes
-<dd>Minimum total number of nodes to be allocated to the job.
-
-<dt>TotalProcs
-<dd>Minimum total number of processors to be allocated to the job.
-
-<dt>User
-<dd>Name of the user executing this job.
+<dt>TimeLimit
+<dd>Maximum wall-time limit for the job in minutes. An "UNLIMITED"
+value is represented internally as -1.
 
 </dl>
 
@@ -464,95 +510,27 @@ The following configuration parameters are established at SLURM build time.
 State and configuration information may be read or updated using SLURM APIs.
 
 <dl>
-<dt>BACKUP_INTERVAL
-<dd>How long to wait between saving SLURM state. The default 
-value is 60 and the units are seconds.
-
-<dt>BACKUP_LOCATION
-<dd>The fully qualified pathname of the file where the SLURM 
-state information is saved. There is no default value. The file should 
-be accessible to both the ControlMachine and also the BackupController.
-The default value is "/usr/local/SLURM/Slurm.state".
-
-<dt>CONTROL_DAEMON
+<dt>SLURMCTLD_PATH
 <dd>The fully qualified pathname of the file containing the SLURM daemon
-to execute on the ControlMachine. The default value is "/usr/local/SLURM/bin/Slurmd.Control".
+to execute on the ControlMachine, <i>slurmctld</i>. The default value is "/usr/local/slurm/bin/slurmctld".
 This file must be accessible to the ControlMachine and BackupController.
 
-<dt>CONTROLLER_TIMEOUT
-<dd>How long the BackupController waits for the CONTROL_DAEMON to respond 
-before assuming it has failed and starting the BackupController. 
-The default value is 300 and the units are seconds.
-
-<dt>EPILOG
-<dd>This program is executed on each node allocated to a job upon its termination. 
-This can be used to remove temporary files created by the job or other clean-up.
-This file must be accessible to every SLURM compute server. 
-By default there is no epilog program. 
-
-<dt>FAST_SCHEDULE
-<dd>SLURM will only check the job's memory, processor, and disk 
-contraints against the configuration file entries if set. If set, 
-the specific values of each node will not be tested and scheduling 
-will be considerably faster for large clusters.
-
-<dt>HASH_BASE
-<dd>SLURM uses a hash table in order to locate table entries rapidly. 
-Each table entry can be directly accessed without any searching
-if the name contains a sequence number suffix. SLURM can be built 
-with the HASH_BASE set to indicate the hashing mechanism. Possible 
-values are "10" and "8" for names containing  
-decimal and octal sequence numbers respectively
-or "0" which processes mixed alpha-numeric without sequence numbers. 
-If you use a naming convention lacking a sequence number, it may be 
-desirable to review the hashing function Hash_Index in the 
-Mach_Stat_Mgr.c module. This is especially important in clusters having 
-large numbers of nodes.  The default value is "10".
-
-<dt>HEARTBEAT_INTERVAL
-<dd>How frequently each SERVER_DAEMON should report its state to the CONTROL_DAEMON. 
-Also, how frequently the CONTROL_DAEMON should report its state to the BackupController. 
-The default value is 60 and the units are seconds.
-
-<dt>INIT_PROGRAM
-<dd>The fully qualified pathname of a program that must execute and 
-return an exit code of zero before the CONTROL_DAEMON or SERVER_DAEMON 
-enter into service. This would normally be used to insure that the 
-computer is fully ready for executing user jobs. It may, for example, 
-wait until every required file system has been mounted.
-By default there is no initialization program.
-
-<dt>KILL_WAIT
-<dd>How long to wait between sending SIGTERM and SIGKILL signals to jobs at termination time.
-The default value is 60 and the units are seconds.
-
-<dt>PRIORITIZE
-<dd>Job to execute in order to establish the initial priority of a job. 
-The program is passed the job's specifications and returns the priority. 
-Details of message format TBD.
-By default there is no prioritization program.
-
-<dt>PROLOG
-<dd>This program is executed on each node allocated to a job prior to its initiation. 
-This file must be accessible to every SLURM compute server. By default no prolog is executed. 
-
-<dt>SERVER_DAEMON
+<dt>SLURMD_PATH
 <dd>The fully qualified pathname of the file containing the SLURM daemon
-to execute on every compute server node. The default value is "/usr/local/SLURM/bin/Slurmd.Server".
+to execute on every compute server node. The default value is "/usr/local/slurm/bin/slurmd".
 This file must be accessible to every SLURM compute server.
-
-<dt>SERVER_TIMEOUT
-<dd>How long the CONTROL_DAEMON waits for the SERVER_DAEMON to respond before assuming it 
-has failed and declaring the node DOWN then terminating any job running on 
-it. The default value is 300 and the units are seconds.
 
 <dt>SLURM_CONF
 <dd>The fully qualified pathname of the file containing the SLURM 
 configuration file. The default value is "/etc/SLURM.conf".
 
-<dt>TMP_FS 
-<dd>The fully qualified pathname of the file system which jobs should use for 
-temporary storage. The default value is "/tmp".
+<dt>SLURMCTLD_PORT
+<dd>The port number that the SLURM controller, <i>slurmctld</i>, listens 
+to for work. 
+
+<dt>SLURMD_PORT
+<dd>The port number that the SLURM compute node daemon, <i>slurmd</i>, listens 
+to for work. 
 </dl>
 
 <h2>scontrol Administration Tool</h2>
@@ -587,17 +565,22 @@ Usage: scontrol [-q | -v] [&lt;keyword&gt;]<br>
 
 <dt>show &lt;entity&gt; [&lt;ID&gt;]
 <dd>Show the configuration for a given entity. Entity must 
-be "build", "job", "node", or "partition" for SLURM  build 
-parameters, job, node and partition information respectively.
+be "config", "job", "node", "partition" or "step" for SLURM 
+configuration parameters, job, node, partition, and job step 
+information respectively.
 By default, state information for all records is reported. 
 If you only wish to see the state of one entity record, 
 specify either its ID number (assumed if entirely numeric) 
 or its name. <a href="#NodeExp">Regular expressions</a> may 
 be used to identify node names.
 
+<dt>shutdown
+<dd>Cause <i>slurmctld</i> to save state and terminate.
+
 <dt>update &lt;options&gt;
 <dd>Update the configuration information. 
-Options are of the same format as the configuration file. 
+Options are of the same format as the configuration file
+and the output of the <i>scontrol show</i> command. 
 Not all configuration information can be modified using 
 this mechanism, such as the configuration of a node 
 after it has registered (only a node's state can be modified). 
@@ -626,10 +609,23 @@ that your system's syslog functionality is operational.
 
 <a name="SampleConfig"><h2>Sample Configuration File</h2></a>
 <pre>
-# /etc/SLURM.conf
-# Built by John Doe, 1/29/2002
-ControlMachine=lx0001
-BackupController=lx0002
+# 
+# Sample /etc/slurm.conf
+# Author: John Doe
+# Date: 11/06/2001
+#
+ControlMachine=lx0001 BackupController=lx0002
+Epilog="" Prolog=""
+FastSchedule=1
+FirstJobId=65536
+HashBase=10
+HeartbeatInterval=60
+KillWait=30
+Prioritize=/usr/local/maui/priority
+SlurmctldPort=7002 SlurmdPort=7003
+SlurmctldTimeout=300 SlurmdTimeout=300
+StateSaveLocation=/tmp/slurm.state
+TmpFS=/tmp
 #
 # Node Configurations
 #
@@ -665,7 +661,7 @@ Remove node lx0030 from service, removing jobs as needed:
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/admin.guide.html
-<p>Last Modified April 5, 2002</p>
+<p>Last Modified July 30, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
