@@ -26,7 +26,7 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   
   SSL_LIBS="-lcrypto"
   
-  AC_ARG_WITH(ssl-dir,
+  AC_ARG_WITH(ssl,
     AC_HELP_STRING([--with-ssl=PATH],[Specify path to OpenSSL installation]),
     [ tryssldir=$withval ]
   )
