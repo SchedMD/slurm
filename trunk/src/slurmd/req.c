@@ -37,6 +37,7 @@
 #include <stdlib.h>
 
 #include <sys/poll.h>
+#include <sys/wait.h>
 
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
@@ -178,10 +179,17 @@ _fork_new_slurmd(void)
 	else if (pid > 0) {
 		if (close(fds[1]) < 0)
 			error("Unable to close write-pipe in parent: %m");
+
+		/*  Wait for grandchild */
 		if (read(fds[0], &c, 1) < 0)
 			return error("Unable to read EOF from grandchild: %m");
 		if (close(fds[0]) < 0)
 			error("Unable to close read-pipe in parent: %m");
+
+		/* Reap child */
+		if (waitpid(pid, NULL, 0) < 0)
+			error("Unable to reap slurmd child process");
+
 		return ((int) pid);
 	}
 
