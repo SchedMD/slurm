@@ -652,7 +652,8 @@ static void _opt_args(int argc, char **argv)
 		{"uid",              required_argument, 0, LONG_OPT_UID},
 		{"gid",              required_argument, 0, LONG_OPT_GID},
 		{"help",             no_argument,       0, LONG_OPT_HELP},
-		{"usage",            no_argument,       0, LONG_OPT_USAGE}
+		{"usage",            no_argument,       0, LONG_OPT_USAGE},
+		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:Abc:C:d:D:e:Hi:IjJ:klm:n:N:"
 		"o:Op:Qr:st:T:uvVw:W:x:Zq";

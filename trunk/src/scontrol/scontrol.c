@@ -121,6 +121,7 @@ main (int argc, char *argv[])
 		{"usage",    0, 0, 'h'},
 		{"verbose",  0, 0, 'v'},
 		{"version",  0, 0, 'V'},
+		{NULL,       0, 0, 0}
 	};
 
 	command_name      = argv[0];
