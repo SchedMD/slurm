@@ -296,6 +296,7 @@ static void opt_list(void);
  * returns full path
  */
 static char * search_path(char *);
+static char * find_file_path (char *fname);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
@@ -810,13 +811,18 @@ static void opt_args(int ac, char **av)
 			remote_argc++;
 	}
 
-	remote_argv = (char **) malloc(remote_argc * sizeof(char *));
-
+	remote_argv = (char **) xmalloc((remote_argc + 1) * sizeof(char *));
 	for (i = 0; i < remote_argc; i++)
 		remote_argv[i] = strdup(rest[i]);
+	remote_argv[i] = NULL;	/* End of argv's (for possible execv) */
 
-	if (opt.batch == 0) {
+	if ((opt.batch == 0) && (opt.allocate == 0) && (remote_argc > 0)) {
 		if ((fullpath = search_path(remote_argv[0])) != NULL) {
+			free(remote_argv[0]);
+			remote_argv[0] = fullpath;
+		} 
+	} else if (remote_argc > 0) {
+		if ((fullpath = find_file_path(remote_argv[0])) != NULL) {
 			free(remote_argv[0]);
 			remote_argv[0] = fullpath;
 		} 
@@ -984,6 +990,69 @@ search_path(char *cmd)
 		} else
 			xfree(fullpath);
 	}
+	return NULL;
+}
+
+/* find_file_path - given a filename, return the full path to a regular file 
+ *	of that name that can be read or NULL otherwise
+ * NOTE: The calling function must xfree the return value (if set) 
+ */
+static char *
+find_file_path (char *fname)
+{
+	int modes;
+	char *pathname;
+	struct stat stat_buf;
+
+	if (fname == NULL)
+		return NULL;
+
+	pathname = xmalloc (PATH_MAX);
+
+	/* generate a fully qualified pathname */
+	if (fname[0] == '/') {
+		if ((strlen (fname) + 1) > PATH_MAX) {
+			error ("Supplied filename too long: %s", fname);
+			goto cleanup;
+		}
+		strcpy (pathname, fname);
+	} else {
+		getcwd (pathname, PATH_MAX);
+		if ((strlen (pathname) + strlen (fname) + 2) > PATH_MAX) {
+			error ("Supplied filename too long: %s", fname);
+			goto cleanup;
+		}
+		strcat (pathname, "/");
+		strcat (pathname, fname);
+	}
+
+	/* determine if the file is accessable */
+	if (stat (pathname, &stat_buf) < 0) {
+		error ("Unable to stat file %s: %m", pathname);
+		goto cleanup;
+	}
+
+	if (S_ISREG (stat_buf.st_mode) == 0) {
+		error ("%s is not a regular file", pathname);
+		goto cleanup;
+	}
+
+	if (stat_buf.st_uid == getuid())
+		modes = (stat_buf.st_mode >> 6) & 0x7;
+	else if (stat_buf.st_gid == getgid())
+		modes = (stat_buf.st_mode >> 3) & 0x7;
+	else
+		modes =  stat_buf.st_mode       & 0x7;
+
+	if ((modes & 0x4) == 0) {
+		error ("%s can not be read", pathname);
+		goto cleanup;
+	}
+
+	return pathname;
+
+    cleanup:
+	xfree (pathname);
 	return NULL;
 }
 

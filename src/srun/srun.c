@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grondona <grondona@llnl.gov>.
+ *  Written by Mark Grondona <grondona@llnl.gov>, Moe Jette <jette1@llnl.gov>, et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -35,7 +35,9 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <linux/limits.h>
+#include <ctype.h>
 #include <fcntl.h>
 #include <pwd.h>
 #include <stdio.h>
@@ -78,11 +80,11 @@ static void		 sigterm_handler(int signum);
 void *                   sig_thr(void *arg);
 void 			 fwd_signal(job_t *job, int signo);
 static char 		*build_script (char *pathname, int file_type);
-static char 		*find_file_path (char *fname);
 static char 		*get_shell (void);
-static int 		 is_file_text (char *fname);
+static int 		 is_file_text (char *fname, char** shell_ptr);
 static int		 run_batch_job (void);
 static allocation_resp	*existing_allocation(void);
+static void		 run_job_script(uint32_t job_id);
 
 #if HAVE_LIBELAN3
 #  include <src/common/qsw.h> 
@@ -135,6 +137,20 @@ main(int ac, char **av)
 		job = job_create(resp); 
 		create_job_step(job);
 		slurm_free_resource_allocation_response_msg(resp);
+	} else if (opt.allocate) {
+		if (!(resp = allocate_nodes()) || (resp->node_list == NULL)) {
+			info("No nodes allocated. exiting");
+			exit(1);
+		}
+		if (_verbose || _debug)
+			print_job_information(resp);
+		else
+			printf("jobid %u\n", resp->job_id); 
+		run_job_script(resp->job_id);
+		slurm_complete_job(resp->job_id);
+		if (_verbose || _debug)
+			info ("Spawned srun shell terminated");
+		exit (0);
 	} else {
 		if (!(resp = allocate_nodes()) || (resp->node_list == NULL)) {
 			info("No nodes allocated. exiting");
@@ -254,7 +270,7 @@ main(int ac, char **av)
 
 
 /* allocate nodes from slurm controller via slurm api
- * will malloc memory for allocation response, which caller must free
+ * will xmalloc memory for allocation response, which caller must free
  */
 static allocation_resp *
 allocate_nodes(void)
@@ -503,24 +519,20 @@ run_batch_job(void)
 	job_desc_msg_t job;
 	submit_response_msg_t *resp;
 	extern char **environ;
-	char *pathname, *job_script;
+	char *job_script;
 
-	pathname = find_file_path (remote_argv[0]);
-	if (pathname == NULL)
+	if ((remote_argc == 0) || (remote_argv[0] == NULL))
 		return 1;
-	file_type = is_file_text (pathname);
+	file_type = is_file_text (remote_argv[0], NULL);
 	if (file_type == TYPE_NOT_TEXT) {
-		error ("file %s is not script", pathname);
-		xfree (pathname);
+		error ("file %s is not script", remote_argv[0]);
 		return 1;
 	}
-	job_script = build_script (pathname, file_type);
+	job_script = build_script (remote_argv[0], file_type);
 	if (job_script == NULL) {
-		error ("unable to build script from file %s", pathname);
-		xfree (pathname);
+		error ("unable to build script from file %s", remote_argv[0]);
 		return 1;
 	}
-	xfree (pathname);
 
 	slurm_init_job_desc_msg(&job);
 
@@ -597,69 +609,6 @@ run_batch_job(void)
 	return rc;
 }
 
-/* find_file_path - given a filename, return the full path to a regular file 
- *	of that name that can be read or NULL otherwise
- * NOTE: The calling function must xfree the return value (if set) 
- */
-char *
-find_file_path (char *fname)
-{
-	int modes;
-	char *pathname;
-	struct stat stat_buf;
-
-	if (fname == NULL)
-		return NULL;
-
-	pathname = xmalloc (PATH_MAX);
-
-	/* generate a fully qualified pathname */
-	if (fname[0] == '/') {
-		if ((strlen (fname) + 1) > PATH_MAX) {
-			error ("Supplied filename too long: %s", fname);
-			goto cleanup;
-		}
-		strcpy (pathname, fname);
-	} else {
-		getcwd (pathname, PATH_MAX);
-		if ((strlen (pathname) + strlen (fname) + 2) > PATH_MAX) {
-			error ("Supplied filename too long: %s", fname);
-			goto cleanup;
-		}
-		strcat (pathname, "/");
-		strcat (pathname, fname);
-	}
-
-	/* determine if the file is accessable */
-	if (stat (pathname, &stat_buf) < 0) {
-		error ("Unable to stat file %s: %m", pathname);
-		goto cleanup;
-	}
-
-	if (S_ISREG (stat_buf.st_mode) == 0) {
-		error ("%s is not a regular file", pathname);
-		goto cleanup;
-	}
-
-	if (stat_buf.st_uid == getuid())
-		modes = (stat_buf.st_mode >> 6) & 0x7;
-	else if (stat_buf.st_gid == getgid())
-		modes = (stat_buf.st_mode >> 3) & 0x7;
-	else
-		modes =  stat_buf.st_mode       & 0x7;
-
-	if ((modes & 0x4) == 0) {
-		error ("%s can not be read", pathname);
-		goto cleanup;
-	}
-
-	return pathname;
-
-    cleanup:
-	xfree (pathname);
-	return NULL;
-}
-
 /* get_shell - return a string containing the default shell for this user
  * NOTE: This function is NOT reentrant (see getpwuid_r if needed) */
 char *
@@ -672,15 +621,18 @@ get_shell (void)
 }
 
 /* is_file_text - determine if specified file is a script
+ * shell_ptr - if not NULL, set to pointer to pathname of specified shell 
+ *		(if any, ie. return code of 2)
  *	return 0 if the specified file can not be read or does not contain text
  *	returns 2 if file contains text starting with "#!", otherwise
- *	returns 1 if file contains text, but lacks "#!" header */
+ *	returns 1 if file contains text, but lacks "#!" header 
+ */
 int
-is_file_text (char *fname)
+is_file_text (char *fname, char **shell_ptr)
 {
 	int buf_size, fd, i;
 	int rc = 1;	/* initially assume the file contains text */
-	char buffer[128];
+	char buffer[256];
 
 	fd = open(fname, O_RDONLY);
 	if (fd < 0) {
@@ -707,6 +659,22 @@ is_file_text (char *fname)
 	if ((rc == 1) && (buf_size > 2)) {
 		if ((buffer[0] == '#') && (buffer[1] == '!'))
 			rc = 2;
+	}
+
+	if ((rc == 2) && shell_ptr) {
+		shell_ptr[0] = xmalloc (sizeof (buffer));
+		for (i=2; i<sizeof(buffer); i++) {
+			if (iscntrl (buffer[i])) {
+				shell_ptr[0][i-2] = '\0';
+				break;
+			} else
+				shell_ptr[0][i-2] = buffer[i];
+		}
+		if (i == sizeof(buffer)) {
+			error ("shell specified in script too long, not used");
+			xfree (shell_ptr[0]);
+			shell_ptr[0] = NULL;
+		}
 	}
 
 	return rc;
@@ -785,4 +753,63 @@ existing_allocation( void )
 	}
 
 	return resp;
+}
+
+/* allocation option specified, spawn a script and wait for it to exit */
+void run_job_script (uint32_t job_id)
+{
+	char jobid_str[16], *shell = NULL;
+	int i;
+	pid_t child;
+
+	sprintf(jobid_str, "%u", job_id);
+	if (setenv("SLURM_JOBID", jobid_str, 1)) {
+		error("Unable to set SLURM_JOBID environment variable");
+		return;
+	}
+
+	/* determine shell from script (if any) or user default */
+	if (remote_argc) {
+		char ** new_argv;
+		(void) is_file_text (remote_argv[0], &shell);
+		if (shell == NULL)
+			shell = get_shell ();	/* user's default shell */
+		new_argv = (char **) xmalloc ((remote_argc + 2) * sizeof(char *));
+		new_argv[0] = strdup (shell);
+		for (i=0; i<remote_argc; i++)
+			new_argv[i+1] = remote_argv[i];
+		xfree (remote_argv);
+		remote_argc++;
+		remote_argv = new_argv;
+	} else {
+		shell = get_shell ();	/* user's default shell */
+		remote_argc = 1;
+		remote_argv = (char **) xmalloc((remote_argc + 1) * sizeof(char *));
+		remote_argv[0] = strdup (shell);
+		remote_argv[1] = NULL;	/* End of argv's (for possible execv) */
+	}
+
+	/* spawn the shell with arguments (if any) */
+	if (_verbose || _debug)
+		info ("Spawning srun shell %s", shell);
+	switch ( (child = fork()) ) {
+		case -1:
+			fatal("Fork error %m");
+		case 0:
+			execv(shell, remote_argv);
+			fatal("exec error %m");
+			exit(1);
+		default:
+			while ( (i = wait(NULL)) ) {
+				if (i == -1)
+					fatal("wait error %m");
+				if (i == child)
+					break;
+			}
+	}
+
+	if (unsetenv("SLURM_JOBID")) {
+		error("Unable to clear SLURM_JOBID environment variable");
+		return;
+	}
 }
