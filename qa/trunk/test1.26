@@ -32,7 +32,6 @@ expect {
 		send_user "\nFAILURE: srun not responding\n"
 		kill_srun
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -48,11 +47,10 @@ if {[string compare $host_0 ""] == 0} {
 }
 set include_node $host_0
 
-
 #
 # Submit a job directly to that node
 #
-set host_0      ""
+set host_1      ""
 set slurm_user  1
 set timeout     10
 spawn $srun -N1 -l --nodelist=$include_node --no-allocate -t1 $bin_hostname  
@@ -63,7 +61,7 @@ expect {
 		exp_continue
 	}
 	-re "0: ($alpha_numeric)" {
-		set host_0 $expect_out(1,string)
+		set host_1 $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -77,6 +75,10 @@ expect {
 }
 if {$slurm_user == 0} {
 	exit 0;
+}
+if {[string compare $host_0 $host_1]} {
+	send_user "\nFAILURE: host name value wrong\n"
+	set exit_code 1
 }
 
 #
@@ -112,14 +114,13 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 	expect {
 		-i $alloc
 		-re "0: ($alpha_numeric)" {
-			set include_node $expect_out(1,string)
+			set host_0 $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
 			send_user "\nFAILURE: srun not responding\n"
 			kill_srun
 			set failures 1
-			exp_continue
 		}
 		eof {
 			wait
@@ -138,7 +139,6 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 			send_user "\nFAILURE: srun not responding\n"
 			kill_srun
 			set failures 1
-			exp_continue
 		}
 		eof {
 			wait
@@ -157,7 +157,6 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 			send_user "\nFAILURE: srun not responding\n"
 			kill_srun
 			set failures 1
-			exp_continue
 		}
 		eof {
 			wait
@@ -166,6 +165,7 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 
 	if {$failures == 0} {
 		incr successes
+		set  include_node $host_0
 	} else {
 		set exit_code 1
 	}
