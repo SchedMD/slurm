@@ -10,7 +10,7 @@ int main ( int argc , char * argv[] )
 	slurm_addr worker_address ;
 	slurm_msg_t msg;
 	slurm_msg_t resp;
-	int16_t port;
+	int16_t port = 0;
 	update_node_msg_t *in_msg, out_msg;
 	
 	/* init address sturctures */
@@ -32,7 +32,7 @@ int main ( int argc , char * argv[] )
 	slurm_send_node_msg( worker_socket , &msg ) ;
 
 	printf("Sending message=%s\n", out_msg.node_names);
-	if (slurm_receive_msg (worker_socket, &resp) < 0) {
+	if (slurm_receive_msg (worker_socket, &resp, 0) < 0) {
 		printf("Error reading slurm_receive_msg %m\n");
 		exit(1);
 	}

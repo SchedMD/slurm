@@ -11,7 +11,7 @@ int main ( int argc , char * argv[] )
 	slurm_addr peer_address ;
 	slurm_msg_t msg;
 	slurm_msg_t resp;
-	int16_t port;
+	int16_t port = 0;
 	update_node_msg_t *in_msg, out_msg;
 		
 	/* init address sturctures */
@@ -29,7 +29,7 @@ int main ( int argc , char * argv[] )
 	printf ( "worker socket %i\n", worker_socket ) ;
 
 	while (1) {
-		if (slurm_receive_msg (worker_socket, &msg) == SLURM_SOCKET_ERROR ) {
+		if (slurm_receive_msg (worker_socket, &msg, 0) == SLURM_SOCKET_ERROR ) {
 			printf ("slurm_receive_msg error\n");
 			break;
 		}
