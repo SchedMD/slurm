@@ -539,13 +539,8 @@ int redo_part(List nodes, int conn_type, int new_count)
 	results_i = list_iterator_create(nodes);
 	while ((pa_node = list_next(results_i)) != NULL) {
 		pa_node->used = false;
-		if(conn_type==TORUS) 
-			pa_node->letter = 
-				pa_system_ptr->fill_in_value[new_count].letter;
-		
-		else 
-			pa_node->letter =
-				pa_system_ptr->fill_in_value[new_count+32].letter;
+		pa_node->letter = 
+			pa_system_ptr->fill_in_value[new_count].letter;
 		
 		pa_node->color =
 			pa_system_ptr->fill_in_value[new_count].color;
@@ -581,6 +576,12 @@ void init_grid(node_info_msg_t * node_info_ptr)
 	int x, y, z, i = 0;
 	int c[PA_SYSTEM_DIMENSIONS];
 	uint16_t node_base_state;
+	/* For systems with more than 62 active jobs or BGL blocks, 
+	 * we just repeat letters */
+	static char letter_array[] = 
+				"abcdefghijklmnopqrstuvwxyz"	/* 00-25 */
+				"ABCDEFGHIJKLMNOPQRSTUVWXYZ"	/* 26-51 */
+				"0123456789";			/* 52-61 */
 
 	for (x = 0; x < DIM_SIZE[X]; x++)
 		for (y = 0; y < DIM_SIZE[Y]; y++)
@@ -613,13 +614,10 @@ void init_grid(node_info_msg_t * node_info_ptr)
 				}
 				pa_system_ptr->grid[x][y][z].indecies = i++;
 			}
-	y = 65;
 	z = 0;
 	for (x = 0; x < pa_system_ptr->num_of_proc; x++) {
-		y = y % 128;
-		if (y == 0)
-			y = 65;
-		pa_system_ptr->fill_in_value[x].letter = y;
+		y = x % (sizeof(letter_array) - 1);
+		pa_system_ptr->fill_in_value[x].letter = letter_array[y];
 		if(z == 4)
 			z++;
 		z = z % 7;
@@ -628,7 +626,6 @@ void init_grid(node_info_msg_t * node_info_ptr)
 		
 		pa_system_ptr->fill_in_value[x].color = z;
 		z++;
-		y++;
 	}
 	return;
 }
@@ -1076,14 +1073,8 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 			pa_node[i]->used=1;
 			pa_node[i]->conn_type=conn_type;
 			if(pa_node[i]->letter == '.') {
-				if(conn_type==TORUS) 
-					pa_node[i]->letter =
-						pa_system_ptr->fill_in_value[color_count].letter;
-				
-				else 
-					pa_node[i]->letter =
-						pa_system_ptr->fill_in_value[color_count+32].letter;
-				
+				pa_node[i]->letter =
+					pa_system_ptr->fill_in_value[color_count].letter;
 				pa_node[i]->color =
 					pa_system_ptr->fill_in_value[color_count].color;
 				set=1;
