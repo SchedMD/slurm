@@ -269,11 +269,16 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *host;		/* host to contact initiating srun */
 	uint32_t dependency;	/* defer until specified job completes */
 	char *account;		/* charge to specified account */
+/*
+ * The following parameters are only meaningful on a Blue Gene
+ * system at present. Some will be of value on other system.
+ */
 	uint16_t geometry[SYSTEM_DIMENSIONS];	/* node count in various 
 				 * dimensions, e.g. X, Y, and Z */
 	uint16_t conn_type;	/* see enum connection_type */
 	uint16_t rotate;	/* permit geometry rotation if set */
 	uint16_t node_use;	/* see enum node_use_type */
+/* End of Blue Gene specific values */
 } job_desc_msg_t;
 
 typedef struct job_info {
@@ -315,11 +320,17 @@ typedef struct job_info {
 	char *account;		/* charge to specified account */
 	uint16_t wait_reason;	/* reason job still pending, see
 				 * slurm.h:enum job_wait_reason */
+/*
+ * The following parameters are only meaningful on a Blue Gene
+ * system at present. Some will be of value on other system.
+ */
+	char *bgl_part_id;	/* Blue Gene partition ID */
 	uint16_t geometry[SYSTEM_DIMENSIONS];	/* node count in various
 				 * dimensions, e.g. X, Y, and Z */
 	uint16_t conn_type;	/* see enum connection_type */
 	uint16_t rotate;	/* permit geometry rotation if set */
 	uint16_t node_use;	/* see enum node_use_type */
+/* End of Blue Gene specific values */
 } job_info_t;
 
 typedef struct job_info_msg {
@@ -422,6 +433,12 @@ typedef struct resource_allocation_response_msg {
 	uint16_t node_cnt;	/* count of nodes */
 	slurm_addr *node_addr;	/* network addresses */
 	uint32_t error_code;	/* error code for warning message */
+/*
+ * The following parameters are only meaningful on a Blue Gene
+ * system at present. Some will be of value on other system.
+ */
+	char *bgl_part_id;	/* Blue Gene partition ID */
+/* End of Blue Gene specific values */
 } resource_allocation_response_msg_t;
 
 typedef struct resource_allocation_and_run_response_msg {

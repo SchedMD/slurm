@@ -421,6 +421,9 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		alloc_msg.node_cnt       = node_cnt;
 		alloc_msg.node_list      = xstrdup(node_list_ptr);
 		alloc_msg.num_cpu_groups = num_cpu_groups;
+#ifdef HAVE_BGL
+		alloc_msg.bgl_part_id    = xstrdup(DEFAULT_BGL_PART_ID);
+#endif
 		unlock_slurmctld(job_write_lock);
 
 		response_msg.msg_type = RESPONSE_RESOURCE_ALLOCATION;
@@ -432,6 +435,9 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		xfree(alloc_msg.cpus_per_node);
 		xfree(alloc_msg.node_addr);
 		xfree(alloc_msg.node_list);
+#ifdef HAVE_BGL
+		xfree(alloc_msg.bgl_part_id);
+#endif
 		schedule_job_save();	/* has own locks */
 		schedule_node_save();	/* has own locks */
 	} else {	/* allocate error */
@@ -1261,6 +1267,9 @@ static void _slurm_rpc_old_job_alloc(slurm_msg_t * msg)
 		alloc_msg.node_cnt       = node_cnt;
 		alloc_msg.node_list      = xstrdup(node_list_ptr);
 		alloc_msg.num_cpu_groups = num_cpu_groups;
+#ifdef HAVE_BGL
+		alloc_msg.bgl_part_id    = xstrdup(DEFAULT_BGL_PART_ID);
+#endif
 		unlock_slurmctld(job_read_lock);
 
 		response_msg.msg_type    = RESPONSE_RESOURCE_ALLOCATION;

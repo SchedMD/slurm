@@ -817,20 +817,9 @@ int _print_job_conn_type(job_info_t * job, int width, bool right_justify,
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CONN_TYPE", width, right_justify, true);
-	else {
-		char *id;
-#ifdef HAVE_BGL
-		if (job->conn_type == RM_TORUS)
-			id = "torus";
-		else if (job->conn_type == RM_MESH)
-			id = "mesh";
-		else
-			id = "nav";
-#else
-		id = "n/a";
-#endif
-		_print_str(id, width, right_justify, true);
-	}
+	else
+		_print_str(job_conn_type_string(job->conn_type), 
+			width, right_justify, true);
 	if (suffix)
 		printf("%s", suffix); 
 	return SLURM_SUCCESS;
@@ -841,18 +830,9 @@ int _print_job_node_use(job_info_t * job, int width, bool right_justify,
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("NODE_USE", width, right_justify, true);
-	else {
-		char *id;
-#ifdef HAVE_BGL
-		if (job->node_use == RM_COPROCESSOR)
-			id = "coprocessor";
-		else
-			id = "virtual";
-#else
-		id = "n/a";
-#endif
-		_print_str(id, width, right_justify, true);
-	}
+	else
+		_print_str(job_node_use_string(job->node_use), 
+			width, right_justify, true);
 	if (suffix)
 		printf("%s", suffix); 
 	return SLURM_SUCCESS;

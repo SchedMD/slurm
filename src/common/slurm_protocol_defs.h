@@ -366,6 +366,9 @@ typedef struct batch_job_launch_msg {
 	uint16_t envc;		/* element count in environment */
 	char **environment;	/* environment variables to set for job, 
 				 *   name=value pairs, one per line */
+#ifdef HAVE_BGL
+	char *bgl_part_id;	/* Blue Gene partition ID */
+#endif
 } batch_job_launch_msg_t;
 
 typedef struct job_id_request_msg {
@@ -500,7 +503,10 @@ void slurm_free_job_step_info_response_msg(
 void slurm_free_node_info_msg(node_info_msg_t * msg);
 void slurm_free_partition_info_msg(partition_info_msg_t * msg);
 
+
+extern char *job_conn_type_string(uint16_t inx);
 extern char *job_dist_string(uint16_t inx);
+extern char *job_node_use_string(uint16_t inx);
 extern char *job_reason_string(enum job_wait_reason inx);
 extern char *job_state_string(enum job_states inx);
 extern char *job_state_string_compact(enum job_states inx);

@@ -216,6 +216,9 @@ int srun(int ac, char **av)
 	setenvf("SLURM_TASKS_PER_NODE=%s", task_cnt = _task_count_string (job));
 	setenvf("SLURM_DISTRIBUTION=%s",
 		format_distribution_t (opt.distribution));
+#ifdef HAVE_BGL
+	setenvf("BGL_PARTITION_ID=%s",    job->bgl_part_id);
+#endif
 
 	xfree(task_cnt);
 
@@ -607,6 +610,13 @@ _set_batch_script_env(job_t *job)
 		error("Unable to set SLURM_LABELIO environment variable");
 		rc = SLURM_FAILURE;
 	}
+
+#ifdef HAVE_BGL
+	if (job && setenvf("BGL_PARTITION_ID=%s", job->bgl_part_id)) {
+		error("Can't set BGL_PARTITION_ID environment variable");
+		rc = SLURM_FAILURE;
+	}
+#endif
 
 	/*
 	 * If no job has been allocated yet, just return. We are

@@ -975,6 +975,10 @@ _setup_batch_env(slurmd_job_t *job, batch_job_launch_msg_t *msg)
 	setenvpf(&job->env, "SLURM_TASKS_PER_NODE", "%s", task_buf);
 	xfree(task_buf); 
 
+#ifdef HAVE_BGL
+	setenvpf(&job->env, "BGL_PARTITION_ID", "%s", msg->bgl_part_id);
+#endif
+
 	return 0;
 }
 

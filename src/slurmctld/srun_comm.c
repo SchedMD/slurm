@@ -89,6 +89,9 @@ extern void srun_allocate (uint32_t job_id)
 				job_ptr->node_cnt);
 		memcpy(msg_arg->node_addr, job_ptr->node_addr,
 				(sizeof(slurm_addr) * job_ptr->node_cnt));
+#ifdef HAVE_BGL
+		msg_arg->bgl_part_id    = xstrdup(DEFAULT_BGL_PART_ID);
+#endif
 		msg_arg->error_code	= SLURM_SUCCESS;
 		_srun_agent_launch(addr, job_ptr->host, 
 				RESPONSE_RESOURCE_ALLOCATION, msg_arg);

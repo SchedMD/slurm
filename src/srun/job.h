@@ -139,6 +139,9 @@ typedef struct srun_job {
 	int   stdinfd;
 	bool *stdin_eof;  /* true if task i processed stdin eof */
 
+#ifdef HAVE_BGL
+	char *bgl_part_id;
+#endif
 } job_t;
 
 void    update_job_state(job_t *job, job_state_t newstate);

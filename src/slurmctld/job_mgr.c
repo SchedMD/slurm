@@ -423,6 +423,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 #ifdef HAVE_BGL
 {
 	int i;
+	packstr(dump_job_ptr->bgl_part_id, buffer);
 	pack16(dump_job_ptr->conn_type, buffer);
 	pack16(dump_job_ptr->rotate, buffer);
 	pack16(dump_job_ptr->node_use, buffer);
@@ -464,6 +465,7 @@ static int _load_job_state(Buf buffer)
 #ifdef HAVE_BGL
 	int i;
 	uint16_t conn_type, node_use, rotate, geometry[SYSTEM_DIMENSIONS];
+	char *bgl_part_id;
 #endif
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
@@ -496,6 +498,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpackstr_xmalloc(&account, &name_len, buffer);
 
 #ifdef HAVE_BGL
+	safe_unpackstr_xmalloc(&bgl_part_id, &name_len, buffer);
 	safe_unpack16(&conn_type, buffer);
 	safe_unpack16(&rotate, buffer);
 	safe_unpack16(&node_use, buffer);
@@ -607,6 +610,7 @@ static int _load_job_state(Buf buffer)
 	job_ptr->port              = port;
 	job_ptr->host              = host;
 #ifdef HAVE_BGL
+	job_ptr->bgl_part_id       = bgl_part_id;
 	job_ptr->conn_type         = conn_type;
 	job_ptr->rotate            = rotate;
 	job_ptr->node_use          = node_use;
@@ -2208,6 +2212,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		job_ptr->rotate = job_desc->rotate;
 	if (job_desc->node_use != (uint16_t) NO_VAL)
 		job_ptr->node_use = job_desc->node_use;
+	job_ptr->bgl_part_id = xstrdup(DEFAULT_BGL_PART_ID);
 #endif
 
 	*job_rec_ptr = job_ptr;
@@ -2443,6 +2448,10 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->cpu_count_reps);
 	xfree(job_ptr->node_addr);
 	xfree(job_ptr->host);
+	xfree(job_ptr->account);
+#ifdef HAVE_BGL
+	xfree(job_ptr->bgl_part_id);
+#endif
 	if (job_ptr->step_list) {
 		delete_all_step_records(job_ptr);
 		list_destroy(job_ptr->step_list);
@@ -2597,6 +2606,7 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 #ifdef HAVE_BGL
 {
 	int i;
+	packstr(dump_job_ptr->bgl_part_id, buffer);
 	pack16(dump_job_ptr->conn_type, buffer);
 	pack16(dump_job_ptr->rotate, buffer);
 	pack16(dump_job_ptr->node_use, buffer);
@@ -3180,9 +3190,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 #ifdef HAVE_BGL
 	if (job_specs->geometry[0] != (uint16_t) NO_VAL) {
-		int i;
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		int i, tot = 1;
+		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+			tot *= job_specs->geometry[i];
 			job_ptr->geometry[i] = job_specs->geometry[i];
+		}
+		detail_ptr->min_nodes = tot;
+		detail_ptr->max_nodes = tot;
 	}
 
 	if (job_specs->conn_type != (uint16_t) NO_VAL)
