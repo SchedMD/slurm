@@ -331,7 +331,8 @@ static task_info_t *_make_task_data(agent_info_t *agent_info_ptr, int inx)
  */
 static void *_wdog(void *args)
 {
-	int fail_cnt, no_resp_cnt, work_done;
+	int fail_cnt, no_resp_cnt;
+	bool work_done;
 	int i, delay, max_delay = 0;
 	agent_info_t *agent_ptr = (agent_info_t *) args;
 	thd_t *thread_ptr = agent_ptr->thread_struct;
@@ -345,7 +346,7 @@ static void *_wdog(void *args)
 #endif
 
 	while (1) {
-		work_done   = 1;	/* assume all threads complete */
+		work_done   = true;	/* assume all threads complete */
 		fail_cnt    = 0;	/* assume no threads failures */
 		no_resp_cnt = 0;	/* assume all threads respond */
 
@@ -355,7 +356,7 @@ static void *_wdog(void *args)
 		for (i = 0; i < agent_ptr->thread_count; i++) {
 			switch (thread_ptr[i].state) {
 			case DSH_ACTIVE:
-				work_done = 0;
+				work_done = false;
 				delay = difftime(time(NULL),
 						 thread_ptr[i].time);
 				if (delay >= COMMAND_TIMEOUT)
@@ -363,7 +364,7 @@ static void *_wdog(void *args)
 						     SIGALRM);
 				break;
 			case DSH_NEW:
-				work_done = 0;
+				work_done = false;
 				break;
 			case DSH_DONE:
 				if (max_delay < (int) thread_ptr[i].time)
@@ -418,7 +419,7 @@ static void *_wdog(void *args)
 		xfree(slurm_names);
 #endif
 		if (agent_ptr->retry)
-			_queue_agent_retry(agent_ptr, fail_cnt);
+			_queue_agent_retry(agent_ptr, no_resp_cnt);
 	}
 #if AGENT_IS_THREAD
 	/* Update last_response on responding nodes */
@@ -522,13 +523,27 @@ static void *_thread_per_node_rpc(void *args)
 		goto cleanup;
 	}
 
+
+	if (task_ptr->msg_type == REQUEST_KILL_TIMELIMIT) {
+		int kill_wait;
+#if AGENT_IS_THREAD
+		kill_wait = slurmctld_conf.kill_wait;
+#else
+		fatal("get kill_wait from elsewhere");
+#endif
+		slurm_mutex_lock(task_ptr->thread_mutex_ptr);
+		thread_ptr->time = time(NULL) + kill_wait;
+		slurm_mutex_unlock(task_ptr->thread_mutex_ptr);
+		sleep(kill_wait);
+	}
+
 	/* receive message as needed (most message types) */
 	if (task_ptr->get_reply && 
 	    ((msg_size = slurm_receive_msg(sockfd, response_msg))
 	     == SLURM_SOCKET_ERROR)) {
 		error(
-		    "_thread_per_node_rpc/slurm_receive_msg to host %s: %m",
-		    thread_ptr->node_name);
+		    "_thread_per_node_rpc/slurm_receive_msg host=%s msg=%u, error=%m",
+		    thread_ptr->node_name, task_ptr->msg_type);
 		goto cleanup;
 	}
 
@@ -764,7 +779,8 @@ static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr)
 	if (agent_arg_ptr == NULL)
 		return;
 
-	debug3("Spawning RPC retry agent");
+	debug3("Spawning RPC retry agent for msg_type %u", 
+	       agent_arg_ptr->msg_type);
 	if (pthread_attr_init(&attr_agent))
 		fatal("pthread_attr_init error %m");
 	if (pthread_attr_setdetachstate(&attr_agent,
