@@ -185,7 +185,6 @@ int print_steps_array( job_step_info_t* steps, int size, List format )
 	return SLURM_SUCCESS;
 }
 
-
 int
 _print_str( char* str, int width, bool right, bool cut_output )
 {
@@ -220,6 +219,19 @@ _print_str( char* str, int width, bool right, bool cut_output )
 
 	return printed;
 }
+
+int
+_print_nodes( char *nodes, int width, bool right, bool cut )
+{	
+	hostlist_t hl = hostlist_create(nodes);
+	char buf[1024];
+	int retval;
+	hostlist_ranged_string(hl, 1024, buf);
+	retval = _print_str( buf, width, right, false );
+	hostlist_destroy(hl);
+	return retval;
+}
+
 
 int
 _print_int( int number, int width, bool right, bool cut_output )
@@ -451,13 +463,8 @@ _print_job_nodes( job_info_t* job, int width, bool right )
 {
 	if ( job == NULL ) /* Print the Header instead */
 		_print_str( "Nodes", width, right, false );
-	else {
-		hostlist_t hl = hostlist_create(job->nodes);
-		char buf[1024];
-		hostlist_ranged_string(hl, 1024, buf);
-		_print_str( buf, width, right, false );
-		hostlist_destroy(hl);
-	}
+	else 
+		_print_nodes( job->nodes, width, right, false );
 
 	return SLURM_SUCCESS;
 }
@@ -565,7 +572,7 @@ _print_job_req_nodes( job_info_t* job, int width, bool right_justify )
 	if ( job == NULL ) /* Print the Header instead */
 		_print_str( "ReqNodes", width, right_justify, true );
 	else
-		_print_str( job->req_nodes, width, right_justify, true );
+		_print_nodes( job->req_nodes, width, right_justify, true );
 
 	return SLURM_SUCCESS;
 }
@@ -706,7 +713,7 @@ int _print_step_nodes( job_step_info_t* step, int width, bool right )
 	if ( step == NULL ) /* Print the Header instead */
 		_print_str( "Nodes", width, right, false );
 	else
-		_print_str( step->nodes, width, right, false );
+		_print_nodes( step->nodes, width, right, false );
 
 	return SLURM_SUCCESS;
 }
