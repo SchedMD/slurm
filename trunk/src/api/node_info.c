@@ -113,15 +113,17 @@ slurm_load_node (time_t update_time, node_info_msg_t **node_info_msg_pptr)
 	{
 		case RESPONSE_NODE_INFO:
         		 *node_info_msg_pptr = ( node_info_msg_t * ) response_msg . data ;
+		        return SLURM_SUCCESS ;
 			break ;
 		case RESPONSE_SLURM_RC:
 			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			return  (int) slurm_rc_msg->return_code ;
 			break ;
 		default:
 			return SLURM_UNEXPECTED_MSG_ERROR ;
-			break ;
 	}
 
-        return SLURM_SUCCESS ;
+	return SLURM_SUCCESS ;
+
 }
 

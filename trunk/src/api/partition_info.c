@@ -106,15 +106,17 @@ slurm_load_partitions (time_t update_time, partition_info_msg_t **partition_info
 	switch ( response_msg . msg_type )
 	{
 		case RESPONSE_PARTITION_INFO:
-        		 *partition_info_msg_pptr = ( partition_info_msg_t * ) response_msg . data ;
+        		*partition_info_msg_pptr = ( partition_info_msg_t * ) response_msg . data ;
+			return SLURM_SUCCESS ;
 			break ;
 		case RESPONSE_SLURM_RC:
 			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			return (int) slurm_rc_msg->return_code ;
 			break ;
 		default:
 			return SLURM_UNEXPECTED_MSG_ERROR ;
 			break ;
 	}
 
-        return SLURM_SUCCESS ;
+	return SLURM_SUCCESS ;
 }

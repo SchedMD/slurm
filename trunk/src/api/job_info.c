@@ -130,10 +130,11 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr)
 	{
 		case RESPONSE_JOB_INFO:
         		 *job_info_msg_pptr = ( job_info_msg_t * ) response_msg . data ;
+		        return SLURM_SUCCESS ;
 			break ;
 		case RESPONSE_SLURM_RC:
 			rc_msg = ( return_code_msg_t * ) response_msg . data ;
-                        return rc_msg -> return_code ;
+			return (int) rc_msg->return_code ;
 			break ;
 		default:
 			return SLURM_UNEXPECTED_MSG_ERROR ;
