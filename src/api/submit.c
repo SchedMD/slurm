@@ -28,8 +28,8 @@
 int 
 main (int argc, char *argv[]) 
 {
-	int error_code, i;
-	char *job_id;
+	int error_code, i, count;
+	uint16_t job_id;
 
 	error_code = slurm_submit
 		("User=1500 Script=/bin/hostname JobName=job01 TotalNodes=400 TotalProcs=1000 ReqNodes=lx[3000-3003] Partition=batch MinRealMemory=1024 MinTmpDisk=2034 Groups=students,employee MinProcs=4 Contiguous=YES Key=1234",
@@ -38,12 +38,15 @@ main (int argc, char *argv[])
 		printf ("submit error %d\n", error_code);
 		exit (error_code);
 	}
-	else {
-		printf ("job %s submitted\n", job_id);
-		free (job_id);
-	}			/* else */
+	else
+		printf ("job %u submitted\n", job_id);
 
-	for (i=0; i<5; i++) {
+	if (argc > 1) 
+		count = atoi (argv[1]);
+	else
+		count = 5;
+
+	for (i=0; i<count; i++) {
 		error_code = slurm_submit
 			("User=1500 Script=/bin/hostname JobName=more TotalProcs=4000 Partition=batch Key=1234 ",
 			 &job_id);
@@ -52,8 +55,7 @@ main (int argc, char *argv[])
 			break;
 		}
 		else {
-			printf ("job %s submitted\n", job_id);
-			free (job_id);
+			printf ("job %u submitted\n", job_id);
 		}
 	}
 
@@ -68,7 +70,6 @@ main (int argc, char *argv[])
  *	job_id - place to store id of submitted job
  * output: job_id - the job's id
  *	returns 0 if no error, EINVAL if the request is invalid
- * NOTE: the caller must free the storage at job_id[0]
  * NOTE: required specification include: Script=<script_path_name>
  *	User=<uid>
  * NOTE: optional specifications include: Contiguous=<YES|NO> 
@@ -80,14 +81,14 @@ main (int argc, char *argv[])
  *	TotalProcs=<count> Immediate=<YES|NO>
  */
 int
-slurm_submit (char *spec, char **job_id)
+slurm_submit (char *spec, uint16_t *job_id)
 {
 	int buffer_offset, buffer_size, in_size;
 	char *request_msg, *buffer;
 	int sockfd;
 	struct sockaddr_in serv_addr;
 
-	if ((spec == NULL) || (job_id == (char **) NULL))
+	if (spec == NULL)
 		return EINVAL;
 	request_msg = malloc (strlen (spec) + 10);
 	if (request_msg == NULL)
@@ -145,6 +146,6 @@ slurm_submit (char *spec, char **job_id)
 		free (buffer);
 		return EINVAL;
 	}
-	job_id[0] = buffer;
+	*job_id = (uint16_t) atoi (buffer);
 	return 0;
 }

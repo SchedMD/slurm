@@ -29,7 +29,8 @@ int
 main (int argc, char *argv[])
 {
 	int error_code;
-	char *node_list, *job_id;
+	char *node_list;
+	uint16_t job_id;
 
 	error_code = slurm_allocate
 		("User=1500 JobName=job01 TotalNodes=400 TotalProcs=1000 ReqNodes=lx[3000-3003] Partition=batch MinRealMemory=1024 MinTmpDisk=2034 Groups=students,employee MinProcs=4 Contiguous=YES Key=1234",
@@ -37,9 +38,8 @@ main (int argc, char *argv[])
 	if (error_code)
 		printf ("allocate error %d\n", error_code);
 	else {
-		printf ("allocate nodes %s to job %s\n", node_list, job_id);
+		printf ("allocate nodes %s to job %u\n", node_list, job_id);
 		free (node_list);
-		free (job_id);
 	}
 
 	while (1) {
@@ -51,9 +51,8 @@ main (int argc, char *argv[])
 			break;
 		}
 		else {
-			printf ("allocate nodes %s to job %s\n", node_list, job_id);
+			printf ("allocate nodes %s to job %u\n", node_list, job_id);
 			free (node_list);
-			free (job_id);
 		}
 	}
 
@@ -66,9 +65,8 @@ main (int argc, char *argv[])
 			break;
 		}
 		else {
-			printf ("allocate nodes %s to job %s\n", node_list, job_id);
+			printf ("allocate nodes %s to job %u\n", node_list, job_id);
 			free (node_list);
-			free (job_id);
 		}
 	}
 
@@ -80,8 +78,9 @@ main (int argc, char *argv[])
 /*
  * slurm_allocate - allocate nodes for a job with supplied contraints. 
  * input: spec - specification of the job's constraints
- *        job_id - place into which a job_id pointer can be placed
- * output: job_id - node_list - list of allocated nodes
+ *        job_id - place into which a job_id can be stored
+ * output: job_id - the job's id
+ *         node_list - list of allocated nodes
  *         returns 0 if no error, EINVAL if the request is invalid, 
  *			EAGAIN if the request can not be satisfied at present
  * NOTE: required specifications include: User=<uid>
@@ -93,17 +92,16 @@ main (int argc, char *argv[])
  *	Shared=<YES|NO> TimeLimit=<minutes> TotalNodes=<count>
  *	TotalProcs=<count>
  * NOTE: the calling function must free the allocated storage at node_list[0]
- *	and job_id[0]
  */
 int
-slurm_allocate (char *spec, char **node_list, char **job_id) 
+slurm_allocate (char *spec, char **node_list, uint16_t *job_id) 
 {
 	int buffer_offset, buffer_size, in_size;
 	char *request_msg, *buffer, *job_id_ptr;
 	int sockfd;
 	struct sockaddr_in serv_addr;
 
-	node_list[0] = job_id[0] = NULL;
+	node_list[0] = NULL;
 	if ((spec == NULL) || (node_list == (char **) NULL))
 		return EINVAL;
 	request_msg = malloc (strlen (spec) + 10);
@@ -164,10 +162,7 @@ slurm_allocate (char *spec, char **node_list, char **job_id)
 	}
 	job_id_ptr = strchr(buffer, (int) ' ');
 	if (job_id_ptr != NULL) {
-		job_id[0] = malloc(strlen(job_id_ptr));
-		job_id_ptr[0] = (char) NULL;
-		if (job_id[0] != NULL)
-			strcpy(job_id[0], &job_id_ptr[1]);
+		*job_id = (uint16_t) atoi (&job_id_ptr[1]);
 	}
 	node_list[0] = buffer;
 	return 0;

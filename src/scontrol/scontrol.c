@@ -24,7 +24,7 @@ static int input_words;		/* number of words of input permitted */
 void dump_command (int argc, char *argv[]);
 int get_command (int *argc, char *argv[]);
 void print_build (char *build_param);
-void print_job (char *job_id);
+void print_job (char * job_id_str);
 void print_node (char *node_name, struct node_buffer *node_buffer_ptr);
 void print_node_list (char *node_list);
 void print_part (char *partition_name);
@@ -271,12 +271,13 @@ print_build (char *build_param)
 
 /*
  * print_job - print the specified job's information
- * input: job_id - NULL to print information about all jobs
+ * input: job_id - job's id or NULL to print information about all jobs
  */
 void 
-print_job (char *job_id) 
+print_job (char * job_id_str) 
 {
 	int error_code, i;
+	uint16_t job_id = 0;
 	static struct job_buffer *old_job_buffer_ptr = NULL;
 	struct job_buffer *job_buffer_ptr = NULL;
 	struct job_table *job_ptr = NULL;
@@ -298,17 +299,21 @@ print_job (char *job_id)
 	}
 	else if (error_code == 0)
 		old_job_buffer_ptr = job_buffer_ptr;
+printf("time=%lu\n",(long)old_job_buffer_ptr->last_update);
 
 	if (quiet_flag == -1)
 		printf ("last_update_time=%ld\n", (long) job_buffer_ptr->last_update);
 
+	if (job_id_str)
+		job_id = (uint16_t) atoi (job_id_str);
+
 	job_ptr = job_buffer_ptr->job_table_ptr;
 	for (i = 0; i < job_buffer_ptr->job_count; i++) {
-		if (job_id && 
-		    strcmp (job_id, job_ptr[i].job_id) != 0)
+		if (job_id_str && 
+		    job_id != job_ptr[i].job_id) 
 			continue;
 
-		printf ("JobId=%s UserId=%u ", 
+		printf ("JobId=%u UserId=%u ", 
 			job_ptr[i].job_id, job_ptr[i].user_id);
 		printf ("JobState=%u TimeLimit=%u ", 
 			job_ptr[i].job_state, job_ptr[i].time_limit);
@@ -335,7 +340,7 @@ print_job (char *job_id)
 		printf ("JobScript=%s\n\n",
 			job_ptr[i].job_script);
 
-		if (job_id)
+		if (job_id_str)
 			break;
 	}
 }

@@ -81,7 +81,7 @@ struct build_buffer {
 };
 
 struct job_table {
-	char *job_id;		/* job ID */
+	uint16_t job_id;	/* job ID */
 	char *name;		/* name of the job */
 	uint32_t user_id;	/* user the job runs as */
 	uint16_t job_state;	/* state of the job, see enum job_states */
@@ -158,8 +158,9 @@ struct part_buffer {
 /*
  * slurm_allocate - allocate nodes for a job with supplied contraints. 
  * input: spec - specification of the job's constraints
- *        job_id - place into which a job_id pointer can be placed
- * output: job_id - node_list - list of allocated nodes
+ *        job_id - place into which a job_id can be stored
+ * output: job_id - the job's id
+ *         node_list - list of allocated nodes
  *         returns 0 if no error, EINVAL if the request is invalid, 
  *			EAGAIN if the request can not be satisfied at present
  * NOTE: required specifications include: User=<uid>
@@ -171,9 +172,8 @@ struct part_buffer {
  *	Shared=<YES|NO> TimeLimit=<minutes> TotalNodes=<count>
  *	TotalProcs=<count>
  * NOTE: the calling function must free the allocated storage at node_list[0]
- * NOTE: the calling function must free the allocated storage at job_id[0]
  */
-extern int slurm_allocate (char *spec, char **node_list, char **job_id);
+extern int slurm_allocate (char *spec, char **node_list, uint16_t *job_id);
 
 /*
  * slurm_cancel - cancel the specified job 
@@ -181,7 +181,7 @@ extern int slurm_allocate (char *spec, char **node_list, char **job_id);
  * output: returns 0 if no error, EINVAL if the request is invalid, 
  *			EAGAIN if the request can not be satisfied at present
  */
-extern int slurm_cancel (char *job_id);
+extern int slurm_cancel (uint16_t job_id);
 
 /*
  * slurm_free_build_info - free the build information buffer (if allocated)
@@ -271,7 +271,6 @@ extern int slurm_load_part (time_t update_time, struct part_buffer **part_buffer
  *	job_id - place to store id of submitted job
  * output: job_id - the job's id
  *	returns 0 if no error, EINVAL if the request is invalid
- * NOTE: the caller must free the storage at job_id[0]
  * NOTE: required specification include: Script=<script_path_name>
  *	User=<uid>
  * NOTE: optional specifications include: Contiguous=<YES|NO> 
@@ -282,7 +281,7 @@ extern int slurm_load_part (time_t update_time, struct part_buffer **part_buffer
  *	Shared=<YES|NO> TimeLimit=<minutes> TotalNodes=<count>
  *	TotalProcs=<count> Immediate=<YES|NO>
  */
-extern int slurm_submit (char *spec, char **job_id);
+extern int slurm_submit (char *spec, uint16_t *job_id);
 
 /*
  * slurm_will_run - determine if a job would execute immediately 
@@ -301,7 +300,7 @@ extern int slurm_submit (char *spec, char **job_id);
  *	Shared=<YES|NO> TimeLimit=<minutes> TotalNodes=<count>
  *	TotalProcs=<count>
  */
-extern int slurm_will_run (char *spec, char **job_id);
+extern int slurm_will_run (char *spec, uint16_t *job_id);
 
 /* 
  * parse_node_name - parse the node name for regular expressions and return a sprintf format 

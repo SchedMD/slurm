@@ -411,7 +411,7 @@ main (int argc, char *argv[])
 	job_ptr = job_buffer_ptr->job_table_ptr;
 
 	for (i = 0; i < job_buffer_ptr->job_count; i++) {
-		printf ("JobId=%s UserId=%u\n", 
+		printf ("JobId=%u UserId=%u\n", 
 			job_ptr[i].job_id, job_ptr[i].user_id);
 	}			
 	slurm_free_job_info (job_buffer_ptr);
