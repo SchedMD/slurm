@@ -109,22 +109,19 @@ struct io_info {
 };
 
 
-static bool   _isa_client(struct io_info *io);
-static bool   _isa_task(struct io_info *io);
-
 static void   _fatal_cleanup(void *);
+static int    find_obj(void *obj, void *key);
+/* static int    find_fd(void *obj, void *key); */
 static int    _io_init_pipes(task_info_t *t);
 static int    _io_prepare_tasks(slurmd_job_t *);
 static void * _io_thr(void *);
 static int    _io_write_header(struct io_info *, srun_info_t *);
-static void   _io_connect_objs(io_obj_t *, io_obj_t *);
-static int    _shutdown_task_obj(struct io_info *t);
-static int    find_obj(void *obj, void *key);
-/* static int    find_fd(void *obj, void *key); */
-static bool   _isa_client(struct io_info *io);
-static bool   _isa_task(struct io_info *io);
 static void   _io_client_attach(io_obj_t *, io_obj_t *, io_obj_t *, 
 		                List objList);
+static void   _io_connect_objs(io_obj_t *, io_obj_t *);
+static int    _shutdown_task_obj(struct io_info *t);
+static bool   _isa_client(struct io_info *io);
+static bool   _isa_task(struct io_info *io);
 static int    _open_output_file(slurmd_job_t *job, task_info_t *t, 
 		                char *fname, slurmd_io_type_t type);
 static int    _open_stdin_file(slurmd_job_t *job, task_info_t *t, 
