@@ -1238,6 +1238,7 @@ void ping_nodes (void)
 			continue;
 
 		if ((node_record_table_ptr[i].last_response != (time_t)0) &&
+		    (slurmctld_conf.slurmd_timeout != 0) &&
 		    (age >= slurmctld_conf.slurmd_timeout) &&
 		    (base_state != NODE_STATE_DOWN)) {
 			error ("Node %s not responding, setting DOWN", 
