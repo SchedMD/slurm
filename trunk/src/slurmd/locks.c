@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * locks.c - semaphore functions for slurmctld
+ * locks.c - semaphore functions for slurmd
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -45,7 +45,7 @@ void wr_rdunlock (lock_datatype_t datatype);
 void wr_wrlock (lock_datatype_t datatype);
 void wr_wrunlock (lock_datatype_t datatype);
 
-/* init_locks - create locks used for slurmctld data structure access control */
+/* init_locks - create locks used for slurmd data structure access control */
 void
 init_locks ( void )
 {
@@ -53,7 +53,7 @@ init_locks ( void )
 	memset ((void *)&slurmd_locks, 0, sizeof (slurmd_locks) );
 }
 
-/* lock_slurmctld - Issue the required lock requests in a well defined order
+/* lock_slurmd - Issue the required lock requests in a well defined order
  * Returns 0 on success, -1 on failure */
 void 
 lock_slurmd (slurmd_lock_t lock_levels)
@@ -74,7 +74,7 @@ lock_slurmd (slurmd_lock_t lock_levels)
 		wr_wrlock (CREDENTIAL_STATE_LOCK);
 }
 
-/* unlock_slurmctld - Issue the required unlock requests in a well defined order */
+/* unlock_slurmd - Issue the required unlock requests in a well defined order */
 void 
 unlock_slurmd (slurmd_lock_t lock_levels)
 {

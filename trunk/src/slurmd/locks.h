@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * locks.h - definitions for semaphore functions for slurmctld (locks.c)
+ * locks.h - definitions for semaphore functions for slurmd (locks.c)
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -64,7 +64,7 @@
  * writers waiting to lock the resource.
  *
  * use init_locks() to initialize the locks then
- * lock_slurmctld() and unlock_slurmctld() to get the ordering so as to 
+ * lock_slurd() and unlock_slurmd() to get the ordering so as to 
  * prevent deadlock. The arguments indicate the lock type required for 
  * each entity (job, node, etc.) in a well defined order.
  * For example: no lock on the config data structure, read lock on the job 
@@ -79,7 +79,7 @@ typedef enum {
 	WRITE_LOCK
 }	lock_level_t;
 
-/* slurmctld specific data structures to lock via APIs */
+/* slurmd specific data structures to lock via APIs */
 typedef struct {
 	lock_level_t	jobs;
 	lock_level_t	tasks;
