@@ -86,7 +86,6 @@ typedef resource_allocation_and_run_response_msg_t alloc_run_resp;
  * forward declaration of static funcs
  */
 static allocation_resp	*_allocate_nodes(void);
-static int 		 _compute_task_count(allocation_resp *resp);
 static void              _print_job_information(allocation_resp *resp);
 static void		 _create_job_step(job_t *job);
 static void		 _sig_kill_alloc(int signum);
