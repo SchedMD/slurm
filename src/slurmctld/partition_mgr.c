@@ -401,8 +401,7 @@ int load_all_part_state(void)
 			     state_up);
 			error
 			    ("No more partition data will be processed from the checkpoint file");
-			if (part_name)
-				xfree(part_name);
+			FREE_NULL(part_name);
 			error_code = EINVAL;
 			break;
 		}
@@ -421,19 +420,16 @@ int load_all_part_state(void)
 			part_ptr->root_only = root_only;
 			part_ptr->shared = shared;
 			part_ptr->state_up = state_up;
-			if (part_ptr->allow_groups)
-				xfree(part_ptr->allow_groups);
+			FREE_NULL(part_ptr->allow_groups);
 			part_ptr->allow_groups = allow_groups;
-			if (part_ptr->nodes)
-				xfree(part_ptr->nodes);
+			FREE_NULL(part_ptr->nodes);
 			part_ptr->nodes = nodes;
 		} else {
 			info("load_all_part_state: partition %s removed from configuration file", 
 			     part_name);
 		}
 
-		if (part_name)
-			xfree(part_name);
+		FREE_NULL(part_name);
 	}
 
 	free_buf(buffer);
@@ -478,18 +474,10 @@ int init_part_conf(void)
 	default_part.shared = SHARED_NO;
 	default_part.total_nodes = 0;
 	default_part.total_cpus = 0;
-	if (default_part.nodes)
-		xfree(default_part.nodes);
-	default_part.nodes = (char *) NULL;
-	if (default_part.allow_groups)
-		xfree(default_part.allow_groups);
-	default_part.allow_groups = (char *) NULL;
-	if (default_part.allow_uids)
-		xfree(default_part.allow_uids);
-	default_part.allow_uids = (uid_t *) NULL;
-	if (default_part.node_bitmap)
-		bit_free(default_part.node_bitmap);
-	default_part.node_bitmap = (bitstr_t *) NULL;
+	FREE_NULL(default_part.nodes);
+	FREE_NULL(default_part.allow_groups);
+	FREE_NULL(default_part.allow_uids);
+	FREE_NULL_BITMAP(default_part.node_bitmap);
 
 	if (part_list)		/* delete defunct partitions */
 		(void) _delete_part_record(NULL);
@@ -525,14 +513,10 @@ static void _list_delete_part(void *part_entry)
 			continue;
 		node_record_table_ptr[i].partition_ptr = NULL;
 	}
-	if (part_record_point->allow_groups)
-		xfree(part_record_point->allow_groups);
-	if (part_record_point->allow_uids)
-		xfree(part_record_point->allow_uids);
-	if (part_record_point->nodes)
-		xfree(part_record_point->nodes);
-	if (part_record_point->node_bitmap)
-		bit_free(part_record_point->node_bitmap);
+	FREE_NULL(part_record_point->allow_groups);
+	FREE_NULL(part_record_point->allow_uids);
+	FREE_NULL(part_record_point->nodes);
+	FREE_NULL_BITMAP(part_record_point->node_bitmap);
 	xfree(part_entry);
 }
 
@@ -722,15 +706,13 @@ int update_part(update_part_msg_t * part_desc)
 	}
 
 	if (part_desc->allow_groups != NULL) {
-		if (part_ptr->allow_groups)
-			xfree(part_ptr->allow_groups);
+		FREE_NULL(part_ptr->allow_groups);
 		i = strlen(part_desc->allow_groups) + 1;
 		part_ptr->allow_groups = xmalloc(i);
 		strcpy(part_ptr->allow_groups, part_desc->allow_groups);
 		info("update_part: setting allow_groups to %s for partition %s", 
 		     part_desc->allow_groups, part_desc->name);
-		if (part_ptr->allow_uids)
-			xfree(part_ptr->allow_uids);
+		FREE_NULL(part_ptr->allow_uids);
 		part_ptr->allow_uids =
 		    _get_groups_members(part_desc->allow_groups);
 	}
@@ -744,14 +726,12 @@ int update_part(update_part_msg_t * part_desc)
 
 		error_code = _build_part_bitmap(part_ptr);
 		if (error_code) {
-			if (part_ptr->nodes)
-				xfree(part_ptr->nodes);
+			FREE_NULL(part_ptr->nodes);
 			part_ptr->nodes = backup_node_list;
 		} else {
 			info("update_part: setting nodes to %s for partition %s", 
 			     part_desc->nodes, part_desc->name);
-			if (backup_node_list)
-				xfree(backup_node_list);
+			FREE_NULL(backup_node_list);
 		}
 	}
 
@@ -807,8 +787,7 @@ void load_part_uid_allow_list(int force)
 	part_record_iterator = list_iterator_create(part_list);
 	while ((part_record_point =
 		(struct part_record *) list_next(part_record_iterator))) {
-		if (part_record_point->allow_uids)
-			xfree(part_record_point->allow_uids);
+		FREE_NULL(part_record_point->allow_uids);
 		part_record_point->allow_uids =
 		    _get_groups_members(part_record_point->allow_groups);
 	}
