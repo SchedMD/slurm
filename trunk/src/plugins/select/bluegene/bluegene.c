@@ -754,7 +754,7 @@ extern int read_bgl_conf(void)
 	FILE *bgl_spec_file;	/* pointer to input data file */
 	int line_num;		/* line number in input file */
 	char in_line[BUFSIZE];	/* input line */
-	int i, j, error_code;
+	int i, j, error_code = SLURM_SUCCESS;
 	static time_t last_config_update = (time_t) 0;
 	struct stat config_stat;
 
