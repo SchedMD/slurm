@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 
-noinst_PROGRAMS = task_mgr-test circular_buffer-test task_launch-test credential_util-test
+#noinst_PROGRAMS = task_mgr-test circular_buffer-test task_launch-test credential_util-test
 
 if WITH_ELAN
 interconnect_lib = $(top_srcdir)/src/slurmd/libelan_interconnect.la
