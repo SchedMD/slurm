@@ -34,7 +34,8 @@ slurmctld_SOURCES = 	\
 	node_scheduler.c\
 	partition_mgr.c \
 	read_config.c	\
-	step_mgr.c
+	step_mgr.c \
+	pack.c
 
 
 
