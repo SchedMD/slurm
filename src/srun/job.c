@@ -90,6 +90,7 @@ static void       _job_resp_hack(resource_allocation_response_msg_t *resp,
 				bitstr_t *req_bitmap);
 static char *     _task_state_name(task_state_t state_inx);
 static char *     _host_state_name(host_state_t state_inx);
+static char *     _normalize_hostlist(const char *hostlist);
 
 
 /*
