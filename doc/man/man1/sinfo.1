@@ -42,15 +42,15 @@ This is ignored if the \fB\-\-format\fR option is specified.
 .TP
 \fB\-o <output_format>\fR, \fB\-\-format=<output_format>\fR
 Specify the information to be displayed.  
-The default format is "%9P %5a %.8l %.6D %6t %N".
+The default format is "%9P %5a %.9l %.5D %6t %N".
 If the \fB\-\-summarize\fR option is specified, the default 
-format is "%9P %5a %.8l %15F %N".
+format is "%9P %5a %.9l %15F %N".
 If the \fB\-\-long\fR option is specified, the default format is 
-"%9P %5a %.8l %.8s %4r %5h %10g %.6D %11T %N". 
+"%9P %5a %.9l %.8s %4r %5h %10g %.5D %11T %N". 
 If the \fB\-\-Node\fR option is specified, the default format is 
-"%#N %.6D %9P %6t". 
+"%#N %.5D %9P %6t". 
 If the \fB\-\-Node\fR and \fB\-\-long\fR options are both specified, 
-the default format is "%#N %.6D %9P %11T %.4c %.6m %.8d %.6w %8f".
+the default format is "%#N %.5D %9P %11T %.4c %.6m %.8d %.6w %8f".
 In the above two formats the value of "#" represents the maximum 
 length of an node list to be printed.
 
@@ -76,7 +76,7 @@ the different node states will be placed on separate lines.
 .br
 \fB%g\fR Groups which may use the nodes
 .br
-\fB%h\fR Jobs may share nodes, "YES", "NO", or "FORCE"
+\fB%h\fR Jobs may share nodes, "yes", "no", or "force"
 .br
 \fB%l\fR Maximum time for any job in the format "days:hours:minutes:seconds"
 .br
@@ -86,7 +86,7 @@ the different node states will be placed on separate lines.
 .br
 \fB%P\fR Partition name
 .br
-\fB%r\fR Only user root may initiate jobs, "YES" or "NO"
+\fB%r\fR Only user root may initiate jobs, "yes" or "no"
 .br
 \fB%s\fR Maximum job size in nodes
 .br
@@ -100,12 +100,16 @@ the different node states will be placed on separate lines.
 .br 
 \fB%<Number><*>\fR size of field
 .TP
-\fB\-t <state>\fR , \fB\-\-state=<state>\fR
-List nodes of a given state.
+\fB\-t <state>\fR , \fB\-\-states=<states>\fR
+List nodes of given states.
 .TP
 \fB\-s\fR , \fB\-\-summarize\fR
 List only a partition state summary with no node state details.
 This is ignored if the \fB\-\-format\fR option is specified.
+.TP
+\fB\-S <sort>\fR , \fB\-\-sort=<sort>\fR
+Sort the records in the order specified. 
+
 .TP
 \fB\-p <partition>\fR, \fB\-\-partition=<partition>\fR
 Print information only about the specified partition.  
@@ -130,8 +134,24 @@ through "linux07".
 \fBpartition\fR
 The name of one partition.
 .TP
-\fBstate\fR
-A valid node state. Possible values include: ALLOC, ALLOCATED, COMP, 
+\fBsort\fR
+Specification of the order in which records should be reported.
+This uses the same field specifciation as the <output_format>.
+Multiple sorts may be performed by listing multiple sort fields 
+separated by commas.
+The field specifications may be preceeded by "+" or "-" for 
+assending (default) and desending order respectively. 
+For example, a sort value of "P,-m" requests that records by 
+printed in order of increasing partition name and within a 
+partition by decreasing memory size.
+The default value of sort is "P,-t" (increasing partition name 
+then decreasing node state).
+If the "--Node" option is selected, the default sort value is 
+"N" (increasing node name). 
+.TP
+\fBstates\fR
+A comma separated list of valid node state (case insensitive). 
+Possible values include: ALLOC, ALLOCATED, COMP, 
 COMPLETING, DOWN, DRAIN, DRAINED, DRAINING, IDLE, UNK, and UNKNOWN.
 A "*" suffix may be appended to any of these states to search for 
 nodes in the specified state which are not responding. 
@@ -140,39 +160,39 @@ responding or not.
 .SH "OUTPUT"
 .TP
 \fBAVAIL\fR
-Partition state, \fBUP\fR or \fBDOWN\fR.
+Partition state, \fBup\fR or \fBdown\fR.
 .TP
 \fBCPUS\fR
 Count of CPUs (processors) on these nodes.
 .TP
 \fBGROUPS\fR
 Resource allocations in this partition are restricted to the named groups.
-\fBALL\fR indicates that all groups may use this partition.
+\fBall\fR indicates that all groups may use this partition.
 .TP
 \fBJOB_SIZE\fR
 Minimum and maximum node count that can be allocated to any user job. 
 A single number indicates the minimum and maximum node count are the 
 same.
-\fBINFINITE\fR is used to identify partitions without a maximum node count.
+\fBinfinite\fR is used to identify partitions without a maximum node count.
 .TP
-\fBMAX_TIME\fR
+\fBTIMELIMIT\fR
 Maximum time limit for any user job in days:hours:minutes:seconds.
-\fBINFINITE\fR is used to identify partitions without a job time limit.
+\fBinfinite\fR is used to identify partitions without a job time limit.
 .TP
 \fBMEMORY\fR
 Size of real memory in megabytes on these nodes.
 .TP
-\fBNODE_LIST\fR
+\fBNODELIST\fR
 Names of nodes associated with this configuration/partition.
 .TP
-\fB#NODES\fR
+\fBNODES\fR
 Count of nodes with this particular configuration.
 .TP
-\fB#NODES(A/T)\fR
+\fBNODES(A/T)\fR
 Count of nodes with this particular configuration by node 
 state in the form "available/total".
 .TP
-\fB#NODES(A/I/O/T)\fR
+\fBNODES(A/I/O/T)\fR
 Count of nodes with this particular configuration by node
 state in the form "available/idle/other/total".
 .TP
@@ -182,13 +202,13 @@ Note that the suffix "*" identifies the default partition.
 .TP
 \fBROOT\fR
 Is the ability to allocate resources in this partition restricted to 
-user root, \fBYES\fR or \fBNO\fR.
+user root, \fByes\fR or \fBno\fR.
 .TP
 \fBSHARE\fR
 Will jobs allocated resources in this partition share those resources.
-\fBNO\fR indicates resources are never shared. 
-\fBFORCE\fR indicates resources are always available to be shared.
-\fBYES\fR indicates resource may be shared or not per job's resource 
+\fBno\fR indicates resources are never shared. 
+\fBforce\fR indicates resources are always available to be shared.
+\fByes\fR indicates resource may be shared or not per job's resource 
 allocation.
 .TP
 \fBSTATE\fR
@@ -209,6 +229,9 @@ SINFO_FORMAT
 .TP
 SINFO_PARTITION
 \fB\-p <partition>, \-\-partition=<partition>\fR
+.TP
+SINFO_SORT
+\fB\-S <sort>, \-\-sort=<sort>\fR
 
 .SH "EXAMPLES"
 .eo
@@ -216,15 +239,13 @@ Report basic node and partition configurations:
 .br
 > sinfo
 .br
-PARTITION AVAIL MAX_TIME #NODES STATE  NODE_LIST
+PARTITION AVAIL TIMELIMIT NODES STATE  NODELIST
 .br
-------------------------------------------------
+batch     up     infinite     2 alloc  adev[8-9]
 .br
-debug     UP       30:00     8 IDLE   adev[0-7]
+batch     up     infinite     6 idle   adev[10-15]
 .br
-batch*    UP    INFINITE     2 ALLOC  adev[8-9]
-.br
-batch*    UP    INFINITE     6 IDLE   adev[10-15]
+debug*    up        30:00     8 idle   adev[0-7]
 .br
  
 .br
@@ -232,13 +253,11 @@ Report partition summary information:
 .br
 > sinfo -s
 .br
-PARTITION AVAIL MAX_TIME #NODES(A/I/O/T) NODE_LIST
+PARTITION AVAIL TIMELIMIT NODES(A/I/O/T) NODELIST
 .br
----------------------------------------------------
+batch     up     infinite 2/6/0/8        adev[8-15]
 .br
-debug     UP       30:00 0/8/0/8         adev[0-7]
-.br
-batch*    UP    INFINITE 2/6/0/8         adev[8-15]
+debug*    up        30:00 0/8/0/8        adev[0-7]
 .br
  
 .br
@@ -246,23 +265,19 @@ Report more complete information about the partition debug:
 .br
 > sinfo --long --partition=debug
 .br
-PARTITION AVAIL MAX_TIME JOB_SIZE ROOT SHARE GROUPS #NODES STATE NODE_LIST
+PARTITION AVAIL TIMELIMIT JOB_SIZE ROOT SHARE GROUPS NODES STATE NODELIST
 .br
---------------------------------------------------------------------------
-.br
-debug     UP       30:00        8 NO   NO    ALL    8      IDLE  dev[0-7]
+debug*    up        30:00        8 no   no    all        8 idle  dev[0-7]
 .br
 
 .br
 Report only those nodes that are in state DRAINED:
 .br
-> sinfo --state=DRAINED
+> sinfo --state=drained
 .br
-PARTITION AVAIL NODES STATE  NODE_LIST
+PARTITION AVAIL NODES TIMELIMIT STATE  NODELIST
 .br
---------------------------------------
-.br
-debug     UP        2 DRAIN  adev[6-7]
+debug*    up        2     30:00 drain  adev[6-7]
 .br
 
 .br
@@ -270,19 +285,17 @@ Report node-oriented information with details and exact matches:
 .br
 > sinfo -Nel
 .br
-NODE_LIST  #NODES PARTITION STATE  CPUS MEMORY TMP_DISK WEIGHT FEATURES
+NODELIST    NODES PARTITION STATE  CPUS MEMORY TMP_DISK WEIGHT FEATURES
 .br
------------------------------------------------------------------------
+adev[0-1]       2 debug*    idle      2   3448    38536     16 (null)  
 .br
-adev[0-1]       2 debug     IDLE      2   3448    38536     16 (null)  
+adev[2,4-7]     5 debug*    idle      2   3384    38536     16 (null)  
 .br
-adev[2,4-7]     5 debug     IDLE      2   3384    38536     16 (null)  
+adev3           1 debug*    idle      2   3394    38536     16 (null)  
 .br
-adev3           1 debug     IDLE      2   3394    38536     16 (null)  
+adev[8-9]       2 batch     allocated 2    246    82306     16 (null)  
 .br
-adev[8-9]       2 batch     ALLOCATED 2    246    82306     16 (null)  
-.br
-adev[10-15]     6 batch     IDLE      2    246    82306     16 (null)  
+adev[10-15]     6 batch     idle      2    246    82306     16 (null)  
 .ec
 
 .SH "COPYING"

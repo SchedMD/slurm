@@ -24,6 +24,7 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#include <ctype.h>
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
@@ -39,11 +40,12 @@
 
 #define MIN_NODE_FIELD_SIZE 9
 
-static int  _build_min_max_string(char *buffer, int buf_size, int min, 
-                                  int max, bool range);
-static int  _print_secs(long time, int width, bool right, bool cut_output);
-static int  _print_str(char *str, int width, bool right, bool cut_output);
-static void _set_node_field_size(List sinfo_list);
+static int   _build_min_max_string(char *buffer, int buf_size, int min, 
+                                   int max, bool range);
+static int   _print_secs(long time, int width, bool right, bool cut_output);
+static int   _print_str(char *str, int width, bool right, bool cut_output);
+static void  _set_node_field_size(List sinfo_list);
+static char *_str_tolower(char *upper_str);
 
 /*****************************************************************************
  * Global Print Functions
@@ -56,7 +58,7 @@ void print_date(void)
 	printf("%s", ctime(&now));
 }
 
-int print_sinfo_list(List sinfo_list, List format)
+int print_sinfo_list(List sinfo_list)
 {
 	ListIterator i = list_iterator_create(sinfo_list);
 	sinfo_data_t *current;
@@ -65,20 +67,19 @@ int print_sinfo_list(List sinfo_list, List format)
 		_set_node_field_size(sinfo_list);
 
 	if (!params.no_header)
-		print_sinfo_entry(NULL, format);
+		print_sinfo_entry(NULL);
 
 	while ((current = list_next(i)) != NULL)
-		 print_sinfo_entry(current, format);
+		 print_sinfo_entry(current);
 
 	list_iterator_destroy(i);
 	return SLURM_SUCCESS;
 }
 
-int print_sinfo_entry(sinfo_data_t *sinfo_data , List format)
+int print_sinfo_entry(sinfo_data_t *sinfo_data)
 {
-	ListIterator i = list_iterator_create(format);
+	ListIterator i = list_iterator_create(params.format_list);
 	sinfo_format_t *current;
-	int total_width = 0, inx;
 
 	while ((current = (sinfo_format_t *) list_next(i)) != NULL) {
 		if (current->
@@ -86,23 +87,10 @@ int print_sinfo_entry(sinfo_data_t *sinfo_data , List format)
 					current->right_justify, current->suffix)
 		    != SLURM_SUCCESS)
 			return SLURM_ERROR;
-		if (current->width)
-			total_width += (current->width + 1);
-		else if ((current->function == _print_node_list) &&
-		         (params.node_field_flag))
-			total_width += (params.node_field_size + 1);
-		else
-			total_width += 10;
 	}
 	list_iterator_destroy(i);
 
 	printf("\n");
-	if (sinfo_data == NULL) {
-		/* one-origin for no trailing space */
-		for (inx=1; inx<total_width; inx++)
-			printf("-");
-		printf("\n");
-	}
 	return SLURM_SUCCESS;
 }
 
@@ -175,7 +163,7 @@ _build_min_max_string(char *buffer, int buf_size, int min, int max, bool range)
 		return snprintf(buffer, buf_size, "%d", max);
 	else if (range) {
 		if (max == INFINITE)
-			return snprintf(buffer, buf_size, "%d-INFINITE", min);
+			return snprintf(buffer, buf_size, "%d-infinite", min);
 		else
 			return snprintf(buffer, buf_size, "%d-%d", min, max);
 	} else
@@ -216,6 +204,22 @@ static void _set_node_field_size(List sinfo_list)
 	params.node_field_size = max_width;
 }
 
+/*
+ * _str_tolower - convert string to all lower case
+ * upper_str IN - upper case input string
+ * RET - lower case version of upper_str, caller must be xfree
+ */ 
+static char *_str_tolower(char *upper_str)
+{
+	int i = strlen(upper_str) + 1;
+	char *lower_str = xmalloc(i);
+
+	for (i=0; upper_str[i]; i++)
+		lower_str[i] = tolower((int) upper_str[i]);
+
+	return lower_str;
+}
+
 /*****************************************************************************
  * Sinfo Print Functions
  *****************************************************************************/
@@ -225,11 +229,11 @@ int _print_avail(sinfo_data_t * sinfo_data, int width,
 {
 	if (sinfo_data) {
 		if (sinfo_data->part_info == NULL)
-			_print_str("N/A", width, right_justify, true);
+			_print_str("n/a", width, right_justify, true);
 		else if (sinfo_data->part_info->state_up)
-			_print_str("UP", width, right_justify, true);
+			_print_str("up", width, right_justify, true);
 		else
-			_print_str("DOWN", width, right_justify, true);
+			_print_str("down", width, right_justify, true);
 	} else
 		_print_str("AVAIL", width, right_justify, true);
 
@@ -290,12 +294,12 @@ int _print_groups(sinfo_data_t * sinfo_data, int width,
 {
 	if (sinfo_data) {
 		if (sinfo_data->part_info == NULL)
-			_print_str("N/A", width, right_justify, true);
+			_print_str("n/a", width, right_justify, true);
 		else if (sinfo_data->part_info->allow_groups)
 			_print_str(sinfo_data->part_info->allow_groups, 
 					width, right_justify, true);
 		else
-			_print_str("ALL", width, right_justify, true);
+			_print_str("all", width, right_justify, true);
 	} else
 		_print_str("GROUPS", width, right_justify, true);
 
@@ -333,7 +337,7 @@ int _print_node_list(sinfo_data_t * sinfo_data, int width,
 					sizeof(tmp), tmp);
 		_print_str(tmp, width, right_justify, true);
 	} else
-		_print_str("NODE_LIST", width, right_justify, true);
+		_print_str("NODELIST", width, right_justify, true);
 
 	if (suffix)
 		printf("%s", suffix);
@@ -348,7 +352,7 @@ int _print_nodes_t(sinfo_data_t * sinfo_data, int width,
 		snprintf(id, FORMAT_STRING_SIZE, "%u", sinfo_data->nodes_tot);
 		_print_str(id, width, right_justify, true);
 	} else
-		_print_str("#NODES", width, right_justify, true);
+		_print_str("NODES", width, right_justify, true);
 
 	if (suffix)
 		printf("%s", suffix);
@@ -364,7 +368,7 @@ int _print_nodes_at(sinfo_data_t * sinfo_data, int width,
 		         sinfo_data->nodes_alloc, sinfo_data->nodes_tot);
 		_print_str(id, width, right_justify, true);
 	} else
-		_print_str("#NODES(A/T)", width, right_justify, true);
+		_print_str("NODES(A/T)", width, right_justify, true);
 
 	if (suffix)
 		printf("%s", suffix);
@@ -381,7 +385,7 @@ int _print_nodes_aiot(sinfo_data_t * sinfo_data, int width,
 		         sinfo_data->nodes_other, sinfo_data->nodes_tot);
 		_print_str(id, width, right_justify, true);
 	} else
-		_print_str("#NODES(A/I/O/T)", width, right_justify, true);
+		_print_str("NODES(A/I/O/T)", width, right_justify, true);
 
 	if (suffix)
 		printf("%s", suffix);
@@ -393,7 +397,7 @@ int _print_partition(sinfo_data_t * sinfo_data, int width,
 {
 	if (sinfo_data) {
 		if (sinfo_data->part_info == NULL)
-			_print_str("N/A", width, right_justify, true);
+			_print_str("n/a", width, right_justify, true);
 		else {
 			char *tmp;
 			tmp = xstrdup(sinfo_data->part_info->name);
@@ -423,11 +427,11 @@ int _print_root(sinfo_data_t * sinfo_data, int width,
 {
 	if (sinfo_data) {
 		if (sinfo_data->part_info == NULL)
-			_print_str("N/A", width, right_justify, true);
+			_print_str("n/a", width, right_justify, true);
 		else if (sinfo_data->part_info->root_only)
-			_print_str("YES", width, right_justify, true);
+			_print_str("yes", width, right_justify, true);
 		else
-			_print_str("NO", width, right_justify, true);
+			_print_str("no", width, right_justify, true);
 	} else
 		_print_str("ROOT", width, right_justify, true);
 
@@ -441,13 +445,13 @@ int _print_share(sinfo_data_t * sinfo_data, int width,
 {
 	if (sinfo_data) {
 		if (sinfo_data->part_info == NULL)
-			_print_str("N/A", width, right_justify, true);
+			_print_str("n/a", width, right_justify, true);
 		else if (sinfo_data->part_info->shared > 1)
-			_print_str("FORCE", width, right_justify, true);
+			_print_str("force", width, right_justify, true);
 		else if (sinfo_data->part_info->shared)
-			_print_str("YES", width, right_justify, true);
+			_print_str("yes", width, right_justify, true);
 		else
-			_print_str("NO", width, right_justify, true);
+			_print_str("no", width, right_justify, true);
 	} else
 		_print_str("SHARE", width, right_justify, true);
 
@@ -462,8 +466,11 @@ int _print_size(sinfo_data_t * sinfo_data, int width,
 	char id[FORMAT_STRING_SIZE];
 	if (sinfo_data) {
 		if (sinfo_data->part_info == NULL)
-			_print_str("N/A", width, right_justify, true);
+			_print_str("n/a", width, right_justify, true);
 		else {
+			if ((sinfo_data->part_info->min_nodes < 1) &&
+			    (sinfo_data->part_info->max_nodes > 0))
+				sinfo_data->part_info->min_nodes = 1;
 			_build_min_max_string(id, FORMAT_STRING_SIZE, 
 		                      sinfo_data->part_info->min_nodes, 
 		                      sinfo_data->part_info->max_nodes,
@@ -481,10 +488,15 @@ int _print_size(sinfo_data_t * sinfo_data, int width,
 int _print_state_compact(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
-	if (sinfo_data) {
-		_print_str(node_state_string_compact(sinfo_data->node_state), 
-				width, right_justify, true);
-	} else
+	if (sinfo_data && sinfo_data->nodes_tot) {
+		char *upper_state = node_state_string_compact(
+				sinfo_data->node_state);
+		char *lower_state = _str_tolower(upper_state);
+		_print_str(lower_state, width, right_justify, true);
+		xfree(lower_state);
+	} else if (sinfo_data)
+		_print_str("n/a", width, right_justify, true);
+	else
 		_print_str("STATE", width, right_justify, true);
 
 	if (suffix)
@@ -495,10 +507,14 @@ int _print_state_compact(sinfo_data_t * sinfo_data, int width,
 int _print_state_long(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
-	if (sinfo_data) {
-		_print_str(node_state_string(sinfo_data->node_state), 
-				width, right_justify, true);
-	} else
+	if (sinfo_data && sinfo_data->nodes_tot) {
+		char *upper_state = node_state_string(sinfo_data->node_state);
+		char *lower_state = _str_tolower(upper_state);
+		_print_str(lower_state, width, right_justify, true);
+		xfree(lower_state);
+	} else if (sinfo_data)
+		_print_str("n/a", width, right_justify, true);
+	else
 		_print_str("STATE", width, right_justify, true);
 
 	if (suffix)
@@ -512,14 +528,14 @@ int _print_time(sinfo_data_t * sinfo_data, int width,
 {
 	if (sinfo_data) {
 		if (sinfo_data->part_info == NULL)
-			_print_str("N/A", width, right_justify, true);
+			_print_str("n/a", width, right_justify, true);
 		else if (sinfo_data->part_info->max_time == INFINITE)
-			_print_str("INFINITE", width, right_justify, true);
+			_print_str("infinite", width, right_justify, true);
 		else
 			_print_secs((sinfo_data->part_info->max_time * 60L),
 					width, right_justify, true);
 	} else
-		_print_str("MAX_TIME", width, right_justify, true);
+		_print_str("TIMELIMIT", width, right_justify, true);
 
 	if (suffix)
 		printf("%s", suffix);

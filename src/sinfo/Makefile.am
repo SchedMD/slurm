@@ -14,7 +14,7 @@ sinfo_LDADD =					  \
 	$(POPT_LIBS)
 
 noinst_HEADERS = sinfo.h print.h
-sinfo_SOURCES = sinfo.c opts.c print.c
+sinfo_SOURCES = sinfo.c opts.c print.c sort.c
 
 force:
 $(sinfo_LDADD) : force
