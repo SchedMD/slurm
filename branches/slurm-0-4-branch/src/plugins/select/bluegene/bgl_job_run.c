@@ -135,7 +135,7 @@ static int _remove_job(db_job_id_t job_id)
 		if ((rc = rm_free_job(job_rec)) != STATUS_OK)
 			error("rm_free_job: %s", bgl_err_str(rc));
 
-		info("job %d is in state %d", job_id, job_state);
+		//debug("job %d is in state %d", job_id, job_state);
 		/* Cancel or remove the job */
 		if(job_state == RM_JOB_TERMINATED 
 		   || job_state == RM_JOB_KILLED
