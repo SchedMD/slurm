@@ -182,17 +182,16 @@ int main(int argc, char *argv[])
 		fatal("read_slurm_conf error %d reading %s",
 		      error_code, SLURM_CONFIG_FILE);
 	_update_logging();
+	if ((slurmctld_conf.slurm_user_id) && 
+	    (slurmctld_conf.slurm_user_id != getuid()) &&
+	    (setuid(slurmctld_conf.slurm_user_id))) {
+		error("setuid(%d): %m", slurmctld_conf.slurm_user_id);
+		exit(1);
+	}
 
 	if (slurmctld_conf.state_save_location)
 		(void) mkdir(slurmctld_conf.state_save_location, 0700);
 
-	if (slurmctld_conf.slurm_user_id && 
-	    (slurmctld_conf.slurm_user_id != getuid())) {
-		error("Slurmctld not running as user %s",
-		      slurmctld_conf.slurm_user_name);
-		if (getuid() != 0)
-			fatal("Not user root either, the show is over");
-	}
 	if (daemonize) {
 		if (chdir(slurmctld_conf.state_save_location))
 			fatal("chdir to %s error %m",
