@@ -422,7 +422,7 @@ dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 int
 load_node_state ( void )
 {
-	char *node_name, *data, *state_file;
+	char *node_name, *data = NULL, *state_file;
 	int data_allocated, data_read = 0, error_code = 0;
 	uint16_t node_state, name_len;
 	uint32_t cpus, real_memory, tmp_disk, data_size = 0;
