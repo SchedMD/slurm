@@ -1303,6 +1303,7 @@ _pack_epilog_comp_msg(epilog_complete_msg_t * msg, Buf buffer)
 	pack32(msg->job_id, buffer);
 	pack32(msg->return_code, buffer);
 	packstr(msg->node_name, buffer);
+	switch_g_pack_node_info(msg->switch_nodeinfo, buffer);
 }
 
 static int  
@@ -1319,9 +1320,15 @@ _unpack_epilog_comp_msg(epilog_complete_msg_t ** msg, Buf buffer)
 	safe_unpack32(&(tmp_ptr->job_id), buffer);
 	safe_unpack32(&(tmp_ptr->return_code), buffer);
 	safe_unpackstr_xmalloc(& (tmp_ptr->node_name), &uint16_tmp, buffer);
+	if (switch_g_alloc_node_info(&tmp_ptr->switch_nodeinfo)
+	||  switch_g_unpack_node_info(tmp_ptr->switch_nodeinfo, buffer))
+		goto unpack_error;
+
 	return SLURM_SUCCESS;
 
       unpack_error:
+	xfree(tmp_ptr->node_name);
+	switch_g_free_node_info(&tmp_ptr->switch_nodeinfo);
 	xfree(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;

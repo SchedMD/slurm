@@ -233,6 +233,7 @@ typedef struct epilog_complete_msg {
 	uint32_t job_id;
 	uint32_t return_code;
 	char    *node_name;
+	switch_node_info_t switch_nodeinfo;
 } epilog_complete_msg_t;
 
 typedef struct shutdown_msg {
