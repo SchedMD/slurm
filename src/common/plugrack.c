@@ -254,7 +254,7 @@ plugrack_open_plugin( plugrack_t rack, const char *fq_path )
 
         /* Now see if this is the right type. */
         if (   rack->major_type 
-	    && ( strncmp( rack->major_type,
+			   && ( strncmp( rack->major_type,
                           plugin_get_type( plug ),
                           strlen( rack->major_type ) ) != 0 ) ) {
                 plugin_unload( plug );
@@ -345,22 +345,21 @@ plugrack_set_paranoia( plugrack_t rack,
         return SLURM_SUCCESS;
 }
 
-int
-plugrack_add_opened_plugin( plugrack_t rack,
-                                                        plugin_handle_t *plug,
-                                                        const char *fq_path )
+static int
+plugrack_add_plugin_path( plugrack_t rack,
+						  const char *full_type,
+						  const char *fq_path )
 {
         plugrack_entry_t *e;
   
         if ( ! rack ) return SLURM_ERROR;
-        if ( ! plug ) return SLURM_ERROR;
         if ( ! fq_path ) return SLURM_ERROR;
 
         e = (plugrack_entry_t *) xmalloc( sizeof( plugrack_entry_t ) );
 
-        e->full_type = xstrdup( plugin_get_type( plug ) );
+        e->full_type = xstrdup( full_type );
         e->fq_path   = xstrdup( fq_path );
-        e->plug      = plug;
+        e->plug      = PLUGIN_INVALID_HANDLE;
         e->refcount  = 0;
   
         list_append( rack->entries, e );
@@ -372,7 +371,8 @@ plugrack_add_opened_plugin( plugrack_t rack,
 int
 plugrack_add_plugin_file( plugrack_t rack, const char *fq_path )
 {
-        plugin_handle_t plug;
+		static const size_t type_len = 64;
+		char plugin_type[ type_len ];
 
         if ( ! rack ) return SLURM_ERROR;
         if ( ! fq_path ) return SLURM_ERROR;
@@ -384,12 +384,22 @@ plugrack_add_plugin_file( plugrack_t rack, const char *fq_path )
          */
         if ( ! accept_paranoia( rack, fq_path ) ) return SLURM_ERROR;
 
-        /* Try to open plugin, testing the type. */
-        plug = plugrack_open_plugin( rack, fq_path );
-        if ( plug == PLUGIN_INVALID_HANDLE ) return SLURM_ERROR;
+		/* Test the type. */
+		if ( plugin_peek( fq_path,
+						  plugin_type,
+						  type_len,
+						  NULL ) == SLURM_ERROR ) {
+			return SLURM_ERROR;
+		}
+		if (   rack->major_type 
+			   && ( strncmp( rack->major_type,
+							 plugin_type,
+                          strlen( rack->major_type ) ) != 0 ) ) {
+			return SLURM_ERROR;
+        }
 
         /* Add it to the list. */
-        return plugrack_add_opened_plugin( rack, plug, fq_path );
+        return plugrack_add_plugin_path( rack, plugin_type, fq_path );
 }
 
 
@@ -403,7 +413,8 @@ plugrack_read_dir( plugrack_t rack,
         DIR *dirp;
         struct dirent *e;
         struct stat st;
-        plugin_handle_t plug;
+		static const size_t type_len = 64;
+		char plugin_type[ type_len ];
 
         if ( ! rack ) return SLURM_ERROR;
         if ( ! dir ) return SLURM_ERROR;
@@ -442,9 +453,9 @@ plugrack_read_dir( plugrack_t rack,
 
                 /*
                  * Compose file name.  Where NAME_MAX is defined it represents 
-		 * the largest file name given in a dirent.  This macro is used
-		 * in the  allocation of "tail" above, so this unbounded copy 
-		 * should work.
+				 * the largest file name given in a dirent.  This macro is used
+				 * in the  allocation of "tail" above, so this unbounded copy 
+				 * should work.
                  */
                 strcpy( tail, e->d_name );
 
@@ -462,14 +473,22 @@ plugrack_read_dir( plugrack_t rack,
                         continue;
                 }
 
-                /* Load the plugin. */
-                plug = plugrack_open_plugin( rack, fq_path );
-                if ( plug == PLUGIN_INVALID_HANDLE ) {
-                        continue;
-                }
-    
+                /* Test the type. */
+				if ( plugin_peek( fq_path,
+						   plugin_type,
+						   type_len,
+						   NULL ) == SLURM_ERROR ) {
+					continue;
+				}
+				if (   rack->major_type 
+					   && ( strncmp( rack->major_type,
+									 plugin_type,
+									 strlen( rack->major_type ) ) != 0 ) ) {
+					continue;
+				}
+
                 /* Add it to the list. */
-                (void) plugrack_add_opened_plugin( rack, plug, fq_path );    
+                (void) plugrack_add_plugin_path( rack, plugin_type, fq_path );
         }
 
         return SLURM_SUCCESS;

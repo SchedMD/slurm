@@ -67,6 +67,30 @@ typedef void *plugin_handle_t;
 #define PLUGIN_INVALID_HANDLE ((void*)0)
 
 /*
+ * "Peek" into a plugin to discover its type and version.  This does
+ * not run the plugin's init() or fini() functions (as defined in this
+ * API) but the _init() and _fini() functions (defined by the underlying
+ * OS) are run.
+ *
+ * fq_path - fully-qualified pathname to the plugin.
+ * plugin_type - a buffer in which to store the plugin type.  May be
+ *	NULL to indicate that the caller is not interested in the
+ *	plugin type.
+ * type_len - the number of bytes available in plugin_type.  The type
+ *	will be zero-terminated if space permits.
+ * plugin_version - pointer to place to store the plugin version.  May
+ *	be NULL to indicate that the caller is not interested in the
+ *	plugin version.
+ *
+ * Returns a SLURM errno.
+ */
+int plugin_peek( const char *fq_path,
+		 char *plugin_type,
+		 const size_t type_len,
+		 uint32_t *plugin_version );
+
+
+/*
  * Simplest way to get a plugin -- load it from a file.
  *
  * fq_path - the fully-qualified pathname (i.e., from root) to
@@ -78,6 +102,7 @@ typedef void *plugin_handle_t;
  * to this function's return.
  */
 plugin_handle_t plugin_load_from_file( const char *fq_path );
+
 
 /*
  * Unload a plugin from memory.

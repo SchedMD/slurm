@@ -36,6 +36,42 @@
 #include <slurm/slurm_errno.h>
 
 
+int
+plugin_peek( const char *fq_path,
+			 char *plugin_type,
+			 const size_t type_len,
+			 uint32_t *plugin_version )
+{
+	plugin_handle_t plug;
+	char *type;
+	uint32_t *version;
+	
+	plug = dlopen( fq_path, RTLD_LAZY );
+	if ( plug == NULL ) {
+		return SLURM_ERROR;
+	}
+
+	if ( ( type = dlsym( plug, PLUGIN_TYPE ) ) != NULL ) {
+		if ( plugin_type != NULL ) {
+			strncpy( plugin_type, type, type_len );
+		}
+	} else {
+		dlclose( plug );
+		return SLURM_ERROR;
+	}
+	if ( ( version = (uint32_t *) dlsym( plug, PLUGIN_VERSION ) ) != NULL ) {
+		if ( plugin_version != NULL ) {
+			*plugin_version = *version;
+		}
+	} else {
+		dlclose( plug );
+		return SLURM_ERROR;
+	}
+
+	dlclose( plug );
+	return SLURM_SUCCESS;
+}
+
 plugin_handle_t
 plugin_load_from_file( const char *fq_path )
 {
