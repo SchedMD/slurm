@@ -61,6 +61,9 @@ Multiple node names may be specified using simple regular expressions
 (e.g. "lx[10-20]"). All other \fIID\fP values must identify a single 
 element. By default, all elements of the entity type specified are printed.
 .TP
+\fIshutdown\fP
+Instruct the Slurm controller to terminate.
+.TP
 \fIupdate\fP \fISPECIFICATION\fP 
 Update job, node or partition configuration per the supplied specification.
 \fISPECIFICATION\fP is in the same format as the Slurm configuration file 
@@ -129,5 +132,5 @@ details.
 .SH "SEE ALSO"
 \fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3), 
 \fBslurm_load_partitions\fR(3), 
-\fBslurm_reconfigure\fR(3), 
+\fBslurm_reconfigure\fR(3), \fBslurm_shutdown\fR(3), 
 \fBslurm_update_job\fR(3), \fBslurm_update_node\fR(3), \fBslurm_update_partition\fR(3)
