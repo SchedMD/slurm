@@ -674,11 +674,21 @@ _kill_all_active_steps(uint32_t jobid, int sig)
 	int step_cnt       = 0;  
 
 	while ((s = list_next(i))) {
-		if ((s->jobid == jobid) && (s->stepid != NO_VAL)) {
-			debug2("sending signal %d to job %d.%d (pg:%d)", 
+		if (s->jobid != jobid)		/* wrong job */
+			continue;
+		if ((s->stepid == NO_VAL) &&	/* batch job script */
+		    ((sig != SIGKILL) || (s->sid <= 0)))
+			continue;
+		step_cnt++;
+		if (s->stepid == NO_VAL) {
+			debug2("sending signal %d to job %u (pg:%d)", 
+			       sig, jobid, s->sid);
+			if (kill(-s->sid, sig) < 0)
+				error("kill jid %d sid %d: %m", s->jobid, s->sid);
+		} else {
+			debug2("sending signal %d to job %u.%u (pg:%d)", 
 			       sig, jobid, s->stepid, s->sid);
 			shm_signal_step(jobid, s->stepid, sig); 
-			step_cnt++;
 		}
 	}
 	list_destroy(steps);
