@@ -1731,7 +1731,6 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		unlock_slurmctld(config_write_lock);
 	}
 	if (error_code == SLURM_SUCCESS) {  /* Stuff to do after unlock */
-		update_logging();
 		_update_cred_key();
 		if (daemonize) {
 			if (chdir(slurmctld_conf.state_save_location))
