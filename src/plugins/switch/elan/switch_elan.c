@@ -241,18 +241,20 @@ int switch_p_libstate_restore (char *dir_name)
 			xrealloc(data, data_allocated);
 		}
 		close (state_fd);
+		xfree(file_name);
 	} else {
 		error("No %s file for QSW state recovery", file_name);
 		error("Starting QSW with clean state");
+		xfree(file_name);
 		return qsw_init(NULL);
 	}
-	xfree(file_name);
 
 	if (error_code == SLURM_SUCCESS) {
 		if (qsw_alloc_libstate(&old_state)) {
 			error_code = SLURM_ERROR;
 		} else {
 			buffer = create_buf (data, data_size);
+			data = NULL;	/* now in buffer, don't xfree() */
 			if (qsw_unpack_libstate(old_state, buffer) < 0)
 				error_code = SLURM_ERROR;
 		}
@@ -260,8 +262,7 @@ int switch_p_libstate_restore (char *dir_name)
 
 	if (buffer)
 		free_buf(buffer);
-	else if (data)
-		xfree(data);
+	xfree(data);
 
 	if (error_code == SLURM_SUCCESS)
 		error_code = qsw_init(old_state);
