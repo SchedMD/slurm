@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in bluegene partition selection (sorting bug).
  -- Don't display any completed jobs in smap.
  -- Add NodeCnt to filetxt job completion plugin.
+ -- Minor restructuring of how MMCS is polled for DOWN nodes and switches.
 
 * Changes in SLURM 0.4.4
 ========================
