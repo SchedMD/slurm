@@ -79,7 +79,7 @@ job_create(launch_tasks_request_msg_t *msg)
 
 	job->cwd     = xstrdup(msg->cwd);
 
-#ifdef HAVE_ELAN
+#ifdef HAVE_LIBELAN3
 	job->qsw_job = msg->qsw_job;
 #endif
 

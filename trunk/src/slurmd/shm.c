@@ -65,7 +65,7 @@
 #include <src/slurmd/shm.h>
 
 /* We use Chris Dunlap's POSIX semaphore implementation if necessary */
-#include <src/slurmd/test/semaphore.h>
+#include <src/slurmd/semaphore.h>
 
 #define MAX_JOB_STEPS	16
 #define MAX_TASKS	1024

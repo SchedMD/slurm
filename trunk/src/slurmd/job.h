@@ -88,7 +88,7 @@ typedef struct slurmd_job {
 	char        **env;
 	char        **argv;
 	char         *cwd;
-#ifdef HAVE_ELAN
+#ifdef HAVE_LIBELAN3
 	qsw_jobinfo_t qsw_job;
 #endif
 	uid_t         uid;
