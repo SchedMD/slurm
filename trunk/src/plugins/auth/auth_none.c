@@ -157,52 +157,34 @@ void init ( void )
  */
 
 /*
- * Allocate a credential.  This function should return NULL if it cannot
- * allocate a credential.  Whether the credential is populated with useful
- * data at this time is implementation-dependent.
+ * Allocate and initializes a credential.  This function should return
+ * NULL if it cannot allocate a credential.
  */
 slurm_auth_credential_t *
-slurm_auth_alloc( void )
+slurm_auth_create( void )
 {
 	slurm_auth_credential_t *cred;
 
 	cred = ((slurm_auth_credential_t *) 
 		xmalloc( sizeof( slurm_auth_credential_t ) ));
 	cred->cr_errno = SLURM_SUCCESS;
+	cred->uid = geteuid();
+	cred->gid = getegid();
 	return cred;
 }
 
 /*
- * Free a credential that was allocated with slurm_auth_alloc().
+ * Free a credential that was allocated with slurm_auth_create() or
+ * slurm_auth_unpack().
  */
 int
-slurm_auth_free( slurm_auth_credential_t *cred )
+slurm_auth_destroy( slurm_auth_credential_t *cred )
 {
 	if ( cred == NULL ) {
 		plugin_errno = SLURM_AUTH_MEMORY;
 		return SLURM_ERROR;
 	}
 	xfree( cred );
-	return SLURM_SUCCESS;
-}
-
-/*
- * Prepare a credential for use as an authentication token.  Accessor
- * functions (slurm_auth_get_uid() and slurm_auth_get_gid()) are not required
- * to return valid data until this function has been called successfully
- * for the credential.
- *
- * Return SLURM_SUCCESS if the credential is successfully activated.
- */
-int
-slurm_auth_activate( slurm_auth_credential_t *cred )
-{
-	if ( cred == NULL ) {
-		plugin_errno = SLURM_AUTH_BADARG;		
-		return SLURM_ERROR;
-	}
-	cred->uid = geteuid();
-	cred->gid = getegid();
 	return SLURM_SUCCESS;
 }
 
@@ -282,35 +264,43 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf )
  * Unmarshall a credential after transmission over the network according
  * to SLURM's marshalling protocol.
  */
-int
-slurm_auth_unpack( slurm_auth_credential_t *cred, Buf buf )
+slurm_auth_credential_t *
+slurm_auth_unpack( Buf buf )
 {
+	slurm_auth_credential_t *cred;
 	char *tmpstr;
 	int32_t tmpint;
 	uint32_t version;
 	uint16_t size;
 	
-	if ( ( cred == NULL ) || ( buf == NULL ) ) {
+	if ( buf == NULL ) {
 		plugin_errno = SLURM_AUTH_BADARG;
-		return SLURM_ERROR;
+		return NULL;
 	}
 
+	/* Allocate a new credential. */
+	cred = ((slurm_auth_credential_t *) 
+		xmalloc( sizeof( slurm_auth_credential_t ) ));
 	cred->cr_errno = SLURM_SUCCESS;
+	
 	
 	/*
 	 * Get the authentication type.
 	 */
 	if ( unpackmem_ptr( &tmpstr, &size, buf ) != SLURM_SUCCESS ) {
-		cred->cr_errno = SLURM_AUTH_UNPACK_TYPE;
-		return SLURM_ERROR;
+		plugin_errno = SLURM_AUTH_UNPACK_TYPE;
+		xfree( cred );
+		return NULL;
 	}
 	if ( strcmp( tmpstr, plugin_type ) != 0 ) {
-		cred->cr_errno = SLURM_AUTH_MISMATCH;
-		return SLURM_ERROR;
+		plugin_errno = SLURM_AUTH_MISMATCH;
+		xfree( cred );
+		return NULL;
 	}
 	if ( unpack32( &version, buf ) != SLURM_SUCCESS ) {
-		cred->cr_errno = SLURM_AUTH_UNPACK_VERSION;
-		return SLURM_ERROR;
+		plugin_errno = SLURM_AUTH_UNPACK_VERSION;
+		xfree( cred );
+		return NULL;
 	}
 
 	/*
@@ -322,17 +312,19 @@ slurm_auth_unpack( slurm_auth_credential_t *cred, Buf buf )
 	 * warning at compile time if the sizes are incompatible.
 	 */
 	if ( unpack32( &tmpint, buf ) != SLURM_SUCCESS ) {
-		cred->cr_errno = SLURM_AUTH_UNPACK_CRED;
-		return SLURM_ERROR;
+		plugin_errno = SLURM_AUTH_UNPACK_CRED;
+		xfree( cred );
+		return NULL;
 	}
 	cred->uid = tmpint;
 	if ( unpack32( &tmpint, buf ) != SLURM_SUCCESS ) {
-		cred->cr_errno = SLURM_AUTH_UNPACK_CRED;
-		return SLURM_ERROR;
+		plugin_errno = SLURM_AUTH_UNPACK_CRED;
+		xfree( cred );
+		return NULL;
 	}
 	cred->gid = tmpint;
 
-	return SLURM_SUCCESS;
+	return cred;
 }
 
 /*

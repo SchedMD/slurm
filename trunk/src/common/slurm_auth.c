@@ -45,14 +45,13 @@
  * end of the structure.
  */
 typedef struct slurm_auth_ops {
-	void *	(*alloc)	( void );
-	int	(*free)		( void *cred );
-	int	(*activate)	( void *cred );
+	void *	(*create)	( void );
+	int	(*destroy)		( void *cred );
 	int	(*verify)	( void *cred );
 	uid_t	(*get_uid)	( void *cred );
 	gid_t	(*get_gid)	( void *cred );
 	int	(*pack)		( void *cred, Buf buf );
-	int	(*unpack)	( void *cred, Buf buf );
+	void *	(*unpack)	( Buf buf );
 	int	(*print)	( void *cred, FILE *fp );
 	int	(*sa_errno)	( void *cred );
 	const char * (*sa_errstr) ( int slurm_errno );
@@ -138,9 +137,8 @@ slurm_auth_get_ops( slurm_auth_context_t c )
 	 * declared for slurm_auth_ops_t.
 	 */
 	static const char *syms[] = {
-		"slurm_auth_alloc",
-		"slurm_auth_free",
-		"slurm_auth_activate",
+		"slurm_auth_create",
+		"slurm_auth_destroy",
 		"slurm_auth_verify",
 		"slurm_auth_get_uid",
 		"slurm_auth_get_gid",
@@ -300,30 +298,21 @@ slurm_auth_init( void )
  */
 	  
 void *
-g_slurm_auth_alloc( void )
+g_slurm_auth_create( void )
 {
 	if ( slurm_auth_init() < 0 )
 		return NULL;
 
-	return (*(g_context->ops.alloc))();
+	return (*(g_context->ops.create))();
 }
 
 int
-g_slurm_auth_free( void *cred )
+g_slurm_auth_destroy( void *cred )
 {
 	if ( slurm_auth_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.free))( cred );
-}
-
-int
-g_slurm_auth_activate( void *cred )
-{
-	if ( slurm_auth_init() < 0 )
-		return SLURM_ERROR;
-
-	return (*(g_context->ops.activate))( cred );
+	return (*(g_context->ops.destroy))( cred );
 }
 
 int
@@ -362,13 +351,13 @@ g_slurm_auth_pack( void *cred, Buf buf )
 	return (*(g_context->ops.pack))( cred, buf );
 }
 
-int
-g_slurm_auth_unpack( void *cred, Buf buf )
+void *
+g_slurm_auth_unpack( Buf buf )
 {
 	if ( slurm_auth_init() < 0 )
-		return SLURM_ERROR;
+		return NULL;
 	
-	return (*(g_context->ops.unpack))( cred, buf );
+	return (*(g_context->ops.unpack))( buf );
 }
 
 int

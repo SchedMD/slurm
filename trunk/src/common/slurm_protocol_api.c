@@ -344,14 +344,6 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 		return rc;
 	}
 
-	auth_cred = g_slurm_auth_alloc();
-	if ( auth_cred == NULL ) {
-		xfree( buftemp );
-		error( "authentication: %s",
-			   g_slurm_auth_errstr( g_slurm_auth_errno( NULL ) ) );
-		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
-	}
-	
 #if	_DEBUG
 	 _print_data (buftemp,rc);
 #endif
@@ -365,9 +357,9 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	}
 
 	/* unpack authentication cred */
-	if (g_slurm_auth_unpack( auth_cred, buffer)) {
+	if ( ( auth_cred = g_slurm_auth_unpack( buffer) ) == NULL ) {
 		error( "authentication: %s ",
-			   g_slurm_auth_errstr( g_slurm_auth_errno( auth_cred ) ) );
+			   g_slurm_auth_errstr( g_slurm_auth_errno( NULL ) ) );
 		free_buf(buffer);
 		slurm_seterrno_ret(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
 	}
@@ -376,7 +368,7 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	if ((rc = g_slurm_auth_verify(auth_cred)) != SLURM_SUCCESS) {
 		error( "authentication: %s ",
 			   g_slurm_auth_errstr( g_slurm_auth_errno( auth_cred ) ) );
-		(void) g_slurm_auth_free(auth_cred);
+		(void) g_slurm_auth_destroy(auth_cred);
 		free_buf(buffer);
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
@@ -385,7 +377,7 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	msg->msg_type = header.msg_type;
 	if ((header.body_length > remaining_buf(buffer)) ||
 	    (unpack_msg(msg, buffer) != SLURM_SUCCESS)) {
-		g_slurm_auth_free(auth_cred);
+		g_slurm_auth_destroy(auth_cred);
 		free_buf(buffer);
 		slurm_seterrno_ret(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
 	}
@@ -440,21 +432,13 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	void *auth_cred;
 
 	/* initialize header */
-	auth_cred = g_slurm_auth_alloc();
+	auth_cred = g_slurm_auth_create();
 	if ( auth_cred == NULL ) {
 		error( "authentication: %s",
 			   g_slurm_auth_errstr( g_slurm_auth_errno( NULL ) ) );
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	}
 	init_header(&header, msg->msg_type, SLURM_PROTOCOL_NO_FLAGS);
-	rc = g_slurm_auth_activate(auth_cred);
-	if (rc != SLURM_SUCCESS)	/* Try once more */
-		rc = g_slurm_auth_activate(auth_cred);
-	if (rc != SLURM_SUCCESS) {
-		error
-		    ("slurm_send_node_msg: sending msg with unsigned credential, rc=%d)",
-		     rc);
-	}
 
 	/* pack header */
 	buffer = init_buf(0);
@@ -465,7 +449,7 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg)
 		error( "authentication: %s",
 			   g_slurm_auth_errstr( g_slurm_auth_errno( auth_cred ) ) );
 	}
-	(void) g_slurm_auth_free(auth_cred);
+	(void) g_slurm_auth_destroy(auth_cred);
 
 	/* pack msg */
 	tmp_len = get_buf_offset(buffer);
@@ -929,6 +913,6 @@ int slurm_send_only_node_msg(slurm_msg_t * request_msg)
 /* Slurm message functions */
 void slurm_free_msg(slurm_msg_t * msg)
 {
-	(void) g_slurm_auth_free(msg->cred);
+	(void) g_slurm_auth_destroy(msg->cred);
 	xfree(msg);
 }

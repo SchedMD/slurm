@@ -109,14 +109,13 @@ int slurm_auth_init( void );
 /*
  * Static bindings for the global authentication context.
  */
-void	*g_slurm_auth_alloc( void );
-int	g_slurm_auth_free( void *cred );
-int	g_slurm_auth_activate( void *cred );
+void	*g_slurm_auth_create( void );
+int	g_slurm_auth_destroy( void *cred );
 int	g_slurm_auth_verify( void *cred );
 uid_t	g_slurm_auth_get_uid( void *cred );
 gid_t	g_slurm_auth_get_gid( void *cred );
 int	g_slurm_auth_pack( void *cred, Buf buf );
-int	g_slurm_auth_unpack( void *cred, Buf buf );
+void	*g_slurm_auth_unpack( Buf buf );
 int	g_slurm_auth_print( void *cred, FILE *fp );
 int	g_slurm_auth_errno( void *cred );
 const char *g_slurm_auth_errstr( int slurm_errno );
