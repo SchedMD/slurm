@@ -124,6 +124,8 @@ static int _add_switch_conns(rm_switch_t* curr_switch, bgl_switch_t *bgl_switch)
 	itr = list_iterator_create(bgl_switch->conn_list);
 	while((bgl_conn = list_next(itr)) != NULL) {
 		for(j=0;j<2;j++) {
+			if(bgl_conn->source == bgl_conn->target)
+				goto next;
 			switch(j) {
 			case 0:
 				port = bgl_conn->source;
@@ -154,8 +156,8 @@ static int _add_switch_conns(rm_switch_t* curr_switch, bgl_switch_t *bgl_switch)
 			}
 		}
 		conn.part_state = RM_PARTITION_READY;
-		//printf("Connecting %d - %d\n",bgl_conn->source,bgl_conn->target);
-		//printf("Connecting %d - %d\n",(conn.p1-6),(conn.p2-6));
+		/* printf("Connecting %d - %d\n",bgl_conn->source,bgl_conn->target); */
+/* 		printf("Connecting %d - %d\n",(conn.p1-6),(conn.p2-6)); */
 			
 		if(firstconnect) {
 			rm_set_data(curr_switch, RM_SwitchFirstConnection, &conn);
@@ -163,7 +165,7 @@ static int _add_switch_conns(rm_switch_t* curr_switch, bgl_switch_t *bgl_switch)
 		} else 
 			rm_set_data(curr_switch, RM_SwitchNextConnection, &conn);   
 		conn_num++;
-		
+	next:
 	}
 	list_iterator_destroy(itr);
 		
@@ -324,6 +326,7 @@ int configure_partition_switches(bgl_record_t * bgl_record)
 			bgl_bp->switch_list = list_create(NULL);
 			list_append(bgl_bp_list, bgl_bp);
 		}
+		bgl_record->bp_count++;
 		bgl_bp->used = 1;
 		for(i=0;i<PA_SYSTEM_DIMENSIONS;i++) {
 			
@@ -341,7 +344,7 @@ int configure_partition_switches(bgl_record_t * bgl_record)
 	
 	bgl_itr = list_iterator_create(bgl_bp_list);
 	while((bgl_bp = list_next(bgl_itr)) != NULL) {
-		bgl_record->bp_count++;
+		//bgl_record->bp_count++;
 		itr = list_iterator_create(bgl_bp->switch_list);
 		while((bgl_switch = list_next(itr)) != NULL) {
 			bgl_record->switch_count++;
@@ -353,25 +356,25 @@ int configure_partition_switches(bgl_record_t * bgl_record)
 	rm_set_data(bgl_record->bgl_part,RM_PartitionSwitchNum,&bgl_record->switch_count);
 	/* printf("BP_count = %d\n",bgl_record->bp_count); */
 /* 	printf("switch_count = %d\n",bgl_record->switch_count); */
-	bgl_itr = list_iterator_create(bgl_bp_list);
 	
 	first_bp = 1;
 	first_switch = 1;
+	bgl_itr = list_iterator_create(bgl_bp_list);
 	while((bgl_bp = list_next(bgl_itr)) != NULL) {
 			
 		if (!_get_bp_by_location(bgl, bgl_bp->coord, &curr_bp)) {
 			return 0;
 		}
 		rm_get_data(curr_bp, RM_BPLoc, &loc);
-		//printf("found %d%d%d %d%d%d\n",loc.X,loc.Y,loc.Z,pa_node->coord[X],pa_node->coord[Y],pa_node->coord[Z]);
-		//if(bgl_bp->used) {
+		
+		if(bgl_bp->used) {
 			if (first_bp){
 				rm_set_data(bgl_record->bgl_part, RM_PartitionFirstBP, curr_bp);
 				first_bp = 0;
 			} else {
 				rm_set_data(bgl_record->bgl_part, RM_PartitionNextBP, curr_bp);
 			}
-			//}
+		}
 		rm_get_data(curr_bp, RM_BPID, &bpid);
 		/* printf("bp name = %s\n",(char *)bpid); */
 		

@@ -25,21 +25,6 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <slurm/slurm.h>
-
-#include "src/common/bitstring.h"
-#include "src/common/list.h"
-#include "src/common/log.h"
-#include "src/common/macros.h"
-
-#include "src/slurmctld/proc_req.h"
 #include "src/common/node_select.h"
 #include "bluegene.h"
 
@@ -144,10 +129,10 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		||  (max_nodes != 0 && record->bp_count > max_nodes)
 		||  (record->bp_count < target_size)) {
 			debug("partition %s node count not suitable",
-				record->bgl_part);
+				record->bgl_part_id);
 			continue;
 		}
-
+		
 		/*
 		 * Next we check that this partition's bitmap is within 
 		 * the set of nodes which the job can use. 
@@ -155,9 +140,14 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		 * drained, allocated to some other job, or in some 
 		 * SLURM partition not available to this job.
 		 */
+		char bitstring[BITSIZE];
+		char bitstring2[BITSIZE];
+		bit_fmt(bitstring, BITSIZE, record->bitmap);
+		bit_fmt(bitstring2, BITSIZE, slurm_part_bitmap);
+		printf("These are the bitmaps, is %s inside of %s?\n",bitstring,bitstring2);
 		if (!bit_super_set(record->bitmap, slurm_part_bitmap)) {
 			debug("bgl partition %s has nodes not usable by this "
-				"job", record->nodes);
+				"job", record->bgl_part_id);
 			continue;
 		}
 
@@ -168,7 +158,7 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		&& (!bit_super_set(job_ptr->details->req_node_bitmap,
 				record->bitmap))) {
 			info("bgl partition %s lacks required nodes",
-				record->nodes);
+				record->bgl_part_id);
 			continue;
 		}
 
@@ -178,7 +168,7 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		if ((conn_type != record->conn_type)
 		&&  (conn_type != SELECT_NAV)) {
 			debug("bgl partition %s conn-type not usable", 
-				record->nodes);
+				record->bgl_part_id);
 			continue;
 		} 
 
@@ -188,7 +178,7 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		if ((node_use != record->node_use) 
 		&&  (node_use != SELECT_NAV)) {
 			debug("bgl partition %s node-use not usable", 
-					record->nodes);
+					record->bgl_part_id);
 			continue;
 		}
 
@@ -229,7 +219,7 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 	/* set the bitmap and do other allocation activities */
 	if (*found_bgl_record) {
 		debug("_find_best_partition_match %s <%s>", 
-			(*found_bgl_record)->bgl_part, 
+			(*found_bgl_record)->bgl_part_id, 
 			(*found_bgl_record)->nodes);
 		bit_and(slurm_part_bitmap, (*found_bgl_record)->bitmap);
 		return SLURM_SUCCESS;
@@ -259,8 +249,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 		SELECT_PRINT_MIXED);
 	debug("bluegene:submit_job: %s nodes=%d-%d", buf, min_nodes, max_nodes);
 	
-	if (_find_best_partition_match(job_ptr, slurm_part_bitmap, min_nodes, 
-					max_nodes, spec, &record)) {
+	if ((_find_best_partition_match(job_ptr, slurm_part_bitmap, min_nodes, 
+					max_nodes, spec, &record)) != SLURM_SUCCESS) {
 		return SLURM_ERROR;
 	} else {
 		/* now we place the part_id into the env of the script to run */

@@ -186,6 +186,12 @@ extern int fini ( void )
  extern int select_p_part_init(List part_list)
 {
 	xassert(part_list);
+#ifdef HAVE_BGL
+	if(read_bgl_conf()) {
+		fatal("Error, could not read the file");
+		return SLURM_ERROR;
+	}
+#else
 	/*looking for partitions only I created */
 	if (create_static_partitions(part_list)) {
 		/* error in creating the static partitions, so
@@ -196,6 +202,7 @@ extern int fini ( void )
 		fatal("Error, could not create the static partitions");
 		return SLURM_ERROR;
 	}
+#endif
 
 	return SLURM_SUCCESS; 
 }
@@ -252,10 +259,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	 * as the SLURM partition logic will handle access rights.
 	 */
 
-	if (submit_job(job_ptr, bitmap, min_nodes, max_nodes))
-		return SLURM_ERROR;
-
-	return SLURM_SUCCESS;
+	return submit_job(job_ptr, bitmap, min_nodes, max_nodes);
 }
 
 extern int select_p_job_begin(struct job_record *job_ptr)

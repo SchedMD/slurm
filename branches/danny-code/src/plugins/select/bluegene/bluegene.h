@@ -66,6 +66,8 @@
   typedef int      rm_partition_state_t;
 #endif
 
+#define USER_NAME "da"
+
 /* Global variables */
 extern rm_BGL_t *bgl;			/* DB2 pointer */
 extern char *bluegene_blrts;
@@ -82,7 +84,7 @@ extern bool agent_fini;
 typedef int lifecycle_type_t;
 enum part_lifecycle {DYNAMIC, STATIC};
 
-typedef struct bgl_record {
+typedef struct {
 	char *nodes;			/* String of nodes in partition */
 	char *owner_name;		/* Owner of partition		*/
 	pm_partition_id_t bgl_part_id;	/* ID returned from CMCS	*/
@@ -93,6 +95,7 @@ typedef struct bgl_record {
 	rm_partition_mode_t node_use;	/* either COPROCESSOR or VIRTUAL */
 	rm_partition_t *bgl_part;
 	List bgl_part_list;
+	hostlist_t hostlist;		/* expanded form of hosts */
 	int bp_count;
 	int switch_count;
 	bitstr_t *bitmap;
@@ -136,26 +139,18 @@ extern int init_bgl(void);
 /* Purge all plugin variables */
 extern void fini_bgl(void);
 
-/*
- * create_static_partitions - create the static partitions that will be used
- *   for scheduling.
- * IN/OUT part_list - (global, from slurmctld): SLURM's partition 
- *   configurations. Fill in bgl_part_id                 
- * RET - success of fitting all configurations
- */
-int create_static_partitions(List part_list);
-
-/* sort a list of bgl_records by size (node count) */
-void sort_bgl_record_inc_size(List records);
-/* void sort_bgl_record_dec_size(List records); */
-
 /* Log a bgl_record's contents */
 void print_bgl_record(bgl_record_t* record);
+void destroy_bgl_record(void* object);
 
 /* Return strings representing blue gene data types */
 char *convert_lifecycle(lifecycle_type_t lifecycle);
 char *convert_conn_type(rm_connection_type_t conn_type);
 char *convert_node_use(rm_partition_mode_t pt);
+
+/* sort a list of bgl_records by size (node count) */
+void sort_bgl_record_inc_size(List records);
+/* void sort_bgl_record_dec_size(List records); */
 
 /* bluegene_agent - detached thread periodically tests status of bluegene 
  * nodes and switches */
@@ -167,6 +162,17 @@ void *bluegene_agent(void *args);
  * RET - string describing the error condition
  */
 char *bgl_err_str(status_t inx);
+
+/*
+ * create_static_partitions - create the static partitions that will be used
+ *   for scheduling.
+ * IN/OUT part_list - (global, from slurmctld): SLURM's partition 
+ *   configurations. Fill in bgl_part_id                 
+ * RET - success of fitting all configurations
+ */
+int create_static_partitions(List part_list);
+
+int read_bgl_conf();
 
 /* partition_sys.c */
 /*****************************************************/
@@ -203,7 +209,16 @@ int submit_job(struct job_record *job_ptr, bitstr_t *bitmap,
  * the job script until the BGL block is available for use.
  */
 int start_job(struct job_record *job_ptr);
-int sync_jobs(List job_list);
+
+/*
+ * Perform any work required to terminate a jobs on a partition
+ * bgl_part_id IN - partition name
+ * RET - SLURM_SUCCESS or an error code
+ *
+ * NOTE: This happens when new partitions are created and we 
+ * need to clean up jobs on them.
+ */
+int term_jobs_on_part(pm_partition_id_t bgl_part_id);
 
 /* 
  * Perform any work required to terminate a job
@@ -216,6 +231,12 @@ int sync_jobs(List job_list);
  */
 int term_job(struct job_record *job_ptr);
 
+/*
+ * Synchronize BGL block state to that of currently active jobs.
+ * This can recover from slurmctld crashes when partition ownership
+ * changes were queued
+ */
+int sync_jobs(List job_list);
 
 /* bgl_switch_connections.c */
 /*****************************************************/
