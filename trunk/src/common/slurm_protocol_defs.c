@@ -35,6 +35,7 @@
 
 #include <stdio.h>
 
+#include <src/common/log.h>
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/xmalloc.h>
 
@@ -559,8 +560,19 @@ char *node_state_string(enum node_states inx)
 		"DRAINING",
 		"END"
 	};
-	if (inx & NODE_STATE_NO_RESPOND)
-		return node_state_string[NODE_STATE_DOWN];
+	static char *node_down_string[] = {
+		"DOWN",
+		"DOWN+UNKNOWN",
+		"DOWN+IDLE",
+		"DOWN+ALLOCATED",
+		"DOWN+DRAINED",
+		"DOWN+DRAINING",
+		"END"
+	};
+	if (inx & NODE_STATE_NO_RESPOND) {
+		inx = (uint16_t) (inx & (~NODE_STATE_NO_RESPOND));
+		return node_down_string[inx];
+	}
 	else
 		return node_state_string[inx];
 }
