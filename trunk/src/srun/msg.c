@@ -39,6 +39,7 @@
 #include <src/srun/job.h>
 #include <src/srun/opt.h>
 
+static pthread_mutex_t tasks_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int tasks_exited = 0;
 
 #define _poll_set_rd(_pfd, _fd) do {    \
@@ -88,7 +89,10 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 	job->task_state[msg->task_id]  = SRUN_TASK_EXITED;
 	pthread_mutex_unlock(&job->task_mutex);
 
-	if (++tasks_exited == opt.nprocs) {
+	pthread_mutex_lock(&tasks_mutex);
+	tasks_exited++;
+	pthread_mutex_unlock(&tasks_mutex);
+	if (tasks_exited == opt.nprocs) {
 		debug2("all tasks exited");
 		update_job_state(job, SRUN_JOB_OVERDONE);
 	}
@@ -238,7 +242,7 @@ _msg_thr_one(void *arg)
 
 		msg = xmalloc(sizeof(*msg));
 		if (slurm_receive_msg(newfd, msg) == SLURM_SOCKET_ERROR) {
-			error("slurm_recieve_msg: rc=%d\n", errno);
+			error("slurm_receive_msg: rc=%d\n", errno);
 			break;
 		}
 
