@@ -65,7 +65,7 @@
 #include "src/common/slurm_protocol_api.h"
 
 #ifdef HAVE_BGL_FILES
-# include "rm_api.h"
+# include "src/plugins/select/bluegene/wrap_rm_api.h"
 #else
   typedef char *   pm_partition_id_t; 
   typedef int      rm_connection_type_t;
