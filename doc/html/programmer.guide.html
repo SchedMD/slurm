@@ -7,9 +7,9 @@
 <h2>Overview</h2>
 Simple Linux Utility for Resource Management (SLURM) is an open source,
 fault-tolerant, and highly scalable cluster management and job 
-scheduling system for Linux clusters of 
-thousands of nodes.  Components include machine status, partition
-management, job management, and scheduling modules.  The design also 
+scheduling system for Linux clusters containing 
+thousands of nodes.  Components include machine status, 
+job management, and scheduling modules.  The design also 
 includes a scalable, general-purpose communication infrastructure
 (MONGO, to be described elsewhere).
 SLURM requires no kernel modifications for it operation and is 
@@ -18,7 +18,7 @@ Initial target platforms include Red Hat Linux clusters with
 Quadrics interconnect and the IBM Blue Gene product line.
 
 <h2>Overview</h2>
-There is a description of the components and their interactions available 
+There is an overview the components and their interactions available 
 in a separate document, <a href="overview.ps">SLURM: Simple Linux Utility 
 for Resource Management</a>.
 
@@ -32,8 +32,8 @@ below. The directories are as follows:
 
 <dl>
 <dt>api
-<dd>Application program interfaces into the SLURM code. 
-Used to get or send SLURM information.
+<dd>Application Program Interfaces into the SLURM code. 
+Used to send and get SLURM information from the central manager.
 
 <dt>common
 <dd>General purpose functions for widespread use.
@@ -45,7 +45,7 @@ Used to get or send SLURM information.
 <dd>User command to cancel a job or allocation.
 
 <dt>scontrol
-<dd>Administrator command to manage SLURM.
+<dd>Administrator tool to manage SLURM.
 
 <dt>slurmctld
 <dd>SLURM central manager code.
@@ -71,48 +71,49 @@ The APIs to get SLURM information accept a time-stamp. If the data
 has not changed since the specified time, a return code will indicate 
 this and return no other data. Otherwise a data structure is returned 
 including its time-stamp, element count, and an array of structures 
-describing the state of the entity (node, job, partition, etc.). 
+describing the state of each node, job, partition, etc.
 Each of these functions also includes a corresponding function to 
 release all storage associated with the data structure. 
 
 <dl>
 <dt>allocate.c
-<dd>API to allocate resources for a job's initiation. 
+<dd>Allocates resources for a job's initiation. 
 This creates a job entry and allocates resouces to it. 
 The resources can be claimed at a later time to actually 
 run a parallel job. If the requested resouces are not 
 currently available, the request will fail.
 
 <dt>build_info.c
-<dd>API to report SLURM build parameter values.
+<dd>Reports SLURM build parameter values.
 
 <dt>cancel.c
-<dd>API to cancel (i.e. terminate) a running or pending job.
+<dd>Cancels (i.e. terminates) a running or pending job/allocation.
 
 <dt>job_info.c
-<dd>API to report job state and configuration values.
+<dd>Reports job state information
 
 <dt>node_info.c
-<dd>API to report node state and configuration values.
+<dd>Reports node state and configuration values.
 
 <dt>partition_info.c
-<dd>API to report partition state and configuration values.
+<dd>Reports partition state and configuration values.
 
 <dt>reconfigure.c
-<dd>API to request that slurmctld reload configuration information.
+<dd>Requests that slurmctld reload configuration information.
 
 <dt>submit.c
-<dd>API to submit a job to slurm. The job will be queued 
+<dd>Submits a job to slurm. The job will be queued 
 for initiation when resources are available.
 
 <dt>update_config.c
-<dd>API to update job, node or partition state information.
+<dd>Updates job, node or partition state information.
 </dl>
 
 <i>Future components to include: job step support (a set of parallel 
 tasks associated with a job or allocation, multiple job steps may 
 execute in serial or parallel within an allocation), association of 
-an allocation with a job step, and resource accounting.</i>
+an allocation with a job step, issuing keys, getting Elan (Quadrics 
+interconnect) capabilities, and resource accounting.</i>
 
 <h2>Common Modules</h2>
 This directory contains modules of general use throughout the SLURM code. 
@@ -120,50 +121,51 @@ The modules are described below.
 
 <dl>
 <dt>bits_bytes.c
-<dd>A collection of functions for processing bit maps and strings for parsing.
+<dd>A collection of SLURM specific functions for processing bitmaps and 
+strings for parsing.
 
 <dt>bits_bytes.h
 <dd>Function definitions for bits_bytes.c.
 
 <dt>bitstring.c
-<dd>A collection of functions for managing bitmaps. We use these for rapid 
-node management functions including: scheduling and associating partitions 
-and jobs with the nodes
+<dd>A collection of general purpose functions for managing bitmaps. 
+We use these for rapid node management functions including: scheduling 
+and associating partitions and jobs with the nodes.
 
 <dt>bitstring.h
 <dd>Function definitions for bitstring.c.
 
 <dt>list.c
-<dd>Module is a general purpose list manager. One can define a 
-list, add and delete entries, search for entries, etc. 
+<dd>A general purpose list manager. 
+One can define a list, add and delete entries, search for entries, etc. 
 
 <dt>list.h
-<dd>Module contains definitions for list.c and documentation for its functions.
+<dd>Definitions for list.c and documentation for its functions.
 
 <dt>log.c
-<dd>Module is a general purpose log manager. It can filter log messages 
+<dd>A general purpose log manager. It can filter log messages 
 based upon severity and route them to stderr, syslog, or a log file.
 
 <dt>log.h
-<dd>Module contains definitions for log.c and documentation for its functions.
+<dd>Definitions for log.c and documentation for its functions.
 
 <dt>macros.h
 <dd>General purpose SLURM macro definitions.
 
 <dt>pack.c
-<dd>Module for packing and unpacking unsigned integers and strings 
+<dd>Functions for packing and unpacking unsigned integers and strings 
 for transmission over the network. The unsigned integers are translated 
 to/from machine independent form. Strings are transmitted with a length 
 value.
 
 <dt>pack.h
-<dd>Module contains definitions for pack.c and documentation for its functions.
+<dd>Definitions for pack.c and documentation for its functions.
 
 <dt>qsw.c
 <dd>Functions for interacting with the Quadrics interconnect.
 
 <dt>qsw.h
-<dd>Module contains definitions for qsw.c and documentation for its functions.
+<dd>Definitions for qsw.c and documentation for its functions.
 
 <dt>strlcpy.c
 <dd>TBD
@@ -179,21 +181,21 @@ This would be included in user applications loading with SLURM APIs.
 <dd>TBD
 
 <dt>xassert.h
-<dd>Module contains definitions for xassert.c and documentation for its functions.
+<dd>Definitions for xassert.c and documentation for its functions.
 
 <dt>xmalloc.c
 <dd>"Safe" memory management functions. Includes magic cooking to insure 
-that freed memory was infact allocated by its functions.
+that freed memory was in fact allocated by its functions.
 
 <dt>xmalloc.h
-<dd>Module contains definitions for xmalloc.c and documentation for its functions.
+<dd>Definitions for xmalloc.c and documentation for its functions.
 
 <dt>xstring.c
 <dd>A collection of functions for string manipulations with automatic expansion 
-of allocated memory on an as needed basis.
+of allocated memory on an <i>as needed</i> basis.
 
 <dt>xstring.h
-<dd>Module contains definitions for xstring.c and documentation for its functions.
+<dd>Definitions for xstring.c and documentation for its functions.
 </dl>
 
 <h2>scancel Modules</h2>
@@ -201,7 +203,7 @@ scancel is a command to cancel running or pending jobs.
 
 <dl>
 <dt>scancel.c
-<dd>A command line interface to cancel jobs.
+<dd>A command line interface to cancel jobs or their allocations.
 </dl>
 
 
@@ -225,6 +227,15 @@ The slurmctld modules and their functionality are described below.
 <dt>controller.c
 <dd>Primary SLURM daemon to execute on control machine. 
 It manages communications the Partition Manager, Switch Manager, and Job Manager threads.
+
+<dt>job_mgr.c
+<dd>Module reads, writes, records, updates, and otherwise 
+manages the state information for all jobs and allocations
+for jobs.
+
+<dt>job_scheduler.c
+<dd>Module determines which pending job(s) should execute next 
+and initiates them.
 
 <dt>node_mgr.c
 <dd>Module reads, writes, records, updates, and otherwise 
@@ -254,17 +265,21 @@ functionality are described below.
 
 <dl>
 <dt>get_mach_stat.c
-<dd>This module gets the machine's status and configuration. 
-This includes: size of real memory, size of temporary disk storage, and 
-the number of processors.
+<dd>Gets the machine's status and configuration in a operating system 
+independent fashion. 
+This configuration information includes: size of real memory, 
+size of temporary disk storage, and the number of processors.
 
 <dt>read_proc.c
-<dd>This module collects job state information including real memory use, 
-virtual memory use, and CPU time use.
+<dd>Collects job state information including real memory use, virtual 
+memory use, and CPU time use. 
+While desirable to maintain operating system independent code, this 
+module is not completely portable.
 </dl>
 
 <h2>Design Issues</h2>
 Most modules are constructed with a some simple, built-in tests. 
+<b>NOTE: We need to convert this to a DegaGnu framework.</b>
 Set declarations for DEBUG_MODULE and DEBUG_SYSTEM  both to 1 near 
 the top of the module's code. Then compile and run the test. 
 Required input scripts and configuration files for these tests 
@@ -277,7 +292,7 @@ to 0 and for DEBUG_SYSTEM set to 1.
 Many of these modules have been built and tested on a variety of 
 Unix computers including Redhat's Linux, IBM's AIX, Sun's Solaris, 
 and Compaq's Tru-64. The only module at this time which is operating 
-system dependent is get_mach_stat.c.
+system dependent is <i>slurmd/read_proc.c</i>.
 <p>
 The node selection logic allocates nodes to jobs in a fashion which 
 makes most sense for a Quadrics switch interconnect. It allocates 
@@ -289,7 +304,11 @@ set). If the job can not be allocated consecutive nodes, it will
 be allocated the smallest number of consecutive sets (e.g. if there 
 are sets of available consecutive nodes of sizes 6, 4, 3, 3, 2, 1, 
 and 1 then a request for 10 nodes will always be allocated the 6 
-and 4 node sets rather than use the smaller sets).
+and 4 node sets rather than use the smaller sets). 
+These techniques minimize the job communications overhead. 
+A job can use hardware broadcast mechanisms given consecutive nodes. 
+Without consecutive nodes, much slower software broadcase mechanisms 
+must be used.
 
 
 <h2>Application Program Interface (API)</h2>
@@ -312,12 +331,12 @@ Execute slurm_free_build_info to release the memory allocated by slurm_load_buil
 <dd>If any SLURM job information has changed since <i>last_time</i>, then 
 download from slurmctld the current information. The information includes
 a count of job entries, and each job's name, job id, user id, allocated 
-nodes, etc. Included with the node information is an array of indecies 
+nodes, etc. Included with the job information is an array of indecies 
 into the node table information as downloaded with slurm_load_node.
 See slurmlib.h for a full description of the information available. 
 Execute slurm_free_job_info to release the memory allocated by slurm_load_job.
 
-<dt>void slurm_free_job_info (struct job_buffer *build_buffer_ptr);
+<dt>void slurm_free_job_info (struct job_buffer *job_buffer_ptr);
 <dd>Release memory allocated by the slurm_load_job function.
 
 <dt>int slurm_load_node (time_t update_time, struct node_buffer **node_buffer_ptr);
@@ -336,7 +355,7 @@ Execute slurm_free_node_info to release the memory allocated by slurm_load_node.
 download from slurmctld the current information. The information includes
 a count of partition entries, and each partition's name, node count limit 
 (per job), time limit (per job), group access restrictions, associated 
-nodes etc. Included with the node information is an array of indecies 
+nodes etc. Included with the partition information is an array of indecies 
 into the node table information as downloaded with slurm_load_node.
 See slurmlib.h for a full description of the information available. 
 Execute slurm_free_part_info to release the memory allocated by slurm_load_part.
@@ -349,14 +368,14 @@ Execute slurm_free_part_info to release the memory allocated by slurm_load_part.
 <h2>Examples of API Use</h2>
 
 <pre>
-#include <stdio.h>
+#include &lt;config.h&gt;
+#include &lt;stdio.h&gt;
 #include "slurmlib.h"
 
 int
 main (int argc, char *argv[]) 
 {
-	static time_t last_update_time = (time_t) NULL;
-	int error_code, i, j;
+	int error_code, i, j, k;
 	struct build_buffer *build_buffer_ptr = NULL;
 	struct build_table  *build_table_ptr = NULL;
 	struct job_buffer *job_buffer_ptr = NULL;
@@ -368,7 +387,7 @@ main (int argc, char *argv[])
 
 
 	/* get and dump some build information */
-	error_code = slurm_load_build (last_update_time, &build_buffer_ptr);
+	error_code = slurm_load_build ((time_t) NULL, &build_buffer_ptr);
 	if (error_code) {
 		printf ("slurm_load_build error %d\n", error_code);
 		exit (1);
@@ -381,7 +400,7 @@ main (int argc, char *argv[])
 
 
 	/* get and dump some job information */
-	error_code = slurm_load_job (last_update_time, &job_buffer_ptr);
+	error_code = slurm_load_job ((time_t) NULL, &job_buffer_ptr);
 	if (error_code) {
 		printf ("slurm_load_job error %d\n", error_code);
 		exit (error_code);
@@ -399,10 +418,11 @@ main (int argc, char *argv[])
 
 
 	/* get and dump some node information */
-	error_code = slurm_load_node (last_update_time, &node_buffer_ptr);
+	error_code = slurm_load_node ((time_t) NULL, &node_buffer_ptr);
 	if (error_code) {
 		printf ("slurm_load_node error %d\n", error_code);
 		exit (error_code);
+	}
 	
 	node_ptr = node_buffer_ptr->node_table_ptr;
 	for (i = 0; i < node_buffer_ptr->node_count; i++) {
@@ -415,7 +435,7 @@ main (int argc, char *argv[])
 	/* note that we use the node information loaded above */
 	/* we assume the node table entries have not changed since */
 	/* loaded above (only updated on slurmctld reconfiguration) */
-	error_code = slurm_load_part (last_update_time, &part_buffer_ptr);
+	error_code = slurm_load_part ((time_t) NULL, &part_buffer_ptr);
 	if (error_code) {
 		printf ("slurm_load_part error %d\n", error_code);
 		exit (error_code);
@@ -469,7 +489,7 @@ main (int argc, char *argv[])
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/programmer.guide.html
-<p>Last Modified May 9, 2002</p>
+<p>Last Modified May 13, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
