@@ -1119,6 +1119,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 				node_ptr->node_state = NODE_STATE_IDLE;
 			info ("validate_node_specs: node %s returned to service", 
 			      node_name);
+			xfree(node_ptr->reason);
 			resp_state = 1;	/* just started responding */
 		} else if ((node_ptr->node_state == NODE_STATE_ALLOCATED) &&
 			   (job_count == 0)) {	/* job vanished */
