@@ -432,18 +432,14 @@ static int _parse_node_spec(char *in_line)
  */
 static int _parse_part_spec(char *in_line)
 {
-	char *allow_groups, *nodes, *partition_name;
-	char *default_str, *root_str, *shared_str, *state_str;
-	int max_time_val, max_nodes_val, min_nodes_val;
-	int root_val, default_val;
-	int state_val, shared_val;
+	char *allow_groups = NULL, *nodes = NULL, *partition_name = NULL;
+	char *max_time_str = NULL, *default_str = NULL, *root_str = NULL;
+	char *shared_str = NULL, *state_str = NULL;
+	int max_time_val = NO_VAL, max_nodes_val = NO_VAL;
+	int min_nodes_val = NO_VAL, root_val = NO_VAL, default_val = NO_VAL;
+	int state_val = NO_VAL, shared_val = NO_VAL;
 	int error_code;
 	struct part_record *part_record_point;
-
-	partition_name = (char *) NULL;
-	default_str = shared_str = state_str = (char *) NULL;
-	max_time_val = max_nodes_val = root_val = default_val = state_val =
-	    shared_val = NO_VAL;
 
 	if ((error_code =
 	     load_string(&partition_name, "PartitionName=", in_line)))
@@ -464,7 +460,7 @@ static int _parse_part_spec(char *in_line)
 				  "AllowGroups=", 's', &allow_groups,
 				  "Default=", 's', &default_str,
 				  "RootOnly=", 's', &root_str,
-				  "MaxTime=", 'd', &max_time_val,
+				  "MaxTime=", 's', &max_time_str,
 				  "MaxNodes=", 'd', &max_nodes_val,
 				  "MinNodes=", 'd', &min_nodes_val,
 				  "Nodes=", 's', &nodes,
@@ -502,6 +498,21 @@ static int _parse_part_spec(char *in_line)
 			goto cleanup;
 		}
 		xfree(root_str);
+	}
+
+	if (max_time_str) {
+		if (strcasecmp(max_time_str, "INFINITE") == 0)
+			max_time_val = INFINITE;
+		else {
+			char *end_ptr;
+			max_time_val = strtol(max_time_str, &end_ptr, 10);
+			if ((max_time_str[0] != '\0') && 
+			    (end_ptr[0] != '\0')) {
+				error_code = EINVAL;
+				goto cleanup;
+			}
+		}
+		xfree(max_time_str);
 	}
 
 	if (shared_str) {
@@ -615,6 +626,7 @@ static int _parse_part_spec(char *in_line)
       cleanup:
 	xfree(allow_groups);
 	xfree(default_str);
+	xfree(max_time_str);
 	xfree(root_str);
 	xfree(nodes);
 	xfree(partition_name);
