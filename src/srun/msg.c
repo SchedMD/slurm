@@ -146,11 +146,28 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 {
 	reattach_tasks_response_msg_t *resp = msg->data;
 
-	slurm_mutex_lock(&job->task_mutex);
-	if ((resp->srun_node_id >= 0) && (resp->srun_node_id < job->nhosts)) {
-		job->host_state[resp->srun_node_id] = SRUN_HOST_REPLIED;
+	if ((resp->srun_node_id < 0) || (resp->srun_node_id >= job->nhosts)) {
+		error ("Invalid reattach response recieved~");
+		return;
 	}
+
+	slurm_mutex_lock(&job->task_mutex);
+	job->host_state[resp->srun_node_id] = SRUN_HOST_REPLIED;
 	slurm_mutex_unlock(&job->task_mutex);
+
+	if (resp->return_code != 0) {
+		if (job->stepid == NO_VAL) { 
+			error ("Unable to attach to job %d: %s", 
+			       job->jobid, slurm_strerror(resp->return_code));
+			update_job_state(job, SRUN_JOB_FAILED);
+		} else {
+			error ("Unable to attach to step %d.%d on node %d",
+			       job->jobid, job->stepid, resp->srun_node_id);
+		}
+	}
+
+	if (job->stepid == NO_VAL)
+		update_job_state(job, SRUN_JOB_OVERDONE);
 
 }
 

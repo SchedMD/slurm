@@ -4,8 +4,9 @@
  ******************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grondona <grondona@llnl.gov>, 
- *	Jim Garlick <garlick@llnl.gov>, et. al.
+ *  Written by Jim Garlick <garlick@llnl.gov>
+ *             Mark Grondona <grondona@llnl.gov>, et al.
+ *	
  *  UCRL-CODE-2002-040.
  *
  *  This file is part of SLURM, a resource management program.
@@ -33,7 +34,7 @@
 #include <string.h>
 #include <stdio.h>
 #if 	HAVE_STRERROR_R && !HAVE_DECL_STRERROR_R
-//char *strerror_r(int, char *, int);
+char *strerror_r(int, char *, int);
 #endif
 #include <errno.h>
 #if 	HAVE_UNISTD_H
@@ -44,11 +45,12 @@
 #  include <pthread.h>
 #endif
 
-#include <xmalloc.h>
-#include <xstring.h>
-#include <strlcpy.h>
-#include <xassert.h>
+#include <stdarg.h>
 
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+#include "src/common/strlcpy.h"
+#include "src/common/xassert.h"
 #include "src/common/slurm_errno.h"
 
 #define XFGETS_CHUNKSIZE 64
@@ -158,6 +160,48 @@ void _xstrftimecat(char **buf, const char *fmt)
 	_xstrcat(buf, p);
 }
 
+/*
+ * append formatted string with printf-style args to buf, expanding
+ * buf as needed
+ */
+int _xstrfmtcat(char **str, const char *fmt, ...)
+{
+	va_list ap;
+	int     rc; 
+	char    buf[4096];
+
+	va_start(ap, fmt);
+	rc = vsnprintf(buf, 4096, fmt, ap);
+	va_end(ap);
+
+	xstrcat(*str, buf);
+
+	return rc;
+}
+
+/*
+ * append a range of memory from start to end to the string str,
+ * expanding str as needed
+ */
+void _xmemcat(char **str, char *start, char *end)
+{
+	char buf[4096];
+	size_t len;
+
+	xassert(end >= start);
+
+	len = (size_t) end - (size_t) start;
+
+	if (len == 0)
+		return;
+
+	if (len > 4095)
+		len = 4095;
+
+	memcpy(buf, start, len);
+	buf[len] = '\0';
+	xstrcat(*str, buf);
+}
 
 /* 
  * Replacement for libc basename

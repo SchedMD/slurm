@@ -58,6 +58,7 @@
 #include "src/slurmd/job.h"
 #include "src/slurmd/shm.h"
 #include "src/slurmd/io.h"
+#include "src/slurmd/fname.h"
 
 typedef enum slurmd_io_tupe {
 	TASK_STDERR = 0,
@@ -103,21 +104,28 @@ struct io_info {
 };
 
 
+static bool   _isa_client(struct io_info *io);
+static bool   _isa_task(struct io_info *io);
+
 static int    _io_init_pipes(task_info_t *t);
 static int    _io_prepare_clients(slurmd_job_t *);
 static int    _io_prepare_tasks(slurmd_job_t *);
-static int    _io_prepare_files(slurmd_job_t *);
 static void * _io_thr(void *);
 static int    _io_write_header(struct io_info *, srun_info_t *);
 static void   _io_connect_objs(io_obj_t *, io_obj_t *);
 static int    _validate_io_list(List objList);
 static int    _shutdown_task_obj(struct io_info *t);
 static int    find_obj(void *obj, void *key);
-static int    find_fd(void *obj, void *key);
+/* static int    find_fd(void *obj, void *key); */
 static bool   _isa_client(struct io_info *io);
 static bool   _isa_task(struct io_info *io);
+static void   _obj_close(io_obj_t *obj, List objs);
 static void   _io_client_attach(io_obj_t *, io_obj_t *, io_obj_t *, 
 		                List objList);
+static int    _open_output_file(slurmd_job_t *job, task_info_t *t, 
+		                char *fname, slurmd_io_type_t type);
+static int    _open_stdin_file(slurmd_job_t *job, task_info_t *t, 
+		               srun_info_t *srun);
 
 static struct io_obj  * _io_obj_create(int fd, void *arg);
 static struct io_info * _io_info_create(uint32_t id);
@@ -142,7 +150,6 @@ static int  _client_read(io_obj_t *, List);
 static int  _task_error(io_obj_t *, List);
 static int  _client_error(io_obj_t *, List);
 static int  _connecting_write(io_obj_t *, List);
-static int  _file_write(io_obj_t *, List);
 
 /* Task Output operations (TASK_STDOUT, TASK_STDERR)
  * These objects are never writable --
@@ -227,11 +234,8 @@ io_spawn_handler(slurmd_job_t *job)
 	/* open 2*ntask initial connections or files for stdout/err 
 	 * append these to objs list 
 	 */
-	if ((list_count(job->sruns) > 0) && (_io_prepare_clients(job) < 0))
+	if (_io_prepare_clients(job) < 0)
 		return SLURM_FAILURE;
-
-	if (_io_prepare_files(job) < 0) 
-		slurm_seterrno_ret(ESCRIPT_OPEN_OUTPUT_FAILED);
 
 		
 	return 0;
@@ -246,40 +250,82 @@ _xclose(int fd)
 	return rc;
 }
 
-/* Close child fds in parent */
+
+
+/* 
+ * Close child fds in parent as well as
+ * any stdin io objs in job->objs
+ * 
+ */
 static void
 _io_finalize(task_info_t *t)
 {
+	struct io_info *in = t->in->arg;
+	ListIterator i;
+	struct io_info *io;
+
+
 	if (_xclose(t->pin[0] ) < 0)
 		error("close(stdin) : %m");
 	if (_xclose(t->pout[1]) < 0)
 		error("close(stdout): %m");
 	if (_xclose(t->perr[1]) < 0)
 		error("close(stderr): %m");
+
+	in->disconnected = 1;
+	/* close stdin objs
+	 */
+	if (!in->writers)
+		return;
+
+	i = list_iterator_create(in->writers);
+	while ((io = list_next(i))) {
+		if (io->obj->fd > 0) {
+			io->eof = 1;
+		}
+	}
+	list_iterator_destroy(i);
 }
 
 void 
 io_close_all(slurmd_job_t *job)
 {
 	int i;
+
 	for (i = 0; i < job->ntasks; i++)
 		_io_finalize(job->task[i]);
+
+	/* Signal IO thread to close appropriate 
+	 * client connections
+	 */
+	pthread_kill(job->ioid, SIGHUP);
 }
 
 static void
 _handle_unprocessed_output(slurmd_job_t *job)
 {
 	int i;
+	task_info_t    *t;
+	struct io_info *io;
+	List            readers;
+	size_t          n = 0;
 	/* XXX Do something with unwritten IO */
 	for (i = 0; i < job->ntasks; i++) {
-		size_t       n;
-		task_info_t *t = job->task[i];
-		List  readers = ((struct io_info *)t->out->arg)->readers;
-		struct io_info *io = list_peek(readers);
+		if (!(t = job->task[i]))
+			continue;
+		if (!(readers = ((struct io_info *)t->out->arg)->readers))
+			continue;
+		if (!(io = list_peek(readers)))
+			continue;
+
 		if (io->buf && (n = cbuf_used(io->buf)))
 			job_error(job, "%ld bytes of stdout unprocessed", n);
-		readers = ((struct io_info *)t->err->arg)->readers;
-		io = list_peek(readers);
+
+		if (!(readers = ((struct io_info *)t->err->arg)->readers))
+			continue;
+		if (!(io = list_peek(readers)))
+			continue;
+
 		if (io->buf && (n = cbuf_used(io->buf)))
 			job_error(job, "%ld bytes of stderr unprocessed", n);
 	}
@@ -372,6 +418,37 @@ _io_add_connecting(slurmd_job_t *job, task_info_t *t, srun_info_t *srun,
 	list_append(job->objs, (void *)obj);
 }
 
+/*
+ * If filename is given for stdout/err/in, open appropriate file,
+ * otherwise create a connecting client back to srun process.
+ */
+static int
+_io_prepare_one(slurmd_job_t *j, task_info_t *t, srun_info_t *s)
+{
+	if (s->ofname) {
+		if (_open_output_file(j, t, s->ofname, CLIENT_STDOUT) < 0)
+			return SLURM_FAILURE;
+	} else {
+		_io_add_connecting(j, t, s, CLIENT_STDOUT); 
+	}
+
+	if (s->efname) {
+		if (_open_output_file(j, t, s->efname, CLIENT_STDERR) < 0)
+			return SLURM_FAILURE;
+	} else {
+		_io_add_connecting(j, t, s, CLIENT_STDERR); 
+	}
+
+	if (s->ifname) {
+		if (_open_stdin_file(j, t, s) < 0)
+			return SLURM_FAILURE;
+	} else if (s->ofname) {
+		_io_add_connecting(j, t, s, CLIENT_STDIN);
+	}
+
+	return SLURM_SUCCESS;
+}
+
 /* 
  * create initial client objs for N tasks
  */
@@ -379,26 +456,21 @@ static int
 _io_prepare_clients(slurmd_job_t *job)
 {
 	int          i;
+	char         host[256];
+	short        port;
 	srun_info_t *srun;
-	char host[256];
-	short port;
-
-	/* xassert(list_count(job->sruns) == 1); */
 
 	srun = list_peek(job->sruns);
-	if (srun->noconnect)
-		return SLURM_SUCCESS;
+	xassert(srun != NULL);
 
 	slurm_get_addr(&srun->ioaddr, &port, host, sizeof(host));
-	debug2("connecting IO back to %s:%d", host, port);
+	debug2("connecting IO back to %s:%d", host, ntohs(port));
 
-	/* 
-	 * connect back to clients for stdin/out/err
+	/* Connect stdin/out/err to either a remote srun or
+	 * local file
 	 */
 	for (i = 0; i < job->ntasks; i++) {
-		list_append(job->task[i]->srun_list, (void *) srun);
-		_io_add_connecting(job, job->task[i], srun, CLIENT_STDOUT); 
-		_io_add_connecting(job, job->task[i], srun, CLIENT_STDERR); 
+		_io_prepare_one(job, job->task[i], srun);
 
 		/* kick IO thread */
 		pthread_kill(job->ioid, SIGHUP);
@@ -429,27 +501,27 @@ _open_task_file(char *filename, int flags)
 }
 
 static int
-_open_output_file(slurmd_job_t *job, task_info_t *t, slurmd_io_type_t type)
+_open_output_file(slurmd_job_t *job, task_info_t *t, char *fmt, 
+		  slurmd_io_type_t type)
 {
-	int       fd    = -1;
-	io_obj_t *obj   = NULL;
-	int       flags = O_CREAT|O_TRUNC|O_APPEND|O_WRONLY;
-	char     *fname;
+	int          fd    = -1;
+	io_obj_t    *obj   = NULL;
+	int          flags = O_CREAT|O_TRUNC|O_APPEND|O_WRONLY;
+	char        *fname = fname_create(job, fmt, t->gid);
 
 	xassert((type == CLIENT_STDOUT) || (type == CLIENT_STDERR));
-	fname = (type == CLIENT_STDOUT) ? t->ofname : t->efname;
 
 	if ((fd = _open_task_file(fname, flags)) > 0) {
-		verbose("opened `%s' for %s fd %d", fname, _io_str[type], fd);
+		debug("opened `%s' for %s fd %d", fname, _io_str[type], fd);
 		obj  = _io_obj(job, t, fd, type);
 		_obj_set_unreadable(obj);
-		obj->ops->handle_write = &_file_write;
 		xassert(obj->ops->writable != NULL);
 		if (type == CLIENT_STDOUT)
 			_io_client_attach(obj, t->out, NULL, job->objs);
 		else
 			_io_client_attach(obj, t->err, NULL, job->objs);
 	} 
+	xfree(fname);
 
 	_validate_io_list(job->objs);
 
@@ -457,41 +529,22 @@ _open_output_file(slurmd_job_t *job, task_info_t *t, slurmd_io_type_t type)
 }
 
 static int
-_open_stdin_file(slurmd_job_t *job, task_info_t *t)
+_open_stdin_file(slurmd_job_t *job, task_info_t *t, srun_info_t *srun)
 {
 	int       fd    = -1;
 	io_obj_t *obj   = NULL;
 	int       flags = O_RDONLY;
+	char     *fname = fname_create(job, srun->ifname, t->gid);
 	
-	if ((fd = _open_task_file(t->ifname, flags)) > 0) {
+	if ((fd = _open_task_file(fname, flags)) > 0) {
 		obj = _io_obj(job, t, fd, CLIENT_STDIN); 
 		_obj_set_unwritable(obj);
 		_io_client_attach(obj, NULL, t->in, job->objs);
 	}
+	xfree(fname);
 	return fd;
 }
 
-static int
-_io_prepare_files(slurmd_job_t *job)
-{
-	int i;
-
-	if (!job->ofname && !job->efname && !job->ifname)
-		return SLURM_SUCCESS;
-
-	for (i = 0; i < job->ntasks; i++) {
-		if (_open_output_file(job, job->task[i], CLIENT_STDOUT) < 0)
-			return SLURM_FAILURE;
-		if (_open_output_file(job, job->task[i], CLIENT_STDERR) < 0)
-			return SLURM_FAILURE;
-		if (job->ifname && (_open_stdin_file(job, job->task[i]) < 0))
-			return SLURM_FAILURE;
-
-		pthread_kill(job->ioid, SIGHUP);
-	}
-
-	return SLURM_SUCCESS;
-}
 
 /* Attach io obj "client" as a reader of 'writer' and a writer to 'reader'
  * if 'reader' is NULL client will have no readers.
@@ -511,16 +564,20 @@ _io_client_attach(io_obj_t *client, io_obj_t *writer,
 	xassert((dst == NULL) || (dst->magic == IO_MAGIC));
 
 	if (writer == NULL) { 
-		debug3("connecting %s to reader only", _io_str[cli->type]);
-		/* simple case: connect client to reader only and return
+		/* 
+		 * Only connect new client to reader if the
+		 * reader is still available.
+		 * 
 		 */
-		_io_connect_objs(client, reader);
-		list_append(objList, client);
+		if (reader->fd < 0 || dst->disconnected)
+			_obj_close(client, objList);
+		else
+			_io_connect_objs(client, reader);
 		return;
 	}
 
 	io = list_peek(src->readers);
-	xassert((io  == NULL) || (io->magic  == IO_MAGIC));
+	xassert((io == NULL) || (io->magic  == IO_MAGIC));
 
 	/* Check to see if src's first reader has disconnected, 
 	 * if so, replace the object with this client, if not, 
@@ -547,6 +604,11 @@ _io_client_attach(io_obj_t *client, io_obj_t *writer,
 		 * Delete old client which is now an empty vessel 
 		 */
 		list_delete_all(objList, (ListFindF)find_obj, client);
+
+		/* 
+		 * Rewind a few lines if possible
+		 */
+		cbuf_rewind_line(io->buf, 256, -1);
 
 		/*
 		 * connect resurrected client ("io") to reader 
@@ -588,12 +650,14 @@ _io_connect_objs(io_obj_t *obj1, io_obj_t *obj2)
 	struct io_info *dst = (struct io_info *) obj2->arg;
 	xassert(src->magic == IO_MAGIC);
 	xassert(dst->magic == IO_MAGIC);
+
 	if (!list_find_first(src->readers, (ListFindF)find_obj, dst))
 		list_append(src->readers, dst);
 	if (!list_find_first(dst->writers, (ListFindF)find_obj, src))
 		list_append(dst->writers, src);
 }
 
+/*
 static int
 find_fd(void *obj, void *key)
 {
@@ -602,6 +666,7 @@ find_fd(void *obj, void *key)
 
 	return (((io_obj_t *)obj)->fd == *((int *)key));
 }
+*/
 
 static int 
 find_obj(void *obj, void *key)
@@ -636,7 +701,7 @@ _io_disconnect(struct io_info *src, struct io_info *dst)
 static void
 _io_disconnect_client(struct io_info *client, List objs)
 {
-	bool   destroy = false;
+	bool   destroy = true;
 	struct io_info *t;
 	ListIterator    i;
 
@@ -647,19 +712,16 @@ _io_disconnect_client(struct io_info *client, List objs)
 	/* Our client becomes a ghost
 	 */
 	client->disconnected = 1;
-
-	debug("%s has %d writers", _io_str[client->type], 
-			client->writers ? list_count(client->writers) : 0);
 		
 	if (client->writers) {
 		/* delete client from its writer->readers list 
 		 */
 		i = list_iterator_create(client->writers);
 		while ((t = list_next(i))) {
-			if (list_count(t->readers) > 1) {
-				destroy = true;
+			if (list_count(t->readers) > 1) 
 				_io_disconnect(t, client);
-			} 
+			else
+				destroy = false;
 		}
 		list_iterator_destroy(i);
 	}
@@ -668,24 +730,22 @@ _io_disconnect_client(struct io_info *client, List objs)
 		/* delete client from its reader->writers list
 		 */
 		i = list_iterator_create(client->readers);
-		while ((t = list_next(i))) {
-			if (list_count(t->writers) > 1) {
-				_io_disconnect(client, t);
-			}
-		}
+		while ((t = list_next(i)))
+			_io_disconnect(client, t);
 		list_iterator_destroy(i);
 	}
 
 	xassert(client == client->obj->arg);
 
-	if (!client->eof && client->buf)
-		cbuf_rewind_line(client->buf, 256, -1);
+	if (!destroy) 
+		return;
 
-	if (destroy) {
-		if (!list_delete_all(objs, (ListFindF)find_obj, client->obj))
-			error("Unable to destroy %s %d (%p)", 
-			      _io_str[client->type], client->id, client); 
-	} 
+	debug3("Going to destroy %s %d", _io_str[client->type], client->id);
+	if (list_delete_all(objs, (ListFindF)find_obj, client->obj) <= 0)
+		error("Unable to destroy %s %d (%p)", 
+		      _io_str[client->type], client->id, client); 
+
+	return;
 }
 
 static bool
@@ -751,9 +811,14 @@ _io_obj(slurmd_job_t *job, task_info_t *t, int fd, int type)
 		 io->buf     = cbuf_create(1024, 1048576);
 		 io->writers = list_create(NULL);
 		 break;
-	 case CLIENT_STDIN:
+	 case CLIENT_STDIN: 
 		 obj->ops    = _ops_copy(&client_ops);
+		 _obj_set_unwritable(obj);
 		 io->readers = list_create(NULL);
+		 /* 
+		  * Connected stdin still needs output buffer 
+		  */
+		 io->buf     = cbuf_create(256, 1024);
 		 break;
 	 default:
 		 error("io: unknown I/O obj type %d", type);
@@ -800,6 +865,7 @@ io_obj_destroy(io_obj_t *obj)
 			 xfree(obj->ops);
 		 break;
 	 case CLIENT_STDIN:
+		 cbuf_destroy(io->buf);
 		 xfree(obj->ops);
 		 list_destroy(io->readers);
 		 break;
@@ -865,9 +931,11 @@ _io_write_header(struct io_info *client, srun_info_t *srun)
 	hdr.version = SLURM_PROTOCOL_VERSION;
 	memcpy(hdr.key, srun->key->data, SLURM_SSL_SIGNATURE_LENGTH);
 	hdr.task_id = client->id;
-	hdr.type    = client->type == CLIENT_STDOUT ? 
-				      SLURM_IO_STREAM_INOUT : 
-				      SLURM_IO_STREAM_SIGERR;
+
+	if ((client->type == CLIENT_STDOUT) || (client->type == CLIENT_STDIN)) 
+		hdr.type = SLURM_IO_STREAM_INOUT; 
+	else
+		hdr.type = SLURM_IO_STREAM_SIGERR;
 
 	pack_io_stream_header(&hdr, buffer);
 
@@ -974,11 +1042,14 @@ _writable(io_obj_t *obj)
 
 	xassert(io->magic == IO_MAGIC);
 
-	debug3("_writable():  task %d fd %d %s [%d %d %d]", 
+	debug3("_writable(): [%p] task %d fd %d %s [%d %d %d]", io,
 	       io->id, obj->fd, _io_str[io->type], io->disconnected, 
 	       cbuf_used(io->buf), io->eof);
 
-	rc = (!io->disconnected && ((cbuf_used(io->buf) > 0) || io->eof));
+	rc = ((io->obj->fd > 0) 
+	      && !io->disconnected 
+	      && ((cbuf_used(io->buf) > 0) || io->eof));
+
 	if (rc)
 		debug3("%d %s is writable", io->id, _io_str[io->type]);
 
@@ -1011,8 +1082,9 @@ _write(io_obj_t *obj, List objs)
 	while ((n = cbuf_read_to_fd(io->buf, obj->fd, -1)) < 0) {
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) 
 			break;
+		if ((errno == EPIPE) || (errno == EINVAL) || (errno == EBADF))
+			_obj_close(obj, objs);
 		error("write failed: <task %d>: %m", io->id);
-		_obj_close(obj, objs);
 		return -1;
 	}
 
@@ -1021,33 +1093,33 @@ _write(io_obj_t *obj, List objs)
 	return 0;
 }
 
-/* flush after writing data to file 
- */
-static int
-_file_write(io_obj_t *obj, List objs)
-{
-	int rc = _write(obj, objs);
-	fdatasync(obj->fd);
-	return rc;
-}
-
 static void
 _do_attach(struct io_info *io)
 {
-	task_info_t *t;
+	task_info_t    *t;
 	
 	xassert(io != NULL);
 	xassert(io->magic == IO_MAGIC);
-	xassert((io->type == CLIENT_STDOUT) || (io->type == CLIENT_STDERR));
+	xassert(_isa_client(io));
 
 	io->obj->ops = _ops_copy(&client_ops);
 
-	t = io->task;
+	t  = io->task;
 
-	if (io->type == CLIENT_STDOUT) 
+	switch (io->type) {
+	case CLIENT_STDOUT:
 		_io_client_attach(io->obj, t->out, t->in, io->job->objs); 
-	else 
+		break;
+	case CLIENT_STDERR:
 		_io_client_attach(io->obj, t->err, NULL,  io->job->objs);
+		break;
+	case CLIENT_STDIN:
+		_io_client_attach(io->obj, NULL, t->in, io->job->objs);
+		break;
+	default:
+		fatal("Unknown client type %d in do_attach()", io->type);
+
+	}
 }
 
 /* Write method for client objects which are connecting back to the
@@ -1060,15 +1132,17 @@ _connecting_write(io_obj_t *obj, List objs)
 	int n;
 
 	xassert(io->magic == IO_MAGIC);
-	xassert((io->type == CLIENT_STDOUT) || (io->type == CLIENT_STDERR));
+	xassert(_isa_client(io));
 
 	debug3("Need to write %ld bytes to connecting %s %d", 
 		cbuf_used(io->buf), _io_str[io->type], io->id);
 	while ((n = cbuf_read_to_fd(io->buf, obj->fd, -1)) < 0) {
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) 
 			continue;
-		error("write failed: <task %d>: %m", io->id);
-		_obj_close(obj, objs);
+		if ((errno == EPIPE) || (errno == EINVAL) || (errno == EBADF))
+			_obj_close(obj, objs);
+		else
+			error("write failed: <task %d>: %m", io->id);
 		return -1;
 	}
 	debug3("Wrote %d bytes to %s %d", n, _io_str[io->type], io->id);
@@ -1087,28 +1161,30 @@ _connecting_write(io_obj_t *obj, List objs)
 static int
 _shutdown_task_obj(struct io_info *t)
 {
-	List l;
 	ListIterator i;
+	List rlist;
 	struct io_info *r;
 
 	xassert(_isa_task(t));
 
-	l = (t->type == TASK_STDIN) ? t->writers : t->readers;
-	
-	i = list_iterator_create(l);
-	while ((r = list_next(i))) {
-		/* Copy EOF to all readers or writers */
+	debug3("shutdown_task_obj: %d %s [%d readers, %d writers]", 
+		t->id, _io_str[t->type], 
+		(t->readers ? list_count(t->readers) : 0),
+		(t->writers ? list_count(t->writers) : 0));
+
+	t->disconnected = 1;
+
+	rlist = t->writers ? : t->readers;
+
+	/* Task objects do not get destroyed. 
+	 * Simply propagate the EOF to the clients
+	 */
+	i = list_iterator_create(rlist);
+	while ((r = list_next(i))) 
 		r->eof = 1;
-		/* XXX  When is it ok to destroy a task obj?
-		 *      perhaps only if the buffer is empty ...
-		 *      but definitely not before then.
-		 *
-		 * For now, never destroy the task objects
-		 *
-		 */
-		/* list_delete_all(rlist, (ListFindF) find_obj, t); */
-	}
 	list_iterator_destroy(i);
+
+	_validate_io_list(t->job->objs);	
 
 	return 0;
 }
@@ -1194,18 +1270,38 @@ _client_read(io_obj_t *obj, List objs)
 	if ((n = read(obj->fd, (void *) buf, len)) < 0) {
 		if (errno == EINTR)
 			goto again;
-		if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
-			fatal("client read");
 		error("read from client %ld: %m", client->id);
 		return -1;
 	}
 
-	debug("read %d bytes from %s %d", n, _io_str[client->type],
+	debug3("read %d bytes from %s %d", n, _io_str[client->type],
 			client->id);
 
-	if (n == 0)  { /* got eof, disconnect this client */
-		debug3("client %d closed connection", client->id);
-		_obj_close(obj, objs);
+	if (n == 0)  { /* got eof, pass this eof to readers */
+		debug3("%s %d stdin closed connection", _io_str[client->type], 
+				client->id);
+		/*
+		 * Do not read from this stdin any longer
+		 */
+		_obj_set_unreadable(obj); 
+
+		/* 
+		 * Loop through this client's readers, 
+		 * noting that EOF was recvd only if this
+		 * client is the only writer
+		 */
+		if (client->readers) {
+			i = list_iterator_create(client->readers);
+			while((reader = list_next(i))) {
+				if (list_count(reader->writers) == 1)
+					reader->eof = 1;
+				list_delete_all( reader->writers, 
+						 (ListFindF) find_obj,
+						 client );
+			}
+			list_iterator_destroy(i);
+		}
+
 		return 0;
 	}
 
@@ -1219,9 +1315,8 @@ _client_read(io_obj_t *obj, List objs)
 	 * Copy cbuf to all readers 
 	 */
 	i = list_iterator_create(client->readers);
-	while((reader = list_next(i))) {
-		n = cbuf_write(reader->buf, (void *) buf, n, NULL);
-	}
+	while((reader = list_next(i))) 
+			n = cbuf_write(reader->buf, (void *) buf, n, NULL);
 	list_iterator_destroy(i);
 
 	return 0;

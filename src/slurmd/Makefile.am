@@ -36,6 +36,7 @@ common_sources = 	        \
 	io.c io.h		\
 	semaphore.c semaphore.h	\
 	shm.c shm.h		\
+	fname.c fname.h		\
 	setenvpf.c setenvpf.h   \
 	interconnect.h
 

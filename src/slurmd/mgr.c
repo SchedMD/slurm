@@ -650,6 +650,7 @@ _exec_all_tasks(slurmd_job_t *job)
 	else
 		_task_exec(job, i, false);
 
+	debug3("All tasks exited");
 	return;
 }
 

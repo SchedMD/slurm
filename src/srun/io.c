@@ -55,6 +55,7 @@
 #define POLL_TIMEOUT_MSEC	 500	/* max wait for i/o poll, msec */
 
 static time_t time_first_done = 0;
+static int    fmt_width       = 0;
 
 /* fd_info struct used in poll() loop to map fds back to task number,
  * appropriate output type (stdout/err), and original fd
@@ -72,6 +73,8 @@ static int	_close_stream(int *fd, FILE *out, int tasknum);
 static void	_do_poll_timeout(job_t *job);
 static int	_do_task_output(int *fd, FILE *out, cbuf_t buf, int tasknum);
 static int 	_do_task_output_poll(fd_info_t *info);
+static int      _do_task_input(job_t *job, int taskid);
+static int 	_do_task_input_poll(job_t *job, fd_info_t *info);
 static int	_handle_pollerr(fd_info_t *info);
 static char *	_host_state_name(host_state_t state_inx);
 static ssize_t	_readn(int fd, void *buf, size_t nbytes);
@@ -93,10 +96,20 @@ static int	_validate_header(slurm_io_stream_header_t *hdr, job_t *job);
 #define _poll_wr_isset(pfd) ((pfd).revents & POLLOUT)
 #define _poll_err(pfd)      ((pfd).revents & POLLERR)
 
+/* True if an EOF needs to be broadcast to all tasks
+ */
+static bool stdin_got_eof = false;
+
 static int 
 _do_task_output_poll(fd_info_t *info)
 {
 	return _do_task_output(info->fd, info->fp, info->buf, info->taskid);
+}
+
+static int
+_do_task_input_poll(job_t *job, fd_info_t *info)
+{
+	return _do_task_input(job, info->taskid);
 }
 
 static int
@@ -107,8 +120,11 @@ _handle_pollerr(fd_info_t *info)
 	socklen_t size = sizeof(int);
 	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&err, &size) < 0)
 		error("_handle_error_poll: getsockopt: %m");
-	else if (err)
-		error("poll error on fd %d: %s", fd, slurm_strerror(err));
+	else if (err) {
+		if ((err != EPIPE) && (err != ECONNRESET))
+			error("poll error on fd %d: %s", fd, slurm_strerror(err));
+		_close_stream(info->fd, info->fp, info->taskid);  
+	}
 
 	if (*info->fd > 0)
 		return _do_task_output_poll(info);
@@ -132,7 +148,7 @@ _io_thr_poll(void *job_arg)
 	nfds_t nfds = 0;
 	int numfds = (opt.nprocs*2) + job->niofds + 2;
 	fd_info_t map[numfds];	/* map fd in pollfd array to fd info */
-	int i, rc;
+	int i, rc, out_fd_state, err_fd_state;
 
 	xassert(job != NULL);
 
@@ -143,26 +159,51 @@ _io_thr_poll(void *job_arg)
 
 	_set_iofds_nonblocking(job);
 
-	for (i = 0; i < opt.nprocs; i++) {
-		job->out[i] = WAITING_FOR_IO; 
-		job->err[i] = WAITING_FOR_IO;
+	if (job->ofname->type == IO_ALL)
+		out_fd_state = WAITING_FOR_IO;
+	else {
+		if (job->ifname->type != IO_ALL)
+			out_fd_state = IO_DONE;
+		else
+			out_fd_state = WAITING_FOR_IO;
+
+		if (!job->efname->name)
+			err_fd_state = IO_DONE;
 	}
 
-	for (i = 0; i < job->niofds; i++) {
-		_poll_set_rd(fds[i], job->iofd[i]);
+	if (job->efname->name == IO_ALL && opt.efname) {
+		err_fd_state = WAITING_FOR_IO;
+	} else 
+		err_fd_state = IO_DONE;
+
+	for (i = 0; i < opt.nprocs; i++) {
+		job->out[i] = out_fd_state; 
+		job->err[i] = err_fd_state;
 	}
-	_poll_set_rd(fds[i], STDIN_FILENO);
+
+	for (i = 0; i < job->niofds; i++) 
+		_poll_set_rd(fds[i], job->iofd[i]);
 
 	while (1) {
 		int eofcnt = 0;
-		nfds = job->niofds+1; /* already have n ioport fds + stdin */
+		nfds = job->niofds; /* already have n ioport fds + stdin */
+
+		if (job->stdinfd >= 0) {
+			_poll_set_rd(fds[nfds], job->stdinfd);
+			nfds++;
+		}
 
 		for (i = 0; i < opt.nprocs; i++) {
 			if (job->out[i] > 0) {
 				_poll_set_rd(fds[nfds], job->out[i]);
+
+				if ( (cbuf_used(job->inbuf[i]) > 0) 
+				    || (stdin_got_eof && !job->stdin_eof[i]))
+					_poll_set_wr(fds[nfds], job->out[i]);
+
 				map[nfds].taskid = i;
 				map[nfds].fd     = &job->out[i];
-				map[nfds].fp     = stdout;
+				map[nfds].fp     = job->outstream;
 				map[nfds].buf    = job->outbuf[i];
 				nfds++;
 			}
@@ -171,19 +212,18 @@ _io_thr_poll(void *job_arg)
 				_poll_set_rd(fds[nfds], job->err[i]);
 				map[nfds].taskid = i;
 				map[nfds].fd     = &job->err[i];
-				map[nfds].fp     = stderr;
+				map[nfds].fp     = job->errstream;
 				map[nfds].buf    = job->errbuf[i];
 				nfds++;
 			}
 
-			if ((job->out[i] == IO_DONE) && 
-			    (job->err[i] == IO_DONE))
+			if (   (job->out[i] == IO_DONE) 
+			    && (job->err[i] == IO_DONE) )
 				eofcnt++;
 		}
 
 		/* exit if we have received EOF on all streams */
 		if (eofcnt) {
-			debug3("eofcnt == %d", eofcnt);
 			if (eofcnt == opt.nprocs)
 				pthread_exit(0);
 			if (time_first_done == 0)
@@ -222,19 +262,22 @@ _io_thr_poll(void *job_arg)
 			}
 		}
 
-		if (_poll_rd_isset(fds[i++]))
-			_bcast_stdin(STDIN_FILENO, job);
+		if ((job->stdinfd >= 0) && _poll_rd_isset(fds[i++])) 
+			_bcast_stdin(job->stdinfd, job);
 
 		for ( ; i < nfds; i++) {
 			unsigned short revents = fds[i].revents;
 			xassert(!(revents & POLLNVAL));
-			if ((revents & POLLERR) || 
-					(revents & POLLHUP) ||
-					(revents & POLLNVAL))
+			if (   (revents & POLLERR) 
+			    || (revents & POLLHUP) 
+			    || (revents & POLLNVAL))
 				_handle_pollerr(&map[i]);
 
 			if ((revents & POLLIN) && (*map[i].fd > 0)) 
 				_do_task_output_poll(&map[i]);
+
+			if ((revents & POLLOUT) && (*map[i].fd > 0))
+				_do_task_input_poll(job, &map[i]);
 		}
 	}
 	xfree(fds);
@@ -255,15 +298,16 @@ static void _do_poll_timeout (job_t *job)
 	if (job->state == SRUN_JOB_FAILED)
 		pthread_exit(0);
 	else if (time_first_done && opt.max_wait && 
-	         (age > opt.max_wait)) {
-		error("First task termination %d seconds ago", age);
+		 (age >= opt.max_wait)
+		) {
+		error("First task terminated %d seconds ago", age);
 		error("Terminating remaining tasks now");
 		report_task_status(job);
 		update_job_state(job, SRUN_JOB_FAILED);
 		pthread_exit(0);
 	} else if (time_first_done && (term_msg_sent == false) && 
-		   (age > MAX_TERM_WAIT_SEC)) {
-		info("Warning: First task termination %d seconds ago", age);
+		   (age >= MAX_TERM_WAIT_SEC)) {
+		info("Warning: First task terminated %d seconds ago", age);
 		term_msg_sent = true;
 	}
 }
@@ -335,11 +379,67 @@ static char *_task_state_name(task_state_t state_inx)
 	}
 }
 
+static int
+_stdin_open(char *filename)
+{
+	int fd;
+	int flags = O_RDONLY;
+	
+	xassert(filename != NULL);
+
+	if ((fd = open(filename, flags, 0644)) < 0) {
+		error ("Unable to open `%s': %m", filename);
+		return -1;
+	}
+	fd_set_nonblocking(fd);
+	fd_set_close_on_exec(fd);
+	return fd;
+}
+
+static FILE *
+_fopen(char *filename)
+{
+	FILE *fp;
+	if (!(fp = fopen(filename, "w"))) 
+		error ("Unable to open file `%s': %m", filename);
+
+	return fp;
+}
+
+static void
+_open_streams(job_t *job)
+{
+	if ((job->ifname->type != IO_PER_TASK) && job->ifname->name) 
+		job->stdinfd = _stdin_open(job->ifname->name);
+	else
+		job->stdinfd = STDIN_FILENO;
+
+	if ((job->ofname->type != IO_PER_TASK) && job->ofname->name)
+		job->outstream = _fopen(job->ofname->name);
+	else
+		job->outstream = stdout;
+
+	if ((job->efname->type != IO_PER_TASK) && job->efname->name)
+		job->errstream = _fopen(job->ifname->name);
+	else
+		job->errstream = stderr;
+
+}
+
 
 void *
 io_thr(void *arg)
 {
 	return _io_thr_poll(arg);
+}
+
+static int
+_wid(int n)
+{
+	int width = 1;
+	while (n /= 10)
+		width++;
+	return width;
 }
 
 int
@@ -348,6 +448,9 @@ io_thr_create(job_t *job)
 	int i;
 	pthread_attr_t attr;
 
+	if (opt.labelio)
+		fmt_width = _wid(opt.nprocs);
+
 	for (i = 0; i < job->niofds; i++) {
 		if (net_stream_listen(&job->iofd[i], &job->ioport[i]) < 0)
 			fatal("unable to initialize stdio server port: %m");
@@ -355,6 +458,8 @@ io_thr_create(job_t *job)
 		      ntohs(job->ioport[i]));
 		net_set_low_water(job->iofd[i], 140);
 	}
+
+	_open_streams(job);
 
 	pthread_attr_init(&attr);
 	if ((errno = pthread_create(&job->ioid, &attr, &io_thr, (void *) job)))
@@ -473,10 +578,32 @@ _do_task_output(int *fd, FILE *out, cbuf_t buf, int tasknum)
 
 	while ((len = cbuf_read_line(buf, line, sizeof(line), 1))) {
 		if (opt.labelio)
-			fprintf(out, "%d: ", tasknum);
+			fprintf(out, "%0*d: ", fmt_width, tasknum);
 		fputs(line, out);
 		fflush(out);
 	}
+
+	return len;
+}
+
+static int
+_do_task_input(job_t *job, int taskid)
+{
+	int len = 0;
+	cbuf_t buf = job->inbuf[taskid];
+	int    fd  = job->out[taskid];
+
+	if ( stdin_got_eof 
+	    && !job->stdin_eof[taskid] 
+	    && (cbuf_used(buf) == 0)   ) {
+		/* write(fd, &eot, 1); */
+		job->stdin_eof[taskid] = true;
+		shutdown(job->out[taskid], SHUT_WR); 
+		return 0;
+	}
+
+	if ((len = cbuf_read_to_fd(buf, fd, -1)) < 0) 
+		error ("writing stdin data; %m");
 
 	return len;
 }
@@ -492,13 +619,10 @@ _readx(int fd, char *buf, size_t maxbytes)
 			goto again;
 		if ((errno == EAGAIN) || 
 		    (errno == EWOULDBLOCK))
-			return 0;
+			return -1;
 		error("readx fd %d: %m", fd, n);
 		return -1; /* shutdown socket, cleanup. */
 	}
-	/* null terminate */
-	buf[n] = '\0';
-
 	return n;
 }	
 
@@ -531,30 +655,29 @@ _readn(int fd, void *buf, size_t nbytes)
 static void
 _bcast_stdin(int fd, job_t *job)
 {
-	int i, disc=0;
-	char buf[IO_BUFSIZ];
+	int i;
 	size_t len;
+	char buf[4096];
 
-	if ((len = _readx(fd, buf, IO_BUFSIZ)) <= 0) {
-		if (len == 0) /* got EOF */
-			buf[len++] = 4;
-		else {
+	if ((len = _readx(fd, buf, 4096)) <= 0) {
+		if (len == 0) { /* got EOF */
+			close(job->stdinfd);
+			job->stdinfd = IO_DONE;
+			stdin_got_eof = true;
+			return;
+		 } else {
 			error("error reading stdin. %m");
 			return;
 		}
 	}
 
-	/* broadcast to every connected task */
-	for (i = 0; i < opt.nprocs; i++) {
-		if ((job->out[i] == WAITING_FOR_IO) || 
-		    (job->out[i] == IO_DONE)) 
-			disc++;
-		else
-			write(job->out[i], buf, len);
+	if (job->ifname->type == IO_ONE) {
+		i = job->ifname->taskid;
+		cbuf_write(job->inbuf[i], buf, len, NULL);
+	} else {
+		for (i = 0; i < opt.nprocs; i++) 
+			cbuf_write(job->inbuf[i], buf, len, NULL);
 	}
-	if (disc)
-		error("Stdin could not be sent to %d disconnected tasks", 
-		      disc);
 	return;
 }
 

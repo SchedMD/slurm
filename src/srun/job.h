@@ -12,6 +12,9 @@
 #include "src/common/macros.h"
 #include "src/common/cbuf.h"
 #include "src/api/slurm.h"
+#include "src/common/slurm_protocol_defs.h"
+
+#include "src/srun/fname.h"
 
 typedef enum {
 	SRUN_JOB_INIT = 0,
@@ -74,8 +77,9 @@ typedef struct srun_job {
 	 */
 	cbuf_t *outbuf;
 	cbuf_t *errbuf;
+	cbuf_t *inbuf;            /* buffer for stdin data */
 
-	pthread_t lid;		/* launch thread id */
+	pthread_t lid;		  /* launch thread id */
 
 	host_state_t *host_state; /* nhost host states */
 
@@ -86,6 +90,15 @@ typedef struct srun_job {
 #ifdef HAVE_LIBELAN3
 	qsw_jobinfo_t qsw_job;
 #endif
+	io_filename_t *ifname;
+	io_filename_t *ofname;
+	io_filename_t *efname;
+
+	/* Output streams and stdin fileno */
+	FILE *outstream;
+	FILE *errstream;
+	int   stdinfd;
+	bool *stdin_eof;  /* true if task i processed stdin eof */
 
 } job_t;
 

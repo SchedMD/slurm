@@ -76,7 +76,7 @@ overcommit resources. Normally,
 .B srun
 will not allocate more than one process per cpu. By specifying
 \fB\-\-overcommit\fR you are explicitly allowing more than one process
-per cpu. However no more than \fMAX_TASKS_PER_NODE\fR tasks are 
+per cpu. However no more than \fBMAX_TASKS_PER_NODE\fR tasks are 
 permitted to execute per node.
 .TP
 \fB\-T\fR, \fB\-\-threads\fR=\fInthreads\fR
@@ -113,21 +113,21 @@ Specify a name for the job. The specified name will appear along with
 the job id number when querying running jobs on the system. The default
 is the supplied \fBexecutable\fR program's name.
 .TP
-\fB\-o\fR, \fB\-\-output\fR=\fIout\fR
-Specify how stdout is to be directed. By default,
+\fB\-o\fR, \fB\-\-output\fR=\fImode\fR
+Specify the mode for stdout redirection. By default,
 .B srun
 collects stdout from all tasks and line buffers this output to
 the attached terminal. With \fB\-\-output\fR stdout may be redirected
-to a file, to one file per task, or to /dev/null. See \fBIO Redirection\fR
-below.
+to a file, to one file per task, or to /dev/null. See section 
+\fBIO Redirection\fR below for the various forms of \fImode\fR.
 .TP
-\fB\-i\fR, \fB\-\-input\fR=\fIin\fR
+\fB\-i\fR, \fB\-\-input\fR=\fImode\fR
 Specify how stdin is to redirected. By default,
 .B srun
-redirects stdin to all tasks from /dev/null. See \fBIO Redirection\fR
+redirects stdin from the terminal all tasks. See \fBIO Redirection\fR
 below for more options.
 .TP
-\fB\-e\fR, \fB\-\-error\fR=\fIerr\fR
+\fB\-e\fR, \fB\-\-error\fR=\fImode\fR
 Specify how stderr is to be redirected. By default,
 .B srun
 redirects stderr to the same file as stdout, if one is specified. The
@@ -159,10 +159,6 @@ Specify how long to wait after the first task terminates before terminating
 all remaining tasks. The default value is unlimited. This can be useful to 
 insure that a a job is terminated in a timely fashion in the event that one 
 or more tasks terminate prematurely.
-.TP
-\fB\-d\fR, \fB\-\-debug\fR
-enable debug output. Multiple \fB-d\fR's increase the debug level of
-.B srun
 .PP
 Allocate options:
 .TP
@@ -291,31 +287,83 @@ will consider this an error, as 15 processes cannot run across 16 nodes.
 By default stdout and stderr will be redirected from all tasks to the
 stdout and stderr of
 .B srun
-, and stdin will be redirected from /dev/null to all tasks. This
-behavior may be changed with the \fB\-\-output\fR, \fB\-\-error\fR,
-and \fB\-\-input\fR (\fB\-o\fR, \fB\-e\fR, \fB\-i\fR) options. Valid
-arguments to these options are
+, and stdin will be redirected from the standard input of 
+.B srun 
+to all remote tasks. This behavior may be changed with the 
+\fB\-\-output\fR, \fB\-\-error\fR, and \fB\-\-input\fR 
+(\fB\-o\fR, \fB\-e\fR, \fB\-i\fR) options. Valid format specifications 
+for these options are
 .TP 10
-all
-stdout stderr is redirected from all tasks to srun (This is the default).
-stdin is forwarded to all tasks.
+\fBall\fR
+stdout stderr is redirected from all tasks to srun.
+stdin is broadcast to all remote tasks.
+(This is the default behavior)
 .TP
-none
-stdout and stderr are redirected to /dev/null.
-stdin is redirected from /dev/null (This is the default for stdin)
+\fBnone\fR
+stdout and stderr is not recieved from any task. 
+stdin is not sent to any task (stdin is closed).
+.TP
+\fItaskid\fR
+stdout and/or stderr are redirected from only the task with relative
+id equal to \fItaskid\fR, where 0 <= \fItaskid\fR <= \fIntasks\fR,
+where \fIntasks\fR is the total number of tasks in the current job step.
+stdin is redirected from the stdin of
+.B srun
+to this same task.
 .TP
 filename
-stdout and stderr are redirected to the named file (relative to the
-current working directory of the job). stdin is redirected from the
-named file.
+.B srun
+will redirect stdout and/or stderr to the named file from all tasks.
+stdin will be redirected from the named file and broadcast to all
+tasks in the job.
 .TP
 format string
-If a format string is provided (such as "output.%d"),
-.B srun
-will open one file per task passing the task id as the argument to
-the format string. The format specifier may be any valid printf
-format, as long as it takes a numeric argument.
+.B srun 
+allows for a format string to be used to generate the named IO file 
+described above. The following list of format specifiers may be
+used in the format string to generate a filename that will be
+unique to a given jobid, stepid, node, or task. In each case, 
+the appropiate number of files are opened and associated with
+the corresponding tasks.
+.RS 10
+.TP
+%J
+jobid.stepid of the running job. (e.g. "128.0")
+.TP
+%j 
+jobid of the running job. 
+.TP
+%s
+stepid of the running job.
+.TP
+%N
+short hostname. This will create a separate IO file per node.
+.TP
+%n
+Node identifier relative to current job (e.g. "0" is the first node of
+the running job) This will create a separate IO file per node.
+.TP
+%t
+task identifier (rank) relative to current job. This will create a
+separate IO file per task.
 .PP
+A number placed between the percent character and format specifier may be
+used to zero-pad the result in the IO filename. This number is ignored if 
+the format specifier corresponds to  non-numeric data (%N for example).
+
+Some examples of how the format string may be used for a 4 task job step
+with a Job ID of 128 and step id of 0 are included below:
+.TP 15
+job%J.out
+job128.0.out
+.TP
+job%4j.out
+job0128.out
+.TP
+job%j-%2t.out 
+job128-00.out, job128-01.out, ...
+.PP
+.RS -10
 .PP
 .B "Allocate Mode"
 .PP
@@ -363,7 +411,7 @@ SLURM_CPUS_PER_TASK
 \fB\-c, \-\-ncpus\-per\-task\fR=\fIn\fR
 .TP
 SLURM_DEBUG
-\fB\-d, \-\-debug\fR
+\fB\-v, \-\-verbose\fR
 .TP
 SLURM_DISTRIBUTION
 \fB\-m, \-\-distribution\fR=(\fIblock|cyclic\fR)

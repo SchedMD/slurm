@@ -265,9 +265,6 @@ env_vars_t env_vars[] = {
 	{"SLURM_NNODES", OPT_INT, &opt.nodes, &opt.nodes_set},
 	{"SLURM_OVERCOMMIT", OPT_OVERCOMMIT, NULL, NULL},
 	{"SLURM_PARTITION", OPT_STRING, &opt.partition, NULL},
-	{"SLURM_STDINMODE", OPT_INPUT, &opt.input, NULL},
-	{"SLURM_STDOUTMODE", OPT_OUTPUT, &opt.output, NULL},
-	{"SLURM_STDERRMODE", OPT_ERROR, &opt.error, NULL},
 	{"SLURM_DISTRIBUTION", OPT_DISTRIB, NULL, NULL},
 	{"SLURM_WAIT", OPT_INT, &opt.max_wait, NULL},
 	{NULL, 0, NULL}
@@ -313,11 +310,9 @@ static void _opt_list(void);
 static char * _search_path(char *);
 static char * _find_file_path (char *fname);
 
-static enum io_t _verify_iotype(char **name);
 static void _print_version(void);
 static enum distribution_t _verify_dist_type(const char *arg);
 static long _to_bytes(const char *arg);
-static void _set_allocate_mode_env_vars(void);
 static List _create_path_list(void);
 
 /*---[ end forward declarations of static functions ]---------------------*/
@@ -345,35 +340,6 @@ static void _print_version(void)
 	printf("%s %s\n", PACKAGE, VERSION);
 }
 
-/*
- * _verify_iotype(): helper for output/input/error arguments.
- *
- * will return IO_NORMAL if string matches "normal" 
- *
- * prunes off trailing '%' char after setting IO_PER_TASK if such
- * a one exists.
- */
-static enum io_t _verify_iotype(char **name)
-{
-	enum io_t type;
-	char *p = *name;
-	int end = strlen(p) - 1;
-
-	/* name must have form "file.%" to be IO_PER_TASK */
-	if (p[end] == '%') {
-		type = IO_PER_TASK;
-		p[end] = '\0';	/* no longer need % char */
-
-	} else if (strncasecmp(p, "normal", (size_t) 6) != 0) {
-		type = IO_ALL;
-	} else if (strncasecmp(p, "none", (size_t) 4) != 0) {
-		type = IO_NONE;
-	} else {
-		type = IO_NORMAL;
-	}
-
-	return type;
-}
 
 /* 
  * verify that a distribution type in arg is of a known form
@@ -463,35 +429,6 @@ static long _to_bytes(const char *arg)
 }
 
 
-/* set a few env vars for allocate mode so they'll be available in
- * the resulting subshell
- */
-static void _set_allocate_mode_env_vars(void)
-{
-	int rc;
-
-	if (opt.output == IO_ALL) {
-		/* all output to single file */
-		rc = setenvf("SLURM_OUTPUT=%s", opt.ofname);
-	} else if (opt.output == IO_PER_TASK) {
-		/* output is per task, need to put '%' char back */
-		rc = setenvf("SLURM_OUTPUT=%s%%", opt.ofname);
-	}
-
-	if (opt.error == IO_ALL) {
-		rc = setenvf("SLURM_ERROR=%s", opt.efname);
-	} else if (opt.output == IO_PER_TASK) {
-		rc = setenvf("SLURM_ERROR=%s%%", opt.efname);
-	}
-
-	if (opt.input == IO_ALL) {
-		rc = setenvf("SLURM_INPUT=%s", opt.ifname);
-	} else if (opt.input == IO_PER_TASK) {
-		rc = setenvf("SLURM_INPUT=%s%%", opt.ifname);
-	}
-
-}
-
 /*
  * print error message to stderr with opt.progname prepended
  */
@@ -548,9 +485,6 @@ static void _opt_default()
 
 	opt.distribution = SRUN_DIST_UNKNOWN;
 
-	opt.output = IO_NORMAL;
-	opt.input = IO_NORMAL;
-	opt.error = IO_NORMAL;
 	opt.ofname = NULL;
 	opt.ifname = NULL;
 	opt.efname = NULL;
@@ -761,17 +695,14 @@ static void _opt_args(int ac, char **av)
 
 		case OPT_OUTPUT:
 			opt.ofname = strdup(arg);
-			opt.output = _verify_iotype(&opt.ofname);
 			break;
 
 		case OPT_INPUT:
 			opt.ifname = strdup(arg);
-			opt.input = _verify_iotype(&opt.ifname);
 			break;
 
 		case OPT_ERROR:
 			opt.efname = strdup(arg);
-			opt.error = _verify_iotype(&opt.efname);
 			break;
 
 		case OPT_DISTRIB:
@@ -907,20 +838,9 @@ _opt_verify(poptContext optctx)
 
 	} else { /* mode != MODE_ATTACH */
 
-		if (mode == MODE_ALLOCATE) {
-
-			/* set output/input/err (an whatever else) as
-			 * env vars so they will be "defaults" in allocate
-			 * subshell
-			 */
-			_set_allocate_mode_env_vars();
-
-		} else {
-
-			if (remote_argc == 0) {
-				error("Error: must supply remote command");
-				verified = false;
-			}
+		if ((remote_argc == 0) && (mode != MODE_ALLOCATE)) {
+			error("must supply remote command");
+			verified = false;
 		}
 
 
@@ -1099,33 +1019,6 @@ _find_file_path (char *fname)
 
 #if	__DEBUG
 
-/* generate meaningful output message based on io type and "filename" */
-char *print_io_t_with_filename(enum io_t type, char *filename)
-{
-	char buf[256];
-
-	switch (type) {
-	case IO_ALL:
-		snprintf(buf, 256, "%s (file `%s')", 
-			 format_io_t(type), filename);
-		break;
-
-	case IO_PER_TASK:
-		snprintf(buf, 256, "%s (file `%s<task_id>')",
-			 format_io_t(type), filename);
-		break;
-
-	case IO_NORMAL:
-		snprintf(buf, 256, "normal");
-		break;
-
-	default:
-		snprintf(buf, 256, "error, unknown type");
-		break;
-	}
-	return strdup(buf);
-}
-
 /* helper function for printing options
  * 
  * warning: returns pointer to memory allocated on the stack.
@@ -1190,12 +1083,6 @@ void _opt_list()
 	     opt.partition == NULL ? "default" : opt.partition);
 	info("job name       : `%s'", opt.job_name);
 	info("distribution   : %s", format_distribution_t(opt.distribution));
-	info("output         : %s",
-	     print_io_t_with_filename(opt.output, opt.ofname));
-	info("error          : %s",
-	     print_io_t_with_filename(opt.error, opt.efname));
-	info("input          : %s",
-	     print_io_t_with_filename(opt.input, opt.ifname));
 	info("core format    : %s", opt.core_format);
 	info("verbose        : %d", _verbose);
 	info("debug          : %d", _debug);

@@ -69,9 +69,6 @@ typedef struct task_info {
 	               *out,       /* I/O objects used in IO event loop   */
 		       *err;       
 	int             estatus;   /* this task's exit status             */
-	char *		ofname;    /* output file (if any)                */
-	char *		efname;    /* error file (if any)		  */
-	char *          ifname;    /* input file (if any) 		  */
 	List            srun_list; /* List of srun objs for this task     */
 } task_info_t;
 
@@ -80,9 +77,10 @@ typedef struct srun_info {
 	srun_key_t *key;	   /* srun key for IO verification       */
 	slurm_addr resp_addr;	   /* response addr for task exit msg    */
 	slurm_addr ioaddr;         /* Address to connect on for I/O      */
+	char *		ofname;    /* output file (if any)                */
+	char *		efname;    /* error file  (if any)		  */
+	char *          ifname;    /* input file  (if any) 		  */
 
-	bool       noconnect;      /* don't connect I/O back to srun     *
-				    * e.g. for local file I/O only       */
 } srun_info_t;
 
 typedef struct slurmd_job {
@@ -102,9 +100,6 @@ typedef struct slurmd_job {
 #endif
 	uid_t         uid;
 	struct passwd *pwd;
-	char          *ifname;
-	char          *ofname;
-	char          *efname;
 	time_t         timelimit;
 	task_info_t  **task;
 	List           objs; 

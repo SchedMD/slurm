@@ -122,12 +122,16 @@ static int               _set_batch_script_env(uint32_t jobid);
    static void _qsw_standalone(job_t *job);
 #endif
 
+/* empty sigint handler */
+static void
+_int_handler(int signal) 
+{ pthread_cancel(pthread_self());}
+
 int
 main(int ac, char **av)
 {
 	sigset_t sigset;
 	allocation_resp *resp;
-	alloc_run_resp *run_resp;
 	job_t *job;
 	pthread_attr_t attr;
 	struct sigaction action;
@@ -258,11 +262,14 @@ main(int ac, char **av)
 	/* kill msg server thread */
 	pthread_kill(job->jtid, SIGTERM);
 
+	/* wait for stdio */
+	xsignal(SIGQUIT, &_int_handler); 
+	if (pthread_join(job->ioid, NULL) < 0) {
+		error ("Waiting on IO: %m");
+	}
+
 	/* kill signal thread */
 	pthread_cancel(job->sigid);
-
-	/* wait for stdio */
-	pthread_join(job->ioid, NULL);
 
 	if (old_job) {
 		debug("cancelling job step %u.%u", job->jobid, job->stepid);
@@ -486,6 +493,7 @@ _print_job_information(allocation_resp *resp)
 	info("%s",job_details);
 }
 
+
 static void
 _sigterm_handler(int signum)
 {
@@ -502,7 +510,6 @@ _sig_thr(void *arg)
 	job_t *job = (job_t *)arg;
 	sigset_t set;
 	time_t last_intr = 0;
-	bool suddendeath = false;
 	int signo;
 
 	while (1) {
@@ -518,7 +525,8 @@ _sig_thr(void *arg)
 		switch (signo) {
 		  case SIGINT:
 			if ((time(NULL) - last_intr) > 1) {
-				info("interrupt (one more within 1 sec to abort)");
+				info("interrupt (one more within 1 "
+				     "sec to abort)");
 				report_task_status(job);
 				last_intr = time(NULL);
 			 } else  { /* second Ctrl-C in half as many seconds */
@@ -528,20 +536,18 @@ _sig_thr(void *arg)
 					last_intr = time(NULL);
 					_fwd_signal(job, signo);
 				} else {
-					pthread_mutex_lock(&job->state_mutex);
-					if (job->state != SRUN_JOB_OVERDONE) {
-						info("forcing termination");
-						job->state = SRUN_JOB_OVERDONE;
-					} else 
-						info("attempting cleanup");
-					pthread_cond_signal(&job->state_cond);
-					pthread_mutex_unlock(&job->state_mutex);
-					suddendeath = true;
+					info("forcing termination");
+					pthread_kill(job->ioid, SIGTERM);
 				}
 			}
 			break;
 		  default:
-			_fwd_signal(job, signo);
+			if (job->state != SRUN_JOB_OVERDONE)
+				_fwd_signal(job, signo);
+			else if (signo == SIGQUIT) {
+				info("forcing termination");
+				pthread_kill(job->ioid, SIGTERM);
+			}
 			break;
 		}
 	}
@@ -726,12 +732,9 @@ _run_batch_job(void)
 		job.env_size++;
 
 	job.script		= job_script;
-	if (opt.efname)
-		job.err		= opt.efname;
-	if (opt.ifname)
-		job.in		= opt.ifname;
-	if (opt.ofname)
-		job.out		= opt.ofname;
+	job.err		        = opt.efname;
+	job.in        		= opt.ifname;
+	job.out	        	= opt.ofname;
 	job.work_dir		= opt.cwd;
 
 	retries = 0;

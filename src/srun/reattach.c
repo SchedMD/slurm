@@ -182,10 +182,10 @@ _step_list_create(char *steplist)
 
 }
 
-static void
+static int
 _get_job_info(srun_step_t *s)
 {
-	int             i;
+	int             i, rc = -1;
 	job_info_msg_t *resp = NULL;
 	job_info_t     *job  = NULL;
 	hostlist_t      hl;
@@ -201,31 +201,30 @@ _get_job_info(srun_step_t *s)
 		job = &resp->job_array[i];
 		if (job->job_id != s->jobid)
 			continue;
-		goto done;
 	}
 
 	if (job == NULL) {
 		error ("Cannot find job %d", s->jobid);
 		goto done;
 	}
+
 	if (job->job_state != JOB_RUNNING) {
 		error ("Cannot attach to %s job %d",
 		       job_state_string(job->job_state), s->jobid);
 		goto done;
 	}
 
-	/* For attaching to a job, we assume that it is meant
-	 * that we are attaching to a job script, which *should*
-	 * be running on the first node of the allocation. If it
-	 * is not, we will get an error attempting to attach, but
-	 * this is not too bad, since the output will be going to
-	 * a file anyway.
-	 */
+	if (!job->batch_flag) {
+		rc = 0;
+		goto done;
+	}
+
 	if (!(hl = hostlist_create(job->nodes))) {
 		error ("Unable to create hostlist from `%s'", job->nodes);
 		goto done;
 	}
 
+	rc = 0;
 	s->nodes  = hostlist_shift(hl);
 	s->ntasks = 1;
 
@@ -234,7 +233,7 @@ _get_job_info(srun_step_t *s)
   done:
 	if (resp)
 		slurm_free_job_info_msg(resp);
-	return;
+	return rc;
 }
 
 static void
@@ -267,10 +266,20 @@ _get_step_info(srun_step_t *s)
 static void
 _get_attach_info(srun_step_t *s)
 {
-	if (s->stepid == NO_VAL) 
-		_get_job_info(s);
-	else
+	if (s->stepid == NO_VAL) {
+		if (_get_job_info(s) < 0)
+			return;
+
+		/* If job was not a batch job, try step 0
+		 */
+		if (s->nodes == NULL) {
+			s->stepid = 0;
+			_get_step_info(s);
+		}
+
+	} else {
 		_get_step_info(s);
+	}
 }
 
 static int
@@ -450,6 +459,8 @@ int reattach()
 
 	_get_attach_info(s);
 
+	opt.ifname = "none";
+
 	if ((opt.nodelist = s->nodes) == NULL) 
 		exit(1);
 
@@ -481,6 +492,10 @@ int reattach()
 	       && (job->state != SRUN_JOB_FAILED  ))
 		pthread_cond_wait(&job->state_cond, &job->state_mutex);
 	slurm_mutex_unlock(&job->state_mutex);
+
+	if (job->state == SRUN_JOB_FAILED) {
+		error ("Attach to job failed!");
+	}
 
 	pthread_kill(job->jtid, SIGTERM);
 	pthread_join(job->ioid, NULL);

@@ -322,7 +322,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 /*
  * concatenate result of xstrfmt() to dst, expanding dst if necessary
  */
-static void xstrfmtcat(char **dst, const char *fmt, ...)
+static void xlogfmtcat(char **dst, const char *fmt, ...)
 {
 	va_list ap;
 	char *buf = NULL;
@@ -415,7 +415,7 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 	}
 
 	if (level <= log->opt.logfile_level && log->logfp != NULL) {
-		xstrfmtcat(&msgbuf, "[%M] %s%s", pfx, buf);
+		xlogfmtcat(&msgbuf, "[%M] %s%s", pfx, buf);
 
 		if (strlen(buf) > 0 && buf[strlen(buf) - 1] == '\n')
 			fprintf(log->logfp, "%s", msgbuf);
@@ -427,7 +427,7 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 	}
 
 	if (level <=  log->opt.syslog_level) {
-		xstrfmtcat(&msgbuf, "%s%s", pfx, buf);
+		xlogfmtcat(&msgbuf, "%s%s", pfx, buf);
 
 		openlog(log->argv0, LOG_PID, log->facility);
 		syslog(priority, "%.500s", msgbuf);
