@@ -473,6 +473,12 @@ By default there is no initialization program.
 <dd>How long to wait between sending SIGTERM and SIGKILL signals to jobs at termination time.
 The default value is 60 and the units are seconds.
 
+<dt>PRIORITIZE
+<dd>Job to execute in order to establish the initial priority of a job. 
+The program is passed the job's specifications and returns the priority. 
+Details of message format TBD.
+By default there is no prioritization program.
+
 <dt>PROLOG
 <dd>This program is executed on each node allocated to a job prior to its initiation. 
 This file must be accessible to every SLURM compute server. By default no prolog is executed. 
@@ -601,7 +607,7 @@ Remove node lx30 from service, removing jobs as needed:
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/admin.guide.html
-<p>Last Modified March 12, 2002</p>
+<p>Last Modified March 13, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
