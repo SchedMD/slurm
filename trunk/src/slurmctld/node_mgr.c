@@ -52,14 +52,14 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/slurmctld.h"
 
+#define _DEBUG		0
 #define BUF_SIZE 	4096
 #define MAX_RETRIES	10
 
 /* Global variables */
 List config_list = NULL;		/* list of config_record entries */
 struct node_record *node_record_table_ptr = NULL;	/* node records */
-int *node_hash_table = NULL;			/* table of hashed indexes into 
-					 * node_record */
+struct node_record **node_hash_table = NULL;	/* node_record hash table */ 
 struct config_record default_config_record;
 struct node_record default_node_record;
 time_t last_bitmap_update = (time_t) NULL;	/* time of last node creation 
@@ -83,11 +83,9 @@ static void 	_pack_node (struct node_record *dump_node_ptr, Buf buffer);
 static void	_sync_bitmaps(struct node_record *node_ptr, int job_count);
 static bool 	_valid_node_state_change(enum node_states old, 
 					enum node_states new);
-
-#if DEBUG_SYSTEM
+#if _DEBUG
 static void	_dump_hash (void);
 #endif
-
 
 /*
  * bitmap2node_name - given a bitmap, build a list of comma separated node 
@@ -442,32 +440,31 @@ unpack_error:
 struct node_record * 
 find_node_record (char *name) 
 {
-	int i, inx;
+	int i;
 
-	/* try to find in hash table first */
+	/* try to find via hash table, if it exists */
 	if (node_hash_table) {
+		struct node_record *node_ptr;
+
 		i = _hash_index (name);
-		if ( (i <= node_record_count) &&
-		     ((inx = node_hash_table[i]) <= node_record_count ) &&
-		     (strncmp ((node_record_table_ptr[inx]).name, name, 
-		                MAX_NAME_LEN) == 0) )
-			return (node_record_table_ptr + inx);
-		debug2("find_node_record: hash table lookup failure for %s", 
-		       name);
-#if DEBUG_SYSTEM
-		_dump_hash ();
-#endif
-	}
+		node_ptr = node_hash_table[i];
+		while (node_ptr) {
+			xassert(node_ptr->magic == NODE_MAGIC);
+			if (strncmp(node_ptr->name, name, MAX_NAME_LEN) == 0)
+				return node_ptr;
+			node_ptr = node_ptr->node_next;
+		}
+		error ("find_node_record: lookup failure for %s", name);
+	} 
 
 	/* revert to sequential search */
-	for (i = 0; i < node_record_count; i++) {
-		if (strcmp (name, node_record_table_ptr[i].name) != 0)
-			continue;
-		return (node_record_table_ptr + i);
+	else {
+		for (i = 0; i < node_record_count; i++) {
+			if (strcmp (name, node_record_table_ptr[i].name) == 0)
+				return (&node_record_table_ptr[i]);
+		}
 	}
 
-	if (node_hash_table) 
-		error ("find_node_record: lookup failure for %s", name);
 	return (struct node_record *) NULL;
 }
 
@@ -481,11 +478,10 @@ find_node_record (char *name)
  */
 static int _hash_index (char *name) 
 {
-	int i, inx, tmp;
+	int i, inx = 0, tmp;
 
 	if (node_record_count == 0)
-		return SLURM_SUCCESS;	/* degenerate case */
-	inx = 0;
+		return 0;	/* degenerate case */
 
 	if ( slurmctld_conf.hash_base == 10 ) {
 		for (i = 0;; i++) {
@@ -780,10 +776,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer)
 
 
 /* 
- * rehash_node - build a hash table of the node_record entries. this is a large 
- *	hash table to permit the immediate finding of a record based only 
- *	upon its name without regards to their number. there should be no 
- *	need for a search. 
+ * rehash_node - build a hash table of the node_record entries. 
  * global: node_record_table_ptr - pointer to global node table
  *         node_hash_table - table of hash indecies
  * NOTE: manages memory for node_hash_table
@@ -793,15 +786,20 @@ void rehash_node (void)
 	int i, inx;
 
 	xfree (node_hash_table);
-	node_hash_table = xmalloc (sizeof (int) * node_record_count);
+	node_hash_table = xmalloc (sizeof (struct node_record *) * 
+				node_record_count);
 
 	for (i = 0; i < node_record_count; i++) {
 		if (strlen (node_record_table_ptr[i].name) == 0)
-			continue;
+			continue;	/* vestigial record */
 		inx = _hash_index (node_record_table_ptr[i].name);
-		node_hash_table[inx] = i;
+		node_record_table_ptr[i].node_next = node_hash_table[inx];
+		node_hash_table[inx] = &node_record_table_ptr[i];
 	}
 
+#if _DEBUG
+	_dump_hash();
+#endif
 	return;
 }
 
@@ -1513,7 +1511,7 @@ find_first_node_record (bitstr_t *node_bitmap)
 		return &node_record_table_ptr[inx];
 }
 
-#if DEBUG_SYSTEM
+#if _DEBUG
 /* 
  * _dump_hash - print the node_hash_table contents, used for debugging
  *	or analysis of hash technique 
@@ -1523,15 +1521,17 @@ find_first_node_record (bitstr_t *node_bitmap)
 static void _dump_hash (void) 
 {
 	int i, inx;
+	struct node_record *node_ptr;
 
 	if (node_hash_table == NULL)
 		return;
 	for (i = 0; i < node_record_count; i++) {
-		inx = node_hash_table[i];
-		if ((inx >= node_record_count) ||
-		    (strlen (node_record_table_ptr[inx].name) == 0))
-			continue;
-		debug3("hash:%d:%s", i, node_record_table_ptr[inx].name);
+		node_ptr = node_hash_table[i];
+		while (node_ptr) {
+			inx = node_ptr -  node_record_table_ptr;
+			debug3("node_hash[%d]:%d", i, inx);
+			node_ptr = node_ptr->node_next;
+		}
 	}
 }
 #endif

@@ -171,6 +171,7 @@ struct node_record {
 	uint16_t no_share_job_cnt;	/* count of jobs running that will
 					 * not share nodes */
 	char *reason; 			/* why a node is DOWN or DRAINING */
+	struct node_record *node_next;	/* next entry with same hash index */ 
 };
 
 extern struct node_record *node_record_table_ptr;  /* ptr to node records */
@@ -1000,10 +1001,7 @@ extern void re_kill_job(struct job_record *job_ptr);
 extern void rehash_jobs(void);
 
 /* 
- * rehash_node - build a hash table of the node_record entries. this is a large 
- *	hash table to permit the immediate finding of a record based only 
- *	upon its name without regards to their number. there should be no 
- *	need for a search. 
+ * rehash_node - build a hash table of the node_record entries. 
  * global: node_record_table_ptr - pointer to global node table
  *         node_hash_table - table of hash indecies
  * NOTE: manages memory for node_hash_table
