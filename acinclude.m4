@@ -91,6 +91,33 @@ AC_DEFUN([AC_SLURM_USE_INCLUDED_POPT],
 ])
 
 dnl
+dnl Perform checks related to setproctitle() emulation
+dnl
+AC_DEFUN([AC_SLURM_SETPROCTITLE],
+[
+#
+case "$host" in
+*-*-aix*)
+     AC_DEFINE(SETPROCTITLE_STRATEGY,PS_USE_CLOBBER_ARGV)
+     AC_DEFINE(SETPROCTITLE_PS_PADDING, '\0')
+     ;;
+*-*-hpux*)
+     AC_DEFINE(SETPROCTITLE_STRATEGY,PS_USE_PSTAT)
+     ;;
+*-*-linux*)
+     AC_DEFINE(SETPROCTITLE_STRATEGY,PS_USE_CLOBBER_ARGV)
+     AC_DEFINE(SETPROCTITLE_PS_PADDING, '\0')
+     ;;
+*)
+     AC_DEFINE(SETPROCTITLE_STRATEGY,PS_USE_NONE,
+               [Define to the setproctitle() emulation type])
+     AC_DEFINE(SETPROCTITLE_PS_PADDING, '\0',
+               [Define if you need setproctitle padding])
+     ;;
+esac
+])
+
+dnl
 dnl
 dnl
 dnl Perform SLURM Project version setup
@@ -484,3 +511,5 @@ CPPFLAGS="$saved_CPPFLAGS"
 LDFLAGS="$saved_LDFLAGS"
 
 ])dnl AC_SLURM_WITH_SSL
+
+
