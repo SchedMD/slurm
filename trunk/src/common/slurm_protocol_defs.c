@@ -53,12 +53,8 @@ void slurm_free_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr )
 {
 	if ( build_ptr ) 
 	{
-		if ( build_ptr->backup_location )
-			xfree ( build_ptr->backup_location ) ;
-		if ( build_ptr->backup_machine )
-			xfree ( build_ptr->backup_machine ) ;
-		if ( build_ptr->control_daemon )
-			xfree ( build_ptr->control_daemon ) ;
+		if ( build_ptr->backup_controller )
+			xfree ( build_ptr->backup_controller ) ;
 		if ( build_ptr->control_machine )
 			xfree ( build_ptr->control_machine ) ;
 		if ( build_ptr->epilog )
@@ -67,14 +63,12 @@ void slurm_free_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr )
 			xfree ( build_ptr->prioritize ) ;
 		if ( build_ptr->prolog )
 			xfree ( build_ptr->prolog ) ;
-		if ( build_ptr->server_daemon )
-			xfree ( build_ptr->server_daemon ) ;
 		if ( build_ptr->slurm_conf )
 			xfree ( build_ptr->slurm_conf ) ;
+		if ( build_ptr->state_save_location )
+			xfree ( build_ptr->state_save_location ) ;
 		if ( build_ptr->tmp_fs )
 			xfree ( build_ptr->tmp_fs ) ;
-		if ( build_ptr->server_daemon )
-			xfree ( build_ptr->server_daemon ) ;
 		xfree ( build_ptr ) ;
 	}
 }

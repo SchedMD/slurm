@@ -5,8 +5,8 @@
 #include <stdio.h>
 
 /* PROJECT INCLUDES */
+#include <src/common/parse_spec.h>
 #include <src/common/slurm_protocol_interface.h>
-#include <src/common/slurm_protocol_defs.h>
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/slurm_protocol_common.h>
 #include <src/common/slurm_protocol_pack.h>
@@ -17,11 +17,12 @@
 /* EXTERNAL VARIABLES */
 
 /* #DEFINES */
+#define BUF_SIZE 1024
 
 /* STATIC VARIABLES */
 static slurm_protocol_config_t proto_conf_default ;
 static slurm_protocol_config_t * proto_conf = & proto_conf_default ;
-
+static slurm_ctl_conf_t slurmctld_conf;
 
 /************************/
 /***** API init functions */
@@ -39,11 +40,90 @@ slurm_protocol_config_t * slurm_get_api_config ( )
 
 int slurm_api_set_default_config ( )
 {
-	slurm_set_addr ( & proto_conf_default . primary_controller , SLURM_PROTOCOL_DEFAULT_PORT , SLURM_PROTOCOL_DEFAULT_PRIMARY_CONTROLLER ) ;
-	slurm_set_addr ( & proto_conf_default . secondary_controller , SLURM_PROTOCOL_DEFAULT_PORT , SLURM_PROTOCOL_DEFAULT_SECONDARY_CONTROLLER ) ;
+	if ( (slurmctld_conf . control_machine == NULL) ||
+	     (slurmctld_conf . backup_controller == NULL) ||
+	     (slurmctld_conf . slurmctld_port == 0) )
+		read_slurm_port_config ( );
+
+	slurm_set_addr ( & proto_conf_default . primary_controller , 
+		slurmctld_conf . slurmctld_port ,
+		slurmctld_conf . control_machine ) ;
+	slurm_set_addr ( & proto_conf_default . secondary_controller , 
+		slurmctld_conf . slurmctld_port ,
+		slurmctld_conf . backup_controller ) ;
 	proto_conf = & proto_conf_default ;
 
 	return SLURM_SUCCESS ;
+}
+
+int read_slurm_port_config ( )
+{
+	FILE *slurm_spec_file;	/* pointer to input data file */
+	char in_line[BUF_SIZE];	/* input line */
+	char * control_machine = NULL;
+	char * backup_controller = NULL;
+	int error_code, i, j, line_num = 0;
+	int slurmctld_port = 0, slurmd_port = 0;
+
+	slurm_spec_file = fopen (SLURM_CONFIG_FILE, "r");
+	if (slurm_spec_file == NULL) {
+		fprintf (stderr, "read_slurm_conf error %d opening file %s", 
+			errno, SLURM_CONFIG_FILE);
+		exit (1);
+	}
+
+	while (fgets (in_line, BUF_SIZE, slurm_spec_file) != NULL) {
+		line_num++;
+		if (strlen (in_line) >= (BUF_SIZE - 1)) {
+			error ("read_slurm_conf line %d, of input file %s too long\n",
+				 line_num, SLURM_CONFIG_FILE);
+			fclose (slurm_spec_file);
+			return E2BIG;
+			break;
+		}		
+
+
+		/* everything after a non-escaped "#" is a comment */
+		/* replace comment flag "#" with an end of string (NULL) */
+		for (i = 0; i < BUF_SIZE; i++) {
+			if (in_line[i] == (char) NULL)
+				break;
+			if (in_line[i] != '#')
+				continue;
+			if ((i > 0) && (in_line[i - 1] == '\\')) {	/* escaped "#" */
+				for (j = i; j < BUF_SIZE; j++) {
+					in_line[j - 1] = in_line[j];
+				}	
+				continue;
+			}	
+			in_line[i] = (char) NULL;
+			break;
+		}		
+
+		/* parse what is left */
+		/* overall slurm configuration parameters */
+		error_code = slurm_parser(in_line,
+			"ControlMachine=", 's', &control_machine, 
+			"BackupController=", 's', &backup_controller, 
+			"SlurmctldPort=", 'd', &slurmctld_port,
+			"SlurmdPort=", 'd', &slurmd_port,
+			"END");
+		if (error_code) {
+			fclose (slurm_spec_file);
+			return error_code;
+		}		
+
+		if ( slurmctld_conf.control_machine == NULL )
+			slurmctld_conf.control_machine = control_machine;
+		if ( slurmctld_conf.backup_controller == NULL )
+			slurmctld_conf.backup_controller = backup_controller;
+		if (slurmctld_port)
+			slurmctld_conf.slurmctld_port = slurmctld_port;
+		if (slurmd_port)
+			slurmctld_conf.slurmd_port = slurmd_port;
+	}			
+	fclose (slurm_spec_file);
+	return SLURM_SUCCESS;
 }
 
 int slurm_set_default_controllers ( char * primary_controller_hostname , char * secondary_controller_hostname, uint16_t pri_port , uint16_t sec_port )

@@ -322,13 +322,10 @@ typedef struct job_desc_msg {   /* Job descriptor for submit, allocate, and upda
 
 struct slurm_ctl_conf {
 	uint32_t last_update;   /* last update time of the build parameters*/
-	uint16_t backup_interval;/* slurmctld save state interval, seconds */
-	char *backup_location;	/* pathname of state save directory */
-	char *backup_machine;	/* name of slurmctld secondary server */
-	char *control_daemon;	/* pathname of slurmctld */
+	char *backup_controller;/* name of slurmctld secondary server */
 	char *control_machine;	/* name of slurmctld primary server */
-	uint16_t controller_timeout; /* seconds for secondary slurmctld to take over */
 	char *epilog;		/* pathname of job epilog */
+	uint32_t first_job_id;	/* first slurm generated job_id to assign */
 	uint16_t fast_schedule;	/* 1 to *not* check configurations by node 
 				 * (only check configuration file, faster) */
 	uint16_t hash_base;	/* base used for hashing node table */
@@ -336,9 +333,12 @@ struct slurm_ctl_conf {
 	uint16_t kill_wait;	/* seconds from SIGXCPU to SIGKILL on job termination */
 	char *prioritize;	/* pathname of program to set initial job priority */
 	char *prolog;		/* pathname of job prolog */
-	char *server_daemon;	/* pathame of slurmd */
-	uint16_t server_timeout;/* how long slurmctld waits for setting node DOWN */
+	uint32_t slurmctld_port;/* default communications port to slurmctld */
+	uint16_t slurmctld_timeout;	/* how long backup waits for primarly slurmctld */
+	uint32_t slurmd_port;	/* default communications port to slurmd */
+	uint16_t slurmd_timeout;/* how long slurmctld waits for slurmd before setting down */
 	char *slurm_conf;	/* pathname of slurm config file */
+	char *state_save_location;	/* pathname of state save directory */
 	char *tmp_fs;		/* pathname of temporary file system */
 } ;
 typedef struct slurm_ctl_conf slurm_ctl_conf_t ;
