@@ -906,7 +906,7 @@ int kill_running_job_by_node_name(char *node_name, bool step_test)
 static void _excise_node_from_job(struct job_record *job_record_ptr, 
 				  struct node_record *node_record_ptr)
 {
-	make_node_idle(node_record_ptr, job_record_ptr); /* clear node_bitmap */
+	make_node_idle(node_record_ptr, job_record_ptr); /* updates bitmap */
 	job_record_ptr->nodes = bitmap2node_name(job_record_ptr->node_bitmap);
 	xfree(job_record_ptr->cpus_per_node);
 	xfree(job_record_ptr->cpu_count_reps);
@@ -1035,7 +1035,7 @@ void rehash_jobs(void)
 					sizeof(struct job_record *));
 	} else if (hash_table_size < slurmctld_conf.max_job_cnt) {
 		/* If the MaxJobCount grows by too much, the hash table will 
-		 * be ineffective without rebuilding. We don't presently bother 
+		 * be ineffective without rebuilding. We don't presently bother
 		 * to rebuild the hash table, but cut MaxJobCount back as 
 		 * needed. */ 
 		error ("MaxJobCount reset too high, restart slurmctld");
@@ -1382,7 +1382,7 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 		if (job_desc->contiguous)
 			bit_fill_gaps(req_bitmap);
 		if (bit_super_set(req_bitmap, part_ptr->node_bitmap) != 1) {
-			info("_job_create: requested nodes %s not in partition %s", 
+			info("_job_create: requested nodes %s not in partition %s",
 			     job_desc->req_nodes, part_ptr->name);
 			error_code = ESLURM_REQUESTED_NODES_NOT_IN_PARTITION;
 			goto cleanup;
@@ -2356,7 +2356,7 @@ static void _reset_step_bitmaps(struct job_record *job_ptr)
 	ListIterator step_record_iterator;
 	struct step_record *step_ptr;
 
-	step_record_iterator = list_iterator_create (job_ptr->step_list);		
+	step_record_iterator = list_iterator_create (job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) 
 			   list_next (step_record_iterator))) {
 		if ((step_ptr->step_node_list) && 		
@@ -2797,12 +2797,11 @@ _kill_job_on_node(uint32_t job_id, struct node_record *node_ptr)
 
 	agent_info = xmalloc(sizeof(agent_arg_t));
 	agent_info->node_count	= 1;
-	agent_info->retry	= 0;
+	agent_info->retry	    = 0;
 	agent_info->slurm_addr	= xmalloc(sizeof(slurm_addr));
 	memcpy(agent_info->slurm_addr, 
 	       &node_ptr->slurm_addr, sizeof(slurm_addr));
-	agent_info->node_names	= xmalloc(MAX_NAME_LEN);
-	strncpy(agent_info->node_names, node_ptr->name, MAX_NAME_LEN);
+	agent_info->node_names	= xstrdup(node_ptr->name);
 	agent_info->msg_type	= REQUEST_KILL_JOB;
 	agent_info->msg_args	= kill_req;
 
