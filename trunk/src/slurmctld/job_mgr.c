@@ -1093,6 +1093,7 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 	if (error_code) {
 		if (immediate && job_ptr) {
 			job_ptr->job_state = JOB_FAILED;
+			job_ptr->start_time = 0;
 			job_ptr->end_time = 0;
 		}
 		return error_code;
@@ -1103,8 +1104,9 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 
 	top_prio = _top_priority(job_ptr);
 	if (immediate && (!top_prio)) {
-		job_ptr->job_state = JOB_FAILED;
-		job_ptr->end_time = 0;
+		job_ptr->job_state  = JOB_FAILED;
+		job_ptr->start_time = 0;
+		job_ptr->end_time   = 0;
 		return ESLURM_NOT_TOP_PRIORITY;
 	}
 
@@ -1132,8 +1134,9 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 	    (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)) {
 		/* Not fatal error, but job can't be scheduled right now */
 		if (immediate) {
-			job_ptr->job_state = JOB_FAILED;
-			job_ptr->end_time = 0;
+			job_ptr->job_state  = JOB_FAILED;
+			job_ptr->start_time = 0;
+			job_ptr->end_time   = 0;
 		} else		/* job remains queued */
 			if (error_code == ESLURM_NODES_BUSY) 
 				error_code = SLURM_SUCCESS;
@@ -1141,14 +1144,16 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 	}
 
 	if (error_code) {	/* fundamental flaw in job request */
-		job_ptr->job_state = JOB_FAILED;
-		job_ptr->end_time = 0;
+		job_ptr->job_state  = JOB_FAILED;
+		job_ptr->start_time = 0;
+		job_ptr->end_time   = 0;
 		return error_code;
 	}
 
 	if (will_run) {		/* job would run, flag job destruction */
-		job_ptr->job_state = JOB_FAILED;
-		job_ptr->end_time = 0;
+		job_ptr->job_state  = JOB_FAILED;
+		job_ptr->start_time = 0;
+		job_ptr->end_time   = 0;
 	}
 
 	if (!no_alloc) {
@@ -1277,6 +1282,10 @@ job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	if (requeue && job_ptr->details && job_ptr->batch_flag) {
 		job_ptr->job_state = JOB_PENDING | job_comp_flag;
 		info("Requeing job %u", job_ptr->job_id);
+	} else if (job_ptr->job_state == JOB_PENDING) {
+		job_ptr->job_state  = JOB_COMPLETE;
+		job_ptr->start_time = 0;
+		job_ptr->end_time   = 0;
 	} else {
 		if (job_return_code)
 			job_ptr->job_state = JOB_FAILED   | job_comp_flag;
