@@ -244,6 +244,8 @@ struct job_details {
 	uint16_t req_tasks;		/* required number of tasks */
 	uint16_t shared;		/* set node can be shared*/
 	uint16_t contiguous;		/* set if requires contiguous nodes */
+	uint16_t wait_reason;		/* reason job still pending, see
+					 * slurm.h:enum job_wait_reason */
 	uint32_t min_procs;		/* minimum processors per node */
 	uint32_t min_memory;		/* minimum memory per node, MB */
 	uint32_t min_tmp_disk;		/* minimum tempdisk per node, MB */
@@ -610,9 +612,11 @@ extern bool is_node_resp (char *name);
  * OUT node_list - list of nodes allocated to the job
  * OUT node_cnt - number of allocated nodes
  * OUT node_addr - slurm_addr's for the allocated nodes
- * RET 0 or an error code
+ * RET 0 or an error code. If the job would only be able to execute with 
+ *	some change in partition configuration then 
+ *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE is returned
  * NOTE: If allocating nodes lx[0-7] to a job and those nodes have cpu counts  
- *	 of 4, 4, 4, 4, 8, 8, 4, 4 then num_cpu_groups=3, cpus_per_node={4,8,4}
+ *	of 4, 4, 4, 4, 8, 8, 4, 4 then num_cpu_groups=3, cpus_per_node={4,8,4}
  *	and cpu_count_reps={4,2,2}
  * globals: job_list - pointer to global job list 
  *	list_part - global list of partition info

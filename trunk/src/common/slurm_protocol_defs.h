@@ -501,6 +501,7 @@ void slurm_free_node_info_msg(node_info_msg_t * msg);
 void slurm_free_partition_info_msg(partition_info_msg_t * msg);
 
 extern char *job_dist_string(uint16_t inx);
+extern char *job_reason_string(enum job_wait_reason inx);
 extern char *job_state_string(enum job_states inx);
 extern char *job_state_string_compact(enum job_states inx);
 extern char *node_state_string(enum node_states inx);

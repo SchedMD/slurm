@@ -311,10 +311,10 @@ int _print_job_job_id(job_info_t * job, int width, bool right, char* suffix)
 
 int _print_job_partition(job_info_t * job, int width, bool right, char* suffix)
 {
-	char id[FORMAT_STRING_SIZE];
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("PARTITION", width, right, true);
 	else {
+		char id[FORMAT_STRING_SIZE];
 		snprintf(id, FORMAT_STRING_SIZE, "%s", job->partition);
 		_print_str(id, width, right, true);
 	}
@@ -325,6 +325,21 @@ int _print_job_partition(job_info_t * job, int width, bool right, char* suffix)
 
 int _print_job_prefix(job_info_t * job, int width, bool right, char* suffix)
 {
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_reason(job_info_t * job, int width, bool right, char* suffix)
+{
+	if (job == NULL)        /* Print the Header instead */
+		_print_str("REASON", width, right, true);
+	else {
+		char id[FORMAT_STRING_SIZE];
+		snprintf(id, FORMAT_STRING_SIZE, "%s", 
+			job_reason_string(job->wait_reason));
+		_print_str(id, width, right, true);
+	}
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
@@ -510,9 +525,27 @@ int _print_job_priority(job_info_t * job, int width, bool right, char* suffix)
 
 int _print_job_nodes(job_info_t * job, int width, bool right, char* suffix)
 {
-	if (job == NULL)	/* Print the Header instead */
+	if (job == NULL)        /* Print the Header instead */
 		_print_str("NODELIST", width, right, false);
 	else
+		_print_nodes(job->nodes, width, right, false);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_reason_list(job_info_t * job, int width, bool right, 
+		char* suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("NODELIST(REASON)", width, right, false);
+	else if (job->job_state == JOB_PENDING) {
+		char id[FORMAT_STRING_SIZE];
+		snprintf(id, FORMAT_STRING_SIZE, "(%s)", 
+			job_reason_string(job->wait_reason));
+		_print_str(id, width, right, true);
+	} else
 		_print_nodes(job->nodes, width, right, false);
 
 	if (suffix)

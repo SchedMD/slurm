@@ -55,10 +55,10 @@ various options are
 .RS
 .TP 15
 .I "default"
-"%.7i %.9P %.8j %.8u  %.2t %.9M %.6D %N"
+"%.7i %.9P %.8j %.8u  %.2t %.9M %.6D %R"
 .TP
 .I "-l, --long"
-".7i %.9P %.8j %.8u %.8T %.9M %.9l %.6D %N"
+".7i %.9P %.8j %.8u %.8T %.9M %.9l %.6D %R"
 .TP
 .I "-s, --steps"
 "%10i %.9P %.8u %.9M %N"
@@ -147,17 +147,30 @@ Priority of the job (converted to a floating point number between 0.0 and 1.0
 \fB%P\fR 
 Partition of the job or job step
 .TP
+\fB%r\fR
+The reason a job is waiting for execution.
+See the \fBJOB REASON CODES\fR section below for more information.
+.TP
+\fB%R\fR
+For running or completed jobs: the list of allocate nodes.
+For pending jobs: the reason a job is waiting for execution 
+is printed within parenthesis. 
+See the \fBJOB REASON CODES\fR section below for more information.
+.TP
 \fB%S\fR 
 Start time of the job or job step
 .TP
 \fB%t\fR 
 Job state, compact form:
-PD (pending), R (running), CG (completing), CD (completed), F (failed),
-TO (timeout), and NF (node failure).
+PD (pending), R (running), CA (cancelled), CG (completing), CD (completed), 
+F (failed), TO (timeout), and NF (node failure).
+See the \fBJOB STATE CODES\fR section below for more information.
 .TP
 \fB%T\fR 
 Job state, extended form: 
-PENDING, RUNNING, CANCELLED, COMPLETING, COMPLETED, FAILED, TIMEOUT, and NODE_FAIL.
+PENDING, RUNNING, CANCELLED, COMPLETING, COMPLETED, FAILED, TIMEOUT, 
+and NODE_FAIL.
+See the \fBJOB STATE CODES\fR section below for more information.
 .TP
 \fB%u\fR 
 User name
@@ -210,6 +223,7 @@ jobs are reported. Valid states (in both extended and compact form) include:
 PENDING (PD), RUNNING (R), COMPLETING (CG), COMPLETED (CD), CANCELLED (CA),
 FAILED (F), TIMEOUT (TO), and NODE_FAIL (NF). Note the \fB<state_list>\fR
 supplied is case insensitve ("pd" and "PD" work the same).
+See the \fBJOB STATE CODES\fR section below for more information.
 .TP
 \fB\-u <user_list>\fR, \fB\-\-user=<user_list>\fR
 Specifies a comma separated list of users whose jobs or job steps are to be
@@ -221,8 +235,39 @@ Report details of squeues actions.
 \fB\-V\fR , \fB\-\-version\fR
 Print version information and exit.
 
+.SH "JOB REASON CODES"
+These codes identify the reason that a job is waiting for execution. 
+A job may be waiting for more than one reason, in which case only 
+one of those reasons is displayed.
+.TP 20
+Dependency
+This job is waiting for a dependent job to complete.
+.TP
+None
+No reason is set for this job.
+.TP
+PartitionDown
+The partition required by this job is in a DOWN state.
+.TP
+PartitionNodeLimit
+The number of nodes required by this job is outside of it's 
+partitions current limits.
+.TP
+PartitionTimeLimit
+The job's time limit exceeds it's partition's current time limit.
+.TP
+Priority
+One or more higher priority jobs exist for this partition.
+.TP
+Resources
+The job is waiting for resources to become availble.
+
 .SH "JOB STATE CODES"
-.TP 17
+Jobs typically pass through several states in the course of their 
+execution. 
+The typical states are PENDING, RUNNING, COMPLETING, and COMPLETED.
+An explanation of each state follows.
+.TP 20
 CA  CANCELLED
 Job was explicitly cancelled by the user or system administrator.
 The job may or may not have been initiated.
@@ -241,6 +286,9 @@ Job terminated due to failure of one or more allocated nodes.
 .TP
 PD  PENDING
 Job is awaiting resource allocation.
+.TP
+R   RUNNING
+Job currently has an allocation.
 .TP
 TO  TIMEOUT
 Job terminated upon reaching its time limit.
@@ -291,7 +339,7 @@ Print the job steps in the debug partition sorted by user:
 .br
 # squeue -s -p debug -S u
 .br
-  STEPID    PARTITION     USER TIME_USED NODELIST
+  STEPID    PARTITION     USER TIME_USED NODELIST(REASON)
 .br
  65552.1        debug    alice      0:23 dev[1-4]
 .br
@@ -301,15 +349,17 @@ Print the job steps in the debug partition sorted by user:
 .ec
 
 .eo
-Print information only about jobs 12345 and 12346:
+Print information only about jobs 12345,12345, and 12348:
 .br
-# squeue --jobs 12345,12346
+# squeue --jobs 12345,12346,12348
 .br
- JOBID PARTITION NAME USER ST TIME_USED NODES NODELIST
+ JOBID PARTITION NAME USER ST TIME_USED NODES NODELIST(REASON)
 .br
  12345     debug job1 dave  R      0:21     4 dev[9-12]
 .br
- 12346     debug job2 dave PD      0:00     8
+ 12346     debug job2 dave PD      0:00     8 (Resources)
+.br
+ 12348     debug job3 ed   PD      0:00     4 (Priority)
 .ec
 
 .eo
@@ -317,7 +367,7 @@ Print information only about job step 65552.1:
 .br
 # squeue --steps 65552.1
 .br
-  STEPID    PARTITION    USER    TIME_USED NODELIST
+  STEPID    PARTITION    USER    TIME_USED NODELIST(REASON)
 .br
  65552.1        debug   alice        12:49 dev[1-4]
 .ec
