@@ -30,6 +30,7 @@
 #include "qsw.h"
 #endif
 #include <src/api/slurm.h>
+#include <src/common/slurm_protocol_defs.h>
 
 #define DEBUG_SYSTEM 1
 
@@ -53,10 +54,10 @@
 extern char *control_machine;	/* name of computer acting as slurm controller */
 extern char *backup_controller;	/* name of computer acting as slurm backup controller */
 
+extern slurm_ctl_conf_t slurmctld_config;
 
 #define CONFIG_MAGIC 0xc065eded
 #define NODE_MAGIC   0x0de575ed
-#define NO_VAL	     0x7f7f7f7f
 struct config_record {
 	uint32_t magic;		/* magic cookie to test data integrity */
 	uint32_t cpus;		/* count of cpus running on the node */

@@ -1,6 +1,6 @@
 #include <src/common/slurm_protocol_defs.h>
+#include <src/common/xmalloc.h>
 #include <stdlib.h>
-#include <src/slurmctld/slurmctld.h>
 /* short messages*/
 void slurm_free_last_update_msg ( last_update_msg_t * msg )
 {
@@ -20,7 +20,7 @@ void slurm_free_return_code_msg ( return_code_msg_t * msg )
 
 
 
-void slurm_free_build_info ( build_info_msg_t * build_ptr )
+void slurm_free_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr )
 {
 	if ( build_ptr ) 
 	{

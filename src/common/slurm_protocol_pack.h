@@ -40,8 +40,8 @@ int unpack_last_update ( last_update_msg_t ** msg , void ** buffer , uint32_t * 
 void pack_return_code ( return_code_msg_t * msg , void ** buffer , uint32_t * length );
 int unpack_return_code ( return_code_msg_t ** msg , void ** buffer , uint32_t * length );
 
-void pack_build_info ( build_info_msg_t * build_ptr, void ** buffer , int * buffer_size ) ;
-int unpack_build_info ( build_info_msg_t **build_buffer_ptr, void ** buffer , int * buffer_size ) ;
+void pack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr, void ** buffer , int * buffer_size ) ;
+int unpack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t **build_buffer_ptr, void ** buffer , int * buffer_size ) ;
 
 void pack_job_info_msg ( slurm_msg_t * msg , void ** buffer , int * buffer_size ) ;
 int unpack_job_info_msg ( job_info_msg_t ** msg , void ** buffer , int * buffer_size ) ;

@@ -44,10 +44,11 @@
 #define BUF_SIZE 1024
 
 time_t init_time;
+slurm_ctl_conf_t slurmctld_conf;
 
 int msg_from_root (void);
 void slurmctld_req ( slurm_msg_t * msg );
-void fill_build_table ( struct build_table * build_ptr );
+void fill_build_table ( slurm_ctl_conf_t * build_ptr );
 inline static void slurm_rpc_dump_build ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_nodes ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_partitions ( slurm_msg_t * msg ) ;
@@ -182,7 +183,7 @@ slurmctld_req ( slurm_msg_t * msg )
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: if you make any changes here be sure to increment the value of 
  *	 	BUILD_STRUCT_VERSION and make the corresponding changes to 
- *		load_build in api/build_info.c
+ *		load_build in api/slurm_ctl_conf.c
  */
 void
 slurm_rpc_dump_build ( slurm_msg_t * msg )
@@ -190,7 +191,7 @@ slurm_rpc_dump_build ( slurm_msg_t * msg )
 	clock_t start_time;
 	slurm_msg_t response_msg ;
 	last_update_msg_t * last_time_msg = ( last_update_msg_t * ) msg-> data ;
-	build_info_msg_t build_tbl ;
+	slurm_ctl_conf_info_msg_t build_tbl ;
 
 	start_time = clock ();
 	
@@ -664,7 +665,7 @@ slurm_rpc_register_node_status ( slurm_msg_t * msg )
 
 
 void
-fill_build_table ( struct build_table * build_ptr )
+fill_build_table ( slurm_ctl_conf_t * build_ptr )
 {
 	build_ptr->last_update		= init_time ;
 	build_ptr->backup_interval	= BACKUP_INTERVAL ;
