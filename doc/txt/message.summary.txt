@@ -177,6 +177,30 @@ Output: 	step id, elan context (opaque data structure)
 Notes:  	needed to start parallel program
 
 
+Command(s):	Modify node information
+Client:   	scontrol
+Server: 	slurmctld
+Input:  	node name, node state, uid
+Output: 	exit code
+Notes:  	Only the node state can be changed (esp. to DRAINING, DOWN, IDLE).
+		Only request from user root is accepted
+
+Command(s):	Modify partition information
+Client:   	scontrol
+Server: 	slurmctld
+Input:  	partition name, allowed groups, default, key, max time, max nodes, 
+		node list, shared, state, uid
+Output: 	exit code
+Notes:  	Only request from user root is accepted.
+
+
+Command(s):	Modify job information
+Client:   	scontrol
+Server: 	slurmctld
+Input:  	job id, time limit, priority, uid (must be root or owner
+Output: 	exit code
+Notes:  	Only request from the job's owner and user root are accepted.
+
 ----TEMPLATE----
 Command(s):	
 Client:   	
