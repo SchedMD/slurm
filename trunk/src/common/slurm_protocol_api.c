@@ -19,30 +19,41 @@
 /* #DEFINES */
 
 /* STATIC VARIABLES */
-static slurm_protocol_config_t * proto_conf = NULL ;
 static slurm_protocol_config_t proto_conf_default ;
+static slurm_protocol_config_t * proto_conf = & proto_conf_default ;
 
 
 /************************/
 /***** API init functions */
 /************************/
-int slurm_api_init ( slurm_protocol_config_t * protocol_conf )
+int slurm_set_api_config ( slurm_protocol_config_t * protocol_conf )
 {
 	proto_conf = protocol_conf ;
 	return SLURM_SUCCESS ;
 }
 
-int slurm_api_cleanup ( )
+slurm_protocol_config_t * slurm_get_api_config ( )
 {
-	return SLURM_SUCCESS ;
+	return NULL ;
 }
 
-int slurm_api_set_defaults ( )
+int slurm_api_set_default_config ( )
 {
 	if ( proto_conf == NULL )
 	{
 		slurm_set_addr ( & proto_conf_default . primary_controller , SLURM_PROTOCOL_DEFAULT_PORT , SLURM_PROTOCOL_DEFAULT_PRIMARY_CONTROLLER ) ;
 		slurm_set_addr ( & proto_conf_default . secondary_controller , SLURM_PROTOCOL_DEFAULT_PORT , SLURM_PROTOCOL_DEFAULT_SECONDARY_CONTROLLER ) ;
+
+	}	
+	return SLURM_SUCCESS ;
+}
+
+int slurm_set_default_controllers ( char * primary_controller_hostname , char * secondary_controller_hostnme, uint16_t pri_port , uint16_t sec_port )
+{
+	if ( proto_conf == NULL )
+	{
+		slurm_set_addr ( & proto_conf_default . primary_controller , pri_port , primary_controller_hostname ) ;
+		slurm_set_addr ( & proto_conf_default . secondary_controller , sec_port , secondary_controller_hostnme ) ;
 
 	}	
 	return SLURM_SUCCESS ;
@@ -111,8 +122,6 @@ slurm_fd slurm_open_controller_conn ( )
 {
 	slurm_fd connection_fd ;
 	
-	slurm_api_set_defaults ( ) ;
-
 	/* try to send to primary first then secondary */	
 	if ( ( connection_fd = slurm_open_msg_conn ( & proto_conf -> primary_controller ) ) == SLURM_SOCKET_ERROR )
 	{

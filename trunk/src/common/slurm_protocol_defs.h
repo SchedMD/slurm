@@ -65,6 +65,10 @@ typedef enum { test1, test2
 #define REQUEST_GET_JOB_STEP_INFO		3071
 #define RESPONSE_GET_JOB_STEP_INFO		3072
 
+#define REQUEST_UPDATE_NODE			3081
+#define REQUEST_UPDATE_PARTITION		3091
+
+
 #define REQUEST_CREATE_JOB_STEP			5001
 #define RESPONSE_CREATE_JOB_STEP		5002
 #define REQUEST_RUN_JOB_STEP			5011
@@ -123,6 +127,11 @@ typedef struct job_id_msg {
 	uint32_t job_id;
 } job_id_msg_t ;
 
+typedef struct slurm_update_node_msg
+{
+	char * node_names ;
+	uint32_t node_state ;
+}	update_node_msg_t ;
 
 typedef struct slurm_node_registration_status_msg
 {
@@ -299,6 +308,7 @@ void inline slurm_free_partition_table_msg ( partition_table_t * part ) ;
 void inline slurm_free_node_info ( node_info_msg_t * msg ) ;
 void inline slurm_free_node_table ( node_table_t * node ) ;
 void inline slurm_free_node_table_msg ( node_table_t * node ) ;
+void inline slurm_free_update_node_msg ( update_node_msg_t * msg ) ;
 
 /* stuct init functions */
 #define SLURM_JOB_DESC_NONCONTIGUOUS		0

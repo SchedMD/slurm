@@ -30,10 +30,10 @@
 
 /* high level routines */
 /* API init routines */
-int inline slurm_api_init ( slurm_protocol_config_t * protocol_conf ) ;
-int inline slurm_api_cleanup ( ) ;
-int inline slurm_api_set_defaults ( ) ;
-
+int inline slurm_set_api_config ( slurm_protocol_config_t * protocol_conf );
+inline slurm_protocol_config_t * slurm_get_api_config ( );
+int inline slurm_api_set_default_config ( );
+int inline slurm_set_default_controllers ( char * primary_controller_hostname , char * secondary_controller_hostnme, uint16_t pri_port , uint16_t sec_port );
 /* msg functions */
 
 /* In the socket implementation it creates a socket, binds to it, and listens for connections.

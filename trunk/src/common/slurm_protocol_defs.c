@@ -215,6 +215,15 @@ void slurm_free_node_registration_status_msg ( slurm_node_registration_status_ms
 }
 
 
+void slurm_free_update_node_msg ( update_node_msg_t * msg )
+{
+	if ( msg )
+	{
+		if ( msg -> node_names )
+			xfree ( msg -> node_names ) ;
+		xfree ( msg ) ;
+	}
+}
 /**********************
 ***********************
 Init functions
