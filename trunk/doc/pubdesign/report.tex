@@ -64,9 +64,21 @@ Jeff Squyres, Tim Mattson):
 \item Non-portable to Windows
 \item Source code is a mess and difficult for others (e.g. the open source
       community) to improve/expand.
-\item Rumored to be moving away from an open source license.
+\item Licensing problems (see below).
 \end{itemize}
 The one strength mentioned is PBS's portability and broad user base.
+
+PBS is owned by Veridian and is released as three separate products with
+different licenses: {\em PBS Pro} is a commercial product sold by Veridian;
+{\em OpenPBS} is an pseudo open source version of PBS that requires 
+registration; and
+{\em PBS} is a GPL-like, true open source version of PBS.
+
+Bug fixes go into PBS Pro.  When a major revision of PBS Pro comes out,
+the previous version of PBS Pro becomes OpenPBS, and the previous version
+of OpenPBS becomes PBS.  The delay getting bug fixes (some reported by the
+open source community) into the true open source version of PBS is the source
+of some frustration.
 
 \subsection{Maui}
 
