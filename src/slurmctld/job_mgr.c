@@ -2450,6 +2450,26 @@ static void _set_job_prio(struct job_record *job_ptr)
 }
 
 
+/* After a node is returned to service, reset the priority of jobs 
+ * which may have been held due to that node being unavailable */
+void reset_job_priority(void)
+{
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+	int count = 0;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (job_ptr->priority == 1) {
+			_set_job_prio(job_ptr);
+			count++;
+		}
+	}
+	list_iterator_destroy(job_iterator);
+	if (count)
+		last_job_update = time(NULL);
+}
+
 /* 
  * _top_priority - determine if any other job for this partition has a 
  *	higher priority than specified job
