@@ -148,7 +148,6 @@ enum {
  */
 int init ( void )
 {
-	debug("authentication==none");
 	return SLURM_SUCCESS;
 }
 
