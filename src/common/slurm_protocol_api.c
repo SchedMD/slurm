@@ -90,15 +90,15 @@ int read_slurm_port_config ( )
 
 	slurm_spec_file = fopen (SLURM_CONFIG_FILE, "r");
 	if (slurm_spec_file == NULL) {
-		error ( "read_slurm_conf error %d opening file %s", 
+		debug ( "read_slurm_conf error %d opening file %s", 
 			errno, SLURM_CONFIG_FILE);
-		exit (1);
+		return SLURM_ERROR ;
 	}
 
 	while (fgets (in_line, BUF_SIZE, slurm_spec_file) != NULL) {
 		line_num++;
 		if (strlen (in_line) >= (BUF_SIZE - 1)) {
-			error ("read_slurm_conf line %d, of input file %s too long\n",
+			debug ("read_slurm_conf line %d, of input file %s too long\n",
 				 line_num, SLURM_CONFIG_FILE);
 			fclose (slurm_spec_file);
 			return E2BIG;
@@ -223,11 +223,13 @@ slurm_fd slurm_open_controller_conn ( )
 	/* try to send to primary first then secondary */	
 	if ( ( connection_fd = slurm_open_msg_conn ( & proto_conf -> primary_controller ) ) == SLURM_SOCKET_ERROR )
 	{
-		error ( "Send message to primary controller failed" ) ;
+		int local_errno = errno ;
+		debug ( "Open connection to primary controller failed errno: %i", local_errno ) ;
 		
 		if ( ( connection_fd = slurm_open_msg_conn ( & proto_conf -> secondary_controller ) ) ==  SLURM_SOCKET_ERROR )	
 		{
-			error ( "Send messge to secondary controller failed" ) ;
+			int local_errno = errno ;
+			debug ( "Open connection to secondary controller failed errno: %i", local_errno ) ;
 		}
 	}
 	return connection_fd ;
@@ -272,7 +274,8 @@ int slurm_receive_msg ( slurm_fd open_fd , slurm_msg_t * msg )
 
 	if ( ( rc = _slurm_msg_recvfrom ( open_fd , buffer , receive_len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , & (msg)->address ) ) == SLURM_SOCKET_ERROR ) 
 	{
-		error ( "Error receiving msg socket: errno %i", errno ) ;
+		int local_errno = errno ;
+		debug ( "Error receiving msg socket: errno %i", errno ) ;
 		return rc ;
 	}
 
@@ -306,11 +309,13 @@ int slurm_send_controller_msg ( slurm_fd open_fd , slurm_msg_t * msg )
 	msg -> address = proto_conf -> primary_controller ; 
 	if ( (rc = slurm_send_node_msg ( open_fd , msg ) ) == SLURM_SOCKET_ERROR )
 	{
-		error  ( "Send message to primary controller failed" ) ;
+		int local_errno = errno ;
+		debug ( "Send message to primary controller failed errno: %i", local_errno ) ;
 		msg -> address = proto_conf -> secondary_controller ;
 		if ( (rc = slurm_send_node_msg ( open_fd , msg ) ) ==  SLURM_SOCKET_ERROR )	
 		{
-			error  ( "Send messge to secondary controller failed" ) ;
+			int local_errno = errno ;
+			debug ( "Send messge to secondary controller failed errno: %i", local_errno ) ;
 		}
 	}
 	return rc ;
@@ -343,7 +348,8 @@ int slurm_send_node_msg ( slurm_fd open_fd ,  slurm_msg_t * msg )
 	/* send msg */
 	if (  ( rc = _slurm_msg_sendto ( open_fd , buf_temp , SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE - pack_len , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , &msg->address ) ) == SLURM_SOCKET_ERROR )
 	{
-		error ( "Error sending msg socket: errno %i", errno ) ;
+		int local_errno = errno ;
+		debug ( "Error sending msg socket: errno %i", local_errno ) ;
 	}
 	return rc ;
 }
@@ -368,7 +374,8 @@ int slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slur
 
 	if ( ( rc = _slurm_msg_recvfrom ( open_fd , buffer , receive_len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , source_address ) ) == SLURM_SOCKET_ERROR ) ;
 	{
-		error ( "Error receiving msg socket: errno %i", errno ) ;
+		int local_errno = errno ;
+		debug ( "Error receiving msg socket: errno %i", local_errno ) ;
 		return rc ;
 	}
 
@@ -405,11 +412,13 @@ int slurm_send_controller_buffer ( slurm_fd open_fd , slurm_msg_type_t msg_type 
 	/* try to send to primary first then secondary */	
 	if ( ( rc = slurm_send_node_buffer ( open_fd ,  & proto_conf -> primary_controller , msg_type , data_buffer , buf_len ) ) == SLURM_SOCKET_ERROR )	
 	{
-		error ( "Send message to primary controller failed" ) ;
-		
+
+		int local_errno = errno ;
+		debug ( "Send message to primary controller failed errno: %i", local_errno ) ;
 		if ( ( rc = slurm_send_node_buffer ( open_fd ,  & proto_conf -> secondary_controller , msg_type , data_buffer , buf_len ) ) == SLURM_SOCKET_ERROR )
 		{
-			error ( "Send messge to secondary controller failed" ) ;
+			int local_errno = errno ;
+			debug ( "Send message to secondary controller failed errno: %i", local_errno ) ;
 		}
 	}
 	return rc ;
@@ -445,7 +454,8 @@ int slurm_send_node_buffer ( slurm_fd open_fd , slurm_addr * destination_address
 
 	if ( ( rc = _slurm_msg_sendto ( open_fd , buf_temp , SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE - pack_len , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , destination_address ) ) == SLURM_SOCKET_ERROR )
 	{
-		error ( "Error sending msg socket: errno %i", errno ) ;
+		int local_errno = errno ;
+		debug ( "Error sending msg socket: errno %i", local_errno ) ;
 	}
 	return rc ;
 }
