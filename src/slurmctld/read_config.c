@@ -71,11 +71,11 @@ main(int argc, char * argv[]) {
 	printf("NodeState=%s ",     Node_State_String[(Node_Record_Table_Ptr+i)->NodeState]);
 	printf("LastResponse=%ld ", (long)(Node_Record_Table_Ptr+i)->LastResponse);
 
-	printf("CPUs=%d ",          (Node_Record_Table_Ptr+i)->Config_Ptr->CPUs);
-	printf("RealMemory=%d ",    (Node_Record_Table_Ptr+i)->Config_Ptr->RealMemory);
-	printf("TmpDisk=%d ",       (Node_Record_Table_Ptr+i)->Config_Ptr->TmpDisk);
 	printf("Weight=%d ",        (Node_Record_Table_Ptr+i)->Config_Ptr->Weight);
 	printf("Feature=%s\n",      (Node_Record_Table_Ptr+i)->Config_Ptr->Feature);
+	printf("CPUs=%d ",          (Node_Record_Table_Ptr+i)->CPUs);
+	printf("RealMemory=%d ",    (Node_Record_Table_Ptr+i)->RealMemory);
+	printf("TmpDisk=%d ",       (Node_Record_Table_Ptr+i)->TmpDisk);
     } /* for */
     BitMap = BitMapPrint(Up_NodeBitMap);
     printf("\nUp_NodeBitMap  =%s\n", BitMap);
@@ -467,11 +467,9 @@ int Parse_Node_Spec (char *In_Line) {
 
 	    Node_Record_Point = Find_Node_Record(This_Node_Name);
 	    if (Node_Record_Point == NULL) {
-		Node_Record_Point = Create_Node_Record(&Error_Code);
+		Node_Record_Point = Create_Node_Record(&Error_Code, Config_Point, This_Node_Name);
 		if (Error_Code != 0) break;
-		strcpy(Node_Record_Point->Name, This_Node_Name);
 		if (State_Val != NO_VAL)         Node_Record_Point->NodeState=State_Val;
-		Node_Record_Point->Config_Ptr = Config_Point;
 	    } else {
 #if DEBUG_SYSTEM
 		fprintf(stderr, "Parse_Node_Spec: Reconfiguration for node %s ignored.\n", 

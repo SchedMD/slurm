@@ -105,35 +105,30 @@ main(int argc, char * argv[]) {
     if (Config_Ptr->RealMemory != 345) printf("ERROR: Config default RealMemory not set\n");
     if (Config_Ptr->TmpDisk != 67)     printf("ERROR: Config default TmpDisk not set\n");
     if (Config_Ptr->Weight != 89)      printf("ERROR: Config default Weight not set\n");
-    Config_Ptr->Feature = "for_lx01";
-    Config_Ptr->Nodes = "lx01";
+    Config_Ptr->Feature = "for_lx01,lx02";
+    Config_Ptr->Nodes = "lx[01-02]";
     Config_Ptr->NodeBitMap = Map1;
-    Node_Ptr   = Create_Node_Record(&Error_Code);
+    Node_Ptr   = Create_Node_Record(&Error_Code, Config_Ptr, "lx01");
     if (Error_Code) printf("ERROR: Create_Node_Record error %d\n", Error_Code);
-    strcpy(Node_Ptr->Name, "lx01");
-    Node_Ptr->Config_Ptr = Config_Ptr;
-    Node_Ptr   = Create_Node_Record(&Error_Code);
+    Node_Ptr   = Create_Node_Record(&Error_Code, Config_Ptr, "lx02");
     if (Error_Code) printf("ERROR: Create_Node_Record error %d\n", Error_Code);
-    strcpy(Node_Ptr->Name, "lx02");
-    Node_Ptr->Config_Ptr = NULL;
     Error_Code = Update_Node("lx[01-02]", Update_Spec);
     if (Error_Code) printf("ERROR: Update_Node error1 %d\n", Error_Code);
     if (Node_Ptr->NodeState != STATE_DRAINING) 
 	printf("ERROR: Update_Node error2 NodeState=%d\n", Node_Ptr->NodeState);
-    Node_Ptr   = Create_Node_Record(&Error_Code);
-    if (Error_Code) printf("ERROR: Create_Node_Record error %d\n", Error_Code);
     Config_Ptr = Create_Config_Record(&Error_Code);
     Config_Ptr->CPUs = 543;
     Config_Ptr->Nodes = "lx[03-20]";
     Config_Ptr->Feature = "for_lx03,lx04";
     Config_Ptr->NodeBitMap = Map2;
-    strcpy(Node_Ptr->Name, "lx03");
-    if (Node_Ptr->LastResponse != (time_t)678) printf("ERROR: Node default LastResponse not set\n");
-    Node_Ptr->Config_Ptr = Config_Ptr;
-    Node_Ptr   = Create_Node_Record(&Error_Code);
+    Node_Ptr   = Create_Node_Record(&Error_Code, Config_Ptr, "lx03");
     if (Error_Code) printf("ERROR: Create_Node_Record error %d\n", Error_Code);
-    strcpy(Node_Ptr->Name, "lx04");
-    Node_Ptr->Config_Ptr = Config_Ptr;
+    if (Node_Ptr->LastResponse != (time_t)678) printf("ERROR: Node default LastResponse not set\n");
+    if (Node_Ptr->CPUs != 543) printf("ERROR: Node default CPUs not set\n");
+    if (Node_Ptr->RealMemory != 345) printf("ERROR: Node default RealMemory not set\n");
+    if (Node_Ptr->TmpDisk != 67) printf("ERROR: Node default TmpDisk not set\n");
+    Node_Ptr   = Create_Node_Record(&Error_Code, Config_Ptr, "lx04");
+    if (Error_Code) printf("ERROR: Create_Node_Record error %d\n", Error_Code);
 
     Error_Code = NodeName2BitMap("lx[01-02],lx04", &Map1);
     if (Error_Code) printf("ERROR: NodeName2BitMap error %d\n", Error_Code);
@@ -430,17 +425,40 @@ struct Config_Record *Create_Config_Record(int *Error_Code) {
 /* 
  * Create_Node_Record - Create a node record
  * Input: Error_Code - Location to store error value in
+ *        Config_Point - Pointer to node's configuration information
+ *        Node_Name - Name of the node
  * Output: Error_Code - Set to zero if no error, errno otherwise
  *         Returns a pointer to the record or NULL if error
- * NOTE The record's values are initialized to those of Default_Record
+ * NOTE The record's values are initialized to those of Default_Node_Record, Node_Name and 
+ *	Config_Point's CPUs, RealMemory, and TmpDisk values
+ * NOTE: Allocates memory that should be freed with Delete_Part_Record
  */
-struct Node_Record *Create_Node_Record(int *Error_Code) {
+struct Node_Record *Create_Node_Record(int *Error_Code, struct Config_Record *Config_Point,
+	char *Node_Name) {
     struct Node_Record *Node_Record_Point;
     int Old_Buffer_Size, New_Buffer_Size;
 
     *Error_Code = 0;
     Last_Node_Update = time(NULL);
 
+    if (Config_Point == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Create_Node_Record: Invalid Config_Point\n");
+#else
+	syslog(LOG_ALERT, "Create_Node_Record: Invalid Config_Point\n");
+#endif
+	*Error_Code = EINVAL;
+	return;
+    } /* if */
+    if ((Node_Name == NULL) || (strlen(Node_Name) >= MAX_NAME_LEN)) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Create_Node_Record: Invalid Node_Name %s\n", Node_Name);
+#else
+	syslog(LOG_ALERT, "Create_Node_Record: Invalid Node_Name %s\n", Node_Name);
+#endif
+	*Error_Code = EINVAL;
+	return;
+    } /* if */
     /* Round up the buffer size to reduce overhead of realloc */
     Old_Buffer_Size = (Node_Record_Count) * sizeof(struct Node_Record);
     Old_Buffer_Size = ((int)((Old_Buffer_Size / BUF_SIZE) + 1)) * BUF_SIZE;
@@ -462,9 +480,14 @@ struct Node_Record *Create_Node_Record(int *Error_Code) {
     } /* if */
 
     Node_Record_Point = Node_Record_Table_Ptr + (Node_Record_Count++);
-    strcpy(Node_Record_Point->Name,    Default_Node_Record.Name);
-    Node_Record_Point->NodeState     = Default_Node_Record.NodeState;
-    Node_Record_Point->LastResponse  = Default_Node_Record.LastResponse;
+    strcpy(Node_Record_Point->Name,	Node_Name);
+    Node_Record_Point->NodeState	= Default_Node_Record.NodeState;
+    Node_Record_Point->LastResponse	= Default_Node_Record.LastResponse;
+    Node_Record_Point->Config_Ptr	= Config_Point;
+    /* These values will be overwritten when the node actually registers */
+    Node_Record_Point->CPUs 		= Config_Point->CPUs;
+    Node_Record_Point->RealMemory  	= Config_Point->RealMemory;
+    Node_Record_Point->TmpDisk  	= Config_Point->TmpDisk;
     return Node_Record_Point;
 } /* Create_Node_Record */
 
@@ -728,6 +751,19 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 	i = (int)(Node_Record_Table_Ptr+inx)->NodeState;
 	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
 	Buffer_Offset += sizeof(i);
+
+	i = (Node_Record_Table_Ptr+inx)->CPUs;
+	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	Buffer_Offset += sizeof(i);
+
+	i = (Node_Record_Table_Ptr+inx)->RealMemory;
+	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	Buffer_Offset += sizeof(i);
+
+	i = (Node_Record_Table_Ptr+inx)->TmpDisk;
+	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	Buffer_Offset += sizeof(i);
+
 	for (i=0; i<Config_Spec_List_Cnt; i++) {
 	    if (Config_Spec_List[i].Config_Record_Point ==
 		(Node_Record_Table_Ptr+inx)->Config_Ptr) break;
@@ -868,18 +904,21 @@ int Init_Node_Conf() {
     }
 
     strcpy(Default_Node_Record.Name, "DEFAULT");
-    Default_Node_Record.NodeState    = STATE_UNKNOWN;
-    Default_Node_Record.LastResponse = (time_t)0;
-    Default_Config_Record.CPUs       = 1;
-    Default_Config_Record.RealMemory = 1;
-    Default_Config_Record.TmpDisk    = 1;
-    Default_Config_Record.Weight     = 1;
+    Default_Node_Record.NodeState    	= STATE_UNKNOWN;
+    Default_Node_Record.LastResponse 	= (time_t)0;
+    Default_Node_Record.CPUs   		= 1;
+    Default_Node_Record.RealMemory    	= 1;
+    Default_Node_Record.TmpDisk    	= 1;
+    Default_Config_Record.CPUs       	= 1;
+    Default_Config_Record.RealMemory 	= 1;
+    Default_Config_Record.TmpDisk    	= 1;
+    Default_Config_Record.Weight     	= 1;
     if (Default_Config_Record.Feature) free(Default_Config_Record.Feature);
-    Default_Config_Record.Feature    = (char *)NULL;
+    Default_Config_Record.Feature    	= (char *)NULL;
     if (Default_Config_Record.Nodes) free(Default_Config_Record.Nodes);
-    Default_Config_Record.Nodes      = (char *)NULL;
+    Default_Config_Record.Nodes      	= (char *)NULL;
     if (Default_Config_Record.NodeBitMap) free(Default_Config_Record.NodeBitMap);
-    Default_Config_Record.NodeBitMap = (unsigned *)NULL;
+    Default_Config_Record.NodeBitMap 	= (unsigned *)NULL;
 
     if (Config_List) 	/* Delete defunct configuration entries */
 	(void)Delete_Config_Record();
@@ -1368,6 +1407,7 @@ int Validate_Node_Specs(char *NodeName, int CPUs, int RealMemory, int TmpDisk) {
 #endif
 	Error_Code = EINVAL;
     } /* if */
+    Node_Ptr->CPUs = CPUs;
 
     if (RealMemory < Config_Ptr->RealMemory) {
 #if DEBUG_SYSTEM
@@ -1377,6 +1417,7 @@ int Validate_Node_Specs(char *NodeName, int CPUs, int RealMemory, int TmpDisk) {
 #endif
 	Error_Code = EINVAL;
     } /* if */
+    Node_Ptr->RealMemory = RealMemory;
 
     if (TmpDisk < Config_Ptr->TmpDisk) {
 #if DEBUG_SYSTEM
@@ -1386,6 +1427,7 @@ int Validate_Node_Specs(char *NodeName, int CPUs, int RealMemory, int TmpDisk) {
 #endif
 	Error_Code = EINVAL;
     } /* if */
+    Node_Ptr->TmpDisk = TmpDisk;
 
     if (Error_Code) {
 #if DEBUG_SYSTEM
@@ -1725,28 +1767,40 @@ int Load_Node_Name(char *Req_Name, char *Next_Name, int *State, int *CPUs,
 	memcpy(&My_Node_Entry.NodeState, Buffer_Loc, sizeof(My_Node_Entry.NodeState)); 
 	Buffer_Loc += sizeof(My_Node_Entry.NodeState);
 
+	memcpy(&My_Node_Entry.CPUs, Buffer_Loc, sizeof(My_Node_Entry.CPUs)); 
+	Buffer_Loc += sizeof(My_Node_Entry.CPUs);
+
+	memcpy(&My_Node_Entry.RealMemory, Buffer_Loc, sizeof(My_Node_Entry.RealMemory)); 
+	Buffer_Loc += sizeof(My_Node_Entry.RealMemory);
+
+	memcpy(&My_Node_Entry.TmpDisk, Buffer_Loc, sizeof(My_Node_Entry.TmpDisk)); 
+	Buffer_Loc += sizeof(My_Node_Entry.TmpDisk);
+
 	memcpy(&Config_Num, Buffer_Loc, sizeof(Config_Num)); 
 	Buffer_Loc += sizeof(Config_Num);
 
 #if 0
 	printf("Name=%s, ", My_Node_Entry.Name);
 	printf("NodeState=%d, ", My_Node_Entry.NodeState);
+	printf("CPUs=%d, ", My_Node_Entry.CPUs);
+	printf("RealMemory=%d, ", My_Node_Entry.RealMemory);
+	printf("TmpDisk=%d, ", My_Node_Entry.TmpDisk);
 	printf("Config_Num=%d\n", Config_Num);
 #endif
 
 	if (strcmp(My_Node_Entry.Name, Req_Name) != 0) continue;
 	*State = My_Node_Entry.NodeState;
 	if (Config_Num == 0) {
-	    *CPUs 	= 0;
-	    *RealMemory	= 0;
-	    *TmpDisk	= 0;
+	    *CPUs 	= My_Node_Entry.CPUs;
+	    *RealMemory	= My_Node_Entry.RealMemory;
+	    *TmpDisk	= My_Node_Entry.TmpDisk;
 	    *Weight	= 0;
 	    Features[0]	= NULL;
 	} else {
 	    Config_Num--;
-	    *CPUs 	= Read_Config_List[Config_Num].CPUs;
-	    *RealMemory	= Read_Config_List[Config_Num].RealMemory;
-	    *TmpDisk	= Read_Config_List[Config_Num].TmpDisk;
+	    *CPUs 	= My_Node_Entry.CPUs;
+	    *RealMemory	= My_Node_Entry.RealMemory;
+	    *TmpDisk	= My_Node_Entry.TmpDisk;
 	    *Weight	= Read_Config_List[Config_Num].Weight;
 	    Features[0]	= Read_Config_List[Config_Num].Feature;
 	} /* else */
