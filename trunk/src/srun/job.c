@@ -27,6 +27,7 @@
 #include <netdb.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <stdlib.h>
 
 #include "job.h"
 #include "opt.h"
@@ -42,6 +43,7 @@ job_create(resource_allocation_response_msg_t *resp)
 	int i; 
 	int ntask, tph;		/* ntasks left to assign and tasks per host */
 	int ncpu;
+	div_t d;
 	hostlist_t hl;
 	job_t *job = (job_t *) xmalloc(sizeof(*job));
 
@@ -78,9 +80,27 @@ job_create(resource_allocation_response_msg_t *resp)
 	job->iaddr = (uint32_t *) xmalloc(job->nhosts * sizeof(uint32_t));
 	job->ntask = (int *)   xmalloc(job->nhosts * sizeof(int *) );
 
+	/* Compute number of file descriptors / Ports needed for Job 
+	 * control info server
+	 */
+	d = div(opt.nprocs, 128);
+	job->njfds = d.rem > 0 ? d.quot+1 : d.quot;
+	job->jfd   = (slurm_fd *)   xmalloc(job->njfds * sizeof(slurm_fd));
+	job->jaddr = (slurm_addr *) xmalloc(job->njfds * sizeof(slurm_addr));
+
+	debug3("njfds = %d", job->njfds);
+
+	/* Compute number of IO file descriptors needed and allocate 
+	 * memory for them
+	 */
+	d = div(opt.nprocs, 64);
+	job->niofds = d.rem > 0 ? d.quot+1 : d.quot;
+	job->iofd   = (int *) xmalloc(job->niofds * sizeof(int));
+	job->ioport = (int *) xmalloc(job->niofds * sizeof(int));
+
 	/* ntask stdout and stderr fds */
-	job->out   = (int *)   xmalloc(opt.nprocs * sizeof(int)   );
-	job->err   = (int *)   xmalloc(opt.nprocs * sizeof(int)   );
+	job->out   = (int *)  xmalloc(opt.nprocs *  sizeof(int));
+	job->err   = (int *)  xmalloc(opt.nprocs *  sizeof(int));
 
 	/* nhost host states */
 	job->host_state = 

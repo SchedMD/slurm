@@ -66,18 +66,19 @@ launch(void *arg)
 	msg.cwd = opt.cwd;
 	msg.nnodes = job->nhosts;
 	msg.nprocs = opt.nprocs;
-	slurm_set_addr_char(&msg.response_addr, 
-		 	    ntohs(job->jaddr.sin_port), hostname);
 
 #if HAVE_LIBELAN3
 	msg.qsw_job = job->qsw_job;
 #endif 
-	debug("setting ioport to %s:%d", hostname, ntohs(job->ioport));
+	/*debug("setting ioport to %s:%d", hostname, ntohs(job->ioport));
 	slurm_set_addr_char(&msg.streams , ntohs(job->ioport), hostname); 
+	*/
 	debug("sending to slurmd port %d", slurm_get_slurmd_port());
 
 	taskid = 0;
 	for (i = 0; i < job->nhosts; i++) {
+		unsigned short port;
+
 		msg.tasks_to_launch = job->ntask[i];
 		msg.global_task_ids = 
 			(uint32_t *) xmalloc(job->ntask[i]*sizeof(uint32_t));
@@ -86,8 +87,15 @@ launch(void *arg)
 		for (j = 0; j < job->ntask[i]; j++)
 			msg.global_task_ids[j] = taskid++;
 
+		port = ntohs(job->ioport[i%job->niofds]);
+		slurm_set_addr_char(&msg.streams, port, hostname); 
+
+		port = ntohs(job->jaddr[i%job->njfds].sin_port);
+		slurm_set_addr_char(&msg.response_addr, port, hostname);
+
 		slurm_set_addr_uint(&req.address, slurm_get_slurmd_port(), 
 				    ntohl(job->iaddr[i]));
+
 
 		debug2("launching on host %s", job->host[i]);
                 print_launch_msg(&msg);
