@@ -16,13 +16,13 @@
 
 #define BUF_SIZE 1024
 #define DEBUG_MODULE 0
+#define DEBUG_SYSTEM 1
 #define SEPCHARS " \n\t"
 
 List   Part_Record_List = NULL;		/* List of Part_Records */
 char *Job_Type_String[]   = {"NONE", "INTERACTIVE", "BATCH", "ALL", "END"};
 
 int	Delete_Part_Record(char *name);
-int 	Find_Valid_Parts (char *Specification, unsigned *Parition);
 struct Part_Record  *Find_Part_Record(char *name);
 int 	Parse_Part_Spec(char *Specification, char *My_Name,  
 	int *My_Number, int *Set_Number, unsigned *My_Batch, int *Set_Batch,
@@ -58,13 +58,13 @@ main(int argc, char * argv[]) {
     Error_Code = Write_Part_Spec_Conf(argv[2]);
     if (Error_Code != 0) printf("Error %d from Write_Part_Spec_Conf", Error_Code);
 
-    Error_Code = Find_Valid_Parts("User=student1 CPUs=4 Time=20 JobType=BATCH", &Partition);
+    Error_Code = Find_Valid_Parts("User=student1 CpuCount=4 MaxTime=20 JobType=BATCH", &Partition);
     if (Error_Code != 0) printf("Error %d from Find_Valid_Parts\n", Error_Code);
     part_target = (1 << 4);
     if (Partition != part_target) printf("Incorrect partition from Find_Valid_Parts, %x instead of %x\n",
 	 (int)Partition, part_target);
 
-    Error_Code = Find_Valid_Parts("User=jette CPUs=8 Time=20 JobType=BATCH", &Partition);
+    Error_Code = Find_Valid_Parts("User=jette CpuCount=8 MaxTime=20 JobType=BATCH", &Partition);
     if (Error_Code != 0) printf("Error %d from Find_Valid_Parts\n", Error_Code);
     part_target = (1 << 0) + (1 << 3);
     if (Partition != part_target) printf("Incorrect partition from Find_Valid_Parts, %x instead of %x\n",
@@ -98,7 +98,7 @@ int Delete_Part_Record(char *name) {
 
     Part_Record_Iterator = list_iterator_create(Part_Record_List);
     if (Part_Record_Iterator == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Delete_Part_Record: list_iterator_create unable to allocate memory\n");
 #else
 	syslog(LOG_ERR, "Delete_Part_Record: list_iterator_create unable to allocate memory\n");
@@ -140,7 +140,7 @@ int Dump_Part_Records (char *File_Name, char *File_Name_UserList) {
     Error_Code = 0;
     Part_Spec_File = fopen(File_Name, "w");
     if (Part_Spec_File == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Dump_Part_Records: error %d opening file %s\n", errno, File_Name);
 #else
 	syslog(LOG_ERR, "Dump_Part_Records: error %d opening file %s\n", errno, File_Name);
@@ -150,7 +150,7 @@ int Dump_Part_Records (char *File_Name, char *File_Name_UserList) {
 
     User_Spec_File = fopen(File_Name_UserList, "w");
     if (User_Spec_File == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Dump_Part_Records: error %d opening file %s\n", errno, File_Name_UserList);
 #else
 	syslog(LOG_ERR, "Dump_Part_Records: error %d opening file %s\n", errno, File_Name_UserList);
@@ -161,7 +161,7 @@ int Dump_Part_Records (char *File_Name, char *File_Name_UserList) {
     i = PART_STRUCT_VERSION;
     if (fwrite((void *)&i, sizeof(i), 1, Part_Spec_File) < 1) {
 	Error_Code = ferror(Part_Spec_File);
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Dump_Part_Records: error %d writing to file %s\n", Error_Code, File_Name);
 #else
 	syslog(LOG_ERR, "Dump_Part_Records: error %d writing to file %s\n", Error_Code, File_Name);
@@ -169,7 +169,7 @@ int Dump_Part_Records (char *File_Name, char *File_Name_UserList) {
     } /* if */
     if (fwrite((void *)&i, sizeof(i), 1, User_Spec_File) < 1) {
 	Error_Code = ferror(User_Spec_File);
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Dump_Part_Records: error %d writing to file %s\n", Error_Code, File_Name_UserList);
 #else
 	syslog(LOG_ERR, "Dump_Part_Records: error %d writing to file %s\n", Error_Code, File_Name_UserList);
@@ -178,7 +178,7 @@ int Dump_Part_Records (char *File_Name, char *File_Name_UserList) {
 
     Part_Record_Iterator = list_iterator_create(Part_Record_List);
     if (Part_Record_Iterator == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Dump_Part_Records: list_iterator_create unable to allocate memory\n");
 #else
 	syslog(LOG_ERR, "Dump_Part_Records: list_iterator_create unable to allocate memory\n");
@@ -196,7 +196,7 @@ int Dump_Part_Records (char *File_Name, char *File_Name_UserList) {
 			(size_t)(strlen(Tmp_Part_Record.AllowUsers)+1), 
 			(size_t)1, User_Spec_File) < 1) {
 		if (Error_Code == 0) Error_Code = ferror(User_Spec_File);
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 		fprintf(stderr, "Dump_Part_Records error %d writing to file %s\n", 
 			Error_Code, File_Name_UserList);
 #else
@@ -214,7 +214,7 @@ int Dump_Part_Records (char *File_Name, char *File_Name_UserList) {
 			(size_t)(strlen(Tmp_Part_Record.DenyUsers)+1), 
 			(size_t)1, User_Spec_File) < 1) {
 		if (Error_Code == 0) Error_Code = ferror(User_Spec_File);
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 		fprintf(stderr, "Dump_Part_Records error %d writing to file %s\n", 
 			Error_Code, File_Name_UserList);
 #else
@@ -227,7 +227,7 @@ int Dump_Part_Records (char *File_Name, char *File_Name_UserList) {
 	} /* if */
 	if (fwrite((void *)&Tmp_Part_Record, sizeof (struct Part_Record), 1, Part_Spec_File) < 1) {
 	    if (Error_Code == 0) Error_Code = ferror(Part_Spec_File);
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	    fprintf(stderr, "Dump_Part_Records error %d writing to file %s\n", Error_Code, File_Name);
 #else
 	    syslog(LOG_ERR, "Dump_Part_Records error %d writing to file %s\n", Error_Code, File_Name);
@@ -238,7 +238,7 @@ int Dump_Part_Records (char *File_Name, char *File_Name_UserList) {
     /* Termination */
     if (fclose(Part_Spec_File) != 0) {
 	if (Error_Code == 0) Error_Code = errno;
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Dump_Part_Records: error %d closing file %s\n", errno, File_Name);
 #else
 	syslog(LOG_NOTICE, "Dump_Part_Records: error %d closing file %s\n", errno, File_Name);
@@ -246,7 +246,7 @@ int Dump_Part_Records (char *File_Name, char *File_Name_UserList) {
     } /* if */
     if (fclose(User_Spec_File) != 0) {
 	if (Error_Code == 0) Error_Code = errno;
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Dump_Part_Records: error %d closing file %s\n", errno, File_Name_UserList);
 #else
 	syslog(LOG_NOTICE, "Dump_Part_Records: error %d closing file %s\n", errno, File_Name_UserList);
@@ -266,7 +266,7 @@ struct Part_Record *Find_Part_Record(char *name) {
 
     Part_Record_Iterator = list_iterator_create(Part_Record_List);
     if (Part_Record_Iterator == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Find_Part_Record:list_iterator_create unable to allocate memory\n");
 #else
 	syslog(LOG_ERR, "Find_Part_Record:list_iterator_create unable to allocate memory\n");
@@ -307,7 +307,7 @@ int Find_Valid_Parts (char *Specification, unsigned *Parition) {
     if (Specification[0] == '#') return 0;
     Scratch = malloc(strlen(Specification)+1);
     if (Scratch == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
     	fprintf(stderr, "Find_Valid_Parts: unable to allocate memory\n");
 #else
     	syslog(LOG_ERR, "Find_Valid_Parts: unable to allocate memory\n");
@@ -322,7 +322,7 @@ int Find_Valid_Parts (char *Specification, unsigned *Parition) {
 	strcpy(Scratch, str_ptr1+10);
 	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
 	if ((strlen(str_ptr2)+1) >= MAX_PART_LEN) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	    fprintf(stderr, "Find_Valid_Parts: Partition name too long\n");
 #else
 	    syslog(LOG_ERR, "Find_Valid_Parts: Partition name too long\n");
@@ -335,7 +335,7 @@ int Find_Valid_Parts (char *Specification, unsigned *Parition) {
 
     str_ptr1 = (char *)strstr(Specification, "User=");
     if (str_ptr1 == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Find_Valid_Parts: No User specified\n");
 #else
 	syslog(LOG_ERR, "Find_Valid_Parts: No User specified\n");
@@ -346,7 +346,7 @@ int Find_Valid_Parts (char *Specification, unsigned *Parition) {
     strcpy(Scratch, str_ptr1+5);
     str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
     if ((strlen(str_ptr2)+1) >= sizeof(My_User)) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Find_Valid_Parts: User name too long\n");
 #else
 	syslog(LOG_ERR, "Find_Valid_Parts: User name too long\n");
@@ -357,16 +357,16 @@ int Find_Valid_Parts (char *Specification, unsigned *Parition) {
     str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
     strcpy(My_User, str_ptr2);
 
-    str_ptr1 = (char *)strstr(Specification, "Time=");
+    str_ptr1 = (char *)strstr(Specification, "MaxTime=");
     if (str_ptr1 != NULL) {
-	strcpy(Scratch, str_ptr1+5);
+	strcpy(Scratch, str_ptr1+8);
 	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
 	My_MaxTime = (int) strtol(str_ptr2, (char **)NULL, 10);
     } else {
 	My_MaxTime = -1;
     } /* else */
 
-    str_ptr1 = (char *)strstr(Specification, "CPUs=");
+    str_ptr1 = (char *)strstr(Specification, "CpuCount=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+5);
 	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
@@ -382,7 +382,7 @@ int Find_Valid_Parts (char *Specification, unsigned *Parition) {
 
     str_ptr1 = (char *)strstr(Specification, "JobType=");
     if (str_ptr1 == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Find_Valid_Parts: No JobType specified\n");
 #else
 	syslog(LOG_ERR, "Find_Valid_Parts: No JobType specified\n");
@@ -397,7 +397,7 @@ int Find_Valid_Parts (char *Specification, unsigned *Parition) {
     } else if (strcmp(str_ptr2, "BATCH") == 0) {
 	My_JobType = 2;
     } else {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Find_Valid_Parts: Invalid JobType specified\n");
 #else
 	syslog(LOG_ERR, "Find_Valid_Parts: Invalid JobType specified\n");
@@ -409,7 +409,7 @@ int Find_Valid_Parts (char *Specification, unsigned *Parition) {
    /* Scan the partition list for matches */
     Part_Record_Iterator = list_iterator_create(Part_Record_List);
     if (Part_Record_Iterator == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Find_Part_Record: list_iterator_create unable to allocate memory\n");
 #else
 	syslog(LOG_ERR, "Find_Part_Record: list_iterator_create unable to allocate memory\n");
@@ -492,7 +492,7 @@ int Parse_Part_Spec(char *Specification, char *My_Name,
     if (Specification[0] == '#') return 0;
     Scratch = malloc(strlen(Specification)+1);
     if (Scratch == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
     	fprintf(stderr, "Parse_Part_Spec: unable to allocate memory\n");
 #else
     	syslog(LOG_ERR, "Parse_Part_Spec: unable to allocate memory\n");
@@ -503,7 +503,16 @@ int Parse_Part_Spec(char *Specification, char *My_Name,
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+5);
 	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
-	strcpy(My_Name, str_ptr2);
+	if (strlen(str_ptr2) < MAX_PART_LEN) strcpy(My_Name, str_ptr2);
+	else {
+#if DEBUG_SYSTEM
+    	    fprintf(stderr, "Parse_Part_Spec: Partition name too long\n");
+#else
+    	    syslog(LOG_ERR, "Parse_Part_Spec: Partition name too long\n");
+#endif
+	    free(Scratch);
+	    return EINVAL;
+	} /* else */
     } /* if */
 
     str_ptr1 = (char *)strstr(Specification, "Number=");
@@ -578,7 +587,7 @@ int Parse_Part_Spec(char *Specification, char *My_Name,
 	user_len = strlen(str_ptr2);
 	str_ptr3 = malloc(user_len+1);
 	if (str_ptr3 == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	    fprintf(stderr, "Parse_Part_Spec malloc failure\n");
 #else
 	    syslog(LOG_ALERT, "Parse_Part_Spec malloc failure\n");
@@ -597,7 +606,7 @@ int Parse_Part_Spec(char *Specification, char *My_Name,
 	user_len = strlen(str_ptr2);
 	str_ptr3 = malloc(user_len+1);
 	if (str_ptr3 == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	    fprintf(stderr, "Parse_Part_Spec malloc failure\n");
 #else
 	    syslog(LOG_ALERT, "Parse_Part_Spec malloc failure\n");
@@ -644,7 +653,7 @@ int Read_Part_Spec_Conf (char *File_Name) {
     Error_Code = 0;
     Part_Spec_File = fopen(File_Name, "r");
     if (Part_Spec_File == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Read_Part_Spec_Conf error %d opening file %s\n", errno, File_Name);
 #else
 	syslog(LOG_ALERT, "Read_Part_Spec_Conf error %d opening file %s\n", errno, File_Name);
@@ -667,7 +676,7 @@ int Read_Part_Spec_Conf (char *File_Name) {
     while (fgets(In_Line, BUF_SIZE, Part_Spec_File) != NULL) {
 	Line_Num++;
 	if (strlen(In_Line) >= (BUF_SIZE-1)) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	    fprintf(stderr, "Read_Part_Spec_Conf line %d, of input file %s too long\n", 
 		Line_Num, File_Name);
 #else
@@ -685,7 +694,7 @@ int Read_Part_Spec_Conf (char *File_Name) {
 	    &My_AllowUsers, &My_DenyUsers);
 	if (Error_Code != 0) break;
 	if (strlen(My_Name) == 0) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	    fprintf(stderr, "Read_Part_Spec_Conf line %d, of input file %s contains no Name\n", 
 		Line_Num, File_Name);
 #else
@@ -711,7 +720,7 @@ int Read_Part_Spec_Conf (char *File_Name) {
 	    if (Part_Record_Point == NULL) {
 		Part_Record_Point = (struct Part_Record *)malloc(sizeof(struct Part_Record));
 		if (Part_Record_Point == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 		    fprintf(stderr, "Read_Part_Spec_Conf malloc failure\n");
 #else
 		    syslog(LOG_ALERT, "Read_Part_Spec_Conf malloc failure\n");
@@ -721,7 +730,7 @@ int Read_Part_Spec_Conf (char *File_Name) {
 		} /* if */
 		memset(Part_Record_Point, 0, (size_t)sizeof(struct Part_Record));
 		if (list_append(Part_Record_List, (void *)Part_Record_Point) == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 		    fprintf(stderr, "Read_Part_Spec_Conf list_append can not allocate memory\n");
 #else
 		    syslog(LOG_ALERT, "Read_Part_Spec_Conf list_append can not allocate memory\n");
@@ -738,7 +747,7 @@ int Read_Part_Spec_Conf (char *File_Name) {
 		Part_Record_Point->MaxCpus        = Default_Record.MaxCpus;
 		/* AllowUsers and My_DenyUsers all handled below */
 	    } else {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 		fprintf(stderr, "Read_Part_Spec_Conf duplicate data for %s, using latest information\n", 
 		    Part_Record_Read.Name);
 #else
@@ -762,7 +771,7 @@ int Read_Part_Spec_Conf (char *File_Name) {
 		list_size = strlen(Default_Record.AllowUsers) + 1;
 		user_list = malloc(list_size);
 		if (user_list == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 		    fprintf(stderr, "Read_Part_Spec_Conf malloc failure\n");
 #else
 		    syslog(LOG_ALERT, "Read_Part_Spec_Conf malloc failure\n");
@@ -783,7 +792,7 @@ int Read_Part_Spec_Conf (char *File_Name) {
 		list_size = strlen(Default_Record.DenyUsers) + 1;
 		user_list = malloc(list_size);
 		if (user_list == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 		    fprintf(stderr, "Read_Part_Spec_Conf malloc failure\n");
 #else
 		    syslog(LOG_ALERT, "Read_Part_Spec_Conf malloc failure\n");
@@ -800,7 +809,7 @@ int Read_Part_Spec_Conf (char *File_Name) {
     /* Termination */
     if (fclose(Part_Spec_File) != 0) {
 	if (Error_Code == 0) Error_Code = errno;
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Read_Part_Spec_Conf error %d closing file %s\n", errno, File_Name);
 #else
 	syslog(LOG_NOTICE, "Read_Part_Spec_Conf error %d closing file %s\n", errno, File_Name);
@@ -898,7 +907,7 @@ int Update_Part_Spec_Conf (char *Specification) {
     if (Error_Code != 0) return EINVAL;
 
     if (strlen(My_Name) == 0) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Update_Part_Spec_Conf invalid input: %s\n", Specification);
 #else
 	syslog(LOG_ERR, "Update_Part_Spec_Conf invalid input: %s\n", Specification);
@@ -910,7 +919,7 @@ int Update_Part_Spec_Conf (char *Specification) {
     if (Part_Record_Point == NULL) {		/* Create new record as needed */
 	Part_Record_Point = (struct Part_Record *)malloc(sizeof(struct Part_Record));
 	if (Part_Record_Point == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	    fprintf(stderr, "Update_Part_Spec_Conf malloc failure\n");
 #else
 	    syslog(LOG_ERR, "Update_Part_Spec_Conf malloc failure\n");
@@ -919,7 +928,7 @@ int Update_Part_Spec_Conf (char *Specification) {
 	} /* if */
 	memset(Part_Record_Point, 0, (size_t)sizeof(struct Part_Record));
 	if (list_append(Part_Record_List, (void *)Part_Record_Point) == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	    fprintf(stderr, "Update_Part_Spec_Conf list_append can not allocate memory\n");
 #else
 	    syslog(LOG_ERR, "Update_Part_Spec_Conf list_append can not allocate memory\n");
@@ -982,7 +991,7 @@ int Write_Part_Spec_Conf (char *File_Name) {
     Error_Code = 0;
     Part_Spec_File = fopen(File_Name, "w");
     if (Part_Spec_File == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Write_Part_Spec_Conf error %d opening file %s\n", errno, File_Name);
 #else
 	syslog(LOG_ERR, "Write_Part_Spec_Conf error %d opening file %s\n", errno, File_Name);
@@ -992,7 +1001,7 @@ int Write_Part_Spec_Conf (char *File_Name) {
 
     Part_Record_Iterator = list_iterator_create(Part_Record_List);
     if (Part_Record_Iterator == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Write_Part_Spec_Conf: list_iterator_create unable to allocate memory\n");
 #else
 	syslog(LOG_ERR, "Write_Part_Spec_Conf: list_iterator_create unable to allocate memory\n");
@@ -1003,7 +1012,7 @@ int Write_Part_Spec_Conf (char *File_Name) {
     (void) time(&now);
     if (fprintf(Part_Spec_File, "#\n# Written by SLURM: %s#\n", ctime(&now)) <= 0) {
 	Error_Code = errno;
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Write_Part_Spec_Conf error %d printing to file %s\n", errno, File_Name);
 #else
 	syslog(LOG_ERR, "Write_Part_Spec_Conf error %d printing to file %s\n", errno, File_Name);
@@ -1034,7 +1043,7 @@ int Write_Part_Spec_Conf (char *File_Name) {
 	  "Name=%s Number=%d JobType=%s MaxTime=%s MaxCpus=%s State=%s",
 	  Part_Record_Point->Name, Part_Record_Point->Number, Out_Type, Out_Time, 
 	  Out_CPUs, Out_State) < 1) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	    fprintf(stderr, "Write_Part_Spec_Conf error %d printing to file %s\n", errno, File_Name);
 #else
 	    syslog(LOG_ERR, "Write_Part_Spec_Conf error %d printing to file %s\n", errno, File_Name);
@@ -1045,7 +1054,7 @@ int Write_Part_Spec_Conf (char *File_Name) {
 
 	if (Part_Record_Point->AllowUsers) {
 	    if (fprintf(Part_Spec_File," AllowUsers=%s\n", Part_Record_Point->AllowUsers) < 1)  {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 		fprintf(stderr, "Write_Part_Spec_Conf error %d printing to file %s\n", errno, File_Name);
 #else
 		syslog(LOG_ERR, "Write_Part_Spec_Conf error %d printing to file %s\n", errno, File_Name);
@@ -1055,7 +1064,7 @@ int Write_Part_Spec_Conf (char *File_Name) {
 	    } /* if */
 	} else if (Part_Record_Point->DenyUsers) {
 	    if (fprintf(Part_Spec_File," DenyUsers=%s\n", Part_Record_Point->DenyUsers) < 1)  {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 		fprintf(stderr, "Write_Part_Spec_Conf error %d printing to file %s\n", errno, File_Name);
 #else
 		syslog(LOG_ERR, "Write_Part_Spec_Conf error %d printing to file %s\n", errno, File_Name);
@@ -1065,7 +1074,7 @@ int Write_Part_Spec_Conf (char *File_Name) {
 	    } /* if */
 	} else {
 	    if (fprintf(Part_Spec_File," \n") < 1)  {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 		fprintf(stderr, "Write_Part_Spec_Conf error %d printing to file %s\n", errno, File_Name);
 #else
 		syslog(LOG_ERR, "Write_Part_Spec_Conf error %d printing to file %s\n", errno, File_Name);
@@ -1079,7 +1088,7 @@ int Write_Part_Spec_Conf (char *File_Name) {
     /* Termination */
     if (fclose(Part_Spec_File) != 0) {
 	if (Error_Code == 0) Error_Code = errno;
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Write_Part_Spec_Conf error %d closing file %s\n", errno, File_Name);
 #else
 	syslog(LOG_NOTICE, "Write_Part_Spec_Conf error %d closing file %s\n", errno, File_Name);
