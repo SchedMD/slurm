@@ -10,8 +10,8 @@
 int
 main (int argc, char *argv[]) {
 	int error_code;
-	partition_desc_msg_t part_update1 ;
-	partition_desc_msg_t part_update2 ;
+	update_part_msg_t	part_update1 ;
+	update_part_msg_t	part_update2 ;
 	update_node_msg_t	node_update1 ;
 	update_node_msg_t	node_update2 ;
 
