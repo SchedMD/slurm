@@ -364,7 +364,7 @@ load_part_state ( void )
 	xfree (state_file);
 	unlock_state_files ();
 
-	buffer = create_buf (data, data_read);
+	buffer = create_buf (data, data_size);
 	if (data_size > sizeof (time_t))
 		unpack_time (&time, buffer);
 
