@@ -52,5 +52,7 @@ typedef struct srun_job * srun_job_t;
 io_filename_t * fname_create(srun_job_t job, char *format);
 void fname_destroy(io_filename_t *fname);
 
+char * fname_remote_string (io_filename_t *fname);
+
 #endif /* !_FNAME_H */
 

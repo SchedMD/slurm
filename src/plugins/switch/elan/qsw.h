@@ -120,4 +120,7 @@ int		qsw_gethost_bynodeid(char *host, int len, int elanid);
 char *		qsw_capability_string(qsw_jobinfo_t j, char *buf, size_t len);
 void		qsw_print_jobinfo(FILE *fp, struct qsw_jobinfo *jobinfo);
 
+		/* Return  Elan shared memory state key */
+int             qsw_statkey (qsw_jobinfo_t jobinfo);
+
 #endif /* _QSW_INCLUDED */

@@ -35,6 +35,8 @@
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
 #include <syslog.h>
 #include <errno.h>
 #include <string.h>
@@ -55,8 +57,17 @@
  *  want to include here since we are using the new
  *  version-nonspecific libelanctrl.
  *  (XXX: What is the equivalent in libelanctrl?)
+ *
+ * slurm/482: the elan USER context range is now split
+ *  into two segments, regular user context and RMS 
+ *  context ranges. Do not allow a context range
+ *  (lowcontext -- highcontext) to span these two segments,
+ *  as this will generate and elan initialization error
+ *  when MPI tries to attach to the capability. For now,
+ *  restrict SLURM's range to the RMS one (starting at 0x400)
+ * 
  */
-# define ELAN_USER_BASE_CONTEXT_NUM    0x020
+# define ELAN_USER_BASE_CONTEXT_NUM    0x400 /* act. RMS_BASE_CONTEXT_NUM */
 # define ELAN_USER_TOP_CONTEXT_NUM     0x7ff
 
 # define Version      cap_version
@@ -107,6 +118,7 @@
 #define QSW_CTX_END		ELAN_USER_TOP_CONTEXT_NUM - 1 
 #define QSW_CTX_INVAL		(-1)
 
+
 /* 
  * We are going to some trouble to keep these defs private so slurm
  * hackers not interested in the interconnect details can just pass around
@@ -150,6 +162,8 @@ struct qsw_jobinfo {
 static qsw_libstate_t qsw_internal_state = NULL;
 static pthread_mutex_t qsw_lock = PTHREAD_MUTEX_INITIALIZER;
 static elanhost_config_t elanconf = NULL;
+
+static int shmid = -1;
 
 
 /*
@@ -667,6 +681,10 @@ qsw_setup_jobinfo(qsw_jobinfo_t j, int nprocs, bitstr_t *nodeset,
 int
 qsw_prgdestroy(qsw_jobinfo_t jobinfo)
 {
+	
+	if (shmid >= 0)
+		shmctl (shmid, IPC_RMID, NULL);
+
 	if (rms_prgdestroy(jobinfo->j_prognum) < 0) {
 		/* translate errno values to more descriptive ones */
 		switch (errno) {
@@ -699,6 +717,50 @@ qsw_prog_fini(qsw_jobinfo_t jobinfo)
 		jobinfo->j_ctx = NULL;
 	}
 #endif
+}
+
+/* Key for Elan stats shared memory segment is the
+ *  rms.o program description number, left shifted 9 less 1
+ *  to avoid conflicts with MPI shared memory
+ */
+static int elan_statkey (int prgid)
+{
+	return ((prgid << 9) - 1);
+}
+
+/*
+ * Return the statkey to caller if shared memory was created
+ */
+int qsw_statkey (qsw_jobinfo_t jobinfo)
+{
+	return (shmid > 0 ? elan_statkey (jobinfo->j_prognum) : -1);
+}
+
+/*
+ * Create shared memory segment for Elan stats use
+ *  (ELAN_STATKEY env var is set in switch_elan.c)
+ */
+static int
+_qsw_shmem_create (qsw_jobinfo_t jobinfo, uid_t uid)
+{
+	struct shmid_ds shm;
+	ELAN_CAPABILITY *cap = &jobinfo->j_cap;
+	key_t key = elan_statkey (jobinfo->j_prognum);
+	int maxLocal = cap->HighContext - cap->LowContext + 2;
+	int pgsize = getpagesize ();
+	
+	if ((shmid = shmget (key, pgsize * (maxLocal + 1), IPC_CREAT)) < 0)
+		return (error ("Failed to create Elan state shmem: %m"));
+
+	/* Ensure permissions on segment allow user read/write access
+	 */
+	shm.shm_perm.uid  = uid;
+	shm.shm_perm.mode = 0600;
+
+	if (shmctl (shmid, IPC_SET, &shm) < 0)
+		return (error ("Failed to set perms on Elan state shm: %m"));
+	
+	return (0);
 }
 
 /*
@@ -787,6 +849,14 @@ qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 		}
 		goto fail;
 	}
+
+
+	/*
+ 	 * Create shared memory for libelan state
+	 *  Failure to create shared memory is not a fatal error.
+	 */
+	_qsw_shmem_create (jobinfo, uid);
+		
 
 	/* note: _elan3_fini() destroys context and makes capability unavail */
 	/* do it in qsw_prog_fini() after app terminates */

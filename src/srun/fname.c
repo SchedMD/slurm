@@ -41,14 +41,17 @@ fname_create(job_t *job, char *format)
 	if ((format == NULL)
 	    || (strncasecmp(format, "all", (size_t) 3) == 0)
 	    || (strncmp(format, "-", (size_t) 1) == 0)       ) {
-		/* fname->type = IO_ALL; */
-		/* fname->name = NULL; */
+		 /* "all" explicitly sets IO_ALL and is the default */
 		return fname;
 	}
 
 	if (strncasecmp(format, "none", (size_t) 4) == 0) {
-		/* fname->type = IO_ALL; */
-		fname->name = "/dev/null";
+		/* 
+		 * Set type to IO_PER_TASK so that /dev/null is opened
+		 *  on every node, which should be more efficient
+		 */
+		fname->type = IO_PER_TASK; 
+		fname->name = xstrdup ("/dev/null");
 		return fname;
 	}
 
@@ -56,7 +59,11 @@ fname_create(job_t *job, char *format)
 	if ((*p == '\0') && ((int) taskid < opt.nprocs)) {
 		fname->type   = IO_ONE;
 		fname->taskid = (uint32_t) taskid;
-		fname->name   = NULL;
+		/* Set the name string to pass to slurmd
+		 *  to the taskid requested, so that tasks with
+		 *  no IO can open /dev/null.
+		 */
+		fname->name   = xstrdup (format);
 		return fname;
 	}
 
@@ -122,4 +129,13 @@ fname_destroy(io_filename_t *f)
 	if (f->name)
 		xfree(f->name);
 	xfree(f);
+}
+
+char * 
+fname_remote_string (io_filename_t *f)
+{
+	if ((f->type == IO_PER_TASK) || (f->type == IO_ONE))
+		return (xstrdup (f->name));
+
+	return (NULL);
 }

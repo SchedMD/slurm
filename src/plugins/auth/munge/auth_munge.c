@@ -53,7 +53,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <arpa/inet.h>
 
 #include <munge.h>
 
@@ -96,9 +95,11 @@ typedef struct _slurm_auth_credential {
  * Munge info structure for print* function
  */
 typedef struct munge_info {
-	struct in_addr addr;
 	time_t         encoded;
 	time_t         decoded;
+	munge_cipher_t cipher;
+	munge_mac_t    mac;
+	munge_zip_t    zip;
 } munge_info_t;
 
 
@@ -124,11 +125,6 @@ int init ( void )
 		return SLURM_ERROR;
 
 	verbose("%s loaded", plugin_name);
-	return SLURM_SUCCESS;
-}
-
-extern int fini ( void )
-{
 	return SLURM_SUCCESS;
 }
 
@@ -508,11 +504,6 @@ cred_info_create(munge_ctx_t ctx)
 	munge_err_t e;
 	munge_info_t *mi = cred_info_alloc();
 
-	e = munge_ctx_get(ctx, MUNGE_OPT_ADDR4, &mi->addr);
-	if (e != EMUNGE_SUCCESS)
-		error ("auth_munge: Unable to retrieve origin addr: %s",
-		       munge_ctx_strerror(ctx));
-
 	e = munge_ctx_get(ctx, MUNGE_OPT_ENCODE_TIME, &mi->encoded);
 	if (e != EMUNGE_SUCCESS)
 		error ("auth_munge: Unable to retrieve encode time: %s",
@@ -521,6 +512,21 @@ cred_info_create(munge_ctx_t ctx)
 	e = munge_ctx_get(ctx, MUNGE_OPT_DECODE_TIME, &mi->decoded);
 	if (e != EMUNGE_SUCCESS)
 		error ("auth_munge: Unable to retrieve decode time: %s",
+		       munge_ctx_strerror(ctx));
+
+	e = munge_ctx_get(ctx, MUNGE_OPT_CIPHER_TYPE, &mi->cipher);
+	if (e != EMUNGE_SUCCESS)
+		error ("auth_munge: Unable to retrieve cipher type: %s",
+		       munge_ctx_strerror(ctx));
+
+	e = munge_ctx_get(ctx, MUNGE_OPT_MAC_TYPE, &mi->mac);
+	if (e != EMUNGE_SUCCESS)
+		error ("auth_munge: Unable to retrieve mac type: %s",
+		       munge_ctx_strerror(ctx));
+
+	e = munge_ctx_get(ctx, MUNGE_OPT_ZIP_TYPE, &mi->zip);
+	if (e != EMUNGE_SUCCESS)
+		error ("auth_munge: Unable to retrieve zip type: %s",
 		       munge_ctx_strerror(ctx));
 
 	return mi;
@@ -534,12 +540,8 @@ static void
 _print_cred_info(munge_info_t *mi)
 {
 	char buf[256];
-	char addrbuf[INET_ADDRSTRLEN];
 
 	xassert(mi != NULL);
-
-	if (inet_ntop(AF_INET, &mi->addr, addrbuf, sizeof(addrbuf)))
-		info ("ORIGIN:  %s", addrbuf);
 
 	if (mi->encoded > 0)
 		info ("ENCODED: %s", ctime_r(&mi->encoded, buf));

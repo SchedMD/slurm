@@ -130,12 +130,9 @@ launch(void *arg)
 		r->slurmd_debug    = opt.slurmd_debug;
 		r->switch_job      = job->switch_job;
 
-		if (job->ofname->type == IO_PER_TASK)
-			r->ofname  = job->ofname->name;
-		if (job->efname->type == IO_PER_TASK)
-			r->efname  = job->efname->name;
-		if (job->ifname->type == IO_PER_TASK)
-			r->ifname  = job->ifname->name;
+		r->ofname  = fname_remote_string (job->ofname);
+		r->efname  = fname_remote_string (job->efname);
+		r->ifname  = fname_remote_string (job->ifname);
 
 		if (opt.parallel_debug)
 			r->task_flags |= TASK_PARALLEL_DEBUG;
