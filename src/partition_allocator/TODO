@@ -1,10 +1,12 @@
-- see why 8 1d takes so long
-
 - read wiring into bluegene plugin
 - read static config from file
 - pass filename of wiring to system
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+done- debug, see why no parts of size num_nodes are coming out.
+prob was incorrect external wiring 
+done - clear up mem leak of destorying system
+
 done - pa_init() resets system
 
 done - add undo buffer
