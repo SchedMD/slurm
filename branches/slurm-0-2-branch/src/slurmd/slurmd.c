@@ -168,6 +168,12 @@ main (int argc, char *argv[])
 
 	_kill_old_slurmd();
 
+	/* 
+	 * Restore any saved revoked credential information
+	 */
+	if (_restore_cred_state(conf->vctx))
+		return SLURM_FAILURE;
+	
 	if (interconnect_node_init() < 0)
 		fatal("Unable to initialize interconnect.");
 
@@ -648,12 +654,6 @@ _slurmd_init()
 		return SLURM_FAILURE;
 	}
 
-
-	/* 
-	 * Restore any saved revoked credential information
-	 */
-	if (_restore_cred_state(conf->vctx))
-		return SLURM_FAILURE;
 	/*
 	 * Cleanup shared memory if so configured
 	 */
