@@ -559,7 +559,18 @@ void slurm_FD_ZERO(slurm_fd_set *set)
 	return _slurm_FD_ZERO(set);
 }
 
+int slurm_fcntl ( slurm_fd fd , int cmd , ... )
+{
+	va_list va ;
+	int rc ;
+	
+	va_start ( va , cmd );
+	rc = _slurm_vfcntl ( fd , cmd , va ) ;
+	va_end ( va ) ;
 
+	return rc ;
+}
+	
 
 /************************/
 /***** slurm addr functions */
