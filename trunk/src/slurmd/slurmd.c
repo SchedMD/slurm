@@ -452,11 +452,11 @@ _read_config()
 static void
 _reconfigure(void)
 {
+	slurm_mutex_lock(&conf->config_mutex);
+
 	read_slurm_conf_ctl(&conf->cf);
 	_update_logging();
 	_print_conf();
-
-	slurm_mutex_lock(&conf->config_mutex);
 
 	if (conf->conffile == NULL)
 		_free_and_set(&conf->conffile, conf->cf.slurm_conf);
@@ -465,13 +465,18 @@ _reconfigure(void)
 	_free_and_set(&conf->epilog, xstrdup(conf->cf.epilog));
 	_free_and_set(&conf->prolog, xstrdup(conf->cf.prolog));
 
+	/*
+	 * Make best effort at changing to new public key
+	 */
+	slurm_cred_ctx_key_update( conf->vctx, 
+                                   conf->cf.job_credential_public_certificate);
+
 	slurm_mutex_unlock(&conf->config_mutex);
 }
 
 static void
 _print_conf()
 {
-	slurm_mutex_lock(&conf->config_mutex);
 	debug3("Confile     = `%s'",     conf->conffile);
 	debug3("Debug       = %d",       conf->cf.slurmd_debug);
 	debug3("Epilog      = `%s'",     conf->epilog);
@@ -483,7 +488,6 @@ _print_conf()
 	debug3("Spool Dir   = `%s'",     conf->spooldir);
 	debug3("Pid File    = `%s'",     conf->pidfile);
 	debug3("Slurm UID   = %u",       conf->slurm_user_id);
-	slurm_mutex_unlock(&conf->config_mutex);
 }
 
 static void 
