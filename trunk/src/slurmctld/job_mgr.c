@@ -1421,6 +1421,7 @@ job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		job_comp_flag = JOB_COMPLETING;
 
 	if (requeue && (job_ptr->batch_flag > 1)) {
+		/* Failed one requeue, just kill it */
 		requeue = 0;
 		if (job_return_code == 0)
 			job_return_code = 1;
