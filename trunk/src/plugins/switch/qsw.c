@@ -82,13 +82,14 @@
 
 #include <slurm/slurm_errno.h>
 
-#include "src/common/elanhosts.h"
 #include "src/common/xassert.h"
 #include "src/common/strlcpy.h"
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
-#include "src/common/qsw.h"
+
+#include "src/plugins/switch/elanhosts.h"
+#include "src/plugins/switch/qsw.h"
 
 /*
  * Definitions local to this module.
