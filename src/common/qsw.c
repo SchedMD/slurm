@@ -410,7 +410,7 @@ _generate_hwcontext(int num)
 		_unlock_qsw();
 	} else {
 		_srand_if_needed();
-		new = lrand48() % (QSW_CTX_END - (QSW_CTX_START + num - 1) + 1);
+		new = lrand48() % (QSW_CTX_END - (QSW_CTX_START + num - 1) - 1);
 		new +=  QSW_CTX_START;
 	}
 	return new;
