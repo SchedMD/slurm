@@ -1,0 +1,183 @@
+/*****************************************************************************\
+ *  job_functions.c - Functions related to job display mode of smap.
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Danny Auble <da@llnl.gov>
+ *
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
+
+#include "src/smap/smap.h"
+
+void print_header_job(void);
+int print_text_job(job_info_t * job_ptr);
+
+void get_job()
+{
+	int error_code = -1, i, j, count = 0;
+
+	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr;
+	job_info_t job;
+
+	if (job_info_ptr) {
+		error_code =
+		    slurm_load_jobs(job_info_ptr->last_update,
+				    &new_job_ptr, 0);
+		if (error_code == SLURM_SUCCESS)
+			slurm_free_job_info_msg(job_info_ptr);
+		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+			error_code = SLURM_SUCCESS;
+			new_job_ptr = job_info_ptr;
+		}
+	} else
+		error_code =
+		    slurm_load_jobs((time_t) NULL, &new_job_ptr, 0);
+
+	if (error_code)
+		if (quiet_flag != 1) {
+			clear_window(text_win);
+			ycord = text_win->_maxy / 2;
+			xcord = text_win->_maxx;
+			mvwprintw(text_win, ycord, 1, "slurm_load_job");
+
+			return;
+		}
+
+	if (new_job_ptr->record_count && !params.no_header)
+		print_header_job();
+	for (i = 0; i < new_job_ptr->record_count; i++) {
+		job = new_job_ptr->job_array[i];
+		if (job.node_inx[0] != -1) {
+			job.num_nodes = 0;
+			j = 0;
+			while (job.node_inx[j] >= 0) {
+				job.num_nodes +=
+				    (job.node_inx[j + 1] + 1) -
+				    job.node_inx[j];
+				set_grid(job.node_inx[j],
+					 job.node_inx[j + 1], count);
+				j += 2;
+			}
+			job.num_procs = (int) fill_in_value[count].letter;
+			wattron(text_win,
+				COLOR_PAIR(fill_in_value[count].color));
+			print_text_job(&job);
+			wattroff(text_win,
+				 COLOR_PAIR(fill_in_value[count].color));
+			count++;
+		}
+	}
+	job_info_ptr = new_job_ptr;
+	return;
+}
+
+void print_header_job(void)
+{
+	mvwprintw(text_win, ycord, xcord, "ID");
+	xcord += 4;
+	mvwprintw(text_win, ycord, xcord, "JOBID");
+	xcord += 7;
+	mvwprintw(text_win, ycord, xcord, "PARTITION");
+	xcord += 11;
+	mvwprintw(text_win, ycord, xcord, "USER");
+	xcord += 8;
+	mvwprintw(text_win, ycord, xcord, "NAME");
+	xcord += 10;
+	mvwprintw(text_win, ycord, xcord, "ST");
+	xcord += 4;
+	mvwprintw(text_win, ycord, xcord, "TIME");
+	xcord += 10;
+	mvwprintw(text_win, ycord, xcord, "NODES");
+	xcord += 7;
+	mvwprintw(text_win, ycord, xcord, "NODELIST");
+	xcord = 1;
+	ycord++;
+
+}
+
+int print_text_job(job_info_t * job_ptr)
+{
+	time_t time;
+	int printed = 0;
+	int tempxcord;
+	int prefixlen;
+	int i = 0;
+	int width = 0;
+	struct passwd *user = NULL;
+	long days, hours, minutes, seconds;
+
+	mvwprintw(text_win, ycord, xcord, "%c", job_ptr->num_procs);
+	xcord += 4;
+	mvwprintw(text_win, ycord, xcord, "%d", job_ptr->job_id);
+	xcord += 7;
+	mvwprintw(text_win, ycord, xcord, "%s", job_ptr->partition);
+	xcord += 11;
+	user = getpwuid((uid_t) job_ptr->user_id);
+	mvwprintw(text_win, ycord, xcord, "%s", user->pw_name);
+	xcord += 8;
+	mvwprintw(text_win, ycord, xcord, "%s", job_ptr->name);
+	xcord += 10;
+	mvwprintw(text_win, ycord, xcord, "%s",
+		  job_state_string_compact(job_ptr->job_state));
+	xcord += 4;
+	time = now - job_ptr->start_time;
+
+	seconds = time % 60;
+	minutes = (time / 60) % 60;
+	hours = (time / 3600) % 24;
+	days = time / 86400;
+
+	if (days)
+		mvwprintw(text_win, ycord, xcord,
+			  "%ld:%2.2ld:%2.2ld:%2.2ld", days, hours, minutes,
+			  seconds);
+	else if (hours)
+		mvwprintw(text_win, ycord, xcord, "%ld:%2.2ld:%2.2ld",
+			  hours, minutes, seconds);
+	else
+		mvwprintw(text_win, ycord, xcord, "%ld:%2.2ld", minutes,
+			  seconds);
+
+	xcord += 10;
+	mvwprintw(text_win, ycord, xcord, "%d", job_ptr->num_nodes);
+	xcord += 7;
+	tempxcord = xcord;
+	width = text_win->_maxx - xcord;
+	while (job_ptr->nodes[i] != '\0') {
+		if ((printed =
+		     mvwaddch(text_win, ycord, xcord,
+			      job_ptr->nodes[i])) < 0)
+			return printed;
+		xcord++;
+		width = text_win->_maxx - xcord;
+		if (job_ptr->nodes[i] == '[')
+			prefixlen = i + 1;
+		else if (job_ptr->nodes[i] == ',' && (width - 9) <= 0) {
+			ycord++;
+			xcord = tempxcord + prefixlen;
+		}
+		i++;
+	}
+
+	xcord = 1;
+	ycord++;
+	return printed;
+}
