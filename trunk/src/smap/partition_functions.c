@@ -53,10 +53,13 @@ void get_part(void)
 		    slurm_load_partitions((time_t) NULL, &new_part_ptr, 0);
 	if (error_code) {
 		if (quiet_flag != 1) {
-			wclear(text_win);
-			ycord = text_win->_maxy / 2;
-			xcord = text_win->_maxx;
-			mvwprintw(text_win, ycord, 1,
+			wclear(smap_info_ptr->text_win);
+			smap_info_ptr->ycord =
+			    smap_info_ptr->text_win->_maxy / 2;
+			smap_info_ptr->xcord =
+			    smap_info_ptr->text_win->_maxx;
+			mvwprintw(smap_info_ptr->text_win,
+				  smap_info_ptr->ycord, 1,
 				  "slurm_load_partitions error");
 
 		}
@@ -93,14 +96,16 @@ void get_part(void)
 							 endy, endz,
 							 count);
 					part.root_only =
-					    (int) fill_in_value[count].
-					    letter;
-					wattron(text_win,
-						COLOR_PAIR(fill_in_value
+					    (int) smap_info_ptr->
+					    fill_in_value[count].letter;
+					wattron(smap_info_ptr->text_win,
+						COLOR_PAIR(smap_info_ptr->
+							   fill_in_value
 							   [count].color));
 					print_text_part(&part);
-					wattroff(text_win,
-						 COLOR_PAIR(fill_in_value
+					wattroff(smap_info_ptr->text_win,
+						 COLOR_PAIR(smap_info_ptr->
+							    fill_in_value
 							    [count].
 							    color));
 					count++;
@@ -120,13 +125,16 @@ void get_part(void)
 				j += 2;
 
 				part.root_only =
-				    (int) fill_in_value[count].letter;
-				wattron(text_win,
-					COLOR_PAIR(fill_in_value[count].
+				    (int) smap_info_ptr->
+				    fill_in_value[count].letter;
+				wattron(smap_info_ptr->text_win,
+					COLOR_PAIR(smap_info_ptr->
+						   fill_in_value[count].
 						   color));
 				print_text_part(&part);
-				wattroff(text_win,
-					 COLOR_PAIR(fill_in_value[count].
+				wattroff(smap_info_ptr->text_win,
+					 COLOR_PAIR(smap_info_ptr->
+						    fill_in_value[count].
 						    color));
 				count++;
 			}
@@ -139,19 +147,25 @@ void get_part(void)
 
 void print_header_part(void)
 {
-	mvwprintw(text_win, ycord, xcord, "ID");
-	xcord += 4;
-	mvwprintw(text_win, ycord, xcord, "PARTITION");
-	xcord += 10;
-	mvwprintw(text_win, ycord, xcord, "AVAIL");
-	xcord += 7;
-	mvwprintw(text_win, ycord, xcord, "TIMELIMIT");
-	xcord += 11;
-	mvwprintw(text_win, ycord, xcord, "NODES");
-	xcord += 7;
-	mvwprintw(text_win, ycord, xcord, "NODELIST");
-	xcord = 1;
-	ycord++;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "ID");
+	smap_info_ptr->xcord += 4;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "PARTITION");
+	smap_info_ptr->xcord += 10;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "AVAIL");
+	smap_info_ptr->xcord += 7;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "TIMELIMIT");
+	smap_info_ptr->xcord += 11;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "NODES");
+	smap_info_ptr->xcord += 7;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "NODELIST");
+	smap_info_ptr->xcord = 1;
+	smap_info_ptr->ycord++;
 }
 
 int print_text_part(partition_info_t * part_ptr)
@@ -163,57 +177,67 @@ int print_text_part(partition_info_t * part_ptr)
 	int width = 0;
 	char *nodes;
 
-	mvwprintw(text_win, ycord, xcord, "%c", part_ptr->root_only);
-	xcord += 4;
-	mvwprintw(text_win, ycord, xcord, "%s", part_ptr->name);
-	xcord += 10;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "%c", part_ptr->root_only);
+	smap_info_ptr->xcord += 4;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "%s", part_ptr->name);
+	smap_info_ptr->xcord += 10;
 	if (part_ptr->state_up)
-		mvwprintw(text_win, ycord, xcord, "UP");
+		mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+			  smap_info_ptr->xcord, "UP");
 	else
-		mvwprintw(text_win, ycord, xcord, "DOWN");
-	xcord += 7;
+		mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+			  smap_info_ptr->xcord, "DOWN");
+	smap_info_ptr->xcord += 7;
 	if (part_ptr->max_time == INFINITE)
-		mvwprintw(text_win, ycord, xcord, "UNLIMITED");
+		mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+			  smap_info_ptr->xcord, "UNLIMITED");
 	else
-		mvwprintw(text_win, ycord, xcord, "%u",
-			  part_ptr->max_time);
+		mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+			  smap_info_ptr->xcord, "%u", part_ptr->max_time);
 
-	xcord += 11;
-	mvwprintw(text_win, ycord, xcord, "%d", part_ptr->total_nodes);
-	xcord += 7;
+	smap_info_ptr->xcord += 11;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "%d", part_ptr->total_nodes);
+	smap_info_ptr->xcord += 7;
 
-	tempxcord = xcord;
-	width = text_win->_maxx - xcord;
+	tempxcord = smap_info_ptr->xcord;
+	width = smap_info_ptr->text_win->_maxx - smap_info_ptr->xcord;
 	if (params.display == BGLPART)
 		nodes = part_ptr->allow_groups;
 	else
 		nodes = part_ptr->nodes;
 	prefixlen = i;
 	while (nodes[i] != '\0') {
-		width = text_win->_maxx - xcord;
+		width =
+		    smap_info_ptr->text_win->_maxx - smap_info_ptr->xcord;
 
 		if (!prefixlen && nodes[i] == '[' && nodes[i - 1] == ',')
 			prefixlen = i + 1;
 
 		if (nodes[i - 1] == ',' && (width - 12) <= 0) {
-			ycord++;
-			xcord = tempxcord + prefixlen;
-		} else if (xcord > text_win->_maxx) {
-			ycord++;
-			xcord = tempxcord + prefixlen;
+			smap_info_ptr->ycord++;
+			smap_info_ptr->xcord = tempxcord + prefixlen;
+		} else if (smap_info_ptr->xcord >
+			   smap_info_ptr->text_win->_maxx) {
+			smap_info_ptr->ycord++;
+			smap_info_ptr->xcord = tempxcord + prefixlen;
 		}
 
 
 		if ((printed =
-		     mvwaddch(text_win, ycord, xcord, nodes[i])) < 0)
+		     mvwaddch(smap_info_ptr->text_win,
+			      smap_info_ptr->ycord, smap_info_ptr->xcord,
+			      nodes[i])) < 0)
 			return printed;
-		xcord++;
+		smap_info_ptr->xcord++;
 
 		i++;
 	}
 
-	xcord = 1;
-	ycord++;
+	smap_info_ptr->xcord = 1;
+	smap_info_ptr->ycord++;
 
 	return printed;
 }

@@ -31,6 +31,9 @@
 #  include "config.h"
 #endif
 
+/* This must be included first for AIX systems */
+#include "src/common/macros.h"
+
 #include <pwd.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -50,8 +53,9 @@
 
 #include <slurm/slurm.h>
 
-#include "src/common/slurm_protocol_api.h"
+#include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+#include "src/common/slurm_protocol_api.h"
 
 enum { JOBS, SLURMPART, BGLPART, COMMANDS };
 
@@ -89,22 +93,27 @@ typedef struct {
 	int state;
 } axis;
 
+typedef struct {
+	int xcord;
+	int ycord;
+	int X;
+	int Y;
+	int Z;
+	int num_of_proc;
+	int resize_screen;
+
+	WINDOW *grid_win;
+	WINDOW *text_win;
+
+	time_t now_time;
+
+	axis ***grid;
+	axis *fill_in_value;
+} smap_info;
+
+extern smap_info *smap_info_ptr;
 extern int quiet_flag;
-extern int xcord;
-extern int ycord;
-extern int X;
-extern int Y;
-extern int Z;
-extern int num_of_proc;
 
-WINDOW *grid_win;
-WINDOW *text_win;
-
-time_t now;
-
-
-axis ***grid;
-axis *fill_in_value;
 
 void init_grid(node_info_msg_t * node_info_ptr);
 int set_grid(int start, int end, int count);
