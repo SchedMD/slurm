@@ -55,7 +55,7 @@
 log_options_t log_opts = LOG_OPTS_STDERR_ONLY ;
 slurm_ctl_conf_t slurmctld_conf;
 time_t shutdown_time = (time_t)0;
-static pthread_mutex_t  thread_count_lock = PTHREAD_MUTEX_INITIALIZER;    
+static pthread_mutex_t thread_count_lock = PTHREAD_MUTEX_INITIALIZER;
 int server_thread_count = 0;
 pid_t slurmctld_pid;
 
@@ -67,26 +67,28 @@ void init_ctld_conf ( slurm_ctl_conf_t * build_ptr );
 void parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * );
 void *process_rpc ( void * req );
 void *slurmctld_background ( void * no_data );
-void *slurmctld_rpc_mgr ( void * no_data );
+void *slurmctld_rpc_mgr( void * no_data );
 int slurm_shutdown ( void );
+void * service_connection ( void * arg );
+void usage (char *prog_name);
+
+inline static void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate ) ;
 inline static void slurm_rpc_dump_build ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_nodes ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_partitions ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_jobs ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_job_step_cancel ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_job_step_complete ( slurm_msg_t * msg ) ;
-inline static void slurm_rpc_submit_batch_job ( slurm_msg_t * msg ) ;
-inline static void slurm_rpc_shutdown_controller ( slurm_msg_t * msg ) ;
-inline static void slurm_rpc_reconfigure_controller ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_job_step_create( slurm_msg_t* msg ) ;	
+inline static void slurm_rpc_job_step_get_info ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_job_will_run ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_node_registration ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_reconfigure_controller ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_shutdown_controller ( slurm_msg_t * msg );
+inline static void slurm_rpc_submit_batch_job ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_update_job ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_update_node ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_update_partition ( slurm_msg_t * msg ) ;
-inline static void slurm_rpc_job_will_run ( slurm_msg_t * msg ) ;
-inline static void slurm_rpc_job_step_create( slurm_msg_t* msg ) ;	
-inline static void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate ) ;
-static void * service_connection ( void * arg ) ;
-void usage (char *prog_name);
 
 typedef struct connection_arg
 {
@@ -695,6 +697,81 @@ slurm_rpc_job_step_complete ( slurm_msg_t * msg )
 	}
 
 	schedule();
+}
+
+/* slurm_rpc_job_step_get_info - process RPC msg to get job_step information */
+void list_append_list( List to, List from )
+{
+	ListIterator i_from = list_iterator_create( from );
+	void *temp = NULL;
+	while ( (temp = list_next( i_from ) ) != NULL )
+		list_append( to, temp );
+
+}
+
+void 
+slurm_rpc_job_step_get_info ( slurm_msg_t * msg ) 
+{
+	int error_code;
+	clock_t start_time;
+	List step_list = list_create( NULL );
+	void* resp_buffer = NULL;
+	int resp_buffer_size = 0;
+	job_step_info_request_msg_t* request = ( job_step_info_request_msg_t * ) msg-> data ;
+
+	start_time = clock ();
+
+	if ( request->job_id == 0 )
+	{
+		/* Return all steps */
+		struct job_record *current_job = NULL;
+		ListIterator i_jobs = list_iterator_create( job_list );
+		
+		while ( (current_job = list_next( i_jobs ) ) != NULL )
+			list_append_list( step_list, current_job->step_list );
+
+	}
+	else if ( request->job_step_id == 0 )
+	{
+		/* Return all steps for job_id */
+		struct job_record* job_ptr = find_job_record( request->job_id );
+		if ( job_ptr == NULL )
+			error_code = ESLURM_INVALID_JOB_ID;
+		else
+			list_append_list( step_list, job_ptr->step_list );
+
+	}
+	else
+	{
+		/* Return  step with give step_id/job_id */
+		struct step_record* step =  find_step_record( find_job_record( request->job_id ), request->job_step_id ); 
+		if ( step ==  NULL ) 
+			error_code = ESLURM_INVALID_JOB_ID;
+		else
+			list_append( step_list, step );
+	}
+
+	if ( error_code )
+	{
+		error ("slurm_rpc_job_step_get_info error %d for job step %u.%u, time=%ld",
+				error_code, request->job_id, request->job_step_id, 
+				(long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , error_code );
+	}
+	else
+	{
+		slurm_msg_t response_msg ;
+	
+		pack_ctld_job_step_info_reponse_msg( step_list, &resp_buffer, &resp_buffer_size );
+		response_msg . address = msg -> address ;
+		response_msg . msg_type = RESPONSE_JOB_STEP_INFO;
+		response_msg . data = resp_buffer ;
+		response_msg . data_size = resp_buffer_size ;
+		slurm_send_node_msg( msg->conn_fd , &response_msg ) ;
+
+	}
+	
+	list_destroy( step_list );
 }
 
 /* slurm_rpc_update_job - process RPC to update the configuration of a job (e.g. priority) */

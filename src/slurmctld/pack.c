@@ -38,9 +38,26 @@
 
 #include <src/common/bitstring.h>
 #include <src/common/list.h>
+#include <src/common/slurm_protocol_pack.h>
 #include <src/slurmctld/slurmctld.h>
 
 #define BUF_SIZE 1024
+#define REALLOC_MULTIPLIER 4  
+
+
+/* buffer_realloc - reallocates the buffer if/when it gets smaller than BUF_SIZE */
+inline void buffer_realloc( void** buffer, void** current, int* size, int* len_left )
+{
+	int current_offset = *current - *buffer;
+
+	if ( *len_left < BUF_SIZE )
+	{
+		*size += BUF_SIZE * REALLOC_MULTIPLIER ;
+		*len_left += BUF_SIZE * REALLOC_MULTIPLIER ;
+		*buffer = xrealloc( *buffer, *size );
+		*current = buffer + current_offset;
+	}
+}
 
 
 void
@@ -66,7 +83,26 @@ pack_ctld_job_step_info( struct  step_record* step, void **buf_ptr, int *buf_len
 }
 
 void
-pack_job_step_info_reponse_msg( List steps )
+pack_ctld_job_step_info_reponse_msg( List steps, void** buffer_base, int* buffer_size )
 {
+	ListIterator iterator = list_iterator_create( steps );
+	struct step_record* current_step = NULL;		
+	int current_size = 0;
+	void* current = buffer_base;
+
+	*buffer_size = BUF_SIZE * REALLOC_MULTIPLIER;
+	*buffer_base = xmalloc( *buffer_size );
+
+
+	pack32( (uint32_t)time(NULL), &current, &current_size ); /* FIXME What am I really suppose to put as the time?*/
+	pack32( (uint32_t)list_count(steps), &current, &current_size );
+	/* Pack the Steps */
+	while( ( current_step = (struct step_record*)list_next( iterator ) ) != NULL )
+	{
+		pack_ctld_job_step_info( current_step, &current, &current_size ); 
+		buffer_realloc( buffer_base, &current, buffer_size, &current_size );
+	}
 	
 }
+
+
