@@ -42,6 +42,7 @@
 #include <src/slurmd/get_mach_stat.h>
 #include <src/slurmd/slurmd.h> 
 #include <src/slurmd/task_mgr.h> 
+#include <src/slurmd/shmem_struct.h> 
 
 #define BUF_SIZE 1024
 #define MAX_NAME_LEN 1024
@@ -50,6 +51,7 @@
 /* global variables */
 
 time_t init_time;
+slurmd_shmem_t * shmem_seg ;
 
 /* function prototypes */
 void slurmd_req ( slurm_msg_t * msg );
@@ -78,6 +80,9 @@ int main (int argc, char *argv[])
 	if ( ( error_code = read_slurm_conf (SLURM_CONF) ) ) 
 		fatal ("slurmd: error %d from read_slurm_conf reading %s", error_code, SLURM_CONF);
 */
+
+	shmem_seg = get_shmem ( ) ;
+	init_shmem ( shmem_seg ) ;
 	if ( ( error_code = gethostname (node_name, MAX_NAME_LEN) ) ) 
 		fatal ("slurmd: errno %d from gethostname", errno);
 	task_mgr_init ( ) ;	

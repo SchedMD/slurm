@@ -9,11 +9,11 @@
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/slurm_errno.h>
 #include <src/slurmd/task_mgr.h>
+#include <src/slurmd/shmem_struct.h>
 
 /*
 global variables 
 */
-static List task_list ;
 
 /* file descriptor defines */
 
@@ -30,16 +30,26 @@ int iowatch_launch (  launch_tasks_msg_t * launch_msg ) ;
 int match_job_id_job_step_id ( void * _x, void * _key ) ;
 int append_task_to_list (  launch_tasks_msg_t * launch_msg , int pid ) ;
 int kill_task ( task_t * task ) ;
+int interconnect_init ( launch_tasks_msg_t * launch_msg );
+int fan_out_task_launch ( launch_tasks_msg_t * launch_msg );
 
 void task_mgr_init ( ) 
 {
-	task_list = list_create ( slurm_free_task ) ;
 }
 
 int launch_tasks ( launch_tasks_msg_t * launch_msg )
 {
-#ifdef ELAN
-#else
+	return interconnect_init ( launch_msg );
+}
+
+/* Contains interconnect specific setup instructions and then calls fan_out_task_launch */
+int interconnect_init ( launch_tasks_msg_t * launch_msg )
+{
+	return fan_out_task_launch ( launch_msg ) ;
+}
+
+int fan_out_task_launch ( launch_tasks_msg_t * launch_msg )
+{
 	int i ;
 	int cpid[64] ;
 	for ( i = 0 ; i < launch_msg->tasks_to_launch ; i ++ )
@@ -50,8 +60,9 @@ int launch_tasks ( launch_tasks_msg_t * launch_msg )
 			break ;
 		}
 	}
-
-	if ( i == launch_msg->tasks_to_launch ) /*parent*/
+	
+	/*parent*/
+	if ( i == launch_msg->tasks_to_launch ) 
 	{
 		int waiting = i ;
 		int j ;
@@ -68,11 +79,11 @@ int launch_tasks ( launch_tasks_msg_t * launch_msg )
                         }
                 }
 	}
-	else /*child*/
+	/*child*/
+	else
 	{
 		iowatch_launch ( launch_msg ) ;
 	}
-#endif
 	return SLURM_SUCCESS ;
 }
 
@@ -167,36 +178,16 @@ int append_task_to_list (  launch_tasks_msg_t * launch_msg , int pid )
 		return ENOMEM ;
 
 	task -> pid = pid;
-	task -> job_id = launch_msg -> job_id; 
-	task -> job_step_id = launch_msg -> job_step_id;
 	task -> uid = launch_msg -> uid;
 	task -> gid = launch_msg -> gid;
 	
-	list_append ( task_list , task ) ;
 	return SLURM_SUCCESS ;
 }
 
 int kill_tasks ( kill_tasks_msg_t * kill_task_msg )
 {
 	int error_code ;
-	task_t key ;
-	task_t * curr_task ;
-	ListIterator iterator ;
-	iterator = list_iterator_create ( task_list ) ;
 
-	key . job_id = kill_task_msg -> job_id ;
-	key . job_id = kill_task_msg -> job_step_id ;
-
-	while ( ( curr_task = list_find ( iterator , match_job_id_job_step_id , & key ) ) )
-	{
-		if ( kill_task ( curr_task ) )
-		{	
-			error_code = ESLURMD_KILL_TASK_FAILED ;
-		}
-		list_delete ( iterator ) ;
-	}	
-
-	list_iterator_destroy ( iterator ) ;
 	return error_code ;
 }
 
@@ -204,26 +195,4 @@ int kill_tasks ( kill_tasks_msg_t * kill_task_msg )
 int kill_task ( task_t * task )
 {
 	return kill ( task -> pid , SIGKILL ) ;
-}
-
-int match_job_id_job_step_id ( void * _x, void * _key )
-{
-	task_t * x = ( task_t * ) _x ;
-	task_t * key = ( task_t * ) _key ;
-
-	if ( x->job_id == key->job_id && x->job_step_id == key->job_step_id )
-	{
-		return true ;
-	}
-	else
-	{
-		return false ;
-	}
-}
-
-void slurm_free_task ( void * _task )
-{
-	task_t * task = ( task_t * ) _task ;
-	if ( task ) 
-		free ( task ) ;
 }
