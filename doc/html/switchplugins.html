@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324"
-<meta name="LLNLRandRdate" content="29 September 2004">
+<meta name="LLNLRandRdate" content="12 October 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -161,6 +161,15 @@ any other job is in the process of terminating.</p>
 <p>Nodes will register with current switch state information when the slurmd daemon 
 is initiated. The slurmctld daemon will also request that slurmd supply current 
 switch state information on a periodic basis.</p>
+
+<p class="commandline">int switch_p_clear_node_state(void);</p>
+<p style="margin-left:.2in"><b>Description</b>: Initialize node state. 
+If any switch state has previously been established for a job, it will be cleared. 
+This will be used to establish a "clean" state for the switch on the node upon 
+which it is executed.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
 
 <p class="commandline">int switch_p_alloc_node_info(switch_node_info_t *switch_node);</p>
 <p style="margin-left:.2in"><b>Description</b>: Allocate storage for a node's switch 
@@ -511,7 +520,7 @@ to maintain data format compatibility across different versions of the plugin.</
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-204324<br>
-Last modified 29 September 2004</p></td>
+Last modified 12 October 2004</p></td>
 </tr>
 </table>
 </td>

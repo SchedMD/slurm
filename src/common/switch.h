@@ -259,6 +259,11 @@ extern int interconnect_attach(switch_jobinfo_t jobinfo, char ***env,
 		uint32_t nprocs, uint32_t rank);
 
 /*
+ * Clear switch state on this node
+ */
+extern int switch_g_clear_node_state(void);
+
+/*
  * Allocate storage for a node's switch state record
  */
 extern int switch_g_alloc_node_info(switch_node_info_t *switch_node);
