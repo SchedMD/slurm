@@ -12,7 +12,7 @@
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Moe Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
 # 
 # This file is part of SLURM, a resource management program.
@@ -51,7 +51,6 @@ print_header $test_id
 exec $bin_rm -f $file_in $file_out $file_err
 exec echo "#!$bin_bash"               >$file_in
 exec echo "$srun $bin_sleep 500 &"   >>$file_in
-#exec echo "disown"                   >>$file_in
 exec echo "wait"                     >>$file_in
 exec $bin_chmod 700 $file_in
 
@@ -87,7 +86,6 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 	send_user "\nFAILURE: waiting for job to start running\n"
 	exit 1
 }
-exec $bin_sleep 5
 spawn $scancel --batch -s INT $job_id
 expect {
 	eof {
@@ -97,7 +95,9 @@ expect {
 exec $bin_sleep 2
 
 #
-# Confirm that job step still exists
+# Confirm that job step still exists.
+# If signal goes to child processes (default without --batch) then
+# sleep will exit along with the entire job.
 #
 set found_step 0
 spawn $squeue --steps
@@ -114,15 +114,73 @@ if {$found_step == 0} {
 	send_user "\nFAILURE: job step not found, apparently killed\n"
 	set exit_code 1
 }
+exec $scancel --quiet $job_id
 
-cancel_job $job_id
+#
+# Build and run second test script
+#
+exec $bin_rm -f $file_in $file_out $file_err
+exec echo "#!$bin_bash"               >$file_in
+exec echo "$bin_sleep 500"           >>$file_in
+exec $bin_chmod 700 $file_in
+
+set job_id 0
+spawn $srun --batch --output=$file_out --error=$file_err -t2 $file_in
+expect {
+	-re "jobid ($number) submitted" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		kill_srun
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: batch submit failure\n"
+	exit 1
+}
+
+#
+# Now send SIGHUP and confirm that job gets cancelled
+#
+spawn $scancel --batch -s HUP $job_id
+expect {
+	eof {
+		wait
+	}
+}
+exec $bin_sleep 2
+
+set found_job 0
+spawn $squeue --jobs=$job_id --states=cg,cd
+expect {
+	-re "($job_id)" {
+		set found_job 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$found_job != 1} {
+	send_user "\nFAILURE: job found, apparently not killed\n"
+	exec $scancel --quiet $job_id
+	set exit_code 1
+}
+
 
 if {$exit_code != 0} {
 	exit $exit_code
 }
 
 #
-# Submit a seconds job with a script that will forward the signal
+# Submit another job to be signalled with steps
 #
 set job_id      0
 exec $bin_rm -f $file_in $file_out $file_err
@@ -131,7 +189,6 @@ exec echo "$srun $bin_sleep 500 &"   >>$file_in
 #exec echo "wait"                     >>$file_in
 exec $bin_chmod 700 $file_in
 
-set timeout $max_job_delay
 spawn $srun --batch --output=$file_out --error=$file_err -t2 $file_in
 expect {
 	-re "jobid ($number) submitted" {
