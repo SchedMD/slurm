@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  bluegene.c - bgl node allocation plugin. 
  *****************************************************************************
- *  Copyright (C) 2003 The Regents of the University of California.
+ *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Dan Phung <phung4@llnl.gov>
  *  
@@ -24,6 +24,7 @@
 \*****************************************************************************/
 
 #include <stdlib.h>
+
 #include "src/slurmctld/proc_req.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
@@ -35,12 +36,15 @@
 #include "partition_sys.h"
 #include "src/common/hostlist.h"
 
-#define RANGE_MAX 8192
 #define BUFSIZE 4096
 #define BITSIZE 128
-#define SLEEP_TIME 3 /* BLUEGENE_PTHREAD checks every 3 secs */
+#define SLEEP_TIME 60 /* BLUEGENE_PTHREAD checks every 60 secs */
 
 char* bgl_conf = BLUEGENE_CONFIG_FILE;
+
+/* Global variables */
+List bgl_list;				/* list of bgl_record entries */
+List bgl_conf_list;			/* list of bgl_conf_record entries */
 
 #define SWAP(a,b,t)	\
 _STMT_START {	\
@@ -50,48 +54,22 @@ _STMT_START {	\
 } _STMT_END
 
  /** some local functions */
-
-/** */
+static int  _copy_slurm_partition_list(List slurm_part_list);
 static int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_bitmap,
 			       int min_nodes, int max_nodes,
 			       int spec, bgl_record_t** found_bgl_record);
-/** */
 static int _parse_request(char* request_string, partition_t** request);
-/** */
-static int _get_request_dimensions(int* bl, int* tr, uint16_t** dim);
-/** */
-static int _extract_range(char* request, char** result);
-/** */
 static int _wire_bgl_partitions();
-/** */
 static int _bgl_record_cmpf_inc(bgl_record_t* rec_a, bgl_record_t* rec_b);
-/** */
 static int _bgl_record_cmpf_dec(bgl_record_t* rec_a, bgl_record_t* rec_b);
-/** 
- * to be used by list object to destroy the array elements
- */
 static void _destroy_bgl_record(void* object);
-/** */
 static void _destroy_bgl_conf_record(void* object);
-
-/** */
 static void _print_bitmap(bitstr_t* bitmap);
-
-/** */
 static void _process_config();
-/** */
 static int _parse_bgl_spec(char *in_line);
-/** */
-static int _copy_slurm_partition_list();
-/** */
 static void _find_part_type(char* nodes, rm_partition_t** return_part_type);
-/** */
 static int _listfindf_conf_part_record(bgl_conf_record_t* record, char *nodes);
-/** */
-static int _compute_part_size(char* nodes);
-/** */
 static void _update_bgl_node_bitmap();
-/** */
 static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 		char *tv_str, int len_tv_str);
 
@@ -105,7 +83,7 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
  * OUT - (global, to slurmctld): Table of partitionIDs to geometries
  * RET - success of fitting all configurations
  */
-extern int create_static_partitions()
+extern int create_static_partitions(List part_list)
 {
 	/** purge the old list.  Later on, it may be more efficient just to amend the list */
 	if (bgl_list){
@@ -114,7 +92,7 @@ extern int create_static_partitions()
 	bgl_list = list_create(_destroy_bgl_record);
 
 	/** copy the slurm conf partition info, this will fill in bgl_list */
-	if (_copy_slurm_partition_list()){
+	if (_copy_slurm_partition_list(part_list)){
 		return SLURM_ERROR;
 	}
 
@@ -172,9 +150,10 @@ static void _process_config()
 		 * bl_coord, tr_coord, dimensions, and size
 		 */
 		request_result = NULL;
-		if (_parse_request(bgl_part->nodes, &request_result) || request_result == NULL){
+		if (_parse_request(bgl_part->nodes, &request_result)
+		|| (request_result == NULL))
 			error("_process_config: error parsing request %s", bgl_part->nodes);
-		} else {
+		else {
 			/** 
 			 * bgl_part->part_type should have been extracted in
 			 * copy_slurm_partition_list
@@ -191,7 +170,7 @@ static void _process_config()
  * that we can maintain our own separate table of bgl_part_id to
  * slurm_part_id.
  */
-static int _copy_slurm_partition_list()
+static int _copy_slurm_partition_list(List slurm_part_list)
 {
 	struct part_record* slurm_part;
 	bgl_record_t* bgl_record;
@@ -199,10 +178,6 @@ static int _copy_slurm_partition_list()
 	char* cur_nodes, *delimiter=",", *nodes_tmp, *next_ptr, *orig_ptr;
 	int err, rc;
 
-	if (!slurm_part_list){
-		error("_copy_slurm_partition_list: slurm_part_list is not initialized yet");
-		return SLURM_ERROR;
-	}
 	itr = list_iterator_create(slurm_part_list);
 	/** 
 	 * try to find the corresponding bgl_conf_record for the
@@ -238,9 +213,8 @@ static int _copy_slurm_partition_list()
 			bgl_record->part_type = (rm_partition_t*) xmalloc(sizeof(rm_partition_t));
 
 			_find_part_type(cur_nodes, &bgl_record->part_type);
-			bgl_record->hostlist = (hostlist_t *) xmalloc(sizeof(hostlist_t));
-			*(bgl_record->hostlist) = hostlist_create(cur_nodes);
-			bgl_record->size = hostlist_count(*(bgl_record->hostlist));
+			bgl_record->hostlist = hostlist_create(cur_nodes);
+			bgl_record->size = hostlist_count(bgl_record->hostlist);
 			if (node_name2bitmap(cur_nodes, false, &(bgl_record->bitmap))){
 				error("unable to convert nodes %s to bitmap", cur_nodes);
 			}
@@ -263,10 +237,7 @@ static int _copy_slurm_partition_list()
 		} /* end while(cur_nodes) */
 
 	cleanup:
-		if (orig_ptr){
-			xfree(orig_ptr);
-			orig_ptr = NULL;
-		}
+		xfree(orig_ptr);
 			
 	} /* end while(slurm_part) */
 	list_iterator_destroy(itr);
@@ -325,7 +296,6 @@ extern int read_bgl_conf()
 		/* partition configuration parameters */
 		if ((error_code = _parse_bgl_spec(in_line))) {
 			error("_parse_bgl_spec error, skipping this line");
-
 		}
 		
 		/* report any leftover strings on input line */
@@ -370,8 +340,6 @@ static int _parse_bgl_spec(char *in_line)
 	if (error_code || !nodes || !part_type){
 		xfree(nodes);
 		xfree(part_type);
-		nodes = NULL;
-		part_type = NULL;
 		return error_code;
 	}
 
@@ -379,24 +347,23 @@ static int _parse_bgl_spec(char *in_line)
 	// debug("partition type %s", part_type);
 
 	new_record = (bgl_conf_record_t*) xmalloc(sizeof(bgl_conf_record_t));
-	new_record->nodes = xstrdup(nodes);
+	new_record->nodes = nodes;
 	new_record->part_type = xmalloc(sizeof(rm_partition_t));
 
-	if (strcasecmp(part_type, "TORUS") == 0){
-		// error("warning, TORUS specified, but I can't handle those yet!  Defaulting to mesh");
-		/** FIXME */
+	if (strcasecmp(part_type, "TORUS") == 0)
 		*(new_record->part_type) = RM_TORUS;
-		// new_record->part_type = RM_MESH;
-	} else if (strcasecmp(part_type, "MESH") == 0) {
+	else if (strcasecmp(part_type, "MESH") == 0)
 		*(new_record->part_type) = RM_MESH;
-	} else {
+	else {
 		error("_parse_bgl_spec: partition type %s invalid for nodes %s",
 		      part_type, nodes);
 		error("defaulting to type: MESH");
-		/* error("defaulting to type: PREFER_TORUS"); */
 		*(new_record->part_type) = RM_MESH;
 	}
 	list_push(bgl_conf_list, new_record);
+
+	xfree(part_type);
+	/* xfree(nodes);	Don't do this as we moved value into new record type */
 	
 	return SLURM_SUCCESS;
 }
@@ -404,55 +371,29 @@ static int _parse_bgl_spec(char *in_line)
 static void _destroy_bgl_record(void* object)
 {
 	bgl_record_t* this_record = (bgl_record_t*) object;
+
 	if (this_record){
-		if (this_record->slurm_part_id){
-			xfree(this_record->slurm_part_id);
-			this_record->slurm_part_id = NULL;
-		}
-		if (this_record->nodes){
-			xfree(this_record->nodes);
-			this_record->nodes = NULL;
-		}
-		if (this_record->part_type){
-			xfree(this_record->part_type);
-			this_record->part_type = NULL;
-		}
-		if (this_record->hostlist){
-			hostlist_destroy(*(this_record->hostlist));
-			*(this_record->hostlist) = NULL;
-		}
-		if (this_record->bitmap){
+		xfree(this_record->nodes);
+		xfree(this_record->slurm_part_id);
+		xfree(this_record->part_type);
+		hostlist_destroy(this_record->hostlist);
+		if (this_record->bitmap)
 			bit_free(this_record->bitmap);
-			this_record->bitmap = NULL;
-		}
-
 #ifdef _RM_API_H__
-		if (this_record->bgl_part_id){
-			xfree(this_record->bgl_part_id);
-			this_record->bgl_part_id = NULL;
-		}
+		xfree(this_record->bgl_part_id);
 #endif
-
+		xfree(this_record);
 	}
-	xfree(this_record);
-	this_record = NULL;
 }
 
 static void _destroy_bgl_conf_record(void* object)
 {
 	bgl_conf_record_t* this_record = (bgl_conf_record_t*) object;
 	if (this_record){
-		if (this_record->nodes){
-			xfree(this_record->nodes);
-			this_record->nodes = NULL;
-		}
-		if (this_record->part_type){
-			xfree(this_record->part_type);
-			this_record->part_type = NULL;
-		}
+		xfree(this_record->nodes);
+		xfree(this_record->part_type);
+		xfree(this_record);
 	}
-	xfree(this_record);
-	this_record = NULL;
 }
 
 /** 
@@ -468,6 +409,7 @@ static void _find_part_type(char* nodes, rm_partition_t** return_part_type)
 						      nodes);
 
 	*return_part_type = (rm_partition_t*) xmalloc(sizeof(rm_partition_t));
+
 	if (record != NULL && record->part_type != NULL){
 		**return_part_type = *(record->part_type);
 	} else {
@@ -482,161 +424,79 @@ static int _listfindf_conf_part_record(bgl_conf_record_t* record, char *nodes)
 	return (!strcasecmp(record->nodes, nodes));
 }
 
-static int _compute_part_size(char* nodes) 
-{
-	int size;
-	/* nhosts is stored as int, hopefully unsigned 32-bit */
-	hostlist_t hosts = hostlist_create(nodes);
-	size = (int) hostlist_count(hosts);
-	hostlist_destroy(hosts);
-	// debug("compute_part_size for %s = %d", nodes, size);	
-	return size;
-}
-
-/** 
- * converts a request of form ABCxXYZ to two int*'s
- * of bl[ABC] and tr[XYZ].
- */
-static int _char2intptr(char* request, int** bl, int** tr)
-{
-	int i, rc;
-	char *request_tmp, *delimit = ",x", *next_ptr, *orig_ptr;
-	char zero = '0';
-	char* token;
-
-	rc = SLURM_ERROR;
-	request_tmp = xstrdup(request);
-	(*bl) = (int*) xmalloc(sizeof(int) * SYSTEM_DIMENSIONS);
-	(*tr) = (int*) xmalloc(sizeof(int) * SYSTEM_DIMENSIONS);
-
-	orig_ptr = request_tmp;
-	token = strtok_r(request_tmp, delimit, &next_ptr);
-	if (token == NULL)
-		goto cleanup;
-
-	for (i=0; i<SYSTEM_DIMENSIONS; i++){
-		(*bl)[i] = (int)(token[i]-zero);
-	}
-	
-	request_tmp = next_ptr;
-	token = strtok_r(request_tmp, delimit, &next_ptr);
-	if (token == NULL)
-		goto cleanup;
-
-	for (i=0; i<SYSTEM_DIMENSIONS; i++){
-		(*tr)[i] = (int)(token[i]-zero);
-	}
-
-	rc = SLURM_SUCCESS;
-
- cleanup:
-	if (rc == SLURM_ERROR){
-		xfree(bl);
-		xfree(tr);
-		bl = NULL; tr = NULL;
-	}
-
-	if (orig_ptr != NULL){
-		xfree(orig_ptr);
-		orig_ptr = NULL;
-	}
-
-	return rc;
-}
-
 /** 
  * parses the request_string
  */
+static int _char2num(char in)
+{
+	int i = in - '0';
+	if ((i < 0) || (i > 9))
+		return -1;
+	return i;
+}
+
 static int _parse_request(char* request_string, partition_t** request_result)
 {
-	char* range;
-	int *bl=NULL, *tr=NULL;
-	uint16_t *dim=NULL;
-	int i, rc;
+	int loc = 0, i,j, rc = SLURM_ERROR;
 
-	rc = SLURM_ERROR;
 	if (!request_string)
-		goto cleanup;
+		return SLURM_ERROR;
 	
 	debug("incoming request %s", request_string);
 	*request_result = (partition_t*) xmalloc(sizeof(partition_t));
-	
-	/** token needs to be of the form 000x000 */
-	if(_extract_range(request_string, &range)){
-		goto cleanup;
-	}
-	
-	if (_char2intptr(range, &bl, &tr) || bl == NULL || tr == NULL ||
-	    _get_request_dimensions(bl, tr, &dim)){
-		goto cleanup;
-	}
 
-	/** place all the correct values into the request */
-	for (i=0; i<SYSTEM_DIMENSIONS; i++){
-		(*request_result)->bl_coord[i] = bl[i];
-		(*request_result)->tr_coord[i] = tr[i];
-		(*request_result)->dimensions[i] = dim[i];
+	for (i=0; ; i++) {
+		if (request_string[i] == '\0')
+			break;
+		if (loc == 0) {
+			if (request_string[i] == '[')
+				loc++;
+		} else if (loc == 1) {
+			for (j=0; j<SYSTEM_DIMENSIONS; j++)
+				(*request_result)->bl_coord[j] = _char2num(request_string[i+j]);
+			i += (SYSTEM_DIMENSIONS - 1);
+			loc++;
+		} else if (loc == 2) {
+			if (request_string[i] != 'x')
+				break;
+			loc++;
+		} else if (loc == 3) {
+			for (j=0; j<SYSTEM_DIMENSIONS; j++)
+				(*request_result)->tr_coord[j] = _char2num(request_string[i+j]);
+			i += (SYSTEM_DIMENSIONS - 1);
+			loc++;
+		} else if (loc == 4) {
+			if (request_string[i] != ']')
+				break;
+			loc++;
+			break;
+		}
 	}
+	if (loc != 5)
+		goto cleanup;
 
-	(*request_result)->size = int_array_size(dim);
+	(*request_result)->size = 1;
+	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+		if (((*request_result)->bl_coord[i] < 0)
+		||  ((*request_result)->tr_coord[i] < 0))
+			goto cleanup;
+		/* count self */
+		(*request_result)->dimensions[i] =
+			(*request_result)->tr_coord[i] -
+			(*request_result)->bl_coord[i] + 1;
+		(*request_result)->size *=
+			(*request_result)->dimensions[i];
+	}
 	rc = SLURM_SUCCESS;
 	
  cleanup: 
-	if (bl) {
-		xfree(bl);
-		bl = NULL;
-	}
-	if (tr) {
-		xfree(tr);
-		tr = NULL; 
-	}
-	if (dim) {
-		xfree(dim);
-		dim = NULL;
-	}
-	if (range){
-		xfree(range);	
-		range = NULL;
-	}
-	if (rc == SLURM_ERROR){
-		xfree(request_result);
-		request_result = NULL;
-	}
+	if (rc == SLURM_ERROR)
+		xfree(*request_result);
 	return rc;
 }
 
-static int _get_request_dimensions(int* bl, int* tr, uint16_t** dim)
-{
-	int i;
-	/*
-	  debug("get request dimensions dim: bl[%d %d %d] tr[%d %d %d]", 
-	  bl[0], bl[1], bl[2], tr[0], tr[1], tr[2]);
-	*/
-	if (bl == NULL || tr == NULL){
-		return SLURM_ERROR;
-	}
-		
-	*dim = (uint16_t*) xmalloc(sizeof(uint16_t) * SYSTEM_DIMENSIONS);
-	for (i=0; i<SYSTEM_DIMENSIONS; i++){
-		(*dim)[i] = tr[i] - bl[i] + 1; /* plus one because we're
-						  counting current
-						  number, so 0 to 1 = 2
-					       */
-		if ((*dim)[i] <= 0){
-			error("_get_request_dimensions: tr dimension less than bl dimension.");
-			goto cleanup;
-		}
-	}
-	// debug("dim: [%d %d %d]", (*dim)[0], (*dim)[1], (*dim)[2]);
-	return SLURM_SUCCESS;
-
- cleanup: 
-	xfree(*dim);
-	*dim = NULL;
-	return SLURM_ERROR;
-}
-
-extern int init_bgl()
+/* Initialize all plugin variables */
+extern int init_bgl(void)
 {
 #ifdef _RM_API_H__
 	int rc;
@@ -653,50 +513,17 @@ extern int init_bgl()
 	return SLURM_SUCCESS;
 }
 
-static int _extract_range(char* request, char** result)
+/* Purge all plugin variables */
+extern void fini_bgl(void)
 {
-	int RANGE_SIZE = 7; /* expecting something of the size: 000x000 = 7 chars */
-	int i, request_length;
-	int start = 0, end = 0;
-
-	if (!request)
-		return SLURM_ERROR;
-	*result = (char*) xmalloc(sizeof(RANGE_SIZE) + 1); /* +1 for NULL term */
-
-	request_length = strlen(request);
-	for(i=0; i<request_length; i++){
-		if (request[i] == ']'){
-			xstrcatchar(*result, '\0');
-			end = 1;
-			break;
-		}
-
-		if (start){
-			xstrcatchar(*result, request[i]);
-		}
-		
-		if (request[i] == '[')
-			start = 1;
-	}
-
-	if (!start || !end)
-		goto cleanup;
-
-	return SLURM_SUCCESS;
-
- cleanup:
-	if (*result){
-		xfree(*result);
-		*result = NULL;
-	}
-	error("_extract_range: could not extract range from node list");
-	return SLURM_ERROR;
+	list_destroy(bgl_conf_list);
 }
 
 extern void print_bgl_record(bgl_record_t* record)
 {
-	if (!record){
+	if (!record) {
 		error("print_bgl_record, record given is null");
+		return;
 	}
 
 	debug(" bgl_record:");
@@ -709,8 +536,8 @@ extern void print_bgl_record(bgl_record_t* record)
 	debug(" \tpart_type: %s", convert_part_type(record->part_type));
 
 	if (record->hostlist){
-		char buffer[RANGE_MAX];
-		hostlist_ranged_string(*(record->hostlist), RANGE_MAX, buffer);
+		char buffer[BUFSIZE];
+		hostlist_ranged_string(record->hostlist, BUFSIZE, buffer);
 		debug(" \thostlist %s", buffer);
 	}
 
@@ -722,10 +549,9 @@ extern void print_bgl_record(bgl_record_t* record)
 	}
 
 	if (record->bitmap){
-		char* bitstring = (char*) xmalloc(sizeof(char)*BITSIZE);
+		char bitstring[BITSIZE];
 		bit_fmt(bitstring, BITSIZE, record->bitmap);
 		debug("\tbitmap: %s", bitstring);
-		xfree(bitstring);
 	}
 }
 
@@ -979,12 +805,11 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 		/* since the bgl_part_id is a number, (most likely single digit), 
 		 * we'll create an LLNL_#, i.e. LLNL_4 = 6 chars + 1 for NULL
 		 */
-		char *bgl_part_id = NULL;
-		xstrfmtcat(bgl_part_id, "LLNL_%i", *(record->bgl_part_id));
+		char bgl_part_id[BITSIZE];
+		snprintf(bgl_part_id, BITSIZE, "LLNL_%i", *(record->bgl_part_id));
 		debug("found fake bgl_part_id %s", bgl_part_id);
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_PART_ID, bgl_part_id);
-		xfree(bgl_part_id);
 	}
 
 	/** we should do the BGL stuff here like, init BGL job stuff... */
@@ -998,11 +823,9 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
  */
 static void _print_bitmap(bitstr_t* bitmap)
 {
-	char* bitstring = (char*) xmalloc(sizeof(char)*BITSIZE);
+	char bitstring[BITSIZE];
 	bit_fmt(bitstring, BITSIZE, bitmap);
 	debug("bitmap:\t%s", bitstring);
-	xfree(bitstring);
-	bitstring = NULL;
 }
 
 /** 
@@ -1025,15 +848,8 @@ static void _update_bgl_node_bitmap()
 	// rm_size3D_t bp_size,size_in_bp,m_size;
 	// rm_size3D_t bp_size,size_in_bp,m_size;
 	char* reason = NULL;
-	char* down_node_list = NULL;
-	char* bgl_down_node = NULL;
-	char* slurm_down_node = NULL;
-
-	bgl_down_node = xmalloc(sizeof(char) * BUFSIZE);
-	slurm_down_node = xmalloc(sizeof(char) * BUFSIZE);
-	/** FIXME: dunno if we have to do this, but i'm reserving mem just to be safe */
-	down_node_list = xmalloc(sizeof(char) * BUFSIZE);
-	down_node_list[0] = '\0';
+	char down_node_list[BUFSIZE];
+	char bgl_down_node[128];
 
 	if (!bgl){
 		error("error, BGL is not initialized");
@@ -1060,7 +876,8 @@ static void _update_bgl_node_bitmap()
 		/* from here we either update the node or bitmap
 		   entry */
 		/** translate the location to the "node name" */
-		xstrfmtcat(bgl_down_node, "bgl%d%d%d", BPLoc.X, BPLoc.Y, BPLoc.Z);
+		snprintf(bgl_down_node, sizeof[bgl_down_node], "bgl%d%d%d", 
+			BPLoc.X, BPLoc.Y, BPLoc.Z);
 		debug("update bgl node bitmap: %s loc(%s) is in state %s", 
 		      BPID, 
 		      bgl_down_node,
@@ -1073,9 +890,12 @@ static void _update_bgl_node_bitmap()
 			 * that slurm knows about = comma separated
 			 * node list
 			 */
-			if (done_node_list[0] != '\0')
-				xstrcat(down_node_list,",");
-			xstrcat(down_node_list, bgl_down_node);
+			if (strlen(down_node_list) + strlen(bgl_down_node) + 2) < BUFSIZE) {
+				if (done_node_list[0] != '\0')
+					strcat(down_node_list,",");
+				strcat(down_node_list, bgl_down_node);
+			} else
+				error("down_node_list overflow");
 		}
 	}
 	if (!down_node_list){
@@ -1087,12 +907,6 @@ static void _update_bgl_node_bitmap()
 			time_ptr);
 		slurm_drain_nodes(down_node_list, reason);
 	}
-
- cleanup:
-	xfree(bgl_down_node);
-	xfree(slurm_down_node);
-	xfree(down_node_list);
-	  
 #endif
 }
 
@@ -1124,7 +938,7 @@ extern void set_bp_node_state(rm_BP_state_t state, node_record node){
 		debug("RM_BP_DOWN");
 		break;
 	case RM_BP_NAV:
-		debug("BGL state update returned UNKNOWN state");
+		debug("RM_BP_NAV");
 		break;
 	defalt:
 		debug("BGL state update returned UNKNOWN state");
@@ -1145,17 +959,16 @@ bluegene_agent(void *args)
 {
 	struct timeval tv1, tv2;
 	char tv_str[20];
-	while (1) {
-		sleep(SLEEP_TIME);      /* don't run continuously */
 
+	while (1) {
 		gettimeofday(&tv1, NULL);
 		_update_bgl_node_bitmap();
-
 		gettimeofday(&tv2, NULL);
 		_diff_tv_str(&tv1, &tv2, tv_str, 20);
 #if DEBUG
 		info("Bluegene status update: completed, %s", tv_str);
 #endif
+		sleep(SLEEP_TIME);      /* don't run continuously */
 	}
 }
 

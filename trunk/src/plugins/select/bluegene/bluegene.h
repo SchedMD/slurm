@@ -42,9 +42,6 @@
   rm_BGL_t *bgl;
 #endif
 
-List slurm_part_list;			/* cached copy of slurm's part_list */
-List bgl_list;				/* list of bgl_record entries */
-List bgl_conf_list;			/* list of bgl_conf_record entries */
 typedef int lifecycle_type_t;
 enum part_lifecycle {DYNAMIC, STATIC};
 
@@ -53,7 +50,7 @@ typedef struct bgl_record {
 	pm_partition_id_t* bgl_part_id;	/* ID returned from CMCS	*/
 	char* nodes;			/* String of nodes in partition */
 	lifecycle_type_t part_lifecycle;/* either STATIC or DYNAMIC	*/
-	hostlist_t* hostlist;		/* expanded form of hosts */
+	hostlist_t hostlist;		/* expanded form of hosts */
 	bitstr_t *bitmap;		/* bitmap of nodes for this partition */
 	struct partition* alloc_part;       /* the allocated partition   */
 	int size;			/* node count for the partitions */
@@ -75,10 +72,22 @@ typedef struct bgl_conf_record{
  * 
  */
 extern int read_bgl_conf();
-/** */
-extern int init_bgl();
 
-extern int create_static_partitions();
+/* Initialize all plugin variables */
+extern int init_bgl(void);
+
+/* Purge all plugin variables */
+extern void fini_bgl(void);
+
+/**
+ * create_static_partitions - create the static partitions that will be used
+ * for scheduling.  
+ * IN - part_list: slurmctld's list of partition configurations 
+ * OUT - (global, to slurmctld): Table of partitionIDs to geometries
+ * RET - success of fitting all configurations
+ */
+extern int create_static_partitions(List part_list);
+
 /** */
 extern int submit_job(struct job_record *job_ptr, bitstr_t *bitmap,
 	       int min_nodes, int max_nodes);

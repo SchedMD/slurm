@@ -87,7 +87,7 @@ static bool thread_running = false;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /** initialize the status pthread */
-int _init_status_pthread();
+static int _init_status_pthread();
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -114,7 +114,7 @@ int init ( void )
 	return SLURM_SUCCESS;
 }
 
-int _init_status_pthread()
+static int _init_status_pthread()
 {
 	pthread_attr_t attr;
 
@@ -146,6 +146,8 @@ int fini ( void )
 	}
 	pthread_mutex_unlock( &thread_flag_mutex );
 
+	fini_bgl();
+
 	return SLURM_SUCCESS;
 }
 
@@ -162,21 +164,19 @@ int fini ( void )
 extern int select_p_part_init(List part_list)
 { 
 	debug("select_p_part_init");
-	/** isn't the part_list already accessible to me? */
-	slurm_part_list = part_list;
 
 	if (read_bgl_conf())
 		return SLURM_ERROR;
 
 	/* create_static_partitions */
-	if (create_static_partitions()){
+	if (create_static_partitions(part_list)){
 		/* error in creating the static partitions, so
 		 * partitions referenced by submitted jobs won't
 		 * correspond to actual slurm partitions/bgl
 		 * partitions.
 		 */
 		fatal("Error, could not create the static partitions");
-		return 1;
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS; 
@@ -207,11 +207,9 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		return SLURM_ERROR;
 	}
 
-	// error("select/bluegene plugin not yet functional");
 	debug("select_p_node_init should be doing a system wide status "
 	      "check on all the nodes to updated the system bitmap, "
 	      "along with killing old jobs, etc");
-	// return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
 

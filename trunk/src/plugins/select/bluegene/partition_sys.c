@@ -31,10 +31,10 @@
 /** need this to have it compile with the BGL header*/
 // typedef int MPIR_PROCDESC;
 
+#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <math.h>
 #include "src/common/list.h"
 #include "src/common/xmalloc.h"
 #include "partition_sys.h"
@@ -70,8 +70,8 @@ List bgl_sys_free = NULL;
 List bgl_sys_allocated = NULL;
 
 void _init_sys(partition_t*);
-int _is_not_equals_all_coord(uint16_t* rec_a, uint16_t* rec_b);
-int _is_not_equals_some_coord(uint16_t* rec_A, uint16_t* rec_b);
+static int _is_not_equals_all_coord(uint16_t* rec_a, uint16_t* rec_b);
+static int _is_not_equals_some_coord(uint16_t* rec_a, uint16_t* rec_b);
 
 #ifdef _RM_API_H__
 /** 
@@ -218,7 +218,7 @@ int _create_bgl_partitions(List requests)
  * we assume that the partitioning done before hand
  * 
  */
-int _fit_request(List sys, List allocated, uint16_t* request)
+static int _fit_request(List sys, List allocated, uint16_t* request)
 {
 	int i, rc = 1;
 	uint16_t* new_request = NULL;
@@ -317,7 +317,8 @@ int _fit_request(List sys, List allocated, uint16_t* request)
  * odd number sizes, and dimensions will kill this!!!
  * 
  */
-int _break_up_partition(List sys, partition_t* partition_to_break, int index)
+static int _break_up_partition(List sys, partition_t* partition_to_break, 
+		int index)
 {
 	/* the two new partitions to create */
 	partition_t *first_part, *second_part;
@@ -340,13 +341,15 @@ int _break_up_partition(List sys, partition_t* partition_to_break, int index)
 	first_part->dimensions[index] /= 2;
 	second_part->dimensions[index] /= 2;
 
-	diff = partition_to_break->tr_coord[index] - partition_to_break->bl_coord[index];
+	diff = partition_to_break->tr_coord[index] - 
+		partition_to_break->bl_coord[index];
 	first_part->tr_coord[index] = floor(diff/2);
 	second_part->bl_coord[index] = ceil(diff/2);
 
 	itr = list_iterator_create(sys);
 	while ((next = (partition_t*) list_next(itr))) {
-		if(!is_not_correct_dimension(next->dimensions, partition_to_break->dimensions)){
+		if(!is_not_correct_dimension(next->dimensions, 
+				partition_to_break->dimensions)){
 			/* next we remove the old partition */
 			list_remove(itr);
 
@@ -784,7 +787,7 @@ void rotate_part(const uint16_t* config, uint16_t** new_config)
 	xfree(*new_config);
 	(*new_config) = (uint16_t*) xmalloc(SYSTEM_DIMENSIONS * 
 		sizeof(uint16_t));
-	
+
 	if (config[0] > config[1]){
 		if (config[1] > config[2]){
 			; // array already sorted
@@ -857,7 +860,7 @@ void _init_sys(partition_t *part)
 /** 
  * to be used by list object to destroy the array elements
  */
-void _int_array_destroy(void* object)
+static void _int_array_destroy(void* object)
 {
 	xfree(object);
 }
@@ -932,7 +935,7 @@ int get_switch(int* cur_coord, List switch_list)
 		switch_list = list_create(rm_switch_t_destroy);
 	}
 
-	if (get_bp_by_location(cur_coord, bp)){
+	if (_get_bp_by_location(cur_coord, bp)){
 		return SLURM_ERROR;
 	}
 	
@@ -987,7 +990,7 @@ void rm_switch_t_destroy(void* object)
  * this is just stupid.  there are some implicit rules for where
  * "NextBP" goes to, but we don't know, so we have to do this.
  */
-int get_bp_by_location(int* cur_coord, rm_BP_t* bp)
+static int _get_bp_by_location(int* cur_coord, rm_BP_t* bp)
 {
 	int BP_num;
 	rm_location_t* loc;
@@ -1002,7 +1005,7 @@ int get_bp_by_location(int* cur_coord, rm_BP_t* bp)
 		rm_get_data(bgl, RM_NextBP, &bp);	
 	}
 
-	error("get_bp_by_location: could not find specified bp.");
+	error("_get_bp_by_location: could not find specified bp.");
 	return SLURM_ERROR;
 }
 #endif
@@ -1012,7 +1015,7 @@ int get_bp_by_location(int* cur_coord, rm_BP_t* bp)
  * 
  * returns 0 if equals, 1 if not equals
  */
-int _is_not_equals_some_coord(uint16_t* rec_a, uint16_t* rec_b)
+static int _is_not_equals_some_coord(uint16_t* rec_a, uint16_t* rec_b)
 {
 	int i;
 	for (i=0; i<SYSTEM_DIMENSIONS; i++){
@@ -1027,7 +1030,7 @@ int _is_not_equals_some_coord(uint16_t* rec_a, uint16_t* rec_b)
  * 
  * returns 0 if equals, 1 if not equals
  */
-int _is_not_equals_all_coord(uint16_t* rec_a, uint16_t* rec_b)
+static int _is_not_equals_all_coord(uint16_t* rec_a, uint16_t* rec_b)
 {
 	int i;
 	for (i=0; i<SYSTEM_DIMENSIONS; i++){
@@ -1040,7 +1043,7 @@ int _is_not_equals_all_coord(uint16_t* rec_a, uint16_t* rec_b)
 /** 
  * sort the partitions by increasing size
  */
-void sort_partitions_by_inc_size(List parts){
+static void _sort_partitions_by_inc_size(List parts){
 	if (parts == NULL)
 		return;
 	list_sort(parts, (ListCmpF) _partition_cmpf_inc);
@@ -1049,7 +1052,7 @@ void sort_partitions_by_inc_size(List parts){
 /** 
  * sort the partitions by decreasing size
  */
-void sort_partitions_by_dec_size(List parts){
+static void _sort_partitions_by_dec_size(List parts){
 	if (parts == NULL)
 		return;
 	list_sort(parts, (ListCmpF) _partition_cmpf_dec);
@@ -1062,7 +1065,7 @@ void sort_partitions_by_dec_size(List parts){
  * returns: -1: rec_a  < rec_b    0: rec_a == rec_b   1: rec_a > rec_b
  * 
  */
-int _partition_cmpf_inc(struct partition* rec_a, struct partition* rec_b)
+static int _partition_cmpf_inc(struct partition* rec_a, struct partition* rec_b)
 {
 	if (rec_a->size < rec_b->size)
 		return -1;
@@ -1078,7 +1081,7 @@ int _partition_cmpf_inc(struct partition* rec_a, struct partition* rec_b)
  * returns: -1: rec_a > rec_b    0: rec_a == rec_b   1: rec_a < rec_b
  * 
  */
-int _partition_cmpf_dec(struct partition* rec_a, struct partition* rec_b)
+static int _partition_cmpf_dec(struct partition* rec_a, struct partition* rec_b)
 {
 	if (rec_a->size > rec_b->size)
 		return -1;
@@ -1089,13 +1092,13 @@ int _partition_cmpf_dec(struct partition* rec_a, struct partition* rec_b)
 }
 
 /** */
-List _get_bgl_sys_allocated()
+static List _get_bgl_sys_allocated()
 {
 	return bgl_sys_allocated;	
 }
 
 /** */
-List _get_bgl_sys_free()
+static List _get_bgl_sys_free()
 {
 	return bgl_sys_free;
 }
