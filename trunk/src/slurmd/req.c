@@ -526,18 +526,23 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 }
 
 static void
-_kill_running_session_mgrs(uint32_t jobid, int signum)
+_kill_running_session_mgrs(uint32_t jobid, int signum, char *signame)
 {
 	List         steps = shm_get_steps();
 	ListIterator i     = list_iterator_create(steps);
-	job_step_t  *s     = NULL; 
+	job_step_t  *s     = NULL;
+	int          cnt   = 0;	
 
 	while ((s = list_next(i))) {
 		if ((s->jobid == jobid) && (s->sid > (pid_t) 0)) {
 			kill(s->sid, signum);
+			cnt++;
 		}
 	}
 	list_destroy(steps);
+	if (cnt)
+		verbose("Job %u: sent %s to %d active steps",
+			jobid, signame, cnt);
 
 	return;
 }
@@ -571,7 +576,7 @@ _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 	 *  Send SIGXCPU to warn session managers of job steps for this
 	 *   job that the job is about to be terminated
 	 */
-	_kill_running_session_mgrs(req->job_id, SIGXCPU);
+	_kill_running_session_mgrs(req->job_id, SIGXCPU, "SIGXCPU");
 
 	nsteps = _kill_all_active_steps(req->job_id, SIGTERM);
 
