@@ -331,6 +331,7 @@ static void _p_launch(slurm_msg_t *req, job_t *job)
 
 		if (job->ntask[i] == 0)	{	/* No tasks for this node */
 			debug("Node %s is unused",job->host[i]);
+			job->host_state[i] = SRUN_HOST_REPLIED;
 			continue;
 		}
 
