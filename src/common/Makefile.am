@@ -75,7 +75,6 @@ noinst_HEADERS = 	\
 	slurm_protocol_interface.h	\
 	slurm_errno.h	\
 	util-net.h	\
-	wrapper.h	\
 	qsw.h			
 
 libdaemonize_la_SOURCES =  \

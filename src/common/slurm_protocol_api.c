@@ -40,6 +40,7 @@
 #include <string.h>
 
 /* PROJECT INCLUDES */
+#include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/parse_spec.h"
 #include "src/common/read_config.h"
@@ -48,7 +49,6 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_protocol_pack.h"
-#include "src/common/wrapper.h"
 #include "src/common/xmalloc.h"
 #include "src/common/log.h"
 
@@ -110,10 +110,10 @@ slurm_protocol_config_t *slurm_get_api_config()
  */
 int slurm_api_set_default_config()
 {
-	x_pthread_mutex_lock(&config_lock);
+	slurm_mutex_lock(&config_lock);
 	if ((slurmctld_conf.control_addr != NULL) &&
 	    (slurmctld_conf.slurmctld_port != 0)) {
-		x_pthread_mutex_unlock(&config_lock);
+		slurm_mutex_unlock(&config_lock);
 		return SLURM_SUCCESS;
 	}
 
@@ -135,7 +135,7 @@ int slurm_api_set_default_config()
 	}
 	proto_conf = &proto_conf_default;
 
-	x_pthread_mutex_unlock(&config_lock);
+	slurm_mutex_unlock(&config_lock);
 	return SLURM_SUCCESS;
 }
 
