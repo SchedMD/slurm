@@ -80,7 +80,9 @@ Signal to be sent to the spawned tasks.
 .LP
 \fBslurm_step_ctx_create\fR Create a job step context. To avoid memory 
 leaks call \fBslurm_step_ctx_destroy\fR when the use of this context is
-finished.
+finished. NOTE: this function creates a slurm job step. Call \fBslurm_spawn\fR 
+in a timely fashion to avoid having job step credentials time out. If
+\fBslurm_spawn\fR is not used, explicitly cancel the job step. 
 .LP
 \fBslurm_step_ctx_get\fR Get values from a job step context.
 \fIctx_key\fP identifies the fields to be gathered from the job step context.
@@ -124,6 +126,10 @@ Sets the environment variable count and values for the executable.
 Accepts two additional arguments, the first of type int and
 the second of type char **. By default the current environment 
 variables are copied to started task's environment.
+.TP
+\fBSLURM_STEP_CTX_STEPID\fR
+Get the step id of the created job step.
+Accepts one additional argument of type uint32_t *.
 .TP
 \fBSLURM_STEP_CTX_TASKS\fR
 Get the number of tasks per node for a given job.
