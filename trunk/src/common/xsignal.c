@@ -34,9 +34,20 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/xsignal.h"
 #include "src/common/xassert.h"
 
+/*
+ * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
+ * for details. 
+ */
+strong_alias(xsignal,		slurm_xsignal);
+strong_alias(xsignal_save_mask,	slurm_xsignal_save_mask);
+strong_alias(xsignal_set_mask,	slurm_xsignal_set_mask);
+strong_alias(xsignal_block,	slurm_xsignal_block);
+strong_alias(xsignal_unblock,	slurm_xsignal_unblock);
+strong_alias(xsignal_sigset_create, slurm_xsignal_sigset_create);
 
 SigFunc *
 xsignal(int signo, SigFunc *f)

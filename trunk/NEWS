@@ -7,6 +7,9 @@ documents those changes that are of interest to users and admins.
     slurm.conf pathname)
  -- Remove slurmd "-f"
  -- Several documenation changes for slurm administrators
+ -- Convert shared object plugins to use only functions with prefix
+    of "slurm_" to avoid linking conflicts with applications using 
+    SLURM library
 
 * Changes in SLURM 0.3.0.0-pre9
 ===============================

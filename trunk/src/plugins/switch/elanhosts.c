@@ -35,8 +35,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-#include "src/common/list.h"
-#include "src/common/hostlist.h"
+#include "src/common/slurm_xlator.h"
 #include "elanhosts.h"
 
 /* Default ElanId config file */

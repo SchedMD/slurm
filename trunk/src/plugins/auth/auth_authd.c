@@ -49,12 +49,7 @@
 #endif
 
 #include <slurm/slurm_errno.h>
-#include "src/common/slurm_auth.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xassert.h"
-#include "src/common/pack.h"
-#include "src/common/log.h"
-#include "src/common/arg_desc.h"
+#include "src/common/slurm_xlator.h"
 
 const char plugin_name[]	= "Brent Chun's authd authentication plugin";
 const char plugin_type[]	= "auth/authd";

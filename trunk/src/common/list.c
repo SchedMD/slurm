@@ -40,8 +40,36 @@
 #include <stdlib.h>
 #include <string.h>
 #include "list.h"
+#include "macros.h"
 
-
+/*
+** Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
+** for details. 
+ */
+strong_alias(list_create,	slurm_list_create);
+strong_alias(list_destroy,	slurm_list_destroy);
+strong_alias(list_is_empty,	slurm_list_is_empty);
+strong_alias(list_count,	slurm_list_count);
+strong_alias(list_append,	slurm_list_append);
+strong_alias(list_prepend,	slurm_list_prepend);
+strong_alias(list_find_first,	slurm_list_find_first);
+strong_alias(list_delete_all,	slurm_list_delete_all);
+strong_alias(list_for_each,	slurm_list_for_each);
+strong_alias(list_sort,		slurm_list_sort);
+strong_alias(list_push,		slurm_list_push);
+strong_alias(list_pop,		slurm_list_pop);
+strong_alias(list_peek,		slurm_list_peek);
+strong_alias(list_enqueue,	slurm_list_enqueue);
+strong_alias(list_dequeue,	slurm_list_dequeue);
+strong_alias(list_iterator_create,	slurm_list_iterator_create);
+strong_alias(list_iterator_reset,	slurm_list_iterator_reset);
+strong_alias(list_iterator_destroy,	slurm_list_iterator_destroy);
+strong_alias(list_next,		slurm_list_next);
+strong_alias(list_insert,	slurm_list_insert);
+strong_alias(list_find,		slurm_list_find);
+strong_alias(list_remove,	slurm_list_remove);
+strong_alias(list_delete,	slurm_list_delete);
+strong_alias(list_install_fork_handlers, slurm_list_install_fork_handlers);
 /*********************
  *  lsd_fatal_error  *
  *********************/

@@ -48,7 +48,48 @@
 #include <sys/param.h>
 #include <unistd.h>
 
-#include "hostlist.h"
+#include "src/common/hostlist.h"
+#include "src/common/macros.h"
+
+/*
+ * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
+ * for details. 
+ */
+strong_alias(hostlist_create,		slurm_hostlist_create);
+strong_alias(hostlist_copy,		slurm_hostlist_copy);
+strong_alias(hostlist_count,		slurm_hostlist_count);
+strong_alias(hostlist_delete,		slurm_hostlist_delete);
+strong_alias(hostlist_delete_host,	slurm_hostlist_delete_host);
+strong_alias(hostlist_delete_nth,	slurm_hostlist_delete_nth);
+strong_alias(hostlist_deranged_string,	slurm_hostlist_deranged_string);
+strong_alias(hostlist_destroy,		slurm_hostlist_destroy);
+strong_alias(hostlist_find,		slurm_hostlist_find);
+strong_alias(hostlist_iterator_create,	slurm_hostlist_iterator_create);
+strong_alias(hostlist_iterator_destroy,	slurm_hostlist_iterator_destroy);
+strong_alias(hostlist_iterator_reset,	slurm_hostlist_iterator_reset);
+strong_alias(hostlist_next,		slurm_hostlist_next);
+strong_alias(hostlist_next_range,	slurm_hostlist_next_range);
+strong_alias(hostlist_nth,		slurm_hostlist_nth);
+strong_alias(hostlist_pop,		slurm_hostlist_pop);
+strong_alias(hostlist_pop_range,	slurm_hostlist_pop_range);
+strong_alias(hostlist_push,		slurm_hostlist_push);
+strong_alias(hostlist_push_host,	slurm_hostlist_push_host);
+strong_alias(hostlist_push_list,	slurm_hostlist_push_list);
+strong_alias(hostlist_ranged_string,	slurm_hostlist_ranged_string);
+strong_alias(hostlist_remove,		slurm_hostlist_remove);
+strong_alias(hostlist_shift,		slurm_hostlist_shift);
+strong_alias(hostlist_shift_range,	slurm_hostlist_shift_range);
+strong_alias(hostlist_sort,		slurm_hostlist_soft);
+strong_alias(hostlist_uniq,		slurm_hostlist_uniq);
+strong_alias(hostset_copy,		slurm_hostset_copy);
+strong_alias(hostset_count,		slurm_hostset_count);
+strong_alias(hostset_create,		slurm_hostset_create);
+strong_alias(hostset_delete,		slurm_hostset_delete);
+strong_alias(hostset_destroy,		slurm_hostset_destroy);
+strong_alias(hostset_insert,		slurm_hostset_insert);
+strong_alias(hostset_shift,		slurm_hostset_shift);
+strong_alias(hostset_shift_range,	slurm_hostset_shift_range);
+strong_alias(hostset_within,		slurm_hostset_within);
 
 /*
  * lsd_fatal_error : fatal error macro
@@ -214,7 +255,8 @@ static int           hostname_suffix_width(hostname_t);
 
 static hostrange_t   hostrange_new(void);
 static hostrange_t   hostrange_create_single(const char *);
-static hostrange_t   hostrange_create(char *, unsigned long, unsigned long, int);
+static hostrange_t   hostrange_create(char *, unsigned long, unsigned long,
+int);
 static unsigned long hostrange_count(hostrange_t);
 static hostrange_t   hostrange_copy(hostrange_t);
 static void          hostrange_destroy(hostrange_t);
@@ -229,7 +271,8 @@ static char *        hostrange_shift(hostrange_t);
 static int           hostrange_join(hostrange_t, hostrange_t);
 static hostrange_t   hostrange_intersect(hostrange_t, hostrange_t);
 static int           hostrange_hn_within(hostrange_t, hostname_t);
-static size_t        hostrange_to_string(hostrange_t hr, size_t, char *, char *);
+static size_t        hostrange_to_string(hostrange_t hr, size_t, char *, char
+*);
 static size_t        hostrange_numstr(hostrange_t, size_t, char *);
 
 static hostlist_t  hostlist_new(void);

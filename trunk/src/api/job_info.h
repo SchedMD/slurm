@@ -28,7 +28,7 @@
 #define _JOB_INFO_H
 
 /*
- * make_time_str - convert time_t to string with "month/date hour:min:sec" 
+ * slurm_make_time_str - convert time_t to string "month/date hour:min:sec" 
  * IN time - a time stamp
  * OUT string - pointer user defined buffer
  */

@@ -82,11 +82,7 @@
 
 #include <slurm/slurm_errno.h>
 
-#include "src/common/xassert.h"
-#include "src/common/strlcpy.h"
-#include "src/common/bitstring.h"
-#include "src/common/log.h"
-#include "src/common/pack.h"
+#include "src/common/slurm_xlator.h"
 
 #include "src/plugins/switch/elanhosts.h"
 #include "src/plugins/switch/qsw.h"

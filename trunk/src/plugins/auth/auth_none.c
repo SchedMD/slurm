@@ -52,11 +52,7 @@
 #include <stdio.h>
 
 #include <slurm/slurm_errno.h>
-#include "src/common/xassert.h"
-#include "src/common/xmalloc.h"
-#include "src/common/pack.h"
-#include "src/common/log.h"
-#include "src/common/slurm_auth.h"
+#include "src/common/slurm_xlator.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they

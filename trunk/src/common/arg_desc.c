@@ -1,6 +1,15 @@
 #include <string.h>
 #include "src/common/arg_desc.h"
+#include "src/common/macros.h"
 #include "src/common/xassert.h"
+
+/*
+ * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
+ * for details. 
+ */
+strong_alias(arg_count,		slurm_arg_count);
+strong_alias(arg_idx_by_name,	slurm_arg_idx_by_name);
+strong_alias(arg_name_by_idx,	slurm_arg_name_by_idx);
 
 const int
 arg_count( const arg_desc_t *desc )

@@ -26,8 +26,8 @@
 #ifndef _SETENVPF_H
 #define _SETENVPF_H
 
-int setenvpf(char ***envp, const char *name, const char *fmt, ...);
-int unsetenvp(char **env, const char *name);
-char * getenvp(char **env, const char *name);
+int	setenvpf(char ***envp, const char *name, const char *fmt, ...);
+void	unsetenvp(char **env, const char *name);
+char *	getenvp(char **env, const char *name);
 
 #endif

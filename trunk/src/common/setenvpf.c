@@ -33,11 +33,20 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "src/common/xmalloc.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
+#include "src/common/setenvpf.h"
 #include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+/*
+ * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
+ * for details. 
+ */
+strong_alias(setenvpf,		slurm_setenvpf);
+strong_alias(unsetenvp,		slurm_unsetenvp);
+strong_alias(getenvp,		slurm_getenvp);
 
 /*
  *  Return pointer to `name' entry in environment if found, or

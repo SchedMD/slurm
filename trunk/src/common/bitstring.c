@@ -33,7 +33,36 @@
 #include <string.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/macros.h"
 #include "src/common/xmalloc.h"
+
+/*
+ * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
+ * for details. 
+ */
+strong_alias(bit_alloc,		slurm_bit_alloc);
+strong_alias(bit_test,		slurm_bit_test);
+strong_alias(bit_set,		slurm_bit_set);
+strong_alias(bit_clear,		slurm_bit_clear);
+strong_alias(bit_nclear,	slurm_bit_nclear);
+strong_alias(bit_nset,		slurm_bit_nset);
+strong_alias(bit_ffc,		slurm_bit_ffc);
+strong_alias(bit_ffs,		slurm_bit_ffs);
+strong_alias(bit_free,		slurm_bit_free);
+strong_alias(bit_realloc,	slurm_bit_realloc);
+strong_alias(bit_size,		slurm_bit_size);
+strong_alias(bit_and,		slurm_bit_and);
+strong_alias(bit_not,		slurm_bit_not);
+strong_alias(bit_or,		slurm_bit_or);
+strong_alias(bit_set_count,	slurm_bit_set_count);
+strong_alias(bit_clear_count,	slurm_bit_clear_count);
+strong_alias(bit_fmt,		slurm_bit_fmt);
+strong_alias(bit_fls,		slurm_bit_fls);
+strong_alias(bit_fill_gaps,	slurm_bit_fill_gaps);
+strong_alias(bit_super_set,	slurm_bit_super_set);
+strong_alias(bit_copy,		slurm_bit_copy);
+strong_alias(bit_pick_cnt,	slurm_bit_pick_cnt);
+strong_alias(bitfmt2int,	slurm_bitfmt2int);
 
 /* 
  * Allocate a bitstring.
