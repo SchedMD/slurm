@@ -119,8 +119,7 @@ be stubbed.</p>
 <p style="margin-left:.2in"><b>Description</b>: Allocates from the free store 
 an anonymous credential object and returns a pointer to it. The pointer should 
 be valid until passed to <span class="commandline">slurm_auth_destroy()</span> for 
-disposal. The credential is not expected to be in a usable state until it is activated 
-by <span class="commandline">slurm_auth_activate()</span>. SLURM will not pass 
+disposal. SLURM will not pass
 credentials to the API which have not been allocated by this function.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: None.</p>
 <p style="margin-left:.2in"><b>Returns</b>: A pointer to a newly allocated credential 
@@ -135,22 +134,6 @@ associated storage that has been allocated for it during its use.</p>
 be NULL.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
 the plugin should return SLURM_ERROR and set the errno to an appropriate value 
-to indicate the reason for failure.</p>
-<p class="commandline">int slurm_auth_activate (void *cr);</p>
-<p style="margin-left:.2in"><b>Description</b>: Prepares a credential for verification, 
-usually by some &quot;signing&quot; process. <span class="commandline">slurm_auth_activate()</span> 
-and <span class="commandline">slurm_auth_verify()</span> are strictly sequential 
-operations. A credential that has been successfully activated should be successfully 
-verified without any further processing, provided it has not expired. A credential 
-must be activated before it can be successfully verified. The return values of 
-<span class="commandline">slurm_auth_get_uid()</span> and <span class="commandline">slurm_auth_get_gid()</span> 
-may be meaningful after activation (depending on plugin preference), but are not 
-considered trustworthy by SLURM until verification.</p>
-<p style="margin-left:.2in"><b>Arguments</b>: <span class="commandline">cr</span>&nbsp; 
-&nbsp;&nbsp;(input) pointer to the credential which is to be activated. Cannot 
-be NULL.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure 
-the function should return SLURM_ERROR and set its errno to an appropriate value 
 to indicate the reason for failure.</p>
 <p class="footer"><a href="#top">top</a></p>
 <p class="commandline">int slurm_auth_verify (void *cr );</p>
