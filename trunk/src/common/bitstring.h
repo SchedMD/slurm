@@ -11,7 +11,11 @@
  * bitstr_t is properly initialized.  Word 1 is the number of valid bits in 
  * the bitstr_t This limts the capacity of a bitstr_t to 4 gigabits if using
  * 32 bit words.
+ * 
+ * bitstrings are zero origin
  */
+
+#include <stdint.h>
 
 #ifndef _BITSTRING_H_
 #define	_BITSTRING_H_
@@ -87,7 +91,7 @@ typedef bitstr_t bitoff_t;
 	(name)[_bitstr_words(nbits)] = { BITSTR_MAGIC_STACK, (nbits) }
 
 /* compat with Vixie macros */
-bitstr_t *bit_alloc(bitoff_t nbits);
+bitstr_t *bit_allocbit_alloc(bitoff_t nbits);
 int bit_test(bitstr_t *b, bitoff_t bit);
 void bit_set(bitstr_t *b, bitoff_t bit);
 void bit_clear(bitstr_t *b, bitoff_t bit);
@@ -99,12 +103,16 @@ bitoff_t bit_ffc(bitstr_t *b);
 bitoff_t bit_ffs(bitstr_t *b);
 
 /* new */
-void bit_free(bitstr_t *b);
+void	bit_free(bitstr_t *b);
 bitstr_t *bit_realloc(bitstr_t *b, bitoff_t nbits);
-void bit_and(bitstr_t *b1, bitstr_t *b2);
-void bit_or(bitstr_t *b1, bitstr_t *b2);
-int bit_set_count(bitstr_t *b);
-int bit_clear_count(bitstr_t *b);
-char *bit_fmt(char *str, int len, bitstr_t *b);
+void	bit_and(bitstr_t *b1, bitstr_t *b2);
+void	bit_or(bitstr_t *b1, bitstr_t *b2);
+int	bit_set_count(bitstr_t *b);
+int	bit_clear_count(bitstr_t *b);
+char	*bit_fmt(char *str, int len, bitstr_t *b);
+bitoff_t bit_fls(bitstr_t *b);
+void	bit_fill_gaps(bitstr_t *b);
+int	bit_super_set(bitstr_t *b1, bitstr_t *b2);
+bitstr_t *bit_copy(bitstr_t *b);
 
 #endif /* !_BITSTRING_H_ */

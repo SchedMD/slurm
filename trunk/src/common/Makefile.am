@@ -2,7 +2,7 @@
 
 #
 if DEBUG_MODULES
-test_modules = controller node_mgr partition_mgr read_config 
+test_modules = bits_bytes bitstring
 else
 test_modules = 
 endif
@@ -17,7 +17,8 @@ libcommon_a_SOURCES = 	xmalloc.c 	\
 		      	strlcpy.c	\
                       	list.c  	\
 		      	log.c		\
-		      	bits_bytes.c
+		      	bits_bytes.c	\
+			bitstring.c
 
 noinst_HEADERS = 	xmalloc.h 	\
 		 	xassert.h 	\
@@ -26,7 +27,8 @@ noinst_HEADERS = 	xmalloc.h 	\
 		 	log.h 		\
 		 	strlcpy.h	\
 		 	slurm.h 	\
-		 	slurmlib.h
+		 	slurmlib.h	\
+			bitstring.h
 
 # target specific CFLAGS do not work until automake 1.5, use explicit rules
 # for now. If we ever move to 1.5, the CFLAGS defs below should work in

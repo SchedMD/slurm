@@ -8,7 +8,6 @@
  * J. Garlick April 2002
  */
 
-#include <stdint.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -18,7 +17,7 @@
 
 /* 
  * Allocate a bitstring.
- *   nbits (IN)		valid bits in new bitstring
+ *   nbits (IN)		valid bits in new bitstring, initialized to all clear
  *   RETURN		new bitstring
  */
 bitstr_t *
@@ -124,11 +123,11 @@ bit_nset(bitstr_t *b, bitoff_t start, bitoff_t stop)
 	_assert_bit_valid(b, start);
 	_assert_bit_valid(b, stop);
 
-	while (start <= stop && start % 8 > 0) 	/* partial first byte? */
+	while (start <= stop && start % 8 > 0) 		/* partial first byte? */
 		bit_set(b, start++);
-	while (stop > start && (stop+1) % 8 > 0)/* partial last byte? */
+	while (stop >= start && (stop+1) % 8 > 0)	/* partial last byte? */
 		bit_set(b, stop--);
-	if (stop > start) {			/* now do whole bytes */
+	if (stop > start) {				/* now do whole bytes */
 		assert((stop-start+1) % 8 == 0);
 		memset(_bit_byteaddr(b, start), 0xff, (stop-start+1) / 8);
 	}
@@ -149,7 +148,7 @@ bit_nclear(bitstr_t *b, bitoff_t start, bitoff_t stop)
 
 	while (start <= stop && start % 8 > 0) 	/* partial first byte? */
 		bit_clear(b, start++);
-	while (stop > start && (stop+1) % 8 > 0)/* partial last byte? */
+	while (stop >= start && (stop+1) % 8 > 0)/* partial last byte? */
 		bit_clear(b, stop--);
 	if (stop > start) {			/* now do whole bytes */
 		assert((stop-start+1) % 8 == 0);
@@ -218,6 +217,86 @@ bit_ffs(bitstr_t *b)
 	return value;
 }
 
+/* 
+ * Find last bit set in b.
+ *   b (IN)		bitstring to search
+ *   RETURN 		resulting bit position (-1 if none found)
+ */
+bitoff_t 
+bit_fls(bitstr_t *b)
+{
+	bitoff_t bit, value = -1;
+	int word;
+
+	_assert_bitstr_valid(b);
+
+	bit = _bitstr_bits(b) - 1;	/* zero origin */
+	while (bit >= 0 && 
+		(bit % (sizeof(bitstr_t)*8)) != (sizeof(bitstr_t)*8-1)) {
+		if (bit_test(b, bit)) {
+			value = bit;
+			break;
+		}
+		bit--;
+	}
+
+	while (bit >= 0 && value == -1) {
+		word = _bit_word(bit);
+
+		if (b[word] == 0) {
+			bit -= sizeof(bitstr_t) * 8;
+			continue;
+		}
+		while (bit >= 0) {
+			if (bit_test(b, bit)) {
+				value = bit;
+				break;
+			}
+			bit--;
+		}
+	}
+	return value;
+}
+
+
+/* 
+ * set all bits between the first and last bits set (i.e. fill in the gaps 
+ *	to make set bits contiguous)
+ */
+void
+bit_fill_gaps(bitstr_t *b) {
+	bitoff_t first, last;
+
+	_assert_bitstr_valid(b);
+
+	first = bit_ffs(b);
+	if (first == -1)
+		return;
+
+	last = bit_fls(b);
+	bit_nset(b, first, last);
+
+	return;
+}
+
+/*
+ * return 1 if all bits set in b1 are also set in b2, 0 0therwise
+ */
+int
+bit_super_set(bitstr_t *b1, bitstr_t *b2)  {
+	bitoff_t bit;
+
+	_assert_bitstr_valid(b1);
+	_assert_bitstr_valid(b2);
+	assert(_bitstr_bits(b1) == _bitstr_bits(b2));
+
+	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t)*8) {
+		if (b1[_bit_word(bit)] != (b1[_bit_word(bit)] & b2[_bit_word(bit)]))
+			return 0;
+	}
+
+	return 1;
+}
 
 /*
  * b1 &= b2
@@ -225,8 +304,7 @@ bit_ffs(bitstr_t *b)
  *   b2 (IN)		second bitstring
  */
 void
-bit_and(bitstr_t *b1, bitstr_t *b2)
-{
+bit_and(bitstr_t *b1, bitstr_t *b2) {
 	bitoff_t bit;
 
 	_assert_bitstr_valid(b1);
@@ -243,8 +321,7 @@ bit_and(bitstr_t *b1, bitstr_t *b2)
  *   b2 (IN)		second bitmap
  */
 void
-bit_or(bitstr_t *b1, bitstr_t *b2)
-{
+bit_or(bitstr_t *b1, bitstr_t *b2) {
 	bitoff_t bit;
 
 	_assert_bitstr_valid(b1);
@@ -253,6 +330,29 @@ bit_or(bitstr_t *b1, bitstr_t *b2)
 
 	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t)*8)
 		b1[_bit_word(bit)] |= b2[_bit_word(bit)];
+}
+
+/* 
+ * return a copy of the supplied bitmap
+ */
+bitstr_t *
+bit_copy(bitstr_t *b)
+{
+	bitoff_t bit;
+	bitstr_t *new;
+
+	_assert_bitstr_valid(b);
+
+	new = (bitstr_t *)calloc(_bitstr_words(_bitstr_bits(b)), sizeof(bitstr_t));
+	if (new) {
+		_bitstr_magic(new) = BITSTR_MAGIC;
+		_bitstr_bits(new)  = _bitstr_bits(b);
+
+		for (bit = 0; bit < _bitstr_bits(b); bit += sizeof(bitstr_t)*8)
+			new[_bit_word(bit)] = b[_bit_word(bit)];
+	}
+
+	return new;
 }
 
 #if !defined(USE_64BIT_BITSTR)
@@ -394,7 +494,7 @@ main(int argc, char *argv[])
 	}
 	printf("Testing basic vixie functions\n");
 	{
-		bitstr_t *bs = bit_alloc(16);
+		bitstr_t *bs = bit_alloc(16), *bs2;
 
 
 		/*bit_set(bs, 42);*/ 	/* triggers assert in bit_set - OK */
@@ -403,6 +503,13 @@ main(int argc, char *argv[])
 		assert(bit_test(bs,9)); 
 		assert(!bit_test(bs,12));
 		assert(bit_test(bs,14));
+
+		bs2 = bit_copy(bs);
+		assert(bit_fls(bs2) == 14);
+		bit_fill_gaps(bs2);
+		assert(bit_test(bs2,12));
+		assert(bit_super_set(bs,bs2) == 1);
+		assert(bit_super_set(bs2,bs) == 0);
 
 		bit_clear(bs,14);
 		assert(!bit_test(bs,14));

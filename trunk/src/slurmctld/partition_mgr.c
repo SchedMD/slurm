@@ -51,8 +51,7 @@ main (int argc, char *argv[]) {
 	int key;		/* 1 if slurm distributed key is required for use of partition */
 	int state_up;		/* 1 if state is up */
 	int shared;		/* 1 if partition can be shared */
-	unsigned *node_bitmap;	/* bitmap of nodes in partition */
-	int bitmap_size;	/* bytes in node_bitmap */
+	bitstr_t *node_bitmap;	/* bitmap of nodes in partition */
 	char update_spec[] =
 		"MaxTime=34 MaxNodes=56 Key=NO State=DOWN Shared=FORCE";
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
@@ -76,7 +75,6 @@ main (int argc, char *argv[]) {
 	if (error_code)
 		printf ("create_part_record error %d\n", error_code);
 	else {
-		int tmp_bitmap;
 		if (part_ptr->max_time != 223344)
 			printf ("ERROR: partition default max_time not set\n");
 		if (part_ptr->max_nodes != 556677)
@@ -94,8 +92,8 @@ main (int argc, char *argv[]) {
 		strcpy (part_ptr->name, "interactive");
 		part_ptr->nodes = "lx[01-04]";
 		part_ptr->allow_groups = "students";
-		tmp_bitmap = 0x3c << (sizeof (unsigned) * 8 - 8);
-		part_ptr->node_bitmap = &tmp_bitmap;
+		part_ptr->node_bitmap = (bitstr_t *) bit_alloc(20);
+		bit_nset(part_ptr->node_bitmap, 2, 5);
 	}			
 	part_ptr = create_part_record (&error_code);
 	if (error_code)
@@ -155,34 +153,35 @@ main (int argc, char *argv[]) {
  *	upon reading the configuration file, not on an update
  */
 int build_part_bitmap (struct part_record *part_record_point) {
-	int i, error_code, node_count, size;
+	int i, error_code, node_count;
 	char *node_list;
-	unsigned *old_bitmap;
+	bitstr_t *old_bitmap;
 	struct node_record *node_record_point;	/* pointer to node_record */
 
 	part_record_point->total_cpus = 0;
 	part_record_point->total_nodes = 0;
 
-	size = (node_record_count + (sizeof (unsigned) * 8) - 1) / (sizeof (unsigned) * 8);
-	size *= 8;		/* bytes in bitmap */
 	if (part_record_point->node_bitmap == NULL) {
-		part_record_point->node_bitmap = xmalloc (size);
+		part_record_point->node_bitmap = (bitstr_t *) bit_alloc (node_record_count);
+		if (part_record_point->node_bitmap == NULL)
+			fatal("bit_alloc memory allocation failure");
 		old_bitmap = NULL;
 	}
-	else
-		old_bitmap = bitmap_copy (part_record_point->node_bitmap);
-	memset (part_record_point->node_bitmap, 0, size);
+	else {
+		bit_nclear (part_record_point->node_bitmap, 0, node_record_count-1);
+		old_bitmap = bit_copy (part_record_point->node_bitmap);
+	}
 
-	if (part_record_point->nodes == NULL) {
-		if (old_bitmap)
-			xfree (old_bitmap);
+	if (part_record_point->nodes == NULL) {		/* no nodes in partition */
+		if (old_bitmap)				/* leave with empty bitmap */
+			bit_free (old_bitmap);
 		return 0;
 	}
 
 	error_code = node_name2list(part_record_point->nodes, &node_list, &node_count);
 	if (error_code) {
 		if (old_bitmap)
-			xfree (old_bitmap);
+			bit_free (old_bitmap);
 		return error_code;
 	}
 
@@ -192,23 +191,23 @@ int build_part_bitmap (struct part_record *part_record_point) {
 			error ("build_part_bitmap: invalid node specified %s",
 				&node_list[i*MAX_NAME_LEN]);
 			if (old_bitmap)
-				xfree (old_bitmap);
-			free(node_list);
+				bit_free (old_bitmap);
+			xfree(node_list);
 			return EINVAL;
 		}	
-		bitmap_set (part_record_point->node_bitmap,
-			    (int) (node_record_point - node_record_table_ptr));
 		part_record_point->total_nodes++;
 		part_record_point->total_cpus += node_record_point->cpus;
 		node_record_point->partition_ptr = part_record_point;
-		bitmap_clear (old_bitmap,
+		bit_clear (old_bitmap,
 			      (int) (node_record_point - node_record_table_ptr));
+		bit_set (part_record_point->node_bitmap,
+			    (int) (node_record_point - node_record_table_ptr));
 	}
-	free(node_list);
+	xfree(node_list);
 
 	/* unlink nodes removed from the partition */
 	for (i = 0; i < node_record_count; i++) {
-		if (bitmap_value (old_bitmap, i) == 0)
+		if (bit_test (old_bitmap, i) == 0)
 			continue;
 		node_record_table_ptr[i].partition_ptr = NULL;
 	}			
@@ -238,7 +237,7 @@ struct part_record * create_part_record (int *error_code) {
 	part_record_point =
 		(struct part_record *) xmalloc (sizeof (struct part_record));
 
-	strcpy (part_record_point->name, "default");
+	strcpy (part_record_point->name, "DEFAULT");
 	part_record_point->max_time = default_part.max_time;
 	part_record_point->max_nodes = default_part.max_nodes;
 	part_record_point->key = default_part.key;
@@ -247,9 +246,7 @@ struct part_record * create_part_record (int *error_code) {
 	part_record_point->total_nodes = default_part.total_nodes;
 	part_record_point->total_cpus = default_part.total_cpus;
 	part_record_point->node_bitmap = NULL;
-#if DEBUG_SYSTEM
 	part_record_point->magic = PART_MAGIC;
-#endif
 
 	if (default_part.allow_groups) {
 		part_record_point->allow_groups =
@@ -342,10 +339,8 @@ dump_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time) {
 	/* write partition records */
 	while (part_record_point =
 	       (struct part_record *) list_next (part_record_iterator)) {
-#if DEBUG_SYSTEM
 		if (part_record_point->magic != PART_MAGIC)
 			fatal ("dump_part: data integrity is bad");
-#endif
 
 		error_code = dump_part(part_record_point, out_line, BUF_SIZE);
 		if (error_code != 0) continue;
@@ -465,8 +460,8 @@ int init_part_conf () {
 		xfree (default_part.allow_groups);
 	default_part.allow_groups = (char *) NULL;
 	if (default_part.node_bitmap)
-		xfree (default_part.node_bitmap);
-	default_part.node_bitmap = (unsigned *) NULL;
+		bit_free (default_part.node_bitmap);
+	default_part.node_bitmap = (bitstr_t *) NULL;
 
 	if (part_list)		/* delete defunct partitions */
 		(void) delete_part_record (NULL);
@@ -505,7 +500,7 @@ void list_delete_part (void *part_entry) {
 	if (part_record_point->nodes)
 		xfree (part_record_point->nodes);
 	if (part_record_point->node_bitmap)
-		xfree (part_record_point->node_bitmap);
+		bit_free (part_record_point->node_bitmap);
 	xfree (part_entry);
 }
 
@@ -520,7 +515,7 @@ int list_find_part (void *part_entry, void *key) {
 	if (strcmp (key, "universal_key") == 0)
 		return 1;
 	part_record_point = (struct part_record *) part_entry;
-	if (strcmp (part_record_point->name, (char *) key) == 0)
+	if (strncmp (part_record_point->name, (char *) key, MAX_NAME_LEN) == 0)
 		return 1;
 	return 0;
 }
@@ -564,7 +559,8 @@ int update_part (char *partition_name, char *spec) {
 	char *allow_groups, *nodes;
 	int bad_index, i;
 
-	if (strcmp (partition_name, "DEFAULT") == 0) {
+	if ((strcmp (partition_name, "DEFAULT") == 0) ||
+	    (strlen (partition_name) >= MAX_NAME_LEN)) {
 		error ("update_part: invalid partition name  %s", partition_name);
 		return EINVAL;
 	}			
@@ -578,6 +574,7 @@ int update_part (char *partition_name, char *spec) {
 		part_ptr = create_part_record (&error_code);
 		if (error_code)
 			return error_code;
+		strcpy(part_ptr->name, partition_name);
 	}			
 
 	max_time_val = NO_VAL;

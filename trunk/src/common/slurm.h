@@ -22,6 +22,7 @@
 #include "list.h"
 #include "slurmlib.h"
 #include "log.h"
+#include "bitstring.h"
 #include "xmalloc.h"
 
 #define DEBUG_SYSTEM 1
@@ -63,19 +64,17 @@ struct job_record {
 /* NOTE: change NODE_STRUCT_VERSION value whenever the contents of NODE_STRUCT_FORMAT change */
 #define NODE_STRUCT_VERSION 1
 #define NODE_STRUCT_FORMAT "NodeName=%s Atate=%s CPUs=%d RealMemory=%d TmpDisk=%d Weight=%d Feature=%s #Partition=%s\n"
-#define CONFIG_MAGIC 'c'
-#define NODE_MAGIC   'n'
+#define CONFIG_MAGIC 0xc065eded
+#define NODE_MAGIC   0x0de575ed
 struct config_record {
-#if DEBUG_SYSTEM
-	char magic;		/* magic cookie to test data integrity */
-#endif
+	unsigned magic;		/* magic cookie to test data integrity */
 	int cpus;		/* count of cpus running on the node */
 	int real_memory;	/* megabytes of real memory on the node */
 	int tmp_disk;		/* megabytes of total storage in TMP_FS file system */
 	int weight;		/* arbitrary priority of node for scheduling work on */
 	char *feature;		/* arbitrary list of features associated with a node */
 	char *nodes;		/* names of nodes in partition configuration record */
-	unsigned *node_bitmap;	/* bitmap of nodes in configuration record */
+	bitstr_t *node_bitmap;	/* bitmap of nodes in configuration record */
 };
 extern List config_list;	/* list of config_record entries */
 
@@ -99,10 +98,8 @@ extern char *node_state_string[];
 extern time_t last_bitmap_update;	/* time of last node creation or deletion */
 extern time_t last_node_update;	/* time of last update to node records */
 struct node_record {
-#if DEBUG_SYSTEM
-	char magic;		/* magic cookie to test data integrity */
-#endif
-	char name[MAX_NAME_LEN];	/* name of the node. a null name indicates defunct node */
+	unsigned magic;		/* magic cookie to test data integrity */
+	char name[MAX_NAME_LEN];/* name of the node. a null name indicates defunct node */
 	int node_state;		/* state of the node, see node_state above, negative if down */
 	time_t last_response;	/* last response from the node */
 	int cpus;		/* actual count of cpus running on the node */
@@ -112,23 +109,21 @@ struct node_record {
 	struct part_record *partition_ptr;	/* partition for this node */
 };
 extern struct node_record *node_record_table_ptr;	/* location of the node records */
-extern int node_record_count;	/* count of records in the node record table */
-extern int *hash_table;		/* table of hashed indicies into node_record */
-extern unsigned *up_node_bitmap;	/* bitmap of nodes are up */
-extern unsigned *idle_node_bitmap;	/* bitmap of nodes are idle */
+extern int node_record_count;		/* count of records in the node record table */
+extern int *hash_table;			/* table of hashed indicies into node_record */
+extern bitstr_t *up_node_bitmap;	/* bitmap of nodes are up */
+extern bitstr_t *idle_node_bitmap;	/* bitmap of nodes are idle */
 extern struct config_record default_config_record;
 extern struct node_record default_node_record;
 
 /* NOTE: change PART_STRUCT_VERSION value whenever the contents of PART_STRUCT_FORMAT change */
 #define PART_STRUCT_VERSION 1
 #define PART_STRUCT_FORMAT "PartitionName=%s MaxNodes=%d MaxTime=%d Nodes=%s Key=%s Default=%s AllowGroups=%s Shared=%s State=%s #TotalNodes=%d TotalCPUs=%d\n"
-#define PART_MAGIC 'p'
+#define PART_MAGIC 0xaefe8495
 extern time_t last_part_update;	/* time of last update to part records */
 struct part_record {
-#if DEBUG_SYSTEM
-	char magic;		/* magic cookie to test data integrity */
-#endif
-	char name[MAX_NAME_LEN];	/* name of the partition */
+	unsigned magic;		/* magic cookie to test data integrity */
+	char name[MAX_NAME_LEN];/* name of the partition */
 	int max_time;		/* -1 if unlimited */
 	int max_nodes;		/* -1 if unlimited */
 	int total_nodes;	/* total number of nodes in the partition */
@@ -138,7 +133,7 @@ struct part_record {
 	unsigned state_up:1;	/* 1 if state is up, 0 if down */
 	char *nodes;		/* names of nodes in partition */
 	char *allow_groups;	/* null indicates all */
-	unsigned *node_bitmap;	/* bitmap of nodes in partition */
+	bitstr_t *node_bitmap;	/* bitmap of nodes in partition */
 };
 extern List part_list;		/* list of part_record entries */
 extern struct part_record default_part;	/* default configuration values */
@@ -155,83 +150,7 @@ extern struct part_record *default_part_loc;	/* location of default partition */
  * NOTE: consider returning the node list as a regular expression if helpful
  * NOTE: the caller must free memory at node_list when no longer required
  */
-extern int bitmap2node_name (unsigned *bitmap, char **node_list);
-
-/*
- * bitmap_and - and two bitmaps together
- * input: bitmap1 and bitmap2 - the bitmaps to and
- * output: bitmap1 is set to the value of bitmap1 & bitmap2
- */
-extern void bitmap_and (unsigned *bitmap1, unsigned *bitmap2);
-
-/*
- * bitmap_clear - clear the specified bit in the specified bitmap
- * input: bitmap - the bit map to manipulate
- *        position - postition to clear
- * output: bitmap - updated value
- */
-extern void bitmap_clear (unsigned *bitmap, int position);
-
-/*
- * bitmap_copy - create a copy of a bitmap
- * input: bitmap - the bitmap create a copy of
- * output: returns pointer to copy of bitmap or null if error (no memory)
- *   the returned value must be freed by the calling routine
- */
-extern unsigned *bitmap_copy (unsigned *bitmap);
-
-/*
- * bitmap_count - return the count of set bits in the specified bitmap
- * input: bitmap - the bit map to get count from
- * output: returns the count of set bits
- */
-extern int bitmap_count (unsigned *bitmap);
-
-/*
- * bitmap_fill - fill the provided bitmap so that all bits between the highest and lowest
- * 	previously set bits are also set (i.e fill in the gaps to make it contiguous)
- * input: bitmap - pointer to the bit map to fill in
- * output: bitmap - the filled in bitmap
- */
-extern void bitmap_fill (unsigned *bitmap);
-
-/* 
- * bitmap_is_super - report if one bitmap's contents are a superset of another
- * input: bitmap1 and bitmap2 - the bitmaps to compare
- * output: return 1 if if all bits in bitmap1 are also in bitmap2, 0 otherwise 
- */
-extern int bitmap_is_super (unsigned *bitmap1, unsigned *bitmap2);
-
-/*
- * bitmap_or - or two bitmaps together
- * input: bitmap1 and bitmap2 - the bitmaps to or
- * output: bitmap1 is set to the value of bitmap1 | bitmap2
- */
-extern void bitmap_or (unsigned *bitmap1, unsigned *bitmap2);
-
-/*
- * bitmap_print - convert the specified bitmap into a printable hexadecimal string
- * input: bitmap - the bit map to print
- * output: returns a string
- * NOTE: the returned string must be freed by the calling program
- */
-extern char *bitmap_print (unsigned *bitmap);
-
-/*
- * bitmap_set - set the specified bit in the specified bitmap
- * input: bitmap - the bit map to manipulate
- *        position - postition to set
- * output: bitmap - updated value
- */
-extern void bitmap_set (unsigned *bitmap, int position);
-
-/*
- * bitmap_value - return the value of specified bit in the specified bitmap
- * input: bitmap - the bit map to get value from
- *        position - postition to get
- * output: normally returns the value 0 or 1, returns -1 if given bad bitmap ponter
- */
-extern int bitmap_value (unsigned *bitmap, int position);
+extern int bitmap2node_name (bitstr_t *bitmap, char **node_list);
 
 /*
  * create_config_record - create a config_record entry, append it to the config_list, 
@@ -432,7 +351,7 @@ extern void node_unlock ();
  *         returns 0 if no error, otherwise einval or enomem
  * NOTE: the caller must free memory at bitmap when no longer required
  */
-extern int node_name2bitmap (char *node_names, unsigned **bitmap);
+extern int node_name2bitmap (char *node_names, bitstr_t **bitmap);
 
 /* 
  * node_name2list - given a node name regular expression, build an 

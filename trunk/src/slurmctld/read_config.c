@@ -36,7 +36,7 @@ char *control_machine = NULL;
 main (int argc, char *argv[]) {
 	int error_code, start_inx, end_inx, count_inx;
 	char out_line[BUF_SIZE];
-	char *format, *node_name, *bitmap;
+	char *format, *node_name, bitmap[128];
 	char *partitions[] = { "login", "debug", "batch", "class", "end" };
 	struct part_record *part_ptr;
 	int cycles, i, found;
@@ -85,12 +85,10 @@ main (int argc, char *argv[]) {
 		printf ("Feature=%s\n",
 			node_record_table_ptr[i].config_ptr->feature);
 	}			
-	bitmap = bitmap_print (up_node_bitmap);
-	printf ("\nup_node_bitmap  =%s\n", bitmap);
-	xfree (bitmap);
-	bitmap = bitmap_print (idle_node_bitmap);
-	printf ("idle_node_bitmap=%s\n\n", bitmap);
-	xfree (bitmap);
+	(void) bit_fmt (bitmap, sizeof(bitmap), up_node_bitmap);
+	printf ("\nup_node_bitmap  = %s\n", bitmap);
+	(void) bit_fmt (bitmap, sizeof(bitmap), idle_node_bitmap);
+	printf ("idle_node_bitmap= %s\n\n", bitmap);
 
 	printf ("default_part_name=%s\n", default_part_name);
 	found = 0;
@@ -119,10 +117,8 @@ main (int argc, char *argv[]) {
 		printf ("AllowGroups=%s  ", part_ptr->allow_groups);
 		printf ("total_nodes=%d ", part_ptr->total_nodes);
 		printf ("total_cpus=%d ", part_ptr->total_cpus);
-		bitmap = bitmap_print (part_ptr->node_bitmap);
+		(void)  bit_fmt (bitmap, sizeof(bitmap), part_ptr->node_bitmap);
 		printf ("node_bitmap=%s\n", bitmap);
-		if (bitmap)
-			xfree (bitmap);
 	}			
 	if (argc < 3)
 		exit (0);
@@ -166,31 +162,28 @@ main (int argc, char *argv[]) {
  */
 int 
 build_bitmaps () {
-	int i, j, size, error_code, node_count;
+	int i, j, error_code, node_count;
 	char  *node_list;
 	ListIterator config_record_iterator;	/* for iterating through config_record */
 	ListIterator part_record_iterator;	/* for iterating through part_record_list */
 	struct config_record *config_record_point;	/* pointer to config_record */
 	struct part_record *part_record_point;	/* pointer to part_record */
 	struct node_record *node_record_point;	/* pointer to node_record */
-	unsigned *all_part_node_bitmap;
+	bitstr_t *all_part_node_bitmap;
 
 	error_code = 0;
 	last_node_update = time (NULL);
 	last_part_update = time (NULL);
-	size = (node_record_count + (sizeof (unsigned) * 8) - 1) / (sizeof (unsigned) * 8);	
-				/* unsigned int records in bitmap */
-	size *= 8;		/* bytes in bitmap */
 
 	/* initialize the idle and up bitmaps */
 	if (idle_node_bitmap)
-		xfree (idle_node_bitmap);
+		bit_free (idle_node_bitmap);
 	if (up_node_bitmap)
-		xfree (up_node_bitmap);
-	idle_node_bitmap = (unsigned *) xmalloc (size);
-	up_node_bitmap = (unsigned *) xmalloc (size);	
-	memset (idle_node_bitmap, 0, size);
-	memset (up_node_bitmap, 0, size);
+		bit_free (up_node_bitmap);
+	idle_node_bitmap = (bitstr_t *) bit_alloc (node_record_count);
+	up_node_bitmap   = (bitstr_t *) bit_alloc (node_record_count);
+	if ((idle_node_bitmap == NULL) || (up_node_bitmap == NULL))
+		fatal ("bit_alloc memory allocation failure");
 
 	/* initialize the configuration bitmaps */
 	config_record_iterator = list_iterator_create (config_list);
@@ -200,10 +193,11 @@ build_bitmaps () {
 	while (config_record_point =
 	       (struct config_record *) list_next (config_record_iterator)) {
 		if (config_record_point->node_bitmap)
-			xfree (config_record_point->node_bitmap);
+			bit_free (config_record_point->node_bitmap);
 
-		config_record_point->node_bitmap = (unsigned *) xmalloc (size);	
-		memset (config_record_point->node_bitmap, 0, size);
+		config_record_point->node_bitmap = (bitstr_t *) bit_alloc (node_record_count);	
+		if (config_record_point->node_bitmap == NULL)
+			fatal ("bit_alloc memory allocation failure");
 	}			
 	list_iterator_destroy (config_record_iterator);
 
@@ -212,26 +206,27 @@ build_bitmaps () {
 		if (strlen (node_record_table_ptr[i].name) == 0)
 			continue;	/* defunct */
 		if (node_record_table_ptr[i].node_state == STATE_IDLE)
-			bitmap_set (idle_node_bitmap, i);
+			bit_set (idle_node_bitmap, i);
 		if (node_record_table_ptr[i].node_state > STATE_DOWN)
-			bitmap_set (up_node_bitmap, i);
+			bit_set (up_node_bitmap, i);
 		if (node_record_table_ptr[i].config_ptr)
-			bitmap_set (node_record_table_ptr[i].config_ptr->
-				    node_bitmap, i);
+			bit_set (node_record_table_ptr[i].config_ptr->node_bitmap, i);
 	}			
 
 	/* scan partition table and identify nodes in each */
-	all_part_node_bitmap = (unsigned *) xmalloc (size);	
-	memset (all_part_node_bitmap, 0, size);
+	all_part_node_bitmap = (bitstr_t *) bit_alloc (node_record_count);	
+	if (all_part_node_bitmap == NULL)
+		fatal ("bit_alloc memory allocation failure");
 	part_record_iterator = list_iterator_create (part_list);
 	if (part_record_iterator == NULL)
 		fatal ("build_bitmaps: list_iterator_create unable to allocate memory");
 
 	while (part_record_point = (struct part_record *) list_next (part_record_iterator)) {
 		if (part_record_point->node_bitmap)
-			xfree (part_record_point->node_bitmap);
-		part_record_point->node_bitmap = (unsigned *) xmalloc (size);
-		memset (part_record_point->node_bitmap, 0, size);
+			bit_free (part_record_point->node_bitmap);
+		part_record_point->node_bitmap = (bitstr_t *) bit_alloc (node_record_count);	
+		if (part_record_point->node_bitmap == NULL)
+			fatal ("bit_alloc memory allocation failure");
 
 		/* check for each node in the partition */
 		if ((part_record_point->nodes == NULL) ||
@@ -251,14 +246,14 @@ build_bitmaps () {
 				continue;
 			}	
 			j = node_record_point - node_record_table_ptr;
-			if (bitmap_value (all_part_node_bitmap, j) == 1) {
+			if (bit_test (all_part_node_bitmap, j) == 1) {
 				error ("build_bitmaps: node %s defined in more than one partition",
 					 &node_list[i*MAX_NAME_LEN]);
 				error ("build_bitmaps: only the first specification is honored");
 			}
 			else {
-				bitmap_set (part_record_point->node_bitmap, j);
-				bitmap_set (all_part_node_bitmap, j);
+				bit_set (part_record_point->node_bitmap, j);
+				bit_set (all_part_node_bitmap, j);
 				part_record_point->total_nodes++;
 				part_record_point->total_cpus +=
 					node_record_point->cpus;
@@ -268,7 +263,7 @@ build_bitmaps () {
 		xfree (node_list);
 	}
 	list_iterator_destroy (part_record_iterator);
-	xfree (all_part_node_bitmap);
+	bit_free (all_part_node_bitmap);
 	return error_code;
 }
 
