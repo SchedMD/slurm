@@ -1649,6 +1649,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->slurmd_timeout, buffer);
 	packstr(build_ptr->slurm_conf, buffer);
 	packstr(build_ptr->state_save_location, buffer);
+	packstr(build_ptr->switch_type, buffer);
 	packstr(build_ptr->tmp_fs, buffer);
 	pack16(build_ptr->wait_time, buffer);
 	packstr(build_ptr->job_credential_private_key, buffer);
@@ -1715,6 +1716,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->slurm_conf, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->state_save_location,
 			       &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->switch_type, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->tmp_fs, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->wait_time, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_credential_private_key,

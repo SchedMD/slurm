@@ -55,6 +55,7 @@
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/common/log.h"
 
 /* EXTERNAL VARIABLES */
@@ -152,6 +153,51 @@ int slurm_api_set_default_config()
         return rc;
 }
 
+/* slurm_api_clear_config
+ * execute this only at program termination to free all memory */
+void slurm_api_clear_config(void)
+{
+        slurm_mutex_lock(&config_lock);
+        free_slurm_conf(&slurmctld_conf);
+        slurm_mutex_unlock(&config_lock);
+}
+
+/* slurm_get_plugin_dir
+ * get plugin directory from slurmctld_conf object
+ * RET char *   - plugin directory, MUST be xfreed by caller
+ */
+char *slurm_get_plugin_dir(void)
+{
+        if (slurmctld_conf.slurmd_port == 0)  /* ==0 if config unread */
+                slurm_api_set_default_config();
+
+        return xstrdup(slurmctld_conf.plugindir);
+}
+
+/* slurm_get_auth_type
+ * returns the authentication type from slurmctld_conf object
+ * RET char *    - auth type, MUST be xfreed by caller
+ */
+char *slurm_get_auth_type(void)
+{
+        if (slurmctld_conf.slurmd_port == 0)  /* ==0 if config unread */
+                slurm_api_set_default_config();
+
+        return xstrdup(slurmctld_conf.authtype);
+}
+
+/* slurm_get_jobcomp_type
+ * returns the job completion logger type from slurmctld_conf object
+ * RET char *    - job completion type,  MUST be xfreed by caller
+ */
+char *slurm_get_jobcomp_type(void)
+{
+        if (slurmctld_conf.slurmd_port == 0)  /* ==0 if config unread */
+                slurm_api_set_default_config();
+
+        return xstrdup(slurmctld_conf.job_comp_type);
+}
+
 /* slurm_get_slurmd_port
  * returns slurmd port from slurmctld_conf object
  * RET short int        - slurmd port
@@ -174,6 +220,30 @@ uint32_t slurm_get_slurm_user_id(void)
                 slurm_api_set_default_config();
 
         return slurmctld_conf.slurm_user_id;
+}
+
+/* slurm_get_sched_type
+ * get sched type from slurmctld_conf object
+ * RET char *   - sched type, MUST be xfreed by caller
+ */
+char *slurm_get_sched_type(void)
+{
+        if (slurmctld_conf.slurmd_port == 0)  /* ==0 if config unread */
+                slurm_api_set_default_config();
+
+        return xstrdup(slurmctld_conf.schedtype);
+}
+
+/* slurm_get_switch_type
+ * get switch type from slurmctld_conf object
+ * RET char *   - switch type, MUST be xfreed by caller
+ */
+char *slurm_get_switch_type(void)
+{
+        if (slurmctld_conf.slurmd_port == 0)  /* ==0 if config unread */
+                slurm_api_set_default_config();
+
+        return xstrdup(slurmctld_conf.switch_type);
 }
 
 /* slurm_get_wait_time

@@ -275,6 +275,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->slurmd_spooldir     = slurmctld_conf.slurmd_spooldir;
 	conf_ptr->slurmd_timeout      = slurmctld_conf.slurmd_timeout;
 	conf_ptr->slurm_conf          = slurmctld_conf.slurm_conf;
+	conf_ptr->switch_type         = slurmctld_conf.switch_type;
 	conf_ptr->state_save_location = slurmctld_conf.state_save_location;
 	conf_ptr->tmp_fs              = slurmctld_conf.tmp_fs;
 	conf_ptr->wait_time           = slurmctld_conf.wait_time;
@@ -1311,7 +1312,7 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 		/* resume backup mode */
 		slurmctld_config.resume_backup = true;	
 	} else {
-		debug2("Performing RPC: REQUEST_SHUTDOWN");
+		info("Performing RPC: REQUEST_SHUTDOWN");
 		core_arg = shutdown_msg->core;
 	}
 
@@ -1352,10 +1353,9 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 		/* save_all_state();	performed by _slurmctld_background */
 	}
 	slurm_send_rc_msg(msg, error_code);
-	if ((error_code == SLURM_SUCCESS) && core_arg) {
-		info("Aborting per RPC request");
-		abort();
-	}
+	if ((error_code == SLURM_SUCCESS) && core_arg && 
+	    (slurmctld_config.thread_id_sig)) 
+		pthread_kill(slurmctld_config.thread_id_sig, SIGABRT);
 }
 
 /* _slurm_rpc_shutdown_controller_immediate - process RPC to shutdown 

@@ -272,7 +272,8 @@ static int _init_all_slurm_conf(void)
  */
 static int _parse_node_spec(char *in_line)
 {
-	char *node_addr, *node_name, *state, *feature, *reason;
+	char *node_addr = NULL, *node_name = NULL, *state = NULL;
+        char *feature = NULL, *reason = NULL;
 	char *this_node_addr, *this_node_name;
 	int error_code, first, i;
 	int state_val, cpus_val, real_memory_val, tmp_disk_val, weight_val;

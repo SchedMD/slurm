@@ -43,9 +43,6 @@ extern int g_slurm_jobcomp_write(uint32_t job_id, uint32_t user_id, char *job_na
 		char *job_state, char *partition, uint32_t time_limit,
 		time_t start_end, time_t end_time, char *node_list);
 
-/* terminate job completion logging, close files, etc. */
-extern void g_slurm_jobcomp_fini(void);
-
 /* return error code */
 extern int g_slurm_jobcomp_errno(void);
 

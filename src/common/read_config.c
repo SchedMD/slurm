@@ -116,10 +116,9 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->slurmd_pidfile);
 	xfree (ctl_conf_ptr->slurmd_spooldir);
 	xfree (ctl_conf_ptr->state_save_location);
+	xfree (ctl_conf_ptr->switch_type);
 	xfree (ctl_conf_ptr->tmp_fs);
 }
-
-
 
 /* 
  * init_slurm_conf - initialize or re-initialize the slurm configuration 
@@ -168,6 +167,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->slurmd_spooldir);
 	ctl_conf_ptr->slurmd_timeout		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->state_save_location);
+	xfree (ctl_conf_ptr->switch_type);
 	xfree (ctl_conf_ptr->tmp_fs);
 	ctl_conf_ptr->wait_time			= (uint16_t) NO_VAL;
 	return;
@@ -207,7 +207,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	char *slurmctld_logfile = NULL, *slurmctld_port = NULL;
 	char *slurmd_logfile = NULL, *slurmd_port = NULL;
 	char *slurmd_spooldir = NULL, *slurmd_pidfile = NULL;
-	char *plugindir = NULL, *authtype = NULL;
+	char *plugindir = NULL, *auth_type = NULL, *switch_type = NULL;
 	char *job_comp_loc = NULL, *job_comp_type = NULL;
 	char *job_credential_private_key = NULL;
 	char *job_credential_public_certificate = NULL;
@@ -215,7 +215,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	struct servent *servent;
 
 	error_code = slurm_parser (in_line,
-		"AuthType=", 's', &authtype,
+		"AuthType=", 's', &auth_type,
 		"BackupAddr=", 's', &backup_addr, 
 		"BackupController=", 's', &backup_controller, 
 		"ControlAddr=", 's', &control_addr, 
@@ -253,6 +253,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"SlurmdSpoolDir=", 's', &slurmd_spooldir,
 		"SlurmdTimeout=", 'd', &slurmd_timeout,
 		"StateSaveLocation=", 's', &state_save_location,
+		"SwitchType=", 's', &switch_type,
 		"TmpFS=", 's', &tmp_fs,
 		"WaitTime=", 'd', &wait_time,
 		"END");
@@ -260,12 +261,12 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	if (error_code)
 		return error_code;
 
-	if ( authtype ) {
+	if ( auth_type ) {
 		if ( ctl_conf_ptr->authtype ) {
 			error( MULTIPLE_VALUE_MSG, "AuthType" );
 			xfree( ctl_conf_ptr->authtype );
 		}
-		ctl_conf_ptr->authtype = authtype;
+		ctl_conf_ptr->authtype = auth_type;
 	}
 
 	if ( backup_addr ) {
@@ -549,6 +550,13 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		ctl_conf_ptr->state_save_location = state_save_location;
 	}
 
+	if ( switch_type ) {
+		if ( ctl_conf_ptr->switch_type ) {
+			error (MULTIPLE_VALUE_MSG, "SwitchType");
+			xfree (ctl_conf_ptr->switch_type);
+		}
+		ctl_conf_ptr->switch_type = switch_type;
+	}
 
 	if ( tmp_fs ) {
 		if ( ctl_conf_ptr->tmp_fs ) {
@@ -915,7 +923,11 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 		ctl_conf_ptr->slurmd_timeout = DEFAULT_SLURMD_TIMEOUT;
 
 	if (ctl_conf_ptr->state_save_location == NULL)
-		ctl_conf_ptr->state_save_location = xstrdup(DEFAULT_SAVE_STATE_LOC);
+		ctl_conf_ptr->state_save_location = xstrdup(
+				DEFAULT_SAVE_STATE_LOC);
+
+	if (ctl_conf_ptr->switch_type == NULL)
+		ctl_conf_ptr->switch_type = xstrdup(DEFAULT_SWITCH_TYPE);
 
 	if (ctl_conf_ptr->tmp_fs == NULL)
 		ctl_conf_ptr->tmp_fs = xstrdup(DEFAULT_TMP_FS);

@@ -33,8 +33,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
-#include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/arg_desc.h"
@@ -92,9 +92,6 @@ struct slurm_auth_context {
 static slurm_auth_context_t g_context    = NULL;
 static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static slurm_ctl_conf_t     conf;
-static pthread_mutex_t      config_lock  = PTHREAD_MUTEX_INITIALIZER;
-
 /*
  * Order of advisory arguments passed to some of the plugins.
  */
@@ -103,38 +100,6 @@ static arg_desc_t auth_args[] = {
         { ARG_TIMEOUT },
         { NULL }
 };
-
-
-static char *
-get_plugin_dir( void )
-{
-        slurm_mutex_lock( &config_lock );
-        if ( conf.slurmd_port == 0 ) {
-                read_slurm_conf_ctl( &conf );
-        }
-        if ( conf.plugindir == NULL ) {
-                conf.plugindir = xstrdup( SLURM_PLUGIN_PATH );
-        }
-        slurm_mutex_unlock( &config_lock );
-        
-        return conf.plugindir;
-}
-
-static char *
-get_auth_type( void )
-{
-        slurm_mutex_lock( &config_lock );
-        if ( conf.slurmd_port == 0 ) {
-                read_slurm_conf_ctl( &conf );
-        }
-        if ( conf.authtype == NULL ) {
-                conf.authtype = xstrdup( "auth/none" );
-        }
-        slurm_mutex_unlock( &config_lock );
-
-        return conf.authtype;
-}
-
 
 /*
  * Resolve the operations from the plugin.
@@ -162,9 +127,10 @@ slurm_auth_get_ops( slurm_auth_context_t c )
 
         /* Get the plugin list, if needed. */
         if ( c->plugin_list == NULL ) {
+		char *plugin_dir;
                 c->plugin_list = plugrack_create();
                 if ( c->plugin_list == NULL ) {
-                        verbose( "Unable to create a plugin manager" );
+                        error( "Unable to create auth plugin manager" );
                         return NULL;
                 }
 
@@ -172,13 +138,15 @@ slurm_auth_get_ops( slurm_auth_context_t c )
                 plugrack_set_paranoia( c->plugin_list, 
 				       PLUGRACK_PARANOIA_NONE, 
 				       0 );
-                plugrack_read_dir( c->plugin_list, get_plugin_dir() );
+		plugin_dir = slurm_get_plugin_dir();
+                plugrack_read_dir( c->plugin_list, plugin_dir );
+		xfree(plugin_dir);
         }
   
         /* Find the correct plugin. */
         c->cur_plugin = plugrack_use_by_type( c->plugin_list, c->auth_type );
         if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
-                verbose( "can't find a plugin for type %s", c->auth_type );
+                error( "can't find a plugin for type %s", c->auth_type );
                 return NULL;
         }  
 
@@ -187,7 +155,7 @@ slurm_auth_get_ops( slurm_auth_context_t c )
                               n_syms,
                               syms,
                               (void **) &c->ops ) < n_syms ) {
-                verbose( "incomplete plugin detected" );
+                error( "incomplete auth plugin detected" );
                 return NULL;
         }
 
@@ -309,44 +277,36 @@ int
 slurm_auth_init( void )
 {
         int retval = SLURM_SUCCESS;
+	char *auth_type = NULL;
 
         slurm_mutex_lock( &context_lock );
 
         if ( g_context ) 
                 goto done;
-        
-        g_context = slurm_auth_context_create( get_auth_type() );
+
+	auth_type = slurm_get_auth_type();
+        g_context = slurm_auth_context_create( auth_type );
         if ( g_context == NULL ) {
-                verbose( "cannot create a context for %s", get_auth_type() );
+                error( "cannot create a context for %s", auth_type );
                 retval = SLURM_ERROR;
+		xfree(auth_type);
                 goto done;
         }
         
         if ( slurm_auth_get_ops( g_context ) == NULL ) {
-                verbose( "cannot resolve plugin operations" );
+                error( "cannot resolve %s plugin operations", 
+				auth_type );
                 slurm_auth_context_destroy( g_context );
                 g_context = NULL;
                 retval = SLURM_ERROR;
         }
+	xfree(auth_type);
 
  done:
         slurm_mutex_unlock( &context_lock );
         return retval;
 }
 
-void
-slurm_auth_fini( void )
-{
-	if ( g_context )
-		slurm_auth_context_destroy( g_context );
-
-	slurm_mutex_lock( &config_lock );
-	if ( conf.slurmd_port ) {
-		free_slurm_conf( &conf );
-		conf.slurmd_port = 0;
-	}
-	slurm_mutex_unlock( &config_lock );
-}
 
 /*
  * Static bindings for the global authentication context.  The test

@@ -129,11 +129,6 @@ int slurm_auth_context_destroy( slurm_auth_context_t ctxt );
 int slurm_auth_init( void );
 
 /*
- * Release memory associated with global context at termination
- */
-void slurm_auth_fini( void );
-
-/*
  * Static bindings for the global authentication context.
  */
 void	*g_slurm_auth_create( void *hosts, int timeout );

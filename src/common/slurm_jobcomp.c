@@ -32,12 +32,11 @@
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
-#include "src/common/read_config.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
-
 
 /*
  * WARNING:  Do not change the order of these fields or add additional
@@ -68,37 +67,6 @@ struct slurm_jobcomp_context {
 
 static slurm_jobcomp_context_t g_context = NULL;
 static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
-
-static slurm_ctl_conf_t  conf;
-static pthread_mutex_t   config_lock     = PTHREAD_MUTEX_INITIALIZER;
-
-static char *
-_get_plugin_dir( void )
-{
-	slurm_mutex_lock( &config_lock );
-	if ( conf.slurmd_port == 0 )
-		read_slurm_conf_ctl( &conf );
-	if ( conf.plugindir == NULL )
-		conf.plugindir = xstrdup( SLURM_PLUGIN_PATH );
-	slurm_mutex_unlock( &config_lock );
-
-	return conf.plugindir;
-}
-
-static char *
-_get_jobcomp_type( void )
-{
-        slurm_mutex_lock( &config_lock );
-        if ( conf.slurmd_port == 0 ) {
-                read_slurm_conf_ctl( &conf );
-        }
-        if ( conf.job_comp_type == NULL ) {
-                conf.job_comp_type = xstrdup( "jobcomp/none" );
-        }
-        slurm_mutex_unlock( &config_lock );
-
-        return conf.job_comp_type;
-}
 
 static slurm_jobcomp_context_t
 _slurm_jobcomp_context_create( const char *jobcomp_type)
@@ -167,9 +135,10 @@ _slurm_jobcomp_get_ops( slurm_jobcomp_context_t c )
 
         /* Get the plugin list, if needed. */
         if ( c->plugin_list == NULL ) {
+		char *plugin_dir;
                 c->plugin_list = plugrack_create();
                 if ( c->plugin_list == NULL ) {
-                        verbose( "Unable to create a plugin manager" );
+                        error( "Unable to create a plugin manager" );
                         return NULL;
                 }
 
@@ -177,14 +146,16 @@ _slurm_jobcomp_get_ops( slurm_jobcomp_context_t c )
                 plugrack_set_paranoia( c->plugin_list, 
 				       PLUGRACK_PARANOIA_NONE, 
 				       0 );
-                plugrack_read_dir( c->plugin_list, _get_plugin_dir() );
+		plugin_dir = slurm_get_plugin_dir();
+                plugrack_read_dir( c->plugin_list, plugin_dir );
+		xfree(plugin_dir);
         }
   
         /* Find the correct plugin. */
         c->cur_plugin = 
 		plugrack_use_by_type( c->plugin_list, c->jobcomp_type );
         if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
-                verbose( "can't find a plugin for type %s", c->jobcomp_type );
+                error( "can't find a plugin for type %s", c->jobcomp_type );
                 return NULL;
         }  
 
@@ -193,7 +164,7 @@ _slurm_jobcomp_get_ops( slurm_jobcomp_context_t c )
                               n_syms,
                               syms,
                               (void **) &c->ops ) < n_syms ) {
-                verbose( "incomplete plugin detected" );
+                error( "incomplete jobcomp plugin detected" );
                 return NULL;
         }
 
@@ -204,20 +175,25 @@ extern int
 g_slurm_jobcomp_init( char *jobcomp_loc )
 {
 	int retval = SLURM_SUCCESS;
+	char *jobcomp_type;
 
 	slurm_mutex_lock( &context_lock );
 
 	if ( g_context )
 		_slurm_jobcomp_context_destroy(g_context);
-	g_context = _slurm_jobcomp_context_create( _get_jobcomp_type() );
+
+	jobcomp_type = slurm_get_jobcomp_type();
+	g_context = _slurm_jobcomp_context_create( jobcomp_type );
 	if ( g_context == NULL ) {
-		verbose( "cannot create a context for %s", _get_jobcomp_type() );
+		error( "cannot create a context for %s", jobcomp_type );
+		xfree(jobcomp_type);
 		retval = SLURM_ERROR;
 		goto done;
 	}
+	xfree(jobcomp_type);
 
 	if ( _slurm_jobcomp_get_ops( g_context ) == NULL ) {
-		verbose( "cannot resolve job completion plugin operations" );
+		error( "cannot resolve job completion plugin operations" );
 		_slurm_jobcomp_context_destroy( g_context );
 		g_context = NULL;
 		retval = SLURM_ERROR;
@@ -228,17 +204,6 @@ g_slurm_jobcomp_init( char *jobcomp_loc )
 		retval = (*(g_context->ops.set_loc))(jobcomp_loc);
 	slurm_mutex_unlock( &context_lock );
 	return retval;
-}
-
-extern void
-g_slurm_jobcomp_fini( void )
-{
-	slurm_mutex_lock( &config_lock );
-	if ( conf.slurmd_port ) {
-		free_slurm_conf( &conf );
-		conf.slurmd_port = 0;
-	}
-	slurm_mutex_unlock( &config_lock );
 }
 
 extern int
