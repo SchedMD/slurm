@@ -173,11 +173,13 @@ slurm_auth_create( void *argv[] )
 
 		error("Munge encode failed: %s", munge_ctx_strerror(ctx));
 		xfree( cred );
+		cred = NULL;
 		plugin_errno = e + MUNGE_ERRNO_OFFSET;
-		return NULL;
 	}
 
 	xsignal(SIGALRM, ohandler);
+
+	munge_ctx_destroy(ctx);
 
 	return cred;
 }
