@@ -100,28 +100,20 @@ int _set_one_dim(int *start, int *end, int *coord);
  * 
  * return SUCCESS of operation.
  */
-int new_pa_request(pa_request_t* pa_request, 
-		   int geometry[PA_SYSTEM_DIMENSIONS], int size, 
-		   bool rotate, bool elongate, 
-		   bool force_contig, bool co_proc, int conn_type)
+int new_pa_request(pa_request_t* pa_request)
 {
 	int i, i2, i3, picked, total_sz=1 , size2, size3;
 	float sz=1;
 	int checked[8];
 	
 	/* size will be overided by geometry size if given */
-	if (geometry[0] != -1){
+	if (pa_request->geometry[0] != -1){
 		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
-			if (geometry[i] < 1 || geometry[i] > DIM_SIZE[i]){
+			if (pa_request->geometry[i] < 1 || pa_request->geometry[i] > DIM_SIZE[i]){
 				printf("new_pa_request Error, request geometry is invalid\n"); 
 				return 0;
 			}
 		}
-
-		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
-			pa_request->geometry[i] = geometry[i];
-		}
-
 	} else {
 		/* decompose the size into a cubic geometry */
 		
@@ -130,10 +122,10 @@ int new_pa_request(pa_request_t* pa_request,
 			pa_request->geometry[i] = 1;
 		}
 	
-		if(size==1)
+		if(pa_request->size==1)
 			goto endit;
 		
-		if(size>total_sz || size<1) {
+		if(pa_request->size>total_sz || pa_request->size<1) {
 			printf("new_pa_request ERROR, requested size must be\ngreater than 0 and less than %d.\n",total_sz);
 			return 0;			
 		}
@@ -144,11 +136,11 @@ int new_pa_request(pa_request_t* pa_request,
 			checked[i]=0;
 		/* see if We can find a cube or square root of the size to make an easy cube */
 		for(i=0;i<PA_SYSTEM_DIMENSIONS-1;i++) {
-			sz = powf((float)size,(float)1/(PA_SYSTEM_DIMENSIONS-i));
-			if(pow(sz,(PA_SYSTEM_DIMENSIONS-i))==size)
+			sz = powf((float)pa_request->size,(float)1/(PA_SYSTEM_DIMENSIONS-i));
+			if(pow(sz,(PA_SYSTEM_DIMENSIONS-i))==pa_request->size)
 				break;
 		}
-		size3=size;
+		size3=pa_request->size;
 		if(i<PA_SYSTEM_DIMENSIONS-1) {
 			i3=i;
 			/* we found something that looks like a cube! */
@@ -163,10 +155,10 @@ int new_pa_request(pa_request_t* pa_request,
 		} else {
 			picked=0;
 		tryagain:	
-			if(size3!=size)
+			if(size3!=pa_request->size)
 				size2=size3;
 			else
-				size2=size;
+				size2=pa_request->size;
 			//messedup:
 			for (i=picked; i<PA_SYSTEM_DIMENSIONS; i++) { 
 				if(size2<=1) 
@@ -196,7 +188,7 @@ int new_pa_request(pa_request_t* pa_request,
 						}		
 					}				
 					if(i2==1) {
-						size +=1;
+						pa_request->size +=1;
 						goto startagain;
 					}
 						
@@ -216,14 +208,9 @@ endit:
 	
 	//printf("geometry: %d %d %d size = %d\n", pa_request->geometry[0],pa_request->geometry[1],pa_request->geometry[2], pa_request->size);
 		
-	pa_request->conn_type = conn_type;
 	pa_request->rotate_count= 0;
-	pa_request->rotate = rotate;
 	pa_request->elongate_count = 0;
-	pa_request->elongate = elongate;
-	pa_request->force_contig = force_contig;
-	pa_request->co_proc = co_proc;
-	
+		
 	return 1;
 }
 
@@ -454,7 +441,7 @@ int remove_part(List nodes)
 			}
 		}
 	}
-	
+				
 	return 1;
 }
 
@@ -470,8 +457,10 @@ int alter_part(List nodes, int conn_type)
 	pa_node_t* pa_node;
 	pa_switch_t *curr_switch; 
 	int size=0;
-	
-	while((pa_node = (pa_node_t*) list_pop(nodes)) != NULL) {
+	ListIterator results_i;		
+
+	results_i = list_iterator_create(nodes);
+	while ((pa_node = list_next(results_i)) != NULL) {
 		pa_node->used = false;
 		
 		for(dim=0;dim<PA_SYSTEM_DIMENSIONS;dim++) {
@@ -486,6 +475,7 @@ int alter_part(List nodes, int conn_type)
 		}
 		size++;
 	}
+	list_iterator_destroy(results_i);
 	_set_internal_wires(nodes, size, conn_type);
 
 	return 1;
@@ -502,8 +492,11 @@ int redo_part(List nodes, int conn_type)
 	pa_node_t* pa_node;
 	pa_switch_t *curr_switch; 
 	int size=0;
-	
-	while((pa_node = (pa_node_t*) list_pop(nodes)) != NULL) {
+	char *name;
+	ListIterator results_i;		
+
+	results_i = list_iterator_create(nodes);
+	while ((pa_node = list_next(results_i)) != NULL) {
 		pa_node->used = false;
 		
 		for(dim=0;dim<PA_SYSTEM_DIMENSIONS;dim++) {
@@ -518,8 +511,10 @@ int redo_part(List nodes, int conn_type)
 		}
 		size++;
 	}
-	_set_internal_wires(nodes, size, conn_type);
-
+	
+	list_iterator_destroy(results_i);
+	name = _set_internal_wires(nodes, size, conn_type);
+	xfree(name);
 	return 1;
 }
 
@@ -983,7 +978,7 @@ char *_set_internal_wires(List nodes, int size, int conn_type)
 {
 	pa_node_t* pa_node[size+1];
 	//pa_switch_t *next_switch; 
-	int count=0, i;
+	int count=0, i, set=0;
 	int *start;
 	int *end;
 	char *name = (char *) xmalloc(sizeof(char)*8);
@@ -991,7 +986,6 @@ char *_set_internal_wires(List nodes, int size, int conn_type)
 	ListIterator itr;
 
 	memset(name,0,8);		
-
 	itr = list_iterator_create(nodes);
 	while((pa_node[count] = (pa_node_t*) list_next(itr))) {
 		count++;
@@ -1000,7 +994,7 @@ char *_set_internal_wires(List nodes, int size, int conn_type)
 		
 	start = pa_node[0]->coord;
 	end = pa_node[count-1]->coord;	
-	
+	//printf("hey %d\n",count);
 	sprintf(name, "%d%d%dx%d%d%d",start[0],start[1],start[2],end[0],end[1],end[2]);
 	//printf("the name = %s\n",name);
 		
@@ -1021,6 +1015,7 @@ char *_set_internal_wires(List nodes, int size, int conn_type)
 				
 				pa_node[i]->color =
 					pa_system_ptr->fill_in_value[part_count].color;
+				set=1;
 			}
 		} else {
 			printf("AHHHHHHH I can't do it in _set_internal_wires\n");
@@ -1032,7 +1027,8 @@ char *_set_internal_wires(List nodes, int size, int conn_type)
 	for(i=0;i<count;i++) {
 		_set_one_dim(start, end, pa_node[i]->coord);
 	}
-	part_count++;		
+	if(set)
+		part_count++;		
 /* 	int i; */
 /* 	itr = list_iterator_create(nodes); */
 /* 	while((pa_node = (pa_node_t*) list_next(itr))){ */
@@ -1358,20 +1354,19 @@ int _set_one_dim(int *start, int *end, int *coord)
 /** */
 int main(int argc, char** argv)
 {
-	int geo[3] = {-1,-1,-1};
-	bool rotate = true;
-	bool elongate = true;
-	bool force_contig = true;
-	bool co_proc = true;
-	pa_request_t *request; 
+	pa_request_t *request = (pa_request_t*) xmalloc(sizeof(pa_request_t)); 
 	int error_code;
 	time_t start, end;
 	node_info_msg_t * node_info_ptr;
 	List results;
 	List results2;
 //	int i,j;
-	request = (pa_request_t*) xmalloc(sizeof(pa_request_t));
-		
+	
+	request->rotate = true;
+	request->elongate = true;
+	request->force_contig = true;
+	request->co_proc = true;
+	request->geometry[0]=-1;
 	//printf("geometry: %d %d %d size = %d\n", request->geometry[0], request->geometry[1], request->geometry[2], request->size);
 #ifdef HAVE_BGL
 	error_code = slurm_load_node((time_t) NULL, &node_info_ptr, 0);
@@ -1387,11 +1382,11 @@ int main(int argc, char** argv)
 #endif
 	
 	results = list_create(NULL);
-	geo[0] = 2;
-	geo[1] = 2;
-	geo[2] = 2;	
-	int size = -1; //atoi(argv[1]);
-	new_pa_request(request, geo, size, rotate, elongate, force_contig, co_proc, SELECT_TORUS);
+	request->geometry[0] = 2;
+	request->geometry[1] = 2;
+	request->geometry[2] = 2;	
+	request->size = -1; //atoi(argv[1]);
+	new_pa_request(request);
 	time(&start);
 	print_pa_request(request);
 	allocate_part(request, results);
@@ -1400,10 +1395,10 @@ int main(int argc, char** argv)
 	//list_destroy(results);
 	printf("name = %s\n",request->save_name);		
 	results2 = list_create(NULL);
-	geo[0] = 3;
-	geo[1] = 1;
-	geo[2] = 1;
-	new_pa_request(request, geo, -1, rotate, elongate, force_contig, co_proc, SELECT_TORUS);
+	request->geometry[0] = 3;
+	request->geometry[1] = 1;
+	request->geometry[2] = 1;
+	new_pa_request(request);
 	time(&start);
 	print_pa_request(request);
 	allocate_part(request, results2);
@@ -1411,6 +1406,7 @@ int main(int argc, char** argv)
 	//printf("allocate_part: %ld\n", (end-start));
 	//list_destroy(results);
 	remove_part(results);
+	redo_part(results2, request->conn_type);
 /* 	results = list_create(NULL); */
 /* 	geo[0] = 2; */
 /* 	geo[1] = 2; */

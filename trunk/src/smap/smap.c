@@ -54,7 +54,8 @@ int main(int argc, char *argv[])
 	int end = 0;
 	int i;
 	//char *name;
-        
+	
+        	
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
 #ifdef HAVE_BGL
@@ -89,7 +90,13 @@ int main(int argc, char *argv[])
 	curs_set(1);
 	nodelay(stdscr, TRUE);
 	start_color();
-
+	
+	//if(can_change_color()) {
+		printf("hey\n");
+		init_color(3, 3, 200, 50);
+		printf("hey\n");
+		//}
+	
 	pa_system_ptr->grid_win = newwin(height, width, starty, startx);
 	box(pa_system_ptr->grid_win, 0, 0);
 

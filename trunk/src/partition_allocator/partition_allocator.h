@@ -181,10 +181,7 @@ typedef struct {
  * 
  * return success of allocation/validation of params
  */
-int new_pa_request(pa_request_t* pa_request, 
-		    int geometry[PA_SYSTEM_DIMENSIONS], int size, 
-		    bool rotate, bool elongate, 
-		    bool force_contig, bool co_proc, int conn_type);
+int new_pa_request(pa_request_t* pa_request);
 
 /**
  * delete a partition request 
