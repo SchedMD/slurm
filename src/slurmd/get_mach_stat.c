@@ -46,6 +46,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/parse_spec.h"
+#include "src/common/read_config.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/get_mach_stat.h"
 
