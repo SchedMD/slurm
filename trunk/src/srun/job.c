@@ -617,7 +617,7 @@ _job_resp_add_nodes(bitstr_t *req_bitmap, bitstr_t *exc_bitmap, int node_cnt)
 
 	/* work up from first allocated node to first excluded node */
 	offset = bit_ffs(req_bitmap);
-	if (offset == -1)	/* no specific required nodes)
+	if (offset == -1)	/* no specific required nodes */
 		offset = 0;	/* start at beginning */
 	for (inx=offset; inx<node_cnt; inx++) {
 		if (total >= max_nodes) 
