@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
     external scheduler control of RoolOnly partition (Chris Holmes, HP).
  -- Modify logic to set process group ID for spawned processes (last 
     patch from slurm v0.3.11).
+ -- "srun -A" modified to return exit code of last command executed
+    (Chris Holmes, HP).
 
 * Changes in SLURM 0.4.7
 ========================
