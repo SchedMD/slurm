@@ -253,15 +253,15 @@ void *agent(void *args)
 				_slurmctld_free_job_launch_msg
 				    (agent_arg_ptr->msg_args);
 			else
-				FREE_NULL(agent_arg_ptr->msg_args);
+				xfree(agent_arg_ptr->msg_args);
 		}
-		FREE_NULL(agent_arg_ptr);
+		xfree(agent_arg_ptr);
 	}
 #endif
 
 	if (agent_info_ptr) {
 		FREE_NULL(agent_info_ptr->thread_struct);
-		FREE_NULL(agent_info_ptr);
+		xfree(agent_info_ptr);
 	}
 	return NULL;
 }
@@ -374,7 +374,7 @@ static void *_wdog(void *args)
 		fatal
 		    ("Code development needed here if agent is not thread");
 
-		FREE_NULL(slurm_names);
+		xfree(slurm_names);
 #endif
 		if (agent_ptr->retry)
 			_queue_agent_retry(agent_ptr, fail_cnt);
@@ -404,7 +404,7 @@ static void *_wdog(void *args)
 	/* send RPC */
 	fatal("Code development needed here if agent is not thread");
 
-	FREE_NULL(slurm_addr);
+	xfree(slurm_addr);
 #endif
 	if (max_delay)
 		debug("agent maximum delay %d seconds", max_delay);
@@ -522,7 +522,7 @@ static void *_thread_per_node_rpc(void *args)
 	slurm_mutex_unlock(task_ptr->thread_mutex_ptr);
 
 	slurm_free_msg(response_msg);
-	FREE_NULL(args);
+	xfree(args);
 	return (void *) NULL;
 }
 
@@ -613,7 +613,7 @@ static void _list_delete_retry(void *retry_entry)
 #if AGENT_IS_THREAD
 	FREE_NULL(agent_arg_ptr->msg_args);
 #endif
-	FREE_NULL(agent_arg_ptr);
+	xfree(agent_arg_ptr);
 }
 
 
