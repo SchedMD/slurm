@@ -79,6 +79,8 @@ int  print_sinfo_list(List sinfo_list);
 	format_add_function(list,wid,right,suffix,_print_partition)
 #define format_add_prefix(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_prefix)
+#define format_add_reason(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_reason)
 #define format_add_root(list,wid,right,prefix) \
 	format_add_function(list,wid,right,prefix,_print_root)
 #define format_add_share(list,wid,right,suffix) \
@@ -121,6 +123,8 @@ int _print_nodes_aiot(sinfo_data_t * sinfo_data, int width,
 int _print_partition(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_prefix(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix);
+int _print_reason(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_root(sinfo_data_t * sinfo_data, int width, 
 			bool right_justify, char *suffix);

@@ -422,6 +422,19 @@ int _print_prefix(sinfo_data_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
+int _print_reason(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix)
+{
+	if (sinfo_data)
+		_print_str(sinfo_data->reason, width, right_justify, true);
+	else
+		_print_str("REASON", width, right_justify, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_root(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {

@@ -73,6 +73,7 @@ typedef struct {
 	uint32_t max_weight;
 
 	char *features;
+	char *reason;
 
 	hostlist_t nodes;
 
@@ -90,6 +91,7 @@ struct sinfo_match_flags {
 	bool job_size_flag;
 	bool max_time_flag;
 	bool partition_flag;
+	bool reason_flag;
 	bool root_flag;
 	bool share_flag;
 	bool state_flag;
