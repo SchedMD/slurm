@@ -1,0 +1,48 @@
+# $Id$
+#
+# Makefile for slurmlib
+
+AUTOMAKE_OPTIONS = foreign
+
+INCLUDES = -I$(top_srcdir)/src/common
+
+# should we build individual modules?
+# (--enable-debug)
+#
+if DEBUG_MODULES
+test_modules = node_info partition_info 
+else
+test_modules = 
+endif
+
+bin_PROGRAMS = slurmctld
+
+noinst_PROGRAMS = $(test_modules)
+
+LDADD = $(top_srcdir)/src/common/libcommon.a
+
+slurmctld_SOURCES = node_info.c \
+		    partition_info.c
+
+# target specific CFLAGS do not work until automake 1.5, use explicit rules
+# for now. If we ever move to 1.5, the CFLAGS defs below should work in
+# place of the rules that follow.
+
+#node_info_CFLAGS       = -DDEBUG_MODULE $(AM_CFLAGS)
+#partition_info_CFLAGS  = -DDEBUG_MODULE $(AM_CFLAGS)
+
+# debug modules to built as binaries:
+#
+# need to create a rule to build each binary from an object file with _d suffix
+# as these will have been compiled with -DDEBUG_MODULE
+#
+# Note: automake 1.5 will complain about these...
+#
+node_info      : node_info_d.o
+partition_info : partition_info_d.o
+
+% : %_d.o
+	$(LINK) $(LDFLAGS) $^ $(LDADD) $(LIBS)
+
+%_d.o : %.c
+	$(COMPILE) -DDEBUG_MODULE -c -o $@ $< 
