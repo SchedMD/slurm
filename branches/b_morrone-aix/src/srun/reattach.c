@@ -378,11 +378,12 @@ _p_reattach_task(void *arg)
 	
 	t->state = THD_ACTIVE;
 	debug3("sending reattach request to %s", host);
-	if ((rc = slurm_send_only_node_msg(t->msg)) < 0) 
-		error("reattach: %s: %m", host);
 
+	rc = slurm_send_only_node_msg(t->msg);
+	printf("rc = %d\n", rc);
 	if (rc < 0) {
-		t->state = (rc < 0) ? THD_FAILED : THD_DONE;
+		error("reattach: %s: %m", host);
+		t->state = THD_FAILED;
 		t->job->host_state[nodeid] = SRUN_HOST_REPLIED;
 	} else {
 		t->state = THD_DONE;
