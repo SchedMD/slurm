@@ -858,7 +858,7 @@ static int _sync_nodes_to_comp_job(void)
 			update_cnt++;
 			info("Revoking credentials for job_id %u",
 			     job_ptr->job_id);
-			deallocate_nodes(job_ptr);
+			deallocate_nodes(job_ptr, false);
 		}
 	}
 	if (update_cnt)
