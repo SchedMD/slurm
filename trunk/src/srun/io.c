@@ -50,7 +50,7 @@
 #include "src/srun/opt.h"
 
 #define IO_BUFSIZ		2048
-#define MAX_MSG_WAIT_SEC	  60	/* max wait to confirm launches, sec */
+#define MAX_MSG_WAIT_SEC	  10	/* max wait to confirm launches, sec */
 #define MAX_IO_WAIT_SEC		 600	/* max I/O idle, secs, warning msg */
 #define POLL_TIMEOUT_MSEC	 500	/* max wait for i/o poll, msec */
 
@@ -65,6 +65,7 @@ typedef struct fd_info {
 } fd_info_t;
 
 static time_t time_first_done = 0;
+static time_t time_job_done = 0;
 static time_t time_last_io = 0;
 static time_t time_startup = 0;
 
@@ -195,6 +196,24 @@ _io_thr_poll(void *job_arg)
 				time_first_done = time(NULL);
 		}
 
+		if ((job->state == SRUN_JOB_OVERDONE) ||
+		    (job->state == SRUN_JOB_FAILED)) {
+			if (time_job_done == 0)
+				time_job_done = time(NULL);
+		}
+		if (time_job_done &&
+		    ((time(NULL) - time_job_done) > MAX_MSG_WAIT_SEC)) {
+			for (i = 0; i < opt.nprocs; i++) {
+				if ((job->out[i] == IO_DONE) && 
+				    (job->err[i] == IO_DONE))
+					continue;
+				error("Task %d terminated abnormally", i);
+				/* report_task_status(job); */
+				update_job_state(job, SRUN_JOB_FAILED);
+			}
+			pthread_exit(0);
+		}
+
 		while ((rc = poll(fds, nfds, POLL_TIMEOUT_MSEC)) < 0) {
 			if (rc == 0) {	/* timeout */
 				_do_poll_timeout(job);
@@ -264,6 +283,7 @@ static void _do_poll_timeout (job_t *job)
 
 	i = time(NULL) - time_last_io;
 	j = time(NULL) - time_first_done;
+
 	if (job->state == SRUN_JOB_FAILED)
 		pthread_exit(0);
 	else if (time_first_done && opt.max_wait && (j > opt.max_wait)) {
