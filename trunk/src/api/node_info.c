@@ -46,32 +46,32 @@
 
 /* print the entire node_info_msg */
 void 
-slurm_print_node_info_msg ( node_info_msg_t * node_info_msg_ptr )
+slurm_print_node_info_msg ( FILE* out, node_info_msg_t * node_info_msg_ptr )
 {
 	int i;
 	node_table_t * node_ptr = node_info_msg_ptr -> node_array ;
 
-	printf("Nodes updated at %d, record count %d\n",
+	fprintf( out, "Nodes updated at %d, record count %d\n",
 		node_info_msg_ptr ->last_update, node_info_msg_ptr->record_count);
 
 	for (i = 0; i < node_info_msg_ptr-> record_count; i++) 
 	{
-		slurm_print_node_table ( & node_ptr[i] ) ;
+		slurm_print_node_table ( out, & node_ptr[i] ) ;
 	}
 }
 
 
 /* print an individual node_table entry */
 void
-slurm_print_node_table (node_table_t * node_ptr )
+slurm_print_node_table ( FILE* out, node_table_t * node_ptr )
 {
-	printf ("NodeName=%s CPUs=%u ", 
+	fprintf ( out, "NodeName=%s CPUs=%u ", 
 		node_ptr->name, node_ptr->cpus);
-	printf ("RealMemory=%u TmpDisk=%u ", 
+	fprintf ( out, "RealMemory=%u TmpDisk=%u ", 
 		node_ptr->real_memory, node_ptr->tmp_disk);
-	printf ("State=%u Weight=%u ", 
+	fprintf ( out, "State=%u Weight=%u ", 
 		node_ptr->node_state, node_ptr->weight);
-	printf ("Features=%s Partition=%s\n\n", 
+	fprintf ( out, "Features=%s Partition=%s\n\n", 
 		node_ptr->features, node_ptr->partition);
 }
 

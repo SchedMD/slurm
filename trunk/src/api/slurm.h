@@ -117,27 +117,27 @@ extern void slurm_free_node_info (node_info_msg_t * node_buffer_ptr);
  * slurm_print_job_info_msg - prints the job information buffer (if allocated)
  * NOTE: buffer is loaded by slurm_load_job_info .
  */
-extern void slurm_print_job_info_msg ( job_info_msg_t * job_info_msg_ptr ) ;
+extern void slurm_print_job_info_msg ( FILE* , job_info_msg_t * job_info_msg_ptr ) ;
 
 /* slurm_print_job_table - prints the job table object (if allocated) */
-extern void slurm_print_job_table ( job_table_t * job_ptr );
+extern void slurm_print_job_table ( FILE*, job_table_t * job_ptr );
 
 /* 
  * slurm_print_node_info_msg - prints the node information buffer (if allocated)
  * NOTE: buffer is loaded by slurm_load_node_info .
  */
-extern void slurm_print_node_info_msg ( node_info_msg_t * node_info_msg_ptr ) ;
+extern void slurm_print_node_info_msg ( FILE*, node_info_msg_t * node_info_msg_ptr ) ;
 
 /* slurm_print_node_table - prints the node table object (if allocated) */
-extern void slurm_print_node_table (node_table_t * node_ptr );
+extern void slurm_print_node_table ( FILE*, node_table_t * node_ptr );
 
 /*
  * slurm_free_part_info - free the partition information buffer (if allocated)
  * NOTE: buffer is loaded by load_part.
  */
 extern void slurm_free_partition_info ( partition_info_msg_t * part_info_ptr);
-extern void slurm_print_partition_info ( partition_info_msg_t * part_info_ptr ) ;
-extern void slurm_print_partition_table ( partition_table_t * part_ptr ) ;
+extern void slurm_print_partition_info ( FILE*, partition_info_msg_t * part_info_ptr ) ;
+extern void slurm_print_partition_table ( FILE*, partition_table_t * part_ptr ) ;
 
 /*
  * slurm_load_build - load the slurm build information buffer for use by info 
@@ -191,7 +191,7 @@ extern int slurm_load_partitions (time_t update_time, partition_info_msg_t **par
  *	Shared=<YES|NO> TimeLimit=<minutes> TotalNodes=<count>
  *	TotalProcs=<count> Immediate=<YES|NO>
  */
-extern int slurm_submit (char *spec, uint32_t *job_id);
+extern int slurm_submit_batch_job (job_desc_msg_t * job_desc_msg );
 
 /*
  * slurm_will_run - determine if a job would execute immediately 
