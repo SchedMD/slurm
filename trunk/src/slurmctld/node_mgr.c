@@ -989,8 +989,6 @@ int update_node ( update_node_msg_t * update_node_msg )
 				_make_node_down(node_ptr);
 				kill_running_job_by_node_name (this_node_name,
 							       false);
-				bit_set   (idle_node_bitmap, node_inx);
-				bit_clear (avail_node_bitmap, node_inx);
 			}
 			else if (state_val == NODE_STATE_IDLE) {
 				bit_set (avail_node_bitmap, node_inx);
@@ -1570,7 +1568,7 @@ static void _make_node_down(struct node_record *node_ptr)
 	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 	node_ptr->node_state = NODE_STATE_DOWN | no_resp_flag;
 	bit_clear (avail_node_bitmap, inx);
-	bit_clear (idle_node_bitmap,  inx);
+	bit_set   (idle_node_bitmap,  inx);
 	bit_set   (share_node_bitmap, inx);
 }
 
