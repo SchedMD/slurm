@@ -1253,7 +1253,9 @@ void ping_nodes (void)
 						slurmctld_conf.last_update;
 
 		/* Request a node registration if its state is UNKNOWN or DOWN 
-		 * and periodically otherwise (about every 17th ping) */
+		 * and periodically otherwise (about every 17th ping, this 
+		 * mechanism avoids an additional timer or counter and gets 
+		 * updated configuration information once in a while) */
 		if ((base_state == NODE_STATE_UNKNOWN) || 
 		    (base_state == NODE_STATE_DOWN   ) || force_reg) {
 			debug3 ("attempt to register %s now", 
