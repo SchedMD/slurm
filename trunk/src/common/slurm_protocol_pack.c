@@ -851,7 +851,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 	}
 
 	if (switch_g_alloc_node_info(&node_reg_ptr->switch_nodeinfo)
-	||  switch_g_pack_node_info(node_reg_ptr->switch_nodeinfo, buffer))
+	||  switch_g_unpack_node_info(node_reg_ptr->switch_nodeinfo, buffer))
 		goto unpack_error;
 
 	return SLURM_SUCCESS;
