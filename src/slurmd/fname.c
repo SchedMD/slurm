@@ -193,7 +193,7 @@ fname_trunc_all(slurmd_job_t *job, const char *fmt)
 
 	files = list_create((ListDelF)fname_free);
 	for (i = 0; i < job->ntasks; i++) {
-		fname = fname_create(job, fmt, job->task[i]->gid);
+		fname = fname_create(job, fmt, job->task[i]->gtid);
 		if (!list_find_first(files, (ListFindF) find_fname, fname))
 			list_append(files, (void *)fname);
 	}	

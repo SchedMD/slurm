@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.5.0-pre2
+=============================
+
 * Changes in SLURM 0.5.0-pre1
 =============================
  -- Add network option to srun and job creation API for specification 
@@ -19,6 +22,7 @@ documents those changes that are of interest to users and admins.
     (Chris Holmes, HP).
  -- Add support for different slurm.conf files controlled via SLURM_CONF
     env var (Brian O'Sullivan, pathscale)
+ -- Fix bug if srun given --uid without --gid option (Chris Holmes, HP).
 
 * Changes in SLURM 0.4.7
 ========================

@@ -84,6 +84,7 @@ void slurm_print_launch_task_msg(launch_tasks_request_msg_t * msg)
 	debug3("job_id: %i", msg->job_id);
 	debug3("job_step_id: %i", msg->job_step_id);
 	debug3("uid: %i", msg->uid);
+	debug3("gid: %i", msg->gid);
 	debug3("tasks_to_launch: %i", msg->tasks_to_launch);
 	debug3("envc: %i", msg->envc);
 	for (i = 0; i < msg->envc; i++) {

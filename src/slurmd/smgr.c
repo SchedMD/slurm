@@ -315,7 +315,7 @@ _exec_all_tasks(slurmd_job_t *job)
 		/* Parent continues: 
 		 */
 		verbose ("task %lu (%lu) started %M", 
-			(unsigned long) job->task[i]->gid, 
+			(unsigned long) job->task[i]->gtid, 
 			(unsigned long) pid); 
 
 		/* 
@@ -366,7 +366,7 @@ _exec_task(slurmd_job_t *job, int i)
 	if (!job->batch) {
 		if (interconnect_attach(job->switch_job, &job->env,
 				job->nodeid, (uint32_t) i, job->nnodes,
-				job->nprocs, job->task[i]->gid) < 0) {
+				job->nprocs, job->task[i]->gtid) < 0) {
 			error("Unable to attach to interconnect: %m");
 			exit(1);
 		}
@@ -536,7 +536,7 @@ _send_exit_status(slurmd_job_t *job, pid_t pid, int status)
 	if ( WIFSTOPPED(status) ) {
 		verbose ( "task %*d (%ld) stopped by %s %M",
 		          _wid(job->ntasks), 
-			  job->task[e.taskid]->gid,
+			  job->task[e.taskid]->gtid,
 			  pid, 
 			  _signame(WSTOPSIG(status))
 			);
@@ -545,7 +545,7 @@ _send_exit_status(slurmd_job_t *job, pid_t pid, int status)
 
 	verbose ( "task %*d (%ld) exited status 0x%04x %M", 
 	          _wid(job->ntasks), 
-	          job->task[e.taskid]->gid, 
+	          job->task[e.taskid]->gtid, 
 	          pid, 
 	          status
 	        );
@@ -591,10 +591,10 @@ _setup_env(slurmd_job_t *job, int taskid)
 		return -1;
 	if (setenvpf(&job->env, "SLURM_CPUS_ON_NODE", "%d", job->cpus) < 0)
 		return -1;
-	if (setenvpf(&job->env, "SLURM_PROCID",       "%d", t->gid     ) < 0)
+	if (setenvpf(&job->env, "SLURM_PROCID",       "%d", t->gtid     ) < 0)
 		return -1;
 	if (getenvp(job->env, "SLURM_GMPI")) {
-		if (setenvpf(&job->env, "GMPI_ID", "%d", t->gid) < 0)
+		if (setenvpf(&job->env, "GMPI_ID",    "%d", t->gtid) < 0)
 			return -1;
 	}
 

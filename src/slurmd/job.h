@@ -70,7 +70,7 @@ typedef struct task_info {
 	task_state_t    state;	   /* task state                           */
  
 	int             id;	   /* local task id                        */
-	uint32_t        gid;	   /* global task id                       */
+	uint32_t        gtid;	   /* global task id                       */
 	pid_t           pid;	   /* task pid                             */
 	int             pin[2];    /* stdin pipe                           */
 	int             pout[2];   /* stdout pipe                          */

@@ -481,7 +481,7 @@ _io_add_connecting(slurmd_job_t *job, task_info_t *t, srun_info_t *srun,
 	io_obj_t *obj  = NULL;
 	int       sock = -1;
 
-	debug2 ("adding connecting %s for task %d", _io_str[type], t->gid);
+	debug2 ("adding connecting %s for task %d", _io_str[type], t->gtid);
 
 	if ((sock = (int) slurm_open_stream(&srun->ioaddr)) < 0) {
 		error("connect io: %m");
@@ -498,7 +498,8 @@ _io_add_connecting(slurmd_job_t *job, task_info_t *t, srun_info_t *srun,
 	obj->ops = _ops_copy(&connecting_client_ops);
 	_io_write_header(obj->arg, srun);
 
-	if ((type == CLIENT_STDOUT) && !_local_filename(srun->ifname, t->gid)) {
+	if ((type == CLIENT_STDOUT) 
+	&&  (!_local_filename(srun->ifname, t->gtid))) {
 		struct io_info *io = obj->arg;
 		/* This is the only read-write capable client
 		 * at this time: a connected CLIENT_STDOUT
@@ -529,22 +530,22 @@ _io_prepare_one(slurmd_job_t *j, task_info_t *t, srun_info_t *s)
 	   && (_io_add_connecting(j, t, s, CLIENT_STDERR)        < 0) )
 		retval = SLURM_FAILURE;
 
-	if ((fname = _local_filename (s->ofname, t->gid))) {
+	if ((fname = _local_filename (s->ofname, t->gtid))) {
 		if (_open_output_file(j, t, fname, CLIENT_STDOUT) < 0)
 			retval = SLURM_FAILURE;
 	} else {
 		_io_add_connecting(j, t, s, CLIENT_STDOUT); 
 	}
 
-	if ((fname = _local_filename (s->ifname, t->gid))) {
+	if ((fname = _local_filename (s->ifname, t->gtid))) {
 		if (_open_stdin_file(j, t, s) < 0)
 			retval = SLURM_FAILURE;
-	} else if (_local_filename (s->ofname, t->gid)) {
+	} else if (_local_filename (s->ofname, t->gtid)) {
 		_io_add_connecting(j, t, s, CLIENT_STDIN);
 	}
 
 	if (!list_find_first(t->srun_list, (ListFindF) find_obj, s)) {
-		debug3("appending new client to srun_list for task %d", t->gid);
+		debug3("appending new client to srun_list for task %d", t->gtid);
 		list_append(t->srun_list, (void *) s);
 	}
 
@@ -638,13 +639,13 @@ _open_output_file(slurmd_job_t *job, task_info_t *t, char *fmt,
 	if (fmt == NULL)
 		return SLURM_ERROR;
 
-	if (!_local_filename (fmt, t->gid))
+	if (!_local_filename (fmt, t->gtid))
 		return SLURM_ERROR;
 
-	fname = fname_create(job, fmt, t->gid);
+	fname = fname_create(job, fmt, t->gtid);
 	if ((fd = _open_task_file(fname, flags)) > 0) {
 		debug2 ("opened `%s' for task %d %s fd %d", 
-		         fname, t->gid, _io_str[type], fd);
+		         fname, t->gtid, _io_str[type], fd);
 		obj  = _io_obj(job, t, fd, type);
 		_obj_set_unreadable(obj);
 		xassert(obj->ops->writable != NULL);
@@ -666,7 +667,7 @@ _open_stdin_file(slurmd_job_t *job, task_info_t *t, srun_info_t *srun)
 	int       fd    = -1;
 	io_obj_t *obj   = NULL;
 	int       flags = O_RDONLY;
-	char     *fname = fname_create(job, srun->ifname, t->gid);
+	char     *fname = fname_create(job, srun->ifname, t->gtid);
 	
 	if ((fd = _open_task_file(fname, flags)) > 0) {
 		debug("opened `%s' for %s fd %d", fname, "stdin", fd);
@@ -930,7 +931,7 @@ _ops_copy(struct io_operations *ops)
 io_obj_t *
 _io_obj(slurmd_job_t *job, task_info_t *t, int fd, int type)
 {
-	struct io_info *io = _io_info_create(t->gid);
+	struct io_info *io = _io_info_create(t->gtid);
 	struct io_obj *obj = _io_obj_create(fd, (void *)io);
 
 	xassert(io->magic == IO_MAGIC);
@@ -986,7 +987,7 @@ _io_obj(slurmd_job_t *job, task_info_t *t, int fd, int type)
 	io->job  = job;
 	io->task = t;
 
-	xassert(io->task->gid == io->id);
+	xassert(io->task->gtid == io->id);
 
 	return obj;
 }

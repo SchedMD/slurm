@@ -363,8 +363,8 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 	job->ntask[resp->srun_node_id] = resp->ntasks;      
 
 	for (i = 0; i < resp->ntasks; i++) {
-		job->tids[resp->srun_node_id][i] = resp->gids[i];
-		job->hostid[resp->gids[i]]       = resp->srun_node_id;
+		job->tids[resp->srun_node_id][i] = resp->gtids[i];
+		job->hostid[resp->gtids[i]]      = resp->srun_node_id;
 	}
 
 	/* Build process table for any parallel debugger

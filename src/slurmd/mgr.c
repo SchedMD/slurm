@@ -576,7 +576,7 @@ _update_shm_task_info(slurmd_job_t *job)
 		task_t t;
 
 		t.id        = i;
-		t.global_id = job->task[i]->gid;
+		t.global_id = job->task[i]->gtid;
 		t.pid       = job->task[i]->pid;
 		t.ppid      = job->smgr_pid;
 
@@ -743,7 +743,7 @@ _send_pending_exit_msgs(slurmd_job_t *job)
 		} else if (status != t->estatus)
 			continue;
 
-		tid[nsent++] = t->gid;
+		tid[nsent++] = t->gtid;
 		t->esent = true;
 	}
 

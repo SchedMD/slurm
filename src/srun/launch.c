@@ -118,6 +118,7 @@ launch(void *arg)
 		/* Common message contents */
 		r->job_id          = job->jobid;
 		r->uid             = opt.uid;
+		r->gid             = opt.gid;
 		r->argc            = remote_argc;
 		r->argv            = remote_argv;
 		r->cred            = job->cred;
@@ -458,6 +459,6 @@ _print_launch_msg(launch_tasks_request_msg_t *msg, char * hostname)
 	     msg->job_id, msg->job_step_id, hostname, 
 	     msg->tasks_to_launch, task_list);
 
-	debug3("uid:%ld cwd:%s %d",
-		(long) msg->uid, msg->cwd, msg->srun_node_id);
+	debug3("uid:%ld gid:%ld cwd:%s %d", (long) msg->uid,
+		(long) msg->gid, msg->cwd, msg->srun_node_id);
 }

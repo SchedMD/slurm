@@ -182,6 +182,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Kill task failed"					},
 	{ ESLURMD_UID_NOT_FOUND,
 	  "User not found on host"                              },
+	{ ESLURMD_GID_NOT_FOUND,
+	  "Group ID not found on host"                          },
 	{ ESLURMD_INVALID_JOB_CREDENTIAL, 
 	  "Invalid job credential"				},
 	{ ESLURMD_CREDENTIAL_REVOKED, 
