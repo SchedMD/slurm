@@ -27,6 +27,7 @@ libcommon_la_SOURCES = 	xmalloc.c 	\
 			bitstring.c     \
 			pack.c		\
 			xerrno.c	\
+			hostlist.c	\
 			nodelist.c	\
 			slurm_protocol_api.c	\
 			slurm_protocol_pack.c	\
@@ -48,6 +49,7 @@ noinst_HEADERS = 	xmalloc.h 	\
 			bitstring.h     \
 			pack.h		\
 			xerrno.h	\
+			hostlist.h	\
 			nodelist.h	\
 			slurm_protocol_api.h	\
 			slurm_protocol_pack.h	\
@@ -65,23 +67,3 @@ noinst_HEADERS = 	xmalloc.h 	\
 
 EXTRA_libcommon_la_SOURCES =		\
 			qsw.c
-
-# target specific CFLAGS do not work until automake 1.5, use explicit rules
-# for now. If we ever move to 1.5, the CFLAGS defs below should work in
-# place of the rules that follow.
-
-#bits_bytes_CFLAGS     = -DDEBUG_MODULE $(AM_CFLAGS)
-
-# debug modules to built as binaries:
-#
-# need to create a rule to build each binary from an object file with _d suffix
-# as these will have been compiled with -DDEBUG_MODULE
-#
-# Note: automake 1.5 will complain about these...
-#
-bits_bytes     : bits_bytes_d.o log.o xmalloc.o xstring.o xassert.o strlcpy.o 
-% : %_d.o
-	$(LINK) $(LDFLAGS) $^ $(LDADD) $(LIBS)
-
-%_d.o : %.c
-	$(COMPILE) -DDEBUG_MODULE -c -o $@ $< 
