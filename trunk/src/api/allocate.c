@@ -70,7 +70,7 @@ main (int argc, char *argv[])
 
 /* slurm_submit_job - load the supplied node information buffer if changed */
 int
-slurm_submit_batch_job (job_desc_msg_t * job_desc_msg )
+slurm_allocate_resources (job_desc_msg_t * job_desc_msg )
 {
         int msg_size ;
         int rc ;
