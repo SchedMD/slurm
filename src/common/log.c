@@ -1,4 +1,4 @@
-/* $Id */
+/* $Id$ */
 
 /* 
 ** log facilities for slurm.
@@ -25,7 +25,6 @@
 #include <errno.h>
 #include <syslog.h>
 #include <pthread.h>
-#include <printf.h>
 
 #if HAVE_STDLIB_H
 #  include <stdlib.h>	/* for abort() */
@@ -66,6 +65,14 @@ static log_t            *log = NULL;
 #define LOGFILE_LEVEL   log->opt.logfile_level
 
 #define LOG_INITIALIZED ((log != NULL) && log->initialized)
+
+/* define a default argv0 */
+#if HAVE_PROGRAM_INVOCATION_SHORT_NAME
+extern char * program_invocation_short_name;
+#  define default_argv0	program_invocation_short_name
+#else 
+#  define default_argv0 ""
+#endif
 
 /*
  * Initialize log with 
@@ -251,11 +258,7 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 	pthread_mutex_lock(&log_lock);
 
 	if (!LOG_INITIALIZED) {
-#if defined(__GNUC__)
-		char *argv0 = program_invocation_short_name;
-#else
-		char *argv0 = "";
-#endif
+		char *argv0 = default_argv0;
 		log_options_t opts = LOG_OPTS_STDERR_ONLY;
 
 		pthread_mutex_unlock(&log_lock);
