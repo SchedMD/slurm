@@ -99,7 +99,7 @@ main(int argc, char * argv[]) {
 	printf("PartitionName=%s ",     Part_Ptr->Name);
 	printf("MaxTime=%d ",           Part_Ptr->MaxTime);
 	printf("MaxNodes=%d ",          Part_Ptr->MaxNodes);
-	printf("RootKey=%d ",           Part_Ptr->RootKey);
+	printf("Interactive=%d ",       Part_Ptr->Interactive);
 	printf("StateUp=%d ",           Part_Ptr->StateUp);
 	printf("Nodes=%s ",             Part_Ptr->Nodes);
 	printf("AllowGroups=%s  ",      Part_Ptr->AllowGroups);
@@ -487,10 +487,10 @@ struct Part_Record *Create_Part_Record(int *Error_Code) {
     } /* if */
 
     strcpy(Part_Record_Point->Name, "DEFAULT");
-    Part_Record_Point->MaxTime  = Default_Part.MaxTime;
-    Part_Record_Point->MaxNodes = Default_Part.MaxNodes;
-    Part_Record_Point->RootKey  = Default_Part.RootKey;
-    Part_Record_Point->StateUp  = Default_Part.StateUp;
+    Part_Record_Point->MaxTime     = Default_Part.MaxTime;
+    Part_Record_Point->MaxNodes    = Default_Part.MaxNodes;
+    Part_Record_Point->Interactive = Default_Part.Interactive;
+    Part_Record_Point->StateUp     = Default_Part.StateUp;
     Part_Record_Point->NodeBitMap  = NULL;
 
     if (Default_Part.AllowGroups == (char *)NULL)
@@ -763,7 +763,7 @@ int Init_SLURM_Conf() {
     Default_Part.MaxTime     = -1;
     Default_Part.MaxNodes    = -1;
     Default_Part.Nodes       = (char *)NULL;
-    Default_Part.RootKey     = 0;
+    Default_Part.Interactive = 1;
     Default_Part.StateUp     = 1;
 
     Part_List = list_create(NULL);
@@ -1142,12 +1142,12 @@ int Parse_Node_Spec (char *In_Line) {
 int Parse_Part_Spec (char *In_Line) {
     int Line_Num;		/* Line number in input file */
     char *AllowGroups, *Nodes, *PartitionName, *State;
-    int MaxTime_Val, MaxNodes_Val, RootKey_Val, Default_Val, StateUp_Val;
+    int MaxTime_Val, MaxNodes_Val, Interactive_Val, Default_Val, StateUp_Val;
     int Error_Code, i;
     struct Part_Record *Part_Record_Point;
 
     AllowGroups = Nodes = PartitionName = State = (char *)NULL;
-    MaxTime_Val = MaxNodes_Val = RootKey_Val = Default_Val = NO_VAL;
+    MaxTime_Val = MaxNodes_Val = Interactive_Val = Default_Val = NO_VAL;
 
     if (Error_Code=Load_String(&PartitionName, "PartitionName=", In_Line))      return Error_Code;
     if (PartitionName == NULL) return 0;	/* No partition info */
@@ -1169,9 +1169,9 @@ int Parse_Part_Spec (char *In_Line) {
     Error_Code += Load_Integer(&StateUp_Val,  "State=DOWN", In_Line);
     if (StateUp_Val == 1) StateUp_Val=0;
     Error_Code += Load_Integer(&StateUp_Val,  "State=UP", In_Line);
-    Error_Code += Load_Integer(&RootKey_Val,  "RootKey=NO", In_Line);
-    if (RootKey_Val == 1) RootKey_Val=0;
-    Error_Code += Load_Integer(&RootKey_Val,  "RootKey=YES", In_Line);
+    Error_Code += Load_Integer(&Interactive_Val,  "Interactive=NO", In_Line);
+    if (Interactive_Val == 1) Interactive_Val=0;
+    Error_Code += Load_Integer(&Interactive_Val,  "Interactive=YES", In_Line);
     if (Error_Code != 0) {
 	free(PartitionName);
 	return Error_Code;
@@ -1193,7 +1193,7 @@ int Parse_Part_Spec (char *In_Line) {
     if (strcmp(PartitionName, "DEFAULT") == 0) {
 	if (MaxTime_Val  != NO_VAL)    Default_Part.MaxTime      = MaxTime_Val;
 	if (MaxNodes_Val != NO_VAL)    Default_Part.MaxNodes     = MaxNodes_Val;
-	if (RootKey_Val  != NO_VAL)    Default_Part.RootKey      = RootKey_Val;
+	if (Interactive_Val != NO_VAL) Default_Part.Interactive  = Interactive_Val;
 	if (StateUp_Val  != NO_VAL)    Default_Part.StateUp      = StateUp_Val;
 	if (AllowGroups != (char *)NULL) {
 	    if (Default_Part.AllowGroups != (char *)NULL) free(Default_Part.AllowGroups);
@@ -1238,7 +1238,7 @@ int Parse_Part_Spec (char *In_Line) {
     } /* if */
     if (MaxTime_Val  != NO_VAL)    Part_Record_Point->MaxTime      = MaxTime_Val;
     if (MaxNodes_Val != NO_VAL)    Part_Record_Point->MaxNodes     = MaxNodes_Val;
-    if (RootKey_Val  != NO_VAL)    Part_Record_Point->RootKey      = RootKey_Val;
+    if (Interactive_Val  != NO_VAL) Part_Record_Point->Interactive = Interactive_Val;
     if (StateUp_Val  != NO_VAL)    Part_Record_Point->StateUp      = StateUp_Val;
     if (AllowGroups != (char *)NULL) {
 	if (Part_Record_Point->AllowGroups != (char *)NULL) free(Part_Record_Point->AllowGroups);
