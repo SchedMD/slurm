@@ -120,18 +120,15 @@ int Get_OS_Name(char *OS_Name) {
 } /* Get_OS_Name */
 
 /*
- * Get_Mach_Name - Return the fully qualified name of this node 
- * Note: This uses getdomainname to get the domain name for non-Linux support
+ * Get_Mach_Name - Return the name of this node 
  * Input: Node_Name - buffer for the node name, must be at least MAX_NAME_LEN characters
  * Output: Node_Name - filled in with node name
  *         return code - 0 if no error, otherwise errno
  */
 int Get_Mach_Name(char *Node_Name) {
     int Error_Code;
-    char Host_Name[MAX_NAME_LEN];
-    char Domain_Name[MAX_NAME_LEN];
 
-    Error_Code = gethostname(Host_Name, sizeof(Host_Name));
+    Error_Code = gethostname(Node_Name, MAX_NAME_LEN);
     if (Error_Code != 0) {
 #ifdef DEBUG_MODULE
 	fprintf(stderr, "Get_Mach_Name: gethostname error %d\n", Error_Code);
@@ -140,21 +137,7 @@ int Get_Mach_Name(char *Node_Name) {
 #endif
     } /* if */
 
-    Error_Code = getdomainname(Domain_Name, sizeof(Domain_Name));
-    if (Error_Code != 0) {
-#ifdef DEBUG_MODULE
-	fprintf(stderr, "Get_Mach_Name: getdomainname error %d\n", Error_Code);
-#else
-	syslog(LOG_ERR, "Get_Mach_Name: getdomainname error %d\n", Error_Code);
-#endif
-    } /* if */
-    if (strcmp(Domain_Name, "(none)") == 0) strcpy(Domain_Name, "llnl.gov");
-
-    if ((strlen(Host_Name) + strlen(Domain_Name) + 1) >= MAX_NAME_LEN) return E2BIG;
-    strcpy(Node_Name, Host_Name);
-    strcat(Node_Name, ".");
-    strcat(Node_Name, Domain_Name);
-    return 0;
+    return Error_Code;
 } /* Get_Mach_Name */
 
 /*

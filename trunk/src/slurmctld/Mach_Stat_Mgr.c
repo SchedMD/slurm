@@ -24,10 +24,10 @@ struct Node_Record  *Duplicate_Record(char *name);
 int 	Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS, 
 	int *My_CPUs, int *Set_CPUs, float *My_Speed, int *Set_Speed,
 	int *My_RealMemory, int *Set_RealMemory, int *My_VirtualMemory, int *Set_VirtualMemory, 
-	long *My_TmpDisk, int *Set_TmpDisk, unsigned int *My_Pool, int *Set_Pool, 
+	long *My_TmpDisk, int *Set_TmpDisk, unsigned int *My_Partition, int *Set_Partition, 
 	enum Node_State *NodeState, int *Set_State, time_t *My_LastResponse, int *Set_LastResponse);
-void	Pool_String_To_Value (char *pool, unsigned int *Pool_Value, int *Error_Code);
-void 	Pool_Value_To_String(unsigned int pool, char *Pool_String, int Pool_String_size, char *node_name);
+void	Partition_String_To_Value (char *partition, unsigned int *Partition_Value, int *Error_Code);
+void 	Partition_Value_To_String(unsigned int partition, char *Partition_String, int Partition_String_size, char *node_name);
 
 #ifdef DEBUG_MODULE
 /* main is used here for testing purposes only */
@@ -45,9 +45,9 @@ main(int argc, char * argv[]) {
 	exit(1);
     } /* if */
 
-    Error_Code = Update_Node_Spec_Conf("Name=mx01.llnl.gov CPUs=3 TmpDisk=12345");
+    Error_Code = Update_Node_Spec_Conf("Name=mx01 CPUs=3 TmpDisk=12345");
     if (Error_Code != 0) printf("Error %d from Update_Node_Spec_Conf\n", Error_Code);
-    Error_Code = Update_Node_Spec_Conf("Name=mx03.llnl.gov CPUs=4 TmpDisk=16384 Pool=9 State=IDLE LastResponse=123");
+    Error_Code = Update_Node_Spec_Conf("Name=mx03 CPUs=4 TmpDisk=16384 Partition=9 State=IDLE LastResponse=123");
     if (Error_Code != 0) printf("Error %d from Update_Node_Spec_Conf\n", Error_Code);
 
     Error_Code = Write_Node_Spec_Conf(argv[2], 1);
@@ -56,12 +56,12 @@ main(int argc, char * argv[]) {
     Error_Code = Dump_Node_Records(argv[3]);
     if (Error_Code != 0) printf("Error %d from Dump_Node_Records", Error_Code);
 
-    Error_Code = Validate_Node_Spec("Name=mx03.llnl.gov CPUs=4 TmpDisk=22222");
+    Error_Code = Validate_Node_Spec("Name=mx03 CPUs=4 TmpDisk=22222");
     if (Error_Code != 0) printf("Error %d from Validate_Node_Spec", Error_Code);
-    Error_Code = Validate_Node_Spec("Name=mx03.llnl.gov CPUs=3");
+    Error_Code = Validate_Node_Spec("Name=mx03 CPUs=3");
     if (Error_Code == 0) printf("Error %d from Validate_Node_Spec", Error_Code);
 
-    Error_Code = Show_Node_Record("mx03.llnl.gov", Out_Line);
+    Error_Code = Show_Node_Record("mx03", Out_Line);
     if (Error_Code != 0) printf("Error %d from Show_Node_Record", Error_Code);
     if (Error_Code == 0) printf("Show_Node_Record: %s\n", Out_Line);
     exit(0);
@@ -205,7 +205,7 @@ struct Node_Record *Duplicate_Record(char *name) {
 int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS, 
 	int *My_CPUs, int *Set_CPUs, float *My_Speed, int *Set_Speed,
 	int *My_RealMemory, int *Set_RealMemory, int *My_VirtualMemory, int *Set_VirtualMemory, 
-	long *My_TmpDisk, int *Set_TmpDisk, unsigned int *My_Pool, int *Set_Pool, 
+	long *My_TmpDisk, int *Set_TmpDisk, unsigned int *My_Partition, int *Set_Partition, 
 	enum Node_State *My_NodeState, int *Set_State, time_t *My_LastResponse, int *Set_LastResponse) {
     char Scratch[BUF_SIZE];
     char *str_ptr1, *str_ptr2;
@@ -219,7 +219,7 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
     *Set_RealMemory    = 0;
     *Set_VirtualMemory = 0;
     *Set_TmpDisk       = 0;
-    *Set_Pool          = 0;
+    *Set_Partition          = 0;
     *Set_State         = 0;
     *Set_LastResponse  = 0;
 
@@ -279,12 +279,12 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
 	*Set_TmpDisk = 1;
     } /* if */
 
-    str_ptr1 = (char *)strstr(Specification, "Pool=");
+    str_ptr1 = (char *)strstr(Specification, "Partition=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+5);
 	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
-	Pool_String_To_Value(str_ptr2, My_Pool, &Error_Code);
-	*Set_Pool = 1;
+	Partition_String_To_Value(str_ptr2, My_Partition, &Error_Code);
+	*Set_Partition = 1;
     } /* if */
 
     str_ptr1 = (char *)strstr(Specification, "State=");
@@ -314,72 +314,72 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
 
 
 /* 
- * Pool_String_To_Value - Convert a pool list string to the equivalent bit mask
- * Input: pool - the pool list, comma separated numbers in the range of 0 to MAX_POOLS-1
- *        Pool_Value - Pointer to pool bit mask
+ * Partition_String_To_Value - Convert a partition list string to the equivalent bit mask
+ * Input: partition - the partition list, comma separated numbers in the range of 0 to MAX_PARTITION-1
+ *        Partition_Value - Pointer to partition bit mask
  *        Error_Code - place in which to place any error code
  */
-void Pool_String_To_Value (char *pool, unsigned int *Pool_Value, int *Error_Code) {
-    int i, Pool_Num;
-    char *Pool_Ptr;
+void Partition_String_To_Value (char *partition, unsigned int *Partition_Value, int *Error_Code) {
+    int i, Partition_Num;
+    char *Partition_Ptr;
     char *Sep_Ptr;
 
     *Error_Code = 0;
-    *Pool_Value = 0;
-    if (pool == NULL) return;
-    if (pool[0] == (char)NULL) return;
-    Pool_Ptr = pool;
-    for (i=0; i<=MAX_POOLS; i++) {
-	Pool_Num = (int)strtol(Pool_Ptr, &Sep_Ptr, 10);
-	if ((Pool_Num < 0) || (Pool_Num > MAX_POOLS)) {
+    *Partition_Value = 0;
+    if (partition == NULL) return;
+    if (partition[0] == (char)NULL) return;
+    Partition_Ptr = partition;
+    for (i=0; i<=MAX_PARTITION; i++) {
+	Partition_Num = (int)strtol(Partition_Ptr, &Sep_Ptr, 10);
+	if ((Partition_Num < 0) || (Partition_Num > MAX_PARTITION)) {
 	    *Error_Code = EINVAL;
 	    break;
 	} else {
-	    *Pool_Value |= (1 << Pool_Num);
+	    *Partition_Value |= (1 << Partition_Num);
 	    if ((Sep_Ptr[0] == (char)NULL) || (Sep_Ptr[0] == '\n')) break;
-	    Pool_Ptr = Sep_Ptr + 1;
+	    Partition_Ptr = Sep_Ptr + 1;
 	} /* else */
     } /* for */
-} /* Pool_String_To_Value */
+} /* Partition_String_To_Value */
 
 
 /* 
- * Pool_Value_To_String - Convert a pool list string to the equivalent bit mask
- * Input: pool - the pool bit mask
- *        Pool_String - the pool list, comma separated numbers in the range of 0 to MAX_POOLS-1
- *        Pool_String_size - size of Pool_String in bytes, prints warning rather than overflow
+ * Partition_Value_To_String - Convert a partition list string to the equivalent bit mask
+ * Input: partition - the partition bit mask
+ *        Partition_String - the partition list, comma separated numbers in the range of 0 to MAX_PARTITION-1
+ *        Partition_String_size - size of Partition_String in bytes, prints warning rather than overflow
  *	  node_name - name of the node, used for error messages
  */
-void Pool_Value_To_String(unsigned int pool, char *Pool_String, int Pool_String_size, char *node_name) {
+void Partition_Value_To_String(unsigned int partition, char *Partition_String, int Partition_String_size, char *node_name) {
     int i;
-    int Max_Pools; 		/* Maximum pool number we are prepared to process */
+    int Max_Partitions; 		/* Maximum partition number we are prepared to process */
     char Tmp_String[7];
 
-    Pool_String[0] = (char)NULL;
-    Max_Pools = MAX_POOLS;
-    if (Max_Pools > 999999) {
+    Partition_String[0] = (char)NULL;
+    Max_Partitions = MAX_PARTITION;
+    if (Max_Partitions > 999999) {
 #ifdef DEBUG_MODULE
-    	fprintf(stderr, "Pool_Value_To_String error MAX_POOLS configured over too large at %d\n", Max_Pools);
+    	fprintf(stderr, "Partition_Value_To_String error MAX_PARTITION configured over too large at %d\n", Max_Partitions);
 #else
-    	syslog(LOG_ERR, "Pool_Value_To_String error MAX_POOLS configured over too large at %d\n", Max_Pools);
+    	syslog(LOG_ERR, "Partition_Value_To_String error MAX_PARTITION configured over too large at %d\n", Max_Partitions);
 #endif
-	Max_Pools = 999999;
+	Max_Partitions = 999999;
     } /* if */
 
-    for (i=0; i<Max_Pools; i++) {
-	if ((pool & (1 << i)) == 0) continue;
+    for (i=0; i<Max_Partitions; i++) {
+	if ((partition & (1 << i)) == 0) continue;
 	sprintf(Tmp_String, "%d", i);
-	if ((strlen(Pool_String)+strlen(Tmp_String)+1) >= Pool_String_size) {
+	if ((strlen(Partition_String)+strlen(Tmp_String)+1) >= Partition_String_size) {
 #ifdef DEBUG_MODULE
-    	    fprintf(stderr, "Pool_Value_To_String Pool string overflow for node Name %s\n", node_name);
+    	    fprintf(stderr, "Partition_Value_To_String Partition string overflow for node Name %s\n", node_name);
 #else
-    	    syslog(LOG_ERR, "Pool_Value_To_String Pool string overflow for node Name %s\n", node_name);
+    	    syslog(LOG_ERR, "Partition_Value_To_String Partition string overflow for node Name %s\n", node_name);
 #endif
 	} /* if */
-	if (Pool_String[0] != (char)NULL) strcat(Pool_String, ",");
-	strcat(Pool_String, Tmp_String);
+	if (Partition_String[0] != (char)NULL) strcat(Partition_String, ",");
+	strcat(Partition_String, Tmp_String);
     } /* for */
-} /* Pool_Value_To_String */
+} /* Partition_Value_To_String */
 
 /*
  * Read_Node_Spec_Conf - Load the node specification information from the specified file 
@@ -399,12 +399,12 @@ int Read_Node_Spec_Conf (char *File_Name) {
     int My_RealMemory;
     int My_VirtualMemory;
     long My_TmpDisk;
-    unsigned int My_Pool;
+    unsigned int My_Partition;
     enum Node_State My_NodeState;
     time_t My_LastResponse;
 
     int Set_CPUs, Set_Speed, Set_RealMemory, Set_VirtualMemory, Set_TmpDisk;
-    int Set_Pool, Set_State, Set_LastResponse;
+    int Set_Partition, Set_State, Set_LastResponse;
 
     /* Initialization */
     Error_Code = 0;
@@ -424,7 +424,7 @@ int Read_Node_Spec_Conf (char *File_Name) {
     Default_Record.RealMemory = 0;
     Default_Record.VirtualMemory = 0;
     Default_Record.TmpDisk = 0L;
-    Default_Record.Pool = 0;
+    Default_Record.Partition = 0;
     Default_Record.NodeState= STATE_UNKNOWN;
     Default_Record.LastResponse = 0;
     Node_Record_List = list_create(NULL);
@@ -448,7 +448,7 @@ int Read_Node_Spec_Conf (char *File_Name) {
 	Error_Code = Parse_Node_Spec(In_Line, My_Name, My_OS, 
 	    &My_CPUs, &Set_CPUs, &My_Speed, &Set_Speed,
 	    &My_RealMemory, &Set_RealMemory, &My_VirtualMemory, &Set_VirtualMemory, 
-	    &My_TmpDisk, &Set_TmpDisk, &My_Pool, &Set_Pool, &My_NodeState, &Set_State,
+	    &My_TmpDisk, &Set_TmpDisk, &My_Partition, &Set_Partition, &My_NodeState, &Set_State,
 	    &My_LastResponse, &Set_LastResponse);
 	if (Error_Code != 0) break;
 	if (strcmp("DEFAULT", My_Name) == 0) {
@@ -458,7 +458,7 @@ int Read_Node_Spec_Conf (char *File_Name) {
 	    if (Set_RealMemory != 0)    Default_Record.RealMemory=My_RealMemory;
 	    if (Set_VirtualMemory != 0) Default_Record.VirtualMemory=My_VirtualMemory;
 	    if (Set_TmpDisk != 0)       Default_Record.TmpDisk=My_TmpDisk;
-	    if (Set_Pool != 0)          Default_Record.Pool=My_Pool;
+	    if (Set_Partition != 0)          Default_Record.Partition=My_Partition;
 	    if (Set_State != 0)         Default_Record.NodeState=My_NodeState;
 	} else {
 	    Node_Record_Point = Duplicate_Record(Node_Record_Read.Name);
@@ -489,7 +489,7 @@ int Read_Node_Spec_Conf (char *File_Name) {
 		Node_Record_Point->RealMemory    = Default_Record.RealMemory;
 		Node_Record_Point->VirtualMemory = Default_Record.VirtualMemory;
 		Node_Record_Point->TmpDisk       = Default_Record.TmpDisk;
-		Node_Record_Point->Pool          = Default_Record.Pool;
+		Node_Record_Point->Partition          = Default_Record.Partition;
 		Node_Record_Point->NodeState     = Default_Record.NodeState;
 	    } else {
 #ifdef DEBUG_MODULE
@@ -506,8 +506,8 @@ int Read_Node_Spec_Conf (char *File_Name) {
 	    if (Set_RealMemory != 0)    Node_Record_Point->RealMemory=My_RealMemory;
 	    if (Set_VirtualMemory != 0) Node_Record_Point->VirtualMemory=My_VirtualMemory;
 	    if (Set_TmpDisk != 0)       Node_Record_Point->TmpDisk=My_TmpDisk;
-	    if (Set_Pool != 0)          Node_Record_Point->Pool=My_Pool;
-	    if (Set_State != 0)         Node_Record_Point->NodeState=My_Pool;
+	    if (Set_Partition != 0)          Node_Record_Point->Partition=My_Partition;
+	    if (Set_State != 0)         Node_Record_Point->NodeState=My_Partition;
 	} /* else */
     } /* while */
 
@@ -533,21 +533,21 @@ int Read_Node_Spec_Conf (char *File_Name) {
  */
     int Show_Node_Record (char *Node_Name, char *Node_Record) {
     struct Node_Record *Node_Record_Point;
-    char Out_Pool[MAX_POOLS*3], Out_Time[20];
+    char Out_Partition[MAX_PARTITION*3], Out_Time[20];
     struct tm *Node_Time;
 
     Node_Record_Point = Duplicate_Record(Node_Name);
     if (Node_Record_Point == NULL) return ENOENT;
-    Pool_Value_To_String(Node_Record_Point->Pool, Out_Pool, sizeof(Out_Pool), Node_Record_Point->Name);
+    Partition_Value_To_String(Node_Record_Point->Partition, Out_Partition, sizeof(Out_Partition), Node_Record_Point->Name);
 /* Alternate, human readable, formatting shown below and commented out */
 /*    Node_Time = localtime(&Node_Record_Point->LastResponse); */
 /*    strftime(Out_Time, sizeof(Out_Time), "%a%d%b@%H:%M:%S", Node_Time); */
     sprintf(Out_Time, "%ld", Node_Record_Point->LastResponse);
     if (sprintf(Node_Record, 
-	  "Name=%s OS=%s CPUs=%d Speed=%f RealMemory=%d VirtualMemory=%d TmpDisk=%ld Pool=%s State=%s LastResponse=%s",
+	  "Name=%s OS=%s CPUs=%d Speed=%f RealMemory=%d VirtualMemory=%d TmpDisk=%ld Partition=%s State=%s LastResponse=%s",
 	  Node_Record_Point->Name, Node_Record_Point->OS, Node_Record_Point->CPUs, 
 	  Node_Record_Point->Speed, Node_Record_Point->RealMemory, 
-	  Node_Record_Point->VirtualMemory, Node_Record_Point->TmpDisk, Out_Pool,
+	  Node_Record_Point->VirtualMemory, Node_Record_Point->TmpDisk, Out_Partition,
 	  Node_State_String[Node_Record_Point->NodeState], Out_Time) == EOF) {
 	return EINVAL;
     } /* if */
@@ -569,18 +569,18 @@ int Update_Node_Spec_Conf (char *Specification) {
     int My_RealMemory;
     int My_VirtualMemory;
     long My_TmpDisk;
-    unsigned int My_Pool;
+    unsigned int My_Partition;
     enum Node_State My_State;
     time_t My_LastResponse;
 
     int Set_CPUs, Set_Speed, Set_RealMemory, Set_VirtualMemory, Set_TmpDisk;
-    int Set_Pool, Set_State, Set_LastResponse;
+    int Set_Partition, Set_State, Set_LastResponse;
     int Error_Code;
 
     Error_Code = Parse_Node_Spec(Specification, My_Name, My_OS, 
 	&My_CPUs, &Set_CPUs, &My_Speed, &Set_Speed,
 	&My_RealMemory, &Set_RealMemory, &My_VirtualMemory, &Set_VirtualMemory, 
-	&My_TmpDisk, &Set_TmpDisk, &My_Pool, &Set_Pool, &My_State, &Set_State, 
+	&My_TmpDisk, &Set_TmpDisk, &My_Partition, &Set_Partition, &My_State, &Set_State, 
 	&My_LastResponse, &Set_LastResponse);
     if (Error_Code != 0) return EINVAL;
 
@@ -620,7 +620,7 @@ int Update_Node_Spec_Conf (char *Specification) {
 	Node_Record_Point->RealMemory = 0;
 	Node_Record_Point->VirtualMemory = 0;
 	Node_Record_Point->TmpDisk = 0L;
-	Node_Record_Point->Pool = 1;
+	Node_Record_Point->Partition = 1;
 	Node_Record_Point->NodeState = STATE_UNKNOWN;
 	Node_Record_Point->LastResponse = 0;
 
@@ -639,7 +639,7 @@ int Update_Node_Spec_Conf (char *Specification) {
     if (Set_RealMemory != 0)    Node_Record_Point->RealMemory=My_RealMemory;
     if (Set_VirtualMemory != 0) Node_Record_Point->VirtualMemory=My_VirtualMemory;
     if (Set_TmpDisk != 0)       Node_Record_Point->TmpDisk=My_TmpDisk;
-    if (Set_Pool != 0)          Node_Record_Point->Pool=My_Pool;
+    if (Set_Partition != 0)          Node_Record_Point->Partition=My_Partition;
     if (Set_State != 0)         Node_Record_Point->NodeState=My_State;
     if (Set_LastResponse != 0)  Node_Record_Point->LastResponse=My_LastResponse;
 
@@ -650,7 +650,7 @@ int Update_Node_Spec_Conf (char *Specification) {
 /* 
  * Validate_Node_Spec - Determine if the supplied node specification satisfies 
  *	the node record specification (all values at least as high). Note we 
- *	ignore pool and the OS level strings are just run through strcmp
+ *	ignore partition and the OS level strings are just run through strcmp
  * Output: Returns 0 if satisfactory, errno otherwise
  */
 int Validate_Node_Spec (char *Specification) { 
@@ -663,16 +663,16 @@ int Validate_Node_Spec (char *Specification) {
     int My_RealMemory;
     int My_VirtualMemory;
     long My_TmpDisk;
-    unsigned My_Pool;
+    unsigned My_Partition;
     enum Node_State My_NodeState;
     time_t My_LastResponse;
     int Set_CPUs, Set_Speed, Set_RealMemory, Set_VirtualMemory, Set_TmpDisk;
-    int Set_Pool, Set_State, Set_LastResponse;
+    int Set_Partition, Set_State, Set_LastResponse;
 
     Error_Code = Parse_Node_Spec(Specification, My_Name, My_OS, 
 	&My_CPUs, &Set_CPUs, &My_Speed, &Set_Speed,
 	&My_RealMemory, &Set_RealMemory, &My_VirtualMemory, &Set_VirtualMemory, 
-	&My_TmpDisk, &Set_TmpDisk, &My_Pool, &Set_Pool, &My_NodeState, &Set_State,
+	&My_TmpDisk, &Set_TmpDisk, &My_Partition, &Set_Partition, &My_NodeState, &Set_State,
 	&My_LastResponse, &Set_LastResponse);
     if (Error_Code != 0) return Error_Code;
     if (My_Name[0] == (char)NULL) return EINVAL;
@@ -704,7 +704,7 @@ int Validate_Node_Spec (char *Specification) {
 int Write_Node_Spec_Conf (char *File_Name, int Full_Dump) {
     FILE *Node_Spec_File;	/* Pointer to output data file */
     int Error_Code;		/* Error returns from system functions */
-    char Out_Line[MAX_POOLS*4];	/* Temporary output information storage */
+    char Out_Line[MAX_PARTITION*4]; /* Temporary output information storage */
     char Out_Buf[BUF_SIZE];	/* Temporary output information storage */
     int i;			/* Counter */
     time_t now;			/* Current time */
@@ -743,7 +743,7 @@ int Write_Node_Spec_Conf (char *File_Name, int Full_Dump) {
 
     /* Process the data file */
     while (Node_Record_Point = (struct Node_Record *)list_next(Node_Record_Iterator)) {
-	Pool_Value_To_String(Node_Record_Point->Pool, Out_Line, sizeof(Out_Line), Node_Record_Point->Name);
+	Partition_Value_To_String(Node_Record_Point->Partition, Out_Line, sizeof(Out_Line), Node_Record_Point->Name);
 	if (Full_Dump == 1) {
 	    sprintf(Out_Buf, "State=%s, LastResponse=%ld\n", 
 		Node_State_String[Node_Record_Point->NodeState], Node_Record_Point->LastResponse); 
@@ -751,7 +751,7 @@ int Write_Node_Spec_Conf (char *File_Name, int Full_Dump) {
 	    strcpy(Out_Buf, "\n"); 
 	} /* else */
         if (fprintf(Node_Spec_File, 
-	  "Name=%s OS=%s CPUs=%d Speed=%f RealMemory=%d VirtualMemory=%d TmpDisk=%ld Pool=%s %s",
+	  "Name=%s OS=%s CPUs=%d Speed=%f RealMemory=%d VirtualMemory=%d TmpDisk=%ld Partition=%s %s",
 	  Node_Record_Point->Name, Node_Record_Point->OS, Node_Record_Point->CPUs, 
 	  Node_Record_Point->Speed, Node_Record_Point->RealMemory, 
 	  Node_Record_Point->VirtualMemory, Node_Record_Point->TmpDisk, Out_Line, Out_Buf) <= 0) {
