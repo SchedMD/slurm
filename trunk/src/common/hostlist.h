@@ -41,7 +41,7 @@ typedef struct hostlist * hostlist_t;
  *    (Note: sort occurs first on alphanumeric prefix -- where prefix
  *     matches, numeric suffixes will be sorted *by value*)
  */
-typedef struct hostlist * hostset_t;
+typedef struct hostset * hostset_t;
 
 /* The hostlist iterator type (may be used with a hostset as well)
  * used for non-destructive access to hostlist members.
@@ -251,7 +251,8 @@ void hostlist_uniq(hostlist_t hl);
  *
  * Write the string representation of the hostlist hl into buf,
  * writing at most n chars. Returns the number of bytes that would have
- * been written (including the terminating '\0'). 
+ * been written (including the terminating '\0') had there been enough
+ * space.
  *
  * The result will be NULL terminated.
  * 
@@ -291,6 +292,12 @@ int hostlist_nranges(hostlist_t hl);
  */
 hostlist_iterator_t hostlist_iterator_create(hostlist_t hl);
 
+/* hostset_iterator_create():
+ *
+ * Same as hostlist_iterator_create(), but creates a hostlist_iterator
+ * from a hostset.
+ */
+hostlist_iterator_t hostset_iterator_create(hostset_t set);
 
 /* hostlist_iterator_destroy():
  *
