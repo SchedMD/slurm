@@ -1021,7 +1021,7 @@ void partition_allocator_init()
 /** 
  * destroy all the internal (global) data structs.
  */
-void fini()
+void partition_allocator_fini()
 {
 	int i;
 
@@ -1179,6 +1179,6 @@ int main(int argc, char** argv)
 
 	delete_pa_request(request);
 	
-	fini();
+	partition_allocator_fini();
 	return 0;
 }

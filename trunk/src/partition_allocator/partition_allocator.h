@@ -78,7 +78,7 @@ void partition_allocator_init();
 /** 
  * destroy all the internal (global) data structs.
  */
-void fini();
+void partition_allocator_fini();
 
 /** 
  * set the node in the internal configuration as unusable
