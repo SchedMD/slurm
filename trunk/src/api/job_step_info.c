@@ -70,12 +70,14 @@ slurm_print_job_step_info_msg ( FILE* out,
 void
 slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr )
 {
+	char time_str[16];
+
+	make_time_str ((time_t *)&job_step_ptr->start_time, time_str);
 	fprintf ( out, "JobId=%u StepId=%u UserId=%u Tasks=%u ", 
 		job_step_ptr->job_id, job_step_ptr->step_id, 
 		job_step_ptr->user_id, job_step_ptr->num_tasks);
-	fprintf ( out, "StartTime=%ld Partition=%s Nodes=%s\n\n", 
-		(long)job_step_ptr->start_time, job_step_ptr->partition, 
-		job_step_ptr->nodes);
+	fprintf ( out, "StartTime=%s Partition=%s Nodes=%s\n\n", 
+		time_str, job_step_ptr->partition, job_step_ptr->nodes);
 }
 
 /*
