@@ -738,10 +738,7 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli, bool found_job, int timeout)
 	 * "revoke" all future credentials for this jobid
 	 */
 	if (slurm_cred_revoke(conf->vctx, req->job_id) < 0) {
-		/* credential not found for job, 
-		 * not an error if no steps started */
-		if (errno != EEXIST)
-			debug("revoking cred for job %d: %m", req->job_id);
+		debug("revoking cred for job %d: %m", req->job_id);
 	} else {
 		debug("credential for job %d revoked", req->job_id);
 		save_cred_state(conf->vctx);
@@ -760,8 +757,19 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli, bool found_job, int timeout)
 			goto done;
 		}
 
-	} else if (!found_job)
-		rc = ESLURM_INVALID_JOB_ID;	/* no such job */
+	} else if (!found_job) 
+		rc = ESLURM_INVALID_JOB_ID;	/* no such job       */
+
+	/*
+	 *  Begin expiration period for cached information about job.
+	 *   If expiration period has already begun, then do not run
+	 *   the epilog again, as that script has already been executed 
+	 *   for this job.
+	 */
+	if (slurm_cred_begin_expiration(conf->vctx, req->job_id) < 0) {
+		debug("Not running epilog for jobid %d: %m", req->job_id);
+		goto done;
+	}
 
 	if (_run_epilog(req->job_id, req->job_uid) != 0) {
 		error ("[job %d] epilog failed", req->job_id);

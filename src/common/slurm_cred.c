@@ -59,6 +59,8 @@
  */
 #define DEFAULT_EXPIRATION_WINDOW 600
 
+#define MAX_TIME 0x7fffffff
+
 /* 
  * slurm job credential state 
  * 
@@ -151,9 +153,9 @@ static void           _cred_state_destroy(cred_state_t *cs);
 static void           _job_state_destroy(job_state_t   *js);
 
 static job_state_t  * _find_job_state(slurm_cred_ctx_t ctx, uint32_t jobid);
+static job_state_t  * _insert_job_state(slurm_cred_ctx_t ctx,  uint32_t jobid);
 
 static void _insert_cred_state(slurm_cred_ctx_t ctx, slurm_cred_t cred);
-static void _insert_job_state(slurm_cred_ctx_t ctx,  uint32_t jobid);
 static void _clear_expired_job_states(slurm_cred_ctx_t ctx);
 static void _clear_expired_credential_states(slurm_cred_ctx_t ctx);
 static void _verifier_ctx_init(slurm_cred_ctx_t ctx);
@@ -519,7 +521,7 @@ slurm_cred_insert_jobid(slurm_cred_ctx_t ctx, uint32_t jobid)
 	slurm_mutex_lock(&ctx->mutex);
 
 	_clear_expired_job_states(ctx);
-	_insert_job_state(ctx, jobid);
+	(void) _insert_job_state(ctx, jobid);
 
 	slurm_mutex_unlock(&ctx->mutex);
 
@@ -532,16 +534,21 @@ slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid)
 	job_state_t  *j = NULL;
 
 	xassert(ctx != NULL);
-	xassert(ctx->magic == CRED_CTX_MAGIC);
-	xassert(ctx->type  == SLURM_CRED_VERIFIER);
 
 	slurm_mutex_lock(&ctx->mutex);
+
+	xassert(ctx->magic == CRED_CTX_MAGIC);
+	xassert(ctx->type  == SLURM_CRED_VERIFIER);
 
 	_clear_expired_job_states(ctx);
 
 	if (!(j = _find_job_state(ctx, jobid))) {
-		slurm_seterrno(ESRCH);
-		goto error;
+		/*
+		 *  This node has not yet seen a job step for this
+		 *   job. Insert a job state object so that we can
+		 *   revoke any future credentials.
+		 */
+		j = _insert_job_state(ctx, jobid);
 	}
 
 	if (j->revoked == true) {
@@ -549,8 +556,7 @@ slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid)
 		goto error;
 	}
 
-	j->revoked     = true;
-	j->expiration  = time(NULL) + ctx->expiry_window;
+	j->revoked = true;
 
 	slurm_mutex_unlock(&ctx->mutex);
 	return SLURM_SUCCESS;
@@ -558,6 +564,40 @@ slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid)
     error:
 	slurm_mutex_unlock(&ctx->mutex);
 	return SLURM_FAILURE;
+}
+
+int
+slurm_cred_begin_expiration(slurm_cred_ctx_t ctx, uint32_t jobid)
+{
+	job_state_t  *j = NULL;
+
+	xassert(ctx != NULL);
+
+	slurm_mutex_lock(&ctx->mutex);
+
+	xassert(ctx->magic == CRED_CTX_MAGIC);
+	xassert(ctx->type  == SLURM_CRED_VERIFIER);
+
+	_clear_expired_job_states(ctx); 
+
+	if (!(j = _find_job_state(ctx, jobid))) {
+		slurm_seterrno(ESRCH);
+		goto error;
+	}
+
+	if (j->expiration < (time_t) MAX_TIME) {
+		slurm_seterrno(EEXIST);
+		goto error;
+	}
+
+	j->expiration  = time(NULL) + ctx->expiry_window;
+
+	slurm_mutex_unlock(&ctx->mutex);
+	return SLURM_SUCCESS;
+
+    error:
+	slurm_mutex_unlock(&ctx->mutex);
+	return SLURM_ERROR;
 }
 
 int
@@ -991,7 +1031,7 @@ _credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 	_clear_expired_job_states(ctx);
 
 	if (!(j = _find_job_state(ctx, cred->jobid))) 
-		_insert_job_state(ctx, cred->jobid);
+		(void) _insert_job_state(ctx, cred->jobid);
 	else if (j->revoked)
 		return true;
 
@@ -1012,11 +1052,12 @@ _find_job_state(slurm_cred_ctx_t ctx, uint32_t jobid)
 }
 
 
-static void
+static job_state_t *
 _insert_job_state(slurm_cred_ctx_t ctx, uint32_t jobid)
 {
 	job_state_t *j = _job_state_create(jobid);
 	list_append(ctx->job_list, j);
+	return j;
 }
 
 
@@ -1028,7 +1069,7 @@ _job_state_create(uint32_t jobid)
 	j->jobid      = jobid;
 	j->revoked    = false;
 	j->ctime      = time(NULL);
-	j->expiration = (time_t) -1;
+	j->expiration = (time_t) MAX_TIME;
 
 	return j;
 }
