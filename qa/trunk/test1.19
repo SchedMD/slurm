@@ -207,7 +207,7 @@ set file_out_n_glob  "test$test_id.n.$node_id.output"
 exec $bin_rm -f $file_out_n_glob
 
 set job_id   0
-spawn $srun --output=$file_out_n -N1 -c1 -O -v -t1 $bin_hostname
+spawn $srun --output=$file_out_n -N1 -n2 -O -v -t1 $bin_hostname
 expect {
 	-re "jobid ($number).*" {
 		set job_id $expect_out(1,string)
@@ -272,7 +272,7 @@ for {set step_id 0} {$step_id < 4} {incr step_id} {
 }
 
 set job_id   0
-spawn $srun --batch --output=/dev/null -N1-4 -c1 -O -t1 $file_in
+spawn $srun --batch --output=/dev/null -N1-4 -n4 -O -t1 $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
