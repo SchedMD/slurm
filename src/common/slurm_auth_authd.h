@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * slurm_auth_imple.h - authentication implementation for Brent Chun's authd
+ * slurm_auth_authd.h - authentication implementation for Brent Chun's authd
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -27,7 +27,7 @@
 #ifndef __SLURM_AUTH_IMPL_H__
 #define __SLURM_AUTH_IMPL_H__
 
-#include <src/common/auth.h>
+#include <auth.h>
 
 /* Each implementation must define this structure. */
 typedef struct slurm_auth_credentials {

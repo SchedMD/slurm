@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * slurm_authentication.h - implementation-independent authentication API.
+ * slurm_auth.h - implementation-independent authentication API.
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -43,9 +43,9 @@
  * Here are included the implementation details of the
  * authentication scheme.  Among other things, that file must define
  * slurm_auth_credentials_t.  That file is identified at compile
- * time.
+ * time. (XXX: This can't work as described. Fix in the near future)
  */
-#include <src/common/slurm_auth_impl.h>
+#include <src/common/slurm_auth_authd.h>
 
 
 /*
