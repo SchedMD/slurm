@@ -291,7 +291,7 @@ int unpack_msg ( slurm_msg_t * msg , Buf buffer )
 			unpack_job_desc ( ( job_desc_msg_t **) & ( msg-> data ), buffer ) ;
 			break ;
 		case REQUEST_OLD_JOB_RESOURCE_ALLOCATION :
-			unpack_old_job_desc ( (old_job_alloc_msg_t * ) & ( msg -> data ), buffer )  ;
+			unpack_old_job_desc ( (old_job_alloc_msg_t ** ) & ( msg -> data ), buffer )  ;
 			break ;
 		case REQUEST_NODE_REGISTRATION_STATUS :
 		case REQUEST_RECONFIGURE :
@@ -518,7 +518,7 @@ int unpack_resource_allocation_response_msg ( resource_allocation_response_msg_t
 		tmp_ptr->cpu_count_reps = NULL;
 	}
 	*msg = tmp_ptr ;
-	info("job id is %ld", tmp_ptr->job_id);
+	info ("job id is %ld", tmp_ptr->job_id);
 	return 0 ;
 }
 
