@@ -86,7 +86,7 @@ CONFIGURATION
 An annotated sample configuration file for SLURM is provided with this
 distribution as etc/slurm.conf.example. Edit this config file to suit
 your site and cluster, then copy it to `$sysconfdir/slurm.conf,' where
-sysconfdir defaults to PREFIX/etc unless explicitly overridden in the
+sysconfdir defaults to PREFIX/etc unless explicitly overwritten in the
 `configure' or `make' steps.
 
 Once the config file is installed in the proper location, you'll need
