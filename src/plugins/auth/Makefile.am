@@ -3,20 +3,20 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-PLUGIN_FLAGS = -module -avoid-version
+PLUGIN_FLAGS = -module -avoid-version -no-undefined 
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 # Add your plugin to this line, following the naming conventions.
-lib_LTLIBRARIES = libauth_none.la libauth_authd.la
+pkglib_LTLIBRARIES = auth_none.la auth_authd.la
 
 # Null authentication plugin.
-libauth_none_la_SOURCES = auth_none.c
-libauth_none_la_LDFLAGS = $(PLUGIN_FLAGS)
-libauth_none_la_LIBADD = -lslurm
+auth_none_la_SOURCES = auth_none.c
+auth_none_la_LDFLAGS = $(PLUGIN_FLAGS)
+auth_none_la_LIBADD = $(top_builddir)/src/api/libslurm.la
 
 # Authd authentication plugin -- requires libauth
-libauth_authd_la_SOURCES = auth_authd.c
-libauth_authd_la_LDFLAGS = $(PLUGIN_FLAGS)
-libauth_authd_la_LIBADD = -lslurm -lauth
+auth_authd_la_SOURCES = auth_authd.c
+auth_authd_la_LDFLAGS = $(PLUGIN_FLAGS) 
+auth_authd_la_LIBADD = $(top_builddir)/src/api/libslurm.la -lauth 
 
