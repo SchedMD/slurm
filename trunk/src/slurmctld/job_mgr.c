@@ -563,7 +563,7 @@ static int _load_job_state(Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	error("Incomplete job data checkpoint file.");
+	error("Incomplete job record");
 	xfree(host);
 	xfree(nodes);
 	xfree(partition);
