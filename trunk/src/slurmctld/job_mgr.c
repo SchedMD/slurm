@@ -506,7 +506,7 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 		if (part_ptr == NULL) {
 			info ("job_create: invalid partition specified: %s",
 					job_desc->partition);
-			error_code = ESLURM_INVALID_PARTITION_SPECIFIED;
+			error_code = ESLURM_INVALID_PARTITION_NAME;
 			return error_code ;
 		}		
 	}
