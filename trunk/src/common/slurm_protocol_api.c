@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 /* PROJECT INCLUDES */
 #include "src/common/macros.h"
@@ -806,7 +807,8 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req, slurm_msg_t *resp,
         return SLURM_SUCCESS;
 }
 
-/* slurm_send_recv_controller_msg
+/*
+ * slurm_send_recv_controller_msg
  * opens a connection to the controller, sends the controller a message, 
  * listens for the response, then closes the connection
  * IN request_msg        - slurm_msg request
@@ -817,29 +819,29 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 {
         slurm_fd fd = -1;
 	int rc = SLURM_SUCCESS;
+        time_t start_time = time(NULL);
 
 	if ((fd = slurm_open_controller_conn()) < 0) {
 		rc = SLURM_SOCKET_ERROR;
 		goto cleanup;
 	}
 
-        rc =_send_and_recv_msg(fd, req, resp, 0);
 	/* If the backup controller is in the process of assuming 
 	 * control, we sleep and retry later */
-	if ((rc == SLURM_SUCCESS) &&
-	    (resp->msg_type == RESPONSE_SLURM_RC) &&
-	    ((((return_code_msg_t *) resp->data)->return_code) ==
-	     ESLURM_IN_STANDBY_MODE) &&
-	    (req->msg_type != MESSAGE_NODE_REGISTRATION_STATUS) &&
-	    (slurmctld_conf.backup_controller)) {
+	while (((rc =_send_and_recv_msg(fd, req, resp, 0)) == SLURM_SUCCESS) &&
+                (resp->msg_type == RESPONSE_SLURM_RC) &&
+                ((((return_code_msg_t *) resp->data)->return_code) ==
+                        ESLURM_IN_STANDBY_MODE) &&
+	        (req->msg_type != MESSAGE_NODE_REGISTRATION_STATUS) &&
+	        (slurmctld_conf.backup_controller) &&
+                (difftime(time(NULL), start_time) < (slurmctld_conf.slurmctld_timeout +
+                        slurmctld_conf.heartbeat_interval))) {
 		debug("Neither primary nor backup controller responding, "
 		      "sleep and retry");
 		slurm_free_return_code_msg(resp->data);
-		sleep(slurmctld_conf.slurmctld_timeout + 
-		      slurmctld_conf.heartbeat_interval);
+		sleep(5);
 		if ((fd = slurm_open_controller_conn()) < 0) 
                 	return SLURM_SOCKET_ERROR;
-		rc =_send_and_recv_msg(fd, req, resp, 0);
 	}
 
       cleanup:
