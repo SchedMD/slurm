@@ -458,14 +458,14 @@ static int _load_job_state(Buf buffer)
 		      job_id, job_state, batch_flag);
 		goto unpack_error;
 	}
-	if ((kill_on_node_fail > 1) || (kill_on_step_done > 1)) {
-		error("Invalid data for job %u: kill_on_node_fail=%u",
-		      job_id, kill_on_node_fail);
-		goto unpack_error;
-	}
-	if ((kill_on_node_fail > 1) || (kill_on_step_done > 1)) {
+	if (kill_on_step_done > KILL_IN_PROGRESS) {
 		error("Invalid data for job %u: kill_on_step_done=%u",
 		      job_id, kill_on_step_done);
+		goto unpack_error;
+	}
+	if (kill_on_node_fail > 1) {
+		error("Invalid data for job %u: kill_on_node_fail=%u",
+		      job_id, kill_on_node_fail);
 		goto unpack_error;
 	}
 	if ((nodes) && (node_name2bitmap(nodes, &node_bitmap))) {
@@ -1113,6 +1113,7 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
 {
 	struct job_record *job_ptr;
+	time_t now = time(NULL);
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -1122,7 +1123,8 @@ int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
 
 	if ((job_ptr->job_state == JOB_FAILED) ||
 	    (job_ptr->job_state == JOB_COMPLETE) ||
-	    (job_ptr->job_state == JOB_TIMEOUT))
+	    (job_ptr->job_state == JOB_TIMEOUT) ||
+	    (job_ptr->kill_on_step_done & KILL_IN_PROGRESS))
 		return ESLURM_ALREADY_DONE;
 
 	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
@@ -1133,7 +1135,7 @@ int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
 
 	if ((job_ptr->job_state == JOB_PENDING) &&
 	    (signal == SIGKILL)) {
-		last_job_update = time(NULL);
+		last_job_update = now;
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
 		delete_job_details(job_ptr);
@@ -1155,14 +1157,16 @@ int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
 		}
 		list_iterator_destroy (step_record_iterator);
 
-		if (signal == SIGKILL) {
-			job_ptr->kill_on_step_done = 1;
-			last_job_update = time(NULL);
+		if ((signal == SIGKILL) &&
+		    ((job_ptr->kill_on_step_done & KILL_IN_PROGRESS) == 0)) {
+			job_ptr->kill_on_step_done = KILL_IN_PROGRESS;
+			job_ptr->time_last_active = now;
+			last_job_update = now;
 		}
 		if ((signal == SIGKILL) && (step_cnt == 0)) {
 			/* kill job with no active steps */
 			job_ptr->job_state = JOB_COMPLETE;
-			job_ptr->end_time = time(NULL);
+			job_ptr->end_time = now;
 			deallocate_nodes(job_ptr);
 			delete_job_details(job_ptr);
 		}
@@ -1190,6 +1194,7 @@ job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	     uint32_t job_return_code)
 {
 	struct job_record *job_ptr;
+	time_t now = time(NULL);
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -1224,13 +1229,15 @@ job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	} else {
 		if (job_return_code)
 			job_ptr->job_state = JOB_FAILED;
+		else if (job_ptr->end_time < now)
+			job_ptr->job_state = JOB_TIMEOUT;
 		else
 			job_ptr->job_state = JOB_COMPLETE;
-		job_ptr->end_time = time(NULL);
+		job_ptr->end_time = now;
 		delete_job_details(job_ptr);
 		delete_all_step_records(job_ptr);
 	}
-	last_job_update = time(NULL);
+	last_job_update = now;
 	return SLURM_SUCCESS;
 }
 
@@ -1861,6 +1868,22 @@ void job_time_limit(void)
 		    (job_ptr->job_state == JOB_TIMEOUT) ||
 		    (job_ptr->job_state == JOB_NODE_FAIL))
 			continue;
+
+		if ((job_ptr->kill_on_step_done & KILL_IN_PROGRESS) &&
+		    (difftime(now, job_ptr->time_last_active) >
+		     JOB_KILL_TIMEOUT)) {
+			info("Job_id %u not properly terminating, forcing it",
+			     job_ptr->job_id);
+			last_job_update = now;
+			job_ptr->job_state = JOB_TIMEOUT;
+			job_ptr->end_time = time(NULL);
+			deallocate_nodes(job_ptr);
+			delete_all_step_records(job_ptr);
+			delete_job_details(job_ptr);
+		}
+		if (job_ptr->kill_on_step_done & KILL_IN_PROGRESS)
+			continue;
+
 		if (slurmctld_conf.inactive_limit) {
 			if (job_ptr->step_list &&
 			    (list_count(job_ptr->step_list) > 0))
@@ -1876,13 +1899,11 @@ void job_time_limit(void)
 		    (job_ptr->end_time > now))
 			continue;
 		last_job_update = now;
-		info("Time limit exhausted for job_id %u, terminated",
+		info("Time limit exhausted for job_id %u, terminating",
 		     job_ptr->job_id);
-		job_ptr->job_state = JOB_TIMEOUT;
-		job_ptr->end_time = time(NULL);
-		deallocate_nodes(job_ptr);
-		delete_all_step_records(job_ptr);
-		delete_job_details(job_ptr);
+		job_signal(job_ptr->job_id, SIGKILL, 0);
+		if (job_ptr->job_state == JOB_COMPLETE)
+			job_ptr->job_state = JOB_TIMEOUT;
 	}
 
 	list_iterator_destroy(job_record_iterator);

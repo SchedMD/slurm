@@ -966,8 +966,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 			   (long) (clock() - start_time));
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
-			/* Below functions provide their own locking */
-			schedule();
+			/* Below function provides its own locking */
 			(void) dump_all_job_state();
 
 		}
