@@ -1137,8 +1137,9 @@ job_complete (uint32_t job_id, uid_t uid)
 		return ESLURM_USER_ID_MISSING;
 	}
 
-	if ((job_ptr->job_state == JOB_PENDING) || 
-	    (job_ptr->job_state == JOB_RUNNING)) {
+	if (job_ptr->job_state == JOB_PENDING) {
+		verbose ("job_complete for job id %u successful", job_id);
+	} else if (job_ptr->job_state == JOB_RUNNING) {
 		deallocate_nodes (job_ptr);
 		verbose ("job_complete for job id %u successful", job_id);
 	} 
