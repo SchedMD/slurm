@@ -102,6 +102,9 @@
 /* Seconds to wait for backup controller response to REQUEST_CONTROL RPC */
 #define CONTROL_TIMEOUT 4
 
+/* Temporary value to set default BGL partition ID */
+#define DEFAULT_BGL_PART_ID "LLNL_128_16"
+
 /*****************************************************************************\
  *  General configuration parameters and data structures
 \*****************************************************************************/
@@ -275,10 +278,13 @@ struct job_record {
 	uint16_t kill_on_step_done;	/* 1 if job should be killed when 
 					 * the job step completes, 2 if kill
 					 * in progress */
+#ifdef HAVE_BGL
 	uint16_t geometry[SYSTEM_DIMENSIONS]; /* geometry of the requested job */
 	uint16_t conn_type;		/* type of connection for request */
 	uint16_t node_use;		/* node usage for Blue Gene */ 
-	bool rotate;			/* allow rotation of request?	  */
+	uint16_t rotate;		/* allow rotation of request?	  */
+	char *bgl_part_id;		/* BGL partition ID */
+#endif
 	char *nodes;			/* list of nodes allocated to job */
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
 	uint32_t num_procs;		/* count of required/allocated processors */

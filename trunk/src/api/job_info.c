@@ -227,20 +227,20 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 		fprintf ( out, "\n   ");
 	fprintf ( out, "Geometry=%ux%ux%u ",  job_ptr->geometry[0],
 		job_ptr->geometry[1], job_ptr->geometry[2]);
-	if (job_ptr->conn_type == RM_MESH)
-		fprintf ( out, "Connection=MESH ");
-	else if (job_ptr->conn_type == RM_TORUS)
-		fprintf ( out, "Connection=TORUS ");
-	else
-		fprintf ( out, "Connection=NAV ");
+	fprintf ( out, "Connection=%s ", job_conn_type_string(job_ptr->conn_type));
 	if (job_ptr->rotate)
-		fprintf ( out, "Rotate=YES ");
+		fprintf ( out, "Rotate=yes ");
 	else
-		fprintf ( out, "Rotate=NO ");
-	if (job_ptr->node_use == RM_COPROCESSOR)
-		fprintf ( out, "NodeUse=COPROCESSOR ");
+		fprintf ( out, "Rotate=no ");
+	if (one_liner)
+		fprintf ( out, " ");
 	else
-		fprintf ( out, "NodeUse=VIRTUAL ");
+		fprintf ( out, "\n   ");
+
+	/****** Line 13 ******/
+	fprintf ( out, "NodeUse=%s BGL_Part_Id=%s",
+		job_node_use_string(job_ptr->node_use),
+		job_ptr->bgl_part_id);
 #endif
 
 	fprintf( out, "\n\n");

@@ -64,6 +64,9 @@ typedef struct allocation_info {
 	int                     num_cpu_groups;
 	int                    *cpus_per_node;
 	int                    *cpu_count_reps;
+#ifdef HAVE_BGL
+	char                   *bgl_part_id;
+#endif
 } allocation_info_t;
 
 
@@ -178,6 +181,10 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 	i->cpus_per_node  = resp->cpus_per_node;
 	i->cpu_count_reps = resp->cpu_count_reps;
 	i->addrs          = resp->node_addr;
+
+#ifdef HAVE_BGL
+	i->bgl_part_id    = resp->bgl_part_id;
+#endif
 
 	job = _job_create_internal(i);
 
@@ -480,6 +487,7 @@ _job_create_internal(allocation_info_t *info)
 	 * one of the allocated nodes. */
 	job->nhosts    = 1;
 	opt.overcommit = true;
+	job->bgl_part_id = xstrdup(info->bgl_part_id);
 #else
 	job->nhosts = hostlist_count(hl);
 #endif

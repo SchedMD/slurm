@@ -874,6 +874,10 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *
 
 	pack16(msg->node_cnt, buffer);
 	_pack_slurm_addr_array(msg->node_addr, msg->node_cnt, buffer);
+
+#ifdef HAVE_BGL
+	packstr(msg->bgl_part_id, buffer);
+#endif
 }
 
 static int
@@ -919,12 +923,19 @@ _unpack_resource_allocation_response_msg(resource_allocation_response_msg_t
 	} else
 		tmp_ptr->node_addr = NULL;
 
+#ifdef HAVE_BGL
+	safe_unpackstr_xmalloc(&tmp_ptr->bgl_part_id,  &uint16_tmp, buffer);
+#endif
+
 	return SLURM_SUCCESS;
 
       unpack_error:
 	xfree(tmp_ptr->node_list);
 	xfree(tmp_ptr->cpus_per_node);
 	xfree(tmp_ptr->cpu_count_reps);
+#ifdef HAVE_BGL
+	xfree(tmp_ptr->bgl_part_id);
+#endif
 	xfree(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
@@ -1636,6 +1647,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 #ifdef HAVE_BGL
 {
 	int i;
+	safe_unpackstr_xmalloc(&job->bgl_part_id, &uint16_tmp, buffer);
 	safe_unpack16(&job->conn_type, buffer);
 	safe_unpack16(&job->rotate, buffer);
 	safe_unpack16(&job->node_use, buffer);
@@ -1679,6 +1691,9 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	xfree(job->req_nodes);
 	xfree(job->exc_nodes);
 	xfree(job->features);
+#ifdef HAVE_BGL
+	xfree(job->bgl_part_id);
+#endif
 	return SLURM_ERROR;
 }
 
@@ -2670,6 +2685,10 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 
 	pack16(msg->envc, buffer);
 	packstr_array(msg->environment, msg->envc, buffer);
+
+#ifdef HAVE_BGL
+	packstr(msg->bgl_part_id, buffer);
+#endif
 }
 
 static int
@@ -2720,6 +2739,11 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	safe_unpackstr_array(&launch_msg_ptr->environment,
 			     &launch_msg_ptr->envc, buffer);
 
+#ifdef HAVE_BGL
+	safe_unpackstr_xmalloc(&launch_msg_ptr->bgl_part_id, 
+		&uint16_tmp, buffer);
+#endif
+
 	return SLURM_SUCCESS;
 
       unpack_error:
@@ -2731,6 +2755,9 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	xfree(launch_msg_ptr->out);
 	xfree(launch_msg_ptr->argv);
 	xfree(launch_msg_ptr->environment);
+#ifdef HAVE_BGL
+	xfree(launch_msg_ptr->bgl_part_id);
+#endif
 	xfree(launch_msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;

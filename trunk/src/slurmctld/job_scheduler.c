@@ -281,6 +281,10 @@ static void _launch_job(struct job_record *job_ptr)
 	memcpy(launch_msg_ptr->cpu_count_reps, job_ptr->cpu_count_reps,
 			(sizeof(uint32_t) * job_ptr->num_cpu_groups));
 
+#ifdef HAVE_BGL
+	launch_msg_ptr->bgl_part_id = xstrdup(job_ptr->bgl_part_id);
+#endif
+
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->node_count = 1;
 	agent_arg_ptr->retry = 0;

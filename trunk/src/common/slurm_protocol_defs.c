@@ -165,6 +165,9 @@ void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 			}
 			xfree(msg->environment);
 		}
+#ifdef HAVE_BGL
+		xfree(msg->bgl_part_id);
+#endif
 
 		xfree(msg);
 	}
@@ -460,6 +463,33 @@ char *job_state_string_compact(enum job_states inx)
 		return job_state_string[inx];
 }
 
+
+extern char *job_conn_type_string(uint16_t inx)
+{
+#ifdef HAVE_BGL
+	if (inx == RM_TORUS)
+		return "torus";
+	else if (inx == RM_MESH)
+		return "mesh";
+	else
+		return "nav";
+#else
+	return "n/a";
+#endif
+}
+
+extern char *job_node_use_string(uint16_t inx)
+{
+#ifdef HAVE_BGL
+	if (inx == RM_COPROCESSOR)
+		return "coprocessor";
+	else
+		return "virtual";
+#else
+	return "n/a";
+#endif
+}
+
 char *node_state_string(enum node_states inx)
 {
 	static char *node_state_string[] = {
@@ -534,6 +564,7 @@ void slurm_free_resource_allocation_response_msg (
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
 		xfree(msg->node_addr);
+		xfree(msg->bgl_part_id);
 		xfree(msg);
 	}
 }
@@ -668,6 +699,7 @@ static void _slurm_free_job_info_members(job_info_t * job)
 		xfree(job->req_nodes);
 		xfree(job->features);
 		xfree(job->req_node_inx);
+		xfree(job->bgl_part_id);
 	}
 }
 

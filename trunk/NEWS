@@ -12,7 +12,7 @@ documents those changes that are of interest to users and admins.
     running under a debugger
  -- Propogate job's task count (if set) for batch job via SLURM_NPROCS.
  -- Add new job parameters for Blue Gene: geometry, rotate, mode (virtual
-    or co-processor), and communications type (mesh or torus).
+    or co-processor), communications type (mesh or torus), and partition ID.
 
 * Changes in SLURM 0.4.0-pre2
 =============================
