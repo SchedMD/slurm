@@ -37,7 +37,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -48,10 +47,10 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE 	4096
-#define MAX_RETRIES 10
 
 /* Global variables */
 List config_list = NULL;		/* list of config_record entries */
@@ -1256,152 +1255,6 @@ bool is_node_down (char *name)
 	if (base_state == NODE_STATE_DOWN)
 		return true;
 	return false;
-}
-
-/* ping_nodes - check that all nodes and daemons are alive,  
- *	get nodes in UNKNOWN state to register */
-void ping_nodes (void)
-{
-	int i, pos, age, retries = 0;
-	time_t now;
-	uint16_t base_state;
-	bool force_reg;
-
-	int ping_buf_rec_size = 0;
-	agent_arg_t *ping_agent_args;
-	pthread_attr_t ping_attr_agent;
-	pthread_t ping_thread_agent;
-
-	int reg_buf_rec_size = 0;
-	agent_arg_t *reg_agent_args;
-	pthread_attr_t reg_attr_agent;
-	pthread_t reg_thread_agent;
-
-	ping_agent_args = xmalloc (sizeof (agent_arg_t));
-	ping_agent_args->msg_type = REQUEST_PING;
-	ping_agent_args->retry = 0;
-	reg_agent_args = xmalloc (sizeof (agent_arg_t));
-	reg_agent_args->msg_type = REQUEST_NODE_REGISTRATION_STATUS;
-	reg_agent_args->retry = 0;
-	now = time (NULL);
-	force_reg = ((now % 17) == 0);
-
-	for (i = 0; i < node_record_count; i++) {
-		base_state = node_record_table_ptr[i].node_state & 
-				(~NODE_STATE_NO_RESPOND);
-		age = difftime (now, node_record_table_ptr[i].last_response);
-		if (age < slurmctld_conf.heartbeat_interval)
-			continue;
-
-		if ((node_record_table_ptr[i].last_response != (time_t)0) &&
-		    (slurmctld_conf.slurmd_timeout != 0) &&
-		    (age >= slurmctld_conf.slurmd_timeout) &&
-		    ((base_state != NODE_STATE_DOWN)     &&
-		     (base_state != NODE_STATE_DRAINING) &&
-		     (base_state != NODE_STATE_DRAINED))) {
-			error ("Node %s not responding, setting DOWN", 
-			       node_record_table_ptr[i].name);
-			_make_node_down(&node_record_table_ptr[i]);
-			kill_running_job_by_node_name (
-					node_record_table_ptr[i].name, false);
-			continue;
-		}
-
-		if (node_record_table_ptr[i].last_response == (time_t)0)
-			node_record_table_ptr[i].last_response = 
-						slurmctld_conf.last_update;
-
-		/* Request a node registration if its state is UNKNOWN or DOWN 
-		 * and periodically otherwise (about every 17th ping, this 
-		 * mechanism avoids an additional timer or counter and gets 
-		 * updated configuration information once in a while) */
-		if ((base_state == NODE_STATE_UNKNOWN) || 
-		    (base_state == NODE_STATE_DOWN   ) || force_reg) {
-			debug3 ("attempt to register %s now", 
-			        node_record_table_ptr[i].name);
-			if ((reg_agent_args->node_count+1) > 
-						reg_buf_rec_size) {
-				reg_buf_rec_size += 32;
-				xrealloc ((reg_agent_args->slurm_addr), 
-				          (sizeof (struct sockaddr_in) * 
-					  reg_buf_rec_size));
-				xrealloc ((reg_agent_args->node_names), 
-				          (MAX_NAME_LEN * reg_buf_rec_size));
-			}
-			reg_agent_args->slurm_addr[
-					reg_agent_args->node_count] = 
-					node_record_table_ptr[i].slurm_addr;
-			pos = MAX_NAME_LEN * reg_agent_args->node_count;
-			strncpy (&reg_agent_args->node_names[pos],
-			         node_record_table_ptr[i].name, MAX_NAME_LEN);
-			reg_agent_args->node_count++;
-			continue;
-		}
-
-		debug3 ("ping %s now", node_record_table_ptr[i].name);
-
-		if ((ping_agent_args->node_count+1) > ping_buf_rec_size) {
-			ping_buf_rec_size += 32;
-			xrealloc ((ping_agent_args->slurm_addr), 
-			          (sizeof (struct sockaddr_in) * 
-				  ping_buf_rec_size));
-			xrealloc ((ping_agent_args->node_names), 
-			          (MAX_NAME_LEN * ping_buf_rec_size));
-		}
-		ping_agent_args->slurm_addr[ping_agent_args->node_count] = 
-					node_record_table_ptr[i].slurm_addr;
-		pos = MAX_NAME_LEN * ping_agent_args->node_count;
-		strncpy (&ping_agent_args->node_names[pos],
-		         node_record_table_ptr[i].name, MAX_NAME_LEN);
-		ping_agent_args->node_count++;
-
-	}
-
-	if (ping_agent_args->node_count == 0)
-		xfree (ping_agent_args);
-	else {
-		debug ("Spawning ping agent");
-		if (pthread_attr_init (&ping_attr_agent))
-			fatal ("pthread_attr_init error %m");
-		if (pthread_attr_setdetachstate (&ping_attr_agent, 
-						PTHREAD_CREATE_DETACHED))
-			error ("pthread_attr_setdetachstate error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-		if (pthread_attr_setscope (&ping_attr_agent, 
-						PTHREAD_SCOPE_SYSTEM))
-			error ("pthread_attr_setscope error %m");
-#endif
-		while (pthread_create (&ping_thread_agent, &ping_attr_agent, 
-					agent, (void *)ping_agent_args)) {
-			error ("pthread_create error %m");
-			if (++retries > MAX_RETRIES)
-				fatal("Can't create pthread");
-			sleep (1); /* sleep and try again */
-		}
-	}
-
-	if (reg_agent_args->node_count == 0)
-		xfree (reg_agent_args);
-	else {
-		debug ("Spawning node registration agent");
-		if (pthread_attr_init (&reg_attr_agent))
-			fatal ("pthread_attr_init error %m");
-		if (pthread_attr_setdetachstate (&reg_attr_agent, 
-						 PTHREAD_CREATE_DETACHED))
-			error ("pthread_attr_setdetachstate error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-		if (pthread_attr_setscope (&reg_attr_agent, 
-					   PTHREAD_SCOPE_SYSTEM))
-			error ("pthread_attr_setscope error %m");
-#endif
-		while (pthread_create (&reg_thread_agent, &reg_attr_agent, 
-					agent, (void *)reg_agent_args)) {
-			error ("pthread_create error %m");
-			if (++retries > MAX_RETRIES)
-				fatal("Can't create pthread");
-			sleep (1); /* sleep and try again */
-		}
-	}
 }
 
 /*

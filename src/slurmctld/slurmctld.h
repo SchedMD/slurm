@@ -848,10 +848,6 @@ extern void pack_part (struct part_record *part_record_point, Buf buffer);
 /* part_fini - free all memory associated with partition records */
 void part_fini (void);
 
-/* ping_nodes - check that all nodes and daemons are alive,  
- *	get nodes in UNKNOWN state to register */
-extern void ping_nodes (void);
-
 /*
  * purge_old_job - purge old job records. 
  *	the jobs must have completed at least MIN_JOB_AGE minutes ago
