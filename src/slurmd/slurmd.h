@@ -70,6 +70,7 @@ typedef struct slurmd_config {
 	slurm_fd      lfd;		/* slurmd listen file descriptor   */
 	pid_t         pid;		/* server pid                      */
 	log_options_t log_opts;         /* current logging options         */
+	int           debug_level;	/* logging detail level            */ 
 	int           daemonize:1;	/* daemonize flag	           */ 
 
 	List          cred_state_list;  /* credential stat list            */
