@@ -32,53 +32,39 @@ int slurm_ssl_destroy()
 
 int slurm_init_signer(slurm_ssl_key_ctx_t * ctx, char *path)
 {
-	int local_errno;
-	FILE *key_file;
-	if ((key_file = fopen(path, "r")) == NULL) {
-		local_errno = errno;
-		fatal("can't open key file '%s' : %m",
-		      path);
+	FILE *fp;
+
+	if (!(fp = fopen(path, "r"))) {
+		error ("can't open key file '%s' : %m", path);
 		return SLURM_ERROR;
 	};
-	ctx->key.private = PEM_read_PrivateKey(key_file, NULL, NULL, NULL);
-	fclose(key_file);
 
-	if (ctx->key.private == NULL) {
-		/* ERR_print_errors_fp(log_fp()); */
-		slurm_seterrno(ESLURMD_OPENSSL_ERROR);
-		return SLURM_ERROR;
+	ctx->key.private = NULL;
+	if (!PEM_read_PrivateKey(fp, &ctx->key.private, NULL, NULL)) {
+		error ("PEM_read_PrivateKey [%s]: %m", path);
+		slurm_seterrno_ret(ESLURMD_OPENSSL_ERROR);
 	}
+	fclose(fp);
+
 	return SLURM_SUCCESS;
 }
 
 int slurm_init_verifier(slurm_ssl_key_ctx_t * ctx, char *path)
 {
-	int local_errno;
-	X509 *x509;
-	FILE *cert_file;
-	if ((cert_file = fopen(path, "r")) == NULL) {
-		local_errno = errno;
-		fatal("can't open certificate file '%s' : %m ", path);
+	FILE *fp = NULL;
+
+	if ((fp = fopen(path, "r")) == NULL) {
+		error ("can't open certificate file '%s' : %m ", path);
 		return SLURM_ERROR;
 	};
 
-	x509 = PEM_read_X509(cert_file, NULL, NULL, NULL);
-	fclose(cert_file);
-
-	if (x509 == NULL) {
-		error("PEM_read_X509 error on %s",path);
-		slurm_seterrno(ESLURMD_OPENSSL_ERROR);
-		return SLURM_ERROR;
+	ctx->key.public = NULL;
+	if (!PEM_read_PUBKEY(fp, &ctx->key.public, NULL, NULL)) {
+		error("PEM_read_PUBKEY[%s]: %m",path);
+		slurm_seterrno_ret(ESLURMD_OPENSSL_ERROR);
 	}
+	fclose(fp);
 
-	ctx->key.public = X509_get_pubkey(x509);
-	X509_free(x509);
-
-	if (ctx->key.public == NULL) {
-		error("X509_get_pubkey no key in",path);
-		slurm_seterrno(ESLURMD_OPENSSL_ERROR);
-		return SLURM_ERROR;
-	}
 	return SLURM_SUCCESS;
 }
 
@@ -102,13 +88,14 @@ slurm_ssl_sign(slurm_ssl_key_ctx_t *ctx, char *data_buffer,
 
 	EVP_SignInit(&md_ctx, EVP_sha1());
 	EVP_SignUpdate(&md_ctx, data_buffer, data_length);
-	if ((rc =
-	     EVP_SignFinal(&md_ctx, signature_buffer, signature_length,
+	if ((rc = 
+	    EVP_SignFinal(&md_ctx, signature_buffer, signature_length,
 			   ctx->key.private)) != SLURM_OPENSSL_SIGNED) {
-		/* ERR_print_errors_fp(log_fp()); */
+		ERR_print_errors_fp(log_fp()); 
 		slurm_seterrno(ESLURMD_OPENSSL_ERROR);
 		return SLURM_ERROR;
 	}
+	info("signature length = %d", *signature_length);
 	return SLURM_SUCCESS;
 }
 
