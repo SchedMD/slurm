@@ -108,6 +108,8 @@ in the configuration file with multiple entries where "Name" is "DEFAULT".
 Any node with less resources or a lower release level than specified 
 will have the event logged and will not be configured for executing 
 user jobs.
+In order to support the concept of jobs requiring consecutive nodes, 
+nodes should be place in this file in consecutive order.
 The size of any field in the configuration file is limited to 1024 characters.
 A sample NodeSpecConf file is included at the end of this document.
 
