@@ -37,17 +37,15 @@ if {[file executable $mpi_ping] == 0} {
 exec $bin_rm -f $file_in $file_out $file_err
 exec echo "#!$bin_bash"							 >$file_in
 exec echo "$bin_echo test1_N3_n6_cyclic"				>>$file_in
-exec echo "$srun -N3 -n6 --distribution=cyclic -l $bin_hostname"	>>$file_in
 exec echo "$srun -N3 -n6 --distribution=cyclic $mpi_ping 8"		>>$file_in
 exec echo "$bin_echo test2_N3_n6_block"					>>$file_in
-exec echo "$srun -N3 -n6 --distribution=block  -l $bin_hostname"	>>$file_in
 exec echo "$srun -N3 -n6 --distribution=block  $mpi_ping 8"		>>$file_in
 exec echo "$bin_echo test3_N3_n4_cyclic"				>>$file_in
-exec echo "$srun -N3 -n4 --distribution=cyclic -l $bin_hostname"	>>$file_in
 exec echo "$srun -N3 -n4 --distribution=cyclic $mpi_ping 8"		>>$file_in
 exec echo "$bin_echo test4_N3_n4_block"					>>$file_in
-exec echo "$srun -N3 -n4 --distribution=block  -l $bin_hostname"	>>$file_in
 exec echo "$srun -N3 -n4 --distribution=block  $mpi_ping 8"		>>$file_in
+exec echo "$bin_echo test5_N2_n4_with_hole"				>>$file_in
+exec echo "$srun -N2 -n4 --distribution=cyclic --relative=\[0,2\]  $mpi_ping 8" >>$file_in
 exec echo "$bin_echo TEST_COMPLETE"					>>$file_in
 exec $bin_chmod 700 $file_in
 
@@ -103,7 +101,7 @@ if {[wait_for_file $file_out] == 0} {
                 eof {
                 }
         }
-	if {$matches != 10} {
+	if {$matches != 12} {
 		send_user "\nFAILURE: unexpected mpi_ping output\n"
 		set exit_code 1
 	} elseif {$complete == 0} {
