@@ -71,7 +71,7 @@ if {[test_front_end] != 0} {
 #
 # Delete left-over program and rebuild it
 #
-exec $bin_rm -f $test_prog
+exec $bin_rm -f $test_prog ${test_prog}.o
 exec $mpicc -o $test_prog ${test_prog}.c
 
 #
