@@ -149,13 +149,14 @@ get_command (int *argc, char **argv)
 		free (in_line);
 		in_line = last_in_line;
 		in_line_size = last_in_line_size;
-	}
-	else {
+	} else {
 		if (last_in_line)
 			free (last_in_line);
 		last_in_line = in_line;
 		last_in_line_size = in_line_size = strlen (in_line);
 	}
+
+	add_history(in_line);
 
 	for (i = 0; i < in_line_size; i++) {
 		if (in_line[i] == '\0')
