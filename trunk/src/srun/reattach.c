@@ -213,7 +213,7 @@ _get_job_info(srun_step_t *s)
 	}
 
 	if (job == NULL) {
-		error ("Unable to find job %d", s->jobid);
+		error ("Unable to find job %u", s->jobid);
 		goto done;
 	}
 
@@ -267,12 +267,12 @@ _get_step_info(srun_step_t *s)
 	xassert(s->stepid != NO_VAL);
 
 	if (slurm_get_job_steps((time_t) 0, s->jobid, s->stepid, &resp, 1) < 0) {
-		error("Unable to get step information for %d.%d: %m", 
+		error("Unable to get step information for %u.%u: %m", 
 		      s->jobid, s->stepid);
 		goto done;
 	}
 	if (resp->job_step_count == 0) {
-		error("No nodes in %d.%d", s->jobid, s->stepid);
+		error("No nodes in %u.%u", s->jobid, s->stepid);
 		s->ntasks = 0;
 		goto done;
 	}
@@ -316,7 +316,7 @@ _attach_to_job(job_t *job)
 	req = xmalloc(job->nhosts * sizeof(*req));
 	msg = xmalloc(job->nhosts * sizeof(*msg));
 
-	debug("Going to attach to job %d.%d", job->jobid, job->stepid);
+	debug("Going to attach to job %u.%u", job->jobid, job->stepid);
 
 	for (i = 0; i < job->nhosts; i++) {
 		reattach_tasks_request_msg_t *r = &req[i];
