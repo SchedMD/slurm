@@ -319,6 +319,20 @@ void slurm_free_launch_tasks_msg ( launch_tasks_msg_t * msg )
 	}
 } 
 
+void slurm_free_reattach_tasks_streams_msg ( reattach_tasks_streams_msg_t * msg )
+{
+	if ( msg )
+	{
+		if ( msg -> credentials )
+			xfree ( msg -> credentials );
+		if ( msg -> streams )
+			xfree ( msg -> streams );
+		if ( msg -> global_task_ids )
+			xfree ( msg -> global_task_ids );
+		xfree ( msg ) ;
+	}
+} 
+
 void slurm_free_kill_tasks_msg ( kill_tasks_msg_t * msg )
 {
 	if ( msg )
