@@ -58,6 +58,11 @@
 
 /* Global variables */
 extern rm_BGL_t *bgl;
+extern char *bluegene_blrts;
+extern char *bluegene_linux;
+extern char *bluegene_mloader;
+extern char *bluegene_ramdisk;
+extern char *bluegene_serialL;
 
 typedef int lifecycle_type_t;
 enum part_lifecycle {DYNAMIC, STATIC};

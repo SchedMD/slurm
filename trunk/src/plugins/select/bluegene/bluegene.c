@@ -54,11 +54,12 @@
 
 char* bgl_conf = BLUEGENE_CONFIG_FILE;
 List bgl_conf_list = NULL;              /* list of bgl_conf_record entries */
-char *bluegene_serial = NULL;
 
 /* Global variables */
 rm_BGL_t *bgl;
 List bgl_list = NULL;			/* list of bgl_record entries */
+char *bluegene_blrts = NULL, *bluegene_linux = NULL, *bluegene_mloader = NULL;
+char *bluegene_ramdisk = NULL, *bluegene_serial = NULL;
 
 #define SWAP(a,b,t)	\
 _STMT_START {	\
@@ -355,9 +356,16 @@ extern int read_bgl_conf(void)
 	}
 	fclose(bgl_spec_file);
 
+	if (!bluegene_blrts)
+		fatal("BlrtsImage not configured in bluegene.conf");
+	if (!bluegene_linux)
+		fatal("LinuxImage not configured in bluegene.conf");
+	if (!bluegene_mloader)
+		fatal("MloaderImage not configured in bluegene.conf");
+	if (!bluegene_ramdisk)
+		fatal("RamDiskImage not configured in bluegene.conf");
 	if (!bluegene_serial)
 		bluegene_serial = xstrdup(DEFAULT_BLUEGENE_SERIAL);
-
 	END_TIMER;
 	debug("read_bgl_conf: finished loading configuration %s", TIME_STR);
 	
@@ -382,10 +390,16 @@ static int _parse_bgl_spec(char *in_line)
 {
 	int error_code = SLURM_SUCCESS;
 	char *nodes = NULL, *node_use = NULL, *serial = NULL, *conn_type = NULL;
+	char *blrts_image = NULL,   *linux_image = NULL;
+	char *mloader_image = NULL, *ramdisk_image = NULL;
 	bgl_conf_record_t* new_record;
 
 	error_code = slurm_parser(in_line,
+				"BlrtsImage=", 's', &blrts_image,
+				"LinuxImage=", 's', &linux_image,
+				"MloaderImage=", 's', &mloader_image,
 				"Nodes=", 's', &nodes,
+				"RamDiskImage=", 's', &ramdisk_image,
 				"Serial=", 's', &serial,
 				"Type=", 's', &conn_type,
 				"Use=", 's', &node_use,
@@ -393,11 +407,35 @@ static int _parse_bgl_spec(char *in_line)
 
 	if (error_code)
 		goto cleanup;
+
+	/* Process system-wide info */
+	if (blrts_image) {
+		xfree(bluegene_blrts);
+		bluegene_blrts = blrts_image;
+		blrts_image = NULL;	/* nothing left to xfree */
+	}
+	if (linux_image) {
+		xfree(bluegene_linux);
+		bluegene_linux = linux_image;
+		linux_image = NULL;	/* nothing left to xfree */
+	}
+	if (mloader_image) {
+		xfree(bluegene_mloader);
+		bluegene_mloader = mloader_image;
+		mloader_image = NULL;	/* nothing left to xfree */
+	}
+	if (ramdisk_image) {
+		xfree(bluegene_ramdisk);
+		bluegene_ramdisk = ramdisk_image;
+		ramdisk_image = NULL;	/* nothing left to xfree */
+	}
 	if (serial) {
 		xfree(bluegene_serial);
 		bluegene_serial = serial;
 		serial = NULL;	/* nothing left to xfree */
 	}
+
+	/* Process node information */
 	if (!nodes && !node_use && !conn_type)
 		goto cleanup;	/* no data */
 	if (!nodes && (node_use || conn_type)) {
@@ -446,9 +484,13 @@ static int _parse_bgl_spec(char *in_line)
 #endif
 
   cleanup:
+	xfree(blrts_image);
 	xfree(conn_type);
+	xfree(linux_image);
+	xfree(mloader_image);
 	xfree(node_use);
 	xfree(nodes);
+	xfree(ramdisk_image);
 	xfree(serial);
 	return error_code;
 }

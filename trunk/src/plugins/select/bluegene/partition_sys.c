@@ -63,11 +63,6 @@ List bgl_init_part_list = NULL;
 static void _init_sys(partition_t*);
 
 #ifdef USE_BGL_FILES
-   char *BGL_MLOADER_IMAGE = "/bgl/edi/build/bglsys/bin/mmcs-mloader.rts";
-   char *BGL_BLRTS_IMAGE = "/bgl/edi/build/bglsys/bin//rts_hw.rts";
-   char *BGL_LINUX_IMAGE = "/bgl/edi/build/bglsys/bin/zImage.elf";
-   char *BGL_RAMDISK_IMAGE = "/bgl/edi/build/bglsys/bin/ramdisk.elf";
-
    /** 
     * _get_bp: get the BP at location loc
     *
@@ -861,10 +856,10 @@ static void _pre_allocate(rm_partition_t *my_part,
 		   rm_connection_type_t part_conn)
 {
 	rm_new_partition(&my_part); /* new partition to be added */
-	rm_set_data(my_part, RM_PartitionMloaderImg, BGL_MLOADER_IMAGE);
-	rm_set_data(my_part, RM_PartitionBlrtsImg,  BGL_BLRTS_IMAGE);
-	rm_set_data(my_part, RM_PartitionLinuxImg, BGL_LINUX_IMAGE);
-	rm_set_data(my_part, RM_PartitionRamdiskImg, BGL_RAMDISK_IMAGE);
+	rm_set_data(my_part, RM_PartitionBlrtsImg,   bluegene_blrts);
+	rm_set_data(my_part, RM_PartitionLinuxImg,   bluegene_linux);
+	rm_set_data(my_part, RM_PartitionMloaderImg, bluegene_mloader);
+	rm_set_data(my_part, RM_PartitionRamdiskImg, bluegene_ramdisk);
 	rm_set_data(my_part, RM_PartitionConnection, &part_conn);
 }
 
