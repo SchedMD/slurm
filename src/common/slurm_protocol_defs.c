@@ -24,16 +24,28 @@ void slurm_free_build_info ( build_info_msg_t * build_ptr )
 {
 	if ( build_ptr ) 
 	{
-		xfree ( build_ptr->backup_location ) ;
-		xfree ( build_ptr->backup_machine ) ;
-		xfree ( build_ptr->control_daemon ) ;
-		xfree ( build_ptr->control_machine ) ;
-		xfree ( build_ptr->epilog ) ;
-		xfree ( build_ptr->init_program ) ;
-		xfree ( build_ptr->prolog ) ;
-		xfree ( build_ptr->server_daemon ) ;
-		xfree ( build_ptr->slurm_conf ) ;
-		xfree ( build_ptr->tmp_fs ) ;
+		if ( build_ptr->backup_location )
+			xfree ( build_ptr->backup_location ) ;
+		if ( build_ptr->backup_machine )
+			xfree ( build_ptr->backup_machine ) ;
+		if ( build_ptr->control_daemon )
+			xfree ( build_ptr->control_daemon ) ;
+		if ( build_ptr->control_machine )
+			xfree ( build_ptr->control_machine ) ;
+		if ( build_ptr->epilog )
+			xfree ( build_ptr->epilog ) ;
+		if ( build_ptr->init_program )
+			xfree ( build_ptr->init_program ) ;
+		if ( build_ptr->prolog )
+			xfree ( build_ptr->prolog ) ;
+		if ( build_ptr->server_daemon )
+			xfree ( build_ptr->server_daemon ) ;
+		if ( build_ptr->slurm_conf )
+			xfree ( build_ptr->slurm_conf ) ;
+		if ( build_ptr->tmp_fs )
+			xfree ( build_ptr->tmp_fs ) ;
+		if ( build_ptr->server_daemon )
+			xfree ( build_ptr->server_daemon ) ;
 		xfree ( build_ptr ) ;
 	}
 }
@@ -42,13 +54,20 @@ void slurm_free_job_desc_msg ( job_desc_msg_t * msg )
 {
 	if ( msg )
 	{
-		xfree ( msg->features ) ;
-		xfree ( msg->groups ) ;
-		xfree ( msg->name ) ;
-		xfree ( msg->partition_key ) ;
-		xfree ( msg->partition ) ;
-		xfree ( msg->req_nodes ) ;
-		xfree ( msg->job_script ) ;
+		if ( msg->features )
+			xfree ( msg->features ) ;
+		if ( msg->groups )
+			xfree ( msg->groups ) ;
+		if ( msg->name )
+			xfree ( msg->name ) ;
+		if ( msg->partition_key )
+			xfree ( msg->partition_key ) ;
+		if ( msg->partition )
+			xfree ( msg->partition ) ;
+		if ( msg->req_nodes )
+			xfree ( msg->req_nodes ) ;
+		if ( msg->job_script )
+			xfree ( msg->job_script ) ;
 		xfree ( msg ) ;
 	}
 }
@@ -81,10 +100,14 @@ void slurm_free_partition_table ( partition_table_t * part )
 {
 	if ( part )
 	{
-		xfree ( part->name ) ;
-		xfree ( part->allow_groups ) ;
-		xfree ( part->nodes ) ;
-		xfree ( part->node_inx ) ;
+		if ( part->name )
+			xfree ( part->name ) ;
+		if ( part->allow_groups )
+			xfree ( part->allow_groups ) ;
+		if ( part->nodes )
+			xfree ( part->nodes ) ;
+		if ( part->node_inx )
+			xfree ( part->node_inx ) ;
 	}
 }
 
@@ -116,13 +139,20 @@ void slurm_free_job_table ( job_table_t * job )
 {
 	if ( job )
 	{
-		xfree (job->nodes) ;
-		xfree (job->partition) ;
-		xfree (job->name) ;
-		xfree (job->node_inx) ;
-		xfree (job->req_nodes) ;
-		xfree (job->features) ;
-		xfree (job->job_script) ;
+		if ( job->nodes )
+			xfree (job->nodes) ;
+		if ( job->partition )
+			xfree (job->partition) ;
+		if ( job->name )
+			xfree (job->name) ;
+		if ( job->node_inx )
+			xfree (job->node_inx) ;
+		if ( job->req_nodes )
+			xfree (job->req_nodes) ;
+		if ( job->features )
+			xfree (job->features) ;
+		if ( job->job_script )
+			xfree (job->job_script) ;
 		xfree (job->req_node_inx) ;
 	}
 }
@@ -155,9 +185,12 @@ void slurm_free_node_table ( node_table_t * node )
 {
 	if ( node )
 	{
-		xfree (node->name) ;
-		xfree (node->features) ;
-		xfree (node->partition) ;
+		if ( node->name )
+			xfree ( node->name ) ;
+		if ( node->features )
+			xfree ( node->features ) ;
+		if ( node->partition )
+			xfree ( node->partition ) ;
 	}
 }
 

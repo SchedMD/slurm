@@ -20,6 +20,7 @@
 #include <string.h>
 #include <syslog.h>
 #include <src/common/nodelist.h>
+#include <src/common/xmalloc.h>
 
 /*
  * bitfmt2int - convert a string describing bitmap (e.g. "0-30,45,50-60") 
@@ -27,7 +28,7 @@
  *	(e.g. "0, 30, 45, 45, 50, 60, -1")
  * input: bitmap string as produced by bitstring.c : bitfmt
  * output: an array of integers
- * NOTE: the caller must free the returned memory
+ * NOTE: the caller must xfree the returned memory
  */
 int *
 bitfmt2int (char *bit_str_ptr) 
@@ -37,7 +38,7 @@ bitfmt2int (char *bit_str_ptr)
 	if (bit_str_ptr == NULL) 
 		return NULL;
 	size = strlen (bit_str_ptr) + 1;
-	bit_int_ptr = malloc ( sizeof (int *) * size);
+	bit_int_ptr = xmalloc ( sizeof (int *) * size);
 	if (bit_int_ptr == NULL)
 		return NULL;
 
@@ -79,7 +80,7 @@ bitfmt2int (char *bit_str_ptr)
  *         end_inx - last index value to use
  *         count_inx - number of index values to use (will be zero if none)
  *         return 0 if no error, error code otherwise
- * NOTE: the calling program must execute free(format) when the storage location 
+ * NOTE: the calling program must execute xfree(format) when the storage location 
  *       is no longer needed
  */
 int 
@@ -90,7 +91,7 @@ parse_node_names (char *node_name, char **format, int *start_inx, int *end_inx,
 	char type[1];
 
 	i = strlen (node_name);
-	format[0] = (char *) malloc (i + 1);
+	format[0] = (char *) xmalloc (i + 1);
 
 	*start_inx = 0;
 	*end_inx = 0;
@@ -115,7 +116,7 @@ parse_node_names (char *node_name, char **format, int *start_inx, int *end_inx,
 				printf ("parse_node_name: invalid '[' in node name %s\n", 
 					node_name); 
 #endif
-				free (format[0]);
+				xfree (format[0]);
 				return EINVAL;
 			}
 			if (node_name[i] == 'o') {
@@ -144,7 +145,7 @@ parse_node_names (char *node_name, char **format, int *start_inx, int *end_inx,
 				printf ("parse_node_name: invalid '%c' in node name %s\n", 
 					 node_name[i], node_name); 
 #endif
-				free (format[0]);
+				xfree (format[0]);
 				return EINVAL;
 			}
 			while (1) {
@@ -163,7 +164,7 @@ parse_node_names (char *node_name, char **format, int *start_inx, int *end_inx,
 				printf ("parse_node_name: invalid '%c' in node name %s\n",
 					 node_name[i], node_name);
 #endif
-				free (format[0]);
+				xfree (format[0]);
 				return EINVAL;
 			}
 			*count_inx = (*end_inx - *start_inx) + 1;

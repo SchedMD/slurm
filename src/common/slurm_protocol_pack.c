@@ -358,7 +358,7 @@ int unpack_partition_info_msg ( partition_info_msg_t ** msg , void ** buf_ptr , 
 
         /* load individual job info */
         for (i = 0; i < (*msg)->record_count ; i++) {
-        unpack_partition_table ( & partition[i] , buf_ptr , buffer_size ) ;
+		unpack_partition_table ( & partition[i] , buf_ptr , buffer_size ) ;
 
         }
         return 0;
@@ -396,15 +396,14 @@ int unpack_partition_table ( partition_table_msg_t * part , void ** buf_ptr , in
 
 	unpack16  (&part->state_up, buf_ptr, buffer_size);
 	unpackstr_xmalloc (&part->allow_groups, &uint16_tmp, buf_ptr, buffer_size);
-	if (part->allow_groups == NULL)
-		part->allow_groups = "";
 	unpackstr_xmalloc (&part->nodes, &uint16_tmp, buf_ptr, buffer_size);
-	if (part->nodes == NULL)
-		part->nodes = "";
 	unpackstr_xmalloc (&node_inx_str, &uint16_tmp, buf_ptr, buffer_size);
 	if (node_inx_str == NULL)
-		node_inx_str = "";
-	part->node_inx = bitfmt2int(node_inx_str);
+		part->node_inx = bitfmt2int("");
+	else {
+		part->node_inx = bitfmt2int(node_inx_str);
+		xfree ( node_inx_str );
+	}
 	return 0;
 }
 
@@ -439,8 +438,7 @@ int unpack_job_info_msg ( job_info_msg_t ** msg , void ** buf_ptr , int * buffer
 
 	/* load individual job info */
 	for (i = 0; i < (*msg)->record_count ; i++) {
-	unpack_job_table ( & job[i] , buf_ptr , buffer_size ) ;
-
+		unpack_job_table ( & job[i] , buf_ptr , buffer_size ) ;
 	}
 	return 0;
 }
@@ -472,18 +470,15 @@ int unpack_job_table ( job_table_t * job , void ** buf_ptr , int * buffer_size )
 	unpack32  (&job->priority, buf_ptr, buffer_size);
 
 	unpackstr_xmalloc (&job->nodes, &uint16_tmp, buf_ptr, buffer_size);
-	if (job->nodes == NULL)
-		job->nodes = "";
 	unpackstr_xmalloc (&job->partition, &uint16_tmp, buf_ptr, buffer_size);
-	if (job->partition == NULL)
-		job->partition = "";
 	unpackstr_xmalloc (&job->name, &uint16_tmp, buf_ptr, buffer_size);
-	if (job->name == NULL)
-		job->name = "";
 	unpackstr_ptr (&node_inx_str, &uint16_tmp, buf_ptr, buffer_size);
 	if (node_inx_str == NULL)
-		node_inx_str = "";
-	job->node_inx = bitfmt2int(node_inx_str);
+		job->node_inx = bitfmt2int("");
+	else {
+		job->node_inx = bitfmt2int(node_inx_str);
+		xfree ( node_inx_str );
+	}
 
 	unpack32  (&job->num_procs, buf_ptr, buffer_size);
 	unpack32  (&job->num_nodes, buf_ptr, buffer_size);
@@ -495,18 +490,15 @@ int unpack_job_table ( job_table_t * job , void ** buf_ptr , int * buffer_size )
 	unpack32  (&job->min_tmp_disk, buf_ptr, buffer_size);
 
 	unpackstr_xmalloc (&job->req_nodes, &uint16_tmp, buf_ptr, buffer_size);
-	if (job->req_nodes == NULL)
-		job->req_nodes = "";
 	unpackstr_ptr (&node_inx_str, &uint16_tmp, buf_ptr, buffer_size);
 	if (node_inx_str == NULL)
-		node_inx_str = "";
-	job->req_node_inx = bitfmt2int(node_inx_str);
+		job->req_node_inx = bitfmt2int("");
+	else {
+		job->node_inx = bitfmt2int(node_inx_str);
+		xfree ( node_inx_str );
+	}
 	unpackstr_xmalloc (&job->features, &uint16_tmp, buf_ptr, buffer_size);
-	if (job->features == NULL)
-		job->features = "";
 	unpackstr_xmalloc (&job->job_script, &uint16_tmp, buf_ptr, buffer_size);
-	if (job->job_script == NULL)
-		job->job_script = "";
 	return 0 ;
 }
 
