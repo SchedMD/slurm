@@ -864,6 +864,7 @@ int select_nodes(struct job_record *job_ptr, int test_only)
 	else
 		job_ptr->end_time =
 		    job_ptr->start_time + (job_ptr->time_limit * 60);
+	build_job_cred(job_ptr); /* uses end_time set above */
 
       cleanup:
 	if (req_bitmap)

@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 	/*
 	 * Establish initial configuration
 	 */
-	log_init(argv[0], log_opts, SYSLOG_FACILITY_DAEMON, NULL);
+	log_init("slurmctld", log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 	thread_id_main = pthread_self();
 
 	slurmctld_pid = getpid();
@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (slurmctld_conf.slurmctld_logfile) {
-		log_init(argv[0], log_opts, SYSLOG_FACILITY_DAEMON,
+		log_alter(log_opts, SYSLOG_FACILITY_DAEMON,
 			 slurmctld_conf.slurmctld_logfile);
 	}
 
@@ -1007,7 +1007,7 @@ static void _slurm_rpc_job_step_cancel(slurm_msg_t * msg)
 }
 
 /* _slurm_rpc_job_step_complete - process RPC to note the completion an  
- *	entirejob or an individual job step */
+ *	entire job or an individual job step */
 static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 {
 	int error_code = SLURM_SUCCESS;
@@ -2088,7 +2088,7 @@ static void _parse_commandline(int argc, char *argv[],
 			exit(1);
 		}
 
-	log_init(argv[0], log_opts, SYSLOG_FACILITY_DAEMON, log_file);
+	log_alter(log_opts, SYSLOG_FACILITY_DAEMON, log_file);
 }
 
 /* _usage - print a message describing the command line arguments of 

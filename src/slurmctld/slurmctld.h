@@ -285,6 +285,13 @@ extern void  allocate_nodes (unsigned *bitmap);
 extern char * bitmap2node_name (bitstr_t *bitmap) ;
 
 /*
+ * build_job_cred - build a credential for a job, only valid after 
+ *	allocation made
+ * IN job_ptr - pointer to the job record 
+ */
+void build_job_cred(struct job_record *job_ptr);
+
+/*
  * build_node_details - set cpu counts and addresses for allocated nodes
  * IN job_ptr - pointer to a job record
  * NOTE: the arrays cpus_per_node, cpu_count_reps and node_addr in the job 

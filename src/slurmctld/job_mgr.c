@@ -1734,12 +1734,25 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	if (job_desc->work_dir)
 		detail_ptr->work_dir = xstrdup(job_desc->work_dir);
 
-	/* job_ptr->nodes               *leave as NULL pointer for now */
-	/* job_ptr->start_time          *leave as NULL pointer for now */
-	/* job_ptr->end_time            *leave as NULL pointer for now */
-	/* detail_ptr->total_procs      *leave as NULL pointer for now */
+	*job_rec_ptr = job_ptr;
+	return SLURM_SUCCESS;
+}
 
-	/* initialize job credential */
+/*
+ * build_job_cred - build a credential for a job, only valid after 
+ *	allocation made
+ * IN job_ptr - pointer to the job record 
+ */
+void build_job_cred(struct job_record *job_ptr)
+{
+	struct job_details *detail_ptr;
+	if (job_ptr == NULL)
+		return;
+
+	detail_ptr = job_ptr->details;
+	if (detail_ptr == NULL)
+		return;
+
 	detail_ptr->credential.job_id = job_ptr->job_id;
 	detail_ptr->credential.user_id = job_ptr->user_id;
 	detail_ptr->credential.node_list = xstrdup(job_ptr->nodes);
@@ -1748,9 +1761,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		error("Error building credential for job_id %u: %m",
 		      job_ptr->job_id);
 	}
-
-	*job_rec_ptr = job_ptr;
-	return SLURM_SUCCESS;
 }
 
 /* 
