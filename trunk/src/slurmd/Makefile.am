@@ -9,7 +9,7 @@ sbin_PROGRAMS = slurmd
 INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS)
 
 if WITH_ELAN
-interconnect_sources = elan_interconnect.c
+interconnect_sources = elan_interconnect.c elanhosts.c elanhosts.h
 else
 interconnect_sources = no_interconnect.c
 endif

@@ -56,14 +56,6 @@ int interconnect_attach (slurmd_job_t *job, int taskid)
 	return SLURM_SUCCESS;
 }
 
-/*
- * Set env variables needed for this interconnect
- */
-int interconnect_env (slurmd_job_t *job, int taskid)
-{
-	return SLURM_SUCCESS;
-}
-
 int interconnect_fini (slurmd_job_t *job)
 {
 	return SLURM_SUCCESS;
