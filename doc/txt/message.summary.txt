@@ -66,6 +66,23 @@ Output: 	SLURM job id
 Notes:  	until SLURM accounting is funcational, DPCS needs help figuring 
 		out what processes are associated with each job
 
+
+Command(s):	Create job step
+Client:   	srun from user script, any node in cluster
+Server: 	slurmctld
+Input:  	job id, uid, node list, task distribution, processors per task
+Output: 	step id, elan context (opaque data structure)
+Notes:  	needed to start parallel program
+
+
+Command(s):	Get job step infomration
+Client:   	srun from user script, slurmd, any node in cluster
+Server: 	slurmctld
+Input:  	job id, uid, step id
+Output: 	step id, elan context (opaque data structure)
+Notes:  	needed to start parallel program
+
+
 ----TEMPLATE----
 Command(s):	
 Client:   	
