@@ -39,14 +39,14 @@ case "$1" in
     start)
         if [ $CONTROLLER -eq 0 ]; then
             echo -n "Starting slurmctld: "
-            daemon /usr/local/slurm/sbin/slurmctld $SLURMCTLD_OPTIONS
+            daemon /usr/sbin/slurmctld $SLURMCTLD_OPTIONS
             RETVAL=$?
             [ $RETVAL -eq 0 ] && touch /var/lock/subsys/slurmctld
             echo
 	fi
         if [ $SERVER -eq 0 ]; then
             echo -n "Starting slurmd: "
-            daemon /usr/local/slurm/sbin/slurmd $SLURMD_OPTIONS
+            daemon /usr/sbin/slurmd $SLURMD_OPTIONS
             RETVALS=$?
             [ $RETVALS -eq 0 ] && touch /var/lock/subsys/slurmd
             RETVAL=$(($RETVAL + $RETVALS))
