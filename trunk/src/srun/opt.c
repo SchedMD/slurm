@@ -48,11 +48,22 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#ifdef HAVE_TOTALVIEW
-#include "src/srun/attach.h"
-#endif
 #include "src/srun/env.h"
 #include "src/srun/opt.h"
+
+#ifdef HAVE_TOTALVIEW
+#  include "src/srun/attach.h"
+
+   MPIR_PROCDESC *MPIR_proctable;
+   int MPIR_proctable_size;
+   VOLATILE int MPIR_debug_state;
+   VOLATILE int MPIR_debug_gate;
+   char * MPIR_debug_abort_string;
+   int MPIR_being_debugged;
+   int MPIR_i_am_starter;
+   int MPIR_acquired_pre_main;
+   int MPIR_debug_gate;
+#endif
 
 #define __DEBUG 0
 
@@ -298,7 +309,7 @@ static bool _opt_verify(poptContext);
 static char * _base_name(char* command);
 
 #ifdef HAVE_TOTALVIEW
-static bool _under_totalview(void);
+   static bool _under_totalview(void);
 #endif
 
 /* list known options and their settings 
@@ -1107,10 +1118,6 @@ void _opt_list()
 /* Determine if srun is under the control of a TotalView debugger or not */
 static bool _under_totalview(void)
 {
-	if (MPIR_being_debugged) {
-		debug("Being executed under totalview");
-		return true;
-	} else
-		return false;
+	return (MPIR_being_debugged != 0);
 }
 #endif
