@@ -20,6 +20,7 @@ AC_DEFUN([X_AC_AIX],
             LIB_LDFLAGS="$LDFLAGS -Wl,-G -Wl,-bnoentry -Wl,-bexpfull"
             SO_LDFLAGS=" $LDFLAGS -Wl,-G -Wl,-bnoentry -Wl,-bexpfull"
             ac_have_aix="yes"
+            ac_with_readline="no"
             AC_DEFINE(USE_ALIAS, 0, 
                       [Define slurm_ prefix function aliases for plusins]) ;;
       *)    AC_DEFINE(USE_ALIAS, 1, 
