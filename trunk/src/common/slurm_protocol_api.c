@@ -89,6 +89,14 @@ uint32_t slurm_send_controller_msg ( slurm_fd open_fd , slurm_msg_type_t msg_typ
 	return SLURM_NOT_IMPLEMENTED ;	
 }
 
+/* sends a message to an arbitrary node
+ *
+ * open_fd		- file descriptor to send msg on
+ * destination_address	- address of destination nodes
+ * msg_type		- type of msg to be sent ( see slurm_protocol_defs.h for msg types )
+ * msg			- a slurm msg struct
+ * uint32_t		- size of msg sent in bytes
+ */
 uint32_t slurm_send_node_msg ( slurm_fd open_fd , slurm_addr * destination_address , slurm_msg_type_t msg_type , slurm_msg_t const * msg )
 {
 	char buf_temp[MAX_MESSAGE_BUFFER_SIZE] ;
@@ -117,6 +125,15 @@ uint32_t slurm_send_node_msg ( slurm_fd open_fd , slurm_addr * destination_addre
 	return rc ;
 }
 
+/*
+ *
+ * open_fd              - file descriptor to receive msg on
+ * destination_address  - address of destination nodes
+ * msg_type             - type of msg to be sent ( see slurm_protocol_defs.h for msg types )
+ * data_buffer		- buffer for data to be received into
+ * buf_len		- length of data buffer 
+ * uint32_t             - size of msg received in bytes
+ */
 uint32_t slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slurm_msg_type_t * msg_type , char * data_buffer , size_t buf_len )
 {
 	char buftemp[MAX_MESSAGE_BUFFER_SIZE] ;
@@ -150,6 +167,15 @@ uint32_t slurm_send_controller_buffer ( slurm_fd open_fd , slurm_msg_type_t msg_
 	return SLURM_NOT_IMPLEMENTED ;	
 }
 
+/* sends a buffer to an arbitrary node
+ *
+ * open_fd		- file descriptor to send msg on
+ * destination_address	- address of destination nodes
+ * msg_type		- type of msg to be sent ( see slurm_protocol_defs.h for msg types )
+ * data_buffer		- buffer to be sent
+ * buf_len		- length of buffer to be sent 
+ * uint32_t		- size of msg sent in bytes
+ */
 uint32_t slurm_send_node_buffer ( slurm_fd open_fd , slurm_addr * destination_address , slurm_msg_type_t msg_type , char * data_buffer , size_t buf_len )
 {
 	char buf_temp[MAX_MESSAGE_BUFFER_SIZE] ;
