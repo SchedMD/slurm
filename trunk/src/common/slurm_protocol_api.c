@@ -1,6 +1,8 @@
+/* GLOBAL INCLUDES */
 #include <stdlib.h>
 #include <string.h>
 
+/* PROJECT INCLUDES */
 #include <src/common/slurm_protocol_interface.h>
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/slurm_protocol_api.h>
@@ -10,10 +12,17 @@
 #include <src/common/xmalloc.h>
 #include <src/common/log.h>
 
+/* EXTERNAL VARIABLES */
 extern int errno ;
 
+/* #DEFINES */
+
+#define SLURM_PORT 7000
+#define PRIMARY_SLURM_CONTROLLER	"pri_slrumctld.llnl.gov"
+#define SECONDARY_SLURM_CONTROLLER	"sec_slrumctld.llnl.gov"
+
 /***** high level routines */
-/* msg functions */
+/***** msg functions */
 
 /* In the socket implementation it creates a socket, binds to it, and listens for connections.
  * In the mongo implemenetation is should just create a mongo socket , bind and return.
@@ -86,7 +95,27 @@ uint32_t slurm_receive_msg ( slurm_fd open_fd , slurm_addr * source_address , sl
  */
 uint32_t slurm_send_controller_msg ( slurm_fd open_fd , slurm_msg_type_t msg_type , slurm_msg_t const * msg )
 {
-	return SLURM_NOT_IMPLEMENTED ;	
+	int32_t rc ;
+	slurm_addr primary_destination_address ;
+	slurm_addr secondary_destination_address ;
+
+	/* set slurm_addr structures */
+	slurm_set_addr ( & primary_destination_address , SLURM_PORT , PRIMARY_SLURM_CONTROLLER ) ;
+	slurm_set_addr ( & secondary_destination_address , SLURM_PORT , SECONDARY_SLURM_CONTROLLER ) ;
+	
+	/* try to send to primary first then secondary */	
+	rc = slurm_send_node_msg ( open_fd , & primary_destination_address , msg_type , msg ) ;	
+	if ( rc == SLURM_SOCKET_ERROR )
+	{
+		debug ( "Send message to primary controller failed" ) ;
+		
+		rc = slurm_send_node_msg ( open_fd , & secondary_destination_address , msg_type , msg ) ;	
+		if ( rc == SLURM_SOCKET_ERROR )
+		{
+			debug ( "Send messge to secondary controller failed" ) ;
+		}
+	}
+	return rc ;
 }
 
 /* sends a message to an arbitrary node
@@ -162,14 +191,42 @@ uint32_t slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address ,
 	return bytes_read ;
 }
 
+/*
+ *
+ * open_fd              - file descriptor to send buffer on
+ * msg_type             - type of msg to be sent ( see slurm_protocol_defs.h for msg types )
+ * data_buffer          - buffer to be sent
+ * buf_len              - length of buffer to be sent
+ * uint32_t             - size of msg sent in bytes
+ */
 uint32_t slurm_send_controller_buffer ( slurm_fd open_fd , slurm_msg_type_t msg_type , char * data_buffer , size_t buf_len )
 {
-	return SLURM_NOT_IMPLEMENTED ;	
+	int32_t rc ;
+	slurm_addr primary_destination_address ;
+	slurm_addr secondary_destination_address ;
+
+	/* set slurm_addr structures */
+	slurm_set_addr ( & primary_destination_address , SLURM_PORT , PRIMARY_SLURM_CONTROLLER ) ;
+	slurm_set_addr ( & secondary_destination_address , SLURM_PORT , SECONDARY_SLURM_CONTROLLER ) ;
+
+	/* try to send to primary first then secondary */	
+	rc = slurm_send_node_buffer ( open_fd , & primary_destination_address , msg_type , data_buffer , buf_len ) ;	
+	if ( rc == SLURM_SOCKET_ERROR )
+	{
+		debug ( "Send message to primary controller failed" ) ;
+		
+		rc = slurm_send_node_buffer ( open_fd , & secondary_destination_address , msg_type , data_buffer , buf_len ) ;	
+		if ( rc == SLURM_SOCKET_ERROR )
+		{
+			debug ( "Send messge to secondary controller failed" ) ;
+		}
+	}
+	return rc ;
 }
 
 /* sends a buffer to an arbitrary node
  *
- * open_fd		- file descriptor to send msg on
+ * open_fd		- file descriptor to send buffer on
  * destination_address	- address of destination nodes
  * msg_type		- type of msg to be sent ( see slurm_protocol_defs.h for msg types )
  * data_buffer		- buffer to be sent
@@ -235,7 +292,7 @@ uint32_t slurm_close_stream ( slurm_fd open_fd )
 	return _slurm_close ( open_fd ) ;
 }
 
-/* sets the fields of a slurm_addr */
+/* sets/gets the fields of a slurm_addr */
 void slurm_set_addr_uint ( slurm_addr * slurm_address , uint16_t port , uint32_t ip_address )
 {
 	_slurm_set_addr_uint ( slurm_address , port , ip_address ) ;
