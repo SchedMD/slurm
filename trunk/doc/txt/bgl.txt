@@ -1,5 +1,5 @@
 Notes for SLURM use with Blue Gene/L
-As of 17 August 2004
+As of 19 August 2004
 
 There is still much development work required, but some basic functionality is 
 in place and usable for development purposes.
@@ -33,3 +33,13 @@ Most of the existing SLURM test suite runs, but some tests fail due to
   the defined node names (e.g. "bgl123") not matching the real node 
   names reported by the hostname command. srun's attach option will 
   only work for batch jobs, which will be the normal BGL mode of operation.
+
+OTHER
+Execution of job steps has been disabled except for super-users (root or 
+  SlurmUser). This is required to avoid overwhelming the one slurmd for 
+  the entire system. The parallel tasks will be initiated exclusively 
+  by mpirun. We could wrap mpirun to record the initiated of job steps, 
+  but real support of that job step as a real SLURM entity (initiation, 
+  signals, completion, etc.) would require a fair bit of work and provide 
+  little real benefit. 
+ 
