@@ -229,7 +229,7 @@ extern int sched_set_nodelist( const uint32_t job_id, char *nodes );
  *
  * Returns a SLURM errno.
  */
-extern int sched_start_job( const uint32_t job_id );
+extern int sched_start_job( const uint32_t job_id, const uint32_t new_prio );
 
 /*
  * Stop the job identified by the job ID.

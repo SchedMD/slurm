@@ -95,6 +95,6 @@ wiki_startjob_t::action( void )
 	}
 	
 	verbose( "Wiki starting job %s", m_jobid );	
-	return new wiki_status_t( (sched_start_job( id )
+	return new wiki_status_t( (sched_start_job( id, (u_int32_t) 1 )
 				   == SLURM_SUCCESS ) ? : 0 -1 );
 }

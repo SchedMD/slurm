@@ -1015,7 +1015,7 @@ sched_set_nodelist( const uint32_t job_id, char *nodes )
 /*  TAG(                       sched_start_job                           )  */
 /* ************************************************************************ */
 int
-sched_start_job( const uint32_t job_id )
+sched_start_job( const uint32_t job_id, uint32_t new_prio )
 {
 	ListIterator i;
 	struct job_record *job;
@@ -1025,7 +1025,7 @@ sched_start_job( const uint32_t job_id )
 	slurmctld_lock_t job_write_lock = { 
                 NO_LOCK,
 		WRITE_LOCK,
-		WRITE_LOCK,
+		NO_LOCK,
 		NO_LOCK
 	};
 
@@ -1035,7 +1035,7 @@ sched_start_job( const uint32_t job_id )
 	rc = SLURM_ERROR;
 	while ( ( job = (struct job_record *) list_next( i ) ) != NULL ) {
 		if ( job->job_id == job_id ) {
-			job->priority = 1;
+			job->priority = new_prio;
 			job->time_last_active = now;
 			last_job_update = now;
 			rc = SLURM_SUCCESS;

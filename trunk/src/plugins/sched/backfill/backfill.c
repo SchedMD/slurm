@@ -42,6 +42,7 @@
 #include "src/common/list.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/sched_plugin.h"
 
 typedef struct part_specs {
 	uint32_t idle_node_cnt;
@@ -69,7 +70,7 @@ static node_space_map_t node_space[MAX_JOB_CNT + 1];
 /* Set __DEBUG to get detailed logging for this thread without 
  * detailed logging for the entire slurmctld daemon */
 #define __DEBUG        0
-#define SLEEP_TIME     2
+#define SLEEP_TIME     5
 
 /*********************** local functions *********************/
 static int  _add_pending_job(job_info_t *job_ptr, partition_info_t *part_ptr,
@@ -640,14 +641,14 @@ _loc_restrict(job_info_t *job_ptr, part_specs_t *part_specs)
 static void
 _change_prio(uint32_t job_id, uint32_t prio)
 {
-	job_desc_msg_t update_job_msg;
+#if __DEBUG
+	info("backfill: set job %u to priority %u", job_id, prio);
+#else
+	debug("backfill: set job %u to priority %u", job_id, prio);
+#endif
 
-	slurm_init_job_desc_msg(&update_job_msg);
-	update_job_msg.job_id   = job_id;
-	update_job_msg.priority = prio;
-	info("set job %u to priority %u\n", job_id, prio);
-	if (slurm_update_job(&update_job_msg))
-		error("backfill/slurm_update_job: %s",
+	if (sched_start_job(job_id, prio))
+		error("backfill/sched_start_job: %s",
 			slurm_strerror(slurm_get_errno()) );
 }
 
