@@ -1,5 +1,6 @@
 # This file is to be processed with autoconf to generate a configure script
 
+# XXX generate PROJECT and VERSION automatically at some point
 AC_INIT([slurm], [0.1])
 # AC_PREREQ(2.50)
 AC_CONFIG_SRCDIR([src/common/slurm.h])
@@ -58,6 +59,8 @@ dnl Checks for structures.
 dnl Checks for compiler characteristics.
 
 dnl checks for library functions.
+AC_FUNC_MALLOC
+AC_FUNC_STRERROR_R
 AC_CHECK_FUNCS(strerror mtrace)
 AC_SEARCH_LIBS([pthread_create], [pthread c_r cr], [], 
                [AC_MSG_ERROR([Error: Cannot find the pthread library])])
