@@ -1,9 +1,9 @@
 /*****************************************************************************\
- *  job_info.c - get/print the job state information of slurm
+ *  job_info.c - get/print the job step state information of slurm
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov> et. al.
+ *  Written by Moe Jette <jette1@llnl.gov>, Joey Ekstrom <ekstrom1@llnl.gov> et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -34,6 +34,34 @@
 
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
+
+/* slurm_print_job_step_info_msg - output information about all Slurm job steps */
+void 
+slurm_print_job_step_info_msg ( FILE* out, job_step_info_response_msg_t * job_step_info_msg_ptr )
+{
+	int i;
+	job_step_info_t * job_step_ptr = job_step_info_msg_ptr -> job_steps ;
+
+	fprintf( out, "Job steps updated at %ld, record count %d\n",
+		(long) job_step_info_msg_ptr ->last_update, job_step_info_msg_ptr->job_step_count);
+
+	for (i = 0; i < job_step_info_msg_ptr-> job_step_count; i++) 
+	{
+		slurm_print_job_step_info ( out, & job_step_ptr[i] ) ;
+	}
+}
+
+/* slurm_print_job_step_info - output information about a specific Slurm job step */
+void
+slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr )
+{
+	int j;
+
+	fprintf ( out, "JobId=%u StepId=%u UserId=%u ", 
+		job_step_ptr->job_id, job_step_ptr->step_id, job_step_ptr->user_id);
+	fprintf ( out, "StartTime=%ld Partition=%s Nodes=%s\n\n", 
+		(long)job_step_ptr->start_time, job_step_ptr->partition, job_step_ptr->nodes);
+}
 
 /* slurm_load_job_steps - issue RPC to get Slurm job_step state information */
 int
