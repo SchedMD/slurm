@@ -189,7 +189,7 @@ int main(int argc, char *argv[])
 		setrlimit(RLIMIT_NOFILE, &rlim);
 	}
 	if (getrlimit(RLIMIT_CORE, &rlim) == 0) {
-		rlim.rlim_cur = RLIM_INFINITY;
+		rlim.rlim_cur = rlim.rlim_max;
 		setrlimit(RLIMIT_CORE, &rlim);
 	}
 
@@ -204,13 +204,14 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	if (slurmctld_conf.state_save_location)
+	if (slurmctld_conf.state_save_location) {
 		(void) mkdir(slurmctld_conf.state_save_location, 0700);
-
-	if (daemonize) {
 		if (chdir(slurmctld_conf.state_save_location))
 			fatal("chdir to %s error %m",
 			      slurmctld_conf.state_save_location);
+	}
+
+	if (daemonize) {
 		error_code = daemon(1, 0);
 		log_alter(log_opts, LOG_DAEMON, 
 			  slurmctld_conf.slurmctld_logfile);
