@@ -405,7 +405,7 @@ int _print_partition(sinfo_data_t * sinfo_data, int width,
 			if (sinfo_data->part_info->default_part) {
 				if (strlen(tmp) < width)
 					xstrcat(tmp, "*");
-				else
+				else if (width > 0)
 					tmp[width-1] = '*';
 			}
 			_print_str(tmp, width, right_justify, true);
