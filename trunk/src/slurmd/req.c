@@ -36,6 +36,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#include <sys/select.h>
+
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -70,7 +72,7 @@ static void _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *);
 static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
 static int  _run_prolog(uint32_t jobid, uid_t uid);
 static int  _run_epilog(uint32_t jobid, uid_t uid);
-static void _wait_for_procs(uint32_t job_id, uid_t job_uid);
+static void _wait_for_procs(slurm_fd fd, uint32_t job_id, uid_t job_uid);
 
 
 void
@@ -141,6 +143,19 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 	return;
 }
 
+/*
+ *  Need to close all open fds
+ */
+static void
+_close_fds(void)
+{
+	int i;
+	int maxfd = 1024;
+	for (i = 4; i < maxfd; i++) {
+		close(i);
+	}
+}
+
 static int
 _launch_batch_job(batch_job_launch_msg_t *req, slurm_addr *cli)
 {	
@@ -183,6 +198,7 @@ _launch_tasks(launch_tasks_request_msg_t *req, slurm_addr *cli)
 		case 0: /* child runs job */
 			slurm_shutdown_msg_engine(conf->lfd);
 			slurm_cred_ctx_destroy(conf->vctx);
+			_close_fds();
 			rc = mgr_launch_tasks(req, cli);
 			exit(rc);
 			/* NOTREACHED */
@@ -201,22 +217,28 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 		      uint32_t stepid, uid_t uid)
 {
 	slurm_cred_arg_t arg;
-	hostset_t        hset = NULL;
+	hostset_t        hset    = NULL;
+	bool             user_ok = false; 
+
+	user_ok = ((uid == (uid_t) 0) || (uid == conf->slurm_user_id));
 
 	/*
 	 * First call slurm_cred_verify() so that all valid
 	 * credentials are checked
 	 */
-	if ( (slurm_cred_verify(conf->vctx, cred, &arg) < 0)
-	   && (uid != conf->slurm_user_id) )
+	if ((slurm_cred_verify(conf->vctx, cred, &arg) < 0) && !user_ok)
 		return SLURM_ERROR;
 
-	/*
-	 * If the requesting user is the slurm user, do not perform
-	 * any more validity checks
-	 */
-	if (uid == conf->slurm_user_id)
+	if (user_ok)
 		return SLURM_SUCCESS;
+
+	/*
+	 * If uid is the slurm user id or root, do not bother
+	 * performing validity check of the credential
+	 */
+	if ((uid == (uid_t) 0) || (uid == conf->slurm_user_id))
+		return SLURM_SUCCESS;
+
 
 	if ((arg.jobid != jobid) || (arg.stepid != stepid)) {
 		error("job credential for %d.%d, expected %d.%d",
@@ -260,8 +282,7 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 static void 
 _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 {
-	int      retval = SLURM_SUCCESS;
-	int      rc     = SLURM_SUCCESS;
+	int      errnum = 0;
 	uint16_t port;
 	char     host[MAXHOSTNAMELEN];
 	uid_t    req_uid;
@@ -276,9 +297,9 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		super_user = true;
 
 	if ((super_user == false) && (req_uid != req->uid)) {
-		error("Security violation, launch task RCP from uid %u",
+		error("launch task request from uid %u",
 		      (unsigned int) req_uid);
-		retval = ESLURM_USER_ID_MISSING;	/* or invalid user */
+		errnum = ESLURM_USER_ID_MISSING;	/* or invalid user */
 		goto done;
 	}
 
@@ -290,7 +311,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		run_prolog = true;
 
 	if (_check_job_credential(req->cred, jobid, stepid, req_uid) < 0) {
-		retval = errno;
+		errnum = errno;
 		error("Invalid job credential from %ld@%s: %m", 
 		      (long) req_uid, host);
 		goto done;
@@ -301,19 +322,20 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	/* Run job prolog if necessary */
 	if (run_prolog && (_run_prolog(req->job_id, req->uid) != 0)) {
 		error("[job %d] prolog failed", req->job_id);
-		retval = ESLURMD_PROLOG_FAILED;
+		errnum = ESLURMD_PROLOG_FAILED;
 		goto done;
 	}
 
 	if (_launch_tasks(req, cli) < 0)
-		retval = errno;
+		errnum = errno;
 
     done:
-	slurm_send_rc_msg(msg, retval);
-	if ((rc == SLURM_SUCCESS) && (retval == SLURM_SUCCESS))
+	if (slurm_send_rc_msg(msg, errnum) < 0)
+		error("launch_tasks: unable to send return code: %m");
+	if (errnum == SLURM_SUCCESS)
 		save_cred_state(conf->vctx);
-	if (retval == ESLURMD_PROLOG_FAILED)
-		send_registration_msg(retval);	/* slurmctld makes node DOWN */
+	if (errnum == ESLURMD_PROLOG_FAILED)
+		send_registration_msg(errnum);	/* slurmctld makes node DOWN */
 }
 
 
@@ -423,7 +445,6 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	       goto done;
 	}
 
-	/* Special case some signals to avoid harming job's slurmd shepherd 
 	if ((req->signal == SIGSTOP) || (req->signal == SIGCONT) || 
 	    (req->signal == SIGKILL))
 		rc = shm_signal_step(req->job_id, req->job_step_id, 
@@ -432,7 +453,6 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		if (killpg(step->sid, req->signal) < 0)
 			rc = errno;
 	} 
-	 */
 
 	if (killpg(step->sid, req->signal) < 0)
 		rc = errno;
@@ -507,7 +527,7 @@ _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 		verbose( "Job %u: waiting %d secs for SIGKILL", 
 			 req->job_id, conf->cf.kill_wait       );
 
-		sleep(conf->cf.kill_wait);
+		sleep(conf->cf.kill_wait - 3);
 	}
 
 	/* SIGKILL and send response */
@@ -543,7 +563,7 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 		/* We could possibly scan the proc table and figure 
 		 * out which job this pid belongs to, but for now 
 		 * we only handle the job's top level pid */
-		info("_rpc_pid2jid: pid(%u) not found", req->job_pid);
+		debug3("_rpc_pid2jid: pid(%u) not found", req->job_pid);
 		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
 	}
 }
@@ -662,11 +682,8 @@ _kill_all_active_steps(uint32_t jobid, int sig)
 
 	while ((s = list_next(i))) {
 		if (s->jobid == jobid) {
-			/* Kill entire process group 
-			 * (slurmd manager will clean up any stragglers)
-			 */
-			debug2("sending signal %d to jobid %d (pg:%d)", 
-			       sig, jobid, s->sid);
+			debug2("sending signal %d to job %d.%d (pg:%d)", 
+			       sig, jobid, s->stepid, s->sid);
 			shm_signal_step(jobid, s->stepid, sig); 
 			step_cnt++;
 		}
@@ -712,7 +729,6 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli, bool found_job)
 		      (unsigned int) req_uid);
 		rc = ESLURM_USER_ID_MISSING;
 		goto done;
-
 	} 
 
 	/*
@@ -731,9 +747,9 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli, bool found_job)
 	 * Now kill all steps associated with this job, they are
 	 * no longer allowed to be running
 	 */
-	if (_kill_all_active_steps(req->job_id, SIGKILL) != 0)
-		_wait_for_procs(req->job_id, req->job_uid);
-	else if (!found_job)
+	if (_kill_all_active_steps(req->job_id, SIGKILL) != 0) {
+		_wait_for_procs(msg->conn_fd, req->job_id, req->job_uid); 
+	} else if (!found_job)
 		rc = ESLURM_INVALID_JOB_ID;	/* no such job */
 
 	if (_run_epilog(req->job_id, req->job_uid) != 0) {
@@ -746,15 +762,38 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli, bool found_job)
 	slurm_send_rc_msg(msg, rc);
 }
 
+/*
+ *  Wait for either timeout seconds or activity on file descriptor 
+ */
+static int _delay_on_fd(int fd, int timeout)
+{
+	int rc;
+	fd_set rd_set;
+	struct timeval tv;
+
+	tv.tv_sec  = timeout;
+	tv.tv_usec = 0;
+
+	FD_ZERO(&rd_set);
+	FD_SET(fd, &rd_set);
+
+	if ((rc = select(1, &rd_set, NULL, NULL,  &tv)) < 0) {
+		error("delay_on_fd: select: %m");
+		return SLURM_ERROR;
+	}
+
+	return rc;
+}
+
 static void
-_wait_for_procs(uint32_t job_id, uid_t job_uid)
+_wait_for_procs(slurm_fd fd, uint32_t job_id, uid_t job_uid)
 {
 	if (!_job_still_running(job_id))
 		return;
 
-	error("Waiting for job %u to complete", job_id);
+	debug("Waiting for job %u to complete", job_id);
 	do {
-		sleep(1);
+		_delay_on_fd((int) fd, 1);
 	} while (_job_still_running(job_id));
 	debug("Job %u complete", job_id);
 }
