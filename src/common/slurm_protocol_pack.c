@@ -317,7 +317,7 @@ int unpack_node_table ( node_table_msg_t * node , void ** buf_ptr , int * buffer
         unpack32  (&node->tmp_disk, buf_ptr, buffer_size);
         unpack32  (&node->weight, buf_ptr, buffer_size);
         unpackstr_ptr_malloc (&node->features, &uint16_tmp, buf_ptr, buffer_size);
-	unpackstr_ptr_malloc (&node->name, &uint16_tmp, buf_ptr, buffer_size);
+	unpackstr_ptr_malloc (&node->partition, &uint16_tmp, buf_ptr, buffer_size);
 
         return 0;
 }
