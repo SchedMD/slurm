@@ -851,6 +851,11 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	if (ctl_conf_ptr->plugindir == NULL)
 		ctl_conf_ptr->plugindir = xstrdup(SLURM_PLUGIN_PATH);
+
+	if (ctl_conf_ptr->slurm_user_name == NULL) {
+		ctl_conf_ptr->slurm_user_name = xstrdup("root");
+		ctl_conf_ptr->slurm_user_id   = 0;
+	}
 }
 
 /* Normalize supplied debug level to be in range per log.h definitions */
