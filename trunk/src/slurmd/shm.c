@@ -63,6 +63,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xassert.h"
 #include "src/common/slurm_errno.h"
+#include "src/common/xstring.h"
 
 #include "src/slurmd/slurmd.h"
 #include "src/slurmd/shm.h"
@@ -575,7 +576,8 @@ shm_update_step_addrs(uint32_t jobid, uint32_t stepid,
 			memcpy(s->key.data, keydata, SLURM_KEY_SIZE);
 			s->io_update = true;
 
-			debug3("Going to send shm update signal to %ld", s->sid);
+			debug3("Going to send shm update signal to %ld", 
+				s->sid);
 			if (kill(s->sid, SIGHUP) < 0) {
 				slurm_seterrno(EPERM);
 				retval = SLURM_FAILURE;
@@ -770,7 +772,7 @@ _shm_task_copy(task_t *to, task_t *from)
 static void 
 _shm_step_copy(job_step_t *to, job_step_t *from)
 {
-	*to = *from;
+	memcpy(to, from, sizeof(job_step_t));
 	to->state = SLURMD_JOB_ALLOCATED;
 
 	/* addition of tasks is another step */
@@ -780,14 +782,15 @@ _shm_step_copy(job_step_t *to, job_step_t *from)
 static void
 _shm_clear_task(task_t *t)
 {
-	memset(t, 0, sizeof(*t));
+	memset(t, 0, sizeof(task_t));
 }
 
 static void
 _shm_clear_step(job_step_t *s)
 {
 	task_t *p, *t = _taskp(s->task_list);
-	memset(s, 0, sizeof(*s));
+
+	memset(s, 0, sizeof(job_step_t));
 	if (!t) 
 		return;
 	do {

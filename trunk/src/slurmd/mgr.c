@@ -264,7 +264,7 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	if ((batchdir = _make_batch_dir(job)) == NULL) 
 		goto cleanup2;
 
-	FREE_NULL(job->argv[0]);
+	xfree(job->argv[0]);
 
 	if ((job->argv[0] = _make_batch_script(msg, batchdir)) == NULL)
 		goto cleanup3;
