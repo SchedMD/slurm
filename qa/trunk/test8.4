@@ -43,8 +43,11 @@ set file_err           "test$test_id.error"
 set test_prog          "test$test_id.prog"
 set job_id             0
 
-# Blue Gene cross-compiler
-set mpicc              "/usr/local/bin/mpgcc"
+# Blue Gene cross-compiler info
+set task_cnt           16
+set mpicc              "/usr/local/bin/mpxlc"
+set mpicc_opts         "-qarch=440d"
+set mpirun_opts        "-nodes $task_cnt -exe [$bin_pwd]/$test_prog -cwd [$bin_pwd]"
 
 print_header $test_id
 
@@ -68,7 +71,7 @@ if {[test_front_end] == 0} {
 # Delete left-over program and rebuild it
 #
 exec $bin_rm -f $test_prog ${test_prog}.o
-exec $mpicc -o $test_prog ${test_prog}.c
+exec $mpicc $mpicc_opts -o $test_prog ${test_prog}.c
 
 #
 # Delete left-over input script plus stdout/err files
@@ -77,7 +80,7 @@ exec $mpicc -o $test_prog ${test_prog}.c
 exec $bin_rm -f $file_in $file_out $file_err
 exec echo "#!$bin_bash"					 >$file_in
 exec echo "$bin_env | $bin_grep BGL_PARTITION_ID"	>>$file_in
-#exec echo "$mpirun $test_prog"				>>$file_in
+exec echo "$mpirun $mpirun_opts"			>>$file_in
 exec echo "$bin_echo TEST_COMPLETE"			>>$file_in
 exec $bin_chmod 700 $file_in
 
@@ -154,7 +157,7 @@ if {[wait_for_file $file_out] == 0} {
 			wait
                 }
         }
-	if {$matches != 0} {
+	if {$matches != $task_cnt} {
 		send_user "\nFAILURE: unexpected output\n"
 		set exit_code 1
 	} elseif {$complete != 1} {
