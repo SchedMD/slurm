@@ -77,6 +77,7 @@ static allocation_resp	*allocate_nodes(void);
 static void              print_job_information(allocation_resp *resp);
 static void		 create_job_step(job_t *job);
 static void		 sigterm_handler(int signum);
+static void		 sig_kill_alloc(int signum);
 void *                   sig_thr(void *arg);
 void 			 fwd_signal(job_t *job, int signo);
 static char 		*build_script (char *pathname, int file_type);
@@ -327,7 +328,13 @@ allocate_nodes(void)
 	}
 
 	if ((rc == 0) && (resp->node_list == NULL)) {
+		struct sigaction action, old_action;
+		int fake_job_id = (0 - resp->job_id);
 		info ("Job %u queued and waiting for resources", resp->job_id);
+		sig_kill_alloc(fake_job_id);
+		action.sa_handler = &sig_kill_alloc;
+		action.sa_flags   = SA_ONESHOT;
+		sigaction(SIGINT, &action, &old_action);
 		old_job.job_id = resp->job_id;
 		old_job.uid = (uint32_t) getuid();
 		slurm_free_resource_allocation_response_msg (resp);
@@ -342,11 +349,29 @@ allocate_nodes(void)
 				exit (1);
 			}
 		}
+		sigaction(SIGINT, &old_action, NULL);
 	}
 
 	return resp;
 
 }
+
+static void
+sig_kill_alloc(int signum)
+{
+	static uint32_t job_id = 0;
+
+	if (signum == SIGINT) {			/* <Control-C> */
+		slurm_complete_job (job_id);
+		exit (0);
+	} else if (signum < 0)
+		job_id = (uint32_t) (0 - signum);	/* kluge to pass the job id */
+	else
+		fatal ("sig_kill_alloc called with invalid argument", signum);
+
+}
+
+
 
 #if HAVE_LIBELAN3
 static void
