@@ -11,7 +11,7 @@ main (int argc, char *argv[])
 {
 	int error_code, job_count, max_jobs;
 	job_desc_msg_t job_mesg;
-	resource_allocation_response_msg_t resp_msg ;
+	resource_allocation_response_msg_t* resp_msg ;
 
 	if (argc > 1) 
 		max_jobs = atoi (argv[1]);
@@ -37,11 +37,11 @@ main (int argc, char *argv[])
 	job_mesg. user_id = 1500;
 
 
-	error_code = slurm_allocate_resources ( &job_mesg , & resp_msg , true ); 
+	error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , false ); 
 	if (error_code)
 		printf ("allocate error %d\n", error_code);
 	else {
-		printf ("allocate nodes %s to job %u\n", resp_msg.node_list, job_mesg.job_id);
+		printf ("allocate nodes %s to job %u\n", resp_msg->node_list, resp_msg->job_id);
 	}
 	job_count = 1;
 
@@ -63,13 +63,15 @@ main (int argc, char *argv[])
 		job_mesg. num_procs = 4000;
 		job_mesg. user_id = 1500;
 
-		error_code = slurm_allocate_resources ( &job_mesg , & resp_msg , true ); 
+		/* the string also had Immediate */
+		error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , true ); 
+		error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , false ); 
 		if (error_code) {
 			printf ("allocate error %d\n", error_code);
 			break;
 		}
 		else {
-			printf ("allocate nodes %s to job %u\n", resp_msg.node_list, job_mesg.job_id);
+			printf ("allocate nodes %s to job %u\n", resp_msg->node_list, job_mesg.job_id);
 		}
 	}
 
@@ -79,13 +81,13 @@ main (int argc, char *argv[])
 		job_mesg. num_procs = 40;
  	        job_mesg. user_id = 1500;
 
-		error_code = slurm_allocate_resources ( &job_mesg , & resp_msg , true ); 
+		error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , true ); 
 		if (error_code) {
 			printf ("allocate error %d\n", error_code);
 			break;
 		}
 		else {
-			printf ("allocate nodes %s to job %u\n", resp_msg.node_list,  job_mesg.job_id);
+			printf ("allocate nodes %s to job %u\n", resp_msg->node_list, &resp_msg->job_id);
 		}
 	}
 
@@ -95,13 +97,13 @@ main (int argc, char *argv[])
 		job_mesg. num_procs = 40;
  	        job_mesg. user_id = 1500;
 
-		error_code = slurm_allocate_resources ( &job_mesg , & resp_msg , false ); 
+		error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , false ); 
 		if (error_code) {
 			printf ("allocate error %d\n", error_code);
 			break;
 		}
 		else {
-			printf ("allocate nodes %s to job %u\n", resp_msg.node_list,  job_mesg.job_id);
+			printf ("allocate nodes %s to job %u\n", resp_msg->node_list, resp_msg->job_id);
 		}
 	}
 
