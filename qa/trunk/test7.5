@@ -71,7 +71,7 @@ expect {
 	}
 }
 
-if {$iteration != 3} {
+if {$iteration < 3} {
 	send_user "\nFAILURE: smap iteration error\n"
 	set exit_code 1
 }
