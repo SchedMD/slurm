@@ -17,10 +17,6 @@
 /* EXTERNAL VARIABLES */
 
 /* #DEFINES */
-#define SLURM_PORT 7000
-#define SLURM_PROTOCOL_DEFAULT_PORT 7000
-#define SLURM_PROTOCOL_DEFAULT_PRIMARY_CONTROLLER "localhost"
-#define SLURM_PROTOCOL_DEFAULT_SECONDARY_CONTROLLER "localhost"
 
 /* STATIC VARIABLES */
 static slurm_protocol_config_t * proto_conf = NULL ;
