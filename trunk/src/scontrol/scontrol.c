@@ -1537,10 +1537,12 @@ _update_node (int argc, char *argv[])
 			if ((len >= 0) && (reason_str[len] == '"'))
 				reason_str[len] = '\0';
 
-			/* Append date and time */
+			/* Append user, date and time */
+			xstrcat(reason_str, " [");
+			xstrcat(reason_str, getlogin());
 			now = time(NULL);
 			time_ptr = localtime(&now);
-			strftime(time_buf, sizeof(time_buf), " %b %d %H:%M", 
+			strftime(time_buf, sizeof(time_buf), "@%b %d %H:%M]", 
 				time_ptr);
 			xstrcat(reason_str, time_buf);
 				
