@@ -272,7 +272,7 @@ int Build_Part_BitMap(struct Part_Record *Part_Record_Point) {
     /* Unlink nodes removed from the partition */
     for (i=0; i<Node_Record_Count; i++) {
 	if (BitMapValue(Old_BitMap, i) == 0) continue;
-	(Node_Record_Table_Ptr+i)->Partition_Ptr = NULL;
+	Node_Record_Table_Ptr[i].Partition_Ptr = NULL;
     } /* for */
 
     if(My_Node_List) free(My_Node_List);

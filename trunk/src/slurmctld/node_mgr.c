@@ -24,14 +24,15 @@
 #define NO_VAL	 	(-99)
 #define SEPCHARS 	" \n\t"
 
-List 	Config_List = NULL;		/* List of Config_Record entries */
-int	Node_Record_Count = 0;		/* Count of records in the Node Record Table */
+List 	Config_List = NULL;			/* List of Config_Record entries */
+int	Node_Record_Count = 0;			/* Count of records in the Node Record Table */
 struct Node_Record *Node_Record_Table_Ptr = NULL; /* Location of the node records */
 char 	*Node_State_String[] = {"DOWN", "UNKNOWN", "IDLE", "STAGE_IN", "BUSY", "STAGE_OUT", "DRAINED", "DRAINING", "END"};
-int	*Hash_Table = NULL;		/* Table of hashed indicies into Node_Record */
+int	*Hash_Table = NULL;			/* Table of hashed indicies into Node_Record */
 struct 	Config_Record Default_Config_Record;
 struct 	Node_Record   Default_Node_Record;
-time_t 	Last_Node_Update =(time_t)NULL;	/* Time of last update to Node Records */
+time_t 	Last_BitMap_Update =(time_t)NULL;	/* Time of last node creation or deletion */
+time_t 	Last_Node_Update =(time_t)NULL;		/* Time of last update to Node Records */
 
 unsigned *Up_NodeBitMap  = NULL;		/* Bitmap of nodes are UP */
 unsigned *Idle_NodeBitMap = NULL;	/* Bitmap of nodes are IDLE */
@@ -301,7 +302,7 @@ int BitMap2NodeName(unsigned *BitMap, char **Node_List) {
 	    } /* if */
 	} /* if need more memory */
 	if (BitMapValue(BitMap, i) == 0) continue;
-	Split_Node_Name((Node_Record_Table_Ptr+i)->Name, Prefix, Suffix, &Index, &Digits);
+	Split_Node_Name(Node_Record_Table_Ptr[i].Name, Prefix, Suffix, &Index, &Digits);
 	if ((Index == (Last_Index+1)) && 		/* Next in sequence */
 	    (strcmp(Last_Prefix, Prefix) == 0) &&
 	    (strcmp(Last_Suffix, Suffix) == 0)) {
@@ -330,7 +331,7 @@ int BitMap2NodeName(unsigned *BitMap, char **Node_List) {
 	} /* if */
 	if (Index == NO_VAL) {
 	    if (strlen(Node_List[0]) > 0) strcat(Node_List[0],",");
-	    strcat(Node_List[0], (Node_Record_Table_Ptr+i)->Name);
+	    strcat(Node_List[0], Node_Record_Table_Ptr[i].Name);
 	} else {
 	    strcpy(Last_Prefix, Prefix);
 	    strcpy(Last_Suffix, Suffix);
@@ -490,6 +491,7 @@ struct Node_Record *Create_Node_Record(int *Error_Code, struct Config_Record *Co
     Node_Record_Point->CPUs 		= Config_Point->CPUs;
     Node_Record_Point->RealMemory  	= Config_Point->RealMemory;
     Node_Record_Point->TmpDisk  	= Config_Point->TmpDisk;
+    Last_BitMap_Update = time(NULL);
     return Node_Record_Point;
 } /* Create_Node_Record */
 
@@ -532,6 +534,7 @@ int Delete_Node_Record(char *name) {
     } /* if */
     strcpy(Node_Record_Point->Name, "");
     Node_Record_Point->NodeState = STATE_DOWN;
+    Last_BitMap_Update = time(NULL);
     return 0;
 } /* Delete_Node_Record */
 
@@ -542,8 +545,8 @@ void Dump_Hash() {
 
     if (Hash_Table ==  NULL) return;
     for (i=0; i<Node_Record_Count; i++) {
-	if (strlen((Node_Record_Table_Ptr+Hash_Table[i])->Name) == 0) continue;
-	printf("Hash:%d:%s\n", i, (Node_Record_Table_Ptr+Hash_Table[i])->Name);
+	if (strlen(Node_Record_Table_Ptr[Hash_Table[i]].Name) == 0) continue;
+	printf("Hash:%d:%s\n", i, Node_Record_Table_Ptr[Hash_Table[i]].Name);
     } /* for */
 } /* Dump_Hash */
 
@@ -826,7 +829,7 @@ struct Node_Record *Find_Node_Record(char *name) {
 
     /* Revert to sequential search */
     for (i=0; i<Node_Record_Count; i++) {
-	if (strcmp(name, (Node_Record_Table_Ptr+i)->Name) != 0) continue;
+	if (strcmp(name, Node_Record_Table_Ptr[i].Name) != 0) continue;
 	return (Node_Record_Table_Ptr+i);
     } /* for */
 
@@ -1218,8 +1221,8 @@ void Rehash() {
     memset(Hash_Table, 0, (sizeof(int) * Node_Record_Count));
 
     for (i=0; i<Node_Record_Count; i++) {
-	if (strlen((Node_Record_Table_Ptr+i)->Name) == 0) continue;
-	inx = Hash_Index((Node_Record_Table_Ptr+i)->Name);
+	if (strlen(Node_Record_Table_Ptr[i].Name) == 0) continue;
+	inx = Hash_Index(Node_Record_Table_Ptr[i].Name);
 	Hash_Table[inx] = i;
     } /* for */
 

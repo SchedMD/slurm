@@ -66,8 +66,8 @@ main(int argc, char * argv[]) {
     printf("\n");
 
     for (i=0; i<Node_Record_Count; i++) {
-	if (strlen((Node_Record_Table_Ptr+i)->Name) == 0) continue;
-	printf("NodeName=%s ",      (Node_Record_Table_Ptr+i)->Name);
+	if (strlen(Node_Record_Table_Ptr[i].Name) == 0) continue;
+	printf("NodeName=%s ",      Node_Record_Table_Ptr[i].Name);
 	printf("NodeState=%s ",     Node_State_String[Node_Record_Table_Ptr[i].NodeState]);
 	printf("LastResponse=%ld ", (long)Node_Record_Table_Ptr[i].LastResponse);
 
@@ -206,10 +206,10 @@ int Build_BitMaps() {
 
     /* Scan all nodes and identify which are UP and IDLE and their configuration */
     for (i=0; i<Node_Record_Count; i++) {
-	if (strlen((Node_Record_Table_Ptr+i)->Name) == 0) continue;	/* Defunct */
-	if ((Node_Record_Table_Ptr+i)->NodeState == STATE_IDLE) BitMapSet(Idle_NodeBitMap, i);
-	if ((Node_Record_Table_Ptr+i)->NodeState != STATE_DOWN) BitMapSet(Up_NodeBitMap, i);
-	if ((Node_Record_Table_Ptr+i)->Config_Ptr) 
+	if (strlen(Node_Record_Table_Ptr[i].Name) == 0) continue;	/* Defunct */
+	if (Node_Record_Table_Ptr[i].NodeState == STATE_IDLE) BitMapSet(Idle_NodeBitMap, i);
+	if (Node_Record_Table_Ptr[i].NodeState != STATE_DOWN) BitMapSet(Up_NodeBitMap, i);
+	if (Node_Record_Table_Ptr[i].Config_Ptr) 
 		BitMapSet(Node_Record_Table_Ptr[i].Config_Ptr->NodeBitMap, i);
     } /* for */
 
