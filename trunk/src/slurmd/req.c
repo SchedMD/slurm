@@ -730,6 +730,11 @@ _job_still_running(uint32_t job_id)
 	return retval;
 }
 
+/*
+ *  Send epilog complete message to currently active comtroller.
+ *   Returns SLURM_SUCCESS if message sent successfully,
+ *           SLURM_FAILURE if epilog complete message fails to be sent.
+ */
 static int
 _epilog_complete(uint32_t jobid, int rc)
 {
@@ -747,6 +752,7 @@ _epilog_complete(uint32_t jobid, int rc)
 		error("Unable to send epilog complete message: %m");
 		return SLURM_ERROR;
 	}
+	debug ("Job %ld: sent epilog complete msg: rc = %d", jobid, rc);
 
 	return SLURM_SUCCESS;
 }
@@ -800,9 +806,12 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 
 	/*
 	 *  Block until all user processes are complete.
+	 *   If wait_for_procs returns with an error, then another
+	 *   thread is waiting for job to complete. Just exit 
+	 *   this thread.
 	 */
 	if (_wait_for_procs(req->job_id) < 0) 
-		rc = ESLURMD_KILL_JOB_FAILED;
+		return;
 
 	/*
 	 *  Begin expiration period for cached information about job.
@@ -863,6 +872,13 @@ static void _waiter_destroy(struct waiter *wp)
 	xfree(wp);
 }
 
+/*
+ *  Wait for session for jobid to expire; Only one thread
+ *   per job will be in this call. 
+ *   
+ *  Returns SLURM_SUCCESS when session has exited, 
+ *    SLURM_ERROR if there is already a thread waiting on job
+ */
 static int
 _wait_for_procs(uint32_t jobid)
 {
@@ -874,23 +890,22 @@ _wait_for_procs(uint32_t jobid)
 		waiters = list_create((ListDelF) _waiter_destroy);
 
 	/* 
-	 *  Kill any other thread waiting for this job and take over
+	 *  Exit this thread if another thread is waiting on job
 	 */
 	i = list_iterator_create(waiters);
-	if ((wp = list_find(i, (ListFindF) _find_waiter, (void *) &jobid))) {
-		pthread_kill(SIGTERM, wp->thd);
-		wp->thd = pthread_self();
-	} else 
+	if ((wp = list_find(i, (ListFindF) _find_waiter, (void *) &jobid))) 
+		return SLURM_ERROR;
+	else 
 		list_append(waiters, _waiter_create(jobid));
 
 	list_iterator_destroy(i);
 
-	debug("Waiting for job %u to complete", jobid);
+	verbose ("Waiting for job %u to complete", jobid);
 
 	while (_job_still_running(jobid)) 
 		sleep (1);
 
-	debug("Job %u complete", jobid);
+	verbose ("Job %u complete", jobid);
 
 	/*
 	 *  Delete all waiting threads for this process
