@@ -111,6 +111,8 @@ int find_all_tori(List part_config_list);
 void print_system(system_t* sys);
 /** */
 int init_system(List port_config_list, int num_nodes);
+/* */
+void sort_node_id(int* node_id, int size);
 
 /** 3x3x1 */
 void create_config_9_2d(List switch_config_list);

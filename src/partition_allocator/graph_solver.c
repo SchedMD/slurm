@@ -73,6 +73,7 @@ int _join_int_connections(switch_t* my_switch, int port_numA, int port_numB,
 			  connection_t** conn);
 /** */
 int _test_ext_connections(node_t* node);
+/* */
 void _init_internal_connections(system_t *sys);
 /** */
 void _swap(char* a, int i, int j);
@@ -631,19 +632,23 @@ void _insert_results(List part_config_list, List result_partitions, List current
 		itr = list_iterator_create(result_partitions);
 		i = 0;
 		while((part = (partition_t*) list_next(itr))){
-			int j;
+			int j, list_size;
+
 			conf_data->partition_sizes[i] = list_count(part->node_list);
 			conf_data->partition_type[i] = part->conn_type;
 
 			/* this is xfree'd by delete_conf_data */
-			j = list_count(part->node_list);
-			conf_data->node_id[i] = (int*) xmalloc (sizeof(int) * j);
+			list_size = list_count(part->node_list);
+			conf_data->node_id[i] = (int*) xmalloc (sizeof(int) * list_size);
+			j = 0;
 			node_itr = list_iterator_create(part->node_list);
 			while((node = (node_t*) list_next(node_itr))){
-				conf_data->node_id[i][--j] = node->id;
+				conf_data->node_id[i][j++] = node->id;
 			}
 			list_iterator_destroy(node_itr);
 			
+			sort_node_id(conf_data->node_id[i], list_size);
+
 			i++;
 		}			
 		list_iterator_destroy(itr);
@@ -658,6 +663,26 @@ void _insert_results(List part_config_list, List result_partitions, List current
 		list_iterator_destroy(itr);
 
 		list_push(part_config_list, conf_result);
+	}
+}
+
+/**
+ * easy to implement swap sort, and since there aren't that
+ * many nodes, this shouldn't take too long.
+ */
+void sort_node_id(int* node_id, int size)
+{
+	int i;
+	int tmp;
+	bool no_change = false;
+	while(!no_change){
+		no_change = true;
+		for (i=0; i<size-1; i++){
+			if (node_id[i] > node_id[i+1]){
+				SWAP(node_id[i], node_id[i+1], tmp);
+				no_change = false;
+			}
+		}
 	}
 }
 
@@ -1459,7 +1484,7 @@ int _connection_t_cmpf(connection_t* A, connection_t* B)
 {
 	if (A->place == B->place)
 		return 0;
-	if (A->place == INTERNAL)
+	else if (A->place == INTERNAL)
 		return -1;
 	else 
 		return 1;
