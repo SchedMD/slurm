@@ -388,6 +388,7 @@ void pa_init(node_info_msg_t *node_info_ptr)
 	node_info_t *node_ptr;
 	int i;
 	int start, temp;
+	char *numeric;
 	
 	/* if we've initialized, just pop off all the old crusty
 	 * pa_systems */
@@ -409,7 +410,17 @@ void pa_init(node_info_msg_t *node_info_ptr)
 	if(node_info_ptr!=NULL) {
 		for (i = 0; i < node_info_ptr->record_count; i++) {
 			node_ptr = &node_info_ptr->node_array[i];
-			start = atoi(node_ptr->name + 3);
+			start = 0;
+			numeric = node_ptr->name;
+			while (numeric) {
+				if ((numeric[0] < '0')
+				||  (numeric[0] > '9')) {
+					numeric++;
+					continue;
+				}
+				start = atoi(numeric);
+				break;
+			}
 #ifdef HAVE_BGL
 			temp = start / 100;
 			if (DIM_SIZE[X] < temp)
