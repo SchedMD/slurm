@@ -272,16 +272,16 @@ _print_config (char *config_param, bool ping_only)
 		error_code = slurm_load_ctl_conf ((time_t) NULL, 
 						  &slurm_ctl_conf_ptr);
 
-	if (error_code) {
-		if (quiet_flag != 1)
-			slurm_perror ("slurm_load_ctl_conf error");
-		return;
-	}
-	old_slurm_ctl_conf_ptr = slurm_ctl_conf_ptr;
+	if ((error_code) && (quiet_flag != 1))
+		slurm_perror ("slurm_load_ctl_conf error");
+	if (error_code == SLURM_SUCCESS)
+		old_slurm_ctl_conf_ptr = slurm_ctl_conf_ptr;
 
-	if (!ping_only)
+	if ((error_code == SLURM_SUCCESS) && !ping_only) {
 		slurm_print_ctl_conf (stdout, slurm_ctl_conf_ptr) ;
-	fprintf(stdout, "\n"); 
+		fprintf(stdout, "\n"); 
+	}
+
 	_ping_slurmctld ( slurm_ctl_conf_ptr );
 }
 
@@ -294,17 +294,24 @@ _ping_slurmctld(slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr)
 
 	if (slurm_ping(1) == SLURM_SUCCESS)
 		primary = 0;
-	fprintf(stdout, "Slurmctld(primary)   at %s is %s\n", 
-		slurm_ctl_conf_ptr->control_machine, state[primary]);
-
-	if (slurm_ctl_conf_ptr->backup_addr) {
-		if (slurm_ping(2) == SLURM_SUCCESS)
-			secondary = 0;
-		fprintf(stdout, "Slurmctld(secondary) at %s is %s\n\n", 
-			slurm_ctl_conf_ptr->backup_controller, 
-			state[secondary]);
-	} else
-		fprintf(stdout, "\n"); 
+	if (slurm_ping(2) == SLURM_SUCCESS)
+		secondary = 0;
+	fprintf(stdout, "Slurmctld(primary/backup) ");
+	if (slurm_ctl_conf_ptr) {
+		fprintf(stdout, "at ");
+		if (slurm_ctl_conf_ptr->control_machine)
+			fprintf(stdout, "%s/", 
+				slurm_ctl_conf_ptr->control_machine);
+		else
+			fprintf(stdout, "(NULL)/");
+		if (slurm_ctl_conf_ptr->backup_controller)
+			fprintf(stdout, "%s ", 
+				slurm_ctl_conf_ptr->backup_controller);
+		else
+			fprintf(stdout, "(NULL) ");
+	}
+	fprintf(stdout, "are %s/%s\n", 
+		state[primary], state[secondary]);
 }
 
 /*
