@@ -49,7 +49,7 @@
 #define BUFSIZE 4096
 #define BITSIZE 128
 #define DEFAULT_BLUEGENE_SERIAL "BGL"
-#define SLEEP_TIME 60 /* BLUEGENE_PTHREAD checks every 60 secs */
+#define NODE_POLL_TIME 60	/* poll CMCS node state every 60 secs */
 #define _DEBUG 0
 
 char* bgl_conf = BLUEGENE_CONFIG_FILE;
@@ -60,6 +60,7 @@ rm_BGL_t *bgl;
 List bgl_list = NULL;			/* list of bgl_record entries */
 char *bluegene_blrts = NULL, *bluegene_linux = NULL, *bluegene_mloader = NULL;
 char *bluegene_ramdisk = NULL, *bluegene_serial = NULL;
+bool agent_fini = false;
 
 #define SWAP(a,b,t)	\
 _STMT_START {	\
@@ -68,7 +69,7 @@ _STMT_START {	\
 	(b) = (t);	\
 } _STMT_END
 
- /** some local functions */
+/* some local functions */
 static int  _bgl_record_cmpf_inc(bgl_record_t* rec_a, bgl_record_t* rec_b);
 static int  _bgl_record_cmpf_dec(bgl_record_t* rec_a, bgl_record_t* rec_b);
 static int  _copy_slurm_partition_list(List slurm_part_list);
@@ -87,15 +88,17 @@ static int  _parse_bgl_spec(char *in_line);
 static int  _parse_request(char* request_string, partition_t** request);
 static void _process_config(void);
 static int  _sync_partitions(void);
-static void _update_bgl_node_bitmap(void);
+static void _test_down_nodes(void);
 static int  _validate_config_nodes(void);
 static int  _wire_bgl_partitions(void);
 
 /* Rotate a geometry array through six permutations */
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
 
-#ifdef USE_BGL_FILES
+#ifdef HAVE_BGL_FILES
 static char *_convert_bp_state(rm_BP_state_t state);
+#endif
+#ifdef USE_BGL_FILES
 static void _set_bp_node_state(rm_BP_state_t state, rm_element_t *element);
 #endif
 
@@ -722,7 +725,7 @@ extern int init_bgl(void)
 #ifdef HAVE_BGL_FILES
 	rc = rm_set_serial(bluegene_serial);
 	if (rc != STATUS_OK){
-		error("init_bgl: rm_set_serial failed, errno=%d", rc);
+		fatal("init_bgl: rm_set_serial failed, errno=%d", rc);
 		return SLURM_ERROR;
 	}
 
@@ -1093,83 +1096,54 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 	return SLURM_SUCCESS;
 }
 
-/** 
- * global - bgl: 
- * 
- * hmm, so it seems here we have to parse through the entire list of
- * base partitions to update our system.  so since we have to go
- * through the list anyways, we would like to have instant O(1) access
- * to the nodelist that we need to update.
- */
-static void _update_bgl_node_bitmap(void)
+/* Test for nodes that are DOWN in BlueGene database */ 
+static void _test_down_nodes(void)
 {
-#ifdef USE_BGL_FILES
-/* Original logic from Dan Phung */
+#ifdef HAVE_BGL_FILES
 	int bp_num,i;
 	rm_BP_t *my_bp;
 	rm_BP_state_t bp_state;
 	rm_location_t bp_loc;
-	rm_size3D_t bp_size;
-	char down_node_list[BUFSIZE] = "";
+	char down_node_list[BUFSIZE];
 	char bgl_down_node[128];
-	char *bp_id;
 
 	if (!bgl) {
 		error("error, BGL is not initialized");
 		return;
 	}
 
-	debug("---------rm_get_BGL------------");
-	// rm_get_data(bgl,RM_BPsize,&bp_size);
-	// rm_get_data(bgl,RM_Msize,&m_size);
-
-	debug("BP Size = (%d x %d x %d)",bp_size.X,bp_size.Y,bp_size.Z);
-
-	rm_get_data(bgl,RM_BPNum,&bp_num);
-	debug("- - - - - BPS (%d) - - - - - -",bp_num);
-
-	for (i=0;i<bp_num;i++) {
-		if (i==0)
-			rm_get_data(bgl,RM_FirstBP,&my_bp);
+	down_node_list[0] = '\0';
+	rm_get_data(bgl, RM_BPNum, &bp_num);
+	for (i=0; i<bp_num; i++) {
+		if (i)
+			rm_get_data(bgl, RM_NextBP, &my_bp);
 		else
-			rm_get_data(bgl,RM_NextBP,&my_bp);
+			rm_get_data(bgl, RM_FirstBP, &my_bp);
 		
-		// is this blocking call?
 		rm_get_data(my_bp, RM_BPState, &bp_state);
-		rm_get_data(my_bp, RM_BPLoc,   &bp_loc);
-		rm_get_data(my_bp, RM_PartitionID, &bp_id);
-		/* from here we either update the node or bitmap
-		   entry */
-		/** translate the location to the "node name" */
+		if (RM_BPState != RM_BP_DOWN)
+			continue;
+
+		rm_get_data(my_bp, RM_BPLoc, &bp_loc);
 		snprintf(bgl_down_node, sizeof(bgl_down_node), "bgl%d%d%d", 
 			bp_loc.X, bp_loc.Y, bp_loc.Z);
-		debug("update bgl node bitmap: %s loc(%s) is in state %s", 
-		      bp_id, bgl_down_node, _convert_bp_state(RM_BPState));
-		// convert_partition_state(BPPartState);
-		// BPID,_convert_bp_state(BPState),bp_loc.X,bp_loc.Y,
-		// bp_loc.Z,BPPartID
-
-		if (RM_BPState == RM_BP_DOWN) {
-			/* now we have to convert the BGL BP to a node
-			 * that slurm knows about = comma separated
-			 * node list
-			 */
-			if ((strlen(down_node_list) + strlen(bgl_down_node) 
-			     +2) < BUFSIZE) {
-				if (down_node_list[0] != '\0')
-					strcat(down_node_list,",");
-				strcat(down_node_list, bgl_down_node);
-			} else
-				error("down_node_list overflow");
-		}
+		debug("update bgl node bitmap: %s in state %s", 
+			bgl_down_node, _convert_bp_state(RM_BPState));
+		if ((strlen(down_node_list) + strlen(bgl_down_node) + 2) 
+				< BUFSIZE) {
+			if (down_node_list[0] != '\0')
+				strcat(down_node_list,",");
+			strcat(down_node_list, bgl_down_node);
+		} else
+			error("down_node_list overflow");
 	}
 
-	if (!down_node_list) {
+	if (down_node_list[0]) {
 		char reason[128];
 		time_t now = time(NULL);
 		struct tm * time_ptr = localtime(&now);
 		strftime(reason, sizeof(reason), 
-			"bluegene_select: RM_BP_DOWN [SLURM @%b %d %H:%M]", 
+			"bluegene_select: CMCS state DOWN [SLURM@%b %d %H:%M]", 
 			time_ptr);
 		slurm_drain_nodes(down_node_list, reason);
 	}
@@ -1177,7 +1151,7 @@ static void _update_bgl_node_bitmap(void)
 }
 
 
-#ifdef USE_BGL_FILES
+#ifdef HAVE_BGL_FILES
 /* Convert base partition state value to a string */
 static char *_convert_bp_state(rm_BP_state_t state)
 {
@@ -1194,7 +1168,8 @@ static char *_convert_bp_state(rm_BP_state_t state)
 		return "BP_STATE_UNIDENTIFIED!";
 	}
 }
-
+#endif
+#ifdef USE_BGL_FILES
 /* Set a base partition's state */
 static void _set_bp_node_state(rm_BP_state_t state, rm_element_t* element)
 {
@@ -1226,19 +1201,23 @@ static void _set_bp_node_state(rm_BP_state_t state, rm_element_t* element)
 extern void *
 bluegene_agent(void *args)
 {
+	static time_t last_node_test, now;
 	struct timeval tv1, tv2;
 	char tv_str[20];
 
-	while (1) {
-		gettimeofday(&tv1, NULL);
-		_update_bgl_node_bitmap();
-		gettimeofday(&tv2, NULL);
-		_diff_tv_str(&tv1, &tv2, tv_str, 20);
-#if _DEBUG
-		debug("Bluegene status update: completed, %s", tv_str);
-#endif
-		sleep(SLEEP_TIME);      /* don't run continuously */
+	last_node_test = time(NULL);
+	while (!agent_fini) {
+		sleep(1);
+		now = time(NULL);
+
+		if (difftime(now, last_node_test) >= NODE_POLL_TIME) {
+			gettimeofday(&tv1, NULL);
+			_test_down_nodes();
+			gettimeofday(&tv2, NULL);
+			_diff_tv_str(&tv1, &tv2, tv_str, 20);
+		}
 	}
+	return NULL;
 }
 
 /*
