@@ -313,7 +313,6 @@ void slurm_free_job_step_create_response_msg ( job_step_create_response_msg_t * 
 
 void slurm_free_launch_tasks_response_msg ( launch_tasks_response_msg_t * msg )
 {
-	int i ;
 	if ( msg )
 	{
 		if ( msg -> node_name )
@@ -340,8 +339,6 @@ void slurm_free_launch_tasks_request_msg ( launch_tasks_request_msg_t * msg )
 			xfree ( msg -> cwd );
 		if ( msg -> cmd_line )
 			xfree ( msg -> cmd_line );
-		if ( msg -> streams )
-			xfree ( msg -> streams );
 		if ( msg -> global_task_ids )
 			xfree ( msg -> global_task_ids );
 		xfree ( msg ) ;
@@ -354,8 +351,6 @@ void slurm_free_reattach_tasks_streams_msg ( reattach_tasks_streams_msg_t * msg 
 	{
 		if ( msg -> credentials )
 			xfree ( msg -> credentials );
-		if ( msg -> streams )
-			xfree ( msg -> streams );
 		if ( msg -> global_task_ids )
 			xfree ( msg -> global_task_ids );
 		xfree ( msg ) ;
