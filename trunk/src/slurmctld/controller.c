@@ -51,7 +51,7 @@
 #include <src/slurmctld/slurmctld.h>
 #include <src/common/credential_utils.h>
 #ifdef	HAVE_AUTHD
-#include <src/common/slurm_authentication.h>
+#include <src/common/slurm_auth_authd.h>
 #endif
 
 #define BUF_SIZE 1024
