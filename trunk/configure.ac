@@ -23,14 +23,14 @@ AM_INIT_AUTOMAKE(slurm, $VERSION)
 AM_CONFIG_HEADER(config.h)
 AM_CONFIG_HEADER(slurm/slurm.h)
 
+X_AC_AIX
+
 dnl Checks for programs.
 dnl
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_MAKE_SET
 AC_PROG_LIBTOOL
-
-X_AC_AIX
 
 AM_CONDITIONAL(WITH_GNU_LD, test "$with_gnu_ld" = "yes")
 
