@@ -2881,7 +2881,7 @@ int set_batch_job_sid(uid_t uid, uint32_t job_id, uint32_t batch_sid)
 		return ESLURM_USER_ID_MISSING;
 	}
 
-error("set_batch_job_sid:%u,%u,%u",uid, job_id, batch_sid);
+	/* debug3("set_batch_job_sid:%u,%u,%u",uid, job_id, batch_sid); */
 	job_ptr->batch_sid = batch_sid;
 	return SLURM_SUCCESS;
 }
