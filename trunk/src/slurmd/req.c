@@ -421,6 +421,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	reattach_tasks_request_msg_t  *req = msg->data;
 	reattach_tasks_response_msg_t  resp;
 
+	memset(&resp, 0, sizeof(reattach_tasks_response_msg_t));
 	slurm_get_addr(cli, &port, host, sizeof(host));
 	req_uid = slurm_auth_uid(msg->cred);
 	req_gid = slurm_auth_gid(msg->cred);
@@ -483,8 +484,8 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 
 	slurm_send_only_node_msg(&resp_msg);
 
-	xfree(resp.gids);
-	xfree(resp.local_pids);
+	FREE_NULL(resp.gids);
+	FREE_NULL(resp.local_pids);
 
 }
 

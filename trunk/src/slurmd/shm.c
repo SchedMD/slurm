@@ -429,7 +429,7 @@ _shm_copy_step(job_step_t *j)
 	job_step_t *s;
 	task_t *t;
 
-	s = xmalloc(sizeof(*s));
+	s = xmalloc(sizeof(job_step_t));
 	_shm_step_copy(s, j);
 
 	for (t = _taskp(j->task_list); t; t = _taskp(t->next)) {
@@ -761,7 +761,7 @@ static void
 _shm_task_copy(task_t *to, task_t *from)
 {
 	*to = *from;
-	/* next and step are not valid for copying */
+	/* next and job_step are not valid for copying */
 	to->used = 1;
 	to->next = NULL;
 	to->job_step = NULL;
