@@ -1101,20 +1101,21 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 
 
 /* 
- * job_cancel - cancel the specified job
- * IN job_id - id of the job to be cancelled
+ * job_signal - signal the specified job
+ * IN job_id - id of the job to be signaled
+ * IN signal - signal to send, SIGKILL == cancel the job
  * IN uid - uid of requesting user
  * RET 0 on success, otherwise ESLURM error code 
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-int job_cancel(uint32_t job_id, uid_t uid)
+int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
 {
 	struct job_record *job_ptr;
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
-		info("job_cancel: invalid job id %u", job_id);
+		info("job_signal: invalid job id %u", job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
@@ -1129,28 +1130,47 @@ int job_cancel(uint32_t job_id, uid_t uid)
 		return ESLURM_USER_ID_MISSING;
 	}
 
-	if (job_ptr->job_state == JOB_PENDING) {
+	if ((job_ptr->job_state == JOB_PENDING) &&
+	    (signal == SIGKILL)) {
 		last_job_update = time(NULL);
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
 		delete_job_details(job_ptr);
-		verbose("job_cancel of pending job %u successful", job_id);
+		verbose("job_signal of pending job %u successful", job_id);
 		return SLURM_SUCCESS;
 	}
 
 	if (job_ptr->job_state == JOB_RUNNING) {
-		last_job_update = time(NULL);
-		job_ptr->job_state = JOB_FAILED;
-		job_ptr->end_time = time(NULL);
-		deallocate_nodes(job_ptr);
-		delete_all_step_records(job_ptr);
-		delete_job_details(job_ptr);
-		verbose("job_cancel of running job %u successful", job_id);
+		ListIterator step_record_iterator;
+		struct step_record *step_ptr;
+		int step_cnt = 0;
+
+		step_record_iterator = 
+				list_iterator_create (job_ptr->step_list);		
+		while ((step_ptr = (struct step_record *)
+					list_next (step_record_iterator))) {
+			signal_step_tasks(step_ptr, signal);
+			step_cnt++;
+		}
+		list_iterator_destroy (step_record_iterator);
+
+		if (signal == SIGKILL) {
+			job_ptr->kill_on_step_done = 1;
+			last_job_update = time(NULL);
+		}
+		if ((signal == SIGKILL) && (step_cnt == 0)) {
+			/* kill job with no active steps */
+			job_ptr->job_state = JOB_COMPLETE;
+			job_ptr->end_time = time(NULL);
+			deallocate_nodes(job_ptr);
+			delete_job_details(job_ptr);
+		}
+		verbose("job_signal of running job %u successful", job_id);
 		return SLURM_SUCCESS;
 	}
 
-	verbose("job_cancel: job %u can't be cancelled from state=%s",
-		job_id, job_state_string(job_ptr->job_state));
+	verbose("job_signal: job %u can't be sent signal %u from state=%s",
+		job_id, signal, job_state_string(job_ptr->job_state));
 	return ESLURM_TRANSITION_STATE_NO_UPDATE;
 }
 

@@ -51,8 +51,6 @@
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer);
 static bitstr_t * _pick_step_nodes (struct job_record  *job_ptr, 
 				    step_specs *step_spec );
-static void _signal_step_tasks(struct step_record *step_ptr, uint16_t signal);
-
 /* 
  * create_step_record - create an empty step_record for the specified job.
  * IN job_ptr - pointer to job table entry to have step record added
@@ -235,12 +233,17 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		return ESLURM_ALREADY_DONE;
 	}
 
-	_signal_step_tasks(step_ptr, signal);
+	signal_step_tasks(step_ptr, signal);
 	return SLURM_SUCCESS;
 
 }
 
-static void _signal_step_tasks(struct step_record *step_ptr, uint16_t signal)
+/*
+ * signal_step_tasks - send specific signal to specific job step
+ * IN step_ptr - step record pointer
+ * IN signal - signal to send
+ */
+void signal_step_tasks(struct step_record *step_ptr, uint16_t signal)
 {
 	int i;
 	kill_tasks_msg_t *kill_tasks_msg;
@@ -329,7 +332,8 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	if (job_ptr->kill_on_step_done)
+	if ((job_ptr->kill_on_step_done) &&
+	    (list_count(job_ptr->step_list) <= 1))
 		return job_complete(job_id, uid, requeue, job_return_code);
 
 	if ((job_ptr->job_state == JOB_FAILED) ||
@@ -517,8 +521,12 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 		return ESLURM_BAD_DIST;
 #endif
 
-	job_ptr->time_last_active = time(NULL);
+	if (job_ptr->kill_on_step_done)
+		/* Don't start more steps, job already being cancelled */
+		return ESLURM_ALREADY_DONE;
 	job_ptr->kill_on_step_done = kill_job_when_step_done;
+
+	job_ptr->time_last_active = time(NULL);
 	nodeset = _pick_step_nodes (job_ptr, step_specs);
 	if (nodeset == NULL)
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE ;
