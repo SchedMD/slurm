@@ -33,7 +33,7 @@ static int  _print_text_job(job_info_t * job_ptr);
 
 extern void get_job(void)
 {
-	int error_code = -1, i, j, count = 0;
+	int error_code = -1, i, j, recs, count = 0;
 
 	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr;
 	job_info_t job;
@@ -62,7 +62,13 @@ extern void get_job(void)
 
 	if (!params.no_header)
 		_print_header_job();
-	for (i = 0; i < new_job_ptr->record_count; i++) {
+
+	if (new_job_ptr)
+		recs = new_job_ptr->record_count;
+	else
+		recs = 0;
+
+	for (i = 0; i < recs; i++) {
 		job = new_job_ptr->job_array[i];
 		if (job.node_inx[0] != -1) {
 			job.num_nodes = 0;
