@@ -54,6 +54,8 @@ noinst_HEADERS = 	xmalloc.h 	\
 			slurm_protocol_common.h	\
 			slurm_protocol_socket_common.h	\
 			slurm_protocol_mongo_common.h	\
+			slurm_protocol_interface.h	\
+			slurm_protocol_errno.h		\
 			qsw.h	
 
 EXTRA_libcommon_la_SOURCES =		\
