@@ -1516,9 +1516,10 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 		if (job_desc->contiguous)
 			bit_fill_gaps(req_bitmap);
 		if (bit_super_set(req_bitmap, part_ptr->node_bitmap) != 1) {
+			char *tmp = bitmap2node_name(req_bitmap);
 			info("_job_create: requested nodes %s not in "
-				"partition %s", job_desc->req_nodes, 
-				part_ptr->name);
+				"partition %s", tmp, part_ptr->name);
+			xfree(tmp);
 			error_code = ESLURM_REQUESTED_NODES_NOT_IN_PARTITION;
 			goto cleanup;
 		}
