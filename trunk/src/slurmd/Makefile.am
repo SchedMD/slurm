@@ -5,8 +5,10 @@ AUTOMAKE_OPTIONS = foreign
 
 if WITH_ELAN
 interconnect_lib = libelan_interconnect.la
+procces_lib = libforked_io.la
 else
 interconnect_lib = libno_interconnect.la
+procces_lib = libthreaded_io.la
 endif
 
 sbin_PROGRAMS = slurmd
@@ -20,7 +22,7 @@ LDADD = $(top_srcdir)/src/common/libcommon.la \
 	$(top_srcdir)/src/common/libdaemonize.la \
 	$(top_srcdir)/src/common/libcred.la \
 	$(interconnect_lib) \
-	libthreaded_io.la \
+	$(procces_lib) \
 	$(SSL_LIBS)
 
 
