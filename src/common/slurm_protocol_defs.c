@@ -283,14 +283,22 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 	}
 }
 
-void slurm_free_reattach_tasks_streams_msg(reattach_tasks_streams_msg_t *
-					   msg)
+void slurm_free_reattach_tasks_request_msg(reattach_tasks_request_msg_t *msg)
 {
 	if (msg) {
-		if (msg->credential)
-			xfree(msg->credential);
-		if (msg->global_task_ids)
-			xfree(msg->global_task_ids);
+		if (msg->ofname)
+			xfree(msg->ofname);
+		if (msg->efname)
+			xfree(msg->efname);
+		if (msg->ifname)
+			xfree(msg->ifname);
+		xfree(msg);
+	}
+}
+
+void slurm_free_reattach_tasks_response_msg(reattach_tasks_response_msg_t *msg)
+{
+	if (msg) {
 		xfree(msg);
 	}
 }
