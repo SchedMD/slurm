@@ -33,6 +33,9 @@
 #  include <pthread.h>
 #endif
 
+#ifdef HAVE_AIX
+#  undef HAVE_UNSETENV
+#endif
 #ifndef HAVE_UNSETENV
 #  include "src/common/unsetenv.h"
 #endif
