@@ -73,8 +73,8 @@ static int quiet_flag;			/* quiet=1, verbose=-1, normal=0 */
 static int input_words;			/* number of words of input permitted */
 
 static int	_get_command (int *argc, char *argv[]);
-static void	_parse_conf_line (char *in_line, bool *have_slurmctld, 
-				  bool *have_slurmd);
+static void	_parse_conf_line (char *in_line, bool *any_slurmctld,
+				  bool *have_slurmctld, bool *have_slurmd);
 static void	_pid2jid(pid_t job_pid);
 static void	_print_config (char *config_param);
 static void     _print_daemons (void);
@@ -292,6 +292,7 @@ _print_daemons (void)
 	int line_num, line_size, i, j;
 	char in_line[BUF_SIZE];
 	bool have_slurmctld = false, have_slurmd = false;
+	bool any_slurmctld = false;
 
 	slurm_spec_file = fopen (SLURM_CONFIG_FILE, "r");
 	if (slurm_spec_file == NULL) {
@@ -334,7 +335,7 @@ _print_daemons (void)
 			break;
 		}
 
-		_parse_conf_line (in_line, 
+		_parse_conf_line (in_line, &any_slurmctld, 
 				  &have_slurmctld, &have_slurmd);
 		if (have_slurmctld && have_slurmd)
 			break;
@@ -342,15 +343,15 @@ _print_daemons (void)
 	fclose (slurm_spec_file);
 
 	strcpy(daemon_list, "");
-	if (have_slurmctld)
+	if (any_slurmctld && have_slurmctld)
 		strcat(daemon_list, "slurmctld ");
-	if (have_slurmd)
+	if (any_slurmctld && have_slurmd)
 		strcat(daemon_list, "slurmd");
 	fprintf (stdout, "%s\n", daemon_list) ;
 }
 
 /*  _parse_conf_line - determine if slurmctld or slurmd location identified */
-static void _parse_conf_line (char *in_line, 
+static void _parse_conf_line (char *in_line, bool *any_slurmctld,
 			      bool *have_slurmctld, bool *have_slurmd)
 {
 	int error_code;
@@ -382,6 +383,7 @@ static void _parse_conf_line (char *in_line,
 		xfree(backup_controller);
 	}
 	if (control_machine) {
+		*any_slurmctld = true;
 		if ((strcmp(control_machine, this_host) == 0) ||
 		    (strcasecmp(control_machine, "localhost") == 0))
 			*have_slurmctld = true;
