@@ -250,6 +250,8 @@ struct part_table {
                                    start_range_1, end_range_1, start_range_2, .., -1  */
         char *allow_groups;     /* comma delimited list of groups, null indicates all */
 } ;
+typedef struct part_table partition_desc_t ;
+typedef struct part_table partition_desc_msg_t ;
 typedef struct part_table partition_table_t ;
 typedef struct part_table partition_table_msg_t ;
 
