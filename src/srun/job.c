@@ -26,7 +26,6 @@
 
 #include <netdb.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <stdlib.h>
 
 #include <src/common/hostlist.h>
