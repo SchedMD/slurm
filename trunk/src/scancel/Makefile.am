@@ -3,14 +3,13 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = -I$(top_srcdir) $(POPT_INCLUDES)
+INCLUDES = -I$(top_srcdir)
 
 bin_PROGRAMS = scancel
 
 scancel_LDADD = 					\
 	$(top_builddir)/src/common/libcommon.la	\
-	$(top_builddir)/src/api/libslurm.la	\
-	$(POPT_LIBS) 
+	$(top_builddir)/src/api/libslurm.la
 
 noinst_HEADERS  = scancel.h
 scancel_SOURCES = scancel.c opt.c

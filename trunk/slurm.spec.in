@@ -13,7 +13,6 @@ Group: System Environment/Base
 Source: %{name}-%{version}-%{release}.tgz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 URL: http://www.llnl.gov/linux/slurm
-Requires: popt 
 Requires: openssl >= 0.9.6
 
 # Don't let rpm complain with unpackaged files:
