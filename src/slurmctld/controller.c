@@ -3,7 +3,8 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Kevin Tew <tew1@llnl.gov> et. al.
+ *  Written by Moe Jette <jette@llnl.gov> 
+ *             Kevin Tew <tew1@llnl.gov> et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -20,11 +21,11 @@
  *  details.
  *  
  *  You should have received a copy of the GNU General Public License along
- *  with ConMan; if not, write to the Free Software Foundation, Inc.,
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifdef have_config_h
+#ifdef HAVE_CONFIG_H
 #  include <config.h>
 #endif
 
