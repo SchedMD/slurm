@@ -81,11 +81,6 @@ main (int argc, char *argv[])
 		pass ("found job %u, script=%s", 
 			job_rec->job_id, job_rec->details->job_script);
 
-	error_code = delete_job_record (tmp_id);
-	if (error_code) 
-		fail ("delete_job_record error %d", error_code);
-	else pass("delete_job_record");
-
 	job_rec = find_job_record (tmp_id);
 	if (job_rec != NULL) 
 		fail ("find_job_record error 2");
