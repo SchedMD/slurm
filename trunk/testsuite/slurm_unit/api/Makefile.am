@@ -1,7 +1,11 @@
 AUTOMAKE_OPTIONS = foreign
 
 SUBDIRS = manual
-noinst_PROGRAMS = api-test 
+
+check_PROGRAMS = $(TESTS)
+
+TESTS = \
+	api-test 
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 LDADD   = $(top_builddir)/src/common/libcommon.la \

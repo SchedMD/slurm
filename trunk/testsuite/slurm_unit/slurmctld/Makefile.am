@@ -1,7 +1,15 @@
 AUTOMAKE_OPTIONS = foreign
 
-noinst_PROGRAMS = job_mgr-test job_step-test job_add job_cancel step_create
-noinst_HEADERS  = get_resp.h
+check_PROGRAMS = $(TESTS)
+noinst_HEADERS = get_resp.h
+
+TESTS = \
+	job_mgr-test \
+	job_step-test \
+	job_add \
+	job_cancel \
+	step_create
+
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
