@@ -42,6 +42,7 @@
 
 #include <slurm/slurm_errno.h>
 
+#include "src/common/daemonize.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_auth.h"
@@ -139,7 +140,8 @@ static void *_background_signal_hand(void *no_data)
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-	info("Send signals to _background_signal_hand, pid = %u", getpid());
+
+	create_pidfile(slurmctld_conf.slurmctld_pidfile);
 
 	if (sigemptyset(&set))
 		error("sigemptyset error: %m");
