@@ -10,7 +10,7 @@
 #include <src/common/xmalloc.h>
 
 
-uint32_t debug = false ;
+extern uint32_t debug ;
 
 extern int errno ;
 
@@ -169,12 +169,12 @@ slurm_fd slurm_open_stream ( slurm_addr * slurm_address )
 	return _slurm_open_stream ( slurm_address ) ;
 }
 
-ssize_t slurm_write_stream ( slurm_fd open_fd , char * buffer , size_t size )
+size_t slurm_write_stream ( slurm_fd open_fd , char * buffer , size_t size )
 {
 	return _slurm_send ( open_fd , buffer , size , NO_SEND_RECV_FLAGS ) ;
 }
 
-ssize_t slurm_read_stream ( slurm_fd open_fd , char * buffer , size_t size )
+size_t slurm_read_stream ( slurm_fd open_fd , char * buffer , size_t size )
 {
 	return _slurm_recv ( open_fd , buffer , size , NO_SEND_RECV_FLAGS ) ;
 }
