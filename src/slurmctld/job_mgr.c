@@ -39,6 +39,13 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#ifdef HAVE_LIBELAN3
+#include <elan3/elan3.h>
+#include <elan3/elanvp.h>
+#define BUF_SIZE (1024 + ELAN_MAX_VPS)
+#else
+#define BUF_SIZE 1024
+#endif
 
 #include <src/common/list.h>
 #include <src/common/macros.h>
@@ -51,7 +58,6 @@
 #include <src/common/credential_utils.h>
 slurm_ssl_key_ctx_t sign_ctx ;
 
-#define BUF_SIZE 1024
 #define MAX_STR_PACK 128
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
 #define TOP_PRIORITY 100000;
@@ -277,6 +283,7 @@ dump_all_job_state ( void )
 {
 	int buf_len, buffer_allocated, buffer_offset = 0, error_code = 0, log_fd;
 	char *buffer;
+	int buffer_needed;
 	void *buf_ptr;
 	char *old_file, *new_file, *reg_file;
 	/* Locks: Read config and node */
@@ -298,15 +305,18 @@ dump_all_job_state ( void )
 	while ((job_record_point = (struct job_record *) list_next (job_record_iterator))) {
 		if (job_record_point->magic != JOB_MAGIC)
 			fatal ("dump_all_job: job integrity is bad");
-
+		buffer_needed = BUF_SIZE;
+#ifdef HAVE_LIBELAN3
+		buffer_needed += (step_count (job_record_point) * ELAN_MAX_VPS / 8);
+#endif
+		if (buf_len < buffer_needed) {
+			buffer_allocated += buffer_needed;
+			buf_len += buffer_needed;
+			buffer_offset = (char *)buf_ptr - buffer;
+			xrealloc(buffer, buffer_allocated);
+			buf_ptr = buffer + buffer_offset;
+		}
 		dump_job_state (job_record_point, &buf_ptr, &buf_len);
-		if (buf_len > BUF_SIZE) 
-			continue;
-		buffer_allocated += (BUF_SIZE*16);
-		buf_len += (BUF_SIZE*16);
-		buffer_offset = (char *)buf_ptr - buffer;
-		xrealloc(buffer, buffer_allocated);
-		buf_ptr = buffer + buffer_offset;
 	}		
 	unlock_slurmctld (job_read_lock);
 	list_iterator_destroy (job_record_iterator);
@@ -394,6 +404,13 @@ dump_job_state (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 	/* Dump job steps */
 	step_record_iterator = list_iterator_create (dump_job_ptr->step_list);		
 	while ((step_record_ptr = (struct step_record *) list_next (step_record_iterator))) {
+#ifdef HAVE_LIBELAN3
+		if (*buf_len < ((ELAN_MAX_VPS / 8) + 60)) {
+			fatal ("dump_job_state, buffer space too small for %u.%u",
+				dump_job_ptr->job_id, step_record_ptr->step_id);
+			break;
+		}
+#endif
 		pack16  ((uint16_t) 0xbbbb, buf_ptr, buf_len);	/* step flag */
 		dump_job_step_state (step_record_ptr, buf_ptr, buf_len);
 	};
@@ -496,6 +513,7 @@ dump_job_step_state (struct step_record *step_ptr, void **buf_ptr, int *buf_len)
 	char *node_list;
 
 	pack16  ((uint16_t) step_ptr->step_id, buf_ptr, buf_len);
+	pack16  ((uint16_t) step_ptr->cyclic_alloc, buf_ptr, buf_len);
 	pack32  ((uint32_t) step_ptr->start_time, buf_ptr, buf_len);
 	node_list = bitmap2node_name (step_ptr->node_bitmap);
 	packstr (node_list, buf_ptr, buf_len);
@@ -689,11 +707,12 @@ load_job_state ( void )
 		safe_unpack16 (&step_flag, &buf_ptr, &buffer_size);
 		while ((step_flag == 0xbbbb) && (buffer_size > (2 * sizeof (uint32_t)))) {
 			struct step_record *step_ptr;
-			uint16_t step_id;
+			uint16_t step_id, cyclic_alloc;
 			uint32_t start_time;
 			char *node_list;
 
 			safe_unpack16 (&step_id, &buf_ptr, &buffer_size);
+			safe_unpack16 (&cyclic_alloc, &buf_ptr, &buffer_size);
 			safe_unpack32 (&start_time, &buf_ptr, &buffer_size);
 			safe_unpackstr_xmalloc (&node_list, &name_len, &buf_ptr, &buffer_size);
 
@@ -701,6 +720,7 @@ load_job_state ( void )
 			if (step_ptr == NULL) 
 				break;
 			step_ptr->step_id = step_id;
+			step_ptr->cyclic_alloc = cyclic_alloc;
 			step_ptr->start_time = start_time;
 			info ("recovered job step %u.%u", job_id, step_id);
 			if (node_list) {

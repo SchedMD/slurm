@@ -260,7 +260,7 @@ slurmctld_rpc_mgr ( void * no_data )
 		pthread_mutex_lock(&thread_count_lock);
 		server_thread_count++;
 		pthread_mutex_unlock(&thread_count_lock);
-		if (server_thread_count > MAX_SERVER_THREAD_COUNT) {
+		if (server_thread_count >= MAX_SERVER_THREAD_COUNT) {
 			info ("Warning: server_thread_count is %d, over system limit", server_thread_count);
 			no_thread = 1;
 		}

@@ -200,6 +200,7 @@ struct job_record {
 struct 	step_record {
 	struct job_record* job_ptr; 	/* ptr to the job that owns the step */
 	uint16_t step_id;		/* step number */
+	uint16_t cyclic_alloc;		/* set for cyclic task allocation to nodes */
 	time_t start_time;      	/* step allocation time */
 	bitstr_t *node_bitmap;		/* bitmap of nodes in allocated to job step */
 #ifdef HAVE_LIBELAN3
@@ -471,6 +472,9 @@ extern void	set_job_prio (struct job_record *job_ptr);
 
 /* set_slurmd_addr - establish the slurm_addr for the slurmd on each node */
 extern void set_slurmd_addr (void);
+
+/* step_count - return a count of steps associated with a specific job */
+extern int step_count (struct job_record *job_ptr);
 
 /* step_create - parse the suppied job step specification and create step_records for it */
 extern int step_create ( step_specs *step_specs, struct step_record** );
