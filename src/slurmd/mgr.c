@@ -599,9 +599,6 @@ _handle_task_exit(slurmd_job_t *job)
 		t->exited  = true;
 		t->esent   = false;
 		nexited++;
-
-		debug2("global task %d exited with status %d", 
-		        t->gid, t->estatus);
 	} 
 
 	return nexited;
