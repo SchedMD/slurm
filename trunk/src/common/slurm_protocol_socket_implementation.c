@@ -374,7 +374,8 @@ slurm_fd _slurm_listen_stream(slurm_addr *addr)
         return fd;
 
     error:
-        _slurm_close_stream(fd);
+	if ((_slurm_close_stream(fd) < 0) && (errno == EINTR))
+		_slurm_close_stream(fd);	/* try again */
         return rc;
         
 }
@@ -408,7 +409,8 @@ slurm_fd _slurm_open_stream(slurm_addr *addr)
         return fd;
 
     error:
-        _slurm_close_stream(fd);
+	if ((_slurm_close_stream(fd) < 0) && (errno == EINTR))
+		_slurm_close_stream(fd);	/* try again */
         return rc;
 }
         

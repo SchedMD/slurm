@@ -57,6 +57,7 @@
 
 /* #DEFINES */
 #define _DEBUG        0
+#define MAX_SHUTDOWN_RETRY 10
 #define SLURM_DEFAULT_TIMEOUT 2000
 
 /* STATIC VARIABLES */
@@ -782,16 +783,21 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req, slurm_msg_t *resp,
                    int timeout)
 {
         int err = SLURM_SUCCESS;
+	int retry = 0;
 
         if (  (slurm_send_node_msg(fd, req) < 0)
            || (slurm_receive_msg(fd, resp, timeout)  < 0) ) 
                 err = errno;
 
-        /* 
-         *  Attempt to close an open connection
-         */
-        if (slurm_shutdown_msg_conn(fd) < 0)
-                return SLURM_ERROR;
+	/* 
+	 *  Attempt to close an open connection
+	 */
+	while ( (slurm_shutdown_msg_conn(fd) < 0) && (errno == EINTR) ) {
+		if (retry++ > MAX_SHUTDOWN_RETRY) {
+			err = errno;
+			break;
+		}
+	}
 
         if (err) slurm_seterrno_ret(err);
 
@@ -867,6 +873,7 @@ int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 int slurm_send_only_controller_msg(slurm_msg_t *req)
 {
         int      rc = SLURM_SUCCESS;
+	int      retry = 0;
         slurm_fd fd = -1;
 
         /*
@@ -879,9 +886,14 @@ int slurm_send_only_controller_msg(slurm_msg_t *req)
 
         rc = slurm_send_node_msg(fd, req);
 
-	if (slurm_shutdown_msg_conn(fd) < 0) {
-		rc = SLURM_SOCKET_ERROR;
-		goto cleanup;
+	/* 
+	 *  Attempt to close an open connection
+	 */
+	while ( (slurm_shutdown_msg_conn(fd) < 0) && (errno == EINTR) ) {
+		if (retry++ > MAX_SHUTDOWN_RETRY) {
+			rc = SLURM_SOCKET_ERROR;
+			goto cleanup;
+		}
 	}
 
       cleanup:
@@ -899,6 +911,7 @@ int slurm_send_only_controller_msg(slurm_msg_t *req)
 int slurm_send_only_node_msg(slurm_msg_t *req)
 {
         int      rc = SLURM_SUCCESS;
+	int      retry = 0;
         slurm_fd fd = -1;
 
         if ((fd = slurm_open_msg_conn(&req->address)) < 0)
@@ -906,8 +919,13 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 
         rc = slurm_send_node_msg(fd, req);
 
-        if (slurm_shutdown_msg_conn(fd) < 0)
-                return SLURM_SOCKET_ERROR;
+	/* 
+	 *  Attempt to close an open connection
+	 */
+	while ( (slurm_shutdown_msg_conn(fd) < 0) && (errno == EINTR) ) {
+		if (retry++ > MAX_SHUTDOWN_RETRY)
+			return SLURM_SOCKET_ERROR;
+	}
 
         return rc;
 }
