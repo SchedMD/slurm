@@ -226,11 +226,6 @@ main(int ac, char **av)
 	}
 
 	pthread_attr_init(&attr);
-#if 0
-/* FIXME: THIS IS REPORTING NO ERROR BUT CORRUPTING MEMORY */
-	pthread_attr_setstacksize(&attr, 16384);
-#endif
-
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	/* spawn msg server thread */
 	if ((errno = pthread_create(&job->jtid, &attr, &msg_thr, (void *) job)))
@@ -238,10 +233,6 @@ main(int ac, char **av)
 	debug("Started msg server thread (%d)\n", job->jtid);
 
 	pthread_attr_init(&ioattr);
-#if 0
-/* FIXME: THIS IS REPORTING NO ERROR BUT CORRUPTING MEMORY */
-	pthread_attr_setstacksize(&ioattr, 16384);
-#endif
 	/* spawn io server thread */
 	if ((errno = pthread_create(&job->ioid, &ioattr, &io_thr, (void *) job)))
 		fatal("Unable to create io thread. %m\n");
