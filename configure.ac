@@ -58,6 +58,9 @@ dnl check to see if glibc's program_invocation_short_name is available:
 dnl
 X_AC_SLURM_PROGRAM_INVOCATION_SHORT_NAME
 
+dnl Check if ptrace takes four or five arguments
+dnl
+X_AC_PTRACE
 
 dnl Checks for types.
 dnl

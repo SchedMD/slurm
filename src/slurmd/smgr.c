@@ -562,7 +562,11 @@ _pdebug_trace_process(slurmd_job_t *job, pid_t pid)
 		waitpid(pid, &status, WUNTRACED);
 		if (kill(pid, SIGSTOP) < 0)
 			error("kill(%lu): %m", (unsigned long) pid);
+#ifdef PTRACE_FIVE_ARGS
+		if (ptrace(PTRACE_DETACH, (long) pid, NULL, 0, NULL))
+#else
 		if (ptrace(PTRACE_DETACH, (long) pid, NULL, NULL))
+#endif
 			error("ptrace(%lu): %m", (unsigned long) pid);
 	}
 }
@@ -577,6 +581,10 @@ _pdebug_stop_current(slurmd_job_t *job)
 	 * Stop the task on exec for TotalView to connect 
 	 */
 	if ( (job->task_flags & TASK_PARALLEL_DEBUG)
+#ifdef PTRACE_FIVE_ARGS
+	     && (ptrace(PTRACE_TRACEME, 0, NULL, 0, NULL) < 0) )
+#else
 	     && (ptrace(PTRACE_TRACEME, 0, NULL, NULL) < 0) )
+#endif
 		error("ptrace: %m");
 }

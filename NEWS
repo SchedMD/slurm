@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
     responding in a timely fashion) then send a registration RPC
     to slurmctld
  -- Add "slurm_" prefix to slurm's hostlist_ function man pages.
+ -- More AIX support added.
 
 * Changes in SLURM 0.3.1
 ========================
