@@ -13,6 +13,9 @@ documents those changes that are of interest to users and admins.
     not responding. Wait for tasks to complete or admin to set DOWN
  -- Always chmod SlurmdSpoolDir to 755 (a umask of 007 was resulting 
     in batch jobs failing)
+ -- Return errors when trying to change configuration parameters
+    AuthType, SchedulerType, and SwitchType via "scontrol reconfig"
+    or SIGHUP. Document how to safely change these parameters.
 
 * Changes in SLURM 0.3.0.0-pre6
 ===============================
