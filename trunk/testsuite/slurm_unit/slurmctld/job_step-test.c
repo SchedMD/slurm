@@ -74,12 +74,7 @@ main( int argc, char* argv[])
 		job_step_create_response_msg_t* msg = (job_step_create_response_msg_t *) response_msg.data ;
 		printf("job_step_id = %u\n ", msg->	job_step_id );
 		printf("node_list = %s\n", msg->node_list );
-		printf("credentials:\n\tjob_id = %u\n\tuser_id = %u\n\tnode_list = %s\n\texpiration_time = %lu\n\tsignature = %s\n\n", 
-					msg->credentials->job_id, 
-					msg->credentials->user_id, 
-					msg->credentials->node_list, 
-					msg->credentials->expiration_time, 
-					msg->credentials->signature);
+		slurm_cred_print(msg->cred);
 #ifdef HAVE_LIBELAN3
     /* print the elan stuff */
 #endif

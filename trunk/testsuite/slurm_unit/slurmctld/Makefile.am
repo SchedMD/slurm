@@ -34,7 +34,6 @@ LDADD   = $(top_builddir)/src/common/libcommon.la \
 		$(top_builddir)/src/common/parse_spec.o  \
 		$(top_builddir)/src/slurmctld/read_config.o \
 		$(top_builddir)/src/api/libslurm.la \
-		$(top_builddir)/src/common/libcred.la \
 		$(SSL_LIBS)
 
 force :
