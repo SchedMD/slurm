@@ -92,7 +92,7 @@ int fan_out_task_launch ( launch_tasks_request_msg_t * launch_msg )
 	for ( i = 0 ; i < launch_msg->tasks_to_launch ; i ++ )
 	{
 		rc = pthread_join( task_start[i]->pthread_id , NULL )  ;
-		debug3 ( "thread %i pthread_id %i joined " , i , task_start[i]->pthread_id ) ;
+		debug3 ( "fan_out_task_launch: thread %i pthread_id %i joined " , i , task_start[i]->pthread_id ) ;
 	}
 	goto return_label;
 
@@ -139,8 +139,6 @@ void * task_exec_thread ( void * arg )
 			break ;
 
 		case CHILD_PROCCESS:
-			debug ("CLIENT PROCESS");
-
 			unblock_all_signals ( ) ;
 
 			posix_signal_ignore (SIGTTOU); /* ignore tty output */

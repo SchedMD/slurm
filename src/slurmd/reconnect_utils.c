@@ -77,9 +77,9 @@ ssize_t read_EINTR(int fd, void *buf, size_t count)
 	{
 		if ( ( bytes_read = read ( fd, buf, count ) ) <= 0 )
 		{
-			debug ( "bytes_read: %i , %m errno: %i", bytes_read , errno ) ;
 			if ( ( bytes_read == SLURM_PROTOCOL_ERROR ) && ( errno == EINTR ) )
 			{
+				debug ( "read_EINTR: bytes_read: %i , fd: %i %m errno: %i", bytes_read , fd , errno ) ;
 				continue ;
 			}
 		}
@@ -94,9 +94,9 @@ ssize_t write_EINTR(int fd, void *buf, size_t count)
 	{
 		if ( ( bytes_written = write ( fd, buf, count ) ) <= 0 )
 		{
-			debug ( "bytes_written: %i , %m errno: %i", bytes_written , errno ) ;
 			if ( ( bytes_written == SLURM_PROTOCOL_ERROR ) && ( errno == EINTR ) )
 			{
+				debug ( "write_EINTR: bytes_written: %i , fd: %i %m errno: %i", bytes_written , fd , errno ) ;
 				continue ;
 			}
 		}

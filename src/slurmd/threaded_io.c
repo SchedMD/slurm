@@ -71,13 +71,13 @@ int wait_on_io_threads ( task_start_t * task_start )
 {
 	/* threads have been detatched*/
 	pthread_join ( task_start->io_pthread_id[STDERR_FILENO] , NULL ) ;
-	info ( "errexit" ) ;
+	info ( "%i: errexit" , task_start -> local_task_id ) ;
 	pthread_join ( task_start->io_pthread_id[STDOUT_FILENO] , NULL ) ;
-	info ( "outexit" ) ;
+	info ( "%i: outexit" , task_start -> local_task_id ) ;
 	/*pthread_join ( task_start->io_pthread_id[STDIN_FILENO] , NULL ) ;*/
 	pthread_cancel ( task_start->io_pthread_id[STDIN_FILENO] );
 	pthread_join ( task_start->io_pthread_id[STDIN_FILENO] , NULL ) ;
-	info ( "inexit" ) ;
+	info ( "%i: inexit" , task_start -> local_task_id ) ;
 	/* thread join on stderr or stdout signifies task termination we should kill the stdin thread */
 	return SLURM_SUCCESS ;
 }
