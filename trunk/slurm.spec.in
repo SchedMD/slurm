@@ -15,8 +15,6 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 URL: http://www.llnl.gov/linux/slurm
 Requires: openssl >= 0.9.6
 
-# Don't let rpm complain with unpackaged files:
-%define _unapackaged_files_terminate_build 0
 
 #
 # If "--with debug" is set compile with --enable-debug 
@@ -108,6 +106,8 @@ DESTDIR="$RPM_BUILD_ROOT" make install
 
 install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/rc.d/init.d/slurm
 install -D -m644 etc/slurm.conf.example $RPM_BUILD_ROOT/etc/slurm/slurm.conf
+# Delete unpackaged files:
+rm -f $RPM_BUILD_ROOT/usr/lib/slurm/*.{a,la}
 
 #############################################################################
 
