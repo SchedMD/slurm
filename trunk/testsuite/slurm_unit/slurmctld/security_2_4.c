@@ -18,6 +18,7 @@ main (int argc, char *argv[])
 	slurm_init_job_desc_msg( &job_mesg );
 	job_mesg. user_id	= getuid() + 1;
 	job_mesg. min_nodes	= 1;
+	job_mesg. task_dist	= SLURM_DIST_CYCLIC;
 
 	error_code = slurm_allocate_resources_and_run ( &job_mesg , 
 							&run_resp_msg ); 

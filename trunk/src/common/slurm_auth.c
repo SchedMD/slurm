@@ -285,6 +285,13 @@ slurm_auth_init( void )
                 goto done;
 
 	auth_type = slurm_get_auth_type();
+	if (strcmp(auth_type, "auth/dummy") == 0) {
+		info( "warning: %s plugin selected", auth_type);
+		retval = SLURM_ERROR;
+		xfree(auth_type);
+		goto done;
+	}
+
         g_context = slurm_auth_context_create( auth_type );
         if ( g_context == NULL ) {
                 error( "cannot create a context for %s", auth_type );

@@ -212,6 +212,20 @@ char *slurm_get_auth_type(void)
         return auth_type;
 }
 
+/* slurm_set_auth_type
+ * set the authentication type in slurmctld_conf object
+ * used for security testing purposes
+ * RET 0 or error code
+ */
+extern int slurm_set_auth_type(char *auth_type)
+{
+        _lock_update_config();
+        xfree(slurmctld_conf.authtype);
+        slurmctld_conf.authtype = xstrdup(auth_type);
+        slurm_mutex_unlock(&config_lock);
+        return 0;
+}
+
 /* slurm_get_jobcomp_type
  * returns the job completion logger type from slurmctld_conf object
  * RET char *    - job completion type,  MUST be xfreed by caller
