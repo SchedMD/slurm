@@ -1,9 +1,9 @@
 /*****************************************************************************\
  *  jobcomp_script.c - Script running slurm job completion logging plugin.
  *****************************************************************************
- *  Produced at Center for High Performance Computing, North Dakota State 
+ *  Produced at Center for High Performance Computing, North Dakota State
  *  University
- *  Written by Nathan Huff <nhuff@geekshanty.com>
+ *  Written by Nathan Huff <nhuff@acm.org>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -26,16 +26,12 @@
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  endif
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#  if HAVE_SYS_TYPES_H
-#    include <sys/types.h>
-#  endif
-#else
+#endif
+
+#if HAVE_STDINT_H
+#  include <stdint.h>
+#endif
+#if HAVE_INTTYPES_H
 #  include <inttypes.h>
 #endif
 
@@ -43,14 +39,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <paths.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/list.h"
+#include "job_record.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -88,28 +89,59 @@ const uint32_t plugin_version	= 90;
 static int plugin_errno = SLURM_SUCCESS;
 static char * script = NULL;
 static char error_str[256];
+static List job_list = NULL;
+
+static pthread_t script_thread;
+static bool thread_running = false;
+static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t job_list_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t job_list_cond = PTHREAD_COND_INITIALIZER;
+
 
 /*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
+ * Check if the script exists and if we can execute it.
  */
-int init ( void )
+static int 
+_check_script_permissions(char * location)
 {
-	return SLURM_SUCCESS;
-}
+	struct stat filestat;
+	uid_t user;
+	gid_t group;
 
-
-/* Set the location of the script to run*/
-int slurm_jobcomp_set_location ( char * location )
-{
-	if (location == NULL) {
-		plugin_errno = EACCES;
-		return SLURM_ERROR;
+	if(stat(location,&filestat) < 0) {
+		plugin_errno = errno;
+		return error("jobcomp/script script does not exist");
 	}
-	xfree(script);
-	script = xstrdup(location);
-	return SLURM_SUCCESS;
+
+	if(!(filestat.st_mode&S_IFREG)) {
+		plugin_errno = EACCES;
+		return error("jobcomp/script script isn't a regular file");
+	}
+	
+	user = geteuid();
+	group = getegid();
+	if(user == filestat.st_uid) {
+		if (filestat.st_mode&S_IXUSR) {
+			return SLURM_SUCCESS;
+		} else {
+			plugin_errno = EACCES;
+			return error("jobcomp/script script is not executable");
+		}
+	} else if(group == filestat.st_gid) {
+		if (filestat.st_mode&S_IXGRP) {
+			return SLURM_SUCCESS;
+		} else {
+			plugin_errno = EACCES;
+			return error("jobcomp/script script is not executable");
+		}
+	} else if(filestat.st_mode&S_IXOTH) {
+		return SLURM_SUCCESS;
+	}
+
+	plugin_errno = EACCES;
+	return error("jobcomp/script script is not executable");
 }
+
 
 /* Create a new environment pointer containing information from 
  * slurm_jobcomp_log_record so that the script can access it.
@@ -131,7 +163,7 @@ static char ** _create_environment(char *job, char *user, char *job_name,
 	len += strlen(start)+7;
 	len += strlen(end)+5;
 	len += strlen(node_list)+7;
-#ifdef	_PATH_STDPATH
+#ifdef _PATH_STDPATH
 	len += strlen(_PATH_STDPATH)+6;
 #endif
 	len += (11*sizeof(char *));
@@ -194,7 +226,7 @@ static char ** _create_environment(char *job, char *user, char *job_name,
 	memcpy(ptr,node_list,strlen(node_list)+1);
 	ptr += strlen(node_list)+1;
 
-#ifdef	_PATH_STDPATH
+#ifdef _PATH_STDPATH
 	envptr[9] = ptr;
 	memcpy(ptr,"PATH=",5);
 	ptr += 5;
@@ -209,95 +241,161 @@ static char ** _create_environment(char *job, char *user, char *job_name,
 	return envptr;
 }
 
-int slurm_jobcomp_log_record ( uint32_t job_id, uint32_t user_id, char *job_name,
-		char *job_state, char *partition, uint32_t time_limit,
-		time_t start, time_t end_time, char *node_list)
-{
+/*
+ * Thread function that executes a script
+ */
+void *script_agent (void *args) {
 	pid_t pid = -1;
 	char user_id_str[32],job_id_str[32], nodes_cache[1];
 	char start_str[32], end_str[32], lim_str[32];
 	char * argvp[] = {script,NULL};
-	int ret_value = SLURM_SUCCESS;
+	int status;
 	char ** envp, * nodes;
+	job_record job;
 
-	debug3("Entering slurm_jobcomp_log_record");
-	snprintf(user_id_str,sizeof(user_id_str),"%u",user_id);
-	snprintf(job_id_str,sizeof(job_id_str),"%u",job_id);
-	snprintf(start_str, sizeof(start_str),"%lu",(long unsigned int) start);
-	snprintf(end_str, sizeof(end_str),"%lu",(long unsigned int) end_time);
-	nodes_cache[0] = '\0';
-
-	if (time_limit == INFINITE) {
-		strcpy(lim_str, "UNLIMITED");
-	} else {
-		snprintf(lim_str, sizeof(lim_str), "%lu", (unsigned long) time_limit);
-	}
-	
-	if (node_list == NULL) {
-		nodes = nodes_cache;
-	} else {
-		nodes = node_list;
-	}
-
-	/* Setup environment */
-	envp = _create_environment(job_id_str,user_id_str,job_name,job_state,
-					partition,lim_str,start_str,end_str,nodes);
-
-	if (envp == NULL) {
-		plugin_errno = ENOMEM;
-		return SLURM_ERROR;
-	}
-
-	pid = fork();
-
-	if (pid < 0) {
-		/* Something bad happened */
-		error("fork: %m");
-		xfree(envp);
-		plugin_errno = errno;
-		return SLURM_ERROR;
-	} else if (pid == 0) {
-		/*Child process*/
-
-		/*Change directory to tmp*/
-		if (chdir(_PATH_TMP) != 0) {
-			exit(errno);
+	while(1) {
+		pthread_mutex_lock(&job_list_mutex);
+		while(list_is_empty(job_list) != 0) {
+			pthread_cond_wait(&job_list_cond,&job_list_mutex);
 		}
-
-		/*Redirect stdin, stderr, and stdout to /dev/null*/
-		if (freopen(_PATH_DEVNULL, "rb", stdin) == NULL) {
-			exit(errno);
-		}
-		if (freopen(_PATH_DEVNULL, "wb", stdout) == NULL) {
-			exit(errno);
-		}
-		if (freopen(_PATH_DEVNULL, "wb", stderr) == NULL) {
-			exit(errno);
-		}
+		job = (job_record)list_pop(job_list);
+		pthread_mutex_unlock(&job_list_mutex);
 		
-		/*Exec Script*/
-		execve(script,argvp,envp);
-		return SLURM_ERROR;	/* should never reach this */
-	} else {
-		/*Parent Processes*/
 
-		/*
-		 * Wait for the script to finish and get the exit status
-		 * Not sure if this is a good idea.  Might want to just return.
-		 */
-		waitpid(pid, &ret_value, 0);
-		xfree(envp);
-		debug3("Exiting slurm_jobcomp_log_record");
-		if (WIFEXITED(ret_value) && !WEXITSTATUS(ret_value)) {
-			return SLURM_SUCCESS;
+		snprintf(user_id_str,sizeof(user_id_str),"%u",job->user_id);
+		snprintf(job_id_str,sizeof(job_id_str),"%u",job->job_id);
+		snprintf(start_str, sizeof(start_str),"%lu",
+			(unsigned long)job->start);
+		snprintf(end_str, sizeof(end_str),"%lu",
+			(unsigned long)job->end);
+		nodes_cache[0] = '\0';
+
+		if (job->limit == INFINITE) {
+			strcpy(lim_str, "UNLIMITED");
 		} else {
-			plugin_errno = WEXITSTATUS(ret_value);
-			return SLURM_ERROR;
+			snprintf(lim_str, sizeof(lim_str), "%lu", 
+				(unsigned long) job->limit);
+		}
+	
+		if(job->node_list == NULL) {
+			nodes = nodes_cache;
+		} else {
+			nodes = job->node_list;
+		}
+
+		/*Setup environment*/
+		envp = _create_environment(job_id_str,user_id_str,
+					job->job_name, job->job_state,
+					job->partition, lim_str,
+					start_str,end_str,nodes);
+
+		if(envp == NULL) {
+			plugin_errno = ENOMEM;
+		}
+
+		pid = fork();
+
+		if (pid < 0) {
+			xfree(envp);
+			job_record_destroy((void *)job);
+			plugin_errno = errno;
+		} else if (pid == 0) {
+			/*Change directory to tmp*/
+			if (chdir(_PATH_TMP) != 0) {
+				exit(errno);
+			}
+
+			/*Redirect stdin, stderr, and stdout to /dev/null*/
+			if (freopen(_PATH_DEVNULL, "rb", stdin) == NULL) {
+				exit(errno);
+			}
+			if (freopen(_PATH_DEVNULL, "wb", stdout) == NULL) {
+				exit(errno);
+			}
+			if (freopen(_PATH_DEVNULL, "wb", stderr) == NULL) {
+				exit(errno);
+			}
+		
+			/*Exec Script*/
+			execve(script,argvp,envp);
+		} else {
+			xfree(envp);
+			job_record_destroy((void *)job);
+			waitpid(pid,&status,0);
+			if(WIFEXITED(status) && WEXITSTATUS(status)) {
+				plugin_errno = WEXITSTATUS(status);
+			}
 		}
 	}
 }
 
-/* Return the error code of the plugin */
+/*
+ * init() is called when the plugin is loaded, before any other functions
+ * are called.  Put global initialization here.
+ */
+int init ( void )
+{
+	pthread_attr_t attr;
+
+	verbose("jobcomp/script plugin loaded init");
+
+	pthread_mutex_lock(&thread_flag_mutex);
+
+	job_list = list_create((ListDelF) job_record_destroy);
+	if(job_list == NULL) {
+		return SLURM_ERROR;
+	}
+
+	if (thread_running) {
+		debug2( "Script thread already running, not starting another");
+		pthread_mutex_unlock(&thread_flag_mutex);
+		return SLURM_ERROR;
+	}
+	slurm_attr_init(&attr);
+	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
+	pthread_create(&script_thread, &attr, script_agent, NULL);
+	thread_running = true;
+	
+	pthread_mutex_unlock(&thread_flag_mutex);
+
+	return SLURM_SUCCESS;
+}
+
+/* Set the location of the script to run*/
+int slurm_jobcomp_set_location ( char * location )
+{
+	if (location == NULL) {
+		plugin_errno = EACCES;
+		return error("jobcomp/script JobCompLoc needs to be set");
+	}
+
+	if (_check_script_permissions(location) != SLURM_SUCCESS) {
+		return SLURM_ERROR;
+	}
+
+	xfree(script);
+	script = xstrdup(location);
+	
+	return SLURM_SUCCESS;
+}
+
+int slurm_jobcomp_log_record ( uint32_t job_id, uint32_t user_id, char *job_name,
+		char *job_state, char *partition, uint32_t time_limit,
+		time_t start, time_t end_time, char *node_list)
+{
+	job_record job;
+
+	debug3("Entering slurm_jobcomp_log_record");
+	job = job_record_create(job_id,user_id,job_name,job_state,partition,time_limit,
+				start,end_time,node_list);
+	pthread_mutex_lock(&job_list_mutex);
+	list_append(job_list,(void *)job);
+	pthread_mutex_unlock(&job_list_mutex);
+	pthread_cond_broadcast(&job_list_cond);
+	return SLURM_SUCCESS;
+}
+
+/* Return the error code of the plugin*/
 int slurm_jobcomp_get_errno( void )
 {
 	return plugin_errno;
@@ -313,6 +411,19 @@ char *slurm_jobcomp_strerror( int errnum )
 /* Called when script unloads */
 int fini ( void )
 {
+	pthread_mutex_lock(&thread_flag_mutex);
+	if(thread_running) {
+		verbose("Script Job Completion plugin shutting down");
+		pthread_cancel(script_thread);
+		thread_running = false;
+	}
+	pthread_mutex_unlock(&thread_flag_mutex);
+
 	xfree(script);
+
+	pthread_mutex_lock(&job_list_mutex);
+	list_destroy(job_list);
+	pthread_mutex_unlock(&job_list_mutex);
+
 	return SLURM_SUCCESS;
 }
