@@ -238,6 +238,33 @@ int kill_tasks ( kill_tasks_msg_t * kill_task_msg )
 	return error_code ;
 }
 
+int kill_all_tasks ( )
+{
+	int error_code = SLURM_SUCCESS ;
+	
+	/* get shmemptr */
+	slurmd_shmem_t * shmem = get_shmem ( ) ;
+
+	int i ;
+	pthread_mutex_lock ( & shmem -> mutex ) ;
+	for ( i=0 ; i < MAX_JOB_STEPS ; i ++ )
+	{
+		if (shmem -> job_steps[i].used == true )
+		{
+			/* cycle through job_step and kill tasks*/
+			task_t * task_ptr = shmem -> job_steps[i] . head_task ;
+			while ( task_ptr != NULL )
+			{
+				kill_task ( task_ptr , SIGKILL ) ;
+				task_ptr = task_ptr -> next ;
+			}
+		} 
+	}
+	pthread_mutex_unlock ( & shmem -> mutex ) ;
+	return SLURM_SUCCESS ; 
+
+}
+
 int kill_task ( task_t * task , int signal )
 {
 	return kill ( task -> task_start . exec_pid , signal ) ;

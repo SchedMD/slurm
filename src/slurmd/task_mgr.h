@@ -26,6 +26,7 @@
 /* function prototypes */
 int launch_tasks ( launch_tasks_request_msg_t * launch_msg ) ;
 int kill_tasks ( kill_tasks_msg_t * kill_task_msg ) ;
+int kill_all_tasks ( ) ;
 int reattach_tasks_streams ( reattach_tasks_streams_msg_t * req_msg ) ;
 
 typedef struct task_start
