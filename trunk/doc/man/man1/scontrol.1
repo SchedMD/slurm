@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "August 2004" "scontrol 0.4" "Slurm components"
+.TH SCONTROL "1" "November 2004" "scontrol 0.4" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -23,9 +23,10 @@ be abbreviated to the extent that the specification is unique.
 \fBOPTIONS\fR
 .TP
 \fB\-a\fR, \fB\-\-all\fR
-Show all partitiion, their jobs and jobs steps. This causes information to be 
-displayed about partitions that are configured as hidden and partitions that
-are unavailable to user's group.
+When the \fIshow\fR command is used, then display all partitions, their jobs 
+and jobs steps. This causes information to be displayed about partitions 
+that are configured as hidden and partitions that are unavailable to user's 
+group.
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print a help message describing the usage of scontrol.
@@ -330,7 +331,7 @@ PartitionName=class TotalNodes=10 TotalCPUs=20 RootOnly=NO
 .br
    MinNodes=1 MaxNodes=2 AllowGroups=students
 .br
-   Nodes=lx[0031-0040] NodeIndecies=31,40,-1
+   Nodes=lx[0031-0040] NodeIndicies=31,40,-1
 .br 
 scontrol: update PartitionName=class MaxTime=99 MaxNodes=4
 .br 
