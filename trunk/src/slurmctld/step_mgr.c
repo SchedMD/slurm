@@ -625,8 +625,9 @@ int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 	uint32_t steps_packed = 0, tmp_offset;
 	struct step_record *step_ptr;
 	struct job_record *job_ptr;
+	time_t now = time(NULL);
 
-	pack_time(last_job_update, buffer);
+	pack_time(now, buffer);
 	pack32(steps_packed, buffer);	/* steps_packed placeholder */
 
 	if (job_id == 0) {
@@ -677,7 +678,7 @@ int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);
 	set_buf_offset(buffer, 0);
-	pack_time(last_job_update, buffer);
+	pack_time(now, buffer);
 	pack32(steps_packed, buffer);
 	set_buf_offset(buffer, tmp_offset);
 
