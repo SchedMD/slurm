@@ -358,7 +358,7 @@ extern int load_job_state ( void );
 extern int load_node_state ( void );
 
 /* load_part_state - load the partition state from file, recover from slurmctld restart */
-extern int load_node_state ( void );
+extern int load_part_state ( void );
 
 /* match_feature - determine if the desired feature (seek) is one of those available */
 extern int  match_feature (char *seek, char *available);

@@ -54,6 +54,7 @@ slurm_ssl_key_ctx_t sign_ctx ;
 #define BUF_SIZE 1024
 #define MAX_STR_PACK 128
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
+#define TOP_PRIORITY 100000;
 
 #define job_hash_inx(job_id)	(job_id % MAX_JOB_COUNT)
 #define yes_or_no(in_string) \
@@ -61,9 +62,11 @@ slurm_ssl_key_ctx_t sign_ctx ;
 			(strcmp((in_string),"NO")? \
 				-1 : 0 ) : 1 ) 
 
-int job_count;				/* job's in the system */
-List job_list = NULL;			/* job_record list */
-time_t last_job_update;			/* time of last update to job records */
+static int default_prio = TOP_PRIORITY;
+static int job_count;			/* job's in the system */
+static long job_id_sequence = -1;	/* first job_id to assign new job */
+List job_list = NULL;		/* job_record list */
+time_t last_job_update;		/* time of last update to job records */
 static struct job_record *job_hash[MAX_JOB_COUNT];
 static struct job_record *job_hash_over[MAX_JOB_COUNT];
 static int max_hash_over = 0;
@@ -461,6 +464,17 @@ load_job_state ( void )
 	int state_fd;
 	char *buffer, *state_file;
 	void *buf_ptr;
+	uint32_t job_id, user_id, time_limit, priority, start_time, end_time;
+	uint16_t job_state, next_step_id, details;
+	char *nodes = NULL, *partition = NULL, *name = NULL;
+	uint32_t num_procs, num_nodes, min_procs, min_memory, min_tmp_disk, submit_time;
+	uint16_t shared, contiguous, name_len;
+	char *req_nodes = NULL, *features = NULL;
+	char  *stderr = NULL, *stdin = NULL, *stdout = NULL, *work_dir = NULL;
+	slurm_job_credential_t *credential_ptr;
+	struct job_record *job_ptr;
+	struct part_record *part_ptr;
+	bitstr_t *node_bitmap = NULL ;
 
 	/* read the file */
 	state_file = xstrdup (slurmctld_conf.state_save_location);
@@ -489,32 +503,111 @@ load_job_state ( void )
 	xfree (state_file);
 	unlock_state_files ();
 
+	if (job_id_sequence < 0)
+		job_id_sequence = slurmctld_conf . first_job_id;
+
 	if (buffer_size > sizeof (uint32_t))
 		unpack32 (&time, &buf_ptr, &buffer_size);
 
-	while (buffer_size >= (4 *sizeof (uint32_t))) {
-/* UNPACK HERE 
-WHAT IF PARTITION BAD on load?
-also to restore: *part_ptr, *node_bitmap, *detail, num_cpu_groups, *cpus_per_node; 
+	while (buffer_size >= (8 *sizeof (uint32_t))) {
+		unpack32 (&job_id, &buf_ptr, &buffer_size);
+		unpack32 (&user_id, &buf_ptr, &buffer_size);
+		unpack32 (&time_limit, &buf_ptr, &buffer_size);
+		unpack32 (&priority, &buf_ptr, &buffer_size);
+
+		unpack32 (&start_time, &buf_ptr, &buffer_size);
+		unpack32 (&end_time, &buf_ptr, &buffer_size);
+		unpack16 (&job_state, &buf_ptr, &buffer_size);
+		unpack16 (&next_step_id, &buf_ptr, &buffer_size);
+
+		unpackstr_xmalloc (&nodes, &name_len, &buf_ptr, &buffer_size);
+		unpackstr_xmalloc (&partition, &name_len, &buf_ptr, &buffer_size);
+		unpackstr_xmalloc (&name, &name_len, &buf_ptr, &buffer_size);
+
+		unpack16 (&details, &buf_ptr, &buffer_size);
+		if (buffer_size < (10 *sizeof (uint32_t))) {
+			details = 0;	/* no room for data, file truncated */
+			buffer_size = 0;
+		}
+
+		if (details) {
+			unpack32 (&num_procs, &buf_ptr, &buffer_size);
+			unpack32 (&num_nodes, &buf_ptr, &buffer_size);
+			unpack16 (&shared, &buf_ptr, &buffer_size);
+			unpack16 (&contiguous, &buf_ptr, &buffer_size);
+
+			unpack32 (&min_procs, &buf_ptr, &buffer_size);
+			unpack32 (&min_memory, &buf_ptr, &buffer_size);
+			unpack32 (&min_tmp_disk, &buf_ptr, &buffer_size);
+			unpack32 (&submit_time, &buf_ptr, &buffer_size);
+
+			unpackstr_xmalloc (&req_nodes, &name_len, &buf_ptr, &buffer_size);
+			unpackstr_xmalloc (&features, &name_len, &buf_ptr, &buffer_size);
+			unpackstr_xmalloc (&stderr, &name_len, &buf_ptr, &buffer_size);
+			unpackstr_xmalloc (&stdin, &name_len, &buf_ptr, &buffer_size);
+			unpackstr_xmalloc (&stdout, &name_len, &buf_ptr, &buffer_size);
+			unpackstr_xmalloc (&work_dir, &name_len, &buf_ptr, &buffer_size);
+			unpack_job_credential ( &credential_ptr , &buf_ptr, &buffer_size);
+		}
+
+		error_code = node_name2bitmap (nodes, &node_bitmap);
+		if (error_code) {
+			error ("load_job_state: invalid nodes (%s) for job_id %u",
+					nodes, job_id);
+			goto cleanup;
+		}
+		
+		job_ptr = find_job_record (job_id);
+		if (job_ptr == NULL) {
+			part_ptr = list_find_first (part_list, &list_find_part, partition);
+			if (part_ptr == NULL) {
+				info ("load_job_state: invalid partition (%s) for job_id %u",
+					partition, job_id);
+				error_code = EINVAL;
+				goto cleanup;
+			}
+			job_ptr = create_job_record (&error_code);
+			if ( error_code ) {
+				error ("load_job_state: unable to create job entry for job_id %u",
+					job_id);
+				goto cleanup ;
+			}
+			job_ptr->job_id = job_id;
+			strncpy (job_ptr->partition, partition, MAX_NAME_LEN);
+			job_ptr->part_ptr = part_ptr;
+		}
+
+		job_ptr->user_id = user_id;
+		job_ptr->time_limit = time_limit;
+		job_ptr->priority = priority;
+		job_ptr->start_time = start_time;
+		job_ptr->end_time = end_time;
+		job_ptr->job_state = job_state;
+		job_ptr->next_step_id = next_step_id;
+		strncpy (job_ptr->name, name, MAX_NAME_LEN);
+		job_ptr->nodes = nodes; nodes = NULL;
+		job_ptr->node_bitmap = node_bitmap; node_bitmap = NULL;
+
+		if (default_prio >= priority)
+			default_prio = priority - 1;
+		if (job_id_sequence <= job_id)
+			job_id_sequence = job_id + 1;
+
+cleanup:
+		if (name)
+			xfree (name);
+		if (nodes)
+			xfree (nodes);
+		if (partition)
+			xfree (partition);
+		if (node_bitmap)
+			bit_free (node_bitmap);
+	}
+/*  
+also to restore: *node_bitmap, *detail, num_cpu_groups, *cpus_per_node; 
 also to restore: *cpu_count_reps; step_list;
 to restore for job details: *req_node_bitmap; total_procs;
-		unpackstr_xmalloc (&node_name, &name_len, &buf_ptr, &buffer_size);
-		unpack16 (&node_state, &buf_ptr, &buffer_size);
-		unpack32 (&cpus, &buf_ptr, &buffer_size);
-		unpack32 (&real_memory, &buf_ptr, &buffer_size);
-		unpack32 (&tmp_disk, &buf_ptr, &buffer_size);
-
-		node_ptr = find_node_record (node_name);
-		if (node_ptr) {
-			node_ptr->node_state = node_state;
-			node_ptr->cpus = cpus;
-			node_ptr->real_memory = real_memory;
-			node_ptr->tmp_disk = tmp_disk;
-		}
-		if (node_name)
-			xfree (node_name);
- */
-	}
+*/
 	return error_code;
 }
 
@@ -1761,21 +1854,19 @@ reset_job_bitmaps ()
 void
 set_job_id (struct job_record *job_ptr)
 {
-	static long id_sequence = -1;
 	uint32_t new_id;
 
-	if (id_sequence < 0)
-		id_sequence = slurmctld_conf . first_job_id;
+	if (job_id_sequence < 0)
+		job_id_sequence = slurmctld_conf . first_job_id;
 
-	if ((job_ptr == NULL) || 
-			(job_ptr->magic != JOB_MAGIC)) 
+	if ((job_ptr == NULL) || (job_ptr->magic != JOB_MAGIC)) 
 		fatal ("set_job_id: invalid job_ptr");
 	if ((job_ptr->partition == NULL) || (strlen(job_ptr->partition) == 0))
 		fatal ("set_job_id: partition not set");
 
 	/* Include below code only if fear of rolling over 32 bit job IDs */
 	while (1) {
-		new_id = id_sequence++;
+		new_id = job_id_sequence++;
 		if (find_job_record(new_id) == NULL) {
 			job_ptr->job_id = new_id;
 			break;
@@ -1792,10 +1883,7 @@ set_job_id (struct job_record *job_ptr)
 void
 set_job_prio (struct job_record *job_ptr)
 {
-	static int default_prio = 100000;
-
-	if ((job_ptr == NULL) || 
-			(job_ptr->magic != JOB_MAGIC)) 
+	if ((job_ptr == NULL) || (job_ptr->magic != JOB_MAGIC)) 
 		fatal ("set_job_prio: invalid job_ptr");
 	job_ptr->priority = default_prio--;
 }
@@ -1815,8 +1903,7 @@ top_priority (struct job_record *job_ptr) {
 
 	top = 1;	/* assume top priority until found otherwise */
 	job_record_iterator = list_iterator_create (job_list);		
-	while ((job_record_point = 
-				(struct job_record *) list_next (job_record_iterator))) {
+	while ((job_record_point = (struct job_record *) list_next (job_record_iterator))) {
 		if (job_record_point->magic != JOB_MAGIC)
 			fatal ("top_priority: job integrity is bad");
 		if (job_record_point == job_ptr)
