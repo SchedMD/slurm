@@ -61,6 +61,7 @@ int main(int argc, char *argv[])
 #ifdef HAVE_BGL
 	error_code = slurm_load_node((time_t) NULL, &node_info_ptr, 0);
 	if (error_code) {
+		node_info_ptr = NULL;
 		slurm_perror("slurm_load_node");
 		pa_init(NULL);
 	} else {
