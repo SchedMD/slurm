@@ -160,9 +160,6 @@ proc print_header { test_id } {
 #
 # Input: file_name   -- Name of the file to wait for.
 #
-# NOTE: We sleep for two seconds before replying that a job is 
-# done to give time for I/O completion (stdout/stderr files)
-#
 ################################################################
 
 proc wait_for_file { file_name } {
@@ -196,6 +193,9 @@ proc wait_for_file { file_name } {
 #                    returning.  Currently supports:
 #                        DONE any terminated state
 #                        RUNNING job is running
+#
+# NOTE: We sleep for two seconds before replying that a job is 
+# done to give time for I/O completion (stdout/stderr files)
 #
 ################################################################
 
@@ -242,6 +242,7 @@ proc wait_for_job { job_id state } {
 		}
 	
 		if {[string compare $state "DONE"] == 0    && $is_done == 1 } {
+			sleep  2
 			return 0
 		}
 		if {[string compare $state "RUNNING"] == 0 && $is_running == 1 } {
