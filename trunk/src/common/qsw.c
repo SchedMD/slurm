@@ -71,7 +71,11 @@
 
 /* we allocate elan hardware context numbers in this range */
 #define QSW_CTX_START		ELAN_USER_BASE_CONTEXT_NUM
-#define QSW_CTX_END		ELAN_USER_TOP_CONTEXT_NUM
+
+/* XXX: Temporary workaround for slurm/222 (qws sw-kernel/5478) 
+ *      (sys_validate_cap does not allow ELAN_USER_TOP_CONTEXT_NUM)
+ */
+#define QSW_CTX_END		ELAN_USER_TOP_CONTEXT_NUM - 1 
 #define QSW_CTX_INVAL		(-1)
 
 /* 
