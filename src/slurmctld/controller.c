@@ -454,7 +454,7 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 		job_id_msg . job_id = job_id ;
 		response_msg . msg_type = RESPONSE_SUBMIT_BATCH_JOB ;
 		response_msg . data = & job_id_msg ;
-		slurm_send_controller_msg ( msg->conn_fd , & response_msg ) ;
+		slurm_send_node_msg ( msg->conn_fd , & response_msg ) ;
 	}
 	schedule();
 }
@@ -467,13 +467,15 @@ void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 	slurm_msg_t response_msg ;
 	clock_t start_time;
 	job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
-	resource_allocation_response_msg_t * alloc_msg = xmalloc( sizeof( resource_allocation_response_msg_t ) ) ;
+	char * node_list_ptr = NULL;
+	int job_id ;
+	resource_allocation_response_msg_t alloc_msg ;
 
 	start_time = clock ();
 
 	/* do RPC call */
 	error_code = job_allocate(job_desc_msg, 
-			&alloc_msg->job_id, &alloc_msg->node_list, immediate , false );
+			&job_id, &node_list_ptr, immediate , false );
 
 	/* return result */
 	if (error_code)
@@ -485,16 +487,20 @@ void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 	else
 	{
 		info ("slurmctld_req: allocated nodes %s, JobId=%u, time=%ld",
-				alloc_msg->node_list, alloc_msg->job_id, 
+				node_list_ptr , job_id , 	
 				(long) (clock () - start_time));
+		
 		/* send job_ID  and node_name_ptr */
-		response_msg . msg_type = ( immediate ) ? RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : RESPONSE_RESOURCE_ALLOCATION ;
-		response_msg . data = & alloc_msg ;
-		slurm_send_controller_msg ( msg->conn_fd , & response_msg ) ;
-	}
 
-	if ( alloc_msg )
-		xfree ( alloc_msg );
+		alloc_msg . job_id = job_id ;
+		alloc_msg . node_list = node_list_ptr ;
+
+		response_msg . msg_type = ( immediate ) ? RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : RESPONSE_RESOURCE_ALLOCATION ;
+		response_msg . data =  & alloc_msg ;
+
+		slurm_send_node_msg ( msg->conn_fd , & response_msg ) ;
+	}
+	xfree ( node_list_ptr );
 }
 
 /* slurm_rpc_job_will_run - determine if job with given configuration can be initiated now */
@@ -526,6 +532,7 @@ void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
+	xfree ( node_name_ptr ) ;
 
 }
 
