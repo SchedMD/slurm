@@ -15,7 +15,7 @@
 AC_DEFUN([X_AC_NCURSES],
 [
    AC_SUBST(NCURSES)
-   ncurses_dir="/usr/lib /usr/lib/curses"
+   ncurses_dir="/usr/lib"
 
    for curse_dir in $ncurses_dir; do
       # Search for "libncurses.a" in the directory
