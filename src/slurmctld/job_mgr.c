@@ -1998,8 +1998,8 @@ list_find_job_old (void *job_entry, void *key)
  *         update_time - set to time partition records last updated
  * global: job_list - global list of job records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
- * NOTE: change unpack_job_desc() in common/slurm_protocol_pack.c whenever the
- *	data format changes
+ * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c 
+ *	whenever the data format changes
  */
 void 
 pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time) 
@@ -2050,8 +2050,8 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
  *	machine independent form (for network transmission)
  * dump_job_ptr (I) - pointer to job for which information is requested
  * buffer (I/O) - buffer in which data is place, pointers automatically updated
- * NOTE: change unpack_job_desc() in common/slurm_protocol_pack.c whenever the
- *	 data format changes
+ * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
+ *	  whenever the data format changes
  */
 void 
 pack_job (struct job_record *dump_job_ptr, Buf buffer) 
