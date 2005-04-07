@@ -1193,13 +1193,13 @@ static void _create_pa_system(void)
 /** */
 static void _delete_pa_system(void)
 {
-	int x=0;
 
 	if (!pa_system_ptr){
 		return;
 	}
 	
 #ifdef HAVE_BGL
+	int x=0;
 	for (x=0; x<DIM_SIZE[X]; x++) {
 		int y;
 		for (y=0; y<DIM_SIZE[Y]; y++)

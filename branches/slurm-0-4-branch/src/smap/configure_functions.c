@@ -242,7 +242,6 @@ static int _down_bps(char *com)
 	int i=4,x;
 	int len = strlen(com);
 	int start[PA_SYSTEM_DIMENSIONS], end[PA_SYSTEM_DIMENSIONS];
-	int number=0, y=0, z=0;
 	
 	while(com[i-1] != ' ' && i<len)
 		i++;
@@ -253,6 +252,7 @@ static int _down_bps(char *com)
 	}
 		
 #ifdef HAVE_BGL
+	int number=0, y=0, z=0;
 	if ((com[i]   == '[')
 	    && (com[i+8] == ']')
 	    && ((com[i+4] == 'x')
