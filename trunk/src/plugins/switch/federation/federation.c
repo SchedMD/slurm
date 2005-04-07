@@ -1269,8 +1269,8 @@ int
 fed_unpack_jobinfo(fed_jobinfo_t *j, Buf buf)
 {
 	uint16_t size;
-	NTBL **tmp_table;
-	char *tmp_index;
+	NTBL **tmp_table = NULL;
+	char *tmp_index = NULL;
 	int i;
 	
 	assert(j);
