@@ -774,8 +774,8 @@ extern int sync_jobs(List job_list)
 		bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
 		bgl_update_ptr->op = TERM_OP;
 		bgl_update_ptr->bgl_part_id = xstrdup(bgl_part_id);
-		//_part_op(bgl_update_ptr);
-		_term_agent(bgl_update_ptr);
+		_part_op(bgl_update_ptr);
+		//_term_agent(bgl_update_ptr);
 	}
 	list_iterator_destroy(block_iterator);
 	list_destroy(block_list);

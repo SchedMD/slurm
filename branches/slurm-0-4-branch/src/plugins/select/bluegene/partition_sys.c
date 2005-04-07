@@ -319,12 +319,12 @@ int read_bgl_partitions()
 			      bgl_err_str(rc));
 		} else
 			bgl_record->owner_name = xstrdup(owner_name);
-							
+		
 		if ((rc = rm_get_data(part_ptr, 
 					 RM_PartitionBPNum,
 					 &bgl_record->bp_count))
 		    != STATUS_OK) {
-			error("rm_get_data(RM_PartitionUserName): %s",
+			error("rm_get_data(RM_PartitionBPNum): %s",
 			      bgl_err_str(rc));
 		} 
 				
@@ -332,7 +332,7 @@ int read_bgl_partitions()
 					 RM_PartitionSwitchNum,
 					 &bgl_record->switch_count))
 		    != STATUS_OK) {
-			error("rm_get_data(RM_PartitionUserName): %s",
+			error("rm_get_data(RM_PartitionSwitchNum): %s",
 			      bgl_err_str(rc));
 		} 
 				

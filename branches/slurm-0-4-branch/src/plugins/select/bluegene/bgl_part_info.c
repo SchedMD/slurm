@@ -55,93 +55,93 @@
 
 #define _DEBUG 0
 
-#ifdef HAVE_BGL_FILES
-static int _wait_part_ready(char *part_name, uint32_t user_id)
-{
-	int is_ready = 0;
-	int j, rc, num_parts;
-	rm_partition_t *part_ptr;
-	rm_partition_state_t state;
-	rm_partition_state_flag_t part_state = PARTITION_ALL_FLAG;
-	struct passwd *pw_ent = NULL;
-	char *name;
-	rm_partition_list_t *part_list;
+/* #ifdef HAVE_BGL_FILES */
+/* static int _wait_part_ready(char *part_name, uint32_t user_id) */
+/* { */
+/* 	int is_ready = 0; */
+/* 	int j, rc, num_parts; */
+/* 	rm_partition_t *part_ptr; */
+/* 	rm_partition_state_t state; */
+/* 	rm_partition_state_flag_t part_state = PARTITION_ALL_FLAG; */
+/* 	struct passwd *pw_ent = NULL; */
+/* 	char *name; */
+/* 	rm_partition_list_t *part_list; */
 
-	if ((rc = rm_get_partitions_info(part_state, &part_list))
-			!= STATUS_OK) {
-		error("rm_get_partitions(): %s", bgl_err_str(rc));
-		is_ready = -1; 
-	} 
-	if ((rc = rm_get_data(part_list, RM_PartListSize, &num_parts))
-			!= STATUS_OK) {
-		error("rm_get_data(RM_PartListSize): %s", bgl_err_str(rc));
-		is_ready = -1;
-		num_parts = 0;
-	}
+/* 	if ((rc = rm_get_partitions_info(part_state, &part_list)) */
+/* 			!= STATUS_OK) { */
+/* 		error("rm_get_partitions(): %s", bgl_err_str(rc)); */
+/* 		is_ready = -1;  */
+/* 	}  */
+/* 	if ((rc = rm_get_data(part_list, RM_PartListSize, &num_parts)) */
+/* 			!= STATUS_OK) { */
+/* 		error("rm_get_data(RM_PartListSize): %s", bgl_err_str(rc)); */
+/* 		is_ready = -1; */
+/* 		num_parts = 0; */
+/* 	} */
 
-	for (j=0; j<num_parts; j++) {
-		if (j) {
-			if ((rc = rm_get_data(part_list, RM_PartListNextPart, 
-					&part_ptr)) != STATUS_OK) {
-				error("rm_get_data(RM_PartListNextPart): %s",
-					bgl_err_str(rc));
-				is_ready = -1;
-				break;
-			}
-		} else {
-			if ((rc = rm_get_data(part_list, RM_PartListFirstPart, 
-					&part_ptr)) != STATUS_OK) {
-				error("rm_get_data(RM_PartListFirstPart: %s",
-					bgl_err_str(rc));
-				is_ready = -1;
-				break;
-			}
-		}
+/* 	for (j=0; j<num_parts; j++) { */
+/* 		if (j) { */
+/* 			if ((rc = rm_get_data(part_list, RM_PartListNextPart,  */
+/* 					&part_ptr)) != STATUS_OK) { */
+/* 				error("rm_get_data(RM_PartListNextPart): %s", */
+/* 					bgl_err_str(rc)); */
+/* 				is_ready = -1; */
+/* 				break; */
+/* 			} */
+/* 		} else { */
+/* 			if ((rc = rm_get_data(part_list, RM_PartListFirstPart,  */
+/* 					&part_ptr)) != STATUS_OK) { */
+/* 				error("rm_get_data(RM_PartListFirstPart: %s", */
+/* 					bgl_err_str(rc)); */
+/* 				is_ready = -1; */
+/* 				break; */
+/* 			} */
+/* 		} */
 
-		if ((rc = rm_get_data(part_ptr, RM_PartitionID, &name))
-				!= STATUS_OK) {
-			error("rm_get_data(RM_PartitionID): %s", 
-				bgl_err_str(rc));
-			is_ready = -1;
-			break;
-		}
+/* 		if ((rc = rm_get_data(part_ptr, RM_PartitionID, &name)) */
+/* 				!= STATUS_OK) { */
+/* 			error("rm_get_data(RM_PartitionID): %s",  */
+/* 				bgl_err_str(rc)); */
+/* 			is_ready = -1; */
+/* 			break; */
+/* 		} */
 
-		if (!strcmp(part_name, name))
-			break;
-	}
-	if(is_ready != -1) {
-		if ((rc = rm_get_data(part_ptr, RM_PartitionState, &state))
-				!= STATUS_OK) {
-			error("rm_get_data(RM_PartitionState): %s",
-				bgl_err_str(rc));
-			is_ready = -1;
-		}
-		//debug("state of Part %s is %d",name, state);
-		if ((rc = rm_get_data(part_ptr, RM_PartitionUserName, 
-				&name)) != STATUS_OK) {
-			error("rm_get_data(RM_PartitionUserName): %s",
-				bgl_err_str(rc));
-			is_ready = -1;
-		}
+/* 		if (!strcmp(part_name, name)) */
+/* 			break; */
+/* 	} */
+/* 	if(is_ready != -1) { */
+/* 		if ((rc = rm_get_data(part_ptr, RM_PartitionState, &state)) */
+/* 				!= STATUS_OK) { */
+/* 			error("rm_get_data(RM_PartitionState): %s", */
+/* 				bgl_err_str(rc)); */
+/* 			is_ready = -1; */
+/* 		} */
+/* 		//debug("state of Part %s is %d",name, state); */
+/* 		if ((rc = rm_get_data(part_ptr, RM_PartitionUserName,  */
+/* 				&name)) != STATUS_OK) { */
+/* 			error("rm_get_data(RM_PartitionUserName): %s", */
+/* 				bgl_err_str(rc)); */
+/* 			is_ready = -1; */
+/* 		} */
 		
-		if ((name[0] != '\0')
-		&&  (pw_ent = getpwnam(name)) == NULL) {
-			error("getpwnam(%s): %m", name);
-			is_ready = -1;
-		}
-		if ((is_ready != -1)
-		&&  (pw_ent != NULL)
-		&&  (pw_ent->pw_uid == user_id)
-		&&  (state == RM_PARTITION_READY))
-			is_ready = 1;
-	}
+/* 		if ((name[0] != '\0') */
+/* 		&&  (pw_ent = getpwnam(name)) == NULL) { */
+/* 			error("getpwnam(%s): %m", name); */
+/* 			is_ready = -1; */
+/* 		} */
+/* 		if ((is_ready != -1) */
+/* 		&&  (pw_ent != NULL) */
+/* 		&&  (pw_ent->pw_uid == user_id) */
+/* 		&&  (state == RM_PARTITION_READY)) */
+/* 			is_ready = 1; */
+/* 	} */
 	
-	if ((rc = rm_free_partition_list(part_list)) != STATUS_OK) {
-		error("rm_free_partition_list(): %s", bgl_err_str(rc));
-	}
-	return is_ready;
-}
-#endif
+/* 	if ((rc = rm_free_partition_list(part_list)) != STATUS_OK) { */
+/* 		error("rm_free_partition_list(): %s", bgl_err_str(rc)); */
+/* 	} */
+/* 	return is_ready; */
+/* } */
+/* #endif */
 
 /*
  * check to see if partition is ready to execute.  Meaning
@@ -157,11 +157,33 @@ extern int part_ready(struct job_record *job_ptr)
 	int rc = 1;
 #ifdef HAVE_BGL_FILES
 	char *part_id;
-
+	ListIterator itr;
+	bgl_record_t *bgl_record;
+	struct passwd *pw_ent = NULL;
+	
 	rc = select_g_get_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_PART_ID, &part_id);
 	if (rc == SLURM_SUCCESS) {
-		rc = _wait_part_ready(part_id, job_ptr->user_id);
+		itr = list_iterator_create(bgl_list);
+		while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
+			if (!strcmp(bgl_record->bgl_part_id, part_id)) 
+				break;	/* found it */
+		}
+		list_iterator_destroy(itr);
+		
+		if ((bgl_record->owner_name[0] != '\0')
+		&&  (pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
+			error("getpwnam(%s): %m", bgl_record->owner_name);
+			rc = -1;
+		}
+		if ((rc != -1)
+		    &&  (pw_ent != NULL)
+		    &&  (pw_ent->pw_uid == job_ptr->user_id)
+		    &&  (bgl_record->state == RM_PARTITION_READY))
+			rc = 1;
+	
+	
+	//rc = _wait_part_ready(part_id, job_ptr->user_id);
 		xfree(part_id);
 	} else
 		rc = -1;
@@ -195,4 +217,116 @@ extern int unpack_partition(bgl_info_record_t *bgl_info_record, Buf buffer)
 unpack_error:
 	xfree(bgl_info_record);
 	return SLURM_ERROR;
+}
+
+extern int update_partition_list()
+{
+	int is_ready = 0;
+#ifdef HAVE_BGL_FILES
+	int j, rc, num_parts = 0;
+	rm_partition_t *part_ptr;
+	rm_partition_state_t state;
+	rm_partition_state_flag_t part_state = PARTITION_ALL_FLAG;
+	char *name;
+	rm_partition_list_t *part_list;
+	ListIterator itr;
+	bgl_record_t *bgl_record;
+
+	if(bgl_list == NULL)
+		return 0;
+	if ((rc = rm_get_partitions_info(part_state, &part_list))
+	    != STATUS_OK) {
+		error("rm_get_partitions(): %s", bgl_err_str(rc));
+		is_ready = -1; 
+	} else if ((rc = rm_get_data(part_list, RM_PartListSize, &num_parts))
+		   != STATUS_OK) {
+		error("rm_get_data(RM_PartListSize): %s", bgl_err_str(rc));
+		is_ready = -1;
+		num_parts = 0;
+	}
+			
+	for (j=0; j<num_parts; j++) {
+		if (j) {
+			if ((rc = rm_get_data(part_list, RM_PartListNextPart, 
+					      &part_ptr)) != STATUS_OK) {
+				error("rm_get_data(RM_PartListNextPart): %s",
+				      bgl_err_str(rc));
+				is_ready = -1;
+				break;
+			}
+		} else {
+			if ((rc = rm_get_data(part_list, RM_PartListFirstPart, 
+					      &part_ptr)) != STATUS_OK) {
+				error("rm_get_data(RM_PartListFirstPart: %s",
+				      bgl_err_str(rc));
+				is_ready = -1;
+				break;
+			}
+		}
+		if ((rc = rm_get_data(part_ptr, RM_PartitionID, &name))
+		    != STATUS_OK) {
+			error("rm_get_data(RM_PartitionID): %s", 
+			      bgl_err_str(rc));
+			is_ready = -1;
+			break;
+		}
+		if(strncmp("RMP", name,3))
+			continue;
+		
+		itr = list_iterator_create(bgl_list);
+		while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
+			if (!strcmp(bgl_record->bgl_part_id, name)) 
+				break;	/* found it */
+		}
+		list_iterator_destroy(itr);
+		
+		if(bgl_record == NULL) {
+			error("Partition %s not found in list on known partitions",name);
+			continue;
+		}
+
+		if ((rc = rm_get_data(part_ptr, RM_PartitionState, &state))
+		    != STATUS_OK) {
+			error("rm_get_data(RM_PartitionState): %s",
+			      bgl_err_str(rc));
+			is_ready = -1;
+			break;
+		} else if(bgl_record->state != state) {
+			debug("state of Partition %s was %d and now is %d",
+			      name, bgl_record->state, state);
+			bgl_record->state = state;
+			is_ready = 1;
+		}
+		if ((rc = rm_get_data(part_ptr, RM_PartitionUserName, 
+				      &name)) != STATUS_OK) {
+			error("rm_get_data(RM_PartitionUserName): %s",
+			      bgl_err_str(rc));
+			is_ready = -1;
+			break;
+		}
+		
+		if (!bgl_record->owner_name) {
+			debug("owner of Partition %s was null and now is %s",
+			      bgl_record->bgl_part_id, name);
+			bgl_record->owner_name = xstrdup(name);
+			is_ready = 1;
+		} else if (name[0] != '\0') {
+			if(strcmp(bgl_record->owner_name, name)) {
+				debug("owner of Partition %s was %s and now is %s",
+				      bgl_record->bgl_part_id, bgl_record->owner_name, name);
+				xfree(bgl_record->owner_name);
+				bgl_record->owner_name = xstrdup(name);
+				
+				is_ready = 1;
+			}	
+		} else {
+			error("name was empty for parition %s from rm_get_data(RM_PartitionUserName)", bgl_record->bgl_part_id);
+		}	
+	}
+	
+	if ((rc = rm_free_partition_list(part_list)) != STATUS_OK) {
+		error("rm_free_partition_list(): %s", bgl_err_str(rc));
+	}
+#endif
+	return is_ready;
 }

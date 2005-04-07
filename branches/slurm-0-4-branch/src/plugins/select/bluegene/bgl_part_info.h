@@ -32,5 +32,5 @@
 extern int part_ready(struct job_record *job_ptr);
 extern void pack_partition(bgl_record_t *bgl_record, Buf buffer);
 extern int unpack_partition(bgl_info_record_t *bgl_info_record, Buf buffer);
-
+extern int update_partition_list();
 #endif /* _BGL_PART_INFO_H_ */

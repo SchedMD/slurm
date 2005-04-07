@@ -30,6 +30,7 @@
 #define BITSIZE 128
 #define MMCS_POLL_TIME 120	/* poll MMCS for down switches and nodes 
 				 * every 120 secs */
+#define BGL_POLL_TIME 0	        /* poll bgl partitions every 3 secs */
 
 #define _DEBUG 0
 
@@ -238,17 +239,31 @@ extern void sort_bgl_record_inc_size(List records){
 extern void *bluegene_agent(void *args)
 {
 	static time_t last_mmcs_test;
+	static time_t last_bgl_test;
+	int rc;
 
 	last_mmcs_test = time(NULL) + MMCS_POLL_TIME;
+	last_bgl_test = time(NULL) + BGL_POLL_TIME;
 	while (!agent_fini) {
 		time_t now = time(NULL);
+
+		if (difftime(now, last_bgl_test) >= BGL_POLL_TIME) {
+			if (agent_fini)		/* don't bother */
+				return NULL;	/* quit now */
+			last_bgl_test = now;
+			if((rc = update_partition_list()) == 1)
+				last_bgl_update = now;
+			else if(rc == -1)
+				error("Erro with update_partition_list");
+		}
 
 		if (difftime(now, last_mmcs_test) >= MMCS_POLL_TIME) {
 			if (agent_fini)		/* don't bother */
 				return NULL;	/* quit now */
 			last_mmcs_test = now;
 			test_mmcs_failures();	/* can run for a while */
-		}
+		}	
+				
 		sleep(1);
 	}
 	return NULL;
