@@ -169,7 +169,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/sinfo
 %{_bindir}/squeue
 %{_bindir}/srun
-%{_sbindir}/*
+%{_sbindir}/slurmctld
+%{_sbindir}/slurmd
 %{_libdir}/*.so*
 %{_libdir}/slurm/src/*
 %{_mandir}/man1/*
@@ -267,6 +268,8 @@ fi
 
 
 %changelog
+* Thu Apr 07 2005 Morris Jette <jette1@llnl.gov>
+- remove duplicate prolog and epilog from primary slurm rpm
 * Thu Feb 24 2005 Morris Jette <jette1@llnl.gov>
 - added bluegene.conf.example to distribution
 - added slurm_epilog and slurm_prolog to bluegene package
