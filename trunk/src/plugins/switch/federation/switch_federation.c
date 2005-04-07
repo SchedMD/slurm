@@ -305,7 +305,8 @@ int switch_p_unpack_node_info(switch_node_info_t switch_node, Buf buffer)
 
 void switch_p_free_node_info(switch_node_info_t *switch_node)
 {
-	fed_free_nodeinfo((fed_nodeinfo_t *)*switch_node);
+	if(switch_node)
+		fed_free_nodeinfo((fed_nodeinfo_t *)*switch_node);
 }
 
 char * switch_p_sprintf_node_info(switch_node_info_t switch_node, 
