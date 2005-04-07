@@ -55,20 +55,6 @@
 
 #define _DEBUG 0
 
-/* 
- * Check the bglblock's status every POLL_SLEEP seconds. 
- * Retry for a period of MIN_DELAY + (INCR_DELAY * base partition count).
- * For example if MIN_DELAY=300 and INCR_DELAY=20, wait up to 428 seconds
- * for a 16 base partition bglblock to ready (300 + 20 * 16).
- */ 
-#define POLL_SLEEP 3			/* retry interval in seconds  */
-#define MIN_DELAY  300			/* time in seconds */
-#define INCR_DELAY 20			/* time in seconds per BP */
-int max_delay = MIN_DELAY;
-int cur_delay = 0; 
-
-static int _wait_part_ready(char *part_name, uint32_t user_id);
-
 #ifdef HAVE_BGL_FILES
 static int _wait_part_ready(char *part_name, uint32_t user_id)
 {
