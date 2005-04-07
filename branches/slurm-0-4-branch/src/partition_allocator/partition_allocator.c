@@ -119,7 +119,7 @@ List bgl_info_list;
 
 extern void destroy_bgl_info_record(void* object)
 {
-	bgl_info_record_t* bgl_info_record = (bgl_record_t*) object;
+	bgl_info_record_t* bgl_info_record = (bgl_info_record_t*) object;
 
 	if (bgl_info_record) {
 		if(bgl_info_record->nodes) 
