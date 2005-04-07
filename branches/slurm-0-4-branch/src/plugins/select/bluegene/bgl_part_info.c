@@ -67,32 +67,7 @@
 int max_delay = MIN_DELAY;
 int cur_delay = 0; 
 
-/* Pack all relevent information about a partition */
-extern void pack_partition(bgl_record_t *bgl_record, Buf buffer)
-{
-	pack_time(bgl_record->time_last_change, buffer);
-	packstr(bgl_record->nodes, buffer);
-	packstr(bgl_record->owner_name, buffer);
-	packstr(bgl_record->bgl_part_id, buffer);
-	pack32(bgl_record->state, buffer);
-	pack32(bgl_record->conn_type, buffer);
-	pack32(bgl_record->node_use, buffer);	
-}
-
-/* unpack all relevent information about a partition */
-extern void unpack_partition(bgl_record_t *bgl_record, Buf buffer)
-{
-	uint16_t uint16_tmp;
-	safe_unpack_time(&bgl_record->time_last_change, buffer);
-unpack_error:
-	safe_unpackstr_xmalloc(&bgl_record->nodes, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&bgl_record->owner_name, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&bgl_record->bgl_part_id, &uint16_tmp, buffer);
-	safe_unpack32(&bgl_record->state, buffer);
-	safe_unpack32(&bgl_record->conn_type, buffer);
-	safe_unpack32(&bgl_record->node_use, buffer); 
-	
-}
+static int _wait_part_ready(char *part_name, uint32_t user_id);
 
 #ifdef HAVE_BGL_FILES
 static int _wait_part_ready(char *part_name, uint32_t user_id)
@@ -208,3 +183,30 @@ extern int part_ready(struct job_record *job_ptr)
 	return rc;
 }
 
+/* Pack all relevent information about a partition */
+extern void pack_partition(bgl_record_t *bgl_record, Buf buffer)
+{
+	packstr(bgl_record->nodes, buffer);
+	packstr(bgl_record->owner_name, buffer);
+	packstr(bgl_record->bgl_part_id, buffer);
+	pack32(bgl_record->state, buffer);
+	pack32(bgl_record->conn_type, buffer);
+	pack32(bgl_record->node_use, buffer);	
+}
+
+/* unpack all relevent information about a partition */
+extern int unpack_partition(bgl_info_record_t *bgl_info_record, Buf buffer)
+{
+	uint16_t uint16_tmp;
+	
+	safe_unpackstr_xmalloc(&bgl_info_record->nodes, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&bgl_info_record->owner_name, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&bgl_info_record->bgl_part_id, &uint16_tmp, buffer);
+	safe_unpack32(&bgl_info_record->state, buffer);
+	safe_unpack32(&bgl_info_record->conn_type, buffer);
+	safe_unpack32(&bgl_info_record->node_use, buffer); 
+	return SLURM_SUCCESS;
+unpack_error:
+	xfree(bgl_info_record);
+	return SLURM_ERROR;
+}

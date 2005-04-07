@@ -68,7 +68,7 @@ extern char *bridge_api_file;
 extern int numpsets;
 extern pa_system_t *pa_system_ptr;
 extern int DIM_SIZE[PA_SYSTEM_DIMENSIONS];
-
+extern time_t last_bgl_update;
 extern List bgl_curr_part_list; 	/* Initial bgl partition state */
 extern List bgl_list;			/* List of configured BGL blocks */
 extern bool agent_fini;
@@ -91,7 +91,6 @@ typedef struct bgl_record {
 	int bp_count;                   /* size */
 	int switch_count;
 	bitstr_t *bitmap;
-	time_t time_last_change;	/* time of last partition change */	
 } bgl_record_t;
 
 typedef struct {

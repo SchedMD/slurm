@@ -261,60 +261,89 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 	return part_ready(job_ptr);
 }
 
-extern void select_p_pack_all_partitions(char **buffer_ptr, int *buffer_size)
+extern int select_p_pack_node_info(time_t last_query_time, char **buffer_ptr)
 {
+	/* Locks: Read config */
+/* 	slurmctld_lock_t node_read_lock = {  */
+/* 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK }; */
 	ListIterator itr;
 	bgl_record_t *bgl_record;
 	uint32_t partitions_packed = 0, tmp_offset;
 	Buf buffer;
-	time_t now = time(NULL);
-	
-	buffer_ptr[0] = NULL;
-	*buffer_size = 0;
-	
-	buffer = init_buf(HUGE_BUF_SIZE);
-	pack32(partitions_packed, buffer);
-	pack_time(now, buffer);
 
-	itr = list_iterator_create(bgl_list);
-	while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
-		//pack_partition(bgl_record, buffer);
-		partitions_packed++;
+	//START_TIMER;
+	debug("packing partition info");
+	//lock_slurmctld(node_read_lock);
+
+	/* check to see if configuration data has changed */
+	if ((last_query_time - 1) >= last_bgl_update) {
+		//unlock_slurmctld(node_read_lock);
+		debug2("Partitions haven't changed since %d", last_bgl_update);
+		return SLURM_NO_CHANGE_IN_DATA;
+	} else {
+		buffer_ptr[0] = NULL;
+		//*buffer_size = 0;
+	
+		buffer = init_buf(HUGE_BUF_SIZE);
+		pack32(partitions_packed, buffer);
+		pack_time(last_bgl_update, buffer);
+
+		itr = list_iterator_create(bgl_list);
+		while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
+			xassert(bgl_record->bgl_part_id != NULL);
+		
+			pack_partition(bgl_record, buffer);
+		
+			partitions_packed++;
+		}
+		list_iterator_destroy(itr);
+		
+		tmp_offset = get_buf_offset(buffer);
+		set_buf_offset(buffer, 0);
+		pack32(partitions_packed, buffer);
+		set_buf_offset(buffer, tmp_offset);
+
+		//*buffer_size = get_buf_offset(buffer);
+		buffer_ptr[0] = xfer_buf_data(buffer);
+		
+		//unlock_slurmctld(node_read_lock);
+	/* 	END_TIMER; */
+/* 		debug("node_info, size=%d %s", */
+/* 		     dump_size, TIME_STR); */
 	}
-	list_iterator_destroy(itr);
-
-	tmp_offset = get_buf_offset(buffer);
-	set_buf_offset(buffer, 0);
-	pack32(partitions_packed, buffer);
-	set_buf_offset(buffer, tmp_offset);
-
-	*buffer_size = get_buf_offset(buffer);
-	buffer_ptr[0] = xfer_buf_data(buffer);
+	debug("done packing partition info");
+	return SLURM_SUCCESS;
 }
 
-extern void select_p_unpack_all_partitions(char **buffer_ptr, int *buffer_size)
+extern int select_p_unpack_node_info(time_t last_update, Buf buffer)
 {
-	bgl_record_t *bgl_record;
+	bgl_info_record_t *bgl_info_record;
 	int partitions_packed, i;
-	Buf buffer;
-	time_t now;
+	//Buf buffer;
+	//time_t now;
+	debug("unpacking partition info");
 	
 	safe_unpack32(&partitions_packed, buffer);
-	safe_unpack_time(&now, buffer);
+	safe_unpack_time(&last_update, buffer);
 
-unpack_error:
-	if(bgl_list) {
-		while ((bgl_record = list_pop(bgl_list)) != NULL) {
-			destroy_bgl_record(bgl_record);
+	if(bgl_info_list) {
+		while ((bgl_info_record = list_pop(bgl_info_list)) != NULL) {
+			destroy_bgl_info_record(bgl_info_record);
 		}
 	} else {
-		bgl_list = list_create(destroy_bgl_record);
+		bgl_info_list = list_create(destroy_bgl_info_record);
 	}
 		
-	for(i=0;i<partitions_packed;i++) {
-		bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
-		list_push(bgl_list, bgl_record);
-		//unpack_partition(bgl_record, buffer);
+	for(i=0; i<partitions_packed; i++) {
+		bgl_info_record = (bgl_info_record_t*) xmalloc(sizeof(bgl_info_record_t));
+		list_push(bgl_info_list, bgl_info_record);
+		unpack_partition(bgl_info_record, buffer);
 	}
+	debug("done packing partition info");
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+
 }
 

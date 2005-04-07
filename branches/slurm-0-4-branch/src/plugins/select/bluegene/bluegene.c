@@ -46,6 +46,7 @@ char *change_numpsets = NULL;
 int numpsets;
 bool agent_fini = false;
 int bridge_api_verb = 0;
+time_t last_bgl_update;
 		
 /* some local functions */
 #ifdef HAVE_BGL
@@ -417,7 +418,7 @@ extern int create_static_partitions(List part_list)
 	print_bgl_record(found_record);
 	
 no_total:
-
+	last_bgl_update = time(NULL);
 	rc = SLURM_SUCCESS;
 #ifdef _PRINT_PARTS_AND_EXIT
  	itr = list_iterator_create(bgl_list);

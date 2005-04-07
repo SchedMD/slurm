@@ -115,6 +115,23 @@ static int _set_one_dim(int *start, int *end, int *coord);
 
 /* Global */
 List bp_map_list;
+List bgl_info_list;
+
+extern void destroy_bgl_info_record(void* object)
+{
+	bgl_info_record_t* bgl_info_record = (bgl_record_t*) object;
+
+	if (bgl_info_record) {
+		if(bgl_info_record->nodes) 
+			xfree(bgl_info_record->nodes);
+		if(bgl_info_record->owner_name)
+			xfree(bgl_info_record->owner_name);
+		if(bgl_info_record->bgl_part_id)
+			xfree(bgl_info_record->bgl_part_id);
+		
+		xfree(bgl_info_record);
+	}
+}
 
 /**
  * create a partition request.  Note that if the geometry is given,

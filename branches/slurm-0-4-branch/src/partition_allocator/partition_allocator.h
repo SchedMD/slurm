@@ -58,6 +58,17 @@ enum {X, Y, Z};
 enum {MESH, TORUS};
 enum {COPROCESSOR, VIRTUAL};
 
+typedef struct {
+	char *nodes;
+	char *owner_name;
+	char *bgl_part_id;
+	int state;
+	int conn_type;
+	int node_use;
+} bgl_info_record_t;
+
+extern List bgl_info_list;			/* List of BGL blocks */
+
 /** 
  * structure that holds switch path information for finding the wiring 
  * path without setting the configuration.
@@ -190,6 +201,9 @@ typedef struct {
 extern List bp_map_list;
 extern char letters[36];
 extern char colors[6];
+
+/* destroy a bgl_info_record_t */
+extern void destroy_bgl_info_record(void* object);
 
 /**
  * create a partition request.  Note that if the geometry is given,
