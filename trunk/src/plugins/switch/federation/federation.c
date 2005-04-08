@@ -54,7 +54,7 @@
 #define FED_ADAPTERLEN 5
 #define FED_HOSTLEN 20
 #define FED_VERBOSE_PRINT 0
-#define FED_BUFSIZ 131072
+#define FED_BUFSIZ 32
 #define FED_MAX_PROCS 4096
 #define FED_AUTO_WINMEM 0
 #define FED_MAX_WIN 15
@@ -848,7 +848,7 @@ _alloc_node(fed_libstate_t *lp, char *name)
 		lp->node_list = 
 			(fed_nodeinfo_t *)malloc(new_bufsize);
 	else if (old_bufsize != new_bufsize)
-		realloc(lp->node_list, new_bufsize);
+		lp->node_list = realloc(lp->node_list, new_bufsize);
 	if(lp->node_list == NULL) {
 		slurm_seterrno(ENOMEM);
 		return NULL;
