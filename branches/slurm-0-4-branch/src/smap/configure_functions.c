@@ -207,8 +207,8 @@ static int _create_allocation(char *com, List allocated_partitions)
 static int _resolve(char *com)
 {
 	int i=0;
-	int len=strlen(com);
 #ifdef HAVE_BGL_FILES
+	int len=strlen(com);
 	char *rack_mid;
 	int *coord;
 #endif
@@ -244,10 +244,10 @@ static int _resolve(char *com)
 			sprintf(error_string, "%s has no resolve.\n", 
 				com+i);	
 	}
+resolve_error:
 #else
 			sprintf(error_string, "Must be on BGL SN to resolve.\n"); 
 #endif
-resolve_error:
 	wnoutrefresh(pa_system_ptr->text_win);
 	doupdate();
 
