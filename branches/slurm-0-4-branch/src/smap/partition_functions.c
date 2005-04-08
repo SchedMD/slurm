@@ -62,7 +62,6 @@ static int  _print_text_part(partition_info_t *part_ptr,
 static int _set_start_finish(db2_block_info_t *db2_info_ptr);
 static void _block_list_del(void *object);
 static int _list_match_all(void *object, void *key);
-static char *bgl_err_str(status_t inx);
 static int _in_slurm_partition(db2_block_info_t *db2_info_ptr, int *first, int *last);
 static int _print_rest(db2_block_info_t *block_ptr, int *count);
 #endif
@@ -590,41 +589,6 @@ static void _block_list_del(void *object)
 		
 	}
 }
-
-/*
- * Convert a BGL API error code to a string
- * IN inx - error code from any of the BGL Bridge APIs
- * RET - string describing the error condition
- */
-static char *bgl_err_str(status_t inx)
-{
-	switch (inx) {
-	case STATUS_OK:
-		return "Status OK";
-	case PARTITION_NOT_FOUND:
-		return "Partition not found";
-	case JOB_NOT_FOUND:
-		return "Job not found";
-	case BP_NOT_FOUND:
-		return "Base partition not found";
-	case SWITCH_NOT_FOUND:
-		return "Switch not found";
-	case JOB_ALREADY_DEFINED:
-		return "Job already defined";
-	case CONNECTION_ERROR:
-		return "Connection error";
-	case INTERNAL_ERROR:
-		return "Internal error";
-	case INVALID_INPUT:
-		return "Invalid input";
-	case INCOMPATIBLE_STATE:
-		return "Incompatible state";
-	case INCONSISTENT_DATA:
-		return "Inconsistent data";
-	}
-	return "?";
-}
-
 
 
 static int _list_match_all(void *object, void *key)
