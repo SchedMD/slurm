@@ -141,6 +141,7 @@ void get_slurm_part(void)
 
 void get_bgl_part(void)
 {
+#ifdef HAVE_BGL
 	int error_code, i, j, recs=0, count = 0;
 	static partition_info_msg_t *part_info_ptr = NULL, *new_part_ptr;
 	static node_select_info_msg_t *bgl_info_ptr = NULL, *new_bgl_ptr;
@@ -283,6 +284,7 @@ void get_bgl_part(void)
 
 	part_info_ptr = new_part_ptr;
 	bgl_info_ptr = new_bgl_ptr;
+#endif /* HAVE_BGL */
 	return;
 }
 
