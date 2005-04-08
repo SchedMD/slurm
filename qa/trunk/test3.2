@@ -86,10 +86,19 @@ expect {
 		}
 		exp_continue
 	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+	
+spawn $scontrol show part $part_name
+expect {
 	-re "State=($alpha_cap) " {
-		if {[string compare $part_old_state ""] == 0} {
-			set part_old_state $expect_out(1,string)
-		}
+		set part_old_state $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
