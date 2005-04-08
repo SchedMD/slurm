@@ -4,7 +4,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = -I$(top_srcdir)
+INCLUDES = -I$(top_srcdir) $(BGL_INCLUDES)
 bin_PROGRAMS = sinfo
 
 sinfo_LDADD =					  \
@@ -18,5 +18,5 @@ force:
 $(sinfo_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-sinfo_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+sinfo_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BGL_LDFLAGS)
 
