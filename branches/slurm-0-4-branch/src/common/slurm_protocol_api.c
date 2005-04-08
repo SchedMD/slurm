@@ -665,8 +665,6 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
         	free_buf(buffer);
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
         }
- 
-
         
         /*
          * Pack message into buffer

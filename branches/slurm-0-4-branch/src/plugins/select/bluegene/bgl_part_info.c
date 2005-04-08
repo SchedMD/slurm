@@ -197,26 +197,9 @@ extern void pack_partition(bgl_record_t *bgl_record, Buf buffer)
 	packstr(bgl_record->nodes, buffer);
 	packstr(bgl_record->owner_name, buffer);
 	packstr(bgl_record->bgl_part_id, buffer);
-	pack32(bgl_record->state, buffer);
-	pack32(bgl_record->conn_type, buffer);
-	pack32(bgl_record->node_use, buffer);	
-}
-
-/* unpack all relevent information about a partition */
-extern int unpack_partition(bgl_info_record_t *bgl_info_record, Buf buffer)
-{
-	uint16_t uint16_tmp;
-	
-	safe_unpackstr_xmalloc(&bgl_info_record->nodes, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&bgl_info_record->owner_name, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&bgl_info_record->bgl_part_id, &uint16_tmp, buffer);
-	safe_unpack32(&bgl_info_record->state, buffer);
-	safe_unpack32(&bgl_info_record->conn_type, buffer);
-	safe_unpack32(&bgl_info_record->node_use, buffer); 
-	return SLURM_SUCCESS;
-unpack_error:
-	xfree(bgl_info_record);
-	return SLURM_ERROR;
+	pack16((uint16_t)bgl_record->state, buffer);
+	pack16((uint16_t)bgl_record->conn_type, buffer);
+	pack16((uint16_t)bgl_record->node_use, buffer);	
 }
 
 extern int update_partition_list()

@@ -611,10 +611,11 @@ static void _set_bgl_lists()
 static int _validate_config_nodes(void)
 {
 	int rc = SLURM_ERROR;
-#ifdef HAVE_BGL_FILES
 	bgl_record_t* record;	/* records from configuration files */
+	ListIterator itr_conf;
+#ifdef HAVE_BGL_FILES
 	bgl_record_t* init_record;	/* records from actual BGL config */
-	ListIterator itr_conf, itr_curr;
+	ListIterator itr_curr;
 	rm_partition_mode_t node_use;
 	
 	/* read current bgl partition info into bgl_curr_part_list */
@@ -659,6 +660,20 @@ static int _validate_config_nodes(void)
 	list_iterator_destroy(itr_conf);
 	if(list_count(bgl_list) == list_count(bgl_curr_part_list))
 		rc = SLURM_SUCCESS;
+#else
+	static int block_inx = 0;
+	itr_conf = list_iterator_create(bgl_list);
+	while ((record = (bgl_record_t*) list_next(itr_conf))) {
+		if (record->bgl_part_id)
+			continue;
+		record->bgl_part_id = xmalloc(8);
+		snprintf(record->bgl_part_id, 8, "RMP%d", block_inx++);
+		info("BGL PartitionID:%s Nodes:%s Conn:%s Mode:%s",
+			record->bgl_part_id, record->nodes,
+			convert_conn_type(record->conn_type),
+			convert_node_use(record->node_use));
+	}
+	list_iterator_destroy(itr_conf);
 #endif
 
 	return rc;
@@ -886,7 +901,7 @@ static int _parse_bgl_spec(char *in_line)
 	char *api_file = NULL;
 	int pset_num=-1, api_verb=-1;
 	bgl_record_t *bgl_record, *found_record;
-	
+
 	error_code = slurm_parser(in_line,
 				  "BlrtsImage=", 's', &blrts_image,
 				  "LinuxImage=", 's', &linux_image,
@@ -946,7 +961,7 @@ static int _parse_bgl_spec(char *in_line)
 	
 	bgl_record->bgl_part_list = list_create(NULL);			
 	bgl_record->hostlist = hostlist_create(NULL);
-	
+
 	bgl_record->nodes = xstrdup(nodes);
 	xfree(nodes);	/* pointer moved, nothing left to xfree */
 	

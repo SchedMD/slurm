@@ -30,6 +30,12 @@
 #include "src/sinfo/sinfo.h"
 #include "src/sinfo/print.h"
 
+#define BGL_TESTING 0
+#if BGL_TESTING
+#include "src/common/node_select.h"
+#include "src/api/node_select_info.h"
+#endif
+
 /********************
  * Global Variables *
  ********************/
@@ -69,6 +75,29 @@ int main(int argc, char *argv[])
 	parse_command_line(argc, argv);
 
 	while (1) {
+#if BGL_TESTING
+		static time_t update_time = (time_t) 0;
+		static node_select_info_msg_t *new_bgl_ptr;
+		int i;
+
+		if (slurm_load_node_select(update_time, &new_bgl_ptr) != SLURM_SUCCESS) {
+			slurm_perror("");
+			break;
+		}
+		printf("time=%ld, recs=%u\n", (long) new_bgl_ptr->last_update, 
+			new_bgl_ptr->record_count);
+		for (i=0; i<new_bgl_ptr->record_count; i++) {
+			printf("block=%s nodes=%s owner=%s state=%d conn=%d use=%d\n",
+				new_bgl_ptr->bgl_info_array[i].bgl_part_id,
+				new_bgl_ptr->bgl_info_array[i].nodes,
+				new_bgl_ptr->bgl_info_array[i].owner_name,
+				new_bgl_ptr->bgl_info_array[i].state,
+				new_bgl_ptr->bgl_info_array[i].conn_type,
+				new_bgl_ptr->bgl_info_array[i].node_use);
+		}
+		select_g_free_node_info(&new_bgl_ptr);
+		break;
+#endif
 		if ( params.iterate && (params.verbose || params.long_output ))
 			print_date();
 

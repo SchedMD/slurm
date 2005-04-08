@@ -26,8 +26,8 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_SLURM_H
-#define _HAVE_SLURM_H
+#ifndef _HAVE_SLURMCTLD_H
+#define _HAVE_SLURMCTLD_H
 
 
 #if HAVE_CONFIG_H
@@ -1167,4 +1167,4 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 			uint32_t *job_id_ptr, uint16_t *step_id_ptr,
 			uint32_t status);
 
-#endif /* !_HAVE_SLURM_H */
+#endif /* !_HAVE_SLURMCTLD_H */

@@ -30,6 +30,7 @@
 #include "src/common/macros.h"
 
 #include <curses.h>
+#include "src/api/node_select_info.h"
 #include "src/common/read_config.h"
 #include "src/common/parse_spec.h"
 #include "src/slurmctld/proc_req.h"
@@ -58,14 +59,7 @@ enum {X, Y, Z};
 enum {MESH, TORUS};
 enum {COPROCESSOR, VIRTUAL};
 
-typedef struct {
-	char *nodes;
-	char *owner_name;
-	char *bgl_part_id;
-	int state;
-	int conn_type;
-	int node_use;
-} bgl_info_record_t;
+/* NOTE: Definition of bgl_info_record_t moved to src/api/node_select_info.h */
 
 extern List bgl_info_list;			/* List of BGL blocks */
 

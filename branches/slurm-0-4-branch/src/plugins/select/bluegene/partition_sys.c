@@ -248,7 +248,8 @@ int read_bgl_partitions()
 				
 		bgl_record->bgl_part_id = xstrdup(part_name);
 		
-		if ((rc = rm_get_data(part_ptr, RM_PartitionBPNum, &bp_cnt)) != STATUS_OK) {
+		if ((rc = rm_get_data(part_ptr, RM_PartitionBPNum, &bp_cnt)) 
+				!= STATUS_OK) {
 			error("rm_get_data(RM_BPNum): %s", bgl_err_str(rc));
 			bp_cnt = 0;
 		}
@@ -260,8 +261,9 @@ int read_bgl_partitions()
 		
 		for (i=0; i<bp_cnt; i++) {
 			if(i) {
-				if ((rc = rm_get_data(part_ptr, RM_PartitionNextBP, &bp_ptr))
-				    != STATUS_OK) {
+				if ((rc = rm_get_data(part_ptr, 
+						RM_PartitionNextBP, &bp_ptr))
+						!= STATUS_OK) {
 					error("rm_get_data(RM_NextBP): %s",
 					      bgl_err_str(rc));
 					rc = SLURM_ERROR;

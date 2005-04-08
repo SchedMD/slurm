@@ -247,16 +247,12 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 	debug("bluegene:submit_job: %s nodes=%d-%d", buf, min_nodes, max_nodes);
 	
 	if ((_find_best_partition_match(job_ptr, slurm_part_bitmap, min_nodes, 
-					max_nodes, spec, &record)) == SLURM_ERROR) {
+				max_nodes, spec, &record)) == SLURM_ERROR) {
 		return SLURM_ERROR;
 	} else {
 		/* now we place the part_id into the env of the script to run */
 		char bgl_part_id[BITSIZE];
-#ifdef HAVE_BGL_FILES
 		snprintf(bgl_part_id, BITSIZE, "%s", record->bgl_part_id);
-#else
-		snprintf(bgl_part_id, BITSIZE, "UNDEFINED");
-#endif
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_PART_ID, bgl_part_id);
 	}

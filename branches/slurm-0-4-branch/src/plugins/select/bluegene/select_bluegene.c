@@ -261,28 +261,20 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 	return part_ready(job_ptr);
 }
 
-extern int select_p_pack_node_info(time_t last_query_time, char **buffer_ptr)
+extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 {
-	/* Locks: Read config */
-/* 	slurmctld_lock_t node_read_lock = {  */
-/* 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK }; */
 	ListIterator itr;
 	bgl_record_t *bgl_record;
 	uint32_t partitions_packed = 0, tmp_offset;
 	Buf buffer;
 
-	//START_TIMER;
-	debug("packing partition info");
-	//lock_slurmctld(node_read_lock);
-
-	/* check to see if configuration data has changed */
-	if ((last_query_time - 1) >= last_bgl_update) {
-		//unlock_slurmctld(node_read_lock);
-		debug2("Partitions haven't changed since %d", last_bgl_update);
+	/* check to see if data has changed */
+	if (last_query_time > last_bgl_update) {
+		debug2("Node select info hasn't changed since %d", 
+			last_bgl_update);
 		return SLURM_NO_CHANGE_IN_DATA;
 	} else {
-		buffer_ptr[0] = NULL;
-		//*buffer_size = 0;
+		*buffer_ptr = NULL;
 	
 		buffer = init_buf(HUGE_BUF_SIZE);
 		pack32(partitions_packed, buffer);
@@ -293,7 +285,6 @@ extern int select_p_pack_node_info(time_t last_query_time, char **buffer_ptr)
 			xassert(bgl_record->bgl_part_id != NULL);
 		
 			pack_partition(bgl_record, buffer);
-		
 			partitions_packed++;
 		}
 		list_iterator_destroy(itr);
@@ -303,47 +294,8 @@ extern int select_p_pack_node_info(time_t last_query_time, char **buffer_ptr)
 		pack32(partitions_packed, buffer);
 		set_buf_offset(buffer, tmp_offset);
 
-		//*buffer_size = get_buf_offset(buffer);
-		buffer_ptr[0] = xfer_buf_data(buffer);
-		
-		//unlock_slurmctld(node_read_lock);
-	/* 	END_TIMER; */
-/* 		debug("node_info, size=%d %s", */
-/* 		     dump_size, TIME_STR); */
+		*buffer_ptr = buffer;
 	}
-	debug("done packing partition info");
+
 	return SLURM_SUCCESS;
 }
-
-extern int select_p_unpack_node_info(time_t last_update, Buf buffer)
-{
-/* 	bgl_info_record_t *bgl_info_record; */
-/* 	int partitions_packed, i; */
-/* 	//Buf buffer; */
-/* 	//time_t now; */
-/* 	debug("unpacking partition info"); */
-	
-/* 	safe_unpack32(&partitions_packed, buffer); */
-/* 	safe_unpack_time(&last_update, buffer); */
-
-/* 	if(bgl_info_list) { */
-/* 		while ((bgl_info_record = list_pop(bgl_info_list)) != NULL) { */
-/* 			destroy_bgl_info_record(bgl_info_record); */
-/* 		} */
-/* 	} else { */
-/* 		bgl_info_list = list_create(destroy_bgl_info_record); */
-/* 	} */
-		
-/* 	for(i=0; i<partitions_packed; i++) { */
-/* 		bgl_info_record = (bgl_info_record_t*) xmalloc(sizeof(bgl_info_record_t)); */
-/* 		list_push(bgl_info_list, bgl_info_record); */
-/* 		unpack_partition(bgl_info_record, buffer); */
-/* 	} */
-/* 	debug("done packing partition info"); */
-/* 	return SLURM_SUCCESS; */
-
-/* unpack_error: */
-	return SLURM_ERROR;
-
-}
-

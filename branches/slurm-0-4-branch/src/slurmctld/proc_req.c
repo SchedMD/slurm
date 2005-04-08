@@ -1740,11 +1740,15 @@ static void _slurm_rpc_job_ready(slurm_msg_t * msg)
 static void  _slurm_rpc_node_select_info(slurm_msg_t * msg)
 {
 	int error_code = SLURM_SUCCESS;
+	Buf buffer = NULL;
+	node_info_select_request_msg_t *sel_req_msg =
+		(node_info_select_request_msg_t *) msg->data;
+	slurm_msg_t response_msg;
 	DEF_TIMERS;
 
 	START_TIMER;
-	debug2("Processing RPC: REQUEST_NODE_SELECTINFO");
-	//error_code = get_the_info();
+	debug2("Processing RPC: REQUEST_NODE_SELECT_INFO");
+	error_code = select_g_pack_node_info(sel_req_msg->last_update, &buffer);
 	END_TIMER;
 
 	if (error_code) {
@@ -1752,6 +1756,17 @@ static void  _slurm_rpc_node_select_info(slurm_msg_t * msg)
 			slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
+		/* init response_msg structure */
+		response_msg.address = msg->address;
+		response_msg.msg_type = RESPONSE_NODE_SELECT_INFO;
+		response_msg.data = get_buf_data(buffer);
+		response_msg.data_size = get_buf_offset(buffer);
+
+		/* send message */
+		slurm_send_node_msg(msg->conn_fd, &response_msg);
+  
+		if (buffer)
+			free_buf(buffer);
 	}
 }
 

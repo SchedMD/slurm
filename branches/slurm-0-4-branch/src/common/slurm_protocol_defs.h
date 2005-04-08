@@ -216,6 +216,10 @@ typedef struct node_info_request_msg {
 	uint16_t show_flags;
 } node_info_request_msg_t;
 
+typedef struct node_info_select_request_msg {
+	time_t last_update;
+} node_info_select_request_msg_t;
+
 typedef struct part_info_request_msg {
 	time_t last_update;
 	uint16_t show_flags;
@@ -325,7 +329,7 @@ typedef struct return_code_msg {
 /* Note: We include select_jobinfo here in addition to the job launch 
  * RPC in order to insure reliable clean-up of a BlueGene partition in
  * the event of some launch failure or race condition preventing slurmd 
- * from getting the BGL_PARTITION_ID at that time. It is needed for 
+ * from getting the MPIRUN_PARTITION at that time. It is needed for 
  * the job epilog. */
 typedef struct kill_job_msg {
 	uint32_t job_id;

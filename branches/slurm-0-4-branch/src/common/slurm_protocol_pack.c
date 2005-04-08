@@ -50,7 +50,8 @@
 
 #define _pack_job_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_job_step_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
-#define _pack_bgl_block_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
+#define _pack_node_select_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
+#define _pack_node_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 
 static void _pack_update_node_msg(update_node_msg_t * msg, Buf buffer);
 static int _unpack_update_node_msg(update_node_msg_t ** msg, Buf buffer);
@@ -90,9 +91,10 @@ static void _pack_node_info_request_msg(
 static int _unpack_node_info_request_msg(
 			node_info_request_msg_t ** msg, Buf bufer);
 
-static void _pack_node_info_msg(slurm_msg_t * msg, Buf buffer);
 static int _unpack_node_info_msg(node_info_msg_t ** msg, Buf buffer);
 static int _unpack_node_info_members(node_info_t * node, Buf buffer);
+static int _unpack_node_select_info_msg(node_select_info_msg_t ** msg, 
+			Buf buffer);
 
 static void _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer);
 static int _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer);
@@ -182,6 +184,11 @@ static int _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 static void _pack_job_info_request_msg(job_info_request_msg_t * 
 		msg, Buf buffer);
 static int _unpack_job_info_request_msg(job_info_request_msg_t** 
+		msg, Buf buffer);
+
+static void _pack_node_select_info_req_msg(node_info_select_request_msg_t *
+		msg, Buf buffer);
+static int _unpack_node_select_info_req_msg(node_info_select_request_msg_t **
 		msg, Buf buffer);
 
 static void _pack_job_step_info_req_msg(job_step_info_request_msg_t * msg,
@@ -507,8 +514,12 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	 case REQUEST_JOB_READY:
 		_pack_job_ready_msg((job_id_msg_t *)msg->data, buffer);
 		break;
+	 case REQUEST_NODE_SELECT_INFO:
+		_pack_node_select_info_req_msg(
+			(node_info_select_request_msg_t *) msg->data, buffer);
+		break;
 	 case RESPONSE_NODE_SELECT_INFO:
-		_pack_bgl_block_info_msg((slurm_msg_t *) msg, buffer);
+		_pack_node_select_info_msg((slurm_msg_t *) msg, buffer);
 		break;
 	 default:
 		 debug("No pack method for msg type %i", msg->msg_type);
@@ -767,9 +778,14 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		 rc = _unpack_job_ready_msg((job_id_msg_t **)
 				& msg->data, buffer);
 		break;
+	 case REQUEST_NODE_SELECT_INFO:
+		rc = _unpack_node_select_info_req_msg(
+				(node_info_select_request_msg_t **) &msg->data,
+				buffer);
+		break;
 	 case RESPONSE_NODE_SELECT_INFO:
-		error("No unpack method for RESPONSE_NODE_SELECT_INFO");
-		return EINVAL;
+		rc = _unpack_node_select_info_msg((node_select_info_msg_t **) &
+			(msg->data), buffer);
 		break;
 	 default:
 		 debug("No unpack method for msg type %i", msg->msg_type);
@@ -1081,11 +1097,6 @@ _unpack_submit_response_msg(submit_response_msg_t ** msg, Buf buffer)
 	*msg = NULL;
 	return SLURM_ERROR;
 }
-static void
-_pack_node_info_msg(slurm_msg_t * msg, Buf buffer)
-{
-	packmem_array(msg->data, msg->data_size, buffer);
-}
 
 static int
 _unpack_node_info_msg(node_info_msg_t ** msg, Buf buffer)
@@ -1145,6 +1156,13 @@ _unpack_node_info_members(node_info_t * node, Buf buffer)
 	return SLURM_ERROR;
 }
 
+static int _unpack_node_select_info_msg(node_select_info_msg_t ** msg,
+		Buf buffer)
+{
+	xassert(msg != NULL);
+
+	return select_g_unpack_node_info(msg, buffer);
+}
 
 static void
 _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer)
@@ -2548,8 +2566,7 @@ _unpack_complete_job_step_msg(complete_job_step_msg_t ** msg_ptr, Buf buffer)
 }
 
 static void
-_pack_job_info_request_msg(job_info_request_msg_t * msg,
-				Buf buffer)
+_pack_job_info_request_msg(job_info_request_msg_t * msg, Buf buffer)
 {
 	pack_time(msg->last_update, buffer);
 	pack16(msg->show_flags, buffer);
@@ -2570,6 +2587,30 @@ _unpack_job_info_request_msg(job_info_request_msg_t** msg,
 
       unpack_error:
 	xfree(job_info);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_node_select_info_req_msg(node_info_select_request_msg_t *msg, Buf buffer)
+{
+	pack_time(msg->last_update, buffer);
+}
+
+static int
+_unpack_node_select_info_req_msg(node_info_select_request_msg_t **msg, 
+		Buf buffer)
+{
+	node_info_select_request_msg_t *node_sel_info;
+
+	node_sel_info = xmalloc(sizeof(node_info_select_request_msg_t));
+	*msg = node_sel_info;
+
+	safe_unpack_time(&node_sel_info->last_update, buffer);
+	return SLURM_SUCCESS;
+
+      unpack_error:
+	xfree(node_sel_info);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

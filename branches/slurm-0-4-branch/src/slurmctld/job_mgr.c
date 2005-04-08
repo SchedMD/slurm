@@ -925,7 +925,7 @@ extern int kill_job_by_part_name(char *part_name)
  * IN step_test - if true, only kill the job if a step is running on the node
  * RET number of killed jobs
  */
-int kill_running_job_by_node_name(char *node_name, bool step_test)
+extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
@@ -1431,8 +1431,7 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-int
-job_complete(uint32_t job_id, uid_t uid, bool requeue,
+extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	     uint32_t job_return_code)
 {
 	struct job_record *job_ptr;
@@ -3507,7 +3506,7 @@ _xmit_new_end_time(struct job_record *job_ptr)
  * IN return_code - return code from epilog script
  * RET true if job is COMPLETED, otherwise false
  */
-bool job_epilog_complete(uint32_t job_id, char *node_name, 
+extern bool job_epilog_complete(uint32_t job_id, char *node_name, 
 		uint32_t return_code)
 {
 	struct job_record  *job_ptr = find_job_record(job_id);

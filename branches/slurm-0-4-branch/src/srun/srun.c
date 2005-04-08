@@ -233,7 +233,7 @@ int srun(int ac, char **av)
 		select_g_get_jobinfo(job->select_jobinfo, 
 				SELECT_DATA_PART_ID, &bgl_part_id);
 	if (bgl_part_id)
-		setenvf("BGL_PARTITION_ID=%s", bgl_part_id);
+		setenvf("MPIRUN_PARTITION=%s", bgl_part_id);
 
 	if (slurm_get_mpich_gm_dir() && getenv("GMPI_PORT") == NULL) {
 		/*
@@ -649,8 +649,8 @@ _set_batch_script_env(job_t *job)
 		select_g_get_jobinfo(job->select_jobinfo, 
 				SELECT_DATA_PART_ID, &bgl_part_id);
 		if (bgl_part_id 
-		&& setenvf("BGL_PARTITION_ID=%s", bgl_part_id)) {
-			error("Can't set BGL_PARTITION_ID environment variable");
+		&& setenvf("MPIRUN_PARTITION=%s", bgl_part_id)) {
+			error("Can't set MPIRUN_PARTITION environment variable");
 			rc = SLURM_FAILURE;
 		}
 	}

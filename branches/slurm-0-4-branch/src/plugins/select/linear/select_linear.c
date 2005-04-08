@@ -410,3 +410,10 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 
 	return 1;
 }
+
+extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
+{
+	/* This function is always invalid on normal Linux clusters */
+	return SLURM_ERROR;
+}
+
