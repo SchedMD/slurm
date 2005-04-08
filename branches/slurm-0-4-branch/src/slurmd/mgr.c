@@ -305,8 +305,10 @@ run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid,
 
 	do {
 		if (waitpid(cpid, &status, 0) < 0) {
-			if (errno != EINTR)
-				return -1;
+			if (errno == EINTR)
+				continue;
+			error("waidpid: %m");
+			return 0;
 		} else
 			return status;
 	} while(1);
