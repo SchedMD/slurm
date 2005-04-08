@@ -180,8 +180,6 @@ static int _bgl_report(void)
 		return error_code;
 	}
 
-	printf("time=%ld, recs=%u\n", (long) new_bgl_ptr->last_update,
-			new_bgl_ptr->record_count);
 	if (!params.no_header)
 		printf("BGLBLOCK NODES        OWNER    STATE    CONNECTION USE\n");
 /*                      12345678 123456789012 12345678 12345678 1234567890 12345+ */
