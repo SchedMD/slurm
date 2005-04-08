@@ -73,13 +73,16 @@ extern int set_grid_bgl(int *start, int *end, int count, int set)
 {
 	int x=0;
 	int i = 0;
+#ifdef HAVE_BGL
+	int y=0, z=0;
+#endif
+
 	assert(end[X] < DIM_SIZE[X]);
 	assert(start[X] >= 0);
 	assert(count >= 0);
 	assert(set >= 0);
 	assert(set <= 2);
 #ifdef HAVE_BGL
-	int y=0, z=0;
 	assert(end[Y] < DIM_SIZE[Y]);
 	assert(start[Y] >= 0);
 	assert(end[Z] < DIM_SIZE[Z]);

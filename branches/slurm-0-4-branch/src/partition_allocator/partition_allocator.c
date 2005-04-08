@@ -1224,9 +1224,9 @@ static void _create_pa_system(void)
 static void _delete_pa_system(void)
 {
 #ifdef HAVE_BGL
-	int x=0;
-	int y;
+	int x, y;
 #endif
+
 	if (!pa_system_ptr){
 		return;
 	}

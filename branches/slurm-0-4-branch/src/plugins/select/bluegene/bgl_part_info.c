@@ -114,7 +114,7 @@ extern void pack_partition(bgl_record_t *bgl_record, Buf buffer)
 	pack16((uint16_t)bgl_record->node_use, buffer);	
 }
 
-extern int update_partition_list()
+extern int update_partition_list(void)
 {
 	int is_ready = 0;
 #ifdef HAVE_BGL_FILES
@@ -129,6 +129,7 @@ extern int update_partition_list()
 
 	if(bgl_list == NULL)
 		return 0;
+
 	if ((rc = rm_get_partitions_info(part_state, &part_list))
 	    != STATUS_OK) {
 		error("rm_get_partitions(): %s", bgl_err_str(rc));
@@ -199,10 +200,10 @@ extern int update_partition_list()
 			is_ready = -1;
 			break;
 		}
-		
+
 		if (!bgl_record->owner_name) {
 			debug("owner of Partition %s was null and now is %s",
-			      bgl_record->bgl_part_id, name);
+				bgl_record->bgl_part_id, name);
 			bgl_record->owner_name = xstrdup(name);
 			is_ready = 1;
 		} else if (name[0] != '\0') {
@@ -211,12 +212,11 @@ extern int update_partition_list()
 				      bgl_record->bgl_part_id, bgl_record->owner_name, name);
 				xfree(bgl_record->owner_name);
 				bgl_record->owner_name = xstrdup(name);
-				
 				is_ready = 1;
 			}	
 		} else {
 			error("name was empty for parition %s from rm_get_data(RM_PartitionUserName)", 
-			      bgl_record->bgl_part_id);
+				bgl_record->bgl_part_id);
 		}	
 	}
 	
