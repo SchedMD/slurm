@@ -709,17 +709,23 @@ static int _unpack_node_info(bgl_info_record_t *bgl_info_record, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
-	xfree(bgl_info_record->nodes);
-	xfree(bgl_info_record->owner_name);
-	xfree(bgl_info_record->bgl_part_id);
+	if(bgl_info_record->nodes)
+		xfree(bgl_info_record->nodes);
+	if(bgl_info_record->owner_name)
+		xfree(bgl_info_record->owner_name);
+	if(bgl_info_record->bgl_part_id)
+		xfree(bgl_info_record->bgl_part_id);
 	return SLURM_ERROR;
 }
 
 static void _free_node_info(bgl_info_record_t *bgl_info_record)
 {
-	xfree(bgl_info_record->nodes);
-	xfree(bgl_info_record->owner_name);
-	xfree(bgl_info_record->bgl_part_id);
+	if(bgl_info_record->nodes)
+		xfree(bgl_info_record->nodes);
+	if(bgl_info_record->owner_name)
+		xfree(bgl_info_record->owner_name);
+	if(bgl_info_record->bgl_part_id)
+		xfree(bgl_info_record->bgl_part_id);
 }
 
 /* Unpack node select info from a buffer */

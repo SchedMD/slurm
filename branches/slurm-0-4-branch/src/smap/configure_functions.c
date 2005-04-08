@@ -207,34 +207,50 @@ static int _create_allocation(char *com, List allocated_partitions)
 static int _resolve(char *com)
 {
 	int i=0;
+	int len=strlen(com);
+#ifdef HAVE_BGL_FILES
+	char *rack_mid;
+	int *coord;
+#endif
+	
 	while(com[i-1] != ' ' && com[i] != '\0')
 		i++;
 	if(com[i] == 'r')
-		com[0] = 'R';
-	
+		com[i] = 'R';
+		
 	memset(error_string,0,255);		
+#ifdef HAVE_BGL_FILES
+	if(len-i<3) {
+		sprintf(error_string, "Must enter 3 coords to resolve.\n");	
+		goto resolve_error;
+	}
 	if(com[i] != 'R') {
-		char *rack_mid = find_bp_rack_mid(com+i);
+		rack_mid = find_bp_rack_mid(com+i);
+		
 		if(rack_mid)
 			sprintf(error_string, "X=%c Y=%c Z=%c resolves to %s\n",
 				com[X+i],com[Y+i],com[Z+i], rack_mid);
 		else
 			sprintf(error_string, "X=%c Y=%c Z=%c has no resolve\n",
-				       params.partition[X],
-				       params.partition[Y],
-				       params.partition[Z]);
+				       com[X+i],com[Y+i],com[Z+i]);
 		
 	} else {
-		int *coord = find_bp_loc(com+i);
+		coord = find_bp_loc(com+i);
+		
 		if(coord)
 			sprintf(error_string, "%s resolves to X=%d Y=%d Z=%d\n",
 				com+i,coord[X],coord[Y],coord[Z]);
 		else
 			sprintf(error_string, "%s has no resolve.\n", 
-				params.partition);	
+				com+i);	
 	}
+#else
+			sprintf(error_string, "Must be on BGL SN to resolve.\n"); 
+#endif
+resolve_error:
 	wnoutrefresh(pa_system_ptr->text_win);
 	doupdate();
+
 	return 1;
 }
 static int _down_bps(char *com)
@@ -700,11 +716,11 @@ void get_command(void)
 	text_startx = pa_system_ptr->text_win->_begx;
 	command_win = newwin(3, text_width - 1, LINES - 4, text_startx + 1);
 	echo();
-
 	
 	while (strcmp(com, "quit")) {
+		clear_window(pa_system_ptr->grid_win);
 		print_grid(0);
-		wclear(pa_system_ptr->text_win);
+		clear_window(pa_system_ptr->text_win);
 		box(pa_system_ptr->text_win, 0, 0);
 		box(pa_system_ptr->grid_win, 0, 0);
 		
@@ -734,10 +750,12 @@ void get_command(void)
 		}
 		list_iterator_destroy(results_i);
 		
+		
 		wnoutrefresh(pa_system_ptr->text_win);
 		wnoutrefresh(pa_system_ptr->grid_win);
 		doupdate();
-		wclear(command_win);
+		clear_window(command_win);
+		//wclear(command_win);
 		box(command_win, 0, 0);
 		mvwprintw(command_win, 0, 3,
 			  "Input Command: (type quit to change view, exit to exit)");
@@ -789,7 +807,7 @@ void get_command(void)
 	params.display = 0;
 	noecho();
 	
-	wclear(pa_system_ptr->text_win);
+	clear_window(pa_system_ptr->text_win);
 	pa_system_ptr->xcord = 1;
 	pa_system_ptr->ycord = 1;
 	print_date();

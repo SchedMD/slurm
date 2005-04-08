@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 	int end = 0;
 	int i;
 	int rc;
-		
+	int mapset = 0;	
 	//char *name;	
         	
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
@@ -69,36 +69,16 @@ int main(int argc, char *argv[])
 	error_code = slurm_load_node((time_t) NULL, &new_node_ptr, 0);
 
 	if (error_code) {
-#ifdef HAVE_BGL_FILES
-		rm_BGL_t *bgl;
-		rm_size3D_t bp_size;
-		if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
-			exit(-1);
-		}
-		
-		if ((rc = rm_get_BGL(&bgl)) != STATUS_OK) {
-			exit(-1);
-		}
-		
-		if ((rc = rm_get_data(bgl, RM_Msize, &bp_size)) != STATUS_OK) {
-			exit(-1);
-		}
-		verbose("BlueGene configured with %d x %d x %d base partitions",
-			bp_size.X, bp_size.Y, bp_size.Z);
-		DIM_SIZE[X]=bp_size.X;
-		DIM_SIZE[Y]=bp_size.Y;
-		DIM_SIZE[Z]=bp_size.Z;
-		rm_free_BGL(bgl);
-#else
-		slurm_perror("slurm_load_node");
+		printf("slurm_load_node: %s", slurm_strerror(slurm_get_errno()));
 		exit(0);
-#endif
-		pa_init(NULL);
 	} else {
 		pa_init(new_node_ptr);
 	}	
 	
 	if(params.partition) {
+#ifdef HAVE_BGL_FILES
+		if(!mapset)
+			mapset = set_bp_map();
 		if(params.partition[0] == 'r')
 			params.partition[0] = 'R';
 		if(params.partition[0] != 'R') {
@@ -126,6 +106,9 @@ int main(int argc, char *argv[])
 			else
 				printf("%s has no resolve.\n", params.partition);
 		}
+#else
+		printf("must be on BGL SN to resolve.\n");
+#endif
 		exit(0);
 	}
 	if(!params.commandline) {
@@ -201,6 +184,12 @@ int main(int argc, char *argv[])
 			break;
 #ifdef HAVE_BGL
 		case COMMANDS:
+			if(!mapset) {
+				mapset = set_bp_map();
+				wclear(pa_system_ptr->text_win);
+				//doupdate();
+				//move(0,0);
+			}
 			get_command();
 			break;
 		case BGLPART:
