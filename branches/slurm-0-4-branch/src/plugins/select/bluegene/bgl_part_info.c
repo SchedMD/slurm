@@ -71,7 +71,6 @@ extern int part_ready(struct job_record *job_ptr)
 	char *part_id;
 	ListIterator itr;
 	bgl_record_t *bgl_record;
-	struct passwd *pw_ent = NULL;
 	
 	rc = select_g_get_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_PART_ID, &part_id);
@@ -83,19 +82,10 @@ extern int part_ready(struct job_record *job_ptr)
 		}
 		list_iterator_destroy(itr);
 		
-		if ((bgl_record->owner_name[0] != '\0')
-		&&  (pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
-			error("getpwnam(%s): %m", bgl_record->owner_name);
-			rc = -1;
-		}
 		if ((rc != -1)
-		    &&  (pw_ent != NULL)
-		    &&  (pw_ent->pw_uid == job_ptr->user_id)
+		    &&  (bgl_record->owner_uid == job_ptr->user_id)
 		    &&  (bgl_record->state == RM_PARTITION_READY))
 			rc = 1;
-	
-	
-	//rc = _wait_part_ready(part_id, job_ptr->user_id);
 		xfree(part_id);
 	} else
 		rc = -1;
@@ -114,7 +104,7 @@ extern void pack_partition(bgl_record_t *bgl_record, Buf buffer)
 	pack16((uint16_t)bgl_record->node_use, buffer);	
 }
 
-extern int update_partition_list(void)
+extern int update_partition_list()
 {
 	int is_ready = 0;
 #ifdef HAVE_BGL_FILES
@@ -126,10 +116,10 @@ extern int update_partition_list(void)
 	rm_partition_list_t *part_list;
 	ListIterator itr;
 	bgl_record_t *bgl_record;
-
+	struct passwd *pw_ent = NULL;
+	
 	if(bgl_list == NULL)
 		return 0;
-
 	if ((rc = rm_get_partitions_info(part_state, &part_list))
 	    != STATUS_OK) {
 		error("rm_get_partitions(): %s", bgl_err_str(rc));
@@ -200,11 +190,16 @@ extern int update_partition_list(void)
 			is_ready = -1;
 			break;
 		}
-
+		
 		if (!bgl_record->owner_name) {
 			debug("owner of Partition %s was null and now is %s",
-				bgl_record->bgl_part_id, name);
+			      bgl_record->bgl_part_id, name);
 			bgl_record->owner_name = xstrdup(name);
+			if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
+				error("getpwnam(%s): %m", bgl_record->owner_name);
+				rc = -1;
+			}
+			bgl_record->owner_uid = pw_ent->pw_uid; 
 			is_ready = 1;
 		} else if (name[0] != '\0') {
 			if(strcmp(bgl_record->owner_name, name)) {
@@ -212,11 +207,16 @@ extern int update_partition_list(void)
 				      bgl_record->bgl_part_id, bgl_record->owner_name, name);
 				xfree(bgl_record->owner_name);
 				bgl_record->owner_name = xstrdup(name);
+				if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
+					error("getpwnam(%s): %m", bgl_record->owner_name);
+					rc = -1;
+				}
+				bgl_record->owner_uid = pw_ent->pw_uid; 
 				is_ready = 1;
 			}	
 		} else {
 			error("name was empty for parition %s from rm_get_data(RM_PartitionUserName)", 
-				bgl_record->bgl_part_id);
+			      bgl_record->bgl_part_id);
 		}	
 	}
 	

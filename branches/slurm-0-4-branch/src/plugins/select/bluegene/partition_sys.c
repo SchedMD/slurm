@@ -146,6 +146,7 @@ static int _post_allocate(bgl_record_t *bgl_record)
 		bgl_record->bgl_part_id = xstrdup("UNKNOWN");
 	} else
 		bgl_record->bgl_part_id = xstrdup(part_id);
+	bgl_record->owner_name = xstrdup(USER_NAME);
 
 	/* We are done with the partition */
 	if ((rc = rm_free_partition(bgl_record->bgl_part)) != STATUS_OK)
@@ -191,7 +192,7 @@ int read_bgl_partitions()
 	if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
 		error("rm_set_serial(): %s\n", bgl_err_str(rc));
 		return SLURM_ERROR;
-	}	
+	}			
 	set_bp_map();
 	if ((rc = rm_get_partitions_info(state, &part_list))
 			!= STATUS_OK) {

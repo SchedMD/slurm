@@ -18,5 +18,5 @@ force:
 $(sinfo_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-sinfo_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BGL_LDFLAGS)
+sinfo_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 

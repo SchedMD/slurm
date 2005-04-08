@@ -79,6 +79,7 @@ enum part_lifecycle {DYNAMIC, STATIC};
 typedef struct bgl_record {
 	char *nodes;			/* String of nodes in partition */
 	char *owner_name;		/* Owner of partition		*/
+	int owner_uid;   		/* Owner of partition uid	*/
 	pm_partition_id_t bgl_part_id;	/* ID returned from MMCS	*/
 	lifecycle_type_t part_lifecycle;/* either STATIC or DYNAMIC	*/
 	rm_partition_state_t state;   	/* the allocated partition   */

@@ -254,7 +254,7 @@ extern void *bluegene_agent(void *args)
 			if((rc = update_partition_list()) == 1)
 				last_bgl_update = now;
 			else if(rc == -1)
-				error("Error with update_partition_list");
+				error("Erro with update_partition_list");
 		}
 
 		if (difftime(now, last_mmcs_test) >= MMCS_POLL_TIME) {
@@ -315,9 +315,7 @@ extern char *bgl_err_str(status_t inx)
  */
 extern int create_static_partitions(List part_list)
 {
-#ifdef HAVE_BGL_FILES
-	int rc;
-#endif
+	int rc = SLURM_SUCCESS;
 
 	ListIterator itr, itr_found;
 	bgl_record_t *bgl_record, *found_record;
@@ -327,8 +325,7 @@ extern int create_static_partitions(List part_list)
 	itr = list_iterator_create(bgl_list);
 	while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
 			
-		if(bgl_record->bp_count>0 && bgl_record->node_use
-				== SELECT_COPROCESSOR_MODE)
+		if(bgl_record->bp_count>0 && bgl_record->node_use==SELECT_COPROCESSOR_MODE)
 			set_bgl_part(bgl_record->bgl_part_list, 
 				     bgl_record->bp_count, 
 				     bgl_record->conn_type);
@@ -340,7 +337,7 @@ extern int create_static_partitions(List part_list)
 	itr = list_iterator_create(bgl_list);
 	while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
 		itr_found = list_iterator_create(bgl_found_part_list);
-		while ((found_record = (bgl_record_t*) list_next(itr_found))) {
+		while ((found_record = (bgl_record_t*) list_next(itr_found)) != NULL) {
 			if (!strcmp(bgl_record->nodes, found_record->nodes)) {
 				break;	/* don't reboot this one */
 			}
@@ -436,6 +433,8 @@ extern int create_static_partitions(List part_list)
 	print_bgl_record(found_record);
 	
 no_total:
+	last_bgl_update = time(NULL);
+	rc = SLURM_SUCCESS;
 #ifdef _PRINT_PARTS_AND_EXIT
  	itr = list_iterator_create(bgl_list);
 	debug("\n\n");
@@ -447,8 +446,7 @@ no_total:
 #endif	/* _PRINT_PARTS_AND_EXIT */
 #endif	/* HAVE_BGL_FILES */
 
-	last_bgl_update = time(NULL);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 #ifdef HAVE_BGL_FILES
