@@ -46,8 +46,10 @@ int max_display;
 static int _get_option();
 static void *_resize_handler(int sig);
 static int _set_pairs();
+#ifndef HAVE_BGL
 static int _scroll_grid(int dir);
-
+#endif /* HAVE_BGL */
+ 
 int main(int argc, char *argv[])
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
@@ -61,7 +63,9 @@ int main(int argc, char *argv[])
 	int end = 0;
 	int i;
 	int rc;
+#ifdef HAVE_BGL
 	int mapset = 0;	
+#endif
 	//char *name;	
         	
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
@@ -294,7 +298,7 @@ static int _get_option()
 		break;
 #endif
 
-#ifdef HAVE_BGL
+#ifndef HAVE_BGL
 	case 'u':
 	case KEY_UP:
 		line_cnt--;
@@ -425,6 +429,7 @@ static int _set_pairs()
 	return 1;
 }
 
+#ifndef HAVE_BGL
 static int _scroll_grid(int dir)
 {
 	print_grid(dir);
@@ -432,4 +437,4 @@ static int _scroll_grid(int dir)
 	doupdate();
 	return 1;
 }
-
+#endif /* HAVE_BGL */

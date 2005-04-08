@@ -48,7 +48,9 @@ typedef struct {
 
 } db2_block_info_t;
 
+#ifdef HAVE_BGL
 static List block_list = NULL;
+#endif
 
 static char* _convert_conn_type(enum connection_type conn_type);
 static char* _convert_node_use(enum node_use_type node_use);
@@ -60,10 +62,10 @@ static int  _print_text_part(partition_info_t *part_ptr,
 static int _set_start_finish(db2_block_info_t *db2_info_ptr);
 static void _block_list_del(void *object);
 static int _list_match_all(void *object, void *key);
-char *bgl_err_str(status_t inx);
-#endif
+static char *bgl_err_str(status_t inx);
 static int _in_slurm_partition(db2_block_info_t *db2_info_ptr, int *first, int *last);
 static int _print_rest(db2_block_info_t *block_ptr, int *count);
+#endif
 
 void get_slurm_part(void)
 {
@@ -594,9 +596,8 @@ static void _block_list_del(void *object)
  * IN inx - error code from any of the BGL Bridge APIs
  * RET - string describing the error condition
  */
-char *bgl_err_str(status_t inx)
+static char *bgl_err_str(status_t inx)
 {
-#ifdef HAVE_BGL
 	switch (inx) {
 	case STATUS_OK:
 		return "Status OK";
@@ -621,7 +622,6 @@ char *bgl_err_str(status_t inx)
 	case INCONSISTENT_DATA:
 		return "Inconsistent data";
 	}
-#endif
 	return "?";
 }
 
@@ -675,7 +675,6 @@ static int _set_start_finish(db2_block_info_t *db2_info_ptr)
 /* 	       db2_info_ptr->end[X],db2_info_ptr->end[Y],db2_info_ptr->end[Z]); */
 	return 1;
 }
-#endif
 
 static int _in_slurm_partition(db2_block_info_t *db2_info_ptr, int *first, int *last)
 {
@@ -760,6 +759,7 @@ static int _print_rest(db2_block_info_t *block_ptr, int *count)
 		 COLOR_PAIR(colors[block_ptr->letter_num%6]));
 	return SLURM_SUCCESS;
 }
+#endif
 
 static char* _convert_conn_type(enum connection_type conn_type)
 {
