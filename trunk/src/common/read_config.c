@@ -1,5 +1,7 @@
 /*****************************************************************************\
  *  read_config.c - read the overall slurm configuration file
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

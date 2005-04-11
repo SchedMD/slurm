@@ -2,6 +2,8 @@
  *  job_mgr.c - manage the job information of slurm
  *	Note: there is a global job list (job_list), job_count, time stamp 
  *	(last_job_update), and hash table (job_hash)
+ *
+ * $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

@@ -3,6 +3,8 @@
  *	Note: there is a global node table (node_record_table_ptr), its 
  *	hash table (node_hash_table), time stamp (last_node_update) and 
  *	configuration list (config_list)
+ *
+ * $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -441,6 +443,12 @@ struct node_record *
 find_node_record (char *name) 
 {
 	int i;
+
+	if ((name == NULL)
+	||  (name[0] == '\0')) {
+		info("find_node_record passed NULL name");
+		return NULL;
+	}
 
 	/* try to find via hash table, if it exists */
 	if (node_hash_table) {
