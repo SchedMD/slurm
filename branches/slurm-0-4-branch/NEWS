@@ -1,8 +1,16 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.4.19
+=========================
+ -- Added new RPCs for getting bglblock state info remotely and cache data 
+    within the plugin (permits removal of DB2 access from BGL FEN and 
+    dramatically increases smap responsivenss, also changed prolog/epilog
+    operation)
+ -- Move smap executable to main slurm RPM (from separate RPM).
+
 * Changes in SLURM 0.4.18
-========================
+=========================
  -- Added error checking of rm_remove_partition calls.
  -- job_term() was terminating a job in real time rather than 
     queueing the request. This would result in slurmctld hanging 
