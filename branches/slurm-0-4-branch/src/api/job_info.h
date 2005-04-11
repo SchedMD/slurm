@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  job_info.h - get/print the job state information of slurm
+ *
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
@@ -28,6 +29,8 @@
 #ifndef _JOB_INFO_H
 #define _JOB_INFO_H
 
+#include <stdint.h>
+
 /*
  * slurm_make_time_str - convert time_t to string "month/date hour:min:sec" 
  * IN time - a time stamp
@@ -35,10 +38,14 @@
  */
 extern void slurm_make_time_str (time_t *time, char *string);
 
+#define READY_JOB_ERROR  -1
+#define READY_NODE_STATE 0x01
+#define READY_JOB_STATE  0x02
+
 /*
  * slurm_job_node_ready - report if nodes are ready for job to execute now
  * IN job_id - slurm job id
- * RET: 1 if ready, 0 if not ready, -1 if error
+ * RET: READY_* values as defined in api/job_info.h
  */
 extern int slurm_job_node_ready(uint32_t job_id);
 

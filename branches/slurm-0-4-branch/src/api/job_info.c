@@ -394,7 +394,7 @@ extern int slurm_get_select_jobinfo (select_jobinfo_t jobinfo,
 /*
  * slurm_job_node_ready - report if nodes are ready for job to execute now
  * IN job_id - slurm job id
- * RET: 1 if ready, 0 if not ready, -1 if error
+ * RET: READY_* values as defined in api/job_info.h
  */
 extern int slurm_job_node_ready(uint32_t job_id)
 {
@@ -413,10 +413,10 @@ extern int slurm_job_node_ready(uint32_t job_id)
 		rc = ((return_code_msg_t *) resp.data)->return_code;
 		slurm_free_return_code_msg(resp.data);
 	} else if (resp.msg_type == RESPONSE_SLURM_RC) {
-		rc = -1;
+		rc = READY_JOB_ERROR;
 		slurm_free_return_code_msg(resp.data);
 	} else
-		rc = -1;
+		rc = READY_JOB_ERROR;
 
 	return rc;
 }

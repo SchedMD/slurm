@@ -44,6 +44,7 @@
 
 #include <slurm/slurm_errno.h>
 
+#include "src/api/job_info.h"
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
 #include "src/common/node_select.h"
@@ -3611,6 +3612,11 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 	rc = select_g_job_ready(job_ptr);
 	if (rc == -1)
 		return SLURM_ERROR;
+
+	if (rc)
+		rc = READY_NODE_STATE;
+	if (job_ptr->job_state == JOB_RUNNING)
+		rc |= READY_JOB_STATE;
 
 	*ready = rc;
 	return SLURM_SUCCESS;

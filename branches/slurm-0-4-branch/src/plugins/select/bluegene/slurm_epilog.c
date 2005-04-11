@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 
 static void _wait_part_not_ready(uint32_t job_id)
 {
-	int is_ready = 1, i;
+	int is_ready = 1, i, rc;
 
 	max_delay = MIN_DELAY + (INCR_DELAY * _get_job_size(job_id));
 
@@ -102,7 +102,10 @@ static void _wait_part_not_ready(uint32_t job_id)
 #endif
 		}
 
-		if (slurm_job_node_ready(job_id) == 0) {
+		rc = slurm_job_node_ready(job_id);
+		if (rc == -1)				/* error */
+			continue;			/* retry */
+		if ((rc & READY_NODE_STATE) == 0) {
 			is_ready = 0;
 			break;
 		}

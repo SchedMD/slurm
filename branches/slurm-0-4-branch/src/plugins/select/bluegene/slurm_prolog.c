@@ -60,7 +60,7 @@ int max_delay = MIN_DELAY;
 int cur_delay = 0; 
 
 static int  _get_job_size(uint32_t job_id);
-static void _wait_part_ready(uint32_t job_id);
+static int  _wait_part_ready(uint32_t job_id);
 
 int main(int argc, char *argv[])
 {
@@ -70,22 +70,25 @@ int main(int argc, char *argv[])
 	job_id_char = getenv("SLURM_JOBID");		/* get SLURM job ID */
 	if (!job_id_char) {
 		fprintf(stderr, "SLURM_JOBID not set\n");
-		exit(0);
+		exit(1);				/* abort job */
 	}
 
 	job_id = (uint32_t) atol(job_id_char);
 	if (job_id == 0) {
 		fprintf(stderr, "SLURM_JOBID invalid: %s\n", job_id_char);
-		exit(0);
+		exit(1);				/* abort job */
 	}
 
-	_wait_part_ready(job_id);
-	exit(0);
+	if (_wait_part_ready(job_id) == 1)
+		exit(0);				/* Success */
+
+	exit(1);					/* abort job */
 }
 
-static void _wait_part_ready(uint32_t job_id)
+/* returns 1 if job and nodes are ready for job to begin, 0 otherwise */
+static int _wait_part_ready(uint32_t job_id)
 {
-	int is_ready = 0, i;
+	int is_ready = 0, i, rc;
 
 	max_delay = MIN_DELAY + (INCR_DELAY * _get_job_size(job_id));
 
@@ -102,7 +105,12 @@ static void _wait_part_ready(uint32_t job_id)
 #endif
 		}
 
-		if (slurm_job_node_ready(job_id) == 1) {
+		rc = slurm_job_node_ready(job_id);
+		if (rc == -1)				/* error */
+			continue;			/* retry */
+		if ((rc & READY_JOB_STATE) == 0)	/* job killed */
+			break;
+		if (rc & READY_NODE_STATE) {		/* job and node ready */
 			is_ready = 1;
 			break;
 		}
@@ -116,7 +124,7 @@ static void _wait_part_ready(uint32_t job_id)
 #endif
 	if (is_ready == 0)
 		fprintf(stderr, "Job %u is not ready.\n", job_id);
-
+	return is_ready;
 }
 
 static int _get_job_size(uint32_t job_id)
