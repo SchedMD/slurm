@@ -1,6 +1,8 @@
 /*****************************************************************************\
  *  bgl_job_run.c - blue gene job execution (e.g. initiation and termination) 
- *  functions. 
+ *  functions.
+ *
+ * $Id$ 
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -388,8 +390,10 @@ static int _boot_part(pm_partition_id_t bgl_part_id)
 		list_iterator_destroy(itr);
 		if(block_ptr) {
 			block_ptr->boot_state = 1;
+			block_ptr->boot_count = 0;
 		} else {
-			error("Partition %s not found in list to set boot state.", bgl_part_id);
+			error("Partition %s not found in list to set state", 
+				bgl_part_id);
 		}
 	} else {
 		error("Partition list not set.");
@@ -629,7 +633,6 @@ extern int start_job(struct job_record *job_ptr)
 		SELECT_DATA_PART_ID, &(bgl_update_ptr->bgl_part_id));
 	info("Queue start of job %u in BGL partition %s",
 		job_ptr->job_id, bgl_update_ptr->bgl_part_id);
-	//_part_op(bgl_update_ptr);
 	_start_agent(bgl_update_ptr);
 #endif
 	return rc;
