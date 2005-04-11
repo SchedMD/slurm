@@ -387,18 +387,21 @@ extern int create_static_partitions(List part_list)
        	itr = list_iterator_create(bgl_found_part_list);
 	while ((found_record = (bgl_record_t *) list_next(itr)) != NULL) {
 		if (!strcmp(bgl_record->nodes, found_record->nodes)) {
+			destroy_bgl_record(bgl_record);
 			goto no_total;	/* don't create total already there */
 		}
 	}
 	itr = list_iterator_create(bgl_list);
 	while ((found_record = (bgl_record_t *) list_next(itr)) != NULL) {
 		if (!strcmp(bgl_record->nodes, found_record->nodes)) {
+			destroy_bgl_record(bgl_record);
 			goto no_total;	/* don't create total already defined */
 		}
 	}
 	list_iterator_destroy(itr);
 	bgl_record->bgl_part_list = list_create(NULL);			
 	bgl_record->hostlist = hostlist_create(NULL);
+	bgl_record->boot_state = 0;
 	_process_nodes(bgl_record);
 	list_push(bgl_list, bgl_record);
 	
@@ -419,6 +422,7 @@ extern int create_static_partitions(List part_list)
 	found_record->hostlist = bgl_record->hostlist;
 	found_record->nodes = xstrdup(bgl_record->nodes);
 	
+	found_record->boot_state = 0;
 	found_record->bp_count = bgl_record->bp_count;
 	found_record->switch_count = bgl_record->switch_count;
 	found_record->geo[X] = bgl_record->geo[X];
@@ -730,7 +734,7 @@ static int _delete_old_partitions(void)
 			       != NULL) {
 				if (!strcmp(init_record->bgl_part_id, 
 					    found_record->bgl_part_id)) {
-					break;	/* delete this one */
+					break;	/* don't delete this one */
 				}
 			}
 			list_iterator_destroy(itr_found);
@@ -961,7 +965,8 @@ static int _parse_bgl_spec(char *in_line)
 	
 	bgl_record->bgl_part_list = list_create(NULL);			
 	bgl_record->hostlist = hostlist_create(NULL);
-
+	bgl_record->boot_state = 0;
+		
 	bgl_record->nodes = xstrdup(nodes);
 	xfree(nodes);	/* pointer moved, nothing left to xfree */
 	
@@ -996,6 +1001,7 @@ static int _parse_bgl_spec(char *in_line)
 		found_record->hostlist = bgl_record->hostlist;
 		found_record->nodes = xstrdup(bgl_record->nodes);
 	
+		found_record->boot_state = 0;
 		found_record->bp_count = bgl_record->bp_count;
 		found_record->switch_count = bgl_record->switch_count;
 		found_record->geo[X] = bgl_record->geo[X];

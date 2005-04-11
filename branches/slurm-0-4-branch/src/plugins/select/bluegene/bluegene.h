@@ -86,12 +86,14 @@ typedef struct bgl_record {
 	int geo[SYSTEM_DIMENSIONS];     /* geometry */
 	rm_connection_type_t conn_type;	/* Mesh or Torus or NAV */
 	rm_partition_mode_t node_use;	/* either COPROCESSOR or VIRTUAL */
-	rm_partition_t *bgl_part;
-	List bgl_part_list;
+	rm_partition_t *bgl_part;       /* structure to hold info from db2 */
+	List bgl_part_list;             /* node list of blocks in partition */
 	hostlist_t hostlist;		/* expanded form of hosts */
 	int bp_count;                   /* size */
-	int switch_count;
-	bitstr_t *bitmap;
+	int switch_count;               /* number of switches used. */
+	int boot_state;                 /* check to see if boot failed. -1 = fail 0 = not booting 1 = booting */
+	int boot_count;                 /* number of attemts trying to booting */
+	bitstr_t *bitmap;               /* bitmap to check the name of partition */
 } bgl_record_t;
 
 typedef struct {

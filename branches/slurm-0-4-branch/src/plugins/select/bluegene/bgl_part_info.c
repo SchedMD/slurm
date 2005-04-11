@@ -54,7 +54,7 @@
 #include "bluegene.h"
 
 #define _DEBUG 0
-
+#define RETRY_BOOT_COUNT 3
 /*
  * check to see if partition is ready to execute.  Meaning
  * User is added to the list of users able to run, and no one 
@@ -81,17 +81,23 @@ extern int part_ready(struct job_record *job_ptr)
 				break;	/* found it */
 		}
 		list_iterator_destroy(itr);
-		
-		if ((rc != -1)
-		    &&  (bgl_record->owner_uid == job_ptr->user_id)
-		    &&  (bgl_record->state == RM_PARTITION_READY))
-			rc = 1;
 		xfree(part_id);
+	
+		if ((rc != -1)
+		    && (bgl_record->owner_uid == job_ptr->user_id)
+		    && (bgl_record->state == RM_PARTITION_READY))
+			rc = 1;
+		else if (bgl_record->boot_state == -1) {
+			error("Booting partition %s failed.",bgl_record->bgl_part_id);
+			bgl_record->boot_state = 0;
+			bgl_record->boot_count = 0;
+			rc = -1;
+		}
 	} else
 		rc = -1;
 #endif
 	return rc;
-}
+}				
 
 /* Pack all relevent information about a partition */
 extern void pack_partition(bgl_record_t *bgl_record, Buf buffer)
@@ -113,10 +119,15 @@ extern int update_partition_list()
 	rm_partition_state_t state;
 	rm_partition_state_flag_t part_state = PARTITION_ALL_FLAG;
 	char *name;
+	char *owner_name;
 	rm_partition_list_t *part_list;
 	ListIterator itr;
+	hostlist_iterator_t host_itr;
 	bgl_record_t *bgl_record;
 	struct passwd *pw_ent = NULL;
+	time_t now;
+	struct tm *time_ptr;
+	char reason[128];
 	
 	if(bgl_list == NULL)
 		return 0;
@@ -170,7 +181,7 @@ extern int update_partition_list()
 			error("Partition %s not found in list on known partitions",name);
 			continue;
 		}
-
+		
 		if ((rc = rm_get_data(part_ptr, RM_PartitionState, &state))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionState): %s",
@@ -182,38 +193,79 @@ extern int update_partition_list()
 			      name, bgl_record->state, state);
 			bgl_record->state = state;
 			is_ready = 1;
+			
+/* 			check the boot state */
+			if(bgl_record->boot_state == 1) {
+				switch(bgl_record->state) {
+				case RM_PARTITION_CONFIGURING:
+					break;
+				case RM_PARTITION_ERROR:
+					error("partition in an error state");
+				case RM_PARTITION_FREE:
+					if(bgl_record->boot_count < RETRY_BOOT_COUNT) {
+						sleep(3);
+						error("Trying to boot %s try %d",
+						      bgl_record->bgl_part_id,
+						      bgl_record->boot_count);
+						if ((rc = pm_create_partition(bgl_record->bgl_part_id))
+						    != STATUS_OK) {
+							error("pm_create_partition(%s): %s",
+							      bgl_record->bgl_part_id, bgl_err_str(rc));
+							is_ready = -1;
+						}
+						bgl_record->boot_count++;
+					} else {
+						error("Couldn't boot Partition %s for user %s. Keeps going into free state",
+						      bgl_record->bgl_part_id, bgl_record->owner_name);
+						now = time(NULL);
+						time_ptr = localtime(&now);
+						strftime(reason, sizeof(reason),
+							 "update_partition_list: MMCS switch DOWN [SLURM@%b %d %H:%M]",
+							 time_ptr);
+						host_itr = hostlist_iterator_create(bgl_record->hostlist);
+						while ((name = (char *) hostlist_next(host_itr)) != NULL) {
+							slurm_drain_nodes(name, reason);
+						}
+						hostlist_iterator_destroy(host_itr);
+						bgl_record->boot_state = -1;
+						
+					}
+					break;
+				default:
+					debug("resetting the boot state flag and counter for partition %s.",
+					      bgl_record->bgl_part_id);
+					bgl_record->boot_state = 0;
+					bgl_record->boot_count = 0;
+					break;
+				}
+			}
 		}
 		if ((rc = rm_get_data(part_ptr, RM_PartitionUserName, 
-				      &name)) != STATUS_OK) {
+				      &owner_name)) != STATUS_OK) {
 			error("rm_get_data(RM_PartitionUserName): %s",
 			      bgl_err_str(rc));
 			is_ready = -1;
 			break;
 		}
 		
-		if (!bgl_record->owner_name) {
-			debug("owner of Partition %s was null and now is %s",
-			      bgl_record->bgl_part_id, name);
-			bgl_record->owner_name = xstrdup(name);
+
+		if (owner_name[0] != '\0') {
+			if (!bgl_record->owner_name) {
+				debug("owner of Partition %s was null and now is %s",
+				      bgl_record->bgl_part_id, owner_name);
+			} else if(strcmp(bgl_record->owner_name, owner_name)) {
+				debug("owner of Partition %s was %s and now is %s",
+				      bgl_record->bgl_part_id, bgl_record->owner_name, owner_name);
+				xfree(bgl_record->owner_name);
+			}
+			bgl_record->owner_name = xstrdup(owner_name);
 			if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
 				error("getpwnam(%s): %m", bgl_record->owner_name);
 				rc = -1;
 			}
 			bgl_record->owner_uid = pw_ent->pw_uid; 
 			is_ready = 1;
-		} else if (name[0] != '\0') {
-			if(strcmp(bgl_record->owner_name, name)) {
-				debug("owner of Partition %s was %s and now is %s",
-				      bgl_record->bgl_part_id, bgl_record->owner_name, name);
-				xfree(bgl_record->owner_name);
-				bgl_record->owner_name = xstrdup(name);
-				if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
-					error("getpwnam(%s): %m", bgl_record->owner_name);
-					rc = -1;
-				}
-				bgl_record->owner_uid = pw_ent->pw_uid; 
-				is_ready = 1;
-			}	
+			
 		} else {
 			error("name was empty for parition %s from rm_get_data(RM_PartitionUserName)", 
 			      bgl_record->bgl_part_id);

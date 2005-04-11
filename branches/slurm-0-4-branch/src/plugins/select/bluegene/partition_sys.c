@@ -302,8 +302,7 @@ int read_bgl_partitions()
 		// need to get the 000x000 range for nodes
 		// also need to get coords
 				
-		if ((rc = rm_get_data(part_ptr,
-					 RM_PartitionConnection,
+		if ((rc = rm_get_data(part_ptr, RM_PartitionConnection,
 					 &bgl_record->conn_type))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionConnection): %s",
@@ -316,24 +315,30 @@ int read_bgl_partitions()
 			      bgl_err_str(rc));
 		}
 			
-		if ((rc = rm_get_data(part_ptr, 
-					 RM_PartitionUserName,
+		if ((rc = rm_get_data(part_ptr, RM_PartitionUserName,
 					 &owner_name)) != STATUS_OK) {
 			error("rm_get_data(RM_PartitionUserName): %s",
 			      bgl_err_str(rc));
 		} else
 			bgl_record->owner_name = xstrdup(owner_name);
 		
-		if ((rc = rm_get_data(part_ptr, 
-					 RM_PartitionBPNum,
+		if ((rc = rm_get_data(part_ptr, RM_PartitionState,
+					 &bgl_record->state)) != STATUS_OK) {
+			error("rm_get_data(RM_PartitionState): %s",
+			      bgl_err_str(rc));
+		} else if(bgl_record->state == RM_PARTITION_CONFIGURING)
+			bgl_record->boot_state = 1;
+		else
+			bgl_record->boot_state = 0;
+		
+		if ((rc = rm_get_data(part_ptr, RM_PartitionBPNum,
 					 &bgl_record->bp_count))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionBPNum): %s",
 			      bgl_err_str(rc));
 		} 
 				
-		if ((rc = rm_get_data(part_ptr, 
-					 RM_PartitionSwitchNum,
+		if ((rc = rm_get_data(part_ptr, RM_PartitionSwitchNum,
 					 &bgl_record->switch_count))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionSwitchNum): %s",
