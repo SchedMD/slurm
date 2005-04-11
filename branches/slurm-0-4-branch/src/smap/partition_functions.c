@@ -98,6 +98,7 @@ void get_slurm_part(void)
 					  slurm_strerror(slurm_get_errno()));
 			}
 		}
+		return;
 	}
 
 	if (!params.no_header)
@@ -178,6 +179,7 @@ void get_bgl_part(void)
 				       slurm_strerror(slurm_get_errno()));
 			}
 		}
+		return;
 	}
 	if (bgl_info_ptr) {
 		error_code = slurm_load_node_select(bgl_info_ptr->last_update, 
@@ -204,6 +206,7 @@ void get_bgl_part(void)
 					  slurm_strerror(slurm_get_errno()));
 			}
 		}
+		return;
 	}
 	if (block_list) {
 		/* clear the old list */
