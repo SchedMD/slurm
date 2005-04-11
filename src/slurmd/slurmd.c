@@ -486,7 +486,11 @@ _read_config()
 	_free_and_set(&conf->spooldir, xstrdup(conf->cf.slurmd_spooldir));
 	_free_and_set(&conf->pidfile,  xstrdup(conf->cf.slurmd_pidfile));
 	_free_and_set(&conf->pubkey,   path_pubkey);     
-		      
+
+	if ( (conf->node_name == NULL) ||
+	     (conf->node_name[0] == '\0') )
+		fatal("Node name is empty");
+ 
 	if ( (conf->cf.control_addr == NULL) || 
 	     (conf->cf.slurmctld_port == 0)    )
 		fatal("Unable to establish control machine or port");
