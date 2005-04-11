@@ -462,7 +462,8 @@ static rm_partition_state_t _get_state_partition(pm_partition_id_t part_id)
 	rm_partition_list_t *part_list;
 	rm_partition_state_flag_t part_state = PARTITION_ALL_FLAG;
 	char *name;
-		
+	
+	debug2("Getting Partition %s state\n",part_id);
 	if ((rc = rm_get_partitions_info(part_state, &part_list))
 	    != STATUS_OK) {
 		error("rm_get_partitions(): %s\n", bgl_err_str(rc));
@@ -514,7 +515,7 @@ static rm_partition_state_t _get_state_partition(pm_partition_id_t part_id)
 	}
 	if ((rc = rm_free_partition_list(part_list)) != STATUS_OK)
 		error("rm_free_partition_list(): %s", bgl_err_str(rc));
-	
+	debug("State for partition %s is %d.",part_id, state);
 	return state;
 }
 #endif

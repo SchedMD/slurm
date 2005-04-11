@@ -83,15 +83,15 @@ extern int part_ready(struct job_record *job_ptr)
 		list_iterator_destroy(itr);
 		xfree(part_id);
 	
-		if ((rc != -1)
-		    && (bgl_record->owner_uid == job_ptr->user_id)
-		    && (bgl_record->state == RM_PARTITION_READY))
-			rc = 1;
-		else if (bgl_record->boot_state == -1) {
-			error("Booting partition %s failed.",bgl_record->bgl_part_id);
-			bgl_record->boot_state = 0;
-			bgl_record->boot_count = 0;
-			rc = -1;
+		if (rc != -1) {
+		    if((bgl_record->owner_uid == job_ptr->user_id)
+		       && (bgl_record->state == RM_PARTITION_READY))
+			    rc = 1;
+		    else if ((bgl_record->owner_uid != job_ptr->user_id)
+		       && (bgl_record->state == RM_PARTITION_FREE))
+			    rc = 0;
+		    else
+			    rc = -1;
 		}
 	} else
 		rc = -1;
@@ -129,12 +129,12 @@ extern int update_partition_list()
 	struct tm *time_ptr;
 	char reason[128];
 	
-	if(bgl_list == NULL)
+	if(bgl_list == NULL && !last_bgl_update)
 		return 0;
 	if ((rc = rm_get_partitions_info(part_state, &part_list))
 	    != STATUS_OK) {
 		error("rm_get_partitions(): %s", bgl_err_str(rc));
-		is_ready = -1; 
+		return -1; 
 	} else if ((rc = rm_get_data(part_list, RM_PartListSize, &num_parts))
 		   != STATUS_OK) {
 		error("rm_get_data(RM_PartListSize): %s", bgl_err_str(rc));
@@ -193,53 +193,53 @@ extern int update_partition_list()
 			      name, bgl_record->state, state);
 			bgl_record->state = state;
 			is_ready = 1;
-			
-/* 			check the boot state */
-			if(bgl_record->boot_state == 1) {
-				switch(bgl_record->state) {
-				case RM_PARTITION_CONFIGURING:
-					break;
-				case RM_PARTITION_ERROR:
-					error("partition in an error state");
-				case RM_PARTITION_FREE:
-					if(bgl_record->boot_count < RETRY_BOOT_COUNT) {
-						sleep(3);
-						error("Trying to boot %s try %d",
-						      bgl_record->bgl_part_id,
-						      bgl_record->boot_count);
-						if ((rc = pm_create_partition(bgl_record->bgl_part_id))
-						    != STATUS_OK) {
-							error("pm_create_partition(%s): %s",
-							      bgl_record->bgl_part_id, bgl_err_str(rc));
-							is_ready = -1;
-						}
-						bgl_record->boot_count++;
-					} else {
-						error("Couldn't boot Partition %s for user %s. Keeps going into free state",
-						      bgl_record->bgl_part_id, bgl_record->owner_name);
-						now = time(NULL);
-						time_ptr = localtime(&now);
-						strftime(reason, sizeof(reason),
-							 "update_partition_list: MMCS switch DOWN [SLURM@%b %d %H:%M]",
-							 time_ptr);
-						host_itr = hostlist_iterator_create(bgl_record->hostlist);
-						while ((name = (char *) hostlist_next(host_itr)) != NULL) {
-							slurm_drain_nodes(name, reason);
-						}
-						hostlist_iterator_destroy(host_itr);
-						bgl_record->boot_state = -1;
-						
+		}
+
+		/* check the boot state */
+		if(bgl_record->boot_state == 1) {
+			switch(bgl_record->state) {
+			case RM_PARTITION_CONFIGURING:
+				break;
+			case RM_PARTITION_ERROR:
+				error("partition in an error state");
+			case RM_PARTITION_FREE:
+				if(bgl_record->boot_count < RETRY_BOOT_COUNT) {
+					info("Booting partition %s attempt %d",
+					      bgl_record->bgl_part_id,
+					      bgl_record->boot_count);
+					if ((rc = pm_create_partition(bgl_record->bgl_part_id))
+					    != STATUS_OK) {
+						error("pm_create_partition(%s): %s",
+						      bgl_record->bgl_part_id, bgl_err_str(rc));
+						is_ready = -1;
 					}
-					break;
-				default:
-					debug("resetting the boot state flag and counter for partition %s.",
-					      bgl_record->bgl_part_id);
+					bgl_record->boot_count++;
+				} else {
+					error("Couldn't boot Partition %s for user %s. Keeps going into free state",
+					      bgl_record->bgl_part_id, bgl_record->owner_name);
+					now = time(NULL);
+					time_ptr = localtime(&now);
+					strftime(reason, sizeof(reason),
+						 "update_partition_list: MMCS switch DOWN [SLURM@%b %d %H:%M]",
+						 time_ptr);
+					host_itr = hostlist_iterator_create(bgl_record->hostlist);
+					while ((name = (char *) hostlist_next(host_itr)) != NULL) {
+						slurm_drain_nodes(name, reason);
+					}
+					hostlist_iterator_destroy(host_itr);
 					bgl_record->boot_state = 0;
-					bgl_record->boot_count = 0;
-					break;
+					bgl_record->boot_count = 0;				
 				}
+				break;
+			default:
+				debug("resetting the boot state flag and counter for partition %s.",
+				      bgl_record->bgl_part_id);
+				bgl_record->boot_state = 0;
+				bgl_record->boot_count = 0;
+				break;
 			}
 		}
+		
 		if ((rc = rm_get_data(part_ptr, RM_PartitionUserName, 
 				      &owner_name)) != STATUS_OK) {
 			error("rm_get_data(RM_PartitionUserName): %s",

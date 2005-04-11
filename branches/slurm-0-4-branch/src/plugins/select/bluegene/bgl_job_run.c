@@ -73,8 +73,9 @@ static int agent_cnt = 0;
 
 static void	_bgl_list_del(void *x);
 static int	_boot_part(pm_partition_id_t bgl_part_id);
-static int	_excise_block(pm_partition_id_t bgl_part_id, 
+static int	_excise_block(List block_list, pm_partition_id_t bgl_part_id, 
 				char *nodes);
+static List	_get_all_blocks(void);
 static char *	_get_part_owner(pm_partition_id_t bgl_part_id);
 static void *	_part_agent(void *args);
 static void	_part_op(bgl_update_t *bgl_update_ptr);
@@ -235,7 +236,6 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 {
 	int rc;
 	rm_partition_t * part_ptr;
-	
 	if (user && user[0])
 		info("Setting partition %s owner to %s", bgl_part_id, user);
 	else
@@ -371,16 +371,16 @@ static int _boot_part(pm_partition_id_t bgl_part_id)
 /* Due to various system problems, we do not want to boot BGL
  * partitions when each job is started, but only at slurmctld 
  * startup on an as needed basis. */
-	int rc;
+	//int rc;
 	ListIterator itr;
 	bgl_record_t *block_ptr;
 		
-	info("Booting partition %s", bgl_part_id);
-	if ((rc = pm_create_partition(bgl_part_id)) != STATUS_OK) {
-		error("pm_create_partition(%s): %s", 
-			bgl_part_id, bgl_err_str(rc));
-		return SLURM_ERROR;
-	}
+	//info("Booting partition %s", bgl_part_id);
+	/* if ((rc = pm_create_partition(bgl_part_id)) != STATUS_OK) { */
+/* 		error("pm_create_partition(%s): %s",  */
+/* 			bgl_part_id, bgl_err_str(rc)); */
+/* 		//return SLURM_ERROR; */
+/* 	} */
 	
 	if(bgl_list) {
 		itr = list_iterator_create(bgl_list);
@@ -389,6 +389,7 @@ static int _boot_part(pm_partition_id_t bgl_part_id)
 				break;
 		list_iterator_destroy(itr);
 		if(block_ptr) {
+			debug("Setting bootflag for %s", bgl_part_id);
 			block_ptr->boot_state = 1;
 			block_ptr->boot_count = 0;
 		} else {
@@ -447,7 +448,9 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 	rm_element_t *job_elem;
 	pm_partition_id_t part_id;
 	db_job_id_t job_id;
-
+	bgl_record_t *bgl_record;
+	ListIterator itr;
+	
 	//debug("getting the job info");
 	live_states = JOB_ALL_FLAG & (~JOB_TERMINATED_FLAG) & (~JOB_KILLED_FLAG);
 	if ((rc = rm_get_jobs(live_states, &job_list)) != STATUS_OK) {
@@ -509,7 +512,18 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 
 	/* Change the block's owner */
 	_set_part_owner(bgl_update_ptr->bgl_part_id, USER_NAME);
-
+	itr = list_iterator_create(bgl_list);
+	while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
+		if (!strcmp(bgl_record->bgl_part_id, bgl_update_ptr->bgl_part_id)) 
+			break;	/* found it */
+	}
+	list_iterator_destroy(itr);
+	if(bgl_record) {
+		debug("resetting the boot state flag and counter for partition %s.",
+		      bgl_record->bgl_part_id);
+		bgl_record->boot_state = 0;
+		bgl_record->boot_count = 0;
+	}
 	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
 		error("rm_free_job_list(): %s", bgl_err_str(rc));
 }
@@ -582,8 +596,38 @@ static void _part_op(bgl_update_t *bgl_update_ptr)
 	}
 }
 
+
+/* get a list of all BGL blocks with owners */
+static List _get_all_blocks(void)
+{
+	List ret_list = list_create(destroy_bgl_record);
+	ListIterator itr;
+	bgl_record_t *block_ptr;
+	bgl_record_t *str_ptr;
+	
+	if (!ret_list)
+		fatal("malloc error");
+
+	itr = list_iterator_create(bgl_list);
+	while ((block_ptr = (bgl_record_t *) list_next(itr))) {
+		if ((block_ptr->owner_name == NULL)
+		||  (block_ptr->owner_name[0] == '\0')
+		||  (block_ptr->bgl_part_id == NULL)
+		||  (block_ptr->bgl_part_id[0] == '0'))
+			continue;
+		str_ptr = xmalloc(sizeof(bgl_record_t));
+		str_ptr->bgl_part_id = xstrdup(block_ptr->bgl_part_id);
+		str_ptr->nodes = xstrdup(block_ptr->nodes);
+		
+		list_append(ret_list, str_ptr);
+	}
+	list_iterator_destroy(itr);
+
+	return ret_list;
+}
+
 /* remove a BGL block from the given list */
-static int _excise_block(pm_partition_id_t bgl_part_id,
+static int _excise_block(List block_list, pm_partition_id_t bgl_part_id,
 			 char *nodes)
 {
 	int rc = SLURM_SUCCESS;
@@ -633,7 +677,10 @@ extern int start_job(struct job_record *job_ptr)
 		SELECT_DATA_PART_ID, &(bgl_update_ptr->bgl_part_id));
 	info("Queue start of job %u in BGL partition %s",
 		job_ptr->job_id, bgl_update_ptr->bgl_part_id);
-	_start_agent(bgl_update_ptr);
+
+	_part_op(bgl_update_ptr);
+	//_start_agent(bgl_update_ptr);
+
 #endif
 	return rc;
 }
@@ -704,6 +751,7 @@ extern int sync_jobs(List job_list)
 	struct job_record  *job_ptr;
 	bgl_update_t *bgl_update_ptr;
 	bgl_record_t *bgl_record;
+	List block_list = _get_all_blocks();
 
 	/* Insure that all running jobs own the specified partition */
 	job_iterator = list_iterator_create(job_list);
@@ -725,7 +773,7 @@ extern int sync_jobs(List job_list)
 			error("Running job %u has nodes==NULL",
 				job_ptr->job_id);
 			good_block = false;
-		} else if (_excise_block(bgl_update_ptr->bgl_part_id, 
+		} else if (_excise_block(block_list, bgl_update_ptr->bgl_part_id, 
 					 job_ptr->nodes) != SLURM_SUCCESS) {
 			error("Kill job %u belongs to defunct bglblock %s",
 			      job_ptr->job_id, bgl_update_ptr->bgl_part_id);
@@ -748,7 +796,7 @@ extern int sync_jobs(List job_list)
 	list_iterator_destroy(job_iterator);
 
 	/* Insure that all other partitions are free */
-	block_iterator = list_iterator_create(bgl_list);
+	block_iterator = list_iterator_create(block_list);
 	while ((bgl_record = (bgl_record_t *) list_next(block_iterator))) {
 		info("Queue clearing of vestigial owner in BGL partition %s",
 			bgl_record->bgl_part_id);
@@ -759,8 +807,9 @@ extern int sync_jobs(List job_list)
 		//_term_agent(bgl_update_ptr);
 	}
 	list_iterator_destroy(block_iterator);
-	
+	list_destroy(block_list);
 #endif
 	return SLURM_SUCCESS;
 }
 
+ 
