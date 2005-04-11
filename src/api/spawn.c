@@ -1,5 +1,7 @@
 /*****************************************************************************\
- *  spawn.c - spawn task functions
+ *  spawn.c - spawn task functions for use by AIX/POE
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -347,6 +349,8 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 	int *sock_array;
 	slurm_msg_t *req_array_ptr;
 	int i, rc = SLURM_SUCCESS;
+	uint16_t slurmd_debug = (uint16_t) NO_VAL;
+	char *env_var;
 
 	if ((ctx == NULL) ||
 	    (ctx->magic != STEP_CTX_MAGIC) ||
@@ -357,6 +361,14 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 
 	if (_validate_ctx(ctx))
 		return SLURM_ERROR;
+
+	/* get slurmd_debug level from SLURMD_DEBUG env var */
+	env_var = getenv("SLURMD_DEBUG");
+	if (env_var) {
+		i = atoi(env_var);
+		if (i >= 0)
+			slurmd_debug = i;
+	}
 
 	/* validate fd_array and bind them to ports */
 	sock_array = xmalloc(ctx->nhosts * sizeof(int));
@@ -395,7 +407,7 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 		r->nnodes	= ctx->nhosts;
 		r->nprocs	= ctx->num_tasks;
 		r->switch_job	= ctx->step_resp->switch_job; 
-		r->slurmd_debug	= 7;
+		r->slurmd_debug	= slurmd_debug;
 
 		/*Task specific message contents */
 		r->global_task_id	= ctx->tids[i][0];
