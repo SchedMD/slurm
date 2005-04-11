@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
     (srun -A would generate a segmentation fault, Chris Holmes, HP).
  -- If slurmd's node name is mapped to NULL (due to bad configuration)
     terminate slurmd with a fatal error and don't crash slurmctld.
+ -- Add SLURMD_DEBUG env var for use with AIX/POE in spawn_task RPC.
 
 * Changes in SLURM 0.5.0-pre1
 =============================
