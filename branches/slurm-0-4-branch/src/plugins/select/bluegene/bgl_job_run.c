@@ -72,7 +72,7 @@ static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int agent_cnt = 0;
 
 static void	_bgl_list_del(void *x);
-static int	_boot_part(pm_partition_id_t bgl_part_id);
+static int	_boot_part(pm_partition_id_t bgl_part_id, char *owner_name, uid_t owner_uid);
 static int	_excise_block(List block_list, pm_partition_id_t bgl_part_id, 
 				char *nodes);
 static List	_get_all_blocks(void);
@@ -365,22 +365,19 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
  * NOTE: This function does not wait for the boot to complete.
  * the slurm prolog script needs to perform the waiting.
  */
-static int _boot_part(pm_partition_id_t bgl_part_id)
+static int _boot_part(pm_partition_id_t bgl_part_id, char *owner_name, uid_t owner_uid)
 {
 #ifdef HAVE_BGL_FILES
-/* Due to various system problems, we do not want to boot BGL
- * partitions when each job is started, but only at slurmctld 
- * startup on an as needed basis. */
-	//int rc;
+	int rc;
 	ListIterator itr;
 	bgl_record_t *block_ptr;
 		
-	//info("Booting partition %s", bgl_part_id);
-	/* if ((rc = pm_create_partition(bgl_part_id)) != STATUS_OK) { */
-/* 		error("pm_create_partition(%s): %s",  */
-/* 			bgl_part_id, bgl_err_str(rc)); */
-/* 		//return SLURM_ERROR; */
-/* 	} */
+	info("Booting partition %s", bgl_part_id);
+	 if ((rc = pm_create_partition(bgl_part_id)) != STATUS_OK) {
+ 		error("pm_create_partition(%s): %s",
+ 			bgl_part_id, bgl_err_str(rc));
+ 		return SLURM_ERROR;
+ 	}
 	
 	if(bgl_list) {
 		itr = list_iterator_create(bgl_list);
@@ -392,6 +389,13 @@ static int _boot_part(pm_partition_id_t bgl_part_id)
 			debug("Setting bootflag for %s", bgl_part_id);
 			block_ptr->boot_state = 1;
 			block_ptr->boot_count = 0;
+			/* reset state and owner right now, don't wait for 
+			 * update_partition_list() to run or epilog could 
+			 * get old/bad data. */
+			last_bgl_update = time(NULL);
+			block_ptr->state = RM_PARTITION_CONFIGURING;
+			block_ptr->owner_name = xstrdup(owner_name);
+			block_ptr->owner_uid  = owner_uid;
 		} else {
 			error("Partition %s not found in list to set state", 
 				bgl_part_id);
@@ -425,11 +429,13 @@ static void _sync_agent(bgl_update_t *bgl_update_ptr)
 static void _start_agent(bgl_update_t *bgl_update_ptr)
 {
 	int rc;
+	char *owner_name = uid_to_string(bgl_update_ptr->uid);
 
-	rc = _set_part_owner(bgl_update_ptr->bgl_part_id,
-		uid_to_string(bgl_update_ptr->uid));
-	if (rc == SLURM_SUCCESS)
-		rc = _boot_part(bgl_update_ptr->bgl_part_id);
+	rc = _set_part_owner(bgl_update_ptr->bgl_part_id, owner_name);
+	if (rc == SLURM_SUCCESS) {
+		rc = _boot_part(bgl_update_ptr->bgl_part_id, owner_name, 
+			bgl_update_ptr->uid);
+	}
 	
 	if (rc != SLURM_SUCCESS) {
 		sleep(2);	/* wait for the slurmd to begin the batch 
