@@ -8,6 +8,10 @@ documents those changes that are of interest to users and admins.
     dramatically increases smap responsivenss, also changed prolog/epilog
     operation)
  -- Move smap executable to main slurm RPM (from separate RPM).
+ -- smap uses RPC instead of DB2 to get info about bgl partitions.
+ -- Status function added to bluegene_agent thread.  Keeps current state
+    of BGL partitions updating every second.  will handle multiple attempts 
+    at booting if booting a partition fails. 
 
 * Changes in SLURM 0.4.18
 =========================
