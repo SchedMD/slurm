@@ -386,9 +386,6 @@ static int _boot_part(pm_partition_id_t bgl_part_id, char *owner_name, uid_t own
 				break;
 		list_iterator_destroy(itr);
 		if(block_ptr) {
-			debug("Setting bootflag for %s", bgl_part_id);
-			block_ptr->boot_state = 1;
-			block_ptr->boot_count = 0;
 			/* reset state and owner right now, don't wait for 
 			 * update_partition_list() to run or epilog could 
 			 * get old/bad data. */
@@ -396,6 +393,9 @@ static int _boot_part(pm_partition_id_t bgl_part_id, char *owner_name, uid_t own
 			block_ptr->state = RM_PARTITION_CONFIGURING;
 			block_ptr->owner_name = xstrdup(owner_name);
 			block_ptr->owner_uid  = owner_uid;
+			debug("Setting bootflag for %s", bgl_part_id);
+			block_ptr->boot_state = 1;
+			block_ptr->boot_count = 0;
 		} else {
 			error("Partition %s not found in list to set state", 
 				bgl_part_id);
