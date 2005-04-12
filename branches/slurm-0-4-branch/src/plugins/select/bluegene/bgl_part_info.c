@@ -191,6 +191,7 @@ extern int update_partition_list()
 			error("rm_get_data(RM_PartitionState): %s",
 			      bgl_err_str(rc));
 			is_ready = -1;
+			slurm_mutex_unlock(&part_state_mutex);
 			break;
 		} else if(bgl_record->state != state) {
 			debug("state of Partition %s was %d and now is %d",
@@ -249,6 +250,7 @@ extern int update_partition_list()
 			error("rm_get_data(RM_PartitionUserName): %s",
 			      bgl_err_str(rc));
 			is_ready = -1;
+			slurm_mutex_unlock(&part_state_mutex);
 			break;
 		}
 		
