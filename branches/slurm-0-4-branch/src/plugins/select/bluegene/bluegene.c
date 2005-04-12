@@ -321,7 +321,9 @@ extern int create_static_partitions(List part_list)
 
 	ListIterator itr, itr_found;
 	bgl_record_t *bgl_record, *found_record;
-	
+#ifndef HAVE_BGL_FILES
+	static int block_inx = 0;
+#endif
 	reset_pa_system();
 	
 	itr = list_iterator_create(bgl_list);
@@ -378,7 +380,6 @@ extern int create_static_partitions(List part_list)
 	   deal.
 	*/
 	
-#ifdef HAVE_BGL_FILES
 	reset_pa_system();
 
 	bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
@@ -414,25 +415,31 @@ extern int create_static_partitions(List part_list)
 	bgl_record->hostlist = hostlist_create(NULL);
 	/* bgl_record->boot_state = 0;		Implicit */
 	_process_nodes(bgl_record);
-	list_push(bgl_list, bgl_record);
+	list_append(bgl_list, bgl_record);
 	
 	bgl_record->conn_type = SELECT_TORUS;
+	bgl_record->state = 0;
+	bgl_record->owner_name = xstrdup(USER_NAME);
 	
 	set_bgl_part(bgl_record->bgl_part_list, 
 		     bgl_record->bp_count, 
 		     bgl_record->conn_type);
 	bgl_record->node_use = SELECT_COPROCESSOR_MODE;
+#ifdef HAVE_BGL_FILES
 	if((rc = configure_partition(bgl_record)) == SLURM_ERROR)
 		return rc;
 	print_bgl_record(bgl_record);
+#endif	/* HAVE_BGL_FILES */
 	
 	found_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
-	list_push(bgl_list, found_record);
+	list_append(bgl_list, found_record);
 			
 	found_record->bgl_part_list = bgl_record->bgl_part_list;			
 	found_record->hostlist = bgl_record->hostlist;
 	found_record->nodes = xstrdup(bgl_record->nodes);
 	
+	found_record->state = 0;
+	found_record->owner_name = xstrdup(USER_NAME);
 	found_record->bp_count = bgl_record->bp_count;
 	found_record->switch_count = bgl_record->switch_count;
 	found_record->geo[X] = bgl_record->geo[X];
@@ -442,9 +449,24 @@ extern int create_static_partitions(List part_list)
 	found_record->conn_type = bgl_record->conn_type;
 	found_record->bitmap = bgl_record->bitmap;
 	found_record->node_use = SELECT_VIRTUAL_NODE_MODE;
+#ifdef HAVE_BGL_FILES
 	if((rc = configure_partition(found_record)) == SLURM_ERROR)
 		return rc;
 	print_bgl_record(found_record);
+#else
+	itr = list_iterator_create(bgl_list);
+	while ((bgl_record = (bgl_record_t*) list_next(itr))) {
+		if (bgl_record->bgl_part_id)
+			continue;
+		bgl_record->bgl_part_id = xmalloc(8);
+		snprintf(bgl_record->bgl_part_id, 8, "RMP%d", block_inx++);
+		info("BGL PartitionID:%s Nodes:%s Conn:%s Mode:%s",
+			bgl_record->bgl_part_id, bgl_record->nodes,
+			convert_conn_type(bgl_record->conn_type),
+			convert_node_use(bgl_record->node_use));
+	}
+	list_iterator_destroy(itr);
+#endif	/* HAVE_BGL_FILES */
 	
 no_total:
 	last_bgl_update = time(NULL);
@@ -458,7 +480,6 @@ no_total:
  	list_iterator_destroy(itr);
  	exit(0);
 #endif	/* _PRINT_PARTS_AND_EXIT */
-#endif	/* HAVE_BGL_FILES */
 
 	return rc;
 }
@@ -626,10 +647,10 @@ static void _set_bgl_lists()
 static int _validate_config_nodes(void)
 {
 	int rc = SLURM_ERROR;
-	bgl_record_t* record;	/* records from configuration files */
-	ListIterator itr_conf;
 #ifdef HAVE_BGL_FILES
+	bgl_record_t* record;	/* records from configuration files */
 	bgl_record_t* init_record;	/* records from actual BGL config */
+	ListIterator itr_conf;
 	ListIterator itr_curr;
 	rm_partition_mode_t node_use;
 	
@@ -675,20 +696,6 @@ static int _validate_config_nodes(void)
 
 	if(list_count(bgl_list) == list_count(bgl_curr_part_list))
 		rc = SLURM_SUCCESS;
-#else
-	static int block_inx = 0;
-	itr_conf = list_iterator_create(bgl_list);
-	while ((record = (bgl_record_t*) list_next(itr_conf))) {
-		if (record->bgl_part_id)
-			continue;
-		record->bgl_part_id = xmalloc(8);
-		snprintf(record->bgl_part_id, 8, "RMP%d", block_inx++);
-		info("BGL PartitionID:%s Nodes:%s Conn:%s Mode:%s",
-			record->bgl_part_id, record->nodes,
-			convert_conn_type(record->conn_type),
-			convert_node_use(record->node_use));
-	}
-	list_iterator_destroy(itr_conf);
 #endif
 
 	return rc;
@@ -973,6 +980,8 @@ static int _parse_bgl_spec(char *in_line)
 	bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
 	list_push(bgl_list, bgl_record);
 	
+	bgl_record->state = 0;
+	bgl_record->owner_name = xstrdup(USER_NAME);
 	bgl_record->bgl_part_list = list_create(NULL);			
 	bgl_record->hostlist = hostlist_create(NULL);
 	/* bgl_record->boot_state = 0; 	Implicit */
@@ -1007,6 +1016,8 @@ static int _parse_bgl_spec(char *in_line)
 		found_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
 		list_push(bgl_list, found_record);
 	
+		found_record->state = 0;
+		found_record->owner_name = xstrdup(USER_NAME);
 		found_record->bgl_part_list = bgl_record->bgl_part_list;			
 		found_record->hostlist = bgl_record->hostlist;
 		found_record->nodes = xstrdup(bgl_record->nodes);

@@ -146,8 +146,7 @@ static int _post_allocate(bgl_record_t *bgl_record)
 		bgl_record->bgl_part_id = xstrdup("UNKNOWN");
 	} else
 		bgl_record->bgl_part_id = xstrdup(part_id);
-	bgl_record->owner_name = xstrdup(USER_NAME);
-
+	
 	/* We are done with the partition */
 	if ((rc = rm_free_partition(bgl_record->bgl_part)) != STATUS_OK)
 		error("rm_free_partition(): %s", bgl_err_str(rc));
