@@ -228,7 +228,7 @@ extern int update_partition_list()
 						"update_partition_list: "
 						"Boot fails [SLURM@%b %d %H:%M]",
 						time_ptr);
-					slurm_drain_nodes(bgl_record->name, 
+					slurm_drain_nodes(bgl_record->nodes, 
 						reason);
 					bgl_record->boot_state = 0;
 					bgl_record->boot_count = 0;				
