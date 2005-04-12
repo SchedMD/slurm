@@ -131,11 +131,14 @@ extern int update_partition_list()
 	
 	if(bgl_list == NULL && !last_bgl_update)
 		return 0;
+
 	if ((rc = rm_get_partitions_info(part_state, &part_list))
 	    != STATUS_OK) {
 		error("rm_get_partitions(): %s", bgl_err_str(rc));
 		return -1; 
-	} else if ((rc = rm_get_data(part_list, RM_PartListSize, &num_parts))
+	}
+
+	if ((rc = rm_get_data(part_list, RM_PartListSize, &num_parts))
 		   != STATUS_OK) {
 		error("rm_get_data(RM_PartListSize): %s", bgl_err_str(rc));
 		is_ready = -1;
@@ -215,12 +218,12 @@ extern int update_partition_list()
 					}
 					bgl_record->boot_count++;
 				} else {
-					error("Couldn't boot Partition %s for user %s. Keeps going into free state",
+					error("Couldn't boot Partition %s for user %s",
 					      bgl_record->bgl_part_id, bgl_record->owner_name);
 					now = time(NULL);
 					time_ptr = localtime(&now);
 					strftime(reason, sizeof(reason),
-						 "update_partition_list: MMCS switch DOWN [SLURM@%b %d %H:%M]",
+						 "update_partition_list: Boot fails [SLURM@%b %d %H:%M]",
 						 time_ptr);
 					host_itr = hostlist_iterator_create(bgl_record->hostlist);
 					while ((name = (char *) hostlist_next(host_itr)) != NULL) {
