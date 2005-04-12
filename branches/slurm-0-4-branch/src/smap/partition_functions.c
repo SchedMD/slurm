@@ -98,7 +98,6 @@ void get_slurm_part(void)
 					  slurm_strerror(slurm_get_errno()));
 			}
 		}
-		return;
 	}
 
 	if (!params.no_header)
@@ -179,7 +178,6 @@ void get_bgl_part(void)
 				       slurm_strerror(slurm_get_errno()));
 			}
 		}
-		return;
 	}
 	if (bgl_info_ptr) {
 		error_code = slurm_load_node_select(bgl_info_ptr->last_update, 
@@ -206,7 +204,6 @@ void get_bgl_part(void)
 					  slurm_strerror(slurm_get_errno()));
 			}
 		}
-		return;
 	}
 	if (block_list) {
 		/* clear the old list */
@@ -335,19 +332,19 @@ static void _print_header_part(void)
 		pa_system_ptr->xcord = 1;
 		pa_system_ptr->ycord++;
 	} else {
-		printf("PARTITION\t");
+		printf("PARTITION  ");
 		if (params.display != BGLPART) {
-			printf("AVAIL\t");
-			printf("TIMELIMIT\t");
+			printf("AVAIL  ");
+			printf("TIMELIMIT  ");
 		} else {
-			printf("BGL_BLOCK\t");
-			printf("STATE\t");
-			printf("USER\t");
-			printf("CONN\t");
-			printf("NODE_USE\t");
+			printf("BGL_BLOCK  ");
+			printf("STATE  ");
+			printf("  USER  ");
+			printf("CONN  ");
+			printf(" NODE_USE  ");
 		}
 
-		printf("NODES\t");
+		printf("NODES  ");
 		printf("NODELIST\n");	
 	}	
 }
@@ -468,7 +465,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 		}
 
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "%5d", part_ptr->total_nodes);
+			  pa_system_ptr->xcord, "%.5d", part_ptr->total_nodes);
 		pa_system_ptr->xcord += 7;
 
 		tempxcord = pa_system_ptr->xcord;
@@ -507,14 +504,13 @@ static int _print_text_part(partition_info_t *part_ptr,
 		pa_system_ptr->ycord++;
 	} else {
 		if (part_ptr->name) {
-			printf("%.9s\t", part_ptr->name);
-			if(!params.parse)
-				printf("\t");
+			printf("%9.9s  ", part_ptr->name);
+			
 			if (params.display != BGLPART) {
 				if (part_ptr->state_up)
-					printf("UP\t");
+					printf("   UP  ");
 				else
-					printf("DOWN\t");
+					printf(" DOWN  ");
 							
 				if (part_ptr->max_time == INFINITE)
 					snprintf(time_buf, sizeof(time_buf), "UNLIMITED");
@@ -524,7 +520,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 				}
 			
 				width = strlen(time_buf);
-				printf("%s\t", time_buf);
+				printf("%9.9s  ", time_buf);
 				
 			} 
 		} else
@@ -532,35 +528,20 @@ static int _print_text_part(partition_info_t *part_ptr,
 
 		if (params.display == BGLPART) {
 			if (db2_info_ptr) {
-				printf("%.11s\t", db2_info_ptr->bgl_block_name);
-				if(!params.parse)
-					printf("\t");
-				printf("%s\t", _part_state_str(db2_info_ptr->state));
+				printf("%9.9s  ", db2_info_ptr->bgl_block_name);
+				printf("%5.5s  ", _part_state_str(db2_info_ptr->state));
 				
-				printf("%.11s\t", db2_info_ptr->bgl_user_name);
+				printf("%6.6s  ", db2_info_ptr->bgl_user_name);
 				
-				printf("%.5s\t", _convert_conn_type(
+				printf("%4.4s  ", _convert_conn_type(
 					       db2_info_ptr->bgl_conn_type));
-				printf("%.9s\t",  _convert_node_use(
+				printf("%9.9s  ",  _convert_node_use(
 					       db2_info_ptr->bgl_node_use));
-				if(!params.parse)
-					if(db2_info_ptr->bgl_node_use != 
-					   SELECT_COPROCESSOR_MODE)
-						printf("\t");
-			} else {
-				printf("?\t");
-				if(!params.parse)
-					printf("\t");
-				printf("?\t");
-				printf("?\t");
-				printf("?\t");
-				printf("?\t");
-				if(!params.parse)
-					printf("\t");
-			}
+				
+			} 
 		}
 
-		printf("%d\t", part_ptr->total_nodes);
+		printf("%5d  ", part_ptr->total_nodes);
 		
 		tempxcord = pa_system_ptr->xcord;
 		//width = pa_system_ptr->text_win->_maxx - pa_system_ptr->xcord;
