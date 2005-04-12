@@ -250,11 +250,13 @@ extern void *bluegene_agent(void *args)
 		if (difftime(now, last_bgl_test) >= BGL_POLL_TIME) {
 			if (agent_fini)		/* don't bother */
 				return NULL;	/* quit now */
-			last_bgl_test = now;
-			if((rc = update_partition_list()) == 1)
-				last_bgl_update = now;
-			else if(rc == -1)
-				error("Erro with update_partition_list");
+			if(last_bgl_update) {
+				last_bgl_test = now;
+				if((rc = update_partition_list()) == 1)
+					last_bgl_update = now;
+				else if(rc == -1)
+					error("Erro with update_partition_list");
+			}
 		}
 
 		if (difftime(now, last_mmcs_test) >= MMCS_POLL_TIME) {
@@ -904,7 +906,7 @@ static int _parse_bgl_spec(char *in_line)
 	char *api_file = NULL;
 	int pset_num=-1, api_verb=-1;
 	bgl_record_t *bgl_record, *found_record;
-
+	//info("in_line = %s",in_line);
 	error_code = slurm_parser(in_line,
 				  "BlrtsImage=", 's', &blrts_image,
 				  "LinuxImage=", 's', &linux_image,
@@ -958,7 +960,6 @@ static int _parse_bgl_spec(char *in_line)
 	/* Process node information */
 	if (!nodes)
 		return SLURM_SUCCESS;	/* not partition line. */
-	
 	bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
 	list_push(bgl_list, bgl_record);
 	
@@ -970,7 +971,6 @@ static int _parse_bgl_spec(char *in_line)
 	xfree(nodes);	/* pointer moved, nothing left to xfree */
 	
 	_process_nodes(bgl_record);
-	
 	if (!conn_type || !strcasecmp(conn_type,"TORUS"))
 		bgl_record->conn_type = SELECT_TORUS;
 	else
@@ -981,10 +981,11 @@ static int _parse_bgl_spec(char *in_line)
 
 	if (node_use) {
 		/* First we check to see if we only want one type of mode */
-		if(!strcasecmp(conn_type,"COPROCESSOR"))
+		if(!strcasecmp(node_use,"COPROCESSOR"))
 			bgl_record->node_use = SELECT_COPROCESSOR_MODE;
 		else
 			bgl_record->node_use = SELECT_VIRTUAL_NODE_MODE;
+		
 	} else {
 		/* If not then we will make both. */
 

@@ -465,7 +465,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 		}
 
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "%.5d", part_ptr->total_nodes);
+			  pa_system_ptr->xcord, "%d", part_ptr->total_nodes);
 		pa_system_ptr->xcord += 7;
 
 		tempxcord = pa_system_ptr->xcord;

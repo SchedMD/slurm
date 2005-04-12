@@ -229,7 +229,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		pa_system_ptr->xcord += 11;
 
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "%5d", job_ptr->num_nodes);
+			  pa_system_ptr->xcord, "%d", job_ptr->num_nodes);
 		pa_system_ptr->xcord += 6;
 
 		tempxcord = pa_system_ptr->xcord;
