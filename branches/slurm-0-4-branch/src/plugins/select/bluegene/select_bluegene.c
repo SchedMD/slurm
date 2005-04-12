@@ -255,9 +255,6 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 
 extern int select_p_job_ready(struct job_record *job_ptr)
 {
-	if (job_ptr->job_state != JOB_RUNNING)
-		return 0;
-
 	return part_ready(job_ptr);
 }
 
