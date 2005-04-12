@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.4.20
+=========================
+ -- Output is more user friendly with -c option
+
 * Changes in SLURM 0.4.19
 =========================
  -- Added new RPCs for getting bglblock state info remotely and cache data 
