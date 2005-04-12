@@ -3,6 +3,11 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.4.20
 =========================
+ -- Fix in race condition with time in Status Thread of BGL
+ -- Fix no leading zeros in smap output.
+
+* Changes in SLURM 0.4.20
+=========================
  -- Output is more user friendly with -c option
 
 * Changes in SLURM 0.4.19
