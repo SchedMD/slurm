@@ -378,7 +378,6 @@ extern int create_static_partitions(List part_list)
 	bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
 	
 	bgl_record->nodes = xmalloc(sizeof(char)*13);
-	memset(bgl_record->nodes, 0, 13);
 	if(DIM_SIZE[X]==1 && DIM_SIZE[Y]==1 && DIM_SIZE[Z]==1)
 		sprintf(bgl_record->nodes, "bgl000");
        	else
@@ -401,7 +400,7 @@ extern int create_static_partitions(List part_list)
 	list_iterator_destroy(itr);
 	bgl_record->bgl_part_list = list_create(NULL);			
 	bgl_record->hostlist = hostlist_create(NULL);
-	bgl_record->boot_state = 0;
+	/* bgl_record->boot_state = 0;		Implicit */
 	_process_nodes(bgl_record);
 	list_push(bgl_list, bgl_record);
 	
@@ -422,7 +421,6 @@ extern int create_static_partitions(List part_list)
 	found_record->hostlist = bgl_record->hostlist;
 	found_record->nodes = xstrdup(bgl_record->nodes);
 	
-	found_record->boot_state = 0;
 	found_record->bp_count = bgl_record->bp_count;
 	found_record->switch_count = bgl_record->switch_count;
 	found_record->geo[X] = bgl_record->geo[X];
@@ -966,7 +964,7 @@ static int _parse_bgl_spec(char *in_line)
 	
 	bgl_record->bgl_part_list = list_create(NULL);			
 	bgl_record->hostlist = hostlist_create(NULL);
-	bgl_record->boot_state = 0;
+	/* bgl_record->boot_state = 0; 	Implicit */
 		
 	bgl_record->nodes = xstrdup(nodes);
 	xfree(nodes);	/* pointer moved, nothing left to xfree */
@@ -1002,7 +1000,7 @@ static int _parse_bgl_spec(char *in_line)
 		found_record->hostlist = bgl_record->hostlist;
 		found_record->nodes = xstrdup(bgl_record->nodes);
 	
-		found_record->boot_state = 0;
+		/* found_record->boot_state = 0;	Implicit */
 		found_record->bp_count = bgl_record->bp_count;
 		found_record->switch_count = bgl_record->switch_count;
 		found_record->geo[X] = bgl_record->geo[X];
