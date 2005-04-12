@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 	error_code = slurm_load_node((time_t) NULL, &new_node_ptr, 0);
 
 	if (error_code) {
-		printf("slurm_load_node: %s", slurm_strerror(slurm_get_errno()));
+		printf("slurm_load_node: %s\n", slurm_strerror(slurm_get_errno()));
 		exit(0);
 	} else {
 		pa_init(new_node_ptr);
