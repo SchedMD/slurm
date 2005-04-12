@@ -122,7 +122,6 @@ extern int update_partition_list()
 	char *owner_name;
 	rm_partition_list_t *part_list;
 	ListIterator itr;
-	hostlist_iterator_t host_itr;
 	bgl_record_t *bgl_record;
 	struct passwd *pw_ent = NULL;
 	time_t now;
@@ -221,24 +220,24 @@ extern int update_partition_list()
 					bgl_record->boot_count++;
 				} else {
 					error("Couldn't boot Partition %s for user %s",
-					      bgl_record->bgl_part_id, bgl_record->owner_name);
+						bgl_record->bgl_part_id, 
+						bgl_record->owner_name);
 					now = time(NULL);
 					time_ptr = localtime(&now);
 					strftime(reason, sizeof(reason),
-						 "update_partition_list: Boot fails [SLURM@%b %d %H:%M]",
-						 time_ptr);
-					host_itr = hostlist_iterator_create(bgl_record->hostlist);
-					while ((name = (char *) hostlist_next(host_itr)) != NULL) {
-						slurm_drain_nodes(name, reason);
-					}
-					hostlist_iterator_destroy(host_itr);
+						"update_partition_list: "
+						"Boot fails [SLURM@%b %d %H:%M]",
+						time_ptr);
+					slurm_drain_nodes(bgl_record->name, 
+						reason);
 					bgl_record->boot_state = 0;
 					bgl_record->boot_count = 0;				
 				}
 				break;
 			default:
-				debug("resetting the boot state flag and counter for partition %s.",
-				      bgl_record->bgl_part_id);
+				debug("resetting the boot state flag and "
+					"counter for partition %s.",
+					bgl_record->bgl_part_id);
 				bgl_record->boot_state = 0;
 				bgl_record->boot_count = 0;
 				break;

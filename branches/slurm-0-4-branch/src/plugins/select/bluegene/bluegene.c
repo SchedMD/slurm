@@ -255,7 +255,7 @@ extern void *bluegene_agent(void *args)
 				if((rc = update_partition_list()) == 1)
 					last_bgl_update = now;
 				else if(rc == -1)
-					error("Erro with update_partition_list");
+					error("Error with update_partition_list");
 			}
 		}
 
@@ -334,7 +334,6 @@ extern int create_static_partitions(List part_list)
 			
 	}
 	list_iterator_destroy(itr);
-	
 
 	itr = list_iterator_create(bgl_list);
 	while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
@@ -345,11 +344,14 @@ extern int create_static_partitions(List part_list)
 			}
 		}
 		list_iterator_destroy(itr_found);
+
 		if(found_record == NULL) {
 #ifdef HAVE_BGL_FILES
 			//bgl_record->node_use = SELECT_VIRTUAL_NODE_MODE;
-			if((rc = configure_partition(bgl_record)) == SLURM_ERROR)
+			if((rc = configure_partition(bgl_record)) == SLURM_ERROR) {
+				list_iterator_destroy(itr);
 				return rc;
+			}
 			print_bgl_record(bgl_record);
 			
 			/* Here we are adding some partitions manually because of the way
@@ -360,8 +362,10 @@ extern int create_static_partitions(List part_list)
 			bgl_record = (bgl_record_t *) list_next(itr);
 			if(bgl_record == NULL)
 				break;
-			if((rc = configure_partition(bgl_record)) == SLURM_ERROR)
+			if((rc = configure_partition(bgl_record)) == SLURM_ERROR) {
+				list_iterator_destroy(itr);
 				return rc;
+			}
 			print_bgl_record(bgl_record);
 #endif
 		}
@@ -385,21 +389,27 @@ extern int create_static_partitions(List part_list)
        	else
 		sprintf(bgl_record->nodes, "bgl[000x%d%d%d]", DIM_SIZE[X]-1,  
 			DIM_SIZE[Y]-1, DIM_SIZE[Z]-1);
+
        	itr = list_iterator_create(bgl_found_part_list);
 	while ((found_record = (bgl_record_t *) list_next(itr)) != NULL) {
 		if (!strcmp(bgl_record->nodes, found_record->nodes)) {
 			destroy_bgl_record(bgl_record);
+			list_iterator_destroy(itr);
 			goto no_total;	/* don't create total already there */
 		}
 	}
+	list_iterator_destroy(itr);
+
 	itr = list_iterator_create(bgl_list);
 	while ((found_record = (bgl_record_t *) list_next(itr)) != NULL) {
 		if (!strcmp(bgl_record->nodes, found_record->nodes)) {
 			destroy_bgl_record(bgl_record);
+			list_iterator_destroy(itr);
 			goto no_total;	/* don't create total already defined */
 		}
 	}
 	list_iterator_destroy(itr);
+
 	bgl_record->bgl_part_list = list_create(NULL);			
 	bgl_record->hostlist = hostlist_create(NULL);
 	/* bgl_record->boot_state = 0;		Implicit */
@@ -661,8 +671,8 @@ static int _validate_config_nodes(void)
 			     convert_node_use(record->node_use));
 		}
 	}
-	
 	list_iterator_destroy(itr_conf);
+
 	if(list_count(bgl_list) == list_count(bgl_curr_part_list))
 		rc = SLURM_SUCCESS;
 #else
