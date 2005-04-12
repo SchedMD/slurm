@@ -74,6 +74,7 @@ extern time_t last_bgl_update;
 extern List bgl_curr_part_list; 	/* Initial bgl partition state */
 extern List bgl_list;			/* List of configured BGL blocks */
 extern bool agent_fini;
+extern pthread_mutex_t part_state_mutex;
 
 typedef int lifecycle_type_t;
 enum part_lifecycle {DYNAMIC, STATIC};

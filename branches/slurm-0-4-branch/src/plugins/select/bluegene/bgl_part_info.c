@@ -185,6 +185,7 @@ extern int update_partition_list()
 			continue;
 		}
 		
+		slurm_mutex_lock(&part_state_mutex);
 		if ((rc = rm_get_data(part_ptr, RM_PartitionState, &state))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionState): %s",
@@ -272,7 +273,8 @@ extern int update_partition_list()
 		} else {
 			error("name was empty for parition %s from rm_get_data(RM_PartitionUserName)", 
 			      bgl_record->bgl_part_id);
-		}	
+		}
+		slurm_mutex_unlock(&part_state_mutex);	
 	}
 	
 	if ((rc = rm_free_partition_list(part_list)) != STATUS_OK) {

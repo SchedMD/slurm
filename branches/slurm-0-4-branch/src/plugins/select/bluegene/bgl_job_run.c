@@ -68,6 +68,8 @@ typedef struct bgl_update {
 } bgl_update_t;
 
 List bgl_update_list = NULL;
+pthread_mutex_t part_state_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int agent_cnt = 0;
 
@@ -386,6 +388,7 @@ static int _boot_part(pm_partition_id_t bgl_part_id, char *owner_name, uid_t own
 				break;
 		list_iterator_destroy(itr);
 		if(block_ptr) {
+			slurm_mutex_lock(&part_state_mutex);
 			/* reset state and owner right now, don't wait for 
 			 * update_partition_list() to run or epilog could 
 			 * get old/bad data. */
@@ -396,6 +399,7 @@ static int _boot_part(pm_partition_id_t bgl_part_id, char *owner_name, uid_t own
 			debug("Setting bootflag for %s", bgl_part_id);
 			block_ptr->boot_state = 1;
 			block_ptr->boot_count = 0;
+			slurm_mutex_unlock(&part_state_mutex);
 		} else {
 			error("Partition %s not found in list to set state", 
 				bgl_part_id);
