@@ -108,6 +108,11 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		target_size = min_nodes;
 	/* this is where we should have the control flow depending on
 	 * the spec arguement */
+
+	if(!bgl_list) {
+		error("_find_best_partition_match: There is no bgl_list");
+		return SLURM_ERROR;
+	}
 	itr = list_iterator_create(bgl_list);
 	*found_bgl_record = NULL;
 

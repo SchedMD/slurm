@@ -615,6 +615,7 @@ static void _set_bgl_lists()
 {
 	bgl_record_t *bgl_record;
 	
+	slurm_mutex_lock(&part_state_mutex);
 	if (bgl_found_part_list) {
 		while ((bgl_record = list_pop(bgl_found_part_list)) != NULL) {
 		}
@@ -635,7 +636,8 @@ static void _set_bgl_lists()
 		}
 	} else
 		bgl_list = list_create(destroy_bgl_record);
-	
+	slurm_mutex_unlock(&part_state_mutex);
+		
 }
 
 /*
@@ -800,10 +802,13 @@ extern int read_bgl_conf(void)
 		fatal("bluegene.conf file not defined");
 	if (stat(bgl_conf, &config_stat) < 0)
 		fatal("can't stat bluegene.conf file %s: %m", bgl_conf);
-	if (last_config_update
-	    &&  (last_config_update == config_stat.st_mtime)) {
-		debug("bluegene.conf unchanged");
+	if (last_config_update) {
+		if(last_config_update == config_stat.st_mtime)
+			debug("bluegene.conf unchanged");
+		else
+			debug("bluegene.conf changed, doing nothing");
 		_reopen_bridge_log();
+		last_config_update = config_stat.st_mtime; 
 		return SLURM_SUCCESS;
 	}
 	last_config_update = config_stat.st_mtime; 

@@ -172,6 +172,7 @@ extern int update_partition_list()
 		if(strncmp("RMP", name,3))
 			continue;
 		
+		slurm_mutex_lock(&part_state_mutex);
 		itr = list_iterator_create(bgl_list);
 		while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
 			if (!strcmp(bgl_record->bgl_part_id, name)) 
@@ -184,7 +185,6 @@ extern int update_partition_list()
 			continue;
 		}
 		
-		slurm_mutex_lock(&part_state_mutex);
 		if ((rc = rm_get_data(part_ptr, RM_PartitionState, &state))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionState): %s",
