@@ -255,7 +255,13 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 
 extern int select_p_job_ready(struct job_record *job_ptr)
 {
+#ifdef HAVE_BGL_FILES
 	return part_ready(job_ptr);
+#else
+	if (job_ptr->job_state == JOB_RUNNING)
+		return 1;
+	return 0;
+#endif
 }
 
 extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
