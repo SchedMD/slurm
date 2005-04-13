@@ -75,13 +75,18 @@ extern int part_ready(struct job_record *job_ptr)
 	rc = select_g_get_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_PART_ID, &part_id);
 	if (rc == SLURM_SUCCESS) {
-		itr = list_iterator_create(bgl_list);
-		while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
-			if (!strcmp(bgl_record->bgl_part_id, part_id)) 
-				break;	/* found it */
+		if(bgl_list) {
+			itr = list_iterator_create(bgl_list);
+			while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
+				if (!strcmp(bgl_record->bgl_part_id, part_id)) 
+					break;	/* found it */
+			}
+			list_iterator_destroy(itr);
+			xfree(part_id);
+		} else {
+			error("part_ready: no bgl_list");
+			rc = -1;
 		}
-		list_iterator_destroy(itr);
-		xfree(part_id);
 	
 		if (rc != -1) {
 		    if((bgl_record->owner_uid == job_ptr->user_id)
@@ -122,7 +127,7 @@ extern int update_partition_list()
 	char *owner_name;
 	rm_partition_list_t *part_list;
 	ListIterator itr;
-	bgl_record_t *bgl_record;
+	bgl_record_t *bgl_record = NULL;
 	struct passwd *pw_ent = NULL;
 	time_t now;
 	struct tm *time_ptr;
@@ -172,19 +177,23 @@ extern int update_partition_list()
 		if(strncmp("RMP", name,3))
 			continue;
 		
-		slurm_mutex_lock(&part_state_mutex);
-		itr = list_iterator_create(bgl_list);
-		while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
-			if (!strcmp(bgl_record->bgl_part_id, name)) 
-				break;	/* found it */
+		if(bgl_list) {
+			itr = list_iterator_create(bgl_list);
+			while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
+				if (!strcmp(bgl_record->bgl_part_id, name)) 
+					break;	/* found it */
+			}
+			list_iterator_destroy(itr);
+		} else {
+			error("update_partition_list: no bgl_list");
+			break;
 		}
-		list_iterator_destroy(itr);
-		
 		if(bgl_record == NULL) {
 			error("Partition %s not found in list on known partitions",name);
 			continue;
 		}
 		
+		slurm_mutex_lock(&part_state_mutex);
 		if ((rc = rm_get_data(part_ptr, RM_PartitionState, &state))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionState): %s",

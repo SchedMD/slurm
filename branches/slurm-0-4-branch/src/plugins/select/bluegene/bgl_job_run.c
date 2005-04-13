@@ -372,7 +372,7 @@ static int _boot_part(pm_partition_id_t bgl_part_id, char *owner_name, uid_t own
 #ifdef HAVE_BGL_FILES
 	int rc;
 	ListIterator itr;
-	bgl_record_t *block_ptr;
+	bgl_record_t *block_ptr = NULL;
 		
 	info("Booting partition %s", bgl_part_id);
 	 if ((rc = pm_create_partition(bgl_part_id)) != STATUS_OK) {
@@ -405,7 +405,7 @@ static int _boot_part(pm_partition_id_t bgl_part_id, char *owner_name, uid_t own
 				bgl_part_id);
 		}
 	} else {
-		error("Partition list not set.");
+		error("_boot_part: no bgl_list");
 	}
 #endif
 	return SLURM_SUCCESS;
@@ -458,7 +458,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 	rm_element_t *job_elem;
 	pm_partition_id_t part_id;
 	db_job_id_t job_id;
-	bgl_record_t *bgl_record;
+	bgl_record_t *bgl_record = NULL;
 	ListIterator itr;
 	
 	//debug("getting the job info");
@@ -522,17 +522,21 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 
 	/* Change the block's owner */
 	_set_part_owner(bgl_update_ptr->bgl_part_id, USER_NAME);
-	itr = list_iterator_create(bgl_list);
-	while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
-		if (!strcmp(bgl_record->bgl_part_id, bgl_update_ptr->bgl_part_id)) 
-			break;	/* found it */
-	}
-	list_iterator_destroy(itr);
-	if(bgl_record) {
-		debug("resetting the boot state flag and counter for partition %s.",
-		      bgl_record->bgl_part_id);
-		bgl_record->boot_state = 0;
-		bgl_record->boot_count = 0;
+	if(bgl_list) {
+		itr = list_iterator_create(bgl_list);
+		while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
+			if (!strcmp(bgl_record->bgl_part_id, bgl_update_ptr->bgl_part_id)) 
+				break;	/* found it */
+		}
+		list_iterator_destroy(itr);
+		if(bgl_record) {
+			debug("resetting the boot state flag and counter for partition %s.",
+			      bgl_record->bgl_part_id);
+			bgl_record->boot_state = 0;
+			bgl_record->boot_count = 0;
+		}
+	} else {
+		error("_term_agent: No bgl_list");
 	}
 	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
 		error("rm_free_job_list(): %s", bgl_err_str(rc));
@@ -619,26 +623,30 @@ static List _get_all_blocks(void)
 {
 	List ret_list = list_create(destroy_bgl_record);
 	ListIterator itr;
-	bgl_record_t *block_ptr;
-	bgl_record_t *str_ptr;
+	bgl_record_t *block_ptr = NULL;
+	bgl_record_t *str_ptr = NULL;
 	
 	if (!ret_list)
 		fatal("malloc error");
 
-	itr = list_iterator_create(bgl_list);
-	while ((block_ptr = (bgl_record_t *) list_next(itr))) {
-		if ((block_ptr->owner_name == NULL)
-		||  (block_ptr->owner_name[0] == '\0')
-		||  (block_ptr->bgl_part_id == NULL)
-		||  (block_ptr->bgl_part_id[0] == '0'))
-			continue;
-		str_ptr = xmalloc(sizeof(bgl_record_t));
-		str_ptr->bgl_part_id = xstrdup(block_ptr->bgl_part_id);
-		str_ptr->nodes = xstrdup(block_ptr->nodes);
-		
-		list_append(ret_list, str_ptr);
+	if(bgl_list) {
+		itr = list_iterator_create(bgl_list);
+		while ((block_ptr = (bgl_record_t *) list_next(itr))) {
+			if ((block_ptr->owner_name == NULL)
+			    ||  (block_ptr->owner_name[0] == '\0')
+			    ||  (block_ptr->bgl_part_id == NULL)
+			    ||  (block_ptr->bgl_part_id[0] == '0'))
+				continue;
+			str_ptr = xmalloc(sizeof(bgl_record_t));
+			str_ptr->bgl_part_id = xstrdup(block_ptr->bgl_part_id);
+			str_ptr->nodes = xstrdup(block_ptr->nodes);
+			
+			list_append(ret_list, str_ptr);
+		}
+		list_iterator_destroy(itr);
+	} else {
+		error("_get_all_blocks: no bgl_list");
 	}
-	list_iterator_destroy(itr);
 
 	return ret_list;
 }
@@ -648,26 +656,31 @@ static int _excise_block(List block_list, pm_partition_id_t bgl_part_id,
 			 char *nodes)
 {
 	int rc = SLURM_SUCCESS;
-	ListIterator iter = list_iterator_create(bgl_list);
-	bgl_record_t *block;
+	ListIterator iter;
+	bgl_record_t *block = NULL;
 	xassert(iter);
 
-	while ((block = list_next(iter))) {
-		rc = SLURM_ERROR;
-		if (strcmp(block->bgl_part_id, bgl_part_id))
-			continue;
-		if (strcmp(block->nodes, nodes)) {	/* changed bglblock */
-			error("bgl_part_id:%s old_nodes:%s new_nodes:%s",
-				bgl_part_id, nodes, block->nodes);
+	if(bgl_list) {
+		iter = list_iterator_create(bgl_list);
+		while ((block = list_next(iter))) {
+			rc = SLURM_ERROR;
+			if (strcmp(block->bgl_part_id, bgl_part_id))
+				continue;
+			if (strcmp(block->nodes, nodes)) {	/* changed bglblock */
+				error("bgl_part_id:%s old_nodes:%s new_nodes:%s",
+				      bgl_part_id, nodes, block->nodes);
+				break;
+			}
+			
+			/* exact match of name and node list */
+			rc = SLURM_SUCCESS;
 			break;
-		}
-
-		/* exact match of name and node list */
-		rc = SLURM_SUCCESS;
-		break;
+		}		
+		list_iterator_destroy(iter);
+	} else {
+		error("_excise_block: No bgl_list");
+		rc = SLURM_ERROR;
 	}
-
-	list_iterator_destroy(iter);
 	return rc;
 }
 #endif
@@ -765,66 +778,75 @@ extern int sync_jobs(List job_list)
 {
 #ifdef HAVE_BGL_FILES
 	ListIterator job_iterator, block_iterator;
-	struct job_record  *job_ptr;
-	bgl_update_t *bgl_update_ptr;
-	bgl_record_t *bgl_record;
+	struct job_record  *job_ptr = NULL;
+	bgl_update_t *bgl_update_ptr = NULL;
+	bgl_record_t *bgl_record = NULL;
 	List block_list = _get_all_blocks();
 
 	/* Insure that all running jobs own the specified partition */
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		bool good_block = true;
-		if (job_ptr->job_state != JOB_RUNNING)
-			continue;
+	if(job_list) {
+		job_iterator = list_iterator_create(job_list);
+		while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+			bool good_block = true;
+			if (job_ptr->job_state != JOB_RUNNING)
+				continue;
+			
+			bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
+			select_g_get_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_PART_ID, 
+					     &(bgl_update_ptr->bgl_part_id));
 
-		bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
-		select_g_get_jobinfo(job_ptr->select_jobinfo,
-				SELECT_DATA_PART_ID, 
-				&(bgl_update_ptr->bgl_part_id));
+			if (bgl_update_ptr->bgl_part_id == NULL) {
+				error("Running job %u has bglblock==NULL", 
+				      job_ptr->job_id);
+				good_block = false;
+			} else if (job_ptr->nodes == NULL) {
+				error("Running job %u has nodes==NULL",
+				      job_ptr->job_id);
+				good_block = false;
+			} else if (_excise_block(block_list, bgl_update_ptr->bgl_part_id, 
+						 job_ptr->nodes) != SLURM_SUCCESS) {
+				error("Kill job %u belongs to defunct bglblock %s",
+				      job_ptr->job_id, bgl_update_ptr->bgl_part_id);
+				good_block = false;
+			}
+			if (!good_block) {
+				job_ptr->job_state = JOB_FAILED | JOB_COMPLETING;
+				xfree(bgl_update_ptr->bgl_part_id);
+				xfree(bgl_update_ptr);
+				continue;
+			}
 
-		if (bgl_update_ptr->bgl_part_id == NULL) {
-			error("Running job %u has bglblock==NULL", 
-				job_ptr->job_id);
-			good_block = false;
-		} else if (job_ptr->nodes == NULL) {
-			error("Running job %u has nodes==NULL",
-				job_ptr->job_id);
-			good_block = false;
-		} else if (_excise_block(block_list, bgl_update_ptr->bgl_part_id, 
-					 job_ptr->nodes) != SLURM_SUCCESS) {
-			error("Kill job %u belongs to defunct bglblock %s",
-			      job_ptr->job_id, bgl_update_ptr->bgl_part_id);
-			good_block = false;
+			debug3("Queue sync of job %u in BGL partition %s",
+			       job_ptr->job_id, bgl_update_ptr->bgl_part_id);
+			bgl_update_ptr->op = SYNC_OP;
+			bgl_update_ptr->uid = job_ptr->user_id;
+			bgl_update_ptr->job_id = job_ptr->job_id;
+			_part_op(bgl_update_ptr);
 		}
-		if (!good_block) {
-			job_ptr->job_state = JOB_FAILED | JOB_COMPLETING;
-			xfree(bgl_update_ptr->bgl_part_id);
-			xfree(bgl_update_ptr);
-			continue;
-		}
-
-		debug3("Queue sync of job %u in BGL partition %s",
-			job_ptr->job_id, bgl_update_ptr->bgl_part_id);
-		bgl_update_ptr->op = SYNC_OP;
-		bgl_update_ptr->uid = job_ptr->user_id;
-		bgl_update_ptr->job_id = job_ptr->job_id;
-		_part_op(bgl_update_ptr);
+		list_iterator_destroy(job_iterator);
+	} else {
+		error("sync_jobs: no job_list");
+		return SLURM_ERROR;
 	}
-	list_iterator_destroy(job_iterator);
-
 	/* Insure that all other partitions are free */
-	block_iterator = list_iterator_create(block_list);
-	while ((bgl_record = (bgl_record_t *) list_next(block_iterator))) {
-		info("Queue clearing of vestigial owner in BGL partition %s",
-			bgl_record->bgl_part_id);
-		bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
-		bgl_update_ptr->op = TERM_OP;
-		bgl_update_ptr->bgl_part_id = xstrdup(bgl_record->bgl_part_id);
-		_part_op(bgl_update_ptr);
-		//_term_agent(bgl_update_ptr);
+	if(block_list) {
+		block_iterator = list_iterator_create(block_list);
+		while ((bgl_record = (bgl_record_t *) list_next(block_iterator))) {
+			info("Queue clearing of vestigial owner in BGL partition %s",
+			     bgl_record->bgl_part_id);
+			bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
+			bgl_update_ptr->op = TERM_OP;
+			bgl_update_ptr->bgl_part_id = xstrdup(bgl_record->bgl_part_id);
+			_part_op(bgl_update_ptr);
+			//_term_agent(bgl_update_ptr);
+		}
+		list_iterator_destroy(block_iterator);
+		list_destroy(block_list);
+	} else {
+		error("sync_jobs: no block_list");
+		return SLURM_ERROR;
 	}
-	list_iterator_destroy(block_iterator);
-	list_destroy(block_list);
 #endif
 	return SLURM_SUCCESS;
 }

@@ -261,7 +261,7 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 {
 	ListIterator itr;
-	bgl_record_t *bgl_record;
+	bgl_record_t *bgl_record = NULL;
 	uint32_t partitions_packed = 0, tmp_offset;
 	Buf buffer;
 
@@ -277,15 +277,19 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 		pack32(partitions_packed, buffer);
 		pack_time(last_bgl_update, buffer);
 
-		itr = list_iterator_create(bgl_list);
-		while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
-			//xassert(bgl_record->bgl_part_id != NULL);
-		
-			pack_partition(bgl_record, buffer);
-			partitions_packed++;
+		if(bgl_list) {
+			itr = list_iterator_create(bgl_list);
+			while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
+				//xassert(bgl_record->bgl_part_id != NULL);
+				
+				pack_partition(bgl_record, buffer);
+				partitions_packed++;
+			}
+			list_iterator_destroy(itr);
+		} else {
+			error("select_p_pack_node_info: no bgl_list");
+			return SLURM_ERROR;
 		}
-		list_iterator_destroy(itr);
-		
 		tmp_offset = get_buf_offset(buffer);
 		set_buf_offset(buffer, 0);
 		pack32(partitions_packed, buffer);

@@ -88,7 +88,7 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		int spec, bgl_record_t** found_bgl_record)
 {
 	ListIterator itr;
-	bgl_record_t* record;
+	bgl_record_t* record = NULL;
 	int i;
 	uint16_t req_geometry[SYSTEM_DIMENSIONS];
 	uint16_t conn_type, node_use, rotate, target_size = 1;
@@ -244,7 +244,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 		      int min_nodes, int max_nodes)
 {
 	int spec = 1; /* this will be like, keep TYPE a priority, etc,  */
-	bgl_record_t* record;
+	bgl_record_t* record = NULL;
 	char buf[100];
 
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 

@@ -62,7 +62,7 @@ static void _print_list(List list)
 	if (list == NULL)
 		return;
 
-	debug("trying to get the list iterator");	
+	debug("trying to get the list iterator");
 	itr = list_iterator_create(list);
 	debug("done");
 
