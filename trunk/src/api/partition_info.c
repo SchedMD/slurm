@@ -132,7 +132,7 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr,
 		fprintf ( out, "\n   ");
 
 	/****** Line 4 ******/
-	fprintf ( out, "Nodes=%s NodeIndicies=", part_ptr->nodes);
+	fprintf ( out, "Nodes=%s NodeIndices=", part_ptr->nodes);
 	for (j = 0; part_ptr->node_inx; j++) {
 		if (j > 0)
 			fprintf( out, ",%d", part_ptr->node_inx[j]);
