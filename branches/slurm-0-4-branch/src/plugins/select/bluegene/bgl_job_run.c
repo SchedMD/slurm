@@ -68,7 +68,6 @@ typedef struct bgl_update {
 } bgl_update_t;
 
 List bgl_update_list = NULL;
-pthread_mutex_t part_state_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int agent_cnt = 0;

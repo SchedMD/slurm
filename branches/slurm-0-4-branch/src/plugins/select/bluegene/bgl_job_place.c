@@ -1,6 +1,8 @@
 /*****************************************************************************\
  *  bgl_job_place.c - blue gene job placement (e.g. base partition selection)
- *  functions. 
+ *  functions.
+ *
+ *  $Id$ 
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -94,6 +96,11 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 	uint16_t conn_type, node_use, rotate, target_size = 1;
 	uint32_t req_procs = job_ptr->num_procs;
 
+	if(!bgl_list) {
+		error("_find_best_partition_match: There is no bgl_list");
+		return SLURM_ERROR;
+	}
+
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_CONN_TYPE, &conn_type);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
@@ -109,10 +116,6 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 	/* this is where we should have the control flow depending on
 	 * the spec arguement */
 
-	if(!bgl_list) {
-		error("_find_best_partition_match: There is no bgl_list");
-		return SLURM_ERROR;
-	}
 	itr = list_iterator_create(bgl_list);
 	*found_bgl_record = NULL;
 

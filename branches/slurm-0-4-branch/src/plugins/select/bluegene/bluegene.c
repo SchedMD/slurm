@@ -1,5 +1,7 @@
 /*****************************************************************************\
  *  bluegene.c - blue gene node configuration processing module. 
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -48,7 +50,8 @@ int numpsets;
 bool agent_fini = false;
 int bridge_api_verb = 0;
 time_t last_bgl_update;
-		
+pthread_mutex_t part_state_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 /* some local functions */
 #ifdef HAVE_BGL
 static int  _addto_node_list(bgl_record_t *bgl_record, int *start, int *end);
@@ -980,6 +983,7 @@ static int _parse_bgl_spec(char *in_line)
 	char *api_file = NULL;
 	int pset_num=-1, api_verb=-1;
 	bgl_record_t *bgl_record = NULL, *found_record = NULL;
+
 	//info("in_line = %s",in_line);
 	error_code = slurm_parser(in_line,
 				  "BlrtsImage=", 's', &blrts_image,
@@ -1037,11 +1041,11 @@ static int _parse_bgl_spec(char *in_line)
 	bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
 	list_push(bgl_list, bgl_record);
 	
-	bgl_record->state = 0;
 	bgl_record->owner_name = xstrdup(USER_NAME);
 	bgl_record->bgl_part_list = list_create(NULL);			
 	bgl_record->hostlist = hostlist_create(NULL);
 	/* bgl_record->boot_state = 0; 	Implicit */
+	/* bgl_record->state = 0;	Implicit */
 		
 	bgl_record->nodes = xstrdup(nodes);
 	xfree(nodes);	/* pointer moved, nothing left to xfree */
@@ -1073,12 +1077,12 @@ static int _parse_bgl_spec(char *in_line)
 		found_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
 		list_push(bgl_list, found_record);
 	
-		found_record->state = 0;
 		found_record->owner_name = xstrdup(USER_NAME);
 		found_record->bgl_part_list = bgl_record->bgl_part_list;			
 		found_record->hostlist = bgl_record->hostlist;
 		found_record->nodes = xstrdup(bgl_record->nodes);
-	
+
+		/* found_record->state = 0;		Implicit */	
 		/* found_record->boot_state = 0;	Implicit */
 		found_record->bp_count = bgl_record->bp_count;
 		found_record->switch_count = bgl_record->switch_count;

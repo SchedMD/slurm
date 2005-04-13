@@ -189,7 +189,7 @@ extern int update_partition_list()
 			break;
 		}
 		if(bgl_record == NULL) {
-			error("Partition %s not found in list on known partitions",name);
+			error("Partition %s not found on bgl_list", name);
 			continue;
 		}
 		
