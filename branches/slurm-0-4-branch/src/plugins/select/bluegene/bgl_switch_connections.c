@@ -362,7 +362,7 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 			
 		if (_get_bp_by_location(bgl, bgl_bp->coord, &curr_bp) 
 				== SLURM_ERROR) {
-			switch_iterator_destroy(bgl_itr);
+			list_iterator_destroy(bgl_itr);
 			return SLURM_ERROR;
 		}
 		
