@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.3.12
+=========================
+ -- Always report job scheduling details (so prolog/epilog can find 
+    constraints).
+
 * Changes in SLURM 0.3.11
 =========================
  -- Fixes for reported problems:

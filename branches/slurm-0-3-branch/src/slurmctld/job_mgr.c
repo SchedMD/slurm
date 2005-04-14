@@ -2446,7 +2446,7 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	pack_bit_fmt(dump_job_ptr->node_bitmap, buffer);
 
 	detail_ptr = dump_job_ptr->details;
-	if (detail_ptr && dump_job_ptr->job_state == JOB_PENDING)
+	if (detail_ptr)
 		_pack_job_details(detail_ptr, buffer);
 	else
 		_pack_job_details(NULL, buffer);
