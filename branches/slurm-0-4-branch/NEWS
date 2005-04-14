@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.4.23
+=========================
+ -- Modified bluegene plugin to only sync bglblocks to jobs on initial 
+    startup, not on reconfig. Fixes race condition.
+
 * Changes in SLURM 0.4.22
 =========================
  -- Modified bluegene plugin to not do anything if the bluegene.conf file 
@@ -14,7 +19,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.4.20
 =========================
- -- Output is more user friendly with -c option
+ -- Smap output is more user friendly with -c option
 
 * Changes in SLURM 0.4.19
 =========================
