@@ -1,5 +1,7 @@
 /****************************************************************************\
  *  slurm_protocol_pack.c - functions to pack and unpack structures for RPCs
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -1671,6 +1673,8 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	||  select_g_unpack_jobinfo(job->select_jobinfo, buffer))
 		goto unpack_error;
 
+	safe_unpackstr_xmalloc(&job->features, &uint16_tmp, buffer);
+
 	safe_unpack32(&job->num_nodes, buffer);
 	safe_unpack16(&job->shared, buffer);
 	safe_unpack16(&job->contiguous, buffer);
@@ -1696,7 +1700,6 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 		job->exc_node_inx = bitfmt2int(node_inx_str);
 		xfree(node_inx_str);
 	}
-	safe_unpackstr_xmalloc(&job->features, &uint16_tmp, buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:
