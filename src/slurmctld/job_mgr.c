@@ -3,7 +3,7 @@
  *	Note: there is a global job list (job_list), job_count, time stamp 
  *	(last_job_update), and hash table (job_hash)
  *
- * $Id$
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -2542,6 +2542,11 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	select_g_pack_jobinfo(dump_job_ptr->select_jobinfo, buffer);
 
 	detail_ptr = dump_job_ptr->details;
+	if (detail_ptr)		/* pack "features" for prolog/epilog use */
+		packstr(detail_ptr->features, buffer);
+	else
+		packstr(NULL, buffer);
+
 	if (detail_ptr && dump_job_ptr->job_state == JOB_PENDING)
 		_pack_job_details(detail_ptr, buffer);
 	else
@@ -2565,7 +2570,6 @@ static void _pack_job_details(struct job_details *detail_ptr, Buf buffer)
 		pack_bit_fmt(detail_ptr->req_node_bitmap, buffer);
 		packstr(detail_ptr->exc_nodes, buffer);
 		pack_bit_fmt(detail_ptr->exc_node_bitmap, buffer);
-		packstr(detail_ptr->features, buffer);
 	} 
 
 	else {
@@ -2578,7 +2582,6 @@ static void _pack_job_details(struct job_details *detail_ptr, Buf buffer)
 		pack32((uint32_t) 0, buffer);
 		pack16((uint16_t) 0, buffer);
 
-		packstr(NULL, buffer);
 		packstr(NULL, buffer);
 		packstr(NULL, buffer);
 		packstr(NULL, buffer);

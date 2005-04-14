@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
  -- If slurmd's node name is mapped to NULL (due to bad configuration)
     terminate slurmd with a fatal error and don't crash slurmctld.
  -- Add SLURMD_DEBUG env var for use with AIX/POE in spawn_task RPC.
+ -- Always pack job's "features" for access by prolog/epilog
 
 * Changes in SLURM 0.5.0-pre1
 =============================
