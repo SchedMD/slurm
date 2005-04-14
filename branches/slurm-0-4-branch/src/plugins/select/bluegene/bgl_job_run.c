@@ -2,7 +2,7 @@
  *  bgl_job_run.c - blue gene job execution (e.g. initiation and termination) 
  *  functions.
  *
- * $Id$ 
+ *  $Id$ 
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -780,9 +780,17 @@ extern int sync_jobs(List job_list)
 	struct job_record  *job_ptr = NULL;
 	bgl_update_t *bgl_update_ptr = NULL;
 	bgl_record_t *bgl_record = NULL;
-	List block_list = _get_all_blocks();
+	List block_list;
+	static bool run_already = false;
+
+	/* Execute only on initial startup. We don't support bglblock 
+	 * creation on demand today, so there is no need to re-sync data. */
+	if (run_already)
+		return SLURM_SUCCESS;
+	run_already = true;
 
 	/* Insure that all running jobs own the specified partition */
+	block_list = _get_all_blocks();
 	if(job_list) {
 		job_iterator = list_iterator_create(job_list);
 		while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
