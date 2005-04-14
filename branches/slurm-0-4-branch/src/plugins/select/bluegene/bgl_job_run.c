@@ -708,8 +708,6 @@ extern int start_job(struct job_record *job_ptr)
 		job_ptr->job_id, bgl_update_ptr->bgl_part_id);
 
 	_part_op(bgl_update_ptr);
-	//_start_agent(bgl_update_ptr);
-
 #endif
 	return rc;
 }
@@ -846,7 +844,6 @@ extern int sync_jobs(List job_list)
 			bgl_update_ptr->op = TERM_OP;
 			bgl_update_ptr->bgl_part_id = xstrdup(bgl_record->bgl_part_id);
 			_part_op(bgl_update_ptr);
-			//_term_agent(bgl_update_ptr);
 		}
 		list_iterator_destroy(block_iterator);
 		list_destroy(block_list);
