@@ -491,7 +491,6 @@ static void _sinfo_list_delete(void *data)
 {
 	sinfo_data_t *sinfo_ptr = data;
 
-	xfree(sinfo_ptr->features);
 	hostlist_destroy(sinfo_ptr->nodes);
 	xfree(sinfo_ptr);
 }
