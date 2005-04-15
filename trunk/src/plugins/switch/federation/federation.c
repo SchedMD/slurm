@@ -54,7 +54,8 @@
 #define FED_ADAPTERLEN 5
 #define FED_HOSTLEN 20
 #define FED_VERBOSE_PRINT 0
-#define FED_BUFSIZ 32
+#define FED_NODECOUNT 128
+#define FED_HASHCOUNT 128
 #define FED_MAX_PROCS 4096
 #define FED_AUTO_WINMEM 0
 #define FED_MAX_WIN 15
@@ -101,7 +102,9 @@ struct fed_nodeinfo {
 struct fed_libstate {
 	uint32_t magic;
 	uint32_t node_count;
+	uint32_t node_max;
 	fed_nodeinfo_t *node_list;
+	uint32_t hash_max;
 	fed_nodeinfo_t **hash_table;
 	uint16_t key_index;
 };
@@ -745,20 +748,20 @@ _copy_node(fed_nodeinfo_t *dest, fed_nodeinfo_t *src)
 static int 
 _hash_index (char *name)
 {
-	int i = 0;
+	int index = 0;
+	int j;
 
 	assert(name);
-	assert(fed_state);
-	assert(fed_state->hash_table);
-	
-	if (fed_state->node_count == 0)
-		return 0;       /* degenerate case */
 
-	while (*name)
-		i += (int) *name++;
-	i %= fed_state->node_count;
+	/* Multiply each character by its numerical position in the
+	 * name string to add a bit of entropy, because host names such
+	 * as cluster[0001-1000] can cause excessive index collisions.
+	 */
+	for (j = 1; *name; name++, j++)
+		index += (int)*name * j;
+	index %= fed_state->hash_max;
 	
-	return i;
+	return index;
 }
 
 /* Tries to find a node fast using the hash table if possible, 
@@ -775,6 +778,9 @@ _find_node(fed_libstate_t *lp, char *name)
 	assert(name);
 	assert(lp);
 
+	if (lp->node_count == 0)
+		return NULL;
+
 	if(lp->hash_table) {
 		i = _hash_index(name);
 		n = lp->hash_table[i];
@@ -784,40 +790,49 @@ _find_node(fed_libstate_t *lp, char *name)
 				return n;
 			n = n->next;
 		}
-	} else {
-		for(i = 0; i < lp->node_count; i++)
-			if(!strncmp(name, lp->node_list[i].name, 
-					FED_HOSTLEN))
-				return(&lp->node_list[i]);
 	}
 	
 	return NULL;
+}
+
+/* Add the hash entry for a newly created fed_nodeinfo_t
+ */
+static void
+_hash_add_nodeinfo(fed_libstate_t *state, fed_nodeinfo_t *node)
+{
+	int index;
+
+	assert(state);
+	assert(state->hash_table);
+	assert(state->hash_max >= state->node_count);
+	if(!strlen(node->name))
+		return;
+	index = _hash_index(node->name);
+	node->next = state->hash_table[index];
+	state->hash_table[index] = node;
 }
 
 /* Recreates the hash table for the node list.
  *
  * Used by: slurmctld
  */
-void
-fed_hash_nodes(void)
+static void
+_hash_rebuild(fed_libstate_t *state)
 {
-	int i, inx;
+	int i;
 	
-	assert(fed_state);
+	assert(state);
 	
-	if(fed_state->hash_table)
-		free(fed_state->hash_table);
-	fed_state->hash_table = (fed_nodeinfo_t **)
-		malloc(sizeof(fed_nodeinfo_t *) * fed_state->node_count);
-	memset(fed_state->hash_table, 0, sizeof(fed_nodeinfo_t *) * 
-		fed_state->node_count);
-	for(i = 0; i < fed_state->node_count; i++) {
-		if(!strlen(fed_state->node_list[i].name))
-			continue;
-		inx = _hash_index(fed_state->node_list[i].name);
-		fed_state->node_list[i].next = fed_state->hash_table[inx];
-		fed_state->hash_table[inx] = &fed_state->node_list[i];
-	}
+	if(state->hash_table)
+		free(state->hash_table);
+	if (state->node_count > state->hash_max || state->hash_max == 0)
+		state->hash_max += FED_HASHCOUNT;
+	state->hash_table = (fed_nodeinfo_t **)
+		malloc(sizeof(fed_nodeinfo_t *) * state->hash_max);
+	memset(state->hash_table, 0,
+	       sizeof(fed_nodeinfo_t *) * state->hash_max);
+	for(i = 0; i < state->node_count; i++)
+		_hash_add_nodeinfo(state, &(state->node_list[i]));
 }
 
 /* If the node is already in the node list then simply return
@@ -831,24 +846,26 @@ _alloc_node(fed_libstate_t *lp, char *name)
 {
 	fed_nodeinfo_t *n = NULL;
 	int old_bufsize, new_bufsize;
-	
+	bool need_hash_rebuild = false;
+
 	assert(lp);
 
-	if(name != NULL)
+	if(name != NULL) {
 		n = _find_node(lp, name);
-	if(n != NULL)
-		return n;
+		if(n != NULL)
+			return n;
+	}
 
-	old_bufsize = lp->node_count * sizeof(fed_nodeinfo_t);
-	old_bufsize = ((old_bufsize / FED_BUFSIZ) + 1) * FED_BUFSIZ;
-	new_bufsize = (lp->node_count + 1) *
-		sizeof(fed_nodeinfo_t);
-	new_bufsize = ((new_bufsize / FED_BUFSIZ) + 1) * FED_BUFSIZ;
-	if(lp->node_count == 0)
-		lp->node_list = 
-			(fed_nodeinfo_t *)malloc(new_bufsize);
-	else if (old_bufsize != new_bufsize)
-		lp->node_list = realloc(lp->node_list, new_bufsize);
+	if(lp->node_count >= lp->node_max) {
+		lp->node_max += FED_NODECOUNT;
+		new_bufsize = lp->node_max * sizeof(fed_nodeinfo_t);
+		if(lp->node_list == NULL)
+			lp->node_list = (fed_nodeinfo_t *)malloc(new_bufsize);
+		else
+			lp->node_list = (fed_nodeinfo_t *)realloc(lp->node_list,
+								  new_bufsize);
+		need_hash_rebuild = true;
+	}
 	if(lp->node_list == NULL) {
 		slurm_seterrno(ENOMEM);
 		return NULL;
@@ -861,7 +878,15 @@ _alloc_node(fed_libstate_t *lp, char *name)
 		sizeof(fed_adapter_t));
 	n->next_adapter = 0;
 	n->next_window = 0;
-	
+
+	if(name != NULL) {
+		strncpy(n->name, name, FED_HOSTLEN);
+		if (need_hash_rebuild || lp->node_count > lp->hash_max)
+			_hash_rebuild(lp);
+		else
+			_hash_add_nodeinfo(lp, n);
+	}
+
 	return n;
 }
 #if FED_DEBUG
@@ -919,7 +944,6 @@ fed_unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
 	if(tmp_n == NULL)
 		return SLURM_ERROR;
 	tmp_n->magic = magic;
-	strncpy(tmp_n->name, name, FED_HOSTLEN);
 	safe_unpack32(&tmp_n->adapter_count, buf);
 	for(i = 0; i < tmp_n->adapter_count; i++) {
 		tmp_a = tmp_n->adapter_list + i;
@@ -949,9 +973,6 @@ fed_unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
 			_unlock();
 			return SLURM_ERROR;
 		}
-
-	/* FIX ME!  Maybe we shouldn't be doing this every time? */
-	fed_hash_nodes();
 
 #if FED_DEBUG
 	_print_libstate(fed_state);
@@ -1497,6 +1518,10 @@ fed_alloc_libstate(fed_libstate_t **l)
 		slurm_seterrno_ret(ENOMEM);
 	tmp->magic = FED_LIBSTATE_MAGIC;
 	tmp->node_count = 0;
+	tmp->node_max = 0;
+	tmp->node_list = NULL;
+	tmp->hash_max = 0;
+	tmp->hash_table = NULL;
 	*l = tmp;
 	
 	return SLURM_SUCCESS;
@@ -1552,7 +1577,9 @@ fed_init(fed_libstate_t *l)
 		
 	} else {
 		tmp->node_count = 0;
+		tmp->node_max = 0;
 		tmp->node_list = NULL;
+		tmp->hash_max = 0;
 		tmp->hash_table = NULL;
 		tmp->key_index = 1;
 	}
