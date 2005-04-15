@@ -35,6 +35,7 @@ source ./globals
 set test_id       "10.3"
 set exit_code     0
 set matches       0
+set too_small     0
 
 print_header $test_id
 
@@ -45,6 +46,10 @@ print_header $test_id
  
 spawn $smap -Ds
 expect {
+	-re "Screen is too small" {
+		set too_small 1
+		exp_continue
+	}
 	-re "ID" {
 		incr matches
 		exp_continue
@@ -80,6 +85,10 @@ expect {
       	}
 }
 
+if {$too_small != 0} {
+	send_user "\nWARNING: screen is too small for test\n"
+	exit 0
+}
 if {$matches != 6} {
 	send_user "\nFAILURE: smap slurm partition display in curses mode\n"
 	set exit_code 1

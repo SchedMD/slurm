@@ -35,6 +35,7 @@ source ./globals
 set test_id       "10.6"
 set exit_code     0
 set matches       0
+set non_bgl       0
 
 print_header $test_id
 
@@ -46,11 +47,9 @@ print_header $test_id
 spawn $smap -Db -c
 expect {
 	-re "BGL SYSTEM" {
-		send_user "\nERROR: Must be on a BGL SYSTEM to run this command\n"	
-		set matches 8
-		set exit_code 1
-		
-	}	
+		set non_bgl 1
+		exp_continue
+	}
 	-re "PARTITION" {
 		incr matches
 		exp_continue
@@ -93,6 +92,10 @@ expect {
       	}
 }
 
+if {$non_bgl != 0} {
+	send_user "\nWARNING: Must be on a BGL SYSTEM to run this command\n"
+	exit 0
+}
 if {$matches != 8} {
 	send_user "\nFAILURE: smap bgl partition display in commandline mode\n"
 	set exit_code 1

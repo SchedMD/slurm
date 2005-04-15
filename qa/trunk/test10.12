@@ -34,6 +34,7 @@ source ./globals
 set test_id     "10.12"
 set exit_code   0
 set check       0
+set non_bgl     0
 
 print_header $test_id
 
@@ -44,11 +45,12 @@ print_header $test_id
 spawn $smap --resolve 000
 expect {
 	-re "must be on BGL SN to resolve." {
-		send_user "\nERROR: This test is only valid on a Blue Gene system Service Node\n"
-	    	exit 0
+		set non_bgl 1
+		exp_continue;
 	}
 	-re "resolves" {
 		set check 1
+		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: smap not responding\n"
@@ -59,8 +61,13 @@ expect {
 		wait
 	}
 }
+if {$non_bgl != 0} {
+	send_user "\nWARNING: This test is only valid on a Blue Gene system Service Node\n"
+	exit 0
+}
 if {$check != 1} {
-	send_user "\nFAILURE: smap resolve failed for XYZ to Rack Midplane.\n"		
+	send_user "\nFAILURE: smap resolve failed for XYZ to Rack Midplane.\n"
+	set exit_code 1
 }
 
 set check 0

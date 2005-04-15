@@ -35,7 +35,9 @@ source ./globals
 set test_id       "10.9"
 set exit_code     0
 set matches       0
-set stuff ""
+set stuff         ""
+set too_small     0
+
 print_header $test_id
 
 #
@@ -45,8 +47,12 @@ print_header $test_id
  
 spawn $smap -i 1
 expect {
+	-re "Screen is too small" {
+		set too_small 1
+		exp_continue
+	}
 	-re "JOBID" {
-	set stuff [concat $stuff "2"]
+		set stuff [concat $stuff "2"]
 		incr matches
 		if { $matches > 2 } {
 			send "q"
@@ -62,7 +68,10 @@ expect {
 		wait
       	}
 }
-
+if {$too_small != 0} {
+	send_user "\nWARNING: Screen too small to run test\n"
+	exit 0
+}
 if {$matches <= 2} {
 	send_user "\nFAILURE: smap --iterate failed\n"
 	set exit_code 1

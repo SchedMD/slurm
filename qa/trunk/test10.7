@@ -35,7 +35,9 @@ source ./globals
 set test_id       "10.7"
 set exit_code     0
 set matches       0
-set stuff ""
+set stuff         ""
+set too_small     0
+
 print_header $test_id
 
 #
@@ -45,48 +47,52 @@ print_header $test_id
  
 spawn $smap -Dj
 expect {
+	-re "Screen is too small" {
+		set too_small 1
+		exp_continue
+	}
 	-re "ID J" {
-	set stuff [concat $stuff "1"]
+		set stuff [concat $stuff "1"]
 		incr matches
 		exp_continue
 	}
 	-re "OBID" {
-	set stuff [concat $stuff "2"]
+		set stuff [concat $stuff "2"]
 		incr matches
 		exp_continue
 	}
 	-re "PARTITION" {
-	set stuff [concat $stuff "3"]
+		set stuff [concat $stuff "3"]
 		incr matches
 		exp_continue
 	}
 	-re "USER" {
-	set stuff [concat $stuff "5"]
+		set stuff [concat $stuff "5"]
 		incr matches
 		exp_continue
 	}
 	-re "NAME" {
-	set stuff [concat $stuff "6"]
+		set stuff [concat $stuff "6"]
 		incr matches
 		exp_continue
 	}
 	-re "ST " {
-	set stuff [concat $stuff "7"]
+		set stuff [concat $stuff "7"]
 		incr matches
 		exp_continue
 	}
 	-re "TIME" {
-	set stuff [concat $stuff "8"]
+		set stuff [concat $stuff "8"]
 		incr matches
 		exp_continue
 	}
 	-re "NODES" {
-	set stuff [concat $stuff "9"]
+		set stuff [concat $stuff "9"]
 		incr matches
 		exp_continue
 	}
 	-re "NODELIST" {
-	set stuff [concat $stuff "10"]
+		set stuff [concat $stuff "10"]
 		incr matches
 		send "q"
 		exp_continue	        
@@ -100,7 +106,10 @@ expect {
 		wait
       	}
 }
-
+if {$too_small != 0} {
+	send_user "\nWARNING: Screen is too small for test\n"
+	exit 0
+}
 if {$matches != 9} {
 	#send_user $matches ."\n"
 	send_user $stuff
