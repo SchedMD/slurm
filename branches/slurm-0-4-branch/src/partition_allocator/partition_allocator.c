@@ -1103,7 +1103,7 @@ extern int set_bp_map(void)
 	pa_bp_map_t *bp_map = NULL;
 	int bp_num, i;
 	char *bp_id = NULL;
-	rm_location_t bp_loc = NULL;
+	rm_location_t bp_loc;
 
 	bp_map_list = list_create(_bp_map_list_del);
 
