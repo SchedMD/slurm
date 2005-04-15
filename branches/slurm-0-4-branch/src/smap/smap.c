@@ -113,6 +113,7 @@ int main(int argc, char *argv[])
 #else
 		printf("must be on BGL SN to resolve.\n");
 #endif
+		pa_fini();
 		exit(0);
 	}
 	if(!params.commandline) {
@@ -133,6 +134,7 @@ int main(int argc, char *argv[])
 			endwin();
 			error("Screen is too small make sure the screen is at least %dx%d\n"
 			      "Right now it is %dx%d\n", 75 + width, height, COLS, LINES);
+			pa_fini();
 			exit(0);
 		}
 		
@@ -198,6 +200,13 @@ int main(int argc, char *argv[])
 			break;
 		case BGLPART:
 			get_bgl_part();
+			break;
+#else
+		default:
+			error("must be on a BGL SYSTEM to run this commands");
+			endwin();
+			pa_fini();
+			exit(0);
 			break;
 #endif
 		}
@@ -322,6 +331,7 @@ static int _get_option()
 	case 'q':
 	case '\n':
 		endwin();
+		pa_fini();
 		exit(0);
 		break;
 	}
@@ -353,6 +363,7 @@ static void *_resize_handler(int sig)
 		endwin();
 		error("Screen is too small make sure the screen is at least %dx%d\n"
 		      "Right now it is %dx%d\n", 75 + width, height, COLS, LINES);
+		pa_fini();
 		exit(0);
 	}
         

@@ -710,6 +710,7 @@ void get_command(void)
 	if(params.commandline) {
 		printf("Configure won't work with commandline mode.\n");
 		printf("Please remove the -c from the commandline.\n");
+		pa_fini();
 		exit(0);
 	}
 	allocated_partitions = list_create(NULL);

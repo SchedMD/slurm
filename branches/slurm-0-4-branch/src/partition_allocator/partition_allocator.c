@@ -49,9 +49,9 @@ bool _initialized = false;
 
 /* _pa_system is the "current" system that the structures will work
  *  on */
-pa_system_t *pa_system_ptr;
-List path;
-List best_path;
+pa_system_t *pa_system_ptr = NULL;
+List path = NULL;
+List best_path = NULL;
 int best_count;
 int color_count = 0;
 char letters[36];
@@ -404,10 +404,10 @@ extern void print_pa_request(pa_request_t* pa_request)
  */
 extern void pa_init(node_info_msg_t *node_info_ptr)
 {
-	node_info_t *node_ptr;
+	node_info_t *node_ptr = NULL;
 	int i;
 	int start, temp;
-	char *numeric;
+	char *numeric = NULL;
 #ifdef HAVE_BGL_FILES
 	rm_BGL_t *bgl = NULL;
 	rm_size3D_t bp_size;
@@ -533,7 +533,7 @@ extern void pa_fini()
 		list_destroy(path);
 	if (best_path)
 		list_destroy(best_path);
-#ifdef HAVE_BGL
+#ifdef HAVE_BGL_FILES
 	if (bp_map_list)
 		list_destroy(bp_map_list);
 #endif
@@ -603,7 +603,7 @@ extern int _reset_the_path(pa_switch_t *curr_switch, int source, int target, int
 {
 	int *node_tar;
 	int port_tar;
-	pa_switch_t *next_switch; 
+	pa_switch_t *next_switch = NULL; 
 	/*set the switch to not be used */
 	curr_switch->int_wire[source].used = 0;
 	port_tar = curr_switch->int_wire[source].port_tar;
@@ -637,8 +637,8 @@ extern int _reset_the_path(pa_switch_t *curr_switch, int source, int target, int
 extern int remove_part(List nodes, int new_count)
 {
 	int dim;
-	pa_node_t* pa_node;
-	pa_switch_t *curr_switch; 
+	pa_node_t* pa_node = NULL;
+	pa_switch_t *curr_switch = NULL; 
 		
 	while((pa_node = (pa_node_t*) list_pop(nodes)) != NULL) {
 		pa_node->used = false;
@@ -840,10 +840,13 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 
 extern int *find_bp_loc(char* bp_id)
 {
-#ifdef HAVE_BGL
-	pa_bp_map_t *bp_map;
+#ifdef HAVE_BGL_FILES
+	pa_bp_map_t *bp_map = NULL;
 	ListIterator itr;
 	
+	if(!bp_map_list)
+		set_bp_map();
+		
 	itr = list_iterator_create(bp_map_list);
 	while ((bp_map = list_next(itr)) != NULL)
 		if (!strcmp(bp_map->bp_id, bp_id)) 
@@ -854,6 +857,7 @@ extern int *find_bp_loc(char* bp_id)
 		return bp_map->coord;
 	else
 		return NULL;
+
 #else
 	return NULL;
 #endif
@@ -861,8 +865,8 @@ extern int *find_bp_loc(char* bp_id)
 
 extern char *find_bp_rack_mid(char* xyz)
 {
-#ifdef HAVE_BGL
-	pa_bp_map_t *bp_map;
+#ifdef HAVE_BGL_FILES
+	pa_bp_map_t *bp_map = NULL;
 	ListIterator itr;
 	int number;
 	int coord[PA_SYSTEM_DIMENSIONS];
@@ -871,18 +875,22 @@ extern char *find_bp_rack_mid(char* xyz)
 	coord[X] = number / 100;
 	coord[Y] = (number % 100) / 10;
 	coord[Z] = (number % 10);
+	if(!bp_map_list)
+		set_bp_map();
+	
 	itr = list_iterator_create(bp_map_list);
 	while ((bp_map = list_next(itr)) != NULL)
 		if (bp_map->coord[X] == coord[X] &&
 		    bp_map->coord[Y] == coord[Y] &&
 		    bp_map->coord[Z] == coord[Z]) 
 			break;	/* we found it */
-		
+	
 	list_iterator_destroy(itr);
 	if(bp_map != NULL)
 		return bp_map->bp_id;
 	else
 		return NULL;
+
 #else
 	return NULL;
 #endif
@@ -971,8 +979,8 @@ static int _check_for_options(pa_request_t* pa_request)
 static int _append_geo(int *geometry, List geos, int rotate) 
 {
 	ListIterator itr;
-	int *geo_ptr;
-	int *geo;
+	int *geo_ptr = NULL;
+	int *geo = NULL;
 	int temp_geo;
 	int i, j;
 	geo = xmalloc(sizeof(int)*3);
@@ -1017,11 +1025,11 @@ static int _create_config_even(pa_node_t *grid)
 #endif
 {
 	int x;
-	pa_node_t *source, *target_1;
+	pa_node_t *source = NULL, *target_1 = NULL;
 
 #ifdef HAVE_BGL
 	int y,z;
-	pa_node_t *target_2;
+	pa_node_t *target_2 = NULL;
 	for(x=0;x<DIM_SIZE[X];x++) {
 		for(y=0;y<DIM_SIZE[Y];y++) {
 			for(z=0;z<DIM_SIZE[Z];z++) {
@@ -1091,11 +1099,11 @@ extern int set_bp_map(void)
 #ifdef HAVE_BGL_FILES
 	static rm_BGL_t *bgl = NULL;
 	int rc;
-	rm_BP_t *my_bp;
-	pa_bp_map_t *bp_map;
+	rm_BP_t *my_bp = NULL;
+	pa_bp_map_t *bp_map = NULL;
 	int bp_num, i;
-	char *bp_id;
-	rm_location_t bp_loc;
+	char *bp_id = NULL;
+	rm_location_t bp_loc = NULL;
 
 	bp_map_list = list_create(_bp_map_list_del);
 
@@ -1231,16 +1239,19 @@ static void _delete_pa_system(void)
 		return;
 	}
 	
+	if(pa_system_ptr->grid) {
 #ifdef HAVE_BGL
-	for (x=0; x<DIM_SIZE[X]; x++) {
-		for (y=0; y<DIM_SIZE[Y]; y++)
-			xfree(pa_system_ptr->grid[x][y]);
-		
-		xfree(pa_system_ptr->grid[x]);
-	}
+		for (x=0; x<DIM_SIZE[X]; x++) {
+			for (y=0; y<DIM_SIZE[Y]; y++)
+				xfree(pa_system_ptr->grid[x][y]);
+			
+			xfree(pa_system_ptr->grid[x]);
+		}
 #endif
-	
-	xfree(pa_system_ptr->grid);
+		
+		
+		xfree(pa_system_ptr->grid);
+	}
 	xfree(pa_system_ptr);
 }
 
@@ -1258,7 +1269,7 @@ static int _find_match(pa_request_t *pa_request, List results)
 #else
 	int find[PA_SYSTEM_DIMENSIONS] = {0};
 #endif
-	pa_node_t* pa_node;
+	pa_node_t* pa_node = NULL;
 	int found_one=0;
 	char *name=NULL;
 
@@ -1421,7 +1432,7 @@ start_again:
 static bool _node_used(pa_node_t* pa_node, int *geometry)
 {
 	int i=0;
-	pa_switch_t* pa_switch;
+	pa_switch_t* pa_switch = NULL;
 	
 	/* if we've used this node in another partition already */
 	if (!pa_node || pa_node->used)
@@ -1444,7 +1455,7 @@ static bool _node_used(pa_node_t* pa_node, int *geometry)
 static void _switch_config(pa_node_t* source, pa_node_t* target, int dim, 
 		int port_src, int port_tar)
 {
-	pa_switch_t* config, *config_tar;
+	pa_switch_t* config = NULL, *config_tar = NULL;
 	int i;
 
 	if (!source || !target)
@@ -1526,8 +1537,8 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 {
 	pa_node_t* pa_node[size+1];
 	int count=0, i, set=0;
-	int *start;
-	int *end;
+	int *start = NULL;
+	int *end = NULL;
 	char *name = (char *) xmalloc(sizeof(char)*8);
 	ListIterator itr;
 
@@ -1578,11 +1589,11 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 static int _find_one_hop(pa_switch_t *curr_switch, int source_port, 
 		int *target, int *target2, int dim) 
 {
-	pa_switch_t *next_switch; 
+	pa_switch_t *next_switch = NULL; 
 	int port_tar;
 	int target_port=0;
 	int ports_to_try[2] = {3,5};
-	int *node_tar;
+	int *node_tar = NULL;
 	int i;
 
 	if(!source_port) {
@@ -1639,11 +1650,11 @@ static int _find_one_hop(pa_switch_t *curr_switch, int source_port,
 static int _find_best_path(pa_switch_t *start, int source_port, int *target, 
 		int *target2, int dim, int count) 
 {
-	pa_switch_t *next_switch; 
+	pa_switch_t *next_switch = NULL; 
 	pa_path_switch_t *path_add = 
 		(pa_path_switch_t *) xmalloc(sizeof(pa_path_switch_t));
-	pa_path_switch_t *path_switch;
-	pa_path_switch_t *temp_switch;
+	pa_path_switch_t *path_switch = NULL;
+	pa_path_switch_t *temp_switch = NULL;
 	int port_tar;
 	int target_port=0;
 	int ports_to_try[2] = {3,5};
@@ -1762,8 +1773,8 @@ static int _find_best_path(pa_switch_t *start, int source_port, int *target,
 static int _set_best_path(void)
 {
 	ListIterator itr;
-	pa_path_switch_t *path_switch;
-	pa_switch_t *curr_switch; 
+	pa_path_switch_t *path_switch = NULL;
+	pa_switch_t *curr_switch = NULL; 
 	
 	itr = list_iterator_create(best_path);
 	while((path_switch = (pa_path_switch_t*) list_next(itr))) {
@@ -1793,7 +1804,7 @@ static int _set_best_path(void)
 
 static int _configure_dims(int *coord, int *start, int *end, int conn_type)
 {
-	pa_switch_t *curr_switch; 
+	pa_switch_t *curr_switch = NULL; 
 	int dim;
 #ifdef HAVE_BGL
 	int target[PA_SYSTEM_DIMENSIONS] = {0,0,0};
@@ -1885,7 +1896,7 @@ static int _configure_dims(int *coord, int *start, int *end, int conn_type)
 static int _set_one_dim(int *start, int *end, int *coord)
 {
 	int dim;
-	pa_switch_t *curr_switch; 
+	pa_switch_t *curr_switch = NULL; 
 	
 	for(dim=0;dim<PA_SYSTEM_DIMENSIONS;dim++) {
 		if(start[dim]==end[dim]) {
@@ -1914,7 +1925,7 @@ static int _set_one_dim(int *start, int *end, int *coord)
 int main(int argc, char** argv)
 {
 	pa_request_t *request = (pa_request_t*) xmalloc(sizeof(pa_request_t)); 
-	int *loc;
+	int *loc = NULL;
 	List results;
 //	List results2;
 //	int i,j;
