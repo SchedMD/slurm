@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
 			break;
 #else
 		default:
-			error("must be on a BGL SYSTEM to run this commands");
+			error("must be on a BGL SYSTEM to run this command");
 			endwin();
 			pa_fini();
 			exit(0);
