@@ -55,11 +55,6 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "BGL_BLOCK" {
-	set stuff [concat $stuff "4"]
-		incr matches
-		exp_continue
-	}
 	-re "USER" {
 	set stuff [concat $stuff "5"]
 		incr matches
@@ -100,7 +95,7 @@ expect {
       	}
 }
 
-if {$matches != 9} {
+if {$matches != 8} {
 	#send_user $matches ."\n"
 	send_user $stuff
 	send_user "\nFAILURE: smap job display in commandline mode.\n"

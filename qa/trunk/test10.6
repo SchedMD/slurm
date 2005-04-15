@@ -45,6 +45,12 @@ print_header $test_id
  
 spawn $smap -Db -c
 expect {
+	-re "BGL SYSTEM" {
+		send_user "\nERROR: Must be on a BGL SYSTEM to run this command\n"	
+		set matches 8
+		set exit_code 1
+		
+	}	
 	-re "PARTITION" {
 		incr matches
 		exp_continue

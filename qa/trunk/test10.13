@@ -47,6 +47,12 @@ print_header $test_id
  
 spawn $smap -Dc
 expect {
+	-re "BGL SYSTEM" {
+		set created 1
+		send_user "\nERROR: Must be on a BGL SYSTEM to run this command\n"
+		set exit_code 1
+		exp_continue	
+	}	
 	-re "both" {
 		set created 1
 		exp_continue
@@ -65,6 +71,7 @@ expect {
 	
 	timeout {
 		send_user "\nFAILURE: smap not responding\n"
+		created = 1;
 		set exit_code 1
 	}
 	eof {
@@ -131,8 +138,8 @@ if { $exit_code != 1 } {
 		send_user "\nFAILURE: smap bluegene.conf file was created but corrupt\n"
 		set exit_code 1
 	}
+	exec rm -f $file
 }
-exec rm -f $file
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 }
