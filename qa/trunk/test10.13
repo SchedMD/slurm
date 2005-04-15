@@ -132,7 +132,7 @@ if { $exit_code != 1 } {
 		set exit_code 1
 	}
 }
-
+exec rm -f $file
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 }
