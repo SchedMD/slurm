@@ -63,6 +63,9 @@
 #define FED_DEBUG 0
 
 #define ZERO 48
+#define BUFSIZE 4096
+
+char* fed_conf = FEDERATION_CONFIG_FILE;
 
 /*
  * Data structures specific to Federation 
@@ -160,6 +163,10 @@ static fed_status_t fed_status_tab[]= {
 	{13, "NTBL_BUSY_STATE"},
 	{FED_STATUS_UNKNOWN, "UNKNOWN_RESULT_CODE"}
 };
+
+static void _strip_13_10(char *line);
+static int _set_up_adapter(fed_adapter_t fed_adapter, char *adapter_name);
+static int _parse_fed_spec(char *in_line, fed_adapter_t *list, int *count);
 
 /* The _lock() and _unlock() functions are used to lock/unlock a 
  * global mutex.  Used to serialize access to the global library 
@@ -298,6 +305,185 @@ _get_adapter_from_lid(int lid)
 	return NULL;
 }
 
+/* Explicitly strip out  new-line and carriage-return */
+static void _strip_13_10(char *line)
+{
+	int len = strlen(line);
+	int i;
+
+	for(i=0;i<len;i++) {
+		if(line[i]==13 || line[i]==10) {
+			line[i] = '\0';
+			return;
+		}
+	}
+}
+
+static int _set_up_adapter(fed_adapter_t fed_adapter, char *adapter_name)
+{
+	ADAPTER_RESOURCES res;
+	struct NTBL_STATUS *status = NULL;
+	struct NTBL_STATUS *old = NULL;
+	fed_window_t *tmp_winlist = NULL;
+	int win_count = 0, i;
+	int error_code;
+
+	info("adapter_name is %s", adapter_name);
+	
+	error_code = ntbl_adapter_resources(NTBL_VERSION, 
+					    adapter_name, 
+					    &res);
+	if(error_code != NTBL_SUCCESS) 
+		return SLURM_ERROR;
+	strncpy(fed_adapter.name, 
+		adapter_name, 
+		FED_ADAPTERLEN);
+	fed_adapter.lid = res.lid;
+	fed_adapter.network_id = res.network_id;
+	/* FUTURE:  check that we don't lose information when converting
+	 * from 64 to 32 bit unsigned ints in the next three assignments.
+	 */
+	fed_adapter.max_winmem = res.max_window_memory;
+	fed_adapter.min_winmem = res.min_window_memory;
+	fed_adapter.avail_mem = res.avail_adapter_memory;
+	fed_adapter.window_count = res.window_count;
+	free(res.window_list);
+	_cache_lid(&fed_adapter);
+	error_code = ntbl_status_adapter(NTBL_VERSION, 
+					 adapter_name, 
+					 &win_count, 
+					 &status);
+	if(error_code)
+		slurm_seterrno_ret(ESTATUS);
+	tmp_winlist = (fed_window_t *)malloc(sizeof(fed_window_t) * 
+					     res.window_count);
+	if(!tmp_winlist)
+		slurm_seterrno_ret(ENOMEM);
+	for(i = 0; i < res.window_count; i++) {
+		tmp_winlist[i].id = status->window_id;
+		tmp_winlist[i].status = status->rc;
+		old = status;
+		status = status->next;
+		free(old);
+	}
+	fed_adapter.window_list = tmp_winlist;
+	return SLURM_SUCCESS;
+}
+
+/*
+ *
+ * _parse_fed_spec - parse the partition specification, build table and 
+ *	set values
+ * IN/OUT in_line - line from the configuration file, parsed keywords 
+ *	and values replaced by blanks
+ * RET 0 if no error, error code otherwise
+ * Note: Operates on common variables
+ * global: part_list - global partition list pointer
+ *	default_part - default parameters for a partition
+ */
+static int _parse_fed_spec(char *in_line, fed_adapter_t *list, int *count)
+{
+	int i = 0, j = 0, start = -1, line = -1, first = 0, last = 0, start_name = 0;
+	int error_code = SLURM_SUCCESS;
+	char *adapter_name = NULL;
+	static int adapter_count = 0;
+	fed_adapter_t *fed_adapter = NULL;
+	char temp_name[FED_ADAPTERLEN] = {0};
+	
+	//info("in_line = %s",in_line);
+	error_code = slurm_parser(in_line,
+				  "AdapterName=", 's', &adapter_name,
+				  "END");
+	if (error_code)
+		return -1;
+	
+	if(adapter_name) {
+		i=0;
+		while (adapter_name[i] != '\0') {
+			if (adapter_name[i] == '[') {
+				memset(temp_name, 0, FED_ADAPTERLEN);
+				memcpy(temp_name, adapter_name, i);
+				start_name = i;
+				start = i+1;
+			} else if (adapter_name[i] == '-') {
+				line = i+1;
+			} else if (adapter_name[i] == ',') {
+				if(start==-1) {
+					error("format not correct please format name[]");
+					return SLURM_ERROR;
+				} else if (line == -1) {
+					memcpy(temp_name+start_name, adapter_name+start, (i-start));
+					if(_set_up_adapter(list[adapter_count], temp_name) 
+					   == SLURM_ERROR) {
+						error("_parse_fed_spec: "
+						      "There was an error setting up adapter. 0");
+					} else {
+						adapter_count++;
+					}
+					memset(temp_name+start_name, 0, (FED_ADAPTERLEN-start_name));
+					
+				} else if (line != -1) {
+					first = atoi(&adapter_name[start]);
+					last = atoi(&adapter_name[line]);
+					for(j = first; j <= last; j++) {
+						sprintf(&temp_name[start_name], "%d", j);
+						if(_set_up_adapter(list[adapter_count], temp_name)
+						   == SLURM_ERROR) {
+							error("_parse_fed_spec: "
+							      "There was an error setting up adapter. 1");
+						} else {
+							adapter_count++;
+						}
+						memset(temp_name+start_name, 0, (FED_ADAPTERLEN-start_name));
+					}
+				}
+				line = -1;
+				start = i+1;
+			} else if (adapter_name[i] == ']') {
+				break;
+			}
+			i++;
+		}
+		
+		if(start==-1) {
+			if(_set_up_adapter(list[adapter_count], adapter_name)
+			   == SLURM_ERROR) {
+				error("_parse_fed_spec: "
+				      "There was an error setting up adapter. 2");
+			} else {
+				adapter_count++;
+			}
+		} else if (line == -1) {
+			memcpy(&temp_name[start_name], &adapter_name[start], (i-start));
+			if(_set_up_adapter(list[adapter_count], temp_name)
+			   == SLURM_ERROR) {
+				error("_parse_fed_spec: "
+				      "There was an error setting up adapter. 3");
+			} else {
+				adapter_count++;
+			}
+			memset(&temp_name[start_name], 0, (FED_ADAPTERLEN-start_name));
+					
+		} else if (line != -1) {
+			first = atoi(&adapter_name[start]);
+			last = atoi(&adapter_name[line]);
+			for(j = first; j <= last; j++) {
+				sprintf(&temp_name[start_name], "%d", j);
+				if(_set_up_adapter(list[adapter_count], temp_name)
+				   == SLURM_ERROR) {
+					error("_parse_fed_spec: "
+					      "There was an error setting up adapter. 4");
+				} else {
+					adapter_count++;
+				}
+				memset(&temp_name[start_name], 0, (FED_ADAPTERLEN-start_name));
+			}
+		}
+	}
+	*count = adapter_count;
+	return adapter_count;
+}
+
 /* Check for existence of sniX, where X is from 0 to FED_MAXADAPTERS.
  * For all that exist, record vital adapter info plus status for all windows
  * available on that adapter.  Cache lid to adapter name mapping locally.
@@ -316,48 +502,100 @@ _get_adapters(fed_adapter_t *list, int *count)
 	int adapter_count;
 	int win_count;
 	int i, j;
+	FILE *fed_spec_file;	/* pointer to input data file */
+	int line_num;		/* line number in input file */
+	char in_line[BUFSIZE];	/* input line */
 	
+	debug("Reading the federation.conf file");
+	if (!fed_conf)
+		fatal("federation.conf file not defined");
+	fed_spec_file = fopen(fed_conf, "r");
+	if (fed_spec_file == NULL)
+		fatal("_get_adapters error opening file %s, %m",
+		      fed_conf);
+	line_num = 0;
 	adapter_count = 0;
-	for(i = 0; i < FED_MAXADAPTERS; i++) {
-		name[3] = i + ZERO;
-		err = ntbl_adapter_resources(NTBL_VERSION, name, &res);
-		if(err != NTBL_SUCCESS) 
-			continue;
-		strncpy(list[adapter_count].name, name, FED_ADAPTERLEN);
-		list[adapter_count].lid = res.lid;
-		list[adapter_count].network_id = res.network_id;
-		/* FUTURE:  check that we don't lose information when converting
-		 * from 64 to 32 bit unsigned ints in the next three assignments.
-		 */
-		list[adapter_count].max_winmem = res.max_window_memory;
-		list[adapter_count].min_winmem = res.min_window_memory;
-		list[adapter_count].avail_mem = res.avail_adapter_memory;
-		list[adapter_count].window_count = res.window_count;
-		free(res.window_list);
-		_cache_lid(&list[adapter_count]);
-		err = ntbl_status_adapter(NTBL_VERSION, name, 
-				&win_count, &status);
-		if(err)
-			slurm_seterrno_ret(ESTATUS);
-		tmp_winlist = (fed_window_t *)malloc(sizeof(fed_window_t) * 
-			res.window_count);
-		if(!tmp_winlist)
-			slurm_seterrno_ret(ENOMEM);
-		for(j = 0; j < res.window_count; j++) {
-			tmp_winlist[j].id = status->window_id;
-			tmp_winlist[j].status = status->rc;
-			old = status;
-			status = status->next;
-			free(old);
+	while (fgets(in_line, BUFSIZE, fed_spec_file) != NULL) {
+		line_num++;
+		_strip_13_10(in_line);
+		if (strlen(in_line) >= (BUFSIZE - 1)) {
+			error("_get_adapters line %d, of input file %s "
+			      "too long", line_num, fed_conf);
+			fclose(fed_spec_file);
+			return E2BIG;
 		}
-		list[adapter_count].window_list = tmp_winlist;
-		adapter_count++;
+
+		/* everything after a non-escaped "#" is a comment */
+		/* replace comment flag "#" with an end of string (NULL) */
+		/* escape sequence "\#" translated to "#" */
+		for (i = 0; i < BUFSIZE; i++) {
+			if (in_line[i] == (char) NULL)
+				break;
+			if (in_line[i] != '#')
+				continue;
+			if ((i > 0) && (in_line[i - 1] == '\\')) {
+				for (j = i; j < BUFSIZE; j++) {
+					in_line[j - 1] = in_line[j];
+				}
+				continue;
+			}
+			in_line[i] = (char) NULL;
+			break;
+		}
+		
+		/* parse what is left, non-comments */
+		/* partition configuration parameters */
+		if((err = _parse_fed_spec(in_line, list, count)) 
+		   == SLURM_ERROR) {
+			error("There was an error code from _parse_fed_spec");
+		}
+		
+		/* report any leftover strings on input line */
+		report_leftover(in_line, line_num);
 	}
+	fclose(fed_spec_file);
+	debug("Number of adapters is = %d",*count);
 
-	if(!adapter_count)
+/* 	adapter_count = 0; */
+/* 	for(i = 0; i < FED_MAXADAPTERS; i++) { */
+/* 		name[3] = i + ZERO; */
+/* 		err = ntbl_adapter_resources(NTBL_VERSION, name, &res); */
+/* 		if(err != NTBL_SUCCESS)  */
+/* 			continue; */
+/* 		strncpy(list[adapter_count].name, name, FED_ADAPTERLEN); */
+/* 		list[adapter_count].lid = res.lid; */
+/* 		list[adapter_count].network_id = res.network_id; */
+/* 		/\* FUTURE:  check that we don't lose information when converting */
+/* 		 * from 64 to 32 bit unsigned ints in the next three assignments. */
+/* 		 *\/ */
+/* 		list[adapter_count].max_winmem = res.max_window_memory; */
+/* 		list[adapter_count].min_winmem = res.min_window_memory; */
+/* 		list[adapter_count].avail_mem = res.avail_adapter_memory; */
+/* 		list[adapter_count].window_count = res.window_count; */
+/* 		free(res.window_list); */
+/* 		_cache_lid(&list[adapter_count]); */
+/* 		err = ntbl_status_adapter(NTBL_VERSION, name,  */
+/* 				&win_count, &status); */
+/* 		if(err) */
+/* 			slurm_seterrno_ret(ESTATUS); */
+/* 		tmp_winlist = (fed_window_t *)malloc(sizeof(fed_window_t) *  */
+/* 			res.window_count); */
+/* 		if(!tmp_winlist) */
+/* 			slurm_seterrno_ret(ENOMEM); */
+/* 		for(j = 0; j < res.window_count; j++) { */
+/* 			tmp_winlist[j].id = status->window_id; */
+/* 			tmp_winlist[j].status = status->rc; */
+/* 			old = status; */
+/* 			status = status->next; */
+/* 			free(old); */
+/* 		} */
+/* 		list[adapter_count].window_list = tmp_winlist; */
+/* 		adapter_count++; */
+/* 	} */
+
+	if(!*count)
 		slurm_seterrno_ret(ENOADAPTER);
-	*count = adapter_count;
-
+	
 	return 0;		
 }
 
@@ -1089,6 +1327,7 @@ _setup_table_entry(NTBL *table_entry, char *lid_index, char *host, int id)
 	table_entry->lid = _get_lid(n, n->next_adapter);
 	table_entry->window_id = 
 		n->adapter_list[n->next_adapter].window_list[n->next_window].id;
+
 	strncpy(lid_index, n->adapter_list[n->next_adapter].name,
 		FED_ADAPTERLEN);
 		

@@ -145,6 +145,7 @@ DESTDIR="$RPM_BUILD_ROOT" make install
 install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/init.d/slurm
 install -D -m644 etc/slurm.conf.example $RPM_BUILD_ROOT/etc/slurm/slurm.conf
 install -D -m644 etc/bluegene.conf.example $RPM_BUILD_ROOT/etc/slurm/bluegene.conf
+install -D -m644 etc/federation.conf.example $RPM_BUILD_ROOT/etc/slurm/federation.conf.example
 # Delete unpackaged files:
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
 
