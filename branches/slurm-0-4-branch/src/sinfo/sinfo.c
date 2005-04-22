@@ -181,7 +181,7 @@ static int _bgl_report(void)
 	}
 
 	if (!params.no_header)
-		printf("BGLBLOCK         NODES        OWNER    STATE    CONNECTION USE\n");
+		printf("BGL_BLOCK        NODES        OWNER    STATE    CONNECTION USE\n");
 /*                      1234567890123456 123456789012 12345678 12345678 1234567890 12345+ */
 /*                      RMP_22Apr1544018 bgl[123x456] name     READY    TORUS      COPROCESSOR */
 
