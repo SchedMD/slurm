@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  sinfo.c - Report overall state the system
  *
- * $Id$
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -181,12 +181,12 @@ static int _bgl_report(void)
 	}
 
 	if (!params.no_header)
-		printf("BGLBLOCK NODES        OWNER    STATE    CONNECTION USE\n");
-/*                      12345678 123456789012 12345678 12345678 1234567890 12345+ */
-/*                      RMP123   bgl[123x456] name     READY    TORUS      COPROCESSOR */
+		printf("BGLBLOCK         NODES        OWNER    STATE    CONNECTION USE\n");
+/*                      1234567890123456 123456789012 12345678 12345678 1234567890 12345+ */
+/*                      RMP_22Apr1544018 bgl[123x456] name     READY    TORUS      COPROCESSOR */
 
 	for (i=0; i<new_bgl_ptr->record_count; i++) {
-		printf("%-8.8s %-12.12s %-8.8s %-8.8s %-10.10s %s\n",
+		printf("%-16.16s %-12.12s %-8.8s %-8.8s %-10.10s %s\n",
 			new_bgl_ptr->bgl_info_array[i].bgl_part_id,
 			new_bgl_ptr->bgl_info_array[i].nodes,
 			new_bgl_ptr->bgl_info_array[i].owner_name,

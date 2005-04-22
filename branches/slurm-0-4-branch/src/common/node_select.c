@@ -657,7 +657,7 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 		break;
 	case SELECT_PRINT_DATA:
 		snprintf(buf, size, 
-			 "%7.7s %6.6s %8.8s    %ux%ux%u %7s",
+			 "%7.7s %6.6s %8.8s    %ux%ux%u %16s",
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _job_rotate_string(jobinfo->rotate),
 			 _job_node_use_string(jobinfo->node_use),
