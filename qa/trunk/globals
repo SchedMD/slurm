@@ -355,28 +355,7 @@ proc wait_for_job { job_id state } {
 ################################################################
 
 proc test_front_end { } {
-	if [file exists "/usr/bglbridge.a"] {
-		return 1
-	}
-	if  [file exists "/usr/lib/bglbridge.a"] {
-		return 1
-	}
-	if  [file exists "/usr/local/bglbridge.a"] {
-		return 1
-	}
-	if  [file exists "/usr/local/lib/bglbridge.a"] {
-		return 1
-	}
-	if  [file exists "/bgl/bglbridge.a"] {
-		return 1
-	}
-	if  [file exists "/bgl/lib/bglbridge.a"] {
-		return 1
-	}
-	if  [file exists "/bgl/bglsched/bglbridge.a"] {
-		return 1
-	}
-	if  [file exists "/bgl/bglsched/lib/bglbridge.a"] {
+	if [file exists "/bgl/BlueLight/ppcfloor/bglsys/bin/mpirun"] {
 		return 1
 	}
 
