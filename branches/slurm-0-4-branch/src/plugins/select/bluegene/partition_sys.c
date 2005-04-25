@@ -123,6 +123,11 @@ static void _pre_allocate(bgl_record_t *bgl_record)
 	if ((rc = rm_set_data(bgl_record->bgl_part, RM_PartitionUserName, 
 			USER_NAME)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionUserName)", bgl_err_str(rc));
+/* 	info("setting it here"); */
+/* 	bgl_record->bgl_part_id = "RMP101"; */
+/* 	if ((rc = rm_set_data(bgl_record->bgl_part, RM_PartitionID,  */
+/* 			&bgl_record->bgl_part_id)) != STATUS_OK) */
+/* 		error("rm_set_data(RM_PartitionID)", bgl_err_str(rc)); */
 }
 
 /** 
@@ -132,12 +137,14 @@ static int _post_allocate(bgl_record_t *bgl_record)
 {
 	int rc;
 	pm_partition_id_t part_id;
+	struct passwd *pw_ent = NULL;
 	/* Add partition record to the DB */
 	debug("adding partition\n");
 	
 	if ((rc = rm_add_partition(bgl_record->bgl_part)) != STATUS_OK) {
 		error("rm_add_partition(): %s", bgl_err_str(rc));
-		return(-1);
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 	debug("done adding\n");
 	
@@ -146,14 +153,43 @@ static int _post_allocate(bgl_record_t *bgl_record)
 			 != STATUS_OK) {
 		error("rm_get_data(RM_PartitionID): %s", bgl_err_str(rc));
 		bgl_record->bgl_part_id = xstrdup("UNKNOWN");
-	} else
+	} else {
 		bgl_record->bgl_part_id = xstrdup(part_id);
-	
+		
+		if ((rc = rm_set_part_owner(bgl_record->bgl_part_id, USER_NAME)) != STATUS_OK) {
+			error("rm_set_part_owner(%s,%s): %s", bgl_record->bgl_part_id, USER_NAME,
+			      bgl_err_str(rc));
+			rc = SLURM_ERROR;
+			goto cleanup;
+		}
+		info("Booting partition %s", bgl_record->bgl_part_id);
+		if ((rc = pm_create_partition(bgl_record->bgl_part_id)) != STATUS_OK) {
+			error("pm_create_partition(%s): %s",
+			      bgl_record->bgl_part_id, bgl_err_str(rc));
+			rc = SLURM_ERROR;
+			goto cleanup;
+		}
+				
+		/* reset state and owner right now, don't wait for 
+		 * update_partition_list() to run or epilog could 
+		 * get old/bad data. */
+		last_bgl_update = time(NULL);
+		bgl_record->state = RM_PARTITION_CONFIGURING;
+		bgl_record->owner_name = xstrdup(USER_NAME);
+		if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
+			error("getpwnam(%s): %m", bgl_record->owner_name);
+		} else {
+			bgl_record->owner_uid = pw_ent->pw_uid;
+		} 
+		debug("Setting bootflag for %s", bgl_record->bgl_part_id);
+		bgl_record->boot_state = 1;
+		bgl_record->boot_count = 0;
+	}
+cleanup:
 	/* We are done with the partition */
 	if ((rc = rm_free_partition(bgl_record->bgl_part)) != STATUS_OK)
-		error("rm_free_partition(): %s", bgl_err_str(rc));
-
-	return 0;
+		error("rm_free_partition(): %s", bgl_err_str(rc));	
+	return rc;
 }
 
 
@@ -177,16 +213,17 @@ int read_bgl_partitions()
 	int rc = SLURM_SUCCESS;
 
 	int bp_cnt, i;
-	rm_element_t *bp_ptr;
+	rm_element_t *bp_ptr = NULL;
 	pm_partition_id_t part_id;
-	rm_partition_t *part_ptr;
-	char node_name_tmp[7], *owner_name;
-	bgl_record_t *bgl_record;
-
+	rm_partition_t *part_ptr = NULL;
+	char node_name_tmp[7], *owner_name = NULL;
+	bgl_record_t *bgl_record = NULL;
+	struct passwd *pw_ent = NULL;
+	
 	int *coord;
 	int part_number, part_count;
-	char *part_name;
-	rm_partition_list_t *part_list;
+	char *part_name = NULL;
+	rm_partition_list_t *part_list = NULL;
 	rm_partition_state_flag_t state = PARTITION_ALL_FLAG;
 	
 
@@ -316,13 +353,25 @@ int read_bgl_partitions()
 			      bgl_err_str(rc));
 		}
 			
-		if ((rc = rm_get_data(part_ptr, RM_PartitionUserName,
-					 &owner_name)) != STATUS_OK) {
-			error("rm_get_data(RM_PartitionUserName): %s",
+		if ((rc = rm_get_data(part_ptr, RM_PartitionUsersNum,
+					 &bp_cnt)) != STATUS_OK) {
+			error("rm_get_data(RM_PartitionUsersNum): %s",
 			      bgl_err_str(rc));
-		} else
-			bgl_record->owner_name = xstrdup(owner_name);
-		
+		} else {
+			if(bp_cnt==0) 
+				bgl_record->owner_name = xstrdup(USER_NAME);
+			
+			else {
+				rm_get_data(part_ptr, RM_PartitionFirstUser, &owner_name);
+				bgl_record->owner_name = xstrdup(owner_name);
+			}
+			if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
+				error("getpwnam(%s): %m", bgl_record->owner_name);				
+			} else {
+				bgl_record->owner_uid = pw_ent->pw_uid;
+			} 
+		}
+
 		if ((rc = rm_get_data(part_ptr, RM_PartitionState,
 					 &bgl_record->state)) != STATUS_OK) {
 			error("rm_get_data(RM_PartitionState): %s",
@@ -331,7 +380,7 @@ int read_bgl_partitions()
 			bgl_record->boot_state = 1;
 		else
 			bgl_record->boot_state = 0;
-		
+		info("Partition %s is in state %d",bgl_record->bgl_part_id, bgl_record->state);
 		if ((rc = rm_get_data(part_ptr, RM_PartitionBPNum,
 					 &bgl_record->bp_count))
 		    != STATUS_OK) {
@@ -379,7 +428,7 @@ static int _post_bgl_init_read(void *object, void *arg)
 		error("Unable to convert nodes %s to bitmap", 
 		      bgl_record->nodes);
 	}
-	print_bgl_record(bgl_record);
+	//print_bgl_record(bgl_record);
 
 	return SLURM_SUCCESS;
 }

@@ -51,7 +51,7 @@ char error_string[255];
 
 static void _delete_allocated_parts(List allocated_partitions)
 {
-	allocated_part_t *allocated_part;
+	allocated_part_t *allocated_part = NULL;
 	
 	while ((allocated_part = list_pop(allocated_partitions)) != NULL) {
 		remove_part(allocated_part->nodes,0);
@@ -66,8 +66,8 @@ static allocated_part_t *_make_request(pa_request_t *request)
 {
 	List results = list_create(NULL);
 	ListIterator results_i;		
-	allocated_part_t *allocated_part;
-	pa_node_t *current;
+	allocated_part_t *allocated_part = NULL;
+	pa_node_t *current = NULL;
 	
 	if (!allocate_part(request, results)){
 		memset(error_string,0,255);
@@ -98,7 +98,7 @@ static int _create_allocation(char *com, List allocated_partitions)
 	int i=6, i2=-1, i3=0;
 	int len = strlen(com);
 	
-	allocated_part_t *allocated_part;
+	allocated_part_t *allocated_part = NULL;
 	pa_request_t *request = (pa_request_t*) xmalloc(sizeof(pa_request_t)); 
 	
 	request->geometry[0] = -1;
@@ -209,8 +209,8 @@ static int _resolve(char *com)
 	int i=0;
 #ifdef HAVE_BGL_FILES
 	int len=strlen(com);
-	char *rack_mid;
-	int *coord;
+	char *rack_mid = NULL;
+	int *coord = NULL;
 #endif
 	
 	while(com[i-1] != ' ' && com[i] != '\0')
@@ -352,7 +352,7 @@ static int _down_bps(char *com)
 static int _remove_allocation(char *com, List allocated_partitions)
 {
 	ListIterator results_i;
-	allocated_part_t *allocated_part;
+	allocated_part_t *allocated_part = NULL;
 	int i=6, found=0;
 	int len = strlen(com);
 	char letter;
@@ -436,13 +436,13 @@ static int _copy_allocation(char *com, List allocated_partitions)
 	ListIterator results_i;
 	allocated_part_t *allocated_part = NULL;
 	allocated_part_t *temp_part = NULL;
-	pa_request_t *request; 
+	pa_request_t *request = NULL; 
 	
 	int i=0;
 	int len = strlen(com);
 	char letter = '\0';
 	int count = 1;
-	int *geo, *geo_ptr;
+	int *geo = NULL, *geo_ptr = NULL;
 			
 	while(com[i-1]!=' ' && i<=len) {
 		i++;
@@ -528,12 +528,12 @@ static int _save_allocation(char *com, List allocated_partitions)
 {
 	int len = strlen(com);
 	int i=5, j=0;
-	allocated_part_t *allocated_part;
+	allocated_part_t *allocated_part = NULL;
 	char filename[20];
 	char save_string[255];
-	FILE *file_ptr;
-	char *conn_type;
-	char *mode_type;
+	FILE *file_ptr = NULL;
+	char *conn_type = NULL;
+	char *mode_type = NULL;
 
 	ListIterator results_i;		
 	
@@ -701,7 +701,7 @@ void get_command(void)
 	char com[255];
 	//static node_info_msg_t *node_info_ptr;
 	int text_width, text_startx;
-	allocated_part_t *allocated_part;
+	allocated_part_t *allocated_part = NULL;
 	int i=0;
 	WINDOW *command_win;
 	List allocated_partitions;

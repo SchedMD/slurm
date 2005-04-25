@@ -64,6 +64,7 @@ typedef struct bgl_update {
 	enum update_op op;	/* start | terminate | sync */
 	uid_t uid;		/* new owner */
 	uint32_t job_id;	/* SLURM job id */	
+	uint16_t node_use;      /* SLURM job node_use */	
 	pm_partition_id_t bgl_part_id;
 } bgl_update_t;
 
@@ -73,15 +74,14 @@ static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int agent_cnt = 0;
 
 static void	_bgl_list_del(void *x);
-static int	_boot_part(pm_partition_id_t bgl_part_id, char *owner_name, uid_t owner_uid);
-static int	_excise_block(List block_list, pm_partition_id_t bgl_part_id, 
-				char *nodes);
+static int	_boot_part(bgl_record_t *bgl_record, rm_partition_mode_t node_use);
+static int	_excise_block(List block_list, pm_partition_id_t bgl_part_id, char *nodes);
 static List	_get_all_blocks(void);
 static char *	_get_part_owner(pm_partition_id_t bgl_part_id);
 static void *	_part_agent(void *args);
 static void	_part_op(bgl_update_t *bgl_update_ptr);
 static int	_remove_job(db_job_id_t job_id);
-static int	_set_part_owner(pm_partition_id_t bgl_part_id, char *user);
+//static int	_set_part_owner(pm_partition_id_t bgl_part_id, char *user);
 static void	_start_agent(bgl_update_t *bgl_update_ptr);
 static void	_sync_agent(bgl_update_t *bgl_update_ptr);
 static void	_term_agent(bgl_update_t *bgl_update_ptr);
@@ -102,7 +102,7 @@ static void _bgl_list_del(void *x)
 static int _remove_job(db_job_id_t job_id)
 {
 	int i, rc;
-	rm_job_t *job_rec;
+	rm_job_t *job_rec = NULL;
 	rm_job_state_t job_state;
 
 	debug("removing job %d from MMCS", job_id);
@@ -159,7 +159,7 @@ static int _remove_job(db_job_id_t job_id)
 			if(rc == INCOMPATIBLE_STATE)
 				debug("job %d is in an INCOMPATIBLE_STATE",job_id);
 			else
-				error("rm_remove_job(%d): %s", job_id, 
+				error("rm_cancel_job(%d): %s", job_id, 
 				      bgl_err_str(rc));
 		}
 	}
@@ -169,243 +169,54 @@ static int _remove_job(db_job_id_t job_id)
 	return INTERNAL_ERROR;
 }
 
-/* Get the owner of an existing partition. Caller must xfree() return value. */
-static char *_get_part_owner(pm_partition_id_t bgl_part_id)
-{
-	int rc, j, num_parts;
-	char *name, *owner = NULL, *cur_owner = NULL;
-	rm_partition_t *part_ptr;
-	rm_partition_list_t *part_list;
-	rm_partition_state_flag_t part_state = PARTITION_ALL_FLAG;
-	
-	if ((rc = rm_get_partitions_info(part_state, &part_list))
-			!= STATUS_OK) {
-		error("rm_get_partitions_info(): %s", bgl_err_str(rc));
-		return NULL;
-	}
-
-	if ((rc = rm_get_data(part_list, RM_PartListSize, &num_parts))
-			!= STATUS_OK) {
-		error("rm_get_data(RM_PartListSize): %s", bgl_err_str(rc));
-		num_parts = 0;
-	}
-
-	for (j=0; j<num_parts; j++) {
-		if (j) {
-			if ((rc = rm_get_data(part_list, RM_PartListNextPart, 
-					&part_ptr)) != STATUS_OK) {
-				error("rm_get_data(RM_PartListNextPart): %s",
-					bgl_err_str(rc));
-				break;
-			}
-		} else {
-			if ((rc = rm_get_data(part_list, RM_PartListFirstPart, 
-					 &part_ptr)) != STATUS_OK) {
-				error("rm_get_data(RM_PartListFirstPart: %s",
-					bgl_err_str(rc));
-				break;
-			}
-		}
-
-		if ((rc = rm_get_data(part_ptr, RM_PartitionID, &name))
-				!= STATUS_OK) {
-			error("rm_get_data(RM_PartitionID): %s", 
-				bgl_err_str(rc));
-			continue;
-		}
-		if (strcmp(bgl_part_id, name) != 0)
-			continue;
-
-		if ((rc = rm_get_data(part_ptr, RM_PartitionUserName, &owner))
-				!= STATUS_OK) {
-			error("rm_get_data(RM_PartitionUserName) errno=%s\n",
-				bgl_err_str(rc));
-			owner = NULL;
-		}
-		break;
-	}
-
-	if (owner)
-		cur_owner = xstrdup(owner);
-	if ((rc = rm_free_partition_list(part_list)) != STATUS_OK)
-		error("rm_free_partition_list(): %s", bgl_err_str(rc));
-	return cur_owner;
-}
-
-/* Set the owner of an existing partition */
-static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
-{
-	int rc;
-	rm_partition_t * part_ptr;
-	if (user && user[0])
-		info("Setting partition %s owner to %s", bgl_part_id, user);
-	else
-		info("Clearing partition %s owner", bgl_part_id);
-
-
-#ifdef USE_BGL_FILES
-
-/* Logic shown below is the type of code we want to use to change the 
- * owner of an existing bglblock - without rebooting it. Logic of this 
- * type should be available in driver 140. 3/24/2005.
- */
-
-	int err_ret = SLURM_SUCCESS;
-
-	/* set its owner */
-	if ((rc = rm_set_part_owner(bgl_part_id, user)) != STATUS_OK) {
-		error("rm_set_part_owner(%s,%s): %s", bgl_part_id, user,
-			bgl_err_str(rc));
-		return SLURM_ERROR;
-	}
-	
-	return err_ret;
-#else
-	int i = 0, j, num_parts;
-	rm_partition_list_t *part_list;
-	rm_partition_state_t state;
-	rm_partition_state_flag_t part_state = PARTITION_ALL_FLAG;
-	char *name;
-	int is_ready = 0, destroyed = 0;
-
-	/* Wait for partition state to be FREE */
-	for (i=0; i<MAX_POLL_RETRIES; i++) {
-		if (i > 0)
-			sleep(POLL_INTERVAL);
-
-		if ((rc = rm_get_partitions_info(part_state, &part_list))
-				!= STATUS_OK) {
-			error("rm_get_partitions(): %s", bgl_err_str(rc));
-			continue;
-		}
-
-		if ((rc = rm_get_data(part_list, RM_PartListSize, &num_parts))
-				!= STATUS_OK) {
-			error("rm_get_data(RM_PartListSize): %s", 
-				bgl_err_str(rc));
-			num_parts = 0;
-		}
-
-		for (j=0; j<num_parts; j++) {
-			if (j) {
-				if ((rc = rm_get_data(part_list, 
-						RM_PartListNextPart,
-						&part_ptr)) != STATUS_OK) {
-					error("rm_get_data(RM_PartListNextPart)"
-						": %s", bgl_err_str(rc));
-					break;
-				}
-			} else {
-				if ((rc = rm_get_data(part_list, 
-						RM_PartListFirstPart, 
-						&part_ptr)) != STATUS_OK) {
-					error("rm_get_data(RM_PartList"
-						"FirstPart: %s",
-						bgl_err_str(rc));
-					break;
-				}
-			}
-
-			if ((rc = rm_get_data(part_ptr, RM_PartitionID, &name))
-					!= STATUS_OK) {
-				error("rm_get_data(RM_PartitionID): %s",
-					bgl_err_str(rc));
-				continue;
-			}
-			if (strcmp(bgl_part_id, name)) 
-				continue;
-
-			if ((rc = rm_get_data(part_ptr, RM_PartitionState, 
-					&state)) != STATUS_OK) {
-				error("rm_get_data(RM_PartitionState) :%s",
-					bgl_err_str(rc));
-				continue;
-			}
-			if (state == RM_PARTITION_FREE) {
-				is_ready = 1;
-				break;
-			}
-			if (destroyed) 
-				break;
-			if ((rc = pm_destroy_partition(bgl_part_id))
-					!= STATUS_OK)  {
-				if(rc == PARTITION_NOT_FOUND) {
-					debug("partition %s is not found");
-					destroyed = 1;
-					break;
-				}
-				error("pm_destroy_partition(%s): %s", 
-					bgl_part_id, bgl_err_str(rc));
-			} else
-				destroyed = 1;
-		}
-		if ((rc = rm_free_partition_list(part_list)) != STATUS_OK)
-			error("rm_free_partition_list(): %s", bgl_err_str(rc));
-		if(is_ready)
-			break;
-	}
-
-	if (!is_ready) {
-		error("Could not free partition %s", bgl_part_id);
-		return SLURM_ERROR;
-	}
-
-	if ((rc = rm_set_part_owner(bgl_part_id, user)) != STATUS_OK) {
-		error("rm_set_part_owner(%s,%s): %s", bgl_part_id, user,
-			bgl_err_str(rc));
-		return SLURM_ERROR;
-	}
-
-	debug("rm_set_part_owner(%s,%s) completed", bgl_part_id, user);
-	return SLURM_SUCCESS;
-#endif
-}
 
 /*
  * Boot a partition. Partition state expected to be FREE upon entry. 
  * NOTE: This function does not wait for the boot to complete.
  * the slurm prolog script needs to perform the waiting.
  */
-static int _boot_part(pm_partition_id_t bgl_part_id, char *owner_name, uid_t owner_uid)
+static int _boot_part(bgl_record_t *bgl_record, rm_partition_mode_t node_use)
 {
 #ifdef HAVE_BGL_FILES
 	int rc;
-	ListIterator itr;
-	bgl_record_t *block_ptr = NULL;
-		
-	info("Booting partition %s", bgl_part_id);
-	 if ((rc = pm_create_partition(bgl_part_id)) != STATUS_OK) {
- 		error("pm_create_partition(%s): %s",
- 			bgl_part_id, bgl_err_str(rc));
- 		return SLURM_ERROR;
- 	}
+	struct passwd *pw_ent = NULL;
 	
-	if(bgl_list) {
-		itr = list_iterator_create(bgl_list);
-		while ((block_ptr = (bgl_record_t *) list_next(itr))) 
-			if (!strcmp(block_ptr->bgl_part_id, bgl_part_id))
-				break;
-		list_iterator_destroy(itr);
-		if(block_ptr) {
-			slurm_mutex_lock(&part_state_mutex);
-			/* reset state and owner right now, don't wait for 
-			 * update_partition_list() to run or epilog could 
-			 * get old/bad data. */
-			last_bgl_update = time(NULL);
-			block_ptr->state = RM_PARTITION_CONFIGURING;
-			block_ptr->owner_name = xstrdup(owner_name);
-			block_ptr->owner_uid  = owner_uid;
-			debug("Setting bootflag for %s", bgl_part_id);
-			block_ptr->boot_state = 1;
-			block_ptr->boot_count = 0;
-			slurm_mutex_unlock(&part_state_mutex);
-		} else {
-			error("Partition %s not found in list to set state", 
-				bgl_part_id);
-		}
-	} else {
-		error("_boot_part: no bgl_list");
+	if ((rc = rm_set_part_owner(bgl_record->bgl_part_id, USER_NAME)) != STATUS_OK) {
+		error("rm_set_part_owner(%s,%s): %s", bgl_record->bgl_part_id, USER_NAME,
+		      bgl_err_str(rc));
+		return SLURM_ERROR;
 	}
+	if(node_use == SELECT_VIRTUAL_NODE_MODE) {
+		info("Booting partition %s in virtual mode", bgl_record->bgl_part_id);
+		if ((rc = pm_create_partition_vnm(bgl_record->bgl_part_id)) != STATUS_OK) {
+			error("pm_create_partition(%s): %s",
+			      bgl_record->bgl_part_id, bgl_err_str(rc));
+			return SLURM_ERROR;
+		}	
+	} else  {
+		info("Booting partition %s in coprocessor mode", bgl_record->bgl_part_id);
+		if ((rc = pm_create_partition(bgl_record->bgl_part_id)) != STATUS_OK) {
+			error("pm_create_partition(%s): %s",
+			      bgl_record->bgl_part_id, bgl_err_str(rc));
+			return SLURM_ERROR;
+		}	
+	}
+	slurm_mutex_lock(&part_state_mutex);
+	/* reset state and owner right now, don't wait for 
+	 * update_partition_list() to run or epilog could 
+	 * get old/bad data. */
+	bgl_record->state = RM_PARTITION_CONFIGURING;
+	bgl_record->owner_name = xstrdup(USER_NAME);
+	if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
+		error("getpwnam(%s): %m", bgl_record->owner_name);
+	} else {
+		bgl_record->owner_uid = pw_ent->pw_uid; 
+	}
+	debug("Setting bootflag for %s", bgl_record->bgl_part_id);
+	bgl_record->boot_state = 1;
+	bgl_record->boot_count = 0;
+	last_bgl_update = time(NULL);
+	slurm_mutex_unlock(&part_state_mutex);
 #endif
 	return SLURM_SUCCESS;
 }
@@ -413,38 +224,98 @@ static int _boot_part(pm_partition_id_t bgl_part_id, char *owner_name, uid_t own
 /* Update partition owner and reboot as needed */
 static void _sync_agent(bgl_update_t *bgl_update_ptr)
 {
-	char *cur_part_owner, *new_part_owner;
-
-	cur_part_owner = _get_part_owner(bgl_update_ptr->bgl_part_id);
-	new_part_owner = uid_to_string(bgl_update_ptr->uid);
-	if ((cur_part_owner == NULL) 
-	||  strcmp(cur_part_owner, new_part_owner)) {
-		error("changing owner of bgl_part %s from %s to %s",
-			bgl_update_ptr->bgl_part_id, cur_part_owner, 
-			new_part_owner);
-		_term_agent(bgl_update_ptr);
-		_start_agent(bgl_update_ptr);
-	}
-	xfree(cur_part_owner);
-}
+/* 	char *cur_part_owner, *new_part_owner; */
+	bgl_record_t * bgl_record = NULL;
 	
+	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
+	if(bgl_record) {
+		if(bgl_record->state==RM_PARTITION_READY) {
+			slurm_mutex_lock(&part_state_mutex);
+			if(bgl_record->owner_uid != bgl_update_ptr->uid) {
+				debug("Owner isn't correct for job %d on %s, fixing...", 
+				      bgl_update_ptr->job_id,
+				      bgl_update_ptr->bgl_part_id);
+				slurm_mutex_lock(&part_state_mutex);
+				xfree(bgl_record->owner_name);
+				bgl_record->owner_name = 
+					xstrdup(uid_to_string(bgl_update_ptr->uid));
+				bgl_record->owner_uid = bgl_update_ptr->uid;
+				slurm_mutex_unlock(&part_state_mutex);
+			}
+			if(update_db_partition_user(bgl_record) == 1) 
+				last_bgl_update = time(NULL);
+			slurm_mutex_unlock(&part_state_mutex);
+				
+		} else {
+			error("Partition %s isn't in a ready state!",
+			      bgl_update_ptr->bgl_part_id);
+		}
+	} else {
+		error("No partition %s", bgl_update_ptr->bgl_part_id);
+	}
+	/* cur_part_owner = _get_part_owner(bgl_update_ptr->bgl_part_id); */
+/* 	new_part_owner = uid_to_string(bgl_update_ptr->uid); */
+/* 	if ((cur_part_owner == NULL)  */
+/* 	    ||  strcmp(cur_part_owner, new_part_owner)) { */
+/* 		error("changing owner of bgl_part %s from %s to %s", */
+/* 		      bgl_update_ptr->bgl_part_id, cur_part_owner,  */
+/* 		      new_part_owner); */
+/* 		_term_agent(bgl_update_ptr); */
+/* 		_start_agent(bgl_update_ptr); */
+/* 	} */
+/* 	xfree(cur_part_owner); */
+}
+
 /* Perform job initiation work */
 static void _start_agent(bgl_update_t *bgl_update_ptr)
 {
 	int rc;
+	bgl_record_t *bgl_record = NULL;
 	char *owner_name = uid_to_string(bgl_update_ptr->uid);
-
-	rc = _set_part_owner(bgl_update_ptr->bgl_part_id, owner_name);
-	if (rc == SLURM_SUCCESS) {
-		rc = _boot_part(bgl_update_ptr->bgl_part_id, owner_name, 
-			bgl_update_ptr->uid);
-	}
 	
-	if (rc != SLURM_SUCCESS) {
-		sleep(2);	/* wait for the slurmd to begin the batch 
-				 * script, slurm_fail_job() is a no-op if 
-				 * issued prior to the script initiation */
-		(void) slurm_fail_job(bgl_update_ptr->job_id);
+	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
+	
+	if(bgl_record) {
+		if(bgl_record->node_use == bgl_update_ptr->node_use) {
+		add_user:
+			while(1) { 
+				if(bgl_record->state == RM_PARTITION_FREE) {
+					debug("%d %d",bgl_update_ptr->node_use,bgl_record->node_use);
+					if((rc = _boot_part(bgl_record, bgl_update_ptr->node_use))
+					   != SLURM_SUCCESS) {
+						sleep(2);	/* wait for the slurmd to begin the batch
+								 * script, slurm_fail_job() is a no-op if
+								 * issued prior to the script initiation */
+						(void) slurm_fail_job(bgl_update_ptr->job_id);
+					}
+				} else if(bgl_record->state != RM_PARTITION_READY) 
+					sleep(1);
+				else 
+					break;
+			}
+			
+			if(bgl_record->state==RM_PARTITION_READY) {
+				slurm_mutex_lock(&part_state_mutex);
+				info("Adding user %s to Partition %s",
+				      owner_name, 
+				      bgl_record->bgl_part_id);
+				xfree(bgl_record->owner_name);
+				bgl_record->owner_name = xstrdup(owner_name);
+				bgl_record->owner_uid = bgl_update_ptr->uid;
+				if(update_db_partition_user(bgl_record) == 1) 
+					last_bgl_update = time(NULL);
+				slurm_mutex_unlock(&part_state_mutex);
+			}
+		} else {
+			debug("Partition in wrong mode, rebooting.");
+			/* Free the partition */
+			debug("destroying the partition %s.", bgl_update_ptr->bgl_part_id);
+			bgl_free_partition(bgl_record);
+							
+			goto add_user;
+		}
+	} else {
+		error("partition %s not found in bgl_list",bgl_update_ptr->bgl_part_id);
 	}
 }
 
@@ -458,7 +329,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 	pm_partition_id_t part_id;
 	db_job_id_t job_id;
 	bgl_record_t *bgl_record = NULL;
-	ListIterator itr;
+	struct passwd *pw_ent = NULL;
 	
 	//debug("getting the job info");
 	live_states = JOB_ALL_FLAG & (~JOB_TERMINATED_FLAG) & (~JOB_KILLED_FLAG);
@@ -466,81 +337,97 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		error("rm_get_jobs(): %s", bgl_err_str(rc));
 		return;
 	}
-
+	
 	if ((rc = rm_get_data(job_list, RM_JobListSize, &jobs)) != STATUS_OK) {
 		error("rm_get_data(RM_JobListSize): %s", bgl_err_str(rc));
 		jobs = 0;
 	} else if (jobs > 300)
 		fatal("Active job count (%d) invalid, restart MMCS", jobs);
 	//debug("job count %d",jobs);
-		
+	
 	for (i=0; i<jobs; i++) {		
 		if (i) {
 			if ((rc = rm_get_data(job_list, RM_JobListNextJob, 
 					&job_elem)) != STATUS_OK) {
 				error("rm_get_data(RM_JobListNextJob): %s", 
-					bgl_err_str(rc));
+				      bgl_err_str(rc));
 				continue;
 			}
 		} else {
 			if ((rc = rm_get_data(job_list, RM_JobListFirstJob, 
-					&job_elem)) != STATUS_OK) {
+					      &job_elem)) != STATUS_OK) {
 				error("rm_get_data(RM_JobListFirstJob): %s",
-					bgl_err_str(rc));
+				      bgl_err_str(rc));
 				continue;
 			}
 		}
-
+		
 		if(!job_elem) {
 			error("No Job Elem breaking out job count = %d\n", jobs);
 			break;
 		}
 		if ((rc = rm_get_data(job_elem, RM_JobPartitionID, &part_id))
-				!= STATUS_OK) {
+		    != STATUS_OK) {
 			error("rm_get_data(RM_JobPartitionID) %s: %s", 
-				part_id, bgl_err_str(rc));
+			      part_id, bgl_err_str(rc));
 			continue;
 		}
-		//debug("looking at partition %s looking for %s\n",
-		//	part_id, bgl_update_ptr->bgl_part_id);
+		debug("looking at partition %s looking for %s\n",
+			part_id, bgl_update_ptr->bgl_part_id);
 		if (strcmp(part_id, bgl_update_ptr->bgl_part_id) != 0)
 			continue;
 		if ((rc = rm_get_data(job_elem, RM_JobDBJobID, &job_id))
-				!= STATUS_OK) {
+		    != STATUS_OK) {
 			error("rm_get_data(RM_JobDBJobID): %s", 
-				bgl_err_str(rc));
+			      bgl_err_str(rc));
 			continue;
 		}
 		//debug("got job_id %d",job_id);
 		rc = _remove_job(job_id);
 	}
-
-	/* Free the partition */
-	debug("destroying the partition %s.", bgl_update_ptr->bgl_part_id);
-	bgl_free_partition(bgl_update_ptr->bgl_part_id);
-
-	/* Change the block's owner */
-	_set_part_owner(bgl_update_ptr->bgl_part_id, USER_NAME);
-	if(bgl_list) {
-		itr = list_iterator_create(bgl_list);
-		while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
-			if (!strcmp(bgl_record->bgl_part_id, bgl_update_ptr->bgl_part_id)) 
-				break;	/* found it */
+	
+	/* remove the partition's users */
+	
+	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
+	debug("got the record %s user is %s",
+	      bgl_record->bgl_part_id,
+	      bgl_record->owner_name);
+	
+	if(bgl_record) {
+		slurm_mutex_lock(&part_state_mutex);
+		/*remove user from list */
+		if((rc = remove_all_users(bgl_update_ptr->bgl_part_id, 
+					  NULL))
+		   == -1) {
+			error("Something happened removing "
+			      "users from partition %s", 
+			      bgl_update_ptr->bgl_part_id);
+		} 
+		if(strcmp(bgl_record->owner_name, USER_NAME)) {
+			info("Removing user %s from Partition %s",
+			     bgl_record->owner_name, 
+			     bgl_record->bgl_part_id);
 		}
-		list_iterator_destroy(itr);
-		if(bgl_record) {
-			debug("resetting the boot state flag and counter for partition %s.",
-			      bgl_record->bgl_part_id);
-			bgl_record->boot_state = 0;
-			bgl_record->boot_count = 0;
+		xfree(bgl_record->owner_name);
+		
+		bgl_record->owner_name = xstrdup(USER_NAME);
+		if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
+			error("getpwnam(%s): %m", bgl_record->owner_name);
+		} else {
+			bgl_record->owner_uid = pw_ent->pw_uid; 
 		}
+		bgl_record->boot_state = 0;
+		bgl_record->boot_count = 0;
+		last_bgl_update = time(NULL);
+		slurm_mutex_unlock(&part_state_mutex);		
 	} else {
-		error("_term_agent: No bgl_list");
+		error("_term_agent: record not found in bgl_list");
+		
+		if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
+			error("rm_free_job_list(): %s", bgl_err_str(rc));
 	}
-	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
-		error("rm_free_job_list(): %s", bgl_err_str(rc));
 }
-
+	
 /* Process requests off the bgl_update_list queue and exit when done */
 static void *_part_agent(void *args)
 {
@@ -659,8 +546,8 @@ static int _excise_block(List block_list, pm_partition_id_t bgl_part_id,
 	bgl_record_t *block = NULL;
 	xassert(iter);
 
-	if(bgl_list) {
-		iter = list_iterator_create(bgl_list);
+	if(block_list) {
+		iter = list_iterator_create(block_list);
 		while ((block = list_next(iter))) {
 			rc = SLURM_ERROR;
 			if (strcmp(block->bgl_part_id, bgl_part_id))
@@ -672,47 +559,19 @@ static int _excise_block(List block_list, pm_partition_id_t bgl_part_id,
 			}
 			
 			/* exact match of name and node list */
+			info("removing Partition %s",bgl_part_id);
+			list_delete(iter);
 			rc = SLURM_SUCCESS;
 			break;
 		}		
 		list_iterator_destroy(iter);
 	} else {
-		error("_excise_block: No bgl_list");
+		error("_excise_block: No block_list");
 		rc = SLURM_ERROR;
 	}
 	return rc;
 }
-#endif
 
-/*
- * Perform any setup required to initiate a job
- * job_ptr IN - pointer to the job being initiated
- * RET - SLURM_SUCCESS or an error code
- *
- * NOTE: This happens in parallel with srun and slurmd spawning
- * the job. A prolog script is expected to defer initiation of
- * the job script until the BGL block is available for use.
- */
-extern int start_job(struct job_record *job_ptr)
-{
-	int rc = SLURM_SUCCESS;
-#ifdef HAVE_BGL_FILES
-	bgl_update_t *bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
-
-	bgl_update_ptr->op = START_OP;
-	bgl_update_ptr->uid = job_ptr->user_id;
-	bgl_update_ptr->job_id = job_ptr->job_id;
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-		SELECT_DATA_PART_ID, &(bgl_update_ptr->bgl_part_id));
-	info("Queue start of job %u in BGL partition %s",
-		job_ptr->job_id, bgl_update_ptr->bgl_part_id);
-
-	_part_op(bgl_update_ptr);
-#endif
-	return rc;
-}
-
-#ifdef HAVE_BGL_FILES
 /*
  * Perform any work required to terminate a jobs on a partition.
  * bgl_part_id IN - partition name
@@ -737,7 +596,39 @@ int term_jobs_on_part(pm_partition_id_t bgl_part_id)
 	
 	return rc;
 }
+
 #endif
+
+/*
+ * Perform any setup required to initiate a job
+ * job_ptr IN - pointer to the job being initiated
+ * RET - SLURM_SUCCESS or an error code
+ *
+ * NOTE: This happens in parallel with srun and slurmd spawning
+ * the job. A prolog script is expected to defer initiation of
+ * the job script until the BGL block is available for use.
+ */
+extern int start_job(struct job_record *job_ptr)
+{
+	int rc = SLURM_SUCCESS;
+#ifdef HAVE_BGL_FILES
+	bgl_update_t *bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
+
+	bgl_update_ptr->op = START_OP;
+	bgl_update_ptr->uid = job_ptr->user_id;
+	bgl_update_ptr->job_id = job_ptr->job_id;
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+		SELECT_DATA_PART_ID, &(bgl_update_ptr->bgl_part_id));
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+		SELECT_DATA_NODE_USE, &(bgl_update_ptr->node_use));
+	info("Queue start of job %u in BGL partition %s",
+		job_ptr->job_id, bgl_update_ptr->bgl_part_id);
+
+	_part_op(bgl_update_ptr);
+#endif
+	return rc;
+}
+
 
 /*
  * Perform any work required to terminate a job
@@ -834,11 +725,11 @@ extern int sync_jobs(List job_list)
 		error("sync_jobs: no job_list");
 		return SLURM_ERROR;
 	}
-	/* Insure that all other partitions are free */
+	/* Insure that all other partitions are free of users */
 	if(block_list) {
 		block_iterator = list_iterator_create(block_list);
 		while ((bgl_record = (bgl_record_t *) list_next(block_iterator))) {
-			info("Queue clearing of vestigial owner in BGL partition %s",
+			info("Queue clearing of users of BGL partition %s",
 			     bgl_record->bgl_part_id);
 			bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
 			bgl_update_ptr->op = TERM_OP;

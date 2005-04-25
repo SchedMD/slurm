@@ -53,8 +53,8 @@ static int _scroll_grid(int dir);
 int main(int argc, char *argv[])
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
-	node_info_msg_t *node_info_ptr=NULL;
-	node_info_msg_t *new_node_ptr=NULL;
+	node_info_msg_t *node_info_ptr = NULL;
+	node_info_msg_t *new_node_ptr = NULL;
 	int error_code;
 	int height = 40;
 	int width = 100;

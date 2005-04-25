@@ -68,36 +68,30 @@ extern int part_ready(struct job_record *job_ptr)
 {
 	int rc = 1;
 #ifdef HAVE_BGL_FILES
-	char *part_id;
-	ListIterator itr;
-	bgl_record_t *bgl_record;
+	char *part_id = NULL;
+	bgl_record_t *bgl_record = NULL;
 	
 	rc = select_g_get_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_PART_ID, &part_id);
 	if (rc == SLURM_SUCCESS) {
-		if(bgl_list) {
-			itr = list_iterator_create(bgl_list);
-			while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
-				if (!strcmp(bgl_record->bgl_part_id, part_id)) 
-					break;	/* found it */
-			}
-			list_iterator_destroy(itr);
-			xfree(part_id);
+		bgl_record = find_bgl_record(part_id);
+		
+		if(bgl_record) {
+			if (rc != -1) {
+				if((bgl_record->owner_uid == job_ptr->user_id)
+				   && (bgl_record->state == RM_PARTITION_READY)) {
+					rc = 1;
+				}
+				else if (bgl_record->owner_uid != job_ptr->user_id)
+					rc = 0;
+				else
+					rc = -1;
+			} 
 		} else {
-			error("part_ready: no bgl_list");
+			error("part_ready: partition %s not in bgl_list.",part_id);
 			rc = -1;
 		}
-	
-		if (rc != -1) {
-		    if((bgl_record->owner_uid == job_ptr->user_id)
-		       && (bgl_record->state == RM_PARTITION_READY))
-			    rc = 1;
-		    else if ((bgl_record->owner_uid != job_ptr->user_id)
-		       && (bgl_record->state == RM_PARTITION_FREE))
-			    rc = 0;
-		    else
-			    rc = -1;
-		}
+		xfree(part_id);
 	} else
 		rc = -1;
 #endif
@@ -119,14 +113,14 @@ extern int update_partition_list()
 {
 	int is_ready = 0;
 #ifdef HAVE_BGL_FILES
-	int j, rc, num_parts = 0;
-	rm_partition_t *part_ptr;
+	int j, rc, num_parts = 0, num_users = 0;
+	rm_partition_t *part_ptr = NULL;
+	rm_partition_mode_t node_use;
 	rm_partition_state_t state;
 	rm_partition_state_flag_t part_state = PARTITION_ALL_FLAG;
-	char *name;
-	char *owner_name;
-	rm_partition_list_t *part_list;
-	ListIterator itr;
+	char *name = NULL;
+	char *owner_name = NULL;
+	rm_partition_list_t *part_list = NULL;
 	bgl_record_t *bgl_record = NULL;
 	struct passwd *pw_ent = NULL;
 	time_t now;
@@ -135,7 +129,7 @@ extern int update_partition_list()
 	
 	if(bgl_list == NULL && !last_bgl_update)
 		return 0;
-
+	
 	if ((rc = rm_get_partitions_info(part_state, &part_list))
 	    != STATUS_OK) {
 		error("rm_get_partitions(): %s", bgl_err_str(rc));
@@ -177,23 +171,29 @@ extern int update_partition_list()
 		if(strncmp("RMP", name,3))
 			continue;
 		
-		if(bgl_list) {
-			itr = list_iterator_create(bgl_list);
-			while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
-				if (!strcmp(bgl_record->bgl_part_id, name)) 
-					break;	/* found it */
-			}
-			list_iterator_destroy(itr);
-		} else {
-			error("update_partition_list: no bgl_list");
-			break;
-		}
+		bgl_record = find_bgl_record(name);
+		
 		if(bgl_record == NULL) {
 			error("Partition %s not found on bgl_list", name);
 			continue;
 		}
 		
 		slurm_mutex_lock(&part_state_mutex);
+		
+		if ((rc = rm_get_data(part_ptr, RM_PartitionMode, &node_use))
+		    != STATUS_OK) {
+			error("rm_get_data(RM_PartitionMode): %s",
+			      bgl_err_str(rc));
+			is_ready = -1;
+			slurm_mutex_unlock(&part_state_mutex);
+			break;
+		} else if(bgl_record->node_use != node_use) {
+			debug("node_use of Partition %s was %d and now is %d",
+			      name, bgl_record->node_use, node_use);
+			bgl_record->node_use = node_use;
+			is_ready = 1;
+		}
+		
 		if ((rc = rm_get_data(part_ptr, RM_PartitionState, &state))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionState): %s",
@@ -252,38 +252,44 @@ extern int update_partition_list()
 				break;
 			}
 		}
+	
+/* 		rc = rm_get_data(part_ptr, RM_PartitionUsersNum, &num_users); */
+/* 		if(num_users != 0) { */		
+/* 			if ((rc = rm_get_data(part_ptr, RM_PartitionFirstUser, */
+/* 					      &owner_name)) != STATUS_OK) { */
+/* 				error("rm_get_data(RM_PartitionUserName): %s", */
+/* 				      bgl_err_str(rc)); */
+/* 				is_ready = -1; */
+/* 				slurm_mutex_unlock(&part_state_mutex); */
+/* 				break; */
+/* 			}	 */
+/* 		} else { */
+/* 			owner_name = USER_NAME; */
+/* 		} */
+/* 		if (owner_name[0] != '\0') { */
+/* 			if (!bgl_record->owner_name) { */
+/* 				debug("owner of Partition %s was null and now is %s", */
+/* 				      bgl_record->bgl_part_id, owner_name); */
+/* 			} else if(strcmp(bgl_record->owner_name, owner_name)) { */
+/* 				debug("owner of Partition %s was %s and now is %s", */
+/* 				      bgl_record->bgl_part_id, bgl_record->owner_name, owner_name); */
+/* 				xfree(bgl_record->owner_name); */
+/* 			} else { */
+/* 				slurm_mutex_unlock(&part_state_mutex);	 */
+/* 				continue; */
+/* 			} */
+/* 			bgl_record->owner_name = xstrdup(owner_name); */
+/* 			if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) { */
+/* 				error("getpwnam(%s): %m", bgl_record->owner_name); */
+/* 				rc = -1; */
+/* 			} */
+/* 			bgl_record->owner_uid = pw_ent->pw_uid; */
+/* 			is_ready = 1; */
+/* 		} else { */
+/* 			error("name was empty for parition %s from rm_get_data(RM_PartitionUserName)", */
+/* 			      bgl_record->bgl_part_id); */
+/* 		} */
 		
-		if ((rc = rm_get_data(part_ptr, RM_PartitionUserName, 
-				      &owner_name)) != STATUS_OK) {
-			error("rm_get_data(RM_PartitionUserName): %s",
-			      bgl_err_str(rc));
-			is_ready = -1;
-			slurm_mutex_unlock(&part_state_mutex);
-			break;
-		}
-		
-
-		if (owner_name[0] != '\0') {
-			if (!bgl_record->owner_name) {
-				debug("owner of Partition %s was null and now is %s",
-				      bgl_record->bgl_part_id, owner_name);
-			} else if(strcmp(bgl_record->owner_name, owner_name)) {
-				debug("owner of Partition %s was %s and now is %s",
-				      bgl_record->bgl_part_id, bgl_record->owner_name, owner_name);
-				xfree(bgl_record->owner_name);
-			}
-			bgl_record->owner_name = xstrdup(owner_name);
-			if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
-				error("getpwnam(%s): %m", bgl_record->owner_name);
-				rc = -1;
-			}
-			bgl_record->owner_uid = pw_ent->pw_uid; 
-			is_ready = 1;
-			
-		} else {
-			error("name was empty for parition %s from rm_get_data(RM_PartitionUserName)", 
-			      bgl_record->bgl_part_id);
-		}
 		slurm_mutex_unlock(&part_state_mutex);	
 	}
 	

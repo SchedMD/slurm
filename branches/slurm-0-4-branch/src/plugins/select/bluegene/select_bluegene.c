@@ -272,13 +272,12 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 	Buf buffer;
 
 	/* check to see if data has changed */
-	if (last_query_time > last_bgl_update) {
+	if (last_query_time >= last_bgl_update) {
 		debug2("Node select info hasn't changed since %d", 
 			last_bgl_update);
 		return SLURM_NO_CHANGE_IN_DATA;
 	} else {
 		*buffer_ptr = NULL;
-	
 		buffer = init_buf(HUGE_BUF_SIZE);
 		pack32(partitions_packed, buffer);
 		pack_time(last_bgl_update, buffer);
@@ -286,7 +285,7 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 		if(bgl_list) {
 			itr = list_iterator_create(bgl_list);
 			while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
-				//xassert(bgl_record->bgl_part_id != NULL);
+				xassert(bgl_record->bgl_part_id != NULL);
 				
 				pack_partition(bgl_record, buffer);
 				partitions_packed++;

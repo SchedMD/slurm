@@ -2,9 +2,11 @@ This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
 * Changes in SLURM 0.4.23
-=========================
+========================= 
  -- Modified bluegene plugin to only sync bglblocks to jobs on initial 
     startup, not on reconfig. Fixes race condition.
+ -- Modified bluegene plugin to work with 141 driver. Enabling it to 
+    only have to reboot when switching from coproc -> virtual and back.
 
 * Changes in SLURM 0.4.22
 =========================

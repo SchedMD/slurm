@@ -34,6 +34,7 @@
 
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <pwd.h>
 
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
@@ -146,6 +147,20 @@ extern void fini_bgl(void);
 extern void print_bgl_record(bgl_record_t* record);
 extern void destroy_bgl_record(void* object);
 
+/* update a record with the correct state */
+extern int update_bgl_record_state(bgl_record_t *bgl_record);
+
+/* return bgl_record from bgl_list */
+extern bgl_record_t *find_bgl_record(char *bgl_part_id);
+
+/* change username of a partition bgl_record_t owner_name needs to be 
+   updated before call of function. 
+*/
+extern int update_db_partition_user(bgl_record_t *bgl_part_id); 
+
+/* remove all users from a partition but what is in user_name*/
+extern int remove_all_users(char *bgl_part_id, char *user_name);
+
 /* Return strings representing blue gene data types */
 extern char *convert_lifecycle(lifecycle_type_t lifecycle);
 extern char *convert_conn_type(rm_connection_type_t conn_type);
@@ -184,7 +199,7 @@ extern int read_bgl_partitions(void);
 /* bgl_switch_connections.c */
 /*****************************************************/
 extern int configure_partition_switches(bgl_record_t * bgl_conf_record);
-extern int bgl_free_partition(pm_partition_id_t part_id);
+extern int bgl_free_partition(bgl_record_t *bgl_record);
 
 
 #endif /* _BLUEGENE_H_ */
