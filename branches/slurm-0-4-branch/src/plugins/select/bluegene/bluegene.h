@@ -99,6 +99,7 @@ typedef struct bgl_record {
 				 * -1 = fail, 0 = not booting, 1 = booting */
 	int boot_count;                 /* number of attemts boot attempts */
 	bitstr_t *bitmap;               /* bitmap to check the name of partition */
+	int cancelled_job;
 } bgl_record_t;
 
 typedef struct {
