@@ -36,6 +36,7 @@ source ./globals
 set test_id     "1.26"
 set interations 100
 set exit_code   0
+set job_id0      0
 
 print_header $test_id
 
@@ -44,8 +45,12 @@ print_header $test_id
 #
 set host_0      ""
 set timeout $max_job_delay
-spawn $srun -N1 -l -t1 $bin_hostname  
+spawn $srun -v -N1 -l $bin_hostname  
 expect {
+	-re "on host ($alpha_numeric)," {
+		set nodelist_name $expect_out(1,string)
+		exp_continue
+	}
 	-re "0: ($alpha_numeric)" {
 		set host_0 $expect_out(1,string)
 		exp_continue
@@ -134,6 +139,11 @@ if {[string compare $host_0 $include_node] != 0} {
 # Note: process output in order of expected completion
 #
 set front_end [test_front_end]
+send_user "$front_end\n"
+if { $front_end == 1 } {
+	set include_node $nodelist_name
+}
+
 set successes 0
 for {set inx 0} {$inx < $interations} {incr inx} {
 	set failures 0
