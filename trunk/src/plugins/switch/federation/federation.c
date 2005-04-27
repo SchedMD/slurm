@@ -165,7 +165,7 @@ static fed_status_t fed_status_tab[]= {
 };
 
 static void _strip_13_10(char *line);
-static int _set_up_adapter(fed_adapter_t fed_adapter, char *adapter_name);
+static int _set_up_adapter(fed_adapter_t *fed_adapter, char *adapter_name);
 static int _parse_fed_spec(char *in_line, fed_adapter_t *list, int *count);
 
 /* The _lock() and _unlock() functions are used to lock/unlock a 
@@ -319,7 +319,7 @@ static void _strip_13_10(char *line)
 	}
 }
 
-static int _set_up_adapter(fed_adapter_t fed_adapter, char *adapter_name)
+static int _set_up_adapter(fed_adapter_t *fed_adapter, char *adapter_name)
 {
 	ADAPTER_RESOURCES res;
 	struct NTBL_STATUS *status = NULL;
@@ -335,18 +335,18 @@ static int _set_up_adapter(fed_adapter_t fed_adapter, char *adapter_name)
 					    &res);
 	if(error_code != NTBL_SUCCESS) 
 		return SLURM_ERROR;
-	strncpy(fed_adapter.name, 
+	strncpy(fed_adapter->name, 
 		adapter_name, 
 		FED_ADAPTERLEN);
-	fed_adapter.lid = res.lid;
-	fed_adapter.network_id = res.network_id;
+	fed_adapter->lid = res.lid;
+	fed_adapter->network_id = res.network_id;
 	/* FUTURE:  check that we don't lose information when converting
 	 * from 64 to 32 bit unsigned ints in the next three assignments.
 	 */
-	fed_adapter.max_winmem = res.max_window_memory;
-	fed_adapter.min_winmem = res.min_window_memory;
-	fed_adapter.avail_mem = res.avail_adapter_memory;
-	fed_adapter.window_count = res.window_count;
+	fed_adapter->max_winmem = res.max_window_memory;
+	fed_adapter->min_winmem = res.min_window_memory;
+	fed_adapter->avail_mem = res.avail_adapter_memory;
+	fed_adapter->window_count = res.window_count;
 	free(res.window_list);
 	_cache_lid(&fed_adapter);
 	error_code = ntbl_status_adapter(NTBL_VERSION, 
@@ -366,7 +366,7 @@ static int _set_up_adapter(fed_adapter_t fed_adapter, char *adapter_name)
 		status = status->next;
 		free(old);
 	}
-	fed_adapter.window_list = tmp_winlist;
+	fed_adapter->window_list = tmp_winlist;
 	return SLURM_SUCCESS;
 }
 
@@ -386,7 +386,7 @@ static int _parse_fed_spec(char *in_line, fed_adapter_t *list, int *count)
 	int i = 0, j = 0, start = -1, line = -1, first = 0, last = 0, start_name = 0;
 	int error_code = SLURM_SUCCESS;
 	char *adapter_name = NULL;
-	static int adapter_count = 0;
+	int adapter_count = *count;
 	fed_adapter_t *fed_adapter = NULL;
 	char temp_name[FED_ADAPTERLEN] = {0};
 	
@@ -413,7 +413,7 @@ static int _parse_fed_spec(char *in_line, fed_adapter_t *list, int *count)
 					return SLURM_ERROR;
 				} else if (line == -1) {
 					memcpy(temp_name+start_name, adapter_name+start, (i-start));
-					if(_set_up_adapter(list[adapter_count], temp_name) 
+					if(_set_up_adapter(&list[adapter_count], temp_name) 
 					   == SLURM_ERROR) {
 						error("_parse_fed_spec: "
 						      "There was an error setting up adapter. 0");
@@ -427,7 +427,7 @@ static int _parse_fed_spec(char *in_line, fed_adapter_t *list, int *count)
 					last = atoi(&adapter_name[line]);
 					for(j = first; j <= last; j++) {
 						sprintf(&temp_name[start_name], "%d", j);
-						if(_set_up_adapter(list[adapter_count], temp_name)
+						if(_set_up_adapter(&list[adapter_count], temp_name)
 						   == SLURM_ERROR) {
 							error("_parse_fed_spec: "
 							      "There was an error setting up adapter. 1");
@@ -446,7 +446,7 @@ static int _parse_fed_spec(char *in_line, fed_adapter_t *list, int *count)
 		}
 		
 		if(start==-1) {
-			if(_set_up_adapter(list[adapter_count], adapter_name)
+			if(_set_up_adapter(&list[adapter_count], adapter_name)
 			   == SLURM_ERROR) {
 				error("_parse_fed_spec: "
 				      "There was an error setting up adapter. 2");
@@ -455,7 +455,7 @@ static int _parse_fed_spec(char *in_line, fed_adapter_t *list, int *count)
 			}
 		} else if (line == -1) {
 			memcpy(&temp_name[start_name], &adapter_name[start], (i-start));
-			if(_set_up_adapter(list[adapter_count], temp_name)
+			if(_set_up_adapter(&list[adapter_count], temp_name)
 			   == SLURM_ERROR) {
 				error("_parse_fed_spec: "
 				      "There was an error setting up adapter. 3");
@@ -469,7 +469,7 @@ static int _parse_fed_spec(char *in_line, fed_adapter_t *list, int *count)
 			last = atoi(&adapter_name[line]);
 			for(j = first; j <= last; j++) {
 				sprintf(&temp_name[start_name], "%d", j);
-				if(_set_up_adapter(list[adapter_count], temp_name)
+				if(_set_up_adapter(&list[adapter_count], temp_name)
 				   == SLURM_ERROR) {
 					error("_parse_fed_spec: "
 					      "There was an error setting up adapter. 4");
@@ -545,7 +545,7 @@ _get_adapters(fed_adapter_t *list, int *count)
 		
 		/* parse what is left, non-comments */
 		/* partition configuration parameters */
-		if((err = _parse_fed_spec(in_line, list, count)) 
+		if((err = _parse_fed_spec(in_line, list, &adapter_count)) 
 		   == SLURM_ERROR) {
 			error("There was an error code from _parse_fed_spec");
 		}
@@ -554,6 +554,7 @@ _get_adapters(fed_adapter_t *list, int *count)
 		report_leftover(in_line, line_num);
 	}
 	fclose(fed_spec_file);
+	*count = adapter_count;
 	debug("Number of adapters is = %d",*count);
 
 /* 	adapter_count = 0; */
