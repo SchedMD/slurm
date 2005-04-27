@@ -135,7 +135,7 @@ extern int update_partition_list()
 	
 	if ((rc = rm_get_partitions_info(part_state, &part_list))
 	    != STATUS_OK) {
-		error("rm_get_partitions(): %s", bgl_err_str(rc));
+		error("rm_get_partitions_info(): %s", bgl_err_str(rc));
 		return -1; 
 	}
 
