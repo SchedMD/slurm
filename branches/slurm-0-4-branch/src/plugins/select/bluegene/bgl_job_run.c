@@ -280,20 +280,17 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 				bgl_update_ptr->bgl_part_id);
 		return;
 	}
-
-	if(bgl_record->node_use == bgl_update_ptr->node_use) {
+	
+	if(bgl_record->node_use != bgl_update_ptr->node_use) {
 		debug("Partition in wrong mode, rebooting.");
 		/* Free the partition */
 		debug("destroying the partition %s.", 
 		      bgl_update_ptr->bgl_part_id);
 		bgl_free_partition(bgl_record);			
 	}
-	
+		
 	while(1) { 
 		if(bgl_record->state == RM_PARTITION_FREE) {
-			debug("%d %d",
-			      bgl_update_ptr->node_use,
-			      bgl_record->node_use);
 			if((rc = _boot_part(bgl_record, 
 					    bgl_update_ptr->node_use))
 			   != SLURM_SUCCESS) {
@@ -306,6 +303,14 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 					bgl_update_ptr->job_id);
 				return;
 			}
+		} else if (bgl_record->cancelled_job) {
+			debug("Job %d was cancelled for Part %s",
+			      bgl_update_ptr->job_id, 
+			      bgl_record->bgl_part_id);
+			slurm_mutex_lock(&part_state_mutex);
+			bgl_record->cancelled_job = 0;
+			slurm_mutex_unlock(&part_state_mutex);
+			return;
 		} else if (bgl_record->cancelled_job) {
 			debug("Job %d was cancelled for Part %s",
 			      bgl_update_ptr->job_id, 
@@ -580,7 +585,7 @@ static int _excise_block(List block_list, pm_partition_id_t bgl_part_id,
 			}
 			
 			/* exact match of name and node list */
-			debug("Synced Partition %s", bgl_part_id);
+			debug("synced Partition %s", bgl_part_id);
 			list_delete(iter);
 			rc = SLURM_SUCCESS;
 			break;
@@ -675,6 +680,7 @@ int term_job(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 #ifdef HAVE_BGL_FILES
+
 	bgl_update_t *bgl_update_ptr;
 	bgl_record_t *bgl_record;
 
