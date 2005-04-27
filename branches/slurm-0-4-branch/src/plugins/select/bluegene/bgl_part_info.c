@@ -114,7 +114,7 @@ extern void pack_partition(bgl_record_t *bgl_record, Buf buffer)
 
 extern int update_partition_list()
 {
-	int is_ready = 0;
+	int updated = 0;
 #ifdef HAVE_BGL_FILES
 	int j, rc, num_parts = 0, num_users = 0;
 	rm_partition_t *part_ptr = NULL;
@@ -142,7 +142,7 @@ extern int update_partition_list()
 	if ((rc = rm_get_data(part_list, RM_PartListSize, &num_parts))
 		   != STATUS_OK) {
 		error("rm_get_data(RM_PartListSize): %s", bgl_err_str(rc));
-		is_ready = -1;
+		updated = -1;
 		num_parts = 0;
 	}
 			
@@ -152,7 +152,7 @@ extern int update_partition_list()
 					      &part_ptr)) != STATUS_OK) {
 				error("rm_get_data(RM_PartListNextPart): %s",
 				      bgl_err_str(rc));
-				is_ready = -1;
+				updated = -1;
 				break;
 			}
 		} else {
@@ -160,7 +160,7 @@ extern int update_partition_list()
 					      &part_ptr)) != STATUS_OK) {
 				error("rm_get_data(RM_PartListFirstPart: %s",
 				      bgl_err_str(rc));
-				is_ready = -1;
+				updated = -1;
 				break;
 			}
 		}
@@ -168,7 +168,7 @@ extern int update_partition_list()
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionID): %s", 
 			      bgl_err_str(rc));
-			is_ready = -1;
+			updated = -1;
 			break;
 		}
 		if(strncmp("RMP", name,3))
@@ -187,28 +187,28 @@ extern int update_partition_list()
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionMode): %s",
 			      bgl_err_str(rc));
-			is_ready = -1;
+			updated = -1;
 			slurm_mutex_unlock(&part_state_mutex);
 			break;
 		} else if(bgl_record->node_use != node_use) {
 			debug("node_use of Partition %s was %d and now is %d",
 			      name, bgl_record->node_use, node_use);
 			bgl_record->node_use = node_use;
-			is_ready = 1;
+			updated = 1;
 		}
 		
 		if ((rc = rm_get_data(part_ptr, RM_PartitionState, &state))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionState): %s",
 			      bgl_err_str(rc));
-			is_ready = -1;
+			updated = -1;
 			slurm_mutex_unlock(&part_state_mutex);
 			break;
 		} else if(bgl_record->state != state) {
 			debug("state of Partition %s was %d and now is %d",
 			      name, bgl_record->state, state);
 			bgl_record->state = state;
-			is_ready = 1;
+			updated = 1;
 		}
 
 		/* check the boot state */
@@ -230,7 +230,7 @@ extern int update_partition_list()
 						      "(%s): %s",
 						      bgl_record->bgl_part_id, 
 						      bgl_err_str(rc));
-						is_ready = -1;
+						updated = -1;
 					}
 					bgl_record->boot_count++;
 				} else {
@@ -261,46 +261,6 @@ extern int update_partition_list()
 			}
 		}
 	
-/* 		rc = rm_get_data(part_ptr, RM_PartitionUsersNum, &num_users); */
-/* 		if(num_users != 0) { */		
-/* 			if ((rc = rm_get_data(part_ptr, RM_PartitionFirstUser, */
-/* 					      &owner_name)) != STATUS_OK) { */
-/* 				error("rm_get_data(RM_PartitionUserName): %s", */
-/* 				      bgl_err_str(rc)); */
-/* 				is_ready = -1; */
-/* 				slurm_mutex_unlock(&part_state_mutex); */
-/* 				break; */
-/* 			}	 */
-/* 		} else { */
-/* 			owner_name = USER_NAME; */
-/* 		} */
-/* 		if (owner_name[0] != '\0') { */
-/* 			if (!bgl_record->owner_name) { */
-/* 				debug("owner of Partition %s was null and now is %s", */
-/* 				      bgl_record->bgl_part_id, owner_name); */
-/* 			} else if(strcmp(bgl_record->owner_name, owner_name)) { */
-/* 				debug("owner of Partition %s was %s and now is %s", */
-/* 				      bgl_record->bgl_part_id, bgl_record->owner_name, owner_name); */
-/* 				xfree(bgl_record->owner_name); */
-/* 			} else { */
-/* 				slurm_mutex_unlock(&part_state_mutex);	 */
-/* 				continue; */
-/* 			} */
-/* 			bgl_record->owner_name = xstrdup(owner_name); */
-/* 			if((pw_ent = getpwnam(bgl_record->owner_name)) 
-			== NULL) { */
-/* 				error("getpwnam(%s): %m", 
-				bgl_record->owner_name); */
-/* 				rc = -1; */
-/* 			} */
-/* 			bgl_record->owner_uid = pw_ent->pw_uid; */
-/* 			is_ready = 1; */
-/* 		} else { */
-/* 			error("name was empty for parition %s "
-			"from rm_get_data(RM_PartitionUserName)", */
-/* 			      bgl_record->bgl_part_id); */
-/* 		} */
-		
 		slurm_mutex_unlock(&part_state_mutex);	
 	}
 	
@@ -308,5 +268,5 @@ extern int update_partition_list()
 		error("rm_free_partition_list(): %s", bgl_err_str(rc));
 	}
 #endif
-	return is_ready;
+	return updated;
 }
