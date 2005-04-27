@@ -180,19 +180,6 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 			continue;
 		} 
 
-		/***********************************************/
-		/* check the node_use specified matches        */
-		/***********************************************/
-/* 		Commented out for Driver 140.  we will decided later what  */
-/* 	        to do with the mode of a partition when a job is ready to run. */
-
-		/* if ((node_use != record->node_use)  */
-/* 		&&  (node_use != SELECT_NAV)) { */
-/* 			debug("bgl partition %s node-use not usable",  */
-/* 					record->bgl_part_id); */
-/* 			continue; */
-/* 		} */
-
 		/*****************************************/
 		/* match up geometry as "best" possible  */
 		/*****************************************/
