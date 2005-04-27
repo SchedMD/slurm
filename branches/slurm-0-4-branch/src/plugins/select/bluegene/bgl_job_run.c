@@ -246,13 +246,11 @@ static void _sync_agent(bgl_update_t *bgl_update_ptr)
 				      "fixing...", 
 				      bgl_update_ptr->job_id,
 				      bgl_update_ptr->bgl_part_id);
-				slurm_mutex_lock(&part_state_mutex);
 				xfree(bgl_record->owner_name);
 				bgl_record->owner_name = 
 					xstrdup(uid_to_string(
 							bgl_update_ptr->uid));
 				bgl_record->owner_uid = bgl_update_ptr->uid;
-				slurm_mutex_unlock(&part_state_mutex);
 			}
 			if(update_db_partition_user(bgl_record) == 1) 
 				last_bgl_update = time(NULL);
@@ -277,62 +275,62 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 	
 	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
 	
-	if(bgl_record) {
-		if(bgl_record->node_use == bgl_update_ptr->node_use) {
-			debug("Partition in wrong mode, rebooting.");
-			/* Free the partition */
-			debug("destroying the partition %s.", 
-			      bgl_update_ptr->bgl_part_id);
-			bgl_free_partition(bgl_record);			
-		}
-		
-		while(1) { 
-			if(bgl_record->state == RM_PARTITION_FREE) {
-				debug("%d %d",
-				      bgl_update_ptr->node_use,
-				      bgl_record->node_use);
-				if((rc = _boot_part(bgl_record, 
-						    bgl_update_ptr->node_use))
-				   != SLURM_SUCCESS) {
-					sleep(2);	
-					/* wait for the slurmd to begin 
-					   the batch script, slurm_fail_job() 
-					   is a no-op if issued prior 
-					   to the script initiation */
-					(void) slurm_fail_job(
-						bgl_update_ptr->job_id);
-					return;
-				}
-			} else if (bgl_record->cancelled_job) {
-				debug("Job %d was cancelled for Part %s",
-				      bgl_update_ptr->job_id, 
-				      bgl_record->bgl_part_id);
-				slurm_mutex_lock(&part_state_mutex);
-				bgl_record->cancelled_job = 0;
-				slurm_mutex_unlock(&part_state_mutex);
-				return;
-			} else if(bgl_record->state != RM_PARTITION_READY) 
-				sleep(1);
-			else 
-				break;
-		}
-			
-		if(bgl_record->state==RM_PARTITION_READY) {
-			slurm_mutex_lock(&part_state_mutex);
-			info("Adding user %s to Partition %s",
-			     owner_name, 
-			     bgl_record->bgl_part_id);
-			xfree(bgl_record->owner_name);
-			bgl_record->owner_name = xstrdup(owner_name);
-			bgl_record->owner_uid = bgl_update_ptr->uid;
-			if(update_db_partition_user(bgl_record) == 1) 
-				last_bgl_update = time(NULL);
-			slurm_mutex_unlock(&part_state_mutex);
-		}
-		
-	} else {
+	if(!bgl_record) {
 		error("partition %s not found in bgl_list",
+				bgl_update_ptr->bgl_part_id);
+		return;
+	}
+
+	if(bgl_record->node_use == bgl_update_ptr->node_use) {
+		debug("Partition in wrong mode, rebooting.");
+		/* Free the partition */
+		debug("destroying the partition %s.", 
 		      bgl_update_ptr->bgl_part_id);
+		bgl_free_partition(bgl_record);			
+	}
+	
+	while(1) { 
+		if(bgl_record->state == RM_PARTITION_FREE) {
+			debug("%d %d",
+			      bgl_update_ptr->node_use,
+			      bgl_record->node_use);
+			if((rc = _boot_part(bgl_record, 
+					    bgl_update_ptr->node_use))
+			   != SLURM_SUCCESS) {
+				sleep(2);	
+				/* wait for the slurmd to begin 
+				   the batch script, slurm_fail_job() 
+				   is a no-op if issued prior 
+				   to the script initiation */
+				(void) slurm_fail_job(
+					bgl_update_ptr->job_id);
+				return;
+			}
+		} else if (bgl_record->cancelled_job) {
+			debug("Job %d was cancelled for Part %s",
+			      bgl_update_ptr->job_id, 
+			      bgl_record->bgl_part_id);
+			slurm_mutex_lock(&part_state_mutex);
+			bgl_record->cancelled_job = 0;
+			slurm_mutex_unlock(&part_state_mutex);
+			return;
+		} else if(bgl_record->state != RM_PARTITION_READY) 
+			sleep(1);
+		else 
+			break;
+	}
+		
+	if(bgl_record->state==RM_PARTITION_READY) {
+		slurm_mutex_lock(&part_state_mutex);
+		info("Adding user %s to Partition %s",
+		     owner_name, 
+		     bgl_record->bgl_part_id);
+		xfree(bgl_record->owner_name);
+		bgl_record->owner_name = xstrdup(owner_name);
+		bgl_record->owner_uid = bgl_update_ptr->uid;
+		if(update_db_partition_user(bgl_record) == 1) 
+			last_bgl_update = time(NULL);
+		slurm_mutex_unlock(&part_state_mutex);
 	}
 }
 
@@ -443,10 +441,10 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		slurm_mutex_unlock(&part_state_mutex);		
 	} else {
 		error("_term_agent: record not found in bgl_list");
-		
-		if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
-			error("rm_free_job_list(): %s", bgl_err_str(rc));
 	}
+
+	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
+		error("rm_free_job_list(): %s", bgl_err_str(rc));
 }
 	
 /* Process requests off the bgl_update_list queue and exit when done */
@@ -635,9 +633,20 @@ extern int start_job(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 #ifdef HAVE_BGL_FILES
-	bgl_update_t *bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
-	bgl_record_t *bgl_record = NULL;
-	
+	bgl_update_t *bgl_update_ptr;
+	bgl_record_t *bgl_record;
+
+	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
+	if(bgl_record) {
+		slurm_mutex_lock(&part_state_mutex);
+		bgl_record->cancelled_job = 0;
+		slurm_mutex_unlock(&part_state_mutex);
+	} else {
+		error("partition %s not found!",bgl_update_ptr->bgl_part_id);
+		return SLURM_ERROR;
+	}
+
+	bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
 	bgl_update_ptr->op = START_OP;
 	bgl_update_ptr->uid = job_ptr->user_id;
 	bgl_update_ptr->job_id = job_ptr->job_id;
@@ -647,18 +656,6 @@ extern int start_job(struct job_record *job_ptr)
 		SELECT_DATA_NODE_USE, &(bgl_update_ptr->node_use));
 	info("Queue start of job %u in BGL partition %s",
 		job_ptr->job_id, bgl_update_ptr->bgl_part_id);
-	
-	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
-	if(bgl_record != NULL) {
-		slurm_mutex_lock(&part_state_mutex);
-		bgl_record->cancelled_job = 0;
-		slurm_mutex_unlock(&part_state_mutex);
-	} else {
-		error("partition %s not found!",bgl_update_ptr->bgl_part_id);
-		xfree(bgl_update_ptr);
-		return SLURM_ERROR;
-	}
-
 	_part_op(bgl_update_ptr);
 #endif
 	return rc;
@@ -678,8 +675,20 @@ int term_job(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 #ifdef HAVE_BGL_FILES
-	bgl_update_t *bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
-	bgl_record_t *bgl_record = NULL;
+	bgl_update_t *bgl_update_ptr;
+	bgl_record_t *bgl_record;
+
+	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
+	if(bgl_record) {
+		slurm_mutex_lock(&part_state_mutex);
+		bgl_record->cancelled_job = 1;
+		slurm_mutex_unlock(&part_state_mutex);
+	} else {
+		error("partition %s not found!",bgl_update_ptr->bgl_part_id);
+		return SLURM_ERROR;
+	}
+
+	bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
 	bgl_update_ptr->op = TERM_OP;
 	bgl_update_ptr->uid = job_ptr->user_id;
 	bgl_update_ptr->job_id = job_ptr->job_id;
@@ -687,16 +696,6 @@ int term_job(struct job_record *job_ptr)
 		SELECT_DATA_PART_ID, &(bgl_update_ptr->bgl_part_id));
 	info("Queue termination of job %u in BGL partition %s",
 		job_ptr->job_id, bgl_update_ptr->bgl_part_id);
-	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
-	if(bgl_record != NULL) {
-		slurm_mutex_lock(&part_state_mutex);
-		bgl_record->cancelled_job = 1;
-		slurm_mutex_unlock(&part_state_mutex);
-	} else {
-		error("partition %s not found!",bgl_update_ptr->bgl_part_id);
-		xfree(bgl_update_ptr);
-		return SLURM_ERROR;
-	}
 	_part_op(bgl_update_ptr);
 #endif
 	return rc;
