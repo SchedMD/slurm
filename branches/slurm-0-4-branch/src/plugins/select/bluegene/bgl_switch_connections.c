@@ -30,10 +30,17 @@
 
 List bgl_bp_list;
 
-static int _get_bp_by_location(rm_BGL_t* my_bgl, int* curr_coord, rm_BP_t** bp);
+static int _get_bp_by_location(rm_BGL_t* my_bgl, 
+			       int* curr_coord, 
+			       rm_BP_t** bp);
 //static int _set_switch(rm_switch_t* curr_switch, pa_connection_t *int_wire);
-static int _add_switch_conns(rm_switch_t* curr_switch, bgl_switch_t *bgl_switch);
-static int _lookat_path(bgl_bp_t *bgl_bp, pa_switch_t *curr_switch, int source, int target, int dim);
+static int _add_switch_conns(rm_switch_t* curr_switch, 
+			     bgl_switch_t *bgl_switch);
+static int _lookat_path(bgl_bp_t *bgl_bp, 
+			pa_switch_t *curr_switch, 
+			int source, 
+			int target, 
+			int dim);
 static int _destroy_bgl_bp_list(List bgl_bp);
 /** 
  * this is just stupid.  there are some implicit rules for where
@@ -81,7 +88,8 @@ static int _get_bp_by_location(rm_BGL_t* my_bgl, int* curr_coord, rm_BP_t** bp)
 	return SLURM_ERROR;
 }
 
-static int _add_switch_conns(rm_switch_t* curr_switch, bgl_switch_t *bgl_switch)
+static int _add_switch_conns(rm_switch_t* curr_switch, 
+			     bgl_switch_t *bgl_switch)
 {
 	ListIterator itr;
 	bgl_conn_t *bgl_conn;
@@ -151,14 +159,16 @@ static int _add_switch_conns(rm_switch_t* curr_switch, bgl_switch_t *bgl_switch)
 		conn_num++;
 	}
 	list_iterator_destroy(itr);
-	if ((rc = rm_set_data(curr_switch, RM_SwitchConnNum, &conn_num)) != STATUS_OK) {
+	if ((rc = rm_set_data(curr_switch, RM_SwitchConnNum, &conn_num)) 
+	    != STATUS_OK) {
 		fatal("rm_set_data: RM_SwitchConnNum: %s", bgl_err_str(rc));
 		return SLURM_ERROR;
 	} 	
 	return SLURM_SUCCESS;
 }
 
-static int _lookat_path(bgl_bp_t *bgl_bp, pa_switch_t *curr_switch, int source, int target, int dim) 
+static int _lookat_path(bgl_bp_t *bgl_bp, pa_switch_t *curr_switch, 
+			int source, int target, int dim) 
 {
 	ListIterator bgl_itr, switch_itr, conn_itr;
 	bgl_switch_t *bgl_switch;
@@ -246,8 +256,11 @@ static int _destroy_bgl_bp_list(List bgl_bp_list)
 	
 	if(bgl_bp_list) {
 		while((bgl_bp = list_pop(bgl_bp_list)) != NULL) {
-			while((bgl_switch = list_pop(bgl_bp->switch_list)) != NULL) {
-				while((bgl_conn = list_pop(bgl_switch->conn_list)) != NULL) {
+			while((bgl_switch = list_pop(bgl_bp->switch_list)) 
+			      != NULL) {
+				while((bgl_conn = list_pop(
+					       bgl_switch->conn_list)) 
+				      != NULL) {
 					if(bgl_conn)
 						xfree(bgl_conn);
 				}
@@ -345,14 +358,16 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 			      RM_PartitionSwitchNum,
 			      &bgl_record->switch_count)) 
 	    != STATUS_OK) {
-		fatal("rm_set_data: RM_PartitionSwitchNum: %s", bgl_err_str(rc));
+		fatal("rm_set_data: RM_PartitionSwitchNum: %s", 
+		      bgl_err_str(rc));
 		return SLURM_ERROR;
 	}
 		
 	first_bp = 1;
 	first_switch = 1;
 	
-	if ((rc = rm_get_data(bgl, RM_SwitchNum, &switch_count)) != STATUS_OK) {
+	if ((rc = rm_get_data(bgl, RM_SwitchNum, &switch_count)) 
+	    != STATUS_OK) {
 		fatal("rm_get_data: RM_SwitchNum: %s", bgl_err_str(rc));
 		return SLURM_ERROR;
 	}
@@ -392,7 +407,8 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 			}
 		}
 
-		if ((rc = rm_get_data(curr_bp,  RM_BPID, &bpid)) != STATUS_OK) {
+		if ((rc = rm_get_data(curr_bp,  RM_BPID, &bpid)) 
+		    != STATUS_OK) {
 			fatal("rm_get_data: RM_BPID: %s", bgl_err_str(rc));
 			list_iterator_destroy(bgl_itr);
 			return SLURM_ERROR;
@@ -411,7 +427,8 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 			} else {
 				if ((rc = rm_get_data(bgl, RM_FirstSwitch, 
 						&curr_switch)) != STATUS_OK) {
-					fatal("rm_get_data: RM_FirstSwitch: %s",
+					fatal("rm_get_data: "
+					      "RM_FirstSwitch: %s",
 						bgl_err_str(rc));
 					list_iterator_destroy(bgl_itr);
 					return SLURM_ERROR;
@@ -438,7 +455,8 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 			switch_itr = list_iterator_create(bgl_bp->switch_list);
 			while((bgl_switch = list_next(switch_itr)) != NULL) {
 				
-				if ((rc = rm_get_data(coord_switch[bgl_switch->dim],
+				if ((rc = rm_get_data(coord_switch
+						      [bgl_switch->dim],
 						      RM_SwitchID,&name2)) 
 				    != STATUS_OK) {
 					fatal("rm_get_data: RM_SwitchID: %s", 
@@ -448,36 +466,46 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 					return SLURM_ERROR;
 				}
 								
-				if (_add_switch_conns(coord_switch[bgl_switch->dim],
-						      bgl_switch) == SLURM_ERROR) {
+				if (_add_switch_conns(coord_switch
+						      [bgl_switch->dim],
+						      bgl_switch) 
+				    == SLURM_ERROR) {
 					list_iterator_destroy(switch_itr);
 					list_iterator_destroy(bgl_itr);
 					return SLURM_ERROR;
 				}
 				
 				if (first_switch){
-					if ((rc = rm_set_data(bgl_record->bgl_part,
-							      RM_PartitionFirstSwitch,
-							      coord_switch[bgl_switch->dim])) 
+					if ((rc = rm_set_data(
+						     bgl_record->bgl_part,
+						     RM_PartitionFirstSwitch,
+						     coord_switch
+						     [bgl_switch->dim])) 
 					    != STATUS_OK) {
 						fatal("rm_set_data("
-							"RM_PartitionFirstSwitch): %s", 
-							bgl_err_str(rc));
-						list_iterator_destroy(switch_itr);
+						      "RM_PartitionFirst"
+						      "Switch): %s", 
+						      bgl_err_str(rc));
+						list_iterator_destroy(
+							switch_itr);
 						list_iterator_destroy(bgl_itr);
 						return SLURM_ERROR;
 					}
 					
 					first_switch = 0;
 				} else {
-					if ((rc = rm_set_data(bgl_record->bgl_part,
-							      RM_PartitionNextSwitch,
-							      coord_switch[bgl_switch->dim])) 
+					if ((rc = rm_set_data(
+						     bgl_record->bgl_part,
+						     RM_PartitionNextSwitch,
+						     coord_switch
+						     [bgl_switch->dim])) 
 					    != STATUS_OK) {
 						fatal("rm_set_data("
-							"RM_PartitionNextSwitch:) %s", 
-							bgl_err_str(rc));
-						list_iterator_destroy(switch_itr);
+						      "RM_PartitionNext"
+						      "Switch:) %s", 
+						      bgl_err_str(rc));
+						list_iterator_destroy(
+							switch_itr);
 						list_iterator_destroy(bgl_itr);
 						return SLURM_ERROR;
 					}

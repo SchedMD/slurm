@@ -211,23 +211,29 @@ extern int update_bgl_record_state(bgl_record_t *bgl_record)
 			
 	for (j=0; j<num_parts; j++) {
 		if (j) {
-			if ((rc = rm_get_data(part_list, RM_PartListNextPart, 
-					      &bgl_record->bgl_part)) != STATUS_OK) {
+			if ((rc = rm_get_data(part_list, 
+					      RM_PartListNextPart, 
+					      &bgl_record->bgl_part)) 
+			    != STATUS_OK) {
 				error("rm_get_data(RM_PartListNextPart): %s",
 				      bgl_err_str(rc));
 				rc = SLURM_ERROR;
 				break;
 			}
 		} else {
-			if ((rc = rm_get_data(part_list, RM_PartListFirstPart, 
-					      &bgl_record->bgl_part)) != STATUS_OK) {
+			if ((rc = rm_get_data(part_list, 
+					      RM_PartListFirstPart, 
+					      &bgl_record->bgl_part)) 
+			    != STATUS_OK) {
 				error("rm_get_data(RM_PartListFirstPart: %s",
 				      bgl_err_str(rc));
 				rc = SLURM_ERROR;
 				break;
 			}
 		}
-		if ((rc = rm_get_data(bgl_record->bgl_part, RM_PartitionID, &name))
+		if ((rc = rm_get_data(bgl_record->bgl_part, 
+				      RM_PartitionID, 
+				      &name))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionID): %s", 
 			      bgl_err_str(rc));
@@ -241,13 +247,16 @@ extern int update_bgl_record_state(bgl_record_t *bgl_record)
 	if(rc == SLURM_ERROR)
 		goto clean_up;
 	else if(j>=num_parts) {
-		error("This partition, %s, doesn't exist in MMCS",bgl_record->bgl_part_id);
+		error("This partition, %s, doesn't exist in MMCS",
+		      bgl_record->bgl_part_id);
 		rc = SLURM_ERROR;
 		goto clean_up;
 	}
 
 	slurm_mutex_lock(&part_state_mutex);
-	if ((rc = rm_get_data(bgl_record->bgl_part, RM_PartitionState, &state))
+	if ((rc = rm_get_data(bgl_record->bgl_part, 
+			      RM_PartitionState, 
+			      &state))
 	    != STATUS_OK) {
 		error("rm_get_data(RM_PartitionState): %s",
 		      bgl_err_str(rc));
@@ -331,26 +340,38 @@ extern int remove_all_users(char *bgl_part_id, char *user_name)
 	int rc, i, user_count;
 
 	if ((rc = rm_get_partition(bgl_part_id,  &part_ptr)) != STATUS_OK) {
-		error("rm_get_partition(%s): %s", bgl_part_id, bgl_err_str(rc));
+		error("rm_get_partition(%s): %s", 
+		      bgl_part_id, 
+		      bgl_err_str(rc));
 		return -1;
 	}	
 	
-	if((rc = rm_get_data(part_ptr, RM_PartitionUsersNum, &user_count)) != STATUS_OK) {
-		error("rm_get_data(RM_PartitionUsersNum): %s", bgl_err_str(rc));
+	if((rc = rm_get_data(part_ptr, RM_PartitionUsersNum, &user_count)) 
+	   != STATUS_OK) {
+		error("rm_get_data(RM_PartitionUsersNum): %s", 
+		      bgl_err_str(rc));
 		return -1;
 	}
 	debug("got %d users for %s",user_count, bgl_part_id);
 	for(i=0; i<user_count; i++) {
 		if(i) {
-			if ((rc = rm_get_data(part_ptr, RM_PartitionNextUser, &user)) 
+			if ((rc = rm_get_data(part_ptr, 
+					      RM_PartitionNextUser, 
+					      &user)) 
 			    != STATUS_OK) {
-				error("rm_get_partition(%s): %s", bgl_part_id, bgl_err_str(rc));
+				error("rm_get_partition(%s): %s", 
+				      bgl_part_id, 
+				      bgl_err_str(rc));
 				return -1;
 			}
 		} else {
-			if ((rc = rm_get_data(part_ptr, RM_PartitionFirstUser, &user)) 
+			if ((rc = rm_get_data(part_ptr, 
+					      RM_PartitionFirstUser, 
+					      &user)) 
 			    != STATUS_OK) {
-				error("rm_get_partition(%s): %s", bgl_part_id, bgl_err_str(rc));
+				error("rm_get_partition(%s): %s", 
+				      bgl_part_id, 
+				      bgl_err_str(rc));
 				return -1;
 			}
 		}
@@ -360,8 +381,11 @@ extern int remove_all_users(char *bgl_part_id, char *user_name)
 				continue;
 			}
 		debug("removing user %s from %s", user, bgl_part_id);
-		if ((rc = rm_remove_part_user(bgl_part_id, user)) != STATUS_OK) {
-			debug("user %s isn't on partition %s",user, bgl_part_id);
+		if ((rc = rm_remove_part_user(bgl_part_id, user)) 
+		    != STATUS_OK) {
+			debug("user %s isn't on partition %s",
+			      user, 
+			      bgl_part_id);
 		}				
 	}
 #endif
@@ -439,7 +463,8 @@ extern void *bluegene_agent(void *args)
 				if((rc = update_partition_list()) == 1)
 					last_bgl_update = now;
 				else if(rc == -1)
-					error("Error with update_partition_list");
+					error("Error "
+					      "with update_partition_list");
 			}
 		}
 
@@ -515,12 +540,14 @@ extern int create_static_partitions(List part_list)
 	
 	if(bgl_list) {
 		itr = list_iterator_create(bgl_list);
-		while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
+		while ((bgl_record = (bgl_record_t *) list_next(itr)) 
+		       != NULL) {
 			
-			if(bgl_record->bp_count>0 && bgl_record->node_use==SELECT_COPROCESSOR_MODE)
+			if(bgl_record->bp_count>0 
+			   && bgl_record->node_use==SELECT_COPROCESSOR_MODE)
 				set_bgl_part(bgl_record->bgl_part_list, 
 					     bgl_record->bp_count, 
-					     bgl_record->conn_type);			
+					     bgl_record->conn_type);
 		}
 		list_iterator_destroy(itr);
 	} else {
@@ -531,20 +558,27 @@ extern int create_static_partitions(List part_list)
 #ifdef HAVE_BGL_FILES
 	if(bgl_list) {
 		itr = list_iterator_create(bgl_list);
-		while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
+		while ((bgl_record = (bgl_record_t *) list_next(itr)) 
+		       != NULL) {
 			if(bgl_found_part_list) {
-				itr_found = list_iterator_create(bgl_found_part_list);
-				while ((found_record = (bgl_record_t*) list_next(itr_found)) != NULL) {
-					if (!strcmp(bgl_record->nodes, found_record->nodes)) {
-						break;	/* don't reboot this one */
+				itr_found = list_iterator_create(
+					bgl_found_part_list);
+				while ((found_record = (bgl_record_t*) 
+					list_next(itr_found)) != NULL) {
+					if (!strcmp(bgl_record->nodes, 
+						    found_record->nodes)) {
+						/* don't reboot this one */
+						break;	
 					}
 				}
 				list_iterator_destroy(itr_found);
 			} else {
-				error("create_static_partitions: no bgl_found_part_list 1");
+				error("create_static_partitions: "
+				      "no bgl_found_part_list 1");
 			}
 			if(found_record == NULL) {
-				if((rc = configure_partition(bgl_record)) == SLURM_ERROR) {
+				if((rc = configure_partition(bgl_record)) 
+				   == SLURM_ERROR) {
 					list_iterator_destroy(itr);
 					return rc;
 				}
@@ -570,16 +604,20 @@ extern int create_static_partitions(List part_list)
 	if(DIM_SIZE[X]==1 && DIM_SIZE[Y]==1 && DIM_SIZE[Z]==1)
 		sprintf(bgl_record->nodes, "bgl000");
        	else
-		sprintf(bgl_record->nodes, "bgl[000x%d%d%d]", DIM_SIZE[X]-1,  
-			DIM_SIZE[Y]-1, DIM_SIZE[Z]-1);
+		sprintf(bgl_record->nodes, "bgl[000x%d%d%d]", 
+			DIM_SIZE[X]-1,  
+			DIM_SIZE[Y]-1, 
+			DIM_SIZE[Z]-1);
 
        	if(bgl_found_part_list) {
 		itr = list_iterator_create(bgl_found_part_list);
-		while ((found_record = (bgl_record_t *) list_next(itr)) != NULL) {
+		while ((found_record = (bgl_record_t *) list_next(itr)) 
+		       != NULL) {
 			if (!strcmp(bgl_record->nodes, found_record->nodes)) {
 				destroy_bgl_record(bgl_record);
 				list_iterator_destroy(itr);
-				goto no_total;	/* don't create total already there */
+				/* don't create total already there */
+				goto no_total;	
 			}
 		}
 		list_iterator_destroy(itr);
@@ -589,11 +627,13 @@ extern int create_static_partitions(List part_list)
 	
 	if(bgl_list) {
 		itr = list_iterator_create(bgl_list);
-		while ((found_record = (bgl_record_t *) list_next(itr)) != NULL) {
+		while ((found_record = (bgl_record_t *) list_next(itr)) 
+		       != NULL) {
 			if (!strcmp(bgl_record->nodes, found_record->nodes)) {
 				destroy_bgl_record(bgl_record);
 				list_iterator_destroy(itr);
-				goto no_total;	/* don't create total already defined */
+				/* don't create total already defined */
+				goto no_total;	
 			}
 		}
 		list_iterator_destroy(itr);
@@ -630,7 +670,8 @@ extern int create_static_partitions(List part_list)
 			if (bgl_record->bgl_part_id)
 				continue;
 			bgl_record->bgl_part_id = xmalloc(8);
-			snprintf(bgl_record->bgl_part_id, 8, "RMP%d", block_inx++);
+			snprintf(bgl_record->bgl_part_id, 8, "RMP%d", 
+				 block_inx++);
 			info("BGL PartitionID:%s Nodes:%s Conn:%s Mode:%s",
 			     bgl_record->bgl_part_id, bgl_record->nodes,
 			     convert_conn_type(bgl_record->conn_type),
@@ -650,7 +691,8 @@ no_total:
 	if(bgl_list) {
 		itr = list_iterator_create(bgl_list);
 		debug("\n\n");
-		while ((found_record = (bgl_record_t *) list_next(itr)) != NULL) {
+		while ((found_record = (bgl_record_t *) list_next(itr)) 
+		       != NULL) {
 			print_bgl_record(found_record);
 		}
 		list_iterator_destroy(itr);
@@ -671,15 +713,19 @@ extern int bgl_free_partition(bgl_record_t *bgl_record)
 	while (1) {
 		if(update_bgl_record_state(bgl_record) == SLURM_ERROR)
 			break;
-		if (bgl_record->state != RM_PARTITION_FREE && bgl_record->state != RM_PARTITION_DEALLOCATING) {
+		if (bgl_record->state != RM_PARTITION_FREE 
+		    && bgl_record->state != RM_PARTITION_DEALLOCATING) {
 			debug("pm_destroy %s",bgl_record->bgl_part_id);
-			if ((rc = pm_destroy_partition(bgl_record->bgl_part_id)) != STATUS_OK) {
+			if ((rc = pm_destroy_partition(
+				     bgl_record->bgl_part_id)) 
+			    != STATUS_OK) {
 				if(rc == PARTITION_NOT_FOUND) {
 					debug("partition %s is not found");
 					break;
 				}
 				error("pm_destroy_partition(%s): %s",
-				      bgl_record->bgl_part_id, bgl_err_str(rc));
+				      bgl_record->bgl_part_id, 
+				      bgl_err_str(rc));
 			}
 		}
 		
@@ -762,8 +808,8 @@ static int _validate_config_nodes(void)
 {
 	int rc = SLURM_ERROR;
 #ifdef HAVE_BGL_FILES
-	bgl_record_t* record = NULL;	/* records from configuration files */
-	bgl_record_t* init_record = NULL;	/* records from actual BGL config */
+	bgl_record_t* record = NULL;	
+	bgl_record_t* init_record = NULL;
 	ListIterator itr_conf;
 	ListIterator itr_curr;
 	rm_partition_mode_t node_use;
@@ -778,37 +824,51 @@ static int _validate_config_nodes(void)
 	if(bgl_list) {
 		itr_conf = list_iterator_create(bgl_list);
 		while ((record = (bgl_record_t*) list_next(itr_conf))) {
-			/* translate hostlist to ranged string for consistent format */
-			/* search here */
+			/* translate hostlist to ranged 
+			   string for consistent format
+			   search here 
+			*/
 			node_use = SELECT_COPROCESSOR_MODE; 
 		
 			if(bgl_curr_part_list) {
-				itr_curr = list_iterator_create(bgl_curr_part_list);
-				while ((init_record = (bgl_record_t*) list_next(itr_curr)) 
-				       != NULL) {					
-					if (strcasecmp(record->nodes, init_record->nodes))
-						continue;	/* wrong nodes */
-					if (record->conn_type != init_record->conn_type)
-						continue;      /* wrong conn_type */
-					record->bgl_part_id = xstrdup(init_record->bgl_part_id);
+				itr_curr = list_iterator_create(
+					bgl_curr_part_list);
+				while ((init_record = (bgl_record_t*) 
+					list_next(itr_curr)) 
+				       != NULL) {
+					if (strcasecmp(record->nodes, 
+						       init_record->nodes))
+						continue; /* wrong nodes */
+					if (record->conn_type 
+					    != init_record->conn_type)
+						continue; /* wrong conn_type */
+					record->bgl_part_id = xstrdup(
+						init_record->bgl_part_id);
 					record->state = init_record->state;
-					record->node_use = init_record->node_use;
-					record->owner_uid = init_record->owner_uid;
-					record->owner_name = xstrdup(init_record->owner_name);
+					record->node_use = 
+						init_record->node_use;
+					record->owner_uid = 
+						init_record->owner_uid;
+					record->owner_name = xstrdup(
+						init_record->owner_name);
 					break;
 				}
 				list_iterator_destroy(itr_curr);
 			} else {
-				error("_validate_config_nodes: no bgl_curr_part_list");
+				error("_validate_config_nodes: "
+				      "no bgl_curr_part_list");
 			}
 			if (!record->bgl_part_id) {
 				info("Existing partition not in bluegene.conf "
-				     "BGL PartitionID:NONE Nodes:%s", record->nodes);
+				     "BGL PartitionID:NONE Nodes:%s", 
+				     record->nodes);
 				rc = SLURM_ERROR;
 			} else {
 				list_push(bgl_found_part_list, record);
-				info("Found existing BGL PartitionID:%s Nodes:%s Conn:%s Mode:%s",
-				     record->bgl_part_id, record->nodes,
+				info("Found existing BGL PartitionID:%s "
+				     "Nodes:%s Conn:%s Mode:%s",
+				     record->bgl_part_id, 
+				     record->nodes,
 				     convert_conn_type(record->conn_type),
 				     convert_node_use(record->node_use));
 			}
@@ -852,15 +912,18 @@ static int _delete_old_partitions(void)
 	if(!bgl_recover) {
 		if(bgl_curr_part_list) {
 			itr_curr = list_iterator_create(bgl_curr_part_list);
-			while ((init_record = (bgl_record_t*) list_next(itr_curr))) {
+			while ((init_record = (bgl_record_t*) 
+				list_next(itr_curr))) {
 				debug("removing the jobs on partition %s\n",
 				      init_record->bgl_part_id);
 				term_jobs_on_part(init_record->bgl_part_id);
 				
-				debug("destroying %s\n",(char *)init_record->bgl_part_id);
+				debug("destroying %s\n",
+				      (char *)init_record->bgl_part_id);
 				bgl_free_partition(init_record);
 				
-				rc = rm_remove_partition(init_record->bgl_part_id);
+				rc = rm_remove_partition(
+					init_record->bgl_part_id);
 				if (rc != STATUS_OK) {
 					error("rm_remove_partition(%s): %s",
 					      init_record->bgl_part_id,
@@ -870,39 +933,53 @@ static int _delete_old_partitions(void)
 			}
 			list_iterator_destroy(itr_curr);
 		} else {
-			error("_delete_old_partitions: no bgl_curr_part_list 1");
+			error("_delete_old_partitions: "
+			      "no bgl_curr_part_list 1");
 			return SLURM_ERROR;
 		}
 	} else {
 		if(bgl_curr_part_list) {
 			itr_curr = list_iterator_create(bgl_curr_part_list);
-			while ((init_record = (bgl_record_t*) list_next(itr_curr))) {
+			while ((init_record = (bgl_record_t*) 
+				list_next(itr_curr))) {
 				if(bgl_found_part_list) {
-					itr_found = list_iterator_create(bgl_found_part_list);
-					while ((found_record = (bgl_record_t*) list_next(itr_found)) 
+					itr_found = list_iterator_create(
+						bgl_found_part_list);
+					while ((found_record = (bgl_record_t*) 
+						list_next(itr_found)) 
 					       != NULL) {
-						if (!strcmp(init_record->bgl_part_id, 
-							    found_record->bgl_part_id)) {
-							break;	/* don't delete this one */
+						if (!strcmp(init_record->
+							    bgl_part_id, 
+							    found_record->
+							    bgl_part_id)) {
+							/* don't delete 
+							   this one 
+							*/
+							break;	
 						}
 					}
 					list_iterator_destroy(itr_found);
 				} else {
-					error("_delete_old_partitions: no bgl_found_part_list");
+					error("_delete_old_partitions: "
+					      "no bgl_found_part_list");
 					return SLURM_ERROR;
 				}
 				if(found_record == NULL) {
-					debug("removing the jobs on partition %s\n",
+					debug("removing the jobs on "
+					      "partition %s\n",
 					      init_record->bgl_part_id);
-					term_jobs_on_part(init_record->bgl_part_id);
+					term_jobs_on_part(
+						init_record->bgl_part_id);
 			
-					debug("destroying %s\n",(char *)init_record->bgl_part_id);
+					debug("destroying %s\n",(char *)
+					      init_record->bgl_part_id);
 					bgl_free_partition(init_record);
 			
 					rc = rm_remove_partition(init_record->
 								 bgl_part_id);
 					if (rc != STATUS_OK) {
-						error("rm_remove_partition(%s): %s",
+						error("rm_remove_partition"
+						      "(%s): %s",
 						      init_record->bgl_part_id,
 						      bgl_err_str(rc));
 					} else
@@ -911,7 +988,8 @@ static int _delete_old_partitions(void)
 			}		
 			list_iterator_destroy(itr_curr);
 		} else {
-			error("_delete_old_partitions: no bgl_curr_part_list 2");
+			error("_delete_old_partitions: "
+			      "no bgl_curr_part_list 2");
 			return SLURM_ERROR;
 		}
 	}
@@ -1145,7 +1223,7 @@ static int _parse_bgl_spec(char *in_line)
 		bgl_record->conn_type = SELECT_MESH;
 	
 	if (conn_type)
-		xfree(conn_type);	/* pointer moved, nothing left to xfree */
+		xfree(conn_type);
 
 	bgl_record->node_use = SELECT_COPROCESSOR_MODE;
 
@@ -1190,7 +1268,8 @@ static void _process_nodes(bgl_record_t *bgl_record)
 								 end);
 			if(bgl_record->nodes[j] != ',')
 				break;
-		} else if((bgl_record->nodes[j] < 58 && bgl_record->nodes[j] > 47) 
+		} else if((bgl_record->nodes[j] < 58 
+			   && bgl_record->nodes[j] > 47) 
 			  && bgl_record->nodes[j-1] != '[') {
 					
 			number = atoi(bgl_record->nodes + j);
@@ -1231,7 +1310,8 @@ static void _process_nodes(bgl_record_t *bgl_record)
 			if(bgl_record->nodes[j] != ',') 
 				break;
 			funky=1;
-		} else if((bgl_record->nodes[j] < 58 && bgl_record->nodes[j] > 47) 
+		} else if((bgl_record->nodes[j] < 58 
+			   && bgl_record->nodes[j] > 47) 
 			  && bgl_record->nodes[j-1] != '[') {
 			number = atoi(bgl_record->nodes + j);
 			start[X] = number / 100;

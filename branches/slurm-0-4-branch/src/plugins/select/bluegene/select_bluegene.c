@@ -284,7 +284,8 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 
 		if(bgl_list) {
 			itr = list_iterator_create(bgl_list);
-			while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
+			while ((bgl_record = (bgl_record_t *) list_next(itr)) 
+			       != NULL) {
 				xassert(bgl_record->bgl_part_id != NULL);
 				
 				pack_partition(bgl_record, buffer);

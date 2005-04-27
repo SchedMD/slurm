@@ -79,16 +79,19 @@ extern int part_ready(struct job_record *job_ptr)
 		if(bgl_record) {
 			if (rc != -1) {
 				if((bgl_record->owner_uid == job_ptr->user_id)
-				   && (bgl_record->state == RM_PARTITION_READY)) {
+				   && (bgl_record->state 
+				       == RM_PARTITION_READY)) {
 					rc = 1;
 				}
-				else if (bgl_record->owner_uid != job_ptr->user_id)
+				else if (bgl_record->owner_uid 
+					 != job_ptr->user_id)
 					rc = 0;
 				else
 					rc = -1;
 			} 
 		} else {
-			error("part_ready: partition %s not in bgl_list.",part_id);
+			error("part_ready: partition %s not in bgl_list.",
+			      part_id);
 			rc = -1;
 		}
 		xfree(part_id);
@@ -220,33 +223,38 @@ extern int update_partition_list()
 					info("Booting partition %s attempt %d",
 					      bgl_record->bgl_part_id,
 					      bgl_record->boot_count);
-					if ((rc = pm_create_partition(bgl_record->bgl_part_id))
+					if ((rc = pm_create_partition(
+						     bgl_record->bgl_part_id))
 					    != STATUS_OK) {
-						error("pm_create_partition(%s): %s",
-						      bgl_record->bgl_part_id, bgl_err_str(rc));
+						error("pm_create_partition"
+						      "(%s): %s",
+						      bgl_record->bgl_part_id, 
+						      bgl_err_str(rc));
 						is_ready = -1;
 					}
 					bgl_record->boot_count++;
 				} else {
-					error("Couldn't boot Partition %s for user %s",
-						bgl_record->bgl_part_id, 
-						bgl_record->owner_name);
+					error("Couldn't boot Partition %s "
+					      "for user %s",
+					      bgl_record->bgl_part_id, 
+					      bgl_record->owner_name);
 					now = time(NULL);
 					time_ptr = localtime(&now);
 					strftime(reason, sizeof(reason),
-						"update_partition_list: "
-						"Boot fails [SLURM@%b %d %H:%M]",
-						time_ptr);
+						 "update_partition_list: "
+						 "Boot fails "
+						 "[SLURM@%b %d %H:%M]",
+						 time_ptr);
 					slurm_drain_nodes(bgl_record->nodes, 
-						reason);
+							  reason);
 					bgl_record->boot_state = 0;
-					bgl_record->boot_count = 0;				
+					bgl_record->boot_count = 0;
 				}
 				break;
 			default:
 				debug("resetting the boot state flag and "
-					"counter for partition %s.",
-					bgl_record->bgl_part_id);
+				      "counter for partition %s.",
+				      bgl_record->bgl_part_id);
 				bgl_record->boot_state = 0;
 				bgl_record->boot_count = 0;
 				break;
@@ -279,14 +287,17 @@ extern int update_partition_list()
 /* 				continue; */
 /* 			} */
 /* 			bgl_record->owner_name = xstrdup(owner_name); */
-/* 			if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) { */
-/* 				error("getpwnam(%s): %m", bgl_record->owner_name); */
+/* 			if((pw_ent = getpwnam(bgl_record->owner_name)) 
+			== NULL) { */
+/* 				error("getpwnam(%s): %m", 
+				bgl_record->owner_name); */
 /* 				rc = -1; */
 /* 			} */
 /* 			bgl_record->owner_uid = pw_ent->pw_uid; */
 /* 			is_ready = 1; */
 /* 		} else { */
-/* 			error("name was empty for parition %s from rm_get_data(RM_PartitionUserName)", */
+/* 			error("name was empty for parition %s "
+			"from rm_get_data(RM_PartitionUserName)", */
 /* 			      bgl_record->bgl_part_id); */
 /* 		} */
 		

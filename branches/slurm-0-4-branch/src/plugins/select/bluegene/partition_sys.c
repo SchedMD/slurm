@@ -313,9 +313,12 @@ int read_bgl_partitions()
 					break;
 				}
 			} else {
-				if ((rc = rm_get_data(part_ptr, RM_PartitionFirstBP, &bp_ptr))
+				if ((rc = rm_get_data(part_ptr, 
+						      RM_PartitionFirstBP, 
+						      &bp_ptr))
 				    != STATUS_OK) {
-					error("rm_get_data(RM_FirstBP): %s", bgl_err_str(rc));
+					error("rm_get_data(RM_FirstBP): %s", 
+					      bgl_err_str(rc));
 					rc = SLURM_ERROR;
 					return rc;
 				}	
@@ -333,11 +336,10 @@ int read_bgl_partitions()
 			sprintf(node_name_tmp, "bgl%d%d%d", 
 				coord[X], coord[Y], coord[Z]);
 		
-			//debug("adding %s to partition %s\n",node_name_tmp, bgl_record->bgl_part_id);
-
 			hostlist_push(bgl_record->hostlist, node_name_tmp);
 			list_append(bgl_record->bgl_part_list, 
-				    &pa_system_ptr->grid[coord[X]][coord[Y]][coord[Z]]);
+				    &pa_system_ptr->grid
+				    [coord[X]][coord[Y]][coord[Z]]);
 		}	
 		
 		// need to get the 000x000 range for nodes
@@ -370,7 +372,8 @@ int read_bgl_partitions()
 				bgl_record->owner_name = xstrdup(owner_name);
 			}
 			if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
-				error("getpwnam(%s): %m", bgl_record->owner_name);				
+				error("getpwnam(%s): %m", 
+				      bgl_record->owner_name);
 			} else {
 				bgl_record->owner_uid = pw_ent->pw_uid;
 			} 

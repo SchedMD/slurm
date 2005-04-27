@@ -95,7 +95,9 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 	uint16_t req_geometry[SYSTEM_DIMENSIONS];
 	uint16_t conn_type, node_use, rotate, target_size = 1;
 	uint32_t req_procs = job_ptr->num_procs;
-
+	int rot_cnt = 0;
+	uint32_t proc_cnt;
+			
 	if(!bgl_list) {
 		error("_find_best_partition_match: There is no bgl_list");
 		return SLURM_ERROR;
@@ -123,7 +125,6 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 	while ((record = (bgl_record_t*) list_next(itr))) {
 		/* Check processor count */
 		if (req_procs > 512) {
-			uint32_t proc_cnt;
 			if (record->node_use == SELECT_VIRTUAL_NODE_MODE)
 				proc_cnt = record->bp_count * 1024;
 			else
@@ -187,7 +188,7 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 			;	/* Geometry not specified */
 		else {	/* match requested geometry */
 			bool match = false;
-			int rot_cnt = 0;	/* attempt six rotations  */
+			rot_cnt = 0;	/* attempt six rotations  */
 
 			for (rot_cnt=0; rot_cnt<6; rot_cnt++) {
 				
@@ -239,17 +240,20 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 	int spec = 1; /* this will be like, keep TYPE a priority, etc,  */
 	bgl_record_t* record = NULL;
 	char buf[100];
-
+	char bgl_part_id[BITSIZE];
+		
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 		SELECT_PRINT_MIXED);
-	debug("bluegene:submit_job: %s nodes=%d-%d", buf, min_nodes, max_nodes);
+	debug("bluegene:submit_job: %s nodes=%d-%d", 
+	      buf, 
+	      min_nodes, 
+	      max_nodes);
 	
 	if ((_find_best_partition_match(job_ptr, slurm_part_bitmap, min_nodes, 
 				max_nodes, spec, &record)) == SLURM_ERROR) {
 		return SLURM_ERROR;
 	} else {
-		/* now we place the part_id into the env of the script to run */
-		char bgl_part_id[BITSIZE];
+		/* we place the part_id into the env of the script to run */
 		snprintf(bgl_part_id, BITSIZE, "%s", record->bgl_part_id);
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_PART_ID, bgl_part_id);
