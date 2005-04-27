@@ -193,19 +193,19 @@ extern int update_bgl_record_state(bgl_record_t *bgl_record)
 	rm_partition_state_flag_t part_state = PARTITION_ALL_FLAG;
 	char *name = NULL;
 	rm_partition_list_t *part_list = NULL;
-	int j, rc, num_parts = 0;
+	int j, rc, func_rc = SLURM_SUCCESS, num_parts = 0;
 	rm_partition_state_t state;
 	
 	if ((rc = rm_get_partitions_info(part_state, &part_list))
 	    != STATUS_OK) {
-		error("rm_get_partitions(): %s", bgl_err_str(rc));
+		error("rm_get_partitions_info(): %s", bgl_err_str(rc));
 		return SLURM_ERROR; 
 	}
 
 	if ((rc = rm_get_data(part_list, RM_PartListSize, &num_parts))
 	    != STATUS_OK) {
 		error("rm_get_data(RM_PartListSize): %s", bgl_err_str(rc));
-		rc = -1;
+		func_rc = SLURM_ERROR;
 		num_parts = 0;
 	}
 			
@@ -217,7 +217,7 @@ extern int update_bgl_record_state(bgl_record_t *bgl_record)
 			    != STATUS_OK) {
 				error("rm_get_data(RM_PartListNextPart): %s",
 				      bgl_err_str(rc));
-				rc = SLURM_ERROR;
+				func_rc = SLURM_ERROR;
 				break;
 			}
 		} else {
@@ -227,7 +227,7 @@ extern int update_bgl_record_state(bgl_record_t *bgl_record)
 			    != STATUS_OK) {
 				error("rm_get_data(RM_PartListFirstPart: %s",
 				      bgl_err_str(rc));
-				rc = SLURM_ERROR;
+				func_rc = SLURM_ERROR;
 				break;
 			}
 		}
@@ -237,19 +237,19 @@ extern int update_bgl_record_state(bgl_record_t *bgl_record)
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionID): %s", 
 			      bgl_err_str(rc));
-			rc = SLURM_ERROR;
+			func_rc = SLURM_ERROR;
 			break;
 		}
 		if(!strcmp(bgl_record->bgl_part_id, name))
 			break;		
 	}
 	
-	if(rc == SLURM_ERROR)
+	if(func_rc == SLURM_ERROR)
 		goto clean_up;
 	else if(j>=num_parts) {
 		error("This partition, %s, doesn't exist in MMCS",
 		      bgl_record->bgl_part_id);
-		rc = SLURM_ERROR;
+		func_rc = SLURM_ERROR;
 		goto clean_up;
 	}
 
@@ -265,13 +265,12 @@ extern int update_bgl_record_state(bgl_record_t *bgl_record)
 		      name, bgl_record->state, state);
 		bgl_record->state = state;
 	}
-	rc = SLURM_SUCCESS;
 	slurm_mutex_unlock(&part_state_mutex);	
 clean_up:
 	if ((rc = rm_free_partition_list(part_list)) != STATUS_OK) {
 		error("rm_free_partition_list(): %s", bgl_err_str(rc));
 	}
-	return rc;
+	return func_rc;
 #else
 	return SLURM_SUCCESS;
 #endif /* HAVE_BGL_FILES */
@@ -294,7 +293,7 @@ extern bgl_record_t *find_bgl_record(char *bgl_part_id)
 		else
 			return NULL;
 	} else {
-		error("find_bgl_record: no bgl_list 3");
+		error("find_bgl_record: no bgl_list");
 		return NULL;
 	}
 	
@@ -309,12 +308,12 @@ extern int update_db_partition_user(bgl_record_t *bgl_record)
 
 	if((rc = remove_all_users(bgl_record->bgl_part_id, 
 				  bgl_record->owner_name))
-	   == -1) {
+	   == REMOVE_USER_ERR) {
 		error("Something happened removing "
 		      "users from partition %s", 
 		      bgl_record->bgl_part_id);
 		return -1;
-	} else if(rc != 2) {
+	} else if(rc == REMOVE_USER_NONE) {
 		if(strcmp(bgl_record->owner_name, USER_NAME)) {
 			if ((rc = rm_add_part_user(bgl_record->bgl_part_id, 
 						   bgl_record->owner_name)) 
@@ -333,7 +332,7 @@ extern int update_db_partition_user(bgl_record_t *bgl_record)
 }
 extern int remove_all_users(char *bgl_part_id, char *user_name) 
 {
-	int returnc = 0;
+	int returnc = REMOVE_USER_NONE;
 #ifdef HAVE_BGL_FILES
 	char *user;
 	rm_partition_t *part_ptr = NULL;
@@ -343,16 +342,17 @@ extern int remove_all_users(char *bgl_part_id, char *user_name)
 		error("rm_get_partition(%s): %s", 
 		      bgl_part_id, 
 		      bgl_err_str(rc));
-		return -1;
+		return REMOVE_USER_ERR;
 	}	
 	
 	if((rc = rm_get_data(part_ptr, RM_PartitionUsersNum, &user_count)) 
 	   != STATUS_OK) {
 		error("rm_get_data(RM_PartitionUsersNum): %s", 
 		      bgl_err_str(rc));
-		return -1;
-	}
-	debug("got %d users for %s",user_count, bgl_part_id);
+		returnc = REMOVE_USER_ERR;
+		user_count = 0;
+	} else
+		debug("got %d users for %s",user_count, bgl_part_id);
 	for(i=0; i<user_count; i++) {
 		if(i) {
 			if ((rc = rm_get_data(part_ptr, 
@@ -362,7 +362,8 @@ extern int remove_all_users(char *bgl_part_id, char *user_name)
 				error("rm_get_partition(%s): %s", 
 				      bgl_part_id, 
 				      bgl_err_str(rc));
-				return -1;
+				returnc = REMOVE_USER_ERR;
+				break;
 			}
 		} else {
 			if ((rc = rm_get_data(part_ptr, 
@@ -372,14 +373,16 @@ extern int remove_all_users(char *bgl_part_id, char *user_name)
 				error("rm_get_partition(%s): %s", 
 				      bgl_part_id, 
 				      bgl_err_str(rc));
-				return -1;
+				returnc = REMOVE_USER_ERR;
+				break;
 			}
 		}
-		if(user_name)
+		if(user_name) {
 			if(!strcmp(user, user_name)) {
-				returnc = 2;
+				returnc = REMOVE_USER_FOUND;
 				continue;
 			}
+		}
 		debug("removing user %s from %s", user, bgl_part_id);
 		if ((rc = rm_remove_part_user(bgl_part_id, user)) 
 		    != STATUS_OK) {
@@ -387,6 +390,9 @@ extern int remove_all_users(char *bgl_part_id, char *user_name)
 			      user, 
 			      bgl_part_id);
 		}				
+	}
+	if ((rc = rm_free_partition(part_ptr)) != STATUS_OK) {
+		error("rm_free_partition(): %s", bgl_err_str(rc));
 	}
 #endif
 	return returnc;

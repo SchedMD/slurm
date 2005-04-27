@@ -418,7 +418,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		/*remove user from list */
 		if((rc = remove_all_users(bgl_update_ptr->bgl_part_id, 
 					  NULL))
-		   == -1) {
+		   == REMOVE_USER_ERR) {
 			error("Something happened removing "
 			      "users from partition %s", 
 			      bgl_update_ptr->bgl_part_id);

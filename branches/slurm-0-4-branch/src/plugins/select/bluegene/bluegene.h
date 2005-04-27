@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  bluegene.h - header for blue gene configuration processing module. 
  *
- * $Id$
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -159,7 +159,11 @@ extern bgl_record_t *find_bgl_record(char *bgl_part_id);
 */
 extern int update_db_partition_user(bgl_record_t *bgl_part_id); 
 
-/* remove all users from a partition but what is in user_name*/
+/* remove all users from a partition but what is in user_name */
+/* Note return codes */
+#define REMOVE_USER_ERR  -1
+#define REMOVE_USER_NONE  0
+#define REMOVE_USER_FOUND 2
 extern int remove_all_users(char *bgl_part_id, char *user_name);
 
 /* Return strings representing blue gene data types */
