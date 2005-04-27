@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-209488">
-<meta name="LLNLRandRdate" content="5 April 2005">
+<meta name="LLNLRandRdate" content="27 April 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -61,6 +61,8 @@ to run on nodes?</a></li>
 <li><a href="#purge">Why is my job killed prematurely?</a></li>
 <li><a href="#opts">Why are my srun options ignored?</a></li>
 <li><a href="#cred">Why are &quot;Invalid job credential&quot; errors generated?</a></li>
+<li><a href="#backfill">Why is the SLURM backfill scheduler not starting my 
+job?</a></li>
 </ol>
 <p><a name="comp"><b>1. Why is my job/node in &quot;completing&quot; state?</b></a><br>
 When a job is terminating, both the job and its nodes enter the state &quot;completing.&quot; 
@@ -103,7 +105,8 @@ limits. If jobs do not specify time limits, then all jobs will receive the same
 time limit (that associated with the partition), and the ability to backfill schedule 
 jobs will be limited. The backfill scheduler does not alter job specifications 
 of required or excluded nodes, so jobs which specify nodes will substantially 
-reduce the effectiveness of backfill scheduling. If the scheduler type is <b>wiki</b>, 
+reduce the effectiveness of backfill scheduling. See the <a href="#backfill">
+backfill</a> section for more details. If the scheduler type is <b>wiki</b>, 
 this represents <a href="http://supercluster.org/maui">The Maui Scheduler</a>. 
 Please refer to its documentation for help. For any scheduler, you can check priorities 
 of jobs using the command <span class="commandline">scontrol show job</span>.</p>
@@ -169,6 +172,31 @@ the cluster. All nodes in the cluster must have the matching public and private
 keys as defined by <b>JobCredPrivateKey</b> and <b>JobCredPublicKey</b> in the 
 slurm configuration file <b>slurm.conf</b>.
 
+<p><a name="backfill"><b>8. Why is the SLURM backfill scheduler not starting my job?
+</b></a><br>
+There are significant limitations in the current backfill scheduler plugin. 
+It was designed to perform backfill node scheduling for a homogeneous cluster.
+It does not manage scheduling on individual processors (or other consumable 
+resources). It also does not update the required or excluded node list of 
+individual jobs. These are the current limiations. You can use the 
+scontrol show command to check if these conditions apply. 
+<ul>
+<li>partition: State=UP</li>
+<li>partition: RootOnly=NO</li>
+<li>partition: Shared=NO</li>
+<li>job: ReqNodeList=NULL</li>
+<li>job: ExcNodeList=NULL</li>
+<li>job: Contiguous=0</li>
+<li>job: Features=NULL</li>
+<li>job: MinProcs, MinMemory, and MinTmpDisk satisfied by all nodes in 
+the partition</li>
+<li>job: MinProcs or MinNodes not to exceed partition's MaxNodes</li>
+</ul>
+As soon as any priority-ordered job in the partition's queue fail to 
+satisfy the request, no lower priority job in that partition's queue 
+will be considered as a backfill candidate. Any programmer wishing 
+to augment the existing code is welcome to do so. 
+
 <br>
 </td>
 </tr>
@@ -176,7 +204,7 @@ slurm configuration file <b>slurm.conf</b>.
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-209488<br>
-Last modified 5 April 2005</p></td>
+Last modified 27 April 2005</p></td>
 </tr>
 </table>
 </td>
