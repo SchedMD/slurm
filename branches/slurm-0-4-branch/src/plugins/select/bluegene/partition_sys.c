@@ -156,14 +156,17 @@ static int _post_allocate(bgl_record_t *bgl_record)
 	} else {
 		bgl_record->bgl_part_id = xstrdup(part_id);
 		
-		if ((rc = rm_set_part_owner(bgl_record->bgl_part_id, USER_NAME)) != STATUS_OK) {
-			error("rm_set_part_owner(%s,%s): %s", bgl_record->bgl_part_id, USER_NAME,
-			      bgl_err_str(rc));
+		if ((rc = rm_set_part_owner(bgl_record->bgl_part_id, 
+					USER_NAME)) != STATUS_OK) {
+			error("rm_set_part_owner(%s,%s): %s", 
+				bgl_record->bgl_part_id, USER_NAME,
+				bgl_err_str(rc));
 			rc = SLURM_ERROR;
 			goto cleanup;
 		}
 		info("Booting partition %s", bgl_record->bgl_part_id);
-		if ((rc = pm_create_partition(bgl_record->bgl_part_id)) != STATUS_OK) {
+		if ((rc = pm_create_partition(bgl_record->bgl_part_id)) 
+				!= STATUS_OK) {
 			error("pm_create_partition(%s): %s",
 			      bgl_record->bgl_part_id, bgl_err_str(rc));
 			rc = SLURM_ERROR;
@@ -362,7 +365,8 @@ int read_bgl_partitions()
 				bgl_record->owner_name = xstrdup(USER_NAME);
 			
 			else {
-				rm_get_data(part_ptr, RM_PartitionFirstUser, &owner_name);
+				rm_get_data(part_ptr, RM_PartitionFirstUser, 
+						&owner_name);
 				bgl_record->owner_name = xstrdup(owner_name);
 			}
 			if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
@@ -380,17 +384,16 @@ int read_bgl_partitions()
 			bgl_record->boot_state = 1;
 		else
 			bgl_record->boot_state = 0;
-		info("Partition %s is in state %d",bgl_record->bgl_part_id, bgl_record->state);
+		info("Partition %s is in state %d",bgl_record->bgl_part_id, 
+				bgl_record->state);
 		if ((rc = rm_get_data(part_ptr, RM_PartitionBPNum,
-					 &bgl_record->bp_count))
-		    != STATUS_OK) {
+				&bgl_record->bp_count)) != STATUS_OK) {
 			error("rm_get_data(RM_PartitionBPNum): %s",
 			      bgl_err_str(rc));
 		} 
 				
 		if ((rc = rm_get_data(part_ptr, RM_PartitionSwitchNum,
-					 &bgl_record->switch_count))
-		    != STATUS_OK) {
+				&bgl_record->switch_count)) != STATUS_OK) {
 			error("rm_get_data(RM_PartitionSwitchNum): %s",
 			      bgl_err_str(rc));
 		} 
@@ -398,9 +401,8 @@ int read_bgl_partitions()
 		bgl_record->part_lifecycle = STATIC;
 				
 		if ((rc = rm_free_partition(part_ptr))
-		    != STATUS_OK) {
-			error("rm_free_partition(): %s",
-			      bgl_err_str(rc));
+				!= STATUS_OK) {
+			error("rm_free_partition(): %s", bgl_err_str(rc));
 		}
 	}
 	rm_free_partition_list(part_list);
