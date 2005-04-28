@@ -324,19 +324,23 @@ int switch_p_alloc_jobinfo(switch_jobinfo_t *switch_job)
 }
 
 int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist, 
-		int nprocs, int cyclic_alloc)
+			   int nprocs, int cyclic_alloc, char *network) 
 {
 	hostlist_t list = NULL;
 	int err;
-verbose("test");
-	list = hostlist_create(nodelist);
-	if(!list)
-		fatal("hostlist_create(%s): %m", nodelist);
-	err = fed_build_jobinfo((fed_jobinfo_t *)switch_job, list, nprocs,
-			cyclic_alloc);
-	hostlist_destroy(list);
-	
-	return err;
+
+	if(strstr(network, "us") || strstr(network, "US")) {
+		list = hostlist_create(nodelist);
+		if(!list)
+			fatal("hostlist_create(%s): %m", nodelist);
+		err = fed_build_jobinfo((fed_jobinfo_t *)switch_job, list,
+					nprocs,	cyclic_alloc);
+		hostlist_destroy(list);
+
+		return err;
+	} else {
+		return SLURM_SUCCESS;
+	}
 }
 
 switch_jobinfo_t switch_p_copy_jobinfo(switch_jobinfo_t switch_job)
