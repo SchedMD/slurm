@@ -456,7 +456,7 @@ _get_adapters(fed_adapter_t *list, int *count)
 		rc = _parse_fed_file(&adapter_list);
 		if (rc != SLURM_SUCCESS)
 			return rc;
-		assert(hostlist_count(adapter_list) < FED_MAXADAPTERS);
+		assert(hostlist_count(adapter_list) <= FED_MAXADAPTERS);
 		adapter_iter = hostlist_iterator_create(adapter_list);
 	}
 
