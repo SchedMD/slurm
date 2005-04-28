@@ -80,14 +80,12 @@ int fed_unpack_jobinfo(fed_jobinfo_t *jp, Buf buf);
 fed_jobinfo_t *fed_copy_jobinfo(fed_jobinfo_t *jp);
 void fed_free_jobinfo(fed_jobinfo_t *jp);
 int fed_load_table(fed_jobinfo_t *jp, int uid, int pid);
-int fed_init(fed_libstate_t *lp);
+int fed_init(void);
 void fed_init_cache(void);
 int fed_unload_table(fed_jobinfo_t *jp);
-int fed_pack_libstate(fed_libstate_t *lp, Buf buffer);
 int fed_unpack_libstate(fed_libstate_t *lp, Buf buffer);
-int fed_alloc_libstate(fed_libstate_t **lh);
 int fed_get_jobinfo(fed_jobinfo_t *jp, int key, void *data);
-void fed_destroy(fed_libstate_t *lp);
-void fed_free_libstate(fed_libstate_t *lp);
+void fed_libstate_save(Buf buffer);
+int fed_libstate_restore(Buf buffer);
 
 #endif /* _FEDERATION_INCLUDED */
