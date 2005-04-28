@@ -165,8 +165,9 @@ static fed_status_t fed_status_tab[]= {
 };
 
 static void _strip_cr_nl(char *line);
+static void _strip_comments(char *line);
 static int _set_up_adapter(fed_adapter_t *fed_adapter, char *adapter_name);
-static int _parse_fed_spec(char *in_line, fed_adapter_t *list, int *count);
+static int _parse_fed_file(hostlist_t *adapter_list);
 
 /* The _lock() and _unlock() functions are used to lock/unlock a 
  * global mutex.  Used to serialize access to the global library 
@@ -319,6 +320,33 @@ static void _strip_cr_nl(char *line)
 	}
 }
 
+/* Strip comments from a line by terminating the string
+ * where the comment begins.
+ * Everything after a non-escaped "#" is a comment.
+ */
+static void _strip_comments(char *line)
+{
+	int i, j;
+	int len = strlen(line);
+
+	/* replace comment flag "#" with an end of string (NULL) */
+	/* escape sequence "\#" translated to "#" */
+	for (i = 0; i < len; i++) {
+		if (line[i] == (char) NULL)
+			break;
+		if (line[i] != '#')
+			continue;
+		if ((i > 0) && (line[i - 1] == '\\')) {
+			for (j = i; j < len; j++) {
+				line[j - 1] = line[j];
+			}
+			continue;
+		}
+		line[i] = (char) NULL;
+		break;
+	}
+}
+
 static int _set_up_adapter(fed_adapter_t *fed_adapter, char *adapter_name)
 {
 	ADAPTER_RESOURCES res;
@@ -390,6 +418,7 @@ static int _parse_fed_file(hostlist_t *adapter_list)
 	while (fgets(in_line, BUFSIZE, fed_spec_file) != NULL) {
 		line_num++;
 		_strip_cr_nl(in_line);
+		_strip_comments(in_line);
 		if (strlen(in_line) >= (BUFSIZE - 1)) {
 			error("_get_adapters line %d, of input file %s "
 			      "too long", line_num, fed_conf);
@@ -397,24 +426,6 @@ static int _parse_fed_file(hostlist_t *adapter_list)
 			return E2BIG;
 		}
 
-		/* everything after a non-escaped "#" is a comment */
-		/* replace comment flag "#" with an end of string (NULL) */
-		/* escape sequence "\#" translated to "#" */
-		for (i = 0; i < BUFSIZE; i++) {
-			if (in_line[i] == (char) NULL)
-				break;
-			if (in_line[i] != '#')
-				continue;
-			if ((i > 0) && (in_line[i - 1] == '\\')) {
-				for (j = i; j < BUFSIZE; j++) {
-					in_line[j - 1] = in_line[j];
-				}
-				continue;
-			}
-			in_line[i] = (char) NULL;
-			break;
-		}
-		
 		/* parse what is left, non-comments */
 		/* partition adapter names */
 		error_code = slurm_parser(in_line,
