@@ -132,19 +132,14 @@ int fini ( void )
 int switch_p_libstate_save ( char * dir_name )
 {
 	int err;
-	fed_libstate_t *old_state = NULL;
 	Buf buffer;
 	char *file_name;
 	int ret = SLURM_SUCCESS;
 	int state_fd;
 	
-	err = fed_alloc_libstate(&old_state);
-	if(err) 
-		return SLURM_ERROR;
-	fed_destroy(old_state);
 		
 	buffer = init_buf(FED_LIBSTATE_LEN);
-	(void)fed_pack_libstate(old_state, buffer);
+	(void)fed_libstate_save(buffer);
 	file_name = xstrdup(dir_name);
 	xstrcat(file_name, "/fed_state");
 	(void)unlink(file_name);
@@ -176,8 +171,6 @@ int switch_p_libstate_save ( char * dir_name )
 	
 	if(buffer)
 		free_buf(buffer);
-	if(old_state)
-		fed_free_libstate(old_state);
 		
 	return ret;
 }
@@ -185,13 +178,12 @@ int switch_p_libstate_save ( char * dir_name )
 int switch_p_libstate_restore ( char * dir_name )
 {
 	char *data = NULL, *file_name;
-	fed_libstate_t *old_state = NULL;
 	Buf buffer = NULL;
 	int error_code = SLURM_SUCCESS;
 	int state_fd, data_allocated = 0, data_read = 0, data_size = 0;
 
 	if (dir_name == NULL)   /* clean start, no recovery */
-		return fed_init(NULL);
+		return fed_init();
 
 	file_name = xstrdup(dir_name);
 	xstrcat(file_name, "/fed_state");
@@ -220,28 +212,19 @@ int switch_p_libstate_restore ( char * dir_name )
 		error("No %s file for Federation state recovery", file_name);
 		error("Starting Federation with clean state");
 		xfree(file_name);
-		return fed_init(NULL);
+		return fed_init();
 	}
 
         if (error_code == SLURM_SUCCESS) {
-                if (fed_alloc_libstate(&old_state)) {
-                        error_code = SLURM_ERROR;
-                } else {
-                        buffer = create_buf (data, data_size);
-                        data = NULL;    /* now in buffer, don't xfree() */
-                        if (fed_unpack_libstate(old_state, buffer) < 0)
-                                error_code = SLURM_ERROR;
-                }
+		buffer = create_buf (data, data_size);
+		data = NULL;    /* now in buffer, don't xfree() */
+		if (fed_libstate_restore(buffer) < 0)
+			error_code = SLURM_ERROR;
         }
 
         if (buffer)
                 free_buf(buffer);
         xfree(data);
-
-        if (error_code == SLURM_SUCCESS)
-                error_code = fed_init(old_state);
-        if (old_state)
-                fed_free_libstate(old_state);
 
         return error_code;
 }

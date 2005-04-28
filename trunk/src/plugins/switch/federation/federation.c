@@ -826,7 +826,7 @@ _copy_node(fed_nodeinfo_t *dest, fed_nodeinfo_t *src)
 	assert(src);
 	assert(dest->magic == FED_NODEINFO_MAGIC);
 	assert(src->magic == FED_NODEINFO_MAGIC);
-			
+
 	strncpy(dest->name, src->name, FED_HOSTLEN);
 	dest->adapter_count = src->adapter_count;
 	for(i = 0; i < dest->adapter_count; i++) {
@@ -1017,6 +1017,8 @@ _print_libstate(const fed_libstate_t *l)
 	printf("--Begin libstate--\n");
 	printf("  magic = %u\n", l->magic);
 	printf("  node_count = %u\n", l->node_count);
+	printf("  node_max = %u\n", l->node_max);
+	printf("  hash_max = %u\n", l->hash_max);
 	for(i = 0; i < l->node_count; i++) {
 		memset(buf, 0, 3000);
 		fed_print_nodeinfo(&l->node_list[i], buf, 3000);
@@ -1025,12 +1027,13 @@ _print_libstate(const fed_libstate_t *l)
 	printf("--End libstate--\n");
 }
 #endif
+
 /* Unpack nodeinfo and update persistent libstate.
  *
  * Used by: slurmctld
  */
-int
-fed_unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
+static int
+_unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
 {
 	int i, j;
 	fed_adapter_t *tmp_a = NULL;
@@ -1048,7 +1051,6 @@ fed_unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
 	/* Extract node name from buffer and update global libstate 
 	 * with this nodes' info.
 	 */
-	_lock();
 	safe_unpack32(&magic, buf);
 	if(magic != FED_NODEINFO_MAGIC)
 		slurm_seterrno_ret(EBADMAGIC_FEDNODEINFO);
@@ -1084,24 +1086,35 @@ fed_unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
 	
 	/* Only copy the node_info structure if the caller wants it */
 	if(n != NULL)
-		if(_copy_node(n, tmp_n) != SLURM_SUCCESS) {
-			_unlock();
+		if(_copy_node(n, tmp_n) != SLURM_SUCCESS)
 			return SLURM_ERROR;
-		}
 
 #if FED_DEBUG
 	_print_libstate(fed_state);
 #endif
 
-	_unlock();
 	return SLURM_SUCCESS;
 	
 unpack_error:
-	_unlock();
 	/* FIX ME!  Add code here to free allocated memory */
 	if(tmp_w)
 		free(tmp_w);
 	slurm_seterrno_ret(EUNPACK);
+}
+
+/* Unpack nodeinfo and update persistent libstate.
+ *
+ * Used by: slurmctld
+ */
+int
+fed_unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
+{
+	int rc;
+
+	_lock();
+	rc = _unpack_nodeinfo(n, buf);
+	_unlock();
+	return rc;
 }
 
 /* Used by: slurmd, slurmctld */
@@ -1622,25 +1635,25 @@ fed_unload_table(fed_jobinfo_t *jp)
 	return SLURM_SUCCESS;
 }
 
-int
-fed_alloc_libstate(fed_libstate_t **l)
+static fed_libstate_t *
+_alloc_libstate(void)
 {
 	fed_libstate_t *tmp;
 	
-	assert(l);
-	
 	tmp = (fed_libstate_t *)malloc(sizeof(fed_libstate_t));
-	if(!tmp)
-		slurm_seterrno_ret(ENOMEM);
+	if(!tmp) {
+		slurm_seterrno(ENOMEM);
+		return NULL;
+	}
 	tmp->magic = FED_LIBSTATE_MAGIC;
 	tmp->node_count = 0;
 	tmp->node_max = 0;
 	tmp->node_list = NULL;
 	tmp->hash_max = 0;
 	tmp->hash_table = NULL;
-	*l = tmp;
+	tmp->key_index = 1;
 	
-	return SLURM_SUCCESS;
+	return tmp;
 }
 
 /* Used by: slurmctld */
@@ -1658,7 +1671,7 @@ _copy_libstate(fed_libstate_t *dest, fed_libstate_t *src)
 	assert(dest->node_count == 0);
 
 	_lock();	
-	/* note:  dest->node_count set by alloc_node */
+	/* note:  dest->node_count set by _alloc_node */
 	for(i = 0; i < src->node_count; i++) {
 		tmp = _alloc_node(dest, NULL); 
 		err = _copy_node(tmp, &src->node_list[i]);
@@ -1671,74 +1684,44 @@ _copy_libstate(fed_libstate_t *dest, fed_libstate_t *src)
 	_unlock();
 }
 
-/* Needs to be called before any using any functions that 
- * manipulate persistent libstate.
+/* Allocate and initialize memory for the persistent libstate.
  *
  * Used by: slurmctld
  */
 int
-fed_init(fed_libstate_t *l)
+fed_init(void)
 {
-	int err;
 	fed_libstate_t *tmp;
 
-	assert(!fed_state);
-
-	err = fed_alloc_libstate(&tmp);
-	if(err != SLURM_SUCCESS)
-		return err;
-	if(l) {
-		assert(l->magic == FED_LIBSTATE_MAGIC);
-		_copy_libstate(tmp, l); 
-		
-	} else {
-		tmp->node_count = 0;
-		tmp->node_max = 0;
-		tmp->node_list = NULL;
-		tmp->hash_max = 0;
-		tmp->hash_table = NULL;
-		tmp->key_index = 1;
-	}
+	tmp = _alloc_libstate();
+	if(!tmp)
+		return SLURM_FAILURE;
 	_lock();
+	assert(!fed_state);
 	fed_state = tmp;
 	_unlock();
 	
 	return SLURM_SUCCESS;
 }
 
-/* Used by: slurmctld */
-void
-fed_free_libstate(fed_libstate_t *lp)
+static void
+_free_libstate(fed_libstate_t *lp)
 {
 	int i;
 	
 	if(!lp)
 		return;
-	_lock();
 	for(i = 0; i < lp->node_count; i++)
 		fed_free_nodeinfo(&lp->node_list[i]);
 	if(lp->hash_table != NULL)
 		free(lp->hash_table);
 	free(lp);
-	_unlock();
 }
 
-/* Used by: slurmctld */
-void
-fed_destroy(fed_libstate_t *lp)
-{
-	assert(fed_state);
-	
-	if(lp)
-		_copy_libstate(lp, fed_state);
-	if(fed_state)
-		fed_free_libstate(fed_state);
-	fed_state = NULL;
-}
 
 /* Used by: slurmctld */
-int
-fed_pack_libstate(fed_libstate_t *lp, Buf buffer)
+static int
+_pack_libstate(fed_libstate_t *lp, Buf buffer)
 {
 	int offset;
 	int i;
@@ -1749,9 +1732,8 @@ fed_pack_libstate(fed_libstate_t *lp, Buf buffer)
 	offset = get_buf_offset(buffer);
 	pack32(lp->magic, buffer);
 	pack32(lp->node_count, buffer);
-	for(i = 0; i < lp->node_count; i++) {
+	for(i = 0; i < lp->node_count; i++)
 		(void)fed_pack_nodeinfo(&lp->node_list[i], buffer);
-	}
 	/* don't pack hash_table, we'll just rebuild on restore */
 	pack16(lp->key_index, buffer);
 	
@@ -1759,10 +1741,21 @@ fed_pack_libstate(fed_libstate_t *lp, Buf buffer)
 }
 
 /* Used by: slurmctld */
-int
-fed_unpack_libstate(fed_libstate_t *lp, Buf buffer)
+void
+fed_libstate_save(Buf buffer)
+{
+	_lock();
+	_pack_libstate(fed_state, buffer);
+	_free_libstate(fed_state);
+	_unlock();
+}
+
+/* Used by: slurmctld */
+static int
+_unpack_libstate(fed_libstate_t *lp, Buf buffer)
 {
 	int offset;
+	int node_count;
 	int i;
 	
 	assert(lp->magic == FED_LIBSTATE_MAGIC);
@@ -1770,10 +1763,10 @@ fed_unpack_libstate(fed_libstate_t *lp, Buf buffer)
 	offset = get_buf_offset(buffer);
 	
 	safe_unpack32(&lp->magic, buffer);
-	safe_unpack32(&lp->node_count, buffer);
-	for(i = 0; i < lp->node_count; i ++) {
-		(void)fed_unpack_nodeinfo(NULL, buffer);
-	}
+	safe_unpack32(&node_count, buffer);
+	for(i = 0; i < node_count; i++)
+		(void)_unpack_nodeinfo(NULL, buffer);
+	assert(lp->node_count == node_count);
 	safe_unpack16(&lp->key_index, buffer);
 	
 	return SLURM_SUCCESS;
@@ -1781,5 +1774,23 @@ fed_unpack_libstate(fed_libstate_t *lp, Buf buffer)
 unpack_error:
 	slurm_seterrno_ret(EBADMAGIC_FEDLIBSTATE); /* corrupted libstate */
 	return SLURM_ERROR;
+}
+
+/* Used by: slurmctld */
+int
+fed_libstate_restore(Buf buffer)
+{
+	int err;
+
+	_lock();
+	assert(!fed_state);
+
+	fed_state = _alloc_libstate();
+	if(!fed_state)
+		return SLURM_FAILURE;
+	_unpack_libstate(fed_state, buffer);
+	_unlock();
+
+	return SLURM_SUCCESS;
 }
 
