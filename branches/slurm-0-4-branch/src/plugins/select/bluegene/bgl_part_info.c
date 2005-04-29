@@ -220,18 +220,12 @@ extern int update_partition_list()
 				error("partition in an error state");
 			case RM_PARTITION_FREE:
 				if(bgl_record->boot_count < RETRY_BOOT_COUNT) {
-					info("Booting partition %s attempt %d",
-					      bgl_record->bgl_part_id,
-					      bgl_record->boot_count);
-					if ((rc = pm_create_partition(
-						     bgl_record->bgl_part_id))
-					    != STATUS_OK) {
-						error("pm_create_partition"
-						      "(%s): %s",
-						      bgl_record->bgl_part_id, 
-						      bgl_err_str(rc));
+					if((rc = boot_part(bgl_record, 
+							   bgl_record->
+							   node_use))
+					   != SLURM_SUCCESS) 
 						updated = -1;
-					}
+					
 					bgl_record->boot_count++;
 				} else {
 					error("Couldn't boot Partition %s "

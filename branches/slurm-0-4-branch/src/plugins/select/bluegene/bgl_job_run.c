@@ -74,8 +74,6 @@ static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int agent_cnt = 0;
 
 static void	_bgl_list_del(void *x);
-static int	_boot_part(bgl_record_t *bgl_record, 
-			   rm_partition_mode_t node_use);
 static int	_excise_block(List block_list, 
 			      pm_partition_id_t bgl_part_id, 
 			      char *nodes);
@@ -83,7 +81,6 @@ static List	_get_all_blocks(void);
 static void *	_part_agent(void *args);
 static void	_part_op(bgl_update_t *bgl_update_ptr);
 static int	_remove_job(db_job_id_t job_id);
-//static int	_set_part_owner(pm_partition_id_t bgl_part_id, char *user);
 static void	_start_agent(bgl_update_t *bgl_update_ptr);
 static void	_sync_agent(bgl_update_t *bgl_update_ptr);
 static void	_term_agent(bgl_update_t *bgl_update_ptr);
@@ -173,63 +170,6 @@ static int _remove_job(db_job_id_t job_id)
 }
 
 
-/*
- * Boot a partition. Partition state expected to be FREE upon entry. 
- * NOTE: This function does not wait for the boot to complete.
- * the slurm prolog script needs to perform the waiting.
- */
-static int _boot_part(bgl_record_t *bgl_record, rm_partition_mode_t node_use)
-{
-#ifdef HAVE_BGL_FILES
-	int rc;
-	struct passwd *pw_ent = NULL;
-	
-	if ((rc = rm_set_part_owner(bgl_record->bgl_part_id, USER_NAME)) 
-	    != STATUS_OK) {
-		error("rm_set_part_owner(%s,%s): %s", 
-		      bgl_record->bgl_part_id, 
-		      USER_NAME,
-		      bgl_err_str(rc));
-		return SLURM_ERROR;
-	}
-	if(node_use == SELECT_VIRTUAL_NODE_MODE) {
-		info("Booting partition %s in virtual mode", 
-		     bgl_record->bgl_part_id);
-		if ((rc = pm_create_partition_vnm(bgl_record->bgl_part_id)) 
-		    != STATUS_OK) {
-			error("pm_create_partition(%s): %s",
-			      bgl_record->bgl_part_id, bgl_err_str(rc));
-			return SLURM_ERROR;
-		}	
-	} else  {
-		info("Booting partition %s in coprocessor mode", 
-		     bgl_record->bgl_part_id);
-		if ((rc = pm_create_partition(bgl_record->bgl_part_id)) 
-		    != STATUS_OK) {
-			error("pm_create_partition(%s): %s",
-			      bgl_record->bgl_part_id, bgl_err_str(rc));
-			return SLURM_ERROR;
-		}	
-	}
-	slurm_mutex_lock(&part_state_mutex);
-	/* reset state and owner right now, don't wait for 
-	 * update_partition_list() to run or epilog could 
-	 * get old/bad data. */
-	bgl_record->state = RM_PARTITION_CONFIGURING;
-	bgl_record->owner_name = xstrdup(USER_NAME);
-	if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
-		error("getpwnam(%s): %m", bgl_record->owner_name);
-	} else {
-		bgl_record->owner_uid = pw_ent->pw_uid; 
-	}
-	debug("Setting bootflag for %s", bgl_record->bgl_part_id);
-	bgl_record->boot_state = 1;
-	bgl_record->boot_count = 0;
-	last_bgl_update = time(NULL);
-	slurm_mutex_unlock(&part_state_mutex);
-#endif
-	return SLURM_SUCCESS;
-}
 
 /* Update partition owner and reboot as needed */
 static void _sync_agent(bgl_update_t *bgl_update_ptr)
@@ -291,8 +231,8 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 		
 	while(1) { 
 		if(bgl_record->state == RM_PARTITION_FREE) {
-			if((rc = _boot_part(bgl_record, 
-					    bgl_update_ptr->node_use))
+			if((rc = boot_part(bgl_record, 
+					   bgl_update_ptr->node_use))
 			   != SLURM_SUCCESS) {
 				sleep(2);	
 				/* wait for the slurmd to begin 
@@ -640,14 +580,18 @@ extern int start_job(struct job_record *job_ptr)
 #ifdef HAVE_BGL_FILES
 	bgl_update_t *bgl_update_ptr;
 	bgl_record_t *bgl_record;
+	char *bgl_part_id;
 
-	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+		SELECT_DATA_PART_ID, &(bgl_part_id));
+	bgl_record = find_bgl_record(bgl_part_id);
 	if(bgl_record) {
 		slurm_mutex_lock(&part_state_mutex);
 		bgl_record->cancelled_job = 0;
 		slurm_mutex_unlock(&part_state_mutex);
 	} else {
 		error("partition %s not found!",bgl_update_ptr->bgl_part_id);
+		xfree(bgl_part_id);
 		return SLURM_ERROR;
 	}
 
@@ -655,8 +599,7 @@ extern int start_job(struct job_record *job_ptr)
 	bgl_update_ptr->op = START_OP;
 	bgl_update_ptr->uid = job_ptr->user_id;
 	bgl_update_ptr->job_id = job_ptr->job_id;
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-		SELECT_DATA_PART_ID, &(bgl_update_ptr->bgl_part_id));
+	bgl_update_ptr->bgl_part_id = bgl_part_id;
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_NODE_USE, &(bgl_update_ptr->node_use));
 	info("Queue start of job %u in BGL partition %s",
@@ -680,17 +623,20 @@ int term_job(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 #ifdef HAVE_BGL_FILES
-
 	bgl_update_t *bgl_update_ptr;
 	bgl_record_t *bgl_record;
+	char *bgl_part_id;
 
-	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+		SELECT_DATA_PART_ID, &(bgl_part_id));
+	bgl_record = find_bgl_record(bgl_part_id);
 	if(bgl_record) {
 		slurm_mutex_lock(&part_state_mutex);
 		bgl_record->cancelled_job = 1;
 		slurm_mutex_unlock(&part_state_mutex);
 	} else {
 		error("partition %s not found!",bgl_update_ptr->bgl_part_id);
+		xfree(bgl_part_id);
 		return SLURM_ERROR;
 	}
 
@@ -698,8 +644,7 @@ int term_job(struct job_record *job_ptr)
 	bgl_update_ptr->op = TERM_OP;
 	bgl_update_ptr->uid = job_ptr->user_id;
 	bgl_update_ptr->job_id = job_ptr->job_id;
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-		SELECT_DATA_PART_ID, &(bgl_update_ptr->bgl_part_id));
+	bgl_update_ptr->bgl_part_id = bgl_part_id;
 	info("Queue termination of job %u in BGL partition %s",
 		job_ptr->job_id, bgl_update_ptr->bgl_part_id);
 	_part_op(bgl_update_ptr);
@@ -806,3 +751,60 @@ extern int sync_jobs(List job_list)
 }
 
  
+/*
+ * Boot a partition. Partition state expected to be FREE upon entry. 
+ * NOTE: This function does not wait for the boot to complete.
+ * the slurm prolog script needs to perform the waiting.
+ */
+extern int boot_part(bgl_record_t *bgl_record, rm_partition_mode_t node_use)
+{
+#ifdef HAVE_BGL_FILES
+	int rc;
+	struct passwd *pw_ent = NULL;
+	
+	if ((rc = rm_set_part_owner(bgl_record->bgl_part_id, USER_NAME)) 
+	    != STATUS_OK) {
+		error("rm_set_part_owner(%s,%s): %s", 
+		      bgl_record->bgl_part_id, 
+		      USER_NAME,
+		      bgl_err_str(rc));
+		return SLURM_ERROR;
+	}
+	if(node_use == SELECT_VIRTUAL_NODE_MODE) {
+		info("Booting partition %s in virtual mode", 
+		     bgl_record->bgl_part_id);
+		if ((rc = pm_create_partition_vnm(bgl_record->bgl_part_id)) 
+		    != STATUS_OK) {
+			error("pm_create_partition(%s): %s",
+			      bgl_record->bgl_part_id, bgl_err_str(rc));
+			return SLURM_ERROR;
+		}	
+	} else  {
+		info("Booting partition %s in coprocessor mode", 
+		     bgl_record->bgl_part_id);
+		if ((rc = pm_create_partition(bgl_record->bgl_part_id)) 
+		    != STATUS_OK) {
+			error("pm_create_partition(%s): %s",
+			      bgl_record->bgl_part_id, bgl_err_str(rc));
+			return SLURM_ERROR;
+		}	
+	}
+	slurm_mutex_lock(&part_state_mutex);
+	/* reset state and owner right now, don't wait for 
+	 * update_partition_list() to run or epilog could 
+	 * get old/bad data. */
+	bgl_record->state = RM_PARTITION_CONFIGURING;
+	bgl_record->owner_name = xstrdup(USER_NAME);
+	if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
+		error("getpwnam(%s): %m", bgl_record->owner_name);
+	} else {
+		bgl_record->owner_uid = pw_ent->pw_uid; 
+	}
+	debug("Setting bootflag for %s", bgl_record->bgl_part_id);
+	bgl_record->boot_state = 1;
+	bgl_record->boot_count = 0;
+	last_bgl_update = time(NULL);
+	slurm_mutex_unlock(&part_state_mutex);
+#endif
+	return SLURM_SUCCESS;
+}
