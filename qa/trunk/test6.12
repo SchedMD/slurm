@@ -173,7 +173,7 @@ expect {
 		wait
 	}
 }
-if {$found_job != 1} {
+if {$found_job == 1} {
 	send_user "\nFAILURE: job found, apparently not killed\n"
 	exec $scancel --quiet $job_id
 	set exit_code 1

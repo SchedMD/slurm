@@ -79,7 +79,6 @@ if {$job_id1 == 0} {
 }
 
 set part_id ""
-#exp_internal 1
 spawn $scontrol show job $job_id1
 expect {
 	-re "PENDING" {
@@ -189,7 +188,7 @@ if {[string compare $part_id ""] == 0} {
 	exit 1	
 }
 
-sleep 2
+sleep 3
 set correct 0
 set redo 0
 for {set inx 0} {$inx < $interations} {incr inx} {

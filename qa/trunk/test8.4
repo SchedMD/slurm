@@ -79,7 +79,7 @@ exec $mpicc $mpicc_opts -o $test_prog ${test_prog}.c
 #
 exec $bin_rm -f $file_in $file_out $file_err
 exec echo "#!$bin_bash"					 >$file_in
-exec echo "$bin_env | $bin_grep BGL_PARTITION_ID"	>>$file_in
+exec echo "$bin_env | $bin_grep MPIRUN_PARTITION"	>>$file_in
 exec echo "$mpirun $mpirun_opts"			>>$file_in
 exec echo "$bin_echo TEST_COMPLETE"			>>$file_in
 exec $bin_chmod 700 $file_in
@@ -141,7 +141,7 @@ if {[wait_for_file $file_out] == 0} {
 	set complete 0
 	spawn $bin_cat $file_out
 	expect {
-		-re "BGL_PARTITION_ID" {
+		-re "MPIRUN_PARTITION" {
 			incr found_env
 			exp_continue
 		}
@@ -164,7 +164,7 @@ if {[wait_for_file $file_out] == 0} {
 		send_user "\nFAILURE: test failed to complete\n"
 		set exit_code 1
 	} elseif {$found_env != 1} {
-		send_user "\nFAILURE: failed to set BGL_PARTITION_ID env var\n"
+		send_user "\nFAILURE: failed to set MPIRUN_PARTITION env var\n"
 		set exit_code 1
 	}
 } else {
