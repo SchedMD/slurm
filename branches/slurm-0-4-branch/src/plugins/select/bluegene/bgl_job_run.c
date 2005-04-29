@@ -71,6 +71,7 @@ typedef struct bgl_update {
 List bgl_update_list = NULL;
 
 static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t cancel_job_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int agent_cnt = 0;
 
 static void	_bgl_list_del(void *x);
@@ -222,7 +223,7 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 	}
 	
 	if(bgl_record->node_use != bgl_update_ptr->node_use) {
-		debug("Partition in wrong mode, rebooting.");
+		info("Partition in wrong mode, rebooting.");
 		/* Free the partition */
 		debug("destroying the partition %s.", 
 		      bgl_update_ptr->bgl_part_id);
@@ -230,9 +231,9 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 	}
 		
 	while(1) { 
-		if(bgl_record->state == RM_PARTITION_FREE) {
+		if(bgl_record->state == RM_PARTITION_FREE) {			
 			if((rc = boot_part(bgl_record, 
-					   bgl_update_ptr->node_use))
+					    bgl_update_ptr->node_use))
 			   != SLURM_SUCCESS) {
 				sleep(2);	
 				/* wait for the slurmd to begin 
@@ -247,24 +248,15 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 			debug("Job %d was cancelled for Part %s",
 			      bgl_update_ptr->job_id, 
 			      bgl_record->bgl_part_id);
-			slurm_mutex_lock(&part_state_mutex);
+			slurm_mutex_lock(&cancel_job_mutex);
 			bgl_record->cancelled_job = 0;
-			slurm_mutex_unlock(&part_state_mutex);
-			return;
-		} else if (bgl_record->cancelled_job) {
-			debug("Job %d was cancelled for Part %s",
-			      bgl_update_ptr->job_id, 
-			      bgl_record->bgl_part_id);
-			slurm_mutex_lock(&part_state_mutex);
-			bgl_record->cancelled_job = 0;
-			slurm_mutex_unlock(&part_state_mutex);
+			slurm_mutex_unlock(&cancel_job_mutex);
 			return;
 		} else if(bgl_record->state != RM_PARTITION_READY) 
 			sleep(1);
 		else 
 			break;
 	}
-		
 	if(bgl_record->state==RM_PARTITION_READY) {
 		slurm_mutex_lock(&part_state_mutex);
 		info("Adding user %s to Partition %s",
@@ -585,16 +577,21 @@ extern int start_job(struct job_record *job_ptr)
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_PART_ID, &(bgl_part_id));
 	bgl_record = find_bgl_record(bgl_part_id);
+
 	if(bgl_record) {
-		slurm_mutex_lock(&part_state_mutex);
+		/* wait for cleanup from the last cancelled 
+		   job on the partition 
+		*/
+		if(bgl_record->cancelled_job)
+			sleep(2);
+		slurm_mutex_lock(&cancel_job_mutex);
 		bgl_record->cancelled_job = 0;
-		slurm_mutex_unlock(&part_state_mutex);
+		slurm_mutex_unlock(&cancel_job_mutex);
 	} else {
 		error("partition %s not found!",bgl_update_ptr->bgl_part_id);
 		xfree(bgl_part_id);
 		return SLURM_ERROR;
 	}
-
 	bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
 	bgl_update_ptr->op = START_OP;
 	bgl_update_ptr->uid = job_ptr->user_id;
@@ -604,6 +601,9 @@ extern int start_job(struct job_record *job_ptr)
 		SELECT_DATA_NODE_USE, &(bgl_update_ptr->node_use));
 	info("Queue start of job %u in BGL partition %s",
 		job_ptr->job_id, bgl_update_ptr->bgl_part_id);
+
+	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
+	
 	_part_op(bgl_update_ptr);
 #endif
 	return rc;
@@ -623,6 +623,7 @@ int term_job(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 #ifdef HAVE_BGL_FILES
+
 	bgl_update_t *bgl_update_ptr;
 	bgl_record_t *bgl_record;
 	char *bgl_part_id;
@@ -631,9 +632,9 @@ int term_job(struct job_record *job_ptr)
 		SELECT_DATA_PART_ID, &(bgl_part_id));
 	bgl_record = find_bgl_record(bgl_part_id);
 	if(bgl_record) {
-		slurm_mutex_lock(&part_state_mutex);
+		slurm_mutex_lock(&cancel_job_mutex);
 		bgl_record->cancelled_job = 1;
-		slurm_mutex_unlock(&part_state_mutex);
+		slurm_mutex_unlock(&cancel_job_mutex);
 	} else {
 		error("partition %s not found!",bgl_update_ptr->bgl_part_id);
 		xfree(bgl_part_id);
@@ -750,7 +751,6 @@ extern int sync_jobs(List job_list)
 	return SLURM_SUCCESS;
 }
 
- 
 /*
  * Boot a partition. Partition state expected to be FREE upon entry. 
  * NOTE: This function does not wait for the boot to complete.
@@ -795,6 +795,7 @@ extern int boot_part(bgl_record_t *bgl_record, rm_partition_mode_t node_use)
 	 * get old/bad data. */
 	bgl_record->state = RM_PARTITION_CONFIGURING;
 	bgl_record->owner_name = xstrdup(USER_NAME);
+	//bgl_record->node_use = node_use;
 	if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
 		error("getpwnam(%s): %m", bgl_record->owner_name);
 	} else {
