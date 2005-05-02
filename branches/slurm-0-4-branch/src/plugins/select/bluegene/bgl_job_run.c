@@ -274,6 +274,9 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 				   to the script initiation */
 				(void) slurm_fail_job(
 					bgl_update_ptr->job_id);
+				slurm_mutex_lock(&cancel_job_mutex);
+				bgl_record->cancelled_job = 0;
+				slurm_mutex_unlock(&cancel_job_mutex);
 				return;
 			}
 		} else if (bgl_record->cancelled_job) {
