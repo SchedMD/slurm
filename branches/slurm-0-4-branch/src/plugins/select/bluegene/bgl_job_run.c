@@ -262,7 +262,15 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 	list_iterator_destroy(itr);
 	
 	while(1) { 
-		if(bgl_record->state == RM_PARTITION_FREE) {
+		if (bgl_record->cancelled_job) {
+			info("Job %d was cancelled for Part %s",
+			      bgl_update_ptr->job_id, 
+			      bgl_record->bgl_part_id);
+			slurm_mutex_lock(&cancel_job_mutex);
+			bgl_record->cancelled_job = 0;
+			slurm_mutex_unlock(&cancel_job_mutex);
+			return;
+		} else if(bgl_record->state == RM_PARTITION_FREE) {
 			
 			if((rc = boot_part(bgl_record, 
 					    bgl_update_ptr->node_use))
@@ -279,14 +287,6 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 				slurm_mutex_unlock(&cancel_job_mutex);
 				return;
 			}
-		} else if (bgl_record->cancelled_job) {
-			info("Job %d was cancelled for Part %s",
-			      bgl_update_ptr->job_id, 
-			      bgl_record->bgl_part_id);
-			slurm_mutex_lock(&cancel_job_mutex);
-			bgl_record->cancelled_job = 0;
-			slurm_mutex_unlock(&cancel_job_mutex);
-			return;
 		} else if(bgl_record->state != RM_PARTITION_READY) 
 			sleep(1);
 		else 
