@@ -634,8 +634,6 @@ extern int start_job(struct job_record *job_ptr)
 	info("Queue start of job %u in BGL partition %s",
 		job_ptr->job_id, bgl_update_ptr->bgl_part_id);
 
-	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
-	
 	_part_op(bgl_update_ptr);
 #endif
 	return rc;
