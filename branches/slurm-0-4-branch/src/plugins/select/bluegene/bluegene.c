@@ -691,6 +691,23 @@ extern int create_static_partitions(List part_list)
 #endif	/* HAVE_BGL_FILES */
 	
 no_total:
+	if(bgl_list) {
+		itr = list_iterator_create(bgl_list);
+		while ((bgl_record = (bgl_record_t*) list_next(itr)) != NULL) {
+			if ((bgl_record->geo[X] == (DIM_SIZE[X]-1))
+			    && (bgl_record->geo[Y] == (DIM_SIZE[Y]-1))
+			    && (bgl_record->geo[Z] == (DIM_SIZE[Z]-1))) {
+				debug("full partiton = %s.", 
+				      bgl_record->bgl_part_id);
+				bgl_record->full_partition = 1;
+				
+				break;
+			}
+		}
+		list_iterator_destroy(itr);
+	} else {
+		error("create_static_partitions: no bgl_list 5");
+	}	
 	last_bgl_update = time(NULL);
 	rc = SLURM_SUCCESS;
 #ifdef _PRINT_PARTS_AND_EXIT
@@ -703,7 +720,7 @@ no_total:
 		}
 		list_iterator_destroy(itr);
 	} else {
-		error("create_static_partitions: no bgl_list 5");		
+		error("create_static_partitions: no bgl_list 5");
 	}
  	exit(0);
 #endif	/* _PRINT_PARTS_AND_EXIT */

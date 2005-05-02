@@ -164,29 +164,30 @@ static int _post_allocate(bgl_record_t *bgl_record)
 			rc = SLURM_ERROR;
 			goto cleanup;
 		}
-		info("Booting partition %s", bgl_record->bgl_part_id);
-		if ((rc = pm_create_partition(bgl_record->bgl_part_id)) 
-				!= STATUS_OK) {
-			error("pm_create_partition(%s): %s",
-			      bgl_record->bgl_part_id, bgl_err_str(rc));
-			rc = SLURM_ERROR;
-			goto cleanup;
-		}
+		/* info("Booting partition %s", bgl_record->bgl_part_id); */
+/* 		if ((rc = pm_create_partition(bgl_record->bgl_part_id))  */
+/* 				!= STATUS_OK) { */
+/* 			error("pm_create_partition(%s): %s", */
+/* 			      bgl_record->bgl_part_id, bgl_err_str(rc)); */
+/* 			rc = SLURM_ERROR; */
+/* 			goto cleanup; */
+/* 		} */
 				
 		/* reset state and owner right now, don't wait for 
 		 * update_partition_list() to run or epilog could 
 		 * get old/bad data. */
-		last_bgl_update = time(NULL);
-		bgl_record->state = RM_PARTITION_CONFIGURING;
+/* 		bgl_record->state = RM_PARTITION_CONFIGURING; */
+/* 		debug("Setting bootflag for %s", bgl_record->bgl_part_id); */
+/* 		bgl_record->boot_state = 1; */
+/* 		bgl_record->boot_count = 0; */
 		bgl_record->owner_name = xstrdup(USER_NAME);
 		if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
 			error("getpwnam(%s): %m", bgl_record->owner_name);
 		} else {
 			bgl_record->owner_uid = pw_ent->pw_uid;
 		} 
-		debug("Setting bootflag for %s", bgl_record->bgl_part_id);
-		bgl_record->boot_state = 1;
-		bgl_record->boot_count = 0;
+		last_bgl_update = time(NULL);
+		
 	}
 cleanup:
 	/* We are done with the partition */

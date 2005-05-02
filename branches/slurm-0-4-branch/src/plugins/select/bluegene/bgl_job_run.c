@@ -212,13 +212,15 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 {
 	int rc;
 	bgl_record_t *bgl_record = NULL;
+	bgl_record_t *found_record = NULL;
 	char *owner_name = uid_to_string(bgl_update_ptr->uid);
+	ListIterator itr;
 	
 	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
 	
 	if(!bgl_record) {
 		error("partition %s not found in bgl_list",
-				bgl_update_ptr->bgl_part_id);
+		      bgl_update_ptr->bgl_part_id);
 		return;
 	}
 	
@@ -229,9 +231,39 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 		      bgl_update_ptr->bgl_part_id);
 		bgl_free_partition(bgl_record);			
 	}
-		
+	
+	itr = list_iterator_create(bgl_list);
+	if(bgl_record->full_partition) {
+		info("Booting full partition freeing all others");
+		while ((found_record = (bgl_record_t*) 
+			list_next(itr)) != NULL) {
+			if(found_record->state != RM_PARTITION_FREE) {
+				if (!found_record->full_partition) {
+					debug("destroying the partition %s.", 
+					      found_record->bgl_part_id);
+					bgl_free_partition(found_record);	
+				}
+			}
+		}		
+	} else {
+		while ((found_record = (bgl_record_t*) 
+			list_next(itr)) != NULL) {
+			if (found_record->full_partition) {
+				if(found_record->state != RM_PARTITION_FREE) {
+					debug("destroying the "
+					      "full partition %s.", 
+					      found_record->bgl_part_id);
+					bgl_free_partition(found_record);
+				}
+				break;
+			}
+		}
+	}
+	list_iterator_destroy(itr);
+	
 	while(1) { 
-		if(bgl_record->state == RM_PARTITION_FREE) {			
+		   if(bgl_record->state == RM_PARTITION_FREE) {
+			
 			if((rc = boot_part(bgl_record, 
 					    bgl_update_ptr->node_use))
 			   != SLURM_SUCCESS) {

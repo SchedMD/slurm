@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  bluegene.h - header for blue gene configuration processing module. 
  *
- *  $Id$
+ * $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -100,6 +100,7 @@ typedef struct bgl_record {
 	int boot_count;                 /* number of attemts boot attempts */
 	bitstr_t *bitmap;               /* bitmap to check the name of partition */
 	int cancelled_job;
+	int full_partition;
 } bgl_record_t;
 
 typedef struct {

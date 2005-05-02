@@ -223,9 +223,9 @@ extern int update_partition_list()
 					if((rc = boot_part(bgl_record, 
 							   bgl_record->
 							   node_use))
-					   != SLURM_SUCCESS) 
+					   != SLURM_SUCCESS) {
 						updated = -1;
-					
+					}
 					bgl_record->boot_count++;
 				} else {
 					error("Couldn't boot Partition %s "
