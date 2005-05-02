@@ -262,7 +262,7 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 	list_iterator_destroy(itr);
 	
 	while(1) { 
-		   if(bgl_record->state == RM_PARTITION_FREE) {
+		if(bgl_record->state == RM_PARTITION_FREE) {
 			
 			if((rc = boot_part(bgl_record, 
 					    bgl_update_ptr->node_use))
@@ -277,7 +277,7 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 				return;
 			}
 		} else if (bgl_record->cancelled_job) {
-			debug("Job %d was cancelled for Part %s",
+			info("Job %d was cancelled for Part %s",
 			      bgl_update_ptr->job_id, 
 			      bgl_record->bgl_part_id);
 			slurm_mutex_lock(&cancel_job_mutex);
@@ -411,7 +411,10 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 	} else {
 		error("_term_agent: record not found in bgl_list");
 	}
-
+	slurm_mutex_lock(&cancel_job_mutex);
+	bgl_record->cancelled_job = 0;
+	slurm_mutex_unlock(&cancel_job_mutex);
+			
 	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
 		error("rm_free_job_list(): %s", bgl_err_str(rc));
 }
@@ -611,14 +614,15 @@ extern int start_job(struct job_record *job_ptr)
 	bgl_record = find_bgl_record(bgl_part_id);
 
 	if(bgl_record) {
-		/* wait for cleanup from the last cancelled 
-		   job on the partition 
+		/* wait for cleanup from the last cancelled
+		   job on the partition
 		*/
-		if(bgl_record->cancelled_job)
-			sleep(2);
-		slurm_mutex_lock(&cancel_job_mutex);
-		bgl_record->cancelled_job = 0;
-		slurm_mutex_unlock(&cancel_job_mutex);
+		while(bgl_record->cancelled_job) {
+			info("waiting for the job to "
+			     "finish setting it set back up " 
+			     "after a cancel.");
+			sleep(1);
+		}
 	} else {
 		error("partition %s not found!",bgl_update_ptr->bgl_part_id);
 		xfree(bgl_part_id);
