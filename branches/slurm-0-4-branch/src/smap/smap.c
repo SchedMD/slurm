@@ -30,6 +30,8 @@
 #include <signal.h>
 #include "src/smap/smap.h"
 
+#define MIN_SCREEN_WIDTH 92
+
 /********************
  * Global Variables *
  ********************/
@@ -124,16 +126,17 @@ int main(int argc, char *argv[])
 #ifdef HAVE_BGL
 		height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
 		width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
-		if (COLS < (75 + width) || LINES < height) {
+		if (COLS < (MIN_SCREEN_WIDTH + width) || LINES < height) {
+			width += MIN_SCREEN_WIDTH;
 #else
 		height = 10;
 		width = COLS;
-	        if (COLS < 75 || LINES < height) {
+	        if (COLS < MIN_SCREEN_WIDTH || LINES < height) {
 #endif
 			
 			endwin();
 			error("Screen is too small make sure the screen is at least %dx%d\n"
-			      "Right now it is %dx%d\n", 75 + width, height, COLS, LINES);
+			      "Right now it is %dx%d\n", width, height, COLS, LINES);
 			pa_fini();
 			exit(0);
 		}
@@ -348,21 +351,25 @@ static void *_resize_handler(int sig)
 	delwin(pa_system_ptr->text_win);
 	
 	endwin();
+	COLS=0;
+	LINES=0;
 	initscr();
+	getmaxyx(stdscr,LINES,COLS);
 
 #ifdef HAVE_BGL
 	height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
 	width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
-	if (COLS < (75 + width) || LINES < height) {
+	if (COLS < (MIN_SCREEN_WIDTH + width) || LINES < height) {
+		width += MIN_SCREEN_WIDTH;
 #else
 	height = 10;
 	width = COLS;
-	if (COLS < 75 || LINES < height) {
+	if (COLS < MIN_SCREEN_WIDTH || LINES < height) {
 #endif
 
 		endwin();
 		error("Screen is too small make sure the screen is at least %dx%d\n"
-		      "Right now it is %dx%d\n", 75 + width, height, COLS, LINES);
+		      "Right now it is %dx%d\n", width, height, COLS, LINES);
 		pa_fini();
 		exit(0);
 	}
