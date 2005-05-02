@@ -409,15 +409,13 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		}
 		bgl_record->boot_state = 0;
 		bgl_record->boot_count = 0;
+		bgl_record->cancelled_job = 0;
 		last_bgl_update = time(NULL);
 		slurm_mutex_unlock(&part_state_mutex);		
 	} else {
 		error("_term_agent: record not found in bgl_list");
 	}
-	slurm_mutex_lock(&cancel_job_mutex);
-	bgl_record->cancelled_job = 0;
-	slurm_mutex_unlock(&cancel_job_mutex);
-			
+
 	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
 		error("rm_free_job_list(): %s", bgl_err_str(rc));
 }
