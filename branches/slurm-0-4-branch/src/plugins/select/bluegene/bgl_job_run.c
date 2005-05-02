@@ -71,7 +71,6 @@ typedef struct bgl_update {
 List bgl_update_list = NULL;
 
 static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t cancel_job_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int agent_cnt = 0;
 
 static void	_bgl_list_del(void *x);
@@ -266,9 +265,7 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 			info("Job %d was cancelled for Part %s",
 			      bgl_update_ptr->job_id, 
 			      bgl_record->bgl_part_id);
-			slurm_mutex_lock(&cancel_job_mutex);
 			bgl_record->cancelled_job = 0;
-			slurm_mutex_unlock(&cancel_job_mutex);
 			return;
 		} else if(bgl_record->state == RM_PARTITION_FREE) {
 			
@@ -282,9 +279,7 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 				   to the script initiation */
 				(void) slurm_fail_job(
 					bgl_update_ptr->job_id);
-				slurm_mutex_lock(&cancel_job_mutex);
 				bgl_record->cancelled_job = 0;
-				slurm_mutex_unlock(&cancel_job_mutex);
 				return;
 			}
 		} else if(bgl_record->state != RM_PARTITION_READY) 
@@ -411,7 +406,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		bgl_record->boot_count = 0;
 		bgl_record->cancelled_job = 0;
 		last_bgl_update = time(NULL);
-		slurm_mutex_unlock(&part_state_mutex);		
+		slurm_mutex_unlock(&part_state_mutex);
 	} else {
 		error("_term_agent: record not found in bgl_list");
 	}
@@ -667,9 +662,7 @@ int term_job(struct job_record *job_ptr)
 		SELECT_DATA_PART_ID, &(bgl_part_id));
 	bgl_record = find_bgl_record(bgl_part_id);
 	if(bgl_record) {
-		slurm_mutex_lock(&cancel_job_mutex);
 		bgl_record->cancelled_job = 1;
-		slurm_mutex_unlock(&cancel_job_mutex);
 	} else {
 		error("partition %s not found!",bgl_update_ptr->bgl_part_id);
 		xfree(bgl_part_id);
