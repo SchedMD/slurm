@@ -694,9 +694,9 @@ no_total:
 	if(bgl_list) {
 		itr = list_iterator_create(bgl_list);
 		while ((bgl_record = (bgl_record_t*) list_next(itr)) != NULL) {
-			if ((bgl_record->geo[X] == (DIM_SIZE[X]-1))
-			    && (bgl_record->geo[Y] == (DIM_SIZE[Y]-1))
-			    && (bgl_record->geo[Z] == (DIM_SIZE[Z]-1))) {
+			if ((bgl_record->geo[X] == DIM_SIZE[X])
+			    && (bgl_record->geo[Y] == DIM_SIZE[Y])
+			    && (bgl_record->geo[Z] == DIM_SIZE[Z])) {
 				debug("full partiton = %s.", 
 				      bgl_record->bgl_part_id);
 				bgl_record->full_partition = 1;

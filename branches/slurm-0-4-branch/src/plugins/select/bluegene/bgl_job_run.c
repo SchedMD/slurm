@@ -282,12 +282,14 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 				bgl_record->cancelled_job = 0;
 				return;
 			}
-		} else if(bgl_record->state != RM_PARTITION_READY) 
+		} else if((bgl_record->state != RM_PARTITION_READY)
+			  && (bgl_record->state != RM_PARTITION_CONFIGURING))
 			sleep(1);
 		else 
 			break;
 	}
-	if(bgl_record->state==RM_PARTITION_READY) {
+	if((bgl_record->state == RM_PARTITION_READY)
+	   || (bgl_record->state == RM_PARTITION_CONFIGURING)) {
 		slurm_mutex_lock(&part_state_mutex);
 		info("Adding user %s to Partition %s",
 		     owner_name, 
@@ -607,6 +609,8 @@ extern int start_job(struct job_record *job_ptr)
 
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_PART_ID, &(bgl_part_id));
+	if(!bgl_part_id)
+		return SLURM_ERROR;
 	bgl_record = find_bgl_record(bgl_part_id);
 
 	if(bgl_record) {
@@ -614,7 +618,7 @@ extern int start_job(struct job_record *job_ptr)
 		   job on the partition
 		*/
 		while(bgl_record->cancelled_job) {
-			info("waiting for the job to "
+			debug("waiting for the job to "
 			     "finish setting it set back up " 
 			     "after a cancel.");
 			sleep(1);

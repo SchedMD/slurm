@@ -1752,7 +1752,7 @@ static void  _slurm_rpc_node_select_info(slurm_msg_t * msg)
 	END_TIMER;
 
 	if (error_code) {
-		info("_slurm_rpc_node_select_info: %s", 
+		debug3("_slurm_rpc_node_select_info: %s", 
 			slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
