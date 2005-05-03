@@ -170,6 +170,12 @@ static int _get_job_size(uint32_t job_id)
 	return size;
 }
 
+/*
+ * Test if any BGL blocks are in deallocating state 
+ * RET	1:  deallocate in progress
+ *	0:  no deallocate in progress
+ *	-1: error occurred
+ */
 static int _partitions_dealloc()
 {
 	static node_select_info_msg_t *bgl_info_ptr = NULL, *new_bgl_ptr = NULL;
@@ -189,7 +195,7 @@ static int _partitions_dealloc()
 	}
 
 	if (error_code) {
-		printf("slurm_load_partitions: %s",
+		fprintf(stderr, "slurm_load_partitions: %s",
 		       slurm_strerror(slurm_get_errno()));
 		return -1;
 	}
