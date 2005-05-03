@@ -403,7 +403,7 @@ int read_bgl_partitions()
 		} 
 				
 		bgl_record->part_lifecycle = STATIC;
-				
+						
 		if ((rc = rm_free_partition(part_ptr))
 				!= STATUS_OK) {
 			error("rm_free_partition(): %s", bgl_err_str(rc));

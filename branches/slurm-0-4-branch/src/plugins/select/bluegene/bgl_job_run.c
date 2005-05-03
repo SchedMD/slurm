@@ -394,15 +394,17 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 			info("Removing user %s from Partition %s",
 			     bgl_record->owner_name, 
 			     bgl_record->bgl_part_id);
-		}
-
-		xfree(bgl_record->owner_name);
-		
-		bgl_record->owner_name = xstrdup(USER_NAME);
-		if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
-			error("getpwnam(%s): %m", bgl_record->owner_name);
 		} else {
-			bgl_record->owner_uid = pw_ent->pw_uid; 
+
+			xfree(bgl_record->owner_name);			
+			bgl_record->owner_name = xstrdup(USER_NAME);
+			if((pw_ent = getpwnam(bgl_record->owner_name))
+			   == NULL) {
+				error("getpwnam(%s): %m", 
+				      bgl_record->owner_name);
+			} else {
+				bgl_record->owner_uid = pw_ent->pw_uid; 
+			}
 		}
 		bgl_record->boot_state = 0;
 		bgl_record->boot_count = 0;
@@ -603,14 +605,13 @@ extern int start_job(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 #ifdef HAVE_BGL_FILES
-	bgl_update_t *bgl_update_ptr;
-	bgl_record_t *bgl_record;
-	char *bgl_part_id;
+	bgl_update_t *bgl_update_ptr = NULL;
+	bgl_record_t *bgl_record = NULL;
+	char *bgl_part_id = NULL;
 
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_PART_ID, &(bgl_part_id));
-	if(!bgl_part_id)
-		return SLURM_ERROR;
+	
 	bgl_record = find_bgl_record(bgl_part_id);
 
 	if(bgl_record) {
@@ -658,12 +659,13 @@ int term_job(struct job_record *job_ptr)
 	int rc = SLURM_SUCCESS;
 #ifdef HAVE_BGL_FILES
 
-	bgl_update_t *bgl_update_ptr;
-	bgl_record_t *bgl_record;
-	char *bgl_part_id;
+	bgl_update_t *bgl_update_ptr = NULL;
+	bgl_record_t *bgl_record = NULL;
+	char *bgl_part_id = NULL;
 
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_PART_ID, &(bgl_part_id));
+	
 	bgl_record = find_bgl_record(bgl_part_id);
 	if(bgl_record) {
 		bgl_record->cancelled_job = 1;

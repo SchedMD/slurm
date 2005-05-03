@@ -281,6 +281,9 @@ extern bgl_record_t *find_bgl_record(char *bgl_part_id)
 	ListIterator itr;
 	bgl_record_t *bgl_record = NULL;
 	
+	if(!bgl_part_id)
+		return NULL;
+	
 	if(bgl_list) {
 		itr = list_iterator_create(bgl_list);
 		while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) 
@@ -543,13 +546,14 @@ extern int create_static_partitions(List part_list)
 	ListIterator itr_found;
 #endif
 	reset_pa_system();
-	
+		
 	if(bgl_list) {
 		itr = list_iterator_create(bgl_list);
 		while ((bgl_record = (bgl_record_t *) list_next(itr)) 
 		       != NULL) {
 			
 			if(bgl_record->bp_count>0 
+			   && !bgl_record->full_partition
 			   && bgl_record->node_use==SELECT_COPROCESSOR_MODE)
 				set_bgl_part(bgl_record->bgl_part_list, 
 					     bgl_record->bp_count, 
@@ -855,7 +859,7 @@ static int _validate_config_nodes(void)
 		
 			if(bgl_curr_part_list) {
 				itr_curr = list_iterator_create(
-					bgl_curr_part_list);
+					bgl_curr_part_list);				
 				while ((init_record = (bgl_record_t*) 
 					list_next(itr_curr)) 
 				       != NULL) {
@@ -895,8 +899,60 @@ static int _validate_config_nodes(void)
 				     convert_conn_type(record->conn_type),
 				     convert_node_use(record->node_use));
 			}
-		}
+		}		
 		list_iterator_destroy(itr_conf);
+		
+		if(bgl_curr_part_list) {
+			itr_curr = list_iterator_create(
+				bgl_curr_part_list);				
+			while ((init_record = (bgl_record_t*) 
+				list_next(itr_curr)) 
+			       != NULL) {
+				_process_nodes(init_record);
+				
+				if ((init_record->geo[X] == DIM_SIZE[X])
+				    && (init_record->geo[Y] == DIM_SIZE[Y])
+				    && (init_record->geo[Z] == DIM_SIZE[Z])) {
+					record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
+					list_push(bgl_list, record);
+	
+					record->full_partition = 1;
+					record->bgl_part_id = xstrdup(
+						init_record->bgl_part_id);
+					record->nodes = xstrdup(
+						init_record->nodes);
+					record->state = init_record->state;
+					record->node_use =
+						init_record->node_use;
+					record->owner_uid =
+						init_record->owner_uid;
+					record->owner_name = xstrdup(
+						init_record->owner_name);
+					record->conn_type = init_record->conn_type;
+					record->node_use = init_record->node_use;
+					record->bp_count = init_record->bp_count;
+					record->boot_state = init_record->boot_state;
+					record->switch_count = init_record->switch_count;
+					if((record->bitmap = bit_copy(init_record->bitmap)) == NULL) {
+						error("Unable to copy bitmap for", 
+						      init_record->nodes);
+					}
+					list_push(bgl_found_part_list, record);
+					info("Found existing BGL PartitionID:%s "
+					     "Nodes:%s Conn:%s Mode:%s",
+					     record->bgl_part_id, 
+					     record->nodes,
+					     convert_conn_type(record->conn_type),
+					     convert_node_use(record->node_use));
+					break;
+				}
+			}
+			list_iterator_destroy(itr_curr);
+		} else {
+			error("_validate_config_nodes: "
+			      "no bgl_curr_part_list 2");
+		}
+
 		if(list_count(bgl_list) == list_count(bgl_curr_part_list))
 			rc = SLURM_SUCCESS;
 	} else {
