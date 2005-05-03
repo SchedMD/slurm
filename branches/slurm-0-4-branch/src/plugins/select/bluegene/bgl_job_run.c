@@ -394,8 +394,6 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 			info("Removing user %s from Partition %s",
 			     bgl_record->owner_name, 
 			     bgl_record->bgl_part_id);
-		} else {
-
 			xfree(bgl_record->owner_name);			
 			bgl_record->owner_name = xstrdup(USER_NAME);
 			if((pw_ent = getpwnam(bgl_record->owner_name))
