@@ -43,6 +43,8 @@
 
 #include "src/api/job_info.h"
 #include "src/common/hostlist.h"
+#include "src/common/node_select.h"
+#include "src/api/node_select_info.h"
 
 #define _DEBUG 0
 
@@ -58,9 +60,18 @@
 
 int max_delay = MIN_DELAY;
 int cur_delay = 0; 
+  
+enum rm_partition_state {RM_PARTITION_FREE, 
+			 RM_PARTITION_CONFIGURING,
+			 RM_PARTITION_READY,
+			 RM_PARTITION_BUSY,
+			 RM_PARTITION_DEALLOCATING,
+			 RM_PARTITION_ERROR,
+			 RM_PARTITION_NAV};
 
 static int  _get_job_size(uint32_t job_id);
 static int  _wait_part_ready(uint32_t job_id);
+static int  _partitions_dealloc();
 
 int main(int argc, char *argv[])
 {
@@ -89,7 +100,7 @@ int main(int argc, char *argv[])
 static int _wait_part_ready(uint32_t job_id)
 {
 	int is_ready = 0, i, rc;
-
+	
 	max_delay = MIN_DELAY + (INCR_DELAY * _get_job_size(job_id));
 
 #if _DEBUG
@@ -99,7 +110,8 @@ static int _wait_part_ready(uint32_t job_id)
 	for (i=0; (cur_delay < max_delay); i++) {
 		if (i) {
 			sleep(POLL_SLEEP);
-			cur_delay += POLL_SLEEP;
+			if(_partitions_dealloc() == 0) 
+				cur_delay += POLL_SLEEP;
 #if _DEBUG
 			printf(".");
 #endif
@@ -156,4 +168,38 @@ static int _get_job_size(uint32_t job_id)
 	printf("Size is %d\n", size);
 #endif
 	return size;
+}
+
+static int _partitions_dealloc()
+{
+	static node_select_info_msg_t *bgl_info_ptr = NULL, *new_bgl_ptr = NULL;
+	int rc = 0, error_code = 0, i;
+	
+	if (bgl_info_ptr) {
+		error_code = slurm_load_node_select(bgl_info_ptr->last_update, 
+						   &new_bgl_ptr);
+		if (error_code == SLURM_SUCCESS)
+			select_g_free_node_info(&bgl_info_ptr);
+		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+			error_code = SLURM_SUCCESS;
+			new_bgl_ptr = bgl_info_ptr;
+		}
+	} else {
+		error_code = slurm_load_node_select((time_t) NULL, &new_bgl_ptr);
+	}
+
+	if (error_code) {
+		printf("slurm_load_partitions: %s",
+		       slurm_strerror(slurm_get_errno()));
+		return -1;
+	}
+	for (i=0; i<new_bgl_ptr->record_count; i++) {
+		if(new_bgl_ptr->bgl_info_array[i].state 
+		   == RM_PARTITION_DEALLOCATING) {
+			rc = 1;
+			break;
+		}
+	}
+	bgl_info_ptr = new_bgl_ptr;
+	return rc;
 }

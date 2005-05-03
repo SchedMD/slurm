@@ -555,9 +555,13 @@ extern int create_static_partitions(List part_list)
 			if(bgl_record->bp_count>0 
 			   && !bgl_record->full_partition
 			   && bgl_record->node_use==SELECT_COPROCESSOR_MODE)
-				set_bgl_part(bgl_record->bgl_part_list, 
-					     bgl_record->bp_count, 
-					     bgl_record->conn_type);
+				if(set_bgl_part(bgl_record->bgl_part_list, 
+						bgl_record->bp_count, 
+						 bgl_record->conn_type) == SLURM_ERROR) {
+					error("I was unable to make the "
+					      "requested partition.");
+					return SLURM_ERROR;
+				}
 		}
 		list_iterator_destroy(itr);
 	} else {
@@ -664,9 +668,13 @@ extern int create_static_partitions(List part_list)
 	}
 	bgl_record->owner_uid = pw_ent->pw_uid;
 	
-	set_bgl_part(bgl_record->bgl_part_list, 
-		     bgl_record->bp_count, 
-		     bgl_record->conn_type);
+	if(set_bgl_part(bgl_record->bgl_part_list, 
+			 bgl_record->bp_count, 
+			 bgl_record->conn_type) == SLURM_ERROR) {
+		error("I was unable to make the "
+		      "requested partition.");
+		return SLURM_ERROR;
+	}
 	bgl_record->node_use = SELECT_COPROCESSOR_MODE;
 #ifdef HAVE_BGL_FILES
 	if((rc = configure_partition(bgl_record)) == SLURM_ERROR)

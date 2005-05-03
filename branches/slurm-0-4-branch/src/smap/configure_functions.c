@@ -371,9 +371,11 @@ static int _remove_allocation(char *com, List allocated_partitions)
 		results_i = list_iterator_create(allocated_partitions);
 		while((allocated_part = list_next(results_i)) != NULL) {
 			if(found) {
-				redo_part(allocated_part->nodes, 
-					allocated_part->request->conn_type, 
-					color_count);
+				if(redo_part(allocated_part->nodes, 
+					     allocated_part->request->conn_type, 
+					     color_count) == SLURM_ERROR) {
+					return 0;
+				}
 				allocated_part->letter = 
 					letters[color_count%62];
 				allocated_part->color =

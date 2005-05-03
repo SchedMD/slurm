@@ -342,7 +342,7 @@ static void _print_header_part(void)
 		} else {
 			printf("       BGL_BLOCK ");
 			printf("STATE ");
-			printf("  USER ");
+			printf("    USER ");
 			printf(" CONN ");
 			printf(" NODE_USE ");
 		}
@@ -533,7 +533,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 				printf("%16.16s ", db2_info_ptr->bgl_block_name);
 				printf("%5.5s ", _part_state_str(db2_info_ptr->state));
 				
-				printf("%6.6s ", db2_info_ptr->bgl_user_name);
+				printf("%8.8s ", db2_info_ptr->bgl_user_name);
 				
 				printf("%5.5s ", _convert_conn_type(
 					       db2_info_ptr->bgl_conn_type));

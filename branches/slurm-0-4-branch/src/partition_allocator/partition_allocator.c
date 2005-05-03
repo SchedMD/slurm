@@ -669,9 +669,10 @@ extern int remove_part(List nodes, int new_count)
 extern int alter_part(List nodes, int conn_type)
 {
 	int dim;
-	pa_node_t* pa_node;
-	pa_switch_t *curr_switch; 
+	pa_node_t* pa_node = NULL;
+	pa_switch_t *curr_switch = NULL; 
 	int size=0;
+	char *name = NULL;
 	ListIterator results_i;		
 
 	results_i = list_iterator_create(nodes);
@@ -691,9 +692,12 @@ extern int alter_part(List nodes, int conn_type)
 		size++;
 	}
 	list_iterator_destroy(results_i);
-	_set_internal_wires(nodes, size, conn_type);
-
-	return 1;
+	if((name = _set_internal_wires(nodes, size, conn_type)) == NULL)
+		return SLURM_ERROR;
+	else {
+		xfree(name);
+		return SLURM_SUCCESS;
+	}
 }
 
 /** 
@@ -707,7 +711,7 @@ extern int redo_part(List nodes, int conn_type, int new_count)
 	pa_node_t* pa_node;
 	pa_switch_t *curr_switch; 
 	int size=0;
-	char *name;
+	char *name = NULL;
 	ListIterator results_i;		
 
 	results_i = list_iterator_create(nodes);
@@ -731,15 +735,23 @@ extern int redo_part(List nodes, int conn_type, int new_count)
 	}
 	color_count++;
 	list_iterator_destroy(results_i);
-	name = _set_internal_wires(nodes, size, conn_type);
-	xfree(name);
-	return 1;
+	if((name = _set_internal_wires(nodes, size, conn_type)) == NULL)
+		return SLURM_ERROR;
+	else {
+		xfree(name);
+		return SLURM_SUCCESS;
+	}
 }
 
 extern int set_bgl_part(List nodes, int size, int conn_type)
 {
-	_set_internal_wires(nodes, size, conn_type);
-	return 1;
+	char *name;
+	if((name = _set_internal_wires(nodes, size, conn_type)) == NULL)
+		return SLURM_ERROR;
+	else {
+		xfree(name);
+		return SLURM_SUCCESS;
+	}
 }
 
 extern int reset_pa_system()
@@ -1571,6 +1583,7 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 			}
 		} else {
 			error("AHHHHHHH I can't do it in _set_internal_wires");
+			xfree(name);
 			return NULL;
 		}
 	}

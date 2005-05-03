@@ -224,16 +224,14 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 	}
 	
 	if(bgl_record->node_use != bgl_update_ptr->node_use) {
-		info("Partition in wrong mode, rebooting.");
+		debug("Partition in wrong mode, rebooting.");
 		/* Free the partition */
-		debug("destroying the partition %s.", 
-		      bgl_update_ptr->bgl_part_id);
 		bgl_free_partition(bgl_record);			
 	}
 	
 	itr = list_iterator_create(bgl_list);
 	if(bgl_record->full_partition) {
-		info("Booting full partition freeing all others");
+		debug("Using full partition freeing all others");
 		while ((found_record = (bgl_record_t*) 
 			list_next(itr)) != NULL) {
 			if(found_record->state != RM_PARTITION_FREE) {
@@ -262,7 +260,7 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 	
 	while(1) { 
 		if (bgl_record->cancelled_job) {
-			info("Job %d was cancelled for Part %s",
+			debug("Job %d was cancelled for Part %s",
 			      bgl_update_ptr->job_id, 
 			      bgl_record->bgl_part_id);
 			bgl_record->cancelled_job = 0;

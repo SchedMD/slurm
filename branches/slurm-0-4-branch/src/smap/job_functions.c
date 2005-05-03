@@ -167,7 +167,7 @@ static void _print_header_job(void)
 #ifdef HAVE_BGL
 		printf("       BGL_BLOCK ");
 #endif
-		printf("  USER ");
+		printf("    USER ");
 		printf("  NAME ");
 		printf("ST ");
 		printf("    TIME ");
@@ -263,7 +263,7 @@ static int _print_text_job(job_info_t * job_ptr)
 					       sizeof(time_buf), 
 					       SELECT_PRINT_BGL_ID));
 #endif
-		printf("%6.6s ", uid_to_string((uid_t) job_ptr->user_id));
+		printf("%8.8s ", uid_to_string((uid_t) job_ptr->user_id));
 		printf("%6.6s ", job_ptr->name);
 		printf("%2.2s ",
 		       job_state_string_compact(job_ptr->job_state));
