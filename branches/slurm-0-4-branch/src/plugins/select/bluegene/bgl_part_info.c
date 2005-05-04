@@ -208,6 +208,29 @@ extern int update_partition_list()
 			debug("state of Partition %s was %d and now is %d",
 			      name, bgl_record->state, state);
 			bgl_record->state = state;
+			if(bgl_record->state == RM_PARTITION_FREE) {
+				if((rc = remove_all_users(bgl_record->bgl_part_id, 
+							  NULL))
+				   == REMOVE_USER_ERR) {
+					error("Something happened removing "
+					      "users from partition %s", 
+					      bgl_record->bgl_part_id);
+				} 
+				if(strcmp(bgl_record->owner_name, USER_NAME)) {
+					info("Removing user %s from Partition %s",
+					     bgl_record->owner_name, 
+					     bgl_record->bgl_part_id);
+					xfree(bgl_record->owner_name);			
+					bgl_record->owner_name = xstrdup(USER_NAME);
+					if((pw_ent = getpwnam(bgl_record->owner_name))
+					   == NULL) {
+						error("getpwnam(%s): %m", 
+						      bgl_record->owner_name);
+					} else {
+						bgl_record->owner_uid = pw_ent->pw_uid; 
+					}
+				}
+			}
 			updated = 1;
 		}
 

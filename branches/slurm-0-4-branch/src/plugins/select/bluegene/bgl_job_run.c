@@ -143,7 +143,12 @@ static int _remove_job(db_job_id_t job_id)
 			return STATUS_OK;
 		else if(job_state == RM_JOB_DYING)
 			continue;
-		else {
+		else if(job_state == RM_JOB_ERROR) {
+			error("job %d is in a error state.", job_id);
+			
+			//free_bgl_partition();
+			return STATUS_OK;
+		} else {
 			(void) jm_signal_job(job_id, SIGKILL);
 			rc = jm_cancel_job(job_id);
 		}
@@ -368,7 +373,10 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 			continue;
 		}
 		//debug("got job_id %d",job_id);
-		rc = _remove_job(job_id);
+		if((rc = _remove_job(job_id)) 
+		   == INTERNAL_ERROR)
+			goto not_removed;
+		
 	}
 	
 	/* remove the partition's users */
@@ -411,6 +419,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		error("_term_agent: record not found in bgl_list");
 	}
 
+not_removed:
 	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
 		error("rm_free_job_list(): %s", bgl_err_str(rc));
 }
@@ -664,7 +673,8 @@ int term_job(struct job_record *job_ptr)
 	
 	bgl_record = find_bgl_record(bgl_part_id);
 	if(bgl_record) {
-		bgl_record->cancelled_job = 1;
+		if(bgl_record->boot_state)
+			bgl_record->cancelled_job = 1;
 	} else {
 		error("partition %s not found!",bgl_update_ptr->bgl_part_id);
 		xfree(bgl_part_id);
