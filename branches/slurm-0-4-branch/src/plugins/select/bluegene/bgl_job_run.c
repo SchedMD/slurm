@@ -180,36 +180,35 @@ static int _remove_job(db_job_id_t job_id)
 /* Update partition user and reboot as needed */
 static void _sync_agent(bgl_update_t *bgl_update_ptr)
 {
-/* 	char *cur_part_user, *new_part_user; */
 	bgl_record_t * bgl_record = NULL;
 	
 	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
-	if(bgl_record) {
-		if(bgl_record->state==RM_PARTITION_READY) {
+	if(!bgl_record) {
+		error("No partition %s", bgl_update_ptr->bgl_part_id);
+		return;
+	}
+		
+	if(bgl_record->state==RM_PARTITION_READY) {
+		if(bgl_record->user_uid != bgl_update_ptr->uid) {
 			slurm_mutex_lock(&part_state_mutex);
-			if(bgl_record->user_uid != bgl_update_ptr->uid) {
-				debug("User isn't correct for job %d on %s, "
-				      "fixing...", 
-				      bgl_update_ptr->job_id,
-				      bgl_update_ptr->bgl_part_id);
-				xfree(bgl_record->user_name);
-				bgl_record->user_name = 
-					xstrdup(uid_to_string(
-							bgl_update_ptr->uid));
-				bgl_record->user_uid = bgl_update_ptr->uid;
-			}
-			if(update_partition_user(bgl_record) == 1) 
+			debug("User isn't correct for job %d on %s, "
+			      "fixing...", 
+			      bgl_update_ptr->job_id,
+			      bgl_update_ptr->bgl_part_id);
+			xfree(bgl_record->target_name);
+			bgl_record->target_name = 
+				xstrdup(uid_to_string(
+						bgl_update_ptr->uid));
+				
+			if(update_partition_user(bgl_record) == 1)
 				last_bgl_update = time(NULL);
 			slurm_mutex_unlock(&part_state_mutex);
-				
-		} else {
-			error("Partition %s isn't in a ready state!",
-			      bgl_update_ptr->bgl_part_id);
 		}
 	} else {
-		error("No partition %s", bgl_update_ptr->bgl_part_id);
+		error("Partition %s isn't in a ready state!",
+		      bgl_update_ptr->bgl_part_id);
+		_start_agent(bgl_update_ptr);
 	}
-
 }
 
 /* Perform job initiation work */
