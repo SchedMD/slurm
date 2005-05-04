@@ -172,8 +172,10 @@ extern void destroy_bgl_record(void* object)
 	if (bgl_record) {
 		if(bgl_record->nodes) 
 			xfree(bgl_record->nodes);
-		if(bgl_record->owner_name)
-			xfree(bgl_record->owner_name);
+		if(bgl_record->user_name)
+			xfree(bgl_record->user_name);
+		if(bgl_record->target_name)
+			xfree(bgl_record->target_name);
 		if(bgl_record->bgl_part_list)
 			list_destroy(bgl_record->bgl_part_list);
 		if(bgl_record->hostlist)
@@ -301,38 +303,67 @@ extern bgl_record_t *find_bgl_record(char *bgl_part_id)
 	}
 	
 }
-/* Only changes the database.  All changes to the bgl_list must 
+/* All changes to the bgl_list target_name must 
    be done before this function is called. 
 */
-extern int update_db_partition_user(bgl_record_t *bgl_record) 
+extern int update_partition_user(bgl_record_t *bgl_record) 
 {
 #ifdef HAVE_BGL_FILES
 	int rc=0;
+	struct passwd *pw_ent = NULL;
+	
+	if(!bgl_record->target_name) {
+		error("Must set target_name to run update_partition_user.");
+		return -1;
+	}
 
 	if((rc = remove_all_users(bgl_record->bgl_part_id, 
-				  bgl_record->owner_name))
+				  bgl_record->target_name))
 	   == REMOVE_USER_ERR) {
 		error("Something happened removing "
 		      "users from partition %s", 
 		      bgl_record->bgl_part_id);
 		return -1;
-	} else if(rc == REMOVE_USER_NONE) {
-		if(strcmp(bgl_record->owner_name, USER_NAME)) {
+	} else if (rc == REMOVE_USER_NONE) {
+		if (strcmp(bgl_record->target_name, USER_NAME)) {
+			info("Adding user %s to Partition %s",
+			     bgl_record->target_name, 
+			     bgl_record->bgl_part_id);
+		
 			if ((rc = rm_add_part_user(bgl_record->bgl_part_id, 
-						   bgl_record->owner_name)) 
+						   bgl_record->target_name)) 
 			    != STATUS_OK) {
 				error("rm_add_part_user(%s,%s): %s", 
 				      bgl_record->bgl_part_id, 
-				      bgl_record->owner_name,
+				      bgl_record->target_name,
 				      bgl_err_str(rc));
 				return -1;
-			}
-			return 1;
-		}		
+			} 
+		}
 	}
+	
+	if(strcmp(bgl_record->target_name, bgl_record->user_name)) {
+		if(bgl_record->user_name)
+			xfree(bgl_record->user_name);
+		bgl_record->user_name = 
+			xstrdup(bgl_record->target_name);
+		if((pw_ent = getpwnam(
+			    bgl_record->user_name))
+		   == NULL) {
+			error("getpwnam(%s): %m", 
+			      bgl_record->user_name);
+			return -1;
+		} else {
+			bgl_record->user_uid = 
+				pw_ent->pw_uid; 
+		}		
+		return 1;
+	}
+	
 #endif
 	return 0;
 }
+
 extern int remove_all_users(char *bgl_part_id, char *user_name) 
 {
 	int returnc = REMOVE_USER_NONE;
@@ -380,13 +411,20 @@ extern int remove_all_users(char *bgl_part_id, char *user_name)
 				break;
 			}
 		}
+		
+		if(!strcmp(user, USER_NAME))
+			continue;
+		
 		if(user_name) {
 			if(!strcmp(user, user_name)) {
 				returnc = REMOVE_USER_FOUND;
 				continue;
 			}
 		}
-		debug("removing user %s from %s", user, bgl_part_id);
+		
+		info("Removing user %s from Partition %s", 
+		      user, 
+		      bgl_part_id);
 		if ((rc = rm_remove_part_user(bgl_part_id, user)) 
 		    != STATUS_OK) {
 			debug("user %s isn't on partition %s",
@@ -399,6 +437,25 @@ extern int remove_all_users(char *bgl_part_id, char *user_name)
 	}
 #endif
 	return returnc;
+}
+
+extern void set_part_user(bgl_record_t *bgl_record) 
+{
+	debug("resetting the boot state flag and "
+	      "counter for partition %s.",
+	      bgl_record->bgl_part_id);
+	bgl_record->boot_state = 0;
+	bgl_record->boot_count = 0;
+	if(strcmp(bgl_record->target_name, 
+		  bgl_record->user_name))
+		if(update_partition_user(bgl_record)
+		   == 1) 
+			last_bgl_update = time(NULL);
+	if(bgl_record->target_name) {
+		xfree(bgl_record->target_name);
+		bgl_record->target_name = 
+			xstrdup(USER_NAME);
+	}
 }
 
 extern char* convert_lifecycle(lifecycle_type_t lifecycle)
@@ -662,11 +719,12 @@ extern int create_static_partitions(List part_list)
 	list_append(bgl_list, bgl_record);
 	
 	bgl_record->conn_type = SELECT_TORUS;
-	bgl_record->owner_name = xstrdup(USER_NAME);
-	if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
-		error("getpwnam(%s): %m", bgl_record->owner_name);
+	bgl_record->user_name = xstrdup(USER_NAME);
+	bgl_record->target_name = xstrdup(USER_NAME);
+	if((pw_ent = getpwnam(bgl_record->user_name)) == NULL) {
+		error("getpwnam(%s): %m", bgl_record->user_name);
 	}
-	bgl_record->owner_uid = pw_ent->pw_uid;
+	bgl_record->user_uid = pw_ent->pw_uid;
 	
 	if(set_bgl_part(bgl_record->bgl_part_list, 
 			 bgl_record->bp_count, 
@@ -882,10 +940,14 @@ static int _validate_config_nodes(void)
 					record->state = init_record->state;
 					record->node_use = 
 						init_record->node_use;
-					record->owner_uid = 
-						init_record->owner_uid;
-					record->owner_name = xstrdup(
-						init_record->owner_name);
+					record->user_uid = 
+						init_record->user_uid;
+					record->user_name = xstrdup(
+						init_record->user_name);
+					record->target_name = xstrdup(
+						init_record->target_name);
+					record->boot_state = 
+						init_record->boot_state;
 					break;
 				}
 				list_iterator_destroy(itr_curr);
@@ -932,26 +994,39 @@ static int _validate_config_nodes(void)
 					record->state = init_record->state;
 					record->node_use =
 						init_record->node_use;
-					record->owner_uid =
-						init_record->owner_uid;
-					record->owner_name = xstrdup(
-						init_record->owner_name);
-					record->conn_type = init_record->conn_type;
-					record->node_use = init_record->node_use;
-					record->bp_count = init_record->bp_count;
-					record->boot_state = init_record->boot_state;
-					record->switch_count = init_record->switch_count;
-					if((record->bitmap = bit_copy(init_record->bitmap)) == NULL) {
-						error("Unable to copy bitmap for", 
+					record->user_uid =
+						init_record->user_uid;
+					record->user_name = xstrdup(
+						init_record->user_name);
+					record->target_name = xstrdup(
+						init_record->target_name);
+					record->conn_type = 
+						init_record->conn_type;
+					record->node_use = 
+						init_record->node_use;
+					record->bp_count = 
+						init_record->bp_count;
+					record->boot_state = 
+						init_record->boot_state;
+					record->switch_count = 
+						init_record->switch_count;
+					if((record->bitmap = 
+					    bit_copy(init_record->bitmap)) 
+					   == NULL) {
+						error("Unable to copy "
+						      "bitmap for", 
 						      init_record->nodes);
 					}
 					list_push(bgl_found_part_list, record);
-					info("Found existing BGL PartitionID:%s "
+					info("Found existing BGL "
+					     "PartitionID:%s "
 					     "Nodes:%s Conn:%s Mode:%s",
 					     record->bgl_part_id, 
 					     record->nodes,
-					     convert_conn_type(record->conn_type),
-					     convert_node_use(record->node_use));
+					     convert_conn_type(
+						     record->conn_type),
+					     convert_node_use(
+						     record->node_use));
 					break;
 				}
 			}
@@ -1289,11 +1364,11 @@ static int _parse_bgl_spec(char *in_line)
 	bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
 	list_push(bgl_list, bgl_record);
 	
-	bgl_record->owner_name = xstrdup(USER_NAME);
-	if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
-		error("getpwnam(%s): %m", bgl_record->owner_name);
+	bgl_record->user_name = xstrdup(USER_NAME);
+	if((pw_ent = getpwnam(bgl_record->user_name)) == NULL) {
+		error("getpwnam(%s): %m", bgl_record->user_name);
 	}
-	bgl_record->owner_uid = pw_ent->pw_uid;
+	bgl_record->user_uid = pw_ent->pw_uid;
 
 	bgl_record->bgl_part_list = list_create(NULL);			
 	bgl_record->hostlist = hostlist_create(NULL);

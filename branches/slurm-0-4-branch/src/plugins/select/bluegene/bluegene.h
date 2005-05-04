@@ -82,8 +82,11 @@ enum part_lifecycle {DYNAMIC, STATIC};
 
 typedef struct bgl_record {
 	char *nodes;			/* String of nodes in partition */
-	char *owner_name;		/* Owner of partition		*/
-	uid_t owner_uid;   		/* Owner of partition uid	*/
+	char *user_name;		/* user using the partition */
+	char *target_name;		/* when a partition is freed this 
+					   is the name of the user we 
+					   want on the partition */
+	uid_t user_uid;   		/* Owner of partition uid	*/
 	pm_partition_id_t bgl_part_id;	/* ID returned from MMCS	*/
 	lifecycle_type_t part_lifecycle;/* either STATIC or DYNAMIC	*/
 	rm_partition_state_t state;   	/* the allocated partition   */
@@ -96,10 +99,12 @@ typedef struct bgl_record {
 	int bp_count;                   /* size */
 	int switch_count;               /* number of switches used. */
 	int boot_state;                 /* check to see if boot failed. 
-				 * -1 = fail, 0 = not booting, 1 = booting */
+					   -1 = fail, 
+					   0 = not booting, 
+					   1 = booting */
 	int boot_count;                 /* number of attemts boot attempts */
-	bitstr_t *bitmap;               /* bitmap to check the name of partition */
-	int cancelled_job;
+	bitstr_t *bitmap;               /* bitmap to check the name 
+					   of partition */
 	int full_partition;
 } bgl_record_t;
 
@@ -155,10 +160,10 @@ extern int update_bgl_record_state(bgl_record_t *bgl_record);
 /* return bgl_record from bgl_list */
 extern bgl_record_t *find_bgl_record(char *bgl_part_id);
 
-/* change username of a partition bgl_record_t owner_name needs to be 
+/* change username of a partition bgl_record_t target_name needs to be 
    updated before call of function. 
 */
-extern int update_db_partition_user(bgl_record_t *bgl_part_id); 
+extern int update_partition_user(bgl_record_t *bgl_part_id); 
 
 /* remove all users from a partition but what is in user_name */
 /* Note return codes */
@@ -166,6 +171,7 @@ extern int update_db_partition_user(bgl_record_t *bgl_part_id);
 #define REMOVE_USER_NONE  0
 #define REMOVE_USER_FOUND 2
 extern int remove_all_users(char *bgl_part_id, char *user_name);
+extern void set_part_user(bgl_record_t *bgl_record);
 
 /* Return strings representing blue gene data types */
 extern char *convert_lifecycle(lifecycle_type_t lifecycle);

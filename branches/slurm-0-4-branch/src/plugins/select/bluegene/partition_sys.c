@@ -156,14 +156,14 @@ static int _post_allocate(bgl_record_t *bgl_record)
 	} else {
 		bgl_record->bgl_part_id = xstrdup(part_id);
 		
-		if ((rc = rm_set_part_owner(bgl_record->bgl_part_id, 
-					USER_NAME)) != STATUS_OK) {
-			error("rm_set_part_owner(%s,%s): %s", 
-				bgl_record->bgl_part_id, USER_NAME,
-				bgl_err_str(rc));
-			rc = SLURM_ERROR;
-			goto cleanup;
-		}
+/* 		if ((rc = rm_set_part_owner(bgl_record->bgl_part_id,  */
+/* 					USER_NAME)) != STATUS_OK) { */
+/* 			error("rm_set_part_owner(%s,%s): %s",  */
+/* 				bgl_record->bgl_part_id, USER_NAME, */
+/* 				bgl_err_str(rc)); */
+/* 			rc = SLURM_ERROR; */
+/* 			goto cleanup; */
+/* 		} */
 		/* info("Booting partition %s", bgl_record->bgl_part_id); */
 /* 		if ((rc = pm_create_partition(bgl_record->bgl_part_id))  */
 /* 				!= STATUS_OK) { */
@@ -180,11 +180,11 @@ static int _post_allocate(bgl_record_t *bgl_record)
 /* 		debug("Setting bootflag for %s", bgl_record->bgl_part_id); */
 /* 		bgl_record->boot_state = 1; */
 /* 		bgl_record->boot_count = 0; */
-		bgl_record->owner_name = xstrdup(USER_NAME);
-		if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
-			error("getpwnam(%s): %m", bgl_record->owner_name);
+		bgl_record->user_name = xstrdup(USER_NAME);
+		if((pw_ent = getpwnam(bgl_record->user_name)) == NULL) {
+			error("getpwnam(%s): %m", bgl_record->user_name);
 		} else {
-			bgl_record->owner_uid = pw_ent->pw_uid;
+			bgl_record->user_uid = pw_ent->pw_uid;
 		} 
 		last_bgl_update = time(NULL);
 		
@@ -220,7 +220,7 @@ int read_bgl_partitions()
 	rm_element_t *bp_ptr = NULL;
 	pm_partition_id_t part_id;
 	rm_partition_t *part_ptr = NULL;
-	char node_name_tmp[7], *owner_name = NULL;
+	char node_name_tmp[7], *user_name = NULL;
 	bgl_record_t *bgl_record = NULL;
 	struct passwd *pw_ent = NULL;
 	
@@ -359,27 +359,6 @@ int read_bgl_partitions()
 			      bgl_err_str(rc));
 		}
 			
-		if ((rc = rm_get_data(part_ptr, RM_PartitionUsersNum,
-					 &bp_cnt)) != STATUS_OK) {
-			error("rm_get_data(RM_PartitionUsersNum): %s",
-			      bgl_err_str(rc));
-		} else {
-			if(bp_cnt==0) 
-				bgl_record->owner_name = xstrdup(USER_NAME);
-			
-			else {
-				rm_get_data(part_ptr, RM_PartitionFirstUser, 
-						&owner_name);
-				bgl_record->owner_name = xstrdup(owner_name);
-			}
-			if((pw_ent = getpwnam(bgl_record->owner_name)) == NULL) {
-				error("getpwnam(%s): %m", 
-				      bgl_record->owner_name);
-			} else {
-				bgl_record->owner_uid = pw_ent->pw_uid;
-			} 
-		}
-
 		if ((rc = rm_get_data(part_ptr, RM_PartitionState,
 					 &bgl_record->state)) != STATUS_OK) {
 			error("rm_get_data(RM_PartitionState): %s",
@@ -388,8 +367,40 @@ int read_bgl_partitions()
 			bgl_record->boot_state = 1;
 		else
 			bgl_record->boot_state = 0;
-		info("Partition %s is in state %d",bgl_record->bgl_part_id, 
-				bgl_record->state);
+		
+		debug("Partition %s is in state %d",
+		      bgl_record->bgl_part_id, 
+		      bgl_record->state);
+		
+		if ((rc = rm_get_data(part_ptr, RM_PartitionUsersNum,
+					 &bp_cnt)) != STATUS_OK) {
+			error("rm_get_data(RM_PartitionUsersNum): %s",
+			      bgl_err_str(rc));
+		} else {
+			if(bp_cnt==0) {
+				bgl_record->user_name = xstrdup(USER_NAME);
+				bgl_record->target_name = xstrdup(USER_NAME);
+			} else {
+				rm_get_data(part_ptr, RM_PartitionFirstUser, 
+						&user_name);
+				bgl_record->user_name = xstrdup(user_name);
+				if(!bgl_record->boot_state)
+					bgl_record->target_name = 
+						xstrdup(USER_NAME);
+				else
+					bgl_record->target_name = 
+						xstrdup(user_name);
+					
+			}
+			if((pw_ent = getpwnam(bgl_record->user_name)) 
+			   == NULL) {
+				error("getpwnam(%s): %m", 
+				      bgl_record->user_name);
+			} else {
+				bgl_record->user_uid = pw_ent->pw_uid;
+			} 
+		}
+
 		if ((rc = rm_get_data(part_ptr, RM_PartitionBPNum,
 				&bgl_record->bp_count)) != STATUS_OK) {
 			error("rm_get_data(RM_PartitionBPNum): %s",

@@ -78,12 +78,12 @@ extern int part_ready(struct job_record *job_ptr)
 		
 		if(bgl_record) {
 			if (rc != -1) {
-				if((bgl_record->owner_uid == job_ptr->user_id)
+				if((bgl_record->user_uid == job_ptr->user_id)
 				   && (bgl_record->state 
 				       == RM_PARTITION_READY)) {
 					rc = 1;
 				}
-				else if (bgl_record->owner_uid 
+				else if (bgl_record->user_uid 
 					 != job_ptr->user_id)
 					rc = 0;
 				else
@@ -105,7 +105,7 @@ extern int part_ready(struct job_record *job_ptr)
 extern void pack_partition(bgl_record_t *bgl_record, Buf buffer)
 {
 	packstr(bgl_record->nodes, buffer);
-	packstr(bgl_record->owner_name, buffer);
+	packstr(bgl_record->user_name, buffer);
 	packstr(bgl_record->bgl_part_id, buffer);
 	pack16((uint16_t)bgl_record->state, buffer);
 	pack16((uint16_t)bgl_record->conn_type, buffer);
@@ -116,13 +116,12 @@ extern int update_partition_list()
 {
 	int updated = 0;
 #ifdef HAVE_BGL_FILES
-	int j, rc, num_parts = 0, num_users = 0;
+	int j, rc, num_parts = 0;
 	rm_partition_t *part_ptr = NULL;
 	rm_partition_mode_t node_use;
 	rm_partition_state_t state;
 	rm_partition_state_flag_t part_state = PARTITION_ALL_FLAG;
 	char *name = NULL;
-	char *owner_name = NULL;
 	rm_partition_list_t *part_list = NULL;
 	bgl_record_t *bgl_record = NULL;
 	struct passwd *pw_ent = NULL;
@@ -209,52 +208,76 @@ extern int update_partition_list()
 			      name, bgl_record->state, state);
 			bgl_record->state = state;
 			if(bgl_record->state == RM_PARTITION_FREE) {
-				if((rc = remove_all_users(bgl_record->bgl_part_id, 
-							  NULL))
+				if((rc = remove_all_users(
+					    bgl_record->bgl_part_id, 
+					    NULL))
 				   == REMOVE_USER_ERR) {
 					error("Something happened removing "
 					      "users from partition %s", 
 					      bgl_record->bgl_part_id);
 				} 
-				if(strcmp(bgl_record->owner_name, USER_NAME)) {
-					info("Removing user %s from Partition %s",
-					     bgl_record->owner_name, 
+				if(strcmp(bgl_record->user_name, 
+					  USER_NAME)) {
+					info("resetting user %s "
+					     "from Partition %s",
+					     bgl_record->user_name, 
 					     bgl_record->bgl_part_id);
-					xfree(bgl_record->owner_name);			
-					bgl_record->owner_name = xstrdup(USER_NAME);
-					if((pw_ent = getpwnam(bgl_record->owner_name))
+					xfree(bgl_record->user_name);	
+					bgl_record->user_name = 
+						xstrdup(USER_NAME);
+					if((pw_ent = getpwnam(
+						    bgl_record->user_name))
 					   == NULL) {
 						error("getpwnam(%s): %m", 
-						      bgl_record->owner_name);
+						      bgl_record->user_name);
 					} else {
-						bgl_record->owner_uid = pw_ent->pw_uid; 
+						bgl_record->user_uid = 
+							pw_ent->pw_uid; 
 					}
 				}
-			}
+			} else if(bgl_record->state 
+				  == RM_PARTITION_CONFIGURING)
+				bgl_record->boot_state = 1;
 			updated = 1;
 		}
 
 		/* check the boot state */
+		/* debug("boot state for partition %s is %d", */
+/* 		      bgl_record->bgl_part_id, */
+/* 		      bgl_record->boot_state); */
 		if(bgl_record->boot_state == 1) {
 			switch(bgl_record->state) {
 			case RM_PARTITION_CONFIGURING:
+				debug("checking to make sure user %s "
+				      "is the user.", 
+				      bgl_record->target_name);
+				if(update_partition_user(bgl_record) 
+				   == 1) 
+					last_bgl_update = time(NULL);
+			
 				break;
 			case RM_PARTITION_ERROR:
 				error("partition in an error state");
 			case RM_PARTITION_FREE:
 				if(bgl_record->boot_count < RETRY_BOOT_COUNT) {
-					if((rc = boot_part(bgl_record, 
+					slurm_mutex_unlock(&part_state_mutex);
+					if((rc = boot_part(bgl_record,
 							   bgl_record->
 							   node_use))
 					   != SLURM_SUCCESS) {
 						updated = -1;
 					}
+					slurm_mutex_lock(&part_state_mutex);
+					debug("boot count for partition %s "
+					      " is %d",
+					      bgl_record->bgl_part_id,
+					      bgl_record->boot_count);
 					bgl_record->boot_count++;
 				} else {
 					error("Couldn't boot Partition %s "
 					      "for user %s",
 					      bgl_record->bgl_part_id, 
-					      bgl_record->owner_name);
+					      bgl_record->user_name);
 					now = time(NULL);
 					time_ptr = localtime(&now);
 					strftime(reason, sizeof(reason),
@@ -269,15 +292,10 @@ extern int update_partition_list()
 				}
 				break;
 			default:
-				debug("resetting the boot state flag and "
-				      "counter for partition %s.",
-				      bgl_record->bgl_part_id);
-				bgl_record->boot_state = 0;
-				bgl_record->boot_count = 0;
+				set_part_user(bgl_record); 	
 				break;
 			}
-		}
-	
+		}	
 		slurm_mutex_unlock(&part_state_mutex);	
 	}
 	
