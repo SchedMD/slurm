@@ -277,7 +277,7 @@ extern int update_partition_list()
 					error("Couldn't boot Partition %s "
 					      "for user %s",
 					      bgl_record->bgl_part_id, 
-					      bgl_record->user_name);
+					      bgl_record->target_name);
 					now = time(NULL);
 					time_ptr = localtime(&now);
 					strftime(reason, sizeof(reason),

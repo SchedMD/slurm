@@ -776,7 +776,7 @@ extern int boot_part(bgl_record_t *bgl_record, rm_partition_mode_t node_use)
 	bgl_record->state = RM_PARTITION_CONFIGURING;
 	debug("Setting bootflag for %s", bgl_record->bgl_part_id);
 	bgl_record->boot_state = 1;
-	bgl_record->boot_count = 0;
+	//bgl_record->boot_count = 0;
 	last_bgl_update = time(NULL);
 	slurm_mutex_unlock(&part_state_mutex);
 #endif
