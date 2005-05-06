@@ -216,24 +216,17 @@ extern int update_partition_list()
 					      "users from partition %s", 
 					      bgl_record->bgl_part_id);
 				} 
-				if(strcmp(bgl_record->user_name, 
-					  USER_NAME)) {
-					info("resetting user %s "
-					     "from Partition %s",
-					     bgl_record->user_name, 
-					     bgl_record->bgl_part_id);
-					xfree(bgl_record->user_name);	
-					bgl_record->user_name = 
-						xstrdup(USER_NAME);
-					if((pw_ent = getpwnam(
-						    bgl_record->user_name))
-					   == NULL) {
-						error("getpwnam(%s): %m", 
-						      bgl_record->user_name);
-					} else {
-						bgl_record->user_uid = 
-							pw_ent->pw_uid; 
-					}
+				if(!strcmp(bgl_record->target_name, USER_NAME) 
+				   && strcmp(bgl_record->target_name, 
+					     bgl_record->user_name)) {
+					info("partition %s was in a "
+					     "ready state but got freed "
+					     "booting again for user %s",
+					     bgl_record->bgl_part_id,
+					     bgl_record->user_name);
+					xfree(bgl_record->target_name);	
+					bgl_record->target_name = 
+						xstrdup(bgl_record->user_name);
 				}
 			} else if(bgl_record->state 
 				  == RM_PARTITION_CONFIGURING)
