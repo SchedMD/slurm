@@ -9,7 +9,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2005 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Danny Auble <da@llnl.gov>
 # UCRL-CODE-2002-040.
@@ -225,13 +225,8 @@ if { $correct == 0} {
 	set exit_code 1	
 } 
 
-spawn $scancel $job_id1
+spawn $scancel --quiet $job_id1
 expect {
-	-re "Job $job_id1 not found" {
-		send_user "\nFAILURE: Job initiation failure\n"
-		set exit_code 1
-		exp_continue
-	}
 	timeout {
 		send_user "\nFAILURE: scancel not responding\n"
 		set exit_code 1
@@ -241,9 +236,8 @@ expect {
 	}
 }
 
-exec $bin_rm -f $file_in
-
 if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
