@@ -600,6 +600,31 @@ extern int start_job(struct job_record *job_ptr)
 		job_ptr->job_id, bgl_update_ptr->bgl_part_id);
 
 	_part_op(bgl_update_ptr);
+#else
+	if (bgl_list) {
+		ListIterator itr;
+		bgl_record_t *bgl_record;
+		char *part_id = NULL;
+		uint16_t node_use;
+
+		select_g_get_jobinfo(job_ptr->select_jobinfo,
+			SELECT_DATA_PART_ID, &part_id);
+		select_g_get_jobinfo(job_ptr->select_jobinfo,
+			SELECT_DATA_NODE_USE, &node_use);
+		itr = list_iterator_create(bgl_list);
+		while ((bgl_record = (bgl_record_t *) list_next(itr))) {
+			if (!part_id)
+				break;
+			if ((!bgl_record->bgl_part_id)
+			||  (strcmp(part_id, bgl_record->bgl_part_id)))
+				continue;
+			bgl_record->node_use = node_use;
+			bgl_record->state = RM_PARTITION_READY;
+			last_bgl_update = time(NULL);
+		}
+		list_iterator_destroy(itr);
+		xfree(part_id);
+	}
 #endif
 	return rc;
 }

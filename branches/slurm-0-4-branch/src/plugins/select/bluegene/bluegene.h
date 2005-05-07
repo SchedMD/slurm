@@ -47,16 +47,7 @@
 # include "src/plugins/select/bluegene/wrap_rm_api.h"
 
 #else
-  typedef char *   pm_partition_id_t;
-  typedef int      rm_connection_type_t;
-  typedef int      rm_partition_mode_t;
-  typedef uint16_t rm_partition_t;
-  typedef char *   rm_BGL_t;
-  typedef char *   rm_component_id_t;
-  typedef rm_component_id_t rm_bp_id_t;
-  typedef int      rm_BP_state_t;
-  typedef int      status_t;
-  typedef int      rm_partition_state_t;
+# include "src/smap/smap.h"
 #endif
 
 #define USER_NAME "slurm"
