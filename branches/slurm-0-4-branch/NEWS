@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.4.24
+=========================
+ -- DRAIN nodes with switches on base partitions are in ERROR, MISSING, 
+    or DOWN states.
+ 
 * Changes in SLURM 0.4.23
 ========================= 
  -- Modified bluegene plugin to only sync bglblocks to jobs on initial 
@@ -12,6 +17,7 @@ documents those changes that are of interest to users and admins.
  -- smap resizing issue fixed.
  -- change prolog not to add time when a partition is in deallocating 
     state.
+ -- NOTE: This version of SLURM requires BGL driver 141/2005.
 
 * Changes in SLURM 0.4.22
 =========================
