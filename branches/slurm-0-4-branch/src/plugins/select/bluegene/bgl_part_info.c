@@ -124,7 +124,7 @@ extern int update_partition_list()
 	char *name = NULL;
 	rm_partition_list_t *part_list = NULL;
 	bgl_record_t *bgl_record = NULL;
-	struct passwd *pw_ent = NULL;
+	//struct passwd *pw_ent = NULL;
 	time_t now;
 	struct tm *time_ptr;
 	char reason[128];

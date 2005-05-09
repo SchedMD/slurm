@@ -218,7 +218,7 @@ int read_bgl_partitions()
 
 	int bp_cnt, i;
 	rm_element_t *bp_ptr = NULL;
-	pm_partition_id_t part_id;
+	rm_bp_id_t bpid;
 	rm_partition_t *part_ptr = NULL;
 	char node_name_tmp[7], *user_name = NULL;
 	bgl_record_t *bgl_record = NULL;
@@ -324,7 +324,7 @@ int read_bgl_partitions()
 					return rc;
 				}	
 			}
-			if ((rc = rm_get_data(bp_ptr, RM_BPID, &part_id))
+			if ((rc = rm_get_data(bp_ptr, RM_BPID, &bpid))
 			    != STATUS_OK) {
 				error("rm_get_data(RM_BPLoc): %s",
 				      bgl_err_str(rc));
@@ -332,9 +332,10 @@ int read_bgl_partitions()
 				break;
 			}
 			
-			coord = find_bp_loc(part_id);
+			coord = find_bp_loc(bpid);
 			
-			sprintf(node_name_tmp, "bgl%d%d%d", 
+			snprintf(node_name_tmp, sizeof(node_name_tmp), 
+				"bgl%d%d%d", 
 				coord[X], coord[Y], coord[Z]);
 		
 			hostlist_push(bgl_record->hostlist, node_name_tmp);
