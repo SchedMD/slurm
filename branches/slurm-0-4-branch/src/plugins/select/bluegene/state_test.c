@@ -129,7 +129,7 @@ static char *_convert_bp_state(rm_BP_state_t state)
 	return "BP_STATE_UNIDENTIFIED!";
 }
 
-/* Test for nodes that are DOWN in MMCS and DRAIN them in SLURM */ 
+/* Test for nodes that are not UP in MMCS and DRAIN them in SLURM */ 
 static void _test_down_nodes(rm_BGL_t *bgl)
 {
 	int bp_num, i, rc;
@@ -167,7 +167,7 @@ static void _test_down_nodes(rm_BGL_t *bgl)
 			error("rm_get_data(RM_BPState): %s", bgl_err_str(rc));
 			continue;
 		}
-		if  (bp_state != RM_BP_DOWN)
+		if  (bp_state == RM_BP_UP)
 			continue;
 		if ((rc = rm_get_data(my_bp, RM_BPLoc, &bp_loc)) 
 				!= STATUS_OK) {
@@ -198,7 +198,7 @@ static void _test_down_nodes(rm_BGL_t *bgl)
 	}
 }
 
-/* Test for switches that are DOWN in MMCS, 
+/* Test for switches that are not UP in MMCS, 
  * when found DRAIN them in SLURM and configure their base partition DOWN */
 static void _test_down_switches(rm_BGL_t *bgl)
 {
@@ -235,7 +235,7 @@ static void _test_down_switches(rm_BGL_t *bgl)
 				bgl_err_str(rc));
 			continue;
 		}
-		if (switch_state != RM_SWITCH_DOWN)
+		if (switch_state == RM_SWITCH_UP)
 			continue;
 		if ((rc = rm_get_data(my_switch, RM_SwitchBPID, &bp_id)) 
 				!= STATUS_OK) {
