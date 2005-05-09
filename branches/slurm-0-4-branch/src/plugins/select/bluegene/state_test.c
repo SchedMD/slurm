@@ -90,7 +90,7 @@ static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bgl)
 			error("rm_get_data(RM_BPState): %s", bgl_err_str(rc));
 			continue;
 		}
-		if  (bp_state == RM_BP_DOWN) 		/* already down */
+		if  (bp_state != RM_BP_UP) 		/* already down */
 			continue;
 
 		snprintf(bgl_down_node, sizeof(bgl_down_node), "bgl%d%d%d",
