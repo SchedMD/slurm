@@ -51,12 +51,12 @@ libslurm_la_SOURCES =    \
 	complete.c       \
 	config_info.c    \
 	init_msg.c       \
-	job_info.c       \
-	job_info.h       \
+	job_info.c job_info.h \
 	job_step_info.c  \
 	node_info.c      \
+	node_select_info.c node_select_info.h \
 	partition_info.c \
-	spawn.c \
+	spawn.c          \
 	submit.c         \
 	reconfigure.c    \
 	update_config.c  

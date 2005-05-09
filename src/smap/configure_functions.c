@@ -51,7 +51,7 @@ char error_string[255];
 
 static void _delete_allocated_parts(List allocated_partitions)
 {
-	allocated_part_t *allocated_part;
+	allocated_part_t *allocated_part = NULL;
 	
 	while ((allocated_part = list_pop(allocated_partitions)) != NULL) {
 		remove_part(allocated_part->nodes,0);
@@ -66,8 +66,8 @@ static allocated_part_t *_make_request(pa_request_t *request)
 {
 	List results = list_create(NULL);
 	ListIterator results_i;		
-	allocated_part_t *allocated_part;
-	pa_node_t *current;
+	allocated_part_t *allocated_part = NULL;
+	pa_node_t *current = NULL;
 	
 	if (!allocate_part(request, results)){
 		memset(error_string,0,255);
@@ -98,7 +98,7 @@ static int _create_allocation(char *com, List allocated_partitions)
 	int i=6, i2=-1, i3=0;
 	int len = strlen(com);
 	
-	allocated_part_t *allocated_part;
+	allocated_part_t *allocated_part = NULL;
 	pa_request_t *request = (pa_request_t*) xmalloc(sizeof(pa_request_t)); 
 	
 	request->geometry[0] = -1;
@@ -207,34 +207,50 @@ static int _create_allocation(char *com, List allocated_partitions)
 static int _resolve(char *com)
 {
 	int i=0;
+#ifdef HAVE_BGL_FILES
+	int len=strlen(com);
+	char *rack_mid = NULL;
+	int *coord = NULL;
+#endif
+	
 	while(com[i-1] != ' ' && com[i] != '\0')
 		i++;
 	if(com[i] == 'r')
-		com[0] = 'R';
-	
+		com[i] = 'R';
+		
 	memset(error_string,0,255);		
+#ifdef HAVE_BGL_FILES
+	if(len-i<3) {
+		sprintf(error_string, "Must enter 3 coords to resolve.\n");	
+		goto resolve_error;
+	}
 	if(com[i] != 'R') {
-		char *rack_mid = find_bp_rack_mid(com+i);
+		rack_mid = find_bp_rack_mid(com+i);
+		
 		if(rack_mid)
 			sprintf(error_string, "X=%c Y=%c Z=%c resolves to %s\n",
 				com[X+i],com[Y+i],com[Z+i], rack_mid);
 		else
 			sprintf(error_string, "X=%c Y=%c Z=%c has no resolve\n",
-				       params.partition[X],
-				       params.partition[Y],
-				       params.partition[Z]);
+				       com[X+i],com[Y+i],com[Z+i]);
 		
 	} else {
-		int *coord = find_bp_loc(com+i);
+		coord = find_bp_loc(com+i);
+		
 		if(coord)
 			sprintf(error_string, "%s resolves to X=%d Y=%d Z=%d\n",
 				com+i,coord[X],coord[Y],coord[Z]);
 		else
 			sprintf(error_string, "%s has no resolve.\n", 
-				params.partition);	
+				com+i);	
 	}
+resolve_error:
+#else
+			sprintf(error_string, "Must be on BGL SN to resolve.\n"); 
+#endif
 	wnoutrefresh(pa_system_ptr->text_win);
 	doupdate();
+
 	return 1;
 }
 static int _down_bps(char *com)
@@ -242,7 +258,10 @@ static int _down_bps(char *com)
 	int i=4,x;
 	int len = strlen(com);
 	int start[PA_SYSTEM_DIMENSIONS], end[PA_SYSTEM_DIMENSIONS];
-	
+#ifdef HAVE_BGL
+	int number=0, y=0, z=0;
+#endif
+
 	while(com[i-1] != ' ' && i<len)
 		i++;
 	if(i>(len-1)) {
@@ -251,8 +270,7 @@ static int _down_bps(char *com)
 		return 0;
 	}
 		
-#if HAVE_BGL
-	int number, y, z;
+#ifdef HAVE_BGL
 	if ((com[i]   == '[')
 	    && (com[i+8] == ']')
 	    && ((com[i+4] == 'x')
@@ -334,7 +352,7 @@ static int _down_bps(char *com)
 static int _remove_allocation(char *com, List allocated_partitions)
 {
 	ListIterator results_i;
-	allocated_part_t *allocated_part;
+	allocated_part_t *allocated_part = NULL;
 	int i=6, found=0;
 	int len = strlen(com);
 	char letter;
@@ -353,13 +371,15 @@ static int _remove_allocation(char *com, List allocated_partitions)
 		results_i = list_iterator_create(allocated_partitions);
 		while((allocated_part = list_next(results_i)) != NULL) {
 			if(found) {
-				redo_part(allocated_part->nodes, 
-					allocated_part->request->conn_type, 
-					color_count);
+				if(redo_part(allocated_part->nodes, 
+					     allocated_part->request->conn_type, 
+					     color_count) == SLURM_ERROR) {
+					return 0;
+				}
 				allocated_part->letter = 
-					pa_system_ptr->fill_in_value[color_count].letter;
+					letters[color_count%62];
 				allocated_part->color =
-					pa_system_ptr->fill_in_value[color_count].color;
+					colors[color_count%6];
 				
 			} else if(allocated_part->letter == letter) {
 				found=1;
@@ -418,13 +438,13 @@ static int _copy_allocation(char *com, List allocated_partitions)
 	ListIterator results_i;
 	allocated_part_t *allocated_part = NULL;
 	allocated_part_t *temp_part = NULL;
-	pa_request_t *request; 
+	pa_request_t *request = NULL; 
 	
 	int i=0;
 	int len = strlen(com);
 	char letter = '\0';
 	int count = 1;
-	int *geo, *geo_ptr;
+	int *geo = NULL, *geo_ptr = NULL;
 			
 	while(com[i-1]!=' ' && i<=len) {
 		i++;
@@ -510,12 +530,12 @@ static int _save_allocation(char *com, List allocated_partitions)
 {
 	int len = strlen(com);
 	int i=5, j=0;
-	allocated_part_t *allocated_part;
+	allocated_part_t *allocated_part = NULL;
 	char filename[20];
 	char save_string[255];
-	FILE *file_ptr;
-	char *conn_type;
-	char *mode_type;
+	FILE *file_ptr = NULL;
+	char *conn_type = NULL;
+	char *mode_type = NULL;
 
 	ListIterator results_i;		
 	
@@ -543,6 +563,10 @@ static int _save_allocation(char *com, List allocated_partitions)
 		fputs ("LinuxImage=/bgl/BlueLight/ppcfloor/bglsys/bin/zImage.elf\n", file_ptr);
 		fputs ("MloaderImage=/bgl/BlueLight/ppcfloor/bglsys/bin/mmcs-mloader.rts\n", file_ptr);
 		fputs ("RamDiskImage=/bgl/BlueLight/ppcfloor/bglsys/bin/ramdisk.elf\n", file_ptr);
+		fputs ("BridgeAPILogFile=/var/log/slurm/bridgeapi.log\n", file_ptr);
+		fputs ("Numpsets=8\n", file_ptr);
+		fputs ("BridgeAPIVerbose=0\n", file_ptr);
+
 		results_i = list_iterator_create(allocated_partitions);
 		while((allocated_part = list_next(results_i)) != NULL) {
 			memset(save_string,0,255);
@@ -680,7 +704,7 @@ void get_command(void)
 	char com[255];
 	//static node_info_msg_t *node_info_ptr;
 	int text_width, text_startx;
-	allocated_part_t *allocated_part;
+	allocated_part_t *allocated_part = NULL;
 	int i=0;
 	WINDOW *command_win;
 	List allocated_partitions;
@@ -689,6 +713,7 @@ void get_command(void)
 	if(params.commandline) {
 		printf("Configure won't work with commandline mode.\n");
 		printf("Please remove the -c from the commandline.\n");
+		pa_fini();
 		exit(0);
 	}
 	allocated_partitions = list_create(NULL);
@@ -697,11 +722,11 @@ void get_command(void)
 	text_startx = pa_system_ptr->text_win->_begx;
 	command_win = newwin(3, text_width - 1, LINES - 4, text_startx + 1);
 	echo();
-
 	
 	while (strcmp(com, "quit")) {
+		clear_window(pa_system_ptr->grid_win);
 		print_grid(0);
-		wclear(pa_system_ptr->text_win);
+		clear_window(pa_system_ptr->text_win);
 		box(pa_system_ptr->text_win, 0, 0);
 		box(pa_system_ptr->grid_win, 0, 0);
 		
@@ -731,10 +756,12 @@ void get_command(void)
 		}
 		list_iterator_destroy(results_i);
 		
+		
 		wnoutrefresh(pa_system_ptr->text_win);
 		wnoutrefresh(pa_system_ptr->grid_win);
 		doupdate();
-		wclear(command_win);
+		clear_window(command_win);
+		//wclear(command_win);
 		box(command_win, 0, 0);
 		mvwprintw(command_win, 0, 3,
 			  "Input Command: (type quit to change view, exit to exit)");
@@ -786,7 +813,7 @@ void get_command(void)
 	params.display = 0;
 	noecho();
 	
-	wclear(pa_system_ptr->text_win);
+	clear_window(pa_system_ptr->text_win);
 	pa_system_ptr->xcord = 1;
 	pa_system_ptr->ycord = 1;
 	print_date();

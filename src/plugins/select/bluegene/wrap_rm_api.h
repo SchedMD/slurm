@@ -14,6 +14,8 @@ typedef struct {
   int    pid;                    /* The pid of the process */
 } MPIR_PROCDESC;
 
-#endif
+
 
 #include "rm_api.h"
+ 
+#endif

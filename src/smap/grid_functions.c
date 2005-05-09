@@ -30,7 +30,7 @@
 extern int set_grid(int start, int end, int count)
 {
 	int x;
-#if HAVE_BGL
+#ifdef HAVE_BGL
 	int y, z;
 	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
 		for (z = 0; z < DIM_SIZE[Z]; z++) {
@@ -44,11 +44,9 @@ extern int set_grid(int start, int end, int count)
 					continue;
 
 				pa_system_ptr->grid[x][y][z].letter = 
-					pa_system_ptr->
-					fill_in_value[count].letter;
+					letters[count%62];
 				pa_system_ptr->grid[x][y][z].color = 
-					pa_system_ptr->
-					fill_in_value[count].color;
+					colors[count%6];
 			}
 		}
 	}
@@ -63,11 +61,9 @@ extern int set_grid(int start, int end, int count)
 			continue;
 
 		pa_system_ptr->grid[x].letter = 
-			pa_system_ptr->
-			fill_in_value[count].letter;
+			letters[count%62];
 		pa_system_ptr->grid[x].color = 
-			pa_system_ptr->
-			fill_in_value[count].color;
+			colors[count%6];
 	}
 #endif
 	return 1;
@@ -75,31 +71,31 @@ extern int set_grid(int start, int end, int count)
 
 extern int set_grid_bgl(int *start, int *end, int count, int set)
 {
-	int x;
+	int x=0;
 	int i = 0;
+#ifdef HAVE_BGL
+	int y=0, z=0;
+#endif
+
 	assert(end[X] < DIM_SIZE[X]);
 	assert(start[X] >= 0);
-	assert(count < pa_system_ptr->num_of_proc);
 	assert(count >= 0);
 	assert(set >= 0);
 	assert(set <= 2);
-#if HAVE_BGL
+#ifdef HAVE_BGL
 	assert(end[Y] < DIM_SIZE[Y]);
 	assert(start[Y] >= 0);
 	assert(end[Z] < DIM_SIZE[Z]);
 	assert(start[Z] >= 0);
 	
-	int y, z;
 	for (x = start[X]; x <= end[X]; x++) {
 		for (y = start[Y]; y <= end[Y]; y++) {
 			for (z = start[Z]; z <= end[Z]; z++) {
 				if(!set) {
 					pa_system_ptr->grid[x][y][z].letter = 
-						pa_system_ptr->
-						fill_in_value[count].letter;
+						letters[count%62];
 					pa_system_ptr->grid[x][y][z].color = 
-						pa_system_ptr->
-						fill_in_value[count].color;
+						colors[count%6];
 				}
 				i++;
 			}
@@ -109,11 +105,9 @@ extern int set_grid_bgl(int *start, int *end, int count, int set)
 	for (x = start[X]; x <= end[X]; x++) {
 		if(!set) {
 			pa_system_ptr->grid[x].letter = 
-				pa_system_ptr->
-				fill_in_value[count].letter;
+				letters[count%62];
 			pa_system_ptr->grid[x].color = 
-				pa_system_ptr->
-				fill_in_value[count].color;
+				colors[count%6];
 		}
 		i++;
 	}
@@ -129,7 +123,7 @@ extern void print_grid(int dir)
 	int x;
 	int grid_xcord, grid_ycord = 2;
 
-#if HAVE_BGL
+#ifdef HAVE_BGL
 	int y, z, offset = DIM_SIZE[Z];
 	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
 		offset = DIM_SIZE[Z] + 1;

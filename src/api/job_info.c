@@ -390,3 +390,34 @@ extern int slurm_get_select_jobinfo (select_jobinfo_t jobinfo,
 {
 	return select_g_get_jobinfo (jobinfo, data_type, data);
 }
+
+/*
+ * slurm_job_node_ready - report if nodes are ready for job to execute now
+ * IN job_id - slurm job id
+ * RET: READY_* values as defined in api/job_info.h
+ */
+extern int slurm_job_node_ready(uint32_t job_id)
+{
+	slurm_msg_t req, resp;
+	job_id_msg_t msg;
+	int rc;
+
+	req.msg_type = REQUEST_JOB_READY;
+	req.data     = &msg;
+	msg.job_id   = job_id;
+
+	if (slurm_send_recv_controller_msg(&req, &resp) < 0)
+		return -1;
+
+	if (resp.msg_type == RESPONSE_JOB_READY) {
+		rc = ((return_code_msg_t *) resp.data)->return_code;
+		slurm_free_return_code_msg(resp.data);
+	} else if (resp.msg_type == RESPONSE_SLURM_RC) {
+		rc = READY_JOB_ERROR;
+		slurm_free_return_code_msg(resp.data);
+	} else
+		rc = READY_JOB_ERROR;
+
+	return rc;
+}
+

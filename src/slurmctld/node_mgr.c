@@ -4,7 +4,7 @@
  *	hash table (node_hash_table), time stamp (last_node_update) and 
  *	configuration list (config_list)
  *
- * $Id$
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -1778,8 +1778,10 @@ void make_node_idle(struct node_record *node_ptr,
 	uint16_t no_resp_flag, base_state;
 
 	xassert(node_ptr);
-	if (job_ptr &&			/* Specific job completed */
-	    (bit_test(job_ptr->node_bitmap, inx))) {	/* Not a replay */
+
+	if (job_ptr			/* Specific job completed */
+	&&  (job_ptr->job_state & JOB_COMPLETING)	/* Not a replay */
+	&&  (bit_test(job_ptr->node_bitmap, inx))) {	/* Not a replay */
 		last_job_update = time (NULL);
 		bit_clear(job_ptr->node_bitmap, inx);
 		if (job_ptr->node_cnt) {
@@ -1788,7 +1790,7 @@ void make_node_idle(struct node_record *node_ptr,
 				delay = last_job_update - job_ptr->end_time;
 				if (delay > 60)
 					info("Job %u completion process took "
-						"%ld second", job_ptr->job_id,
+						"%ld seconds", job_ptr->job_id,
 						(long) delay);
 				delete_all_step_records(job_ptr);
 				job_ptr->job_state &= (~JOB_COMPLETING);

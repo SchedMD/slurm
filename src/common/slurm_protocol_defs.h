@@ -1,5 +1,7 @@
 /****************************************************************************\
  *  slurm_protocol_defs.h - definitions used for RPCs
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -88,6 +90,8 @@ typedef enum {
 	RESPONSE_ACCOUNTING_INFO,
 	REQUEST_JOB_ID,
 	RESPONSE_JOB_ID,
+	REQUEST_NODE_SELECT_INFO,
+	RESPONSE_NODE_SELECT_INFO,
 
 	REQUEST_UPDATE_JOB = 3001,
 	REQUEST_UPDATE_NODE,
@@ -113,6 +117,8 @@ typedef enum {
 	RESPONSE_ALLOCATION_AND_RUN_JOB_STEP,
 	REQUEST_OLD_JOB_RESOURCE_ALLOCATION,
 	REQUEST_UPDATE_JOB_TIME,
+	REQUEST_JOB_READY,
+	RESPONSE_JOB_READY,
 
 	REQUEST_JOB_STEP_CREATE = 5001,
 	RESPONSE_JOB_STEP_CREATE,
@@ -209,6 +215,10 @@ typedef struct node_info_request_msg {
 	time_t last_update;
 	uint16_t show_flags;
 } node_info_request_msg_t;
+
+typedef struct node_info_select_request_msg {
+	time_t last_update;
+} node_info_select_request_msg_t;
 
 typedef struct part_info_request_msg {
 	time_t last_update;
@@ -321,7 +331,7 @@ typedef struct return_code_msg {
 /* Note: We include select_jobinfo here in addition to the job launch 
  * RPC in order to insure reliable clean-up of a BlueGene partition in
  * the event of some launch failure or race condition preventing slurmd 
- * from getting the BGL_PARTITION_ID at that time. It is needed for 
+ * from getting the MPIRUN_PARTITION at that time. It is needed for 
  * the job epilog. */
 typedef struct kill_job_msg {
 	uint32_t job_id;
@@ -461,6 +471,7 @@ slurm_free_node_registration_status_msg(slurm_node_registration_status_msg_t *
 void inline slurm_free_job_info(job_info_t * job);
 void inline slurm_free_job_info_members(job_info_t * job);
 
+void inline slurm_free_job_id_msg(job_id_msg_t * msg);
 void inline slurm_free_job_id_request_msg(job_id_request_msg_t * msg);
 void inline slurm_free_job_id_response_msg(job_id_response_msg_t * msg);
 

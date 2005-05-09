@@ -1,9 +1,11 @@
 /****************************************************************************\
  *  sinfo.h - definitions used for sinfo data functions
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Moe Jette <jette1@llnl.gov>
+ *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *
  *  This file is part of SLURM, a resource management program.
@@ -105,6 +107,7 @@ struct sinfo_match_flags {
 /* Input parameters */
 struct sinfo_parameters {
 	bool all_flag;
+	bool bgl_flag;
 	bool dead_nodes;
 	bool exact_match;
 	bool filtering;

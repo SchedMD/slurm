@@ -14,6 +14,7 @@ pkglib_LTLIBRARIES = select_bluegene.la
 select_bluegene_la_SOURCES = select_bluegene.c \
 				bgl_job_place.c bgl_job_place.h \
 				bgl_job_run.c bgl_job_run.h \
+				bgl_part_info.c bgl_part_info.h \
 				bluegene.c bluegene.h \
 				state_test.c state_test.h \
 				bgl_switch_connections.c \
@@ -26,7 +27,11 @@ select_bluegene_la_LIBADD  = $(top_builddir)/src/partition_allocator/libpartitio
 
 sbin_PROGRAMS = slurm_prolog slurm_epilog
 
+slurm_prolog_LDADD = $(top_builddir)/src/common/libcommon.la \
+		$(top_builddir)/src/api/libslurm.la
+slurm_epilog_LDADD =  $(top_builddir)/src/common/libcommon.la \
+		$(top_builddir)/src/api/libslurm.la
 slurm_prolog_SOURCES = slurm_prolog.c
 slurm_epilog_SOURCES = slurm_epilog.c
-slurm_prolog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BGL_LDFLAGS)
-slurm_epilog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BGL_LDFLAGS)
+slurm_prolog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+slurm_epilog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)

@@ -67,4 +67,11 @@ extern int term_jobs_on_part(pm_partition_id_t bgl_part_id);
  * changes were queued
  */
 extern int sync_jobs(List job_list);
+
+/*
+ * Boot a partition. Partition state expected to be FREE upon entry. 
+ * NOTE: This function does not wait for the boot to complete.
+ * the slurm prolog script needs to perform the waiting.
+ */
+extern int boot_part(bgl_record_t *bgl_record, rm_partition_mode_t node_use);
 #endif /* _BGL_JOB_RUN_H_ */

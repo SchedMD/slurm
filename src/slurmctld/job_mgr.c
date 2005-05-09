@@ -44,6 +44,7 @@
 
 #include <slurm/slurm_errno.h>
 
+#include "src/api/job_info.h"
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
 #include "src/common/node_select.h"
@@ -930,7 +931,7 @@ extern int kill_job_by_part_name(char *part_name)
  * IN step_test - if true, only kill the job if a step is running on the node
  * RET number of killed jobs
  */
-int kill_running_job_by_node_name(char *node_name, bool step_test)
+extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
@@ -1438,8 +1439,7 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-int
-job_complete(uint32_t job_id, uid_t uid, bool requeue,
+extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	     uint32_t job_return_code)
 {
 	struct job_record *job_ptr;
@@ -3519,7 +3519,7 @@ _xmit_new_end_time(struct job_record *job_ptr)
  * IN return_code - return code from epilog script
  * RET true if job is COMPLETED, otherwise false
  */
-bool job_epilog_complete(uint32_t job_id, char *node_name, 
+extern bool job_epilog_complete(uint32_t job_id, char *node_name, 
 		uint32_t return_code)
 {
 	struct job_record  *job_ptr = find_job_record(job_id);
@@ -3603,5 +3603,34 @@ extern bool job_independent(struct job_record *job_ptr)
 	if (detail_ptr)
 		detail_ptr->wait_reason = WAIT_DEPENDENCY;
 	return false;	/* job exists and incomplete */
+}
+/*
+ * determine if job is ready to execute per the node select plugin
+ * IN job_id - job to test
+ * OUT ready - 1 if job is ready to execute 0 otherwise
+ * RET SLURM error code
+ */
+extern int job_node_ready(uint32_t job_id, int *ready)
+{
+	int rc;
+	struct job_record *job_ptr;
+	xassert(ready);
+
+	*ready = 0;
+	job_ptr = find_job_record(job_id);
+	if (job_ptr == NULL)
+		return ESLURM_INVALID_JOB_ID;
+
+	rc = select_g_job_ready(job_ptr);
+	if (rc == -1)
+		return SLURM_ERROR;
+
+	if (rc)
+		rc = READY_NODE_STATE;
+	if (job_ptr->job_state == JOB_RUNNING)
+		rc |= READY_JOB_STATE;
+
+	*ready = rc;
+	return SLURM_SUCCESS;
 }
 

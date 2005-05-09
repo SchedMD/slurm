@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Moe Jette <jette1@llnl.gov>
+ *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *
  *  This file is part of SLURM, a resource management program.
@@ -74,7 +74,8 @@ extern void parse_command_line(int argc, char *argv[])
 	int opt_char;
 	int option_index;
 	static struct option long_options[] = {
-		{"all",         no_argument,       0, 'a'},
+		{"all",       no_argument,       0, 'a'},
+		{"bgl",       no_argument,       0, 'b'},
 		{"dead",      no_argument,       0, 'd'},
 		{"exact",     no_argument,       0, 'e'},
 		{"noheader",  no_argument,       0, 'h'},
@@ -105,7 +106,7 @@ extern void parse_command_line(int argc, char *argv[])
 		params.sort = xstrdup(env_val);
 
 
-	while((opt_char = getopt_long(argc, argv, "adehi:ln:No:p:rRsS:t:vV",
+	while((opt_char = getopt_long(argc, argv, "abdehi:ln:No:p:rRsS:t:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -114,6 +115,9 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		case (int)'a':
 			params.all_flag = true;
+			break;
+		case (int)'b':
+			params.bgl_flag = true;
 			break;
 		case (int)'d':
 			params.dead_nodes = true;
@@ -582,6 +586,7 @@ void _print_options( void )
 	printf("all_flag        = %s\n", params.all_flag ? "true" : "false");
 	printf("avail_flag      = %s\n", params.match_flags.avail_flag ?
 			"true" : "false");
+	printf("bgl_flag        = %s\n", params.bgl_flag ? "true" : "false");
 	printf("cpus_flag       = %s\n", params.match_flags.cpus_flag ?
 			"true" : "false");
 	printf("disk_flag       = %s\n", params.match_flags.disk_flag ?
@@ -620,7 +625,7 @@ static void _print_version(void)
 static void _usage( void )
 {
 	printf("\
-Usage: sinfo [-adelNRrsv] [-i seconds] [-t states] [-p partition] [-n nodes]\n\
+Usage: sinfo [-abdelNRrsv] [-i seconds] [-t states] [-p partition] [-n nodes]\n\
              [-S fields] [-o format] \n");
 }
 
@@ -630,6 +635,7 @@ static void _help( void )
 Usage: sinfo [OPTIONS]\n\
   -a, --all                  show all partitions (including hidden and those\n\
                              not accessible)\n\
+  -b, --bgl                  show bglblocks (on Blue Gene systems)\n\
   -d, --dead                 show only non-responding nodes\n\
   -e, --exact                group nodes only on exact match of configuration\n\
   -h, --noheader             no headers on output\n\

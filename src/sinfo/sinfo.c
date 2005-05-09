@@ -1,10 +1,11 @@
 /*****************************************************************************\
  *  sinfo.c - Report overall state the system
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, 
- *             Morris Jette <jette1@llnl.gov>, et. al.
+ *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -25,10 +26,20 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
+#include "src/api/node_select_info.h"
 #include "src/common/xstring.h"
 #include "src/common/macros.h"
+#include "src/common/node_select.h"
 #include "src/sinfo/sinfo.h"
 #include "src/sinfo/print.h"
+
+#ifdef HAVE_BGL_FILES
+# include "src/plugins/select/bluegene/wrap_rm_api.h"
+#endif
 
 /********************
  * Global Variables *
@@ -38,6 +49,7 @@ struct sinfo_parameters params;
 /************
  * Funtions *
  ************/
+static int  _bgl_report(void);
 static int  _build_sinfo_data(List sinfo_list, 
 		partition_info_msg_t *partition_msg,
 		node_info_msg_t *node_msg);
@@ -72,16 +84,20 @@ int main(int argc, char *argv[])
 		if ( params.iterate && (params.verbose || params.long_output ))
 			print_date();
 
-		if (_query_server(&partition_msg, &node_msg) != 0)
-			exit(1);
+		if (params.bgl_flag)
+			(void) _bgl_report();
+		else {
+			if (_query_server(&partition_msg, &node_msg) != 0)
+				exit(1);
 
-		sinfo_list = list_create(_sinfo_list_delete);
-		_build_sinfo_data(sinfo_list, partition_msg, node_msg);
-		sort_sinfo_list(sinfo_list);
-		print_sinfo_list(sinfo_list);
-
+			sinfo_list = list_create(_sinfo_list_delete);
+			_build_sinfo_data(sinfo_list, partition_msg, node_msg);
+	 		sort_sinfo_list(sinfo_list);
+			print_sinfo_list(sinfo_list);
+		}
 		if (params.iterate) {
-			list_destroy(sinfo_list);
+			if (sinfo_list)
+				list_destroy(sinfo_list);
 			printf("\n");
 			sleep(params.iterate);
 		} else
@@ -89,6 +105,97 @@ int main(int argc, char *argv[])
 	}
 
 	exit(0);
+}
+
+static char *_conn_type_str(int conn_type)
+{
+	switch (conn_type) {
+		case (SELECT_MESH):
+			return "MESH";
+		case (SELECT_TORUS):
+			return "TORUS";
+	}
+	return "?";
+}
+
+static char *_node_use_str(int node_use)
+{
+	switch (node_use) {
+		case (SELECT_COPROCESSOR_MODE):
+			return "COPROCESSOR";
+		case (SELECT_VIRTUAL_NODE_MODE):
+			return "VIRTUAL";
+	}
+	return "?";
+}
+
+static char *_part_state_str(int state)
+{
+	static char tmp[16];
+
+#ifdef HAVE_BGL_FILES
+	switch (state) {
+		case RM_PARTITION_BUSY:
+			return "BUSY";
+		case RM_PARTITION_CONFIGURING:
+			return "CONFIG";
+		case RM_PARTITION_DEALLOCATING:
+			return "DEALLOC";
+		case RM_PARTITION_ERROR:
+			return "ERROR";
+		case RM_PARTITION_FREE:
+			return "FREE";
+		case RM_PARTITION_READY:
+			return "READY";
+	}
+#endif
+
+	snprintf(tmp, sizeof(tmp), "%d", state);
+	return tmp;
+}
+
+/*
+ * _bgl_report - download and print current bglblock state information
+ */
+static int _bgl_report(void)
+{
+	static node_select_info_msg_t *old_bgl_ptr = NULL, *new_bgl_ptr;
+	int error_code, i;
+
+	if (old_bgl_ptr) {
+		error_code = slurm_load_node_select(old_bgl_ptr->last_update, 
+				&new_bgl_ptr);
+		if (error_code == SLURM_SUCCESS)
+			select_g_free_node_info(&new_bgl_ptr);
+		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+			error_code = SLURM_SUCCESS;
+			new_bgl_ptr = old_bgl_ptr;
+		}
+	} else {
+		error_code = slurm_load_node_select((time_t) NULL, 
+				&new_bgl_ptr);
+	}
+	if (error_code) {
+		slurm_perror("slurm_load_node_select");
+		return error_code;
+	}
+
+	if (!params.no_header)
+		printf("BGL_BLOCK        NODES        OWNER    STATE    CONNECTION USE\n");
+/*                      1234567890123456 123456789012 12345678 12345678 1234567890 12345+ */
+/*                      RMP_22Apr1544018 bgl[123x456] name     READY    TORUS      COPROCESSOR */
+
+	for (i=0; i<new_bgl_ptr->record_count; i++) {
+		printf("%-16.16s %-12.12s %-8.8s %-8.8s %-10.10s %s\n",
+			new_bgl_ptr->bgl_info_array[i].bgl_part_id,
+			new_bgl_ptr->bgl_info_array[i].nodes,
+			new_bgl_ptr->bgl_info_array[i].owner_name,
+			_part_state_str(new_bgl_ptr->bgl_info_array[i].state),
+			_conn_type_str(new_bgl_ptr->bgl_info_array[i].conn_type),
+			_node_use_str(new_bgl_ptr->bgl_info_array[i].node_use));
+	}
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -491,7 +598,6 @@ static void _sinfo_list_delete(void *data)
 {
 	sinfo_data_t *sinfo_ptr = data;
 
-	xfree(sinfo_ptr->features);
 	hostlist_destroy(sinfo_ptr->nodes);
 	xfree(sinfo_ptr);
 }

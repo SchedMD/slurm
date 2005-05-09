@@ -2,6 +2,8 @@
  *  slurm_protocol_defs.c - functions for initializing and releasing 
  *	storage for RPC data structures. these are the functions used by 
  *	the slurm daemons directly, not for user client use.
+ *
+ * $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -72,6 +74,11 @@ void slurm_free_old_job_alloc_msg(old_job_alloc_msg_t * msg)
 }
 
 void slurm_free_return_code_msg(return_code_msg_t * msg)
+{
+	xfree(msg);
+}
+
+void slurm_free_job_id_msg(job_id_msg_t * msg)
 {
 	xfree(msg);
 }

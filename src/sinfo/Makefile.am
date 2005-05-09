@@ -4,7 +4,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = -I$(top_srcdir)
+INCLUDES = -I$(top_srcdir) $(BGL_INCLUDES)
 bin_PROGRAMS = sinfo
 
 sinfo_LDADD =					  \

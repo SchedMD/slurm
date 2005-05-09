@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.5.0-pre3
+=============================
+ -- Merge of SLURM v0.4-branch into v0.5/HEAD.
+
 * Changes in SLURM 0.5.0-pre2
 =============================
  -- Fix bug in srun to clean-up upon failure of an allocated node
@@ -29,6 +33,105 @@ documents those changes that are of interest to users and admins.
  -- Add support for different slurm.conf files controlled via SLURM_CONF
     env var (Brian O'Sullivan, pathscale)
  -- Fix bug if srun given --uid without --gid option (Chris Holmes, HP).
+
+* Changes in SLURM 0.4.24
+=========================
+ -- DRAIN nodes with switches on base partitions are in ERROR, MISSING, 
+    or DOWN states.
+ 
+* Changes in SLURM 0.4.23
+========================= 
+ -- Modified bluegene plugin to only sync bglblocks to jobs on initial 
+    startup, not on reconfig. Fixes race condition.
+ -- Modified bluegene plugin to work with 141 driver. Enabling it to 
+    only have to reboot when switching from coproc -> virtual and back.
+ -- added support for a full system partition to make sure every other 
+    partition is free and vice-verse.
+ -- smap resizing issue fixed.
+ -- change prolog not to add time when a partition is in deallocating 
+    state.
+ -- NOTE: This version of SLURM requires BGL driver 141/2005.
+
+* Changes in SLURM 0.4.22
+=========================
+ -- Modified bluegene plugin to not do anything if the bluegene.conf file 
+    is altered.
+ -- added checking for lists before trying to create iterator on the list.
+
+* Changes in SLURM 0.4.21
+=========================
+ -- Fix in race condition with time in Status Thread of BGL
+ -- Fix no leading zeros in smap output.
+
+* Changes in SLURM 0.4.20
+=========================
+ -- Smap output is more user friendly with -c option
+
+* Changes in SLURM 0.4.19
+=========================
+ -- Added new RPCs for getting bglblock state info remotely and cache data 
+    within the plugin (permits removal of DB2 access from BGL FEN and 
+    dramatically increases smap responsivenss, also changed prolog/epilog
+    operation)
+ -- Move smap executable to main slurm RPM (from separate RPM).
+ -- smap uses RPC instead of DB2 to get info about bgl partitions.
+ -- Status function added to bluegene_agent thread.  Keeps current state
+    of BGL partitions updating every second.  will handle multiple attempts 
+    at booting if booting a partition fails. 
+
+* Changes in SLURM 0.4.18
+=========================
+ -- Added error checking of rm_remove_partition calls.
+ -- job_term() was terminating a job in real time rather than 
+    queueing the request. This would result in slurmctld hanging 
+    for many seconds when a job termination was required.
+
+* Changes in SLURM 0.4.17
+========================
+ -- Bug fixes from testing .16.
+
+* Changes in SLURM 0.4.16
+========================
+ -- Added error checking to a bunch of Bridge API calls and more 
+    gracefully handle failure modes.
+ -- Made smap more robust for more jobs.
+
+* Changes in SLURM 0.4.15
+========================
+ -- Added error checking to a bunch of Bridge API calls and more 
+    gracefully handle failure modes.
+
+* Changes in SLURM 0.4.14
+========================
+ -- job state is kept on warm start of slurm
+
+* Changes in SLURM 0.4.13
+========================
+ -- epilog fix for bgl plugin
+
+* Changes in SLURM 0.4.12
+========================
+ -- bug shot for new api calls.
+ -- added BridgeAPILogFile as an option for bluegene.conf file
+ 
+* Changes in SLURM 0.4.11
+========================
+ -- changed as many rm_get_partition() to rm_get_partitions_info as we could 
+    for time saving.
+ 
+* Changes in SLURM 0.4.10
+========================
+ -- redesign for BGL external wiring.
+ -- smap display bug fix for smaller systems.
+
+* Changes in SLURM 0.4.9
+========================
+ -- setpnum works now, have to include this in bluegene.conf
+
+* Changes in SLURM 0.4.8
+========================
+ -- Changed the prolog and the epilog to use the env var MPIRUN_PARTITION
+    instead of BGL_PARTITION_ID
 
 * Changes in SLURM 0.4.7
 ========================
