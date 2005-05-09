@@ -86,13 +86,20 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 	send_user "\nFAILURE: waiting for job to start running\n"
 	exit 1
 }
+exec $bin_sleep 5
+spawn $squeue --steps=$job_id.0
+expect {
+	eof {
+		wait
+	}
+}
 spawn $scancel --batch -s INT $job_id
 expect {
 	eof {
 		wait
 	}
 }
-exec $bin_sleep 10
+exec $bin_sleep 5
 
 #
 # Confirm that job step still exists.
@@ -100,7 +107,7 @@ exec $bin_sleep 10
 # sleep will exit along with the entire job.
 #
 set found_step 0
-spawn $squeue --steps
+spawn $squeue --steps=$job_id.0
 expect {
 	-re "($job_id).0" {
 		set found_step 1
@@ -154,14 +161,20 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 	send_user "\nFAILURE: waiting for job to start running\n"
 	exit 1
 }
+exec $bin_sleep 5
+spawn $squeue --jobs=$job_id
+expect {
+	eof {
+		wait
+	}
+}
 spawn $scancel --batch -s HUP $job_id
 expect {
 	eof {
 		wait
 	}
 }
-exec $bin_sleep 10
-
+exec $bin_sleep 5
 set found_job 0
 spawn $squeue --jobs=$job_id --states=cg,cd
 expect {
@@ -175,6 +188,12 @@ expect {
 }
 if {$found_job == 0} {
 	send_user "\nFAILURE: job not killed on SIGHUP\n"
+	spawn $scontrol show job $job_id
+	expect {
+		eof {
+			wait
+		}
+	}
 	exec $scancel --quiet $job_id
 	set exit_code 1
 }
@@ -222,21 +241,26 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 	send_user "\nFAILURE: waiting for job to start running\n"
 	exit 1
 }
-
-exec $bin_sleep 2
+exec $bin_sleep 5
+spawn $squeue --steps=$job_id.0
+expect {
+	eof {
+		wait
+	}
+}
 spawn $scancel -s INT $job_id
 expect {
 	eof {
 		wait
 	}
 }
-exec $bin_sleep 2
+exec $bin_sleep 5
 
 #
 # Confirm that job is gone
 #
 set found_step 0
-spawn $squeue --steps
+spawn $squeue --steps=$job_id.0
 expect {
 	-re "($job_id).0" {
 		set found_step 1
