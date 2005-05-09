@@ -36,11 +36,36 @@
 
 #include "src/common/log.h"
 #include "src/slurmctld/proc_req.h"
+#include "src/slurmctld/slurmctld.h"
 #include "bluegene.h"
 
 #define BUFSIZE 4096
 
 #ifdef HAVE_BGL_FILES
+
+/* Determine if specific slurm node is already in DOWN or DRAIN state */
+static bool _node_already_down(char *node_name)
+{
+	int i;
+	uint16_t base_state;
+	struct node_record *node_ptr = node_record_table_ptr;
+
+	for (i=0; i<node_record_count; i++, node_ptr++) {
+		if (strcmp(node_ptr->name, node_name))
+			continue;
+		base_state = node_ptr->node_state & 
+			(~NODE_STATE_NO_RESPOND);
+		if ((base_state == NODE_STATE_DOWN)
+		||  (base_state == NODE_STATE_DRAINED)
+		||  (base_state == NODE_STATE_DRAINING))
+			return true;
+		else
+			return false;
+	}
+
+	return false;
+}
+
 /* Find the specified BlueGene node ID and drain it from SLURM */
 static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bgl)
 {
@@ -95,7 +120,8 @@ static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bgl)
 
 		snprintf(bgl_down_node, sizeof(bgl_down_node), "bgl%d%d%d",
 			bp_loc.X, bp_loc.Y, bp_loc.Z);
-
+		if (_node_already_down(bgl_down_node))
+			break;
 		error("switch for node %s is bad", bgl_down_node);
 		now = time(NULL);
 		time_ptr = localtime(&now);
@@ -103,7 +129,7 @@ static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bgl)
 			"bluegene_select: MMCS switch DOWN [SLURM@%b %d %H:%M]",
 			time_ptr);
 		slurm_drain_nodes(bgl_down_node, reason);
-
+		break;
 	}
 }
 
@@ -177,6 +203,8 @@ static void _test_down_nodes(rm_BGL_t *bgl)
 
 		snprintf(bgl_down_node, sizeof(bgl_down_node), "bgl%d%d%d", 
 			bp_loc.X, bp_loc.Y, bp_loc.Z);
+		if (_node_already_down(bgl_down_node))
+			continue;
 		debug("_test_down_nodes: %s in state %s", 
 			bgl_down_node, _convert_bp_state(RM_BPState));
 		if ((strlen(down_node_list) + strlen(bgl_down_node) + 2) 
