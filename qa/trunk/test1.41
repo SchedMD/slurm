@@ -42,7 +42,7 @@ print_header $test_id
 #
 # Submit a slurm job that will execute 'id' on 1 node and over task_cnt tasks
 #
-set timeout [expr $max_job_delay + 60]
+set timeout [expr $max_job_delay + 130]
 spawn $srun -N1-2 -n$task_cnt --overcommit --debugger-test -t1 $bin_id  
 expect {
 	-re "uid=" {
