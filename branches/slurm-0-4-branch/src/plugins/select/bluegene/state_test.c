@@ -46,13 +46,10 @@
 /* Determine if specific slurm node is already in DOWN or DRAIN state */
 static bool _node_already_down(char *node_name)
 {
-	int i;
 	uint16_t base_state;
-	struct node_record *node_ptr = node_record_table_ptr;
+	struct node_record *node_ptr = find_node_record(node_name);
 
-	for (i=0; i<node_record_count; i++, node_ptr++) {
-		if (strcmp(node_ptr->name, node_name))
-			continue;
+	if (node_ptr) {
 		base_state = node_ptr->node_state & 
 			(~NODE_STATE_NO_RESPOND);
 		if ((base_state == NODE_STATE_DOWN)
