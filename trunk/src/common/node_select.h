@@ -1,5 +1,7 @@
 /*****************************************************************************\
  *  node_select.h - Define node selection plugin functions.
+ *
+ * $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -24,9 +26,10 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef __SELECT_PLUGIN_API_H__
-#define __SELECT_PLUGIN_API_H__
+#ifndef _NODE_SELECT_H 
+#define _NODE_SELECT_H
 
+#include "src/api/node_select_info.h"
 #include "src/common/list.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -99,6 +102,13 @@ extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 extern int select_g_job_begin(struct job_record *job_ptr);
 
 /*
+ * determine if job is ready to execute per the node select plugin
+ * IN job_ptr - pointer to job being tested
+ * RET -1 on error, 1 if ready to execute, 0 otherwise
+ */
+extern int select_g_job_ready(struct job_record *job_ptr);
+
+/*
  * Note termination of job is starting. Executed from slurmctld.
  * IN job_ptr - pointer to job being terminated
  */
@@ -164,5 +174,25 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer);
  */
 extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 		char *buf, size_t size, int mode);
+
+/******************************************************\
+ * NODE-SELECT PLUGIN SPECIFIC INFORMATION FUNCTIONS  *
+\******************************************************/
+
+/* pack node-select plugin specific information into a buffer in 
+ *	machine independent form
+ * IN last_update_time - time of latest information consumer has
+ * OUT buffer - location to hold the data, consumer must free
+ * RET - slurm error code
+ */
+extern int select_g_pack_node_info(time_t last_query_time, Buf *buffer);
+ 
+/* Unpack node select info from a buffer */
+extern int select_g_unpack_node_info(node_select_info_msg_t **
+		node_select_info_msg_pptr, Buf buffer);
+
+/* Free a node select information buffer */
+extern int select_g_free_node_info(node_select_info_msg_t **
+		node_select_info_msg_pptr);
 
 #endif /*__SELECT_PLUGIN_API_H__*/

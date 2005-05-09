@@ -30,6 +30,7 @@
 #include "src/common/macros.h"
 
 #include <curses.h>
+#include "src/api/node_select_info.h"
 #include "src/common/read_config.h"
 #include "src/common/parse_spec.h"
 #include "src/slurmctld/proc_req.h"
@@ -42,7 +43,7 @@
 #define BIG_MAX 9999
 #define BUFSIZE 4096
 
-#if HAVE_BGL
+#ifdef HAVE_BGL
 #define PA_SYSTEM_DIMENSIONS 3
 #else
 #define PA_SYSTEM_DIMENSIONS 1
@@ -57,6 +58,10 @@ enum {X, Y, Z};
 /* */
 enum {MESH, TORUS};
 enum {COPROCESSOR, VIRTUAL};
+
+/* NOTE: Definition of bgl_info_record_t moved to src/api/node_select_info.h */
+
+extern List bgl_info_list;			/* List of BGL blocks */
 
 /** 
  * structure that holds switch path information for finding the wiring 
@@ -170,12 +175,11 @@ typedef struct {
 	time_t now_time;
 
 	/* made to hold info about a system, which right now is only a grid of pa_nodes*/
-#if HAVE_BGL
+#ifdef HAVE_BGL
 	pa_node_t ***grid;
 #else
 	pa_node_t *grid;
 #endif
-	pa_node_t *fill_in_value;
 } pa_system_t;
 
 /* Used to Keep track of where the Base Partitions are at all times
@@ -189,6 +193,11 @@ typedef struct {
 
 /* Global */
 extern List bp_map_list;
+extern char letters[36];
+extern char colors[6];
+
+/* destroy a bgl_info_record_t */
+extern void destroy_bgl_info_record(void* object);
 
 /**
  * create a partition request.  Note that if the geometry is given,
@@ -208,17 +217,17 @@ extern List bp_map_list;
  * 
  * return success of allocation/validation of params
  */
-int new_pa_request(pa_request_t* pa_request);
+extern int new_pa_request(pa_request_t* pa_request);
 
 /**
  * delete a partition request 
  */
-void delete_pa_request(pa_request_t* pa_request);
+extern void delete_pa_request(pa_request_t* pa_request);
 
 /**
  * print a partition request 
  */
-void print_pa_request(pa_request_t* pa_request);
+extern void print_pa_request(pa_request_t* pa_request);
 
 /**
  * Initialize internal structures by either reading previous partition
@@ -228,11 +237,11 @@ void print_pa_request(pa_request_t* pa_request);
  * 
  * return: success or error of the intialization.
  */
-void pa_init();
+extern void pa_init();
 /** 
  * destroy all the internal (global) data structs.
  */
-void pa_fini();
+extern void pa_fini();
 
 /** 
  * set the node in the internal configuration as unusable
@@ -240,7 +249,7 @@ void pa_fini();
  * IN c: coordinate of the node to put down
  */
 //void pa_set_node_down(int c[PA_SYSTEM_DIMENSIONS]);
-void pa_set_node_down(pa_node_t *pa_node);
+extern void pa_set_node_down(pa_node_t *pa_node);
 
 /** 
  * Try to allocate a partition.
@@ -252,13 +261,13 @@ void pa_set_node_down(pa_node_t *pa_node);
  * 
  * return: success or error of request
  */
-int allocate_part(pa_request_t* pa_request, List results);
+extern int allocate_part(pa_request_t* pa_request, List results);
 
 /** 
  * Admin wants to remove a previous allocation.
  * will allow Admin to delete a previous allocation retrival by letter code.
  */
-int remove_part(List nodes, int new_count);
+extern int remove_part(List nodes, int new_count);
 
 /** 
  * Admin wants to change something about a previous allocation. 
@@ -266,29 +275,34 @@ int remove_part(List nodes, int new_count);
  * letter code for the allocation and the variable to alter
  *
  */
-int alter_part(List nodes, int conn_type);
+extern int alter_part(List nodes, int conn_type);
 
 /** 
  * After a partition is deleted or altered following allocations must
  * be redone to make sure correct path will be used in the real system
  *
  */
-int redo_part(List nodes, int conn_type, int new_count);
+extern int redo_part(List nodes, int conn_type, int new_count);
 
-int set_bgl_part(List nodes, int size, int conn_type);
+extern int set_bgl_part(List nodes, int size, int conn_type);
 
-int reset_pa_system();
+extern int reset_pa_system();
 
-void init_grid(node_info_msg_t *node_info_ptr);
+extern void init_grid(node_info_msg_t *node_info_ptr);
+
+/**
+ * Set up the map for resolving
+ */
+extern int set_bp_map(void);
 
 /**
  * find a base partitions bgl location 
  */
-int *find_bp_loc(char* bp_id);
+extern int *find_bp_loc(char* bp_id);
 
 /**
  * find a rack/midplace location 
  */
-char *find_bp_rack_mid(char* xyz);
+extern char *find_bp_rack_mid(char* xyz);
 
 #endif /* _PARTITION_ALLOCATOR_H_ */

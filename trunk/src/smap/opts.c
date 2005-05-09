@@ -45,6 +45,7 @@ void parse_command_line(int argc, char *argv[])
 		{"iterate", required_argument, 0, 'i'},
 		{"version", no_argument, 0, 'V'},
 		{"commandline", no_argument, 0, 'c'},
+		{"parse", no_argument, 0, 'p'},
 		{"resolve", required_argument, 0, 'R'},
 		{"help", no_argument, 0, OPT_LONG_HELP},
 		{"usage", no_argument, 0, OPT_LONG_USAGE},
@@ -53,7 +54,7 @@ void parse_command_line(int argc, char *argv[])
 	};
 
 	while ((opt_char =
-		getopt_long(argc, argv, "D:hi:VcR:",
+		getopt_long(argc, argv, "D:hi:VcpR:",
 			    long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int) '?':
@@ -88,6 +89,9 @@ void parse_command_line(int argc, char *argv[])
 			exit(0);
 		case (int) 'c':
 			params.commandline = TRUE;
+			break;
+		case (int) 'p':
+			params.parse = TRUE;
 			break;
 		case (int) 'R':
 			params.commandline = TRUE;
@@ -135,10 +139,15 @@ void snprint_time(char *buf, size_t buf_size, time_t time)
 void print_date()
 {
 	pa_system_ptr->now_time = time(NULL);
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "%s",
-		  ctime(&pa_system_ptr->now_time));
-	pa_system_ptr->ycord++;
+
+	if (params.commandline) {
+		printf("%s", ctime(&pa_system_ptr->now_time));
+	} else {
+		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+			  pa_system_ptr->xcord, "%s",
+			  ctime(&pa_system_ptr->now_time));
+		pa_system_ptr->ycord++;
+	}
 }
 
 void clear_window(WINDOW *win)
@@ -160,7 +169,7 @@ static void _print_version(void)
 static void _usage(void)
 {
 	printf("\
-Usage: smap [-hV] [-D jsbc] [-i seconds]\n");
+Usage: smap [-hVcp] [-D jsbc] [-i seconds]\n");
 }
 
 static void _help(void)
@@ -176,6 +185,7 @@ Usage: smap [OPTIONS]\n\
   -i, --iterate=seconds      specify an interation period\n\
   -V, --version              output version information and exit\n\
   -c, --commandline          output written with straight to the commandline.\n\
+  -p, --parse                used with -c to not format output, but use single tab delimitation.\n\
   -R, --resolve              resolve an XYZ coord from a Rack/Midplane id or vice versa.\n\
                              (i.e. -R R101 for R/M input -R 101 for XYZ).\n\
 \nHelp options:\n\

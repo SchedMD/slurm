@@ -1,9 +1,11 @@
 /*****************************************************************************\
  *  select_bluegene.c - node selection plugin for Blue Gene system.
+ * 
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Dan Phung <phung4@llnl.gov>
+ *  Written by Dan Phung <phung4@llnl.gov> Danny Auble <da@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -25,6 +27,8 @@
 \*****************************************************************************/
 
 #include "bluegene.h"
+
+#define HUGE_BUF_SIZE (1024*16)
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -165,13 +169,13 @@ extern int fini ( void )
 {
 	xassert(part_list);
 #ifdef HAVE_BGL
-	if(read_bgl_conf()) {
+	if(read_bgl_conf() == SLURM_ERROR) {
 		fatal("Error, could not read the file");
 		return SLURM_ERROR;
 	}
 #else
 	/*looking for partitions only I created */
-	if (create_static_partitions(part_list)) {
+	if (create_static_partitions(part_list) == SLURM_ERROR) {
 		/* error in creating the static partitions, so
 		 * partitions referenced by submitted jobs won't
 		 * correspond to actual slurm partitions/bgl
@@ -247,4 +251,58 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	return term_job(job_ptr);
+}
+
+extern int select_p_job_ready(struct job_record *job_ptr)
+{
+#ifdef HAVE_BGL_FILES
+	return part_ready(job_ptr);
+#else
+	if (job_ptr->job_state == JOB_RUNNING)
+		return 1;
+	return 0;
+#endif
+}
+
+extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
+{
+	ListIterator itr;
+	bgl_record_t *bgl_record = NULL;
+	uint32_t partitions_packed = 0, tmp_offset;
+	Buf buffer;
+
+	/* check to see if data has changed */
+	if (last_query_time >= last_bgl_update) {
+		debug2("Node select info hasn't changed since %d", 
+			last_bgl_update);
+		return SLURM_NO_CHANGE_IN_DATA;
+	} else {
+		*buffer_ptr = NULL;
+		buffer = init_buf(HUGE_BUF_SIZE);
+		pack32(partitions_packed, buffer);
+		pack_time(last_bgl_update, buffer);
+
+		if(bgl_list) {
+			itr = list_iterator_create(bgl_list);
+			while ((bgl_record = (bgl_record_t *) list_next(itr)) 
+			       != NULL) {
+				xassert(bgl_record->bgl_part_id != NULL);
+				
+				pack_partition(bgl_record, buffer);
+				partitions_packed++;
+			}
+			list_iterator_destroy(itr);
+		} else {
+			error("select_p_pack_node_info: no bgl_list");
+			return SLURM_ERROR;
+		}
+		tmp_offset = get_buf_offset(buffer);
+		set_buf_offset(buffer, 0);
+		pack32(partitions_packed, buffer);
+		set_buf_offset(buffer, tmp_offset);
+
+		*buffer_ptr = buffer;
+	}
+
+	return SLURM_SUCCESS;
 }

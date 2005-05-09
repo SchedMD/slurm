@@ -76,7 +76,28 @@
   typedef char *   rm_component_id_t;
   typedef rm_component_id_t rm_bp_id_t;
   typedef int      rm_BP_state_t;
-  typedef int      status_t;
+
+/* these are the typedefs that we will need to have  */
+/* if we want the states on the fen in a bgl system */
+  enum rm_partition_state {RM_PARTITION_FREE, 
+			   RM_PARTITION_CONFIGURING,
+			   RM_PARTITION_READY,
+			   RM_PARTITION_BUSY,
+			   RM_PARTITION_DEALLOCATING,
+			   RM_PARTITION_ERROR,
+			   RM_PARTITION_NAV};
+  typedef enum status {STATUS_OK  = 0,
+		       PARTITION_NOT_FOUND = -1,
+		       JOB_NOT_FOUND = -2,
+		       BP_NOT_FOUND = -3,
+		       SWITCH_NOT_FOUND = -4,
+		       JOB_ALREADY_DEFINED=-5,
+		       CONNECTION_ERROR=-10,
+		       INTERNAL_ERROR = -11,
+		       INVALID_INPUT=-12,
+		       INCOMPATIBLE_STATE=-13,
+		       INCONSISTENT_DATA=-14,
+  }status_t;
 #endif
 
 /* getopt_long options, integers but not characters */
@@ -104,6 +125,7 @@ typedef struct {
 
 	bool long_output;
 	bool commandline;
+	bool parse;
 
 	char *nodes;
 	char *partition;

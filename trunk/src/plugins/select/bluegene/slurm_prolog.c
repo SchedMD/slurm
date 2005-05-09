@@ -3,7 +3,7 @@
  *	this user. This is executed via SLURM to synchronize the user's job 
  *	execution with slurmctld configuration of partitions.
  *
- * NOTE: execute "/bgl/BlueLight/ppcfloor/bglsys/bin/db2profile" first
+ * $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -31,24 +31,20 @@
 #if HAVE_CONFIG_H
 #  include "config.h"
 #endif
+
 #include <stdlib.h>
-
-#ifndef HAVE_BGL_FILES
-
-/* Just a stub, no synchronization to perform */
-int main(int argc, char *argv[])
-{
-	exit(0);
-}
-
-#else
-
 #include <errno.h>
-#include <pwd.h>
 #include <stdio.h>
-#include <sys/types.h>
 #include <unistd.h>
-#include "src/plugins/select/bluegene/wrap_rm_api.h"
+#include <string.h>
+#include <strings.h>
+#include <sys/types.h>
+#include <slurm/slurm.h>
+
+#include "src/api/job_info.h"
+#include "src/common/hostlist.h"
+#include "src/common/node_select.h"
+#include "src/api/node_select_info.h"
 
 #define _DEBUG 0
 
@@ -61,189 +57,72 @@ int main(int argc, char *argv[])
 #define POLL_SLEEP 3			/* retry interval in seconds  */
 #define MIN_DELAY  300			/* time in seconds */
 #define INCR_DELAY 20			/* time in seconds per BP */
-int max_delay=MIN_DELAY;
-int cur_delay=0;
 
-static char *_part_state_str(rm_partition_state_t state);
-static void  _wait_part_ready(char *part_name);
-static void  _wait_part_owner(char *part_name, char *user_id);
+int max_delay = MIN_DELAY;
+int cur_delay = 0; 
+  
+enum rm_partition_state {RM_PARTITION_FREE, 
+			 RM_PARTITION_CONFIGURING,
+			 RM_PARTITION_READY,
+			 RM_PARTITION_BUSY,
+			 RM_PARTITION_DEALLOCATING,
+			 RM_PARTITION_ERROR,
+			 RM_PARTITION_NAV};
+
+static int  _get_job_size(uint32_t job_id);
+static int  _wait_part_ready(uint32_t job_id);
+static int  _partitions_dealloc();
 
 int main(int argc, char *argv[])
 {
-	char *job_id = NULL, *part_name = NULL, *user_id = NULL;
+	char *job_id_char = NULL;
+	uint32_t job_id;
 
-	job_id = getenv("SLURM_JOBID");		/* get SLURM job ID */
-	if (!job_id)
+	job_id_char = getenv("SLURM_JOBID");		/* get SLURM job ID */
+	if (!job_id_char) {
 		fprintf(stderr, "SLURM_JOBID not set\n");
-
-	part_name = getenv("BGL_PARTITION_ID");	/* get partition ID */
-	if (!part_name) {
-		fprintf(stderr, "BGL_PARTITION_ID not set for job %s\n",
-			job_id);
-		exit(0);
+		exit(1);				/* abort job */
 	}
 
-	_wait_part_ready(part_name);
+	job_id = (uint32_t) atol(job_id_char);
+	if (job_id == 0) {
+		fprintf(stderr, "SLURM_JOBID invalid: %s\n", job_id_char);
+		exit(1);				/* abort job */
+	}
 
-	user_id = getenv("SLURM_UID");          /* get SLURM user ID */
-	if (!user_id)
-		fprintf(stderr, "SLURM_UID not set for job %s\n", job_id);
-	else
-		_wait_part_owner(part_name, user_id);
-	exit(0);
+	if (_wait_part_ready(job_id) == 1)
+		exit(0);				/* Success */
+
+	exit(1);					/* abort job */
 }
 
-static void _wait_part_ready(char *part_name)
+/* returns 1 if job and nodes are ready for job to begin, 0 otherwise */
+static int _wait_part_ready(uint32_t job_id)
 {
-	int i, rc1, rc2;
-	rm_partition_t *part_ptr;
-	rm_partition_state_t state;
-	int is_ready = 0;
+	int is_ready = 0, i, rc;
+	
+	max_delay = MIN_DELAY + (INCR_DELAY * _get_job_size(job_id));
 
 #if _DEBUG
-	printf("Waiting for partition %s to become ready.", part_name);
+	printf("Waiting for job %u to become ready.", job_id);
 #endif
+
 	for (i=0; (cur_delay < max_delay); i++) {
 		if (i) {
 			sleep(POLL_SLEEP);
-			cur_delay += POLL_SLEEP;
+			if(_partitions_dealloc() == 0) 
+				cur_delay += POLL_SLEEP;
 #if _DEBUG
 			printf(".");
 #endif
 		}
-		rc1 = rm_get_partition(part_name, &part_ptr);
-		if (rc1 == PARTITION_NOT_FOUND)
-			continue;	/* wait for creation */
-		if (rc1 != STATUS_OK) {
-			fprintf(stderr, "rm_get_partition(%s) errno=%d\n", 
-				part_name, rc1);
-			return;
-		}
 
-		if (max_delay == MIN_DELAY) {
-			int bp;
-			rc1 = rm_get_data(part_ptr, RM_PartitionBPNum, &bp);
-			if (rc1 != STATUS_OK)
-				fprintf(stderr, "rm_get_data(%s, "
-					"RM_PartitionBPNum) errno=%d\n",
-					part_name, rc1);
-			else {
-				max_delay += (INCR_DELAY * bp);
-				if (max_delay == MIN_DELAY)
-					max_delay++;	/* avoid re-test */
-			}
-		}
-		rc1 = rm_get_data(part_ptr, RM_PartitionState, &state);
-		rc2 = rm_free_partition(part_ptr);
-		if (rc1 != STATUS_OK) {
-			fprintf(stderr, 
-				"rm_get_data(%s, RM_PartitionState) errno=%d\n", 
-				part_name, rc1);
-			return;
-		}
-		if (rc2 != STATUS_OK)
-			fprintf(stderr, "rm_free_partition() errno=%d\n", rc2);
-#if (_DEBUG > 1)
-		printf("\nstate=%s\n",_part_state_str(state));
-#endif
-		if ((state == RM_PARTITION_READY) 
-		||  (state == RM_PARTITION_ERROR)) {
-			is_ready = 1;
+		rc = slurm_job_node_ready(job_id);
+		if (rc == -1)				/* error */
+			continue;			/* retry */
+		if ((rc & READY_JOB_STATE) == 0)	/* job killed */
 			break;
-		}
-	}
-#if _DEBUG
-	if (is_ready == 0)
-		printf("\n");
-	else
-     	   printf("\nPartition %s is ready.\n", part_name);
-#endif
-	if (is_ready == 0)
-		fprintf(stderr, "Partition state not ready (%s)\n",
-			_part_state_str(state));
-
-}
-
-static char *_part_state_str(rm_partition_state_t state)
-{
-	static char tmp[16];
-
-	switch (state) {
-		case RM_PARTITION_BUSY: 
-			return "RM_PARTITION_BUSY";
-		case RM_PARTITION_CONFIGURING:
-			return "RM_PARTITION_CONFIGURING";
-		case RM_PARTITION_DEALLOCATING:
-			return "RM_PARTITION_DEALLOCATING";
-		case RM_PARTITION_ERROR:
-			return "RM_PARTITION_ERROR";
-		case RM_PARTITION_FREE:
-			return "RM_PARTITION_FREE";
-		case RM_PARTITION_NAV:
-			return "RM_PARTITION_NAV";
-		case RM_PARTITION_READY:
-			return "RM_PARTITION_READY";
-		default:
-			snprintf(tmp, sizeof(tmp), "%d", state);
-			return tmp;
-	}
-}
-
-/* Partition owner should be set when partition is ready, don't 
- * have long delays */
-static void  _wait_part_owner(char *part_name, char *user_id)
-{
-	uid_t target_uid;
-	int i, rc1, rc2;
-	rm_partition_t *part_ptr;
-	char *name;
-	struct passwd *pw_ent;
-	int is_ready = 0;
-
-	target_uid = atoi(user_id);
-
-#if _DEBUG
-	printf("Waiting for partition %s owner to become %d.", part_name, 
-		target_uid);
-#endif
-
-	for (i=0; (cur_delay < max_delay); i++) {
-		if (i) {
-			sleep(POLL_SLEEP);
-			cur_delay += POLL_SLEEP;
-#if _DEBUG
-			printf(".");
-#endif
-		}
-		if ((rc1 = rm_get_partition(part_name, &part_ptr)) != 
-				STATUS_OK) {
-			fprintf(stderr, "rm_get_partition(%s) errno=%d\n",
-				part_name, rc1);
-			return;
-		}
-		rc1 = rm_get_data(part_ptr, RM_PartitionUserName, &name);
-		rc2 = rm_free_partition(part_ptr);
-		if (rc1 != STATUS_OK) {
-			fprintf(stderr,
-				"rm_get_data(%s, RM_PartitionUserName) "
-				"errno=%d\n", part_name, rc1);
-			return;
-		}
-		if (rc2 != STATUS_OK)
-			fprintf(stderr, "rm_free_partition() errno=%d\n", rc2);
-
-		/* Now test this owner */
-		if (name[0] == '\0')
-			continue;
-		if ((pw_ent = getpwnam(name)) == NULL) {
-			fprintf(stderr, "getpwnam(%s) errno=%d\n", part_name, 
-				errno);
-			continue;
-		}
-#if (_DEBUG > 1)
-		printf("\nowner = %s(%d)\n", name, pw_ent->pw_uid);
-#endif
-		if (pw_ent->pw_uid == target_uid) {
+		if (rc & READY_NODE_STATE) {		/* job and node ready */
 			is_ready = 1;
 			break;
 		}
@@ -253,11 +132,80 @@ static void  _wait_part_owner(char *part_name, char *user_id)
 	if (is_ready == 0)
 		printf("\n");
 	else
-		printf("\nPartition %s owner is %d.\n", part_name, target_uid);
+     		printf("\nJob %u is ready.\n", job_id);
 #endif
 	if (is_ready == 0)
-		fprintf(stderr, "Partition %s owner not changed (%s)\n", 
-			part_name, name);
+		fprintf(stderr, "Job %u is not ready.\n", job_id);
+	return is_ready;
 }
 
-#endif  /* HAVE_BGL_FILES */
+static int _get_job_size(uint32_t job_id)
+{
+	job_info_msg_t *job_buffer_ptr;
+	job_info_t * job_ptr;
+	int i, size = 1;
+	hostlist_t hl;
+
+	if (slurm_load_jobs((time_t) 0, &job_buffer_ptr, SHOW_ALL)) {
+		slurm_perror("slurm_load_jobs");
+		return 1;
+	}
+
+	for (i = 0; i < job_buffer_ptr->record_count; i++) {
+		job_ptr = &job_buffer_ptr->job_array[i];
+		if (job_ptr->job_id != job_id)
+			continue;
+		hl = hostlist_create(job_ptr->nodes);
+		if (hl) {
+			size = hostlist_count(hl);
+			hostlist_destroy(hl);
+		}
+		break;
+	}
+	slurm_free_job_info_msg (job_buffer_ptr);
+
+#if _DEBUG
+	printf("Size is %d\n", size);
+#endif
+	return size;
+}
+
+/*
+ * Test if any BGL blocks are in deallocating state 
+ * RET	1:  deallocate in progress
+ *	0:  no deallocate in progress
+ *	-1: error occurred
+ */
+static int _partitions_dealloc()
+{
+	static node_select_info_msg_t *bgl_info_ptr = NULL, *new_bgl_ptr = NULL;
+	int rc = 0, error_code = 0, i;
+	
+	if (bgl_info_ptr) {
+		error_code = slurm_load_node_select(bgl_info_ptr->last_update, 
+						   &new_bgl_ptr);
+		if (error_code == SLURM_SUCCESS)
+			select_g_free_node_info(&bgl_info_ptr);
+		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+			error_code = SLURM_SUCCESS;
+			new_bgl_ptr = bgl_info_ptr;
+		}
+	} else {
+		error_code = slurm_load_node_select((time_t) NULL, &new_bgl_ptr);
+	}
+
+	if (error_code) {
+		fprintf(stderr, "slurm_load_partitions: %s",
+		       slurm_strerror(slurm_get_errno()));
+		return -1;
+	}
+	for (i=0; i<new_bgl_ptr->record_count; i++) {
+		if(new_bgl_ptr->bgl_info_array[i].state 
+		   == RM_PARTITION_DEALLOCATING) {
+			rc = 1;
+			break;
+		}
+	}
+	bgl_info_ptr = new_bgl_ptr;
+	return rc;
+}

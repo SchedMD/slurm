@@ -1,6 +1,8 @@
 /*****************************************************************************\
  *  state_test.c - Test state of Blue Gene base partitions and switches. 
  *  DRAIN nodes in SLURM that are not usable. 
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -34,11 +36,33 @@
 
 #include "src/common/log.h"
 #include "src/slurmctld/proc_req.h"
+#include "src/slurmctld/slurmctld.h"
 #include "bluegene.h"
 
 #define BUFSIZE 4096
 
 #ifdef HAVE_BGL_FILES
+
+/* Determine if specific slurm node is already in DOWN or DRAIN state */
+static bool _node_already_down(char *node_name)
+{
+	uint16_t base_state;
+	struct node_record *node_ptr = find_node_record(node_name);
+
+	if (node_ptr) {
+		base_state = node_ptr->node_state & 
+			(~NODE_STATE_NO_RESPOND);
+		if ((base_state == NODE_STATE_DOWN)
+		||  (base_state == NODE_STATE_DRAINED)
+		||  (base_state == NODE_STATE_DRAINING))
+			return true;
+		else
+			return false;
+	}
+
+	return false;
+}
+
 /* Find the specified BlueGene node ID and drain it from SLURM */
 static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bgl)
 {
@@ -48,8 +72,8 @@ static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bgl)
 	rm_location_t bp_loc;
 	rm_BP_state_t bp_state;
 	char bgl_down_node[128], reason[128];
-	time_t now;
-	struct tm *time_ptr;
+	time_t now = time(NULL);
+	struct tm *time_ptr = localtime(&now);
 
 	if ((rc = rm_get_data(bgl, RM_BPNum, &bp_num)) != STATUS_OK) {
 		error("rm_get_data(RM_BPNum): %s", bgl_err_str(rc));
@@ -59,16 +83,16 @@ static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bgl)
 	for (i=0; i<bp_num; i++) {
 		if (i) {
 			if ((rc = rm_get_data(bgl, RM_NextBP, &my_bp)) != 
-					STATUS_OK) {
+			    STATUS_OK) {
 				error("rm_get_data(RM_NextBP): %s", 
-					bgl_err_str(rc));
+				      bgl_err_str(rc));
 				continue;
 			}
 		} else {
 			if ((rc = rm_get_data(bgl, RM_FirstBP, &my_bp)) != 
-					STATUS_OK) {
+			    STATUS_OK) {
 				error("rm_get_data(RM_FirstBP): %s", 
-					bgl_err_str(rc));
+				      bgl_err_str(rc));
 				continue;
 			}
 		}
@@ -79,29 +103,31 @@ static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bgl)
 		}
 		if (strcmp(bp_id, bpid) != 0)	/* different base partition */
 			continue;
-		if ((rc = rm_get_data(my_bp, RM_BPLoc, &bp_loc)) != STATUS_OK) {
-			error("rm_get_data(RM_BPLoc): %s", bgl_err_str(rc));
-			continue;
-		}
 		if ((rc = rm_get_data(my_bp, RM_BPState, &bp_state)) 
-				!= STATUS_OK) {
+		    != STATUS_OK) {
 			error("rm_get_data(RM_BPState): %s", bgl_err_str(rc));
 			continue;
 		}
-		if  (bp_state == RM_BP_DOWN) 		/* already down */
+		if  (bp_state != RM_BP_UP) 		/* already down */
 			continue;
 
+		if ((rc = rm_get_data(my_bp, RM_BPLoc, &bp_loc)) 
+		    != STATUS_OK) {
+			error("rm_get_data(RM_BPLoc): %s", bgl_err_str(rc));
+			continue;
+		}
 		snprintf(bgl_down_node, sizeof(bgl_down_node), "bgl%d%d%d",
-			bp_loc.X, bp_loc.Y, bp_loc.Z);
+			 bp_loc.X, bp_loc.Y, bp_loc.Z);
+		if (_node_already_down(bgl_down_node))
+			break;
 
 		error("switch for node %s is bad", bgl_down_node);
-		now = time(NULL);
-		time_ptr = localtime(&now);
 		strftime(reason, sizeof(reason),
-			"bluegene_select: MMCS switch DOWN [SLURM@%b %d %H:%M]",
-			time_ptr);
+			 "select_bluegene: MMCS switch not UP "
+			 "[SLURM@%b %d %H:%M]",
+			 time_ptr);
 		slurm_drain_nodes(bgl_down_node, reason);
-
+		break;
 	}
 }
 
@@ -115,13 +141,19 @@ static char *_convert_bp_state(rm_BP_state_t state)
 	case RM_BP_DOWN:
 		return "RM_BP_DOWN";
 		break;
+	case RM_BP_MISSING:
+		return "RM_BP_MISSING";
+		break;
+	case RM_BP_ERROR:
+		return "RM_BP_ERROR";
+		break;
 	case RM_BP_NAV:
 		return "RM_BP_NAV";
 	}
 	return "BP_STATE_UNIDENTIFIED!";
 }
 
-/* Test for nodes that are DOWN in MMCS and DRAIN them in SLURM */ 
+/* Test for nodes that are not UP in MMCS and DRAIN them in SLURM */ 
 static void _test_down_nodes(rm_BGL_t *bgl)
 {
 	int bp_num, i, rc;
@@ -130,7 +162,10 @@ static void _test_down_nodes(rm_BGL_t *bgl)
 	rm_location_t bp_loc;
 	char down_node_list[BUFSIZE];
 	char bgl_down_node[128];
-
+	char reason[128];
+	time_t now = time(NULL);
+	struct tm * time_ptr = localtime(&now);
+		
 	debug2("Running _test_down_nodes");
 	down_node_list[0] = '\0';
 	if ((rc = rm_get_data(bgl, RM_BPNum, &bp_num)) != STATUS_OK) {
@@ -140,39 +175,47 @@ static void _test_down_nodes(rm_BGL_t *bgl)
 	for (i=0; i<bp_num; i++) {
 		if (i) {
 			if ((rc = rm_get_data(bgl, RM_NextBP, &my_bp)) 
-					!= STATUS_OK) {
+			    != STATUS_OK) {
 				error("rm_get_data(RM_NextBP): %s", 
-					bgl_err_str(rc));
+				      bgl_err_str(rc));
 				continue;
 			}
 		} else {
 			if ((rc = rm_get_data(bgl, RM_FirstBP, &my_bp)) 
-					!= STATUS_OK) {
+			    != STATUS_OK) {
 				error("rm_get_data(RM_FirstBP): %s", 
-					bgl_err_str(rc));
+				      bgl_err_str(rc));
 				continue;
 			}
 		}
 
 		if ((rc = rm_get_data(my_bp, RM_BPState, &bp_state)) 
-				!= STATUS_OK) {
+		    != STATUS_OK) {
 			error("rm_get_data(RM_BPState): %s", bgl_err_str(rc));
 			continue;
 		}
-		if  (bp_state != RM_BP_DOWN)
+		
+		if  (bp_state == RM_BP_UP)
 			continue;
+		
 		if ((rc = rm_get_data(my_bp, RM_BPLoc, &bp_loc)) 
-				!= STATUS_OK) {
+		    != STATUS_OK) {
 			error("rm_get_data(RM_BPLoc): %s", bgl_err_str(rc));
 			continue;
 		}
 
 		snprintf(bgl_down_node, sizeof(bgl_down_node), "bgl%d%d%d", 
-			bp_loc.X, bp_loc.Y, bp_loc.Z);
+			 bp_loc.X, bp_loc.Y, bp_loc.Z);
+
+		if (_node_already_down(bgl_down_node))
+			continue;
+
 		debug("_test_down_nodes: %s in state %s", 
-			bgl_down_node, _convert_bp_state(RM_BPState));
-		if ((strlen(down_node_list) + strlen(bgl_down_node) + 2) 
-				< BUFSIZE) {
+		      bgl_down_node, _convert_bp_state(RM_BPState));
+		
+		if ((strlen(down_node_list) + strlen(bgl_down_node) 
+		     + 2) 
+		    < BUFSIZE) {
 			if (down_node_list[0] != '\0')
 				strcat(down_node_list,",");
 			strcat(down_node_list, bgl_down_node);
@@ -180,17 +223,16 @@ static void _test_down_nodes(rm_BGL_t *bgl)
 			error("down_node_list overflow");
 	}
 	if (down_node_list[0]) {
-		char reason[128];
-		time_t now = time(NULL);
-		struct tm * time_ptr = localtime(&now);
 		strftime(reason, sizeof(reason), 
-			"bluegene_select: MMCS state DOWN [SLURM@%b %d %H:%M]", 
-			time_ptr);
+			 "select_bluegene: MMCS state not UP "
+			 "[SLURM@%b %d %H:%M]", 
+			 time_ptr);
 		slurm_drain_nodes(down_node_list, reason);
 	}
+	
 }
 
-/* Test for switches that are DOWN in MMCS, 
+/* Test for switches that are not UP in MMCS, 
  * when found DRAIN them in SLURM and configure their base partition DOWN */
 static void _test_down_switches(rm_BGL_t *bgl)
 {
@@ -207,32 +249,32 @@ static void _test_down_switches(rm_BGL_t *bgl)
 	for (i=0; i<switch_num; i++) {
 		if (i) {
 			if ((rc = rm_get_data(bgl, RM_NextSwitch, &my_switch))
-					!= STATUS_OK) {
+			    != STATUS_OK) {
 				error("rm_get_data(RM_NextSwitch): %s", 
-					bgl_err_str(rc));
+				      bgl_err_str(rc));
 				continue;
 			}
 		} else {
 			if ((rc = rm_get_data(bgl, RM_FirstSwitch, &my_switch))
-					!= STATUS_OK) {
+			    != STATUS_OK) {
 				error("rm_get_data(RM_FirstSwitch): %s",
-					bgl_err_str(rc));
+				      bgl_err_str(rc));
 				continue;
 			}
 		}
 
 		if ((rc = rm_get_data(my_switch, RM_SwitchState, 
-				&switch_state)) != STATUS_OK) {
+				      &switch_state)) != STATUS_OK) {
 			error("rm_get_data(RM_SwitchState): %s",
-				bgl_err_str(rc));
+			      bgl_err_str(rc));
 			continue;
 		}
-		if (switch_state != RM_SWITCH_DOWN)
+		if (switch_state == RM_SWITCH_UP)
 			continue;
 		if ((rc = rm_get_data(my_switch, RM_SwitchBPID, &bp_id)) 
-				!= STATUS_OK) {
+		    != STATUS_OK) {
 			error("rm_get_data(RM_SwitchBPID): %s",
-				bgl_err_str(rc));
+			      bgl_err_str(rc));
 			continue;
 		}
 		_configure_node_down(bp_id, bgl);

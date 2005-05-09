@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  select_plugin.c - node selection plugin wrapper.
+ *  node_select.c - node selection plugin wrapper.
  *
  *  NOTE: The node selection plugin itself is intimately tied to 
  *  slurmctld functions and data structures. Some related 
@@ -7,6 +7,8 @@
  *  variable setting) are required by most SLURM commands. 
  *  Rather than creating a new plugin with these commonly 
  *  used functions, they are included within this module.
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -66,7 +68,10 @@ typedef struct slurm_select_ops {
 						  bitstr_t *bitmap, int min_nodes, 
 						  int max_nodes );
 	int		(*job_begin)		( struct job_record *job_ptr );
+	int		(*job_ready)		( struct job_record *job_ptr );
 	int		(*job_fini)		( struct job_record *job_ptr );
+	int		(*pack_node_info)	( time_t last_query_time,
+						Buf *buffer_ptr);
 } slurm_select_ops_t;
 
 typedef struct slurm_select_context {
@@ -117,7 +122,9 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
 		"select_p_part_init",
 		"select_p_job_test",
 		"select_p_job_begin",
-		"select_p_job_fini"
+		"select_p_job_ready",
+		"select_p_job_fini",
+		"select_p_pack_node_info"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -341,6 +348,19 @@ extern int select_g_job_begin(struct job_record *job_ptr)
 }
 
 /*
+ * determine if job is ready to execute per the node select plugin
+ * IN job_ptr - pointer to job being tested
+ * RET -1 on error, 1 if ready to execute, 0 otherwise
+ */
+extern int select_g_job_ready(struct job_record *job_ptr)
+{
+	if (slurm_select_init() < 0)
+		return -1;
+
+	return (*(g_select_context->ops.job_ready))(job_ptr);
+}
+
+/*
  * Note termination of job is starting. Executed from slurmctld.
  * IN job_ptr - pointer to job being terminated
  */
@@ -350,6 +370,15 @@ extern int select_g_job_fini(struct job_record *job_ptr)
 		return SLURM_ERROR;
 
 	return (*(g_select_context->ops.job_fini))(job_ptr);
+}
+
+extern int select_g_pack_node_info(time_t last_query_time, Buf *buffer)
+{
+	if (slurm_select_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(g_select_context->ops.pack_node_info))
+		(last_query_time, buffer);
 }
 
 #ifdef HAVE_BGL		/* node selection specific logic */
@@ -433,7 +462,8 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 			jobinfo->bgl_part_id = xstrdup(tmp_char);
 			break;
 		default:
-			debug("select_g_set_jobinfo data_type %d invalid", data_type);
+			debug("select_g_set_jobinfo data_type %d invalid", 
+				data_type);
 	}
 
 	return rc;
@@ -627,7 +657,7 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 		break;
 	case SELECT_PRINT_DATA:
 		snprintf(buf, size, 
-			 "%7.7s %6.6s %8.8s    %ux%ux%u %7s",
+			 "%7.7s %6.6s %8.8s    %ux%ux%u %16s",
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _job_rotate_string(jobinfo->rotate),
 			 _job_node_use_string(jobinfo->node_use),
@@ -654,6 +684,96 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 	}
 	
 	return buf;
+}
+
+/* NOTE: The matching pack functions are directly in the select/bluegene 
+ * plugin. The unpack functions can not be there since the plugin is 
+ * dependent upon libraries which do not exist on the BlueGene front-end 
+ * nodes. */
+static int _unpack_node_info(bgl_info_record_t *bgl_info_record, Buf buffer)
+{
+	uint16_t uint16_tmp;
+	safe_unpackstr_xmalloc(&(bgl_info_record->nodes), &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&bgl_info_record->owner_name, &uint16_tmp, 
+		buffer);
+	safe_unpackstr_xmalloc(&bgl_info_record->bgl_part_id, &uint16_tmp, 
+		buffer);
+
+	safe_unpack16(&uint16_tmp, buffer);
+	bgl_info_record->state     = (int) uint16_tmp;
+	safe_unpack16(&uint16_tmp, buffer);
+	bgl_info_record->conn_type = (int) uint16_tmp;
+	safe_unpack16(&uint16_tmp, buffer);
+	bgl_info_record->node_use = (int) uint16_tmp;
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	if(bgl_info_record->nodes)
+		xfree(bgl_info_record->nodes);
+	if(bgl_info_record->owner_name)
+		xfree(bgl_info_record->owner_name);
+	if(bgl_info_record->bgl_part_id)
+		xfree(bgl_info_record->bgl_part_id);
+	return SLURM_ERROR;
+}
+
+static void _free_node_info(bgl_info_record_t *bgl_info_record)
+{
+	if(bgl_info_record->nodes)
+		xfree(bgl_info_record->nodes);
+	if(bgl_info_record->owner_name)
+		xfree(bgl_info_record->owner_name);
+	if(bgl_info_record->bgl_part_id)
+		xfree(bgl_info_record->bgl_part_id);
+}
+
+/* Unpack node select info from a buffer */
+extern int select_g_unpack_node_info(node_select_info_msg_t **
+		node_select_info_msg_pptr, Buf buffer)
+{
+	int i, record_count = 0;
+	node_select_info_msg_t *buf;
+
+	buf = xmalloc(sizeof(bgl_info_record_t));
+	safe_unpack32(&(buf->record_count), buffer);
+	safe_unpack_time(&(buf->last_update), buffer);
+	buf->bgl_info_array = xmalloc(sizeof(bgl_info_record_t) * 
+		buf->record_count);
+	record_count = buf->record_count;
+
+	for(i=0; i<record_count; i++) {
+		if (_unpack_node_info(&(buf->bgl_info_array[i]), buffer))
+			goto unpack_error;
+	}
+	*node_select_info_msg_pptr = buf;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	for(i=0; i<record_count; i++)
+		_free_node_info(&(buf->bgl_info_array[i]));
+	xfree(buf->bgl_info_array);
+	xfree(buf);
+	return SLURM_ERROR;
+}
+
+/* Free a node select information buffer */
+extern int select_g_free_node_info(node_select_info_msg_t **
+		node_select_info_msg_pptr)
+{
+	int i;
+	node_select_info_msg_t *buf;
+
+	if (node_select_info_msg_pptr == NULL)
+		return EINVAL;
+	buf = *node_select_info_msg_pptr;
+
+	if (buf->bgl_info_array == NULL)
+		buf->record_count = 0;
+	for(i=0; i<buf->record_count; i++)
+		_free_node_info(&(buf->bgl_info_array[i]));
+	xfree(buf);
+	return SLURM_SUCCESS;
 }
 
 #else	/* !HAVE_BGL */
@@ -744,6 +864,18 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 		return buf;
 	} else
 		return NULL;
+}
+
+extern int select_g_unpack_node_info(node_select_info_msg_t **
+		node_select_info_msg_pptr, Buf buffer)
+{
+	return SLURM_ERROR;
+}
+
+extern int select_g_free_node_info(node_select_info_msg_t **
+		node_select_info_msg_pptr)
+{
+	return SLURM_ERROR;
 }
 
 #endif

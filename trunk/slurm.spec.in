@@ -68,11 +68,6 @@ Summary: SLURM scheduling plugin for the Maui scheduler.
 Group: System Environment/Base
 Requires: slurm
 
-%package smap
-Summary: SLURM GUI.
-Group: System Environment/Base
-Requires: slurm
-
 %package switch-elan
 Summary: SLURM switch plugin for Quadrics Elan3 or Elan4.
 Group: System Environment/Base
@@ -108,9 +103,6 @@ SLURM plugin interfaces to IBM Blue Gene system
 %description sched-wiki
 SLURM scheduling plugin for the Maui scheduler.
 
-%description smap 
-SLURM GUI.
-
 %description switch-elan
 SLURM switch plugin for Quadrics Elan3 or Elan4.
 
@@ -143,9 +135,10 @@ mkdir -p "$RPM_BUILD_ROOT"
 DESTDIR="$RPM_BUILD_ROOT" make install
 
 install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/init.d/slurm
-install -D -m644 etc/slurm.conf.example $RPM_BUILD_ROOT/etc/slurm/slurm.conf
-install -D -m644 etc/bluegene.conf.example $RPM_BUILD_ROOT/etc/slurm/bluegene.conf
-install -D -m644 etc/federation.conf.example $RPM_BUILD_ROOT/etc/slurm/federation.conf.example
+install -D -m644 etc/slurm.conf.example $RPM_BUILD_ROOT/etc/slurm/slurm.conf.example
+install -D -m644 etc/bluegene.conf.example $RPM_BUILD_ROOT/etc/slurm/bluegene.conf.example
+install -D -m644 etc/federation.conf.example $RPM_BUILD_ROOT/etc/slurm/federation.conf.exam
+ple
 # Delete unpackaged files:
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
 
@@ -176,9 +169,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/scancel
 %{_bindir}/scontrol
 %{_bindir}/sinfo
+%{_bindir}/smap
 %{_bindir}/squeue
 %{_bindir}/srun
-%{_sbindir}/*
+%{_sbindir}/slurmctld
+%{_sbindir}/slurmd
 %{_libdir}/*.so*
 %{_libdir}/slurm/src/*
 %{_mandir}/man1/*
@@ -199,7 +194,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/switch_none.so
 %dir %{_libdir}/slurm/src
 %config(noreplace) /etc/init.d/slurm
-%config(noreplace) /etc/slurm/slurm.conf
+%config(noreplace) /etc/slurm/slurm.conf.example
 #############################################################################
 
 %files devel
@@ -229,17 +224,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/slurm_epilog
 %{_sbindir}/slurm_prolog
 %{_libdir}/slurm/select_bluegene.so
-%config(noreplace) /etc/slurm/bluegene.conf
+%config(noreplace) /etc/slurm/bluegene.conf.example
 #############################################################################
 
 %files sched-wiki
 %defattr(-,root,root)
 %{_libdir}/slurm/sched_wiki.so
-#############################################################################
-
-%files smap
-%defattr(-,root,root,0755)
-%{_bindir}/smap
 #############################################################################
 
 %files -f switch_elan.files switch-elan
@@ -282,6 +272,12 @@ fi
 
 
 %changelog
+* Mon May 02 2005 Danny Auble <da@llnl.gov>
+- added sample federation switch plugin file
+* Mon Apr 11 2005 Morris Jette <jette1@llnl.gov>
+- move smap executable within main slurm rpm
+* Thu Apr 07 2005 Morris Jette <jette1@llnl.gov>
+- remove duplicate prolog and epilog from primary slurm rpm
 * Thu Mar 10 2005 Morris Jette <jette1@llnl.gov>
 - added federation switch plugin
 * Fri Mar 04 2005 Morris Jette <jette1@llnl.gov>

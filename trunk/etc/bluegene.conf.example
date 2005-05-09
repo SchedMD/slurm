@@ -5,9 +5,19 @@
 # LinuxImage:     LinuxImage used for creation of all bglblocks.
 # MloaderImage:   MloaderImage used for creation of all bglblocks.
 # RamDiskImage:   RamDiskImage used for creation of all bglblocks.
-# ChangeNumpsets: Script to reset a created bglblock's Numpsets value.
-#                 Will be removed when an API is available for this.
-#                 Default value uses half of available I/O nodes.
+# Numpsets:       The Numpsets used for creation of all bglblocks 
+#                 equals this value multiplied by the number of 
+#                 base partitions in the bglblock.
+#
+# BridgeAPILogFile : Pathname of file in which to write the BGL 
+#                    Bridge API logs.
+# BridgeAPIVerbose:  How verbose the BGL Bridge API logs should be
+#                    0: Log only error and warning messages
+#                    1: Log level 0 and information messasges
+#                    2: Log level 1 and basic debug messages
+#                    3: Log level 2 and more debug message
+#                    4: Log all messages
+# 
 # NOTE: The bgl_serial value is set at configuration time using the 
 #       "--with-bgl-serial=" option. Its default value is "BGL".
 #
@@ -15,7 +25,10 @@ BlrtsImage=/bgl/BlueLight/ppcfloor/bglsys/bin/rts_hw.rts
 LinuxImage=/bgl/BlueLight/ppcfloor/bglsys/bin/zImage.elf
 MloaderImage=/bgl/BlueLight/ppcfloor/bglsys/bin/mmcs-mloader.rts
 RamDiskImage=/bgl/BlueLight/ppcfloor/bglsys/bin/ramdisk.elf
-#ChangeNumpsets=/etc/slurm/change_numpsets
+Numpsets=8
+#
+BridgeAPILogFile=/var/log/slurm/bridgeapi.log
+BridgeAPIVerbose=0
 
 #
 # Define the static partitions (bglblocks)

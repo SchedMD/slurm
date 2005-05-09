@@ -2,6 +2,8 @@
  *  select_linear.c - node selection plugin for simple one-dimensional 
  *  address space. Selects nodes for a job so as to minimize the number 
  *  of sets of consecutive nodes using a best-fit algorithm.
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -399,5 +401,19 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	return SLURM_SUCCESS;
+}
+
+extern int select_p_job_ready(struct job_record *job_ptr)
+{
+	if (job_ptr->job_state != JOB_RUNNING)
+		return 0;
+
+	return 1;
+}
+
+extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
+{
+	/* This function is always invalid on normal Linux clusters */
+	return SLURM_ERROR;
 }
 
