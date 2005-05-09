@@ -236,7 +236,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 #############################################################################
 
-%files -f switch_federation
+%files -f switch_federation.files switch-federation
 %defattr(-,root,root)
 %doc etc/federation.conf.example
 %config /etc/federation.conf.example
