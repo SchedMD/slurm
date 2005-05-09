@@ -76,7 +76,7 @@ expect {
 	
 	timeout {
 		send_user "\nFAILURE: smap not responding\n"
-		created = 1;
+		set created 1
 		set exit_code 1
 	}
 	eof {
