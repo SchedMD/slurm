@@ -143,7 +143,7 @@ ple
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
 
 # Build file lists for optional plugin packages
-for plugin in auth_munge auth_authd switch_elan switch_federation; do
+for plugin in auth_munge auth_authd switch_elan; do
    LIST=./${plugin}.files
    touch $LIST
    test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/${plugin}.so &&
@@ -236,9 +236,10 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 #############################################################################
 
-%files -f switch_federation.files switch-federation
+%files switch-federation
 %defattr(-,root,root)
 %doc etc/federation.conf.example
+%{_libdir}/slurm/switch_federation.so
 %config /etc/federation.conf.example
 #############################################################################
 
