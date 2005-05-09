@@ -194,7 +194,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/switch_none.so
 %dir %{_libdir}/slurm/src
 %config(noreplace) /etc/init.d/slurm
-%config(noreplace) /etc/slurm/slurm.conf.example
+%config /etc/slurm/slurm.conf.example
 #############################################################################
 
 %files devel
@@ -224,7 +224,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/slurm_epilog
 %{_sbindir}/slurm_prolog
 %{_libdir}/slurm/select_bluegene.so
-%config(noreplace) /etc/slurm/bluegene.conf.example
+%config /etc/slurm/bluegene.conf.example
 #############################################################################
 
 %files sched-wiki
@@ -238,6 +238,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -f switch_federation.files switch-federation
 %defattr(-,root,root)
+%doc etc/federation.conf.example
+%config /etc/federation.conf.example
 #############################################################################
 
 %pre
