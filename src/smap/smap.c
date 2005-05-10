@@ -75,7 +75,8 @@ int main(int argc, char *argv[])
 	error_code = slurm_load_node((time_t) NULL, &new_node_ptr, 0);
 
 	if (error_code) {
-		printf("slurm_load_node: %s\n", slurm_strerror(slurm_get_errno()));
+		printf("slurm_load_node: %s\n", 
+		       slurm_strerror(slurm_get_errno()));
 		exit(0);
 	} else {
 		pa_init(new_node_ptr);
@@ -110,7 +111,8 @@ int main(int argc, char *argv[])
 				       coord[Y],
 				       coord[Z]);
 			else
-				printf("%s has no resolve.\n", params.partition);
+				printf("%s has no resolve.\n", 
+				       params.partition);
 		}
 #else
 		printf("must be on BGL SN to resolve.\n");
@@ -132,11 +134,15 @@ int main(int argc, char *argv[])
 		height = 10;
 		width = COLS;
 	        if (COLS < MIN_SCREEN_WIDTH || LINES < height) {
-#endif
-			
+#endif			
 			endwin();
-			error("Screen is too small make sure the screen is at least %dx%d\n"
-			      "Right now it is %dx%d\n", width, height, COLS, LINES);
+			error("Screen is too small make sure the screen "
+			      "is at least %dx%d\n"
+			      "Right now it is %dx%d\n", 
+			      width, 
+			      height, 
+			      COLS, 
+			      LINES);
 			pa_fini();
 			exit(0);
 		}
@@ -150,8 +156,12 @@ int main(int argc, char *argv[])
 		start_color();
 		_set_pairs();
 		
-		pa_system_ptr->grid_win = newwin(height, width, starty, startx);
-		max_display = pa_system_ptr->grid_win->_maxy*pa_system_ptr->grid_win->_maxx;
+		pa_system_ptr->grid_win = newwin(height, 
+						 width, 
+						 starty, 
+						 startx);
+		max_display = pa_system_ptr->grid_win->_maxy
+			*pa_system_ptr->grid_win->_maxx;
 		//scrollok(pa_system_ptr->grid_win, TRUE);
 		
 #ifdef HAVE_BGL
@@ -166,7 +176,10 @@ int main(int argc, char *argv[])
 		
 #endif
 		
-		pa_system_ptr->text_win = newwin(height, width, starty, startx);
+		pa_system_ptr->text_win = newwin(height, 
+						 width, 
+						 starty, 
+						 startx);
         }
 	while (!end) {
 		if(!params.commandline) {
