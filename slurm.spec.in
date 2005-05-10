@@ -150,6 +150,14 @@ for plugin in auth_munge auth_authd switch_elan; do
      echo %{_libdir}/slurm/${plugin}.so > $LIST
 done
 
+LIST=./switch_federation.files
+touch $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_federation.so &&
+  echo %{_libdir}/slurm/switch_federation.so  > $LIST
+echo "%doc etc/federation.conf.example"      >> $LIST
+echo "%config /etc/federation.conf.example"  >> $LIST
+
+
 #############################################################################
 
 %clean
@@ -235,11 +243,8 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 #############################################################################
 
-%files switch-federation
+%files -f switch_federation.files switch-federation
 %defattr(-,root,root)
-%doc etc/federation.conf.example
-%{_libdir}/slurm/*_federation.so
-%config /etc/federation.conf.example
 #############################################################################
 
 %pre
