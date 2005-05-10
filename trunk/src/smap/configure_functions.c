@@ -77,7 +77,8 @@ static allocated_part_t *_make_request(pa_request_t *request)
 		return NULL;
 	} else {
 				
-		allocated_part = (allocated_part_t *)xmalloc(sizeof(allocated_part_t));
+		allocated_part = (allocated_part_t *)xmalloc(
+			sizeof(allocated_part_t));
 		allocated_part->request = request;
 		allocated_part->nodes = list_create(NULL);
 		results_i = list_iterator_create(results);
@@ -123,7 +124,7 @@ static int _create_allocation(char *com, List allocated_partitions)
 			request->elongate=true;
 			i+=8;
 		} else if(!strncasecmp(com+i, "force", 5)) {
-			request->force_contig=true;				
+			request->force_contig=true;
 			i+=5;
 		} else if(i2<0 && (com[i] < 58 && com[i] > 47)) {
 			i2=i;
@@ -136,7 +137,8 @@ static int _create_allocation(char *com, List allocated_partitions)
 	
 	if(i2<0) {
 		memset(error_string,0,255);
-		sprintf(error_string, "No size or dimension specified, please re-enter");
+		sprintf(error_string, 
+			"No size or dimension specified, please re-enter");
 	} else {
 		i3=i2;
 		while(i3<len) {
@@ -149,13 +151,14 @@ static int _create_allocation(char *com, List allocated_partitions)
 				
 				/* for geometery */
 				request->geometry[0] = atoi(&com[i2]);
-				i2++;						
+				i2++;
 				while(com[i2-1]!='x' && i2<len)
 					i2++;
 				if(i2==len){
 					memset(error_string,0,255);
 					sprintf(error_string, 
-						"Error in dimension specified, please re-enter");
+						"Error in dimension "
+						"specified, please re-enter");
 					break;
 				} 
 				request->geometry[1] = atoi(&com[i2]);
@@ -165,7 +168,8 @@ static int _create_allocation(char *com, List allocated_partitions)
 				if(i2==len){
 					memset(error_string,0,255);
 					sprintf(error_string, 
-						"Error in dimension specified, please re-enter");
+						"Error in dimension "
+						"specified, please re-enter");
 					break;
 				} 
 				request->geometry[2] = atoi(&com[i2]);
@@ -185,19 +189,25 @@ static int _create_allocation(char *com, List allocated_partitions)
 			if(request->size!=-1) {
 				sprintf(error_string, 
 					"Problems with request for %d\n"
-					"Either you put in something that doesn't work,\n"
-					"or we are unable to process your request.", 
+					"Either you put in something "
+					"that doesn't work,\n"
+					"or we are unable to process "
+					"your request.", 
 					request->size);
 			} else
 				sprintf(error_string, 
 					"Problems with request for %d%d%d\n"
-					"Either you put in something that doesn't work,\n"
-					"or we are unable to process your request.", 
-					request->geometry[0], request->geometry[1], 
+					"Either you put in something "
+					"that doesn't work,\n"
+					"or we are unable to process "
+					"your request.", 
+					request->geometry[0], 
+					request->geometry[1], 
 					request->geometry[2]);
 		} else {
 			if((allocated_part = _make_request(request)) != NULL)
-				list_append(allocated_partitions, allocated_part);
+				list_append(allocated_partitions, 
+					    allocated_part);
 		}
 	}
 	
@@ -221,24 +231,27 @@ static int _resolve(char *com)
 	memset(error_string,0,255);		
 #ifdef HAVE_BGL_FILES
 	if(len-i<3) {
-		sprintf(error_string, "Must enter 3 coords to resolve.\n");	
+		sprintf(error_string, "Must enter 3 coords to resolve.\n");
 		goto resolve_error;
 	}
 	if(com[i] != 'R') {
 		rack_mid = find_bp_rack_mid(com+i);
 		
 		if(rack_mid)
-			sprintf(error_string, "X=%c Y=%c Z=%c resolves to %s\n",
+			sprintf(error_string, 
+				"X=%c Y=%c Z=%c resolves to %s\n",
 				com[X+i],com[Y+i],com[Z+i], rack_mid);
 		else
-			sprintf(error_string, "X=%c Y=%c Z=%c has no resolve\n",
-				       com[X+i],com[Y+i],com[Z+i]);
+			sprintf(error_string, 
+				"X=%c Y=%c Z=%c has no resolve\n",
+				com[X+i],com[Y+i],com[Z+i]);
 		
 	} else {
 		coord = find_bp_loc(com+i);
 		
 		if(coord)
-			sprintf(error_string, "%s resolves to X=%d Y=%d Z=%d\n",
+			sprintf(error_string, 
+				"%s resolves to X=%d Y=%d Z=%d\n",
 				com+i,coord[X],coord[Y],coord[Z]);
 		else
 			sprintf(error_string, "%s has no resolve.\n", 
@@ -246,7 +259,8 @@ static int _resolve(char *com)
 	}
 resolve_error:
 #else
-			sprintf(error_string, "Must be on BGL SN to resolve.\n"); 
+			sprintf(error_string, 
+				"Must be on BGL SN to resolve.\n"); 
 #endif
 	wnoutrefresh(pa_system_ptr->text_win);
 	doupdate();
@@ -266,7 +280,8 @@ static int _down_bps(char *com)
 		i++;
 	if(i>(len-1)) {
 		memset(error_string,0,255);
-		sprintf(error_string, "You didn't specify any nodes to down.");	
+		sprintf(error_string, 
+			"You didn't specify any nodes to down.");	
 		return 0;
 	}
 		
@@ -364,7 +379,8 @@ static int _remove_allocation(char *com, List allocated_partitions)
 	
 	if(i>(len-1)) {
 		memset(error_string,0,255);
-		sprintf(error_string, "You need to specify which letter to delete.");
+		sprintf(error_string, 
+			"You need to specify which letter to delete.");
 		return 0;
 	} else {
 		letter = com[i];
@@ -372,7 +388,8 @@ static int _remove_allocation(char *com, List allocated_partitions)
 		while((allocated_part = list_next(results_i)) != NULL) {
 			if(found) {
 				if(redo_part(allocated_part->nodes, 
-					     allocated_part->request->conn_type, 
+					     allocated_part->
+					     request->conn_type, 
 					     color_count) == SLURM_ERROR) {
 					return 0;
 				}
@@ -385,7 +402,7 @@ static int _remove_allocation(char *com, List allocated_partitions)
 				found=1;
 				remove_part(allocated_part->nodes,color_count);
 				list_destroy(allocated_part->nodes);
-				delete_pa_request(allocated_part->request);				
+				delete_pa_request(allocated_part->request);
 				list_remove(results_i);
 				color_count--;
 			}
@@ -461,13 +478,13 @@ static int _copy_allocation(char *com, List allocated_partitions)
 					i++;
 				
 				if(com[i]>='0' && com[i]<='9')
-					count = atoi(com+i);			
+					count = atoi(com+i);
 			}
 		}
 	}
 
 	results_i = list_iterator_create(allocated_partitions);
-	while((allocated_part = list_next(results_i)) != NULL) {		
+	while((allocated_part = list_next(results_i)) != NULL) {
 		temp_part = allocated_part;
 		if(allocated_part->letter != letter)
 			continue;
@@ -480,7 +497,8 @@ static int _copy_allocation(char *com, List allocated_partitions)
 	
 	if(!allocated_part) {
 		memset(error_string,0,255);
-		sprintf(error_string, "Could not find requested record to copy");
+		sprintf(error_string, 
+			"Could not find requested record to copy");
 		return 0;
 	}
 	
@@ -508,13 +526,14 @@ static int _copy_allocation(char *com, List allocated_partitions)
 			geo[Y] = geo_ptr[Y];
 			geo[Z] = geo_ptr[Z];
 			
-			list_append(request->elongate_geos, geo);			
+			list_append(request->elongate_geos, geo);
 		}
 		list_iterator_destroy(results_i);
 		
 		if((allocated_part = _make_request(request)) == NULL) {
 			memset(error_string,0,255);
-			sprintf(error_string, "Problem with the copy\n"
+			sprintf(error_string, 
+				"Problem with the copy\n"
 				"Are you sure there is enough room for it?");
 			xfree(request);
 			return 0;
@@ -559,11 +578,21 @@ static int _save_allocation(char *com, List allocated_partitions)
 	}
 	file_ptr = fopen(filename,"w");
 	if (file_ptr!=NULL) {
-		fputs ("BlrtsImage=/bgl/BlueLight/ppcfloor/bglsys/bin/rts_hw.rts\n", file_ptr);
-		fputs ("LinuxImage=/bgl/BlueLight/ppcfloor/bglsys/bin/zImage.elf\n", file_ptr);
-		fputs ("MloaderImage=/bgl/BlueLight/ppcfloor/bglsys/bin/mmcs-mloader.rts\n", file_ptr);
-		fputs ("RamDiskImage=/bgl/BlueLight/ppcfloor/bglsys/bin/ramdisk.elf\n", file_ptr);
-		fputs ("BridgeAPILogFile=/var/log/slurm/bridgeapi.log\n", file_ptr);
+		fputs ("BlrtsImage="
+		       "/bgl/BlueLight/ppcfloor/bglsys/bin/rts_hw.rts\n", 
+		       file_ptr);
+		fputs ("LinuxImage="
+		       "/bgl/BlueLight/ppcfloor/bglsys/bin/zImage.elf\n", 
+		       file_ptr);
+		fputs ("MloaderImage="
+		       "/bgl/BlueLight/ppcfloor/bglsys/bin/mmcs-mloader.rts\n",
+		       file_ptr);
+		fputs ("RamDiskImage="
+		       "/bgl/BlueLight/ppcfloor/bglsys/bin/ramdisk.elf\n", 
+		       file_ptr);
+		fputs ("BridgeAPILogFile="
+		       "/var/log/slurm/bridgeapi.log\n", 
+		       file_ptr);
 		fputs ("Numpsets=8\n", file_ptr);
 		fputs ("BridgeAPIVerbose=0\n", file_ptr);
 
@@ -576,16 +605,19 @@ static int _save_allocation(char *com, List allocated_partitions)
 				conn_type = "MESH";
 			
 			if(allocated_part->request->node_use != -1) {
-				if(allocated_part->request->node_use == COPROCESSOR)
+				if(allocated_part->request->node_use 
+				   == COPROCESSOR)
 					mode_type = "COPROCESSOR";
 				else
 					mode_type = "VIRTUAL";
 			
-				sprintf(save_string, "Nodes=bgl[%s] Type=%s Use=%s\n", 
+				sprintf(save_string, "Nodes=bgl[%s] Type=%s "
+					"Use=%s\n", 
 					allocated_part->request->save_name, 
 					conn_type, mode_type);
 			} else {
-				sprintf(save_string, "Nodes=bgl[%s] Type=%s\n", 
+				sprintf(save_string, "Nodes=bgl[%s] "
+					"Type=%s\n", 
 					allocated_part->request->save_name, 
 					conn_type);
 			}
@@ -651,10 +683,12 @@ static void _print_text_command(allocated_part_t *allocated_part)
 				
 	if(allocated_part->request->node_use != -1) {
 		if(allocated_part->request->node_use == COPROCESSOR) 
-			mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+			mvwprintw(pa_system_ptr->text_win, 
+				  pa_system_ptr->ycord,
 				  pa_system_ptr->xcord, "coproc");
 		else
-			mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+			mvwprintw(pa_system_ptr->text_win, 
+				  pa_system_ptr->ycord,
 				  pa_system_ptr->xcord, "virtual");
 	} else {
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
@@ -691,7 +725,8 @@ static void _print_text_command(allocated_part_t *allocated_part)
 		  pa_system_ptr->xcord, "%d",allocated_part->request->size);
 	pa_system_ptr->xcord += 7;
 	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "bgl[%s]",allocated_part->request->save_name);
+		  pa_system_ptr->xcord, "bgl[%s]",
+		  allocated_part->request->save_name);
 	pa_system_ptr->xcord = 1;
 	pa_system_ptr->ycord++;
 	wattroff(pa_system_ptr->text_win,
@@ -718,7 +753,7 @@ void get_command(void)
 	}
 	allocated_partitions = list_create(NULL);
 				
-	text_width = pa_system_ptr->text_win->_maxx;	// - pa_system_ptr->text_win->_begx;
+	text_width = pa_system_ptr->text_win->_maxx;	
 	text_startx = pa_system_ptr->text_win->_begx;
 	command_win = newwin(3, text_width - 1, LINES - 4, text_startx + 1);
 	echo();
@@ -741,8 +776,11 @@ void get_command(void)
 					pa_system_ptr->xcord=1;
 					i++;
 				}
-				mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-					  pa_system_ptr->xcord, "%c",error_string[i++]);
+				mvwprintw(pa_system_ptr->text_win, 
+					  pa_system_ptr->ycord,
+					  pa_system_ptr->xcord, 
+					  "%c",
+					  error_string[i++]);
 				pa_system_ptr->xcord++;
 			}
 			pa_system_ptr->ycord++;
@@ -764,7 +802,8 @@ void get_command(void)
 		//wclear(command_win);
 		box(command_win, 0, 0);
 		mvwprintw(command_win, 0, 3,
-			  "Input Command: (type quit to change view, exit to exit)");
+			  "Input Command: (type quit to change view, "
+			  "exit to exit)");
 		wmove(command_win, 1, 1);
 		wgetstr(command_win, com);
 		

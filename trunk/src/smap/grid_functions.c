@@ -35,14 +35,19 @@ extern int set_grid(int start, int end, int count)
 	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
 		for (z = 0; z < DIM_SIZE[Z]; z++) {
 			for (x = 0; x < DIM_SIZE[X]; x++) {
-				if ((pa_system_ptr->grid[x][y][z].indecies < start)
-				||  (pa_system_ptr->grid[x][y][z].indecies > end)) 
+				if ((pa_system_ptr->grid[x][y][z].indecies 
+				     < start)
+				||  (pa_system_ptr->grid[x][y][z].indecies 
+				     > end)) 
 					continue;
-				if ((pa_system_ptr->grid[x][y][z].state == NODE_STATE_DOWN)
-				||  (pa_system_ptr->grid[x][y][z].state == NODE_STATE_DRAINED)
-				||  (pa_system_ptr->grid[x][y][z].state == NODE_STATE_DRAINING))
+				if ((pa_system_ptr->grid[x][y][z].state 
+				     == NODE_STATE_DOWN)
+				    ||  (pa_system_ptr->grid[x][y][z].state 
+					 == NODE_STATE_DRAINED)
+				    ||  (pa_system_ptr->grid[x][y][z].state 
+					 == NODE_STATE_DRAINING))
 					continue;
-
+				
 				pa_system_ptr->grid[x][y][z].letter = 
 					letters[count%62];
 				pa_system_ptr->grid[x][y][z].color = 
@@ -132,22 +137,28 @@ extern void print_grid(int dir)
 
 			for (x = 0; x < DIM_SIZE[X]; x++) {
 				if (pa_system_ptr->grid[x][y][z].color)
-					init_pair(pa_system_ptr->grid[x][y][z].color,
-						  pa_system_ptr->grid[x][y][z].color,
+					init_pair(pa_system_ptr->
+						  grid[x][y][z].color,
+						  pa_system_ptr->
+						  grid[x][y][z].color,
 						  COLOR_BLACK);
 				else
-					init_pair(pa_system_ptr->grid[x][y][z].color,
-						  pa_system_ptr->grid[x][y][z].color, 
+					init_pair(pa_system_ptr->
+						  grid[x][y][z].color,
+						  pa_system_ptr->
+						  grid[x][y][z].color, 
                                                   7);
 
 				wattron(pa_system_ptr->grid_win,
-					COLOR_PAIR(pa_system_ptr->grid[x][y][z].color));
+					COLOR_PAIR(pa_system_ptr->
+						   grid[x][y][z].color));
 
 				mvwprintw(pa_system_ptr->grid_win,
 					  grid_ycord, grid_xcord, "%c",
 					  pa_system_ptr->grid[x][y][z].letter);
 				wattroff(pa_system_ptr->grid_win,
-					 COLOR_PAIR(pa_system_ptr->grid[x][y][z].color));
+					 COLOR_PAIR(pa_system_ptr->
+						    grid[x][y][z].color));
 				grid_xcord++;
 			}
 			grid_ycord++;

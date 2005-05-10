@@ -233,18 +233,21 @@ static int _print_text_job(job_info_t * job_ptr)
 		pa_system_ptr->xcord += 6;
 
 		tempxcord = pa_system_ptr->xcord;
-		//width = pa_system_ptr->text_win->_maxx - pa_system_ptr->xcord;
+		
 
 		while (job_ptr->nodes[i] != '\0') {
 			if ((printed = mvwaddch(pa_system_ptr->text_win,
-						pa_system_ptr->ycord, pa_system_ptr->xcord,
+						pa_system_ptr->ycord, 
+						pa_system_ptr->xcord,
 						job_ptr->nodes[i])) < 0)
 				return printed;
 			pa_system_ptr->xcord++;
-			width = pa_system_ptr->text_win->_maxx - pa_system_ptr->xcord;
+			width = pa_system_ptr->text_win->_maxx 
+				- pa_system_ptr->xcord;
 			if (job_ptr->nodes[i] == '[')
 				prefixlen = i + 1;
-			else if (job_ptr->nodes[i] == ',' && (width - 9) <= 0) {
+			else if (job_ptr->nodes[i] == ',' 
+				 && (width - 9) <= 0) {
 				pa_system_ptr->ycord++;
 				pa_system_ptr->xcord = tempxcord + prefixlen;
 			}
