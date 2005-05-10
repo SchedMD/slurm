@@ -42,7 +42,12 @@ print_header $test_id
 #
 # Submit a slurm job that will execute 'id' on 1 node and over task_cnt tasks
 #
-set timeout [expr $max_job_delay + 130]
+# Timeout is max_job_delay (to spawn task) + 
+#	60 (job time limit) +
+#	60 (slurmctld time limit check poll interval) +
+#	KillWait (120 secs on BlueGene per IBM recommendation)
+#
+set timeout [expr $max_job_delay + 60 + 60 + 120]
 spawn $srun -N1-2 -n$task_cnt --overcommit --debugger-test -t1 $bin_id  
 expect {
 	-re "uid=" {
