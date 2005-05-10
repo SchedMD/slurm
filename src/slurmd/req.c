@@ -952,8 +952,7 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 		} else {
 			debug2("signal %d to job %u (cont_id:%u)",
 			       sig, jobid, s->cont_id);
-			if (s->cont_id
-			&&  (slurm_signal_container(s->cont_id, sig) < 0))
+			if (slurm_signal_container(s->cont_id, sig) < 0)
 				error("kill jid %d cont_id %u: %m",
 				      s->jobid, s->cont_id);
 			if (s->task_list
@@ -963,6 +962,7 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 					s->jobid, s->task_list->pid);
 		}
 	}
+	list_iterator_destroy(i);
 	list_destroy(steps);
 	if (step_cnt == 0)
 		debug2("No steps in jobid %d to send signal %d", jobid, sig);
