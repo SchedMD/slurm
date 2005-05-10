@@ -1,0 +1,29 @@
+# Sample partition configuration file
+# 
+# Example sample.part.conf
+# Author: John Doe
+# Date: 12/14/2001
+#
+Name=DEFAULT JobType=Batch
+#
+Name=DEFAULT          JobType=INTERACTIVE MaxCpus=16
+Name=pbatch  Number=0 JobType=BATCH       MaxCpus=128 MaxTime=UNLIMITED
+Name=debug   Number=1                     MaxCpus=4   MaxTime=60
+Name=super   Number=3 JobType=BATCH       MaxCpus=256 AllowUsers=cdunlap,garlick,jette
+Name=class   Number=4 JobType=ALL   MaxCpus=UNLIMITED MaxTime=60 AllowUsers=student1,student2,student3
+
+
+# Executed assorted partition tests: read, write, update, select available partitions for pending job, etc.
+Partition_Mgr sample.part.conf tmp.1
+Show_Part_Record: Name=test Number=10 JobType=ALL MaxTime=UNLIMITED MaxCpus=UNLIMITED State=DOWN DenyUsers=non_tester
+
+
+# Sample partition configuration file written by SLURM after updates
+#
+# Written by SLURM: Tue Dec 18 12:48:22 2001
+#
+Name=pbatch Number=0 JobType=BATCH MaxTime=UNLIMITED MaxCpus=128 State=UP DenyUsers=student1
+Name=debug Number=1 JobType=INTERACTIVE MaxTime=60 MaxCpus=4 State=UP 
+Name=super Number=3 JobType=BATCH MaxTime=UNLIMITED MaxCpus=256 State=UP AllowUsers=cdunlap,garlick,jette
+Name=class Number=4 JobType=ALL MaxTime=60 MaxCpus=UNLIMITED State=UP AllowUsers=student1,student2,student3
+Name=test Number=10 JobType=ALL MaxTime=UNLIMITED MaxCpus=UNLIMITED State=DOWN DenyUsers=non_tester
