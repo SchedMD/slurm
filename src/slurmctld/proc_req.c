@@ -877,7 +877,8 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 		complete_job_step_msg->slurm_rc = SLURM_SUCCESS;
 	}
 	if (complete_job_step_msg->slurm_rc != SLURM_SUCCESS) {
-		error("Fatal slurmd error running JobId=%u from node=%s: %s",
+		error("Fatal slurmd error %u running JobId=%u on node=%s: %s",
+		      complete_job_step_msg->slurm_rc,
 		      complete_job_step_msg->job_id,
 		      complete_job_step_msg->node_name,
 		      slurm_strerror(complete_job_step_msg->slurm_rc));
