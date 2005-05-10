@@ -138,7 +138,7 @@ install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/init.d/slurm
 install -D -m644 etc/slurm.conf.example $RPM_BUILD_ROOT/etc/slurm/slurm.conf.example
 install -D -m644 etc/bluegene.conf.example $RPM_BUILD_ROOT/etc/slurm/bluegene.conf.example
 install -D -m644 etc/federation.conf.example $RPM_BUILD_ROOT/etc/slurm/federation.conf.example
-ple
+
 # Delete unpackaged files:
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
 
