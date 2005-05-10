@@ -89,6 +89,9 @@ static bool _pause_for_job_completion (uint32_t jobid, int maxtime);
 static int _waiter_init (uint32_t jobid);
 static int _waiter_complete (uint32_t jobid);
 
+static bool _steps_completed_now(uint32_t jobid);
+static void _wait_state_completed(uint32_t jobid, int max_delay);
+
 /*
  *  List of threads waiting for jobs to complete
  */
@@ -990,6 +993,54 @@ _job_still_running(uint32_t job_id)
 }
 
 /*
+ * Wait until all job steps are in SLURMD_JOB_COMPLETE state.
+ * This indicates that interconnect_postfini has completed and 
+ * freed the switch windows (as needed only for Federation switch).
+ */
+static void
+_wait_state_completed(uint32_t jobid, int max_delay)
+{
+	char *switch_type = slurm_get_switch_type();
+	int i;
+
+	if (strcmp(switch_type, "switch/federation")) {
+		xfree(switch_type);
+		return;
+	}
+	xfree(switch_type);
+
+	for (i=0; i<max_delay; i++) {
+		if (_steps_completed_now(jobid))
+			break;
+		sleep(1);
+	}
+	if (i >= max_delay)
+		error("timed out waiting for job %u to complete", jobid);
+}
+
+static bool
+_steps_completed_now(uint32_t jobid)
+{
+	List   steps = shm_get_steps();
+	ListIterator i = list_iterator_create(steps);
+	job_step_t *s = NULL;
+	bool rc = true;
+
+	while ((s = list_next(i))) {
+		if (s->jobid != jobid)
+			continue;
+		if (s->state != SLURMD_JOB_COMPLETE) {
+			rc = false;
+			break;
+		}
+	}
+	list_iterator_destroy(i);
+	list_destroy(steps);
+
+	return rc;
+}
+
+/*
  *  Send epilog complete message to currently active comtroller.
  *   Returns SLURM_SUCCESS if message sent successfully,
  *           SLURM_FAILURE if epilog complete message fails to be sent.
@@ -1000,6 +1051,8 @@ _epilog_complete(uint32_t jobid, int rc)
 	int                    ret = SLURM_SUCCESS;
 	slurm_msg_t            msg;
 	epilog_complete_msg_t  req;
+
+	_wait_state_completed(jobid, 5);
 
 	req.job_id      = jobid;
 	req.return_code = rc;
