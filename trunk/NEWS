@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in slurmd that could double KillWait time on job timeout.
  -- Fix bug in srun's error code reporting to slurmctld, could DOWN 
     a node if job run as root has non-zero error code.
+ -- Remove a node's partition info when removed from existing partition.
 
 * Changes in SLURM 0.5.0-pre3
 =============================
