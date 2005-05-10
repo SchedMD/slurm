@@ -764,25 +764,13 @@ _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 	 *   job that the job is about to be terminated
 	 */
 	_kill_running_session_mgrs(req->job_id, SIGXCPU, "SIGXCPU");
+	sleep(1);
 
 	nsteps = _kill_all_active_steps(req->job_id, SIGTERM, false);
-
 	verbose( "Job %u: timeout: sent SIGTERM to %d active steps", 
 	         req->job_id, nsteps );
 
-	sleep(1);
-
-	/*
-	 * Check to see if any processes are still around
-	 */
-	if ((nsteps > 0) && _job_still_running(req->job_id)
-	&&  (conf->cf.kill_wait > 1)) {
-		verbose( "Job %u: waiting %d secs for SIGKILL", 
-			 req->job_id, conf->cf.kill_wait       );
-		sleep (conf->cf.kill_wait - 1);
-	}
-
-	/* SIGKILL and send response */
+	/* Revoke credential, send SIGKILL, run epilog, etc. */
 	_rpc_kill_job(msg, cli_addr); 
 }
 
