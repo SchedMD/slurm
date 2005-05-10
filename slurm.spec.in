@@ -153,9 +153,9 @@ done
 LIST=./switch_federation.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_federation.so &&
-  echo %{_libdir}/slurm/switch_federation.so  > $LIST
-echo "%doc etc/federation.conf.example"      >> $LIST
-echo "%config /etc/federation.conf.example"  >> $LIST
+  echo %{_libdir}/slurm/switch_federation.so       > $LIST
+echo "%doc etc/federation.conf.example"           >> $LIST
+echo "%config /etc/slurm/federation.conf.example" >> $LIST
 
 
 #############################################################################
