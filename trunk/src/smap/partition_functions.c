@@ -62,14 +62,17 @@ static int  _print_text_part(partition_info_t *part_ptr,
 static int _set_start_finish(db2_block_info_t *db2_info_ptr);
 static void _block_list_del(void *object);
 static int _list_match_all(void *object, void *key);
-static int _in_slurm_partition(db2_block_info_t *db2_info_ptr, int *first, int *last);
+static int _in_slurm_partition(db2_block_info_t *db2_info_ptr, 
+			       int *first, 
+			       int *last);
 static int _print_rest(db2_block_info_t *block_ptr, int *count);
 #endif
 
 void get_slurm_part(void)
 {
 	int error_code, i, j, recs, count = 0;
-	static partition_info_msg_t *part_info_ptr = NULL, *new_part_ptr = NULL;
+	static partition_info_msg_t *part_info_ptr = NULL;
+	static partition_info_msg_t *new_part_ptr = NULL;
 	partition_info_t part;
 
 	if (part_info_ptr) {
@@ -145,8 +148,11 @@ void get_bgl_part(void)
 {
 #ifdef HAVE_BGL
 	int error_code, i, j, recs=0, count = 0;
-	static partition_info_msg_t *part_info_ptr = NULL, *new_part_ptr = NULL;
-	static node_select_info_msg_t *bgl_info_ptr = NULL, *new_bgl_ptr = NULL;
+	static partition_info_msg_t *part_info_ptr = NULL;
+	static partition_info_msg_t *new_part_ptr = NULL;
+	static node_select_info_msg_t *bgl_info_ptr = NULL;
+	static node_select_info_msg_t *new_bgl_ptr = NULL;
+
 	partition_info_t part;
 	int number, start[PA_SYSTEM_DIMENSIONS], end[PA_SYSTEM_DIMENSIONS];
 	db2_block_info_t *block_ptr = NULL;

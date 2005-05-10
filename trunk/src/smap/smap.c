@@ -227,30 +227,35 @@ int main(int argc, char *argv[])
 			
 			node_info_ptr = new_node_ptr;
 			if (node_info_ptr) {
-				error_code = slurm_load_node(node_info_ptr->last_update, 
-								   &new_node_ptr, 0);
+				error_code = slurm_load_node(
+					node_info_ptr->last_update, 
+					&new_node_ptr, 0);
 				if (error_code == SLURM_SUCCESS)
-					slurm_free_node_info_msg(node_info_ptr);
-				else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+					slurm_free_node_info_msg(
+						node_info_ptr);
+				else if (slurm_get_errno() 
+					 == SLURM_NO_CHANGE_IN_DATA) {
 					error_code = SLURM_SUCCESS;
 					new_node_ptr = node_info_ptr;
 				}
 			} else {
 				error_code = slurm_load_node((time_t) NULL, 
-								   &new_node_ptr, 0);
+							     &new_node_ptr, 0);
 			}
-			if (error_code) {
-				if (quiet_flag != 1) {
-					if(!params.commandline) {
-						mvwprintw(pa_system_ptr->text_win,
-							  pa_system_ptr->ycord, 1,
-							  "slurm_load_node: %s",
-							  slurm_strerror(slurm_get_errno()));
-						pa_system_ptr->ycord++;
-					} else {
-						printf("slurm_load_node: %s",
-						       slurm_strerror(slurm_get_errno()));
-					}
+			if (error_code && (quiet_flag != 1)) {
+				if(!params.commandline) {
+					mvwprintw(
+						pa_system_ptr->text_win,
+						pa_system_ptr->ycord, 
+						1,
+						"slurm_load_node: %s",
+						slurm_strerror(
+							slurm_get_errno()));
+					pa_system_ptr->ycord++;
+				} else {
+					printf("slurm_load_node: %s",
+					       slurm_strerror(
+						       slurm_get_errno()));
 				}
 			}
 		}
@@ -264,8 +269,10 @@ int main(int argc, char *argv[])
 						goto redraw;
 					else if (rc == 2)
 						goto scrolling_grid;
-					else if (pa_system_ptr->resize_screen) {
-						pa_system_ptr->resize_screen = 0;
+					else if (pa_system_ptr->
+						 resize_screen) {
+						pa_system_ptr->
+							resize_screen = 0;
 						goto redraw;
 					}
 				}
@@ -368,7 +375,8 @@ static void *_resize_handler(int sig)
 #endif
 
 		endwin();
-		error("Screen is too small make sure the screen is at least %dx%d\n"
+		error("Screen is too small make sure "
+		      "the screen is at least %dx%d\n"
 		      "Right now it is %dx%d\n", width, height, COLS, LINES);
 		pa_fini();
 		exit(0);

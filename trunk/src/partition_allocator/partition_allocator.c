@@ -458,8 +458,8 @@ extern void pa_init(node_info_msg_t *node_info_ptr)
 				DIM_SIZE[X] = temp;
 #endif
 		}
-		DIM_SIZE[X]++;
 #ifdef HAVE_BGL
+		DIM_SIZE[X]++;
 		DIM_SIZE[Y]++;
 		DIM_SIZE[Z]++;
 #endif
