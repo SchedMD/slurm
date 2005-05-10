@@ -1088,7 +1088,7 @@ _complete_job(uint32_t jobid, int err, int status)
 	slurm_msg_t              req_msg;
 	complete_job_step_msg_t  req;
 
-	req.job_id	    = jobid;
+	req.job_id	= jobid;
 	req.job_step_id	= NO_VAL; 
 	req.job_rc      = status;
 	req.slurm_rc	= err; 
