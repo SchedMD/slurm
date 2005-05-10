@@ -2,6 +2,7 @@
  *  partition_mgr.c - manage the partition information of slurm
  *	Note: there is a global partition list (part_list) and
  *	time stamp (last_part_update)
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -71,7 +72,7 @@ static uid_t *_get_group_members(char *group_name);
 static time_t _get_group_tlm(void);
 static void   _list_delete_part(void *part_entry);
 static int    _uid_list_size(uid_t * uid_list_ptr);
-
+static void   _unlink_free_nodes(bitstr_t *old_bitmap);
 
 /*
  * _build_part_bitmap - update the total_cpus, total_nodes, and node_bitmap 
@@ -85,7 +86,6 @@ static int    _uid_list_size(uid_t * uid_list_ptr);
  */
 static int _build_part_bitmap(struct part_record *part_ptr)
 {
-	int i, update_nodes;
 	char *this_node_name;
 	bitstr_t *old_bitmap;
 	struct node_record *node_ptr;	/* pointer to node_record */
@@ -109,6 +109,7 @@ static int _build_part_bitmap(struct part_record *part_ptr)
 	}
 
 	if (part_ptr->nodes == NULL) {	/* no nodes in partition */
+		_unlink_free_nodes(old_bitmap);
 		FREE_NULL_BITMAP(old_bitmap);
 		return 0;
 	}
@@ -146,21 +147,27 @@ static int _build_part_bitmap(struct part_record *part_ptr)
 	}
 	hostlist_destroy(host_list);
 
-	/* unlink nodes removed from the partition */
+	_unlink_free_nodes(old_bitmap);
+	last_node_update = time(NULL);
+	FREE_NULL_BITMAP(old_bitmap);
+	return 0;
+}
+
+/* unlink nodes removed from the partition */
+static void _unlink_free_nodes(bitstr_t *old_bitmap)
+{
+	int i, update_nodes = 0;
+
 	if (old_bitmap) {
-		update_nodes = 0;
 		for (i = 0; i < node_record_count; i++) {
 			if (bit_test(old_bitmap, i) == 0)
 				continue;
 			node_record_table_ptr[i].partition_ptr = NULL;
 			update_nodes = 1;
 		}
-		bit_free(old_bitmap);
 		if (update_nodes)
 			last_node_update = time(NULL);
 	}
-
-	return 0;
 }
 
 
