@@ -137,7 +137,7 @@ DESTDIR="$RPM_BUILD_ROOT" make install
 install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/init.d/slurm
 install -D -m644 etc/slurm.conf.example $RPM_BUILD_ROOT/etc/slurm/slurm.conf.example
 install -D -m644 etc/bluegene.conf.example $RPM_BUILD_ROOT/etc/slurm/bluegene.conf.example
-install -D -m644 etc/federation.conf.example $RPM_BUILD_ROOT/etc/slurm/federation.conf.exam
+install -D -m644 etc/federation.conf.example $RPM_BUILD_ROOT/etc/slurm/federation.conf.example
 ple
 # Delete unpackaged files:
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
@@ -149,7 +149,6 @@ for plugin in auth_munge auth_authd switch_elan; do
    test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/${plugin}.so &&
      echo %{_libdir}/slurm/${plugin}.so > $LIST
 done
-
 
 #############################################################################
 
@@ -239,7 +238,7 @@ rm -rf $RPM_BUILD_ROOT
 %files switch-federation
 %defattr(-,root,root)
 %doc etc/federation.conf.example
-%{_libdir}/slurm/switch_federation.so
+%{_libdir}/slurm/*_federation.so
 %config /etc/federation.conf.example
 #############################################################################
 
