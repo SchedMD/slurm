@@ -42,6 +42,10 @@ print_header $test_id
 #
 # Submit a 1 node job and record the node name
 #
+# NOTE: Check explicity for "^0:" or "\n0:. Otherwise in srun verbose mode we 
+# can get a hostname ending with 0 in the messages that gets used to generate
+# a bad value for host_0 below. 
+#
 set host_0      ""
 set nodelist_name ""
 set timeout $max_job_delay
@@ -51,7 +55,11 @@ expect {
 		set nodelist_name $expect_out(1,string)
 		exp_continue
 	}
-	-re "0: ($alpha_numeric)" {
+	-re "^0: ($alpha_numeric)" {
+		set host_0 $expect_out(1,string)
+		exp_continue
+	}
+	-re "\n0: ($alpha_numeric)" {
 		set host_0 $expect_out(1,string)
 		exp_continue
 	}
