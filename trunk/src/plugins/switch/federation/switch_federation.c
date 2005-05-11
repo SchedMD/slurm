@@ -236,6 +236,9 @@ int switch_p_libstate_restore ( char * dir_name )
  * notification of this will be forwarded to slurmctld.  We do not
  * enforce that in this function.
  */
+/* FIX ME! - should use adapter name from federation.conf file now that
+ *           we have that file support.
+ */
 #define ZERO 48
 int switch_p_clear_node_state(void)
 {
@@ -331,6 +334,8 @@ switch_jobinfo_t switch_p_copy_jobinfo(switch_jobinfo_t switch_job)
 	switch_jobinfo_t j;
 
 	j = (switch_jobinfo_t)fed_copy_jobinfo((fed_jobinfo_t *)switch_job);
+	if (!j)
+		error("fed_copy_jobinfo failed");
 
 	return j;
 }

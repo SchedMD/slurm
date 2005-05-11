@@ -498,6 +498,9 @@ fed_alloc_jobinfo(fed_jobinfo_t **j)
 	if (!new)
 		slurm_seterrno_ret(ENOMEM);
 	new->magic = FED_JOBINFO_MAGIC;
+	new->job_key = -1;
+	new->window_memory = 0;
+	new->table_size = 0;
 	new->table = NULL;
 	new->lid_index = NULL;
 	*j = new;
@@ -1485,28 +1488,59 @@ fed_jobinfo_t *
 fed_copy_jobinfo(fed_jobinfo_t *j)
 {
 	fed_jobinfo_t *new;
-	NTBL **tmp;
 	int i;
 	
-	if(fed_alloc_jobinfo(&new))
-		return NULL;
+	assert(j);
+	assert(j->magic == FED_JOBINFO_MAGIC);
+
+	if(fed_alloc_jobinfo(&new)) {
+		debug("fed_alloc_jobinfo failed");
+		goto cleanup1;
+	}
 	memcpy(new, j, sizeof(fed_jobinfo_t));
-	new->lid_index = (char *)malloc(new->table_size * FED_ADAPTERLEN);
-	tmp = (NTBL **)malloc(sizeof(NTBL *) * new->table_size);
-	if((tmp == NULL) || (new->lid_index == NULL)) {
-		fed_free_jobinfo(new);
-		slurm_seterrno(ENOMEM);
-		return NULL;
+	/* table will be empty (and table_size == 0) when the network string
+	 * from poe does not contain "us".
+	 * (See man poe: -euilib or MP_EUILIB)
+	 */
+	if (new->table_size > 0) {
+		int size;
+
+		size = new->table_size * FED_ADAPTERLEN;
+		new->lid_index = (char *)malloc(size);
+		if (new->lid_index == NULL) {
+			debug("fed_copy_jobinfo new->lid_index malloc failed");
+			goto cleanup2;
+		}
+		memcpy(new->lid_index, j->lid_index, size);
+
+		size = sizeof(NTBL *) * new->table_size;
+		new->table = (NTBL **)malloc(size);
+		if (new->table == NULL) {
+			debug("fed_copy_jobinfo: new->table malloc failed");
+			goto cleanup3;
+		}
+		memset(new->table, 0, size);
+		for(i = 0; i < new->table_size; i++) {
+			new->table[i] = (NTBL *)malloc(sizeof(NTBL));
+			if (new->table[i] == NULL)
+				goto cleanup4;
+			memcpy(new->table[i], j->table[i], sizeof(NTBL));
+		}
 	}
-	for(i = 0; i < new->table_size; i++) {
-		tmp[i] = (NTBL *)malloc(sizeof(NTBL));
-		memcpy(tmp[i], j->table[i], sizeof(NTBL));
-		
-	}
-	new->table = tmp;
-	memcpy(new->lid_index, j->lid_index, new->table_size * FED_ADAPTERLEN);
-	
-	return new;	
+	return new;
+
+cleanup4:
+	for (i = 0; i < new->table_size; i++)
+		if (new->table[i])
+			free(new->table[i]);
+cleanup3:
+	free(new->lid_index);
+cleanup2:
+	fed_free_jobinfo(new);
+cleanup1:
+	slurm_seterrno(ENOMEM);
+	return NULL;
+
 }
 
 /* Used by: all */
@@ -1523,6 +1557,7 @@ fed_free_jobinfo(fed_jobinfo_t *jp)
 			if(!jp->table[i])
 				free(jp->table[i]);
 		}
+		free(jp->table);
 	}
 	if(jp->lid_index)
 		free(jp->lid_index);
