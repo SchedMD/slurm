@@ -77,7 +77,13 @@ int main(int argc, char *argv[])
 	if (error_code) {
 		printf("slurm_load_node: %s\n", 
 		       slurm_strerror(slurm_get_errno()));
-		exit(0);
+#ifdef HAVE_BGL
+		if(params.display == COMMANDS)
+			pa_init(NULL);
+		else
+#endif
+			exit(0);
+
 	} else {
 		pa_init(new_node_ptr);
 	}	
