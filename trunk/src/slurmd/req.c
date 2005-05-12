@@ -783,24 +783,27 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 	job_id_request_msg_t *req = (job_id_request_msg_t *) msg->data;
 	slurm_msg_t           resp_msg;
 	job_id_response_msg_t resp;
-	List         steps = shm_get_steps();
-	ListIterator i     = list_iterator_create(steps);
-	job_step_t  *s     = NULL;  
 	bool         found = false; 
 	uint32_t     my_cont = slurm_find_container(req->job_pid);
 
-	if (my_cont == 0)
+	if (my_cont == 0) {
 		verbose("slurm_find_container(%u): process not found",
 			(uint32_t) req->job_pid);
-	while (my_cont && (s = list_next(i))) {
-		if (s->cont_id == my_cont) {
-			resp.job_id = s->jobid;
-			found = true;
-			break;
+	} else {
+		List         steps = shm_get_steps();
+		ListIterator i     = list_iterator_create(steps);
+		job_step_t  *s     = NULL;
+
+		while ((s = list_next(i))) {
+			if (s->cont_id == my_cont) {
+				resp.job_id = s->jobid;
+				found = true;
+				break;
+			}
 		}
+		list_iterator_destroy(i);
+		list_destroy(steps);
 	}
-	list_iterator_destroy(i);
-	list_destroy(steps);
 
 	if (found) {
 		resp_msg.address      = msg->address;
