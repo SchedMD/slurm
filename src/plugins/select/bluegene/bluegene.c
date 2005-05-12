@@ -602,6 +602,7 @@ extern int create_static_partitions(List part_list)
 #else
 	ListIterator itr_found;
 #endif
+	slurm_mutex_lock(&part_state_mutex);
 	reset_pa_system();
 		
 	if(bgl_list) {
@@ -617,12 +618,14 @@ extern int create_static_partitions(List part_list)
 						 bgl_record->conn_type) == SLURM_ERROR) {
 					error("I was unable to make the "
 					      "requested partition.");
+					slurm_mutex_unlock(&part_state_mutex);
 					return SLURM_ERROR;
 				}
 		}
 		list_iterator_destroy(itr);
 	} else {
 		error("create_static_partitions: no bgl_list 1");
+		slurm_mutex_unlock(&part_state_mutex);
 		return SLURM_ERROR;
 	}
 
@@ -651,6 +654,7 @@ extern int create_static_partitions(List part_list)
 				if((rc = configure_partition(bgl_record)) 
 				   == SLURM_ERROR) {
 					list_iterator_destroy(itr);
+					slurm_mutex_unlock(&part_state_mutex);
 					return rc;
 				}
 				print_bgl_record(bgl_record);
@@ -659,6 +663,7 @@ extern int create_static_partitions(List part_list)
 		list_iterator_destroy(itr);
 	} else {
 		error("create_static_partitions: no bgl_list 2");
+		slurm_mutex_unlock(&part_state_mutex);
 		return SLURM_ERROR;
 	}
 #endif
@@ -710,6 +715,7 @@ extern int create_static_partitions(List part_list)
 		list_iterator_destroy(itr);
 	} else {
 		error("create_static_partitions: no bgl_list 3");
+		slurm_mutex_unlock(&part_state_mutex);
 		return SLURM_ERROR;
 	}
 	bgl_record->bgl_part_list = list_create(NULL);			
@@ -731,12 +737,15 @@ extern int create_static_partitions(List part_list)
 			 bgl_record->conn_type) == SLURM_ERROR) {
 		error("I was unable to make the "
 		      "requested partition.");
+		slurm_mutex_unlock(&part_state_mutex);
 		return SLURM_ERROR;
 	}
 	bgl_record->node_use = SELECT_COPROCESSOR_MODE;
 #ifdef HAVE_BGL_FILES
-	if((rc = configure_partition(bgl_record)) == SLURM_ERROR)
+	if((rc = configure_partition(bgl_record)) == SLURM_ERROR) {
+		slurm_mutex_unlock(&part_state_mutex);
 		return rc;
+	}
 	print_bgl_record(bgl_record);
 
 #else
@@ -756,6 +765,7 @@ extern int create_static_partitions(List part_list)
 		list_iterator_destroy(itr);
 	} else {
 		error("create_static_partitions: no bgl_list 4");
+		slurm_mutex_unlock(&part_state_mutex);
 		return SLURM_ERROR;
 	}
 #endif	/* HAVE_BGL_FILES */
@@ -777,9 +787,10 @@ no_total:
 		list_iterator_destroy(itr);
 	} else {
 		error("create_static_partitions: no bgl_list 5");
-	}	
+	}
+	debug("Setting time up");
 	last_bgl_update = time(NULL);
-	rc = SLURM_SUCCESS;
+	slurm_mutex_unlock(&part_state_mutex);
 #ifdef _PRINT_PARTS_AND_EXIT
 	if(bgl_list) {
 		itr = list_iterator_create(bgl_list);
@@ -794,6 +805,7 @@ no_total:
 	}
  	exit(0);
 #endif	/* _PRINT_PARTS_AND_EXIT */
+	rc = SLURM_SUCCESS;
 
 	return rc;
 }

@@ -157,6 +157,7 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 			}
 		} 
 		conn_num++;
+		//debug("adding %d -> %d",bgl_conn->source, bgl_conn->target);
 	}
 	list_iterator_destroy(itr);
 	if ((rc = rm_set_data(curr_switch, RM_SwitchConnNum, &conn_num)) 
