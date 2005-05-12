@@ -729,6 +729,7 @@ _kill_running_session_mgrs(uint32_t jobid, int signum, char *signame)
 			cnt++;
 		}
 	}
+	list_iterator_destroy(i);
 	list_destroy(steps);
 	if (cnt)
 		verbose("Job %u: sent %s to %d active steps",
@@ -798,6 +799,7 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 			break;
 		}
 	}
+	list_iterator_destroy(i);
 	list_destroy(steps);
 
 	if (found) {
@@ -987,6 +989,7 @@ _job_still_running(uint32_t job_id)
 			break;
 		}
 	}
+	list_iterator_destroy(i);
 	list_destroy(steps);
 
 	return retval;
