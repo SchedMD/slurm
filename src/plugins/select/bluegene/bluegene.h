@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  bluegene.h - header for blue gene configuration processing module. 
  *
- * $Id$
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -42,13 +42,7 @@
 #include "src/common/macros.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/partition_allocator/partition_allocator.h"
-
-#ifdef HAVE_BGL_FILES
-# include "src/plugins/select/bluegene/wrap_rm_api.h"
-
-#else
-# include "src/smap/smap.h"
-#endif
+#include "src/plugins/select/bluegene/wrap_rm_api.h"
 
 #define USER_NAME "slurm"
 
