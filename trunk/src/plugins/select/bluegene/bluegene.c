@@ -723,9 +723,9 @@ extern int create_static_partitions(List part_list)
 	bgl_record->target_name = xstrdup(USER_NAME);
 	if((pw_ent = getpwnam(bgl_record->user_name)) == NULL) {
 		error("getpwnam(%s): %m", bgl_record->user_name);
+	} else {
+		bgl_record->user_uid = pw_ent->pw_uid;
 	}
-	bgl_record->user_uid = pw_ent->pw_uid;
-	
 	if(set_bgl_part(bgl_record->bgl_part_list, 
 			 bgl_record->bp_count, 
 			 bgl_record->conn_type) == SLURM_ERROR) {
@@ -1367,9 +1367,9 @@ static int _parse_bgl_spec(char *in_line)
 	bgl_record->user_name = xstrdup(USER_NAME);
 	if((pw_ent = getpwnam(bgl_record->user_name)) == NULL) {
 		error("getpwnam(%s): %m", bgl_record->user_name);
+	} else {
+		bgl_record->user_uid = pw_ent->pw_uid;
 	}
-	bgl_record->user_uid = pw_ent->pw_uid;
-
 	bgl_record->bgl_part_list = list_create(NULL);			
 	bgl_record->hostlist = hostlist_create(NULL);
 	/* bgl_record->boot_state = 0; 	Implicit */
