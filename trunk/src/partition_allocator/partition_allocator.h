@@ -29,7 +29,21 @@
 /* This must be included first for AIX systems */
 #include "src/common/macros.h"
 
-#include <curses.h>
+#ifndef _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
+#if HAVE_CURSES_H
+#  include <curses.h>
+#endif
+#if HAVE_NCURSES_H
+#  include <ncurses.h>
+#endif
+
 #include "src/api/node_select_info.h"
 #include "src/common/read_config.h"
 #include "src/common/parse_spec.h"

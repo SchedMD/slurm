@@ -173,12 +173,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc COPYING
 %doc etc/slurm.conf.example
 %doc doc/html
-%{_bindir}/scancel
-%{_bindir}/scontrol
-%{_bindir}/sinfo
-%{_bindir}/smap
-%{_bindir}/squeue
-%{_bindir}/srun
+%{_bindir}/*
 %{_sbindir}/slurmctld
 %{_sbindir}/slurmd
 %{_libdir}/*.so*

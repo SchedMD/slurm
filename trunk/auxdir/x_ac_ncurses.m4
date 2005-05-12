@@ -24,9 +24,12 @@ AC_DEFUN([X_AC_NCURSES],
    AC_SUBST(NCURSES)
    if test "$ac_have_ncurses" = "yes"; then
       NCURSES="-lncurses"
+      ac_have_some_curses="yes"
    elif test "$ac_have_curses" = "yes"; then
       NCURSES="-lcurses"
+      ac_have_some_curses="yes"
    else
-      AC_MSG_ERROR([Can not find curses or ncurses library.])
+      AC_MSG_NOTICE([Can not build smap without curses or ncurses library])
+      ac_have_some_curses="no"
    fi
 ])
