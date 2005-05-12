@@ -7,6 +7,9 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in srun's error code reporting to slurmctld, could DOWN 
     a node if job run as root has non-zero error code.
  -- Remove a node's partition info when removed from existing partition.
+ -- Use proctrack plugin to call all processes in a job step before 
+    calling interconnect_postfini() to insure no processes escape from 
+    job and prevent switch windows from being released.
 
 * Changes in SLURM 0.5.0-pre3
 =============================
