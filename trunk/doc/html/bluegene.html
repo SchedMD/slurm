@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-209488">
-<meta name="LLNLRandRdate" content="11 May 2005">
+<meta name="LLNLRandRdate" content="12 May 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -164,8 +164,14 @@ a a a a . . . #            Z
 <h3>System Administration</h3>
 
 <p>Building a Blue Gene compatible system is dependent upon the <i>configure</i>
-program locating some expected files. You should see "#define HAVE_BGL 1" and
-"#define HAVE_FRONT_END 1" in the "config.h" file before making SLURM.</p>
+program locating some expected files. 
+You will need to configure and build two sets of files for installation. 
+One set will be for the Service Node (SN), which has direct access to the BGL Bridge APIs. 
+The second set will be for the Front End Nodes (FEN), whick lack access to the 
+Bridge APIs and interact with using Remote Proceedure Calls to the slurmctld daemon. 
+You should see "#define HAVE_BGL 1" and "#define HAVE_FRONT_END 1" in the "config.h" 
+file for both the SN and FEN builds. 
+You should also see "#define HAVE_BGL_FILES 1" in config.h on the SN before making SLURM.</p>
 
 <p>The slurmctld daemon should execute on the system's service node.
 If an optional backup daemon is used, it must be in some location where 
@@ -301,7 +307,7 @@ from about 24% to about 6% of total job time.
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-209488<br>
-Last modified 11 May 2005</p></td>
+Last modified 12 May 2005</p></td>
 </tr>
 </table>
 </td>
