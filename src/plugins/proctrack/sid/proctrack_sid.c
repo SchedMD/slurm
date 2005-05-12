@@ -134,6 +134,11 @@ extern int slurm_destroy_container ( uint32_t id )
 extern uint32_t
 slurm_find_container(pid_t pid)
 {
-	return (uint32_t) getsid(pid);
+	pid_t rc = getsid(pid);
+
+	if (rc == -1)
+		return (uint32_t) 0;
+	else
+		return (uint32_t) rc;
 }
 
