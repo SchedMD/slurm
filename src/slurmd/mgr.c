@@ -130,6 +130,7 @@ static void _handle_attach_req(slurmd_job_t *job);
 static int  _send_exit_msg(slurmd_job_t *job, int tid[], int n, int status);
 static void _set_unexited_task_status(slurmd_job_t *job, int status);
 static int  _send_pending_exit_msgs(slurmd_job_t *job);
+static void _kill_running_tasks(slurmd_job_t *job);
 
 static void _setargs(slurmd_job_t *job);
 static void _set_mgr_env(slurmd_job_t *, slurm_addr *cli, slurm_addr *self);
@@ -538,10 +539,12 @@ _job_mgr(slurmd_job_t *job)
 	 *    is moved behind wait_for_io(), we may block waiting for IO
 	 *    on a hung process.
 	 */
-	if (!job->batch && 
-	    (interconnect_postfini(job->switch_job, job->smgr_pid,
-			job->jobid, job->stepid) < 0))
-		error("interconnect_postfini: %m");
+	if (!job->batch) {
+		_kill_running_tasks(job);
+		if (interconnect_postfini(job->switch_job, job->smgr_pid,
+				job->jobid, job->stepid) < 0)
+			error("interconnect_postfini: %m");
+	}
 
 	/*
 	 * Wait for io thread to complete (if there is one)
@@ -872,7 +875,6 @@ _wait_for_session(slurmd_job_t *job)
 
 		if (signo != 9)
 			error ("slurmd session manager killed by signal %d", signo);
-
 		/*
 		 * Make sure all processes in session are dead
 		 */
@@ -883,8 +885,40 @@ _wait_for_session(slurmd_job_t *job)
 
 	if (!WIFEXITED(status))
 		rc = WEXITSTATUS(status);
-
 	return (rc <= MAX_SMGR_EXIT_STATUS) ? exit_errno[rc] : rc;
+}
+
+/*
+ * Make sure all processes in session are dead for interactive jobs.  On 
+ * systems with an IBM Federation switch, all processes must be terminated 
+ * before the switch window can be released by interconnect_postfini().
+ *  For batch jobs, we let spawned processes continue by convention
+ * (although this could go either way). The Epilog program could be used 
+ * to terminate any "orphan" processes.
+ */
+static void
+_kill_running_tasks(slurmd_job_t *job)
+{
+	List         steps;
+	ListIterator i;
+	job_step_t  *s     = NULL;
+
+	if (job->batch)
+		return;
+
+	steps = shm_get_steps();
+	i = list_iterator_create(steps);
+	while ((s = list_next(i))) {
+		if ((s->jobid != job->jobid) || (s->stepid != job->stepid))
+			continue;
+		if (s->task_list->pid)
+			killpg(s->task_list->pid, SIGKILL);
+		if (s->cont_id)
+			slurm_signal_container(s->cont_id, SIGKILL);
+	}
+	list_iterator_destroy(i);
+	list_destroy(steps);
+	return;
 }
 
 /*
