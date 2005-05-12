@@ -381,10 +381,12 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 				xfree(bgl_record->target_name);
 				bgl_record->target_name = xstrdup(USER_NAME);
 			}
-		}
-		if(update_partition_user(bgl_record) == 1) 
-			last_bgl_update = time(NULL);
-			
+		
+			if(update_partition_user(bgl_record) == 1) 
+				last_bgl_update = time(NULL);
+		} else {
+			bgl_record->target_name = xstrdup(USER_NAME);	
+		}	
 		if(bgl_record->state != RM_PARTITION_CONFIGURING) {
 			bgl_record->boot_state = 0;
 			bgl_record->boot_count = 0;
