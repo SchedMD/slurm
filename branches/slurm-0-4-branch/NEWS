@@ -1,10 +1,14 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.4.26
+=========================
+ -- Relocate xassert() to after initialization of a file.
+
 * Changes in SLURM 0.4.25
 =========================
  -- Added another directory to search for DB2 on BGL system.
-
+ 
 * Changes in SLURM 0.4.24
 =========================
  -- DRAIN nodes with switches on base partitions are in ERROR, MISSING, 

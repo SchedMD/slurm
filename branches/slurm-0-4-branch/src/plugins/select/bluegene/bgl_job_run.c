@@ -516,10 +516,10 @@ static int _excise_block(List block_list, pm_partition_id_t bgl_part_id,
 	int rc = SLURM_SUCCESS;
 	ListIterator iter;
 	bgl_record_t *block = NULL;
-	xassert(iter);
 
 	if(block_list) {
 		iter = list_iterator_create(block_list);
+		xassert(iter);
 		while ((block = list_next(iter))) {
 			rc = SLURM_ERROR;
 			if (strcmp(block->bgl_part_id, bgl_part_id))
