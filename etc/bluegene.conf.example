@@ -38,6 +38,8 @@ BridgeAPIVerbose=0
 # Use:   Node use "virtual" or "coprocessor", by default both are created
 # 
 # NOTE: A bglblock is implicitly created containing all resources on the system
+# NOTE: All Nodes defined here must also be defined in the slurm.conf file
+#
 
 # volume = 1x1x1 = 1
 Nodes=bgl[000x000]
