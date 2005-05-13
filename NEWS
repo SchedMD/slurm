@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
  -- Use proctrack plugin to call all processes in a job step before 
     calling interconnect_postfini() to insure no processes escape from 
     job and prevent switch windows from being released.
+ -- Added mail.html web page telling how to get on slurm mailing lists.
 
 * Changes in SLURM 0.5.0-pre3
 =============================
