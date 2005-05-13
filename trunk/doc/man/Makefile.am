@@ -8,6 +8,7 @@ man1_MANS =            \
 	man1/sinfo.1   \
 	man1/squeue.1  \
 	man1/srun.1 \
+	man1/slurm.1 \
 	man1/smap.1   
 
 man3_MANS = man3/slurm_hostlist_create.3 \
