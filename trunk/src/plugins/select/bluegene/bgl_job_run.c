@@ -285,10 +285,10 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 	}
 
 	slurm_mutex_lock(&part_state_mutex);
-	if(bgl_record->target_name) {
+	if(bgl_record->target_name) 
 		xfree(bgl_record->target_name);
-		bgl_record->target_name = xstrdup(user_name);
-	}
+	bgl_record->target_name = xstrdup(user_name);
+	
 	if(bgl_record->state == RM_PARTITION_READY)
 		set_part_user(bgl_record); 
 	slurm_mutex_unlock(&part_state_mutex);	
@@ -377,15 +377,18 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		slurm_mutex_lock(&part_state_mutex);
 		/*remove user from list */
 		if(bgl_record->target_name) {
-			if(strcmp(bgl_record->target_name, USER_NAME)) {
+			if(strcmp(bgl_record->target_name, 
+				  slurmctld_conf.slurm_user_name)) {
 				xfree(bgl_record->target_name);
-				bgl_record->target_name = xstrdup(USER_NAME);
+				bgl_record->target_name = 
+					xstrdup(slurmctld_conf.
+						slurm_user_name);
 			}
 		
-			if(update_partition_user(bgl_record) == 1) 
-				last_bgl_update = time(NULL);
+			update_partition_user(bgl_record);
 		} else {
-			bgl_record->target_name = xstrdup(USER_NAME);	
+			bgl_record->target_name = 
+				xstrdup(slurmctld_conf.slurm_user_name);
 		}	
 		if(bgl_record->state != RM_PARTITION_CONFIGURING) {
 			bgl_record->boot_state = 0;
@@ -518,10 +521,10 @@ static int _excise_block(List block_list, pm_partition_id_t bgl_part_id,
 	int rc = SLURM_SUCCESS;
 	ListIterator iter;
 	bgl_record_t *block = NULL;
-	xassert(iter);
-
+	
 	if(block_list) {
 		iter = list_iterator_create(block_list);
+		xassert(iter);
 		while ((block = list_next(iter))) {
 			rc = SLURM_ERROR;
 			if (strcmp(block->bgl_part_id, bgl_part_id))
@@ -769,11 +772,11 @@ extern int boot_part(bgl_record_t *bgl_record, rm_partition_mode_t node_use)
 #ifdef HAVE_BGL_FILES
 	int rc;
 	
-	if ((rc = rm_set_part_owner(bgl_record->bgl_part_id, USER_NAME)) 
+	if ((rc = rm_set_part_owner(bgl_record->bgl_part_id, slurmctld_conf.slurm_user_name)) 
 	    != STATUS_OK) {
 		error("rm_set_part_owner(%s,%s): %s", 
 		      bgl_record->bgl_part_id, 
-		      USER_NAME,
+		      slurmctld_conf.slurm_user_name,
 		      bgl_err_str(rc));
 		return SLURM_ERROR;
 	}

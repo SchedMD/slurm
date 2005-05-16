@@ -325,7 +325,8 @@ extern int update_partition_user(bgl_record_t *bgl_record)
 		      bgl_record->bgl_part_id);
 		return -1;
 	} else if (rc == REMOVE_USER_NONE) {
-		if (strcmp(bgl_record->target_name, USER_NAME)) {
+		if (strcmp(bgl_record->target_name, 
+			   slurmctld_conf.slurm_user_name)) {
 			info("Adding user %s to Partition %s",
 			     bgl_record->target_name, 
 			     bgl_record->bgl_part_id);
@@ -412,7 +413,7 @@ extern int remove_all_users(char *bgl_part_id, char *user_name)
 			}
 		}
 		
-		if(!strcmp(user, USER_NAME))
+		if(!strcmp(user, slurmctld_conf.slurm_user_name))
 			continue;
 		
 		if(user_name) {
@@ -454,7 +455,7 @@ extern void set_part_user(bgl_record_t *bgl_record)
 	if(bgl_record->target_name) {
 		xfree(bgl_record->target_name);
 		bgl_record->target_name = 
-			xstrdup(USER_NAME);
+			xstrdup(slurmctld_conf.slurm_user_name);
 	}
 }
 
@@ -725,10 +726,12 @@ extern int create_static_partitions(List part_list)
 	list_append(bgl_list, bgl_record);
 	
 	bgl_record->conn_type = SELECT_TORUS;
-	bgl_record->user_name = xstrdup(USER_NAME);
-	bgl_record->target_name = xstrdup(USER_NAME);
+	bgl_record->user_name = xstrdup(slurmctld_conf.slurm_user_name);
+	bgl_record->target_name = xstrdup(slurmctld_conf.slurm_user_name);
 	if((pw_ent = getpwnam(bgl_record->user_name)) == NULL) {
 		error("getpwnam(%s): %m", bgl_record->user_name);
+		slurm_mutex_unlock(&part_state_mutex);
+		return SLURM_ERROR;
 	} else {
 		bgl_record->user_uid = pw_ent->pw_uid;
 	}
@@ -788,7 +791,6 @@ no_total:
 	} else {
 		error("create_static_partitions: no bgl_list 5");
 	}
-	debug("Setting time up");
 	last_bgl_update = time(NULL);
 	slurm_mutex_unlock(&part_state_mutex);
 #ifdef _PRINT_PARTS_AND_EXIT
@@ -937,7 +939,7 @@ static int _validate_config_nodes(void)
 		
 			if(bgl_curr_part_list) {
 				itr_curr = list_iterator_create(
-					bgl_curr_part_list);				
+					bgl_curr_part_list);	
 				while ((init_record = (bgl_record_t*) 
 					list_next(itr_curr)) 
 				       != NULL) {
@@ -968,8 +970,8 @@ static int _validate_config_nodes(void)
 				      "no bgl_curr_part_list");
 			}
 			if (!record->bgl_part_id) {
-				info("Existing partition not in bluegene.conf "
-				     "BGL PartitionID:NONE Nodes:%s", 
+				info("Partition found in bluegene.conf to be "
+				     "created: Nodes:%s", 
 				     record->nodes);
 				rc = SLURM_ERROR;
 			} else {
@@ -986,7 +988,7 @@ static int _validate_config_nodes(void)
 		
 		if(bgl_curr_part_list) {
 			itr_curr = list_iterator_create(
-				bgl_curr_part_list);				
+				bgl_curr_part_list);
 			while ((init_record = (bgl_record_t*) 
 				list_next(itr_curr)) 
 			       != NULL) {
@@ -1376,7 +1378,7 @@ static int _parse_bgl_spec(char *in_line)
 	bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
 	list_push(bgl_list, bgl_record);
 	
-	bgl_record->user_name = xstrdup(USER_NAME);
+	bgl_record->user_name = xstrdup(slurmctld_conf.slurm_user_name);
 	if((pw_ent = getpwnam(bgl_record->user_name)) == NULL) {
 		error("getpwnam(%s): %m", bgl_record->user_name);
 	} else {
