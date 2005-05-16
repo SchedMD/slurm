@@ -121,7 +121,7 @@ static void _pre_allocate(bgl_record_t *bgl_record)
 		error("rm_set_data(RM_PartitionPsetsPerBP)", bgl_err_str(rc));
 
 	if ((rc = rm_set_data(bgl_record->bgl_part, RM_PartitionUserName, 
-			USER_NAME)) != STATUS_OK)
+			slurmctld_conf.slurm_user_name)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionUserName)", bgl_err_str(rc));
 /* 	info("setting it here"); */
 /* 	bgl_record->bgl_part_id = "RMP101"; */
@@ -156,31 +156,16 @@ static int _post_allocate(bgl_record_t *bgl_record)
 	} else {
 		bgl_record->bgl_part_id = xstrdup(part_id);
 		
-/* 		if ((rc = rm_set_part_owner(bgl_record->bgl_part_id,  */
-/* 					USER_NAME)) != STATUS_OK) { */
-/* 			error("rm_set_part_owner(%s,%s): %s",  */
-/* 				bgl_record->bgl_part_id, USER_NAME, */
-/* 				bgl_err_str(rc)); */
-/* 			rc = SLURM_ERROR; */
-/* 			goto cleanup; */
-/* 		} */
-		/* info("Booting partition %s", bgl_record->bgl_part_id); */
-/* 		if ((rc = pm_create_partition(bgl_record->bgl_part_id))  */
-/* 				!= STATUS_OK) { */
-/* 			error("pm_create_partition(%s): %s", */
-/* 			      bgl_record->bgl_part_id, bgl_err_str(rc)); */
-/* 			rc = SLURM_ERROR; */
-/* 			goto cleanup; */
-/* 		} */
-				
-		/* reset state and owner right now, don't wait for 
-		 * update_partition_list() to run or epilog could 
-		 * get old/bad data. */
-/* 		bgl_record->state = RM_PARTITION_CONFIGURING; */
-/* 		debug("Setting bootflag for %s", bgl_record->bgl_part_id); */
-/* 		bgl_record->boot_state = 1; */
-/* 		bgl_record->boot_count = 0; */
-		bgl_record->user_name = xstrdup(USER_NAME);
+		if(bgl_record->target_name)
+			xfree(bgl_record->target_name);
+		bgl_record->target_name = 
+			xstrdup(slurmctld_conf.slurm_user_name);
+
+		if(bgl_record->user_name)
+			xfree(bgl_record->user_name);
+		bgl_record->user_name = 
+			xstrdup(slurmctld_conf.slurm_user_name);
+
 		if((pw_ent = getpwnam(bgl_record->user_name)) == NULL) {
 			error("getpwnam(%s): %m", bgl_record->user_name);
 		} else {
@@ -379,15 +364,20 @@ int read_bgl_partitions()
 			      bgl_err_str(rc));
 		} else {
 			if(bp_cnt==0) {
-				bgl_record->user_name = xstrdup(USER_NAME);
-				bgl_record->target_name = xstrdup(USER_NAME);
+				bgl_record->user_name = 
+					xstrdup(slurmctld_conf.
+						slurm_user_name);
+				bgl_record->target_name = 
+					xstrdup(slurmctld_conf.
+						slurm_user_name);
 			} else {
 				rm_get_data(part_ptr, RM_PartitionFirstUser, 
 						&user_name);
 				bgl_record->user_name = xstrdup(user_name);
 				if(!bgl_record->boot_state)
 					bgl_record->target_name = 
-						xstrdup(USER_NAME);
+						xstrdup(slurmctld_conf.
+							slurm_user_name);
 				else
 					bgl_record->target_name = 
 						xstrdup(user_name);

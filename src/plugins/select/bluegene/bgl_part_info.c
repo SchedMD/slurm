@@ -216,7 +216,8 @@ extern int update_partition_list()
 					      "users from partition %s", 
 					      bgl_record->bgl_part_id);
 				} 
-				if(!strcmp(bgl_record->target_name, USER_NAME) 
+				if(!strcmp(bgl_record->target_name, 
+					   slurmctld_conf.slurm_user_name) 
 				   && strcmp(bgl_record->target_name, 
 					     bgl_record->user_name)) {
 					info("partition %s was in a "

@@ -1079,23 +1079,6 @@ static int _create_config_even(pa_node_t *grid)
 	for(x=0;x<DIM_SIZE[X];x++) {
 		source = &grid[x];
 				
-		/* if(x<(DIM_SIZE[X]-1)) { */
-/* 			target_1 = &grid[x+1]; */
-/* 		} else */
-/* 			target_1 = NULL; */
-/* 		if(x<(DIM_SIZE[X]-2)) */
-/* 			target_2 = &grid[x+2]; */
-/* 		else */
-/* 			target_2 = target_1; */
-/* 		target_first = &grid[0]; */
-/* 		if (DIM_SIZE[X] > 1) */
-/* 			target_second = &grid[1]; */
-/* 		else */
-/* 			target_second = target_first; */
-	/* 	_set_external_wires(X, x, source,  */
-/* 				    target_1, target_2,  */
-/* 				    target_first, target_second); */
-				
 		target_1 = &grid[x+1];
 		
 		_set_external_wires(X, x, source, 
@@ -1496,20 +1479,20 @@ static void _set_external_wires(int dim, int count, pa_node_t* source,
 	_switch_config(source, source, dim, 0, 0);
 	_switch_config(source, source, dim, 1, 1);
 	if(dim!=X) {
-		_switch_config(source, target_1, dim, 2, 5);			
-		_switch_config(source, source, dim, 3, 3);			
-		_switch_config(source, source, dim, 4, 4);			
+		_switch_config(source, target_1, dim, 2, 5);
+		_switch_config(source, source, dim, 3, 3);
+		_switch_config(source, source, dim, 4, 4);
 		return;
 	}
 
 	if(count==0) {
 		/* First Even Node */
-		/* 4->3 of next */
-		_switch_config(source, target_1, dim, 4, 3);
-		/* 5->2 of next */
-		_switch_config(source, target_1, dim, 5, 2);
-		/* 2->5 of next even */
-		_switch_config(source, target_2, dim, 2, 5);	
+		/* 3->4 of next */
+		_switch_config(source, target_1, dim, 3, 4);
+		/* 2->5 of next */
+		_switch_config(source, target_1, dim, 2, 5);
+		/* 5->2 of next even */
+		_switch_config(source, target_2, dim, 5, 2);	
 
 	} else if(!(count%2)) {
 		if(count<DIM_SIZE[dim]-2) {
@@ -1518,26 +1501,24 @@ static void _set_external_wires(int dim, int count, pa_node_t* source,
 			_switch_config(source, target_1, dim, 3, 4);
 			/* 4->3 of next */
 			_switch_config(source, target_1, dim, 4, 3);
-			/* 2->5 of next even */
-			_switch_config(source, target_2, dim, 2, 5);
 			/* 5->2 of next even */
 			_switch_config(source, target_2, dim, 5, 2);
 			
 		} else {
 			/* Last Even Node */
-			/* 3->4 of next */
-			_switch_config(source, target_1, dim, 3, 4);
+			/* 4->3 of next */
+			_switch_config(source, target_1, dim, 4, 3);
 			/* 2->5 of previous */
 			/********** fix me: on the full system this is needed ******/ 
-			//_switch_config(source, target_1, dim, 2, 5);	
+			//_switch_config(source, target_1, dim, 5, 2);	
 			/********** fix me: not this ******/ 
-			_switch_config(source, target_1, dim, 4, 3);
+			_switch_config(source, target_1, dim, 3, 4);
 		}
 	} else {
 		if(count<DIM_SIZE[dim]-2) {
 			/* Not Last Odd Node */
-			/* 5->2 of next odd */
-			_switch_config(source, target_2, dim, 5, 2);
+			/* 2->5 of next odd */
+			_switch_config(source, target_2, dim, 2, 5);
 		} else {
 			/* Last Odd Node */
 			/* nothing */

@@ -44,8 +44,6 @@
 #include "src/partition_allocator/partition_allocator.h"
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
 
-#define USER_NAME "slurm"
-
 /* Global variables */
 extern rm_BGL_t *bgl;
 extern char *bluegene_blrts;
