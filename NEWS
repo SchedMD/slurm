@@ -13,6 +13,7 @@ documents those changes that are of interest to users and admins.
  -- Added mail.html web page telling how to get on slurm mailing lists.
  -- Added another directory to search for DB2 files on BGL system.
  -- Added overview man page slurm.1.
+ -- Added new configure option "--with-db2-dir=PATH" for BGL.
 
 * Changes in SLURM 0.5.0-pre3
 =============================
