@@ -15,7 +15,8 @@
 AC_DEFUN([X_AC_BGL],
 [
    AC_ARG_WITH(db2,
-      AC_HELP_STRING([--with-db2=PATH],[Specify path to DB2 library]),
+      AC_HELP_STRING([--with-db2-dir=PATH],
+                     [Specify path to DB2 library's parent directory]),
       [ trydb2dir=$withval ]
    )
 
