@@ -1,6 +1,6 @@
 /*****************************************************************************\
- * src/slurmd/slurmd.c - main slurm node server daemon
- * $Id$
+ *  src/slurmd/slurmd.c - main slurm node server daemon
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -489,7 +489,7 @@ _read_config()
 
 	if ( (conf->node_name == NULL) ||
 	     (conf->node_name[0] == '\0') )
-		fatal("Node name is empty");
+		fatal("Node name lookup failure");
  
 	if ( (conf->cf.control_addr == NULL) || 
 	     (conf->cf.slurmctld_port == 0)    )
