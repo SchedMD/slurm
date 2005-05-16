@@ -1563,7 +1563,9 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 				set=1;
 			}
 		} else {
-			error("AHHHHHHH I can't do it in _set_internal_wires");
+			error("No network connection to create bglblock "
+				"containing bgl[%s]", name);
+			error("Use smap to define bglbokcs in bluegene.conf");
 			xfree(name);
 			return NULL;
 		}
