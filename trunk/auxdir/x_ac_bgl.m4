@@ -14,9 +14,14 @@
 
 AC_DEFUN([X_AC_BGL],
 [
+   AC_ARG_WITH(db2,
+      AC_HELP_STRING([--with-db2=PATH],[Specify path to DB2 library]),
+      [ trydb2dir=$withval ]
+   )
+
    bgl_default_dirs="/bgl/BlueLight/ppcfloor/bglsys /home/bgdb2cli/sqllib /u/bgdb2cli/sqllib"
 
-   for bgl_dir in $bgl_default_dirs; do
+   for bgl_dir in $trydb2dir "" $bgl_default_dirs; do
       # Skip directories that don't exist
       if test ! -z "$bgl_dir" -a ! -d "$bgl_dir" ; then
          continue;

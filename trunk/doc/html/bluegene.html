@@ -166,11 +166,10 @@ a a a a . . . #            Z
 
 <p>Building a Blue Gene compatible system is dependent upon the <i>configure</i>
 program locating some expected files. 
-Since these files may be in a different location on each system, it will 
-likely be necessary to edit the file <i>auxdir/x_ac_bgl.m4</i> to identify 
-the location of your DB2 library files. 
-After editing <i>auxdir/x_ac_bgl.m4</i>, execute <i>autogen.sh</i>, 
-<i>configure</i>, <i>make</i>, etc.
+In particular, the configure script searches for <i>libdb2.so</i> in the 
+directories <i>/home/bgdb2cli/sqllib</i> and <i>/u/bgdb2cli/sqllib</i>.
+If your DB2 library file is in a different location, use the configure 
+option <i>--with-db2=PATH</i> to specify the parent directory.
 You will need to configure and build two sets of files for installation. 
 One set will be for the Service Node (SN), which has direct access to the BGL Bridge APIs. 
 The second set will be for the Front End Nodes (FEN), whick lack access to the 
