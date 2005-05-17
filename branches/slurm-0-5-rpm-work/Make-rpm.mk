@@ -101,7 +101,9 @@ tar-internal:
 
 rpm-internal: tar-internal
 	@echo "Creating $$pkg*rpm ..."; \
-	rpm_ver=4; \
+	(rpm --version | grep -q 'version 3') && rpm_ver=3; \
+	(rpm --version | grep -q 'version 4') && rpm_ver=4; \
+echo "rpm_ver=$$rpm_ver"; \
 	for d in BUILD RPMS SOURCES SPECS SRPMS TMP; do \
 	  if ! $$mkdir $$tmp/$$d >/dev/null; then \
 	    echo "ERROR: Cannot create \"$$tmp/$$d\" dir." 1>&2; exit 1; fi; \
@@ -124,6 +126,13 @@ rpm-internal: tar-internal
 	  if ! rpmbuild -ba --define "_tmppath $$tmp/TMP" --define "_topdir $$tmp" \
             $$sign --quiet $$rpmargs $$tmp/SPECS/$$proj.spec \
                                                    >$$tmp/rpm.log 2>&1; then \
+	      cat $$tmp/rpm.log; exit 1; fi; \
+	fi; \
+	if test $$rpm_ver -eq 3; then \
+	  rpm --showrc | egrep "_(gpg|pgp)_nam" >/dev/null && sign="--sign"; \
+	  if ! rpm -ba --define "tmppath: $$tmp/TMP" --define "topdir: $$tmp" \\
+	    $$sign --quiet $$rpmargs $$tmp/SPECS/$$proj.spec \
+						>$$tmp/rpm.log 2>&1; then \
 	      cat $$tmp/rpm.log; exit 1; fi; \
 	fi; \
 	cp -p $$tmp/RPMS/*/$$proj-*.rpm $$tmp/SRPMS/$$proj-*.src.rpm . || exit 1
