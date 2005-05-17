@@ -101,7 +101,8 @@ tar-internal:
 
 rpm-internal: tar-internal
 	@echo "Creating $$pkg*rpm ..."; \
-rpm_ver=4; \
+	rpm --version | grep -q 'version 3' && rpm_ver=3; \
+	rpm --version | grep -q 'version 4' && rpm_ver=4; \
 	for d in BUILD RPMS SOURCES SPECS SRPMS TMP; do \
 	  if ! $$mkdir $$tmp/$$d >/dev/null; then \
 	    echo "ERROR: Cannot create \"$$tmp/$$d\" dir." 1>&2; exit 1; fi; \
