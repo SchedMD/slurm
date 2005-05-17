@@ -20,7 +20,7 @@ AC_DEFUN([X_AC_FEDERATION],
 [
    ntbl_default_dirs="/usr/lib"
    for ntbl_dir in $ntbl_default_dirs; do
-      echo "checking for libntbl.a in $ntbl_dir... "
+      echo -n "checking for libntbl.a in $ntbl_dir... "
 
       # skip dirs that don't exist
       if test ! -z "$ntbl_dir" -a ! -d "$ntbl_dir" ; then
