@@ -127,7 +127,7 @@ echo "pt3"; \
 	  echo "ERROR: Cannot create $$proj.spec." 1>&2; exit 1; fi; \
 echo "pt4"; \
 	if test $$rpm_ver -eq 3; then \
-	   rpm_cmd=$rpm; \
+	   rpm_cmd=rpm; \
 	else \
 	   rpm_cmd=rpmbuild; fi; \
 echo "pt5"; \
@@ -136,6 +136,6 @@ echo "pt6"; \
 	if ! $$rpm_cmd -ba --define "_tmppath $$tmp/TMP" --define "_topdir $$tmp" \
             $$sign --quiet $$rpmargs $$tmp/SPECS/$$proj.spec \
                                                    >$$tmp/rpm.log 2>&1; then \
-	      cat $$tmp/rpm.log; exit 1; fi; \
+	    cat $$tmp/rpm.log; exit 1; fi; \
 echo "pt8"; \
 	cp -p $$tmp/RPMS/*/$$proj-*.rpm $$tmp/SRPMS/$$proj-*.src.rpm . || exit 1
