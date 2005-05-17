@@ -101,8 +101,7 @@ tar-internal:
 
 rpm-internal: tar-internal
 	@echo "Creating $$pkg*rpm ..."; \
-	(rpm --version | grep -q 'version 3') && rpm_ver=3; \
-	(rpm --version | grep -q 'version 4') && rpm_ver=4; \
+rpm_ver=4; \
 echo "rpm_ver=$$rpm_ver"; \
 	for d in BUILD RPMS SOURCES SPECS SRPMS TMP; do \
 	  if ! $$mkdir $$tmp/$$d >/dev/null; then \
