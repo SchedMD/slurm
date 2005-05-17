@@ -102,7 +102,6 @@ tar-internal:
 rpm-internal: tar-internal
 	@echo "Creating $$pkg*rpm ..."; \
 rpm_ver=4; \
-echo "rpm_ver=$$rpm_ver"; \
 	for d in BUILD RPMS SOURCES SPECS SRPMS TMP; do \
 	  if ! $$mkdir $$tmp/$$d >/dev/null; then \
 	    echo "ERROR: Cannot create \"$$tmp/$$d\" dir." 1>&2; exit 1; fi; \
@@ -135,3 +134,4 @@ echo "rpm_ver=$$rpm_ver"; \
 	      cat $$tmp/rpm.log; exit 1; fi; \
 	fi; \
 	cp -p $$tmp/RPMS/*/$$proj-*.rpm $$tmp/SRPMS/$$proj-*.src.rpm . || exit 1
+
