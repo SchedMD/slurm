@@ -108,13 +108,13 @@ rpm-internal: tar-internal
 	  if ! $$mkdir $$tmp/$$d >/dev/null; then \
 	    echo "ERROR: Cannot create \"$$tmp/$$d\" dir." 1>&2; exit 1; fi; \
 	      done; \
-@echo "pt1"; \
+echo "pt1"; \
 	mv $$tmp/$$pkg.tgz $$tmp/SOURCES/ || exit 1; \
-@echo "pt2"; \
+echo "pt2"; \
 	test -f $$tmp/$$pkg/$$proj.spec.in \
 	  && spec=$$tmp/$$pkg/$$proj.spec.in \
 	  || spec=$$tmp/$$pkg/$$proj.spec; \
-@echo "spec=$$spec"; \
+echo "spec=$$spec"; \
 	if ! test -f $$spec; then \
 	  echo "ERROR: Cannot find $$proj spec file in CVS." 1>&2; exit 1; fi; \
 	sed -e "s/^\([ 	]*Name:\).*/\1 $$proj/i" \
@@ -122,19 +122,19 @@ rpm-internal: tar-internal
 	    -e "s/^\([ 	]*Release:\).*/\1 $$rel/i" \
 	    -e "s/^\([ 	]*Source0?:\).*/\1 $$pkg.tgz/i" \
 	    <$$spec >$$tmp/SPECS/$$proj.spec; \
-@echo "pt3"; \
+echo "pt3"; \
 	if ! test -s $$tmp/SPECS/$$proj.spec; then \
 	  echo "ERROR: Cannot create $$proj.spec." 1>&2; exit 1; fi; \
-@echo "pt4"; \
+echo "pt4"; \
 	if test $$rpm_ver -eq 3; then \
-@echo "pt5"; \
+echo "pt5"; \
 	  rpm --showrc | egrep "_(gpg|pgp)_nam" >/dev/null && sign="--sign"; \
-@echo "pt6"; \
+echo "pt6"; \
 	  if ! rpm -ba --define "tmppath: $$tmp/TMP" --define "topdir: $$tmp" \
 	    $$sign --quiet $$rpmargs $$tmp/SPECS/$$proj.spec \
 						>$$tmp/rpm.log 2>&1; then \
 	      cat $$tmp/rpm.log; exit 1; fi; \
-@echo "pt7"; \
+echo "pt7"; \
 	fi; \
 	if test $$rpm_ver -eq 4; then \
 	  rpmbuild --showrc | egrep "_(gpg|pgp)_nam" >/dev/null && sign="--sign"; \
@@ -143,4 +143,5 @@ rpm-internal: tar-internal
                                                    >$$tmp/rpm.log 2>&1; then \
 	      cat $$tmp/rpm.log; exit 1; fi; \
 	fi; \
+echo "pt8"; \
 	cp -p $$tmp/RPMS/*/$$proj-*.rpm $$tmp/SRPMS/$$proj-*.src.rpm . || exit 1
