@@ -126,12 +126,4 @@ rpm_ver=4; \
                                                    >$$tmp/rpm.log 2>&1; then \
 	      cat $$tmp/rpm.log; exit 1; fi; \
 	fi; \
-	if test $$rpm_ver -eq 3; then \
-	  rpm --showrc | egrep "_(gpg|pgp)_nam" >/dev/null && sign="--sign"; \
-	  if ! rpm -ba --define "tmppath: $$tmp/TMP" --define "topdir: $$tmp" \\
-	    $$sign --quiet $$rpmargs $$tmp/SPECS/$$proj.spec \
-						>$$tmp/rpm.log 2>&1; then \
-	      cat $$tmp/rpm.log; exit 1; fi; \
-	fi; \
 	cp -p $$tmp/RPMS/*/$$proj-*.rpm $$tmp/SRPMS/$$proj-*.src.rpm . || exit 1
-
