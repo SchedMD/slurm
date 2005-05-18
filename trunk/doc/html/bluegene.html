@@ -292,6 +292,11 @@ full-system bglblock, which is implicitly created).
 See the smap man page for more information.
 Note that in addition to the bglblocks defined in blugene.conf, an 
 additional block containing all resources is created. 
+Note that SLURM wiring decisions are based upon the link-cards 
+being interconnected in a specific fashion. 
+If your BlueGene system is wired in an unconventional fashion, 
+modifications to the file <i>src/partition_allocator/partition_allocator.c</i> 
+may be required.
 Make use of the SLURM partition mechanism to control access to these 
 bglblocks. A sample <i>bluegene.conf</i> file is shown below.
 <pre>
@@ -345,41 +350,19 @@ Nodes=bgl[001x001]
 # Nodes=bgl[000x001]   Full-system bglblock, implicitly created 
 </pre></p>
 
-<p>Two other changes are required to support SLURM interactions with 
+<p>One more thing is required to support SLURM interactions with 
 the DB2 database (at least as of the time this was written).
 DB2 database access is required by the slurmctld daemon only.
 All other SLURM daemons and commands interact with DB2 using 
 remote procedure calls, which are processed by slurmctld.
-The <i>db2profile</i> script must be executed prior to the execution 
-of the slurmctld daemon.
-This may be accomplished by executing the script from
-<i>/etc/sysconfig/slurm</i>, which is automatically executed by 
-<i>/etc/init.d/slurm</i>.
-The second required file is <i>db.properties</i>, which should 
-be copied into the SLURM configuration directory with <i>slurm.conf</i>. 
-Again, this can be accomplished using /etc/sysconfig/slurm.
-A sample <i>/etc/sysconfig/slurm</i> file follows:
-<pre>
-# Sample /etc/sysconfig/slurm file
-#
-# Execute db2profile to configure DB2 environment variables
-#   required to access DB2 on BlueGene
-
-if [ -f /bgl/BlueLight/ppcfloor/bglsys/bin/db2profile ]; then
-    . /bgl/BlueLight/ppcfloor/bglsys/bin/db2profile
-fi
-
-# Copy db.profile to slurmctld's working directory (SaveStateLocation
-#   in slurm.conf, also required to access DB2 on BlueGene
-
-if [ -d /usr/local/admin/slurm ]; then
-    if [ -f /bgl/BlueLight/ppcfloor/bglsys/bin/db.properties ]; then
-        rm -f /usr/local/admin/slurm/db.properties
-        cp --preserve /bgl/BlueLight/ppcfloor/bglsys/bin/db.properties \
-		/usr/local/admin/slurm/db.properties
-    fi
-fi
-</pre></p>
+DB2 access is dependent upon the environment variable
+<b>BRIDGE_CONFIG_FILE</b>. 
+Make sure this is set appropriate before initiating the 
+slurmctld daemon. 
+If desired, this environment variable and any other logic 
+can be executed through the script <i>/etc/sysconfig/slurm</i>, 
+which is automatically executed by <i>/etc/init.d/slurm</i> 
+prior to initiating the SLURM daemons.</p>
 
 <p>At some time in the future, we expect SLURM to support <i>dynamic 
 partitioning</i> in which Blue Gene job partitions are created and destroyed 
