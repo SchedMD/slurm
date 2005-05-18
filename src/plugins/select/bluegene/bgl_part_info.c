@@ -176,7 +176,16 @@ extern int update_partition_list()
 		bgl_record = find_bgl_record(name);
 		
 		if(bgl_record == NULL) {
-			error("Partition %s not found on bgl_list", name);
+			error("Partition %s not found in bgl_list "
+			      "removing from database", name);
+			term_jobs_on_part(name);
+			rc = rm_remove_partition(name);
+			if (rc != STATUS_OK) {
+				error("rm_remove_partition(%s): %s",
+				      name,
+				      bgl_err_str(rc));
+			} else
+				debug("done\n");
 			continue;
 		}
 		
