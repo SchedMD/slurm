@@ -484,15 +484,22 @@ find_node_record (char *name)
  */
 static int _hash_index (char *name) 
 {
-	int i = 0;
+	int index = 0;
+	int j;
 
-	if (node_record_count == 0)
+	if ((node_record_count == 0)
+	||  (name == NULL))
 		return 0;	/* degenerate case */
 
-	while (*name)
-		i += (int) *name++;
-	i %= node_record_count;
-	return i;
+	/* Multiply each character by its numerical position in the
+	 * name string to add a bit of entropy, because host names such
+	 * as cluster[0001-1000] can cause excessive index collisions.
+	 */
+	for (j = 1; *name; name++, j++)
+		index += (int)*name * j;
+	index %= node_record_count;
+	
+	return index;
 }
 
 
