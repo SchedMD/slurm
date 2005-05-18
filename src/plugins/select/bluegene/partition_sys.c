@@ -52,6 +52,8 @@ static void _pre_allocate(bgl_record_t *bgl_record);
 static int _post_allocate(bgl_record_t *bgl_record);
 static int _post_bgl_init_read(void *object, void *arg);
 
+#define MAX_ADD_RETRY 5
+
 #if 0
 /* Vestigial
  * print out a list
@@ -135,16 +137,27 @@ static void _pre_allocate(bgl_record_t *bgl_record)
  */
 static int _post_allocate(bgl_record_t *bgl_record)
 {
-	int rc;
+	int rc, i;
 	pm_partition_id_t part_id;
 	struct passwd *pw_ent = NULL;
 	/* Add partition record to the DB */
 	debug("adding partition\n");
 	
-	if ((rc = rm_add_partition(bgl_record->bgl_part)) != STATUS_OK) {
-		error("rm_add_partition(): %s", bgl_err_str(rc));
-		rc = SLURM_ERROR;
-		goto cleanup;
+	for(i=0;i<MAX_ADD_RETRY; i++) {
+		if ((rc = rm_add_partition(bgl_record->bgl_part)) != STATUS_OK) {
+			error("rm_add_partition(): %s", bgl_err_str(rc));
+			rc = SLURM_ERROR;
+		} else {
+			rc = SLURM_SUCCESS;
+			break;
+		}
+		sleep(3);
+	}
+	if(rc == SLURM_ERROR) {
+		if ((rc = rm_free_partition(bgl_record->bgl_part)) 
+		    != STATUS_OK)
+			error("rm_free_partition(): %s", bgl_err_str(rc));
+		fatal("couldn't add last partition.");
 	}
 	debug("done adding\n");
 	
@@ -174,7 +187,6 @@ static int _post_allocate(bgl_record_t *bgl_record)
 		last_bgl_update = time(NULL);
 		
 	}
-cleanup:
 	/* We are done with the partition */
 	if ((rc = rm_free_partition(bgl_record->bgl_part)) != STATUS_OK)
 		error("rm_free_partition(): %s", bgl_err_str(rc));	
