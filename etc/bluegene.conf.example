@@ -35,7 +35,6 @@ BridgeAPIVerbose=0
 #
 # Nodes: The base partitions (midplanes) in the bglblock using XYZ coordinates
 # Type:  Connection type "mesh" or "torus", default is "torus"
-# Use:   Node use "virtual" or "coprocessor", by default both are created
 # 
 # NOTE: A bglblock is implicitly created containing all resources on the system
 # NOTE: All Nodes defined here must also be defined in the slurm.conf file
@@ -72,4 +71,4 @@ Nodes=bgl[222x333]
 Nodes=bgl[400x733]
 
 # volume = 8x4x4 = 128
-# Nodes=bgl[000x733]   Implicitly created 
+# Nodes=bgl[000x733]   Full-system bglblock, implicitly created 
