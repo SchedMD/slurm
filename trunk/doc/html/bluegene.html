@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-209488">
-<meta name="LLNLRandRdate" content="16 May 2005">
+<meta name="LLNLRandRdate" content="18 May 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -93,6 +93,12 @@ See the srun man pages for details. </p>
 
 <p>To reiterate: srun is used to submit a job script, but mpirun is used to launch the parallel tasks. 
 <b>It is highly recommended that the srun <i>--batch</i> option be used to submit a script.</b> 
+Note that a SLURM batch job's default stdout and stderr file names are generated 
+using the SLURM job ID. 
+When the SLURM control daemon is restarted, SLURM job ID values can be repeated, 
+therefore it is recommended that batch jobs explicitly specify unique names for 
+stdout and stderr files using the srun options <i>--output</i> and <i>--error</i>
+respectively.
 While the srun <i>--allocate</i> option may be used to create an interactive SLURM job, 
 it will be the responsibility of the user to insure that the <i>bglblock</i> 
 is ready for use before initiating any mpirun commands. 
@@ -195,16 +201,38 @@ The value of <i>SelectType</i> must be set to "select/bluegene" in order to have
 node selection performed using a system aware of the system's topography 
 and interfaces. 
 The value of <i>SchedulerType</i> should be set to "sched/builtin".
-The value of <i>Prolog</i> should be set to a program that will delay 
-execution until the bglblock identified by the MPIRUN_PARTITION environment 
-variable is ready for use. It is recommended that you construct a script 
+The value of <i>Prolog</i> should be set to the full pathname of a program that 
+will delay execution until the bglblock identified by the MPIRUN_PARTITION 
+environment variable is ready for use. It is recommended that you construct a script 
 that serves this function and calls the supplied program <i>sbin/slurm_prolog</i>.
-The value of <i>Epilog</i> should be set to a program that will wait
-until the bglblock identified by the MPIRUN_PARTITION environment
-variable has been freed. It is recommended that you construct a script
+The value of <i>Epilog</i> should be set to the full pathname of a program that 
+will wait until the bglblock identified by the MPIRUN_PARTITION environment
+variable is no longer usable by this job. It is recommended that you construct a script
 that serves this function and calls the supplied program <i>sbin/slurm_epilog</i>.
 The prolog and epilog programs are used to insure proper synchronization 
-between the slurmctld daemon, the user job, and MMCS.</p>
+between the slurmctld daemon, the user job, and MMCS.
+A multitude of other functions may also be placed into the prolog and 
+epilog as desired (e.g. enabling/disabling user logins, puring file systmes, 
+etc.).  Sample prolog and epilog scripts follow. </p>
+
+<pre>
+#!/bin/bash
+# Sample Blue Gene Prolog script
+#
+# Wait for bglblock to be ready for this job's use
+/usr/sbin/slurm_prolog
+
+
+#!/bin/bash
+# Sample Blue Gene Epilog script
+#
+# Cancel job to start the termination process for this job
+# and release the bglblock
+/usr/bin/scancel $SLURM_JOBID
+#
+# Wait for bglblock to be released from this job's use
+/usr/sbin/slurm_epilog
+</pre>
 
 <p>Since jobs with different geometries or other characteristics do not interfere 
 with each other's scheduling, backfill scheduling is not presently meaningful.
@@ -220,7 +248,7 @@ Jobs could still be queued in a partition that is configured in a DOWN
 state and scheduled to execute when changed to an UP state. 
 Nodes can also be moved between slurm partitions either by changing 
 the slurm.conf file and restarting the slurmctld daemon or by using 
-the scontrol command. </p>
+the scontrol reconfig command. </p>
 
 <p>SLURM node and partition descriptions should make use of the 
 <a href="#naming">naming</a> conventions described above. For example,
@@ -239,7 +267,9 @@ Be advised that the one slurmd supporting all nodes is unable to manage a
 large number of job steps, so this ability should be used only to verify normal 
 SLURM operation. 
 If large numbers of job steps are initiated by slurmd, expect the daemon to 
-fail due to lack of memory. </p>
+fail due to lack of memory or other resources. 
+It is best to minimize other work on the front end node executing slurmd
+so as to maximize its performance and minimize other risk factors.</p>
 
 <p>Presently the system administrator must explicitly define each of the 
 Blue Gene partitions (or bglblocks) available to execute jobs. 
@@ -253,7 +283,7 @@ bglblock.
 In addition to the normal <i>slurm.conf</i> file, a new 
 <i>bluegene.conf</i> configuration file is required with this information.
 Put <i>bluegene.conf</i> into the SLURM configuration directory with
-<i>slurm.conf</i>. 
+<i>slurm.conf</i>.
 A sample file is installed in <i>bluegene.conf.example</i>. 
 System administrators should use the smap tool to build appropriate 
 configuration file for static partitioning. 
@@ -263,7 +293,57 @@ See the smap man page for more information.
 Note that in addition to the bglblocks defined in blugene.conf, an 
 additional block containing all resources is created. 
 Make use of the SLURM partition mechanism to control access to these 
-bglblocks.</p>
+bglblocks. A sample <i>bluegene.conf</i> file is shown below.
+<pre>
+#
+# Global specifications for Blue Gene system
+#
+# BlrtsImage:     BlrtsImage used for creation of all bglblocks.
+# LinuxImage:     LinuxImage used for creation of all bglblocks.
+# MloaderImage:   MloaderImage used for creation of all bglblocks.
+# RamDiskImage:   RamDiskImage used for creation of all bglblocks.
+# Numpsets:       The Numpsets used for creation of all bglblocks 
+#                 equals this value multiplied by the number of 
+#                 base partitions in the bglblock.
+#
+# BridgeAPILogFile : Pathname of file in which to write the BGL 
+#                    Bridge API logs.
+# BridgeAPIVerbose:  How verbose the BGL Bridge API logs should be
+#                    0: Log only error and warning messages
+#                    1: Log level 0 and information messasges
+#                    2: Log level 1 and basic debug messages
+#                    3: Log level 2 and more debug message
+#                    4: Log all messages
+# 
+# NOTE: The bgl_serial value is set at configuration time using the 
+#       "--with-bgl-serial=" option. Its default value is "BGL".
+#
+BlrtsImage=/bgl/BlueLight/ppcfloor/bglsys/bin/rts_hw.rts
+LinuxImage=/bgl/BlueLight/ppcfloor/bglsys/bin/zImage.elf
+MloaderImage=/bgl/BlueLight/ppcfloor/bglsys/bin/mmcs-mloader.rts
+RamDiskImage=/bgl/BlueLight/ppcfloor/bglsys/bin/ramdisk.elf
+Numpsets=8
+#
+BridgeAPILogFile=/var/log/slurm/bridgeapi.log
+BridgeAPIVerbose=0
+
+#
+# Define the static partitions (bglblocks)
+#
+# Nodes: The base partitions (midplanes) in the bglblock using XYZ coordinates
+# Type:  Connection type "mesh" or "torus", default is "torus"
+# 
+# NOTE: A bglblock is implicitly created containing all resources on the system
+# NOTE: All Nodes defined here must also be defined in the slurm.conf file
+#
+
+# volume = 1x1x1 = 1
+Nodes=bgl[000x000]
+Nodes=bgl[001x001]
+
+# volume = 1x1x2 = 2
+# Nodes=bgl[000x001]   Full-system bglblock, implicitly created 
+</pre></p>
 
 <p>Two other changes are required to support SLURM interactions with 
 the DB2 database.
@@ -305,7 +385,31 @@ ready state at the same time).
 When this logic became available at LLNL, approximately 85 percent of 
 bglblock boots were eliminated and the overhead of job startup went
 from about 24% to about 6% of total job time.
-</p>
+Note that bglblocks will remain in a ready (booted) state when 
+the SLURM daemons are stopped. 
+This permits SLURM daemon restarts without loss of running jobs 
+or rebooting of bglblocks.  </p>
+
+<p>Be aware that SLURM will issue multiple bglblock boot requests as 
+needed (e.g. when the boot fails). 
+If the bglblock boot requests repeatedly fail, SLURM will configure 
+the failing nodes to a DRAINED state so as to avoid continuing 
+repeated reboots and the likely failure of user jobs. 
+A system administrator should address the problem before returning 
+the nodes to service.</p>
+
+<h4>Debugging</h4>
+
+<p>All of the testing and debugging guidance provided in 
+<a href="quickstart_admin.html"> Quick Start Administrator Guide</a>
+apply to Blue Gene systems.
+One can start the <b>slurmctld</b> and <b>slurmd</b> in the foreground 
+with extensive debugging to establish basic functionality. 
+Once runnning in production, the configured <b>SlurmctldLog</b> and 
+<b>SlurmdLog</b> files will provide historical system information.
+On Blue Gene systems, there is also a <b>BridgeAPILogFile</b> defined 
+in <b>bluegene.conf</b> which can be configured to contain detailed 
+information about every Bridge API call issued.</p>
 
 <p class="footer"><a href="#top">top</a></p></td>
 
@@ -314,7 +418,7 @@ from about 24% to about 6% of total job time.
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-209488<br>
-Last modified 16 May 2005</p></td>
+Last modified 18 May 2005</p></td>
 </tr>
 </table>
 </td>
