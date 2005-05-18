@@ -112,9 +112,9 @@ static void _pre_allocate(bgl_record_t *bgl_record)
 			&bgl_record->conn_type)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionConnection)", bgl_err_str(rc));
 
-	if ((rc = rm_set_data(bgl_record->bgl_part, RM_PartitionMode, 
-			&bgl_record->node_use)) != STATUS_OK)
-		error("rm_set_data(RM_PartitionMode)", bgl_err_str(rc));
+	/* if ((rc = rm_set_data(bgl_record->bgl_part, RM_PartitionMode,  */
+/* 			&bgl_record->node_use)) != STATUS_OK) */
+/* 		error("rm_set_data(RM_PartitionMode)", bgl_err_str(rc)); */
 
 	if ((rc = rm_set_data(bgl_record->bgl_part, RM_PartitionPsetsPerBP, 
 			&numpsets)) != STATUS_OK)
