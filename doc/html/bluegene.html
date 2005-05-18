@@ -419,6 +419,12 @@ On Blue Gene systems, there is also a <b>BridgeAPILogFile</b> defined
 in <b>bluegene.conf</b> which can be configured to contain detailed 
 information about every Bridge API call issued.</p>
 
+<p>Note that slurmcltld log messages of the sort 
+<i>Nodes bgl[000x133] not responding</i> are indicative of the slurmd 
+daemon serving as a front-end to those nodes is not responding (on 
+non-Blue Gene systems, the slurmd actaully does run on the compute 
+nodes, so the message is more meaningful there). </p>
+
 <p class="footer"><a href="#top">top</a></p></td>
 
 </tr>
