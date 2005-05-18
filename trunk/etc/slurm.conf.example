@@ -145,7 +145,7 @@
 #
 # o Define a scheduler.
 #
-# "SchedulerType"	 : the type of scheduler.
+# "SchedulerType"	 : the type of scheduler. Orders pending jobs.
 #	"sched/builtin"	 : the default, SLURM's built-in FIFO scheduler.
 #	"sched/backfill" : FIFO scheduling with backfill.
 #	"sched/hold"     : hold all new jobs if "/etc/slurm.hold" exists, 
@@ -175,11 +175,23 @@
 
 
 #
-# o Define the job completion logging mechanism to be used
+# "SelectType"			: node selection logic for scheduling.
+#	"select/bluegene"	: the default on BlueGene systems, aware of
+#				  system topology, manages bglblocks, etc.
+#	"select/linear"		: the default on non-BlueGene systems,
+#				  no topology awareness, oriented toward
+#				  allocating nodes to jobs rather than
+#				  resources within a node (e.g. CPUs)
 #
-# "jobcomp/none"    : no job logging, the default
-# "jobcomp/filetxt" : log job record to a text file
-# "jobcomp/script"  : execute an arbitrary script
+# SelectType=select/linear
+
+
+#
+# "JobCompType"			:  Define the job completion logging
+#				   mechanism to be used
+#	"jobcomp/none"		: no job logging, the default
+#	"jobcomp/filetxt"	: log job record to a text file
+#	"jobcomp/script"	: execute an arbitrary script
 #
 # JobCompType=jobcomp/filetxt
 
