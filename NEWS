@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.5.0-pre6
+=============================
+ -- Load bluegene.conf and federation.conf based upon SLURM_CONF env 
+    var (if set).
+
 * Changes in SLURM 0.5.0-pre5
 =============================
  -- Modify slurmctld node hashing function to reduce collisions.
