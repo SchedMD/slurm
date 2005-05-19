@@ -20,8 +20,6 @@ AC_DEFUN([X_AC_FEDERATION],
 [
    ntbl_default_dirs="/usr/lib"
    for ntbl_dir in $ntbl_default_dirs; do
-      echo -n "checking for libntbl.a in $ntbl_dir... "
-
       # skip dirs that don't exist
       if test ! -z "$ntbl_dir" -a ! -d "$ntbl_dir" ; then
          continue;
@@ -31,11 +29,11 @@ AC_DEFUN([X_AC_FEDERATION],
       if test -f "$ntbl_dir/libntbl.a"; then
          ac_have_federation="yes"
          FEDERATION_LDFLAGS="$ntbl_dir/libntbl.a -lntbl"
-         echo "yes"
+         echo "checking for libntbl.a in $ntbl_dir... yes"
          break;
       fi
 
-      echo "no"
+      echo "checking for libntbl.a in $ntbl_dir... no"
    done
 
    if test "x$ac_have_federation" != "xyes" ; then
