@@ -290,16 +290,23 @@ configuration file for static partitioning.
 Note that <i>smap -Dc</i> can be run without the SLURM daemons 
 active to establish the initial configuration.
 Note that the defined bglblocks may not overlap (except for the 
-full-system bglblock, which is implicitly created). 
+full-system bglblock, which is implicitly created).
 See the smap man page for more information.
 You must insure that the nodes defined in <i>bluegene.conf</i> are 
 consistent with those defined in <i>slurm.conf</i>.
 Note that the Image and Numpsets values defined in <i>bluegene.conf</i>
-are used only when SLURM creates bglblocks. 
+are used only when SLURM creates bglblocks.
 If previously defined bglblocks are used by SLURM, their configurations 
 are not altered.
+If you which to modify the Image and Numpsets values for existing
+bglblocks, either modify them manually or destroy the bglblocks
+and let SLURM recreate them. 
 Note that in addition to the bglblocks defined in blugene.conf, an 
-additional block containing all resources is created. 
+additional bglblock is created containing all resources defined 
+all of the other defined bglblocks. 
+If you modify the bglblocks, it is recommended that you restart 
+both slurmctld and slurmd without preserving state 
+(<i>/etc/init.d/slurm startclean</i>).
 Note that SLURM wiring decisions are based upon the link-cards 
 being interconnected in a specific fashion. 
 If your BlueGene system is wired in an unconventional fashion, 
