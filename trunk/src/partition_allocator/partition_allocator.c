@@ -1545,14 +1545,16 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 	start = pa_node[0]->coord;
 	end = pa_node[count-1]->coord;	
 #ifdef HAVE_BGL
-	sprintf(name, "%d%d%dx%d%d%d",start[X],start[Y],start[Z],end[X],end[Y],end[Z]);
+	sprintf(name, "%d%d%dx%d%d%d",start[X],start[Y],start[Z],
+		end[X],end[Y],end[Z]);
 #else
 	sprintf(name, "%d-%d", start[X], end[X]);
 #endif
 	for(i=0;i<count;i++) {
 		if(!pa_node[i]->used) {
 			if(size!=1) 
-				_configure_dims(pa_node[i]->coord, start, end, conn_type);
+				_configure_dims(pa_node[i]->coord, 
+						start, end, conn_type);
 				
 			pa_node[i]->used=1;
 			pa_node[i]->conn_type=conn_type;
@@ -1933,10 +1935,10 @@ int main(int argc, char** argv)
 	
 
 	results = list_create(NULL);
-	request->geometry[0] = 4;
+	request->geometry[0] = 2;
 	request->geometry[1] = 1;
 	request->geometry[2] = 1;
-	request->size = 4;
+	request->size = 2;
 	request->conn_type = TORUS;
 	new_pa_request(request);
 	print_pa_request(request);
@@ -1972,10 +1974,27 @@ int main(int argc, char** argv)
 						&pa_system_ptr->
 						grid[x][y][z].axis_switch[dim];
 					for(j=0;j<6;j++)
-						info("\t%d -> %d -> %d Used = %d",
-						       j, wire->int_wire[j].port_tar,
-						       wire->ext_wire[wire->int_wire[j].port_tar].port_tar,
-						       wire->int_wire[j].used);
+						info("\t%d -> %d -> %d%d%d %d "
+						     "Used = %d",
+						     j, wire->int_wire[j].
+						     port_tar,
+						     wire->ext_wire[
+							     wire->int_wire[j].
+							     port_tar].
+						     node_tar[X],
+						     wire->ext_wire[
+							     wire->int_wire[j].
+							     port_tar].
+						     node_tar[Y],
+						     wire->ext_wire[
+							     wire->int_wire[j].
+							     port_tar].
+						     node_tar[Z],
+						     wire->ext_wire[
+							     wire->int_wire[j].
+							     port_tar].
+						     port_tar,
+						     wire->int_wire[j].used);
 				}
 			}
 		}
