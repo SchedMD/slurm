@@ -4,6 +4,8 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 0.5.0-pre5
 =============================
  -- Modify slurmctld node hashing function to reduce collisions.
+ -- Treat bglblock vanishing as fatal error for job, prolog and epilog 
+    exit immediately.
 
 * Changes in SLURM 0.5.0-pre4
 =============================

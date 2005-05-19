@@ -77,26 +77,21 @@ extern int part_ready(struct job_record *job_ptr)
 		bgl_record = find_bgl_record(part_id);
 		
 		if(bgl_record) {
-			if (rc != -1) {
-				if((bgl_record->user_uid == job_ptr->user_id)
-				   && (bgl_record->state 
-				       == RM_PARTITION_READY)) {
-					rc = 1;
-				}
-				else if (bgl_record->user_uid 
-					 != job_ptr->user_id)
-					rc = 0;
-				else
-					rc = -1;
-			} 
+			if ((bgl_record->user_uid == job_ptr->user_id)
+			 && (bgl_record->state == RM_PARTITION_READY)) {
+				rc = 1;
+			} else if (bgl_record->user_uid != job_ptr->user_id)
+				rc = 0;
+			else
+				rc = READY_JOB_ERROR;	/* try again */
 		} else {
 			error("part_ready: partition %s not in bgl_list.",
 			      part_id);
-			rc = -1;
+			rc = READY_JOB_FATAL;	/* fatal error */
 		}
 		xfree(part_id);
 	} else
-		rc = -1;
+		rc = READY_JOB_ERROR;
 #endif
 	return rc;
 }				

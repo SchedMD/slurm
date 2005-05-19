@@ -413,7 +413,11 @@ extern int slurm_job_node_ready(uint32_t job_id)
 		rc = ((return_code_msg_t *) resp.data)->return_code;
 		slurm_free_return_code_msg(resp.data);
 	} else if (resp.msg_type == RESPONSE_SLURM_RC) {
-		rc = READY_JOB_ERROR;
+		if (((return_code_msg_t *) resp.data)->return_code ==
+				ESLURM_INVALID_PARTITION_NAME)
+			rc = READY_JOB_FATAL;
+		else
+			rc = READY_JOB_ERROR;
 		slurm_free_return_code_msg(resp.data);
 	} else
 		rc = READY_JOB_ERROR;

@@ -1,9 +1,9 @@
 /*****************************************************************************\
- * slurm_ prolog.c - Wait until the specified partition is ready and owned by 
+ *  slurm_ prolog.c - Wait until the specified partition is ready and owned by 
  *	this user. This is executed via SLURM to synchronize the user's job 
  *	execution with slurmctld configuration of partitions.
  *
- * $Id$
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -118,7 +118,9 @@ static int _wait_part_ready(uint32_t job_id)
 		}
 
 		rc = slurm_job_node_ready(job_id);
-		if (rc == -1)				/* error */
+		if (rc == READY_JOB_FATAL)
+			break;				/* fatal error */
+		if (rc == READY_JOB_ERROR)		/* error */
 			continue;			/* retry */
 		if ((rc & READY_JOB_STATE) == 0)	/* job killed */
 			break;

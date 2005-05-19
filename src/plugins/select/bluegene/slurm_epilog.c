@@ -103,7 +103,9 @@ static void _wait_part_not_ready(uint32_t job_id)
 		}
 
 		rc = slurm_job_node_ready(job_id);
-		if (rc == -1)				/* error */
+		if (rc == READY_JOB_FATAL)
+			break;				/* fatal error */
+		if (rc == READY_JOB_ERROR)		/* error */
 			continue;			/* retry */
 		if ((rc & READY_NODE_STATE) == 0) {
 			is_ready = 0;
