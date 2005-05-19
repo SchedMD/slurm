@@ -350,7 +350,8 @@ extern int select_g_job_begin(struct job_record *job_ptr)
 /*
  * determine if job is ready to execute per the node select plugin
  * IN job_ptr - pointer to job being tested
- * RET -1 on error, 1 if ready to execute, 0 otherwise
+ * RET: -2 fatal error, -1 try again, 1 if ready to execute, 
+ *	0 not ready to execute
  */
 extern int select_g_job_ready(struct job_record *job_ptr)
 {
