@@ -182,8 +182,10 @@ int main(int argc, char *argv[])
 
 	if ((slurmctld_conf.slurm_user_id) && 
 	    (slurmctld_conf.slurm_user_id != getuid()) &&
-	    (setuid(slurmctld_conf.slurm_user_id)))
-		fatal("setuid(%d): %m", slurmctld_conf.slurm_user_id);
+	    (setuid(slurmctld_conf.slurm_user_id))) {
+		fatal("Can not set uid to SlurmUser(%d): %m", 
+			slurmctld_conf.slurm_user_id);
+	}
 
 #ifndef NDEBUG
 #  ifdef PR_SET_DUMPABLE
