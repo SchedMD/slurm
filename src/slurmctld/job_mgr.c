@@ -3625,7 +3625,7 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 	if (rc == READY_JOB_FATAL)
 		return ESLURM_INVALID_PARTITION_NAME;
 	if (rc == READY_JOB_ERROR)
-		return SLURM_ERROR;
+		return EAGAIN;
 
 	if (rc)
 		rc = READY_NODE_STATE;
