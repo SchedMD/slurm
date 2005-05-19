@@ -16,6 +16,7 @@ INCLUDES = -I$(top_srcdir) $(BGL_INCLUDES)
 # 	$(top_builddir)/src/api/libslurm.la
 
 # partition_allocator_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS) $(BGL_LDFLAGS)
+
 # CPPFLAGS = -DBUILD_EXE 
 
 # making a .la
