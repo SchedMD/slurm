@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Modify slurmctld node hashing function to reduce collisions.
  -- Treat bglblock vanishing as fatal error for job, prolog and epilog 
     exit immediately.
+ -- bug fix for following multiple X-dim partitions
 
 * Changes in SLURM 0.5.0-pre4
 =============================
