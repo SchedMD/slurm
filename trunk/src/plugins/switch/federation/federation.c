@@ -65,7 +65,7 @@
 #define ZERO 48
 #define BUFSIZE 4096
 
-char* fed_conf = FEDERATION_CONFIG_FILE;
+char* fed_conf = NULL;
 
 /*
  * Data structures specific to Federation 
@@ -398,6 +398,28 @@ static int _set_up_adapter(fed_adapter_t *fed_adapter, char *adapter_name)
 	return SLURM_SUCCESS;
 }
 
+static char *_get_fed_conf(void)
+{
+	char *val = getenv("SLURM_CONF");
+	char *rc;
+	int i;
+
+	if (!val)
+		return xstrdup(FEDERATION_CONFIG_FILE);
+
+	/* Replace file name on end of path */
+	i = strlen(val) - strlen("slurm.conf") + strlen("federation.conf") + 1;
+	rc = xmalloc(i);
+	strcpy(rc, val);
+	val = strrchr(rc, (int)'/');
+	if (val)	/* absolute path */
+		val++;
+	else		/* not absolute path */
+		val = rc;
+	strcpy(val, "federation.conf");
+	return rc;
+}
+
 static int _parse_fed_file(hostlist_t *adapter_list)
 {
 	FILE *fed_spec_file;	/* pointer to input data file */
@@ -409,7 +431,7 @@ static int _parse_fed_file(hostlist_t *adapter_list)
 
 	debug("Reading the federation.conf file");
 	if (!fed_conf)
-		fatal("federation.conf file not defined");
+		fed_conf = _get_fed_conf();
 	fed_spec_file = fopen(fed_conf, "r");
 	if (fed_spec_file == NULL)
 		fatal("_get_adapters error opening file %s, %m",
@@ -423,6 +445,7 @@ static int _parse_fed_file(hostlist_t *adapter_list)
 			error("_get_adapters line %d, of input file %s "
 			      "too long", line_num, fed_conf);
 			fclose(fed_spec_file);
+			xfree(fed_conf);
 			return E2BIG;
 		}
 
@@ -444,6 +467,7 @@ static int _parse_fed_file(hostlist_t *adapter_list)
 		report_leftover(in_line, line_num);
 	}
 	fclose(fed_spec_file);
+	xfree(fed_conf);
 
 	return SLURM_SUCCESS;
 }

@@ -36,7 +36,7 @@
 
 #define _DEBUG 0
 
-char* bgl_conf = BLUEGENE_CONFIG_FILE;
+char* bgl_conf = NULL;
 
 /* Global variables */
 rm_BGL_t *bgl;
@@ -670,7 +670,7 @@ extern int create_static_partitions(List part_list)
 #endif
 	
 	/* Here we are adding a partition that in for the entire machine 
-	   just incase it isn't in the bluegene.conf file.
+	   just in case it isn't in the bluegene.conf file.
 	*/
 	
 	reset_pa_system();
@@ -1173,6 +1173,28 @@ static int _delete_old_partitions(void)
 	return SLURM_SUCCESS;
 }
 
+static char *_get_bgl_conf(void)
+{
+	char *val = getenv("SLURM_CONF");
+	char *rc;
+	int i;
+
+	if (!val)
+		return xstrdup(BLUEGENE_CONFIG_FILE);
+
+	/* Replace file name on end of path */
+	i = strlen(val) - strlen("slurm.conf") + strlen("bluegene.conf") + 1;
+	rc = xmalloc(i);
+	strcpy(rc, val);
+	val = strrchr(rc, (int)'/');
+	if (val)	/* absolute path */
+		val++;
+	else		/* not absolute path */
+		val = rc;
+	strcpy(val, "bluegene.conf");
+	return rc;
+}
+
 /*
  * Read and process the bluegene.conf configuration file so to interpret what
  * partitions are static/dynamic, torus/mesh, etc.
@@ -1190,7 +1212,7 @@ extern int read_bgl_conf(void)
 
 	/* check if config file has changed */
 	if (!bgl_conf)
-		fatal("bluegene.conf file not defined");
+		bgl_conf = _get_bgl_conf();
 	if (stat(bgl_conf, &config_stat) < 0)
 		fatal("can't stat bluegene.conf file %s: %m", bgl_conf);
 	if (last_config_update) {
@@ -1222,6 +1244,7 @@ extern int read_bgl_conf(void)
 			error("_read_bgl_config line %d, of input file %s "
 			      "too long", line_num, bgl_conf);
 			fclose(bgl_spec_file);
+			xfree(bgl_conf);
 			return E2BIG;
 		}
 
@@ -1251,6 +1274,7 @@ extern int read_bgl_conf(void)
 		report_leftover(in_line, line_num);
 	}
 	fclose(bgl_spec_file);
+	xfree(bgl_conf);
 		
 	if (!bluegene_blrts)
 		fatal("BlrtsImage not configured in bluegene.conf");
