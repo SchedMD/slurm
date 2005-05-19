@@ -416,7 +416,7 @@ extern int slurm_job_node_ready(uint32_t job_id)
 		if (((return_code_msg_t *) resp.data)->return_code ==
 				ESLURM_INVALID_PARTITION_NAME)
 			rc = READY_JOB_FATAL;
-		else
+		else	/* EAGAIN */
 			rc = READY_JOB_ERROR;
 		slurm_free_return_code_msg(resp.data);
 	} else
