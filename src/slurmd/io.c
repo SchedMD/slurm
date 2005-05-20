@@ -668,8 +668,30 @@ _open_stdin_file(slurmd_job_t *job, task_info_t *t, srun_info_t *srun)
 	io_obj_t *obj   = NULL;
 	int       flags = O_RDONLY;
 	char     *fname = fname_create(job, srun->ifname, t->gtid);
-	
-	if ((fd = _open_task_file(fname, flags)) > 0) {
+
+        if (!strcmp(fname, "/dev/null")) {
+		/* AIX returns POLLERR when a file descriptor for /dev/null is
+		 * polled, so we bypass the normal eio handling of stdin, and
+		 * instead connect the task's stdin directly to /dev/null.
+		 *
+		 * Without eio the pin pipe is no longer useful so we close
+		 * both ends.  We reuse pin[0] to pass the file descriptor for
+		 * /dev/null to io_prepare_child.
+		 */
+		close(t->pin[0]);
+		close(t->pin[1]);
+		/* io_prepare_child will do close(t->pin[1]), so set it to a
+		 * number unlikely to conflict with new file descriptors.
+		 */
+		t->pin[1] = -1;
+		if ((fd = open("/dev/null", flags)) < 0) {
+			error("Unable to open /dev/null: %s",
+			      slurm_strerror(errno));
+			return -1;
+		}
+		debug("opened /dev/null for direct stdin use fd %d", fd);
+		t->pin[0] = fd;
+        } else if ((fd = _open_task_file(fname, flags)) > 0) {
 		debug("opened `%s' for %s fd %d", fname, "stdin", fd);
 		obj = _io_obj(job, t, fd, CLIENT_STDIN); 
 		_io_client_attach(obj, NULL, t->in, job->objs);
@@ -1459,7 +1481,7 @@ _task_error(io_obj_t *obj, List objs)
 	xassert(t->magic == IO_MAGIC);
 
 	if (getsockopt(obj->fd, SOL_SOCKET, SO_ERROR, &err, &size) < 0)
-		error ("getsockopt: %m");
+		error ("_task_error getsockopt: %m");
 	else
 		_update_error_state(t, E_POLL, err);
 	_obj_close(obj, objs);
@@ -1557,7 +1579,7 @@ _client_error(io_obj_t *obj, List objs)
 	xassert(io->magic == IO_MAGIC);
 
 	if (getsockopt(obj->fd, SOL_SOCKET, SO_ERROR, &err, &size) < 0)
-		error ("getsockopt: %m");
+		error ("_client_error getsockopt: %m");
 	else if (err != ECONNRESET) /* Do not log connection resets */
 		_update_error_state(io, E_POLL, err);
 
