@@ -30,13 +30,16 @@
 #define MAX_POLL_RETRIES    110
 #define POLL_INTERVAL        3
 
+/* Globals */
+
+char *bgl_part_id = NULL;
+int all_parts = 0;
+
 /************
  * Functions *
  ************/
 #ifdef HAVE_BGL_FILES
 
-char *bgl_part_id = NULL;
-int all_parts = 0;
 	
 static int _free_partition(char *bgl_part_id);
 static int _update_bgl_record_state(char *bgl_part_id);
