@@ -94,6 +94,7 @@ static pthread_mutex_t fork_mutex     = PTHREAD_MUTEX_INITIALIZER;
  */
 static sig_atomic_t _shutdown = 0;
 static sig_atomic_t _reconfig = 0;
+static pthread_t msg_pthread = (pthread_t) 0;
 
 static void      _term_handler(int);
 static void      _hup_handler(int);
@@ -232,6 +233,7 @@ _msg_engine()
 {
 	slurm_fd sock;
 
+	msg_pthread = pthread_self();
 	while (!_shutdown) {
 		slurm_addr *cli = xmalloc (sizeof (*cli));
 		if ((sock = slurm_accept_msg_conn(conf->lfd, cli)) >= 0) {
@@ -821,8 +823,11 @@ int save_cred_state(slurm_cred_ctx_t ctx)
 static void
 _term_handler(int signum)
 {
-	if (signum == SIGTERM || signum == SIGINT) 
+	if (signum == SIGTERM || signum == SIGINT) { 
 		_shutdown = 1;
+		if (msg_pthread && (pthread_self() != msg_pthread))
+			pthread_kill(msg_pthread, SIGTERM);
+	}
 }
 
 static void 
