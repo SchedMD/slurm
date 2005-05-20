@@ -225,6 +225,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc etc/bluegene.conf.example
 %{_sbindir}/slurm_epilog
 %{_sbindir}/slurm_prolog
+%{_sbindir}/sfree
 %{_libdir}/slurm/select_bluegene.so
 %config /etc/slurm/bluegene.conf.example
 #############################################################################
