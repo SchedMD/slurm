@@ -50,6 +50,7 @@
 #include "src/srun/fname.h"
 #include "src/srun/signals.h"
 #include "src/srun/attach.h"
+#include "src/srun/io.h"
 
 
 /*
