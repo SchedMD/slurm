@@ -107,6 +107,7 @@ typedef struct srun_job {
 	slurm_addr *jaddr;	/* job control info ports 	  */
 
 	pthread_t ioid;		/* stdio thread id 		  */
+	int io_thr_pipe[2];	/* pipe for waking stdio thread   */
 	int niofds;		/* Number of IO fds  		  */
 	int *iofd;		/* stdio listen fds 		  */
 	int *ioport;		/* stdio listen ports 		  */

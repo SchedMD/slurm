@@ -283,7 +283,7 @@ job_force_termination(job_t *job)
 		update_job_state(job, SRUN_JOB_FORCETERM);
 	}
 
-	pthread_kill(job->ioid,  SIGHUP);
+	io_thr_wake(job);
 }
 
 

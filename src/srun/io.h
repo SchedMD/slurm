@@ -35,6 +35,7 @@
 int   io_node_fail(char *nodelist, job_t *job);
 void *io_thr(void *arg);
 int   io_thr_create(job_t *job);
+void  io_thr_wake(job_t *job);
 int   open_streams(job_t *job);
 
 #endif /* !_HAVE_IO_H */

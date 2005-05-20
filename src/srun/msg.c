@@ -208,7 +208,7 @@ static void _node_fail_handler(char *nodelist, job_t *job)
 	info("sending Ctrl-C to remaining tasks");
 	fwd_signal(job, SIGINT);
 	if (job->ioid)
-		pthread_kill(job->ioid,  SIGHUP);
+		io_thr_wake(job);
 }
 
 static bool _job_msg_done(job_t *job)

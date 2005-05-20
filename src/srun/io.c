@@ -168,6 +168,7 @@ _do_output_line(cbuf_t buf, FILE *out, int tasknum)
 	int  len     = 0;
 	int  tot     = 0;
 	char line[4096];
+	int  rc;
 
 	while ((len = cbuf_read_line(buf, line, sizeof(line), 1))) {
 		int n = 0;
@@ -175,15 +176,22 @@ _do_output_line(cbuf_t buf, FILE *out, int tasknum)
 		if (opt.labelio)
 			fprintf(out, "%0*d: ", fmt_width, tasknum);
 
-		if ((n = fprintf(out, "%s", line)) < 0) { 
-			error("Need to rewind %d bytes: %m", len);
+		if ((n = fprintf(out, "%s", line)) < len) { 
+			int rewind = (n < 0) ? len : len-n;
+			error("Rewinding %d of %d bytes: %m", rewind, len);
+			cbuf_rewind(buf, rewind);
+			if (ferror(out))
+				clearerr(out);
 			goto done;
 		} else
 			tot += n;
 	}
-
-    done:
-	fflush(NULL);
+  done:
+	if(fflush(out)) {
+		error ("fflush error: %m");
+		if (ferror(out))
+			clearerr(out);
+	}
 
 	debug3("do_output: [%d %d %d]", tot, cbuf_used(buf), cbuf_size(buf));
 
@@ -242,8 +250,16 @@ static void
 _io_thr_init(job_t *job, struct pollfd *fds) 
 {
 	int i;
+	sigset_t set;
 
 	xassert(job != NULL);
+
+	/* Block SIGHUP because it is interrupting file stream functions
+	 * (fprintf, fflush, etc.) and causing data loss on stdout.
+	 */
+	sigemptyset(&set);
+	sigaddset(&set, SIGHUP);
+ 	pthread_sigmask(SIG_BLOCK, &set, NULL);
 
 	_set_iofds_nonblocking(job);
 
@@ -289,6 +305,12 @@ _setup_pollfds(job_t *job, struct pollfd *fds, fd_info_t *map)
 	int eofcnt = 0;
 	int i;
 	nfds_t nfds = job->niofds; /* already have n ioport fds + stdin */
+
+	/* set up reader for the io thread signalling pipe */
+	if (job->io_thr_pipe[0] >= 0) {
+		_poll_set_rd(fds[nfds], job->io_thr_pipe[0]);
+		nfds++;
+	}
 
 	if ((job->stdinfd >= 0) && stdin_open && _stdin_buffer_space(job)) {
 		_poll_set_rd(fds[nfds], job->stdinfd);
@@ -352,7 +374,7 @@ _io_thr_poll(void *job_arg)
 {
 	int i, rc;
 	job_t *job  = (job_t *) job_arg;
-	int numfds  = (opt.nprocs*2) + job->niofds + 2;
+	int numfds  = (opt.nprocs*2) + job->niofds + 3;
 	nfds_t nfds = 0;
 	struct pollfd fds[numfds];
 	fd_info_t     map[numfds];	/* map fd in pollfd array to fd info */
@@ -392,6 +414,23 @@ _io_thr_poll(void *job_arg)
 			}
 		}
 
+		/* Check for wake-up signal from other srun pthreads */
+		if ((fds[i].fd == job->io_thr_pipe[0])
+		    && (job->io_thr_pipe[0] >=0)
+		    && fds[i].revents) {
+			char c;
+			int n;
+			debug3("I/O thread received wake-up message");
+			n = read(job->io_thr_pipe[0], &c, 1);
+			if (n < 0) {
+				error("Unable to read from io_thr_pipe: %m");
+			} else if (n == 0) {
+				close(job->io_thr_pipe[0]);
+				job->io_thr_pipe[0] = IO_DONE;
+			}
+			++i;
+		}
+
 		if (  (fds[i].fd == job->stdinfd) 
                    && (job->stdinfd >= 0) 
                    && stdin_open 
@@ -399,7 +438,6 @@ _io_thr_poll(void *job_arg)
 			_bcast_stdin(job->stdinfd, job);
 			++i;
 		}
-
 
 		for ( ; i < nfds; i++) {
 			unsigned short revents = fds[i].revents;
@@ -540,6 +578,9 @@ io_thr_create(job_t *job)
 	}
 
 	xsignal(SIGTTIN, SIG_IGN);
+
+	if (pipe(job->io_thr_pipe) < 0)
+		error("io_thr_create: pipe: %m");
 
 	slurm_attr_init(&attr);
 	if ((errno = pthread_create(&job->ioid, &attr, &io_thr, (void *) job)))
@@ -842,6 +883,20 @@ _bcast_stdin(int fd, job_t *job)
 	return;
 }
 
+
+/*
+ * io_thr_wake - Wake the I/O thread if it is blocking in poll().
+ */
+void
+io_thr_wake(job_t *job)
+{
+	char c;
+
+	debug3("Sending wake-up message to the I/O thread.");
+	if (write(job->io_thr_pipe[1], &c, 1) == -1)
+		error("Failed sending wakeup signal to io thread: %m");
+}
+
 /*
  * io_node_fail - Some nodes have failed.  Identify affected I/O streams.
  * Flag them as done and signal the I/O thread.
@@ -867,7 +922,7 @@ io_node_fail(char *nodelist, job_t *job)
 		}
 	}
 
-	pthread_kill(job->ioid,  SIGHUP);
+	io_thr_wake(job);
 	hostlist_destroy(fail_list);
 	return SLURM_SUCCESS;
 }
