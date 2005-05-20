@@ -462,6 +462,7 @@ static int _parse_fed_file(hostlist_t *adapter_list)
 			if (rc == 0)
 				error("Adapter name format is incorrect.");
 			free(adapter_name);
+			adapter_name = NULL;
 		}
 		/* report any leftover strings on input line */
 		report_leftover(in_line, line_num);
