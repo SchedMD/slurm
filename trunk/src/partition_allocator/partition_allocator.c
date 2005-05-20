@@ -882,8 +882,11 @@ extern char *find_bp_rack_mid(char* xyz)
 	ListIterator itr;
 	int number;
 	int coord[PA_SYSTEM_DIMENSIONS];
-
-	number = atoi(&xyz[X]);
+	int len = strlen(xyz);
+	len -= 3;
+	if(len<0)
+		return NULL;
+	number = atoi(&xyz[X]+len);
 	coord[X] = number / 100;
 	coord[Y] = (number % 100) / 10;
 	coord[Z] = (number % 10);
