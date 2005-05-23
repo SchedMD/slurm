@@ -14,6 +14,7 @@ html_DATA = \
 	html/entities.gif \
 	html/faq.html \
 	html/help.html \
+	html/ibm.html \
 	html/jobcompplugins.html \
 	html/lll.gif \
 	html/mail.html \

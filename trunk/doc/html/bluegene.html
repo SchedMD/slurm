@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-209488">
-<meta name="LLNLRandRdate" content="19 May 2005">
+<meta name="LLNLRandRdate" content=" May 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -176,13 +176,19 @@ In particular, the configure script searches for <i>libdb2.so</i> in the
 directories <i>/home/bgdb2cli/sqllib</i> and <i>/u/bgdb2cli/sqllib</i>.
 If your DB2 library file is in a different location, use the configure 
 option <i>--with-db2-dir=PATH</i> to specify the parent directory.
-You will need to configure and build two sets of files for installation. 
+If you have the samem version of the operating system on both the 
+Service Node (SN) and the Front End Nodes (FEN) then you can configure 
+and build one set of files on the SN and install them on both the SN and FEN.
+If you have different versions of the operating system on the SN and FEN
+(as  was the case for some early system installations), then you will need 
+to coconfigure and build two sets of files for installation. 
 One set will be for the Service Node (SN), which has direct access to the BGL Bridge APIs. 
 The second set will be for the Front End Nodes (FEN), whick lack access to the 
 Bridge APIs and interact with using Remote Proceedure Calls to the slurmctld daemon.
 You should see "#define HAVE_BGL 1" and "#define HAVE_FRONT_END 1" in the "config.h" 
 file for both the SN and FEN builds. 
-You should also see "#define HAVE_BGL_FILES 1" in config.h on the SN before making SLURM.</p>
+You should also see "#define HAVE_BGL_FILES 1" in config.h on the SN before 
+building SLURM. </p>
 
 <p>The slurmctld daemon should execute on the system's service node.
 If an optional backup daemon is used, it must be in some location where 
@@ -447,7 +453,7 @@ nodes, so the message is more meaningful there). </p>
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-209488<br>
-Last modified 19 May 2005</p></td>
+Last modified 23 May 2005</p></td>
 </tr>
 </table>
 </td>

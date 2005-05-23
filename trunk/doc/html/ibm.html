@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-209488">
-<meta name="LLNLRandRdate" content="23 May 2004">
+<meta name="LLNLRandRdate" content=" May 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -20,7 +20,7 @@ Department of Energy under Contract W-7405-Eng-48">
 <meta name="Classification"
 content="DOE:DOE Web sites via organizational
 structure:Laboratories and Other Field Facilities">
-<title>Simple Linux Utility for Resource Management:Documentation</title>
+<title>Simple Linux Utility for Resource Management:IBM AIX User and Administrator Guide</title>
 <link href="slurmstyles.css" rel="stylesheet" type="text/css">
 </head>
 
@@ -52,31 +52,62 @@ structure:Laboratories and Other Field Facilities">
 <a href="download.html" class="nav">Download</a><br>
 <a href="quickstart_admin.html" class="nav">Guide</a></p></td>
 <td><img src="spacer.gif" width="10" height="1" alt=""></td>
-<td valign="top"><h2> Documentation</h2>
-<h3>SLURM Users</h3>
-<ul>
-<li><a href="quickstart.html">Quick Start User Guide</a></li>
-<li><a href="http://www.llnl.gov/LCdocs/slurm">SLURM Reference Manual</a></li>
-<li><a href="bluegene.html">Blue Gene User and Administrator Guide</a></li>
-<li><a href="ibm.html">IBM AIX User and Administrator Guide</a></li>
-</ul>
-<h3>SLURM Administrators</h3>
-<ul>
-<li><a href="quickstart_admin.html">Quick Start Administrator Guide</a></li>
-<li><a href="bluegene.html">Blue Gene User and Administrator Guide</a></li>
-<li><a href="ibm.html">IBM AIX User and Administrator Guide</a></li>
-</ul>
-<h3>SLURM Developers</h3>
-<ul>
-<li><a href="programmer_guide.html">Programmer Guide</a></li>
-<li><a href="plugins.html">Plugin Programmer Guide</a></li>
-<li><a href="authplugins.html">Authentication Plugin Programmer Guide</a></li>
-<li><a href="jobcompplugins.html">Job Completion Logging Plugin Programmer Guide</a></li>
-<li><a href="selectplugins.html">Node Selection Plugin Programmer Guide</a></li>
-<li><a href="schedplugins.html">Scheduler Plugin Programmer Guide</a></li>
-<li><a href="switchplugins.html">Switch (Interconnect) Plugin Programmer Guide</a></li>
-<li><a href="maui.html">Maui Scheduler Integration Guide</a></li>
-</ul></td>
+<td valign="top"><h2>IBM AIX User and Administrator Guide</h2>
+
+<h3>Overview</h3>
+
+<p>This document describes the unique features of SLURM on the
+IBM AIX computers with a Federation switch.
+You should be familiar with the SLURM's mode of operation on Linux clusters 
+before studying the relatively few differences in IBM system operation 
+described in this document.</p>
+
+<h3>User Tools</h3>
+
+<p>The normal set of SLURM user tools: srun, scancel, sinfo, smap, squeue and scontrol 
+provide all of the expected services except support for job steps. 
+While the srun command will launch the tasks of a job step on an IBM
+AIX system, it does not support use of the Federation switch or IBM's MPI.
+Job steps should be launched using IBM's poe command. 
+This architecture insures proper operation of all IBM tools.</p>
+
+<p>You will use srun to submit a batch script to SLURM.
+This script should contain one or more invocations of poe to launch 
+the tasks.
+If you want to run a job interactively, just execute poe directly. 
+Poe will recognize that it lacks a SLURM job allocation (the SLURM_JOBID 
+environment variable will be missing) and create the SLURM allocation 
+prior to launching tasks.</p>
+
+<h3>System Administration</h3>
+
+<p>Three unique components are required to use SLURM on an IBM system.
+<ol>
+<li>The Federation switch plugin is required.  
+This component is packaged with the SLURM distrbution.</li>
+<li>There is a process tracking kernel extension required. 
+This is used to insure that all processes associated with a job 
+are tracked.
+SLURM normatlly uses session ID and process group ID on Linux systems,
+but these mechanisms can not prevent user processes from establishing 
+their own session or process group and thus "escape" from SLURM 
+tracking.
+This kernel extension is not packaged with SLURM, but is available 
+upon request.</li>
+<li>The final component is a library that accepts poe library calls 
+and performs actions in SLURM to satisfy these requests, such 
+as launching tasks. 
+This library is based upon IBM Confidential information and is 
+not at this time available for distribution. 
+Interested parties are welcome to pursue the possible distribution 
+of this library with IBM and SLURM developers.</li>
+</ol>
+Until this last issue is resolved, use of SLURM on an IBM AIX system 
+should not be viewed as a supported configuration (at least outside 
+of LLNL, which established a contract with IBM for this purpose).</p>
+
+<p class="footer"><a href="#top">top</a></p></td>
+
 </tr>
 <tr> 
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
