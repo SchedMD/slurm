@@ -99,11 +99,13 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 	int j, rc;
 	int conn_num=0;
 	int port = 0;
+	int temp;
 	
 	itr = list_iterator_create(bgl_switch->conn_list);
 	while((bgl_conn = list_next(itr)) != NULL) {
 		if(bgl_conn->source == bgl_conn->target)
 			continue;
+		
 		for(j=0;j<2;j++) {
 			switch(j) {
 			case 0:
