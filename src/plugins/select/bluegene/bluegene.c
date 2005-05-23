@@ -808,7 +808,7 @@ no_total:
  	exit(0);
 #endif	/* _PRINT_PARTS_AND_EXIT */
 	rc = SLURM_SUCCESS;
-
+	//exit(0);
 	return rc;
 }
 
@@ -1290,12 +1290,12 @@ extern int read_bgl_conf(void)
 		_reopen_bridge_log();	
 	if (!numpsets)
 		info("Warning: Numpsets not configured in bluegene.conf");
-	
+//#if 0	
 	/* Check to see if the configs we have are correct */
 	if (_validate_config_nodes() == SLURM_ERROR) { 
 		_delete_old_partitions();
 	}
-	
+//#endif
 	/* looking for partitions only I created */
 	if (create_static_partitions(NULL) == SLURM_ERROR) {
 		/* error in creating the static partitions, so
