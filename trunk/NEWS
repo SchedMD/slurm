@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     var (if set).
  -- Add doc/html/ibm.html document. Update bluegene.html.
  -- Add sfree to bluegene plugin. 
+ -- Remove geometry[SYSTEM_DIMENSIONS] from opaque node_select data 
+    type if SYSTEM_DIMENSIONS==0 (not ASCI-C compliant).
 
 * Changes in SLURM 0.5.0-pre5
 =============================

@@ -2136,9 +2136,11 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 
 	if (select_g_alloc_jobinfo(&job_ptr->select_jobinfo))
 		return SLURM_ERROR;
+#if SYSTEM_DIMENSION
 	select_g_set_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_GEOMETRY, 
 		job_desc->geometry);
+#endif
 	select_g_set_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_CONN_TYPE, 
 		&job_desc->conn_type);

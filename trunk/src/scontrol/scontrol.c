@@ -1436,6 +1436,7 @@ _update_job (int argc, char *argv[])
 			job_msg.dependency =
 				(uint32_t) strtol(&argv[i][11],
 					(char **) NULL, 10);
+#if SYSTEM_DIMENSION
 		else if (strncasecmp(argv[i], "Geometry=", 9) == 0) {
 			char* token, *delimiter = ",x", *next_ptr;
 			int j, rc = 0;
@@ -1470,6 +1471,7 @@ _update_job (int argc, char *argv[])
 				exit_code = 1;
 			}
 		}
+#endif
 		else if (strncasecmp(argv[i], "Rotate=", 7) == 0) {
 			if (strcasecmp(&argv[i][7], "yes") == 0)
 				job_msg.rotate = 1;
