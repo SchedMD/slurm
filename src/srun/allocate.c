@@ -356,7 +356,6 @@ job_desc_msg_t *
 job_desc_msg_create_from_opts (char *script)
 {
 	extern char **environ;
-	int i;
 	job_desc_msg_t *j = xmalloc(sizeof(*j));
 
 	slurm_init_job_desc_msg(j);
@@ -381,11 +380,13 @@ job_desc_msg_create_from_opts (char *script)
 	if (opt.hold)
 		j->priority     = 0;
 
-	if ((SYSTEM_DIMENSIONS > 0)
-	&&  (opt.geometry[0] > 0)) {
+#if SYSTEM_DIMENSION
+	if (opt.geometry[0] > 0) {
+		int i;
 		for (i=0; i<SYSTEM_DIMENSIONS; i++) 
 			j->geometry[i] = opt.geometry[i];
 	}
+#endif
 
 	if (opt.conn_type > -1)
 		j->conn_type = opt.conn_type;

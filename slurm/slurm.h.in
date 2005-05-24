@@ -303,8 +303,10 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
  * The following parameters are only meaningful on a Blue Gene
  * system at present. Some will be of value on other system.
  */
+#if SYSTEM_DIMENSIONS
 	uint16_t geometry[SYSTEM_DIMENSIONS];	/* node count in various 
 				 * dimensions, e.g. X, Y, and Z */
+#endif
 	uint16_t conn_type;	/* see enum connection_type */
 	uint16_t rotate;	/* permit geometry rotation if set */
 	uint16_t node_use;	/* see enum node_use_type */
