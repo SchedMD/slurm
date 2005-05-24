@@ -200,7 +200,7 @@ char * slurm_strerror PARAMS((int errnum));
 void slurm_seterrno PARAMS((int errnum));
 
 /* get an errno value */
-inline int slurm_get_errno PARAMS((void));
+int slurm_get_errno PARAMS((void));
 
 /* print message: error string for current errno value */
 void slurm_perror PARAMS((char *msg));
