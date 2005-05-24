@@ -99,7 +99,6 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 	int j, rc;
 	int conn_num=0;
 	int port = 0;
-	int temp;
 	
 	itr = list_iterator_create(bgl_switch->conn_list);
 	while((bgl_conn = list_next(itr)) != NULL) {
@@ -200,10 +199,15 @@ static int _lookat_path(bgl_bp_t *bgl_bp, pa_switch_t *curr_switch,
 	
 	conn_itr = list_iterator_create(bgl_switch->conn_list);
 	while((bgl_conn = list_next(conn_itr)) != NULL) {
+		if(port_tar == curr_switch->ext_wire[port_tar].port_tar) {
+			//list_delete(conn_itr);
+			//continue;
+			debug("I found these %d %d",port_tar, curr_switch->ext_wire[port_tar].port_tar);
+		}
 		if(((bgl_conn->source == port_tar)
 		    && (bgl_conn->target == source))
 		   || ((bgl_conn->source == source)
-		   && (bgl_conn->target == port_tar)))
+		       && (bgl_conn->target == port_tar)))
 			break;
 	}
 	list_iterator_destroy(conn_itr);
@@ -230,7 +234,8 @@ static int _lookat_path(bgl_bp_t *bgl_bp, pa_switch_t *curr_switch,
 	/* set source to the node you are on */
 	node_src = curr_switch->ext_wire[0].node_tar;
 
-	debug("trying from %d%d%d %d -> %d%d%d %d",
+	debug("dim %d trying from %d%d%d %d -> %d%d%d %d",
+	      dim,
 	      node_src[X], 
 	      node_src[Y], 
 	      node_src[Z],
