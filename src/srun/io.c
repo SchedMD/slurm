@@ -168,7 +168,6 @@ _do_output_line(cbuf_t buf, FILE *out, int tasknum)
 	int  len     = 0;
 	int  tot     = 0;
 	char line[4096];
-	int  rc;
 
 	while ((len = cbuf_read_line(buf, line, sizeof(line), 1))) {
 		int n = 0;
