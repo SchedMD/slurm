@@ -35,4 +35,16 @@ AC_DEFUN([X_AC_AIX],
    AC_SUBST(SO_LDFLAGS)
    AM_CONDITIONAL(HAVE_AIX, test "x$ac_have_aix" = "xyes")
    AC_SUBST(HAVE_AIX)
+
+   if test "x$ac_have_aix" = "xyes"; then
+      AC_ARG_WITH(proctrack,
+         AC_HELP_STRING([--with-proctrack=PATH],
+                        [Specify path to proctrack sources]),
+         [ PROCTRACKDIR="$withval" ]
+      )
+      if test ! -d "$PROCTRACKDIR" -o ! -f "$PROCTRACKDIR/proctrackext.exp"; then
+         AC_MSG_ERROR([$PROCTRACKDIR/proctrackext.exp is required and does not exit])
+      fi
+      AC_SUBST(PROCTRACKDIR)
+   fi
 ])
