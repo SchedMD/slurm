@@ -306,20 +306,24 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 	slurm_cred_arg_t arg;
 	hostset_t        hset    = NULL;
 	bool             user_ok = _slurm_authorized_user(uid); 
+	int              rc;
 
 	/*
 	 * First call slurm_cred_verify() so that all valid
 	 * credentials are checked
 	 */
-	if ((slurm_cred_verify(conf->vctx, cred, &arg) < 0) && !user_ok)
+	if (((rc = slurm_cred_verify(conf->vctx, cred, &arg)) < 0) && !user_ok)
 		return SLURM_ERROR;
 
 	/*
 	 * If uid is the slurm user id or root, do not bother
 	 * performing validity check of the credential
 	 */
-	if (user_ok)
+	if (user_ok) {
+		if (rc >= 0)
+			xfree(arg.hostlist);
 		return SLURM_SUCCESS;
+	}
 
 	if ((arg.jobid != jobid) || (arg.stepid != stepid)) {
 		error("job credential for %d.%d, expected %d.%d",
