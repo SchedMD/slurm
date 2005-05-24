@@ -143,7 +143,7 @@ install -D -m644 etc/federation.conf.example $RPM_BUILD_ROOT/etc/slurm/federatio
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
 
 # Build file lists for optional plugin packages
-for plugin in auth_munge auth_authd switch_elan; do
+for plugin in auth_munge auth_authd sched_wiki switch_elan; do
    LIST=./${plugin}.files
    touch $LIST
    test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/${plugin}.so &&
@@ -157,6 +157,15 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_federation.so &&
 echo "%doc etc/federation.conf.example"           >> $LIST
 echo "%config /etc/slurm/federation.conf.example" >> $LIST
 
+LIST=./bluegene.files
+touch $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/select_bluegene.so &&
+  echo %{_libdir}/slurm/select_bluegene.so         > $LIST
+echo "%doc etc/bluegene.conf.example"             >> $LIST
+echo "%{_sbindir}/slurm_epilog"                   >> $LIST
+echo "%{_sbindir}/slurm_prolog"                   >> $LIST
+echo "%{_sbindir}/sfree"                          >> $LIST
+echo "%config /etc/slurm/bluegene.conf.example"   >> $LIST
 
 #############################################################################
 
@@ -220,19 +229,12 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 #############################################################################
 
-%files bluegene
+%files -f bluegene.files bluegene
 %defattr(-,root,root)
-%doc etc/bluegene.conf.example
-%{_sbindir}/slurm_epilog
-%{_sbindir}/slurm_prolog
-%{_sbindir}/sfree
-%{_libdir}/slurm/select_bluegene.so
-%config /etc/slurm/bluegene.conf.example
 #############################################################################
 
-%files sched-wiki
+%files -f sched_wiki.files sched-wiki
 %defattr(-,root,root)
-%{_libdir}/slurm/sched_wiki.so
 #############################################################################
 
 %files -f switch_elan.files switch-elan
@@ -275,6 +277,8 @@ fi
 
 
 %changelog
+* Tue May 24 2005 Morris Jette <jette1@llnl.gov>
+- optionally include sched_wiki.so and select_bluegene.so
 * Mon May 02 2005 Danny Auble <da@llnl.gov>
 - added sample federation switch plugin file
 * Mon Apr 11 2005 Morris Jette <jette1@llnl.gov>
