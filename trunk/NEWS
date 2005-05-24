@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Load bluegene.conf and federation.conf based upon SLURM_CONF env 
     var (if set).
  -- Add doc/html/ibm.html document. Update bluegene.html.
+ -- Add sfree to bluegene plugin. 
 
 * Changes in SLURM 0.5.0-pre5
 =============================
