@@ -52,7 +52,7 @@ static void _pre_allocate(bgl_record_t *bgl_record);
 static int _post_allocate(bgl_record_t *bgl_record);
 static int _post_bgl_init_read(void *object, void *arg);
 
-#define MAX_ADD_RETRY 5
+#define MAX_ADD_RETRY 2
 
 #if 0
 /* Vestigial
