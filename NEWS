@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
  -- Add sfree to bluegene plugin. 
  -- Remove geometry[SYSTEM_DIMENSIONS] from opaque node_select data 
     type if SYSTEM_DIMENSIONS==0 (not ASCI-C compliant).
+ -- Modify smap to test for valid libdb2.so before issuing any BGL 
+    Bridge API calls.
  -- Modify spec file for optional inclusion of select_bluegene and 
     sched_wiki plugin libraries.
 
