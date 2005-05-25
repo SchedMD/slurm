@@ -29,16 +29,24 @@
 
 #define MAX_POLL_RETRIES    110
 #define POLL_INTERVAL        3
+#define MAX_PTHREAD_RETRIES  1
 
 /* Globals */
+
 
 char *bgl_part_id = NULL;
 int all_parts = 0;
 
+#ifdef HAVE_BGL_FILES
+
+static int num_part_to_free = 0;
+static int num_part_freed = 0;
+static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+
 /************
  * Functions *
  ************/
-#ifdef HAVE_BGL_FILES
 
 	
 static int _free_partition(char *bgl_part_id);
@@ -46,6 +54,21 @@ static int _update_bgl_record_state(char *bgl_part_id);
 static void _term_jobs_on_part(char *bgl_part_id);
 static char *_bgl_err_str(status_t inx);
 static int _remove_job(db_job_id_t job_id);
+
+/* Free multiple partitions in parallel */
+static void *_mult_free_part(void *args)
+{
+	char *bgl_part_id = (char *) args;
+
+	debug("destroying the partition %s.", bgl_part_id);
+	_free_partition(bgl_part_id);	
+	
+	slurm_mutex_lock(&freed_cnt_mutex);
+	num_part_freed++;
+	slurm_mutex_unlock(&freed_cnt_mutex);
+	
+	return NULL;
+}
 
 int main(int argc, char *argv[])
 {
@@ -55,7 +78,10 @@ int main(int argc, char *argv[])
 	int j, num_parts = 0;
 	rm_partition_t *part_ptr = NULL;
 	int rc;
-
+	pthread_attr_t attr_agent;
+	pthread_t thread_agent;
+	int retries;
+	
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
 	if(!all_parts) {
@@ -67,7 +93,8 @@ int main(int argc, char *argv[])
 	} else {
 		if ((rc = rm_get_partitions_info(part_state, &part_list))
 		    != STATUS_OK) {
-			error("rm_get_partitions_info(): %s", _bgl_err_str(rc));
+			error("rm_get_partitions_info(): %s", 
+			      _bgl_err_str(rc));
 			return -1; 
 		}
 
@@ -113,13 +140,40 @@ int main(int argc, char *argv[])
 			}
 			if(strncmp("RMP", bgl_part_id, 3))
 				continue;
-			_free_partition(bgl_part_id);
+			slurm_attr_init(&attr_agent);
+			if (pthread_attr_setdetachstate(
+				    &attr_agent, 
+				    PTHREAD_CREATE_JOINABLE))
+				error("pthread_attr_setdetach"
+				      "state error %m");
+			
+			retries = 0;
+			while (pthread_create(&thread_agent, 
+					      &attr_agent, 
+					      _mult_free_part, 
+					      (void *)
+					      bgl_part_id)) {
+				error("pthread_create "
+				      "error %m");
+				if (++retries 
+				    > MAX_PTHREAD_RETRIES)
+					fatal("Can't create "
+					      "pthread");
+				/* sleep and retry */
+				usleep(1000);	
+			}
+			num_part_to_free++;
 		}
 		if ((rc = rm_free_partition_list(part_list)) != STATUS_OK) {
 			error("rm_free_partition_list(): %s",
 			      _bgl_err_str(rc));
 		}
 	}
+	while(num_part_to_free != num_part_freed) {
+		info("waiting for all partitions to free...");
+		sleep(1);
+	}
+		
 	return 0;
 }
 
@@ -132,7 +186,7 @@ static int _free_partition(char *bgl_part_id)
 	_term_jobs_on_part(bgl_part_id);
 	while (1) {
 		if((state = _update_bgl_record_state(bgl_part_id))
-		   == SLURM_ERROR)
+		   == -1)
 			break;
 		if (state != RM_PARTITION_FREE 
 		    && state != RM_PARTITION_DEALLOCATING) {
@@ -164,7 +218,7 @@ static int _update_bgl_record_state(char *bgl_part_id)
 	char *name = NULL;
 	rm_partition_list_t *part_list = NULL;
 	int j, rc,  num_parts = 0;
-	rm_partition_state_t state = -1;
+	rm_partition_state_t state = -2;
 	rm_partition_t *part_ptr = NULL;
 	
 	if ((rc = rm_get_partitions_info(part_state, &part_list))
@@ -179,7 +233,7 @@ static int _update_bgl_record_state(char *bgl_part_id)
 		state = -1;
 		num_parts = 0;
 	}
-			
+	
 	for (j=0; j<num_parts; j++) {
 		if (j) {
 			if ((rc = rm_get_data(part_list,
