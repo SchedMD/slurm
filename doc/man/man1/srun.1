@@ -23,30 +23,32 @@ parallel run options
 .TP
 \fB\-n\fR, \fB\-\-ntasks\fR=\fIntasks\fR
 Specify the number of processes to run. Request that \fBsrun\fR
-allocate \fIntasks\fR processes. Specification of the number of 
-processes per node may be achieved with the \fB\-c\fR and \fB\-N\fR
-options. The default is one process per CPU unless \fB\-c\fR 
-explicitly specifies otherwise.
+allocate \fIntasks\fR processes.  The default is one process per
+node, but note that the \fB\-c\fR parameter will change this default.
 .TP
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR=\fIncpus\fR
 Request that \fIncpus\fR be allocated \fBper process\fR. This may be
 useful if the job is multithreaded and requires more than one cpu
 per task for optimal performance. The default is one cpu per process.
+If \fB\-c\fR is specified without \fB\-n\fR as many 
+tasks will be allocated per node as possible while satisfying
+the \fB\-c\fR restriction. (See \fBBUGS\fR below.)
 .TP
-\fB\-N\fR, \fB\-\-nodes\fR=\fInnodes\fR
-Request that \fInnodes\fR nodes be allocated to this job. \fInnodes\fR
-may be either a specific number or a minimum and maximum node count 
-separated by a hyphen (e.g. "\-\-nodes=2\-4"). The partition's node 
+\fB\-N\fR, \fB\-\-nodes\fR=\fIminnodes\fR[\-\fImaxnodes\fR]
+Request that a minimum of \fIminnodes\fR nodes be allocated to this job.
+The scheduler may decide to launch the job on more than \fIminnodes\fR nodes.
+A limit on the maximum node count may be specified with \fImaxnodes\fR
+(e.g. "\-\-nodes=2\-4").  The minimum and maximum node count may be the
+same to specify a specific number of nodes (e.g. "\-\-nodes=2\-2" will ask
+for two and ONLY two nodes).  The partition's node 
 limits supersede those of the job. If a job's node limits are completely 
 outside of the range permitted for its associated partition, the job 
 will be left in a PENDING state. Note that the environment 
 variable \fBSLURM_NNODES\fR will be set to the count of nodes actually 
 allocated to the job. See the \fBENVIRONMENT VARIABLES \fR section 
-for more information. The default
-is to allocate one cpu per process, such that nodes with one cpu will
-run one process, nodes with 2 cpus will be allocated 2 processes, etc.
-The distribution of processes across nodes may be controlled using this
-option along with the \fB\-n\fR and \fB\-c\fR options.
+for more information.  If \fB\-N\fR is not specified, the default
+behaviour is to allocate enough nodes to satisfy the requirements of
+the \fB\-n\fR and \fB\-c\fR options.
 .TP
 \fB\-r\fR, \fB\-\-relative\fR=\fIn\fR
 Run a job step relative to node \fIn\fR of the current allocation. 
@@ -878,12 +880,35 @@ rm $MACHINEFILE
 If the number of processors per node allocated to a job is not evenly 
 divisible by the value of \fBcpus\-per\-node\fR, tasks may be initiated 
 on nodes lacking a sufficient number of processors for the desired parallelism. 
-For example, if \fBcpus\-per\-node\fR is three, \fBntasks\fR is four and 
-the job is allocated three nodes each with four processors. The requisite 
-12 processors have been allocated, but there is no way for the job to 
-initiate four tasks with each of them having exclusive access to three 
-processors on the same node.  The \fBnodes\fR and \fBmincpus\fR options 
-may be helpful in preventing this problem. 
+
+For example, if we are running a job on a cluster comprised of quad-processor
+nodes, and we run the following:
+
+.nf
+> srun -n 4 -c 3 -l hostname
+0: quad0
+1: quad0
+2: quad1
+3: quad2
+.fi
+.PP
+The desired outcome for -c 3 with quad-processor nodes is each process
+running own its own node, but this is not the result.
+\fBsrun\fR assumes that the job requires 3 * 4 = 12 processes, and only requests
+as much from slurmctld.  slurmctld can satisfy the request of 12 processors with only
+three nodes in this example, and that is all that the job receives.  Unfortunatly,
+the -c 3 parameter is not honored.
+.PP
+The \fBnodes\fR and \fBmincpus\fR options may be helpful in preventing this problem.
+For instance to acheive the desired allocation in the above example:
+
+.nf
+> srun -N 4 -n 4 -c 3 --mincpus 3 -l hostname
+0: quad0
+1: quad1
+2: quad2
+3: quad3
+.fi
 
 .SH "SEE ALSO"
 \fBscancel\fR(1), \fBscontrol\fR(1), \fBsqueue\fR(1), \fBslurm.conf\fR(5)
