@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  smap.c - Report overall state the system
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -27,6 +28,8 @@
 
 #include "config.h"
 
+#include <stdio.h>
+#include <dlfcn.h>
 #include <signal.h>
 #include "src/smap/smap.h"
 
@@ -40,6 +43,7 @@ smap_parameters_t params;
 int quiet_flag = 0;
 int line_cnt = 0;
 int max_display;
+bool have_db2 = false;
 		
 /************
  * Functions *
@@ -51,6 +55,20 @@ static int _set_pairs();
 #ifndef HAVE_BGL
 static int _scroll_grid(int dir);
 #endif /* HAVE_BGL */
+
+static void _db2_check(void)
+{
+	void *handle;
+
+	handle = dlopen("libdb2.so", RTLD_LAZY);
+	if (!handle)
+		return;
+
+	if (dlsym(handle, "SQLAllocHandle"))
+		have_db2 = true;
+
+	dlclose(handle);
+}
  
 int main(int argc, char *argv[])
 {
@@ -86,10 +104,18 @@ int main(int argc, char *argv[])
 
 	} else {
 		pa_init(new_node_ptr);
-	}	
+	}
 	
+	_db2_check();
+
 	if(params.partition) {
+			
 #ifdef HAVE_BGL_FILES
+		if (!have_db2) {
+			printf("must be on BGL SN to resolve.\n");
+			goto part_fini;
+		}
+
 		if(!mapset)
 			mapset = set_bp_map();
 		if(params.partition[0] == 'r')
@@ -123,7 +149,7 @@ int main(int argc, char *argv[])
 #else
 		printf("must be on BGL SN to resolve.\n");
 #endif
-		pa_fini();
+part_fini:	pa_fini();
 		exit(0);
 	}
 	if(!params.commandline) {

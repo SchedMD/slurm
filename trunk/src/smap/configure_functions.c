@@ -230,6 +230,11 @@ static int _resolve(char *com)
 		
 	memset(error_string,0,255);		
 #ifdef HAVE_BGL_FILES
+	if (!have_db2) {
+		sprintf(error_string, "Must be on BGL SN to resolve\n"); 
+		goto resolve_error;
+	}
+
 	if(len-i<3) {
 		sprintf(error_string, "Must enter 3 coords to resolve.\n");
 		goto resolve_error;

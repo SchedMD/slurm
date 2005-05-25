@@ -1,6 +1,7 @@
 /*****************************************************************************\
- *  partition_allocator.c
- * 
+ *  partition_allocator.c - Assorted functions for layout of bglblocks, 
+ *	 wiring, mapping for smap, etc.
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -28,6 +29,8 @@
 #  include "config.h"
 #endif
 
+#include <stdio.h>
+#include <dlfcn.h>
 #include <stdlib.h>
 #include <math.h>
 #include "partition_allocator.h"
@@ -46,6 +49,7 @@ int DIM_SIZE[PA_SYSTEM_DIMENSIONS] = {0};
 #endif
 
 bool _initialized = false;
+bool _have_db2 = false;
 
 /* _pa_system is the "current" system that the structures will work
  *  on */
@@ -396,6 +400,27 @@ extern void print_pa_request(pa_request_t* pa_request)
 }
 
 /**
+ * Search for local DB2 library
+ */
+static void _db2_check(void)
+{
+	void *handle;
+
+	handle = dlopen("libdb2.so", RTLD_LAZY);
+	if (!handle) {
+		debug("can not open libdb2.so");
+		return;
+	}
+
+	if (dlsym(handle, "SQLAllocHandle") == NULL)
+		debug("SQLAllocHandle not found in libdb2.so");
+	else
+		_have_db2 = true;
+
+	dlclose(handle);
+}
+
+/**
  * Initialize internal structures by either reading previous partition
  * configurations from a file or by running the graph solver.
  * 
@@ -420,6 +445,7 @@ extern void pa_init(node_info_msg_t *node_info_ptr)
 	if (_initialized){
 		return;
 	}
+	_db2_check();
 
 	best_count=BEST_COUNT_INIT;
 						
@@ -469,7 +495,8 @@ extern void pa_init(node_info_msg_t *node_info_ptr)
         } 
 
 #ifdef HAVE_BGL_FILES
-	if ((DIM_SIZE[X]==0) && (DIM_SIZE[X]==0) && (DIM_SIZE[X]==0)) {
+	if (_have_db2
+	&&  (DIM_SIZE[X]==0) && (DIM_SIZE[X]==0) && (DIM_SIZE[X]==0)) {
 		if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
 			error("rm_set_serial(%s): %d", BGL_SERIAL, rc);
 			return;
@@ -1120,6 +1147,11 @@ extern int set_bp_map(void)
 	rm_location_t bp_loc;
 
 	bp_map_list = list_create(_bp_map_list_del);
+
+	if (!_have_db2) {
+		error("Can't access DB2 library, run from service node");
+		return -1;
+	}
 
 	if (!getenv("DB2INSTANCE") || !getenv("VWSPATH")) {
 		error("Missing DB2INSTANCE or VWSPATH env var."

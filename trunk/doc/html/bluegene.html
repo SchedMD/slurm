@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-209488">
-<meta name="LLNLRandRdate" content=" May 2005">
+<meta name="LLNLRandRdate" content="25 May 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -176,12 +176,27 @@ In particular, the configure script searches for <i>libdb2.so</i> in the
 directories <i>/home/bgdb2cli/sqllib</i> and <i>/u/bgdb2cli/sqllib</i>.
 If your DB2 library file is in a different location, use the configure 
 option <i>--with-db2-dir=PATH</i> to specify the parent directory.
-If you have the samem version of the operating system on both the 
+If you have the same version of the operating system on both the 
 Service Node (SN) and the Front End Nodes (FEN) then you can configure 
 and build one set of files on the SN and install them on both the SN and FEN.
-If you have different versions of the operating system on the SN and FEN
-(as  was the case for some early system installations), then you will need 
-to coconfigure and build two sets of files for installation. 
+Note that if your FENs lack an installed <i>libdb2.so</i>, an smap 
+built on the SN will be unable to execute at all on those nodes (it 
+calls BGL Bridge APIs, that dynamically load <i>libdb2.so</i> completely 
+out of our control).
+You can handle this in two different ways. 
+One option is to build two versions of smap (in the main SLURM RPM), 
+one for the SN and the other for the FENs. 
+The second option is to create a dummy <i>libdb2.so</i> on the FENs 
+(it can just point to libslurm.so) so that smap can be initiated. 
+Smap will discover if <i>libdb2.so</i> is invalid and avoid using 
+any BGL Bridge function calls, which would fail. 
+In either case, all smap functionality will be provided on the FEN 
+except for the ability to map SLURM node names to and from 
+row/rack/midplane data.</p> 
+
+<p>If you have different versions of the operating system on the SN and FEN
+(as was the case for some early system installations), then you will need 
+to configure and build two sets of files for installation. 
 One set will be for the Service Node (SN), which has direct access to the BGL Bridge APIs. 
 The second set will be for the Front End Nodes (FEN), whick lack access to the 
 Bridge APIs and interact with using Remote Proceedure Calls to the slurmctld daemon.
@@ -457,7 +472,7 @@ nodes, so the message is more meaningful there). </p>
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-209488<br>
-Last modified 23 May 2005</p></td>
+Last modified 25 May 2005</p></td>
 </tr>
 </table>
 </td>
