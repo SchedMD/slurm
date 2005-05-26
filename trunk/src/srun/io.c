@@ -387,7 +387,6 @@ _io_thr_poll(void *job_arg)
 	while (!_io_thr_done(job)) {
 
 		nfds = _setup_pollfds(job, fds, map);
-
 		if ((rc = poll(fds, nfds, -1)) <= 0) {
 			switch(errno) {
 				case EINTR:
@@ -414,18 +413,19 @@ _io_thr_poll(void *job_arg)
 		}
 
 		/* Check for wake-up signal from other srun pthreads */
-		if ((fds[i].fd == job->io_thr_pipe[0])
-		    && (job->io_thr_pipe[0] >=0)
-		    && fds[i].revents) {
-			char c;
-			int n;
-			debug3("I/O thread received wake-up message");
-			n = read(job->io_thr_pipe[0], &c, 1);
-			if (n < 0) {
-				error("Unable to read from io_thr_pipe: %m");
-			} else if (n == 0) {
-				close(job->io_thr_pipe[0]);
-				job->io_thr_pipe[0] = IO_DONE;
+		if (fds[i].fd == job->io_thr_pipe[0]) {
+			if ((job->io_thr_pipe[0] >=0)
+			    && fds[i].revents) {
+				char c;
+				int n;
+				debug3("I/O thread received wake-up message");
+				n = read(job->io_thr_pipe[0], &c, 1);
+				if (n < 0) {
+					error("Unable to read from io_thr_pipe: %m");
+				} else if (n == 0) {
+					close(job->io_thr_pipe[0]);
+					job->io_thr_pipe[0] = IO_DONE;
+				}
 			}
 			++i;
 		}
