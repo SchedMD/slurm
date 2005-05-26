@@ -13,7 +13,3 @@ pkglib_LTLIBRARIES = sched_builtin.la
 
 sched_builtin_la_SOURCES = builtin_wrapper.c
 sched_builtin_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-
-if HAVE_AIX
-sched_builtin_la_LIBADD = $(top_builddir)/src/common/libcommon.la
-endif
