@@ -31,7 +31,7 @@ global scancel scontrol sinfo smap squeue srun
 # Specify the slurm install directory.
 # Used to locate binaries, libraries, and header files.
 #
-set slurm_dir   "/usr"
+set slurm_dir   "/g/g0/morrone/local/blue"
 set scancel     "${slurm_dir}/bin/scancel"
 set scontrol    "${slurm_dir}/bin/scontrol"
 set sinfo       "${slurm_dir}/bin/sinfo"
@@ -39,7 +39,7 @@ set smap        "${slurm_dir}/bin/smap"
 set squeue      "${slurm_dir}/bin/squeue"
 set srun        "${slurm_dir}/bin/srun"
 
-set mpicc	"/usr/local/bin/mpicc"
+set mpicc	"/usr/local/bin/mpcc"
 set mpirun	"mpirun"
 set totalviewcli	"/usr/local/bin/totalviewcli"
 
@@ -48,7 +48,7 @@ set totalviewcli	"/usr/local/bin/totalviewcli"
 # Only the shell names (e.g. bin_bash) must be full pathnames
 #
 set bin_awk 	"awk"
-set bin_bash	"/bin/bash"
+set bin_bash	"/usr/local/bin/bash"
 set bin_cat	"cat"
 set bin_cc	"gcc"
 set bin_chmod	"chmod"
@@ -61,7 +61,7 @@ set bin_grep    "grep"
 set bin_hostname "hostname"
 set bin_kill	"kill"
 set bin_make	"make"
-set bin_pkill	"pkill"
+set bin_pkill	"./pkill"
 set bin_ps	"ps"
 set bin_pwd	"pwd"
 set bin_rm	"rm"
@@ -69,7 +69,7 @@ set bin_sleep   "sleep"
 set bin_sort    "sort"
 set bin_touch   "touch"
 set bin_uname	"uname"
-set bin_usleep  "usleep"
+set bin_usleep  "./usleep"
 set bin_wc	"wc"
 
 #
