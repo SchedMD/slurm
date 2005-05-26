@@ -447,11 +447,8 @@ extern void set_part_user(bgl_record_t *bgl_record)
 	      bgl_record->bgl_part_id);
 	bgl_record->boot_state = 0;
 	bgl_record->boot_count = 0;
-	if(strcmp(bgl_record->target_name, 
-		  bgl_record->user_name))
-		if(update_partition_user(bgl_record)
-		   == 1) 
-			last_bgl_update = time(NULL);
+	if(update_partition_user(bgl_record) == 1) 
+		last_bgl_update = time(NULL);
 	if(bgl_record->target_name) {
 		xfree(bgl_record->target_name);
 		bgl_record->target_name = 

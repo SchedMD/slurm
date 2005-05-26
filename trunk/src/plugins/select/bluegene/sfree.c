@@ -363,7 +363,7 @@ static void _term_jobs_on_part(char *bgl_part_id)
 		
 	}
 	if(job_found == 0)
-		info("No jobs on partition");
+		info("No jobs on partition %s", bgl_part_id);
 	
 not_removed:
 	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)

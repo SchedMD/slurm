@@ -294,6 +294,7 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 		}
 		list_iterator_destroy(itr);
 		
+		/* wait for all necessary partitions to be freed */
 		while(num_part_to_free != num_part_freed)
 			usleep(1000);
 		if((rc = boot_part(bgl_record, 
