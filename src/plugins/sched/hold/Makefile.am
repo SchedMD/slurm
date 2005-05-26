@@ -13,7 +13,3 @@ pkglib_LTLIBRARIES = sched_hold.la
 
 sched_hold_la_SOURCES = hold_wrapper.c
 sched_hold_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-
-if HAVE_AIX
-sched_hold_la_LIBADD = $(top_builddir)/src/common/libcommon.la
-endif

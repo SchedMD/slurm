@@ -17,7 +17,7 @@ AC_DEFUN([X_AC_AIX],
 [
    case "$host" in
       *-*-aix*) LDFLAGS="$LDFLAGS -Wl,-brtl"  # permit run time linking
-            CMD_LDFLAGS="$LDFLAGS -Wl,-bgcbypass:1000" # keep all common functions
+ 	    CMD_LDFLAGS="$LDFLAGS -Wl,-bgcbypass:1000 -Wl,-bexpfull" # keep all common functions
             LIB_LDFLAGS="$LDFLAGS -Wl,-G -Wl,-bnoentry -Wl,-bexpfull"
             SO_LDFLAGS=" $LDFLAGS -Wl,-G -Wl,-bnoentry -Wl,-bexpfull"
             CFLAGS="-maix32 $CFLAGS"
@@ -43,7 +43,7 @@ AC_DEFUN([X_AC_AIX],
          [ PROCTRACKDIR="$withval" ]
       )
       if test ! -d "$PROCTRACKDIR" -o ! -f "$PROCTRACKDIR/proctrackext.exp"; then
-         AC_MSG_ERROR([$PROCTRACKDIR/proctrackext.exp is required and does not exit])
+         AC_MSG_ERROR([$PROCTRACKDIR/proctrackext.exp is required and does not exist])
       fi
       AC_SUBST(PROCTRACKDIR)
    fi

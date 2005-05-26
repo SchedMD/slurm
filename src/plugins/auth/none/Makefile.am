@@ -12,7 +12,3 @@ pkglib_LTLIBRARIES = auth_none.la
 # Null authentication plugin.
 auth_none_la_SOURCES = auth_none.c
 auth_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-
-if HAVE_AIX
-auth_none_la_LIBADD  =	$(top_builddir)/src/common/libcommon.la
-endif
