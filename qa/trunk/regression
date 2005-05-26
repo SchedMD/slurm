@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/local/bin/bash
 ############################################################################
 # Purpose: Test of SLURM functionality
 #          Executes the full battery of tests.
@@ -38,16 +38,20 @@ COMPLETIONS=0
 
 # Run the tests in this directory
 /bin/date
-for TEST in test[0-9]*.*[0-9]
-do
-	expect $TEST
-	if [ $? -eq 0 ]
-	then
-		COMPLETIONS=$((COMPLETIONS+1))
-	else
-		FAILURES=$((FAILURES+1))
-	fi
-	/bin/echo "============================================"
+for major in `seq 1 10`; do
+	for minor in `seq 1 100`; do
+		TEST=test${major}.${minor}
+		if [ ! -f $TEST ]; then break; fi
+
+		expect $TEST
+		if [ $? -eq 0 ]
+		then
+			COMPLETIONS=$((COMPLETIONS+1))
+		else
+			FAILURES=$((FAILURES+1))
+		fi
+		/bin/echo "============================================"
+	done
 done
 
 # Report the results
