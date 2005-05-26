@@ -60,6 +60,5 @@ main (int argc, char **argv)
 	while (wait_sigusr1 || wait_sigusr2)
 		sleep(1);
 
-	printf("Exiting!!\n");fflush(NULL);
 	exit(0);
 }

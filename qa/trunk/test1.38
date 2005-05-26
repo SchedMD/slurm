@@ -78,8 +78,7 @@ expect {
 	}
 	-re "WAITING" {
 		incr matches
-		exec $bin_kill -INT $srun_pid
-#		exec $bin_pkill -INT -n -u $uid srun
+		exec $bin_pkill -INT -n -u $uid srun
 		exp_continue
 	}
 	-re "srun: interrupt" {
@@ -122,8 +121,7 @@ expect {
 	}
 	-re "WAITING" {
 		incr matches
-		exec $bin_kill -INT $srun_pid
-#		exec $bin_pkill -INT -n -u $uid srun
+		exec $bin_pkill -INT -n -u $uid srun
 		exp_continue
 	}
 	-re "srun: interrupt" {

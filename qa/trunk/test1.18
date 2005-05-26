@@ -98,7 +98,6 @@ expect {
 		send_user "\nFAILURE: srun not responding\n"
 		kill_srun
 		set exit_code 1
-		set timeout 30
 		exp_continue
 	}
 	eof {
