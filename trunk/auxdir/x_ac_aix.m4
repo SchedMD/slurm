@@ -43,8 +43,14 @@ AC_DEFUN([X_AC_AIX],
          [ PROCTRACKDIR="$withval" ]
       )
       if test ! -d "$PROCTRACKDIR" -o ! -f "$PROCTRACKDIR/proctrackext.exp"; then
-         AC_MSG_ERROR([$PROCTRACKDIR/proctrackext.exp is required and does not exist])
+         AC_MSG_WARN([proctrackext.exp is required for AIX proctrack support, specify location with --with-proctrack])
+         ac_have_aix_proctrack="no"
+      else
+         AC_SUBST(PROCTRACKDIR)
+         ac_have_aix_proctrack="yes"
       fi
-      AC_SUBST(PROCTRACKDIR)
+   else
+      ac_have_aix_proctrack="no"
    fi
+   AM_CONDITIONAL(HAVE_AIX_PROCTRACK, test "x$ac_have_aix_proctrack" = "xyes")
 ])
