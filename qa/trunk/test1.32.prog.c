@@ -26,8 +26,9 @@
 \*****************************************************************************/
 #include <signal.h>
 #include <stdio.h>
+#include <errno.h>
 
-int wait_sigusr1 = 1, wait_sigusr2 = 1;
+int sigusr1_cnt = 0, sigusr2_cnt = 0;
 
 void sig_handler(int sig)
 {
@@ -36,12 +37,12 @@ void sig_handler(int sig)
 		case SIGUSR1:
 			printf("Received SIGUSR1\n");
 			fflush(NULL);
-			wait_sigusr1 = 0;
+			sigusr1_cnt++;
 			break;
 		case SIGUSR2:
 			printf("Received SIGUSR2\n");
 			fflush(NULL);
-			wait_sigusr2 = 0;
+			sigusr2_cnt++;
 			break;
 		default:
 			printf("Received signal %d\n", sig);
@@ -51,14 +52,26 @@ void sig_handler(int sig)
 
 main (int argc, char **argv) 
 {
-	signal(SIGUSR1, sig_handler);
-	signal(SIGUSR2, sig_handler);
+	struct sigaction act;
+
+	act.sa_handler = sig_handler;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+	if (sigaction(SIGUSR1, &act, NULL) < 0) {
+		perror("setting SIGUSR1 handler");
+		exit(2);
+	}
+	if (sigaction(SIGUSR2, &act, NULL) < 0) {
+		perror("setting SIGUSR2 handler");
+		exit(2);
+	}
 
 	printf("WAITING\n");
 	fflush(NULL);
 
-	while (wait_sigusr1 || wait_sigusr2)
+	while (!sigusr1_cnt || !sigusr2_cnt) {
 		sleep(1);
+	}
 
 	exit(0);
 }
