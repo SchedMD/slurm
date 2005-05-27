@@ -38,6 +38,8 @@ set test_id     "1.32"
 set exit_code   0
 set file_prog   "test$test_id.prog"
 set matches     0
+set usr1cnt     0
+set usr2cnt     0
 
 print_header $test_id
 
@@ -74,20 +76,22 @@ expect {
 	-re "WAITING" {
 		if {$matches == 0} {
 			set matches 1
-#			exec $bin_kill -USR1 $srun_pid
-			exec $bin_pkill -USR1 -n -u $uid srun
+			exec $bin_kill -USR1 $srun_pid
+#			exec $bin_pkill -USR1 -n -u $uid srun
 		}
 		exp_continue
 	}
 	-re "SIGUSR1" {
+		set usr1cnt [expr $usr1cnt + 1]
 		if {$matches == 1} {
 			set matches 2
-#			exec $bin_kill -USR2 $srun_pid
-			exec $bin_pkill -USR2 -n -u $uid srun
+			exec $bin_kill -USR2 $srun_pid
+#			exec $bin_pkill -USR2 -n -u $uid srun
 		}
 		exp_continue
 	}
 	-re "SIGUSR2" {
+		set usr2cnt [expr $usr2cnt + 1]
 		if {$matches == 2} {
 			set matches 3
 		}
@@ -109,6 +113,10 @@ expect {
 }
 if {$matches != 3} {
 	send_user "\nFAILURE: srun failed to forward signals\n"
+	set exit_code 1
+}
+if {($usr1cnt > 1) || ($usr2cnt > 1)} {
+	send_user "\nFAILURE: $file_prog received more than one copy of the same signal\n"
 	set exit_code 1
 }
 

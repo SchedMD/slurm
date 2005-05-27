@@ -27,6 +27,9 @@
 #include <signal.h>
 #include <stdio.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 
 int sigusr1_cnt = 0, sigusr2_cnt = 0;
 
