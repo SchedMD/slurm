@@ -92,20 +92,26 @@ _pwd_destroy(struct passwd *pwd)
 }
 
 /* returns 0 if invalid gid, otherwise returns 1 */
-int
+static int
 _valid_gid(struct passwd *pwd, gid_t *gid)
 {
 	struct group *grp;
 	int i;
 	
-	if (!pwd) return 0;
-       	if (pwd->pw_gid == *gid) return 1;
+	if (!pwd)
+		return 0;
+	if (pwd->pw_gid == *gid)
+		return 1;
 
 	grp = getgrgid(*gid);
 	if (!grp) {
-	       	error("gid %ld not found on system", (long)(*gid));
+		error("gid %ld not found on system", (long)(*gid));
 		return 0;
 	}
+
+	/* Allow user root to use any valid gid */
+	if (pwd->pw_uid == 0)
+		return 1;
 
 	for (i = 0; grp->gr_mem[i]; i++) {
 	       	if (strcmp(pwd->pw_name,grp->gr_mem[i]) == 0) {
@@ -209,7 +215,8 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	return job;
 }
 
-/* create a slurmd job structure from a spawn task message */
+/* create a slurmd job structure from a spawn task message. 
+ * NOTE: gid field in spawn_task_request_msg_t is not used. */
 slurmd_job_t * 
 job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *cli_addr)
 {
