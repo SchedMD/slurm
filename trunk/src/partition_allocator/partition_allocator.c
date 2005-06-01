@@ -30,7 +30,6 @@
 #endif
 
 #include <stdio.h>
-#include <dlfcn.h>
 #include <stdlib.h>
 #include <math.h>
 #include "partition_allocator.h"
@@ -49,7 +48,7 @@ int DIM_SIZE[PA_SYSTEM_DIMENSIONS] = {0};
 #endif
 
 bool _initialized = false;
-bool _have_db2 = false;
+bool have_db2 = false;
 
 /* _pa_system is the "current" system that the structures will work
  *  on */
@@ -415,7 +414,7 @@ static void _db2_check(void)
 	if (dlsym(handle, "SQLAllocHandle") == NULL)
 		debug("SQLAllocHandle not found in libdb2.so");
 	else
-		_have_db2 = true;
+		have_db2 = true;
 
 	dlclose(handle);
 }
@@ -495,7 +494,7 @@ extern void pa_init(node_info_msg_t *node_info_ptr)
         } 
 
 #ifdef HAVE_BGL_FILES
-	if (_have_db2
+	if (have_db2
 	&&  (DIM_SIZE[X]==0) && (DIM_SIZE[X]==0) && (DIM_SIZE[X]==0)) {
 		if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
 			error("rm_set_serial(%s): %d", BGL_SERIAL, rc);
@@ -1148,7 +1147,7 @@ extern int set_bp_map(void)
 
 	bp_map_list = list_create(_bp_map_list_del);
 
-	if (!_have_db2) {
+	if (!have_db2) {
 		error("Can't access DB2 library, run from service node");
 		return -1;
 	}

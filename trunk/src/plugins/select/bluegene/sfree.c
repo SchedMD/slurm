@@ -42,7 +42,7 @@ int all_parts = 0;
 static int num_part_to_free = 0;
 static int num_part_freed = 0;
 static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
-
+static bool _have_db2 = true;
 
 /************
  * Functions *
@@ -70,6 +70,20 @@ static void *_mult_free_part(void *args)
 	return NULL;
 }
 
+static void _db2_check(void)
+{
+	void *handle;
+
+	handle = dlopen("libdb2.so", RTLD_LAZY);
+	if (!handle)
+		return;
+
+	if (dlsym(handle, "SQLAllocHandle"))
+		_have_db2 = true;
+
+	dlclose(handle);
+}
+
 int main(int argc, char *argv[])
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
@@ -82,6 +96,12 @@ int main(int argc, char *argv[])
 	pthread_t thread_agent;
 	int retries;
 	
+	_db2_check();
+	if (!_have_db2) {
+		printf("must be on BGL SN to resolve.\n");
+		exit(0);
+	}
+
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
 	if(!all_parts) {

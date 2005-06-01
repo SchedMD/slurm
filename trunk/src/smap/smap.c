@@ -29,7 +29,6 @@
 #include "config.h"
 
 #include <stdio.h>
-#include <dlfcn.h>
 #include <signal.h>
 #include "src/smap/smap.h"
 
@@ -43,7 +42,6 @@ smap_parameters_t params;
 int quiet_flag = 0;
 int line_cnt = 0;
 int max_display;
-bool have_db2 = false;
 		
 /************
  * Functions *
@@ -56,20 +54,6 @@ static int _set_pairs();
 static int _scroll_grid(int dir);
 #endif /* HAVE_BGL */
 
-static void _db2_check(void)
-{
-	void *handle;
-
-	handle = dlopen("libdb2.so", RTLD_LAZY);
-	if (!handle)
-		return;
-
-	if (dlsym(handle, "SQLAllocHandle"))
-		have_db2 = true;
-
-	dlclose(handle);
-}
- 
 int main(int argc, char *argv[])
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
@@ -106,8 +90,6 @@ int main(int argc, char *argv[])
 		pa_init(new_node_ptr);
 	}
 	
-	_db2_check();
-
 	if(params.partition) {
 			
 #ifdef HAVE_BGL_FILES
