@@ -129,7 +129,7 @@ For example, " bgl[620x731]" is used to represent the eight nodes enclosed in a 
 with endpoints bgl620 and bgl731 (bgl620, bgl621, bgl630, bgl631, bgl720, bgl721, 
 bgl730 and bgl731).</p></a>
 
-<p>One new tools provided is <i>smap</i>.
+<p>One new tool provided is <i>smap</i>.
 Smap is aware of system topography and provides a map of what nodes are allocated 
 to jobs, partitions, etc. 
 See the smap man page for details.
@@ -169,6 +169,12 @@ a a a a . . . #            Z
 <p class="footer"><a href="#top">top</a></p>
 
 <h3>System Administration</h3>
+
+<p><b>If running on a multi X-dim system external wiring may be different 
+that programmed into slurm.  If you have more than 2 nodes in the X-dim please 
+have a wiring diagram of your system and query slurm-dev@lists.llnl.gov 
+for advice.
+</b></p>  
 
 <p>Building a Blue Gene compatible system is dependent upon the <i>configure</i>
 program locating some expected files. 
