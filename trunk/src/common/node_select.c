@@ -71,7 +71,18 @@ typedef struct slurm_select_ops {
 	int		(*job_ready)		( struct job_record *job_ptr );
 	int		(*job_fini)		( struct job_record *job_ptr );
 	int		(*pack_node_info)	( time_t last_query_time,
-						Buf *buffer_ptr);
+                                                  Buf *buffer_ptr);
+        int             (*get_extra_jobinfo)    ( struct node_record *node_ptr,
+                                                  struct job_record *job_ptr,
+                                                  enum select_data_info cr_info,
+                                                  void *data);
+        int             (*get_select_nodeinfo)  ( struct node_record *node_ptr,
+                                                  enum select_data_info cr_info, 
+                                                  void *data);
+        int             (*update_nodeinfo)      ( struct job_record *job_ptr,
+                                                  enum select_data_info cr_info);
+        int             (*get_info_from_plugin) ( enum select_data_info cr_info, 
+                                                  void *data);
 } slurm_select_ops_t;
 
 typedef struct slurm_select_context {
@@ -124,7 +135,11 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
 		"select_p_job_begin",
 		"select_p_job_ready",
 		"select_p_job_fini",
-		"select_p_pack_node_info"
+		"select_p_pack_node_info",
+                "select_p_get_extra_jobinfo",
+                "select_p_get_select_nodeinfo",
+                "select_p_update_nodeinfo",
+                "select_p_get_info_from_plugin"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -314,6 +329,66 @@ extern int select_g_part_init(List part_list)
 		return SLURM_ERROR;
 
 	return (*(g_select_context->ops.part_init))(part_list);
+}
+ 
+/* 
+ * Get selected data from a given node for a specific job. 
+ * IN node_ptr  - current node record
+ * IN job_ptr   - current job record
+ * IN cr_info   - type of data to get from the node record (see enum select_data_info)
+ * IN/OUT data  - the data to get from node record
+ */
+extern int select_g_get_extra_jobinfo (struct node_record *node_ptr, 
+                                      struct job_record *job_ptr, 
+                                       enum select_data_info cr_info,
+                                       void *data)
+{
+       if (slurm_select_init() < 0)
+               return SLURM_ERROR;
+
+       return (*(g_select_context->ops.get_extra_jobinfo))(node_ptr, job_ptr, cr_info, data);
+}
+
+/* 
+ * Get select data from a specific node record
+ * IN node_pts  - current node record
+ * IN cr_info   - type of data to get from the node record (see enum select_data_info)
+ * IN/OUT data  - the data to get from node record
+ */
+extern int select_g_get_select_nodeinfo (struct node_record *node_ptr, 
+                                         enum select_data_info cr_info, void *data)
+{
+       if (slurm_select_init() < 0)
+               return SLURM_ERROR;
+
+       return (*(g_select_context->ops.get_select_nodeinfo))(node_ptr, cr_info, data);
+}
+
+/* 
+ * Update select data for a specific node record for a specific job 
+ * IN cr_info   - type of data to update for a given job record (see enum select_data_info)
+ * IN job_ptr - current job record
+ */
+extern int select_g_update_nodeinfo (struct job_record *job_ptr, enum select_data_info cr_info)
+{
+       if (slurm_select_init() < 0)
+               return SLURM_ERROR;
+
+       return (*(g_select_context->ops.update_nodeinfo))(job_ptr, cr_info);
+}
+
+/* 
+ * Get select data from a plugin
+ * IN node_pts  - current node record
+ * IN cr_info   - type of data to get from the node record (see enum select_data_info)
+ * IN/OUT data  - the data to get from node record
+ */
+extern int select_g_get_info_from_plugin (enum select_data_info cr_info, void *data)
+{
+       if (slurm_select_init() < 0)
+               return SLURM_ERROR;
+
+       return (*(g_select_context->ops.get_info_from_plugin))(cr_info, data);
 }
 
 /*

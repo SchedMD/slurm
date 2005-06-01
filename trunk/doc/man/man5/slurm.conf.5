@@ -227,6 +227,14 @@ Identifies whether or not RootOnly partitions should be filtered from
 any external scheduling activities. Currently only used by the built-in
 backfill scheduling module "sched/backfill" (see \fBSchedulerType\fR).
 .TP
+\fBSchedulerRootFilter\fR
+Identifies whether or not RootOnly partitions should be filtered from
+any external scheduling activities. If set to 0, then RootOnly partitions
+are treated like any other partition. If set to 1, then RootOnly
+partitions are exempt from any external scheduling activities. The
+default value is 1. Currently only used by the built-in backfill
+scheduling module "sched/backfill" (see \fBSchedulerType\fR).
+.TP
 \fBSchedulerType\fR
 Identifies the type of scheduler to be used. Acceptable values include 
 "sched/builtin" for the built-in FIFO scheduler, 

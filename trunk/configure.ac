@@ -190,7 +190,8 @@ AC_CONFIG_FILES([Makefile
 		 auxdir/Makefile
 		 src/Makefile 
 		 src/api/Makefile 
-		 src/common/Makefile 
+		 src/common/Makefile
+		 src/sacct/Makefile
 		 src/srun/Makefile 
 		 src/slurmd/Makefile 
 		 src/slurmctld/Makefile 
@@ -208,6 +209,9 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/checkpoint/Makefile
 		 src/plugins/checkpoint/aix/Makefile
 		 src/plugins/checkpoint/none/Makefile
+		 src/plugins/jobacct/Makefile
+		 src/plugins/jobacct/log/Makefile
+		 src/plugins/jobacct/none/Makefile
 		 src/plugins/jobcomp/Makefile
 		 src/plugins/jobcomp/filetxt/Makefile
 		 src/plugins/jobcomp/none/Makefile
@@ -224,6 +228,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/Makefile
 		 src/plugins/select/bluegene/Makefile
 		 src/plugins/select/linear/Makefile
+		 src/plugins/select/cons_res/Makefile
 		 src/plugins/switch/Makefile
 		 src/plugins/switch/elan/Makefile
 		 src/plugins/switch/none/Makefile

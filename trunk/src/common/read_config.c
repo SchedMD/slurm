@@ -305,6 +305,9 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->epilog);
+	xfree (ctl_conf_ptr->job_acct_loc);
+	xfree (ctl_conf_ptr->job_acct_parameters);
+	xfree (ctl_conf_ptr->job_acct_type);
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_credential_private_key);
@@ -350,6 +353,9 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->first_job_id		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->heartbeat_interval	= (uint16_t) NO_VAL;
 	ctl_conf_ptr->inactive_limit		= (uint16_t) NO_VAL;
+	xfree (ctl_conf_ptr->job_acct_loc);
+	xfree (ctl_conf_ptr->job_acct_parameters);
+	xfree (ctl_conf_ptr->job_acct_type);
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_credential_private_key);
@@ -430,6 +436,8 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	char *slurmd_logfile = NULL;
 	char *slurmd_spooldir = NULL, *slurmd_pidfile = NULL;
 	char *plugindir = NULL, *auth_type = NULL, *switch_type = NULL;
+	char *job_acct_loc = NULL, *job_acct_parameters = NULL,
+	     *job_acct_type = NULL;
 	char *job_comp_loc = NULL, *job_comp_type = NULL;
 	char *job_credential_private_key = NULL;
 	char *job_credential_public_certificate = NULL;
@@ -448,6 +456,9 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"HashBase=", 'd', &hash_base,	/* defunct */
 		"HeartbeatInterval=", 'd', &heartbeat_interval,
 		"InactiveLimit=", 'd', &inactive_limit,
+		"JobAcctloc=", 's', &job_acct_loc,
+		"JobAcctParameters=", 's', &job_acct_parameters,
+		"JobAcctType=", 's', &job_acct_type,
 		"JobCompLoc=", 's', &job_comp_loc,
 		"JobCompType=", 's', &job_comp_type,
 		"JobCredentialPrivateKey=", 's', &job_credential_private_key,
@@ -576,6 +587,30 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 #endif
 	}
 
+	if ( job_acct_loc ) {
+		if ( ctl_conf_ptr->job_acct_loc ) {
+			error( MULTIPLE_VALUE_MSG, "JobAcctLoc" );
+			xfree( ctl_conf_ptr->job_acct_loc );
+		}
+		ctl_conf_ptr->job_acct_loc = job_acct_loc;
+	}
+
+	if ( job_acct_parameters ) {
+		if ( ctl_conf_ptr->job_acct_parameters ) {
+			error( MULTIPLE_VALUE_MSG, "JobAcctParameters" );
+			xfree( ctl_conf_ptr->job_acct_parameters );
+		}
+		ctl_conf_ptr->job_acct_parameters = job_acct_parameters;
+	}
+
+	if ( job_acct_type ) {
+		if ( ctl_conf_ptr->job_acct_type ) {
+			error( MULTIPLE_VALUE_MSG, "JobAcctType" );
+			xfree( ctl_conf_ptr->job_acct_type );
+		}
+		ctl_conf_ptr->job_acct_type = job_acct_type;
+	}
+
 	if ( job_comp_loc ) {
 		if ( ctl_conf_ptr->job_comp_loc ) {
 			error( MULTIPLE_VALUE_MSG, "JobCompLoc" );
@@ -699,6 +734,12 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 			error (MULTIPLE_VALUE_MSG, "SchedulerRootFilter");
 		ctl_conf_ptr->schedrootfltr = (uint16_t) sched_rootfltr;
 	}
+
+        if ( sched_rootfltr != -1 ) {
+                if ( ctl_conf_ptr->schedrootfltr != (uint16_t) NO_VAL)
+                        error (MULTIPLE_VALUE_MSG, "SchedulerRootFilter");
+                ctl_conf_ptr->schedrootfltr = (uint16_t) sched_rootfltr;
+        }
 
 	if ( sched_type ) {
 		if ( ctl_conf_ptr->schedtype ) {
@@ -1136,6 +1177,16 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 	if (ctl_conf_ptr->inactive_limit == (uint16_t) NO_VAL)
 		ctl_conf_ptr->inactive_limit = DEFAULT_INACTIVE_LIMIT;
 
+	if (ctl_conf_ptr->job_acct_loc == NULL)
+		ctl_conf_ptr->job_acct_loc = xstrdup(DEFAULT_JOB_ACCT_LOC);
+
+	if (ctl_conf_ptr->job_acct_parameters == NULL)
+		ctl_conf_ptr->job_acct_parameters =
+				xstrdup(DEFAULT_JOB_ACCT_PARAMETERS);
+
+	if (ctl_conf_ptr->job_acct_type == NULL)
+		ctl_conf_ptr->job_acct_type = xstrdup(DEFAULT_JOB_ACCT_TYPE);
+
 	if (ctl_conf_ptr->job_comp_type == NULL)
 		ctl_conf_ptr->job_comp_type = xstrdup(DEFAULT_JOB_COMP_TYPE);
 
@@ -1165,6 +1216,9 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	if (ctl_conf_ptr->schedrootfltr == (uint16_t) NO_VAL)
 		ctl_conf_ptr->schedrootfltr = DEFAULT_SCHEDROOTFILTER;
+
+	if (ctl_conf_ptr->schedrootfltr == (uint16_t) NO_VAL)
+	        ctl_conf_ptr->schedrootfltr = DEFAULT_SCHEDROOTFILTER;
 
 	if (ctl_conf_ptr->schedtype == NULL)
 		ctl_conf_ptr->schedtype = xstrdup(DEFAULT_SCHEDTYPE);

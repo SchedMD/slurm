@@ -67,6 +67,30 @@ extern int select_g_state_restore(char *dir_name);
  */
 extern int select_g_node_init(struct node_record *node_ptr, int node_cnt);
 
+/* 
+ * Get select data from a specific node record
+ * IN node_pts  - current node record
+ * IN cr_info   - type of data to get from the node record
+ * IN/OUT data  - the data to get from node record
+ */
+extern int select_g_get_select_nodeinfo (struct node_record *node_ptr, 
+                                         enum select_data_info cr_info, void *data);
+
+/* 
+ * Update select data for a specific node record for a specific job 
+ * IN cr_info   - type of data to update for a given job record
+ * IN job_ptr - current job record
+ */
+extern int select_g_update_nodeinfo (struct job_record *job_ptr, enum select_data_info cr_info);
+
+/* 
+ * Get select data from a plugin
+ * IN node_pts  - current node record
+ * IN cr_info   - type of data to get from the node record (see enum select_data_info)
+ * IN/OUT data  - the data to get from node record
+ */
+extern int select_g_get_info_from_plugin (enum select_data_info cr_info, void *data);
+
 /*
  * Note re/initialization of partition record data structure
  * IN part_list - list of partition records
@@ -149,6 +173,18 @@ extern select_jobinfo_t select_g_copy_jobinfo(select_jobinfo_t jobinfo);
  * RET         - slurm error code
  */
 extern int select_g_free_jobinfo  (select_jobinfo_t *jobinfo);
+ 
+/* 
+ * Get selected data from a given node for a specific job. 
+ * IN node_ptr  - current node record
+ * IN job_ptr   - current job record
+ * IN cr_info   - type of data to get from the node record
+ * IN/OUT data  - the data to get from node record
+ */
+extern int select_g_get_extra_jobinfo (struct node_record *node_ptr, 
+                                      struct job_record *job_ptr, 
+                                       enum select_data_info cr_info,
+                                       void *data);
 
 /* pack a select job credential into a buffer in machine independent form
  * IN jobinfo  - the select job credential to be saved

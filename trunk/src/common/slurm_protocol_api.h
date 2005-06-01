@@ -124,6 +124,24 @@ extern int slurm_set_auth_type(char *auth_type);
  */
 extern uint16_t slurm_get_fast_schedule(void);
 
+/* slurm_get_jobacct_loc
+ * returns the job accounting loc from slurmctld_conf object
+ * RET char *    - job accounting location,  MUST be xfreed by caller
+ */
+char *slurm_get_jobacct_loc(void);
+
+/* slurm_get_jobacct_parameters
+ * returns the job accounting parameters from slurmctld_conf object
+ * RET char *    - job accounting parameters,  MUST be xfreed by caller
+ */
+char *slurm_get_jobacct_parameters(void);
+
+/* slurm_get_jobacct_type
+ * returns the job accounting type from slurmctld_conf object
+ * RET char *    - job accounting type,  MUST be xfreed by caller
+ */
+char *slurm_get_jobacct_type(void);
+
 /* slurm_get_jobcomp_type
  * returns the job completion logger type from slurmctld_conf object
  * RET char *    - job completion type,  MUST be xfreed by caller

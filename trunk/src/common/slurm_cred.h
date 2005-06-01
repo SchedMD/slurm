@@ -120,6 +120,8 @@ typedef struct {
 	uint32_t stepid;
 	uid_t    uid;
 	char    *hostlist;
+        uint32_t ntask_cnt;
+        uint32_t *ntask;
 } slurm_cred_arg_t;
 
 /*

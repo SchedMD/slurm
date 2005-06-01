@@ -191,6 +191,8 @@ rm -rf $RPM_BUILD_ROOT
 %dir /etc/slurm
 %dir %{_libdir}/slurm
 %{_libdir}/slurm/checkpoint_none.so
+%{_libdir}/slurm/jobacct_log.so
+%{_libdir}/slurm/jobacct_none.so
 %{_libdir}/slurm/jobcomp_none.so
 %{_libdir}/slurm/jobcomp_filetxt.so
 %{_libdir}/slurm/jobcomp_script.so
@@ -199,6 +201,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/sched_backfill.so
 %{_libdir}/slurm/sched_builtin.so
 %{_libdir}/slurm/sched_hold.so
+%{_libdir}/slurm/select_cons_res.so
 %{_libdir}/slurm/select_linear.so
 %{_libdir}/slurm/switch_none.so
 %dir %{_libdir}/slurm/src
@@ -275,6 +278,10 @@ fi
 
 
 %changelog
+* Tue May 31 2005  Andy Riebs <andy.riebs@hp.com>
+- added jobacct plugins and sacct program
+* Thu May 26 2005  Morris Jette <jette1@llnl.gov>
+- added select_cons_res.so plugin
 * Tue May 24 2005 Morris Jette <jette1@llnl.gov>
 - optionally include sched_wiki.so and select_bluegene.so
 * Mon May 02 2005 Danny Auble <da@llnl.gov>

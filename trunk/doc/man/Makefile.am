@@ -3,6 +3,7 @@
 EXTRA_DIST = man1 man3 man5 man8 
 
 man1_MANS =            \
+	man1/sacct.1 \
 	man1/scancel.1 \
 	man1/scontrol.1\
 	man1/sinfo.1   \

@@ -299,6 +299,10 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t dependency;	/* defer until specified job completes */
 	char *account;		/* charge to specified account */
 	char *network;		/* network use spec */
+	uint16_t exclusive;	/* 1 if job requires exclusive nodes,
+				 * 0 otherwise, default=0. Only useful
+				 * when Consumable Resources are
+				 * enabled */
 /*
  * The following parameters are only meaningful on a Blue Gene
  * system at present. Some will be of value on other system.
@@ -497,6 +501,9 @@ typedef struct slurm_ctl_conf {
 	uint16_t heartbeat_interval; /* interval between heartbeats, seconds */
 	uint16_t inactive_limit;/* seconds of inactivity before a
 				 * inactive resource allocation is released */
+	char *job_acct_loc;	/* job accounting log location */
+	char *job_acct_parameters; /* parameters for job accounting plugins */
+	char *job_acct_type;	/* job accounting type */
 	char *job_comp_type;	/* job completion logger type */
 	char *job_comp_loc;	/* job completion logging location */
 	uint16_t kill_tree;     /* Kill all descendants processes */
@@ -514,7 +521,7 @@ typedef struct slurm_ctl_conf {
 	char *schedtype;	/* type of scheduler to use */
 	char *schedauth;	/* credential for scheduler (if needed) */
 	uint16_t schedport;	/* port for scheduler connection */
-	uint16_t schedrootfltr; /* 1 if rootOnly partitions should be
+	uint16_t schedrootfltr;	/* 1 if rootOnly partitions should be
 				 * filtered from scheduling (if needed) */
 	char *select_type;	/* type of node selector to use */
 	uint16_t slurm_user_id;	/* uid of slurm_user_name */
@@ -544,6 +551,7 @@ typedef struct slurm_ctl_conf {
 
 typedef struct submit_response_msg {
 	uint32_t job_id;	/* job ID */
+	uint32_t step_id;	/* step ID */
 	uint32_t error_code;	/* error code for warning message */
 } submit_response_msg_t;
 

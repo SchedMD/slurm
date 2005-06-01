@@ -294,7 +294,7 @@ static char *
 _mkfilename(slurmd_job_t *job, const char *name)
 {
 	if (name == NULL) 
-		return fname_create(job, "slurm-%j.out", 0);
+		return fname_create(job, "slurm-%J.out", 0);
 	else
 		return fname_create(job, name, 0);
 }
@@ -320,8 +320,9 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 
 	job->pwd     = pwd;
 	job->ntasks  = 1; 
+	job->nprocs  = msg->nprocs;
 	job->jobid   = msg->job_id;
-	job->stepid  = NO_VAL;
+	job->stepid  = msg->step_id;
 	job->batch   = true;
 
 	job->uid     = (uid_t) msg->uid;

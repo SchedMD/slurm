@@ -189,7 +189,7 @@ _make_time_str (time_t *time, char *string, int str_size)
 int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 {
 	int rc = SLURM_SUCCESS;
-	char job_rec[512];
+	char job_rec[512+MAX_JOBNAME_LEN];
 	char usr_str[32], start_str[32], end_str[32], lim_str[32];
 	char select_buf[128];
 	size_t offset = 0, tot_size, wrote;

@@ -44,6 +44,7 @@
 #include "src/common/node_select.c"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
+#include "src/common/slurm_jobacct.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/xstring.h"
@@ -167,6 +168,10 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 	case REQUEST_JOB_ID:
 		_rpc_pid2jid(msg, cli);
 		slurm_free_job_id_request_msg(msg->data);
+		break;
+	case MESSAGE_JOBACCT_DATA:
+		g_slurm_jobacct_process_message(msg);
+		slurm_free_jobacct_msg(msg->data);
 		break;
 	default:
 		error("slurmd_req: invalid request msg type %d\n",
@@ -301,11 +306,12 @@ _spawn_task(spawn_task_request_msg_t *req, slurm_addr *cli, slurm_addr *self)
 
 static int
 _check_job_credential(slurm_cred_t cred, uint32_t jobid, 
-		      uint32_t stepid, uid_t uid)
+		      uint32_t stepid, uid_t uid, int tasks_to_launch)
 {
 	slurm_cred_arg_t arg;
 	hostset_t        hset    = NULL;
 	bool             user_ok = _slurm_authorized_user(uid); 
+	int              host_index = -1;
 	int              rc;
 
 	/*
@@ -352,14 +358,43 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 		goto fail;
 	}
 
+        if ((arg.ntask_cnt > 0) && (tasks_to_launch > 0)) {
+
+                host_index = hostset_index(hset, conf->node_name, jobid);
+
+                if(host_index >= 0)
+                  debug3(" cons_res %u ntask_cnt %d task[%d] = %d = task_to_launch %d host %s ", 
+                         arg.jobid, arg.ntask_cnt, host_index, arg.ntask[host_index], 
+                         tasks_to_launch, conf->node_name);
+
+                if (host_index < 0) { 
+                        error("job cr credential invalid host_index %d for job %d",
+                              host_index, arg.jobid);
+                        goto fail; 
+                }
+                
+                if (!(arg.ntask[host_index] == tasks_to_launch)) {
+                        error("job cr credential (%d != %d) invalid for this host [%d.%d %ld %s]",
+                              arg.ntask[host_index], tasks_to_launch, arg.jobid, arg.stepid, 
+                              (long) arg.uid, arg.hostlist);
+                        goto fail;
+                }
+        }
+
 	hostset_destroy(hset);
 	xfree(arg.hostlist);
+        arg.ntask_cnt = 0;
+        if (arg.ntask) xfree(arg.ntask);
+        arg.ntask = NULL;
 
 	return SLURM_SUCCESS;
 
     fail:
 	if (hset) hostset_destroy(hset);
 	xfree(arg.hostlist);
+        arg.ntask_cnt = 0;
+        if (arg.ntask) xfree(arg.ntask);
+        arg.ntask = NULL;
 	slurm_seterrno_ret(ESLURMD_INVALID_JOB_CREDENTIAL);
 }
 
@@ -398,7 +433,8 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		run_prolog = true;
 #endif
 
-	if (_check_job_credential(req->cred, jobid, stepid, req_uid) < 0) {
+	if (_check_job_credential(req->cred, jobid, stepid, req_uid,
+			req->tasks_to_launch) < 0) {
 		errnum = errno;
 		error("Invalid job credential from %ld@%s: %m", 
 		      (long) req_uid, host);
@@ -453,6 +489,7 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 	bool     super_user = false, run_prolog = false;
 	slurm_addr self;
 	socklen_t adlen;
+        int spawn_tasks_to_launch = -1;
 
 	req_uid = g_slurm_auth_get_uid(msg->cred);
 
@@ -474,7 +511,7 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 		run_prolog = true;
 #endif
 
-	if (_check_job_credential(req->cred, jobid, stepid, req_uid) < 0) {
+	if (_check_job_credential(req->cred, jobid, stepid, req_uid, spawn_tasks_to_launch) < 0) {
 		errnum = errno;
 		error("Invalid job credential from %ld@%s: %m", 
 		      (long) req_uid, host);
@@ -518,6 +555,7 @@ static void
 _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 {
 	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
+	bool     first_job_run = true;
 	int      rc = SLURM_SUCCESS;
 	uid_t    req_uid = g_slurm_auth_get_uid(msg->cred);
 	char    *bgl_part_id = NULL;
@@ -530,16 +568,20 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 		goto done;
 	} 
 
+	if (req->step_id != NO_VAL && req->step_id != 0)
+		first_job_run = false;
+
 	/*
 	 * Insert jobid into credential context to denote that
 	 * we've now "seen" an instance of the job
 	 */
-	slurm_cred_insert_jobid(conf->vctx, req->job_id);
+	if (first_job_run) {
+		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 
-	/* 
-	 * Run job prolog on this node
-	 */
-	select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_PART_ID, 
+		/* 
+	 	 * Run job prolog on this node
+	 	 */
+		select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_PART_ID, 
 			&bgl_part_id);
 
 #ifdef HAVE_BGL
@@ -550,13 +592,14 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	replied = true;
 #endif
 
-	rc = _run_prolog(req->job_id, req->uid, bgl_part_id);
-	xfree(bgl_part_id);
-	if (rc != 0) {
-		error("[job %u] prolog failed", req->job_id);
-		rc = ESLURMD_PROLOG_FAILED;
-		goto done;
-	} 
+		rc = _run_prolog(req->job_id, req->uid, bgl_part_id);
+		xfree(bgl_part_id);
+		if (rc != 0) {
+			error("[job %u] prolog failed", req->job_id);
+			rc = ESLURMD_PROLOG_FAILED;
+			goto done;
+		}
+	}
 
 	/* Since job could have been killed while the prolog was 
 	 * running (especially on BlueGene, which can wait  minutes
@@ -569,7 +612,12 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	}
 	
 	slurm_mutex_lock(&launch_mutex);
-	info("Launching batch job %u for UID %d", req->job_id, req->uid);
+	if (req->step_id == NO_VAL)
+		info("Launching batch job %u for UID %d",
+			req->job_id, req->uid);
+	else
+		info("Launching batch job %u.%u for UID %d",
+			req->job_id, req->step_id, req->uid);
 	rc = _launch_batch_job(req, cli);
 	slurm_mutex_unlock(&launch_mutex);
 

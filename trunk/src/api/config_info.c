@@ -87,6 +87,12 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->heartbeat_interval);
 	fprintf(out, "InactiveLimit     = %u\n", 
 		slurm_ctl_conf_ptr->inactive_limit);
+	fprintf(out, "JobAcctLoc        = %s\n", 
+		slurm_ctl_conf_ptr->job_acct_loc);
+	fprintf(out, "JobAcctParameters = %s\n",
+		slurm_ctl_conf_ptr->job_acct_parameters);
+	fprintf(out, "JobAcctType       = %s\n", 
+		slurm_ctl_conf_ptr->job_acct_type);
 	fprintf(out, "JobCompLoc        = %s\n", 
 		slurm_ctl_conf_ptr->job_comp_loc);
 	fprintf(out, "JobCompType       = %s\n", 

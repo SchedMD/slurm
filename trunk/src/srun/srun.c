@@ -415,6 +415,9 @@ _run_batch_job(void)
 	if (!(req = job_desc_msg_create_from_opts (script)))
 		fatal ("Unable to create job request");
 
+	if (opt.jobid != NO_VAL)
+		req->job_id = (uint32_t)opt.jobid;
+
 	retries = 0;
 	while (  (retries < MAX_RETRIES)
               && (rc = slurm_submit_batch_job(req, &resp)) < 0) {
@@ -429,7 +432,11 @@ _run_batch_job(void)
 
 	
 	if (rc == SLURM_SUCCESS) {
-		info ("jobid %u submitted",resp->job_id);
+		if (resp->step_id == NO_VAL)
+			info ("jobid %u submitted",resp->job_id);
+		else
+			info ("jobid %u.%u submitted",resp->job_id,
+							resp->step_id);
 		if (resp->error_code)
 			info("Warning: %s", slurm_strerror(resp->error_code));
 		slurm_free_submit_response_response_msg (resp);

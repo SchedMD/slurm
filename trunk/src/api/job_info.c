@@ -97,8 +97,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 		fprintf ( out, "\n   ");
 
 	/****** Line 2 ******/
-	fprintf ( out, "Name=%s JobState=%s", 
-		  job_ptr->name, job_state_string(job_ptr->job_state));
+	fprintf ( out, "Name=%s", job_ptr->name);
 	if (one_liner)
 		fprintf ( out, " ");
 	else
@@ -129,7 +128,8 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 
 	/****** Line 5 ******/
 	slurm_make_time_str ((time_t *)&job_ptr->start_time, time_str);
-	fprintf ( out, "StartTime=%s EndTime=", time_str);
+	fprintf ( out, "JobState=%s StartTime=%s EndTime=",
+		  job_state_string(job_ptr->job_state), time_str);
 	if ((job_ptr->time_limit == INFINITE) && 
 	    (job_ptr->end_time > time(NULL)))
 		fprintf ( out, "NONE");

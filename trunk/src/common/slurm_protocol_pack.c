@@ -252,6 +252,10 @@ static int  _unpack_checkpoint_resp_msg(checkpoint_resp_msg_t **msg_ptr, Buf buf
 
 static void _pack_buffer_msg(slurm_msg_t * msg, Buf buffer);
 
+static void _pack_jobacct_data(jobacct_msg_t * msg , Buf buffer );
+
+static int _unpack_jobacct_data(jobacct_msg_t ** msg_ptr , Buf buffer );
+
 /* pack_header
  * packs a slurm protocol header that proceeds every slurm message
  * IN header - the header structure to pack
@@ -521,6 +525,9 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	 case RESPONSE_NODE_SELECT_INFO:
 		_pack_node_select_info_msg((slurm_msg_t *) msg, buffer);
 		break;
+	 case MESSAGE_JOBACCT_DATA:
+		_pack_jobacct_data((jobacct_msg_t *) msg->data, buffer);
+		break;
 	 default:
 		 debug("No pack method for msg type %i", msg->msg_type);
 		 return EINVAL;
@@ -786,6 +793,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	 case RESPONSE_NODE_SELECT_INFO:
 		rc = _unpack_node_select_info_msg((node_select_info_msg_t **) &
 			(msg->data), buffer);
+		break;
+	 case MESSAGE_JOBACCT_DATA:
+		rc = _unpack_jobacct_data( (jobacct_msg_t **) 
+				& msg->data, buffer);
 		break;
 	 default:
 		 debug("No unpack method for msg type %i", msg->msg_type);
@@ -1078,6 +1089,7 @@ _pack_submit_response_msg(submit_response_msg_t * msg, Buf buffer)
 	xassert(msg != NULL);
 
 	pack32(msg->job_id, buffer);
+	pack32(msg->step_id, buffer);
 	pack32(msg->error_code, buffer);
 }
 
@@ -1093,6 +1105,7 @@ _unpack_submit_response_msg(submit_response_msg_t ** msg, Buf buffer)
 
 	/* load the data values */
 	safe_unpack32(&tmp_ptr->job_id, buffer);
+	safe_unpack32(&tmp_ptr->step_id, buffer);
 	safe_unpack32(&tmp_ptr->error_code, buffer);
 	return SLURM_SUCCESS;
 
@@ -1766,6 +1779,9 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack32(build_ptr->first_job_id, buffer);
 	pack16(build_ptr->heartbeat_interval, buffer);
 	pack16(build_ptr->inactive_limit, buffer);
+	packstr(build_ptr->job_acct_loc, buffer);
+	packstr(build_ptr->job_acct_parameters, buffer);
+	packstr(build_ptr->job_acct_type, buffer);
 	packstr(build_ptr->job_comp_loc, buffer);
 	packstr(build_ptr->job_comp_type, buffer);
 	pack16(build_ptr->kill_tree, buffer);
@@ -1832,6 +1848,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack32(&build_ptr->first_job_id, buffer);
 	safe_unpack16(&build_ptr->heartbeat_interval, buffer);
 	safe_unpack16(&build_ptr->inactive_limit, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_acct_loc, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_acct_parameters, &uint16_tmp,
+				buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_acct_type, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_loc, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_type, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->kill_tree, buffer);
@@ -1887,6 +1907,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	xfree(build_ptr->control_addr);
 	xfree(build_ptr->control_machine);
 	xfree(build_ptr->epilog);
+	xfree(build_ptr->job_acct_loc);
+	xfree(build_ptr->job_acct_parameters);
+	xfree(build_ptr->job_acct_type);
 	xfree(build_ptr->job_comp_loc);
 	xfree(build_ptr->job_comp_type);
 	xfree(build_ptr->plugindir);
@@ -1919,6 +1942,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 
 	/* load the data values */
 	pack16(job_desc_ptr->contiguous, buffer);
+        pack16(job_desc_ptr->exclusive, buffer);
 	pack16(job_desc_ptr->kill_on_node_fail, buffer);
 	packstr(job_desc_ptr->features, buffer);
 	pack32(job_desc_ptr->job_id, buffer);
@@ -1997,6 +2021,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 
 	/* load the data values */
 	safe_unpack16(&job_desc_ptr->contiguous, buffer);
+        safe_unpack16(&job_desc_ptr->exclusive, buffer);
 	safe_unpack16(&job_desc_ptr->kill_on_node_fail, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->features, &uint16_tmp, buffer);
 	safe_unpack32(&job_desc_ptr->job_id, buffer);
@@ -2410,6 +2435,7 @@ _pack_spawn_task_request_msg(spawn_task_request_msg_t * msg, Buf buffer)
 	pack32(msg->nnodes, buffer);
 	pack32(msg->nprocs, buffer);
 	pack32(msg->uid, buffer);
+        pack32(msg->gid, buffer);
 	pack32(msg->srun_node_id, buffer);
 	slurm_cred_pack(msg->cred, buffer);
 	packstr_array(msg->env, msg->envc, buffer);
@@ -2439,6 +2465,7 @@ _unpack_spawn_task_request_msg(spawn_task_request_msg_t **
 	safe_unpack32(&msg->nnodes, buffer);
 	safe_unpack32(&msg->nprocs, buffer);
 	safe_unpack32(&msg->uid, buffer);
+        safe_unpack32(&msg->gid, buffer);
 	safe_unpack32(&msg->srun_node_id, buffer);
 	if (!(msg->cred = slurm_cred_unpack(buffer)))
 		goto unpack_error;
@@ -2764,6 +2791,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 	xassert(msg != NULL);
 
 	pack32(msg->job_id, buffer);
+	pack32(msg->step_id, buffer);
 	pack32(msg->uid, buffer);
 	pack32(msg->gid, buffer);
 	pack32(msg->nprocs, buffer);
@@ -2801,6 +2829,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	*msg = launch_msg_ptr;
 
 	safe_unpack32(&launch_msg_ptr->job_id, buffer);
+	safe_unpack32(&launch_msg_ptr->step_id, buffer);
 	safe_unpack32(&launch_msg_ptr->uid, buffer);
 	safe_unpack32(&launch_msg_ptr->gid, buffer);
 	safe_unpack32(&launch_msg_ptr->nprocs, buffer);
@@ -3091,6 +3120,37 @@ _unpack_checkpoint_resp_msg(checkpoint_resp_msg_t **msg_ptr, Buf buffer)
     unpack_error:
 	*msg_ptr = NULL;
 	xfree(msg);
+	return SLURM_ERROR;
+}
+
+static void _pack_jobacct_data(jobacct_msg_t * msg , Buf buffer )
+{
+	xassert ( msg != NULL );
+	/* debug("jobacct: packing message"); */
+
+	pack16 ( msg -> len, buffer );
+	packmem ( msg -> data, msg->len, buffer ) ;
+}
+
+static int _unpack_jobacct_data(jobacct_msg_t ** msg_ptr , Buf buffer )
+{
+	uint16_t uint16_tmp;
+	jobacct_msg_t *msg ;
+
+	xassert ( msg_ptr != NULL );
+
+	msg = xmalloc ( sizeof (jobacct_msg_t) ) ;
+	*msg_ptr = msg;
+
+	safe_unpack16 ( & msg -> len, buffer );
+	safe_unpackmem_xmalloc ( & msg -> data, & uint16_tmp , buffer ) ;
+	/* debug("jobacct: unpacked message"); */
+	return SLURM_SUCCESS;
+
+    unpack_error:
+	xfree(msg -> data);
+	xfree(msg);
+	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 

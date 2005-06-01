@@ -1,4 +1,4 @@
 # $Id$
 # Makefile for node selection plugins
 
-SUBDIRS = bluegene linear
+SUBDIRS = bluegene cons_res linear

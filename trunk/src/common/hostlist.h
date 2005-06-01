@@ -421,5 +421,9 @@ char * hostset_shift_range(hostset_t set);
  */
 int hostset_count(hostset_t set);
 
+/* hostset_index():
+ * Return the index of host in hostset
+ */
+int hostset_index(hostset_t set, const char *host, int jobid);
 
 #endif /* !_HOSTLIST_H */

@@ -232,6 +232,34 @@
 
 
 #
+# o Define the job accounting mechanism to use.
+#
+#   "jobacct/log"    : Generate job accounting data for each job.
+#   "jobacct/none"   : Do not track accounting data.
+#
+
+JobAcctType=jobacct/none
+
+#
+# o Define the location where job accounting logs are to be
+#   written. For
+#    - jobacct/none - this parameter is ignored
+#    - jobacct/log  - the fully-qualified file name for the data file
+#
+# JobAcctLoc=/var/log/slurm_accounting.log
+
+#
+# o Define any parameters to pass to the job accounting plugin. For
+#    - jobacct/none - this parameter is ignored
+#    - jobacct/log  - the only parameter available at this time is
+#          - "Frequency=N" - where N is the number of seconds between
+#                            sampling the memory usage stats (psize,
+#                            vsize). If N=0, no sampling is done, and
+#                            psize and vsize are returned as 0.
+#
+# JobAcctParameters="Frequency=30"
+
+#
 # o Define the places to look for SLURM plugins.  This is a
 #   colon-separated list of directories, just like the PATH
 #   environment variable.

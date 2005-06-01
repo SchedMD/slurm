@@ -131,6 +131,8 @@ struct slurm_job_credential {
 	uid_t    uid;          /* user for which this cred is valid         */
 	time_t   ctime;        /* time of credential creation               */
 	char    *nodes;        /* list of hostnames for which the cred is ok*/
+        uint32_t ntask_cnt;    /* Number of hosts in the list above         */
+        uint32_t *ntask;       /* Number of tasks on each host              */
 
 	unsigned char *signature; /* credential signature                   */
 	int      siglen;          /* signature length in bytes              */
@@ -361,6 +363,12 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg)
 	cred->stepid = arg->stepid;
 	cred->uid    = arg->uid;
 	cred->nodes  = xstrdup(arg->hostlist);
+        cred->ntask_cnt = arg->ntask_cnt;
+        cred->ntask  = NULL;
+        if (cred->ntask_cnt > 0) {
+                cred->ntask =  xmalloc(cred->ntask_cnt * sizeof(int));
+                memcpy(cred->ntask, arg->ntask, cred->ntask_cnt * sizeof(int));
+        }
 	cred->ctime  = time(NULL);
 
 	if (_slurm_cred_sign(ctx, cred) < 0) 
@@ -394,6 +402,12 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	cred->stepid = arg->stepid;
         cred->uid    = arg->uid;
 	cred->nodes  = xstrdup(arg->hostlist);
+        cred->ntask_cnt = arg->ntask_cnt;
+        cred->ntask  = NULL;
+        if (cred->ntask_cnt > 0) {
+                 cred->ntask =  xmalloc(cred->ntask_cnt * sizeof(int));
+                 memcpy(cred->ntask, arg->ntask, cred->ntask_cnt * sizeof(int));
+        }
 	cred->ctime  = time(NULL);
 	cred->siglen = SLURM_IO_KEY_SIZE;
 
@@ -465,6 +479,12 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred,
 	arg->stepid   = cred->stepid;
 	arg->uid      = cred->uid;
 	arg->hostlist = xstrdup(cred->nodes);
+        arg->ntask_cnt = cred->ntask_cnt;
+        arg->ntask     = NULL;
+        if (arg->ntask_cnt > 0) {
+                arg->ntask =  xmalloc(arg->ntask_cnt * sizeof(int));
+                memcpy(arg->ntask, cred->ntask, arg->ntask_cnt * sizeof(int));
+        }
 
 	slurm_mutex_unlock(&cred->mutex);
 
@@ -488,6 +508,9 @@ slurm_cred_destroy(slurm_cred_t cred)
 	slurm_mutex_lock(&cred->mutex);
 	if (cred->nodes)
 		xfree(cred->nodes);
+        if (cred->ntask)
+                xfree(cred->ntask);
+        cred->ntask = NULL;
 	if (cred->signature)
 		xfree(cred->signature);
 	xassert(cred->magic = ~CRED_MAGIC);
@@ -688,6 +711,9 @@ slurm_cred_unpack(Buf buffer)
 	safe_unpack32(          &tmpint,             buffer);
 	cred->uid = tmpint;
 	safe_unpackstr_xmalloc( &cred->nodes, &len,  buffer);
+	safe_unpack32(          &cred->ntask_cnt,     buffer);
+        if (cred->ntask_cnt > 0)
+                safe_unpack32_array(&cred->ntask, &tmpint,  buffer);
 	safe_unpack_time(       &cred->ctime,        buffer);
 	safe_unpackmem_xmalloc( sigp,         &len,  buffer);
 
@@ -739,6 +765,8 @@ slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, Buf buffer)
 void
 slurm_cred_print(slurm_cred_t cred)
 {
+        int i;
+
 	if (cred == NULL)
 		return;
 
@@ -750,6 +778,10 @@ slurm_cred_print(slurm_cred_t cred)
 	info("Cred: Stepid  %u",  cred->jobid         );
 	info("Cred: UID     %lu", (u_long) cred->uid  );
 	info("Cred: Nodes   %s",  cred->nodes         );
+	info("Cred: ntask_cnt %d", cred->ntask_cnt     ); 
+        info("Cred: ntask: ");                            
+        for (i=0; i<cred->ntask_cnt; i++)                 
+                info("ntask[%d] = %d ", i, cred->ntask[i]);
 	info("Cred: ctime   %s",  ctime(&cred->ctime) );
 	info("Cred: siglen  %d",  cred->siglen        );
 	slurm_mutex_unlock(&cred->mutex);
@@ -923,6 +955,8 @@ _slurm_cred_alloc(void)
 	cred->stepid    = 0;
 	cred->uid       = (uid_t) -1;
 	cred->nodes     = NULL;
+        cred->ntask_cnt  = 0; 
+	cred->ntask     = NULL;
 	cred->signature = NULL;
 	cred->siglen    = 0;
 
@@ -1033,6 +1067,9 @@ _pack_cred(slurm_cred_t cred, Buf buffer)
 	pack32(           cred->stepid, buffer);
 	pack32((uint32_t) cred->uid,    buffer);
 	packstr(          cred->nodes,  buffer);
+	pack32(           cred->ntask_cnt, buffer);
+        if (cred->ntask_cnt > 0)
+                pack32_array( cred->ntask, cred->ntask_cnt, buffer);
 	pack_time(        cred->ctime,  buffer);
 }
 

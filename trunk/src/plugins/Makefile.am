@@ -1,3 +1,3 @@
 # $Id$
 
-SUBDIRS = auth checkpoint jobcomp proctrack sched select switch
+SUBDIRS = auth checkpoint jobacct jobcomp proctrack sched select switch

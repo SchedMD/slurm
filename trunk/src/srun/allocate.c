@@ -371,7 +371,8 @@ job_desc_msg_create_from_opts (char *script)
 	j->num_tasks      = opt.nprocs;
 	j->user_id        = opt.uid;
 	j->dependency     = opt.dependency;
-	 j->group_id      = opt.gid;
+	j->exclusive      = opt.exclusive;
+	j->group_id       = opt.gid;
 	if (opt.network)
 		j->network = xstrdup(opt.network);
 	if (opt.account)

@@ -100,6 +100,7 @@
 #define LONG_OPT_NODE_USE 0x112
 #define LONG_OPT_TEST_ONLY 0x113
 #define LONG_OPT_NETWORK  0x114
+#define LONG_OPT_EXCLUSIVE 0x115
 
 /*---- forward declarations of static functions  ----*/
 
@@ -408,7 +409,6 @@ static long _to_bytes(const char *arg)
 	return result;
 }
 
-
 /*
  * print error message to stderr with opt.progname prepended
  */
@@ -495,7 +495,7 @@ static void _opt_default()
 
 	opt.quit_on_intr = false;
 	opt.disable_status = false;
-	opt. test_only   = false;
+	opt.test_only   = false;
 
 	opt.quiet = 0;
 	_verbose = 0;
@@ -509,6 +509,7 @@ static void _opt_default()
 	opt.hold	    = false;
 	opt.constraints	    = NULL;
 	opt.contiguous	    = false;
+        opt.exclusive       = false;
 	opt.nodelist	    = NULL;
 	opt.exc_nodes	    = NULL;
 	opt.max_launch_time = 120;/* 120 seconds to launch job             */
@@ -758,6 +759,7 @@ static void _opt_args(int argc, char **argv)
 		{"disable-status", no_argument,      0, 'X'},
 		{"no-allocate",   no_argument,       0, 'Z'},
 		{"contiguous",       no_argument,       0, LONG_OPT_CONT},
+                {"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
 		{"core",             required_argument, 0, LONG_OPT_CORE},
 		{"mincpus",          required_argument, 0, LONG_OPT_MINCPU},
 		{"mem",              required_argument, 0, LONG_OPT_MEM},
@@ -966,6 +968,9 @@ static void _opt_args(int argc, char **argv)
 		case LONG_OPT_CONT:
 			opt.contiguous = true;
 			break;
+                case LONG_OPT_EXCLUSIVE:
+                        opt.exclusive = true;
+                        break;
 		case LONG_OPT_CORE:
 			opt.core_type = core_format_type (optarg);
 			if (opt.core_type == CORE_INVALID)
@@ -1231,6 +1236,9 @@ static bool _opt_verify(void)
 	if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid)) 
 		opt.gid = opt.egid;
 
+        if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid))
+	        opt.gid = opt.egid;
+
 	if (opt.noshell && !opt.allocate) {
 		error ("--no-shell only valid with -A (--allocate)");
 		verified = false;
@@ -1332,6 +1340,9 @@ static char *print_constraints()
 
 	if (opt.contiguous == true)
 		xstrcat(buf, "contiguous ");
+ 
+        if (opt.exclusive == true)
+                xstrcat(buf, "exclusive ");
 
 	if (opt.nodelist != NULL)
 		xstrfmtcat(buf, "nodelist=%s ", opt.nodelist);
@@ -1527,6 +1538,10 @@ static void _help(void)
 "  -w, --nodelist=hosts...     request a specific list of hosts\n"
 "  -x, --exclude=hosts...      exclude a specific list of hosts\n"
 "  -Z, --no-allocate           don't allocate nodes (must supply -w)\n"
+"\n"
+"Consumable resources related options\n" 
+"      --exclusive             allocate nodes in exclusive mode when\n" 
+"                              cpu consumable resource is enabled\n"
 "\n"
 #ifdef HAVE_BGL				/* Blue gene specific options */
   "Blue Gene related options:\n"

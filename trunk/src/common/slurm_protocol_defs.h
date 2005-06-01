@@ -150,6 +150,7 @@ typedef enum {
 
 	RESPONSE_SLURM_RC = 8001,
 	MESSAGE_UPLOAD_ACCOUNTING_INFO,
+	MESSAGE_JOBACCT_DATA,
 } slurm_msg_type_t;
 
 typedef enum {
@@ -299,6 +300,7 @@ typedef struct spawn_task_request_msg {
 	uint32_t  nnodes;	/* number of nodes in this job step       */
 	uint32_t  nprocs;	/* number of processes in this job step   */
 	uint32_t  uid;
+        uint32_t  gid;
 	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
 	uint16_t  envc;
 	uint16_t  argc;
@@ -368,6 +370,7 @@ typedef struct reattach_tasks_response_msg {
 
 typedef struct batch_job_launch_msg {
 	uint32_t job_id;
+	uint32_t step_id;
 	uint32_t uid;
 	uint32_t gid;
 	uint32_t nprocs;	/* number of tasks in this job         */
@@ -424,6 +427,11 @@ typedef struct checkpoint_resp_msg {
 	uint16_t ckpt_errno;	/* errno from last checkpoint operation */
 	char * ckpt_strerror;	/* string descriptive of ckpt_errno */
 } checkpoint_resp_msg_t;
+
+typedef struct jobacct_msg {
+	uint16_t len;		/* job accounting plugins specify their own */
+	char *data;		/* data structure; we just pass it to them. */
+} jobacct_msg_t;
 
 /*****************************************************************************\
  * Slurm API Message Types
@@ -508,6 +516,7 @@ void inline slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg);
 void inline slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg);
 void inline slurm_free_checkpoint_msg(checkpoint_msg_t *msg);
 void inline slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg);
+void inline slurm_free_jobacct_msg(jobacct_msg_t *msg);
 
 void slurm_free_resource_allocation_response_msg (
 		resource_allocation_response_msg_t * msg);
