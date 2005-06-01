@@ -276,6 +276,7 @@ static void _launch_job(struct job_record *job_ptr)
 	    (batch_job_launch_msg_t *)
 	    xmalloc(sizeof(batch_job_launch_msg_t));
 	launch_msg_ptr->job_id = job_ptr->job_id;
+	launch_msg_ptr->step_id = NO_VAL;
 	launch_msg_ptr->uid = job_ptr->user_id;
 	launch_msg_ptr->gid = job_ptr->group_id;
 	launch_msg_ptr->nprocs = job_ptr->details->req_tasks;

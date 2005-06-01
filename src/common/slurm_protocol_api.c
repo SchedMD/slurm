@@ -242,6 +242,48 @@ extern int slurm_set_auth_type(char *auth_type)
         return 0;
 }
 
+/* slurm_get_jobacct_loc
+ * returns the job accounting loc from the slurmctld_conf object
+ * RET char *    - job accounting loc,  MUST be xfreed by caller
+ */
+char *slurm_get_jobacct_loc(void)
+{
+        char *jobacct_loc;
+
+        _lock_update_config();
+        jobacct_loc = xstrdup(slurmctld_conf.job_acct_loc);
+        slurm_mutex_unlock(&config_lock);
+        return jobacct_loc;
+}
+
+/* slurm_get_jobacct_parameters
+ * returns the job accounting parameters from the slurmctld_conf object
+ * RET char *    - job accounting parameters,  MUST be xfreed by caller
+ */
+char *slurm_get_jobacct_parameters(void)
+{
+        char *jobacct_parameters;
+
+        _lock_update_config();
+        jobacct_parameters = xstrdup(slurmctld_conf.job_acct_parameters);
+        slurm_mutex_unlock(&config_lock);
+        return jobacct_parameters;
+}
+
+/* slurm_get_jobacct_type
+ * returns the job accounting type from the slurmctld_conf object
+ * RET char *    - job accounting type,  MUST be xfreed by caller
+ */
+char *slurm_get_jobacct_type(void)
+{
+        char *jobacct_type;
+
+        _lock_update_config();
+        jobacct_type = xstrdup(slurmctld_conf.job_acct_type);
+        slurm_mutex_unlock(&config_lock);
+        return jobacct_type;
+}
+
 /* slurm_get_jobcomp_type
  * returns the job completion logger type from slurmctld_conf object
  * RET char *    - job completion type,  MUST be xfreed by caller

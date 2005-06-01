@@ -97,7 +97,8 @@ delete_all_step_records (struct job_record *job_ptr)
 	last_job_update = time(NULL);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		list_remove (step_iterator);
-		switch_free_jobinfo(step_ptr->switch_job);
+		if (!step_ptr->batch_step)
+			switch_free_jobinfo(step_ptr->switch_job);
 		checkpoint_free_jobinfo(step_ptr->check_job);
 		xfree(step_ptr->host);
 		xfree(step_ptr->step_node_list);
@@ -137,7 +138,8 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
  * simultaneously. */
 			switch_g_job_step_complete(step_ptr->switch_job, 
 				step_ptr->step_node_list);
-			switch_free_jobinfo (step_ptr->switch_job);
+			if (!step_ptr->batch_step)
+				switch_free_jobinfo (step_ptr->switch_job);
 			checkpoint_free_jobinfo (step_ptr->check_job);
 			xfree(step_ptr->host);
 			xfree(step_ptr->step_node_list);
@@ -474,13 +476,14 @@ cleanup:
  * IN step_specs - job step specifications
  * OUT new_step_record - pointer to the new step_record (NULL on error)
  * IN kill_job_when_step_done - if set kill the job on step completion
+ * IN batch_step - if set then step is a batch script
  * RET - 0 or error code
  * NOTE: don't free the returned step_record because that is managed through
  * 	the job.
  */
 int
 step_create ( step_specs *step_specs, struct step_record** new_step_record,
-	      bool kill_job_when_step_done )
+	      bool kill_job_when_step_done, bool batch_step )
 {
 	struct step_record *step_ptr;
 	struct job_record  *job_ptr;
@@ -542,17 +545,21 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 	step_ptr->time_last_active = now;
 	step_ptr->port = step_specs->port;
 	step_ptr->host = xstrdup(step_specs->host);
+	step_ptr->batch_step = batch_step;
 
-	if (switch_alloc_jobinfo (&step_ptr->switch_job) < 0)
-		fatal ("step_create: switch_alloc_jobinfo error");
-	if (switch_build_jobinfo(step_ptr->switch_job, 
-				step_ptr->step_node_list,
-				step_specs->num_tasks, 
-				step_ptr->cyclic_alloc,
-				job_ptr->network) < 0) {
-		error("switch_build_jobinfo: %m");
-		delete_step_record (job_ptr, step_ptr->step_id);
-		return ESLURM_INTERCONNECT_FAILURE;
+	/* a batch script does not need switch info */
+	if (!batch_step) {
+		if (switch_alloc_jobinfo (&step_ptr->switch_job) < 0)
+			fatal ("step_create: switch_alloc_jobinfo error");
+		if (switch_build_jobinfo(step_ptr->switch_job, 
+					step_ptr->step_node_list,
+					step_specs->num_tasks, 
+					step_ptr->cyclic_alloc,
+					job_ptr->network) < 0) {
+			error("switch_build_jobinfo: %m");
+			delete_step_record (job_ptr, step_ptr->step_id);
+			return ESLURM_INTERCONNECT_FAILURE;
+		}
 	}
 	if (checkpoint_alloc_jobinfo (&step_ptr->check_job) < 0)
 		fatal ("step_create: checkpoint_alloc_jobinfo error");

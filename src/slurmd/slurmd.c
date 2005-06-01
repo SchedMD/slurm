@@ -52,6 +52,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/daemonize.h"
 #include "src/common/slurm_cred.h"
+#include "src/common/slurm_jobacct.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/parse_spec.h"
 #include "src/common/hostlist.h"
@@ -716,6 +717,11 @@ _slurmd_init()
 		error("Unable to chdir to /tmp");
 		return SLURM_FAILURE;
 	}
+
+	/*
+	 * Set up the job accounting plugin
+	 */
+	g_slurmd_jobacct_init(conf->cf.job_acct_parameters);
 
 
 	return SLURM_SUCCESS;

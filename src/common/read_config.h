@@ -37,7 +37,10 @@
 #define DEFAULT_HEARTBEAT_INTERVAL  60
 /* NOTE: DEFAULT_INACTIVE_LIMIT must be 0 for Blue Gene/L systems */
 #define DEFAULT_INACTIVE_LIMIT      0
-#define DEFAULT_JOB_COMP_TYPE      "jobcomp/none"
+#define DEFAULT_JOB_ACCT_LOC        "/var/log/slurm_accounting.log"
+#define DEFAULT_JOB_ACCT_PARAMETERS "Frequency=30"
+#define DEFAULT_JOB_ACCT_TYPE       "jobacct/none"
+#define DEFAULT_JOB_COMP_TYPE       "jobcomp/none"
 #define DEFAULT_KILL_TREE           0
 #define DEFAULT_KILL_WAIT           30
 #define DEFAULT_MAX_JOB_COUNT       2000

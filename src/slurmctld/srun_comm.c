@@ -139,6 +139,7 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 			continue;	/* job step not on this node */
 		if ( (step_ptr->port    == 0)    || 
 		     (step_ptr->host    == NULL) ||
+		     (step_ptr->batch_step)      ||
 		     (step_ptr->host[0] == '\0') )
 			continue;
 		addr = xmalloc(sizeof(struct sockaddr_in));
@@ -190,6 +191,7 @@ extern void srun_ping (void)
 			if ( (step_ptr->time_last_active > old) ||
 			     (step_ptr->port    == 0)    || 
 			     (step_ptr->host    == NULL) ||
+			     (step_ptr->batch_step)      ||
 			     (step_ptr->host[0] == '\0') )
 				continue;
 			addr = xmalloc(sizeof(struct sockaddr_in));
@@ -239,6 +241,7 @@ extern void srun_timeout (uint32_t job_id, time_t timeout)
 	while ((step_ptr = (struct step_record *) list_next(step_iterator))) {
 		if ( (step_ptr->port    == 0)    || 
 		     (step_ptr->host    == NULL) ||
+		     (step_ptr->batch_step)      ||
 		     (step_ptr->host[0] == '\0') )
 			continue;
 		addr = xmalloc(sizeof(struct sockaddr_in));

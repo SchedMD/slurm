@@ -620,6 +620,8 @@ _job_fake_cred(job_t *job)
 	arg.stepid   = job->stepid;
 	arg.uid      = opt.uid;
 	arg.hostlist = job->nodelist;
+        arg.ntask_cnt = 0;    
+        arg.ntask    =  NULL; 
 	job->cred = slurm_cred_faker(&arg);
 }
 

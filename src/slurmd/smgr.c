@@ -47,10 +47,13 @@
 #  include <sys/types.h>
 #endif
 
+#include <sys/resource.h>
+
 #include <slurm/slurm_errno.h>
 
 #include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/slurm_jobacct.h"
 #include "src/common/setenvpf.h"
 #include "src/common/switch.h"
 #include "src/common/xsignal.h"
@@ -83,7 +86,7 @@ static void  _make_tmpdir(slurmd_job_t *job);
 static int   _child_exited(void);
 static void  _wait_for_all_tasks(slurmd_job_t *job);
 static int   _local_taskid(slurmd_job_t *job, pid_t pid);
-static int   _send_exit_status(slurmd_job_t *job, pid_t pid, int status);
+static int   _send_exit_status(slurmd_job_t *job, pid_t pid, int status, struct rusage *rusage);
 static char *_signame(int signo);
 static void  _cleanup_file_descriptors(slurmd_job_t *job);
 static int   _setup_env(slurmd_job_t *job, int taskid);
@@ -191,6 +194,9 @@ _session_mgr(slurmd_job_t *job)
 		debug("exec_all_tasks failed");
 		exit(6);
 	}
+
+	g_slurmd_jobacct_smgr();	/* tell the accountants to start
+					   counting. */
 
 	/*
 	 *  Clean up open file descriptors in session manager so that
@@ -467,15 +473,18 @@ static int
 _reap_task(slurmd_job_t *job)
 {
 	pid_t pid;
+	struct rusage rusage;
 	int   status = 0;
 
-	if ((pid = waitpid(-1, &status, WNOHANG|WUNTRACED)) > (pid_t) 0) 
-		return _send_exit_status(job, pid, status);
+	if ((pid = wait3(&status, WNOHANG|WUNTRACED, &rusage)) > (pid_t) 0)
+	{ 
+		return _send_exit_status(job, pid, status, &rusage);
+	}
 
 	if ((pid < 0) && (errno != ECHILD))
-		error  ("waitpid: %m");
+		error  ("wait3: %m");
 	else
-		debug2 ("waitpid(-1, WNOHANG) returned 0");
+		debug2 ("wait3(WNOHANG) returned 0");
 
 	return 0;
 }
@@ -517,7 +526,7 @@ _wid(int n)
  *    exited (e.g. task has stopped).
  */ 
 static int 
-_send_exit_status(slurmd_job_t *job, pid_t pid, int status)
+_send_exit_status(slurmd_job_t *job, pid_t pid, int status, struct rusage *rusage)
 {
 	exit_status_t e;
 	int           retry = 1;
@@ -549,6 +558,8 @@ _send_exit_status(slurmd_job_t *job, pid_t pid, int status)
 	          pid, 
 	          status
 	        );
+
+	g_slurmd_jobacct_task_exit(job, pid, status, rusage);
 
 	while (((rc = fd_write_n(fd, &e, len)) <= 0) && retry--) {;}
 

@@ -2682,6 +2682,35 @@ size_t hostset_deranged_string(hostset_t set, size_t n, char *buf)
 	return hostlist_deranged_string(set->hl, n, buf);
 }
 
+int hostset_index(hostset_t set, const char *host, int jobid)
+{
+        char *this_host;
+        int retval = -1, j = 0; 
+        int nhosts = hostset_count(set);
+
+        /* Locking isn't an option since host_list_iterator_create,
+           hostlist_next and hostlist_iterator_destroy are locking */
+
+        hostlist_iterator_t iterator = hostlist_iterator_create(set->hl);
+
+        for (j = 0; j < nhosts; j++) {
+                this_host = hostlist_next(iterator);
+                debug3(" cons_res host_index %u j=%d host %s this_host %s", 
+                      jobid, j, host, this_host);
+                if (strcmp(host, this_host) == 0) {
+                        retval = j; 
+                        free(this_host);
+                        goto done;
+                }
+               free(this_host);
+        }
+
+    done:
+       hostlist_iterator_destroy(iterator);
+
+       return retval;
+}
+
 #if TEST_MAIN 
 
 int hostlist_nranges(hostlist_t hl)

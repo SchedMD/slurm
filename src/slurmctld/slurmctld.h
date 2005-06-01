@@ -138,6 +138,7 @@ extern int bgl_recover;		/* state recovery mode */
  *  NODE parameters and data structures
 \*****************************************************************************/
 #define MAX_NAME_LEN	32
+#define MAX_JOBNAME_LEN 256
 #define CONFIG_MAGIC 0xc065eded
 #define NODE_MAGIC   0x0de575ed
 
@@ -247,6 +248,10 @@ struct job_details {
 	uint16_t req_tasks;		/* required number of tasks */
 	uint16_t shared;		/* set node can be shared*/
 	uint16_t contiguous;		/* set if requires contiguous nodes */
+        uint16_t exclusive;             /* set if requires exclusive
+                                         * nodes, Only useful when
+                                         * Consumable Resources are
+                                         * enabled */
 	uint16_t wait_reason;		/* reason job still pending, see
 					 * slurm.h:enum job_wait_reason */
 	uint32_t min_procs;		/* minimum processors per node */
@@ -266,7 +271,7 @@ struct job_details {
 struct job_record {
 	uint32_t job_id;		/* job ID */
 	uint32_t magic;			/* magic cookie for data integrity */
-	char name[MAX_NAME_LEN];	/* name of the job */
+	char name[MAX_JOBNAME_LEN];	/* name of the job */
 	char partition[MAX_NAME_LEN];	/* name of the partition */
 	struct part_record *part_ptr;	/* pointer to the partition record */
 	uint16_t batch_flag;		/* 1 or 2 if batch job (with script),
@@ -311,6 +316,22 @@ struct job_record {
 	uint32_t dependency;		/* defer until this job completes */
 	char *network;			/* network/switch requirement spec */
 	struct job_record *job_next;	/* next entry with same hash index */
+        uint16_t cr_enabled;            /* specify if if Consumable
+                                         * Resources is
+                                         * enabled. Needed since CR
+                                         * deals with a finer
+                                         * granularity in its node/cpu
+                                         * scheduling (available cpus
+                                         * instead of available nodes)
+                                         * than the bluegene and the
+                                         * linear plugins 
+                                         * 0 if cr is NOT enabled, 
+                                         * 1 if cr is enabled */
+        uint32_t ntask_cnt;             /* number of hosts in *ntask
+                                           or 0 if ntask is not needed
+                                           for the credentials */
+        uint32_t *ntask;                /* number of tasks to run on
+                                           each of the ntask_cnt hosts */
 };
 
 struct 	step_record {
@@ -327,12 +348,33 @@ struct 	step_record {
 	time_t time_last_active;	/* time of last job activity */
 	uint16_t port;			/* port for srun communications */
 	char *host;			/* host for srun communications */
+	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */
 	switch_jobinfo_t switch_job;	/* switch context, opaque */
 	check_jobinfo_t check_job;	/* checkpoint context, opaque */
 };
 
 typedef struct job_step_specs step_specs; 
 extern List job_list;			/* list of job_record entries */
+
+ extern List job_list;                  /* list of job_record entries */
+ 
+/*****************************************************************************\
+ *  Consumable Resources parameters and data structures
+\*****************************************************************************/
+
+/* 
+ * Define the type of update and of data retrieval that can happen
+ * from the "select/cons_res" plugin. This information needed to
+ * support processors as consumable resources.  This structure will be
+ * useful when updating other types of consumable resources as well
+*/
+enum select_data_info {
+       SELECT_CR_PLUGIN,       /* data-> uint32 1 if CR plugin */
+       SELECT_CR_CPU_COUNT,    /* data-> uint32_t count_cpus (CR support) */   
+       SELECT_CR_BITMAP,       /* data-> partially_idle_bitmap (CR support) */
+       SELECT_CR_USED_CPUS,    /* data-> uint32 used_cpus (CR support) */
+       SELECT_CR_USABLE_CPUS   /* data-> uint32 usable cpus (CR support) */ 
+};
 
 /*****************************************************************************\
  *  Global slurmctld functions
@@ -1056,13 +1098,15 @@ extern int slurmctld_shutdown(void);
  * IN step_specs - job step specifications
  * OUT new_step_record - pointer to the new step_record (NULL on error)
  * IN kill_job_when_step_done - if set kill the job on step completion
+ * IN batch_step - set if step is a batch script
  * RET - 0 or error code
  * NOTE: don't free the returned step_record because that is managed through
  * 	the job.
  */
 extern int step_create ( step_specs *step_specs, 
 			 struct step_record** new_step_record,
-			 bool kill_job_when_step_done );
+			 bool kill_job_when_step_done,
+			 bool batch_step );
 
 /* 
  * step_on_node - determine if the specified job has any job steps allocated to 

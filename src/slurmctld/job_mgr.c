@@ -48,6 +48,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
 #include "src/common/node_select.h"
+#include "src/common/slurm_jobacct.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/switch.h"
 #include "src/common/xassert.h"
@@ -70,6 +71,8 @@
 #define TOP_PRIORITY 0xffff0000	/* large, but leave headroom for higher */
 
 #define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
+
+#define JOB_STATE_VERSION      "VER001"
 
 /* Global variables */
 List job_list = NULL;		/* job_record list */
@@ -249,8 +252,26 @@ int dump_all_job_state(void)
 	DEF_TIMERS;
 
 	START_TIMER;
+
+        /*
+         * write header: The version of the "job_state" file format.
+         * Putting a version in the header comes in handy for cases where
+         * we need to modify the format of the "job_state" file.
+         */
+	packstr( JOB_STATE_VERSION, buffer);
+
 	/* write header: time */
 	pack_time(time(NULL), buffer);
+
+        /*
+         * write header: job id
+         * This is needed so that the job id remains persistent even after
+         * slurmctld is restarted.
+         */
+	pack32( job_id_sequence, buffer);
+
+	debug3("Writing job id %d to header record of job_state file",
+	       job_id_sequence);
 
 	/* write individual job records */
 	lock_slurmctld(job_read_lock);
@@ -328,6 +349,9 @@ int load_all_job_state(void)
 	char *data = NULL, *state_file;
 	Buf buffer;
 	time_t buf_time;
+	uint32_t saved_job_id;
+	char *ver_str = NULL;
+	uint16_t ver_str_len;
 
 	/* read the file */
 	state_file = xstrdup(slurmctld_conf.state_save_location);
@@ -366,7 +390,40 @@ int load_all_job_state(void)
 		job_id_sequence = slurmctld_conf.first_job_id;
 
 	buffer = create_buf(data, data_size);
+
+        /*
+         * The old header of the "job_state" file simply contained a
+         * timestamp, while the new header contains a "VERXXX" at the
+         * beginning (VER001, VER002, etc), a timestamp, and the last
+         * job id. To determine if we're looking at an old header or
+         * new header, we first check if the file begins with "VER".
+         *
+         * Each field is preceeded by two bytes which contains the field
+         * size.  Since we are bypassing the "pack" functions in order
+         * see if the header contains a "VERXXX" string, we need to make
+         * sure that there is enough data in the buffer to compare against.
+         */
+	if (size_buf(buffer) >= sizeof(uint16_t) + strlen(JOB_STATE_VERSION))
+	{
+	        char *ptr = get_buf_data(buffer);
+
+	        if (memcmp( &ptr[sizeof(uint16_t)], JOB_STATE_VERSION, 3) == 0)
+		{
+		        safe_unpackstr_xmalloc( &ver_str, &ver_str_len, buffer);
+		        debug3("Version string in job_state header is %s",
+				ver_str);
+		}
+	}
+
 	safe_unpack_time(&buf_time, buffer);
+
+        /*
+         * If the header has the version string then it also has the job id.
+         */
+	if (ver_str != NULL) {
+	        safe_unpack32( &saved_job_id, buffer);
+	        debug3("Job id in job_state header is %d", saved_job_id);
+	}
 
 	while (remaining_buf(buffer) > 0) {
 		error_code = _load_job_state(buffer);
@@ -375,7 +432,18 @@ int load_all_job_state(void)
 		job_cnt++;
 	}
 
+        /*
+         * If the header has the version string then it also has the job id.
+	 * Use MAX of preserved value or configuration parameter 
+	 * FirstJobId (set above).
+         */
+	if (ver_str != NULL) {
+		job_id_sequence = MAX(saved_job_id, job_id_sequence);
+		debug3("Set job_id_sequence to %d", job_id_sequence);
+	}
+
 	free_buf(buffer);
+	xfree(ver_str);
 	info("Recovered state of %d jobs", job_cnt);
 	return error_code;
 
@@ -383,6 +451,7 @@ int load_all_job_state(void)
 	error("Incomplete job data checkpoint file");
 	info("State of %d jobs recovered", job_cnt);
 	free_buf(buffer);
+	xfree(ver_str);
 	return SLURM_FAILURE;
 }
 
@@ -557,7 +626,7 @@ static int _load_job_state(Buf buffer)
 	job_ptr->dependency   = dependency;
 	job_ptr->num_procs    = num_procs;
 	job_ptr->time_last_active = time(NULL);
-	strncpy(job_ptr->name, name, MAX_NAME_LEN);
+	strncpy(job_ptr->name, name, MAX_JOBNAME_LEN);
 	xfree(name);
 	xfree(job_ptr->nodes);
 	job_ptr->nodes  = nodes;
@@ -747,7 +816,9 @@ static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	pack_time(step_ptr->start_time, buffer);
 	packstr(step_ptr->host,  buffer);
 	packstr(step_ptr->step_node_list,  buffer);
-	switch_pack_jobinfo(step_ptr->switch_job, buffer);
+	pack16(step_ptr->batch_step, buffer);
+	if (!step_ptr->batch_step)
+		switch_pack_jobinfo(step_ptr->switch_job, buffer);
 	checkpoint_pack_jobinfo(step_ptr->check_job, buffer);
 }
 
@@ -755,7 +826,7 @@ static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 {
 	struct step_record *step_ptr;
-	uint16_t step_id, cyclic_alloc, name_len, port;
+	uint16_t step_id, cyclic_alloc, name_len, port, batch_step;
 	uint32_t num_tasks;
 	time_t start_time;
 	char *step_node_list = NULL, *host = NULL;
@@ -769,7 +840,12 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	safe_unpack_time(&start_time, buffer);
 	safe_unpackstr_xmalloc(&host, &name_len, buffer);
 	safe_unpackstr_xmalloc(&step_node_list, &name_len, buffer);
-	switch_alloc_jobinfo(&switch_tmp);
+	safe_unpack16(&batch_step, buffer);
+	if (!batch_step) {
+		switch_alloc_jobinfo(&switch_tmp);
+        	if (switch_unpack_jobinfo(switch_tmp, buffer))
+                	goto unpack_error;
+	}
         if (switch_unpack_jobinfo(switch_tmp, buffer))
                 goto unpack_error;
 	checkpoint_alloc_jobinfo(&check_tmp);
@@ -798,6 +874,7 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_ptr->num_tasks    = num_tasks;
 	step_ptr->port         = port;
 	step_ptr->host         = host;
+	step_ptr->batch_step   = batch_step;
 	host                   = NULL;  /* re-used, nothing left to free */
 	step_ptr->start_time   = start_time;
 	step_ptr->step_node_list = step_node_list;
@@ -811,7 +888,7 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
       unpack_error:
 	xfree(host);
 	xfree(step_node_list);
-	switch_free_jobinfo(switch_tmp);
+	if (switch_tmp) switch_free_jobinfo(switch_tmp);
 	return SLURM_FAILURE;
 }
 
@@ -1276,6 +1353,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
 	}
 
+	g_slurmctld_jobacct_job_start(job_ptr);
 	return SLURM_SUCCESS;
 }
 
@@ -2067,8 +2145,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	_add_job_hash(job_ptr);
 
 	if (job_desc->name) {
-		strncpy(job_ptr->name, job_desc->name,
-			sizeof(job_ptr->name));
+		strncpy(job_ptr->name, job_desc->name, MAX_JOBNAME_LEN);
 	}
 	job_ptr->user_id    = (uid_t) job_desc->user_id;
 	job_ptr->group_id   = (gid_t) job_desc->group_id;
@@ -2093,6 +2170,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->host = xstrdup(job_desc->host);
 	job_ptr->time_last_active = time(NULL);
 	job_ptr->num_procs = job_desc->num_procs;
+        job_ptr->cr_enabled = 0;
 
 	detail_ptr = job_ptr->details;
 	detail_ptr->argc = job_desc->argc;
@@ -2119,6 +2197,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->shared = job_desc->shared;
 	if (job_desc->contiguous != (uint16_t) NO_VAL)
 		detail_ptr->contiguous = job_desc->contiguous;
+        if (job_desc->exclusive != (uint16_t) NO_VAL)
+                detail_ptr->exclusive = job_desc->exclusive;
 	if (job_desc->min_procs != NO_VAL)
 		detail_ptr->min_procs = job_desc->min_procs;
 	if (job_desc->min_memory != NO_VAL)
@@ -2291,11 +2371,13 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		return ESLURM_USER_ID_MISSING;
 	}
 	if ((job_desc_msg->name) &&
-	    (strlen(job_desc_msg->name) >= MAX_NAME_LEN)) {
-		job_desc_msg->name[MAX_NAME_LEN-1] = '\0';
+	    (strlen(job_desc_msg->name) >= MAX_JOBNAME_LEN)) {
+		job_desc_msg->name[MAX_JOBNAME_LEN-1] = '\0';
 	}
 	if (job_desc_msg->contiguous == (uint16_t) NO_VAL)
 		job_desc_msg->contiguous = 0;
+        if (job_desc_msg->exclusive == (uint16_t) NO_VAL)
+                job_desc_msg->exclusive = 0;
 	if (job_desc_msg->kill_on_node_fail == (uint16_t) NO_VAL)
 		job_desc_msg->kill_on_node_fail = 1;
 	if (job_desc_msg->shared == (uint16_t) NO_VAL)
@@ -2389,6 +2471,9 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->host);
 	xfree(job_ptr->account);
 	xfree(job_ptr->network);
+	if (job_ptr->ntask) 
+		xfree(job_ptr->ntask);
+	job_ptr->ntask = 0;
 	select_g_free_jobinfo(&job_ptr->select_jobinfo);
 	if (job_ptr->step_list) {
 		delete_all_step_records(job_ptr);
@@ -3053,7 +3138,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->name) {
-		strncpy(job_ptr->name, job_specs->name, MAX_NAME_LEN);
+		strncpy(job_ptr->name, job_specs->name, MAX_JOBNAME_LEN);
 		info("update_job: setting name to %s for job_id %u",
 		     job_specs->name, job_specs->job_id);
 	}
@@ -3578,6 +3663,7 @@ void job_fini (void)
 extern void job_completion_logger(struct job_record  *job_ptr)
 {
 	xassert(job_ptr);
+	g_slurmctld_jobacct_job_complete(job_ptr);
 	g_slurm_jobcomp_write(job_ptr);
 }
 

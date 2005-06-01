@@ -53,10 +53,12 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
+#include "src/common/slurm_jobacct.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
 
+#include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
@@ -68,6 +70,8 @@
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static inline bool 	_is_super_user(uid_t uid);
 static void         _kill_job_on_msg_fail(uint32_t job_id);
+static int 	    _launch_batch_step(job_desc_msg_t *job_desc_msg,
+					uid_t uid, uint32_t *step_id);
 static int          _make_step_cred(struct step_record *step_rec, 
 				    slurm_cred_t *slurm_cred);
 inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
@@ -98,6 +102,7 @@ inline static void  _slurm_rpc_update_node(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_delete_partition(slurm_msg_t * msg);
 inline static void  _update_cred_key(void);
+
 
 /*
  * diff_tv_str - build a string showing the time difference between two times
@@ -237,6 +242,10 @@ void slurmctld_req (slurm_msg_t * msg)
 		_slurm_rpc_node_select_info(msg);
 		/* Note: No data to free */
 		break;
+	case MESSAGE_JOBACCT_DATA:
+		g_slurm_jobacct_process_message(msg);
+		slurm_free_jobacct_msg(msg->data);
+		break; 
 	default:
 		error("invalid RPC msg_type=%d", msg->msg_type);
 		slurm_send_rc_msg(msg, EINVAL);
@@ -265,6 +274,11 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->first_job_id        = slurmctld_conf.first_job_id;
 	conf_ptr->heartbeat_interval  = slurmctld_conf.heartbeat_interval;
 	conf_ptr->inactive_limit      = slurmctld_conf.inactive_limit;
+	conf_ptr->job_acct_loc        = xstrdup(slurmctld_conf.job_acct_loc);
+	conf_ptr->job_acct_parameters = xstrdup(slurmctld_conf.
+					job_acct_parameters);
+	conf_ptr->job_acct_type       = xstrdup(slurmctld_conf.
+					job_acct_type);
 	conf_ptr->job_comp_loc        = xstrdup(slurmctld_conf.job_comp_loc);
 	conf_ptr->job_comp_type       = xstrdup(slurmctld_conf.
 					job_comp_type);
@@ -355,6 +369,15 @@ static int _make_step_cred(struct step_record *step_rec,
 	cred_arg.stepid   = step_rec->step_id;
 	cred_arg.uid      = step_rec->job_ptr->user_id;
 	cred_arg.hostlist = step_rec->step_node_list;
+        if(step_rec->job_ptr->details->exclusive)
+                cred_arg.ntask_cnt = 0;
+        else
+                cred_arg.ntask_cnt = step_rec->job_ptr->ntask_cnt;
+        if (cred_arg.ntask_cnt > 0) {
+                cred_arg.ntask = xmalloc(cred_arg.ntask_cnt * sizeof(int));
+                memcpy(cred_arg.ntask, step_rec->job_ptr->ntask, 
+                       cred_arg.ntask_cnt*sizeof(int));
+        }
 
 	if ( (*slurm_cred = slurm_cred_create(slurmctld_config.cred_ctx, 
 			&cred_arg)) == NULL) {
@@ -521,14 +544,22 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 #endif
 	req_step_msg.num_tasks  = job_desc_msg->num_tasks;
 	req_step_msg.task_dist  = job_desc_msg->task_dist;
-	error_code = step_create(&req_step_msg, &step_rec, true);
+	error_code = step_create(&req_step_msg, &step_rec, true, false);
 	if (error_code == SLURM_SUCCESS) {
 		error_code = _make_step_cred(step_rec, &slurm_cred);
 		END_TIMER;
+                if (job_ptr->ntask) {
+                       xfree(job_ptr->ntask);         
+                       job_ptr->ntask = NULL;
+                }
 	}
 
 	/* note: no need to free step_rec, pointer to global job step record */
 	if (error_code) {
+                if (job_ptr->ntask) {
+                       xfree(job_ptr->ntask);
+                       job_ptr->ntask = NULL;
+                }
 		job_complete(job_ptr->job_id, job_desc_msg->user_id, false, 0);
 		unlock_slurmctld(job_write_lock);
 		info("_slurm_rpc_allocate_and_run creating job step: %s",
@@ -990,10 +1021,13 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		/* issue the RPC */
 		lock_slurmctld(job_write_lock);
-		error_code = step_create(req_step_msg, &step_rec, false);
+		error_code = step_create(req_step_msg, &step_rec, false, false);
 	}
-	if (error_code == SLURM_SUCCESS)
+	if (error_code == SLURM_SUCCESS) {
 		error_code = _make_step_cred(step_rec, &slurm_cred);
+                if (step_rec->job_ptr->ntask) 
+                        xfree(step_rec->job_ptr->ntask);      
+        }
 	END_TIMER;
 
 	/* return result */
@@ -1431,6 +1465,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	/* init */
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
+	uint32_t step_id;
 	struct job_record *job_ptr;
 	slurm_msg_t response_msg;
 	submit_response_msg_t submit_msg;
@@ -1453,6 +1488,37 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		      (unsigned int) uid);
 	}
 	if (error_code == SLURM_SUCCESS) {
+		if (job_desc_msg->job_id != NO_VAL) {
+
+#ifdef HAVE_FRONT_END	/* Limited job step support */
+			/* Non-super users not permitted to run job steps on front-end.
+	 		 * A single slurmd can not handle a heavy load. */
+			if (!_is_super_user(uid)) {
+				info("Attempt to execute batch job step by uid=%u",
+					(unsigned int) uid);
+				slurm_send_rc_msg(msg, ESLURM_BATCH_ONLY);
+				return;
+			}
+#endif
+			error_code = _launch_batch_step(job_desc_msg, uid,
+							&step_id);
+
+			if (error_code != SLURM_SUCCESS) {
+				info("_slurm_rpc_submit_batch_job: %s",
+				     slurm_strerror(error_code));
+				slurm_send_rc_msg(msg, error_code);
+			} else {
+				submit_msg.job_id     = job_desc_msg->job_id;
+				submit_msg.step_id    = step_id;
+				submit_msg.error_code = error_code;
+				response_msg.msg_type = RESPONSE_SUBMIT_BATCH_JOB;
+				response_msg.data = &submit_msg;
+				slurm_send_node_msg(msg->conn_fd,
+						    &response_msg);
+				schedule_job_save();
+			}
+			return;
+		}
 		lock_slurmctld(job_write_lock);
 		error_code = job_allocate(job_desc_msg, false, false,
 					  false, uid, &job_ptr);
@@ -1471,6 +1537,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 			job_ptr->job_id, TIME_STR);
 		/* send job_ID */
 		submit_msg.job_id     = job_ptr->job_id;
+		submit_msg.step_id    = NO_VAL;
 		submit_msg.error_code = error_code;
 		response_msg.msg_type = RESPONSE_SUBMIT_BATCH_JOB;
 		response_msg.data = &submit_msg;
@@ -1858,3 +1925,195 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 		schedule_job_save();
 	}
 }
+
+
+static char **
+_xduparray(uint16_t size, char ** array)
+{
+  int i;
+  char ** result;
+
+  if (size == 0)
+    return (char **)NULL;
+
+  result = (char **) xmalloc(sizeof(char *) * size);
+  for (i=0; i<size; i++)
+    result[i] = xstrdup(array[i]);
+  return result;
+}
+
+
+int _max_nprocs(struct job_record  *job_ptr)
+{
+       int i, num, nprocs = 0;
+       if (!job_ptr) return 0;
+       num = job_ptr->num_cpu_groups;
+       for (i = 0; i < num; i++) {
+	       nprocs += job_ptr->cpu_count_reps[i]*job_ptr->cpus_per_node[i];
+       }
+       return nprocs;
+}
+
+/* _launch_batch_step
+ * IN: job_desc_msg from _slurm_rpc_submit_batch_job() but with jobid set
+ *     which means it's trying to launch within a pre-existing allocation.
+ * IN: uid launching this batch job, which has already been validated.
+ * OUT: SLURM error code if launch fails, or SLURM_SUCCESS
+ */
+int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
+						uint32_t *step_id)
+{
+	struct job_record  *job_ptr;
+	time_t now = time(NULL);
+	int error_code = SLURM_SUCCESS;
+	DEF_TIMERS;
+
+	batch_job_launch_msg_t *launch_msg_ptr;
+	agent_arg_t *agent_arg_ptr;
+	struct node_record *node_ptr;
+	
+	/*
+         * Create a job step. Note that a credential is not necessary,
+	 * since the slurmctld will be submitting this job directly to
+	 * the slurmd.
+	 */
+	job_step_create_request_msg_t req_step_msg;
+	slurmctld_lock_t job_write_lock = { 
+	  NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
+	struct step_record *step_rec;
+	
+	/*
+	 * As far as the step record in slurmctld goes, we are just
+	 * launching a batch script which will be run on a single
+	 * processor on a single node. The actual launch request sent
+	 * to the slurmd should contain the proper allocation values
+	 * for subsequent srun jobs within the batch script.
+	 */
+	req_step_msg.job_id = job_desc_msg->job_id;
+	req_step_msg.user_id = uid;
+	req_step_msg.node_count = 1;
+	req_step_msg.cpu_count = 1;
+	req_step_msg.num_tasks = 1;
+	req_step_msg.relative = 0;
+	req_step_msg.task_dist = SLURM_DIST_CYCLIC;
+	req_step_msg.port = 0;
+	req_step_msg.host = NULL;
+	req_step_msg.node_list = NULL;
+	
+
+	START_TIMER;
+	lock_slurmctld(job_write_lock);
+	error_code = step_create(&req_step_msg, &step_rec, false, true);
+	unlock_slurmctld(job_write_lock);
+	END_TIMER;
+	
+	if (error_code != SLURM_SUCCESS)
+	  return error_code;
+	
+	/*
+	 * TODO: check all instances of step_record to ensure there's no
+	 * problem with a null switch_job_info pointer.
+	 *
+	 * TODO: figure out if I'm using lock_slurmctld() correctly in this
+	 * procedure
+	 */
+
+	/* Get the allocation in order to construct the batch job
+	 * launch request for the slurmd.
+	 */
+
+	job_ptr = step_rec->job_ptr;
+
+	/* TODO: need to address batch job step request options such as
+	 * the ability to run a batch job on a subset of the nodes in the
+	 * current allocation.
+	 * TODO: validate the specific batch job request vs. the
+	 * existing allocation. Note that subsequent srun steps within
+	 * the batch script will work within the full allocation, but 
+	 * the batch step options can still provide default settings via
+	 * environment variables
+	 *
+	 * NOTE: for now we are *ignoring* most of the job_desc_msg
+	 *       allocation-related settings. At some point we
+	 *       should perform better error-checking, otherwise
+	 *       the submitter will make some invalid assumptions
+	 *       about how this job actually ran.
+	 */
+	job_ptr->time_last_active = now;
+	
+	
+	/* Launch the batch job */
+	node_ptr = find_first_node_record(job_ptr->node_bitmap);
+	if (node_ptr == NULL) {
+		delete_step_record(job_ptr, step_rec->step_id);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	/* Initialization of data structures */
+	launch_msg_ptr =
+	    (batch_job_launch_msg_t *)
+	    xmalloc(sizeof(batch_job_launch_msg_t));
+	launch_msg_ptr->job_id = job_ptr->job_id;
+	launch_msg_ptr->step_id = step_rec->step_id;
+	launch_msg_ptr->gid = job_ptr->group_id;
+	launch_msg_ptr->uid = uid;
+	launch_msg_ptr->nodes = xstrdup(job_ptr->nodes);
+	launch_msg_ptr->err = xstrdup(job_desc_msg->err);
+	launch_msg_ptr->in = xstrdup(job_desc_msg->in);
+	launch_msg_ptr->out = xstrdup(job_desc_msg->out);
+	launch_msg_ptr->work_dir = xstrdup(job_desc_msg->work_dir);
+	launch_msg_ptr->argc = job_desc_msg->argc;
+	launch_msg_ptr->argv = _xduparray(job_desc_msg->argc,
+					job_desc_msg->argv);
+	launch_msg_ptr->script = xstrdup(job_desc_msg->script);
+	launch_msg_ptr->environment = _xduparray(job_desc_msg->env_size,
+						 job_desc_msg->environment);
+	launch_msg_ptr->envc = job_desc_msg->env_size;
+
+	/* _max_nprocs() represents the total number of CPUs available
+	 * for this step (overcommit not supported yet). If job_desc_msg
+	 * contains a reasonable num_procs request, use that value;
+	 * otherwise default to the allocation processor request.
+	 */
+	launch_msg_ptr->nprocs = _max_nprocs(job_ptr);
+	if (job_desc_msg->num_procs > 0 &&
+		job_desc_msg->num_procs < launch_msg_ptr->nprocs)
+		launch_msg_ptr->nprocs = job_desc_msg->num_procs;
+	if (launch_msg_ptr->nprocs < 0)
+		launch_msg_ptr->nprocs = job_ptr->num_procs;
+	
+	launch_msg_ptr->num_cpu_groups = job_ptr->num_cpu_groups;
+	launch_msg_ptr->cpus_per_node  = xmalloc(sizeof(uint32_t) *
+			job_ptr->num_cpu_groups);
+	memcpy(launch_msg_ptr->cpus_per_node, job_ptr->cpus_per_node,
+			(sizeof(uint32_t) * job_ptr->num_cpu_groups));
+	launch_msg_ptr->cpu_count_reps  = xmalloc(sizeof(uint32_t) *
+			job_ptr->num_cpu_groups);
+	memcpy(launch_msg_ptr->cpu_count_reps, job_ptr->cpu_count_reps,
+			(sizeof(uint32_t) * job_ptr->num_cpu_groups));
+
+	/* FIXME: for some reason these CPU arrays total all the CPUs
+	 * actually allocated, rather than totaling up to the requested
+	 * CPU count for the allocation.
+	 * This means that SLURM_TASKS_PER_NODE will not match with
+	 * SLURM_NPROCS in the batch script environment.
+	 */
+	
+	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
+	agent_arg_ptr->node_count = 1;
+	agent_arg_ptr->retry = 0;
+	agent_arg_ptr->slurm_addr = xmalloc(sizeof(struct sockaddr_in));
+	memcpy(agent_arg_ptr->slurm_addr,
+	       &(node_ptr->slurm_addr), sizeof(struct sockaddr_in));
+	agent_arg_ptr->node_names = xstrdup(node_ptr->name);
+	agent_arg_ptr->msg_type = REQUEST_BATCH_JOB_LAUNCH;
+	agent_arg_ptr->msg_args = (void *) launch_msg_ptr;
+
+	/* Launch the RPC via agent */
+	agent_queue_request(agent_arg_ptr);
+	
+	*step_id = step_rec->step_id;
+
+	return SLURM_SUCCESS;
+}
+

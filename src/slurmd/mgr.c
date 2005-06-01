@@ -61,6 +61,7 @@
 #include "src/common/fd.h"
 #include "src/common/safeopen.h"
 #include "src/common/setenvpf.h"
+#include "src/common/slurm_jobacct.h"
 #include "src/common/switch.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -143,7 +144,7 @@ static char *_sprint_task_cnt(batch_job_launch_msg_t *msg);
 static char * _make_batch_dir(slurmd_job_t *job);
 static char * _make_batch_script(batch_job_launch_msg_t *msg, char *path);
 static int    _setup_batch_env(slurmd_job_t *job, batch_job_launch_msg_t *msg);
-static int    _complete_job(uint32_t jobid, int err, int status);
+static int    _complete_job(uint32_t jobid, uint32_t stepid, int err, int status);
 
 
 /* SIGHUP (empty) signal handler
@@ -223,9 +224,13 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 		error("rmdir(%s): %m",  batchdir);
 	xfree(batchdir);
    cleanup :
-	verbose("job %u completed with slurm_rc = %d, job_rc = %d", 
-	        jobid, rc, status);
-	_complete_job(jobid, rc, status);
+	if (job->stepid == NO_VAL) 
+		verbose("job %u completed with slurm_rc = %d, job_rc = %d", 
+			jobid, rc, status);
+	else
+		verbose("job %u.%u completed with slurm_rc = %d, job_rc = %d", 
+			jobid, job->stepid, rc, status);
+	_complete_job(jobid, job->stepid, rc, status);
 	return 0; 
 }
 
@@ -501,6 +506,9 @@ _job_mgr(slurmd_job_t *job)
 	 * Create slurmd session manager and read task pids from pipe
 	 * (waits for session manager process on failure)
 	 */
+
+	g_slurmd_jobacct_jobstep_launched(job);
+
 	if ((rc = _create_job_session(job))) 
 		goto fail2;
 
@@ -553,6 +561,7 @@ _job_mgr(slurmd_job_t *job)
 		_wait_for_io(job);
 
 	job_update_state(job, SLURMD_JOB_COMPLETE);
+	g_slurmd_jobacct_jobstep_terminated(job);
 
     fail1:
 	job_delete_shm(job);
@@ -911,7 +920,7 @@ _kill_running_tasks(slurmd_job_t *job)
 	while ((s = list_next(i))) {
 		if ((s->jobid != job->jobid) || (s->stepid != job->stepid))
 			continue;
-		if (s->task_list->pid)
+		if (s->task_list && s->task_list->pid)
 			killpg(s->task_list->pid, SIGKILL);
 		if (s->cont_id)
 			slurm_signal_container(s->cont_id, SIGKILL);
@@ -944,7 +953,11 @@ _make_batch_dir(slurmd_job_t *job)
 {
 	char path[MAXPATHLEN]; 
 
-	snprintf(path, 1024, "%s/job%05u", conf->spooldir, job->jobid);
+	if (job->stepid == NO_VAL)
+	  snprintf(path, 1024, "%s/job%05u", conf->spooldir, job->jobid);
+	else
+	  snprintf(path, 1024, "%s/job%05u.%05u", conf->spooldir, job->jobid,
+		   job->stepid);
 
 	if ((mkdir(path, 0750) < 0) && (errno != EEXIST)) {
 		error("mkdir(%s): %m", path);
@@ -1116,14 +1129,14 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 
 
 static int
-_complete_job(uint32_t jobid, int err, int status)
+_complete_job(uint32_t jobid, uint32_t stepid, int err, int status)
 {
 	int                      rc;
 	slurm_msg_t              req_msg;
 	complete_job_step_msg_t  req;
 
 	req.job_id	= jobid;
-	req.job_step_id	= NO_VAL; 
+	req.job_step_id	= stepid; 
 	req.job_rc      = status;
 	req.slurm_rc	= err; 
 	req.node_name	= conf->node_name;

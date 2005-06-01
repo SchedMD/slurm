@@ -115,6 +115,26 @@ const char * const sched_get_auth( void );
 const u_int16_t sched_get_root_filter( void );
 
 /*
+ * RootOnly partitions are typically exempted from external scheduling
+ * because these partitions are expected to be directly maintained by
+ * the root user (or some external meta-scheduler) that may have it's
+ * own mechanisms for scheduling. However some cluster configurations
+ * may want to use RootOnly partitions simply to prevent non-root
+ * access, and would still like normal external scheduler operation to
+ * occur.
+ *
+ * This procedure reflects the "SchedulerRootFilter" setting in
+ * slurm.conf which allows the SLURM configuration to request how
+ * external schedulers handle RootOnly partition, if supported by
+ * the external scheduler. Currently only the SLURM backfill
+ * scheduler makes use of this.
+ *
+ * Returns non-zero if RootOnly partitions are to be filtered from
+ * any external scheduling efforts.
+ */
+const u_int16_t sched_get_root_filter( void );
+
+/*
  * Opaque type for a list of objects supplied by the controller.
  * These objects are either jobs in the job queue, or nodes in the
  * cluster.

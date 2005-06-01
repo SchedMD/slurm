@@ -128,10 +128,11 @@ int main(int argc, char *argv[])
 				printf("%s has no resolve.\n", 
 				       params.partition);
 		}
+part_fini:
 #else
 		printf("must be on BGL SN to resolve.\n");
 #endif
-part_fini:	pa_fini();
+		pa_fini();
 		exit(0);
 	}
 	if(!params.commandline) {

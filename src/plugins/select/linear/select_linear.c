@@ -417,3 +417,28 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 	return SLURM_ERROR;
 }
 
+extern int select_p_get_select_nodeinfo (struct node_record *node_ptr, 
+                                         enum select_data_info info,
+                                         void *data)
+{
+       return SLURM_SUCCESS;
+}
+
+extern int select_p_update_nodeinfo (struct job_record *job_ptr,
+                                            enum select_data_info info)
+{
+       return SLURM_SUCCESS;
+}
+
+extern int select_p_get_extra_jobinfo (struct node_record *node_ptr, 
+                                      struct job_record *job_ptr, 
+                                       enum select_data_info info,
+                                       void *data)
+{
+       return SLURM_SUCCESS;
+}
+
+extern int select_p_get_info_from_plugin (enum select_data_info info, void *data)
+{
+       return SLURM_SUCCESS;
+}
