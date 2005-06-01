@@ -38,6 +38,7 @@ set sinfo       "${slurm_dir}/bin/sinfo"
 set smap        "${slurm_dir}/bin/smap"
 set squeue      "${slurm_dir}/bin/squeue"
 set srun        "${slurm_dir}/bin/srun"
+set poe         "/usr/bin/poe"
 
 set mpicc	"/usr/local/bin/mpicc"
 set mpirun	"mpirun"
@@ -92,12 +93,13 @@ set max_file_delay 60
 set max_stress_tasks 4
 
 # Other common variables
-set alpha          "\[a-zA-Z\]+"
-set alpha_cap      "\[A-Z\]+"
-set alpha_numeric  "\[a-zA-Z0-9\]+"
-set alpha_under    "\[A-Z_\]+"
-set end_of_line    "\[\r\n\]"
-set number         "\[0-9\]+"
+set alpha                "\[a-zA-Z\]+"
+set alpha_cap            "\[A-Z\]+"
+set alpha_numeric        "\[a-zA-Z0-9\]+"
+set alpha_numeric_under  "\[a-zA-Z0-9_\]+"
+set alpha_under          "\[A-Z_\]+"
+set end_of_line          "\[\r\n\]"
+set number               "\[0-9\]+"
 
 #
 # Cache SlurmUser to check for SuperUser requests

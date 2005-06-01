@@ -262,3 +262,10 @@ test10.11  Confirm that smap reports a proper version number
 test10.12  Test bgl base partition XYZ to Rack Midplane and back 
            resolution (--resolve option).
 test10.13  Test bluegene.conf file creation and validate it (-Dc option).
+
+test11.#   Testing of poe options. (AIX only)
+===================================
+test11.1   Test poe -proc and -nodes options
+test11.2   Test poe Network options (-euilib and -euidevice)
+test11.3   Test running of Network protocol option (-msg_api)
+test11.4   Test mpi jobs (must run make in mpi-testscripts dir)  
