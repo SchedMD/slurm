@@ -52,6 +52,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+#include <dlfcn.h>
 
 // #define DEBUG_PA
 #define BIG_MAX 9999
@@ -66,6 +67,7 @@
 #define NUM_PORTS_PER_NODE 6
 
 extern bool _initialized;
+extern bool have_db2;
 
 enum {X, Y, Z};
 
