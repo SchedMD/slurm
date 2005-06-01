@@ -937,13 +937,15 @@ static int _get_process_data_line(FILE *in, _prec_t *prec) {
 	/* discardable data */
 	int		d;
 	char		c;
-	char		s[NAME_MAX+1];
+	char		*s;
 	long int	ld;
 	unsigned long	lu;
+	int max_path_len = pathconf("/", _PC_NAME_MAX);
 
 	/* useful datum */
 	int		nvals;
 
+	s = xmalloc(max_path_len + 1);
 	nvals=fscanf(in,
 		"%d %s %c %d %d "
 		"%d %d %d %lu %lu "
@@ -962,6 +964,7 @@ static int _get_process_data_line(FILE *in, _prec_t *prec) {
 	 *	cutime, cstime, priority, nice, lit_0,
 	 *	itrealvalue, starttime, vsize, rss, rlim
 	 */
+	xfree(s);
 	if (nvals != 25)	/* Is it what we expected? */
 		return 0;	/* No! */
 	prec->psize *= getpagesize();	/* convert pages to bytes */

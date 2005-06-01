@@ -25,6 +25,9 @@
 /*
  * HISTORY
  * $Log$
+ * Revision 1.2  2005/06/01 18:35:11  jette
+ * Fix a couple of minor issues for clean build on AIX with new HP code.
+ *
  * Revision 1.1  2005/06/01 17:26:11  jette
  * Extensive mods checked it for HP work, see NEWS for details.
  *
@@ -121,7 +124,6 @@
 
 #include <ctype.h>
 #include <errno.h>
-#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -131,6 +133,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "src/common/getopt.h"
 #include "src/common/slurm_protocol_api.h"
 
 #define ERROR 2
