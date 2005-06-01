@@ -116,6 +116,7 @@ test1.41   Validate SLURM debugger infrastructure (--debugger-test option).
 test1.42   Test of account number and job dependencies (--account and 
            --depedency options).
 test1.43   Test of slurm_job_will_run API, (srun --test-only option).
+test1.44   Read srun's stdout slowly and test for lost data.   
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
            The test will print "WARNING" and terminate with an exit code of 
            zero if the cluster configuration does not permit proper testing.
@@ -264,7 +265,7 @@ test10.12  Test bgl base partition XYZ to Rack Midplane and back
 test10.13  Test bluegene.conf file creation and validate it (-Dc option).
 
 test11.#   Testing of poe options. (AIX only)
-===================================
+=============================================
 test11.1   Test poe -proc and -nodes options
 test11.2   Test poe Network options (-euilib and -euidevice)
 test11.3   Test running of Network protocol option (-msg_api)

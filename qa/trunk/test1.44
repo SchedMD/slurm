@@ -9,11 +9,11 @@
 #          anything else indicates a failure mode that must be investigated.
 #
 # Note:    This script generates and then deletes files in the working directory 
-#          named test1.59.output
+#          named test1.44.output
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2005 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Morris Jette <jette1@llnl.gov>
+# Written by Chris Morrone <morrone2@llnl.gov>
 # UCRL-CODE-2002-040.
 # 
 # This file is part of SLURM, a resource management program.
@@ -35,8 +35,9 @@
 ############################################################################
 source ./globals
 
-set test_id      "1.59"
+set test_id      "1.44"
 set cycle_count  3
+set target_lines 1000
 set exit_code    0
 set file_in      "test$test_id.input"
 set file_out     "test$test_id.output"
@@ -50,18 +51,25 @@ print_header $test_id
 # Write the srun's stdout to a file so that the caller can compare the sizes
 # of input_file and output_file.
 proc run_cat_backpressure { input_file output_file } {
-    global bin_cat bin_rm number srun node_cnt other_opts task_cnt timeout file_err
+	global bin_cat bin_rm srun node_cnt task_cnt timeout file_err
 
-    send_user "Running run_cat_backpressure\n"
-    exec $bin_rm -f $output_file
+	send_user "Running run_cat_backpressure (This is slow)."
+	exec $bin_rm -f $file_err $output_file
+	set iter 0
 
-    set output [open $output_file w]
-    set srun_output [open "| $srun -e $file_err -N1 $bin_cat $input_file" r]
-    while {![eof $srun_output]} {
-	after 1 [puts -nonewline $output [read $srun_output 1]]
-    }
-    flush $output
-    close $output
+	set output [open $output_file w]
+	set srun_output [open "| $srun -e $file_err -N1 $bin_cat $input_file" r]
+	while {![eof $srun_output]} {
+		after 1 [puts -nonewline $output [read $srun_output 1]]
+		incr iter
+		if {[expr $iter % 1000] == 0} {
+		    send_user "."
+		}
+	}
+
+	send_user "\n"
+	flush $output
+	close $output
 }
 
 #
@@ -69,9 +77,12 @@ proc run_cat_backpressure { input_file output_file } {
 #
 exec $bin_rm -f $file_in $file_out
 for {set inx 0} {$inx < 10} {incr inx} {
-    exec $bin_cat /etc/hosts  >>$file_in
-    exec $bin_cat /etc/passwd >>$file_in
+	exec $bin_cat /etc/hosts  >>$file_out
+	exec $bin_cat /etc/passwd >>$file_out
 }
+exec head -n $target_lines <$file_out >$file_in
+exec $bin_rm -f $file_out
+
 set stdin_lines [get_line_cnt $file_in]
 set stdout_target [expr $stdin_lines * $task_cnt]
 
@@ -89,10 +100,9 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 	}
 	if {$stdout_lines != $stdout_target} {
 		send_user "\nFAILURE: stdout is incomplete\n"
-	        return 1
+	        set exit_code 1
 	        break
 	} else {
-	    send_user "Incrementing\n"
 		incr success_cnt
 	}
 }
@@ -100,6 +110,7 @@ exec $bin_rm -f $file_in $file_out $file_err
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
+	exec $bin_rm -f $file_err $file_in $file_out
 } else {
 	send_user "\nFAILURE\n"
 }
