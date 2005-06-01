@@ -290,8 +290,10 @@ extern int update_partition_list()
 					bgl_record->boot_count = 0;
 				}
 				break;
-			default:
+			case RM_PARTITION_READY:
 				set_part_user(bgl_record); 	
+				break;
+			default:
 				break;
 			}
 		}	
