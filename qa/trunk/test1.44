@@ -46,12 +46,12 @@ set task_cnt     1
 
 print_header $test_id
 
-# Execute an srun job to cat input_file.  Read srun's stdout
-# SLOWLY to create back pressure which used to reveal a stdout data-loss bug.
+# Execute an srun job to cat input_file.  Read srun's stdout SLOWLY (1k/sec)
+# to create back pressure which used to reveal a stdout data-loss bug.
 # Write the srun's stdout to a file so that the caller can compare the sizes
 # of input_file and output_file.
 proc run_cat_backpressure { input_file output_file } {
-	global bin_cat bin_rm srun node_cnt task_cnt timeout file_err
+	global bin_cat bin_sleep bin_rm srun node_cnt task_cnt timeout file_err
 
 	send_user "Running run_cat_backpressure (This is slow)."
 	exec $bin_rm -f $file_err $output_file
@@ -60,10 +60,11 @@ proc run_cat_backpressure { input_file output_file } {
 	set output [open $output_file w]
 	set srun_output [open "| $srun -e $file_err -N1 $bin_cat $input_file" r]
 	while {![eof $srun_output]} {
-		after 1 [puts -nonewline $output [read $srun_output 1]]
+		puts -nonewline $output [read $srun_output 1]
 		incr iter
 		if {[expr $iter % 1000] == 0} {
-		    send_user "."
+			send_user "."
+			exec $bin_sleep 1
 		}
 	}
 
