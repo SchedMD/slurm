@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-209488">
-<meta name="LLNLRandRdate" content="25 May 2005">
+<meta name="LLNLRandRdate" content="2 June 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -165,6 +165,24 @@ a a a a . . e e               |
  a a a a . . . .            /
 a a a a . . . #            Z
 </pre>
+
+<p>Note that jobs enter the SLURM state RUNNING as soon as the have been 
+allocated a bglblock. 
+If the bglblock is in a READY state, the job will begin execution almost 
+immediately. 
+Otherwise the execution of the job will not actually begin until the 
+bglblock is in a READY state, which can require booting the block and 
+a delay of minutes to do so.
+You can identify the bglblock associated with your job using the command
+<i>smap -Dj -c</i> and the state of the bglblock with the command 
+<i>smap -Db -c</i>.
+The time to boot a bglblock is related to its size, but should range from 
+from a few minutes to about 15 minutes for a bglblock containing 64 
+base partitions. 
+Only after the bglblock is READY will your job's output file be created 
+and the script execution begin. 
+If the bglblock boot fails, SLURM will attempt to reboot several times 
+before draining the associated nodes and aborting the job.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -478,7 +496,7 @@ nodes, so the message is more meaningful there). </p>
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-209488<br>
-Last modified 25 May 2005</p></td>
+Last modified 2 June 2005</p></td>
 </tr>
 </table>
 </td>
