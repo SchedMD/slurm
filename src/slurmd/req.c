@@ -1373,7 +1373,7 @@ static int
 _run_epilog(uint32_t jobid, uid_t uid, char *bgl_part_id)
 {
 	int error_code;
-	static char *my_epilog;
+	char *my_epilog;
 
 	slurm_mutex_lock(&conf->config_mutex);
 	my_epilog = xstrdup(conf->epilog);
