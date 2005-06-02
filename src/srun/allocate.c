@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <sys/poll.h>
 
+
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_auth.h"
@@ -381,10 +382,10 @@ job_desc_msg_create_from_opts (char *script)
 	if (opt.hold)
 		j->priority     = 0;
 
-#if SYSTEM_DIMENSION
+#if SYSTEM_DIMENSIONS
 	if (opt.geometry[0] > 0) {
 		int i;
-		for (i=0; i<SYSTEM_DIMENSIONS; i++) 
+		for (i=0; i<SYSTEM_DIMENSIONS; i++)
 			j->geometry[i] = opt.geometry[i];
 	}
 #endif
