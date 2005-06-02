@@ -93,6 +93,9 @@ static int exit_errno[] =
 
 #define MAX_SMGR_EXIT_STATUS 6
 
+#define RETRY_DELAY 15		/* retry every 15 seconds */
+#define MAX_RETRY   240		/* retry 240 times (one hour max) */
+
 /*
  *  List of signals to block in this process
  */
@@ -1131,7 +1134,7 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 static int
 _complete_job(uint32_t jobid, uint32_t stepid, int err, int status)
 {
-	int                      rc;
+	int                      rc, i;
 	slurm_msg_t              req_msg;
 	complete_job_step_msg_t  req;
 
@@ -1143,12 +1146,22 @@ _complete_job(uint32_t jobid, uint32_t stepid, int err, int status)
 	req_msg.msg_type= REQUEST_COMPLETE_JOB_STEP;
 	req_msg.data	= &req;	
 
-	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0) {
+	/* Note: these log messages don't go to slurmd.log from here */
+	for (i=0; i<=MAX_RETRY; i++) {
+		if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) >= 0)
+			break;
+		info("Retrying job complete RPC for %u.%u", jobid, stepid);
+		sleep(RETRY_DELAY);
+	}
+	if (i > MAX_RETRY) {
 		error("Unable to send job complete message: %m");
 		return SLURM_ERROR;
 	}
 
-	if (rc) slurm_seterrno_ret(rc);
+	if ((rc == ESLURM_ALREADY_DONE) || (rc == ESLURM_INVALID_JOB_ID))
+		rc = SLURM_SUCCESS;
+	if (rc)
+		slurm_seterrno_ret(rc);
 
 	return SLURM_SUCCESS;
 }
