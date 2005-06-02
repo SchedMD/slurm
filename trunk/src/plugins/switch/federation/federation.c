@@ -863,19 +863,15 @@ fed_pack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
 	pack32(n->magic, buf);
 	packmem(n->name, FED_HOSTLEN, buf);
 	pack32(n->adapter_count, buf);
-	printf("adapter count is %d\n",n->adapter_count);
 	for(i = 0; i < n->adapter_count; i++) {
 		a = n->adapter_list + i;
 		packmem(a->name, FED_ADAPTERLEN, buf);
-		printf("name is %s\n",a->name);
 		pack16(a->lid, buf);
 		pack16(a->network_id, buf);
-		printf("id is %d\n",a->network_id);
 		pack32(a->max_winmem, buf);
 		pack32(a->min_winmem, buf);
 		pack32(a->avail_mem, buf);
 		pack32(a->window_count, buf);
-		printf("win count is %d\n",a->window_count);
 		for(j = 0; j < a->window_count; j++) {
 			pack16(a->window_list[j].id, buf);
 			pack32(a->window_list[j].status, buf);
