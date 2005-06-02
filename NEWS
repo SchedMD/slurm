@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =============================
  -- BlueGene srun --geometry was not getting propogated properly.
  -- Fix race condition with multiple simultaneous epilogs.
+ -- Modify slurmd to resend job completion RPC to slurmctld in the 
+    case where slurmctld is not responding.
 
 * Changes in SLURM 0.5.0-pre7
 =============================
