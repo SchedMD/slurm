@@ -484,8 +484,11 @@ _get_adapters(fed_adapter_t *list, int *count)
 {
 	static hostlist_t adapter_list = NULL;
 	static hostlist_iterator_t adapter_iter;
-	char *adapter;
+	int i = 0;
+	char *adapter = NULL;
 
+	assert(list != NULL);
+		
 	if (adapter_list == NULL || hostlist_is_empty(adapter_list)) {
 		int rc; 
 		adapter_list = hostlist_create(NULL);
@@ -495,17 +498,21 @@ _get_adapters(fed_adapter_t *list, int *count)
 		assert(hostlist_count(adapter_list) <= FED_MAXADAPTERS);
 		adapter_iter = hostlist_iterator_create(adapter_list);
 	}
-
+	i=0;
+	*count = hostlist_count(adapter_list);
+	info("Number of adapters is = %d", *count);
+	assert(*count > 0);
+	//list = malloc(sizeof(fed_adapter_t) * (*count));
 	while (adapter = hostlist_next(adapter_iter)) {
-		if(_set_up_adapter(list, adapter) == SLURM_ERROR)
+		if(_set_up_adapter(list + i, adapter)
+		   == SLURM_ERROR)
 			error("_get_adapters: "
 			      "There was an error setting up adapter.");
+		i++;
 	}
 	hostlist_iterator_reset(adapter_iter);
 
-	*count = hostlist_count(adapter_list);
-	debug("Number of adapters is = %d",*count);
-
+	
 	if(!*count)
 		slurm_seterrno_ret(ENOADAPTER);
 	
@@ -835,15 +842,19 @@ fed_pack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
 	pack32(n->magic, buf);
 	packmem(n->name, FED_HOSTLEN, buf);
 	pack32(n->adapter_count, buf);
+	printf("adapter count is %d\n",n->adapter_count);
 	for(i = 0; i < n->adapter_count; i++) {
 		a = n->adapter_list + i;
 		packmem(a->name, FED_ADAPTERLEN, buf);
+		printf("name is %s\n",a->name);
 		pack16(a->lid, buf);
 		pack16(a->network_id, buf);
+		printf("id is %d\n",a->network_id);
 		pack32(a->max_winmem, buf);
 		pack32(a->min_winmem, buf);
 		pack32(a->avail_mem, buf);
 		pack32(a->window_count, buf);
+		printf("win count is %d\n",a->window_count);
 		for(j = 0; j < a->window_count; j++) {
 			pack16(a->window_list[j].id, buf);
 			pack32(a->window_list[j].status, buf);
