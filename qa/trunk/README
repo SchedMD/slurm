@@ -117,6 +117,7 @@ test1.42   Test of account number and job dependencies (--account and
            --depedency options).
 test1.43   Test of slurm_job_will_run API, (srun --test-only option).
 test1.44   Read srun's stdout slowly and test for lost data.   
+test1.45   Test the launch of a batch job within an existing job allocation.
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
            The test will print "WARNING" and terminate with an exit code of 
            zero if the cluster configuration does not permit proper testing.
