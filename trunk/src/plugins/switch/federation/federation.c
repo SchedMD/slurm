@@ -134,7 +134,8 @@ typedef struct {
 
 typedef struct {
 	char name[FED_ADAPTERLEN];
-	int lid;
+	uint16_t lid;
+	uint16_t network_id;
 } fed_cache_entry_t;
 
 /* 
@@ -268,11 +269,12 @@ fed_init_cache(void)
 	for(i = 0; i < FED_MAXADAPTERS; i++) {
 		lid_cache[i].name[0] = 0;
 		lid_cache[i].lid = -1;
+		lid_cache[i].network_id = -1;
 	}
 }
 
-/* Cache the lid of a given adapter.  Ex:  sni0 with lid 10 gets
- * cached in array index 0 with a lid = 10 and a name = sni0.
+/* Cache the lid and network_id of a given adapter.  Ex:  sni0 with lid 10
+ * gets cached in array index 0 with a lid = 10 and a name = sni0.
  *
  * Used by: slurmd
  */
@@ -284,6 +286,7 @@ _cache_lid(fed_adapter_t *ap)
 	int adapter_num = ap->name[3] - ZERO;
 
 	lid_cache[adapter_num].lid = ap->lid;
+	lid_cache[adapter_num].network_id = ap->network_id;
 	strncpy(lid_cache[adapter_num].name, ap->name, FED_ADAPTERLEN);		
 }
 
@@ -304,6 +307,24 @@ _get_adapter_from_lid(int lid)
 	}
 	
 	return NULL;
+}
+
+/* Check lid cache for a given lid and return the associated network_id 
+ *
+ * Used by: slurmd
+ */
+static uint16_t
+_get_network_id_from_lid(int lid)
+{
+	int i;
+	
+	for(i = 0; i < FED_MAXADAPTERS; i++) {
+		if(lid_cache[i].lid == lid) {
+			return lid_cache[i].network_id;
+		}		
+	}
+	
+	return -1;
 }
 
 /* Explicitly strip out carriage-return and new-line */
@@ -1647,6 +1668,7 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 	int err;
 	char *adapter, *old_adapter = NULL;
 	unsigned long long winmem;
+	uint16_t network_id;
 #if FED_DEBUG
 	char buf[2000];
 #endif
@@ -1658,6 +1680,7 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 #endif
 	for(i = 0; i < jp->table_size; i++) {
 		adapter = _get_adapter_from_lid(jp->table[i]->lid);
+		network_id = _get_network_id_from_lid(jp->table[i]->lid);
 		/* FIX ME!  This is a crude check to see if we have already 
 		 * loaded a table for this adapter (and therefore don't need 
 		 * to do it again).  Make this better.
@@ -1668,7 +1691,7 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 		err = ntbl_load_table(
 			NTBL_VERSION,
 			adapter,
-			1,	/* network_id:  just hardcode 1 for now */
+			network_id,
 			uid,
 			pid,
 			jp->job_key,
