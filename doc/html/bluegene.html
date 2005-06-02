@@ -184,6 +184,15 @@ and the script execution begin.
 If the bglblock boot fails, SLURM will attempt to reboot several times 
 before draining the associated nodes and aborting the job.</p>
 
+<p>The job will continue to be in a RUNNING state until the bgljob has 
+completed and the bglblock ownership is changed. 
+The time for completing a bgljob has freqently been on the order of 
+five minutes.
+In summary, your job may appear in SLURM as RUNNING for 15 minutes 
+before the script actually begins to 5 minutes after it completes.
+These delays are the result of BGL infrastructure issues and are 
+not due to anything in SLURM.</p>
+ 
 <p class="footer"><a href="#top">top</a></p>
 
 <h3>System Administration</h3>
