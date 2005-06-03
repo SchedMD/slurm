@@ -270,4 +270,14 @@ test11.#   Testing of poe options. (AIX only)
 test11.1   Test poe -proc and -nodes options
 test11.2   Test poe Network options (-euilib and -euidevice)
 test11.3   Test running of Network protocol option (-msg_api)
-test11.4   Test mpi jobs (must run make in mpi-testscripts dir)  
+test11.4   Test mpi jobs (must run make in mpi-testscripts dir)
+
+test12.#   Testing of sacct command and options
+===============================================
+test12.1   Test sacct --help option.
+test12.2   Test validity/accuracy of accounting data for exit code, 
+           memory and real-time information.
+(There are many more tests that should probably be added, but HP 
+is taking responsibility for validating this code, so we'll stick 
+with the basics here.)
+
