@@ -59,6 +59,8 @@ extern List bgl_curr_part_list; 	/* Initial bgl partition state */
 extern List bgl_list;			/* List of configured BGL blocks */
 extern bool agent_fini;
 extern pthread_mutex_t part_state_mutex;
+extern int num_part_to_free;
+extern int num_part_freed;
 
 typedef int lifecycle_type_t;
 enum part_lifecycle {DYNAMIC, STATIC};
@@ -106,6 +108,8 @@ typedef struct {
 	int used;
 	List switch_list;
 } bgl_bp_t;
+
+#define MAX_PTHREAD_RETRIES  1
 
 #include "bgl_part_info.h"
 #include "bgl_job_place.h"
@@ -195,6 +199,8 @@ extern int read_bgl_partitions(void);
 /*****************************************************/
 extern int configure_partition_switches(bgl_record_t * bgl_conf_record);
 extern int bgl_free_partition(bgl_record_t *bgl_record);
+extern void *mult_free_part(void *args);
+extern void *mult_destroy_part(void *args);
 
 
 #endif /* _BLUEGENE_H_ */

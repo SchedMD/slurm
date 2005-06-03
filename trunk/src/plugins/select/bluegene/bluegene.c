@@ -51,6 +51,9 @@ bool agent_fini = false;
 int bridge_api_verb = 0;
 time_t last_bgl_update;
 pthread_mutex_t part_state_mutex = PTHREAD_MUTEX_INITIALIZER;
+int num_part_to_free = 0;
+int num_part_freed = 0;
+static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* some local functions */
 #ifdef HAVE_BGL
@@ -842,6 +845,53 @@ extern int bgl_free_partition(bgl_record_t *bgl_record)
 	return SLURM_SUCCESS;
 }
 
+/* Free multiple partitions in parallel */
+extern void *mult_free_part(void *args)
+{
+#ifdef HAVE_BGL_FILES
+	bgl_record_t *bgl_record = (bgl_record_t*) args;
+
+	debug("destroying the partition %s.", bgl_record->bgl_part_id);
+	bgl_free_partition(bgl_record);	
+	debug("done\n");
+	slurm_mutex_lock(&freed_cnt_mutex);
+	num_part_freed++;
+	slurm_mutex_unlock(&freed_cnt_mutex);
+#endif	
+	return NULL;
+}
+
+/* destroy multiple partitions in parallel */
+extern void *mult_destroy_part(void *args)
+{
+#ifdef HAVE_BGL_FILES
+	bgl_record_t *bgl_record = (bgl_record_t*) args;
+	int rc;
+
+	debug("removing the jobs on partition %s\n",
+	      bgl_record->bgl_part_id);
+	term_jobs_on_part(bgl_record->bgl_part_id);
+	
+	debug("destroying %s\n",
+	      (char *)bgl_record->bgl_part_id);
+	bgl_free_partition(bgl_record);
+	
+	rc = rm_remove_partition(
+		bgl_record->bgl_part_id);
+	if (rc != STATUS_OK) {
+		error("rm_remove_partition(%s): %s",
+		      bgl_record->bgl_part_id,
+		      bgl_err_str(rc));
+	} else
+		debug("done\n");
+	slurm_mutex_lock(&freed_cnt_mutex);
+	num_part_freed++;
+	slurm_mutex_unlock(&freed_cnt_mutex);
+
+#endif	
+	return NULL;
+}
+
 #ifdef HAVE_BGL
 static int _addto_node_list(bgl_record_t *bgl_record, int *start, int *end)
 {
@@ -1078,31 +1128,43 @@ static int _bgl_record_cmpf_inc(bgl_record_t* rec_a, bgl_record_t* rec_b)
 static int _delete_old_partitions(void)
 {
 #ifdef HAVE_BGL_FILES
-	int rc;
 	ListIterator itr_curr, itr_found;
 	bgl_record_t *found_record = NULL, *init_record = NULL;
-        
+	pthread_attr_t attr_agent;
+	pthread_t thread_agent;
+	int retries;
+	
+	num_part_to_free = 0;
+	num_part_freed = 0;
+		
 	if(!bgl_recover) {
 		if(bgl_curr_part_list) {
 			itr_curr = list_iterator_create(bgl_curr_part_list);
 			while ((init_record = (bgl_record_t*) 
 				list_next(itr_curr))) {
-				debug("removing the jobs on partition %s\n",
-				      init_record->bgl_part_id);
-				term_jobs_on_part(init_record->bgl_part_id);
+				slurm_attr_init(&attr_agent);
+				if (pthread_attr_setdetachstate(
+					    &attr_agent, 
+					    PTHREAD_CREATE_JOINABLE))
+					error("pthread_attr_setdetach"
+						      "state error %m");
 				
-				debug("destroying %s\n",
-				      (char *)init_record->bgl_part_id);
-				bgl_free_partition(init_record);
-				
-				rc = rm_remove_partition(
-					init_record->bgl_part_id);
-				if (rc != STATUS_OK) {
-					error("rm_remove_partition(%s): %s",
-					      init_record->bgl_part_id,
-					      bgl_err_str(rc));
-				} else
-					debug("done\n");
+				retries = 0;
+				while (pthread_create(&thread_agent, 
+						      &attr_agent, 
+						      mult_destroy_part, 
+						      (void *)
+						      found_record)) {
+					error("pthread_create "
+					      "error %m");
+					if (++retries 
+					    > MAX_PTHREAD_RETRIES)
+						fatal("Can't create "
+						      "pthread");
+					/* sleep and retry */
+					usleep(1000);	
+				}
+				num_part_to_free++;
 			}
 			list_iterator_destroy(itr_curr);
 		} else {
@@ -1138,25 +1200,29 @@ static int _delete_old_partitions(void)
 					return SLURM_ERROR;
 				}
 				if(found_record == NULL) {
-					debug("removing the jobs on "
-					      "partition %s\n",
-					      init_record->bgl_part_id);
-					term_jobs_on_part(
-						init_record->bgl_part_id);
-			
-					debug("destroying %s\n",(char *)
-					      init_record->bgl_part_id);
-					bgl_free_partition(init_record);
-			
-					rc = rm_remove_partition(init_record->
-								 bgl_part_id);
-					if (rc != STATUS_OK) {
-						error("rm_remove_partition"
-						      "(%s): %s",
-						      init_record->bgl_part_id,
-						      bgl_err_str(rc));
-					} else
-						debug("done\n");
+					slurm_attr_init(&attr_agent);
+					if (pthread_attr_setdetachstate(
+						    &attr_agent, 
+						    PTHREAD_CREATE_JOINABLE))
+						error("pthread_attr_setdetach"
+						      "state error %m");
+				
+					retries = 0;
+					while (pthread_create(
+						       &thread_agent, 
+						       &attr_agent, 
+						       mult_destroy_part, 
+						       (void *)found_record)) {
+						error("pthread_create "
+						      "error %m");
+						if (++retries 
+						    > MAX_PTHREAD_RETRIES)
+							fatal("Can't create "
+							      "pthread");
+						/* sleep and retry */
+						usleep(1000);	
+					}
+					num_part_to_free++;
 				}
 			}		
 			list_iterator_destroy(itr_curr);
@@ -1166,6 +1232,9 @@ static int _delete_old_partitions(void)
 			return SLURM_ERROR;
 		}
 	}
+	while(num_part_to_free != num_part_freed)
+			usleep(1000);
+		
 #endif	
 	return SLURM_SUCCESS;
 }

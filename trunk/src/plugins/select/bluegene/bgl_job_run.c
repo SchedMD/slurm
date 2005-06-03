@@ -55,9 +55,8 @@
 #ifdef HAVE_BGL_FILES
 
 #define MAX_POLL_RETRIES    110
-#define MAX_PTHREAD_RETRIES  1
 #define POLL_INTERVAL        3
-
+#define MAX_AGENT_COUNT      32
 enum update_op {START_OP, TERM_OP, SYNC_OP};
 
 typedef struct bgl_update {
@@ -71,10 +70,7 @@ typedef struct bgl_update {
 static List bgl_update_list = NULL;
 
 static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int agent_cnt = 0;
-static int num_part_to_free = 0;
-static int num_part_freed = 0;
 
 static void	_bgl_list_del(void *x);
 static int	_excise_block(List block_list, 
@@ -82,7 +78,6 @@ static int	_excise_block(List block_list,
 			      char *nodes);
 static List	_get_all_blocks(void);
 static void *	_part_agent(void *args);
-static void *	_mult_free_part(void *args);
 static void	_part_op(bgl_update_t *bgl_update_ptr);
 static int	_remove_job(db_job_id_t job_id);
 static void	_start_agent(bgl_update_t *bgl_update_ptr);
@@ -260,7 +255,7 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 					retries = 0;
 					while (pthread_create(&thread_agent, 
 							      &attr_agent, 
-							      _mult_free_part, 
+							      mult_free_part, 
 							      (void *)
 							      found_record)) {
 						error("pthread_create "
@@ -460,23 +455,8 @@ static void *_part_agent(void *args)
 		_bgl_list_del(bgl_update_ptr);
 	}
 	slurm_mutex_lock(&agent_cnt_mutex);
-	agent_cnt = 0;
+	agent_cnt--;
 	slurm_mutex_unlock(&agent_cnt_mutex);
-	return NULL;
-}
-
-/* Free multiple partitions in parallel */
-static void *_mult_free_part(void *args)
-{
-	bgl_record_t *bgl_record = (bgl_record_t*) args;
-
-	debug("destroying the partition %s.", bgl_record->bgl_part_id);
-	bgl_free_partition(bgl_record);	
-	
-	slurm_mutex_lock(&freed_cnt_mutex);
-	num_part_freed++;
-	slurm_mutex_unlock(&freed_cnt_mutex);
-	
 	return NULL;
 }
 
@@ -489,6 +469,11 @@ static void _part_op(bgl_update_t *bgl_update_ptr)
 	int retries;
 	
 	slurm_mutex_lock(&agent_cnt_mutex);
+	if (agent_cnt > MAX_AGENT_COUNT) {	/* already running an agent */
+		slurm_mutex_unlock(&agent_cnt_mutex);
+		return;
+	}
+	agent_cnt++;
 	if ((bgl_update_list == NULL)
 	&&  ((bgl_update_list = list_create(_bgl_list_del)) == NULL))
 		fatal("malloc failure in start_job/list_create");
@@ -502,11 +487,6 @@ static void _part_op(bgl_update_t *bgl_update_ptr)
 		if (list_enqueue(bgl_update_list, bgl_update_ptr) == NULL)
 			fatal("malloc failure in _part_op/list_enqueue");
 	}
-	if (agent_cnt > 0) {	/* already running an agent */
-		slurm_mutex_unlock(&agent_cnt_mutex);
-		return;
-	}
-	agent_cnt = 1;
 	slurm_mutex_unlock(&agent_cnt_mutex);
 	/* spawn an agent */
 	slurm_attr_init(&attr_agent);
