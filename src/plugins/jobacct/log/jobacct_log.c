@@ -106,8 +106,8 @@ const uint32_t plugin_version = 100;
 
 typedef enum _stats_msg_type {
 		TO_CONTROLLER=100,
-		 TO_MYNODE=101,
-		 TO_NODE0=102
+		TO_MYNODE=101,
+		TO_NODE0=102
 } _stats_msg_type_t;
 
 typedef struct _stats_msg {
@@ -236,13 +236,14 @@ int slurm_jobacct_process_message(struct slurm_msg *msg)
 	_stats_msg_type_t	msgtype;
 	_stats_msg_t		*stats;
 
-	debug2("jobacct(%i): in slurm_jobacct_process_message", getpid());
+	debug2("jobacct(%d): in slurm_jobacct_process_message", getpid());
 	jmsg    = msg->data;
 	stats   = (_stats_msg_t *)jmsg->data;
 	msgtype = ntohl(stats->msg_type);
 	jobid   = ntohl(stats->jobid);
 	stepid  = ntohl(stats->stepid); 
-	debug2("jobacct(%i): in slurm_jobacct_process_message, job %i.%i, msgtype=%i",
+	debug2("jobacct(%d): in slurm_jobacct_process_message, "
+			"job %u.%u, msgtype=%d", 
 			getpid(), jobid, stepid, msgtype);
 
 	switch (msgtype) {
@@ -259,7 +260,7 @@ int slurm_jobacct_process_message(struct slurm_msg *msg)
 				"job %d, \"%30s...\"",
 				getpid(), jobid, stats->data);
 		if ((job_ptr = (*find_job_record_in_slurmctld)(jobid))==NULL) {
-			error("jobacct(%d): job %d record not found, "
+			error("jobacct(%d): job %lu record not found, "
 					"record starts %30s",
 					getpid(), jobid, jmsg->data);
 			return(SLURM_ERROR);
@@ -287,7 +288,7 @@ int slurm_jobacct_process_message(struct slurm_msg *msg)
 		break;
 
 	  default:
-		error("jobacct(%i): unknown message type: %i",
+		error("jobacct(%d): unknown message type: %d",
 				getpid(), msgtype);
 		rc = SLURM_ERROR;
 		break;
@@ -306,7 +307,7 @@ static int _send_msg_to_slurmctld(_stats_msg_t *stats) {
 	jobacct_msg_t		*jmsg;
 	int			rc = SLURM_SUCCESS;
 
-	debug2("jobacct(%i): _send_msg_to_slurmctld, msgtype=%i",
+	debug2("jobacct(%d): _send_msg_to_slurmctld, msgtype=%d",
 			getpid(), ntohl(stats->msg_type)); 
 	jmsg = xmalloc(sizeof(jobacct_msg_t));
 	jmsg->len = sizeof(_stats_msg_t);
@@ -322,7 +323,7 @@ static int _send_msg_to_slurmctld(_stats_msg_t *stats) {
 	}
 	xfree(jmsg);
 	xfree(msg);
-	debug2("jobacct(%i): leaving _send_msg_to_slurmctld, rc=%i",
+	debug2("jobacct(%d): leaving _send_msg_to_slurmctld, rc=%d",
 			getpid(), rc);
 
 	return rc;
@@ -379,7 +380,7 @@ int slurmctld_jobacct_job_complete(struct job_record *job_ptr)
 
 	debug2("slurmctld_jobacct_job_complete() called");
 	if (job_ptr->end_time == 0) {
-		debug2("jobacct: job %i never started", job_ptr->job_id);
+		debug2("jobacct: job %u never started", job_ptr->job_id);
 		return rc;
 	}
 	gmtime_r(&job_ptr->end_time, &ts);
@@ -393,9 +394,13 @@ int slurmctld_jobacct_job_complete(struct job_record *job_ptr)
 		1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
 			ts.tm_hour, ts.tm_min, ts.tm_sec,
 			job_state_string_compact((job_ptr->job_state) & ~JOB_COMPLETING));
-	xassert(tmp<MAX_MSG_SIZE);
-	stats->datalen = htonl(tmp+1);
-	rc = _send_msg_to_slurmctld(stats);
+	if (tmp >= MAX_MSG_SIZE) {
+		error("slurmctld_jobacct_job_complete buffer overflow");
+		rc = SLURM_ERROR;
+	} else {
+		stats->datalen = htonl(tmp+1);
+		rc = _send_msg_to_slurmctld(stats);
+	}
 	xfree(stats);
 	return rc;
 }
@@ -438,9 +443,13 @@ int slurmctld_jobacct_job_start(struct job_record *job_ptr)
 			job_ptr->user_id, job_ptr->group_id, jname,
 			job_ptr->batch_flag, priority, ncpus,
 			job_ptr->nodes);
-	xassert(tmp<MAX_MSG_SIZE);
-	stats->datalen = htonl(tmp+1);
-	rc = _send_msg_to_slurmctld(stats);
+	if (tmp >= MAX_MSG_SIZE) {
+		error("slurmctld_jobacct_job_start buffer overflow");
+		rc = SLURM_ERROR;
+	} else {
+		stats->datalen = htonl(tmp+1);
+		rc = _send_msg_to_slurmctld(stats);
+	}
 	xfree(stats);
 	xfree(jname);
 	return rc;
@@ -483,11 +492,12 @@ static void _print_record(struct job_record *job_ptr, char *data)
 	debug2("jobacct:_print_record, chk=%d, rec starts \"%20s",
 			chk++, data);
 	fprintf(LOGFILE,
-		"%d %s %04d%02d%02d%02d%02d%02d %u - - %s\n",
+		"%u %s %04d%02d%02d%02d%02d%02d %u %d.%d - %s\n",
 		job_ptr->job_id, job_ptr->partition,
 		1900+(ts->tm_year), 1+(ts->tm_mon), ts->tm_mday,
 		ts->tm_hour, ts->tm_min, ts->tm_sec, 
-		(int) job_ptr->start_time, data);
+		(int) job_ptr->start_time, 
+		job_ptr->user_id, job_ptr->group_id, data);
 	fdatasync(LOGFILE_FD);
 	slurm_mutex_unlock( &logfile_lock );
 	xfree(ts);
@@ -575,8 +585,8 @@ int slurmd_jobacct_jobstep_launched(slurmd_job_t *job)
 	
 	jrec = _alloc_jrec(job);
 	jrec->nodeid = job->nodeid;
-	debug2("jobacct(%i): in slurmd_jobacct_jobstep_launched with %d cpus,"
-			" node0,1=%s,%s, this is node %i of %i",
+	debug2("jobacct(%d): in slurmd_jobacct_jobstep_launched with %d cpus,"
+			" node0,1=%s,%s, this is node %d of %d",
 			getpid(), job->cpus, jrec->node0, jrec->node1,
 			job->nodeid, job->nnodes);
 	_send_data_to_mynode(LAUNCH, jrec);
@@ -623,8 +633,8 @@ int slurmd_jobacct_task_exit(slurmd_job_t *job, pid_t pid, int status, struct ru
 {
 	_jrec_t *jrec;
 
-	debug2("slurmd_jobacct_task_exit for job %i.%i,"
-			" node %i, status=%i",
+	debug2("slurmd_jobacct_task_exit for job %u.%u,"
+			" node %d, status=%d",
 			job->jobid, job->stepid, job->nodeid, status/256);
 	jrec = _alloc_jrec(job);
 	jrec->nodeid			= job->nodeid;
@@ -654,7 +664,7 @@ int slurmd_jobacct_task_exit(slurmd_job_t *job, pid_t pid, int status, struct ru
 
 static void _aggregate_job_data(_jrec_t *jrec, _jrec_t *inrec)
 {
-	debug("jobacct(%i): entering _aggregate_job_data, inbound utime=%d.%06d",
+	debug("jobacct(%d): entering _aggregate_job_data, inbound utime=%d.%06d",
 			getpid(), inrec->rusage.ru_utime.tv_sec,
 			inrec->rusage.ru_utime.tv_usec);
 	jrec->rusage.ru_utime.tv_sec	+= inrec->rusage.ru_utime.tv_sec;
@@ -689,7 +699,7 @@ static void _aggregate_job_data(_jrec_t *jrec, _jrec_t *inrec)
 		jrec->max_psize		= inrec->max_psize;
 	if ( jrec->max_vsize < inrec->max_vsize)
 		jrec->max_vsize		= inrec->max_vsize;
-	debug("jobacct(%i): leaving _aggregate_job_data, total utime=%d.%06d",
+	debug("jobacct(%d): leaving _aggregate_job_data, total utime=%d.%06d",
 			getpid(), jrec->rusage.ru_utime.tv_sec,
 			jrec->rusage.ru_utime.tv_usec);
 	return;
@@ -705,7 +715,7 @@ static _jrec_t  *_alloc_jrec(slurmd_job_t *job)
 
 	jrec = xmalloc(sizeof(_jrec_t));
 	if (pthread_mutex_init(&jrec->lock, NULL))
-		error("jobacct(%i): failed to init jrec->lock", getpid());
+		error("jobacct(%d): failed to init jrec->lock", getpid());
 	jrec->jobid			= job->jobid;
 	jrec->stepid			= job->stepid;
 	jrec->nprocs			= job->nprocs;
@@ -786,7 +796,7 @@ static void _get_node_01_names( char *node0, char *node1, char **env ) {
 		}
 	strncpy(node0, "NOTFOUND", HOST_NAME_MAX);}
   done:
-	debug2("jobacct(%i): node0 is \"%s\"\n", getpid(), node0);
+	debug2("jobacct(%d): node0 is \"%s\"\n", getpid(), node0);
 	return;
 }
 
@@ -1013,7 +1023,7 @@ static int _pack_jobrec(_jrec_t *outrec, _jrec_t *inrec) {
 }
 
 static void _process_mynode_msg(_mynode_msg_t *msg) {
-	debug2("jobacct(%i): in process_mynode_msg(msg=%i) for job %i.%i",
+	debug2("jobacct(%d): in process_mynode_msg(msg=%d) for job %u.%u",
 			getpid(), msg->msgtype, msg->jrec.jobid,
 			msg->jrec.stepid);
 	switch (msg->msgtype) {
@@ -1027,7 +1037,7 @@ static void _process_mynode_msg(_mynode_msg_t *msg) {
 		  _process_mynode_msg_terminate( (_jrec_t *) &msg->jrec);
 		  break;
 	  default:
-		  error("jobacct(%i): invalid mynode msgtype: %i", 
+		  error("jobacct(%d): invalid mynode msgtype: %d", 
 				  getpid(), msg->msgtype);
 		  break;
 	}
@@ -1041,10 +1051,10 @@ static void _process_mynode_msg(_mynode_msg_t *msg) {
 static void _process_mynode_msg_launch(_jrec_t *inrec) { 
 	_jrec_t	*jrec;
 
-	debug2("jobacct(%i): in _process_mynode_msg_launch", getpid());
+	debug2("jobacct(%d): in _process_mynode_msg_launch", getpid());
 	/* Have we seen this one before? */
 	if (_get_jrec_by_jobstep(inrec->jobid, inrec->stepid)) {
-		error("jobacct(%i): dup launch record for %i.%i",
+		error("jobacct(%d): dup launch record for %u.%u",
 				getpid(), inrec->jobid, inrec->stepid);
 		return;
 	}
@@ -1062,7 +1072,7 @@ static void _process_mynode_msg_taskdata(_jrec_t *inrec){
 
 	jrec = _get_jrec_by_jobstep(inrec->jobid, inrec->stepid);
 	if ( jrec == NULL ) {
-		error("jobacct(%i): task data but no record for %i.%i,"
+		error("jobacct(%d): task data but no record for %u.%u,"
 				" discarding data",
 				getpid(), inrec->jobid, inrec->stepid);
 		return;
@@ -1078,11 +1088,11 @@ static void _process_mynode_msg_taskdata(_jrec_t *inrec){
 
 static void _process_mynode_msg_terminate(_jrec_t *inrec){
 	_jrec_t	*jrec;
-	debug2("jobacct(%i): in _process_mynode_msg_terminate for job %i",
-			getpid(), inrec->jobid);
+	debug2("jobacct(%d): in _process_mynode_msg_terminate for job %u.%u",
+			getpid(), inrec->jobid, inrec->stepid);
 	jrec = _get_jrec_by_jobstep(inrec->jobid, inrec->stepid);
 	if ( jrec == NULL ) {
-		error("jobacct(%i): no data for job %i.%i in"
+		error("jobacct(%d): no data for job %u.%u in"
 				" _process_mynode_msg_terminate",
 				getpid(), inrec->jobid, inrec->stepid);
 		return;
@@ -1102,7 +1112,8 @@ static void _process_node0_msg(_jrec_t *nrec) {
 
 	hrec = xmalloc(sizeof(_jrec_t));
 	_unpack_jobrec(hrec, nrec);
-	debug2("jobacct(%i): Received %i.%i node0 message, nodeid=%d, utime=%d.%06d",
+	debug2("jobacct(%d): Received %u.%u node0 message, "
+			"nodeid=%d, utime=%d.%06d",
 			getpid(), hrec->jobid, hrec->stepid,
 			hrec->nodeid,
 			hrec->rusage.ru_utime.tv_sec,
@@ -1122,7 +1133,8 @@ static void _process_node0_msg(_jrec_t *nrec) {
 	}
 	xfree(hrec);
 	--jrec->not_reported;
-	debug2("jobacct(%i): not_reported=%i after node0 message, cum. utime=%d.%06d",
+	debug2("jobacct(%i): not_reported=%i after node0 message, "
+			"cum. utime=%d.%06d",
 			getpid(), jrec->not_reported,
 			jrec->rusage.ru_utime.tv_sec,
 			jrec->rusage.ru_utime.tv_usec );
@@ -1204,7 +1216,8 @@ static int _send_data_to_mynode(_mynode_msg_type_t msgtype, _jrec_t *jrec) {
 				" says %i (%m)",
 				getpid(), s_port, rc);
 	else
-		debug2("jobacct(%i): _send_data_to_mynode(msg, %i, localhost) succeeded",
+		debug2("jobacct(%i): _send_data_to_mynode(msg, %i, localhost) "
+				"succeeded",
 				getpid(), s_port);
 	return rc;
 }
@@ -1325,9 +1338,13 @@ static int _send_data_to_slurmctld(_jrec_t *jrec) {
 		jrec->rusage.ru_nivcsw,		/* total nivcsw */
 		jrec->max_vsize,		/* max vsize */
 		jrec->max_psize);		/* max psize */
-	xassert(nchars < MAX_MSG_SIZE);
-	stats->datalen = htonl(nchars+1);
-	rc =  _send_msg_to_slurmctld(stats);
+	if (nchars >= MAX_MSG_SIZE) {
+		error("_send_data_to_slurmctld buffer overflow");
+		rc = SLURM_ERROR;
+	} else {
+		stats->datalen = htonl(nchars+1);
+		rc =  _send_msg_to_slurmctld(stats);
+	}
 	xfree(stats);
 	xfree(tbuf);
 	return rc;
