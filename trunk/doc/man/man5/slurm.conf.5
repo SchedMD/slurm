@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "March 2005" "slurm.conf 0.5" "Slurm configuration file"
+.TH "slurm.conf" "5" "June 2005" "slurm.conf 0.5" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -122,6 +122,22 @@ This value should reflect the possibility that the srun command may
 stopped by a debugger or considerable time could be required for batch 
 job pre- and post-processing. The default value is unlimited (zero). 
 .TP
+\fBJobAcctType\fR
+Define the job accounting mechanism type.
+Acceptable values at present include "jobacct/log" and "jobacct/none".
+The default value is "jobacct/none".
+In order to use the \fBsacct\fR tool, "jobacct/log" must be configured.a
+\fBJobAcctLoc\fR
+Define the location where job accounting logs are to be written.
+For jobacct/none this parameter is ignored.
+For jobacct/log this is the fully-qualified file name for the data file.a
+\fBJobAcctParameters\fR
+Define any parameters to pass to the job accounting plugin. 
+For jobacct/none this parameter is ignored.
+For jobacct/log the only parameter available at this time is
+"Frequency=N", where N is the number of seconds between
+sampling the memory usage stats (psize, vsize). If N=0, no sampling
+is done and psize and vsize are returned as 0.
 \fBJobCompLoc\fR
 The interpretation of this value depends upon the logging mechanism 
 specified by the \fBJobCompType\fR parameter. 

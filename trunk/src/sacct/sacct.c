@@ -25,6 +25,10 @@
 /*
  * HISTORY
  * $Log$
+ * Revision 1.4  2005/06/03 23:33:48  jette
+ * Add info on new slurm.conf parameters for job accounting.
+ * Sacct now reports right away if accounting is disabled.
+ *
  * Revision 1.3  2005/06/03 20:35:52  jette
  * Fix several sacct bugs.
  *
@@ -1230,7 +1234,9 @@ void getData(void)
 void getOptions(int argc, char **argv)
 {
 	int c, i, optionIndex = 0;
-	char *end, *start;
+	char *end, *start, *acct_type;
+	struct stat stat_buf;
+
 	if ((i=getuid()))	/* default to current user unless root*/
 		opt_uid = i;
 	static struct option long_options[] = {
@@ -1517,6 +1523,17 @@ void getOptions(int argc, char **argv)
 			opt_total,
 			opt_verbose);
 	}
+
+	/* check if we have accounting data to view */
+	if (opt_filein == NULL)
+		opt_filein = slurm_get_jobacct_loc();
+	acct_type = slurm_get_jobacct_type();
+	if ((strcmp(acct_type, "jobacct/none") == 0)
+	&&  (stat(opt_filein, &stat_buf) != 0)) {
+		fprintf(stderr, "SLURM accounting is disabled\n");
+		exit(1);
+	} 
+	free(acct_type);
 
 	/* specific partitions requested? */
 	if (opt_partition_list) {
@@ -1915,8 +1932,6 @@ void linkJobstep(long j, long js)
 
 void openLogFile(void)
 {
-	if (opt_filein == NULL)
-		opt_filein = slurm_get_jobacct_loc();
 	logfile = fopen(opt_filein, "r");
 	if (logfile == NULL) {
 		perror(opt_filein);
