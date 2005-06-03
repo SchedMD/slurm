@@ -53,7 +53,10 @@ time_t last_bgl_update;
 pthread_mutex_t part_state_mutex = PTHREAD_MUTEX_INITIALIZER;
 int num_part_to_free = 0;
 int num_part_freed = 0;
+
+#ifdef HAVE_BGL_FILES
 static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 /* some local functions */
 #ifdef HAVE_BGL
