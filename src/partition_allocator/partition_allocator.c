@@ -32,7 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "partition_allocator.h"
+#include "src/partition_allocator/partition_allocator.h"
 
 #ifdef HAVE_BGL_FILES
 # include "src/plugins/select/bluegene/wrap_rm_api.h"
