@@ -25,6 +25,9 @@
 /*
  * HISTORY
  * $Log$
+ * Revision 1.3  2005/06/03 20:35:52  jette
+ * Fix several sacct bugs.
+ *
  * Revision 1.2  2005/06/01 18:35:11  jette
  * Fix a couple of minor issues for clean build on AIX with new HP code.
  *
@@ -124,6 +127,8 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <grp.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -143,9 +148,9 @@
 #define NOT_JOBSTEP "4294967294"
 
 #define BRIEF_FIELDS "jobstep,status,error"
-#define DEFAULT_FIELDS "jobstep,jobname,partition,nprocs,status,error"
+#define DEFAULT_FIELDS "jobstep,jobname,partition,ncpus,status,error"
 #define BUFSIZE 1024
-#define LONG_FIELDS "jobstep,usercpu,systemcpu,minflt,majflt,nprocs,ncpus,elapsed,status,error"
+#define LONG_FIELDS "jobstep,usercpu,systemcpu,minflt,majflt,ntasks,ncpus,elapsed,status,error"
 
 /* The following literals define how many significant characters
  * are used in a yyyymmddHHMMSS timestamp. */
@@ -179,7 +184,7 @@
 #define F_PARTITION 1
 #define F_SUBMITTED 2
 #define F_STARTTIME 3
-#define F_RESERVED2 4
+#define F_UIDGID 4
 #define F_RESERVED1 5
 #define F_RECTYPE 6
 #define F_RECVERSION 7
@@ -272,6 +277,7 @@ void printElapsed(print_what_t which, long idx);
 void printError(print_what_t which, long idx);
 void printFinished(print_what_t which, long idx);
 void printGid(print_what_t which, long idx);
+void printGroup(print_what_t which, long idx);
 void printIdrss(print_what_t which, long idx);
 void printInblocks(print_what_t which, long idx);
 void printIsrss(print_what_t which, long idx);
@@ -286,9 +292,9 @@ void printMsgSnd(print_what_t which, long idx);
 void printNcpus(print_what_t which, long idx);
 void printNivcsw(print_what_t which, long idx);
 void printNodes(print_what_t which, long idx);
-void printNprocs(print_what_t which, long idx);
 void printNsignals(print_what_t which, long idx);
 void printNswap(print_what_t which, long idx);
+void printNtasks(print_what_t which, long idx);
 void printNvcsw(print_what_t which, long idx);
 void printOutBlocks(print_what_t which, long idx);
 void printPartition(print_what_t which, long idx);
@@ -298,6 +304,7 @@ void printStatus(print_what_t which, long idx);
 void printSubmitted(print_what_t which, long idx);
 void printSystemCpu(print_what_t which, long idx);
 void printUid(print_what_t which, long idx);
+void printUser(print_what_t which, long idx);
 void printUserCpu(print_what_t which, long idx);
 void printVsize(print_what_t which, long idx);
 
@@ -315,6 +322,7 @@ static struct {
 	"error", &printError}, {
 	"finished", &printFinished}, {
 	"gid", &printGid}, {
+	"group", &printGroup}, {
 	"idrss", &printIdrss}, {
 	"inblocks", &printInblocks}, {
 	"isrss", &printIsrss}, {
@@ -329,9 +337,10 @@ static struct {
 	"ncpus", &printNcpus}, {
 	"nivcsw", &printNivcsw}, {
 	"nodes", &printNodes}, {
-	"nprocs", &printNprocs}, {
+	"nprocs", &printNtasks}, {
 	"nsignals", &printNsignals}, {
 	"nswap", &printNswap}, {
+	"ntasks", &printNtasks}, {
 	"nvcsw", &printNvcsw}, {
 	"outblocks", &printOutBlocks}, {
 	"partition", &printPartition}, {
@@ -341,6 +350,7 @@ static struct {
 	"submitted", &printSubmitted}, {
 	"systemcpu", &printSystemCpu}, {
 	"uid", &printUid}, {
+	"user", &printUser}, {
 	"usercpu", &printUserCpu}, {
 	"vsize", &printVsize}, {
 	NULL, NULL}
@@ -463,12 +473,18 @@ char *decodeCstatus(char *cs)
 {
 	static char buf[10];
 
-	if (strcasecmp(cs, "cd")==0) 
+	if (strcasecmp(cs, "ca")==0) 
+		return "CANCELLED";
+	else if (strcasecmp(cs, "cd")==0) 
 		return "COMPLETED";
+	else if (strcasecmp(cs, "cg")==0) 
+		return "COMPLETING";	/* we should never see this */
 	else if (strcasecmp(cs, "f")==0) 
 		return "FAILED";
 	else if (strcasecmp(cs, "nf")==0)
 		return "NODEFAILED";
+	else if (strcasecmp(cs, "p")==0)
+		return "PENDING"; 	/* we should never see this */
 	else if (strcasecmp(cs, "r")==0)
 		return "RUNNING"; 
 	else if (strcasecmp(cs, "to")==0)
@@ -488,7 +504,10 @@ void doDump(void)
 				continue;
 		/* JOB_START */
 		if (opt_jobstep_list == NULL) {
-			if (jobs[j].job_start_seen==0) {
+			if ((jobs[j].job_start_seen==0) &&
+			    (jobs[j].job_step_seen) ) {
+				/* If we only saw JOB_TERMINATED, the
+				 * job was probably canceled. */ 
 				fprintf(stderr,
 					"Error: No JOB_START record for "
 					"job %ld\n",
@@ -870,7 +889,7 @@ void doFdump(char* fields[])
 		{ "partition",	"partition",	"partition" },	/*  1 */
 		{ "submitted",	"submitted",	"submitted" },	/*  2 */
 		{ "starttime",	"starttime",	"starttime" },	/*  3 */
-		{ "reserved-2",	"reserved-2",	"reserved-2" },	/*  4 */
+		{ "uid.gid",	"reserved-2",	"uid.gid" },	/*  4 */
 		{ "reserved-1",	"reserved-1",	"reserved-1" },	/*  5 */
 		{ "recordType", "recordType",	"recordType" },	/*  6 */
 		{ "recordVers",	"recordVers",	"recordVers" },	/*  7 */
@@ -946,9 +965,6 @@ void doHelp(void)
  *
  * At this point, we have already selected the desired data,
  * so we just need to print it for the user.
- *
- * Note that we couldn't select for uid and gid until we
- * got here, as only JOB_START records carry the uid/gid data.
  */
 void doList(void)
 {
@@ -963,7 +979,9 @@ void doList(void)
 	else if (opt_jobstep_list)
 		doJobs = 0;
 	for (j=0; j<Njobs; j++) {
-		if (jobs[j].job_start_seen==0) {
+		if ((jobs[j].job_start_seen==0) && jobs[j].job_step_seen) {
+			/* If we only saw JOB_TERMINATED, the job was
+			 * probably canceled. */
 			fprintf(stderr,
 				"Error: No JOB_START record for " "job %ld\n",
 				jobs[j].job);
@@ -971,6 +989,11 @@ void doList(void)
 				rc = ERROR;
 		}
 		if (opt_verbose) {
+			if (jobs[j].job_start_seen==0)
+				fprintf(stderr,
+					"Note: No JOB_START record for "
+					"job %ld\n",
+					jobs[j].job);
 			if (jobs[j].job_step_seen==0)
 				fprintf(stderr,
 					"Note: No JOB_STEP record for "
@@ -1134,6 +1157,14 @@ void getData(void)
 				*fptr++ = 0;
 		}
 		f[++i] = NULL;
+		if (i < F_NUMFIELDS) {
+			fprintf(stderr,
+				"Invalid record (too short) "
+				"at input line %ld\n", lc);
+			if (opt_debug)
+				fprintf(stderr, "rec> %s\n", buf);
+			continue;
+		}
 		if (strcmp(f[F_RECVERSION], "1")) {
 			fprintf(stderr,
 				"Invalid record version at input line %ld\n",
@@ -1141,6 +1172,7 @@ void getData(void)
 			inputError++;
 			if (opt_debug)
 				fprintf(stderr, "rec> %s\n", buf);
+			continue;
 		}
 		if (NjobstepsSelected) {
 			for (i = 0; i < NjobstepsSelected; i++) {
@@ -1211,6 +1243,7 @@ void getOptions(int argc, char **argv)
 		{"file", 1, 0, 'f'},
 		{"formatted_dump", 0, 0, 'O'},
 		{"gid", 1, 0, 'g'},
+		{"group", 1, 0, 'g'},
 		{"help", 0, &opt_help, 1},
 		{"help-fields", 0, &opt_help, 2},
 		{"jobs", 1, 0, 'j'},
@@ -1223,6 +1256,7 @@ void getOptions(int argc, char **argv)
 		{"total", 0, 0,  't'},
 		{"uid", 1, 0, 'u'},
 		{"usage", 0, &opt_help, 3},
+		{"user", 1, 0, 'u'},
 		{"verbose", 0, 0, 'V'},
 		{"version", 0, 0, 'v'},
 		{0, 0, 0, 0}
@@ -1329,7 +1363,18 @@ void getOptions(int argc, char **argv)
 			break;
 
 		case 'g':
-			opt_gid = atoi(optarg);
+			if (isdigit((int) *optarg))
+				opt_gid = atoi(optarg);
+			else {
+				struct group *grp;
+				if ((grp=getgrnam(optarg))==NULL) {
+					fprintf(stderr,
+						"Invalid group id: %s\n",
+						optarg);
+					exit(1);
+				}
+				opt_gid=grp->gr_gid;
+			}
 			break;
 
 		case 'h':
@@ -1399,7 +1444,17 @@ void getOptions(int argc, char **argv)
 			break;
 
 		case 'u':
-			opt_uid = atoi(optarg);
+			if (isdigit((int) *optarg))
+				opt_uid = atoi(optarg);
+			else {
+				struct passwd *pwd;
+				if ((pwd=getpwnam(optarg))==NULL) {
+					fprintf(stderr, "Invalid user id: %s\n",
+							optarg);
+					exit(1);
+				}
+				opt_uid=pwd->pw_uid;
+			}
 			break;
 
 		case 'V':
@@ -1615,7 +1670,7 @@ void helpMsg(void)
 	       "      or /hptc_cluster/slurm/etc/slurm.conf. If no slurm.conf file\n"
 	       "      is found, try to use /var/log/slurm_accounting.log.\n"
 	       "\n"
-	       "Options\n"
+	       "Options:\n"
 	       "\n"
 	       "-a, --all\n"
 	       "    Display job accounting data for all users. By default, only\n"
@@ -1638,13 +1693,13 @@ void helpMsg(void)
 	       "-F <field-list>, --fields=<field-list>\n"
 	       "    Display the specified data (use \"--help-fields\" for a\n"
 	       "    list of available fields). If no field option is specified,\n"
-	       "    we use \"--fields=jobstep,jobname,partition,nprocs,status,error\".\n"
+	       "    we use \"--fields=jobstep,jobname,partition,ncpus,status,error\".\n"
 	       "-f<file>, --file=<file>\n"
 	       "    Read data from the specified file, rather than SLURM's current\n"
 	       "    accounting log file.\n"
 	       "-l, --long\n"
 	       "    Equivalent to specifying\n"
-	       "    \"--fields=jobstep,usercpu,systemcpu,minflt,majflt,nprocs,\n"
+	       "    \"--fields=jobstep,usercpu,systemcpu,minflt,majflt,ntasks,\n"
 	       "    ncpus,elapsed,status,error\"\n"
 	       "-O, --formatted_dump\n"
 	       "    Dump accounting records in an easy-to-read format, primarily\n"
@@ -1679,7 +1734,7 @@ void helpMsg(void)
 	       "--usage\n"
 	       "    Pointer to this message.\n"
 	       "-V, --verbose\n"
-	       "    Primarily for debugging porpoises, report the state of various\n"
+	       "    Primarily for debugging purposes, report the state of various\n"
 	       "    variables during processing.\n");
 	return;
 }
@@ -1778,6 +1833,7 @@ int main(int argc, char **argv)
 long initJobStruct(long job, char *f[])
 {
 	long	j;
+	char	*p;
 
 	if ((j=Njobs++)>= MAX_JOBS) {
 		fprintf(stderr, "Too many jobs, %ld, listed in log file\n", j);
@@ -1791,9 +1847,18 @@ long initJobStruct(long job, char *f[])
 	jobs[j].partition = _my_malloc(strlen(f[F_PARTITION])+1);
 	strcpy(jobs[j].partition, f[F_PARTITION]);
 	strncpy(jobs[j].submitted, f[F_SUBMITTED], 16);
+	strncpy(jobs[j].jobname, "(unknown)", MAX_JOBNAME_LENGTH);
 	strcpy(jobs[j].cstatus,"r");
 	strcpy(jobs[j].finished,"?");
 	jobs[j].starttime = strtol(f[F_STARTTIME], NULL, 10);
+	/* Early versions of jobacct treated F_UIDGID as a reserved
+	 * field, so we might find "-" here. Take advantage of the
+	 * fact that atoi() will return 0 if it finds something that's
+	 * not a number for uid and gid.
+	 */
+	jobs[j].uid = atoi(f[F_UIDGID]);
+	if ((p=strstr(f[F_UIDGID],".")))
+		jobs[j].gid=atoi(++p);
 	jobs[j].tot_cpu_sec = 0;
 	jobs[j].tot_cpu_usec = 0;
 	jobs[j].tot_user_sec = 0;
@@ -1953,6 +2018,28 @@ void printGid(print_what_t which, long idx)
 			break;
 		case JOBSTEP:
 			printf("%5d", jobs[jobsteps[idx].j].gid);
+			break;
+	} 
+}
+
+void printGroup(print_what_t which, long idx)
+{ 
+	switch(which) {
+		case HEADLINE:
+			printf("%-9s", "Group");
+			break;
+		case UNDERSCORE:
+			printf("%-9s", "---------");
+			break;
+		case JOB:
+		case JOBSTEP:
+			{
+				char	*tmp="(unknown)";
+				struct	group *gr;
+				if ((gr=getgrgid(jobs[idx].gid)))
+					tmp=gr->gr_name;
+				printf("%-9s", tmp);
+			}
 			break;
 	} 
 }
@@ -2223,24 +2310,6 @@ void printNodes(print_what_t which, long idx)
 	} 
 }
 
-void printNprocs(print_what_t which, long idx)
-{ 
-	switch(which) {
-		case HEADLINE:
-			printf("%7s", "Nprocs");
-			break;
-		case UNDERSCORE:
-			printf("%7s", "-------");
-			break;
-		case JOB:
-			printf("%7ld", jobs[idx].nprocs);
-			break;
-		case JOBSTEP:
-			printf("%7ld", jobsteps[idx].nprocs);
-			break;
-	} 
-}
-
 void printNsignals(print_what_t which, long idx)
 { 
 	switch(which) {
@@ -2273,6 +2342,24 @@ void printNswap(print_what_t which, long idx)
 			break;
 		case JOBSTEP:
 			printf("%8ld", jobsteps[idx].nswap);
+			break;
+	} 
+}
+
+void printNtasks(print_what_t which, long idx)
+{ 
+	switch(which) {
+		case HEADLINE:
+			printf("%7s", "Ntasks");
+			break;
+		case UNDERSCORE:
+			printf("%7s", "-------");
+			break;
+		case JOB:
+			printf("%7ld", jobs[idx].nprocs);
+			break;
+		case JOBSTEP:
+			printf("%7ld", jobsteps[idx].nprocs);
 			break;
 	} 
 }
@@ -2440,6 +2527,28 @@ void printUid(print_what_t which, long idx)
 			break;
 		case JOBSTEP:
 			printf("%5d", jobs[jobsteps[idx].j].uid);
+			break;
+	} 
+}
+
+void printUser(print_what_t which, long idx)
+{ 
+	switch(which) {
+		case HEADLINE:
+			printf("%-9s", "User");
+			break;
+		case UNDERSCORE:
+			printf("%-9s", "---------");
+			break;
+		case JOB:
+		case JOBSTEP:
+			{
+				char	*tmp="(unknown)";
+				struct	passwd *pw;
+				if ((pw=getpwuid(jobs[idx].uid)))
+					tmp=pw->pw_name;
+				printf("%-9s", tmp);
+			}
 			break;
 	} 
 }

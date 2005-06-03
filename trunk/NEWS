@@ -7,6 +7,9 @@ documents those changes that are of interest to users and admins.
  -- Fix race condition with multiple simultaneous epilogs.
  -- Modify slurmd to resend job completion RPC to slurmctld in the 
     case where slurmctld is not responding.
+ -- Updated sacct: handle cancelled jobs correctly, add user/group
+    output, add ntasks ans synonym for nprocs, display error field 
+    by default, display ncpus instead of nprocs
  -- Parallelization of queing jobs up to 32 at once.  Variable 
     MAX_AGENT_COUNT used in bgl_job_run.c to specify.
 
