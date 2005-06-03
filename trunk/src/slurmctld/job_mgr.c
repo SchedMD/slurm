@@ -82,7 +82,7 @@ time_t last_job_update;		/* time of last update to job records */
 static uint32_t maximum_prio = TOP_PRIORITY;
 static int    hash_table_size = 0;
 static int    job_count = 0;        /* job's in the system */
-static long   job_id_sequence = -1; /* first job_id to assign new job */
+static uint32_t job_id_sequence = 0; /* first job_id to assign new job */
 static struct job_record **job_hash = NULL;
 
 /* Local functions */
@@ -270,7 +270,7 @@ int dump_all_job_state(void)
          */
 	pack32( job_id_sequence, buffer);
 
-	debug3("Writing job id %d to header record of job_state file",
+	debug3("Writing job id %u to header record of job_state file",
 	       job_id_sequence);
 
 	/* write individual job records */
@@ -386,7 +386,7 @@ int load_all_job_state(void)
 	xfree(state_file);
 	unlock_state_files();
 
-	if (job_id_sequence < 0)
+	if (job_id_sequence == 0)
 		job_id_sequence = slurmctld_conf.first_job_id;
 
 	buffer = create_buf(data, data_size);
@@ -439,7 +439,7 @@ int load_all_job_state(void)
          */
 	if (ver_str != NULL) {
 		job_id_sequence = MAX(saved_job_id, job_id_sequence);
-		debug3("Set job_id_sequence to %d", job_id_sequence);
+		debug3("Set job_id_sequence to %u", job_id_sequence);
 	}
 
 	free_buf(buffer);
@@ -2839,7 +2839,7 @@ static void _set_job_id(struct job_record *job_ptr)
 {
 	uint32_t new_id;
 
-	if (job_id_sequence < 0)
+	if (job_id_sequence == 0)
 		job_id_sequence = slurmctld_conf.first_job_id;
 
 	xassert(job_ptr);
