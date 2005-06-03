@@ -1154,7 +1154,7 @@ static int _delete_old_partitions(void)
 						      &attr_agent, 
 						      mult_destroy_part, 
 						      (void *)
-						      found_record)) {
+						      init_record)) {
 					error("pthread_create "
 					      "error %m");
 					if (++retries 
