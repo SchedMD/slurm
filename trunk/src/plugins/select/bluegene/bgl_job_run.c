@@ -308,8 +308,7 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 
 	slurm_mutex_lock(&part_state_mutex);
 	bgl_record->boot_count = 0;
-	if(bgl_record->target_name) 
-		xfree(bgl_record->target_name);
+	xfree(bgl_record->target_name);
 	bgl_record->target_name = xstrdup(uid_to_string(bgl_update_ptr->uid));
 	debug("setting the target_name for Partition %s to %s",
 	      bgl_record->bgl_part_id,
