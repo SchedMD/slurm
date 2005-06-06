@@ -216,12 +216,10 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 	int rc;
 	bgl_record_t *bgl_record = NULL;
 	bgl_record_t *found_record = NULL;
-	char *user_name = uid_to_string(bgl_update_ptr->uid);
 	ListIterator itr;
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
 	int retries;
-	
 	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
 			
 	if(!bgl_record) {
@@ -286,7 +284,7 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 					break;
 				}
 			}
-		}
+		} 
 		list_iterator_destroy(itr);
 		
 		/* wait for all necessary partitions to be freed */
@@ -304,15 +302,25 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 				bgl_update_ptr->job_id);
 			return;
 		}
+	} else if (bgl_record->state == RM_PARTITION_CONFIGURING) {
+		bgl_record->boot_state = 1;		
 	}
 
 	slurm_mutex_lock(&part_state_mutex);
+	bgl_record->boot_count = 0;
 	if(bgl_record->target_name) 
 		xfree(bgl_record->target_name);
-	bgl_record->target_name = xstrdup(user_name);
+	bgl_record->target_name = xstrdup(uid_to_string(bgl_update_ptr->uid));
+	debug("setting the target_name for Partition %s to %s",
+	      bgl_record->bgl_part_id,
+	      bgl_record->target_name);
 	
-	if(bgl_record->state == RM_PARTITION_READY)
+	if(bgl_record->state == RM_PARTITION_READY) {
+		debug("partition %s is ready.",
+		      bgl_record->bgl_part_id);
+				
 		set_part_user(bgl_record); 
+	}
 	slurm_mutex_unlock(&part_state_mutex);	
 }
 
@@ -412,10 +420,10 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 			bgl_record->target_name = 
 				xstrdup(slurmctld_conf.slurm_user_name);
 		}	
-		if(bgl_record->state != RM_PARTITION_CONFIGURING) {
-			bgl_record->boot_state = 0;
-			bgl_record->boot_count = 0;
-		}
+		
+		bgl_record->boot_state = 0;
+		bgl_record->boot_count = 0;
+		
 		last_bgl_update = time(NULL);
 		slurm_mutex_unlock(&part_state_mutex);
 	} else {
@@ -469,11 +477,6 @@ static void _part_op(bgl_update_t *bgl_update_ptr)
 	int retries;
 	
 	slurm_mutex_lock(&agent_cnt_mutex);
-	if (agent_cnt > MAX_AGENT_COUNT) {	/* already running an agent */
-		slurm_mutex_unlock(&agent_cnt_mutex);
-		return;
-	}
-	agent_cnt++;
 	if ((bgl_update_list == NULL)
 	&&  ((bgl_update_list = list_create(_bgl_list_del)) == NULL))
 		fatal("malloc failure in start_job/list_create");
@@ -487,6 +490,11 @@ static void _part_op(bgl_update_t *bgl_update_ptr)
 		if (list_enqueue(bgl_update_list, bgl_update_ptr) == NULL)
 			fatal("malloc failure in _part_op/list_enqueue");
 	}
+	if (agent_cnt > MAX_AGENT_COUNT) {	/* already running an agent */
+		slurm_mutex_unlock(&agent_cnt_mutex);
+		return;
+	}
+	agent_cnt++;
 	slurm_mutex_unlock(&agent_cnt_mutex);
 	/* spawn an agent */
 	slurm_attr_init(&attr_agent);
@@ -624,7 +632,8 @@ extern int start_job(struct job_record *job_ptr)
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_NODE_USE, &(bgl_update_ptr->node_use));
 	info("Queue start of job %u in BGL partition %s",
-		job_ptr->job_id, bgl_update_ptr->bgl_part_id);
+	     job_ptr->job_id, 
+	     bgl_update_ptr->bgl_part_id);
 
 	_part_op(bgl_update_ptr);
 #else

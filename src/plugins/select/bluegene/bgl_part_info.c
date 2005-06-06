@@ -175,6 +175,7 @@ extern int update_partition_list()
 			error("Partition %s not found in bgl_list "
 			      "removing from database", name);
 			term_jobs_on_part(name);
+			bgl_free_partition(bgl_record);
 			rc = rm_remove_partition(name);
 			if (rc != STATUS_OK) {
 				error("rm_remove_partition(%s): %s",
@@ -221,19 +222,32 @@ extern int update_partition_list()
 					      "users from partition %s", 
 					      bgl_record->bgl_part_id);
 				} 
-				if(!strcmp(bgl_record->target_name, 
-					   slurmctld_conf.slurm_user_name) 
-				   && strcmp(bgl_record->target_name, 
-					     bgl_record->user_name)) {
-					info("partition %s was in a "
-					     "ready state but got freed "
-					     "booting again for user %s",
-					     bgl_record->bgl_part_id,
-					     bgl_record->user_name);
-					xfree(bgl_record->target_name);	
+				if(bgl_record->target_name 
+				   && bgl_record->user_name) {
+					if(!strcmp(bgl_record->target_name, 
+						   slurmctld_conf.
+						   slurm_user_name) 
+					   && strcmp(bgl_record->target_name, 
+						     bgl_record->user_name)) {
+						info("partition %s was in a "
+						     "ready state but got "
+						     "freed booting again for "
+						     "user %s",
+						     bgl_record->bgl_part_id,
+						     bgl_record->user_name);
+						xfree(bgl_record->
+						      target_name);	
+						bgl_record->target_name = 
+							xstrdup(bgl_record->
+								user_name);
+					}
+				} else if(bgl_record->user_name)
 					bgl_record->target_name = 
 						xstrdup(bgl_record->user_name);
-				}
+				else
+					error("Target Name and User Name are "
+					      "not set for partition %s.",
+					      bgl_record->bgl_part_id);
 			} else if(bgl_record->state 
 				  == RM_PARTITION_CONFIGURING)
 				bgl_record->boot_state = 1;
@@ -276,7 +290,7 @@ extern int update_partition_list()
 					error("Couldn't boot Partition %s "
 					      "for user %s",
 					      bgl_record->bgl_part_id, 
-					      bgl_record->target_name);
+					      bgl_record->user_name);
 					now = time(NULL);
 					time_ptr = localtime(&now);
 					strftime(reason, sizeof(reason),
@@ -291,9 +305,13 @@ extern int update_partition_list()
 				}
 				break;
 			case RM_PARTITION_READY:
+				debug("partition %s is ready.",
+				      bgl_record->bgl_part_id);
 				set_part_user(bgl_record); 	
 				break;
 			default:
+				debug("Hey the state of the Partition is %d "
+				      "doing nothing.",bgl_record->state);
 				break;
 			}
 		}	
