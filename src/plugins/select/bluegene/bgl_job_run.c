@@ -480,15 +480,10 @@ static void _part_op(bgl_update_t *bgl_update_ptr)
 	&&  ((bgl_update_list = list_create(_bgl_list_del)) == NULL))
 		fatal("malloc failure in start_job/list_create");
 
-	if (bgl_update_ptr->op == START_OP) {
-		/* partition boot is fast, put at front of the queue */
-		if (list_push(bgl_update_list, bgl_update_ptr) == NULL)
-			fatal("malloc failure in _part_op/list_push");
-	} else {
-		/* job kill and partition free are slow, put at end of queue */
-		if (list_enqueue(bgl_update_list, bgl_update_ptr) == NULL)
-			fatal("malloc failure in _part_op/list_enqueue");
-	}
+	/* push job onto queue in a FIFO */
+	if (list_push(bgl_update_list, bgl_update_ptr) == NULL)
+		fatal("malloc failure in _part_op/list_push");
+	
 	if (agent_cnt > MAX_AGENT_COUNT) {	/* already running an agent */
 		slurm_mutex_unlock(&agent_cnt_mutex);
 		return;
