@@ -176,20 +176,16 @@ extern void destroy_bgl_record(void* object)
 	bgl_record_t* bgl_record = (bgl_record_t*) object;
 
 	if (bgl_record) {
-		if(bgl_record->nodes) 
-			xfree(bgl_record->nodes);
-		if(bgl_record->user_name)
-			xfree(bgl_record->user_name);
-		if(bgl_record->target_name)
-			xfree(bgl_record->target_name);
+		xfree(bgl_record->nodes);
+		xfree(bgl_record->user_name);
+		xfree(bgl_record->target_name);
 		if(bgl_record->bgl_part_list)
 			list_destroy(bgl_record->bgl_part_list);
 		if(bgl_record->hostlist)
 			hostlist_destroy(bgl_record->hostlist);
 		if(bgl_record->bitmap)
 			bit_free(bgl_record->bitmap);
-		if(bgl_record->bgl_part_id)
-			xfree(bgl_record->bgl_part_id);
+		xfree(bgl_record->bgl_part_id);
 		
 		xfree(bgl_record);
 	}
@@ -1485,8 +1481,7 @@ static int _parse_bgl_spec(char *in_line)
 	else
 		bgl_record->conn_type = SELECT_MESH;
 	
-	if (conn_type)
-		xfree(conn_type);
+	xfree(conn_type);
 
 	bgl_record->node_use = SELECT_COPROCESSOR_MODE;
 
