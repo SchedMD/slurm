@@ -445,11 +445,10 @@ extern void set_part_user(bgl_record_t *bgl_record)
 	bgl_record->boot_count = 0;
 	if(update_partition_user(bgl_record) == 1) 
 		last_bgl_update = time(NULL);
-	if(bgl_record->target_name) {
-		xfree(bgl_record->target_name);
-		bgl_record->target_name = 
-			xstrdup(slurmctld_conf.slurm_user_name);
-	}
+	
+	xfree(bgl_record->target_name);
+	bgl_record->target_name = 
+		xstrdup(slurmctld_conf.slurm_user_name);
 }
 
 extern char* convert_lifecycle(lifecycle_type_t lifecycle)
