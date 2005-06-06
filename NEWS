@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.5.0-pre9
+=============================
+ -- If a job and node are in COMPLETING state and slurmd stops responding for
+    SlurmdTimeout, then set the node DOWN and the job COMPLETED.
+ 
 * Changes in SLURM 0.5.0-pre8
 =============================
  -- BlueGene srun --geometry was not getting propogated properly.

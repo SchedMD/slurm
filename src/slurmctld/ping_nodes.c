@@ -168,7 +168,6 @@ void ping_nodes (void)
 		if ((node_ptr->last_response != (time_t)0) &&
 		    (node_ptr->last_response <= node_dead_time) &&
 		    ((base_state != NODE_STATE_DOWN) &&
-		     (base_state != NODE_STATE_COMPLETING) &&
 		     (base_state != NODE_STATE_DRAINED))) {
 			if (down_hostlist)
 				(void) hostlist_push_host(down_hostlist,
