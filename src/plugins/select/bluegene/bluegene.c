@@ -350,19 +350,13 @@ extern int update_partition_user(bgl_record_t *bgl_record)
 	}
 	
 	if(strcmp(bgl_record->target_name, bgl_record->user_name)) {
-		if(bgl_record->user_name)
-			xfree(bgl_record->user_name);
-		bgl_record->user_name = 
-			xstrdup(bgl_record->target_name);
-		if((pw_ent = getpwnam(
-			    bgl_record->user_name))
-		   == NULL) {
-			error("getpwnam(%s): %m", 
-			      bgl_record->user_name);
+		xfree(bgl_record->user_name);
+		bgl_record->user_name = xstrdup(bgl_record->target_name);
+		if((pw_ent = getpwnam(bgl_record->user_name)) == NULL) {
+			error("getpwnam(%s): %m", bgl_record->user_name);
 			return -1;
 		} else {
-			bgl_record->user_uid = 
-				pw_ent->pw_uid; 
+			bgl_record->user_uid = pw_ent->pw_uid; 
 		}		
 		return 1;
 	}
