@@ -83,7 +83,7 @@ set job_id 0
 set matches 0
 set task_cnt 1
 # Usage: test7.3.prog [min_nodes] [max_nodes] [tasks]
-spawn $test_prog 1 2
+spawn ./$test_prog 1 2
 expect {
 	-re "job_id ($number)" {
 		set job_id $expect_out(1,string)
