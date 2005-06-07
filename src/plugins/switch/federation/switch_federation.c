@@ -315,7 +315,10 @@ int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist,
 	hostlist_t list = NULL;
 	int err;
 
-	if(strstr(network, "us") || strstr(network, "US")) {
+	if(strstr(network, "ip") || strstr(network, "IP")) {
+		debug2("federation: \"ip\" found in network string, no network tables allocated");
+		return SLURM_SUCCESS;
+	} else {
 		list = hostlist_create(nodelist);
 		if(!list)
 			fatal("hostlist_create(%s): %m", nodelist);
@@ -324,8 +327,6 @@ int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist,
 		hostlist_destroy(list);
 
 		return err;
-	} else {
-		return SLURM_SUCCESS;
 	}
 }
 
