@@ -47,6 +47,7 @@
 #include <grp.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/utsname.h>
 
 #if HAVE_STDLIB_H
 #  include <stdlib.h>
@@ -1029,6 +1030,7 @@ static int
 _setup_batch_env(slurmd_job_t *job, batch_job_launch_msg_t *msg)
 {
 	char       buf[1024], *task_buf, *bgl_part_id = NULL;
+	struct utsname name;
 	hostlist_t hl = hostlist_create(msg->nodes);
 
 	if (!hl)
@@ -1050,6 +1052,13 @@ _setup_batch_env(slurmd_job_t *job, batch_job_launch_msg_t *msg)
 	if (bgl_part_id) {
 		setenvpf(&job->env, "MPIRUN_PARTITION", "%s", bgl_part_id);
 		xfree(bgl_part_id);
+	}
+ 
+	uname(&name);
+	if (strcasecmp(name.sysname, "AIX") == 0) {
+		/* Required for AIX/POE systems indicating pre-allocation */
+		setenvpf(&job->env, "LOADLBATCH", "yes");
+		setenvpf(&job->env, "LOADL_ACTIVE", "3.2.0");
 	}
 
 	return 0;
