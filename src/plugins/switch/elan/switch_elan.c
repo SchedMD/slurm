@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  switch_elan.c - Library routines for initiating jobs on QsNet. 
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2003 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -47,6 +48,7 @@
 #include "src/plugins/switch/elan/qsw.h"
 
 #define BUF_SIZE 1024
+#define QSW_STATE_VERSION "VER001"
 
 /*
  * Static prototypes for network error resolver creation:
@@ -173,6 +175,7 @@ int switch_p_libstate_save (char *dir_name)
 		return SLURM_ERROR;
 	qsw_fini(old_state);
 	buffer = init_buf(1024);
+	packstr(QSW_STATE_VERSION, buffer);
 	(void) qsw_pack_libstate(old_state, buffer);
 	file_name = xstrdup(dir_name);
 	xstrcat(file_name, "/qsw_state");
@@ -184,7 +187,7 @@ int switch_p_libstate_save (char *dir_name)
 		error_code = SLURM_ERROR;
 	} else {
 		char  *buf = get_buf_data(buffer);
-		size_t len =get_buf_offset(buffer);
+		size_t len = get_buf_offset(buffer);
 		while(1) {
 			int wrote = write (state_fd, buf, len);
 			if ((wrote < 0) && (errno == EINTR))
@@ -218,6 +221,8 @@ int switch_p_libstate_restore (char *dir_name)
 	Buf buffer = NULL;
 	int error_code = SLURM_SUCCESS;
 	int state_fd, data_allocated = 0, data_read = 0, data_size = 0;
+	char *ver_str = NULL;
+	uint16_t ver_str_len;
 
 	if (dir_name == NULL)	/* clean start, no recovery */
 		return qsw_init(NULL);
@@ -253,15 +258,27 @@ int switch_p_libstate_restore (char *dir_name)
 	}
 
 	if (error_code == SLURM_SUCCESS) {
-		if (qsw_alloc_libstate(&old_state)) {
-			error_code = SLURM_ERROR;
-		} else {
-			buffer = create_buf (data, data_size);
-			data = NULL;	/* now in buffer, don't xfree() */
-			if (qsw_unpack_libstate(old_state, buffer) < 0)
-				error_code = SLURM_ERROR;
+		buffer = create_buf (data, data_size);
+		data = NULL;    /* now in buffer, don't xfree() */
+		if (buffer && (size_buf(buffer) >= sizeof(uint16_t) + 
+				strlen(QSW_STATE_VERSION))) {
+			char *ptr = get_buf_data(buffer);
+
+			if (!memcmp(&ptr[sizeof(uint16_t)], 
+					QSW_STATE_VERSION, 3)) {
+				unpackstr_xmalloc(&ver_str, &ver_str_len, 
+						buffer);
+				debug3("qsw_state file version: %s", ver_str);
+			}
 		}
 	}
+
+	if (ver_str && (strcmp(ver_str, QSW_STATE_VERSION) == 0)) {
+		if ((qsw_alloc_libstate(&old_state))
+		||  (qsw_unpack_libstate(old_state, buffer) < 0))
+			error_code = SLURM_ERROR;
+	} else 
+		error("qsw_state file is in an unsupported format, ignored");
 
 	if (buffer)
 		free_buf(buffer);
@@ -322,7 +339,7 @@ int switch_p_build_jobinfo ( switch_jobinfo_t switch_job, char *nodelist,
 	if (error_code == SLURM_SUCCESS) {
 		qsw_jobinfo_t j = (qsw_jobinfo_t) switch_job;
 		error_code = qsw_setup_jobinfo(j, nprocs, nodeset, 
-				cyclic_alloc);
+				cyclic_alloc); /* allocs hw context */
 	}
 
 	bit_free(nodeset);
@@ -779,5 +796,7 @@ extern char*switch_p_sprintf_node_info(switch_node_info_t switch_node,
 extern int switch_p_job_step_complete(switch_jobinfo_t jobinfo,
 	char *nodelist)
 {
+	qsw_teardown_jobinfo((qsw_jobinfo_t) jobinfo); /* frees hw context */
+
 	return SLURM_SUCCESS;
 }

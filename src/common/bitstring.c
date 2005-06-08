@@ -64,6 +64,10 @@ strong_alias(bit_equal,		slurm_bit_equal);
 strong_alias(bit_copy,		slurm_bit_copy);
 strong_alias(bit_pick_cnt,	slurm_bit_pick_cnt);
 strong_alias(bitfmt2int,	slurm_bitfmt2int);
+strong_alias(bit_nffc,		slurm_bit_nffc);
+strong_alias(bit_nffs,		slurm_bit_nffs);
+strong_alias(bit_copybits,	slurm_bit_copybits);
+strong_alias(bit_unfmt,		slurm_bit_unfmt);
 
 /* 
  * Allocate a bitstring.
@@ -246,6 +250,66 @@ bit_ffc(bitstr_t *b)
 			bit++;
 		}
 	}
+	return value;
+}
+
+/* Find the first n contiguous bits clear in b.
+ *   b (IN)             bitstring to search
+ *   n (IN)             number of bits needed
+ *   RETURN             position of first bit in range (-1 if none found)
+ */
+bitoff_t
+bit_nffc(bitstr_t *b, int n)
+{
+	bitoff_t value = -1;
+	bitoff_t bit;
+	int cnt = 0;
+
+	_assert_bitstr_valid(b);
+	assert(n > 0 && n <= _bitstr_bits(b));
+
+	for (bit = 0; bit <= _bitstr_bits(b) - n; bit++) {
+		if (bit_test(b, bit)) {		/* fail */
+			cnt = 0;
+		} else {
+			cnt++;
+			if (cnt >= n) {
+				value = bit - (cnt - 1);
+				break;
+			}
+		}
+	}
+
+	return value;
+}
+
+/* Find the first n contiguous bits set in b.
+ *   b (IN)             bitstring to search
+ *   n (IN)             number of bits needed
+ *   RETURN             position of first bit in range (-1 if none found)
+ */
+bitoff_t
+bit_nffs(bitstr_t *b, int n)
+{
+	bitoff_t value = -1;
+	bitoff_t bit;
+	int cnt = 0;
+
+	_assert_bitstr_valid(b);
+	assert(n > 0 && n <= _bitstr_bits(b));
+
+	for (bit = 0; bit <= _bitstr_bits(b) - n; bit++) {
+		if (!bit_test(b, bit)) {	/* fail */
+			cnt = 0;
+		} else {
+			cnt++;
+			if (cnt >= n) {
+				value = bit - (cnt - 1);
+				break;
+			}
+		}
+	}
+
 	return value;
 }
 
@@ -456,6 +520,19 @@ bit_copy(bitstr_t *b)
 	return new;
 }
 
+void
+bit_copybits(bitstr_t *dest, bitstr_t *src)
+{
+	int len;
+
+	_assert_bitstr_valid(dest);
+	_assert_bitstr_valid(src);
+	assert(bit_size(src) == bit_size(dest));
+
+	len = (_bitstr_words(bit_size(src)) - BITSTR_OVERHEAD)*sizeof(bitstr_t);
+	memcpy(&dest[BITSTR_OVERHEAD], &src[BITSTR_OVERHEAD], len);
+}
+
 #if !defined(USE_64BIT_BITSTR)
 /*
  * Returns the hamming weight (i.e. the number of bits set) in a word.
@@ -632,6 +709,29 @@ bit_fmt(char *str, int len, bitstr_t *b)
 	return str;
 }
 
+int
+bit_unfmt(bitstr_t *b, char *str)
+{
+	int *intvec, *p, rc = 0; 
+
+	_assert_bitstr_valid(b);
+	intvec = bitfmt2int(str);
+	if (intvec == NULL) 
+		return -1;
+
+	bit_nclear(b, 0, _bitstr_bits(b) - 1);
+	for (p = intvec; *p != -1; p += 2) {
+		if ((*p < 0) || (*p >= _bitstr_bits(b))
+		||  (*(p + 1) < 0) || (*(p + 1) >= _bitstr_bits(b))) {
+			rc = -1;
+			break;
+		}
+		bit_nset(b, *p, *(p + 1));		
+	}
+
+	xfree(intvec);
+	return rc;
+}
 
 /*
  * bitfmt2int - convert a string describing bitmap (output from bit_fmt, 
