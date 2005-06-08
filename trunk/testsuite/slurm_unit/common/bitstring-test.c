@@ -18,7 +18,7 @@
 int
 main(int argc, char *argv[])
 {
-	note("Testing static decl\n");
+	note("Testing static decl");
 	{
 		bitstr_t bit_decl(bs, 65);
 		/*bitstr_t *bsp = bs;*/
@@ -30,7 +30,7 @@ main(int argc, char *argv[])
 		TEST(bit_test(bs,14), "bit 14 set" );
 		/*bit_free(bsp);*/	/* triggers TEST in bit_free - OK */
 	}
-	note("Testing basic vixie functions\n");
+	note("Testing basic vixie functions");
 	{
 		bitstr_t *bs = bit_alloc(16), *bs2;
 
@@ -72,7 +72,7 @@ main(int argc, char *argv[])
 		bit_free(bs);
 		/*bit_set(bs,9); */	/* triggers TEST in bit_set - OK */
 	}
-	note("Testing and/or/not\n");
+	note("Testing and/or/not");
 	{
 		bitstr_t *bs1 = bit_alloc(128);
 		bitstr_t *bs2 = bit_alloc(128);
@@ -102,7 +102,7 @@ main(int argc, char *argv[])
 		bit_free(bs2);
 	}
 
-	note("testing bit selection\n");
+	note("testing bit selection");
 	{
 		bitstr_t *bs1 = bit_alloc(128), *bs2;
 		bit_set(bs1, 21);
@@ -121,7 +121,7 @@ main(int argc, char *argv[])
 
 		bit_free(bs1);
 	}
-	note("Testing realloc\n");
+	note("Testing realloc");
 	{
 		bitstr_t *bs = bit_alloc(1);
 
@@ -141,7 +141,7 @@ main(int argc, char *argv[])
 		TEST(bit_ffs(bs) == 1048575, "bitstring");
 		bit_free(bs);
 	}
-	note("Testing bit_fmt\n");
+	note("Testing bit_fmt");
 	{
 		char tmpstr[1024];
 		bitstr_t *bs = bit_alloc(1024);
@@ -156,6 +156,46 @@ main(int argc, char *argv[])
 					"[9-14,42,102]"), "bitstring");
 	}
 
-	note("Testing successful!\n");
+	note("Testing bit_nffc/bit_nffs");
+	{
+		bitstr_t *bs = bit_alloc(1024);
+
+		bit_set(bs, 2);
+		bit_set(bs, 6);
+		bit_set(bs, 7);
+		bit_nset(bs,12,1018); 
+
+		TEST(bit_nffc(bs, 2) == 0, "bitstring");
+		TEST(bit_nffc(bs, 3) == 3, "bitstring");
+		TEST(bit_nffc(bs, 4) == 8, "bitstring");
+		TEST(bit_nffc(bs, 5) == 1019, "bitstring");
+		TEST(bit_nffc(bs, 6) == -1, "bitstring");
+
+		TEST(bit_nffs(bs, 1) == 2, "bitstring");
+		TEST(bit_nffs(bs, 2) == 6, "bitstring");
+		TEST(bit_nffs(bs, 100) == 12, "bitstring");
+		TEST(bit_nffs(bs, 1023) == -1, "bitstring");
+
+		bit_free(bs);
+	}
+
+	note("Testing bit_unfmt");
+	{
+		bitstr_t *bs = bit_alloc(1024);
+		bitstr_t *bs2 = bit_alloc(1024);
+		char tmpstr[4096];
+
+		bit_set(bs,1);
+		bit_set(bs,3);
+		bit_set(bs,30);
+		bit_nset(bs,42,64);
+		bit_nset(bs,97,1000);
+
+		bit_fmt(tmpstr, sizeof(tmpstr), bs);
+		TEST(bit_unfmt(bs2, tmpstr) != -1, "bitstring");
+		TEST(bit_equal(bs, bs2), "bitstring");
+	}
+
+	note("Testing complete!");
 	exit(0);
 }

@@ -128,7 +128,7 @@
 struct qsw_libstate {
 	int ls_magic;
 	int ls_prognum;
-	int ls_hwcontext;
+	bitstr_t *ls_hwcontext;
 };
 
 struct qsw_jobinfo {
@@ -141,7 +141,8 @@ struct qsw_jobinfo {
 #define _copy_libstate(dest, src) do { 			\
 	assert((src)->ls_magic == QSW_LIBSTATE_MAGIC); 	\
 	assert((dest)->ls_magic == QSW_LIBSTATE_MAGIC); \
-	memcpy(dest, src, sizeof(struct qsw_libstate));	\
+	(dest)->ls_prognum = (src)->ls_prognum;		\
+	bit_copybits((dest)->ls_hwcontext, (src)->ls_hwcontext); \
 } while (0)
 
 /* Lock on library state */
@@ -181,6 +182,11 @@ qsw_alloc_libstate(qsw_libstate_t *lsp)
 	if (!new)
 		slurm_seterrno_ret(ENOMEM);
 	new->ls_magic = QSW_LIBSTATE_MAGIC;
+	new->ls_hwcontext = bit_alloc(QSW_CTX_END - QSW_CTX_START + 1);
+	if (!new->ls_hwcontext) {
+		qsw_free_libstate(new);
+		slurm_seterrno_ret(ENOMEM);
+	}
 	*lsp = new;
 	return 0;
 }
@@ -193,6 +199,8 @@ void
 qsw_free_libstate(qsw_libstate_t ls)
 {
 	assert(ls->ls_magic == QSW_LIBSTATE_MAGIC);
+	if (ls->ls_hwcontext)
+		bit_free(ls->ls_hwcontext);
 	ls->ls_magic = 0;
 	free(ls);
 }
@@ -214,9 +222,30 @@ qsw_pack_libstate(qsw_libstate_t ls, Buf buffer)
 
 	pack32(ls->ls_magic, buffer);
 	pack32(ls->ls_prognum, buffer);
-	pack32(ls->ls_hwcontext, buffer);
+	pack_bit_fmt(ls->ls_hwcontext, buffer);
 
 	return (get_buf_offset(buffer) - offset);
+}
+
+
+static int 
+_unpack_bit_fmt(bitstr_t *b, Buf buffer)
+{
+	uint16_t tmpstr_len;
+	char *tmpstr = NULL;
+
+	safe_unpackstr_xmalloc(&tmpstr, &tmpstr_len, buffer);
+	if (tmpstr == NULL)
+		goto unpack_error;
+	if (bit_unfmt(b, tmpstr) == -1) {
+		xfree(tmpstr);
+		goto unpack_error;
+	}
+	if (tmpstr)
+		xfree(tmpstr);
+	return 0;
+unpack_error:
+	return -1;
 }
 
 /*
@@ -235,7 +264,8 @@ qsw_unpack_libstate(qsw_libstate_t ls, Buf buffer)
 
 	safe_unpack32(&ls->ls_magic, buffer);
 	safe_unpack32(&ls->ls_prognum, buffer);
-	safe_unpack32(&ls->ls_hwcontext, buffer);
+	if (_unpack_bit_fmt(ls->ls_hwcontext, buffer) == -1)
+		goto unpack_error;
 
 	if (ls->ls_magic != QSW_LIBSTATE_MAGIC)
 		goto unpack_error;
@@ -280,7 +310,7 @@ qsw_init(qsw_libstate_t oldstate)
 		_copy_libstate(new, oldstate);
 	else {
 		new->ls_prognum = QSW_PRG_START;
-		new->ls_hwcontext = QSW_CTX_START;
+		bit_nclear(new->ls_hwcontext, 0, QSW_CTX_END - QSW_CTX_START);
 	}
 	qsw_internal_state = new;
 	return 0;
@@ -492,24 +522,34 @@ _generate_prognum(void)
 /*
  * Elan hardware context numbers are an adapter resource that must not be used
  * more than once on a single node.  One is allocated to each process on the
- * node that will be communication over Elan.  In order for processes on the 
+ * node that will be communicating over Elan.  In order for processes on the 
  * same node to communicate with one another and with other nodes across QsNet,
  * they must use contexts in the hi-lo range of a common capability.
- * If the library is initialized, we allocate these consecutively, otherwise 
+ * If the library state is initialized, we allocate/free these, otherwise 
  * we generate a random one, assuming we are being called by a transient 
  * program like pdsh.  Ref: rms_setcap(3).
+ *
+ * 2005-06-01 J. Garlick: we presume that all job steps require a unique range
+ * cluster-wide.  However, unrelated job steps may be be able to use the 
+ * same context range IFF their node ranges do not overlap or they are on 
+ * seperate rails (per Mark Grondona).  Try this later.
+ *
+ * Returns -1 on allocation error.
  */
 static int
-_generate_hwcontext(int num)
+_alloc_hwcontext(int num)
 {
-	int new;
+	bitoff_t bit;
+	int new = -1;
 
 	if (qsw_internal_state) {
 		_lock_qsw();
-		if (qsw_internal_state->ls_hwcontext + num - 1 > QSW_CTX_END)
-			qsw_internal_state->ls_hwcontext = QSW_CTX_START;
-		new = qsw_internal_state->ls_hwcontext;
-		qsw_internal_state->ls_hwcontext += num;
+		bit = bit_nffc(qsw_internal_state->ls_hwcontext, num);
+		if (bit != -1) {
+			bit_nset(qsw_internal_state->ls_hwcontext, 
+					bit, bit + num - 1);
+			new = bit + QSW_CTX_START;
+		}
 		_unlock_qsw();
 	} else {
 		_srand_if_needed();
@@ -517,13 +557,27 @@ _generate_hwcontext(int num)
 		      (QSW_CTX_END - (QSW_CTX_START + num - 1) - 1);
 		new +=  QSW_CTX_START;
 	}
+	assert(new == -1 || (new >= QSW_CTX_START && new <= QSW_CTX_END));
 	return new;
+}
+
+static void
+_free_hwcontext(int low, int high)
+{
+	assert((low >= QSW_CTX_START) && (high <= QSW_CTX_END));
+	if (qsw_internal_state) {
+		_lock_qsw();
+		bit_nclear(qsw_internal_state->ls_hwcontext,
+				low - QSW_CTX_START, high - QSW_CTX_START);
+		_unlock_qsw();
+	}
 }
 
 /*
  * Initialize the elan capability for this job.
+ * Returns -1 on failure to allocate hw context.
  */
-static void
+static int
 _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
 		bitstr_t *nodeset, int cyclic_alloc)
 {
@@ -564,7 +618,9 @@ _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
 		cap->UserKey.Values[i] = lrand48();
 
 	/* set up hardware context range */
-	cap->LowContext = _generate_hwcontext(max_procs_per_node);
+	cap->LowContext = _alloc_hwcontext(max_procs_per_node);
+	if (cap->LowContext == -1)
+		return -1;
 	cap->HighContext = cap->LowContext + max_procs_per_node - 1;
 	/* Note: not necessary to initialize cap->MyContext */
 
@@ -620,6 +676,7 @@ _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
 			}
 		}
 	}
+	return 0;
 }
 
 /*
@@ -644,10 +701,19 @@ qsw_setup_jobinfo(qsw_jobinfo_t j, int nprocs, bitstr_t *nodeset,
       
 	/* initialize jobinfo */
 	j->j_prognum = _generate_prognum();
-	_init_elan_capability(&j->j_cap, nprocs, nnodes, nodeset, 
-	                      cyclic_alloc);
+	if (_init_elan_capability(&j->j_cap, nprocs, nnodes, nodeset, 
+				cyclic_alloc) == -1) {
+		slurm_seterrno_ret(EAGAIN); /* failed to allocate hw ctx */
+	}
 
 	return 0;
+}
+
+void
+qsw_teardown_jobinfo(qsw_jobinfo_t j)
+{
+	if (j)
+		_free_hwcontext(j->j_cap.LowContext, j->j_cap.HighContext);
 }
 
 /*

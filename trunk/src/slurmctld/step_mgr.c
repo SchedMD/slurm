@@ -97,8 +97,11 @@ delete_all_step_records (struct job_record *job_ptr)
 	last_job_update = time(NULL);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		list_remove (step_iterator);
-		if (!step_ptr->batch_step)
+		if (step_ptr->switch_job) {
+			switch_g_job_step_complete(step_ptr->switch_job,
+				step_ptr->step_node_list);
 			switch_free_jobinfo(step_ptr->switch_job);
+		}
 		checkpoint_free_jobinfo(step_ptr->check_job);
 		xfree(step_ptr->host);
 		xfree(step_ptr->step_node_list);
@@ -136,10 +139,11 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
  * the switch_g_job_step_complete() must be called upon completion 
  * and not upon record purging. Presently both events occur 
  * simultaneously. */
-			switch_g_job_step_complete(step_ptr->switch_job, 
-				step_ptr->step_node_list);
-			if (!step_ptr->batch_step)
+			if (step_ptr->switch_job) {
+				switch_g_job_step_complete(step_ptr->switch_job, 
+					step_ptr->step_node_list);
 				switch_free_jobinfo (step_ptr->switch_job);
+			}
 			checkpoint_free_jobinfo (step_ptr->check_job);
 			xfree(step_ptr->host);
 			xfree(step_ptr->step_node_list);

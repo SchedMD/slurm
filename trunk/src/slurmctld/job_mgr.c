@@ -846,8 +846,6 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
         	if (switch_unpack_jobinfo(switch_tmp, buffer))
                 	goto unpack_error;
 	}
-        if (switch_unpack_jobinfo(switch_tmp, buffer))
-                goto unpack_error;
 	checkpoint_alloc_jobinfo(&check_tmp);
         if (checkpoint_unpack_jobinfo(check_tmp, buffer))
                 goto unpack_error;
