@@ -227,7 +227,7 @@ test7.3    Test of slurm_spawn API (needed on IBM SP systems).
 test7.4    Test of TotalView operation with SLURM
 
 
-test8.#    Test of system specific functionality.
+test8.#    Test of Blue Gene specific functionality.
 =================================================
 test8.1    Test of Blue Gene specific srun command line options
 test8.2    Test of Blue Gene specific srun environment variables
@@ -280,4 +280,8 @@ test12.2   Test validity/accuracy of accounting data for exit code,
 (There are many more tests that should probably be added, but HP 
 is taking responsibility for validating this code, so we'll stick 
 with the basics here.)
+
+test13.#   Testing of elan switch plugin
+========================================
+test13.1   Test that we avoid re-using active switch contexts.
 
