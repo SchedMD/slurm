@@ -100,6 +100,7 @@
 /*
  * Definitions local to this module.
  */
+#define _DEBUG			0
 #define QSW_JOBINFO_MAGIC 	0xf00ff00e
 #define QSW_LIBSTATE_MAGIC 	0xf00ff00f
 
@@ -125,25 +126,24 @@
  * the opaque types.  All use of the data structure internals is local to this
  * module.
  */
+struct step_ctx {
+	uint32_t  st_prognum;
+	uint32_t  st_low;
+	uint32_t  st_high;
+	bitstr_t *st_nodeset;
+};
+
 struct qsw_libstate {
-	int ls_magic;
-	int ls_prognum;
-	bitstr_t *ls_hwcontext;
+	uint32_t ls_magic;
+	uint32_t ls_prognum;
+	List     step_ctx_list;
 };
 
 struct qsw_jobinfo {
-	int             j_magic;
-	int             j_prognum;
+	uint32_t        j_magic;
+	uint32_t        j_prognum;
 	ELAN_CAPABILITY j_cap;
 };
-
-/* Copy library state */
-#define _copy_libstate(dest, src) do { 			\
-	assert((src)->ls_magic == QSW_LIBSTATE_MAGIC); 	\
-	assert((dest)->ls_magic == QSW_LIBSTATE_MAGIC); \
-	(dest)->ls_prognum = (src)->ls_prognum;		\
-	bit_copybits((dest)->ls_hwcontext, (src)->ls_hwcontext); \
-} while (0)
 
 /* Lock on library state */
 #define _lock_qsw() do {				\
@@ -163,9 +163,18 @@ struct qsw_jobinfo {
 static qsw_libstate_t qsw_internal_state = NULL;
 static pthread_mutex_t qsw_lock = PTHREAD_MUTEX_INITIALIZER;
 static elanhost_config_t elanconf = NULL;
-
+static uint16_t system_node_cnt = 0;
 static int shmid = -1;
 
+
+static void _step_ctx_del(void *ptr)
+{
+	struct step_ctx *step_ctx_p = (struct step_ctx *) ptr;
+
+	if (step_ctx_p->st_nodeset)
+		bit_free(step_ctx_p->st_nodeset);
+	xfree(step_ctx_p);
+}
 
 /*
  * Allocate a qsw_libstate_t.
@@ -182,8 +191,8 @@ qsw_alloc_libstate(qsw_libstate_t *lsp)
 	if (!new)
 		slurm_seterrno_ret(ENOMEM);
 	new->ls_magic = QSW_LIBSTATE_MAGIC;
-	new->ls_hwcontext = bit_alloc(QSW_CTX_END - QSW_CTX_START + 1);
-	if (!new->ls_hwcontext) {
+	new->step_ctx_list = list_create(_step_ctx_del);
+	if (!new->step_ctx_list) {
 		qsw_free_libstate(new);
 		slurm_seterrno_ret(ENOMEM);
 	}
@@ -199,10 +208,25 @@ void
 qsw_free_libstate(qsw_libstate_t ls)
 {
 	assert(ls->ls_magic == QSW_LIBSTATE_MAGIC);
-	if (ls->ls_hwcontext)
-		bit_free(ls->ls_hwcontext);
+	if (ls->step_ctx_list)
+		list_destroy(ls->step_ctx_list);
 	ls->ls_magic = 0;
 	free(ls);
+}
+
+static void 
+_pack_step_ctx(struct step_ctx *step_ctx_p, Buf buffer)
+{
+#if _DEBUG
+	char node_inx[32];
+	info("_pack_step_ctx: prog:%u low:%u high:%u node_inx:%s",
+		step_ctx_p->st_prognum, step_ctx_p->st_low, step_ctx_p->st_high,
+		 bit_fmt(node_inx, 32, step_ctx_p->st_nodeset));
+#endif
+	pack32(step_ctx_p->st_prognum,	buffer);
+	pack32(step_ctx_p->st_low,	buffer);
+	pack32(step_ctx_p->st_high,	buffer);
+	pack_bit_fmt(step_ctx_p->st_nodeset, buffer);
 }
 
 /*
@@ -216,13 +240,28 @@ int
 qsw_pack_libstate(qsw_libstate_t ls, Buf buffer)
 {
 	int offset;
+	uint16_t step_ctx_cnt;
+	ListIterator iter;
+	struct step_ctx *step_ctx_p;
 
 	assert(ls->ls_magic == QSW_LIBSTATE_MAGIC);
 	offset = get_buf_offset(buffer);
 
-	pack32(ls->ls_magic, buffer);
-	pack32(ls->ls_prognum, buffer);
-	pack_bit_fmt(ls->ls_hwcontext, buffer);
+	pack32(ls->ls_magic,	buffer);
+	pack32(ls->ls_prognum,	buffer);
+	pack16(system_node_cnt,	buffer);
+
+	if (ls->step_ctx_list)
+		step_ctx_cnt = list_count(ls->step_ctx_list);
+	else
+		step_ctx_cnt = 0;
+	pack16(step_ctx_cnt, buffer);
+	if (step_ctx_cnt) {
+		iter = list_iterator_create(ls->step_ctx_list);
+		while ((step_ctx_p = list_next(iter)))
+			_pack_step_ctx(step_ctx_p, buffer);
+		list_iterator_destroy(iter);
+	}
 
 	return (get_buf_offset(buffer) - offset);
 }
@@ -248,6 +287,21 @@ unpack_error:
 	return -1;
 }
 
+static int
+_unpack_step_ctx(struct step_ctx *step_ctx_p, Buf buffer)
+{
+	safe_unpack32(&step_ctx_p->st_prognum,	buffer);
+	safe_unpack32(&step_ctx_p->st_low,	buffer);
+	safe_unpack32(&step_ctx_p->st_high,	buffer);
+	step_ctx_p->st_nodeset = bit_alloc(system_node_cnt);
+	if (_unpack_bit_fmt(step_ctx_p->st_nodeset, buffer) != 0)
+		goto unpack_error;
+	return 0;
+unpack_error:
+        return -1;
+}
+
+
 /*
  * Unpack libstate packed by qsw_pack_libstate.
  *   ls (IN/OUT)	where to put libstate structure
@@ -257,15 +311,26 @@ unpack_error:
 int
 qsw_unpack_libstate(qsw_libstate_t ls, Buf buffer)
 {
-	int offset;
+	int offset, i;
+	uint16_t step_ctx_cnt;
+	struct step_ctx *step_ctx_p;
 
 	assert(ls->ls_magic == QSW_LIBSTATE_MAGIC);
 	offset = get_buf_offset(buffer);
 
-	safe_unpack32(&ls->ls_magic, buffer);
-	safe_unpack32(&ls->ls_prognum, buffer);
-	if (_unpack_bit_fmt(ls->ls_hwcontext, buffer) == -1)
-		goto unpack_error;
+	safe_unpack32(&ls->ls_magic,	buffer);
+	safe_unpack32(&ls->ls_prognum,	buffer);
+	safe_unpack16(&system_node_cnt,	buffer);
+	safe_unpack16(&step_ctx_cnt,	buffer);
+
+	for (i=0; i<step_ctx_cnt; i++) {
+		step_ctx_p = xmalloc(sizeof(struct step_ctx));
+		if (_unpack_step_ctx(step_ctx_p, buffer) == -1) {
+			_step_ctx_del(step_ctx_p);
+			goto unpack_error;
+		}
+		list_push(ls->step_ctx_list, step_ctx_p);
+	}	
 
 	if (ls->ls_magic != QSW_LIBSTATE_MAGIC)
 		goto unpack_error;
@@ -292,6 +357,28 @@ _srand_if_needed(void)
 	}
 }
 
+static void
+_copy_libstate(qsw_libstate_t dest, qsw_libstate_t src)
+{
+	ListIterator iter;
+	struct step_ctx *src_step_ctx_p, *dest_step_ctx_p;
+
+	assert(src->ls_magic  == QSW_LIBSTATE_MAGIC);
+	assert(dest->ls_magic == QSW_LIBSTATE_MAGIC);
+	dest->ls_prognum = src->ls_prognum;
+	iter = list_iterator_create(src->step_ctx_list);
+	while ((src_step_ctx_p = list_next(iter))) {
+		dest_step_ctx_p = xmalloc(sizeof(struct step_ctx));
+		dest_step_ctx_p->st_prognum   = src_step_ctx_p->st_prognum;
+		dest_step_ctx_p->st_low       = src_step_ctx_p->st_low;
+		dest_step_ctx_p->st_high      = src_step_ctx_p->st_high;
+		dest_step_ctx_p->st_nodeset   = 
+				bit_copy(src_step_ctx_p->st_nodeset);
+		list_push(dest->step_ctx_list, dest_step_ctx_p);
+	}
+	list_iterator_destroy(iter);	
+}
+
 /*
  * Initialize this library, optionally restoring a previously saved state.
  *   oldstate (IN)	old state retrieved from qsw_fini() or NULL
@@ -310,7 +397,7 @@ qsw_init(qsw_libstate_t oldstate)
 		_copy_libstate(new, oldstate);
 	else {
 		new->ls_prognum = QSW_PRG_START;
-		bit_nclear(new->ls_hwcontext, 0, QSW_CTX_END - QSW_CTX_START);
+		new->step_ctx_list = list_create(_step_ctx_del);
 	}
 	qsw_internal_state = new;
 	return 0;
@@ -529,25 +616,44 @@ _generate_prognum(void)
  * we generate a random one, assuming we are being called by a transient 
  * program like pdsh.  Ref: rms_setcap(3).
  *
- * 2005-06-01 J. Garlick: we presume that all job steps require a unique range
- * cluster-wide.  However, unrelated job steps may be be able to use the 
- * same context range IFF their node ranges do not overlap or they are on 
- * seperate rails (per Mark Grondona).  Try this later.
- *
  * Returns -1 on allocation error.
  */
 static int
-_alloc_hwcontext(int num)
+_alloc_hwcontext(bitstr_t *nodeset, uint32_t prognum, int num)
 {
 	bitoff_t bit;
 	int new = -1;
 
+	assert(nodeset);
+	if (!system_node_cnt)
+		system_node_cnt = bit_size(nodeset);
 	if (qsw_internal_state) {
+		ListIterator iter;
+		struct step_ctx *step_ctx_p;
+		bitstr_t *avail_context = bit_alloc(QSW_CTX_END - 
+				QSW_CTX_START + 1);
+		bit_nset(avail_context, 0, (QSW_CTX_END - QSW_CTX_START));
+
 		_lock_qsw();
-		bit = bit_nffc(qsw_internal_state->ls_hwcontext, num);
+		iter = list_iterator_create(qsw_internal_state->step_ctx_list);
+		while ((step_ctx_p = list_next(iter))) {
+			bitstr_t *node_overlap = bit_copy(step_ctx_p->st_nodeset);
+			bit_and(node_overlap, nodeset);
+			if (bit_ffs(node_overlap) != (bitoff_t) -1) {
+				bit_nclear(avail_context, step_ctx_p->st_low,
+						step_ctx_p->st_high);
+			}
+			bit_free(node_overlap);
+		}
+		list_iterator_destroy(iter);
+		bit = bit_nffs(avail_context, num);
 		if (bit != -1) {
-			bit_nset(qsw_internal_state->ls_hwcontext, 
-					bit, bit + num - 1);
+			step_ctx_p = xmalloc(sizeof(struct step_ctx));
+			step_ctx_p->st_prognum = prognum;
+			step_ctx_p->st_nodeset = bit_copy(nodeset);
+			step_ctx_p->st_low     = bit;
+			step_ctx_p->st_high    = bit + num - 1;
+			list_push(qsw_internal_state->step_ctx_list, step_ctx_p); 
 			new = bit + QSW_CTX_START;
 		}
 		_unlock_qsw();
@@ -562,13 +668,25 @@ _alloc_hwcontext(int num)
 }
 
 static void
-_free_hwcontext(int low, int high)
+_free_hwcontext(uint32_t prog_num)
 {
-	assert((low >= QSW_CTX_START) && (high <= QSW_CTX_END));
+	ListIterator iter;
+	struct step_ctx *step_ctx_p;
+
 	if (qsw_internal_state) {
 		_lock_qsw();
-		bit_nclear(qsw_internal_state->ls_hwcontext,
-				low - QSW_CTX_START, high - QSW_CTX_START);
+		iter = list_iterator_create(qsw_internal_state->step_ctx_list);
+		while ((step_ctx_p = list_next(iter)))  {
+			if (prog_num != step_ctx_p->st_prognum)
+				continue;
+			list_delete(iter);
+			break;
+		}
+		if (!step_ctx_p) {
+			error("_free_hwcontext could not find prognum %u",
+				prog_num);
+		}
+		list_iterator_destroy(iter);
 		_unlock_qsw();
 	}
 }
@@ -578,8 +696,8 @@ _free_hwcontext(int low, int high)
  * Returns -1 on failure to allocate hw context.
  */
 static int
-_init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
-		bitstr_t *nodeset, int cyclic_alloc)
+_init_elan_capability(ELAN_CAPABILITY *cap, uint32_t prognum, int nprocs, 
+		int nnodes, bitstr_t *nodeset, int cyclic_alloc)
 {
 	int i, node_num, full_node_cnt, min_procs_per_node, max_procs_per_node;
 
@@ -618,7 +736,7 @@ _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
 		cap->UserKey.Values[i] = lrand48();
 
 	/* set up hardware context range */
-	cap->LowContext = _alloc_hwcontext(max_procs_per_node);
+	cap->LowContext = _alloc_hwcontext(nodeset, prognum, max_procs_per_node);
 	if (cap->LowContext == -1)
 		return -1;
 	cap->HighContext = cap->LowContext + max_procs_per_node - 1;
@@ -701,8 +819,8 @@ qsw_setup_jobinfo(qsw_jobinfo_t j, int nprocs, bitstr_t *nodeset,
       
 	/* initialize jobinfo */
 	j->j_prognum = _generate_prognum();
-	if (_init_elan_capability(&j->j_cap, nprocs, nnodes, nodeset, 
-				cyclic_alloc) == -1) {
+	if (_init_elan_capability(&j->j_cap, j->j_prognum, nprocs, nnodes, 
+			nodeset, cyclic_alloc) == -1) {
 		slurm_seterrno_ret(EAGAIN); /* failed to allocate hw ctx */
 	}
 
@@ -713,7 +831,7 @@ void
 qsw_teardown_jobinfo(qsw_jobinfo_t j)
 {
 	if (j)
-		_free_hwcontext(j->j_cap.LowContext, j->j_cap.HighContext);
+		_free_hwcontext(j->j_prognum);
 }
 
 /*
