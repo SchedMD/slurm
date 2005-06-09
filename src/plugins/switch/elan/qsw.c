@@ -130,7 +130,8 @@ struct step_ctx {
 	uint32_t  st_prognum;
 	uint32_t  st_low;
 	uint32_t  st_high;
-	bitstr_t *st_nodeset;
+	uint16_t  st_low_node;
+	uint16_t  st_high_node;
 };
 
 struct qsw_libstate {
@@ -160,19 +161,18 @@ struct qsw_jobinfo {
 /*
  * Globals
  */
+static inline void _dump_step_ctx(const char *head, 
+		struct step_ctx *step_ctx_p);
 static qsw_libstate_t qsw_internal_state = NULL;
 static pthread_mutex_t qsw_lock = PTHREAD_MUTEX_INITIALIZER;
 static elanhost_config_t elanconf = NULL;
-static uint16_t system_node_cnt = 0;
 static int shmid = -1;
 
 
-static void _step_ctx_del(void *ptr)
+static inline void _step_ctx_del(void *ptr)
 {
 	struct step_ctx *step_ctx_p = (struct step_ctx *) ptr;
 
-	if (step_ctx_p->st_nodeset)
-		bit_free(step_ctx_p->st_nodeset);
 	xfree(step_ctx_p);
 }
 
@@ -214,19 +214,24 @@ qsw_free_libstate(qsw_libstate_t ls)
 	free(ls);
 }
 
+static inline void _dump_step_ctx(const char *head, struct step_ctx *step_ctx_p)
+{
+#if _DEBUG
+	info("%s: prog:%u context:%u:%u nodes:%u:%u", head,
+		step_ctx_p->st_prognum, step_ctx_p->st_low, step_ctx_p->st_high,
+		step_ctx_p->st_low_node, step_ctx_p->st_high_node);
+#endif
+}
+
 static void 
 _pack_step_ctx(struct step_ctx *step_ctx_p, Buf buffer)
 {
-#if _DEBUG
-	char node_inx[32];
-	info("_pack_step_ctx: prog:%u low:%u high:%u node_inx:%s",
-		step_ctx_p->st_prognum, step_ctx_p->st_low, step_ctx_p->st_high,
-		 bit_fmt(node_inx, 32, step_ctx_p->st_nodeset));
-#endif
+	_dump_step_ctx("_pack_step_ctx", step_ctx_p);
 	pack32(step_ctx_p->st_prognum,	buffer);
 	pack32(step_ctx_p->st_low,	buffer);
 	pack32(step_ctx_p->st_high,	buffer);
-	pack_bit_fmt(step_ctx_p->st_nodeset, buffer);
+	pack16(step_ctx_p->st_low_node,	buffer);
+	pack16(step_ctx_p->st_high_node,buffer);
 }
 
 /*
@@ -249,7 +254,6 @@ qsw_pack_libstate(qsw_libstate_t ls, Buf buffer)
 
 	pack32(ls->ls_magic,	buffer);
 	pack32(ls->ls_prognum,	buffer);
-	pack16(system_node_cnt,	buffer);
 
 	if (ls->step_ctx_list)
 		step_ctx_cnt = list_count(ls->step_ctx_list);
@@ -267,35 +271,15 @@ qsw_pack_libstate(qsw_libstate_t ls, Buf buffer)
 }
 
 
-static int 
-_unpack_bit_fmt(bitstr_t *b, Buf buffer)
-{
-	uint16_t tmpstr_len;
-	char *tmpstr = NULL;
-
-	safe_unpackstr_xmalloc(&tmpstr, &tmpstr_len, buffer);
-	if (tmpstr == NULL)
-		goto unpack_error;
-	if (bit_unfmt(b, tmpstr) == -1) {
-		xfree(tmpstr);
-		goto unpack_error;
-	}
-	if (tmpstr)
-		xfree(tmpstr);
-	return 0;
-unpack_error:
-	return -1;
-}
-
 static int
 _unpack_step_ctx(struct step_ctx *step_ctx_p, Buf buffer)
 {
 	safe_unpack32(&step_ctx_p->st_prognum,	buffer);
 	safe_unpack32(&step_ctx_p->st_low,	buffer);
 	safe_unpack32(&step_ctx_p->st_high,	buffer);
-	step_ctx_p->st_nodeset = bit_alloc(system_node_cnt);
-	if (_unpack_bit_fmt(step_ctx_p->st_nodeset, buffer) != 0)
-		goto unpack_error;
+	safe_unpack16(&step_ctx_p->st_low_node,	buffer);
+	safe_unpack16(&step_ctx_p->st_high_node,	buffer);
+	_dump_step_ctx("_unpack_step_ctx", step_ctx_p);
 	return 0;
 unpack_error:
         return -1;
@@ -320,7 +304,6 @@ qsw_unpack_libstate(qsw_libstate_t ls, Buf buffer)
 
 	safe_unpack32(&ls->ls_magic,	buffer);
 	safe_unpack32(&ls->ls_prognum,	buffer);
-	safe_unpack16(&system_node_cnt,	buffer);
 	safe_unpack16(&step_ctx_cnt,	buffer);
 
 	for (i=0; i<step_ctx_cnt; i++) {
@@ -372,8 +355,8 @@ _copy_libstate(qsw_libstate_t dest, qsw_libstate_t src)
 		dest_step_ctx_p->st_prognum   = src_step_ctx_p->st_prognum;
 		dest_step_ctx_p->st_low       = src_step_ctx_p->st_low;
 		dest_step_ctx_p->st_high      = src_step_ctx_p->st_high;
-		dest_step_ctx_p->st_nodeset   = 
-				bit_copy(src_step_ctx_p->st_nodeset);
+		dest_step_ctx_p->st_low_node  = src_step_ctx_p->st_low_node;
+		dest_step_ctx_p->st_high_node = src_step_ctx_p->st_high_node;
 		list_push(dest->step_ctx_list, dest_step_ctx_p);
 	}
 	list_iterator_destroy(iter);	
@@ -621,14 +604,14 @@ _generate_prognum(void)
 static int
 _alloc_hwcontext(bitstr_t *nodeset, uint32_t prognum, int num)
 {
-	bitoff_t bit;
 	int new = -1;
 
 	assert(nodeset);
-	if (!system_node_cnt)
-		system_node_cnt = bit_size(nodeset);
 	if (qsw_internal_state) {
+		bitoff_t bit;
 		ListIterator iter;
+		uint16_t low_node  = bit_ffs(nodeset);
+		uint16_t high_node = bit_fls(nodeset);
 		struct step_ctx *step_ctx_p;
 		bitstr_t *avail_context = bit_alloc(QSW_CTX_END - 
 				QSW_CTX_START + 1);
@@ -637,22 +620,22 @@ _alloc_hwcontext(bitstr_t *nodeset, uint32_t prognum, int num)
 		_lock_qsw();
 		iter = list_iterator_create(qsw_internal_state->step_ctx_list);
 		while ((step_ctx_p = list_next(iter))) {
-			bitstr_t *node_overlap = bit_copy(step_ctx_p->st_nodeset);
-			bit_and(node_overlap, nodeset);
-			if (bit_ffs(node_overlap) != (bitoff_t) -1) {
-				bit_nclear(avail_context, step_ctx_p->st_low,
+			if ((high_node < step_ctx_p->st_low_node)
+			||  (low_node  > step_ctx_p->st_high_node))
+				continue;
+			bit_nclear(avail_context, step_ctx_p->st_low,
 						step_ctx_p->st_high);
-			}
-			bit_free(node_overlap);
 		}
 		list_iterator_destroy(iter);
 		bit = bit_nffs(avail_context, num);
 		if (bit != -1) {
 			step_ctx_p = xmalloc(sizeof(struct step_ctx));
-			step_ctx_p->st_prognum = prognum;
-			step_ctx_p->st_nodeset = bit_copy(nodeset);
-			step_ctx_p->st_low     = bit;
-			step_ctx_p->st_high    = bit + num - 1;
+			step_ctx_p->st_prognum   = prognum;
+			step_ctx_p->st_low       = bit;
+			step_ctx_p->st_high      = bit + num - 1;
+			step_ctx_p->st_low_node  = low_node;
+			step_ctx_p->st_high_node = high_node;
+			_dump_step_ctx("_alloc_hwcontext", step_ctx_p);
 			list_push(qsw_internal_state->step_ctx_list, step_ctx_p); 
 			new = bit + QSW_CTX_START;
 		}
@@ -679,6 +662,7 @@ _free_hwcontext(uint32_t prog_num)
 		while ((step_ctx_p = list_next(iter)))  {
 			if (prog_num != step_ctx_p->st_prognum)
 				continue;
+			_dump_step_ctx("_free_hwcontext", step_ctx_p);
 			list_delete(iter);
 			break;
 		}
