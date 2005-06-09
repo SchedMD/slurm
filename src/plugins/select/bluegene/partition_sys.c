@@ -331,6 +331,9 @@ int read_bgl_partitions()
 			
 			coord = find_bp_loc(bpid);
 			
+			if(!coord)
+				fatal("No contact with db2. Shutting down.");
+				
 			snprintf(node_name_tmp, sizeof(node_name_tmp), 
 				"bgl%d%d%d", 
 				coord[X], coord[Y], coord[Z]);

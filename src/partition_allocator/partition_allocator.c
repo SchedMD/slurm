@@ -898,9 +898,10 @@ extern int *find_bp_loc(char* bp_id)
 	pa_bp_map_t *bp_map = NULL;
 	ListIterator itr;
 	
-	if(!bp_map_list)
-		set_bp_map();
-		
+	if(!bp_map_list) {
+		if(set_bp_map() == -1)
+			return NULL;
+	}
 	itr = list_iterator_create(bp_map_list);
 	while ((bp_map = list_next(itr)) != NULL)
 		if (!strcmp(bp_map->bp_id, bp_id)) 
@@ -932,8 +933,10 @@ extern char *find_bp_rack_mid(char* xyz)
 	coord[X] = number / 100;
 	coord[Y] = (number % 100) / 10;
 	coord[Z] = (number % 10);
-	if(!bp_map_list)
-		set_bp_map();
+	if(!bp_map_list) {
+		if(set_bp_map() == -1)
+			return NULL;
+	}
 	
 	itr = list_iterator_create(bp_map_list);
 	while ((bp_map = list_next(itr)) != NULL)
