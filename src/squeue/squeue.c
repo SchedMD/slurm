@@ -65,7 +65,7 @@ main (int argc, char *argv[])
 	
 	while (1) 
 	{
-		if ( params.iterate && (params.verbose || params.long_list) )
+		if ( params.iterate || params.verbose || params.long_list )
 			_print_date ();
 
 		if ( params.step_flag )
