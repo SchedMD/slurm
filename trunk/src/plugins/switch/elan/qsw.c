@@ -613,21 +613,21 @@ _alloc_hwcontext(bitstr_t *nodeset, uint32_t prognum, int num)
 		uint16_t low_node  = bit_ffs(nodeset);
 		uint16_t high_node = bit_fls(nodeset);
 		struct step_ctx *step_ctx_p;
-		bitstr_t *avail_context = bit_alloc(QSW_CTX_END - 
+		bitstr_t *busy_context = bit_alloc(QSW_CTX_END - 
 				QSW_CTX_START + 1);
-		bit_nset(avail_context, 0, (QSW_CTX_END - QSW_CTX_START));
 
+		assert(busy_context);
 		_lock_qsw();
 		iter = list_iterator_create(qsw_internal_state->step_ctx_list);
 		while ((step_ctx_p = list_next(iter))) {
 			if ((high_node < step_ctx_p->st_low_node)
 			||  (low_node  > step_ctx_p->st_high_node))
 				continue;
-			bit_nclear(avail_context, step_ctx_p->st_low,
+			bit_nset(busy_context, step_ctx_p->st_low,
 						step_ctx_p->st_high);
 		}
 		list_iterator_destroy(iter);
-		bit = bit_nffs(avail_context, num);
+		bit = bit_nffc(busy_context, num);
 		if (bit != -1) {
 			step_ctx_p = xmalloc(sizeof(struct step_ctx));
 			step_ctx_p->st_prognum   = prognum;
@@ -640,6 +640,7 @@ _alloc_hwcontext(bitstr_t *nodeset, uint32_t prognum, int num)
 			new = bit + QSW_CTX_START;
 		}
 		_unlock_qsw();
+		bit_free(busy_context);
 	} else {
 		_srand_if_needed();
 		new = lrand48() % 
