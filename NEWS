@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
  -- Add logic to switch/elan to track contexts allocated to active job steps 
     rather than just using a cyclic counter and hoping to avoid collisions. 
  -- Plug memory leak in freeing job info retrieved using API.
+ -- Bluegene Plugin handles long deallocating states from driver 202.
 
 * Changes in SLURM 0.5.0-pre8
 =============================
