@@ -135,7 +135,7 @@ static int _remove_job(db_job_id_t job_id)
 		if ((rc = rm_free_job(job_rec)) != STATUS_OK)
 			error("rm_free_job: %s", bgl_err_str(rc));
 
-		debug("job %d is in state %d", job_id, job_state);
+		debug2("job %d is in state %d", job_id, job_state);
 		
 		/* check the state and process accordingly */
 		if(job_state == RM_JOB_TERMINATED)
@@ -339,7 +339,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 	db_job_id_t job_id;
 	bgl_record_t *bgl_record = NULL;
 	
-	//debug("getting the job info");
+	debug2("getting the job info");
 	live_states = JOB_ALL_FLAG 
 		& (~JOB_TERMINATED_FLAG) 
 		& (~JOB_KILLED_FLAG);
@@ -353,7 +353,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		jobs = 0;
 	} else if (jobs > 300)
 		fatal("Active job count (%d) invalid, restart MMCS", jobs);
-	//debug("job count %d",jobs);
+	debug2("job count %d",jobs);
 	
 	for (i=0; i<jobs; i++) {		
 		if (i) {
@@ -383,7 +383,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 			      part_id, bgl_err_str(rc));
 			continue;
 		}
-		debug("looking at partition %s looking for %s\n",
+		debug2("looking at partition %s looking for %s\n",
 			part_id, bgl_update_ptr->bgl_part_id);
 		if (strcmp(part_id, bgl_update_ptr->bgl_part_id) != 0)
 			continue;
@@ -393,7 +393,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 			      bgl_err_str(rc));
 			continue;
 		}
-		debug("got job_id %d",job_id);
+		debug2("got job_id %d",job_id);
 		if((rc = _remove_job(job_id)) 
 		   == INTERNAL_ERROR)
 			goto not_removed;
@@ -404,7 +404,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 	
 	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
 	if(bgl_record) {
-		debug("got the record %s user is %s",
+		debug2("got the record %s user is %s",
 		      bgl_record->bgl_part_id,
 		      bgl_record->user_name);
 	
@@ -600,7 +600,7 @@ int term_jobs_on_part(pm_partition_id_t bgl_part_id)
 	bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
 	bgl_update_ptr->op = TERM_OP;
 	bgl_update_ptr->bgl_part_id = xstrdup(bgl_part_id);
-	_term_agent(bgl_update_ptr);
+	_part_op(bgl_update_ptr);
 	
 	return rc;
 }

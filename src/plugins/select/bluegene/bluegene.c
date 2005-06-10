@@ -383,7 +383,7 @@ extern int remove_all_users(char *bgl_part_id, char *user_name)
 		returnc = REMOVE_USER_ERR;
 		user_count = 0;
 	} else
-		debug("got %d users for %s",user_count, bgl_part_id);
+		debug2("got %d users for %s",user_count, bgl_part_id);
 	for(i=0; i<user_count; i++) {
 		if(i) {
 			if ((rc = rm_get_data(part_ptr, 
