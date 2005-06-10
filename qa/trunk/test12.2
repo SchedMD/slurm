@@ -152,6 +152,8 @@ set error_time [expr abs($diff_time)]
 if {$error_time > 5} {
 	send_user "\nFAILURE: sacct elapsed time error of $error_time\n"
 	set exit_code 1
+} else {
+	send_user "\nSUCCESS: sacct elapsed time error of $error_time\n"
 }
 
 set mem_used 0
@@ -175,6 +177,8 @@ set error_mem [expr abs($diff_mem)]
 if {$error_mem > 4000} {
 	send_user "\nFAILURE: sacct memory use error of $error_mem\n"
 	set exit_code 1
+} else {
+	send_user "\nSUCCESS: sacct memory use error of $error_mem\n"
 }
 
 
