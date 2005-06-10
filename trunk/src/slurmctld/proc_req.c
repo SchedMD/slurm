@@ -1792,11 +1792,11 @@ static void _slurm_rpc_job_ready(slurm_msg_t * msg)
 	END_TIMER;
 
 	if (error_code) {
-		debug("_slurm_rpc_job_ready: %s",
+		debug2("_slurm_rpc_job_ready: %s",
 			slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		debug("_slurm_rpc_job_ready(%u)=%d %s", id_msg->job_id, 
+		debug2("_slurm_rpc_job_ready(%u)=%d %s", id_msg->job_id, 
 			result, TIME_STR);
 		rc_msg.return_code = result;
 		response_msg.address = msg->address;

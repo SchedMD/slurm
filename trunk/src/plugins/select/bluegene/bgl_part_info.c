@@ -56,6 +56,61 @@
 
 #define _DEBUG 0
 #define RETRY_BOOT_COUNT 3
+static int _partition_is_deallocating(bgl_record_t *bgl_record);
+
+static int _partition_is_deallocating(bgl_record_t *bgl_record)
+{
+	if(remove_all_users(bgl_record->bgl_part_id, NULL) 
+	   == REMOVE_USER_ERR) {
+		error("Something happened removing "
+		      "users from partition %s", 
+		      bgl_record->bgl_part_id);
+	} 
+	
+	if(bgl_record->target_name 
+	   && bgl_record->user_name) {
+		if(!strcmp(bgl_record->target_name, 
+			   slurmctld_conf.slurm_user_name)) {
+			if(strcmp(bgl_record->target_name, 
+				  bgl_record->user_name)) {
+				error("Partition %s was in a ready state "
+				      "for user %s but is being freed. "
+				      "Job was lost.",
+				      bgl_record->bgl_part_id,
+				      bgl_record->user_name);
+				xfree(bgl_record->target_name);
+				bgl_record->target_name = 
+					xstrdup(bgl_record->user_name);
+				//term_jobs_on_part(bgl_record->bgl_part_id);
+			} else {
+				debug("Partition %s was in a ready state "
+				      "but is being freed. No job running.",
+				      bgl_record->bgl_part_id);
+			}
+		} else {
+			error("State went to free on a boot "
+			      "for partition %s.",
+			      bgl_record->bgl_part_id);
+		}
+					   
+	} else if(bgl_record->user_name) {
+		error("Target Name was not set "
+		      "not set for partition %s.",
+		      bgl_record->bgl_part_id);
+		bgl_record->target_name = 
+			xstrdup(bgl_record->user_name);
+	} else {
+		error("Target Name and User Name are "
+		      "not set for partition %s.",
+		      bgl_record->bgl_part_id);
+		bgl_record->user_name = 
+			xstrdup(slurmctld_conf.slurm_user_name);
+		bgl_record->target_name = 
+			xstrdup(bgl_record->user_name);
+	}
+	return SLURM_SUCCESS;
+}
+
 /*
  * check to see if partition is ready to execute.  Meaning
  * User is added to the list of users able to run, and no one 
@@ -124,7 +179,8 @@ extern int update_partition_list()
 	time_t now;
 	struct tm *time_ptr;
 	char reason[128];
-	
+	int skipped_dealloc = 0;
+
 	if(bgl_list == NULL && !last_bgl_update)
 		return 0;
 	
@@ -212,62 +268,19 @@ extern int update_partition_list()
 		} else if(bgl_record->state != state) {
 			debug("state of Partition %s was %d and now is %d",
 			      name, bgl_record->state, state);
+			/* 
+			   check to make sure partition went 
+			   through freeing correctly 
+			*/
+			if(bgl_record->state != RM_PARTITION_DEALLOCATING
+			   && state == RM_PARTITION_FREE)
+				skipped_dealloc = 1;
 			bgl_record->state = state;
-			error("Yeah, the state changed");
-			if(bgl_record->state == RM_PARTITION_FREE) {
-				if((rc = remove_all_users(
-					    bgl_record->bgl_part_id, 
-					    NULL))
-				   == REMOVE_USER_ERR) {
-					error("Something happened removing "
-					      "users from partition %s", 
-					      bgl_record->bgl_part_id);
-				} 
-				
-				if(bgl_record->target_name 
-				   && bgl_record->user_name) {
-					if(!strcmp(bgl_record->target_name, 
-						   slurmctld_conf.
-						   slurm_user_name)) {
-						if(strcmp(bgl_record->target_name, 
-							  bgl_record->user_name)) {
-							error("Partition %s was in a "
-							      "ready state for user %s but got "
-							      "freed. Job was probably lost.",
-							      bgl_record->user_name,
-							      bgl_record->bgl_part_id);
-							xfree(bgl_record->
-							      user_name);	
-							bgl_record->user_name = 
-								xstrdup(bgl_record->
-									target_name);
-						} else {
-							error("Partition %s was in a "
-							      "ready state for user %s but got "
-							      "freed. No job running.",
-							      bgl_record->bgl_part_id);
-						}
-					} else {
-						error("State went to free on a boot "
-						      "for partition %s.",
-						      bgl_record->bgl_part_id);
-					}
-					   
-					   } else if(bgl_record->user_name) {
-						   error("Target Name was not set "
-							 "not set for partition %s.",
-							 bgl_record->bgl_part_id);
-						   bgl_record->target_name = 
-						xstrdup(bgl_record->user_name);
-				} else {
-					error("Target Name and User Name are "
-					      "not set for partition %s.",
-					      bgl_record->bgl_part_id);
-					bgl_record->user_name = 
-						xstrdup(slurmctld_conf.slurm_user_name);
-					bgl_record->target_name = 
-						xstrdup(bgl_record->user_name);
-				}
+			if(bgl_record->state == RM_PARTITION_DEALLOCATING) {
+				_partition_is_deallocating(bgl_record);
+			} else if(skipped_dealloc) {
+				_partition_is_deallocating(bgl_record);
+				skipped_dealloc = 0;
 			} else if(bgl_record->state 
 				  == RM_PARTITION_CONFIGURING)
 				bgl_record->boot_state = 1;
