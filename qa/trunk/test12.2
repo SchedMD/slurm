@@ -129,6 +129,11 @@ if {$matches != 4} {
 set elapsed_time 0
 spawn $sacct --noheader  --jobstep=$job_id.0 --fields elapsed
 expect {
+	-re "($number):($number)\.($number)" {
+		set mins $expect_out(1,string)
+		set secs $expect_out(2,string)
+		set elapsed_time [expr $mins * 60 + $secs]
+	}
 	-re "($number)\.($number)" {
 		set elapsed_time $expect_out(1,string)
 		exp_continue
