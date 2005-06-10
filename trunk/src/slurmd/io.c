@@ -345,7 +345,7 @@ _fatal_cleanup(void *arg)
 	i = list_iterator_create(job->objs);
 	while((obj = list_next(i))) {
 		io = (struct io_info *) obj->arg;
-		if ((*obj->ops->writable)(obj))
+		if (obj->ops->writable && (*obj->ops->writable)(obj))
 			_write(obj, job->objs);
 	}
 	list_iterator_destroy(i);
