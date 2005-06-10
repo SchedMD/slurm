@@ -623,8 +623,9 @@ bitfmt2int (char *bit_str_ptr)
 
 	if (bit_str_ptr == NULL) 
 		return NULL;
-	size = (strlen (bit_str_ptr) * 2) + 1;  /* more than enough space */
-	bit_int_ptr = xmalloc ( sizeof (int *) * size);
+	size = strlen (bit_str_ptr) + 1;
+	bit_int_ptr = xmalloc ( sizeof (int *) * 
+			(size * 2 + 1));	/* more than enough space */
 	if (bit_int_ptr == NULL)
 		return NULL;
 
@@ -653,7 +654,7 @@ bitfmt2int (char *bit_str_ptr)
 			sum = 0;
 		}
 	}
-	assert(bit_inx < size);
+	assert(bit_inx < (size*2+1));
 	bit_int_ptr[bit_inx] = -1;
 	return bit_int_ptr;
 }
