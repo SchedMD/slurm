@@ -1756,11 +1756,16 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
       unpack_error:
 	xfree(job->nodes);
 	xfree(job->partition);
+	xfree(job->account);
 	xfree(job->name);
-	xfree(job->req_nodes);
-	xfree(job->exc_nodes);
-	xfree(job->features);
+	xfree(job->alloc_node);
+	xfree(job->node_inx);
 	select_g_free_jobinfo(&job->select_jobinfo);
+	xfree(job->features);
+	xfree(job->req_nodes);
+	xfree(job->req_node_inx);
+	xfree(job->exc_nodes);
+	xfree(job->exc_node_inx);
 	return SLURM_ERROR;
 }
 
