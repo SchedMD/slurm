@@ -193,15 +193,18 @@ void slurm_free_job_info(job_info_t * job)
 void slurm_free_job_info_members(job_info_t * job)
 {
 	if (job) {
-		select_g_free_jobinfo(&job->select_jobinfo);
-		xfree(job->account);
 		xfree(job->nodes);
 		xfree(job->partition);
+		xfree(job->account);
 		xfree(job->name);
+		xfree(job->alloc_node);
 		xfree(job->node_inx);
-		xfree(job->req_nodes);
+		select_g_free_jobinfo(&job->select_jobinfo);
 		xfree(job->features);
+		xfree(job->req_nodes);
 		xfree(job->req_node_inx);
+		xfree(job->exc_nodes);
+		xfree(job->exc_node_inx);
 	}
 }
 
