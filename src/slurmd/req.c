@@ -170,8 +170,19 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		slurm_free_job_id_request_msg(msg->data);
 		break;
 	case MESSAGE_JOBACCT_DATA:
-		g_slurm_jobacct_process_message(msg);
-		slurm_free_jobacct_msg(msg->data);
+		{
+			int rc=SLURM_SUCCESS;
+			debug3("jobacct(%i) received jobacct message",
+					getpid());
+			slurm_send_rc_msg(msg,rc); /* ACK the message */
+			debug3("jobacct(%i) sent jobacct rc=%d message",
+					getpid(), rc);
+			rc=g_slurm_jobacct_process_message(msg);
+			debug3("jobacct(%i) slurm_jobacct_process_message "
+					"rc=%d",
+					getpid(), rc);
+			slurm_free_jobacct_msg(msg->data);
+		}
 		break;
 	default:
 		error("slurmd_req: invalid request msg type %d\n",
@@ -1357,7 +1368,7 @@ static int
 _run_prolog(uint32_t jobid, uid_t uid, char *bgl_part_id)
 {
 	int error_code;
-	static char *my_prolog;
+	char *my_prolog;
 
 	slurm_mutex_lock(&conf->config_mutex);
 	my_prolog = xstrdup(conf->prolog);
