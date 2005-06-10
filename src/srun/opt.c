@@ -53,6 +53,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/utsname.h>
 
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -718,6 +719,7 @@ static void _opt_args(int argc, char **argv)
 {
 	int opt_char, i;
 	int option_index;
+	struct utsname name;
 	static struct option long_options[] = {
 		{"attach",        required_argument, 0, 'a'},
 		{"allocate",      no_argument,       0, 'A'},
@@ -964,6 +966,9 @@ static void _opt_args(int argc, char **argv)
 			break;
 		case (int)'Z':
 			opt.no_alloc = true;
+			uname(&name);
+			if (strcasecmp(name.sysname, "AIX") == 0)
+				opt.network = xstrdup("ip");
 			break;
 		case LONG_OPT_CONT:
 			opt.contiguous = true;
