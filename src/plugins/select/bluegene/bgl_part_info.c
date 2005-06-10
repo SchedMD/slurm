@@ -228,7 +228,7 @@ extern int update_partition_list()
 				   && bgl_record->user_name) {
 					if(!strcmp(bgl_record->target_name, 
 						   slurmctld_conf.
-						   slurm_user_name) {
+						   slurm_user_name)) {
 						if(strcmp(bgl_record->target_name, 
 							  bgl_record->user_name)) {
 							error("Partition %s was in a "
@@ -252,11 +252,12 @@ extern int update_partition_list()
 						      "for partition %s.",
 						      bgl_record->bgl_part_id);
 					}
-				} else if(bgl_record->user_name) {
-					error("Target Name was not set "
-					      "not set for partition %s.",
-					      bgl_record->bgl_part_id);
-					bgl_record->target_name = 
+					   
+					   } else if(bgl_record->user_name) {
+						   error("Target Name was not set "
+							 "not set for partition %s.",
+							 bgl_record->bgl_part_id);
+						   bgl_record->target_name = 
 						xstrdup(bgl_record->user_name);
 				} else {
 					error("Target Name and User Name are "
