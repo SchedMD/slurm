@@ -233,7 +233,12 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 		/* Free the partition */
 		bgl_free_partition(bgl_record);			
 	}
-	
+
+	if(bgl_record->state == RM_PARTITION_DEALLOCATING) {
+		debug("Partition is in Deallocating state, waiting for free.");
+		bgl_free_partition(bgl_record);
+	}
+
 	if(bgl_record->state == RM_PARTITION_FREE) {
 		num_part_to_free = 0;
 		num_part_freed = 0;

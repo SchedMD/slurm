@@ -213,6 +213,7 @@ extern int update_partition_list()
 			debug("state of Partition %s was %d and now is %d",
 			      name, bgl_record->state, state);
 			bgl_record->state = state;
+			error("Yeah, the state changed");
 			if(bgl_record->state == RM_PARTITION_FREE) {
 				if((rc = remove_all_users(
 					    bgl_record->bgl_part_id, 
@@ -222,32 +223,50 @@ extern int update_partition_list()
 					      "users from partition %s", 
 					      bgl_record->bgl_part_id);
 				} 
+				
 				if(bgl_record->target_name 
 				   && bgl_record->user_name) {
 					if(!strcmp(bgl_record->target_name, 
 						   slurmctld_conf.
-						   slurm_user_name) 
-					   && strcmp(bgl_record->target_name, 
-						     bgl_record->user_name)) {
-						info("partition %s was in a "
-						     "ready state but got "
-						     "freed booting again for "
-						     "user %s",
-						     bgl_record->bgl_part_id,
-						     bgl_record->user_name);
-						xfree(bgl_record->
-						      target_name);	
-						bgl_record->target_name = 
-							xstrdup(bgl_record->
-								user_name);
+						   slurm_user_name) {
+						if(strcmp(bgl_record->target_name, 
+							  bgl_record->user_name)) {
+							error("Partition %s was in a "
+							      "ready state for user %s but got "
+							      "freed. Job was probably lost.",
+							      bgl_record->user_name,
+							      bgl_record->bgl_part_id);
+							xfree(bgl_record->
+							      user_name);	
+							bgl_record->user_name = 
+								xstrdup(bgl_record->
+									target_name);
+						} else {
+							error("Partition %s was in a "
+							      "ready state for user %s but got "
+							      "freed. No job running.",
+							      bgl_record->bgl_part_id);
+						}
+					} else {
+						error("State went to free on a boot "
+						      "for partition %s.",
+						      bgl_record->bgl_part_id);
 					}
-				} else if(bgl_record->user_name)
+				} else if(bgl_record->user_name) {
+					error("Target Name was not set "
+					      "not set for partition %s.",
+					      bgl_record->bgl_part_id);
 					bgl_record->target_name = 
 						xstrdup(bgl_record->user_name);
-				else
+				} else {
 					error("Target Name and User Name are "
 					      "not set for partition %s.",
 					      bgl_record->bgl_part_id);
+					bgl_record->user_name = 
+						xstrdup(slurmctld_conf.slurm_user_name);
+					bgl_record->target_name = 
+						xstrdup(bgl_record->user_name);
+				}
 			} else if(bgl_record->state 
 				  == RM_PARTITION_CONFIGURING)
 				bgl_record->boot_state = 1;
