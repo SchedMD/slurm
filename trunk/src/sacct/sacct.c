@@ -25,15 +25,8 @@
 /*
  * HISTORY
  * $Log$
- * Revision 1.4  2005/06/03 23:33:48  jette
- * Add info on new slurm.conf parameters for job accounting.
- * Sacct now reports right away if accounting is disabled.
- *
- * Revision 1.3  2005/06/03 20:35:52  jette
- * Fix several sacct bugs.
- *
- * Revision 1.2  2005/06/01 18:35:11  jette
- * Fix a couple of minor issues for clean build on AIX with new HP code.
+ * Revision 1.5  2005/06/11 00:49:43  jette
+ * Get all the latest accounting software patches.
  *
  * Revision 1.1  2005/06/01 17:26:11  jette
  * Extensive mods checked it for HP work, see NEWS for details.
@@ -184,60 +177,60 @@
 /* Map field names to positions */
 
 /* Fields common to all records */
-#define F_JOB 0
-#define F_PARTITION 1
-#define F_SUBMITTED 2
-#define F_STARTTIME 3
-#define F_UIDGID 4
-#define F_RESERVED1 5
-#define F_RECTYPE 6
-#define F_RECVERSION 7
-#define F_NUMFIELDS 8
+#define F_JOB		0
+#define F_PARTITION	1
+#define F_SUBMITTED	2
+#define F_STARTTIME	3
+#define F_UIDGID	4
+#define F_RESERVED1	5
+#define F_RECTYPE	6
+#define F_RECVERSION	7
+#define F_NUMFIELDS	8
 
 /* JOB_START fields */
-#define F_UID 9
-#define F_GID 10
-#define F_JOBNAME 11
-#define F_BATCH 12
-#define F_PRIORITY 13
-#define F_NCPUS 14
-#define F_NODES 15
+#define F_UID		9
+#define F_GID		10
+#define F_JOBNAME	11
+#define F_BATCH		12
+#define F_PRIORITY	13
+#define F_NCPUS		14
+#define F_NODES		15
 
 /* JOB_STEP fields */
-#define F_JOBSTEP 9
-#define F_FINISHED 10
-#define F_CSTATUS 11
-#define F_ERROR 12
-#define F_NPROCS 13
+#define F_JOBSTEP	9
+#define F_FINISHED	10
+#define F_CSTATUS	11
+#define F_ERROR		12
+#define F_NPROCS	13
 /*define F_NCPUS 14 (defined above) */
-#define F_ELAPSED 15
-#define F_CPU_SEC 16
-#define F_CPU_USEC 17
-#define F_USER_SEC 18
-#define F_USER_USEC 19
-#define F_SYS_SEC 20
-#define F_SYS_USEC 21
-#define F_RSS 22
-#define F_IXRSS 23
-#define F_IDRSS 24
-#define F_ISRSS 25
-#define F_MINFLT 26
-#define F_MAJFLT 27
-#define F_NSWAP 28
-#define F_INBLOCKS 29
-#define F_OUBLOCKS 30
-#define F_MSGSND 31
-#define F_MSGRCV 32
-#define F_NSIGNALS 33
-#define F_NVCSW 34
-#define F_NIVCSW 35
-#define F_VSIZE 36
-#define F_PSIZE 37
+#define F_ELAPSED	15
+#define F_CPU_SEC	16
+#define F_CPU_USEC	17
+#define F_USER_SEC	18
+#define F_USER_USEC	19
+#define F_SYS_SEC	20
+#define F_SYS_USEC	21
+#define F_RSS		22
+#define F_IXRSS		23
+#define F_IDRSS		24
+#define F_ISRSS		25
+#define F_MINFLT	26
+#define F_MAJFLT	27
+#define F_NSWAP		28
+#define F_INBLOCKS	29
+#define F_OUBLOCKS	30
+#define F_MSGSND	31
+#define F_MSGRCV	32
+#define F_NSIGNALS	33
+#define F_NVCSW		34
+#define F_NIVCSW	35
+#define F_VSIZE		36
+#define F_PSIZE		37
 
 /* JOB_COMPLETION fields */
-#define F_TOT_ELAPSED 9 
-/*define F_FINISHED 10 */
-/*define F_CSTATUS 11 */
+#define F_TOT_ELAPSED	9 
+/*define F_FINISHED	10 */
+/*define F_CSTATUS	11 */
 
 /* On output, use fields 12-37 from JOB_STEP */
 
@@ -1532,7 +1525,7 @@ void getOptions(int argc, char **argv)
 	&&  (stat(opt_filein, &stat_buf) != 0)) {
 		fprintf(stderr, "SLURM accounting is disabled\n");
 		exit(1);
-	} 
+	}
 	free(acct_type);
 
 	/* specific partitions requested? */
@@ -2630,6 +2623,7 @@ char *prefix_filename(char *path, char *prefix) {
 	i++;
 	*out = 0;
 	strncpy(out, path, i);
+	out[i] = 0;
 	strcat(out, prefix);
 	strcat(out, path+i);
 	return(out);

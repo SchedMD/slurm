@@ -243,8 +243,16 @@ void slurmctld_req (slurm_msg_t * msg)
 		/* Note: No data to free */
 		break;
 	case MESSAGE_JOBACCT_DATA:
-		g_slurm_jobacct_process_message(msg);
-		slurm_free_jobacct_msg(msg->data);
+		{
+			int rc=SLURM_SUCCESS;
+			debug3("proc_req received jobacct message");
+			slurm_send_rc_msg(msg,rc); /* ACK the message */
+			debug3("proc_req sent rc=%d to jobacct", rc);
+			rc=g_slurm_jobacct_process_message(msg);
+			debug3("proc_req slurm_jobacct_process_message rc=%d",
+					rc);
+			slurm_free_jobacct_msg(msg->data);
+		}
 		break; 
 	default:
 		error("invalid RPC msg_type=%d", msg->msg_type);
@@ -1792,11 +1800,11 @@ static void _slurm_rpc_job_ready(slurm_msg_t * msg)
 	END_TIMER;
 
 	if (error_code) {
-		debug2("_slurm_rpc_job_ready: %s",
+		debug("_slurm_rpc_job_ready: %s",
 			slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		debug2("_slurm_rpc_job_ready(%u)=%d %s", id_msg->job_id, 
+		debug("_slurm_rpc_job_ready(%u)=%d %s", id_msg->job_id, 
 			result, TIME_STR);
 		rc_msg.return_code = result;
 		response_msg.address = msg->address;
