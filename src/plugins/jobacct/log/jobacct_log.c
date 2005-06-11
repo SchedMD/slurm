@@ -102,7 +102,11 @@ const uint32_t plugin_version = 100;
 #define HOST_NAME_MAX 256
 #endif
 #endif
+#define MAX_BUFFER_SIZE 1024
 #define MAX_MSG_SIZE 1024
+#define MAX_SEND_RETRIES 3
+#define MAX_SEND_RETRY_DELAY 5
+#define NOT_FOUND "NOT_FOUND"
 
 typedef enum _stats_msg_type {
 		TO_CONTROLLER=100,
@@ -204,7 +208,7 @@ static _prec_t	*_get_process_data(void);
 static int	 _get_process_data_line(FILE *in, _prec_t *prec);
 static void	 _get_slurmctld_syms(void);
 static int	 _pack_jobrec(_jrec_t *outrec, _jrec_t *inrec);
-static void	 _print_record(struct job_record *job_ptr, char *data);
+static int	 _print_record(struct job_record *job_ptr, char *data);
 static void	 _process_mynode_msg(_mynode_msg_t *msg);
 static void	 _process_mynode_msg_launch(_jrec_t *jrec);
 static void	 _process_mynode_msg_taskdata(_jrec_t *jrec);
@@ -236,7 +240,6 @@ int slurm_jobacct_process_message(struct slurm_msg *msg)
 	_stats_msg_type_t	msgtype;
 	_stats_msg_t		*stats;
 
-	debug2("jobacct(%d): in slurm_jobacct_process_message", getpid());
 	jmsg    = msg->data;
 	stats   = (_stats_msg_t *)jmsg->data;
 	msgtype = ntohl(stats->msg_type);
@@ -265,7 +268,7 @@ int slurm_jobacct_process_message(struct slurm_msg *msg)
 					getpid(), jobid, jmsg->data);
 			return(SLURM_ERROR);
 		}
-		_print_record(job_ptr, stats->data);
+		rc = _print_record(job_ptr, stats->data);
 		break;
 
 /*
@@ -303,9 +306,11 @@ int slurm_jobacct_process_message(struct slurm_msg *msg)
 
 static int _send_msg_to_slurmctld(_stats_msg_t *stats) {
 
-	slurm_msg_t		*msg;
+	slurm_msg_t		*msg,
+				*retmsg=NULL;
 	jobacct_msg_t		*jmsg;
-	int			rc = SLURM_SUCCESS;
+	int			rc = SLURM_SUCCESS,
+				retry;
 
 	debug2("jobacct(%d): _send_msg_to_slurmctld, msgtype=%d",
 			getpid(), ntohl(stats->msg_type)); 
@@ -313,14 +318,25 @@ static int _send_msg_to_slurmctld(_stats_msg_t *stats) {
 	jmsg->len = sizeof(_stats_msg_t);
 	jmsg->data = (char *)stats;
 	msg = xmalloc(sizeof(slurm_msg_t));
+	retmsg = xmalloc(sizeof(slurm_msg_t));
 	msg->msg_type	= MESSAGE_JOBACCT_DATA;
 	msg->data	= jmsg;
 	msg->data_size  = sizeof(jobacct_msg_t);
 
-	if (slurm_send_only_controller_msg(msg) < 0) {
-		error("Unable to send message to slurmctld: %m");
-		rc = SLURM_ERROR;
+	for (retry=0; retry<MAX_SEND_RETRIES; retry++) {
+		if ((rc=slurm_send_recv_controller_msg(msg, retmsg)) >= 0)
+			break;
+		sleep(1+(rand()/(RAND_MAX/MAX_SEND_RETRY_DELAY)));
+			/* pause 1-MAX_SEND_RETRY_DELAY seconds */
 	}
+	if (rc<0)
+		error("jobacct(%d): _send_data_to_slurmctld(msg, retmsg)"
+				" says %d (%m) after %d tries",
+				getpid(), rc, retry);
+	else
+		debug3("jobacct(%d): slurm_send_recv_controller_msg says %d",
+				rc);
+	slurm_free_cred(retmsg->cred);
 	xfree(jmsg);
 	xfree(msg);
 	debug2("jobacct(%d): leaving _send_msg_to_slurmctld, rc=%d",
@@ -375,7 +391,7 @@ int slurmctld_jobacct_job_complete(struct job_record *job_ptr)
 {
 	int		rc = SLURM_SUCCESS,
 			tmp;
-	_stats_msg_t	*stats;
+	char		*buf;
 	struct tm	ts; /* timestamp decoder */
 
 	debug2("slurmctld_jobacct_job_complete() called");
@@ -384,24 +400,21 @@ int slurmctld_jobacct_job_complete(struct job_record *job_ptr)
 		return rc;
 	}
 	gmtime_r(&job_ptr->end_time, &ts);
-	stats = xmalloc(sizeof(_stats_msg_t));
-	stats->msg_type = htonl(TO_CONTROLLER);
-	stats->jobid    = htonl(job_ptr->job_id);
-	stats->stepid   = 0;
-	tmp = snprintf(stats->data, MAX_MSG_SIZE,
+	buf = xmalloc(MAX_BUFFER_SIZE);
+	tmp = snprintf(buf, MAX_MSG_SIZE,
 		"JOB_TERMINATED 1 12 %u %04d%02d%02d%02d%02d%02d %s",
 		(int) (job_ptr->end_time - job_ptr->start_time),
 		1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
-			ts.tm_hour, ts.tm_min, ts.tm_sec,
-			job_state_string_compact((job_ptr->job_state) & ~JOB_COMPLETING));
+		ts.tm_hour, ts.tm_min, ts.tm_sec,
+		job_state_string_compact(
+			(job_ptr->job_state) & ~JOB_COMPLETING));
 	if (tmp >= MAX_MSG_SIZE) {
 		error("slurmctld_jobacct_job_complete buffer overflow");
 		rc = SLURM_ERROR;
 	} else {
-		stats->datalen = htonl(tmp+1);
-		rc = _send_msg_to_slurmctld(stats);
+		rc = _print_record(job_ptr, buf);
 	}
-	xfree(stats);
+	xfree(buf);
 	return rc;
 }
 
@@ -409,11 +422,11 @@ int slurmctld_jobacct_job_start(struct job_record *job_ptr)
 {
 	int		i,
 			ncpus=0,
-			rc,
+			rc=SLURM_SUCCESS,
 			tmp;
-	char		*jname;
+	char		*buf,
+			*jname;
 	long		priority;
-	_stats_msg_t	*stats;
 	
 	debug2("slurmctld_jobacct_job_start() called");
 	for (i=0; i < job_ptr->num_cpu_groups; i++)
@@ -434,11 +447,8 @@ int slurmctld_jobacct_job_start(struct job_record *job_ptr)
 		jname = (char*) xmalloc(10);
 		strncpy(jname, "(noname)", 10);
 	}
-	stats = xmalloc(sizeof(_stats_msg_t));
-	stats->msg_type = htonl(TO_CONTROLLER);
-	stats->jobid    = htonl(job_ptr->job_id);
-	stats->stepid   = 0;
-	tmp = snprintf(stats->data, MAX_MSG_SIZE,
+	buf = xmalloc(MAX_BUFFER_SIZE);
+	tmp = snprintf(buf, MAX_MSG_SIZE,
 			"JOB_START 1 16 %d %d %s %u %ld %u %s",
 			job_ptr->user_id, job_ptr->group_id, jname,
 			job_ptr->batch_flag, priority, ncpus,
@@ -447,10 +457,9 @@ int slurmctld_jobacct_job_start(struct job_record *job_ptr)
 		error("slurmctld_jobacct_job_start buffer overflow");
 		rc = SLURM_ERROR;
 	} else {
-		stats->datalen = htonl(tmp+1);
-		rc = _send_msg_to_slurmctld(stats);
+		rc = _print_record(job_ptr, buf);
 	}
-	xfree(stats);
+	xfree(buf);
 	xfree(jname);
 	return rc;
 }
@@ -481,26 +490,29 @@ static void _get_slurmctld_syms(void)
  * Print the record to the log file.
  */
 
-static void _print_record(struct job_record *job_ptr, char *data)
+static int _print_record(struct job_record *job_ptr, char *data)
 { 
 	struct tm   *ts; /* timestamp decoder */
-	static int   chk=0;
+	static int   chk=0,
+		     rc=SLURM_SUCCESS;
 
 	ts = xmalloc(sizeof(struct tm));
 	gmtime_r(&job_ptr->start_time, ts);
+	debug2("jobacct:_print_record, chk=%d, rec starts \"%20s", chk++, data);
 	slurm_mutex_lock( &logfile_lock );
-	debug2("jobacct:_print_record, chk=%d, rec starts \"%20s",
-			chk++, data);
-	fprintf(LOGFILE,
-		"%u %s %04d%02d%02d%02d%02d%02d %u %d.%d - %s\n",
-		job_ptr->job_id, job_ptr->partition,
-		1900+(ts->tm_year), 1+(ts->tm_mon), ts->tm_mday,
-		ts->tm_hour, ts->tm_min, ts->tm_sec, 
-		(int) job_ptr->start_time, 
-		job_ptr->user_id, job_ptr->group_id, data);
+	if (fprintf(LOGFILE,
+			"%u %s %04d%02d%02d%02d%02d%02d %u %d.%d - %s\n",
+			job_ptr->job_id, job_ptr->partition,
+			1900+(ts->tm_year), 1+(ts->tm_mon), ts->tm_mday,
+			ts->tm_hour, ts->tm_min, ts->tm_sec, 
+			(int) job_ptr->start_time, 
+			job_ptr->user_id, job_ptr->group_id, data)
+		< 0)
+		rc=SLURM_ERROR;
 	fdatasync(LOGFILE_FD);
 	slurm_mutex_unlock( &logfile_lock );
 	xfree(ts);
+	return rc;
 }
 
 
@@ -582,27 +594,30 @@ int slurmd_jobacct_init(char *job_acct_parameters)
 int slurmd_jobacct_jobstep_launched(slurmd_job_t *job)
 {
 	_jrec_t *jrec;
-	
+	int	rc=SLURM_SUCCESS;
+
+	debug3("slurmd_jobacct_jobstep_launched() called");
 	jrec = _alloc_jrec(job);
 	jrec->nodeid = job->nodeid;
 	debug2("jobacct(%d): in slurmd_jobacct_jobstep_launched with %d cpus,"
 			" node0,1=%s,%s, this is node %d of %d",
 			getpid(), job->cpus, jrec->node0, jrec->node1,
 			job->nodeid, job->nnodes);
-	_send_data_to_mynode(LAUNCH, jrec);
+	rc = _send_data_to_mynode(LAUNCH, jrec);
 	xfree(jrec);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 int slurmd_jobacct_jobstep_terminated(slurmd_job_t *job)
 {
 	_jrec_t *jrec;
+	int	rc=SLURM_SUCCESS;
 	
 	jrec = _alloc_jrec(job);
 	jrec->status = job->smgr_status;
-	_send_data_to_mynode(TERMINATE, jrec);
+	rc = _send_data_to_mynode(TERMINATE, jrec);
 	xfree(jrec);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /*
@@ -632,6 +647,7 @@ int slurmd_jobacct_smgr(void)
 int slurmd_jobacct_task_exit(slurmd_job_t *job, pid_t pid, int status, struct rusage *rusage)
 {
 	_jrec_t *jrec;
+	int	rc=SLURM_SUCCESS;
 
 	debug2("slurmd_jobacct_task_exit for job %u.%u,"
 			" node %d, status=%d",
@@ -647,9 +663,9 @@ int slurmd_jobacct_task_exit(slurmd_job_t *job, pid_t pid, int status, struct ru
 		jrec->max_psize			= max_psize;
 		jrec->max_vsize			= max_vsize;
 	}
-	_send_data_to_mynode(TASKDATA, jrec);
+	rc = _send_data_to_mynode(TASKDATA, jrec);
 	xfree(jrec);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /*
@@ -780,9 +796,8 @@ static void _get_node_01_names( char *node0, char *node1, char **env ) {
 	int		i=0,
 			slen;
 	const char	*env_var = "SLURM_NODELIST=";
-
 	slen = strlen(env_var);
-	while (*(hname=env[i++])) {
+	while (env && env[i+1] && *(hname=env[i++])) {
 		if (strncmp(env_var, hname, slen)==0) { 
 			hname += slen;
 			hl = hostlist_create(hname);
@@ -794,7 +809,10 @@ static void _get_node_01_names( char *node0, char *node1, char **env ) {
 			hostlist_destroy(hl);
 			goto done;
 		}
-	strncpy(node0, "NOTFOUND", HOST_NAME_MAX);}
+		/* Either user cleared SLURM_NODELIST or 
+		 * never set (as is case with POE on AIX) */
+		strncpy(node0, NOT_FOUND, HOST_NAME_MAX);
+	}
   done:
 	debug2("jobacct(%d): node0 is \"%s\"\n", getpid(), node0);
 	return;
@@ -1120,8 +1138,8 @@ static void _process_node0_msg(_jrec_t *nrec) {
 			hrec->rusage.ru_utime.tv_usec);
 	jrec = _get_jrec_by_jobstep(hrec->jobid, hrec->stepid);
 	if (jrec == NULL) {
-		error("jobacct(%i): in process_node0_msg, "
-			"did not find %i.%i record",
+		error("jobacct(%d): in process_node0_msg, "
+			"did not find %u.%u record",
 			getpid(), hrec->jobid, hrec->stepid); 
 		xfree(hrec);
 		return;
@@ -1133,7 +1151,7 @@ static void _process_node0_msg(_jrec_t *nrec) {
 	}
 	xfree(hrec);
 	--jrec->not_reported;
-	debug2("jobacct(%i): not_reported=%i after node0 message, "
+	debug2("jobacct(%d): not_reported=%d after node0 message, "
 			"cum. utime=%d.%06d",
 			getpid(), jrec->not_reported,
 			jrec->rusage.ru_utime.tv_sec,
@@ -1159,8 +1177,8 @@ static void _remove_jrec_from_list(uint32_t jobid, uint32_t stepid)
 	while ((jrec = list_next(i))) {
 		if ( (jrec->jobid == jobid )
 				&& (jrec->stepid == stepid)) {
-			debug2("jobacct(%i): in _remove_jrec_from_list, "
-				"found %i.%i record",
+			debug2("jobacct(%d): in _remove_jrec_from_list, "
+				"found %u.%u record",
 				getpid(), jobid, stepid); 
 			break;
 		}
@@ -1178,14 +1196,16 @@ static void _remove_jrec_from_list(uint32_t jobid, uint32_t stepid)
  */
 
 static int _send_data_to_mynode(_mynode_msg_type_t msgtype, _jrec_t *jrec) {
-	slurm_msg_t	msg;
+	slurm_msg_t	*msg,
+			*retmsg;
 	jobacct_msg_t	jmsg;
 	_mynode_msg_t	*node_msg;
 	_stats_msg_t	stats;
 	int		rc,
+			retry,
 			s_port;
 
-	debug2("jobacct(%i): in _send_data_to_mynode(msgtype %i, job %i)",
+	debug2("jobacct(%d): in _send_data_to_mynode(msgtype %d, job %u)",
 			getpid(), msgtype, jrec->jobid);
 	stats.msg_type = htonl(TO_MYNODE);
 	stats.jobid    = htonl(jrec->jobid);
@@ -1202,23 +1222,33 @@ static int _send_data_to_mynode(_mynode_msg_type_t msgtype, _jrec_t *jrec) {
 	jmsg.len = sizeof(_mynode_msg_t);
 	jmsg.data = (char*)&stats;
 	/* finally, set up the slurm_msg */
+	msg = xmalloc(sizeof(slurm_msg_t));
+	retmsg = xmalloc(sizeof(slurm_msg_t));
 	s_port=slurm_get_slurmd_port();
-	slurm_set_addr(&msg.address, s_port, "localhost");
-	msg.msg_type  = MESSAGE_JOBACCT_DATA;
-	msg.data      = &jmsg;
-	msg.data_size = sizeof(jobacct_msg_t);
-	debug2("jobacct(%i): attempting send_only_node_msg(msg, %i, localhost)"
-			" for job %i.%i",
+	slurm_set_addr(&msg->address, s_port, "localhost");
+	msg->msg_type  = MESSAGE_JOBACCT_DATA;
+	msg->data      = &jmsg;
+	msg->data_size = sizeof(jobacct_msg_t);
+	debug2("jobacct(%d): attempting send_recv_node_msg(msg, %d, localhost)"
+			" for job %u.%u",
 			getpid(), s_port, jrec->jobid, jrec->stepid);
-	rc = slurm_send_only_node_msg(&msg);
+	for (retry=0; retry<MAX_SEND_RETRIES; retry++) {
+		if (( rc = slurm_send_recv_node_msg(msg, retmsg, 0)) >=0 )
+				break;
+		sleep(1+(rand()/(RAND_MAX/MAX_SEND_RETRY_DELAY)));
+			/* pause 1-MAX_SEND_RETRY_DELAY seconds */
+	}
+	slurm_free_cred(retmsg->cred);
 	if (rc<0)
-		error("jobacct(%i): _send_data_to_mynode(msg, %i, localhost)"
-				" says %i (%m)",
-				getpid(), s_port, rc);
+		error("jobacct(%d): _send_data_to_mynode(msg, %d, localhost)"
+				" says %d (%m) after %d tries",
+				getpid(), s_port, rc, retry);
 	else
-		debug2("jobacct(%i): _send_data_to_mynode(msg, %i, localhost) "
+		debug2("jobacct(%d): _send_data_to_mynode(msg, %d, localhost) "
 				"succeeded",
 				getpid(), s_port);
+	xfree(msg);
+	xfree(retmsg);
 	return rc;
 }
 
@@ -1229,17 +1259,25 @@ static int _send_data_to_mynode(_mynode_msg_type_t msgtype, _jrec_t *jrec) {
  */
 
 static int _send_data_to_node_0(_jrec_t *jrec) {
-	slurm_msg_t	msg;
+	slurm_msg_t	*msg,
+			*retmsg;
 	jobacct_msg_t	jmsg;
 	_stats_msg_t	stats;
 	int		rc,
+			retry,
 			s_port;
 
-	debug2("jobacct(%i): in _send_data_to_node_0(job %i), nodes0,1=%s,%s"
+	if (!strcmp(jrec->node0, NOT_FOUND)) {
+		error("jobacct(%d): job %d has no node0");
+		return SLURM_SUCCESS;	/* can't do anything here */
+	}
+
+	debug2("jobacct(%d): in _send_data_to_node_0(job %u), nodes0,1=%s,%s"
 			", utime=%d.%06d",
 			getpid(), jrec->jobid, jrec->node0, jrec->node1,
 			jrec->rusage.ru_utime.tv_sec,
 			jrec->rusage.ru_utime.tv_usec);
+
 	/* make a stats_msg */
 	stats.msg_type = htonl(TO_NODE0);
 	stats.jobid    = htonl(jrec->jobid);
@@ -1251,22 +1289,32 @@ static int _send_data_to_node_0(_jrec_t *jrec) {
 	jmsg.len = sizeof(_stats_msg_t);
 	jmsg.data = (char*)&stats;
 	/* finally, set up the slurm_msg */
+	msg = xmalloc(sizeof(slurm_msg_t));
+	retmsg = xmalloc(sizeof(slurm_msg_t));
 	s_port=slurm_get_slurmd_port();
-	slurm_set_addr(&msg.address, s_port, jrec->node0);
-	msg.msg_type  = MESSAGE_JOBACCT_DATA;
-	msg.data      = &jmsg;
-	msg.data_size = sizeof(jobacct_msg_t);
-	debug2("jobacct(%i): attempting send_only_node_msg(msg, %i, %s)",
+	slurm_set_addr(&msg->address, s_port, jrec->node0);
+	msg->msg_type  = MESSAGE_JOBACCT_DATA;
+	msg->data      = &jmsg;
+	msg->data_size = sizeof(jobacct_msg_t);
+	debug2("jobacct(%d): attempting send_recv_node_msg(msg, %d, %s)",
 			getpid(), s_port, jrec->node0);
-	rc = slurm_send_only_node_msg(&msg);
+	for (retry=0; retry<MAX_SEND_RETRIES; retry++) {
+		if ((rc = slurm_send_recv_node_msg(msg, retmsg, 0))>=0 )
+			break;
+		sleep(1+(rand()/(RAND_MAX/MAX_SEND_RETRY_DELAY)));
+			/* pause 1-MAX_SEND_RETRY_DELAY seconds */
+	}
+	slurm_free_cred(retmsg->cred);
 	if (rc<0)
-		error("jobacct(%i): _send_data_to_node_0(msg, %i, %s)"
-				" says %i (%m)",
-				getpid(), s_port, jrec->node0);
+		error("jobacct(%d): _send_data_to_node_0(msg, %d, %s)"
+				" says %d (%m) after %d tries",
+				getpid(), s_port, jrec->node0, rc, retry);
 	else
-		debug2("jobacct(%i): _send_data_to_node_0(msg, %i, %s)"
+		debug2("jobacct(%d): _send_data_to_node_0(msg, %d, %s)"
 				" succeeded",
 				getpid(), s_port, jrec->node0);
+	xfree(msg);
+	xfree(retmsg);
 	return rc;
 }
 
@@ -1286,7 +1334,7 @@ static int _send_data_to_slurmctld(_jrec_t *jrec) {
 	struct tm 	ts; /* timestamp decoder */
 	time_t		now;
 
-	debug2("jobacct(%i): in _send_data_to_slurmctld", getpid());
+	debug2("jobacct(%d): in _send_data_to_slurmctld", getpid());
 	if (jrec->status)
 		comp_status = "F";
 	else
