@@ -138,6 +138,7 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		slurm_free_reattach_tasks_request_msg(msg->data);
 		break;
 	case REQUEST_KILL_JOB:
+		debug2("RPC: REQUEST_KILL_JOB");
 		_rpc_kill_job(msg, cli);
 		slurm_free_kill_job_msg(msg->data);
 		break;
@@ -757,14 +758,16 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		kill_proc_tree((pid_t) step->cont_id, req->signal);
 		rc = SLURM_SUCCESS;
 	} else {
-		if  (slurm_signal_container(step->cont_id, req->signal) < 0)
-			rc = errno;
-
-		if (step->task_list 
-		&&  (step->task_list->pid > (pid_t) 0)
-		&&  (killpg(step->task_list->pid, req->signal) < 0))
-			rc = errno;
- 
+		if ((req->signal == SIGKILL) || (req->signal == 0)) {
+			if  (slurm_signal_container(step->cont_id,
+						    req->signal) < 0)
+				rc = errno;
+		} else {
+			if (step->task_list 
+			    && (step->task_list->pid > (pid_t) 0)
+			    && (killpg(step->task_list->pid, req->signal) < 0))
+				rc = errno;
+		} 
 		if (rc == SLURM_SUCCESS)
 			verbose("Sent signal %d to %u.%u", 
 				req->signal, req->job_id, req->job_step_id);
@@ -790,7 +793,8 @@ _kill_running_session_mgrs(uint32_t jobid, int signum, char *signame)
 
 	while ((s = list_next(i))) {
 		if ((s->jobid == jobid) && s->cont_id) {
-			slurm_signal_container(s->cont_id, signum);
+			kill(s->spid, signum);
+			/* slurm_signal_container(s->cont_id, signum); */
 			cnt++;
 		}
 	}
@@ -1028,11 +1032,11 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 			if (slurm_signal_container(s->cont_id, sig) < 0)
 				error("kill jid %d cont_id %u: %m",
 				      s->jobid, s->cont_id);
-			if (s->task_list
-			&&  (s->task_list->pid  > (pid_t) 0)
-			&&  (killpg(s->task_list->pid, sig) < 0))
-				error("kill jid %d pgrp %d: %m",
-					s->jobid, s->task_list->pid);
+/* 			if (s->task_list */
+/* 			&&  (s->task_list->pid  > (pid_t) 0) */
+/* 			&&  (killpg(s->task_list->pid, sig) < 0)) */
+/* 				error("kill jid %d pgrp %d: %m", */
+/* 					s->jobid, s->task_list->pid); */
 		}
 	}
 	list_iterator_destroy(i);

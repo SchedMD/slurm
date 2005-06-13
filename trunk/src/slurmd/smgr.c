@@ -324,14 +324,6 @@ _exec_all_tasks(slurmd_job_t *job)
 			(unsigned long) job->task[i]->gtid, 
 			(unsigned long) pid); 
 
-		/* 
-		 * Send pid to job manager
-		 */
-		if (fd_write_n(fd, (char *)&pid, sizeof(pid_t)) < 0) {
-			error("unable to update task pid!: %m");
-			return SLURM_ERROR;
-		}
-
 		job->task[i]->pid = pid;
 
 		/*
@@ -340,6 +332,14 @@ _exec_all_tasks(slurmd_job_t *job)
 		if (setpgid (pid, job->task[0]->pid) < 0)
 			error ("Unable to put task %d (pid %ld) into pgrp %ld",
 			       i, pid, job->task[0]->pid);
+
+		/* 
+		 * Send pid to job manager
+		 */
+		if (fd_write_n(fd, (char *)&pid, sizeof(pid_t)) < 0) {
+			error("unable to update task pid!: %m");
+			return SLURM_ERROR;
+		}
 
 		/*
 		 * Now it's ok to unblock this child, so it may call exec

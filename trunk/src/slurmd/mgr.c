@@ -655,6 +655,8 @@ _create_job_session(slurmd_job_t *job)
 	 */
 	if (shm_update_step_mpid(job->jobid, job->stepid, getpid()) < 0)
 		debug("shm_update_step_mpid: %m");
+	if (shm_update_step_spid(job->jobid, job->stepid, spid) < 0)
+		debug("shm_update_step_spid: %m");
 
 	job->smgr_pid = spid;
 
@@ -924,8 +926,8 @@ _kill_running_tasks(slurmd_job_t *job)
 	while ((s = list_next(i))) {
 		if ((s->jobid != job->jobid) || (s->stepid != job->stepid))
 			continue;
-		if (s->task_list && s->task_list->pid)
-			killpg(s->task_list->pid, SIGKILL);
+/* 		if (s->task_list && s->task_list->pid) */
+/* 			killpg(s->task_list->pid, SIGKILL); */
 		if (s->cont_id)
 			slurm_signal_container(s->cont_id, SIGKILL);
 	}
