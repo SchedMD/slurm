@@ -76,6 +76,7 @@ struct job_step {
 	uint32_t   sw_id;	/* Switch/Interconnect specific id       */
 	int        ntasks;	/* number of tasks in this job	         */
 	pid_t      mpid;        /* Job manager pid                       */
+	pid_t      spid;        /* Session manager pid                   */
 	uint32_t   cont_id;	/* Job container id                      */
 
                                 /* Executable's pathname                 */
@@ -196,6 +197,12 @@ int shm_update_step_cont_id(uint32_t jobid, uint32_t stepid, uint32_t cont_id);
  * update job step "manager" pid
  */
 int shm_update_step_mpid(uint32_t jobid, uint32_t stepid, int mpid);
+
+
+/* 
+ * update job step "session manager" pid
+ */
+int shm_update_step_spid(uint32_t jobid, uint32_t stepid, int spid);
 
 
 /*

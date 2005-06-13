@@ -527,6 +527,21 @@ shm_update_step_mpid(uint32_t jobid, uint32_t stepid, int mpid)
 }
 
 int 
+shm_update_step_spid(uint32_t jobid, uint32_t stepid, int spid)
+{
+	int i, retval = SLURM_SUCCESS;
+	_shm_lock();
+	if ((i = _shm_find_step(jobid, stepid)) >= 0)
+		slurmd_shm->step[i].spid = spid;
+	else {
+		slurm_seterrno(ESRCH);
+		retval = SLURM_FAILURE;
+	}
+	_shm_unlock();
+	return retval;
+}
+
+int 
 shm_update_step_cont_id(uint32_t jobid, uint32_t stepid, uint32_t cont_id)
 {
 	int i, retval = SLURM_SUCCESS;

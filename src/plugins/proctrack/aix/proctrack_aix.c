@@ -43,10 +43,6 @@
 #include <slurm/slurm_errno.h>
 #include "src/common/log.h"
 
-#ifndef __USE_XOPEN_EXTENDED
-extern pid_t getsid(pid_t pid);	/* missing from <unistd.h> */
-#endif
-
 extern int proctrack_job_reg(int *jobid);	/* register a job, include this proc */
 extern int proctrack_job_unreg(int *jobid);	/* unregister a job */
 extern int proctrack_job_kill(int *jobid, int *signal);	/* signal a job */
@@ -102,13 +98,12 @@ extern int fini ( void )
 
 /*
  * For this plugin, we ignore the job_id.
- * To generate a unique container ID, we use setsid.
+ * To generate a unique container ID, we use getpid.
  */
 extern uint32_t slurm_create_container ( uint32_t job_id )
 {
-	pid_t pid = setsid();
+	pid_t pid = getpid();
 	int jobid = (int) pid;
-	(void) setpgrp();
 
 	if (pid < 0) {
 		error("slurm_create_container: setsid: %m");

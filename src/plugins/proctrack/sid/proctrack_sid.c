@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  proctrack_sid.c - process tracking via session ID plugin.
+ *  proctrack_sid.c - process tracking via process group ID plugin.
  *****************************************************************************
  *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -42,11 +42,6 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 #include "src/common/log.h"
-
-#ifndef __USE_XOPEN_EXTENDED
-extern pid_t getsid(pid_t pid);	/* missing from <unistd.h> */
-extern pid_t setsid(void);	/* missing from <unistd.h> */
-#endif
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -97,18 +92,16 @@ extern int fini ( void )
 
 /*
  * For this plugin, we ignore the job_id.
- * To generate a unique container ID, we use setsid.
+ *
+ * FIXME! - This is basically a no-op.  We return -1 because
+ * only returning a 0 disturbs the caller.  The caller throws
+ * away the return code anyway.  This needs to be redone
+ * for slurm-0.6 when the task-creation code is rewritten to
+ * eliminate the user-owned session manager slurmd.
  */
 extern uint32_t slurm_create_container ( uint32_t job_id )
 {
-	pid_t pid = setsid();
-	(void) setpgrp();
-
-	if (pid < 0) {
-		error("slurm_create_container: setsid: %m");
-		return (uint32_t) 0;
-	}
-	return (uint32_t) pid;
+	return (uint32_t) -1;
 }
 
 extern int slurm_add_container ( uint32_t id )
@@ -123,6 +116,11 @@ extern int slurm_signal_container  ( uint32_t id, int signal )
 	if (!id)	/* no container ID */
 		return ESRCH;
 
+	if (id == getpid() || id == getpgid(0)) {
+		error("slurm_signal_container would kill caller!");
+		return ESRCH;
+	}
+
 	return killpg(pid, signal);
 }
 
@@ -134,7 +132,7 @@ extern int slurm_destroy_container ( uint32_t id )
 extern uint32_t
 slurm_find_container(pid_t pid)
 {
-	pid_t rc = getsid(pid);
+	pid_t rc = getpgid(pid);
 
 	if (rc == -1)
 		return (uint32_t) 0;
