@@ -498,6 +498,24 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 
 	_die_if_signaled(job, status);
 
+	/*
+	 * When a task terminates with a non-zero exit code and the
+	 * "--kill-on-bad-exit" option is set, terminate the entire job.
+	 */
+	if (status != 0 && opt.kill_bad_exit)
+	{
+		static int first_time = 1;
+
+		/* Only kill the job once. */
+		if (first_time)
+		{
+			debug("Terminating job due to a non-zero exit code");
+
+			first_time = 0;
+
+			job_kill(job);
+		}
+	}
 }
 
 static void

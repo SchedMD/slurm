@@ -485,6 +485,7 @@ static void _opt_default()
 	opt.batch = false;
 	opt.share = false;
 	opt.no_kill = false;
+	opt.kill_bad_exit = false;
 
 	opt.immediate	= false;
 
@@ -568,6 +569,7 @@ env_vars_t env_vars[] = {
   {"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
   {"SLURM_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL           },
   {"SLURM_JOBID",         OPT_INT,        &opt.jobid,         NULL           },
+  {"SLURM_KILL_BAD_EXIT", OPT_INT,        &opt.kill_bad_exit, NULL           },
   {"SLURM_LABELIO",       OPT_INT,        &opt.labelio,       NULL           },
   {"SLURM_NNODES",        OPT_NODES,      NULL,               NULL           },
   {"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
@@ -736,6 +738,7 @@ static void _opt_args(int argc, char **argv)
 		{"join",          no_argument,       0, 'j'},
 		{"job-name",      required_argument, 0, 'J'},
 		{"no-kill",       no_argument,       0, 'k'},
+		{"kill-on-bad-exit", no_argument,    0, 'K'},
 		{"label",         no_argument,       0, 'l'},
 		{"distribution",  required_argument, 0, 'm'},
 		{"ntasks",        required_argument, 0, 'n'},
@@ -783,7 +786,7 @@ static void _opt_args(int argc, char **argv)
 		{"network",          required_argument, 0, LONG_OPT_NETWORK},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:klm:n:N:"
+	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
 		"o:Op:P:qQr:R:st:T:uU:vVw:W:x:XZ";
 	char **rest = NULL;
 
@@ -868,6 +871,9 @@ static void _opt_args(int argc, char **argv)
 			break;
 		case (int)'k':
 			opt.no_kill = true;
+			break;
+		case (int)'K':
+			opt.kill_bad_exit = true;
 			break;
 		case (int)'l':
 			opt.labelio = true;
@@ -1476,6 +1482,7 @@ static void _usage(void)
 "            [--core=type] [-T threads] [-W sec] [--attach] [--join] \n"
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "            [--mpi=type] [--account=name] [--dependency=jobid]\n"
+"            [--kill-on-bad-exit]\n"
 #ifdef HAVE_BGL		/* Blue gene specific options */
 "            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
 "            [--node-use=type]\n"
@@ -1503,6 +1510,8 @@ static void _help(void)
 "  -I, --immediate             exit if resources are not immediately available\n"
 "  -O, --overcommit            overcommit resources\n"
 "  -k, --no-kill               do not kill job on node failure\n"
+"  -K, --kill-on-bad-exit      kill the job if any task terminates with a\n"
+"                              non-zero exit code\n"
 "  -s, --share                 share nodes with other jobs\n"
 "  -l, --label                 prepend task number to lines of stdout/err\n"
 "  -u, --unbuffered            do not line-buffer stdout/err\n"
