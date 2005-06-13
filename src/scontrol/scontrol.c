@@ -1436,7 +1436,7 @@ _update_job (int argc, char *argv[])
 			job_msg.dependency =
 				(uint32_t) strtol(&argv[i][11],
 					(char **) NULL, 10);
-#if SYSTEM_DIMENSION
+#if SYSTEM_DIMENSIONS
 		else if (strncasecmp(argv[i], "Geometry=", 9) == 0) {
 			char* token, *delimiter = ",x", *next_ptr;
 			int j, rc = 0;
