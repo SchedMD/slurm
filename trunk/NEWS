@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.5.0-pre10
 ==============================
+ -- Fix bug that was resetting BGL job geometry on unrelated field update.
  -- squeue and sinfo print timestamp in interate mode by default.
  -- added scrolling windows in smap
  -- introduced new variable to start polling thread in the bluegene plugin.
