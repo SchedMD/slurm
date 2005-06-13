@@ -3194,6 +3194,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		xfree(job_ptr->account);
 		if (job_specs->account[0] != '\0') {
 			job_ptr->account = job_specs->account ;
+			info("update_job: setting account to %s for job_id %u",
+				job_ptr->account, job_specs->job_id);
 			job_specs->account = NULL;
 		}
 	}
@@ -3201,8 +3203,12 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->dependency != NO_VAL) {
 		if (job_specs->dependency == job_ptr->job_id)
 			error_code = ESLURM_DEPENDENCY;
-		else
+		else {
 			job_ptr->dependency = job_specs->dependency;
+			info("update_job: setting dependency to %u for " 
+				"job_id %u",  job_ptr->dependency, 
+				job_ptr->job_id);
+		}
 	}
 
 #if SYSTEM_DIMENSIONS
@@ -3215,23 +3221,35 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_GEOMETRY,
 			job_specs->geometry);
+		 info("update_job: setting geometry to %ux%ux%u for job_id %u",
+			job_specs->geometry[0], job_specs->geometry[1], 
+			job_specs->geometry[2], job_ptr->job_id);
 	}
 #endif
 
-	if (job_specs->conn_type != (uint16_t) NO_VAL)
+	if (job_specs->conn_type != (uint16_t) NO_VAL) {
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_CONN_TYPE,
 			&job_specs->conn_type);
+		info("update_job: setting conn_type to %u for job_id %u",
+			job_specs->conn_type, job_ptr->job_id);
+	}
 
-	if (job_specs->rotate != (uint16_t) NO_VAL)
+	if (job_specs->rotate != (uint16_t) NO_VAL) {
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_ROTATE,
 			&job_specs->rotate);
+		info("update_job: setting rotate to %u for job_id %u",
+			job_specs->rotate, job_ptr->job_id);
+	}
 
-	if (job_specs->node_use != (uint16_t) NO_VAL)
+	if (job_specs->node_use != (uint16_t) NO_VAL) {
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_NODE_USE,
 			&job_specs->node_use);
+		info("update_job: setting node_use to %u for job_id %u",
+			job_specs->node_use, job_ptr->job_id);
+	}
 
 	return error_code;
 }
