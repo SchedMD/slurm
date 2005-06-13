@@ -202,7 +202,8 @@ static void _kill_proclist(xpid_t *list, int sig)
 	while (list) {
 		verbose("Sending %d to %d", sig, list->pid);
 		/* Do not check errors. May already be dead */
-		kill(list->pid, sig);
+		if (list->pid > 0)
+			kill(list->pid, sig);
 		list = list->next;
 	}
 }
