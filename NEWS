@@ -7,6 +7,9 @@ documents those changes that are of interest to users and admins.
  -- Latest accounting patches from Riebs/HP, retry communications.
  -- Added srun option --kill-on-bad-exit from Holmes/HP.
  -- Support large (64-bit address) log files where possible.
+ -- Fix problem of signals being delivered twice to tasks.  Note that as
+    part of the fix the slurmd session manger no longer calls setsid to
+    create a new session.
 
 * Changes in SLURM 0.5.0-pre9
 =============================
