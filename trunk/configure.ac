@@ -66,7 +66,7 @@ X_AC_PTRACE
 dnl Checks for types.
 dnl
 X_AC_SLURM_BIGENDIAN
-  
+AC_SYS_LARGEFILE  
 
 dnl Checks for compiler characteristics.
 dnl
