@@ -169,13 +169,11 @@ static int _post_allocate(bgl_record_t *bgl_record)
 	} else {
 		bgl_record->bgl_part_id = xstrdup(part_id);
 		
-		if(bgl_record->target_name)
-			xfree(bgl_record->target_name);
+		xfree(bgl_record->target_name);
 		bgl_record->target_name = 
 			xstrdup(slurmctld_conf.slurm_user_name);
 
-		if(bgl_record->user_name)
-			xfree(bgl_record->user_name);
+		xfree(bgl_record->user_name);
 		bgl_record->user_name = 
 			xstrdup(slurmctld_conf.slurm_user_name);
 
