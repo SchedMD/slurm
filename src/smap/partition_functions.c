@@ -68,7 +68,7 @@ static int _in_slurm_partition(db2_block_info_t *db2_info_ptr,
 static int _print_rest(db2_block_info_t *block_ptr, int *count);
 #endif
 
-void get_slurm_part(void)
+extern void get_slurm_part()
 {
 	int error_code, i, j, recs, count = 0;
 	static partition_info_msg_t *part_info_ptr = NULL;
@@ -98,19 +98,22 @@ void get_slurm_part(void)
 				pa_system_ptr->ycord++;
 			} else {
 				printf("slurm_load_partitions: %s",
-					  slurm_strerror(slurm_get_errno()));
+				       slurm_strerror(slurm_get_errno()));
 			}
 		}
 		return;
 	}
-
+	
 	if (!params.no_header)
 		_print_header_part();
-
+	
 	if (new_part_ptr)
 		recs = new_part_ptr->record_count;
 	else
 		recs = 0;
+	if (!params.commandline)
+		if((recs - text_line_cnt) < (pa_system_ptr->text_win->_maxy-3))
+			text_line_cnt--;
 
 	for (i = 0; i < recs; i++) {
 		j = 0;
@@ -125,13 +128,15 @@ void get_slurm_part(void)
 				 part.node_inx[j + 1], count);
 			j += 2;
 		}
-		part.root_only =
-			(int) letters[count%62];
-		wattron(pa_system_ptr->text_win,
-			COLOR_PAIR(colors[count%6]));
-		_print_text_part(&part, NULL);
-		wattroff(pa_system_ptr->text_win,
-			 COLOR_PAIR(colors[count%6]));
+		if(i>=text_line_cnt) {
+			part.root_only =
+				(int) letters[count%62];
+			wattron(pa_system_ptr->text_win,
+				COLOR_PAIR(colors[count%6]));
+			_print_text_part(&part, NULL);
+			wattroff(pa_system_ptr->text_win,
+				 COLOR_PAIR(colors[count%6]));
+		}
 		count++;
 			
 	}
@@ -144,7 +149,7 @@ void get_slurm_part(void)
 	return;
 }
 
-void get_bgl_part(void)
+extern void get_bgl_part()
 {
 #ifdef HAVE_BGL
 	int error_code, i, j, recs=0, count = 0;
@@ -225,6 +230,11 @@ void get_bgl_part(void)
 			return;
 		}
 	}
+	if (!params.commandline)
+		if((new_bgl_ptr->record_count - text_line_cnt) 
+		   < (pa_system_ptr->text_win->_maxy-3))
+			text_line_cnt--;
+	
 	for (i=0; i<new_bgl_ptr->record_count; i++) {
 		block_ptr = xmalloc(sizeof(db2_block_info_t));
 		list_append(block_list, block_ptr);
@@ -251,6 +261,7 @@ void get_bgl_part(void)
 		recs = new_part_ptr->record_count;
 	else
 		recs = 0;
+
 	for (i = 0; i < recs; i++) {
 		j = 0;
 		part = new_part_ptr->partition_array[i];
@@ -282,23 +293,36 @@ void get_bgl_part(void)
 			itr = list_iterator_create(block_list);
 			while ((block_ptr = (db2_block_info_t*) 
 				list_next(itr)) != NULL) {
-				if(_in_slurm_partition(block_ptr, start, end))
+				if(_in_slurm_partition(block_ptr, 
+						       start, 
+						       end)) {
 					block_ptr->slurm_part_name 
 						= xstrdup(part.name);
+				}
 			}
 			list_iterator_destroy(itr);
 		}
 	}
 
-	/* Report any BGL Blocks not in a SLURM partition */
+	/* Report the BGL Blocks */
 	if (block_list) {
 		itr = list_iterator_create(block_list);
 		while ((block_ptr = (db2_block_info_t*) 
-			list_next(itr)) != NULL)
+			list_next(itr)) != NULL) {
+			if (params.commandline)
+				block_ptr->printed = 1;
+			else
+				if(count>=text_line_cnt)
+					block_ptr->printed = 1;
+				
 			_print_rest(block_ptr, &count);
+			
+		}
+		
 		list_iterator_destroy(itr);
 	}
 
+	
 	if (params.commandline && params.iterate)
 		printf("\n");
 
@@ -699,13 +723,10 @@ static int _in_slurm_partition(db2_block_info_t *db2_info_ptr,
 
 static int _print_rest(db2_block_info_t *block_ptr, int *count)
 {
-	//static rm_BGL_t *bgl = NULL;
 	partition_info_t part;
 	db2_block_info_t *db2_info_ptr = NULL;
 	ListIterator itr;
 	int set = 0;
-	if (block_ptr->printed)
-		return SLURM_SUCCESS;
 		
 	part.total_nodes = 0;
 	
@@ -763,14 +784,16 @@ static int _print_rest(db2_block_info_t *block_ptr, int *count)
 	else
 		part.name = "no part";
 
+	if (!block_ptr->printed)
+		return SLURM_SUCCESS;
 	part.allow_groups = block_ptr->nodes;
-	part.root_only = (int) letters[block_ptr->letter_num%62];	
-	
+	part.root_only = (int) letters[block_ptr->letter_num%62];
 	wattron(pa_system_ptr->text_win, 
 		COLOR_PAIR(colors[block_ptr->letter_num%6]));
 	_print_text_part(&part, block_ptr);
 	wattroff(pa_system_ptr->text_win,
 		 COLOR_PAIR(colors[block_ptr->letter_num%6]));
+	
 	return SLURM_SUCCESS;
 }
 #endif

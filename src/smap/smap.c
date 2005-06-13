@@ -32,15 +32,20 @@
 #include <signal.h>
 #include "src/smap/smap.h"
 
+#ifdef HAVE_BGL
 #define MIN_SCREEN_WIDTH 92
-
+#else
+#define MIN_SCREEN_WIDTH 72
+#endif
 /********************
  * Global Variables *
  ********************/
+int text_line_cnt = 0;
+
 smap_parameters_t params;
 
 int quiet_flag = 0;
-int line_cnt = 0;
+int grid_line_cnt = 0;
 int max_display;
 		
 /************
@@ -50,9 +55,6 @@ int max_display;
 static int _get_option();
 static void *_resize_handler(int sig);
 static int _set_pairs();
-#ifndef HAVE_BGL
-static int _scroll_grid(int dir);
-#endif /* HAVE_BGL */
 
 int main(int argc, char *argv[])
 {
@@ -201,7 +203,6 @@ part_fini:
 			_get_option();
 		redraw:
 			
-			line_cnt = 0;
 			clear_window(pa_system_ptr->text_win);
 			clear_window(pa_system_ptr->grid_win);
 			doupdate();
@@ -247,7 +248,8 @@ part_fini:
 			box(pa_system_ptr->text_win, 0, 0);
 			wnoutrefresh(pa_system_ptr->text_win);
 			
-			print_grid(0);
+			print_grid(grid_line_cnt*
+				     (pa_system_ptr->grid_win->_maxx-1));
 			box(pa_system_ptr->grid_win, 0, 0);
 			wnoutrefresh(pa_system_ptr->grid_win);
 			
@@ -287,7 +289,7 @@ part_fini:
 				}
 			}
 		}
-	scrolling_grid:
+
 		if (params.iterate) {
 			for (i = 0; i < params.iterate; i++) {
 
@@ -295,8 +297,6 @@ part_fini:
 				if(!params.commandline) {
 					if ((rc = _get_option()) == 1)
 						goto redraw;
-					else if (rc == 2)
-						goto scrolling_grid;
 					else if (pa_system_ptr->
 						 resize_screen) {
 						pa_system_ptr->
@@ -326,16 +326,40 @@ static int _get_option()
 
 	ch = getch();
 	switch (ch) {
+	case KEY_RIGHT:
+	case '-':
+	case '_':
+		text_line_cnt++;		
+		return 1;
+		break;
+	case KEY_LEFT:
+	case '=':
+	case '+':
+		text_line_cnt--;
+		if(text_line_cnt<0) {
+			text_line_cnt = 0;
+			return 0;		
+	
+		}
+		return 1;
+		break;
+		
 	case 's':
+		text_line_cnt = 0;
+		grid_line_cnt = 0;
 		params.display = SLURMPART;
 		return 1;
 		break;
 	case 'j':
+		text_line_cnt = 0;
+		grid_line_cnt = 0;
 		params.display = JOBS;
 		return 1;
 		break;
 #ifdef HAVE_BGL
 	case 'b':
+		text_line_cnt = 0;
+		grid_line_cnt = 0;
 		params.display = BGLPART;
 		return 1;
 		break;
@@ -348,22 +372,23 @@ static int _get_option()
 #ifndef HAVE_BGL
 	case 'u':
 	case KEY_UP:
-		line_cnt--;
-		if(line_cnt<0)
-			line_cnt = 0;
-		_scroll_grid(line_cnt*(pa_system_ptr->grid_win->_maxx-1));
-		return 2;
+		grid_line_cnt--;
+		if(grid_line_cnt<0) {
+			grid_line_cnt = 0;
+			return 0;
+		}
+		return 1;
 		break;
 	case 'd':
 	case KEY_DOWN:
-		if((((line_cnt-1)*(pa_system_ptr->grid_win->_maxx-1)) + 
+		grid_line_cnt++;
+		if((((grid_line_cnt-2)*(pa_system_ptr->grid_win->_maxx-1)) + 
 		    max_display) > DIM_SIZE[X]) {
-			line_cnt--;
-			return 2;
+			grid_line_cnt--;
+			return 0;		
 		}
-		line_cnt++;
-		_scroll_grid(line_cnt*(pa_system_ptr->grid_win->_maxx-1));
-		return 2;
+		
+		return 1;
 		break;
 #endif
 	case 'q':
@@ -446,7 +471,7 @@ static void *_resize_handler(int sig)
 #endif
 	}
 
-	print_grid(0);
+	print_grid(grid_line_cnt*(pa_system_ptr->grid_win->_maxx-1));
 	box(pa_system_ptr->text_win, 0, 0);
 	box(pa_system_ptr->grid_win, 0, 0);
 	wnoutrefresh(pa_system_ptr->text_win);
@@ -482,13 +507,3 @@ static int _set_pairs()
 	}
 	return 1;
 }
-
-#ifndef HAVE_BGL
-static int _scroll_grid(int dir)
-{
-	print_grid(dir);
-	wnoutrefresh(pa_system_ptr->grid_win);
-	doupdate();
-	return 1;
-}
-#endif /* HAVE_BGL */
