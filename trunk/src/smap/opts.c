@@ -34,7 +34,7 @@ static void _usage(void);
 /*
  * parse_command_line, fill in params data structure with data
  */
-void parse_command_line(int argc, char *argv[])
+extern void parse_command_line(int argc, char *argv[])
 {
 	int opt_char;
 	int option_index;
@@ -111,7 +111,7 @@ void parse_command_line(int argc, char *argv[])
 
 }
 
-void snprint_time(char *buf, size_t buf_size, time_t time)
+extern void snprint_time(char *buf, size_t buf_size, time_t time)
 {
 	if (time == INFINITE) {
 		snprintf(buf, buf_size, "UNLIMITED");
@@ -136,7 +136,7 @@ void snprint_time(char *buf, size_t buf_size, time_t time)
 	}
 }
 
-void print_date()
+extern void print_date()
 {
 	pa_system_ptr->now_time = time(NULL);
 
@@ -150,7 +150,7 @@ void print_date()
 	}
 }
 
-void clear_window(WINDOW *win)
+extern void clear_window(WINDOW *win)
 {
 	int x,y;
 	for(x=0; x<=win->_maxx; x++)

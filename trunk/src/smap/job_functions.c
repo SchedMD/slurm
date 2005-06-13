@@ -32,10 +32,11 @@
 static void _print_header_job(void);
 static int  _print_text_job(job_info_t * job_ptr);
 
-extern void get_job(void)
+extern void get_job()
 {
-	int error_code = -1, i, j, recs, count = 0;
-
+	int error_code = -1, i, j, recs;
+	static int printed_jobs = 0;
+	static int count = 0;
 	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr = NULL;
 	job_info_t job;
 
@@ -69,6 +70,11 @@ extern void get_job(void)
 	else
 		recs = 0;
 	
+	if(!params.commandline)
+		if((text_line_cnt+printed_jobs) > count) 
+			text_line_cnt--;
+	printed_jobs = 0;
+	count = 0;
 	for (i = 0; i < recs; i++) {
 		job = new_job_ptr->job_array[i];
 		
@@ -87,31 +93,62 @@ extern void get_job(void)
 					 job.node_inx[j + 1], count);
 				j += 2;
 			}
+			
+			if(!params.commandline) {
+				if((count>=text_line_cnt)
+				   && (printed_jobs 
+				       < (pa_system_ptr->text_win->_maxy-3))) {
+					job.num_procs = (int)letters[count%62];
+					wattron(pa_system_ptr->text_win,
+						COLOR_PAIR(colors[count%6]));
+					_print_text_job(&job);
+					wattroff(pa_system_ptr->text_win,
+						 COLOR_PAIR(colors[count%6]));
+					printed_jobs++;
+				} 
+			} else {
+				job.num_procs = (int)letters[count%62];
+				wattron(pa_system_ptr->text_win,
+					COLOR_PAIR(colors[count%6]));
+				_print_text_job(&job);
+				wattroff(pa_system_ptr->text_win,
+					 COLOR_PAIR(colors[count%6]));
+			}
+			count++;			
+		}
+		if(count==128)
+			count=0;
+	}
+		
+	for (i = 0; i < recs; i++) {
+		job = new_job_ptr->job_array[i];
+		
+		if (job.job_state != JOB_PENDING)
+			continue;	/* job has completed */
+
+		if(!params.commandline) {
+			if((count>=text_line_cnt)
+			   && (printed_jobs 
+			       < (pa_system_ptr->text_win->_maxy-3))) {
+				job.nodes = "waiting...";
+				job.num_procs = (int) letters[count%62];
+				wattron(pa_system_ptr->text_win,
+					COLOR_PAIR(colors[count%6]));
+				_print_text_job(&job);
+				wattroff(pa_system_ptr->text_win,
+					 COLOR_PAIR(colors[count%6]));
+				printed_jobs++;
+			} 
+		} else {
+			job.nodes = "waiting...";
 			job.num_procs = (int) letters[count%62];
 			wattron(pa_system_ptr->text_win,
 				COLOR_PAIR(colors[count%6]));
 			_print_text_job(&job);
 			wattroff(pa_system_ptr->text_win,
 				 COLOR_PAIR(colors[count%6]));
-			count++;			
+			printed_jobs++;
 		}
-		if(count==128)
-			count=0;
-	}
-	
-	for (i = 0; i < recs; i++) {
-		job = new_job_ptr->job_array[i];
-		
-		if (job.job_state != JOB_PENDING)
-			continue;	/* job has completed */
-		
-		job.nodes = "waiting...";
-		job.num_procs = (int) letters[count%62];
-		wattron(pa_system_ptr->text_win,
-			COLOR_PAIR(colors[count%6]));
-		_print_text_job(&job);
-		wattroff(pa_system_ptr->text_win,
-			 COLOR_PAIR(colors[count%6]));
 		count++;			
 		
 		if(count==128)
@@ -121,6 +158,8 @@ extern void get_job(void)
 	if (params.commandline && params.iterate)
 		printf("\n");
 
+	pa_system_ptr->ycord++;
+	
 	job_info_ptr = new_job_ptr;
 	return;
 }

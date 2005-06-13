@@ -861,6 +861,6 @@ void get_command(void)
 	pa_system_ptr->xcord = 1;
 	pa_system_ptr->ycord = 1;
 	print_date();
-	get_job();
+	get_job(0);
 	return;
 }
