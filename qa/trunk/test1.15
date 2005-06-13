@@ -8,11 +8,11 @@
 #          anything else indicates a failure mode that must be investigated.
 #
 # Note:    This script generates and then deletes files in the working directory 
-#          named test1.15.input, test1.15.output, and test1.15.error
+#          named test1.15.input
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Moe Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
 # 
 # This file is part of SLURM, a resource management program.
@@ -79,12 +79,12 @@ expect {
 	}
 }
 
-exec $bin_rm -f $file_in
 if {$matches != 2} {
 	send_user "\nFAILURE: problem with wait option\n"
 	set exit_code 1
 }
 if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
