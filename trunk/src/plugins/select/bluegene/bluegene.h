@@ -61,6 +61,7 @@ extern bool agent_fini;
 extern pthread_mutex_t part_state_mutex;
 extern int num_part_to_free;
 extern int num_part_freed;
+extern int partitions_are_created;
 
 typedef int lifecycle_type_t;
 enum part_lifecycle {DYNAMIC, STATIC};

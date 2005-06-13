@@ -53,6 +53,7 @@ time_t last_bgl_update;
 pthread_mutex_t part_state_mutex = PTHREAD_MUTEX_INITIALIZER;
 int num_part_to_free = 0;
 int num_part_freed = 0;
+int partitions_are_created = 0;
 
 #ifdef HAVE_BGL_FILES
 static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -1364,6 +1365,8 @@ extern int read_bgl_conf(void)
 		fatal("Error, could not create the static partitions");
 		return SLURM_ERROR;
 	}
+	partitions_are_created = 1;
+	
 	return error_code;
 }
 
