@@ -9,7 +9,9 @@
 #
 #  DESCRIPTION:
 #    Check for AIX operating system and sets parameters accordingly, 
-#    also define HAVE_AIX if appropriate
+#    also define HAVE_AIX and HAVE_LARGEFILE if appropriate.
+#  NOTE: AC_SYS_LARGEFILE may fail on AIX due to inconstencies within
+#    installed gcc header files.
 ##*****************************************************************************
 
 
@@ -51,6 +53,7 @@ AC_DEFUN([X_AC_AIX],
       fi
    else
       ac_have_aix_proctrack="no"
+      AC_SYS_LARGEFILE
    fi
    AM_CONDITIONAL(HAVE_AIX_PROCTRACK, test "x$ac_have_aix_proctrack" = "xyes")
 ])

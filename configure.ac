@@ -54,7 +54,6 @@ AC_HEADER_STDC
 dnl Checks for structures.
 dnl
 X_AC__SYSTEM_CONFIGURATION
-AC_SYS_LARGEFILE
 
 dnl check to see if glibc's program_invocation_short_name is available:
 dnl
@@ -67,7 +66,6 @@ X_AC_PTRACE
 dnl Checks for types.
 dnl
 X_AC_SLURM_BIGENDIAN
-AC_SYS_LARGEFILE  
 
 dnl Checks for compiler characteristics.
 dnl
