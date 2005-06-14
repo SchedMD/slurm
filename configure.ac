@@ -153,12 +153,7 @@ X_AC_SLURM_WITH_SSL
 dnl
 dnl Check for compilation of SLURM auth modules:
 dnl
-AC_CHECK_LIB(munge, munge_encode, [have_munge=yes], [have_munge=no])
-if test "$have_munge" = "yes"; then
-  MUNGE_LIBS="-lmunge"
-  AC_SUBST(MUNGE_LIBS)
-fi
-AM_CONDITIONAL(WITH_MUNGE, test "x$have_munge" = "xyes")
+X_AC_MUNGE
 
 AUTHD_LIBS="-lauth -le"
 savedLIBS="$LIBS"
