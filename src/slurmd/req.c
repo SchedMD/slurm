@@ -792,9 +792,11 @@ _kill_running_session_mgrs(uint32_t jobid, int signum, char *signame)
 	int          cnt   = 0;	
 
 	while ((s = list_next(i))) {
-		if ((s->jobid == jobid) && s->cont_id) {
-			kill(s->spid, signum);
-			/* slurm_signal_container(s->cont_id, signum); */
+		if (s->jobid == jobid) {
+			if (s->spid)
+				kill(s->spid, signum);
+			/* if (s->cont_id) */
+				/* slurm_signal_container(s->cont_id, signum); */
 			cnt++;
 		}
 	}
