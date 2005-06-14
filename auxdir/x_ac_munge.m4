@@ -51,10 +51,11 @@ AC_DEFUN([X_AC_MUNGE], [
   else
     MUNGE_LIBS="-lmunge"
     AC_SUBST(MUNGE_LIBS)
-    AM_CONDITIONAL(WITH_MUNGE, true)
     if test "$x_ac_cv_munge_dir" != "/usr"; then
       CPPFLAGS="$CPPFLAGS -I$x_ac_cv_munge_dir/include"
       LDFLAGS="$LDFLAGS -L$x_ac_cv_munge_dir/lib"
     fi
   fi
+
+  AM_CONDITIONAL(WITH_MUNGE, test -n "$x_ac_cv_munge_dir")
 ])
