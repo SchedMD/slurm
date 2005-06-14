@@ -181,7 +181,7 @@ extern int update_partition_list()
 	char reason[128];
 	int skipped_dealloc = 0;
 
-	if(partitions_are_created)
+	if(!partitions_are_created)
 		return 0;
 	
 	if ((rc = rm_get_partitions_info(part_state, &part_list))

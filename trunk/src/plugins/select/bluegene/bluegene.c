@@ -1365,6 +1365,7 @@ extern int read_bgl_conf(void)
 		fatal("Error, could not create the static partitions");
 		return SLURM_ERROR;
 	}
+	debug("Partitions have finished being created.");
 	partitions_are_created = 1;
 	
 	return error_code;
