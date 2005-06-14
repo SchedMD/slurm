@@ -1,6 +1,13 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.5.0-pre11
+==============================
+ -- Slurmd tests for initialized session manager (user's) slurmd pid before 
+    killing it to avoid killing system daemon (race condition).
+ -- srun --output or --error file names of "none" mapped to /dev/null for 
+    batch jobs rather than a file actually named "none".
+
 * Changes in SLURM 0.5.0-pre10
 ==============================
  -- Fix bug that was resetting BGL job geometry on unrelated field update.
