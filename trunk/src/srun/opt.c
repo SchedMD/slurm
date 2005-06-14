@@ -846,7 +846,10 @@ static void _opt_args(int argc, char **argv)
 			break;
 		case (int)'e':
 			xfree(opt.efname);
-			opt.efname = xstrdup(optarg);
+			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
+				opt.efname = xstrdup("/dev/null");
+			else
+				opt.efname = xstrdup(optarg);
 			break;
 		case (int)'g':
 			if (_verify_geometry(optarg, opt.geometry))
@@ -904,7 +907,10 @@ static void _opt_args(int argc, char **argv)
 			break;
 		case (int)'o':
 			xfree(opt.ofname);
-			opt.ofname = xstrdup(optarg);
+			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
+				opt.ofname = xstrdup("/dev/null");
+			else
+				opt.ofname = xstrdup(optarg);
 			break;
 		case (int)'O':
 			opt.overcommit = true;
