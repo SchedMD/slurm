@@ -10,7 +10,6 @@ bin_PROGRAMS = srun
 srun_SOURCES = \
 	srun.c \
 	opt.c opt.h \
-	env.c env.h \
 	job.c job.h \
 	gmpi.c gmpi.h \
 	net.c net.h \

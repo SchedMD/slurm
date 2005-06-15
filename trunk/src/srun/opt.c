@@ -62,7 +62,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/srun/env.h"
 #include "src/srun/opt.h"
 #include "src/srun/attach.h"
 

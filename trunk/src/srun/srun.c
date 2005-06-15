@@ -66,7 +66,6 @@
 #include "src/common/xstring.h"
 
 #include "src/srun/allocate.h"
-#include "src/srun/env.h"
 #include "src/srun/io.h"
 #include "src/srun/job.h"
 #include "src/srun/gmpi.h"
@@ -97,8 +96,7 @@ static char *_build_script (char *pathname, int file_type);
 static char *_get_shell (void);
 static int   _is_file_text (char *, char**);
 static int   _run_batch_job (void);
-static int   _run_job_script(job_t *job);
-static int   _set_batch_script_env(job_t *job);
+static int   _run_job_script(job_t *job, env_t *env);
 static int   _set_rlimit_env(void);
 static char *_task_count_string(job_t *job);
 static void  _switch_standalone(job_t *job);
@@ -111,17 +109,18 @@ int srun(int ac, char **av)
 	job_t *job;
 	char *task_cnt, *bgl_part_id = NULL;
 	int exitcode = 0;
+	env_t *env = xmalloc(sizeof(env_t));
 
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
 	log_init(xbasename(av[0]), logopt, 0, NULL);
-
+		
 	/* set default options, process commandline arguments, and
 	 * verify some basic values
 	 */
 	initialize_and_process_args(ac, av);
 
-
+	
 	/* reinit log with new verbosity (if changed by command line)
 	 */
 	if (_verbose || opt.quiet) {
@@ -161,7 +160,8 @@ int srun(int ac, char **av)
 
 	} else if ( (resp = existing_allocation()) ) {
 		if (opt.allocate) {
-			error("job %u already has an allocation", resp->job_id);
+			error("job %u already has an allocation", 
+			      resp->job_id);
 			exit(1);
 		}
 		if (job_resp_hack_for_step(resp))	/* FIXME */
@@ -188,10 +188,11 @@ int srun(int ac, char **av)
 		job = job_create_allocation(resp); 
 		if (msg_thr_create(job) < 0)
 			job_fatal(job, "Unable to create msg thread");
-		exitcode = _run_job_script(job);
+		exitcode = _run_job_script(job, env);
 		job_destroy(job,exitcode);
 
 		debug ("Spawned srun shell terminated");
+		xfree(env);
 		exit (exitcode);
 
 	} else if (mode == MODE_ATTACH) {
@@ -224,21 +225,22 @@ int srun(int ac, char **av)
 	/*
 	 *  Enhance environment for job
 	 */
-	setenvf("SLURM_NODELIST=%s", job->nodelist);
-	setenvf("SLURM_JOBID=%u",    job->jobid);
-	if (opt.nprocs_set)
-		setenvf("SLURM_NPROCS=%d",   opt.nprocs);
-	setenvf("SLURM_NNODES=%d",   job->nhosts);
-	setenvf("SLURM_TASKS_PER_NODE=%s", task_cnt = _task_count_string (job));
-	xfree(task_cnt);
-	setenvf("SLURM_DISTRIBUTION=%s",
-		format_distribution_t (opt.distribution));
-
-	if (job->select_jobinfo)
-		select_g_get_jobinfo(job->select_jobinfo, 
-				SELECT_DATA_PART_ID, &bgl_part_id);
-	if (bgl_part_id)
-		setenvf("MPIRUN_PARTITION=%s", bgl_part_id);
+	
+	env->nprocs = opt.nprocs;
+	env->cpus_per_task = opt.cpus_per_task;
+	env->distribution = opt.distribution;
+	env->overcommit = opt.overcommit;
+	env->slurmd_debug = opt.slurmd_debug;
+	env->labelio = opt.labelio;
+	if(job) {
+		env->select_jobinfo = job->select_jobinfo;
+		env->jobid = job->jobid;
+		env->nhosts = job->nhosts;
+		env->nodelist = job->nodelist;
+		env->task_count = _task_count_string (job);
+	}
+	
+	setup_env(env);
 
 	if (slurm_get_mpich_gm_dir() && getenv("GMPI_PORT") == NULL) {
 		/*
@@ -250,13 +252,15 @@ int srun(int ac, char **av)
 		char *port = NULL;
 		if (gmpi_thr_create(job, &port))
 			job_fatal(job, "Unable to create GMPI thread");
-		setenvf("GMPI_PORT=%s", port);
+		setenvf(NULL, "GMPI_PORT", "%s", port);
 		xfree(port);
-		setenvf("GMPI_SHMEM=1");
-		setenvf("GMPI_MAGIC=%u", job->jobid);
-		setenvf("GMPI_NP=%d", opt.nprocs);
-		setenvf("GMPI_BOARD=-1"); /* FIXME for multi-board config. */
-		setenvf("SLURM_GMPI=1"); /* mark for slurmd */
+		setenvf(NULL, "GMPI_SHMEM", "1");
+		setenvf(NULL, "GMPI_MAGIC", "%u", job->jobid);
+		setenvf(NULL, "GMPI_NP", "%d", opt.nprocs);
+		setenvf(NULL, 
+			"GMPI_BOARD", 
+			"-1"); /* FIXME for multi-board config.*/
+		setenvf(NULL, "SLURM_GMPI", "1"); /* mark for slurmd */
 	}
 
 	if (msg_thr_create(job) < 0)
@@ -409,8 +413,6 @@ _run_batch_job(void)
 		error ("unable to build script from file %s", remote_argv[0]);
 		return SLURM_ERROR;
 	}
-
-	_set_batch_script_env (NULL);
 
 	if (!(req = job_desc_msg_create_from_opts (script)))
 		fatal ("Unable to create job request");
@@ -607,112 +609,6 @@ _build_script (char *fname, int file_type)
 	return buffer;
 }
 
-
-static int
-_set_batch_script_env(job_t *job)
-{
-	int rc = SLURM_SUCCESS;
-	char *dist = NULL;
-	char *p;
-	struct utsname name;
-
-	if ( opt.nprocs_set
-	   && setenvf("SLURM_NPROCS=%u", opt.nprocs)) {
-		error("Unable to set SLURM_NPROCS environment variable");
-		rc = SLURM_FAILURE;
-	}
-
-	if ( opt.cpus_set 
-	   && setenvf("SLURM_CPUS_PER_TASK=%u", opt.cpus_per_task) ) {
-		error("Unable to set SLURM_CPUS_PER_TASK");
-		rc = SLURM_FAILURE;
-	}
-
-	if (job && opt.distribution != SRUN_DIST_UNKNOWN) {
-		dist = (opt.distribution == SRUN_DIST_BLOCK) ?  
-		       "block" : "cyclic";
-
-		if (setenvf("SLURM_DISTRIBUTION=%s", dist)) {
-			error("Can't set SLURM_DISTRIBUTION env variable");
-			rc = SLURM_FAILURE;
-		}
-	}
-
-	if ((opt.overcommit) &&
-	    (setenvf("SLURM_OVERCOMMIT=1"))) {
-		error("Unable to set SLURM_OVERCOMMIT environment variable");
-		rc = SLURM_FAILURE;
-	}
-
-	if ((opt.slurmd_debug) 
-	    && setenvf("SLURMD_DEBUG=%d", opt.slurmd_debug)) {
-		error("Can't set SLURMD_DEBUG environment variable");
-		rc = SLURM_FAILURE;
-	}
-
-	if (opt.labelio 
-	   && setenvf("SLURM_LABELIO=1")) {
-		error("Unable to set SLURM_LABELIO environment variable");
-		rc = SLURM_FAILURE;
-	}
-
-	if (job) {
-		char *bgl_part_id = NULL;
-		select_g_get_jobinfo(job->select_jobinfo, 
-				SELECT_DATA_PART_ID, &bgl_part_id);
-		if (bgl_part_id 
-		&& setenvf("MPIRUN_PARTITION=%s", bgl_part_id)) {
-			error("Can't set MPIRUN_PARTITION environment variable");
-			rc = SLURM_FAILURE;
-		}
-	}
-
-	/*
-	 * If no job has been allocated yet, just return. We are
-	 *  submitting a batch job.
-	 */
-	if (job == NULL)
-		return (rc);
-
-
-	if (job->jobid > 0) {
-		if (setenvf("SLURM_JOBID=%u", job->jobid)) {
-			error("Unable to set SLURM_JOBID environment");
-			rc = SLURM_FAILURE;
-		}
-	}
-
-	if (job->nhosts > 0) {
-		if (setenvf("SLURM_NNODES=%u", job->nhosts)) {
-			error("Unable to set SLURM_NNODES environment var");
-			rc = SLURM_FAILURE;
-		}
-	}
-
-	if (job->nodelist) {
-		if (setenvf("SLURM_NODELIST=%s", job->nodelist)) {
-			error("Unable to set SLURM_NODELIST environment var.");
-			rc = SLURM_FAILURE;
-		}
-	}
-	if ((p = _task_count_string (job))) {
-		if (setenvf ("SLURM_TASKS_PER_NODE=%s", p)) {
-			error ("Can't set SLURM_TASKS_PER_NODE env variable");
-			rc = SLURM_FAILURE;
-		}
-		xfree (p);
-	}
-
-	uname(&name);
-	if (strcasecmp(name.sysname, "AIX") == 0) {
-		/* Required for AIX/POE systems indicating pre-allocation */
-		setenvf("LOADLBATCH=yes");
-		setenvf("LOADL_ACTIVE=3.2.0");
-	}
-
-	return rc;
-}
-
 /* Set SLURM_RLIMIT_* environment variables with current resource 
  * limit values, reset RLIMIT_NOFILE to maximum possible value */
 static int _set_rlimit_env(void)
@@ -771,14 +667,15 @@ static int _set_rlimit_env(void)
 		}
 		
 		cur = (unsigned long) rlim->rlim_cur;
-
-		if (setenvf ("SLURM_RLIMIT_%s=%lu", r->var, cur) < 0) {
+		
+		if (setenvfs ("SLURM_RLIMIT_%s=%lu", r->var, cur)
+		    < 0) {
 			error ("unable to set RLIMIT_%s in environment",
 			       r->var);
 			rc = SLURM_FAILURE;
 			continue;
 		}
-
+		
 		debug ("propagating RLIMIT_%s=%lu", r->var, cur);
 	}
 
@@ -823,14 +720,28 @@ _print_script_exit_status(const char *argv0, int status)
 }
 
 /* allocation option specified, spawn a script and wait for it to exit */
-static int _run_job_script (job_t *job)
+static int _run_job_script (job_t *job, env_t *env)
 {
 	int   status, exitcode;
 	pid_t cpid;
 	char **argv = (remote_argv[0] ? remote_argv : NULL);
 
-	if (_set_batch_script_env(job) < 0) 
-		return 1;
+	env->nprocs = opt.nprocs;
+	env->cpus_per_task = opt.cpus_per_task;
+	env->distribution = opt.distribution;
+	env->overcommit = opt.overcommit;
+	env->slurmd_debug = opt.slurmd_debug;
+	env->labelio = opt.labelio;
+	if(job) {
+		env->select_jobinfo = job->select_jobinfo;
+		env->jobid = job->jobid;
+		env->nhosts = job->nhosts;
+		env->nodelist = job->nodelist;
+		env->task_count = _task_count_string (job);
+	}
+	
+	if (setup_env(env) != SLURM_SUCCESS) 
+		return SLURM_ERROR;
 
 	if (!argv) {
 		/*

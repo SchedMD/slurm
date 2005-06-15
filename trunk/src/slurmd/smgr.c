@@ -54,7 +54,7 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/slurm_jobacct.h"
-#include "src/common/setenvpf.h"
+#include "src/common/env.h"
 #include "src/common/switch.h"
 #include "src/common/xsignal.h"
 
@@ -598,14 +598,14 @@ _setup_env(slurmd_job_t *job, int taskid)
 {
 	task_info_t *t = job->task[taskid];
 
-	if (setenvpf(&job->env, "SLURM_NODEID",       "%d", job->nodeid) < 0)
+	if (setenvf(&job->env, "SLURM_NODEID",       "%d", job->nodeid) < 0)
 		return -1;
-	if (setenvpf(&job->env, "SLURM_CPUS_ON_NODE", "%d", job->cpus) < 0)
+	if (setenvf(&job->env, "SLURM_CPUS_ON_NODE", "%d", job->cpus) < 0)
 		return -1;
-	if (setenvpf(&job->env, "SLURM_PROCID",       "%d", t->gtid     ) < 0)
+	if (setenvf(&job->env, "SLURM_PROCID",       "%d", t->gtid     ) < 0)
 		return -1;
 	if (getenvp(job->env, "SLURM_GMPI")) {
-		if (setenvpf(&job->env, "GMPI_ID",    "%d", t->gtid) < 0)
+		if (setenvf(&job->env, "GMPI_ID",    "%d", t->gtid) < 0)
 			return -1;
 	}
 

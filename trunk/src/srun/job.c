@@ -181,7 +181,6 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 	i->cpus_per_node  = resp->cpus_per_node;
 	i->cpu_count_reps = resp->cpu_count_reps;
 	i->addrs          = resp->node_addr;
-
 	i->select_jobinfo = select_g_copy_jobinfo(resp->select_jobinfo);
 
 	job = _job_create_internal(i);
