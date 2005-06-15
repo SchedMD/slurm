@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * src/common/setenvpf.h - environment vector manipulation
+ * src/common/env.h - environment vector manipulation
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -23,8 +23,8 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
-#ifndef _SETENVPF_H
-#define _SETENVPF_H
+#ifndef _ENV_H
+#define _ENV_H
 
 #include <slurm/slurm.h>
 #include <sys/utsname.h>
