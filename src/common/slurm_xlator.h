@@ -208,8 +208,8 @@
 #define	packmem_array		slurm_packmem_array
 #define	unpackmem_array		slurm_unpackmem_array
 
-/* setenvpf.[ch] functions */
-#define	setenvpf		slurm_setenvpf
+/* env.[ch] functions */
+#define	setenvf 		slurm_setenvpf
 #define	unsetenvp		slurm_unsetenvp
 #define	getenvp			slurm_getenvp
 
@@ -255,7 +255,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
-#include "src/common/setenvpf.h"
+#include "src/common/env.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/strlcpy.h"
 #include "src/common/switch.h"

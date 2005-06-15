@@ -26,8 +26,41 @@
 #ifndef _SETENVPF_H
 #define _SETENVPF_H
 
-int	setenvpf(char ***envp, const char *name, const char *fmt, ...);
+#include <slurm/slurm.h>
+#include <sys/utsname.h>
+
+enum distribution_t {
+	SRUN_DIST_BLOCK 	= 0, 
+	SRUN_DIST_CYCLIC 	= 1,
+	SRUN_DIST_UNKNOWN 	= 2
+};
+
+typedef struct env_options {
+	int nprocs;		/* --nprocs=n,      -n n	*/
+	char *task_count;
+	bool nprocs_set;	/* true if nprocs explicitly set */
+	int  cpus_per_task;	/* --cpus-per-task=n, -c n	*/
+	bool cpus_set;		/* true if cpus_per_task explicitly set */
+	enum distribution_t
+		distribution;	/* --distribution=, -m dist	*/
+	bool overcommit;	/* --overcommit,   -O		*/
+	int  slurmd_debug;	/* --slurmd-debug, -D           */
+	bool labelio;		/* --label-output, -l		*/
+	select_jobinfo_t select_jobinfo;
+	uint32_t jobid;		/* assigned job id */
+	int nhosts;
+	char *nodelist;		/* nodelist in string form */
+	char **env;             /* job environment */
+	
+} env_t;
+
+
+int     envcount (char **env);
+int     setenvfs(const char *fmt, ...);
+int     setenvf(char ***envp, const char *name, const char *fmt, ...);
+//int	setenvpf(char ***envp, const char *name, const char *fmt, ...);
 void	unsetenvp(char **env, const char *name);
 char *	getenvp(char **env, const char *name);
+int     setup_env(env_t *env);
 
 #endif

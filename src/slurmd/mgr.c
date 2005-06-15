@@ -61,7 +61,7 @@
 #include "src/common/node_select.h"
 #include "src/common/fd.h"
 #include "src/common/safeopen.h"
-#include "src/common/setenvpf.h"
+#include "src/common/env.h"
 #include "src/common/slurm_jobacct.h"
 #include "src/common/switch.h"
 #include "src/common/xsignal.h"
@@ -202,7 +202,7 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 		status = errno;
 		goto cleanup;
 	}
-
+	
 	_set_job_log_prefix(job);
 
 	_setargs(job);
@@ -214,7 +214,6 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 
 	if ((job->argv[0] = _make_batch_script(msg, batchdir)) == NULL)
 		goto cleanup2;
-
 	if ((rc = _setup_batch_env(job, msg)) < 0)
 		goto cleanup2;
 
@@ -303,10 +302,10 @@ run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid,
 		argv[1] = NULL;
 
 		env[0]  = NULL;
-		setenvpf(&env, "SLURM_JOBID", "%u", jobid);
-		setenvpf(&env, "SLURM_UID",   "%u", uid);
+		setenvf(&env, "SLURM_JOBID", "%u", jobid);
+		setenvf(&env, "SLURM_UID",   "%u", uid);
 		if (bgl_part_id)
-			setenvpf(&env, "MPIRUN_PARTITION", "%s", bgl_part_id);
+			setenvf(&env, "MPIRUN_PARTITION", "%s", bgl_part_id);
 
 		execve(path, argv, env);
 		error("help! %m");
@@ -1034,36 +1033,28 @@ _setup_batch_env(slurmd_job_t *job, batch_job_launch_msg_t *msg)
 	char       buf[1024], *task_buf, *bgl_part_id = NULL;
 	struct utsname name;
 	hostlist_t hl = hostlist_create(msg->nodes);
-
+	env_t *env = xmalloc(sizeof(env_t));
+	int rc;
 	if (!hl)
 		return SLURM_ERROR;
 
 	hostlist_ranged_string(hl, 1024, buf);
-	setenvpf(&job->env, "SLURM_JOBID",    "%u", job->jobid);
-	setenvpf(&job->env, "SLURM_NPROCS",   "%u", msg->nprocs);
-	setenvpf(&job->env, "SLURM_NNODES",   "%u", hostlist_count(hl));
-	setenvpf(&job->env, "SLURM_NODELIST", "%s", buf);
+	
+	env->nprocs = msg->nprocs;
+	env->select_jobinfo = msg->select_jobinfo;
+	env->jobid = job->jobid;
+	env->nhosts = hostlist_count(hl);
 	hostlist_destroy(hl);
-
-	task_buf = _sprint_task_cnt(msg);
-	setenvpf(&job->env, "SLURM_TASKS_PER_NODE", "%s", task_buf);
-	xfree(task_buf); 
-
-	select_g_get_jobinfo(msg->select_jobinfo, 
-		SELECT_DATA_PART_ID, &bgl_part_id);
-	if (bgl_part_id) {
-		setenvpf(&job->env, "MPIRUN_PARTITION", "%s", bgl_part_id);
-		xfree(bgl_part_id);
-	}
- 
-	uname(&name);
-	if (strcasecmp(name.sysname, "AIX") == 0) {
-		/* Required for AIX/POE systems indicating pre-allocation */
-		setenvpf(&job->env, "LOADLBATCH", "yes");
-		setenvpf(&job->env, "LOADL_ACTIVE", "3.2.0");
-	}
+	env->nodelist = buf;
+	env->task_count = _sprint_task_cnt(msg);
+	env->env = job->env;
+	
+	rc = setup_env(env);
+	job->env = env->env;
+	xfree(env->task_count);
 
 	return 0;
+
 }
 
 static char *
@@ -1318,13 +1309,13 @@ _set_mgr_env(slurmd_job_t *job, slurm_addr *cli, slurm_addr *self)
 	if ((p = strchr (addrbuf, ':')) != NULL)
 		*p = '\0';
 
-	setenvpf (&job->env, "SLURM_LAUNCH_NODE_IPADDR", "%s", addrbuf);
+	setenvf (&job->env, "SLURM_LAUNCH_NODE_IPADDR", "%s", addrbuf);
 
 	if (getenvp(job->env, "SLURM_GMPI")) {
-		setenvpf (&job->env, "GMPI_MASTER", "%s", addrbuf);
+		setenvf (&job->env, "GMPI_MASTER", "%s", addrbuf);
 		slurm_print_slurm_addr (self, addrbuf, INET_ADDRSTRLEN);
 		if ((p = strchr (addrbuf, ':')) != NULL) *p = '\0';
-		setenvpf (&job->env, "GMPI_SLAVE", "%s", addrbuf);
+		setenvf (&job->env, "GMPI_SLAVE", "%s", addrbuf);
 	}
 
 	return;

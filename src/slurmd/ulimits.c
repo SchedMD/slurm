@@ -35,7 +35,7 @@
 #include <string.h>
 
 #include "src/common/log.h"
-#include "src/common/setenvpf.h" /* For unsetenvp() */
+#include "src/common/env.h" /* For unsetenvp() */
 #include "src/common/strlcpy.h"
 #include "src/common/xmalloc.h"
 

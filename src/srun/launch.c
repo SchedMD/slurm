@@ -44,7 +44,7 @@
 #include "src/srun/job.h"
 #include "src/srun/launch.h"
 #include "src/srun/opt.h"
-#include "src/srun/env.h"
+//#include "src/srun/env.h"
 
 extern char **environ;
 

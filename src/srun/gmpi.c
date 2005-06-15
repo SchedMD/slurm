@@ -42,7 +42,7 @@
 #include "src/common/xstring.h"
 
 #include "src/srun/allocate.h"
-#include "src/srun/env.h"
+//#include "src/srun/env.h"
 #include "src/srun/io.h"
 #include "src/srun/job.h"
 #include "src/srun/gmpi.h"

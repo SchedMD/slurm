@@ -36,6 +36,7 @@
 
 #include "src/common/macros.h" /* true and false */
 #include "src/srun/core-format.h"
+#include "src/common/env.h"
 
 #define MAX_THREADS	64
 #define MAX_USERNAME	9
@@ -56,12 +57,6 @@ enum modes {
 };
 
 enum modes mode;
-
-enum distribution_t {
-	SRUN_DIST_BLOCK 	= 0, 
-	SRUN_DIST_CYCLIC 	= 1,
-	SRUN_DIST_UNKNOWN 	= 2
-};
 
 enum mpi_t {
 	MPI_UNKNOWN     = 0,

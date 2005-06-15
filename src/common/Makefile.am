@@ -36,7 +36,7 @@ libcommon_la_SOURCES = 			\
 	plugrack.c plugrack.h		\
 	read_config.c read_config.h	\
 	node_select.c node_select.h	\
-	setenvpf.c setenvpf.h		\
+	env.c env.h      		\
 	slurm_cred.h       		\
 	slurm_cred.c			\
 	slurm_errno.c			\

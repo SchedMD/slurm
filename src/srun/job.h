@@ -143,7 +143,7 @@ typedef struct srun_job {
 	FILE *errstream;
 	int   stdinfd;
 	bool *stdin_eof;  /* true if task i processed stdin eof */
-
+	
 	select_jobinfo_t select_jobinfo;
 } job_t;
 
