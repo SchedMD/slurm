@@ -36,8 +36,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+//#include "src/common/env.h" 
 #include "src/srun/core-format.h"
-#include "src/srun/env.h"
 #include "src/common/log.h"
 
 #define CORE_NORMAL 0
@@ -140,9 +140,9 @@ int core_format_enable (core_format_t type)
 	case CORE_NORMAL: case CORE_INVALID:
 		break;
 	case CORE_LCB:
-		setenvf ("LWCF_CORE_FORMAT=LCB");
+		setenvfs ("LWCF_CORE_FORMAT=LCB");
 	case CORE_LIGHT:
-		setenvf ("LD_PRELOAD=" LIB_LIGHT);
+		setenvfs ("LD_PRELOAD=" LIB_LIGHT);
 		break;
 	}
 
