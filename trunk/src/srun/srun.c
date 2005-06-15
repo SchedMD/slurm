@@ -726,8 +726,10 @@ static int _run_job_script (job_t *job, env_t *env)
 	pid_t cpid;
 	char **argv = (remote_argv[0] ? remote_argv : NULL);
 
-	env->nprocs = opt.nprocs;
-	env->cpus_per_task = opt.cpus_per_task;
+	if (opt.nprocs_set)
+		env->nprocs = opt.nprocs;
+	if (opt.cpus_set)
+		env->cpus_per_task = opt.cpus_per_task;
 	env->distribution = opt.distribution;
 	env->overcommit = opt.overcommit;
 	env->slurmd_debug = opt.slurmd_debug;
