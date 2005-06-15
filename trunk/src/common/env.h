@@ -58,7 +58,6 @@ typedef struct env_options {
 int     envcount (char **env);
 int     setenvfs(const char *fmt, ...);
 int     setenvf(char ***envp, const char *name, const char *fmt, ...);
-//int	setenvpf(char ***envp, const char *name, const char *fmt, ...);
 void	unsetenvp(char **env, const char *name);
 char *	getenvp(char **env, const char *name);
 int     setup_env(env_t *env);
