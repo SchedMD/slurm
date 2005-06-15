@@ -114,7 +114,7 @@ SLURM plugins for IBM AIX and Federation switch.
 
 %build
 %configure --program-prefix=%{?_program_prefix:%{_program_prefix}} \
-    --sysconfdir=/etc/slurm		\
+    --sysconfdir=%{_sysconfdir}		\
     %{?_enable_debug}
 
 #
@@ -134,13 +134,22 @@ rm -rf "$RPM_BUILD_ROOT"
 mkdir -p "$RPM_BUILD_ROOT"
 DESTDIR="$RPM_BUILD_ROOT" make install
 
-install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/init.d/slurm
+if test @HAVE_AIX@ == "no"; then
+   install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/init.d/slurm
+fi
 install -D -m644 etc/slurm.conf.example $RPM_BUILD_ROOT/etc/slurm/slurm.conf.example
 install -D -m644 etc/bluegene.conf.example $RPM_BUILD_ROOT/etc/slurm/bluegene.conf.example
 install -D -m644 etc/federation.conf.example $RPM_BUILD_ROOT/etc/slurm/federation.conf.example
 
 # Delete unpackaged files:
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
+
+# Build conditional file list for main package
+LIST=./slurm.files
+touch $LIST
+if test @HAVE_AIX@ == "no"; then
+   echo '%config(noreplace) /etc/init.d/slurm' >> $LIST
+fi
 
 # Build file lists for optional plugin packages
 for plugin in auth_munge auth_authd sched_wiki switch_elan; do
@@ -173,7 +182,7 @@ echo "%config /etc/slurm/bluegene.conf.example"   >> $LIST
 rm -rf $RPM_BUILD_ROOT
 #############################################################################
 
-%files
+%files -f slurm.files
 %defattr(-,root,root,0755)
 %doc AUTHORS
 %doc NEWS
@@ -190,7 +199,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 %{_mandir}/man5/*
 %{_mandir}/man8/*
-%dir /etc/slurm
+%dir %{_sysconfdir}
 %dir %{_libdir}/slurm
 %{_libdir}/slurm/checkpoint_none.so
 %{_libdir}/slurm/jobacct_log.so
@@ -206,8 +215,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/select_linear.so
 %{_libdir}/slurm/switch_none.so
 %dir %{_libdir}/slurm/src
-%config(noreplace) /etc/init.d/slurm
-%config /etc/slurm/slurm.conf.example
+%config %{_sysconfdir}/slurm.conf.example
 #############################################################################
 
 %files devel

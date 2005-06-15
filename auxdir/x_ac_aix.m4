@@ -28,7 +28,8 @@ AC_DEFUN([X_AC_AIX],
             AC_DEFINE(HAVE_AIX, 1, [Define to 1 for AIX operating system])
             AC_DEFINE(USE_ALIAS, 0, 
                       [Define slurm_ prefix function aliases for plusins]) ;;
-      *)    AC_DEFINE(USE_ALIAS, 1, 
+      *)    ac_have_aix="no"
+            AC_DEFINE(USE_ALIAS, 1, 
                       [Define slurm_ prefix function aliases for plugins]) ;;
    esac
 
@@ -36,7 +37,7 @@ AC_DEFUN([X_AC_AIX],
    AC_SUBST(LIB_LDFLAGS)
    AC_SUBST(SO_LDFLAGS)
    AM_CONDITIONAL(HAVE_AIX, test "x$ac_have_aix" = "xyes")
-   AC_SUBST(HAVE_AIX)
+   AC_SUBST(HAVE_AIX, "$ac_have_aix")
 
    if test "x$ac_have_aix" = "xyes"; then
       AC_ARG_WITH(proctrack,
