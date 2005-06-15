@@ -263,25 +263,31 @@ rm -rf $RPM_BUILD_ROOT
 #fi
 
 %post
-/sbin/ldconfig %{_libdir}
-/sbin/ldconfig %{_libdir}
-if [ $1 = 1 ]; then
-    [ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
+if test @HAVE_AIX@ == "no"; then
+    /sbin/ldconfig %{_libdir}
+    /sbin/ldconfig %{_libdir}
+    if [ $1 = 1 ]; then
+        [ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
+    fi
 fi
 
 %preun
-if [ "$1" = 0 ]; then
-    if [ -x /etc/init.d/slurm ]; then
-        [ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
-        if /etc/init.d/slurm status | grep -q running; then
-            /etc/init.d/slurm stop
+if test @HAVE_AIX@ == "no"; then
+    if [ "$1" = 0 ]; then
+        if [ -x /etc/init.d/slurm ]; then
+            [ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
+            if /etc/init.d/slurm status | grep -q running; then
+                /etc/init.d/slurm stop
+            fi
         fi
     fi
 fi
 
 %postun
-if [ "$1" = 0 ]; then
-    /sbin/ldconfig %{_libdir}
+if test @HAVE_AIX@ == "no"; then
+    if [ "$1" = 0 ]; then
+        /sbin/ldconfig %{_libdir}
+    fi
 fi
 #############################################################################
 
