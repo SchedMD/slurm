@@ -665,22 +665,27 @@ int switch_p_job_attach ( switch_jobinfo_t jobinfo, char ***env,
 		return SLURM_ERROR;
 	}
 
-	if (setenvpf(env, "RMS_RANK",   "%lu", (unsigned long) rank  ) < 0)
+	if (slurm_setenvpf(env, "RMS_RANK",   "%lu", (unsigned long) rank  ) 
+	    < 0)
 		return SLURM_ERROR;
-	if (setenvpf(env, "RMS_NODEID", "%lu", (unsigned long) nodeid) < 0)
+	if (slurm_setenvpf(env, "RMS_NODEID", "%lu", (unsigned long) nodeid) 
+	    < 0)
 		return SLURM_ERROR;
-	if (setenvpf(env, "RMS_PROCID", "%lu", (unsigned long) rank  ) < 0)
+	if (slurm_setenvpf(env, "RMS_PROCID", "%lu", (unsigned long) rank  ) 
+	    < 0)
 		return SLURM_ERROR;
-	if (setenvpf(env, "RMS_NNODES", "%lu", (unsigned long) nnodes) < 0)
+	if (slurm_setenvpf(env, "RMS_NNODES", "%lu", (unsigned long) nnodes) 
+	    < 0)
 		return SLURM_ERROR;
-	if (setenvpf(env, "RMS_NPROCS", "%lu", (unsigned long) nprocs) < 0)
+	if (slurm_setenvpf(env, "RMS_NPROCS", "%lu", (unsigned long) nprocs) 
+	    < 0)
 		return SLURM_ERROR;
 
 	/* 
 	 * Tell libelan the key to use for Elan state shmem segment
 	 */
 	if ((id = qsw_statkey ((qsw_jobinfo_t) jobinfo)) > 0)
-		setenvpf (env, "ELAN_STATKEY", "0x%x", id);
+		slurm_setenvpf (env, "ELAN_STATKEY", "0x%x", id);
 	
 
 
