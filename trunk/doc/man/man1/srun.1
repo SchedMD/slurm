@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "March 2005" "srun 0.5" "slurm components"
+.TH SRUN "1" "June 2005" "srun 0.5" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -362,10 +362,18 @@ allocated to this job. The host list will be assumed to be a filename
 if it contains a "/"character.
 
 .PP
+The following options support AIX systems, but may be applicable to 
+other systems as well. Since POE is used to launch tasks, these 
+options are not normally used.
+.TP
+\fB\-\-network\fR=\fItype\fR
+Specify the communication protocol to be used. 
+
+.PP
 The following options support Blue Gene systems, but may be 
 applicable to other systems as well.
 .TP
-\fB\--g\fR, fB\-\-geometry\fR=\fIXxYxZ\fR
+\fB\-g\fR, fB\-\-geometry\fR=\fIXxYxZ\fR
 Specify the geometry requirements for the job. The three numbers 
 represent the required geometry giving dimensions in the X, Y and 
 Z directions. For example "\-\-geometry=2x3x4", specifies a block 

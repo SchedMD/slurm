@@ -1558,10 +1558,16 @@ static void _help(void)
 "  -x, --exclude=hosts...      exclude a specific list of hosts\n"
 "  -Z, --no-allocate           don't allocate nodes (must supply -w)\n"
 "\n"
-"Consumable resources related options\n" 
+"Consumable resources related options:\n" 
 "      --exclusive             allocate nodes in exclusive mode when\n" 
 "                              cpu consumable resource is enabled\n"
 "\n"
+#ifdef HAVE_AIX				/* AIX/Federation specific options */
+  "AIX related options:\n"
+  "  --network=type              communication protocol to be used\n"
+  "\n"
+#endif
+
 #ifdef HAVE_BGL				/* Blue gene specific options */
   "Blue Gene related options:\n"
   "  -g, --geometry=XxYxZ        geometry constraints of the job\n"
@@ -1569,7 +1575,7 @@ static void _help(void)
   "      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
   "                              if not set, then tries to fit TORUS else MESH\n"
   "      --node-use=type         mode of node use VIRTUAL or COPROCESSOR\n"
-"\n"
+  "\n"
 #endif
 "Help options:\n"
 "      --help                  show this help message\n"
