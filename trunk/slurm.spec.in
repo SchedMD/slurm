@@ -137,7 +137,7 @@ rm -rf "$RPM_BUILD_ROOT"
 mkdir -p "$RPM_BUILD_ROOT"
 DESTDIR="$RPM_BUILD_ROOT" make install
 
-if test @HAVE_AIX@ == "no"; then
+if test @HAVE_AIX@ == no ; then
    install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/init.d/slurm
 fi
 install -D -m644 etc/slurm.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.example
@@ -150,8 +150,11 @@ rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
 # Build conditional file list for main package
 LIST=./slurm.files
 touch $LIST
-if test @HAVE_AIX@ == "no"; then
+if test @HAVE_AIX@ == no ; then
    echo "%config(noreplace) /etc/init.d/slurm"	>> $LIST
+else
+   echo @HAVE_AIX@ >> $LIST
+   echo "%config /etc/init.d/slurm"		>> $LIST
 fi
 echo "%doc AUTHORS"				>> $LIST
 echo "%doc NEWS"				>> $LIST
@@ -266,7 +269,7 @@ rm -rf $RPM_BUILD_ROOT
 #fi
 
 %post
-if test @HAVE_AIX@ == "no"; then
+if test @HAVE_AIX@ == no ; then
     /sbin/ldconfig %{_libdir}
     /sbin/ldconfig %{_libdir}
     if [ $1 = 1 ]; then
@@ -275,7 +278,7 @@ if test @HAVE_AIX@ == "no"; then
 fi
 
 %preun
-if test @HAVE_AIX@ == "no"; then
+if test @HAVE_AIX@ == no ; then
     if [ "$1" = 0 ]; then
         if [ -x /etc/init.d/slurm ]; then
             [ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
@@ -287,7 +290,7 @@ if test @HAVE_AIX@ == "no"; then
 fi
 
 %postun
-if test @HAVE_AIX@ == "no"; then
+if test @HAVE_AIX@ == no ; then
     if [ "$1" = 0 ]; then
         /sbin/ldconfig %{_libdir}
     fi
