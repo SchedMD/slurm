@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     killing it to avoid killing system daemon (race condition).
  -- srun --output or --error file names of "none" mapped to /dev/null for 
     batch jobs rather than a file actually named "none".
+ -- BGL: don't try to read bglblock state until they are all created to 
+    avoid having BGL Bridge API seg fault.
 
 * Changes in SLURM 0.5.0-pre10
 ==============================
