@@ -24,16 +24,21 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   AC_SUBST(SSL_LIBS)
   AC_SUBST(SSL_CPPFLAGS)
   
-  if test "x$ac_have_aix" = "xyes"; then
-  	SSL_LIBS="-lcrypto-static"
-  else
-  	SSL_LIBS="-lcrypto"
-  fi
+  SSL_LIBS="-lcrypto"
   
   AC_ARG_WITH(ssl,
     AC_HELP_STRING([--with-ssl=PATH],[Specify path to OpenSSL installation]),
-    [ tryssldir=$withval ]
-  )
+    [
+  	tryssldir=$withval
+
+  	# Hack around a libtool bug on AIX.
+  	# libcrypto is in a non-standard library path on AIX (/opt/freeware
+  	# which is specified with --with-ssl), and libtool is not setting
+  	# the correct runtime library path in the binaries.
+  	if test "x$ac_have_aix" = "xyes"; then
+  		SSL_LIBS="-lcrypto-static"
+  	fi
+    ])
   
   saved_LIBS="$LIBS"
   saved_LDFLAGS="$LDFLAGS"
