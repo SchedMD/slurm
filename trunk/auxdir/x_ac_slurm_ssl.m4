@@ -24,7 +24,11 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   AC_SUBST(SSL_LIBS)
   AC_SUBST(SSL_CPPFLAGS)
   
-  SSL_LIBS="-lcrypto"
+  if test "x$ac_have_aix" = "xyes"; then
+  	SSL_LIBS="-lcrypto-static"
+  else
+  	SSL_LIBS="-lcrypto"
+  fi
   
   AC_ARG_WITH(ssl,
     AC_HELP_STRING([--with-ssl=PATH],[Specify path to OpenSSL installation]),
