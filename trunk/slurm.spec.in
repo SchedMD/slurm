@@ -137,7 +137,7 @@ rm -rf "$RPM_BUILD_ROOT"
 mkdir -p "$RPM_BUILD_ROOT"
 DESTDIR="$RPM_BUILD_ROOT" make install
 
-if test @HAVE_AIX@ == no; then
+if test @HAVE_AIX@ == "no"; then
    install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/init.d/slurm
 fi
 install -D -m644 etc/slurm.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.example
@@ -150,7 +150,7 @@ rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
 # Build conditional file list for main package
 LIST=./slurm.files
 touch $LIST
-if test @HAVE_AIX@ == no; then
+if test @HAVE_AIX@ == "no"; then
    echo "%config(noreplace) /etc/init.d/slurm"	>> $LIST
 fi
 echo "%doc AUTHORS"				>> $LIST
