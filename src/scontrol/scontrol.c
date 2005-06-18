@@ -1,6 +1,7 @@
 /*****************************************************************************\
  *  scontrol - administration tool for slurm. 
  *	provides interface to read, write, update, and configurations.
+ *  $Id*
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -1826,7 +1827,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
   input for the update keyword, editing as needed.                         \n\
                                                                            \n\
   <CH_OP> identify checkpoint operations and may be \"disable\", \"enable\",\n\
-  \"create\", \"vacate\", \"restart\", or \"error\". \n\
+  \"able\", \"create\", \"vacate\", \"restart\", or \"error\". \n\
                                                                            \n\
   All commands and options are case-insensitive, although node names and   \n\
   partition names tests are case-sensitive (node names \"LX\" and \"lx\"   \n\
@@ -1867,7 +1868,15 @@ static int _checkpoint(char *op, char *job_step_id_str)
 		return 0;
 	}
 
-	if (strncasecmp(op, "disable", 3) == 0)
+	if (strncasecmp(op, "able", 2) == 0) {
+		rc = slurm_checkpoint_able (job_id, step_id);
+		if (rc == SLURM_SUCCESS)
+			printf("Yes\n");
+		else if (slurm_get_errno() == ESLURM_DISABLED) {
+			printf("No\n");
+			rc = SLURM_SUCCESS;	/* not real error */
+		}
+	} else if (strncasecmp(op, "disable", 3) == 0)
 		rc = slurm_checkpoint_disable (job_id, step_id);
 	else if (strncasecmp(op, "enable", 2) == 0)
 		rc = slurm_checkpoint_enable (job_id, step_id);
@@ -1876,8 +1885,8 @@ static int _checkpoint(char *op, char *job_step_id_str)
 		rc = slurm_checkpoint_create (job_id, step_id, CKPT_WAIT);
 	else if (strncasecmp(op, "vacate", 2) == 0)
 		rc = slurm_checkpoint_vacate (job_id, step_id, CKPT_WAIT);
-	else if (strncasecmp(op, "resume", 2) == 0)
-		rc = slurm_checkpoint_resume (job_id, step_id);
+	else if (strncasecmp(op, "restart", 2) == 0)
+		rc = slurm_checkpoint_restart (job_id, step_id);
 
 	else if (strncasecmp(op, "error", 2) == 0) {
 		rc = slurm_checkpoint_error (job_id, step_id, 

@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  checkpoint.c - Process checkpoint related functions.
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -71,6 +72,18 @@ static int _checkpoint_op (uint16_t op, uint16_t data,
 }
 
 /*
+ * slurm_checkpoint_able - determine if the specified job step can presently
+ *	be checkpointed
+ * IN job_id  - job on which to perform operation
+ * IN step_id - job step on which to perform operation
+ * RET 0 (can be checkpoined) or a slurm error code
+ */
+extern int slurm_checkpoint_able (uint32_t job_id, uint32_t step_id)
+{
+	return _checkpoint_op (CHECK_ABLE, 0, job_id, step_id);
+}
+
+/*
  * slurm_checkpoint_disable - disable checkpoint requests for some job step
  * IN job_id  - job on which to perform operation
  * IN step_id - job step on which to perform operation
@@ -122,14 +135,14 @@ extern int slurm_checkpoint_vacate (uint32_t job_id, uint32_t step_id,
 }
 
 /*
- * slurm_checkpoint_resume - resume execution of a checkpointed job step.
+ * slurm_checkpoint_restart - restart execution of a checkpointed job step.
  * IN job_id  - job on which to perform operation
  * IN step_id - job step on which to perform operation
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_resume (uint32_t job_id, uint32_t step_id)
+extern int slurm_checkpoint_restart (uint32_t job_id, uint32_t step_id)
 {
-	return _checkpoint_op (CHECK_RESUME, 0, job_id, step_id);
+	return _checkpoint_op (CHECK_RESTART, 0, job_id, step_id);
 }
 
 /*
@@ -159,8 +172,8 @@ extern int slurm_checkpoint_failed (uint32_t job_id, uint32_t step_id,
 }
 
 /*
- * slurm_checkpoint_error - gather error information for the last checkpoint operation 
- * for some job step
+ * slurm_checkpoint_error - gather error information for the last checkpoint 
+ *	operation for some job step
  * IN job_id  - job on which to perform operation
  * IN step_id - job step on which to perform operation
  * OUT ckpt_errno - error number associated with the last checkpoint operation,

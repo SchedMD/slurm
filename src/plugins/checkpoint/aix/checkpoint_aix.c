@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  checkpoint_aix.c - AIX slurm checkpoint plugin.
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -111,6 +112,12 @@ extern int slurm_ckpt_op ( uint16_t op, uint16_t data,
 	xassert(check_ptr);
 
 	switch (op) {
+		case CHECK_ABLE:
+			if (check_ptr->disabled)
+				rc = ESLURM_DISABLED;
+			else
+				rc = SLURM_SUCCESS;
+			break;
 		case CHECK_COMPLETE:
 			check_ptr->ckpt_errno = 0;
 			break;
@@ -125,7 +132,7 @@ extern int slurm_ckpt_op ( uint16_t op, uint16_t data,
 			break;
 		case CHECK_CREATE:
 		case CHECK_VACATE:
-		case CHECK_RESUME:
+		case CHECK_RESTART:
 			rc = ESLURM_NOT_SUPPORTED;
 			break;
 		default:

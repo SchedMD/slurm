@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  checkpoint.c - implementation-independent checkpoint functions
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

@@ -167,7 +167,9 @@ touch $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_federation.so &&
   echo %{_libdir}/slurm/switch_federation.so      >> $LIST
 test -f  $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_aix.so &&
-  echo %{_libdir}/slurm/proctrack_aix.so          >> $LIST 
+  echo %{_libdir}/slurm/proctrack_aix.so          >> $LIST
+test -f  $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_aix.so &&
+  echo %{_libdir}/slurm/checkpoint_aix.so         >> $LIST
 echo "%config %{_sysconfdir}/federation.conf.example" >> $LIST
 
 LIST=./bluegene.files
@@ -294,6 +296,8 @@ fi
 
 
 %changelog
+* Fri Jun 17 2005 Morris Jette <jette1@llnl.gov>
+- added checkpoint_aix to aix_federation rpm
 * Tue Jun 14 2005 Chris Morrone <morrone2@llnl.gov>
 - include /etc/init.d/slurm only on non-AIX systems
 * Wed Jun 01 2005 Morris Jette <jette1@llnl.gov>
