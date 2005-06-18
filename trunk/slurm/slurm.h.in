@@ -1138,6 +1138,15 @@ extern int slurm_shutdown PARAMS(( uint16_t core ));
 \*****************************************************************************/
 
 /*
+ * slurm_checkpoint_able - determine if the specified job step can presently
+ *	be checkpointed
+ * IN job_id  - job on which to perform operation
+ * IN step_id - job step on which to perform operation
+ * RET 0 (can be checkpoined) or a slurm error code
+ */
+extern int slurm_checkpoint_able (uint32_t job_id, uint32_t step_id);
+
+/*
  * slurm_checkpoint_disable - disable checkpoint requests for some job step
  * IN job_id  - job on which to perform operation
  * IN step_id - job step on which to perform operation
@@ -1177,12 +1186,12 @@ extern int slurm_checkpoint_vacate (uint32_t job_id, uint32_t step_id,
 		uint16_t max_wait);
 
 /*
- * slurm_checkpoint_resume - resume execution of a checkpointed job step.
+ * slurm_checkpoint_restart - restart execution of a checkpointed job step.
  * IN job_id  - job on which to perform operation
  * IN step_id - job step on which to perform operation
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_resume (uint32_t job_id, uint32_t step_id);
+extern int slurm_checkpoint_restart (uint32_t job_id, uint32_t step_id);
 
 /*
  * slurm_checkpoint_complete - note the successful completion of a job step's 

@@ -1,6 +1,7 @@
 /*****************************************************************************\
  *  step_mgr.c - manage the job step information of slurm
- *****************************************************************************
+ *  $Id$
+*****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, Joseph Ekstrom <ekstrom1@llnl.gov>
@@ -716,7 +717,8 @@ bool step_on_node(struct job_record  *job_ptr, struct node_record *node_ptr)
  * IN op - the operation to be performed (see enum check_opts)
  * IN data - operation-specific data
  * IN job_id - id of the job
- * IN step_id - id of the job step, NO_VAL indicates all steps of the indicated job
+ * IN step_id - id of the job step, NO_VAL indicates all steps of the 
+ *	indicated job
  * IN uid - user id of the user issuing the RPC
  * IN conn_fd - file descriptor on which to send reply
  * RET 0 on success, otherwise ESLURM error code
@@ -763,7 +765,8 @@ extern int job_step_checkpoint(uint16_t op, uint16_t data,
 				error_reply = true;
 				break;
 			} else {
-				update_rc = checkpoint_op(op, data, (void *)step_ptr);
+				update_rc = checkpoint_op(op, data, 
+					(void *)step_ptr);
 				rc = MAX(rc, update_rc);
 			}
 		}

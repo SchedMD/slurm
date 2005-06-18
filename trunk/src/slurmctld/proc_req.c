@@ -1870,11 +1870,14 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 
 	START_TIMER;
 	switch (ckpt_ptr->op) {
+		case CHECK_ABLE:
+			op = "able";
+			break;
 		case CHECK_COMPLETE:
-			op = "disable";
+			op = "complete";
 			break;
 		case CHECK_CREATE:
-			op = "disable";
+			op = "create";
 			break;
 		case CHECK_DISABLE:
 			op = "disable";
@@ -1883,19 +1886,19 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 			op = "enable";
 			break;
 		case CHECK_ERROR:
-			op = "disable";
+			op = "error";
 			break;
 		case CHECK_FAILED:
-			op = "disable";
+			op = "failed";
 			break;
-		case CHECK_RESUME:
-			op = "disable";
+		case CHECK_RESTART:
+			op = "restart";
 			break;
 		case CHECK_VACATE:
-			op = "disable";
+			op = "vacate";
 			break;
 		default:
-			op = "unknown operation";
+			op = "unknown";
 	}
 	debug2("Processing RPC: REQUEST_CHECKPOINT %s", op);
 	uid = g_slurm_auth_get_uid(msg->cred);
@@ -1911,10 +1914,10 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 	/* return result */
 	if (error_code) {
 		if (ckpt_ptr->step_id == NO_VAL)
-			info("_slurm_rpc_checkpoint for %u: %s", 
+			info("_slurm_rpc_checkpoint %s %u: %s", op, 
 				ckpt_ptr->job_id, slurm_strerror(error_code));
 		else
-			info("_slurm_rpc_checkpoint for %u.%u: %s", 
+			info("_slurm_rpc_checkpoint %s %u.%u: %s", op, 
 				ckpt_ptr->job_id, ckpt_ptr->step_id, 
 				slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
@@ -1922,10 +1925,10 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 		;	/* Response already sent */
 	} else {
 		if (ckpt_ptr->step_id == NO_VAL)
-			info("_slurm_rpc_checkpoint complete for %u %s",
+			info("_slurm_rpc_checkpoint %s for %u %s", op,
 				ckpt_ptr->job_id, TIME_STR);
 		else
-			info("_slurm_rpc_checkpoint complete for %u.%u %s",
+			info("_slurm_rpc_checkpoint %s for %u.%u %s", op,
 				ckpt_ptr->job_id, ckpt_ptr->step_id, TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 

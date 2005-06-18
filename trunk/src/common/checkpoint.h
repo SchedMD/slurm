@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  checkpoint.h - implementation-independent checkpoint API definitions. 
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,13 +34,14 @@
 
 /* Define checkpoint options */
 enum check_opts {
+	CHECK_ABLE,		/* able to checkpoint now */
 	CHECK_DISABLE,		/* disable checkpointing */
 	CHECK_ENABLE,		/* enable checkpointing */
 	CHECK_CREATE,		/* create a checkpoint for this job, 
 				 * job continues execution afterwards */
 	CHECK_VACATE,		/* create a checkpoint for this job,
 				 * job terminates afterwards */
-	CHECK_RESUME,		/* resume a previously checkpointed job */
+	CHECK_RESTART,		/* restart a previously checkpointed job */
 	CHECK_COMPLETE,		/* a checkpoint of this job has completed */
 	CHECK_FAILED,		/* a checkpoint of this job has failed */
 	CHECK_ERROR		/* get error info */

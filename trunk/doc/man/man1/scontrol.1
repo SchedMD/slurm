@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "April 2005" "scontrol 0.5" "Slurm components"
+.TH SCONTROL "1" "June 2005" "scontrol 0.5" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -62,11 +62,13 @@ Instruct the Slurm controller to terminate immediately and generate a core file.
 \fIcheckpoint\fP \fICKPT_OP\fP \fIID\fP
 Perform a checkpoint activity on the job step(s) with the specified identification.
 \fICKPT_OP\fP may be \fIdisable\fP, \fIenable\fP, 
+\fIable\fP (test if presently not disabled),
 \fIcreate\fP (create a checkpoint and let the job step continue), 
 \fIvacate\fP (create a checkpoint and terminate the job step), 
 \fIerror\fP (report the reason for the last checkpoint failure), 
-or \fIresume\fP (resume execution of the previously checkpointed job steps).
-\fIID\fP can be used to identify a specific job (e.g. "<job_id>", implying all of its steps) 
+or \fIrestart\fP (restart execution of the previously checkpointed job steps).
+\fIID\fP can be used to identify a specific job (e.g. "<job_id>", 
+which applies to all of its existing steps) 
 or a specific job step (e.g. "<job_id>.<step_id>").
 .TP
 \fIcompleting\fP
