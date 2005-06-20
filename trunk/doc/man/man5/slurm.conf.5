@@ -63,7 +63,10 @@ While not essential, it is recommended that you specify a backup controller.
 \fBCheckpointType\fR
 Define the system-initiated checkpoint method to be used for user jobs. 
 The slurmctld daemon must be restarted for a change in CheckpointType 
-to take effect.
+to take effect. 
+Acceptable values at present include "checkpoint/none" and "checkpoint/aix"
+(only on AIX systems). 
+The default value is "checkpoint/none".
 .TP
 \fBControlAddr\fR
 Name that \fBControlMachine\fR should be referred to in 
