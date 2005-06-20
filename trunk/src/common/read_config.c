@@ -299,9 +299,9 @@ void
 free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 {
 	xfree (ctl_conf_ptr->authtype);
-	xfree (ctl_conf_ptr->checkpoint_type);
 	xfree (ctl_conf_ptr->backup_addr);
 	xfree (ctl_conf_ptr->backup_controller);
+	xfree (ctl_conf_ptr->checkpoint_type);
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->epilog);
