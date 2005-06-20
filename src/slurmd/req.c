@@ -1,6 +1,6 @@
 /*****************************************************************************\
- * src/slurmd/req.c - slurmd request handling
- * $Id$
+ *  src/slurmd/req.c - slurmd request handling
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -762,6 +762,19 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 			if  (slurm_signal_container(step->cont_id,
 						    req->signal) < 0)
 				rc = errno;
+/* SIGMIGRATE and SIGSOUND are used to initiate job checkpoint on AIX.
+ * These signals are not sent to the entire process group, but just a
+ * single process, namely the PMD. */
+#ifdef SIGMIGRATE
+#ifdef SIGSOUND
+		} else if ((req->signal == SIGMIGRATE) || 
+		           (req->signal == SIGSOUND)) {
+			if (step->task_list
+			    && (step->task_list->pid > (pid_t) 0)
+			    && (kill(step->task_list->pid, req->signal) < 0))
+				rc = errno;
+#endif
+#endif
 		} else {
 			if (step->task_list 
 			    && (step->task_list->pid > (pid_t) 0)
