@@ -629,7 +629,8 @@ extern int allocate_part(pa_request_t* pa_request, List results)
 	}
 }
 
-extern int _reset_the_path(pa_switch_t *curr_switch, int source, int target, int dim)
+extern int _reset_the_path(pa_switch_t *curr_switch, int source, 
+			   int target, int dim)
 {
 	int *node_tar;
 	int port_tar;
@@ -2042,7 +2043,9 @@ static int _configure_dims(int *coord, List nodes, int *start,
 /* 				target2[dim]=coord[dim]-1; */
 			
 /* 		} */
-		
+		if(conn_type == MESH && (coord[dim]==(end[dim]))) {
+			continue;
+		}
 		//if(coord[dim]<(end[dim]-1) || dim == X) {
 			
 			/* set it up for 0 */
@@ -2164,27 +2167,27 @@ int main(int argc, char** argv)
 	List results;
 //	List results2;
 //	int i,j;
-	DIM_SIZE[X]=4;
-	DIM_SIZE[Y]=2;
-	DIM_SIZE[Z]=1;
+	DIM_SIZE[X]=1;
+	DIM_SIZE[Y]=4;
+	DIM_SIZE[Z]=4;
 	pa_init(NULL);	
 
 	results = list_create(NULL);
-	request->geometry[0] = 2;
-	request->geometry[1] = 2;
-	request->geometry[2] = 1;
+	request->geometry[0] = 1;
+	request->geometry[1] = 4;
+	request->geometry[2] = 4;
 	//request->size = 2;
-	request->conn_type = TORUS;
+	request->conn_type = MESH;
 	new_pa_request(request);
 	print_pa_request(request);
 	allocate_part(request, results);
 
 	results = list_create(NULL);
-	request->geometry[0] = 2;
+	request->geometry[0] = 1;
 	request->geometry[1] = 2;
-	request->geometry[2] = 1;
+	request->geometry[2] = 4;
 	//request->size = 2;
-	request->conn_type = TORUS;
+	request->conn_type = MESH;
 	new_pa_request(request);
 	print_pa_request(request);
 	allocate_part(request, results);
@@ -2212,18 +2215,18 @@ int main(int argc, char** argv)
 	int dim,j;
 	int x,y,z;
 	int startx=0;
-	int starty=1;
+	int starty=0;
 	int startz=0;
 	int endx=DIM_SIZE[X];
 	int endy=DIM_SIZE[Y];
-	int endz=DIM_SIZE[Z];
+	int endz=1;
 	for(x=startx;x<endx;x++) {
 		for(y=starty;y<endy;y++) {
 			for(z=startz;z<endz;z++) {
 				info("Node %d%d%d Used = %d Letter = %c",
 				       x,y,z,pa_system_ptr->grid[x][y][z].used,
 				       pa_system_ptr->grid[x][y][z].letter);
-				for(dim=0;dim<1;dim++) {
+				for(dim=1;dim<2;dim++) {
 					info("Dim %d",dim);
 					pa_switch_t *wire =
 						&pa_system_ptr->
