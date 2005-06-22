@@ -522,7 +522,7 @@ extern void pa_init(node_info_msg_t *node_info_ptr)
 #ifdef HAVE_BGL
 	if ((DIM_SIZE[X]==0) && (DIM_SIZE[X]==0) && (DIM_SIZE[X]==0)) {
 		debug("Setting default system dimensions");
-		DIM_SIZE[X]=4;
+		DIM_SIZE[X]=8;
 		DIM_SIZE[Y]=4;
 		DIM_SIZE[Z]=4;
 	}
@@ -1102,7 +1102,7 @@ static int _create_config_even(pa_node_t *grid)
 #endif
 {
 	int x;
-	pa_node_t *source = NULL, *target_1 = NULL;
+	pa_node_t *source = NULL, *target = NULL;
 
 #ifdef HAVE_BGL
 	int y,z;
@@ -1113,30 +1113,30 @@ static int _create_config_even(pa_node_t *grid)
 				source = &grid[x][y][z];
 				
 				if(x<(DIM_SIZE[X]-1)) {
-					target_1 = &grid[x+1][y][z];
+					target = &grid[x+1][y][z];
 				} else
-					target_1 = &grid[0][y][z];
+					target = &grid[0][y][z];
 				/* if(x<(DIM_SIZE[X]-2)) */
 /* 					target_2 = &grid[x+2][y][z]; */
 /* 				else */
 /* 					target_2 = target_1; */
 				_set_external_wires(X, x, source, 
-						    target_1);
+						    target);
 				
 				if(y<(DIM_SIZE[Y]-1)) 
-					target_1 = &grid[x][y+1][z];
+					target = &grid[x][y+1][z];
 				else 
-					target_1 = &grid[x][0][z];
+					target = &grid[x][0][z];
 				
 				_set_external_wires(Y, y, source, 
-						    target_1);
+						    target);
 				if(z<(DIM_SIZE[Z]-1)) 
-					target_1 = &grid[x][y][z+1];
+					target = &grid[x][y][z+1];
 				else 
-					target_1 = &grid[x][y][0];
+					target = &grid[x][y][0];
 				
 				_set_external_wires(Z, z, source, 
-						    target_1);
+						    target);
 			}
 		}
 	}
@@ -1144,10 +1144,10 @@ static int _create_config_even(pa_node_t *grid)
 	for(x=0;x<DIM_SIZE[X];x++) {
 		source = &grid[x];
 				
-		target_1 = &grid[x+1];
+		target = &grid[x+1];
 		
 		_set_external_wires(X, x, source, 
-				    target_1);
+				    target);
 	}
 #endif
 	return 1;
@@ -1558,62 +1558,79 @@ static void _switch_config(pa_node_t* source, pa_node_t* target, int dim,
 }
 
 static void _set_external_wires(int dim, int count, pa_node_t* source, 
-		pa_node_t* target_1)
+		pa_node_t* target)
 {
+	
 	_switch_config(source, source, dim, 0, 0);
 	_switch_config(source, source, dim, 1, 1);
 	if(dim!=X) {
-		_switch_config(source, target_1, dim, 2, 5);
+		_switch_config(source, target, dim, 2, 5);
 		_switch_config(source, source, dim, 3, 3);
 		_switch_config(source, source, dim, 4, 4);
 		return;
 	}
+#ifdef HAVE_BGL
 
-	if(count==0) {
-		/* First Even Node */
+	/* always 2->5 of next. If it is the last 
+		   it will go to the first.*/
+		
+	_switch_config(source, target, dim, 2, 5);
+	if(count == 0 || count==4) {
+		/* 0 and 4th Node */
 		/* 3->4 of next */
-		_switch_config(source, target_1, dim, 3, 4);
-		/* 2->5 of next */
-		_switch_config(source, target_1, dim, 2, 5);
+		_switch_config(source, target, dim, 3, 4);
+		/* 4 is not in use */
 		_switch_config(source, source, dim, 4, 4);
+	} else if( count == 1 || count == 5) {
+		/* 1st and 5th Node */
+		/* 3 is not in use */
+		_switch_config(source, source, dim, 3, 3);
+	} else if(count == 2) {
+		/* 2nd Node */
+		/* make sure target is the last node */
+		target = &pa_system_ptr->grid[DIM_SIZE[X]-1]
+			[source->coord[Y]]
+			[source->coord[Z]];
+		/* 3->4 of last */
+		_switch_config(source, target, dim, 3, 4);
+		/* 4->3 of last */
+		_switch_config(source, target, dim, 4, 3);
+	} else if(count == 3) {
+		/* 3rd Node */
+		/* make sure target is the next to last node */
+		target = &pa_system_ptr->grid[DIM_SIZE[X]-2]
+			[source->coord[Y]]
+			[source->coord[Z]];
+		/* 3->4 of next to last */ 
+		_switch_config(source, target, dim, 3, 4);
+		/* 4->3 of next to last */
+		_switch_config(source, target, dim, 4, 3);
+	}
+
+	if(DIM_SIZE[X] <= 4) {
+		/* 4 X dim fixes for wires */
 		
-	} else if(!(count%2)) {
-		if(count<DIM_SIZE[dim]-2) {
-			/* Not Last Even Node */
-			/* 3->4 of next */
-			_switch_config(source, target_1, dim, 3, 4);
-			/* 4->3 of next */
-			_switch_config(source, target_1, dim, 4, 3);
-			/* 2->5 of next */
-			_switch_config(source, target_1, dim, 2, 5);
-			
-		} else {
-			/* Last Even Node */
-			/* 3->4 of next */ 
-			_switch_config(source, target_1, dim, 3, 4);
-			/* 4->3 of next */
-			_switch_config(source, target_1, dim, 4, 3);
-			/* 2->5 of next */
-		
-			/********** fix me: on the full system this is needed ******/ 
-			//_switch_config(source, target_1, dim, 2, 5);	
-			/* FIXME: this isn't correct for the full system */
+		if(count == 2) {
+			/* 2 not in use */		
 			_switch_config(source, source, dim, 2, 2);
+		} else if(count == 3) {
+			/* 5 not in use */
 			_switch_config(source, source, dim, 5, 5);
 		}
-	} else {
-		if(count<DIM_SIZE[dim]-2) {
-			/* Not Last Odd Node */
-			/* 2->5 of next */
-			_switch_config(source, target_1, dim, 2, 5);
-		} else {
-			/* Last Odd Node */
-			/* 2-5 of first */
-			_switch_config(source, target_1, dim, 2, 5);
-			/* FIXME: this isn't correct for the full system */
-			_switch_config(source, source, dim, 5, 5);
-		}	
-	}	
+	} else if(DIM_SIZE[X] != 8) {
+		fatal("Do don't have a config to do this BGL system.");
+	}
+#else
+	if(count == 0)
+		_switch_config(source, source, dim, 5, 5);
+	else if(count < DIM_SIZE[X]-1) 
+		_switch_config(source, target, dim, 2, 5);
+	else
+		_switch_config(source, source, dim, 2, 2);		
+	_switch_config(source, source, dim, 3, 3);
+	_switch_config(source, source, dim, 4, 4);
+#endif
+
 }
 
 static char *_set_internal_wires(List nodes, int size, int conn_type)
@@ -2182,30 +2199,30 @@ int main(int argc, char** argv)
 	List results;
 //	List results2;
 //	int i,j;
-	DIM_SIZE[X]=1;
-	DIM_SIZE[Y]=4;
-	DIM_SIZE[Z]=4;
+	DIM_SIZE[X]=2;
+	DIM_SIZE[Y]=1;
+	DIM_SIZE[Z]=1;
 	pa_init(NULL);	
 
 	results = list_create(NULL);
 	request->geometry[0] = 1;
-	request->geometry[1] = 4;
-	request->geometry[2] = 4;
+	request->geometry[1] = 1;
+	request->geometry[2] = 1;
 	//request->size = 2;
 	request->conn_type = MESH;
 	new_pa_request(request);
 	print_pa_request(request);
 	allocate_part(request, results);
 
-	results = list_create(NULL);
-	request->geometry[0] = 1;
-	request->geometry[1] = 2;
-	request->geometry[2] = 4;
-	//request->size = 2;
-	request->conn_type = MESH;
-	new_pa_request(request);
-	print_pa_request(request);
-	allocate_part(request, results);
+/* 	results = list_create(NULL); */
+/* 	request->geometry[0] = 1; */
+/* 	request->geometry[1] = 2; */
+/* 	request->geometry[2] = 4; */
+/* 	//request->size = 2; */
+/* 	request->conn_type = MESH; */
+/* 	new_pa_request(request); */
+/* 	print_pa_request(request); */
+/* 	allocate_part(request, results); */
 	
 	/* results = list_create(NULL); */
 /* 	request->geometry[0] = 2; */
@@ -2234,14 +2251,14 @@ int main(int argc, char** argv)
 	int startz=0;
 	int endx=DIM_SIZE[X];
 	int endy=DIM_SIZE[Y];
-	int endz=1;
+	int endz=DIM_SIZE[Z];
 	for(x=startx;x<endx;x++) {
 		for(y=starty;y<endy;y++) {
 			for(z=startz;z<endz;z++) {
 				info("Node %d%d%d Used = %d Letter = %c",
 				       x,y,z,pa_system_ptr->grid[x][y][z].used,
 				       pa_system_ptr->grid[x][y][z].letter);
-				for(dim=1;dim<2;dim++) {
+				for(dim=0;dim<1;dim++) {
 					info("Dim %d",dim);
 					pa_switch_t *wire =
 						&pa_system_ptr->
