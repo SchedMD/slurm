@@ -522,7 +522,7 @@ extern void pa_init(node_info_msg_t *node_info_ptr)
 #ifdef HAVE_BGL
 	if ((DIM_SIZE[X]==0) && (DIM_SIZE[X]==0) && (DIM_SIZE[X]==0)) {
 		debug("Setting default system dimensions");
-		DIM_SIZE[X]=8;
+		DIM_SIZE[X]=4;
 		DIM_SIZE[Y]=4;
 		DIM_SIZE[Z]=4;
 	}
@@ -633,17 +633,21 @@ extern int _reset_the_path(pa_switch_t *curr_switch, int source,
 			   int target, int dim)
 {
 	int *node_tar;
-	int port_tar;
+	int *node_curr;
+	int port_tar, port_tar1;
 	pa_switch_t *next_switch = NULL; 
 	/*set the switch to not be used */
 	curr_switch->int_wire[source].used = 0;
 	port_tar = curr_switch->int_wire[source].port_tar;
+	port_tar1 = port_tar;
 	curr_switch->int_wire[source].port_tar = source;
 	curr_switch->int_wire[port_tar].used = 0;
 	curr_switch->int_wire[port_tar].port_tar = port_tar;
-	if(port_tar==target)
+	if(port_tar==target) {
 		return 1;
+	}
 	/* follow the path */
+	node_curr = curr_switch->ext_wire[0].node_tar;
 	node_tar = curr_switch->ext_wire[port_tar].node_tar;
 	port_tar = curr_switch->ext_wire[port_tar].port_tar;
 	
@@ -654,7 +658,19 @@ extern int _reset_the_path(pa_switch_t *curr_switch, int source,
 	next_switch = &pa_system_ptr->
 		grid[node_tar[X]].axis_switch[dim];
 #endif
-
+	/* printf("going from %d %d%d%d %d-%d -> %d%d%d %d-%d\n",  */
+/* 	       dim, */
+/* 	       node_curr[X], */
+/* 	       node_curr[Y], */
+/* 	       node_curr[Z], */
+/* 	       source, */
+/* 	       port_tar1, */
+/* 	       node_tar[X], */
+/* 	       node_tar[Y], */
+/* 	       node_tar[Z], */
+/* 	       port_tar, */
+/* 	       next_switch->int_wire[port_tar].port_tar); */
+	       
 	_reset_the_path(next_switch, port_tar, target, dim);
 	return 1;
 }
@@ -1584,7 +1600,6 @@ static void _set_external_wires(int dim, int count, pa_node_t* source,
 			/* FIXME: this isn't correct for the full system */
 			_switch_config(source, source, dim, 2, 2);
 			_switch_config(source, source, dim, 5, 5);
-			_switch_config(source, source, dim, 3, 3);
 		}
 	} else {
 		if(count<DIM_SIZE[dim]-2) {
