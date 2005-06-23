@@ -93,7 +93,6 @@ static int   _local_taskid(slurmd_job_t *job, pid_t pid);
 static int   _send_exit_status(slurmd_job_t *job, pid_t pid, int status, struct rusage *rusage);
 static char *_signame(int signo);
 static void  _cleanup_file_descriptors(slurmd_job_t *job);
-static int   _setup_env(slurmd_job_t *job, int taskid);
 static void  _setup_spawn_io(slurmd_job_t *job);
 
 /* parallel debugger support */
@@ -371,6 +370,14 @@ _exec_all_tasks(slurmd_job_t *job)
 static void
 _exec_task(slurmd_job_t *job, int i)
 {
+	task_info_t *t = NULL;
+	env_t *env = xmalloc(sizeof(env_t));
+	env->stepid = -1;
+	env->gmpi = -1;
+	env->procid = -1;
+	env->nodeid = -1;
+	env->jobid = -1;
+	
 	if (xsignal_unblock(smgr_sigarray) < 0) {
 		error("unable to unblock signals");
 		exit(1);
@@ -383,10 +390,24 @@ _exec_task(slurmd_job_t *job, int i)
 			error("Unable to attach to interconnect: %m");
 			exit(1);
 		}
-
-		if (_setup_env(job, i) < 0)
-			error("error establishing SLURM env vars: %m");
-
+	
+		t = job->task[i];
+	
+		env->jobid = job->jobid;
+		env->stepid = job->stepid;
+		env->nodeid = job->nodeid;
+		env->cpus_on_node = job->cpus;
+		env->cli = job->cli;
+		env->self = job->self;
+		env->procid = t->gtid;
+		env->gmpi = t->gtid;
+		env->env = job->env;
+		
+		setup_env(env);
+		job->env = env->env;
+		env->env = NULL;
+		xfree(env);
+		
 		_pdebug_stop_current(job);
 	}
 
@@ -595,28 +616,6 @@ _local_taskid(slurmd_job_t *job, pid_t pid)
 	}
 	debug("unknown pid %ld exited status 0x%04x %M", (long) pid);
 	return SLURM_ERROR;
-}
-
-/*
- *  Set task-specific environment variables
- */
-static int
-_setup_env(slurmd_job_t *job, int taskid)
-{
-	task_info_t *t = job->task[taskid];
-
-	if (setenvf(&job->env, "SLURM_NODEID",       "%d", job->nodeid) < 0)
-		return -1;
-	if (setenvf(&job->env, "SLURM_CPUS_ON_NODE", "%d", job->cpus) < 0)
-		return -1;
-	if (setenvf(&job->env, "SLURM_PROCID",       "%d", t->gtid     ) < 0)
-		return -1;
-	if (getenvp(job->env, "SLURM_GMPI")) {
-		if (setenvf(&job->env, "GMPI_ID",    "%d", t->gtid) < 0)
-			return -1;
-	}
-
-	return SLURM_SUCCESS;
 }
 
 static void

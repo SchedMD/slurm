@@ -174,9 +174,9 @@ mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli,
 	_set_job_log_prefix(job);
 
 	_setargs(job);
+	job->cli = cli;
+	job->self = self;
 	
-	_setup_spawn_env(job, cli, self);
-
 	if (_job_mgr(job) < 0)
 		return SLURM_ERROR;
 
@@ -255,8 +255,9 @@ mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *cli,
 	_set_job_log_prefix(job);
 
 	_setargs(job);
-
-	_setup_spawn_env(job, cli, self);
+	
+	job->cli = cli;
+	job->self = self;
 	
 	if (_job_mgr(job) < 0)
 		return SLURM_ERROR;
@@ -1036,25 +1037,30 @@ _setup_batch_env(slurmd_job_t *job, batch_job_launch_msg_t *msg)
 	struct utsname name;
 	hostlist_t hl = hostlist_create(msg->nodes);
 	env_t *env = xmalloc(sizeof(env_t));
-	int rc;
+	
 	if (!hl)
 		return SLURM_ERROR;
 
 	hostlist_ranged_string(hl, 1024, buf);
 	
+	env->stepid = -1;
+	env->gmpi = -1;
+	env->procid = -1;
+	env->nodeid = -1;
 	env->nprocs = msg->nprocs;
 	env->select_jobinfo = msg->select_jobinfo;
 	env->jobid = job->jobid;
-	env->stepid = job->stepid;
 	env->nhosts = hostlist_count(hl);
 	hostlist_destroy(hl);
 	env->nodelist = buf;
 	env->task_count = _sprint_task_cnt(msg);
 	env->env = job->env;
-	
-	rc = setup_env(env);
+		
+	setup_env(env);
 	job->env = env->env;
+	env->env = NULL;
 	xfree(env->task_count);
+	xfree(env);
 
 	return 0;
 
@@ -1299,21 +1305,24 @@ _setargs(slurmd_job_t *job)
 static void
 _setup_spawn_env(slurmd_job_t *job, slurm_addr *cli, slurm_addr *self)
 {
-	char *p;
-	char addrbuf[INET_ADDRSTRLEN];
 	env_t *env = xmalloc(sizeof(env_t));
-	int rc;
-
+	
+	env->stepid = -1;
+	env->gmpi = -1;
+	env->procid = -1;
+	env->nodeid = -1;
+	env->jobid = -1;
+	
 	env->cli = cli;
 	env->self = self;
 	env->jobid = job->jobid;
 	env->stepid = job->stepid;
 	env->env = job->env;
 	
-	rc = setup_env(env);
+	setup_env(env);
 	job->env = env->env;
-	xfree(env->task_count);
-	
+	env->env = NULL;
+	xfree(env);
 	return;
 }
 

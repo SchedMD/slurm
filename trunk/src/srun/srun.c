@@ -115,6 +115,13 @@ int srun(int ac, char **av)
 
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
+	env->stepid = -1;
+	env->gmpi = -1;
+	env->procid = -1;
+	env->nodeid = -1;
+	env->cli = NULL;
+	env->env = NULL;
+	
 	log_init(xbasename(av[0]), logopt, 0, NULL);
 		
 	/* set default options, process commandline arguments, and
@@ -242,12 +249,11 @@ int srun(int ac, char **av)
 		env->jobid = job->jobid;
 		env->nhosts = job->nhosts;
 		env->nodelist = job->nodelist;
-		env->stepid = job->stepid;
 		env->task_count = _task_count_string (job);
 	}
 	
 	setup_env(env);
-
+	xfree(env);
 	if (slurm_get_mpich_gm_dir() && getenv("GMPI_PORT") == NULL) {
 		/*
 		 * It is possible for one to modify the mpirun command in

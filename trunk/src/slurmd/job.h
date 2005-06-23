@@ -136,6 +136,8 @@ typedef struct slurmd_job {
 	                           /* communication between slurmds         */
 
 	uint16_t       task_flags; 
+	slurm_addr     *cli;
+	slurm_addr     *self;
 } slurmd_job_t;
 
 
