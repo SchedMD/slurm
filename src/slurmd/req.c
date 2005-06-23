@@ -523,7 +523,8 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 		run_prolog = true;
 #endif
 
-	if (_check_job_credential(req->cred, jobid, stepid, req_uid, spawn_tasks_to_launch) < 0) {
+	if (_check_job_credential(req->cred, jobid, stepid, req_uid, 
+			spawn_tasks_to_launch) < 0) {
 		errnum = errno;
 		error("Invalid job credential from %ld@%s: %m", 
 		      (long) req_uid, host);
