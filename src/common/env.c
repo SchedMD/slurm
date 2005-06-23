@@ -231,7 +231,15 @@ int setup_env(env_t *env)
 	} 
  
 	if (env->cpus_per_task 
-	   && setenvf(&env->env, "SLURM_CPUS_PER_TASK", "%u", env->cpus_per_task) ) {
+	   && setenvf(&env->env, "SLURM_CPUS_PER_TASK", "%u", 
+		      env->cpus_per_task) ) {
+		error("Unable to set SLURM_CPUS_PER_TASK");
+		rc = SLURM_FAILURE;
+	} 
+
+	if (env->cpus_on_node 
+	   && setenvf(&env->env, "SLURM_CPUS_ON_NODE", "%d", 
+		      env->cpus_on_node) ) {
 		error("Unable to set SLURM_CPUS_PER_TASK");
 		rc = SLURM_FAILURE;
 	} 
@@ -247,8 +255,8 @@ int setup_env(env_t *env)
 		}
 	}
 
-	if (env->overcommit &&
-	    (setenvf(&env->env, "SLURM_OVERCOMMIT", "1"))) {
+	if (env->overcommit 
+	    && (setenvf(&env->env, "SLURM_OVERCOMMIT", "1"))) {
 		error("Unable to set SLURM_OVERCOMMIT environment variable");
 		rc = SLURM_FAILURE;
 	}
@@ -277,15 +285,33 @@ int setup_env(env_t *env)
 		}
 	}
 	
-	if (env->jobid
+	if (env->jobid >= 0
 	    && setenvf(&env->env, "SLURM_JOBID", "%u", env->jobid)) {
 		error("Unable to set SLURM_JOBID environment");
 		rc = SLURM_FAILURE;
 	}
 	
-	if (env->stepid
+	if (env->nodeid >= 0
+	    && setenvf(&env->env, "SLURM_NODEID", "%d", env->nodeid)) {
+		error("Unable to set SLURM_NODEID environment");
+		rc = SLURM_FAILURE;
+	}
+	
+	if (env->procid >= 0
+	    && setenvf(&env->env, "SLURM_PROCID", "%d", env->procid)) {
+		error("Unable to set SLURM_PROCID environment");
+		rc = SLURM_FAILURE;
+	}
+	
+	if (env->stepid >= 0
 	    && setenvf(&env->env, "SLURM_STEPID", "%u", env->stepid)) {
-		error("Unable to set SLURM_JOBID environment");
+		error("Unable to set SLURM_STEPID environment");
+		rc = SLURM_FAILURE;
+	}
+	
+	if (env->gmpi >= 0
+	    && setenvf(&env->env, "SLURM_GMPI", "%d", env->gmpi)) {
+		error("Unable to set SLURM_GMPI environment");
 		rc = SLURM_FAILURE;
 	}
 	

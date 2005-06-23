@@ -54,6 +54,10 @@ typedef struct env_options {
 	char **env;             /* job environment */
 	slurm_addr *cli;
 	slurm_addr *self;
+	int procid;
+	int gmpi;
+	int nodeid;
+	int cpus_on_node;
 } env_t;
 
 
