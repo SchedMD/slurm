@@ -36,20 +36,33 @@
 #  include <inttypes.h>
 #endif
 
+#include <signal.h>
 #include <stdio.h>
+#include <time.h>
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
 #include "src/common/log.h"
 #include "src/common/pack.h"
 #include "src/common/xassert.h"
+#include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+#include "src/slurmctld/agent.h"
 #include "src/slurmctld/slurmctld.h"
 
 struct check_job_info {
-	uint16_t ckpt_errno;
 	uint16_t disabled;
+	uint16_t node_cnt;
+	uint16_t reply_cnt;
+	uint16_t wait_time;
+	time_t   time_stamp;	/* begin or end checkpoint time */
+	uint32_t error_code;
+	char    *error_msg;
 };
+
+static void _comp_msg(struct step_record *step_ptr, 
+		struct check_job_info *check_ptr);
+static int _step_sig(struct step_record * step_ptr, uint16_t wait, int signal);
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -87,13 +100,13 @@ const uint32_t plugin_version	= 90;
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
-int init ( void )
+extern int init ( void )
 {
 	return SLURM_SUCCESS;
 }
 
 
-int fini ( void )
+extern int fini ( void )
 {
 	return SLURM_SUCCESS;
 }
@@ -103,23 +116,24 @@ int fini ( void )
  */
 
 extern int slurm_ckpt_op ( uint16_t op, uint16_t data,
-		struct step_record * step_ptr )
+		struct step_record * step_ptr, time_t * event_time, 
+		uint32_t *error_code, char **error_msg )
 {
 	int rc = SLURM_SUCCESS;
-	struct check_job_info *check_ptr = 
-		(struct check_job_info *) step_ptr->check_job;
+	struct check_job_info *check_ptr;
 
+	xassert(step_ptr);
+	check_ptr = (struct check_job_info *) step_ptr->check_job;
 	xassert(check_ptr);
 
 	switch (op) {
 		case CHECK_ABLE:
 			if (check_ptr->disabled)
 				rc = ESLURM_DISABLED;
-			else
+			else {
+				*event_time = check_ptr->time_stamp;
 				rc = SLURM_SUCCESS;
-			break;
-		case CHECK_COMPLETE:
-			check_ptr->ckpt_errno = 0;
+			}
 			break;
 		case CHECK_DISABLE:
 			check_ptr->disabled = 1;
@@ -127,13 +141,41 @@ extern int slurm_ckpt_op ( uint16_t op, uint16_t data,
 		case CHECK_ENABLE:
 			check_ptr->disabled = 0;
 			break;
-		case CHECK_FAILED:
-			check_ptr->ckpt_errno = data;
-			break;
 		case CHECK_CREATE:
+			check_ptr->time_stamp = time(NULL);
+			check_ptr->reply_cnt = 0;
+			check_ptr->error_code = 0;
+			xfree(check_ptr->error_msg);
+#ifdef SIGSOUND
+			rc = _step_sig(step_ptr, data, SIGSOUND);
+#else
+			/* No checkpoint, SIGWINCH for testing purposes */
+			info("Checkpoint not supported, sending SIGWINCH");
+			rc = _step_sig(step_ptr, data, SIGWINCH);
+#endif
+			break;
 		case CHECK_VACATE:
+			check_ptr->time_stamp = time(NULL);
+			check_ptr->reply_cnt = 0;
+			check_ptr->error_code = 0;
+			xfree(check_ptr->error_msg);
+#ifdef SIGMIGRATE
+			rc = _step_sig(step_ptr, data, SIGMIGRATE);
+#else
+			/* No checkpoint, kill job now, useful for testing */
+			info("Checkpoint not supported, sending SIGTERM");
+			rc = _step_sig(step_ptr, data, SIGTERM);
+#endif
+			break;
 		case CHECK_RESTART:
 			rc = ESLURM_NOT_SUPPORTED;
+			break;
+		case CHECK_ERROR:
+			xassert(error_code);
+			xassert(error_msg);
+			*error_code = check_ptr->error_code;
+			xfree(*error_msg);
+			*error_msg = xstrdup(check_ptr->error_msg);
 			break;
 		default:
 			error("Invalid checkpoint operation: %d", op);
@@ -143,23 +185,32 @@ extern int slurm_ckpt_op ( uint16_t op, uint16_t data,
 	return rc;
 }
 
-extern int slurm_ckpt_error ( struct step_record * step_ptr, 
-		uint32_t *ckpt_errno, char **ckpt_strerror)
+extern int slurm_ckpt_comp ( struct step_record * step_ptr, time_t event_time,
+		uint32_t error_code, char *error_msg )
 {
-	struct check_job_info *check_ptr = 
-		(struct check_job_info *) step_ptr->check_job;
+	struct check_job_info *check_ptr;
 
-	if (ckpt_errno)
-		*ckpt_errno = check_ptr->ckpt_errno;
-	else
-		return EINVAL;
+	xassert(step_ptr);
+	check_ptr = (struct check_job_info *) step_ptr->check_job;
+	xassert(check_ptr);
 
-	if (ckpt_strerror)
-		*ckpt_strerror = "TBD";
-	else
-		return EINVAL;
+	if (event_time && (event_time != check_ptr->time_stamp))
+		return ESLURM_ALREADY_DONE;
 
-	return SLURM_SUCCESS;
+	if (error_code > check_ptr->error_code) {
+		info("slurm_ckpt_comp error %u: %s", error_code, error_msg);
+		check_ptr->error_code = error_code;
+		xfree(check_ptr->error_msg);
+		check_ptr->error_msg = xstrdup(error_msg);
+	}
+
+	if (++check_ptr->reply_cnt == check_ptr->node_cnt) {
+		info("Checkpoint complete for job %u.%u",
+			step_ptr->job_ptr->job_id, step_ptr->step_id);
+		check_ptr->time_stamp = time(NULL);
+	}
+
+	return SLURM_SUCCESS; 
 }
 
 extern int slurm_ckpt_alloc_job(check_jobinfo_t *jobinfo)
@@ -179,23 +230,101 @@ extern int slurm_ckpt_pack_job(check_jobinfo_t jobinfo, Buf buffer)
 	struct check_job_info *check_ptr = 
 		(struct check_job_info *)jobinfo;
  
-	pack16(check_ptr->ckpt_errno, buffer);
 	pack16(check_ptr->disabled, buffer);
+	pack16(check_ptr->node_cnt, buffer);
+	pack16(check_ptr->reply_cnt, buffer);
+	pack16(check_ptr->wait_time, buffer);
+
+	pack32(check_ptr->error_code, buffer);
+	packstr(check_ptr->error_msg, buffer);
+	pack_time(check_ptr->time_stamp, buffer);
 
 	return SLURM_SUCCESS;
 }
 
 extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer)
 {
+	uint16_t uint16_tmp;
 	struct check_job_info *check_ptr =
 		(struct check_job_info *)jobinfo;
 
-	safe_unpack16(&check_ptr->ckpt_errno, buffer);
 	safe_unpack16(&check_ptr->disabled, buffer);
+	safe_unpack16(&check_ptr->node_cnt, buffer);
+	safe_unpack16(&check_ptr->reply_cnt, buffer);
+	safe_unpack16(&check_ptr->wait_time, buffer);
 
+	safe_unpack32(&check_ptr->error_code, buffer);
+	safe_unpackstr_xmalloc(&check_ptr->error_msg, &uint16_tmp, buffer);
+	safe_unpack_time(&check_ptr->time_stamp, buffer);
+	
 	return SLURM_SUCCESS; 
 
     unpack_error:
+	xfree(check_ptr->error_msg);
 	return SLURM_ERROR;
 }
 
+/* Send specified signal only to the process launched on node 0 */
+static int _step_sig(struct step_record * step_ptr, uint16_t wait, int signal)
+{
+	struct check_job_info *check_ptr;
+	struct job_record *job_ptr;
+	agent_arg_t *agent_args = NULL;
+	kill_tasks_msg_t *kill_tasks_msg;
+	int i;
+
+	xassert(step_ptr);
+	check_ptr = (struct check_job_info *) step_ptr->check_job;
+	xassert(check_ptr);
+	job_ptr = step_ptr->job_ptr;
+	xassert(job_ptr);
+
+	if (IS_JOB_FINISHED(job_ptr))
+		return ESLURM_ALREADY_DONE;
+
+	if (check_ptr->disabled)
+		return ESLURM_DISABLED;
+
+	for (i = 0; i < node_record_count; i++) {
+		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
+			continue;
+		if (check_ptr->node_cnt++ > 0)
+			continue;
+		kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
+		kill_tasks_msg->job_id      = step_ptr->job_ptr->job_id;
+		kill_tasks_msg->job_step_id = step_ptr->step_id;
+		kill_tasks_msg->signal      = signal;
+		agent_args = xmalloc(sizeof(agent_arg_t));
+		agent_args->msg_type = REQUEST_KILL_TASKS;
+		agent_args->retry = 1;
+		agent_args->msg_args = kill_tasks_msg;
+		agent_args->slurm_addr = xmalloc(sizeof(struct sockaddr_in));
+		agent_args->node_names = xmalloc(MAX_NAME_LEN);
+		agent_args->slurm_addr[0] = node_record_table_ptr[i].slurm_addr;
+		strncpy(&agent_args->node_names[0], 
+			node_record_table_ptr[i].name, MAX_NAME_LEN);
+		agent_args->node_count++;
+	}
+
+	if (agent_args == NULL) {
+		error("_step_sig: job %u.%u has no nodes", job_ptr->job_id,
+			step_ptr->step_id);
+		return ESLURM_INVALID_NODE_NAME;
+	}
+
+	agent_queue_request(agent_args);
+	check_ptr->time_stamp = time(NULL);
+	check_ptr->wait_time = wait;
+	info("checkpoint requested for job %u.%u", job_ptr->job_id,
+		step_ptr->step_id);
+	return SLURM_SUCCESS;
+}
+
+static void _comp_msg(struct step_record *step_ptr, 
+		struct check_job_info *check_ptr)
+{
+	long delay = (long) difftime(time(NULL), check_ptr->time_stamp);
+	info("checkpoint done for job %u.%u, secs %ld errno %d", 
+		step_ptr->job_ptr->job_id, step_ptr->step_id, 
+		delay, check_ptr->error_code);
+}

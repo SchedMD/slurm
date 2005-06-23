@@ -31,7 +31,6 @@
 #include "src/common/slurm_protocol_defs.h"
 
 #define DEFAULT_AUTH_TYPE          "auth/none"
-#define DEFAULT_CHECKPOINT_TYPE    "checkpoint/none"
 #define DEFAULT_FAST_SCHEDULE       1
 #define DEFAULT_FIRST_JOB_ID        1
 #define DEFAULT_HEARTBEAT_INTERVAL  60
@@ -47,8 +46,10 @@
 #define DEFAULT_MIN_JOB_AGE         300
 #define DEFAULT_MPICH_GM_DIR        0
 #ifdef HAVE_AIX		/* AIX specific default configuration parameters */
+#  define DEFAULT_CHECKPOINT_TYPE   "checkpoint/aix"
 #  define DEFAULT_PROCTRACK_TYPE    "proctrack/aix"
 #else
+#  define DEFAULT_CHECKPOINT_TYPE   "checkpoint/none"
 #  define DEFAULT_PROCTRACK_TYPE    "proctrack/sid"
 #endif
 #define DEFAULT_RETURN_TO_SERVICE   0

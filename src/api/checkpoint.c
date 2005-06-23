@@ -39,9 +39,9 @@ static int _handle_rc_msg(slurm_msg_t *msg);
 static int _checkpoint_op (uint16_t op, uint16_t data,
 		uint32_t job_id, uint32_t step_id);
 /*
- * _checkpoint_op - perform some checkpoint operation for some job step
+ * _checkpoint_op - perform many checkpoint operation for some job step.
  * IN op      - operation to perform
- * IN data   - operation-specific data
+ * IN data    - operation-specific data
  * IN job_id  - job on which to perform operation
  * IN step_id - job step on which to perform operation
  * RET 0 or a slurm error code
@@ -50,25 +50,20 @@ static int _checkpoint_op (uint16_t op, uint16_t data,
 		uint32_t job_id, uint32_t step_id)
 {
 	int rc;
-	slurm_msg_t msg;
-	checkpoint_msg_t req;
+	checkpoint_msg_t ckp_req;
+	slurm_msg_t req_msg;
 
-	/*
-	 * Request message:
-	 */
-	req.op       = op;
-	req.job_id   = job_id;
-	req.step_id  = step_id;
-	msg.msg_type = REQUEST_CHECKPOINT;
-	msg.data     = &req;
+	ckp_req.op       = op;
+	ckp_req.job_id   = job_id;
+	ckp_req.step_id  = step_id;
+	req_msg.msg_type = REQUEST_CHECKPOINT;
+	req_msg.data     = &ckp_req;
 
-	if (slurm_send_recv_controller_rc_msg(&msg, &rc) < 0)
+	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0)
 		return SLURM_ERROR;
 
-	if (rc)
-		slurm_seterrno_ret(rc);
-
-	return SLURM_SUCCESS;
+	slurm_seterrno(rc);
+	return rc;
 }
 
 /*
@@ -76,11 +71,41 @@ static int _checkpoint_op (uint16_t op, uint16_t data,
  *	be checkpointed
  * IN job_id  - job on which to perform operation
  * IN step_id - job step on which to perform operation
+ * OUT start_time - time at which checkpoint request was issued
  * RET 0 (can be checkpoined) or a slurm error code
  */
-extern int slurm_checkpoint_able (uint32_t job_id, uint32_t step_id)
+extern int slurm_checkpoint_able (uint32_t job_id, uint32_t step_id, 
+		time_t *start_time)
 {
-	return _checkpoint_op (CHECK_ABLE, 0, job_id, step_id);
+	int rc;
+	slurm_msg_t req_msg, resp_msg;
+	checkpoint_msg_t ckp_req;
+	checkpoint_resp_msg_t *resp;
+
+	ckp_req.op       = CHECK_ABLE;
+	ckp_req.job_id   = job_id;
+	ckp_req.step_id  = step_id;
+	req_msg.msg_type = REQUEST_CHECKPOINT;
+	req_msg.data     = &ckp_req;
+
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+		return SLURM_ERROR;
+
+	switch(resp_msg.msg_type) {
+	 case RESPONSE_CHECKPOINT:
+		resp = (checkpoint_resp_msg_t *) resp_msg.data;
+		*start_time = resp->event_time;
+		slurm_free_checkpoint_resp_msg(resp_msg.data);
+		rc = SLURM_SUCCESS;
+		break;
+	 case RESPONSE_SLURM_RC:
+		rc = _handle_rc_msg(&resp_msg);
+		break;
+	 default:
+		*start_time = (time_t) NULL;
+		rc = SLURM_ERROR;
+	}
+	return rc;
 }
 
 /*
@@ -146,29 +171,35 @@ extern int slurm_checkpoint_restart (uint32_t job_id, uint32_t step_id)
 }
 
 /*
- * slurm_checkpoint_complete - note the successful completion of a job step's 
- *	checkpoint operation.
+ * slurm_checkpoint_complete - note the completion of a job step's checkpoint
+ *	operation.
  * IN job_id  - job on which to perform operation
  * IN step_id - job step on which to perform operation
+ * IN begin_time - time at which checkpoint began
+ * IN error_code - error code, highest value for all complete calls is preserved
+ * IN error_msg - error message, preserved for highest error_code
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_complete (uint32_t job_id, uint32_t step_id)
+extern int slurm_checkpoint_complete (uint32_t job_id, uint32_t step_id,
+		time_t begin_time, uint32_t error_code, char *error_msg)
 {
-	return _checkpoint_op (CHECK_COMPLETE, 0, job_id, step_id);
-}
+	int rc;
+	slurm_msg_t msg;
+	checkpoint_comp_msg_t req;
 
-/*
- * slurm_checkpoint_failed - note the unsuccessful completion of a job step's 
- *	checkpoint operation.
- * IN job_id  - job on which to perform operation
- * IN step_id - job step on which to perform operation
- * IN ckpt_errno - plugin-specific error code indicative of the failure type
- * RET 0 or a slurm error code
- */
-extern int slurm_checkpoint_failed (uint32_t job_id, uint32_t step_id, 
-		uint16_t ckpt_errno)
-{
-	return _checkpoint_op (CHECK_FAILED, ckpt_errno, job_id, step_id);
+	req.job_id       = job_id;
+	req.step_id      = step_id;
+	req.begin_time   = begin_time;
+	req.error_code   = error_code;
+	req.error_msg    = error_msg;
+	msg.msg_type     = REQUEST_CHECKPOINT_COMP;
+	msg.data         = &req;
+
+	if (slurm_send_recv_controller_rc_msg(&msg, &rc) < 0)
+		return SLURM_ERROR;
+	if (rc)
+		slurm_seterrno_ret(rc);
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -176,15 +207,16 @@ extern int slurm_checkpoint_failed (uint32_t job_id, uint32_t step_id,
  *	operation for some job step
  * IN job_id  - job on which to perform operation
  * IN step_id - job step on which to perform operation
- * OUT ckpt_errno - error number associated with the last checkpoint operation,
+ * OUT error_code - error number associated with the last checkpoint operation,
  *	this value is dependent upon the checkpoint plugin used and may be
- *	completely unrelated to slurm error codes
- * OUT ckpt_strerror - string describing the message associated with the last 
- *	checkpoint operation
+ *	completely unrelated to slurm error codes, the highest value for all
+ *	complete calls is preserved
+ * OUT error_msg - error message, preserved for highest error_code, value 
+ *	must be freed by the caller to prevent memory leak
  * RET 0 or a slurm error code
  */
 extern int slurm_checkpoint_error ( uint32_t job_id, uint32_t step_id, 
-		uint16_t *ckpt_errno, char **ckpt_strerror)
+		uint32_t *error_code, char **error_msg)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -192,7 +224,7 @@ extern int slurm_checkpoint_error ( uint32_t job_id, uint32_t step_id,
 	slurm_msg_t resp_msg;
 	checkpoint_resp_msg_t *ckpt_resp;
 
-	if ((ckpt_errno == NULL) || (ckpt_strerror == NULL))
+	if ((error_code == NULL) || (error_msg == NULL))
 		return EINVAL;
 
 	/*
@@ -207,39 +239,40 @@ extern int slurm_checkpoint_error ( uint32_t job_id, uint32_t step_id,
 	rc = slurm_send_recv_controller_msg(&msg, &resp_msg);
 
 	if (rc == SLURM_SOCKET_ERROR) 
-		return SLURM_SOCKET_ERROR;
+		return rc;
 
 	switch (resp_msg.msg_type) {
-	case RESPONSE_SLURM_RC:
-		if (_handle_rc_msg(&resp_msg) < 0)
-			return SLURM_PROTOCOL_ERROR;
+	 case RESPONSE_SLURM_RC:
+		*error_code = 0;
+		*error_msg = strdup("");
+		rc = _handle_rc_msg(&resp_msg);
 		break;
-	case RESPONSE_CHECKPOINT:
+	 case RESPONSE_CHECKPOINT:
 		ckpt_resp = (checkpoint_resp_msg_t *) resp_msg.data;
-		*ckpt_errno = ckpt_resp->ckpt_errno;
-		*ckpt_strerror = strdup(ckpt_resp->ckpt_strerror);
+		*error_code = ckpt_resp->error_code;
+		if (ckpt_resp->error_msg)
+			*error_msg = strdup(ckpt_resp->error_msg);
+		else
+			*error_msg = strdup("");
 		slurm_free_checkpoint_resp_msg(ckpt_resp);
+		rc = SLURM_SUCCESS;
 		break;
-	default:
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+	 default:
+		rc = SLURM_UNEXPECTED_MSG_ERROR;
 	}
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /*
  *  Handle a return code message type. 
- *    if return code is nonzero, sets errno to return code and returns < 0.
- *    Otherwise, returns 0 (SLURM_SUCCES)
+ *    Sets errno to return code and returns it
  */
 static int
 _handle_rc_msg(slurm_msg_t *msg)
 {
 	int rc = ((return_code_msg_t *) msg->data)->return_code;
 	slurm_free_return_code_msg(msg->data);
-
-	if (rc) 
-		slurm_seterrno_ret(rc);
-	else
-		return SLURM_SUCCESS;
+	slurm_seterrno(rc);
+	return rc;
 }

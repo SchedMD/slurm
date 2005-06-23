@@ -77,6 +77,7 @@ static int          _make_step_cred(struct step_record *step_rec,
 inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
 inline static void  _slurm_rpc_allocate_and_run(slurm_msg_t * msg);
 inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg);
+inline static void  _slurm_rpc_checkpoint_comp(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_conf(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_jobs(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_nodes(slurm_msg_t * msg);
@@ -233,6 +234,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_CHECKPOINT:
 		_slurm_rpc_checkpoint(msg);
 		slurm_free_checkpoint_msg(msg->data);
+		break;
+	case REQUEST_CHECKPOINT_COMP:
+		_slurm_rpc_checkpoint_comp(msg);
+		slurm_free_checkpoint_comp_msg(msg->data);
 		break;
 	case REQUEST_JOB_READY:
 		_slurm_rpc_job_ready(msg);
@@ -1873,9 +1878,6 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 		case CHECK_ABLE:
 			op = "able";
 			break;
-		case CHECK_COMPLETE:
-			op = "complete";
-			break;
 		case CHECK_CREATE:
 			op = "create";
 			break;
@@ -1887,9 +1889,6 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 			break;
 		case CHECK_ERROR:
 			op = "error";
-			break;
-		case CHECK_FAILED:
-			op = "failed";
 			break;
 		case CHECK_RESTART:
 			op = "restart";
@@ -1903,15 +1902,12 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 	debug2("Processing RPC: REQUEST_CHECKPOINT %s", op);
 	uid = g_slurm_auth_get_uid(msg->cred);
 
-	/* do RPC call */
+	/* do RPC call and send reply */
 	lock_slurmctld(job_write_lock);
-	error_code = job_step_checkpoint(ckpt_ptr->op, 
-			ckpt_ptr->data, ckpt_ptr->job_id, 
-			ckpt_ptr->step_id, uid, msg->conn_fd);
+	error_code = job_step_checkpoint(ckpt_ptr, uid, msg->conn_fd);
 	unlock_slurmctld(job_write_lock);
 	END_TIMER;
 
-	/* return result */
 	if (error_code) {
 		if (ckpt_ptr->step_id == NO_VAL)
 			info("_slurm_rpc_checkpoint %s %u: %s", op, 
@@ -1920,9 +1916,6 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 			info("_slurm_rpc_checkpoint %s %u.%u: %s", op, 
 				ckpt_ptr->job_id, ckpt_ptr->step_id, 
 				slurm_strerror(error_code));
-		slurm_send_rc_msg(msg, error_code);
-	} else if (ckpt_ptr->op == CHECK_ERROR) {
-		;	/* Response already sent */
 	} else {
 		if (ckpt_ptr->step_id == NO_VAL)
 			info("_slurm_rpc_checkpoint %s for %u %s", op,
@@ -1930,13 +1923,45 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 		else
 			info("_slurm_rpc_checkpoint %s for %u.%u %s", op,
 				ckpt_ptr->job_id, ckpt_ptr->step_id, TIME_STR);
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
-		/* NOTE: This function provides it own locks */
-		schedule_job_save();
+		if ((ckpt_ptr->op != CHECK_ABLE) 
+		&&  (ckpt_ptr->op != CHECK_ERROR)) {
+			/* job state changed, save it */
+			/* NOTE: This function provides it own locks */
+			schedule_job_save();
+		}
 	}
 }
 
+inline static void  _slurm_rpc_checkpoint_comp(slurm_msg_t * msg)
+{
+	int error_code = SLURM_SUCCESS;
+	DEF_TIMERS;
+	checkpoint_comp_msg_t *ckpt_ptr = (checkpoint_comp_msg_t *) msg->data;
+	/* Locks: read job */
+	slurmctld_lock_t job_read_lock = {
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+	uid_t uid;
+
+	START_TIMER;
+	debug2("Processing RPC: REQUEST_CHECKPOINT_COMP");
+	uid = g_slurm_auth_get_uid(msg->cred);
+
+	/* do RPC call and send reply */
+	lock_slurmctld(job_read_lock);
+	error_code = job_step_checkpoint_comp(ckpt_ptr, uid, msg->conn_fd);
+	unlock_slurmctld(job_read_lock);
+	END_TIMER;
+
+	if (error_code) {
+		info("_slurm_rpc_checkpoint_comp %u.%u: %s",
+			ckpt_ptr->job_id, ckpt_ptr->step_id,
+			slurm_strerror(error_code));
+	} else {
+		info("_slurm_rpc_checkpoint_comp %u.%u %s",
+			ckpt_ptr->job_id, ckpt_ptr->step_id, TIME_STR);
+	}
+}
 
 static char **
 _xduparray(uint16_t size, char ** array)

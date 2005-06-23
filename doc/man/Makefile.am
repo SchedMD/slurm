@@ -24,7 +24,7 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_checkpoint_enable.3 \
 	man3/slurm_checkpoint_error.3 \
 	man3/slurm_checkpoint_failed.3 \
-	man3/slurm_checkpoint_resume.3 \
+	man3/slurm_checkpoint_restart.3 \
 	man3/slurm_checkpoint_vacate.3 \
 	man3/slurm_complete_job.3 \
 	man3/slurm_complete_job_step.3 \

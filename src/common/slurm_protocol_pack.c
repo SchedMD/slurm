@@ -248,7 +248,12 @@ static void _pack_checkpoint_msg(checkpoint_msg_t *msg, Buf buffer);
 static int  _unpack_checkpoint_msg(checkpoint_msg_t **msg_ptr, Buf buffer);
 
 static void _pack_checkpoint_resp_msg(checkpoint_resp_msg_t *msg, Buf buffer);
-static int  _unpack_checkpoint_resp_msg(checkpoint_resp_msg_t **msg_ptr, Buf buffer);
+static int  _unpack_checkpoint_resp_msg(checkpoint_resp_msg_t **msg_ptr, 
+		Buf buffer);
+
+static void _pack_checkpoint_comp(checkpoint_comp_msg_t *msg, Buf buffer);
+static int  _unpack_checkpoint_comp(checkpoint_comp_msg_t **msg_ptr, 
+		Buf buffer);
 
 static void _pack_buffer_msg(slurm_msg_t * msg, Buf buffer);
 
@@ -512,8 +517,14 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	 case REQUEST_CHECKPOINT:
 		_pack_checkpoint_msg((checkpoint_msg_t *)msg->data, buffer);
 		break;
+	 case REQUEST_CHECKPOINT_COMP:
+		_pack_checkpoint_comp((checkpoint_comp_msg_t *)msg->data, 
+			buffer);
+		break;
 	 case RESPONSE_CHECKPOINT:
-		_pack_checkpoint_resp_msg((checkpoint_resp_msg_t *)msg->data, buffer);
+	 case RESPONSE_CHECKPOINT_COMP:
+		_pack_checkpoint_resp_msg((checkpoint_resp_msg_t *)msg->data, 
+			buffer);
 		break;
 	 case REQUEST_JOB_READY:
 		_pack_job_ready_msg((job_id_msg_t *)msg->data, buffer);
@@ -777,7 +788,12 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_checkpoint_msg((checkpoint_msg_t **)
 				& msg->data, buffer);
 		break;
+	 case REQUEST_CHECKPOINT_COMP:
+		rc = _unpack_checkpoint_comp((checkpoint_comp_msg_t **)
+				& msg->data, buffer);
+		break;
 	 case RESPONSE_CHECKPOINT:
+	 case RESPONSE_CHECKPOINT_COMP:
 		rc = _unpack_checkpoint_resp_msg((checkpoint_resp_msg_t **)
 				& msg->data, buffer);
 		break;
@@ -3107,12 +3123,49 @@ _unpack_checkpoint_msg(checkpoint_msg_t **msg_ptr, Buf buffer)
 }
 
 static void
+_pack_checkpoint_comp(checkpoint_comp_msg_t *msg, Buf buffer)
+{
+	xassert ( msg != NULL );
+
+	pack32 ( msg -> job_id,  buffer ) ;
+	pack32 ( msg -> step_id, buffer ) ;
+	pack32 ( msg -> error_code, buffer ) ;
+	packstr ( msg -> error_msg, buffer ) ;
+	pack_time ( msg -> begin_time, buffer ) ;
+}
+
+static int
+_unpack_checkpoint_comp(checkpoint_comp_msg_t **msg_ptr, Buf buffer)
+{
+	uint16_t uint16_tmp;
+	checkpoint_comp_msg_t * msg;
+	xassert ( msg_ptr != NULL );
+
+	msg = xmalloc ( sizeof (checkpoint_comp_msg_t) );
+	*msg_ptr = msg ;
+
+	safe_unpack32 ( & msg -> job_id  , buffer ) ;
+	safe_unpack32 ( & msg -> step_id , buffer ) ;
+	safe_unpack32 ( & msg -> error_code , buffer ) ;
+	safe_unpackstr_xmalloc ( & msg -> error_msg, & uint16_tmp , buffer ) ;
+	safe_unpack_time ( & msg -> begin_time , buffer ) ;
+	return SLURM_SUCCESS;
+
+    unpack_error:
+	*msg_ptr = NULL;
+	xfree (msg->error_msg);
+	xfree (msg);
+	return SLURM_ERROR;
+}
+
+static void
 _pack_checkpoint_resp_msg(checkpoint_resp_msg_t *msg, Buf buffer)
 {
 	xassert ( msg != NULL );
 
-	pack16 ( msg -> ckpt_errno,  buffer ) ;
-	packstr ( msg -> ckpt_strerror, buffer ) ;
+	pack_time ( msg -> event_time, buffer ) ;
+	pack32 ( msg -> error_code,  buffer ) ;
+	packstr ( msg -> error_msg, buffer ) ;
 }
 
 static int
@@ -3125,8 +3178,9 @@ _unpack_checkpoint_resp_msg(checkpoint_resp_msg_t **msg_ptr, Buf buffer)
 	msg = xmalloc ( sizeof (checkpoint_resp_msg_t) ) ;
 	*msg_ptr = msg ;
 
-	safe_unpack16 ( & msg -> ckpt_errno , buffer ) ;
-	safe_unpackstr_xmalloc ( & msg -> ckpt_strerror, & uint16_tmp , buffer ) ;
+	safe_unpack_time ( & msg -> event_time, buffer ) ;
+	safe_unpack32 ( & msg -> error_code , buffer ) ;
+	safe_unpackstr_xmalloc ( & msg -> error_msg, & uint16_tmp , buffer ) ;
 	return SLURM_SUCCESS;
 
     unpack_error:
