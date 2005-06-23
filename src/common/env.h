@@ -48,10 +48,12 @@ typedef struct env_options {
 	bool labelio;		/* --label-output, -l		*/
 	select_jobinfo_t select_jobinfo;
 	uint32_t jobid;		/* assigned job id */
+	uint32_t stepid;	/* assigned step id */
 	int nhosts;
 	char *nodelist;		/* nodelist in string form */
 	char **env;             /* job environment */
-	
+	slurm_addr *cli;
+	slurm_addr *self;
 } env_t;
 
 

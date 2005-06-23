@@ -138,7 +138,8 @@ static int  _send_pending_exit_msgs(slurmd_job_t *job);
 static void _kill_running_tasks(slurmd_job_t *job);
 
 static void _setargs(slurmd_job_t *job);
-static void _set_mgr_env(slurmd_job_t *, slurm_addr *cli, slurm_addr *self);
+static void _setup_spawn_env(slurmd_job_t *, 
+			     slurm_addr *cli, slurm_addr *self);
 
 static void _random_sleep(slurmd_job_t *job);
 static char *_sprint_task_cnt(batch_job_launch_msg_t *msg);
@@ -163,7 +164,8 @@ mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli,
 		 slurm_addr *self)
 {
 	slurmd_job_t *job = NULL;
-
+	env_t *env = xmalloc(sizeof(env_t));
+	
 	if (!(job = job_create(msg, cli))) {
 		_send_launch_failure (msg, cli, errno);
 		return SLURM_ERROR;
@@ -172,8 +174,8 @@ mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli,
 	_set_job_log_prefix(job);
 
 	_setargs(job);
-
-	_set_mgr_env(job, cli, self);
+	
+	_setup_spawn_env(job, cli, self);
 
 	if (_job_mgr(job) < 0)
 		return SLURM_ERROR;
@@ -254,8 +256,8 @@ mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *cli,
 
 	_setargs(job);
 
-	_set_mgr_env(job, cli, self);
-
+	_setup_spawn_env(job, cli, self);
+	
 	if (_job_mgr(job) < 0)
 		return SLURM_ERROR;
 
@@ -1043,6 +1045,7 @@ _setup_batch_env(slurmd_job_t *job, batch_job_launch_msg_t *msg)
 	env->nprocs = msg->nprocs;
 	env->select_jobinfo = msg->select_jobinfo;
 	env->jobid = job->jobid;
+	env->stepid = job->stepid;
 	env->nhosts = hostlist_count(hl);
 	hostlist_destroy(hl);
 	env->nodelist = buf;
@@ -1294,30 +1297,23 @@ _setargs(slurmd_job_t *job)
 }
 
 static void
-_set_mgr_env(slurmd_job_t *job, slurm_addr *cli, slurm_addr *self)
+_setup_spawn_env(slurmd_job_t *job, slurm_addr *cli, slurm_addr *self)
 {
 	char *p;
 	char addrbuf[INET_ADDRSTRLEN];
+	env_t *env = xmalloc(sizeof(env_t));
+	int rc;
 
-	slurm_print_slurm_addr (cli, addrbuf, INET_ADDRSTRLEN);
-
-	/* 
-	 *  XXX: Eventually, need a function for slurm_addrs that
-	 *   returns just the IP address (not addr:port)
-	 */   
-
-	if ((p = strchr (addrbuf, ':')) != NULL)
-		*p = '\0';
-
-	setenvf (&job->env, "SLURM_LAUNCH_NODE_IPADDR", "%s", addrbuf);
-
-	if (getenvp(job->env, "SLURM_GMPI")) {
-		setenvf (&job->env, "GMPI_MASTER", "%s", addrbuf);
-		slurm_print_slurm_addr (self, addrbuf, INET_ADDRSTRLEN);
-		if ((p = strchr (addrbuf, ':')) != NULL) *p = '\0';
-		setenvf (&job->env, "GMPI_SLAVE", "%s", addrbuf);
-	}
-
+	env->cli = cli;
+	env->self = self;
+	env->jobid = job->jobid;
+	env->stepid = job->stepid;
+	env->env = job->env;
+	
+	rc = setup_env(env);
+	job->env = env->env;
+	xfree(env->task_count);
+	
 	return;
 }
 

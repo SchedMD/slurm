@@ -219,7 +219,8 @@ int setup_env(env_t *env)
 	int rc = SLURM_SUCCESS;
 	char *dist = NULL;
 	char *bgl_part_id = NULL;
-	
+	char addrbuf[INET_ADDRSTRLEN];
+
 	if (env == NULL)
 		return SLURM_ERROR;
 	
@@ -282,7 +283,12 @@ int setup_env(env_t *env)
 		rc = SLURM_FAILURE;
 	}
 	
-
+	if (env->stepid
+	    && setenvf(&env->env, "SLURM_STEPID", "%u", env->stepid)) {
+		error("Unable to set SLURM_JOBID environment");
+		rc = SLURM_FAILURE;
+	}
+	
 	if (env->nhosts
 	    && setenvf(&env->env, "SLURM_NNODES", "%u", env->nhosts)) {
 		error("Unable to set SLURM_NNODES environment var");
@@ -300,6 +306,31 @@ int setup_env(env_t *env)
 			"SLURM_TASKS_PER_NODE", "%s", env->task_count)) {
 		error ("Can't set SLURM_TASKS_PER_NODE env variable");
 		rc = SLURM_FAILURE;
+	}
+	
+	if (env->cli) {
+		
+		slurm_print_slurm_addr (env->cli, addrbuf, INET_ADDRSTRLEN);
+
+		/* 
+		 *  XXX: Eventually, need a function for slurm_addrs that
+		 *   returns just the IP address (not addr:port)
+		 */   
+
+		if ((dist = strchr (addrbuf, ':')) != NULL)
+			*dist = '\0';
+
+		setenvf (&env->env, "SLURM_LAUNCH_NODE_IPADDR", "%s", addrbuf);
+
+		if (getenvp(env->env, "SLURM_GMPI")) {
+			setenvf (&env->env, "GMPI_MASTER", "%s", addrbuf);
+			slurm_print_slurm_addr (env->self, 
+						addrbuf, INET_ADDRSTRLEN);
+			if ((dist = strchr (addrbuf, ':')) != NULL) 
+				*dist = '\0';
+			setenvf (&env->env, "GMPI_SLAVE", "%s", addrbuf);
+		}
+
 	}
 
 	uname(&name);
