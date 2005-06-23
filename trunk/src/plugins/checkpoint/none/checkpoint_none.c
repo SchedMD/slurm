@@ -77,12 +77,12 @@ const uint32_t plugin_version	= 90;
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
-int init ( void )
+extern int init ( void )
 {
 	return SLURM_SUCCESS;
 }
 
-int fini ( void )
+extern int fini ( void )
 {
 	return SLURM_SUCCESS;
 }
@@ -92,25 +92,16 @@ int fini ( void )
  */
 
 extern int slurm_ckpt_op ( uint16_t op, uint16_t data,
-		struct step_record * step_ptr )
+		struct step_record * step_ptr, time_t * event_time,
+		uint32_t *error_code, char **error_msg )
 {
 	return ESLURM_NOT_SUPPORTED;
 }
 
-extern int slurm_ckpt_error ( struct step_record * step_ptr, 
-		uint32_t *ckpt_errno, char **ckpt_strerror)
+extern int slurm_ckpt_comp ( struct step_record * step_ptr, time_t event_time,
+		uint32_t error_code, char *error_msg)
 {
-	if (ckpt_errno)
-		*ckpt_errno = ESLURM_NOT_SUPPORTED;
-	else
-		return EINVAL;
-
-	if (ckpt_strerror)
-		*ckpt_strerror = "This system does not support checkpointing";
-	else
-		return EINVAL;
-
-	return SLURM_SUCCESS;
+	return ESLURM_NOT_SUPPORTED;
 }
 
 extern int slurm_ckpt_alloc_job(check_jobinfo_t *jobinfo)

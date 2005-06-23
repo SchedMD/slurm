@@ -423,10 +423,18 @@ void inline slurm_free_checkpoint_msg(checkpoint_msg_t *msg)
 	}
 }
 
+void inline slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->error_msg);
+		xfree(msg);
+	}
+}
+
 void inline slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg)
 {
 	if (msg) {
-		xfree(msg->ckpt_strerror);
+		xfree(msg->error_msg);
 		xfree(msg);
 	}
 }

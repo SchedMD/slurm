@@ -132,6 +132,8 @@ typedef enum {
 	RESPONSE_COMPLETE_JOB_STEP,
 	REQUEST_CHECKPOINT,
 	RESPONSE_CHECKPOINT,
+	REQUEST_CHECKPOINT_COMP,
+	RESPONSE_CHECKPOINT_COMP,
 
 	REQUEST_LAUNCH_TASKS = 6001,
 	RESPONSE_LAUNCH_TASKS,
@@ -423,9 +425,18 @@ typedef struct checkpoint_msg {
 	uint32_t step_id;	/* slurm step_id */
 } checkpoint_msg_t;
 
+typedef struct checkpoint_comp_msg {
+	uint32_t job_id;	/* slurm job_id */
+	uint32_t step_id;	/* slurm step_id */
+	time_t   begin_time;	/* time checkpoint began */
+	uint32_t error_code;	/* error code on failure */
+	char *   error_msg;	/* error message on failure */
+} checkpoint_comp_msg_t;
+
 typedef struct checkpoint_resp_msg {
-	uint16_t ckpt_errno;	/* errno from last checkpoint operation */
-	char * ckpt_strerror;	/* string descriptive of ckpt_errno */
+	time_t   event_time;	/* time of checkpoint start/finish */
+	uint32_t error_code;	/* error code on failure */
+	char   * error_msg;	/* error message on failure */
 } checkpoint_resp_msg_t;
 
 typedef struct jobacct_msg {
@@ -515,6 +526,7 @@ void inline slurm_free_srun_ping_msg(srun_ping_msg_t * msg);
 void inline slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg);
 void inline slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg);
 void inline slurm_free_checkpoint_msg(checkpoint_msg_t *msg);
+void inline slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg);
 void inline slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg);
 void inline slurm_free_jobacct_msg(jobacct_msg_t *msg);
 

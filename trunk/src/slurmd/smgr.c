@@ -47,6 +47,10 @@
 #  include <sys/types.h>
 #endif
 
+#ifdef HAVE_AIX
+#  include <sys/checkpnt.h>
+#endif
+
 #include <sys/resource.h>
 
 #include <slurm/slurm_errno.h>
@@ -173,6 +177,9 @@ _session_mgr(slurmd_job_t *job)
 		error("slurm_create_container: %m");
 		exit(3);
 	}
+#ifdef HAVE_AIX
+	(void) mkcrid(0);
+#endif
 
 	if (chdir(job->cwd) < 0) {
 		error("couldn't chdir to `%s': %m: going to /tmp instead",

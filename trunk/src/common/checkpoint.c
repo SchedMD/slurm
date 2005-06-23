@@ -47,9 +47,10 @@
  */
 typedef struct slurm_checkpoint_ops {
 	int     (*ckpt_op) (uint16_t op, uint16_t data, 
-			struct step_record * step_ptr);
-	int	(*ckpt_error) (struct step_record * step_ptr, uint16_t *ckpt_errno, 
-			char **ckpt_strerror);
+			struct step_record * step_ptr, time_t * event_time,
+			 uint32_t *error_code, char **error_msg);
+	int	(*ckpt_comp) (struct step_record * step_ptr, time_t event_time,
+			 uint32_t error_code, char *error_msg);
 
 	int	(*ckpt_alloc_jobinfo) (check_jobinfo_t *jobinfo);
 	int	(*ckpt_free_jobinfo) (check_jobinfo_t jobinfo);
@@ -74,7 +75,7 @@ static slurm_checkpoint_context_t g_context = NULL;
 static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static slurm_checkpoint_context_t
-_slurm_checkpoint_context_create( const char *checkpoint_type)
+_slurm_checkpoint_context_create( const char *checkpoint_type )
 {
 	slurm_checkpoint_context_t c;
 
@@ -133,7 +134,7 @@ _slurm_checkpoint_get_ops( slurm_checkpoint_context_t c )
          */
 	static const char *syms[] = {
 		"slurm_ckpt_op",
-		"slurm_ckpt_error",
+		"slurm_ckpt_comp",
 		"slurm_ckpt_alloc_job",
 		"slurm_ckpt_free_job",
 		"slurm_ckpt_pack_job",
@@ -228,15 +229,16 @@ checkpoint_fini(void)
 
 /* perform some checkpoint operation */
 extern int
-checkpoint_op(uint16_t op, uint16_t data,
-		void * step_ptr)
+checkpoint_op(uint16_t op, uint16_t data, void * step_ptr,
+		time_t * event_time, uint32_t *error_code, char **error_msg)
 {
 	int retval = SLURM_SUCCESS;
 
 	slurm_mutex_lock( &context_lock );
 	if ( g_context )
 		retval = (*(g_context->ops.ckpt_op))(op, data, 
-			(struct step_record *) step_ptr);
+			(struct step_record *) step_ptr, event_time, 
+			error_code, error_msg);
 	else {
 		error ("slurm_checkpoint plugin context not initialized");
 		retval = ENOENT;
@@ -245,18 +247,17 @@ checkpoint_op(uint16_t op, uint16_t data,
 	return retval;
 }
 
-/* gather checkpoint error info */
 extern int
-checkpoint_error(void * step_ptr, 
-		uint16_t *ckpt_errno, char **ckpt_strerror)
+checkpoint_comp(void * step_ptr, time_t event_time, uint32_t error_code,
+		char *error_msg)
 {
 	int retval = SLURM_SUCCESS;
 
 	slurm_mutex_lock( &context_lock );
 	if ( g_context )
-		retval = (*(g_context->ops.ckpt_error))(
-				(struct step_record *) step_ptr, 
-				ckpt_errno, ckpt_strerror);
+		retval = (*(g_context->ops.ckpt_comp))(
+			(struct step_record *) step_ptr,
+			event_time, error_code, error_msg);
 	else {
 		error ("slurm_checkpoint plugin context not initialized");
 		retval = ENOENT;

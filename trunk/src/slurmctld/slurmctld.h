@@ -707,16 +707,22 @@ extern int job_step_cancel (uint32_t job_id, uint32_t job_step_id, uid_t uid );
 
 /*
  * job_step_checkpoint - perform some checkpoint operation
- * IN op - the operation to be performed (see enum check_opts)
- * IN data - operation-specific data
- * IN job_id - id of the job
- * IN step_id - id of the job step, NO_VAL indicates all steps of the indicated job
+ * IN ckpt_ptr - checkpoint request message
  * IN uid - user id of the user issuing the RPC
  * IN conn_fd - file descriptor on which to send reply
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_step_checkpoint(uint16_t op, uint16_t data, 
-		uint32_t job_id, uint32_t step_id, 
+extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
+		uid_t uid, slurm_fd conn_fd);
+
+/*
+ * job_step_checkpoint_comp - note job step checkpoint completion
+ * IN ckpt_ptr - checkpoint complete status message
+ * IN uid - user id of the user issuing the RPC
+ * IN conn_fd - file descriptor on which to send reply
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
 		uid_t uid, slurm_fd conn_fd);
 
 /* 

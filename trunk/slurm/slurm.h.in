@@ -1142,9 +1142,11 @@ extern int slurm_shutdown PARAMS(( uint16_t core ));
  *	be checkpointed
  * IN job_id  - job on which to perform operation
  * IN step_id - job step on which to perform operation
+ * OUT start_time - time at which checkpoint request was issued
  * RET 0 (can be checkpoined) or a slurm error code
  */
-extern int slurm_checkpoint_able (uint32_t job_id, uint32_t step_id);
+extern int slurm_checkpoint_able (uint32_t job_id, uint32_t step_id,
+		time_t *start_time);
 
 /*
  * slurm_checkpoint_disable - disable checkpoint requests for some job step
@@ -1194,39 +1196,33 @@ extern int slurm_checkpoint_vacate (uint32_t job_id, uint32_t step_id,
 extern int slurm_checkpoint_restart (uint32_t job_id, uint32_t step_id);
 
 /*
- * slurm_checkpoint_complete - note the successful completion of a job step's 
- *	checkpoint operation.
+ * slurm_checkpoint_complete - note the completion of a job step's checkpoint
+ *	operation.
  * IN job_id  - job on which to perform operation
  * IN step_id - job step on which to perform operation
+ * IN begin_time - time at which checkpoint began
+ * IN error_code - error code, highest value for all complete calls is preserved
+ * IN error_msg - error message, preserved for highest error_code
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_complete (uint32_t job_id, uint32_t step_id);
+extern int slurm_checkpoint_complete (uint32_t job_id, uint32_t step_id,
+		time_t begin_time, uint32_t error_code, char *error_msg);
 
 /*
- * slurm_checkpoint_failed - note the unsuccessful completion of a job step's 
- *	checkpoint operation.
+ * slurm_checkpoint_error - gather error information for the last checkpoint
+ *	operation for some job step
  * IN job_id  - job on which to perform operation
  * IN step_id - job step on which to perform operation
- * IN ckpt_errno - plugin-specific error code indicative of the failure type
- * RET 0 or a slurm error code
- */
-extern int slurm_checkpoint_failed (uint32_t job_id, uint32_t step_id, 
-		uint16_t ckpt_errno);
-
-/*
- * slurm_checkpoint_error - gather error information for the last checkpoint operation 
- * for some job step
- * IN job_id  - job on which to perform operation
- * IN step_id - job step on which to perform operation
- * OUT ckpt_errno - error number associated with the last checkpoint operation,
+ * OUT error_code - error number associated with the last checkpoint operation,
  *	this value is dependent upon the checkpoint plugin used and may be
- *	completely unrelated to slurm error codes
- * OUT ckpt_strerror - string describing the message associated with the last 
- *	checkpoint operation
+ *	completely unrelated to slurm error codes, the highest value for all
+ *	complete calls is preserved
+ * OUT error_msg - error message, preserved for highest error_code, value
+ *	must be freed by the caller to prevent memory leak
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_error ( uint32_t job_id, uint32_t step_id, 
-		uint16_t *ckpt_errno, char **ckpt_strerror);
+extern int slurm_checkpoint_error ( uint32_t job_id, uint32_t step_id,
+		uint32_t *error_code, char **error_msg);
 
 END_C_DECLS
 

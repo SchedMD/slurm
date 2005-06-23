@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "July 2004" "Morris Jette" "Slurm checkpoin functions"
+.TH "Slurm API" "3" "June 2005" "Morris Jette" "Slurm checkpoin functions"
 
 .SH "NAME"
 slurm_spawn \- Slurm checkpoint functions
@@ -8,15 +8,31 @@ slurm_spawn \- Slurm checkpoint functions
 #include <slurm/slurm.h>
 .LP
 .LP
-slurm_step_ctx \fBslurm_checkpoint_complete\fR (
+int \fBslurm_checkpoint_able\fR (
 .br
 	uint32_t \fIjob_id\fP,
 .br
-	uint32_t \fIstep_id\fP
+	uint32_t \fIstep_id\fP,
+.br
+	time_t *\fIstart_time\fP,
 .br
 );
 .LP
-slurm_step_ctx \fBslurm_checkpoint_create\fR (
+int \fBslurm_checkpoint_complete\fR (
+.br
+	uint32_t \fIjob_id\fP,
+.br
+	uint32_t \fIstep_id\fP,
+.br
+	time_t \fIstart_time\fP,
+.br
+	uint32_t \fIerror_code\fP,
+.br
+	char *\fIerror_msg\fP
+.br
+);
+.LP
+int \fBslurm_checkpoint_create\fR (
 .br
 	uint32_t \fIjob_id\fP,
 .br
@@ -26,7 +42,7 @@ slurm_step_ctx \fBslurm_checkpoint_create\fR (
 .br
 );
 .LP
-slurm_step_ctx \fBslurm_checkpoint_disable\fR (
+int \fBslurm_checkpoint_disable\fR (
 .br
 	uint32_t \fIjob_id\fP,
 .br
@@ -34,7 +50,7 @@ slurm_step_ctx \fBslurm_checkpoint_disable\fR (
 .br
 );
 .LP
-slurm_step_ctx \fBslurm_checkpoint_enable\fR (
+int \fBslurm_checkpoint_enable\fR (
 .br
 	uint32_t \fIjob_id\fP,
 .br
@@ -42,30 +58,20 @@ slurm_step_ctx \fBslurm_checkpoint_enable\fR (
 .br
 );
 .LP
-slurm_step_ctx \fBslurm_checkpoint_error\fR (
+int \fBslurm_checkpoint_error\fR (
 
 .br
 	uint32_t \fIjob_id\fP,
 .br
 	uint32_t \fIstep_id\fP,
 .br
-	uint16_t *\fIckpt_errno\fP,
+	uint32_t *\fIerror_code\fP,
 .br
-	char ** \fIckpt_strerror\fP
-.br
-);
-.LP
-slurm_step_ctx \fBslurm_checkpoint_failed\fR (
-.br
-	uint32_t \fIjob_id\fP,
-.br
-	uint32_t \fIstep_id\fP,
-.br
-	uint16_t \fIckpt_errno\fP
+	char ** \fIerror_msg\fP
 .br
 );
 .LP
-slurm_step_ctx \fBslurm_checkpoint_resume\fR (
+int \fBslurm_checkpoint_restart\fR (
 .br
 	uint32_t \fIjob_id\fP,
 .br
@@ -73,7 +79,7 @@ slurm_step_ctx \fBslurm_checkpoint_resume\fR (
 .br
 );
 .LP
-slurm_step_ctx \fBslurm_checkpoint_vacate\fR (
+int \fBslurm_checkpoint_vacate\fR (
 .br
 	uint32_t \fIjob_id\fP,
 .br
@@ -86,14 +92,12 @@ slurm_step_ctx \fBslurm_checkpoint_vacate\fR (
 .SH "ARGUMENTS"
 .LP 
 .TP
-\fIckpt_errno\fP
-Set to the last checkpoint error number associated with this slurm job step. 
-This is an error number specific to the checkpoint mechanism and independent 
-of system or SLURM error numbers.
+\fIerror_code\fP
+Error code for checkpoint operation. Only the highest value is preserved.
 .TP
-\fIckpt_strerror\fP
-Set to a string descriptive of the last checkpoint error associated with this slurm job step. 
-This storage must be freed by the caller.
+\fIerror_msg\fP
+Error message for checkpoint operation. Only the \fIerror_msg\fP value for the highest 
+\fIerror_code\fP is preserved.
 .TP
 \fIjob_id\fP
 SLURM job ID to perform the operation upon.
@@ -101,12 +105,19 @@ SLURM job ID to perform the operation upon.
 \fImax_wait\fP
 Maximum time to allow for the operation to complete in seconds.
 .TP
+\fIstart_time\fP
+Time at which last checkpoint operation began (if one is in progress), otherwise zero.
+.TP
 \fIstep_id\fP
 SLURM job step ID to perform the operation upon. 
-May be NO_VAL if the operation is to be performed on all steps of the specified job
-(only for the \fBslurm_checkpoint\fR function).
+May be NO_VAL if the operation is to be performed on all steps of the specified job.
 
 .SH "DESCRIPTION"
+.LP
+\fBslurm_checkpoint_able\fR
+Report if checkpoint operations can presently be issued for the specified job step.
+If yes, returns SLURM_SUCCESS and sets \fIstart_time\fP if checkpoint operation is 
+presently active. Returns ESLURM_DISABLED if checkpoint operation is disabled.
 .LP
 \fBslurm_checkpoint_complete\fR
 Note that a requested checkpoint has been completed.
@@ -123,10 +134,10 @@ a job step is in a critical section or for other reasons.
 \fBslurm_checkpoint_enable\fR
 Make the indentified job step checkpointable.
 .LP
-\fBslurm_checkpoint_failed\fR
-Note that a requested checkpoint has been failed.
+\fBslurm_checkpoint_error\fR
+Get error information about the last checkpoint operation for a given job step.
 .LP
-\fBslurm_checkpoint_resume\fR
+\fBslurm_checkpoint_restart\fR
 Request that a previously checkpointed job resume execution.
 It may continue execution on differrent nodes than were 
 originally used.
@@ -169,14 +180,10 @@ int main (int argc, char *argv[])
 {
 .br 
 	uint32_t job_id, step_id;
-.br
-	uint16_t ckpt_errno;
-.br
-	char *ckpt_strerror;
 .LP
 	if (argc < 3) {
 .br
-		printf("Usage: %s job_id step_id\\n");
+		printf("Usage: %s job_id step_id\\n", argv[0]);
 .br
 		exit(1);
 .br
@@ -186,21 +193,13 @@ int main (int argc, char *argv[])
 .br
 	step_id = atoi(argv[2]);
 .br
-	if (slurm_checkpoint_error(job_id, step_id, 
-.br
-			&ckpt_errno, &ckpt_strerror)) {
+	if (slurm_checkpoint_disable(job_id, step_id)) {
 .br
 		slurm_perror ("slurm_checkpoint_error:");
 .br 
 		exit (1);
 .br
 	}
-.LP
-	printf ("step:%u.%u ckpt_errno=%u ckpt_strerror:%s\\n", 
-.br 
-	        job_id, step_id, ckpt_errno, ckpt_strerror); 
-.br 
-	free(ckpt_strerror);
 .br 
 	exit (0);
 .br 

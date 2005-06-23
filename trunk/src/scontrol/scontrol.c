@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  scontrol - administration tool for slurm. 
  *	provides interface to read, write, update, and configurations.
- *  $Id*
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -1826,8 +1826,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
   file. You may wish to use the \"show\" keyword then use its output as    \n\
   input for the update keyword, editing as needed.                         \n\
                                                                            \n\
-  <CH_OP> identify checkpoint operations and may be \"disable\", \"enable\",\n\
-  \"able\", \"create\", \"vacate\", \"restart\", or \"error\". \n\
+  <CH_OP> identify checkpoint operations and may be \"able\", \"disable\", \n\
+  \"enable\", \"create\", \"vacate\", \"restart\", or \"error\".           \n\
                                                                            \n\
   All commands and options are case-insensitive, although node names and   \n\
   partition names tests are case-sensitive (node names \"LX\" and \"lx\"   \n\
@@ -1849,7 +1849,7 @@ static int _checkpoint(char *op, char *job_step_id_str)
 	int rc = SLURM_SUCCESS;
 	uint32_t job_id = 0, step_id = 0, step_id_set = 0;
 	char *next_str;
-	uint16_t ckpt_errno;
+	uint32_t ckpt_errno;
 	char *ckpt_strerror = NULL;
 
 	if (job_step_id_str) {
@@ -1869,25 +1869,40 @@ static int _checkpoint(char *op, char *job_step_id_str)
 	}
 
 	if (strncasecmp(op, "able", 2) == 0) {
-		rc = slurm_checkpoint_able (job_id, step_id);
-		if (rc == SLURM_SUCCESS)
-			printf("Yes\n");
-		else if (slurm_get_errno() == ESLURM_DISABLED) {
+		time_t start_time;
+		rc = slurm_checkpoint_able (job_id, step_id, &start_time);
+		if (rc == SLURM_SUCCESS) {
+			if (start_time) {
+				char time_str[128];
+				strftime(time_str, sizeof(time_str), 
+					"Began at %H:%M:%S\n", 
+					localtime(&start_time));
+				printf(time_str);
+			} else
+				printf("Yes\n");
+		} else if (slurm_get_errno() == ESLURM_DISABLED) {
 			printf("No\n");
 			rc = SLURM_SUCCESS;	/* not real error */
 		}
-	} else if (strncasecmp(op, "disable", 3) == 0)
+	}
+	else if (strncasecmp(op, "complete", 3) == 0) {
+		/* Undocumented option used for testing purposes */
+		static uint32_t error_code = 1;
+		char error_msg[64];
+		sprintf(error_msg, "test error message %d", error_code);
+		rc = slurm_checkpoint_complete(job_id, step_id, (time_t) 0,
+			error_code++, error_msg);
+	}
+	else if (strncasecmp(op, "disable", 3) == 0)
 		rc = slurm_checkpoint_disable (job_id, step_id);
 	else if (strncasecmp(op, "enable", 2) == 0)
 		rc = slurm_checkpoint_enable (job_id, step_id);
-
 	else if (strncasecmp(op, "create", 2) == 0)
 		rc = slurm_checkpoint_create (job_id, step_id, CKPT_WAIT);
 	else if (strncasecmp(op, "vacate", 2) == 0)
 		rc = slurm_checkpoint_vacate (job_id, step_id, CKPT_WAIT);
 	else if (strncasecmp(op, "restart", 2) == 0)
 		rc = slurm_checkpoint_restart (job_id, step_id);
-
 	else if (strncasecmp(op, "error", 2) == 0) {
 		rc = slurm_checkpoint_error (job_id, step_id, 
 			&ckpt_errno, &ckpt_strerror);

@@ -31,6 +31,7 @@
 #include "slurm/slurm.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/common/slurm_protocol_defs.h"
 
 /* Define checkpoint options */
 enum check_opts {
@@ -42,8 +43,6 @@ enum check_opts {
 	CHECK_VACATE,		/* create a checkpoint for this job,
 				 * job terminates afterwards */
 	CHECK_RESTART,		/* restart a previously checkpointed job */
-	CHECK_COMPLETE,		/* a checkpoint of this job has completed */
-	CHECK_FAILED,		/* a checkpoint of this job has failed */
 	CHECK_ERROR		/* get error info */
 };
 
@@ -60,9 +59,13 @@ extern int checkpoint_init(char *checkpoint_type);
 /* shutdown checkpoint plugin */
 extern int checkpoint_fini(void);
 
-/* perform some checkpoint operation */
-extern int checkpoint_op(uint16_t op, uint16_t data,
-		void * step_ptr);
+/* perform many checkpoint operation */
+extern int checkpoint_op(uint16_t op, uint16_t data, void * step_ptr, 
+		time_t * event_time, uint32_t *error_code, char **error_msg);
+
+/* note checkpoint completion */
+extern int checkpoint_comp(void * step_ptr, time_t event_time, uint32_t error_code,
+		char *error_msg);
 
 /* gather checkpoint error info */
 extern int checkpoint_error(void * step_ptr, 

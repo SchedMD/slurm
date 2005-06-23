@@ -7,7 +7,7 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
-# AIXcheckpoint plugin.
+# AIX checkpoint plugin.
 if HAVE_AIX
 pkglib_LTLIBRARIES = checkpoint_aix.la
 checkpoint_aix_la_SOURCES = checkpoint_aix.c
