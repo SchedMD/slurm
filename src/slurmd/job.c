@@ -261,7 +261,13 @@ job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *cli_addr)
 	job->env     = _array_copy(msg->envc, msg->env);
 	job->argc    = msg->argc;
 	job->argv    = _array_copy(job->argc, msg->argv);
-
+	job->envtp   = xmalloc(sizeof(env_t));
+	job->envtp->jobid = -1;
+	job->envtp->stepid = -1;
+	job->envtp->gmpi = -1;
+	job->envtp->procid = -1;
+	job->envtp->nodeid = -1;
+	
 	job->cwd     = xstrdup(msg->cwd);
 
 	memcpy(&io_addr,   cli_addr, sizeof(slurm_addr));
