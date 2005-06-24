@@ -225,13 +225,13 @@ int setup_env(env_t *env)
 		return SLURM_ERROR;
 	
 	if (env->nprocs
-	   && setenvf(&env->env, "SLURM_NPROCS", "%u", env->nprocs)) {
+	   && setenvf(&env->env, "SLURM_NPROCS", "%d", env->nprocs)) {
 		error("Unable to set SLURM_NPROCS environment variable");
 		rc = SLURM_FAILURE;
 	} 
  
 	if (env->cpus_per_task 
-	   && setenvf(&env->env, "SLURM_CPUS_PER_TASK", "%u", 
+	   && setenvf(&env->env, "SLURM_CPUS_PER_TASK", "%d", 
 		      env->cpus_per_task) ) {
 		error("Unable to set SLURM_CPUS_PER_TASK");
 		rc = SLURM_FAILURE;
@@ -286,7 +286,7 @@ int setup_env(env_t *env)
 	}
 	
 	if (env->jobid >= 0
-	    && setenvf(&env->env, "SLURM_JOBID", "%u", env->jobid)) {
+	    && setenvf(&env->env, "SLURM_JOBID", "%d", env->jobid)) {
 		error("Unable to set SLURM_JOBID environment");
 		rc = SLURM_FAILURE;
 	}
@@ -304,7 +304,7 @@ int setup_env(env_t *env)
 	}
 	
 	if (env->stepid >= 0
-	    && setenvf(&env->env, "SLURM_STEPID", "%u", env->stepid)) {
+	    && setenvf(&env->env, "SLURM_STEPID", "%d", env->stepid)) {
 		error("Unable to set SLURM_STEPID environment");
 		rc = SLURM_FAILURE;
 	}
@@ -316,7 +316,7 @@ int setup_env(env_t *env)
 	}
 	
 	if (env->nhosts
-	    && setenvf(&env->env, "SLURM_NNODES", "%u", env->nhosts)) {
+	    && setenvf(&env->env, "SLURM_NNODES", "%d", env->nhosts)) {
 		error("Unable to set SLURM_NNODES environment var");
 		rc = SLURM_FAILURE;
 	}

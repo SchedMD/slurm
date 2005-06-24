@@ -61,7 +61,6 @@
 #include "src/common/node_select.h"
 #include "src/common/fd.h"
 #include "src/common/safeopen.h"
-#include "src/common/env.h"
 #include "src/common/slurm_jobacct.h"
 #include "src/common/switch.h"
 #include "src/common/xsignal.h"
@@ -138,8 +137,6 @@ static int  _send_pending_exit_msgs(slurmd_job_t *job);
 static void _kill_running_tasks(slurmd_job_t *job);
 
 static void _setargs(slurmd_job_t *job);
-static void _setup_spawn_env(slurmd_job_t *, 
-			     slurm_addr *cli, slurm_addr *self);
 
 static void _random_sleep(slurmd_job_t *job);
 static char *_sprint_task_cnt(batch_job_launch_msg_t *msg);
@@ -148,8 +145,8 @@ static char *_sprint_task_cnt(batch_job_launch_msg_t *msg);
  */
 static char * _make_batch_dir(slurmd_job_t *job);
 static char * _make_batch_script(batch_job_launch_msg_t *msg, char *path);
-static int    _setup_batch_env(slurmd_job_t *job, batch_job_launch_msg_t *msg);
-static int    _complete_job(uint32_t jobid, uint32_t stepid, int err, int status);
+static int    _complete_job(uint32_t jobid, uint32_t stepid, 
+			    int err, int status);
 
 
 /* SIGHUP (empty) signal handler
@@ -164,7 +161,6 @@ mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli,
 		 slurm_addr *self)
 {
 	slurmd_job_t *job = NULL;
-	env_t *env = xmalloc(sizeof(env_t));
 	
 	if (!(job = job_create(msg, cli))) {
 		_send_launch_failure (msg, cli, errno);
@@ -174,12 +170,14 @@ mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli,
 	_set_job_log_prefix(job);
 
 	_setargs(job);
-	job->cli = cli;
-	job->self = self;
 	
-	if (_job_mgr(job) < 0)
+	job->envtp->cli = cli;
+	job->envtp->self = self;
+	
+	if (_job_mgr(job) < 0) 
 		return SLURM_ERROR;
-
+	
+		
 	job_destroy(job);
 
 	return SLURM_SUCCESS;
@@ -194,9 +192,15 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	int           rc     = 0;
 	int           status = 0;
 	uint32_t      jobid  = msg->job_id;
-	slurmd_job_t *job;
-	char         *batchdir;
-
+	slurmd_job_t *job = NULL;
+	char         *batchdir = NULL;
+	char       buf[1024];
+	hostlist_t hl = hostlist_create(msg->nodes);
+	if (!hl)
+		return SLURM_ERROR;
+		
+	hostlist_ranged_string(hl, 1024, buf);
+	
 	if (!(job = job_batch_job_create(msg))) {
 		/*
 		 *  Set "job" status to returned errno and cleanup job.
@@ -204,7 +208,7 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 		status = errno;
 		goto cleanup;
 	}
-	
+
 	_set_job_log_prefix(job);
 
 	_setargs(job);
@@ -216,11 +220,16 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 
 	if ((job->argv[0] = _make_batch_script(msg, batchdir)) == NULL)
 		goto cleanup2;
-	if ((rc = _setup_batch_env(job, msg)) < 0)
-		goto cleanup2;
-
+	
+	job->envtp->nprocs = msg->nprocs;
+	job->envtp->select_jobinfo = msg->select_jobinfo;
+	job->envtp->nhosts = hostlist_count(hl);
+	hostlist_destroy(hl);
+	job->envtp->nodelist = buf;
+	job->envtp->task_count = _sprint_task_cnt(msg);
+	
 	status = _job_mgr(job);
-		
+	
    cleanup2:
 	if (job->argv[0] && (unlink(job->argv[0]) < 0))
 		error("unlink(%s): %m", job->argv[0]);
@@ -247,7 +256,7 @@ mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *cli,
 	       slurm_addr *self)
 {
 	slurmd_job_t *job = NULL;
-
+	
 	if (!(job = job_spawn_create(msg, cli)))
 		return SLURM_ERROR;
 
@@ -256,12 +265,12 @@ mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *cli,
 
 	_setargs(job);
 	
-	job->cli = cli;
-	job->self = self;
+	job->envtp->cli = cli;
+	job->envtp->self = self;
 	
-	if (_job_mgr(job) < 0)
+	if (_job_mgr(job) < 0) 
 		return SLURM_ERROR;
-
+	
 	job_destroy(job);
 
 	return SLURM_SUCCESS;
@@ -478,9 +487,10 @@ static int
 _job_mgr(slurmd_job_t *job)
 {
 	int rc = 0;
-
+	
 	debug3("Entered job_mgr pid=%lu", (unsigned long) getpid());
 
+	
 	if (shm_init(false) < 0)
 		goto fail0;
 
@@ -497,7 +507,7 @@ _job_mgr(slurmd_job_t *job)
 		rc = ESLURM_INTERCONNECT_FAILURE;
 		goto fail1;
 	}
-
+	
 	xsignal_block(mgr_sigarray);
 	xsignal(SIGHUP, _hup_handler);
 
@@ -1030,42 +1040,6 @@ _make_batch_script(batch_job_launch_msg_t *msg, char *path)
 
 }
 
-static int
-_setup_batch_env(slurmd_job_t *job, batch_job_launch_msg_t *msg)
-{
-	char       buf[1024], *task_buf, *bgl_part_id = NULL;
-	struct utsname name;
-	hostlist_t hl = hostlist_create(msg->nodes);
-	env_t *env = xmalloc(sizeof(env_t));
-	
-	if (!hl)
-		return SLURM_ERROR;
-
-	hostlist_ranged_string(hl, 1024, buf);
-	
-	env->stepid = -1;
-	env->gmpi = -1;
-	env->procid = -1;
-	env->nodeid = -1;
-	env->nprocs = msg->nprocs;
-	env->select_jobinfo = msg->select_jobinfo;
-	env->jobid = job->jobid;
-	env->nhosts = hostlist_count(hl);
-	hostlist_destroy(hl);
-	env->nodelist = buf;
-	env->task_count = _sprint_task_cnt(msg);
-	env->env = job->env;
-		
-	setup_env(env);
-	job->env = env->env;
-	env->env = NULL;
-	xfree(env->task_count);
-	xfree(env);
-
-	return 0;
-
-}
-
 static char *
 _sprint_task_cnt(batch_job_launch_msg_t *msg)
 {
@@ -1301,28 +1275,3 @@ _setargs(slurmd_job_t *job)
 
 	return;
 }
-
-static void
-_setup_spawn_env(slurmd_job_t *job, slurm_addr *cli, slurm_addr *self)
-{
-	env_t *env = xmalloc(sizeof(env_t));
-	
-	env->stepid = -1;
-	env->gmpi = -1;
-	env->procid = -1;
-	env->nodeid = -1;
-	env->jobid = -1;
-	
-	env->cli = cli;
-	env->self = self;
-	env->jobid = job->jobid;
-	env->stepid = job->stepid;
-	env->env = job->env;
-	
-	setup_env(env);
-	job->env = env->env;
-	env->env = NULL;
-	xfree(env);
-	return;
-}
-

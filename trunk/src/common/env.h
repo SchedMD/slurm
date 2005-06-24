@@ -39,7 +39,6 @@ typedef struct env_options {
 	int nprocs;		/* --nprocs=n,      -n n	*/
 	char *task_count;
 	bool nprocs_set;	/* true if nprocs explicitly set */
-	int  cpus_per_task;	/* --cpus-per-task=n, -c n	*/
 	bool cpus_set;		/* true if cpus_per_task explicitly set */
 	enum distribution_t
 		distribution;	/* --distribution=, -m dist	*/
@@ -47,16 +46,17 @@ typedef struct env_options {
 	int  slurmd_debug;	/* --slurmd-debug, -D           */
 	bool labelio;		/* --label-output, -l		*/
 	select_jobinfo_t select_jobinfo;
-	uint32_t jobid;		/* assigned job id */
-	uint32_t stepid;	/* assigned step id */
 	int nhosts;
 	char *nodelist;		/* nodelist in string form */
 	char **env;             /* job environment */
 	slurm_addr *cli;
 	slurm_addr *self;
+	int jobid;		/* assigned job id */
+	int stepid;	        /* assigned step id */
 	int procid;
-	int gmpi;
 	int nodeid;
+	int gmpi;
+	int cpus_per_task;	/* --cpus-per-task=n, -c n	*/
 	int cpus_on_node;
 } env_t;
 

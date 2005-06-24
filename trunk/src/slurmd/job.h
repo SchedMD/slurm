@@ -39,6 +39,7 @@
 #include "src/common/list.h"
 #include "src/common/eio.h"
 #include "src/common/switch.h"
+#include "src/common/env.h"
 
 
 #ifndef MAXHOSTNAMELEN
@@ -136,8 +137,7 @@ typedef struct slurmd_job {
 	                           /* communication between slurmds         */
 
 	uint16_t       task_flags; 
-	slurm_addr     *cli;
-	slurm_addr     *self;
+	env_t          *envtp;
 } slurmd_job_t;
 
 

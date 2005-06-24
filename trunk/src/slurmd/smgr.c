@@ -58,7 +58,6 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/slurm_jobacct.h"
-#include "src/common/env.h"
 #include "src/common/switch.h"
 #include "src/common/xsignal.h"
 
@@ -293,7 +292,7 @@ _exec_all_tasks(slurmd_job_t *job)
 
 	xassert(job != NULL);
 	xassert(fd >= 0);
-
+	
 	/*
 	 *  Block signals for this process before exec-ing
 	 *   user tasks. Esp. important to block SIGCHLD until
@@ -371,18 +370,27 @@ static void
 _exec_task(slurmd_job_t *job, int i)
 {
 	task_info_t *t = NULL;
-	env_t *env = xmalloc(sizeof(env_t));
-	env->stepid = -1;
-	env->gmpi = -1;
-	env->procid = -1;
-	env->nodeid = -1;
-	env->jobid = -1;
-	
 	if (xsignal_unblock(smgr_sigarray) < 0) {
 		error("unable to unblock signals");
 		exit(1);
 	}
 
+	job->envtp->jobid = job->jobid;
+	job->envtp->stepid = job->stepid;
+	job->envtp->nodeid = job->nodeid;
+	job->envtp->cpus_on_node = job->cpus;
+	job->envtp->env = job->env;
+	
+	t = job->task[i];
+	job->envtp->procid = t->gtid;
+	job->envtp->gmpi = t->gtid;
+	
+	
+	setup_env(job->envtp);
+	job->env = job->envtp->env;
+	job->envtp->env = NULL;
+	xfree(job->envtp->task_count);
+	
 	if (!job->batch) {
 		if (interconnect_attach(job->switch_job, &job->env,
 				job->nodeid, (uint32_t) i, job->nnodes,
@@ -391,23 +399,6 @@ _exec_task(slurmd_job_t *job, int i)
 			exit(1);
 		}
 	
-		t = job->task[i];
-	
-		env->jobid = job->jobid;
-		env->stepid = job->stepid;
-		env->nodeid = job->nodeid;
-		env->cpus_on_node = job->cpus;
-		env->cli = job->cli;
-		env->self = job->self;
-		env->procid = t->gtid;
-		env->gmpi = t->gtid;
-		env->env = job->env;
-		
-		setup_env(env);
-		job->env = env->env;
-		env->env = NULL;
-		xfree(env);
-		
 		_pdebug_stop_current(job);
 	}
 

@@ -177,7 +177,13 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->env     = _array_copy(msg->envc, msg->env);
 	job->argc    = msg->argc;
 	job->argv    = _array_copy(job->argc, msg->argv);
-
+	job->envtp   = xmalloc(sizeof(env_t));
+	job->envtp->jobid = -1;
+	job->envtp->stepid = -1;
+	job->envtp->gmpi = -1;
+	job->envtp->procid = -1;
+	job->envtp->nodeid = -1;
+	
 	job->cwd     = xstrdup(msg->cwd);
 
 	memcpy(&resp_addr, cli_addr, sizeof(slurm_addr));
@@ -333,7 +339,13 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->eio     = eio_handle_create();
 	job->objs    = list_create((ListDelF) io_obj_destroy);
 	job->sruns   = list_create((ListDelF) _srun_info_destructor);
-
+	job->envtp   = xmalloc(sizeof(env_t));
+	job->envtp->jobid = -1;
+	job->envtp->stepid = -1;
+	job->envtp->gmpi = -1;
+	job->envtp->procid = -1;
+	job->envtp->nodeid = -1;
+	
 	srun = srun_info_create(NULL, NULL, NULL);
 
 	srun->ofname = _mkfilename(job, msg->out);
@@ -437,7 +449,7 @@ job_destroy(slurmd_job_t *job)
 		task_info_destroy(job->task[i]);
 	list_destroy(job->sruns);
 	list_destroy(job->objs);
-
+	xfree(job->envtp);
 	xfree(job);
 }
 
