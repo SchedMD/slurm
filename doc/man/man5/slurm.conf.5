@@ -133,14 +133,35 @@ In order to use the \fBsacct\fR tool, "jobacct/log" must be configured.a
 \fBJobAcctLoc\fR
 Define the location where job accounting logs are to be written.
 For jobacct/none this parameter is ignored.
-For jobacct/log this is the fully-qualified file name for the data file.a
+For jobacct/log this is the fully-qualified file name for the data file.
+.TP
 \fBJobAcctParameters\fR
-Define any parameters to pass to the job accounting plugin. 
+Define any parameters to pass to the job accounting plugin, in a
+comma-separated list.
 For jobacct/none this parameter is ignored.
-For jobacct/log the only parameter available at this time is
-"Frequency=N", where N is the number of seconds between
+For jobacct/log the parameters available are
+.RS
+.TP
+\fBFrequency=N\fR, where N is the number of seconds between
 sampling the memory usage stats (psize, vsize). If N=0, no sampling
 is done and psize and vsize are returned as 0.
+.TP
+\fBMaxSendRetries=N\fR, where N is the number of times to try to send 
+an accounting message before giving up.
+.TP
+\fBMaxSendRetryDelay=N\fR, pause for 1 to MaxSendRetryDelay
+seconds between attempts to deliver an
+accounting message.
+.TP
+\fBStaggerSlotSize=N\fR - For a process that might be sending 
+a message at the same time as N other processes in the job, where N is
+10 or greater, each process will pause a bit before trying to send its
+message. For N tasks, N "staggered timeslots" are defined, in increments
+of (StaggerSlotSize*.001) seconds. The first process sends its message
+immediately, the second process pauses one increment before sending,
+the third process pauses two increments before sending, and so on.  
+.RE
+.TP
 \fBJobCompLoc\fR
 The interpretation of this value depends upon the logging mechanism 
 specified by the \fBJobCompType\fR parameter. 
