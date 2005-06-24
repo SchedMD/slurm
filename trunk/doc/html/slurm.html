@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-209488">
-<meta name="LLNLRandRdate" content="12 January 2004">
+<meta name="LLNLRandRdate" content="23 June 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -61,13 +61,14 @@ can perform work. Second, it provides a framework for starting, executing, and
 monitoring work (typically a parallel job) on a set of allocated nodes. Finally, 
 it arbitrates conflicting requests for resources by managing a queue of pending 
 work. </p>
+
 <p>SLURM is not a sophisticated batch system, but it does provide an Applications 
-Programming Interface (API) for integration with external schedulers such as <a href="http://supercluster.org/maui">The 
-Maui Scheduler</a>. While other resource managers do exist, SLURM is unique in 
-several respects: 
+Programming Interface (API) for integration with external schedulers such as 
+<a href="http://supercluster.org/maui">The Maui Scheduler</a>. 
+While other resource managers do exist, SLURM is unique in several respects: 
 <ul>
-<li>Its source code is freely available under the <a href="http://www.gnu.org/licenses/gpl.html">GNU 
-General Public License</a>.</li>
+<li>Its source code is freely available under the 
+<a href="http://www.gnu.org/licenses/gpl.html">GNU General Public License</a>.</li>
 <li>It is designed to operate in a heterogeneous cluster with up to thousands 
 of nodes.</li>
 <li>It is portable; written in C with a GNU autoconf configuration engine. While 
@@ -78,7 +79,19 @@ mechanisms, schedulers, etc.</li>
 executing its control functions.</li>
 <li>It is simple enough for the motivated end user to understand its source and 
 add functionality.</li>
-</ul>
+</ul></p>
+
+<p>SLURM provides resource management on about 1000 computers world-wide including 
+many of the most powerful computers in the world including:
+<ul>
+<li><a href="http://www.llnl.gov/asci/platforms/bluegenel/">BlueGene/L</a> with 131,072
+dual-processor compute nodes</li>
+<li><a href="http://www.llnl.gov/linux/thunder/">Thunder</a> a Linux cluster with 1024 nodes 
+each having four Itanium2 processors</li>
+<li><a href="http://www.llnl.gov/asci/platforms/purple/">ASC Purple</a> an IBM SP/AIX cluster 
+with about 1500 nodes each having eight Power5 processors</li>
+</p>
+
 </td>
 </tr>
 <tr> 
@@ -87,7 +100,7 @@ add functionality.</li>
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-209488<br>
-Last modified January 15, 2004</p></td>
+Last modified 23 June 2005</p></td>
 </tr>
 </table>
 </td>

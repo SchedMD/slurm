@@ -251,14 +251,32 @@ JobAcctType=jobacct/none
 #
 # o Define any parameters to pass to the job accounting plugin. For
 #    - jobacct/none - this parameter is ignored
-#    - jobacct/log  - the only parameter available at this time is
-#          - "Frequency=N" - where N is the number of seconds between
-#                            sampling the memory usage stats (psize,
-#                            vsize). If N=0, no sampling is done, and
-#                            psize and vsize are returned as 0.
+#    - jobacct/log  - the parameters available are
+#          - Frequency=N       - where N is the number of seconds
+#                                between sampling the memory usage stats
+#                                (psize, vsize). If N=0, no sampling is
+#                                done, and psize and vsize are returned
+#                                as 0.
+#          - MaxSendRetries    - Number of times to try to send an
+#                                accounting message before giving up.
+#          - MaxSendRetryDelay - Pause for 1 to MaxSendRetryDelay
+#                                seconds between attempts to deliver an
+#                                accounting message.
+#          - StaggerSlotSize   - For a process that might be sending
+#                                a message at the same time as N other
+#                                processes in the job, where N is 10 or greater,
+#                                each process will pause a bit before
+#                                trying to send its message. For N tasks,
+#                                N "staggered timeslots" are defined,
+#                                in increments of (StaggerSlotSize*.001)
+#                                seconds. The first process sends its
+#                                message immediately, the second process
+#                                pauses one increment before sending,
+#                                the third process pauses two increments
+#                                before sending, and so on.  
 #
-# JobAcctParameters="Frequency=30"
-
+# JobAcctParameters="Frequency=30,MaxSendRetries=3,MaxSendRetryDelay=5,\
+#                     StaggerSlotSize=1" 
 #
 # o Define the places to look for SLURM plugins.  This is a
 #   colon-separated list of directories, just like the PATH

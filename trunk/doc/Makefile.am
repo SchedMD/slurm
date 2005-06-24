@@ -15,6 +15,7 @@ html_DATA = \
 	html/faq.html \
 	html/help.html \
 	html/ibm.html \
+	html/jobacctplugins.html \
 	html/jobcompplugins.html \
 	html/lll.gif \
 	html/mail.html \

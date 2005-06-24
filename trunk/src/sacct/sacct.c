@@ -25,6 +25,10 @@
 /*
  * HISTORY
  * $Log$
+ * Revision 1.6  2005/06/24 01:19:52  jette
+ * Additional documenation for job accounting. Some bug fixes too. All from
+ * Andy Riebs/HP.
+ *
  * Revision 1.5  2005/06/11 00:49:43  jette
  * Get all the latest accounting software patches.
  *
@@ -137,6 +141,7 @@
 
 #include "src/common/getopt.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
 
 #define ERROR 2
 
@@ -1079,8 +1084,7 @@ char *elapsedTime(long secs, long usecs)
 	hourbuf[0] = 0;
 	minbuf[0] = 0;
 
-	res = div(usecs, 1e6);		/* In case we had lots of usecs */
-	usecs = res.rem+5000;		/* round it up then  */
+	res = div(usecs+5000, 1e6);	/* round up the usecs, then */
 	usecs /= 1e4;			/* truncate to .00's */
 
 	res = div(secs+res.quot, 60*60*24);	/* 1 day is 24 hours of 60
@@ -1091,12 +1095,11 @@ char *elapsedTime(long secs, long usecs)
 	res = div(res.rem, 60);
 	minutes = res.quot;
 	seconds = res.rem;
-	if (days)
+	if (days) {
 		snprintf(daybuf, sizeof(daybuf), "%d:", days);
-	if (days)
-		snprintf(hourbuf, sizeof(hourbuf), "%02d:", days);
-	else if (hours)
-		snprintf(hourbuf, sizeof(hourbuf), "%2d:", days);
+		snprintf(hourbuf, sizeof(hourbuf), "%02d:", hours);
+	} else if (hours)
+		snprintf(hourbuf, sizeof(hourbuf), "%2d:", hours);
 	if (days || hours)
 		snprintf(minbuf, sizeof(minbuf), "%02d:", minutes);
 	else if (minutes)
@@ -1526,7 +1529,7 @@ void getOptions(int argc, char **argv)
 		fprintf(stderr, "SLURM accounting is disabled\n");
 		exit(1);
 	}
-	free(acct_type);
+	xfree(acct_type);
 
 	/* specific partitions requested? */
 	if (opt_partition_list) {

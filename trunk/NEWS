@@ -4,6 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 0.5.0-pre13
 ==============================
  -- Major mods to support checkpoint on AIX.
+ -- Job accounting documenation expanded, added tuning options, minor bug fixes
 
 * Changes in SLURM 0.5.0-pre12
 ==============================
