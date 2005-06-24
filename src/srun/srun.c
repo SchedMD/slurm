@@ -204,6 +204,7 @@ int srun(int ac, char **av)
 		job_destroy(job,exitcode);
 
 		debug ("Spawned srun shell terminated");
+		xfree(env->task_count);
 		xfree(env);
 		exit (exitcode);
 
@@ -237,7 +238,6 @@ int srun(int ac, char **av)
 	/*
 	 *  Enhance environment for job
 	 */
-	
 	env->nprocs = opt.nprocs;
 	env->cpus_per_task = opt.cpus_per_task;
 	env->distribution = opt.distribution;
@@ -246,14 +246,15 @@ int srun(int ac, char **av)
 	env->labelio = opt.labelio;
 	if(job) {
 		env->select_jobinfo = job->select_jobinfo;
-		env->jobid = job->jobid;
 		env->nhosts = job->nhosts;
 		env->nodelist = job->nodelist;
 		env->task_count = _task_count_string (job);
 	}
 	
 	setup_env(env);
+	xfree(env->task_count);
 	xfree(env);
+
 	if (slurm_get_mpich_gm_dir() && getenv("GMPI_PORT") == NULL) {
 		/*
 		 * It is possible for one to modify the mpirun command in
