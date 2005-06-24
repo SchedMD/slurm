@@ -186,6 +186,10 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 			send_user "Can't avoid this possible error\n"
 			exp_continue
 		}
+		-re "error: qsw_prog_init" {
+			send_user "Can't avoid this possible error\n"
+			exp_continue
+		}
 		-re "error:" {
 			send_user "\nFAILURE: some error happened\n"
 			set failures 1
@@ -218,6 +222,10 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 			send_user "Can't avoid this possible error\n"
 			exp_continue
 		}
+		-re "error: qsw_prog_init" {
+			send_user "Can't avoid this possible error\n"
+			exp_continue
+		}
 		-re "error:" {
 			send_user "\nFAILURE: some error happened\n"
 			set failures 1
@@ -243,6 +251,14 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 			} else {
 				send_user "\nExpected error on front-end systems\n"
 			}
+			exp_continue
+		}
+		-re "error: elan" {
+			send_user "Can't avoid this possible error\n"
+			exp_continue
+		}
+		-re "error: qsw_prog_init" {
+			send_user "Can't avoid this possible error\n"
 			exp_continue
 		}
 		-re "error:" {
