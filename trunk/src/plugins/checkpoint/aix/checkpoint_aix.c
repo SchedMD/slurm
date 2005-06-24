@@ -285,6 +285,7 @@ static int _step_sig(struct step_record * step_ptr, uint16_t wait, int signal)
 	if (check_ptr->disabled)
 		return ESLURM_DISABLED;
 
+	check_ptr->node_cnt = 0;	/* re-calculate below */
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
 			continue;
