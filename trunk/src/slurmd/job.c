@@ -159,51 +159,49 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	}
 	job = xmalloc(sizeof(*job));
 
+	job->pwd     = pwd;
+	job->ntasks  = msg->tasks_to_launch;
+	job->nprocs  = msg->nprocs;
 	job->jobid   = msg->job_id;
 	job->stepid  = msg->job_step_id;
+	
 	job->uid     = (uid_t) msg->uid;
-	job->pwd     = pwd;
 	job->gid     = (gid_t) msg->gid;
-	job->nprocs  = msg->nprocs;
-	job->nnodes  = msg->nnodes;
-	job->nodeid  = msg->srun_node_id;
-	job->ntasks  = msg->tasks_to_launch;
-	job->debug   = msg->slurmd_debug;
-	job->cpus    = msg->cpus_allocated;
-
-	job->timelimit   = (time_t) -1;
-	job->task_flags  = msg->task_flags;
+	job->cwd     = xstrdup(msg->cwd);
 
 	job->env     = _array_copy(msg->envc, msg->env);
-	job->argc    = msg->argc;
-	job->argv    = _array_copy(job->argc, msg->argv);
+	job->eio     = eio_handle_create();
+	job->objs    = list_create((ListDelF) io_obj_destroy);
+	job->sruns   = list_create((ListDelF) _srun_info_destructor);
 	job->envtp   = xmalloc(sizeof(env_t));
 	job->envtp->jobid = -1;
 	job->envtp->stepid = -1;
 	job->envtp->gmpi = -1;
 	job->envtp->procid = -1;
-	job->envtp->nodeid = -1;
+	job->envtp->nodeid = -1;	
 	
-	job->cwd     = xstrdup(msg->cwd);
-
 	memcpy(&resp_addr, cli_addr, sizeof(slurm_addr));
 	slurm_set_addr(&resp_addr, msg->resp_port, NULL); 
 	memcpy(&io_addr,   cli_addr, sizeof(slurm_addr));
-	slurm_set_addr(&io_addr,   msg->io_port,   NULL); 
-
-	job->switch_job = msg->switch_job;
-
-	job->objs    = list_create((ListDelF) io_obj_destroy);
-	job->eio     = eio_handle_create();
-
+	slurm_set_addr(&io_addr,   msg->io_port,   NULL); 	
 	srun = srun_info_create(msg->cred, &resp_addr, &io_addr);
 
 	srun->ofname = xstrdup(msg->ofname);
 	srun->efname = xstrdup(msg->efname);
 	srun->ifname = xstrdup(msg->ifname);
 
-	job->sruns   = list_create((ListDelF) _srun_info_destructor);
+	job->argc    = msg->argc;
+	job->argv    = _array_copy(job->argc, msg->argv);
+	
 
+	job->nnodes  = msg->nnodes;
+	job->nodeid  = msg->srun_node_id;
+	job->debug   = msg->slurmd_debug;
+	job->cpus    = msg->cpus_allocated;
+	job->timelimit   = (time_t) -1;
+	job->task_flags  = msg->task_flags;
+	job->switch_job = msg->switch_job;
+	
 	list_append(job->sruns, (void *) srun);
 
 	_job_init_task_info(job, msg->global_task_ids);
@@ -242,25 +240,21 @@ job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *cli_addr)
 	}
 	job = xmalloc(sizeof(*job));
 
+	job->pwd     = pwd;
+	job->ntasks  = 1;	/* tasks to launch always one */
+	job->nprocs  = msg->nprocs;
 	job->jobid   = msg->job_id;
 	job->stepid  = msg->job_step_id;
-	job->uid     = (uid_t) msg->uid;
-	job->pwd     = pwd;
-	job->gid     = job->pwd->pw_gid;
-	job->nprocs  = msg->nprocs;
-	job->nnodes  = msg->nnodes;
-	job->nodeid  = msg->srun_node_id;
-	job->ntasks  = 1;	/* tasks to launch always one */
-	job->debug   = msg->slurmd_debug;
-	job->cpus    = msg->cpus_allocated;
-
-	job->timelimit   = (time_t) -1;
-	job->task_flags  = msg->task_flags;
 	job->spawn_task = true;
 
+	job->uid     = (uid_t) msg->uid;
+	job->gid     = job->pwd->pw_gid;
+	job->cwd     = xstrdup(msg->cwd);
+
 	job->env     = _array_copy(msg->envc, msg->env);
-	job->argc    = msg->argc;
-	job->argv    = _array_copy(job->argc, msg->argv);
+	job->eio     = eio_handle_create();
+	job->objs    = list_create((ListDelF) io_obj_destroy);
+	job->sruns   = list_create((ListDelF) _srun_info_destructor);
 	job->envtp   = xmalloc(sizeof(env_t));
 	job->envtp->jobid = -1;
 	job->envtp->stepid = -1;
@@ -268,19 +262,21 @@ job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *cli_addr)
 	job->envtp->procid = -1;
 	job->envtp->nodeid = -1;
 	
-	job->cwd     = xstrdup(msg->cwd);
-
 	memcpy(&io_addr,   cli_addr, sizeof(slurm_addr));
 	slurm_set_addr(&io_addr,   msg->io_port,   NULL); 
 
-	job->switch_job = msg->switch_job;
-
-	job->objs    = list_create((ListDelF) io_obj_destroy);
-	job->eio     = eio_handle_create();
-
 	srun = srun_info_create(msg->cred, NULL, &io_addr);
 
-	job->sruns   = list_create((ListDelF) _srun_info_destructor);
+	job->argc    = msg->argc;
+	job->argv    = _array_copy(job->argc, msg->argv);
+	
+	job->nnodes  = msg->nnodes;
+	job->nodeid  = msg->srun_node_id;
+	job->debug   = msg->slurmd_debug;
+	job->cpus    = msg->cpus_allocated;
+	job->timelimit   = (time_t) -1;
+	job->task_flags  = msg->task_flags;
+	job->switch_job = msg->switch_job;
 
 	list_append(job->sruns, (void *) srun);
 
@@ -315,9 +311,13 @@ slurmd_job_t *
 job_batch_job_create(batch_job_launch_msg_t *msg)
 {
 	struct passwd *pwd;
-	slurmd_job_t *job = xmalloc(sizeof(*job));
+	slurmd_job_t *job;
 	srun_info_t  *srun = NULL;
 	uint32_t      global_taskid = 0;
+
+	xassert(msg != NULL);
+	
+	debug3("entering batch_job_create");
 
 	if ((pwd = _pwd_create((uid_t)msg->uid)) == NULL) {
 		error("uid %ld not found on system", (long) msg->uid);
@@ -329,7 +329,9 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 		_pwd_destroy(pwd);
 		return NULL;
 	}
-
+	
+	job = xmalloc(sizeof(*job));
+	
 	job->pwd     = pwd;
 	job->ntasks  = 1; 
 	job->nprocs  = msg->nprocs;
