@@ -1277,13 +1277,13 @@ _find_free_window(fed_adapter_t *adapter) {
 /* For a given process, fill out an NTBL
  * struct (an array of these makes up the network table loaded
  * for each job).  Assign adapters, lids and switch windows to
- * each task in a job.  Update lid_index for quick mapping
- * of lid to adapter name (used by slurm_ll_api).
+ * each task in a job.
  *
  * Used by: slurmctld
  */
 static int
-_allocate_windows(fed_tableinfo_t *tableinfo, char *hostname, int task_id)
+_allocate_windows(int adapter_cnt, fed_tableinfo_t *tableinfo,
+		  char *hostname, int task_id)
 {
 	fed_nodeinfo_t *node;
 	fed_adapter_t *adapter;
@@ -1301,7 +1301,7 @@ _allocate_windows(fed_tableinfo_t *tableinfo, char *hostname, int task_id)
 	}
 	
 	/* Allocate a window on each adapter for this task */
-	for (i = 0; i < node->adapter_count; i++) {
+	for (i = 0; i < adapter_cnt; i++) {
 		adapter = &node->adapter_list[i];
 		window = _find_free_window(adapter);
 		if (window == NULL) {
@@ -1369,7 +1369,8 @@ _print_index(char *index, int size)
  * Used by: slurmctld
  */
 int
-fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs, int cyclic)
+fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
+		  int cyclic, bool sn_all)
 {
 	int nnodes;
 	hostlist_iterator_t hi;
@@ -1387,23 +1388,26 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs, int cyclic)
 		slurm_seterrno_ret(EINVAL);
 
 	jp->job_key = _next_key();
-	/* FIX ME! skip setting job_desc for now, will default to
-	 * "no_job_description_given".  Also, let the adapter
-	 * determine our window memory size.
-	 */
+	snprintf(jp->job_desc, DESCLEN,
+		 "slurm federation driver key=%d", jp->job_key);
 	jp->window_memory = FED_AUTO_WINMEM;
 
 	hi = hostlist_iterator_create(hl);
 
-	/*
-	 * Peek at the first host to figure out tables_per_task.
-	 * This driver assumes that all nodes have the same number of adapters
-	 * per node.  Bad Things will happen if this assumption is incorrect.
-	 */
-	host = hostlist_next(hi);
-	node = _find_node(fed_state, host);
-	jp->tables_per_task = node->adapter_count;
-	hostlist_iterator_reset(hi);
+	if (sn_all) {
+		/*
+		 * Peek at the first host to figure out tables_per_task.
+		 * This driver assumes that all nodes have the same number
+		 * of adapters per node.  Bad Things will happen if this
+		 * assumption is incorrect.
+		 */
+		host = hostlist_next(hi);
+		node = _find_node(fed_state, host);
+		jp->tables_per_task = node->adapter_count;
+		hostlist_iterator_reset(hi);
+	} else {
+		jp->tables_per_task = 1;
+	}
 
 	/* Allocate memory for each fed_tableinfo_t */
 	jp->tableinfo = (fed_tableinfo_t *) xmalloc(jp->tables_per_task
@@ -1429,7 +1433,8 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs, int cyclic)
 				host = hostlist_next(hi);
 			}
 			/* FIXME check return code */
-			_allocate_windows(jp->tableinfo, host, proc_cnt);
+			_allocate_windows(jp->tables_per_task, jp->tableinfo,
+					  host, proc_cnt);
 			free(host);
 		}
 	} else {
@@ -1457,7 +1462,9 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs, int cyclic)
 			
 			for (j = 0; j < task_cnt; j++) {
 				/* FIXME check return code */
-				_allocate_windows(jp->tableinfo, host, proc_cnt);
+				_allocate_windows(jp->tables_per_task,
+						  jp->tableinfo, host,
+						  proc_cnt);
 				proc_cnt++;
 			}
 			free(host);
@@ -1468,6 +1475,7 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs, int cyclic)
 	_print_table(jp->table, jp->table_size);
 #endif
 			
+	hostlist_iterator_destroy(hi);
 	return SLURM_SUCCESS;
 }
 
