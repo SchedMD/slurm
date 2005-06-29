@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- BGL wiring will now work on <= 4 node X-dim partitions and also 8 node 
     X-dim partitions.
  -- ENV variables set for spawning jobs. 
+ -- jobacct patch from HP to not erroneously lock a mutex in the 
+    jobacct_log plugin.
  -- switch/federation supports multiple adapters per task.  sn_all behaviour
     is now correct, and it also supports sn_single.
 

@@ -25,6 +25,9 @@
 /*
  * HISTORY
  * $Log$
+ * Revision 1.7  2005/06/29 20:41:23  da
+ * New Tag HP's patch applied for mutex issue in jobacct.
+ *
  * Revision 1.6  2005/06/24 01:19:52  jette
  * Additional documenation for job accounting. Some bug fixes too. All from
  * Andy Riebs/HP.
@@ -152,7 +155,7 @@
 #define BRIEF_FIELDS "jobstep,status,error"
 #define DEFAULT_FIELDS "jobstep,jobname,partition,ncpus,status,error"
 #define BUFSIZE 1024
-#define LONG_FIELDS "jobstep,usercpu,systemcpu,minflt,majflt,ntasks,ncpus,elapsed,status,error"
+#define LONG_FIELDS "jobstep,usercpu,systemcpu,minflt,majflt,nprocs,ncpus,elapsed,status,error"
 
 /* The following literals define how many significant characters
  * are used in a yyyymmddHHMMSS timestamp. */
@@ -296,7 +299,7 @@ void printNivcsw(print_what_t which, long idx);
 void printNodes(print_what_t which, long idx);
 void printNsignals(print_what_t which, long idx);
 void printNswap(print_what_t which, long idx);
-void printNtasks(print_what_t which, long idx);
+void printNprocs(print_what_t which, long idx);
 void printNvcsw(print_what_t which, long idx);
 void printOutBlocks(print_what_t which, long idx);
 void printPartition(print_what_t which, long idx);
@@ -339,10 +342,9 @@ static struct {
 	"ncpus", &printNcpus}, {
 	"nivcsw", &printNivcsw}, {
 	"nodes", &printNodes}, {
-	"nprocs", &printNtasks}, {
+	"nprocs", &printNprocs}, {
 	"nsignals", &printNsignals}, {
 	"nswap", &printNswap}, {
-	"ntasks", &printNtasks}, {
 	"nvcsw", &printNvcsw}, {
 	"outblocks", &printOutBlocks}, {
 	"partition", &printPartition}, {
@@ -1712,7 +1714,7 @@ void helpMsg(void)
 	       "    accounting log file.\n"
 	       "-l, --long\n"
 	       "    Equivalent to specifying\n"
-	       "    \"--fields=jobstep,usercpu,systemcpu,minflt,majflt,ntasks,\n"
+	       "    \"--fields=jobstep,usercpu,systemcpu,minflt,majflt,nprocs,\n"
 	       "    ncpus,elapsed,status,error\"\n"
 	       "-O, --formatted_dump\n"
 	       "    Dump accounting records in an easy-to-read format, primarily\n"
@@ -2357,11 +2359,11 @@ void printNswap(print_what_t which, long idx)
 	} 
 }
 
-void printNtasks(print_what_t which, long idx)
+void printNprocs(print_what_t which, long idx)
 { 
 	switch(which) {
 		case HEADLINE:
-			printf("%7s", "Ntasks");
+			printf("%7s", "Nprocs");
 			break;
 		case UNDERSCORE:
 			printf("%7s", "-------");
