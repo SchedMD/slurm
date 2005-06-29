@@ -5,6 +5,9 @@ documents those changes that are of interest to users and admins.
 ==============================
  -- Major mods to support checkpoint on AIX.
  -- Job accounting documenation expanded, added tuning options, minor bug fixes
+ -- BGL wiring will now work on <= 4 node X-dim partitions and also 8 node 
+    X-dim partitions.
+ -- ENV variables set for spawning jobs. 
 
 * Changes in SLURM 0.5.0-pre12
 ==============================
