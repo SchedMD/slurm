@@ -215,14 +215,12 @@ g_slurmctld_jobacct_job_complete(struct job_record *job_ptr)
 {
 	int retval = SLURM_SUCCESS;
 
-	slurm_mutex_lock( &context_lock );
 	if ( g_context )
 		 retval = (*(g_context->ops.slurmctld_jobacct_job_complete))(job_ptr);
 	else {
 		error ("slurm_jobacct plugin context not initialized");
 		retval = ENOENT;
 	}
-	slurm_mutex_unlock( &context_lock );
 	return retval;
 }
 
@@ -231,14 +229,12 @@ g_slurmctld_jobacct_job_start(struct job_record *job_ptr)
 {
 	int retval = SLURM_SUCCESS;
 
-	slurm_mutex_lock( &context_lock );
 	if ( g_context )
 		 retval = (*(g_context->ops.slurmctld_jobacct_job_start))(job_ptr);
 	else {
 		error ("slurm_jobacct plugin context not initialized");
 		retval = ENOENT;
 	}
-	slurm_mutex_unlock( &context_lock );
 	return retval;
 }
 
@@ -251,14 +247,12 @@ g_slurm_jobacct_process_message(struct slurm_msg *msg)
 {
 	int retval = SLURM_SUCCESS;
 
-	slurm_mutex_lock( &context_lock );
 	if ( g_context )
 		 retval = (*(g_context->ops.slurm_jobacct_process_message))(msg);
 	else {
 		error ("slurm_jobacct plugin context not initialized");
 		retval = ENOENT;
 	}
-	slurm_mutex_unlock( &context_lock );
 	return retval;
 }
 
@@ -283,14 +277,12 @@ g_slurmd_jobacct_jobstep_launched(slurmd_job_t *job)
 {
 	int retval = SLURM_SUCCESS;
 
-	slurm_mutex_lock( &context_lock );
 	if ( g_context )
 		 retval = (*(g_context->ops.slurmd_jobacct_jobstep_launched))(job);
 	else {
 		error ("slurm_jobacct plugin context not initialized");
 		retval = ENOENT;
 	}
-	slurm_mutex_unlock( &context_lock );
 	return retval;
 }
 
@@ -300,14 +292,12 @@ g_slurmd_jobacct_jobstep_terminated(slurmd_job_t *job)
 {
 	int retval = SLURM_SUCCESS;
 
-	slurm_mutex_lock( &context_lock );
 	if ( g_context )
 		 retval = (*(g_context->ops.slurmd_jobacct_jobstep_terminated))(job);
 	else {
 		error ("slurm_jobacct plugin context not initialized");
 		retval = ENOENT;
 	}
-	slurm_mutex_unlock( &context_lock );
 	return retval;
 }
 
@@ -317,14 +307,12 @@ g_slurmd_jobacct_smgr(void)
 {
 	int retval = SLURM_SUCCESS;
 
-	slurm_mutex_lock( &context_lock );
 	if ( g_context )
 		 retval = (*(g_context->ops.slurmd_jobacct_smgr))();
 	else {
 		error ("slurm_jobacct plugin context not initialized");
 		retval = ENOENT;
 	}
-	slurm_mutex_unlock( &context_lock );
 	return retval;
 }
 
@@ -335,14 +323,12 @@ g_slurmd_jobacct_task_exit(slurmd_job_t *job, pid_t pid, int status,
 {
 	int retval = SLURM_SUCCESS;
 
-	slurm_mutex_lock( &context_lock );
 	if ( g_context )
 		 retval = (*(g_context->ops.slurmd_jobacct_task_exit))(job, pid, status, rusage);
 	else {
 		error ("slurm_jobacct plugin context not initialized");
 		retval = ENOENT;
 	}
-	slurm_mutex_unlock( &context_lock );
 	return retval;
 }
 

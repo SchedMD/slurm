@@ -130,13 +130,14 @@ typedef struct _stats_msg {
 
 static List		jobsteps_active,
 			jobsteps_retiring;
-static pthread_mutex_t	jobsteps_retiring_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t	jobsteps_active_lock = PTHREAD_MUTEX_INITIALIZER,
+			jobsteps_retiring_lock = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct	_jrec {
-	pthread_mutex_t	lock;		/* control access to the record */
 	uint32_t	jobid;		/* record is for this SLURM job id */
 	uint32_t	stepid;		/* record is for this step id */
 	uint32_t	nprocs;		/* number of processes */
+	uint32_t	ntasks;		/* number of tasks on this node */
 	uint32_t	ncpus;		/* number of processors */
 	uint32_t	nnodes;		/* number of nodes */
 	uint32_t	nodeid;		/* relative node position */
@@ -171,8 +172,7 @@ static int		LOGFILE_FD;
 
 typedef enum _mynode_msg_type {
 	LAUNCH=1,		/* make them explicit for easy debugging */
-	TASKDATA=2,
-	TERMINATE=3
+	TASKDATA=2
 } _mynode_msg_type_t;
 
 typedef struct _mynode_msg {
@@ -223,7 +223,6 @@ static int	 _print_record(struct job_record *job_ptr, char *data);
 static void	 _process_mynode_msg(_mynode_msg_t *msg);
 static void	 _process_mynode_msg_launch(_jrec_t *jrec);
 static void	 _process_mynode_msg_taskdata(_jrec_t *jrec);
-static void	 _process_mynode_msg_terminate(_jrec_t *jrec);
 static void	 _process_node0_data(_jrec_t *inrec);
 static void	 _process_node0_msg(_jrec_t *inrec);
 static void	 _remove_jrec_from_list(List jrecs, 
@@ -692,14 +691,9 @@ int slurmd_jobacct_jobstep_launched(slurmd_job_t *job)
 
 int slurmd_jobacct_jobstep_terminated(slurmd_job_t *job)
 {
-	_jrec_t *jrec;
-	int	rc=SLURM_SUCCESS;
-	
-	jrec = _alloc_jrec(job);
-	jrec->status = job->smgr_status;
-	rc = _send_data_to_mynode(TERMINATE, jrec);
-	xfree(jrec);
-	return rc;
+	debug3("jobacct(%d): slurmd_jobacct_jobstep_terminated(%u.%u)",
+			getpid(), job->jobid, job->stepid);
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -812,11 +806,10 @@ static _jrec_t  *_alloc_jrec(slurmd_job_t *job)
 	_jrec_t *jrec;
 
 	jrec = xmalloc(sizeof(_jrec_t));
-	if (pthread_mutex_init(&jrec->lock, NULL))
-		error("jobacct(%d): failed to init jrec->lock", getpid());
 	jrec->jobid			= job->jobid;
 	jrec->stepid			= job->stepid;
 	jrec->nprocs			= job->nprocs;
+	jrec->ntasks			= job->ntasks;
 	jrec->nnodes			= job->nnodes;
 	jrec->ncpus			= job->cpus;
 	jrec->nodeid			= job->nodeid;
@@ -843,12 +836,16 @@ static _jrec_t  *_alloc_jrec(slurmd_job_t *job)
 	jrec->max_vsize			= 0;
 	jrec->max_psize			= 0; 
 	jrec->not_reported		= job->nnodes;
+	if (job->batch)	/* Account for the batch control pseudo-step */
+		jrec->not_reported++;
 	_get_node_01_names(jrec->node0, jrec->node1, job->env);
 	return jrec;
 }
 
 /*
  * Select a jrec from the list by jobid and stepid.
+ *
+ * THREADS:	The caller must lock {jrecs}_lock, if necessary.
  */
 
 static _jrec_t *_get_jrec_by_jobstep(List jrecs, uint32_t jobid,
@@ -1135,9 +1132,6 @@ static void _process_mynode_msg(_mynode_msg_t *msg) {
 	  case TASKDATA:
 		  _process_mynode_msg_taskdata( (_jrec_t *) &msg->jrec);
 		  break;
-	  case TERMINATE:
-		  _process_mynode_msg_terminate( (_jrec_t *) &msg->jrec);
-		  break;
 	  default:
 		  error("jobacct(%d): invalid mynode msgtype: %d", 
 				  getpid(), msg->msgtype);
@@ -1154,9 +1148,11 @@ static void _process_mynode_msg_launch(_jrec_t *inrec) {
 	_jrec_t	*jrec;
 
 	debug2("jobacct(%d): in _process_mynode_msg_launch", getpid());
+	slurm_mutex_lock(&jobsteps_active_lock);
 	/* Have we seen this one before? */
 	if (_get_jrec_by_jobstep(jobsteps_active, inrec->jobid,
 				inrec->stepid)) {
+		slurm_mutex_unlock(&jobsteps_active_lock);
 		error("jobacct(%d): dup launch record for %u.%u",
 				getpid(), inrec->jobid, inrec->stepid);
 		return;
@@ -1164,6 +1160,7 @@ static void _process_mynode_msg_launch(_jrec_t *inrec) {
 	jrec = xmalloc(sizeof(_jrec_t));
 	memcpy(jrec, inrec, sizeof(_jrec_t));
 	list_append(jobsteps_active, jrec);
+	slurm_mutex_unlock(&jobsteps_active_lock);
 }
 
 /*
@@ -1173,36 +1170,30 @@ static void _process_mynode_msg_launch(_jrec_t *inrec) {
 static void _process_mynode_msg_taskdata(_jrec_t *inrec){
 	_jrec_t		*jrec;
 
+	debug2("jobacct(%d): in _process_mynode_msg_taskdata for job %u.%u"
+			" ntasks=%d",
+			getpid(), inrec->jobid, inrec->stepid, inrec->ntasks); 
+	if (inrec->ntasks == 1) {    /* if only one task, skip aggregation */
+		debug3("jobacct(%d): _process_mynode_msg_taskdata "
+				"skipping aggregation for job %u.%u",
+				getpid(), inrec->jobid, inrec->stepid);
+		_send_data_to_node_0(inrec);
+		return;
+	}
+	slurm_mutex_lock(&jobsteps_active_lock);
 	jrec = _get_jrec_by_jobstep(jobsteps_active, inrec->jobid,
 			inrec->stepid);
 	if ( jrec == NULL ) {
+		slurm_mutex_unlock(&jobsteps_active_lock);
 		error("jobacct(%d): task data but no record for %u.%u,"
 				" discarding data",
 				getpid(), inrec->jobid, inrec->stepid);
 		return;
 	}
-	slurm_mutex_lock(&jrec->lock);
 	_aggregate_job_data(jrec, inrec);
-	slurm_mutex_unlock(&jrec->lock);
-}
-
-/*
- * Clean up upon jobstep termination.
- */
-
-static void _process_mynode_msg_terminate(_jrec_t *inrec){
-	_jrec_t	*jrec;
-	debug2("jobacct(%d): in _process_mynode_msg_terminate for job %u.%u",
-			getpid(), inrec->jobid, inrec->stepid);
-	jrec = _get_jrec_by_jobstep(jobsteps_active, inrec->jobid,
-			inrec->stepid);
-	if ( jrec == NULL ) {
-		error("jobacct(%d): no data for job %u.%u in"
-				" _process_mynode_msg_terminate",
-				getpid(), inrec->jobid, inrec->stepid);
-		return;
-	}
-	_send_data_to_node_0(jrec); 
+	if (--jrec->ntasks == 0)	/* All tasks have reported */
+		_send_data_to_node_0(jrec);
+	slurm_mutex_unlock(&jobsteps_active_lock);
 }
 
 /* Aggregate the final data from each node
@@ -1219,16 +1210,14 @@ static void _process_node0_data(_jrec_t *inrec) {
 		jrec = xmalloc(sizeof(_jrec_t));
 		memcpy(jrec, inrec, sizeof(_jrec_t));
 		list_append(jobsteps_retiring, jrec);
-		slurm_mutex_unlock(&jobsteps_retiring_lock);
-		slurm_mutex_lock(&jrec->lock);
 	} else {
-		slurm_mutex_unlock(&jobsteps_retiring_lock);
-		slurm_mutex_lock(&jrec->lock);
 		_aggregate_job_data(jrec, inrec);
 		jrec->nnodes += inrec->nnodes;
 		jrec->ncpus  += inrec->ncpus;
 	}
-	--jrec->not_reported;
+	if (--jrec->not_reported < 0)
+		error("jobacct(%d): invalid, not_reported=%d",
+				getpid(), jrec->not_reported);
 	debug2("jobacct(%d): not_reported=%d after node0 message, "
 			"cum. utime=%d.%06d",
 			getpid(), jrec->not_reported,
@@ -1236,14 +1225,12 @@ static void _process_node0_data(_jrec_t *inrec) {
 			jrec->rusage.ru_utime.tv_usec );
 	if (jrec->not_reported <= 0) {
 		_send_data_to_slurmctld(jrec);
-		slurm_mutex_lock(&jobsteps_retiring_lock);
 		_remove_jrec_from_list(jobsteps_retiring, jrec->jobid,
 				jrec->stepid);
 		slurm_mutex_unlock(&jobsteps_retiring_lock);
-		slurm_mutex_unlock(&jrec->lock);
 		xfree(jrec); 
 	} else {
-		slurm_mutex_unlock(&jrec->lock);
+		slurm_mutex_unlock(&jobsteps_retiring_lock);
 	}
 }
 
