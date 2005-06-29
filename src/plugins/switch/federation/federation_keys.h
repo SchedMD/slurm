@@ -28,13 +28,22 @@
 #ifndef _FEDERATION_KEYS_INCLUDED
 #define _FEDERATION_KEYS_INCLUDED
 
+#define FED_ADAPTERNAME_LEN 5
+
 enum {
 	/* Federation specific get_jobinfo keys */
-	FED_JOBINFO_TABLE,
-	FED_JOBINFO_PROTOCOL,
-	FED_JOBINFO_MODE,
+	FED_JOBINFO_TABLEINFO,
+	FED_JOBINFO_TABLESPERTASK,
 	FED_JOBINFO_KEY,
-	FED_JOBINFO_LIDIDX
+	FED_JOBINFO_PROTOCOL,
+	FED_JOBINFO_MODE
 };
+
+/* Information shared between slurm_ll_api and the slurm federation driver */
+typedef struct fed_tableinfo {
+	uint32_t table_length;
+	NTBL **table;
+	char adapter_name[FED_ADAPTERNAME_LEN];
+} fed_tableinfo_t;
 
 #endif /* _FEDERATION_KEYS_INCLUDED */
