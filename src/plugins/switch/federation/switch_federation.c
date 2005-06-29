@@ -313,17 +313,34 @@ int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist,
 			   int nprocs, int cyclic_alloc, char *network) 
 {
 	hostlist_t list = NULL;
+	bool sn_all;
 	int err;
 
 	if(strstr(network, "ip") || strstr(network, "IP")) {
-		debug2("federation: \"ip\" found in network string, no network tables allocated");
+		debug2("federation: \"ip\" found in network string, "
+		       "no network tables allocated");
 		return SLURM_SUCCESS;
 	} else {
 		list = hostlist_create(nodelist);
 		if(!list)
 			fatal("hostlist_create(%s): %m", nodelist);
+
+		if (strstr(network, "sn_all")
+		    || strstr(network, "SN_ALL")) {
+			debug3("Found sn_all in network string");
+			sn_all = true;
+		} else if (strstr(network, "sn_single")
+			   || strstr(network, "SN_SINGLE")) {
+			debug3("Found sn_single in network string");
+			sn_all = false;
+		} else {
+			error("Network string contained neither sn_all "
+			      "nor sn_single");
+			return SLURM_ERROR;
+		}
+
 		err = fed_build_jobinfo((fed_jobinfo_t *)switch_job, list,
-					nprocs,	cyclic_alloc);
+					nprocs,	cyclic_alloc, sn_all);
 		hostlist_destroy(list);
 
 		return err;
