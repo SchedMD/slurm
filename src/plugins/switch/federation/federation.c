@@ -122,6 +122,7 @@ struct fed_jobinfo {
 	uint32_t window_memory;
 	uint16_t tables_per_task;
 	fed_tableinfo_t *tableinfo;
+	uint32_t bulk_xfer;
 };
 
 typedef struct {
@@ -1370,7 +1371,7 @@ _print_index(char *index, int size)
  */
 int
 fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
-		  int cyclic, bool sn_all)
+		  int cyclic, bool sn_all, int bulk_xfer)
 {
 	int nnodes;
 	hostlist_iterator_t hi;
@@ -1387,6 +1388,7 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 	if((nprocs <= 0) || (nprocs > FED_MAX_PROCS))
 		slurm_seterrno_ret(EINVAL);
 
+	jp->bulk_xfer = bulk_xfer;
 	jp->job_key = _next_key();
 	snprintf(jp->job_desc, DESCLEN,
 		 "slurm federation driver key=%d", jp->job_key);
@@ -1472,7 +1474,7 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 	}
 
 #if FED_DEBUG
-	_print_table(jp->table, jp->table_size);
+	_print_table(jp->tableinfo[i].table, jp->tableinfo[i].table_length);
 #endif
 			
 	hostlist_iterator_destroy(hi);
@@ -1507,6 +1509,7 @@ fed_pack_jobinfo(fed_jobinfo_t *j, Buf buf)
 	pack16(j->job_key, buf);
 	packmem(j->job_desc, DESCLEN, buf);
 	pack32(j->window_memory, buf);
+	pack32(j->bulk_xfer, buf);
 	pack16(j->tables_per_task, buf);
 	for (i = 0; i < j->tables_per_task; i++) {
 		_pack_tableinfo(&j->tableinfo[i], buf);
@@ -1560,6 +1563,7 @@ fed_unpack_jobinfo(fed_jobinfo_t *j, Buf buf)
 	if(size != DESCLEN)
 		goto unpack_error;
 	safe_unpack32(&j->window_memory, buf);
+	safe_unpack32(&j->bulk_xfer, buf);
 	safe_unpack16(&j->tables_per_task, buf);
 
 	j->tableinfo = (fed_tableinfo_t *) xmalloc(j->tables_per_task
@@ -1729,6 +1733,8 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 	unsigned long long winmem;
 	char *adapter;
 	uint16_t network_id;
+	ADAPTER_RESOURCES res;
+
 #if FED_DEBUG
 	char buf[2000];
 #endif
@@ -1746,20 +1752,40 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 		if(adapter == NULL)
 			continue;
 		winmem = jp->window_memory;
-		err = ntbl_load_table(
-			NTBL_VERSION,
-			adapter,
-			network_id,
-			uid,
-			pid,
-			jp->job_key,
-			jp->job_desc,
-			&winmem,
-			jp->tableinfo[i].table_length,
-			jp->tableinfo[i].table);
+		if(jp->bulk_xfer) {
+			ntbl_adapter_resources(
+				NTBL_VERSION,
+				adapter,
+				&res);
+			
+			ntbl_load_table_rdma(
+				NTBL_VERSION,
+				adapter,
+				network_id,
+				uid,
+				pid,
+				jp->job_key,
+				jp->job_desc,
+				1,
+				res.rcontext_block_count,
+				jp->tableinfo[i].table_length,
+				jp->tableinfo[i].table);
+		} else {
+			err = ntbl_load_table(
+				NTBL_VERSION,
+				adapter,
+				network_id,
+				uid,
+				pid,
+				jp->job_key,
+				jp->job_desc,
+				&winmem,
+				jp->tableinfo[i].table_length,
+				jp->tableinfo[i].table);
+		}
 		if(err != NTBL_SUCCESS) {
 			error("unable to load table %s\n", 
-				_lookup_fed_status_tab(err));
+			      _lookup_fed_status_tab(err));
 			return SLURM_ERROR;
 		}
 	}
