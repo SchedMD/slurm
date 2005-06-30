@@ -1301,7 +1301,7 @@ _allocate_windows(int adapter_cnt, fed_tableinfo_t *tableinfo,
 		return SLURM_ERROR;
 	}
 	
-	/* Allocate a window on each adapter for this task */
+	/* Reserve a window on each adapter for this task */
 	for (i = 0; i < adapter_cnt; i++) {
 		adapter = &node->adapter_list[i];
 		window = _find_free_window(adapter);
@@ -1380,6 +1380,7 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 	char *cur_idx;
 	int i, j;
 	fed_nodeinfo_t *node;
+	int rc;
 	
 	assert(jp);
 	assert(jp->magic == FED_JOBINFO_MAGIC);
@@ -1434,9 +1435,11 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 				hostlist_iterator_reset(hi);
 				host = hostlist_next(hi);
 			}
-			/* FIXME check return code */
-			_allocate_windows(jp->tables_per_task, jp->tableinfo,
-					  host, proc_cnt);
+			rc = _allocate_windows(jp->tables_per_task,
+					       jp->tableinfo,
+					       host, proc_cnt);
+			if (rc != SLURM_SUCCESS)
+				goto fail;
 			free(host);
 		}
 	} else {
@@ -1464,9 +1467,11 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 			
 			for (j = 0; j < task_cnt; j++) {
 				/* FIXME check return code */
-				_allocate_windows(jp->tables_per_task,
-						  jp->tableinfo, host,
-						  proc_cnt);
+				rc = _allocate_windows(jp->tables_per_task,
+						       jp->tableinfo,
+						       host, proc_cnt);
+				if (rc != SLURM_SUCCESS)
+					goto fail;
 				proc_cnt++;
 			}
 			free(host);
@@ -1479,6 +1484,12 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 			
 	hostlist_iterator_destroy(hi);
 	return SLURM_SUCCESS;
+
+fail:
+	free(host);
+	hostlist_iterator_destroy(hi);
+	fed_free_jobinfo(jp);
+	return SLURM_FAILURE;
 }
 
 void
@@ -1767,7 +1778,13 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 				jp->job_key,
 				jp->job_desc,
 				jp->bulk_xfer,
-				res.rcontext_block_count,
+				/*
+				 * FIXME - When the following is 0, this call
+				 *   dies with NTBL_NO_RDMA_AVAIL, so we
+				 *   hardcode to 1.  We don't know what it should
+				 *   really be...
+				 */
+				1,
 				jp->tableinfo[i].table_length,
 				jp->tableinfo[i].table);
 		} else {
