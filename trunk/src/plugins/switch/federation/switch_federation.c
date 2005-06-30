@@ -315,6 +315,7 @@ int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist,
 	hostlist_t list = NULL;
 	bool sn_all;
 	int err;
+	int bulk_xfer = 0;
 
 	if(strstr(network, "ip") || strstr(network, "IP")) {
 		debug2("federation: \"ip\" found in network string, "
@@ -338,9 +339,11 @@ int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist,
 			      "nor sn_single");
 			return SLURM_ERROR;
 		}
-
+		if(network[strlen(network)-1] == '1')
+			bulk_xfer = 1;
 		err = fed_build_jobinfo((fed_jobinfo_t *)switch_job, list,
-					nprocs,	cyclic_alloc, sn_all);
+					nprocs,	cyclic_alloc, sn_all,
+					bulk_xfer);
 		hostlist_destroy(list);
 
 		return err;
@@ -430,7 +433,6 @@ int switch_p_job_init (switch_jobinfo_t jobinfo, uid_t uid)
 	pid_t pid;
 	
 	pid = getpid();
-	
 	return fed_load_table((fed_jobinfo_t *)jobinfo, uid, pid);
 }
 

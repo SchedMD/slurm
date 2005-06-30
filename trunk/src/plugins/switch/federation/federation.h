@@ -74,7 +74,7 @@ int fed_unpack_nodeinfo(fed_nodeinfo_t *np, Buf buf);
 void fed_free_nodeinfo(fed_nodeinfo_t *np);
 int fed_alloc_jobinfo(fed_jobinfo_t **jh);
 int fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs, 
-		      int cyclic, bool sn_all);
+		      int cyclic, bool sn_all, int bulk_xfer);
 int fed_pack_jobinfo(fed_jobinfo_t *jp, Buf buf);
 int fed_unpack_jobinfo(fed_jobinfo_t *jp, Buf buf);
 fed_jobinfo_t *fed_copy_jobinfo(fed_jobinfo_t *jp);
