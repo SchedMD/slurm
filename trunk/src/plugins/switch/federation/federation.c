@@ -1766,7 +1766,7 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 				pid,
 				jp->job_key,
 				jp->job_desc,
-				1,
+				jp->bulk_xfer,
 				res.rcontext_block_count,
 				jp->tableinfo[i].table_length,
 				jp->tableinfo[i].table);
