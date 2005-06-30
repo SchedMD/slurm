@@ -56,7 +56,6 @@
 #define FED_VERBOSE_PRINT 0
 #define FED_NODECOUNT 128
 #define FED_HASHCOUNT 128
-#define FED_MAX_PROCS 4096
 #define FED_AUTO_WINMEM 0
 #define FED_MAX_WIN 15
 #define FED_MIN_WIN 0
@@ -160,6 +159,7 @@ static fed_status_t fed_status_tab[]= {
 	{11, "NTBL_DISABLED_STATE"},
 	{12, "NTBL_ACTIVE_STATE"},
 	{13, "NTBL_BUSY_STATE"},
+	{14, "NTBL_NO_RDMA_AVAIL"},
 	{FED_STATUS_UNKNOWN, "UNKNOWN_RESULT_CODE"}
 };
 
@@ -1385,7 +1385,7 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 	assert(jp->magic == FED_JOBINFO_MAGIC);
 	assert(!hostlist_is_empty(hl));
 
-	if((nprocs <= 0) || (nprocs > FED_MAX_PROCS))
+	if(nprocs <= 0)
 		slurm_seterrno_ret(EINVAL);
 
 	jp->bulk_xfer = bulk_xfer;
@@ -1758,7 +1758,7 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 				adapter,
 				&res);
 			
-			ntbl_load_table_rdma(
+			err = ntbl_load_table_rdma(
 				NTBL_VERSION,
 				adapter,
 				network_id,
@@ -1784,8 +1784,8 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 				jp->tableinfo[i].table);
 		}
 		if(err != NTBL_SUCCESS) {
-			error("unable to load table %s\n", 
-			      _lookup_fed_status_tab(err));
+			error("unable to load table: [%d] %s\n", 
+			      err, _lookup_fed_status_tab(err));
 			return SLURM_ERROR;
 		}
 	}
