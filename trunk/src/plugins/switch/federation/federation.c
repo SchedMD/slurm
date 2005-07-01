@@ -1306,7 +1306,6 @@ _allocate_windows(int adapter_cnt, fed_tableinfo_t *tableinfo,
 		adapter = &node->adapter_list[i];
 		window = _find_free_window(adapter);
 		if (window == NULL) {
-			/* FIXME need to clean up */
 			error("No free windows");
 			return SLURM_ERROR;
 		}
@@ -1466,7 +1465,6 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 				task_cnt = min_procs_per_node;
 			
 			for (j = 0; j < task_cnt; j++) {
-				/* FIXME check return code */
 				rc = _allocate_windows(jp->tables_per_task,
 						       jp->tableinfo,
 						       host, proc_cnt);
