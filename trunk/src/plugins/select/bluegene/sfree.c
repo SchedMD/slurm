@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  sfree.c - free specified partition or all partitions.
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -60,7 +61,7 @@ static void *_mult_free_part(void *args)
 {
 	char *bgl_part_id = (char *) args;
 
-	debug("destroying the partition %s.", bgl_part_id);
+	debug("destroying the bglblock %s.", bgl_part_id);
 	_free_partition(bgl_part_id);	
 	
 	slurm_mutex_lock(&freed_cnt_mutex);
@@ -106,7 +107,7 @@ int main(int argc, char *argv[])
 	parse_command_line(argc, argv);
 	if(!all_parts) {
 		if(!bgl_part_id) {
-			error("you need to specify a partition");
+			error("you need to specify a bglblock");
 			exit(0);
 		}
 		_free_partition(bgl_part_id);
@@ -190,7 +191,7 @@ int main(int argc, char *argv[])
 		}
 	}
 	while(num_part_to_free != num_part_freed) {
-		info("waiting for all partitions to free...");
+		info("waiting for all bglblocks to free...");
 		sleep(1);
 	}
 		
@@ -202,7 +203,7 @@ static int _free_partition(char *bgl_part_id)
 	int state=-1;
 	int rc;
 
-	info("freeing partition %s", bgl_part_id);
+	info("freeing bglblock %s", bgl_part_id);
 	_term_jobs_on_part(bgl_part_id);
 	while (1) {
 		if((state = _update_bgl_record_state(bgl_part_id))
@@ -228,7 +229,7 @@ static int _free_partition(char *bgl_part_id)
 			break;
 		sleep(3);
 	}
-	info("partition %s is freed", bgl_part_id);
+	info("bglblock %s is freed", bgl_part_id);
 	return SLURM_SUCCESS;
 }
 
@@ -292,7 +293,7 @@ static int _update_bgl_record_state(char *bgl_part_id)
 	if(state == -1)
 		goto clean_up;
 	else if(j>=num_parts) {
-		error("This partition, %s, doesn't exist in MMCS",
+		error("This bglblock, %s, doesn't exist in MMCS",
 		      bgl_part_id);
 		state = -1;
 		goto clean_up;
@@ -383,7 +384,7 @@ static void _term_jobs_on_part(char *bgl_part_id)
 		
 	}
 	if(job_found == 0)
-		info("No jobs on partition %s", bgl_part_id);
+		info("No jobs on bglblock %s", bgl_part_id);
 	
 not_removed:
 	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
