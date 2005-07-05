@@ -1205,7 +1205,7 @@ static int _delete_old_partitions(void)
 						       &thread_agent, 
 						       &attr_agent, 
 						       mult_destroy_part, 
-						       (void *)found_record)) {
+						       (void *)init_record)) {
 						error("pthread_create "
 						      "error %m");
 						if (++retries 
@@ -1227,7 +1227,7 @@ static int _delete_old_partitions(void)
 	}
 	while(num_part_to_free != num_part_freed)
 			usleep(1000);
-		
+	
 #endif	
 	return SLURM_SUCCESS;
 }
