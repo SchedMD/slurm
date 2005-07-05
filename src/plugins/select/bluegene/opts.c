@@ -1,5 +1,6 @@
 /****************************************************************************\
  *  opts.c - sfree command line option processing functions
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -118,8 +119,8 @@ static void _help(void)
 {
 	printf("\
 Usage: sfree [OPTIONS]\n\
-  -p, --partition            free specific partition named\n\
-  -a, --all                  free all partitions\n\
+  -p, --partition            free specific bglblock named\n\
+  -a, --all                  free all bglblocks\n\
   -V, --version              output version information and exit\n\
 \nHelp options:\n\
   --help                     show this help message\n\
