@@ -41,16 +41,17 @@ void parse_command_line(int argc, char *argv[])
 	int option_index;
 	
 	static struct option long_options[] = {
-		{"all", required_argument, 0, 'a'},
-		{"partition", no_argument, 0, 'p'},
-		{"version", no_argument, 0, 'V'},
-		{"help", no_argument, 0, 'h'},
-		{"usage", no_argument, 0, 'u'},
+		{"all", required_argument, 0,       'a'},
+		{"bglblock", required_argument, 0,  'b'},
+		{"partition", required_argument, 0, 'p'},
+		{"version", no_argument, 0,         'V'},
+		{"help", no_argument, 0,            'h'},
+		{"usage", no_argument, 0,           'u'},
 		{NULL, 0, 0, 0}
 	};
 
 	while ((opt_char =
-		getopt_long(argc, argv, "ahup:V",
+		getopt_long(argc, argv, "ab:hup:V",
 			    long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int) '?':
@@ -64,6 +65,7 @@ void parse_command_line(int argc, char *argv[])
 		case (int) 'V':
 			_print_version();
 			exit(0);
+		case (int) 'b':
 		case (int) 'p':
 			bgl_part_id = optarg;
 			break;
@@ -112,14 +114,17 @@ static void _print_version(void)
 
 static void _usage(void)
 {
-	printf("Usage: sfree [-huVca] [-p]\n");
+	printf("Usage: sfree [-huVa] [-b]\n");
 }
 
 static void _help(void)
 {
+	/* We still honor -p and --partition, 
+	 * but don't tell users about them here */
+
 	printf("\
 Usage: sfree [OPTIONS]\n\
-  -p, --partition            free specific bglblock named\n\
+  -b, --bglblock             free specific bglblock named\n\
   -a, --all                  free all bglblocks\n\
   -V, --version              output version information and exit\n\
 \nHelp options:\n\
