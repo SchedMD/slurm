@@ -60,14 +60,6 @@ enum controller_id {
 };
 
 /**********************************************************************\
-* configuration parameters
-\**********************************************************************/
-
-/* slurmctld_conf must be loaded with port numbers and controller names */
-extern slurm_ctl_conf_t slurmctld_conf;
-
-
-/**********************************************************************\
  * protocol configuration functions                
 \**********************************************************************/
 
