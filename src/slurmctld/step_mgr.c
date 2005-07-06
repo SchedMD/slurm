@@ -755,9 +755,9 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 			rc = ESLURM_INVALID_JOB_ID;
 			goto reply;
 		} else {
-			rc = checkpoint_op(ckpt_ptr->op, ckpt_ptr->data, (void *)step_ptr, 
-				&resp_data.event_time, &resp_data.error_code,
-				&resp_data.error_msg);
+			rc = checkpoint_op(ckpt_ptr->op, ckpt_ptr->data, 
+				(void *)step_ptr, &resp_data.event_time, 
+				&resp_data.error_code, &resp_data.error_msg);
 			last_job_update = time(NULL);
 		}
 	}
