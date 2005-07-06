@@ -1832,6 +1832,8 @@ fed_unload_table(fed_jobinfo_t *jp)
 			adapter = _get_adapter_from_lid(table[j]->lid);
 			if(adapter == NULL)
 				continue;
+			debug3("  freeing adapter %s window %d job_key %d",
+			       adapter, table[j]->window_id, jp->job_key);
 			err = ntbl_unload_window(NTBL_VERSION, adapter,
 						 jp->job_key,
 						 table[j]->window_id);
