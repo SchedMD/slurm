@@ -54,6 +54,7 @@ static int _checkpoint_op (uint16_t op, uint16_t data,
 	slurm_msg_t req_msg;
 
 	ckp_req.op       = op;
+	ckp_req.data     = data;
 	ckp_req.job_id   = job_id;
 	ckp_req.step_id  = step_id;
 	req_msg.msg_type = REQUEST_CHECKPOINT;
