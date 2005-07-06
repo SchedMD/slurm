@@ -425,8 +425,10 @@ int switch_p_node_init ( void )
 
 	slurm_mutex_lock(&neterr_mutex);
 
-	if (pthread_create(&neterr_tid, &attr, _neterr_thr, NULL))
+	if (pthread_create(&neterr_tid, &attr, _neterr_thr, NULL)) {
+		error("pthread_create: %m");
 		return SLURM_ERROR;
+	}
 
 	/*
 	 *  Wait for successful startup of neterr thread before
