@@ -339,7 +339,8 @@ int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist,
 			      "nor sn_single");
 			return SLURM_ERROR;
 		}
-		if(network[strlen(network)-1] == '1')
+		if (strstr(network, "bulk_xfer")
+		    || strstr(network, "BULK_XFER"))
 			bulk_xfer = 1;
 		err = fed_build_jobinfo((fed_jobinfo_t *)switch_job, list,
 					nprocs,	cyclic_alloc, sn_all,
