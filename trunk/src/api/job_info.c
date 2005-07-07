@@ -179,9 +179,9 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 		fprintf ( out, "\n   ");
 
 	/****** Line 9 ******/
-	 fprintf ( out, "Dependency=%u Account=%s Reason=%s",
+	 fprintf ( out, "Dependency=%u Account=%s Reason=%s Network=%s",
 		job_ptr->dependency, job_ptr->account,
-		job_reason_string(job_ptr->wait_reason));
+		job_reason_string(job_ptr->wait_reason), job_ptr->network);
 	if (one_liner)
 		fprintf ( out, " ");
 	else
