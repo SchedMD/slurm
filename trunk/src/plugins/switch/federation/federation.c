@@ -288,43 +288,11 @@ _cache_lid(fed_adapter_t *ap)
 	strncpy(lid_cache[adapter_num].name, ap->name, FED_ADAPTERNAME_LEN);		
 }
 
-/* Check lid cache for a given lid and return the associated adapter 
- * name. 
+
+/* Check lid cache for an adapter name and return the network id. 
  *
  * Used by: slurmd
  */
-static char *
-_get_adapter_from_lid(int lid)
-{
-	int i;
-	
-	for(i = 0; i < FED_MAXADAPTERS; i++) {
-		if(lid_cache[i].lid == lid) {
-			return lid_cache[i].name;
-		}		
-	}
-	
-	return NULL;
-}
-
-/* Check lid cache for a given lid and return the associated network_id 
- *
- * Used by: slurmd
- */
-static uint16_t
-_get_network_id_from_lid(int lid)
-{
-	int i;
-	
-	for(i = 0; i < FED_MAXADAPTERS; i++) {
-		if(lid_cache[i].lid == lid) {
-			return lid_cache[i].network_id;
-		}		
-	}
-	
-	return -1;
-}
-
 static uint16_t
 _get_network_id_from_adapter(char *adapter_name)
 {
@@ -338,6 +306,26 @@ _get_network_id_from_adapter(char *adapter_name)
 
         return (uint16_t) -1;
 }
+
+
+/* Check lid cache for an adapter name and return the lid. 
+ *
+ * Used by: slurmd
+ */
+static uint16_t
+_get_lid_from_adapter(char *adapter_name)
+{
+	int i;
+
+	for (i = 0; i < FED_MAXADAPTERS; i++) {
+		if (!strncmp(adapter_name, lid_cache[i].name,
+			     FED_ADAPTERNAME_LEN))
+			return lid_cache[i].lid;
+	}
+
+        return (uint16_t) -1;
+}
+
 
 /* Explicitly strip out carriage-return and new-line */
 static void _strip_cr_nl(char *line)
@@ -1818,23 +1806,26 @@ fed_unload_table(fed_jobinfo_t *jp)
 {
 	int i, j;
 	int err;
-	char *adapter;
+	char *adapter_name;
 	NTBL **table;
 	uint32_t table_length;
+	int local_lid;
 
         assert(jp);
         assert(jp->magic == FED_JOBINFO_MAGIC);
 	for (i = 0; i < jp->tables_per_task; i++) {
 		table        = jp->tableinfo[i].table;
 		table_length = jp->tableinfo[i].table_length;
+		adapter_name = jp->tableinfo[i].adapter_name;
+		local_lid = _get_lid_from_adapter(adapter_name);
 
 		for(j = 0; j < table_length; j++) {
-			adapter = _get_adapter_from_lid(table[j]->lid);
-			if(adapter == NULL)
+			if(table[j]->lid != local_lid)
 				continue;
-			debug3("  freeing adapter %s window %d job_key %d",
-			       adapter, table[j]->window_id, jp->job_key);
-			err = ntbl_unload_window(NTBL_VERSION, adapter,
+			debug3("freeing adapter %s lid %d window %d job_key %d",
+			       adapter_name, table[j]->lid,
+			       table[j]->window_id, jp->job_key);
+			err = ntbl_unload_window(NTBL_VERSION, adapter_name,
 						 jp->job_key,
 						 table[j]->window_id);
 			if(err != NTBL_SUCCESS) {
