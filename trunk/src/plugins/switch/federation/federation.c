@@ -119,9 +119,10 @@ struct fed_jobinfo {
 	uint16_t job_key;
 	char job_desc[DESCLEN];
 	uint32_t window_memory;
+	uint8_t bulk_xfer;  /* flag */
+	uint8_t cyclic;     /* flag */
 	uint16_t tables_per_task;
 	fed_tableinfo_t *tableinfo;
-	uint32_t bulk_xfer;
 };
 
 typedef struct {
@@ -1247,6 +1248,7 @@ _get_lid(fed_nodeinfo_t *np, int index)
 	return ap[index].lid;
 }
 
+
 /* FIXME - this could be a little smarter than walking the whole list each time */
 static fed_window_t *
 _find_free_window(fed_adapter_t *adapter) {
@@ -1256,6 +1258,21 @@ _find_free_window(fed_adapter_t *adapter) {
 	for (i = FED_MIN_WIN; i < adapter->window_count; i++) {
 		window = &adapter->window_list[i];
 		if (window->status == NTBL_UNLOADED_STATE)
+			return window;
+	}
+
+	return (fed_window_t *) NULL;
+}
+
+
+static fed_window_t *
+_find_window(fed_adapter_t *adapter, int window_id) {
+	int i;
+	fed_window_t *window;
+
+	for (i = FED_MIN_WIN; i < adapter->window_count; i++) {
+		window = &adapter->window_list[i];
+		if (window->id == window_id)
 			return window;
 	}
 
@@ -1312,6 +1329,49 @@ _allocate_windows(int adapter_cnt, fed_tableinfo_t *tableinfo,
 }
 
 
+/* Find the correct NTBL structs and remove the allocation 
+ * of adapters, lids and switch windows for the specified task_id.
+ *
+ * Used by: slurmctld
+ */
+static int
+_deallocate_windows(int adapter_cnt, fed_tableinfo_t *tableinfo,
+		    char *hostname, int task_id)
+{
+	fed_nodeinfo_t *node;
+	fed_adapter_t *adapter;
+	fed_window_t *window;
+	NTBL *table;
+	int i;
+	
+	assert(tableinfo);
+	assert(hostname);
+	
+	node = _find_node(fed_state, hostname);
+	if(node == NULL) {
+		error("Failed to find node in node_list: %s", hostname);
+		return SLURM_ERROR;
+	}
+	
+	/* Reserve a window on each adapter for this task */
+	for (i = 0; i < adapter_cnt; i++) {
+		adapter = &node->adapter_list[i];
+		table = tableinfo[i].table[task_id];
+		if (adapter->lid != table->lid) {
+			error("Did not find the correct adapter: %hu vs. %hu",
+			      adapter->lid, table->lid);
+			return SLURM_ERROR;
+		}
+		debug3("Clearing adapter %s, lid %hu, window %hu for task %d",
+		       adapter->name, table->lid, table->window_id, task_id);
+		window = _find_window(adapter, table->window_id);
+		window->status = NTBL_UNLOADED_STATE;
+	}
+	
+	return SLURM_SUCCESS;
+}
+
+
 #if FED_DEBUG
 /* Used by: all */
 static void
@@ -1350,6 +1410,88 @@ _print_index(char *index, int size)
 #endif	
 
 
+/* Find mark as free all of the windows used by this job step.
+ *
+ * Used by: slurmctld
+ */
+int
+fed_job_step_complete(fed_jobinfo_t *jp, hostlist_t hl)
+{
+	hostlist_iterator_t hi;
+	char *host;
+	int proc_cnt;
+	int nprocs;
+	int nnodes;
+	int i, j;
+	int rc;
+
+	assert(jp);
+	assert(jp->magic == FED_JOBINFO_MAGIC);
+	assert(!hostlist_is_empty(hl));
+
+	if ((jp->tables_per_task == 0)
+	    || !jp->tableinfo
+	    || (jp->tableinfo[0].table_length == 0))
+		return SLURM_SUCCESS;
+
+	debug3("jp->tables_per_task = %d", jp->tables_per_task);
+	nprocs = jp->tableinfo[0].table_length;
+	hi = hostlist_iterator_create(hl);
+
+	if (jp->cyclic) {
+		_lock();
+		for (proc_cnt = 0; proc_cnt < nprocs; proc_cnt++) {
+			host = hostlist_next(hi);
+			if(!host) {
+				hostlist_iterator_reset(hi);
+				host = hostlist_next(hi);
+			}
+			rc = _deallocate_windows(jp->tables_per_task,
+						 jp->tableinfo,
+						 host, proc_cnt);
+			free(host);
+		}
+		_unlock();
+	} else {
+		int task_cnt;
+		int full_node_cnt;
+		int min_procs_per_node;
+		int max_procs_per_node;
+
+		debug("Allocating windows in block mode");
+		nnodes = hostlist_count(hl);
+		full_node_cnt = nprocs % nnodes;
+		min_procs_per_node = nprocs / nnodes;
+		max_procs_per_node = (nprocs + nnodes - 1) / nnodes;
+	
+		proc_cnt = 0;
+		_lock();
+		for  (i = 0; i < nnodes; i++) {
+			host = hostlist_next(hi);
+			if(!host)
+				error("Failed to get next host");
+
+			if(i < full_node_cnt)
+				task_cnt = max_procs_per_node;
+			else
+				task_cnt = min_procs_per_node;
+			
+			for (j = 0; j < task_cnt; j++) {
+				rc = _deallocate_windows(jp->tables_per_task,
+							 jp->tableinfo,
+							 host, proc_cnt);
+				proc_cnt++;
+			}
+			free(host);
+		}
+		_unlock();
+	}
+
+	hostlist_iterator_destroy(hi);
+	return SLURM_SUCCESS;
+}
+
+
 /* Setup everything for the job.  Assign tasks across
  * nodes in a block or cyclic fashion and create the network table used
  * on all nodes of the job.
@@ -1376,7 +1518,8 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 	if(nprocs <= 0)
 		slurm_seterrno_ret(EINVAL);
 
-	jp->bulk_xfer = bulk_xfer;
+	jp->cyclic = (uint8_t) cyclic;
+	jp->bulk_xfer = (uint8_t) bulk_xfer;
 	jp->job_key = _next_key();
 	snprintf(jp->job_desc, DESCLEN,
 		 "slurm federation driver key=%d", jp->job_key);
@@ -1392,8 +1535,10 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 		 * assumption is incorrect.
 		 */
 		host = hostlist_next(hi);
+		_lock();
 		node = _find_node(fed_state, host);
 		jp->tables_per_task = node->adapter_count;
+		_unlock();
 		hostlist_iterator_reset(hi);
 	} else {
 		jp->tables_per_task = 1;
@@ -1416,6 +1561,7 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 	if (cyclic) {
 		/* Allocate tables for one process per node at a time */
 		debug("Allocating windows in cyclic mode");
+		_lock();
 		for (proc_cnt = 0; proc_cnt < nprocs; proc_cnt++) {
 			host = hostlist_next(hi);
 			if(!host) {
@@ -1425,10 +1571,13 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 			rc = _allocate_windows(jp->tables_per_task,
 					       jp->tableinfo,
 					       host, proc_cnt);
-			if (rc != SLURM_SUCCESS)
+			if (rc != SLURM_SUCCESS) {
+				_unlock();
 				goto fail;
+			}
 			free(host);
 		}
+		_unlock();
 	} else {
 		int task_cnt;
 		int full_node_cnt;
@@ -1442,6 +1591,7 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 		max_procs_per_node = (nprocs + nnodes - 1) / nnodes;
 	
 		proc_cnt = 0;
+		_lock();
 		for  (i = 0; i < nnodes; i++) {
 			host = hostlist_next(hi);
 			if(!host)
@@ -1456,12 +1606,15 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 				rc = _allocate_windows(jp->tables_per_task,
 						       jp->tableinfo,
 						       host, proc_cnt);
-				if (rc != SLURM_SUCCESS)
+				if (rc != SLURM_SUCCESS) {
+					_unlock();
 					goto fail;
+				}
 				proc_cnt++;
 			}
 			free(host);
 		}
+		_unlock();
 	}
 
 #if FED_DEBUG
@@ -1506,7 +1659,8 @@ fed_pack_jobinfo(fed_jobinfo_t *j, Buf buf)
 	pack16(j->job_key, buf);
 	packmem(j->job_desc, DESCLEN, buf);
 	pack32(j->window_memory, buf);
-	pack32(j->bulk_xfer, buf);
+	pack8(j->bulk_xfer, buf);
+	pack8(j->cyclic, buf);
 	pack16(j->tables_per_task, buf);
 	for (i = 0; i < j->tables_per_task; i++) {
 		_pack_tableinfo(&j->tableinfo[i], buf);
@@ -1560,7 +1714,8 @@ fed_unpack_jobinfo(fed_jobinfo_t *j, Buf buf)
 	if(size != DESCLEN)
 		goto unpack_error;
 	safe_unpack32(&j->window_memory, buf);
-	safe_unpack32(&j->bulk_xfer, buf);
+	safe_unpack8(&j->bulk_xfer, buf);
+	safe_unpack8(&j->cyclic, buf);
 	safe_unpack16(&j->tables_per_task, buf);
 
 	j->tableinfo = (fed_tableinfo_t *) xmalloc(j->tables_per_task
@@ -1716,6 +1871,48 @@ fed_get_jobinfo(fed_jobinfo_t *jp, int key, void *data)
 	return SLURM_SUCCESS;
 }
 
+
+/*
+ * Look through the table and find all of the NTBL that are for an adapter on
+ * this node.  Wait until each window becomes free.
+ *
+ * Used by: slurmd
+ */
+static int
+_wait_for_window_unloaded(fed_tableinfo_t *tableinfo)
+{
+	int status;
+	uint16_t lid;
+	uint16_t window_id;
+	int i, j;
+
+	lid = _get_lid_from_adapter(tableinfo->adapter_name);
+
+	for (i = 0; i < tableinfo->table_length; i++) {
+		if (tableinfo->table[i]->lid == lid) {
+			for (j = 0; j < 30; j++) { /* Bound the wait time */
+				ntbl_query_window(NTBL_VERSION,
+						  tableinfo->adapter_name,
+						  tableinfo->table[i]->window_id,
+						  &status);
+				if (status == NTBL_UNLOADED_STATE)
+					break;
+				debug2("Window %hu adapter %s is in use, "
+				       "sleeping 1 second",
+				       tableinfo->table[i]->window_id,
+				       tableinfo->adapter_name);
+				sleep(1);
+			}
+			error("Window %hu adapter %s did not become free"
+			      " within %d seconds",
+			      lid, tableinfo->table[i]->window_id, j);
+			return SLURM_ERROR;
+		}
+	}
+	return SLURM_SUCCESS;
+}
+
+
 /* Load a network table on node.  If table contains more than
  * one window for a given adapter, load the table only once for that
  * adapter.
@@ -1745,6 +1942,8 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 #endif
 		adapter = jp->tableinfo[i].adapter_name;
 		network_id = _get_network_id_from_adapter(jp->tableinfo[i].adapter_name);
+
+		_wait_for_window_unloaded(&jp->tableinfo[i]);
 
 		if(adapter == NULL)
 			continue;
@@ -1834,7 +2033,7 @@ fed_unload_table(fed_jobinfo_t *jp)
 				slurm_seterrno_ret(EUNLOAD);
 			}
 		}
-	}	
+	}
 	return SLURM_SUCCESS;
 }
 

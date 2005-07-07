@@ -317,6 +317,7 @@ int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist,
 	int err;
 	int bulk_xfer = 0;
 
+	debug3("network = \"%s\"", network);
 	if(strstr(network, "ip") || strstr(network, "IP")) {
 		debug2("federation: \"ip\" found in network string, "
 		       "no network tables allocated");
@@ -385,7 +386,14 @@ extern int switch_p_get_jobinfo(switch_jobinfo_t switch_job, int key,
 
 int switch_p_job_step_complete(switch_jobinfo_t jobinfo, char *nodelist)
 {
-	return SLURM_SUCCESS;
+	hostlist_t list = NULL;
+	int rc;
+
+	list = hostlist_create(nodelist);
+	rc = fed_job_step_complete((fed_jobinfo_t *)jobinfo, list);
+	hostlist_destroy(list);
+
+	return rc;
 }
 
 void switch_p_print_jobinfo(FILE *fp, switch_jobinfo_t jobinfo)

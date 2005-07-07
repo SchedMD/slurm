@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.5.0-pre16
+==============================
+ -- Federation driver clears windows at job step completion
+
 * Changes in SLURM 0.5.0-pre15
 ==============================
  -- Added "network" field to "scontrol show job" output. 
