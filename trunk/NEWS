@@ -4,6 +4,8 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 0.5.0-pre15
 ==============================
  -- Added "network" field to "scontrol show job" output. 
+ -- Federation fix for unfreed windows when multiple adapters on
+    one node use the same LID
 
 * Changes in SLURM 0.5.0-pre14
 ==============================
