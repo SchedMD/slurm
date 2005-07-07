@@ -3,7 +3,7 @@
  *	storage for RPC data structures. these are the functions used by 
  *	the slurm daemons directly, not for user client use.
  *
- * $Id$
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -205,6 +205,7 @@ void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->req_node_inx);
 		xfree(job->exc_nodes);
 		xfree(job->exc_node_inx);
+		xfree(job->network);
 	}
 }
 
@@ -753,13 +754,17 @@ static void _slurm_free_job_info_members(job_info_t * job)
 	if (job) {
 		xfree(job->nodes);
 		xfree(job->partition);
-		xfree(job->alloc_node);
+		xfree(job->account);
 		xfree(job->name);
+		xfree(job->alloc_node);
 		xfree(job->node_inx);
-		xfree(job->req_nodes);
-		xfree(job->features);
-		xfree(job->req_node_inx);
 		select_g_free_jobinfo(&job->select_jobinfo);
+		xfree(job->features);
+		xfree(job->req_nodes);
+		xfree(job->req_node_inx);
+		xfree(job->exc_nodes);
+		xfree(job->exc_node_inx);
+		xfree(job->network);
 	}
 }
 

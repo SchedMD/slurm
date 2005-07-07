@@ -1723,6 +1723,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpackstr_xmalloc(&job->nodes, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->partition, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->account, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&job->network, &uint16_tmp, buffer);
 	safe_unpack32(&job->dependency, buffer);
 
 	safe_unpackstr_xmalloc(&job->name, &uint16_tmp, buffer);
@@ -1767,6 +1768,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 		job->exc_node_inx = bitfmt2int(node_inx_str);
 		xfree(node_inx_str);
 	}
+
 	return SLURM_SUCCESS;
 
       unpack_error:
@@ -1782,6 +1784,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	xfree(job->req_node_inx);
 	xfree(job->exc_nodes);
 	xfree(job->exc_node_inx);
+	xfree(job->network);
 	return SLURM_ERROR;
 }
 

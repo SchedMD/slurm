@@ -2617,6 +2617,7 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->nodes, buffer);
 	packstr(dump_job_ptr->partition, buffer);
 	packstr(dump_job_ptr->account, buffer);
+	packstr(dump_job_ptr->network, buffer);
 	pack32(dump_job_ptr->dependency, buffer);
 
 	packstr(dump_job_ptr->name, buffer);

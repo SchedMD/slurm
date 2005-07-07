@@ -358,6 +358,7 @@ typedef struct job_info {
 	char *account;		/* charge to specified account */
 	uint16_t wait_reason;	/* reason job still pending, see
 				 * slurm.h:enum job_wait_reason */
+	char *network;		/* network specification */
 	select_jobinfo_t select_jobinfo; /* opaque data type,
 			* process using select_g_get_jobinfo() */
 } job_info_t;
