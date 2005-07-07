@@ -416,14 +416,14 @@ int
 parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr) 
 {
 	int error_code;
-	int fast_schedule = -1, hash_base, heartbeat_interval = -1;
-	int inactive_limit = -1, kill_wait = -1;
-	int ret2service = -1, slurmctld_timeout = -1, slurmd_timeout = -1;
-	int sched_port = -1, sched_rootfltr = -1;
-	int slurmctld_debug = -1, slurmd_debug = -1;
-	int max_job_cnt = -1, min_job_age = -1, wait_time = -1;
-	int slurmctld_port = -1, slurmd_port = -1;
-	int mpich_gm_dir = -1, kill_tree = -1;
+	long fast_schedule = -1, hash_base, heartbeat_interval = -1;
+	long inactive_limit = -1, kill_wait = -1;
+	long ret2service = -1, slurmctld_timeout = -1, slurmd_timeout = -1;
+	long sched_port = -1, sched_rootfltr = -1;
+	long slurmctld_debug = -1, slurmd_debug = -1;
+	long max_job_cnt = -1, min_job_age = -1, wait_time = -1;
+	long slurmctld_port = -1, slurmd_port = -1;
+	long mpich_gm_dir = -1, kill_tree = -1;
 	char *backup_addr = NULL, *backup_controller = NULL;
 	char *checkpoint_type = NULL, *control_addr = NULL;
 	char *control_machine = NULL, *epilog = NULL;
@@ -451,11 +451,11 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"ControlAddr=", 's', &control_addr, 
 		"ControlMachine=", 's', &control_machine, 
 		"Epilog=", 's', &epilog, 
-		"FastSchedule=", 'd', &fast_schedule,
+		"FastSchedule=", 'l', &fast_schedule,
 		"FirstJobId=", 'l', &first_job_id,
-		"HashBase=", 'd', &hash_base,	/* defunct */
-		"HeartbeatInterval=", 'd', &heartbeat_interval,
-		"InactiveLimit=", 'd', &inactive_limit,
+		"HashBase=", 'l', &hash_base,	/* defunct */
+		"HeartbeatInterval=", 'l', &heartbeat_interval,
+		"InactiveLimit=", 'l', &inactive_limit,
 		"JobAcctloc=", 's', &job_acct_loc,
 		"JobAcctParameters=", 's', &job_acct_parameters,
 		"JobAcctType=", 's', &job_acct_type,
@@ -464,36 +464,36 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"JobCredentialPrivateKey=", 's', &job_credential_private_key,
 		"JobCredentialPublicCertificate=", 's', 
 					&job_credential_public_certificate,
-		"KillTree=", 'd', &kill_tree,
-		"KillWait=", 'd', &kill_wait,
-		"MaxJobCount=", 'd', &max_job_cnt,
-		"MinJobAge=", 'd', &min_job_age,
-		"MpichGmDirectSupport=", 'd', &mpich_gm_dir,
+		"KillTree=", 'l', &kill_tree,
+		"KillWait=", 'l', &kill_wait,
+		"MaxJobCount=", 'l', &max_job_cnt,
+		"MinJobAge=", 'l', &min_job_age,
+		"MpichGmDirectSupport=", 'l', &mpich_gm_dir,
 		"PluginDir=", 's', &plugindir,
 		"ProctrackType=", 's', &proctrack_type,
 		"Prolog=", 's', &prolog,
-		"ReturnToService=", 'd', &ret2service,
+		"ReturnToService=", 'l', &ret2service,
 		"SchedulerAuth=", 's', &sched_auth,
-		"SchedulerPort=", 'd', &sched_port,
-		"SchedulerRootFilter=", 'd', &sched_rootfltr,
+		"SchedulerPort=", 'l', &sched_port,
+		"SchedulerRootFilter=", 'l', &sched_rootfltr,
 		"SchedulerType=", 's', &sched_type,
 		"SelectType=", 's', &select_type,
 		"SlurmUser=", 's', &slurm_user,
-		"SlurmctldDebug=", 'd', &slurmctld_debug,
+		"SlurmctldDebug=", 'l', &slurmctld_debug,
 		"SlurmctldLogFile=", 's', &slurmctld_logfile,
 		"SlurmctldPidFile=", 's', &slurmctld_pidfile,
-		"SlurmctldPort=", 'd', &slurmctld_port,
-		"SlurmctldTimeout=", 'd', &slurmctld_timeout,
-		"SlurmdDebug=", 'd', &slurmd_debug,
+		"SlurmctldPort=", 'l', &slurmctld_port,
+		"SlurmctldTimeout=", 'l', &slurmctld_timeout,
+		"SlurmdDebug=", 'l', &slurmd_debug,
 		"SlurmdLogFile=", 's', &slurmd_logfile,
 		"SlurmdPidFile=",  's', &slurmd_pidfile,
-		"SlurmdPort=", 'd', &slurmd_port,
+		"SlurmdPort=", 'l', &slurmd_port,
 		"SlurmdSpoolDir=", 's', &slurmd_spooldir,
-		"SlurmdTimeout=", 'd', &slurmd_timeout,
+		"SlurmdTimeout=", 'l', &slurmd_timeout,
 		"StateSaveLocation=", 's', &state_save_location,
 		"SwitchType=", 's', &switch_type,
 		"TmpFS=", 's', &tmp_fs,
-		"WaitTime=", 'd', &wait_time,
+		"WaitTime=", 'l', &wait_time,
 		"END");
 
 	if (error_code)
@@ -558,33 +558,45 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	if ( fast_schedule != -1 ) {
 		if ( ctl_conf_ptr->fast_schedule != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "FastSchedule");
-		ctl_conf_ptr->fast_schedule = fast_schedule;
+		if ((fast_schedule < 0) || (fast_schedule > 0xffff))
+			error("FastSchedule=%ld is invalid", fast_schedule);
+		else
+			ctl_conf_ptr->fast_schedule = fast_schedule;
 	}
 
 	if ( first_job_id != -1) {
 		if ( ctl_conf_ptr->first_job_id != (uint32_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "FirstJobId");
-		ctl_conf_ptr->first_job_id = first_job_id;
+		if (first_job_id < 0)
+			error("FirstJobId=%ld is invalid", first_job_id);
+		else
+			ctl_conf_ptr->first_job_id = first_job_id;
 	}
 
 	if ( heartbeat_interval != -1) {
 		if ( ctl_conf_ptr->heartbeat_interval != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "HeartbeatInterval");
-		ctl_conf_ptr->heartbeat_interval = heartbeat_interval;
+		if ((heartbeat_interval < 0) || (heartbeat_interval > 0xffff))
+			error("HeartbeatInterval=%ld is invalid", 
+				heartbeat_interval);
+		else
+			ctl_conf_ptr->heartbeat_interval = heartbeat_interval;
 	}
 
 	if ( inactive_limit != -1) {
 		if ( ctl_conf_ptr->inactive_limit != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "InactiveLimit");
-#ifdef HAVE_BGL		/* Inactive limit must be zero on blue gene */
+#ifdef HAVE_BGL		/* Inactive limit must be zero on Blue Gene */
 		if (inactive_limit) {
-			error("InactiveLimit=%d invalid on Blue Gene/L",
+			error("InactiveLimit=%ld is invalid on Blue Gene",
 				inactive_limit);
 		}
-		ctl_conf_ptr->inactive_limit = 0;	/* default value too */
-#else
-		ctl_conf_ptr->inactive_limit = inactive_limit;
+		inactive_limit = 0;	/* default value too */
 #endif
+		if ((inactive_limit < 0) || (inactive_limit > 0xffff))
+			error("InactiveLimit=%ld is invalid", inactive_limit);
+		else
+			ctl_conf_ptr->inactive_limit = inactive_limit;
 	}
 
 	if ( job_acct_loc ) {
@@ -657,32 +669,48 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 			kill_tree = 0;
 		}
 #else
-		ctl_conf_ptr->kill_tree = kill_tree;
+		if ((kill_tree < 0) || (kill_tree > 0xffff))
+			error("KillTree=%ld is invalid", kill_tree);
+		else
+			ctl_conf_ptr->kill_tree = kill_tree;
 #endif
 	}
 
 	if ( kill_wait != -1) {
 		if ( ctl_conf_ptr->kill_wait != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "KillWait");
-		ctl_conf_ptr->kill_wait = kill_wait;
+		if ((kill_wait < 0) || (kill_wait > 0xffff))
+			error("KillWait=%ld is invalid", kill_wait);
+		else
+			ctl_conf_ptr->kill_wait = kill_wait;
 	}
 
 	if ( max_job_cnt != -1) {
 		if ( ctl_conf_ptr->max_job_cnt != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "MaxJobCount");
-		ctl_conf_ptr->max_job_cnt = max_job_cnt;
+		if ((max_job_cnt < 0) || (max_job_cnt > 0xffff))
+			error("MaxJobCount=%ld is invalid", max_job_cnt);
+		else
+			ctl_conf_ptr->max_job_cnt = max_job_cnt;
 	}
 
 	if ( min_job_age != -1) {
 		if ( ctl_conf_ptr->min_job_age != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "MinJobAge");
-		ctl_conf_ptr->min_job_age = min_job_age;
+		if ((min_job_age < 0) || (min_job_age > 0xffff))
+			error("MinJobAge=%ld is invalid", min_job_age);
+		else
+			ctl_conf_ptr->min_job_age = min_job_age;
 	}
 
 	if ( mpich_gm_dir != -1) {
 		if ( ctl_conf_ptr->mpich_gm_dir != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "MpichGmDirectSupport");
-		ctl_conf_ptr->mpich_gm_dir = mpich_gm_dir;
+		if ((mpich_gm_dir < 0) || (mpich_gm_dir > 0xffff))
+			error("MpichGmDirectSupport=%ld is invalid", 
+				mpich_gm_dir);
+		else
+			ctl_conf_ptr->mpich_gm_dir = mpich_gm_dir;
 	}
 
 	if ( plugindir ) {
@@ -712,7 +740,10 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	if ( ret2service != -1) {
 		if ( ctl_conf_ptr->ret2service != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "ReturnToService");
-		ctl_conf_ptr->ret2service = ret2service;
+		if ((ret2service < 0) || (ret2service > 0xffff))
+			error("ReturnToService=%ld is invalid", ret2service);
+		else
+			ctl_conf_ptr->ret2service = ret2service;
 	}
 
 	if ( sched_auth ) {
@@ -723,23 +754,22 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	}
 
 	if ( sched_port != -1 ) {
-		if ( sched_port < 1 )
-			error( "External scheduler port %d is invalid",
-			       sched_port );
-		ctl_conf_ptr->schedport = (uint16_t) sched_port;
+		if (ctl_conf_ptr->schedport != (uint16_t) NO_VAL)
+			 error (MULTIPLE_VALUE_MSG, "SchedPort");
+		if (( sched_port < 1 ) || (sched_port > 0xffff))
+			error( "SchedPort=%ld is invalid", sched_port );
+		else
+			ctl_conf_ptr->schedport = (uint16_t) sched_port;
 	}
 
 	if ( sched_rootfltr != -1 ) {
 		if ( ctl_conf_ptr->schedrootfltr != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "SchedulerRootFilter");
-		ctl_conf_ptr->schedrootfltr = (uint16_t) sched_rootfltr;
+		if ((sched_rootfltr < 0) || (sched_rootfltr > 0xffff))
+			error("SchedulerRootFilter=%ld is invalid");
+		else
+			ctl_conf_ptr->schedrootfltr = (uint16_t) sched_rootfltr;
 	}
-
-        if ( sched_rootfltr != -1 ) {
-                if ( ctl_conf_ptr->schedrootfltr != (uint16_t) NO_VAL)
-                        error (MULTIPLE_VALUE_MSG, "SchedulerRootFilter");
-                ctl_conf_ptr->schedrootfltr = (uint16_t) sched_rootfltr;
-        }
 
 	if ( sched_type ) {
 		if ( ctl_conf_ptr->schedtype ) {
@@ -774,7 +804,10 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	if ( slurmctld_debug != -1) {
 		if ( ctl_conf_ptr->slurmctld_debug != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "SlurmctldDebug");
-		ctl_conf_ptr->slurmctld_debug = slurmctld_debug;
+		if ((slurmctld_debug < 0) || (slurmctld_debug > 0xffff))
+			error("SlurmctldDebug=%ld is invalid");
+		else
+			ctl_conf_ptr->slurmctld_debug = slurmctld_debug;
 	}
 
 	if ( slurmctld_pidfile ) {
@@ -797,7 +830,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		if ( ctl_conf_ptr->slurmctld_port != (uint32_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "SlurmctldPort");
 		else if (slurmctld_port < 0)
-			error ("Bad value for SlurmctldPort: %d", 
+			error ("SlurmctldPort=%ld is invalid", 
 			       slurmctld_port);
 		else 
 			ctl_conf_ptr->slurmctld_port = slurmctld_port;
@@ -806,13 +839,20 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	if ( slurmctld_timeout != -1) {
 		if ( ctl_conf_ptr->slurmctld_timeout != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "SlurmctldTimeout");
-		ctl_conf_ptr->slurmctld_timeout = slurmctld_timeout;
+		if ((slurmctld_timeout < 0) || (slurmctld_timeout > 0xffff))
+			error("SlurmctldTimeout=%ld is invalid", 
+				slurmctld_timeout);
+		else
+			ctl_conf_ptr->slurmctld_timeout = slurmctld_timeout;
 	}
 
 	if ( slurmd_debug != -1) {
 		if ( ctl_conf_ptr->slurmd_debug != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "SlurmdDebug");
-		ctl_conf_ptr->slurmd_debug = slurmd_debug;
+		if ((slurmd_debug < 0) || (slurmd_debug > 0xffff))
+			error("SlurmdDebug=%ld is invalid", slurmd_debug);
+		else
+			ctl_conf_ptr->slurmd_debug = slurmd_debug;
 	}
 
 	if ( slurmd_logfile ) {
@@ -827,7 +867,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		if ( ctl_conf_ptr->slurmd_port != (uint32_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "SlurmdPort");
 		else if (slurmd_port < 0)
-			error ("Bad value for SlurmdPort: %d", slurmd_port);
+			error ("SlurmdPort=%ld is invalid", slurmd_port);
 		else
 			ctl_conf_ptr->slurmd_port = slurmd_port;
 	}
@@ -851,7 +891,10 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	if ( slurmd_timeout != -1) {
 		if ( ctl_conf_ptr->slurmd_timeout != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "SlurmdTimeout");
-		ctl_conf_ptr->slurmd_timeout = slurmd_timeout;
+		if ((slurmd_timeout < 0) || (slurmd_timeout > 0xffff))
+			error("SlurmdTimeout=%ld is invalid", slurmd_timeout);
+		else
+			ctl_conf_ptr->slurmd_timeout = slurmd_timeout;
 	}
 
 	if ( state_save_location ) {
@@ -881,7 +924,10 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	if ( wait_time != -1) {
 		if ( ctl_conf_ptr->wait_time != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "WaitTime");
-		ctl_conf_ptr->wait_time = wait_time;
+		if ((wait_time < 0) || (wait_time > 0xffff))
+			error("WaitTime=%ld is invalid", wait_time);
+		else
+			ctl_conf_ptr->wait_time = wait_time;
 	}
 
 	return 0;
@@ -1216,9 +1262,6 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	if (ctl_conf_ptr->schedrootfltr == (uint16_t) NO_VAL)
 		ctl_conf_ptr->schedrootfltr = DEFAULT_SCHEDROOTFILTER;
-
-	if (ctl_conf_ptr->schedrootfltr == (uint16_t) NO_VAL)
-	        ctl_conf_ptr->schedrootfltr = DEFAULT_SCHEDROOTFILTER;
 
 	if (ctl_conf_ptr->schedtype == NULL)
 		ctl_conf_ptr->schedtype = xstrdup(DEFAULT_SCHEDTYPE);

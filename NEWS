@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.5.0-pre16
 ==============================
+ -- Check slurm.conf values for under/overflows (some are 16 bit values).
  -- Federation driver clears windows at job step completion
 
 * Changes in SLURM 0.5.0-pre15
