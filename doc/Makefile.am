@@ -8,6 +8,7 @@ html_DATA = \
 	html/arch.gif \
 	html/authplugins.html \
 	html/bluegene.html \
+	html/checkpoint_plugins.html \
 	html/coding_style.pdf \
 	html/documentation.html \
 	html/download.html \
