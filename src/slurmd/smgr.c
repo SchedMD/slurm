@@ -175,9 +175,6 @@ _session_mgr(slurmd_job_t *job)
 		error("slurm_create_container: %m");
 		exit(3);
 	}
-#ifdef HAVE_AIX
-	(void) mkcrid(0);
-#endif
 
 	if (chdir(job->cwd) < 0) {
 		error("couldn't chdir to `%s': %m: going to /tmp instead",
@@ -312,6 +309,9 @@ _exec_all_tasks(slurmd_job_t *job)
 			error("fork: %m");
 			return SLURM_ERROR;
 		} else if (pid == 0)  { /* child */
+#ifdef HAVE_AIX
+			(void) mkcrid(0);
+#endif
 			/*
 			 * Stall exec until pgid is set by parent
 			 */
