@@ -282,7 +282,7 @@ typedef struct launch_tasks_request_msg {
 	char     *efname;
 	char     *ifname;
 
-	int32_t   slurmd_debug; /* remote slurmd debug level */
+	uint32_t   slurmd_debug; /* remote slurmd debug level */
 
 	slurm_cred_t cred;	/* job credential            */
 	switch_jobinfo_t switch_job;	/* switch credential for the job */
@@ -314,7 +314,7 @@ typedef struct spawn_task_request_msg {
 	uint16_t  task_flags;
 	uint32_t  global_task_id;
 
-	int32_t   slurmd_debug; /* remote slurmd debug level */
+	uint32_t   slurmd_debug; /* remote slurmd debug level */
 
 	slurm_cred_t cred;	/* job credential            */
 	switch_jobinfo_t switch_job;	/* switch credential for the job */
@@ -329,7 +329,7 @@ typedef struct task_ext_msg {
 typedef struct partition_info partition_desc_msg_t;
 
 typedef struct return_code_msg {
-	int32_t return_code;
+	uint32_t return_code;
 } return_code_msg_t;
 
 /* Note: We include select_jobinfo here in addition to the job launch 

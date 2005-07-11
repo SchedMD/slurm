@@ -249,7 +249,7 @@ _accept_msg_connection(slurm_fd slurmctld_fd,
 	slurm_msg_t *msg = NULL;
 	slurm_addr   cli_addr;
 	char         host[256];
-	short        port;
+	uint16_t     port;
 	int          rc = 0;
 
 	fd = slurm_accept_msg_conn(slurmctld_fd, &cli_addr);

@@ -629,7 +629,7 @@ _read_io_header(int fd, job_t *job, char *host)
 		goto fail;
 	}
 
-	if (io_hdr_validate(&hdr, key, len) < 0)  /* check key */
+	if (io_hdr_validate(&hdr, key, len) < 0) /* check key */
 		goto fail;
 
 	/* 

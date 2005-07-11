@@ -893,8 +893,8 @@ void load_part_uid_allow_list(int force)
  */
 uid_t *_get_groups_members(char *group_names)
 {
-	int *group_uids = NULL;
-	int *temp_uids = NULL;
+	uid_t *group_uids = NULL;
+	uid_t *temp_uids  = NULL;
 	int i, j, k;
 	char *tmp_names, *name_ptr, *one_group_name;
 
@@ -934,7 +934,7 @@ uid_t *_get_group_members(char *group_name)
 	struct group *group_struct_ptr;
 	struct passwd *user_pw_ptr;
 	int i, j;
-	int *group_uids = NULL;
+	uid_t *group_uids = NULL;
 	int uid_cnt = 0;
 
 	group_struct_ptr = getgrnam(group_name); /* Note: static memory, 
@@ -950,7 +950,7 @@ uid_t *_get_group_members(char *group_name)
 			break;
 	}
 	uid_cnt = i;
-	group_uids = (int *) xmalloc(sizeof(uid_t) * (uid_cnt + 1));
+	group_uids = (uid_t *) xmalloc(sizeof(uid_t) * (uid_cnt + 1));
 	memset(group_uids, 0, (sizeof(uid_t) * (uid_cnt + 1)));
 
 	j = 0;

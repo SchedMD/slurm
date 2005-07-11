@@ -61,11 +61,11 @@ typedef struct allocation_info {
 	uint32_t                jobid;
 	uint32_t                stepid;
 	char                   *nodelist;
-	int                     nnodes;
+	uint32_t                nnodes;
 	slurm_addr             *addrs;
-	int                     num_cpu_groups;
-	int                    *cpus_per_node;
-	int                    *cpu_count_reps;
+	uint16_t                num_cpu_groups;
+	uint32_t               *cpus_per_node;
+	uint32_t               *cpu_count_reps;
 	select_jobinfo_t select_jobinfo;
 } allocation_info_t;
 
@@ -201,7 +201,7 @@ job_create_noalloc(void)
 {
 	job_t *job = NULL;
 	allocation_info_t *ai = xmalloc(sizeof(*ai));
-	int cpn = 1;
+	uint32_t cpn = 1;
 	int i   = 0;
 
 	hostlist_t  hl = hostlist_create(opt.nodelist);

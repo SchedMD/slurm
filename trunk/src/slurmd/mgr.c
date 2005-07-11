@@ -131,7 +131,8 @@ static int  _wait_for_session(slurmd_job_t *job);
 static void _wait_for_io(slurmd_job_t *job);
 static void _set_unexited_task_status(slurmd_job_t *job, int status);
 static void _handle_attach_req(slurmd_job_t *job);
-static int  _send_exit_msg(slurmd_job_t *job, int tid[], int n, int status);
+static int  _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, 
+		int status);
 static void _set_unexited_task_status(slurmd_job_t *job, int status);
 static int  _send_pending_exit_msgs(slurmd_job_t *job);
 static void _kill_running_tasks(slurmd_job_t *job);
@@ -437,7 +438,7 @@ _random_sleep(slurmd_job_t *job)
  * task ids that have exited
  */
 static int
-_send_exit_msg(slurmd_job_t *job, int tid[], int n, int status)
+_send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, int status)
 {
 	slurm_msg_t     resp;
 	task_exit_msg_t msg;
@@ -757,7 +758,7 @@ _send_pending_exit_msgs(slurmd_job_t *job)
 	int  nsent  = 0;
 	int  status = 0;
 	bool set    = false;
-	int  tid[job->ntasks];
+	uint32_t  tid[job->ntasks];
 
 	/* 
 	 * Collect all exit codes with the same status into a 

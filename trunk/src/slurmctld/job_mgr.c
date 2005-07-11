@@ -1,6 +1,6 @@
 /*****************************************************************************\
  *  job_mgr.c - manage the job information of slurm
- *	Note: there is a global job list (job_list), job_count, time stamp 
+ *	Note: there is a global job list (job_list), time stamp 
  *	(last_job_update), and hash table (job_hash)
  *
  *  $Id$
@@ -75,15 +75,15 @@
 #define JOB_STATE_VERSION      "VER001"
 
 /* Global variables */
-List job_list = NULL;		/* job_record list */
+List   job_list = NULL;		/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
 
 /* Local variables */
 static uint32_t maximum_prio = TOP_PRIORITY;
-static int    hash_table_size = 0;
-static int    job_count = 0;        /* job's in the system */
-static uint32_t job_id_sequence = 0; /* first job_id to assign new job */
-static struct job_record **job_hash = NULL;
+static int      hash_table_size = 0;
+static int      job_count = 0;		/* job's in the system */
+static uint32_t job_id_sequence = 0;	/* first job_id to assign new job */
+static struct   job_record **job_hash = NULL;
 
 /* Local functions */
 static void _add_job_hash(struct job_record *job_ptr);
