@@ -1,6 +1,6 @@
 /*****************************************************************************\
- * slurmd/smgr.c - session manager functions for slurmd
- * $Id$
+ *  slurmd/smgr.c - session manager functions for slurmd
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -319,6 +319,7 @@ _exec_all_tasks(slurmd_job_t *job)
 				error ("pgrp child read failed: %m");
 			close (fdpair[0]);
 			close (fdpair[1]);
+			log_fini();
 
 			_exec_task(job, i);
 		}
