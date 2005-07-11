@@ -232,8 +232,6 @@ extern time_t last_job_update;	/* time of last update to part records */
 #define STEP_MAGIC 0xce593bc1
 #define KILL_ON_STEP_DONE	1
 
-extern int job_count;			/* number of jobs in the system */
-
 /* job_details - specification of a job's constraints, 
  * can be purged after initiation */
 struct job_details {

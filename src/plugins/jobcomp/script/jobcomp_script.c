@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  jobcomp_script.c - Script running slurm job completion logging plugin.
+ *  $Id$
  *****************************************************************************
  *  Produced at Center for High Performance Computing, North Dakota State
  *  University
@@ -91,12 +92,12 @@ const uint32_t plugin_version	= 90;
 static int plugin_errno = SLURM_SUCCESS;
 static char * script = NULL;
 static char error_str[256];
-static List job_list = NULL;
+static List comp_list = NULL;
 
 static pthread_t script_thread = 0;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t job_list_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t job_list_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t comp_list_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t comp_list_cond = PTHREAD_COND_INITIALIZER;
 static int agent_exit = 0;
 
 /*
@@ -270,16 +271,16 @@ void *script_agent (void *args) {
 	job_record job;
 
 	while(1) {
-		pthread_mutex_lock(&job_list_mutex);
-		while ((list_is_empty(job_list) != 0) && (agent_exit == 0)) {
-			pthread_cond_wait(&job_list_cond, &job_list_mutex);
+		pthread_mutex_lock(&comp_list_mutex);
+		while ((list_is_empty(comp_list) != 0) && (agent_exit == 0)) {
+			pthread_cond_wait(&comp_list_cond, &comp_list_mutex);
 		}
 		if (agent_exit) {
-			pthread_mutex_unlock(&job_list_mutex);
+			pthread_mutex_unlock(&comp_list_mutex);
 			return NULL;
 		}
-		job = (job_record)list_pop(job_list);
-		pthread_mutex_unlock(&job_list_mutex);
+		job = (job_record)list_pop(comp_list);
+		pthread_mutex_unlock(&comp_list_mutex);
 
 		snprintf(user_id_str,sizeof(user_id_str),"%u",job->user_id);
 		snprintf(job_id_str,sizeof(job_id_str),"%u",job->job_id);
@@ -367,8 +368,8 @@ int init ( void )
 
 	pthread_mutex_lock(&thread_flag_mutex);
 
-	job_list = list_create((ListDelF) job_record_destroy);
-	if(job_list == NULL) {
+	comp_list = list_create((ListDelF) job_record_destroy);
+	if(comp_list == NULL) {
 		return SLURM_ERROR;
 	}
 
@@ -427,10 +428,10 @@ int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 				job_ptr->partition, job_ptr->time_limit,
 				job_ptr->start_time, job_ptr->end_time,
 				submit, job_ptr->batch_flag, job_ptr->nodes);
-	pthread_mutex_lock(&job_list_mutex);
-	list_append(job_list,(void *)job);
-	pthread_mutex_unlock(&job_list_mutex);
-	pthread_cond_broadcast(&job_list_cond);
+	pthread_mutex_lock(&comp_list_mutex);
+	list_append(comp_list,(void *)job);
+	pthread_mutex_unlock(&comp_list_mutex);
+	pthread_cond_broadcast(&comp_list_cond);
 	return SLURM_SUCCESS;
 }
 
@@ -469,7 +470,7 @@ int fini ( void )
 	if (script_thread) {
 		verbose("Script Job Completion plugin shutting down");
 		agent_exit = 1;
-		pthread_cond_broadcast(&job_list_cond);
+		pthread_cond_broadcast(&comp_list_cond);
 		rc = _wait_for_thread(script_thread);
 		script_thread = 0;
 	}
@@ -477,9 +478,9 @@ int fini ( void )
 
 	xfree(script);
 	if (rc == SLURM_SUCCESS) {
-		pthread_mutex_lock(&job_list_mutex);
-		list_destroy(job_list);
-		pthread_mutex_unlock(&job_list_mutex);
+		pthread_mutex_lock(&comp_list_mutex);
+		list_destroy(comp_list);
+		pthread_mutex_unlock(&comp_list_mutex);
 	}
 
 	return rc;

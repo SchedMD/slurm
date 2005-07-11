@@ -534,12 +534,21 @@ qsw_unpack_jobinfo(qsw_jobinfo_t j, Buf buffer)
 #if HAVE_LIBELAN3  
 	safe_unpack16(&j->j_cap.padding, 	buffer);	    
 #endif
-	safe_unpack32(&j->j_cap.Version,	buffer); 	    
-	safe_unpack32(&j->j_cap.LowContext, 	buffer);
-	safe_unpack32(&j->j_cap.HighContext,	buffer);
-	safe_unpack32(&j->j_cap.MyContext,	buffer);
-	safe_unpack32(&j->j_cap.LowNode, 	buffer);
-	safe_unpack32(&j->j_cap.HighNode,	buffer);
+{
+	uint32_t tmp32;
+	safe_unpack32(&tmp32,	buffer);
+	j->j_cap.Version	= (int) tmp32;
+	safe_unpack32(&tmp32,	buffer);
+	j->j_cap.LowContext	= (int) tmp32;
+	safe_unpack32(&tmp32,	buffer);
+	j->j_cap.HighContext	= (int) tmp32;
+	safe_unpack32(&tmp32,	buffer);
+	j->j_cap.MyContext	= (int) tmp32; 
+	safe_unpack32(&tmp32,	buffer);
+	j->j_cap.LowNode	= (int) tmp32;
+	safe_unpack32(&tmp32,	buffer);
+	j->j_cap.HighNode	= (int) tmp32;
+}
 #if HAVE_LIBELAN3
 	safe_unpack32(&j->j_cap.Entries, 	buffer);
 #endif

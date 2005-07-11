@@ -54,7 +54,7 @@ static void
 io_hdr_pack(io_hdr_t *hdr, Buf buffer)
 {
 	pack16(hdr->version, buffer);
-	packmem(hdr->key, (uint16_t) SLURM_IO_KEY_SIZE, buffer);
+	packmem((char *) hdr->key, (uint16_t) SLURM_IO_KEY_SIZE, buffer);
 	pack32(hdr->taskid,  buffer);
 	pack16(hdr->type,    buffer);
 }
@@ -66,7 +66,7 @@ io_hdr_unpack(io_hdr_t *hdr, Buf buffer)
 
 	safe_unpack16(&hdr->version, buffer);
 
-	safe_unpackmem(hdr->key, &val, buffer);
+	safe_unpackmem((char *) hdr->key, &val, buffer);
 
 	if (val != SLURM_IO_KEY_SIZE)
 		goto unpack_error;
@@ -119,7 +119,7 @@ io_hdr_read_cb(cbuf_t cb, io_hdr_t *hdr)
 }
 
 int 
-io_hdr_validate(io_hdr_t *hdr, const unsigned char *key, int len)
+io_hdr_validate(io_hdr_t *hdr, const char *key, int len)
 {
 	
 	if (hdr->version != IO_HDR_VERSION) {

@@ -74,10 +74,10 @@ public:
 class int_eq_comparator_t : public comparator_t
 {
 protected:
-	int32_t			m_val;
+	time_t			m_val;
 public:
 	int_eq_comparator_t( sched_accessor_fn_t fn,
-			     int32_t expected ) :
+			     time_t expected ) :
 		comparator_t( fn ),
 		m_val( expected )
 	{
@@ -85,7 +85,7 @@ public:
 
 	const bool eval( sched_obj_list_t obj_data, int32_t idx )
 	{
-		return (int32_t) m_func( obj_data,
+		return (time_t) m_func( obj_data,
 					 idx,
 					 NULL ) == m_val;
 	}
@@ -100,10 +100,10 @@ public:
 class int_lt_comparator_t : public comparator_t
 {
 protected:
-	int32_t			m_val;
+	time_t			m_val;
 public:
 	int_lt_comparator_t( sched_accessor_fn_t fn,
-			     int32_t expected ) :
+			     time_t expected ) :
 		comparator_t( fn ),
 		m_val( expected )
 	{
@@ -111,7 +111,7 @@ public:
 
 	const bool eval( sched_obj_list_t obj_data, int32_t idx )
 	{
-		return (int32_t) m_func( obj_data, idx, NULL ) < m_val;
+		return (time_t) m_func( obj_data, idx, NULL ) < m_val;
 	}
 };
 
@@ -124,10 +124,10 @@ public:
 class int_gt_comparator_t : public comparator_t
 {
 protected:
-	int32_t			m_val;
+	time_t			m_val;
 public:
 	int_gt_comparator_t( sched_accessor_fn_t fn,
-			     int32_t expected ) :
+			     time_t expected ) :
 		comparator_t( fn ),
 		m_val( expected )
 	{
@@ -135,7 +135,7 @@ public:
 
 	const bool eval( sched_obj_list_t obj_data, int32_t idx )
 	{
-		return (int32_t) m_func( obj_data, idx, NULL ) > m_val;
+		return (time_t) m_func( obj_data, idx, NULL ) > m_val;
 	}
 };
 

@@ -135,7 +135,7 @@ struct slurm_job_credential {
         uint32_t *ntask;       /* Number of tasks on each host              */
 
 	unsigned char *signature; /* credential signature                   */
-	int      siglen;          /* signature length in bytes              */
+	unsigned int siglen;      /* signature length in bytes              */
 };
 
 
@@ -666,7 +666,7 @@ slurm_cred_get_signature(slurm_cred_t cred, char **datap, int *datalen)
 
 	slurm_mutex_lock(&cred->mutex);
 
-	*datap   = cred->signature;
+	*datap   = (char *) cred->signature;
 	*datalen = cred->siglen;
 
 	slurm_mutex_unlock(&cred->mutex);
@@ -684,7 +684,7 @@ slurm_cred_pack(slurm_cred_t cred, Buf buffer)
 
 	_pack_cred(cred, buffer);
 	xassert(cred->siglen > 0);
-	packmem(cred->signature, (uint16_t) cred->siglen, buffer);
+	packmem((char *) cred->signature, (uint16_t) cred->siglen, buffer);
 
 	slurm_mutex_unlock(&cred->mutex);
 
@@ -988,10 +988,10 @@ static int
 _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 {
 	EVP_MD_CTX ectx;
-	Buf        buffer;
-	int        rc    = SLURM_SUCCESS;
-	int       *lenp  = &cred->siglen;
-	int        ksize = EVP_PKEY_size(ctx->key);
+	Buf           buffer;
+	int           rc    = SLURM_SUCCESS;
+	unsigned int *lenp  = &cred->siglen;
+	int           ksize = EVP_PKEY_size(ctx->key);
 
 	/*
 	 * Allocate memory for signature: at most EVP_PKEY_size() bytes
@@ -1349,7 +1349,7 @@ static void
 _cred_state_unpack(slurm_cred_ctx_t ctx, Buf buffer)
 {
 	time_t        now = time(NULL);
-	int           n   = 0;
+	uint32_t      n;
 	int           i   = 0;
 	cred_state_t *s   = NULL;
 

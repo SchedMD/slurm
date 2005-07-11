@@ -88,6 +88,6 @@ int io_hdr_read_cb(cbuf_t cb, io_hdr_t *hdr);
  *  len bytes of key != hdr->key
  *
  */
-int io_hdr_validate(io_hdr_t *hdr, const unsigned char *key, int len);
+int io_hdr_validate(io_hdr_t *hdr, const char *key, int len);
 
 #endif /* !_HAVE_IO_HDR_H */
