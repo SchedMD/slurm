@@ -1071,6 +1071,7 @@ static void _opt_args(int argc, char **argv)
 		case LONG_OPT_NETWORK:
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
+			setenv("SLURM_NETWORK", opt.network, 1);
 			break;
 		}
 	}
