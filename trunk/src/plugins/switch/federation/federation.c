@@ -1903,12 +1903,36 @@ _wait_for_window_unloaded(fed_tableinfo_t *tableinfo)
 				       tableinfo->adapter_name);
 				sleep(1);
 			}
-			error("Window %hu adapter %s did not become free"
-			      " within %d seconds",
-			      lid, tableinfo->table[i]->window_id, j);
-			return SLURM_ERROR;
+			if (status != NTBL_UNLOADED_STATE) {
+				error("Window %hu adapter %s did not become"
+				      " free within %d seconds",
+				      lid, tableinfo->table[i]->window_id, j);
+				return SLURM_ERROR;
+			}
 		}
 	}
+	return SLURM_SUCCESS;
+}
+
+
+static int
+_check_rdma_job_count(char *adapter)
+{
+	unsigned int job_count;
+	unsigned int *job_keys;
+	int z;
+
+	ntbl_rdma_jobs(NTBL_VERSION, adapter,
+		       &job_count, &job_keys);
+	debug3("Adapter %s, RDMA job_count = %u",
+	       adapter, job_count);
+	for (z = 0; z < job_count; z++)
+		debug3("  job key = %u", job_keys[z]);
+	if (job_count >= 4) {
+		error("RDMA job_count is too high: %u", job_count);
+		return SLURM_ERROR;
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -1927,7 +1951,8 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 	unsigned long long winmem;
 	char *adapter;
 	uint16_t network_id;
-	ADAPTER_RESOURCES res;
+/* 	ADAPTER_RESOURCES res; */
+	int rc;
 
 #if FED_DEBUG
 	char buf[2000];
@@ -1941,19 +1966,27 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 		printf("%s", fed_sprint_jobinfo(jp, buf, 2000));
 #endif
 		adapter = jp->tableinfo[i].adapter_name;
-		network_id = _get_network_id_from_adapter(jp->tableinfo[i].adapter_name);
+		network_id = _get_network_id_from_adapter(adapter);
 
-		_wait_for_window_unloaded(&jp->tableinfo[i]);
+		rc = _wait_for_window_unloaded(&jp->tableinfo[i]);
+		if (rc != SLURM_SUCCESS)
+			return rc;
 
 		if(adapter == NULL)
 			continue;
 		winmem = jp->window_memory;
 		if(jp->bulk_xfer) {
-			ntbl_adapter_resources(
-				NTBL_VERSION,
-				adapter,
-				&res);
-			
+			if (i == 0) {
+				rc = _check_rdma_job_count(adapter);
+				if (rc != SLURM_SUCCESS)
+					return rc;
+			}
+
+/* 			ntbl_adapter_resources( */
+/* 				NTBL_VERSION, */
+/* 				adapter, */
+/* 				&res); */
+
 			err = ntbl_load_table_rdma(
 				NTBL_VERSION,
 				adapter,
@@ -1963,13 +1996,7 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 				jp->job_key,
 				jp->job_desc,
 				jp->bulk_xfer,
-				/*
-				 * FIXME - When the following is 0, this call
-				 *   dies with NTBL_NO_RDMA_AVAIL, so we
-				 *   hardcode to 1.  We don't know what it should
-				 *   really be...
-				 */
-				1,
+				0,             /* rcontext_blocks */
 				jp->tableinfo[i].table_length,
 				jp->tableinfo[i].table);
 		} else {
