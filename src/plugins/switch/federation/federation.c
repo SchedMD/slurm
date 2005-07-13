@@ -958,9 +958,6 @@ _find_node(fed_libstate_t *lp, char *name)
 	if (lp->node_count == 0)
 		return NULL;
 
-	if (lp->hash_table == NULL)
-		_hash_rebuild(lp);
-
 	if (lp->hash_table) {
 		i = _hash_index(name);
 		n = lp->hash_table[i];
@@ -1091,6 +1088,41 @@ _print_libstate(const fed_libstate_t *l)
 }
 #endif
 
+
+/* Throw away adapter portion of the nodeinfo.
+ *
+ * Used by: _unpack_nodeinfo
+ */
+static void _fake_unpack_adapters(Buf buf)
+{
+	uint32_t adapter_count;
+	uint32_t window_count;
+	uint32_t dummy32;
+	uint16_t dummy16;
+	char *dummyptr;
+	int i, j;
+
+	safe_unpack32(&adapter_count, buf);
+	for (i = 0; i < adapter_count; i++) {
+		/* no copy, just advances buf counters */
+		unpackmem_ptr(&dummyptr, &dummy16, buf);
+		safe_unpack16(&dummy16, buf);
+		safe_unpack16(&dummy16, buf);
+		safe_unpack32(&dummy32, buf);
+		safe_unpack32(&dummy32, buf);
+		safe_unpack32(&dummy32, buf);
+		safe_unpack32(&window_count, buf);
+		for (j = 0; j < window_count; j++) {
+			safe_unpack16(&dummy16, buf);
+			safe_unpack32(&dummy32, buf);
+		}
+	}
+
+unpack_error:
+	return;
+}
+
+
 /* Unpack nodeinfo and update persistent libstate.
  *
  * Used by: slurmctld
@@ -1111,8 +1143,7 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
 	 */	
 	assert(buf);
 	
-	/* Extract node name from buffer and update global libstate 
-	 * with this nodes' info.
+	/* Extract node name from buffer
 	 */
 	safe_unpack32(&magic, buf);
 	if(magic != FED_NODEINFO_MAGIC)
@@ -1120,7 +1151,23 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
 	unpackmem(name, &size, buf);
 	if(size != FED_HOSTLEN)
 		goto unpack_error;
-	tmp_n =_alloc_node(fed_state, name);
+
+	/* If we already have nodeinfo for this node, we ignore this message.
+	 * The slurmctld's view of window allocation is always better than
+	 * the slurmd's view.  We only need the slurmd's view if the slurmctld
+	 * has no nodeinfo at all for that node.
+	 */
+	if (name != NULL) {
+		tmp_n = _find_node(fed_state, name);
+		if (tmp_n != NULL) {
+			_fake_unpack_adapters(buf);
+			goto copy_node;
+		}
+	}
+
+	/* Update global libstate with this nodes' info.
+	 */
+	tmp_n = _alloc_node(fed_state, name);
 	if(tmp_n == NULL)
 		return SLURM_ERROR;
 	tmp_n->magic = magic;
@@ -1147,6 +1194,7 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
 		tmp_a->window_list = tmp_w;
 	}
 	
+copy_node:
 	/* Only copy the node_info structure if the caller wants it */
 	if(n != NULL)
 		if(_copy_node(n, tmp_n) != SLURM_SUCCESS)
