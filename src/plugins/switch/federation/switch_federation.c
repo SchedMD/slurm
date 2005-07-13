@@ -137,7 +137,6 @@ int switch_p_libstate_save ( char * dir_name )
 	int ret = SLURM_SUCCESS;
 	int state_fd;
 	
-		
 	buffer = init_buf(FED_LIBSTATE_LEN);
 	(void)fed_libstate_save(buffer);
 	file_name = xstrdup(dir_name);
