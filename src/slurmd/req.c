@@ -160,7 +160,7 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		/* No body to free */
 		/* Then initiate a separate node registration */
 		if (rc == SLURM_SUCCESS)
-			send_registration_msg(SLURM_SUCCESS, false);
+			send_registration_msg(SLURM_SUCCESS, true);
 		break;
 	case REQUEST_PING:
 		_rpc_ping(msg, cli);
