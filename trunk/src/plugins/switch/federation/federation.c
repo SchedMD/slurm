@@ -164,6 +164,7 @@ static fed_status_t fed_status_tab[]= {
 	{FED_STATUS_UNKNOWN, "UNKNOWN_RESULT_CODE"}
 };
 
+static void _hash_rebuild(fed_libstate_t *state);
 static void _strip_cr_nl(char *line);
 static void _strip_comments(char *line);
 static int _set_up_adapter(fed_adapter_t *fed_adapter, char *adapter_name);
@@ -548,7 +549,7 @@ fed_alloc_jobinfo(fed_jobinfo_t **j)
 	fed_jobinfo_t *new;
 
 	assert(j != NULL);
-	new = (fed_jobinfo_t *)malloc(sizeof(fed_jobinfo_t));
+	new = (fed_jobinfo_t *)xmalloc(sizeof(fed_jobinfo_t));
 	if (!new)
 		slurm_seterrno_ret(ENOMEM);
 	new->magic = FED_JOBINFO_MAGIC;
@@ -957,7 +958,10 @@ _find_node(fed_libstate_t *lp, char *name)
 	if (lp->node_count == 0)
 		return NULL;
 
-	if(lp->hash_table) {
+	if (lp->hash_table == NULL)
+		_hash_rebuild(lp);
+
+	if (lp->hash_table) {
 		i = _hash_index(name);
 		n = lp->hash_table[i];
 		while(n) {
@@ -967,7 +971,7 @@ _find_node(fed_libstate_t *lp, char *name)
 			n = n->next;
 		}
 	}
-	
+
 	return NULL;
 }
 
@@ -1425,9 +1429,10 @@ fed_job_step_complete(fed_jobinfo_t *jp, hostlist_t hl)
 	int i, j;
 	int rc;
 
-	assert(jp);
-	assert(jp->magic == FED_JOBINFO_MAGIC);
-	assert(!hostlist_is_empty(hl));
+	if ((jp == NULL)
+	    || (jp->magic != FED_JOBINFO_MAGIC)
+	    || (hostlist_is_empty(hl)))
+		return SLURM_ERROR;
 
 	if ((jp->tables_per_task == 0)
 	    || !jp->tableinfo
@@ -1537,7 +1542,7 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 		host = hostlist_next(hi);
 		_lock();
 		node = _find_node(fed_state, host);
-		jp->tables_per_task = node->adapter_count;
+		jp->tables_per_task = node ? node->adapter_count : 0;
 		_unlock();
 		hostlist_iterator_reset(hi);
 	} else {
@@ -1627,7 +1632,7 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 fail:
 	free(host);
 	hostlist_iterator_destroy(hi);
-	fed_free_jobinfo(jp);
+	/* slurmctld will call fed_free_jobinfo on jp */
 	return SLURM_FAILURE;
 }
 
@@ -1818,23 +1823,32 @@ fed_free_jobinfo(fed_jobinfo_t *jp)
 	int i, j;
 	fed_tableinfo_t *tableinfo;
 
-	if(!jp) {
+	if (!jp) {
 		return;
 	}
 
+	if (jp->magic != FED_JOBINFO_MAGIC) {
+		error("jp is not a switch/federation fed_jobinfo_t");
+		return;
+	}
+
+	jp->magic = 0;
 	if (jp->tables_per_task > 0 && jp->tableinfo != NULL) {
 		for (i = 0; i < jp->tables_per_task; i++) {
 			tableinfo = &jp->tableinfo[i];
-			if (tableinfo == NULL)
+			if (tableinfo->table == NULL)
 				continue;
-			for (j = 0; j < tableinfo->table_length; j++)
+			for (j = 0; j < tableinfo->table_length; j++) {
+				if (tableinfo->table[j] == NULL)
+					continue;
 				xfree(tableinfo->table[j]);
+			}
 			xfree(tableinfo->table);
 		}
 		xfree(jp->tableinfo);
 	}	
 
-	free(jp);
+	xfree(jp);
 	jp = NULL;
 	
 	return;
