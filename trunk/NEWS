@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Check slurm.conf values for under/overflows (some are 16 bit values).
  -- Federation driver clears windows at job step completion
  -- Modify code for clean build with gcc v4.0
+ -- New SLURM_NETWORK environmant variable used by slurm_ll_api
 
 * Changes in SLURM 0.5.0-pre15
 ==============================
