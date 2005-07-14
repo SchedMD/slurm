@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-209488"
-<meta name="LLNLRandRdate" content="10 July 2004">
+<meta name="LLNLRandRdate" content="13 July 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -71,7 +71,8 @@ abbreviation for the type of node selection algorithm. We recommend, for example
 <li><b>linear</b>&#151;A plugin that selects nodes assuming a one-dimensional 
 array of nodes. The nodes are selected so as to minimize the number of consecutive 
 sets of nodes utilizing a best-fit algorithm. While supporting shared nodes, 
-this plugin does not allocated individual processors, memory, etc.</li>
+this plugin does not allocate individual processors, memory, etc. 
+This plugin is recommended for systems without shared nodes.</li>
 <li><b>cons_res</b>&#151;A plugin that can allocate individual processors, 
 memory, etc. within nodes. This plugin is recommended for systems with 
 many non-parallel programs sharing nodes.</li>
@@ -104,9 +105,11 @@ if (<i>select_p_job_test</i>(all available nodes) != SLURM_SUCCESS) {
       leave the job queued for later execution
 } else {
    update job's node list and node bitmap
-   if (<i>select_p_job_init</i>() != SLURM_SUCCESS)
+   if (<i>select_p_job_begin</i>() != SLURM_SUCCESS)
       leave the job queued for later execution
    else {
+      while (!<i>select_p_job_ready</i>())
+        wait
       execute the job
       wait for job to end or be terminated
       <i>select_p_job_fini</i>()
@@ -191,6 +194,16 @@ consider that nodes can be removed from one partition and added to a different p
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
 the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
 
+<p class="commandline">int select_p_pack_node_info (time_t last_query_time, Buf *buffer_ptr);</p>
+<p style="margin-left:.2in"><b>Description</b>: pack node specific information into a buffer.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:
+<span class="commandline"> last_query_time</span>&nbsp;&nbsp;&nbsp;(input) time that the data
+was last saved. If it has not changed since this time, return SLURM_NO_CHANGE_IN_DATA. <br>
+<span class="commandline"> buffer_ptre</span>&nbsp;&nbsp;&nbsp;(input/output) buffer into 
+which the node data is appended.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, 
+SLURM_NO_CHANGE_IN_DATA if data has not changed since last packed, otherwise SLURM_ERROR</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
 <h4>Job-Specific Node Selection Functions</h4>
@@ -229,7 +242,7 @@ and partition specifications.<br>
 the plugin should return SLURM_ERROR and future attempts may be made to schedule 
 the job.</p>
 
-<p class="commandline">int select_p_job_init (struct job_record *job_ptr);</p>
+<p class="commandline">int select_p_job_begin (struct job_record *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note the initiation of the specified job
 is about to begin. This function is called immediately after 
 <span class="commandline">select_p_job_test()</span> sucessfully completes for this job.
@@ -243,6 +256,18 @@ a job record field that the plugin may write into, see <i>select_id</i>.</p>
 the plugin should return SLURM_ERROR, which causes the job to be requeued for 
 later execution.</p>
 
+<p class="commandline">int select_p_job_ready (struct job_record *job_ptr);</p>
+<p style="margin-left:.2in"><b>Description</b>: Test if resources are configured 
+and ready for job execution. This function is only used in the job prolog for 
+BlueGene systems to determine if the bglblock has been booted and is ready for use.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:
+<span class="commandline"> job_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer
+to the job being initialized. Data in this job record may safely be read.
+The <i>nodes</i> and <i>node_bitmap</i> fields of this job record identify the
+nodes which have already been selected for this job to use. </p>
+<p style="margin-left:.2in"><b>Returns</b>: 1 if the job may begin execution, 
+0 otherwise.</p>
+ 
 <p class="commandline">int select_p_job_fini (struct job_record *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note the termination of the 
 specified job. This function is called as the termination process for the 
@@ -254,6 +279,59 @@ The <i>nodes</i> and/or <i>node_bitmap</i> fields of this job record identify th
 nodes which were selected for this job to use.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<h4>Get/set plugin information</h4>
+<p class="commandline">int select_p_get_extra_jobinfo(struct node_record *node_ptr,
+struct job_record *job_ptr, enum select_data_info info, void *data);</p>
+<p style="margin-left:.2in"><b>Description</b>: Get plugin-specific information 
+related to the specified job and/or node.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> node_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer
+to the node for which information is requested.<br>
+<span class="commandline"> job_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer
+to the job for which information is requested.<br>
+<span class="commandline"> info</span>&nbsp; &nbsp;&nbsp;(input) identifies 
+the type of data requested.<br>
+<span class="commandline"> data</span>&nbsp; &nbsp;&nbsp;(output) the requested data.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR.</p>
+
+<p class="commandline">int select_p_get_select_nodeinfo(struct node_record *node_ptr,
+enum select_data_info info, void *data);</p>
+<p style="margin-left:.2in"><b>Description</b>: Get plugin-specific information
+related to the specified node.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> node_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer
+to the node for which information is requested.<br>
+<span class="commandline"> info</span>&nbsp; &nbsp;&nbsp;(input) identifies
+the type of data requested.<br>
+<span class="commandline"> data</span>&nbsp; &nbsp;&nbsp;(output) the requested data.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR.</p>
+
+<p class="commandline">int select_p_update_nodeinfo(struct node_record *node_ptr,
+enum select_data_info info);</p>
+<p style="margin-left:.2in"><b>Description</b>: Update plugin-specific information
+related to the specified  node.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> node_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer
+to the node for which information is requested.<br>
+<span class="commandline"> info</span>&nbsp; &nbsp;&nbsp;(input) identifies
+the type of data requested.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR.</p>
+
+<p class="commandline">int select_p_get_info_from_plugin(enum select_data_info info, void *data);</p>
+<p style="margin-left:.2in"><b>Description</b>: Get plugin-specific information.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> info</span>&nbsp; &nbsp;&nbsp;(input) identifies 
+the type of data to be updated.<br>
+<span class="commandline"> data</span>&nbsp; &nbsp;&nbsp;(output) the requested data.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR.</p>
+
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -272,7 +350,7 @@ to maintain data format compatibility across different versions of the plugin.</
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-209488<br>
-Last modified 10 July 2005</p></td>
+Last modified 13 July 2005</p></td>
 </tr>
 </table>
 </td>
