@@ -121,11 +121,10 @@ int main(int argc, char *argv[])
 		} else {
 			int *coord = find_bp_loc(params.partition);
 			if(coord)
-				printf("%s resolves to X=%d Y=%d Z=%d\n",
+				printf("%s resolves to X=%d Y=%d Z=%d or bgl%d%d%d\n",
 				       params.partition,
-				       coord[X],
-				       coord[Y],
-				       coord[Z]);
+				       coord[X], coord[Y], coord[Z],
+				       coord[X], coord[Y], coord[Z]);
 			else
 				printf("%s has no resolve.\n", 
 				       params.partition);

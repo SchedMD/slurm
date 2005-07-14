@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  configure_functions.c - Functions related to configure mode of smap.
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -256,8 +257,9 @@ static int _resolve(char *com)
 		
 		if(coord)
 			sprintf(error_string, 
-				"%s resolves to X=%d Y=%d Z=%d\n",
-				com+i,coord[X],coord[Y],coord[Z]);
+				"%s resolves to X=%d Y=%d Z=%d or bgl%d%d%d\n",
+				com+i,coord[X],coord[Y],coord[Z],
+				coord[X],coord[Y],coord[Z]);
 		else
 			sprintf(error_string, "%s has no resolve.\n", 
 				com+i);	
