@@ -1071,10 +1071,15 @@ static void _opt_args(int argc, char **argv)
 		case LONG_OPT_NETWORK:
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
-			setenv("SLURM_NETWORK", opt.network, 1);
 			break;
 		}
 	}
+
+#ifdef HAVE_AIX
+	if (opt.network == NULL)
+		opt.network = "us,sn_all,bulk_xfer";
+	setenv("SLURM_NETWORK", opt.network, 1);
+#endif
 
 	remote_argc = 0;
 	if (optind < argc) {
