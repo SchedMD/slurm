@@ -777,6 +777,10 @@ static int _run_job_script (job_t *job, env_t *env)
 		/*
 		 *  Child.
 		 */
+#ifdef HAVE_AIX
+		(void) mkcrid(0);
+#endif
+		log_fini();
 		sig_unblock_signals();
 		execvp(argv[0], argv);
 		exit(1);
