@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-209488">
-<meta name="LLNLRandRdate" content=" May 2005">
+<meta name="LLNLRandRdate" content="14 July 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -79,6 +79,25 @@ Poe will recognize that it lacks a SLURM job allocation (the SLURM_JOBID
 environment variable will be missing) and create the SLURM allocation 
 prior to launching tasks.</p>
 
+<h3>Checkpoint</h3>
+
+<p>SLURM supports checkpoint via poe. 
+In order to enable checkpoint, the shell executing the poe command must 
+itself be initiated with the environment variable <b>CHECKPOINT=yes</b>. 
+One file is written for each node on which the job is executing, plus 
+another for the script executing poe.a
+By default, the checkpoint files will be written to the current working
+directory of the job.
+Names and locations of these files can be controled using the 
+environment variables <b>MP_CKPTFILE</b> and <b>MP_CKPTDIR</b>.
+Use the squeue command to identify the job and job step of interest. 
+To initiate a checkpoint in which the job step will continue execution, 
+use the command: <br>
+<b>scontrol check create <i>job_id.step_id</i></b><br>
+To initiate a checkpoint in which the job step will terminate afterwards, 
+use the command: <br>
+<b>scontrol check vacate <i>job_id.step_id</i></b></p>
+
 <h3>System Administration</h3>
 
 <p>Three unique components are required to use SLURM on an IBM system.
@@ -113,7 +132,7 @@ of LLNL, which established a contract with IBM for this purpose).</p>
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-209488<br>
-Last modified 23 May 2005</p></td>
+Last modified 14 July 2005</p></td>
 </tr>
 </table>
 </td>
