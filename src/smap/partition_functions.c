@@ -44,6 +44,8 @@ typedef struct {
 	int letter_num;
 	int start[PA_SYSTEM_DIMENSIONS];
 	int end[PA_SYSTEM_DIMENSIONS];
+	List nodelist;
+	int size;
 	bool printed;
 
 } db2_block_info_t;
@@ -54,6 +56,7 @@ static List block_list = NULL;
 
 static char* _convert_conn_type(enum connection_type conn_type);
 static char* _convert_node_use(enum node_use_type node_use);
+static int _marknodes(db2_block_info_t *block_ptr, int count);
 static void _print_header_part(void);
 static char *_part_state_str(rm_partition_state_t state);
 static int  _print_text_part(partition_info_t *part_ptr, 
@@ -61,6 +64,7 @@ static int  _print_text_part(partition_info_t *part_ptr,
 #ifdef HAVE_BGL
 static int _set_start_finish(db2_block_info_t *db2_info_ptr);
 static void _block_list_del(void *object);
+static void _nodelist_del(void *object);
 static int _list_match_all(void *object, void *key);
 static int _in_slurm_partition(db2_block_info_t *db2_info_ptr, 
 			       int *first, 
@@ -251,6 +255,7 @@ extern void get_bgl_part()
 			= new_bgl_ptr->bgl_info_array[i].conn_type;
 		block_ptr->bgl_node_use 
 			= new_bgl_ptr->bgl_info_array[i].node_use;
+		_marknodes(block_ptr, i);		
 		_set_start_finish(block_ptr);
 	}
 	
@@ -330,6 +335,73 @@ extern void get_bgl_part()
 	bgl_info_ptr = new_bgl_ptr;
 #endif /* HAVE_BGL */
 	return;
+}
+
+static int _marknodes(db2_block_info_t *block_ptr, int count)
+{
+	int j=0;
+	int start[PA_SYSTEM_DIMENSIONS];
+	int end[PA_SYSTEM_DIMENSIONS];
+	int number = 0;
+	
+	block_ptr->letter_num = count;
+	while (block_ptr->nodes[j] != '\0') {
+		if ((block_ptr->nodes[j] == '['
+		     || block_ptr->nodes[j] == ',')
+		    && (block_ptr->nodes[j+8] == ']' 
+			|| block_ptr->nodes[j+8] == ',')
+		    && (block_ptr->nodes[j+4] == 'x'
+			|| block_ptr->nodes[j+4] == '-')) {
+			j++;
+			number = atoi(block_ptr->nodes + j);
+			start[X] = number / 100;
+			start[Y] = (number % 100) / 10;
+			start[Z] = (number % 10);
+			j += 4;
+			number = atoi(block_ptr->nodes + j);
+			end[X] = number / 100;
+			end[Y] = (number % 100) / 10;
+			end[Z] = (number % 10);
+			j += 3;
+			
+			if(start[X] == 0
+			   && start[Y] == 0
+			   && start[Z] == 0
+			   && end[X] == (DIM_SIZE[X]-1) 
+			   && end[Y] == (DIM_SIZE[Y]-1)
+			   && end[Z] == (DIM_SIZE[Z]-1) 
+			   && block_ptr->state == RM_PARTITION_FREE) 
+				block_ptr->size += set_grid_bgl(start,
+								end,
+								count,
+								1);
+			else
+				block_ptr->size += set_grid_bgl(start, 
+								end, 
+								count, 
+								0);
+			if(block_ptr->nodes[j] != ',')
+				break;
+			j--;
+		} else if((block_ptr->nodes[j] < 58 
+			   && block_ptr->nodes[j] > 47) 
+			  && block_ptr->nodes[j-1] != '[') {
+					
+			number = atoi(block_ptr->nodes + j);
+			start[X] = number / 100;
+			start[Y] = (number % 100) / 10;
+			start[Z] = (number % 10);
+			j+=3;
+			block_ptr->size += set_grid_bgl(start, 
+							start, 
+							count, 
+							0);
+			if(block_ptr->nodes[j] != ',')
+				break;
+		}
+		j++;
+	}
+	return SLURM_SUCCESS;
 }
 
 static void _print_header_part(void)
@@ -649,12 +721,18 @@ static void _block_list_del(void *object)
 			xfree(block_ptr->slurm_part_name);
 		if(block_ptr->nodes)
 			xfree(block_ptr->nodes);
+		if(block_ptr->nodelist)
+			list_destroy(block_ptr->nodelist);
 		
 		xfree(block_ptr);
 		
 	}
 }
 
+static void _nodelist_del(void *object)
+{
+	return;
+}
 
 static int _list_match_all(void *object, void *key)
 {
@@ -728,57 +806,57 @@ static int _print_rest(db2_block_info_t *block_ptr, int *count)
 	ListIterator itr;
 	int set = 0;
 		
-	part.total_nodes = 0;
+/* 	part.total_nodes = 0; */
 	
-	if (block_list) {
-		itr = list_iterator_create(block_list);
-		while ((db2_info_ptr = (db2_block_info_t*) list_next(itr)) 
-		       != NULL) {
-			if(!strcmp(block_ptr->bgl_block_name, 
-				   db2_info_ptr->bgl_block_name)) {
-				if(set == 2)
-					break;
-				set = 0;
-				break;
-			}
-			if((block_ptr->start[X]==db2_info_ptr->start[X] && 
-			    block_ptr->start[Y]==db2_info_ptr->start[Y] && 
-			    block_ptr->start[Z]==db2_info_ptr->start[Z]) &&
-			   (block_ptr->end[X]==db2_info_ptr->end[X] && 
-			    block_ptr->end[Y]==db2_info_ptr->end[Y] && 
-			    block_ptr->end[Z]==db2_info_ptr->end[Z])) {
-				set = 1;
-				break;
-			} 
+/* 	if (block_list) { */
+/* 		itr = list_iterator_create(block_list); */
+/* 		while ((db2_info_ptr = (db2_block_info_t*) list_next(itr))  */
+/* 		       != NULL) { */
+/* 			if(!strcmp(block_ptr->bgl_block_name,  */
+/* 				   db2_info_ptr->bgl_block_name)) { */
+/* 				if(set == 2) */
+/* 					break; */
+/* 				set = 0; */
+/* 				break; */
+/* 			} */
+/* 			if((block_ptr->start[X]==db2_info_ptr->start[X] &&  */
+/* 			    block_ptr->start[Y]==db2_info_ptr->start[Y] &&  */
+/* 			    block_ptr->start[Z]==db2_info_ptr->start[Z]) && */
+/* 			   (block_ptr->end[X]==db2_info_ptr->end[X] &&  */
+/* 			    block_ptr->end[Y]==db2_info_ptr->end[Y] &&  */
+/* 			    block_ptr->end[Z]==db2_info_ptr->end[Z])) { */
+/* 				set = 1; */
+/* 				break; */
+/* 			}  */
 			
-			if((block_ptr->start[X]<=db2_info_ptr->start[X] && 
-			    block_ptr->start[Y]<=db2_info_ptr->start[Y] && 
-			    block_ptr->start[Z]<=db2_info_ptr->start[Z]) &&
-			   (block_ptr->end[X]>=db2_info_ptr->end[X] && 
-			    block_ptr->end[Y]>=db2_info_ptr->end[Y] && 
-			    block_ptr->end[Z]>=db2_info_ptr->end[Z])) {
-				set = 2;
-				continue;
-			}		
-		}
-		list_iterator_destroy(itr);
-	}
+/* 			if((block_ptr->start[X]<=db2_info_ptr->start[X] &&  */
+/* 			    block_ptr->start[Y]<=db2_info_ptr->start[Y] &&  */
+/* 			    block_ptr->start[Z]<=db2_info_ptr->start[Z]) && */
+/* 			   (block_ptr->end[X]>=db2_info_ptr->end[X] &&  */
+/* 			    block_ptr->end[Y]>=db2_info_ptr->end[Y] &&  */
+/* 			    block_ptr->end[Z]>=db2_info_ptr->end[Z])) { */
+/* 				set = 2; */
+/* 				continue; */
+/* 			}		 */
+/* 		} */
+/* 		list_iterator_destroy(itr); */
+/* 	} */
 	
-	if (set == 1) {
-		block_ptr->letter_num=db2_info_ptr->letter_num;
-		part.total_nodes += set_grid_bgl(block_ptr->start, 
-						 block_ptr->end, 
-						 block_ptr->letter_num, 
-						 set);
-	} else {
-		block_ptr->letter_num=*count;
-		part.total_nodes += set_grid_bgl(block_ptr->start, 
-						 block_ptr->end, 
-						 block_ptr->letter_num, 
-						 set);
-		(*count)++;
-	} 
-
+/* 	if (set == 1) { */
+/* 		block_ptr->letter_num=db2_info_ptr->letter_num; */
+/* 		part.total_nodes += set_grid_bgl(block_ptr->start,  */
+/* 						 block_ptr->end,  */
+/* 						 block_ptr->letter_num,  */
+/* 						 set); */
+/* 	} else { */
+/* 		block_ptr->letter_num=*count; */
+/* 		part.total_nodes += set_grid_bgl(block_ptr->start,  */
+/* 						 block_ptr->end,  */
+/* 						 block_ptr->letter_num,  */
+/* 						 set); */
+/* 		(*count)++; */
+/* 	}  */
+	part.total_nodes = block_ptr->size;
 	if(block_ptr->slurm_part_name)
 		part.name = block_ptr->slurm_part_name;
 	else

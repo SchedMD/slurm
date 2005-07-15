@@ -482,27 +482,10 @@ static void *_resize_handler(int sig)
 
 static int _set_pairs()
 {
-	int x,y,z;
+	int x;
 
-	y = 65;
-	for (x = 0; x < 62; x++) {
-		if (y == 91)
-			y = 97;
-		else if(y == 123)
-			y = 48;
-		else if(y == 58)
-			y = 65;
-		letters[x] = y;
-		y++;
-	}
-
-	z=1;
 	for (x = 0; x < 6; x++) {
-		if(z == 4)
-			z++;
-		colors[x] = z;				
 		init_pair(colors[x], colors[x], COLOR_BLACK);
-		z++;
 	}
 	return 1;
 }
