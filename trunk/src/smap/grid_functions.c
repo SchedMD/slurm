@@ -81,7 +81,6 @@ extern int set_grid_bgl(int *start, int *end, int count, int set)
 #ifdef HAVE_BGL
 	int y=0, z=0;
 #endif
-
 	assert(end[X] < DIM_SIZE[X]);
 	assert(start[X] >= 0);
 	assert(count >= 0);
@@ -97,10 +96,12 @@ extern int set_grid_bgl(int *start, int *end, int count, int set)
 		for (y = start[Y]; y <= end[Y]; y++) {
 			for (z = start[Z]; z <= end[Z]; z++) {
 				if(!set) {
-					pa_system_ptr->grid[x][y][z].letter = 
-						letters[count%62];
-					pa_system_ptr->grid[x][y][z].color = 
-						colors[count%6];
+					if(pa_system_ptr->grid[x][y][z].letter != '#') {
+						pa_system_ptr->grid[x][y][z].letter = 
+							letters[count%62];
+						pa_system_ptr->grid[x][y][z].color = 
+							colors[count%6];
+					}
 				}
 				i++;
 			}

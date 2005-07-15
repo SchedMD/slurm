@@ -618,12 +618,12 @@ static int _save_allocation(char *com, List allocated_partitions)
 				else
 					mode_type = "VIRTUAL";
 			
-				sprintf(save_string, "Nodes=bgl[%s] Type=%s "
+				sprintf(save_string, "Nodes=%s Type=%s "
 					"Use=%s\n", 
 					allocated_part->request->save_name, 
 					conn_type, mode_type);
 			} else {
-				sprintf(save_string, "Nodes=bgl[%s] "
+				sprintf(save_string, "Nodes=%s "
 					"Type=%s\n", 
 					allocated_part->request->save_name, 
 					conn_type);
@@ -732,7 +732,7 @@ static void _print_text_command(allocated_part_t *allocated_part)
 		  pa_system_ptr->xcord, "%d",allocated_part->request->size);
 	pa_system_ptr->xcord += 7;
 	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "bgl[%s]",
+		  pa_system_ptr->xcord, "%s",
 		  allocated_part->request->save_name);
 	pa_system_ptr->xcord = 1;
 	pa_system_ptr->ycord++;
