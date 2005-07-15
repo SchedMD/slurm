@@ -158,16 +158,18 @@ strong_alias(hostset_within,		slurm_hostset_within);
 /* ----[ Internal Data Structures ]---- */
 
 
-#ifdef HAVE_BGL		/* logic for block node description */
-   /* We allocate space for three digits, 
-    * each with values 0 to 9 even if they are not all used */
-   bool axis[10][10][10];
-   int axis_min_x, axis_min_y, axis_min_z;
-   int axis_max_x, axis_max_y, axis_max_z;
+#ifdef HAVE_BGL		
+/* logic for block node description */
+/* We allocate space for three digits, 
+ * each with values 0 to 9 even if they are not all used */
+bool axis[10][10][10];
+int axis_min_x, axis_min_y, axis_min_z;
+int axis_max_x, axis_max_y, axis_max_z;
 
-   static void _clear_grid(void);
-   static void _set_grid(unsigned long start, unsigned long end);
-   static bool _test_box(void);
+static int _get_boxes(char *buf);
+static void _clear_grid(void);
+static void _set_grid(unsigned long start, unsigned long end);
+static bool _test_box(void);
 #endif
 
 /* hostname type: A convenience structure used in parsing single hostnames */
@@ -2184,7 +2186,66 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
 	return len;
 }
 
-#ifdef HAVE_BGL		/* logic for block node description */
+#ifdef HAVE_BGL		
+
+/* logic for block node description */
+/* write the next bracketed hostlist, i.e. prefix[n-m,k,...]
+ * into buf, writing at most n chars including the terminating '\0'
+ *
+ * leaves start pointing to one past last range object in bracketed list,
+ * and returns the number of bytes written into buf.
+ *
+ * Assumes hostlist is locked.
+ */
+static int
+_get_boxes(char *buf)
+{
+	int len = 0;
+	int temp;
+	int x1;
+	int x2 = -1;
+	int found = 0;
+	
+	x1 = axis_min_x;
+	while(x1<=axis_max_x) {
+		found = 0;
+		for (temp = x1; temp<=axis_max_x; temp++) {
+			if(axis[temp][axis_min_y][axis_min_z] && !found) {
+				x1 = temp;
+				found = 1;
+			} else if (!axis[temp][axis_min_y][axis_min_z] 
+				   && found) {
+				x2 = temp-1;
+				break;
+			}
+		}
+		if(found) {
+			found = 0;
+				
+			if(x2 == -1) 
+				x2 = axis_max_x;
+			
+			sprintf(buf+len,"%d%d%dx%d%d%d,",
+				x1,axis_min_y,axis_min_z,
+				x2,axis_max_y,axis_max_z);
+			
+			len+=8;
+		} else if(x2 == -1) 
+			break;	
+		x1 = x2+1;
+		x2 = -1;
+		
+	}
+	
+	
+	buf[len - 1] = ']';
+	
+	/* NUL terminate for safety, but do not add terminator to len */
+	buf[len]   = '\0';
+
+	return len;
+}
+
 static void
 _clear_grid(void)
 {
@@ -2222,7 +2283,6 @@ _set_grid(unsigned long start, unsigned long end)
 	axis_max_x = MAX(axis_max_x, x2);
 	axis_max_y = MAX(axis_max_y, y2);
 	axis_max_z = MAX(axis_max_z, z2);
-
 	for (temp=x1; temp<=x2; temp++) {
 		for (temp1=y1; temp1<=y2; temp1++) {
 			for (temp2=z1; temp2<=z2; temp2++) {
@@ -2277,20 +2337,22 @@ size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	_clear_grid();
 	for (i=0;i<hl->nranges;i++)
 		_set_grid(hl->hr[i]->lo, hl->hr[i]->hi);
-	if (!_test_box())
-		goto notbox;
-
-	len += snprintf(buf, n, "%s[%d%d%dx%d%d%d]", 
-		hl->hr[0]->prefix,
-		axis_min_x, axis_min_y, axis_min_z,
-		axis_max_x, axis_max_y, axis_max_z);
-	if ((len < 0) || (len > n))
-		len = n;	/* truncated */
+	if (!_test_box()) {
+		sprintf(buf, "%s[", hl->hr[0]->prefix);
+		len = strlen(hl->hr[0]->prefix) + 1;
+		len += _get_boxes(buf + len);
+	} else {
+		len += snprintf(buf, n, "%s[%d%d%dx%d%d%d]", 
+				hl->hr[0]->prefix,
+				axis_min_x, axis_min_y, axis_min_z,
+				axis_max_x, axis_max_y, axis_max_z);
+		if ((len < 0) || (len > n))
+			len = n;	/* truncated */
+	}
 	box = true;
 
-  notbox:
+notbox:
 #endif
-
 	if (!box) {
 		i=0;
 		while (i < hl->nranges && len < n) {
