@@ -284,7 +284,7 @@ int read_bgl_partitions()
 		
 		bgl_record = xmalloc(sizeof(bgl_record_t));
 		list_push(bgl_curr_part_list, bgl_record);
-				
+									
 		bgl_record->bgl_part_id = xstrdup(part_name);
 		
 		if ((rc = rm_get_data(part_ptr, RM_PartitionBPNum, &bp_cnt)) 

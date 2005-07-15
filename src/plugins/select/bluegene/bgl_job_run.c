@@ -332,9 +332,9 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 static void _term_agent(bgl_update_t *bgl_update_ptr)
 {
 	int i, jobs, rc;
-	rm_job_list_t *job_list;
+	rm_job_list_t *job_list = NULL;
 	int live_states;
-	rm_element_t *job_elem;
+	rm_element_t *job_elem = NULL;
 	pm_partition_id_t part_id;
 	db_job_id_t job_id;
 	bgl_record_t *bgl_record = NULL;
@@ -433,7 +433,6 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 	} else {
 		error("_term_agent: record not found in bgl_list");
 	}
-
 not_removed:
 	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
 		error("rm_free_job_list(): %s", bgl_err_str(rc));
@@ -460,7 +459,7 @@ static void *_part_agent(void *args)
 		}
 		if (bgl_update_ptr->op == START_OP)
 			_start_agent(bgl_update_ptr);
-		else if (bgl_update_ptr->op == TERM_OP)
+		else if (bgl_update_ptr->op == TERM_OP) 
 			_term_agent(bgl_update_ptr);
 		else if (bgl_update_ptr->op == SYNC_OP)
 			_sync_agent(bgl_update_ptr);
