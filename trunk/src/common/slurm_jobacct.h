@@ -61,6 +61,8 @@ extern int g_slurm_jobacct_process_message(struct slurm_msg *msg);
 extern int g_slurmctld_jobacct_init(char *job_acct_loc, 
 		char *job_acct_parameters);
 
+extern int g_slurmctld_jobacct_fini(void);
+
 extern int g_slurmctld_jobacct_job_complete(struct job_record *job_ptr);
 
 extern int g_slurmctld_jobacct_job_start(struct job_record *job_ptr);

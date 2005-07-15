@@ -211,6 +211,14 @@ g_slurmctld_jobacct_init(char *job_acct_loc, char *job_acct_parameters)
 }
 
 extern int
+g_slurmctld_jobacct_fini(void)
+{
+	if ( g_context )
+		return _slurm_jobacct_context_destroy(g_context);
+	return SLURM_SUCCESS;
+}
+
+extern int
 g_slurmctld_jobacct_job_complete(struct job_record *job_ptr)
 {
 	int retval = SLURM_SUCCESS;
@@ -323,9 +331,10 @@ g_slurmd_jobacct_task_exit(slurmd_job_t *job, pid_t pid, int status,
 {
 	int retval = SLURM_SUCCESS;
 
-	if ( g_context )
-		 retval = (*(g_context->ops.slurmd_jobacct_task_exit))(job, pid, status, rusage);
-	else {
+	if ( g_context ) {
+		 retval = (*(g_context->ops.slurmd_jobacct_task_exit))
+			(job, pid, status, rusage);
+	} else {
 		error ("slurm_jobacct plugin context not initialized");
 		retval = ENOENT;
 	}

@@ -1,6 +1,12 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.5.0-pre18
+==============================
+ -- elan switch plugin memory leak plugged
+ -- added g_slurmctld_jobacct_fini() to release all memory (useful 
+    to confirm no memory leaks)
+
 * Changes in SLURM 0.5.0-pre17
 ==============================
  -- slurmd calls the proctrack destroy function at job step completion
