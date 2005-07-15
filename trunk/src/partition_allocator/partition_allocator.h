@@ -49,6 +49,7 @@
 #include "src/common/parse_spec.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/common/list.h"
+#include "src/common/hostlist.h"
 #include "src/common/bitstring.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
@@ -300,7 +301,8 @@ extern int alter_part(List nodes, int conn_type);
  */
 extern int redo_part(List nodes, int conn_type, int new_count);
 
-extern int set_bgl_part(List nodes, int size, int conn_type);
+extern char *set_bgl_part(List results, int *start, 
+			  int *geometry, int conn_type);
 
 extern int reset_pa_system();
 
