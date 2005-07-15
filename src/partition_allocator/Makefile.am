@@ -17,7 +17,8 @@ INCLUDES = -I$(top_srcdir) $(BGL_INCLUDES)
 
 # partition_allocator_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS) $(BGL_LDFLAGS)
 
-# CPPFLAGS = -DBUILD_EXE 
+# CPPFLAGS = -DBUILD_EXE
+
 
 # making a .la
 noinst_LTLIBRARIES = libpartition_allocator.la 
