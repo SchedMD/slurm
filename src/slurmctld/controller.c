@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  controller.c - main control machine daemon for slurm
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -348,6 +349,7 @@ int main(int argc, char *argv[])
 
 	/* Plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
+	g_slurmctld_jobacct_fini();
 	g_slurm_jobcomp_fini();
 	slurm_sched_fini();
 	slurm_select_fini();
