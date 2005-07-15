@@ -939,9 +939,9 @@ _kill_running_tasks(slurmd_job_t *job)
 	steps = shm_get_steps();
 	i = list_iterator_create(steps);
 
-	/* find the job_step_t for this job step */
+	/* find the job_step_t for this job step in the list from shared mem */
 	while ((s = list_next(i)))
-		if ((s->jobid == job->jobid) || (s->stepid == job->stepid))
+		if ((s->jobid == job->jobid) && (s->stepid == job->stepid))
 			break;
 	if (!s)
 		return;
