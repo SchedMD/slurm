@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ==============================
  -- slurmd calls the proctrack destroy function at job step completion
  -- federation driver tries harder to clean up switch windows
+ -- BGL wiring changes
 
 * Changes in SLURM 0.5.0-pre16
 ==============================
