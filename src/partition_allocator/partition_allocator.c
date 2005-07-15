@@ -2754,8 +2754,8 @@ static int _find_x_path(List results, pa_node_t *pa_node,
 					       node_tar[Z],
 					       port_tar,
 					       target_port);
-				found_one:			
 #endif					
+				found_one:			
 					if(geometry[X] != 1) {
 						curr_switch->
 							int_wire
