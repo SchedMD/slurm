@@ -1935,45 +1935,71 @@ fed_get_jobinfo(fed_jobinfo_t *jp, int key, void *data)
 
 
 /*
- * Look through the table and find all of the NTBL that are for an adapter on
- * this node.  Wait until each window becomes free.
+ * Check up to "retry" times for "window_id" on "adapter_name"
+ * to switch to the NTBL_UNLOADED_STATE.  Sleep one second between 
+ * each retry.
  *
  * Used by: slurmd
  */
 static int
-_wait_for_window_unloaded(fed_tableinfo_t *tableinfo)
+_wait_for_window_unloaded(char *adapter_name, unsigned short window_id,
+			  int retry)
 {
 	int status;
+	int i;
+
+	for (i = 0; i < retry; i++) {
+		ntbl_query_window(NTBL_VERSION, adapter_name,
+				  window_id, &status);
+		if (status == NTBL_UNLOADED_STATE)
+			break;
+		debug2("Window %hu adapter %s is in use, sleeping 1 second",
+		       window_id, adapter_name);
+		sleep(1);
+	}
+
+	if (status != NTBL_UNLOADED_STATE)
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
+
+/*
+ * Look through the table and find all of the NTBL that are for an adapter on
+ * this node.  Wait until the window from each local NTBL is in the
+ * NTBL_UNLOADED_STATE.
+ *
+ * Used by: slurmd
+ */
+static int
+_wait_for_all_windows(fed_tableinfo_t *tableinfo)
+{
 	uint16_t lid;
-	uint16_t window_id;
-	int i, j;
+	int i;
+	int err;
+	int rc = SLURM_SUCCESS;
+	int retry = 30;
 
 	lid = _get_lid_from_adapter(tableinfo->adapter_name);
 
 	for (i = 0; i < tableinfo->table_length; i++) {
 		if (tableinfo->table[i]->lid == lid) {
-			for (j = 0; j < 30; j++) { /* Bound the wait time */
-				ntbl_query_window(NTBL_VERSION,
-						  tableinfo->adapter_name,
-						  tableinfo->table[i]->window_id,
-						  &status);
-				if (status == NTBL_UNLOADED_STATE)
-					break;
-				debug2("Window %hu adapter %s is in use, "
-				       "sleeping 1 second",
-				       tableinfo->table[i]->window_id,
-				       tableinfo->adapter_name);
-				sleep(1);
-			}
-			if (status != NTBL_UNLOADED_STATE) {
+			err = _wait_for_window_unloaded(
+				tableinfo->adapter_name,
+				tableinfo->table[i]->window_id,
+				retry);
+			if (err != SLURM_SUCCESS) {
 				error("Window %hu adapter %s did not become"
 				      " free within %d seconds",
-				      lid, tableinfo->table[i]->window_id, j);
-				return SLURM_ERROR;
+				      lid, tableinfo->table[i]->window_id, i);
+				rc = err;
+				retry = 2;
 			}
 		}
 	}
-	return SLURM_SUCCESS;
+
+	return rc;
 }
 
 
@@ -2030,7 +2056,7 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 		adapter = jp->tableinfo[i].adapter_name;
 		network_id = _get_network_id_from_adapter(adapter);
 
-		rc = _wait_for_window_unloaded(&jp->tableinfo[i]);
+		rc = _wait_for_all_windows(&jp->tableinfo[i]);
 		if (rc != SLURM_SUCCESS)
 			return rc;
 
@@ -2084,6 +2110,32 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 	return SLURM_SUCCESS;
 }
 
+
+/*
+ * Try up to "retry" times to unload a window.
+ */
+static int
+_unload_window(char *adapter, unsigned short job_key, unsigned short window_id,
+	       int retry)
+{
+	int i;
+	int err;
+	int rc = SLURM_SUCCESS;
+
+	for (i = 0; i < retry; i++) {
+		err = ntbl_unload_window(NTBL_VERSION, adapter,
+					 job_key, window_id);
+		if (err == NTBL_SUCCESS) {
+			debug3("_unload_window succeeded");
+			break;
+		}
+		error("Unable to unload window %hu adapter %s: %s\n",
+		      window_id, adapter, _lookup_fed_status_tab(err));
+		sleep(1);
+	}
+}
+
+
 /* Assumes that, on error, new switch state information will be
  * read from node.
  *
@@ -2098,6 +2150,8 @@ fed_unload_table(fed_jobinfo_t *jp)
 	NTBL **table;
 	uint32_t table_length;
 	int local_lid;
+	int rc = SLURM_SUCCESS;
+	int retry = 30;
 
         assert(jp);
         assert(jp->magic == FED_JOBINFO_MAGIC);
@@ -2113,17 +2167,18 @@ fed_unload_table(fed_jobinfo_t *jp)
 			debug3("freeing adapter %s lid %d window %d job_key %d",
 			       adapter_name, table[j]->lid,
 			       table[j]->window_id, jp->job_key);
-			err = ntbl_unload_window(NTBL_VERSION, adapter_name,
-						 jp->job_key,
-						 table[j]->window_id);
-			if(err != NTBL_SUCCESS) {
-				error("unloading window: %s\n",
-				      _lookup_fed_status_tab(err));
-				slurm_seterrno_ret(EUNLOAD);
+			err = _unload_window(adapter_name,
+					     jp->job_key,
+					     table[j]->window_id,
+					     retry);
+			if(err != SLURM_SUCCESS) {
+				rc = err;
+				slurm_seterrno(EUNLOAD);
+				retry = 2;
 			}
 		}
 	}
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static fed_libstate_t *
