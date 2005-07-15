@@ -116,7 +116,7 @@ int set_user_limits(slurmd_job_t *job)
  */
 static char * rlim_to_string (unsigned long rlim, char *buf, size_t n)
 {
-	if (rlim == RLIM_INFINITY)
+	if (rlim == (unsigned long) RLIM_INFINITY)
 		strlcpy (buf, "inf", n);
 	else 
 		snprintf (buf, n, "%lu", rlim);
