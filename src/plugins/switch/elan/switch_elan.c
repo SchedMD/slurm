@@ -283,6 +283,7 @@ int switch_p_libstate_restore (char *dir_name)
 	if (buffer)
 		free_buf(buffer);
 	xfree(data);
+	xfree(ver_str);
 
 	if (error_code == SLURM_SUCCESS)
 		error_code = qsw_init(old_state);
