@@ -74,9 +74,6 @@ static int _append_geo(int *geo, List geos, int rotate);
 static int _fill_in_coords(List results, List start_list, 
 			   int *geometry, int conn_type);
 /* */
-static int _reset_the_path(pa_switch_t *curr_switch, int source, 
-			   int target, int dim);
-/* */
 static int _copy_the_path(pa_switch_t *curr_switch, pa_switch_t *mark_switch, 
 			  int source, int dim);
 /* */
@@ -94,6 +91,9 @@ static void _new_pa_node(pa_node_t *pa_node,
 		int *coord);
 /** */
 //static void _print_pa_node(pa_node_t* pa_node);
+/* */
+static int _reset_the_path(pa_switch_t *curr_switch, int source, 
+			   int target, int dim);
 /** */
 static void _create_pa_system(void);
 /* */
@@ -1364,56 +1364,6 @@ failed:
 	return rc;
 }
 
-static int _reset_the_path(pa_switch_t *curr_switch, int source, 
-			   int target, int dim)
-{
-	int *node_tar;
-	int *node_curr;
-	int port_tar, port_tar1;
-	pa_switch_t *next_switch = NULL; 
-	/*set the switch to not be used */
-		
-	curr_switch->int_wire[source].used = 0;
-	port_tar = curr_switch->int_wire[source].port_tar;
-	port_tar1 = port_tar;
-	curr_switch->int_wire[source].port_tar = source;
-	curr_switch->int_wire[port_tar].used = 0;
-	curr_switch->int_wire[port_tar].port_tar = port_tar;
-	if(port_tar==target) {
-		return 1;
-	}
-	/* follow the path */
-	node_curr = curr_switch->ext_wire[0].node_tar;
-	node_tar = curr_switch->ext_wire[port_tar].node_tar;
-	port_tar = curr_switch->ext_wire[port_tar].port_tar;
-	debug2("from %d%d%d %d %d -> %d%d%d %d",
-	       node_curr[X],
-	       node_curr[Y],
-	       node_curr[Z],
-	       source,
-	       port_tar1,
-	       node_tar[X],
-	       node_tar[Y],
-	       node_tar[Z],
-	       port_tar);
-	if(node_curr[X] == node_tar[X]
-	   && node_curr[Y] == node_tar[Y]
-	   && node_curr[Z] == node_tar[Z]) {
-		debug2("%d something bad happened!!", dim);
-		return 0;
-	}
-	next_switch = &pa_system_ptr->
-		grid[node_tar[X]]
-#ifdef HAVE_BGL
-		[node_tar[Y]]
-		[node_tar[Z]]
-#endif
-		.axis_switch[dim];
-
-	_reset_the_path(next_switch, port_tar, target, dim);
-	return 1;
-}
-
 static int _copy_the_path(pa_switch_t *curr_switch, pa_switch_t *mark_switch, 
 			  int start, int source)
 {
@@ -1688,6 +1638,56 @@ static int _create_config_even(pa_node_t *grid)
 				    target);
 	}
 #endif
+	return 1;
+}
+
+static int _reset_the_path(pa_switch_t *curr_switch, int source, 
+			   int target, int dim)
+{
+	int *node_tar;
+	int *node_curr;
+	int port_tar, port_tar1;
+	pa_switch_t *next_switch = NULL; 
+	/*set the switch to not be used */
+		
+	curr_switch->int_wire[source].used = 0;
+	port_tar = curr_switch->int_wire[source].port_tar;
+	port_tar1 = port_tar;
+	curr_switch->int_wire[source].port_tar = source;
+	curr_switch->int_wire[port_tar].used = 0;
+	curr_switch->int_wire[port_tar].port_tar = port_tar;
+	if(port_tar==target) {
+		return 1;
+	}
+	/* follow the path */
+	node_curr = curr_switch->ext_wire[0].node_tar;
+	node_tar = curr_switch->ext_wire[port_tar].node_tar;
+	port_tar = curr_switch->ext_wire[port_tar].port_tar;
+	debug2("from %d%d%d %d %d -> %d%d%d %d",
+	       node_curr[X],
+	       node_curr[Y],
+	       node_curr[Z],
+	       source,
+	       port_tar1,
+	       node_tar[X],
+	       node_tar[Y],
+	       node_tar[Z],
+	       port_tar);
+	if(node_curr[X] == node_tar[X]
+	   && node_curr[Y] == node_tar[Y]
+	   && node_curr[Z] == node_tar[Z]) {
+		debug2("%d something bad happened!!", dim);
+		return 0;
+	}
+	next_switch = &pa_system_ptr->
+		grid[node_tar[X]]
+#ifdef HAVE_BGL
+		[node_tar[Y]]
+		[node_tar[Z]]
+#endif
+		.axis_switch[dim];
+
+	_reset_the_path(next_switch, port_tar, target, dim);
 	return 1;
 }
 
