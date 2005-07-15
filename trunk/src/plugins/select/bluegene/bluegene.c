@@ -591,6 +591,7 @@ extern int create_static_partitions(List part_list)
 	ListIterator itr;
 	struct passwd *pw_ent = NULL;
 	bgl_record_t *bgl_record = NULL, *found_record = NULL;
+	char *name = NULL;
 #ifndef HAVE_BGL_FILES
 	static int block_inx = 0;
 #else
@@ -606,15 +607,24 @@ extern int create_static_partitions(List part_list)
 			
 			if(bgl_record->bp_count>0 
 			   && !bgl_record->full_partition
-			   && bgl_record->node_use==SELECT_COPROCESSOR_MODE)
-				if(set_bgl_part(bgl_record->bgl_part_list, 
-						bgl_record->bp_count, 
-						 bgl_record->conn_type) == SLURM_ERROR) {
+			   && bgl_record->node_use==SELECT_COPROCESSOR_MODE) {
+				debug("adding %s %d%d%d",
+				      bgl_record->nodes,
+				      bgl_record->start[X],
+				      bgl_record->start[Y],
+				      bgl_record->start[Z]);
+				name = set_bgl_part(NULL,
+						    bgl_record->start, 
+						    bgl_record->geo, 
+						    bgl_record->conn_type);
+				if(!name) {
 					error("I was unable to make the "
 					      "requested partition.");
 					slurm_mutex_unlock(&part_state_mutex);
 					return SLURM_ERROR;
 				}
+				xfree(name);
+			}
 		}
 		list_iterator_destroy(itr);
 	} else {
@@ -678,7 +688,10 @@ extern int create_static_partitions(List part_list)
 			DIM_SIZE[X]-1,  
 			DIM_SIZE[Y]-1, 
 			DIM_SIZE[Z]-1);
-
+	bgl_record->geo[X] = DIM_SIZE[X]-1;
+	bgl_record->geo[Y] = DIM_SIZE[Y]-1;
+	bgl_record->geo[Z] = DIM_SIZE[Z]-1;
+	
        	if(bgl_found_part_list) {
 		itr = list_iterator_create(bgl_found_part_list);
 		while ((found_record = (bgl_record_t *) list_next(itr)) 
@@ -728,14 +741,19 @@ extern int create_static_partitions(List part_list)
 	} else {
 		bgl_record->user_uid = pw_ent->pw_uid;
 	}
-	if(set_bgl_part(bgl_record->bgl_part_list, 
-			 bgl_record->bp_count, 
-			 bgl_record->conn_type) == SLURM_ERROR) {
+	
+	name = set_bgl_part(NULL,
+			    bgl_record->start, 
+			    bgl_record->geo, 
+			    bgl_record->conn_type);
+
+	if(!name) {
 		error("I was unable to make the "
 		      "requested partition.");
 		slurm_mutex_unlock(&part_state_mutex);
 		return SLURM_ERROR;
 	}
+	xfree(name);
 	bgl_record->node_use = SELECT_COPROCESSOR_MODE;
 #ifdef HAVE_BGL_FILES
 	if((rc = configure_partition(bgl_record)) == SLURM_ERROR) {
@@ -809,7 +827,8 @@ extern int bgl_free_partition(bgl_record_t *bgl_record)
 {
 #ifdef HAVE_BGL_FILES
 	int rc;
-		
+	if(!bgl_record)
+		return SLURM_ERROR;
 	while (1) {
 		if(update_bgl_record_state(bgl_record) == SLURM_ERROR)
 			break;
@@ -891,7 +910,18 @@ static int _addto_node_list(bgl_record_t *bgl_record, int *start, int *end)
 	int node_count=0;
 	int x,y,z;
 	char node_name_tmp[7];
-	
+	info("%d%d%dx%d%d%d",
+	     start[X],
+	     start[Y],
+	     start[Z],
+	     end[X],
+	     end[Y],
+	     end[Z]);
+	info("%d%d%d",
+	     DIM_SIZE[X],
+	     DIM_SIZE[Y],
+	     DIM_SIZE[Z]);
+	     
 	assert(end[X] < DIM_SIZE[X]);
 	assert(start[X] >= 0);
 	assert(end[Y] < DIM_SIZE[Y]);
@@ -1015,7 +1045,7 @@ static int _validate_config_nodes(void)
 				     record->nodes);
 				rc = SLURM_ERROR;
 			} else {
-				list_push(bgl_found_part_list, record);
+				list_append(bgl_found_part_list, record);
 				info("Found existing BGL PartitionID:%s "
 				     "Nodes:%s Conn:%s Mode:%s",
 				     record->bgl_part_id, 
@@ -1038,7 +1068,7 @@ static int _validate_config_nodes(void)
 				    && (init_record->geo[Y] == DIM_SIZE[Y])
 				    && (init_record->geo[Z] == DIM_SIZE[Z])) {
 					record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
-					list_push(bgl_list, record);
+					list_append(bgl_list, record);
 	
 					record->full_partition = 1;
 					record->bgl_part_id = xstrdup(
@@ -1071,7 +1101,8 @@ static int _validate_config_nodes(void)
 						      "bitmap for", 
 						      init_record->nodes);
 					}
-					list_push(bgl_found_part_list, record);
+					list_append(bgl_found_part_list, 
+						    record);
 					info("Found existing BGL "
 					     "PartitionID:%s "
 					     "Nodes:%s Conn:%s Mode:%s",
@@ -1462,7 +1493,7 @@ static int _parse_bgl_spec(char *in_line)
 	if (!nodes)
 		return SLURM_SUCCESS;	/* not partition line. */
 	bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
-	list_push(bgl_list, bgl_record);
+	list_append(bgl_list, bgl_record);
 	
 	bgl_record->user_name = xstrdup(slurmctld_conf.slurm_user_name);
 	if((pw_ent = getpwnam(bgl_record->user_name)) == NULL) {
@@ -1505,14 +1536,18 @@ static void _process_nodes(bgl_record_t *bgl_record)
 	int end[PA_SYSTEM_DIMENSIONS];
 	char buffer[BUFSIZE];
 	int funky=0;
-
+	ListIterator itr;
+	pa_node_t* pa_node = NULL;
+	
 	bgl_record->bp_count = 0;
 
 	while (bgl_record->nodes[j] != '\0') {
-		if ((bgl_record->nodes[j]   == '[')
-		    && (bgl_record->nodes[j+8] == ']')
-		    && ((bgl_record->nodes[j+4] == 'x')
-			|| (bgl_record->nodes[j+4] == '-'))) {
+		if ((bgl_record->nodes[j] == '['
+		     || bgl_record->nodes[j] == ',')
+		    && (bgl_record->nodes[j+8] == ']' 
+			|| bgl_record->nodes[j+8] == ',')
+		    && (bgl_record->nodes[j+4] == 'x'
+			|| bgl_record->nodes[j+4] == '-')) {
 			j++;
 			number = atoi(bgl_record->nodes + j);
 			start[X] = number / 100;
@@ -1523,12 +1558,22 @@ static void _process_nodes(bgl_record_t *bgl_record)
 			end[X] = number / 100;
 			end[Y] = (number % 100) / 10;
 			end[Z] = (number % 10);
-			j += 5;
+			j += 3;
+			if(!bgl_record->bp_count) {
+				bgl_record->start[X] = start[X];
+				bgl_record->start[Y] = start[Y];
+				bgl_record->start[Z] = start[Z];
+				debug2("start is %d%d%d",
+				      bgl_record->start[X],
+				      bgl_record->start[Y],
+				      bgl_record->start[Z]);
+			}
 			bgl_record->bp_count += _addto_node_list(bgl_record, 
 								 start, 
 								 end);
 			if(bgl_record->nodes[j] != ',')
 				break;
+			j--;
 		} else if((bgl_record->nodes[j] < 58 
 			   && bgl_record->nodes[j] > 47) 
 			  && bgl_record->nodes[j-1] != '[') {
@@ -1538,61 +1583,53 @@ static void _process_nodes(bgl_record_t *bgl_record)
 			start[Y] = (number % 100) / 10;
 			start[Z] = (number % 10);
 			j+=3;
+			if(!bgl_record->bp_count) {
+				bgl_record->start[X] = start[X];
+				bgl_record->start[Y] = start[Y];
+				bgl_record->start[Z] = start[Z];
+				debug2("start is %d%d%d",
+				      bgl_record->start[X],
+				      bgl_record->start[Y],
+				      bgl_record->start[Z]);
+			}
 			bgl_record->bp_count += _addto_node_list(bgl_record, 
 								 start, 
 								 start);
 			if(bgl_record->nodes[j] != ',')
-				break;	
-		}
-		j++;
-	}
-	hostlist_ranged_string(bgl_record->hostlist, BUFSIZE, buffer);
-	if(strcmp(buffer,bgl_record->nodes)) {
-		xfree(bgl_record->nodes);
-		bgl_record->nodes = xstrdup(buffer);
-	}
-	j=0;
-	while (bgl_record->nodes[j] != '\0') {
-		if ((bgl_record->nodes[j]   == '[')
-		    && (bgl_record->nodes[j+8] == ']')
-		    && ((bgl_record->nodes[j+4] == 'x')
-			|| (bgl_record->nodes[j+4] == '-'))) {
-			j++;
-			number = atoi(bgl_record->nodes + j);
-			start[X] = number / 100;
-			start[Y] = (number % 100) / 10;
-			start[Z] = (number % 10);
-			j += 4;
-			number = atoi(bgl_record->nodes + j);
-			end[X] = number / 100;
-			end[Y] = (number % 100) / 10;
-			end[Z] = (number % 10);
-			j += 5;			
-			if(bgl_record->nodes[j] != ',') 
 				break;
-			funky=1;
-		} else if((bgl_record->nodes[j] < 58 
-			   && bgl_record->nodes[j] > 47) 
-			  && bgl_record->nodes[j-1] != '[') {
-			number = atoi(bgl_record->nodes + j);
-			start[X] = number / 100;
-			start[Y] = (number % 100) / 10;
-			start[Z] = (number % 10);
-			j+=3;
-			if(bgl_record->nodes[j] != ',')
-				break;	
-			funky=1;
 		}
-		
 		j++;
 	}
-
-	if(!funky) {
-		bgl_record->geo[X] = (end[X] - start[X])+1;
-		bgl_record->geo[Y] = (end[Y] - start[Y])+1;
-		bgl_record->geo[Z] = (end[Z] - start[Z])+1;
+	/* hostlist_ranged_string(bgl_record->hostlist, BUFSIZE, buffer); */
+/* 	if(strcmp(buffer,bgl_record->nodes)) { */
+/* 		xfree(bgl_record->nodes); */
+/* 		bgl_record->nodes = xstrdup(buffer); */
+/* 	} */
+	j=0;
+	bgl_record->geo[X] = 0;
+	bgl_record->geo[Y] = 0;
+	bgl_record->geo[Z] = 0;
+	end[X] = -1;
+	end[Y] = -1;
+	end[Z] = -1;
+	
+	itr = list_iterator_create(bgl_record->bgl_part_list);
+	while ((pa_node = list_next(itr)) != NULL) {
+		if(pa_node->coord[X]>end[X]) {
+			bgl_record->geo[X]++;
+			end[X] = pa_node->coord[X];
+		}
+		if(pa_node->coord[Y]>end[Y]) {
+			bgl_record->geo[Y]++;
+			end[Y] = pa_node->coord[Y];
+		}
+		if(pa_node->coord[Z]>end[Z]) {
+			bgl_record->geo[Z]++;
+			end[Z] = pa_node->coord[Z];
+		}
 	}
-		
+	list_iterator_destroy(itr);
+		     
 	if (node_name2bitmap(bgl_record->nodes, 
 			     false, 
 			     &bgl_record->bitmap)) {

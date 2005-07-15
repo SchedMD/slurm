@@ -231,7 +231,16 @@ extern int update_partition_list()
 			error("Partition %s not found in bgl_list "
 			      "removing from database", name);
 			term_jobs_on_part(name);
-			bgl_free_partition(bgl_record);
+			if ((rc = pm_destroy_partition(name)) 
+			    != STATUS_OK) {
+				if(rc == PARTITION_NOT_FOUND) {
+					debug("partition %s is not found");
+					break;
+				}
+				error("pm_destroy_partition(%s): %s",
+				      name, 
+				      bgl_err_str(rc));
+			}
 			rc = rm_remove_partition(name);
 			if (rc != STATUS_OK) {
 				error("rm_remove_partition(%s): %s",

@@ -76,6 +76,7 @@ typedef struct bgl_record {
 	pm_partition_id_t bgl_part_id;	/* ID returned from MMCS	*/
 	lifecycle_type_t part_lifecycle;/* either STATIC or DYNAMIC	*/
 	rm_partition_state_t state;   	/* the allocated partition   */
+	int start[SYSTEM_DIMENSIONS];   /* start node */
 	int geo[SYSTEM_DIMENSIONS];     /* geometry */
 	rm_connection_type_t conn_type;	/* Mesh or Torus or NAV */
 	rm_partition_mode_t node_use;	/* either COPROCESSOR or VIRTUAL */
