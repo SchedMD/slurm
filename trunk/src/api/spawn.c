@@ -409,7 +409,7 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 		r->switch_job	= ctx->step_resp->switch_job; 
 		r->slurmd_debug	= slurmd_debug;
 
-		/*Task specific message contents */
+		/* Task specific message contents */
 		r->global_task_id	= ctx->tids[i][0];
 		r->cpus_allocated	= ctx->cpus[i];
 		r->srun_node_id	= (uint32_t) i;
@@ -420,7 +420,7 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 			sizeof(slurm_addr));
 #if		_DEBUG
 		printf("tid=%d, fd=%d, port=%u, node_id=%u\n",
-			tid, fd_array[i], r->io_port, i);
+			ctx->tids[i][0], fd_array[i], r->io_port, i);
 #endif
 	}
 
@@ -721,7 +721,8 @@ static void _xcopy_char_array(char ***argv_p, char **argv, int cnt)
 }
 
 
-/* parallel (multi-threaded) task launch, transmits all RPCs in parallel with timeout */
+/* parallel (multi-threaded) task launch, 
+ * transmits all RPCs in parallel with timeout */
 static int _p_launch(slurm_msg_t *req, slurm_step_ctx ctx)
 {
 	int rc = SLURM_SUCCESS, i;
@@ -765,7 +766,7 @@ static int _p_launch(slurm_msg_t *req, slurm_step_ctx ctx)
 		slurm_mutex_unlock(&thread_mutex);
 	}
 
-	/* wait for all tasks to terminate*/
+	/* wait for all tasks to terminate */
 	slurm_mutex_lock(&thread_mutex);
 	for (i=0; i<ctx->nhosts; i++) {
 		while (thd[i].state < DSH_DONE) {
