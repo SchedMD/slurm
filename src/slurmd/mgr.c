@@ -916,6 +916,7 @@ _wait_for_session(slurmd_job_t *job)
 	return (rc <= MAX_SMGR_EXIT_STATUS) ? exit_errno[rc] : rc;
 }
 
+
 /*
  * Make sure all processes in session are dead for interactive jobs.  On 
  * systems with an IBM Federation switch, all processes must be terminated 
@@ -930,20 +931,33 @@ _kill_running_tasks(slurmd_job_t *job)
 	List         steps;
 	ListIterator i;
 	job_step_t  *s     = NULL;
+	int          limit = 0;
 
 	if (job->batch)
 		return;
 
 	steps = shm_get_steps();
 	i = list_iterator_create(steps);
-	while ((s = list_next(i))) {
-		if ((s->jobid != job->jobid) || (s->stepid != job->stepid))
-			continue;
-/* 		if (s->task_list && s->task_list->pid) */
-/* 			killpg(s->task_list->pid, SIGKILL); */
-		if (s->cont_id)
+
+	/* find the job_step_t for this job step */
+	while ((s = list_next(i)))
+		if ((s->jobid == job->jobid) || (s->stepid == job->stepid))
+			break;
+	if (!s)
+		return;
+
+	if (s->cont_id) {
+		slurm_signal_container(s->cont_id, SIGKILL);
+
+		/* Try destroying the container up to 30 times */
+		while (slurm_destroy_container(s->cont_id) != SLURM_SUCCESS
+		       && limit < 30) {
 			slurm_signal_container(s->cont_id, SIGKILL);
+			sleep(1);
+			limit++;
+		}
 	}
+
 	list_iterator_destroy(i);
 	list_destroy(steps);
 	return;
