@@ -33,10 +33,12 @@
 
 int main(int argc, char **argv)
 {
-	char buf1[128], buf2[128];
-	int size, j, procid;
+	char buf1[128], buf2[128], *tmp;
+	int size, j, procid = -1;
 
-	procid = atoi(getenv("SLURM_PROCID"));
+	tmp = getenv("SLURM_PROCID");
+	if (tmp)
+		procid = atoi(tmp);
 	sprintf(buf1, "task %d write to stdout:", procid);
 	write(STDOUT_FILENO, buf1, strlen(buf1));
 	sprintf(buf1, "task %d write to stderr:", procid);
