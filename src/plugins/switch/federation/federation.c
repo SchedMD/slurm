@@ -2120,19 +2120,19 @@ _unload_window(char *adapter, unsigned short job_key, unsigned short window_id,
 {
 	int i;
 	int err;
-	int rc = SLURM_SUCCESS;
 
 	for (i = 0; i < retry; i++) {
 		err = ntbl_unload_window(NTBL_VERSION, adapter,
 					 job_key, window_id);
-		if (err == NTBL_SUCCESS) {
-			debug3("_unload_window succeeded");
-			break;
-		}
+		if (err == NTBL_SUCCESS)
+			return SLURM_SUCCESS;
+
 		error("Unable to unload window %hu adapter %s: %s\n",
 		      window_id, adapter, _lookup_fed_status_tab(err));
 		sleep(1);
 	}
+	
+	return SLURM_FAILURE;
 }
 
 
