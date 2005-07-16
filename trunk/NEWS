@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- elan switch plugin memory leak plugged
  -- added g_slurmctld_jobacct_fini() to release all memory (useful 
     to confirm no memory leaks)
+ -- Fix slurmd bug introduced in pre17
 
 * Changes in SLURM 0.5.0-pre17
 ==============================
