@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-209488">
-<meta name="LLNLRandRdate" content="21 June 2005">
+<meta name="LLNLRandRdate" content="15 July 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -229,11 +229,16 @@ SLURM also supports a plugin for use of <a href="http://supercluster.org/maui">
 The Maui Scheduler</a>, which offers sophisticated scheduling algorithms. 
 Motivated users can even develop their own scheduler plugin if so desired. </p>
 
-<p>SLURM also has a plugin to control the node selection algorithm for jobs.
-This is controlled by the <b>SelectType</b> configuration parameter.
-The two available options are <i>linear</i>, to support a flat interconnect, 
-and <i>bluegene</i> to support Blue Gene systems with a three-dimensional 
-topography.</p>
+<h4>Node selection</h4>
+<p>The node selection mechanism used by SLURM is controlled by the 
+<b>SelectType</b> configuration parameter. 
+If you want to execute multiple jobs per node, but apportion the processors, 
+memory and other resources, the <i>cons_res</i> (consumable resources) 
+plugin is recommended.
+If you tend to dedicate entire nodes to jobs, the <i>linear</i> plugin 
+is recommended. 
+For BlueGene systems, <i>bluegene</i> plugin is required (it is topology 
+aware and interactes with the BlueGene bridge API).</p>
 
 <h4>Logging</h4>
 <p>SLURM uses the syslog function to record events. It uses a range of importance
@@ -265,6 +270,19 @@ could be set to ensure only a single task per node. This functions properly
 because the SLRUM_JOBID environment variable is set in the allocation shell 
 environment.
 </p>
+
+<h4>Compute node access</h4>
+<p>SLURM does not by itself limit access to allocated compute nodes, 
+but it does provide mechanisms to accomplish this. 
+There is a Pluggable Authentication Module (PAM) for resticting access 
+to compute nodes available for download. 
+When installed, the SLURM PAM module will prevent users from logging 
+into any node that has not be assigned to that user.
+On job termination, any processes initiated by the user outside of 
+SLURM's control may be killed using an <i>Epilog</i> script configured 
+in <i>slurm.conf</i>. 
+Without these mechanisms any user can login to any compute node, 
+even those allocated to other users.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -525,7 +543,7 @@ in the NEWS file.
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-209488<br>
-Last modified 21 June 2005</p></td>
+Last modified 15 July 2005</p></td>
 </tr>
 </table>
 </td>
