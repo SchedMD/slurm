@@ -2127,6 +2127,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	xfree(job_desc_ptr->out);
 	xfree(job_desc_ptr->work_dir);
 	xfree(job_desc_ptr->host);
+	xfree(job_desc_ptr->network);
 	xfree(job_desc_ptr);
 	*job_desc_buffer_ptr = NULL;
 	return SLURM_ERROR;
