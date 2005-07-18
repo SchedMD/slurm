@@ -197,9 +197,6 @@ int srun(int ac, char **av)
 		job = job_create_allocation(resp); 
 		if (msg_thr_create(job) < 0)
 			job_fatal(job, "Unable to create msg thread");
-#ifdef HAVE_AIX
-		(void) mkcrid(0);
-#endif
 		exitcode = _run_job_script(job, env);
 		job_destroy(job,exitcode);
 
