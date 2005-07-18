@@ -167,21 +167,6 @@ int srun(int ac, char **av)
 		job = job_create_noalloc(); 
 		_switch_standalone(job);
 
-	} else if ( (resp = existing_allocation()) ) {
-		if (opt.allocate) {
-			error("job %u already has an allocation", 
-			      resp->job_id);
-			exit(1);
-		}
-		if (job_resp_hack_for_step(resp))	/* FIXME */
-			exit(1);
-		job = job_create_allocation(resp); 
-		job->old_job = true;
-		sig_setup_sigmask();
-		if (create_job_step(job) < 0)
-			exit(1);
-		slurm_free_resource_allocation_response_msg(resp);
-
 	} else if (opt.allocate) {
 		sig_setup_sigmask();
 		if ( !(resp = allocate_nodes()) ) 
@@ -205,6 +190,21 @@ int srun(int ac, char **av)
 		xfree(env);
 		exit (exitcode);
 
+	} else if ( (resp = existing_allocation()) ) {
+		if (opt.allocate) {
+			error("job %u already has an allocation",
+				resp->job_id);
+			exit(1);
+		}
+		if (job_resp_hack_for_step(resp))	/* FIXME */
+			exit(1);
+		job = job_create_allocation(resp);
+		job->old_job = true;
+		sig_setup_sigmask();
+		if (create_job_step(job) < 0)
+			exit(1);
+		slurm_free_resource_allocation_response_msg(resp);
+		
 	} else if (mode == MODE_ATTACH) {
 		reattach();
 		exit (0);

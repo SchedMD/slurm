@@ -381,6 +381,8 @@ job_desc_msg_create_from_opts (char *script)
 
 	if (opt.hold)
 		j->priority     = 0;
+	if (opt.jobid != NO_VAL)
+		j->job_id	= opt.jobid;
 
 #if SYSTEM_DIMENSIONS
 	if (opt.geometry[0] > 0) {
