@@ -254,10 +254,11 @@ extern int slurm_ckpt_comp ( struct step_record * step_ptr, time_t event_time,
 		check_ptr->error_code = error_code;
 		xfree(check_ptr->error_msg);
 		check_ptr->error_msg = xstrdup(error_msg);
+		return SLURM_SUCCESS;
 	}
 
-	/* We need a reply from each compute node, 
-	 * plus POE itself */
+	/* We need an error-free reply from each compute node, 
+	 * plus POE itself to note completion */
 	if (check_ptr->reply_cnt++ == check_ptr->node_cnt) {
 		info("Checkpoint complete for job %u.%u",
 			step_ptr->job_ptr->job_id, step_ptr->step_id);
@@ -265,7 +266,6 @@ extern int slurm_ckpt_comp ( struct step_record * step_ptr, time_t event_time,
 		_ckpt_dequeue_timeout(step_ptr->job_ptr->job_id,
 			step_ptr->step_id, event_time);
 	}
-
 	return SLURM_SUCCESS; 
 }
 
