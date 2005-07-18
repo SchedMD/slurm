@@ -283,6 +283,7 @@ int setup_env(env_t *env)
 			      "environment variable");
 			rc = SLURM_FAILURE;
 		}
+		xfree(bgl_part_id);
 	}
 	
 	if (env->jobid >= 0
@@ -361,6 +362,21 @@ int setup_env(env_t *env)
 
 	uname(&name);
 	if (strcasecmp(name.sysname, "AIX") == 0) {
+		char res_env[64];
+		if (env->jobid >= 0)
+			snprintf(res_env, sizeof(res_env), "SLURM_JOBID=%d", 
+				env->jobid);
+		else
+			res_env[0] = '\0';
+		if (env->stepid >= 0) {
+			char step_env[32];
+			snprintf(step_env, sizeof(res_env), "SLURM_STEPID=%d",
+				env->stepid);
+			if (res_env[0] != '\0')
+				strcat(res_env, "\n");
+			strcat(res_env, step_env);
+		}
+		setenvf(&env->env, "MP_POERESTART_ENV", res_env);
 		/* Required for AIX/POE systems indicating pre-allocation */
 		setenvf(&env->env, "LOADLBATCH", "yes");
 		setenvf(&env->env, "LOADL_ACTIVE", "3.2.0");
