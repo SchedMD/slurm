@@ -156,7 +156,8 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 /* get data from a select job credential
  * IN jobinfo  - updated select job credential
  * IN data_type - type of data to enter into job credential
- * IN/OUT data - the data to enter into job credential
+ * OUT data - the data to get from job credential, caller must xfree
+ *	data for data_tyep == SELECT_DATA_PART_ID
  */
 extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 		enum select_data_type data_type, void *data);
