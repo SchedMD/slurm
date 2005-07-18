@@ -598,11 +598,11 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 			&bgl_part_id);
 
 #ifdef HAVE_BGL
-	/* BlueGene prolog waits for partition boot and is very slow.
-	 * Just reply now and send a separate kill job request if the 
-	 * prolog or launch fail. */
-	slurm_send_rc_msg(msg, rc);
-	replied = true;
+		/* BlueGene prolog waits for partition boot and is very slow.
+		 * Just reply now and send a separate kill job request if the 
+		 * prolog or launch fail. */
+		slurm_send_rc_msg(msg, rc);
+		replied = true;
 #endif
 
 		rc = _run_prolog(req->job_id, req->uid, bgl_part_id);
