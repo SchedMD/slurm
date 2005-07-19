@@ -72,7 +72,7 @@ expect {
 		set waiting 1
 		exp_continue
 	}
-	-re "($number): ($alpha)($number)" {
+	-re "($number): ($alpha_numeric)($number)" {
 		set task_id $expect_out(1,string)
 		if {$task_id == 0} {
 			set host_0_name $expect_out(2,string)
