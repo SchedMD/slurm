@@ -104,6 +104,8 @@ will block until resources become available.
 \fB\-k\fR, \fB\-\-no-kill\fR
 Do not automatically terminate a job of one of the nodes it has been allocated 
 fails. The job will assume all responsibilities for fault-tolerance. The 
+active job step (MPI job) will almost certainly suffer a fatal error, 
+but subsequent job steps may be run if this option is specified. The
 default action is to terminate job upon node failure. Note that
 \fB\-\-batch\fR jobs will be re-queued if a node failure occurs in the 
 process of initiating it.
