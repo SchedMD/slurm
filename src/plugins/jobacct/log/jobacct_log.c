@@ -1018,6 +1018,9 @@ NextSlashProcEntry: ;
 				/* tally their memory usage */
 			psize += precTable[i].psize;
 			vsize += precTable[i].vsize;
+			if (vsize==0)
+				vsize=1; /* Flag to let us know we found it,
+					    though it is already finished */
 		}
 	}
 	if (max_psize < psize)
@@ -1173,13 +1176,6 @@ static void _process_mynode_msg_taskdata(_jrec_t *inrec){
 	debug2("jobacct(%d): in _process_mynode_msg_taskdata for job %u.%u"
 			" ntasks=%d",
 			getpid(), inrec->jobid, inrec->stepid, inrec->ntasks); 
-	if (inrec->ntasks == 1) {    /* if only one task, skip aggregation */
-		debug3("jobacct(%d): _process_mynode_msg_taskdata "
-				"skipping aggregation for job %u.%u",
-				getpid(), inrec->jobid, inrec->stepid);
-		_send_data_to_node_0(inrec);
-		return;
-	}
 	slurm_mutex_lock(&jobsteps_active_lock);
 	jrec = _get_jrec_by_jobstep(jobsteps_active, inrec->jobid,
 			inrec->stepid);
