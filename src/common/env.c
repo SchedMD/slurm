@@ -215,7 +215,6 @@ char *getenvp(char **env, const char *name)
 
 int setup_env(env_t *env)
 {
-	struct utsname name;
 	int rc = SLURM_SUCCESS;
 	char *dist = NULL;
 	char *bgl_part_id = NULL;
@@ -360,8 +359,8 @@ int setup_env(env_t *env)
 
 	}
 
-	uname(&name);
-	if (strcasecmp(name.sysname, "AIX") == 0) {
+#ifdef HAVE_AIX
+	{
 		char res_env[128], tmp_env[32];
 		char *debug_env = getenv("SLURM_LL_API_DEBUG");
 		int  debug_num = 0;
@@ -384,6 +383,7 @@ int setup_env(env_t *env)
 		setenvf(&env->env, "LOADLBATCH", "yes");
 		setenvf(&env->env, "LOADL_ACTIVE", "3.2.0");
 	}
+#endif
 	
 	return SLURM_SUCCESS;
 }
