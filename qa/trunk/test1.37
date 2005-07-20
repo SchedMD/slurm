@@ -107,10 +107,15 @@ if {$job_id1 == 0} {
 	exit 1
 }
 
+set partition "dummy"
 set waited 1
 set timeout [expr $timeout + 5]
 spawn $srun -N1 --nodelist=$host_name -t1 --share $scontrol -o show job $job_id1
 expect {
+	-re "Partition=($alpha_numeric)" {
+		set partition $expect_out(1,string)
+		exp_continue
+	}
 	-re "JobState=RUN" {
 		set waited 0 
 		exp_continue
@@ -122,6 +127,19 @@ expect {
 	}
 	eof {
 		wait
+	}
+}
+if {$waited == 0} {
+	spawn $scontrol show partition
+	expect {
+		-re "Shared=FORCE" {
+			send_user "\nWARNING: Test incompatable with Shared=FORCE\n"
+			set waited 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
 	}
 }
 if {$waited == 0} {
