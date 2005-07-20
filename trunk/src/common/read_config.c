@@ -797,7 +797,10 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 				xfree (ctl_conf_ptr->slurm_user_name);
 			}
 			ctl_conf_ptr->slurm_user_name = slurm_user;
-			ctl_conf_ptr->slurm_user_id = slurm_passwd->pw_uid;
+			if (slurm_passwd->pw_uid > 0xffff)
+				error("SlurmUser numberic overflow, will be fixed soon");
+			else
+				ctl_conf_ptr->slurm_user_id = slurm_passwd->pw_uid;
 		}
 	}
 
