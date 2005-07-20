@@ -406,7 +406,7 @@ static int _set_up_adapter(fed_adapter_t *fed_adapter, char *adapter_name)
 					 &status);
 	if(error_code)
 		slurm_seterrno_ret(ESTATUS);
-	tmp_winlist = (fed_window_t *)malloc(sizeof(fed_window_t) * 
+	tmp_winlist = (fed_window_t *)xmalloc(sizeof(fed_window_t) * 
 					     res.window_count);
 	if(!tmp_winlist)
 		slurm_seterrno_ret(ENOMEM);
@@ -525,7 +525,7 @@ _get_adapters(fed_adapter_t *list, int *count)
 	*count = hostlist_count(adapter_list);
 	info("Number of adapters is = %d", *count);
 	assert(*count > 0);
-	//list = malloc(sizeof(fed_adapter_t) * (*count));
+	//list = xmalloc(sizeof(fed_adapter_t) * (*count));
 	while (adapter = hostlist_next(adapter_iter)) {
 		if(_set_up_adapter(list + i, adapter)
 		   == SLURM_ERROR)
@@ -570,13 +570,13 @@ fed_alloc_nodeinfo(fed_nodeinfo_t **n)
 
  	assert(n);
 
-	new = (fed_nodeinfo_t *)malloc(sizeof(fed_nodeinfo_t));
+	new = (fed_nodeinfo_t *)xmalloc(sizeof(fed_nodeinfo_t));
 	if(!new)
 		slurm_seterrno_ret(ENOMEM);
-	new->adapter_list = (fed_adapter_t *)malloc(sizeof(fed_adapter_t) 
+	new->adapter_list = (fed_adapter_t *)xmalloc(sizeof(fed_adapter_t) 
 		* FED_MAXADAPTERS);
 	if(!new->adapter_list) {
-		free(new);
+		xfree(new);
 		slurm_seterrno_ret(ENOMEM);
 	}
 	new->magic = FED_NODEINFO_MAGIC;
@@ -903,7 +903,7 @@ _copy_node(fed_nodeinfo_t *dest, fed_nodeinfo_t *src)
 		da->min_winmem = sa->min_winmem;
 		da->avail_mem = sa->avail_mem;
 		da->window_count = sa->window_count;
-		da->window_list = (fed_window_t *)malloc(sizeof(fed_window_t) *
+		da->window_list = (fed_window_t *)xmalloc(sizeof(fed_window_t) *
 			da->window_count);
 		if(!da->window_list) {
 			slurm_seterrno_ret(ENOMEM);
@@ -1001,11 +1001,11 @@ _hash_rebuild(fed_libstate_t *state)
 	assert(state);
 	
 	if(state->hash_table)
-		free(state->hash_table);
+		xfree(state->hash_table);
 	if (state->node_count > state->hash_max || state->hash_max == 0)
 		state->hash_max += FED_HASHCOUNT;
 	state->hash_table = (fed_nodeinfo_t **)
-		malloc(sizeof(fed_nodeinfo_t *) * state->hash_max);
+		xmalloc(sizeof(fed_nodeinfo_t *) * state->hash_max);
 	memset(state->hash_table, 0,
 	       sizeof(fed_nodeinfo_t *) * state->hash_max);
 	for(i = 0; i < state->node_count; i++)
@@ -1037,10 +1037,10 @@ _alloc_node(fed_libstate_t *lp, char *name)
 		lp->node_max += FED_NODECOUNT;
 		new_bufsize = lp->node_max * sizeof(fed_nodeinfo_t);
 		if(lp->node_list == NULL)
-			lp->node_list = (fed_nodeinfo_t *)malloc(new_bufsize);
+			lp->node_list = (fed_nodeinfo_t *)xmalloc(new_bufsize);
 		else
-			lp->node_list = (fed_nodeinfo_t *)realloc(lp->node_list,
-								  new_bufsize);
+			lp->node_list = (fed_nodeinfo_t *)xrealloc(lp->node_list,
+								   new_bufsize);
 		need_hash_rebuild = true;
 	}
 	if(lp->node_list == NULL) {
@@ -1051,7 +1051,7 @@ _alloc_node(fed_libstate_t *lp, char *name)
 	n = lp->node_list + (lp->node_count++);
 	n->magic = FED_NODEINFO_MAGIC;
 	n->name[0] = '\0';
-	n->adapter_list = (fed_adapter_t *)malloc(FED_MAXADAPTERS *
+	n->adapter_list = (fed_adapter_t *)xmalloc(FED_MAXADAPTERS *
 		sizeof(fed_adapter_t));
 
 	if(name != NULL) {
@@ -1183,7 +1183,7 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
 		safe_unpack32(&tmp_a->min_winmem, buf);
 		safe_unpack32(&tmp_a->avail_mem, buf);
 		safe_unpack32(&tmp_a->window_count, buf);
-		tmp_w = (fed_window_t *)malloc(sizeof(fed_window_t) * 
+		tmp_w = (fed_window_t *)xmalloc(sizeof(fed_window_t) * 
 			tmp_a->window_count);
 		if(!tmp_w)
 			slurm_seterrno_ret(ENOMEM);
@@ -1209,7 +1209,7 @@ copy_node:
 unpack_error:
 	/* FIX ME!  Add code here to free allocated memory */
 	if(tmp_w)
-		free(tmp_w);
+		xfree(tmp_w);
 	slurm_seterrno_ret(EUNPACK);
 }
 
@@ -1228,26 +1228,12 @@ fed_unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
 	return rc;
 }
 
-/* Used by: slurmd, slurmctld */
-static void
-_free_adapter(fed_adapter_t *a)
-{
-	assert(a);
-	assert(a->window_list);
-
-	if(a) {
-		if(a->window_list)
-			free(a->window_list);
-		free(a);
-		a = NULL;
-	}
-}
 
 /* Used by: slurmd, slurmctld */
 void
-fed_free_nodeinfo(fed_nodeinfo_t *n)
+fed_free_nodeinfo(fed_nodeinfo_t *n, bool ptr_into_array)
 {
-	fed_adapter_t *a;
+	fed_adapter_t *adapter;
 	int i;
 	
 	if(!n)
@@ -1256,13 +1242,15 @@ fed_free_nodeinfo(fed_nodeinfo_t *n)
 	assert(n->magic == FED_NODEINFO_MAGIC);
 	
 	if(n->adapter_list) {
-		a = n->adapter_list;
-		for(i = 0; i < n->adapter_count; i++) {
-			_free_adapter(a + i);
+		adapter = n->adapter_list;
+		for (i = 0; i < n->adapter_count; i++) {
+			if (adapter[i].window_list)
+				xfree(adapter[i].window_list);
 		}
+		xfree(n->adapter_list);
 	}
-	free(n);
-	n = NULL;
+	if (!ptr_into_array)
+		xfree(n);
 }
 
 /* Assign a unique key to each job.  The key is used later to 
@@ -2186,7 +2174,7 @@ _alloc_libstate(void)
 {
 	fed_libstate_t *tmp;
 	
-	tmp = (fed_libstate_t *)malloc(sizeof(fed_libstate_t));
+	tmp = (fed_libstate_t *)xmalloc(sizeof(fed_libstate_t));
 	if(!tmp) {
 		slurm_seterrno(ENOMEM);
 		return NULL;
@@ -2255,13 +2243,16 @@ _free_libstate(fed_libstate_t *lp)
 {
 	int i;
 	
-	if(!lp)
+	if (!lp)
 		return;
-	for(i = 0; i < lp->node_count; i++)
-		fed_free_nodeinfo(&lp->node_list[i]);
-	if(lp->hash_table != NULL)
-		free(lp->hash_table);
-	free(lp);
+	if (lp->node_list != NULL) {
+		for (i = 0; i < lp->node_count; i++)
+			fed_free_nodeinfo(&lp->node_list[i], true);
+		free(lp->node_list);
+	}
+	if (lp->hash_table != NULL)
+		xfree(lp->hash_table);
+	xfree(lp);
 }
 
 
