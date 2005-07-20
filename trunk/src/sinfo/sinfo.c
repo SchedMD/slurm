@@ -81,7 +81,8 @@ int main(int argc, char *argv[])
 	parse_command_line(argc, argv);
 
 	while (1) {
-		if ( params.iterate || params.verbose || params.long_output )
+		if ((!params.no_header)
+		&&  (params.iterate || params.verbose || params.long_output))
 			print_date();
 
 		if (params.bgl_flag)
