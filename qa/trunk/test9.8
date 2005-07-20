@@ -124,11 +124,15 @@ expect {
 
 #
 # Give a few seconds for clean-up and insure things are still fine
+# If message are lost, slurmctld re-sends job kill RPC 120 seconds later
+# In any case, make sure that all jobs get completed
 #
-exec $bin_sleep $delay
+exec $bin_sleep 5
+set completing_jobs 0
 spawn $squeue --noheader --user $user_name
 expect {
 	-re "$user_name *CG" {
+		incr completing_jobs
 		exp_continue
 	}
 	-re "$user_name" {
@@ -141,6 +145,26 @@ expect {
 	}
 	eof {
 		wait
+	}
+}
+if {$completing_jobs != 0} {
+	send_user "\nWaiting for slurmctld to re-send job kill RPC\n"
+	send_user "This will take 120 seconds...\n"
+	exec $bin_sleep 120
+	set completing_jobs 0
+	spawn $squeue --noheader --user $user_name
+	expect {
+		-re "$user_name *CG" {
+			incr completing_jobs
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {$completing_jobs != 0} {
+		send_user "\nFAILURE: jobs not completing\n"
+		set exit_code 1
 	}
 }
 
