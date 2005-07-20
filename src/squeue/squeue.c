@@ -1,5 +1,7 @@
 /*****************************************************************************\
  *  squeue.c - Report jobs in the slurm system
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -65,7 +67,8 @@ main (int argc, char *argv[])
 	
 	while (1) 
 	{
-		if ( params.iterate || params.verbose || params.long_list )
+		if ((!params.no_header)
+		 && (params.iterate || params.verbose || params.long_list))
 			_print_date ();
 
 		if ( params.step_flag )
