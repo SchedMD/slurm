@@ -910,14 +910,14 @@ static int _addto_node_list(bgl_record_t *bgl_record, int *start, int *end)
 	int node_count=0;
 	int x,y,z;
 	char node_name_tmp[7];
-	info("%d%d%dx%d%d%d",
+	debug3("%d%d%dx%d%d%d",
 	     start[X],
 	     start[Y],
 	     start[Z],
 	     end[X],
 	     end[Y],
 	     end[Z]);
-	info("%d%d%d",
+	debug3("%d%d%d",
 	     DIM_SIZE[X],
 	     DIM_SIZE[Y],
 	     DIM_SIZE[Z]);

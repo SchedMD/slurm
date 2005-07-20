@@ -244,7 +244,8 @@ extern int new_pa_request(pa_request_t* pa_request)
 		i = pa_request->size/4;
 		if(!(pa_request->size%2)
 		   && i <= DIM_SIZE[Y]
-		   && i <= DIM_SIZE[Z]) {
+		   && i <= DIM_SIZE[Z]
+		   && i*i == pa_request->size) {
 			geo[X] = 1;
 			geo[Y] = i;
 			geo[Z] = i;
@@ -1281,6 +1282,7 @@ static int _append_geo(int *geometry, List geos, int rotate)
 		geo[X] = geometry[X];
 		geo[Y] = geometry[Y];
 		geo[Z] = geometry[Z];
+		debug3("adding geo %d%d%d",geo[X],geo[Y],geo[Z]);
 		list_append(geos, geo);
 	}
 	return 1;
@@ -2115,17 +2117,18 @@ start_again:
 			results = list_create(NULL);
 		}
 #ifdef HAVE_BGL
-		if((DIM_SIZE[Z]-start[Z])
+		
+		if((DIM_SIZE[Z]-start[Z]-1)
 		   >= pa_request->geometry[Z])
 			start[Z]++;
 		else {
 			start[Z] = 0;
-			if((DIM_SIZE[Y]-start[Y])
+			if((DIM_SIZE[Y]-start[Y]-1)
 			   >= pa_request->geometry[Y])
 				start[Y]++;
 			else {
 				start[Y] = 0;
-				if ((DIM_SIZE[X]-start[X])
+				if ((DIM_SIZE[X]-start[X]-1)
 				    >= pa_request->geometry[X])
 					start[X]++;
 				else {
@@ -2217,11 +2220,50 @@ static void _set_external_wires(int dim, int count, pa_node_t* source,
 		_switch_config(source, source, dim, 4, 4);
 		return;
 	}
-#ifdef HAVE_BGL
-
 	/* always 2->5 of next. If it is the last 
 		   it will go to the first.*/
 		
+	
+#ifdef HAVE_BGL
+#if 0
+	/* this is here for the second half of bgl system. 
+	   if used it should be changed to #if 1
+	*/
+	if(count == 0) {
+		/* 3->4 of next */
+		_switch_config(source, target, dim, 3, 4);
+		/* 4->3 of next */
+		_switch_config(source, target, dim, 4, 3);
+		/* 2 not in use */
+		_switch_config(source, source, dim, 2, 2);
+		target = &pa_system_ptr->grid[DIM_SIZE[X]-1]
+			[source->coord[Y]]
+			[source->coord[Z]];
+		
+		/* 5->2 of last */
+		_switch_config(source, target, dim, 5, 2);
+		
+	} else if (count == 1) {
+		/* 2->5 of next */
+		_switch_config(source, target, dim, 2, 5);
+		/* 5 not in use */
+		_switch_config(source, source, dim, 5, 5);
+	} else if (count == 2) {
+		/* 2->5 of next */
+		_switch_config(source, target, dim, 2, 5);
+		/* 3->4 of next */
+		_switch_config(source, target, dim, 3, 4);
+		/* 4 not in use */
+		_switch_config(source, source, dim, 4, 4);
+	} else if(count == 3) {
+		/* 2->5 of first */
+		_switch_config(source, target, dim, 2, 5);
+		/* 3 not in use */
+		_switch_config(source, source, dim, 3, 3);		
+	}
+      
+	return;
+#endif
 	_switch_config(source, target, dim, 2, 5);
 	if(count == 0 || count==4) {
 		/* 0 and 4th Node */
@@ -2659,7 +2701,7 @@ static int _find_x_path(List results, pa_node_t *pa_node,
 			debug3("Broke = %d Found = %d geometry[X] = %d",
 			       broke, found, geometry[X]);
 			if(broke && (found == geometry[X])) {
-				return 1;
+				goto found_path;
 			} else if(found == geometry[X]) {
 				debug2("finishing the torus!");
 				list_destroy(best_path);
@@ -2670,7 +2712,6 @@ static int _find_x_path(List results, pa_node_t *pa_node,
 					      X, 
 					      0, 
 					      start);
-				
 				if(best_count < BEST_COUNT_INIT) {
 					debug2("Found a best path with %d "
 					       "steps.", best_count);
@@ -2742,7 +2783,7 @@ static int _find_x_path(List results, pa_node_t *pa_node,
 					/* check Y and Z dims */
 #ifdef HAVE_BGL
 				found_path:
-					debug("added node %d%d%d %d %d -> "
+					debug2("added node %d%d%d %d %d -> "
 					       "%d%d%d %d %d",
 					       pa_node->coord[X],
 					       pa_node->coord[Y],
@@ -3339,12 +3380,12 @@ int main(int argc, char** argv)
 {
 	pa_request_t *request = (pa_request_t*) xmalloc(sizeof(pa_request_t)); 
 	log_options_t log_opts = LOG_OPTS_INITIALIZER;
-	int debug_level = 3;
+	int debug_level = 6;
 
 	List results;
 //	List results2;
 //	int i,j;
-	DIM_SIZE[X]=8;
+	DIM_SIZE[X]=4;
 	DIM_SIZE[Y]=4;
 	DIM_SIZE[Z]=4;
 	pa_init(NULL);	
@@ -3356,10 +3397,10 @@ int main(int argc, char** argv)
 		  "/dev/null");
 						
 	results = list_create(NULL);
-	request->geometry[0] = 6;
-	request->geometry[1] = 2;
-	request->geometry[2] = 2;
-	//request->size = 32;
+	request->geometry[0] = -1;
+	request->geometry[1] = 1;
+	request->geometry[2] = 1;
+	request->size = 32;
 	request->rotate = 0;
 	request->elongate = 0;
 	request->conn_type = TORUS;
@@ -3374,10 +3415,10 @@ int main(int argc, char** argv)
 	list_destroy(results);
 	
 	results = list_create(NULL);
-	request->geometry[0] = 6;
+	request->geometry[0] = -1;
 	request->geometry[1] = 2;
 	request->geometry[2] = 2;
-	//request->size = 32;
+	request->size = 4;
 	request->conn_type = TORUS;
 	new_pa_request(request);
 	print_pa_request(request);
@@ -3424,17 +3465,17 @@ int main(int argc, char** argv)
 	int x,y,z;
 	int startx=0;
 	int starty=0;
-	int startz=2;
-	int endx=1;//DIM_SIZE[X];
-	int endy=DIM_SIZE[Y];
-	int endz=3;//DIM_SIZE[Z];
+	int startz=0;
+	int endx=DIM_SIZE[X];
+	int endy=1;//DIM_SIZE[Y];
+	int endz=1;//DIM_SIZE[Z];
 	for(x=startx;x<endx;x++) {
 		for(y=starty;y<endy;y++) {
 			for(z=startz;z<endz;z++) {
 				info("Node %d%d%d Used = %d Letter = %c",
 				       x,y,z,pa_system_ptr->grid[x][y][z].used,
 				       pa_system_ptr->grid[x][y][z].letter);
-				for(dim=1;dim<2;dim++) {
+				for(dim=0;dim<1;dim++) {
 					info("Dim %d",dim);
 					pa_switch_t *wire =
 						&pa_system_ptr->
