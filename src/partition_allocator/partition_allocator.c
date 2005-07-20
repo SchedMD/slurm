@@ -2781,8 +2781,8 @@ static int _find_x_path(List results, pa_node_t *pa_node,
 					continue;
 				} else {
 					/* check Y and Z dims */
-#ifdef HAVE_BGL
 				found_path:
+#ifdef HAVE_BGL
 					debug2("added node %d%d%d %d %d -> "
 					       "%d%d%d %d %d",
 					       pa_node->coord[X],
