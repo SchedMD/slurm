@@ -220,6 +220,7 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
 	int retries;
+	
 	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
 			
 	if(!bgl_record) {
@@ -228,11 +229,12 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 		return;
 	}
 	
-	if(bgl_record->node_use != bgl_update_ptr->node_use) {
-		debug("Partition in wrong mode, rebooting.");
-		/* Free the partition */
-		bgl_free_partition(bgl_record);			
-	}
+	/* if(bgl_record->node_use != bgl_update_ptr->node_use) { */
+/* 		debug("Partition in wrong mode, rebooting."); */
+		
+/* 		/\* Free the partition *\/ */
+/* 		bgl_free_partition(bgl_record);			 */
+/* 	} */
 
 	if(bgl_record->state == RM_PARTITION_DEALLOCATING) {
 		debug("Partition is in Deallocating state, waiting for free.");
@@ -655,6 +657,7 @@ extern int start_job(struct job_record *job_ptr)
 			bgl_record->node_use = node_use;
 			bgl_record->state = RM_PARTITION_READY;
 			last_bgl_update = time(NULL);
+			break;
 		}
 		list_iterator_destroy(itr);
 		xfree(part_id);
