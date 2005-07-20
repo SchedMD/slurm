@@ -738,6 +738,7 @@ int slurmd_jobacct_task_exit(slurmd_job_t *job, pid_t pid, int status, struct ru
 	if (prec_frequency) {	/* if dynamic monitoring */
 		slurm_mutex_lock(&precTable_lock); /* let watcher finish loop */
 		pthread_cancel(_watch_tasks_thread_id); 
+		pthread_join(_watch_tasks_thread_id,NULL);
 		slurm_mutex_unlock(&precTable_lock);
 		jrec->max_psize			= max_psize;
 		jrec->max_vsize			= max_vsize;
@@ -1585,10 +1586,15 @@ static int _unpack_jobrec(_jrec_t *outrec, _jrec_t *inrec) {
 
 static void *_watch_tasks(void *arg) {
 
+	int	tmp;
+
 	while(1) {	/* Do this until slurm_jobacct_task_exit() stops us */
 		sleep(prec_frequency);
+		pthread_testcancel();
 		slurm_mutex_lock(&precTable_lock);
+		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &tmp);
 		_get_process_data();	/* Update the data */ 
 		slurm_mutex_unlock(&precTable_lock);
+		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &tmp);
 	} 
 }
