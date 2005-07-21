@@ -41,10 +41,9 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 
-#include "src/srun/job.h"
+#include "src/srun/srun_job.h"
 #include "src/srun/launch.h"
 #include "src/srun/opt.h"
-//#include "src/srun/env.h"
 
 extern char **environ;
 
@@ -58,7 +57,7 @@ typedef enum {DSH_NEW, DSH_ACTIVE, DSH_DONE, DSH_FAILED} state_t;
 
 typedef struct task_info {
 	slurm_msg_t *req;
-	job_t *job;
+	srun_job_t *job;
 } task_info_t;
 
 typedef struct thd {
@@ -70,14 +69,14 @@ typedef struct thd {
 
 static int    _check_pending_threads(thd_t *thd, int count);
 static void   _spawn_launch_thr(thd_t *th);
-static int    _wait_on_active(thd_t *thd, job_t *job);
-static void   _p_launch(slurm_msg_t *req_array_ptr, job_t *job);
+static int    _wait_on_active(thd_t *thd, srun_job_t *job);
+static void   _p_launch(slurm_msg_t *req_array_ptr, srun_job_t *job);
 static void * _p_launch_task(void *args);
 static void   _print_launch_msg(launch_tasks_request_msg_t *msg, 
 		                char * hostname);
 
 int 
-launch_thr_create(job_t *job)
+launch_thr_create(srun_job_t *job)
 {
 	int e;
 	pthread_attr_t attr;
@@ -96,7 +95,7 @@ launch(void *arg)
 {
 	slurm_msg_t *req_array_ptr;
 	launch_tasks_request_msg_t *msg_array_ptr;
-	job_t *job = (job_t *) arg;
+	srun_job_t *job = (srun_job_t *) arg;
 	int i, my_envc;
 	char hostname[MAXHOSTNAMELEN];
 
@@ -139,8 +138,8 @@ launch(void *arg)
 			r->task_flags |= TASK_PARALLEL_DEBUG;
 
 		/* Node specific message contents */
-		if (opt.mpi_type == MPI_LAM)
-			r->tasks_to_launch = 1; /* just launch one task */
+		if (slurm_mpi_single_task_per_node ())
+			r->tasks_to_launch = 1; 
 		else
 			r->tasks_to_launch = job->ntask[i];
 		r->global_task_ids = job->tids[i];
@@ -159,7 +158,7 @@ launch(void *arg)
 	xfree(req_array_ptr);
 
 	if (fail_launch_cnt) {
-		job_state_t jstate;
+		srun_job_state_t jstate;
 
 		slurm_mutex_lock(&job->state_mutex);
 		jstate = job->state;
@@ -169,7 +168,7 @@ launch(void *arg)
 			error("%d launch request%s failed", 
 			      fail_launch_cnt, fail_launch_cnt > 1 ? "s" : "");
 			job->rc = 124;
-			job_kill(job);
+			srun_job_kill(job);
 		}
 
 	} else {
@@ -249,7 +248,7 @@ static void _spawn_launch_thr(thd_t *th)
 	return;
 }
 
-static int _wait_on_active(thd_t *thd, job_t *job)
+static int _wait_on_active(thd_t *thd, srun_job_t *job)
 {
 	struct timeval now;
 	struct timespec timeout;
@@ -270,7 +269,7 @@ static int _wait_on_active(thd_t *thd, job_t *job)
 }
 
 /* _p_launch - parallel (multi-threaded) task launcher */
-static void _p_launch(slurm_msg_t *req, job_t *job)
+static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 {
 	int i;
 	thd_t *thd;
@@ -351,7 +350,7 @@ _send_msg_rc(slurm_msg_t *msg)
 }
 
 static void
-_update_failed_node(job_t *j, int id)
+_update_failed_node(srun_job_t *j, int id)
 {
 	int i;
 	pthread_mutex_lock(&j->task_mutex);
@@ -365,7 +364,7 @@ _update_failed_node(job_t *j, int id)
 }
 
 static void
-_update_contacted_node(job_t *j, int id)
+_update_contacted_node(srun_job_t *j, int id)
 {
 	pthread_mutex_lock(&j->task_mutex);
 	if (j->host_state[id] == SRUN_HOST_INIT)
@@ -381,7 +380,7 @@ static void * _p_launch_task(void *arg)
 	task_info_t                *tp     = &(th->task);
 	slurm_msg_t                *req    = tp->req;
 	launch_tasks_request_msg_t *msg    = req->data;
-	job_t                      *job    = tp->job;
+	srun_job_t                 *job    = tp->job;
 	int                        nodeid  = msg->srun_node_id;
 	int                        failure = 0;
 	int                        retry   = 3; /* retry thrice */

@@ -49,10 +49,10 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/io_hdr.h"
+#include "src/common/net.h"
 
 #include "src/srun/io.h"
-#include "src/srun/job.h"
-#include "src/srun/net.h"
+#include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
 
 static int    fmt_width       = 0;
@@ -67,18 +67,18 @@ typedef struct fd_info {
 	cbuf_t buf;
 } fd_info_t;
 
-static void	_accept_io_stream(job_t *job, int i);
-static void	_bcast_stdin(int fd, job_t *job);	
+static void	_accept_io_stream(srun_job_t *job, int i);
+static void	_bcast_stdin(int fd, srun_job_t *job);	
 static int	_close_stream(int *fd, FILE *out, int tasknum);
 static int	_do_task_output(int *fd, FILE *out, cbuf_t buf, int tasknum);
 static int 	_do_task_output_poll(fd_info_t *info);
-static int      _do_task_input(job_t *job, int taskid);
-static int 	_do_task_input_poll(job_t *job, fd_info_t *info);
-static inline bool _io_thr_done(job_t *job);
+static int      _do_task_input(srun_job_t *job, int taskid);
+static int 	_do_task_input_poll(srun_job_t *job, fd_info_t *info);
+static inline bool _io_thr_done(srun_job_t *job);
 static int	_handle_pollerr(fd_info_t *info);
 static ssize_t	_readx(int fd, char *buf, size_t maxbytes);
-static int      _read_io_header(int fd, job_t *job, char *host);
-static void     _terminate_node_io(int node_inx, job_t *job);
+static int      _read_io_header(int fd, srun_job_t *job, char *host);
+static void     _terminate_node_io(int node_inx, srun_job_t *job);
 #define _poll_set_rd(_pfd, _fd) do { 	\
 	(_pfd).fd = _fd;		\
 	(_pfd).events = POLLIN; 	\
@@ -108,7 +108,7 @@ _do_task_output_poll(fd_info_t *info)
 }
 
 static int
-_do_task_input_poll(job_t *job, fd_info_t *info)
+_do_task_input_poll(srun_job_t *job, fd_info_t *info)
 {
 	return _do_task_input(job, info->taskid);
 }
@@ -138,7 +138,7 @@ _handle_pollerr(fd_info_t *info)
 }
 
 static void
-_set_iofds_nonblocking(job_t *job)
+_set_iofds_nonblocking(srun_job_t *job)
 {
 	int i;
 	for (i = 0; i < job->niofds; i++) 
@@ -153,7 +153,7 @@ _set_iofds_nonblocking(job_t *job)
 }
 
 static void
-_update_task_io_state(job_t *job, int taskid)
+_update_task_io_state(srun_job_t *job, int taskid)
 {	
 	slurm_mutex_lock(&job->task_mutex);
 	if (job->task_state[taskid] == SRUN_TASK_IO_WAIT)
@@ -208,7 +208,7 @@ _do_output(cbuf_t buf, FILE *out, int tasknum)
 }
 
 static void
-_flush_io(job_t *job)
+_flush_io(srun_job_t *job)
 {
 	int i;
 
@@ -246,7 +246,7 @@ _initial_fd_state (io_filename_t *f, int task)
 }
 
 static void
-_io_thr_init(job_t *job, struct pollfd *fds) 
+_io_thr_init(srun_job_t *job, struct pollfd *fds) 
 {
 	int i;
 	sigset_t set;
@@ -286,7 +286,7 @@ _fd_info_init(fd_info_t *info, int taskid, int *pfd, FILE *fp, cbuf_t buf)
 }
 
 static int
-_stdin_buffer_space (job_t *job)
+_stdin_buffer_space (srun_job_t *job)
 {
 	int i, nfree, len = 0;
 	for (i = 0; i < opt.nprocs; i++) {
@@ -299,7 +299,7 @@ _stdin_buffer_space (job_t *job)
 }
 
 static nfds_t
-_setup_pollfds(job_t *job, struct pollfd *fds, fd_info_t *map)
+_setup_pollfds(srun_job_t *job, struct pollfd *fds, fd_info_t *map)
 {
 	int eofcnt = 0;
 	int i;
@@ -357,8 +357,9 @@ _setup_pollfds(job_t *job, struct pollfd *fds, fd_info_t *map)
 
 	/* exit if we have received EOF on all streams */
 	if (eofcnt) {
-		if ( (eofcnt == opt.nprocs) ||
-		     ((opt.mpi_type == MPI_LAM) && (eofcnt == job->nhosts)) ) {
+		if ((eofcnt == opt.nprocs) 
+		  || (slurm_mpi_single_task_per_node() 
+		    && (eofcnt == job->nhosts))) {
 			debug("got EOF on all streams");
 			_flush_io(job);
 			pthread_exit(0);
@@ -372,7 +373,7 @@ static void *
 _io_thr_poll(void *job_arg)
 {
 	int i, rc;
-	job_t *job  = (job_t *) job_arg;
+	srun_job_t *job  = (srun_job_t *) job_arg;
 	int numfds  = (opt.nprocs*2) + job->niofds + 3;
 	nfds_t nfds = 0;
 	struct pollfd fds[numfds];
@@ -458,7 +459,7 @@ _io_thr_poll(void *job_arg)
 }
 
 static inline bool 
-_io_thr_done(job_t *job)
+_io_thr_done(srun_job_t *job)
 {
 	bool retval;
 	slurm_mutex_lock(&job->state_mutex);
@@ -508,7 +509,7 @@ _is_local_file (io_filename_t *fname)
 
 
 int
-open_streams(job_t *job)
+open_streams(srun_job_t *job)
 {
 	if (_is_local_file (job->ifname))
 		job->stdinfd = _stdin_open(job->ifname->name);
@@ -556,7 +557,7 @@ _wid(int n)
 }
 
 int
-io_thr_create(job_t *job)
+io_thr_create(srun_job_t *job)
 {
 	int i;
 	pthread_attr_t attr;
@@ -606,7 +607,7 @@ _is_fd_ready(int fd)
 
 
 static int
-_read_io_header(int fd, job_t *job, char *host)
+_read_io_header(int fd, srun_job_t *job, char *host)
 {
 	int      size = io_hdr_packed_size();
 	cbuf_t   cb   = cbuf_create(size, size);
@@ -660,7 +661,7 @@ _read_io_header(int fd, job_t *job, char *host)
 
 
 static void
-_accept_io_stream(job_t *job, int i)
+_accept_io_stream(srun_job_t *job, int i)
 {
 	int j;
 	int fd = job->iofd[i];
@@ -768,7 +769,7 @@ _do_task_output(int *fd, FILE *out, cbuf_t buf, int tasknum)
 }
 
 static int
-_do_task_input(job_t *job, int taskid)
+_do_task_input(srun_job_t *job, int taskid)
 {
 	int len = 0;
 	cbuf_t buf = job->inbuf[taskid];
@@ -809,7 +810,7 @@ _readx(int fd, char *buf, size_t maxbytes)
 
 
 static void
-_write_all(job_t *job, cbuf_t cb, char *buf, size_t len, int taskid)
+_write_all(srun_job_t *job, cbuf_t cb, char *buf, size_t len, int taskid)
 {
 	int n = 0;
 	int dropped = 0;
@@ -827,7 +828,7 @@ _write_all(job_t *job, cbuf_t cb, char *buf, size_t len, int taskid)
 }
 
 static void
-_close_stdin(job_t *j)
+_close_stdin(srun_job_t *j)
 {
 	close(j->stdinfd); 
 	j->stdinfd = IO_DONE;
@@ -836,7 +837,7 @@ _close_stdin(job_t *j)
 }
 
 static void
-_bcast_stdin(int fd, job_t *job)
+_bcast_stdin(int fd, srun_job_t *job)
 {
 	int          i;
 	char         buf[4096];
@@ -887,7 +888,7 @@ _bcast_stdin(int fd, job_t *job)
  * io_thr_wake - Wake the I/O thread if it is blocking in poll().
  */
 void
-io_thr_wake(job_t *job)
+io_thr_wake(srun_job_t *job)
 {
 	char c;
 
@@ -901,7 +902,7 @@ io_thr_wake(job_t *job)
  * Flag them as done and signal the I/O thread.
  */
 extern int 
-io_node_fail(char *nodelist, job_t *job)
+io_node_fail(char *nodelist, srun_job_t *job)
 {
 	hostlist_t fail_list = hostlist_create(nodelist);
 	char *node_name;
@@ -927,7 +928,7 @@ io_node_fail(char *nodelist, job_t *job)
 }
 
 static void
-_terminate_node_io(int node_inx, job_t *job)
+_terminate_node_io(int node_inx, srun_job_t *job)
 {
 	int i;
 

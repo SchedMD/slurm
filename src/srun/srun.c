@@ -66,16 +66,15 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+#include "src/common/net.h"
+#include "src/common/mpi.h"
 
 #include "src/srun/allocate.h"
 #include "src/srun/io.h"
-#include "src/srun/job.h"
-#include "src/srun/gmpi.h"
+#include "src/srun/srun_job.h"
 #include "src/srun/launch.h"
 #include "src/srun/msg.h"
-#include "src/srun/net.h"
 #include "src/srun/opt.h"
-#include "src/srun/signals.h"
 #include "src/srun/sigstr.h"
 #include "src/srun/reattach.h"
 #include "src/srun/attach.h"
@@ -98,17 +97,17 @@ static char *_build_script (char *pathname, int file_type);
 static char *_get_shell (void);
 static int   _is_file_text (char *, char**);
 static int   _run_batch_job (void);
-static int   _run_job_script(job_t *job, env_t *env);
+static int   _run_job_script(srun_job_t *job, env_t *env);
 static int   _set_rlimit_env(void);
-static char *_task_count_string(job_t *job);
-static void  _switch_standalone(job_t *job);
+static char *_task_count_string(srun_job_t *job);
+static void  _switch_standalone(srun_job_t *job);
 static int   _become_user (void);
 static int   _print_script_exit_status(const char *argv0, int status);
 
 int srun(int ac, char **av)
 {
 	allocation_resp *resp;
-	job_t *job;
+	srun_job_t *job;
 	char *task_cnt, *bgl_part_id = NULL;
 	int exitcode = 0;
 	env_t *env = xmalloc(sizeof(env_t));
@@ -183,7 +182,7 @@ int srun(int ac, char **av)
 		if (msg_thr_create(job) < 0)
 			job_fatal(job, "Unable to create msg thread");
 		exitcode = _run_job_script(job, env);
-		job_destroy(job,exitcode);
+		srun_job_destroy(job,exitcode);
 
 		debug ("Spawned srun shell terminated");
 		xfree(env->task_count);
@@ -218,7 +217,7 @@ int srun(int ac, char **av)
 
 		job = job_create_allocation(resp); 
 		if (create_job_step(job) < 0) {
-			job_destroy(job, 0);
+			srun_job_destroy(job, 0);
 			exit(1);
 		}
 		slurm_free_resource_allocation_response_msg(resp);
@@ -252,26 +251,8 @@ int srun(int ac, char **av)
 	xfree(env->task_count);
 	xfree(env);
 
-	if (slurm_get_mpich_gm_dir() && getenv("GMPI_PORT") == NULL) {
-		/*
-		 * It is possible for one to modify the mpirun command in
-		 * MPICH-GM distribution so that it calls srun, instead of
-		 * rsh, for remote process invocations.  In that case, we
-		 * should not override envs nor open the master port.
-		 */
-		char *port = NULL;
-		if (gmpi_thr_create(job, &port))
-			job_fatal(job, "Unable to create GMPI thread");
-		setenvf(NULL, "GMPI_PORT", "%s", port);
-		xfree(port);
-		setenvf(NULL, "GMPI_SHMEM", "1");
-		setenvf(NULL, "GMPI_MAGIC", "%u", job->jobid);
-		setenvf(NULL, "GMPI_NP", "%d", opt.nprocs);
-		setenvf(NULL, 
-			"GMPI_BOARD", 
-			"-1"); /* FIXME for multi-board config.*/
-		setenvf(NULL, "SLURM_GMPI", "1"); /* mark for slurmd */
-	}
+	if (slurm_mpi_thr_create(job) < 0)
+		job_fatal (job, "Failed to initialize MPI");
 
 	if (msg_thr_create(job) < 0)
 		job_fatal(job, "Unable to create msg thread");
@@ -299,9 +280,9 @@ int srun(int ac, char **av)
 	 */
 	if (job->state == SRUN_JOB_FAILED) {
 		info("Terminating job");
-		job_destroy(job, 0);
+		srun_job_destroy(job, 0);
 	} else if (job->state == SRUN_JOB_FORCETERM) {
-		job_destroy(job, 0);
+		srun_job_destroy(job, 0);
 		exit(1);
 	}
 
@@ -318,8 +299,11 @@ int srun(int ac, char **av)
 	if (pthread_join(job->ioid, NULL) < 0)
 		error ("Waiting on IO: %m");
 
+	if (slurm_mpi_exit () < 0)
+		; /* eh, ignore errors here */
+
 	/* Tell slurmctld that job is done */
-	job_destroy(job, 0);
+	srun_job_destroy(job, 0);
 
 	log_fini();
 
@@ -331,7 +315,7 @@ int srun(int ac, char **av)
 }
 
 static char *
-_task_count_string (job_t *job)
+_task_count_string (srun_job_t *job)
 {
 	int i, last_val, last_cnt;
 	char tmp[16];
@@ -361,7 +345,7 @@ _task_count_string (job_t *job)
 }
 
 static void
-_switch_standalone(job_t *job)
+_switch_standalone(srun_job_t *job)
 {
 	int cyclic = (opt.distribution == SRUN_DIST_CYCLIC);
 
@@ -730,7 +714,7 @@ _print_script_exit_status(const char *argv0, int status)
 }
 
 /* allocation option specified, spawn a script and wait for it to exit */
-static int _run_job_script (job_t *job, env_t *env)
+static int _run_job_script (srun_job_t *job, env_t *env)
 {
 	int   status, exitcode;
 	pid_t cpid;

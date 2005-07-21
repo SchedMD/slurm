@@ -1,6 +1,6 @@
 /****************************************************************************\
  *  job.c - job data structure creation functions
- *  $Id$
+ *  $Id: job.c,v 1.77 2005/06/15 16:39:19 da Exp $
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -45,10 +45,9 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/srun/job.h"
+#include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
 #include "src/srun/fname.h"
-#include "src/srun/signals.h"
 #include "src/srun/attach.h"
 #include "src/srun/io.h"
 
@@ -61,11 +60,11 @@ typedef struct allocation_info {
 	uint32_t                jobid;
 	uint32_t                stepid;
 	char                   *nodelist;
-	uint32_t                nnodes;
+	int                     nnodes;
 	slurm_addr             *addrs;
-	uint16_t                num_cpu_groups;
-	uint32_t               *cpus_per_node;
-	uint32_t               *cpu_count_reps;
+	int                     num_cpu_groups;
+	int                    *cpus_per_node;
+	int                    *cpu_count_reps;
 	select_jobinfo_t select_jobinfo;
 } allocation_info_t;
 
@@ -74,13 +73,13 @@ typedef struct allocation_info {
 /*
  * Prototypes:
  */
-static void       _dist_block(job_t *job);
-static void       _dist_cyclic(job_t *job);
+static void       _dist_block(srun_job_t *job);
+static void       _dist_cyclic(srun_job_t *job);
 static inline int _estimate_nports(int nclients, int cli_per_port);
 static int        _compute_task_count(allocation_info_t *info);
 static void       _set_nprocs(allocation_info_t *info);
-static job_t *    _job_create_internal(allocation_info_t *info);
-static void       _job_fake_cred(job_t *job);
+static srun_job_t *    _job_create_internal(allocation_info_t *info);
+static void       _job_fake_cred(srun_job_t *job);
 static int        _job_resp_add_nodes(bitstr_t *req_bitmap, 
 				bitstr_t *exc_bitmap, int node_cnt);
 static int        _job_resp_bitmap(hostlist_t resp_node_hl, char *nodelist, 
@@ -91,8 +90,8 @@ static int        _job_resp_cpus(uint32_t *cpus_per_node,
 				uint32_t *cpu_count_reps, int node);
 static void       _job_resp_hack(resource_allocation_response_msg_t *resp, 
 				bitstr_t *req_bitmap);
-static char *     _task_state_name(task_state_t state_inx);
-static char *     _host_state_name(host_state_t state_inx);
+static char *     _task_state_name(srun_task_state_t state_inx);
+static char *     _host_state_name(srun_host_state_t state_inx);
 static char *     _normalize_hostlist(const char *hostlist);
 
 
@@ -100,7 +99,7 @@ static char *     _normalize_hostlist(const char *hostlist);
  * distribution to figure out how many tasks go on each node and 
  * then make those assignments in a block fashion */
 static void
-_dist_block(job_t *job)
+_dist_block(srun_job_t *job)
 {
 	int i, j, taskid = 0;
 	bool over_subscribe = false;
@@ -143,7 +142,7 @@ _dist_block(job_t *job)
  *                     12 13 14 15  etc.
  */
 static void
-_dist_cyclic(job_t *job)
+_dist_cyclic(srun_job_t *job)
 {
 	int i, j, taskid = 0;
 	bool over_subscribe = false;
@@ -167,10 +166,10 @@ _dist_cyclic(job_t *job)
 /*
  * Create an srun job structure from a resource allocation response msg
  */
-job_t *
+srun_job_t *
 job_create_allocation(resource_allocation_response_msg_t *resp)
 {
-	job_t *job;
+	srun_job_t *job;
 	allocation_info_t *i = xmalloc(sizeof(*i));
 
 	i->nodelist       = _normalize_hostlist(resp->node_list);
@@ -196,12 +195,12 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
  * Create an srun job structure w/out an allocation response msg.
  * (i.e. use the command line options)
  */
-job_t *
+srun_job_t *
 job_create_noalloc(void)
 {
-	job_t *job = NULL;
+	srun_job_t *job = NULL;
 	allocation_info_t *ai = xmalloc(sizeof(*ai));
-	uint32_t cpn = 1;
+	int cpn = 1;
 	int i   = 0;
 
 	hostlist_t  hl = hostlist_create(opt.nodelist);
@@ -251,7 +250,7 @@ job_create_noalloc(void)
 
 
 void
-update_job_state(job_t *job, job_state_t state)
+update_job_state(srun_job_t *job, srun_job_state_t state)
 {
 	pthread_mutex_lock(&job->state_mutex);
 	if (job->state < state) {
@@ -261,10 +260,10 @@ update_job_state(job_t *job, job_state_t state)
 	pthread_mutex_unlock(&job->state_mutex);
 }
 
-job_state_t 
-job_state(job_t *job)
+srun_job_state_t 
+job_state(srun_job_t *job)
 {
-	job_state_t state;
+	srun_job_state_t state;
 	slurm_mutex_lock(&job->state_mutex);
 	state = job->state;
 	slurm_mutex_unlock(&job->state_mutex);
@@ -273,7 +272,7 @@ job_state(job_t *job)
 
 
 void 
-job_force_termination(job_t *job)
+job_force_termination(srun_job_t *job)
 {
 	if (mode == MODE_ATTACH) {
 		info ("forcing detach");
@@ -288,7 +287,7 @@ job_force_termination(job_t *job)
 
 
 int
-job_rc(job_t *job)
+job_rc(srun_job_t *job)
 {
 	int i;
 	int rc = 0;
@@ -317,18 +316,18 @@ job_rc(job_t *job)
 }
 
 
-void job_fatal(job_t *job, const char *msg)
+void job_fatal(srun_job_t *job, const char *msg)
 {
 	if (msg) error(msg);
 
-	job_destroy(job, errno);
+	srun_job_destroy(job, errno);
 
 	exit(1);
 }
 
 
 void 
-job_destroy(job_t *job, int error)
+srun_job_destroy(srun_job_t *job, int error)
 {
 	if (job->removed)
 		return;
@@ -353,7 +352,7 @@ job_destroy(job_t *job, int error)
 
 
 void
-job_kill(job_t *job)
+srun_job_kill(srun_job_t *job)
 {
 	if (!opt.no_alloc) {
 		if (slurm_kill_job_step(job->jobid, job->stepid, SIGKILL) < 0)
@@ -361,26 +360,9 @@ job_kill(job_t *job)
 	}
 	update_job_state(job, SRUN_JOB_FAILED);
 }
-
-
-int
-job_active_tasks_on_host(job_t *job, int hostid)
-{
-	int i;
-	int retval = 0;
-
-	slurm_mutex_lock(&job->task_mutex);
-	for (i = 0; i < job->ntask[hostid]; i++) {
-		uint32_t tid = job->tids[hostid][i];
-		if (job->task_state[tid] == SRUN_TASK_RUNNING) 
-			retval++;
-	}
-	slurm_mutex_unlock(&job->task_mutex);
-	return retval;
-}
 	
 void 
-report_job_status(job_t *job)
+report_job_status(srun_job_t *job)
 {
 	int i;
 
@@ -393,7 +375,7 @@ report_job_status(job_t *job)
 
 #define NTASK_STATES 6
 void 
-report_task_status(job_t *job)
+report_task_status(srun_job_t *job)
 {
 	int i;
 	char buf[1024];
@@ -455,14 +437,14 @@ _set_nprocs(allocation_info_t *info)
 }
 
 
-static job_t *
+static srun_job_t *
 _job_create_internal(allocation_info_t *info)
 {
 	int i;
 	int cpu_cnt = 0;
 	int cpu_inx = 0;
 	hostlist_t hl;
-	job_t *job;
+	srun_job_t *job;
 
 	/* Reset nprocs if necessary 
 	 */
@@ -541,10 +523,10 @@ _job_create_internal(allocation_info_t *info)
 
 
 	/* nhost host states */
-	job->host_state =  xmalloc(job->nhosts * sizeof(host_state_t));
+	job->host_state =  xmalloc(job->nhosts * sizeof(srun_host_state_t));
 
 	/* ntask task states and statii*/
-	job->task_state  =  xmalloc(opt.nprocs * sizeof(task_state_t));
+	job->task_state  =  xmalloc(opt.nprocs * sizeof(srun_task_state_t));
 	job->tstatus	 =  xmalloc(opt.nprocs * sizeof(int));
 
 	for (i = 0; i < opt.nprocs; i++) {
@@ -604,7 +586,7 @@ _job_create_internal(allocation_info_t *info)
 }
 
 void
-job_update_io_fnames(job_t *job)
+job_update_io_fnames(srun_job_t *job)
 {
 	job->ifname = fname_create(job, opt.ifname);
 	job->ofname = fname_create(job, opt.ofname);
@@ -612,7 +594,7 @@ job_update_io_fnames(job_t *job)
 }
 
 static void
-_job_fake_cred(job_t *job)
+_job_fake_cred(srun_job_t *job)
 {
 	slurm_cred_arg_t arg;
 	arg.jobid    = job->jobid;
@@ -627,7 +609,7 @@ _job_fake_cred(job_t *job)
 
 
 static char *
-_task_state_name(task_state_t state_inx)
+_task_state_name(srun_task_state_t state_inx)
 {
 	switch (state_inx) {
 		case SRUN_TASK_INIT:
@@ -648,7 +630,7 @@ _task_state_name(task_state_t state_inx)
 }
 
 static char *
-_host_state_name(host_state_t state_inx)
+_host_state_name(srun_host_state_t state_inx)
 {
 	switch (state_inx) {
 		case SRUN_HOST_INIT:

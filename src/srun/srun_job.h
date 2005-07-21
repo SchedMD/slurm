@@ -1,6 +1,6 @@
 /*****************************************************************************\
  * src/srun/job.h - specification of an srun "job"
- * $Id$
+ * $Id: job.h,v 1.42 2005/06/15 16:39:19 da Exp $
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -39,6 +39,9 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_protocol_defs.h"
+//#include "src/common/global_srun.h"
+
+#include "src/srun/signals.h"
 #include "src/srun/fname.h"
 
 typedef enum {
@@ -53,14 +56,14 @@ typedef enum {
 	SRUN_JOB_DETACHED,         /* Detached IO from job (Not used now)   */
 	SRUN_JOB_FAILED,           /* Job failed for some reason            */
 	SRUN_JOB_FORCETERM,        /* Forced termination of IO thread       */
-} job_state_t;
+} srun_job_state_t;
 
 typedef enum {
 	SRUN_HOST_INIT = 0,
 	SRUN_HOST_CONTACTED,
 	SRUN_HOST_UNREACHABLE,
 	SRUN_HOST_REPLIED
-} host_state_t;
+} srun_host_state_t;
 
 typedef enum {
 	SRUN_TASK_INIT = 0,
@@ -69,7 +72,7 @@ typedef enum {
 	SRUN_TASK_IO_WAIT,
 	SRUN_TASK_EXITED,
 	SRUN_TASK_ABNORMAL_EXIT
-} task_state_t;
+} srun_task_state_t;
 
 
 typedef struct srun_job {
@@ -78,7 +81,7 @@ typedef struct srun_job {
 	bool old_job;           /* run job step under previous allocation */
 	bool removed;       /* job has been removed from SLURM */
 
-	job_state_t state;	/* job state	   	                  */
+	srun_job_state_t state;	/* job state	   	                  */
 	pthread_mutex_t state_mutex; 
 	pthread_cond_t  state_cond;
 
@@ -95,9 +98,6 @@ typedef struct srun_job {
 	uint32_t *hostid;	/* task id => host id mapping     */
 
 	slurm_addr *slurmd_addr;/* slurm_addr vector to slurmd's */
-
-	pthread_t gtid;		/* GMPI master thread */
-	int gmpi_fd;		/* fd for accept(2) */
 
 	pthread_t sigid;	/* signals thread tid		  */
 
@@ -127,10 +127,10 @@ typedef struct srun_job {
 	time_t    ltimeout;       /* Time by which all tasks must be running */
 	time_t    etimeout;       /* exit timeout (see opt.max_wait          */
 
-	host_state_t *host_state; /* nhost host states */
+	srun_host_state_t *host_state; /* nhost host states */
 
 	int *tstatus;	          /* ntask exit statii */
-	task_state_t *task_state; /* ntask task states */
+	srun_task_state_t *task_state; /* ntask task states */
 	pthread_mutex_t task_mutex;
 
 	switch_jobinfo_t switch_job;
@@ -145,55 +145,50 @@ typedef struct srun_job {
 	bool *stdin_eof;  /* true if task i processed stdin eof */
 	
 	select_jobinfo_t select_jobinfo;
-} job_t;
+} srun_job_t;
 
-void    update_job_state(job_t *job, job_state_t newstate);
-void    job_force_termination(job_t *job);
+void    update_job_state(srun_job_t *job, srun_job_state_t newstate);
+void    job_force_termination(srun_job_t *job);
 
-job_state_t job_state(job_t *job);
+srun_job_state_t job_state(srun_job_t *job);
 
-job_t * job_create_noalloc(void);
-job_t * job_create_allocation(resource_allocation_response_msg_t *resp);
+srun_job_t * job_create_noalloc(void);
+srun_job_t * job_create_allocation(resource_allocation_response_msg_t *resp);
 
 /*
  *  Update job filenames and modes for stderr, stdout, and stdin.
  */
-void    job_update_io_fnames(job_t *j);
+void    job_update_io_fnames(srun_job_t *j);
 
 /* 
  * Issue a fatal error message and terminate running job
  */
-void    job_fatal(job_t *job, const char *msg);
+void    job_fatal(srun_job_t *job, const char *msg);
 
 /* 
  * Deallocates job and or job step via slurm API
  */
-void    job_destroy(job_t *job, int error);
+void    srun_job_destroy(srun_job_t *job, int error);
 
 /* 
  * Send SIGKILL to running job via slurm controller
  */
-void    job_kill(job_t *job);
-
-/*
- * returns number of active tasks on host with id = hostid.
- */
-int     job_active_tasks_on_host(job_t *job, int hostid);
+void    srun_job_kill(srun_job_t *job);
 
 /*
  * report current task status
  */
-void    report_task_status(job_t *job);
+void    report_task_status(srun_job_t *job);
 
 /*
  * report current node status
  */
-void    report_job_status(job_t *job);
+void    report_job_status(srun_job_t *job);
 
 /*
  * Returns job return code (for srun exit status)
  */
-int    job_rc(job_t *job);
+int    job_rc(srun_job_t *job);
 
 /*
  * To run a job step on existing allocation, modify the 

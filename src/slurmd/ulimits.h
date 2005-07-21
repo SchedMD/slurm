@@ -27,7 +27,7 @@
 #ifndef _SLURMD_ULIMITS_H
 #define _SLURMD_ULIMITS_H
 
-#include "src/slurmd/job.h"
+#include "src/slurmd/slurmd_job.h"
 
 /*
  * Set user resource limits as defined by SLURM_RLIMIT* environment

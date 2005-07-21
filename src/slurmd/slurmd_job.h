@@ -1,6 +1,6 @@
 /*****************************************************************************\
  * src/slurmd/job.h  slurmd_job_t definition
- * $Id$
+ * $Id: job.h,v 1.29 2005/06/24 18:08:30 da Exp $
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -50,12 +50,22 @@ typedef struct srun_key {
 	unsigned char data[SLURM_IO_KEY_SIZE];
 } srun_key_t;
 
+typedef struct srun_info {
+	srun_key_t *key;	   /* srun key for IO verification         */
+	slurm_addr resp_addr;	   /* response addr for task exit msg      */
+	slurm_addr ioaddr;         /* Address to connect on for I/O        */
+	char *	   ofname;         /* output file (if any)                 */
+	char *	   efname;         /* error file  (if any)	           */
+	char *     ifname;         /* input file  (if any) 		   */
+
+} srun_info_t;
+
 typedef enum task_state {
 	SLURMD_TASK_INIT,
 	SLURMD_TASK_STARTING,
 	SLURMD_TASK_RUNNING,
 	SLURMD_TASK_COMPLETE
-} task_state_t;
+} slurmd_task_state_t;
 
 /* local job states */
 typedef enum job_state {
@@ -65,11 +75,11 @@ typedef enum job_state {
 	SLURMD_JOB_STARTED,
 	SLURMD_JOB_ENDING,
 	SLURMD_JOB_COMPLETE
-} job_state_t;
+} slurmd_job_state_t;
 
 typedef struct task_info {
 	pthread_mutex_t mutex;	   /* mutex to protect task state          */
-	task_state_t    state;	   /* task state                           */
+	slurmd_task_state_t    state; /* task state                        */
  
 	int             id;	   /* local task id                        */
 	uint32_t        gtid;	   /* global task id                       */
@@ -86,18 +96,7 @@ typedef struct task_info {
 	int             estatus;   /* this task's exit status              */
 
 	List            srun_list; /* List of srun objs for this task      */
-} task_info_t;
-
-
-typedef struct srun_info {
-	srun_key_t *key;	   /* srun key for IO verification         */
-	slurm_addr resp_addr;	   /* response addr for task exit msg      */
-	slurm_addr ioaddr;         /* Address to connect on for I/O        */
-	char *	   ofname;         /* output file (if any)                 */
-	char *	   efname;         /* error file  (if any)	           */
-	char *     ifname;         /* input file  (if any) 		   */
-
-} srun_info_t;
+} slurmd_task_info_t;
 
 typedef struct slurmd_job {
 	uint32_t       jobid;  /* Current SLURM job id                      */
@@ -122,7 +121,7 @@ typedef struct slurmd_job {
 	time_t         timelimit;  /* time at which job must stop           */
 
 	struct passwd *pwd;   /* saved passwd struct for user job           */
-	task_info_t  **task;  /* list of task information pointers          */
+	slurmd_task_info_t  **task;  /* list of task information pointers   */
 	eio_t          eio;
 	List           objs;  /* list of IO objects                         */
 	List 	       sruns; /* List of sruns                              */
@@ -154,13 +153,13 @@ struct srun_info * srun_info_create(slurm_cred_t cred, slurm_addr *respaddr,
 
 void  srun_info_destroy(struct srun_info *srun);
 
-struct task_info * task_info_create(int taskid, int gtaskid);
+slurmd_task_info_t * task_info_create(int taskid, int gtaskid);
 
-void task_info_destroy(struct task_info *t);
+void task_info_destroy(slurmd_task_info_t *t);
 
 int job_update_shm(slurmd_job_t *job);
 
-int job_update_state(slurmd_job_t *job, job_state_t s);
+int job_update_state(slurmd_job_t *job, slurmd_job_state_t s);
 
 void job_delete_shm(slurmd_job_t *job);
 

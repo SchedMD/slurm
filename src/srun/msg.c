@@ -54,11 +54,10 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 
-#include "src/srun/job.h"
+#include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
 #include "src/srun/io.h"
 #include "src/srun/msg.h"
-#include "src/srun/signals.h"
 #include "src/srun/sigstr.h"
 #include "src/srun/attach.h"
 
@@ -73,21 +72,21 @@ static slurm_fd slurmctld_fd   = (slurm_fd) NULL;
 /*
  *  Static prototypes
  */
-static void	_accept_msg_connection(job_t *job, int fdnum);
-static void	_confirm_launch_complete(job_t *job);
-static void	_dump_proctable(job_t *job);
-static void 	_exit_handler(job_t *job, slurm_msg_t *exit_msg);
-static void	_handle_msg(job_t *job, slurm_msg_t *msg);
-static inline bool _job_msg_done(job_t *job);
-static void	_launch_handler(job_t *job, slurm_msg_t *resp);
-static void     _do_poll_timeout(job_t *job);
-static int      _get_next_timeout(job_t *job);
-static void 	_msg_thr_poll(job_t *job);
-static void	_set_jfds_nonblocking(job_t *job);
+static void	_accept_msg_connection(srun_job_t *job, int fdnum);
+static void	_confirm_launch_complete(srun_job_t *job);
+static void	_dump_proctable(srun_job_t *job);
+static void 	_exit_handler(srun_job_t *job, slurm_msg_t *exit_msg);
+static void	_handle_msg(srun_job_t *job, slurm_msg_t *msg);
+static inline bool _job_msg_done(srun_job_t *job);
+static void	_launch_handler(srun_job_t *job, slurm_msg_t *resp);
+static void     _do_poll_timeout(srun_job_t *job);
+static int      _get_next_timeout(srun_job_t *job);
+static void 	_msg_thr_poll(srun_job_t *job);
+static void	_set_jfds_nonblocking(srun_job_t *job);
 static void     _print_pid_list(const char *host, int ntasks, 
 				uint32_t *pid, char *executable_name);
 static void     _timeout_handler(time_t timeout);
-static void     _node_fail_handler(char *nodelist, job_t *job);
+static void     _node_fail_handler(char *nodelist, srun_job_t *job);
 
 #define _poll_set_rd(_pfd, _fd) do {    \
 	(_pfd).fd = _fd;                \
@@ -109,7 +108,7 @@ static void     _node_fail_handler(char *nodelist, job_t *job);
  *  and the number of tasks `ntasks' with pid array `pid'
  */
 static void
-_build_proctable(job_t *job, char *host, int nodeid, int ntasks, uint32_t *pid)
+_build_proctable(srun_job_t *job, char *host, int nodeid, int ntasks, uint32_t *pid)
 {
 	int i;
 	static int tasks_recorded = 0;
@@ -139,7 +138,7 @@ _build_proctable(job_t *job, char *host, int nodeid, int ntasks, uint32_t *pid)
 	}
 }
 
-static void _dump_proctable(job_t *job)
+static void _dump_proctable(srun_job_t *job)
 {
 	int node_inx, task_inx, taskid, max_task = 0;
 	MPIR_PROCDESC *tv;
@@ -195,7 +194,7 @@ static void _timeout_handler(time_t timeout)
  * not. The job will continue to execute given the --no-kill option. 
  * Otherwise all of the job's tasks and the job itself are killed..
  */
-static void _node_fail_handler(char *nodelist, job_t *job)
+static void _node_fail_handler(char *nodelist, srun_job_t *job)
 {
 	if ( (opt.no_kill) &&
 	     (io_node_fail(nodelist, job) == SLURM_SUCCESS) ) {
@@ -211,13 +210,13 @@ static void _node_fail_handler(char *nodelist, job_t *job)
 		io_thr_wake(job);
 }
 
-static bool _job_msg_done(job_t *job)
+static bool _job_msg_done(srun_job_t *job)
 {
 	return (job->state >= SRUN_JOB_TERMINATED);
 }
 
 static void
-_process_launch_resp(job_t *job, launch_tasks_response_msg_t *msg)
+_process_launch_resp(srun_job_t *job, launch_tasks_response_msg_t *msg)
 {
 	if ((msg->srun_node_id < 0) || (msg->srun_node_id >= job->nhosts)) {
 		error ("Bad launch response from %s", msg->node_name);
@@ -235,7 +234,7 @@ _process_launch_resp(job_t *job, launch_tasks_response_msg_t *msg)
 }
 
 static void
-update_running_tasks(job_t *job, uint32_t nodeid)
+update_running_tasks(srun_job_t *job, uint32_t nodeid)
 {
 	int i;
 	debug2("updating %d running tasks for node %d", 
@@ -249,7 +248,7 @@ update_running_tasks(job_t *job, uint32_t nodeid)
 }
 
 static void
-update_failed_tasks(job_t *job, uint32_t nodeid)
+update_failed_tasks(srun_job_t *job, uint32_t nodeid)
 {
 	int i;
 	slurm_mutex_lock(&job->task_mutex);
@@ -267,7 +266,7 @@ update_failed_tasks(job_t *job, uint32_t nodeid)
 }
 
 static void
-_launch_handler(job_t *job, slurm_msg_t *resp)
+_launch_handler(srun_job_t *job, slurm_msg_t *resp)
 {
 	launch_tasks_response_msg_t *msg = resp->data;
 
@@ -304,7 +303,7 @@ _launch_handler(job_t *job, slurm_msg_t *resp)
  * confirm that all tasks registers a sucessful launch
  * pthread_exit with job kill on failure */
 static void	
-_confirm_launch_complete(job_t *job)
+_confirm_launch_complete(srun_job_t *job)
 {
 	int i;
 
@@ -327,7 +326,7 @@ _confirm_launch_complete(job_t *job)
 }
 
 static void
-_reattach_handler(job_t *job, slurm_msg_t *msg)
+_reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 {
 	int i;
 	reattach_tasks_response_msg_t *resp = msg->data;
@@ -389,7 +388,7 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 
 
 static void 
-_print_exit_status(job_t *job, hostlist_t hl, char *host, int status)
+_print_exit_status(srun_job_t *job, hostlist_t hl, char *host, int status)
 {
 	char buf[1024];
 	char *corestr = "";
@@ -431,7 +430,7 @@ _print_exit_status(job_t *job, hostlist_t hl, char *host, int status)
 }
 
 static void
-_die_if_signaled(job_t *job, int status)
+_die_if_signaled(srun_job_t *job, int status)
 {
 	bool signaled  = false;
 
@@ -446,7 +445,7 @@ _die_if_signaled(job_t *job, int status)
 }
 
 static void 
-_exit_handler(job_t *job, slurm_msg_t *exit_msg)
+_exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 {
 	task_exit_msg_t *msg       = (task_exit_msg_t *) exit_msg->data;
 	hostlist_t       hl        = hostlist_create(NULL);
@@ -484,8 +483,9 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 		slurm_mutex_unlock(&job->task_mutex);
 
 		tasks_exited++;
-		if ( (tasks_exited == opt.nprocs) ||
-		     ((opt.mpi_type == MPI_LAM) && (tasks_exited == job->nhosts)) ) {
+		if ((tasks_exited == opt.nprocs) 
+		  || (slurm_mpi_single_task_per_node () 
+			&& (tasks_exited == job->nhosts))) {
 			debug2("All tasks exited");
 			update_job_state(job, SRUN_JOB_TERMINATED);
 		}
@@ -513,13 +513,13 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 
 			first_time = 0;
 
-			job_kill(job);
+			srun_job_kill(job);
 		}
 	}
 }
 
 static void
-_handle_msg(job_t *job, slurm_msg_t *msg)
+_handle_msg(srun_job_t *job, slurm_msg_t *msg)
 {
 	uid_t req_uid = g_slurm_auth_get_uid(msg->cred);
 	uid_t uid     = getuid();
@@ -580,7 +580,7 @@ _handle_msg(job_t *job, slurm_msg_t *msg)
 
 /* NOTE: One extra FD for incoming slurmctld messages */
 static void
-_accept_msg_connection(job_t *job, int fdnum)
+_accept_msg_connection(srun_job_t *job, int fdnum)
 {
 	slurm_fd     fd = (slurm_fd) NULL;
 	slurm_msg_t *msg = NULL;
@@ -632,7 +632,7 @@ _accept_msg_connection(job_t *job, int fdnum)
 
 
 static void
-_set_jfds_nonblocking(job_t *job)
+_set_jfds_nonblocking(srun_job_t *job)
 {
 	int i;
 	for (i = 0; i < job->njfds; i++) 
@@ -644,7 +644,7 @@ _set_jfds_nonblocking(job_t *job)
  * NOTE: One extra FD for incoming slurmctld messages
  */
 static int
-_do_poll(job_t *job, struct pollfd *fds, int timeout)
+_do_poll(srun_job_t *job, struct pollfd *fds, int timeout)
 {
 	nfds_t nfds = (job->njfds + 1);
 	int rc, to;
@@ -674,7 +674,7 @@ _do_poll(job_t *job, struct pollfd *fds, int timeout)
  *  Get the next timeout in seconds from now.
  */
 static int 
-_get_next_timeout(job_t *job)
+_get_next_timeout(srun_job_t *job)
 {
 	int timeout = -1;
 
@@ -699,7 +699,7 @@ _get_next_timeout(job_t *job)
  *    2. Exit timeout has expired (either print a message or kill job)
  */
 static void
-_do_poll_timeout(job_t *job)
+_do_poll_timeout(srun_job_t *job)
 {
 	time_t now = time(NULL);
 
@@ -721,7 +721,7 @@ _do_poll_timeout(job_t *job)
 
 /* NOTE: One extra FD for incoming slurmctld messages */
 static void 
-_msg_thr_poll(job_t *job)
+_msg_thr_poll(srun_job_t *job)
 {
 	struct pollfd *fds;
 	int i;
@@ -757,7 +757,7 @@ _msg_thr_poll(job_t *job)
 void *
 msg_thr(void *arg)
 {
-	job_t *job = (job_t *) arg;
+	srun_job_t *job = (srun_job_t *) arg;
 
 	debug3("msg thread pid = %lu", (unsigned long) getpid());
 
@@ -769,7 +769,7 @@ msg_thr(void *arg)
 }
 
 int 
-msg_thr_create(job_t *job)
+msg_thr_create(srun_job_t *job)
 {
 	int i;
 	pthread_attr_t attr;

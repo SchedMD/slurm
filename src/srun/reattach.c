@@ -46,12 +46,12 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/read_config.h"
 
-#include "src/srun/job.h"
+#include "src/srun/srun_job.h"
 #include "src/srun/launch.h"
 #include "src/srun/opt.h"
 #include "src/srun/io.h"
 #include "src/srun/msg.h"
-#include "src/srun/signals.h"
+
 
 
 /* number of active threads */
@@ -66,11 +66,11 @@ typedef struct thd {
         pthread_attr_t	attr;			/* thread attributes */
         state_t		state;      		/* thread state */
 	slurm_msg_t    *msg;
-	job_t          *job;
+	srun_job_t          *job;
 } thd_t;
 
-static inline bool	 _job_all_done(job_t *job);
-static void		 _p_reattach(slurm_msg_t *req, job_t *job);
+static inline bool	 _job_all_done(srun_job_t *job);
+static void		 _p_reattach(slurm_msg_t *req, srun_job_t *job);
 static void 		*_p_reattach_task(void *args);
 
 typedef struct _srun_step {
@@ -288,7 +288,7 @@ _get_attach_info(srun_step_t *s)
 }
 
 static int
-_attach_to_job(job_t *job)
+_attach_to_job(srun_job_t *job)
 {
 	int i;
 	reattach_tasks_request_msg_t *req;
@@ -329,7 +329,7 @@ _attach_to_job(job_t *job)
 }
 
 static void
-_p_reattach(slurm_msg_t *msg, job_t *job)
+_p_reattach(slurm_msg_t *msg, srun_job_t *job)
 {
 	int i;
 	thd_t *thd = xmalloc(job->nhosts * sizeof(thd_t));
@@ -402,7 +402,7 @@ int reattach()
 {
 	List          steplist = _step_list_create(opt.attach);
 	srun_step_t  *s        = NULL;
-	job_t        *job      = NULL;
+	srun_job_t        *job      = NULL;
 
 	if ((steplist == NULL) || (list_count(steplist) == 0)) {
 		info("No job/steps in attach");
@@ -488,7 +488,7 @@ int reattach()
 }
 
 
-static bool _job_all_done(job_t *job)
+static bool _job_all_done(srun_job_t *job)
 {
 	return (job->state >= SRUN_JOB_TERMINATED);
 }

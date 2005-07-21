@@ -557,7 +557,8 @@ shm_update_step_cont_id(uint32_t jobid, uint32_t stepid, uint32_t cont_id)
 }
 
 int 
-shm_update_step_state(uint32_t jobid, uint32_t stepid, job_state_t state)
+shm_update_step_state(uint32_t jobid, uint32_t stepid, 
+		      slurmd_job_state_t state)
 {
 	int i, retval = SLURM_SUCCESS;
 	_shm_lock();
@@ -571,11 +572,11 @@ shm_update_step_state(uint32_t jobid, uint32_t stepid, job_state_t state)
 	return retval;
 }
 
-job_state_t *
+slurmd_job_state_t *
 shm_lock_step_state(uint32_t jobid, uint32_t stepid)
 {
 	int i;
-	job_state_t *state = NULL;
+	slurmd_job_state_t *state = NULL;
 	_shm_lock();
 	if ((i = _shm_find_step(jobid, stepid)) >= 0)
 		state = &slurmd_shm->step[i].state;

@@ -30,7 +30,7 @@
 
 #include <slurm/slurm.h>
 
-#include "src/srun/job.h"
+#include "src/srun/srun_job.h"
 
 /* 
  * Allocate nodes from the slurm controller -- retrying the attempt
@@ -83,7 +83,7 @@ uint32_t jobid_from_env(void);
  *
  * Returns -1 if job step creation failure, 0 otherwise
  */
-int create_job_step(job_t *j);
+int create_job_step(srun_job_t *j);
 
 
 #endif /* !_HAVE_ALLOCATE_H */

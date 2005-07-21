@@ -40,28 +40,31 @@
 
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/net.h"
 
-#include "src/srun/allocate.h"
-//#include "src/srun/env.h"
-#include "src/srun/io.h"
-#include "src/srun/job.h"
-#include "src/srun/gmpi.h"
-#include "src/srun/launch.h"
-#include "src/srun/msg.h"
-#include "src/srun/net.h"
-#include "src/srun/opt.h"
-#include "src/srun/signals.h"
-#include "src/srun/sigstr.h"
-#include "src/srun/reattach.h"
-#include "src/srun/attach.h"
+#include "src/plugins/mpi/mpichgm/mpichgm.h"
 
+typedef struct {
+	int defined;
+	unsigned int port_board_id;
+	unsigned int unique_high_id;
+	unsigned int unique_low_id;
+	unsigned int numanode;
+	unsigned int remote_pid;
+	unsigned int remote_port;
+} gm_slave_t;
 
-static int _gmpi_parse_init_recv_msg(job_t *job, char *rbuf,
-			gm_slave_t *slave_data);
+#define GMPI_RECV_BUF_LEN 65536
 
 
-static int _gmpi_parse_init_recv_msg(job_t *job, char *rbuf,
-				    gm_slave_t *slave_data)
+static int _gmpi_parse_init_recv_msg(srun_job_t *job, char *rbuf,
+				     gm_slave_t *slave_data);
+
+static int gmpi_fd = -1;
+static int gmpi_port = -1;
+
+static int _gmpi_parse_init_recv_msg(srun_job_t *job, char *rbuf,
+				     gm_slave_t *slave_data)
 {
 	unsigned int magic, id, port_board_id, unique_high_id,
 		unique_low_id, numanode, remote_pid, remote_port;
@@ -105,7 +108,7 @@ static int _gmpi_parse_init_recv_msg(job_t *job, char *rbuf,
 }
 
 
-static int _gmpi_establish_map(job_t *job)
+static int _gmpi_establish_map(srun_job_t *job)
 {
 	struct sockaddr_in addr;
 	socklen_t addrlen;
@@ -114,12 +117,12 @@ static int _gmpi_establish_map(job_t *job)
 	char *p, *rbuf = NULL, *gmap = NULL, *lmap = NULL, *map = NULL;
 	char tmp[128];
 	gm_slave_t *slave_data = NULL, *dp;
-
+	
 	/*
 	 * Collect info from slaves.
 	 * Will never finish unless slaves are GMPI processes.
 	 */
-	accfd = job->gmpi_fd;
+	accfd = gmpi_fd;
 	addrlen = sizeof(addr);
 	nprocs = opt.nprocs;
 	slave_data = (gm_slave_t *)xmalloc(sizeof(*slave_data)*nprocs);
@@ -127,6 +130,7 @@ static int _gmpi_establish_map(job_t *job)
 		slave_data[i].defined = 0;
 	i = 0;
 	rbuf = (char *)xmalloc(GMPI_RECV_BUF_LEN);
+	
 	while (i < nprocs) {
 		newfd = accept(accfd, (struct sockaddr *)&addr, &addrlen);
 		if (newfd == -1) {
@@ -221,7 +225,7 @@ static int _gmpi_establish_map(job_t *job)
 }
 
 
-static void _gmpi_wait_abort(job_t *job)
+static void _gmpi_wait_abort(srun_job_t *job)
 {
 	struct sockaddr_in addr;
 	socklen_t addrlen;
@@ -232,7 +236,7 @@ static void _gmpi_wait_abort(job_t *job)
 	rbuf = (char *)xmalloc(GMPI_RECV_BUF_LEN);
 	addrlen = sizeof(addr);
 	while (1) {
-		newfd = accept(job->gmpi_fd, (struct sockaddr *)&addr,
+		newfd = accept(gmpi_fd, (struct sockaddr *)&addr,
 			       &addrlen);
 		if (newfd == -1) {
 			fatal("GMPI master failed to accept (abort-wait)");
@@ -260,8 +264,8 @@ static void _gmpi_wait_abort(job_t *job)
 		fwd_signal(job, SIGKILL);
 #if 0
 		xfree(rbuf);
-		close(job->gmpi_fd);
-		job->gmpi_fd = -1;
+		close(jgmpi_fd);
+		gmpi_fd = -1;
 		return;
 #endif
 	}
@@ -270,9 +274,9 @@ static void _gmpi_wait_abort(job_t *job)
 
 static void *_gmpi_thr(void *arg)
 {
-	job_t *job;
+	srun_job_t *job;
 
-	job = (job_t *) arg;
+	job = (srun_job_t *) arg;
 
 	debug3("GMPI master thread pid=%lu", (unsigned long) getpid());
 	_gmpi_establish_map(job);
@@ -284,47 +288,42 @@ static void *_gmpi_thr(void *arg)
 }
 
 
-extern int gmpi_thr_create(job_t *job, char **port)
+extern int gmpi_thr_create(srun_job_t *job)
 {
-	int fd;
-	struct sockaddr_in addr;
-	char name[128];
-	socklen_t namelen;
+	int port;
 	pthread_attr_t attr;
+	pthread_t gtid;
 
 	/*
-	 * Prepare for accepting GMPI processes.
+	 * It is possible for one to modify the mpirun command in
+	 * MPICH-GM distribution so that it calls srun, instead of
+	 * rsh, for remote process invocations.  In that case, we
+	 * should not override envs nor open the master port.
 	 */
-	if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-		return -1;
-	}
-	bzero(&addr, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	addr.sin_port = htons(0);
-	if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-		return -1;
-	}
-	if (listen(fd, 5) == -1)
-		return -1;
+	if (getenv("GMPI_PORT"))
+		return (0);
 
-	/*
-	 * Get the port name to communicate.
-	 */
-	namelen = sizeof(addr);
-	getsockname(fd, (struct sockaddr *)&addr, &namelen);
-	sprintf(name, "%u", ntohs(addr.sin_port));
-	*port = xstrdup(name);
+	if (net_stream_listen (&gmpi_fd, &port) < 0) {
+		error ("Unable to create GMPI listen port: %m");
+		return -1;
+	}
 
 	/*
 	 * Accept in a separate thread.
 	 */
 	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	job->gmpi_fd = fd;
-	if (pthread_create(&job->gtid, &attr, &_gmpi_thr, (void *)job))
+	if (pthread_create(&gtid, &attr, &_gmpi_thr, (void *)job))
 		return -1;
-	debug("Started GMPI master thread (%lu)", (unsigned long) job->gtid);
+
+	setenvf (NULL, "GMPI_PORT",  "%u", ntohs (port));
+	setenvf (NULL, "GMPI_MAGIC", "%u", job->jobid);
+	setenvf (NULL, "GMPI_NP",    "%d", opt.nprocs);
+	setenvf (NULL, "GMPI_SHMEM", "1");
+	/* FIXME for multi-board config. */
+	setenvf (NULL, "GMPI_BOARD", "-1");
+
+	debug("Started GMPI master thread (%lu)", (unsigned long) gtid);
 
 	return 0;
 }

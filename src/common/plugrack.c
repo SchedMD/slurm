@@ -222,7 +222,7 @@ accept_paranoia( plugrack_t rack, const char *fq_path )
         if ( ! rack->paranoia ) return 1;
   
         /* Make a local copy of the path name so we can write into it. */
-        local = malloc( strlen( fq_path ) + 1 );
+        local = xmalloc( strlen( fq_path ) + 1 );
         strcpy( local, fq_path );
 
         if ( ! accept_path_paranoia( rack,
@@ -231,7 +231,7 @@ accept_paranoia( plugrack_t rack, const char *fq_path )
 				     PLUGRACK_PARANOIA_FILE_OWN,
                                      rack->paranoia & 
 				     PLUGRACK_PARANOIA_FILE_WRITABLE ) ) {
-		free( local );
+		xfree( local );
                 return 0;
         }
 
@@ -253,7 +253,7 @@ accept_paranoia( plugrack_t rack, const char *fq_path )
 				   PLUGRACK_PARANOIA_DIR_OWN,
                                    rack->paranoia & 
 				   PLUGRACK_PARANOIA_DIR_WRITABLE );
-	free( local );
+	xfree( local );
 	return rc;
 }
 
@@ -385,7 +385,7 @@ plugrack_add_plugin_path( plugrack_t rack,
 			  const char *fq_path )
 {
         plugrack_entry_t *e;
-  
+	
         if ( ! rack ) return SLURM_ERROR;
         if ( ! fq_path ) return SLURM_ERROR;
 
@@ -395,8 +395,7 @@ plugrack_add_plugin_path( plugrack_t rack,
         e->fq_path   = xstrdup( fq_path );
         e->plug      = PLUGIN_INVALID_HANDLE;
         e->refcount  = 0;
-  
-        list_append( rack->entries, e );
+	list_append( rack->entries, e );
 
         return SLURM_SUCCESS;
 }
@@ -447,7 +446,7 @@ plugrack_read_dir( plugrack_t rack, const char *dir )
 	if ( ( ! rack ) || (! dir ) )
 		return SLURM_ERROR;
 
-	dir_array = malloc( strlen( dir ) + 1 );
+	dir_array = xmalloc( strlen( dir ) + 1 );
 	xassert( dir_array );
 	strcpy( dir_array, dir );
 	head = dir_array;
@@ -466,7 +465,7 @@ plugrack_read_dir( plugrack_t rack, const char *dir )
 			head = dir_array + i + 1;
 		}
 	}
-	free( dir_array );
+	xfree( dir_array );
 	return rc;
 }
 
@@ -488,7 +487,7 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 		if (max_path_len <= 0)
 			max_path_len = 256;
 	}
-        fq_path = malloc( strlen( dir ) + max_path_len + 1 );
+        fq_path = xmalloc( strlen( dir ) + max_path_len + 1 );
         xassert( fq_path );
 
         /*
@@ -500,7 +499,7 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
         tail = &fq_path[ strlen( dir ) ];
         *tail = '/';
         ++tail;
-
+	
         /* Check whether we should be paranoid about this directory. */
         if ( ! accept_path_paranoia( rack,
                                      dir,
@@ -508,7 +507,7 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 				     PLUGRACK_PARANOIA_DIR_OWN,
                                      rack->paranoia & 
 				     PLUGRACK_PARANOIA_DIR_WRITABLE ) ) {
-		free( fq_path );
+		xfree( fq_path );
                 return SLURM_ERROR;
         }
   
@@ -516,7 +515,7 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
         dirp = opendir( dir );
         if ( dirp == NULL ) {
 		error( "cannot open plugin directory %s", dir );
-		free( fq_path );
+		xfree( fq_path );
 		return SLURM_ERROR;
 	}
   
@@ -531,7 +530,7 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 		 * should work.
                  */
                 strcpy( tail, e->d_name );
-
+		
                 /* Check only regular files. */
 		if ( strncmp(e->d_name, ".", 1) == 0) continue;
                 if ( stat( fq_path, &st ) < 0 ) continue;
@@ -547,7 +546,7 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 		if ((rack->major_type) && 
 		    (!_match_major(e->d_name, rack->major_type))) 
 			continue;
-			
+				
                 /* See if we should be paranoid about this file. */
                 if (!accept_path_paranoia( rack,
                                            fq_path,
@@ -559,7 +558,7 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 				"reasons", fq_path );
                         continue;
                 }
-
+		
                 /* Test the type. */
 		if ( plugin_peek( fq_path,
 				  plugin_type,
@@ -567,20 +566,21 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 				  NULL ) == SLURM_ERROR ) {
 			continue;
 		}
+		
 		if (   rack->major_type 
 		       && ( strncmp( rack->major_type,
 				     plugin_type,
 				     strlen( rack->major_type ) ) != 0 ) ) {
 			continue;
 		}
-
+		
                 /* Add it to the list. */
                 (void) plugrack_add_plugin_path( rack, plugin_type, fq_path );
         }
 
 	closedir( dirp );
 
-	free( fq_path );
+	xfree( fq_path );
         return SLURM_SUCCESS;
 }
 
@@ -689,12 +689,11 @@ plugrack_use_by_type( plugrack_t rack,
 
         it = list_iterator_create( rack->entries );
         while ( ( e = list_next( it ) ) != NULL ) {
-                if ( strcmp( full_type, e->full_type ) != 0 ) continue;
-
+		if ( strcmp( full_type, e->full_type ) != 0 ) continue;
+		
                 /* See if plugin is loaded. */
-                if ( e->plug == PLUGIN_INVALID_HANDLE ) {
-                        e->plug = plugin_load_from_file( e->fq_path );
-                }
+                if ( e->plug == PLUGIN_INVALID_HANDLE ) 
+			e->plug = plugin_load_from_file( e->fq_path );
 
                 /* If load was successful, increment the reference count. */
                 if ( e->plug == PLUGIN_INVALID_HANDLE )
@@ -705,7 +704,7 @@ plugrack_use_by_type( plugrack_t rack,
                  * as an error return value.
                  */
                 list_iterator_destroy( it );
-                return e->plug;
+		return e->plug;
         }
 
         /* Couldn't find a suitable plugin. */
@@ -738,4 +737,17 @@ plugrack_finished_with_plugin( plugrack_t rack, plugin_handle_t plug )
         /* Plugin not in this rack. */
         list_iterator_destroy( it );
         return SLURM_ERROR;
+}
+
+int
+plugrack_print_all_plugin(plugrack_t rack)
+{
+	ListIterator itr;
+        plugrack_entry_t *e = NULL;
+	itr = list_iterator_create(rack->entries);
+	info("MPI types are...");
+	while ((e = list_next(itr)) != NULL ) {
+		info("%s",e->full_type);
+	}
+	return SLURM_SUCCESS;
 }

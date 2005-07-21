@@ -23,13 +23,17 @@ libcommon_la_SOURCES = 			\
 	xassert.c xassert.h		\
 	xstring.c xstring.h		\
 	xsignal.c xsignal.h		\
+	global_srun.c                   \
+	global_srun.h                   \
 	strlcpy.c strlcpy.h		\
 	list.c list.h 			\
+	net.c net.h                     \
 	fd.c fd.h			\
 	log.c log.h			\
 	cbuf.c cbuf.h			\
 	safeopen.c safeopen.h		\
 	bitstring.c bitstring.h 	\
+	mpi.c mpi.h                     \
 	pack.c pack.h			\
 	parse_spec.c parse_spec.h	\
 	plugin.c plugin.h		\

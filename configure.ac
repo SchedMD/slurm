@@ -227,6 +227,10 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/switch/elan/Makefile
 		 src/plugins/switch/none/Makefile
 		 src/plugins/switch/federation/Makefile
+		 src/plugins/mpi/Makefile
+		 src/plugins/mpi/mpichgm/Makefile
+		 src/plugins/mpi/mvapich/Makefile
+		 src/plugins/mpi/lam/Makefile
 		 doc/Makefile
 		 doc/man/Makefile
 		 testsuite/Makefile

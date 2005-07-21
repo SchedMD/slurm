@@ -10,10 +10,9 @@ bin_PROGRAMS = srun
 srun_SOURCES = \
 	srun.c \
 	opt.c opt.h \
-	job.c job.h \
-	gmpi.c gmpi.h \
-	net.c net.h \
+	srun_job.c srun_job.h \
 	msg.c msg.h \
+	signals.c signals.h \
 	io.c io.h   \
 	launch.c    \
 	launch.h    \
@@ -23,8 +22,6 @@ srun_SOURCES = \
 	reattach.h  \
 	fname.c     \
 	fname.h     \
-	signals.c   \
-	signals.h   \
 	sigstr.c    \
 	sigstr.h    \
 	allocate.c  \

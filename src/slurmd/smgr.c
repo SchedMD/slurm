@@ -247,7 +247,7 @@ _cleanup_file_descriptors(slurmd_job_t *j)
 {
 	int i;
 	for (i = 0; i < j->ntasks; i++) {
-		task_info_t *t = j->task[i];
+		slurmd_task_info_t *t = j->task[i];
 		/*
 		 * Ignore errors on close()
 		 */
@@ -370,7 +370,7 @@ _exec_all_tasks(slurmd_job_t *job)
 static void
 _exec_task(slurmd_job_t *job, int i)
 {
-	task_info_t *t = NULL;
+	slurmd_task_info_t *t = NULL;
 	if (xsignal_unblock(smgr_sigarray) < 0) {
 		error("unable to unblock signals");
 		exit(1);
@@ -399,10 +399,12 @@ _exec_task(slurmd_job_t *job, int i)
 			error("Unable to attach to interconnect: %m");
 			exit(1);
 		}
+
+		slurmd_mpi_init (job, job->task[i]->gtid);
 	
 		_pdebug_stop_current(job);
 	}
-
+		
 	/* 
 	 * If io_prepare_child() is moved above interconnect_attach()
 	 * this causes EBADF from qsw_attach(). Why?

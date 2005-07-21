@@ -44,7 +44,6 @@
 #include "src/srun/allocate.h"
 #include "src/srun/msg.h"
 #include "src/srun/opt.h"
-//#include "src/srun/env.h"
 #include "src/srun/attach.h"
 
 #define MAX_ALLOC_WAIT 60	/* seconds */
@@ -64,7 +63,7 @@ static void  _wait_for_resources(resource_allocation_response_msg_t **resp);
 static bool  _retry();
 static void  _intr_handler(int signo);
 
-static job_step_create_request_msg_t * _step_req_create(job_t *j);
+static job_step_create_request_msg_t * _step_req_create(srun_job_t *j);
 static void _step_req_destroy(job_step_create_request_msg_t *r);
 
 static sig_atomic_t destroy_job = 0;
@@ -458,7 +457,7 @@ job_desc_msg_destroy(job_desc_msg_t *j)
 }
 
 static job_step_create_request_msg_t *
-_step_req_create(job_t *j)
+_step_req_create(srun_job_t *j)
 {
 	job_step_create_request_msg_t *r = xmalloc(sizeof(*r));
 	r->job_id     = j->jobid;
@@ -501,7 +500,7 @@ _step_req_destroy(job_step_create_request_msg_t *r)
 }
 
 int
-create_job_step(job_t *job)
+create_job_step(srun_job_t *job)
 {
 	job_step_create_request_msg_t  *req  = NULL;
 	job_step_create_response_msg_t *resp = NULL;

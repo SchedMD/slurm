@@ -28,7 +28,7 @@
 #ifndef _IO_H
 #define _IO_H
 
-#include "src/slurmd/job.h"
+#include "src/slurmd/slurmd_job.h"
 #include "src/common/eio.h"
 
 /*
@@ -52,7 +52,7 @@ int io_new_clients(slurmd_job_t *job);
 void io_obj_destroy(io_obj_t *obj);
 
 int  io_init_pipes(slurmd_job_t *job);
-int  io_prepare_child(task_info_t *t);
+int  io_prepare_child(slurmd_task_info_t *t);
 
 void io_close_all(slurmd_job_t *job);
 

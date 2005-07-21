@@ -51,7 +51,7 @@
 #include <unistd.h>
 
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmd/job.h"
+#include "src/slurmd/slurmd_job.h"
 
 typedef struct slurm_jobacct_context * slurm_jobacct_context_t;
 

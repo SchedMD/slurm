@@ -170,5 +170,12 @@ plugin_handle_t plugrack_use_by_type( plugrack_t rack,
  */
 int plugrack_finished_with_plugin( plugrack_t rack, plugin_handle_t plug );
 
+/*
+ * print all plugins in rack
+ *
+ * Returns a SLURM errno.
+ */
+int plugrack_print_all_plugin( plugrack_t rack);
+
 
 #endif /*__PLUGRACK_H__*/

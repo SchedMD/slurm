@@ -39,18 +39,18 @@
 #include "src/common/slurm_protocol_api.h"
 
 #include "src/srun/opt.h"
-#include "src/srun/job.h"
+#include "src/srun/srun_job.h"
 
 typedef struct launch_thr {
 	pthread_t	thread;
 	pthread_attr_t  attr;
-	char            *host;		/* name of host on which to run       */
-	int             ntasks;		/* number of tasks to initiate on host*/
-	int 		*taskid;	/* list of global task ids 	      */
-	int 		i;		/* temporary index into array	      */
+	char            *host;	       /* name of host on which to run       */
+	int             ntasks;	       /* number of tasks to initiate on host*/
+	int 		*taskid;       /* list of global task ids            */
+	int 		i;	       /* temporary index into array	     */
 } launch_thr_t;
 
-int    launch_thr_create(job_t *job);
+int    launch_thr_create(srun_job_t *job);
 void * launch(void *arg);
 
 #endif /* !_HAVE_LAUNCH_H */

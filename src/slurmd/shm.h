@@ -51,7 +51,7 @@
 
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/list.h"
-#include "src/slurmd/job.h"
+#include "src/slurmd/slurmd_job.h"
 
 typedef struct task task_t;
 typedef struct job_step job_step_t;
@@ -88,7 +88,7 @@ struct job_step {
 	srun_key_t key;		/* last key from srun client	         */
 
 
-	job_state_t state;	/* Job step status 		         */
+	slurmd_job_state_t state;	/* Job step status               */
 	time_t      timelimit;	/* job time limit		         */
 	task_t     *task_list;	/* list of this step's tasks             */
 };
@@ -208,7 +208,9 @@ int shm_update_step_spid(uint32_t jobid, uint32_t stepid, int spid);
 /*
  * update job step state 
  */
-int shm_update_step_state(uint32_t jobid, uint32_t stepid, job_state_t state);
+int shm_update_step_state(uint32_t jobid, 
+			  uint32_t stepid, 
+			  slurmd_job_state_t state);
 
 
 /* 
@@ -219,7 +221,7 @@ int shm_update_step_state(uint32_t jobid, uint32_t stepid, job_state_t state);
  *  it returns a pointer into the shared memory region instead of a copy
  *  of the data. Callers should remain cognizant of this fact. )
  */
-job_state_t *shm_lock_step_state(uint32_t jobid, uint32_t stepid);
+slurmd_job_state_t *shm_lock_step_state(uint32_t jobid, uint32_t stepid);
 
 /* unlock job step state
  */

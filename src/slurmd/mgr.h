@@ -32,7 +32,7 @@
 
 #include "src/common/slurm_protocol_defs.h"
 
-#include "src/slurmd/job.h"
+#include "src/slurmd/slurmd_job.h"
 
 /* Spawn a task / job step on this node
  */

@@ -21,7 +21,7 @@ EXTRA_DIST =			\
 	NEWS			\
 	ChangeLog		\
 	META
-	
+
 pkginclude_HEADERS =		\
 	slurm/bnr.h		\
 	slurm/slurm.h 		\
