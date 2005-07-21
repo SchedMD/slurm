@@ -4,6 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 0.6.0-pre1
 =============================
  -- Added configurable resource limit propagation  (Daniel Christians, HP).
+ -- Added mpi plugin specify at start of srun.
 
 * Changes in SLURM 0.5.0
 ========================
