@@ -527,7 +527,7 @@ typedef struct slurm_ctl_conf {
 	uint16_t schedrootfltr;	/* 1 if rootOnly partitions should be
 				 * filtered from scheduling (if needed) */
 	char *select_type;	/* type of node selector to use */
-	uint16_t slurm_user_id;	/* uid of slurm_user_name */
+	uint32_t slurm_user_id;	/* uid of slurm_user_name */
 	char *slurm_user_name;	/* user that slurmctld runs as */
 	uint16_t slurmctld_debug; /* slurmctld logging level */
 	char *slurmctld_logfile;/* where slurmctld error log gets written */
