@@ -134,6 +134,7 @@ if {$no_capability != 0} {
 }
 if {$matches != 9} {
 	send_user "\nFAILURE: totalviewcli operation matches = $matches\n"
+	send_user "Remove your ~/.totalview directory and try again\n"
 	set exit_code 1
 }
 
