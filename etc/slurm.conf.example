@@ -368,6 +368,55 @@ JobAcctType=jobacct/none
 
 
 #
+# o Define the Resource Limit Propagation Configuration
+#
+#   These two parameters can be used to specify which resource limits to
+#   propagate from the users environment on the submit node to the users job
+#   environment on the compute nodes.  This can be useful when system limits
+#   vary among nodes.  By default, (when neither parameter is  specified), all
+#   resource limits are propagated.   The values of non-propagated resource
+#   limits are determined by the system limits configured on the compute
+#   nodes.   Only one of these two parameters may be specified.
+#
+#    "PropagateResourceLimits"       : A list of one or more comma-separated
+#                                      resource limits whose (soft) values
+#                                      will be set at job startup on behalf of
+#                                      the user.  Any resource limit that is
+#                                      not listed here, will not be propagated,
+#                                      (unless the user overrides this setting
+#                                      with the 'srun --propagate' switch).
+#
+#
+#    "PropagateResourceLimitsExcept" : A list of one or more comma-separated
+#                                      resource limits which will not be
+#                                      propagated.  Any resource limit that is
+#                                      not listed here, will be propagated.
+#   
+#                                The following resource limits are supported:
+#
+#                                RLIMIT_NPROC   RLIMIT_MEMLOCK   RLIMIT_CORE
+#                                RLIMIT_FSIZE   RLIMIT_CPU       RLIMIT_DATA
+#                                RLIMIT_STACK   RLIMIT_RSS       RLIMIT_NOFILE
+#                                RLIMIT_AS
+#
+# Examples:
+#
+# PropagateResourceLimits=RLIMIT_CORE,RLIMIT_DATA # The users RLIMIT_CORE and
+#                                                 # RLIMIT_DATA resource limit
+#                                                 # soft values will be applied
+#                                                 # to the job on startup.  All
+#                                                 # other resource limit soft
+#                                                 # values are determined by the
+#                                                 # system limits defined on
+#                                                 # the compute nodes.
+#
+# PropagateResourceLimitsExcept=RLIMIT_MEMLOCK    # All limits, except for
+#                                                 # MEMLOCK, are propagated.
+#
+
+
+
+#
 # o Define an epilog and a prolog
 #
 #    "Prolog" : fully qualified path to script that will be executed as 

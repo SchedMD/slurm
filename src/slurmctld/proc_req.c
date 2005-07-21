@@ -307,6 +307,10 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->plugindir           = xstrdup(slurmctld_conf.plugindir);
 	conf_ptr->proctrack_type      = xstrdup(slurmctld_conf.proctrack_type);
 	conf_ptr->prolog              = xstrdup(slurmctld_conf.prolog);
+        conf_ptr->propagate_rlimits   = xstrdup(slurmctld_conf.
+                                                propagate_rlimits);
+        conf_ptr->propagate_rlimits_except = xstrdup(slurmctld_conf.
+                                                     propagate_rlimits_except);
 	conf_ptr->ret2service         = slurmctld_conf.ret2service;
 	conf_ptr->schedauth           = xstrdup(slurmctld_conf.schedauth);
 	conf_ptr->schedport           = slurmctld_conf.schedport;

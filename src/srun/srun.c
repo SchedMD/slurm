@@ -68,6 +68,7 @@
 #include "src/common/xstring.h"
 #include "src/common/net.h"
 #include "src/common/mpi.h"
+#include "src/common/slurm_rlimits_info.h"
 
 #include "src/srun/allocate.h"
 #include "src/srun/io.h"
@@ -607,70 +608,37 @@ _build_script (char *fname, int file_type)
  * limit values, reset RLIMIT_NOFILE to maximum possible value */
 static int _set_rlimit_env(void)
 {
-	int rc = SLURM_SUCCESS;
-	struct rlimit rlim[1];
+	int                  rc = SLURM_SUCCESS;
+	struct rlimit        rlim[1];
+	unsigned long        cur;
+	char                 name[64], *format;
+	slurm_rlimits_info_t *rli;
 
-	struct rlimit_info {
-		const int res;
-		const char *var;
-	} rlimit_vars[] = {
-#ifdef RLIMIT_CPU
-		{ RLIMIT_CPU,    "CPU"    },
-#endif
-#ifdef RLIMIT_FSIZE
-		{ RLIMIT_FSIZE,  "FSIZE"  },
-#endif
-#ifdef RLIMIT_DATA
-		{ RLIMIT_DATA,   "DATA"   },
-#endif
-#ifdef RLIMIT_STACK
-		{ RLIMIT_STACK,  "STACK"  },
-#endif
-#ifdef RLIMIT_CORE
-		{ RLIMIT_CORE,   "CORE"   },
-#endif
-#ifdef RLIMIT_RSS
-		{ RLIMIT_RSS,    "RSS"    },
-#endif
-#ifdef RLIMIT_NPROC
-		{ RLIMIT_NPROC,  "NPROC"  },
-#endif
-#ifdef RLIMIT_NOFILE
-		{ RLIMIT_NOFILE, "NOFILE" },
-#endif
-#ifdef RLIMIT_MEMLOCK
-		{ RLIMIT_MEMLOCK,"MEMLOCK"},
-#endif
-#ifdef RLIMIT_AS
-		{ RLIMIT_AS,     "AS"     },
-#endif
-		{ 0,             NULL}
-	};
+	for (rli = get_slurm_rlimits_info(); rli->name != NULL; rli++ ) {
 
-	struct rlimit_info *r;
-
-
-
-	for (r = rlimit_vars; r->var; r++) {
-		unsigned long cur;
-
-		if (getrlimit (r->res, rlim) < 0) {
-			error ("getrlimit (%s): %m", r->var);
+		if (getrlimit (rli->resource, rlim) < 0) {
+			error ("getrlimit (RLIMIT_%s): %m", rli->name);
 			rc = SLURM_FAILURE;
 			continue;
 		}
 		
 		cur = (unsigned long) rlim->rlim_cur;
+		snprintf(name, sizeof(name), "SLURM_RLIMIT_%s", rli->name);
+		if (opt.propagate && rli->propagate_flag == PROPAGATE_RLIMITS)
+			/*
+			 * Prepend 'U' to indicate user requested propagate
+			 */
+			format = "U%lu";
+		else
+			format = "%lu";
 		
-		if (setenvfs ("SLURM_RLIMIT_%s=%lu", r->var, cur)
-		    < 0) {
-			error ("unable to set RLIMIT_%s in environment",
-			       r->var);
+		if (setenvf (NULL, name, format, cur) < 0) {
+			error ("unable to set %s in environment", name);
 			rc = SLURM_FAILURE;
 			continue;
 		}
 		
-		debug ("propagating RLIMIT_%s=%lu", r->var, cur);
+		debug ("propagating RLIMIT_%s=%lu", rli->name, cur);
 	}
 
 	/* 
