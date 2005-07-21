@@ -107,7 +107,7 @@ static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
 static slurm_switch_context_t
-_slurm_switch_context_create( const char *switch_type)
+_slurm_switch_context_create(const char *switch_type)
 {
 	slurm_switch_context_t c;
 

@@ -721,7 +721,7 @@ _handle_task_exit(slurmd_job_t *job)
 	 * read at most ntask task exit codes from session manager
 	 */
 	for (i = 0; i < job->ntasks; i++) {
-		task_info_t *t;
+		slurmd_task_info_t *t;
 		
 		if ((len = read(job->fdpair[0], &e, sizeof(e))) < 0) {
 			if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
@@ -765,7 +765,7 @@ _send_pending_exit_msgs(slurmd_job_t *job)
 	 * single message. 
 	 */
 	for (i = 0; i < job->ntasks; i++) {
-		task_info_t *t = job->task[i];
+		slurmd_task_info_t *t = job->task[i];
 
 		if (!t->exited || t->esent)
 			continue;
@@ -862,7 +862,7 @@ _set_unexited_task_status(slurmd_job_t *job, int status)
 {
 	int i;
 	for (i = 0; i < job->ntasks; i++) {
-		task_info_t *t = job->task[i];
+		slurmd_task_info_t *t = job->task[i];
 
 		if (t->exited) continue;
 

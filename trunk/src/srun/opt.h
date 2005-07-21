@@ -37,9 +37,11 @@
 #include "src/common/macros.h" /* true and false */
 #include "src/srun/core-format.h"
 #include "src/common/env.h"
+//#include "src/common/mpi.h"
 
 #define MAX_THREADS	64
 #define MAX_USERNAME	9
+
 
 /* global variables relating to user options */
 char **remote_argv;
@@ -58,11 +60,6 @@ enum modes {
 
 enum modes mode;
 
-enum mpi_t {
-	MPI_UNKNOWN     = 0,
-	MPI_LAM         = 1
-};
-
 #define format_distribution_t(t) (t == SRUN_DIST_BLOCK) ? "block" :   \
 		                 (t == SRUN_DIST_CYCLIC) ? "cyclic" : \
 			         "unknown"
@@ -76,6 +73,7 @@ enum io_t {
 
 #define format_io_t(t) (t == IO_ONE) ? "one" : (t == IO_ALL) ? \
                                                      "all" : "per task"
+//typedef struct srun_job fname_job_t;
 
 typedef struct srun_options {
 
@@ -101,7 +99,7 @@ typedef struct srun_options {
 		distribution;	/* --distribution=, -m dist	*/
 	char *job_name;		/* --job-name=,     -J name	*/
 	unsigned int jobid;     /* --jobid=jobid                */
-	enum mpi_t mpi_type;	/* --mpi=type			*/
+	char *mpi_type;		/* --mpi=type			*/
 	unsigned int dependency;/* --dependency, -P jobid	*/
 	char *account;		/* --account, -U acct_name	*/
 

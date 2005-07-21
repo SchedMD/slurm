@@ -64,6 +64,7 @@
 
 #include "src/srun/opt.h"
 #include "src/srun/attach.h"
+#include "src/common/mpi.h"
 
 /* generic OPT_ definitions -- mainly for use with env vars  */
 #define OPT_NONE        0x00
@@ -78,6 +79,7 @@
 #define OPT_NODE_USE	0x09
 #define OPT_NO_ROTATE	0x0a
 #define OPT_GEOMETRY	0x0b
+#define OPT_MPI         0x0c
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP     0x100
@@ -466,7 +468,6 @@ static void _opt_default()
 
 	opt.job_name = NULL;
 	opt.jobid    = NO_VAL;
-	opt.mpi_type = MPI_UNKNOWN;
 	opt.dependency = NO_VAL;
 	opt.account  = NULL;
 
@@ -583,6 +584,7 @@ env_vars_t env_vars[] = {
   {"SLURM_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
   {"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
   {"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL           },
+  {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -680,6 +682,14 @@ _process_env_var(env_vars_t *e, const char *val)
 		if (_verify_geometry(val, opt.geometry)) {
 			error("\"%s=%s\" -- invalid geometry, ignoring...",
 				e->var, val);
+		}
+		break;
+
+	case OPT_MPI:
+		if (srun_mpi_init((char *)val) == SLURM_ERROR) {
+			fatal("\"%s=%s\" -- invalid MPI type, "
+			      "--mpi=list for acceptable types.",
+			      e->var, val);
 		}
 		break;
 
@@ -1005,8 +1015,11 @@ static void _opt_args(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MPI:
-			if (strncasecmp(optarg, "lam",  3) == 0)
-			       opt.mpi_type = MPI_LAM;	
+			if (srun_mpi_init((char *)optarg) == SLURM_ERROR) {
+				fatal("\"--mpi=%s\" -- long invalid MPI type, "
+				      "--mpi=list for acceptable types.",
+				      optarg);
+			}
 			break;
 		case LONG_OPT_NOSHELL:
 			opt.noshell = true;

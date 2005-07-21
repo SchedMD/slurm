@@ -913,7 +913,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	char         host[MAXHOSTNAMELEN];
 	int          i;
 	job_step_t  *step;
-	job_state_t *state;
+	slurmd_job_state_t *state;
 	task_t      *t;
 	uid_t        req_uid;
 	gid_t        req_gid;

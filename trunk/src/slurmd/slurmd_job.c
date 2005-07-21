@@ -1,6 +1,6 @@
 /*****************************************************************************\
  * src/slurmd/job.c - slurmd_job_t routines
- * $Id$
+ * $Id: job.c,v 1.51 2005/06/28 19:12:48 da Exp $
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -45,7 +45,7 @@
 #include "src/common/eio.h"
 #include "src/common/slurm_protocol_api.h"
 
-#include "src/slurmd/job.h"
+#include "src/slurmd/slurmd_job.h"
 #include "src/slurmd/shm.h"
 #include "src/slurmd/io.h"
 #include "src/slurmd/fname.h"
@@ -392,7 +392,8 @@ _job_init_task_info(slurmd_job_t *job, uint32_t *gtid)
 	int          i;
 	int          n = job->ntasks;
 
-	job->task = (task_info_t **) xmalloc(n * sizeof(task_info_t *));
+	job->task = (slurmd_task_info_t **) 
+		xmalloc(n * sizeof(slurmd_task_info_t *));
 
 	for (i = 0; i < n; i++){
 		job->task[i] = task_info_create(i, gtid[i]);
@@ -422,7 +423,7 @@ job_signal_tasks(slurmd_job_t *job, int signal)
 void 
 job_kill(slurmd_job_t *job, int rc)
 {
-	job_state_t *state;
+	slurmd_job_state_t *state;
 
 	xassert(job != NULL);
 
@@ -533,10 +534,10 @@ srun_info_destroy(struct srun_info *srun)
 	xfree(srun);
 }
 
-task_info_t *
+slurmd_task_info_t *
 task_info_create(int taskid, int gtaskid)
 {
-	task_info_t *t = (task_info_t *) xmalloc(sizeof(*t));
+	slurmd_task_info_t *t = (slurmd_task_info_t *) xmalloc(sizeof(*t));
 
 	xassert(taskid >= 0);
 	xassert(gtaskid >= 0);
@@ -564,7 +565,7 @@ task_info_create(int taskid, int gtaskid)
 
 
 void 
-task_info_destroy(task_info_t *t)
+task_info_destroy(slurmd_task_info_t *t)
 {
 	slurm_mutex_lock(&t->mutex);
 	list_destroy(t->srun_list);
@@ -607,7 +608,7 @@ job_update_shm(slurmd_job_t *job)
 }
 
 int
-job_update_state(slurmd_job_t *job, job_state_t s)
+job_update_state(slurmd_job_t *job, slurmd_job_state_t s)
 {
 	return shm_update_step_state(job->jobid, job->stepid, s);
 }

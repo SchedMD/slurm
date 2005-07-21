@@ -38,7 +38,7 @@
 #  include <sys/types.h>
 #endif /* HAVE_SYS_TYPES_H */
 
-#include "src/slurmd/job.h"
+#include "src/slurmd/slurmd_job.h"
 
 /*
  * Task exit code information

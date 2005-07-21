@@ -1,9 +1,10 @@
 /*****************************************************************************\
- *  src/common/unsetenv.c - Kludge for unsetenv on AIX
+ **  gmpi.h - Library routines for initiating jobs on with gmpi type mpi 
+ **  $Id: mpi_gmpi.c,v 1.7 2005/06/07 18:25:32 morrone Exp $
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette@llnl.gov>.
+ *  Written by Danny Auble <da@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -23,27 +24,12 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
 
-#include <stdlib.h>
-#include <string.h>
+#include "src/srun/srun_job.h"
+#include "src/slurmd/slurmd_job.h"
+#include "src/common/env.h"
 
-extern int unsetenv (const char *name)
-{
-	int len, rc;
-	char *tmp;
-
-	if (!getenv(name))	/* Nothing to clear */
-		return 0;
-
-	len = strlen(name);
-	tmp = malloc(len + 3);
-	strcpy(tmp, name);
-	strcat(tmp, "=x");
-	if ((rc = putenv(tmp)) != 0)
-		return rc;
-
-	/* Here's the real kludge, just clear the variable out.
-	 * This does result in a memory leak. */
-	tmp[0] = '\0';
-	return 0;
-}
+extern int gmpi_thr_create(srun_job_t *job);

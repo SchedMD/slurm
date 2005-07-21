@@ -39,9 +39,6 @@ typedef struct io_filename {
 	int        taskid;  /* taskid for IO if IO_ONE */
 } io_filename_t;
 
-/* need to predeclare srun_job to resolve declaration dependencies
- */
-typedef struct srun_job * srun_job_t;
 
 /*
  * Create an filename from a (probably user supplied) filename format.
@@ -49,7 +46,9 @@ typedef struct srun_job * srun_job_t;
  * leaving node or task specific format specifiers for the remote 
  * slurmd to handle.
  */
-io_filename_t * fname_create(srun_job_t job, char *format);
+typedef struct srun_job fname_job_t;
+
+io_filename_t *fname_create(fname_job_t *job, char *format);
 void fname_destroy(io_filename_t *fname);
 
 char * fname_remote_string (io_filename_t *fname);

@@ -1,9 +1,10 @@
 /*****************************************************************************\
- *  gmpi.h - srun support for MPICH-GM (GMPI)
+ **  lam.h - Library routines for initiating jobs on with lam type mpi 
+ **  $Id: mpi_gmpi.c,v 1.7 2005/06/07 18:25:32 morrone Exp $
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Takao Hatazaki <takao.hatazaki@hp.com>
+ *  Written by Danny Auble <da@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -23,25 +24,12 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
 
-#ifndef _HAVE_GMPI_H
-#define _HAVE_GMPI_H
+#include "src/srun/srun_job.h"
+#include "src/slurmd/slurmd_job.h"
+#include "src/common/env.h"
 
-#include "src/srun/job.h"
-
-typedef struct {
-	int defined;
-	unsigned int port_board_id;
-	unsigned int unique_high_id;
-	unsigned int unique_low_id;
-	unsigned int numanode;
-	unsigned int remote_pid;
-	unsigned int remote_port;
-} gm_slave_t;
-
-#define GMPI_RECV_BUF_LEN 65536
-
-extern int gmpi_thr_create(job_t *job, char **port);
-
-#endif	/* _HAVE_GMPI_H */
-
+//extern int lam_thr_create(srun_job_t *job);

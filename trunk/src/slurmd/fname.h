@@ -27,7 +27,7 @@
 #ifndef _SLURMD_FNAME_H
 #define _SLURMD_FNAME_H
 
-#include "src/slurmd/job.h"
+#include "src/slurmd/slurmd_job.h"
 
 char *fname_create(slurmd_job_t *job, const char *fmt, int taskid);
 int   fname_trunc_all(slurmd_job_t *job, const char *fmt);

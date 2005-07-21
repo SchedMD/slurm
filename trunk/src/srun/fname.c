@@ -5,9 +5,8 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "src/srun/job.h"
 #include "src/srun/fname.h"
-#include "src/srun/opt.h"
+#include "src/srun/srun_job.h"
 
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -24,7 +23,7 @@
  * filename type to one of the io types ALL, NONE, PER_TASK, ONE
  */
 io_filename_t *
-fname_create(job_t *job, char *format)
+fname_create(srun_job_t *job, char *format)
 {
 	unsigned long int wid     = 0;
 	unsigned long int taskid  = 0;

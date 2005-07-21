@@ -65,17 +65,17 @@ plugin_peek( const char *fq_path,
 		debug3( "plugin_peek: dlopen(%s): %s", fq_path, _dlerror() );
 		return SLURM_ERROR;
 	}
-
 	if ( ( type = dlsym( plug, PLUGIN_TYPE ) ) != NULL ) {
 		if ( plugin_type != NULL ) {
 			strncpy( plugin_type, type, type_len );
 		}
-	} else {
+	} else {	
 		dlclose( plug );
 		/* could be vestigial library, don't treat as an error */
 		verbose( "%s: not a SLURM plugin", fq_path );
 		return SLURM_ERROR;
 	}
+	
 	if ( ( version = (uint32_t *) dlsym( plug, PLUGIN_VERSION ) ) != NULL ) {
 		if ( plugin_version != NULL ) {
 			*plugin_version = *version;
@@ -107,7 +107,7 @@ plugin_load_from_file( const char *fq_path )
          */
         plug = dlopen( fq_path, RTLD_NOW );
         if ( plug == NULL ) {
-		debug( "plugin_load_from_file: dlopen(%s): %s",
+		error( "plugin_load_from_file: dlopen(%s): %s",
 			fq_path,
 			_dlerror() );
                 return PLUGIN_INVALID_HANDLE;
@@ -128,7 +128,7 @@ plugin_load_from_file( const char *fq_path )
          */
         if ( ( init = dlsym( plug, "init" ) ) != NULL ) {
                 if ( (*init)() != 0 ) {
-			debug( "plugin_load_from_file(%s): init() returned SLURM_ERROR", 
+			error( "plugin_load_from_file(%s): init() returned SLURM_ERROR", 
 				fq_path );
                         (void) dlclose( plug );
                         return PLUGIN_INVALID_HANDLE;

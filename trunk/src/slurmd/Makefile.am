@@ -22,7 +22,7 @@ slurmd_SOURCES = 	        	\
 	smgr.c smgr.h			\
 	get_mach_stat.c get_mach_stat.h	\
 	read_proc.c 	        	\
-	job.c job.h			\
+	slurmd_job.c slurmd_job.h			\
 	io.c io.h			\
 	semaphore.c semaphore.h		\
 	shm.c shm.h			\
@@ -30,7 +30,7 @@ slurmd_SOURCES = 	        	\
 	ulimits.c ulimits.h     	\
 	kill_tree.c kill_tree.h		\
 	proctrack.c proctrack.h		\
-	setproctitle.c setproctitle.h
+	setproctitle.c setproctitle.h 
 
 slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)
 

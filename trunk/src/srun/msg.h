@@ -25,13 +25,13 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#include "src/srun/job.h"
+#include "src/srun/srun_job.h"
 
 #ifndef _HAVE_MSG_H
 #define _HAVE_MSG_H
 
 void     *msg_thr(void *arg);
-int       msg_thr_create(job_t *job);
+int       msg_thr_create(srun_job_t *job);
 slurm_fd  slurmctld_msg_init(void);
 
 typedef struct slurmctld_communication_addr {

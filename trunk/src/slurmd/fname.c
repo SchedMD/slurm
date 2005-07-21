@@ -33,7 +33,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "src/slurmd/job.h"
 #include "src/slurmd/fname.h"
 #include "src/slurmd/slurmd.h"
 

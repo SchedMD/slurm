@@ -27,11 +27,10 @@
 #ifndef _SIGNALS_H
 #define _SIGNALS_H
 
-#include "src/srun/job.h"
+typedef struct srun_job signal_job_t;
 
-void sig_setup_sigmask(void);
+int sig_setup_sigmask(void);
 int  sig_unblock_signals(void);
-int  sig_thr_create(job_t *job);
-void fwd_signal(job_t *job, int signal);
+int  sig_thr_create(signal_job_t *job);
 
 #endif /* !_SIGNALS_H */

@@ -181,12 +181,18 @@ Identify the type of MPI to be used. May result in unique initiation
 procedures.
 .RS
 .TP
+.B list
+Lists avaliable mpi types to choose from.
+.TP
+.B mpich-gm
+For use with Myrinet.
+.TP
+.B mvapich
+For use with Infiniband.
+.TP
 .B lam
 Initiates one 'lamd' process per node and establishes necessary 
 environment variables for LAM/MPI.
-.TP
-.B qsw
-Establishes necessary environment variables for Quadrics MPI.
 .RE
 .TP
 \fB\-\-jobid\fR=\fIid\fR

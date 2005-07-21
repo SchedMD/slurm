@@ -58,7 +58,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 
-#include "src/slurmd/job.h"
 #include "src/slurmd/shm.h"
 #include "src/slurmd/io.h"
 #include "src/slurmd/fname.h"
@@ -108,7 +107,7 @@ struct io_info {
 	uint32_t         id;             /* global task id             */
 	io_obj_t        *obj;            /* pointer back to eio object */
 	slurmd_job_t    *job;		 /* pointer back to job data   */
-	task_info_t     *task;           /* pointer back to task data  */
+	slurmd_task_info_t     *task;    /* pointer back to task data  */
 	cbuf_t           buf;		 /* IO buffer	               */
 	List             readers;        /* list of current readers    */
 	List             writers;        /* list of current writers    */
@@ -133,7 +132,7 @@ struct io_info {
 static void   _fatal_cleanup(void *);
 static int    find_obj(void *obj, void *key);
 /* static int    find_fd(void *obj, void *key); */
-static int    _io_init_pipes(task_info_t *t);
+static int    _io_init_pipes(slurmd_task_info_t *t);
 static int    _io_prepare_tasks(slurmd_job_t *);
 static void * _io_thr(void *);
 static int    _io_write_header(struct io_info *, srun_info_t *);
@@ -142,14 +141,14 @@ static void   _io_client_attach(io_obj_t *, io_obj_t *, io_obj_t *,
 static void   _io_connect_objs(io_obj_t *, io_obj_t *);
 static int    _shutdown_task_obj(struct io_info *t);
 static bool   _isa_client(struct io_info *io);
-static int    _open_output_file(slurmd_job_t *job, task_info_t *t, 
+static int    _open_output_file(slurmd_job_t *job, slurmd_task_info_t *t, 
 		                char *fname, slurmd_io_type_t type);
-static int    _open_stdin_file(slurmd_job_t *job, task_info_t *t, 
+static int    _open_stdin_file(slurmd_job_t *job, slurmd_task_info_t *t, 
 		               srun_info_t *srun);
 
 static struct io_obj  * _io_obj_create(int fd, void *arg);
 static struct io_info * _io_info_create(uint32_t id);
-static struct io_obj  * _io_obj(slurmd_job_t *, task_info_t *, int, int);
+static struct io_obj  * _io_obj(slurmd_job_t *, slurmd_task_info_t *, int, int);
 static void           * _io_thr(void *arg);
 
 static void   _clear_error_state(struct io_info *io);
@@ -274,7 +273,7 @@ _xclose(int fd)
  * 
  */
 static void
-_io_finalize(task_info_t *t)
+_io_finalize(slurmd_task_info_t *t)
 {
 	struct io_info *in  = t->in->arg;
 
@@ -355,7 +354,7 @@ static void
 _handle_unprocessed_output(slurmd_job_t *job)
 {
 	int i;
-	task_info_t    *t;
+	slurmd_task_info_t    *t;
 	struct io_info *io;
 	List            readers;
 	size_t          n = 0;
@@ -408,7 +407,7 @@ static int
 _io_prepare_tasks(slurmd_job_t *job)
 {
 	int          i;
-	task_info_t *t;
+	slurmd_task_info_t *t;
 	io_obj_t    *obj;
 
 	for (i = 0; i < job->ntasks; i++) {
@@ -475,7 +474,7 @@ _local_filename (char *fname, int taskid)
 }
 
 static int
-_io_add_connecting(slurmd_job_t *job, task_info_t *t, srun_info_t *srun, 
+_io_add_connecting(slurmd_job_t *job, slurmd_task_info_t *t, srun_info_t *srun, 
 		   slurmd_io_type_t type)
 {
 	io_obj_t *obj  = NULL;
@@ -519,7 +518,7 @@ _io_add_connecting(slurmd_job_t *job, task_info_t *t, srun_info_t *srun,
  * otherwise create a connecting client back to srun process.
  */
 static int
-_io_prepare_one(slurmd_job_t *j, task_info_t *t, srun_info_t *s)
+_io_prepare_one(slurmd_job_t *j, slurmd_task_info_t *t, srun_info_t *s)
 {
 	int retval = SLURM_SUCCESS;
 	char *fname = NULL;
@@ -626,7 +625,7 @@ _open_task_file(char *filename, int flags)
 }
 
 static int
-_open_output_file(slurmd_job_t *job, task_info_t *t, char *fmt, 
+_open_output_file(slurmd_job_t *job, slurmd_task_info_t *t, char *fmt, 
 		  slurmd_io_type_t type)
 {
 	int          fd     = -1;
@@ -662,7 +661,7 @@ _open_output_file(slurmd_job_t *job, task_info_t *t, char *fmt,
 }
 
 static int
-_open_stdin_file(slurmd_job_t *job, task_info_t *t, srun_info_t *srun)
+_open_stdin_file(slurmd_job_t *job, slurmd_task_info_t *t, srun_info_t *srun)
 {
 	int       fd    = -1;
 	io_obj_t *obj   = NULL;
@@ -951,7 +950,7 @@ _ops_copy(struct io_operations *ops)
 
 
 io_obj_t *
-_io_obj(slurmd_job_t *job, task_info_t *t, int fd, int type)
+_io_obj(slurmd_job_t *job, slurmd_task_info_t *t, int fd, int type)
 {
 	struct io_info *io = _io_info_create(t->gtid);
 	struct io_obj *obj = _io_obj_create(fd, (void *)io);
@@ -1118,7 +1117,7 @@ _io_write_header(struct io_info *client, srun_info_t *srun)
 }
 
 static int
-_io_init_pipes(task_info_t *t)
+_io_init_pipes(slurmd_task_info_t *t)
 {
 	if (  (pipe(t->pin)  < 0) 
 	   || (pipe(t->pout) < 0) 
@@ -1143,7 +1142,7 @@ _io_init_pipes(task_info_t *t)
  * close write end of stdin, and read end of stdout/err
  */
 int 
-io_prepare_child(task_info_t *t)
+io_prepare_child(slurmd_task_info_t *t)
 {
 	if (dup2(t->pin[0], STDIN_FILENO  ) < 0) {
 		error("dup2(stdin): %m");
@@ -1309,7 +1308,7 @@ _write(io_obj_t *obj, List objs)
 static void
 _do_attach(struct io_info *io)
 {
-	task_info_t    *t;
+	slurmd_task_info_t    *t;
 	struct io_operations *opsptr;
 	
 	xassert(io != NULL);

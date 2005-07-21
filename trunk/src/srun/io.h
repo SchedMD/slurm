@@ -27,15 +27,15 @@
 #ifndef _HAVE_IO_H
 #define _HAVE_IO_H
 
-#include "src/srun/job.h"
+#include "src/srun/srun_job.h"
 
 #define WAITING_FOR_IO -1
 #define IO_DONE -9
 
-int   io_node_fail(char *nodelist, job_t *job);
+int   io_node_fail(char *nodelist, srun_job_t *job);
 void *io_thr(void *arg);
-int   io_thr_create(job_t *job);
-void  io_thr_wake(job_t *job);
-int   open_streams(job_t *job);
+int   io_thr_create(srun_job_t *job);
+void  io_thr_wake(srun_job_t *job);
+int   open_streams(srun_job_t *job);
 
 #endif /* !_HAVE_IO_H */
