@@ -1816,6 +1816,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->plugindir, buffer);
 	packstr(build_ptr->proctrack_type, buffer);
 	packstr(build_ptr->prolog, buffer);
+        packstr(build_ptr->propagate_rlimits, buffer);
+        packstr(build_ptr->propagate_rlimits_except, buffer);
 	pack16(build_ptr->ret2service, buffer);
 	packstr(build_ptr->schedauth, buffer);
 	pack16(build_ptr->schedport, buffer);
@@ -1886,6 +1888,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->plugindir, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->proctrack_type, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->prolog, &uint16_tmp, buffer);
+        safe_unpackstr_xmalloc(&build_ptr->propagate_rlimits,
+                               &uint16_tmp, buffer);
+        safe_unpackstr_xmalloc(&build_ptr->propagate_rlimits_except,
+                               &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->ret2service, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->schedauth, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->schedport, buffer);
@@ -1942,6 +1948,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	xfree(build_ptr->plugindir);
 	xfree(build_ptr->proctrack_type);
 	xfree(build_ptr->prolog);
+	xfree(build_ptr->propagate_rlimits);
+	xfree(build_ptr->propagate_rlimits_except);
 	xfree(build_ptr->schedauth);
 	xfree(build_ptr->schedtype);
 	xfree(build_ptr->select_type);

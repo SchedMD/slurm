@@ -517,6 +517,8 @@ typedef struct slurm_ctl_conf {
 	char *plugindir;	/* pathname to plugins */
 	char *proctrack_type;	/* process tracking plugin type */
 	char *prolog;		/* pathname of job prolog */
+        char *propagate_rlimits;/* Propagate (all/specific) resource limits */
+        char *propagate_rlimits_except; /* Propagate all rlimits except these */
 	uint16_t ret2service;	/* 1 return DOWN node to service at 
 				 * registration */
 	char *schedtype;	/* type of scheduler to use */

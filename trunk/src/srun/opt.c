@@ -61,6 +61,7 @@
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/slurm_rlimits_info.h"
 
 #include "src/srun/opt.h"
 #include "src/srun/attach.h"
@@ -103,6 +104,8 @@
 #define LONG_OPT_TEST_ONLY 0x113
 #define LONG_OPT_NETWORK  0x114
 #define LONG_OPT_EXCLUSIVE 0x115
+#define LONG_OPT_PROPAGATE 0x116
+
 
 /*---- forward declarations of static functions  ----*/
 
@@ -527,6 +530,8 @@ static void _opt_default()
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
 	
+	opt.propagate	    = NULL;  /* propagate specific rlimits */
+
 	mode	= MODE_NORMAL;
 
 	/*
@@ -793,6 +798,7 @@ static void _opt_args(int argc, char **argv)
 		{"node-use",         required_argument, 0, LONG_OPT_NODE_USE},
 		{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
 		{"network",          required_argument, 0, LONG_OPT_NETWORK},
+		{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1085,6 +1091,11 @@ static void _opt_args(int argc, char **argv)
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
 			break;
+		case LONG_OPT_PROPAGATE:
+			xfree(opt.propagate);
+			if (optarg) opt.propagate = xstrdup(optarg);
+			else	    opt.propagate = xstrdup("ALL");
+			break;
 		}
 	}
 
@@ -1276,6 +1287,11 @@ static bool _opt_verify(void)
 
 	if (opt.noshell && !opt.allocate) {
 		error ("--no-shell only valid with -A (--allocate)");
+		verified = false;
+	}
+
+	if (opt.propagate && parse_rlimits( opt.propagate, PROPAGATE_RLIMITS)) {
+		error( "--propagate=%s is not valid.", opt.propagate );
 		verified = false;
 	}
 
@@ -1483,6 +1499,8 @@ static void _opt_list()
 	else
 		info("rotate         : yes");
 	info("network        : %s", opt.network);
+	info("propagate      : %s",
+	     opt.propagate == NULL ? "NONE" : opt.propagate);
 	str = print_commandline();
 	info("remote command : `%s'", str);
 	xfree(str);
@@ -1507,6 +1525,7 @@ static void _usage(void)
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "            [--mpi=type] [--account=name] [--dependency=jobid]\n"
 "            [--kill-on-bad-exit]\n"
+"            [--propagate[=rlimits] ]\n"
 #ifdef HAVE_BGL		/* Blue gene specific options */
 "            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
 "            [--node-use=type]\n"
@@ -1557,6 +1576,7 @@ static void _help(void)
 "                              (type=\"list\" to list of valid formats)\n"
 "  -P, --dependency=jobid      defer job until specified jobid completes\n"
 "  -U, --account=name          charge job to specified account\n"
+"      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
 "\n"
 "Allocate only:\n"
 "  -A, --allocate              allocate resources and spawn a shell\n"

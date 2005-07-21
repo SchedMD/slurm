@@ -297,6 +297,12 @@ Adjust corefile format for parallel job. If possible, srun will set
 up the environment for the job such that a corefile format other than
 full core dumps is enabled. If run with type = "list", srun will
 print a list of supported corefile format types to stdout and exit.
+.TP
+\fB\-\-propagate\fR[=\fIrlimits\fR]
+Allows users to specify which of the modifiable (soft) resource limits
+to propagate to the compute nodes and apply to their jobs.  If
+\fIrlimits\fR is not specified, then all resource limits will be
+propagated.
 .PP
 Allocate options:
 .TP

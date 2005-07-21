@@ -38,75 +38,34 @@
 #include "src/common/env.h" /* For unsetenvp() */
 #include "src/common/strlcpy.h"
 #include "src/common/xmalloc.h"
+#include "src/common/macros.h"
+#include "src/common/slurm_rlimits_info.h"
 
 #include "src/slurmd/slurmd_job.h"
-
-struct userlim {
-	char *var;
-	int   resource;
-};
-
-/*
- * This is a list of SLURM environment variables that contain the
- * desired user limits for this node, along with the corresponding
- * get/setrlimit resource number.
- */
-static struct userlim ulims[] =
-	{
-#ifdef RLIMIT_CPU
-          { "SLURM_RLIMIT_CPU"   , RLIMIT_CPU   },
-#endif
-#ifdef RLIMIT_FSIZE
-          { "SLURM_RLIMIT_FSIZE" , RLIMIT_FSIZE },
-#endif
-#ifdef RLIMIT_DATA
-          { "SLURM_RLIMIT_DATA"  , RLIMIT_DATA  },
-#endif
-#ifdef RLIMIT_STACK
-          { "SLURM_RLIMIT_STACK" , RLIMIT_STACK },
-#endif
-#ifdef RLIMIT_CORE
-          { "SLURM_RLIMIT_CORE"  , RLIMIT_CORE  },
-#endif
-#ifdef RLIMIT_RSS
-          { "SLURM_RLIMIT_RSS"   , RLIMIT_RSS  },
-#endif
-#ifdef RLIMIT_NPROC
-	  { "SLURM_RLIMIT_NPROC" , RLIMIT_NPROC },
-#endif
-#ifdef RLIMIT_NOFILE
-	  { "SLURM_RLIMIT_NOFILE", RLIMIT_NOFILE},
-#endif
-#ifdef RLIMIT_MEMLOCK
-	  { "SLURM_RLIMIT_MEMLOCK", RLIMIT_MEMLOCK },
-#endif
-#ifdef RLIMIT_AS
-	  { "SLURM_RLIMIT_AS"    , RLIMIT_AS    },
-#endif
-	  { NULL, 0 } 
-	};
 
 /*
  * Prototypes:
  *
  */
-static int _get_env_val(char **env, const char *name, unsigned long *valp);
-static int _set_limit(char **env, struct userlim *ulim);
-
+static int _get_env_val(char **env, const char *name, unsigned long *valp,
+		bool *u_req_propagate);
+static int _set_limit(char **env, slurm_rlimits_info_t *rli);
 
 /*
- * Set all user limits off environment variables as detailed in
- * the local ulims[] var. Sets limits off environment variables
- * in job->env.
+ * Set user resource limits using the values of the environment variables
+ * of the name "SLURM_RLIMIT_*" that are found in job->env.
+ *
+ * The sys admin can control the propagation of user limits in the slurm
+ * conf file by setting values for the PropagateResourceRlimits and
+ * ResourceLimits keywords.
  */
+
 int set_user_limits(slurmd_job_t *job)
 {
-	struct userlim *uptr = &ulims[0];
+	slurm_rlimits_info_t *rli;
 
-	while (uptr && (uptr->var != NULL)) {
-		_set_limit(job->env, uptr);
-		uptr++;
-	}
+	for (rli = get_slurm_rlimits_info(); rli->name; rli++)
+		_set_limit( job->env, rli );
 
 	return SLURM_SUCCESS;
 }
@@ -123,48 +82,87 @@ static char * rlim_to_string (unsigned long rlim, char *buf, size_t n)
 	return (buf);
 }
 
+/*
+ * Set rlimit using value of env vars such as SLURM_RLIMIT_CORE if
+ * the slurm config file has PropagateResourceLimits=YES or the user 
+ * requested it with srun --propagate.
+ */
 static int
-_set_limit(char **env, struct userlim *u)
+_set_limit(char **env, slurm_rlimits_info_t *rli)
 {
-	unsigned long val;
-	const char *  name = u->var+6;
+	unsigned long env_value;
 	char max[24], cur[24], req[24]; 
 	struct rlimit r;
+	bool u_req_propagate;  /* e.g. TRUE if 'srun --propagate' */
 
+	char env_name[25] = "SLURM_RLIMIT_";
+	char *rlimit_name = &env_name[6];
 
-	if (_get_env_val (env, u->var, &val) < 0) {
-		error ("couldn't find %s in environment", u->var);
+	strcpy( &env_name[sizeof("SLURM_RLIMIT_")-1], rli->name );
+
+	if (_get_env_val( env, env_name, &env_value, &u_req_propagate )){
+		error( "Couldn't find %s in environment", env_name );
 		return SLURM_ERROR;
 	}
 
-	if (getrlimit(u->resource, &r) < 0)
-		error("getrlimit(%s): %m", name);
-
-	debug2("%-14s: max:%s cur:%s req:%s", name, 
-	       rlim_to_string (r.rlim_max, max, sizeof (max)),
-	       rlim_to_string (r.rlim_cur, cur, sizeof (cur)),
-	       rlim_to_string (val,        req, sizeof (req)) );
+	/*
+	 * Users shouldn't get the SLURM_RLIMIT_* env vars in their environ
+	 */
+	unsetenvp( env, env_name );
 
 	/* 
-	 *  Only call setrlimit() if new value does not
-	 *   equal current value.
+	 * We'll only attempt to set the propagated soft rlimit when indicated
+	 * by the slurm conf file settings, or the user requested it.
 	 */
-	if (r.rlim_cur != (rlim_t) val) {
-		r.rlim_cur = (rlim_t) val;
+	if ( ! (rli->propagate_flag == PROPAGATE_RLIMITS || u_req_propagate))
+		return SLURM_SUCCESS;
 
-		if (setrlimit(u->resource, &r) < 0)
-			error("Can't propagate %s of %ld from submit host: %m",
-				name, (long) r.rlim_cur);	
+	if (getrlimit( rli->resource, &r ) < 0) {
+		error("getrlimit(%s): %m", rlimit_name);
+		return SLURM_ERROR;
 	}
 
-	unsetenvp(env, u->var); 
+	/* 
+	 * Nothing to do if the rlimit won't change
+	 */
+	if (r.rlim_cur == (rlim_t) env_value) {
+		debug2( "_set_limit: %s setrlimit %s is unnecessary (same val)",
+			u_req_propagate?"user":"conf", rlimit_name );
+		return SLURM_SUCCESS;
+	}
+
+	debug2("_set_limit: %-14s: max:%s cur:%s req:%s", rlimit_name, 
+		rlim_to_string (r.rlim_max, max, sizeof (max)),
+		rlim_to_string (r.rlim_cur, cur, sizeof (cur)),
+		rlim_to_string (env_value,  req, sizeof (req)) );
+
+	r.rlim_cur = (rlim_t) env_value;
+
+	if (setrlimit( rli->resource, &r ) < 0) {
+		/*
+		 * Report an error only if the user requested propagate 
+		 */
+		if (u_req_propagate)
+			error( "Can't propagate %s of %s from submit host: %m",
+				rlimit_name,
+				r.rlim_cur == RLIM_INFINITY ? "'unlimited'" :
+				rlim_to_string( r.rlim_cur, cur, sizeof(cur)));
+		debug2( "_set_limit: %s setrlimit %s failed: %m",
+				u_req_propagate?"user":"conf", rlimit_name );
+		return SLURM_ERROR;
+	}
+	debug2( "_set_limit: %s setrlimit %s succeeded",
+			u_req_propagate?"user":"conf", rlimit_name );
 
 	return SLURM_SUCCESS;
 }
 
-
-static int
-_get_env_val(char **env, const char *name, unsigned long *valp)
+/*
+ * Determine the value of the env var 'name' (if it exists) and whether
+ * or not the user wants to use its value as the jobs soft rlimit.
+ */
+static int _get_env_val(char **env, const char *name, unsigned long *valp, 
+		bool *u_req_propagate)
 {
 	char *val    = NULL;
 	char *p      = NULL;
@@ -172,8 +170,20 @@ _get_env_val(char **env, const char *name, unsigned long *valp)
 	xassert(env  != NULL);
 	xassert(name != NULL);
 
-	if(!(val = getenvp(env, name))) 
+	if (!(val = getenvp(env, name))) 
 		return (-1);
+
+	/*
+	 * The letter 'U' would have been prepended to the string value if the
+	 * user requested to have this rlimit propagated via 'srun --propagate'
+	 */
+	if (*val == 'U') {
+		*u_req_propagate = TRUE;
+		debug2( "_get_env_val: %s propagated by user option", &name[6]);
+		val++;
+	}
+	else
+		*u_req_propagate = FALSE;
 
 	*valp = strtoul(val, &p, 10);
 

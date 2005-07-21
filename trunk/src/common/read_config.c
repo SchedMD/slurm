@@ -51,6 +51,7 @@
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/slurm_rlimits_info.h"
 
 #define BUF_SIZE 1024
 #define MAX_NAME_LEN	32
@@ -314,6 +315,8 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->proctrack_type);
+	xfree (ctl_conf_ptr->propagate_rlimits);
+	xfree (ctl_conf_ptr->propagate_rlimits_except);
 	xfree (ctl_conf_ptr->prolog);
 	xfree (ctl_conf_ptr->schedauth);
 	xfree (ctl_conf_ptr->schedtype);
@@ -368,6 +371,8 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
+	xfree (ctl_conf_ptr->propagate_rlimits_except);
+	xfree (ctl_conf_ptr->propagate_rlimits);
 	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL;
 	xfree( ctl_conf_ptr->schedauth );
 	ctl_conf_ptr->schedport			= (uint16_t) NO_VAL;
@@ -428,6 +433,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	char *checkpoint_type = NULL, *control_addr = NULL;
 	char *control_machine = NULL, *epilog = NULL;
 	char *proctrack_type = NULL, *prolog = NULL;
+	char *propagate_rlimits_except = NULL, *propagate_rlimits = NULL;
 	char *sched_type = NULL, *sched_auth = NULL;
 	char *select_type = NULL;
 	char *state_save_location = NULL, *tmp_fs = NULL;
@@ -472,6 +478,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"PluginDir=", 's', &plugindir,
 		"ProctrackType=", 's', &proctrack_type,
 		"Prolog=", 's', &prolog,
+		"PropagateResourceLimitsExcept=", 's',&propagate_rlimits_except,		"PropagateResourceLimits=",       's',&propagate_rlimits,
 		"ReturnToService=", 'l', &ret2service,
 		"SchedulerAuth=", 's', &sched_auth,
 		"SchedulerPort=", 'l', &sched_port,
@@ -736,6 +743,36 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		}
 		ctl_conf_ptr->prolog = prolog;
 	}
+
+        if ( propagate_rlimits ) {
+                if ( ctl_conf_ptr->propagate_rlimits ) {
+                        error( MULTIPLE_VALUE_MSG,
+                               "PropagateResourceLimits" );
+                        xfree( ctl_conf_ptr->propagate_rlimits );
+                }
+                else if ( ctl_conf_ptr->propagate_rlimits_except ) {
+                        error( "%s keyword conflicts with %s, using latter.",
+                                "PropagateResourceLimitsExcept",
+                                "PropagateResourceLimits");
+                        xfree( ctl_conf_ptr->propagate_rlimits_except );
+                }
+                ctl_conf_ptr->propagate_rlimits = propagate_rlimits;
+        }
+        if ( propagate_rlimits_except ) {
+                if ( ctl_conf_ptr->propagate_rlimits_except ) {
+                        error( MULTIPLE_VALUE_MSG,
+                               "PropagateResourceLimitsExcept" );
+                        xfree( ctl_conf_ptr->propagate_rlimits_except );
+                }
+                else if ( ctl_conf_ptr->propagate_rlimits ) {
+                        error( "%s keyword conflicts with %s, using latter.",
+                                "PropagateResourceLimits",
+                                "PropagateResourceLimitsExcept");
+                        xfree( ctl_conf_ptr->propagate_rlimits );
+                }
+                ctl_conf_ptr->propagate_rlimits_except = 
+                                                      propagate_rlimits_except;
+        }
 
 	if ( ret2service != -1) {
 		if ( ctl_conf_ptr->ret2service != (uint16_t) NO_VAL)
@@ -1259,6 +1296,21 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	if (ctl_conf_ptr->proctrack_type == NULL)
 		ctl_conf_ptr->proctrack_type = xstrdup(DEFAULT_PROCTRACK_TYPE);
+
+        if (ctl_conf_ptr->propagate_rlimits_except) {
+                if ((parse_rlimits( ctl_conf_ptr->propagate_rlimits_except,
+                                   NO_PROPAGATE_RLIMITS )) < 0)
+                        fatal( "Bad PropagateResourceLimitsExcept: %s",
+                                ctl_conf_ptr->propagate_rlimits_except );
+        }
+        else {
+                if (ctl_conf_ptr->propagate_rlimits == NULL)
+                        ctl_conf_ptr->propagate_rlimits = xstrdup( "ALL" );
+                if ((parse_rlimits( ctl_conf_ptr->propagate_rlimits,
+                                   PROPAGATE_RLIMITS )) < 0)
+                        fatal( "Bad PropagateResourceLimits: %s",
+                                ctl_conf_ptr->propagate_rlimits );
+        }
 
 	if (ctl_conf_ptr->ret2service == (uint16_t) NO_VAL)
 		ctl_conf_ptr->ret2service = DEFAULT_RETURN_TO_SERVICE;

@@ -135,6 +135,7 @@ typedef struct srun_options {
 	bool parallel_debug;	/* srun controlled by debugger	*/
 	bool debugger_test;	/* --debugger-test		*/
 	bool test_only;		/* --test-only			*/
+	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/
 
 	/* constraint options */
 	int mincpus;		/* --mincpus=n			*/
