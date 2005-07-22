@@ -229,13 +229,6 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 		return;
 	}
 	
-	/* if(bgl_record->node_use != bgl_update_ptr->node_use) { */
-/* 		debug("Partition in wrong mode, rebooting."); */
-		
-/* 		/\* Free the partition *\/ */
-/* 		bgl_free_partition(bgl_record);			 */
-/* 	} */
-
 	if(bgl_record->state == RM_PARTITION_DEALLOCATING) {
 		debug("Partition is in Deallocating state, waiting for free.");
 		bgl_free_partition(bgl_record);
@@ -799,7 +792,7 @@ extern int sync_jobs(List job_list)
  * NOTE: This function does not wait for the boot to complete.
  * the slurm prolog script needs to perform the waiting.
  */
-extern int boot_part(bgl_record_t *bgl_record, rm_partition_mode_t node_use)
+extern int boot_part(bgl_record_t *bgl_record)
 {
 #ifdef HAVE_BGL_FILES
 	int rc;
@@ -812,25 +805,16 @@ extern int boot_part(bgl_record_t *bgl_record, rm_partition_mode_t node_use)
 		      bgl_err_str(rc));
 		return SLURM_ERROR;
 	}
-	if(node_use == SELECT_VIRTUAL_NODE_MODE) {
-		info("Booting partition %s in virtual mode", 
-		     bgl_record->bgl_part_id);
-		if ((rc = pm_create_partition_vnm(bgl_record->bgl_part_id)) 
-		    != STATUS_OK) {
-			error("pm_create_partition(%s): %s",
-			      bgl_record->bgl_part_id, bgl_err_str(rc));
-			return SLURM_ERROR;
-		}	
-	} else  {
-		info("Booting partition %s in coprocessor mode", 
-		     bgl_record->bgl_part_id);
-		if ((rc = pm_create_partition(bgl_record->bgl_part_id)) 
-		    != STATUS_OK) {
-			error("pm_create_partition(%s): %s",
-			      bgl_record->bgl_part_id, bgl_err_str(rc));
-			return SLURM_ERROR;
-		}	
-	}
+	
+	info("Booting partition %s", 
+	     bgl_record->bgl_part_id);
+	if ((rc = pm_create_partition(bgl_record->bgl_part_id)) 
+	    != STATUS_OK) {
+		error("pm_create_partition(%s): %s",
+		      bgl_record->bgl_part_id, bgl_err_str(rc));
+		return SLURM_ERROR;
+	}	
+	
 	slurm_mutex_lock(&part_state_mutex);
 	/* reset state right now, don't wait for 
 	 * update_partition_list() to run or epilog could 

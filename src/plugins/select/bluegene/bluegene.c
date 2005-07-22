@@ -606,8 +606,7 @@ extern int create_static_partitions(List part_list)
 		       != NULL) {
 			
 			if(bgl_record->bp_count>0 
-			   && !bgl_record->full_partition
-			   && bgl_record->node_use==SELECT_COPROCESSOR_MODE) {
+			   && !bgl_record->full_partition) {
 				debug("adding %s %d%d%d",
 				      bgl_record->nodes,
 				      bgl_record->start[X],
