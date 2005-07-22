@@ -225,6 +225,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files devel
 %defattr(-,root,root)
+%dir %attr(0755,root,root) %{_prefix}/include/slurm
 %{_prefix}/include/slurm/*
 %{_libdir}/libslurm.a
 %{_libdir}/libslurm.la
@@ -296,6 +297,8 @@ fi
 
 
 %changelog
+* Fri Jul 22 2005 Mark Grondona <mgrondona@llnl.gov>
+- explicitly set modes and owner of %prefix/include/slurm
 * Fri Jun 17 2005 Morris Jette <jette1@llnl.gov>
 - added checkpoint_aix to aix_federation rpm
 * Tue Jun 14 2005 Chris Morrone <morrone2@llnl.gov>
