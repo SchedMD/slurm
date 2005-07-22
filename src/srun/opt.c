@@ -77,7 +77,6 @@
 #define OPT_OVERCOMMIT  0x06
 #define OPT_CORE        0x07
 #define OPT_CONN_TYPE	0x08
-#define OPT_NODE_USE	0x09
 #define OPT_NO_ROTATE	0x0a
 #define OPT_GEOMETRY	0x0b
 #define OPT_MPI         0x0c
@@ -100,7 +99,6 @@
 #define LONG_OPT_NOSHELL  0x10f
 #define LONG_OPT_DEBUG_TS 0x110
 #define LONG_OPT_CONNTYPE 0x111
-#define LONG_OPT_NODE_USE 0x112
 #define LONG_OPT_TEST_ONLY 0x113
 #define LONG_OPT_NETWORK  0x114
 #define LONG_OPT_EXCLUSIVE 0x115
@@ -153,7 +151,6 @@ static enum  distribution_t _verify_dist_type(const char *arg);
 static bool  _verify_node_count(const char *arg, int *min, int *max);
 static int   _verify_geometry(const char *arg, int *geometry);
 static int   _verify_conn_type(const char *arg);
-static int   _verify_node_use(const char *arg);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
@@ -253,25 +250,6 @@ static int _verify_conn_type(const char *arg)
 		return SELECT_NAV;
 
 	error("invalid --conn-type argument %s ignored.", arg);
-	return -1;
-}
-
-/*
- * verify that a node usage type in arg is of known form
- * returns the node_use_type or -1 if not recognized
- */
-static int _verify_node_use(const char *arg)
-{
-	int len = strlen(arg);
-
-	if (!strncasecmp(arg, "VIRTUAL", len))
-		return SELECT_VIRTUAL_NODE_MODE;
-	else if (!strncasecmp(arg, "COPROCESSOR", len))
-		return SELECT_COPROCESSOR_MODE;
-	else if (!strncasecmp(arg, "NAV", len))
-		return SELECT_NAV_MODE;
-
-	error("invalid --node-use argument %s ignored.", arg);
 	return -1;
 }
 
@@ -525,7 +503,6 @@ static void _opt_default()
 		opt.geometry[i]	    = -1;
 	opt.no_rotate	    = false;
 	opt.conn_type	    = -1;
-	opt.node_use        = -1;
 
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
@@ -578,7 +555,6 @@ env_vars_t env_vars[] = {
   {"SLURM_LABELIO",       OPT_INT,        &opt.labelio,       NULL           },
   {"SLURM_NNODES",        OPT_NODES,      NULL,               NULL           },
   {"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
-  {"SLURM_NODE_USE",      OPT_NODE_USE,   NULL,               NULL           },
   {"SLURM_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set},
   {"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
   {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
@@ -675,10 +651,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.conn_type = _verify_conn_type(val);
 		break;
 	
-	case OPT_NODE_USE:
-		opt.node_use = _verify_node_use(val);
-		break;
-
 	case OPT_NO_ROTATE:
 		opt.no_rotate = true;
 		break;
@@ -795,7 +767,6 @@ static void _opt_args(int argc, char **argv)
 		{"help",             no_argument,       0, LONG_OPT_HELP},
 		{"usage",            no_argument,       0, LONG_OPT_USAGE},
 		{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
-		{"node-use",         required_argument, 0, LONG_OPT_NODE_USE},
 		{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
 		{"network",          required_argument, 0, LONG_OPT_NETWORK},
 		{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
@@ -1080,9 +1051,6 @@ static void _opt_args(int argc, char **argv)
 			exit(0);
 		case LONG_OPT_CONNTYPE:
 			opt.conn_type = _verify_conn_type(optarg);
-			break;
-		case LONG_OPT_NODE_USE:
-			opt.node_use = _verify_node_use(optarg);
 			break;
 		case LONG_OPT_TEST_ONLY:
 			opt.test_only = true;
@@ -1492,8 +1460,6 @@ static void _opt_list()
 	str = print_geometry();
 	info("geometry       : %s", str);
 	xfree(str);
-	if (opt.node_use >= 0)
-		info("node_use       : %u", opt.node_use);
 	if (opt.no_rotate)
 		info("rotate         : no");
 	else

@@ -176,14 +176,22 @@ int _mpi_init (char *mpi_type)
 {
 	int retval = SLURM_SUCCESS;
 	char *full_type = NULL;
+	int got_default = 0;
+
 	slurm_mutex_lock( &context_lock );
 
 	if ( g_context )
 		goto done;
 	
-	if (mpi_type == NULL)
+	if (mpi_type == NULL) {
+		mpi_type = slurm_get_mpi_default();
+		got_default = 1;
+	}
+	if (mpi_type == NULL) {
+		error("No MPI default set in slurm.conf using %s.",
+		      MPI_DEFAULT);
 		mpi_type = MPI_DEFAULT;
-	
+	}
 	setenvf (NULL, "SLURM_MPI_TYPE", "%s", mpi_type);
 		
 	full_type = xmalloc(sizeof(char) * (strlen(mpi_type)+5));
@@ -206,6 +214,8 @@ int _mpi_init (char *mpi_type)
 	
 		
 done:
+	if(got_default)
+		xfree(mpi_type);
 	slurm_mutex_unlock( &context_lock );
 	return retval;
 }
