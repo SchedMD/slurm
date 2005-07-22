@@ -313,6 +313,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
+	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->propagate_rlimits);
@@ -368,6 +369,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->max_job_cnt		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->min_job_age		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->mpich_gm_dir		= (uint16_t) NO_VAL;
+	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
@@ -431,7 +433,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	long mpich_gm_dir = -1, kill_tree = -1;
 	char *backup_addr = NULL, *backup_controller = NULL;
 	char *checkpoint_type = NULL, *control_addr = NULL;
-	char *control_machine = NULL, *epilog = NULL;
+	char *control_machine = NULL, *epilog = NULL, *mpi_default = NULL;
 	char *proctrack_type = NULL, *prolog = NULL;
 	char *propagate_rlimits_except = NULL, *propagate_rlimits = NULL;
 	char *sched_type = NULL, *sched_auth = NULL;
@@ -475,6 +477,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"MaxJobCount=", 'l', &max_job_cnt,
 		"MinJobAge=", 'l', &min_job_age,
 		"MpichGmDirectSupport=", 'l', &mpich_gm_dir,
+		"MpiDefault=", 's', &mpi_default,
 		"PluginDir=", 's', &plugindir,
 		"ProctrackType=", 's', &proctrack_type,
 		"Prolog=", 's', &prolog,
@@ -719,6 +722,14 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 				mpich_gm_dir);
 		else
 			ctl_conf_ptr->mpich_gm_dir = mpich_gm_dir;
+	}
+
+	if (mpi_default) {
+		if ( ctl_conf_ptr->mpi_default ) {
+			error( MULTIPLE_VALUE_MSG, "MpiDefault" );
+			xfree( ctl_conf_ptr->mpi_default );
+		}
+		ctl_conf_ptr->mpi_default = mpi_default;
 	}
 
 	if ( plugindir ) {
@@ -1292,6 +1303,8 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 	if (ctl_conf_ptr->mpich_gm_dir == (uint16_t) NO_VAL)
 		ctl_conf_ptr->mpich_gm_dir = DEFAULT_MPICH_GM_DIR;
 
+	if (ctl_conf_ptr->mpi_default == NULL)
+		ctl_conf_ptr->mpi_default = xstrdup(DEFAULT_MPI_DEFAULT);
 	if (ctl_conf_ptr->plugindir == NULL)
 		ctl_conf_ptr->plugindir = xstrdup(SLURM_PLUGIN_PATH);
 
