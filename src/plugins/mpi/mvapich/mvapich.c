@@ -44,8 +44,6 @@
 
 #include "src/plugins/mpi/mvapich/mvapich.h"
 
-
-
 /*
  *  Arguments passed to mvapich support thread.
  */
@@ -308,7 +306,7 @@ static void *mvapich_thr(void *arg)
 		}
 
 		if (mvarray[mvi->rank] != NULL) {
-			job_fatal (job, "mvapich: MPI task checked in more than once");
+			fatal ("mvapich: MPI task checked in more than once");
 			return NULL;
 		}
 
