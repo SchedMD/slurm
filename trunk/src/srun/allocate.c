@@ -393,8 +393,6 @@ job_desc_msg_create_from_opts (char *script)
 
 	if (opt.conn_type > -1)
 		j->conn_type = opt.conn_type;
-	if (opt.node_use > -1)
-		j->node_use = opt.node_use;
 	if (opt.no_rotate)
 		j->rotate = 0;
 
