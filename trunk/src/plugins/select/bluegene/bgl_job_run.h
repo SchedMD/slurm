@@ -73,5 +73,5 @@ extern int sync_jobs(List job_list);
  * NOTE: This function does not wait for the boot to complete.
  * the slurm prolog script needs to perform the waiting.
  */
-extern int boot_part(bgl_record_t *bgl_record, rm_partition_mode_t node_use);
+extern int boot_part(bgl_record_t *bgl_record);
 #endif /* _BGL_JOB_RUN_H_ */
