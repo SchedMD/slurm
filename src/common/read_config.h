@@ -1,6 +1,8 @@
 /*****************************************************************************
  *  read_config.h - definitions for reading the overall slurm configuration 
  *  file
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -45,6 +47,7 @@
 #define DEFAULT_MAX_JOB_COUNT       2000
 #define DEFAULT_MIN_JOB_AGE         300
 #define DEFAULT_MPICH_GM_DIR        0
+#define DEFAULT_MPI_DEFAULT         "lam"
 #ifdef HAVE_AIX		/* AIX specific default configuration parameters */
 #  define DEFAULT_CHECKPOINT_TYPE   "checkpoint/aix"
 #  define DEFAULT_PROCTRACK_TYPE    "proctrack/aix"

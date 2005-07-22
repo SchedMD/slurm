@@ -345,6 +345,13 @@ JobAcctType=jobacct/none
 #                         have in its active database at one time. Set the 
 #                         values of MaxJobCount and MinJobAge so as to avoid 
 #                         having slurmctld exhaust its memory or other resources.
+#
+#    "MpiDefault"	: define the default type of MPI to be used. If
+#			  srun does not specify another value, slurm will 
+#			  establish the environment for this mpi to execute.
+#			  Currently supported values are lam (default),
+#			  mpich-gm, mvapich, champion, quadrics, and hp-mpi. 
+#
 #    "MpichGmDirectSupport"
 #                       : if set to `1', srun handles executable files linked
 #                         with MPICH-GM library directly, not via mpirun that
@@ -363,6 +370,7 @@ JobAcctType=jobacct/none
 # FirstJobid=1000       	# default is `1'
 # ReturnToService=1     	# default is `0'
 # MaxJobCount=10000		# Defaults to 2000
+# MpiDefault			# default is "lam"
 # MpichGmDirectSupport=1	# default is `0'
 # KillTree=1			# default is `0'
 

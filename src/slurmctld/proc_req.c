@@ -303,6 +303,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->kill_wait           = slurmctld_conf.kill_wait;
 	conf_ptr->max_job_cnt         = slurmctld_conf.max_job_cnt;
 	conf_ptr->min_job_age         = slurmctld_conf.min_job_age;
+	conf_ptr->mpi_default         = xstrdup(slurmctld_conf.mpi_default);
 	conf_ptr->mpich_gm_dir        = slurmctld_conf.mpich_gm_dir;
 	conf_ptr->plugindir           = xstrdup(slurmctld_conf.plugindir);
 	conf_ptr->proctrack_type      = xstrdup(slurmctld_conf.proctrack_type);

@@ -109,6 +109,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->max_job_cnt);
 	fprintf(out, "MinJobAge         = %u\n", 
 		slurm_ctl_conf_ptr->min_job_age);
+	fprintf(out, "MpiDefault        = %s\n",
+		slurm_ctl_conf_ptr->mpi_default);
 	fprintf(out, "MpichGmDirectSupport = %u\n", 
 		slurm_ctl_conf_ptr->mpich_gm_dir);
 	fprintf(out, "PluginDir         = %s\n", 
