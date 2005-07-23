@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurmd/smgr.c - session manager functions for slurmd
+ *  slurmd/task.c - task launching functions for slurmd
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
@@ -61,7 +61,7 @@
 #include "src/common/switch.h"
 #include "src/common/xsignal.h"
 
-#include "src/slurmd/smgr.h"
+#include "src/slurmd/task.h"
 #include "src/slurmd/ulimits.h"
 #include "src/slurmd/io.h"
 #include "src/slurmd/proctrack.h"
