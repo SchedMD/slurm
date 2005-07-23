@@ -50,5 +50,5 @@ mrproper: distclean-local clean
 	-(cd $(top_srcdir)/slurm  && rm -rf stamp-h2 slurm.h)
 	-find $(top_srcdir) -name "Makefile.in" -exec rm {} \;
 	-find $(top_srcdir)/src -name "Makefile" -exec rm {} \;
-	-find $(top_srcdir) -name ".deps" -exec rm -rf {} \;
+	-find $(top_srcdir) -depth -name ".deps" -exec rm -rf {} \;
 
