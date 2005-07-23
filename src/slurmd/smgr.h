@@ -40,25 +40,6 @@
 
 #include "src/slurmd/slurmd_job.h"
 
-/*
- * Task exit code information
- */
-typedef struct exit_status {
-	int taskid;
-	int status;
-} exit_status_t;
-
-
-/*
- * Create the session manager process, which starts a new session
- * and runs as the UID of the job owner. The session manager process
- * will wait for all tasks in the job to exit (sending task exit messages
- * as appropriate), and then exit itself.
- *
- * If the smgr process is successfully created, the pid of the new 
- * process is returned. On error, (pid_t) -1 is returned.
- *
- */
-pid_t smgr_create(slurmd_job_t *job);
+void exec_task(slurmd_job_t *job, int i, int waitfd);
 
 #endif /* !_SMGR_H */
