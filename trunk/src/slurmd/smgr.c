@@ -67,35 +67,15 @@
 #include "src/slurmd/proctrack.h"
 #include "src/slurmd/shm.h"
 
-/*
- * Static list of signals to block in this process
- *  *Must be zero-terminated*
- */
-static int smgr_sigarray[] = {
-	SIGINT,  SIGTERM, SIGCHLD, SIGUSR1, 
-	SIGUSR2, SIGTSTP, SIGXCPU,
-	SIGQUIT, SIGPIPE, 
-	SIGALRM, 0
-};
 
 /*
  * Static prototype definitions.
  */
-static void  _session_mgr(slurmd_job_t *job);
-static int   _exec_all_tasks(slurmd_job_t *job);
-static void  _exec_task(slurmd_job_t *job, int i);
-static int   _become_user(slurmd_job_t *job);
 static void  _make_tmpdir(slurmd_job_t *job);
-static int   _child_exited(void);
-static void  _wait_for_all_tasks(slurmd_job_t *job);
-static int   _local_taskid(slurmd_job_t *job, pid_t pid);
-static int   _send_exit_status(slurmd_job_t *job, pid_t pid, int status, struct rusage *rusage);
 static char *_signame(int signo);
 static void  _cleanup_file_descriptors(slurmd_job_t *job);
 static void  _setup_spawn_io(slurmd_job_t *job);
 
-/* parallel debugger support */
-static void  _pdebug_trace_process(slurmd_job_t *job, pid_t pid);
 static void  _pdebug_stop_current(slurmd_job_t *job);
 #ifdef HAVE_PTRACE64
 #  define _PTRACE(r,p,a,d) ptrace64((r),(long long)(p),(long long)(a),(d),NULL)
@@ -107,117 +87,6 @@ static void  _pdebug_stop_current(slurmd_job_t *job);
 #  endif
 #endif
 
-/*
- *  Dummy handler for SIGCHLD. 
- *
- *  We need this handler to work around what may be a bug in
- *   RedHat 9 based kernel/glibc. If no handler is installed for
- *   any signal that is, by default, ignored, then the signal
- *   will not be delivered even if that signal is currently blocked.
- *
- *  Since we block SIGCHLD, this handler should never actually
- *   get invoked. Assert this fact.
- */
-static void _chld_handler(int signo) { assert(signo != SIGCHLD); }
-
-
-/*
- * Create the slurmd session manager process
- */
-pid_t 
-smgr_create(slurmd_job_t *job)
-{
-	pid_t pid;
-	switch ((pid = fork())) {
-	case -1:
-		error("smgr_create: fork: %m");
-		return pid;
-		break;
-	case  0: /* child */
-		close(job->fdpair[0]);
-		_session_mgr(job);
-		/* NOTREACHED */
-		break;
-	}
-
-	/* parent continues here */
-
-	close(job->fdpair[1]);
-
-	return pid;
-}
-
-static void
-_session_mgr(slurmd_job_t *job)
-{
-	uint32_t cont_id;
-	xassert(job != NULL);
-
-	/* 
-	 * Install dummy SIGCHLD handler (see comments above)
-	 */
-	xsignal(SIGCHLD, &_chld_handler);
-
-	/*
-	 * Call interconnect_init() before becoming user
-	 */
-	if (!job->batch && 
-	    (interconnect_init(job->switch_job, job->uid) < 0)) {
-		/* error("interconnect_init: %m"); already logged */
-		exit(1);
-	}
-
-	if (_become_user(job) < 0) 
-		exit(2);
-
-	cont_id = slurm_create_container(job->jobid);
-	if (cont_id == 0) {
-		error("slurm_create_container: %m");
-		exit(3);
-	}
-
-	if (chdir(job->cwd) < 0) {
-		error("couldn't chdir to `%s': %m: going to /tmp instead",
-		      job->cwd);
-		if (chdir("/tmp") < 0) {
-			error("couldn't chdir to /tmp either. dying.");
-			exit(4);
-		}
-	}
-
-	if ((!job->spawn_task) && (set_user_limits(job) < 0)) {
-		debug("Unable to set user limits");
-		exit(5);
-	}
-
-	_make_tmpdir(job);
-
-	if (_exec_all_tasks(job) < 0) {
-		debug("exec_all_tasks failed");
-		exit(6);
-	}
-
-	g_slurmd_jobacct_smgr();	/* tell the accountants to start
-					   counting. */
-
-	/*
-	 *  Clean up open file descriptors in session manager so that
-	 *    IO thread in job manager can tell output is complete,
-	 *    and additionally, so that closing stdin will generate
-	 *    EOF to tasks
-	 */ 
-	_cleanup_file_descriptors(job);
-
-        _wait_for_all_tasks(job);
-
-	if (!job->batch && 
-	    (interconnect_fini(job->switch_job) < 0)) {
-		error("interconnect_fini: %m");
-		exit(1);
-	}
-
-	exit(SLURM_SUCCESS);
-}
 
 static void _setup_spawn_io(slurmd_job_t *job)
 {
@@ -230,13 +99,20 @@ static void _setup_spawn_io(slurmd_job_t *job)
 		error("connect io: %m");
 		exit(1);
 	}
-	(void) close(STDIN_FILENO);
-	(void) close(STDOUT_FILENO);
-	(void) close(STDERR_FILENO);
-	if ((dup(fd) != 0) || (dup(fd) != 1) || (dup(fd) != 2)) {
-		error("dup: %m");
+
+	if (dup2(fd, STDIN_FILENO) == -1) {
+		error("dup2 over STDIN_FILENO: %m");
 		exit(1);
 	}
+	if (dup2(fd, STDOUT_FILENO) == -1) {
+		error("dup2 over STDOUT_FILENO: %m");
+		exit(1);
+	}
+	if (dup2(fd, STDERR_FILENO) == -1) {
+		error("dup2 over STDERR_FILENO: %m");
+		exit(1);
+	}
+		
 	(void) close(fd);
 }
 
@@ -257,124 +133,45 @@ _cleanup_file_descriptors(slurmd_job_t *j)
 	}
 }
 
-static int
-_become_user(slurmd_job_t *job)
-{
-	if (setgid(job->gid) < 0) {
-		error("setgid: %m");
-		return -1;
-	}
 
-	if (initgroups(job->pwd->pw_name, job->pwd->pw_gid) < 0) {
-		;
-		/* error("initgroups: %m"); */
-	}
-
-	if (setuid(job->pwd->pw_uid) < 0) {
-		error("setuid: %m");
-		return -1;
-	}
-
-	return 0;
-}	
-
-/* Execute N tasks and send pids back to job manager process.
- */ 
-static int
-_exec_all_tasks(slurmd_job_t *job)
+/*
+ *  Current process is running as the user when this is called.
+ */
+void
+exec_task(slurmd_job_t *job, int i, int waitfd)
 {
 	char c;
-	int i;
-	int fd = job->fdpair[1];
+	int rc;
+	slurmd_task_info_t *t = NULL;
 
-	xassert(job != NULL);
-	xassert(fd >= 0);
-	
-	/*
-	 *  Block signals for this process before exec-ing
-	 *   user tasks. Esp. important to block SIGCHLD until
-	 *   we're ready to handle it.
-	 */
-	if (xsignal_block(smgr_sigarray) < 0)
-		return error ("Unable to block signals");
-
-	for (i = 0; i < job->ntasks; i++) {
-		int fdpair[2];
-		pid_t pid;
-
-		if (pipe (fdpair) < 0)
-			error ("exec_all_tasks: pipe: %m");
-
-		if ((pid = fork ()) < 0) {
-			error("fork: %m");
-			return SLURM_ERROR;
-		} else if (pid == 0)  { /* child */
-#ifdef HAVE_AIX
-			(void) mkcrid(0);
-#endif
-			/*
-			 * Stall exec until pgid is set by parent
-			 */
-			if (read (fdpair[0], &c, sizeof (c)) != 1)
-				error ("pgrp child read failed: %m");
-			close (fdpair[0]);
-			close (fdpair[1]);
-			log_fini();
-
-			_exec_task(job, i);
+	if (chdir(job->cwd) < 0) {
+		error("couldn't chdir to `%s': %m: going to /tmp instead",
+		      job->cwd);
+		if (chdir("/tmp") < 0) {
+			error("couldn't chdir to /tmp either. dying.");
+			exit(4);
 		}
-
-		/* Parent continues: 
-		 */
-		verbose ("task %lu (%lu) started %M", 
-			(unsigned long) job->task[i]->gtid, 
-			(unsigned long) pid); 
-
-		job->task[i]->pid = pid;
-
-		/*
-		 * Set this child's pgid to pid of first task
-		 */
-		if (setpgid (pid, job->task[0]->pid) < 0)
-			error ("Unable to put task %d (pid %ld) into pgrp %ld",
-			       i, pid, job->task[0]->pid);
-
-		/* 
-		 * Send pid to job manager
-		 */
-		if (fd_write_n(fd, (char *)&pid, sizeof(pid_t)) < 0) {
-			error("unable to update task pid!: %m");
-			return SLURM_ERROR;
-		}
-
-		/*
-		 * Now it's ok to unblock this child, so it may call exec
-		 */
-		if (write (fdpair[1], &c, sizeof (c)) != 1)
-			error ("write to unblock task %d failed", i); 
-
-		close (fdpair[0]);
-		close (fdpair[1]);
-
-		/*
-		 * Prepare process for attach by parallel debugger 
-		 * (if specified and able)
-		 */
-		_pdebug_trace_process(job, pid);
 	}
 
-	return SLURM_SUCCESS;
-}
+	if ((!job->spawn_task) && (set_user_limits(job) < 0)) {
+		debug("Unable to set user limits");
+		exit(5);
+	}
+
+	if (i == 0)
+		_make_tmpdir(job);
 
 
-static void
-_exec_task(slurmd_job_t *job, int i)
-{
-	slurmd_task_info_t *t = NULL;
-	if (xsignal_unblock(smgr_sigarray) < 0) {
-		error("unable to unblock signals");
+        /*
+	 * Stall exec until all tasks have joined the same process group
+	 */
+        if ((rc = read (waitfd, &c, sizeof (c))) != 1) {
+	        error ("_exec_task read failed, fd = %d, rc=%d: %m", waitfd, rc);
 		exit(1);
 	}
+	close(waitfd);
+
+	_cleanup_file_descriptors(job);
 
 	job->envtp->jobid = job->jobid;
 	job->envtp->stepid = job->stepid;
@@ -404,7 +201,7 @@ _exec_task(slurmd_job_t *job, int i)
 	
 		_pdebug_stop_current(job);
 	}
-		
+
 	/* 
 	 * If io_prepare_child() is moved above interconnect_attach()
 	 * this causes EBADF from qsw_attach(). Why?
@@ -436,13 +233,13 @@ _signame(int signo)
 		int s_num;
 		char * s_name;
 	} sigtbl[] = {   
-		{ 1, "SIGHUP" }, { 2, "SIGINT" }, { 3, "SIGQUIT"},
-		{ 6, "SIGABRT"}, { 10,"SIGUSR1"}, { 12,"SIGUSR2"},
-		{ 13,"SIGPIPE"}, { 14,"SIGALRM"}, { 15,"SIGTERM"},
-		{ 17,"SIGCHLD"}, { 18,"SIGCONT"}, { 19,"SIGSTOP"},
-		{ 20,"SIGTSTP"}, { 21,"SIGTTIN"}, { 22,"SIGTTOU"},
-		{ 23,"SIGURG" }, { 24,"SIGXCPU"}, { 25,"SIGXFSZ"},
-		{ 0, NULL}
+		{SIGHUP, "SIGHUP" }, {SIGINT, "SIGINT" }, {SIGQUIT,"SIGQUIT"},
+		{SIGABRT,"SIGABRT"}, {SIGUSR1,"SIGUSR1"}, {SIGUSR2,"SIGUSR2"},
+		{SIGPIPE,"SIGPIPE"}, {SIGALRM,"SIGALRM"}, {SIGTERM,"SIGTERM"},
+		{SIGCHLD,"SIGCHLD"}, {SIGCONT,"SIGCONT"}, {SIGSTOP,"SIGSTOP"},
+		{SIGTSTP,"SIGTSTP"}, {SIGTTIN,"SIGTTIN"}, {SIGTTOU,"SIGTTOU"},
+		{SIGURG, "SIGURG" }, {SIGXCPU,"SIGXCPU"}, {SIGXFSZ,"SIGXFSZ"},
+		{0, NULL}
 	};
 
 	for (i = 0; ; i++) {
@@ -456,161 +253,6 @@ _signame(int signo)
 	return str;
 }
 
-
-/*
- *  Call sigwait on the set of signals already blocked in this
- *   process, and only return (true) on reciept of SIGCHLD;
- */
-static int
-_child_exited(void)
-{
-	int      sig;
-	sigset_t set;
-
-	for (;;) {
-		xsignal_sigset_create(smgr_sigarray, &set);
-		sigwait(&set, &sig);
-
-		debug2 ("slurmd caught %s", _signame(sig));
-
-		switch (sig) {
-		 case SIGCHLD: return 1;
-		 case SIGXCPU: error ("job exceeded timelimit"); break;
-		 default:      break;      
-		}
-	}
-	/* NOTREACHED */
-	return 0;
-}
-
-/*
- *  Collect a single task's exit status and send it up to the
- *   slurmd job manager. 
- *
- *  Returns the number of tasks actually reaped
- *   (i.e. 1 for success, 0 for failure)
- *
- */
-static int
-_reap_task(slurmd_job_t *job)
-{
-	pid_t pid;
-	struct rusage rusage;
-	int   status = 0;
-
-	if ((pid = wait3(&status, WNOHANG|WUNTRACED, &rusage)) > (pid_t) 0)
-	{ 
-		return _send_exit_status(job, pid, status, &rusage);
-	}
-
-	if ((pid < 0) && (errno != ECHILD))
-		error  ("wait3: %m");
-	else
-		debug2 ("wait3(WNOHANG) returned 0");
-
-	return 0;
-}
-
-
-/* wait for N tasks to exit, reporting exit status back to slurmd mgr
- * process over file descriptor fd.
- *
- */
-static void
-_wait_for_all_tasks(slurmd_job_t *job)
-{
-	int active = job->ntasks;
-
-	/*
-	 *  While there are still active tasks, block waiting
-	 *   for SIGCHLD, then reap as many children as possible.
-	 */
-
-	while ((active > 0) && _child_exited()) 
-		while (_reap_task(job) && --active) {;}
-
-	return;
-}
-
-static int
-_wid(int n)
-{
-	int width = 1;
-	n--;
-	while (n /= 10) width++;
-	return width;
-}
-
-/*
- *  Send exit status for local pid `pid' to slurmd manager process.
- *   Returns 1 if pid corresponding to a local taskid has exited.
- *   Returns 0 if pid is not a tracked task, or if task has not
- *    exited (e.g. task has stopped).
- */ 
-static int 
-_send_exit_status(slurmd_job_t *job, pid_t pid, int status, struct rusage *rusage)
-{
-	exit_status_t e;
-	int           retry = 1;
-	int           rc  = 0;
-	int           len = sizeof(e);
-	int           fd  = job->fdpair[1];
-
-	if ((e.taskid = _local_taskid(job, pid)) < 0)
-		return 0;
-	e.status = status;
-
-	/*
-	 *  Report tasks that are stopped via debug log,
-	 *   but return 0 since the task has not exited.
-	 */
-	if ( WIFSTOPPED(status) ) {
-		verbose ( "task %*d (%ld) stopped by %s %M",
-		          _wid(job->ntasks), 
-			  job->task[e.taskid]->gtid,
-			  pid, 
-			  _signame(WSTOPSIG(status))
-			);
-		return 0;
-	}
-
-	verbose ( "task %*d (%ld) exited status 0x%04x %M", 
-	          _wid(job->ntasks), 
-	          job->task[e.taskid]->gtid, 
-	          pid, 
-	          status
-	        );
-
-	g_slurmd_jobacct_task_exit(job, pid, status, rusage);
-
-	while (((rc = fd_write_n(fd, &e, len)) <= 0) && retry--) {;}
-
-	if (rc < len) 
-		error("failed to send task %lu exit msg: rc=%d: %s",
-			(unsigned long) e.taskid, rc, 
-			(rc < 0 ? slurm_strerror(errno) : "")); 
-	/* 
-	 * Return 1 on failure to notify slurm mgr -- this will
-	 *  allow current process to be aware that the task exited anyway
-	 */
-	return 1;
-}
-
-/*
- *  Returns local taskid corresponding to `pid' or SLURM_ERROR
- *    if no local task has pid.
- */
-static int
-_local_taskid(slurmd_job_t *job, pid_t pid)
-{
-	int i;
-	for (i = 0; i < job->ntasks; i++) {
-		if (job->task[i]->pid == pid) 
-			return i;
-	}
-	debug("unknown pid %ld exited status 0x%04x %M", (long) pid);
-	return SLURM_ERROR;
-}
 
 static void
 _make_tmpdir(slurmd_job_t *job)
@@ -626,33 +268,6 @@ _make_tmpdir(slurmd_job_t *job)
 	return;
 }
 
-
-/*
- * Prepare task for parallel debugger attach
- */
-static void 
-_pdebug_trace_process(slurmd_job_t *job, pid_t pid)
-{
-	/*  If task to be debugged, wait for it to stop via
-	 *  child's ptrace(PTRACE_TRACEME), then SIGSTOP, and 
-	 *  ptrace(PTRACE_DETACH). This requires a kernel patch,
-	 *  which you may already have in place for TotalView.
-	 *  If not, apply the kernel patch in etc/ptrace.patch
-	 */
-
-	if (job->task_flags & TASK_PARALLEL_DEBUG) {
-		int status;
-		waitpid(pid, &status, WUNTRACED);
-		if ((pid > (pid_t) 0) && (kill(pid, SIGSTOP) < 0))
-			error("kill(%lu): %m", (unsigned long) pid);
-#ifdef HAVE_AIX
-		if (_PTRACE(PT_DETACH, pid, NULL, 0))
-#else
-		if (_PTRACE(PTRACE_DETACH, pid, NULL, 0))
-#endif
-			error("ptrace(%lu): %m", (unsigned long) pid);
-	}
-}
 
 /*
  * Stop current task on exec() for connection from a parallel debugger

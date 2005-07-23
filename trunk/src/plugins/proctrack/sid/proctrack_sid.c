@@ -42,6 +42,7 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 #include "src/common/log.h"
+#include "src/slurmd/slurmd_job.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -91,17 +92,11 @@ extern int fini ( void )
 }
 
 /*
- * For this plugin, we ignore the job_id.
- *
- * FIXME! - This is basically a no-op.  We return -1 because
- * only returning a 0 disturbs the caller.  The caller throws
- * away the return code anyway.  This needs to be redone
- * for slurm-0.6 when the task-creation code is rewritten to
- * eliminate the user-owned session manager slurmd.
+ * Uses job step process group id.
  */
-extern uint32_t slurm_create_container ( uint32_t job_id )
+extern uint32_t slurm_create_container ( slurmd_job_t *job )
 {
-	return (uint32_t) -1;
+	return (uint32_t) job->pgid;
 }
 
 extern int slurm_add_container ( uint32_t id )
@@ -121,7 +116,7 @@ extern int slurm_signal_container  ( uint32_t id, int signal )
 		return ESRCH;
 	}
 
-	return killpg(pid, signal);
+	return (int)killpg(pid, signal);
 }
 
 extern int slurm_destroy_container ( uint32_t id )

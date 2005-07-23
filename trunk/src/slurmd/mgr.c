@@ -116,6 +116,8 @@ static int mgr_sigarray[] = {
 static void _send_launch_failure(launch_tasks_request_msg_t *, 
                                  slurm_addr *, int);
 static int  _job_mgr(slurmd_job_t *job);
+static int  _fork_all_tasks(slurmd_job_t *job);
+static int  _become_user(slurmd_job_t *job);
 static void _set_job_log_prefix(slurmd_job_t *job);
 static int  _setup_io(slurmd_job_t *job);
 static int  _setup_spawn_io(slurmd_job_t *job);
@@ -123,19 +125,15 @@ static int  _drop_privileges(struct passwd *pwd);
 static int  _reclaim_privileges(struct passwd *pwd);
 static void _send_launch_resp(slurmd_job_t *job, int rc);
 static void _slurmd_job_log_init(slurmd_job_t *job);
-static int  _update_shm_task_info(slurmd_job_t *job);
-static int  _readn(int fd, void *buf, size_t nbytes);
-static int  _create_job_session(slurmd_job_t *job);
-static int  _wait_for_task_exit(slurmd_job_t *job);
-static int  _wait_for_session(slurmd_job_t *job);
 static void _wait_for_io(slurmd_job_t *job);
-static void _set_unexited_task_status(slurmd_job_t *job, int status);
 static void _handle_attach_req(slurmd_job_t *job);
 static int  _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, 
 		int status);
 static void _set_unexited_task_status(slurmd_job_t *job, int status);
 static int  _send_pending_exit_msgs(slurmd_job_t *job);
 static void _kill_running_tasks(slurmd_job_t *job);
+static void _wait_for_all_tasks(slurmd_job_t *job);
+static int  _wait_for_any_task(slurmd_job_t *job, bool waitflag);
 
 static void _setargs(slurmd_job_t *job);
 
@@ -148,11 +146,33 @@ static char * _make_batch_dir(slurmd_job_t *job);
 static char * _make_batch_script(batch_job_launch_msg_t *msg, char *path);
 static int    _complete_job(uint32_t jobid, uint32_t stepid, 
 			    int err, int status);
-
-
-/* SIGHUP (empty) signal handler
+/*
+ * Parallel debugger support
  */
-static void _hup_handler(int sig) {;}
+static void  _pdebug_trace_process(slurmd_job_t *job, pid_t pid);
+#ifdef HAVE_PTRACE64
+#  define _PTRACE(r,p,a,d) ptrace64((r),(long long)(p),(long long)(a),(d),NULL)
+#else
+#  ifdef PTRACE_FIVE_ARGS
+#    define _PTRACE(r,p,a,d) ptrace((r),(p),(a),(d),NULL)
+#  else
+#    define _PTRACE(r,p,a,d) ptrace((r),(p),(a),(void *)(d))
+#  endif
+#endif
+
+
+static slurmd_job_t *reattach_job;
+
+/*
+ * SIGHUP signal handler.  A SIGHUP is a message from the main slurmd
+ * that a reattach request needs to be processed.
+ */
+static void _hup_handler(int sig)
+{
+	if ((sig == SIGHUP)
+	    && (reattach_job != NULL))
+		_handle_attach_req(reattach_job);
+}
 
 /*
  * Launch an job step on the current node
@@ -488,9 +508,10 @@ static int
 _job_mgr(slurmd_job_t *job)
 {
 	int rc = 0;
-	
-	debug3("Entered job_mgr pid=%lu", (unsigned long) getpid());
 
+	job->jmgr_pid = getpid();
+	debug3("Entered job_mgr for %d.%d pid=%lu",
+	       job->jobid, job->stepid, (unsigned long) job->jmgr_pid);
 	
 	if (shm_init(false) < 0)
 		goto fail0;
@@ -508,9 +529,9 @@ _job_mgr(slurmd_job_t *job)
 		rc = ESLURM_INTERCONNECT_FAILURE;
 		goto fail1;
 	}
-	
-	xsignal_block(mgr_sigarray);
-	xsignal(SIGHUP, _hup_handler);
+
+/* 	xsignal_block(mgr_sigarray); */
+/* 	xsignal(SIGHUP, _hup_handler); */
 
 	if (job->spawn_task)
 		rc = _setup_spawn_io(job);
@@ -519,45 +540,44 @@ _job_mgr(slurmd_job_t *job)
 	if (rc)
 		goto fail2;
 
-	/*
-	 * Create slurmd session manager and read task pids from pipe
-	 * (waits for session manager process on failure)
-	 */
-
 	g_slurmd_jobacct_jobstep_launched(job);
 
-	if ((rc = _create_job_session(job))) 
+	/* Call interconnect_init() before becoming user */
+	if (!job->batch && 
+	    (interconnect_init(job->switch_job, job->uid) < 0)) {
+		/* error("interconnect_init: %m"); already logged */
 		goto fail2;
+	}
+
+	if (_fork_all_tasks(job) < 0) {
+		debug("_fork_all_tasks failed");
+		goto fail2;
+	}
+
+	xsignal_block(mgr_sigarray);
+	reattach_job = job;
+	xsignal(SIGHUP, _hup_handler);
 
 	if (job_update_state(job, SLURMD_JOB_STARTED) < 0)
 		goto fail2;
 
-	/*
-	 * Send job launch response with list of pids
-	 */
+	/* Send job launch response with list of pids */
 	_send_launch_resp(job, 0);
 
-	/*
-	 * Wait for all tasks to exit
-	 */
-	_wait_for_task_exit(job);
+	/* tell the accountants to start counting */
+	g_slurmd_jobacct_smgr();
 
-	/* wait for session to terminate, 
-	 * then clean up
-	 */
-	_wait_for_session(job);
+	_wait_for_all_tasks(job);
 
-	/*
-	 * Set status of any unexited tasks to that of 
-	 * the session manager. Then send any pending 
-	 * exit messages back to clients.
-	 */
-	_set_unexited_task_status(job, job->smgr_status);
-	while (_send_pending_exit_msgs(job)) {;}
+	if (!job->batch && 
+	    (interconnect_fini(job->switch_job) < 0)) {
+		error("interconnect_fini: %m");
+		exit(1);
+	}
 
 	job_update_state(job, SLURMD_JOB_ENDING);
-    fail2:
 
+    fail2:
 	/*
 	 *  First call interconnect_postfini() - In at least one case,
 	 *    this will clean up any straggling processes. If this call
@@ -566,7 +586,7 @@ _job_mgr(slurmd_job_t *job)
 	 */
 	if (!job->batch) {
 		_kill_running_tasks(job);
-		if (interconnect_postfini(job->switch_job, job->smgr_pid,
+		if (interconnect_postfini(job->switch_job, job->jmgr_pid,
 				job->jobid, job->stepid) < 0)
 			error("interconnect_postfini: %m");
 	}
@@ -587,161 +607,139 @@ _job_mgr(slurmd_job_t *job)
 	/* If interactive job startup was abnormal, 
 	 * be sure to notify client.
 	 */
-	if (rc != 0) 
+	if (rc != 0) {
+		error("_job_mgr exiting abnormally, rc = %d", rc);
 		_send_launch_resp(job, rc);
+	}
 
 	return(rc);
 }
 
 
-/*
- * update task information from "job" into shared memory
- */
-static int 
-_update_shm_task_info(slurmd_job_t *job)
-{
-	int retval = SLURM_SUCCESS;
-	int i;
-	
-	for (i = 0; i < job->ntasks; i++) {
-		task_t t;
-
-		t.id        = i;
-		t.global_id = job->task[i]->gtid;
-		t.pid       = job->task[i]->pid;
-		t.ppid      = job->smgr_pid;
-
-		if (shm_add_task(job->jobid, job->stepid, &t) < 0)
-			retval = SLURM_ERROR;
-	}
-
-	return retval;
-}
-
-static int 
-_readn(int fd, void *buf, size_t nbytes)
-{
-	int    n     = 0;
-	char  *pbuf  = (char *) buf;
-	size_t nleft = nbytes;
-
-	while (nleft > 0) {
-		if ((n = read(fd, (void *) pbuf, nleft)) > 0) {
-			pbuf+=n;
-			nleft-=n;
-		} else if (n == 0)	/* EOF */
-			break;
-		else if (errno == EINTR)
-			break;
-		else {
-			debug("read: %m");
-			break;
-		}
-	}
-	return(n);
-}
-
-
+/* fork and exec N tasks
+ */ 
 static int
-_create_job_session(slurmd_job_t *job)
+_fork_all_tasks(slurmd_job_t *job)
 {
-	int   i;
-	int   rc = 0;
-	int   fd = job->fdpair[0];
-	pid_t spid;
-	uint32_t cont_id = 0;   
+	int i;
+	int *writefds; /* array of write file descriptors */
+	int *readfds; /* array of read file descriptors */
+	uint32_t cont_id;
+	int fdpair[2];
 
-	job->jmgr_pid = getpid();
-	if (setpgrp() < 0)
-		error("setpgrp(): %m");
+	xassert(job != NULL);
 
-	if ((spid = smgr_create(job)) < (pid_t) 0) {
-		error("Unable to create session manager: %m");
-		return ESLURMD_FORK_FAILED;
+	/*
+	 * Pre-allocate a pipe for each of the tasks
+	 */
+	writefds = (int *) xmalloc (job->ntasks * sizeof(int));
+	if (!writefds)
+		error("writefds xmalloc failed!");
+	readfds = (int *) xmalloc (job->ntasks * sizeof(int));
+	if (!readfds)
+		error("readfds xmalloc failed!");
+	for (i = 0; i < job->ntasks; i++) {
+		fdpair[0] = -1; fdpair[1] = -1;
+		if (pipe (fdpair) < 0)
+			error ("exec_all_tasks: pipe: %m");
+		debug("New fdpair[0] = %d, fdpair[1] = %d", fdpair[0], fdpair[1]);
+		fd_set_close_on_exec(fdpair[0]);
+		fd_set_close_on_exec(fdpair[1]);
+		readfds[i] = fdpair[0];
+		writefds[i] = fdpair[1];
 	}
 
 	/*
-	 * If the created job terminates immediately, the shared memory
-	 * record can be purged before we can set the mpid below.
-	 * This does not truly indicate an error condition, but a rare 
-	 * timing anomaly. Thus we log the event using debug()
-	 */
-	if (shm_update_step_mpid(job->jobid, job->stepid, getpid()) < 0)
-		debug("shm_update_step_mpid: %m");
-	if (shm_update_step_spid(job->jobid, job->stepid, spid) < 0)
-		debug("shm_update_step_spid: %m");
-
-	job->smgr_pid = spid;
-
-	/*
-	 * Read information from session manager slurmd
+	 * Fork all of the task processes.
 	 */
 	for (i = 0; i < job->ntasks; i++) {
-		pid_t *pidptr = &job->task[i]->pid;
+		pid_t pid;
+		task_t task;
 
-		if ((rc = _readn(fd, (void *) pidptr, sizeof(pid_t))) < 0) 
-			error("Error obtaining task information: %m");
+		if ((pid = fork ()) < 0) {
+			error("fork: %m");
+			return SLURM_ERROR;
+		} else if (pid == 0)  { /* child */
+			int j;
+#ifdef HAVE_AIX
+			(void) mkcrid(0);
+#endif
+			/* Close file descriptors not needed by the child */
+			for (j = 0; j < job->ntasks; j++) {
+				close(writefds[j]);
+				if (j > i)
+					close(readfds[j]);
+			}
 
-		if (rc == 0) /* EOF, smgr must've died */
-			 goto error;
+			if (_become_user(job) < 0) 
+				exit(2);
 
-		if (cont_id)
-			continue;
-		cont_id = slurm_find_container(job->task[i]->pid);
-		if (cont_id) {
-			shm_update_step_cont_id(job->jobid, job->stepid, 
-				cont_id);
+			log_fini();
+
+			exec_task(job, i, readfds[i]);
 		}
+
+		/* Parent continues: 
+		 */
+		close(readfds[i]);
+		verbose ("task %lu (%lu) started %M", 
+			(unsigned long) job->task[i]->gtid, 
+			(unsigned long) pid); 
+
+		job->task[i]->pid = pid;
+		if (i == 0)
+			job->pgid = pid;
+		/*
+		 * Put this task in the step process group
+		 */
+		if (setpgid (pid, job->pgid) < 0)
+			error ("Unable to put task %d (pid %ld) into pgrp %ld",
+			       i, pid, job->pgid);
+
+		task.id        = i;
+		task.global_id = job->task[i]->gtid;
+		task.pid       = job->task[i]->pid;
+		task.ppid      = job->jmgr_pid;
+		if (shm_add_task(job->jobid, job->stepid, &task) < 0)
+			debug("shm_add_task: %m");	/* see comment above */
 	}
 
-	if (_update_shm_task_info(job) < 0)
-		debug("shm_add_task: %m");	/* see comment above */
+	/*
+	 * All tasks are now forked and running as the user, but
+	 * will wait for our signal before calling exec.
+	 */
+	shm_update_step_pgid(job->jobid, job->stepid, job->pgid);
+	cont_id = slurm_create_container(job);
+	if (cont_id == 0) {
+		error("slurm_create_container: %m");
+		exit(3);
+	}
+	shm_update_step_cont_id(job->jobid, job->stepid, cont_id);
+
+	/*
+	 * Now it's ok to unblock the tasks, so they may call exec.
+	 */
+	for (i = 0; i < job->ntasks; i++) {
+		char c;
+		
+		debug3("Unblocking %u.%u task %d, writefd = %d",
+		       job->jobid, job->stepid, i, writefds[i]);
+		if (write (writefds[i], &c, sizeof (c)) != 1)
+			error ("write to unblock task %d failed", i); 
+
+		close(writefds[i]);
+
+		debug3("Before _pdebug_trace_process");
+		/*
+		 * Prepare process for attach by parallel debugger 
+		 * (if specified and able)
+		 */
+		_pdebug_trace_process(job, job->task[i]->pid);
+	}
+	xfree(writefds);
+	xfree(readfds);
 
 	return SLURM_SUCCESS;
-
-    error:
-	return _wait_for_session(job);
-}
-
-/*
- * Read task exit codes from session pipe.
- * read as many as possible until nonblocking fd returns EAGAIN.
- *
- * Returns number of exit codes read
- */
-static int 
-_handle_task_exit(slurmd_job_t *job)
-{
-	exit_status_t e;
-	int i       = 0;
-	int len     = 0;
-	int nexited = 0;
-
-	/*
-	 * read at most ntask task exit codes from session manager
-	 */
-	for (i = 0; i < job->ntasks; i++) {
-		slurmd_task_info_t *t;
-		
-		if ((len = read(job->fdpair[0], &e, sizeof(e))) < 0) {
-			if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
-				break;
-			error("read from session mgr: %m");
-			return SLURM_ERROR;
-		}
-
-		if (len == 0) /* EOF */
-			break;
-
-		t = job->task[e.taskid];
-
-		t->estatus = e.status;
-		t->exited  = true;
-		t->esent   = false;
-		nexited++;
-	} 
-
-	return nexited;
 }
 
 
@@ -788,74 +786,63 @@ _send_pending_exit_msgs(slurmd_job_t *job)
 	return nsent;
 }
 
-
 /*
- * Wait for tasks to exit by reading task exit codes from session manger.
+ * If waitflag is true, perform a blocking wait for a single process
+ * and then return.
  *
- * Send exit messages to client(s), aggregating where possible.
- *
+ * If waitflag is false, do repeated non-blocking waits until
+ * there are no more processes to reap (waitpid returns 0).
  */
 static int
-_wait_for_task_exit(slurmd_job_t *job)
+_wait_for_any_task(slurmd_job_t *job, bool waitflag)
 {
-	int           rc      = 0;
-	int           timeout = -1;
-	int           waiting = job->ntasks;
-	int           rfd     = job->fdpair[0];
-	struct pollfd pfd[1]; 
-
-	pfd[0].fd     = rfd;
-	pfd[0].events = POLLIN;
-
-	fd_set_nonblocking(rfd);
+	slurmd_task_info_t *t = NULL;
+	int i;
+	int status;
+	pid_t pid;
+	struct rusage rusage;
+	int completed = 0;
 
 	do {
-		int revents = 0;
-		int nsent   = 0;
-
-		if ((rc = poll(pfd, 1, timeout)) < 0) {
-			if (errno == EINTR)
-				_handle_attach_req(job);
-			else
-				error("wait_for_task_exit: poll: %m");
+		pid = wait3(&status, waitflag ? 0 : WNOHANG, &rusage);
+		if (pid <= 0)
 			continue;
+
+		/* See if the pid matches that of one of the tasks */
+		for (i = 0; i < job->ntasks; i++) {
+			if (job->task[i]->pid == pid) {
+				t = job->task[i];
+				completed++;
+				break;
+			}
+		}
+		if (t != NULL) {
+			debug3("Process %d, task %d finished", (int)pid, i);
+			t->exited  = true;
+			t->estatus = status;
+			g_slurmd_jobacct_task_exit(job, pid, status, &rusage);
 		}
 
-		revents = pfd[0].revents;
+	} while ((pid > 0) && !waitflag);
 
-		xassert (!(revents & POLLNVAL));
-
-		if ((revents & (POLLIN|POLLHUP|POLLERR))) {
-
-		     if ((rc = _handle_task_exit(job)) <= 0) {
-			     if (rc < 0) 
-				     error("Unable to read task exit codes");
-			     goto done;
-		     } 
-
-		     if (rc < (job->ntasks - nsent)) {
-			     timeout = 50;
-			     continue;
-		     }
-		}
-
-		/* 
-		 * send all pending task exit messages
-		 */
-		while ((nsent = _send_pending_exit_msgs(job))) 
-			waiting -= rc;
-
-		timeout = -1;
-
-	} while (waiting);
-
-	close(rfd);
-	return SLURM_SUCCESS;
-
-    done:
-	close(rfd);
-	return SLURM_FAILURE;
+	return completed;
 }
+	
+
+static void
+_wait_for_all_tasks(slurmd_job_t *job)
+{
+	int i;
+
+	for (i = 0; i < job->ntasks; ) {
+		i += _wait_for_any_task(job, true);
+		if (i < job->ntasks)
+			i += _wait_for_any_task(job, false);
+
+		while (_send_pending_exit_msgs(job)) {;}
+	}
+}
+
 
 static void
 _set_unexited_task_status(slurmd_job_t *job, int status)
@@ -871,50 +858,6 @@ _set_unexited_task_status(slurmd_job_t *job, int status)
 	}
 }
 
-/*
- * read task exit status from slurmd session manager process,
- * then wait for session manager to terminate
- */
-static int
-_wait_for_session(slurmd_job_t *job)
-{
-	int   status = job->smgr_status;
-	int   rc     = 0;
-	pid_t pid;
-
-	if (status != -1) 
-		goto done;
-
-	while ((pid = waitpid(job->smgr_pid, &status, 0)) < (pid_t) 0) {
-		if (errno == EINTR) 
-			_handle_attach_req(job);
-		else {
-			error("waitpid: %m");
-			break;
-		}
-	}
-
-	job->smgr_status = status;
-
-    done:
-	if (WIFSIGNALED(status)) {
-
-		int signo = WTERMSIG(status);
-
-		if (signo != 9)
-			error ("slurmd session manager killed by signal %d", signo);
-		/*
-		 * Make sure all processes in session are dead
-		 */
-		if (job->smgr_pid > (pid_t) 0)
-			killpg(job->smgr_pid, SIGKILL);
-		return ESLURMD_SESSION_KILLED;
-	}
-
-	if (!WIFEXITED(status))
-		rc = WEXITSTATUS(status);
-	return (rc <= MAX_SMGR_EXIT_STATUS) ? exit_errno[rc] : rc;
-}
 
 
 /*
@@ -1167,7 +1110,6 @@ _complete_job(uint32_t jobid, uint32_t stepid, int err, int status)
 }
 
 
-
 static void
 _handle_attach_req(slurmd_job_t *job)
 {
@@ -1290,3 +1232,55 @@ _setargs(slurmd_job_t *job)
 
 	return;
 }
+
+
+static int
+_become_user(slurmd_job_t *job)
+{
+	if (setgid(job->gid) < 0) {
+		error("setgid: %m");
+		return -1;
+	}
+
+	if (initgroups(job->pwd->pw_name, job->pwd->pw_gid) < 0) {
+		;
+		/* error("initgroups: %m"); */
+	}
+
+	if (setuid(job->pwd->pw_uid) < 0) {
+		error("setuid: %m");
+		return -1;
+	}
+
+	return 0;
+}	
+
+
+/*
+ * Prepare task for parallel debugger attach
+ */
+static void 
+_pdebug_trace_process(slurmd_job_t *job, pid_t pid)
+{
+	/*  If task to be debugged, wait for it to stop via
+	 *  child's ptrace(PTRACE_TRACEME), then SIGSTOP, and 
+	 *  ptrace(PTRACE_DETACH). This requires a kernel patch,
+	 *  which you may already have in place for TotalView.
+	 *  If not, apply the kernel patch in etc/ptrace.patch
+	 */
+
+	if (job->task_flags & TASK_PARALLEL_DEBUG) {
+		int status;
+		waitpid(pid, &status, WUNTRACED);
+		if ((pid > (pid_t) 0) && (kill(pid, SIGSTOP) < 0))
+			error("kill(%lu): %m", (unsigned long) pid);
+#ifdef HAVE_AIX
+		if (_PTRACE(PT_DETACH, pid, NULL, 0))
+#else
+		if (_PTRACE(PTRACE_DETACH, pid, NULL, 0))
+#endif
+			error("ptrace(%lu): %m", (unsigned long) pid);
+	}
+}
+
+

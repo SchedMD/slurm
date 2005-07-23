@@ -42,6 +42,7 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 #include "src/common/log.h"
+#include "src/slurmd/slurmd_job.h"
 
 extern int proctrack_job_reg(int *jobid);	/* register a job, include this proc */
 extern int proctrack_job_unreg(int *jobid);	/* unregister a job */
@@ -97,24 +98,24 @@ extern int fini ( void )
 }
 
 /*
- * For this plugin, we ignore the job_id.
- * To generate a unique container ID, we use getpid.
+ * Uses job step process group id as a unique identifier.  Job id
+ * step id are not unique by themselves.
  */
-extern uint32_t slurm_create_container ( uint32_t job_id )
+extern uint32_t slurm_create_container ( slurmd_job_t *job )
 {
-	pid_t pid = getpid();
-	int jobid = (int) pid;
+	int pgid = (int) job->pgid;
+	int i;
 
-	if (pid < 0) {
-		error("slurm_create_container: setsid: %m");
-		return (uint32_t) 0;
+	xassert(jobid != 0);
+
+	for (i = 0; i < job->ntasks; i++) {
+		if (proctrack_job_reg(&pgid, &job->task[i].pid) != 0) {
+			error("proctrack_job_reg(%d): %m", jobid);
+			return (uint32_t) 0;
+		}
 	}
+	return (uint32_t) pgid;
 
-	if (proctrack_job_reg(&jobid) == 0)
-		return (uint32_t) pid;
-
-	error("proctrack_job_reg(%d): %m", jobid);
-	return (uint32_t) 0;
 }
 
 extern int slurm_add_container ( uint32_t id )
