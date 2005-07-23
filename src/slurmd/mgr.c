@@ -72,7 +72,7 @@
 
 #include "src/slurmd/slurmd.h"
 #include "src/slurmd/setproctitle.h"
-#include "src/slurmd/smgr.h"
+#include "src/slurmd/task.h"
 #include "src/slurmd/io.h"
 #include "src/slurmd/shm.h"
 #include "src/slurmd/proctrack.h"

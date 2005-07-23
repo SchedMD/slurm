@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * src/slurmd/smgr.h - session manager functions for slurmd
+ * src/slurmd/task.h - task launching functions for slurmd
  * $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
@@ -25,8 +25,8 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef _SMGR_H
-#define _SMGR_H
+#ifndef _TASK_H
+#define _TASK_H
 
 #if HAVE_CONFIG_H
 #  include "config.h"
@@ -42,4 +42,4 @@
 
 void exec_task(slurmd_job_t *job, int i, int waitfd);
 
-#endif /* !_SMGR_H */
+#endif /* !_TASK_H */
