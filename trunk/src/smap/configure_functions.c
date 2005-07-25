@@ -395,9 +395,13 @@ static int _remove_allocation(char *com, List allocated_partitions)
 		while((allocated_part = list_next(results_i)) != NULL) {
 			if(found) {
 				if(redo_part(allocated_part->nodes, 
+					     allocated_part->request->geometry,
 					     allocated_part->
 					     request->conn_type, 
 					     color_count) == SLURM_ERROR) {
+					memset(error_string,0,255);
+					sprintf(error_string, 
+						"problem redoing the part.");
 					return 0;
 				}
 				allocated_part->letter = 
