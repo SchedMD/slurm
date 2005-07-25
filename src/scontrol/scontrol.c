@@ -1495,16 +1495,6 @@ _update_job (int argc, char *argv[])
 					(uint16_t) strtol(&argv[i][11], 
 							(char **) NULL, 10);
 		}
-		else if (strncasecmp(argv[i], "NodeUse=", 8) == 0) {
-			if (strcasecmp(&argv[i][8], "virtual") == 0)
-				job_msg.node_use = SELECT_VIRTUAL_NODE_MODE;
-			else if (strcasecmp(&argv[i][8], "coprocessor") == 0)
-				job_msg.node_use = SELECT_COPROCESSOR_MODE;
-			else
-				job_msg.node_use = 
-					(uint16_t) strtol(&argv[i][8], 
-							(char **) NULL, 10);
-		}
 		else {
 			exit_code = 1;
 			fprintf (stderr, "Invalid input: %s\n", argv[i]);
