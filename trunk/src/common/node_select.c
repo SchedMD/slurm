@@ -468,17 +468,6 @@ static char *_job_conn_type_string(uint16_t inx)
 		return "nav";
 }
 
-static char *_job_node_use_string(uint16_t inx)
-{
-	if (inx == SELECT_COPROCESSOR_MODE)
-		return "coprocessor";
-	else if (inx == SELECT_VIRTUAL_NODE_MODE)
-		return "virtual";
-	else
-		return "nav";
-}
-
-
 static char *_job_rotate_string(uint16_t inx)
 {
 	if (inx)
@@ -612,7 +601,6 @@ extern select_jobinfo_t select_g_copy_jobinfo(select_jobinfo_t jobinfo)
 		for (i=0; i<SYSTEM_DIMENSIONS; i++)
 			rc->geometry[i] = jobinfo->geometry[i];
 		rc->rotate = jobinfo->rotate;
-		rc->node_use = jobinfo->node_use;
 		rc->conn_type = jobinfo->conn_type;
 		rc->rotate = jobinfo->rotate;
 		rc->bgl_part_id = xstrdup(jobinfo->bgl_part_id);
@@ -656,7 +644,6 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
 			pack16(jobinfo->geometry[i], buffer);		
 		pack16(jobinfo->conn_type, buffer);
 		pack16(jobinfo->rotate, buffer);
-		pack16(jobinfo->node_use, buffer);
 		packstr(jobinfo->bgl_part_id, buffer);
 	} else {
 		for (i=0; i<(SYSTEM_DIMENSIONS+3); i++)
@@ -682,7 +669,6 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer)
 		safe_unpack16(&(jobinfo->geometry[i]), buffer);
 	safe_unpack16(&(jobinfo->conn_type), buffer);
 	safe_unpack16(&(jobinfo->rotate), buffer);
-	safe_unpack16(&(jobinfo->node_use), buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->bgl_part_id), &uint16_tmp, buffer);
 	return SLURM_SUCCESS;
 
@@ -730,24 +716,22 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 	switch (mode) {
 	case SELECT_PRINT_HEAD:
 		snprintf(buf, size,
-			 "CONNECT ROTATE NODE_USE GEOMETRY PART_ID");
+			 "CONNECT ROTATE GEOMETRY PART_ID");
 		break;
 	case SELECT_PRINT_DATA:
 		snprintf(buf, size, 
-			 "%7.7s %6.6s %8.8s    %ux%ux%u %16s",
+			 "%7.7s %6.6s %8.8s %ux%ux%u %16s",
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _job_rotate_string(jobinfo->rotate),
-			 _job_node_use_string(jobinfo->node_use),
 			 geometry[0], geometry[1], geometry[2],
 			 jobinfo->bgl_part_id);
 		break;
 	case SELECT_PRINT_MIXED:
 		snprintf(buf, size, 
-			 "Connection=%s Rotate=%s NodeUse=%s "
+			 "Connection=%s Rotate=%s "
 			 "Geometry=%ux%ux%u Part_ID=%s",
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _job_rotate_string(jobinfo->rotate),
-			 _job_node_use_string(jobinfo->node_use),
 			 geometry[0], geometry[1], geometry[2],
 			 jobinfo->bgl_part_id);
 		break;

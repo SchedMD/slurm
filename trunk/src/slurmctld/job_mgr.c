@@ -2228,11 +2228,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	select_g_set_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_ROTATE, 
 		&job_desc->rotate);
-	select_g_set_jobinfo(job_ptr->select_jobinfo,
-		SELECT_DATA_NODE_USE, 
-		&job_desc->node_use);
-	if (job_desc->node_use == (uint16_t) NO_VAL)
-		job_desc->node_use = SELECT_COPROCESSOR_MODE;
 
 	*job_rec_ptr = job_ptr;
 	return SLURM_SUCCESS;
@@ -2426,8 +2421,6 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 #endif
 	if (job_desc_msg->conn_type == (uint16_t) NO_VAL)
 		job_desc_msg->conn_type = SELECT_NAV;  /* try TORUS, then MESH */
-	if (job_desc_msg->node_use == (uint16_t) NO_VAL)
-		job_desc_msg->node_use = SELECT_COPROCESSOR_MODE;
 	if (job_desc_msg->rotate == (uint16_t) NO_VAL)
 		job_desc_msg->rotate = true;    /* default to allow rotate */
 
@@ -3243,14 +3236,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			&job_specs->rotate);
 		info("update_job: setting rotate to %u for job_id %u",
 			job_specs->rotate, job_ptr->job_id);
-	}
-
-	if (job_specs->node_use != (uint16_t) NO_VAL) {
-		select_g_set_jobinfo(job_ptr->select_jobinfo,
-			SELECT_DATA_NODE_USE,
-			&job_specs->node_use);
-		info("update_job: setting node_use to %u for job_id %u",
-			job_specs->node_use, job_ptr->job_id);
 	}
 
 	return error_code;

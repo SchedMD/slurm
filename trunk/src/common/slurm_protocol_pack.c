@@ -2037,8 +2037,6 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 			&(job_desc_ptr->conn_type));
 		select_g_set_jobinfo(jobinfo, SELECT_DATA_ROTATE, 
 			&(job_desc_ptr->rotate));
-		select_g_set_jobinfo(jobinfo, SELECT_DATA_NODE_USE, 
-			&(job_desc_ptr->node_use));
 		select_g_pack_jobinfo(jobinfo, buffer);
 		select_g_free_jobinfo(&jobinfo);
 	}
@@ -2118,9 +2116,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 		SELECT_DATA_CONN_TYPE, &job_desc_ptr->conn_type);
 	select_g_get_jobinfo(job_desc_ptr->select_jobinfo, 
 		SELECT_DATA_ROTATE, &job_desc_ptr->rotate);
-	select_g_get_jobinfo(job_desc_ptr->select_jobinfo, 
-		SELECT_DATA_NODE_USE, &job_desc_ptr->node_use);
-
+	
 	return SLURM_SUCCESS;
 
       unpack_error:
