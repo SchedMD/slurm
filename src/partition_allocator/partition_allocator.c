@@ -80,6 +80,8 @@ static int _copy_the_path(pa_switch_t *curr_switch, pa_switch_t *mark_switch,
 static int _find_yz_path(pa_node_t *pa_node, int *first, 
 			 int *geometry, int conn_type);
 /* */
+static void _init_wires();
+/* */
 static int _create_config_even(pa_node_t ***grid);
 #else
 /* */
@@ -110,8 +112,8 @@ static bool _node_used(pa_node_t* pa_node, int *geometry);
 static void _switch_config(pa_node_t* source, pa_node_t* target, int dim, 
 			   int port_src, int port_tar);
 /* */
-static void _set_external_wires(int dim, int count, pa_node_t* source, 
-				pa_node_t* target_1);
+static int _set_external_wires(int dim, int count, pa_node_t* source, 
+				pa_node_t* target);
 /* */
 static char *_set_internal_wires(List nodes, int size, int conn_type);
 
@@ -632,7 +634,6 @@ extern void pa_init(node_info_msg_t *node_info_ptr)
 				DIM_SIZE[X] = temp;
 #endif
 		}
-
 		DIM_SIZE[X]++;
 #ifdef HAVE_BGL
 		DIM_SIZE[Y]++;
@@ -683,20 +684,19 @@ extern void pa_init(node_info_msg_t *node_info_ptr)
 
 	if(!pa_system_ptr->num_of_proc)
 		pa_system_ptr->num_of_proc = 
-			DIM_SIZE[X] 
-#ifdef HAVE_BGL
-			* DIM_SIZE[Y] 
-			* DIM_SIZE[Z]
-#endif
-			;
+			DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z];
 
 		
 	_create_pa_system();
 	
 	init_grid(node_info_ptr);
 	
+#ifdef HAVE_BGL_FILES
+	_set_external_wires(0,0,NULL,NULL);
+#else	
 	_create_config_even(pa_system_ptr->grid);
-	
+#endif
+
 	path = list_create(_delete_path_list);
 	best_path = list_create(_delete_path_list);
 
@@ -857,58 +857,21 @@ extern int alter_part(List nodes, int conn_type)
  * be redone to make sure correct path will be used in the real system
  *
  */
-extern int redo_part(List nodes, int conn_type, int new_count)
+extern int redo_part(List nodes, int *geo, int conn_type, int new_count)
 {
-	int dim;
-	pa_node_t* pa_node;
-	pa_switch_t *curr_switch; 
-	int size=0;
+       	pa_node_t* pa_node;
 	char *name = NULL;
-	int geo[PA_SYSTEM_DIMENSIONS];
-	int start[PA_SYSTEM_DIMENSIONS];
-	int x = -1;
-#ifdef HAVE_BGL
-	int y = -1, z = -1;
-#endif
 	ListIterator itr;		
 
 	itr = list_iterator_create(nodes);
-	while ((pa_node = list_next(itr)) != NULL) {
-		if(x==-1) {
-			start[X] = pa_node->coord[X];
-			start[Y] = pa_node->coord[Y];
-			start[Z] = pa_node->coord[Z];
-		}
-		if(pa_node->coord[X]>x) {
-			geo[X]++;
-			x = pa_node->coord[X];
-		}
-#ifdef HAVE_BGL
-		if(pa_node->coord[Y]>y) {
-			geo[Y]++;
-			y = pa_node->coord[Y];
-		}
-		if(pa_node->coord[Z]>z) {
-			geo[Z]++;
-			z = pa_node->coord[Z];
-		}
-#endif
-		pa_node->used = false;
-
-		pa_node->letter = letters[new_count%62];
-		pa_node->color = colors[new_count%6];
-			
-		for(dim=0;dim<PA_SYSTEM_DIMENSIONS;dim++) {
-			curr_switch = &pa_node->axis_switch[dim];
-			if(curr_switch->int_wire[0].used) {
-				_reset_the_path(curr_switch, 0, 1, dim);
-			}
-		}
-		size++;
-	}
+	pa_node = list_next(itr);
 	list_iterator_destroy(itr);
-	color_count++;
-	name = set_bgl_part(nodes, start, geo, conn_type);
+
+	remove_part(nodes, new_count);
+	list_destroy(nodes);
+	nodes = list_create(NULL);
+	
+	name = set_bgl_part(nodes, pa_node->coord, geo, conn_type);
 	if(!name)
 		return SLURM_ERROR;
 	else {
@@ -1183,6 +1146,7 @@ static void _bp_map_list_del(void *object)
 	pa_bp_map_t *bp_map = (pa_bp_map_t *)object;
 	
 	if (bp_map) {
+		xfree(bp_map->bp_id);
 		xfree(bp_map);		
 	}
 }
@@ -1591,6 +1555,31 @@ static int _find_yz_path(pa_node_t *pa_node, int *first,
 	}
 	return 1;
 }
+
+static void _init_wires()
+{
+	int x, y, z, i;
+	pa_node_t *source = NULL;
+	
+	for(x=0;x<DIM_SIZE[X];x++) {
+		for(y=0;y<DIM_SIZE[Y];y++) {
+			for(z=0;z<DIM_SIZE[Z];z++) {
+				source = &pa_system_ptr->grid[x][y][z];
+				for(i=0; i<6; i++) {
+					_switch_config(source, source, 
+						       X, i, i);
+					_switch_config(source, source, 
+						       Y, i, i);
+					_switch_config(source, source, 
+						       Z, i, i);
+				}
+			}
+		}
+	}
+
+	return;
+}
+
 #endif
 
 /** */
@@ -1699,6 +1688,32 @@ static int _reset_the_path(pa_switch_t *curr_switch, int source,
 	return 1;
 }
 
+int _port_enum(int port)
+{
+	switch(port) {
+	case 6:
+		return 0;
+		break;
+	case 7:
+		return 1;
+		break;
+	case 8:
+		return 2;
+		break;
+	case 9:
+		return 3;
+		break;
+	case 10:
+		return 4;
+		break;
+	case 11:
+		return 5;
+		break;
+	default:
+		return -1;
+	}
+}
+
 /** */
 extern int set_bp_map(void)
 {
@@ -1707,9 +1722,11 @@ extern int set_bp_map(void)
 	int rc;
 	rm_BP_t *my_bp = NULL;
 	pa_bp_map_t *bp_map = NULL;
-	int bp_num, i;
+	int bp_num, i, j;
 	char *bp_id = NULL;
 	rm_location_t bp_loc;
+	rm_wire_t *my_wire = NULL;
+	rm_port_t *my_port = NULL;
 
 	bp_map_list = list_create(_bp_map_list_del);
 
@@ -1770,7 +1787,7 @@ extern int set_bp_map(void)
 			continue;
 		}
 		
-		bp_map->bp_id = strdup(bp_id);
+		bp_map->bp_id = xstrdup(bp_id);
 		bp_map->coord[X] = bp_loc.X;
 		bp_map->coord[Y] = bp_loc.Y;
 		bp_map->coord[Z] = bp_loc.Z;
@@ -1778,9 +1795,11 @@ extern int set_bp_map(void)
 		list_push(bp_map_list, bp_map);
 		
 	}
+
 	if ((rc = rm_free_BGL(bgl)) != STATUS_OK)
 		error("rm_free_BGL(): %s", rc);
-
+	
+	
 #endif
 	return 1;
 	
@@ -2214,25 +2233,174 @@ static void _switch_config(pa_node_t* source, pa_node_t* target, int dim,
 	config_tar->ext_wire[port_tar].port_tar = port_src;
 }
 
-static void _set_external_wires(int dim, int count, pa_node_t* source, 
-		pa_node_t* target)
+static int _set_external_wires(int dim, int count, pa_node_t* source, 
+			       pa_node_t* target)
 {
+#ifdef HAVE_BGL_FILES
+	rm_BGL_t *bgl = NULL;
+	int rc;
+	int i;
+	rm_wire_t *my_wire = NULL;
+	rm_port_t *my_port = NULL;
+	char *wire_id = NULL;
+	char from_node[5];
+	char to_node[5];
+	int from_port, to_port;
+	int wire_num;
+	int *coord;
+
+	_init_wires();
+
+	if (!have_db2) {
+		error("Can't access DB2 library, run from service node");
+		return -1;
+	}
+	if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
+		error("rm_set_serial(%s): %d", BGL_SERIAL, rc);
+		return -1;
+	}
+	if ((rc = rm_get_BGL(&bgl)) != STATUS_OK) {
+		error("rm_get_BGL(): %d", rc);
+		return -1;
+	}
 	
+	if (bgl == NULL) 
+		return -1;
+	
+	if ((rc = rm_get_data(bgl, RM_WireNum, &wire_num)) != STATUS_OK) {
+		error("rm_get_data(RM_BPNum): %d", rc);
+		wire_num = 0;
+	}
+	/* find out system wires on each bp */
+	
+	for (i=0; i<wire_num; i++) {
+		
+		if (i) {
+			if ((rc = rm_get_data(bgl, RM_NextWire, &my_wire))
+			    != STATUS_OK) {
+				error("rm_get_data(RM_NextWire): %d", rc);
+				break;
+			}
+		} else {
+			if ((rc = rm_get_data(bgl, RM_FirstWire, &my_wire))
+			    != STATUS_OK) {
+				error("rm_get_data(RM_FirstWire): %d", rc);
+				break;
+			}
+		}
+		if ((rc = rm_get_data(my_wire, RM_WireID, &wire_id))
+		    != STATUS_OK) {
+			error("rm_get_data(RM_FirstWire): %d", rc);
+			break;
+		}
+		if(wire_id[7] != '_') 
+			continue;
+		switch(wire_id[0]) {
+		case 'X':
+			dim = X;
+			break;
+		case 'Y':
+			dim = Y;
+			break;
+		case 'Z':
+			dim = Z;
+			break;
+		}
+		if(strlen(wire_id)<12) {
+			error("Wire_id isn't correct %s",wire_id);
+			continue;
+		}
+		strncpy(from_node, wire_id+2, 4);
+		strncpy(to_node, wire_id+8, 4);
+		from_node[4] = '\0';
+		to_node[4] = '\0';
+		if ((rc = rm_get_data(my_wire, RM_WireFromPort, &my_port))
+		    != STATUS_OK) {
+			error("rm_get_data(RM_FirstWire): %d", rc);
+			break;
+		}
+		if ((rc = rm_get_data(my_port, RM_PortID, &from_port))
+		    != STATUS_OK) {
+			error("rm_get_data(RM_PortID): %d", rc);
+			break;
+		}
+		
+		if ((rc = rm_get_data(my_wire, RM_WireToPort, &my_port))
+		    != STATUS_OK) {
+			error("rm_get_data(RM_WireToPort): %d", rc);
+			break;
+		}
+		if ((rc = rm_get_data(my_port, RM_PortID, &to_port))
+		    != STATUS_OK) {
+			error("rm_get_data(RM_PortID): %d", rc);
+			break;
+		}
+		coord = find_bp_loc(from_node);
+		if(coord[X]>=DIM_SIZE[X] 
+		   || coord[Y]>=DIM_SIZE[Y]
+		   || coord[Z]>=DIM_SIZE[Z]) {
+			error("got coord %d%d%d greater than system dims "
+			      "%d%d%d",
+			      coord[X],
+			      coord[Y],
+			      coord[Z],
+			      DIM_SIZE[X],
+			      DIM_SIZE[Y],
+			      DIM_SIZE[Z]);
+			continue;
+		}
+		source = &pa_system_ptr->
+			grid[coord[X]][coord[Y]][coord[Z]];
+		coord = find_bp_loc(to_node);
+		if(coord[X]>=DIM_SIZE[X] 
+		   || coord[Y]>=DIM_SIZE[Y]
+		   || coord[Z]>=DIM_SIZE[Z]) {
+			error("got coord %d%d%d greater than system dims "
+			      "%d%d%d",
+			      coord[X],
+			      coord[Y],
+			      coord[Z],
+			      DIM_SIZE[X],
+			      DIM_SIZE[Y],
+			      DIM_SIZE[Z]);
+			continue;
+		}
+		target = &pa_system_ptr->
+			grid[coord[X]][coord[Y]][coord[Z]];
+		_switch_config(source, 
+			       target, 
+			       dim, 
+			       _port_enum(from_port),
+			       _port_enum(to_port));	
+		
+		debug3("dim %d from %d%d%d %d -> %d%d%d %d",
+		     dim,
+		     source->coord[X], source->coord[Y], source->coord[Z],
+		     _port_enum(from_port),
+		     target->coord[X], target->coord[Y], target->coord[Z],
+		     _port_enum(to_port));
+		
+	}
+	if ((rc = rm_free_BGL(bgl)) != STATUS_OK)
+		error("rm_free_BGL(): %s", rc);
+	
+#else
+
 	_switch_config(source, source, dim, 0, 0);
 	_switch_config(source, source, dim, 1, 1);
 	if(dim!=X) {
 		_switch_config(source, target, dim, 2, 5);
 		_switch_config(source, source, dim, 3, 3);
 		_switch_config(source, source, dim, 4, 4);
-		return;
+		return 1;
 	}
-	/* always 2->5 of next. If it is the last 
+	/* always 2->5 of next. If it is the last
 		   it will go to the first.*/
 		
 	
 #ifdef HAVE_BGL
 #if 0
-	/* this is here for the second half of bgl system. 
+	/* this is here for the second half of bgl system.
 	   if used it should be changed to #if 1
 	*/
 	if(count == 0) {
@@ -2265,10 +2433,10 @@ static void _set_external_wires(int dim, int count, pa_node_t* source,
 		/* 2->5 of first */
 		_switch_config(source, target, dim, 2, 5);
 		/* 3 not in use */
-		_switch_config(source, source, dim, 3, 3);		
+		_switch_config(source, source, dim, 3, 3);
 	}
       
-	return;
+	return 1;
 #endif
 	_switch_config(source, target, dim, 2, 5);
 	if(count == 0 || count==4) {
@@ -2297,7 +2465,7 @@ static void _set_external_wires(int dim, int count, pa_node_t* source,
 		target = &pa_system_ptr->grid[DIM_SIZE[X]-2]
 			[source->coord[Y]]
 			[source->coord[Z]];
-		/* 3->4 of next to last */ 
+		/* 3->4 of next to last */
 		_switch_config(source, target, dim, 3, 4);
 		/* 4->3 of next to last */
 		_switch_config(source, target, dim, 4, 3);
@@ -2307,7 +2475,7 @@ static void _set_external_wires(int dim, int count, pa_node_t* source,
 		/* 4 X dim fixes for wires */
 		
 		if(count == 2) {
-			/* 2 not in use */		
+			/* 2 not in use */
 			_switch_config(source, source, dim, 2, 2);
 		} else if(count == 3) {
 			/* 5 not in use */
@@ -2319,14 +2487,15 @@ static void _set_external_wires(int dim, int count, pa_node_t* source,
 #else
 	if(count == 0)
 		_switch_config(source, source, dim, 5, 5);
-	else if(count < DIM_SIZE[X]-1) 
+	else if(count < DIM_SIZE[X]-1)
 		_switch_config(source, target, dim, 2, 5);
 	else
-		_switch_config(source, source, dim, 2, 2);		
+		_switch_config(source, source, dim, 2, 2);
 	_switch_config(source, source, dim, 3, 3);
 	_switch_config(source, source, dim, 4, 4);
-#endif
-
+#endif /* HAVE_BGL */
+#endif /* HAVE_BGL_FILES */
+	return 1;
 }
 
 /* static char *_set_internal_wires(List nodes, int size, int conn_type) */
@@ -3386,7 +3555,7 @@ int main(int argc, char** argv)
 {
 	pa_request_t *request = (pa_request_t*) xmalloc(sizeof(pa_request_t)); 
 	log_options_t log_opts = LOG_OPTS_INITIALIZER;
-	int debug_level = 6;
+	int debug_level = 4;
 
 	List results;
 //	List results2;
@@ -3394,7 +3563,7 @@ int main(int argc, char** argv)
 	DIM_SIZE[X]=4;
 	DIM_SIZE[Y]=4;
 	DIM_SIZE[Z]=4;
-	pa_init(NULL);	
+	pa_init(NULL);
 	log_opts.stderr_level  = debug_level;
 	log_opts.logfile_level = debug_level;
 	log_opts.syslog_level  = debug_level;
@@ -3403,9 +3572,9 @@ int main(int argc, char** argv)
 		  "/dev/null");
 						
 	results = list_create(NULL);
-	request->geometry[0] = -1;
-	request->geometry[1] = 1;
-	request->geometry[2] = 1;
+	request->geometry[0] = 2;
+	request->geometry[1] = 4;
+	request->geometry[2] = 4;
 	request->size = 32;
 	request->rotate = 0;
 	request->elongate = 0;
@@ -3421,15 +3590,15 @@ int main(int argc, char** argv)
 	list_destroy(results);
 	
 	results = list_create(NULL);
-	request->geometry[0] = -1;
-	request->geometry[1] = 2;
-	request->geometry[2] = 2;
+	request->geometry[0] = 2;
+	request->geometry[1] = 4;
+	request->geometry[2] = 4;
 	request->size = 4;
 	request->conn_type = TORUS;
 	new_pa_request(request);
 	print_pa_request(request);
 	if(!allocate_part(request, results)) {
-       		printf("couldn't allocate %d%d%d\n",
+       		debug("couldn't allocate %d%d%d",
 		       request->geometry[0],
 		       request->geometry[1],
 		       request->geometry[2]);

@@ -299,7 +299,7 @@ extern int alter_part(List nodes, int conn_type);
  * be redone to make sure correct path will be used in the real system
  *
  */
-extern int redo_part(List nodes, int conn_type, int new_count);
+extern int redo_part(List nodes, int *geo, int conn_type, int new_count);
 
 extern char *set_bgl_part(List results, int *start, 
 			  int *geometry, int conn_type);
