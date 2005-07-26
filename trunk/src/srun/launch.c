@@ -138,7 +138,7 @@ launch(void *arg)
 			r->task_flags |= TASK_PARALLEL_DEBUG;
 
 		/* Node specific message contents */
-		if (slurm_mpi_single_task_per_node ())
+		if (slurm_mpi_single_task_per_node ()) 
 			r->tasks_to_launch = 1; 
 		else
 			r->tasks_to_launch = job->ntask[i];
