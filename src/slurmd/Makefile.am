@@ -30,7 +30,8 @@ slurmd_SOURCES = 	        	\
 	ulimits.c ulimits.h     	\
 	kill_tree.c kill_tree.h		\
 	proctrack.c proctrack.h		\
-	setproctitle.c setproctitle.h 
+	setproctitle.c setproctitle.h   \
+	pdebug.c pdebug.h
 
 slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)
 

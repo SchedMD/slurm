@@ -32,7 +32,6 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/param.h>
-#include <sys/ptrace.h>
 #include <unistd.h>
 #include <pwd.h>
 #include <grp.h>
@@ -66,6 +65,7 @@
 #include "src/slurmd/io.h"
 #include "src/slurmd/proctrack.h"
 #include "src/slurmd/shm.h"
+#include "src/slurmd/pdebug.h"
 
 
 /*
@@ -75,17 +75,6 @@ static void  _make_tmpdir(slurmd_job_t *job);
 static char *_signame(int signo);
 static void  _cleanup_file_descriptors(slurmd_job_t *job);
 static void  _setup_spawn_io(slurmd_job_t *job);
-
-static void  _pdebug_stop_current(slurmd_job_t *job);
-#ifdef HAVE_PTRACE64
-#  define _PTRACE(r,p,a,d) ptrace64((r),(long long)(p),(long long)(a),(d),NULL)
-#else
-#  ifdef PTRACE_FIVE_ARGS
-#    define _PTRACE(r,p,a,d) ptrace((r),(p),(a),(d),NULL)
-#  else
-#    define _PTRACE(r,p,a,d) ptrace((r),(p),(a),(void *)(d))
-#  endif
-#endif
 
 
 static void _setup_spawn_io(slurmd_job_t *job)
@@ -199,7 +188,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 
 		slurmd_mpi_init (job, job->task[i]->gtid);
 	
-		_pdebug_stop_current(job);
+		pdebug_stop_current(job);
 	}
 
 	/* 
@@ -266,23 +255,4 @@ _make_tmpdir(slurmd_job_t *job)
 		error ("Unable to create TMPDIR [%s]: %m", tmpdir);
 
 	return;
-}
-
-
-/*
- * Stop current task on exec() for connection from a parallel debugger
- */
-static void
-_pdebug_stop_current(slurmd_job_t *job)
-{
-	/* 
-	 * Stop the task on exec for TotalView to connect 
-	 */
-	if ( (job->task_flags & TASK_PARALLEL_DEBUG)
-#ifdef HAVE_AIX
-	     && (_PTRACE(PT_TRACE_ME, 0, NULL, 0) < 0) )
-#else
-	     && (_PTRACE(PTRACE_TRACEME, 0, NULL, 0) < 0) )
-#endif
-		error("ptrace: %m");
 }

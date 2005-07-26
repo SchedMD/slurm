@@ -41,7 +41,6 @@
 #include <sys/stat.h>
 #include <sys/param.h>
 #include <sys/poll.h>
-#include <sys/ptrace.h>
 #include <unistd.h>
 #include <pwd.h>
 #include <grp.h>
@@ -76,6 +75,7 @@
 #include "src/slurmd/io.h"
 #include "src/slurmd/shm.h"
 #include "src/slurmd/proctrack.h"
+#include "src/slurmd/pdebug.h"
 
 /* 
  * Map session manager exit status to slurm errno:
@@ -146,20 +146,6 @@ static char * _make_batch_dir(slurmd_job_t *job);
 static char * _make_batch_script(batch_job_launch_msg_t *msg, char *path);
 static int    _complete_job(uint32_t jobid, uint32_t stepid, 
 			    int err, int status);
-/*
- * Parallel debugger support
- */
-static void  _pdebug_trace_process(slurmd_job_t *job, pid_t pid);
-#ifdef HAVE_PTRACE64
-#  define _PTRACE(r,p,a,d) ptrace64((r),(long long)(p),(long long)(a),(d),NULL)
-#else
-#  ifdef PTRACE_FIVE_ARGS
-#    define _PTRACE(r,p,a,d) ptrace((r),(p),(a),(d),NULL)
-#  else
-#    define _PTRACE(r,p,a,d) ptrace((r),(p),(a),(void *)(d))
-#  endif
-#endif
-
 
 static slurmd_job_t *reattach_job;
 
@@ -632,6 +618,7 @@ _fork_all_tasks(slurmd_job_t *job)
 	/*
 	 * Pre-allocate a pipe for each of the tasks
 	 */
+	debug3("num tasks on this node = %d", job->ntasks);
 	writefds = (int *) xmalloc (job->ntasks * sizeof(int));
 	if (!writefds)
 		error("writefds xmalloc failed!");
@@ -729,12 +716,11 @@ _fork_all_tasks(slurmd_job_t *job)
 
 		close(writefds[i]);
 
-		debug3("Before _pdebug_trace_process");
 		/*
 		 * Prepare process for attach by parallel debugger 
 		 * (if specified and able)
 		 */
-		_pdebug_trace_process(job, job->task[i]->pid);
+		pdebug_trace_process(job, job->task[i]->pid);
 	}
 	xfree(writefds);
 	xfree(readfds);
@@ -1254,33 +1240,5 @@ _become_user(slurmd_job_t *job)
 
 	return 0;
 }	
-
-
-/*
- * Prepare task for parallel debugger attach
- */
-static void 
-_pdebug_trace_process(slurmd_job_t *job, pid_t pid)
-{
-	/*  If task to be debugged, wait for it to stop via
-	 *  child's ptrace(PTRACE_TRACEME), then SIGSTOP, and 
-	 *  ptrace(PTRACE_DETACH). This requires a kernel patch,
-	 *  which you may already have in place for TotalView.
-	 *  If not, apply the kernel patch in etc/ptrace.patch
-	 */
-
-	if (job->task_flags & TASK_PARALLEL_DEBUG) {
-		int status;
-		waitpid(pid, &status, WUNTRACED);
-		if ((pid > (pid_t) 0) && (kill(pid, SIGSTOP) < 0))
-			error("kill(%lu): %m", (unsigned long) pid);
-#ifdef HAVE_AIX
-		if (_PTRACE(PT_DETACH, pid, NULL, 0))
-#else
-		if (_PTRACE(PTRACE_DETACH, pid, NULL, 0))
-#endif
-			error("ptrace(%lu): %m", (unsigned long) pid);
-	}
-}
 
 
