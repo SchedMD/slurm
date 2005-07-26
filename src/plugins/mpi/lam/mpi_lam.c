@@ -80,7 +80,7 @@ int mpi_p_thr_create(srun_job_t *job)
 
 int mpi_p_single_task()
 {
-	return true;
+	return false;
 }
 
 int mpi_p_exit()
