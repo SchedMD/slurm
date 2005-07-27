@@ -74,6 +74,7 @@ int mpi_p_init(slurmd_job_t *job, int rank)
 	char *p;
 	char *addr = getenvp (job->env, "SLURM_LAUNCH_NODE_IPADDR");
 	
+	debug("Using mpi/mpich-gm");
 	slurm_print_slurm_addr (job->envtp->self, addrbuf, sizeof(addrbuf));
 	
 	if ((p = strchr (addrbuf, ':')) != NULL)

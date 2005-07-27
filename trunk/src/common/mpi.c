@@ -36,7 +36,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#define MPI_DEFAULT "mpich-gm"
 
 /*
  * WARNING:  Do not change the order of these fields or add additional
@@ -188,9 +187,9 @@ int _mpi_init (char *mpi_type)
 		got_default = 1;
 	}
 	if (mpi_type == NULL) {
-		error("No MPI default set in slurm.conf using %s.",
-		      MPI_DEFAULT);
-		mpi_type = MPI_DEFAULT;
+		error("No MPI default set.");
+		retval = SLURM_ERROR;
+		goto done;		
 	}
 	setenvf (NULL, "SLURM_MPI_TYPE", "%s", mpi_type);
 		
