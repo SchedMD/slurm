@@ -559,12 +559,12 @@ static void _db2_check(void)
 extern void pa_init(node_info_msg_t *node_info_ptr)
 {
 	node_info_t *node_ptr = NULL;
-	int i;
 	int start, temp;
 	char *numeric = NULL;
 	int x,y,z;
 
 #ifdef HAVE_BGL_FILES
+	int i;
 	rm_BGL_t *bgl = NULL;
 	rm_size3D_t bp_size;
 	int rc = 0;
@@ -605,6 +605,7 @@ extern void pa_init(node_info_msg_t *node_info_ptr)
 	pa_system_ptr->resize_screen = 0;
 	
 	if(node_info_ptr!=NULL) {
+#ifdef HAVE_BGL
 		for (i = 0; i < node_info_ptr->record_count; i++) {
 			node_ptr = &node_info_ptr->node_array[i];
 			start = 0;
@@ -618,7 +619,7 @@ extern void pa_init(node_info_msg_t *node_info_ptr)
 				start = atoi(numeric);
 				break;
 			}
-#ifdef HAVE_BGL
+
 			temp = start / 100;
 			if (DIM_SIZE[X] < temp)
 				DIM_SIZE[X] = temp;
@@ -628,16 +629,15 @@ extern void pa_init(node_info_msg_t *node_info_ptr)
 			temp = start % 10;
 			if (DIM_SIZE[Z] < temp)
 				DIM_SIZE[Z] = temp;
-#else
 			temp = start;
 			if (DIM_SIZE[X] < temp)
 				DIM_SIZE[X] = temp;
-#endif
 		}
 		DIM_SIZE[X]++;
-#ifdef HAVE_BGL
 		DIM_SIZE[Y]++;
 		DIM_SIZE[Z]++;
+#else
+		DIM_SIZE[X] = node_info_ptr->record_count;
 #endif
 		pa_system_ptr->num_of_proc = node_info_ptr->record_count;
         } 
