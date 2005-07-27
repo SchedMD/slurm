@@ -362,7 +362,7 @@ int setup_env(env_t *env)
 #ifdef HAVE_AIX
 	{
 		char res_env[128], tmp_env[32];
-		char *debug_env = getenv("SLURM_LL_API_DEBUG");
+		char *debug_env = (char *)getenv("SLURM_LL_API_DEBUG");
 		int  debug_num = 0;
 		if (debug_env)
 			debug_num = atoi(debug_env);

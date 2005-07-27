@@ -88,6 +88,7 @@ int mpi_p_init(slurmd_job_t *job, int rank)
 
 int mpi_p_thr_create(srun_job_t *job)
 {
+	debug("Using mpi/mpich-gm");
 	return gmpi_thr_create(job);
 }
 
