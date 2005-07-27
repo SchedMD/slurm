@@ -74,11 +74,12 @@ int mpi_p_init (slurmd_job_t *job, int rank)
 	char *processes = NULL;
 	char *addr = getenvp (job->env, "SLURM_LAUNCH_NODE_IPADDR");
 
+	debug("Using mpi/mvapich");
 	setenvf (&job->env, "MPIRUN_HOST", "%s", addr);
 	setenvf (&job->env, "MPIRUN_RANK", "%d", rank);
 	setenvf (&job->env, "MPIRUN_MPD", "0");
 
-	info ("init for mpi rank %d\n", rank);
+	debug2("init for mpi rank %d\n", rank);
 	/*
 	 * Fake MPIRUN_PROCESSES env var -- we don't need this for
 	 *  SLURM at this time. (what a waste)

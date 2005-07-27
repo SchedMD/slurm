@@ -79,7 +79,8 @@ extern void get_job()
 		job = new_job_ptr->job_array[i];
 		
 		if ((job.job_state == JOB_COMPLETE)
-		||  (job.job_state == JOB_END))
+		    || (job.job_state == JOB_END)
+		    || (job.job_state == JOB_FAILED))
 			continue;	/* job has completed */
 
 		if (job.node_inx[0] != -1) {

@@ -70,6 +70,7 @@ const uint32_t plugin_version   = 100;
 
 int mpi_p_init(slurmd_job_t *job)
 {
+	debug("Using mpi/lam");
 	return 0;
 }
 
