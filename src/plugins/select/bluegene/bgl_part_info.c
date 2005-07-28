@@ -78,8 +78,8 @@ static int _partition_is_deallocating(bgl_record_t *bgl_record)
 				      "Job was lost.",
 				      bgl_record->bgl_part_id,
 				      bgl_record->user_name);
-				update_partition_user(bgl_record);
-				//term_jobs_on_part(bgl_record->bgl_part_id);
+				//update_partition_user(bgl_record);
+				term_jobs_on_part(bgl_record->bgl_part_id);
 			} else {
 				debug("Partition %s was in a ready state "
 				      "but is being freed. No job running.",

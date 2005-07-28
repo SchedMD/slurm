@@ -1411,7 +1411,7 @@ static int _find_yz_path(pa_node_t *pa_node, int *first,
 
 	for(i2=1;i2<=2;i2++) {
 		if(geometry[i2] > 1) {
-			debug("%d node %d%d%d"
+			debug2("%d node %d%d%d"
 			       " port 2 -> ",
 			       i2,
 			       pa_node->coord[X],
@@ -1422,7 +1422,7 @@ static int _find_yz_path(pa_node_t *pa_node, int *first,
 				&pa_node->
 				axis_switch[i2];
 			if(dim_curr_switch->int_wire[2].used) {
-				debug2("returning here");
+				debug3("returning here");
 				return 0;
 			}
 							
@@ -1432,13 +1432,13 @@ static int _find_yz_path(pa_node_t *pa_node, int *first,
 			next_node = &pa_system_ptr->
 				grid[node_tar[X]][node_tar[Y]][node_tar[Z]];
 			dim_next_switch = &next_node->axis_switch[i2];
-			debug("%d%d%d port 5",
+			debug2("%d%d%d port 5",
 			       next_node->coord[X],
 			       next_node->coord[Y],
 			       next_node->coord[Z]);
 							  
 			if(dim_next_switch->int_wire[5].used) {
-				debug2("returning here 2");
+				debug3("returning here 2");
 				return 0;
 			}
 			debug3("%d %d %d %d",i2, node_tar[i2],
@@ -1467,7 +1467,7 @@ static int _find_yz_path(pa_node_t *pa_node, int *first,
 					dim_curr_switch = dim_next_switch;
 									
 					while(node_tar[i2] != first[i2]) {
-						debug2("on dim %d at %d "
+						debug3("on dim %d at %d "
 						       "looking for %d",
 						       i2,
 						       node_tar[i2],
@@ -1475,7 +1475,7 @@ static int _find_yz_path(pa_node_t *pa_node, int *first,
 						
 						if(dim_curr_switch->
 						   int_wire[2].used) {
-							debug2("returning "
+							debug3("returning "
 							       "here 3");
 							return 0;
 						} 

@@ -1170,7 +1170,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 
 	/* return result */
 	if (error_code) {
-		info("_slurm_rpc_job_will_run: %s", 
+		debug2("_slurm_rpc_job_will_run: %s", 
 			slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {

@@ -158,7 +158,7 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 			}
 		} 
 		conn_num++;
-		debug("adding %d -> %d",bgl_conn->source, bgl_conn->target);
+		debug2("adding %d -> %d",bgl_conn->source, bgl_conn->target);
 	}
 	list_iterator_destroy(itr);
 	if ((rc = rm_set_data(curr_switch, RM_SwitchConnNum, &conn_num)) 
@@ -202,7 +202,8 @@ static int _lookat_path(bgl_bp_t *bgl_bp, pa_switch_t *curr_switch,
 		if(port_tar == curr_switch->ext_wire[port_tar].port_tar) {
 			//list_delete(conn_itr);
 			//continue;
-			debug("I found these %d %d",port_tar, curr_switch->ext_wire[port_tar].port_tar);
+			debug3("I found these %d %d",port_tar, 
+			      curr_switch->ext_wire[port_tar].port_tar);
 		}
 		if(((bgl_conn->source == port_tar)
 		    && (bgl_conn->target == source))
@@ -386,7 +387,7 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
-	debug2("BP count %d",bgl_record->bp_count);
+	debug3("BP count %d",bgl_record->bp_count);
 	if ((rc = rm_set_data(bgl_record->bgl_part,
 			      RM_PartitionSwitchNum,
 			      &bgl_record->switch_count)) 
@@ -396,7 +397,7 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
-	debug2("switch count %d",bgl_record->switch_count);
+	debug3("switch count %d",bgl_record->switch_count);
 		
 	first_bp = 1;
 	first_switch = 1;
