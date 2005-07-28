@@ -358,9 +358,9 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 				_lookat_path(bgl_bp, pa_switch, 0, 1, i);
 			}
 			
-			if(pa_switch->int_wire[1].used) {
-				_lookat_path(bgl_bp, pa_switch, 1, 0, i);
-			}
+		/* 	if(pa_switch->int_wire[1].used) { */
+/* 				_lookat_path(bgl_bp, pa_switch, 1, 0, i); */
+/* 			} */
 		}
 	}
 	list_iterator_destroy(itr);
