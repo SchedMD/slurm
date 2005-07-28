@@ -54,7 +54,7 @@
 
 #ifdef HAVE_BGL_FILES
 
-#define MAX_POLL_RETRIES    110
+#define MAX_POLL_RETRIES    220
 #define POLL_INTERVAL        3
 #define MAX_AGENT_COUNT      32
 enum update_op {START_OP, TERM_OP, SYNC_OP};
@@ -587,10 +587,10 @@ int term_jobs_on_part(pm_partition_id_t bgl_part_id)
 {
 	int rc = SLURM_SUCCESS;
 	bgl_update_t *bgl_update_ptr;
-	if (bgl_update_list == NULL) {
-		debug("No jobs started that I know about");
-		return rc;
-	}
+	/* if (bgl_update_list == NULL) { */
+/* 		debug("No jobs started that I know about"); */
+/* 		return rc; */
+/* 	} */
 	bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
 	bgl_update_ptr->op = TERM_OP;
 	bgl_update_ptr->bgl_part_id = xstrdup(bgl_part_id);
