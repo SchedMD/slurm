@@ -484,7 +484,6 @@ static int _parse_fed_file(hostlist_t *adapter_list)
 			rc = hostlist_push(*adapter_list, adapter_name);
 			if (rc == 0)
 				error("Adapter name format is incorrect.");
-			free(adapter_name);
 			adapter_name = NULL;
 		}
 		/* report any leftover strings on input line */
@@ -531,6 +530,7 @@ _get_adapters(fed_adapter_t *list, int *count)
 		   == SLURM_ERROR)
 			error("_get_adapters: "
 			      "There was an error setting up adapter.");
+		free(adapter);
 		i++;
 	}
 	hostlist_iterator_reset(adapter_iter);
@@ -1256,6 +1256,9 @@ fed_free_nodeinfo(fed_nodeinfo_t *n, bool ptr_into_array)
 /* Assign a unique key to each job.  The key is used later to 
  * gain access to the network table loaded on each node of a job.
  *
+ * Federation documentation states that the job key must be greater
+ * than 0 and less than 0xFFF0.
+ *
  * Used by: slurmctld
  */
 static uint16_t
@@ -1266,7 +1269,10 @@ _next_key(void)
 	assert(fed_state);
 	
 	_lock();
-	key = fed_state->key_index++;
+	key = fed_state->key_index % 0xFFF0;
+	if (key == 0)
+		key++;
+	fed_state->key_index = key + 1;
 	_unlock();
 	
 	return key;
@@ -2058,11 +2064,6 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 					return rc;
 			}
 
-/* 			ntbl_adapter_resources( */
-/* 				NTBL_VERSION, */
-/* 				adapter, */
-/* 				&res); */
-
 			err = ntbl_load_table_rdma(
 				NTBL_VERSION,
 				adapter,
@@ -2114,9 +2115,16 @@ _unload_window(char *adapter, unsigned short job_key, unsigned short window_id,
 					 job_key, window_id);
 		if (err == NTBL_SUCCESS)
 			return SLURM_SUCCESS;
+		debug("Unable to unload window %hu adapter %s job_key %hu: %s",
+		      window_id, adapter, job_key, _lookup_fed_status_tab(err));
 
-		error("Unable to unload window %hu adapter %s: %s\n",
-		      window_id, adapter, _lookup_fed_status_tab(err));
+		err = ntbl_clean_window(NTBL_VERSION, adapter,
+					ALWAYS_KILL, window_id);
+		if (err == NTBL_SUCCESS)
+			return SLURM_SUCCESS;
+		error("Unable to clean window %hu adapter %s job_key %hu: %s",
+		      window_id, adapter, job_key, _lookup_fed_status_tab(err));
+
 		sleep(1);
 	}
 	
@@ -2139,7 +2147,7 @@ fed_unload_table(fed_jobinfo_t *jp)
 	uint32_t table_length;
 	int local_lid;
 	int rc = SLURM_SUCCESS;
-	int retry = 30;
+	int retry = 15;
 
         assert(jp);
         assert(jp->magic == FED_JOBINFO_MAGIC);
