@@ -254,6 +254,7 @@ int switch_p_clear_node_state(void)
 		for(j = 0; j < res.window_count; j++)
 			ntbl_clean_window(NTBL_VERSION, name, 
 				ALWAYS_KILL, res.window_list[j]);
+		free(res.window_list);
 	}
 	
 	return SLURM_SUCCESS;
