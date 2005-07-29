@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  proctrack_sid.c - process tracking via process group ID plugin.
+ *  proctrack_pgid.c - process tracking via process group ID plugin.
  *****************************************************************************
  *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -74,7 +74,7 @@
  * matures.
  */
 const char plugin_name[]      = "Process tracking via process group ID plugin";
-const char plugin_type[]      = "proctrack/sid";
+const char plugin_type[]      = "proctrack/pgid";
 const uint32_t plugin_version = 90;
 
 /*
