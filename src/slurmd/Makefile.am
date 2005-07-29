@@ -28,7 +28,6 @@ slurmd_SOURCES = 	        	\
 	shm.c shm.h			\
 	fname.c fname.h			\
 	ulimits.c ulimits.h     	\
-	kill_tree.c kill_tree.h		\
 	proctrack.c proctrack.h		\
 	setproctitle.c setproctitle.h   \
 	pdebug.c pdebug.h

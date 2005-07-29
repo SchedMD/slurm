@@ -197,29 +197,120 @@ static void _destroy_list(xpid_t *list)
 	}
 }
 
-static void _kill_proclist(xpid_t *list, int sig)
+static int _kill_proclist(xpid_t *list, int sig)
 {
+	int rc = -1;
+
 	while (list) {
-		verbose("Sending %d to %d", sig, list->pid);
-		/* Do not check errors. May already be dead */
-		if (list->pid > 0)
-			kill(list->pid, sig);
+		if (list->pid > 1) {
+			verbose("Sending %d to %d", sig, list->pid);
+			rc &= kill(list->pid, sig);
+		}
 		list = list->next;
 	}
+
+	return rc;
 }
 
-extern void kill_proc_tree(pid_t top, int sig)
+
+/*
+ * Some of processes may not be in the same process group
+ * (e.g. GMPI processes).  So, find out the process tree,
+ * then kill all that subtree.
+ */
+extern int kill_proc_tree(pid_t top, int sig)
 {
-	/*
-	 * Some of processes may not be in the same process group
-	 * (e.g. GMPI processes).  So, find out the process tree,
-	 * then kill all that subtree.
-	 */
 	xpid_t *list;
+	int rc;
 
 	_build_hashtbl();
 	list = _get_list(top, _alloc_pid(top, NULL));
-	_kill_proclist(list, sig);
+	rc = _kill_proclist(list, sig);
 	_destroy_hashtbl();
 	_destroy_list(list);
+
+	return rc;
+}
+
+
+static int _kill_proclist_exclude(xpid_t *list, pid_t exclude, int sig)
+{
+	int rc = -1;
+
+	while (list) {
+		if (list->pid > 1 && list->pid != exclude) {
+			verbose("Sending %d to %d", sig, list->pid);
+			rc &= kill(list->pid, sig);
+		}
+		list = list->next;
+	}
+
+	return rc;
+}
+
+
+/*
+ * Send signal "sig" to every process in the tree EXCEPT for the top.
+ */
+extern int kill_proc_tree_not_top(pid_t top, int sig)
+{
+	xpid_t *list;
+	int rc;
+
+	_build_hashtbl();
+	list = _get_list(top, _alloc_pid(top, NULL));
+	rc = _kill_proclist_exclude(list, top, sig);
+	_destroy_hashtbl();
+
+	while(list) {
+		find_ancestor(list->pid, "slurmd");
+		list = list->next;
+	}
+	_destroy_list(list);
+
+	return rc;
+}
+
+
+/*
+ * Return the pid of the process named "process_name" 
+ * which is the ancestor of "process".
+ */
+extern pid_t find_ancestor(pid_t process, char *process_name)
+{
+	char path[MAX_NAME_LEN], rbuf[1024];
+	int fd;
+	long pid, ppid;
+
+	pid = ppid = (long)process;
+	do {
+		if (ppid <= 1) {
+			return 0;
+		}
+
+		snprintf(path, MAX_NAME_LEN, "/proc/%d/stat", ppid);
+		if ((fd = open(path, O_RDONLY)) < 0) {
+			return 0;
+		}
+		if (read(fd, rbuf, 1024) <= 0) {
+			close(fd);
+			return 0;
+		}
+		close(fd);
+		if (sscanf(rbuf, "%ld %*s %*s %ld", &pid, &ppid) != 2) {
+			return 0;
+		}
+
+		snprintf(path, MAX_NAME_LEN, "/proc/%d/cmdline", pid);
+		if ((fd = open(path, O_RDONLY)) < 0) {
+			continue;
+		}
+		if (read(fd, rbuf, 1024) <= 0) {
+			close(fd);
+			continue;
+		}
+		close(fd);
+	} while (!strstr(rbuf, process_name));
+
+	return pid;
 }
