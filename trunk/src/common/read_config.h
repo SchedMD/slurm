@@ -53,7 +53,7 @@
 #  define DEFAULT_PROCTRACK_TYPE    "proctrack/aix"
 #else
 #  define DEFAULT_CHECKPOINT_TYPE   "checkpoint/none"
-#  define DEFAULT_PROCTRACK_TYPE    "proctrack/sid"
+#  define DEFAULT_PROCTRACK_TYPE    "proctrack/pgid"
 #endif
 #define DEFAULT_RETURN_TO_SERVICE   0
 #define DEFAULT_SAVE_STATE_LOC      "/tmp"
