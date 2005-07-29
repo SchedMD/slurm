@@ -2,7 +2,7 @@
 # Makefile for proctrack plugins
 
 if HAVE_AIX_PROCTRACK
-SUBDIRS = aix sid
+SUBDIRS = aix sid linuxproc
 else
-SUBDIRS = sid
+SUBDIRS = sid linuxproc
 endif

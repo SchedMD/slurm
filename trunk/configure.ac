@@ -213,6 +213,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/proctrack/Makefile
 		 src/plugins/proctrack/aix/Makefile
 		 src/plugins/proctrack/sid/Makefile
+		 src/plugins/proctrack/linuxproc/Makefile
 		 src/plugins/sched/Makefile
 		 src/plugins/sched/backfill/Makefile
 		 src/plugins/sched/builtin/Makefile

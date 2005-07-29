@@ -29,7 +29,9 @@
 
 #include <sys/types.h>
 
-extern void kill_proc_tree(pid_t top, int sig);
+extern int kill_proc_tree(pid_t top, int sig);
+extern int kill_proc_tree_not_top(pid_t top, int sig);
+extern pid_t find_ancestor(pid_t process, char *process_name);
 /*
  * Some of processes may not be in the same process group
  * (e.g. GMPI processes).  So, find out the process tree,

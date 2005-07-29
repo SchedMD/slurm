@@ -55,7 +55,6 @@
 #include "src/slurmd/slurmd.h"
 #include "src/slurmd/shm.h"
 #include "src/slurmd/mgr.h"
-#include "src/slurmd/kill_tree.h"
 #include "src/slurmd/proctrack.h"
 
 #ifndef MAXHOSTNAMELEN
@@ -755,39 +754,36 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		goto done;
 	}
 
-	if (conf->cf.kill_tree) {
-		kill_proc_tree((pid_t) step->cont_id, req->signal);
-		rc = SLURM_SUCCESS;
-	} else {
-		if ((req->signal == SIGKILL) || (req->signal == 0)) {
-			if (slurm_signal_container(step->cont_id, req->signal) < 0)
-				rc = errno;
+	if ((req->signal == SIGKILL)
+	    || (req->signal == SIGINT) /* concession to proctrack/linuxproc */
+	    || (req->signal == 0)) {
+		if (slurm_signal_container(step->cont_id, req->signal) < 0)
+			rc = errno;
 /* SIGMIGRATE and SIGSOUND are used to initiate job checkpoint on AIX.
  * These signals are not sent to the entire process group, but just a
  * single process, namely the PMD. */
 #ifdef SIGMIGRATE
 #ifdef SIGSOUND
-		} else if ((req->signal == SIGMIGRATE) || 
-		           (req->signal == SIGSOUND)) {
-			if (step->task_list
-			    && (step->task_list->pid > (pid_t) 0)
-			    && (kill(step->task_list->pid, req->signal) < 0))
-				rc = errno;
+	} else if ((req->signal == SIGMIGRATE) || 
+		   (req->signal == SIGSOUND)) {
+		if (step->task_list
+		    && (step->task_list->pid > (pid_t) 0)
+		    && (kill(step->task_list->pid, req->signal) < 0))
+			rc = errno;
 #endif
 #endif
-		} else {
-			if ((step->pgid > (pid_t) 0)
-			    &&  (killpg(step->pgid, req->signal) < 0))
-				rc = errno;
-		} 
-		if (rc == SLURM_SUCCESS)
-			verbose("Sent signal %d to %u.%u", 
-				req->signal, req->job_id, req->job_step_id);
-		else
-			verbose("Error sending signal %d to %u.%u: %s", 
-				req->signal, req->job_id, req->job_step_id, 
-				slurm_strerror(rc));
-	}
+	} else {
+		if ((step->pgid > (pid_t) 0)
+		    &&  (killpg(step->pgid, req->signal) < 0))
+			rc = errno;
+	} 
+	if (rc == SLURM_SUCCESS)
+		verbose("Sent signal %d to %u.%u", 
+			req->signal, req->job_id, req->job_step_id);
+	else
+		verbose("Error sending signal %d to %u.%u: %s", 
+			req->signal, req->job_id, req->job_step_id, 
+			slurm_strerror(rc));
 
   done:
 	if (step)
@@ -1007,23 +1003,11 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 
 		step_cnt++;
 
-		if (conf->cf.kill_tree) {
-			kill_proc_tree((pid_t) s->cont_id, sig);
-		} else {
-			if ((sig == SIGKILL) || (sig == 0)) {
-				debug2("signal %d to job %u (cont_id:%u)",
-				       sig, jobid, s->cont_id);
-				if (slurm_signal_container(s->cont_id, sig) < 0)
-					error("kill jid %d cont_id %u: %m",
-					      s->jobid, s->cont_id);
-			} else {
-				if (s->task_list
-				    &&  (s->task_list->pid  > (pid_t) 0)
-				    &&  (killpg(s->task_list->pid, sig) < 0))
-					error("kill jid %d pgrp %d: %m",
-					      s->jobid, s->task_list->pid);
-			}
-		}
+		debug2("signal %d to job %u (cont_id:%u)",
+		       sig, jobid, s->cont_id);
+		if (slurm_signal_container(s->cont_id, sig) < 0)
+			error("kill jid %d cont_id %u: %m",
+			      s->jobid, s->cont_id);
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);
