@@ -81,6 +81,7 @@
 #include "src/srun/attach.h"
 
 #define MAX_RETRIES 20
+#define MAX_ENTRIES 50
 
 #define	TYPE_NOT_TEXT	0
 #define	TYPE_TEXT	1
@@ -96,6 +97,8 @@ typedef resource_allocation_and_run_response_msg_t alloc_run_resp;
 static void  _print_job_information(allocation_resp *resp);
 static char *_build_script (char *pathname, int file_type);
 static char *_get_shell (void);
+static void  _send_options(const int argc, char **argv);
+static void  _get_options (const char *buffer);
 static int   _is_file_text (char *, char**);
 static int   _run_batch_job (void);
 static int   _run_job_script(srun_job_t *job, env_t *env);
@@ -445,6 +448,17 @@ _run_batch_job(void)
 	return (rc);
 }
 
+static void _send_options(const int argc, char **argv)
+{
+	int i;
+	
+	set_options(argc, argv, 0);
+	for(i=1; i<argc; i++) {
+		debug3("argv[%d] = %s.",i,argv[i]);
+		xfree(argv[i]);
+	}
+}
+
 /* _get_shell - return a string containing the default shell for this user
  * NOTE: This function is NOT reentrant (see getpwuid_r if needed) */
 static char *
@@ -458,6 +472,74 @@ _get_shell (void)
 		info( "warning - no user information for user %d", getuid() );
 	}
 	return pw_ent_ptr->pw_shell;
+}
+
+/* _get_opts - gather options put in user script.  Used for batch scripts. */
+
+static void
+_get_options (const char *buffer)
+{
+	int i=0, i2=0;
+	int argc = 1;
+	char *argv[MAX_ENTRIES];
+	
+	while(buffer[i]) {
+		if(!strncmp(buffer+i, "#SLURM ",7)) {
+			i += 7;
+			i2 = i;
+			while(buffer[i2]!= '\n') {
+				if(buffer[i2] == '-') {
+					i = i2;
+					while(buffer[i] != '\n') {
+						if(i != i2 && i != (i2+1) 
+						   && buffer[i] == '-') {
+							argv[argc] = xmalloc(
+								sizeof(char)
+								*(i-i2));
+							memset(argv[argc], 0,
+							       (i-i2));
+							strncpy(argv[argc],
+								buffer+i2,
+								(i-i2-1));
+							argc++;
+							if(argc>=MAX_ENTRIES) {
+								_send_options(
+									argc, 
+									argv);
+								argc = 1;
+							}
+							i2 = i;
+						}
+						i++;
+						
+					}
+					argv[argc] = xmalloc(
+						sizeof(char)
+						*(i-i2+1));
+					memset(argv[argc], 0,
+					       (i-i2+1));
+					strncpy(argv[argc],
+						buffer+i2,
+						(i-i2));
+					i2 = i;
+					argc++;
+					if(argc>=MAX_ENTRIES) {
+						_send_options(argc, argv);
+						argc = 1;
+					}
+							
+					break;
+				} else
+					i2++;				
+			}
+			i = i2;
+		}
+			
+		i++;
+	}
+	if(argc > 1)
+		_send_options(argc, argv);
+	return;
 }
 
 #define F 0	/* char never appears in text */
@@ -575,14 +657,14 @@ _build_script (char *fname, int file_type)
 			xstrcatchar(buffer, '\n');
 		}
 	} 
-
+	
 	if (file_type != 0) {
 		int len = buffer ? strlen(buffer) : 0;
 		int size;
 
 		while ((size = cbuf_write_from_fd(cb, fd, -1, NULL)) > 0) 
 			;
-
+		
 		if (size < 0) {
 			error ("unable to read %s: %m", fname);
 			cbuf_destroy(cb);
@@ -598,8 +680,10 @@ _build_script (char *fname, int file_type)
 		if (close(fd) < 0)
 			error("close: %m");
 	}
-
+	
 	cbuf_destroy(cb);
+
+	_get_options(buffer);
 
 	return buffer;
 }

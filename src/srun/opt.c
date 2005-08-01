@@ -119,14 +119,13 @@ static int  _get_int(const char *arg, const char *what);
 
 static void  _help(void);
 
-/* set options based upon commandline args */
-static void _opt_args(int, char **);
-
 /* fill in default options  */
 static void _opt_default(void);
 
 /* set options based upon env vars  */
 static void _opt_env(void);
+
+static void _opt_args(int argc, char **argv);
 
 /* list known options and their settings  */
 static void  _opt_list(void);
@@ -700,13 +699,9 @@ _get_int(const char *arg, const char *what)
 	return (int) result;
 }
 
-/*
- * _opt_args() : set options via commandline args and popt
- */
-static void _opt_args(int argc, char **argv)
+void set_options(const int argc, char **argv, int first)
 {
-	int opt_char, i;
-	int option_index;
+	int opt_char, option_index = 0;
 	struct utsname name;
 	static struct option long_options[] = {
 		{"attach",        required_argument, 0, 'a'},
@@ -774,44 +769,65 @@ static void _opt_args(int argc, char **argv)
 	};
 	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
 		"o:Op:P:qQr:R:st:T:uU:vVw:W:x:XZ";
-	char **rest = NULL;
-
-	opt.progname = xbasename(argv[0]);
-
+	if(opt.progname == NULL)
+		opt.progname = xbasename(argv[0]);
+	else if(!first)
+		argv[0] = opt.progname;
+	else
+		error("opt.progname is set but it is the first time through.");
+	optind = 0;		
 	while((opt_char = getopt_long(argc, argv, opt_string,
-			long_options, &option_index)) != -1) {
+				      long_options, &option_index)) != -1) {
 		switch (opt_char) {
+			
 		case (int)'?':
-			fprintf(stderr, "Try \"srun --help\" for more "
-				"information\n");
-			exit(1);
+			if(first) {
+				fprintf(stderr, "Try \"srun --help\" for more "
+					"information\n");
+				exit(1);
+			} 
 			break;
 		case (int)'a':
-			if (opt.allocate || opt.batch) {
-				error("can only specify one mode: "
-				      "allocate, attach or batch.");
-				exit(1);
+			if(first) {
+				if (opt.allocate || opt.batch) {
+					error("can only specify one mode: "
+					      "allocate, attach or batch.");
+					exit(1);
+				}
+				mode = MODE_ATTACH;
+				opt.attach = strdup(optarg);
+			} else {
+				error("Option '%c' can only be set "
+				      "from srun commandline.", opt_char);
 			}
-			mode = MODE_ATTACH;
-			opt.attach = strdup(optarg);
 			break;
 		case (int)'A':
-			if (opt.attach || opt.batch) {
-				error("can only specify one mode: "
-				      "allocate, attach or batch.");
-				exit(1);
+			if(first) {
+				if (opt.attach || opt.batch) {
+					error("can only specify one mode: "
+					      "allocate, attach or batch.");
+					exit(1);
+				}
+				mode = MODE_ALLOCATE;
+				opt.allocate = true;
+			} else {
+				error("Option '%c' can only be set "
+				      "from srun commandline.", opt_char);
 			}
-			mode = MODE_ALLOCATE;
-			opt.allocate = true;
 			break;
 		case (int)'b':
-			if (opt.allocate || opt.attach) {
-				error("can only specify one mode: "
-				      "allocate, attach or batch.");
-				exit(1);
+			if(first) {
+				if (opt.allocate || opt.attach) {
+					error("can only specify one mode: "
+					      "allocate, attach or batch.");
+					exit(1);
+				}
+				mode = MODE_BATCH;
+				opt.batch = true;
+			} else {
+				error("Option '%c' can only be set "
+				      "from srun commandline.", opt_char);
 			}
-			mode = MODE_BATCH;
-			opt.batch = true;
 			break;
 		case (int)'c':
 			opt.cpus_set = true;
@@ -1058,6 +1074,9 @@ static void _opt_args(int argc, char **argv)
 		case LONG_OPT_NETWORK:
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
+#ifdef HAVE_AIX
+			setenv("SLURM_NETWORK", opt.network, 1);
+#endif
 			break;
 		case LONG_OPT_PROPAGATE:
 			xfree(opt.propagate);
@@ -1066,11 +1085,23 @@ static void _opt_args(int argc, char **argv)
 			break;
 		}
 	}
+}
+
+/*
+ * _opt_args() : set options via commandline args and popt
+ */
+static void _opt_args(int argc, char **argv)
+{
+	int i;
+	char **rest = NULL;
+
+	set_options(argc, argv, 1);	
 
 #ifdef HAVE_AIX
-	if (opt.network == NULL)
+	if (opt.network == NULL) {
 		opt.network = "us,sn_all,bulk_xfer";
-	setenv("SLURM_NETWORK", opt.network, 1);
+		setenv("SLURM_NETWORK", opt.network, 1);
+	}
 #endif
 
 	remote_argc = 0;
@@ -1095,7 +1126,6 @@ static void _opt_args(int argc, char **argv)
 			remote_argv[0] = fullpath;
 		} 
 	}
-
 	if (!_opt_verify())
 		exit(1);
 }
