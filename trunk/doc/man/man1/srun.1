@@ -238,10 +238,26 @@ reused. Plan accordingly to avoid over-writing output and error files.
 \fIexecutable\fR must be specified using either a fully qualified 
 pathname or its pathname will be relative to the current working directory. 
 The search path will not be used to locate the file. \fIexecutable\fR 
-will be interpreted by the user's default shell unless the file begins 
+will be interpreted by the users default shell unless the file begins 
 with "#!" followed by the fully qualified pathname of a valid shell.
 Note that batch jobs will be re\-queued if a node fails while it is being 
 initiated. 
+
+Srun commandline options can also be inserted into the script by prefacing 
+the option with #SLURM. Multiple options can be on one line or multiple lines. 
+i.e.
+
+.br 
+#SLURM -N 2 -n 2
+.br 
+#SLURM --mpi=lam
+.br
+
+This is run the script on 2 nodes, with 2 procs with mpi type lam.  
+All commandline options are able to be set inside the script with the 
+exception of the mode (which has already been set since to run a batch 
+script you are in batch mode).
+
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 verbose operation. Multiple \fB-v\fR's will further increase the verbosity of
