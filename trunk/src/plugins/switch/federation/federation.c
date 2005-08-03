@@ -1259,6 +1259,9 @@ fed_free_nodeinfo(fed_nodeinfo_t *n, bool ptr_into_array)
  * Federation documentation states that the job key must be greater
  * than 0 and less than 0xFFF0.
  *
+ * Federation documentation states that the job key must be greater
+ * than 0 and less than 0xFFF0.
+ *
  * Used by: slurmctld
  */
 static uint16_t
@@ -1322,6 +1325,8 @@ _find_window(fed_adapter_t *adapter, int window_id) {
 			return window;
 	}
 
+	debug3("Unable to _find_window %d on adapter %s",
+	       window_id, adapter->name);
 	return (fed_window_t *) NULL;
 }
 
@@ -1392,17 +1397,30 @@ _deallocate_windows(int adapter_cnt, fed_tableinfo_t *tableinfo,
 	
 	assert(tableinfo);
 	assert(hostname);
+	assert(adapter_cnt <= FED_MAXADAPTERS);
 	
 	node = _find_node(fed_state, hostname);
-	if(node == NULL) {
+	if (node == NULL) {
 		error("Failed to find node in node_list: %s", hostname);
+		return SLURM_ERROR;
+	}
+	if (node->adapter_list == NULL) {
+		error("Found node, but adapter_list is NULL");
 		return SLURM_ERROR;
 	}
 	
 	/* Reserve a window on each adapter for this task */
 	for (i = 0; i < adapter_cnt; i++) {
 		adapter = &node->adapter_list[i];
+		if (tableinfo[i].table == NULL) {
+			error("tableinfo[%d].table is NULL", i);
+			return SLURM_ERROR;
+		}
 		table = tableinfo[i].table[task_id];
+		if (table == NULL) {
+			error("tableinfo[%d].table[%d] is NULL", i, task_id);
+			return SLURM_ERROR;
+		}
 		if (adapter->lid != table->lid) {
 			error("Did not find the correct adapter: %hu vs. %hu",
 			      adapter->lid, table->lid);
@@ -1411,7 +1429,8 @@ _deallocate_windows(int adapter_cnt, fed_tableinfo_t *tableinfo,
 		debug3("Clearing adapter %s, lid %hu, window %hu for task %d",
 		       adapter->name, table->lid, table->window_id, task_id);
 		window = _find_window(adapter, table->window_id);
-		window->status = NTBL_UNLOADED_STATE;
+		if (window)
+			window->status = NTBL_UNLOADED_STATE;
 	}
 	
 	return SLURM_SUCCESS;
@@ -1973,7 +1992,7 @@ _wait_for_all_windows(fed_tableinfo_t *tableinfo)
 	int i;
 	int err;
 	int rc = SLURM_SUCCESS;
-	int retry = 30;
+	int retry = 15;
 
 	lid = _get_lid_from_adapter(tableinfo->adapter_name);
 
