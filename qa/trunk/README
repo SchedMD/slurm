@@ -234,7 +234,6 @@ test8.1    Test of Blue Gene specific srun command line options
 test8.2    Test of Blue Gene specific srun environment variables
 test8.3    Test of Blue Gene specific job geometry support
 test8.4    Test of Blue Gene MPI job execution
-test8.5    Test of Blue Gene specific srun --node-use option
 
 
 test9.#    System stress testing. Exercises all commands and daemons.
