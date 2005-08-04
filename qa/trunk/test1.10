@@ -43,18 +43,24 @@ print_header $test_id
 # Set debug level to 3 (above default value of 2, net is 5)
 #
 set timeout $max_job_delay
-spawn $srun -N1 -d4 -t1 /invalid_executable  
+spawn $srun -N1 -d3 -t1 /invalid_executable  
 expect {
-	-re "debug " {
-		set debug_level 5
+	-re "debug3" {
+		if { $debug_level < 7 } {
+			set debug_level 7
+		}
 		exp_continue
 	}
 	-re "debug2" {
-		set debug_level 6
+		if { $debug_level < 6 } {
+			set debug_level 6
+		}
 		exp_continue
 	}
-	-re "debug3" {
-		set debug_level 7
+	-re "debug " {
+		if { $debug_level < 5 } {
+			set debug_level 5
+		}
 		exp_continue
 	}
 	timeout {
@@ -66,7 +72,7 @@ expect {
 }
 
 if {$debug_level != 5} {
-	send_user "\nFAILURE: Did not log at proper debug level\n"
+	send_user "\nFAILURE: Did not log at proper level ($debug_level)\n"
 	set exit_code 1
 }
 if {$exit_code == 0} {
