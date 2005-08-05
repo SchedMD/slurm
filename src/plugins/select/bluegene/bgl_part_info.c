@@ -314,9 +314,7 @@ extern int update_partition_list()
 			case RM_PARTITION_FREE:
 				if(bgl_record->boot_count < RETRY_BOOT_COUNT) {
 					slurm_mutex_unlock(&part_state_mutex);
-					if((rc = boot_part(bgl_record,
-							   bgl_record->
-							   node_use))
+					if((rc = boot_part(bgl_record))
 					   != SLURM_SUCCESS) {
 						updated = -1;
 					}

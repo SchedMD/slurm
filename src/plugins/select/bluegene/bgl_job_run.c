@@ -228,12 +228,16 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 		      bgl_update_ptr->bgl_part_id);
 		return;
 	}
-	
+
+	slurm_mutex_lock(&part_state_mutex);
+	bgl_record->job_running = 1;
+	slurm_mutex_unlock(&part_state_mutex);
+		
 	if(bgl_record->state == RM_PARTITION_DEALLOCATING) {
 		debug("Partition is in Deallocating state, waiting for free.");
 		bgl_free_partition(bgl_record);
 	}
-
+	
 	if(bgl_record->state == RM_PARTITION_FREE) {
 		num_part_to_free = 0;
 		num_part_freed = 0;
@@ -290,8 +294,9 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 		/* wait for all necessary partitions to be freed */
 		while(num_part_to_free != num_part_freed)
 			usleep(1000);
-		if((rc = boot_part(bgl_record, 
-				   bgl_update_ptr->node_use))
+		if(!bgl_record->job_running) 
+			return;
+		if((rc = boot_part(bgl_record))
 		   != SLURM_SUCCESS) {
 			sleep(2);	
 			/* wait for the slurmd to begin 
@@ -404,6 +409,8 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		      bgl_record->user_name);
 	
 		slurm_mutex_lock(&part_state_mutex);
+		bgl_record->job_running = 0;
+	
 		/*remove user from list */
 		if(bgl_record->target_name) {
 			if(strcmp(bgl_record->target_name, 
