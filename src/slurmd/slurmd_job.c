@@ -381,7 +381,7 @@ job_signal_tasks(slurmd_job_t *job, int signal)
 	while (--n >= 0) {
 		if ((job->task[n]->pid > (pid_t) 0)
 		&&  (kill(job->task[n]->pid, signal) < 0)) {
-			if (errno != EEXIST) {
+			if (errno != ESRCH) {
 				error("job %d.%d: kill task %d: %m", 
 				      job->jobid, job->stepid, n);
 			}
