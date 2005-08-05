@@ -92,7 +92,10 @@ typedef struct bgl_record {
 	int boot_count;                 /* number of attemts boot attempts */
 	bitstr_t *bitmap;               /* bitmap to check the name 
 					   of partition */
-	int full_partition;
+	int full_partition;             /* wether or not partition is the full
+					   partition */
+	int job_running;                /* signal if there is a job running 
+					   on the partition */
 } bgl_record_t;
 
 typedef struct {
