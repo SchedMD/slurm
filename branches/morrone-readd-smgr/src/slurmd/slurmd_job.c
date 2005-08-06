@@ -206,6 +206,16 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 
 	_job_init_task_info(job, msg->global_task_ids);
 
+	if (pipe(job->fdpair) < 0) {
+		error("pipe: %m");
+		return NULL;
+	}
+
+	fd_set_close_on_exec(job->fdpair[0]);
+	fd_set_close_on_exec(job->fdpair[1]);
+
+	job->smgr_status = -1;
+
 	return job;
 }
 
@@ -271,6 +281,16 @@ job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *cli_addr)
 	list_append(job->sruns, (void *) srun);
 
 	_job_init_task_info(job, &(msg->global_task_id));
+
+	if (pipe(job->fdpair) < 0) {
+		error("pipe: %m");
+		return NULL;
+	}
+
+	fd_set_close_on_exec(job->fdpair[0]);
+	fd_set_close_on_exec(job->fdpair[1]);
+
+	job->smgr_status = -1;
 
 	return job;
 }
@@ -351,6 +371,15 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 		 */
 		job->argv    = (char **) xmalloc(job->argc * sizeof(char *));
 	}
+
+	if (pipe(job->fdpair) < 0) {
+		error("pipe: %m");
+		return NULL;
+	}
+	fd_set_close_on_exec(job->fdpair[0]);
+	fd_set_close_on_exec(job->fdpair[1]);
+
+	job->smgr_status = -1;
 
 	_job_init_task_info(job, &global_taskid);
 
@@ -557,7 +586,7 @@ job_update_shm(slurmd_job_t *job)
 	s.timelimit = job->timelimit;
 	strncpy(s.exec_name, job->argv[0], MAXPATHLEN);
 	s.sw_id     = 0;
-	s.mpid      = job->jmgr_pid;
+	s.mpid      = (pid_t) 0;
 	s.cont_id   = 0;
 	s.io_update = false;
 	/*

@@ -391,9 +391,6 @@ _io_thr(void *arg)
 	/* A SIGHUP signal signals a reattach to the mgr thread.  We need
 	 * to block SIGHUP from being delivered to this thread so the mgr
 	 * thread will see the signal.
-	 *
-	 * FIXME!  It is conceivable that a SIGHUP could be delivered to
-	 * this thread before we get a chance to block it.
 	 */
 	sigemptyset(&set);
 	sigaddset(&set, SIGHUP);

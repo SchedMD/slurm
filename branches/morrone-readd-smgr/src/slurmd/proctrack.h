@@ -55,7 +55,7 @@ extern int slurm_proctrack_fini(void);
  *
  * Returns container ID or zero on error
  */
-extern uint32_t slurm_create_container(slurmd_job_t *job);
+extern uint32_t slurm_create_container(uint32_t job_id);
 
 /*
  * Add this process to the specified container

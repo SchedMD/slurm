@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * src/slurmd/task.h - task launching functions for slurmd
+ * src/slurmd/smgr.h - session manager functions for slurmd
  * $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
@@ -25,8 +25,8 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef _TASK_H
-#define _TASK_H
+#ifndef _SMGR_H
+#define _SMGR_H
 
 #if HAVE_CONFIG_H
 #  include "config.h"
@@ -40,6 +40,25 @@
 
 #include "src/slurmd/slurmd_job.h"
 
-void exec_task(slurmd_job_t *job, int i, int waitfd);
+/*
+ * Task exit code information
+ */
+typedef struct exit_status {
+	int taskid;
+	int status;
+} exit_status_t;
 
-#endif /* !_TASK_H */
+
+/*
+ * Create the session manager process, which starts a new session
+ * and runs as the UID of the job owner. The session manager process
+ * will wait for all tasks in the job to exit (sending task exit messages
+ * as appropriate), and then exit itself.
+ *
+ * If the smgr process is successfully created, the pid of the new 
+ * process is returned. On error, (pid_t) -1 is returned.
+ *
+ */
+pid_t smgr_create(slurmd_job_t *job);
+
+#endif /* !_SMGR_H */

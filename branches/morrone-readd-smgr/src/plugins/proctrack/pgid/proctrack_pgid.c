@@ -92,11 +92,25 @@ extern int fini ( void )
 }
 
 /*
- * Uses job step process group id.
+ * Uses the process group id of the tasks as the unique container id.
  */
 extern uint32_t slurm_create_container ( slurmd_job_t *job )
 {
-	return (uint32_t) job->pgid;
+	if (job == NULL) {
+		error("job is NULL");
+		return -1;
+	}
+	if (job->task == NULL) {
+		error("job->task is NULL");
+		return -1;
+	}
+	if (job->task[0] == NULL) {
+		error("job->tasks[0] == NULL");
+		return -1;
+	}
+
+	return (uint32_t) job->task[0]->pid;
+;
 }
 
 extern int slurm_add_container ( uint32_t id )

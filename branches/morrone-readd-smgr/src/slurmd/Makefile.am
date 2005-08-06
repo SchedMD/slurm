@@ -19,7 +19,7 @@ slurmd_SOURCES = 	        	\
 	slurmd.c slurmd.h       	\
 	req.c req.h			\
 	mgr.c mgr.h			\
-	task.c task.h			\
+	smgr.c smgr.h			\
 	get_mach_stat.c get_mach_stat.h	\
 	read_proc.c 	        	\
 	slurmd_job.c slurmd_job.h			\

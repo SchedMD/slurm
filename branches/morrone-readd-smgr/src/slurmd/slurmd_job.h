@@ -126,10 +126,14 @@ typedef struct slurmd_job {
 	List           objs;  /* list of IO objects                         */
 	List 	       sruns; /* List of sruns                              */
 
-	pthread_t      ioid;  /* pthread id of IO thread                    */
+	pthread_t       ioid; /* pthread id of IO thread                    */
 
 	pid_t          jmgr_pid;     /* job manager pid                     */
-	pid_t          pgid;         /* process group id for tasks          */
+	pid_t          smgr_pid;     /* session manager pid                 */
+	int            smgr_status;  /* session manager status              */
+
+	int            fdpair[2];  /* file descriptor pair for              */
+	                           /* communication between slurmds         */
 
 	uint16_t       task_flags; 
 	env_t          *envtp;

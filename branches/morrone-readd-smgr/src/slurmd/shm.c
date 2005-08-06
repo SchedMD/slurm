@@ -264,17 +264,6 @@ shm_get_steps(void)
 	return l;
 }
 
-
-static bool
-_job_step_mgr_still_running(job_step_t *step)
-{
-	if (kill(step->mpid, 0) == 0)
-		return true;
-	else
-		return false;
-}
-
-
 bool
 shm_step_still_running(uint32_t jobid, uint32_t stepid)
 {
@@ -290,21 +279,14 @@ shm_step_still_running(uint32_t jobid, uint32_t stepid)
 
 	s = &slurmd_shm->step[i];
 
-	debug3("shm_step_still_running, s->state = %d, cont_id = %d",
-	       s->state, s->cont_id);
 	/*
 	 *  Consider a job step running if the step state is less 
 	 *   than STARTED or if s->cont_id has not yet been set then 
 	 *   validate that the cont_id has a valid slurmd process. 
 	 */
-/* 	if (  (s->state < SLURMD_JOB_STARTED) */
-/* 	   || (s->cont_id == 0)  */
-/* 	   || (_valid_slurmd_cont_id(s->cont_id)) ) */
-/* 		retval = true; */
-/* 	if (s->state < SLURMD_JOB_COMPLETE) */
-/* 		retval = true; */
-	if (s->state < SLURMD_JOB_COMPLETE
-	    && _job_step_mgr_still_running(s))
+	if (  (s->state < SLURMD_JOB_STARTED)
+	   || (s->cont_id == 0) 
+	   || (_valid_slurmd_cont_id(s->cont_id)) )
 		retval = true;
 
     done:
@@ -545,12 +527,12 @@ shm_update_step_mpid(uint32_t jobid, uint32_t stepid, int mpid)
 }
 
 int 
-shm_update_step_pgid(uint32_t jobid, uint32_t stepid, int pgid)
+shm_update_step_spid(uint32_t jobid, uint32_t stepid, int spid)
 {
 	int i, retval = SLURM_SUCCESS;
 	_shm_lock();
 	if ((i = _shm_find_step(jobid, stepid)) >= 0)
-		slurmd_shm->step[i].pgid = pgid;
+		slurmd_shm->step[i].spid = spid;
 	else {
 		slurm_seterrno(ESRCH);
 		retval = SLURM_FAILURE;

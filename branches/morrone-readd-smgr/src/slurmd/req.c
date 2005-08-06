@@ -773,8 +773,9 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 #endif
 #endif
 	} else {
-		if ((step->pgid > (pid_t) 0)
-		    &&  (killpg(step->pgid, req->signal) < 0))
+		pid_t pgid = step->task_list->pid;
+		if ((pgid > (pid_t) 0)
+		    &&  (killpg(pgid, req->signal) < 0))
 			rc = errno;
 	} 
 	if (rc == SLURM_SUCCESS)
@@ -791,10 +792,35 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	slurm_send_rc_msg(msg, rc);
 }
 
+static void
+_kill_running_session_mgrs(uint32_t jobid, int signum, char *signame)
+{
+	List         steps = shm_get_steps();
+	ListIterator i     = list_iterator_create(steps);
+	job_step_t  *s     = NULL;
+	int          cnt   = 0;	
+
+	while ((s = list_next(i))) {
+		if (s->jobid == jobid) {
+			if (s->spid)
+				kill(s->spid, signum);
+			/* if (s->cont_id) */
+				/* slurm_signal_container(s->cont_id, signum); */
+			cnt++;
+		}
+	}
+	list_iterator_destroy(i);
+	list_destroy(steps);
+	if (cnt)
+		verbose("Job %u: sent %s to %d active steps",
+			jobid, signame, cnt);
+
+	return;
+}
+
 /* 
- *  For the specified job_id: reply to slurmctld, 
+ *  For the specified job_id: Send SIGXCPU to the smgr, reply to slurmctld, 
  *   sleep(configured kill_wait), then send SIGKILL 
- *  FIXME! - Perhaps we should send SIGXCPU first?
  */
 static void
 _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
@@ -803,7 +829,6 @@ _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 	kill_job_msg_t *req = msg->data;
 	int             nsteps;
 
-	debug2("Processing RPC: REQUEST_KILL_TIMELIMIT");
 	if (!_slurm_authorized_user(uid)) {
 		error ("Security violation: rpc_timelimit req from uid %ld", 
 		       (long) uid);
@@ -817,6 +842,13 @@ _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	slurm_close_accepted_conn(msg->conn_fd);
 	msg->conn_fd = -1;
+
+	/*
+	 *  Send SIGXCPU to warn session managers of job steps for this
+	 *   job that the job is about to be terminated
+	 */
+	_kill_running_session_mgrs(req->job_id, SIGXCPU, "SIGXCPU");
+	sleep(1);
 
 	nsteps = _kill_all_active_steps(req->job_id, SIGTERM, false);
 	verbose( "Job %u: timeout: sent SIGTERM to %d active steps", 
@@ -1130,7 +1162,6 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	int		delay;
 	char           *bgl_part_id = NULL;
 
-	debug2("Processing RPC: REQUEST_KILL_JOB");
 	/* 
 	 * check that requesting user ID is the SLURM UID
 	 */
@@ -1145,11 +1176,11 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	/*
 	 *  Initialize a "waiter" thread for this jobid. If another
 	 *   thread is already waiting on termination of this job, 
-	 *   _waiter_init() will return SLURM_ERROR. In this case, just 
+	 *   _waiter_init() will return < 0. In this case, just 
 	 *   notify slurmctld that we recvd the message successfully,
 	 *   then exit this thread.
 	 */
-	if (_waiter_init(req->job_id) == SLURM_ERROR) {
+	if (_waiter_init (req->job_id) < 0) {
 		if (msg->conn_fd >= 0)
 			slurm_send_rc_msg (msg, SLURM_SUCCESS);
 		return;

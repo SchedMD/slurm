@@ -31,13 +31,12 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/slurmd/slurmd_job.h"
 
 /* ************************************************************************ */
 /*  TAG(                        slurm_proctrack_ops_t                    )  */
 /* ************************************************************************ */
 typedef struct slurm_proctrack_ops {
-	uint32_t	(*create)	( slurmd_job_t *job );
+	uint32_t	(*create)	( uint32_t job_id );
 	int		(*add)		( uint32_t id );
 	int		(*signal)	( uint32_t id, int signal );
 	int		(*destroy)	( uint32_t id );
@@ -223,12 +222,12 @@ slurm_proctrack_fini( void )
  * Returns container ID or zero on error
  */
 extern uint32_t
-slurm_create_container(slurmd_job_t *job)
+slurm_create_container(uint32_t job_id)
 {
 	if ( slurm_proctrack_init() < 0 )
 		return 0;
 
-	return (*(g_proctrack_context->ops.create))( job );
+	return (*(g_proctrack_context->ops.create))( job_id );
 }
 
 /*
