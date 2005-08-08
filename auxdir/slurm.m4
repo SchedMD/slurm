@@ -46,23 +46,23 @@ AC_DEFUN([X_AC_SLURM_PORTS],
   
 ])
 dnl
-dnl Check for program_invocation_short_name
+dnl Check for program_invocation_name
 dnl
-AC_DEFUN([X_AC_SLURM_PROGRAM_INVOCATION_SHORT_NAME],
+AC_DEFUN([X_AC_SLURM_PROGRAM_INVOCATION_NAME],
 [
-  AC_MSG_CHECKING([for program_invocation_short_name])
+  AC_MSG_CHECKING([for program_invocation_name])
 
-  AC_TRY_LINK([extern char *program_invocation_short_name;],
-    [char *p; p = program_invocation_short_name; printf("%s\n", p);],
-    [got_program_invocation_short_name=yes],
+  AC_TRY_LINK([extern char *program_invocation_name;],
+    [char *p; p = program_invocation_name; printf("%s\n", p);],
+    [got_program_invocation_name=yes],
     []
   )
 
-  AC_MSG_RESULT(${got_program_invocation_short_name=no})
+  AC_MSG_RESULT(${got_program_invocation_name=no})
 
-  if test "x$got_program_invocation_short_name" = "xyes"; then
-    AC_DEFINE(HAVE_PROGRAM_INVOCATION_SHORT_NAME, 1,
-              [Define if libc sets program_invocation_short_name]
+  if test "x$got_program_invocation_name" = "xyes"; then
+    AC_DEFINE(HAVE_PROGRAM_INVOCATION_NAME, 1,
+              [Define if libc sets program_invocation_name]
              )
   fi
 ])dnl AC_PROG_INVOCATION_NAME

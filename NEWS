@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
     "ProctrackType=proctrack/linuxproc")
  -- Make default plugin be "none".
  -- Added mpi/none plugin and made it the default.
+ -- Replace extern program_invocation_short_name with program_invocation_name
+    due to short name being truncated to 16 bytes on some systems.
 
 * Changes in SLURM 0.5.0
 ========================

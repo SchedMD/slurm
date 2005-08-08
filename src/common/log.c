@@ -134,11 +134,13 @@ static log_t            *log = NULL;
 #define LOG_INITIALIZED ((log != NULL) && (log->initialized))
 
 /* define a default argv0 */
-#if HAVE_PROGRAM_INVOCATION_SHORT_NAME
-extern char * program_invocation_short_name;
-#  define default_argv0	program_invocation_short_name
+#if HAVE_PROGRAM_INVOCATION_NAME
+/* This used to use program_invocation_short_name, but on some systems 
+ * that gets truncated at 16 bytes, too short for our needs. */
+extern char * program_invocation_name;
+#  define default_name	program_invocation_name
 #else 
-#  define default_argv0 ""
+#  define default_name ""
 #endif
 
 
@@ -185,7 +187,12 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 			xfree(log->argv0);
 		log->argv0 = xstrdup(xbasename(prog));
 	} else if (!log->argv0) {
-		log->argv0 = xstrdup(default_argv0);
+		char *short_name = strrchr(default_name, '/');
+		if (short_name)
+			short_name++;
+		else
+			short_name = default_name;
+		log->argv0 = xstrdup(short_name);
 	}
 
 	if (!log->fpfx)

@@ -55,9 +55,9 @@ dnl Checks for structures.
 dnl
 X_AC__SYSTEM_CONFIGURATION
 
-dnl check to see if glibc's program_invocation_short_name is available:
+dnl check to see if glibc's program_invocation_name is available:
 dnl
-X_AC_SLURM_PROGRAM_INVOCATION_SHORT_NAME
+X_AC_SLURM_PROGRAM_INVOCATION_NAME
 
 dnl Check if ptrace takes four or five arguments
 dnl
