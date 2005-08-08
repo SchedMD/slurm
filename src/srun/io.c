@@ -155,9 +155,20 @@ _set_iofds_nonblocking(srun_job_t *job)
 static void
 _update_task_io_state(srun_job_t *job, int taskid)
 {	
+	pipe_enum_t pipe_enum = PIPE_TASK_STATE;
+	
 	slurm_mutex_lock(&job->task_mutex);
-	if (job->task_state[taskid] == SRUN_TASK_IO_WAIT)
+	if (job->task_state[taskid] == SRUN_TASK_IO_WAIT) {
 		job->task_state[taskid] = SRUN_TASK_EXITED;
+		if(message_thread) {
+			write(job->par_msg->msg_pipe[1],
+			      &pipe_enum,sizeof(int));
+			write(job->par_msg->msg_pipe[1],
+			      &taskid,sizeof(int));
+			write(job->par_msg->msg_pipe[1],
+			      &job->task_state[taskid],sizeof(int));
+		}
+	}
 	slurm_mutex_unlock(&job->task_mutex);
 }
 
@@ -365,7 +376,6 @@ _setup_pollfds(srun_job_t *job, struct pollfd *fds, fd_info_t *map)
 			pthread_exit(0);
 		} 
 	}
-
 	return nfds;
 }
 

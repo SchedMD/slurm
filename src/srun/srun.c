@@ -273,10 +273,11 @@ int srun(int ac, char **av)
 	/* wait for job to terminate 
 	 */
 	slurm_mutex_lock(&job->state_mutex);
-	while (job->state < SRUN_JOB_TERMINATED) 
+	while (job->state < SRUN_JOB_TERMINATED) {
 		pthread_cond_wait(&job->state_cond, &job->state_mutex);
+	}
 	slurm_mutex_unlock(&job->state_mutex);
-
+		
 	/* job is now overdone, clean up  
 	 *
 	 * If job is "forcefully terminated" exit immediately.

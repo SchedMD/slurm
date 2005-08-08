@@ -85,5 +85,7 @@ uint32_t jobid_from_env(void);
  */
 int create_job_step(srun_job_t *j);
 
+/* set the job for debugging purpose */
+void set_allocate_job(srun_job_t *job);
 
 #endif /* !_HAVE_ALLOCATE_H */

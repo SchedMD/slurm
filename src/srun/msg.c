@@ -102,7 +102,6 @@ static void     _node_fail_handler(char *nodelist, srun_job_t *job);
 #define _poll_wr_isset(pfd) ((pfd).revents & POLLOUT)
 #define _poll_err(pfd)      ((pfd).revents & POLLERR)
 
-
 /*
  * Install entry in the MPI_proctable for host with node id `nodeid'
  *  and the number of tasks `ntasks' with pid array `pid'
@@ -112,29 +111,64 @@ _build_proctable(srun_job_t *job, char *host, int nodeid, int ntasks, uint32_t *
 {
 	int i;
 	static int tasks_recorded = 0;
-
+	pipe_enum_t pipe_enum = PIPE_MPIR_PROCTABLE_SIZE;
+	
 	if (MPIR_proctable_size == 0) {
 		MPIR_proctable_size = opt.nprocs;
-		MPIR_proctable = xmalloc(sizeof(MPIR_PROCDESC) * opt.nprocs);
-		totalview_jobid = NULL;
-		xstrfmtcat(totalview_jobid, "%lu", job->jobid);
+/* 		MPIR_proctable = xmalloc(sizeof(MPIR_PROCDESC) * opt.nprocs); */
+/* 		totalview_jobid = NULL; */
+/* 		xstrfmtcat(totalview_jobid, "%lu", job->jobid);		 */
+		
+		if(message_thread) {
+			write(job->par_msg->msg_pipe[1],
+			      &pipe_enum,sizeof(int));
+			write(job->par_msg->msg_pipe[1],
+			      &opt.nprocs,sizeof(int));
+			
+			pipe_enum = PIPE_MPIR_TOTALVIEW_JOBID;
+			write(job->par_msg->msg_pipe[1],
+			      &pipe_enum,sizeof(int));
+			write(job->par_msg->msg_pipe[1],
+			      &job->jobid,sizeof(int));	
+		}
 	}
 
 	for (i = 0; i < ntasks; i++) {
 		int taskid          = job->tids[nodeid][i];
-		MPIR_PROCDESC *tv   = &MPIR_proctable[taskid];
-		tv->host_name       = job->host[nodeid];
-		tv->executable_name = remote_argv[0];
-		tv->pid             = pid[i];
+		/* MPIR_PROCDESC *tv   = &MPIR_proctable[taskid]; */
+/* 		tv->host_name       = job->host[nodeid]; */
+/* 		tv->executable_name = remote_argv[0]; */
+/* 		tv->pid             = pid[i]; */
+		
+		if(message_thread) {
+			pipe_enum = PIPE_MPIR_PROCDESC;
+			write(job->par_msg->msg_pipe[1],
+			      &pipe_enum,sizeof(int));
+			write(job->par_msg->msg_pipe[1],
+			      &taskid,sizeof(int));	
+			write(job->par_msg->msg_pipe[1],
+			      &nodeid,sizeof(int));	
+			write(job->par_msg->msg_pipe[1],
+			      &pid[i],sizeof(int));
+		}
 
 		tasks_recorded++;
 	}
 
 	if (tasks_recorded == opt.nprocs) {
-		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
-		MPIR_Breakpoint();
-		if (opt.debugger_test)
-			_dump_proctable(job); 
+		/* MPIR_debug_state = MPIR_DEBUG_SPAWNED; */
+/* 		MPIR_Breakpoint(); */
+/* 		if (opt.debugger_test) */
+/* 			_dump_proctable(job);  */
+		
+		if(message_thread) {
+			i = MPIR_DEBUG_SPAWNED;
+			pipe_enum = PIPE_MPIR_DEBUG_STATE;
+			write(job->par_msg->msg_pipe[1],
+			      &pipe_enum,sizeof(int));
+			write(job->par_msg->msg_pipe[1],
+			      &i,sizeof(int));
+		}
 	}
 }
 
@@ -160,11 +194,24 @@ static void _dump_proctable(srun_job_t *job)
 	} 
 }
 	
-void debugger_launch_failure(void)
+void debugger_launch_failure(srun_job_t *job)
 {
+	int i;
+	pipe_enum_t pipe_enum = PIPE_MPIR_DEBUG_STATE;
+	
 	if (opt.parallel_debug) {
-		MPIR_debug_state = MPIR_DEBUG_ABORTING;
-		MPIR_Breakpoint(); 
+		/* MPIR_debug_state = MPIR_DEBUG_ABORTING; */
+/* 		MPIR_Breakpoint();  */
+		if(message_thread && job) {
+			i = MPIR_DEBUG_ABORTING;
+			write(job->par_msg->msg_pipe[1],
+			      &pipe_enum,sizeof(int));
+			write(job->par_msg->msg_pipe[1],
+			      &i,sizeof(int));
+		} else if(!job) {
+			error("Hey I don't have a job to write to on the "
+			      "failure of the debugger launch.");
+		}
 	}
 }
 
@@ -218,6 +265,8 @@ static bool _job_msg_done(srun_job_t *job)
 static void
 _process_launch_resp(srun_job_t *job, launch_tasks_response_msg_t *msg)
 {
+	pipe_enum_t pipe_enum = PIPE_HOST_STATE;
+	
 	if ((msg->srun_node_id < 0) || (msg->srun_node_id >= job->nhosts)) {
 		error ("Bad launch response from %s", msg->node_name);
 		return;
@@ -226,23 +275,40 @@ _process_launch_resp(srun_job_t *job, launch_tasks_response_msg_t *msg)
 	pthread_mutex_lock(&job->task_mutex);
 	job->host_state[msg->srun_node_id] = SRUN_HOST_REPLIED;
 	pthread_mutex_unlock(&job->task_mutex);
+
+	if(message_thread) {
+		write(job->par_msg->msg_pipe[1],&pipe_enum,sizeof(int));
+		write(job->par_msg->msg_pipe[1],
+		      &msg->srun_node_id,sizeof(int));
+		write(job->par_msg->msg_pipe[1],
+		      &job->host_state[msg->srun_node_id],sizeof(int));
+		
+	}
 	_build_proctable( job, msg->node_name, msg->srun_node_id, 
 			  msg->count_of_pids,  msg->local_pids   );
 	_print_pid_list( msg->node_name, msg->count_of_pids, 
-			msg->local_pids, remote_argv[0]     );
-
+			 msg->local_pids, remote_argv[0]     );
+	
 }
 
 static void
 update_running_tasks(srun_job_t *job, uint32_t nodeid)
 {
 	int i;
+	pipe_enum_t pipe_enum = PIPE_TASK_STATE;
 	debug2("updating %d running tasks for node %d", 
 			job->ntask[nodeid], nodeid);
 	slurm_mutex_lock(&job->task_mutex);
 	for (i = 0; i < job->ntask[nodeid]; i++) {
 		uint32_t tid = job->tids[nodeid][i];
 		job->task_state[tid] = SRUN_TASK_RUNNING;
+
+		if(message_thread) {
+			write(job->par_msg->msg_pipe[1],&pipe_enum,sizeof(int));
+			write(job->par_msg->msg_pipe[1],&tid,sizeof(int));
+			write(job->par_msg->msg_pipe[1],
+			      &job->task_state[tid],sizeof(int));
+		}
 	}
 	slurm_mutex_unlock(&job->task_mutex);
 }
@@ -251,10 +317,20 @@ static void
 update_failed_tasks(srun_job_t *job, uint32_t nodeid)
 {
 	int i;
+	pipe_enum_t pipe_enum = PIPE_TASK_STATE;
+	
 	slurm_mutex_lock(&job->task_mutex);
 	for (i = 0; i < job->ntask[nodeid]; i++) {
 		uint32_t tid = job->tids[nodeid][i];
 		job->task_state[tid] = SRUN_TASK_FAILED;
+
+		if(message_thread) {
+			write(job->par_msg->msg_pipe[1],
+			      &pipe_enum,sizeof(int));
+			write(job->par_msg->msg_pipe[1],&tid,sizeof(int));
+			write(job->par_msg->msg_pipe[1],
+			      &job->task_state[tid],sizeof(int));
+		}
 		tasks_exited++;
 	}
 	slurm_mutex_unlock(&job->task_mutex);
@@ -269,7 +345,8 @@ static void
 _launch_handler(srun_job_t *job, slurm_msg_t *resp)
 {
 	launch_tasks_response_msg_t *msg = resp->data;
-
+	pipe_enum_t pipe_enum = PIPE_HOST_STATE;
+	
 	debug2("received launch resp from %s nodeid=%d", msg->node_name,
 			msg->srun_node_id);
 	
@@ -281,7 +358,15 @@ _launch_handler(srun_job_t *job, slurm_msg_t *resp)
 		slurm_mutex_lock(&job->task_mutex);
 		job->host_state[msg->srun_node_id] = SRUN_HOST_REPLIED;
 		slurm_mutex_unlock(&job->task_mutex);
-
+		
+		if(message_thread) {
+			write(job->par_msg->msg_pipe[1],
+			      &pipe_enum,sizeof(int));
+			write(job->par_msg->msg_pipe[1],
+			      &msg->srun_node_id,sizeof(int));
+			write(job->par_msg->msg_pipe[1],
+			      &job->host_state[msg->srun_node_id],sizeof(int));
+		}
 		update_failed_tasks(job, msg->srun_node_id);
 
 		/*
@@ -291,7 +376,7 @@ _launch_handler(srun_job_t *job, slurm_msg_t *resp)
 		} else 
 			update_failed_tasks(job, msg->srun_node_id);
 		*/
-		debugger_launch_failure();
+		debugger_launch_failure(job);
 		return;
 	} else {
 		_process_launch_resp(job, msg);
@@ -330,7 +415,8 @@ _reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 {
 	int i;
 	reattach_tasks_response_msg_t *resp = msg->data;
-
+	pipe_enum_t pipe_enum = PIPE_HOST_STATE;
+	
 	if ((resp->srun_node_id < 0) || (resp->srun_node_id >= job->nhosts)) {
 		error ("Invalid reattach response received");
 		return;
@@ -339,6 +425,14 @@ _reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 	slurm_mutex_lock(&job->task_mutex);
 	job->host_state[resp->srun_node_id] = SRUN_HOST_REPLIED;
 	slurm_mutex_unlock(&job->task_mutex);
+
+	if(message_thread) {
+		write(job->par_msg->msg_pipe[1],&pipe_enum,sizeof(int));
+		write(job->par_msg->msg_pipe[1],
+		      &resp->srun_node_id,sizeof(int));
+		write(job->par_msg->msg_pipe[1],
+		      &job->host_state[resp->srun_node_id],sizeof(int));
+	}
 
 	if (resp->return_code != 0) {
 		if (job->stepid == NO_VAL) { 
@@ -394,13 +488,13 @@ _print_exit_status(srun_job_t *job, hostlist_t hl, char *host, int status)
 	char *corestr = "";
 	bool signaled  = false;
 	void (*print) (const char *, ...) = (void *) &error; 
-
+		
 	xassert(hl != NULL);
 
 	slurm_mutex_lock(&job->state_mutex);
 	signaled = job->signaled;
 	slurm_mutex_unlock(&job->state_mutex);
-
+	
 	/*
 	 *  Print message that task was signaled as verbose message
 	 *    not error message if the user generated the signal.
@@ -480,6 +574,7 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 			else
 				job->task_state[taskid] = SRUN_TASK_EXITED;
 		}
+
 		slurm_mutex_unlock(&job->task_mutex);
 
 		tasks_exited++;
@@ -735,7 +830,6 @@ _msg_thr_poll(srun_job_t *job)
 	_poll_set_rd(fds[i], slurmctld_fd);
 
 	while (!_job_msg_done(job)) {
-
 		if (_do_poll(job, fds, _get_next_timeout(job)) == 0) {
 			_do_poll_timeout(job);
 			continue;
@@ -750,6 +844,7 @@ _msg_thr_poll(srun_job_t *job)
 			else if (revents & POLLIN) 
 				_accept_msg_connection(job, i);
 		}
+		
 	}
 	xfree(fds);	/* if we were to break out of while loop */
 }
@@ -758,13 +853,111 @@ void *
 msg_thr(void *arg)
 {
 	srun_job_t *job = (srun_job_t *) arg;
-
+	par_to_msg_t *par_msg = job->par_msg;
+	int done = 0;
 	debug3("msg thread pid = %lu", (unsigned long) getpid());
 
 	slurm_uid = (uid_t) slurm_get_slurm_user_id();
 
 	_msg_thr_poll(job);
 
+	close(par_msg->msg_pipe[1]); // close excess fildes
+	debug3("msg thread done");	
+	return (void *)1;
+}
+
+void *
+par_thr(void *arg)
+{
+	srun_job_t *job = (srun_job_t *) arg;
+	par_to_msg_t *par_msg = job->par_msg;
+	par_to_msg_t *msg_par = job->msg_par;
+	int c;
+	pipe_enum_t type=0;
+	int tid=-1;
+	int nodeid=-1;
+	int status;
+	debug3("par thread pid = %lu", (unsigned long) getpid());
+
+	//slurm_uid = (uid_t) slurm_get_slurm_user_id();
+	close(msg_par->msg_pipe[0]); // close read end of pipe
+	close(par_msg->msg_pipe[1]); // close write end of pipe 
+	while(read(par_msg->msg_pipe[0],&c,sizeof(int))>0) {
+		// getting info from msg thread
+		if(type == PIPE_NONE) {
+			debug2("got type %d\n",c);
+			type = c;
+			continue;
+		} 
+
+		if(type == PIPE_JOB_STATE) {
+			update_job_state(job, c);
+		} else if(type == PIPE_TASK_STATE) {
+			if(tid == -1) {
+				tid = c;
+				continue;
+			}
+			slurm_mutex_lock(&job->task_mutex);
+			job->task_state[tid] = c;
+			if(c == SRUN_TASK_FAILED)
+				tasks_exited++;
+			slurm_mutex_unlock(&job->task_mutex);
+			if (tasks_exited == opt.nprocs) {
+				debug2("all tasks exited");
+				update_job_state(job, SRUN_JOB_TERMINATED);
+			}
+			tid = -1;
+		} else if(type == PIPE_HOST_STATE) {
+			if(tid == -1) {
+				tid = c;
+				continue;
+			}
+			slurm_mutex_lock(&job->task_mutex);
+			job->host_state[tid] = c;
+			slurm_mutex_unlock(&job->task_mutex);
+			tid = -1;
+		} else if(type == PIPE_SIGNALED) {
+			slurm_mutex_lock(&job->state_mutex);
+			job->signaled = c;
+			slurm_mutex_unlock(&job->state_mutex);
+		} else if(type == PIPE_MPIR_PROCTABLE_SIZE) {
+			if(MPIR_proctable_size == 0) {
+				MPIR_proctable_size = c;
+				MPIR_proctable = 
+					xmalloc(sizeof(MPIR_PROCDESC) * c);
+			}		
+		} else if(type == PIPE_MPIR_TOTALVIEW_JOBID) {
+			totalview_jobid = NULL;
+			xstrfmtcat(totalview_jobid, "%lu", c);
+		} else if(type == PIPE_MPIR_PROCDESC) {
+			if(tid == -1) {
+				tid = c;
+				continue;
+			}
+			if(nodeid == -1) {
+				nodeid = c;
+				continue;
+			}
+			MPIR_PROCDESC *tv   = &MPIR_proctable[tid];
+			tv->host_name       = job->host[nodeid];
+			tv->executable_name = remote_argv[0];
+			tv->pid             = c;
+			tid = -1;
+			nodeid = -1;
+		} else if(type == PIPE_MPIR_DEBUG_STATE) {
+			MPIR_debug_state = c;
+			MPIR_Breakpoint();
+			if (opt.debugger_test)
+				_dump_proctable(job);
+		}
+		type = PIPE_NONE;
+		
+	}
+	close(par_msg->msg_pipe[0]); // close excess fildes    
+	close(msg_par->msg_pipe[1]); // close excess fildes
+	if(waitpid(par_msg->pid,&status,0)<0) // wait for pid to finish
+		return;// there was an error
+	debug3("par thread done");
 	return (void *)1;
 }
 
@@ -773,27 +966,72 @@ msg_thr_create(srun_job_t *job)
 {
 	int i;
 	pthread_attr_t attr;
+	int c;
+	job->par_msg = xmalloc(sizeof(par_to_msg_t));
+	job->msg_par = xmalloc(sizeof(par_to_msg_t));
+	par_to_msg_t *par_msg = job->par_msg;
+	par_to_msg_t *msg_par = job->msg_par;
+
+	set_allocate_job(job);
 
 	for (i = 0; i < job->njfds; i++) {
 		if ((job->jfd[i] = slurm_init_msg_engine_port(0)) < 0)
 			fatal("init_msg_engine_port: %m");
-		if (slurm_get_stream_addr(job->jfd[i], &job->jaddr[i]) < 0)
+		if (slurm_get_stream_addr(job->jfd[i], &job->jaddr[i]) 
+		    < 0)
 			fatal("slurm_get_stream_addr: %m");
 		debug("initialized job control port %d\n",
-		      ntohs(((struct sockaddr_in)job->jaddr[i]).sin_port));
+		      ntohs(((struct sockaddr_in)
+			     job->jaddr[i]).sin_port));
 	}
 
-	slurm_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	if ((errno = pthread_create(&job->jtid, &attr, &msg_thr, 
-			            (void *)job)))
-		fatal("Unable to start message thread: %m");
+	if (pipe(par_msg->msg_pipe) == -1) 
+		return SLURM_ERROR; // there was an error
+	if (pipe(msg_par->msg_pipe) == -1) 
+		return SLURM_ERROR; // there was an error
+	debug2("created the pipes for communication");
+	if((par_msg->pid = fork()) == -1)   
+		return SLURM_ERROR; // there was an error
+	else if (par_msg->pid == 0) 
+	{                       // child:                       
+		setsid();  
+		message_thread = 1;
+		close(par_msg->msg_pipe[0]); // close read end of pipe
+		close(msg_par->msg_pipe[1]); // close write end of pipe
+		slurm_attr_init(&attr);
+		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+		if ((errno = pthread_create(&job->jtid, &attr, &msg_thr,
+					    (void *)job)))
+			fatal("Unable to start msg to parent thread: %m");
+		
+		debug("Started msg to parent server thread (%lu)", 
+		      (unsigned long) job->jtid);
+		
+		while(read(msg_par->msg_pipe[0],&c,sizeof(int))>0)
+			; // make sure my parent doesn't leave me hangin
+		
+		close(msg_par->msg_pipe[0]); // close excess fildes    
+		xfree(par_msg);	
+		xfree(msg_par);	
+		_exit(0);
+	}
+	else 
+	{ // parent:   
+		
+		slurm_attr_init(&attr);
+		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+		if ((errno = pthread_create(&job->jtid, &attr, &par_thr, 
+					    (void *)job)))
+			fatal("Unable to start parent to msg thread: %m");
+		
+		debug("Started parent to msg server thread (%lu)", 
+		      (unsigned long) job->jtid);
+	}
 
-	debug("Started msg server thread (%lu)", (unsigned long) job->jtid);
-
+	
 	return SLURM_SUCCESS;
 }
- 
+
 static void
 _print_pid_list(const char *host, int ntasks, uint32_t *pid, 
 		char *executable_name)
@@ -802,12 +1040,12 @@ _print_pid_list(const char *host, int ntasks, uint32_t *pid,
 		int i;
 		hostlist_t pids = hostlist_create(NULL);
 		char buf[1024];
-
+		
 		for (i = 0; i < ntasks; i++) {
 			snprintf(buf, sizeof(buf), "pids:%d", pid[i]);
 			hostlist_push(pids, buf);
 		}
-
+		
 		hostlist_ranged_string(pids, sizeof(buf), buf);
 		verbose("%s: %s %s", host, executable_name, buf);
 	}

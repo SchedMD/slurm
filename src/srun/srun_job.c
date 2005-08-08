@@ -252,10 +252,16 @@ job_create_noalloc(void)
 void
 update_job_state(srun_job_t *job, srun_job_state_t state)
 {
+	pipe_enum_t pipe_enum = PIPE_JOB_STATE;
 	pthread_mutex_lock(&job->state_mutex);
 	if (job->state < state) {
 		job->state = state;
+		if(message_thread) {
+			write(job->par_msg->msg_pipe[1],&pipe_enum,sizeof(int));
+			write(job->par_msg->msg_pipe[1],&job->state,sizeof(int));
+		}
 		pthread_cond_signal(&job->state_cond);
+		
 	}
 	pthread_mutex_unlock(&job->state_mutex);
 }
@@ -345,7 +351,7 @@ srun_job_destroy(srun_job_t *job, int error)
 		return;
 	}
 
-	if (error) debugger_launch_failure();
+	if (error) debugger_launch_failure(job);
 
 	job->removed = true;
 }

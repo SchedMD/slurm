@@ -46,14 +46,6 @@
 #include "src/common/xsignal.h"
 #include "src/common/global_srun.h"
 
-/*
- *  Static list of signals to block in srun:
- */
-static int srun_sigarray[] = {
-	SIGINT,  SIGQUIT, SIGTSTP, SIGCONT, SIGTERM,
-	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0
-};
-
 /* number of active threads */
 static pthread_mutex_t active_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  active_cond  = PTHREAD_COND_INITIALIZER;
@@ -73,6 +65,7 @@ typedef struct task_info {
 	int host_inx;
 } task_info_t;
 
+int message_thread = 0;
 
 /* 
  * Static prototypes
@@ -87,13 +80,20 @@ fwd_signal(srun_job_t *job, int signo)
 	slurm_msg_t *req;
 	kill_tasks_msg_t msg;
 	static pthread_mutex_t sig_mutex = PTHREAD_MUTEX_INITIALIZER;
-
+	pipe_enum_t pipe_enum = PIPE_SIGNALED;
+	
 	slurm_mutex_lock(&sig_mutex);
 
 	if (signo == SIGKILL || signo == SIGINT || signo == SIGTERM) {
 		slurm_mutex_lock(&job->state_mutex);
 		job->signaled = true;
 		slurm_mutex_unlock(&job->state_mutex);
+		if(message_thread) {
+			write(job->par_msg->msg_pipe[1],
+			      &pipe_enum,sizeof(int));
+			write(job->par_msg->msg_pipe[1],
+			      &job->signaled,sizeof(int));
+		}
 	}
 
 	debug2("forward signal %d to job", signo);
@@ -110,7 +110,6 @@ fwd_signal(srun_job_t *job, int signo)
 			debug2("%s has not yet replied\n", job->host[i]);
 			continue;
 		}
-
 		if (job_active_tasks_on_host(job, i) == 0)
 			continue;
 
@@ -166,7 +165,6 @@ static void _p_fwd_signal(slurm_msg_t *req, srun_job_t *job)
 		tinfo->req_ptr  = &req[i];
 		tinfo->job_ptr  = job;
 		tinfo->host_inx = i;
-
 		slurm_attr_init(&thd[i].attr);
 		if (pthread_attr_setdetachstate(&thd[i].attr, 
 		                                PTHREAD_CREATE_DETACHED))
@@ -206,8 +204,9 @@ static void * _p_signal_task(void *args)
 	 *  Report error unless it is "Invalid job id" which 
 	 *    probably just means the tasks exited in the meanwhile.
 	 */
-	if ((rc != 0) && (rc != ESLURM_INVALID_JOB_ID) && (rc != ESRCH)) 
+	if ((rc != 0) && (rc != ESLURM_INVALID_JOB_ID) && (rc != ESRCH)) {
 		error("%s: signal: %s", host, slurm_strerror(rc));
+	}
 
     done:
 	slurm_mutex_lock(&active_mutex);

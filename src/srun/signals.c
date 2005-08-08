@@ -51,7 +51,7 @@
  *  Static list of signals to block in srun:
  */
 static int srun_sigarray[] = {
-	SIGINT,  SIGQUIT, SIGTSTP, SIGCONT, SIGTERM,
+	SIGINT,  SIGQUIT, /*SIGTSTP,*/ SIGCONT, SIGTERM,
 	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0
 };
 
@@ -190,9 +190,9 @@ _sig_thr(void *arg)
 		  case SIGINT:
 			  _handle_intr(job, &last_intr, &last_intr_sent);
 			  break;
-		  case SIGTSTP:
-			debug3("got SIGTSTP");
-			break;
+		  /* case SIGTSTP: */
+/* 			debug3("got SIGTSTP"); */
+/* 			break; */
 		  case SIGCONT:
 			debug3("got SIGCONT");
 			break;
