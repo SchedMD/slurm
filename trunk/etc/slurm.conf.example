@@ -222,11 +222,13 @@
 #
 # o Define the process tracking mechanism in use.
 #
-# "ProctrackType"      : the type of process tracking mechanism
-#     "proctrack/aix"  : use AIX kernel extension for process tracking,
-#                        the default value on AIX computers
-#     "proctrack/pgid" : use Unix process group ID for process tracking,
-#                        the default value on all other computers
+# "ProctrackType"           : the type of process tracking mechanism
+#     "proctrack/aix"       : use AIX kernel extension for process tracking,
+#                             the default value on AIX computers
+#     "proctrack/pgid"      : use Unix process group ID for process tracking,
+#                             the default value on all other computers
+#     "proctrack/linuxproc" : use parent process ID to establish process
+#                             tree, required for MPICH-GM use
 #
 # ProctrackType=proctrack/pgid
 
@@ -356,13 +358,6 @@ JobAcctType=jobacct/none
 #                       : if set to `1', srun handles executable files linked
 #                         with MPICH-GM library directly, not via mpirun that
 #                         uses rsh.
-#    "KillTree"         : if set to `1', signals (e.g. Ctrl-C or scancel) are
-#                         forwarded to all descendant processes of one that was
-#                         directly invoked by the user.  This is always
-#                         required if MpichGmDirectSupport is set to 1.  The
-#                         default behavior is that signals are forwarded to
-#                         processes that belong to the process group of the
-#                         process that was directly invoked by the user.
 #
 # Example:
 #
@@ -372,7 +367,6 @@ JobAcctType=jobacct/none
 # MaxJobCount=10000		# Defaults to 2000
 # MpiDefault			# default is "lam"
 # MpichGmDirectSupport=1	# default is `0'
-# KillTree=1			# default is `0'
 
 
 #

@@ -364,7 +364,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
-	ctl_conf_ptr->kill_tree   		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
 	ctl_conf_ptr->max_job_cnt		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->min_job_age		= (uint16_t) NO_VAL;
@@ -671,20 +670,10 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	}
 
 	if ( kill_tree != -1) {
-		if ( ctl_conf_ptr->kill_tree != (uint16_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "KillTree");
-#if HAVE_AIX
-		if (kill_tree) {
-			error("KillTree=%d presently invalid on AIX", 
-				kill_tree);
-			kill_tree = 0;
-		}
-#else
-		if ((kill_tree < 0) || (kill_tree > 0xffff))
-			error("KillTree=%ld is invalid", kill_tree);
-		else
-			ctl_conf_ptr->kill_tree = kill_tree;
-#endif
+		verbose("KillTree configuration parameter is defunct");
+		verbose("  mapping to ProctrackType=proctrack/linuxproc");
+		xfree(proctrack_type);
+		proctrack_type = xstrdup("proctrack/killtree");
 	}
 
 	if ( kill_wait != -1) {
@@ -1287,9 +1276,6 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	if (ctl_conf_ptr->job_comp_type == NULL)
 		ctl_conf_ptr->job_comp_type = xstrdup(DEFAULT_JOB_COMP_TYPE);
-
-	if (ctl_conf_ptr->kill_tree == (uint16_t) NO_VAL)
-		ctl_conf_ptr->kill_tree = DEFAULT_KILL_TREE;
 
 	if (ctl_conf_ptr->kill_wait == (uint16_t) NO_VAL)
 		ctl_conf_ptr->kill_wait = DEFAULT_KILL_WAIT;
