@@ -200,8 +200,9 @@ be synchronized. </p>
 interconnects and is the prefered version of MPI for those systems.</p>
 
 <p>For <a href="http://www.myricom.com/">Myrinet</a> systems, MPICH-GM
-is prefered. In order to use MPICH-GM, set the <b>MpichGmDirectSupport</b> 
-and <b>KillTree </b> configuration parameters in slurm.conf.</p>
+is prefered. In order to use MPICH-GM, set <b>MpichGmDirectSupport=1</b> 
+and <b>ProctrackType=proctrack/linuxproc</b> configuration parameters in 
+slurm.conf.</p>
 
 <p>HP customers would be well served by using 
 <a href="http://www.hp.com/go/mpi">HP-MPI</a>.</p>

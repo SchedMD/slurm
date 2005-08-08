@@ -498,11 +498,6 @@ _read_config()
 	     (conf->cf.slurmctld_port == 0)    )
 		fatal("Unable to establish control machine or port");
 
-	if ( (conf->cf.kill_tree)
-	&&   (strcmp(conf->cf.proctrack_type, "proctrack/sid")) )
-		fatal("configuration error: KillTree compatable only with "
-			"proctrack/sid");
-
 	slurm_mutex_unlock(&conf->config_mutex);
 }
 

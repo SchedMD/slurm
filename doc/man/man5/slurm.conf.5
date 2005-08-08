@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "July 2005" "slurm.conf 0.6" "Slurm configuration file"
+.TH "slurm.conf" "5" "August 2005" "slurm.conf 0.6" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -189,12 +189,8 @@ Fully qualified pathname of a file containing a public key used for
 authentication by Slurm daemons.
 .TP
 \fBKillTree\fR
-If set to "1", signals (e.g. Ctrl-C or scancel) are forwarded to all descendant 
-processes of one that was directly invoked by the user.  This is always
-required if \fBMpichGmDirectSupport\fR is set to "1".  The default behavior 
-is that signals are forwarded to processes that belong to the process group 
-of the process that was directly invoked by the user.
-NOTE: This option is not currently supported on AIX systems.
+This option is mapped to "ProctrackType=proctrack/linuxproc". 
+It will be removed from a future release.
 .TP
 \fBKillWait\fR
 The interval, in seconds, given to a job's processes between the 
@@ -230,8 +226,8 @@ mpich-gm, mvapich, champion, quadrics, and hp-mpi.
 .TP
 \fBMpichGmDirectSupport\fR
 If set to "1", srun handles executable files linked with the MPICH-GM 
-library directly, not via mpirun that uses rsh. If set, \fBKillTree\fR
-must also be set to "1".
+library directly, not via mpirun that uses rsh. If set, \fBProctrackType\fR
+must also be set to "linuxproc".
 .TP
 \fBPluginDir\fR
 Identifies the places in which to look for SLURM plugins. 

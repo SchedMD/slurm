@@ -1808,7 +1808,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->job_acct_type, buffer);
 	packstr(build_ptr->job_comp_loc, buffer);
 	packstr(build_ptr->job_comp_type, buffer);
-	pack16(build_ptr->kill_tree, buffer);
 	pack16(build_ptr->kill_wait, buffer);
 	pack16(build_ptr->max_job_cnt, buffer);
 	pack16(build_ptr->min_job_age, buffer);
@@ -1881,7 +1880,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->job_acct_type, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_loc, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_type, &uint16_tmp, buffer);
-	safe_unpack16(&build_ptr->kill_tree, buffer);
 	safe_unpack16(&build_ptr->kill_wait, buffer);
 	safe_unpack16(&build_ptr->max_job_cnt, buffer);
 	safe_unpack16(&build_ptr->min_job_age, buffer);

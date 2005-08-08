@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
  -- Added mpi plugin specify at start of srun.
  -- Changed SlurmUser ID from 16-bit to 32-bit.
  -- Added MpiDefault slurm.conf parameter.
+ -- Remove KillTree configuration parameter (replace with
+    "ProctrackType=proctrack/linuxproc")
 
 * Changes in SLURM 0.5.0
 ========================
