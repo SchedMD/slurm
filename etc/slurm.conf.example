@@ -351,7 +351,7 @@ JobAcctType=jobacct/none
 #    "MpiDefault"	: define the default type of MPI to be used. If
 #			  srun does not specify another value, slurm will 
 #			  establish the environment for this mpi to execute.
-#			  Currently supported values are lam, mpichgm, mvapich,
+#			  Currently supported values are lam, mpich-gm, mvapich,
 #                         and none (default, which works for most other versions
 #                         of MPI).
 #
