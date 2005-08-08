@@ -291,9 +291,11 @@ extern bgl_record_t *find_bgl_record(char *bgl_part_id)
 	
 	if(bgl_list) {
 		itr = list_iterator_create(bgl_list);
-		while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) 
-			if (!strcmp(bgl_record->bgl_part_id, bgl_part_id))
-				break;
+		while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL)
+			if(bgl_record->bgl_part_id)
+				if (!strcmp(bgl_record->bgl_part_id, 
+					    bgl_part_id))
+					break;
 		
 		list_iterator_destroy(itr);
 		if(bgl_record)
