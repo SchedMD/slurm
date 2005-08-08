@@ -102,20 +102,20 @@ set host_2      ""
 set host_3      ""
 send "$srun -l $bin_hostname\n"
 expect {
-	-re "0: ($alpha_numeric)" {
-		set host_0 $expect_out(1,string)
-		exp_continue
-	}
-	-re "1: ($alpha_numeric)" {
-		set host_1 $expect_out(1,string)
-		exp_continue
-	}
-	-re "2: ($alpha_numeric)" {
-		set host_2 $expect_out(1,string)
-		exp_continue
-	}
-	-re "3: ($alpha_numeric)" {
-		set host_3 $expect_out(1,string)
+	-re "($number): ($alpha_numeric)" {
+		set host_num $expect_out(1,string)
+		if { $host_num == 0 } {
+			set host_0 $expect_out(2,string)
+		}
+		if { $host_num == 1 } {
+			set host_1 $expect_out(2,string)
+		}
+		if { $host_num == 2 } {
+			set host_2 $expect_out(2,string)
+		}
+		if { $host_num == 3 } {
+			set host_3 $expect_out(2,string)
+		}
 		exp_continue
 	}
 	-re "Unable to contact" {
@@ -166,27 +166,28 @@ set matches 0
 
 send "$srun -l -N2 -n2 --relative=0 $bin_hostname\n"
 expect {
-	-re "0: ($alpha_numeric)" {
-		if {[string compare $expect_out(1,string) $host_0] == 0} {
-			incr matches
-		} else {
-			send_user "\nFAILURE: wrong node responded\n"
-			set exit_code   1	
+	-re "($number): ($alpha_numeric)" {
+		set host_num $expect_out(1,string)
+		if { $host_num == 0 } {
+			if {[string compare $expect_out(2,string) $host_0] == 0} {
+				incr matches
+			} else {
+				send_user "\nFAILURE: wrong node responded\n"
+				set exit_code   1
+			}
 		}
-		exp_continue
-	}
-	-re "1: ($alpha_numeric)" {
-		if {[string compare $expect_out(1,string) $host_1] == 0} {
-			incr matches
-		} else {
-			send_user "\nFAILURE: wrong node responded\n"
-			set exit_code   1	
+		if { $host_num == 1 } {
+			if {[string compare $expect_out(2,string) $host_1] == 0} {
+				incr matches
+			} else {
+				send_user "\nFAILURE: wrong node responded\n"
+				set exit_code   1
+			}
 		}
-		exp_continue
-	}
-	-re "2: ($alpha_numeric)" {
-		send_user "\nFAILURE: too many tasks responded\n"
-		set exit_code   1	
+		if { $host_num > 1 } {
+			send_user "\nFAILURE: too many tasks responded\n"
+			set exit_code   1
+		}
 		exp_continue
 	}
 	-re "Unable to contact" {
@@ -216,27 +217,28 @@ if {$matches < 2} {
 set matches 0
 send "$srun -l -N2 -n2 --relative=2 $bin_hostname\n"
 expect {
-	-re "0: ($alpha_numeric)" {
-		if {[string compare $expect_out(1,string) $host_2] == 0} {
-			incr matches
-		} else {
-			send_user "\nFAILURE: wrong node responded\n"
+	-re "($number): ($alpha_numeric)" {
+		set host_num $expect_out(1,string)
+		if { $host_num == 0 } {
+			if {[string compare $expect_out(2,string) $host_2] == 0} {
+				incr matches
+			} else {
+				send_user "\nFAILURE: wrong node responded\n"
+				set exit_code   1	
+			}
+		}
+		if { $host_num == 1 } {
+			if {[string compare $expect_out(2,string) $host_3] == 0} {
+				incr matches
+			} else {
+				send_user "\nFAILURE: wrong node responded\n"
+				set exit_code   1	
+			}
+		}
+		if { $host_num > 1 } {
+			send_user "\nFAILURE: too many tasks responded\n"
 			set exit_code   1	
 		}
-		exp_continue
-	}
-	-re "1: ($alpha_numeric)" {
-		if {[string compare $expect_out(1,string) $host_3] == 0} {
-			incr matches
-		} else {
-			send_user "\nFAILURE: wrong node responded\n"
-			set exit_code   1	
-		}
-		exp_continue
-	}
-	-re "2: ($alpha_numeric)" {
-		send_user "\nFAILURE: too many tasks responded\n"
-		set exit_code   1	
 		exp_continue
 	}
 	 -re "Unable to contact" {
@@ -272,27 +274,27 @@ expect {
 		set warning 1
 		exp_continue
 	}
-	-re "0: ($alpha_numeric)" {
-		if {[string compare $expect_out(1,string) $host_3] == 0} {
-			incr matches
-		} else {
-			send_user "\nFAILURE: wrong node responded\n"
+	-re "($number): ($alpha_numeric)" {
+		if { $host_num == 0 } {
+			if {[string compare $expect_out(2,string) $host_3] == 0} {
+				incr matches
+			} else {
+				send_user "\nFAILURE: wrong node responded\n"
+				set exit_code   1	
+			}
+		}
+		if { $host_num == 1 } {
+			if {[string compare $expect_out(2,string) $host_3] == 0} {
+				incr matches
+			} else {
+				send_user "\nFAILURE: wrong node responded\n"
+				set exit_code   1	
+			}
+		}
+		if { $host_num > 1 } {
+			send_user "\nFAILURE: too many tasks responded\n"
 			set exit_code   1	
 		}
-		exp_continue
-	}
-	-re "1: ($alpha_numeric)" {
-		if {[string compare $expect_out(1,string) $host_3] == 0} {
-			incr matches
-		} else {
-			send_user "\nFAILURE: wrong node responded\n"
-			set exit_code   1	
-		}
-		exp_continue
-	}
-	-re "2: ($alpha_numeric)" {
-		send_user "\nFAILURE: too many tasks responded\n"
-		set exit_code   1	
 		exp_continue
 	}
 	-re "Unable to contact" {
