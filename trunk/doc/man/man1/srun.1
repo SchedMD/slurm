@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "June 2005" "srun 0.5" "slurm components"
+.TH SRUN "1" "August 2005" "srun 0.6" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -184,15 +184,19 @@ procedures.
 .B list
 Lists avaliable mpi types to choose from.
 .TP
-.B mpich-gm
+.B lam
+Initiates one 'lamd' process per node and establishes necessary
+environment variables for LAM/MPI.
+.TP
+.B mpich\-gm
 For use with Myrinet.
 .TP
 .B mvapich
 For use with Infiniband.
 .TP
-.B lam
-Initiates one 'lamd' process per node and establishes necessary 
-environment variables for LAM/MPI.
+.B none
+No special MPI processing. This is the default and works with 
+many other versions of MPI.
 .RE
 .TP
 \fB\-\-jobid\fR=\fIid\fR

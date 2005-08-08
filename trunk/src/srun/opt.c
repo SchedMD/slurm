@@ -1573,6 +1573,7 @@ static void _help(void)
 "  -P, --dependency=jobid      defer job until specified jobid completes\n"
 "  -U, --account=name          charge job to specified account\n"
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
+"      --mpi=type              specifies version of MPI to use\n"
 "\n"
 "Allocate only:\n"
 "  -A, --allocate              allocate resources and spawn a shell\n"
