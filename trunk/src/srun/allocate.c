@@ -67,7 +67,7 @@ static job_step_create_request_msg_t * _step_req_create(srun_job_t *j);
 static void _step_req_destroy(job_step_create_request_msg_t *r);
 
 static sig_atomic_t destroy_job = 0;
-
+static srun_job_t *allocate_job = NULL;
 
 int
 allocate_test(void)
@@ -187,7 +187,7 @@ _wait_for_resources(resource_allocation_response_msg_t **resp)
 		if (destroy_job) {
 			verbose("cancelling job %u", old.job_id);
 			slurm_complete_job(old.job_id, 0, 0);
-			debugger_launch_failure();
+			debugger_launch_failure(allocate_job);
 			exit(0);
 		}
 
@@ -524,3 +524,9 @@ create_job_step(srun_job_t *job)
 	return 0;
 }
 
+void 
+set_allocate_job(srun_job_t *job) 
+{
+	allocate_job = job;
+	return;
+}

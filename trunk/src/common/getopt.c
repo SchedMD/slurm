@@ -514,7 +514,7 @@ _getopt_internal (argc, argv, optstring, longopts, longind, long_only)
   int print_errors = opterr;
   if (optstring[0] == ':')
     print_errors = 0;
-
+  
   if (argc < 1)
     return -1;
 

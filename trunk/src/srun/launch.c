@@ -353,11 +353,35 @@ static void
 _update_failed_node(srun_job_t *j, int id)
 {
 	int i;
+	pipe_enum_t pipe_enum = PIPE_HOST_STATE;
+	
 	pthread_mutex_lock(&j->task_mutex);
-	if (j->host_state[id] == SRUN_HOST_INIT)
+	if (j->host_state[id] == SRUN_HOST_INIT) {
 		j->host_state[id] = SRUN_HOST_UNREACHABLE;
-	for (i = 0; i < j->ntask[id]; i++)
+
+		if(message_thread) {
+			write(j->par_msg->msg_pipe[1],
+			      &pipe_enum,sizeof(int));
+			write(j->par_msg->msg_pipe[1],
+			      &id,sizeof(int));
+			write(j->par_msg->msg_pipe[1],
+			      &j->host_state[id],sizeof(int));
+		}
+	}
+
+	pipe_enum = PIPE_TASK_STATE;
+	for (i = 0; i < j->ntask[id]; i++) {
 		j->task_state[j->tids[id][i]] = SRUN_TASK_FAILED;
+
+		if(message_thread) {
+			write(j->par_msg->msg_pipe[1],
+			      &pipe_enum,sizeof(int));
+			write(j->par_msg->msg_pipe[1],
+			      &j->tids[id][i],sizeof(int));
+			write(j->par_msg->msg_pipe[1],
+			      &j->task_state[j->tids[id][i]],sizeof(int));
+		}
+	}
 	pthread_mutex_unlock(&j->task_mutex);
 
 	/* update_failed_tasks(j, id); */
@@ -366,9 +390,20 @@ _update_failed_node(srun_job_t *j, int id)
 static void
 _update_contacted_node(srun_job_t *j, int id)
 {
+	pipe_enum_t pipe_enum = PIPE_HOST_STATE;
+	
 	pthread_mutex_lock(&j->task_mutex);
-	if (j->host_state[id] == SRUN_HOST_INIT)
+	if (j->host_state[id] == SRUN_HOST_INIT) {
 		j->host_state[id] = SRUN_HOST_CONTACTED;
+		if(message_thread) {
+			write(j->par_msg->msg_pipe[1],
+			      &pipe_enum,sizeof(int));
+			write(j->par_msg->msg_pipe[1],
+			      &id,sizeof(int));
+			write(j->par_msg->msg_pipe[1],
+			      &j->host_state[id],sizeof(int));
+		}
+	}
 	pthread_mutex_unlock(&j->task_mutex);
 }
 

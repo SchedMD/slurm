@@ -29,7 +29,7 @@
 #define VOLATILE
 #endif
 #endif
-
+#include "src/srun/srun_job.h"
 /*****************************************************************************
 *                                DEBUGGING SUPPORT                           *
 *****************************************************************************/
@@ -75,7 +75,7 @@ extern int MPIR_i_am_starter;
 extern int MPIR_acquired_pre_main;
 
 extern void MPIR_Breakpoint(void);
-extern void debugger_launch_failure(void);
+extern void debugger_launch_failure(srun_job_t *job);
 
 /* Value for totalview %J expansion in bulk launch string
  */

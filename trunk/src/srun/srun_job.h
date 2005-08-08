@@ -44,6 +44,18 @@
 #include "src/srun/signals.h"
 #include "src/srun/fname.h"
 
+typedef enum { 
+	PIPE_NONE = 0, 
+	PIPE_JOB_STATE, 
+	PIPE_TASK_STATE, 
+	PIPE_HOST_STATE, 
+	PIPE_SIGNALED,
+	PIPE_MPIR_PROCTABLE_SIZE,
+	PIPE_MPIR_TOTALVIEW_JOBID,
+	PIPE_MPIR_PROCDESC,
+	PIPE_MPIR_DEBUG_STATE
+} pipe_enum_t;
+
 typedef enum {
 	SRUN_JOB_INIT = 0,         /* Job's initial state                   */
 	SRUN_JOB_LAUNCHING,        /* Launch thread is running              */
@@ -55,7 +67,7 @@ typedef enum {
 	SRUN_JOB_DONE,             /* tasks and IO complete                 */
 	SRUN_JOB_DETACHED,         /* Detached IO from job (Not used now)   */
 	SRUN_JOB_FAILED,           /* Job failed for some reason            */
-	SRUN_JOB_FORCETERM,        /* Forced termination of IO thread       */
+	SRUN_JOB_FORCETERM         /* Forced termination of IO thread       */
 } srun_job_state_t;
 
 typedef enum {
@@ -74,6 +86,10 @@ typedef enum {
 	SRUN_TASK_ABNORMAL_EXIT
 } srun_task_state_t;
 
+typedef struct par_to_msg {
+	int msg_pipe[2];
+	int pid;	
+} par_to_msg_t;
 
 typedef struct srun_job {
 	uint32_t jobid;		/* assigned job id 	                  */
@@ -143,9 +159,12 @@ typedef struct srun_job {
 	FILE *errstream;
 	int   stdinfd;
 	bool *stdin_eof;  /* true if task i processed stdin eof */
-	
+	par_to_msg_t *par_msg;
+	par_to_msg_t *msg_par;
 	select_jobinfo_t select_jobinfo;
 } srun_job_t;
+
+extern int message_thread;
 
 void    update_job_state(srun_job_t *job, srun_job_state_t newstate);
 void    job_force_termination(srun_job_t *job);
