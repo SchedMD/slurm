@@ -9,8 +9,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 pkglib_LTLIBRARIES = mpi_lam.la
 
-# Null switch plugin.
-mpi_lam_la_SOURCES = mpi_lam.c
+mpi_lam_la_SOURCES = mpi_lam.c lam.h
 mpi_lam_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 mpi_lam_la_LIBADD  =  \
 	$(top_builddir)/src/common/libcommon.la -lpthread \
