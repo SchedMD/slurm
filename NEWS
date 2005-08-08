@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- Added MpiDefault slurm.conf parameter.
  -- Remove KillTree configuration parameter (replace with
     "ProctrackType=proctrack/linuxproc")
+ -- Make default plugin be "none".
+ -- Added mpi/none plugin and made it the default.
 
 * Changes in SLURM 0.5.0
 ========================

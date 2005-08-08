@@ -232,6 +232,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/mpi/mpichgm/Makefile
 		 src/plugins/mpi/mvapich/Makefile
 		 src/plugins/mpi/lam/Makefile
+		 src/plugins/mpi/none/Makefile
 		 doc/Makefile
 		 doc/man/Makefile
 		 testsuite/Makefile

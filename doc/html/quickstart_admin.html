@@ -197,12 +197,13 @@ be synchronized. </p>
 
 <h4>MPI support</h4>
 <p>Quadrics MPI works directly with SLURM on systems having Quadrics 
-interconnects and is the prefered version of MPI for those systems.</p>
+interconnects and is the prefered version of MPI for those systems.
+Set the <b>MpiDefault=none</b> configuration parameter in slurm.conf.</p>
 
 <p>For <a href="http://www.myricom.com/">Myrinet</a> systems, MPICH-GM
-is prefered. In order to use MPICH-GM, set <b>MpichGmDirectSupport=1</b> 
-and <b>ProctrackType=proctrack/linuxproc</b> configuration parameters in 
-slurm.conf.</p>
+is prefered. In order to use MPICH-GM, set <b>MpichGmDirectSupport=1</b>, 
+<b>MpiDefault=mpichgm</b>, and <b>ProctrackType=proctrack/linuxproc</b> 
+configuration parameters in slurm.conf.</p>
 
 <p>HP customers would be well served by using 
 <a href="http://www.hp.com/go/mpi">HP-MPI</a>.</p>
@@ -213,7 +214,8 @@ slurm.conf.</p>
 <span class="commandline">srun</span> 
 command. This places all MPI processes in a process-tree under the control of 
 the <b>slurmd</b> daemon. LAM/MPI version 7.1 or higher contains support for 
-SLURM.</p>
+SLURM. 
+Set the <b>MpiDefault=lam</b> configuration parameters in slurm.conf.</p>
 
 <p>Note that the ordering of tasks within an job's allocation matches that of 
 nodes in the slurm.conf configuration file. SLURM presently lacks the ability 
