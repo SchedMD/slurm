@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- Added MpiDefault slurm.conf parameter.
  -- Remove KillTree configuration parameter (replace with
     "ProctrackType=proctrack/linuxproc")
+ -- Remove MpichGmDirectSupport configuration parameter (replace with
+    "MpiDefault=mpich-gm")
  -- Make default plugin be "none".
  -- Added mpi/none plugin and made it the default.
  -- Replace extern program_invocation_short_name with program_invocation_name

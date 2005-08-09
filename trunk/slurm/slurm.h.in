@@ -512,7 +512,6 @@ typedef struct slurm_ctl_conf {
 	uint16_t max_job_cnt;	/* maximum number of active jobs */
 	uint16_t min_job_age;	/* COMPLETED jobs over this age (secs) 
 	                         * purged from in memory records */
-	uint16_t mpich_gm_dir;  /* MPICH-GM direct support */
 	char *mpi_default;	/* Default version of MPI in use */
 	char *plugindir;	/* pathname to plugins */
 	char *proctrack_type;	/* process tracking plugin type */
