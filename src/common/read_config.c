@@ -367,7 +367,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
 	ctl_conf_ptr->max_job_cnt		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->min_job_age		= (uint16_t) NO_VAL;
-	ctl_conf_ptr->mpich_gm_dir		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->proctrack_type);
@@ -673,7 +672,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		verbose("KillTree configuration parameter is defunct");
 		verbose("  mapping to ProctrackType=proctrack/linuxproc");
 		xfree(proctrack_type);
-		proctrack_type = xstrdup("proctrack/killtree");
+		proctrack_type = xstrdup("proctrack/linuxproc");
 	}
 
 	if ( kill_wait != -1) {
@@ -704,13 +703,10 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	}
 
 	if ( mpich_gm_dir != -1) {
-		if ( ctl_conf_ptr->mpich_gm_dir != (uint16_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "MpichGmDirectSupport");
-		if ((mpich_gm_dir < 0) || (mpich_gm_dir > 0xffff))
-			error("MpichGmDirectSupport=%ld is invalid", 
-				mpich_gm_dir);
-		else
-			ctl_conf_ptr->mpich_gm_dir = mpich_gm_dir;
+		verbose("MpichGmDirectSupport configuration parameter is defunct");
+		verbose("  mapping to ProctrackType=proctrack/linuxproc");
+		xfree(proctrack_type);
+		proctrack_type = xstrdup("proctrack/linuxproc");
 	}
 
 	if (mpi_default) {
@@ -1285,9 +1281,6 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	if (ctl_conf_ptr->min_job_age == (uint16_t) NO_VAL)
 		ctl_conf_ptr->min_job_age = DEFAULT_MIN_JOB_AGE;
-
-	if (ctl_conf_ptr->mpich_gm_dir == (uint16_t) NO_VAL)
-		ctl_conf_ptr->mpich_gm_dir = DEFAULT_MPICH_GM_DIR;
 
 	if (ctl_conf_ptr->mpi_default == NULL)
 		ctl_conf_ptr->mpi_default = xstrdup(DEFAULT_MPI_DEFAULT);

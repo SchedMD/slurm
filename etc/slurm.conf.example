@@ -355,11 +355,6 @@ JobAcctType=jobacct/none
 #                         and none (default, which works for most other versions
 #                         of MPI).
 #
-#    "MpichGmDirectSupport"
-#                       : if set to `1', srun handles executable files linked
-#                         with MPICH-GM library directly, not via mpirun that
-#                         uses rsh.
-#
 # Example:
 #
 # FastSchedule=0		# default is `1'
@@ -367,7 +362,6 @@ JobAcctType=jobacct/none
 # ReturnToService=1     	# default is `0'
 # MaxJobCount=10000		# Defaults to 2000
 # MpiDefault			# default is "none"
-# MpichGmDirectSupport=1	# default is `0'
 
 
 #
