@@ -854,39 +854,13 @@ qsw_teardown_jobinfo(qsw_jobinfo_t j)
  *   in the range allocated in the capability.
  */
 
-/*
- * Process 1: issue the rms_prgdestroy for the job.
- */
-int
-qsw_prgdestroy(qsw_jobinfo_t jobinfo)
-{
-	
-	if (shmid >= 0)
-		shmctl (shmid, IPC_RMID, NULL);
-
-	if (rms_prgdestroy(jobinfo->j_prognum) < 0) {
-		/* translate errno values to more descriptive ones */
-		switch (errno) {
-			case ECHILD:
-				slurm_seterrno(ECHILD_PRGDESTROY);
-				break;
-			case EEXIST:
-				slurm_seterrno(EEXIST_PRGDESTROY);
-				break;
-			default:
-				break;
-		}
-		return -1;
-	}
-	return 0;
-}
-
-/*
- * Process 2: Destroy the context after children are dead.
- */
 void
 qsw_prog_fini(qsw_jobinfo_t jobinfo)
 {
+	if (shmid >= 0) {
+		debug2("qsw_prog_fini");
+		shmctl (shmid, IPC_RMID, NULL);
+	}
 	/* Do nothing... apparently this will be handled by
 	 *  callbacks in the kernel exit handlers ... 
 	 */
@@ -942,14 +916,205 @@ _qsw_shmem_create (qsw_jobinfo_t jobinfo, uid_t uid)
 	return (0);
 }
 
+
+static void
+_close_all_fd_except(int fd)
+{
+        int openmax;
+        int i;
+
+        openmax = sysconf(_SC_OPEN_MAX);
+        for (i = 0; i <= openmax; i++) {
+                if (i != fd)
+                        close(i);
+        }
+}
+
+
+/*
+ * Process 1: After the fork, the parent process is process 1,
+ *            and will call rms_prgdestroy when the child (slurmd job
+ *            manager) exits.
+ */
+#if 0
+static int
+_prg_destructor_fork()
+{
+	pid_t mgr;
+	int fdpair[2];
+	int prgid;
+	int i;
+
+	debug3("Entering _prg_destructor_fork");
+	if (pipe(fdpair) < 0) {
+		error("switch/elan: failed creating pipe");
+		return -1;
+	}
+
+	mgr = fork();
+	if (mgr < 0) {
+		error("switch/elan: failed to fork program destructor");
+	} else if (mgr == 0) {
+		/* child */
+		close(fdpair[0]);
+		return fdpair[1];
+	}
+	
+	/****************************************/
+	/* parent */
+	close(fdpair[1]);
+
+	_close_all_fd_except(fdpair[0]);
+        /* Wait for the program description id from the child */
+        if (read(fdpair[0], &prgid, sizeof(prgid)) != sizeof(prgid)) {
+		error("_prg_destructor_fork read failed: %m");
+		exit(1);
+	}
+	close(fdpair[0]);
+
+	debug3("_prg_destructor program is %d, waiting on process %d",
+	       prgid, mgr);
+
+	if (prgid == -1)
+		exit(-1);
+	/*
+	 * Wait for the slurmd child process to exit, then destroy the
+	 * program description
+	 */
+	if (waitpid(mgr, NULL, 0) == -1)
+		error("_prg_desctructor_fork waitpid error: %m");
+
+	/*
+	 * Verify that program description is empty.  If not, send a SIGKILL.
+	 */
+	for (i = 0; i < 30; i++) {
+		int maxids = 8;
+		pid_t pids[8];
+		int nids = 0;
+
+		if (rms_prginfo(prgid, maxids, pids, &nids) < 0) {
+			error("switch/elan: rms_prginfo: %m");
+		}
+		if (nids == 0)
+			break;
+		error("_prg_destructor_fork program desc is not empty %d",
+		      nids);
+		if (rms_prgsignal(prgid, SIGKILL) < 0) {
+			error("switch/elan: rms_prgsignal: %m");
+		}
+		sleep(1);
+	}
+
+	debug3("_prg_desctrutor attempting to call rms_prgdestroy");
+	if (rms_prgdestroy(prgid) < 0) {
+		error("rms_prgdestroy");
+	}
+	exit(0);
+}
+#else
+static int
+_prg_destructor_fork()
+{
+	pid_t pid;
+	int fdpair[2];
+	int prgid;
+	int i;
+	int dummy;
+
+	debug3("Entering _prg_destructor_fork");
+	if (pipe(fdpair) < 0) {
+		error("switch/elan: failed creating pipe");
+		return -1;
+	}
+
+	pid = fork();
+	if (pid < 0) {
+		error("switch/elan: failed to fork program destructor");
+	} else if (pid > 0) {
+		/* parent */
+		close(fdpair[0]);
+		return fdpair[1];
+	}
+	
+	/****************************************/
+	/* child */
+	close(fdpair[1]);
+
+	_close_all_fd_except(fdpair[0]);
+        /* Wait for the program description id from the child */
+        if (read(fdpair[0], &prgid, sizeof(prgid)) != sizeof(prgid)) {
+		error("_prg_destructor_fork read failed: %m");
+		exit(1);
+	}
+
+/* 	debug3("_prg_destructor program is %d, waiting on process %d", */
+/* 	       prgid, pid); */
+
+	if (prgid == -1)
+		exit(-1);
+
+	/*
+	 * Wait for the pipe to close, signalling that the parent
+	 * has exited.
+	 */
+	while (read(fdpair[0], &dummy, sizeof(dummy)) > 0) {}
+
+/* 	debug3("_prg_destructor read returned ################################"); */
+	/*
+	 * Verify that program description is empty.  If not, send a SIGKILL.
+	 */
+	for (i = 0; i < 30; i++) {
+		int maxids = 8;
+		pid_t pids[8];
+		int nids = 0;
+
+		if (rms_prginfo(prgid, maxids, pids, &nids) < 0) {
+			error("switch/elan: rms_prginfo: %m");
+		}
+		if (nids == 0)
+			break;
+/* 		error("_prg_destructor_fork program desc is not empty %d", */
+/* 		      nids); */
+		if (rms_prgsignal(prgid, SIGKILL) < 0) {
+			error("switch/elan: rms_prgsignal: %m");
+		}
+		sleep(1);
+	}
+
+	debug3("_prg_desctrutor attempting to call rms_prgdestroy");
+	if (rms_prgdestroy(prgid) < 0) {
+		error("rms_prgdestroy");
+	}
+	exit(0);
+}
+#endif
+
+static void
+_prg_destructor_send(int fd, int prgid)
+{
+	debug3("_prg_destructor_send %d", prgid);
+	if (write (fd, &prgid, sizeof(prgid)) != sizeof(prgid)) {
+		error ("_prg_destructor_send failed: %m"); 
+	}
+	/* Deliberately avoid closing fd.  When this process exits, it
+	   will close fd signalling to the child process that it is
+	   time to call rms_prgdestroy */
+	/*close(fd);*/
+}
+
 /*
  * Process 2: Create the context and make capability available to children.
  */
 int
 qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
+
 {
 	int err;
 	int i, nrails;
+	int fd; 
+
+	if ((fd = _prg_destructor_fork()) == -1)
+		goto fail;
 #if HAVE_LIBELANCTRL
 	nrails = elan_nrails(&jobinfo->j_cap);
 
@@ -1011,8 +1176,10 @@ qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 			default:
 				break;
 		}
+		_prg_destructor_send(fd, -1);
 		goto fail;
 	}
+	_prg_destructor_send(fd, jobinfo->j_prognum);
 
 	if (rms_prgaddcap(jobinfo->j_prognum, 0, &jobinfo->j_cap) < 0) {
 		/* translate errno values to more descriptive ones */
