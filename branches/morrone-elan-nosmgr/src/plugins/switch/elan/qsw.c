@@ -932,86 +932,10 @@ _close_all_fd_except(int fd)
 
 
 /*
- * Process 1: After the fork, the parent process is process 1,
- *            and will call rms_prgdestroy when the child (slurmd job
+ * Process 1: After the fork, the child process is process 1,
+ *            and will call rms_prgdestroy when the parent (slurmd job
  *            manager) exits.
  */
-#if 0
-static int
-_prg_destructor_fork()
-{
-	pid_t mgr;
-	int fdpair[2];
-	int prgid;
-	int i;
-
-	debug3("Entering _prg_destructor_fork");
-	if (pipe(fdpair) < 0) {
-		error("switch/elan: failed creating pipe");
-		return -1;
-	}
-
-	mgr = fork();
-	if (mgr < 0) {
-		error("switch/elan: failed to fork program destructor");
-	} else if (mgr == 0) {
-		/* child */
-		close(fdpair[0]);
-		return fdpair[1];
-	}
-	
-	/****************************************/
-	/* parent */
-	close(fdpair[1]);
-
-	_close_all_fd_except(fdpair[0]);
-        /* Wait for the program description id from the child */
-        if (read(fdpair[0], &prgid, sizeof(prgid)) != sizeof(prgid)) {
-		error("_prg_destructor_fork read failed: %m");
-		exit(1);
-	}
-	close(fdpair[0]);
-
-	debug3("_prg_destructor program is %d, waiting on process %d",
-	       prgid, mgr);
-
-	if (prgid == -1)
-		exit(-1);
-	/*
-	 * Wait for the slurmd child process to exit, then destroy the
-	 * program description
-	 */
-	if (waitpid(mgr, NULL, 0) == -1)
-		error("_prg_desctructor_fork waitpid error: %m");
-
-	/*
-	 * Verify that program description is empty.  If not, send a SIGKILL.
-	 */
-	for (i = 0; i < 30; i++) {
-		int maxids = 8;
-		pid_t pids[8];
-		int nids = 0;
-
-		if (rms_prginfo(prgid, maxids, pids, &nids) < 0) {
-			error("switch/elan: rms_prginfo: %m");
-		}
-		if (nids == 0)
-			break;
-		error("_prg_destructor_fork program desc is not empty %d",
-		      nids);
-		if (rms_prgsignal(prgid, SIGKILL) < 0) {
-			error("switch/elan: rms_prgsignal: %m");
-		}
-		sleep(1);
-	}
-
-	debug3("_prg_desctrutor attempting to call rms_prgdestroy");
-	if (rms_prgdestroy(prgid) < 0) {
-		error("rms_prgdestroy");
-	}
-	exit(0);
-}
-#else
 static int
 _prg_destructor_fork()
 {
@@ -1021,7 +945,7 @@ _prg_destructor_fork()
 	int i;
 	int dummy;
 
-	debug3("Entering _prg_destructor_fork");
+/* 	debug3("Entering _prg_destructor_fork"); */
 	if (pipe(fdpair) < 0) {
 		error("switch/elan: failed creating pipe");
 		return -1;
@@ -1059,7 +983,6 @@ _prg_destructor_fork()
 	 */
 	while (read(fdpair[0], &dummy, sizeof(dummy)) > 0) {}
 
-/* 	debug3("_prg_destructor read returned ################################"); */
 	/*
 	 * Verify that program description is empty.  If not, send a SIGKILL.
 	 */
@@ -1081,14 +1004,20 @@ _prg_destructor_fork()
 		sleep(1);
 	}
 
-	debug3("_prg_desctrutor attempting to call rms_prgdestroy");
+/* 	debug3("_prg_desctrutor attempting to call rms_prgdestroy"); */
 	if (rms_prgdestroy(prgid) < 0) {
 		error("rms_prgdestroy");
 	}
 	exit(0);
 }
-#endif
 
+
+
+/*
+ * Send the prgid of the newly created program description to the process
+ * forked earlier by _prg_destructor_fork(), using the file descriptor
+ * "fd" which was returned by the call to _prg_destructor_fork().
+ */
 static void
 _prg_destructor_send(int fd, int prgid)
 {
