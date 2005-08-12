@@ -307,22 +307,36 @@ int switch_p_alloc_jobinfo(switch_jobinfo_t *jp)
 }
 
 int switch_p_build_jobinfo ( switch_jobinfo_t switch_job, char *nodelist,
-		int nprocs, int cyclic_alloc, char *network)
+		int *tasks_per_node, int cyclic_alloc, char *network)
 {
 	int node_set_size = QSW_MAX_TASKS; /* overkill but safe */
 	hostlist_t host_list;
 	char *this_node_name;
 	bitstr_t *nodeset;
 	int node_id, error_code = SLURM_SUCCESS;
+	int i, nnodes, ntasks = 0;
+	
+	if (!tasks_per_node) {
+		slurm_seterrno(ENOMEM);
+		return SLURM_ERROR;
+	}
+	
+	if ((host_list = hostlist_create(nodelist)) == NULL)
+		fatal("hostlist_create(%s): %m", nodelist);
 
-	if (nprocs > node_set_size)
-		return ESLURM_BAD_TASK_COUNT;
+	nnodes = hostlist_count(host_list);
+	for (i = 0; i < nnodes; i++)
+		ntasks += tasks_per_node[i];
+
+	if (ntasks > node_set_size) {
+		slurm_seterrno(ESLURM_BAD_TASK_COUNT);
+		hostlist_destroy(host_list);
+		return SLURM_ERROR;
+	}
+
 	if ((nodeset = bit_alloc (node_set_size)) == NULL)
 		fatal("bit_alloc: %m");
 
-
-	if ((host_list = hostlist_create(nodelist)) == NULL)
-		fatal("hostlist_create(%s): %m", nodelist);
 	while ((this_node_name = hostlist_shift(host_list))) {
 		node_id = qsw_getnodeid_byhost(this_node_name);
 		if (node_id >= 0)
@@ -339,8 +353,9 @@ int switch_p_build_jobinfo ( switch_jobinfo_t switch_job, char *nodelist,
 
 	if (error_code == SLURM_SUCCESS) {
 		qsw_jobinfo_t j = (qsw_jobinfo_t) switch_job;
-		error_code = qsw_setup_jobinfo(j, nprocs, nodeset, 
-				cyclic_alloc); /* allocs hw context */
+		error_code = qsw_setup_jobinfo(j, ntasks, nodeset, 
+				tasks_per_node, cyclic_alloc); 
+				/* allocs hw context */
 	}
 
 	bit_free(nodeset);

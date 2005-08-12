@@ -37,6 +37,7 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/cbuf.h"
+#include "src/common/dist_tasks.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
@@ -94,72 +95,42 @@ static char *     _task_state_name(srun_task_state_t state_inx);
 static char *     _host_state_name(srun_host_state_t state_inx);
 static char *     _normalize_hostlist(const char *hostlist);
 
-
-/* to effectively deal with heterogeneous nodes, we fake a cyclic 
- * distribution to figure out how many tasks go on each node and 
- * then make those assignments in a block fashion */
+/* assign taskids and hostids in a block fashion */
 static void
 _dist_block(srun_job_t *job)
 {
 	int i, j, taskid = 0;
-	bool over_subscribe = false;
 
-	/* figure out how many tasks go to each node */
-	for (j=0; (taskid<opt.nprocs); j++) {   /* cycle counter */
-		bool space_remaining = false;
-		for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
-			if ((j<job->cpus[i]) || over_subscribe) {
-				taskid++;
-				job->ntask[i]++;
-				if ((j+1) < job->cpus[i])
-					space_remaining = true;
-			}
-		}
-		if (!space_remaining)
-			over_subscribe = true;
-	}
-
-	/* now distribute the tasks */
-	taskid = 0;
 	for (i=0; i < job->nhosts; i++) {
-		for (j=0; j<job->ntask[i]; j++) {
+		for (j=0; j < job->ntask[i]; j++) {
 			job->hostid[taskid] = i;
 			job->tids[i][j]     = taskid++;
 		}
 	}
 }
 
-/* distribute tasks across available nodes: allocate tasks to nodes 
- * in a cyclic fashion using available processors. once all available 
- * processors are allocated, continue to allocate task over-subscribing
- * nodes as needed. for example
- * cpus per node        4  2  4  2
- *                     -- -- -- --
- * task distribution:   0  1  2  3
- *                      4  5  6  7
- *                      8     9
- *                     10    11     all processors allocated now
- *                     12 13 14 15  etc.
+/* assign taskids and hostids in a cyclic fashion. for example:
+ *
+ * tasks per node        5  3  5  3
+ *                      -- -- -- --
+ * task distribution:    0  1  2  3
+ *                       4  5  6  7
+ *                       8  9 10 11
+ *                      12    13
+ *                      14    15  all tasks allocated now
  */
 static void
 _dist_cyclic(srun_job_t *job)
 {
 	int i, j, taskid = 0;
-	bool over_subscribe = false;
 
-	for (j=0; (taskid<opt.nprocs); j++) {   /* cycle counter */
-		bool space_remaining = false;
-		for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
-			if ((j<job->cpus[i]) || over_subscribe) {
-				job->hostid[taskid]         = i;
-				job->tids[i][job->ntask[i]] = taskid++;
-				job->ntask[i]++;
-				if ((j+1) < job->cpus[i])
-					space_remaining = true;
+	for (j=0; (taskid < opt.nprocs); j++) {   /* cycle counter */
+		for (i=0; ((i < job->nhosts) && (taskid < opt.nprocs)); i++) {
+			if (j < job->ntask[i]) {
+				job->hostid[taskid]     = i;
+				job->tids[i][j] = taskid++;
 			}
 		}
-		if (!space_remaining)
-			over_subscribe = true;
 	}
 }
 
@@ -499,7 +470,6 @@ _job_create_internal(allocation_info_t *info)
 
 	job->host  = (char **) xmalloc(job->nhosts * sizeof(char *));
 	job->cpus  = (int *)   xmalloc(job->nhosts * sizeof(int) );
-	job->ntask = (int *)   xmalloc(job->nhosts * sizeof(int) );
 
 	/* Compute number of file descriptors / Ports needed for Job 
 	 * control info server
@@ -562,15 +532,19 @@ _job_create_internal(allocation_info_t *info)
 		}
 	}
 
+	job->ntask = distribute_tasks(job->nodelist, info->num_cpu_groups,
+				info->cpus_per_node, info->cpu_count_reps,
+				job->nodelist, opt.nprocs);
+
+	for (i = 0; i < job->nhosts; i++)
+	  debug3("distribute_tasks placed %d tasks on host %d",
+		 job->ntask[i], i);
+
 	/* Build task id list for each host */
 	job->tids   = xmalloc(job->nhosts * sizeof(uint32_t *));
 	job->hostid = xmalloc(opt.nprocs  * sizeof(uint32_t));
-	for (i = 0; i < job->nhosts; i++) {
-		if (opt.overcommit)
-			job->tids[i] = xmalloc(opt.nprocs * sizeof(uint32_t));
-		else
-			job->tids[i] = xmalloc(job->cpus[i] * sizeof(uint32_t));
-	}
+	for (i = 0; i < job->nhosts; i++)
+		job->tids[i] = xmalloc(job->ntask[i] * sizeof(uint32_t));
 
 	if (opt.distribution == SRUN_DIST_UNKNOWN) {
 		if (opt.nprocs <= job->nhosts)

@@ -42,6 +42,7 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/checkpoint.h"
+#include "src/common/dist_tasks.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
@@ -555,17 +556,28 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 
 	/* a batch script does not need switch info */
 	if (!batch_step) {
+		int *tasks_per_node;
+		tasks_per_node = distribute_tasks(job_ptr->nodes,
+						  job_ptr->num_cpu_groups,
+						  job_ptr->cpus_per_node,
+						  job_ptr->cpu_count_reps,
+						  step_ptr->step_node_list,
+						  step_ptr->num_tasks);
+
 		if (switch_alloc_jobinfo (&step_ptr->switch_job) < 0)
 			fatal ("step_create: switch_alloc_jobinfo error");
+		
 		if (switch_build_jobinfo(step_ptr->switch_job, 
 					step_ptr->step_node_list,
-					step_specs->num_tasks, 
+					tasks_per_node, 
 					step_ptr->cyclic_alloc,
 					job_ptr->network) < 0) {
 			error("switch_build_jobinfo: %m");
+			xfree(tasks_per_node);
 			delete_step_record (job_ptr, step_ptr->step_id);
 			return ESLURM_INTERCONNECT_FAILURE;
 		}
+		xfree(tasks_per_node);
 	}
 	if (checkpoint_alloc_jobinfo (&step_ptr->check_job) < 0)
 		fatal ("step_create: checkpoint_alloc_jobinfo error");

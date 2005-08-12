@@ -1,4 +1,4 @@
-This file describes changes in recent versions of SLURM. It primarily
+Tis file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
 * Changes in SLURM 0.6.0-pre1
@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
  -- Added mpi/none plugin and made it the default.
  -- Replace extern program_invocation_short_name with program_invocation_name
     due to short name being truncated to 16 bytes on some systems.
+ -- Added support for Elan clusters with different CPU counts on nodes
+    (Chris Holmes, HP).
  -- Added Consumable Resources web page (Susanne Balle, HP).
 
 * Changes in SLURM 0.5.0
