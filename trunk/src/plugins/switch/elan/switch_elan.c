@@ -577,33 +577,6 @@ extern int switch_p_node_fini ( void )
 #endif /*  HAVE_LIBELAN3 */
 }
 
-static int 
-_wait_and_destroy_prg(qsw_jobinfo_t qsw_job)
-{
-	int i = 0;
-	int sleeptime = 1;
-
-	debug("going to destroy program description...");
-
-	while((qsw_prgdestroy(qsw_job) < 0) && (errno == ECHILD_PRGDESTROY)) {
-		debug("qsw_prgdestroy: %m");
-		i++;
-		if (i == 1) {
-			debug("sending SIGTERM to remaining tasks");
-			qsw_prgsignal(qsw_job, SIGTERM);
-		} else {
-			debug("sending SIGKILL to remaining tasks");
-			qsw_prgsignal(qsw_job, SIGKILL);
-		}
-
-		debug("sleeping for %d sec ...", sleeptime);
-		sleep(sleeptime*=2);
-	}
-
-	debug("destroyed program description");
-	return SLURM_SUCCESS;
-}
-
 int switch_p_job_preinit ( switch_jobinfo_t jobinfo )
 {
 	return SLURM_SUCCESS;
@@ -648,7 +621,6 @@ int switch_p_job_fini ( switch_jobinfo_t jobinfo )
 int switch_p_job_postfini ( switch_jobinfo_t jobinfo, uid_t pgid, 
 				uint32_t job_id, uint32_t step_id )
 {
-	_wait_and_destroy_prg((qsw_jobinfo_t)jobinfo);
 	return SLURM_SUCCESS;
 }
 
