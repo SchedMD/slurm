@@ -691,15 +691,17 @@ _free_hwcontext(uint32_t prog_num)
  * Returns -1 on failure to allocate hw context.
  */
 static int
-_init_elan_capability(ELAN_CAPABILITY *cap, uint32_t prognum, int nprocs, 
-		int nnodes, bitstr_t *nodeset, int cyclic_alloc)
+_init_elan_capability(ELAN_CAPABILITY *cap, uint32_t prognum, int ntasks, 
+		int nnodes, bitstr_t *nodeset, int *tasks_per_node,
+		int cyclic_alloc)
 {
-	int i, node_num, full_node_cnt, min_procs_per_node, max_procs_per_node;
+	int i, node_index, max_tasks_per_node = tasks_per_node[0];
 
-	/* Task count may not be identical for all nodes */
-	full_node_cnt = nprocs % nnodes;
-	min_procs_per_node = nprocs / nnodes;
-	max_procs_per_node = (nprocs + nnodes - 1) / nnodes;
+	/* Determine maximum number of tasks on any one node */
+	for (i = 1; i < nnodes; i++) {
+		if (tasks_per_node[i] > max_tasks_per_node)
+			max_tasks_per_node = tasks_per_node[i];
+	}
 
 	_srand_if_needed();
 
@@ -731,10 +733,10 @@ _init_elan_capability(ELAN_CAPABILITY *cap, uint32_t prognum, int nprocs,
 		cap->UserKey.Values[i] = lrand48();
 
 	/* set up hardware context range */
-	cap->LowContext = _alloc_hwcontext(nodeset, prognum, max_procs_per_node);
+	cap->LowContext = _alloc_hwcontext(nodeset, prognum, max_tasks_per_node);
 	if (cap->LowContext == -1)
 		return -1;
-	cap->HighContext = cap->LowContext + max_procs_per_node - 1;
+	cap->HighContext = cap->LowContext + max_tasks_per_node - 1;
 	/* Note: not necessary to initialize cap->MyContext */
 
 	/* set the range of nodes to be used and number of processes */
@@ -744,7 +746,7 @@ _init_elan_capability(ELAN_CAPABILITY *cap, uint32_t prognum, int nprocs,
 	assert(cap->HighNode != -1);
 
 #if HAVE_LIBELAN3
-	cap->Entries = nprocs;
+	cap->Entries = ntasks;
 #endif
 
 #if USE_OLD_LIBELAN
@@ -759,22 +761,18 @@ _init_elan_capability(ELAN_CAPABILITY *cap, uint32_t prognum, int nprocs,
 	/*
 	 * Set up cap->Bitmap, which describes the mapping of processes to 
 	 * the nodes in the range of cap->LowNode - cap->Highnode.
-	 * There are (nprocs * nnodes) significant bits in the mask, each 
+	 * There are (ntasks * nnodes) significant bits in the mask, each 
  	 * representing a process slot.  Bits are off for process slots 
 	 * corresponding to unallocated nodes.  For example, if nodes 4 and 6 
 	 * are running two processes per node, bits 0,1 (corresponding to the 
 	 * two processes on node 4) and bits 4,5 (corresponding to the two 
 	 * processes running on node 6) are set.  
 	 */
-	node_num = 0;
+	node_index = 0;
 	for (i = cap->LowNode; i <= cap->HighNode; i++) {
 		if (bit_test(nodeset, i)) {
 			int j, bit, task_cnt;
-
-			if (node_num++ < full_node_cnt)
-				task_cnt = max_procs_per_node;
-			else
-				task_cnt = min_procs_per_node;
+			task_cnt = tasks_per_node[node_index++];
 
 			for (j = 0; j < task_cnt; j++) {
 				if (cyclic_alloc)
@@ -782,13 +780,14 @@ _init_elan_capability(ELAN_CAPABILITY *cap, uint32_t prognum, int nprocs,
 					 (cap->HighNode - cap->LowNode + 1));
 				else
 					bit = ((i-cap->LowNode)
-					       * max_procs_per_node) + j;
+					       * max_tasks_per_node) + j;
 
 				assert(bit < (sizeof(cap->Bitmap) * 8));
 				BT_SET(cap->Bitmap, bit);
 			}
 		}
 	}
+
 	return 0;
 }
 
@@ -798,8 +797,8 @@ _init_elan_capability(ELAN_CAPABILITY *cap, uint32_t prognum, int nprocs,
  * Call this on the "client" process, e.g. pdsh, srun, slurmctld, etc..
  */
 int
-qsw_setup_jobinfo(qsw_jobinfo_t j, int nprocs, bitstr_t *nodeset, 
-		int cyclic_alloc)
+qsw_setup_jobinfo(qsw_jobinfo_t j, int ntasks, bitstr_t *nodeset, 
+		int *tasks_per_node, int cyclic_alloc)
 {
 	int nnodes = bit_set_count(nodeset);
 
@@ -808,14 +807,14 @@ qsw_setup_jobinfo(qsw_jobinfo_t j, int nprocs, bitstr_t *nodeset,
 
 	/* sanity check on args */
 	/* Note: ELAN_MAX_VPS is 512 on "old" Elan driver, 16384 on new. */
-	if ((nprocs <= 0) || (nprocs > ELAN_MAX_VPS) || (nnodes <= 0)) {
+	if ((ntasks <= 0) || (ntasks > ELAN_MAX_VPS) || (nnodes <= 0)) {
 		slurm_seterrno_ret(EINVAL);
 	}
       
 	/* initialize jobinfo */
 	j->j_prognum = _generate_prognum();
-	if (_init_elan_capability(&j->j_cap, j->j_prognum, nprocs, nnodes, 
-			nodeset, cyclic_alloc) == -1) {
+	if (_init_elan_capability(&j->j_cap, j->j_prognum, ntasks, nnodes, 
+			nodeset, tasks_per_node, cyclic_alloc) == -1) {
 		slurm_seterrno_ret(EAGAIN); /* failed to allocate hw ctx */
 	}
 

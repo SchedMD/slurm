@@ -70,6 +70,7 @@ libcommon_la_SOURCES = 			\
 	getopt.h getopt.c getopt1.c     \
 	$(build_unsetenv_src)		\
 	hostlist.c hostlist.h		\
+	dist_tasks.c dist_tasks.h	\
 	checkpoint.c checkpoint.h	\
 	slurm_xlator.h
 

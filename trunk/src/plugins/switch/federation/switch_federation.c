@@ -310,11 +310,11 @@ int switch_p_alloc_jobinfo(switch_jobinfo_t *switch_job)
 }
 
 int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist, 
-			   int nprocs, int cyclic_alloc, char *network) 
+			   int *tasks_per_node, int cyclic_alloc, char *network) 
 {
 	hostlist_t list = NULL;
 	bool sn_all;
-	int err;
+	int i, err, nprocs = 0;
 	int bulk_xfer = 0;
 
 	debug3("network = \"%s\"", network);
@@ -340,6 +340,9 @@ int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist,
 			      "nor sn_single");
 			return SLURM_ERROR;
 		}
+		for (i = 0; i < hostlist_count(list); i++)
+			nprocs += tasks_per_node[i];
+
 		if (strstr(network, "bulk_xfer")
 		    || strstr(network, "BULK_XFER"))
 			bulk_xfer = 1;

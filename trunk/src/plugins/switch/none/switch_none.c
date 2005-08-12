@@ -102,7 +102,7 @@ int switch_p_alloc_jobinfo ( switch_jobinfo_t *switch_job )
 }
 
 int switch_p_build_jobinfo ( switch_jobinfo_t switch_job, char *nodelist, 
-		int nprocs, int cyclic_alloc, char *network)
+		int *tasks_per_node, int cyclic_alloc, char *network)
 {
 	return SLURM_SUCCESS;
 }

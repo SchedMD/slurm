@@ -96,8 +96,9 @@ void		qsw_free_jobinfo(qsw_jobinfo_t j);
 int		qsw_pack_jobinfo(qsw_jobinfo_t j, Buf buffer);
 int		qsw_unpack_jobinfo(qsw_jobinfo_t j, Buf buffer);
 
-int 		qsw_setup_jobinfo(qsw_jobinfo_t j, int nprocs, 
-			bitstr_t *nodeset, int cyclic_alloc);
+int 		qsw_setup_jobinfo(qsw_jobinfo_t j, int ntasks, 
+			bitstr_t *nodeset, int *tasks_per_node,
+			int cyclic_alloc);
 void		qsw_teardown_jobinfo(qsw_jobinfo_t j);
 
 int 		qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid);

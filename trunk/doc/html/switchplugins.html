@@ -250,7 +250,7 @@ the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
 <p class="commandline">int switch_p_build_jobinfo (switch_jobinfo_t switch_job, 
-char *nodelist, int nprocs, int cyclic_alloc, char *network);</p>
+char *nodelist, int *tasks_per_node, int cyclic_alloc, char *network);</p>
 <p style="margin-left:.2in"><b>Description</b>: Build a job's switch credential.
 It is recommended that the credential's magic number be validated.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
@@ -259,8 +259,8 @@ switch credential to be updated<br>
 <span class="commandline">nodelist</span>&nbsp;&nbsp;&nbsp; (input) List of nodes 
 allocated to the job. This may contain expressions to specify node ranges (e.g. 
 "linux[1-20]" or "linux[2,4,6,8]").<br>
-<span class="commandline">nprocs</span>&nbsp;&nbsp;&nbsp; (input) Number of 
-processes to be initiated as part of the job.<br>
+<span class="commandline">tasks_per_node</span>&nbsp;&nbsp;&nbsp; (input) List
+of processes per node to be initiated as part of the job.<br>
 <span class="commandline">cyclic_alloc</span>&nbsp;&nbsp;&nbsp; (input) Non-zero 
 if job's processes are to be allocated across nodes in a cyclic fashion (task 0 on node 0, 
 task 1 on node 1, etc). If zero, processes are allocated sequentially on a node before 
