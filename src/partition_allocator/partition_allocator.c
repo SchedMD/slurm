@@ -563,8 +563,11 @@ extern void pa_init(node_info_msg_t *node_info_ptr)
 	char *numeric = NULL;
 	int x,y,z;
 
-#ifdef HAVE_BGL_FILES
+#ifdef HAVE_BGL
 	int i;
+#endif
+
+#ifdef HAVE_BGL_FILES
 	rm_BGL_t *bgl = NULL;
 	rm_size3D_t bp_size;
 	int rc = 0;
@@ -629,9 +632,6 @@ extern void pa_init(node_info_msg_t *node_info_ptr)
 			temp = start % 10;
 			if (DIM_SIZE[Z] < temp)
 				DIM_SIZE[Z] = temp;
-			temp = start;
-			if (DIM_SIZE[X] < temp)
-				DIM_SIZE[X] = temp;
 		}
 		DIM_SIZE[X]++;
 		DIM_SIZE[Y]++;
@@ -676,7 +676,7 @@ extern void pa_init(node_info_msg_t *node_info_ptr)
 		DIM_SIZE[Z]=4;
 	}
 #else 
-	if ((DIM_SIZE[X]==0) && (DIM_SIZE[X]==0) && (DIM_SIZE[X]==0)) {
+	if (DIM_SIZE[X]==0) {
 		debug("Setting default system dimensions");
 		DIM_SIZE[X]=100;
 	}	
@@ -684,9 +684,12 @@ extern void pa_init(node_info_msg_t *node_info_ptr)
 
 	if(!pa_system_ptr->num_of_proc)
 		pa_system_ptr->num_of_proc = 
-			DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z];
-
-		
+			DIM_SIZE[X] 
+#ifdef HAVE_BGL
+			* DIM_SIZE[Y] 
+			* DIM_SIZE[Z]
+#endif 
+			;
 	_create_pa_system();
 	
 	init_grid(node_info_ptr);
@@ -1564,7 +1567,11 @@ static void _init_wires()
 	for(x=0;x<DIM_SIZE[X];x++) {
 		for(y=0;y<DIM_SIZE[Y];y++) {
 			for(z=0;z<DIM_SIZE[Z];z++) {
+#ifdef HAVE_BGL
 				source = &pa_system_ptr->grid[x][y][z];
+#else
+				source = &pa_system_ptr->grid[x];
+#endif
 				for(i=0; i<6; i++) {
 					_switch_config(source, source, 
 						       X, i, i);
@@ -2399,45 +2406,6 @@ static int _set_external_wires(int dim, int count, pa_node_t* source,
 		
 	
 #ifdef HAVE_BGL
-#if 0
-	/* this is here for the second half of bgl system.
-	   if used it should be changed to #if 1
-	*/
-	if(count == 0) {
-		/* 3->4 of next */
-		_switch_config(source, target, dim, 3, 4);
-		/* 4->3 of next */
-		_switch_config(source, target, dim, 4, 3);
-		/* 2 not in use */
-		_switch_config(source, source, dim, 2, 2);
-		target = &pa_system_ptr->grid[DIM_SIZE[X]-1]
-			[source->coord[Y]]
-			[source->coord[Z]];
-		
-		/* 5->2 of last */
-		_switch_config(source, target, dim, 5, 2);
-		
-	} else if (count == 1) {
-		/* 2->5 of next */
-		_switch_config(source, target, dim, 2, 5);
-		/* 5 not in use */
-		_switch_config(source, source, dim, 5, 5);
-	} else if (count == 2) {
-		/* 2->5 of next */
-		_switch_config(source, target, dim, 2, 5);
-		/* 3->4 of next */
-		_switch_config(source, target, dim, 3, 4);
-		/* 4 not in use */
-		_switch_config(source, source, dim, 4, 4);
-	} else if(count == 3) {
-		/* 2->5 of first */
-		_switch_config(source, target, dim, 2, 5);
-		/* 3 not in use */
-		_switch_config(source, source, dim, 3, 3);
-	}
-      
-	return 1;
-#endif
 	_switch_config(source, target, dim, 2, 5);
 	if(count == 0 || count==4) {
 		/* 0 and 4th Node */
@@ -2482,7 +2450,8 @@ static int _set_external_wires(int dim, int count, pa_node_t* source,
 			_switch_config(source, source, dim, 5, 5);
 		}
 	} else if(DIM_SIZE[X] != 8) {
-		fatal("Do don't have a config to do this BGL system.");
+		fatal("You don't have a config to do this BGL system, "
+		      "size is %d.", DIM_SIZE[X]);
 	}
 #else
 	if(count == 0)
