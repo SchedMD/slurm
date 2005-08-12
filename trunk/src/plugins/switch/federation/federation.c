@@ -61,7 +61,6 @@
 #define FED_MIN_WIN 0
 #define FED_DEBUG 0
 
-#define ZERO 48
 #define BUFSIZE 4096
 
 char* fed_conf = NULL;
@@ -283,7 +282,7 @@ _cache_lid(fed_adapter_t *ap)
 {
 	assert(ap);
 	
-	int adapter_num = ap->name[3] - ZERO;
+	int adapter_num = ap->name[3] - (int) '0';
 
 	lid_cache[adapter_num].lid = ap->lid;
 	lid_cache[adapter_num].network_id = ap->network_id;
@@ -457,7 +456,7 @@ static int _parse_fed_file(hostlist_t *adapter_list)
 		fed_conf = _get_fed_conf();
 	fed_spec_file = fopen(fed_conf, "r");
 	if (fed_spec_file == NULL)
-		fatal("_get_adapters error opening file %s, %m",
+		fatal("_parse_fed_file error opening file %s, %m",
 		      fed_conf);
 	line_num = 0;
 	while (fgets(in_line, BUFSIZE, fed_spec_file) != NULL) {
@@ -465,7 +464,7 @@ static int _parse_fed_file(hostlist_t *adapter_list)
 		_strip_cr_nl(in_line);
 		_strip_comments(in_line);
 		if (strlen(in_line) >= (BUFSIZE - 1)) {
-			error("_get_adapters line %d, of input file %s "
+			error("_parse_fed_file line %d, of input file %s "
 			      "too long", line_num, fed_conf);
 			fclose(fed_spec_file);
 			xfree(fed_conf);
@@ -498,6 +497,8 @@ static int _parse_fed_file(hostlist_t *adapter_list)
 /* Check for existence of sniX, where X is from 0 to FED_MAXADAPTERS.
  * For all that exist, record vital adapter info plus status for all windows
  * available on that adapter.  Cache lid to adapter name mapping locally.
+ *
+ * Is not thread-safe.
  * 
  * Used by: slurmd
  */
@@ -528,8 +529,7 @@ _get_adapters(fed_adapter_t *list, int *count)
 	while (adapter = hostlist_next(adapter_iter)) {
 		if(_set_up_adapter(list + i, adapter)
 		   == SLURM_ERROR)
-			error("_get_adapters: "
-			      "There was an error setting up adapter.");
+			fatal("Failed to set up adapter %s.", adapter);
 		free(adapter);
 		i++;
 	}
@@ -606,7 +606,9 @@ fed_build_nodeinfo(fed_nodeinfo_t *n, char *name)
 	assert(name);
 
 	strncpy(n->name, name, FED_HOSTLEN);
+	_lock();
 	err = _get_adapters(n->adapter_list, &count);
+	_unlock();
 	if(err != 0)
 		return err;
 	n->adapter_count = count;
@@ -1125,10 +1127,14 @@ unpack_error:
 
 /* Unpack nodeinfo and update persistent libstate.
  *
+ * If believe_window_status is true, we honor the window status variables
+ * from the packed fed_nodeinfo_t.  If it is false we set the status of
+ * all windows to NTBL_UNLOADED_STATE.
+ *
  * Used by: slurmctld
  */
 static int
-_unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
+_unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 {
 	int i, j;
 	fed_adapter_t *tmp_a = NULL;
@@ -1190,6 +1196,8 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
 		for(j = 0; j < tmp_a->window_count; j++) {
 			safe_unpack16(&tmp_w[j].id, buf);
 			safe_unpack32(&tmp_w[j].status, buf);
+			if (!believe_window_status)
+				tmp_w[j].status = NTBL_UNLOADED_STATE;
 		}
 		tmp_a->window_list = tmp_w;
 	}
@@ -1223,7 +1231,7 @@ fed_unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
 	int rc;
 
 	_lock();
-	rc = _unpack_nodeinfo(n, buf);
+	rc = _unpack_nodeinfo(n, buf, false);
 	_unlock();
 	return rc;
 }
@@ -1255,9 +1263,6 @@ fed_free_nodeinfo(fed_nodeinfo_t *n, bool ptr_into_array)
 
 /* Assign a unique key to each job.  The key is used later to 
  * gain access to the network table loaded on each node of a job.
- *
- * Federation documentation states that the job key must be greater
- * than 0 and less than 0xFFF0.
  *
  * Federation documentation states that the job key must be greater
  * than 0 and less than 0xFFF0.
@@ -1362,7 +1367,8 @@ _allocate_windows(int adapter_cnt, fed_tableinfo_t *tableinfo,
 		adapter = &node->adapter_list[i];
 		window = _find_free_window(adapter);
 		if (window == NULL) {
-			error("No free windows");
+			error("No free windows on node %s adapter %s",
+			      node->name, adapter->name);
 			return SLURM_ERROR;
 		}
 		window->status = NTBL_LOADED_STATE;
@@ -2329,7 +2335,7 @@ _unpack_libstate(fed_libstate_t *lp, Buf buffer)
 	safe_unpack32(&lp->magic, buffer);
 	safe_unpack32(&node_count, buffer);
 	for(i = 0; i < node_count; i++)
-		(void)_unpack_nodeinfo(NULL, buffer);
+		(void)_unpack_nodeinfo(NULL, buffer, true);
 	assert(lp->node_count == node_count);
 	safe_unpack16(&lp->key_index, buffer);
 	
