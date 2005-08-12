@@ -234,6 +234,7 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
         int fd_flags;
         struct pollfd ufds;
         struct timeval tstart;
+        int timeleft = timeout;
 
         ufds.fd     = fd;
         ufds.events = POLLOUT;
@@ -244,14 +245,16 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
         gettimeofday(&tstart, NULL);
 
         while (sent < size) {
-                if ((timeout -= _tot_wait(&tstart)) <= 0) {
+
+                timeleft = timeout - _tot_wait(&tstart);
+                if (timeleft <= 0) {
 			debug("_slurm_send_timeout at %d of %d, timeout",
 				sent, size);
 			slurm_seterrno(SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT);
 			sent = SLURM_ERROR;
 			goto done;
                 }
-                if ((rc = poll(&ufds, 1, timeout)) <= 0) {
+                if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
 			if ((rc == 0) || (errno == EINTR) || (errno == EAGAIN)) 
  				continue;
 			else {
@@ -309,6 +312,7 @@ int _slurm_recv_timeout(slurm_fd fd, char *buffer, size_t size,
         int fd_flags;
         struct pollfd  ufds;
         struct timeval tstart;
+	int timeleft = timeout;
 
         ufds.fd     = fd;
         ufds.events = POLLIN;
@@ -320,7 +324,8 @@ int _slurm_recv_timeout(slurm_fd fd, char *buffer, size_t size,
 
         while (recvlen < size) {
 
-                if ((timeout -= _tot_wait(&tstart)) <= 0) {
+                timeleft = timeout - _tot_wait(&tstart);
+                if (timeleft <= 0) {
 			debug("_slurm_recv_timeout at %d of %d, timeout",
 				recvlen, size);
                         slurm_seterrno(SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT);
@@ -328,7 +333,7 @@ int _slurm_recv_timeout(slurm_fd fd, char *buffer, size_t size,
                         goto done;
                 }
 
-                if ((rc = poll(&ufds, 1, timeout)) <= 0) {
+                if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
                         if ((errno == EINTR) || (errno == EAGAIN) || (rc == 0))
                                 continue;
                         else {
