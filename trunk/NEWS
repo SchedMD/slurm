@@ -15,6 +15,7 @@ documents those changes that are of interest to users and admins.
  -- Added mpi/none plugin and made it the default.
  -- Replace extern program_invocation_short_name with program_invocation_name
     due to short name being truncated to 16 bytes on some systems.
+ -- Added Consumable Resources web page (Susanne Balle, HP).
 
 * Changes in SLURM 0.5.0
 ========================
