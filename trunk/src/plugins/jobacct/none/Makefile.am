@@ -12,7 +12,3 @@ pkglib_LTLIBRARIES = jobacct_none.la
 # Null job completion logging plugin.
 jobacct_none_la_SOURCES = jobacct_none.c
 jobacct_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-
-if HAVE_AIX
-jobacct_none_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
-endif
