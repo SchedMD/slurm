@@ -56,6 +56,8 @@
 
 #define _DEBUG 0
 #define RETRY_BOOT_COUNT 3
+
+#ifdef HAVE_BGL_FILES
 static int _partition_is_deallocating(bgl_record_t *bgl_record);
 
 static int _partition_is_deallocating(bgl_record_t *bgl_record)
@@ -108,6 +110,7 @@ static int _partition_is_deallocating(bgl_record_t *bgl_record)
 	}
 	return SLURM_SUCCESS;
 }
+#endif
 
 /*
  * check to see if partition is ready to execute.  Meaning

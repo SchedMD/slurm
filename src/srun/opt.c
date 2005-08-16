@@ -830,23 +830,36 @@ void set_options(const int argc, char **argv, int first)
 			}
 			break;
 		case (int)'c':
+			if(!first && opt.cpus_per_task)
+				break;
 			opt.cpus_set = true;
 			opt.cpus_per_task = 
 				_get_int(optarg, "cpus-per-task");
 			break;
 		case (int)'C':
+			if(!first && opt.constraints)
+				break;
 			xfree(opt.constraints);
 			opt.constraints = xstrdup(optarg);
 			break;
 		case (int)'d':
+			if(!first && opt.slurmd_debug)
+				break;
+			
 			opt.slurmd_debug = 
 				_get_int(optarg, "slurmd-debug");
 			break;
 		case (int)'D':
+			if(!first && opt.cwd)
+				break;
+			
 			xfree(opt.cwd);
 			opt.cwd = xstrdup(optarg);
 			break;
 		case (int)'e':
+			if(!first && opt.efname)
+				break;
+			
 			xfree(opt.efname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.efname = xstrdup("/dev/null");
@@ -854,6 +867,9 @@ void set_options(const int argc, char **argv, int first)
 				opt.efname = xstrdup(optarg);
 			break;
 		case (int)'g':
+			if(!first && opt.geometry)
+				break;
+						
 			if (_verify_geometry(optarg, opt.geometry))
 				exit(1);
 			break;
@@ -861,6 +877,9 @@ void set_options(const int argc, char **argv, int first)
 			opt.hold = true;
 			break;
 		case (int)'i':
+			if(!first && opt.ifname)
+				break;
+						
 			xfree(opt.ifname);
 			opt.ifname = xstrdup(optarg);
 			break;
@@ -871,6 +890,9 @@ void set_options(const int argc, char **argv, int first)
 			opt.join = true;
 			break;
 		case (int)'J':
+			if(!first && opt.job_name)
+				break;
+						
 			xfree(opt.job_name);
 			opt.job_name = xstrdup(optarg);
 			break;
@@ -884,6 +906,9 @@ void set_options(const int argc, char **argv, int first)
 			opt.labelio = true;
 			break;
 		case (int)'m':
+			if(!first && opt.distribution)
+				break;
+						
 			opt.distribution = _verify_dist_type(optarg);
 			if (opt.distribution == SRUN_DIST_UNKNOWN) {
 				error("distribution type `%s' " 
@@ -892,11 +917,17 @@ void set_options(const int argc, char **argv, int first)
 			}
 			break;
 		case (int)'n':
+			if(!first && opt.nprocs)
+				break;
+						
 			opt.nprocs_set = true;
 			opt.nprocs = 
 				_get_int(optarg, "number of tasks");
 			break;
 		case (int)'N':
+			if(!first && opt.nodes_set)
+				break;
+						
 			opt.nodes_set = 
 				_verify_node_count(optarg, 
 						   &opt.min_nodes,
@@ -908,6 +939,9 @@ void set_options(const int argc, char **argv, int first)
 			}
 			break;
 		case (int)'o':
+			if(!first && opt.ofname)
+				break;			
+			
 			xfree(opt.ofname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.ofname = xstrdup("/dev/null");
@@ -918,19 +952,31 @@ void set_options(const int argc, char **argv, int first)
 			opt.overcommit = true;
 			break;
 		case (int)'p':
+			if(!first && opt.partition)
+				break;
+						
 			xfree(opt.partition);
 			opt.partition = xstrdup(optarg);
 			break;
 		case (int)'P':
+			if(!first && opt.dependency)
+				break;
+						
 			opt.dependency = _get_int(optarg, "dependency");
 			break;
 		case (int)'q':
 			opt.quit_on_intr = true;
 			break;
 		case (int) 'Q':
+			if(!first && opt.quiet)
+				break;
+			
 			opt.quiet++;
 			break;
 		case (int)'r':
+			if(!first && opt.relative)
+				break;
+			
 			xfree(opt.relative);
 			opt.relative = xstrdup(optarg);
 			break;
@@ -941,9 +987,15 @@ void set_options(const int argc, char **argv, int first)
 			opt.share = true;
 			break;
 		case (int)'t':
+			if(!first && opt.time_limit)
+				break;
+			
 			opt.time_limit = _get_int(optarg, "time");
 			break;
 		case (int)'T':
+			if(!first && opt.max_threads)
+				break;
+			
 			opt.max_threads = 
 				_get_int(optarg, "max_threads");
 			break;
@@ -951,9 +1003,15 @@ void set_options(const int argc, char **argv, int first)
 			opt.unbuffered = true;
 			break;
 		case (int)'U':
+			if(!first && opt.account)
+				break;
+			xfree(opt.account);
 			opt.account = xstrdup(optarg);
 			break;
 		case (int)'v':
+			if(!first && _verbose)
+				break;
+			
 			_verbose++;
 			break;
 		case (int)'V':
@@ -961,6 +1019,9 @@ void set_options(const int argc, char **argv, int first)
 			exit(0);
 			break;
 		case (int)'w':
+			if(!first && opt.nodelist)
+				break;
+			
 			xfree(opt.nodelist);
 			opt.nodelist = xstrdup(optarg);
 			if (!_valid_node_list(&opt.nodelist))

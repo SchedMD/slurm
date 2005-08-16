@@ -83,7 +83,7 @@ int mpi_p_init(slurmd_job_t *job, int rank)
 	setenvf (&job->env, "GMPI_MASTER", "%s", addr);
 	setenvf (&job->env, "GMPI_SLAVE",  "%s", addrbuf);
 	
-	return (0);
+	return SLURM_SUCCESS;
 }
 
 int mpi_p_thr_create(srun_job_t *job)
@@ -99,5 +99,5 @@ int mpi_p_single_task()
 
 int mpi_p_exit()
 {
-	return 0;
+	return SLURM_SUCCESS;
 }
