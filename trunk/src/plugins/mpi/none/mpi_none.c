@@ -74,13 +74,13 @@ const uint32_t plugin_version   = 100;
 int mpi_p_init(slurmd_job_t *job)
 {
 	debug("Using mpi/none");
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 int mpi_p_thr_create(srun_job_t *job)
 {
 	debug("Using mpi/none");
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 int mpi_p_single_task()
@@ -90,5 +90,5 @@ int mpi_p_single_task()
 
 int mpi_p_exit()
 {
-	return 0;
+	return SLURM_SUCCESS;
 }
