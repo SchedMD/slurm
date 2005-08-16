@@ -1,0 +1,172 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
+                        "http://www.w3.org/TR/REC-html40/loose.dtd">
+
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
+Linux clusters, high-performance computing, Livermore Computing">
+<meta name="LLNLRandR" content="UCRL-WEB-213976"
+<meta name="LLNLRandRdate" content="13 July 2005">
+<meta name="distribution" content="global">
+<meta name="description" content="Simple Linux Utility for Resource Management">
+<meta name="copyright"
+content="This document is copyrighted U.S.
+Department of Energy under Contract W-7405-Eng-48">
+<meta name="Author" content="Morris Jette">
+<meta name="email" content="jette1@llnl.gov">
+<meta name="Classification"
+content="DOE:DOE Web sites via organizational
+structure:Laboratories and Other Field Facilities">
+<title>Simple Linux Utility for Resource Management:Node Selection Plugins</title>
+<link href="slurmstyles.css" rel="stylesheet" type="text/css">
+</head>
+
+<body bgcolor="#000000" text="#000000" leftmargin="0" topmargin="0">
+<table width="770" border="0" cellspacing="0" cellpadding="0">
+<tr> 
+<td><img src="slurm_banner.jpg" width="770" height="145" usemap="#Map" border="0" alt="Simple Linux Utility for Resource Management"></td>
+</tr>
+</table>
+<table width="770" border="0" cellspacing="0" cellpadding="3" bgcolor="#FFFFFF">
+<tr> 
+<td width="100%"> 
+<table width="760" border="0" cellspacing="0" cellpadding="4" align="right">
+<tr>
+<td valign="top" bgcolor="#000000"><p><img src="spacer.gif" width="110" height="1" alt=""></p>
+<p><a href="slurm.html" class="nav" align="center">Home</a></p>
+<p><span class="whitetext">About</span><br>
+<a href="overview.html" class="nav">Overview</a><br>
+<a href="news.html" class="nav">What's New</a><br>
+<a href="publications.html" class="nav">Publications</a><br>
+<a href="team.html" class="nav">SLURM Team</a></p>
+<p><span class="whitetext">Using</span><br>
+<a href="documentation.html" class="nav">Documentation</a><br>
+<a href="faq.html" class="nav">FAQ</a><br>
+<a href="help.html" class="nav">Getting Help</a><br>
+<a href="mail.html"  class="nav">Mailing Lists</a></p>
+<p><span class="whitetext">Installing</span><br>
+<a href="platforms.html" class="nav">Platforms</a><br>
+<a href="download.html" class="nav">Download</a><br>
+<a href="quickstart_admin.html" class="nav">Guide</a></p></td>
+<td><img src="spacer.gif" width="10" height="1" alt=""></td>
+<td valign="top"><h2><a name="top">SLURM Node Selection Plugin API</a></h2>
+
+<h3> Overview</h3>
+<p> This document describes SLURM mpi selection plugins and the API that defines 
+them. It is intended as a resource to programmers wishing to write their own SLURM 
+node selection plugins. This is version 0 of the API.</p>
+
+<p>SLURM mpi selection plugins are SLURM plugins that implement the which version of
+mpi is used during execution of the new SLURM job. API described herein. They are 
+intended to provide a mechanism for both selecting mpi versions for pending jobs and 
+performing any mpi-specific tasks for job launch or termination. The plugins must 
+conform to the SLURM Plugin API with the following specifications:</p>
+<p><span class="commandline">const char plugin_type[]</span><br>
+The major type must be &quot;mpi.&quot; The minor type can be any recognizable 
+abbreviation for the type of node selection algorithm. We recommend, for example:</p>
+<ul>
+<li><b>mpich-gm</b>&#151;For use with Myrinet.</li>
+<li><b>mvapich</b>&#151;For use with Infiniband.</li>
+<li><b>lam</b>&#151;A no-op right now.  LAM is not implemented yet.</li>
+</ul>
+<p>The <span class="commandline">plugin_name</span> and 
+<span class="commandline">plugin_version</span> 
+symbols required by the SLURM Plugin API require no specialization for node selection support. 
+Note carefully, however, the versioning discussion below.</p>
+
+<p>A simplified flow of logic follows:
+<pre>
+srun is able to specify the correct mpi to use. with --mpi=MPITYPE
+
+srun calls
+<i>mpi_p_thr_create((srun_job_t *)job);</i>
+which will set up the correct enviornment for the specified mpi.
+
+slurmd daemon runs
+<i>mpi_p_init((slurmd_job_t *)job, (int)rank);</i>
+which will set configure the slurmd to use the correct mpi as well to interact with the srun.
+
+</pre>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<h3>Data Objects</h3>
+<p> These functions are expected to read and/or modify data structures directly in 
+the slurmd daemon's and srun memory. Slurmd is a multi-threaded program with independent 
+read and write locks on each data structure type. Thererfore the type of operations 
+permitted on various data structures is identified for each function.</p>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<h3>API Functions</h3>
+<p>The following functions must appear. Functions which are not implemented should 
+be stubbed.</p>
+
+<p class="commandline">int mpi_p_init (slurmd_job_t *job, int rank);</p>
+<p style="margin-left:.2in"><b>Description</b>: Used by slurmd to configure the slurmd's environment
+to that of the correct mpi.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br><span class="commandline"> job</span>&nbsp; 
+&nbsp;&nbsp;(input) Pointer to the slurmd_job that is running.  Cannot be NULL.<br>
+<span class="commandline"> rank</span>&nbsp;
+&nbsp;&nbsp;(input) Primarially there for MVAPICH.  Used to send the rank fo the mpirun job. 
+This can be 0 if no rank information is needed for the mpi type.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
+the plugin should return SLURM_ERROR.</p>
+
+<p class="commandline">int mpi_p_thr_create (srun_job_t *job);</p>
+<p style="margin-left:.2in"><b>Description</b>: Used by srun to spawn the thread for the mpi processes. 
+Most all the real proccessing happens here.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> job</span>&nbsp; 
+&nbsp;&nbsp;(input) Pointer to the srun_job that is running.  Cannot be NULL.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
+the plugin should return -1.</p>
+
+<p class="commandline">int mpi_p_single_task ();</p>
+<p style="margin-left:.2in"><b>Description</b>: Tells the system whether or not multiple tasks
+can run at the same time </p>
+<p style="margin-left:.2in"><b>Arguments</b>:
+<span class="commandline"> none</span></p>
+<p style="margin-left:.2in"><b>Returns</b>: false if multiple tasks can run and true if only 
+a single task can run at one time.</p>
+
+<p class="commandline">int mpi_p_exit();</p>
+<p style="margin-left:.2in"><b>Description</b>: Cleans up anything that needs cleaning up after 
+execution.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:
+<span class="commandline"> none</span></p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
+the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<h3>Versioning</h3>
+<p> This document describes version 0 of the SLURM node selection API. Future 
+releases of SLURM may revise this API. A node selection plugin conveys its ability 
+to implement a particular API version using the mechanism outlined for SLURM plugins. 
+In addition, the credential is transmitted along with the version number of the 
+plugin that transmitted it. It is at the discretion of the plugin author whether 
+to maintain data format compatibility across different versions of the plugin.</p>
+
+<p class="footer"><a href="#top">top</a></p></td>
+</tr>
+<tr> 
+<td colspan="3"><hr> <p>For information about this page, contact 
+<a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
+<p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
+<p class="footer">UCRL-WEB-213976<br>
+Last modified 13 July 2005</p></td>
+</tr>
+</table>
+</td>
+ </tr>
+</table>
+<map name="Map">
+<area shape="rect" coords="616,4,762,97" href="../">
+<area shape="rect" coords="330,1,468,11" href="http://www.llnl.gov/disclaimer.html">
+<area shape="rect" coords="11,23,213,115" href="slurm.html">
+</map>
+</body>
+</html>
