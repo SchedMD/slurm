@@ -51,9 +51,10 @@ extern char **environ;
 static pthread_mutex_t active_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  active_cond  = PTHREAD_COND_INITIALIZER;
 static int             active = 0;
+static int             joinable = 0;
 static int             fail_launch_cnt = 0;
 
-typedef enum {DSH_NEW, DSH_ACTIVE, DSH_DONE, DSH_FAILED} state_t;
+typedef enum {DSH_NEW, DSH_ACTIVE, DSH_DONE, DSH_FAILED, DSH_JOINED} state_t;
 
 typedef struct task_info {
 	slurm_msg_t *req;
@@ -208,23 +209,33 @@ static int _check_pending_threads(thd_t *thd, int count)
 static void _set_attr_detached (pthread_attr_t *attr)
 {
 	int err;
-	if (!opt.parallel_debug)
+	if (opt.parallel_debug) {
 		return;
+	}
 	if ((err = pthread_attr_setdetachstate(attr, PTHREAD_CREATE_DETACHED)))
 		error ("pthread_attr_setdetachstate: %s", slurm_strerror(err));
 	return;
 }
 
+
+/*
+ * Need to join with all attached threads if running
+ *  under parallel debugger
+ */
 static void _join_attached_threads (int nthreads, thd_t *th)
 {
 	int i;
 	void *retval;
-	if (!opt.parallel_debug)
-		return;
-	for (i = 0; i < nthreads; i++) {
-		if (th[i].thread != (pthread_t) NULL)
-			pthread_join (th[i].thread, &retval);
+	if (opt.parallel_debug) {
+		for (i = 0; i < nthreads; i++) {
+			if (th[i].thread != (pthread_t) NULL
+			    && th[i].state == DSH_DONE) {
+				pthread_join (th[i].thread, &retval);
+				th[i].state = DSH_JOINED;
+			}
+		}
 	}
+
 	return;
 }
 
@@ -302,7 +313,8 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 		pthread_mutex_lock(&active_mutex);
 		while (active >= opt.max_threads || rc < 0) 
 			rc = _wait_on_active(thd, job);
-
+		if (joinable >= (opt.max_threads/2))
+			_join_attached_threads(job->nhosts, thd);
 		active++;
 		pthread_mutex_unlock(&active_mutex);
 
@@ -320,10 +332,6 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 		_wait_on_active(thd, job);
 	pthread_mutex_unlock(&active_mutex);
 
-	/*
-	 * Need to join with all attached threads if running
-	 *  under parallel debugger
-	 */
 	_join_attached_threads (job->nhosts, thd);
 
 	/*
@@ -454,10 +462,11 @@ static void * _p_launch_task(void *arg)
 	} else 
 		_update_contacted_node(job, nodeid);
 
-
 	pthread_mutex_lock(&active_mutex);
 	th->state = DSH_DONE;
 	active--;
+	if (opt.parallel_debug)
+		joinable++;
 	fail_launch_cnt += failure;
 	pthread_cond_signal(&active_cond);
 	pthread_mutex_unlock(&active_mutex);
