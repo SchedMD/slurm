@@ -1,4 +1,4 @@
-Tis file describes changes in recent versions of SLURM. It primarily
+This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
 * Changes in SLURM 0.6.0-pre1
@@ -18,6 +18,9 @@ documents those changes that are of interest to users and admins.
  -- Added support for Elan clusters with different CPU counts on nodes
     (Chris Holmes, HP).
  -- Added Consumable Resources web page (Susanne Balle, HP).
+ -- "Session manager" slurmd process has been eliminated.
+ -- switch/federation fixes migrated from 0.5.*
+ -- srun pthreads really set detached, fixes scaling problem
 
 * Changes in SLURM 0.5.0
 ========================
