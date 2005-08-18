@@ -760,11 +760,11 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		 * Assume step termination request.
 		 * Send SIGCONT just in case the processes are stopped.
 		 */
-		slurm_signal_container(step->cont_id, SIGCONT);
-		if (slurm_signal_container(step->cont_id, req->signal) < 0)
+		slurm_container_signal(step->cont_id, SIGCONT);
+		if (slurm_container_signal(step->cont_id, req->signal) < 0)
 			rc = errno;
 	} else if (req->signal == 0) {
-		if (slurm_signal_container(step->cont_id, req->signal) < 0)
+		if (slurm_container_signal(step->cont_id, req->signal) < 0)
 			rc = errno;
 /* SIGMIGRATE and SIGSOUND are used to initiate job checkpoint on AIX.
  * These signals are not sent to the entire process group, but just a
@@ -839,10 +839,10 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 	slurm_msg_t           resp_msg;
 	job_id_response_msg_t resp;
 	bool         found = false; 
-	uint32_t     my_cont = slurm_find_container(req->job_pid);
+	uint32_t     my_cont = slurm_container_find(req->job_pid);
 
 	if (my_cont == 0) {
-		verbose("slurm_find_container(%u): process not found",
+		verbose("slurm_container_find(%u): process not found",
 			(uint32_t) req->job_pid);
 	} else {
 		List         steps = shm_get_steps();
@@ -1012,7 +1012,7 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 
 		debug2("signal %d to job %u (cont_id:%u)",
 		       sig, jobid, s->cont_id);
-		if (slurm_signal_container(s->cont_id, sig) < 0)
+		if (slurm_container_signal(s->cont_id, sig) < 0)
 			error("kill jid %d cont_id %u: %m",
 			      s->jobid, s->cont_id);
 	}

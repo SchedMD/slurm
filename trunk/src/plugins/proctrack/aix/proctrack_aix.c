@@ -110,7 +110,7 @@ extern int fini ( void )
  * Uses job step process group id as a unique identifier.  Job id
  * and step id are not unique by themselves.
  */
-extern uint32_t slurm_create_container ( slurmd_job_t *job )
+extern uint32_t slurm_container_create ( slurmd_job_t *job )
 {
 	int pgid = (int) job->pgid;
 	int i;
@@ -128,13 +128,13 @@ extern uint32_t slurm_create_container ( slurmd_job_t *job )
 
 }
 
-extern int slurm_add_container ( uint32_t id )
+extern int slurm_container_add ( uint32_t id, pid_t pid )
 {
-	error("slurm_add_container not supported");
-	return SLURM_ERROR;
+	debug("slurm_container_add not supported");
+	return SLURM_SUCCESS;
 }
 
-extern int slurm_signal_container  ( uint32_t id, int signal )
+extern int slurm_container_signal  ( uint32_t id, int signal )
 {
 	int jobid = (int) id;
 	if (!id)	/* no container ID */
@@ -143,7 +143,7 @@ extern int slurm_signal_container  ( uint32_t id, int signal )
 	return proctrack_job_kill(&jobid, &signal);
 }
 
-extern int slurm_destroy_container ( uint32_t id )
+extern int slurm_container_destroy ( uint32_t id )
 {
 	int jobid = (int) id;
 
@@ -158,7 +158,7 @@ extern int slurm_destroy_container ( uint32_t id )
 }
 
 extern uint32_t
-slurm_find_container(pid_t pid)
+slurm_container_find(pid_t pid)
 {
 	int local_pid = (int) pid;
 	int cont_id = proctrack_get_job_id(&local_pid);

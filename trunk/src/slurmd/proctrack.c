@@ -38,7 +38,7 @@
 /* ************************************************************************ */
 typedef struct slurm_proctrack_ops {
 	uint32_t	(*create)	( slurmd_job_t *job );
-	int		(*add)		( uint32_t id );
+	int		(*add)		( uint32_t id, pid_t pid );
 	int		(*signal)	( uint32_t id, int signal );
 	int		(*destroy)	( uint32_t id );
 	uint32_t	(*find_cont)	( pid_t pid );
@@ -70,11 +70,11 @@ _proctrack_get_ops( slurm_proctrack_context_t *c )
 	 * Must be synchronized with slurm_proctrack_ops_t above.
 	 */
 	static const char *syms[] = {
-		"slurm_create_container",
-		"slurm_add_container",
-		"slurm_signal_container",
-		"slurm_destroy_container",
-		"slurm_find_container"
+		"slurm_container_create",
+		"slurm_container_add",
+		"slurm_container_signal",
+		"slurm_container_destroy",
+		"slurm_container_find"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -223,7 +223,7 @@ slurm_proctrack_fini( void )
  * Returns container ID or zero on error
  */
 extern uint32_t
-slurm_create_container(slurmd_job_t *job)
+slurm_container_create(slurmd_job_t *job)
 {
 	if ( slurm_proctrack_init() < 0 )
 		return 0;
@@ -232,30 +232,31 @@ slurm_create_container(slurmd_job_t *job)
 }
 
 /*
- * Add this process to the specified container
- * cont_id IN  - container ID as returned by slurm_create_container()
+ * Add a process to the specified container
+ * cont_id IN  - container ID as returned by slurm_container_create()
+ * pid IN      - process ID to be added to the container
  *
  * Returns a SLURM errno.
  */
 extern int
-slurm_add_container(uint32_t cont_id)
+slurm_container_add(uint32_t cont_id, pid_t pid)
 {
 	if ( slurm_proctrack_init() < 0 )
 		return SLURM_ERROR;
 
-	 return (*(g_proctrack_context->ops.add))( cont_id );
+	return (*(g_proctrack_context->ops.add))( cont_id , pid );
 }
 
 /*
  * Signal all processes within a container
- * cont_id IN - container ID as returned by slurm_create_container()
+ * cont_id IN - container ID as returned by slurm_container_create()
  * signal IN  - signal to send, if zero then perform error checking 
  *              but do not send signal
  *
  * Returns a SLURM errno.
  */
 extern int
-slurm_signal_container(uint32_t cont_id, int signal)
+slurm_container_signal(uint32_t cont_id, int signal)
 {
 	if ( slurm_proctrack_init() < 0 )
 		return SLURM_ERROR;
@@ -265,12 +266,12 @@ slurm_signal_container(uint32_t cont_id, int signal)
 
 /* 
  * Destroy a container, any processes within the container are not effected
- * cont_id IN - container ID as returned by slurm_create_container()
+ * cont_id IN - container ID as returned by slurm_container_create()
  *
  * Returns a SLURM errno.
 */
 extern int
-slurm_destroy_container(uint32_t cont_id)
+slurm_container_destroy(uint32_t cont_id)
 {
 	if ( slurm_proctrack_init() < 0 )
 		return SLURM_ERROR;
@@ -284,7 +285,7 @@ slurm_destroy_container(uint32_t cont_id)
  * Returns a SLURM errno.
  */
 extern uint32_t 
-slurm_find_container(pid_t pid)
+slurm_container_find(pid_t pid)
 {
 	if ( slurm_proctrack_init() < 0 )
 		return SLURM_ERROR;

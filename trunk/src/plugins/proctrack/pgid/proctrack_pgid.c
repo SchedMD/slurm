@@ -94,17 +94,17 @@ extern int fini ( void )
 /*
  * Uses job step process group id.
  */
-extern uint32_t slurm_create_container ( slurmd_job_t *job )
+extern uint32_t slurm_container_create ( slurmd_job_t *job )
 {
 	return (uint32_t) job->pgid;
 }
 
-extern int slurm_add_container ( uint32_t id )
+extern int slurm_container_add ( uint32_t id, pid_t pid )
 {
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_signal_container  ( uint32_t id, int signal )
+extern int slurm_container_signal  ( uint32_t id, int signal )
 {
 	pid_t pid = (pid_t) id;
 
@@ -119,13 +119,13 @@ extern int slurm_signal_container  ( uint32_t id, int signal )
 	return (int)killpg(pid, signal);
 }
 
-extern int slurm_destroy_container ( uint32_t id )
+extern int slurm_container_destroy ( uint32_t id )
 {
 	return SLURM_SUCCESS;
 }
 
 extern uint32_t
-slurm_find_container(pid_t pid)
+slurm_container_find(pid_t pid)
 {
 	pid_t rc = getpgid(pid);
 
