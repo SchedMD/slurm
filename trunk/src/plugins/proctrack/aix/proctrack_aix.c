@@ -44,11 +44,12 @@
 #include "src/common/log.h"
 #include "src/slurmd/slurmd_job.h"
 
-extern int proctrack_job_reg(int *jobid);	/* register a job, include this proc */
+extern int proctrack_job_reg_pid(int *jobid, int *pid_ptr); /* register a job */
 extern int proctrack_job_unreg(int *jobid);	/* unregister a job */
 extern int proctrack_job_kill(int *jobid, int *signal);	/* signal a job */
 extern int proctrack_get_job_id(int *pid_ptr);	/* return jobid for given pid */
 extern int proctrack_dump_records(void);	/* dump records */
+extern uint32_t proctrack_version(void);        /* proctrack version */
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -89,6 +90,14 @@ const uint32_t plugin_version = 90;
  */
 extern int init ( void )
 {
+	uint32_t required_version = 2;
+
+	if (proctrack_version() < required_version) {
+		error("proctrack AIX kernel extension must be >= %u",
+		      required_version);
+		return SLURM_ERROR;
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -99,18 +108,19 @@ extern int fini ( void )
 
 /*
  * Uses job step process group id as a unique identifier.  Job id
- * step id are not unique by themselves.
+ * and step id are not unique by themselves.
  */
 extern uint32_t slurm_create_container ( slurmd_job_t *job )
 {
 	int pgid = (int) job->pgid;
 	int i;
 
-	xassert(jobid != 0);
+	xassert(job);
+	xassert(pgid > 1);
 
 	for (i = 0; i < job->ntasks; i++) {
-		if (proctrack_job_reg(&pgid, &job->task[i].pid) != 0) {
-			error("proctrack_job_reg(%d): %m", jobid);
+		if (proctrack_job_reg_pid(&pgid, &job->task[i]->pid) != 0) {
+			error("proctrack_job_reg(%d): %m", pgid);
 			return (uint32_t) 0;
 		}
 	}
