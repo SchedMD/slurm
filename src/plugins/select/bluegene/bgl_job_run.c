@@ -56,7 +56,7 @@
 
 #define MAX_POLL_RETRIES    220
 #define POLL_INTERVAL        3
-#define MAX_AGENT_COUNT      32
+#define MAX_AGENT_COUNT      130
 enum update_op {START_OP, TERM_OP, SYNC_OP};
 
 typedef struct bgl_update {
@@ -204,8 +204,14 @@ static void _sync_agent(bgl_update_t *bgl_update_ptr)
 			slurm_mutex_unlock(&part_state_mutex);
 		}
 	} else {
-		error("Partition %s isn't in a ready state!",
-		      bgl_update_ptr->bgl_part_id);
+		if(bgl_record->state != RM_PARTITION_CONFIGURING) {
+			error("Partition %s isn't ready and isn't "
+			      "being configured! Starting job again.",
+			      bgl_update_ptr->bgl_part_id);
+		} else {
+			debug("Partition %s is booting, job ok",
+			      bgl_update_ptr->bgl_part_id);
+		}
 		_start_agent(bgl_update_ptr);
 	}
 }
@@ -222,7 +228,7 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 	int retries;
 	
 	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
-			
+					
 	if(!bgl_record) {
 		error("partition %s not found in bgl_list",
 		      bgl_update_ptr->bgl_part_id);
@@ -253,7 +259,7 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 						    PTHREAD_CREATE_JOINABLE))
 						error("pthread_attr_setdetach"
 						      "state error %m");
-					
+
 					retries = 0;
 					while (pthread_create(&thread_agent, 
 							      &attr_agent, 
@@ -292,8 +298,10 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 		list_iterator_destroy(itr);
 		
 		/* wait for all necessary partitions to be freed */
-		while(num_part_to_free != num_part_freed)
-			usleep(1000);
+		while(num_part_to_free != num_part_freed) {
+			sleep(1);
+		}
+		
 		if(!bgl_record->job_running) 
 			return;
 		if((rc = boot_part(bgl_record))
@@ -353,8 +361,9 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		jobs = 0;
 	} else if (jobs > 300)
 		fatal("Active job count (%d) invalid, restart MMCS", jobs);
+
 	debug2("job count %d",jobs);
-	
+
 	for (i=0; i<jobs; i++) {		
 		if (i) {
 			if ((rc = rm_get_data(job_list, RM_JobListNextJob, 
@@ -401,7 +410,6 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 	}
 	
 	/* remove the partition's users */
-	
 	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
 	if(bgl_record) {
 		debug2("got the record %s user is %s",
@@ -432,9 +440,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		
 		last_bgl_update = time(NULL);
 		slurm_mutex_unlock(&part_state_mutex);
-	} else {
-		error("_term_agent: record not found in bgl_list");
-	}
+	} 
 not_removed:
 	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
 		error("rm_free_job_list(): %s", bgl_err_str(rc));
@@ -804,7 +810,8 @@ extern int boot_part(bgl_record_t *bgl_record)
 #ifdef HAVE_BGL_FILES
 	int rc;
 	
-	if ((rc = rm_set_part_owner(bgl_record->bgl_part_id, slurmctld_conf.slurm_user_name)) 
+	if ((rc = rm_set_part_owner(bgl_record->bgl_part_id, 
+				    slurmctld_conf.slurm_user_name)) 
 	    != STATUS_OK) {
 		error("rm_set_part_owner(%s,%s): %s", 
 		      bgl_record->bgl_part_id, 
@@ -820,13 +827,20 @@ extern int boot_part(bgl_record_t *bgl_record)
 		error("pm_create_partition(%s): %s",
 		      bgl_record->bgl_part_id, bgl_err_str(rc));
 		return SLURM_ERROR;
-	}	
-	
+	}
+	rc = 0;
+	while(rc < 10) {
+		if(bgl_record->state == RM_PARTITION_CONFIGURING)
+			break;
+		sleep(1);
+		rc++;
+	}
 	slurm_mutex_lock(&part_state_mutex);
 	/* reset state right now, don't wait for 
 	 * update_partition_list() to run or epilog could 
 	 * get old/bad data. */
-	bgl_record->state = RM_PARTITION_CONFIGURING;
+	if(bgl_record->state != RM_PARTITION_CONFIGURING)
+		bgl_record->state = RM_PARTITION_CONFIGURING;
 	debug("Setting bootflag for %s", bgl_record->bgl_part_id);
 	bgl_record->boot_state = 1;
 	//bgl_record->boot_count = 0;

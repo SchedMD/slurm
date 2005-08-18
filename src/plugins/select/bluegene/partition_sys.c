@@ -78,7 +78,7 @@ static void _print_list(List list)
 		}
 
 		debug("[ %d", stuff[0]);
-		for (i=1; i<SYSTEM_DIMENSIONS; i++){
+		for (i=1; i<PA_SYSTEM_DIMENSIONS; i++){
 			debug(" x %d", stuff[i]);
 		}
 		debug(" ]");
@@ -194,10 +194,10 @@ static int _post_allocate(bgl_record_t *bgl_record)
 
 extern int configure_partition(bgl_record_t *bgl_record)
 {
-	
-	rm_new_partition(&bgl_record->bgl_part); /* new partition to be added */
+	/* new partition to be added */
+	rm_new_partition(&bgl_record->bgl_part); 
 	_pre_allocate(bgl_record);
-	
+
 	configure_partition_switches(bgl_record);
 	
 	_post_allocate(bgl_record); 
@@ -244,7 +244,6 @@ int read_bgl_partitions()
 		part_count = 0;
 	}
 	
-	
 	for(part_number=0; part_number<part_count; part_number++) {
 		
 		if (part_number) {
@@ -280,21 +279,23 @@ int read_bgl_partitions()
 				rc = SLURM_ERROR;
 				break;
 			}
+		
 		/* New BGL partition record */		
 		
 		bgl_record = xmalloc(sizeof(bgl_record_t));
 		list_push(bgl_curr_part_list, bgl_record);
 									
 		bgl_record->bgl_part_id = xstrdup(part_name);
-		
+		bgl_record->state = -1;
 		if ((rc = rm_get_data(part_ptr, RM_PartitionBPNum, &bp_cnt)) 
 				!= STATUS_OK) {
 			error("rm_get_data(RM_BPNum): %s", bgl_err_str(rc));
 			bp_cnt = 0;
 		}
+		
 		if(bp_cnt==0)
 			continue;
-		
+			
 		bgl_record->bgl_part_list = list_create(NULL);
 		bgl_record->hostlist = hostlist_create(NULL);
 		
@@ -337,9 +338,6 @@ int read_bgl_partitions()
 				coord[X], coord[Y], coord[Z]);
 		
 			hostlist_push(bgl_record->hostlist, node_name_tmp);
-			list_append(bgl_record->bgl_part_list, 
-				    &pa_system_ptr->grid
-				    [coord[X]][coord[Y]][coord[Z]]);
 		}	
 		
 		// need to get the 000x000 range for nodes
@@ -366,7 +364,7 @@ int read_bgl_partitions()
 			bgl_record->boot_state = 1;
 		else
 			bgl_record->boot_state = 0;
-		
+			
 		debug("Partition %s is in state %d",
 		      bgl_record->bgl_part_id, 
 		      bgl_record->state);
@@ -410,6 +408,8 @@ int read_bgl_partitions()
 			error("rm_get_data(RM_PartitionBPNum): %s",
 			      bgl_err_str(rc));
 		} 
+		debug("has %d BPs",
+		      bgl_record->bp_count);
 				
 		if ((rc = rm_get_data(part_ptr, RM_PartitionSwitchNum,
 				&bgl_record->switch_count)) != STATUS_OK) {
@@ -442,7 +442,7 @@ static int _post_bgl_init_read(void *object, void *arg)
 		i *= 2;
 		xrealloc(bgl_record->nodes, i);
 	}
-
+	
 	if (node_name2bitmap(bgl_record->nodes, 
 			     false, 
 			     &bgl_record->bitmap)) {

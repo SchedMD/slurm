@@ -92,7 +92,7 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 	ListIterator itr;
 	bgl_record_t* record = NULL;
 	int i;
-	uint16_t req_geometry[SYSTEM_DIMENSIONS];
+	uint16_t req_geometry[PA_SYSTEM_DIMENSIONS];
 	uint16_t conn_type, node_use, rotate, target_size = 1;
 	uint32_t req_procs = job_ptr->num_procs;
 	int rot_cnt = 0;
@@ -111,7 +111,7 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		SELECT_DATA_NODE_USE, &node_use);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_ROTATE, &rotate);
-	for (i=0; i<SYSTEM_DIMENSIONS; i++)
+	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++)
 		target_size *= req_geometry[i];
 	if (target_size == 0)	/* no geometry specified */
 		target_size = min_nodes;
@@ -125,10 +125,10 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 	while ((record = (bgl_record_t*) list_next(itr))) {
 		/* Check processor count */
 		if (req_procs > 512) {
-			if (record->node_use == SELECT_VIRTUAL_NODE_MODE)
-				proc_cnt = record->bp_count * 1024;
-			else
-				proc_cnt = record->bp_count * 512;
+			/* We use the c-node count here. Job could start
+			 * twice this count if VIRTUAL_NODE_MODE, but this
+			 * is now controlled by mpirun, not SLURM */
+			proc_cnt = record->bp_count * 512;
 			if (req_procs > proc_cnt) {
 				debug("partition %s CPU count too low",
 					record->bgl_part_id);

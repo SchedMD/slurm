@@ -199,7 +199,7 @@ static int _partitions_dealloc()
 	}
 
 	if (error_code) {
-		fprintf(stderr, "slurm_load_partitions: %s",
+		fprintf(stderr, "slurm_load_partitions: %s\n",
 		       slurm_strerror(slurm_get_errno()));
 		return -1;
 	}

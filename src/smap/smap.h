@@ -99,7 +99,6 @@ typedef struct {
 } smap_parameters_t;
 
 extern smap_parameters_t params;
-extern int DIM_SIZE[PA_SYSTEM_DIMENSIONS];
 extern int text_line_cnt;
 
 extern void parse_command_line(int argc, char *argv[]);

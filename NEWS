@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.6.0-pre1
 =============================
+ -- Added bgl/partition_allocator/smap changes from 0.5.7.
  -- Added configurable resource limit propagation  (Daniel Christians, HP).
  -- Added mpi plugin specify at start of srun.
  -- Changed SlurmUser ID from 16-bit to 32-bit.
@@ -11,7 +12,7 @@ documents those changes that are of interest to users and admins.
     "ProctrackType=proctrack/linuxproc")
  -- Remove MpichGmDirectSupport configuration parameter (replace with
     "MpiDefault=mpich-gm")
- -- Make default plugin be "none".
+ -- Make default plugin be "none" for mpi.
  -- Added mpi/none plugin and made it the default.
  -- Replace extern program_invocation_short_name with program_invocation_name
     due to short name being truncated to 16 bytes on some systems.

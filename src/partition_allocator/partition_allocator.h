@@ -59,13 +59,13 @@
 #define BIG_MAX 9999
 #define BUFSIZE 4096
 
+#define NUM_PORTS_PER_NODE 6
+
 #ifdef HAVE_BGL
 #define PA_SYSTEM_DIMENSIONS 3
 #else
 #define PA_SYSTEM_DIMENSIONS 1
 #endif
-
-#define NUM_PORTS_PER_NODE 6
 
 extern bool _initialized;
 extern bool have_db2;
@@ -177,6 +177,7 @@ typedef struct {
 	int indecies;
 	int state;
 	int conn_type;
+	int phys_x;
 	
 } pa_node_t;
 
@@ -210,8 +211,9 @@ typedef struct {
 
 /* Global */
 extern List bp_map_list;
-extern char letters[36];
+extern char letters[62];
 extern char colors[6];
+extern int DIM_SIZE[PA_SYSTEM_DIMENSIONS];
 
 /* destroy a bgl_info_record_t */
 extern void destroy_bgl_info_record(void* object);
@@ -255,6 +257,9 @@ extern void print_pa_request(pa_request_t* pa_request);
  * return: success or error of the intialization.
  */
 extern void pa_init();
+/**
+ */
+extern void init_wires();
 /** 
  * destroy all the internal (global) data structs.
  */
@@ -265,7 +270,6 @@ extern void pa_fini();
  * 
  * IN c: coordinate of the node to put down
  */
-//void pa_set_node_down(int c[PA_SYSTEM_DIMENSIONS]);
 extern void pa_set_node_down(pa_node_t *pa_node);
 
 /** 

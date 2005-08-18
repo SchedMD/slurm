@@ -73,7 +73,6 @@ int main(int argc, char *argv[])
 	int mapset = 0;	
 #endif
 	//char *name;	
-        	
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
 	error_code = slurm_load_node((time_t) NULL, &new_node_ptr, 0);
