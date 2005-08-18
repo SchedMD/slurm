@@ -755,8 +755,15 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	}
 
 	if ((req->signal == SIGKILL)
-	    || (req->signal == SIGINT) /* concession to proctrack/linuxproc */
-	    || (req->signal == 0)) {
+	    || (req->signal == SIGINT)) { /* for proctrack/linuxproc */
+		/*
+		 * Assume step termination request.
+		 * Send SIGCONT just in case the processes are stopped.
+		 */
+		slurm_signal_container(step->cont_id, SIGCONT);
+		if (slurm_signal_container(step->cont_id, req->signal) < 0)
+			rc = errno;
+	} else if (req->signal == 0) {
 		if (slurm_signal_container(step->cont_id, req->signal) < 0)
 			rc = errno;
 /* SIGMIGRATE and SIGSOUND are used to initiate job checkpoint on AIX.
@@ -1165,6 +1172,12 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 		save_cred_state(conf->vctx);
 		debug("credential for job %u revoked", req->job_id);
 	}
+
+	/*
+	 * Tasks might be stopped (possibly by a debugger)
+	 * so send SIGCONT first.
+	 */
+	_kill_all_active_steps(req->job_id, SIGCONT, true);
 
 	nsteps = _kill_all_active_steps(req->job_id, SIGTERM, true);
 
