@@ -384,8 +384,7 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 				break;
 			j--;
 		} else if((block_ptr->nodes[j] < 58 
-			   && block_ptr->nodes[j] > 47) 
-			  && block_ptr->nodes[j-1] != '[') {
+			   && block_ptr->nodes[j] > 47)) {
 					
 			number = atoi(block_ptr->nodes + j);
 			start[X] = number / 100;

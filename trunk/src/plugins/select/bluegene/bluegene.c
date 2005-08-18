@@ -57,6 +57,7 @@ int partitions_are_created = 0;
 
 #ifdef HAVE_BGL_FILES
 static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int _update_bgl_record_state();
 #endif
 
 /* some local functions */
@@ -192,111 +193,24 @@ extern void destroy_bgl_record(void* object)
 	}
 }
 
-extern int update_bgl_record_state(bgl_record_t *bgl_record)
-{
-#ifdef HAVE_BGL_FILES
-	rm_partition_state_flag_t part_state = PARTITION_ALL_FLAG;
-	char *name = NULL;
-	rm_partition_list_t *part_list = NULL;
-	int j, rc, func_rc = SLURM_SUCCESS, num_parts = 0;
-	rm_partition_state_t state;
-	
-	if ((rc = rm_get_partitions_info(part_state, &part_list))
-	    != STATUS_OK) {
-		error("rm_get_partitions_info(): %s", bgl_err_str(rc));
-		return SLURM_ERROR; 
-	}
 
-	if ((rc = rm_get_data(part_list, RM_PartListSize, &num_parts))
-	    != STATUS_OK) {
-		error("rm_get_data(RM_PartListSize): %s", bgl_err_str(rc));
-		func_rc = SLURM_ERROR;
-		num_parts = 0;
-	}
-			
-	for (j=0; j<num_parts; j++) {
-		if (j) {
-			if ((rc = rm_get_data(part_list, 
-					      RM_PartListNextPart, 
-					      &bgl_record->bgl_part)) 
-			    != STATUS_OK) {
-				error("rm_get_data(RM_PartListNextPart): %s",
-				      bgl_err_str(rc));
-				func_rc = SLURM_ERROR;
-				break;
-			}
-		} else {
-			if ((rc = rm_get_data(part_list, 
-					      RM_PartListFirstPart, 
-					      &bgl_record->bgl_part)) 
-			    != STATUS_OK) {
-				error("rm_get_data(RM_PartListFirstPart: %s",
-				      bgl_err_str(rc));
-				func_rc = SLURM_ERROR;
-				break;
-			}
-		}
-		if ((rc = rm_get_data(bgl_record->bgl_part, 
-				      RM_PartitionID, 
-				      &name))
-		    != STATUS_OK) {
-			error("rm_get_data(RM_PartitionID): %s", 
-			      bgl_err_str(rc));
-			func_rc = SLURM_ERROR;
-			break;
-		}
-		if(!strcmp(bgl_record->bgl_part_id, name))
-			break;		
-	}
-	
-	if(func_rc == SLURM_ERROR)
-		goto clean_up;
-	else if(j>=num_parts) {
-		error("This partition, %s, doesn't exist in MMCS",
-		      bgl_record->bgl_part_id);
-		func_rc = SLURM_ERROR;
-		goto clean_up;
-	}
-
-	slurm_mutex_lock(&part_state_mutex);
-	if ((rc = rm_get_data(bgl_record->bgl_part, 
-			      RM_PartitionState, 
-			      &state))
-	    != STATUS_OK) {
-		error("rm_get_data(RM_PartitionState): %s",
-		      bgl_err_str(rc));
-	} else if(bgl_record->state != state) {
-		debug("state of Partition %s was %d and now is %d",
-		      name, bgl_record->state, state);
-		bgl_record->state = state;
-	}
-	slurm_mutex_unlock(&part_state_mutex);	
-clean_up:
-	if ((rc = rm_free_partition_list(part_list)) != STATUS_OK) {
-		error("rm_free_partition_list(): %s", bgl_err_str(rc));
-	}
-	return func_rc;
-#else
-	return SLURM_SUCCESS;
-#endif /* HAVE_BGL_FILES */
-
-}
 extern bgl_record_t *find_bgl_record(char *bgl_part_id)
 {
 	ListIterator itr;
 	bgl_record_t *bgl_record = NULL;
-	
+		
 	if(!bgl_part_id)
 		return NULL;
-	
+			
 	if(bgl_list) {
 		itr = list_iterator_create(bgl_list);
-		while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL)
+		while ((bgl_record = 
+			(bgl_record_t *) list_next(itr)) != NULL) {
 			if(bgl_record->bgl_part_id)
 				if (!strcmp(bgl_record->bgl_part_id, 
 					    bgl_part_id))
 					break;
-		
+		}
 		list_iterator_destroy(itr);
 		if(bgl_record)
 			return bgl_record;
@@ -598,6 +512,7 @@ extern int create_static_partitions(List part_list)
 	static int block_inx = 0;
 #else
 	ListIterator itr_found;
+	init_wires();
 #endif
 	slurm_mutex_lock(&part_state_mutex);
 	reset_pa_system();
@@ -828,11 +743,11 @@ extern int bgl_free_partition(bgl_record_t *bgl_record)
 {
 #ifdef HAVE_BGL_FILES
 	int rc;
-	if(!bgl_record)
+	if(!bgl_record) {
+		error("bgl_free_partition: there was no bgl_record");
 		return SLURM_ERROR;
+	}
 	while (1) {
-		if(update_bgl_record_state(bgl_record) == SLURM_ERROR)
-			break;
 		if (bgl_record->state != RM_PARTITION_FREE 
 		    && bgl_record->state != RM_PARTITION_DEALLOCATING) {
 			debug("pm_destroy %s",bgl_record->bgl_part_id);
@@ -864,7 +779,7 @@ extern void *mult_free_part(void *args)
 #ifdef HAVE_BGL_FILES
 	bgl_record_t *bgl_record = (bgl_record_t*) args;
 
-	debug("destroying the partition %s.", bgl_record->bgl_part_id);
+	debug("freeing the partition %s.", bgl_record->bgl_part_id);
 	bgl_free_partition(bgl_record);	
 	debug("done\n");
 	slurm_mutex_lock(&freed_cnt_mutex);
@@ -935,8 +850,6 @@ static int _addto_node_list(bgl_record_t *bgl_record, int *start, int *end)
 			for (z = start[Z]; z <= end[Z]; z++) {
 				sprintf(node_name_tmp, "bgl%d%d%d", 
 					x, y, z);		
-				hostlist_push(bgl_record->hostlist, 
-					      node_name_tmp);
 				list_append(bgl_record->bgl_part_list, 
 					    &pa_system_ptr->grid[x][y][z]);
 				node_count++;
@@ -1056,7 +969,6 @@ static int _validate_config_nodes(void)
 			}
 		}		
 		list_iterator_destroy(itr_conf);
-		
 		if(bgl_curr_part_list) {
 			itr_curr = list_iterator_create(
 				bgl_curr_part_list);
@@ -1064,7 +976,15 @@ static int _validate_config_nodes(void)
 				list_next(itr_curr)) 
 			       != NULL) {
 				_process_nodes(init_record);
-				
+				debug3("%s %d %d%d%d %d%d%d",
+				       init_record->bgl_part_id, 
+				       init_record->bp_count, 
+				       init_record->geo[X],
+				       init_record->geo[Y],
+				       init_record->geo[Z],
+				       DIM_SIZE[X],
+				       DIM_SIZE[Y],
+				       DIM_SIZE[Z]);
 				if ((init_record->geo[X] == DIM_SIZE[X])
 				    && (init_record->geo[Y] == DIM_SIZE[Y])
 				    && (init_record->geo[Z] == DIM_SIZE[Z])) {
@@ -1149,7 +1069,6 @@ static int _bgl_record_cmpf_inc(bgl_record_t* rec_a, bgl_record_t* rec_b)
 		return 0;
 }
 
-
 static int _delete_old_partitions(void)
 {
 #ifdef HAVE_BGL_FILES
@@ -1158,10 +1077,11 @@ static int _delete_old_partitions(void)
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
 	int retries;
-	
+	List bgl_destroy_list = list_create(NULL);
+
 	num_part_to_free = 0;
 	num_part_freed = 0;
-		
+				
 	if(!bgl_recover) {
 		if(bgl_curr_part_list) {
 			itr_curr = list_iterator_create(bgl_curr_part_list);
@@ -1173,7 +1093,8 @@ static int _delete_old_partitions(void)
 					    PTHREAD_CREATE_JOINABLE))
 					error("pthread_attr_setdetach"
 						      "state error %m");
-				
+
+				list_push(bgl_destroy_list, init_record);
 				retries = 0;
 				while (pthread_create(&thread_agent, 
 						      &attr_agent, 
@@ -1232,6 +1153,8 @@ static int _delete_old_partitions(void)
 						error("pthread_attr_setdetach"
 						      "state error %m");
 				
+					list_push(bgl_destroy_list, 
+						  init_record);
 					retries = 0;
 					while (pthread_create(
 						       &thread_agent, 
@@ -1257,8 +1180,20 @@ static int _delete_old_partitions(void)
 			return SLURM_ERROR;
 		}
 	}
-	while(num_part_to_free != num_part_freed)
-			usleep(1000);
+	retries=30;
+	while(num_part_to_free != num_part_freed) {
+		_update_bgl_record_state(bgl_destroy_list);
+		if(retries==30) {
+			info("Waiting for old partitions to be "
+			     "freed.  Have %d of %d",
+			     num_part_freed, 
+			     num_part_to_free);
+			retries=0;
+		}
+		retries++;
+		sleep(1);
+	}
+	list_destroy(bgl_destroy_list);
 	
 #endif	
 	return SLURM_SUCCESS;
@@ -1541,7 +1476,7 @@ static void _process_nodes(bgl_record_t *bgl_record)
 	pa_node_t* pa_node = NULL;
 	
 	bgl_record->bp_count = 0;
-
+				
 	while (bgl_record->nodes[j] != '\0') {
 		if ((bgl_record->nodes[j] == '['
 		     || bgl_record->nodes[j] == ',')
@@ -1576,8 +1511,7 @@ static void _process_nodes(bgl_record_t *bgl_record)
 				break;
 			j--;
 		} else if((bgl_record->nodes[j] < 58 
-			   && bgl_record->nodes[j] > 47) 
-			  && bgl_record->nodes[j-1] != '[') {
+			   && bgl_record->nodes[j] > 47)) {
 					
 			number = atoi(bgl_record->nodes + j);
 			start[X] = number / 100;
@@ -1601,11 +1535,6 @@ static void _process_nodes(bgl_record_t *bgl_record)
 		}
 		j++;
 	}
-	/* hostlist_ranged_string(bgl_record->hostlist, BUFSIZE, buffer); */
-/* 	if(strcmp(buffer,bgl_record->nodes)) { */
-/* 		xfree(bgl_record->nodes); */
-/* 		bgl_record->nodes = xstrdup(buffer); */
-/* 	} */
 	j=0;
 	bgl_record->geo[X] = 0;
 	bgl_record->geo[Y] = 0;
@@ -1630,6 +1559,10 @@ static void _process_nodes(bgl_record_t *bgl_record)
 		}
 	}
 	list_iterator_destroy(itr);
+	debug3("geo = %d%d%d\n",
+	       bgl_record->geo[X],
+	       bgl_record->geo[Y],
+	       bgl_record->geo[Z]);
 		     
 	if (node_name2bitmap(bgl_record->nodes, 
 			     false, 
@@ -1669,3 +1602,101 @@ static int _reopen_bridge_log(void)
 		
 	return SLURM_SUCCESS;
 }
+
+#ifdef HAVE_BGL_FILES
+static int _update_bgl_record_state(List bgl_destroy_list)
+{
+	rm_partition_state_flag_t part_state = PARTITION_ALL_FLAG;
+	char *name = NULL;
+	rm_partition_list_t *part_list = NULL;
+	int j, rc, func_rc = SLURM_SUCCESS, num_parts = 0;
+	rm_partition_state_t state;
+	rm_partition_t *part_ptr = NULL;
+	ListIterator itr;
+	bgl_record_t* bgl_record = NULL;	
+	int found = 0;
+
+	if(!bgl_destroy_list) {
+		return SLURM_SUCCESS;
+	}
+	info("got %d partitions",num_part_to_free);
+	if ((rc = rm_get_partitions_info(part_state, &part_list))
+	    != STATUS_OK) {
+		error("rm_get_partitions_info(): %s", bgl_err_str(rc));
+		return SLURM_ERROR; 
+	}
+
+	if ((rc = rm_get_data(part_list, RM_PartListSize, &num_parts))
+	    != STATUS_OK) {
+		error("rm_get_data(RM_PartListSize): %s", bgl_err_str(rc));
+		func_rc = SLURM_ERROR;
+		num_parts = 0;
+	}
+			
+	for (j=0; j<num_parts; j++) {
+		if (j) {
+			if ((rc = rm_get_data(part_list, 
+					      RM_PartListNextPart, 
+					      &part_ptr)) 
+			    != STATUS_OK) {
+				error("rm_get_data(RM_PartListNextPart): %s",
+				      bgl_err_str(rc));
+				func_rc = SLURM_ERROR;
+				break;
+			}
+		} else {
+			if ((rc = rm_get_data(part_list, 
+					      RM_PartListFirstPart, 
+					      &part_ptr)) 
+			    != STATUS_OK) {
+				error("rm_get_data(RM_PartListFirstPart: %s",
+				      bgl_err_str(rc));
+				func_rc = SLURM_ERROR;
+				break;
+			}
+		}
+		if ((rc = rm_get_data(part_ptr, 
+				      RM_PartitionID, 
+				      &name))
+		    != STATUS_OK) {
+			error("rm_get_data(RM_PartitionID): %s", 
+			      bgl_err_str(rc));
+			func_rc = SLURM_ERROR;
+			break;
+		}
+		found = 0;
+		itr = list_iterator_create(bgl_destroy_list);
+		while ((bgl_record = (bgl_record_t*) list_next(itr))) {	
+			if(bgl_record->bgl_part_id)
+				if(!strcmp(bgl_record->bgl_part_id, name)) {
+					found = 1;
+					break;		
+				}
+		}
+		list_iterator_destroy(itr);
+		       
+		if(found) {	
+			slurm_mutex_lock(&part_state_mutex);
+			if ((rc = rm_get_data(part_ptr, 
+					      RM_PartitionState, 
+					      &state))
+			    != STATUS_OK) {
+				error("rm_get_data(RM_PartitionState): %s",
+				      bgl_err_str(rc));
+			} else if(bgl_record->state != state) {
+				debug("state of Partition %s was %d "
+				      "and now is %d",
+				      name, bgl_record->state, state);
+				bgl_record->state = state;
+			}
+			slurm_mutex_unlock(&part_state_mutex);	
+		}
+	}
+	
+clean_up:
+	if ((rc = rm_free_partition_list(part_list)) != STATUS_OK) {
+		error("rm_free_partition_list(): %s", bgl_err_str(rc));
+	}
+	return func_rc;
+}
+#endif /* HAVE_BGL_FILES */

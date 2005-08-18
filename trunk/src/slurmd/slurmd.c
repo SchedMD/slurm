@@ -72,7 +72,7 @@
 #  define MAXHOSTNAMELEN	64
 #endif
 
-#define MAX_THREADS		64
+#define MAX_THREADS		130
 
 typedef struct connection {
 	slurm_fd fd;

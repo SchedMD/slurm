@@ -53,7 +53,6 @@ extern char *bluegene_ramdisk;
 extern char *bridge_api_file;
 extern int numpsets;
 extern pa_system_t *pa_system_ptr;
-extern int DIM_SIZE[PA_SYSTEM_DIMENSIONS];
 extern time_t last_bgl_update;
 extern List bgl_curr_part_list; 	/* Initial bgl partition state */
 extern List bgl_list;			/* List of configured BGL blocks */
@@ -76,8 +75,8 @@ typedef struct bgl_record {
 	pm_partition_id_t bgl_part_id;	/* ID returned from MMCS	*/
 	lifecycle_type_t part_lifecycle;/* either STATIC or DYNAMIC	*/
 	rm_partition_state_t state;   	/* the allocated partition   */
-	int start[SYSTEM_DIMENSIONS];   /* start node */
-	int geo[SYSTEM_DIMENSIONS];     /* geometry */
+	int start[PA_SYSTEM_DIMENSIONS];/* start node */
+	int geo[PA_SYSTEM_DIMENSIONS];  /* geometry */
 	rm_connection_type_t conn_type;	/* Mesh or Torus or NAV */
 	rm_partition_mode_t node_use;	/* either COPROCESSOR or VIRTUAL */
 	rm_partition_t *bgl_part;       /* structure to hold info from db2 */
@@ -145,9 +144,6 @@ extern void fini_bgl(void);
 /* Log a bgl_record's contents */
 extern void print_bgl_record(bgl_record_t* record);
 extern void destroy_bgl_record(void* object);
-
-/* update a record with the correct state */
-extern int update_bgl_record_state(bgl_record_t *bgl_record);
 
 /* return bgl_record from bgl_list */
 extern bgl_record_t *find_bgl_record(char *bgl_part_id);

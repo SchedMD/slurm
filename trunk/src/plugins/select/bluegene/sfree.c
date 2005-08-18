@@ -34,35 +34,51 @@
 
 /* Globals */
 
-
-char *bgl_part_id = NULL;
 int all_parts = 0;
+char *bgl_part_id = NULL;
 
 #ifdef HAVE_BGL_FILES
+
+typedef struct bgl_records {
+	char *bgl_part_id;
+	int state;
+} delete_record_t; 
 
 static int num_part_to_free = 0;
 static int num_part_freed = 0;
 static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool _have_db2 = true;
+static List delete_record_list = NULL;
 
 /************
  * Functions *
  ************/
 
 	
-static int _free_partition(char *bgl_part_id);
-static int _update_bgl_record_state(char *bgl_part_id);
+static int _free_partition(delete_record_t *delete_record);
+static int _update_bgl_record_state();
 static void _term_jobs_on_part(char *bgl_part_id);
 static char *_bgl_err_str(status_t inx);
 static int _remove_job(db_job_id_t job_id);
 
+
+static void _clean_destroy_list(void* object)
+{
+	delete_record_t* delete_record = (delete_record_t*) object;
+
+	if (delete_record) {
+		xfree(delete_record->bgl_part_id);
+		xfree(delete_record);
+	}
+}
+
 /* Free multiple partitions in parallel */
 static void *_mult_free_part(void *args)
 {
-	char *bgl_part_id = (char *) args;
+	delete_record_t *delete_record = (delete_record_t *) args;
 
-	debug("destroying the bglblock %s.", bgl_part_id);
-	_free_partition(bgl_part_id);	
+	debug("destroying the bglblock %s.", delete_record->bgl_part_id);
+	_free_partition(delete_record);	
 	
 	slurm_mutex_lock(&freed_cnt_mutex);
 	num_part_freed++;
@@ -96,6 +112,7 @@ int main(int argc, char *argv[])
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
 	int retries;
+	delete_record_t *delete_record = NULL;
 	
 	_db2_check();
 	if (!_have_db2) {
@@ -105,12 +122,41 @@ int main(int argc, char *argv[])
 
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
+
+	delete_record_list = list_create(_clean_destroy_list);
+	
 	if(!all_parts) {
 		if(!bgl_part_id) {
 			error("you need to specify a bglblock");
 			exit(0);
 		}
-		_free_partition(bgl_part_id);
+		delete_record = xmalloc(sizeof(delete_record_t));
+		delete_record->bgl_part_id = xstrdup(bgl_part_id);
+		delete_record->state = -1;
+		list_push(delete_record_list, delete_record);
+
+		slurm_attr_init(&attr_agent);
+		if (pthread_attr_setdetachstate(
+			    &attr_agent, 
+			    PTHREAD_CREATE_JOINABLE))
+			error("pthread_attr_setdetach"
+			      "state error %m");
+		
+		retries = 0;
+		while (pthread_create(&thread_agent, 
+				      &attr_agent, 
+				      _mult_free_part, 
+				      (void *)delete_record)) {
+			error("pthread_create "
+			      "error %m");
+			if (++retries 
+			    > MAX_PTHREAD_RETRIES)
+				fatal("Can't create "
+				      "pthread");
+			/* sleep and retry */
+			usleep(1000);	
+		}
+		num_part_to_free++;
 	} else {
 		if ((rc = rm_get_partitions_info(part_state, &part_list))
 		    != STATUS_OK) {
@@ -161,6 +207,12 @@ int main(int argc, char *argv[])
 			}
 			if(strncmp("RMP", bgl_part_id, 3))
 				continue;
+
+			delete_record = xmalloc(sizeof(delete_record_t));
+			delete_record->bgl_part_id = xstrdup(bgl_part_id);
+			delete_record->state = -1;
+			list_push(delete_record_list, delete_record);
+
 			slurm_attr_init(&attr_agent);
 			if (pthread_attr_setdetachstate(
 				    &attr_agent, 
@@ -172,8 +224,7 @@ int main(int argc, char *argv[])
 			while (pthread_create(&thread_agent, 
 					      &attr_agent, 
 					      _mult_free_part, 
-					      (void *)
-					      bgl_part_id)) {
+					      (void *)delete_record)) {
 				error("pthread_create "
 				      "error %m");
 				if (++retries 
@@ -192,55 +243,63 @@ int main(int argc, char *argv[])
 	}
 	while(num_part_to_free != num_part_freed) {
 		info("waiting for all bglblocks to free...");
+		_update_bgl_record_state();
 		sleep(1);
 	}
-		
+	list_destroy(delete_record_list);
+	
 	return 0;
 }
 
-static int _free_partition(char *bgl_part_id)
+static int _free_partition(delete_record_t *delete_record)
 {
 	int state=-1;
 	int rc;
-
-	info("freeing bglblock %s", bgl_part_id);
-	_term_jobs_on_part(bgl_part_id);
+	int i=0;
+	info("freeing bglblock %s", delete_record->bgl_part_id);
+	_term_jobs_on_part(delete_record->bgl_part_id);
 	while (1) {
-		if((state = _update_bgl_record_state(bgl_part_id))
-		   == -1)
-			break;
-		if (state != RM_PARTITION_FREE 
-		    && state != RM_PARTITION_DEALLOCATING) {
-			info("pm_destroy %s",bgl_part_id);
-			if ((rc = pm_destroy_partition(bgl_part_id)) 
+		if (delete_record->state != -1
+		    && delete_record->state != RM_PARTITION_FREE 
+		    && delete_record->state != RM_PARTITION_DEALLOCATING) {
+			info("pm_destroy %s",delete_record->bgl_part_id);
+			if ((rc = pm_destroy_partition(
+				     delete_record->bgl_part_id))
 			    != STATUS_OK) {
 				if(rc == PARTITION_NOT_FOUND) {
 					info("partition %s is not found");
 					break;
 				}
 				error("pm_destroy_partition(%s): %s",
-				      bgl_part_id, 
+				      delete_record->bgl_part_id,
 				      _bgl_err_str(rc));
 			}
 		}
 		
-		if ((state == RM_PARTITION_FREE)
-		    ||  (state == RM_PARTITION_ERROR))
+		if(i>5)
+			delete_record->state = RM_PARTITION_FREE;
+		i++;
+		
+		if ((delete_record->state == RM_PARTITION_FREE)
+		    ||  (delete_record->state == RM_PARTITION_ERROR))
 			break;
 		sleep(3);
 	}
-	info("bglblock %s is freed", bgl_part_id);
+	info("bglblock %s is freed", delete_record->bgl_part_id);
 	return SLURM_SUCCESS;
 }
 
-static int _update_bgl_record_state(char *bgl_part_id)
+static int _update_bgl_record_state()
 {
 	rm_partition_state_flag_t part_state = PARTITION_ALL_FLAG;
 	char *name = NULL;
 	rm_partition_list_t *part_list = NULL;
-	int j, rc,  num_parts = 0;
+	int j, rc, i, num_parts = 0;
 	rm_partition_state_t state = -2;
 	rm_partition_t *part_ptr = NULL;
+	int found=0;
+	delete_record_t *delete_record = NULL;
+	ListIterator itr;
 	
 	if ((rc = rm_get_partitions_info(part_state, &part_list))
 	    != STATUS_OK) {
@@ -286,27 +345,40 @@ static int _update_bgl_record_state(char *bgl_part_id)
 			state = -1;
 			break;
 		}
-		if(!strcmp(bgl_part_id, name))
-			break;
+		found = 0;
+		
+		itr = list_iterator_create(delete_record_list);
+		while ((delete_record = 
+			(delete_record_t*) list_next(itr))) {	
+			if(delete_record->bgl_part_id)
+				if(!strcmp(delete_record->bgl_part_id, name)) {
+					found = 1;
+					break;		
+				}
+		}
+		list_iterator_destroy(itr);
+		
+		if(found) {
+			if(state == -1)
+				goto clean_up;
+			else if(j>=num_parts) {
+				error("This bglblock, %s, "
+				      "doesn't exist in MMCS",
+				      bgl_part_id);
+				state = -1;
+				goto clean_up;
+			}
+			
+			if ((rc = rm_get_data(part_ptr,
+					      RM_PartitionState,
+					      &delete_record->state))
+			    != STATUS_OK) {
+				error("rm_get_data"
+				      "(RM_PartitionState): %s",
+				      _bgl_err_str(rc));
+			} 
+		}
 	}
-	
-	if(state == -1)
-		goto clean_up;
-	else if(j>=num_parts) {
-		error("This bglblock, %s, doesn't exist in MMCS",
-		      bgl_part_id);
-		state = -1;
-		goto clean_up;
-	}
-
-	if ((rc = rm_get_data(part_ptr,
-			      RM_PartitionState,
-			      &state))
-	    != STATUS_OK) {
-		error("rm_get_data(RM_PartitionState): %s",
-		      _bgl_err_str(rc));
-	} 
-
 clean_up:
 	if ((rc = rm_free_partition_list(part_list)) != STATUS_OK) {
 		error("rm_free_partition_list(): %s", _bgl_err_str(rc));
