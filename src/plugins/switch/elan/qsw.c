@@ -898,9 +898,13 @@ _qsw_shmem_create (qsw_jobinfo_t jobinfo, uid_t uid)
 	struct shmid_ds shm;
 	ELAN_CAPABILITY *cap = &jobinfo->j_cap;
 	key_t key = elan_statkey (jobinfo->j_prognum);
-	int maxLocal = cap->HighContext - cap->LowContext + 2;
+	int maxLocal = cap->HighContext - cap->LowContext + 1;
 	int pgsize = getpagesize ();
 	
+	/* 8KB minimum stats page size */
+	if (pgsize < 8192)
+		pgsize = 8192;
+
 	if ((shmid = shmget (key, pgsize * (maxLocal + 1), IPC_CREAT)) < 0)
 		return (error ("Failed to create Elan state shmem: %m"));
 
