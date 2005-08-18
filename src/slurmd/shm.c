@@ -880,7 +880,7 @@ _shm_clear_stale_entries(void)
 
 		if ((s->state == SLURMD_JOB_UNUSED)	/* unused */
 		||  (s->cont_id == 0)			/* empty */
-		||  (slurm_signal_container(s->cont_id, 0) == 0)) /* active */ 
+		||  (slurm_container_signal(s->cont_id, 0) == 0)) /* active */ 
 			continue;
 
 		while (t && !active_tasks) {
@@ -1135,7 +1135,7 @@ static bool
 _valid_slurmd_cont_id(uint32_t cont_id)
 {
 	/* Check if container has processes */
-	if (slurm_signal_container(cont_id, 0) != 0)
+	if (slurm_container_signal(cont_id, 0) != 0)
 		return false;
 
 	return true;

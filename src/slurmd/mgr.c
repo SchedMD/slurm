@@ -696,9 +696,9 @@ _fork_all_tasks(slurmd_job_t *job)
 	 * will wait for our signal before calling exec.
 	 */
 	shm_update_step_pgid(job->jobid, job->stepid, job->pgid);
-	cont_id = slurm_create_container(job);
+	cont_id = slurm_container_create(job);
 	if (cont_id == 0) {
-		error("slurm_create_container: %m");
+		error("slurm_container_create: %m");
 		exit(3);
 	}
 	shm_update_step_cont_id(job->jobid, job->stepid, cont_id);
@@ -876,12 +876,12 @@ _kill_running_tasks(slurmd_job_t *job)
 		return;
 
 	if (s->cont_id) {
-		slurm_signal_container(s->cont_id, SIGKILL);
+		slurm_container_signal(s->cont_id, SIGKILL);
 
 		/* Try destroying the container up to 30 times */
-		while (slurm_destroy_container(s->cont_id) != SLURM_SUCCESS
+		while (slurm_container_destroy(s->cont_id) != SLURM_SUCCESS
 		       && limit < 30) {
-			slurm_signal_container(s->cont_id, SIGKILL);
+			slurm_container_signal(s->cont_id, SIGKILL);
 			sleep(1);
 			limit++;
 		}
