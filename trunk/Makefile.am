@@ -34,8 +34,6 @@ MAINTAINERCLEANFILES = 					\
 	slurm/slurm.h					\
 	stamp-h.in
 
-include $(top_srcdir)/Make-rpm.mk
-
 distclean-local:
 	-(cd $(top_srcdir) && rm -rf autom4te*.cache autoscan.*)
 	-(cd $(top_srcdir) && rm -rf $(PACKAGE)-*)
@@ -43,7 +41,7 @@ distclean-local:
 mrproper: distclean-local clean
 	-(cd $(top_srcdir) && rm -rf aclocal.m4 autom4te.cache config.h.in)
 	-(cd $(top_srcdir) && rm -rf config.log config.status configure)
-	-(cd $(top_srcdir) && rm -rf libtool slurm.spec config.h stamp-h1)
+	-(cd $(top_srcdir) && rm -rf libtool config.h stamp-h1)
 	-(cd $(top_srcdir)/auxdir && rm -rf config.guess config.sub ltmain.sh)
 	-(cd $(top_srcdir)/auxdir && rm -rf install-sh mkinstalldirs missing)
 	-(cd $(top_srcdir)/auxdir && rm -rf depcomp)
