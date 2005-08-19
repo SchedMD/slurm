@@ -273,6 +273,12 @@ _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 	bitstr_t *no_load_bit, *light_load_bit, *heavy_load_bit;
 	int error_code;
 
+	/* Can we satisfy the allocation with req_nodes? */
+/* 	if (select_g_job_test(job_ptr, bitmap, min_nodes, max_nodes)== */
+/* 			SLURM_SUCCESS) */
+/* 		return SLURM_SUCCESS; */
+
+
 	_node_load_bitmaps(bitmap, &no_load_bit, &light_load_bit, 
 			&heavy_load_bit);
 
