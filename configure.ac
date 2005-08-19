@@ -242,7 +242,6 @@ AC_CONFIG_FILES([Makefile
 		 testsuite/slurm_unit/slurmd/Makefile
 		 testsuite/slurm_unit/api/Makefile
 		 testsuite/slurm_unit/api/manual/Makefile
-		 slurm.spec
 		 ]
 )
 

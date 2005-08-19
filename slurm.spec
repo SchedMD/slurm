@@ -2,9 +2,9 @@
 
 # Note that this package is not relocatable
 
-Name:    @PROJECT@
-Version: @VERSION@
-Release: @RELEASE@
+Name:    See META file
+Version: See META file
+Release: See META file
 
 Summary: Simple Linux Utility for Resource Management
 
@@ -38,6 +38,9 @@ Requires: openssl >= 0.9.6
 # This was added due to a bug in Suse Linux. For a good reference, see
 # http://slforums.typo3-factory.net/index.php?showtopic=11378
 %define _unpackaged_files_terminate_build      0
+
+%{!?_slurm_sysconfdir: %define _slurm_sysconfdir %{_prefix}/etc/slurm}
+%define _sysconfdir %_slurm_sysconfdir
 
 %package devel
 Summary: Development package for SLURM.
