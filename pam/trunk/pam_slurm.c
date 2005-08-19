@@ -7,7 +7,7 @@
  *  
  *  Written by Chris Dunlap <cdunlap@llnl.gov>
  *         and Jim Garlick  <garlick@llnl.gov>
- *         and Moe Jette    <jette@llnl.gov>.
+ *         modified for SLURM by Moe Jette <jette@llnl.gov>.
  *  
  *  This file is part of pam_slurm, a PAM module for restricting access to
  *  the compute nodes within a cluster based on information obtained from
@@ -72,6 +72,7 @@ struct _options {
  *
  */
 static void * slurm_h = NULL;
+static int    debug   = 0;
 
 static void _log_msg(int level, const char *format, ...);
 static void _parse_args(struct _options *opts, int argc, const char **argv);
@@ -80,6 +81,11 @@ static int  _slurm_match_allocation(uid_t uid);
 static void _send_denial_msg(pam_handle_t *pamh, struct _options *opts,
             const char *user, uid_t uid);
 
+#define DBG(msg,args...) \
+    do { \
+        if (debug) \
+           _log_msg(LOG_INFO, msg, ##args); \
+    } while (0);
 
 /**********************************\
  *  Account Management Functions  *
@@ -179,7 +185,7 @@ _parse_args(struct _options *opts, int argc, const char **argv)
      */
     for (i=0; i<argc; i++) {
         if (!strcmp(argv[i], "debug"))
-            opts->enable_debug = 1;
+            opts->enable_debug = debug = 1;
         else if (!strcmp(argv[i], "no_warn"))
             opts->enable_silence = 1;
         else if (!strcmp(argv[i], "rsh_kludge"))
@@ -283,19 +289,28 @@ _slurm_match_allocation(uid_t uid)
     if ((p = strchr(hostname, '.')))
         *p = '\0';
 
+    DBG ("does uid %ld have \"%s\" allocated", uid, hostname);
+
     if (_slurm_load_jobs(&msg) < 0) {
         _log_msg(LOG_ERR, "slurm_load_jobs: %s", _slurm_strerror(errno));
         return 0;
     }
 
+    DBG ("slurm_load_jobs returned %d records", msg->record_count);
+
     for (i = 0; i < msg->record_count; i++) {
         job_info_t *j = &msg->job_array[i];
 
-        if (  (j->user_id == uid) 
-           && (j->job_state == JOB_RUNNING) 
-           && _hostrange_member(hostname, j->nodes) ) {
+        if (  (j->user_id == uid) && (j->job_state == JOB_RUNNING)) {
+
+           DBG ("jobid %ld: nodes=\"%s\"", j->job_id, j->nodes);
+
+           if (_hostrange_member(hostname, j->nodes) ) {
+                 DBG ("user %ld allocated node %s in job %ld", 
+                      uid, hostname, j->job_id);
                 authorized = 1;
                 break;
+            }
         }
     }
 
