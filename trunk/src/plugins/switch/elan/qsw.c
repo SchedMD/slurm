@@ -905,7 +905,8 @@ _qsw_shmem_create (qsw_jobinfo_t jobinfo, uid_t uid)
 	if (pgsize < 8192)
 		pgsize = 8192;
 
-	if ((shmid = shmget (key, pgsize * (maxLocal + 1), IPC_CREAT)) < 0)
+	if ((shmid = shmget (key, pgsize * (maxLocal + 1), IPC_CREAT|IPC_EXCL))
+	    < 0)
 		return (error ("Failed to create Elan state shmem: %m"));
 
 	/* Ensure permissions on segment allow user read/write access
