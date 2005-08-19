@@ -748,7 +748,8 @@ extern int bgl_free_partition(bgl_record_t *bgl_record)
 		return SLURM_ERROR;
 	}
 	while (1) {
-		if (bgl_record->state != RM_PARTITION_FREE 
+		if (bgl_record->state != -1
+		    && bgl_record->state != RM_PARTITION_FREE 
 		    && bgl_record->state != RM_PARTITION_DEALLOCATING) {
 			debug("pm_destroy %s",bgl_record->bgl_part_id);
 			if ((rc = pm_destroy_partition(
@@ -1619,7 +1620,7 @@ static int _update_bgl_record_state(List bgl_destroy_list)
 	if(!bgl_destroy_list) {
 		return SLURM_SUCCESS;
 	}
-	info("got %d partitions",num_part_to_free);
+	
 	if ((rc = rm_get_partitions_info(part_state, &part_list))
 	    != STATUS_OK) {
 		error("rm_get_partitions_info(): %s", bgl_err_str(rc));
