@@ -26,6 +26,47 @@ documents those changes that are of interest to users and admins.
  -- switch/federation fixes migrated from 0.5.*
  -- srun pthreads really set detached, fixes scaling problem
 
+* Changes in SLURM 0.5.7
+========================
+ -- added infrastructure for (eventual) support of AIX checkpointing
+    of slurm batch and interactive poe jobs
+ -- added wiring for BGL to do wiring for physical location first and then
+    logical.
+ -- only one thread used to query database before polling thread is there.
+ -- slurmd can now handle 130 jobs at one time instead of 64.
+
+* Changes in SLURM 0.5.6
+========================
+ -- fix for BGL hostnames and full system partition finding
+
+* Changes in SLURM 0.5.5
+========================
+ -- Increase SLURM_MESSAGE_TIMEOUT_MSEC_STATIC to 15000
+ -- Fix for premature timeout in _slurm_send_timeout
+ -- Fix for federation overlapping calls to non-thread-safe _get_adapters
+
+* Changes in SLURM 0.5.4
+========================
+ -- Added support for no reboot for VN to CO on BGL
+ -- Fix for if a job starts after it finishes on BGL
+
+* Changes in SLURM 0.5.3
+========================
+ -- federation patch so the slurm controller has sane window status at
+    start-up regardless of the window status reported in the slurmd
+    registration.
+ -- federation driver exits with fatal() if the federation driver can not
+    find all of the adapters listed in the federation.conf
+
+* Changes in SLURM 0.5.2
+========================
+ -- Extra federation driver sanity checks
+
+* Changes in SLURM 0.5.1
+========================
+ -- Fix federation driver bad free(), other minor fed fixes
+ -- Allow slurm to parse very long lines in the slurm.conf
+
 * Changes in SLURM 0.5.0
 ========================
  -- Fix race condition in job accouting plugin, could hang slurmd
