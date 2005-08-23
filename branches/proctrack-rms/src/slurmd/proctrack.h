@@ -28,6 +28,7 @@
 #define __PROC_TRACK_H__
 
 #include <slurm/slurm.h>
+#include "src/slurmd/slurmd_job.h"
 
 /*
  * Initialize the process tracking plugin.
