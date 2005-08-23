@@ -52,6 +52,8 @@ const uint32_t plugin_version = 1;
 
 int init (void)
 {
+	/* close librmscall's internal fd to /proc/rms/control */
+	pthread_atfork(NULL, NULL, rmsmod_fini);
 	return SLURM_SUCCESS;
 }
 

@@ -968,6 +968,9 @@ _prg_destructor_fork()
 	/* child */
 	close(fdpair[1]);
 
+	/* close librmscall's internal fd to /proc/rms/control */
+	rmsmod_fini();
+
 	_close_all_fd_except(fdpair[0]);
         /* Wait for the program description id from the child */
         if (read(fdpair[0], &prgid, sizeof(prgid)) != sizeof(prgid)) {
@@ -979,7 +982,7 @@ _prg_destructor_fork()
 /* 	       prgid, pid); */
 
 	if (prgid == -1)
-		exit(-1);
+		exit(1);
 
 	/*
 	 * Wait for the pipe to close, signalling that the parent
