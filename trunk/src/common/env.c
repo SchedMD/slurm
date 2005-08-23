@@ -364,6 +364,12 @@ int setup_env(env_t *env)
 		char res_env[128], tmp_env[32];
 		char *debug_env = (char *)getenv("SLURM_LL_API_DEBUG");
 		int  debug_num = 0;
+
+		/* MP_POERESTART_ENV causes a warning message for "poe", but
+		 * is needed for "poerestart". Presently we have no means to
+		 * determine what command a user will execute. We could
+		 * possibly add a "srestart" command which would set
+		 * MP_POERESTART_ENV, but that presently seems unnecessary. */
 		if (debug_env)
 			debug_num = atoi(debug_env);
 		snprintf(res_env, sizeof(res_env), "SLURM_LL_API_DEBUG=%d",
@@ -379,6 +385,7 @@ int setup_env(env_t *env)
 			strcat(res_env, tmp_env);
 		}
 		setenvf(&env->env, "MP_POERESTART_ENV", res_env);
+
 		/* Required for AIX/POE systems indicating pre-allocation */
 		setenvf(&env->env, "LOADLBATCH", "yes");
 		setenvf(&env->env, "LOADL_ACTIVE", "3.2.0");
