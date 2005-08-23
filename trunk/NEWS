@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.6.0-pre2
 =============================
+ -- Add code so job request for shared nodes gets explicitly requested 
+    nodes, but lightly loaded nodes otherwise.
 
 * Changes in SLURM 0.6.0-pre1
 =============================
