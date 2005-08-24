@@ -92,12 +92,13 @@ extern int fini ( void )
 /*
  * Uses slurmd job-step manager's pid as the unique container id.
  */
-extern uint32_t slurm_container_create ( slurmd_job_t *job )
+extern int slurm_container_create ( slurmd_job_t *job )
 {
-	return (uint32_t) job->jmgr_pid;
+	job->cont_id = (uint32_t)job->jmgr_pid;
+	return SLURM_SUCCESS;
 }
 
-extern int slurm_container_add ( uint32_t id, pid_t pid )
+extern int slurm_container_add ( slurmd_job_t *job, pid_t pid )
 {
 	return SLURM_SUCCESS;
 }

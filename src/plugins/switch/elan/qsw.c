@@ -949,7 +949,6 @@ _prg_destructor_fork()
 	int i;
 	int dummy;
 
-/* 	debug3("Entering _prg_destructor_fork"); */
 	if (pipe(fdpair) < 0) {
 		error("switch/elan: failed creating pipe");
 		return -1;
@@ -968,6 +967,9 @@ _prg_destructor_fork()
 	/* child */
 	close(fdpair[1]);
 
+	/* close librmscall's internal fd to /proc/rms/control */
+	rmsmod_fini();
+
 	_close_all_fd_except(fdpair[0]);
         /* Wait for the program description id from the child */
         if (read(fdpair[0], &prgid, sizeof(prgid)) != sizeof(prgid)) {
@@ -975,11 +977,8 @@ _prg_destructor_fork()
 		exit(1);
 	}
 
-/* 	debug3("_prg_destructor program is %d, waiting on process %d", */
-/* 	       prgid, pid); */
-
 	if (prgid == -1)
-		exit(-1);
+		exit(1);
 
 	/*
 	 * Wait for the pipe to close, signalling that the parent
@@ -1000,15 +999,12 @@ _prg_destructor_fork()
 		}
 		if (nids == 0)
 			break;
-/* 		error("_prg_destructor_fork program desc is not empty %d", */
-/* 		      nids); */
 		if (rms_prgsignal(prgid, SIGKILL) < 0) {
 			error("switch/elan: rms_prgsignal: %m");
 		}
 		sleep(1);
 	}
 
-/* 	debug3("_prg_desctrutor attempting to call rms_prgdestroy"); */
 	if (rms_prgdestroy(prgid) < 0) {
 		error("rms_prgdestroy");
 	}

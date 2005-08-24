@@ -2,7 +2,7 @@
 # Makefile for proctrack plugins
 
 if HAVE_AIX_PROCTRACK
-SUBDIRS = aix pgid linuxproc
+SUBDIRS = aix pgid linuxproc rms
 else
-SUBDIRS = pgid linuxproc
+SUBDIRS = pgid linuxproc rms
 endif

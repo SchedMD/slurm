@@ -106,11 +106,16 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
+extern int slurm_container_create ( slurmd_job_t *job )
+{
+	return SLURM_SUCCESS;
+}
+
 /*
  * Uses job step process group id as a unique identifier.  Job id
  * and step id are not unique by themselves.
  */
-extern uint32_t slurm_container_create ( slurmd_job_t *job )
+extern int slurm_container_add ( slurmd_job_t *job, pid_t pid )
 {
 	int pgid = (int) job->pgid;
 	int i;
@@ -118,19 +123,12 @@ extern uint32_t slurm_container_create ( slurmd_job_t *job )
 	xassert(job);
 	xassert(pgid > 1);
 
-	for (i = 0; i < job->ntasks; i++) {
-		if (proctrack_job_reg_pid(&pgid, &job->task[i]->pid) != 0) {
-			error("proctrack_job_reg(%d): %m", pgid);
-			return (uint32_t) 0;
-		}
+	if (proctrack_job_reg_pid(&pgid, pid) != 0) {
+		error("proctrack_job_reg_pid(%d, %d): %m", pgid, (int)pid);
+		return SLURM_ERROR;
 	}
-	return (uint32_t) pgid;
 
-}
-
-extern int slurm_container_add ( uint32_t id, pid_t pid )
-{
-	debug("slurm_container_add not supported");
+	job->cont_id = (uint32_t)pgid;
 	return SLURM_SUCCESS;
 }
 
