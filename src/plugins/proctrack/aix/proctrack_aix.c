@@ -123,7 +123,7 @@ extern int slurm_container_add ( slurmd_job_t *job, pid_t pid )
 	xassert(job);
 	xassert(pgid > 1);
 
-	if (proctrack_job_reg_pid(&pgid, pid) != 0) {
+	if (proctrack_job_reg_pid(pgid, pid) != 0) {
 		error("proctrack_job_reg_pid(%d, %d): %m", pgid, (int)pid);
 		return SLURM_ERROR;
 	}
