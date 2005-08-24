@@ -178,6 +178,8 @@
 # "SelectType"			: node selection logic for scheduling.
 #	"select/bluegene"	: the default on BlueGene systems, aware of
 #				  system topology, manages bglblocks, etc.
+#	"select/cons_res"	: allocate individual consumable resources
+#				  (i.e. processors, memory, etc.)
 #	"select/linear"		: the default on non-BlueGene systems,
 #				  no topology awareness, oriented toward
 #				  allocating nodes to jobs rather than
