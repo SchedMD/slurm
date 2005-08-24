@@ -1,5 +1,6 @@
 /*****************************************************************************\
- *  gmpi.h - srun support for MPICH-GM (GMPI)
+ *  kill_tree.h - Kill process tree based upon process IDs
+ *	Used primarily for MPICH-GM
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
