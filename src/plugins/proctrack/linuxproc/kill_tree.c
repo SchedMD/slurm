@@ -1,6 +1,6 @@
 /*****************************************************************************\
- * src/slurmd/kill_tree.c - Kill process tree based upon process IDs
- * Used primarily for MPICH-GM
+ *  kill_tree.c - Kill process tree based upon process IDs
+ *	Used primarily for MPICH-GM
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
