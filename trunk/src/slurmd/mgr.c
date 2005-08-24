@@ -615,6 +615,11 @@ _fork_all_tasks(slurmd_job_t *job)
 
 	xassert(job != NULL);
 
+	if (slurm_container_create(job) == SLURM_ERROR) {
+		error("slurm_container_create: %m");
+		exit(3);
+	}
+
 	/*
 	 * Pre-allocate a pipe for each of the tasks
 	 */
@@ -666,7 +671,8 @@ _fork_all_tasks(slurmd_job_t *job)
 			exec_task(job, i, readfds[i]);
 		}
 
-		/* Parent continues: 
+		/*
+		 * Parent continues: 
 		 */
 		close(readfds[i]);
 		verbose ("task %lu (%lu) started %M", 
@@ -683,6 +689,11 @@ _fork_all_tasks(slurmd_job_t *job)
 			error ("Unable to put task %d (pid %ld) into pgrp %ld",
 			       i, pid, job->pgid);
 
+		if (slurm_container_add(job, pid) == SLURM_ERROR) {
+			error("slurm_container_create: %m");
+			exit(3);
+		}
+		    
 		task.id        = i;
 		task.global_id = job->task[i]->gtid;
 		task.pid       = job->task[i]->pid;
@@ -696,12 +707,7 @@ _fork_all_tasks(slurmd_job_t *job)
 	 * will wait for our signal before calling exec.
 	 */
 	shm_update_step_pgid(job->jobid, job->stepid, job->pgid);
-	cont_id = slurm_container_create(job);
-	if (cont_id == 0) {
-		error("slurm_container_create: %m");
-		exit(3);
-	}
-	shm_update_step_cont_id(job->jobid, job->stepid, cont_id);
+	shm_update_step_cont_id(job->jobid, job->stepid, job->cont_id);
 
 	/*
 	 * Now it's ok to unblock the tasks, so they may call exec.

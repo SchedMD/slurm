@@ -37,8 +37,8 @@
 /*  TAG(                        slurm_proctrack_ops_t                    )  */
 /* ************************************************************************ */
 typedef struct slurm_proctrack_ops {
-	uint32_t	(*create)	( slurmd_job_t *job );
-	int		(*add)		( uint32_t id, pid_t pid );
+	int		(*create)	( slurmd_job_t *job );
+	int		(*add)		( slurmd_job_t *job, pid_t pid );
 	int		(*signal)	( uint32_t id, int signal );
 	int		(*destroy)	( uint32_t id );
 	uint32_t	(*find_cont)	( pid_t pid );
@@ -218,11 +218,13 @@ slurm_proctrack_fini( void )
 
 /* 
  * Create a container
- * job_id IN - SLURM job ID
+ * job IN - slurmd_job_t structure
+ * job->cont_id OUT - Plugin must fill in job->cont_id either here
+ *                    or in slurm_container_add()
  *
- * Returns container ID or zero on error
+ * Returns a SLURM errno.
  */
-extern uint32_t
+extern int
 slurm_container_create(slurmd_job_t *job)
 {
 	if ( slurm_proctrack_init() < 0 )
@@ -233,18 +235,20 @@ slurm_container_create(slurmd_job_t *job)
 
 /*
  * Add a process to the specified container
- * cont_id IN  - container ID as returned by slurm_container_create()
+ * job IN - slurmd_job_t structure
  * pid IN      - process ID to be added to the container
+ * job->cont_id OUT - Plugin must fill in job->cont_id either here
+ *                    or in slurm_container_create()
  *
  * Returns a SLURM errno.
  */
 extern int
-slurm_container_add(uint32_t cont_id, pid_t pid)
+slurm_container_add(slurmd_job_t *job, pid_t pid)
 {
 	if ( slurm_proctrack_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_proctrack_context->ops.add))( cont_id , pid );
+	return (*(g_proctrack_context->ops.add))( job , pid );
 }
 
 /*
