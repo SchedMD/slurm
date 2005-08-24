@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  proctrack_arms.c - process tracking via QsNet rms kernel module
+ *  proctrack_rms.c - process tracking via QsNet rms kernel module
  *****************************************************************************
  *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -70,18 +70,16 @@ int fini (void)
  */
 uint32_t slurm_container_create (slurmd_job_t * job)
 {
-	int prgid = 0;
+	int prgid = -1;
 	/*
 	 * Return a handle to the job step manager's existing prgid
 	 */
 	if (rms_getprgid (job->jmgr_pid, &prgid) < 0) {
-		error ("proctrack/rms: rms_getprdid: %m");
-		return (0);
+		error ("proctrack/rms: rms_getprgid: %m");
+		return -1;
 	}
-	debug2 ("proctrack/rms: prgid = %d, jmgr_pid = %d",
-		prgid, job->jmgr_pid);
 
-	return (prgid);
+	return prgid;
 }
 
 extern int slurm_container_add (uint32_t id, pid_t pid)
@@ -90,7 +88,7 @@ extern int slurm_container_add (uint32_t id, pid_t pid)
 }
 
 /*
- * slurm_singal_container assumes that the slurmd jobstep manager
+ * slurm_container_signal assumes that the slurmd jobstep manager
  * is always the last process in the rms program description.
  * No signals are sent to the last process.
  */
@@ -103,23 +101,8 @@ extern int slurm_container_signal  (uint32_t id, int signal)
 	int ids[MAX_IDS];
 	bool cont_exists = false;
 
-	debug3("proctrack/rms slurm_container_signal id %d, signal %d",
-	       id, signal);
 	if (id <= 0)
 		return -1;
-
-/* 	rms_prgids(MAX_IDS, ids, &nids); */
-/* 	for (i = 0; i < nids; i++) { */
-/* 		debug3("proctrack/rms prgid[%d] = %d", i, ids[i]); */
-/* 		if (ids[i] == id) { */
-/* 			cont_exists = true; */
-/* 			break; */
-/* 		} */
-/* 	} */
-/* 	if (!cont_exists) { */
-/* 		debug3("container (program description) not found"); */
-/* 		return -1; */
-/* 	} */
 
         pids = malloc(MAX_IDS * sizeof(pid_t));
 	if (!pids) {
@@ -136,7 +119,6 @@ extern int slurm_container_signal  (uint32_t id, int signal)
                 return -1;
         }
 
-	debug3("proctrack/rms nids = %d", nids);
         rc = -1;
         for (i = nids-2; i >= 0 ; i--) {
 		debug3("proctrack/rms(pid %d) Sending signal %d to process %d",
@@ -166,7 +148,6 @@ int slurm_container_destroy (uint32_t id)
 	if (id == 0)
 		return SLURM_SUCCESS;
 
-	debug3("proctrack/rms destroy cont calling signal cont signal 0");
 	if (slurm_container_signal(id, 0) == -1)
 		return SLURM_SUCCESS;
 
@@ -181,6 +162,5 @@ uint32_t slurm_container_find (pid_t pid)
 		error ("rms_getprgid: %m");
 		return (0);
 	}
-	debug2 ("proctrack/rms: rms_getprgid(pid %ld) = %d",  pid, prgid);
-	return ((uint32_t) prgid);
+	return (uint32_t) prgid;
 }
