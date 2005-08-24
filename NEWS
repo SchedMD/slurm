@@ -1,10 +1,18 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
-* Changes in SLURM 0.6.0-pre2
+* Changes in SLURM 0.6.0-pre3
 =============================
  -- Add code so job request for shared nodes gets explicitly requested 
     nodes, but lightly loaded nodes otherwise.
+ -- Add proctrack/rms plugin
+ -- Change the proctrack API to send a slurmd_job_t pointer to both
+    slurm_container_create() and slurm_container_add().  One of those
+    functions MUST set job->cont_id.
+
+* Changes in SLURM 0.6.0-pre2
+=============================
+ -- Removed "make rpm" target.
 
 * Changes in SLURM 0.6.0-pre1
 =============================
