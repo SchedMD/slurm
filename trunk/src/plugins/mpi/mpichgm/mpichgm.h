@@ -1,6 +1,6 @@
 /*****************************************************************************\
- **  gmpi.h - Library routines for initiating jobs on with gmpi type mpi 
- **  $Id: mpi_gmpi.c,v 1.7 2005/06/07 18:25:32 morrone Exp $
+ **  mpichgm.h - Library routines for initiating jobs on with gmpi type mpi 
+ **  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
