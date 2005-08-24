@@ -48,41 +48,57 @@ const char plugin_name[] = "Process tracking for QsNet via the rms module";
 const char plugin_type[]      = "proctrack/rms";
 const uint32_t plugin_version = 1;
 
+static int _prg_destructor_fork(void);
+static void _prg_destructor_send(int fd, int prgid);
+
 #define MAX_IDS 512
 
-int init (void)
+extern int init (void)
 {
 	/* close librmscall's internal fd to /proc/rms/control */
 	pthread_atfork(NULL, NULL, rmsmod_fini);
 	return SLURM_SUCCESS;
 }
 
-int fini (void)
+extern int fini (void)
 {
 	return SLURM_SUCCESS;
 }
 
 
 /*
- * This plugin does not actually create the rms program description.
- * switch/elan handles program creation.  This just returns the prgid
- * created by switch/elan.
+ * When proctrack/rms is used in conjunction with switch/elan, 
+ * slurm_container_create will not normally create the program description.
+ * It just retrieves the prgid created in switch/elan.
+ *
+ * When the program description cannot be retrieved (switch/elan is not
+ * being used, the job step is a batch script, etc.) then rms_prgcreate()
+ * is called here.
  */
-uint32_t slurm_container_create (slurmd_job_t * job)
+extern int slurm_container_create (slurmd_job_t *job)
 {
-	int prgid = -1;
+	int prgid;
 	/*
-	 * Return a handle to the job step manager's existing prgid
+	 * Return a handle to an existing prgid or create a new one
 	 */
 	if (rms_getprgid (job->jmgr_pid, &prgid) < 0) {
-		error ("proctrack/rms: rms_getprgid: %m");
-		return -1;
+		int fd = _prg_destructor_fork();
+		/* Use slurmd job-step manager's pid as a unique identifier */
+		prgid = job->jmgr_pid;
+		if ((rms_prgcreate (prgid, job->uid, 1)) < 0) {
+			error ("ptrack/rms: rms_prgcreate: %m");
+			_prg_destructor_send(fd, -1);
+			return SLURM_ERROR;
+		}
+		_prg_destructor_send(fd, prgid);
 	}
+        debug3("proctrack/rms: prgid = %d", prgid);
 
-	return prgid;
+	job->cont_id = (uint32_t)prgid;
+	return SLURM_SUCCESS;
 }
 
-extern int slurm_container_add (uint32_t id, pid_t pid)
+extern int slurm_container_add (slurmd_job_t *job, pid_t pid)
 {
 	return SLURM_SUCCESS;
 }
@@ -138,7 +154,7 @@ extern int slurm_container_signal  (uint32_t id, int signal)
  * returns SLURM_SUCCESS when the program description contains one and
  * only one process, assumed to be the slurmd jobstep manager.
  */
-int slurm_container_destroy (uint32_t id)
+extern int slurm_container_destroy (uint32_t id)
 {
 	pid_t pids[8];
 	int nids = 0;
@@ -154,13 +170,121 @@ int slurm_container_destroy (uint32_t id)
 	return SLURM_ERROR;
 }
 
-uint32_t slurm_container_find (pid_t pid)
+extern uint32_t slurm_container_find (pid_t pid)
 {
 	int prgid = 0;
 
-	if (rms_getprgid ((int) pid, &prgid) < 0) {
-		error ("rms_getprgid: %m");
-		return (0);
-	}
+	if (rms_getprgid ((int) pid, &prgid) < 0)
+		return (uint32_t) 0;
 	return (uint32_t) prgid;
+}
+
+
+static void
+_close_all_fd_except(int fd)
+{
+        int openmax;
+        int i;
+
+        openmax = sysconf(_SC_OPEN_MAX);
+        for (i = 0; i <= openmax; i++) {
+                if (i != fd)
+                        close(i);
+        }
+}
+
+
+/*
+ * Fork a child process that waits for a pipe to close, signalling that the
+ * parent process has exited.  Then call rms_prgdestroy.
+ */
+static int
+_prg_destructor_fork()
+{
+	pid_t pid;
+	int fdpair[2];
+	int prgid;
+	int i;
+	int dummy;
+
+	if (pipe(fdpair) < 0) {
+		error("_prg_destructor_fork: failed creating pipe");
+		return -1;
+	}
+
+	pid = fork();
+	if (pid < 0) {
+		error("_prg_destructor_fork: failed to fork program destructor");
+	} else if (pid > 0) {
+		/* parent */
+		close(fdpair[0]);
+		return fdpair[1];
+	}
+	
+	/****************************************/
+	/* child */
+	close(fdpair[1]);
+
+	/* close librmscall's internal fd to /proc/rms/control */
+	rmsmod_fini();
+
+	_close_all_fd_except(fdpair[0]);
+        /* Wait for the program description id from the child */
+        if (read(fdpair[0], &prgid, sizeof(prgid)) != sizeof(prgid)) {
+		error("_prg_destructor_fork read failed: %m");
+		exit(1);
+	}
+
+	if (prgid == -1)
+		exit(1);
+
+	/*
+	 * Wait for the pipe to close, signalling that the parent
+	 * has exited.
+	 */
+	while (read(fdpair[0], &dummy, sizeof(dummy)) > 0) {}
+
+	/*
+	 * Verify that program description is empty.  If not, send a SIGKILL.
+	 */
+	for (i = 0; i < 30; i++) {
+		int maxids = 8;
+		pid_t pids[8];
+		int nids = 0;
+
+		if (rms_prginfo(prgid, maxids, pids, &nids) < 0) {
+			error("_prg_destructor_fork: rms_prginfo: %m");
+		}
+		if (nids == 0)
+			break;
+		if (rms_prgsignal(prgid, SIGKILL) < 0) {
+			error("_prg_destructor_fork: rms_prgsignal: %m");
+		}
+		sleep(1);
+	}
+
+	if (rms_prgdestroy(prgid) < 0) {
+		error("rms_prgdestroy");
+	}
+	exit(0);
+}
+
+
+
+/*
+ * Send the prgid of the newly created program description to the process
+ * forked earlier by _prg_destructor_fork(), using the file descriptor
+ * "fd" which was returned by the call to _prg_destructor_fork().
+ */
+static void
+_prg_destructor_send(int fd, int prgid)
+{
+	debug3("_prg_destructor_send %d", prgid);
+	if (write (fd, &prgid, sizeof(prgid)) != sizeof(prgid)) {
+		error ("_prg_destructor_send failed: %m"); 
+	}
+	/* Deliberately avoid closing fd.  When this process exits, it
+	   will close fd signalling to the child process that it is
+	   time to call rms_prgdestroy */
+	/*close(fd);*/
 }

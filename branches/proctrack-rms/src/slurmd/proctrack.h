@@ -52,20 +52,24 @@ extern int slurm_proctrack_fini(void);
 
 /* 
  * Create a container
- * job_id IN - SLURM job ID
- *
- * Returns container ID or zero on error
- */
-extern uint32_t slurm_container_create(slurmd_job_t *job);
-
-/*
- * Add a process to the specified container
- * cont_id IN  - container ID as returned by slurm_container_create()
- * pid IN      - process ID to be added to the container
+ * job IN - slurmd_job_t structure
+ * job->cont_id OUT - Plugin must fill in job->cont_id either here
+ *                    or in slurm_container_add()
  *
  * Returns a SLURM errno.
  */
-extern int slurm_container_add(uint32_t cont_id, pid_t pid);
+extern int slurm_container_create(slurmd_job_t *job);
+
+/*
+ * Add a process to the specified container
+ * job IN - slurmd_job_t structure
+ * pid IN      - process ID to be added to the container
+ * job->cont_id OUT - Plugin must fill in job->cont_id either here
+ *                    or in slurm_container_create()
+ *
+ * Returns a SLURM errno.
+ */
+extern int slurm_container_add(slurmd_job_t *job, pid_t pid);
 
 /*
  * Signal all processes within a container
