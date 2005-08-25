@@ -950,6 +950,18 @@ int _print_step_time_used(job_step_info_t * step, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
+int _print_step_name(job_step_info_t * step, int width, bool right,
+			char* suffix)
+{
+	if (step == NULL)	/* Print the Header instead */
+		_print_str("NAME", width, right, true);
+	else
+		_print_nodes(step->name, width, right, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_step_nodes(job_step_info_t * step, int width, bool right, 
 		      char* suffix)
 {

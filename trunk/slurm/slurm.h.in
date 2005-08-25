@@ -379,6 +379,8 @@ typedef struct job_step_specs {
 	uint16_t port;		/* port to contact initiating srun */
 	char *host;		/* host to contact initiating srun */
 	char *node_list;	/* list of required nodes */
+	char *network;		/* network use spec */
+	char *name;		/* name of the job step, default "" */
 } job_step_create_request_msg_t;
 
 typedef struct job_step_create_response_msg {
@@ -396,6 +398,8 @@ typedef struct {
 	time_t start_time;	/* step start time */
 	char *partition;	/* name of assigned partition */
 	char *nodes;		/* list of nodes allocated to job_step */
+	char *name;		/* name of job step */
+	char *network;		/* network specs for job step */
 } job_step_info_t;
 
 typedef struct job_step_info_response_msg {

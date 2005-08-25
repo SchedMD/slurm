@@ -91,8 +91,9 @@ slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr,
 		fprintf ( out, "\n   ");
 
 	/****** Line 2 ******/
-	fprintf ( out, "Partition=%s Nodes=%s\n\n", 
-		job_step_ptr->partition, job_step_ptr->nodes);
+	fprintf ( out, "Partition=%s Nodes=%s Name=%s Network=%s\n\n", 
+		job_step_ptr->partition, job_step_ptr->nodes,
+		job_step_ptr->name, job_step_ptr->network);
 }
 
 /*

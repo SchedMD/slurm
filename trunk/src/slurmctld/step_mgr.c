@@ -56,7 +56,7 @@
 static int _job_step_ckpt_error(struct step_record *step_ptr, slurm_fd conn_fd);
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer);
 static bitstr_t * _pick_step_nodes (struct job_record  *job_ptr, 
-				    step_specs *step_spec );
+				    job_step_create_request_msg_t *step_spec );
 /* 
  * create_step_record - create an empty step_record for the specified job.
  * IN job_ptr - pointer to job table entry to have step record added
@@ -166,7 +166,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
  * IN step_spec - job step request specification from RPC
  */
 void
-dump_step_desc(step_specs *step_spec)
+dump_step_desc(job_step_create_request_msg_t *step_spec)
 {
 	if (step_spec == NULL) 
 		return;
@@ -177,8 +177,9 @@ dump_step_desc(step_specs *step_spec)
 	debug3("   num_tasks=%u relative=%u task_dist=%u node_list=%s", 
 		step_spec->num_tasks, step_spec->relative, 
 		step_spec->task_dist, step_spec->node_list);
-	debug3("   host=%s port=%u", 
-		step_spec->host, step_spec->port);
+	debug3("   host=%s port=%u name=%s network=%s", 
+		step_spec->host, step_spec->port, step_spec->name,
+		step_spec->network);
 }
 
 
@@ -366,7 +367,8 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
  * NOTE: returned bitmap must be freed by the caller using bit_free()
  */
 static bitstr_t *
-_pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec )
+_pick_step_nodes (struct job_record  *job_ptr, 
+		job_step_create_request_msg_t *step_spec )
 {
 
 	bitstr_t *nodes_avail = NULL, *nodes_picked = NULL, *node_tmp = NULL;
@@ -488,9 +490,10 @@ cleanup:
  * NOTE: don't free the returned step_record because that is managed through
  * 	the job.
  */
-int
-step_create ( step_specs *step_specs, struct step_record** new_step_record,
-	      bool kill_job_when_step_done, bool batch_step )
+extern int
+step_create ( job_step_create_request_msg_t *step_specs, 
+		struct step_record** new_step_record,
+		bool kill_job_when_step_done, bool batch_step )
 {
 	struct step_record *step_ptr;
 	struct job_record  *job_ptr;
@@ -554,6 +557,17 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 	step_ptr->host = xstrdup(step_specs->host);
 	step_ptr->batch_step = batch_step;
 
+	/* step's name and network default to job's values if not 
+	 * specified in the step specification */
+	if (step_specs->name && step_specs->name[0])
+		step_ptr->name = xstrdup(step_specs->name);
+	else
+		step_ptr->name = xstrdup(job_ptr->name);
+	if (step_specs->network && step_specs->network[0])
+		step_ptr->network = xstrdup(step_specs->network);
+	else
+		step_ptr->network = xstrdup(job_ptr->network);
+
 	/* a batch script does not need switch info */
 	if (!batch_step) {
 		int *tasks_per_node;
@@ -571,7 +585,7 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 					step_ptr->step_node_list,
 					tasks_per_node, 
 					step_ptr->cyclic_alloc,
-					job_ptr->network) < 0) {
+					step_ptr->network) < 0) {
 			error("switch_build_jobinfo: %m");
 			xfree(tasks_per_node);
 			delete_step_record (job_ptr, step_ptr->step_id);
@@ -598,7 +612,8 @@ static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer)
 				   step->num_tasks,
 				   step->start_time,
 				   step->job_ptr->partition,
-				   step->step_node_list, buffer);
+				   step->step_node_list, 
+				   step->name, step->network, buffer);
 }
 
 /* 

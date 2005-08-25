@@ -72,7 +72,7 @@
 
 #define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
 
-#define JOB_STATE_VERSION      "VER001"
+#define JOB_STATE_VERSION      "VER002"
 
 /* Global variables */
 List   job_list = NULL;		/* job_record list */
@@ -816,6 +816,8 @@ static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	pack_time(step_ptr->start_time, buffer);
 	packstr(step_ptr->host,  buffer);
 	packstr(step_ptr->step_node_list,  buffer);
+	packstr(step_ptr->name, buffer);
+	packstr(step_ptr->network, buffer);
 	pack16(step_ptr->batch_step, buffer);
 	if (!step_ptr->batch_step)
 		switch_pack_jobinfo(step_ptr->switch_job, buffer);
@@ -830,6 +832,7 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	uint32_t num_tasks;
 	time_t start_time;
 	char *step_node_list = NULL, *host = NULL;
+	char *name = NULL, *network = NULL;
 	switch_jobinfo_t switch_tmp = NULL;
 	check_jobinfo_t check_tmp = NULL;
 
@@ -840,6 +843,8 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	safe_unpack_time(&start_time, buffer);
 	safe_unpackstr_xmalloc(&host, &name_len, buffer);
 	safe_unpackstr_xmalloc(&step_node_list, &name_len, buffer);
+	safe_unpackstr_xmalloc(&name, &name_len, buffer);
+	safe_unpackstr_xmalloc(&network, &name_len, buffer);
 	safe_unpack16(&batch_step, buffer);
 	if (!batch_step) {
 		switch_alloc_jobinfo(&switch_tmp);
@@ -869,6 +874,8 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	/* set new values */
 	step_ptr->step_id      = step_id;
 	step_ptr->cyclic_alloc = cyclic_alloc;
+	step_ptr->name         = name;
+	step_ptr->network      = network;
 	step_ptr->num_tasks    = num_tasks;
 	step_ptr->port         = port;
 	step_ptr->host         = host;
@@ -885,6 +892,8 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 
       unpack_error:
 	xfree(host);
+	xfree(name);
+	xfree(network);
 	xfree(step_node_list);
 	if (switch_tmp) switch_free_jobinfo(switch_tmp);
 	return SLURM_FAILURE;

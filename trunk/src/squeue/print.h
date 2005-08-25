@@ -236,6 +236,8 @@ int step_format_add_function(List list, int width, bool right_justify,
 	step_format_add_function(list,wid,right,suffix,_print_step_time_used)
 #define step_format_add_nodes(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,_print_step_nodes)
+#define step_format_add_name(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_name)
 
 /*****************************************************************************
  * Step Line Print Functions
@@ -253,6 +255,8 @@ int _print_step_user_name(job_step_info_t * step, int width,
 int _print_step_time_start(job_step_info_t * step, int width,
 			bool right_justify, char *suffix);
 int _print_step_time_used(job_step_info_t * step, int width,
+			bool right_justify, char *suffix);
+int _print_step_name(job_step_info_t * step, int width,
 			bool right_justify, char *suffix);
 int _print_step_nodes(job_step_info_t * step, int width,
 			bool right_justify, char *suffix);

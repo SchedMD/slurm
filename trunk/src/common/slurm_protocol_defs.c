@@ -254,6 +254,8 @@ void slurm_free_job_step_create_request_msg(job_step_create_request_msg_t *
 					    msg)
 {
 	if (msg) {
+		xfree(msg->name);
+		xfree(msg->network);
 		xfree(msg->node_list);
 		xfree(msg->host);
 		xfree(msg);

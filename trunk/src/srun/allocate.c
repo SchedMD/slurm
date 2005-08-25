@@ -465,6 +465,8 @@ _step_req_create(srun_job_t *j)
 		                       : (opt.nprocs*opt.cpus_per_task);
 	r->num_tasks  = opt.nprocs;
 	r->node_list  = j->nodelist;
+	r->network    = opt.network;
+	r->name       = opt.job_name;
 	r->relative   = false;      /* XXX fix this oneday */
 
 	switch (opt.distribution) {
