@@ -1585,7 +1585,6 @@ static void _usage(void)
 "            [--propagate[=rlimits] ]\n"
 #ifdef HAVE_BGL		/* Blue gene specific options */
 "            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
-"            [--node-use=type]\n"
 #endif
 "            [-w hosts...] [-x hosts...] executable [args...]\n");
 }
@@ -1671,7 +1670,6 @@ static void _help(void)
   "  -R, --no-rotate             disable geometry rotation\n"
   "      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
   "                              if not set, then tries to fit TORUS else MESH\n"
-  "      --node-use=type         mode of node use VIRTUAL or COPROCESSOR\n"
   "\n"
 #endif
 "Help options:\n"
