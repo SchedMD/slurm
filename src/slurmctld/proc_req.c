@@ -558,6 +558,8 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 	req_step_msg.node_count = INFINITE;
 	req_step_msg.cpu_count  = job_desc_msg->num_procs;
 #endif
+	req_step_msg.name	= job_ptr->name;
+	req_step_msg.network	= job_ptr->network;
 	req_step_msg.num_tasks  = job_desc_msg->num_tasks;
 	req_step_msg.task_dist  = job_desc_msg->task_dist;
 	error_code = step_create(&req_step_msg, &step_rec, true, false);
@@ -2037,8 +2039,9 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	req_step_msg.task_dist = SLURM_DIST_CYCLIC;
 	req_step_msg.port = 0;
 	req_step_msg.host = NULL;
+	req_step_msg.name = NULL;
+	req_step_msg.network = NULL;
 	req_step_msg.node_list = NULL;
-	
 
 	START_TIMER;
 	lock_slurmctld(job_write_lock);

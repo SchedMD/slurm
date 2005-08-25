@@ -335,6 +335,12 @@ extern int parse_format( char* format )
 				step_format_add_id( params.format_list, 
 				                    field_size, 
 						    right_justify, suffix );
+			else if (field[0] == 'j')
+				step_format_add_name( params.format_list,
+							field_size,
+							right_justify,
+							suffix );
+
 			else if (field[0] == 'M')
 				step_format_add_time_used( params.format_list, 
 				                            field_size, 

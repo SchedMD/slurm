@@ -1296,6 +1296,8 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 	pack16(msg->task_dist, buffer);
 	pack16(msg->port, buffer);
 	packstr(msg->host, buffer);
+	packstr(msg->name, buffer);
+	packstr(msg->network, buffer);
 	packstr(msg->node_list, buffer);
 }
 
@@ -1321,12 +1323,16 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 	safe_unpack16(&(tmp_ptr->task_dist), buffer);
 	safe_unpack16(&(tmp_ptr->port), buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->host), &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&(tmp_ptr->name), &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&(tmp_ptr->network), &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->node_list), &uint16_tmp, buffer);
 
 	return SLURM_SUCCESS;
 
       unpack_error:
 	xfree(tmp_ptr->host);
+	xfree(tmp_ptr->name);
+	xfree(tmp_ptr->network);
 	xfree(tmp_ptr->node_list);
 	xfree(tmp_ptr);
 	*msg = NULL;
@@ -1572,7 +1578,8 @@ void
 pack_job_step_info_members(uint32_t job_id, uint16_t step_id,
 			   uint32_t user_id, uint32_t num_tasks,
 			   time_t start_time, char *partition, 
-			   char *nodes, Buf buffer)
+			   char *nodes, char *name, char *network,
+			   Buf buffer)
 {
 	pack32(job_id, buffer);
 	pack16(step_id, buffer);
@@ -1582,7 +1589,8 @@ pack_job_step_info_members(uint32_t job_id, uint16_t step_id,
 	pack_time(start_time, buffer);
 	packstr(partition, buffer);
 	packstr(nodes, buffer);
-
+	packstr(name, buffer);
+	packstr(network, buffer);
 }
 
 /* pack_job_step_info
@@ -1599,7 +1607,8 @@ pack_job_step_info(job_step_info_t * step, Buf buffer)
 				   step->user_id,
 				   step->num_tasks,
 				   step->start_time,
-				   step->partition, step->nodes, buffer);
+				   step->partition, step->nodes, 
+				   step->name, step->network, buffer);
 }
 
 /* _unpack_job_step_info_members
@@ -1621,12 +1630,16 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer)
 	safe_unpack_time(&step->start_time, buffer);
 	safe_unpackstr_xmalloc(&step->partition, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&step->nodes, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&step->name, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&step->network, &uint16_tmp, buffer);
 
 	return SLURM_SUCCESS;
 
       unpack_error:
 	xfree(step->partition);
 	xfree(step->nodes);
+	xfree(step->name);
+	xfree(step->network);
 	return SLURM_ERROR;
 }
 

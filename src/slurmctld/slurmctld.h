@@ -349,9 +349,10 @@ struct 	step_record {
 	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */
 	switch_jobinfo_t switch_job;	/* switch context, opaque */
 	check_jobinfo_t check_job;	/* checkpoint context, opaque */
+	char *name;			/* name of job step */
+	char *network;			/* step's network specification */
 };
 
-typedef struct job_step_specs step_specs; 
 extern List job_list;			/* list of job_record entries */
 
  extern List job_list;                  /* list of job_record entries */
@@ -506,7 +507,7 @@ extern void dump_job_desc(job_desc_msg_t * job_specs);
  * dump_step_desc - dump the incoming step initiate request message
  * IN step_spec - job step request specification from RPC
  */
-extern void dump_step_desc(step_specs *step_spec);
+extern void dump_step_desc(job_step_create_request_msg_t *step_spec);
 
 /* 
  * find_job_record - return a pointer to the job record with the given job_id
@@ -1107,7 +1108,7 @@ extern int slurmctld_shutdown(void);
  * NOTE: don't free the returned step_record because that is managed through
  * 	the job.
  */
-extern int step_create ( step_specs *step_specs, 
+extern int step_create ( job_step_create_request_msg_t *step_specs, 
 			 struct step_record** new_step_record,
 			 bool kill_job_when_step_done,
 			 bool batch_step );

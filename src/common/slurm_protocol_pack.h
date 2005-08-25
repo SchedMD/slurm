@@ -124,6 +124,7 @@ void pack_job_step_info ( job_step_info_t* step, Buf buffer );
  */ 
 void pack_job_step_info_members( uint32_t job_id, uint16_t step_id, 
 		uint32_t user_id, uint32_t num_tasks, time_t start_time, 
-		char *partition, char *nodes, Buf buffer );
+		char *partition, char *nodes, char *name, char *network,
+		Buf buffer );
 
 #endif

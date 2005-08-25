@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Add code so job request for shared nodes gets explicitly requested 
     nodes, but lightly loaded nodes otherwise.
+ -- Add job step name field.
+ -- Add job step network specification field.
  -- Add proctrack/rms plugin
  -- Change the proctrack API to send a slurmd_job_t pointer to both
     slurm_container_create() and slurm_container_add().  One of those
