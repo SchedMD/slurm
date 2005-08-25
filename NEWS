@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- Change the proctrack API to send a slurmd_job_t pointer to both
     slurm_container_create() and slurm_container_add().  One of those
     functions MUST set job->cont_id.
+ -- Remove vestigial node_use (virtual or coprocessor) field from job
+    request RPC.
 
 * Changes in SLURM 0.6.0-pre2
 =============================
