@@ -739,7 +739,7 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	       goto done;
 	}
 
-	if (step->state != SLURMD_JOB_STARTED) {
+	if (step->state == SLURMD_JOB_STARTING) {
 		debug ("kill req for starting job step %u.%u",
 			req->job_id, req->job_step_id); 
 		rc = ESLURMD_JOB_NOTRUNNING;
