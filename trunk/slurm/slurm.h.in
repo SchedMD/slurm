@@ -313,7 +313,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 #endif
 	uint16_t conn_type;	/* see enum connection_type */
 	uint16_t rotate;	/* permit geometry rotation if set */
-	uint16_t node_use;	/* see enum node_use_type */
 /* End of Blue Gene specific values */
 	select_jobinfo_t select_jobinfo; /* opaque data type,
 			* SLURM internal use only */
