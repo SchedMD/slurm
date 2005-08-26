@@ -696,9 +696,10 @@ _add_node_set_info(struct node_set *node_set_ptr,
                 *cpu_cnt  += node_set_ptr->nodes * node_set_ptr->cpus_per_node;
         } else {
                 for (i = 0; i < node_record_count; i++) {
+                        int allocated_cpus;
                         if (bit_test (node_set_ptr->my_bitmap, i) == 0)
                           continue;
-                        int allocated_cpus = 0;
+                        allocated_cpus = 0;
                         error_code = select_g_get_select_nodeinfo(&node_record_table_ptr[i], 
                                                                 SELECT_CR_USED_CPUS, 
                                                                 &allocated_cpus);

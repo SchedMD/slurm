@@ -1234,9 +1234,6 @@ void getOptions(int argc, char **argv)
 	int c, i, optionIndex = 0;
 	char *end, *start, *acct_type;
 	struct stat stat_buf;
-
-	if ((i=getuid()))	/* default to current user unless root*/
-		opt_uid = i;
 	static struct option long_options[] = {
 		{"all", 0,0, 'a'},
 		{"brief", 0, 0, 'b'},
@@ -1265,6 +1262,9 @@ void getOptions(int argc, char **argv)
 		{"version", 0, 0, 'v'},
 		{0, 0, 0, 0}
 	};
+
+	if ((i=getuid()))	/* default to current user unless root*/
+		opt_uid = i;
 
 	opterr = 1;		/* Let getopt report problems to the user */
 
