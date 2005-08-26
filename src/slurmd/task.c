@@ -170,7 +170,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	
 	t = job->task[i];
 	job->envtp->procid = t->gtid;
-	job->envtp->gmpi = t->gtid;
+	job->envtp->gmpi = getenvp(job->env, "SLURM_GMPI") ? t->gtid : -1;
 	
 	
 	setup_env(job->envtp);

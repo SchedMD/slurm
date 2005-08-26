@@ -13,6 +13,7 @@ documents those changes that are of interest to users and admins.
     functions MUST set job->cont_id.
  -- Remove vestigial node_use (virtual or coprocessor) field from job
     request RPC.
+ -- Fix mpich-gm bugs, thanks to Takao Hatazaki (HP).
 
 * Changes in SLURM 0.6.0-pre2
 =============================
