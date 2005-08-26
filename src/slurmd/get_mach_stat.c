@@ -36,6 +36,10 @@
 #ifdef HAVE_SYS_SYSTEMCFG_H
 # include <sys/systemcfg.h>
 #endif
+
+#ifdef HAVE_SYS_DR_H
+# include <sys/dr.h>
+#endif
  
 #include <errno.h>
 #include <fcntl.h> 
@@ -90,6 +94,19 @@ main(int argc, char * argv[])
 extern int 
 get_procs(uint32_t *procs) 
 {
+#ifdef LPAR_INFO_FORMAT2
+	/* AIX 5.3 only */
+	lpar_info_format2_t info;
+
+	*procs = 1;
+	if (lpar_get_info(LPAR_INFO_FORMAT2, &info, sizeof(info)) != 0) {
+		error("lpar_get_info() failed");
+		return EINVAL;
+	}
+	
+	*procs = (uint32_t)info.online_vcpus;
+	return 0;
+#else
 	int my_proc_tally;
 
 	*procs = 1;
@@ -101,6 +118,7 @@ get_procs(uint32_t *procs)
 
 	*procs = my_proc_tally;
 	return 0;
+#endif
 }
 
 
