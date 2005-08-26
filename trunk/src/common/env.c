@@ -310,8 +310,8 @@ int setup_env(env_t *env)
 	}
 	
 	if (env->gmpi >= 0
-	    && setenvf(&env->env, "SLURM_GMPI", "%d", env->gmpi)) {
-		error("Unable to set SLURM_GMPI environment");
+	    && setenvf(&env->env, "GMPI_ID", "%d", env->gmpi)) {
+		error("Unable to set GMPI_ID environment");
 		rc = SLURM_FAILURE;
 	}
 	
