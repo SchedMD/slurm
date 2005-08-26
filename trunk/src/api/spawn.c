@@ -349,7 +349,7 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 	int *sock_array;
 	slurm_msg_t *req_array_ptr;
 	int i, rc = SLURM_SUCCESS;
-	uint16_t slurmd_debug = (uint16_t) NO_VAL;
+	uint16_t slurmd_debug = 0;
 	char *env_var;
 
 	if ((ctx == NULL) ||
