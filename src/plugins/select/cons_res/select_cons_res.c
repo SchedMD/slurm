@@ -270,9 +270,10 @@ static int _count_cr_cpus(unsigned *bitmap, int sum)
 	sum = 0;
 
 	for (i = 0; i < node_record_count; i++) {
+		int allocated_cpus;
 		if (bit_test(bitmap, i) != 1)
 			continue;
-		int allocated_cpus = 0;
+		allocated_cpus = 0;
 		rc = select_g_get_select_nodeinfo(&node_record_table_ptr
 						  [i], SELECT_CR_USED_CPUS,
 						  &allocated_cpus);
@@ -303,6 +304,7 @@ static int _synchronize_bitmaps(bitstr_t ** partially_idle_bitmap)
 	       bit_size(avail_node_bitmap), bit_size(idle_node_bitmap));
 
 	for (i = 0; i < node_record_count; i++) {
+		int allocated_cpus;
 		if (bit_test(avail_node_bitmap, i) != 1)
 			continue;
 
@@ -311,7 +313,7 @@ static int _synchronize_bitmaps(bitstr_t ** partially_idle_bitmap)
 			continue;
 		}
 
-		int allocated_cpus = 0;
+		allocated_cpus = 0;
 		rc = select_g_get_select_nodeinfo(&node_record_table_ptr
 						  [i], SELECT_CR_USED_CPUS,
 						  &allocated_cpus);
@@ -340,6 +342,8 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS, i, j;
 	struct select_cr_job *job = NULL;
+	int job_id;
+	ListIterator iterator;
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -347,8 +351,8 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 	if (list_count(select_cr_job_list) == 0)
 		return rc;
 
-	int job_id = job_ptr->job_id;
-	ListIterator iterator = list_iterator_create(select_cr_job_list);
+	job_id = job_ptr->job_id;
+	iterator = list_iterator_create(select_cr_job_list);
 	while ((job =
 		(struct select_cr_job *) list_next(iterator)) != NULL) {
 		if (job->job_id != job_id)
@@ -559,9 +563,10 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		rem_nodes = min_nodes;
 	for (index = 0; index < select_node_cnt; index++) {
 		if (bit_test(bitmap, index)) {
+			int allocated_cpus;
 			if (consec_nodes[consec_index] == 0)
 				consec_start[consec_index] = index;
-			int allocated_cpus = 0;
+			allocated_cpus = 0;
 			if (cr_enabled) {
 				error_code =
 				    select_g_get_select_nodeinfo
@@ -660,13 +665,14 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 			 * then down from the required nodes */
 			for (i = best_fit_req;
 			     i <= consec_end[best_fit_location]; i++) {
+				int allocated_cpus;
 				if ((rem_nodes <= 0) && (rem_cpus <= 0))
 					break;
 				if (bit_test(bitmap, i))
 					continue;
 				bit_set(bitmap, i);
 				rem_nodes--;
-				int allocated_cpus = 0;
+				allocated_cpus = 0;
 				if (cr_enabled) {
 					error_code =
 					    select_g_get_select_nodeinfo
@@ -688,6 +694,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 			}
 			for (i = (best_fit_req - 1);
 			     i >= consec_start[best_fit_location]; i--) {
+				int allocated_cpus;
 				if ((rem_nodes <= 0) && (rem_cpus <= 0))
 					break;
 				/* if (bit_test(bitmap, i)) 
@@ -695,7 +702,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 				bit_set(bitmap, i);
 				rem_nodes--;
 
-				int allocated_cpus = 0;
+				allocated_cpus = 0;
 				if (cr_enabled) {
 					error_code =
 					    select_g_get_select_nodeinfo
@@ -719,6 +726,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		} else {
 			for (i = consec_start[best_fit_location];
 			     i <= consec_end[best_fit_location]; i++) {
+				int allocated_cpus;
 				if ((rem_nodes <= 0) && (rem_cpus <= 0))
 					break;
 				if (bit_test(bitmap, i))
@@ -726,7 +734,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 				bit_set(bitmap, i);
 				rem_nodes--;
 
-				int allocated_cpus = 0;
+				allocated_cpus = 0;
 				if (cr_enabled) {
 					error_code =
 					    select_g_get_select_nodeinfo
@@ -766,15 +774,17 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		goto cleanup;
 
 	if (cr_enabled) {
+		int jobid, job_nodecnt, j;
+		bitoff_t size;
 		static struct select_cr_job *job;
 		job = xmalloc(sizeof(struct select_cr_job));
-		int jobid = job_ptr->job_id;
+		jobid = job_ptr->job_id;
 		job->job_id = jobid;
-		int job_nodecnt = bit_set_count(bitmap);
+		job_nodecnt = bit_set_count(bitmap);
 		job->nhosts = job_nodecnt;
 		job->nprocs = job_ptr->num_procs;
 
-		bitoff_t size = bit_size(bitmap);
+		size = bit_size(bitmap);
 		job->node_bitmap = (bitstr_t *) bit_alloc(size);
 		if (job->node_bitmap == NULL)
 			fatal("bit_alloc malloc failure");
@@ -788,7 +798,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		    (char **) xmalloc(job->nhosts * sizeof(char *));
 		job->cpus = (int *) xmalloc(job->nhosts * sizeof(int));
 
-		int j = 0;
+		j = 0;
 		for (i = 0; i < node_record_count; i++) {
 			if (bit_test(bitmap, i) == 0)
 				continue;

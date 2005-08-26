@@ -855,11 +855,12 @@ static _jrec_t  *_alloc_jrec(slurmd_job_t *job)
 static _jrec_t *_get_jrec_by_jobstep(List jrecs, uint32_t jobid,
 		uint32_t stepid) {
 	_jrec_t *jrec = NULL;
+	ListIterator i;
 	if (jrecs==NULL) {
 		error("no accounting job list");
 		return jrec;
 	}
-	ListIterator i = list_iterator_create(jrecs);
+	i = list_iterator_create(jrecs);
 	while ((jrec = list_next(i))) {
 		if ( (jrec->jobid == jobid ) && (jrec->stepid == stepid)) {
 			break;
