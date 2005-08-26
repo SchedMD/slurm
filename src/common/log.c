@@ -440,6 +440,11 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 						va_arg(ap, long int));
 					xstrcat(buf, tmp);
 					p++;
+				} else if ((unprocessed==0) && (*(p+1)=='x')) {
+					snprintf(tmp, sizeof(tmp), "%lx",
+						va_arg(ap, long int));
+					xstrcat(buf, tmp);
+					p++;
 				} else
 					xstrcat(buf, "%l");
 				break; 
