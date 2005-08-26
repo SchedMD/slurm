@@ -282,7 +282,7 @@ _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 	/* always include required nodes or selection algorithm fails,
 	 * note that we have already confirmed these nodes are available
 	 * to this job */
-	if (job_ptr->details->req_node_bitmap)
+	if (job_ptr->details && job_ptr->details->req_node_bitmap)
 		bit_or(bitmap, job_ptr->details->req_node_bitmap);
 	error_code = select_g_job_test(job_ptr, bitmap, 
 			min_nodes, max_nodes);
