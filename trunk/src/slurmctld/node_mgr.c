@@ -83,8 +83,7 @@ static void	_node_did_resp(struct node_record *node_ptr);
 static void	_node_not_resp (struct node_record *node_ptr, time_t msg_time);
 static void 	_pack_node (struct node_record *dump_node_ptr, Buf buffer);
 static void	_sync_bitmaps(struct node_record *node_ptr, int job_count);
-static bool 	_valid_node_state_change(enum node_states old, 
-					enum node_states new);
+static bool 	_valid_node_state_change(uint16_t old, uint16_t *new); 
 #if _DEBUG
 static void	_dump_hash (void);
 #endif
@@ -825,8 +824,6 @@ int update_node ( update_node_msg_t * update_node_msg )
 		return ESLURM_INVALID_NODE_NAME;
 	}
 
-	state_val = update_node_msg -> node_state ; 
-	
 	if ( (host_list = hostlist_create (update_node_msg -> node_names))
 								 == NULL) {
 		error ("hostlist_create error on %s: %m", 
@@ -837,6 +834,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 	last_node_update = time (NULL);
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		int err_code = 0;
+		state_val = update_node_msg -> node_state;
 		node_ptr = find_node_record (this_node_name);
 		node_inx = node_ptr - node_record_table_ptr;
 		if (node_ptr == NULL) {
@@ -850,7 +848,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 		if (state_val != (uint16_t) NO_VAL) {
 			base_state = node_ptr->node_state & 
 			             (~NODE_STATE_NO_RESPOND);
-			if (!_valid_node_state_change(base_state, state_val)) {
+			if (!_valid_node_state_change(base_state, &state_val)) {
 				info ("Invalid node state transition requested "
 					"for node %s from=%s to=%s",
 					this_node_name, 
@@ -989,16 +987,28 @@ extern int drain_nodes ( char *nodes, char *reason )
 	return error_code;
 }
 /* Return true if admin request to change node state from old to new is valid */
-static bool _valid_node_state_change(enum node_states old, enum node_states new)
+static bool _valid_node_state_change(uint16_t old, uint16_t *new)
 {
-	if (old == new)
+	if (old == *new)
 		return true;
 
-	switch (new) {
+	switch (*new) {
 		case NODE_STATE_DOWN:
 		case NODE_STATE_DRAINED:
 		case NODE_STATE_DRAINING:
 			return true;
+			break;
+
+		case NODE_RESUME:
+			if ((old == NODE_STATE_DRAINED) ||
+			    (old == NODE_STATE_DOWN)) {
+				*new = NODE_STATE_IDLE;
+				return true;
+			}
+			if (old == NODE_STATE_DRAINING) {
+				*new = NODE_STATE_ALLOCATED;
+				return true;
+			}
 			break;
 
 		case NODE_STATE_IDLE:

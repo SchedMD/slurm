@@ -1579,6 +1579,11 @@ _update_node (int argc, char *argv[])
 					state_val = NODE_STATE_DRAINING;
 					break;
 				}
+				if ((j == 0) &&
+				    (strncasecmp ("RES", &argv[i][6], 3) == 0)) {
+					state_val = NODE_RESUME;
+					break;
+				}
 				if (strcmp(node_state_string(j),"END") == 0) {
 					exit_code = 1;
 					fprintf(stderr, "Invalid input: %s\n", 
