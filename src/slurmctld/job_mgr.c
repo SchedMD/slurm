@@ -3231,6 +3231,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 #endif
 
+#ifdef HAVE_BGL
 	if (job_specs->conn_type != (uint16_t) NO_VAL) {
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_CONN_TYPE,
@@ -3246,6 +3247,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		info("update_job: setting rotate to %u for job_id %u",
 			job_specs->rotate, job_ptr->job_id);
 	}
+#endif
 
 	return error_code;
 }
