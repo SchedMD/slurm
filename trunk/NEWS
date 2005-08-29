@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
  -- Fix code for clean build with gcc 2.96, Takao Hatazaki (HP).
  -- Add node update state of "RESUME" to return DRAINED, DRAINING, or 
     DOWN node to service (IDLE or ALLOCATED state).
+ -- smap keeps trying to connect to slurmctld in iterative mode rather 
+    than just aborting on failure.
 
 * Changes in SLURM 0.6.0-pre2
 =============================
