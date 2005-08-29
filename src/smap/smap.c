@@ -75,21 +75,18 @@ int main(int argc, char *argv[])
 	//char *name;	
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
-	error_code = slurm_load_node((time_t) NULL, &new_node_ptr, 0);
-
-	if (error_code) {
-		printf("slurm_load_node: %s\n", 
-		       slurm_strerror(slurm_get_errno()));
-#ifdef HAVE_BGL
-		if(params.display == COMMANDS)
-			pa_init(NULL);
-		else
-#endif
-			exit(0);
-
-	} else {
-		pa_init(new_node_ptr);
+	while (slurm_load_node((time_t) NULL, &new_node_ptr, 0)) { 
+		error_code = slurm_get_errno();
+		printf("slurm_load_node: %s\n", slurm_strerror(error_code));
+		if (params.display == COMMANDS) {
+			new_node_ptr = NULL;
+			break;		/* just continue */
+		}
+		if (params.iterate == 0)
+			exit(1);
+		sleep(10);	/* keep trying to reconnect */
 	}
+	pa_init(new_node_ptr);
 	
 	if(params.partition) {
 			
