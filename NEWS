@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
     request RPC.
  -- Fix mpich-gm bugs, thanks to Takao Hatazaki (HP).
  -- Fix code for clean build with gcc 2.96, Takao Hatazaki (HP).
+ -- Add node update state of "RESUME" to return DRAINED, DRAINING, or 
+    DOWN node to service (IDLE or ALLOCATED state).
 
 * Changes in SLURM 0.6.0-pre2
 =============================

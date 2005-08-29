@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "June 2005" "scontrol 0.5" "Slurm components"
+.TH SCONTROL "1" "August 2005" "scontrol 0.6" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -257,10 +257,12 @@ Use quotes to enclose a reason having more than one word.
 .TP
 \fIState\fP=<state>
 Identify the state to be assigned to the node. Possible values are  "NoResp", 
-"DOWN", "IDLE", "DRAIN", "DRAINED", "DRAINING", and "ALLOCATED". 
+"RESUME", "DOWN", "IDLE", "DRAIN", "DRAINED", "DRAINING", and "ALLOCATED". 
 To drain a node specify "DRAIN", "DRAINED", or "DRAINING".
 SLURM will automatically set it to the appropriate value of either 
 "DRAINING" or "DRAINED" depending if the node is allocated or not.
+"RESUME is not an actual node state, but will return a DRAINED, DRAINING, 
+or DOWN node to service, either IDLE or ALLOCATED state as appropriate. 
 The "NoResp" state will only set the "NoResp" flag for a node without
 changing its underlying state.
 .TP

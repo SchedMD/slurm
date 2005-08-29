@@ -209,6 +209,9 @@ enum node_states {
 	NODE_STATE_COMPLETING,	/* node is completing allocated job */
 	NODE_STATE_END		/* last entry in table */
 };
+#define NODE_RESUME 0x400	/* Restore a DRAINED, DRAINING, or DOWN
+				 * node to service (e.g. IDLE or ALLOCATED).
+				 * Used for slurm_update_node request */
 #define NODE_STATE_NO_RESPOND (0x8000)
 
 /* used to define the size of the credential.signature size
