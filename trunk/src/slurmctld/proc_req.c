@@ -1583,6 +1583,7 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 	debug2("Processing RPC: REQUEST_UPDATE_JOB");
 
 	/* do RPC call */
+	dump_job_desc(job_desc_msg);
 	uid = g_slurm_auth_get_uid(msg->cred);
 	lock_slurmctld(job_write_lock);
 	error_code = update_job(job_desc_msg, uid);
