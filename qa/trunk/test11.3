@@ -56,12 +56,16 @@ foreach proto $protocols {
 	# execute poe with a specific node count
 	#
 	incr protos
+	set found 0
 	spawn $poe hostname -resd yes -rmpool $partition -msg_api $proto\
 	    -euilib us -retry wait
 	expect {
 		-re "LL_AdapterUsageProtocol = ($alpha_numeric_under)" {
 			if {![string compare $proto $expect_out(1,string)]} {
-				incr proto_count
+				if { !$found } {
+					incr proto_count
+					incr found
+				}
 			} 
 			exp_continue
 		}
@@ -80,7 +84,7 @@ foreach proto $protocols {
 }
 
 if { $proto_count != $protos || !$proto_count } {
-	send_user "\nFAILURE: not all protocols worked\n"
+	send_user "\nFAILURE: not all protocols worked got $proto_count looking for $protos\n"
 	set exit_code 1
 }
 	

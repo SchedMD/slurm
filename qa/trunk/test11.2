@@ -64,6 +64,10 @@ expect {
 		set found_device 1
 		exp_continue
 	}
+	-re "Error configuring interconnect" {
+		set found_device 1
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: poe not responding\n"
 		exec $scancel --quiet $job_id
