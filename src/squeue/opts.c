@@ -867,7 +867,7 @@ static List
 _build_user_list( char* str )
 {
 	List my_list;
-	char *user, *tmp_char, *my_user_list;
+	char *user, *tmp_char, *my_user_list, *end_ptr;
 	uint32_t *uid;
 	struct passwd *passwd_ptr;
 
@@ -876,15 +876,20 @@ _build_user_list( char* str )
 	my_list = list_create( NULL );
 	my_user_list = xstrdup( str );
 	user = strtok_r( my_user_list, ",", &tmp_char );
-	while (user) 
-	{
-		passwd_ptr = getpwnam( user );
-		if (passwd_ptr == NULL)
-			error( "Invalid user: %s\n", user);
-		else {
-			uid = xmalloc( sizeof( uint32_t ));
-			*uid = passwd_ptr->pw_uid;
+	while (user) {
+		uid = xmalloc( sizeof( uint32_t ));
+		*uid = (uint32_t) strtol(user, &end_ptr, 10);
+		if (end_ptr[0] == '\0')
 			list_append( my_list, uid );
+		else {
+			passwd_ptr = getpwnam( user );
+			if (passwd_ptr == NULL) {
+				error( "Invalid user: %s\n", user);
+				xfree(uid);
+			} else {
+				*uid = passwd_ptr->pw_uid;
+				list_append( my_list, uid );
+			}
 		}
 		user = strtok_r (NULL, ",", &tmp_char);
 	}

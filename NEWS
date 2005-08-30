@@ -20,6 +20,8 @@ documents those changes that are of interest to users and admins.
  -- smap keeps trying to connect to slurmctld in iterative mode rather 
     than just aborting on failure.
  -- Add squeue option --node to filter by node name.
+ -- Modify squeue --user option to accept not only user names, but also
+    user IDs.
 
 * Changes in SLURM 0.6.0-pre2
 =============================
