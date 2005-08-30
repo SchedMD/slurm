@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  print.c - squeue print job functions
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -46,6 +47,7 @@ static int	_adjust_completing (job_info_t *j, node_info_msg_t **ni);
 static int	_filter_job(job_info_t * job);
 static int	_filter_step(job_step_info_t * step);
 static int	_get_node_cnt(job_info_t * job);
+static bool     _node_in_list(char *node_name, char *node_list);
 static int	_nodes_in_list(char *node_list);
 static int	_print_str(char *str, int width, bool right, bool cut_output);
 
@@ -618,6 +620,18 @@ static int _nodes_in_list(char *node_list)
 	return count;
 }
 
+static bool _node_in_list(char *node_name, char *node_list)
+{
+	bool rc;
+	hostset_t host_set = hostset_create(node_list);
+	if (hostset_within(host_set, node_name) == 0)
+		rc = false;
+	else
+		rc = true;
+	hostset_destroy(host_set);
+	return rc;
+}
+
 int _print_job_shared(job_info_t * job, int width, bool right_justify, 
 		      char* suffix)
 {
@@ -975,7 +989,7 @@ int _print_step_nodes(job_step_info_t * step, int width, bool right,
 }
 
 /* filter job records per input specifications, 
- * returns 1 if job should be filter out (not printed) */
+ * returns >0 if job should be filter out (not printed) */
 static int _filter_job(job_info_t * job)
 {
 	int filter;
@@ -1033,6 +1047,10 @@ static int _filter_job(job_info_t * job)
 			return 4;
 	}
 
+	if ((params.node)
+	&&  (!_node_in_list(params.node, job->nodes)))
+		return 5;
+
 	if (params.user_list) {
 		filter = 1;
 		iterator = list_iterator_create(params.user_list);
@@ -1044,7 +1062,7 @@ static int _filter_job(job_info_t * job)
 		}
 		list_iterator_destroy(iterator);
 		if (filter == 1)
-			return 5;
+			return 6;
 	}
 
 	return 0;
@@ -1103,6 +1121,10 @@ static int _filter_step(job_step_info_t * step)
 			return 3;
 	}
 
+	if ((params.node)
+	&&  (!_node_in_list(params.node, step->nodes)))
+		return 5;
+
 	if (params.user_list) {
 		filter = 1;
 		iterator = list_iterator_create(params.user_list);
@@ -1114,7 +1136,7 @@ static int _filter_step(job_step_info_t * step)
 		}
 		list_iterator_destroy(iterator);
 		if (filter == 1)
-			return 5;
+			return 6;
 	}
 
 	return 0;

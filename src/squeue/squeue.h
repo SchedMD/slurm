@@ -72,6 +72,7 @@ struct squeue_parameters {
 	int  verbose;
 
 	char* jobs;
+	char* node;
 	char* partitions;
 	char* states;
 	char* steps;
