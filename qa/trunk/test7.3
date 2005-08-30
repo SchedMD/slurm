@@ -37,6 +37,7 @@ set test_id     "7.3"
 set exit_code   0
 set io_prog     "test$test_id.io"
 set test_prog   "test$test_id.prog"
+set test_out    "test$test_id.out"
 
 print_header $test_id
 
@@ -63,7 +64,7 @@ if {[test_front_end] != 0} {
 #
 # Delete left-over programs and rebuild them 
 #
-exec $bin_rm -f $io_prog $test_prog
+exec $bin_rm -f $io_prog $test_prog $test_out
 
 exec $bin_make $io_prog
 exec $bin_chmod 700 $io_prog
@@ -78,12 +79,17 @@ exec $bin_chmod 700 $test_prog
 #
 # Spawn initial program via srun
 #
+# (Actually there is a bug in the Linux which causes Expect to record
+# an eof from the spawned program before it really complets, so we
+# exec it and then scan the output)
+#
 set timeout $max_job_delay
 set job_id 0
 set matches 0
 set task_cnt 1
 # Usage: test7.3.prog [min_nodes] [max_nodes] [tasks]
-spawn ./$test_prog 1 2
+exec ./$test_prog 1 2 >$test_out 2>&1
+spawn $bin_cat $test_out
 expect {
 	-re "job_id ($number)" {
 		set job_id $expect_out(1,string)
@@ -138,7 +144,7 @@ if {$matches != [expr $task_cnt * 3]} {
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $io_prog $test_prog
+	exec $bin_rm -f $io_prog $test_prog $test_out
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

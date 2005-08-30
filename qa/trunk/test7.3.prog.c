@@ -75,11 +75,13 @@ int main (int argc, char *argv[])
 		exit(0);
 	}
 	printf("job_id %u\n", job_resp->job_id);
+	fflush(stdout);
 
 	/* Wait for allocation request to be satisfied */
 	if ((job_resp->node_list == NULL) ||
 	    (strlen(job_resp->node_list) == 0)) {
 		printf("Waiting for resource allocation\n");
+		fflush(stdout);
 		old_alloc.job_id = job_resp->job_id;
 		old_alloc.uid    = job_req.user_id;
 		while ((job_resp->node_list == NULL) ||
@@ -102,6 +104,7 @@ int main (int argc, char *argv[])
 		exit(1);
 	}
 	printf("Starting %d tasks on %d nodes\n", tasks, nodes);
+	fflush(stdout);
 
 	/* Set up step configuration */
 	bzero(&step_req, sizeof(job_step_create_request_msg_t ));
@@ -202,8 +205,10 @@ static void _do_task_work(int *fd_array, int tasks)
 				for (j=0; j<size; j++)
 					printf("%c",buf[j]);
 				printf("\n");
+				fflush(stdout);
 			} else if (size == 0) {
 				printf("task:%d:EOF\n", i);
+				fflush(stdout);
 				break;
 			} else {
 				perror("read");
