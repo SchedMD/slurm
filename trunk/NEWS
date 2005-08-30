@@ -19,6 +19,7 @@ documents those changes that are of interest to users and admins.
     DOWN node to service (IDLE or ALLOCATED state).
  -- smap keeps trying to connect to slurmctld in iterative mode rather 
     than just aborting on failure.
+ -- Add squeue option --node to filter by node name.
 
 * Changes in SLURM 0.6.0-pre2
 =============================

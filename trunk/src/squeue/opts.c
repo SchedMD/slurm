@@ -1,5 +1,7 @@
 /****************************************************************************\
  *  opts.c - srun command line option parsing
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -44,6 +46,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "src/common/read_config.h"
 #include "src/common/xstring.h"
 #include "src/squeue/squeue.h"
 
@@ -79,11 +82,12 @@ parse_command_line( int argc, char* argv[] )
 	int opt_char;
 	int option_index;
 	static struct option long_options[] = {
-		{"all",         no_argument,       0, 'a'},
+		{"all",        no_argument,       0, 'a'},
 		{"noheader",   no_argument,       0, 'h'},
 		{"iterate",    required_argument, 0, 'i'},
 		{"jobs",       optional_argument, 0, 'j'},
 		{"long",       no_argument,       0, 'l'},
+		{"node",       required_argument, 0, 'n'},
 		{"format",     required_argument, 0, 'o'},
 		{"partitions", required_argument, 0, 'p'},
 		{"steps",      optional_argument, 0, 's'},
@@ -95,7 +99,7 @@ parse_command_line( int argc, char* argv[] )
 		{"version",    no_argument,       0, 'V'},
 		{"help",       no_argument,       0, OPT_LONG_HELP},
 		{"usage",      no_argument,       0, OPT_LONG_USAGE},
-		{"hide",     no_argument, 0, OPT_LONG_HIDE},
+		{"hide",       no_argument,       0, OPT_LONG_HIDE},
 		{NULL,         0,                 0, 0}
 	};
 
@@ -106,7 +110,7 @@ parse_command_line( int argc, char* argv[] )
 	if ( ( env_val = getenv("SQUEUE_SORT") ) )
 		params.sort = xstrdup(env_val);
 
-	while((opt_char = getopt_long(argc, argv, "ahi:j::lo:p:s::S:t:u:vV",
+	while((opt_char = getopt_long(argc, argv, "ahi:j::ln:o:p:s::S:t:u:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
@@ -136,6 +140,10 @@ parse_command_line( int argc, char* argv[] )
 				break;	
 			case (int) 'l':
 				params.long_list = true;
+				break;
+			case (int) 'n':
+				xfree(params.node);
+				params.node = xstrdup(optarg);
 				break;
 			case (int) 'o':
 				xfree(params.format);
@@ -204,6 +212,18 @@ parse_command_line( int argc, char* argv[] )
 	if ( params.job_flag && params.step_flag) {
 		error("Incompatable options --jobs and --steps\n");
 		exit(1);
+	}
+
+	if ( params.node ) {
+		char *name1 = NULL;
+		if (strcasecmp("localhost", params.node) == 0) {
+			xfree(params.node);
+			params.node = xmalloc(128);
+			getnodename(params.node, 128);
+		}
+		name1 = get_conf_node_name(params.node);
+		xfree(params.node);
+		params.node = xstrdup(name1);
 	}
 
 	if ( ( params.partitions == NULL ) && 
@@ -619,6 +639,7 @@ _print_options()
 	printf( "job_flag   = %d\n", params.job_flag );
 	printf( "jobs       = %s\n", params.jobs );
 	printf( "max_procs  = %d\n", params.max_procs ) ;
+	printf( "node       = %s\n", params.node ) ;
 	printf( "partitions = %s\n", params.partitions ) ;
 	printf( "sort       = %s\n", params.sort ) ;
 	printf( "states     = %s\n", params.states ) ;
@@ -878,7 +899,7 @@ static void _print_version(void)
 static void _usage(void)
 {
 	printf("Usage: squeue [-i seconds] [-S fields] [-t states] [-p partitions]\n");
-	printf("              [-o format] [-u user_name] [--usage] [-ahjlsv]\n");
+	printf("              [-n node] [-o format] [-u user_name] [--usage] [-ahjlsv]\n");
 }
 
 static void _help(void)
@@ -892,6 +913,8 @@ Usage: squeue [OPTIONS]\n\
   -j, --jobs                      comma separated list of jobs\n\
                                   to view, default is all\n\
   -l, --long                      long report\n\
+  -n, --node=node_name            name of single node to view, default is \n\
+                                  all nodes\n\
   -o, --format=format             format specification\n\
   -p, --partitions=partitions     comma separated list of partitions\n\
                                   to view, default is all partitions\n\
