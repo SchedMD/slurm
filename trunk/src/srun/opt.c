@@ -103,7 +103,8 @@
 #define LONG_OPT_NETWORK  0x114
 #define LONG_OPT_EXCLUSIVE 0x115
 #define LONG_OPT_PROPAGATE 0x116
-
+#define LONG_OPT_PROLOG   0x117
+#define LONG_OPT_EPILOG   0x118
 
 /*---- forward declarations of static functions  ----*/
 
@@ -508,6 +509,9 @@ static void _opt_default()
 	
 	opt.propagate	    = NULL;  /* propagate specific rlimits */
 
+	opt.prolog = slurm_get_srun_prolog();
+	opt.epilog = slurm_get_srun_epilog();
+
 	mode	= MODE_NORMAL;
 
 	/*
@@ -765,6 +769,8 @@ void set_options(const int argc, char **argv, int first)
 		{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
 		{"network",          required_argument, 0, LONG_OPT_NETWORK},
 		{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
+		{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
+		{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1143,6 +1149,14 @@ void set_options(const int argc, char **argv, int first)
 			xfree(opt.propagate);
 			if (optarg) opt.propagate = xstrdup(optarg);
 			else	    opt.propagate = xstrdup("ALL");
+			break;
+		case LONG_OPT_PROLOG:
+			xfree(opt.prolog);
+			opt.prolog = xstrdup(optarg);
+			break;
+		case LONG_OPT_EPILOG:
+			xfree(opt.epilog);
+			opt.epilog = xstrdup(optarg);
 			break;
 		}
 	}
@@ -1634,6 +1648,8 @@ static void _help(void)
 "  -U, --account=name          charge job to specified account\n"
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
 "      --mpi=type              specifies version of MPI to use\n"
+"      --prolog=program        run \"program\" before launching job step\n"
+"      --epilog=program        run \"program\" after launching job step\n"
 "\n"
 "Allocate only:\n"
 "  -A, --allocate              allocate resources and spawn a shell\n"

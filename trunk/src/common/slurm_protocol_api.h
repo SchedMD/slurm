@@ -188,6 +188,18 @@ char *slurm_get_switch_type(void);
  */
 uint16_t slurm_get_wait_time(void);
 
+/* slurm_get_srun_prolog
+ * return the name of the srun prolog program
+ * RET char *   - name of prolog program
+ */
+char *slurm_get_srun_prolog(void);
+
+/* slurm_get_srun_epilog
+ * return the name of the srun epilog program
+ * RET char *   - name of epilog program
+ */
+char *slurm_get_srun_epilog(void);
+
 /**********************************************************************\
  * general message management functions used by slurmctld, slurmd
 \**********************************************************************/

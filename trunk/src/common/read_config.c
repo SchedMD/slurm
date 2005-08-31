@@ -396,6 +396,8 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->switch_type);
 	xfree (ctl_conf_ptr->tmp_fs);
 	ctl_conf_ptr->wait_time			= (uint16_t) NO_VAL;
+	xfree (ctl_conf_ptr->srun_prolog);
+	xfree (ctl_conf_ptr->srun_epilog);
 	
 	_free_name_hashtbl();
 	_init_name_hashtbl();
@@ -447,6 +449,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	char *job_comp_loc = NULL, *job_comp_type = NULL;
 	char *job_credential_private_key = NULL;
 	char *job_credential_public_certificate = NULL;
+	char *srun_prolog = NULL, *srun_epilog = NULL;
 	long first_job_id = -1;
 
 	error_code = slurm_parser (in_line,
@@ -456,6 +459,8 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"BackupController=", 's', &backup_controller, 
 		"ControlAddr=", 's', &control_addr, 
 		"ControlMachine=", 's', &control_machine, 
+		/* SrunEpilog MUST come before Epilog */
+		"SrunEpilog=", 's', &srun_epilog,
 		"Epilog=", 's', &epilog, 
 		"FastSchedule=", 'l', &fast_schedule,
 		"FirstJobId=", 'l', &first_job_id,
@@ -478,6 +483,8 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"MpiDefault=", 's', &mpi_default,
 		"PluginDir=", 's', &plugindir,
 		"ProctrackType=", 's', &proctrack_type,
+		/* SrunProlog MUST come before Prolog */
+		"SrunProlog=", 's', &srun_prolog,
 		"Prolog=", 's', &prolog,
 		"PropagateResourceLimitsExcept=", 's',&propagate_rlimits_except,
 		"PropagateResourceLimits=",       's',&propagate_rlimits,
@@ -932,6 +939,22 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 			error("SlurmdTimeout=%ld is invalid", slurmd_timeout);
 		else
 			ctl_conf_ptr->slurmd_timeout = slurmd_timeout;
+	}
+
+	if ( srun_prolog ) {
+		if ( ctl_conf_ptr->srun_prolog ) {
+			error (MULTIPLE_VALUE_MSG, "SrunProlog");
+			xfree (ctl_conf_ptr->srun_prolog);
+		}
+		ctl_conf_ptr->srun_prolog = srun_prolog;
+	}
+
+	if ( srun_epilog ) {
+		if ( ctl_conf_ptr->srun_epilog ) {
+			error (MULTIPLE_VALUE_MSG, "SrunEpilog");
+			xfree (ctl_conf_ptr->srun_epilog);
+		}
+		ctl_conf_ptr->srun_epilog = srun_epilog;
 	}
 
 	if ( state_save_location ) {

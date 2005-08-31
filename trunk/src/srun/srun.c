@@ -107,6 +107,9 @@ static char *_task_count_string(srun_job_t *job);
 static void  _switch_standalone(srun_job_t *job);
 static int   _become_user (void);
 static int   _print_script_exit_status(const char *argv0, int status);
+static void  _run_srun_prolog (srun_job_t *job);
+static void  _run_srun_epilog (srun_job_t *job);
+static int   _run_srun_script (srun_job_t *job, char *script);
 
 int srun(int ac, char **av)
 {
@@ -115,6 +118,8 @@ int srun(int ac, char **av)
 	char *task_cnt, *bgl_part_id = NULL;
 	int exitcode = 0;
 	env_t *env = xmalloc(sizeof(env_t));
+	char *prolog = NULL;
+	char *epilog = NULL;
 
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
@@ -249,10 +254,14 @@ int srun(int ac, char **av)
 		env->nhosts = job->nhosts;
 		env->nodelist = job->nodelist;
 		env->task_count = _task_count_string (job);
+		env->jobid = job->jobid;
+		env->stepid = job->stepid;
 	}
 	setup_env(env);
 	xfree(env->task_count);
 	xfree(env);
+
+	_run_srun_prolog(job);
 
 	if (slurm_mpi_thr_create(job) < 0)
 		job_fatal (job, "Failed to initialize MPI");
@@ -308,6 +317,8 @@ int srun(int ac, char **av)
 
 	/* Tell slurmctld that job is done */
 	srun_job_destroy(job, 0);
+
+	_run_srun_epilog(job);
 
 	log_fini();
 
@@ -854,4 +865,72 @@ static int _become_user (void)
 		return (error ("setuid: %m"));
 
 	return (0);
+}
+
+static void _run_srun_prolog (srun_job_t *job)
+{
+	int rc;
+
+	if (opt.prolog && strcasecmp(opt.prolog, "none") != 0) {
+		rc = _run_srun_script(job, opt.prolog);
+		debug("srun prolog rc = %d", rc);
+	}
+}
+
+static void _run_srun_epilog (srun_job_t *job)
+{
+	int rc;
+
+	if (opt.epilog && strcasecmp(opt.epilog, "none") != 0) {
+		rc = _run_srun_script(job, opt.epilog);
+		debug("srun epilog rc = %d", rc);
+	}
+}
+
+static int _run_srun_script (srun_job_t *job, char *script)
+{
+	int status;
+	pid_t cpid;
+	int i;
+	char **args = NULL;
+
+	if (script == NULL || script[0] == '\0')
+		return 0;
+
+	if (access(script, R_OK | X_OK) < 0) {
+		info("Access denied for %s: %m", script);
+		return 0;
+	}
+
+	if ((cpid = fork()) < 0) {
+		error ("run_srun_script: fork: %m");
+		return -1;
+	}
+	if (cpid == 0) {
+
+		/* set the scripts command line arguments to the arguments
+		 * for the application, but shifted one higher
+		 */
+		args = xmalloc(sizeof(char *) * 1024);
+		args[0] = script;
+		for (i = 0; i < remote_argc; i++) {
+			args[i+1] = remote_argv[i];
+		}
+		args[i+1] = NULL;
+		execv(script, args);
+		error("help! %m");
+		exit(127);
+	}
+
+	do {
+		if (waitpid(cpid, &status, 0) < 0) {
+			if (errno == EINTR)
+				continue;
+			error("waidpid: %m");
+			return 0;
+		} else
+			return status;
+	} while(1);
+
+	/* NOTREACHED */
 }

@@ -325,6 +325,20 @@ Allows users to specify which of the modifiable (soft) resource limits
 to propagate to the compute nodes and apply to their jobs.  If
 \fIrlimits\fR is not specified, then all resource limits will be
 propagated.
+.TP
+\fB\-\-prolog\fR=\fIexecutable\fR
+\fBsrun\fR will run \fIexecutable\fR just before launching the job step.
+The command line arguments for \fIexecutable\fR will be the command
+and arguments of the job step.  If \fIexecutable\fR is "none", then
+no prolog will be run.  This parameter overrides the SrunProlog
+parameter in slurm.conf.
+.TP
+\fB\-\-epilog\fR=\fIexecutable\fR
+\fBsrun\fR will run \fIexecutable\fR just after the job step completes.
+The command line arguments for \fIexecutable\fR will be the command
+and arguments of the job step.  If \fIexecutable\fR is "none", then
+no epilog will be run.  This parameter overrides the SrunEpilog
+parameter in slurm.conf.
 .PP
 Allocate options:
 .TP

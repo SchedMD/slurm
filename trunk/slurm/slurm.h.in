@@ -567,6 +567,8 @@ typedef struct slurm_ctl_conf {
 	uint16_t wait_time;	/* default job --wait time */
 	char *job_credential_private_key;	/* path to private key */
 	char *job_credential_public_certificate;/* path to public certificate*/
+	char *srun_prolog;      /* srun prolog program */
+	char *srun_epilog;      /* srun epilog program */
 } slurm_ctl_conf_t;
 
 typedef struct submit_response_msg {

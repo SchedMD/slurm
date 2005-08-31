@@ -157,6 +157,8 @@ typedef struct srun_options {
 	int geometry[SYSTEM_DIMENSIONS]; /* --geometry, -g	*/
 	bool no_rotate;		/* --no_rotate, -R		*/
 	int conn_type;		/* --conn-type 			*/
+	char *prolog;           /* --prolog                     */
+	char *epilog;           /* --epilog                     */
 } opt_t;
 
 opt_t opt;

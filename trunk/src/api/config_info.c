@@ -158,6 +158,10 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->slurmd_timeout);
 	fprintf(out, "SLURM_CONFIG_FILE = %s\n", 
 		slurm_ctl_conf_ptr->slurm_conf);
+	fprintf(out, "SrunProlog        = %s\n",
+		slurm_ctl_conf_ptr->srun_prolog);
+	fprintf(out, "SrunEpilog        = %s\n",
+		slurm_ctl_conf_ptr->srun_epilog);
 	fprintf(out, "StateSaveLocation = %s\n", 
 		slurm_ctl_conf_ptr->state_save_location);
 	fprintf(out, "SwitchType        = %s\n",
