@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-213976">
-<meta name="LLNLRandRdate" content="14 July 2005">
+<meta name="LLNLRandRdate" content="31 August 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -79,6 +79,16 @@ Poe will recognize that it lacks a SLURM job allocation (the SLURM_JOBID
 environment variable will be missing) and create the SLURM allocation 
 prior to launching tasks.</p>
 
+<p>Each poe invocation (or SLURM job step) can have it's own network 
+specification.
+For example one poe may use IP mode communications and the next use
+User Space (US) mode communcations. 
+This enhancement to normal poe functionality may be accomplished by 
+setting the SLURM_NETWORK environment variable.
+The format of SLURM_NETWORK is "network.[protocol],[type],[usage],[mode]". 
+For example "network.mpi,en0,shared,ip". 
+See LoadLeveler documentation for more details.</p>
+
 <h3>Checkpoint</h3>
 
 <p>SLURM supports checkpoint via poe. 
@@ -132,7 +142,7 @@ of LLNL, which established a contract with IBM for this purpose).</p>
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-213976<br>
-Last modified 14 July 2005</p></td>
+Last modified 31 August 2005</p></td>
 </tr>
 </table>
 </td>
