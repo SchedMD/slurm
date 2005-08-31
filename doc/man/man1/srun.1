@@ -261,7 +261,9 @@ This is run the script on 2 nodes, with 2 procs with mpi type lam.
 All commandline options are able to be set inside the script with the 
 exception of the mode (which has already been set since to run a batch 
 script you are in batch mode).
-
+.br
+Options on the command line take precedence over options in the batch 
+script, which in turn take precedence over exiting environmement variables.
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 verbose operation. Multiple \fB-v\fR's will further increase the verbosity of
