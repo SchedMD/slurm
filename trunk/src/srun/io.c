@@ -161,11 +161,11 @@ _update_task_io_state(srun_job_t *job, int taskid)
 	if (job->task_state[taskid] == SRUN_TASK_IO_WAIT) {
 		job->task_state[taskid] = SRUN_TASK_EXITED;
 		if(message_thread) {
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &pipe_enum,sizeof(int));
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &taskid,sizeof(int));
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &job->task_state[taskid],sizeof(int));
 		}
 	}

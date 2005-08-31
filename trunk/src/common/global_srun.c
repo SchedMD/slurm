@@ -89,9 +89,9 @@ fwd_signal(srun_job_t *job, int signo)
 		job->signaled = true;
 		slurm_mutex_unlock(&job->state_mutex);
 		if(message_thread) {
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &pipe_enum,sizeof(int));
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &job->signaled,sizeof(int));
 		}
 	}

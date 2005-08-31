@@ -172,6 +172,7 @@ extern void srun_ping (void)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
+		
 		if (job_ptr->job_state != JOB_RUNNING)
 			continue;
 		if ( (job_ptr->time_last_active <= old) && job_ptr->port &&
@@ -194,6 +195,10 @@ extern void srun_ping (void)
 			     (step_ptr->batch_step)      ||
 			     (step_ptr->host[0] == '\0') )
 				continue;
+			debug3("sending message to host=%s, port=%u\n", 
+			       step_ptr->host,
+			       step_ptr->port);
+
 			addr = xmalloc(sizeof(struct sockaddr_in));
 			slurm_set_addr(addr, step_ptr->port, step_ptr->host);
 			msg_arg = xmalloc(sizeof(srun_ping_msg_t));
