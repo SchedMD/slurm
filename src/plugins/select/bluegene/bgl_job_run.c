@@ -346,6 +346,9 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 	pm_partition_id_t part_id;
 	db_job_id_t job_id;
 	bgl_record_t *bgl_record = NULL;
+	time_t now;
+	struct tm *time_ptr;
+	char reason[128];
 	
 	debug2("getting the job info");
 	live_states = JOB_ALL_FLAG 
@@ -403,10 +406,18 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 			continue;
 		}
 		debug2("got job_id %d",job_id);
-		if((rc = _remove_job(job_id)) 
-		   == INTERNAL_ERROR)
-			goto not_removed;
-		
+		if((rc = _remove_job(job_id)) == INTERNAL_ERROR) {
+			now = time(NULL);
+			time_ptr = localtime(&now);
+			strftime(reason, sizeof(reason),
+				 "_term_agent: "
+				 "Couldn't remove job "
+				 "[SLURM@%b %d %H:%M]",
+				 time_ptr);
+			slurm_drain_nodes(bgl_record->nodes, 
+					  reason);
+			break;
+		}
 	}
 	
 	/* remove the partition's users */
