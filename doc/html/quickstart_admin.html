@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-213976">
-<meta name="LLNLRandRdate" content="12 August 2005">
+<meta name="LLNLRandRdate" content="31 August 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -216,6 +216,11 @@ command. This places all MPI processes in a process-tree under the control of
 the <b>slurmd</b> daemon. LAM/MPI version 7.1 or higher contains support for 
 SLURM. 
 Set the <b>MpiDefault=lam</b> configuration parameters in slurm.conf.</p>
+
+<p>Another good pen-source MPI for use with SLURM is
+<a href="http://www.open-mpi.org/">Open MPI</a>.
+Set the <b>MpiDefault=lam</b> configuration parameters in slurm.conf 
+for use of Open MPI.</p>
 
 <p>Note that the ordering of tasks within an job's allocation matches that of 
 nodes in the slurm.conf configuration file. SLURM presently lacks the ability 
@@ -548,7 +553,7 @@ in the NEWS file.
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-213976<br>
-Last modified 12 August 2005</p></td>
+Last modified 31 August 2005</p></td>
 </tr>
 </table>
 </td>
