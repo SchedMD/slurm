@@ -410,6 +410,34 @@ uint16_t slurm_get_wait_time(void)
 	return wait_time;
 }
 
+/* slurm_get_srun_prolog
+ * return the name of the srun prolog program
+ * RET char *   - name of prolog program
+ */
+char *slurm_get_srun_prolog(void)
+{
+	char *prolog;
+
+	_lock_update_config();
+	prolog = xstrdup(slurmctld_conf.srun_prolog);
+	slurm_mutex_unlock(&config_lock);
+	return prolog;
+}
+
+/* slurm_get_srun_epilog
+ * return the name of the srun epilog program
+ * RET char *   - name of epilog program
+ */
+char *slurm_get_srun_epilog(void)
+{
+	char *epilog;
+
+	_lock_update_config();
+	epilog = xstrdup(slurmctld_conf.srun_epilog);
+	slurm_mutex_unlock(&config_lock);
+	return epilog;
+}
+
 /* Change general slurm communication errors to slurmctld specific errors */
 static void _remap_slurmctld_errno(void)
 {
