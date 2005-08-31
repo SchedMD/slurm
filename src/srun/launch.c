@@ -368,11 +368,11 @@ _update_failed_node(srun_job_t *j, int id)
 		j->host_state[id] = SRUN_HOST_UNREACHABLE;
 
 		if(message_thread) {
-			write(j->par_msg->msg_pipe[1],
+			write(j->forked_msg->par_msg->msg_pipe[1],
 			      &pipe_enum,sizeof(int));
-			write(j->par_msg->msg_pipe[1],
+			write(j->forked_msg->par_msg->msg_pipe[1],
 			      &id,sizeof(int));
-			write(j->par_msg->msg_pipe[1],
+			write(j->forked_msg->par_msg->msg_pipe[1],
 			      &j->host_state[id],sizeof(int));
 		}
 	}
@@ -382,11 +382,11 @@ _update_failed_node(srun_job_t *j, int id)
 		j->task_state[j->tids[id][i]] = SRUN_TASK_FAILED;
 
 		if(message_thread) {
-			write(j->par_msg->msg_pipe[1],
+			write(j->forked_msg->par_msg->msg_pipe[1],
 			      &pipe_enum,sizeof(int));
-			write(j->par_msg->msg_pipe[1],
+			write(j->forked_msg->par_msg->msg_pipe[1],
 			      &j->tids[id][i],sizeof(int));
-			write(j->par_msg->msg_pipe[1],
+			write(j->forked_msg->par_msg->msg_pipe[1],
 			      &j->task_state[j->tids[id][i]],sizeof(int));
 		}
 	}
@@ -404,11 +404,11 @@ _update_contacted_node(srun_job_t *j, int id)
 	if (j->host_state[id] == SRUN_HOST_INIT) {
 		j->host_state[id] = SRUN_HOST_CONTACTED;
 		if(message_thread) {
-			write(j->par_msg->msg_pipe[1],
+			write(j->forked_msg->par_msg->msg_pipe[1],
 			      &pipe_enum,sizeof(int));
-			write(j->par_msg->msg_pipe[1],
+			write(j->forked_msg->par_msg->msg_pipe[1],
 			      &id,sizeof(int));
-			write(j->par_msg->msg_pipe[1],
+			write(j->forked_msg->par_msg->msg_pipe[1],
 			      &j->host_state[id],sizeof(int));
 		}
 	}

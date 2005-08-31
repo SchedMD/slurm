@@ -120,15 +120,15 @@ _build_proctable(srun_job_t *job, char *host, int nodeid, int ntasks, uint32_t *
 /* 		xstrfmtcat(totalview_jobid, "%lu", job->jobid);		 */
 		
 		if(message_thread) {
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &pipe_enum,sizeof(int));
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &opt.nprocs,sizeof(int));
 			
 			pipe_enum = PIPE_MPIR_TOTALVIEW_JOBID;
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &pipe_enum,sizeof(int));
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &job->jobid,sizeof(int));	
 		}
 	}
@@ -142,13 +142,13 @@ _build_proctable(srun_job_t *job, char *host, int nodeid, int ntasks, uint32_t *
 		
 		if(message_thread) {
 			pipe_enum = PIPE_MPIR_PROCDESC;
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &pipe_enum,sizeof(int));
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &taskid,sizeof(int));	
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &nodeid,sizeof(int));	
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &pid[i],sizeof(int));
 		}
 
@@ -164,9 +164,9 @@ _build_proctable(srun_job_t *job, char *host, int nodeid, int ntasks, uint32_t *
 		if(message_thread) {
 			i = MPIR_DEBUG_SPAWNED;
 			pipe_enum = PIPE_MPIR_DEBUG_STATE;
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &pipe_enum,sizeof(int));
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &i,sizeof(int));
 		}
 	}
@@ -204,9 +204,9 @@ void debugger_launch_failure(srun_job_t *job)
 /* 		MPIR_Breakpoint();  */
 		if(message_thread && job) {
 			i = MPIR_DEBUG_ABORTING;
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &pipe_enum,sizeof(int));
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &i,sizeof(int));
 		} else if(!job) {
 			error("Hey I don't have a job to write to on the "
@@ -277,10 +277,11 @@ _process_launch_resp(srun_job_t *job, launch_tasks_response_msg_t *msg)
 	pthread_mutex_unlock(&job->task_mutex);
 
 	if(message_thread) {
-		write(job->par_msg->msg_pipe[1],&pipe_enum,sizeof(int));
-		write(job->par_msg->msg_pipe[1],
+		write(job->forked_msg->
+		      par_msg->msg_pipe[1],&pipe_enum,sizeof(int));
+		write(job->forked_msg->par_msg->msg_pipe[1],
 		      &msg->srun_node_id,sizeof(int));
-		write(job->par_msg->msg_pipe[1],
+		write(job->forked_msg->par_msg->msg_pipe[1],
 		      &job->host_state[msg->srun_node_id],sizeof(int));
 		
 	}
@@ -304,9 +305,11 @@ update_running_tasks(srun_job_t *job, uint32_t nodeid)
 		job->task_state[tid] = SRUN_TASK_RUNNING;
 
 		if(message_thread) {
-			write(job->par_msg->msg_pipe[1],&pipe_enum,sizeof(int));
-			write(job->par_msg->msg_pipe[1],&tid,sizeof(int));
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->
+			      par_msg->msg_pipe[1],&pipe_enum,sizeof(int));
+			write(job->forked_msg->
+			      par_msg->msg_pipe[1],&tid,sizeof(int));
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &job->task_state[tid],sizeof(int));
 		}
 	}
@@ -325,10 +328,11 @@ update_failed_tasks(srun_job_t *job, uint32_t nodeid)
 		job->task_state[tid] = SRUN_TASK_FAILED;
 
 		if(message_thread) {
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &pipe_enum,sizeof(int));
-			write(job->par_msg->msg_pipe[1],&tid,sizeof(int));
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->
+			      par_msg->msg_pipe[1],&tid,sizeof(int));
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &job->task_state[tid],sizeof(int));
 		}
 		tasks_exited++;
@@ -360,11 +364,11 @@ _launch_handler(srun_job_t *job, slurm_msg_t *resp)
 		slurm_mutex_unlock(&job->task_mutex);
 		
 		if(message_thread) {
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &pipe_enum,sizeof(int));
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &msg->srun_node_id,sizeof(int));
-			write(job->par_msg->msg_pipe[1],
+			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &job->host_state[msg->srun_node_id],sizeof(int));
 		}
 		update_failed_tasks(job, msg->srun_node_id);
@@ -427,10 +431,11 @@ _reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 	slurm_mutex_unlock(&job->task_mutex);
 
 	if(message_thread) {
-		write(job->par_msg->msg_pipe[1],&pipe_enum,sizeof(int));
-		write(job->par_msg->msg_pipe[1],
+		write(job->forked_msg->
+		      par_msg->msg_pipe[1],&pipe_enum,sizeof(int));
+		write(job->forked_msg->par_msg->msg_pipe[1],
 		      &resp->srun_node_id,sizeof(int));
-		write(job->par_msg->msg_pipe[1],
+		write(job->forked_msg->par_msg->msg_pipe[1],
 		      &job->host_state[resp->srun_node_id],sizeof(int));
 	}
 
@@ -853,7 +858,7 @@ void *
 msg_thr(void *arg)
 {
 	srun_job_t *job = (srun_job_t *) arg;
-	par_to_msg_t *par_msg = job->par_msg;
+	forked_msg_pipe_t *par_msg = job->forked_msg->par_msg;
 	int done = 0;
 	debug3("msg thread pid = %lu", (unsigned long) getpid());
 
@@ -870,8 +875,8 @@ void *
 par_thr(void *arg)
 {
 	srun_job_t *job = (srun_job_t *) arg;
-	par_to_msg_t *par_msg = job->par_msg;
-	par_to_msg_t *msg_par = job->msg_par;
+	forked_msg_pipe_t *par_msg = job->forked_msg->par_msg;
+	forked_msg_pipe_t *msg_par = job->forked_msg->msg_par;
 	int c;
 	pipe_enum_t type=0;
 	int tid=-1;
@@ -967,11 +972,11 @@ msg_thr_create(srun_job_t *job)
 	int i;
 	pthread_attr_t attr;
 	int c;
-	job->par_msg = xmalloc(sizeof(par_to_msg_t));
-	job->msg_par = xmalloc(sizeof(par_to_msg_t));
-	par_to_msg_t *par_msg = job->par_msg;
-	par_to_msg_t *msg_par = job->msg_par;
-
+	
+	job->forked_msg = xmalloc(sizeof(forked_msg_t));
+	job->forked_msg->par_msg = xmalloc(sizeof(forked_msg_pipe_t));
+	job->forked_msg->msg_par = xmalloc(sizeof(forked_msg_pipe_t));
+	
 	set_allocate_job(job);
 
 	for (i = 0; i < job->njfds; i++) {
@@ -985,19 +990,21 @@ msg_thr_create(srun_job_t *job)
 			     job->jaddr[i]).sin_port));
 	}
 
-	if (pipe(par_msg->msg_pipe) == -1) 
+	if (pipe(job->forked_msg->par_msg->msg_pipe) == -1) 
 		return SLURM_ERROR; // there was an error
-	if (pipe(msg_par->msg_pipe) == -1) 
+	if (pipe(job->forked_msg->msg_par->msg_pipe) == -1) 
 		return SLURM_ERROR; // there was an error
 	debug2("created the pipes for communication");
-	if((par_msg->pid = fork()) == -1)   
+	if((job->forked_msg->par_msg->pid = fork()) == -1)   
 		return SLURM_ERROR; // there was an error
-	else if (par_msg->pid == 0) 
+	else if (job->forked_msg->par_msg->pid == 0) 
 	{                       // child:                       
 		setsid();  
 		message_thread = 1;
-		close(par_msg->msg_pipe[0]); // close read end of pipe
-		close(msg_par->msg_pipe[1]); // close write end of pipe
+		close(job->forked_msg->
+		      par_msg->msg_pipe[0]); // close read end of pipe
+		close(job->forked_msg->
+		      msg_par->msg_pipe[1]); // close write end of pipe
 		slurm_attr_init(&attr);
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 		if ((errno = pthread_create(&job->jtid, &attr, &msg_thr,
@@ -1007,12 +1014,15 @@ msg_thr_create(srun_job_t *job)
 		debug("Started msg to parent server thread (%lu)", 
 		      (unsigned long) job->jtid);
 		
-		while(read(msg_par->msg_pipe[0],&c,sizeof(int))>0)
+		while(read(job->forked_msg->
+			   msg_par->msg_pipe[0],&c,sizeof(int))>0)
 			; // make sure my parent doesn't leave me hangin
 		
-		close(msg_par->msg_pipe[0]); // close excess fildes    
-		xfree(par_msg);	
-		xfree(msg_par);	
+		close(job->forked_msg->
+		      msg_par->msg_pipe[0]); // close excess fildes    
+		xfree(job->forked_msg->par_msg);	
+		xfree(job->forked_msg->msg_par);	
+		xfree(job->forked_msg);	
 		_exit(0);
 	}
 	else 

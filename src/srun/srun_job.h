@@ -86,11 +86,6 @@ typedef enum {
 	SRUN_TASK_ABNORMAL_EXIT
 } srun_task_state_t;
 
-typedef struct par_to_msg {
-	int msg_pipe[2];
-	int pid;	
-} par_to_msg_t;
-
 typedef struct srun_job {
 	uint32_t jobid;		/* assigned job id 	                  */
 	uint32_t stepid;	/* assigned step id 	                  */
@@ -159,8 +154,7 @@ typedef struct srun_job {
 	FILE *errstream;
 	int   stdinfd;
 	bool *stdin_eof;  /* true if task i processed stdin eof */
-	par_to_msg_t *par_msg;
-	par_to_msg_t *msg_par;
+	forked_msg_t *forked_msg;
 	select_jobinfo_t select_jobinfo;
 } srun_job_t;
 

@@ -250,7 +250,6 @@ int srun(int ac, char **av)
 		env->nodelist = job->nodelist;
 		env->task_count = _task_count_string (job);
 	}
-	
 	setup_env(env);
 	xfree(env->task_count);
 	xfree(env);

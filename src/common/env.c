@@ -374,16 +374,7 @@ int setup_env(env_t *env)
 			debug_num = atoi(debug_env);
 		snprintf(res_env, sizeof(res_env), "SLURM_LL_API_DEBUG=%d",
 			debug_num);
-		if (env->jobid >= 0) {
-			snprintf(tmp_env, sizeof(tmp_env), "\nSLURM_JOBID=%d", 
-				env->jobid);
-			strcat(res_env, tmp_env);
-		}
-		if (env->stepid >= 0) {
-			snprintf(tmp_env, sizeof(tmp_env), "\nSLURM_STEPID=%d",
-				env->stepid);
-			strcat(res_env, tmp_env);
-		}
+		
 		setenvf(&env->env, "MP_POERESTART_ENV", res_env);
 
 		/* Required for AIX/POE systems indicating pre-allocation */
