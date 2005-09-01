@@ -39,7 +39,7 @@ Requires: openssl >= 0.9.6
 # http://slforums.typo3-factory.net/index.php?showtopic=11378
 %define _unpackaged_files_terminate_build      0
 
-%{!?_slurm_sysconfdir: %define _slurm_sysconfdir %{_prefix}/etc/slurm}
+%{!?_slurm_sysconfdir: %define _slurm_sysconfdir /etc/slurm}
 %define _sysconfdir %_slurm_sysconfdir
 
 %package devel
