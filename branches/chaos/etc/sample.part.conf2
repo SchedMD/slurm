@@ -1,9 +1,0 @@
-# 
-# Example sample.part.conf2
-# Author: John Doe
-# Date: 12/14/2001
-#
-Name=pbatch  Number=0 JobType=BATCH       MaxCpus=128 MaxTime=UNLIMITED
-Name=debug   Number=1 JobType=INTERACTIVE MaxCpus=16  MaxTime=60
-Name=super   Number=3 JobType=ALL   MaxCpus=UNLIMITED MaxTime=UNLIMITED AllowUsers=cdunlap,garlick,jette
-Name=class   Number=4 JobType=ALL         MaxCpus=16  MaxTime=10        AllowUsers=student1,student2,student3
