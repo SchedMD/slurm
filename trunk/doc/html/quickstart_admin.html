@@ -218,7 +218,7 @@ the <b>slurmd</b> daemon. LAM/MPI version 7.1 or higher contains support for
 SLURM. 
 Set the <b>MpiDefault=lam</b> configuration parameters in slurm.conf.</p>
 
-<p>Another good pen-source MPI for use with SLURM is
+<p>Another good open-source MPI for use with SLURM is
 <a href="http://www.open-mpi.org/">Open MPI</a>.
 Set the <b>MpiDefault=lam</b> configuration parameters in slurm.conf 
 for use of Open MPI.</p>
@@ -291,7 +291,8 @@ When installed, the SLURM PAM module will prevent users from logging
 into any node that has not be assigned to that user.
 On job termination, any processes initiated by the user outside of 
 SLURM's control may be killed using an <i>Epilog</i> script configured 
-in <i>slurm.conf</i>. 
+in <i>slurm.conf</i>.
+An example of such a script is included as <i>etc/slurm.epilog.clean</i>. 
 Without these mechanisms any user can login to any compute node, 
 even those allocated to other users.</p>
 

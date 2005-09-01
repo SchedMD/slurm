@@ -147,6 +147,7 @@ fi
 install -D -m644 etc/slurm.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.example
 install -D -m644 etc/bluegene.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/bluegene.conf.example
 install -D -m644 etc/federation.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/federation.conf.example
+install -D -m755 etc/slurm.epilog.clean ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.epilog.clean
 
 # Delete unpackaged files:
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
@@ -229,6 +230,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/mpi_lam.so
 %dir %{_libdir}/slurm/src
 %config %{_sysconfdir}/slurm.conf.example
+%config %{_sysconfdir}/slurm.epilog.clean
 #############################################################################
 
 %files devel
@@ -305,6 +307,8 @@ fi
 
 
 %changelog
+* Thu Sep 01 2005 Morris Jette <jette1@llnl.gov>
+- added etc/slurm.epilog.clean
 * Fri Jul 22 2005 Mark Grondona <mgrondona@llnl.gov>
 - explicitly set modes and owner of %prefix/include/slurm
 * Fri Jun 17 2005 Morris Jette <jette1@llnl.gov>
