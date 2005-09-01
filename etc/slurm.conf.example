@@ -432,6 +432,17 @@ JobAcctType=jobacct/none
 # Epilog=/usr/local/slurm/epilog	# default is no epilog
 
 
+# 
+# o Define programs to be executed by srun at job step initiation and 
+#   termination. These parameters may be overridden by srun's --prolog 
+#   and --epilog options.
+#
+# Example:
+#
+# SrunProlog=/usr/local/slurm/srun_prolog   # default is no srun prolog
+# SrunEpilog=/usr/local/slurm/srun_epilog   # default is no srun epilog
+
+
 #
 # o Define the temporary file system 
 #
