@@ -180,7 +180,8 @@ AC_DEFINE(WITH_LSD_NOMEM_ERROR_FUNC, 1, [Have definition of lsd_nomem_error()])
 
 dnl All slurm Makefiles:
 
-AC_CONFIG_FILES([Makefile 
+AC_CONFIG_FILES([Makefile
+		 config.xml 
 		 auxdir/Makefile
 		 src/Makefile 
 		 src/api/Makefile 

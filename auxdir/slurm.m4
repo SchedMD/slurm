@@ -146,13 +146,13 @@ VERSION="`perl -ne 'print,exit if s/^\s*VERSION:\s*(\S*).*/\1/i' $srcdir/META`"
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Define the project's version.])
 AC_SUBST(VERSION)
 
-MAJOR="`perl -ne 'print,exit if s/^\s*MAJOR:\s*(\S*).*/\1/i' $srcdir/META`"
-MINOR="`perl -ne 'print,exit if s/^\s*MINOR:\s*(\S*).*/\1/i' $srcdir/META`"
-MICRO="`perl -ne 'print,exit if s/^\s*MICRO:\s*(\S*).*/\1/i' $srcdir/META`"
+SLURM_MAJOR="`perl -ne 'print,exit if s/^\s*MAJOR:\s*(\S*).*/\1/i' $srcdir/META`"
+SLURM_MINOR="`perl -ne 'print,exit if s/^\s*MINOR:\s*(\S*).*/\1/i' $srcdir/META`"
+SLURM_MICRO="`perl -ne 'print,exit if s/^\s*MICRO:\s*(\S*).*/\1/i' $srcdir/META`"
 RELEASE="`perl -ne 'print,exit if s/^\s*RELEASE:\s*(\S*).*/\1/i' $srcdir/META`"
 
-if test "$MAJOR.$MINOR.$MICRO" != "$VERSION"; then
-    AC_MSG_ERROR([META information is inconsistent: $VERSION != $MAJOR.$MINOR.$MICRO!])
+if test "$SLURM_MAJOR.$SLURM_MINOR.$SLURM_MICRO" != "$VERSION"; then
+    AC_MSG_ERROR([META information is inconsistent: $VERSION != $SLURM_MAJOR.$SLURM_MINOR.$SLURM_MICRO!])
 fi
 
 # Check to see if we're on an unstable branch (no prereleases yet)
@@ -163,17 +163,17 @@ if echo "$RELEASE" | grep -e "pre0" -e "UNSTABLE"; then
       DATE=`echo $RELEASE | cut -d. -f3`
    fi
    SLURM_RELEASE="unstable cvs build $DATE" 
-   SLURM_VERSION="$MAJOR.$MINOR ($SLURM_RELEASE)"
+   SLURM_VERSION="$SLURM_MAJOR.$SLURM_MINOR ($SLURM_RELEASE)"
 else
    SLURM_RELEASE="`echo $RELEASE | sed 's/^.*\.//'`"
-   SLURM_VERSION="$MAJOR.$MINOR.$MICRO"
+   SLURM_VERSION="$SLURM_MAJOR.$SLURM_MINOR.$SLURM_MICRO"
    test $RELEASE = "1" || SLURM_VERSION="$SLURM_VERSION-$SLURM_RELEASE"
 fi
-AC_DEFINE_UNQUOTED(SLURM_MAJOR, "$MAJOR", 
+AC_DEFINE_UNQUOTED(SLURM_MAJOR, "$SLURM_MAJOR", 
                    [Define the project's major version.])
-AC_DEFINE_UNQUOTED(SLURM_MINOR, "$MINOR",
+AC_DEFINE_UNQUOTED(SLURM_MINOR, "$SLURM_MINOR",
                    [Define the project's minor version.])
-AC_DEFINE_UNQUOTED(SLURM_MICRO, "$MICRO",
+AC_DEFINE_UNQUOTED(SLURM_MICRO, "$SLURM_MICRO",
                    [Define the project's micro version.])
 AC_DEFINE_UNQUOTED(RELEASE, "$RELEASE", [Define the project's release.])
 AC_DEFINE_UNQUOTED(SLURM_VERSION, "$SLURM_VERSION",
