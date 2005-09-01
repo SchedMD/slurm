@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.6.0-pre4
+=============================
+ -- Added etc/slurm.epilog.clean to kill processes initiated outside of 
+    slurm when a user's last job on a node terminates.
+
 * Changes in SLURM 0.6.0-pre3
 =============================
  -- Add code so job request for shared nodes gets explicitly requested 
