@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Added etc/slurm.epilog.clean to kill processes initiated outside of 
     slurm when a user's last job on a node terminates.
+ -- Added config.xml file for use by OSCAR.
 
 * Changes in SLURM 0.6.0-pre3
 =============================

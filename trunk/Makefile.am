@@ -29,7 +29,7 @@ pkginclude_HEADERS =		\
 	slurm/slurm_errno.h
 
 MAINTAINERCLEANFILES = 					\
-	aclocal.m4 config.guess 			\
+	aclocal.m4 config.guess config.xml		\
 	config.h.in config.sub configure install-sh 	\
 	ltconfig ltmain.sh missing mkinstalldirs 	\
 	slurm/slurm.h					\
