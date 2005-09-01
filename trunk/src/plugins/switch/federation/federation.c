@@ -39,6 +39,7 @@
 # error "Must have libntbl to compile this module!"
 #endif 
 
+#include <sys/stat.h>
 #include <slurm/slurm_errno.h>
 #include "src/common/slurm_xlator.h"
 #include "src/plugins/switch/federation/federation.h"
@@ -65,6 +66,7 @@
 
 char* fed_conf = NULL;
 
+mode_t fed_umask;
 /*
  * Data structures specific to Federation 
  *
@@ -270,6 +272,12 @@ fed_init_cache(void)
 		lid_cache[i].lid = -1;
 		lid_cache[i].network_id = -1;
 	}
+
+	/*
+	 * This is a work-around for the ntbl_* functions calling umask(0)
+	 */
+	fed_umask = umask(0077);
+	umask(fed_umask);
 }
 
 /* Cache the lid and network_id of a given adapter.  Ex:  sni0 with lid 10
@@ -403,6 +411,7 @@ static int _set_up_adapter(fed_adapter_t *fed_adapter, char *adapter_name)
 					 adapter_name, 
 					 &win_count, 
 					 &status);
+	umask(fed_umask);
 	if(error_code)
 		slurm_seterrno_ret(ESTATUS);
 	tmp_winlist = (fed_window_t *)xmalloc(sizeof(fed_window_t) * 
@@ -2120,6 +2129,7 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 			return SLURM_ERROR;
 		}
 	}
+	umask(fed_umask);
 	
 	return SLURM_SUCCESS;
 }
