@@ -41,12 +41,12 @@ void parse_command_line(int argc, char *argv[])
 	int option_index;
 	
 	static struct option long_options[] = {
-		{"all", required_argument, 0,       'a'},
-		{"bglblock", required_argument, 0,  'b'},
+		{"all",       no_argument,       0, 'a'},
+		{"bglblock",  required_argument, 0, 'b'},
 		{"partition", required_argument, 0, 'p'},
-		{"version", no_argument, 0,         'V'},
-		{"help", no_argument, 0,            'h'},
-		{"usage", no_argument, 0,           'u'},
+		{"version",   no_argument,       0, 'V'},
+		{"help",      no_argument,       0, 'h'},
+		{"usage",     no_argument,       0, 'u'},
 		{NULL, 0, 0, 0}
 	};
 

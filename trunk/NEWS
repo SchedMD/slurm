@@ -1,11 +1,16 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.6.0-pre5
+=============================
+ -- Modify sfree (BGL command) so that --all option no longer requires
+    an argument.
+
 * Changes in SLURM 0.6.0-pre4
 =============================
  -- Added etc/slurm.epilog.clean to kill processes initiated outside of 
     slurm when a user's last job on a node terminates.
- -- Added config.xml file for use by OSCAR.
+ -- Added config.xml and configurator.html files for use by OSCAR.
  -- Increased maximum job step count from 64 to 130 for BGL systems only.
 
 * Changes in SLURM 0.6.0-pre3
