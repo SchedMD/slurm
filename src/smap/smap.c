@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 	//char *name;	
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
-	while (slurm_load_node((time_t) NULL, &new_node_ptr, 0)) { 
+	while (slurm_load_node((time_t) NULL, &new_node_ptr, SHOW_ALL)) { 
 		error_code = slurm_get_errno();
 		printf("slurm_load_node: %s\n", slurm_strerror(error_code));
 		if (params.display == COMMANDS) {
@@ -254,7 +254,7 @@ part_fini:
 			if (node_info_ptr) {
 				error_code = slurm_load_node(
 					node_info_ptr->last_update, 
-					&new_node_ptr, 0);
+					&new_node_ptr, SHOW_ALL);
 				if (error_code == SLURM_SUCCESS)
 					slurm_free_node_info_msg(
 						node_info_ptr);
@@ -265,7 +265,7 @@ part_fini:
 				}
 			} else {
 				error_code = slurm_load_node((time_t) NULL, 
-							     &new_node_ptr, 0);
+						&new_node_ptr, SHOW_ALL);
 			}
 			if (error_code && (quiet_flag != 1)) {
 				if(!params.commandline) {
