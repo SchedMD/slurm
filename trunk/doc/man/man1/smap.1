@@ -1,4 +1,4 @@
-.TH SMAP "1" "March 2005" "smap 0.5" "Slurm components"
+.TH SMAP "1" "March 2005" "smap 0.6" "Slurm components"
 
 .SH "NAME"
 smap \- graphically view information about SLURM jobs, partitions, and set 
@@ -9,6 +9,10 @@ configurations parameters.
 .SH "DESCRIPTION"
 \fBsmap\fR is used to graphically view job, partition and node information 
 for a system running SLURM. 
+Note that information about nodes and partitions to which a user lacks 
+access will always be displayed to avoid obvious gaps in the output.
+This is equivalent to the \fB\-\-all\fR option of the \fBsinfo\fR and 
+\fBsqueue\fR commands. 
 
 .SH "OPTIONS"
 .TP
@@ -68,6 +72,7 @@ to exit configure mode.
 .TP
 \fB\-V\fR , \fB\-\-version\fR
 Print version information and exit.
+
 .SH "INTERACTIVE OPTIONS"
 When using smap in curses mode you can scroll through the different windows
 using the arrow keys.  The \fBup\fR and \fBdown\fR arrow keys scroll 
