@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Added etc/slurm.epilog.clean to kill processes initiated outside of 
     slurm when a user's last job on a node terminates.
  -- Added config.xml file for use by OSCAR.
+ -- Increased maximum job step count from 64 to 130 for BGL systems only.
 
 * Changes in SLURM 0.6.0-pre3
 =============================
@@ -62,7 +63,6 @@ documents those changes that are of interest to users and admins.
  -- added wiring for BGL to do wiring for physical location first and then
     logical.
  -- only one thread used to query database before polling thread is there.
- -- slurmd can now handle 130 jobs at one time instead of 64.
 
 * Changes in SLURM 0.5.6
 ========================

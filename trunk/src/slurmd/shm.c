@@ -74,7 +74,12 @@
 /* We use Chris Dunlap's POSIX semaphore implementation if necessary */
 #include "src/slurmd/semaphore.h"
 
-#define MAX_JOB_STEPS	64
+#ifdef HAVE_BGL
+#  define MAX_JOB_STEPS	130
+#else
+#  define MAX_JOB_STEPS	64
+#endif
+
 #define MAX_TASKS	1024
 
 #define SHM_LOCKNAME	"/.slurm.lock"
