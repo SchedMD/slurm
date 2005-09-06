@@ -21,7 +21,9 @@ EXTRA_DIST =			\
 	INSTALL			\
 	NEWS			\
 	ChangeLog		\
-	META
+	META			\
+	config.xml		\
+	configurator.html
 
 pkginclude_HEADERS =		\
 	slurm/bnr.h		\
