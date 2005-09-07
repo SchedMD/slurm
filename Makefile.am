@@ -5,7 +5,6 @@ ACLOCAL_AMFLAGS = -I auxdir
 SUBDIRS    = auxdir src testsuite doc 
 
 EXTRA_DIST =			\
-	Make-rpm.mk		\
 	etc/bluegene.conf.example \
 	etc/federation.conf.example \
 	etc/slurm.conf.example	\
