@@ -72,6 +72,7 @@ libcommon_la_SOURCES = 			\
 	hostlist.c hostlist.h		\
 	dist_tasks.c dist_tasks.h	\
 	checkpoint.c checkpoint.h	\
+	parse_time.c parse_time.h	\
 	slurm_xlator.h
 
 EXTRA_libcommon_la_SOURCES = 	\

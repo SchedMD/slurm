@@ -6,8 +6,10 @@ documents those changes that are of interest to users and admins.
  -- Modify sfree (BGL command) so that --all option no longer requires
     an argument.
  -- Modify smap so it shows all nodes and partitions by default (even 
-    nodess that the user can't access, otherwise there are holes in 
+    nodes that the user can't access, otherwise there are holes in 
     its maps).
+ -- Added module to parse time string (src/common/parse_time.c) for 
+    future use.
 
 * Changes in SLURM 0.6.0-pre4
 =============================
