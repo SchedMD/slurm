@@ -277,11 +277,11 @@ _io_finalize(slurmd_task_info_t *t)
 {
 	struct io_info *in  = t->in->arg;
 
-	if (_xclose(t->pin[0] ) < 0)
+	if (_xclose(t->stdin ) < 0)
 		error("close(stdin) : %m");
-	if (_xclose(t->pout[1]) < 0)
+	if (_xclose(t->stdout) < 0)
 		error("close(stdout): %m");
-	if (_xclose(t->perr[1]) < 0)
+	if (_xclose(t->stderr) < 0)
 		error("close(stderr): %m");
 
 	in->disconnected  = 1;
@@ -416,10 +416,10 @@ _io_prepare_tasks(slurmd_job_t *job)
 	for (i = 0; i < job->ntasks; i++) {
 		t = job->task[i];
 
-		t->in  = _io_obj(job, t, t->pin[1],  TASK_STDIN );
+		t->in  = _io_obj(job, t, t->to_stdin,  TASK_STDIN );
 		list_append(job->objs, (void *)t->in );
 
-		t->out = _io_obj(job, t, t->pout[0], TASK_STDOUT);
+		t->out = _io_obj(job, t, t->from_stdout, TASK_STDOUT);
 		list_append(job->objs, (void *)t->out);
 
 		/* "ghost" stdout client buffers task data without sending 
@@ -428,7 +428,7 @@ _io_prepare_tasks(slurmd_job_t *job)
 		obj    = _io_obj(job, t, -1,         CLIENT_STDOUT);
 		_io_client_attach(obj, t->out, NULL, job->objs);
 
-		t->err = _io_obj(job, t, t->perr[0], TASK_STDERR);
+		t->err = _io_obj(job, t, t->from_stderr, TASK_STDERR);
 		list_append(job->objs, (void *)t->err);
 
 		/* "fake" stderr client buffers task data without sending 
@@ -676,23 +676,23 @@ _open_stdin_file(slurmd_job_t *job, slurmd_task_info_t *t, srun_info_t *srun)
 		 * polled, so we bypass the normal eio handling of stdin, and
 		 * instead connect the task's stdin directly to /dev/null.
 		 *
-		 * Without eio the pin pipe is no longer useful so we close
-		 * both ends.  We reuse pin[0] to pass the file descriptor for
+		 * Without eio the stdin pipe is no longer useful so we close
+		 * both ends.  We reuse t->stdin to pass the file descriptor for
 		 * /dev/null to io_prepare_child.
 		 */
-		close(t->pin[0]);
-		close(t->pin[1]);
-		/* io_prepare_child will do close(t->pin[1]), so set it to a
+		close(t->stdin);
+		close(t->to_stdin);
+		/* io_prepare_child will do close(t->to_stdin), so set it to a
 		 * number unlikely to conflict with new file descriptors.
 		 */
-		t->pin[1] = -1;
+		t->to_stdin = -1;
 		if ((fd = open("/dev/null", flags)) < 0) {
 			error("Unable to open /dev/null: %s",
 			      slurm_strerror(errno));
 			return -1;
 		}
 		debug("opened /dev/null for direct stdin use fd %d", fd);
-		t->pin[0] = fd;
+		t->stdin = fd;
         } else if ((fd = _open_task_file(fname, flags)) > 0) {
 		debug("opened `%s' for %s fd %d", fname, "stdin", fd);
 		obj = _io_obj(job, t, fd, CLIENT_STDIN); 
@@ -1122,20 +1122,31 @@ _io_write_header(struct io_info *client, srun_info_t *srun)
 static int
 _io_init_pipes(slurmd_task_info_t *t)
 {
-	if (  (pipe(t->pin)  < 0) 
-	   || (pipe(t->pout) < 0) 
-	   || (pipe(t->perr) < 0) ) {
+	int pin[2];
+	int pout[2];
+	int perr[2];
+
+	if (  (pipe(pin)  < 0) 
+	   || (pipe(pout) < 0) 
+	   || (pipe(perr) < 0) ) {
 		error("io_init_pipes: pipe: %m");
 		return SLURM_FAILURE;
 	}
 
-	fd_set_close_on_exec(t->pin[1]);
-	fd_set_close_on_exec(t->pout[0]);
-	fd_set_close_on_exec(t->perr[0]);
+	t->stdin = pin[0];
+	t->to_stdin = pin[1];
+	t->stdout = pout[1];
+	t->from_stdout = pout[0];
+	t->stderr = perr[1];
+	t->from_stderr = perr[0];
 
-	fd_set_nonblocking(t->pin[1]);
-	fd_set_nonblocking(t->pout[0]);
-	fd_set_nonblocking(t->perr[0]);
+	fd_set_close_on_exec(t->to_stdin);
+	fd_set_close_on_exec(t->from_stdout);
+	fd_set_close_on_exec(t->from_stderr);
+
+	fd_set_nonblocking(t->to_stdin);
+	fd_set_nonblocking(t->from_stdout);
+	fd_set_nonblocking(t->from_stderr);
 
 	return SLURM_SUCCESS;
 }
@@ -1147,25 +1158,25 @@ _io_init_pipes(slurmd_task_info_t *t)
 int 
 io_prepare_child(slurmd_task_info_t *t)
 {
-	if (dup2(t->pin[0], STDIN_FILENO  ) < 0) {
+	if (dup2(t->stdin, STDIN_FILENO  ) < 0) {
 		error("dup2(stdin): %m");
 		return SLURM_FAILURE;
 	}
 
-	if (dup2(t->pout[1], STDOUT_FILENO) < 0) {
+	if (dup2(t->stdout, STDOUT_FILENO) < 0) {
 		error("dup2(stdout): %m");
 		return SLURM_FAILURE;
 	}
 
-	if (dup2(t->perr[1], STDERR_FILENO) < 0) {
+	if (dup2(t->stderr, STDERR_FILENO) < 0) {
 		error("dup2(stderr): %m");
 		return SLURM_FAILURE;
 	}
 
 	/* ignore errors on close */
-	close(t->pin[1] );
-	close(t->pout[0]);
-	close(t->perr[0]);
+	close(t->to_stdin );
+	close(t->from_stdout);
+	close(t->from_stderr);
 	return SLURM_SUCCESS;
 }
 

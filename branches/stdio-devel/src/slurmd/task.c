@@ -116,9 +116,9 @@ _cleanup_file_descriptors(slurmd_job_t *j)
 		/*
 		 * Ignore errors on close()
 		 */
-		close(t->pin[1]); 
-		close(t->pout[0]);
-		close(t->perr[0]);
+		close(t->to_stdin); 
+		close(t->from_stdout);
+		close(t->from_stdout);
 	}
 }
 

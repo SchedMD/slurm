@@ -78,24 +78,27 @@ typedef enum job_state {
 } slurmd_job_state_t;
 
 typedef struct task_info {
-	pthread_mutex_t mutex;	   /* mutex to protect task state          */
-	slurmd_task_state_t    state; /* task state                        */
+	pthread_mutex_t mutex;	    /* mutex to protect task state          */
+	slurmd_task_state_t state;  /* task state                           */
  
-	int             id;	   /* local task id                        */
-	uint32_t        gtid;	   /* global task id                       */
-	pid_t           pid;	   /* task pid                             */
-	int             pin[2];    /* stdin pipe                           */
-	int             pout[2];   /* stdout pipe                          */
-	int             perr[2];   /* stderr pipe                          */
-	io_obj_t       *in, 
-	               *out,       /* I/O objects used in IO event loop    */
-		       *err;       
+	int             id;	    /* local task id                        */
+	uint32_t        gtid;	    /* global task id                       */
+	pid_t           pid;	    /* task pid                             */
 
-        bool            esent;     /* true if exit status has been sent    */
-	bool            exited;    /* true if task has exited              */
-	int             estatus;   /* this task's exit status              */
+	int             stdin;      /* standard input file descriptor       */
+	int             stdout;     /* standard output file descriptor      */
+	int             stderr;     /* standard error file descriptor       */
+	int             to_stdin;   /* write file descriptor for task stdin */
+	int             from_stdout;/* read file descriptor from task stdout*/
+	int             from_stderr;/* read file descriptor from task stderr*/
+	eio_obj_t      *in;         /* standard input event IO object       */
+	eio_obj_t      *out;        /* standard output event IO object      */
+	eio_obj_t      *err;        /* standard error event IO object       */
 
-	List            srun_list; /* List of srun objs for this task      */
+	List            srun_list;  /* List of srun objs for this task      */
+	bool            esent;      /* true if exit status has been sent    */
+	bool            exited;     /* true if task has exited              */
+	int             estatus;    /* this task's exit status              */
 } slurmd_task_info_t;
 
 typedef struct slurmd_job {
@@ -123,8 +126,8 @@ typedef struct slurmd_job {
 	struct passwd *pwd;   /* saved passwd struct for user job           */
 	slurmd_task_info_t  **task;  /* list of task information pointers   */
 	eio_t          eio;
-	List           objs;  /* list of IO objects                         */
-	List 	       sruns; /* List of sruns                              */
+	List           objs;  /* List of io_obj_t pointers (see eio.h)      */
+	List 	       sruns; /* List of srun_info_t pointers               */
 
 	pthread_t      ioid;  /* pthread id of IO thread                    */
 

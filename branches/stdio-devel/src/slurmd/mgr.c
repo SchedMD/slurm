@@ -1204,7 +1204,7 @@ _slurmd_job_log_init(slurmd_job_t *job)
 
 	/* Connect slurmd stderr to job's stderr */
 	if ((!job->spawn_task) && 
-	    (dup2(job->task[0]->perr[1], STDERR_FILENO) < 0)) {
+	    (dup2(job->task[0]->stderr, STDERR_FILENO) < 0)) {
 		error("job_log_init: dup2(stderr): %m");
 		return;
 	}

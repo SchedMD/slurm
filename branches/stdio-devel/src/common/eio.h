@@ -31,6 +31,7 @@
 #include "src/common/macros.h"
 
 typedef struct io_obj io_obj_t;
+typedef struct io_obj eio_obj_t;
 
 typedef struct eio_handle_components * eio_t;
 

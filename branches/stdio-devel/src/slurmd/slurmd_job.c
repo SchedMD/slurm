@@ -515,21 +515,21 @@ task_info_create(int taskid, int gtaskid)
 
 	slurm_mutex_init(&t->mutex);
 	slurm_mutex_lock(&t->mutex);
-	t->state     = SLURMD_TASK_INIT;
-	t->id        = taskid;
-	t->gtid	     = gtaskid;
-	t->pid       = (pid_t) -1;
-	t->pin[0]    = -1;
-	t->pin[1]    = -1;
-	t->pout[0]   = -1;
-	t->pout[1]   = -1;
-	t->perr[0]   = -1;
-	t->perr[1]   = -1;
-	t->estatus   = -1;
-	t->in        = NULL;
-	t->out       = NULL;
-	t->err       = NULL;
-	t->srun_list = list_create(NULL); 
+	t->state       = SLURMD_TASK_INIT;
+	t->id          = taskid;
+	t->gtid	       = gtaskid;
+	t->pid         = (pid_t) -1;
+	t->stdin       = -1;
+	t->to_stdin    = -1;
+	t->stdout      = -1;
+	t->from_stdout = -1;
+	t->stderr      = -1;
+	t->from_stderr = -1;
+	t->estatus     = -1;
+	t->in          = NULL;
+	t->out         = NULL;
+	t->err         = NULL;
+	t->srun_list   = list_create(NULL); 
 	slurm_mutex_unlock(&t->mutex);
 	return t;
 }
