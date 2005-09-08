@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
     its maps).
  -- Added module to parse time string (src/common/parse_time.c) for 
     future use.
+ -- Fix BlueGene hostlist processing for non-rectangular prisms and
+    add string length checking.
 
 * Changes in SLURM 0.6.0-pre4
 =============================

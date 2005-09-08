@@ -166,7 +166,7 @@ bool axis[10][10][10];
 int axis_min_x, axis_min_y, axis_min_z;
 int axis_max_x, axis_max_y, axis_max_z;
 
-static int _get_boxes(char *buf);
+static int _get_boxes(char *buf, int max_len);
 static void _clear_grid(void);
 static void _set_grid(unsigned long start, unsigned long end);
 static bool _test_box(void);
@@ -2198,45 +2198,50 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
  * Assumes hostlist is locked.
  */
 static int
-_get_boxes(char *buf)
+_get_boxes(char *buf, int max_len)
 {
-	int len = 0;
-	int temp;
-	int x1;
-	int x2 = -1;
-	int found = 0;
-	
-	x1 = axis_min_x;
-	while(x1<=axis_max_x) {
-		found = 0;
-		for (temp = x1; temp<=axis_max_x; temp++) {
-			if(axis[temp][axis_min_y][axis_min_z] && !found) {
-				x1 = temp;
-				found = 1;
-			} else if (!axis[temp][axis_min_y][axis_min_z] 
-				   && found) {
-				x2 = temp-1;
-				break;
+	int i, j, k, len = 0;
+	int is_box, start_box=-1, end_box=-1;
+
+	/* scan each X-plane for a box then match across X values */
+	for (i=axis_min_x; i<=axis_max_x; i++) {
+		is_box = 1;
+		for (j=axis_min_y; j<=axis_max_y; j++) {
+			for (k=axis_min_z; k<=axis_max_z; k++) {
+				if (!axis[i][j][k]) {
+					is_box = 0;
+					break;
+				}
 			}
 		}
-		if(found) {
-			found = 0;
-				
-			if(x2 == -1) 
-				x2 = axis_max_x;
-			
+		if (is_box) {
+			if (start_box == -1)
+				start_box = i;
+			end_box = i;
+		}
+		if (((len+8) < max_len) && (start_box != -1)
+		&& ((is_box == 0) || (i == axis_max_x))) {
 			sprintf(buf+len,"%d%d%dx%d%d%d,",
-				x1,axis_min_y,axis_min_z,
-				x2,axis_max_y,axis_max_z);
-			
-			len+=8;
-		} else if(x2 == -1) 
-			break;	
-		x1 = x2+1;
-		x2 = -1;
-		
+				start_box, axis_min_y, axis_min_z,
+				end_box, axis_min_y, axis_min_z);
+			len += 8;
+			start_box = -1;
+			end_box = -1;
+		}
+		if (is_box == 0) {
+			for (j=axis_min_y; j<=axis_max_y; j++) {
+				for (k=axis_min_z; k<=axis_max_z; k++) {
+					if (!axis[i][j][k])
+						continue;
+					if ((len+4) >= max_len)
+						break;
+					sprintf(buf+len,"%d%d%d,",
+						i, j, k);
+					len += 4;
+				}
+			}
+		}
 	}
-	
 	
 	buf[len - 1] = ']';
 	
@@ -2340,7 +2345,7 @@ size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	if (!_test_box()) {
 		sprintf(buf, "%s[", hl->hr[0]->prefix);
 		len = strlen(hl->hr[0]->prefix) + 1;
-		len += _get_boxes(buf + len);
+		len += _get_boxes(buf + len, (n-len));
 	} else {
 		len += snprintf(buf, n, "%s[%d%d%dx%d%d%d]", 
 				hl->hr[0]->prefix,
