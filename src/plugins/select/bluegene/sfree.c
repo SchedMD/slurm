@@ -450,8 +450,7 @@ static void _term_jobs_on_part(char *bgl_part_id)
 			continue;
 		}
 		info("got job_id %d",job_id);
-		if((rc = _remove_job(job_id))
-		   == INTERNAL_ERROR)
+		if((rc = _remove_job(job_id)) == INTERNAL_ERROR)
 			goto not_removed;
 		
 	}
@@ -548,11 +547,10 @@ static int _remove_job(db_job_id_t job_id)
 			
 			//free_bgl_partition();
 			return STATUS_OK;
-		} else {
-			(void) jm_signal_job(job_id, SIGKILL);
-			rc = jm_cancel_job(job_id);
 		}
-		
+
+		(void) jm_signal_job(job_id, SIGKILL);
+		rc = jm_cancel_job(job_id);
 		if (rc != STATUS_OK) {
 			if (rc == JOB_NOT_FOUND) {
 				debug("job %d removed from MMCS", job_id);
