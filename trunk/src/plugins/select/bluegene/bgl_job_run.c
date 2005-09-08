@@ -147,12 +147,12 @@ static int _remove_job(db_job_id_t job_id)
 			
 			//free_bgl_partition();
 			return STATUS_OK;
-		} else {
-			(void) jm_signal_job(job_id, SIGKILL);
-			rc = jm_cancel_job(job_id);
 		}
+
+		(void) jm_signal_job(job_id, SIGKILL);
+		rc = jm_cancel_job(job_id);
 		/* it doesn't appear that this does anything. */
-		//rc = rm_remove_job(job_id);
+		// rc = rm_remove_job(job_id);
 
 		if (rc != STATUS_OK) {
 			if (rc == JOB_NOT_FOUND) {
@@ -169,7 +169,7 @@ static int _remove_job(db_job_id_t job_id)
 	}
 	/* try once more... */
 	/* it doesn't appear that this does anything. */
-	//	(void) rm_remove_job(job_id);
+	// (void) rm_remove_job(job_id);
 	error("Failed to remove job %d from MMCS", job_id);
 	return INTERNAL_ERROR;
 }
