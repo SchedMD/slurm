@@ -1,6 +1,6 @@
 /****************************************************************************\
- *  job.c - job data structure creation functions
- *  $Id: job.c,v 1.77 2005/06/15 16:39:19 da Exp $
+ *  srun_job.c - job data structure creation functions
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
