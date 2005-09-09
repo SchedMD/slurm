@@ -349,7 +349,7 @@ extern time_t parse_time(char *time_str)
 	res_tm.tm_mday  = mday;
 	res_tm.tm_mon   = month;
 	res_tm.tm_year  = year;
-	res_tm.tm_isdst = 1;
+	res_tm.tm_isdst = -1;
 	return mktime(&res_tm);
 
  prob:	fprintf(stderr, "Invalid time specification (pos=%d): %s", pos, time_str);
