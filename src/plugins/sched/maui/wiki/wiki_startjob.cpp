@@ -68,6 +68,7 @@ message_t *
 wiki_startjob_t::action( void )
 {
 	u_int32_t id = (u_int32_t) atol( m_jobid );
+	int rc;
 
 	// *
 	// If Maui has specified a node list to run on, change the
@@ -95,6 +96,15 @@ wiki_startjob_t::action( void )
 	}
 	
 	verbose( "Wiki starting job %s", m_jobid );	
-	return new wiki_status_t( (sched_start_job( id, (u_int32_t) 1 )
-				   == SLURM_SUCCESS ) ? : 0 -1 );
+
+	rc = sched_start_job( id, (u_int32_t) 1 );
+
+	if (rc == SLURM_SUCCESS)
+	{
+		return new wiki_status_t( 0, "SUCCESS: job %s started successfully");
+	}
+	else
+	{
+		return new wiki_status_t( -1, "ERROR: job %s failed to start");
+	}
 }
