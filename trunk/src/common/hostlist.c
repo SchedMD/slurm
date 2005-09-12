@@ -2342,7 +2342,14 @@ size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	_clear_grid();
 	for (i=0;i<hl->nranges;i++)
 		_set_grid(hl->hr[i]->lo, hl->hr[i]->hi);
-	if (!_test_box()) {
+    if ((axis_min_x == axis_max_x) && (axis_min_y == axis_max_y)
+    &&  (axis_min_z == axis_max_z)) {
+        len += snprintf(buf, n, "%s%d%d%d",
+                hl->hr[0]->prefix,
+                axis_min_x, axis_min_y, axis_min_z);
+        if ((len < 0) || (len > n))
+            len = n;    /* truncated */
+    } else if (!_test_box()) {
 		sprintf(buf, "%s[", hl->hr[0]->prefix);
 		len = strlen(hl->hr[0]->prefix) + 1;
 		len += _get_boxes(buf + len, (n-len));
