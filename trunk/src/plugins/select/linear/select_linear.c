@@ -327,7 +327,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			 * then down from the required nodes */
 			for (i = best_fit_req;
 			     i <= consec_end[best_fit_location]; i++) {
-				if ((rem_nodes <= 0) && (rem_cpus <= 0))
+				if ((rem_nodes <= 0)
+				&&  ((rem_cpus <= 0) || max_nodes))
 					break;
 				if (bit_test(bitmap, i))
 					continue;
@@ -342,7 +343,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			}
 			for (i = (best_fit_req - 1);
 			     i >= consec_start[best_fit_location]; i--) {
-				if ((rem_nodes <= 0) && (rem_cpus <= 0))
+				if ((rem_nodes <= 0)
+				&&  ((rem_cpus <= 0) || max_nodes))
 					break;
 				/* if (bit_test(bitmap, i)) 
 					continue;  cleared above earlier */
@@ -358,7 +360,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		} else {
 			for (i = consec_start[best_fit_location];
 			     i <= consec_end[best_fit_location]; i++) {
-				if ((rem_nodes <= 0) && (rem_cpus <= 0))
+				if ((rem_nodes <= 0)
+				&&  ((rem_cpus <= 0) || max_nodes))
 					break;
 				if (bit_test(bitmap, i))
 					continue;
