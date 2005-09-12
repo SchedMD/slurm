@@ -116,6 +116,7 @@ static void * sched_get_job_end_time(	sched_obj_list_t, int32_t, char * );
 static void * sched_get_job_user_id(	sched_obj_list_t, int32_t, char * );
 static void * sched_get_job_group_name(	sched_obj_list_t, int32_t, char * );
 static void * sched_get_job_req_nodes(	sched_obj_list_t, int32_t, char * );
+static void * sched_get_job_alloc_nodes( sched_obj_list_t, int32_t, char * );
 static void * sched_get_job_min_nodes(	sched_obj_list_t, int32_t, char * );
 static void * sched_get_job_partition(	sched_obj_list_t, int32_t, char * );
 static void * sched_get_job_min_disk( sched_obj_list_t, int32_t, char * );
@@ -225,6 +226,12 @@ sched_get_accessor( char *field )
 		{ JOB_FIELD_END_TIME,		sched_get_job_end_time },
 		{ JOB_FIELD_USER_ID,		sched_get_job_user_id },
 		{ JOB_FIELD_GROUP_ID,		sched_get_job_group_name },
+		/*  { JOB_FIELD_ALLOC_NODES,	sched_get_job_alloc_nodes },
+		 * Wiki specifies the nodes to be allocated in the requested node
+		 * field, so that is where we are getting the allocated node 
+		 * information from for now.
+		 */
+		{ JOB_FIELD_ALLOC_NODES,	sched_get_job_req_nodes },
 		{ JOB_FIELD_REQ_NODES,		sched_get_job_req_nodes },
 		{ JOB_FIELD_MIN_NODES,		sched_get_job_min_nodes },
 		{ JOB_FIELD_PARTITION,		sched_get_job_partition },
@@ -743,6 +750,36 @@ sched_get_job_req_nodes( sched_obj_list_t job_data,
 		return cache;
 	}
 	return "";
+}
+
+
+/* ************************************************************************ */
+/*  TAG(                       sched_get_job_alloc_nodes                 )  */
+/* ************************************************************************ */
+static void *
+sched_get_job_alloc_nodes( sched_obj_list_t job_data,
+                         int32_t idx,
+                         char *type )
+{
+        void *cache;
+        char *nodes;
+
+        if ( type ) *type = 'S';
+        nodes = ( (struct job_record *)job_data->data )[ idx ].nodes;
+
+        if ( nodes ) {
+                if ( ( cache = sched_obj_cache_entry_find( job_data,
+                                                           idx,
+                                                           "alloc_nodes" ) ) != NULL ) {
+                        return cache;
+                }
+                cache = expand_hostlist( nodes );
+                if ( ! cache )
+                        return nodes;
+                sched_obj_cache_entry_add( job_data, idx, "alloc_nodes", cache );
+                return cache;
+        }
+        return "";
 }
 
 /* ************************************************************************ */

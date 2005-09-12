@@ -52,6 +52,8 @@ wiki_status_t::wiki_status_t( int status, char * const msg ) :
 		m_str += " RESPONSE=";
 		m_str += msg;
 	}
+
+	debug3( "Wiki plugin status = \"%s\"", m_str.s() );
 }
 
 // **************************************************************

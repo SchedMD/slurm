@@ -289,6 +289,7 @@ extern sched_obj_list_t sched_get_job_list( void );
 #define JOB_FIELD_MIN_DISK 		"job.min_disk"
 #define JOB_FIELD_MIN_MEMORY	       	"job.min_mem"
 #define JOB_FIELD_REQ_NODES		"job.req_nodes"
+#define JOB_FIELD_ALLOC_NODES		"job.alloc_nodes"
 #define JOB_FIELD_MIN_NODES		"job.min_nodes"
 
 #define JOB_STATE_LABEL_PENDING		"PENDING"
