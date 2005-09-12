@@ -16,6 +16,7 @@ documents those changes that are of interest to users and admins.
     slowness when booting many bglblocks at the same time.
  -- Added logic to return scheduled nodes to Maui scheduler (David
     Jackson, Cluster Resources)
+ -- Fix bug in handling job request with maximum node count.
 
 * Changes in SLURM 0.6.0-pre4
 =============================
