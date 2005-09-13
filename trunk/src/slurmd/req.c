@@ -439,7 +439,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	info("launch task %u.%u request from %u.%u@%s", req->job_id, 
 	     req->job_step_id, req->uid, req->gid, host);
 
-#ifndef HAVE_BGL
+#ifndef HAVE_FRONT_END
 	if (!slurm_cred_jobid_cached(conf->vctx, req->job_id)) 
 		run_prolog = true;
 #endif
@@ -517,7 +517,7 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 	info("spawn task %u.%u request from %u@%s", req->job_id, 
 	     req->job_step_id, req->uid, host);
 
-#ifndef HAVE_BGL
+#ifndef HAVE_FRONT_END
 	if (!slurm_cred_jobid_cached(conf->vctx, req->job_id)) 
 		run_prolog = true;
 #endif
