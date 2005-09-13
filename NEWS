@@ -1,6 +1,15 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.6.0-pre6
+=============================
+ -- Added logic to return scheduled nodes to Maui scheduler (David
+    Jackson, Cluster Resources)
+ -- Fix bug in handling job request with maximum node count.
+ -- Fix node selection scheduling bug with heterogeneous nodes and
+    srun --cpus-per-task option
+ -- Generate error file to note prolog failures.
+
 * Changes in SLURM 0.6.0-pre5
 =============================
  -- Modify sfree (BGL command) so that --all option no longer requires
@@ -14,11 +23,6 @@ documents those changes that are of interest to users and admins.
     add string length checking.
  -- Modify orphan batch job time calculation for BGL to account for 
     slowness when booting many bglblocks at the same time.
- -- Added logic to return scheduled nodes to Maui scheduler (David
-    Jackson, Cluster Resources)
- -- Fix bug in handling job request with maximum node count.
- -- Fix node selection scheduling bug with heterogeneous nodes.
- -- Generate error file to note prolog failures.
 
 * Changes in SLURM 0.6.0-pre4
 =============================
