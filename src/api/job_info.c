@@ -161,8 +161,9 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 	/****** Line 7 ******/
 	fprintf ( out, "ReqProcs=%u MinNodes=%u ", 
 		job_ptr->num_procs, job_ptr->num_nodes);
-	fprintf ( out, "Shared=%u Contiguous=%u",  
+	fprintf ( out, "Shared=%u Contiguous=%u ",  
 		job_ptr->shared, job_ptr->contiguous);
+	fprintf ( out, "CPUs/task=%u", job_ptr->cpus_per_task);
 	if (one_liner)
 		fprintf ( out, " ");
 	else

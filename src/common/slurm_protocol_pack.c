@@ -1759,6 +1759,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpack32(&job->num_nodes, buffer);
 	safe_unpack16(&job->shared, buffer);
 	safe_unpack16(&job->contiguous, buffer);
+	safe_unpack16(&job->cpus_per_task, buffer);
 
 	safe_unpack32(&job->min_procs, buffer);
 	safe_unpack32(&job->min_memory, buffer);
@@ -2030,6 +2031,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 
 	pack16(job_desc_ptr->immediate, buffer);
 	pack16(job_desc_ptr->shared, buffer);
+	pack16(job_desc_ptr->cpus_per_task, buffer);
 	pack16(job_desc_ptr->task_dist, buffer);
 	pack32(job_desc_ptr->time_limit, buffer);
 
@@ -2108,6 +2110,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 
 	safe_unpack16(&job_desc_ptr->immediate, buffer);
 	safe_unpack16(&job_desc_ptr->shared, buffer);
+	safe_unpack16(&job_desc_ptr->cpus_per_task, buffer);
 	safe_unpack16(&job_desc_ptr->task_dist, buffer);
 	safe_unpack32(&job_desc_ptr->time_limit, buffer);
 

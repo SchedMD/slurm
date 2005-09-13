@@ -690,6 +690,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack16((uint16_t) detail_ptr->req_tasks, buffer);
 	pack16((uint16_t) detail_ptr->shared, buffer);
 	pack16((uint16_t) detail_ptr->contiguous, buffer);
+	pack16((uint16_t) detail_ptr->cpus_per_task, buffer);
 
 	pack32((uint32_t) detail_ptr->min_procs, buffer);
 	pack32((uint32_t) detail_ptr->min_memory, buffer);
@@ -716,7 +717,8 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	char **argv = (char **) NULL;
 	uint32_t min_nodes, max_nodes, min_procs;
-	uint16_t argc = 0, req_tasks, shared, contiguous, name_len;
+	uint16_t argc = 0, req_tasks, shared, contiguous;
+	uint16_t cpus_per_task, name_len;
 	uint32_t min_memory, min_tmp_disk, total_procs;
 	time_t begin_time, submit_time;
 	int i;
@@ -729,6 +731,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	safe_unpack16(&req_tasks, buffer);
 	safe_unpack16(&shared, buffer);
 	safe_unpack16(&contiguous, buffer);
+	safe_unpack16(&cpus_per_task, buffer);
 
 	safe_unpack32(&min_procs, buffer);
 	safe_unpack32(&min_memory, buffer);
@@ -774,6 +777,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->req_tasks = req_tasks;
 	job_ptr->details->shared = shared;
 	job_ptr->details->contiguous = contiguous;
+	job_ptr->details->cpus_per_task = cpus_per_task;
 	job_ptr->details->min_procs = min_procs;
 	job_ptr->details->min_memory = min_memory;
 	job_ptr->details->min_tmp_disk = min_tmp_disk;
@@ -1110,6 +1114,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	long job_id, min_procs, min_memory, min_tmp_disk, num_procs;
 	long min_nodes, max_nodes, time_limit, priority, contiguous;
 	long kill_on_node_fail, shared, task_dist, immediate, dependency;
+	long cpus_per_task;
 	char buf[100];
 
 	if (job_specs == NULL)
@@ -1206,7 +1211,10 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		dependency, job_specs->account);
 
 	_make_time_str(&job_specs->begin_time, buf);
-	debug3("   network=%s begin=%s", job_specs->network, buf);
+	cpus_per_task = (job_specs->cpus_per_task != (uint16_t) NO_VAL) ?
+			(long) job_specs->cpus_per_task : -1L;
+	debug3("   network=%s begin=%s cpus_per_task=%ld", 
+		job_specs->network, buf, cpus_per_task);
 
 	select_g_sprint_jobinfo(job_specs->select_jobinfo, 
 		buf, sizeof(buf), SELECT_PRINT_MIXED);
@@ -2227,8 +2235,12 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->contiguous = job_desc->contiguous;
         if (job_desc->exclusive != (uint16_t) NO_VAL)
                 detail_ptr->exclusive = job_desc->exclusive;
+	if (job_desc->cpus_per_task != (uint16_t) NO_VAL)
+		detail_ptr->cpus_per_task = job_desc->cpus_per_task;
 	if (job_desc->min_procs != NO_VAL)
 		detail_ptr->min_procs = job_desc->min_procs;
+	detail_ptr->min_procs = MAX(detail_ptr->min_procs,
+			detail_ptr->cpus_per_task);
 	if (job_desc->min_memory != NO_VAL)
 		detail_ptr->min_memory = job_desc->min_memory;
 	if (job_desc->min_tmp_disk != NO_VAL)
@@ -2677,6 +2689,7 @@ static void _pack_job_details(struct job_details *detail_ptr, Buf buffer)
 		pack32((uint32_t) detail_ptr->min_nodes, buffer);
 		pack16((uint16_t) detail_ptr->shared, buffer);
 		pack16((uint16_t) detail_ptr->contiguous, buffer);
+		pack16((uint16_t) detail_ptr->cpus_per_task, buffer);
 
 		pack32((uint32_t) detail_ptr->min_procs, buffer);
 		pack32((uint32_t) detail_ptr->min_memory, buffer);
@@ -2691,6 +2704,7 @@ static void _pack_job_details(struct job_details *detail_ptr, Buf buffer)
 
 	else {
 		pack32((uint32_t) 0, buffer);
+		pack16((uint16_t) 0, buffer);
 		pack16((uint16_t) 0, buffer);
 		pack16((uint16_t) 0, buffer);
 
