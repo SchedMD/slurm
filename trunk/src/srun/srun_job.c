@@ -534,13 +534,19 @@ _job_create_internal(allocation_info_t *info)
 		}
 	}
 
-	job->ntask = distribute_tasks(job->nodelist, info->num_cpu_groups,
+#ifdef HAVE_FRONT_END
+		job->ntask = (int *) xmalloc(sizeof(int *));
+		job->ntask[0] = opt.nprocs;
+#else
+		job->ntask = distribute_tasks(job->nodelist, info->num_cpu_groups,
 				info->cpus_per_node, info->cpu_count_reps,
 				job->nodelist, opt.nprocs);
+#endif
 
-	for (i = 0; i < job->nhosts; i++)
-	  debug3("distribute_tasks placed %d tasks on host %d",
-		 job->ntask[i], i);
+	for (i = 0; i < job->nhosts; i++) {
+		debug3("distribute_tasks placed %d tasks on host %d",
+			job->ntask[i], i);
+	}
 
 	/* Build task id list for each host */
 	job->tids   = xmalloc(job->nhosts * sizeof(uint32_t *));

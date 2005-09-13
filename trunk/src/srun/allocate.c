@@ -412,6 +412,9 @@ job_desc_msg_create_from_opts (char *script)
 	else
 		j->num_procs    = opt.nprocs * opt.cpus_per_task;
 
+	if (opt.cpus_set)
+		j->cpus_per_task = opt.cpus_per_task;
+
 	if (opt.no_kill)
 		j->kill_on_node_fail   = 0;
 	if (opt.time_limit > -1)

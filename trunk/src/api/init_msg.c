@@ -47,6 +47,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->alloc_node  = NULL;
 	job_desc_msg->alloc_sid   = NO_VAL;
 	job_desc_msg->contiguous  = (uint16_t) NO_VAL;
+	job_desc_msg->cpus_per_task = (uint16_t) NO_VAL;
 	job_desc_msg->dependency  = NO_VAL;
 	job_desc_msg->environment = ((char **) NULL);
 	job_desc_msg->env_size    = 0;

@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  dist_tasks.c - function to distribute tasks over nodes.
+ *  $Id$
  *****************************************************************************
  *
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
@@ -91,8 +92,10 @@ int *distribute_tasks(const char *mlist, uint16_t num_cpu_groups,
 	while ((this_node_name = hostlist_shift(master_hl))) {
 
 		if (hostlist_find(task_hl, this_node_name) >= 0) {
-			if (i >= nnodes)
-				fatal("Internal error: duplicate nodes? (%s)(%s):%m", mlist, tlist);
+			if (i >= nnodes) {
+				fatal("Internal error: duplicate nodes? "
+					"(%s)(%s):%m", mlist, tlist);
+			}
 			ntask[i++] = cpus_per_node[index];
 			ncpus += cpus_per_node[index];
 		}

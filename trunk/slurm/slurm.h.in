@@ -282,6 +282,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t num_tasks;	/* number of tasks required by job, 
 				 * default=0, used only by 
 				 * slurm_allocate_resources_and_run() */
+	uint16_t cpus_per_task;	/* number of processors required for each task */
 	char *script;		/* the actual job script, default NONE */
 	char **argv;		/* arguments to the script */
 	uint16_t argc;		/* number of arguments to the script */
@@ -358,6 +359,7 @@ typedef struct job_info {
 	uint32_t num_nodes;	/* number of nodes required by job */
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
+	uint16_t cpus_per_task;	/* number of processors required for each task */
 	uint32_t min_procs;	/* minimum processors required per node */
 	uint32_t min_memory;	/* minimum real memory required per node */
 	uint32_t min_tmp_disk;	/* minimum temporary disk required per node */

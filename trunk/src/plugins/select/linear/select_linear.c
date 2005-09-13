@@ -197,6 +197,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	int rem_cpus, rem_nodes;	/* remaining resources required */
 	int best_fit_nodes, best_fit_cpus, best_fit_req;
 	int best_fit_location = 0, best_fit_sufficient;
+	int cpus_per_task, avail_cpus;
 
 	xassert(bitmap);
 
@@ -208,6 +209,11 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	consec_start = xmalloc(sizeof(int) * consec_size);
 	consec_end   = xmalloc(sizeof(int) * consec_size);
 	consec_req   = xmalloc(sizeof(int) * consec_size);
+
+	if (job_ptr->details && job_ptr->details->cpus_per_task)
+		cpus_per_task = job_ptr->details->cpus_per_task;
+	else
+		cpus_per_task = 1;
 
 	/* Build table with information about sets of consecutive nodes */
 	consec_cpus[consec_index] = consec_nodes[consec_index] = 0;
@@ -227,16 +233,18 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				    config_ptr->cpus;
 			else
 				i = select_node_ptr[index].cpus;
+			avail_cpus = (i / cpus_per_task) * 
+					cpus_per_task;	/* round down */
 			if (job_ptr->details->req_node_bitmap && 
 			    bit_test(job_ptr->details->req_node_bitmap, index)) {
 				if (consec_req[consec_index] == -1)
 					/* first required node in set */
 					consec_req[consec_index] = index;
-				rem_cpus -= i;
+				rem_cpus -= avail_cpus;
 				rem_nodes--;
 			} else {	 /* node not required (yet) */
 				bit_clear(bitmap, index); 
-				consec_cpus[consec_index] += i;
+				consec_cpus[consec_index] += avail_cpus;
 				consec_nodes[consec_index]++;
 			}
 		} else if (consec_nodes[consec_index] == 0) {
@@ -335,11 +343,14 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				bit_set(bitmap, i);
 				rem_nodes--;
 				if (select_fast_schedule)
-					rem_cpus -= select_node_ptr[i].
+					avail_cpus = select_node_ptr[i].
 							config_ptr->cpus;
 				else
-					rem_cpus -= select_node_ptr[i].
+					avail_cpus = select_node_ptr[i].
 							cpus;
+				avail_cpus = (avail_cpus / cpus_per_task) *
+						cpus_per_task;	/* round down */
+				rem_cpus -= avail_cpus;
 			}
 			for (i = (best_fit_req - 1);
 			     i >= consec_start[best_fit_location]; i--) {
@@ -351,11 +362,14 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				bit_set(bitmap, i);
 				rem_nodes--;
 				if (select_fast_schedule)
-					rem_cpus -= select_node_ptr[i].
+					avail_cpus = select_node_ptr[i].
 							config_ptr->cpus;
 				else
-					rem_cpus -= select_node_ptr[i].
+					avail_cpus = select_node_ptr[i].
 							cpus;
+				avail_cpus = (avail_cpus / cpus_per_task) *
+						cpus_per_task;  /* round down */
+				rem_cpus -= avail_cpus;
 			}
 		} else {
 			for (i = consec_start[best_fit_location];
@@ -368,11 +382,14 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				bit_set(bitmap, i);
 				rem_nodes--;
 				if (select_fast_schedule)
-					rem_cpus -= select_node_ptr[i].
+					avail_cpus = select_node_ptr[i].
 							config_ptr->cpus;
 				else
-					rem_cpus -= select_node_ptr[i].
+					avail_cpus = select_node_ptr[i].
 							cpus;
+				avail_cpus = (avail_cpus / cpus_per_task) *
+						cpus_per_task;  /* round down */
+				rem_cpus -= avail_cpus;
 			}
 		}
 		if (job_ptr->details->contiguous || 

@@ -252,6 +252,7 @@ struct job_details {
                                          * enabled */
 	uint16_t wait_reason;		/* reason job still pending, see
 					 * slurm.h:enum job_wait_reason */
+	uint16_t cpus_per_task;		/* number of processors required for each task */
 	uint32_t min_procs;		/* minimum processors per node */
 	uint32_t min_memory;		/* minimum memory per node, MB */
 	uint32_t min_tmp_disk;		/* minimum tempdisk per node, MB */
