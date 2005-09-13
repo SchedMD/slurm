@@ -28,6 +28,7 @@
 #  include "config.h"
 #endif
 
+#include <fcntl.h>
 #include <pthread.h>
 #include <sched.h>
 #include <signal.h>
@@ -35,7 +36,10 @@
 #include <sys/param.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/param.h>		/* MAXPATHLEN */
 #include <sys/poll.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 
 #include "src/common/hostlist.h"
@@ -563,6 +567,36 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 	if (errnum == ESLURMD_PROLOG_FAILED)
 		send_registration_msg(errnum, false);	
 }
+
+static void
+_prolog_error(batch_job_launch_msg_t *req, int rc)
+{
+	char *err_name_ptr, err_name[128], path_name[MAXPATHLEN];
+	int fd;
+
+	if (req->err)
+		err_name_ptr = req->err;
+	else {
+		snprintf(err_name, sizeof(err_name), "slurm-%u.err", req->job_id);
+		err_name_ptr = err_name;
+	}
+	if (err_name_ptr[0] == '/')
+		snprintf(path_name, MAXPATHLEN, "%s", err_name_ptr);
+	else if (req->work_dir)
+		snprintf(path_name, MAXPATHLEN, "%s/%s", req->work_dir, err_name_ptr);
+	else
+		snprintf(path_name, MAXPATHLEN, "/%s", err_name_ptr);
+
+	if ((fd = open(path_name, (O_CREAT|O_APPEND|O_WRONLY), 0644)) == -1) {
+		error("Unable to open %s: %s", path_name, slurm_strerror(errno));
+		return;
+	}
+	snprintf(err_name, 128, "Error running slurm prolog: %d\n", WEXITSTATUS(rc));
+	write(fd, err_name, strlen(err_name));
+	fchown(fd, (uid_t) req->uid, (gid_t) req->gid);
+	close(fd);
+}
+
 static void
 _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 {
@@ -608,6 +642,7 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 		xfree(bgl_part_id);
 		if (rc != 0) {
 			error("[job %u] prolog failed", req->job_id);
+			_prolog_error(req, rc);
 			rc = ESLURMD_PROLOG_FAILED;
 			goto done;
 		}
