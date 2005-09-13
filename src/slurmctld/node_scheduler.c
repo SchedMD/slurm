@@ -800,7 +800,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 		}
 	}
 
-	/* enforce both user's and partition's node limits*/
+	/* enforce both user's and partition's node limits */
 	if (super_user) {
 		min_nodes = job_ptr->details->min_nodes;
 		part_node_limit = INFINITE;
