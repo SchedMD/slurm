@@ -114,6 +114,7 @@ static int  _list_find_job_old(void *job_entry, void *key);
 static int  _load_job_details(struct job_record *job_ptr, Buf buffer);
 static int  _load_job_state(Buf buffer);
 static int  _load_step_state(struct job_record *job_ptr, Buf buffer);
+static void _make_time_str (time_t *time, char *string);
 static void _pack_job_details(struct job_details *detail_ptr, Buf buffer);
 static int  _purge_job_record(uint32_t job_id);
 static void _purge_lost_batch_jobs(int node_inx, time_t now);
@@ -693,6 +694,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack32((uint32_t) detail_ptr->min_procs, buffer);
 	pack32((uint32_t) detail_ptr->min_memory, buffer);
 	pack32((uint32_t) detail_ptr->min_tmp_disk, buffer);
+	pack_time(detail_ptr->begin_time, buffer);
 	pack_time(detail_ptr->submit_time, buffer);
 
 	packstr(detail_ptr->req_nodes, buffer);
@@ -716,7 +718,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	uint32_t min_nodes, max_nodes, min_procs;
 	uint16_t argc = 0, req_tasks, shared, contiguous, name_len;
 	uint32_t min_memory, min_tmp_disk, total_procs;
-	time_t submit_time;
+	time_t begin_time, submit_time;
 	int i;
 
 	/* unpack the job's details from the buffer */
@@ -731,6 +733,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	safe_unpack32(&min_procs, buffer);
 	safe_unpack32(&min_memory, buffer);
 	safe_unpack32(&min_tmp_disk, buffer);
+	safe_unpack_time(&begin_time, buffer);
 	safe_unpack_time(&submit_time, buffer);
 
 	safe_unpackstr_xmalloc(&req_nodes, &name_len, buffer);
@@ -774,6 +777,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->min_procs = min_procs;
 	job_ptr->details->min_memory = min_memory;
 	job_ptr->details->min_tmp_disk = min_tmp_disk;
+	job_ptr->details->begin_time = begin_time;
 	job_ptr->details->submit_time = submit_time;
 	job_ptr->details->req_nodes = req_nodes;
 	job_ptr->details->exc_nodes = exc_nodes;
@@ -1198,16 +1202,32 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	dependency = (job_specs->dependency != NO_VAL) ?
                         (long) job_specs->dependency : -1L;
 	debug3("   host=%s port=%u dependency=%ld account=%s",
-	       job_specs->host, job_specs->port,
-	       dependency, job_specs->account);
+		job_specs->host, job_specs->port,
+		dependency, job_specs->account);
 
-	debug3("   network=%s", job_specs->network);
+	_make_time_str(&job_specs->begin_time, buf);
+	debug3("   network=%s begin=%s", job_specs->network, buf);
 
 	select_g_sprint_jobinfo(job_specs->select_jobinfo, 
 		buf, sizeof(buf), SELECT_PRINT_MIXED);
 	if (buf[0] != '\0')
 		debug3("   %s", buf);
 }
+
+static void _make_time_str (time_t *time, char *string)
+{
+	struct tm time_tm;
+
+	localtime_r (time, &time_tm);
+	if ( *time == (time_t) 0 ) {
+		sprintf( string, "N/A" );
+	} else {
+		sprintf ( string, "%2.2u/%2.2u-%2.2u:%2.2u:%2.2u",
+			(time_tm.tm_mon+1), time_tm.tm_mday,
+			time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec);
+	}
+}
+
 
 
 /* 
@@ -2221,6 +2241,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->out = xstrdup(job_desc->out);
 	if (job_desc->work_dir)
 		detail_ptr->work_dir = xstrdup(job_desc->work_dir);
+	detail_ptr->begin_time = job_desc->begin_time;
 
 	if (select_g_alloc_jobinfo(&job_ptr->select_jobinfo))
 		return SLURM_ERROR;
@@ -2613,7 +2634,14 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->alloc_sid, buffer);
 	pack32(dump_job_ptr->time_limit, buffer);
 
-	pack_time(dump_job_ptr->start_time, buffer);
+	if (IS_JOB_PENDING(dump_job_ptr)) {
+		if (dump_job_ptr->details)
+			pack_time(dump_job_ptr->details->begin_time,
+				buffer);
+		else
+			pack_time((time_t) 0, buffer);
+	} else
+		pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
 	pack32(dump_job_ptr->priority, buffer);
 
@@ -3215,6 +3243,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
+	if (job_specs->begin_time) {
+		if (IS_JOB_PENDING(job_ptr) && detail_ptr)
+			detail_ptr->begin_time = job_specs->begin_time;
+		else
+			error_code = ESLURM_DISABLED;
+	}
+
 #if SYSTEM_DIMENSIONS
 	if (job_specs->geometry[0] != (uint16_t) NO_VAL) {
 		int i, tot = 1;
@@ -3682,7 +3717,8 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 }
 
 /*
- * job_independent - determine if this job has a depenentent job pending
+ * job_independent - determine if this job has a depenendent job pending
+ *	or if the job's scheduled begin time is in the future
  * IN job_ptr - pointer to job being tested
  * RET - true if job no longer must be defered for another job
  */
@@ -3691,6 +3727,11 @@ extern bool job_independent(struct job_record *job_ptr)
 	struct job_record *dep_ptr;
 	struct job_details *detail_ptr = job_ptr->details;
 
+	if (detail_ptr && (detail_ptr->begin_time > time(NULL))) {
+		detail_ptr->wait_reason = WAIT_TIME;
+		return false;	/* not yet time */
+	}
+		
 	if (job_ptr->dependency == 0)
 		return true;
 

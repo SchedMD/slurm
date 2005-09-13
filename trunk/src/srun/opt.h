@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  opt.h - definitions for srun option processing
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -31,6 +32,7 @@
 #  include "config.h"
 #endif
 
+#include <time.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -159,6 +161,7 @@ typedef struct srun_options {
 	int conn_type;		/* --conn-type 			*/
 	char *prolog;           /* --prolog                     */
 	char *epilog;           /* --epilog                     */
+	time_t begin;		/* --begin			*/
 } opt_t;
 
 opt_t opt;

@@ -261,6 +261,7 @@ struct job_details {
 	uint32_t total_procs;		/* number of allocated processors, 
 					   for accounting */
 	time_t submit_time;		/* time of submission */
+	time_t begin_time;		/* start after this time */
 	char *work_dir;			/* pathname of working directory */
 	char **argv;			/* arguments for a batch job script */
 	uint16_t argc;			/* count of argv elements */
@@ -739,6 +740,7 @@ extern int job_complete (uint32_t job_id, uid_t uid, bool requeue,
 
 /*
  * job_independent - determine if this job has a depenentent job pending
+ *	or if the job's scheduled begin time is in the future
  * IN job_ptr - pointer to job being tested
  * RET - true if job no longer must be defered for another job
  */

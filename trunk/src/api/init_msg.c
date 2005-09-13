@@ -80,6 +80,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->work_dir    = NULL;
 	job_desc_msg->host        = NULL;
 	job_desc_msg->port        = 0;
+	job_desc_msg->begin_time  = 0;
 #if SYSTEM_DIMENSIONS
 {
 	int i;
