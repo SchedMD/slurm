@@ -113,8 +113,8 @@ test1.39   Test of linux light-weight core files.
 test1.40   Test of stand-alone srun resource allocation (--uid and --no-shell
            options).
 test1.41   Validate SLURM debugger infrastructure (--debugger-test option).
-test1.42   Test of account number and job dependencies (--account and 
-           --depedency options).
+test1.42   Test of account number and job dependencies (--account, --begin 
+           and --depedency options).
 test1.43   Test of slurm_job_will_run API, (srun --test-only option).
 test1.44   Read srun's stdout slowly and test for lost data.   
 test1.45   Test the launch of a batch job within an existing job allocation.
