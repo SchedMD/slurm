@@ -1,6 +1,6 @@
 /*****************************************************************************\
- * src/slurmd/job.h  slurmd_job_t definition
- * $Id: job.h,v 1.29 2005/06/24 18:08:30 da Exp $
+ *  src/slurmd/slurmd_job.h  slurmd_job_t definition
+ *  $Id: job.h,v 1.29 2005/06/24 18:08:30 da Exp $
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
