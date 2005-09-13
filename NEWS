@@ -18,6 +18,7 @@ documents those changes that are of interest to users and admins.
     Jackson, Cluster Resources)
  -- Fix bug in handling job request with maximum node count.
  -- Fix node selection scheduling bug with heterogeneous nodes.
+ -- Generate error file to note prolog failures.
 
 * Changes in SLURM 0.6.0-pre4
 =============================
