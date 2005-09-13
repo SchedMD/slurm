@@ -929,6 +929,8 @@ static int _build_node_list(struct job_record *job_ptr,
 		    (detail_ptr->min_memory > config_ptr->real_memory) || 
 		    (detail_ptr->min_tmp_disk > config_ptr->tmp_disk))
 			config_filter = 1;
+		else
+			config_filter = 0;
 
 		/* since nodes can register with more resources than defined */
 		/* in the configuration, we want to use those higher values */
