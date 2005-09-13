@@ -154,7 +154,8 @@ enum job_wait_reason {
 	WAIT_PART_NODE_LIMIT,	/* request exceeds partition node limit */
 	WAIT_PART_TIME_LIMIT,	/* request exceeds partition time limit */
 	WAIT_PART_STATE,	/* requested partition is down */
-	WAIT_HELD		/* job is held, priority==0 */
+	WAIT_HELD,		/* job is held, priority==0 */
+	WAIT_TIME		/* job waiting for specific begin time */
 };
 
 #ifdef HAVE_BGL
@@ -306,6 +307,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * 0 otherwise, default=0. Only useful
 				 * when Consumable Resources are
 				 * enabled */
+	time_t begin_time;	/* delay initiation until this time */
 /*
  * The following parameters are only meaningful on a Blue Gene
  * system at present. Some will be of value on other system.

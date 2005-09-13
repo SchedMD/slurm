@@ -2043,6 +2043,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	pack16(job_desc_ptr->port, buffer);
 	packstr(job_desc_ptr->host, buffer);
 	packstr(job_desc_ptr->network, buffer);
+	pack_time(job_desc_ptr->begin_time, buffer);
 
 	if (select_g_alloc_jobinfo (&jobinfo) == SLURM_SUCCESS) {
 #if SYSTEM_DIMENSIONS
@@ -2120,6 +2121,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpack16(&job_desc_ptr->port, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->host, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->network, &uint16_tmp, buffer);
+	safe_unpack_time(&job_desc_ptr->begin_time, buffer);
 
 	if (select_g_alloc_jobinfo (&job_desc_ptr->select_jobinfo)
 	||  select_g_unpack_jobinfo(job_desc_ptr->select_jobinfo, buffer))

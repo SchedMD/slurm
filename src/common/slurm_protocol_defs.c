@@ -462,6 +462,8 @@ extern char *job_reason_string(enum job_wait_reason inx)
 			return "PartitionDown";
 		case WAIT_HELD:
 			return "JobHeld";
+		case WAIT_TIME:
+			return "BeginTime";
 		default:
 			return "?";
 	}

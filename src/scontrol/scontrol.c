@@ -67,6 +67,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/parse_spec.h"
+#include "src/common/parse_time.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
@@ -1494,6 +1495,9 @@ _update_job (int argc, char *argv[])
 				job_msg.conn_type = 
 					(uint16_t) strtol(&argv[i][11], 
 							(char **) NULL, 10);
+		}
+		else if (strncasecmp(argv[i], "StartTime=", 10) == 0) {
+			job_msg.begin_time = parse_time(&argv[i][10]);
 		}
 		else {
 			exit_code = 1;

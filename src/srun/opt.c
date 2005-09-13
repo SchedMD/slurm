@@ -57,6 +57,7 @@
 
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
@@ -105,6 +106,7 @@
 #define LONG_OPT_PROPAGATE 0x116
 #define LONG_OPT_PROLOG   0x117
 #define LONG_OPT_EPILOG   0x118
+#define LONG_OPT_BEGIN    0x119
 
 /*---- forward declarations of static functions  ----*/
 
@@ -771,6 +773,7 @@ void set_options(const int argc, char **argv, int first)
 		{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
 		{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
 		{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
+		{"begin",            required_argument, 0, LONG_OPT_BEGIN},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1157,6 +1160,9 @@ void set_options(const int argc, char **argv, int first)
 		case LONG_OPT_EPILOG:
 			xfree(opt.epilog);
 			opt.epilog = xstrdup(optarg);
+			break;
+		case LONG_OPT_BEGIN:
+			opt.begin = parse_time(optarg);
 			break;
 		}
 	}
@@ -1572,6 +1578,10 @@ static void _opt_list()
 	info("network        : %s", opt.network);
 	info("propagate      : %s",
 	     opt.propagate == NULL ? "NONE" : opt.propagate);
+	if (opt.begin) {
+		info("begin          : %s", 
+			asctime(localtime(&opt.begin)));
+	}
 	str = print_commandline();
 	info("remote command : `%s'", str);
 	xfree(str);
@@ -1650,6 +1660,7 @@ static void _help(void)
 "      --mpi=type              specifies version of MPI to use\n"
 "      --prolog=program        run \"program\" before launching job step\n"
 "      --epilog=program        run \"program\" after launching job step\n"
+"      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "\n"
 "Allocate only:\n"
 "  -A, --allocate              allocate resources and spawn a shell\n"
