@@ -352,7 +352,7 @@ extern time_t parse_time(char *time_str)
 	res_tm.tm_isdst = -1;
 	return mktime(&res_tm);
 
- prob:	fprintf(stderr, "Invalid time specification (pos=%d): %s", pos, time_str);
+ prob:	fprintf(stderr, "Invalid time specification (pos=%d): %s\n", pos, time_str);
 	return (time_t) 0;
 }
 
