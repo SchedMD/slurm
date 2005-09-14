@@ -78,6 +78,8 @@ documents those changes that are of interest to users and admins.
  -- "Session manager" slurmd process has been eliminated.
  -- switch/federation fixes migrated from 0.5.*
  -- srun pthreads really set detached, fixes scaling problem
+ -- srun spawns message handler process so it can now be stopped (via 
+    Ctrl-Z or TotalView) without inducing failures.
 
 * Changes in SLURM 0.5.7
 ========================
