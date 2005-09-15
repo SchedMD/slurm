@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- Fix node selection scheduling bug with heterogeneous nodes and
     srun --cpus-per-task option
  -- Generate error file to note prolog failures.
+ -- Modify switch logic to restore state based exclusively upon 
+    recovered job steps (not state save file).
 
 * Changes in SLURM 0.6.0-pre5
 =============================
