@@ -293,6 +293,12 @@ int switch_p_libstate_restore (char *dir_name)
 	return error_code;
 }
 
+int switch_p_libstate_clear ( void )
+{
+	return qsw_clear();
+}
+
+
 bool switch_p_no_frag ( void )
 {
 	return true;
@@ -794,4 +800,9 @@ extern int switch_p_job_step_complete(switch_jobinfo_t jobinfo,
 	qsw_teardown_jobinfo((qsw_jobinfo_t) jobinfo); /* frees hw context */
 
 	return SLURM_SUCCESS;
+}
+
+extern int switch_p_job_step_allocated(switch_jobinfo_t jobinfo, char *nodelist)
+{
+	return qsw_restore_jobinfo((qsw_jobinfo_t) jobinfo);
 }

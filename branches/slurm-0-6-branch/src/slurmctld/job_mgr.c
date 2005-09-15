@@ -886,7 +886,8 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_node_list         =  NULL;	/* re-used, nothing left to free */
 	step_ptr->time_last_active = time(NULL);
 	step_ptr->switch_job   = switch_tmp;
-	step_ptr->check_job   = check_tmp;
+	step_ptr->check_job    = check_tmp;
+	switch_g_job_step_allocated(switch_tmp, step_node_list);
 	info("recovered job step %u.%u", job_ptr->job_id, step_id);
 	return SLURM_SUCCESS;
 

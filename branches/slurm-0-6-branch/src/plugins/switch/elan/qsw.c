@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  qsw.c - Library routines for initiating jobs on QsNet. 
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -24,7 +25,7 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#if     HAVE_CONFIG_H
+#ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
 
@@ -408,6 +409,28 @@ qsw_fini(qsw_libstate_t savestate)
 	_unlock_qsw();
 }
 
+int
+qsw_clear(void)
+{
+	int rc = 0;
+
+	_lock_qsw();
+	assert(qsw_internal_state->ls_magic == QSW_LIBSTATE_MAGIC);
+	if (qsw_internal_state->step_ctx_list)
+		list_destroy(qsw_internal_state->step_ctx_list);
+	qsw_internal_state->step_ctx_list = list_create(_step_ctx_del);
+	if (elanconf)
+		elanhost_config_destroy(elanconf);
+	if (!(elanconf = elanhost_config_create ())) {
+		rc = -1;
+		goto done;
+	}
+	qsw_internal_state->ls_prognum = QSW_PRG_START +
+		 (lrand48() % (QSW_PRG_END - QSW_PRG_START + 1));
+done:	unlock_qsw();
+	return rc;
+}
+
 /*
  * Allocate a qsw_jobinfo_t.
  *   jp (IN)		store pointer to new instantiation here
@@ -659,6 +682,28 @@ _alloc_hwcontext(bitstr_t *nodeset, uint32_t prognum, int num)
 	}
 	assert(new == -1 || (new >= QSW_CTX_START && new <= QSW_CTX_END));
 	return new;
+}
+
+extern int qsw_restore_jobinfo(struct qsw_jobinfo *jobinfo)
+{
+	struct step_ctx *step_ctx_p;
+
+	assert(qsw_internal_state);
+	if (!jobinfo)
+		return 0;
+
+	assert(jobinfo->j_magic == QSW_JOBINFO_MAGIC);
+	_lock_qsw();
+	step_ctx_p = xmalloc(sizeof(struct step_ctx));
+	step_ctx_p->st_prognum    = jobinfo->j_prognum;
+	step_ctx_p->st_low        = jobinfo->j_cap.LowContext;
+	step_ctx_p->st_high       = jobinfo->j_cap.HighContext;
+	step_ctx_p->st_low_node   = jobinfo->j_cap.LowNode;
+	step_ctx_p->st_high_node  = jobinfo->j_cap.HighNode;
+	_dump_step_ctx("qsw_restore_jobinfo", step_ctx_p);
+	list_push(qsw_internal_state->step_ctx_list, step_ctx_p);
+	_unlock_qsw();
+	return 0;
 }
 
 static void

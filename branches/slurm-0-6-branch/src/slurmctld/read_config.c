@@ -1177,10 +1177,7 @@ static void _validate_node_proc_count(void)
  */ 
 int switch_state_begin(int recover)
 {
-	if (recover)
-		return switch_restore(slurmctld_conf.state_save_location);
-	else
-		return switch_restore(NULL); 
+	return switch_restore(NULL); 
 }
 
 /*
