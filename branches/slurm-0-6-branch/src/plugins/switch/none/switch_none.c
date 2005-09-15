@@ -93,6 +93,11 @@ int switch_p_libstate_restore ( char * dir_name )
 	return SLURM_SUCCESS;
 }
 
+int switch_p_libstate_clear ( void )
+{
+	return SLURM_SUCCESS;
+}
+
 /*
  * switch functions for job step specific credential
  */
@@ -268,6 +273,12 @@ extern char*switch_p_sprintf_node_info(switch_node_info_t switch_node,
 }
 
 extern int switch_p_job_step_complete(switch_jobinfo_t jobinfo,
+	char *nodelist)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int switch_p_job_step_allocated(switch_jobinfo_t jobinfo,
 	char *nodelist)
 {
 	return SLURM_SUCCESS;

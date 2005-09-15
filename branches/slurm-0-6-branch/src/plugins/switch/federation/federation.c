@@ -1395,14 +1395,14 @@ _allocate_windows(int adapter_cnt, fed_tableinfo_t *tableinfo,
 }
 
 
-/* Find the correct NTBL structs and remove the allocation 
- * of adapters, lids and switch windows for the specified task_id.
+/* Find the correct NTBL structs and set the state 
+ * of the switch windows for the specified task_id.
  *
  * Used by: slurmctld
  */
 static int
-_deallocate_windows(int adapter_cnt, fed_tableinfo_t *tableinfo,
-		    char *hostname, int task_id)
+_window_state_set(int adapter_cnt, fed_tableinfo_t *tableinfo,
+		  char *hostname, int task_id, enum NTBL_RC state)
 {
 	fed_nodeinfo_t *node;
 	fed_adapter_t *adapter;
@@ -1424,7 +1424,6 @@ _deallocate_windows(int adapter_cnt, fed_tableinfo_t *tableinfo,
 		return SLURM_ERROR;
 	}
 	
-	/* Reserve a window on each adapter for this task */
 	for (i = 0; i < adapter_cnt; i++) {
 		adapter = &node->adapter_list[i];
 		if (tableinfo[i].table == NULL) {
@@ -1445,7 +1444,7 @@ _deallocate_windows(int adapter_cnt, fed_tableinfo_t *tableinfo,
 		       adapter->name, table->lid, table->window_id, task_id);
 		window = _find_window(adapter, table->window_id);
 		if (window)
-			window->status = NTBL_UNLOADED_STATE;
+			window->status = state;
 	}
 	
 	return SLURM_SUCCESS;
@@ -1487,15 +1486,16 @@ _print_index(char *index, int size)
 	}
 	printf("--End lid index--\n");
 }
-#endif	
+#endif
 
 
-/* Find mark as free all of the windows used by this job step.
+/* Find all of the windows used by this job step and set their
+ * status to "state".
  *
  * Used by: slurmctld
  */
-int
-fed_job_step_complete(fed_jobinfo_t *jp, hostlist_t hl)
+static int
+_job_step_window_state(fed_jobinfo_t *jp, hostlist_t hl, enum NTBL_RC state)
 {
 	hostlist_iterator_t hi;
 	char *host;
@@ -1527,9 +1527,10 @@ fed_job_step_complete(fed_jobinfo_t *jp, hostlist_t hl)
 				hostlist_iterator_reset(hi);
 				host = hostlist_next(hi);
 			}
-			rc = _deallocate_windows(jp->tables_per_task,
-						 jp->tableinfo,
-						 host, proc_cnt);
+			rc = _window_state_set(jp->tables_per_task,
+					       jp->tableinfo,
+					       host, proc_cnt,
+					       state);
 			free(host);
 		}
 		_unlock();
@@ -1558,9 +1559,10 @@ fed_job_step_complete(fed_jobinfo_t *jp, hostlist_t hl)
 				task_cnt = min_procs_per_node;
 			
 			for (j = 0; j < task_cnt; j++) {
-				rc = _deallocate_windows(jp->tables_per_task,
-							 jp->tableinfo,
-							 host, proc_cnt);
+				rc = _windows_state_set(jp->tables_per_task,
+							jp->tableinfo,
+							host, proc_cnt,
+							state);
 				proc_cnt++;
 			}
 			free(host);
@@ -1571,6 +1573,33 @@ fed_job_step_complete(fed_jobinfo_t *jp, hostlist_t hl)
 	hostlist_iterator_destroy(hi);
 	return SLURM_SUCCESS;
 }
+
+/* Find all of the windows used by job step "jp" and mark their
+ * state NTBL_UNLOADED_STATE.
+ *
+ * Used by: slurmctld
+ */
+int
+fed_job_step_complete(fed_jobinfo_t *jp, hostlist_t hl)
+{
+	return _job_step_window_state(jp, hl, NTBL_UNLOADED_STATE);
+}
+
+
+/* Find all of the windows used by job step "jp" and mark their
+ * state NTBL_LOADED_STATE.
+ *
+ * Used by the slurmctld at startup time to restore the allocation
+ * status of any job steps that were running at the time the previous
+ * slurmctld was shutdown.  Also used to restore teh allocation
+ * status after a call to switch_clear().
+ */
+int
+fed_job_step_allocated(fed_jobinfo_t *jp, hostlist_t hl)
+{
+	return _job_step_window_state(jp, hl, NTBL_LOADED_STATE);
+}
+
 
 
 /* Setup everything for the job.  Assign tasks across
@@ -2345,7 +2374,7 @@ _unpack_libstate(fed_libstate_t *lp, Buf buffer)
 	safe_unpack32(&lp->magic, buffer);
 	safe_unpack32(&node_count, buffer);
 	for(i = 0; i < node_count; i++)
-		(void)_unpack_nodeinfo(NULL, buffer, true);
+		(void)_unpack_nodeinfo(NULL, buffer, false);
 	assert(lp->node_count == node_count);
 	safe_unpack16(&lp->key_index, buffer);
 	
@@ -2374,3 +2403,33 @@ fed_libstate_restore(Buf buffer)
 	return SLURM_SUCCESS;
 }
 
+int
+fed_libstate_clear(void)
+{
+	int i, j, k;
+	struct fed_nodeinfo *node;
+	struct fed_adapter *adapter;
+	struct fed_window *window;
+
+	_lock();
+	if (!fed_state || !fed_state->node_list)
+		return SLURM_ERROR;
+
+	for (i = 0; i < fed_state->node_count; i++) {
+		node = &fed_state->node_list[i];
+		for (j = 0; j < node->adapter_count; j++) {
+			if (!node->adapter_list)
+				continue;
+			adapter = &node->adapter_list[i];
+			for (k = 0; k < adapter->window_count; k++) {
+				if (!adapter->window_list)
+					continue;
+				window = &adapter->window_list[k];
+				window->status = NTBL_UNLOADED_STATE;
+			}
+		}
+	}
+	_unlock();
+
+	return SLURM_SUCCESS;
+}

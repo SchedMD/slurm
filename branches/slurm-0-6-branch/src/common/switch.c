@@ -46,6 +46,7 @@
 typedef struct slurm_switch_ops {
 	int          (*state_save)        ( char *dir_name );
 	int          (*state_restore)     ( char *dir_name );
+	
 	bool         (*no_frag)           ( void );
 	int          (*alloc_jobinfo)     ( switch_jobinfo_t *jobinfo );
 	int          (*build_jobinfo)     ( switch_jobinfo_t jobinfo,
@@ -93,6 +94,9 @@ typedef struct slurm_switch_ops {
 						char *buf, size_t size );
 	int          (*step_complete)     ( switch_jobinfo_t jobinfo,
 						char *nodelist );
+	int          (*step_allocated)    ( switch_jobinfo_t jobinfo,
+					        char *nodelist );
+	int          (*state_clear)       ( void );
 } slurm_switch_ops_t;
 
 struct slurm_switch_context {
@@ -194,7 +198,9 @@ _slurm_switch_get_ops( slurm_switch_context_t c )
 		"switch_p_unpack_node_info",
 		"switch_p_free_node_info",
 		"switch_p_sprintf_node_info",
-		"switch_p_job_step_complete"
+		"switch_p_job_step_complete",
+		"switch_p_job_step_allocated",
+		"switch_p_libstate_clear"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -292,6 +298,14 @@ extern int  switch_restore(char *dir_name)
 		return SLURM_ERROR;
 
 	return (*(g_context->ops.state_restore))( dir_name );
+}
+
+extern int  switch_clear(void)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_context->ops.state_clear))( );
 }
 
 extern bool switch_no_frag(void)
@@ -527,4 +541,13 @@ extern int switch_g_job_step_complete(switch_jobinfo_t jobinfo,
 		return SLURM_ERROR;
 
 	return (*(g_context->ops.step_complete))( jobinfo, nodelist );
+}
+
+extern int switch_g_job_step_allocated(switch_jobinfo_t jobinfo,
+	char *nodelist)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_context->ops.step_allocated))( jobinfo, nodelist );
 }

@@ -228,6 +228,11 @@ int switch_p_libstate_restore ( char * dir_name )
         return error_code;
 }
 
+int switch_p_libstate_clear(void)
+{
+	return fed_libstate_clear();
+}
+
 /*
  * switch state monitoring functions
  */
@@ -394,6 +399,18 @@ int switch_p_job_step_complete(switch_jobinfo_t jobinfo, char *nodelist)
 
 	list = hostlist_create(nodelist);
 	rc = fed_job_step_complete((fed_jobinfo_t *)jobinfo, list);
+	hostlist_destroy(list);
+
+	return rc;
+}
+
+int switch_p_job_step_allocated(switch_jobinfo_t jobinfo, char *nodelist)
+{
+	hostlist_t list = NULL;
+	int rc;
+
+	list = hostlist_create(nodelist);
+	rc = fed_job_step_allocated((fed_jobinfo_t *)jobinfo, list);
 	hostlist_destroy(list);
 
 	return rc;
