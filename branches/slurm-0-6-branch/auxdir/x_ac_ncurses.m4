@@ -29,7 +29,7 @@ AC_DEFUN([X_AC_NCURSES],
       NCURSES="-lcurses"
       ac_have_some_curses="yes"
    else
-      AC_MSG_NOTICE([Can not build smap without curses or ncurses library])
+      AC_MSG_ERROR([Can not build slurm without curses or ncurses library])
       ac_have_some_curses="no"
    fi
 ])
