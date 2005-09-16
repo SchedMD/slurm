@@ -239,6 +239,8 @@ int main(int argc, char *argv[])
 	if ( checkpoint_init(slurmctld_conf.checkpoint_type) != 
 			SLURM_SUCCESS )
 		fatal( "failed to initialize checkpoint plugin" );
+	if ( switch_restore(NULL) != 0)
+		fatal(" failed to initialize switch plugin" );
 	if (select_g_state_restore(slurmctld_conf.state_save_location))
 		fatal( "failed to restore node selection plugin state");
 
@@ -270,14 +272,10 @@ int main(int argc, char *argv[])
 		}
 		info("Running as primary controller");
 
-		/* Recover node scheduler and switch state info */
+		/* Recover node scheduler state info */
 		if (select_g_state_restore(slurmctld_conf.state_save_location)
 				!= SLURM_SUCCESS ) {
 			error("failed to restore node selection state");
-			abort();
-		}
-		if (switch_state_begin(recover)) {
-			error("switch_state_begin: %m");
 			abort();
 		}
 
@@ -323,7 +321,7 @@ int main(int argc, char *argv[])
 		if (select_g_state_save(slurmctld_conf.state_save_location)
 				!= SLURM_SUCCESS )
 			error("failed to restore node selection state");
-		switch_state_fini();
+		switch_save(slurmctld_conf.state_save_location);
 		if (slurmctld_config.resume_backup == false)
 			break;
 	}

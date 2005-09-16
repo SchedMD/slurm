@@ -101,7 +101,7 @@
 /*
  * Definitions local to this module.
  */
-#define _DEBUG			0
+#define _DEBUG			1
 #define QSW_JOBINFO_MAGIC 	0xf00ff00e
 #define QSW_LIBSTATE_MAGIC 	0xf00ff00f
 
@@ -427,7 +427,7 @@ qsw_clear(void)
 	}
 	qsw_internal_state->ls_prognum = QSW_PRG_START +
 		 (lrand48() % (QSW_PRG_END - QSW_PRG_START + 1));
-done:	unlock_qsw();
+done:	_unlock_qsw();
 	return rc;
 }
 
