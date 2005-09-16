@@ -698,6 +698,7 @@ extern int qsw_restore_jobinfo(struct qsw_jobinfo *jobinfo)
 	_lock_qsw();
 
 	/* check for duplicate */
+	iter = list_iterator_create(qsw_internal_state->step_ctx_list);
 	while ((step_ctx_p = list_next(iter)))  {
 		if (jobinfo->j_prognum == step_ctx_p->st_prognum) {
 			duplicate = 1;
