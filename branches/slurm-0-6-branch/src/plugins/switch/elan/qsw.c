@@ -101,7 +101,7 @@
 /*
  * Definitions local to this module.
  */
-#define _DEBUG			1
+#define _DEBUG			0
 #define QSW_JOBINFO_MAGIC 	0xf00ff00e
 #define QSW_LIBSTATE_MAGIC 	0xf00ff00f
 
@@ -696,8 +696,8 @@ extern int qsw_restore_jobinfo(struct qsw_jobinfo *jobinfo)
 	_lock_qsw();
 	step_ctx_p = xmalloc(sizeof(struct step_ctx));
 	step_ctx_p->st_prognum    = jobinfo->j_prognum;
-	step_ctx_p->st_low        = jobinfo->j_cap.LowContext;
-	step_ctx_p->st_high       = jobinfo->j_cap.HighContext;
+	step_ctx_p->st_low        = jobinfo->j_cap.LowContext  - QSW_CTX_START;
+	step_ctx_p->st_high       = jobinfo->j_cap.HighContext - QSW_CTX_START;
 	step_ctx_p->st_low_node   = jobinfo->j_cap.LowNode;
 	step_ctx_p->st_high_node  = jobinfo->j_cap.HighNode;
 	_dump_step_ctx("qsw_restore_jobinfo", step_ctx_p);
