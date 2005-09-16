@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Support defered initiation of job (e.g. srun --begin=11:30 ...).
  -- Add support for srun --cpus-per-task through task allocation in 
     slurmctld.
+ -- fixed partition_allocator to work without curses
 
 * Changes in SLURM 0.6.0-pre6
 =============================
