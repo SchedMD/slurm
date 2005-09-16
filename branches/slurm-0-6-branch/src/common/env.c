@@ -311,6 +311,12 @@ int setup_env(env_t *env)
 		rc = SLURM_FAILURE;
 	}
 	
+	if (env->localid >= 0
+	    && setenvf(&env->env, "SLURM_LOCALID", "%d", env->localid)) {
+		error("Unable to set SLURM_LOCALID environment");
+		rc = SLURM_FAILURE;
+	}
+
 	if (env->stepid >= 0
 	    && setenvf(&env->env, "SLURM_STEPID", "%d", env->stepid)) {
 		error("Unable to set SLURM_STEPID environment");
