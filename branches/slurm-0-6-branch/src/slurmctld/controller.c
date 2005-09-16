@@ -239,7 +239,11 @@ int main(int argc, char *argv[])
 	if ( checkpoint_init(slurmctld_conf.checkpoint_type) != 
 			SLURM_SUCCESS )
 		fatal( "failed to initialize checkpoint plugin" );
-	if ( switch_restore(NULL) != 0)
+	if (recover)
+		error_code = switch_restore(slurmctld_conf.state_save_location);
+	else
+		error_code =  switch_restore(NULL);
+	if ( error_code != 0)
 		fatal(" failed to initialize switch plugin" );
 	if (select_g_state_restore(slurmctld_conf.state_save_location))
 		fatal( "failed to restore node selection plugin state");

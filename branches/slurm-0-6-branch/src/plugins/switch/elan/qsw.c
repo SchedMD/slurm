@@ -687,6 +687,8 @@ _alloc_hwcontext(bitstr_t *nodeset, uint32_t prognum, int num)
 extern int qsw_restore_jobinfo(struct qsw_jobinfo *jobinfo)
 {
 	struct step_ctx *step_ctx_p;
+	ListIterator iter;
+	int duplicate = 0; 
 
 	assert(qsw_internal_state);
 	if (!jobinfo)
@@ -694,14 +696,26 @@ extern int qsw_restore_jobinfo(struct qsw_jobinfo *jobinfo)
 
 	assert(jobinfo->j_magic == QSW_JOBINFO_MAGIC);
 	_lock_qsw();
-	step_ctx_p = xmalloc(sizeof(struct step_ctx));
-	step_ctx_p->st_prognum    = jobinfo->j_prognum;
+
+	/* check for duplicate */
+	while ((step_ctx_p = list_next(iter)))  {
+		if (jobinfo->j_prognum == step_ctx_p->st_prognum) {
+			duplicate = 1;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+	if (!duplicate) {		/* need new record */
+		step_ctx_p = xmalloc(sizeof(struct step_ctx));
+		step_ctx_p->st_prognum    = jobinfo->j_prognum;
+	}
 	step_ctx_p->st_low        = jobinfo->j_cap.LowContext  - QSW_CTX_START;
 	step_ctx_p->st_high       = jobinfo->j_cap.HighContext - QSW_CTX_START;
 	step_ctx_p->st_low_node   = jobinfo->j_cap.LowNode;
 	step_ctx_p->st_high_node  = jobinfo->j_cap.HighNode;
 	_dump_step_ctx("qsw_restore_jobinfo", step_ctx_p);
-	list_push(qsw_internal_state->step_ctx_list, step_ctx_p);
+	if (!duplicate)
+		list_push(qsw_internal_state->step_ctx_list, step_ctx_p);
 	_unlock_qsw();
 	return 0;
 }
