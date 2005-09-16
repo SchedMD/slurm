@@ -42,6 +42,9 @@
 #endif
 #if HAVE_NCURSES_H
 #  include <ncurses.h>
+#  ifndef HAVE_CURSES_H
+#     define HAVE_CURSES_H
+#  endif
 #endif
 
 #include "src/api/node_select_info.h"
@@ -187,9 +190,10 @@ typedef struct {
 	int num_of_proc;
 	int resize_screen;
 
-	WINDOW *grid_win;
+#ifdef HAVE_CURSES_H
+ 	WINDOW *grid_win;
 	WINDOW *text_win;
-
+#endif
 	time_t now_time;
 
 	/* made to hold info about a system, which right now is only a grid of pa_nodes*/
