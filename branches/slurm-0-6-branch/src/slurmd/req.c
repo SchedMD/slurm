@@ -456,6 +456,14 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		goto done;
 	}
 
+	/* Make an effort to not overflow shm records */
+	if (shm_free_steps() < 2) {
+		errnum = ESLURMD_TOOMANYSTEPS;
+		error("reject task %u.%u, too many steps", req->job_id,
+			req->job_step_id);
+		goto done;
+	}
+
 	/* xassert(slurm_cred_jobid_cached(conf->vctx, req->job_id));*/
 
 	/* Run job prolog if necessary */
@@ -514,6 +522,14 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 		error("spawn task request from uid %u",
 		      (unsigned int) req_uid);
 		errnum = ESLURM_USER_ID_MISSING;	/* or invalid user */
+		goto done;
+	}
+
+	/* Make an effort to not overflow shm records */
+	if (shm_free_steps() < 2) {
+		errnum = ESLURMD_TOOMANYSTEPS;
+		error("reject task %u.%u, too many steps", req->job_id,
+			req->job_step_id);
 		goto done;
 	}
 
@@ -613,6 +629,14 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
 		goto done;
 	} 
+
+	/* Make an effort to not overflow shm records */
+	if (shm_free_steps() < 2) {
+		rc = ESLURMD_TOOMANYSTEPS;
+		error("reject job %u, too many steps", req->job_id);
+		_prolog_error(req, rc);
+		goto done;
+	}
 
 	if (req->step_id != NO_VAL && req->step_id != 0)
 		first_job_run = false;

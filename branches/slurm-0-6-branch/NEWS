@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
     (Dan Palermo, HP).
  -- Modify switch logic to restore state based exclusively upon
     recovered job steps (not state save file).
+ -- Gracefully refuse job if there are too many job steps in slurmd.
 
 * Changes in SLURM 0.6.0-pre6
 =============================
