@@ -68,11 +68,12 @@ extern int  switch_save   (char *dir_name);
 
 /* restore any global switch state from a file within the specified directory
  * the actual file name used in plugin specific
- * IN dir_name - directory from hich switch state is restored or NULL for 
- *               switch restart with no state restored
+ * IN dir_name - directory from hich switch state is restored
+ * IN recover  - "true" to restore switch state, "false" to start with
+ *               a clean slate.
  * RET         - slurm error code
  */
-extern int  switch_restore(char *dir_name);
+extern int  switch_restore(char *dir_name, bool recover);
 
 /* clear all current switch window allocation information
  * RET         - slurm error code

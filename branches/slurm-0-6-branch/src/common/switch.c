@@ -45,7 +45,7 @@
  */
 typedef struct slurm_switch_ops {
 	int          (*state_save)        ( char *dir_name );
-	int          (*state_restore)     ( char *dir_name );
+	int          (*state_restore)     ( char *dir_name, bool recover );
 	
 	bool         (*no_frag)           ( void );
 	int          (*alloc_jobinfo)     ( switch_jobinfo_t *jobinfo );
@@ -292,12 +292,12 @@ extern int  switch_save(char *dir_name)
 	return (*(g_context->ops.state_save))( dir_name );
 }
 
-extern int  switch_restore(char *dir_name)
+extern int  switch_restore(char *dir_name, bool recover)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.state_restore))( dir_name );
+	return (*(g_context->ops.state_restore))( dir_name, recover );
 }
 
 extern int  switch_clear(void)

@@ -88,7 +88,7 @@ int switch_p_libstate_save ( char * dir_name )
 	return SLURM_SUCCESS;
 }
 
-int switch_p_libstate_restore ( char * dir_name )
+int switch_p_libstate_restore ( char * dir_name, bool recover )
 {
 	return SLURM_SUCCESS;
 }

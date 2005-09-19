@@ -214,7 +214,7 @@ int switch_p_libstate_save (char *dir_name)
 	return error_code;
 }
 
-int switch_p_libstate_restore (char *dir_name)
+int switch_p_libstate_restore (char *dir_name, bool recover)
 {
 	char *data = NULL, *file_name;
 	qsw_libstate_t old_state = NULL;
@@ -224,7 +224,7 @@ int switch_p_libstate_restore (char *dir_name)
 	char *ver_str = NULL;
 	uint16_t ver_str_len;
 
-	if (dir_name == NULL)	/* clean start, no recovery */
+	if (!recover)	/* clean start, no recovery */
 		return qsw_init(NULL);
 	
 	file_name = xstrdup(dir_name);

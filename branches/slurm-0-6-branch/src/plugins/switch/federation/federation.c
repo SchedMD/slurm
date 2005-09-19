@@ -65,6 +65,7 @@
 #define BUFSIZE 4096
 
 char* fed_conf = NULL;
+extern bool fed_need_state_save;
 
 mode_t fed_umask;
 /*
@@ -1044,6 +1045,8 @@ _alloc_node(fed_libstate_t *lp, char *name)
 			return n;
 	}
 
+	fed_need_state_save = true;
+
 	if(lp->node_count >= lp->node_max) {
 		lp->node_max += FED_NODECOUNT;
 		new_bufsize = lp->node_max * sizeof(fed_nodeinfo_t);
@@ -1436,12 +1439,17 @@ _window_state_set(int adapter_cnt, fed_tableinfo_t *tableinfo,
 			return SLURM_ERROR;
 		}
 		if (adapter->lid != table->lid) {
-			error("Did not find the correct adapter: %hu vs. %hu",
-			      adapter->lid, table->lid);
+			if (table->lid != 0)
+				error("Did not find the correct adapter: "
+				      "%hu vs. %hu",
+				      adapter->lid, table->lid);
 			return SLURM_ERROR;
 		}
-		debug3("Clearing adapter %s, lid %hu, window %hu for task %d",
-		       adapter->name, table->lid, table->window_id, task_id);
+		debug3("Setting status %s adapter %s, "
+		       "lid %hu, window %hu for task %d",
+		       state == NTBL_UNLOADED_STATE ? "UNLOADED" : "LOADED",
+		       adapter->name,
+		       table->lid, table->window_id, task_id);
 		window = _find_window(adapter, table->window_id);
 		if (window)
 			window->status = state;
@@ -1505,10 +1513,18 @@ _job_step_window_state(fed_jobinfo_t *jp, hostlist_t hl, enum NTBL_RC state)
 	int i, j;
 	int rc;
 
+	xassert(!hostlist_is_empty(hl));
+	xassert(jp);
+	xassert(jp->magic == FED_JOBINFO_MAGIC);
+
 	if ((jp == NULL)
 	    || (jp->magic != FED_JOBINFO_MAGIC)
 	    || (hostlist_is_empty(hl)))
 		return SLURM_ERROR;
+
+	xassert(jp->tables_per_task);
+	xassert(jp->tableinfo);
+	xassert(jp->tableinfo[0].table_length);
 
 	if ((jp->tables_per_task == 0)
 	    || !jp->tableinfo
@@ -1559,10 +1575,10 @@ _job_step_window_state(fed_jobinfo_t *jp, hostlist_t hl, enum NTBL_RC state)
 				task_cnt = min_procs_per_node;
 			
 			for (j = 0; j < task_cnt; j++) {
-				rc = _windows_state_set(jp->tables_per_task,
-							jp->tableinfo,
-							host, proc_cnt,
-							state);
+				rc = _window_state_set(jp->tables_per_task,
+						       jp->tableinfo,
+						       host, proc_cnt,
+						       state);
 				proc_cnt++;
 			}
 			free(host);
@@ -2355,7 +2371,7 @@ fed_libstate_save(Buf buffer)
 {
 	_lock();
 	_pack_libstate(fed_state, buffer);
-	_free_libstate(fed_state);
+	/*_free_libstate(fed_state);*/
 	_unlock();
 }
 
@@ -2381,6 +2397,7 @@ _unpack_libstate(fed_libstate_t *lp, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	error("unpack error in _unpack_libstate");
 	slurm_seterrno_ret(EBADMAGIC_FEDLIBSTATE);
 	return SLURM_ERROR;
 }
@@ -2395,8 +2412,10 @@ fed_libstate_restore(Buf buffer)
 	assert(!fed_state);
 
 	fed_state = _alloc_libstate();
-	if(!fed_state)
+	if(!fed_state) {
+		error("fed_libstate_restore fed_state is NULL");
 		return SLURM_FAILURE;
+	}
 	_unpack_libstate(fed_state, buffer);
 	_unlock();
 
@@ -2411,19 +2430,20 @@ fed_libstate_clear(void)
 	struct fed_adapter *adapter;
 	struct fed_window *window;
 
+	debug3("Clearing state on all windows in global fed state");
 	_lock();
 	if (!fed_state || !fed_state->node_list)
 		return SLURM_ERROR;
 
 	for (i = 0; i < fed_state->node_count; i++) {
 		node = &fed_state->node_list[i];
+		if (!node->adapter_list)
+			continue;
 		for (j = 0; j < node->adapter_count; j++) {
-			if (!node->adapter_list)
-				continue;
 			adapter = &node->adapter_list[i];
+			if (!adapter->window_list)
+				continue;
 			for (k = 0; k < adapter->window_count; k++) {
-				if (!adapter->window_list)
-					continue;
 				window = &adapter->window_list[k];
 				window->status = NTBL_UNLOADED_STATE;
 			}
