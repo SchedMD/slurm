@@ -657,7 +657,8 @@ _slurmd_init()
 	 */
 	_update_logging();
 	_print_conf();
-	slurm_proctrack_init();
+	if (slurm_proctrack_init() != SLURM_SUCCESS)
+		return SLURM_FAILURE;
 
 	if (getrlimit(RLIMIT_NOFILE,&rlim) == 0) {
 		rlim.rlim_cur = rlim.rlim_max;
