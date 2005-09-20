@@ -382,8 +382,12 @@ int read_bgl_partitions()
 					xstrdup(slurmctld_conf.
 						slurm_user_name);
 			} else {
-				rm_get_data(part_ptr, RM_PartitionFirstUser, 
-						&user_name);
+				user_name = NULL;
+				if ((rc = rm_get_data(part_ptr, RM_PartitionFirstUser, 
+						&user_name)) != STATUS_OK) {
+					error("rm_get_data(RM_PartitionFirstUser): %s",
+						bgl_err_str(rc));
+				}
 				bgl_record->user_name = xstrdup(user_name);
 				if(!bgl_record->boot_state)
 					bgl_record->target_name = 
