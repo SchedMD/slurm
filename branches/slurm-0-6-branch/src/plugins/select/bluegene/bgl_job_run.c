@@ -396,10 +396,22 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 			      part_id, bgl_err_str(rc));
 			continue;
 		}
+
+		if(!part_id) {
+			error("No partitionID returned from Database");
+			continue;
+		}
+
 		debug2("looking at partition %s looking for %s\n",
 			part_id, bgl_update_ptr->bgl_part_id);
-		if (strcmp(part_id, bgl_update_ptr->bgl_part_id) != 0)
+			
+		if (strcmp(part_id, bgl_update_ptr->bgl_part_id) != 0) {
+			free(part_id);
 			continue;
+		}
+		
+		free(part_id);
+
 		if ((rc = rm_get_data(job_elem, RM_JobDBJobID, &job_id))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_JobDBJobID): %s", 

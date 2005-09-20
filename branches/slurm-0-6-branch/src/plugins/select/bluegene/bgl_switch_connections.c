@@ -454,12 +454,18 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 			rc = SLURM_ERROR;
 			goto cleanup;
 		}		
-		
+
+		if(!bpid) {
+			error("No BP ID was returned from database");
+			continue;
+		}
+
 		found_bpid = 0;
 		for (i=0; i<switch_count; i++) {
 			if(i) {
 				if ((rc = rm_get_data(bgl, RM_NextSwitch, 
-						      &curr_switch)) != STATUS_OK) {
+						      &curr_switch)) 
+				    != STATUS_OK) {
 					fatal("rm_get_data: RM_NextSwitch: %s",
 					      bgl_err_str(rc));
 					list_iterator_destroy(bgl_itr);
@@ -468,7 +474,8 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 				}
 			} else {
 				if ((rc = rm_get_data(bgl, RM_FirstSwitch, 
-						      &curr_switch)) != STATUS_OK) {
+						      &curr_switch)) 
+				    != STATUS_OK) {
 					fatal("rm_get_data: "
 					      "RM_FirstSwitch: %s",
 					      bgl_err_str(rc));
@@ -485,15 +492,24 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
-			
+
+			if(!curr_bpid) {
+				error("No BP ID was returned from database");
+				continue;
+			}
+
 			if (!strcasecmp((char *)bpid, (char *)curr_bpid)) {
+				free(curr_bpid);
 				coord_switch[found_bpid] = curr_switch;
 				found_bpid++;
 				if(found_bpid==PA_SYSTEM_DIMENSIONS)
 					break;
-			}			
+			}
+			free(curr_bpid);
 		}
-	
+
+		free(bpid);
+
 		if(found_bpid==PA_SYSTEM_DIMENSIONS) {
 						
 			debug2("adding midplane %d%d%d\n",
@@ -503,17 +519,17 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 			switch_itr = list_iterator_create(bgl_bp->switch_list);
 			while((bgl_switch = list_next(switch_itr)) != NULL) {
 				
-				if ((rc = rm_get_data(coord_switch
-						      [bgl_switch->dim],
-						      RM_SwitchID,&name2)) 
-				    != STATUS_OK) {
-					fatal("rm_get_data: RM_SwitchID: %s", 
-					      bgl_err_str(rc));
-					list_iterator_destroy(bgl_itr);
-					list_iterator_destroy(switch_itr);
-					rc = SLURM_ERROR;
-					goto cleanup;
-				}
+				/* if ((rc = rm_get_data(coord_switch */
+/* 						      [bgl_switch->dim], */
+/* 						      RM_SwitchID,&name2))  */
+/* 				    != STATUS_OK) { */
+/* 					fatal("rm_get_data: RM_SwitchID: %s",*/
+/* 					      bgl_err_str(rc)); */
+/* 					list_iterator_destroy(bgl_itr); */
+/* 					list_iterator_destroy(switch_itr); */
+/* 					rc = SLURM_ERROR; */
+/* 					goto cleanup; */
+/* 				} */
 				debug2("adding switch dim %d\n",
 				       bgl_switch->dim);
 				     

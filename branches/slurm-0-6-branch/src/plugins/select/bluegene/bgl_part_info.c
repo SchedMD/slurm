@@ -223,9 +223,10 @@ extern int update_partition_list()
 			updated = -1;
 			break;
 		}
-		if(strncmp("RMP", name,3))
+		if(strncmp("RMP", name,3)) {
+			free(name);
 			continue;
-		
+		}
 		bgl_record = find_bgl_record(name);
 		
 		if(bgl_record == NULL) {
@@ -235,7 +236,9 @@ extern int update_partition_list()
 			if ((rc = pm_destroy_partition(name)) 
 			    != STATUS_OK) {
 				if(rc == PARTITION_NOT_FOUND) {
-					debug("partition %s is not found");
+					debug("partition %s is not found",
+					      name);
+					free(name);
 					break;
 				}
 				error("pm_destroy_partition(%s): %s",
@@ -249,9 +252,11 @@ extern int update_partition_list()
 				      bgl_err_str(rc));
 			} else
 				debug("done\n");
+			free(name);
 			continue;
 		}
-		
+		free(name);
+			
 		slurm_mutex_lock(&part_state_mutex);
 		
 		if ((rc = rm_get_data(part_ptr, RM_PartitionMode, &node_use))

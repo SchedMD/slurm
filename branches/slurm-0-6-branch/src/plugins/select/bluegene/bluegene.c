@@ -110,6 +110,8 @@ extern int init_bgl(void)
 /* Purge all plugin variables */
 extern void fini_bgl(void)
 {
+	int rc;
+
 	_set_bgl_lists();
 	
 	if (bgl_list) {
@@ -135,7 +137,8 @@ extern void fini_bgl(void)
 
 #ifdef HAVE_BGL_FILES
 	if(bgl)
-		rm_free_BGL(bgl);
+		if ((rc = rm_free_BGL(bgl)) != STATUS_OK)
+			error("rm_free_BGL(): %s", bgl_err_str(rc));
 #endif	
 	pa_fini();
 }
@@ -325,13 +328,19 @@ extern int remove_all_users(char *bgl_part_id, char *user_name)
 				break;
 			}
 		}
-		
-		if(!strcmp(user, slurmctld_conf.slurm_user_name))
+		if(!user) {
+			error("No user was returned from database");
 			continue;
-		
+		}
+		if(!strcmp(user, slurmctld_conf.slurm_user_name)) {
+			free(user);
+			continue;
+		}
+
 		if(user_name) {
 			if(!strcmp(user, user_name)) {
 				returnc = REMOVE_USER_FOUND;
+				free(user);
 				continue;
 			}
 		}
@@ -344,7 +353,9 @@ extern int remove_all_users(char *bgl_part_id, char *user_name)
 			debug("user %s isn't on partition %s",
 			      user, 
 			      bgl_part_id);
-		}				
+		}
+		if(user)
+			free(user);
 	}
 	if ((rc = rm_free_partition(part_ptr)) != STATUS_OK) {
 		error("rm_free_partition(): %s", bgl_err_str(rc));
@@ -1615,7 +1626,6 @@ static int _update_bgl_record_state(List bgl_destroy_list)
 	rm_partition_t *part_ptr = NULL;
 	ListIterator itr;
 	bgl_record_t* bgl_record = NULL;	
-	int found = 0;
 
 	if(!bgl_destroy_list) {
 		return SLURM_SUCCESS;
@@ -1665,18 +1675,15 @@ static int _update_bgl_record_state(List bgl_destroy_list)
 			func_rc = SLURM_ERROR;
 			break;
 		}
-		found = 0;
+		
 		itr = list_iterator_create(bgl_destroy_list);
 		while ((bgl_record = (bgl_record_t*) list_next(itr))) {	
-			if(bgl_record->bgl_part_id)
-				if(!strcmp(bgl_record->bgl_part_id, name)) {
-					found = 1;
-					break;		
-				}
-		}
-		list_iterator_destroy(itr);
+			if(!bgl_record->bgl_part_id) 
+				continue;
+			if(!strcmp(bgl_record->bgl_part_id, name)) {
+				continue;		
+			}
 		       
-		if(found) {	
 			slurm_mutex_lock(&part_state_mutex);
 			if ((rc = rm_get_data(part_ptr, 
 					      RM_PartitionState, 
@@ -1690,8 +1697,12 @@ static int _update_bgl_record_state(List bgl_destroy_list)
 				      name, bgl_record->state, state);
 				bgl_record->state = state;
 			}
-			slurm_mutex_unlock(&part_state_mutex);	
+			slurm_mutex_unlock(&part_state_mutex);
+			break;
 		}
+		list_iterator_destroy(itr);
+		if(name)
+			free(name);
 	}
 	
 clean_up:
