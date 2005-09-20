@@ -318,7 +318,7 @@ extern int remove_all_users(char *bgl_part_id, char *user_name)
 					      RM_PartitionFirstUser, 
 					      &user)) 
 			    != STATUS_OK) {
-				error("rm_get_partition(%s): %s", 
+				error("rm_get_data(%s): %s", 
 				      bgl_part_id, 
 				      bgl_err_str(rc));
 				returnc = REMOVE_USER_ERR;
