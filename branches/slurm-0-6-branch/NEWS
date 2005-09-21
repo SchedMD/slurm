@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Modify switch logic to restore state based exclusively upon
     recovered job steps (not state save file).
  -- Gracefully refuse job if there are too many job steps in slurmd.
+ -- Fix race condition in job completion that can leave nodes in 
+    COMPLETING state after job is COMPLETED.
 
 * Changes in SLURM 0.6.0-pre6
 =============================
