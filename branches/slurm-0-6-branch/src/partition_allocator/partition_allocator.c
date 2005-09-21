@@ -1810,7 +1810,12 @@ extern int set_bp_map(void)
 			error("rm_get_data(RM_BPID): %d", rc);
 			continue;
 		}
-		
+
+		if(!bp_id) {
+			error("No BP ID was returned from database");
+			continue;
+		}
+			
 		if ((rc = rm_get_data(my_bp, RM_BPLoc, &bp_loc))
 		    != STATUS_OK) {
 			xfree(bp_map);
@@ -1833,11 +1838,11 @@ extern int set_bp_map(void)
 		
 		list_push(bp_map_list, bp_map);
 		
+		free(bp_id);		
 	}
 
 	if ((rc = rm_free_BGL(bgl)) != STATUS_OK)
-		error("rm_free_BGL(): %s", rc);
-	
+		error("rm_free_BGL(): %s", rc);	
 	
 #endif
 	_bp_map_initialized = true;
@@ -2146,6 +2151,12 @@ static int _set_external_wires(int dim, int count, pa_node_t* source,
 			error("rm_get_data(RM_FirstWire): %d", rc);
 			break;
 		}
+		
+		if(!wire_id) {
+			error("No Wire ID was returned from database");
+			continue;
+		}
+
 		if(wire_id[7] != '_') 
 			continue;
 		switch(wire_id[0]) {
@@ -2165,6 +2176,9 @@ static int _set_external_wires(int dim, int count, pa_node_t* source,
 		}
 		strncpy(from_node, wire_id+2, 4);
 		strncpy(to_node, wire_id+8, 4);
+		
+		free(wire_id);
+		
 		from_node[4] = '\0';
 		to_node[4] = '\0';
 		if ((rc = rm_get_data(my_wire, RM_WireFromPort, &my_port))
@@ -2177,7 +2191,6 @@ static int _set_external_wires(int dim, int count, pa_node_t* source,
 			error("rm_get_data(RM_PortID): %d", rc);
 			break;
 		}
-		
 		if ((rc = rm_get_data(my_wire, RM_WireToPort, &my_port))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_WireToPort): %d", rc);
@@ -2188,6 +2201,7 @@ static int _set_external_wires(int dim, int count, pa_node_t* source,
 			error("rm_get_data(RM_PortID): %d", rc);
 			break;
 		}
+
 		coord = find_bp_loc(from_node);
 		if(coord[X]>=DIM_SIZE[X] 
 		   || coord[Y]>=DIM_SIZE[Y]
