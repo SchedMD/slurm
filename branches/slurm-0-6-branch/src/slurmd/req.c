@@ -899,15 +899,27 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 	job_id_response_msg_t resp;
 	bool         found = false; 
 	uint32_t     my_cont = slurm_container_find(req->job_pid);
+	List         steps = shm_get_steps();
+	ListIterator i     = list_iterator_create(steps);
+	job_step_t  *s     = NULL;
 
 	if (my_cont == 0) {
-		verbose("slurm_container_find(%u): process not found",
-			(uint32_t) req->job_pid);
+		debug("slurm_container_find(%u): process not found",
+		      (uint32_t) req->job_pid);
+		/*
+		 * Check if the job_pid matches the pid of a job step slurmd.
+		 * LCRM gets confused if a session leader process
+		 * (the job step slurmd) is not labelled as a process in the
+		 * job step.
+		 */
+		while ((s = list_next(i))) {
+			if (s->mpid == req->job_pid) {
+				resp.job_id = s->jobid;
+				found = true;
+				break;
+			}
+		}
 	} else {
-		List         steps = shm_get_steps();
-		ListIterator i     = list_iterator_create(steps);
-		job_step_t  *s     = NULL;
-
 		while ((s = list_next(i))) {
 			if (s->cont_id == my_cont) {
 				resp.job_id = s->jobid;
@@ -915,9 +927,9 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 				break;
 			}
 		}
-		list_iterator_destroy(i);
-		list_destroy(steps);
 	}
+	list_iterator_destroy(i);
+	list_destroy(steps);
 
 	if (found) {
 		resp_msg.address      = msg->address;
