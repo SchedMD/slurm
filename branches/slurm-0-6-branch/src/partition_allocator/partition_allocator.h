@@ -118,7 +118,6 @@ typedef struct {
 	int conn_type;
 	int rotate_count;
 	int elongate_count;
-	int node_use;
 	bool rotate;
 	bool elongate; 
 	bool force_contig;

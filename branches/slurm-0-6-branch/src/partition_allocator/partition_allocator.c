@@ -520,7 +520,6 @@ extern void print_pa_request(pa_request_t* pa_request)
 	debug("      rotate:\t%d", pa_request->rotate);
 	debug("    elongate:\t%d", pa_request->elongate);
 	debug("force contig:\t%d", pa_request->force_contig);
-	debug("     node_use:\t%d", pa_request->node_use);
 }
 
 /**

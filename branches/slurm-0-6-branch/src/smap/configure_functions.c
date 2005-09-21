@@ -108,7 +108,6 @@ static int _create_allocation(char *com, List allocated_partitions)
 	request->rotate = false;
 	request->elongate = false;
 	request->force_contig = false;
-	request->node_use = -1;
 
 	while(i<len) {
 		
@@ -521,7 +520,6 @@ static int _copy_allocation(char *com, List allocated_partitions)
 		request->geometry[Z] = allocated_part->request->geometry[Z];
 		request->size = allocated_part->request->size;
 		request->conn_type=allocated_part->request->conn_type;
-		request->node_use=allocated_part->request->node_use;
 		request->rotate =allocated_part->request->rotate;
 		request->elongate = allocated_part->request->elongate;
 		request->force_contig = allocated_part->request->force_contig;
@@ -615,24 +613,6 @@ static int _save_allocation(char *com, List allocated_partitions)
 			else
 				conn_type = "MESH";
 			
-			if(allocated_part->request->node_use != -1) {
-				if(allocated_part->request->node_use 
-				   == COPROCESSOR)
-					mode_type = "COPROCESSOR";
-				else
-					mode_type = "VIRTUAL";
-			
-				sprintf(save_string, "Nodes=%s Type=%s "
-					"Use=%s\n", 
-					allocated_part->request->save_name, 
-					conn_type, mode_type);
-			} else {
-				sprintf(save_string, "Nodes=%s "
-					"Type=%s\n", 
-					allocated_part->request->save_name, 
-					conn_type);
-			}
-
 			fputs (save_string,file_ptr);
 		}
 		fclose (file_ptr);
@@ -646,15 +626,9 @@ static void _print_header_command(void)
 	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 		  pa_system_ptr->xcord, "ID");
 	pa_system_ptr->xcord += 4;
-	/* mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord, */
-/* 		  pa_system_ptr->xcord, "PARTITION"); */
-/* 	pa_system_ptr->xcord += 10; */
 	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 		  pa_system_ptr->xcord, "TYPE");
 	pa_system_ptr->xcord += 7;
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "CONF");
-	pa_system_ptr->xcord += 9;
 	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 		  pa_system_ptr->xcord, "CONTIG");
 	pa_system_ptr->xcord += 7;
@@ -681,9 +655,6 @@ static void _print_text_command(allocated_part_t *allocated_part)
 	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 		  pa_system_ptr->xcord, "%c",allocated_part->letter);
 	pa_system_ptr->xcord += 4;
-	/* mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord, */
-	/* 		  pa_system_ptr->xcord, "PARTITION"); */
-	/* 	pa_system_ptr->xcord += 10; */
 	if(allocated_part->request->conn_type==TORUS) 
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "TORUS");
@@ -691,22 +662,6 @@ static void _print_text_command(allocated_part_t *allocated_part)
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "MESH");	
 	pa_system_ptr->xcord += 7;
-				
-	if(allocated_part->request->node_use != -1) {
-		if(allocated_part->request->node_use == COPROCESSOR) 
-			mvwprintw(pa_system_ptr->text_win, 
-				  pa_system_ptr->ycord,
-				  pa_system_ptr->xcord, "coproc");
-		else
-			mvwprintw(pa_system_ptr->text_win, 
-				  pa_system_ptr->ycord,
-				  pa_system_ptr->xcord, "virtual");
-	} else {
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "both");	
-	}
-	
-	pa_system_ptr->xcord += 9;
 				
 	if(allocated_part->request->force_contig)
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
@@ -748,12 +703,14 @@ static void _print_text_command(allocated_part_t *allocated_part)
 void get_command(void)
 {
 	char com[255];
-	//static node_info_msg_t *node_info_ptr;
+	
 	int text_width, text_startx;
 	allocated_part_t *allocated_part = NULL;
 	int i=0;
+	int count=0;
+	
 	WINDOW *command_win;
-	List allocated_partitions;
+        List allocated_partitions;
 	ListIterator results_i;
 		
 	if(params.commandline) {
@@ -796,22 +753,29 @@ void get_command(void)
 				pa_system_ptr->xcord++;
 			}
 			pa_system_ptr->ycord++;
-			pa_system_ptr->xcord=1;					
-			memset(error_string,0,255);
-			
+			pa_system_ptr->xcord=1;	
+			memset(error_string,0,255);			
 		}
 		results_i = list_iterator_create(allocated_partitions);
-		while((allocated_part = list_next(results_i)) != NULL) {
-			_print_text_command(allocated_part);
-		}
-		list_iterator_destroy(results_i);
 		
+		count = list_count(allocated_partitions) 
+			- (LINES-(pa_system_ptr->ycord+5)); 
+		
+		if(count<0)
+			count=0;
+		i=0;
+		while((allocated_part = list_next(results_i)) != NULL) {
+			if(i>=count)
+				_print_text_command(allocated_part);
+			i++;
+		}
+		list_iterator_destroy(results_i);		
 		
 		wnoutrefresh(pa_system_ptr->text_win);
 		wnoutrefresh(pa_system_ptr->grid_win);
 		doupdate();
 		clear_window(command_win);
-		//wclear(command_win);
+		
 		box(command_win, 0, 0);
 		mvwprintw(command_win, 0, 3,
 			  "Input Command: (type quit to change view, "
@@ -824,6 +788,8 @@ void get_command(void)
 			_delete_allocated_parts(allocated_partitions);
 			pa_fini();
 			exit(0);
+		} if (!strcmp(com, "quit")) {
+			break;
 		} else if (!strncasecmp(com, "resolve", 7) ||
 			   !strncasecmp(com, "r ", 2)) {
 			_resolve(com);
