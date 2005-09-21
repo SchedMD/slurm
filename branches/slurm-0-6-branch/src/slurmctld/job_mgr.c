@@ -1548,6 +1548,9 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		return ESLURM_USER_ID_MISSING;
 	}
 
+	if (job_ptr->job_state & JOB_COMPLETING)
+		return SLURM_SUCCESS;	/* avoid replay */
+
 	if (job_ptr->job_state == JOB_RUNNING)
 		job_comp_flag = JOB_COMPLETING;
 
