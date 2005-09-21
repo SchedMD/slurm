@@ -223,7 +223,11 @@ extern int update_partition_list()
 			updated = -1;
 			break;
 		}
-		if(strncmp("RMP", name,3)) {
+		if(!name) {
+			error("No Partition ID was returned from database");
+			continue;
+		}
+		if(strncmp("RMP", name, 3)) {
 			free(name);
 			continue;
 		}

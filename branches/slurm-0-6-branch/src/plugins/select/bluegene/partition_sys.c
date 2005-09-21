@@ -280,7 +280,7 @@ int read_bgl_partitions()
 			continue;
 		}
 
-		if(strncmp("RMP",part_name,3)) {
+		if(strncmp("RMP", part_name, 3)) {
 			free(part_name);
 			continue;
 		}
@@ -310,15 +310,9 @@ int read_bgl_partitions()
 			bp_cnt = 0;
 		}
 		
-		if(bp_cnt==0) {
-			if(bgl_recover) 
-				if ((rc = rm_free_partition(part_ptr))
-				    != STATUS_OK) {
-					error("rm_free_partition(): %s", 
-					      bgl_err_str(rc));
-				}	
-			continue;
-		}
+		if(bp_cnt==0)
+			goto clean_up;
+
 		bgl_record->bgl_part_list = list_create(NULL);
 		bgl_record->hostlist = hostlist_create(NULL);
 		
@@ -341,6 +335,8 @@ int read_bgl_partitions()
 					error("rm_get_data(RM_FirstBP): %s", 
 					      bgl_err_str(rc));
 					rc = SLURM_ERROR;
+					if (bgl_recover)
+						rm_free_partition(part_ptr);
 					return rc;
 				}	
 			}
@@ -422,7 +418,7 @@ int read_bgl_partitions()
 				if(!user_name) {
 					error("No user name was "
 					      "returned from database");
-					break;
+					goto clean_up;
 				}
 				bgl_record->user_name = xstrdup(user_name);
 			
@@ -462,8 +458,8 @@ int read_bgl_partitions()
 				
 		bgl_record->part_lifecycle = STATIC;
 						
-		if ((rc = rm_free_partition(part_ptr))
-				!= STATUS_OK) {
+clean_up:	if (bgl_recover
+		&&  ((rc = rm_free_partition(part_ptr)) != STATUS_OK)) {
 			error("rm_free_partition(): %s", bgl_err_str(rc));
 		}
 	}

@@ -354,8 +354,7 @@ extern int remove_all_users(char *bgl_part_id, char *user_name)
 			      user, 
 			      bgl_part_id);
 		}
-		if(user)
-			free(user);
+		free(user);
 	}
 	if ((rc = rm_free_partition(part_ptr)) != STATUS_OK) {
 		error("rm_free_partition(): %s", bgl_err_str(rc));
@@ -1675,6 +1674,10 @@ static int _update_bgl_record_state(List bgl_destroy_list)
 			func_rc = SLURM_ERROR;
 			break;
 		}
+		if (!name) {
+			error("RM_Partition is NULL");
+			continue;
+		}
 		
 		itr = list_iterator_create(bgl_destroy_list);
 		while ((bgl_record = (bgl_record_t*) list_next(itr))) {	
@@ -1701,11 +1704,9 @@ static int _update_bgl_record_state(List bgl_destroy_list)
 			break;
 		}
 		list_iterator_destroy(itr);
-		if(name)
-			free(name);
+		free(name);
 	}
 	
-clean_up:
 	if ((rc = rm_free_partition_list(part_list)) != STATUS_OK) {
 		error("rm_free_partition_list(): %s", bgl_err_str(rc));
 	}
