@@ -32,12 +32,12 @@
 #include "src/common/eio.h"
 
 /*
- * Spawn IO handling thread.
+ * Start IO handling thread.
  * Initializes IO pipes, creates IO objects and appends them to job->objs,
  * and opens 2*ntask initial connections for stdout/err, also appending these
  * to job->objs list.
  */
-int io_spawn_handler(slurmd_job_t *job);
+int io_start_thread(slurmd_job_t *job);
 
 /*
  * Create a set of new connecting clients for the running job

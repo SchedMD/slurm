@@ -375,7 +375,7 @@ _setup_io(slurmd_job_t *job)
 		return ESLURMD_IO_ERROR;
 	}
 
-	if (io_spawn_handler(job) < 0)
+	if (io_start_thread(job) < 0)
 		return ESLURMD_IO_ERROR;
 
 	/*
@@ -390,7 +390,8 @@ _setup_io(slurmd_job_t *job)
 	if (_drop_privileges(job->pwd) < 0)
 		return ESLURMD_SET_UID_OR_GID_ERROR;
 
-	rc = io_prepare_clients(job);
+	/* FIXME! Need to open files */
+	rc = io_client_connect(job);
 
 	if (_reclaim_privileges(spwd) < 0)
 		error("sete{u/g}id(%lu/%lu): %m", 

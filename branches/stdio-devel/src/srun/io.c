@@ -619,52 +619,31 @@ _is_fd_ready(int fd)
 static int
 _read_io_header(int fd, srun_job_t *job, char *host)
 {
-	int      size = io_hdr_packed_size();
-	cbuf_t   cb   = cbuf_create(size, size);
-	char    *key  = NULL;
-	int      len  = 0;
-	io_hdr_t hdr;
+	struct slurm_io_init_msg msg;
 
-	if (cbuf_write_from_fd(cb, fd, size, NULL) < 0) {
-		error ("Bad stream header write: %m");
+	if (io_init_msg_read_from_fd(fd, &msg) != SLURM_SUCCESS) {
+		error("failed reading io init message");
 		goto fail;
 	}
 
-	if (io_hdr_read_cb(cb, &hdr) < 0) {
-		error ("Unable to unpack io header: %m");
+/* 	if (slurm_cred_get_signature(job->cred, &key, &len) < 0) { */
+/* 		error ("Couldn't get existing cred signature"); */
+/* 		goto fail; */
+/* 	} */
+
+	if (io_init_msg_validate(&msg) < 0)
+		goto fail;
+
+	/* FIXME!  Should use real node count rather than max_nodes */
+	if (msg.nodeid >= job->nhosts) {
+		error ("Invalid nodeid %d from %s", msg.nodeid, host);
 		goto fail;
 	}
 
-	if (slurm_cred_get_signature(job->cred, &key, &len) < 0) {
-		error ("Couldn't get existing cred signature");
-		goto fail;
-	}
-
-	if (io_hdr_validate(&hdr, key, len) < 0) /* check key */
-		goto fail;
-
-	/* 
-	 * validate reality of hdr.taskid
-	 */
-	if ((hdr.taskid < 0) || (hdr.taskid >= opt.nprocs)) {
-		error ("Invalid taskid %d from %s", hdr.taskid, host);
-		goto fail;
-	}
-
-	if (hdr.type == SLURM_IO_STDOUT)
-		job->out[hdr.taskid] = fd;
-	else
-		job->err[hdr.taskid] = fd;
-
-	debug2("accepted %s connection from %s task %u, sd=%d", 
-	       (hdr.type == SLURM_IO_STDERR ? "stderr" : "stdout"), 
-		host, hdr.taskid, fd                               );
-
-	cbuf_destroy(cb);
-	return SLURM_SUCCESS;
+	debug2("Validated IO connection from %s, node rank %u, sd=%d",
+	       host, msg.nodeid, fd);
 
     fail:
-	cbuf_destroy(cb);
 	close(fd);
 	return SLURM_ERROR;
 }

@@ -529,7 +529,6 @@ task_info_create(int taskid, int gtaskid)
 	t->in          = NULL;
 	t->out         = NULL;
 	t->err         = NULL;
-	t->srun_list   = list_create(NULL); 
 	slurm_mutex_unlock(&t->mutex);
 	return t;
 }
@@ -539,7 +538,6 @@ void
 task_info_destroy(slurmd_task_info_t *t)
 {
 	slurm_mutex_lock(&t->mutex);
-	list_destroy(t->srun_list);
 	slurm_mutex_unlock(&t->mutex);
 	slurm_mutex_destroy(&t->mutex);
 	xfree(t);

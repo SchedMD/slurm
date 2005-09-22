@@ -45,49 +45,43 @@
 
 #define SLURM_IO_KEY_SIZE 8	/* IO key is 64 bits */
 
-/* 
- * Slurm IO stream types:
- *
- * STDOUT = stdout/stdin
- * STDERR = stderr/signals
- */
-#define SLURM_IO_STDOUT   0x00
-#define SLURM_IO_STDERR   0x01
+#define SLURM_IO_STDIN 0
+#define SLURM_IO_STDOUT 1
+#define SLURM_IO_STDERR 2
+#define SLURM_IO_ALLTASKS ((uint16_t)-1)
+
+struct slurm_io_init_msg {
+	uint16_t      version;
+	unsigned char key[SLURM_IO_KEY_SIZE]; 
+	uint32_t      nodeid;
+};
+
 
 typedef struct slurm_io_header {
-	unsigned char key[SLURM_IO_KEY_SIZE]; 
-	uint32_t      taskid;
-	uint16_t      version;
 	uint16_t      type;
+	uint16_t      gtaskid;
+	uint16_t      ltaskid;
+	uint32_t      length;
 } io_hdr_t;
-
 
 /*
  * Return the packed size of an IO header in bytes;
  */
 int io_hdr_packed_size();
 
+void io_hdr_pack(io_hdr_t *hdr, Buf buffer);
 
-/* 
- * Write an io header into the cbuf in packed form
- */
-int io_hdr_write_cb(cbuf_t cb, io_hdr_t *hdr);
+int io_hdr_unpack(io_hdr_t *hdr, Buf buffer);
 
 /*
- * Read an io header from the cbuf into hdr
- */
-int io_hdr_read_cb(cbuf_t cb, io_hdr_t *hdr);
-
-/*
- * Validate io header hdr against len bytes of the data in key
+ * Validate io init msg
  *
  * Returns 0 on success, -1 if any of the following is not true
- *
- *  version          != internal version
- *  type             != (SLURM_IO_STDOUT or SLURM_IO_STDERR)
- *  len bytes of key != hdr->key
- *
  */
-int io_hdr_validate(io_hdr_t *hdr, const char *key, int len);
+int io_init_msg_validate(struct slurm_io_init_msg *msg);
+
+int io_init_msg_write_to_fd(int fd, struct slurm_io_init_msg *msg);
+
+int io_init_msg_read_from_fd(int fd, struct slurm_io_init_msg *msg);
 
 #endif /* !_HAVE_IO_HDR_H */

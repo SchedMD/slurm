@@ -32,7 +32,7 @@
 #include "src/common/io_hdr.h"
 #include "src/common/slurm_protocol_defs.h"
 
-#define IO_HDR_VERSION 0xa001
+#define IO_PROTOCOL_VERSION 0xb001
 
 /*
 static void
@@ -49,30 +49,24 @@ _print_data(char *data, int datalen)
 }
 */
 
-
-static void
+void
 io_hdr_pack(io_hdr_t *hdr, Buf buffer)
 {
-	pack16(hdr->version, buffer);
-	packmem((char *) hdr->key, (uint16_t) SLURM_IO_KEY_SIZE, buffer);
-	pack32(hdr->taskid,  buffer);
-	pack16(hdr->type,    buffer);
+	pack16(hdr->type, buffer);
+	pack16(hdr->gtaskid, buffer);
+	pack16(hdr->ltaskid, buffer);
+	pack32(hdr->length,  buffer);
 }
 
-static int
+int
 io_hdr_unpack(io_hdr_t *hdr, Buf buffer)
 {
 	uint16_t val;
 
-	safe_unpack16(&hdr->version, buffer);
-
-	safe_unpackmem((char *) hdr->key, &val, buffer);
-
-	if (val != SLURM_IO_KEY_SIZE)
-		goto unpack_error;
-
-	safe_unpack32(&hdr->taskid, buffer);
 	safe_unpack16(&hdr->type, buffer);
+	safe_unpack16(&hdr->gtaskid, buffer);
+	safe_unpack16(&hdr->ltaskid, buffer);
+	safe_unpack32(&hdr->length, buffer);
 
 	return SLURM_SUCCESS;
 
@@ -83,62 +77,131 @@ io_hdr_unpack(io_hdr_t *hdr, Buf buffer)
 int 
 io_hdr_packed_size()
 {
-	return sizeof(uint32_t) + 3*sizeof(uint16_t) + SLURM_IO_KEY_SIZE;
+	return sizeof(uint32_t) + 3*sizeof(uint16_t);
 }
 
 int 
-io_hdr_write_cb(cbuf_t cb, io_hdr_t *hdr)
+io_init_msg_validate(struct slurm_io_init_msg *msg)
 {
-	int retval = SLURM_SUCCESS;
+	debug2("Entering io_init_msg_validate");
 
-	Buf buffer = init_buf(1024);
-	hdr->version = IO_HDR_VERSION;
+	debug3("msg->version = %x", msg->version);
+	debug3("msg->nodeid = %u", msg->nodeid);
 
-	io_hdr_pack(hdr, buffer);
-
-	xassert(buffer->processed == io_hdr_packed_size());
-
-	retval = cbuf_write(cb, buffer->head, buffer->processed, NULL);
-	free_buf(buffer);
-
-	return retval;
-} 
-
-int 
-io_hdr_read_cb(cbuf_t cb, io_hdr_t *hdr)
-{
-	Buf buffer = init_buf(4096);
-	int rc     = SLURM_SUCCESS;
-
-	cbuf_read(cb, buffer->head, io_hdr_packed_size());
-	
-	rc = io_hdr_unpack(hdr, buffer);
-
-	free_buf(buffer);
-	return rc; 
-}
-
-int 
-io_hdr_validate(io_hdr_t *hdr, const char *key, int len)
-{
-	
-	if (hdr->version != IO_HDR_VERSION) {
+	if (msg->version != IO_PROTOCOL_VERSION) {
 		error("Invalid IO header version");
 		return SLURM_ERROR;
 	}
 
-	if ((hdr->type != SLURM_IO_STDOUT) && (hdr->type != SLURM_IO_STDERR)) {
-		error("Invalid IO header type: %d", hdr->type);
-		return SLURM_ERROR;
-	}
-
-	len = len < SLURM_IO_KEY_SIZE ? len : SLURM_IO_KEY_SIZE;
-
-	if (memcmp((void *) key, (void *) hdr->key, len)) {
-		error("Invalid IO header signature");
-		return SLURM_ERROR;
-	}
-
+	debug2("Leaving  io_init_msg_validate");
 	return SLURM_SUCCESS;
 }
 
+
+static int
+io_init_msg_packed_size(void)
+{
+	int len;
+
+	len = sizeof(uint16_t)        /* version */
+		+ sizeof(uint32_t)    /* nodeid */
+		+ (SLURM_IO_KEY_SIZE + sizeof(uint16_t));  /* key */
+
+	return len;
+}
+
+static void
+io_init_msg_pack(struct slurm_io_init_msg *hdr, Buf buffer)
+{
+	pack16(hdr->version, buffer);
+       	pack32(hdr->nodeid, buffer);
+	packmem((char *) hdr->key, (uint16_t) SLURM_IO_KEY_SIZE, buffer);
+}
+
+
+static int
+io_init_msg_unpack(struct slurm_io_init_msg *hdr, Buf buffer)
+{
+	uint16_t val;
+
+	safe_unpack16(&hdr->version, buffer);
+	safe_unpack32(&hdr->nodeid, buffer);
+	safe_unpackmem((char *) hdr->key, &val, buffer);
+	if (val != SLURM_IO_KEY_SIZE)
+		goto unpack_error;
+
+	return SLURM_SUCCESS;
+
+    unpack_error:
+	error("unpack error in io_init_msg_unpack");
+	return SLURM_ERROR;
+}
+
+
+int
+io_init_msg_write_to_fd(int fd, struct slurm_io_init_msg *msg)
+{
+	Buf buf;
+	void *ptr;
+	int n;
+	
+	xassert(msg);
+
+	debug2("Entering io_init_msg_write_to_fd");
+	msg->version = IO_PROTOCOL_VERSION;
+	buf = init_buf(io_init_msg_packed_size());
+	debug2("msg->nodeid = %d", msg->nodeid);
+	io_init_msg_pack(msg, buf);
+	
+	ptr = get_buf_data(buf);
+again:
+	if ((n = write(fd, ptr, io_init_msg_packed_size())) < 0) {
+		if (errno == EINTR)
+			goto again;
+		free_buf(buf);
+		return SLURM_ERROR;
+	}
+	if (n != io_init_msg_packed_size()) {
+		error("io init msg write too small");
+		free_buf(buf);
+		return SLURM_ERROR;
+	}
+
+	free_buf(buf);
+	debug2("Leaving  io_init_msg_write_to_fd");
+	return SLURM_SUCCESS;
+}
+
+
+int
+io_init_msg_read_from_fd(int fd, struct slurm_io_init_msg *msg)
+{
+	Buf buf;
+	void *ptr;
+	int n;
+	
+	xassert(msg);
+
+	debug2("Entering io_init_msg_read_from_fd");
+	buf = init_buf(io_init_msg_packed_size());
+	ptr = get_buf_data(buf);
+again:
+	if ((n = read(fd, ptr, io_init_msg_packed_size())) < 0) {
+		if (errno == EINTR)
+			goto again;
+		free_buf(buf);
+		return SLURM_ERROR;
+	}
+	if (n != io_init_msg_packed_size()) {
+		error("io init msg read too small");
+		free_buf(buf);
+		return SLURM_ERROR;
+	}
+	debug3("  read %d bytes", n);
+	io_init_msg_unpack(msg, buf);
+
+	free_buf(buf);
+
+	debug2("Leaving  io_init_msg_read_from_fd");
+	return SLURM_SUCCESS;
+}

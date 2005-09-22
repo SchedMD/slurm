@@ -95,7 +95,6 @@ typedef struct task_info {
 	eio_obj_t      *out;        /* standard output event IO object      */
 	eio_obj_t      *err;        /* standard error event IO object       */
 
-	List            srun_list;  /* List of srun objs for this task      */
 	bool            esent;      /* true if exit status has been sent    */
 	bool            exited;     /* true if task has exited              */
 	int             estatus;    /* this task's exit status              */
@@ -128,6 +127,8 @@ typedef struct slurmd_job {
 	eio_t          eio;
 	List           objs;  /* List of io_obj_t pointers (see eio.h)      */
 	List 	       sruns; /* List of srun_info_t pointers               */
+	List           clients; /* List of struct client_io_info pointers   */
+	List           free_io_buf; /* List of free struct io_buf pointers  */
 
 	pthread_t      ioid;  /* pthread id of IO thread                    */
 
