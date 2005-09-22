@@ -866,7 +866,7 @@ _kill_running_tasks(slurmd_job_t *job)
 	List         steps;
 	ListIterator i;
 	job_step_t  *s     = NULL;
-	int          limit = 0;
+	int          delay = 1;
 
 	if (job->batch)
 		return;
@@ -885,11 +885,15 @@ _kill_running_tasks(slurmd_job_t *job)
 		slurm_container_signal(s->cont_id, SIGKILL);
 
 		/* Try destroying the container up to 30 times */
-		while (slurm_container_destroy(s->cont_id) != SLURM_SUCCESS
-		       && limit < 30) {
+		while (slurm_container_destroy(s->cont_id) != SLURM_SUCCESS) {
 			slurm_container_signal(s->cont_id, SIGKILL);
-			sleep(1);
-			limit++;
+			sleep(delay);
+			if (delay < 120) {
+				delay *= 2;
+			} else {
+				error("Unable to destroy container, job %u.%u",
+				      job->jobid, job->stepid);
+			}
 		}
 	}
 
