@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
  -- Add support for srun --cpus-per-task through task allocation in 
     slurmctld.
  -- fixed partition_allocator to work without curses
+ -- made change to srun to start message thread before other threads 
+    to make sure localtime doesn't interfere.   
 
 * Changes in SLURM 0.6.0
 ========================

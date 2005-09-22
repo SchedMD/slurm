@@ -2220,7 +2220,7 @@ _get_boxes(char *buf, int max_len)
 			end_box = i;
 		}
 		if (((len+8) < max_len) && (start_box != -1)
-		&& ((is_box == 0) || (i == axis_max_x))) {
+		    && ((is_box == 0) || (i == axis_max_x))) {
 			sprintf(buf+len,"%d%d%dx%d%d%d,",
 				start_box, axis_min_y, axis_min_z,
 				end_box, axis_max_y, axis_max_z);
