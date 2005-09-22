@@ -349,7 +349,8 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 	time_t now;
 	struct tm *time_ptr;
 	char reason[128];
-	
+	int job_remove_failed = 0;
+
 	debug2("getting the job info");
 	live_states = JOB_ALL_FLAG 
 		& (~JOB_TERMINATED_FLAG) 
@@ -407,15 +408,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		}
 		debug2("got job_id %d",job_id);
 		if((rc = _remove_job(job_id)) == INTERNAL_ERROR) {
-			now = time(NULL);
-			time_ptr = localtime(&now);
-			strftime(reason, sizeof(reason),
-				 "_term_agent: "
-				 "Couldn't remove job "
-				 "[SLURM@%b %d %H:%M]",
-				 time_ptr);
-			slurm_drain_nodes(bgl_record->nodes, 
-					  reason);
+			job_remove_failed = 1;
 			break;
 		}
 	}
@@ -426,10 +419,25 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		debug2("got the record %s user is %s",
 		      bgl_record->bgl_part_id,
 		      bgl_record->user_name);
-	
+
+		if(job_remove_failed) {
+			time_ptr = localtime(&now);
+			strftime(reason, sizeof(reason),
+				 "_term_agent: "
+				 "Couldn't remove job "
+				 "[SLURM@%b %d %H:%M]",
+				 time_ptr);
+			if(bgl_record->nodes)
+				slurm_drain_nodes(bgl_record->nodes, 
+						  reason);
+			else
+				error("Partition %s doesn't have a node list.",
+				      bgl_update_ptr->bgl_part_id);
+		}
+			
 		slurm_mutex_lock(&part_state_mutex);
 		bgl_record->job_running = 0;
-	
+		
 		/*remove user from list */
 		if(bgl_record->target_name) {
 			if(strcmp(bgl_record->target_name, 

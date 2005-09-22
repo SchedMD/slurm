@@ -126,6 +126,7 @@ int srun(int ac, char **av)
 	env->stepid = -1;
 	env->gmpi = -1;
 	env->procid = -1;
+	env->localid = -1;
 	env->nodeid = -1;
 	env->cli = NULL;
 	env->env = NULL;
