@@ -1,6 +1,15 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.6.0-pre8
+=============================
+ -- Remove debugging xassert in switch/federation that were accidentally
+    committed
+ -- Make slurmd step manager retry slurm_container_destroy() indefinitely
+    instead of giving up after 30 seconds.  If something prevents a job
+    step's processes from being killed, the job will be stuck in the
+    completing until the container destroy succeeds.
+
 * Changes in SLURM 0.6.0-pre7
 =============================
  -- Disable localtime_r() calls from forked processes (semaphore set 
