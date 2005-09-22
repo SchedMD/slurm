@@ -508,8 +508,6 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 					break;
 				}
 			}
-			
-			//BGLBridgeAPI doesn't strdup SwitchBPID
 			free(curr_bpid);
 		}
 
