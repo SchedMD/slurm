@@ -244,6 +244,9 @@ _fork_new_slurmd(void)
 		return ((int) pid);
 	}
 
+#ifdef DISABLE_LOCALTIME
+	disable_localtime();
+#endif
 	if (close(fds[0]) < 0)
 		error("Unable to close read-pipe in child: %m");
 

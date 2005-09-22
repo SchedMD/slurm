@@ -152,6 +152,11 @@ void _xstrftimecat(char **buf, const char *fmt)
 	struct tm tm;
 
 	const char default_fmt[] = "%m/%d/%Y %H:%M:%S %Z";
+#ifdef DISABLE_LOCALTIME
+	static int disabled=0;
+	if (!buf) disabled=1;
+	if (disabled) return;
+#endif
 
 	if (fmt == NULL)
 		fmt = default_fmt;

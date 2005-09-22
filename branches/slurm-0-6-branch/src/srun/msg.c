@@ -998,7 +998,10 @@ msg_thr_create(srun_job_t *job)
 	if((job->forked_msg->par_msg->pid = fork()) == -1)   
 		return SLURM_ERROR; // there was an error
 	else if (job->forked_msg->par_msg->pid == 0) 
-	{                       // child:                       
+	{                       // child:    
+#ifdef DISABLE_LOCALTIME
+		disable_localtime();
+#endif                   
 		setsid();  
 		message_thread = 1;
 		close(job->forked_msg->

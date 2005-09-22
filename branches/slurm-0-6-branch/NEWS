@@ -2,7 +2,14 @@ This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
 * Changes in SLURM 0.6.0-pre7
-========================
+=============================
+ -- Disable localtime_r() calls from forked processes (semaphore set 
+    in another pthread can deadlock calls to localtime_r made from 
+    the forked process, this will be properly fixed in the next 
+    major release of SLURM).
+
+* Changes in SLURM 0.6.0-pre7
+=============================
  -- Added SLURM_LOCALID environment variable for spawned tasks
     (Dan Palermo, HP).
  -- Modify switch logic to restore state based exclusively upon
