@@ -77,7 +77,7 @@ int io_hdr_unpack(io_hdr_t *hdr, Buf buffer);
  *
  * Returns 0 on success, -1 if any of the following is not true
  */
-int io_init_msg_validate(struct slurm_io_init_msg *msg);
+int io_init_msg_validate(struct slurm_io_init_msg *msg, const char *sig);
 
 int io_init_msg_write_to_fd(int fd, struct slurm_io_init_msg *msg);
 

@@ -81,7 +81,7 @@ io_hdr_packed_size()
 }
 
 int 
-io_init_msg_validate(struct slurm_io_init_msg *msg)
+io_init_msg_validate(struct slurm_io_init_msg *msg, const char *sig)
 {
 	debug2("Entering io_init_msg_validate");
 
@@ -89,7 +89,13 @@ io_init_msg_validate(struct slurm_io_init_msg *msg)
 	debug3("msg->nodeid = %u", msg->nodeid);
 
 	if (msg->version != IO_PROTOCOL_VERSION) {
-		error("Invalid IO header version");
+		error("Invalid IO init header version");
+		return SLURM_ERROR;
+	}
+
+	if (memcmp((void *)sig, (void *)msg->cred_signature,
+		   SLURM_CRED_SIGLEN)) {
+		error("Invalid IO init header signature");
 		return SLURM_ERROR;
 	}
 

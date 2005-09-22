@@ -620,18 +620,20 @@ static int
 _read_io_header(int fd, srun_job_t *job, char *host)
 {
 	struct slurm_io_init_msg msg;
+	char *sig;
+	int siglen;
 
 	if (io_init_msg_read_from_fd(fd, &msg) != SLURM_SUCCESS) {
 		error("failed reading io init message");
 		goto fail;
 	}
 
-/* 	if (slurm_cred_get_signature(job->cred, &key, &len) < 0) { */
-/* 		error ("Couldn't get existing cred signature"); */
-/* 		goto fail; */
-/* 	} */
+	if (slurm_cred_get_signature(job->cred, &sig, &siglen) < 0) {
+		error ("Couldn't get existing cred signature");
+		goto fail;
+	}
 
-	if (io_init_msg_validate(&msg) < 0)
+	if (io_init_msg_validate(&msg, sig) < 0)
 		goto fail;
 
 	/* FIXME!  Should use real node count rather than max_nodes */
