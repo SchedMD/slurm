@@ -264,11 +264,11 @@ int srun(int ac, char **av)
 
 	_run_srun_prolog(job);
 
-	if (slurm_mpi_thr_create(job) < 0)
-		job_fatal (job, "Failed to initialize MPI");
-
 	if (msg_thr_create(job) < 0)
 		job_fatal(job, "Unable to create msg thread");
+
+	if (slurm_mpi_thr_create(job) < 0)
+		job_fatal (job, "Failed to initialize MPI");
 
 	if (io_thr_create(job) < 0) 
 		job_fatal(job, "failed to initialize IO");
