@@ -507,10 +507,12 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 				if(found_bpid==PA_SYSTEM_DIMENSIONS)
 					break;
 			}
-			free(curr_bpid);
+			
+			//BGLBridgeAPI doesn't strdup SwitchBPID
+			//free(curr_bpid);
 		}
 
-		free(bpid);
+		//free(bpid);
 
 		if(found_bpid==PA_SYSTEM_DIMENSIONS) {
 						

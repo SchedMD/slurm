@@ -769,9 +769,10 @@ extern int bgl_free_partition(bgl_record_t *bgl_record)
 					debug("partition %s is not found");
 					break;
 				}
-				error("pm_destroy_partition(%s): %s",
+				error("pm_destroy_partition(%s): %s "
+				      "State = %d",
 				      bgl_record->bgl_part_id, 
-				      bgl_err_str(rc));
+				      bgl_err_str(rc), bgl_record->state);
 			}
 		}
 		
@@ -1683,7 +1684,7 @@ static int _update_bgl_record_state(List bgl_destroy_list)
 		while ((bgl_record = (bgl_record_t*) list_next(itr))) {	
 			if(!bgl_record->bgl_part_id) 
 				continue;
-			if(!strcmp(bgl_record->bgl_part_id, name)) {
+			if(strcmp(bgl_record->bgl_part_id, name)) {
 				continue;		
 			}
 		       

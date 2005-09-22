@@ -1356,7 +1356,7 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 		hostlist_uniq(reg_hostlist);
 		hostlist_ranged_string(reg_hostlist, sizeof(host_str),
 			host_str);
-		debug("Nodes %s have registerd", host_str);
+		debug("Nodes %s have registered", host_str);
 		hostlist_destroy(reg_hostlist);
 	}
 	if (return_hostlist) {

@@ -293,7 +293,6 @@ int read_bgl_partitions()
 				free(part_name);
 				break;
 			}
-		
 		/* New BGL partition record */		
 		
 		bgl_record = xmalloc(sizeof(bgl_record_t));
