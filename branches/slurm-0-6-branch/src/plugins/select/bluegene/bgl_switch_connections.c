@@ -501,18 +501,19 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 			}
 
 			if (!strcasecmp((char *)bpid, (char *)curr_bpid)) {
-				free(curr_bpid);
 				coord_switch[found_bpid] = curr_switch;
 				found_bpid++;
-				if(found_bpid==PA_SYSTEM_DIMENSIONS)
+				if(found_bpid==PA_SYSTEM_DIMENSIONS) {
+					free(curr_bpid);
 					break;
+				}
 			}
 			
 			//BGLBridgeAPI doesn't strdup SwitchBPID
-			//free(curr_bpid);
+			free(curr_bpid);
 		}
 
-		//free(bpid);
+		free(bpid);
 
 		if(found_bpid==PA_SYSTEM_DIMENSIONS) {
 						
