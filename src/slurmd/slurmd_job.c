@@ -178,6 +178,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->envtp->stepid = -1;
 	job->envtp->gmpi = -1;
 	job->envtp->procid = -1;
+	job->envtp->localid = -1;
 	job->envtp->nodeid = -1;	
 	
 	memcpy(&resp_addr, cli_addr, sizeof(slurm_addr));
@@ -250,6 +251,7 @@ job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *cli_addr)
 	job->envtp->stepid = -1;
 	job->envtp->gmpi = -1;
 	job->envtp->procid = -1;
+	job->envtp->localid = -1;
 	job->envtp->nodeid = -1;
 	
 	memcpy(&io_addr,   cli_addr, sizeof(slurm_addr));
@@ -332,6 +334,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->envtp->stepid = -1;
 	job->envtp->gmpi = -1;
 	job->envtp->procid = -1;
+	job->envtp->localid = -1;
 	job->envtp->nodeid = -1;
 	
 	srun = srun_info_create(NULL, NULL, NULL);

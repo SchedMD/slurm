@@ -46,6 +46,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/switch.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
@@ -158,6 +159,7 @@ void run_backup(void)
 
 	/* clear old state and read new state */
 	job_fini();
+	switch_clear();
 	if (read_slurm_conf(2)) {	/* Recover all state */
 		error("Unable to recover slurm state");
 		abort();

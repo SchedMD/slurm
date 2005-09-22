@@ -53,7 +53,8 @@ typedef struct env_options {
 	slurm_addr *self;
 	int jobid;		/* assigned job id */
 	int stepid;	        /* assigned step id */
-	int procid;
+	int procid;		/* global task id (across nodes) */
+	int localid;		/* local task id (within node) */
 	int nodeid;
 	int gmpi;
 	int cpus_per_task;	/* --cpus-per-task=n, -c n	*/

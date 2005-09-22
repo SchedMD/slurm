@@ -12,7 +12,7 @@
 #    
 #
 #  WARNINGS:
-#    This macro must be placed after AC_PROG_CC or equivalent.
+#    This macro must be placed after AC_PROG_CC and X_AC_CURSES.
 ##*****************************************************************************
 
 AC_DEFUN([X_AC_READLINE],
@@ -28,17 +28,21 @@ AC_DEFUN([X_AC_READLINE],
       esac
     ]
   )
+
   AC_MSG_RESULT([${ac_with_readline=yes}])
   if test "$ac_with_readline" = "yes"; then
-          savedLIBS="$LIBS"
-	  READLINE_LIBS="-lreadline -lhistory -lncurses"
-
-	  AC_CHECK_LIB([readline], [readline], [], 
-	      AC_MSG_ERROR([Cannot find libreadline!]), [ -lhistory -lncurses ])
-
-	  AC_DEFINE([HAVE_READLINE], [1], 
-		        [Define if you are compiling with readline.])
-          LIBS="$savedLIBS"
+    saved_LIBS="$LIBS"
+    READLINE_LIBS="-lreadline -lhistory $NCURSES"
+    LIBS="$saved_LIBS $READLINE_LIBS"
+    AC_TRY_LINK(
+      [	#include <stdio.h>
+	#include <readline/readline.h>
+	#include <readline/history.h>], [
+	char *line = readline("in:");],
+      [AC_DEFINE([HAVE_READLINE], [1], 
+                 [Define if you are compiling with readline.])],
+      [READLINE_LIBS=""])
+    LIBS="$savedLIBS"
   fi
   AC_SUBST(READLINE_LIBS)
 ])

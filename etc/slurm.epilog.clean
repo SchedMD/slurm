@@ -34,3 +34,4 @@ done
 # No other SLURM jobs, purge all remaining processes of this user
 #
 pkill -KILL -U $SLURM_UID
+exit 0

@@ -68,11 +68,17 @@ extern int  switch_save   (char *dir_name);
 
 /* restore any global switch state from a file within the specified directory
  * the actual file name used in plugin specific
- * IN dir_name - directory from hich switch state is restored or NULL for 
- *               switch restart with no state restored
+ * IN dir_name - directory from hich switch state is restored
+ * IN recover  - "true" to restore switch state, "false" to start with
+ *               a clean slate.
  * RET         - slurm error code
  */
-extern int  switch_restore(char *dir_name);
+extern int  switch_restore(char *dir_name, bool recover);
+
+/* clear all current switch window allocation information
+ * RET         - slurm error code
+ */
+extern int  switch_clear(void);
 
 /* report if resource fragmentation is important. if so, delay scheduling a 
  * new job while another is in the process of terminating.
@@ -153,6 +159,14 @@ extern int  switch_g_get_jobinfo(switch_jobinfo_t jobinfo,
  * has completed execution.
  */
 extern int switch_g_job_step_complete(switch_jobinfo_t jobinfo,
+	char *nodelist);
+
+/*
+ * Restore the switch allocation information "jobinfo" for an already
+ * allocated job step, most likely to restore the switch information
+ * after a call to switch_clear().
+ */
+extern int switch_g_job_step_allocated(switch_jobinfo_t jobinfo,
 	char *nodelist);
 
 /* write job credential string representation to a file

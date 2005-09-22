@@ -40,6 +40,10 @@
 
 #define BUF_SIZE 1024
 
+bool fed_need_state_save = false;
+
+static void _spawn_state_save_thread(char *dir);
+
 /* Type for error string table entries */
 typedef struct {
 	int xe_number;
@@ -174,14 +178,25 @@ int switch_p_libstate_save ( char * dir_name )
 	return ret;
 }
 
-int switch_p_libstate_restore ( char * dir_name )
+
+/*
+ * Restore global nodeinfo from a file.
+ *
+ * NOTE: switch_p_libstate_restore is only called by slurmctld, and only
+ * once at start-up.  We exploit (abuse?) this fact to spawn a pthread to
+ * periodically call switch_p_libstate_save().
+ */
+int switch_p_libstate_restore ( char * dir_name, bool recover )
 {
 	char *data = NULL, *file_name;
 	Buf buffer = NULL;
 	int error_code = SLURM_SUCCESS;
 	int state_fd, data_allocated = 0, data_read = 0, data_size = 0;
 
-	if (dir_name == NULL)   /* clean start, no recovery */
+	xassert(dir_name != NULL);
+
+	_spawn_state_save_thread(xstrdup(dir_name));
+	if (!recover)   /* clean start, no recovery */
 		return fed_init();
 
 	file_name = xstrdup(dir_name);
@@ -226,6 +241,11 @@ int switch_p_libstate_restore ( char * dir_name )
         xfree(data);
 
         return error_code;
+}
+
+int switch_p_libstate_clear(void)
+{
+	return fed_libstate_clear();
 }
 
 /*
@@ -399,6 +419,18 @@ int switch_p_job_step_complete(switch_jobinfo_t jobinfo, char *nodelist)
 	return rc;
 }
 
+int switch_p_job_step_allocated(switch_jobinfo_t jobinfo, char *nodelist)
+{
+	hostlist_t list = NULL;
+	int rc;
+
+	list = hostlist_create(nodelist);
+	rc = fed_job_step_allocated((fed_jobinfo_t *)jobinfo, list);
+	hostlist_destroy(list);
+
+	return rc;
+}
+
 void switch_p_print_jobinfo(FILE *fp, switch_jobinfo_t jobinfo)
 {
 	return;
@@ -530,4 +562,29 @@ char *switch_p_strerror(int errnum)
 {
 	char *res = _lookup_slurm_api_errtab(errnum);
 	return (res ? res : strerror(errnum));
+}
+
+
+static void *_state_save_thread(void *arg)
+{
+	char *dir_name = (char *)arg;
+
+	while (1) {
+		sleep(300);
+		if (fed_need_state_save) {
+			fed_need_state_save = false;
+			switch_p_libstate_save(dir_name);
+		}
+	}
+}
+
+static void _spawn_state_save_thread(char *dir)
+{
+	pthread_attr_t attr;
+	pthread_t id;
+
+	slurm_attr_init(&attr);
+
+	if (pthread_create(&id, &attr, &_state_save_thread, (void *)dir) != 0)
+		error("Could not start federation state saving pthread");
 }
