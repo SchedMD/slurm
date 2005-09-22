@@ -47,7 +47,7 @@
 #endif
 
 typedef struct srun_key {
-	unsigned char data[SLURM_IO_KEY_SIZE];
+	unsigned char data[SLURM_CRED_SIGLEN];
 } srun_key_t;
 
 typedef struct srun_info {

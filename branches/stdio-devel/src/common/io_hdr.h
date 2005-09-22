@@ -40,10 +40,9 @@
 #  include <inttypes.h>
 #endif
 
+#include "src/common/macros.h"   /* Containes SLURM_CRED_SIGLEN */
 #include "src/common/pack.h"
 #include "src/common/cbuf.h"
-
-#define SLURM_IO_KEY_SIZE 8	/* IO key is 64 bits */
 
 #define SLURM_IO_STDIN 0
 #define SLURM_IO_STDOUT 1
@@ -52,7 +51,7 @@
 
 struct slurm_io_init_msg {
 	uint16_t      version;
-	unsigned char key[SLURM_IO_KEY_SIZE]; 
+	unsigned char cred_signature[SLURM_CRED_SIGLEN]; 
 	uint32_t      nodeid;
 };
 

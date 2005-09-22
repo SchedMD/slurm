@@ -473,14 +473,14 @@ srun_info_create(slurm_cred_t cred, slurm_addr *resp_addr, slurm_addr *ioaddr)
 
 	slurm_cred_get_signature(cred, &data, &len);
 
-	len = len > SLURM_IO_KEY_SIZE ? SLURM_IO_KEY_SIZE : len;
+	len = len > SLURM_CRED_SIGLEN ? SLURM_CRED_SIGLEN : len;
 
 	if (data != NULL) {
 		memcpy((void *) key->data, data, len);
 
-		if (len < SLURM_IO_KEY_SIZE)
+		if (len < SLURM_CRED_SIGLEN)
 			memset( (void *) (key->data + len), 0, 
-			        SLURM_IO_KEY_SIZE - len        );
+			        SLURM_CRED_SIGLEN - len);
 	}
 
 	if (ioaddr != NULL)

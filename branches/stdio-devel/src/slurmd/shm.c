@@ -635,7 +635,7 @@ shm_update_step_addrs(uint32_t jobid, uint32_t stepid,
 		if (!s->io_update) {
 			s->ioaddr    = *ioaddr;
 			s->respaddr  = *respaddr;
-			memcpy(s->key.data, keydata, SLURM_IO_KEY_SIZE);
+			memcpy(s->key.data, keydata, SLURM_CRED_SIGLEN);
 			s->io_update = true;
 
 			debug3("Going to send shm update signal to %ld", 
@@ -681,7 +681,7 @@ shm_step_addrs(uint32_t jobid, uint32_t stepid,
 		} else {
 			*ioaddr   = s->ioaddr;
 			*respaddr = s->respaddr;
-			memcpy(key->data, s->key.data, SLURM_IO_KEY_SIZE);
+			memcpy(key->data, s->key.data, SLURM_CRED_SIGLEN);
 			s->io_update = false;
 		}
 	} else {

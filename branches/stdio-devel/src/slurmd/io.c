@@ -1040,7 +1040,7 @@ _send_io_init_msg(int sock, srun_key_t *key, int nodeid)
 {
 	struct slurm_io_init_msg msg;
 
-	memcpy(msg.key, key->data, SLURM_IO_KEY_SIZE);
+	memcpy(msg.cred_signature, key->data, SLURM_CRED_SIGLEN);
 	msg.nodeid = nodeid;
 
 	error("msg.nodeid = %u", msg.nodeid);

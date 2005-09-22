@@ -409,7 +409,7 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
                  memcpy(cred->ntask, arg->ntask, cred->ntask_cnt * sizeof(int));
         }
 	cred->ctime  = time(NULL);
-	cred->siglen = SLURM_IO_KEY_SIZE;
+	cred->siglen = SLURM_CRED_SIGLEN;
 
 	cred->signature = xmalloc(cred->siglen * sizeof(char));
 
