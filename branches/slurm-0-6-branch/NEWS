@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.6.0-pre9
+=============================
+ -- Add documentation for ProctrackType=proctrack/rms.
+
 * Changes in SLURM 0.6.0-pre8
 =============================
  -- Remove debugging xassert in switch/federation that were accidentally
