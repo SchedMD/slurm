@@ -816,6 +816,8 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		goto done;
 	}
 
+#if 0
+	/* This code was used in an investigation of hung TotalView proceses */
 	if ((req->signal == SIGKILL)
 	    || (req->signal == SIGINT)) { /* for proctrack/linuxproc */
 		/*
@@ -825,7 +827,9 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		slurm_container_signal(step->cont_id, SIGCONT);
 		if (slurm_container_signal(step->cont_id, req->signal) < 0)
 			rc = errno;
-	} else if (req->signal == 0) {
+	} else 
+#endif
+	if (req->signal == 0) {
 		if (slurm_container_signal(step->cont_id, req->signal) < 0)
 			rc = errno;
 /* SIGMIGRATE and SIGSOUND are used to initiate job checkpoint on AIX.
