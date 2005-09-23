@@ -154,7 +154,8 @@ time limit.
 record count, and array of job_table records for all jobs.
 .LP 
 \fBslurm_pid2jobid\fR Returns a Slurm job id corresponding to the supplied 
-local process id.
+local process id. This only works for processes which Slurm spawns and their 
+descendants.
 .LP 
 \fBslurm_print_job_info\fR Prints the contents of the data structure 
 describing a single job records from the data loaded by the 

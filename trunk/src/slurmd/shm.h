@@ -1,6 +1,6 @@
 /*****************************************************************************\
- * src/slurmd/shm.h - shared memory routines for slurmd
- * $Id$
+ *  src/slurmd/shm.h - shared memory routines for slurmd
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -263,6 +263,10 @@ int shm_update_job_timelimit(uint32_t jobid, time_t newlim);
  */
 int shm_update_step_timelimit(uint32_t jobid, uint32_t stepid, time_t newlim);
 
+/*
+ * Return count of free shm records
+ */
+extern int shm_free_steps(void);
 
 /* 
  * Return job step timelimit

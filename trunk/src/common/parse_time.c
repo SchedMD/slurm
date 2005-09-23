@@ -210,6 +210,7 @@ static int _get_date(char *time_str, int *pos, int *month, int *mday, int *year)
  *   now + count [minutes | hours | days | weeks]
  * 
  * Invalid input results in message to stderr and return value of zero
+ * NOTE: not thread safe
  */
 extern time_t parse_time(char *time_str)
 {

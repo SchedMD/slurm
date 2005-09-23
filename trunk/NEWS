@@ -10,12 +10,32 @@ documents those changes that are of interest to users and admins.
  -- made change to srun to start message thread before other threads 
     to make sure localtime doesn't interfere.   
 
-* Changes in SLURM 0.6.0
-========================
+* Changes in SLURM 0.6.0-pre8
+=============================
+ -- Remove debugging xassert in switch/federation that were accidentally
+    committed
+ -- Make slurmd step manager retry slurm_container_destroy() indefinitely
+    instead of giving up after 30 seconds.  If something prevents a job
+    step's processes from being killed, the job will be stuck in the
+    completing until the container destroy succeeds.
+
+* Changes in SLURM 0.6.0-pre7
+=============================
+ -- Disable localtime_r() calls from forked processes (semaphore set 
+    in another pthread can deadlock calls to localtime_r made from 
+    the forked process, this will be properly fixed in the next 
+    major release of SLURM).
  -- Added SLURM_LOCALID environment variable for spawned tasks
     (Dan Palermo, HP).
  -- Modify switch logic to restore state based exclusively upon
     recovered job steps (not state save file).
+ -- Gracefully refuse job if there are too many job steps in slurmd.
+ -- Fix race condition in job completion that can leave nodes in 
+    COMPLETING state after job is COMPLETED.
+ -- Added frees for BGL BrigeAPI strdups that were to this point unknown.
+ -- smap scrolls correctly for BGL systems.
+ -- slurm_pid2jobid() API call will now return the jobid for a step
+    manager slurmd process.
 
 * Changes in SLURM 0.6.0-pre6
 =============================

@@ -1,6 +1,6 @@
 /*****************************************************************************\
- * src/slurmd/shm.c - slurmd shared memory routines 
- * $Id$
+ *  src/slurmd/shm.c - slurmd shared memory routines 
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -269,6 +269,20 @@ shm_get_steps(void)
 	return l;
 }
 
+extern int
+shm_free_steps(void)
+{
+	int i, rc = 0;
+
+	xassert(slurmd_shm != NULL);
+	_shm_lock();
+	for (i = 0; i < MAX_JOB_STEPS; i++) {
+		if (slurmd_shm->step[i].state == SLURMD_JOB_UNUSED)
+			rc++;
+	}
+	_shm_unlock();
+	return rc;
+}
 
 static bool
 _job_step_mgr_still_running(job_step_t *step)

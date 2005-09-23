@@ -244,6 +244,9 @@ _fork_new_slurmd(void)
 		return ((int) pid);
 	}
 
+#ifdef DISABLE_LOCALTIME
+	disable_localtime();
+#endif
 	if (close(fds[0]) < 0)
 		error("Unable to close read-pipe in child: %m");
 
@@ -456,6 +459,14 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		goto done;
 	}
 
+	/* Make an effort to not overflow shm records */
+	if (shm_free_steps() < 2) {
+		errnum = ESLURMD_TOOMANYSTEPS;
+		error("reject task %u.%u, too many steps", req->job_id,
+			req->job_step_id);
+		goto done;
+	}
+
 	/* xassert(slurm_cred_jobid_cached(conf->vctx, req->job_id));*/
 
 	/* Run job prolog if necessary */
@@ -514,6 +525,14 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 		error("spawn task request from uid %u",
 		      (unsigned int) req_uid);
 		errnum = ESLURM_USER_ID_MISSING;	/* or invalid user */
+		goto done;
+	}
+
+	/* Make an effort to not overflow shm records */
+	if (shm_free_steps() < 2) {
+		errnum = ESLURMD_TOOMANYSTEPS;
+		error("reject task %u.%u, too many steps", req->job_id,
+			req->job_step_id);
 		goto done;
 	}
 
@@ -613,6 +632,14 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
 		goto done;
 	} 
+
+	/* Make an effort to not overflow shm records */
+	if (shm_free_steps() < 2) {
+		rc = ESLURMD_TOOMANYSTEPS;
+		error("reject job %u, too many steps", req->job_id);
+		_prolog_error(req, rc);
+		goto done;
+	}
 
 	if (req->step_id != NO_VAL && req->step_id != 0)
 		first_job_run = false;
@@ -875,15 +902,27 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 	job_id_response_msg_t resp;
 	bool         found = false; 
 	uint32_t     my_cont = slurm_container_find(req->job_pid);
+	List         steps = shm_get_steps();
+	ListIterator i     = list_iterator_create(steps);
+	job_step_t  *s     = NULL;
 
 	if (my_cont == 0) {
-		verbose("slurm_container_find(%u): process not found",
-			(uint32_t) req->job_pid);
+		debug("slurm_container_find(%u): process not found",
+		      (uint32_t) req->job_pid);
+		/*
+		 * Check if the job_pid matches the pid of a job step slurmd.
+		 * LCRM gets confused if a session leader process
+		 * (the job step slurmd) is not labelled as a process in the
+		 * job step.
+		 */
+		while ((s = list_next(i))) {
+			if (s->mpid == req->job_pid) {
+				resp.job_id = s->jobid;
+				found = true;
+				break;
+			}
+		}
 	} else {
-		List         steps = shm_get_steps();
-		ListIterator i     = list_iterator_create(steps);
-		job_step_t  *s     = NULL;
-
 		while ((s = list_next(i))) {
 			if (s->cont_id == my_cont) {
 				resp.job_id = s->jobid;
@@ -891,9 +930,9 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 				break;
 			}
 		}
-		list_iterator_destroy(i);
-		list_destroy(steps);
 	}
+	list_iterator_destroy(i);
+	list_destroy(steps);
 
 	if (found) {
 		resp_msg.address      = msg->address;

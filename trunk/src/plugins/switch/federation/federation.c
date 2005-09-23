@@ -1522,10 +1522,6 @@ _job_step_window_state(fed_jobinfo_t *jp, hostlist_t hl, enum NTBL_RC state)
 	    || (hostlist_is_empty(hl)))
 		return SLURM_ERROR;
 
-	xassert(jp->tables_per_task);
-	xassert(jp->tableinfo);
-	xassert(jp->tableinfo[0].table_length);
-
 	if ((jp->tables_per_task == 0)
 	    || !jp->tableinfo
 	    || (jp->tableinfo[0].table_length == 0))

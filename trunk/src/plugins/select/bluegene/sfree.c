@@ -205,11 +205,22 @@ int main(int argc, char *argv[])
 				
 				break;
 			}
-			if(strncmp("RMP", bgl_part_id, 3))
-				continue;
 
+			if(!bgl_part_id) {
+				error("No Part ID was returned from database");
+				continue;
+			}
+
+			if(strncmp("RMP", bgl_part_id, 3)) {
+				free(bgl_part_id);
+				continue;
+			}
+				
 			delete_record = xmalloc(sizeof(delete_record_t));
 			delete_record->bgl_part_id = xstrdup(bgl_part_id);
+			
+			free(bgl_part_id);
+			
 			delete_record->state = -1;
 			list_push(delete_record_list, delete_record);
 
@@ -297,7 +308,6 @@ static int _update_bgl_record_state()
 	int j, rc, i, num_parts = 0;
 	rm_partition_state_t state = -2;
 	rm_partition_t *part_ptr = NULL;
-	int found=0;
 	delete_record_t *delete_record = NULL;
 	ListIterator itr;
 	
@@ -345,20 +355,21 @@ static int _update_bgl_record_state()
 			state = -1;
 			break;
 		}
-		found = 0;
 		
+		if(!name) {
+			error("No Partition ID was returned from database");
+			continue;
+		}
+
 		itr = list_iterator_create(delete_record_list);
 		while ((delete_record = 
 			(delete_record_t*) list_next(itr))) {	
-			if(delete_record->bgl_part_id)
-				if(!strcmp(delete_record->bgl_part_id, name)) {
-					found = 1;
-					break;		
-				}
-		}
-		list_iterator_destroy(itr);
+			if(!delete_record->bgl_part_id)
+				continue;
+			if(strcmp(delete_record->bgl_part_id, name)) {
+				continue;
+			}
 		
-		if(found) {
 			if(state == -1)
 				goto clean_up;
 			else if(j>=num_parts) {
@@ -377,7 +388,10 @@ static int _update_bgl_record_state()
 				      "(RM_PartitionState): %s",
 				      _bgl_err_str(rc));
 			} 
+			break;
 		}
+		list_iterator_destroy(itr);
+		free(name);
 	}
 clean_up:
 	if ((rc = rm_free_partition_list(part_list)) != STATUS_OK) {
@@ -439,9 +453,17 @@ static void _term_jobs_on_part(char *bgl_part_id)
 			      part_id, _bgl_err_str(rc));
 			continue;
 		}
-		
-		if (strcmp(part_id, bgl_part_id) != 0)
+
+		if(!part_id) {
+			error("No Partition ID was returned from database");
 			continue;
+		}
+
+		if (strcmp(part_id, bgl_part_id) != 0) {
+			free(part_id);
+			continue;
+		}
+		free(part_id);
 		job_found = 1;
 		if ((rc = rm_get_data(job_elem, RM_JobDBJobID, &job_id))
 		    != STATUS_OK) {
@@ -450,9 +472,9 @@ static void _term_jobs_on_part(char *bgl_part_id)
 			continue;
 		}
 		info("got job_id %d",job_id);
-		if((rc = _remove_job(job_id)) == INTERNAL_ERROR)
+		if((rc = _remove_job(job_id)) == INTERNAL_ERROR) {
 			goto not_removed;
-		
+		}
 	}
 	if(job_found == 0)
 		info("No jobs on bglblock %s", bgl_part_id);
