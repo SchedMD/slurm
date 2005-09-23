@@ -128,7 +128,8 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		slurm_free_spawn_task_request_msg(msg->data);
 		slurm_mutex_unlock(&launch_mutex);
 		break;
-	case REQUEST_KILL_TASKS:
+	case REQUEST_SIGNAL_TASKS:
+	case REQUEST_TERMINATE_TASKS:
 		_rpc_kill_tasks(msg, cli);
 		slurm_free_kill_tasks_msg(msg->data);
 		break;
@@ -140,8 +141,8 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		_rpc_reattach_tasks(msg, cli);
 		slurm_free_reattach_tasks_request_msg(msg->data);
 		break;
-	case REQUEST_KILL_JOB:
-		debug2("RPC: REQUEST_KILL_JOB");
+	case REQUEST_SIGNAL_JOB:
+	case REQUEST_TERMINATE_JOB:
 		_rpc_kill_job(msg, cli);
 		slurm_free_kill_job_msg(msg->data);
 		break;
@@ -1211,7 +1212,7 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	int		delay;
 	char           *bgl_part_id = NULL;
 
-	debug2("Processing RPC: REQUEST_KILL_JOB");
+	debug2("Processing RPC: REQUEST_SIGNAL_JOB");
 	/* 
 	 * check that requesting user ID is the SLURM UID
 	 */

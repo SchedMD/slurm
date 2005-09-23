@@ -1,6 +1,8 @@
 /*****************************************************************************\
  *  agent.c - parallel background communication functions. This is where  
  *	logic could be placed for broadcast communications.
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -280,10 +282,12 @@ static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 	xassert((agent_arg_ptr->msg_type == SRUN_PING) ||
 		(agent_arg_ptr->msg_type == SRUN_TIMEOUT) || 
 		(agent_arg_ptr->msg_type == SRUN_NODE_FAIL) || 
-		(agent_arg_ptr->msg_type == REQUEST_KILL_JOB) || 
+		(agent_arg_ptr->msg_type == REQUEST_SIGNAL_JOB) ||
+		(agent_arg_ptr->msg_type == REQUEST_TERMINATE_JOB) ||
 		(agent_arg_ptr->msg_type == REQUEST_KILL_TIMELIMIT) || 
 		(agent_arg_ptr->msg_type == REQUEST_UPDATE_JOB_TIME) ||
-		(agent_arg_ptr->msg_type == REQUEST_KILL_TASKS) || 
+		(agent_arg_ptr->msg_type == REQUEST_SIGNAL_TASKS) ||
+		(agent_arg_ptr->msg_type == REQUEST_TERMINATE_TASKS) || 
 		(agent_arg_ptr->msg_type == REQUEST_PING) || 
 		(agent_arg_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH) || 
 		(agent_arg_ptr->msg_type == REQUEST_SHUTDOWN) || 
@@ -560,7 +564,7 @@ static void *_thread_per_node_rpc(void *args)
 	xassert(args != NULL);
 
 	is_kill_msg = (	(msg_type == REQUEST_KILL_TIMELIMIT) ||
-			(msg_type == REQUEST_KILL_JOB)     );
+			(msg_type == REQUEST_TERMINATE_JOB) );
 	srun_agent = (	(msg_type == SRUN_PING)    ||
 			(msg_type == SRUN_TIMEOUT) ||
 			(msg_type == RESPONSE_RESOURCE_ALLOCATION) ||
@@ -656,7 +660,8 @@ static void *_thread_per_node_rpc(void *args)
 		goto cleanup;
 	}
 #endif
-	if ((msg_type == REQUEST_KILL_TASKS) && (rc == ESRCH)) {
+	if (((msg_type == REQUEST_SIGNAL_TASKS) 
+	||   (msg_type == REQUEST_TERMINATE_TASKS)) &&  (rc == ESRCH)) {
 		/* process is already dead, not a real error */
 		rc = SLURM_SUCCESS;
 	}
@@ -939,8 +944,8 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 				RESPONSE_RESOURCE_ALLOCATION)
 			slurm_free_resource_allocation_response_msg(
 					agent_arg_ptr->msg_args);
-		else if (agent_arg_ptr->msg_type ==
-				REQUEST_KILL_JOB)
+		else if ((agent_arg_ptr->msg_type == REQUEST_SIGNAL_JOB)
+		||       (agent_arg_ptr->msg_type == REQUEST_TERMINATE_JOB))
 			slurm_free_kill_job_msg(agent_arg_ptr->msg_args);
 		else
 			xfree(agent_arg_ptr->msg_args);
