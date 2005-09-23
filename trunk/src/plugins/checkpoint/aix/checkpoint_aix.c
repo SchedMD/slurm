@@ -333,7 +333,7 @@ static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
 	kill_tasks_msg->signal		= signal;
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
-	agent_args->msg_type		= REQUEST_KILL_TASKS;
+	agent_args->msg_type		= REQUEST_SIGNAL_TASKS;
 	agent_args->retry		= 1;
 	agent_args->msg_args		= kill_tasks_msg;
 	agent_args->slurm_addr		= xmalloc(sizeof(slurm_addr));
