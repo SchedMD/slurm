@@ -951,6 +951,30 @@ rm $MACHINEFILE
 > srun -AN2 -n4 test.sh
 
 .fi 
+.PP
+This simple example demonstrates the execution of different jobs on different 
+nodes in the same srun.  You can do this for any number of nodes or any 
+number of jobs.  The executables are placed on the nodes sited by the 
+SLURM_NODEID env var.  Starting at 0 and going to the number specified on
+the srun commandline.
 
+.nf
+
+> cat test.sh
+case $SLURM_NODEID in
+    0) echo "I am running on "
+       hostname ;;
+    1) hostname
+       echo "is where I am running" ;;
+esac
+
+> srun \-N2 test.sh
+dev0
+is where I am running
+I am running on 
+dev1
+
+.fi
+.PP
 .SH "SEE ALSO"
 \fBscancel\fR(1), \fBscontrol\fR(1), \fBsqueue\fR(1), \fBslurm.conf\fR(5)
