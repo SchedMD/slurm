@@ -32,6 +32,7 @@
 #include <time.h>
 #include <ctype.h>
 #include <errno.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -269,7 +270,10 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal)
 
 	xassert(step_ptr);
 	agent_args = xmalloc(sizeof(agent_arg_t));
-	agent_args->msg_type = REQUEST_KILL_TASKS;
+	if (signal == SIGKILL)
+		agent_args->msg_type = REQUEST_TERMINATE_TASKS;
+	else
+		agent_args->msg_type = REQUEST_SIGNAL_TASKS;
 	agent_args->retry = 1;
 	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	kill_tasks_msg->job_id      = step_ptr->job_ptr->job_id;

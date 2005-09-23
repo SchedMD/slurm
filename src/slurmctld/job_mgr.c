@@ -1523,7 +1523,7 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
 	}
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
-	agent_args->msg_type	= REQUEST_KILL_TASKS;
+	agent_args->msg_type	= REQUEST_SIGNAL_TASKS;
 	agent_args->retry	= 1;
 	agent_args->node_count  = 1;
 	agent_args->slurm_addr	= xmalloc(sizeof(struct sockaddr_in));
@@ -3471,7 +3471,7 @@ kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 	memcpy(agent_info->slurm_addr, 
 	       &node_ptr->slurm_addr, sizeof(slurm_addr));
 	agent_info->node_names	= xstrdup(node_ptr->name);
-	agent_info->msg_type	= REQUEST_KILL_JOB;
+	agent_info->msg_type	= REQUEST_TERMINATE_JOB;
 	agent_info->msg_args	= kill_req;
 
 	agent_queue_request(agent_info);

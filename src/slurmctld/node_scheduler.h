@@ -57,7 +57,7 @@ extern int count_cpus(unsigned *bitmap);
  *	their state NODE_STATE_COMPLETING
  * IN job_ptr - pointer to terminating job (already in some COMPLETING state)
  * IN timeout - true of job exhausted time limit, send REQUEST_KILL_TIMELIMIT
- *	RPC instead of REQUEST_KILL_JOB
+ *	RPC instead of REQUEST_TERMINATE_JOB
  * globals: node_record_count - number of nodes in the system
  *	node_record_table_ptr - pointer to global node table
  */

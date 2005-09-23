@@ -1,6 +1,8 @@
 /*****************************************************************************\
  *  node_scheduler.c - select and allocated nodes to jobs 
  *	Note: there is a global node table (node_record_table_ptr) 
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -140,7 +142,7 @@ extern int count_cpus(unsigned *bitmap)
  *	their state NODE_STATE_COMPLETING
  * IN job_ptr - pointer to terminating job (already in some COMPLETING state)
  * IN timeout - true of job exhausted time limit, send REQUEST_KILL_TIMELIMIT
- *	RPC instead of REQUEST_KILL_JOB
+ *	RPC instead of REQUEST_TERMINATE_JOB
  * globals: node_record_count - number of nodes in the system
  *	node_record_table_ptr - pointer to global node table
  */
@@ -162,7 +164,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 	if (timeout)
 		agent_args->msg_type = REQUEST_KILL_TIMELIMIT;
 	else
-		agent_args->msg_type = REQUEST_KILL_JOB;
+		agent_args->msg_type = REQUEST_TERMINATE_JOB;
 	agent_args->retry = 1;
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
 	last_node_update = time(NULL);
@@ -1308,7 +1310,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 	xassert(job_ptr->details);
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
-	agent_args->msg_type = REQUEST_KILL_JOB;
+	agent_args->msg_type = REQUEST_TERMINATE_JOB;
 	agent_args->retry = 0;
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
 	kill_job->job_id = job_ptr->job_id;
@@ -1366,7 +1368,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 	hostlist_uniq(kill_hostlist);
 	hostlist_ranged_string(kill_hostlist, 
 			sizeof(host_str), host_str);
-	info("Resending KILL_JOB request JobId=%u Nodelist=%s",
+	info("Resending TERMINATE_JOB request JobId=%u Nodelist=%s",
 			job_ptr->job_id, host_str);
 	hostlist_destroy(kill_hostlist);
 

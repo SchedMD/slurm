@@ -413,7 +413,8 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 					(spawn_task_request_msg_t *)
 					msg->data, buffer);
 		 break;
-	 case REQUEST_KILL_TASKS:
+	 case REQUEST_SIGNAL_TASKS:
+	 case REQUEST_TERMINATE_TASKS:
 		 _pack_cancel_tasks_msg((kill_tasks_msg_t *) msg->data,
 					buffer);
 		 break;
@@ -434,7 +435,8 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 					     msg->data, buffer);
 		 break;
 	 case REQUEST_KILL_TIMELIMIT:
-	 case REQUEST_KILL_JOB:
+	 case REQUEST_SIGNAL_JOB:
+	 case REQUEST_TERMINATE_JOB:
 		 _pack_kill_job_msg((kill_job_msg_t *) msg->data, buffer);
 		 break;
 	 case MESSAGE_EPILOG_COMPLETE:
@@ -444,16 +446,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		 _pack_update_job_time_msg((job_time_msg_t *)
 					     msg->data, buffer);
 		 break;
-	 case REQUEST_SIGNAL_JOB:
-		 break;
-	 case REQUEST_SIGNAL_JOB_STEP:
-		 break;
 	 case RESPONSE_RECONFIGURE:
 	 case RESPONSE_SHUTDOWN:
 	 case RESPONSE_CANCEL_JOB_STEP:
 	 case RESPONSE_COMPLETE_JOB_STEP:
-	 case RESPONSE_SIGNAL_JOB:
-	 case RESPONSE_SIGNAL_JOB_STEP:
 		 break;
 	 case REQUEST_JOB_ATTACH:
 		 break;
@@ -672,7 +668,8 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 					(reattach_tasks_response_msg_t **) 
 					& msg->data, buffer);
 		 break;
-	 case REQUEST_KILL_TASKS:
+	 case REQUEST_SIGNAL_TASKS:
+	 case REQUEST_TERMINATE_TASKS:
 		 rc = _unpack_cancel_tasks_msg((kill_tasks_msg_t **) &
 					       (msg->data), buffer);
 		 break;
@@ -696,7 +693,8 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 						    buffer);
 		 break;
 	 case REQUEST_KILL_TIMELIMIT:
-	 case REQUEST_KILL_JOB:
+	 case REQUEST_SIGNAL_JOB:
+	 case REQUEST_TERMINATE_JOB:
 		 rc = _unpack_kill_job_msg((kill_job_msg_t **) & (msg->data), 
 					   buffer);
 		 break;
@@ -709,16 +707,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 					(job_time_msg_t **)
 					& (msg->data), buffer);
 		 break;
-	 case REQUEST_SIGNAL_JOB:
-		 break;
-	 case REQUEST_SIGNAL_JOB_STEP:
-		 break;
 	 case RESPONSE_RECONFIGURE:
 	 case RESPONSE_SHUTDOWN:
 	 case RESPONSE_CANCEL_JOB_STEP:
 	 case RESPONSE_COMPLETE_JOB_STEP:
-	 case RESPONSE_SIGNAL_JOB:
-	 case RESPONSE_SIGNAL_JOB_STEP:
 		 break;
 	 case REQUEST_JOB_ATTACH:
 		 break;

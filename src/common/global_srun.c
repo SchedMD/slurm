@@ -113,7 +113,7 @@ fwd_signal(srun_job_t *job, int signo)
 		if (job_active_tasks_on_host(job, i) == 0)
 			continue;
 
-		req[i].msg_type = REQUEST_KILL_TASKS;
+		req[i].msg_type = REQUEST_SIGNAL_TASKS;
 		req[i].data     = &msg;
 		memcpy( &req[i].address, 
 		        &job->slurmd_addr[i], sizeof(slurm_addr));
