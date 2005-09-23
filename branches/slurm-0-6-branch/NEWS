@@ -4,6 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 0.6.0-pre9
 =============================
  -- Add documentation for ProctrackType=proctrack/rms.
+ -- Make proctrack/rms be the default for switch/elan.
 
 * Changes in SLURM 0.6.0-pre8
 =============================
