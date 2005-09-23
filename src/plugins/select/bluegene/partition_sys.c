@@ -167,7 +167,13 @@ static int _post_allocate(bgl_record_t *bgl_record)
 		error("rm_get_data(RM_PartitionID): %s", bgl_err_str(rc));
 		bgl_record->bgl_part_id = xstrdup("UNKNOWN");
 	} else {
+		if(!part_id) {
+			error("No Partition ID was returned from database");
+			return SLURM_ERROR;
+		}
 		bgl_record->bgl_part_id = xstrdup(part_id);
+		
+		free(part_id);
 		
 		xfree(bgl_record->target_name);
 		bgl_record->target_name = 
@@ -268,42 +274,53 @@ int read_bgl_partitions()
 				bgl_err_str(rc));
 			continue;
 		}
-		if(strncmp("RMP",part_name,3))
+
+		if(!part_name) {
+			error("No Partition ID was returned from database");
 			continue;
-		
+		}
+
+		if(strncmp("RMP", part_name, 3)) {
+			free(part_name);
+			continue;
+		}
 		if(bgl_recover) 
 			if ((rc = rm_get_partition(part_name, &part_ptr))
 			    != STATUS_OK) {
 				error("Partition %s doesn't exist.",
 				      part_name);
 				rc = SLURM_ERROR;
+				free(part_name);
 				break;
 			}
-		
 		/* New BGL partition record */		
 		
 		bgl_record = xmalloc(sizeof(bgl_record_t));
 		list_push(bgl_curr_part_list, bgl_record);
 									
 		bgl_record->bgl_part_id = xstrdup(part_name);
+		
+		free(part_name);
+
 		bgl_record->state = -1;
 		if ((rc = rm_get_data(part_ptr, RM_PartitionBPNum, &bp_cnt)) 
-				!= STATUS_OK) {
+		    != STATUS_OK) {
 			error("rm_get_data(RM_BPNum): %s", bgl_err_str(rc));
 			bp_cnt = 0;
 		}
 		
 		if(bp_cnt==0)
-			continue;
-			
+			goto clean_up;
+
 		bgl_record->bgl_part_list = list_create(NULL);
 		bgl_record->hostlist = hostlist_create(NULL);
 		
 		for (i=0; i<bp_cnt; i++) {
 			if(i) {
 				if ((rc = rm_get_data(part_ptr, 
-						RM_PartitionNextBP, &bp_ptr))
-						!= STATUS_OK) {
+						      RM_PartitionNextBP, 
+						      &bp_ptr))
+				    != STATUS_OK) {
 					error("rm_get_data(RM_NextBP): %s",
 					      bgl_err_str(rc));
 					rc = SLURM_ERROR;
@@ -317,6 +334,8 @@ int read_bgl_partitions()
 					error("rm_get_data(RM_FirstBP): %s", 
 					      bgl_err_str(rc));
 					rc = SLURM_ERROR;
+					if (bgl_recover)
+						rm_free_partition(part_ptr);
 					return rc;
 				}	
 			}
@@ -327,9 +346,16 @@ int read_bgl_partitions()
 				rc = SLURM_ERROR;
 				break;
 			}
-			
+
+			if(!bpid) {
+				error("No BP ID was returned from database");
+				continue;
+			}
+
 			coord = find_bp_loc(bpid);
-			
+
+			free(bpid);
+
 			if(!coord)
 				fatal("No contact with db2. Shutting down.");
 				
@@ -382,9 +408,19 @@ int read_bgl_partitions()
 					xstrdup(slurmctld_conf.
 						slurm_user_name);
 			} else {
-				rm_get_data(part_ptr, RM_PartitionFirstUser, 
-						&user_name);
+				user_name = NULL;
+				if ((rc = rm_get_data(part_ptr, RM_PartitionFirstUser, 
+						&user_name)) != STATUS_OK) {
+					error("rm_get_data(RM_PartitionFirstUser): %s",
+						bgl_err_str(rc));
+				}
+				if(!user_name) {
+					error("No user name was "
+					      "returned from database");
+					goto clean_up;
+				}
 				bgl_record->user_name = xstrdup(user_name);
+			
 				if(!bgl_record->boot_state)
 					bgl_record->target_name = 
 						xstrdup(slurmctld_conf.
@@ -392,6 +428,8 @@ int read_bgl_partitions()
 				else
 					bgl_record->target_name = 
 						xstrdup(user_name);
+				
+				free(user_name);
 					
 			}
 			if((pw_ent = getpwnam(bgl_record->user_name)) 
@@ -419,8 +457,8 @@ int read_bgl_partitions()
 				
 		bgl_record->part_lifecycle = STATIC;
 						
-		if ((rc = rm_free_partition(part_ptr))
-				!= STATUS_OK) {
+clean_up:	if (bgl_recover
+		&&  ((rc = rm_free_partition(part_ptr)) != STATUS_OK)) {
 			error("rm_free_partition(): %s", bgl_err_str(rc));
 		}
 	}

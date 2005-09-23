@@ -98,7 +98,8 @@ Print information one line per record.
 .TP
 \fIpidinfo\fP \fIPROC_ID\fP
 Print the Slurm job id and scheduled termination time corresponding to the 
-supplied process id, \fIPROC_ID\fP, on the current node.
+supplied process id, \fIPROC_ID\fP, on the current node. This will only 
+work for processes which Slurm spawns and their descendants.
 .TP
 \fIping\fP
 Ping the primary and secondary slurmctld daemon and report if 

@@ -185,8 +185,9 @@ static void _cred_state_pack(slurm_cred_ctx_t ctx, Buf buffer);
 static void _job_state_pack_one(job_state_t *j, Buf buffer);
 static void _cred_state_pack_one(cred_state_t *s, Buf buffer);
 
+#ifndef DISABLE_LOCALTIME
 static char * timestr (const time_t *tp, char *buf, size_t n);
-
+#endif
 
 slurm_cred_ctx_t 
 slurm_cred_creator_ctx_create(const char *path)
@@ -1103,10 +1104,19 @@ _credential_replayed(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 	return false;
 }
 
+#ifdef DISABLE_LOCALTIME
+extern char * timestr (const time_t *tp, char *buf, size_t n)
+#else
 static char * timestr (const time_t *tp, char *buf, size_t n)
+#endif
 {
 	char fmt[] = "%y%m%d%H%M%S";
 	struct tm tmval;
+#ifdef DISABLE_LOCALTIME
+	static int disabled = 0;
+	if (buf == NULL) disabled=1;
+	if (disabled) return NULL;
+#endif
 	if (!localtime_r (tp, &tmval))
 		error ("localtime: %m");
 	strftime (buf, n, fmt, &tmval);

@@ -101,8 +101,18 @@ static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bgl)
 			error("rm_get_data(RM_BPID): %s", bgl_err_str(rc));
 			continue;
 		}
-		if (strcmp(bp_id, bpid) != 0)	/* different base partition */
+
+		if(!bpid) {
+			error("No BPID was returned from database");
 			continue;
+		}
+
+		if (strcmp(bp_id, bpid) != 0) {	/* different base partition */
+			free(bpid);
+			continue;
+		}
+		free(bpid);
+
 		if ((rc = rm_get_data(my_bp, RM_BPState, &bp_state)) 
 		    != STATUS_OK) {
 			error("rm_get_data(RM_BPState): %s", bgl_err_str(rc));
@@ -277,7 +287,14 @@ static void _test_down_switches(rm_BGL_t *bgl)
 			      bgl_err_str(rc));
 			continue;
 		}
+
+		if(!bp_id) {
+			error("No BPID was returned from database");
+			continue;
+		}
+
 		_configure_node_down(bp_id, bgl);
+		free(bp_id);
 	}
 }
 #endif

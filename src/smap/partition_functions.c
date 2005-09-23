@@ -69,7 +69,7 @@ static int _list_match_all(void *object, void *key);
 static int _in_slurm_partition(db2_block_info_t *db2_info_ptr, 
 			       int *first, 
 			       int *last);
-static int _print_rest(db2_block_info_t *block_ptr, int *count);
+static int _print_rest(db2_block_info_t *block_ptr);
 #endif
 
 extern void get_slurm_part()
@@ -316,12 +316,12 @@ extern void get_bgl_part()
 			list_next(itr)) != NULL) {
 			if (params.commandline)
 				block_ptr->printed = 1;
-			else
+			else {
 				if(count>=text_line_cnt)
 					block_ptr->printed = 1;
-				
-			_print_rest(block_ptr, &count);
-			
+			}
+			_print_rest(block_ptr);
+			count++;			
 		}
 		
 		list_iterator_destroy(itr);
@@ -798,63 +798,13 @@ static int _in_slurm_partition(db2_block_info_t *db2_info_ptr,
 	
 }
 
-static int _print_rest(db2_block_info_t *block_ptr, int *count)
+static int _print_rest(db2_block_info_t *block_ptr)
 {
 	partition_info_t part;
 	db2_block_info_t *db2_info_ptr = NULL;
 	ListIterator itr;
 	int set = 0;
 		
-/* 	part.total_nodes = 0; */
-	
-/* 	if (block_list) { */
-/* 		itr = list_iterator_create(block_list); */
-/* 		while ((db2_info_ptr = (db2_block_info_t*) list_next(itr))  */
-/* 		       != NULL) { */
-/* 			if(!strcmp(block_ptr->bgl_block_name,  */
-/* 				   db2_info_ptr->bgl_block_name)) { */
-/* 				if(set == 2) */
-/* 					break; */
-/* 				set = 0; */
-/* 				break; */
-/* 			} */
-/* 			if((block_ptr->start[X]==db2_info_ptr->start[X] &&  */
-/* 			    block_ptr->start[Y]==db2_info_ptr->start[Y] &&  */
-/* 			    block_ptr->start[Z]==db2_info_ptr->start[Z]) && */
-/* 			   (block_ptr->end[X]==db2_info_ptr->end[X] &&  */
-/* 			    block_ptr->end[Y]==db2_info_ptr->end[Y] &&  */
-/* 			    block_ptr->end[Z]==db2_info_ptr->end[Z])) { */
-/* 				set = 1; */
-/* 				break; */
-/* 			}  */
-			
-/* 			if((block_ptr->start[X]<=db2_info_ptr->start[X] &&  */
-/* 			    block_ptr->start[Y]<=db2_info_ptr->start[Y] &&  */
-/* 			    block_ptr->start[Z]<=db2_info_ptr->start[Z]) && */
-/* 			   (block_ptr->end[X]>=db2_info_ptr->end[X] &&  */
-/* 			    block_ptr->end[Y]>=db2_info_ptr->end[Y] &&  */
-/* 			    block_ptr->end[Z]>=db2_info_ptr->end[Z])) { */
-/* 				set = 2; */
-/* 				continue; */
-/* 			}		 */
-/* 		} */
-/* 		list_iterator_destroy(itr); */
-/* 	} */
-	
-/* 	if (set == 1) { */
-/* 		block_ptr->letter_num=db2_info_ptr->letter_num; */
-/* 		part.total_nodes += set_grid_bgl(block_ptr->start,  */
-/* 						 block_ptr->end,  */
-/* 						 block_ptr->letter_num,  */
-/* 						 set); */
-/* 	} else { */
-/* 		block_ptr->letter_num=*count; */
-/* 		part.total_nodes += set_grid_bgl(block_ptr->start,  */
-/* 						 block_ptr->end,  */
-/* 						 block_ptr->letter_num,  */
-/* 						 set); */
-/* 		(*count)++; */
-/* 	}  */
 	part.total_nodes = block_ptr->size;
 	if(block_ptr->slurm_part_name)
 		part.name = block_ptr->slurm_part_name;

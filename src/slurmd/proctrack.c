@@ -188,7 +188,8 @@ slurm_proctrack_init( void )
 	}
 
 	if ( _proctrack_get_ops( g_proctrack_context ) == NULL ) {
-		error( "cannot resolve proctrack plugin operations" );
+		error( "cannot resolve proctrack plugin operations for %s",
+			proctrack_type );
 		_proctrack_context_destroy( g_proctrack_context );
 		g_proctrack_context = NULL;
 		retval = SLURM_ERROR;

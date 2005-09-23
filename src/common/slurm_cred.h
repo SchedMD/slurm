@@ -1,6 +1,6 @@
 /*****************************************************************************\
- * src/common/slurm_cred.h  - SLURM job credential operations
- * $Id$
+ *  src/common/slurm_cred.h  - SLURM job credential operations
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -226,5 +226,7 @@ int slurm_cred_get_signature(slurm_cred_t cred, char **datap, int *len);
  */
 void slurm_cred_print(slurm_cred_t cred);
 
-
+#ifdef DISABLE_LOCALTIME
+extern char * timestr (const time_t *tp, char *buf, size_t n);
+#endif
 #endif  /* _HAVE_SLURM_CREDS_H */

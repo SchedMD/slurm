@@ -101,18 +101,24 @@ int main(int argc, char *argv[])
 		if(params.partition[0] == 'r')
 			params.partition[0] = 'R';
 		if(params.partition[0] != 'R') {
-			char *rack_mid = find_bp_rack_mid(params.partition);
+			i = strlen(params.partition);
+			i -= 3;
+			if(i<0) {
+				printf("No real block was entered\n");
+				goto part_fini;
+			}
+			char *rack_mid = find_bp_rack_mid(params.partition+i);
 			if(rack_mid)
 				printf("X=%c Y=%c Z=%c resolves to %s\n",
-				       params.partition[X],
-				       params.partition[Y],
-				       params.partition[Z], 
+				       params.partition[X+i],
+				       params.partition[Y+i],
+				       params.partition[Z+i], 
 				       rack_mid);
 			else
 				printf("X=%c Y=%c Z=%c has no resolve\n",
-				       params.partition[X],
-				       params.partition[Y],
-				       params.partition[Z]);
+				       params.partition[X+i],
+				       params.partition[Y+i],
+				       params.partition[Z+i]);
 			
 		} else {
 			int *coord = find_bp_loc(params.partition);

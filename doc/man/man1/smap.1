@@ -1,4 +1,4 @@
-.TH SMAP "1" "March 2005" "smap 0.6" "Slurm components"
+.TH SMAP "1" "September 2005" "smap 0.6" "Slurm components"
 
 .SH "NAME"
 smap \- graphically view information about SLURM jobs, partitions, and set 
@@ -236,18 +236,6 @@ The default value is FALSE.
 .TP
 .I \fBRotate\fR
 Equivalent to "Rotation=true".
-.TP
-.I \fBMode = COPROC | VIRTUAL\fR
-Specify how the second processor on a c-node should be used. 
-To use it for computation, specify VIRTUAL. 
-To use it for communications, specify COPROC.
-The default value is COPROC.
-.TP
-.I \fBCoproc\fR
-Equivalent to "Mode=Coproc".
-.TP
-.I \fBVirtual\fR
-Equivalent to "Mode=Virtual".
 .TP
 .I \fBElongation = TRUE | FALSE\fR
 If TRUE, permit the geometry specified in the size parameter to be altered as 

@@ -149,10 +149,14 @@ void _xstrftimecat(char **buf, const char *fmt)
 {
 	char p[256];		/* output truncated to 256 chars */
 	time_t t;
-	struct tm *tm_ptr = NULL;
-	static pthread_mutex_t localtime_lock = PTHREAD_MUTEX_INITIALIZER;
+	struct tm tm;
 
 	const char default_fmt[] = "%m/%d/%Y %H:%M:%S %Z";
+#ifdef DISABLE_LOCALTIME
+	static int disabled=0;
+	if (!buf) disabled=1;
+	if (disabled) return;
+#endif
 
 	if (fmt == NULL)
 		fmt = default_fmt;
@@ -160,13 +164,11 @@ void _xstrftimecat(char **buf, const char *fmt)
 	if (time(&t) == (time_t) -1) 
 		fprintf(stderr, "time() failed\n");
 
-	pthread_mutex_lock(&localtime_lock);
-	if (!(tm_ptr = localtime(&t)))
-		fprintf(stderr, "localtime() failed\n");
+	if (!localtime_r(&t, &tm))
+		fprintf(stderr, "localtime_r() failed\n");
 
-	strftime(p, sizeof(p), fmt, tm_ptr);
+	strftime(p, sizeof(p), fmt, &tm);
 
-	pthread_mutex_unlock(&localtime_lock);
 
 	_xstrcat(buf, p);
 }

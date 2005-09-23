@@ -236,4 +236,15 @@ typedef enum {false, true} bool;
 #  endif
 #endif
 
+/* localtime() can't be used after a fork due to possibly set semaphore.
+ * until we modify slurmd and srun to exec immediately after the fork, 
+ * we disable localtime(). This is a temporary patch. */
+#define DISABLE_LOCALTIME 1
+#include "src/common/xstring.h"
+#include "src/common/slurm_cred.h"
+#define disable_localtime()						\
+	_STMT_START {							\
+		_xstrftimecat(NULL, NULL);				\
+		timestr(NULL,NULL,0);					\
+	} _STMT_END
 #endif /* !_MACROS_H */
