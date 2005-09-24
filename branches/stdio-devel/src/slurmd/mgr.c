@@ -367,6 +367,7 @@ _setup_io(slurmd_job_t *job)
 	int            rc   = 0;
 	struct passwd *spwd = NULL;
 
+	debug2("Entering _setup_io");
 	/* 
 	 * Save current UID/GID
 	 */
@@ -375,7 +376,7 @@ _setup_io(slurmd_job_t *job)
 		return ESLURMD_IO_ERROR;
 	}
 
-	if (io_start_thread(job) < 0)
+	if (io_thread_start(job) < 0)
 		return ESLURMD_IO_ERROR;
 
 	/*
@@ -407,6 +408,7 @@ _setup_io(slurmd_job_t *job)
 	if (rc < 0) 
 		return ESLURMD_IO_ERROR;
 
+	debug2("Leaving  _setup_io");
 	return SLURM_SUCCESS;
 }
 

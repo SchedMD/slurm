@@ -31,13 +31,22 @@
 #include "src/slurmd/slurmd_job.h"
 #include "src/common/eio.h"
 
+struct io_buf {
+	int ref_count;
+	uint32_t length;
+	void *data;
+};
+
+struct io_buf *alloc_io_buf(void);
+void free_io_buf(struct io_buf *buf);
+
 /*
  * Start IO handling thread.
  * Initializes IO pipes, creates IO objects and appends them to job->objs,
  * and opens 2*ntask initial connections for stdout/err, also appending these
  * to job->objs list.
  */
-int io_start_thread(slurmd_job_t *job);
+int io_thread_start(slurmd_job_t *job);
 
 /*
  * Create a set of new connecting clients for the running job
@@ -51,8 +60,7 @@ int io_new_clients(slurmd_job_t *job);
  */
 void io_obj_destroy(io_obj_t *obj);
 
-int  io_init_pipes(slurmd_job_t *job);
-int  io_prepare_child(slurmd_task_info_t *t);
+int io_dup_stdio(slurmd_task_info_t *t);
 
 void io_close_all(slurmd_job_t *job);
 

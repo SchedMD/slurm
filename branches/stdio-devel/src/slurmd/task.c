@@ -198,7 +198,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	if (job->spawn_task)
 		_setup_spawn_io(job);
 	else
-		io_prepare_child(job->task[i]);
+		io_dup_stdio(job->task[i]);
 
 	execve(job->argv[0], job->argv, job->env);
 

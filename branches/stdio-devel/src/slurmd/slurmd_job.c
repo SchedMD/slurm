@@ -142,6 +142,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	srun_info_t   *srun;
 	slurm_addr     resp_addr;
 	slurm_addr     io_addr;
+	int i;
 
 	xassert(msg != NULL);
 
@@ -173,6 +174,12 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->eio     = eio_handle_create();
 	job->objs    = list_create((ListDelF) io_obj_destroy);
 	job->sruns   = list_create((ListDelF) _srun_info_destructor);
+	job->clients = list_create(NULL); /* FIXME! Needs destructor */
+	job->free_io_buf = list_create(NULL); /* FIXME! Needs destructor */
+	for (i = 0; i < 10; i++) {
+		list_enqueue(job->free_io_buf, alloc_io_buf());
+	}
+
 	job->envtp   = xmalloc(sizeof(env_t));
 	job->envtp->jobid = -1;
 	job->envtp->stepid = -1;

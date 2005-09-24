@@ -85,8 +85,8 @@ io_init_msg_validate(struct slurm_io_init_msg *msg, const char *sig)
 {
 	debug2("Entering io_init_msg_validate");
 
-	debug3("msg->version = %x", msg->version);
-	debug3("msg->nodeid = %u", msg->nodeid);
+	debug3("  msg->version = %x", msg->version);
+	debug3("  msg->nodeid = %u", msg->nodeid);
 
 	if (msg->version != IO_PROTOCOL_VERSION) {
 		error("Invalid IO init header version");
@@ -157,7 +157,7 @@ io_init_msg_write_to_fd(int fd, struct slurm_io_init_msg *msg)
 	debug2("Entering io_init_msg_write_to_fd");
 	msg->version = IO_PROTOCOL_VERSION;
 	buf = init_buf(io_init_msg_packed_size());
-	debug2("msg->nodeid = %d", msg->nodeid);
+	debug2("  msg->nodeid = %d", msg->nodeid);
 	io_init_msg_pack(msg, buf);
 	
 	ptr = get_buf_data(buf);
