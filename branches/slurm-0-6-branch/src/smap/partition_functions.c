@@ -832,7 +832,6 @@ static int _print_rest(db2_block_info_t *block_ptr)
 	
 	return SLURM_SUCCESS;
 }
-#endif
 
 static int _addto_nodelist(List nodelist, int *start, int *end)
 {
@@ -908,6 +907,9 @@ static int _make_nodelist(char *nodes, List nodelist)
 	}
 	return 1;
 }
+
+#endif
+
 static char* _convert_conn_type(enum connection_type conn_type)
 {
 	switch (conn_type) {
