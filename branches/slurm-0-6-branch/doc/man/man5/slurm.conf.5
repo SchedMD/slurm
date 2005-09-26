@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "August 2005" "slurm.conf 0.6" "Slurm configuration file"
+.TH "slurm.conf" "5" "September 2005" "slurm.conf 0.6" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -244,6 +244,7 @@ default if "SwitchType=switch/elan") and
 "proctrack/pgid" (which is the default for all other systems).
 The slurmd daemon must be restarted for a change in ProctrackType 
 to take effect.
+NOTE: "proctrack/linuxproc" is not compatable with "swich/elan."
 .TP
 \fBProlog\fR
 Fully qualified pathname of a script to execute as user root on every 

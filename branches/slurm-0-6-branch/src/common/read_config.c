@@ -1321,6 +1321,9 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 			ctl_conf_ptr->proctrack_type = 
 					xstrdup(DEFAULT_PROCTRACK_TYPE);
 	}
+	if ((!strcmp(ctl_conf_ptr->switch_type,   "switch/elan"))
+	&&  (!strcmp(ctl_conf_ptr->proctrack_type,"proctrack/linuxproc")))
+		fatal("proctrack/linuxproc is incompatable with switch/elan");
 
         if (ctl_conf_ptr->propagate_rlimits_except) {
                 if ((parse_rlimits( ctl_conf_ptr->propagate_rlimits_except,
