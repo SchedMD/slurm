@@ -1,8 +1,8 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
-* Changes in SLURM 0.6.0-pre9
-=============================
+* Changes in SLURM 0.6.0
+========================
  -- Add documentation for ProctrackType=proctrack/rms.
  -- Make proctrack/rms be the default for switch/elan.
  -- Do not preceed SIGKILL or SIGTERM to job step with (non-requested) SIGCONT.
