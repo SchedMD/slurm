@@ -284,11 +284,10 @@ extern void get_bgl_part()
 			itr = list_iterator_create(block_list);
 			while ((block_ptr = (db2_block_info_t*) 
 				list_next(itr)) != NULL) {
-				if(_in_slurm_partition(block_ptr->nodelist, 
-						       nodelist)) {
+				if(_in_slurm_partition(nodelist,
+						       block_ptr->nodelist)) {
 					block_ptr->slurm_part_name 
 						= xstrdup(part.name);
-					break;
 				}
 			}
 			list_iterator_destroy(itr);
@@ -779,7 +778,7 @@ static int _in_slurm_partition(List slurm_nodes, List bgl_nodes)
 	int *coord = NULL;
 	int *slurm_coord = NULL;
 	int found = 0;
-
+	
 	bgl_itr = list_iterator_create(bgl_nodes);
 	slurm_itr = list_iterator_create(slurm_nodes);
 	while ((coord = list_next(bgl_itr)) != NULL) {
@@ -792,6 +791,8 @@ static int _in_slurm_partition(List slurm_nodes, List bgl_nodes)
 				found=1;
 				break;
 			}
+			
+			
 		}
 		if(!found) {
 			break;
@@ -868,7 +869,6 @@ static int _make_nodelist(char *nodes, List nodelist)
 	
 	if(!nodelist)
 		nodelist = list_create(_nodelist_del);
-
 	while (nodes[j] != '\0') {
 		if ((nodes[j] == '['
 		     || nodes[j] == ',')
