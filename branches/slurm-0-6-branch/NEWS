@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Add documentation for ProctrackType=proctrack/rms.
  -- Make proctrack/rms be the default for switch/elan.
  -- Do not preceed SIGKILL or SIGTERM to job step with (non-requested) SIGCONT.
+ -- Fixed smap -Db to display slurm partitions correctly.  
 
 * Changes in SLURM 0.6.0-pre8
 =============================

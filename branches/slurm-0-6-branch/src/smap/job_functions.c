@@ -173,7 +173,7 @@ static void _print_header_job(void)
 		pa_system_ptr->xcord += 3;
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "JOBID");
-		pa_system_ptr->xcord += 6;
+		pa_system_ptr->xcord += 7;
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "PARTITION");
 		pa_system_ptr->xcord += 10;
@@ -232,7 +232,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		pa_system_ptr->xcord += 3;
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "%d", job_ptr->job_id);
-		pa_system_ptr->xcord += 6;
+		pa_system_ptr->xcord += 7;
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "%.10s", job_ptr->partition);
 		pa_system_ptr->xcord += 10;

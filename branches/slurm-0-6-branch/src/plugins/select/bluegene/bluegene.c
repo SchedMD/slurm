@@ -1482,8 +1482,6 @@ static void _process_nodes(bgl_record_t *bgl_record)
 	int j=0, number;
 	int start[PA_SYSTEM_DIMENSIONS];
 	int end[PA_SYSTEM_DIMENSIONS];
-	char buffer[BUFSIZE];
-	int funky=0;
 	ListIterator itr;
 	pa_node_t* pa_node = NULL;
 	

@@ -66,10 +66,10 @@ static int _set_start_finish(db2_block_info_t *db2_info_ptr);
 static void _block_list_del(void *object);
 static void _nodelist_del(void *object);
 static int _list_match_all(void *object, void *key);
-static int _in_slurm_partition(db2_block_info_t *db2_info_ptr, 
-			       int *first, 
-			       int *last);
+static int _in_slurm_partition(List slurm_nodes, List bgl_nodes);
 static int _print_rest(db2_block_info_t *block_ptr);
+static int _addto_node_list(List nodelist, int *start, int *end);
+static int _make_nodelist(char *nodes, List nodelist);
 #endif
 
 extern void get_slurm_part()
@@ -166,7 +166,8 @@ extern void get_bgl_part()
 	int number, start[PA_SYSTEM_DIMENSIONS], end[PA_SYSTEM_DIMENSIONS];
 	db2_block_info_t *block_ptr = NULL;
 	ListIterator itr;
-	
+	List nodelist = NULL;
+
 	if (part_info_ptr) {
 		error_code = slurm_load_partitions(part_info_ptr->last_update, 
 						   &new_part_ptr, SHOW_ALL);
@@ -247,6 +248,9 @@ extern void get_bgl_part()
 			= xstrdup(new_bgl_ptr->bgl_info_array[i].bgl_part_id);
 		block_ptr->nodes 
 			= xstrdup(new_bgl_ptr->bgl_info_array[i].nodes);
+		block_ptr->nodelist = list_create(_nodelist_del);
+		_make_nodelist(block_ptr->nodes,block_ptr->nodelist);
+		
 		block_ptr->bgl_user_name 
 			= xstrdup(new_bgl_ptr->bgl_info_array[i].owner_name);
 		block_ptr->state 
@@ -273,40 +277,23 @@ extern void get_bgl_part()
 		
 		if (!part.nodes || (part.nodes[0] == '\0'))
 			continue;	/* empty partition */
-		while (part.nodes[j] != '\0') {
-			if ((part.nodes[j]   == '[')
-			    && (part.nodes[j+8] == ']')
-			    && ((part.nodes[j+4] == 'x')
-				|| (part.nodes[j+4] == '-'))) {
-				j++;
-				number = atoi(part.nodes + j);
-				start[X] = number / 100;
-				start[Y] = (number % 100) / 10;
-				start[Z] = (number % 10);
-				j += 4;
-
-				number = atoi(part.nodes + j);
-				end[X] = number / 100;
-				end[Y] = (number % 100) / 10;
-				end[Z] = (number % 10);
-				break;
-			}
-			j++;
-		}
+		nodelist = list_create(_nodelist_del);
+		_make_nodelist(part.nodes,nodelist);	
 		
 		if (block_list) {
 			itr = list_iterator_create(block_list);
 			while ((block_ptr = (db2_block_info_t*) 
 				list_next(itr)) != NULL) {
-				if(_in_slurm_partition(block_ptr, 
-						       start, 
-						       end)) {
+				if(_in_slurm_partition(block_ptr->nodelist, 
+						       nodelist)) {
 					block_ptr->slurm_part_name 
 						= xstrdup(part.name);
+					break;
 				}
 			}
 			list_iterator_destroy(itr);
 		}
+		list_destroy(nodelist);
 	}
 
 	/* Report the BGL Blocks */
@@ -730,6 +717,8 @@ static void _block_list_del(void *object)
 
 static void _nodelist_del(void *object)
 {
+	int *coord = (int *)object;
+	xfree(coord);
 	return;
 }
 
@@ -783,17 +772,37 @@ static int _set_start_finish(db2_block_info_t *db2_info_ptr)
 	return 1;
 }
 
-static int _in_slurm_partition(db2_block_info_t *db2_info_ptr, 
-			       int *first, int *last)
+static int _in_slurm_partition(List slurm_nodes, List bgl_nodes)
 {
-	if((db2_info_ptr->start[X]>=first[X])
-	   && (db2_info_ptr->start[Y]>=first[Y])
-	   && (db2_info_ptr->start[Z]>=first[Z])
-	   && (db2_info_ptr->end[X]<=last[X])
-	   && (db2_info_ptr->end[Y]<=last[Y])
-	   && (db2_info_ptr->end[Z]<=last[Z]))
+	ListIterator slurm_itr;
+	ListIterator bgl_itr;
+	int *coord = NULL;
+	int *slurm_coord = NULL;
+	int found = 0;
+
+	bgl_itr = list_iterator_create(bgl_nodes);
+	slurm_itr = list_iterator_create(slurm_nodes);
+	while ((coord = list_next(bgl_itr)) != NULL) {
+		list_iterator_reset(slurm_itr);
+		found = 0;
+		while ((slurm_coord = list_next(slurm_itr)) != NULL) {
+			if((coord[X] == slurm_coord[X])
+			   && (coord[Y] == slurm_coord[Y])
+			   && (coord[Z] == slurm_coord[Z])) {
+				found=1;
+				break;
+			}
+		}
+		if(!found) {
+			break;
+		}
+	}
+	list_iterator_destroy(slurm_itr);
+	list_iterator_destroy(bgl_itr);
+			
+	if(found)
 		return 1;
-	else 
+	else
 		return 0;
 	
 }
@@ -825,6 +834,80 @@ static int _print_rest(db2_block_info_t *block_ptr)
 }
 #endif
 
+static int _addto_nodelist(List nodelist, int *start, int *end)
+{
+	int *coord = NULL;
+	int x,y,z;
+	
+	assert(end[X] < DIM_SIZE[X]);
+	assert(start[X] >= 0);
+	assert(end[Y] < DIM_SIZE[Y]);
+	assert(start[Y] >= 0);
+	assert(end[Z] < DIM_SIZE[Z]);
+	assert(start[Z] >= 0);
+	
+	for (x = start[X]; x <= end[X]; x++) {
+		for (y = start[Y]; y <= end[Y]; y++) {
+			for (z = start[Z]; z <= end[Z]; z++) {
+				coord = xmalloc(sizeof(int)*3);
+				coord[X] = x;
+				coord[Y] = y;
+				coord[Z] = z;
+				list_append(nodelist, coord);
+			}
+		}
+	}
+	return 1;
+}
+
+static int _make_nodelist(char *nodes, List nodelist)
+{
+	int j = 0;
+	int number;
+	int start[PA_SYSTEM_DIMENSIONS];
+	int end[PA_SYSTEM_DIMENSIONS];
+	
+	if(!nodelist)
+		nodelist = list_create(_nodelist_del);
+
+	while (nodes[j] != '\0') {
+		if ((nodes[j] == '['
+		     || nodes[j] == ',')
+		    && (nodes[j+8] == ']' 
+			|| nodes[j+8] == ',')
+		    && (nodes[j+4] == 'x'
+			|| nodes[j+4] == '-')) {
+			j++;
+			number = atoi(nodes + j);
+			start[X] = number / 100;
+			start[Y] = (number % 100) / 10;
+			start[Z] = (number % 10);
+			j += 4;
+			number = atoi(nodes + j);
+			end[X] = number / 100;
+			end[Y] = (number % 100) / 10;
+			end[Z] = (number % 10);
+			j += 3;
+			_addto_nodelist(nodelist, start, end);
+			if(nodes[j] != ',')
+				break;
+			j--;
+		} else if((nodes[j] < 58 
+			   && nodes[j] > 47)) {
+					
+			number = atoi(nodes + j);
+			start[X] = number / 100;
+			start[Y] = (number % 100) / 10;
+			start[Z] = (number % 10);
+			j+=3;
+			_addto_nodelist(nodelist, start, start);
+			if(nodes[j] != ',')
+				break;
+		}
+		j++;
+	}
+	return 1;
+}
 static char* _convert_conn_type(enum connection_type conn_type)
 {
 	switch (conn_type) {
