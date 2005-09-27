@@ -2039,6 +2039,9 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	packstr(job_desc_ptr->network, buffer);
 	pack_time(job_desc_ptr->begin_time, buffer);
 
+	pack16(job_desc_ptr->mail_type, buffer);
+	packstr(job_desc_ptr->mail_user, buffer);
+
 	if (select_g_alloc_jobinfo (&jobinfo) == SLURM_SUCCESS) {
 #if SYSTEM_DIMENSIONS
 		select_g_set_jobinfo(jobinfo, SELECT_DATA_GEOMETRY, 
@@ -2118,6 +2121,9 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpackstr_xmalloc(&job_desc_ptr->network, &uint16_tmp, buffer);
 	safe_unpack_time(&job_desc_ptr->begin_time, buffer);
 
+	safe_unpack16(&job_desc_ptr->mail_type, buffer);
+	safe_unpackstr_xmalloc(&job_desc_ptr->mail_user, &uint16_tmp, buffer);
+
 	if (select_g_alloc_jobinfo (&job_desc_ptr->select_jobinfo)
 	||  select_g_unpack_jobinfo(job_desc_ptr->select_jobinfo, buffer))
 		goto unpack_error;
@@ -2147,6 +2153,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	xfree(job_desc_ptr->work_dir);
 	xfree(job_desc_ptr->host);
 	xfree(job_desc_ptr->network);
+	xfree(job_desc_ptr->mail_user);
 	xfree(job_desc_ptr);
 	*job_desc_buffer_ptr = NULL;
 	return SLURM_ERROR;

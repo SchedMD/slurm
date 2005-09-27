@@ -6,7 +6,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette@llnl.gov>, et. al.
+ *  Written by Morris Jette <jette@llnl.gov>, et. al.
  *  Derived from pdsh written by Jim Garlick <garlick1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
@@ -56,8 +56,11 @@
 
 #include <errno.h>
 #include <pthread.h>
+#include <pwd.h>
 #include <signal.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "src/common/list.h"
@@ -126,6 +129,11 @@ typedef struct queued_request {
 	time_t       last_attempt;	/* Time of last xmit attempt */
 } queued_request_t;
 
+typedef struct mail_info {
+	char *user_name;
+	char *message;
+} mail_info_t;
+
 static void _alarm_handler(int dummy);
 static inline void _comm_err(char *node_name);
 static void _list_delete_retry(void *retry_entry);
@@ -142,8 +150,15 @@ static void *_thread_per_node_rpc(void *args);
 static int   _valid_agent_arg(agent_arg_t *agent_arg_ptr);
 static void *_wdog(void *args);
 
+static mail_info_t *_mail_alloc(void);
+static void  _mail_free(void *arg);
+static void  _mail_proc(mail_info_t *mi);
+static char *_mail_type_str(uint16_t mail_type);
+
 static pthread_mutex_t retry_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t mail_mutex  = PTHREAD_MUTEX_INITIALIZER;
 static List retry_list = NULL;		/* agent_arg_t list for retry */
+static List mail_list = NULL;		/* pending e-mail requests */
 
 static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cnt_cond  = PTHREAD_COND_INITIALIZER;
@@ -837,6 +852,13 @@ extern int agent_retry (int min_wait)
 			_spawn_retry_agent(agent_arg_ptr);
 		else
 			error("agent_retry found record with no agent_args");
+	} else if (mail_list) {
+		mail_info_t *mi;
+		slurm_mutex_lock(&mail_mutex);
+		mi = (mail_info_t *) list_dequeue(mail_list);
+		slurm_mutex_unlock(&mail_mutex);
+		if (mi)
+			_mail_proc(mi);
 	}
 
 	return list_size;
@@ -927,6 +949,8 @@ void agent_purge(void)
 	slurm_mutex_lock(&retry_mutex);
 	list_destroy(retry_list);
 	retry_list = NULL;
+	list_destroy(mail_list);
+	mail_list = NULL;
 	slurm_mutex_unlock(&retry_mutex);
 }
 
@@ -952,3 +976,107 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 	}
 	xfree(agent_arg_ptr);
 }
+
+static mail_info_t *_mail_alloc(void)
+{
+	return xmalloc(sizeof(mail_info_t));
+}
+
+static void _mail_free(void *arg)
+{
+	mail_info_t *mi = (mail_info_t *) arg;
+
+	if (mi) {
+		xfree(mi->user_name);
+		xfree(mi->message);
+		xfree(mi);
+	}
+}
+
+/* process an email request and free the record */
+static void _mail_proc(mail_info_t *mi)
+{
+	pid_t pid;
+	int pfd[2];
+
+	if (pipe(pfd) == -1) {
+		error("pipe(): %m");
+		goto fini;
+	}
+
+	pid = fork();
+	if (pid < 0) {
+		error("fork(): %m");
+		(void) close(pfd[0]);
+		(void) close(pfd[1]);
+	} else if (pid == 0) { /* child */
+		(void) close(0);
+		dup(pfd[0]);
+		(void) close(pfd[0]);
+		(void) close(pfd[1]);
+		(void) close(1);
+		(void) close(2);
+		execle("/bin/mail", "mail", mi->user_name, 
+			"-s", mi->message, NULL, NULL);
+		exit(1);
+	} else {	/* parent */
+		(void) close(pfd[0]);
+		(void) close(pfd[1]);
+		waitpid(pid, NULL, 0);
+	}
+fini:	_mail_free(mi);
+	return;
+}
+
+static char *_mail_type_str(uint16_t mail_type)
+{
+	if (mail_type == MAIL_JOB_BEGIN)
+		return "Began";
+	if (mail_type == MAIL_JOB_END)
+		return "Ended";
+	if (mail_type == MAIL_JOB_FAIL)
+		return "Failed";
+	return "unknown";
+}
+
+/*
+ * mail_job_info - Send e-mail notice of job state change
+ * IN job_ptr - job identification
+ * IN state_type - job transition type, see MAIL_JOB in slurm.h
+ */
+extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
+{
+	mail_info_t *mi = _mail_alloc();
+
+	if (!job_ptr->mail_user) {
+		struct passwd *pw;
+		pw = getpwuid((uid_t) job_ptr->user_id);
+		if (pw && pw->pw_name)
+			mi->user_name = xstrdup(pw->pw_name);
+		else {
+			error("getpwuid(%u): %m", job_ptr->user_id);
+			_mail_free(mi);
+			return;
+		}
+	} else
+		mi->user_name = xstrdup(job_ptr->mail_user);
+
+	mi->message = xmalloc(128);
+	sprintf(mi->message, "SLURM Job_id=%u Name=%.24s %s",
+		job_ptr->job_id, job_ptr->name, 
+		_mail_type_str(mail_type));
+
+	info ("msg to %s: %s", mi->user_name, mi->message);
+
+	slurm_mutex_lock(&mail_mutex);
+	if (!mail_list) {
+		mail_list = list_create(&_mail_free);
+		if (!mail_list)
+			fatal("list_create failed");
+	}
+	if (!list_enqueue(mail_list, (void *) mi))
+		fatal("list_enqueue failed");
+	slurm_mutex_unlock(&mail_mutex);
+	return;
+}
+

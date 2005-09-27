@@ -144,6 +144,10 @@ enum job_states {
 };
 #define JOB_COMPLETING (0x8000)
 
+#define MAIL_JOB_BEGIN 0x0001	/* notify when job begins */
+#define MAIL_JOB_END   0x0002	/* notify when job ends */
+#define MAIL_JOB_FAIL  0x0004	/* notify if job fails */
+
 /* Reason for job to be pending rather than executing. If multiple reasons 
  * exists, only one is given for the sake of system efficiency */
 enum job_wait_reason {
@@ -309,6 +313,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * when Consumable Resources are
 				 * enabled */
 	time_t begin_time;	/* delay initiation until this time */
+	uint16_t mail_type;	/* see MAIL_JOB_ definitions above */
+	char *mail_user;	/* user to receive notification */
 /*
  * The following parameters are only meaningful on a Blue Gene
  * system at present. Some will be of value on other system.

@@ -874,6 +874,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 	else
 		job_ptr->end_time = job_ptr->start_time + 
 				    (job_ptr->time_limit * 60);   /* secs */
+	if (job_ptr->mail_type & MAIL_JOB_BEGIN)
+		mail_job_info(job_ptr, MAIL_JOB_BEGIN);
 
       cleanup:
 	FREE_NULL_BITMAP(select_bitmap);

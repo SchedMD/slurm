@@ -487,6 +487,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->kill_on_step_done, buffer);
 	pack16(dump_job_ptr->batch_flag, buffer);
 	pack16(dump_job_ptr->port, buffer);
+	pack16(dump_job_ptr->mail_type, buffer);
 
 	packstr(dump_job_ptr->host, buffer);
 	packstr(dump_job_ptr->nodes, buffer);
@@ -495,6 +496,8 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->alloc_node, buffer);
 	packstr(dump_job_ptr->account, buffer);
 	packstr(dump_job_ptr->network, buffer);
+	packstr(dump_job_ptr->mail_user, buffer);
+
 	select_g_pack_jobinfo(dump_job_ptr->select_jobinfo,
 		buffer);
 
@@ -526,9 +529,10 @@ static int _load_job_state(Buf buffer)
 	time_t start_time, end_time;
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done, name_len, port;
+	uint16_t mail_type;
 	char *nodes = NULL, *partition = NULL, *name = NULL;
 	char *alloc_node = NULL, *host = NULL, *account = NULL;
-	char *network = NULL;
+	char *network = NULL, *mail_user = NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	int error_code;
@@ -552,6 +556,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack16(&kill_on_step_done, buffer);
 	safe_unpack16(&batch_flag, buffer);
 	safe_unpack16(&port, buffer);
+	safe_unpack16(&mail_type, buffer);
 
 	safe_unpackstr_xmalloc(&host, &name_len, buffer);
 	safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
@@ -560,6 +565,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpackstr_xmalloc(&alloc_node, &name_len, buffer);
 	safe_unpackstr_xmalloc(&account, &name_len, buffer);
 	safe_unpackstr_xmalloc(&network, &name_len, buffer);
+	safe_unpackstr_xmalloc(&mail_user, &name_len, buffer);
 
 	if (select_g_alloc_jobinfo(&select_jobinfo)
 	||  select_g_unpack_jobinfo(select_jobinfo, buffer))
@@ -647,6 +653,9 @@ static int _load_job_state(Buf buffer)
 	job_ptr->batch_flag        = batch_flag;
 	job_ptr->port              = port;
 	job_ptr->host              = host;
+	job_ptr->mail_type         = mail_type;
+	job_ptr->mail_user         = mail_user;
+	mail_user = NULL;	/* reused, nothing left to free */
 	job_ptr->select_jobinfo = select_jobinfo;
 
 	build_node_details(job_ptr);	/* set: num_cpu_groups, cpus_per_node, 
@@ -671,6 +680,7 @@ static int _load_job_state(Buf buffer)
 	xfree(name);
 	xfree(alloc_node);
 	xfree(account);
+	xfree(mail_user);
 	select_g_free_jobinfo(&select_jobinfo);
 	return SLURM_FAILURE;
 }
@@ -1210,6 +1220,9 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	debug3("   host=%s port=%u dependency=%ld account=%s",
 		job_specs->host, job_specs->port,
 		dependency, job_specs->account);
+
+	debug3("   mail_type=%u, mail_user=%s",
+		job_specs->mail_type, job_specs->mail_user);
 
 	_make_time_str(&job_specs->begin_time, buf);
 	cpus_per_task = (job_specs->cpus_per_task != (uint16_t) NO_VAL) ?
@@ -2212,6 +2225,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->num_procs = job_desc->num_procs;
         job_ptr->cr_enabled = 0;
 
+	job_ptr->mail_type = job_desc->mail_type;
+	job_ptr->mail_user = xstrdup(job_desc->mail_user);
+
 	detail_ptr = job_ptr->details;
 	detail_ptr->argc = job_desc->argc;
 	detail_ptr->argv = job_desc->argv;
@@ -2508,10 +2524,9 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->node_addr);
 	xfree(job_ptr->host);
 	xfree(job_ptr->account);
+	xfree(job_ptr->mail_user);
 	xfree(job_ptr->network);
-	if (job_ptr->ntask) 
-		xfree(job_ptr->ntask);
-	job_ptr->ntask = 0;
+	xfree(job_ptr->ntask);
 	select_g_free_jobinfo(&job_ptr->select_jobinfo);
 	if (job_ptr->step_list) {
 		delete_all_step_records(job_ptr);
@@ -3729,7 +3744,18 @@ void job_fini (void)
 /* log the completion of the specified job */
 extern void job_completion_logger(struct job_record  *job_ptr)
 {
+	int base_state;
 	xassert(job_ptr);
+
+	base_state = job_ptr->job_state & (~JOB_COMPLETING);
+	if ((base_state == JOB_COMPLETE) || (base_state == JOB_CANCELLED)) {
+		if (job_ptr->mail_type & MAIL_JOB_END)
+			mail_job_info(job_ptr, MAIL_JOB_END);
+	} else {	/* JOB_FAILED, JOB_NODE_FAIL, or JOB_TIMEOUT */
+		if (job_ptr->mail_type & MAIL_JOB_FAIL)
+			mail_job_info(job_ptr, MAIL_JOB_FAIL);
+	}
+
 	g_slurmctld_jobacct_job_complete(job_ptr);
 	g_slurm_jobcomp_write(job_ptr);
 }

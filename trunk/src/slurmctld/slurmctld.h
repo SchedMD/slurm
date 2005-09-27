@@ -332,6 +332,8 @@ struct job_record {
                                            for the credentials */
         uint32_t *ntask;                /* number of tasks to run on
                                            each of the ntask_cnt hosts */
+	uint16_t mail_type;		/* see MAIL_JOB_* in slurm.h */
+	char *mail_user;		/* user to get e-mail notification */
 };
 
 struct 	step_record {
