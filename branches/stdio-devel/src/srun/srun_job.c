@@ -485,9 +485,9 @@ _job_create_internal(allocation_info_t *info)
 	/* Compute number of IO file descriptors needed and allocate 
 	 * memory for them
 	 */
-	job->niofds = _estimate_nports(opt.nprocs, 64);
-	job->iofd   = (int *) xmalloc(job->niofds * sizeof(int));
-	job->ioport = (int *) xmalloc(job->niofds * sizeof(int));
+	job->num_listen = _estimate_nports(opt.nprocs, 64);
+	job->listensock = (int *) xmalloc(job->num_listen * sizeof(int));
+	job->listenport = (int *) xmalloc(job->num_listen * sizeof(int));
 
 	/* ntask stdout and stderr fds */
 	job->out    = (int *)  xmalloc(opt.nprocs * sizeof(int));

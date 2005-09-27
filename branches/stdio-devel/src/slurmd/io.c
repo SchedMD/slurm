@@ -1351,6 +1351,7 @@ again:
 		/* FIXME handle error */
 		return SLURM_ERROR;
 	}
+	debug3("Wrote %d bytes to socket", n);
 	out->remaining -= n;
 	if (out->remaining > 0)
 		return SLURM_SUCCESS;

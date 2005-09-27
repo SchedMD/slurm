@@ -138,11 +138,11 @@ _handle_pollerr(fd_info_t *info)
 }
 
 static void
-_set_iofds_nonblocking(srun_job_t *job)
+_set_listensocks_nonblocking(srun_job_t *job)
 {
 	int i;
-	for (i = 0; i < job->niofds; i++) 
-		fd_set_nonblocking(job->iofd[i]);
+	for (i = 0; i < job->num_listen; i++) 
+		fd_set_nonblocking(job->listensock[i]);
 	/* 
 	 * Do not do this. Setting stdin nonblocking has the side
 	 * effect of setting stdout/stderr nonblocking, which is
@@ -271,7 +271,7 @@ _io_thr_init(srun_job_t *job, struct pollfd *fds)
 	sigaddset(&set, SIGHUP);
  	pthread_sigmask(SIG_BLOCK, &set, NULL);
 
-	_set_iofds_nonblocking(job);
+	_set_listensocks_nonblocking(job);
 
 	for (i = 0; i < opt.nprocs; i++) {
 		int instate = _initial_fd_state (job->ifname, i);
@@ -283,8 +283,8 @@ _io_thr_init(srun_job_t *job, struct pollfd *fds)
 			
 	}
 
-	for (i = 0; i < job->niofds; i++) 
-		_poll_set_rd(fds[i], job->iofd[i]);
+	for (i = 0; i < job->num_listen; i++) 
+		_poll_set_rd(fds[i], job->listensock[i]);
 }
 
 static void
@@ -314,7 +314,7 @@ _setup_pollfds(srun_job_t *job, struct pollfd *fds, fd_info_t *map)
 {
 	int eofcnt = 0;
 	int i;
-	nfds_t nfds = job->niofds; /* already have n ioport fds + stdin */
+	nfds_t nfds = job->num_listen; /* already have n listenport fds + stdin */
 
 	/* set up reader for the io thread signalling pipe */
 	if (job->io_thr_pipe[0] >= 0) {
@@ -384,7 +384,7 @@ _io_thr_poll(void *job_arg)
 {
 	int i, rc;
 	srun_job_t *job  = (srun_job_t *) job_arg;
-	int numfds  = (opt.nprocs*2) + job->niofds + 3;
+	int numfds  = (opt.nprocs*2) + job->num_listen + 3;
 	nfds_t nfds = 0;
 	struct pollfd fds[numfds];
 	fd_info_t     map[numfds];	/* map fd in pollfd array to fd info */
@@ -414,7 +414,7 @@ _io_thr_poll(void *job_arg)
 		}
 
 
-		for (i = 0; i < job->niofds; i++) {
+		for (i = 0; i < job->num_listen; i++) {
 			if (fds[i].revents) {
 				if (_poll_err(fds[i]))
 					error("poll error on io fd %d", i);
@@ -575,12 +575,13 @@ io_thr_create(srun_job_t *job)
 	if (opt.labelio)
 		fmt_width = _wid(opt.nprocs);
 
-	for (i = 0; i < job->niofds; i++) {
-		if (net_stream_listen(&job->iofd[i], &job->ioport[i]) < 0)
+	for (i = 0; i < job->num_listen; i++) {
+		if (net_stream_listen(&job->listensock[i],
+				      &job->listenport[i]) < 0)
 			fatal("unable to initialize stdio server port: %m");
 		debug("initialized stdio server port %d\n",
-		      ntohs(job->ioport[i]));
-		net_set_low_water(job->iofd[i], 140);
+		      ntohs(job->listenport[i]));
+		net_set_low_water(job->listensock[i], 140);
 	}
 
 	if (open_streams(job) < 0) {
@@ -655,7 +656,7 @@ static void
 _accept_io_stream(srun_job_t *job, int i)
 {
 	int j;
-	int fd = job->iofd[i];
+	int fd = job->listensock[i];
 	debug2("Activity on IO server port %d fd %d", i, fd);
 
 	for (j = 0; j < 15; j++) {
