@@ -107,6 +107,8 @@
 #define LONG_OPT_PROLOG   0x117
 #define LONG_OPT_EPILOG   0x118
 #define LONG_OPT_BEGIN    0x119
+#define LONG_OPT_MAIL_TYPE 0x11a
+#define LONG_OPT_MAIL_USER 0x11b
 
 /*---- forward declarations of static functions  ----*/
 
@@ -139,6 +141,9 @@ static bool _opt_verify(void);
 static void  _print_version(void);
 
 static void _process_env_var(env_vars_t *e, const char *val);
+
+static uint16_t _parse_mail_type(const char *arg);
+static char *_print_mail_type(const uint16_t type);
 
 /* search PATH for command returns full path */
 static char *_search_path(char *, bool, int);
@@ -774,6 +779,8 @@ void set_options(const int argc, char **argv, int first)
 		{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
 		{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
 		{"begin",            required_argument, 0, LONG_OPT_BEGIN},
+		{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
+		{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1164,6 +1171,15 @@ void set_options(const int argc, char **argv, int first)
 		case LONG_OPT_BEGIN:
 			opt.begin = parse_time(optarg);
 			break;
+		case LONG_OPT_MAIL_TYPE:
+			opt.mail_type = _parse_mail_type(optarg);
+			if (opt.mail_type == 0)
+				fatal("--mail-type=%s invalid", optarg);
+			break;
+		case LONG_OPT_MAIL_USER:
+			xfree(opt.mail_user);
+			opt.mail_user = xstrdup(optarg);
+			break;
 		}
 	}
 }
@@ -1377,6 +1393,39 @@ static bool _opt_verify(void)
 	return verified;
 }
 
+static uint16_t _parse_mail_type(const char *arg)
+{
+	uint16_t rc;
+
+	if (strcasecmp(arg, "BEGIN") == 0)
+		rc = MAIL_JOB_BEGIN;
+	else if  (strcasecmp(arg, "END") == 0)
+		rc = MAIL_JOB_END;
+	else if (strcasecmp(arg, "FAIL") == 0)
+		rc = MAIL_JOB_FAIL;
+	else if (strcasecmp(arg, "ALL") == 0)
+		rc = MAIL_JOB_BEGIN |  MAIL_JOB_END |  MAIL_JOB_FAIL;
+	else
+		rc = 0;		/* failure */
+
+	return rc;
+}
+static char *_print_mail_type(const uint16_t type)
+{
+	if (type == 0)
+		return "NONE";
+	if (type == MAIL_JOB_BEGIN)
+		return "BEGIN";
+	if (type == MAIL_JOB_END)
+		return "END";
+	if (type == MAIL_JOB_FAIL)
+		return "FAIL";
+	if (type == (MAIL_JOB_BEGIN |  MAIL_JOB_END |  MAIL_JOB_FAIL))
+		return "ALL";
+
+	return "UNKNOWN";
+}
+
 static void
 _freeF(void *data)
 {
@@ -1582,6 +1631,10 @@ static void _opt_list()
 		info("begin          : %s", 
 			asctime(localtime(&opt.begin)));
 	}
+	info("prolog         : %s", opt.prolog);
+	info("epilog         : %s", opt.epilog);
+	info("mail_type      : %s", _print_mail_type(opt.mail_type));
+	info("mail_user      : %s", opt.mail_user);
 	str = print_commandline();
 	info("remote command : `%s'", str);
 	xfree(str);
@@ -1605,11 +1658,12 @@ static void _usage(void)
 "            [--core=type] [-T threads] [-W sec] [--attach] [--join] \n"
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "            [--mpi=type] [--account=name] [--dependency=jobid]\n"
-"            [--kill-on-bad-exit]\n"
-"            [--propagate[=rlimits] ]\n"
+"            [--kill-on-bad-exit] [--propagate[=rlimits] ]\n"
 #ifdef HAVE_BGL		/* Blue gene specific options */
 "            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
 #endif
+"            [--mail-type=type] [mail-user=user]\n"
+"            [--prolog=fname] [--epilog=fname]\n"
 "            [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -1661,6 +1715,8 @@ static void _help(void)
 "      --prolog=program        run \"program\" before launching job step\n"
 "      --epilog=program        run \"program\" after launching job step\n"
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
+"      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
+"      --mail-user=user        who to send email notification for job state changes\n"
 "\n"
 "Allocate only:\n"
 "  -A, --allocate              allocate resources and spawn a shell\n"

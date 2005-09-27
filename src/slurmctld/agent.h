@@ -1,6 +1,8 @@
 /*****************************************************************************\
  *  agent.h - data structures and function definitions for parallel 
  *	background communications
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -81,5 +83,12 @@ extern int agent_retry (int min_wait);
 
 /* agent_purge - purge all pending RPC requests */
 extern void agent_purge (void);
+
+/*
+ * mail_job_info - Send e-mail notice of job state change
+ * IN job_ptr - job identification
+ * IN state_type - job transition type, see MAIL_JOB in slurm.h
+ */ 
+extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type);
 
 #endif /* !_AGENT_H */

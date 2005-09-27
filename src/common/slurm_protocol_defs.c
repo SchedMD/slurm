@@ -133,6 +133,7 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		}
 		xfree(msg->environment);
 		xfree(msg->features);
+		xfree(msg->mail_user);
 		xfree(msg->name);
 		xfree(msg->partition);
 		xfree(msg->req_nodes);

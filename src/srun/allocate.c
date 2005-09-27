@@ -373,6 +373,9 @@ job_desc_msg_create_from_opts (char *script)
 	j->dependency     = opt.dependency;
 	j->exclusive      = opt.exclusive;
 	j->group_id       = opt.gid;
+	j->mail_type      = opt.mail_type;
+	if (opt.mail_user)
+		j->mail_user = xstrdup(opt.mail_user);
 	if (opt.begin)
 		j->begin_time = opt.begin;
 	if (opt.network)
