@@ -33,9 +33,6 @@
 #define IO_DONE -9
 
 int   io_node_fail(char *nodelist, srun_job_t *job);
-void *io_thr(void *arg);
 int   io_thr_create(srun_job_t *job);
-void  io_thr_wake(srun_job_t *job);
-int   open_streams(srun_job_t *job);
 
 #endif /* !_HAVE_IO_H */

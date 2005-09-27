@@ -261,7 +261,7 @@ job_force_termination(srun_job_t *job)
 		update_job_state(job, SRUN_JOB_FORCETERM);
 	}
 
-	io_thr_wake(job);
+	eio_handle_signal(job->eio);
 }
 
 
@@ -365,9 +365,9 @@ report_task_status(srun_job_t *job)
 
 	for (i = 0; i < opt.nprocs; i++) {
 		int state = job->task_state[i];
-		if ((state == SRUN_TASK_EXITED) 
-		    && ((job->err[i] >= 0) || (job->out[i] >= 0)))
-			state = 4;
+/* 		if ((state == SRUN_TASK_EXITED)  */
+/* 		    && ((job->err[i] >= 0) || (job->out[i] >= 0))) */
+/* 			state = 4; */
 		snprintf(buf, 256, "task%d", i);
 		hostlist_push(hl[state], buf); 
 	}
@@ -453,7 +453,7 @@ _job_create_internal(allocation_info_t *info)
 	job->nhosts = hostlist_count(hl);
 #endif
 
-	job->select_jobinfo = info->select_jobinfo;
+ 	job->select_jobinfo = info->select_jobinfo;
 	job->jobid   = info->jobid;
 	job->stepid  = info->stepid;
 	job->old_job = false;
@@ -482,23 +482,18 @@ _job_create_internal(allocation_info_t *info)
 
 	debug3("njfds = %d", job->njfds);
 
-	/* Compute number of IO file descriptors needed and allocate 
-	 * memory for them
+	/* Compute number of listening sockets needed to allow
+	 * all of the slurmds to establish IO streams with srun, without
+	 * overstressing the TCP/IP backoff/retry algorithm
 	 */
 	job->num_listen = _estimate_nports(opt.nprocs, 64);
 	job->listensock = (int *) xmalloc(job->num_listen * sizeof(int));
 	job->listenport = (int *) xmalloc(job->num_listen * sizeof(int));
 
-	/* ntask stdout and stderr fds */
-	job->out    = (int *)  xmalloc(opt.nprocs * sizeof(int));
-	job->err    = (int *)  xmalloc(opt.nprocs * sizeof(int));
-
-	/* ntask cbufs for stdout and stderr */
-	job->outbuf     = (cbuf_t *) xmalloc(opt.nprocs * sizeof(cbuf_t));
-	job->errbuf     = (cbuf_t *) xmalloc(opt.nprocs * sizeof(cbuf_t));
-	job->inbuf      = (cbuf_t *) xmalloc(opt.nprocs * sizeof(cbuf_t));
-	job->stdin_eof  = (bool *)   xmalloc(opt.nprocs * sizeof(bool));
-
+	job->eio = eio_handle_create();
+	job->eio_objs = list_create(NULL); /* FIXME - needs destructor */
+	/* "nhosts" number of IO protocol sockets */
+	job->ioserver = (eio_obj_t *)xmalloc(job->nhosts*sizeof(eio_obj_t *));
 
 	/* nhost host states */
 	job->host_state =  xmalloc(job->nhosts * sizeof(srun_host_state_t));
@@ -506,20 +501,6 @@ _job_create_internal(allocation_info_t *info)
 	/* ntask task states and statii*/
 	job->task_state  =  xmalloc(opt.nprocs * sizeof(srun_task_state_t));
 	job->tstatus	 =  xmalloc(opt.nprocs * sizeof(int));
-
-	for (i = 0; i < opt.nprocs; i++) {
-		job->task_state[i] = SRUN_TASK_INIT;
-
-		job->outbuf[i]     = cbuf_create(4096, 1048576);
-		job->errbuf[i]     = cbuf_create(4096, 1048576);
-		job->inbuf[i]      = cbuf_create(4096, 4096);
-
-		cbuf_opt_set(job->outbuf[i], CBUF_OPT_OVERWRITE, CBUF_NO_DROP);
-		cbuf_opt_set(job->errbuf[i], CBUF_OPT_OVERWRITE, CBUF_NO_DROP);
-		cbuf_opt_set(job->inbuf[i],  CBUF_OPT_OVERWRITE, CBUF_NO_DROP);
-
-		job->stdin_eof[i]  = false;
-	}
 
 	slurm_mutex_init(&job->task_mutex);
 

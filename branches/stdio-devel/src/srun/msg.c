@@ -254,7 +254,7 @@ static void _node_fail_handler(char *nodelist, srun_job_t *job)
 	info("sending Ctrl-C to remaining tasks");
 	fwd_signal(job, SIGINT);
 	if (job->ioid)
-		io_thr_wake(job);
+		eio_handle_signal(job->eio);
 }
 
 static bool _job_msg_done(srun_job_t *job)
@@ -573,11 +573,11 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 		if (status) 
 			job->task_state[taskid] = SRUN_TASK_ABNORMAL_EXIT;
 		else {
-			if (   (job->err[taskid] != IO_DONE) 
-			    || (job->out[taskid] != IO_DONE) )
-				job->task_state[taskid] = SRUN_TASK_IO_WAIT;
-			else
-				job->task_state[taskid] = SRUN_TASK_EXITED;
+/* 			if (   (job->err[taskid] != IO_DONE)  */
+/* 			    || (job->out[taskid] != IO_DONE) ) */
+/* 				job->task_state[taskid] = SRUN_TASK_IO_WAIT; */
+/* 			else */
+/* 				job->task_state[taskid] = SRUN_TASK_EXITED; */
 		}
 
 		slurm_mutex_unlock(&job->task_mutex);

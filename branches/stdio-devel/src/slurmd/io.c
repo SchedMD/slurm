@@ -1185,8 +1185,8 @@ _client_readable(eio_obj_t *obj)
 
 	debug3("Called _client_readable");
 	/* FIXME!  Remove following two lines */
-	debug3("  false");
-	return false;
+/* 	debug3("  false"); */
+/* 	return false; */
 
 	xassert(client->magic == CLIENT_IO_MAGIC);
 

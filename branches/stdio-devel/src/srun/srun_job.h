@@ -35,6 +35,7 @@
 
 #include <slurm/slurm.h>
 
+#include "src/common/eio.h"
 #include "src/common/cbuf.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
@@ -118,20 +119,12 @@ typedef struct srun_job {
 	slurm_addr *jaddr;	/* job control info ports 	  */
 
 	pthread_t ioid;		/* stdio thread id 		  */
-	int io_thr_pipe[2];	/* pipe for waking stdio thread   */
 	int num_listen;		/* Number of stdio listen sockets */
 	int *listensock;	/* Array of stdio listen sockets  */
 	int *listenport;	/* Array of stdio listen ports 	  */
-
-	int *out;		/* ntask stdout fds */
-	int *err;		/* ntask stderr fds */
-
-	/* XXX Need long term solution here:
-	 * Quickfix: ntask*2 cbufs for buffering job output
-	 */
-	cbuf_t *outbuf;
-	cbuf_t *errbuf;
-	cbuf_t *inbuf;            /* buffer for stdin data */
+	eio_t eio;              /* Event IO handle                */
+	List eio_objs;          /* List of eio_obj_t pointers     */
+	eio_obj_t **ioserver;	/* Array of nhosts pointers to eio_obt_t */
 
 	pthread_t lid;		  /* launch thread id */
 
@@ -153,7 +146,6 @@ typedef struct srun_job {
 	FILE *outstream;
 	FILE *errstream;
 	int   stdinfd;
-	bool *stdin_eof;  /* true if task i processed stdin eof */
 	forked_msg_t *forked_msg;
 	select_jobinfo_t select_jobinfo;
 } srun_job_t;
