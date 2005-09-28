@@ -57,32 +57,12 @@
 
 static int    fmt_width       = 0;
 
-/* fd_info struct used in poll() loop to map fds back to task number,
- * appropriate output type (stdout/err), and original fd
- */
-typedef struct fd_info {
-	int taskid;	/* corresponding task id		*/
-	int *fd; 	/* pointer to fd in job->out/err array 	*/
-	FILE *fp;	/* fp on which to write output		*/
-	cbuf_t buf;
-} fd_info_t;
-
 static void	_handle_io_init_msg(int fd, srun_job_t *job);
 static int	_close_stream(int *fd, FILE *out, int tasknum);
-static int	_handle_pollerr(fd_info_t *info);
 static ssize_t	_readx(int fd, char *buf, size_t maxbytes);
 static int      _read_io_init_msg(int fd, srun_job_t *job, char *host);
 static int      _wid(int n);
-
-static bool _listening_socket_readable(eio_obj_t *obj);
-static int _listening_socket_read(eio_obj_t *obj, List objs);
-
-/* True if an EOF needs to be broadcast to all tasks
- */
-static bool stdin_got_eof = false;
-static bool stdin_open    = true;
-static uint32_t nbytes    = 0;
-static uint32_t nwritten  = 0;
+static struct io_operations *_ops_copy(struct io_operations *ops);
 
 #if 0
 struct io_operations server_ops = {
@@ -108,6 +88,12 @@ struct io_operations file_write_ops = {
 	handle_close:   &_obj_close
 };
 #endif
+
+/**********************************************************************
+ * Listening socket implementation
+ **********************************************************************/
+static bool _listening_socket_readable(eio_obj_t *obj);
+static int _listening_socket_read(eio_obj_t *obj, List objs);
 
 struct io_operations listening_socket_ops = {
 	readable:	&_listening_socket_readable,
@@ -137,6 +123,113 @@ _set_listensocks_nonblocking(srun_job_t *job)
 	for (i = 0; i < job->num_listen; i++) 
 		fd_set_nonblocking(job->listensock[i]);
 }
+
+/**********************************************************************
+ * IO server socket implementation
+ **********************************************************************/
+static bool _server_readable(eio_obj_t *obj);
+static int _server_read(eio_obj_t *obj, List objs);
+
+struct io_operations server_ops = {
+        readable:	&_server_readable,
+	handle_read:	&_server_read
+};
+
+struct server_io_info {
+	srun_job_t *job;
+
+	/* incoming variables */
+	struct slurm_io_header header;
+	struct io_buf *in_msg;
+	int32_t in_remaining;
+	
+	/* outgoing variables */
+	List msg_queue;
+	struct io_buf *out_msg;
+	int32_t out_remaining;
+};
+
+static eio_obj_t *
+_create_server_eio_obj(int fd, srun_job_t *job)
+{
+	struct server_io_info *info = NULL;
+	eio_obj_t *eio = NULL;
+
+	info = (struct server_io_info *)xmalloc(sizeof(struct server_io_info));
+	info->job = job;
+	info->in_msg = NULL;
+	info->in_remaining = 0;
+	info->msg_queue = list_create(NULL); /* FIXME! Add destructor */
+	info->out_msg = NULL;
+	info->out_remaining = 0;
+
+	eio = (eio_obj_t *)xmalloc(sizeof(eio_obj_t));
+	eio->fd = fd;
+	eio->arg = (void *)info;
+	eio->ops = _ops_copy(&server_ops);
+
+	return eio;
+}
+
+static bool 
+_server_readable(eio_obj_t *obj)
+{
+	debug3("Called _server_readable");
+	return true;
+}
+
+static int
+_server_read(eio_obj_t *obj, List objs)
+{
+	struct server_io_info *s = (struct server_io_info *) obj->arg;
+	void *buf;
+	int n;
+
+	debug3("Entering _server_read");
+	if (s->in_msg == NULL) {
+		s->in_msg = list_dequeue(s->job->free_io_buf);
+		if (s->in_msg == NULL) {
+			debug("List free_io_buf is empty!");
+			return SLURM_ERROR;
+		}
+
+		io_hdr_read_fd(obj->fd, &s->header);
+		s->in_remaining = s->header.length;
+		s->in_msg->length = s->header.length;
+	}
+
+	/*
+	 * Read the body
+	 */
+	buf = s->in_msg->data + (s->in_msg->length - s->in_remaining);
+again:
+	if ((n = read(obj->fd, buf, s->in_remaining)) < 0) {
+		if (errno == EINTR)
+			goto again;
+		/* FIXME handle error */
+		return SLURM_ERROR;
+	}
+	debug3("  read %d bytes", n);
+	s->in_remaining -= n;
+	if (s->in_remaining > 0)
+		return SLURM_SUCCESS;
+
+	debug3("\"%s\"", s->in_msg->data);
+
+	/*
+	 * Route the message to the proper outputs
+	 */
+	/* FIXME! Fill in the routing code. Just throwing away for now. */
+	list_enqueue(s->job->free_io_buf, s->in_msg);
+	s->in_msg = NULL;
+
+	return SLURM_SUCCESS;
+}
+
+
+/**********************************************************************
+ * General fuctions
+ **********************************************************************/
 
 static void *
 _io_thr_internal(void *job_arg)
@@ -220,7 +313,7 @@ io_thr_create(srun_job_t *job)
 			fatal("unable to initialize stdio listen socket: %m");
 		debug("initialized stdio listening socket, port %d\n",
 		      ntohs(job->listenport[i]));
-		net_set_low_water(job->listensock[i], 140);
+		/*net_set_low_water(job->listensock[i], 140);*/
 		obj = _create_listensock_eio(job->listensock[i], job);
 		list_enqueue(job->eio_objs, obj);
 	}
@@ -250,22 +343,24 @@ _read_io_init_msg(int fd, srun_job_t *job, char *host)
 		error("failed reading io init message");
 		goto fail;
 	}
-
 	if (slurm_cred_get_signature(job->cred, &sig, &siglen) < 0) {
 		error ("Couldn't get existing cred signature");
 		goto fail;
 	}
-
-	if (io_init_msg_validate(&msg, sig) < 0)
-		goto fail;
-
+	if (io_init_msg_validate(&msg, sig) < 0) {
+		goto fail; 
+	}
 	if (msg.nodeid >= job->nhosts) {
 		error ("Invalid nodeid %d from %s", msg.nodeid, host);
 		goto fail;
 	}
-
 	debug2("Validated IO connection from %s, node rank %u, sd=%d",
 	       host, msg.nodeid, fd);
+	
+	net_set_low_water(fd, 1);
+	job->ioserver[msg.nodeid] = _create_server_eio_obj(fd, job);
+	list_enqueue(job->eio_objs, job->ioserver[msg.nodeid]);
+
 	return SLURM_SUCCESS;
 
     fail:

@@ -43,6 +43,9 @@
 #include "src/common/macros.h"   /* Containes SLURM_CRED_SIGLEN */
 #include "src/common/pack.h"
 #include "src/common/cbuf.h"
+#include "src/common/xmalloc.h"
+
+#define MAX_MSG_LEN 1024
 
 #define SLURM_IO_STDIN 0
 #define SLURM_IO_STDOUT 1
@@ -67,20 +70,29 @@ typedef struct slurm_io_header {
  * Return the packed size of an IO header in bytes;
  */
 int io_hdr_packed_size();
-
 void io_hdr_pack(io_hdr_t *hdr, Buf buffer);
-
 int io_hdr_unpack(io_hdr_t *hdr, Buf buffer);
+int io_hdr_read_fd(int fd, io_hdr_t *hdr);
 
 /*
  * Validate io init msg
- *
- * Returns 0 on success, -1 if any of the following is not true
  */
 int io_init_msg_validate(struct slurm_io_init_msg *msg, const char *sig);
-
 int io_init_msg_write_to_fd(int fd, struct slurm_io_init_msg *msg);
-
 int io_init_msg_read_from_fd(int fd, struct slurm_io_init_msg *msg);
+
+
+/*
+ * SLURM Internal implementation details
+ */
+struct io_buf {
+	int ref_count;
+	uint32_t length;
+	void *data;
+};
+
+struct io_buf *alloc_io_buf(void);
+void free_io_buf(struct io_buf *buf);
+
 
 #endif /* !_HAVE_IO_HDR_H */

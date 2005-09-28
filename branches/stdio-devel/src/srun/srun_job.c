@@ -494,6 +494,10 @@ _job_create_internal(allocation_info_t *info)
 	job->eio_objs = list_create(NULL); /* FIXME - needs destructor */
 	/* "nhosts" number of IO protocol sockets */
 	job->ioserver = (eio_obj_t *)xmalloc(job->nhosts*sizeof(eio_obj_t *));
+	job->free_io_buf = list_create(NULL); /* FIXME! Needs destructor */
+	for (i = 0; i < 10; i++) {
+		list_enqueue(job->free_io_buf, alloc_io_buf());
+	}
 
 	/* nhost host states */
 	job->host_state =  xmalloc(job->nhosts * sizeof(srun_host_state_t));

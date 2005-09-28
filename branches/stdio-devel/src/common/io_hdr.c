@@ -80,6 +80,53 @@ io_hdr_packed_size()
 	return sizeof(uint32_t) + 3*sizeof(uint16_t);
 }
 
+/*
+ * Only return when the all of the bytes have been read, or an unignorable
+ * error has occurred.
+ */
+static int _full_read(int fd, void *buf, size_t count)
+{
+	int n;
+
+	debug3("Entering _full_read");
+again:
+	if ((n = read(fd, (void *) buf, count)) < 0) {
+		if (errno == EINTR)
+			goto again;
+		/*_update_error_state(client, E_READ, errno);*/
+		debug3("Leaving  _full_read on error!");
+		return -1;
+	}
+	if (n == 0) { /* got eof */
+		debug3("  _full_read (_client_read) got eof");
+		return 0;
+	}
+	debug3("Leaving  _full_read, %d bytes of %d read", n, count);
+
+	return n;
+}
+
+/*
+ * Read and unpack an io_hdr_t from a file descriptor (socket).
+ */
+int io_hdr_read_fd(int fd, io_hdr_t *hdr)
+{
+	Buf buffer;
+	int rc = SLURM_SUCCESS;
+
+	debug3("Entering io_hdr_read_fd");
+	buffer = init_buf(io_hdr_packed_size());
+	_full_read(fd, buffer->head, io_hdr_packed_size());
+	rc = io_hdr_unpack(hdr, buffer);
+	free_buf(buffer);
+	debug3("Leaving  io_hdr_read_fd");
+
+	return rc;
+}
+
+
+
+
 int 
 io_init_msg_validate(struct slurm_io_init_msg *msg, const char *sig)
 {
@@ -211,4 +258,33 @@ again:
 
 	debug2("Leaving  io_init_msg_read_from_fd");
 	return SLURM_SUCCESS;
+}
+
+struct io_buf *
+alloc_io_buf(void)
+{
+	struct io_buf *buf;
+
+	buf = (struct io_buf *)xmalloc(sizeof(struct io_buf));
+	if (!buf)
+		return NULL;
+	buf->ref_count = 0;
+	buf->length = 0;
+	buf->data = xmalloc(MAX_MSG_LEN + io_hdr_packed_size());
+	if (!buf->data) {
+		xfree(buf);
+		return NULL;
+	}
+
+	return buf;
+}
+
+void
+free_io_buf(struct io_buf *buf)
+{
+	if (buf) {
+		if (buf->data)
+			xfree(buf->data);
+		xfree(buf);
+	}
 }

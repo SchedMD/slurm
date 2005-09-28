@@ -125,6 +125,7 @@ typedef struct srun_job {
 	eio_t eio;              /* Event IO handle                */
 	List eio_objs;          /* List of eio_obj_t pointers     */
 	eio_obj_t **ioserver;	/* Array of nhosts pointers to eio_obt_t */
+	List free_io_buf;       /* List of free struct io_buf pointers */
 
 	pthread_t lid;		  /* launch thread id */
 

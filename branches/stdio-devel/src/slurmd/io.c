@@ -92,8 +92,6 @@ struct error_state {
 	time_t          e_time;
 };
 
-#define MAX_MSG_LEN 1024
-
 struct incoming_client_info {
 	struct slurm_io_header header;
 	struct io_buf *msg;
@@ -1337,8 +1335,11 @@ _client_write(io_obj_t *obj, List objs)
 			debug3("_client_write: nothing in the queue");
 			return SLURM_SUCCESS;
 		}
+		debug3("  dequeue successful, out->msg->length = %d", out->msg->length);
 		out->remaining = out->msg->length;
 	}
+
+	debug3("  out->remaining = %d", out->remaining); 
 
 	/*
 	 * Write message to socket.
@@ -1453,6 +1454,7 @@ _task_build_message(struct task_out_info *out, slurmd_job_t *job, cbuf_t cbuf)
 	struct slurm_io_header header;
 	int n;
 
+	debug2("Entering _task_build_message");
 	msg = list_dequeue(job->free_io_buf);
 	if (msg == NULL)
 		return NULL;
@@ -1473,9 +1475,17 @@ _task_build_message(struct task_out_info *out, slurmd_job_t *job, cbuf_t cbuf)
 	header.gtaskid = out->gtaskid;
 	header.length = n;
 
+	debug3("header.length = %d", n);
 	packbuf = create_buf(msg->data, io_hdr_packed_size());
 	io_hdr_pack(&header, packbuf);
+	msg->length = io_hdr_packed_size() + header.length;
+	msg->ref_count = 0; /* make certain it is initialized */
 
+	/* free the Buf packbuf, but num the memory to which it points */
+	packbuf->head = NULL;
+	free_buf(packbuf);
+	      
+	debug2("Leaving  _task_build_message");
 	return msg;
 }
 
@@ -1540,7 +1550,8 @@ again:
 		client = (struct client_io_info *)eio->arg;
 		debug3("========================= Enqueued message");
 		xassert(client->magic == CLIENT_IO_MAGIC);
-		list_enqueue(client->out.msg_queue, msg);
+		if (list_enqueue(client->out.msg_queue, msg))
+			msg->ref_count++;
 	}
 	list_iterator_destroy(clients);
 
@@ -1560,49 +1571,6 @@ _task_error(io_obj_t *obj, List objs)
 	return -1;
 }
 
-/*
- * Only return when the all of the bytes have been read, or an unignorable
- * error has occurred.
- */
-int _full_read(int fd, void *buf, size_t count)
-{
-	int n;
-
-	debug3("Entering _full_read");
-again:
-	if ((n = read(fd, (void *) buf, count)) < 0) {
-		if (errno == EINTR)
-			goto again;
-		/*_update_error_state(client, E_READ, errno);*/
-		debug3("Leaving  _full_read on error!");
-		return -1;
-	}
-	if (n == 0) { /* got eof */
-		debug3("  _full_read (_client_read) got eof");
-		return 0;
-	}
-	debug3("Leaving  _full_read, %d bytes of %d read", n, count);
-
-	return n;
-}
-
-/*
- * Read and unpack an io_hdr_t from a file descriptor (socket).
- */
-int io_hdr_read_fd(int fd, struct slurm_io_header *hdr)
-{
-	Buf buffer;
-	int rc = SLURM_SUCCESS;
-
-	debug3("Entering io_hdr_read_fd");
-	buffer = init_buf(io_hdr_packed_size());
-	_full_read(fd, buffer->head, io_hdr_packed_size());
-	rc = io_hdr_unpack(hdr, buffer);
-	free_buf(buffer);
-	debug3("Leaving  io_hdr_read_fd");
-
-	return rc;
-}
 
 /*
  * Read from a client socket.
@@ -1631,9 +1599,7 @@ _client_read(eio_obj_t *obj, List objs)
 	if (in->msg == NULL) {
 		in->msg = list_dequeue(client->job->free_io_buf);
 		if (in->msg == NULL) {
-			/* FIXME should not be fatal */
-/* 			debug("List free_io_buf is empty!"); */
-			fatal("List free_io_buf is empty!");
+			debug("List free_io_buf is empty!");
 			return SLURM_ERROR;
 		}
 
@@ -1726,33 +1692,4 @@ err_string(enum error_type type)
 	}
 
 	return "";
-}
-
-struct io_buf *
-alloc_io_buf(void)
-{
-	struct io_buf *buf;
-
-	buf = (struct io_buf *)xmalloc(sizeof(struct io_buf));
-	if (!buf)
-		return NULL;
-	buf->ref_count = 0;
-	buf->length = 0;
-	buf->data = xmalloc(MAX_MSG_LEN + io_hdr_packed_size());
-	if (!buf->data) {
-		xfree(buf);
-		return NULL;
-	}
-
-	return buf;
-}
-
-void
-free_io_buf(struct io_buf *buf)
-{
-	if (buf) {
-		if (buf->data)
-			xfree(buf->data);
-		xfree(buf);
-	}
 }
