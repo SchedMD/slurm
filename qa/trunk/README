@@ -120,6 +120,7 @@ test1.44   Read srun's stdout slowly and test for lost data.
 test1.45   Test the launch of a batch job within an existing job allocation.
 test1.46   Test srun option --kill-on-bad-exit
 test1.47   Tests #SLURM entry functionality in a batch script.
+test1.48   Test of mail options (--mail-type and --mail-user options).
 
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
            The test will print "WARNING" and terminate with an exit code of 
