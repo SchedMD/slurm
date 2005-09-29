@@ -10,8 +10,5 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = mpi_mvapich.la
 
 # Null switch plugin.
-mpi_mvapich_la_SOURCES = mpi_mvapich.c mvapich.c
+mpi_mvapich_la_SOURCES = mpi_mvapich.c mvapich.c $(top_srcdir)/src/common/net.c
 mpi_mvapich_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-mpi_mvapich_la_LIBADD  =  \
-	$(top_builddir)/src/common/libcommon.la -lpthread \
-	$(top_builddir)/src/api/libslurm.la

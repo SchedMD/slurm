@@ -60,7 +60,8 @@ struct mvapich_info
 	int fd;             /* fd for socket connection to MPI task  */
 	int version;        /* Version of mvapich startup protocol   */
 	int rank;           /* This process' MPI rank                */
-	int pid;            /* This rank's local pid (V3 only)       */
+	int pidlen;         /* length of pid buffer                  */
+	char *pid;          /* This rank's local pid (V3 only)       */
 	int addrlen;        /* Length of addr array in bytes         */
 
 	int *addr;          /* This process' address array, which for
@@ -115,7 +116,7 @@ static struct mvapich_info * mvapich_info_create (int fd)
 	if (fd_read_n (fd, &mvi->rank, sizeof (int)) < 0)
 		E_RET ("mvapich: Unable to read rank id: %m", mvi->rank);
 
-	if (mvi->version != 2 && mvi->version != 3)
+	if (mvi->version <= 1 || mvi->version > 3)
 		E_RET ("Unsupported version %d from rank %d", mvi->version, mvi->rank);
 
 	if (fd_read_n (fd, &mvi->addrlen, sizeof (int)) < 0)
@@ -127,18 +128,14 @@ static struct mvapich_info * mvapich_info_create (int fd)
 		E_RET ("mvapich: Unable to read addr info for rank %d: %m", mvi->rank);
 
 	if (mvi->version == 3) {
-		int pidlen;
-		if (fd_read_n (fd, &pidlen, sizeof (int)) < 0)
+		if (fd_read_n (fd, &mvi->pidlen, sizeof (int)) < 0)
 			E_RET ("mvapich: Unable to read pidlen for rank %d: %m", mvi->rank);
 
-		if (pidlen != sizeof (mvi->pid)) 
-			E_RET ("mvapich: Confused. Rank %d pidlen of %d not what I expected", 
-					mvi->rank, pidlen);
+		mvi->pid = xmalloc (mvi->pidlen);
 
-		if (fd_read_n (fd, &mvi->pid, pidlen) < 0)
+		if (fd_read_n (fd, &mvi->pid, mvi->pidlen) < 0)
 			E_RET ("mvapich: Unable to read pid for rank %d: %m", mvi->rank);
 	}
-
 
 	return (mvi);
 }
@@ -146,6 +143,7 @@ static struct mvapich_info * mvapich_info_create (int fd)
 static void mvapich_info_destroy (struct mvapich_info *mvi)
 {
 	xfree (mvi->addr);
+	xfree (mvi->pid);
 	xfree (mvi);
 	return;
 }
@@ -201,7 +199,7 @@ static void mvapich_bcast (void)
 		 */
 		if (protocol_version == 3) {
 			for (j = 0; j < nprocs; j++)
-				fd_write_n (m->fd, &mvarray[j]->pid, sizeof (int));
+				fd_write_n (m->fd, &mvarray[j]->pid, mvarray[j]->pidlen);
 		}
 
 	}
@@ -288,7 +286,7 @@ static void *mvapich_thr(void *arg)
 
 	mvarray = xmalloc (nprocs * sizeof (*mvarray));
 
-	debug ("mvapich-0.9.[45]: thread started: %ld", pthread_self ());
+	debug ("mvapich-0.9.[45]/gen2: thread started: %ld", pthread_self ());
 
 	while (i < nprocs) {
 		struct mvapich_info *mvi = NULL;

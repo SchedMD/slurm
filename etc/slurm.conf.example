@@ -231,6 +231,9 @@
 #                             the default value on all other computers
 #     "proctrack/linuxproc" : use parent process ID to establish process
 #                             tree, required for MPICH-GM use
+#     "proctrack/rms"       : use Quadrics kernal infrastructure to track 
+#                             processes, strongly recommended for systems
+#                             with a Quadrics switch
 #
 # ProctrackType=proctrack/pgid
 

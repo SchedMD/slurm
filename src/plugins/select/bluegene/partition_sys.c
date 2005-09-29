@@ -409,10 +409,13 @@ int read_bgl_partitions()
 						slurm_user_name);
 			} else {
 				user_name = NULL;
-				if ((rc = rm_get_data(part_ptr, RM_PartitionFirstUser, 
-						&user_name)) != STATUS_OK) {
-					error("rm_get_data(RM_PartitionFirstUser): %s",
-						bgl_err_str(rc));
+				if ((rc = rm_get_data(part_ptr, 
+						      RM_PartitionFirstUser, 
+						      &user_name)) 
+				    != STATUS_OK) {
+					error("rm_get_data"
+					      "(RM_PartitionFirstUser): %s",
+					      bgl_err_str(rc));
 				}
 				if(!user_name) {
 					error("No user name was "

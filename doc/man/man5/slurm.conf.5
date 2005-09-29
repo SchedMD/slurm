@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "August 2005" "slurm.conf 0.6" "Slurm configuration file"
+.TH "slurm.conf" "5" "September 2005" "slurm.conf 0.6" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -235,11 +235,16 @@ The default value is "/usr/local/lib/slurm".
 Identifies the plugin to be used for process tracking. 
 The slurmd daemon uses this mechanism to identify all processes 
 which are children of processes it spawns for a user job. 
-Acceptable values at present include "proctrack/aix" (which 
-is the default for AIX systems) and "proctrack/pgid" (which 
-is the default for all other systems).
+Acceptable values at present include 
+"proctrack/aix" (which uses an AIX kernel extenstion and is 
+the default for AIX systems),
+"proctrack/linuxproc" (which uses linux process tree),
+"proctrack/rms" (which uses Quadrics kernel patch and is the 
+default if "SwitchType=switch/elan") and 
+"proctrack/pgid" (which is the default for all other systems).
 The slurmd daemon must be restarted for a change in ProctrackType 
 to take effect.
+NOTE: "proctrack/linuxproc" is not compatable with "swich/elan."
 .TP
 \fBProlog\fR
 Fully qualified pathname of a script to execute as user root on every 

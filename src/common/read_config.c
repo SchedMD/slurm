@@ -1310,8 +1310,20 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 	if (ctl_conf_ptr->plugindir == NULL)
 		ctl_conf_ptr->plugindir = xstrdup(SLURM_PLUGIN_PATH);
 
-	if (ctl_conf_ptr->proctrack_type == NULL)
-		ctl_conf_ptr->proctrack_type = xstrdup(DEFAULT_PROCTRACK_TYPE);
+	if (ctl_conf_ptr->switch_type == NULL)
+		ctl_conf_ptr->switch_type = xstrdup(DEFAULT_SWITCH_TYPE);
+
+	if (ctl_conf_ptr->proctrack_type == NULL) {
+		if (!strcmp(ctl_conf_ptr->switch_type,"switch/elan"))
+			ctl_conf_ptr->proctrack_type = 
+					xstrdup("proctrack/rms");
+		else
+			ctl_conf_ptr->proctrack_type = 
+					xstrdup(DEFAULT_PROCTRACK_TYPE);
+	}
+	if ((!strcmp(ctl_conf_ptr->switch_type,   "switch/elan"))
+	&&  (!strcmp(ctl_conf_ptr->proctrack_type,"proctrack/linuxproc")))
+		fatal("proctrack/linuxproc is incompatable with switch/elan");
 
         if (ctl_conf_ptr->propagate_rlimits_except) {
                 if ((parse_rlimits( ctl_conf_ptr->propagate_rlimits_except,
@@ -1381,8 +1393,7 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 		ctl_conf_ptr->state_save_location = xstrdup(
 				DEFAULT_SAVE_STATE_LOC);
 
-	if (ctl_conf_ptr->switch_type == NULL)
-		ctl_conf_ptr->switch_type = xstrdup(DEFAULT_SWITCH_TYPE);
+	/* see above for switch_type, order dependent */
 
 	if (ctl_conf_ptr->tmp_fs == NULL)
 		ctl_conf_ptr->tmp_fs = xstrdup(DEFAULT_TMP_FS);

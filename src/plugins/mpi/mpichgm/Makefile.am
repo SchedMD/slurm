@@ -10,8 +10,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = mpi_mpichgm.la
 
 # Null switch plugin.
-mpi_mpichgm_la_SOURCES = mpi_mpichgm.c mpichgm.c
+mpi_mpichgm_la_SOURCES = mpi_mpichgm.c mpichgm.c \
+                         $(top_srcdir)/src/common/global_srun.c \
+			  $(top_srcdir)/src/common/net.c
 mpi_mpichgm_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-mpi_mpichgm_la_LIBADD  =  \
-	$(top_builddir)/src/common/libcommon.la -lpthread \
-	$(top_builddir)/src/api/libslurm.la
