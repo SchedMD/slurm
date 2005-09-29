@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Fixed smap -Db to display slurm partitions correctly (take 2).
  -- Add srun fork() retry logic for very heavily loaded system.
+ -- Fix possible srun hang on task launch failure.
 
 * Changes in SLURM 0.6.0
 ========================
