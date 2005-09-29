@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.6.2
 ========================
+ -- Fix sinfo and squeue formatting to properly handle slurm nodes, 
+    jobs, and other names containing "%".
 
 * Changes in SLURM 0.6.1
 ========================
