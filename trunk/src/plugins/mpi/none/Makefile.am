@@ -12,6 +12,3 @@ pkglib_LTLIBRARIES = mpi_none.la
 # Null MPI plugin.
 mpi_none_la_SOURCES = mpi_none.c
 mpi_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-mpi_none_la_LIBADD  =  \
-	$(top_builddir)/src/common/libcommon.la -lpthread \
-	$(top_builddir)/src/api/libslurm.la

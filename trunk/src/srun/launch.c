@@ -310,6 +310,9 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 			continue;
 		}
 
+		if (job->state > SRUN_JOB_LAUNCHING)
+			break;
+
 		pthread_mutex_lock(&active_mutex);
 		while (active >= opt.max_threads || rc < 0) 
 			rc = _wait_on_active(thd, job);
@@ -317,9 +320,6 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 			_join_attached_threads(job->nhosts, thd);
 		active++;
 		pthread_mutex_unlock(&active_mutex);
-
-		if (job->state > SRUN_JOB_LAUNCHING)
-			break;
 
 		thd[i].task.req = &req[i];
 		thd[i].task.job = job;

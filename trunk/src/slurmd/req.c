@@ -223,12 +223,17 @@ _fork_new_slurmd(void)
 	 *  to return until signaled by grandchild process that
 	 *  slurmd job manager has been successfully created.
 	 */
-	if (pipe(fds) < 0)
+	if (pipe(fds) < 0) {
 		error("fork_slurmd: pipe: %m");
+		return -1;
+	}
 	
-	if ((pid = fork()) < 0) 
+	if ((pid = fork()) < 0) { 
 		error("fork_slurmd: fork: %m");
-	else if (pid > 0) {
+		close(fds[0]);
+		close(fds[1]);
+		return -1;
+	} else if (pid > 0) {
 		if ((fds[1] >= 0) && (close(fds[1]) < 0))
 			error("Unable to close write-pipe in parent: %m");
 
@@ -817,6 +822,8 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		goto done;
 	}
 
+#if 0
+	/* This code was used in an investigation of hung TotalView proceses */
 	if ((req->signal == SIGKILL)
 	    || (req->signal == SIGINT)) { /* for proctrack/linuxproc */
 		/*
@@ -826,7 +833,9 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		slurm_container_signal(step->cont_id, SIGCONT);
 		if (slurm_container_signal(step->cont_id, req->signal) < 0)
 			rc = errno;
-	} else if (req->signal == 0) {
+	} else 
+#endif
+	if (req->signal == 0) {
 		if (slurm_container_signal(step->cont_id, req->signal) < 0)
 			rc = errno;
 /* SIGMIGRATE and SIGSOUND are used to initiate job checkpoint on AIX.
