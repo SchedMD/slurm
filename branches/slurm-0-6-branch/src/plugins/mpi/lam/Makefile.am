@@ -11,6 +11,3 @@ pkglib_LTLIBRARIES = mpi_lam.la
 
 mpi_lam_la_SOURCES = mpi_lam.c lam.h
 mpi_lam_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-mpi_lam_la_LIBADD  =  \
-	$(top_builddir)/src/common/libcommon.la -lpthread \
-	$(top_builddir)/src/api/libslurm.la

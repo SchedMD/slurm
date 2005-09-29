@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Fixed smap -Db to display slurm partitions correctly (take 2).
  -- Add srun fork() retry logic for very heavily loaded system.
  -- Fix possible srun hang on task launch failure.
+ -- Add support for mvapich v0.9.4, 0.9.5 and gen2.
 
 * Changes in SLURM 0.6.0
 ========================
