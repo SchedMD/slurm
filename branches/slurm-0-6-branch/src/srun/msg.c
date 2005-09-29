@@ -990,15 +990,30 @@ msg_thr_create(srun_job_t *job)
 			     job->jaddr[i]).sin_port));
 	}
 
-	if (pipe(job->forked_msg->par_msg->msg_pipe) == -1) 
-		return SLURM_ERROR; // there was an error
-	if (pipe(job->forked_msg->msg_par->msg_pipe) == -1) 
-		return SLURM_ERROR; // there was an error
+	if (pipe(job->forked_msg->par_msg->msg_pipe) == -1) {
+		error("pipe():  %m"); 
+		return SLURM_ERROR;
+	}
+	if (pipe(job->forked_msg->msg_par->msg_pipe) == -1) {
+		error("pipe():  %m"); 
+		return SLURM_ERROR;
+	}
 	debug2("created the pipes for communication");
-	if((job->forked_msg->par_msg->pid = fork()) == -1)   
-		return SLURM_ERROR; // there was an error
-	else if (job->forked_msg->par_msg->pid == 0) 
-	{                       // child:    
+
+	/* retry fork for super-heavily loaded systems */
+	for (i = 0; ; i++) {
+		if((job->forked_msg->par_msg->pid = fork()) != -1)
+			break;
+		if (i < 3)
+			usleep(1000);
+		else {
+			error("fork(): %m");
+			return SLURM_ERROR;
+		}
+	}
+
+	if (job->forked_msg->par_msg->pid == 0) {
+		/* child */
 #ifdef DISABLE_LOCALTIME
 		disable_localtime();
 #endif                   
@@ -1027,10 +1042,9 @@ msg_thr_create(srun_job_t *job)
 		xfree(job->forked_msg->msg_par);	
 		xfree(job->forked_msg);	
 		_exit(0);
-	}
-	else 
-	{ // parent:   
-		
+	} else {
+		/* parent */
+
 		slurm_attr_init(&attr);
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 		if ((errno = pthread_create(&job->jtid, &attr, &par_thr, 
