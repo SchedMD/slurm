@@ -45,6 +45,7 @@
 #include "src/common/slurm_cred.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/io_hdr.h"
 
 #include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
@@ -424,6 +425,7 @@ _job_create_internal(allocation_info_t *info)
 	int cpu_inx = 0;
 	hostlist_t hl;
 	srun_job_t *job;
+	eio_obj_t *obj;
 
 	/* Reset nprocs if necessary 
 	 */
@@ -493,7 +495,7 @@ _job_create_internal(allocation_info_t *info)
 	job->eio = eio_handle_create();
 	job->eio_objs = list_create(NULL); /* FIXME - needs destructor */
 	/* "nhosts" number of IO protocol sockets */
-	job->ioserver = (eio_obj_t *)xmalloc(job->nhosts*sizeof(eio_obj_t *));
+	job->ioserver = (eio_obj_t **)xmalloc(job->nhosts*sizeof(eio_obj_t *));
 	job->free_io_buf = list_create(NULL); /* FIXME! Needs destructor */
 	for (i = 0; i < 10; i++) {
 		list_enqueue(job->free_io_buf, alloc_io_buf());
@@ -523,9 +525,28 @@ _job_create_internal(allocation_info_t *info)
 				info->cpus_per_node, info->cpu_count_reps,
 				job->nodelist, opt.nprocs);
 
-	for (i = 0; i < job->nhosts; i++)
-	  debug3("distribute_tasks placed %d tasks on host %d",
-		 job->ntask[i], i);
+	job->ntasks = 0;
+	for (i = 0; i < job->nhosts; i++) {
+		debug3("distribute_tasks placed %d tasks on host %d",
+		       job->ntask[i], i);
+		job->ntasks += job->ntask[i];
+	}
+
+	job->iostdout = (eio_obj_t **)xmalloc(job->ntasks*sizeof(eio_obj_t *));
+	/* FIXME!  Should not all point to stdout/stderr if filenames
+	   were specified */
+	obj = create_file_write_eio_obj(STDOUT_FILENO, job);
+	list_enqueue(job->eio_objs, obj);
+	for (i = 0; i < job->ntasks; i++) {
+		job->iostdout[i] = obj;
+	}
+	job->iostderr = (eio_obj_t **)xmalloc(job->ntasks*sizeof(eio_obj_t *));
+	obj = create_file_write_eio_obj(STDERR_FILENO, job);
+	list_enqueue(job->eio_objs, obj);
+	for (i = 0; i < job->ntasks; i++) {
+		job->iostderr[i] = obj;
+	}
+
 
 	/* Build task id list for each host */
 	job->tids   = xmalloc(job->nhosts * sizeof(uint32_t *));

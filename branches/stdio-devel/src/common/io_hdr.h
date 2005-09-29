@@ -81,18 +81,4 @@ int io_init_msg_validate(struct slurm_io_init_msg *msg, const char *sig);
 int io_init_msg_write_to_fd(int fd, struct slurm_io_init_msg *msg);
 int io_init_msg_read_from_fd(int fd, struct slurm_io_init_msg *msg);
 
-
-/*
- * SLURM Internal implementation details
- */
-struct io_buf {
-	int ref_count;
-	uint32_t length;
-	void *data;
-};
-
-struct io_buf *alloc_io_buf(void);
-void free_io_buf(struct io_buf *buf);
-
-
 #endif /* !_HAVE_IO_HDR_H */

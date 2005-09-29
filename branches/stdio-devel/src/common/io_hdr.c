@@ -259,32 +259,3 @@ again:
 	debug2("Leaving  io_init_msg_read_from_fd");
 	return SLURM_SUCCESS;
 }
-
-struct io_buf *
-alloc_io_buf(void)
-{
-	struct io_buf *buf;
-
-	buf = (struct io_buf *)xmalloc(sizeof(struct io_buf));
-	if (!buf)
-		return NULL;
-	buf->ref_count = 0;
-	buf->length = 0;
-	buf->data = xmalloc(MAX_MSG_LEN + io_hdr_packed_size());
-	if (!buf->data) {
-		xfree(buf);
-		return NULL;
-	}
-
-	return buf;
-}
-
-void
-free_io_buf(struct io_buf *buf)
-{
-	if (buf) {
-		if (buf->data)
-			xfree(buf->data);
-		xfree(buf);
-	}
-}

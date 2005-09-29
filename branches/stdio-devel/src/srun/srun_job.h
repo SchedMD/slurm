@@ -106,6 +106,7 @@ typedef struct srun_job {
 	char **host;		/* hostname vector */
 	int *cpus; 		/* number of processors on each host */
 	int *ntask; 		/* number of tasks to run on each host */
+	int ntasks;             /* total number of tasks in the job step */
 	uint32_t **tids;	/* host id => task ids mapping    */
 	uint32_t *hostid;	/* task id => host id mapping     */
 
@@ -124,7 +125,9 @@ typedef struct srun_job {
 	int *listenport;	/* Array of stdio listen ports 	  */
 	eio_t eio;              /* Event IO handle                */
 	List eio_objs;          /* List of eio_obj_t pointers     */
-	eio_obj_t **ioserver;	/* Array of nhosts pointers to eio_obt_t */
+	eio_obj_t **ioserver;	/* Array of nhosts pointers to eio_obj_t */
+	eio_obj_t **iostdout;   /* Array of ntasks pointers to eio_obj_t */
+	eio_obj_t **iostderr;   /* Array of ntasks pointers to eio_obj_t */
 	List free_io_buf;       /* List of free struct io_buf pointers */
 
 	pthread_t lid;		  /* launch thread id */

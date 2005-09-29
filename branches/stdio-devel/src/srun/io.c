@@ -90,7 +90,7 @@ struct io_operations file_write_ops = {
 #endif
 
 /**********************************************************************
- * Listening socket implementation
+ * Listening socket declarations
  **********************************************************************/
 static bool _listening_socket_readable(eio_obj_t *obj);
 static int _listening_socket_read(eio_obj_t *obj, List objs);
@@ -100,6 +100,55 @@ struct io_operations listening_socket_ops = {
 	handle_read:	&_listening_socket_read
 };
 
+/**********************************************************************
+ * IO server socket declarations
+ **********************************************************************/
+static bool _server_readable(eio_obj_t *obj);
+static int _server_read(eio_obj_t *obj, List objs);
+
+struct io_operations server_ops = {
+        readable:	&_server_readable,
+	handle_read:	&_server_read
+};
+
+struct server_io_info {
+	srun_job_t *job;
+
+	/* incoming variables */
+	struct slurm_io_header header;
+	struct io_buf *in_msg;
+	int32_t in_remaining;
+	
+	/* outgoing variables */
+	List msg_queue;
+	struct io_buf *out_msg;
+	int32_t out_remaining;
+};
+
+/**********************************************************************
+ * Output file declarations
+ **********************************************************************/
+static bool _file_writable(eio_obj_t *obj);
+static int _file_write(eio_obj_t *obj, List objs);
+
+struct io_operations file_write_ops = {
+	writable:	&_file_writable,
+	handle_write:	&_file_write,
+};
+
+struct file_write_info {
+	srun_job_t *job;
+
+	/* outgoing variables */
+	List msg_queue;
+	struct io_buf *out_msg;
+	int32_t out_remaining;
+};
+
+
+/**********************************************************************
+ * Listening socket functions
+ **********************************************************************/
 static bool 
 _listening_socket_readable(eio_obj_t *obj)
 {
@@ -125,30 +174,8 @@ _set_listensocks_nonblocking(srun_job_t *job)
 }
 
 /**********************************************************************
- * IO server socket implementation
+ * IO server socket functions
  **********************************************************************/
-static bool _server_readable(eio_obj_t *obj);
-static int _server_read(eio_obj_t *obj, List objs);
-
-struct io_operations server_ops = {
-        readable:	&_server_readable,
-	handle_read:	&_server_read
-};
-
-struct server_io_info {
-	srun_job_t *job;
-
-	/* incoming variables */
-	struct slurm_io_header header;
-	struct io_buf *in_msg;
-	int32_t in_remaining;
-	
-	/* outgoing variables */
-	List msg_queue;
-	struct io_buf *out_msg;
-	int32_t out_remaining;
-};
-
 static eio_obj_t *
 _create_server_eio_obj(int fd, srun_job_t *job)
 {
@@ -196,6 +223,7 @@ _server_read(eio_obj_t *obj, List objs)
 		io_hdr_read_fd(obj->fd, &s->header);
 		s->in_remaining = s->header.length;
 		s->in_msg->length = s->header.length;
+		s->in_msg->header = s->header;
 	}
 
 	/*
@@ -210,22 +238,177 @@ again:
 		return SLURM_ERROR;
 	}
 	debug3("  read %d bytes", n);
+	debug3("\"%s\"", s->in_msg->data);
 	s->in_remaining -= n;
 	if (s->in_remaining > 0)
 		return SLURM_SUCCESS;
 
-	debug3("\"%s\"", s->in_msg->data);
-
 	/*
-	 * Route the message to the proper outputs
+	 * Route the message to the proper output
 	 */
-	/* FIXME! Fill in the routing code. Just throwing away for now. */
-	list_enqueue(s->job->free_io_buf, s->in_msg);
-	s->in_msg = NULL;
+	{
+		eio_obj_t *obj;
+		struct file_write_info *info;
+
+		s->in_msg->ref_count = 1;
+		if (s->in_msg->header.type == SLURM_IO_STDOUT)
+			obj = s->job->iostdout[s->in_msg->header.gtaskid];
+		else
+			obj = s->job->iostderr[s->in_msg->header.gtaskid];
+		info = (struct file_write_info *) obj->arg;
+		list_enqueue(info->msg_queue, s->in_msg);
+
+		s->in_msg = NULL;
+	}
 
 	return SLURM_SUCCESS;
 }
 
+/**********************************************************************
+ * Output file functions
+ **********************************************************************/
+extern eio_obj_t *
+create_file_write_eio_obj(int fd, srun_job_t *job)
+{
+	struct file_write_info *info = NULL;
+	eio_obj_t *eio = NULL;
+
+	info = (struct file_write_info *)
+		xmalloc(sizeof(struct file_write_info));
+	info->job = job;
+	info->msg_queue = list_create(NULL); /* FIXME! Add destructor */
+	info->out_msg = NULL;
+	info->out_remaining = 0;
+
+	eio = (eio_obj_t *)xmalloc(sizeof(eio_obj_t));
+	eio->fd = fd;
+	eio->arg = (void *)info;
+	eio->ops = _ops_copy(&file_write_ops);
+
+	return eio;
+}
+
+static void _write_label(int fd, int taskid)
+{
+	/* FIXME */
+}
+
+static void _write_newline()
+{
+	/* FIXME */
+	debug2("Called _write_newline");
+}
+
+
+/*
+ * Blocks until write is complete, regardless of the file
+ * descriptor being in non-blocking mode.
+ */
+static int _write_line(int fd, void *buf, int len)
+{
+	int n;
+	int left = len;
+
+	debug2("Called _write_line");
+	while (left > 0) {
+	again:
+		if ((n = write(fd, buf, left)) < 0) {
+			if (errno == EINTR)
+				goto again;
+			if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
+				debug3("  got EAGAIN in _write_line");
+				goto again;
+			}
+			/* FIXME handle error */
+			return -1;
+		}
+		left -= n;
+	}
+	
+	return len;
+}
+
+static int _write_msg(int fd, void *buf, int len, int taskid)
+{
+	void *start;
+	void *end;
+	int line_len;
+	int rc;
+	
+	start = buf;
+	end = memchr(start, '\n', len);
+	if (opt.labelio)
+		_write_label(fd, taskid);
+	if (end == NULL) { /* no newline found */
+		rc = _write_line(fd, start, len);
+		_write_newline(fd);
+	} else {
+		line_len = (int)(end - start) + 1;
+		rc = _write_line(fd, start, line_len);
+	}
+
+	return rc;
+}
+
+static bool _file_writable(eio_obj_t *obj)
+{
+	struct file_write_info *info = (struct file_write_info *) obj->arg;
+
+	debug2("Called _file_writable");
+	if (info->out_msg != NULL
+	    || !list_is_empty(info->msg_queue))
+		return true;
+
+	debug3("  false");
+	return false;
+}
+
+static int _file_write(eio_obj_t *obj, List objs)
+{
+	struct file_write_info *info = (struct file_write_info *) obj->arg;
+	void *ptr;
+	int n;
+
+	debug2("Entering _file_write");
+	/*
+	 * If we aren't already in the middle of sending a message, get the
+	 * next message from the queue.
+	 */
+	if (info->out_msg == NULL) {
+		info->out_msg = list_dequeue(info->msg_queue);
+		if (info->out_msg == NULL) {
+			debug3("_file_write: nothing in the queue");
+			return SLURM_SUCCESS;
+		}
+		info->out_remaining = info->out_msg->length;
+	}
+	
+	/*
+	 * Write message to file.
+	 */
+	ptr = info->out_msg->data + (info->out_msg->length
+				     - info->out_remaining);
+	if ((n = _write_msg(obj->fd, ptr,
+			    info->out_remaining,
+			    info->out_msg->header.gtaskid)) < 0) {
+		return SLURM_ERROR;
+	}
+	debug3("  wrote %d bytes", n);
+	info->out_remaining -= n;
+	if (info->out_remaining > 0)
+		return SLURM_SUCCESS;
+
+	/*
+	 * Free the message and prepare to send the next one.
+	 */
+	info->out_msg->ref_count--;
+	if (info->out_msg->ref_count == 0)
+		list_enqueue(info->job->free_io_buf, info->out_msg);
+	info->out_msg = NULL;
+	debug2("Leaving  _file_write");
+
+	return SLURM_SUCCESS;
+}
 
 /**********************************************************************
  * General fuctions
@@ -496,4 +679,33 @@ _wid(int n)
 	while (n /= 10)
 		width++;
 	return width;
+}
+
+struct io_buf *
+alloc_io_buf(void)
+{
+	struct io_buf *buf;
+
+	buf = (struct io_buf *)xmalloc(sizeof(struct io_buf));
+	if (!buf)
+		return NULL;
+	buf->ref_count = 0;
+	buf->length = 0;
+	buf->data = xmalloc(MAX_MSG_LEN + io_hdr_packed_size());
+	if (!buf->data) {
+		xfree(buf);
+		return NULL;
+	}
+
+	return buf;
+}
+
+void
+free_io_buf(struct io_buf *buf)
+{
+	if (buf) {
+		if (buf->data)
+			xfree(buf->data);
+		xfree(buf);
+	}
 }

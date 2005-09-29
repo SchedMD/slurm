@@ -27,12 +27,21 @@
 #ifndef _HAVE_IO_H
 #define _HAVE_IO_H
 
+#include "src/common/io_hdr.h"
 #include "src/srun/srun_job.h"
 
-#define WAITING_FOR_IO -1
-#define IO_DONE -9
+struct io_buf {
+	int ref_count;
+	uint32_t length;
+	void *data;
+	io_hdr_t header;
+};
+
+struct io_buf *alloc_io_buf(void);
+void free_io_buf(struct io_buf *buf);
 
 int   io_node_fail(char *nodelist, srun_job_t *job);
 int   io_thr_create(srun_job_t *job);
+eio_obj_t *create_file_write_eio_obj(int fd, srun_job_t *job);
 
 #endif /* !_HAVE_IO_H */

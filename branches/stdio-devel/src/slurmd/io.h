@@ -31,6 +31,15 @@
 #include "src/slurmd/slurmd_job.h"
 #include "src/common/eio.h"
 
+struct io_buf {
+	int ref_count;
+	uint32_t length;
+	void *data;
+};
+
+struct io_buf *alloc_io_buf(void);
+void free_io_buf(struct io_buf *buf);
+
 /*
  * Start IO handling thread.
  * Initializes IO pipes, creates IO objects and appends them to job->objs,

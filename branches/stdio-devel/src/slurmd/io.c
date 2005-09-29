@@ -1302,6 +1302,8 @@ again:
 	out->msg->ref_count--;
 	if (out->msg->ref_count == 0)
 		list_enqueue(in->job->free_io_buf, out->msg);
+	else
+		debug3("  Could not free msg!!");
 	out->msg = NULL;
 
 	return SLURM_SUCCESS;
@@ -1363,6 +1365,8 @@ again:
 	out->msg->ref_count--;
 	if (out->msg->ref_count == 0)
 		list_enqueue(client->job->free_io_buf, out->msg);
+	else
+		debug3("  Could not free msg!!");
 	out->msg = NULL;
 
 	return SLURM_SUCCESS;
@@ -1529,18 +1533,20 @@ again:
 		}
 	}
 
-	/* FIXME remove this debug3 */
 	debug3("************************* %d bytes read from task %s", n,
 	       out->type == SLURM_IO_STDOUT ? "STDOUT" : "STDERR");
+
+	/* FIXME!  Need to do the following in a loop! */
 
 	/* Pack task output into a message for transfer to a client */
 	if (cbuf_used(out->buf) > 0 && !list_is_empty(out->job->free_io_buf)) {
 		msg = _task_build_message(out, out->job, out->buf);
 		if (msg == NULL)
 			return SLURM_ERROR;
-	}
-	if (msg == NULL)
+	} else {
+		debug3("  task read failed, cbuf or free list empty");
 		return SLURM_SUCCESS;
+	}
 
 	debug3("\"%s\"", msg->data + io_hdr_packed_size());
 
@@ -1635,6 +1641,7 @@ again:
 		slurmd_task_info_t *task;
 		struct task_in_info *io;
 
+		in->msg->ref_count = 0;
 		if (in->header.gtaskid == SLURM_IO_ALLTASKS) {
 			for (i = 0; i < client->job->ntasks; i++) {
 				task = client->job->task[i];
@@ -1692,4 +1699,33 @@ err_string(enum error_type type)
 	}
 
 	return "";
+}
+
+struct io_buf *
+alloc_io_buf(void)
+{
+	struct io_buf *buf;
+
+	buf = (struct io_buf *)xmalloc(sizeof(struct io_buf));
+	if (!buf)
+		return NULL;
+	buf->ref_count = 0;
+	buf->length = 0;
+	buf->data = xmalloc(MAX_MSG_LEN + io_hdr_packed_size());
+	if (!buf->data) {
+		xfree(buf);
+		return NULL;
+	}
+
+	return buf;
+}
+
+void
+free_io_buf(struct io_buf *buf)
+{
+	if (buf) {
+		if (buf->data)
+			xfree(buf->data);
+		xfree(buf);
+	}
 }
