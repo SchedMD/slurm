@@ -1252,7 +1252,7 @@ _task_writable(eio_obj_t *obj)
 	if (out->msg != NULL || list_count(out->msg_queue) > 0)
 		return true;
 
-	debug3("  false");
+	debug3("  false (list_count = %d)", list_count(out->msg_queue));
 	return false;
 }
 
@@ -1641,7 +1641,7 @@ again:
 		struct task_in_info *io;
 
 		in->msg->ref_count = 0;
-		if (in->header.gtaskid == SLURM_IO_ALLSTDIN) {
+		if (in->header.type == SLURM_IO_ALLSTDIN) {
 			for (i = 0; i < client->job->ntasks; i++) {
 				task = client->job->task[i];
 				io = (struct task_in_info *)(task->in->arg);

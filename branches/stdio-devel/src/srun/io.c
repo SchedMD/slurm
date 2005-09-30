@@ -538,6 +538,7 @@ static int _file_read(eio_obj_t *obj, List objs)
 	Buf packbuf;
 	int len;
 
+	debug2("Entering _file_read");
 	msg = list_dequeue(info->job->free_io_buf);
 	if (msg == NULL) {
 		debug3("  List free_io_buf is empty, no file read");
@@ -555,12 +556,13 @@ again:
 				goto again;
 			}
 	}
-	if (len = 0) { /* got eof */
+	if (len == 0) { /* got eof */
 		debug3("got eof on _file_read");
 		list_enqueue(info->job->free_io_buf, msg);
 		return SLURM_ERROR;
 	}
 
+	debug3("  read %d bytes from file", len);
 	/*
 	 * Pack header and build msg
 	 */
@@ -573,6 +575,7 @@ again:
 	/* free the Buf packbuf, but not the memory to which it points */
 	packbuf->head = NULL;
 	free_buf(packbuf);
+	debug3("  msg->length = %d", msg->length);
 
 	/*
 	 * Route the message to the correct IO servers
