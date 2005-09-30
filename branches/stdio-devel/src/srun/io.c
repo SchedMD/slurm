@@ -64,31 +64,6 @@ static int      _read_io_init_msg(int fd, srun_job_t *job, char *host);
 static int      _wid(int n);
 static struct io_operations *_ops_copy(struct io_operations *ops);
 
-#if 0
-struct io_operations server_ops = {
-        readable:	&_server_readable,
-	writable:	&_server_writable,
-	handle_read:	&_server_read,
-	handle_write:	&_server_write,
-	handle_error:	&_server_error,
-	handle_close:   &_obj_close
-};
-
-struct io_operations file_read_ops = {
-        readable:	&_file_readable,
-	handle_read:	&_file_read,
-        handle_error:	&_file_error,
-	handle_close:   &_obj_close
-};
-
-struct io_operations file_write_ops = {
-	writable:	&_file_writable,
-	handle_write:	&_file_write,
-	handle_error:	&_file_error,
-	handle_close:   &_obj_close
-};
-#endif
-
 /**********************************************************************
  * Listening socket declarations
  **********************************************************************/
@@ -105,10 +80,14 @@ struct io_operations listening_socket_ops = {
  **********************************************************************/
 static bool _server_readable(eio_obj_t *obj);
 static int _server_read(eio_obj_t *obj, List objs);
+static bool _server_writable(eio_obj_t *obj);
+static int _server_write(eio_obj_t *obj, List objs);
 
 struct io_operations server_ops = {
         readable:	&_server_readable,
-	handle_read:	&_server_read
+	handle_read:	&_server_read,
+	writable:       &_server_writable,
+	handle_write:   &_server_write
 };
 
 struct server_io_info {
@@ -143,6 +122,24 @@ struct file_write_info {
 	List msg_queue;
 	struct io_buf *out_msg;
 	int32_t out_remaining;
+};
+
+/**********************************************************************
+ * Input file declarations
+ **********************************************************************/
+static bool _file_readable(eio_obj_t *obj);
+static int _file_read(eio_obj_t *obj, List objs);
+
+struct io_operations file_read_ops = {
+	readable:	&_file_readable,
+	handle_read:	&_file_read,
+};
+
+struct file_read_info {
+	srun_job_t *job;
+
+	/* header contains destination of file input */
+	struct slurm_io_header header;
 };
 
 
@@ -238,7 +235,7 @@ again:
 		return SLURM_ERROR;
 	}
 	debug3("  read %d bytes", n);
-	debug3("\"%s\"", s->in_msg->data);
+	debug3("\"%s\"", buf);
 	s->in_remaining -= n;
 	if (s->in_remaining > 0)
 		return SLURM_SUCCESS;
@@ -262,6 +259,81 @@ again:
 	}
 
 	return SLURM_SUCCESS;
+}
+
+static bool 
+_server_writable(eio_obj_t *obj)
+{
+	struct server_io_info *s = (struct server_io_info *) obj->arg;
+
+	debug3("Called _server_readable");
+	if (s->out_msg != NULL)
+		debug3("  s->out_msg != NULL");
+	if (!list_is_empty(s->msg_queue))
+		debug3("  s->msg_queue queue length = %d",
+		       list_count(s->msg_queue));
+
+	if (s->out_msg != NULL
+	    || !list_is_empty(s->msg_queue))
+		return true;
+
+	debug3("  false");
+	return false;
+}
+
+static int
+_server_write(eio_obj_t *obj, List objs)
+{
+	struct server_io_info *s = (struct server_io_info *) obj->arg;
+	void *buf;
+	int n;
+
+	debug2("Entering _server_write");
+
+	/*
+	 * If we aren't already in the middle of sending a message, get the
+	 * next message from the queue.
+	 */
+	if (s->out_msg == NULL) {
+		s->out_msg = list_dequeue(s->msg_queue);
+		if (s->out_msg == NULL) {
+			debug3("_server_write: nothing in the queue");
+			return SLURM_SUCCESS;
+		}
+		debug3("  dequeue successful, s->out_msg->length = %d", s->out_msg->length);
+		s->out_remaining = s->out_msg->length;
+	}
+
+	debug3("  s->out_remaining = %d", s->out_remaining); 
+	
+	/*
+	 * Write message to socket.
+	 */
+	buf = s->out_msg->data + (s->out_msg->length - s->out_remaining);
+again:
+	if ((n = write(obj->fd, buf, s->out_remaining)) < 0) {
+		if (errno == EINTR)
+			goto again;
+		/* FIXME handle error */
+		return SLURM_ERROR;
+	}
+	debug3("Wrote %d bytes to socket", n);
+	s->out_remaining -= n;
+	if (s->out_remaining > 0)
+		return SLURM_SUCCESS;
+
+	/*
+	 * Free the message and prepare to send the next one.
+	 */
+	s->out_msg->ref_count--;
+	if (s->out_msg->ref_count == 0)
+		list_enqueue(s->job->free_io_buf, s->out_msg);
+	else
+		debug3("  Could not free msg!!");
+	s->out_msg = NULL;
+
+	return SLURM_SUCCESS;
+
 }
 
 /**********************************************************************
@@ -291,6 +363,9 @@ create_file_write_eio_obj(int fd, srun_job_t *job)
 static void _write_label(int fd, int taskid)
 {
 	/* FIXME */
+	char *buf = "foo: ";
+
+	write(fd, buf, 5);
 }
 
 static void _write_newline()
@@ -409,6 +484,126 @@ static int _file_write(eio_obj_t *obj, List objs)
 
 	return SLURM_SUCCESS;
 }
+
+/**********************************************************************
+ * Input file functions
+ **********************************************************************/
+extern eio_obj_t *
+create_file_read_eio_obj(int fd, srun_job_t *job,
+			 uint16_t type, uint16_t gtaskid)
+{
+	struct file_read_info *info = NULL;
+	eio_obj_t *eio = NULL;
+
+	info = (struct file_read_info *)
+		xmalloc(sizeof(struct file_read_info));
+	info->job = job;
+	info->header.type = type;
+	info->header.gtaskid = gtaskid;
+	/* FIXME!  Need to set ltaskid based on gtaskid */
+	info->header.ltaskid = (uint16_t)-1;
+
+	eio = (eio_obj_t *)xmalloc(sizeof(eio_obj_t));
+	eio->fd = fd;
+	eio->arg = (void *)info;
+	eio->ops = _ops_copy(&file_read_ops);
+
+	return eio;
+}
+
+static bool _file_readable(eio_obj_t *obj)
+{
+	struct file_read_info *info = (struct file_read_info *) obj->arg;
+
+	debug2("Called _file_readable");
+
+	if (info->job->ioservers_ready < info->job->nhosts) {
+		debug("  false, all ioservers not yet initialized");
+		return false;
+	}
+
+	if (!list_is_empty(info->job->free_io_buf))
+		return true;
+
+	debug3("  false");
+	return false;
+}
+
+static int _file_read(eio_obj_t *obj, List objs)
+{
+	struct file_read_info *info = (struct file_read_info *) obj->arg;
+	struct io_buf *msg;
+	io_hdr_t header;
+	void *ptr;
+	Buf packbuf;
+	int len;
+
+	msg = list_dequeue(info->job->free_io_buf);
+	if (msg == NULL) {
+		debug3("  List free_io_buf is empty, no file read");
+		return SLURM_SUCCESS;
+	}
+
+	ptr = msg->data + io_hdr_packed_size();
+
+again:
+	if ((len = read(obj->fd, ptr, MAX_MSG_LEN)) < 0) {
+			if (errno == EINTR)
+				goto again;
+			if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
+				error("_file_read returned EAGAIN");
+				goto again;
+			}
+	}
+	if (len = 0) { /* got eof */
+		debug3("got eof on _file_read");
+		list_enqueue(info->job->free_io_buf, msg);
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * Pack header and build msg
+	 */
+	header = info->header;
+	header.length = len;
+	packbuf = create_buf(msg->data, io_hdr_packed_size());
+	io_hdr_pack(&header, packbuf);
+	msg->length = io_hdr_packed_size() + header.length;
+	msg->ref_count = 0; /* make certain it is initialized */
+	/* free the Buf packbuf, but not the memory to which it points */
+	packbuf->head = NULL;
+	free_buf(packbuf);
+
+	/*
+	 * Route the message to the correct IO servers
+	 */
+	if (header.type == SLURM_IO_ALLSTDIN) {
+		int i;
+		struct server_io_info *server;
+		for (i = 0; i < info->job->nhosts; i++) {
+			msg->ref_count++;
+			if (info->job->ioserver[i] == NULL)
+				fatal("ioserver stream not yet initialized");
+			server = info->job->ioserver[i]->arg;
+			list_enqueue(server->msg_queue, msg);
+		}
+	} else if (header.type == SLURM_IO_STDIN) {
+		fatal("Not yet implemented");
+#if 0
+		int nodeid;
+		struct server_io_info *server;
+		msg->ref_count = 1;
+		nodeid = info->job->taskid_to_nodeid[header.gtaskid];
+		server = info->job->ioserver[nodeid]->arg;
+		list_enqueue(server->msg_queue, msg);
+#endif		
+	} else {
+		fatal("Unsupported header.type");
+	}
+	msg = NULL;
+	return SLURM_SUCCESS;
+}
+
 
 /**********************************************************************
  * General fuctions
@@ -543,6 +738,7 @@ _read_io_init_msg(int fd, srun_job_t *job, char *host)
 	net_set_low_water(fd, 1);
 	job->ioserver[msg.nodeid] = _create_server_eio_obj(fd, job);
 	list_enqueue(job->eio_objs, job->ioserver[msg.nodeid]);
+	job->ioservers_ready++;
 
 	return SLURM_SUCCESS;
 

@@ -494,6 +494,7 @@ _job_create_internal(allocation_info_t *info)
 
 	job->eio = eio_handle_create();
 	job->eio_objs = list_create(NULL); /* FIXME - needs destructor */
+	job->ioservers_ready = 0;
 	/* "nhosts" number of IO protocol sockets */
 	job->ioserver = (eio_obj_t **)xmalloc(job->nhosts*sizeof(eio_obj_t *));
 	job->free_io_buf = list_create(NULL); /* FIXME! Needs destructor */
@@ -532,9 +533,8 @@ _job_create_internal(allocation_info_t *info)
 		job->ntasks += job->ntask[i];
 	}
 
+	/* FIXME!  Need more intelligent stdio object setup */
 	job->iostdout = (eio_obj_t **)xmalloc(job->ntasks*sizeof(eio_obj_t *));
-	/* FIXME!  Should not all point to stdout/stderr if filenames
-	   were specified */
 	obj = create_file_write_eio_obj(STDOUT_FILENO, job);
 	list_enqueue(job->eio_objs, obj);
 	for (i = 0; i < job->ntasks; i++) {
@@ -546,7 +546,13 @@ _job_create_internal(allocation_info_t *info)
 	for (i = 0; i < job->ntasks; i++) {
 		job->iostderr[i] = obj;
 	}
-
+	job->iostdin = (eio_obj_t **)xmalloc(job->ntasks*sizeof(eio_obj_t *));
+	obj = create_file_read_eio_obj(STDIN_FILENO, job,
+				       SLURM_IO_ALLSTDIN, (uint16_t)-1);
+	list_enqueue(job->eio_objs, obj);
+	for (i = 0; i < job->ntasks; i++) {
+		job->iostdin[i] = obj;
+	}
 
 	/* Build task id list for each host */
 	job->tids   = xmalloc(job->nhosts * sizeof(uint32_t *));

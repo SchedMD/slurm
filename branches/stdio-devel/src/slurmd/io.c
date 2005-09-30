@@ -1485,7 +1485,7 @@ _task_build_message(struct task_out_info *out, slurmd_job_t *job, cbuf_t cbuf)
 	msg->length = io_hdr_packed_size() + header.length;
 	msg->ref_count = 0; /* make certain it is initialized */
 
-	/* free the Buf packbuf, but num the memory to which it points */
+	/* free the Buf packbuf, but not the memory to which it points */
 	packbuf->head = NULL;
 	free_buf(packbuf);
 	      
@@ -1536,30 +1536,26 @@ again:
 	debug3("************************* %d bytes read from task %s", n,
 	       out->type == SLURM_IO_STDOUT ? "STDOUT" : "STDERR");
 
-	/* FIXME!  Need to do the following in a loop! */
-
-	/* Pack task output into a message for transfer to a client */
-	if (cbuf_used(out->buf) > 0 && !list_is_empty(out->job->free_io_buf)) {
+	/* Pack task output into messages for transfer to a client */
+	while (cbuf_used(out->buf) > 0
+	       && !list_is_empty(out->job->free_io_buf)) {
 		msg = _task_build_message(out, out->job, out->buf);
 		if (msg == NULL)
 			return SLURM_ERROR;
-	} else {
-		debug3("  task read failed, cbuf or free list empty");
-		return SLURM_SUCCESS;
-	}
 
-	debug3("\"%s\"", msg->data + io_hdr_packed_size());
+		debug3("\"%s\"", msg->data + io_hdr_packed_size());
 
-	/* Add message to the msg_queue of all clients */
-	clients = list_iterator_create(out->job->clients);
-	while(eio = list_next(clients)) {
-		client = (struct client_io_info *)eio->arg;
-		debug3("========================= Enqueued message");
-		xassert(client->magic == CLIENT_IO_MAGIC);
-		if (list_enqueue(client->out.msg_queue, msg))
-			msg->ref_count++;
+		/* Add message to the msg_queue of all clients */
+		clients = list_iterator_create(out->job->clients);
+		while(eio = list_next(clients)) {
+			client = (struct client_io_info *)eio->arg;
+			debug3("========================= Enqueued message");
+			xassert(client->magic == CLIENT_IO_MAGIC);
+			if (list_enqueue(client->out.msg_queue, msg))
+				msg->ref_count++;
+		}
+		list_iterator_destroy(clients);
 	}
-	list_iterator_destroy(clients);
 
 	return SLURM_SUCCESS;
 }
@@ -1625,6 +1621,8 @@ again:
 		/* FIXME handle error */
 		return SLURM_ERROR;
 	}
+	debug3("  read %d bytes", n);
+	debug3("\"%s\"", buf);
 	in->remaining -= n;
 	if (in->remaining > 0)
 		return SLURM_SUCCESS;
@@ -1632,8 +1630,9 @@ again:
 	/*
 	 * Route the message to its destination(s)
 	 */
-	if (in->header.type != SLURM_IO_STDIN) {
-		error("Input from client is not labelled SLURM_IO_STDIN!");
+	if (in->header.type != SLURM_IO_STDIN
+	    && in->header.type != SLURM_IO_ALLSTDIN) {
+		error("Input in->header.type is not valid!");
 		in->msg = NULL;
 		return SLURM_ERROR;
 	} else {
@@ -1642,7 +1641,7 @@ again:
 		struct task_in_info *io;
 
 		in->msg->ref_count = 0;
-		if (in->header.gtaskid == SLURM_IO_ALLTASKS) {
+		if (in->header.gtaskid == SLURM_IO_ALLSTDIN) {
 			for (i = 0; i < client->job->ntasks; i++) {
 				task = client->job->task[i];
 				io = (struct task_in_info *)(task->in->arg);

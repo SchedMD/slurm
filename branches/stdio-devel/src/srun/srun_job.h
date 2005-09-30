@@ -125,9 +125,11 @@ typedef struct srun_job {
 	int *listenport;	/* Array of stdio listen ports 	  */
 	eio_t eio;              /* Event IO handle                */
 	List eio_objs;          /* List of eio_obj_t pointers     */
+	int ioservers_ready;    /* Number of servers that established contact */
 	eio_obj_t **ioserver;	/* Array of nhosts pointers to eio_obj_t */
 	eio_obj_t **iostdout;   /* Array of ntasks pointers to eio_obj_t */
 	eio_obj_t **iostderr;   /* Array of ntasks pointers to eio_obj_t */
+	eio_obj_t **iostdin;    /* Array of ntasks pointers to eio_obj_t */
 	List free_io_buf;       /* List of free struct io_buf pointers */
 
 	pthread_t lid;		  /* launch thread id */

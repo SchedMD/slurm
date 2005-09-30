@@ -50,7 +50,7 @@
 #define SLURM_IO_STDIN 0
 #define SLURM_IO_STDOUT 1
 #define SLURM_IO_STDERR 2
-#define SLURM_IO_ALLTASKS ((uint16_t)-1)
+#define SLURM_IO_ALLSTDIN 3
 
 struct slurm_io_init_msg {
 	uint16_t      version;
