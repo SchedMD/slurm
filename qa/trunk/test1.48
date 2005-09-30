@@ -68,7 +68,7 @@ if {$got_login_grps == 0} {
 # Submit a slurm job that will execute 'id'
 #
 set timeout $max_job_delay
-spawn $srun -N1 -t1 --mail-type=all --mail-user=$login_grp_info $bin_id -un  
+spawn $srun -N1 -t1 --job-name=test$test_id --mail-type=all --mail-user=$login_grp_info $bin_id -un  
 expect {
 	-re "error" {
 		send_user "\nFAILURE: Error running srun\n"
