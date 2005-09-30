@@ -140,6 +140,8 @@ struct file_read_info {
 
 	/* header contains destination of file input */
 	struct slurm_io_header header;
+
+	bool eof;
 };
 
 
@@ -502,6 +504,7 @@ create_file_read_eio_obj(int fd, srun_job_t *job,
 	info->header.gtaskid = gtaskid;
 	/* FIXME!  Need to set ltaskid based on gtaskid */
 	info->header.ltaskid = (uint16_t)-1;
+	info->eof = false;
 
 	eio = (eio_obj_t *)xmalloc(sizeof(eio_obj_t));
 	eio->fd = fd;
@@ -521,6 +524,9 @@ static bool _file_readable(eio_obj_t *obj)
 		debug("  false, all ioservers not yet initialized");
 		return false;
 	}
+
+	if (info->eof)
+		return false;
 
 	if (!list_is_empty(info->job->free_io_buf))
 		return true;
@@ -558,8 +564,8 @@ again:
 	}
 	if (len == 0) { /* got eof */
 		debug3("got eof on _file_read");
-		list_enqueue(info->job->free_io_buf, msg);
-		return SLURM_ERROR;
+		info->eof = true;
+		/* send eof message, message with payload length 0 */
 	}
 
 	debug3("  read %d bytes from file", len);

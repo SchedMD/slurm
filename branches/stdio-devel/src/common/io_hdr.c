@@ -112,16 +112,23 @@ again:
 int io_hdr_read_fd(int fd, io_hdr_t *hdr)
 {
 	Buf buffer;
-	int rc = SLURM_SUCCESS;
+	int n = 0;
+	int rc;
 
 	debug3("Entering io_hdr_read_fd");
 	buffer = init_buf(io_hdr_packed_size());
-	_full_read(fd, buffer->head, io_hdr_packed_size());
-	rc = io_hdr_unpack(hdr, buffer);
-	free_buf(buffer);
+	n = _full_read(fd, buffer->head, io_hdr_packed_size());
+	if (n <= 0)
+		goto fail;
+	if (io_hdr_unpack(hdr, buffer) == SLURM_ERROR) {
+		n = -1;
+		goto fail;
+	}
 	debug3("Leaving  io_hdr_read_fd");
 
-	return rc;
+fail:
+	free_buf(buffer);
+	return n;
 }
 
 

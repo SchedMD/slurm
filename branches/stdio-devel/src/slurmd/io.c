@@ -96,6 +96,7 @@ struct incoming_client_info {
 	struct slurm_io_header header;
 	struct io_buf *msg;
 	int32_t remaining;
+	bool eof;
 };
 
 struct outgoing_fd_info {
@@ -567,9 +568,7 @@ io_client_connect(slurmd_job_t *job)
 	client->job = job;
 	client->out.msg_queue = list_create(NULL); /* FIXME! Need desctructor */
 
-	debug3("  test 1");
 	obj = _eio_obj_create(sock, (void *)client, _ops_copy(&client_ops));
-	debug3("  test 2");
 	list_append(job->clients, (void *)obj);
 	list_append(job->objs, (void *)obj);
 
@@ -1182,11 +1181,12 @@ _client_readable(eio_obj_t *obj)
 	struct client_io_info *client = (struct client_io_info *) obj->arg;
 
 	debug3("Called _client_readable");
-	/* FIXME!  Remove following two lines */
-/* 	debug3("  false"); */
-/* 	return false; */
-
 	xassert(client->magic == CLIENT_IO_MAGIC);
+
+	if (client->in.eof) {
+		debug3("  false");
+		return false;
+	}
 
 	if (client->in.msg != NULL
 	    || !list_is_empty(client->job->free_io_buf))
@@ -1302,8 +1302,6 @@ again:
 	out->msg->ref_count--;
 	if (out->msg->ref_count == 0)
 		list_enqueue(in->job->free_io_buf, out->msg);
-	else
-		debug3("  Could not free msg!!");
 	out->msg = NULL;
 
 	return SLURM_SUCCESS;
@@ -1601,11 +1599,16 @@ _client_read(eio_obj_t *obj, List objs)
 	if (in->msg == NULL) {
 		in->msg = list_dequeue(client->job->free_io_buf);
 		if (in->msg == NULL) {
-			debug("List free_io_buf is empty!");
-			return SLURM_ERROR;
+			debug3("  _client_read free_io_buf is empty");
+			return SLURM_SUCCESS;
 		}
-
-		io_hdr_read_fd(obj->fd, &in->header);
+		n = io_hdr_read_fd(obj->fd, &in->header);
+		if (n == 0) { /* got eof on socket read */
+			debug3("  got eof on _client_read header");
+			in->eof = true;
+			list_enqueue(client->job->free_io_buf, in->msg);
+			return SLURM_SUCCESS;
+		}
 		in->remaining = in->header.length;
 		in->msg->length = in->header.length;
 	}
@@ -1613,19 +1616,29 @@ _client_read(eio_obj_t *obj, List objs)
 	/*
 	 * Read the body
 	 */
-	buf = in->msg->data + (in->msg->length - in->remaining);
-again:
-	if ((n = read(obj->fd, buf, in->remaining)) < 0) {
-		if (errno == EINTR)
-			goto again;
-		/* FIXME handle error */
-		return SLURM_ERROR;
+	if (in->header.length == 0) { /* zero length is an eof message */
+		debug3("  got stdin eof message!");
+	} else {
+		buf = in->msg->data + (in->msg->length - in->remaining);
+	again:
+		if ((n = read(obj->fd, buf, in->remaining)) < 0) {
+			if (errno == EINTR)
+				goto again;
+			/* FIXME handle error */
+			return SLURM_ERROR;
+		}
+		if (n == 0) { /* got eof */
+			debug3("  got eof on _client_read body");
+			in->eof = true;
+			list_enqueue(client->job->free_io_buf, in->msg);
+			return SLURM_SUCCESS;
+		}
+		debug3("  read %d bytes", n);
+		debug3("\"%s\"", buf);
+		in->remaining -= n;
+		if (in->remaining > 0)
+			return SLURM_SUCCESS;
 	}
-	debug3("  read %d bytes", n);
-	debug3("\"%s\"", buf);
-	in->remaining -= n;
-	if (in->remaining > 0)
-		return SLURM_SUCCESS;
 
 	/*
 	 * Route the message to its destination(s)
