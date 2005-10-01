@@ -124,8 +124,8 @@ struct task_out_info {
 	uint16_t         gtaskid;
 	uint16_t         ltaskid;
 	slurmd_job_t    *job;		 /* pointer back to job data   */
-
 	cbuf_t           buf;
+	bool		 eof;
 };
 
 struct client_io_info {
@@ -451,6 +451,7 @@ _create_task_out_eio(int fd, uint16_t type,
 	out->ltaskid = task->id;
 	out->job = job;
 	out->buf = cbuf_create(MAX_MSG_LEN, MAX_MSG_LEN*16);
+	out->eof = false;
 	if (cbuf_opt_set(out->buf, CBUF_OPT_OVERWRITE, CBUF_NO_DROP) == -1)
 		error("setting cbuf options");
 
@@ -1227,15 +1228,11 @@ _task_readable(eio_obj_t *obj)
 	debug3("Called _task_readable, task %d, %s", out->gtaskid,
 	       out->type == SLURM_IO_STDOUT ? "STDOUT" : "STDERR");
 
+	if (out->eof) {
+		debug3("  false, eof");
+		return false;
+	}
 	if (cbuf_free(out->buf) > 0)
-		return true;
-
-	/*
-	 * FIXME! The following should not be used here.
-	 * The output cbufs should be emptied every time _task_read() is called,
-	 * AND every time an empty io_buf is added back to the free_io_buf list.
-	 */
-	if (cbuf_used(out->buf > 0) && !list_is_empty(out->job->free_io_buf))
 		return true;
 
 	debug3("  false");
@@ -1505,7 +1502,7 @@ _task_read(eio_obj_t *obj, List objs)
 	eio_obj_t *eio;
 	ListIterator clients;
 	int len;
-	int n;
+	int rc = -1;
 
 	xassert(out->magic == TASK_OUT_MAGIC);
 
@@ -1513,7 +1510,7 @@ _task_read(eio_obj_t *obj, List objs)
 	len = cbuf_free(out->buf);
 	if (len > 0) {
 again:
-		if ((n = cbuf_write_from_fd(out->buf, obj->fd, len, NULL))
+		if ((rc = cbuf_write_from_fd(out->buf, obj->fd, len, NULL))
 		    < 0) {
 			if (errno == EINTR)
 				goto again;
@@ -1522,24 +1519,28 @@ again:
 				return SLURM_SUCCESS;
 			}
 			/* FIXME add error message */
+			debug3("  error in _task_read");
 			return SLURM_ERROR;
 		}
-		if (n == 0) {  /* got eof */
-			debug3("got eof on task");
-			_obj_close(obj, objs);
-			return SLURM_SUCCESS;
+		if (rc == 0) {  /* got eof */
+			debug3("  got eof on task");
 		}
 	}
 
-	debug3("************************* %d bytes read from task %s", n,
+	debug3("************************ %d bytes read from task %s", rc,
 	       out->type == SLURM_IO_STDOUT ? "STDOUT" : "STDERR");
 
 	/* Pack task output into messages for transfer to a client */
+	/*
+	 * FIXME!  If free_io_buf is empty, the following needs to be
+	 *         done by the entity that puts a free io_buf back
+	 *         on the free_io_buf List.
+	 */
 	while (cbuf_used(out->buf) > 0
 	       && !list_is_empty(out->job->free_io_buf)) {
 		msg = _task_build_message(out, out->job, out->buf);
 		if (msg == NULL)
-			return SLURM_ERROR;
+			return SLURM_SUCCESS;
 
 		debug3("\"%s\"", msg->data + io_hdr_packed_size());
 
@@ -1547,12 +1548,31 @@ again:
 		clients = list_iterator_create(out->job->clients);
 		while(eio = list_next(clients)) {
 			client = (struct client_io_info *)eio->arg;
-			debug3("========================= Enqueued message");
+			debug3("======================== Enqueued message");
 			xassert(client->magic == CLIENT_IO_MAGIC);
 			if (list_enqueue(client->out.msg_queue, msg))
 				msg->ref_count++;
 		}
 		list_iterator_destroy(clients);
+	}
+	/*
+	 * FIXME!  Send the eof message
+	 */
+	if (cbuf_used(out->buf) == 0 && rc == 0) {
+		msg = _task_build_message(out, out->job, out->buf);
+		if (msg == NULL)
+			return SLURM_SUCCESS;
+		/* Add message to the msg_queue of all clients */
+		clients = list_iterator_create(out->job->clients);
+		while(eio = list_next(clients)) {
+			client = (struct client_io_info *)eio->arg;
+			debug3("======================== Enqueued EOF message");
+			xassert(client->magic == CLIENT_IO_MAGIC);
+			if (list_enqueue(client->out.msg_queue, msg))
+				msg->ref_count++;
+		}
+		list_iterator_destroy(clients);
+		out->eof = true;
 	}
 
 	return SLURM_SUCCESS;
