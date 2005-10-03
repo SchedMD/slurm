@@ -162,7 +162,7 @@ static int _print_str(char *str, int width, bool right, bool cut_output)
 	} else {
 		char temp[width + 1];
 		snprintf(temp, width + 1, format, str);
-		if ((printed = printf(temp)) < 0)
+		if ((printed = printf("%s",temp)) < 0)
 			return printed;
 	}
 

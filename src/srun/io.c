@@ -94,6 +94,8 @@ static void     _terminate_node_io(int node_inx, srun_job_t *job);
 #define _poll_err(pfd)      ((pfd).revents & POLLERR)
 #define _poll_hup(pfd)      ((pfd).revents & POLLHUP)
 
+#define MAX_RETRIES 3
+
 /* True if an EOF needs to be broadcast to all tasks
  */
 static bool stdin_got_eof = false;
@@ -569,7 +571,7 @@ _wid(int n)
 int
 io_thr_create(srun_job_t *job)
 {
-	int i;
+	int i, retries = 0;
 	pthread_attr_t attr;
 
 	if (opt.labelio)
@@ -593,9 +595,14 @@ io_thr_create(srun_job_t *job)
 		error("io_thr_create: pipe: %m");
 
 	slurm_attr_init(&attr);
-	if ((errno = pthread_create(&job->ioid, &attr, &io_thr, (void *) job)))
-		return SLURM_ERROR;
-
+	while ((errno = pthread_create(&job->ioid, &attr, &io_thr, 
+			(void *) job))) {
+		if (++retries > MAX_RETRIES) {
+			error ("pthread_create error %m");
+			return SLURM_ERROR;
+		}
+		sleep(1);	/* sleep and try again */
+	}
 	debug("Started IO server thread (%lu)", (unsigned long) job->ioid);
 
 	return SLURM_SUCCESS;

@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-213976"
-<meta name="LLNLRandRdate" content="13 July 2005">
+<meta name="LLNLRandRdate" content="1 October 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -75,7 +75,8 @@ this plugin does not allocate individual processors, memory, etc.
 This plugin is recommended for systems without shared nodes.</li>
 <li><b>cons_res</b>&#151;A plugin that can allocate individual processors, 
 memory, etc. within nodes. This plugin is recommended for systems with 
-many non-parallel programs sharing nodes.</li>
+many non-parallel programs sharing nodes. For more information see
+<a href=cons_res.html>Consumable Resources in SLURM</a>.</li>
 <li><b>bluegene</b>&#151;<a href="http://www.research.ibm.com/bluegene">IBM Blue Gene</a>  
 node selector. Note that this plugin not only selects the nodes for a job, but performs 
 some initialization and termination functions for the job.</li>
@@ -332,7 +333,14 @@ the type of data to be updated.<br>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
 
-
+<p class="commandline">int select_p_job_init(List job_list);<p>
+<p style="margin-left:.2in"><b>Description</b>: Used at slurm startup to 
+syncrhonize plugin (and node) state with that of currectly active jobs.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:
+<span class="commandline"> job_list</span>&nbsp; &nbsp;&nbsp;(input) 
+list of slurm jobs from slurmctld job records.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h3>Versioning</h3>
@@ -350,7 +358,7 @@ to maintain data format compatibility across different versions of the plugin.</
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-213976<br>
-Last modified 13 July 2005</p></td>
+Last modified 1 October 2005</p></td>
 </tr>
 </table>
 </td>

@@ -47,6 +47,8 @@
 
 #include "src/srun/srun_job.h"
 
+#define MAX_RETRIES 3
+
 /*
  *  Static list of signals to block in srun:
  */
@@ -112,13 +114,16 @@ sig_unblock_signals(void)
 int 
 sig_thr_create(srun_job_t *job)
 {
-	int e;
+	int e, retries = 0;
 	pthread_attr_t attr;
 
 	slurm_attr_init(&attr);
 
-	if ((e = pthread_create(&job->sigid, &attr, &_sig_thr, job)) != 0)
-		slurm_seterrno_ret(e);
+	while ((e = pthread_create(&job->sigid, &attr, &_sig_thr, job))) {
+		if (++retries > MAX_RETRIES)
+			slurm_seterrno_ret(e);
+		sleep(1);	/* sleep and try again */
+	}
 
 	debug("Started signals thread (%lu)", (unsigned long) job->sigid);
 
