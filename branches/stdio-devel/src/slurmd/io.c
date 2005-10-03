@@ -817,6 +817,7 @@ _task_writable(eio_obj_t *obj)
 	struct outgoing_fd_info *out = &in->out;
 
 	debug3("Called _task_writable");
+
 	if (out->msg != NULL || list_count(out->msg_queue) > 0)
 		return true;
 
@@ -844,6 +845,13 @@ _task_write(io_obj_t *obj, List objs)
 		out->msg = list_dequeue(out->msg_queue);
 		if (out->msg == NULL) {
 			debug3("_task_write: nothing in the queue");
+			return SLURM_SUCCESS;
+		}
+		if (out->msg->length == 0) { /* eof message */
+			close(obj->fd);
+			obj->fd = -1;
+			_free_msg(out->msg, in->job);
+			out->msg = NULL;
 			return SLURM_SUCCESS;
 		}
 		out->remaining = out->msg->length;
