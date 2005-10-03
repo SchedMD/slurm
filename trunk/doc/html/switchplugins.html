@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-213976"
-<meta name="LLNLRandRdate" content="4 March 2005">
+<meta name="LLNLRandRdate" content="1 October 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -129,7 +129,9 @@ be stubbed.</p>
 <p style="margin-left:.2in"><b>Description</b>: Save any global switch state to a file 
 within the specified directory. The actual file name used is plugin specific. It is recommended 
 that the global switch state contain a magic number for validation purposes. This function 
-is called by the slurmctld deamon on shutdown.</p>
+is called by the slurmctld deamon on shutdown. Note that if the slurmctld daemon fails, 
+this function will not be called. The plugin may save state independently and/or make 
+use of the switch_p_job_step_allocated function to restore state.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> dir_name</span>&nbsp; 
 &nbsp;&nbsp;(input) fully-qualified pathname of a directory into which user SlurmUser (as defined
 in slurm.conf) can create a file and write state information into that file. Cannot be NULL.</p>
@@ -137,16 +139,25 @@ in slurm.conf) can create a file and write state information into that file. Can
 the plugin should return SLURM_ERROR and set the errno to an appropriate value 
 to indicate the reason for failure.</p>
 
-<p class="commandline">int switch_p_libstate_restore(char *dir_name);</p>
+<p class="commandline">int switch_p_libstate_restore(char *dir_name, bool recover);</p>
 <p style="margin-left:.2in"><b>Description</b>: Restore any global switch state from a file 
 within the specified directory. The actual file name used is plugin specific. It is recommended 
 that any magic number associated with the global switch state be verified. This function 
 is called by the slurmctld deamon on startup.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> dir_name</span>&nbsp; 
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> dir_name</span>&nbsp; 
 &nbsp;&nbsp;(input) fully-qualified pathname of a directory containing a state information file 
-from which user SlurmUser (as defined in slurm.conf) can read. Cannot be NULL.</p>
+from which user SlurmUser (as defined in slurm.conf) can read. Cannot be NULL.<br>
+<span class="commandline"><span class="commandline"> recover</span>&nbsp;
+true of restart with state preserved, false if no state recovery. </p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
 the plugin should return SLURM_ERROR and set the errno to an appropriate value 
+to indicate the reason for failure.</p>
+
+<p class="commandline">int switch_p_libstate_clear (void);</p>
+<p style="margin-left:.2in"><b>Description</b>: Clear switch state information.
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
 <p class="commandline">bool switch_p_no_frag(void);</p>
@@ -163,7 +174,7 @@ any other job is in the process of terminating.</p>
 is initiated. The slurmctld daemon will also request that slurmd supply current 
 switch state information on a periodic basis.</p>
 
-<p class="commandline">int switch_p_clear_node_state(void);</p>
+<p class="commandline">int switch_p_clear_node_state (void);</p>
 <p style="margin-left:.2in"><b>Description</b>: Initialize node state. 
 If any switch state has previously been established for a job, it will be cleared. 
 This will be used to establish a "clean" state for the switch on the node upon 
@@ -472,8 +483,8 @@ switch credential.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value 
 to indicate the reason for failure.</p>
 
-<p class="commandline">int switch_p_job_postfini ( switch_jobinfo_t switch_job, uid_t pgid, 
-uint32_t job_id, uint32_t step_id );</p>
+<p class="commandline">int switch_p_job_postfini ( switch_jobinfo_t switch_job, 
+uid_t pgid, uint32_t job_id, uint32_t step_id );</p>
 <p style="margin-left:.2in"><b>Description</b>: This function is run from the initial slurmd 
 process (same process as switch_p_job_preinit()), and is run as root. Any cleanup routines
 that need to be run with root privileges should be run from this function.</p>
@@ -488,6 +499,24 @@ associated SLURM job id.<br>
 associated SLURM job step id.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
 the plugin should return SLURM_ERROR and set the errno to an appropriate value 
+to indicate the reason for failure.</p>
+
+<p class="commandline">int switch_p_job_step_allocated (switch_jobinfo_t 
+jobinfo switch_job, char *nodelist);</p>
+<p style="margin-left:.2in"><b>Description</b>: Note that the identified 
+job step is active at restart time. This function can be used to 
+restore global switch state information based upon job steps known to be 
+active at restart time. Use of this function is prefered over switch state 
+saved and restored by the switch plugin. Direct use of job step switch 
+information eliminates the possibility of inconsistent state information 
+between the switch and job steps.
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input) a job's
+switch credential.<br>
+<span class="commandline"> nodelist</span>&nbsp; &nbsp;&nbsp;(input) the nodes
+allocated to a job step.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 <p class="footer"><a href="#top">top</a></p>
 
@@ -523,7 +552,7 @@ to maintain data format compatibility across different versions of the plugin.</
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-213976<br>
-Last modified 4 March 2005</p></td>
+Last modified 1 October 2005</p></td>
 </tr>
 </table>
 </td>
