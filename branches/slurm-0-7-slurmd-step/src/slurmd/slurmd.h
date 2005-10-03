@@ -106,10 +106,5 @@ int send_registration_msg(uint32_t status, bool startup);
  */
 int save_cred_state(slurm_cred_ctx_t vctx);
 
-/*
- * Same as slurm_get_addr but protected by pthread_atfork handlers
- */
-void slurmd_get_addr(slurm_addr *a, uint16_t *port, char *buf, uint32_t len);
-
 
 #endif /* !_SLURMD_H */

@@ -34,6 +34,12 @@
 
 #include "src/slurmd/slurmd_job.h"
 
+typedef enum slurmd_step_tupe {
+	LAUNCH_BATCH_JOB = 0,
+	LAUNCH_TASKS,
+	SPAWN_TASKS
+} slurmd_step_type_t;
+
 /* Spawn a task / job step on this node
  */
 int mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *client,
@@ -57,5 +63,9 @@ int mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *client);
  */
 extern int run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid,
 		char *bgl_part_id);
+/*
+ * Same as slurm_get_addr but protected by pthread_atfork handlers
+ */
+void slurmd_get_addr(slurm_addr *a, uint16_t *port, char *buf, uint32_t len);
 
 #endif

@@ -216,59 +216,93 @@ _fork_new_slurmd(void)
 {
 	pid_t pid;
 	int fds[2] = {-1, -1};
+	int fds2[2] = {-1, -1};
 	char c;
-
+	int rc;
 	/* Idea taken from ConMan by Chris Dunlap:
 	 *  Create pipe for IPC so parent slurmd will wait
 	 *  to return until signaled by grandchild process that
 	 *  slurmd job manager has been successfully created.
 	 */
-	if (pipe(fds) < 0) {
-		error("fork_slurmd: pipe: %m");
-		return -1;
-	}
+	/* if (pipe(fds) < 0) { */
+/* 		error("fork_slurmd: pipe: %m"); */
+/* 		return -1; */
+/* 	} */
 	
-	if ((pid = fork()) < 0) { 
-		error("fork_slurmd: fork: %m");
-		close(fds[0]);
-		close(fds[1]);
-		return -1;
-	} else if (pid > 0) {
-		if ((fds[1] >= 0) && (close(fds[1]) < 0))
-			error("Unable to close write-pipe in parent: %m");
+	/* if ((pid = fork()) < 0) {  */
+/* 		error("fork_slurmd: fork: %m"); */
+/* 		close(fds[0]); */
+/* 		close(fds[1]); */
+/* 		return -1; */
+/* 	} else if (pid > 0) { */
+/* 		if ((fds[1] >= 0) && (close(fds[1]) < 0)) */
+/* 			error("Unable to close write-pipe in parent: %m"); */
 
-		/*  Wait for grandchild */
-		if ((fds[0] >= 0) && (read(fds[0], &c, 1) < 0))
-			return error("Unable to read EOF from grandchild: %m");
-		if ((fds[0] >= 0) && (close(fds[0]) < 0))
-			error("Unable to close read-pipe in parent: %m");
+/* 		/\*  Wait for grandchild *\/ */
+/* 		if ((fds[0] >= 0) && (read(fds[0], &c, 1) < 0)) */
+/* 			return error("Unable to read EOF from grandchild: %m"); */
+/* 		if ((fds[0] >= 0) && (close(fds[0]) < 0)) */
+/* 			error("Unable to close read-pipe in parent: %m"); */
 
-		/* Reap child */
-		if (waitpid(pid, NULL, 0) < 0)
-			error("Unable to reap slurmd child process");
+/* 		/\* Reap child *\/ */
+/* 		if (waitpid(pid, NULL, 0) < 0) */
+/* 			error("Unable to reap slurmd child process"); */
 
-		return ((int) pid);
-	}
+/* 		return ((int) pid); */
+/* 	} */
 
 #ifdef DISABLE_LOCALTIME
 	disable_localtime();
 #endif
-	if (close(fds[0]) < 0)
-		error("Unable to close read-pipe in child: %m");
-
-	if (setsid() < 0)
-		error("fork_slurmd: setsid: %m");
-
+	/* if (close(fds[0]) < 0) */
+/* 		error("Unable to close read-pipe in child: %m"); */
+	
+	/* if (setsid() < 0) */
+/* 		error("fork_slurmd: setsid: %m"); */
+	if (pipe(fds2) < 0) {
+		error("fork_slurmd: pipe: %m");
+		return -1;
+	}
+	
 	if ((pid = fork()) < 0)
 		error("fork_slurmd: Unable to fork grandchild: %m");
-	else if (pid > 0)
-		exit(0);
+	else if (pid > 0) {
+			sleep(1);
+		write(fds2[1],"2",sizeof(char));
+		if (close(fds2[0]) < 0)
+			error("Unable to close read-pipe in child: %m");
+		info("wrote the info");
+		/* Reap child */
+		if (waitpid(pid, NULL, 0) < 0)
+			error("Unable to reap slurmd child process");
 
+		return pid;
+	}
 	/* Grandchild continues */
+	if (setsid() < 0)
+		error("fork_slurmd: setsid: %m");
+	
+	/* if (close(fds[1]) < 0) */
+/* 		error("Unable to close write-pipe in grandchild: %m"); */
 
-	if (close(fds[1]) < 0)
-		error("Unable to close write-pipe in grandchild: %m");
+	/* if (close(fds2[1]) < 0) */
+/* 		error("Unable to close write-pipe in grandchild: %m"); */
 
+	if (dup2(fds2[0], STDIN_FILENO) == -1) {
+		error("dup2 over STDIN_FILENO: %m");
+		exit(1);
+	}
+/* 	if((rc = read(STDIN_FILENO,&c,sizeof(char))) != 1) { */
+/* 		error ("slurmd_step: couldn't read step_type: %m", */
+/* 		       rc); */
+/* 		exit(1); */
+/* 	} */
+	rc = fcntl(fds2[0], F_GETFD, FD_CLOEXEC);
+	info("calling it %d", rc);
+       
+	execvp("slurmd_step", NULL);
+	info("done calling it");	
+			
 	/*
 	 *  We could destroy the credential context object here. 
 	 *   However, since we have forked from the main slurmd,
@@ -280,6 +314,7 @@ _fork_new_slurmd(void)
 	 */
 
 	slurm_shutdown_msg_engine(conf->lfd);
+	
 	_close_fds();
 
 	/*
