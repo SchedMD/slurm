@@ -122,6 +122,7 @@ struct file_write_info {
 	List msg_queue;
 	struct io_buf *out_msg;
 	int32_t out_remaining;
+	bool eof;
 };
 
 /**********************************************************************
@@ -205,8 +206,20 @@ _create_server_eio_obj(int fd, srun_job_t *job)
 static bool 
 _server_readable(eio_obj_t *obj)
 {
-	debug3("Called _server_readable");
-	return true;
+	struct server_io_info *s = (struct server_io_info *) obj->arg;
+	struct file_write_info *fout, *ferr;
+	int i;
+
+	debug2("Called _server_readable");
+	for (i = 0; i < s->job->ntasks; i++) {
+		fout = s->job->iostdout[i]->arg;
+		ferr = s->job->iostderr[i]->arg;
+		if (!fout->eof || !ferr->eof)
+			return true;
+	}
+
+	debug("  false");
+	return false;
 }
 
 static int
@@ -230,22 +243,25 @@ _server_read(eio_obj_t *obj, List objs)
 		s->in_msg->header = s->header;
 	}
 
+
 	/*
 	 * Read the body
 	 */
-	buf = s->in_msg->data + (s->in_msg->length - s->in_remaining);
-again:
-	if ((n = read(obj->fd, buf, s->in_remaining)) < 0) {
-		if (errno == EINTR)
-			goto again;
-		/* FIXME handle error */
-		return SLURM_ERROR;
+	if (s->header.length != 0) {
+		buf = s->in_msg->data + (s->in_msg->length - s->in_remaining);
+	again:
+		if ((n = read(obj->fd, buf, s->in_remaining)) < 0) {
+			if (errno == EINTR)
+				goto again;
+			/* FIXME handle error */
+			return SLURM_ERROR;
+		}
+		debug3("  read %d bytes", n);
+		debug3("\"%s\"", buf);
+		s->in_remaining -= n;
+		if (s->in_remaining > 0)
+			return SLURM_SUCCESS;
 	}
-	debug3("  read %d bytes", n);
-	debug3("\"%s\"", buf);
-	s->in_remaining -= n;
-	if (s->in_remaining > 0)
-		return SLURM_SUCCESS;
 
 	/*
 	 * Route the message to the proper output
@@ -273,7 +289,7 @@ _server_writable(eio_obj_t *obj)
 {
 	struct server_io_info *s = (struct server_io_info *) obj->arg;
 
-	debug3("Called _server_readable");
+	debug3("Called _server_writable");
 	if (s->out_msg != NULL)
 		debug3("  s->out_msg != NULL");
 	if (!list_is_empty(s->msg_queue))
@@ -362,6 +378,7 @@ create_file_write_eio_obj(int fd, srun_job_t *job)
 	info->msg_queue = list_create(NULL); /* FIXME! Add destructor */
 	info->out_msg = NULL;
 	info->out_remaining = 0;
+	info->eof = false;
 
 	eio = (eio_obj_t *)xmalloc(sizeof(eio_obj_t));
 	eio->fd = fd;
@@ -422,6 +439,7 @@ static int _write_msg(int fd, void *buf, int len, int taskid)
 	int line_len;
 	int rc;
 	
+	/* FIXME - should loop here, write as many lines as in the message */
 	start = buf;
 	end = memchr(start, '\n', len);
 	if (opt.labelio)
@@ -468,25 +486,29 @@ static int _file_write(eio_obj_t *obj, List objs)
 			return SLURM_SUCCESS;
 		}
 		info->out_remaining = info->out_msg->length;
+		if (info->out_msg->length == 0) /* eof */
+			info->eof = true;
 	}
 	
 	/*
 	 * Write message to file.
 	 */
-	ptr = info->out_msg->data + (info->out_msg->length
-				     - info->out_remaining);
-	if ((n = _write_msg(obj->fd, ptr,
-			    info->out_remaining,
-			    info->out_msg->header.gtaskid)) < 0) {
-		return SLURM_ERROR;
+	if (!info->eof) {
+		ptr = info->out_msg->data + (info->out_msg->length
+					     - info->out_remaining);
+		if ((n = _write_msg(obj->fd, ptr,
+				    info->out_remaining,
+				    info->out_msg->header.gtaskid)) < 0) {
+			return SLURM_ERROR;
+		}
+		debug3("  wrote %d bytes", n);
+		info->out_remaining -= n;
+		if (info->out_remaining > 0)
+			return SLURM_SUCCESS;
 	}
-	debug3("  wrote %d bytes", n);
-	info->out_remaining -= n;
-	if (info->out_remaining > 0)
-		return SLURM_SUCCESS;
 
 	/*
-	 * Free the message and prepare to send the next one.
+	 * Free the message.
 	 */
 	info->out_msg->ref_count--;
 	if (info->out_msg->ref_count == 0)
