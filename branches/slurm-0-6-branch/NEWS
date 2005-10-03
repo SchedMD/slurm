@@ -5,7 +5,6 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Fix sinfo and squeue formatting to properly handle slurm nodes, 
     jobs, and other names containing "%".
- -- Build srun with libdbfork.a until TotalView bug is fixed.
 
 * Changes in SLURM 0.6.1
 ========================

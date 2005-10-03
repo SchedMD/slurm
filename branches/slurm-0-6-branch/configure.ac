@@ -107,17 +107,6 @@ X_AC_NCURSES
 AM_CONDITIONAL(HAVE_SOME_CURSES, test "x$ac_have_some_curses" = "xyes")
 AC_SUBST(HAVE_SOME_CURSES)
 
-# Because of a bug in TotalView, we need to load srun with 
-# libdbflags, if available
-if test -d "/usr/totalview/lib" ; then
-	LDFLAGS="$LDFLAGS -Wl,-L/usr/totalview/lib "
-fi
-AC_CHECK_LIB(dbfork, fork, [have_dbfork=yes], [have_dbfork=no])
-if test x"$have_dbfork" = xyes; then
-	SRUN_LDFLAGS="-ldbfork"
-fi
-AC_SUBST(SRUN_LDFLAGS)
-
 dnl checks for system services.
 dnl
 
