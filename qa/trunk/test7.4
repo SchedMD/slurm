@@ -80,7 +80,7 @@ exec $mpicc -o $test_prog ${test_prog}.c
 set matches 0
 set no_capability 0
 set timeout $max_job_delay
-spawn $totalviewcli -verbosity info -e $no_bulk $srun -a -n4 -N1-2 -O $test_prog
+spawn $totalviewcli -verbosity info -e $no_bulk $srun -a -n4 -N1-2 -O -t1 $test_prog
 expect {
 	-re "d1.<>" {
 		if {$matches == 0} {
