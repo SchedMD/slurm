@@ -62,6 +62,13 @@ void io_obj_destroy(io_obj_t *obj);
 
 int io_dup_stdio(slurmd_task_info_t *t);
 
+/*
+ *  Close the tasks' ends of the stdio pipes.
+ *  Presumably the tasks have already been started, and
+ *  have their copies of these file descriptors.
+ */
+void io_close_task_fds(slurmd_job_t *job);
+
 void io_close_all(slurmd_job_t *job);
 
 /*

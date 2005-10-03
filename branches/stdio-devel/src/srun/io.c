@@ -152,6 +152,10 @@ static bool
 _listening_socket_readable(eio_obj_t *obj)
 {
 	debug3("Called _listening_socket_readable");
+	if (obj->shutdown == true) {
+		debug2("  false, shutdown");
+		return false;
+	}
 	return true;
 }
 
@@ -193,6 +197,7 @@ _create_server_eio_obj(int fd, srun_job_t *job)
 	eio->fd = fd;
 	eio->arg = (void *)info;
 	eio->ops = _ops_copy(&server_ops);
+	eio->shutdown = false;
 
 	return eio;
 }
@@ -275,6 +280,10 @@ _server_writable(eio_obj_t *obj)
 		debug3("  s->msg_queue queue length = %d",
 		       list_count(s->msg_queue));
 
+	if (obj->shutdown == true) {
+		debug3("  false, shutdown");
+		return false;
+	}
 	if (s->out_msg != NULL
 	    || !list_is_empty(s->msg_queue))
 		return true;
@@ -358,6 +367,7 @@ create_file_write_eio_obj(int fd, srun_job_t *job)
 	eio->fd = fd;
 	eio->arg = (void *)info;
 	eio->ops = _ops_copy(&file_write_ops);
+	eio->shutdown = false;
 
 	return eio;
 }
@@ -510,6 +520,7 @@ create_file_read_eio_obj(int fd, srun_job_t *job,
 	eio->fd = fd;
 	eio->arg = (void *)info;
 	eio->ops = _ops_copy(&file_read_ops);
+	eio->shutdown = false;
 
 	return eio;
 }
@@ -521,13 +532,19 @@ static bool _file_readable(eio_obj_t *obj)
 	debug2("Called _file_readable");
 
 	if (info->job->ioservers_ready < info->job->nhosts) {
-		debug("  false, all ioservers not yet initialized");
+		debug3("  false, all ioservers not yet initialized");
 		return false;
 	}
 
 	if (info->eof)
 		return false;
-
+	if (obj->shutdown == true) {
+		debug3("  false, shutdown");
+		close(obj->fd);
+		obj->fd = -1;
+		info->eof = true;
+		return false;
+	}
 	if (!list_is_empty(info->job->free_io_buf))
 		return true;
 
@@ -638,7 +655,7 @@ _io_thr_internal(void *job_arg)
 	_set_listensocks_nonblocking(job);
 
 	/* start the eio engine */
-	io_handle_events(job->eio, job->eio_objs);
+	io_handle_events(job->eio);
 
 	debug("IO thread exiting");
 
@@ -680,6 +697,7 @@ _create_listensock_eio(int fd, srun_job_t *job)
 	eio->fd = fd;
 	eio->arg = (void *)job;
 	eio->ops = _ops_copy(&listening_socket_ops);
+	eio->shutdown = false;
 	return eio;
 }
 
@@ -871,7 +889,7 @@ io_node_fail(char *nodelist, srun_job_t *job)
 		}
 	}
 
-	eio_handle_signal(job->eio);
+	eio_handle_signal_wake(job->eio);
 	hostlist_destroy(fail_list);
 	return SLURM_SUCCESS;
 }

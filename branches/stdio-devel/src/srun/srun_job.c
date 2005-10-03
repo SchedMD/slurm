@@ -262,7 +262,7 @@ job_force_termination(srun_job_t *job)
 		update_job_state(job, SRUN_JOB_FORCETERM);
 	}
 
-	eio_handle_signal(job->eio);
+	eio_handle_signal_wake(job->eio);
 }
 
 
@@ -492,8 +492,8 @@ _job_create_internal(allocation_info_t *info)
 	job->listensock = (int *) xmalloc(job->num_listen * sizeof(int));
 	job->listenport = (int *) xmalloc(job->num_listen * sizeof(int));
 
-	job->eio = eio_handle_create();
 	job->eio_objs = list_create(NULL); /* FIXME - needs destructor */
+	job->eio = eio_handle_create(job->eio_objs);
 	job->ioservers_ready = 0;
 	/* "nhosts" number of IO protocol sockets */
 	job->ioserver = (eio_obj_t **)xmalloc(job->nhosts*sizeof(eio_obj_t *));

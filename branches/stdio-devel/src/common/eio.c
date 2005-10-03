@@ -45,6 +45,7 @@ struct eio_handle_components {
 	int  magic;
 #endif
 	int  fds[2];
+	List obj_list;
 };
 
 
@@ -59,7 +60,7 @@ static void         _poll_dispatch(struct pollfd *, unsigned int, io_obj_t **,
 static void         _poll_handle_event(short revents, io_obj_t *obj,
 		                       List objList);
 
-eio_t eio_handle_create(void)
+eio_t eio_handle_create(List eio_obj_list)
 {
 	eio_t eio = xmalloc(sizeof(*eio));
 
@@ -73,6 +74,8 @@ eio_t eio_handle_create(void)
 
 	xassert(eio->magic = EIO_MAGIC);
 
+	eio->obj_list = eio_obj_list;
+
 	return eio;
 }
 
@@ -82,36 +85,60 @@ void eio_handle_destroy(eio_t eio)
 	xassert(eio->magic == EIO_MAGIC);
 	close(eio->fds[0]);
 	close(eio->fds[1]);
+	/* FIXME - Destroy the eio object list here ? */
 	xassert(eio->magic = ~EIO_MAGIC);
 	xfree(eio);
 }
 
-int eio_handle_signal(eio_t eio)
+int eio_handle_signal_shutdown(eio_t eio)
+{
+	char c = 1;
+	if (write(eio->fds[1], &c, sizeof(char)) != 1) 
+		return error("eio_handle_signal_shutdown: write; %m");
+	return 0;
+}
+
+int eio_handle_signal_wake(eio_t eio)
 {
 	char c = 0;
 	if (write(eio->fds[1], &c, sizeof(char)) != 1) 
-		return error("eio_signal: write; %m");
+		return error("eio_handle_signal_wake: write; %m");
 	return 0;
+}
+
+static void _mark_shutdown_true(List obj_list)
+{
+	ListIterator objs;
+	eio_obj_t *obj;
+	
+	objs = list_iterator_create(obj_list);
+	while (obj = list_next(objs)) {
+		obj->shutdown = true;
+	}
+	list_iterator_destroy(objs);
 }
 
 static int _eio_clear(eio_t eio)
 {
-	char buf[1024];
+	char c = 0;
 	int rc = 0;
 
-	while ((rc = (read(eio->fds[0], buf, 1024)) > 0))  {;}
+	while ((rc = (read(eio->fds[0], &c, 1)) > 0)) {
+		if (c == 1)
+			_mark_shutdown_true(eio->obj_list);
+	}
 
 	if (rc < 0) return error("eio_clear: read: %m");
 
 	return 0;
 }
 
-int io_handle_events(eio_t eio, List objs)
+int io_handle_events(eio_t eio)
 {
 	xassert (eio != NULL);
 	xassert (eio->magic == EIO_MAGIC);
 
-	return _poll_loop_internal(eio, objs);
+	return _poll_loop_internal(eio, eio->obj_list);
 }
 
 static int

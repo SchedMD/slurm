@@ -543,6 +543,8 @@ _job_mgr(slurmd_job_t *job)
 		goto fail2;
 	}
 
+	io_close_task_fds(job);
+
 	xsignal_block(mgr_sigarray);
 	reattach_job = job;
 	xsignal(SIGHUP, _hup_handler);
@@ -583,8 +585,10 @@ _job_mgr(slurmd_job_t *job)
 	/*
 	 * Wait for io thread to complete (if there is one)
 	 */
-	if (!job->spawn_task)
+	if (!job->spawn_task) {
+		eio_handle_signal_shutdown(job->eio);
 		_wait_for_io(job);
+	}
 
 	job_update_state(job, SLURMD_JOB_COMPLETE);
 	g_slurmd_jobacct_jobstep_terminated(job);
@@ -741,7 +745,7 @@ _fork_all_tasks(slurmd_job_t *job)
 /*
  * Loop once through tasks looking for all tasks that have exited with
  * the same exit status (and whose statuses have not been sent back to
- * the client) Aggregrate these tasks into a single task exit message.
+ * the client) Aggregate these tasks into a single task exit message.
  *
  */ 
 static int 

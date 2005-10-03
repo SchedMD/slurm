@@ -54,21 +54,22 @@ struct io_obj {
 	int fd;                           /* fd to operate on                */
 	void *arg;                        /* application-specific data       */
 	struct io_operations *ops;        /* pointer to ops struct for obj   */
+	bool shutdown;
 };
 
-/* passed a list of struct io_obj's, this routine will watch for activtiy
- * on the fd's as long as obj->readable() or obj->writable() returns >0
+/* This routine will watch for activtiy on the fd's as long
+ * as obj->readable() or obj->writable() returns >0
  *
  * routine returns 0 when either list is empty or no objects in list are
  * readable() or writable().
  *
  * returns -1 on error.
  */
-int io_handle_events(eio_t eio, List io_obj_list);
+int io_handle_events(eio_t eio);
 
-
-eio_t eio_handle_create(void);
-void  eio_handle_destroy(eio_t eio);
-int   eio_handle_signal(eio_t eio);
+eio_t eio_handle_create(List eio_obj_list);
+void eio_handle_destroy(eio_t eio);
+int eio_handle_signal_wake(eio_t eio);
+int eio_handle_signal_shutdown(eio_t eio);
 
 #endif /* !_EIO_H */

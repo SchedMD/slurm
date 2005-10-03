@@ -123,7 +123,7 @@ typedef struct slurmd_job {
 	time_t         timelimit;  /* time at which job must stop           */
 
 	struct passwd *pwd;   /* saved passwd struct for user job           */
-	slurmd_task_info_t  **task;  /* list of task information pointers   */
+	slurmd_task_info_t  **task;  /* array of task information pointers  */
 	eio_t          eio;
 	List           objs;  /* List of io_obj_t pointers (see eio.h)      */
 	List 	       sruns; /* List of srun_info_t pointers               */
