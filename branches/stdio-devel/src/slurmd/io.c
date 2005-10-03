@@ -1074,7 +1074,6 @@ again:
 	 */
 	if (cbuf_used(out->buf) == 0 && out->eof) {
 		_send_eof_msg(out);
-		out->eof_msg_sent = true;
 	}
 
 	return SLURM_SUCCESS;
@@ -1130,6 +1129,7 @@ _client_read(eio_obj_t *obj, List objs)
 			debug3("  got eof on _client_read header");
 			in->eof = true;
 			list_enqueue(client->job->free_io_buf, in->msg);
+			in->msg = NULL;
 			return SLURM_SUCCESS;
 		}
 		in->remaining = in->header.length;
@@ -1154,6 +1154,7 @@ _client_read(eio_obj_t *obj, List objs)
 			debug3("  got eof on _client_read body");
 			in->eof = true;
 			list_enqueue(client->job->free_io_buf, in->msg);
+			in->msg = NULL;
 			return SLURM_SUCCESS;
 		}
 		debug3("  read %d bytes", n);

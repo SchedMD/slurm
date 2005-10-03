@@ -97,11 +97,13 @@ struct server_io_info {
 	struct slurm_io_header header;
 	struct io_buf *in_msg;
 	int32_t in_remaining;
+	bool in_eof;
 	
 	/* outgoing variables */
 	List msg_queue;
 	struct io_buf *out_msg;
 	int32_t out_remaining;
+	bool out_eof;
 };
 
 /**********************************************************************
@@ -190,9 +192,11 @@ _create_server_eio_obj(int fd, srun_job_t *job)
 	info->job = job;
 	info->in_msg = NULL;
 	info->in_remaining = 0;
+	info->in_eof = false;
 	info->msg_queue = list_create(NULL); /* FIXME! Add destructor */
 	info->out_msg = NULL;
 	info->out_remaining = 0;
+	info->out_eof = false;
 
 	eio = (eio_obj_t *)xmalloc(sizeof(eio_obj_t));
 	eio->fd = fd;
@@ -211,14 +215,26 @@ _server_readable(eio_obj_t *obj)
 	int i;
 
 	debug2("Called _server_readable");
+
+	if (s->in_eof) {
+		debug3("  false, eof");
+		return false;
+	}
+
 	for (i = 0; i < s->job->ntasks; i++) {
 		fout = s->job->iostdout[i]->arg;
 		ferr = s->job->iostderr[i]->arg;
-		if (!fout->eof || !ferr->eof)
+		if (fout->eof == false) {
+			debug3("  task %d stdout no eof", i);
+		}
+		if (ferr->eof == false) {
+			debug3("  task %d stderr no eof", i);
+		}
+		if (fout->eof == false || ferr->eof == false)
 			return true;
 	}
 
-	debug("  false");
+	debug3("  false");
 	return false;
 }
 
@@ -237,12 +253,18 @@ _server_read(eio_obj_t *obj, List objs)
 			return SLURM_ERROR;
 		}
 
-		io_hdr_read_fd(obj->fd, &s->header);
+		n = io_hdr_read_fd(obj->fd, &s->header);
+		if (n == 0) { /* got eof on socket read */
+			debug3(  "got eof on _server_read header");
+			s->in_eof = true;
+			list_enqueue(s->job->free_io_buf, s->in_msg);
+			s->in_msg = NULL;
+			return SLURM_SUCCESS;
+		}
 		s->in_remaining = s->header.length;
 		s->in_msg->length = s->header.length;
 		s->in_msg->header = s->header;
 	}
-
 
 	/*
 	 * Read the body
@@ -255,6 +277,13 @@ _server_read(eio_obj_t *obj, List objs)
 				goto again;
 			/* FIXME handle error */
 			return SLURM_ERROR;
+		}
+		if (n == 0) { /* got eof  */
+			debug3(  "got eof on _server_read body");
+			s->in_eof = true;
+			list_enqueue(s->job->free_io_buf, s->in_msg);
+			s->in_msg = NULL;
+			return SLURM_SUCCESS;
 		}
 		debug3("  read %d bytes", n);
 		debug3("\"%s\"", buf);
@@ -465,6 +494,7 @@ static bool _file_writable(eio_obj_t *obj)
 		return true;
 
 	debug3("  false");
+	debug3("  eof is %s", info->eof ? "true" : "false");
 	return false;
 }
 
@@ -558,8 +588,10 @@ static bool _file_readable(eio_obj_t *obj)
 		return false;
 	}
 
-	if (info->eof)
+	if (info->eof) {
+		debug3("  false, eof");
 		return false;
+	}
 	if (obj->shutdown == true) {
 		debug3("  false, shutdown");
 		close(obj->fd);
