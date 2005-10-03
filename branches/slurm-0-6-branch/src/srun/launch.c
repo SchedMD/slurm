@@ -45,6 +45,8 @@
 #include "src/srun/launch.h"
 #include "src/srun/opt.h"
 
+#define MAX_RETRIES 3
+
 extern char **environ;
 
 /* number of active threads */
@@ -79,12 +81,17 @@ static void   _print_launch_msg(launch_tasks_request_msg_t *msg,
 int 
 launch_thr_create(srun_job_t *job)
 {
-	int e;
+	int e, retries = 0;
 	pthread_attr_t attr;
 
 	slurm_attr_init(&attr);
-	if ((e = pthread_create(&job->lid, &attr, &launch, (void *) job))) 
-		slurm_seterrno_ret(e);
+	while ((e = pthread_create(&job->lid, &attr, &launch, (void *) job))) {
+		if (++retries > MAX_RETRIES) {
+			error ("pthread_create error %m");
+			slurm_seterrno_ret(e);
+		}
+		sleep(1);	/* sleep and try again */
+	}
 
 	debug("Started launch thread (%lu)", (unsigned long) job->lid);
 

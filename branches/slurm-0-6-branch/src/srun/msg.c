@@ -64,6 +64,7 @@
 #include "src/common/xstring.h"
 
 #define LAUNCH_WAIT_SEC	 60	/* max wait to confirm launches, sec */
+#define MAX_RETRIES 3		/* pthread_create retries */
 
 static int    tasks_exited     = 0;
 static uid_t  slurm_uid;
@@ -969,7 +970,7 @@ par_thr(void *arg)
 int 
 msg_thr_create(srun_job_t *job)
 {
-	int i;
+	int i, retries = 0;
 	pthread_attr_t attr;
 	int c;
 	
@@ -1025,10 +1026,12 @@ msg_thr_create(srun_job_t *job)
 		      msg_par->msg_pipe[1]); // close write end of pipe
 		slurm_attr_init(&attr);
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-		if ((errno = pthread_create(&job->jtid, &attr, &msg_thr,
-					    (void *)job)))
-			fatal("Unable to start msg to parent thread: %m");
-		
+		while ((errno = pthread_create(&job->jtid, &attr, &msg_thr,
+					    (void *)job))) {
+			if (++retries > MAX_RETRIES)
+				fatal("Can't create pthread");
+			sleep(1);
+		}
 		debug("Started msg to parent server thread (%lu)", 
 		      (unsigned long) job->jtid);
 		
@@ -1047,10 +1050,13 @@ msg_thr_create(srun_job_t *job)
 
 		slurm_attr_init(&attr);
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-		if ((errno = pthread_create(&job->jtid, &attr, &par_thr, 
-					    (void *)job)))
-			fatal("Unable to start parent to msg thread: %m");
-		
+		while ((errno = pthread_create(&job->jtid, &attr, &par_thr, 
+					    (void *)job))) {
+			if (++retries > MAX_RETRIES)
+				fatal("Can't create pthread");
+			sleep(1);	/* sleep and try again */
+		}
+
 		debug("Started parent to msg server thread (%lu)", 
 		      (unsigned long) job->jtid);
 	}
