@@ -280,6 +280,9 @@ typedef struct launch_tasks_request_msg {
 	char     *efname;
 	char     *ifname;
 
+	char     *task_prolog;
+	char     *task_epilog;
+
 	uint32_t   slurmd_debug; /* remote slurmd debug level */
 
 	slurm_cred_t cred;	/* job credential            */

@@ -109,6 +109,8 @@
 #define LONG_OPT_BEGIN    0x119
 #define LONG_OPT_MAIL_TYPE 0x11a
 #define LONG_OPT_MAIL_USER 0x11b
+#define LONG_OPT_TASK_PROLOG 0x11c
+#define LONG_OPT_TASK_EPILOG 0x11d
 
 /*---- forward declarations of static functions  ----*/
 
@@ -519,6 +521,9 @@ static void _opt_default()
 	opt.prolog = slurm_get_srun_prolog();
 	opt.epilog = slurm_get_srun_epilog();
 
+	opt.task_prolog     = NULL;
+	opt.task_epilog     = NULL;
+
 	mode	= MODE_NORMAL;
 
 	/*
@@ -781,6 +786,8 @@ void set_options(const int argc, char **argv, int first)
 		{"begin",            required_argument, 0, LONG_OPT_BEGIN},
 		{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
 		{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
+		{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
+		{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1179,6 +1186,14 @@ void set_options(const int argc, char **argv, int first)
 		case LONG_OPT_MAIL_USER:
 			xfree(opt.mail_user);
 			opt.mail_user = xstrdup(optarg);
+			break;
+		case LONG_OPT_TASK_PROLOG:
+			xfree(opt.task_prolog);
+			opt.task_prolog = xstrdup(optarg);
+			break;
+		case LONG_OPT_TASK_EPILOG:
+			xfree(opt.task_epilog);
+			opt.task_epilog = xstrdup(optarg);
 			break;
 		}
 	}
@@ -1635,6 +1650,8 @@ static void _opt_list()
 	info("epilog         : %s", opt.epilog);
 	info("mail_type      : %s", _print_mail_type(opt.mail_type));
 	info("mail_user      : %s", opt.mail_user);
+	info("task_prolog    : %s", opt.task_prolog);
+	info("task_epilog    : %s", opt.task_epilog);
 	str = print_commandline();
 	info("remote command : `%s'", str);
 	xfree(str);

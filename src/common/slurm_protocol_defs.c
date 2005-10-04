@@ -329,6 +329,9 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 	xfree(msg->ofname);
 	xfree(msg->efname);
 
+	xfree(msg->task_prolog);
+	xfree(msg->task_epilog);
+
 	if (msg->switch_job)
 		switch_free_jobinfo(msg->switch_job);
 
