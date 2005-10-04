@@ -2434,6 +2434,8 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	packstr(msg->ofname, buffer);
 	packstr(msg->efname, buffer);
 	packstr(msg->ifname, buffer);
+	packstr(msg->task_prolog, buffer);
+	packstr(msg->task_epilog, buffer);
 	pack32(msg->slurmd_debug, buffer);
 	pack32_array(msg->global_task_ids,
 		     msg->tasks_to_launch, buffer);
@@ -2472,6 +2474,8 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	safe_unpackstr_xmalloc(&msg->ofname, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg->efname, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg->ifname, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&msg->task_prolog, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&msg->task_epilog, &uint16_tmp, buffer);
 	safe_unpack32(&msg->slurmd_debug, buffer);
 	safe_unpack32_array(&msg->global_task_ids, &uint32_tmp, buffer);
 	if (msg->tasks_to_launch != uint32_tmp)

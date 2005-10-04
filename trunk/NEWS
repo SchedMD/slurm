@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
  -- Added new RPCs for slurmctld REQUEST_TERMINATE_JOB or TASKS, 
     REQUEST_KILL_JOB/TASKS changed to REQUEST_SIGNAL_JOB/TASKS.
  -- Add support for e-mail notification on job state changes.
+ -- Some infrastructure added for task launch controls (slurm.conf:
+    TaskProlog, TaskEpilog, TaskPlugin; srun --task-prolog, --task-epilog).
 
 * Changes in SLURM 0.6.2
 ========================

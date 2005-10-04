@@ -138,6 +138,8 @@ typedef struct srun_options {
 	bool debugger_test;	/* --debugger-test		*/
 	bool test_only;		/* --test-only			*/
 	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/
+	char *task_epilog;	/* --task-epilog=		*/
+	char *task_prolog;	/* --task-prolog=		*/
 
 	/* constraint options */
 	int mincpus;		/* --mincpus=n			*/
@@ -153,7 +155,6 @@ typedef struct srun_options {
 	int  max_exit_timeout;  /* Undocumented                 */
 	int  msg_timeout;       /* Undocumented                 */
 	char *network;		/* --network=			*/
- 
         bool exclusive;         /* --exclusive                  */
 
 	int geometry[SYSTEM_DIMENSIONS]; /* --geometry, -g	*/
