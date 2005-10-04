@@ -254,7 +254,7 @@ static void _node_fail_handler(char *nodelist, srun_job_t *job)
 	info("sending Ctrl-C to remaining tasks");
 	fwd_signal(job, SIGINT);
 	if (job->ioid)
-		eio_handle_signal_wake(job->eio);
+		eio_signal_wakeup(job->eio);
 }
 
 static bool _job_msg_done(srun_job_t *job)
@@ -587,7 +587,7 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 		  || (slurm_mpi_single_task_per_node () 
 			&& (tasks_exited == job->nhosts))) {
 			debug2("All tasks exited");
-			eio_handle_signal_shutdown(job->eio);
+			eio_signal_shutdown(job->eio);
 			update_job_state(job, SRUN_JOB_TERMINATED);
 		}
 	}

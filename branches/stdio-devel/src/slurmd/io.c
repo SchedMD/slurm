@@ -664,7 +664,7 @@ _free_msg(struct io_buf *msg, slurmd_job_t *job)
 		}
 
 		/* Kick the event IO engine */
-		eio_handle_signal_wake(job->eio);
+		eio_signal_wakeup(job->eio);
 	}
 }
 
@@ -698,7 +698,7 @@ io_close_all(slurmd_job_t *job)
 	/* Signal IO thread to close appropriate 
 	 * client connections
 	 */
-	eio_handle_signal_wake(job->eio);
+	eio_signal_wakeup(job->eio);
 }
 
 static void *
@@ -719,7 +719,7 @@ _io_thr(void *arg)
 	pthread_sigmask(SIG_BLOCK, &set, NULL);
 
 	debug("IO handler started pid=%lu", (unsigned long) getpid());
-	io_handle_events(job->eio);
+	eio_handle_mainloop(job->eio);
 	debug("IO handler exited");
 	return (void *)1;
 }
@@ -804,7 +804,7 @@ io_client_connect(slurmd_job_t *job)
 	debug3("Now handling %d IO Client object(s)", list_count(job->clients));
 
 	/* kick IO thread */
-	eio_handle_signal_wake(job->eio);
+	eio_signal_wakeup(job->eio);
 	debug3("  test 3");
 
 	return SLURM_SUCCESS;

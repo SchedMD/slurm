@@ -90,7 +90,7 @@ void eio_handle_destroy(eio_t eio)
 	xfree(eio);
 }
 
-int eio_handle_signal_shutdown(eio_t eio)
+int eio_signal_shutdown(eio_t eio)
 {
 	char c = 1;
 	if (write(eio->fds[1], &c, sizeof(char)) != 1) 
@@ -98,7 +98,7 @@ int eio_handle_signal_shutdown(eio_t eio)
 	return 0;
 }
 
-int eio_handle_signal_wake(eio_t eio)
+int eio_signal_wakeup(eio_t eio)
 {
 	char c = 0;
 	if (write(eio->fds[1], &c, sizeof(char)) != 1) 
@@ -133,7 +133,7 @@ static int _eio_clear(eio_t eio)
 	return 0;
 }
 
-int io_handle_events(eio_t eio)
+int eio_handle_mainloop(eio_t eio)
 {
 	xassert (eio != NULL);
 	xassert (eio->magic == EIO_MAGIC);

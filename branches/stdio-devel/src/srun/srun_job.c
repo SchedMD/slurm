@@ -262,7 +262,7 @@ job_force_termination(srun_job_t *job)
 		update_job_state(job, SRUN_JOB_FORCETERM);
 	}
 
-	eio_handle_signal_wake(job->eio);
+	eio_signal_wakeup(job->eio);
 }
 
 

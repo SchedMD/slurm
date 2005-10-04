@@ -696,7 +696,7 @@ _io_thr_internal(void *job_arg)
 	_set_listensocks_nonblocking(job);
 
 	/* start the eio engine */
-	io_handle_events(job->eio);
+	eio_handle_mainloop(job->eio);
 
 	debug("IO thread exiting");
 
@@ -915,7 +915,7 @@ io_node_fail(char *nodelist, srun_job_t *job)
 		}
 	}
 
-	eio_handle_signal_wake(job->eio);
+	eio_signal_wakeup(job->eio);
 	hostlist_destroy(fail_list);
 	return SLURM_SUCCESS;
 }

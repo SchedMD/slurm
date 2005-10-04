@@ -586,7 +586,7 @@ _job_mgr(slurmd_job_t *job)
 	 * Wait for io thread to complete (if there is one)
 	 */
 	if (!job->spawn_task) {
-		eio_handle_signal_shutdown(job->eio);
+		eio_signal_shutdown(job->eio);
 		_wait_for_io(job);
 	}
 

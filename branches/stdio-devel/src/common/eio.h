@@ -56,6 +56,9 @@ struct eio_obj {
 	bool shutdown;
 };
 
+eio_t eio_handle_create(List eio_obj_list);
+void eio_handle_destroy(eio_t eio);
+
 /* This routine will watch for activtiy on the fd's as long
  * as obj->readable() or obj->writable() returns >0
  *
@@ -64,12 +67,10 @@ struct eio_obj {
  *
  * returns -1 on error.
  */
-int io_handle_events(eio_t eio);
+int eio_handle_mainloop(eio_t eio);
 
-eio_t eio_handle_create(List eio_obj_list);
-void eio_handle_destroy(eio_t eio);
-int eio_handle_signal_wake(eio_t eio);
-int eio_handle_signal_shutdown(eio_t eio);
+int eio_signal_wakeup(eio_t eio);
+int eio_signal_shutdown(eio_t eio);
 
 eio_obj_t *eio_obj_create(int fd, struct io_operations *ops, void *arg);
 void eio_obj_destroy(eio_obj_t *obj);
