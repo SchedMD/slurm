@@ -166,6 +166,12 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->state_save_location);
 	fprintf(out, "SwitchType        = %s\n",
 		slurm_ctl_conf_ptr->switch_type);
+	fprintf(out, "TaskEpilog        = %s\n",
+		slurm_ctl_conf_ptr->task_epilog);
+	fprintf(out, "TaskPlugin        = %s\n",
+		 slurm_ctl_conf_ptr->task_plugin);
+	fprintf(out, "TaskProlog        = %s\n",
+		slurm_ctl_conf_ptr->task_prolog);
 	fprintf(out, "TmpFS             = %s\n", 
 		slurm_ctl_conf_ptr->tmp_fs);
 	fprintf(out, "WaitTime          = %u\n", 

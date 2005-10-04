@@ -339,6 +339,9 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->state_save_location = xstrdup(slurmctld_conf.
 					state_save_location);
 	conf_ptr->switch_type         = xstrdup(slurmctld_conf.switch_type);
+	conf_ptr->task_epilog         = xstrdup(slurmctld_conf.task_epilog);
+	conf_ptr->task_prolog         = xstrdup(slurmctld_conf.task_prolog);
+	conf_ptr->task_plugin         = xstrdup(slurmctld_conf.task_plugin);
 	conf_ptr->tmp_fs              = xstrdup(slurmctld_conf.tmp_fs);
 	conf_ptr->wait_time           = slurmctld_conf.wait_time;
 	conf_ptr->srun_prolog         = xstrdup(slurmctld_conf.srun_prolog);

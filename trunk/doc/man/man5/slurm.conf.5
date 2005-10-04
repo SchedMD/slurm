@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "September 2005" "slurm.conf 0.6" "Slurm configuration file"
+.TH "slurm.conf" "5" "October 2005" "slurm.conf 0.7" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -450,6 +450,22 @@ All SLURM daemons, commands and running jobs must be restarted for a
 change in \fBSwitchType\fR to take effect.
 If running jobs exist at the time \fBslurmctld\fR is restarted with a new 
 value of \fBSwitchType\fR, records of all jobs in any state may be lost.
+.TP
+\fBTaskEpilog\fR
+Fully qualified pathname of a program to be execute as user root after
+termination of each task.
+.TP
+\fBTaskPlugin\fR
+Identifies the type of task launch plugin, typically used to provide 
+resource management within a node (e.g. pinning tasks to specific 
+processors).
+Acceptable values include
+"task/none" for systems requiring no special handling.
+The default value is "task/none".
+.TP
+\fBTaskProlog\fR
+Fully qualified pathname of a program to be execute as user root prior to 
+initiation of each task.
 .TP
 \fBTmpFS\fR
 Fully qualified pathname of the file system available to user jobs for 

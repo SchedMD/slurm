@@ -190,15 +190,27 @@ uint16_t slurm_get_wait_time(void);
 
 /* slurm_get_srun_prolog
  * return the name of the srun prolog program
- * RET char *   - name of prolog program
+ * RET char *   - name of prolog program, must be xfreed by caller
  */
 char *slurm_get_srun_prolog(void);
 
 /* slurm_get_srun_epilog
  * return the name of the srun epilog program
- * RET char *   - name of epilog program
+ * RET char *   - name of epilog program, must be xfreed by caller
  */
 char *slurm_get_srun_epilog(void);
+
+/* slurm_get_task_epilog
+ * RET task_epilog name, must be xfreed by caller */
+char *slurm_get_task_epilog(void);
+
+/* slurm_get_task_prolog
+ * RET task_prolog name, must be xfreed by caller */
+char *slurm_get_task_prolog(void);
+
+/* slurm_get_task_plugin
+ * RET task_plugin name, must be xfreed by caller */
+char *slurm_get_task_plugin(void);
 
 /**********************************************************************\
  * general message management functions used by slurmctld, slurmd

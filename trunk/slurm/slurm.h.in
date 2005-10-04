@@ -573,6 +573,9 @@ typedef struct slurm_ctl_conf {
 	char *state_save_location;/* pathname of slurmctld state save
 				 * directory */
 	char *switch_type;	/* switch or interconnect type */
+	char *task_epilog;	/* pathname of task launch epilog */
+	char *task_plugin;	/* task launch plugin */
+	char *task_prolog;	/* pathname of task launch prolog */
 	char *tmp_fs;		/* pathname of temporary file system */
 	uint16_t wait_time;	/* default job --wait time */
 	char *job_credential_private_key;	/* path to private key */

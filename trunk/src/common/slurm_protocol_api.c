@@ -412,7 +412,7 @@ uint16_t slurm_get_wait_time(void)
 
 /* slurm_get_srun_prolog
  * return the name of the srun prolog program
- * RET char *   - name of prolog program
+ * RET char *   - name of prolog program, must be xfreed by caller
  */
 char *slurm_get_srun_prolog(void)
 {
@@ -426,7 +426,7 @@ char *slurm_get_srun_prolog(void)
 
 /* slurm_get_srun_epilog
  * return the name of the srun epilog program
- * RET char *   - name of epilog program
+ * RET char *   - name of epilog program, must be xfreed by caller
  */
 char *slurm_get_srun_epilog(void)
 {
@@ -438,6 +438,41 @@ char *slurm_get_srun_epilog(void)
 	return epilog;
 }
 
+/* slurm_get_task_epilog
+ * RET task_epilog name, must be xfreed by caller */
+char *slurm_get_task_epilog(void)
+{
+        char *task_epilog;
+
+        _lock_update_config();
+        task_epilog = xstrdup(slurmctld_conf.task_epilog);
+        slurm_mutex_unlock(&config_lock);
+        return task_epilog;
+}
+
+/* slurm_get_task_prolog
+ * RET task_prolog name, must be xfreed by caller */
+char *slurm_get_task_prolog(void)
+{
+        char *task_prolog;
+                                                                                
+        _lock_update_config();
+        task_prolog = xstrdup(slurmctld_conf.task_prolog);
+        slurm_mutex_unlock(&config_lock);
+        return task_prolog;
+}
+
+/* slurm_get_task_plugin
+ * RET task_plugin name, must be xfreed by caller */
+char *slurm_get_task_plugin(void)
+{
+        char *task_plugin;
+
+        _lock_update_config();
+        task_plugin = xstrdup(slurmctld_conf.task_plugin);
+        slurm_mutex_unlock(&config_lock);
+        return task_plugin;
+}
 /* Change general slurm communication errors to slurmctld specific errors */
 static void _remap_slurmctld_errno(void)
 {

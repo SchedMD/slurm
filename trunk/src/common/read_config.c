@@ -394,6 +394,9 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->slurmd_timeout		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->state_save_location);
 	xfree (ctl_conf_ptr->switch_type);
+	xfree (ctl_conf_ptr->task_epilog);
+	xfree (ctl_conf_ptr->task_prolog);
+	xfree (ctl_conf_ptr->task_plugin);
 	xfree (ctl_conf_ptr->tmp_fs);
 	ctl_conf_ptr->wait_time			= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->srun_prolog);
@@ -450,6 +453,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	char *job_credential_private_key = NULL;
 	char *job_credential_public_certificate = NULL;
 	char *srun_prolog = NULL, *srun_epilog = NULL;
+	char *task_prolog = NULL, *task_epilog = NULL, *task_plugin = NULL;
 	long first_job_id = -1;
 
 	error_code = slurm_parser (in_line,
@@ -459,8 +463,9 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"BackupController=", 's', &backup_controller, 
 		"ControlAddr=", 's', &control_addr, 
 		"ControlMachine=", 's', &control_machine, 
-		/* SrunEpilog MUST come before Epilog */
+		/* SrunEpilog and TaskEpilog MUST come before Epilog */
 		"SrunEpilog=", 's', &srun_epilog,
+		"TaskEpilog=", 's', &task_epilog,
 		"Epilog=", 's', &epilog, 
 		"FastSchedule=", 'l', &fast_schedule,
 		"FirstJobId=", 'l', &first_job_id,
@@ -483,8 +488,9 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"MpiDefault=", 's', &mpi_default,
 		"PluginDir=", 's', &plugindir,
 		"ProctrackType=", 's', &proctrack_type,
-		/* SrunProlog MUST come before Prolog */
+		/* SrunProlog and TaskProlog  MUST come before Prolog */
 		"SrunProlog=", 's', &srun_prolog,
+		"TaskProlog=", 's', &task_prolog,
 		"Prolog=", 's', &prolog,
 		"PropagateResourceLimitsExcept=", 's',&propagate_rlimits_except,
 		"PropagateResourceLimits=",       's',&propagate_rlimits,
@@ -508,6 +514,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"SlurmdTimeout=", 'l', &slurmd_timeout,
 		"StateSaveLocation=", 's', &state_save_location,
 		"SwitchType=", 's', &switch_type,
+		"TaskPlugin=", 's', &task_plugin,
 		"TmpFS=", 's', &tmp_fs,
 		"WaitTime=", 'l', &wait_time,
 		"END");
@@ -971,6 +978,30 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 			xfree (ctl_conf_ptr->switch_type);
 		}
 		ctl_conf_ptr->switch_type = switch_type;
+	}
+
+	if ( task_epilog ) {
+		if ( ctl_conf_ptr->task_epilog ) {
+			error (MULTIPLE_VALUE_MSG, "TaskEpilog");
+			xfree (ctl_conf_ptr->task_epilog);
+		}
+		ctl_conf_ptr->task_epilog = task_epilog;
+	}
+
+	if ( task_prolog ) {
+		if ( ctl_conf_ptr->task_prolog ) {
+			error (MULTIPLE_VALUE_MSG, "TaskProlog");
+			xfree (ctl_conf_ptr->task_prolog);
+		}
+		ctl_conf_ptr->task_prolog = task_prolog;
+	}
+
+	if ( task_plugin ) {
+		if ( ctl_conf_ptr->task_plugin ) {
+			error (MULTIPLE_VALUE_MSG, "TaskPlugin");
+			xfree (ctl_conf_ptr->task_plugin);
+		}
+		 ctl_conf_ptr->task_plugin = task_plugin;
 	}
 
 	if ( tmp_fs ) {
