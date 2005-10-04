@@ -949,7 +949,8 @@ void agent_purge(void)
 	slurm_mutex_lock(&retry_mutex);
 	list_destroy(retry_list);
 	retry_list = NULL;
-	list_destroy(mail_list);
+	if (mail_list)
+		list_destroy(mail_list);
 	mail_list = NULL;
 	slurm_mutex_unlock(&retry_mutex);
 }
