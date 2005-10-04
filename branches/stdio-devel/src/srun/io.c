@@ -62,7 +62,6 @@ static int	_close_stream(int *fd, FILE *out, int tasknum);
 static ssize_t	_readx(int fd, char *buf, size_t maxbytes);
 static int      _read_io_init_msg(int fd, srun_job_t *job, char *host);
 static int      _wid(int n);
-static struct io_operations *_ops_copy(struct io_operations *ops);
 
 /**********************************************************************
  * Listening socket declarations
@@ -107,7 +106,7 @@ struct server_io_info {
 };
 
 /**********************************************************************
- * Output file declarations
+ * File write declarations
  **********************************************************************/
 static bool _file_writable(eio_obj_t *obj);
 static int _file_write(eio_obj_t *obj, List objs);
@@ -128,7 +127,7 @@ struct file_write_info {
 };
 
 /**********************************************************************
- * Input file declarations
+ * File read declarations
  **********************************************************************/
 static bool _file_readable(eio_obj_t *obj);
 static int _file_read(eio_obj_t *obj, List objs);
@@ -198,11 +197,7 @@ _create_server_eio_obj(int fd, srun_job_t *job)
 	info->out_remaining = 0;
 	info->out_eof = false;
 
-	eio = (eio_obj_t *)xmalloc(sizeof(eio_obj_t));
-	eio->fd = fd;
-	eio->arg = (void *)info;
-	eio->ops = _ops_copy(&server_ops);
-	eio->shutdown = false;
+	eio = eio_obj_create(fd, &server_ops, (void *)info);
 
 	return eio;
 }
@@ -393,7 +388,7 @@ again:
 }
 
 /**********************************************************************
- * Output file functions
+ * File write functions
  **********************************************************************/
 extern eio_obj_t *
 create_file_write_eio_obj(int fd, srun_job_t *job)
@@ -409,11 +404,7 @@ create_file_write_eio_obj(int fd, srun_job_t *job)
 	info->out_remaining = 0;
 	info->eof = false;
 
-	eio = (eio_obj_t *)xmalloc(sizeof(eio_obj_t));
-	eio->fd = fd;
-	eio->arg = (void *)info;
-	eio->ops = _ops_copy(&file_write_ops);
-	eio->shutdown = false;
+	eio = eio_obj_create(fd, &file_write_ops, (void *)info);
 
 	return eio;
 }
@@ -550,7 +541,7 @@ static int _file_write(eio_obj_t *obj, List objs)
 }
 
 /**********************************************************************
- * Input file functions
+ * File read functions
  **********************************************************************/
 extern eio_obj_t *
 create_file_read_eio_obj(int fd, srun_job_t *job,
@@ -568,11 +559,7 @@ create_file_read_eio_obj(int fd, srun_job_t *job,
 	info->header.ltaskid = (uint16_t)-1;
 	info->eof = false;
 
-	eio = (eio_obj_t *)xmalloc(sizeof(eio_obj_t));
-	eio->fd = fd;
-	eio->arg = (void *)info;
-	eio->ops = _ops_copy(&file_read_ops);
-	eio->shutdown = false;
+	eio = eio_obj_create(fd, &file_read_ops, (void *)info);
 
 	return eio;
 }
@@ -730,28 +717,13 @@ _fopen(char *filename)
 }
 
 
-static struct io_operations *
-_ops_copy(struct io_operations *ops)
-{
-	struct io_operations *ret = xmalloc(sizeof(*ops));
-	/* 
-	 * Copy initial client_ops 
-	 */
-	*ret = *ops;
-	return ret;
-}
-
-
 static eio_obj_t *
 _create_listensock_eio(int fd, srun_job_t *job)
 {
 	eio_obj_t *eio = NULL;
 
-	eio = (eio_obj_t *)xmalloc(sizeof(eio_obj_t));
-	eio->fd = fd;
-	eio->arg = (void *)job;
-	eio->ops = _ops_copy(&listening_socket_ops);
-	eio->shutdown = false;
+	eio = eio_obj_create(fd, &listening_socket_ops, (void *)job);
+
 	return eio;
 }
 

@@ -30,8 +30,7 @@
 #include "src/common/list.h"
 #include "src/common/macros.h"
 
-typedef struct io_obj io_obj_t;
-typedef struct io_obj eio_obj_t;
+typedef struct eio_obj eio_obj_t;
 
 typedef struct eio_handle_components * eio_t;
 
@@ -42,15 +41,15 @@ typedef struct eio_handle_components * eio_t;
  *
  */
 struct io_operations {
-	bool (*readable    )(io_obj_t *);       
-	bool (*writable    )(io_obj_t *);      
-	int  (*handle_read )(io_obj_t *, List);
-	int  (*handle_write)(io_obj_t *, List);
-	int  (*handle_error)(io_obj_t *, List);
-	int  (*handle_close)(io_obj_t *, List);
+	bool (*readable    )(eio_obj_t *);       
+	bool (*writable    )(eio_obj_t *);      
+	int  (*handle_read )(eio_obj_t *, List);
+	int  (*handle_write)(eio_obj_t *, List);
+	int  (*handle_error)(eio_obj_t *, List);
+	int  (*handle_close)(eio_obj_t *, List);
 };
 
-struct io_obj {
+struct eio_obj {
 	int fd;                           /* fd to operate on                */
 	void *arg;                        /* application-specific data       */
 	struct io_operations *ops;        /* pointer to ops struct for obj   */
@@ -71,5 +70,8 @@ eio_t eio_handle_create(List eio_obj_list);
 void eio_handle_destroy(eio_t eio);
 int eio_handle_signal_wake(eio_t eio);
 int eio_handle_signal_shutdown(eio_t eio);
+
+eio_obj_t *eio_obj_create(int fd, struct io_operations *ops, void *arg);
+void eio_obj_destroy(eio_obj_t *obj);
 
 #endif /* !_EIO_H */

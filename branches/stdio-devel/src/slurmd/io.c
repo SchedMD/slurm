@@ -63,35 +63,6 @@
 #include "src/slurmd/fname.h"
 #include "src/slurmd/slurmd.h"
 
-typedef enum slurmd_fd_type {
-	TASK_STDERR_FD = 0,
-	TASK_STDOUT_FD,
-	TASK_STDIN_FD,
-	CLIENT_SOCKET,
-} slurmd_fd_type_t;
-
-static char *_io_str[] = 
-{
-	"task stderr",
-	"task stdout",
-	"task stdin",
-	"client socket",
-};
-
-enum error_type {
-	E_NONE,
-	E_WRITE,
-	E_READ,
-	E_POLL
-};
-
-struct error_state {
-	enum error_type e_type;
-	int             e_last;
-	int             e_count;
-	time_t          e_time;
-};
-
 struct incoming_client_info {
 	struct slurm_io_header header;
 	struct io_buf *msg;
@@ -105,6 +76,43 @@ struct outgoing_fd_info {
 	int32_t remaining;
 };
 
+/**********************************************************************
+ * IO client socket declarations
+ **********************************************************************/
+static bool _client_readable(eio_obj_t *);
+static bool _client_writable(eio_obj_t *);
+static int  _client_read(eio_obj_t *, List);
+static int  _client_write(eio_obj_t *, List);
+
+struct io_operations client_ops = {
+        readable:	&_client_readable,
+	writable:	&_client_writable,
+	handle_read:	&_client_read,
+	handle_write:	&_client_write,
+};
+
+struct client_io_info {
+#ifndef NDEBUG
+#define CLIENT_IO_MAGIC  0x10102
+	int                   magic;
+#endif
+	slurmd_job_t    *job;		 /* pointer back to job data   */
+
+	struct incoming_client_info in;
+	struct outgoing_fd_info out;
+};
+
+/**********************************************************************
+ * Task write declarations
+ **********************************************************************/
+static bool _task_writable(eio_obj_t *);
+static int  _task_write(eio_obj_t *, List);
+
+struct io_operations task_in_ops = {
+	writable:	&_task_writable,
+	handle_write:	&_task_write,
+};
+
 struct task_in_info {
 #ifndef NDEBUG
 #define TASK_IN_MAGIC  0x10103
@@ -113,6 +121,17 @@ struct task_in_info {
 	slurmd_job_t    *job;		 /* pointer back to job data   */
 
 	struct outgoing_fd_info out;
+};
+
+/**********************************************************************
+ * Task read declarations
+ **********************************************************************/
+static bool _task_readable(eio_obj_t *);
+static int  _task_read(eio_obj_t *, List);
+
+struct io_operations task_out_ops = {
+        readable:	&_task_readable,
+	handle_read:	&_task_read,
 };
 
 struct task_out_info {
@@ -129,98 +148,434 @@ struct task_out_info {
 	bool		 eof_msg_sent;
 };
 
-struct client_io_info {
-#ifndef NDEBUG
-#define CLIENT_IO_MAGIC  0x10102
-	int                   magic;
-#endif
-	slurmd_job_t    *job;		 /* pointer back to job data   */
-
-	struct incoming_client_info in;
-	struct outgoing_fd_info out;
-};
-
-struct io_info {
-	/* FIXME! Obsolete struct */
-};
-
-static void   _fatal_cleanup(void *);
-static int    find_obj(void *obj, void *key);
-/* static int    find_fd(void *obj, void *key); */
+/**********************************************************************
+ * General declarations
+ **********************************************************************/
 static int    _task_init_pipes(slurmd_task_info_t *t);
 static int    _create_task_eio_objs(slurmd_job_t *);
 static void * _io_thr(void *);
 static int    _send_io_init_msg(int sock, srun_key_t *key, int nodeid);
-static void   _io_connect_objs(io_obj_t *, io_obj_t *);
 static int    _init_pipes(slurmd_job_t *job);
-static int    _shutdown_task_obj(struct io_info *t);
 static void   _send_eof_msg(struct task_out_info *out);
 static struct io_buf *_task_build_message(struct task_out_info *out,
 					  slurmd_job_t *job, cbuf_t cbuf);
-
-static eio_obj_t *_eio_obj_create(int fd, void *arg, struct io_operations *ops);
-static struct io_obj  * _io_obj_create(int fd, void *arg);
-static struct io_info * _io_info_create(uint32_t id);
 static struct io_obj  * _io_obj(slurmd_job_t *, slurmd_task_info_t *, int, int);
 static void           * _io_thr(void *arg);
 
-static void   _clear_error_state(struct io_info *io);
-static int    _update_error_state(struct io_info *, enum error_type, int);
+/**********************************************************************
+ * IO client socket functions
+ **********************************************************************/
+static bool 
+_client_readable(eio_obj_t *obj)
+{
+	struct client_io_info *client = (struct client_io_info *) obj->arg;
 
-static struct io_operations * _ops_copy(struct io_operations *ops);
+	debug3("Called _client_readable");
+	xassert(client->magic == CLIENT_IO_MAGIC);
 
-/* Slurmd I/O objects:
- * N   task   stderr, stdout objs (read-only)
- * N*M client stderr, stdout objs (read-write) (possibly a file)
- * N   task   stdin          objs (write only) (possibly a file)
+	if (client->in.eof) {
+		debug3("  false");
+		return false;
+	}
+
+	if (obj->shutdown) {
+		debug3("  false, shutdown");
+		shutdown(obj->fd, SHUT_RD);
+		client->in.eof = true;
+	}
+
+	if (client->in.msg != NULL
+	    || !list_is_empty(client->job->free_io_buf))
+		return true;
+
+	debug3("  false");
+	return false;
+}
+
+static bool 
+_client_writable(eio_obj_t *obj)
+{
+	struct client_io_info *client = (struct client_io_info *) obj->arg;
+
+	debug3("Called _client_writable");
+	xassert(client->magic == CLIENT_IO_MAGIC);
+
+	if (client->out.msg != NULL)
+		debug3("  client->out.msg != NULL");
+
+	if (!list_is_empty(client->out.msg_queue))
+		debug3("  client->out.msg_queue queue length = %d",
+		       list_count(client->out.msg_queue));
+
+	if (client->out.msg != NULL
+	    || !list_is_empty(client->out.msg_queue))
+		return true;
+
+	debug3("  false");
+	return false;
+}
+
+static int 
+_client_read(eio_obj_t *obj, List objs)
+{
+	struct client_io_info *client = (struct client_io_info *) obj->arg;
+	struct incoming_client_info *in;
+	void *buf;
+	int n;
+
+	debug2("Entering _client_read");
+	xassert(client->magic == CLIENT_IO_MAGIC);
+
+	in = &client->in;
+	/*
+	 * Read the header, if a message read is not already in progress
+	 */
+	if (in->msg == NULL) {
+		in->msg = list_dequeue(client->job->free_io_buf);
+		if (in->msg == NULL) {
+			debug3("  _client_read free_io_buf is empty");
+			return SLURM_SUCCESS;
+		}
+		n = io_hdr_read_fd(obj->fd, &in->header);
+		if (n == 0) { /* got eof on socket read */
+			debug3("  got eof on _client_read header");
+			in->eof = true;
+			list_enqueue(client->job->free_io_buf, in->msg);
+			in->msg = NULL;
+			return SLURM_SUCCESS;
+		}
+		in->remaining = in->header.length;
+		in->msg->length = in->header.length;
+	}
+
+	/*
+	 * Read the body
+	 */
+	if (in->header.length == 0) { /* zero length is an eof message */
+		debug3("  got stdin eof message!");
+	} else {
+		buf = in->msg->data + (in->msg->length - in->remaining);
+	again:
+		if ((n = read(obj->fd, buf, in->remaining)) < 0) {
+			if (errno == EINTR)
+				goto again;
+			/* FIXME handle error */
+			return SLURM_ERROR;
+		}
+		if (n == 0) { /* got eof */
+			debug3("  got eof on _client_read body");
+			in->eof = true;
+			list_enqueue(client->job->free_io_buf, in->msg);
+			in->msg = NULL;
+			return SLURM_SUCCESS;
+		}
+		debug3("  read %d bytes", n);
+		debug3("\"%s\"", buf);
+		in->remaining -= n;
+		if (in->remaining > 0)
+			return SLURM_SUCCESS;
+	}
+
+	/*
+	 * Route the message to its destination(s)
+	 */
+	if (in->header.type != SLURM_IO_STDIN
+	    && in->header.type != SLURM_IO_ALLSTDIN) {
+		error("Input in->header.type is not valid!");
+		in->msg = NULL;
+		return SLURM_ERROR;
+	} else {
+		int i;
+		slurmd_task_info_t *task;
+		struct task_in_info *io;
+
+		in->msg->ref_count = 0;
+		if (in->header.type == SLURM_IO_ALLSTDIN) {
+			for (i = 0; i < client->job->ntasks; i++) {
+				task = client->job->task[i];
+				io = (struct task_in_info *)(task->in->arg);
+				list_enqueue(io->out.msg_queue, in->msg);
+				in->msg->ref_count++;
+			}
+		} else {
+			for (i = 0; i < client->job->ntasks; i++) {
+				task = client->job->task[i];
+				io = (struct task_in_info *)task->in->arg;
+				if (task->gtid != in->header.gtaskid)
+					continue;
+				list_enqueue(io->out.msg_queue, in->msg);
+				in->msg->ref_count++;
+				break;
+			}
+		}
+	}
+	client->in.msg = NULL;
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Write outgoing packed messages to the client socket.
  */
+static int
+_client_write(eio_obj_t *obj, List objs)
+{
+	struct client_io_info *client = (struct client_io_info *) obj->arg;
+	struct outgoing_fd_info *out;
+	void *buf;
+	int n;
 
-static bool _task_readable(io_obj_t *);
-static bool _task_writable(io_obj_t *);
-static int  _task_read(io_obj_t *, List);
-static int  _task_write(io_obj_t *, List);
-static int  _task_error(io_obj_t *, List);
-static bool _client_readable(io_obj_t *);
-static bool _client_writable(io_obj_t *);
-static int  _client_read(io_obj_t *, List);
-static int  _client_write(io_obj_t *, List);
-static int  _client_error(io_obj_t *, List);
-static int  _obj_close(io_obj_t *, List);
+	xassert(client->magic == CLIENT_IO_MAGIC);
 
-/* Task Output operations (TASK_STDOUT, TASK_STDERR)
- * These objects are never writable --
- * therefore no need for writeable and handle_write methods
+	debug2("Entering _client_write");
+	out = &client->out;
+
+	/*
+	 * If we aren't already in the middle of sending a message, get the
+	 * next message from the queue.
+	 */
+	if (out->msg == NULL) {
+		out->msg = list_dequeue(out->msg_queue);
+		if (out->msg == NULL) {
+			debug3("_client_write: nothing in the queue");
+			return SLURM_SUCCESS;
+		}
+		debug3("  dequeue successful, out->msg->length = %d", out->msg->length);
+		out->remaining = out->msg->length;
+	}
+
+	debug3("  out->remaining = %d", out->remaining); 
+
+	/*
+	 * Write message to socket.
+	 */
+	buf = out->msg->data + (out->msg->length - out->remaining);
+again:
+	if ((n = write(obj->fd, buf, out->remaining)) < 0) {
+		if (errno == EINTR)
+			goto again;
+		/* FIXME handle error */
+		return SLURM_ERROR;
+	}
+	debug3("Wrote %d bytes to socket", n);
+	out->remaining -= n;
+	if (out->remaining > 0)
+		return SLURM_SUCCESS;
+
+	_free_msg(out->msg, client->job);
+	out->msg = NULL;
+
+	return SLURM_SUCCESS;
+}
+
+/**********************************************************************
+ * Task write functions
+ **********************************************************************/
+/*
+ * Create an eio_obj_t for handling a task's stdin traffic
  */
-struct io_operations task_out_ops = {
-        readable:	&_task_readable,
-	handle_read:	&_task_read,
-        handle_error:	&_task_error,
-	handle_close:   &_obj_close
-};
+static eio_obj_t *
+_create_task_in_eio(int fd, slurmd_job_t *job)
+{
+	struct task_in_info *in = NULL;
+	eio_obj_t *eio = NULL;
 
-/* Task Input operations (TASK_STDIN)
- * input objects are never readable
- */
-struct io_operations task_in_ops = {
-	writable:	&_task_writable,
-	handle_write:	&_task_write,
-	handle_error:	&_task_error,
-	handle_close:   &_obj_close
-};
+	in = (struct task_in_info *)xmalloc(sizeof(struct task_in_info));
+#ifndef NDEBUG
+	in->magic = TASK_IN_MAGIC;
+#endif
+	in->job = job;
+	in->out.msg_queue = list_create(NULL); /* FIXME! Add destructor */
+	in->out.msg = NULL;
+	in->out.remaining = 0;
 
-/* Normal client operations (CLIENT_STDOUT, CLIENT_STDERR, CLIENT_STDIN)
- * these methods apply to clients which are considered
- * "connected" i.e. in the case of srun, they've read
- * the so-called IO-header data
+	eio = eio_obj_create(fd, &task_in_ops, (void *)in);
+
+	return eio;
+}
+
+static bool 
+_task_writable(eio_obj_t *obj)
+{
+	struct task_in_info *in = (struct task_in_info *) obj->arg;
+	struct outgoing_fd_info *out = &in->out;
+
+	debug3("Called _task_writable");
+
+	if (out->msg != NULL || list_count(out->msg_queue) > 0)
+		return true;
+
+	debug3("  false (list_count = %d)", list_count(out->msg_queue));
+	return false;
+}
+
+static int
+_task_write(eio_obj_t *obj, List objs)
+{
+	struct task_in_info *in = (struct task_in_info *) obj->arg;
+	struct outgoing_fd_info *out;
+	void *buf;
+	int n;
+
+	xassert(in->magic == TASK_IN_MAGIC);
+
+	out = &in->out;
+
+	/*
+	 * If we aren't already in the middle of sending a message, get the
+	 * next message from the queue.
+	 */
+	if (out->msg == NULL) {
+		out->msg = list_dequeue(out->msg_queue);
+		if (out->msg == NULL) {
+			debug3("_task_write: nothing in the queue");
+			return SLURM_SUCCESS;
+		}
+		if (out->msg->length == 0) { /* eof message */
+			close(obj->fd);
+			obj->fd = -1;
+			_free_msg(out->msg, in->job);
+			out->msg = NULL;
+			return SLURM_SUCCESS;
+		}
+		out->remaining = out->msg->length;
+	}
+
+	/*
+	 * Write message to socket.
+	 */
+	buf = out->msg->data + (out->msg->length - out->remaining);
+again:
+	if ((n = write(obj->fd, buf, out->remaining)) < 0) {
+		if (errno == EINTR)
+			goto again;
+		/* FIXME handle error */
+		return SLURM_ERROR;
+	}
+	out->remaining -= n;
+	if (out->remaining > 0)
+		return SLURM_SUCCESS;
+
+	_free_msg(out->msg, in->job);
+	out->msg = NULL;
+
+	return SLURM_SUCCESS;
+}
+
+/**********************************************************************
+ * Task read functions
+ **********************************************************************/
+/*
+ * Create an eio_obj_t for handling a task's stdout or stderr traffic
  */
-struct io_operations client_ops = {
-        readable:	&_client_readable,
-	writable:	&_client_writable,
-	handle_read:	&_client_read,
-	handle_write:	&_client_write,
-	handle_error:	&_client_error,
-	handle_close:   &_obj_close
-};
+static eio_obj_t *
+_create_task_out_eio(int fd, uint16_t type,
+		     slurmd_job_t *job, slurmd_task_info_t *task)
+{
+	struct task_out_info *out = NULL;
+	eio_obj_t *eio = NULL;
+
+	out = (struct task_out_info *)xmalloc(sizeof(struct task_out_info));
+#ifndef NDEBUG
+	out->magic = TASK_OUT_MAGIC;
+#endif
+	out->type = type;
+	out->gtaskid = task->gtid;
+	out->ltaskid = task->id;
+	out->job = job;
+	out->buf = cbuf_create(MAX_MSG_LEN, MAX_MSG_LEN*16);
+	out->eof = false;
+	out->eof_msg_sent = false;
+	if (cbuf_opt_set(out->buf, CBUF_OPT_OVERWRITE, CBUF_NO_DROP) == -1)
+		error("setting cbuf options");
+
+	eio = eio_obj_create(fd, &task_out_ops, (void *)out);
+
+	return eio;
+}
+
+static bool 
+_task_readable(eio_obj_t *obj)
+{
+	struct task_out_info *out = (struct task_out_info *)obj->arg;
+
+	debug3("Called _task_readable, task %d, %s", out->gtaskid,
+	       out->type == SLURM_IO_STDOUT ? "STDOUT" : "STDERR");
+
+	if (out->eof_msg_sent) {
+		debug3("  false, eof message sent");
+		return false;
+	}
+	if (cbuf_free(out->buf) > 0) {
+		debug3("  cbuf_free = %d", cbuf_free(out->buf));
+		return true;
+	}
+
+	debug3("  false");
+	return false;
+}
+
+/*
+ * Read output (stdout or stderr) from a task into a cbuf.  The cbuf
+ * allows whole lines to be packed into messages if line buffering
+ * is requested.
+ */
+static int
+_task_read(eio_obj_t *obj, List objs)
+{
+	struct task_out_info *out = (struct task_out_info *)obj->arg;
+	struct client_io_info *client;
+	struct io_buf *msg = NULL;
+	eio_obj_t *eio;
+	ListIterator clients;
+	int len;
+	int rc = -1;
+
+	xassert(out->magic == TASK_OUT_MAGIC);
+
+	debug2("Entering _task_read");
+	len = cbuf_free(out->buf);
+	if (len > 0) {
+again:
+		if ((rc = cbuf_write_from_fd(out->buf, obj->fd, len, NULL))
+		    < 0) {
+			if (errno == EINTR)
+				goto again;
+			if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
+				error("_task_read returned EAGAIN");
+				return SLURM_SUCCESS;
+			}
+			/* FIXME add error message */
+			debug3("  error in _task_read");
+			return SLURM_ERROR;
+		}
+		if (rc == 0) {  /* got eof */
+			debug3("  got eof on task");
+			out->eof = true;
+		}
+	}
+
+	debug3("************************ %d bytes read from task %s", rc,
+	       out->type == SLURM_IO_STDOUT ? "STDOUT" : "STDERR");
+
+
+	/*
+	 * Put the message in client outgoing queues
+	 */
+	_route_msg_task_to_client(obj);
+
+	/*
+	 * Send the eof message
+	 */
+	if (cbuf_used(out->buf) == 0 && out->eof) {
+		_send_eof_msg(out);
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/**********************************************************************
+ * General fuctions
+ **********************************************************************/
 
 int
 io_thread_start(slurmd_job_t *job) 
@@ -241,7 +596,7 @@ io_thread_start(slurmd_job_t *job)
 	if (pthread_create(&job->ioid, &attr, &_io_thr, (void *)job) != 0)
 		fatal("pthread_create: %m");
 	
-	fatal_add_cleanup(&_fatal_cleanup, (void *) job);
+	/*fatal_add_cleanup(&_fatal_cleanup, (void *) job);*/
 
 	return 0;
 }
@@ -346,29 +701,6 @@ io_close_all(slurmd_job_t *job)
 	eio_handle_signal_wake(job->eio);
 }
 
-static void
-_fatal_cleanup(void *arg)
-{
-	slurmd_job_t   *job = (slurmd_job_t *) arg;
-	ListIterator    i;
-	io_obj_t       *obj;
-	struct io_info *io;
-
-	error("in fatal_cleanup");
-
-#if 0
-	_task_read(job->task[0]->err, job->objs);
-
-	i = list_iterator_create(job->objs);
-	while((obj = list_next(i))) {
-		io = (struct io_info *) obj->arg;
-		if (obj->ops->writable && (*obj->ops->writable)(obj))
-			_write(obj, job->objs);
-	}
-	list_iterator_destroy(i);
-#endif
-}
-
 static void *
 _io_thr(void *arg)
 {
@@ -390,65 +722,6 @@ _io_thr(void *arg)
 	io_handle_events(job->eio);
 	debug("IO handler exited");
 	return (void *)1;
-}
-
-/*
- * Create an eio_obj_t for handling a task's stdin traffic
- */
-static eio_obj_t *
-_create_task_in_eio(int fd, slurmd_job_t *job)
-{
-	struct task_in_info *in = NULL;
-	eio_obj_t *eio = NULL;
-
-	in = (struct task_in_info *)xmalloc(sizeof(struct task_in_info));
-#ifndef NDEBUG
-	in->magic = TASK_IN_MAGIC;
-#endif
-	in->job = job;
-	in->out.msg_queue = list_create(NULL); /* FIXME! Add destructor */
-	in->out.msg = NULL;
-	in->out.remaining = 0;
-
-	eio = (eio_obj_t *)xmalloc(sizeof(eio_obj_t));
-	eio->fd = fd;
-	eio->arg = (void *)in;
-	eio->ops = _ops_copy(&task_in_ops);
-	eio->shutdown = false;
-
-	return eio;
-}
-
-/*
- * Create an eio_obj_t for handling a task's stdout or stderr traffic
- */
-static eio_obj_t *
-_create_task_out_eio(int fd, uint16_t type,
-		     slurmd_job_t *job, slurmd_task_info_t *task)
-{
-	struct task_out_info *out = NULL;
-	eio_obj_t *eio = NULL;
-
-	out = (struct task_out_info *)xmalloc(sizeof(struct task_out_info));
-#ifndef NDEBUG
-	out->magic = TASK_OUT_MAGIC;
-#endif
-	out->type = type;
-	out->gtaskid = task->gtid;
-	out->ltaskid = task->id;
-	out->job = job;
-	out->buf = cbuf_create(MAX_MSG_LEN, MAX_MSG_LEN*16);
-	out->eof = false;
-	out->eof_msg_sent = false;
-	if (cbuf_opt_set(out->buf, CBUF_OPT_OVERWRITE, CBUF_NO_DROP) == -1)
-		error("setting cbuf options");
-
-	eio = (eio_obj_t *)xmalloc(sizeof(eio_obj_t));
-	eio->fd = fd;
-	eio->arg = (void *)out;
-	eio->ops = _ops_copy(&task_out_ops);
-	eio->shutdown = false;
-	return eio;
 }
 
 static int
@@ -475,40 +748,6 @@ _create_task_eio_objs(slurmd_job_t *job)
 
 	return SLURM_SUCCESS;
 }
-
-/*
- * Turn off obj's readable() function such that it is never
- * checked for readability
- */
-static inline void
-_obj_set_unreadable(io_obj_t *obj)
-{
-	obj->ops->readable = NULL;
-}
-
-static inline void
-_obj_set_unwritable(io_obj_t *obj)
-{
-	obj->ops->writable = NULL;
-}
-
-static char * 
-_local_filename (char *fname, int taskid)
-{
-	int id;
-
-	if (fname == NULL)
-		return (NULL);
-
-	if ((id = fname_single_task_io (fname)) < 0) 
-		return (fname);
-
-	if (id != taskid)
-		return ("/dev/null");
-
-	return (NULL);
-}
-
 
 /* 
  * create initial client obj for this job step
@@ -558,7 +797,7 @@ io_client_connect(slurmd_job_t *job)
 	client->job = job;
 	client->out.msg_queue = list_create(NULL); /* FIXME! Need desctructor */
 
-	obj = _eio_obj_create(sock, (void *)client, _ops_copy(&client_ops));
+	obj = eio_obj_create(sock, &client_ops, (void *)client);
 	list_append(job->clients, (void *)obj);
 	list_append(job->objs, (void *)obj);
 
@@ -578,49 +817,6 @@ io_new_clients(slurmd_job_t *job)
 #if 0
 	return io_prepare_clients(job);
 #endif
-}
-
-static int 
-find_obj(void *obj, void *key)
-{
-	xassert(obj != NULL);
-	xassert(key != NULL);
-
-	return (obj == key);
-}
-
-static struct io_operations *
-_ops_copy(struct io_operations *ops)
-{
-	struct io_operations *ret = xmalloc(sizeof(*ops));
-	/* 
-	 * Copy initial client_ops 
-	 */
-	*ret = *ops;
-	return ret;
-}
-
-
-static io_obj_t *
-_io_obj_create(int fd, void *arg)
-{
-	io_obj_t *obj = xmalloc(sizeof(*obj));
-	obj->fd  = fd;
-	obj->arg = arg;
-	obj->ops = NULL;
-	obj->shutdown = false;
-	return obj;
-}
-
-static eio_obj_t *
-_eio_obj_create(int fd, void *arg, struct io_operations *ops)
-{
-	eio_obj_t *obj = xmalloc(sizeof(*obj));
-	obj->fd  = fd;
-	obj->arg = arg;
-	obj->ops = ops;
-	obj->shutdown = false;
-	return obj;
 }
 
 static int
@@ -676,7 +872,6 @@ _send_io_init_msg(int sock, srun_key_t *key, int nodeid)
 	memcpy(msg.cred_signature, key->data, SLURM_CRED_SIGLEN);
 	msg.nodeid = nodeid;
 
-	error("msg.nodeid = %u", msg.nodeid);
 	if (io_init_msg_write_to_fd(sock, &msg) != SLURM_SUCCESS) {
 		error("Couldn't sent slurm_io_init_msg");
 		return SLURM_ERROR;
@@ -713,224 +908,6 @@ io_dup_stdio(slurmd_task_info_t *t)
 	close(t->to_stdin );
 	close(t->from_stdout);
 	close(t->from_stderr);
-	return SLURM_SUCCESS;
-}
-
-static int
-_obj_close(io_obj_t *obj, List objs)
-{
-
-	fatal("_obj_close");
-#if 0
-	struct io_info *io = (struct io_info *) obj->arg;
-
-	debug3("Need to close %d %s", io->id, _io_str[io->type]);
-
-	if (close(obj->fd) < 0)
-		error("close: %m");
-	obj->fd = -1;
-
-	if (_isa_client(io)) 
-		_io_disconnect_client(io, objs);
-	else 
-		_shutdown_task_obj(io);
-
-	return SLURM_SUCCESS;
-#endif
-}
-
-static bool 
-_client_readable(eio_obj_t *obj)
-{
-	struct client_io_info *client = (struct client_io_info *) obj->arg;
-
-	debug3("Called _client_readable");
-	xassert(client->magic == CLIENT_IO_MAGIC);
-
-	if (client->in.eof) {
-		debug3("  false");
-		return false;
-	}
-
-	if (obj->shutdown) {
-		debug3("  false, shutdown");
-		shutdown(obj->fd, SHUT_RD);
-		client->in.eof = true;
-	}
-
-	if (client->in.msg != NULL
-	    || !list_is_empty(client->job->free_io_buf))
-		return true;
-
-	debug3("  false");
-	return false;
-}
-
-static bool 
-_client_writable(eio_obj_t *obj)
-{
-	struct client_io_info *client = (struct client_io_info *) obj->arg;
-
-	debug3("Called _client_writable");
-	xassert(client->magic == CLIENT_IO_MAGIC);
-
-	if (client->out.msg != NULL)
-		debug3("  client->out.msg != NULL");
-
-	if (!list_is_empty(client->out.msg_queue))
-		debug3("  client->out.msg_queue queue length = %d",
-		       list_count(client->out.msg_queue));
-
-	if (client->out.msg != NULL
-	    || !list_is_empty(client->out.msg_queue))
-		return true;
-
-	debug3("  false");
-	return false;
-}
-
-static bool 
-_task_readable(eio_obj_t *obj)
-{
-	struct task_out_info *out = (struct task_out_info *)obj->arg;
-
-	debug3("Called _task_readable, task %d, %s", out->gtaskid,
-	       out->type == SLURM_IO_STDOUT ? "STDOUT" : "STDERR");
-
-	if (out->eof_msg_sent) {
-		debug3("  false, eof message sent");
-		return false;
-	}
-	if (cbuf_free(out->buf) > 0) {
-		debug3("  cbuf_free = %d", cbuf_free(out->buf));
-		return true;
-	}
-
-	debug3("  false");
-	return false;
-}
-
-static bool 
-_task_writable(eio_obj_t *obj)
-{
-	struct task_in_info *in = (struct task_in_info *) obj->arg;
-	struct outgoing_fd_info *out = &in->out;
-
-	debug3("Called _task_writable");
-
-	if (out->msg != NULL || list_count(out->msg_queue) > 0)
-		return true;
-
-	debug3("  false (list_count = %d)", list_count(out->msg_queue));
-	return false;
-}
-
-static int
-_task_write(io_obj_t *obj, List objs)
-{
-	struct task_in_info *in = (struct task_in_info *) obj->arg;
-	struct outgoing_fd_info *out;
-	void *buf;
-	int n;
-
-	xassert(in->magic == TASK_IN_MAGIC);
-
-	out = &in->out;
-
-	/*
-	 * If we aren't already in the middle of sending a message, get the
-	 * next message from the queue.
-	 */
-	if (out->msg == NULL) {
-		out->msg = list_dequeue(out->msg_queue);
-		if (out->msg == NULL) {
-			debug3("_task_write: nothing in the queue");
-			return SLURM_SUCCESS;
-		}
-		if (out->msg->length == 0) { /* eof message */
-			close(obj->fd);
-			obj->fd = -1;
-			_free_msg(out->msg, in->job);
-			out->msg = NULL;
-			return SLURM_SUCCESS;
-		}
-		out->remaining = out->msg->length;
-	}
-
-	/*
-	 * Write message to socket.
-	 */
-	buf = out->msg->data + (out->msg->length - out->remaining);
-again:
-	if ((n = write(obj->fd, buf, out->remaining)) < 0) {
-		if (errno == EINTR)
-			goto again;
-		/* FIXME handle error */
-		return SLURM_ERROR;
-	}
-	out->remaining -= n;
-	if (out->remaining > 0)
-		return SLURM_SUCCESS;
-
-	_free_msg(out->msg, in->job);
-	out->msg = NULL;
-
-	return SLURM_SUCCESS;
-
-}
-
-
-/*
- * Write outgoing packed messages to the client socket.
- */
-static int
-_client_write(io_obj_t *obj, List objs)
-{
-	struct client_io_info *client = (struct client_io_info *) obj->arg;
-	struct outgoing_fd_info *out;
-	void *buf;
-	int n;
-
-	xassert(client->magic == CLIENT_IO_MAGIC);
-
-	debug2("Entering _client_write");
-	out = &client->out;
-
-	/*
-	 * If we aren't already in the middle of sending a message, get the
-	 * next message from the queue.
-	 */
-	if (out->msg == NULL) {
-		out->msg = list_dequeue(out->msg_queue);
-		if (out->msg == NULL) {
-			debug3("_client_write: nothing in the queue");
-			return SLURM_SUCCESS;
-		}
-		debug3("  dequeue successful, out->msg->length = %d", out->msg->length);
-		out->remaining = out->msg->length;
-	}
-
-	debug3("  out->remaining = %d", out->remaining); 
-
-	/*
-	 * Write message to socket.
-	 */
-	buf = out->msg->data + (out->msg->length - out->remaining);
-again:
-	if ((n = write(obj->fd, buf, out->remaining)) < 0) {
-		if (errno == EINTR)
-			goto again;
-		/* FIXME handle error */
-		return SLURM_ERROR;
-	}
-	debug3("Wrote %d bytes to socket", n);
-	out->remaining -= n;
-	if (out->remaining > 0)
-		return SLURM_SUCCESS;
-
-	_free_msg(out->msg, client->job);
-	out->msg = NULL;
-
 	return SLURM_SUCCESS;
 }
 
@@ -1023,228 +1000,9 @@ _task_build_message(struct task_out_info *out, slurmd_job_t *job, cbuf_t cbuf)
 	/* free the Buf packbuf, but not the memory to which it points */
 	packbuf->head = NULL;
 	free_buf(packbuf);
-	      
+	
 	debug2("Leaving  _task_build_message");
 	return msg;
-}
-
-/*
- * Read output (stdout or stderr) from a task into a cbuf.  The cbuf
- * allows whole lines to be packed into messages if line buffering
- * is requested.
- */
-static int
-_task_read(eio_obj_t *obj, List objs)
-{
-	struct task_out_info *out = (struct task_out_info *)obj->arg;
-	struct client_io_info *client;
-	struct io_buf *msg = NULL;
-	eio_obj_t *eio;
-	ListIterator clients;
-	int len;
-	int rc = -1;
-
-	xassert(out->magic == TASK_OUT_MAGIC);
-
-	debug2("Entering _task_read");
-	len = cbuf_free(out->buf);
-	if (len > 0) {
-again:
-		if ((rc = cbuf_write_from_fd(out->buf, obj->fd, len, NULL))
-		    < 0) {
-			if (errno == EINTR)
-				goto again;
-			if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
-				error("_task_read returned EAGAIN");
-				return SLURM_SUCCESS;
-			}
-			/* FIXME add error message */
-			debug3("  error in _task_read");
-			return SLURM_ERROR;
-		}
-		if (rc == 0) {  /* got eof */
-			debug3("  got eof on task");
-			out->eof = true;
-		}
-	}
-
-	debug3("************************ %d bytes read from task %s", rc,
-	       out->type == SLURM_IO_STDOUT ? "STDOUT" : "STDERR");
-
-
-	/*
-	 * Put the message in client outgoing queues
-	 */
-	_route_msg_task_to_client(obj);
-
-	/*
-	 * Send the eof message
-	 */
-	if (cbuf_used(out->buf) == 0 && out->eof) {
-		_send_eof_msg(out);
-	}
-
-	return SLURM_SUCCESS;
-}
-
-static int 
-_task_error(io_obj_t *obj, List objs)
-{
-	debug3("eio detected _task_error");
-#if 0
-	if (getsockopt(obj->fd, SOL_SOCKET, SO_ERROR, &err, &size) < 0)
-		error ("_task_error getsockopt: %m");
-	else
-		_update_error_state(t, E_POLL, err);
-	_obj_close(obj, objs);
-#endif
-	return -1;
-}
-
-
-/*
- * Read from a client socket.
- *
- * 1) Read message header, if not already read in a previous call to
- *    _client_read.  Function will not return until entire header has
- *    been read.
- * 2) Read message body in non-blocking fashion.
- * 3) Enqueue message in task stdin List.
- */
-static int 
-_client_read(eio_obj_t *obj, List objs)
-{
-	struct client_io_info *client = (struct client_io_info *) obj->arg;
-	struct incoming_client_info *in;
-	void *buf;
-	int n;
-
-	debug2("Entering _client_read");
-	xassert(client->magic == CLIENT_IO_MAGIC);
-
-	in = &client->in;
-	/*
-	 * Read the header, if a message read is not already in progress
-	 */
-	if (in->msg == NULL) {
-		in->msg = list_dequeue(client->job->free_io_buf);
-		if (in->msg == NULL) {
-			debug3("  _client_read free_io_buf is empty");
-			return SLURM_SUCCESS;
-		}
-		n = io_hdr_read_fd(obj->fd, &in->header);
-		if (n == 0) { /* got eof on socket read */
-			debug3("  got eof on _client_read header");
-			in->eof = true;
-			list_enqueue(client->job->free_io_buf, in->msg);
-			in->msg = NULL;
-			return SLURM_SUCCESS;
-		}
-		in->remaining = in->header.length;
-		in->msg->length = in->header.length;
-	}
-
-	/*
-	 * Read the body
-	 */
-	if (in->header.length == 0) { /* zero length is an eof message */
-		debug3("  got stdin eof message!");
-	} else {
-		buf = in->msg->data + (in->msg->length - in->remaining);
-	again:
-		if ((n = read(obj->fd, buf, in->remaining)) < 0) {
-			if (errno == EINTR)
-				goto again;
-			/* FIXME handle error */
-			return SLURM_ERROR;
-		}
-		if (n == 0) { /* got eof */
-			debug3("  got eof on _client_read body");
-			in->eof = true;
-			list_enqueue(client->job->free_io_buf, in->msg);
-			in->msg = NULL;
-			return SLURM_SUCCESS;
-		}
-		debug3("  read %d bytes", n);
-		debug3("\"%s\"", buf);
-		in->remaining -= n;
-		if (in->remaining > 0)
-			return SLURM_SUCCESS;
-	}
-
-	/*
-	 * Route the message to its destination(s)
-	 */
-	if (in->header.type != SLURM_IO_STDIN
-	    && in->header.type != SLURM_IO_ALLSTDIN) {
-		error("Input in->header.type is not valid!");
-		in->msg = NULL;
-		return SLURM_ERROR;
-	} else {
-		int i;
-		slurmd_task_info_t *task;
-		struct task_in_info *io;
-
-		in->msg->ref_count = 0;
-		if (in->header.type == SLURM_IO_ALLSTDIN) {
-			for (i = 0; i < client->job->ntasks; i++) {
-				task = client->job->task[i];
-				io = (struct task_in_info *)(task->in->arg);
-				list_enqueue(io->out.msg_queue, in->msg);
-				in->msg->ref_count++;
-			}
-		} else {
-			for (i = 0; i < client->job->ntasks; i++) {
-				task = client->job->task[i];
-				io = (struct task_in_info *)task->in->arg;
-				if (task->gtid != in->header.gtaskid)
-					continue;
-				list_enqueue(io->out.msg_queue, in->msg);
-				in->msg->ref_count++;
-				break;
-			}
-		}
-	}
-	client->in.msg = NULL;
-	return SLURM_SUCCESS;
-}
-
-static int 
-_client_error(io_obj_t *obj, List objs)
-{
-	struct io_info *io = (struct io_info *) obj->arg;
-	socklen_t size = sizeof(int);
-	int err = 0;
-
-	fatal("_client_error");
-
-#if 0
-	xassert(io->magic == IO_MAGIC);
-
-	if (getsockopt(obj->fd, SOL_SOCKET, SO_ERROR, &err, &size) < 0)
-		error ("_client_error getsockopt: %m");
-	else if (err != ECONNRESET) /* Do not log connection resets */
-		_update_error_state(io, E_POLL, err);
-#endif
-
-	return 0;
-}
-
-static char *
-err_string(enum error_type type)
-{
-	switch (type) {
-	case E_NONE:
-		return "";
-	case E_WRITE:
-		return "write failed";
-	case E_READ:
-		return "read failed";
-	case E_POLL:
-		return "poll error";
-	}
-
-	return "";
 }
 
 struct io_buf *

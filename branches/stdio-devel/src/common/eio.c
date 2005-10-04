@@ -54,10 +54,10 @@ struct eio_handle_components {
 
 static int          _poll_loop_internal(eio_t eio, List objs);
 static int          _poll_internal(struct pollfd *pfds, unsigned int nfds);
-static unsigned int _poll_setup_pollfds(struct pollfd *, io_obj_t **, List);
-static void         _poll_dispatch(struct pollfd *, unsigned int, io_obj_t **,
+static unsigned int _poll_setup_pollfds(struct pollfd *, eio_obj_t **, List);
+static void         _poll_dispatch(struct pollfd *, unsigned int, eio_obj_t **,
 		                   List objList);
-static void         _poll_handle_event(short revents, io_obj_t *obj,
+static void         _poll_handle_event(short revents, eio_obj_t *obj,
 		                       List objList);
 
 eio_t eio_handle_create(List eio_obj_list)
@@ -146,7 +146,7 @@ _poll_loop_internal(eio_t eio, List objs)
 {
 	int            retval  = 0;
 	struct pollfd *pollfds = NULL;
-	io_obj_t     **map     = NULL;
+	eio_obj_t    **map     = NULL;
 	unsigned int   maxnfds = 0, nfds = 0;
 	unsigned int   n       = 0;
 
@@ -156,7 +156,7 @@ _poll_loop_internal(eio_t eio, List objs)
 		if (maxnfds < (n = list_count(objs))) {
 			maxnfds = n;
 			xrealloc(pollfds, (maxnfds+1) * sizeof(struct pollfd));
-			xrealloc(map,     maxnfds     * sizeof(io_obj_t *   ));
+			xrealloc(map,     maxnfds     * sizeof(eio_obj_t *  ));
 			/* 
 			 * Note: xrealloc() also handles initial malloc 
 			 */
@@ -215,22 +215,22 @@ _poll_internal(struct pollfd *pfds, unsigned int nfds)
 }
 
 static bool
-_is_writable(io_obj_t *obj)
+_is_writable(eio_obj_t *obj)
 {
 	return (obj->ops->writable && (*obj->ops->writable)(obj));
 }
 
 static bool
-_is_readable(io_obj_t *obj)
+_is_readable(eio_obj_t *obj)
 {
 	return (obj->ops->readable && (*obj->ops->readable)(obj));
 }
 
 static unsigned int
-_poll_setup_pollfds(struct pollfd *pfds, io_obj_t *map[], List l)
+_poll_setup_pollfds(struct pollfd *pfds, eio_obj_t *map[], List l)
 {
 	ListIterator  i    = list_iterator_create(l);
-	io_obj_t     *obj  = NULL;
+	eio_obj_t    *obj  = NULL;
 	unsigned int  nfds = 0;
 	bool          readable, writable;
 
@@ -259,12 +259,12 @@ _poll_setup_pollfds(struct pollfd *pfds, io_obj_t *map[], List l)
 }
 
 static void
-_poll_dispatch(struct pollfd *pfds, unsigned int nfds, io_obj_t *map[], 
+_poll_dispatch(struct pollfd *pfds, unsigned int nfds, eio_obj_t *map[], 
 	       List objList)
 {
 	int i;
 	ListIterator iter;
-	io_obj_t *obj;
+	eio_obj_t *obj;
 
 	for (i = 0; i < nfds; i++) {
 		if (pfds[i].revents > 0)
@@ -280,7 +280,7 @@ _poll_dispatch(struct pollfd *pfds, unsigned int nfds, io_obj_t *map[],
 }
 
 static void
-_poll_handle_event(short revents, io_obj_t *obj, List objList)
+_poll_handle_event(short revents, eio_obj_t *obj, List objList)
 {
 	if ((revents & POLLERR ) && obj->ops->handle_error) {
 		if ((*obj->ops->handle_error) (obj, objList) < 0) 
@@ -299,4 +299,33 @@ _poll_handle_event(short revents, io_obj_t *obj, List objList)
 	}
 }
 
+static struct io_operations *
+_ops_copy(struct io_operations *ops)
+{
+	struct io_operations *ret = xmalloc(sizeof(*ops));
 
+	/* Copy initial client_ops */
+	*ret = *ops;
+	return ret;
+}
+
+eio_obj_t *
+eio_obj_create(int fd, struct io_operations *ops, void *arg)
+{
+	eio_obj_t *obj = xmalloc(sizeof(*obj));
+	obj->fd  = fd;
+	obj->arg = arg;
+	obj->ops = _ops_copy(ops);
+	obj->shutdown = false;
+	return obj;
+}
+
+void eio_obj_destroy(eio_obj_t *obj)
+{
+	if (obj) {
+		if (obj->ops) {
+			xfree(obj->ops);
+		}
+		xfree(obj);
+	}
+}

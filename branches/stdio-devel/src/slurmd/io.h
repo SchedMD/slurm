@@ -55,11 +55,6 @@ int io_thread_start(slurmd_job_t *job);
  */
 int io_new_clients(slurmd_job_t *job);
 
-/*
- * Frees memory associated with the given IO object
- */
-void io_obj_destroy(io_obj_t *obj);
-
 int io_dup_stdio(slurmd_task_info_t *t);
 
 /*
