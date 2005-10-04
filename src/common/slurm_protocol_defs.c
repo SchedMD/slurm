@@ -722,6 +722,11 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->slurmd_spooldir);
 		xfree(config_ptr->slurm_conf);
 		xfree(config_ptr->state_save_location);
+		xfree(config_ptr->srun_epilog);
+		xfree(config_ptr->srun_prolog);
+		xfree(config_ptr->task_epilog);
+		xfree(config_ptr->task_prolog);
+		xfree(config_ptr->task_plugin);
 		xfree(config_ptr->tmp_fs);
 		xfree(config_ptr);
 	}
