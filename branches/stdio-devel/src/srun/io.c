@@ -58,7 +58,6 @@
 static int    fmt_width       = 0;
 
 static void	_handle_io_init_msg(int fd, srun_job_t *job);
-static int	_close_stream(int *fd, FILE *out, int tasknum);
 static ssize_t	_readx(int fd, char *buf, size_t maxbytes);
 static int      _read_io_init_msg(int fd, srun_job_t *job, char *host);
 static int      _wid(int n);
@@ -411,18 +410,28 @@ create_file_write_eio_obj(int fd, srun_job_t *job)
 
 static void _write_label(int fd, int taskid)
 {
-	/* FIXME */
-	char *buf = "foo: ";
+	char buf[16];
 
-	write(fd, buf, 5);
+	snprintf(buf, 16, "%0*d: ", fmt_width, taskid);
+	/* FIXME - Need to handle return code */
+	write(fd, buf, fmt_width+2);
 }
 
-static void _write_newline()
+static void _write_newline(int fd)
 {
-	/* FIXME */
-	debug2("Called _write_newline");
-}
+	int n;
 
+	debug2("Called _write_newline");
+again:
+	if ((n = write(fd, "\n", 1)) < 0) {
+		if (errno == EINTR
+		    || errno == EAGAIN
+		    || errno == EWOULDBLOCK) {
+			goto again;
+		}
+		/* FIXME handle error */
+	}
+}
 
 /*
  * Blocks until write is complete, regardless of the file
