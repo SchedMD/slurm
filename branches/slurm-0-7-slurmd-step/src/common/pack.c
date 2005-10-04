@@ -179,10 +179,9 @@ void pack32(uint32_t val, Buf buffer)
 int unpack32(uint32_t * valp, Buf buffer)
 {
 	uint32_t nl;
-
 	if (remaining_buf(buffer) < sizeof(nl))
 		return SLURM_ERROR;
-
+	
 	memcpy(&nl, &buffer->head[buffer->processed], sizeof(nl));
 	*valp = ntohl(nl);
 	buffer->processed += sizeof(nl);

@@ -2443,7 +2443,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	xassert(msg_ptr != NULL);
 	msg = xmalloc(sizeof(launch_tasks_request_msg_t));
 	*msg_ptr = msg;
-
+ 
 	safe_unpack32(&msg->job_id, buffer);
 	safe_unpack32(&msg->job_step_id, buffer);
 	safe_unpack32(&msg->nnodes, buffer);

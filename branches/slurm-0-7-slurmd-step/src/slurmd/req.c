@@ -212,53 +212,62 @@ _close_fds(void)
 }
 
 static int
-_fork_new_slurmd(void)
+_fork_new_slurmd(slurmd_step_type_t type, void *req, 
+		 slurm_addr *cli, slurm_addr *self)
 {
 	pid_t pid;
 	int fds[2] = {-1, -1};
 	int fds2[2] = {-1, -1};
+	char send_argv[2];
 	char c;
 	int rc;
+	char **argv = NULL;
+	batch_job_launch_msg_t *batch_req = NULL;
+	launch_tasks_request_msg_t *launch_req = NULL;
+	spawn_task_request_msg_t *spawn_req = NULL;
+	int len = 0;
+	Buf buffer = init_buf(0);
+	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
 	/* Idea taken from ConMan by Chris Dunlap:
 	 *  Create pipe for IPC so parent slurmd will wait
 	 *  to return until signaled by grandchild process that
 	 *  slurmd job manager has been successfully created.
 	 */
-	/* if (pipe(fds) < 0) { */
-/* 		error("fork_slurmd: pipe: %m"); */
-/* 		return -1; */
-/* 	} */
+	if (pipe(fds) < 0) {
+		error("fork_slurmd: pipe: %m");
+		return -1;
+	}
 	
-	/* if ((pid = fork()) < 0) {  */
-/* 		error("fork_slurmd: fork: %m"); */
-/* 		close(fds[0]); */
-/* 		close(fds[1]); */
-/* 		return -1; */
-/* 	} else if (pid > 0) { */
-/* 		if ((fds[1] >= 0) && (close(fds[1]) < 0)) */
-/* 			error("Unable to close write-pipe in parent: %m"); */
+	if ((pid = fork()) < 0) {
+		error("fork_slurmd: fork: %m");
+		close(fds[0]);
+		close(fds[1]);
+		return -1;
+	} else if (pid > 0) {
+		if ((fds[1] >= 0) && (close(fds[1]) < 0))
+			error("Unable to close write-pipe in parent: %m");
 
-/* 		/\*  Wait for grandchild *\/ */
-/* 		if ((fds[0] >= 0) && (read(fds[0], &c, 1) < 0)) */
-/* 			return error("Unable to read EOF from grandchild: %m"); */
-/* 		if ((fds[0] >= 0) && (close(fds[0]) < 0)) */
-/* 			error("Unable to close read-pipe in parent: %m"); */
+		/*  Wait for grandchild */
+		if ((fds[0] >= 0) && (read(fds[0], &c, 1) < 0))
+			return error("Unable to read EOF from grandchild: %m");
+		if ((fds[0] >= 0) && (close(fds[0]) < 0))
+			error("Unable to close read-pipe in parent: %m");
 
-/* 		/\* Reap child *\/ */
-/* 		if (waitpid(pid, NULL, 0) < 0) */
-/* 			error("Unable to reap slurmd child process"); */
+		/* Reap child */
+		if (waitpid(pid, NULL, 0) < 0)
+			error("Unable to reap slurmd child process");
 
-/* 		return ((int) pid); */
-/* 	} */
+		return ((int) pid);
+	}
 
 #ifdef DISABLE_LOCALTIME
 	disable_localtime();
 #endif
-	/* if (close(fds[0]) < 0) */
-/* 		error("Unable to close read-pipe in child: %m"); */
+	if (close(fds[0]) < 0)
+		error("Unable to close read-pipe in child: %m");
 	
-	/* if (setsid() < 0) */
-/* 		error("fork_slurmd: setsid: %m"); */
+	if (setsid() < 0)
+		error("fork_slurmd: setsid: %m");
 	if (pipe(fds2) < 0) {
 		error("fork_slurmd: pipe: %m");
 		return -1;
@@ -267,42 +276,187 @@ _fork_new_slurmd(void)
 	if ((pid = fork()) < 0)
 		error("fork_slurmd: Unable to fork grandchild: %m");
 	else if (pid > 0) {
-			sleep(1);
-		write(fds2[1],"2",sizeof(char));
 		if (close(fds2[0]) < 0)
 			error("Unable to close read-pipe in child: %m");
+			if((rc = write(fds2[1],&type,
+				       sizeof(int)))
+			   == -1) {
+				error ("fork_slurmd: couldn't write "
+				       "type: %m", rc);
+				exit(1);
+			}
+			switch(type) {
+			case LAUNCH_BATCH_JOB:
+				if((rc = write(fds2[1],req,
+					       sizeof(batch_job_launch_msg_t)))
+				   == -1) {
+					error ("fork_slurmd: couldn't write "
+					       "batch_req: %m", rc);
+					exit(1);
+				}
+				if((rc = write(fds2[1],cli,
+					       sizeof(slurm_addr)))
+				   == -1) {
+					error ("fork_slurmd: couldn't write "
+					       "slurm_addr: %m", rc);
+					exit(1);
+				}
+				break;
+			case LAUNCH_TASKS:
+				msg->msg_type = REQUEST_LAUNCH_TASKS;
+				msg->data = req;
+				len = get_buf_offset(buffer);
+				/* printf("buffer = %d %s\n", len,  */
+/* 				       get_buf_data(buffer)); */
+				pack_msg(msg, buffer);
+				len = get_buf_offset(buffer);
+				/* printf("buffer = %d %s\n", len,  */
+/* 				       get_buf_data(buffer)); */
+				if((rc = write(fds2[1], &len, sizeof(int)))
+				   == -1) {
+					error ("fork_slurmd: couldn't write "
+					       "buffer len: %m", rc);
+					exit(1);
+				}
+				if((rc = 
+				    write(fds2[1], get_buf_data(buffer), len))
+				   == -1) {
+					error ("fork_slurmd: couldn't write "
+					       "buffer: %m", rc);
+					exit(1);
+				}
+				//printf("uid = %d\n",launch_req->uid);
+				/* if((rc =  */
+/* 				    write(fds2[1],&launch_req->uid, */
+/* 					  sizeof(uint32_t))) */
+/* 				   == -1) { */
+/* 					error ("fork_slurmd: couldn't write " */
+/* 					       "uid: %m", rc); */
+/* 					exit(1); */
+/* 				} */
+/* 				if((rc =  */
+/* 				    write(fds2[1],&launch_req->gid, */
+/* 					  sizeof(uint32_t))) */
+/* 				   == -1) { */
+/* 					error ("fork_slurmd: couldn't write " */
+/* 					       "gid: %m", rc); */
+/* 					exit(1); */
+/* 				} */
+/* 				if((rc =  */
+/* 				    write(fds2[1],&launch_req->tasks_to_launch, */
+/* 					  sizeof(uint32_t))) */
+/* 				   == -1) { */
+/* 					error ("fork_slurmd: couldn't write " */
+/* 					       "tasks_to_launch: %m", rc); */
+/* 					exit(1); */
+/* 				} */
+/* 				if((rc =  */
+/* 				    write(fds2[1],&launch_req->nprocs, */
+/* 					  sizeof(uint32_t))) */
+/* 				   == -1) { */
+/* 					error ("fork_slurmd: couldn't write " */
+/* 					       "nprocs: %m", rc); */
+/* 					exit(1); */
+/* 				} */
+/* 				if((rc =  */
+/* 				    write(fds2[1],&launch_req->job_id, */
+/* 					  sizeof(uint32_t))) */
+/* 				   == -1) { */
+/* 					error ("fork_slurmd: couldn't write " */
+/* 					       "job_id: %m", rc); */
+/* 					exit(1); */
+/* 				} */
+/* 				if((rc =  */
+/* 				    write(fds2[1],&launch_req->job_step_id, */
+/* 					  sizeof(uint32_t))) */
+/* 				   == -1) { */
+/* 					error ("fork_slurmd: couldn't write " */
+/* 					       "job_step_id: %m", rc); */
+/* 					exit(1); */
+/* 				} */
+				free_buf(buffer);
+				buffer = init_buf(0);
+				slurm_pack_slurm_addr(cli, buffer);
+				len = get_buf_offset(buffer);
+				if((rc = write(fds2[1], &len, sizeof(int)))
+				   == -1) {
+					error ("fork_slurmd: couldn't write "
+					       "cli len: %m", rc);
+					exit(1);
+				}
+				if((rc = 
+				    write(fds2[1], get_buf_data(buffer), 
+					  sizeof(char)*len))
+				   == -1) {
+					error ("fork_slurmd: couldn't write "
+					       "cli buffer: %m", rc);
+					exit(1);
+				}
+				
+				free_buf(buffer);
+				buffer = init_buf(0);
+				slurm_pack_slurm_addr(self, buffer);
+				len = get_buf_offset(buffer);
+				if((rc = write(fds2[1], &len, sizeof(int)))
+				   == -1) {
+					error ("fork_slurmd: couldn't write "
+					       "self len: %m", rc);
+					exit(1);
+				}
+				if((rc = 
+				    write(fds2[1], get_buf_data(buffer), 
+					  sizeof(char)*len))
+				   == -1) {
+					error ("fork_slurmd: couldn't write "
+					       "self buffer: %m", rc);
+					exit(1);
+				}
+				
+				break;
+			case SPAWN_TASKS:
+				if((rc = 
+				    write(fds2[1],&req,
+					  sizeof(spawn_task_request_msg_t)))
+				   == -1) {
+					error ("fork_slurmd: couldn't write "
+					       "spawn_req: %m", rc);
+					exit(1);
+				}
+				if((rc = write(fds2[1],&cli,
+					       sizeof(slurm_addr)))
+				   == -1) {
+					error ("fork_slurmd: couldn't write "
+					       "slurm_addr: %m", rc);
+					exit(1);
+				}
+				if((rc = write(fds2[1],&self,
+					       sizeof(slurm_addr)))
+				   == -1) {
+					error ("fork_slurmd: couldn't write "
+					       "slurm_addr: %m", rc);
+					exit(1);
+				}
+				break;
+			default:
+				fatal("Was sent a task I didn't understand");
+				break;
+			}
 		info("wrote the info");
 		/* Reap child */
 		if (waitpid(pid, NULL, 0) < 0)
 			error("Unable to reap slurmd child process");
-
-		return pid;
+		if (close(fds2[1]) < 0)
+			error("Unable to close write-pipe in child: %m");
+		info("done on the child");
+		exit(0);
 	}
 	/* Grandchild continues */
 	if (setsid() < 0)
 		error("fork_slurmd: setsid: %m");
 	
-	/* if (close(fds[1]) < 0) */
-/* 		error("Unable to close write-pipe in grandchild: %m"); */
+	if (close(fds[1]) < 0)
+		error("Unable to close write-pipe in grandchild: %m");
 
-	/* if (close(fds2[1]) < 0) */
-/* 		error("Unable to close write-pipe in grandchild: %m"); */
-
-	if (dup2(fds2[0], STDIN_FILENO) == -1) {
-		error("dup2 over STDIN_FILENO: %m");
-		exit(1);
-	}
-/* 	if((rc = read(STDIN_FILENO,&c,sizeof(char))) != 1) { */
-/* 		error ("slurmd_step: couldn't read step_type: %m", */
-/* 		       rc); */
-/* 		exit(1); */
-/* 	} */
-	rc = fcntl(fds2[0], F_GETFD, FD_CLOEXEC);
-	info("calling it %d", rc);
-       
-	execvp("slurmd_step", NULL);
-	info("done calling it");	
-			
 	/*
 	 *  We could destroy the credential context object here. 
 	 *   However, since we have forked from the main slurmd,
@@ -312,21 +466,32 @@ _fork_new_slurmd(void)
 	 *
 	 *  slurm_cred_ctx_destroy(conf->vctx);
 	 */
-
 	slurm_shutdown_msg_engine(conf->lfd);
 	
-	_close_fds();
-
+	
 	/*
 	 *  Reopen logfile by calling log_alter() without
 	 *    changing log options
 	 */   
 	log_alter(conf->log_opts, 0, conf->logfile);
+	
+	if (close(fds2[1]) < 0)
+		error("Unable to close write-pipe in grandchild 2: %m");
 
-	/* 
-	 * Return 0 to indicate this is a child slurmd
-	 */
-	return(0);
+	if (dup2(fds2[0], STDIN_FILENO) == -1) {
+		error("dup2 over STDIN_FILENO: %m");
+		exit(1);
+	}
+	argv = xmalloc(2 * sizeof(char *));
+	argv[0] = "slurmd_step";
+	argv[1] = NULL;
+	execvp("slurmd_step", argv);
+       
+	if (close(fds2[0]) < 0)
+		error("Unable to close read-pipe in grandchild: %m");
+
+	_close_fds();
+	exit(0);
 }
 
 static int
@@ -334,8 +499,10 @@ _launch_batch_job(batch_job_launch_msg_t *req, slurm_addr *cli)
 {	
 	int retval;
 	
-	if ((retval = _fork_new_slurmd()) == 0) 
-		exit (mgr_launch_batch_job(req, cli));
+	if ((retval = _fork_new_slurmd(LAUNCH_BATCH_JOB, 
+				       (void *)req, cli, NULL)) == 0) 
+		//exit(0);
+		exit(mgr_launch_batch_job(req, cli));
 
 	return (retval <= 0) ? retval : 0;
 }
@@ -345,9 +512,11 @@ _launch_tasks(launch_tasks_request_msg_t *req, slurm_addr *cli,
 	      slurm_addr *self)
 {
 	int retval;
-
-	if ((retval = _fork_new_slurmd()) == 0)
-		exit (mgr_launch_tasks(req, cli, self));
+					
+	if ((retval = _fork_new_slurmd(LAUNCH_TASKS,
+				       (void *)req, cli, self)) == 0)
+		//exit(0);
+		exit(mgr_launch_tasks(req, cli, self));
 
 	return (retval <= 0) ? retval : 0;
 }
@@ -357,8 +526,10 @@ _spawn_task(spawn_task_request_msg_t *req, slurm_addr *cli, slurm_addr *self)
 {
 	int retval;
 
-	if ((retval = _fork_new_slurmd()) == 0)
-		exit (mgr_spawn_task(req, cli, self));
+	if ((retval = _fork_new_slurmd(SPAWN_TASKS,
+				       (void *)req, cli, self)) == 0)
+		//exit(0);
+		exit(mgr_spawn_task(req, cli, self));
 
 	return (retval <= 0) ? retval : 0;
 }
