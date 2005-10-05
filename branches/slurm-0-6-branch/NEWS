@@ -4,6 +4,8 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 0.6.3
 ========================
  -- Fix slurmctld mem leaks (step name and hostlist struct).
+ -- Allocate extra space in srun's task id array for trailing zero (needed
+    for srun's --debuger-test option).
 
 * Changes in SLURM 0.6.2
 ========================
