@@ -46,12 +46,10 @@ set task_cnt    0
 set timeout $max_job_delay
 spawn $srun -N1-1 -c 1 -l -t1 $bin_hostname -s
 expect {
-	-re "0: ($alpha_numeric)" {
-		set host_0 $expect_out(1,string)
-		incr task_cnt
-		exp_continue
-	}
 	-re "($number):" {
+		if {$task_cnt == 0} {
+			set host_0 $expect_out(1,string)
+		}
 		incr task_cnt
 		exp_continue
 	}
