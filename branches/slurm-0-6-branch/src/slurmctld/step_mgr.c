@@ -106,6 +106,7 @@ delete_all_step_records (struct job_record *job_ptr)
 		}
 		checkpoint_free_jobinfo(step_ptr->check_job);
 		xfree(step_ptr->host);
+		xfree(step_ptr->name);
 		xfree(step_ptr->step_node_list);
 		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
 		xfree(step_ptr);
@@ -148,6 +149,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 			}
 			checkpoint_free_jobinfo (step_ptr->check_job);
 			xfree(step_ptr->host);
+			xfree(step_ptr->name);
 			xfree(step_ptr->step_node_list);
 			FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
 			xfree(step_ptr);

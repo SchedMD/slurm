@@ -80,6 +80,8 @@ int *distribute_tasks(const char *mlist, uint16_t num_cpu_groups,
 	nnodes = hostlist_count(task_hl);
 	ntask = (int *) xmalloc(sizeof(int *) * nnodes);
 	if (!ntask) {
+		hostlist_destroy(master_hl);
+		hostlist_destroy(task_hl);
 		slurm_seterrno(ENOMEM);
 		return NULL;
 	}
@@ -103,6 +105,7 @@ int *distribute_tasks(const char *mlist, uint16_t num_cpu_groups,
 		}
 		free(this_node_name);
 	}
+	hostlist_destroy(master_hl);
 	hostlist_destroy(task_hl);
 
 	if (num_tasks >= ncpus) {
