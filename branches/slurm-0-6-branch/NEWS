@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Fix slurmctld mem leaks (step name and hostlist struct).
  -- Allocate extra space in srun's task id array for trailing zero (needed
     for srun's --debuger-test option).
+ -- Bluegene plugin sets end time for job terminated due to removed 
+    bglblock.
 
 * Changes in SLURM 0.6.2
 ========================

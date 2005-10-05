@@ -790,6 +790,7 @@ extern int sync_jobs(List job_list)
 			if (!good_block) {
 				job_ptr->job_state = JOB_FAILED 
 					| JOB_COMPLETING;
+				job_ptr->end_time = time(NULL);
 				xfree(bgl_update_ptr->bgl_part_id);
 				xfree(bgl_update_ptr);
 				continue;
