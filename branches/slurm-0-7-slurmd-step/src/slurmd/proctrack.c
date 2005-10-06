@@ -263,9 +263,9 @@ slurm_container_add(slurmd_job_t *job, pid_t pid)
 extern int
 slurm_container_signal(uint32_t cont_id, int signal)
 {
-	if ( slurm_proctrack_init() < 0 )
+	if ( slurm_proctrack_init() < 0 ) {
 		return SLURM_ERROR;
-
+	}
 	return (*(g_proctrack_context->ops.signal))( cont_id, signal );
 }
 

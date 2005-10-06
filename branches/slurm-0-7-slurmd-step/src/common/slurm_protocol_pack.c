@@ -1841,6 +1841,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->slurmd_pidfile, buffer);
 	pack32(build_ptr->slurmd_port, buffer);
 	packstr(build_ptr->slurmd_spooldir, buffer);
+	debug2("Packing string %s", build_ptr->slurmd_spooldir);
 	pack16(build_ptr->slurmd_timeout, buffer);
 	packstr(build_ptr->slurm_conf, buffer);
 	packstr(build_ptr->state_save_location, buffer);
@@ -1849,7 +1850,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->wait_time, buffer);
 	packstr(build_ptr->job_credential_private_key, buffer);
 	packstr(build_ptr->job_credential_public_certificate, buffer);
-	debug2("Packing string %s", build_ptr->srun_prolog);
 	packstr(build_ptr->srun_prolog, buffer);
 	packstr(build_ptr->srun_epilog, buffer);
 }

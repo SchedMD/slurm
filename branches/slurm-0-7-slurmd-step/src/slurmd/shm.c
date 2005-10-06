@@ -189,7 +189,8 @@ shm_fini(void)
 	for (i = 0; i < MAX_JOB_STEPS; i++) {
 		if (slurmd_shm->step[i].state > SLURMD_JOB_UNUSED) {
 			job_step_t *s = &slurmd_shm->step[i];
-			info ("Used shm for job %u.%u\n", s->jobid, s->stepid); 
+			info ("Used shm for job %u.%u\n", 
+			      s->jobid, s->stepid); 
 		}
 	}
 
@@ -400,16 +401,16 @@ _sem_open(const char *name, int oflag, ...)
 
 	if (!(lockname = _create_ipc_name(name)))
 		fatal("sem_open failed for [%s]: invalid IPC name", name);
-
+	
 	if (oflag & O_CREAT) {
 		va_start(ap, oflag);
 		mode = va_arg(ap, mode_t);
 		value = va_arg(ap, unsigned int);
 		va_end(ap);
 		sem = sem_open(lockname, oflag, mode, value);
-	} else 
+	} else {
 		sem = sem_open(lockname, oflag);
-
+	}
 	return(sem);
 }
 

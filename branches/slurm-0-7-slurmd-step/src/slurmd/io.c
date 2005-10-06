@@ -499,7 +499,6 @@ _io_add_connecting(slurmd_job_t *job, slurmd_task_info_t *t, srun_info_t *srun,
 	obj      = _io_obj(job, t, sock, type);
 	obj->ops = _ops_copy(&connecting_client_ops);
 	_io_write_header(obj->arg, srun);
-
 	if ((type == CLIENT_STDOUT) 
 	&&  (!_local_filename(srun->ifname, t->gtid))) {
 		struct io_info *io = obj->arg;
@@ -512,7 +511,7 @@ _io_add_connecting(slurmd_job_t *job, slurmd_task_info_t *t, srun_info_t *srun,
 	list_append(job->objs, (void *)obj);
 
 	debug3("Now handling %d IO objects", list_count(job->objs));
-
+	
 	return SLURM_SUCCESS;
 }
 
@@ -1110,12 +1109,11 @@ _io_write_header(struct io_info *client, srun_info_t *srun)
 		hdr.type = SLURM_IO_STDOUT; 
 	else
 		hdr.type = SLURM_IO_STDERR;
-
 	if (io_hdr_write_cb(client->buf, &hdr) < 0) {
 		error ("Unable to write io header: %m");
 		return SLURM_ERROR;
 	}
-
+		
 	return SLURM_SUCCESS;
 }
 

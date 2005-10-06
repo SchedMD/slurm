@@ -33,6 +33,7 @@
 #include "src/common/slurm_protocol_defs.h"
 
 #include "src/slurmd/slurmd_job.h"
+#include "src/slurmd/slurmd.h"
 
 typedef enum slurmd_step_tupe {
 	LAUNCH_BATCH_JOB = 0,
@@ -66,6 +67,19 @@ extern int run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid,
 /*
  * Same as slurm_get_addr but protected by pthread_atfork handlers
  */
-void slurmd_get_addr(slurm_addr *a, uint16_t *port, char *buf, uint32_t len);
+extern void slurmd_get_addr(slurm_addr *a, uint16_t *port, 
+			    char *buf, uint32_t len);
+
+/*
+ * Pack information needed for the forked slurmd_step process.
+ * Does not pack everything from the slurm_conf_t struct.
+ */
+extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer);
+
+/*
+ * Unpack information needed for the forked slurmd_step process.
+ * Does not unpack everything from the slurm_conf_t struct.
+*/
+extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer);
 
 #endif

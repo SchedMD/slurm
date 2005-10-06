@@ -30,6 +30,7 @@
 #  include "config.h"
 #endif
 
+#include "src/slurmd/slurmd.h"
 #include "src/slurmd/mgr.h"
 #include "src/common/xmalloc.h"
 
@@ -49,6 +50,7 @@ main (int argc, char *argv[])
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
 	Buf buffer = init_buf(0);
 
+	/* recieve job type from main slurmd */
 	if((rc = read(STDIN_FILENO,&step_type,sizeof(int))) == -1) {
 		error ("slurmd_step: couldn't read step_type: %m",
 		       rc);
@@ -56,149 +58,143 @@ main (int argc, char *argv[])
 	}
 	info("got the number %d",step_type);
 	
+	/* recieve len of packed conf from main slurmd */
+	if((rc = read(STDIN_FILENO, &len, sizeof(int))) == -1) {
+		error ("slurmd_step: couldn't read len: %m",
+		       rc);
+		exit(1);
+	}
+	
+	/* recieve packed conf from main slurmd */
+	incoming_buffer = xmalloc(len);
+	if((rc = read(STDIN_FILENO, incoming_buffer, 
+		      sizeof(char)*len)) == -1) {
+		error ("slurmd_step: couldn't read launch_req: %m",
+		       rc);
+		exit(1);
+	}
+	buffer = create_buf(incoming_buffer,len);
+	conf = xmalloc(sizeof(*conf));
+	if(unpack_slurmd_conf_lite_no_alloc(conf, buffer)
+	   == SLURM_ERROR) {
+		fatal("slurmd_step: problem with unpack of "
+		       "slurmd_conf");
+	}
+	free_buf(buffer);
+				
+	debug2("running a launch_task %d.", conf->debug_level);
+	conf->log_opts.stderr_level = conf->debug_level;
+	conf->log_opts.logfile_level = conf->debug_level;
+	conf->log_opts.syslog_level = conf->debug_level;
+	/* forward the log options to slurmd_step */
+	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
+	g_slurmd_jobacct_init(conf->cf.job_acct_parameters);
+
+	/* recieve len of packed cli from main slurmd */
+	if((rc = read(STDIN_FILENO, &len, sizeof(int))) == -1) {
+		error ("slurmd_step: couldn't read len: %m",
+		       rc);
+		exit(1);
+	}
+
+	/* recieve packed cli from main slurmd */
+	incoming_buffer = xmalloc(len);
+	if((rc = read(STDIN_FILENO, incoming_buffer, 
+		      sizeof(char)*len)) == -1) {
+		error ("slurmd_step: couldn't read launch_req: %m",
+		       rc);
+		exit(1);
+	}
+
+	buffer = create_buf(incoming_buffer,len);	
+	cli = xmalloc(sizeof(slurm_addr));
+	if(slurm_unpack_slurm_addr_no_alloc(cli, buffer)
+	   == SLURM_ERROR) {
+		fatal("slurmd_step: problem with unpack of "
+		      "slurmd_conf");
+	}
+	free_buf(buffer);
+
+	/* recieve len of packed self from main slurmd */
+	if((rc = read(STDIN_FILENO, &len, sizeof(int))) == -1) {
+		error ("slurmd_step: couldn't read len: %m",
+		       rc);
+		exit(1);
+	}
+	
+	/* recieve packed self from main slurmd */
+	incoming_buffer = xmalloc(len);
+	if((rc = read(STDIN_FILENO, incoming_buffer, 
+		      sizeof(char)*len)) == -1) {
+		error ("slurmd_step: couldn't read launch_req: %m",
+		       rc);
+		exit(1);
+	}
+	buffer = create_buf(incoming_buffer,len);
+		
+	self = xmalloc(sizeof(slurm_addr));
+	if(slurm_unpack_slurm_addr_no_alloc(self, buffer)
+	   == SLURM_ERROR) {
+		fatal("slurmd_step: problem with unpack of "
+		      "slurmd_conf");
+	}
+	free_buf(buffer);
+
+	/* recieve len of packed req from main slurmd */
+	if((rc = read(STDIN_FILENO, &len, sizeof(int))) == -1) {
+		fatal("slurmd_step: couldn't read len: %m",
+		      rc);
+	}
+	
+	/* recieve len of packed req from main slurmd */
+	incoming_buffer = xmalloc(len);
+	if((rc = read(STDIN_FILENO, incoming_buffer, 
+		      sizeof(char)*len)) == -1) {
+		error ("slurmd_step: couldn't read launch_req: %m",
+		       rc);
+		exit(1);
+	}
+	buffer = create_buf(incoming_buffer,len);
+
+	/* determine type and unpack appropriately */
 	switch(step_type) {
 	case LAUNCH_BATCH_JOB:
-		if((rc = read(STDIN_FILENO,&batch_req,
-			      sizeof(batch_job_launch_msg_t))) == -1) {
-			error ("slurmd_step: couldn't read batch_req: %m",
-			       rc);
-			exit(1);
-		}
-		if((rc = read(STDIN_FILENO,&cli,
-			      sizeof(slurm_addr))) == -1) {
-			error ("slurmd_step: couldn't read slurm_addr 1: %m",
-			       rc);
-			exit(1);
-		}
 		debug2("running a batch_job");
-		exit (mgr_launch_batch_job(batch_req, cli));
+		msg->msg_type = REQUEST_BATCH_JOB_LAUNCH;
+		if(unpack_msg(msg, buffer) == SLURM_ERROR) 
+			fatal("slurmd_step: we didn't unpack the "
+			      "request correctly");
+		
+		free_buf(buffer);
+		exit (mgr_launch_batch_job(msg->data, cli));
 		break;
 	case LAUNCH_TASKS:
-		//launch_req = xmalloc(sizeof(launch_tasks_request_msg_t));
 		info("running a launch_task");
-		if((rc = read(STDIN_FILENO, &len, sizeof(int))) == -1) {
-			error ("slurmd_step: couldn't read len: %m",
-			       rc);
-			exit(1);
-		}
-		incoming_buffer = xmalloc(len);
-		if((rc = read(STDIN_FILENO, incoming_buffer, 
-			      sizeof(char)*len)) == -1) {
-			error ("slurmd_step: couldn't read launch_req: %m",
-			       rc);
-			exit(1);
-		}
-		buffer = create_buf(incoming_buffer,len);
 		msg->msg_type = REQUEST_LAUNCH_TASKS;
-		unpack_msg(msg, buffer);
+		if(unpack_msg(msg, buffer) == SLURM_ERROR) 
+			fatal("slurmd_step: we didn't unpack the "
+			      "request correctly");
+				
 		launch_req = msg->data;
-		/* if((rc = read(STDIN_FILENO,&launch_req->uid, */
-/* 			      sizeof(uint32_t))) == -1) { */
-/* 			error ("slurmd_step: couldn't read launch_req: %m", */
-/* 			       rc); */
-/* 			exit(1); */
-/* 		} */
-		info("running a launch_task %d.",launch_req->job_id);
-/* 		if((rc = read(STDIN_FILENO,&launch_req->gid, */
-/* 			  sizeof(uint32_t))) */
-/* 		   == -1) { */
-/* 			error ("fork_slurmd: couldn't read " */
-/* 			       "gid: %m", rc); */
-/* 			exit(1); */
-/* 		} */
-/* 		if((rc = read(STDIN_FILENO,&launch_req->tasks_to_launch, */
-/* 			  sizeof(uint32_t))) */
-/* 		   == -1) { */
-/* 			error ("fork_slurmd: couldn't read " */
-/* 			       "tasks_to_launch: %m", rc); */
-/* 			exit(1); */
-/* 		} */
-/* 		if((rc = read(STDIN_FILENO,&launch_req->nprocs, */
-/* 			  sizeof(uint32_t))) */
-/* 		   == -1) { */
-/* 			error ("fork_slurmd: couldn't read " */
-/* 			       "nprocs: %m", rc); */
-/* 			exit(1); */
-/* 		} */
-/* 		if((rc = read(STDIN_FILENO,&launch_req->job_id, */
-/* 			  sizeof(uint32_t))) */
-/* 		   == -1) { */
-/* 			error ("fork_slurmd: couldn't read " */
-/* 			       "job_id: %m", rc); */
-/* 			exit(1); */
-/* 		} */
-/* 		if((rc = read(STDIN_FILENO,&launch_req->job_step_id, */
-/* 			  sizeof(uint32_t))) */
-/* 		   == -1) { */
-/* 			error ("fork_slurmd: couldn't read " */
-/* 			       "job_step_id: %m", rc); */
-/* 			exit(1); */
-/* 		} */
-		free_buf(buffer);		
-		if((rc = read(STDIN_FILENO, &len, sizeof(int))) == -1) {
-			error ("slurmd_step: couldn't read len: %m",
-			       rc);
-			exit(1);
-		}
-		incoming_buffer = xmalloc(len);
-		if((rc = read(STDIN_FILENO, incoming_buffer, 
-			      sizeof(char)*len)) == -1) {
-			error ("slurmd_step: couldn't read launch_req: %m",
-			       rc);
-			exit(1);
-		}
-		buffer = create_buf(incoming_buffer,len);
-	
-		cli = xmalloc(sizeof(slurm_addr));
-		slurm_unpack_slurm_addr_no_alloc(cli, buffer);
-
 		free_buf(buffer);
-		if((rc = read(STDIN_FILENO, &len, sizeof(int))) == -1) {
-			error ("slurmd_step: couldn't read len: %m",
-			       rc);
-			exit(1);
-		}
-		incoming_buffer = xmalloc(len);
-		if((rc = read(STDIN_FILENO, incoming_buffer, 
-			      sizeof(char)*len)) == -1) {
-			error ("slurmd_step: couldn't read launch_req: %m",
-			       rc);
-			exit(1);
-		}
-		buffer = create_buf(incoming_buffer,len);
-		
-		self = xmalloc(sizeof(slurm_addr));
-		slurm_unpack_slurm_addr_no_alloc(self, buffer);
-
-		info("running a launch_task");
-		
-		exit (mgr_launch_tasks(launch_req, cli, self));
+		debug2("running a launch_task %d.",launch_req->job_id);
+		exit (mgr_launch_tasks(msg->data, cli, self));
 		break;
 	case SPAWN_TASKS:
-		if((rc = read(STDIN_FILENO,&launch_req,
-			      sizeof(spawn_task_request_msg_t))) == -1) {
-			error ("slurmd_step: couldn't read spawn_req: %m",
-			       rc);
-			exit(1);
-		}
-		if((rc = read(STDIN_FILENO,&cli,
-			      sizeof(slurm_addr))) == -1) {
-			error ("slurmd_step: couldn't read slurm_addr 1: %m",
-			       rc);
-			exit(1);
-		}
-		if((rc = read(STDIN_FILENO,&self,
-			      sizeof(slurm_addr))) == -1) {
-			error ("slurmd_step: couldn't read slurm_addr 2: %m",
-			       rc);
-			exit(1);
-		}
 		debug2("running a spawn_task");
-		exit (mgr_spawn_task(spawn_req, cli, self));
+		msg->msg_type = REQUEST_SPAWN_TASK;
+		if(unpack_msg(msg, buffer) == SLURM_ERROR) 
+			fatal("slurmd_step: we didn't unpack the "
+			      "request correctly");
+		free_buf(buffer);
+		exit (mgr_spawn_task(msg->data, cli, self));
 		break;
 	default:
 		fatal("Was sent a task I didn't understand");
 		break;
 	}
+	
+
+
 	return 0;
 }

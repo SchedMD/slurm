@@ -22,7 +22,7 @@ slurmd_SOURCES = 	        	\
 	task.c task.h			\
 	get_mach_stat.c get_mach_stat.h	\
 	read_proc.c 	        	\
-	slurmd_job.c slurmd_job.h			\
+	slurmd_job.c slurmd_job.h	\
 	io.c io.h			\
 	semaphore.c semaphore.h		\
 	shm.c shm.h			\
@@ -47,6 +47,7 @@ slurmd_step_SOURCES = 	        	\
 	task.c task.h			\
 	slurmd_job.c slurmd_job.h	\
 	io.c io.h			\
+	semaphore.c semaphore.h		\
 	shm.c shm.h			\
 	fname.c fname.h			\
 	ulimits.c ulimits.h     	\

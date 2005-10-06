@@ -361,6 +361,32 @@ slurmd_get_addr(slurm_addr *a, uint16_t *port, char *buf, uint32_t len)
 #endif
 	return;
 }
+extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer)
+{
+	xassert(conf != NULL);
+	packstr(conf->hostname, buffer);
+	packstr(conf->spooldir, buffer);
+	packstr(conf->node_name, buffer);
+	packstr(conf->logfile, buffer);
+	packstr(conf->cf.job_acct_parameters, buffer);
+	pack32(conf->debug_level, buffer);
+	
+}
+extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
+{
+	uint16_t uint16_tmp;
+	safe_unpackstr_xmalloc(&conf->hostname, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&conf->spooldir, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&conf->node_name, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&conf->logfile, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&conf->cf.job_acct_parameters, 
+			       &uint16_tmp, buffer);
+	safe_unpack32(&conf->debug_level, buffer);
+	
+	return SLURM_SUCCESS;
+unpack_error:
+	return SLURM_ERROR;
+}
 
 static void
 _set_job_log_prefix(slurmd_job_t *job)

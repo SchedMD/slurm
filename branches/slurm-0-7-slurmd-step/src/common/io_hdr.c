@@ -67,7 +67,6 @@ io_hdr_unpack(io_hdr_t *hdr, Buf buffer)
 	safe_unpack16(&hdr->version, buffer);
 
 	safe_unpackmem((char *) hdr->key, &val, buffer);
-
 	if (val != SLURM_IO_KEY_SIZE)
 		goto unpack_error;
 
