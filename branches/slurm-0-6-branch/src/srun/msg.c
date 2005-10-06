@@ -184,10 +184,8 @@ static void _dump_proctable(srun_job_t *job)
 	for (node_inx=0; node_inx<job->nhosts; node_inx++) {
 		if (!opt.overcommit)
 			max_task = job->cpus[node_inx];
-		for (task_inx=0; task_inx<max_task; task_inx++) {
+		for (task_inx=0; task_inx<job->ntask[node_inx]; task_inx++) {
 			taskid = job->tids[node_inx][task_inx];
-			if ((task_inx > 0) && (taskid == 0))
-				break;
 			tv = &MPIR_proctable[taskid];
 			info("task:%d, host:%s, pid:%d",
 				taskid, tv->host_name, tv->pid);

@@ -545,11 +545,8 @@ _job_create_internal(allocation_info_t *info)
 	/* Build task id list for each host */
 	job->tids   = xmalloc(job->nhosts * sizeof(uint32_t *));
 	job->hostid = xmalloc(opt.nprocs  * sizeof(uint32_t));
-	for (i = 0; i < job->nhosts; i++) {
-		/* leave space for trailing zero */
-		job->tids[i] = xmalloc((job->ntask[i] + 1) 
-			* sizeof(uint32_t));
-	}
+	for (i = 0; i < job->nhosts; i++)
+		job->tids[i] = xmalloc(job->ntask[i] * sizeof(uint32_t));
 
 	if (opt.distribution == SRUN_DIST_UNKNOWN) {
 		if (opt.nprocs <= job->nhosts)
