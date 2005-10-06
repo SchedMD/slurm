@@ -44,7 +44,7 @@
 #ifdef HAVE_BGL_FILES
 
 /* Determine if specific slurm node is already in DOWN or DRAIN state */
-static bool _node_already_down(char *node_name)
+extern bool node_already_down(char *node_name)
 {
 	uint16_t base_state;
 	struct node_record *node_ptr = find_node_record(node_name);
@@ -128,7 +128,7 @@ static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bgl)
 		}
 		snprintf(bgl_down_node, sizeof(bgl_down_node), "bgl%d%d%d",
 			 bp_loc.X, bp_loc.Y, bp_loc.Z);
-		if (_node_already_down(bgl_down_node))
+		if (node_already_down(bgl_down_node))
 			break;
 
 		error("switch for node %s is bad", bgl_down_node);
@@ -217,7 +217,7 @@ static void _test_down_nodes(rm_BGL_t *bgl)
 		snprintf(bgl_down_node, sizeof(bgl_down_node), "bgl%d%d%d", 
 			 bp_loc.X, bp_loc.Y, bp_loc.Z);
 
-		if (_node_already_down(bgl_down_node))
+		if (node_already_down(bgl_down_node))
 			continue;
 
 		debug("_test_down_nodes: %s in state %s", 
