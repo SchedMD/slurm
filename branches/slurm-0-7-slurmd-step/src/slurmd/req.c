@@ -290,25 +290,29 @@ _fork_new_slurmd(slurmd_step_type_t type, void *req,
 			      "cli buffer: %m", rc);
 		}				
 		free_buf(buffer);
-				
-		buffer = init_buf(0);
-		slurm_pack_slurm_addr(self, buffer);
-		len = get_buf_offset(buffer);
+		if(self) {
+			buffer = init_buf(0);
+			slurm_pack_slurm_addr(self, buffer);
+			len = get_buf_offset(buffer);
+		} else 
+			len = 0;
+			
 		/* send len of packed self over to slurmd_step */
 		if((rc = write(fds[1], &len, sizeof(int)))
 		   == -1) {
 			fatal("fork_slurmd: couldn't write "
 			       "self len: %m", rc);
 		}
-		/* send packed self over to slurmd_step */
-		if((rc = write(fds[1], get_buf_data(buffer), 
-			  sizeof(char)*len))
-		   == -1) {
-			fatal("fork_slurmd: couldn't write "
-			       "self buffer: %m", rc);
+		if(self) {
+			/* send packed self over to slurmd_step */
+			if((rc = write(fds[1], get_buf_data(buffer), 
+				       sizeof(char)*len))
+			   == -1) {
+				fatal("fork_slurmd: couldn't write "
+				      "self buffer: %m", rc);
+			}
+			free_buf(buffer);
 		}
-		free_buf(buffer);
-
 		switch(type) {
 		case LAUNCH_BATCH_JOB:
 			msg->msg_type = REQUEST_BATCH_JOB_LAUNCH;

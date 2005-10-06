@@ -122,30 +122,32 @@ main (int argc, char *argv[])
 		exit(1);
 	}
 	
-	/* recieve packed self from main slurmd */
-	incoming_buffer = xmalloc(len);
-	if((rc = read(STDIN_FILENO, incoming_buffer, 
-		      sizeof(char)*len)) == -1) {
-		error ("slurmd_step: couldn't read launch_req: %m",
-		       rc);
-		exit(1);
-	}
-	buffer = create_buf(incoming_buffer,len);
+	if(len > 0) {
+		/* recieve packed self from main slurmd */
+		incoming_buffer = xmalloc(len);
+		if((rc = read(STDIN_FILENO, incoming_buffer, 
+			      sizeof(char)*len)) == -1) {
+			error ("slurmd_step: couldn't read launch_req: %m",
+			       rc);
+			exit(1);
+		}
+		buffer = create_buf(incoming_buffer,len);
 		
-	self = xmalloc(sizeof(slurm_addr));
-	if(slurm_unpack_slurm_addr_no_alloc(self, buffer)
-	   == SLURM_ERROR) {
-		fatal("slurmd_step: problem with unpack of "
-		      "slurmd_conf");
+		self = xmalloc(sizeof(slurm_addr));
+		if(slurm_unpack_slurm_addr_no_alloc(self, buffer)
+		   == SLURM_ERROR) {
+			fatal("slurmd_step: problem with unpack of "
+			      "slurmd_conf");
+		}
+		free_buf(buffer);
 	}
-	free_buf(buffer);
-
+		
 	/* recieve len of packed req from main slurmd */
 	if((rc = read(STDIN_FILENO, &len, sizeof(int))) == -1) {
 		fatal("slurmd_step: couldn't read len: %m",
 		      rc);
 	}
-	
+
 	/* recieve len of packed req from main slurmd */
 	incoming_buffer = xmalloc(len);
 	if((rc = read(STDIN_FILENO, incoming_buffer, 
