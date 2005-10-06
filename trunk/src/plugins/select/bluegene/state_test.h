@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  state_test.h - header for Blue Gene node and switch state test. 
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -25,6 +26,9 @@
 
 #ifndef _STATE_TEST_H_
 #define _STATE_TEST_H_
+
+/* Determine if specific slurm node is already in DOWN or DRAIN state */
+extern bool node_already_down(char *node_name);
 
 /*
  * Search MMCS for failed switches and nodes. Failed resources are DRAINED in 

@@ -45,6 +45,7 @@
 
 #include <pwd.h>
 #include <sys/types.h>
+#include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
@@ -58,7 +59,8 @@
 #define RETRY_BOOT_COUNT 3
 
 #ifdef HAVE_BGL_FILES
-static int _partition_is_deallocating(bgl_record_t *bgl_record);
+static int  _partition_is_deallocating(bgl_record_t *bgl_record);
+static void _drain_as_needed(char *node_list, char *reason);
 
 static int _partition_is_deallocating(bgl_record_t *bgl_record)
 {
@@ -109,6 +111,35 @@ static int _partition_is_deallocating(bgl_record_t *bgl_record)
 			xstrdup(bgl_record->user_name);
 	}
 	return SLURM_SUCCESS;
+}
+
+/* If any nodes in node_list are drained, draining, or down, 
+ *   then just return
+ *   else drain all of the nodes
+ * This function lets us drain an entire bglblock only if 
+ * we have not already identified a specific node as bad. */
+static void _drain_as_needed(char *node_list, char *reason)
+{
+	bool needed = true;
+	hostlist_t hl;
+	char *host;
+
+	/* scan node list */
+	hl = hostlist_create(node_list);
+	if (!hl) {
+		slurm_drain_nodes(node_list, reason);
+		return;
+	}
+	while ((host = hostlist_shift(hl))) {
+		if (node_already_down(host)) {
+			needed = false;
+			break;
+		}
+	}
+	hostlist_destroy(hl);
+
+	if (needed)
+		slurm_drain_nodes(node_list, reason);
 }
 #endif
 
@@ -344,12 +375,12 @@ extern int update_partition_list()
 					now = time(NULL);
 					time_ptr = localtime(&now);
 					strftime(reason, sizeof(reason),
-						 "update_partition_list: "
-						 "Boot fails "
-						 "[SLURM@%b %d %H:%M]",
-						 time_ptr);
-					slurm_drain_nodes(bgl_record->nodes, 
-							  reason);
+						"update_partition_list: "
+						"Boot fails "
+						"[SLURM@%b %d %H:%M]",
+						time_ptr);
+					_drain_as_needed(bgl_record->nodes,
+						reason);
 					bgl_record->boot_state = 0;
 					bgl_record->boot_count = 0;
 				}

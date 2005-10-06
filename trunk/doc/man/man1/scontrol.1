@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "September 2005" "scontrol 0.7" "Slurm components"
+.TH SCONTROL "1" "October 2005" "scontrol 0.7" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -205,7 +205,7 @@ Set the job's name to the specified value.
 \fIPartition\fP=<name>
 Set the job's partition to the specified value.
 .TP
-\fIPriority\fP=<minutes>
+\fIPriority\fP=<number>
 Set the job's priority to the specified value.
 .TP
 \fIReqNodeList\fP=<nodes>
@@ -254,10 +254,6 @@ Reset the required job geometry.
 On Blue Gene the value should be three digits separated by 
 "x" or ",". The digits represent the allocation size in 
 X, Y and Z dimentions (e.g. "2x3x4").
-.TP
-\fINodeUse\fP=<use>
-Reset the mode of node use.
-Possible values on Blue Gene are "VIRTUAL" and "COPROCESSOR".
 .TP
 \fIRotate\fP=<yes|no>
 Permit the job's geometry to be rotated.
