@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
     for srun's --debuger-test option).
  -- Bluegene plugin sets end time for job terminated due to removed 
     bglblock.
+ -- Bluegene plugin drains an entire bglblock on repeated boot failures 
+    only if it has not identified a specific node as being bad.
 
 * Changes in SLURM 0.6.2
 ========================
