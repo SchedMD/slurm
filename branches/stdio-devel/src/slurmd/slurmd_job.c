@@ -200,10 +200,10 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	srun->ofname = xstrdup(msg->ofname);
 	srun->efname = xstrdup(msg->efname);
 	srun->ifname = xstrdup(msg->ifname);
+	job->buffered_stdio = msg->buffered_stdio;
 
 	job->argc    = msg->argc;
 	job->argv    = _array_copy(job->argc, msg->argv);
-	
 
 	job->nnodes  = msg->nnodes;
 	job->nodeid  = msg->srun_node_id;

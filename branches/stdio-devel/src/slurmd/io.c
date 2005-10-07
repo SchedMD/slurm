@@ -1045,11 +1045,17 @@ _task_build_message(struct task_out_info *out, slurmd_job_t *job, cbuf_t cbuf)
 	if (msg == NULL)
 		return NULL;
 	ptr = msg->data + io_hdr_packed_size();
-	avail = cbuf_peek_line(cbuf, ptr, MAX_MSG_LEN, 1);
-	if (avail >= MAX_MSG_LEN)
-		must_truncate = true;
 
-	if (must_truncate) {
+	if (job->buffered_stdio) {
+		avail = cbuf_peek_line(cbuf, ptr, MAX_MSG_LEN, 1);
+		if (avail >= MAX_MSG_LEN)
+			must_truncate = true;
+	}
+
+	debug3("  buffered_stdio is %s", job->buffered_stdio ? "true" : "false");
+	debug3("  must_truncate  is %s", must_truncate ? "true" : "false");
+
+	if (must_truncate || !job->buffered_stdio) {
 		n = cbuf_read(cbuf, ptr, MAX_MSG_LEN);
 	} else {
 		n = cbuf_read_line(cbuf, ptr, MAX_MSG_LEN, -1);

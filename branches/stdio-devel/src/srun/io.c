@@ -493,7 +493,8 @@ static int _write_msg(int fd, void *buf, int len, int taskid)
 		_write_label(fd, taskid);
 	if (end == NULL) { /* no newline found */
 		rc = _write_line(fd, start, len);
-		_write_newline(fd);
+		if (opt.labelio)
+			_write_newline(fd);
 	} else {
 		line_len = (int)(end - start) + 1;
 		rc = _write_line(fd, start, line_len);

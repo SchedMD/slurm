@@ -281,6 +281,8 @@ typedef struct launch_tasks_request_msg {
 	char     *ofname;
 	char     *efname;
 	char     *ifname;
+	/* buffered stdio flag: 1 for line-buffered, 0 for unbuffered */
+	uint8_t   buffered_stdio;
 
 	uint32_t   slurmd_debug; /* remote slurmd debug level */
 

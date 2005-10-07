@@ -136,6 +136,9 @@ typedef struct slurmd_job {
 			       * traffic "outgoing" means traffic from the
 			       * tasks to srun.
 			       */
+	uint8_t	buffered_stdio; /* stdio buffering flag, 1 for line-buffering,
+				 * 0 for no buffering
+				 */
 
 	pthread_t      ioid;  /* pthread id of IO thread                    */
 

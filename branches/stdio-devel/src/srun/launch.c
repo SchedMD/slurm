@@ -134,6 +134,7 @@ launch(void *arg)
 		r->ofname  = fname_remote_string (job->ofname);
 		r->efname  = fname_remote_string (job->efname);
 		r->ifname  = fname_remote_string (job->ifname);
+		r->buffered_stdio = !opt.unbuffered;
 
 		if (opt.parallel_debug)
 			r->task_flags |= TASK_PARALLEL_DEBUG;
