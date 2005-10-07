@@ -215,17 +215,20 @@ _server_readable(eio_obj_t *obj)
 		return false;
 	}
 
-	for (i = 0; i < s->job->ntasks; i++) {
-		fout = s->job->iostdout[i]->arg;
-		ferr = s->job->iostderr[i]->arg;
+	if (s->job->stdout) {
+		fout = (struct file_write_info *)s->job->stdout->arg;
 		if (fout->eof == false) {
-			debug3("  task %d stdout no eof", i);
-		}
-		if (ferr->eof == false) {
-			debug3("  task %d stderr no eof", i);
-		}
-		if (fout->eof == false || ferr->eof == false)
+			debug3("  stdout no eof");
 			return true;
+		}
+	}
+
+	if (s->job->stderr) {
+		ferr = (struct file_write_info *)s->job->stderr->arg;
+		if (ferr->eof == false) {
+			debug3("  stderr no eof");
+			return true;
+		}
 	}
 
 	debug3("  false");
@@ -279,7 +282,8 @@ _server_read(eio_obj_t *obj, List objs)
 			s->in_msg = NULL;
 			return SLURM_SUCCESS;
 		}
-		debug3("  read %d bytes", n);
+
+		*(char *)(buf + n) = '\0';
 		debug3("\"%s\"", buf);
 		s->in_remaining -= n;
 		if (s->in_remaining > 0)
@@ -295,9 +299,9 @@ _server_read(eio_obj_t *obj, List objs)
 
 		s->in_msg->ref_count = 1;
 		if (s->in_msg->header.type == SLURM_IO_STDOUT)
-			obj = s->job->iostdout[s->in_msg->header.gtaskid];
+			obj = s->job->stdout;
 		else
-			obj = s->job->iostderr[s->in_msg->header.gtaskid];
+			obj = s->job->stderr;
 		info = (struct file_write_info *) obj->arg;
 		list_enqueue(info->msg_queue, s->in_msg);
 
@@ -313,19 +317,21 @@ _server_writable(eio_obj_t *obj)
 	struct server_io_info *s = (struct server_io_info *) obj->arg;
 
 	debug3("Called _server_writable");
-	if (s->out_msg != NULL)
-		debug3("  s->out_msg != NULL");
-	if (!list_is_empty(s->msg_queue))
-		debug3("  s->msg_queue queue length = %d",
-		       list_count(s->msg_queue));
 
+	if (s->out_eof) {
+		debug3("  false, eof");
+		return false;
+	}
 	if (obj->shutdown == true) {
 		debug3("  false, shutdown");
 		return false;
 	}
 	if (s->out_msg != NULL
-	    || !list_is_empty(s->msg_queue))
+	    || !list_is_empty(s->msg_queue)) {
+		debug3("  true, s->msg_queue length = %d",
+		       list_count(s->msg_queue));
 		return true;
+	}
 
 	debug3("  false");
 	return false;
@@ -362,10 +368,17 @@ _server_write(eio_obj_t *obj, List objs)
 	buf = s->out_msg->data + (s->out_msg->length - s->out_remaining);
 again:
 	if ((n = write(obj->fd, buf, s->out_remaining)) < 0) {
-		if (errno == EINTR)
+		if (errno == EINTR) {
 			goto again;
-		/* FIXME handle error */
-		return SLURM_ERROR;
+		} else if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
+			debug3("  got EAGAIN in _server_write");
+			return SLURM_SUCCESS;
+		} else {
+			error("_server_write write failed: %m");
+			s->out_eof = true;
+			/* FIXME - perhaps we should free the message here? */
+			return SLURM_ERROR;
+		}
 	}
 	debug3("Wrote %d bytes to socket", n);
 	s->out_remaining -= n;
@@ -712,20 +725,6 @@ _io_thr_internal(void *job_arg)
 	return NULL;
 }
 
-static FILE *
-_fopen(char *filename)
-{
-	FILE *fp;
-
-	xassert(filename != NULL);
-
-	if (!(fp = fopen(filename, "w"))) 
-		error ("Unable to open `%s' for writing: %m", filename);
-
-	return fp;
-}
-
-
 static eio_obj_t *
 _create_listensock_eio(int fd, srun_job_t *job)
 {
@@ -949,7 +948,9 @@ alloc_io_buf(void)
 		return NULL;
 	buf->ref_count = 0;
 	buf->length = 0;
-	buf->data = xmalloc(MAX_MSG_LEN + io_hdr_packed_size());
+	/* The following "+ 1" is just temporary so I can stick a \0 at
+	   the end and do a printf of the data pointer */
+	buf->data = xmalloc(MAX_MSG_LEN + io_hdr_packed_size() + 1);
 	if (!buf->data) {
 		xfree(buf);
 		return NULL;

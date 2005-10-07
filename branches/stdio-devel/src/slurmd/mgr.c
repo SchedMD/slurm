@@ -368,13 +368,26 @@ _setup_io(slurmd_job_t *job)
 	struct passwd *spwd = NULL;
 
 	debug2("Entering _setup_io");
-	/* 
-	 * Save current UID/GID
-	 */
+
+	/* Save current UID/GID */
 	if (!(spwd = getpwuid(geteuid()))) {
 		error("getpwuid: %m");
 		return ESLURMD_IO_ERROR;
 	}
+
+	/*
+	 * Temporarily drop permissions, initialize task stdio file
+	 * decriptors (which may be connected to files), then
+	 * reclaim privileges.
+	 */
+	if (_drop_privileges(job->pwd) < 0)
+		return ESLURMD_SET_UID_OR_GID_ERROR;
+
+	io_init_tasks_stdio(job);
+
+	if (_reclaim_privileges(spwd) < 0)
+		error("sete{u/g}id(%lu/%lu): %m", 
+		      (u_long) spwd->pw_uid, (u_long) spwd->pw_gid);
 
 	if (io_thread_start(job) < 0)
 		return ESLURMD_IO_ERROR;
@@ -384,19 +397,7 @@ _setup_io(slurmd_job_t *job)
 	 */
 	_slurmd_job_log_init(job);
 
-	/*
-	 * Temporarily drop permissions, initialize IO clients
-	 * (open files/connections for IO, etc), then reclaim privileges.
-	 */
-	if (_drop_privileges(job->pwd) < 0)
-		return ESLURMD_SET_UID_OR_GID_ERROR;
-
-	/* FIXME! Need to open files */
 	rc = io_client_connect(job);
-
-	if (_reclaim_privileges(spwd) < 0)
-		error("sete{u/g}id(%lu/%lu): %m", 
-		      (u_long) spwd->pw_uid, (u_long) spwd->pw_gid);
 
 #ifndef NDEBUG
 #  ifdef PR_SET_DUMPABLE

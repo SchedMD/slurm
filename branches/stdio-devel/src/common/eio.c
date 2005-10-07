@@ -287,11 +287,11 @@ _poll_handle_event(short revents, eio_obj_t *obj, List objList)
 			return;
 	}
 
-	if (((revents & POLLIN) || (revents & POLLHUP))
+	if ((revents & POLLHUP) && obj->ops->handle_close) {
+		(*obj->ops->handle_close) (obj, objList);
+	} else if (((revents & POLLIN) || (revents & POLLHUP)) 
 	    && obj->ops->handle_read ) {
 		(*obj->ops->handle_read ) (obj, objList);
-	} else if ((revents & POLLHUP) && obj->ops->handle_close) {
-		(*obj->ops->handle_close) (obj, objList);
 	}
 
 	if ((revents & POLLOUT) && obj->ops->handle_write) {

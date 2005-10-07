@@ -43,5 +43,7 @@ void free_io_buf(struct io_buf *buf);
 int   io_node_fail(char *nodelist, srun_job_t *job);
 int   io_thr_create(srun_job_t *job);
 eio_obj_t *create_file_write_eio_obj(int fd, srun_job_t *job);
+eio_obj_t *create_file_read_eio_obj(int fd, srun_job_t *job,
+				    uint16_t type, uint16_t gtaskid);
 
 #endif /* !_HAVE_IO_H */

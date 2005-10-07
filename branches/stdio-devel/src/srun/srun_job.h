@@ -127,9 +127,9 @@ typedef struct srun_job {
 	List eio_objs;          /* List of eio_obj_t pointers     */
 	int ioservers_ready;    /* Number of servers that established contact */
 	eio_obj_t **ioserver;	/* Array of nhosts pointers to eio_obj_t */
-	eio_obj_t **iostdout;   /* Array of ntasks pointers to eio_obj_t */
-	eio_obj_t **iostderr;   /* Array of ntasks pointers to eio_obj_t */
-	eio_obj_t **iostdin;    /* Array of ntasks pointers to eio_obj_t */
+	eio_obj_t *stdout;      /* stdout eio_obj_t               */
+	eio_obj_t *stderr;      /* stderr eio_obj_t               */
+	eio_obj_t *stdin;       /* stdin eio_obj_t                */
 	List free_io_buf;       /* List of free struct io_buf pointers */
 
 	pthread_t lid;		  /* launch thread id */
@@ -149,9 +149,6 @@ typedef struct srun_job {
 	io_filename_t *efname;
 
 	/* Output streams and stdin fileno */
-	FILE *outstream;
-	FILE *errstream;
-	int   stdinfd;
 	forked_msg_t *forked_msg;
 	select_jobinfo_t select_jobinfo;
 } srun_job_t;

@@ -67,10 +67,10 @@ io_hdr_unpack(io_hdr_t *hdr, Buf buffer)
 	safe_unpack16(&hdr->gtaskid, buffer);
 	safe_unpack16(&hdr->ltaskid, buffer);
 	safe_unpack32(&hdr->length, buffer);
-
 	return SLURM_SUCCESS;
 
     unpack_error:
+	error("io_hdr_unpack error: %m");
 	return SLURM_ERROR;
 }
 
@@ -87,23 +87,29 @@ io_hdr_packed_size()
 static int _full_read(int fd, void *buf, size_t count)
 {
 	int n;
+	int left;
+	void *ptr;
 
-	debug3("Entering _full_read");
-again:
-	if ((n = read(fd, (void *) buf, count)) < 0) {
-		if (errno == EINTR)
-			goto again;
-		/*_update_error_state(client, E_READ, errno);*/
-		debug3("Leaving  _full_read on error!");
-		return -1;
+	left = count;
+	ptr = buf;
+	while (left > 0) {
+	again:
+		if ((n = read(fd, (void *) ptr, left)) < 0) {
+			if (errno == EINTR
+			    || errno == EAGAIN
+			    || errno == EWOULDBLOCK)
+				goto again;
+			debug3("Leaving  _full_read on error!");
+			return -1;
+		} else if (n == 0) { /* got eof */
+			debug3("  _full_read (_client_read) got eof");
+			return 0;
+		}
+		left -= n;
+		ptr += n;
 	}
-	if (n == 0) { /* got eof */
-		debug3("  _full_read (_client_read) got eof");
-		return 0;
-	}
-	debug3("Leaving  _full_read, %d bytes of %d read", n, count);
 
-	return n;
+	return count;
 }
 
 /*
@@ -124,9 +130,9 @@ int io_hdr_read_fd(int fd, io_hdr_t *hdr)
 		n = -1;
 		goto fail;
 	}
-	debug3("Leaving  io_hdr_read_fd");
 
 fail:
+	debug3("Leaving  io_hdr_read_fd");
 	free_buf(buffer);
 	return n;
 }

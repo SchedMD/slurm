@@ -416,6 +416,100 @@ _set_nprocs(allocation_info_t *info)
 	}
 }
 
+static int
+_is_local_file (io_filename_t *fname)
+{
+	if (fname->name == NULL)
+		return 1;
+
+	return ((fname->type != IO_PER_TASK) && (fname->type != IO_ONE));
+}
+
+static void
+_init_stdio_eio_objs(srun_job_t *job)
+{
+	io_filename_t *inname, *outname, *errname;
+	int infd, outfd, errfd;
+	bool err_shares_out = false;
+
+	inname = fname_create(job, opt.ifname);
+	outname = fname_create(job, opt.ofname);
+	errname = fname_create(job, opt.efname);
+
+	/*
+	 * build stdin eio_obj_t
+	 */
+	if (_is_local_file(inname)) {
+		uint16_t type, destid;
+		if (inname->name == NULL) {
+			infd = STDIN_FILENO;
+		} else {
+			infd = open(inname->name, O_RDONLY);
+			if (infd == -1)
+				fatal("Could not open stdin file: %m");
+		}
+		fd_set_nonblocking(infd);
+		fd_set_close_on_exec(infd);
+		if (inname->type == IO_ONE) {
+			type = SLURM_IO_STDIN;
+			destid = inname->taskid;
+		} else {
+			type = SLURM_IO_ALLSTDIN;
+			destid = -1;
+		}
+		job->stdin = create_file_read_eio_obj(infd, job, type, destid);
+		list_enqueue(job->eio_objs, job->stdin);
+	}
+
+	/*
+	 * build stdout eio_obj_t
+	 */
+	if (_is_local_file(outname)) {
+		int refcount;
+		if (outname->name == NULL) {
+			outfd = STDOUT_FILENO;
+		} else {
+			outfd = open(outname->name,
+				     O_CREAT|O_WRONLY|O_TRUNC, 0644);
+			if (outfd == -1)
+				fatal("Could not open stdout file: %m");
+		}
+		if (outname->name != NULL
+		    && errname->name != NULL
+		    && !strcmp(outname->name, errname->name)) {
+			refcount = job->ntasks * 2;
+			err_shares_out = true;
+		} else {
+			refcount = job->ntasks;
+		}
+		/*job->stdout = create_file_write_eio_obj(outfd, job, refcount);*/
+		job->stdout = create_file_write_eio_obj(outfd, job);
+		list_enqueue(job->eio_objs, job->stdout);
+	}
+
+	/*
+	 * build a seperate stderr eio_obj_t only if stderr is not sharing
+	 * the stdout eio_obj_t
+	 */
+	if (err_shares_out) {
+		error("Doh, sharing");
+		job->stderr = job->stdout;
+	} else if (_is_local_file(errname)) {
+		int refcount;
+		if (errname->name == NULL) {
+			errfd = STDERR_FILENO;
+		} else {
+			errfd = open(errname->name,
+				     O_CREAT|O_WRONLY|O_TRUNC, 0644);
+			if (errfd == -1)
+				fatal("Could not open stderr file: %m");
+		}
+		refcount = job->ntasks;
+		/*job->stderr = create_file_write_eio_obj(errfd, job, refcount);*/
+		job->stderr = create_file_write_eio_obj(errfd, job);
+		list_enqueue(job->eio_objs, job->stderr);
+	}
+}
 
 static srun_job_t *
 _job_create_internal(allocation_info_t *info)
@@ -533,26 +627,7 @@ _job_create_internal(allocation_info_t *info)
 		job->ntasks += job->ntask[i];
 	}
 
-	/* FIXME!  Need more intelligent stdio object setup */
-	job->iostdout = (eio_obj_t **)xmalloc(job->ntasks*sizeof(eio_obj_t *));
-	obj = create_file_write_eio_obj(STDOUT_FILENO, job);
-	list_enqueue(job->eio_objs, obj);
-	for (i = 0; i < job->ntasks; i++) {
-		job->iostdout[i] = obj;
-	}
-	job->iostderr = (eio_obj_t **)xmalloc(job->ntasks*sizeof(eio_obj_t *));
-	obj = create_file_write_eio_obj(STDERR_FILENO, job);
-	list_enqueue(job->eio_objs, obj);
-	for (i = 0; i < job->ntasks; i++) {
-		job->iostderr[i] = obj;
-	}
-	job->iostdin = (eio_obj_t **)xmalloc(job->ntasks*sizeof(eio_obj_t *));
-	obj = create_file_read_eio_obj(STDIN_FILENO, job,
-				       SLURM_IO_ALLSTDIN, (uint16_t)-1);
-	list_enqueue(job->eio_objs, obj);
-	for (i = 0; i < job->ntasks; i++) {
-		job->iostdin[i] = obj;
-	}
+	_init_stdio_eio_objs(job);
 
 	/* Build task id list for each host */
 	job->tids   = xmalloc(job->nhosts * sizeof(uint32_t *));
@@ -572,7 +647,7 @@ _job_create_internal(allocation_info_t *info)
 	else
 		_dist_cyclic(job);
 
-	job_update_io_fnames(job);
+/* 	job_update_io_fnames(job); */
 
 	hostlist_destroy(hl);
 

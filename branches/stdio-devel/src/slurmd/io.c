@@ -151,16 +151,14 @@ struct task_out_info {
 /**********************************************************************
  * General declarations
  **********************************************************************/
-static int    _task_init_pipes(slurmd_task_info_t *t);
-static int    _create_task_eio_objs(slurmd_job_t *);
-static void * _io_thr(void *);
-static int    _send_io_init_msg(int sock, srun_key_t *key, int nodeid);
-static int    _init_pipes(slurmd_job_t *job);
-static void   _send_eof_msg(struct task_out_info *out);
+static void *_io_thr(void *);
+static int _send_io_init_msg(int sock, srun_key_t *key, int nodeid);
+static void _send_eof_msg(struct task_out_info *out);
 static struct io_buf *_task_build_message(struct task_out_info *out,
 					  slurmd_job_t *job, cbuf_t cbuf);
-static struct io_obj  * _io_obj(slurmd_job_t *, slurmd_task_info_t *, int, int);
-static void           * _io_thr(void *arg);
+static struct io_obj *_io_obj(slurmd_job_t *, slurmd_task_info_t *, int, int);
+static void *_io_thr(void *arg);
+static void _route_msg_task_to_client(eio_obj_t *obj);
 
 /**********************************************************************
  * IO client socket functions
@@ -237,13 +235,17 @@ _client_read(eio_obj_t *obj, List objs)
 			return SLURM_SUCCESS;
 		}
 		n = io_hdr_read_fd(obj->fd, &in->header);
-		if (n == 0) { /* got eof on socket read */
-			debug3("  got eof on _client_read header");
+		if (n <= 0) { /* got eof or fatal error */
+			debug3("  got eof or error _client_read header, n=%d", n);
 			in->eof = true;
 			list_enqueue(client->job->free_io_buf, in->msg);
 			in->msg = NULL;
 			return SLURM_SUCCESS;
 		}
+		debug3("in->header.length = %d", in->header.length);
+		if (in->header.length > MAX_MSG_LEN)
+			fatal("Message length of %d exceeds maximum of %d",
+			      in->header.length, MAX_MSG_LEN);
 		in->remaining = in->header.length;
 		in->msg->length = in->header.length;
 	}
@@ -269,11 +271,11 @@ _client_read(eio_obj_t *obj, List objs)
 			in->msg = NULL;
 			return SLURM_SUCCESS;
 		}
-		debug3("  read %d bytes", n);
-		debug3("\"%s\"", buf);
 		in->remaining -= n;
 		if (in->remaining > 0)
 			return SLURM_SUCCESS;
+		*(char *)(buf + n) = '\0';
+		debug3("\"%s\"", buf);
 	}
 
 	/*
@@ -294,22 +296,24 @@ _client_read(eio_obj_t *obj, List objs)
 			for (i = 0; i < client->job->ntasks; i++) {
 				task = client->job->task[i];
 				io = (struct task_in_info *)(task->in->arg);
-				list_enqueue(io->out.msg_queue, in->msg);
 				in->msg->ref_count++;
+				list_enqueue(io->out.msg_queue, in->msg);
 			}
+			debug3("  message ref_count = %d", in->msg->ref_count);
 		} else {
 			for (i = 0; i < client->job->ntasks; i++) {
 				task = client->job->task[i];
 				io = (struct task_in_info *)task->in->arg;
 				if (task->gtid != in->header.gtaskid)
 					continue;
-				list_enqueue(io->out.msg_queue, in->msg);
 				in->msg->ref_count++;
+				list_enqueue(io->out.msg_queue, in->msg);
 				break;
 			}
 		}
 	}
-	client->in.msg = NULL;
+	in->msg = NULL;
+	debug2("Leaving  _client_read");
 	return SLURM_SUCCESS;
 }
 
@@ -401,8 +405,10 @@ _task_writable(eio_obj_t *obj)
 
 	debug3("Called _task_writable");
 
-	if (out->msg != NULL || list_count(out->msg_queue) > 0)
+	if (out->msg != NULL || list_count(out->msg_queue) > 0) {
+		debug3("  true, list_count = %d", list_count(out->msg_queue));
 		return true;
+	}
 
 	debug3("  false (list_count = %d)", list_count(out->msg_queue));
 	return false;
@@ -416,6 +422,7 @@ _task_write(eio_obj_t *obj, List objs)
 	void *buf;
 	int n;
 
+	debug2("Entering _task_write");
 	xassert(in->magic == TASK_IN_MAGIC);
 
 	out = &in->out;
@@ -482,7 +489,7 @@ _create_task_out_eio(int fd, uint16_t type,
 	out->gtaskid = task->gtid;
 	out->ltaskid = task->id;
 	out->job = job;
-	out->buf = cbuf_create(MAX_MSG_LEN, MAX_MSG_LEN*16);
+	out->buf = cbuf_create(MAX_MSG_LEN, MAX_MSG_LEN*4);
 	out->eof = false;
 	out->eof_msg_sent = false;
 	if (cbuf_opt_set(out->buf, CBUF_OPT_OVERWRITE, CBUF_NO_DROP) == -1)
@@ -576,20 +583,138 @@ again:
 /**********************************************************************
  * General fuctions
  **********************************************************************/
+static char * 
+_local_filename (char *fname, int taskid)
+{
+	int id;
+
+	if (fname == NULL)
+		return NULL;
+
+	if ((id = fname_single_task_io(fname)) < 0) 
+		return fname;
+
+	if (id != taskid)
+		return "/dev/null";
+
+	return (NULL);
+}
+
+static int
+_init_task_stdio_fds(slurmd_job_t *job, slurmd_task_info_t *task,
+		     srun_info_t *srun)
+{
+	char *name;
+	int single;
+	int fd;
+	struct passwd *spwd = NULL;
+
+	/*
+	 *  Initialize stdin
+	 */
+	if ((name = _local_filename(srun->ifname, task->gtid)) != NULL) {
+		/* open file "name" on task's stdin */
+		name = fname_create(job, srun->ifname, task->gtid);
+		debug3("  stdin file name = %s", name);
+		if ((task->stdin = open(name, O_RDONLY)) == -1) {
+			error("Could not open stdin file: %m");
+			return SLURM_ERROR;
+		}
+		task->to_stdin = -1;  /* not used */
+	} else {
+		/* create pipe and eio object */
+		int pin[2];
+		if (pipe(pin) < 0) {
+			error("stdin pipe: %m");
+			return SLURM_ERROR;
+		}
+		task->stdin = pin[0];
+		task->to_stdin = pin[1];
+		fd_set_close_on_exec(task->to_stdin);
+		fd_set_nonblocking(task->to_stdin);
+		task->in = _create_task_in_eio(task->to_stdin, job);
+		list_append(job->objs, (void *)task->in);
+	}
+	
+	/*
+	 *  Initialize stdout
+	 */
+	if ((name = _local_filename(srun->ofname, task->gtid)) != NULL) {
+		/* open file "name" on task's stdout */
+		name = fname_create(job, srun->ofname, task->gtid);
+		debug3("  stdout file name = %s", name);
+		task->stdout = open(name, O_CREAT|O_WRONLY|O_TRUNC|O_APPEND,
+				    0666);
+		if (task->stdout == -1) {
+			error("Could not open stdout file: %m");
+			return SLURM_ERROR;
+		}
+		task->from_stdout == -1; /* not used */
+	} else {
+		/* create pipe and eio object */
+		int pout[2];
+		if (pipe(pout) < 0) {
+			error("stdout pipe: %m");
+			return SLURM_ERROR;
+		}
+		task->stdout = pout[1];
+		task->from_stdout = pout[0];
+		fd_set_close_on_exec(task->from_stdout);
+		fd_set_nonblocking(task->from_stdout);
+		task->out = _create_task_out_eio(task->from_stdout,
+						 SLURM_IO_STDOUT, job, task);
+		list_append(job->objs, (void *)task->out);
+	}
+
+	/*
+	 *  Initialize stderr
+	 */
+	if ((name = _local_filename(srun->efname, task->gtid)) != NULL) {
+		/* open file "name" on task's stdout */
+		name = fname_create(job, srun->efname, task->gtid);
+		debug3("  stderr file name = %s", name);
+		task->stderr = open(name, O_CREAT|O_WRONLY|O_TRUNC|O_APPEND,
+				    0666);
+		if (task->stderr == -1) {
+			error("Could not open stderr file: %m");
+			return SLURM_ERROR;
+		}
+		task->from_stderr == -1; /* not used */
+	} else {
+		/* create pipe and eio object */
+		int perr[2];
+		if (pipe(perr) < 0) {
+			error("stderr pipe: %m");
+			return SLURM_ERROR;
+		}
+		task->stderr = perr[1];
+		task->from_stderr = perr[0];
+		fd_set_close_on_exec(task->from_stderr);
+		fd_set_nonblocking(task->from_stderr);
+		task->err = _create_task_out_eio(task->from_stderr,
+						 SLURM_IO_STDERR, job, task);
+		list_append(job->objs, (void *)task->err);
+	}
+}
+
+int
+io_init_tasks_stdio(slurmd_job_t *job)
+{
+	srun_info_t *srun;
+	int i;
+
+	srun = list_peek(job->sruns);
+	xassert(srun != NULL);
+
+	for (i = 0; i < job->ntasks; i++) {
+		_init_task_stdio_fds(job, job->task[i], srun);
+	}
+}
 
 int
 io_thread_start(slurmd_job_t *job) 
 {
 	pthread_attr_t attr;
-
-	if (_init_pipes(job) == SLURM_FAILURE) {
-		error("io_handler: init_pipes failed: %m");
-		return SLURM_FAILURE;
-	}
-
-	/* create task event IO objects and append these to the objs list */
-	if (_create_task_eio_objs(job) < 0)
-		return SLURM_FAILURE;
 
 	slurm_attr_init(&attr);
 
@@ -654,15 +779,20 @@ _free_msg(struct io_buf *msg, slurmd_job_t *job)
 		list_enqueue(job->free_io_buf, msg);
 
 		/* Try packing messages from tasks' output cbufs */
+		if (job->task == NULL)
+			return;
 		for (i = 0; i < job->ntasks; i++) {
-			_route_msg_task_to_client(job->task[i]->err);
-			if (list_is_empty(job->free_io_buf))
-				break;
-			_route_msg_task_to_client(job->task[i]->out);
-			if (list_is_empty(job->free_io_buf))
-				break;
+			if (job->task[i]->err != NULL) {
+				_route_msg_task_to_client(job->task[i]->err);
+				if (list_is_empty(job->free_io_buf))
+					break;
+			}
+			if (job->task[i]->out != NULL) {
+				_route_msg_task_to_client(job->task[i]->out);
+				if (list_is_empty(job->free_io_buf))
+					break;
+			}
 		}
-
 		/* Kick the event IO engine */
 		eio_signal_wakeup(job->eio);
 	}
@@ -722,31 +852,6 @@ _io_thr(void *arg)
 	eio_handle_mainloop(job->eio);
 	debug("IO handler exited");
 	return (void *)1;
-}
-
-static int
-_create_task_eio_objs(slurmd_job_t *job)
-{
-	int          i;
-	slurmd_task_info_t *t;
-	eio_obj_t    *obj;
-
-	for (i = 0; i < job->ntasks; i++) {
-		t = job->task[i];
-
-		t->in = _create_task_in_eio(t->to_stdin, job);
-		list_append(job->objs, (void *)t->in );
-
-		t->out = _create_task_out_eio(t->from_stdout,
-					      SLURM_IO_STDOUT, job, t);
-		list_append(job->objs, (void *)t->out);
-
-		t->err = _create_task_out_eio(t->from_stderr,
-					      SLURM_IO_STDERR, job, t);
-		list_append(job->objs, (void *)t->err);
-	}
-
-	return SLURM_SUCCESS;
 }
 
 /* 
@@ -817,51 +922,6 @@ io_new_clients(slurmd_job_t *job)
 #if 0
 	return io_prepare_clients(job);
 #endif
-}
-
-static int
-_task_init_pipes(slurmd_task_info_t *t)
-{
-	int pin[2];
-	int pout[2];
-	int perr[2];
-
-	if (  (pipe(pin)  < 0) 
-	   || (pipe(pout) < 0) 
-	   || (pipe(perr) < 0) ) {
-		error("io_init_pipes: pipe: %m");
-		return SLURM_FAILURE;
-	}
-
-	t->stdin = pin[0];
-	t->to_stdin = pin[1];
-	t->stdout = pout[1];
-	t->from_stdout = pout[0];
-	t->stderr = perr[1];
-	t->from_stderr = perr[0];
-
-	fd_set_close_on_exec(t->to_stdin);
-	fd_set_close_on_exec(t->from_stdout);
-	fd_set_close_on_exec(t->from_stderr);
-
-	fd_set_nonblocking(t->to_stdin);
-	fd_set_nonblocking(t->from_stdout);
-	fd_set_nonblocking(t->from_stderr);
-
-	return SLURM_SUCCESS;
-}
-
-static int
-_init_pipes(slurmd_job_t *job)
-{
-	int i;
-	for (i = 0; i < job->ntasks; i++) {
-		if (_task_init_pipes(job->task[i]) == SLURM_FAILURE) {
-			error("init_pipes <task %d> failed", i);
-			return SLURM_FAILURE;
-		}
-	}
-	return SLURM_SUCCESS;
 }
 
 static int
@@ -1015,7 +1075,9 @@ alloc_io_buf(void)
 		return NULL;
 	buf->ref_count = 0;
 	buf->length = 0;
-	buf->data = xmalloc(MAX_MSG_LEN + io_hdr_packed_size());
+	/* The following "+ 1" is just temporary so I can stick a \0 at
+	   the end and do a printf of the data pointer */
+	buf->data = xmalloc(MAX_MSG_LEN + io_hdr_packed_size() + 1);
 	if (!buf->data) {
 		xfree(buf);
 		return NULL;

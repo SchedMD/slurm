@@ -174,9 +174,9 @@ int fname_single_task_io (const char *fmt)
 	taskid = strtoul (fmt, &p, 10);
 
 	if (*p == '\0')
-		return ((int) taskid);
+		return (int)taskid;
 
-	return (-1);
+	return -1;
 }
 
 int 

@@ -41,6 +41,12 @@ struct io_buf *alloc_io_buf(void);
 void free_io_buf(struct io_buf *buf);
 
 /*
+ * Initialize each task's standard I/O file descriptors.  The file descriptors
+ * may be files, or may be the end of a pipe which is handled by an eio_obj_t.
+ */
+int io_init_tasks_stdio(slurmd_job_t *job);
+
+/*
  * Start IO handling thread.
  * Initializes IO pipes, creates IO objects and appends them to job->objs,
  * and opens 2*ntask initial connections for stdout/err, also appending these
@@ -65,10 +71,5 @@ int io_dup_stdio(slurmd_task_info_t *t);
 void io_close_task_fds(slurmd_job_t *job);
 
 void io_close_all(slurmd_job_t *job);
-
-/*
- * Connect initial N tasks to their stdio
- */
-int io_prepare_clients(slurmd_job_t *job);
 
 #endif /* !_IO_H */
