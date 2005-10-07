@@ -128,7 +128,14 @@ typedef struct slurmd_job {
 	List           objs;  /* List of io_obj_t pointers (see eio.h)      */
 	List 	       sruns; /* List of srun_info_t pointers               */
 	List           clients; /* List of struct client_io_info pointers   */
-	List           free_io_buf; /* List of free struct io_buf pointers  */
+	List free_incoming;   /* List of free struct io_buf * for incoming
+			       * traffic. "incoming" means traffic from srun
+			       * to the tasks.
+			       */
+	List free_outgoing;   /* List of free struct io_buf * for outgoing
+			       * traffic "outgoing" means traffic from the
+			       * tasks to srun.
+			       */
 
 	pthread_t      ioid;  /* pthread id of IO thread                    */
 

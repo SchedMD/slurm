@@ -175,9 +175,13 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->eio     = eio_handle_create(job->objs);
 	job->sruns   = list_create((ListDelF) _srun_info_destructor);
 	job->clients = list_create(NULL); /* FIXME! Needs destructor */
-	job->free_io_buf = list_create(NULL); /* FIXME! Needs destructor */
+	job->free_incoming = list_create(NULL); /* FIXME! Needs destructor */
 	for (i = 0; i < 10; i++) {
-		list_enqueue(job->free_io_buf, alloc_io_buf());
+		list_enqueue(job->free_incoming, alloc_io_buf());
+	}
+	job->free_outgoing = list_create(NULL); /* FIXME! Needs destructor */
+	for (i = 0; i < 10; i++) {
+		list_enqueue(job->free_outgoing, alloc_io_buf());
 	}
 
 	job->envtp   = xmalloc(sizeof(env_t));

@@ -183,7 +183,7 @@ _client_readable(eio_obj_t *obj)
 	}
 
 	if (client->in.msg != NULL
-	    || !list_is_empty(client->job->free_io_buf))
+	    || !list_is_empty(client->job->free_incoming))
 		return true;
 
 	debug3("  false");
@@ -229,16 +229,16 @@ _client_read(eio_obj_t *obj, List objs)
 	 * Read the header, if a message read is not already in progress
 	 */
 	if (in->msg == NULL) {
-		in->msg = list_dequeue(client->job->free_io_buf);
+		in->msg = list_dequeue(client->job->free_incoming);
 		if (in->msg == NULL) {
-			debug3("  _client_read free_io_buf is empty");
+			debug3("  _client_read free_incoming is empty");
 			return SLURM_SUCCESS;
 		}
 		n = io_hdr_read_fd(obj->fd, &in->header);
 		if (n <= 0) { /* got eof or fatal error */
 			debug3("  got eof or error _client_read header, n=%d", n);
 			in->eof = true;
-			list_enqueue(client->job->free_io_buf, in->msg);
+			list_enqueue(client->job->free_incoming, in->msg);
 			in->msg = NULL;
 			return SLURM_SUCCESS;
 		}
@@ -267,7 +267,7 @@ _client_read(eio_obj_t *obj, List objs)
 		if (n == 0) { /* got eof */
 			debug3("  got eof on _client_read body");
 			in->eof = true;
-			list_enqueue(client->job->free_io_buf, in->msg);
+			list_enqueue(client->job->free_incoming, in->msg);
 			in->msg = NULL;
 			return SLURM_SUCCESS;
 		}
@@ -365,7 +365,7 @@ again:
 	if (out->remaining > 0)
 		return SLURM_SUCCESS;
 
-	_free_msg(out->msg, client->job);
+	_free_outgoing_msg(out->msg, client->job);
 	out->msg = NULL;
 
 	return SLURM_SUCCESS;
@@ -440,7 +440,7 @@ _task_write(eio_obj_t *obj, List objs)
 		if (out->msg->length == 0) { /* eof message */
 			close(obj->fd);
 			obj->fd = -1;
-			_free_msg(out->msg, in->job);
+			_free_incoming_msg(out->msg, in->job);
 			out->msg = NULL;
 			return SLURM_SUCCESS;
 		}
@@ -462,7 +462,7 @@ again:
 	if (out->remaining > 0)
 		return SLURM_SUCCESS;
 
-	_free_msg(out->msg, in->job);
+	_free_incoming_msg(out->msg, in->job);
 	out->msg = NULL;
 
 	return SLURM_SUCCESS;
@@ -747,7 +747,7 @@ _route_msg_task_to_client(eio_obj_t *obj)
 
 	/* Pack task output into messages for transfer to a client */
 	while (cbuf_used(out->buf) > 0
-	       && !list_is_empty(out->job->free_io_buf)) {
+	       && !list_is_empty(out->job->free_outgoing)) {
 		debug3("cbuf_used = %d", cbuf_used(out->buf));
 		msg = _task_build_message(out, out->job, out->buf);
 		if (msg == NULL)
@@ -769,14 +769,29 @@ _route_msg_task_to_client(eio_obj_t *obj)
 }
 
 static void
-_free_msg(struct io_buf *msg, slurmd_job_t *job)
+_free_incoming_msg(struct io_buf *msg, slurmd_job_t *job)
 {
 	int i;
 
 	msg->ref_count--;
 	if (msg->ref_count == 0) {
 		/* Put the message back on the free List */
-		list_enqueue(job->free_io_buf, msg);
+		list_enqueue(job->free_incoming, msg);
+
+		/* Kick the event IO engine */
+		eio_signal_wakeup(job->eio);
+	}
+}
+
+static void
+_free_outgoing_msg(struct io_buf *msg, slurmd_job_t *job)
+{
+	int i;
+
+	msg->ref_count--;
+	if (msg->ref_count == 0) {
+		/* Put the message back on the free List */
+		list_enqueue(job->free_outgoing, msg);
 
 		/* Try packing messages from tasks' output cbufs */
 		if (job->task == NULL)
@@ -784,12 +799,12 @@ _free_msg(struct io_buf *msg, slurmd_job_t *job)
 		for (i = 0; i < job->ntasks; i++) {
 			if (job->task[i]->err != NULL) {
 				_route_msg_task_to_client(job->task[i]->err);
-				if (list_is_empty(job->free_io_buf))
+				if (list_is_empty(job->free_outgoing))
 					break;
 			}
 			if (job->task[i]->out != NULL) {
 				_route_msg_task_to_client(job->task[i]->out);
-				if (list_is_empty(job->free_io_buf))
+				if (list_is_empty(job->free_outgoing))
 					break;
 			}
 		}
@@ -982,9 +997,9 @@ _send_eof_msg(struct task_out_info *out)
 	Buf packbuf;
 
 	debug2("Entering _send_eof_msg");
-	msg = list_dequeue(out->job->free_io_buf);
+	msg = list_dequeue(out->job->free_outgoing);
 	if (msg == NULL) {
-		debug3("  free msg list empty, unable to send eof_msg");
+		debug3("  free_outgoing msg list empty, can't send eof_msg");
 		return;
 	}
 
@@ -1026,7 +1041,7 @@ _task_build_message(struct task_out_info *out, slurmd_job_t *job, cbuf_t cbuf)
 	int n;
 
 	debug2("Entering _task_build_message");
-	msg = list_dequeue(job->free_io_buf);
+	msg = list_dequeue(job->free_outgoing);
 	if (msg == NULL)
 		return NULL;
 	ptr = msg->data + io_hdr_packed_size();
@@ -1041,7 +1056,7 @@ _task_build_message(struct task_out_info *out, slurmd_job_t *job, cbuf_t cbuf)
 		if (n == 0) {
 			debug3("  partial line in buffer, ignoring");
 			debug2("Leaving  _task_build_message");
-			list_enqueue(job->free_io_buf, msg);
+			list_enqueue(job->free_outgoing, msg);
 			return NULL;
 		}
 	}
