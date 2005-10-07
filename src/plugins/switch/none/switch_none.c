@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  switch_none.c - Library for managing a switch with no
+ *  switch_none.c - Library for managing a switch with no special handling.
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
