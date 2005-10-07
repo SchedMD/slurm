@@ -1,6 +1,14 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.7.0-pre2
+=============================
+ -- New stdio protocol.  Now srun has just a single TCP stream to each node
+    of a job-step.  srun and slurmd comminicate over the TCP stream using a
+    simple messaging protocol.
+    WARNING:  The stdio rewrite is incomplete (in particular --attach support
+              is still missing), and not yet debugged.
+
 * Changes in SLURM 0.7.0-pre1
 =============================
  -- Support defered initiation of job (e.g. srun --begin=11:30 ...).
