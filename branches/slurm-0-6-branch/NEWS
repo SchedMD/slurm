@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.6.5
+========================
+ -- Sacct to report on job steps that never actually started.
+
 * Changes in SLURM 0.6.4
 ========================
  -- Bluegene plugin drains an entire bglblock on repeated boot failures
