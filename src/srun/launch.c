@@ -141,6 +141,7 @@ launch(void *arg)
 		r->ofname  = fname_remote_string (job->ofname);
 		r->efname  = fname_remote_string (job->efname);
 		r->ifname  = fname_remote_string (job->ifname);
+		r->buffered_stdio = !opt.unbuffered;
 
 		if (opt.parallel_debug)
 			r->task_flags |= TASK_PARALLEL_DEBUG;
@@ -153,7 +154,7 @@ launch(void *arg)
 		r->global_task_ids = job->tids[i];
 		r->cpus_allocated  = job->cpus[i];
 		r->srun_node_id    = (uint32_t)i;
-		r->io_port         = ntohs(job->ioport[i%job->niofds]);
+		r->io_port         = ntohs(job->listenport[i%job->num_listen]);
 		r->resp_port       = ntohs(job->jaddr[i%job->njfds].sin_port);
 		m->msg_type        = REQUEST_LAUNCH_TASKS;
 		m->data            = &msg_array_ptr[i];

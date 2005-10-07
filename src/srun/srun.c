@@ -309,7 +309,7 @@ int srun(int ac, char **av)
 	 *    wait for all output to complete
 	 */
 	debug("Waiting for IO thread");
-	io_thr_wake(job);
+	eio_signal_wakeup(job->eio);
 	if (pthread_join(job->ioid, NULL) < 0)
 		error ("Waiting on IO: %m");
 

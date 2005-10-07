@@ -116,9 +116,9 @@ _cleanup_file_descriptors(slurmd_job_t *j)
 		/*
 		 * Ignore errors on close()
 		 */
-		close(t->pin[1]); 
-		close(t->pout[0]);
-		close(t->perr[0]);
+		close(t->to_stdin); 
+		close(t->from_stdout);
+		close(t->from_stdout);
 	}
 }
 
@@ -199,7 +199,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	if (job->spawn_task)
 		_setup_spawn_io(job);
 	else
-		io_prepare_child(job->task[i]);
+		io_dup_stdio(job->task[i]);
 
 	execve(job->argv[0], job->argv, job->env);
 

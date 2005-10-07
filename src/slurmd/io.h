@@ -31,13 +31,28 @@
 #include "src/slurmd/slurmd_job.h"
 #include "src/common/eio.h"
 
+struct io_buf {
+	int ref_count;
+	uint32_t length;
+	void *data;
+};
+
+struct io_buf *alloc_io_buf(void);
+void free_io_buf(struct io_buf *buf);
+
 /*
- * Spawn IO handling thread.
+ * Initialize each task's standard I/O file descriptors.  The file descriptors
+ * may be files, or may be the end of a pipe which is handled by an eio_obj_t.
+ */
+int io_init_tasks_stdio(slurmd_job_t *job);
+
+/*
+ * Start IO handling thread.
  * Initializes IO pipes, creates IO objects and appends them to job->objs,
  * and opens 2*ntask initial connections for stdout/err, also appending these
  * to job->objs list.
  */
-int io_spawn_handler(slurmd_job_t *job);
+int io_thread_start(slurmd_job_t *job);
 
 /*
  * Create a set of new connecting clients for the running job
@@ -46,65 +61,15 @@ int io_spawn_handler(slurmd_job_t *job);
  */
 int io_new_clients(slurmd_job_t *job);
 
-/*
- * Frees memory associated with the given IO object
- */
-void io_obj_destroy(io_obj_t *obj);
+int io_dup_stdio(slurmd_task_info_t *t);
 
-int  io_init_pipes(slurmd_job_t *job);
-int  io_prepare_child(slurmd_task_info_t *t);
+/*
+ *  Close the tasks' ends of the stdio pipes.
+ *  Presumably the tasks have already been started, and
+ *  have their copies of these file descriptors.
+ */
+void io_close_task_fds(slurmd_job_t *job);
 
 void io_close_all(slurmd_job_t *job);
-
-/*
- * Connect initial N tasks to their stdio
- */
-int io_prepare_clients(slurmd_job_t *job);
-
-/* Notes:
- *
- * slurmd <-+---> client (e.g. srun, file)
- *          `---> client
- * 
- * slurmd can handle multiple client connections. Each task writes
- * stdout and stderr data to the client and reads stdin and signals
- * from the client streams. 
- *
- * I/O objects:
- * task stdout: R/0 pipe created by slurmd
- *  - buffer is null
- *  - readers list has at least one client reader (may be a file obj)
- *  - writers list is empty
- *
- *  task stderr: R/O pipe created by slurmd
- *  - buffer is null
- *  - readers list has at least one client reader (may be a file obj)
- *  - writers list is empty
- *
- *  task stdin: W/O pipe created by slurmd
- *  - circular buffer
- *  - readers list is empty
- *  - writers list contains only one client (may be a file obj)
- *
- *  client stdout/in socket:
- *  - circular buffer for stdout data
- *  - readers list is one task stdin obj or empty
- *  - writers list is one task stdout obj
- *
- *  client stderr/sig socket:
- *  - circular buffer for stderr data
- *  - readers list is null (data read is converted to signal)
- *  - writers list is one task stderr obj
- *
- *  stdout/err file obj:
- *  - circular buffer for stdout/err data
- *  - readers list is empty
- *  - writers list is one task stdout/err obj
- *
- *  stdin file obj
- *  - buffer is null
- *  - readers list is one or more task stdin obj's
- *  - writers list is empty
- */
 
 #endif /* !_IO_H */

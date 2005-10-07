@@ -35,6 +35,7 @@
 
 #include <slurm/slurm.h>
 
+#include "src/common/eio.h"
 #include "src/common/cbuf.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
@@ -105,6 +106,7 @@ typedef struct srun_job {
 	char **host;		/* hostname vector */
 	int *cpus; 		/* number of processors on each host */
 	int *ntask; 		/* number of tasks to run on each host */
+	int ntasks;             /* total number of tasks in the job step */
 	uint32_t **tids;	/* host id => task ids mapping    */
 	uint32_t *hostid;	/* task id => host id mapping     */
 
@@ -118,20 +120,24 @@ typedef struct srun_job {
 	slurm_addr *jaddr;	/* job control info ports 	  */
 
 	pthread_t ioid;		/* stdio thread id 		  */
-	int io_thr_pipe[2];	/* pipe for waking stdio thread   */
-	int niofds;		/* Number of IO fds  		  */
-	int *iofd;		/* stdio listen fds 		  */
-	int *ioport;		/* stdio listen ports 		  */
-
-	int *out;		/* ntask stdout fds */
-	int *err;		/* ntask stderr fds */
-
-	/* XXX Need long term solution here:
-	 * Quickfix: ntask*2 cbufs for buffering job output
-	 */
-	cbuf_t *outbuf;
-	cbuf_t *errbuf;
-	cbuf_t *inbuf;            /* buffer for stdin data */
+	int num_listen;		/* Number of stdio listen sockets */
+	int *listensock;	/* Array of stdio listen sockets  */
+	int *listenport;	/* Array of stdio listen ports 	  */
+	eio_t eio;              /* Event IO handle                */
+	List eio_objs;          /* List of eio_obj_t pointers     */
+	int ioservers_ready;    /* Number of servers that established contact */
+	eio_obj_t **ioserver;	/* Array of nhosts pointers to eio_obj_t */
+	eio_obj_t *stdout;      /* stdout eio_obj_t               */
+	eio_obj_t *stderr;      /* stderr eio_obj_t               */
+	eio_obj_t *stdin;       /* stdin eio_obj_t                */
+	List free_incoming;     /* List of free struct io_buf * for incoming
+				 * traffic. "incoming" means traffic from srun
+				 * to the tasks.
+				 */
+	List free_outgoing;     /* List of free struct io_buf * for outgoing
+				 * traffic "outgoing" means traffic from the
+				 * tasks to srun.
+				 */
 
 	pthread_t lid;		  /* launch thread id */
 
@@ -150,10 +156,6 @@ typedef struct srun_job {
 	io_filename_t *efname;
 
 	/* Output streams and stdin fileno */
-	FILE *outstream;
-	FILE *errstream;
-	int   stdinfd;
-	bool *stdin_eof;  /* true if task i processed stdin eof */
 	forked_msg_t *forked_msg;
 	select_jobinfo_t select_jobinfo;
 } srun_job_t;

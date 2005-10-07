@@ -45,6 +45,7 @@ struct eio_handle_components {
 	int  magic;
 #endif
 	int  fds[2];
+	List obj_list;
 };
 
 
@@ -53,13 +54,13 @@ struct eio_handle_components {
 
 static int          _poll_loop_internal(eio_t eio, List objs);
 static int          _poll_internal(struct pollfd *pfds, unsigned int nfds);
-static unsigned int _poll_setup_pollfds(struct pollfd *, io_obj_t **, List);
-static void         _poll_dispatch(struct pollfd *, unsigned int, io_obj_t **,
+static unsigned int _poll_setup_pollfds(struct pollfd *, eio_obj_t **, List);
+static void         _poll_dispatch(struct pollfd *, unsigned int, eio_obj_t **,
 		                   List objList);
-static void         _poll_handle_event(short revents, io_obj_t *obj,
+static void         _poll_handle_event(short revents, eio_obj_t *obj,
 		                       List objList);
 
-eio_t eio_handle_create(void)
+eio_t eio_handle_create(List eio_obj_list)
 {
 	eio_t eio = xmalloc(sizeof(*eio));
 
@@ -73,6 +74,8 @@ eio_t eio_handle_create(void)
 
 	xassert(eio->magic = EIO_MAGIC);
 
+	eio->obj_list = eio_obj_list;
+
 	return eio;
 }
 
@@ -82,36 +85,60 @@ void eio_handle_destroy(eio_t eio)
 	xassert(eio->magic == EIO_MAGIC);
 	close(eio->fds[0]);
 	close(eio->fds[1]);
+	/* FIXME - Destroy the eio object list here ? */
 	xassert(eio->magic = ~EIO_MAGIC);
 	xfree(eio);
 }
 
-int eio_handle_signal(eio_t eio)
+int eio_signal_shutdown(eio_t eio)
+{
+	char c = 1;
+	if (write(eio->fds[1], &c, sizeof(char)) != 1) 
+		return error("eio_handle_signal_shutdown: write; %m");
+	return 0;
+}
+
+int eio_signal_wakeup(eio_t eio)
 {
 	char c = 0;
 	if (write(eio->fds[1], &c, sizeof(char)) != 1) 
-		return error("eio_signal: write; %m");
+		return error("eio_handle_signal_wake: write; %m");
 	return 0;
+}
+
+static void _mark_shutdown_true(List obj_list)
+{
+	ListIterator objs;
+	eio_obj_t *obj;
+	
+	objs = list_iterator_create(obj_list);
+	while (obj = list_next(objs)) {
+		obj->shutdown = true;
+	}
+	list_iterator_destroy(objs);
 }
 
 static int _eio_clear(eio_t eio)
 {
-	char buf[1024];
+	char c = 0;
 	int rc = 0;
 
-	while ((rc = (read(eio->fds[0], buf, 1024)) > 0))  {;}
+	while ((rc = (read(eio->fds[0], &c, 1)) > 0)) {
+		if (c == 1)
+			_mark_shutdown_true(eio->obj_list);
+	}
 
 	if (rc < 0) return error("eio_clear: read: %m");
 
 	return 0;
 }
 
-int io_handle_events(eio_t eio, List objs)
+int eio_handle_mainloop(eio_t eio)
 {
 	xassert (eio != NULL);
 	xassert (eio->magic == EIO_MAGIC);
 
-	return _poll_loop_internal(eio, objs);
+	return _poll_loop_internal(eio, eio->obj_list);
 }
 
 static int
@@ -119,7 +146,7 @@ _poll_loop_internal(eio_t eio, List objs)
 {
 	int            retval  = 0;
 	struct pollfd *pollfds = NULL;
-	io_obj_t     **map     = NULL;
+	eio_obj_t    **map     = NULL;
 	unsigned int   maxnfds = 0, nfds = 0;
 	unsigned int   n       = 0;
 
@@ -129,7 +156,7 @@ _poll_loop_internal(eio_t eio, List objs)
 		if (maxnfds < (n = list_count(objs))) {
 			maxnfds = n;
 			xrealloc(pollfds, (maxnfds+1) * sizeof(struct pollfd));
-			xrealloc(map,     maxnfds     * sizeof(io_obj_t *   ));
+			xrealloc(map,     maxnfds     * sizeof(eio_obj_t *  ));
 			/* 
 			 * Note: xrealloc() also handles initial malloc 
 			 */
@@ -188,22 +215,22 @@ _poll_internal(struct pollfd *pfds, unsigned int nfds)
 }
 
 static bool
-_is_writable(io_obj_t *obj)
+_is_writable(eio_obj_t *obj)
 {
 	return (obj->ops->writable && (*obj->ops->writable)(obj));
 }
 
 static bool
-_is_readable(io_obj_t *obj)
+_is_readable(eio_obj_t *obj)
 {
 	return (obj->ops->readable && (*obj->ops->readable)(obj));
 }
 
 static unsigned int
-_poll_setup_pollfds(struct pollfd *pfds, io_obj_t *map[], List l)
+_poll_setup_pollfds(struct pollfd *pfds, eio_obj_t *map[], List l)
 {
 	ListIterator  i    = list_iterator_create(l);
-	io_obj_t     *obj  = NULL;
+	eio_obj_t    *obj  = NULL;
 	unsigned int  nfds = 0;
 	bool          readable, writable;
 
@@ -232,12 +259,12 @@ _poll_setup_pollfds(struct pollfd *pfds, io_obj_t *map[], List l)
 }
 
 static void
-_poll_dispatch(struct pollfd *pfds, unsigned int nfds, io_obj_t *map[], 
+_poll_dispatch(struct pollfd *pfds, unsigned int nfds, eio_obj_t *map[], 
 	       List objList)
 {
 	int i;
 	ListIterator iter;
-	io_obj_t *obj;
+	eio_obj_t *obj;
 
 	for (i = 0; i < nfds; i++) {
 		if (pfds[i].revents > 0)
@@ -253,18 +280,18 @@ _poll_dispatch(struct pollfd *pfds, unsigned int nfds, io_obj_t *map[],
 }
 
 static void
-_poll_handle_event(short revents, io_obj_t *obj, List objList)
+_poll_handle_event(short revents, eio_obj_t *obj, List objList)
 {
 	if ((revents & POLLERR ) && obj->ops->handle_error) {
 		if ((*obj->ops->handle_error) (obj, objList) < 0) 
 			return;
 	}
 
-	if (((revents & POLLIN) || (revents & POLLHUP))
+	if ((revents & POLLHUP) && obj->ops->handle_close) {
+		(*obj->ops->handle_close) (obj, objList);
+	} else if (((revents & POLLIN) || (revents & POLLHUP)) 
 	    && obj->ops->handle_read ) {
 		(*obj->ops->handle_read ) (obj, objList);
-	} else if ((revents & POLLHUP) && obj->ops->handle_close) {
-		(*obj->ops->handle_close) (obj, objList);
 	}
 
 	if ((revents & POLLOUT) && obj->ops->handle_write) {
@@ -272,4 +299,33 @@ _poll_handle_event(short revents, io_obj_t *obj, List objList)
 	}
 }
 
+static struct io_operations *
+_ops_copy(struct io_operations *ops)
+{
+	struct io_operations *ret = xmalloc(sizeof(*ops));
 
+	/* Copy initial client_ops */
+	*ret = *ops;
+	return ret;
+}
+
+eio_obj_t *
+eio_obj_create(int fd, struct io_operations *ops, void *arg)
+{
+	eio_obj_t *obj = xmalloc(sizeof(*obj));
+	obj->fd  = fd;
+	obj->arg = arg;
+	obj->ops = _ops_copy(ops);
+	obj->shutdown = false;
+	return obj;
+}
+
+void eio_obj_destroy(eio_obj_t *obj)
+{
+	if (obj) {
+		if (obj->ops) {
+			xfree(obj->ops);
+		}
+		xfree(obj);
+	}
+}
