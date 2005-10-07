@@ -210,6 +210,11 @@ _server_readable(eio_obj_t *obj)
 
 	debug2("Called _server_readable");
 
+	if (list_is_empty(s->job->free_io_buf)) {
+		debug3("  false, free_io_buf is empty");
+		return false;
+	}
+
 	if (s->in_eof) {
 		debug3("  false, eof");
 		return false;
