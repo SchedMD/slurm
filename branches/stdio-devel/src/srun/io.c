@@ -210,7 +210,7 @@ _server_readable(eio_obj_t *obj)
 
 	debug2("Called _server_readable");
 
-	if (list_is_empty(s->job->free_io_buf)) {
+	if (list_is_empty(s->job->free_outgoing)) {
 		debug3("  false, free_io_buf is empty");
 		return false;
 	}
@@ -249,9 +249,9 @@ _server_read(eio_obj_t *obj, List objs)
 
 	debug3("Entering _server_read");
 	if (s->in_msg == NULL) {
-		s->in_msg = list_dequeue(s->job->free_io_buf);
+		s->in_msg = list_dequeue(s->job->free_outgoing);
 		if (s->in_msg == NULL) {
-			debug("List free_io_buf is empty!");
+			debug("List free_outgoing is empty!");
 			return SLURM_ERROR;
 		}
 
@@ -259,7 +259,7 @@ _server_read(eio_obj_t *obj, List objs)
 		if (n == 0) { /* got eof on socket read */
 			debug3(  "got eof on _server_read header");
 			s->in_eof = true;
-			list_enqueue(s->job->free_io_buf, s->in_msg);
+			list_enqueue(s->job->free_outgoing, s->in_msg);
 			s->in_msg = NULL;
 			return SLURM_SUCCESS;
 		}
@@ -283,7 +283,7 @@ _server_read(eio_obj_t *obj, List objs)
 		if (n == 0) { /* got eof  */
 			debug3(  "got eof on _server_read body");
 			s->in_eof = true;
-			list_enqueue(s->job->free_io_buf, s->in_msg);
+			list_enqueue(s->job->free_outgoing, s->in_msg);
 			s->in_msg = NULL;
 			return SLURM_SUCCESS;
 		}
@@ -395,7 +395,7 @@ again:
 	 */
 	s->out_msg->ref_count--;
 	if (s->out_msg->ref_count == 0)
-		list_enqueue(s->job->free_io_buf, s->out_msg);
+		list_enqueue(s->job->free_incoming, s->out_msg);
 	else
 		debug3("  Could not free msg!!");
 	s->out_msg = NULL;
@@ -560,7 +560,7 @@ static int _file_write(eio_obj_t *obj, List objs)
 	 */
 	info->out_msg->ref_count--;
 	if (info->out_msg->ref_count == 0)
-		list_enqueue(info->job->free_io_buf, info->out_msg);
+		list_enqueue(info->job->free_outgoing, info->out_msg);
 	info->out_msg = NULL;
 	debug2("Leaving  _file_write");
 
@@ -613,7 +613,7 @@ static bool _file_readable(eio_obj_t *obj)
 		info->eof = true;
 		return false;
 	}
-	if (!list_is_empty(info->job->free_io_buf))
+	if (!list_is_empty(info->job->free_incoming))
 		return true;
 
 	debug3("  false");
@@ -630,9 +630,9 @@ static int _file_read(eio_obj_t *obj, List objs)
 	int len;
 
 	debug2("Entering _file_read");
-	msg = list_dequeue(info->job->free_io_buf);
+	msg = list_dequeue(info->job->free_incoming);
 	if (msg == NULL) {
-		debug3("  List free_io_buf is empty, no file read");
+		debug3("  List free_incoming is empty, no file read");
 		return SLURM_SUCCESS;
 	}
 

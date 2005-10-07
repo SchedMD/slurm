@@ -130,7 +130,14 @@ typedef struct srun_job {
 	eio_obj_t *stdout;      /* stdout eio_obj_t               */
 	eio_obj_t *stderr;      /* stderr eio_obj_t               */
 	eio_obj_t *stdin;       /* stdin eio_obj_t                */
-	List free_io_buf;       /* List of free struct io_buf pointers */
+	List free_incoming;     /* List of free struct io_buf * for incoming
+				 * traffic. "incoming" means traffic from srun
+				 * to the tasks.
+				 */
+	List free_outgoing;     /* List of free struct io_buf * for outgoing
+				 * traffic "outgoing" means traffic from the
+				 * tasks to srun.
+				 */
 
 	pthread_t lid;		  /* launch thread id */
 
