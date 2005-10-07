@@ -430,13 +430,13 @@ into this directory.
 Fully qualified pathname of an executable to be run by \fBsrun\fR following the
 completion of a job step.  The command line arguments for the executable will
 be the command and arguments of the job step.  This configuration parameter
-may be overridden by \fBsrun\fR\'s \fB--epilog\fR parameter.
+may be overridden by \fBsrun\fR\'s \fB\-\-epilog\fR parameter.
 .TP
 \fBSrunProlog\fR
 Fully qualified pathname of an executable to be run by \fBsrun\fR prior to the
 launch of a job step.  The command line arguments for the executable will
 be the command and arguments of the job step.  This configuration parameter
-may be overridden by \fBsrun\fR\'s \fB--prolog\fR parameter.
+may be overridden by \fBsrun\fR\'s \fB\-\-prolog\fR parameter.
 .TP
 \fBSwitchType\fR
 Identifies the type of switch or interconnect used for application
@@ -452,8 +452,9 @@ If running jobs exist at the time \fBslurmctld\fR is restarted with a new
 value of \fBSwitchType\fR, records of all jobs in any state may be lost.
 .TP
 \fBTaskEpilog\fR
-Fully qualified pathname of a program to be execute as user root after
-termination of each task.
+Fully qualified pathname of a program to be execute as the slurm job's
+owner after termination of each task.
+See \fBTaskPlugin\fR for execution order details.
 .TP
 \fBTaskPlugin\fR
 Identifies the type of task launch plugin, typically used to provide 
@@ -462,10 +463,32 @@ processors).
 Acceptable values include
 "task/none" for systems requiring no special handling.
 The default value is "task/none".
+The order of task prolog/epilog execution is as follows:
+.RS
+.TP
+\fB1. pre_launch()\fR: function in TaskPlugin
+.TP
+\fB2. TaskProlog\fR: system\-wide per task program defined in slurm.conf
+.TP
+\fB3. user prolog\fR: job step specific task program defined using 
+\fBsrun\fR's \fB\-\-task\-prolog\fR option or \fBSLURM_TASK_PROLOG\fR 
+environment variable
+.TP
+\fB4.\fR Execute the job step's task
+.TP
+\fB5. user epilog\fR: job step specific task program defined using
+\fBsrun\fR's \fB\-\-task\-epilog\fR option or \fBSLURM_TASK_EPILOG\fR 
+environment variable
+.TP
+\fB6. TaskEpilog\fR: system\-wide per task program defined in slurm.conf
+.TP
+\fB7. post_term()\fR: function in TaskPlugin
+.RE 
 .TP
 \fBTaskProlog\fR
-Fully qualified pathname of a program to be execute as user root prior to 
-initiation of each task.
+Fully qualified pathname of a program to be execute as the slurm job's 
+owner prior to initiation of each task. 
+See \fBTaskPlugin\fR for execution order details.
 .TP
 \fBTmpFS\fR
 Fully qualified pathname of the file system available to user jobs for 
