@@ -37,9 +37,6 @@
 int 
 main (int argc, char *argv[])
 {
-	batch_job_launch_msg_t *batch_req = NULL;
-	launch_tasks_request_msg_t *launch_req = NULL;
-	spawn_task_request_msg_t *spawn_req = NULL;
 	int rc;	
 	slurm_addr *cli = NULL;
 	slurm_addr *self = NULL;
@@ -48,33 +45,35 @@ main (int argc, char *argv[])
 	int len;
 	char *incoming_buffer = NULL;
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
-	Buf buffer = init_buf(0);
+	Buf buffer;
 
+	conf = xmalloc(sizeof(*conf));
+	conf->argv = &argv;
+	conf->argc = &argc;
+	init_setproctitle(argc, argv);
+	
 	/* recieve job type from main slurmd */
 	if((rc = read(STDIN_FILENO,&step_type,sizeof(int))) == -1) {
 		error ("slurmd_step: couldn't read step_type: %m",
 		       rc);
 		exit(1);
 	}
-	info("got the number %d",step_type);
+	debug3("got the number %d",step_type);
 	
 	/* recieve len of packed conf from main slurmd */
 	if((rc = read(STDIN_FILENO, &len, sizeof(int))) == -1) {
-		error ("slurmd_step: couldn't read len: %m",
-		       rc);
-		exit(1);
+		fatal("slurmd_step: couldn't read len: %m",
+		      rc);
 	}
 	
 	/* recieve packed conf from main slurmd */
 	incoming_buffer = xmalloc(len);
 	if((rc = read(STDIN_FILENO, incoming_buffer, 
 		      sizeof(char)*len)) == -1) {
-		error ("slurmd_step: couldn't read launch_req: %m",
-		       rc);
-		exit(1);
+		fatal("slurmd_step: couldn't read launch_req: %m",
+		      rc);
 	}
 	buffer = create_buf(incoming_buffer,len);
-	conf = xmalloc(sizeof(*conf));
 	if(unpack_slurmd_conf_lite_no_alloc(conf, buffer)
 	   == SLURM_ERROR) {
 		fatal("slurmd_step: problem with unpack of "
@@ -87,7 +86,7 @@ main (int argc, char *argv[])
 	conf->log_opts.logfile_level = conf->debug_level;
 	conf->log_opts.syslog_level = conf->debug_level;
 	/* forward the log options to slurmd_step */
-	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
+	//log_init(argv[0],conf->log_opts, LOG_DAEMON, conf->logfile);
 	g_slurmd_jobacct_init(conf->cf.job_acct_parameters);
 
 	/* recieve len of packed cli from main slurmd */
@@ -166,20 +165,17 @@ main (int argc, char *argv[])
 		if(unpack_msg(msg, buffer) == SLURM_ERROR) 
 			fatal("slurmd_step: we didn't unpack the "
 			      "request correctly");
-		
 		free_buf(buffer);
 		exit (mgr_launch_batch_job(msg->data, cli));
 		break;
 	case LAUNCH_TASKS:
-		info("running a launch_task");
+		debug2("running a launch_task");
 		msg->msg_type = REQUEST_LAUNCH_TASKS;
 		if(unpack_msg(msg, buffer) == SLURM_ERROR) 
 			fatal("slurmd_step: we didn't unpack the "
 			      "request correctly");
-				
-		launch_req = msg->data;
 		free_buf(buffer);
-		debug2("running a launch_task %d.",launch_req->job_id);
+		debug2("running a launch_task.");
 		exit (mgr_launch_tasks(msg->data, cli, self));
 		break;
 	case SPAWN_TASKS:

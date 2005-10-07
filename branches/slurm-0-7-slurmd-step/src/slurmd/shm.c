@@ -1027,8 +1027,10 @@ _shm_reopen()
 	 *  exit with a failure
 	 */
 
+	//if ((shm_lock == SEM_FAILED)) {
 	if ((shm_lock == SEM_FAILED) || (!_shm_sane())) {
-		debug2("Shared memory not in sane state - reinitializing.");
+		debug2("Shared memory not in sane state %d "
+		       "- reinitializing.", shm_lock->id);
 
 		/*
 		 * Unlink old lockfile, reopen semaphore with create flag,
@@ -1176,11 +1178,11 @@ _shm_sane(void)
 
 	sem_getvalue(shm_lock, &val);
 
-	debug3("shm lock val = %d, last accessed at %s", 
-	      val, ctime(&st.st_atime));
-
-	if ((val == 0) && ((time(NULL) - st.st_atime) > 30))
-	     return false;	
+	debug3("shm lock val = %d, last accessed at %s difference %d", 
+	      val, ctime(&st.st_atime), (time(NULL) - st.st_atime));
+	
+	/* if ((val == 0) && ((time(NULL) - st.st_atime) > 30)) */
+/* 	     return false;	 */
 
 	return true;
 }
@@ -1188,10 +1190,11 @@ _shm_sane(void)
 static void 
 _shm_lock()
 {
-    restart:
+restart:
 	if (sem_wait(shm_lock) == -1) {
 		if (errno == EINTR)
 			goto restart;
+		
 		fatal("_shm_lock: %m");
 	}
 	return;
