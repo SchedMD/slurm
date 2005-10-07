@@ -142,6 +142,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	srun_info_t   *srun;
 	slurm_addr     resp_addr;
 	slurm_addr     io_addr;
+	int i;
 
 	xassert(msg != NULL);
 
@@ -170,9 +171,19 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->cwd     = xstrdup(msg->cwd);
 
 	job->env     = _array_copy(msg->envc, msg->env);
-	job->eio     = eio_handle_create();
-	job->objs    = list_create((ListDelF) io_obj_destroy);
+	job->objs    = list_create(NULL); /* FIXME! Needs destructor */
+	job->eio     = eio_handle_create(job->objs);
 	job->sruns   = list_create((ListDelF) _srun_info_destructor);
+	job->clients = list_create(NULL); /* FIXME! Needs destructor */
+	job->free_incoming = list_create(NULL); /* FIXME! Needs destructor */
+	for (i = 0; i < 10; i++) {
+		list_enqueue(job->free_incoming, alloc_io_buf());
+	}
+	job->free_outgoing = list_create(NULL); /* FIXME! Needs destructor */
+	for (i = 0; i < 10; i++) {
+		list_enqueue(job->free_outgoing, alloc_io_buf());
+	}
+
 	job->envtp   = xmalloc(sizeof(env_t));
 	job->envtp->jobid = -1;
 	job->envtp->stepid = -1;
@@ -190,10 +201,10 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	srun->ofname = xstrdup(msg->ofname);
 	srun->efname = xstrdup(msg->efname);
 	srun->ifname = xstrdup(msg->ifname);
+	job->buffered_stdio = msg->buffered_stdio;
 
 	job->argc    = msg->argc;
 	job->argv    = _array_copy(job->argc, msg->argv);
-	
 
 	job->nnodes  = msg->nnodes;
 	job->nodeid  = msg->srun_node_id;
@@ -243,8 +254,8 @@ job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *cli_addr)
 	job->cwd     = xstrdup(msg->cwd);
 
 	job->env     = _array_copy(msg->envc, msg->env);
-	job->eio     = eio_handle_create();
-	job->objs    = list_create((ListDelF) io_obj_destroy);
+	job->objs    = list_create(NULL); /* Need destructor */
+	job->eio     = eio_handle_create(job->objs);
 	job->sruns   = list_create((ListDelF) _srun_info_destructor);
 	job->envtp   = xmalloc(sizeof(env_t));
 	job->envtp->jobid = -1;
@@ -326,8 +337,8 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->cwd     = xstrdup(msg->work_dir);
 
 	job->env     = _array_copy(msg->envc, msg->environment);
-	job->eio     = eio_handle_create();
-	job->objs    = list_create((ListDelF) io_obj_destroy);
+	job->objs    = list_create(NULL); /* FIXME - Need desctructor */
+	job->eio     = eio_handle_create(job->objs);
 	job->sruns   = list_create((ListDelF) _srun_info_destructor);
 	job->envtp   = xmalloc(sizeof(env_t));
 	job->envtp->jobid = -1;
@@ -476,14 +487,14 @@ srun_info_create(slurm_cred_t cred, slurm_addr *resp_addr, slurm_addr *ioaddr)
 
 	slurm_cred_get_signature(cred, &data, &len);
 
-	len = len > SLURM_IO_KEY_SIZE ? SLURM_IO_KEY_SIZE : len;
+	len = len > SLURM_CRED_SIGLEN ? SLURM_CRED_SIGLEN : len;
 
 	if (data != NULL) {
 		memcpy((void *) key->data, data, len);
 
-		if (len < SLURM_IO_KEY_SIZE)
+		if (len < SLURM_CRED_SIGLEN)
 			memset( (void *) (key->data + len), 0, 
-			        SLURM_IO_KEY_SIZE - len        );
+			        SLURM_CRED_SIGLEN - len);
 	}
 
 	if (ioaddr != NULL)
@@ -518,21 +529,20 @@ task_info_create(int taskid, int gtaskid)
 
 	slurm_mutex_init(&t->mutex);
 	slurm_mutex_lock(&t->mutex);
-	t->state     = SLURMD_TASK_INIT;
-	t->id        = taskid;
-	t->gtid	     = gtaskid;
-	t->pid       = (pid_t) -1;
-	t->pin[0]    = -1;
-	t->pin[1]    = -1;
-	t->pout[0]   = -1;
-	t->pout[1]   = -1;
-	t->perr[0]   = -1;
-	t->perr[1]   = -1;
-	t->estatus   = -1;
-	t->in        = NULL;
-	t->out       = NULL;
-	t->err       = NULL;
-	t->srun_list = list_create(NULL); 
+	t->state       = SLURMD_TASK_INIT;
+	t->id          = taskid;
+	t->gtid	       = gtaskid;
+	t->pid         = (pid_t) -1;
+	t->stdin       = -1;
+	t->to_stdin    = -1;
+	t->stdout      = -1;
+	t->from_stdout = -1;
+	t->stderr      = -1;
+	t->from_stderr = -1;
+	t->estatus     = -1;
+	t->in          = NULL;
+	t->out         = NULL;
+	t->err         = NULL;
 	slurm_mutex_unlock(&t->mutex);
 	return t;
 }
@@ -542,7 +552,6 @@ void
 task_info_destroy(slurmd_task_info_t *t)
 {
 	slurm_mutex_lock(&t->mutex);
-	list_destroy(t->srun_list);
 	slurm_mutex_unlock(&t->mutex);
 	slurm_mutex_destroy(&t->mutex);
 	xfree(t);

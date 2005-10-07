@@ -367,15 +367,29 @@ _setup_io(slurmd_job_t *job)
 	int            rc   = 0;
 	struct passwd *spwd = NULL;
 
-	/* 
-	 * Save current UID/GID
-	 */
+	debug2("Entering _setup_io");
+
+	/* Save current UID/GID */
 	if (!(spwd = getpwuid(geteuid()))) {
 		error("getpwuid: %m");
 		return ESLURMD_IO_ERROR;
 	}
 
-	if (io_spawn_handler(job) < 0)
+	/*
+	 * Temporarily drop permissions, initialize task stdio file
+	 * decriptors (which may be connected to files), then
+	 * reclaim privileges.
+	 */
+	if (_drop_privileges(job->pwd) < 0)
+		return ESLURMD_SET_UID_OR_GID_ERROR;
+
+	io_init_tasks_stdio(job);
+
+	if (_reclaim_privileges(spwd) < 0)
+		error("sete{u/g}id(%lu/%lu): %m", 
+		      (u_long) spwd->pw_uid, (u_long) spwd->pw_gid);
+
+	if (io_thread_start(job) < 0)
 		return ESLURMD_IO_ERROR;
 
 	/*
@@ -383,18 +397,7 @@ _setup_io(slurmd_job_t *job)
 	 */
 	_slurmd_job_log_init(job);
 
-	/*
-	 * Temporarily drop permissions, initialize IO clients
-	 * (open files/connections for IO, etc), then reclaim privileges.
-	 */
-	if (_drop_privileges(job->pwd) < 0)
-		return ESLURMD_SET_UID_OR_GID_ERROR;
-
-	rc = io_prepare_clients(job);
-
-	if (_reclaim_privileges(spwd) < 0)
-		error("sete{u/g}id(%lu/%lu): %m", 
-		      (u_long) spwd->pw_uid, (u_long) spwd->pw_gid);
+	rc = io_client_connect(job);
 
 #ifndef NDEBUG
 #  ifdef PR_SET_DUMPABLE
@@ -406,6 +409,7 @@ _setup_io(slurmd_job_t *job)
 	if (rc < 0) 
 		return ESLURMD_IO_ERROR;
 
+	debug2("Leaving  _setup_io");
 	return SLURM_SUCCESS;
 }
 
@@ -540,6 +544,8 @@ _job_mgr(slurmd_job_t *job)
 		goto fail2;
 	}
 
+	io_close_task_fds(job);
+
 	xsignal_block(mgr_sigarray);
 	reattach_job = job;
 	xsignal(SIGHUP, _hup_handler);
@@ -580,8 +586,10 @@ _job_mgr(slurmd_job_t *job)
 	/*
 	 * Wait for io thread to complete (if there is one)
 	 */
-	if (!job->spawn_task)
+	if (!job->spawn_task) {
+		eio_signal_shutdown(job->eio);
 		_wait_for_io(job);
+	}
 
 	job_update_state(job, SLURMD_JOB_COMPLETE);
 	g_slurmd_jobacct_jobstep_terminated(job);
@@ -738,7 +746,7 @@ _fork_all_tasks(slurmd_job_t *job)
 /*
  * Loop once through tasks looking for all tasks that have exited with
  * the same exit status (and whose statuses have not been sent back to
- * the client) Aggregrate these tasks into a single task exit message.
+ * the client) Aggregate these tasks into a single task exit message.
  *
  */ 
 static int 
@@ -1208,7 +1216,7 @@ _slurmd_job_log_init(slurmd_job_t *job)
 
 	/* Connect slurmd stderr to job's stderr */
 	if ((!job->spawn_task) && 
-	    (dup2(job->task[0]->perr[1], STDERR_FILENO) < 0)) {
+	    (dup2(job->task[0]->stderr, STDERR_FILENO) < 0)) {
 		error("job_log_init: dup2(stderr): %m");
 		return;
 	}

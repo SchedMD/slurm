@@ -45,6 +45,7 @@
 #include "src/common/slurm_cred.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/io_hdr.h"
 
 #include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
@@ -261,7 +262,7 @@ job_force_termination(srun_job_t *job)
 		update_job_state(job, SRUN_JOB_FORCETERM);
 	}
 
-	io_thr_wake(job);
+	eio_signal_wakeup(job->eio);
 }
 
 
@@ -365,9 +366,9 @@ report_task_status(srun_job_t *job)
 
 	for (i = 0; i < opt.nprocs; i++) {
 		int state = job->task_state[i];
-		if ((state == SRUN_TASK_EXITED) 
-		    && ((job->err[i] >= 0) || (job->out[i] >= 0)))
-			state = 4;
+/* 		if ((state == SRUN_TASK_EXITED)  */
+/* 		    && ((job->err[i] >= 0) || (job->out[i] >= 0))) */
+/* 			state = 4; */
 		snprintf(buf, 256, "task%d", i);
 		hostlist_push(hl[state], buf); 
 	}
@@ -415,6 +416,100 @@ _set_nprocs(allocation_info_t *info)
 	}
 }
 
+static int
+_is_local_file (io_filename_t *fname)
+{
+	if (fname->name == NULL)
+		return 1;
+
+	return ((fname->type != IO_PER_TASK) && (fname->type != IO_ONE));
+}
+
+static void
+_init_stdio_eio_objs(srun_job_t *job)
+{
+	io_filename_t *inname, *outname, *errname;
+	int infd, outfd, errfd;
+	bool err_shares_out = false;
+
+	inname = fname_create(job, opt.ifname);
+	outname = fname_create(job, opt.ofname);
+	errname = fname_create(job, opt.efname);
+
+	/*
+	 * build stdin eio_obj_t
+	 */
+	if (_is_local_file(inname)) {
+		uint16_t type, destid;
+		if (inname->name == NULL) {
+			infd = STDIN_FILENO;
+		} else {
+			infd = open(inname->name, O_RDONLY);
+			if (infd == -1)
+				fatal("Could not open stdin file: %m");
+		}
+		fd_set_nonblocking(infd);
+		fd_set_close_on_exec(infd);
+		if (inname->type == IO_ONE) {
+			type = SLURM_IO_STDIN;
+			destid = inname->taskid;
+		} else {
+			type = SLURM_IO_ALLSTDIN;
+			destid = -1;
+		}
+		job->stdin = create_file_read_eio_obj(infd, job, type, destid);
+		list_enqueue(job->eio_objs, job->stdin);
+	}
+
+	/*
+	 * build stdout eio_obj_t
+	 */
+	if (_is_local_file(outname)) {
+		int refcount;
+		if (outname->name == NULL) {
+			outfd = STDOUT_FILENO;
+		} else {
+			outfd = open(outname->name,
+				     O_CREAT|O_WRONLY|O_TRUNC, 0644);
+			if (outfd == -1)
+				fatal("Could not open stdout file: %m");
+		}
+		if (outname->name != NULL
+		    && errname->name != NULL
+		    && !strcmp(outname->name, errname->name)) {
+			refcount = job->ntasks * 2;
+			err_shares_out = true;
+		} else {
+			refcount = job->ntasks;
+		}
+		/*job->stdout = create_file_write_eio_obj(outfd, job, refcount);*/
+		job->stdout = create_file_write_eio_obj(outfd, job);
+		list_enqueue(job->eio_objs, job->stdout);
+	}
+
+	/*
+	 * build a seperate stderr eio_obj_t only if stderr is not sharing
+	 * the stdout eio_obj_t
+	 */
+	if (err_shares_out) {
+		error("Doh, sharing");
+		job->stderr = job->stdout;
+	} else if (_is_local_file(errname)) {
+		int refcount;
+		if (errname->name == NULL) {
+			errfd = STDERR_FILENO;
+		} else {
+			errfd = open(errname->name,
+				     O_CREAT|O_WRONLY|O_TRUNC, 0644);
+			if (errfd == -1)
+				fatal("Could not open stderr file: %m");
+		}
+		refcount = job->ntasks;
+		/*job->stderr = create_file_write_eio_obj(errfd, job, refcount);*/
+		job->stderr = create_file_write_eio_obj(errfd, job);
+		list_enqueue(job->eio_objs, job->stderr);
+	}
+}
 
 static srun_job_t *
 _job_create_internal(allocation_info_t *info)
@@ -424,6 +519,7 @@ _job_create_internal(allocation_info_t *info)
 	int cpu_inx = 0;
 	hostlist_t hl;
 	srun_job_t *job;
+	eio_obj_t *obj;
 
 	/* Reset nprocs if necessary 
 	 */
@@ -453,7 +549,7 @@ _job_create_internal(allocation_info_t *info)
 	job->nhosts = hostlist_count(hl);
 #endif
 
-	job->select_jobinfo = info->select_jobinfo;
+ 	job->select_jobinfo = info->select_jobinfo;
 	job->jobid   = info->jobid;
 	job->stepid  = info->stepid;
 	job->old_job = false;
@@ -482,23 +578,27 @@ _job_create_internal(allocation_info_t *info)
 
 	debug3("njfds = %d", job->njfds);
 
-	/* Compute number of IO file descriptors needed and allocate 
-	 * memory for them
+	/* Compute number of listening sockets needed to allow
+	 * all of the slurmds to establish IO streams with srun, without
+	 * overstressing the TCP/IP backoff/retry algorithm
 	 */
-	job->niofds = _estimate_nports(opt.nprocs, 64);
-	job->iofd   = (int *) xmalloc(job->niofds * sizeof(int));
-	job->ioport = (int *) xmalloc(job->niofds * sizeof(int));
+	job->num_listen = _estimate_nports(opt.nprocs, 64);
+	job->listensock = (int *) xmalloc(job->num_listen * sizeof(int));
+	job->listenport = (int *) xmalloc(job->num_listen * sizeof(int));
 
-	/* ntask stdout and stderr fds */
-	job->out    = (int *)  xmalloc(opt.nprocs * sizeof(int));
-	job->err    = (int *)  xmalloc(opt.nprocs * sizeof(int));
-
-	/* ntask cbufs for stdout and stderr */
-	job->outbuf     = (cbuf_t *) xmalloc(opt.nprocs * sizeof(cbuf_t));
-	job->errbuf     = (cbuf_t *) xmalloc(opt.nprocs * sizeof(cbuf_t));
-	job->inbuf      = (cbuf_t *) xmalloc(opt.nprocs * sizeof(cbuf_t));
-	job->stdin_eof  = (bool *)   xmalloc(opt.nprocs * sizeof(bool));
-
+	job->eio_objs = list_create(NULL); /* FIXME - needs destructor */
+	job->eio = eio_handle_create(job->eio_objs);
+	job->ioservers_ready = 0;
+	/* "nhosts" number of IO protocol sockets */
+	job->ioserver = (eio_obj_t **)xmalloc(job->nhosts*sizeof(eio_obj_t *));
+	job->free_incoming = list_create(NULL); /* FIXME! Needs destructor */
+	for (i = 0; i < 10; i++) {
+		list_enqueue(job->free_incoming, alloc_io_buf());
+	}
+	job->free_outgoing = list_create(NULL); /* FIXME! Needs destructor */
+	for (i = 0; i < 10; i++) {
+		list_enqueue(job->free_outgoing, alloc_io_buf());
+	}
 
 	/* nhost host states */
 	job->host_state =  xmalloc(job->nhosts * sizeof(srun_host_state_t));
@@ -506,20 +606,6 @@ _job_create_internal(allocation_info_t *info)
 	/* ntask task states and statii*/
 	job->task_state  =  xmalloc(opt.nprocs * sizeof(srun_task_state_t));
 	job->tstatus	 =  xmalloc(opt.nprocs * sizeof(int));
-
-	for (i = 0; i < opt.nprocs; i++) {
-		job->task_state[i] = SRUN_TASK_INIT;
-
-		job->outbuf[i]     = cbuf_create(4096, 1048576);
-		job->errbuf[i]     = cbuf_create(4096, 1048576);
-		job->inbuf[i]      = cbuf_create(4096, 4096);
-
-		cbuf_opt_set(job->outbuf[i], CBUF_OPT_OVERWRITE, CBUF_NO_DROP);
-		cbuf_opt_set(job->errbuf[i], CBUF_OPT_OVERWRITE, CBUF_NO_DROP);
-		cbuf_opt_set(job->inbuf[i],  CBUF_OPT_OVERWRITE, CBUF_NO_DROP);
-
-		job->stdin_eof[i]  = false;
-	}
 
 	slurm_mutex_init(&job->task_mutex);
 
@@ -543,10 +629,14 @@ _job_create_internal(allocation_info_t *info)
 				job->nodelist, opt.nprocs);
 #endif
 
+	job->ntasks = 0;
 	for (i = 0; i < job->nhosts; i++) {
 		debug3("distribute_tasks placed %d tasks on host %d",
-			job->ntask[i], i);
+		       job->ntask[i], i);
+		job->ntasks += job->ntask[i];
 	}
+
+	_init_stdio_eio_objs(job);
 
 	/* Build task id list for each host */
 	job->tids   = xmalloc(job->nhosts * sizeof(uint32_t *));
@@ -566,7 +656,7 @@ _job_create_internal(allocation_info_t *info)
 	else
 		_dist_cyclic(job);
 
-	job_update_io_fnames(job);
+/* 	job_update_io_fnames(job); */
 
 	hostlist_destroy(hl);
 
