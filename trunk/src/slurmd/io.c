@@ -159,6 +159,8 @@ static struct io_buf *_task_build_message(struct task_out_info *out,
 static struct io_obj *_io_obj(slurmd_job_t *, slurmd_task_info_t *, int, int);
 static void *_io_thr(void *arg);
 static void _route_msg_task_to_client(eio_obj_t *obj);
+static void _free_outgoing_msg(struct io_buf *msg, slurmd_job_t *job);
+static void _free_incoming_msg(struct io_buf *msg, slurmd_job_t *job);
 
 /**********************************************************************
  * IO client socket functions
