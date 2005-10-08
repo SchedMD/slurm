@@ -755,7 +755,7 @@ _route_msg_task_to_client(eio_obj_t *obj)
 		if (msg == NULL)
 			return;
 
-		debug3("\"%s\"", msg->data + io_hdr_packed_size());
+/* 		debug3("\"%s\"", msg->data + io_hdr_packed_size()); */
 
 		/* Add message to the msg_queue of all clients */
 		clients = list_iterator_create(out->job->clients);
