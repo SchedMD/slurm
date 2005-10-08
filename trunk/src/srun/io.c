@@ -290,8 +290,8 @@ _server_read(eio_obj_t *obj, List objs)
 			return SLURM_SUCCESS;
 		}
 
-		*(char *)(buf + n) = '\0';
-		debug3("\"%s\"", buf);
+/* 		*(char *)(buf + n) = '\0'; */
+/* 		debug3("\"%s\"", buf); */
 		s->in_remaining -= n;
 		if (s->in_remaining > 0)
 			return SLURM_SUCCESS;

@@ -276,8 +276,8 @@ _client_read(eio_obj_t *obj, List objs)
 		in->remaining -= n;
 		if (in->remaining > 0)
 			return SLURM_SUCCESS;
-		*(char *)(buf + n) = '\0';
-		debug3("\"%s\"", buf);
+/* 		*(char *)(buf + n) = '\0'; */
+/* 		debug3("\"%s\"", buf); */
 	}
 
 	/*
