@@ -55,7 +55,7 @@ io_hdr_pack(io_hdr_t *hdr, Buf buffer)
 	pack16(hdr->type, buffer);
 	pack16(hdr->gtaskid, buffer);
 	pack16(hdr->ltaskid, buffer);
-	pack32(hdr->length,  buffer);
+	pack32(hdr->length, buffer);
 }
 
 int
@@ -171,8 +171,9 @@ io_init_msg_packed_size(void)
 
 	len = sizeof(uint16_t)        /* version */
 		+ sizeof(uint32_t)    /* nodeid */
-		+ (SLURM_CRED_SIGLEN + sizeof(uint16_t));  /* signature */
-
+		+ (SLURM_CRED_SIGLEN + sizeof(uint16_t))  /* signature */
+		+ sizeof(uint32_t)    /* stdout_objs */
+		+ sizeof(uint32_t);   /* stderr_objs */
 	return len;
 }
 
@@ -181,6 +182,8 @@ io_init_msg_pack(struct slurm_io_init_msg *hdr, Buf buffer)
 {
 	pack16(hdr->version, buffer);
        	pack32(hdr->nodeid, buffer);
+	pack32(hdr->stdout_objs, buffer);
+	pack32(hdr->stderr_objs, buffer);
 	packmem((char *) hdr->cred_signature,
 		(uint16_t) SLURM_CRED_SIGLEN, buffer);
 }
@@ -193,6 +196,8 @@ io_init_msg_unpack(struct slurm_io_init_msg *hdr, Buf buffer)
 
 	safe_unpack16(&hdr->version, buffer);
 	safe_unpack32(&hdr->nodeid, buffer);
+	safe_unpack32(&hdr->stdout_objs, buffer);
+	safe_unpack32(&hdr->stderr_objs, buffer);
 	safe_unpackmem((char *) hdr->cred_signature, &val, buffer);
 	if (val != SLURM_CRED_SIGLEN)
 		goto unpack_error;

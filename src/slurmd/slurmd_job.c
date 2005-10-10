@@ -175,6 +175,8 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->eio     = eio_handle_create(job->objs);
 	job->sruns   = list_create((ListDelF) _srun_info_destructor);
 	job->clients = list_create(NULL); /* FIXME! Needs destructor */
+	job->stdout_eio_objs = list_create(NULL); /* FIXME! Needs destructor */
+	job->stderr_eio_objs = list_create(NULL); /* FIXME! Needs destructor */
 	job->free_incoming = list_create(NULL); /* FIXME! Needs destructor */
 	for (i = 0; i < 10; i++) {
 		list_enqueue(job->free_incoming, alloc_io_buf());

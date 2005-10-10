@@ -56,6 +56,8 @@ struct slurm_io_init_msg {
 	uint16_t      version;
 	unsigned char cred_signature[SLURM_CRED_SIGLEN]; 
 	uint32_t      nodeid;
+	uint32_t      stdout_objs;
+	uint32_t      stderr_objs;
 };
 
 

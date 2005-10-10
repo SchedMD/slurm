@@ -152,7 +152,7 @@ struct task_out_info {
  * General declarations
  **********************************************************************/
 static void *_io_thr(void *);
-static int _send_io_init_msg(int sock, srun_key_t *key, int nodeid);
+static int _send_io_init_msg(int sock, srun_key_t *key, slurmd_job_t *job);
 static void _send_eof_msg(struct task_out_info *out);
 static struct io_buf *_task_build_message(struct task_out_info *out,
 					  slurmd_job_t *job, cbuf_t cbuf);
@@ -666,6 +666,7 @@ _init_task_stdio_fds(slurmd_job_t *job, slurmd_task_info_t *task,
 		task->out = _create_task_out_eio(task->from_stdout,
 						 SLURM_IO_STDOUT, job, task);
 		list_append(job->objs, (void *)task->out);
+		list_append(job->stdout_eio_objs, (void *)task->out);
 	}
 
 	/*
@@ -696,6 +697,7 @@ _init_task_stdio_fds(slurmd_job_t *job, slurmd_task_info_t *task,
 		task->err = _create_task_out_eio(task->from_stderr,
 						 SLURM_IO_STDERR, job, task);
 		list_append(job->objs, (void *)task->err);
+		list_append(job->stderr_eio_objs, (void *)task->out);
 	}
 }
 
@@ -905,7 +907,7 @@ io_client_connect(slurmd_job_t *job)
 
 	fd_set_blocking(sock);  /* just in case... */
 
-	_send_io_init_msg(sock, srun->key, job->nodeid);
+	_send_io_init_msg(sock, srun->key, job);
 
 	debug3("  back from _send_io_init_msg");
 	fd_set_nonblocking(sock);
@@ -942,12 +944,14 @@ io_new_clients(slurmd_job_t *job)
 }
 
 static int
-_send_io_init_msg(int sock, srun_key_t *key, int nodeid)
+_send_io_init_msg(int sock, srun_key_t *key, slurmd_job_t *job)
 {
 	struct slurm_io_init_msg msg;
 
 	memcpy(msg.cred_signature, key->data, SLURM_CRED_SIGLEN);
-	msg.nodeid = nodeid;
+	msg.nodeid = job->nodeid;
+	msg.stdout_objs = list_count(job->stdout_eio_objs);
+	msg.stderr_objs = list_count(job->stderr_eio_objs);
 
 	if (io_init_msg_write_to_fd(sock, &msg) != SLURM_SUCCESS) {
 		error("Couldn't sent slurm_io_init_msg");
