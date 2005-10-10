@@ -33,6 +33,7 @@ fname_create(srun_job_t *job, char *format)
 	fname = xmalloc(sizeof(*fname));
 	fname->type = IO_ALL;
 	fname->name = NULL;
+	fname->taskid = -1;
 
 	/* Handle special  cases
 	 */

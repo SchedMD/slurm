@@ -305,6 +305,8 @@ _client_read(eio_obj_t *obj, List objs)
 		} else {
 			for (i = 0; i < client->job->ntasks; i++) {
 				task = client->job->task[i];
+				if (task->in == NULL)
+					continue;
 				io = (struct task_in_info *)task->in->arg;
 				if (task->gtid != in->header.gtaskid)
 					continue;
