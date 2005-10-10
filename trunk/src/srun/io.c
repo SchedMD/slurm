@@ -98,6 +98,8 @@ struct server_io_info {
 	struct io_buf *in_msg;
 	int32_t in_remaining;
 	bool in_eof;
+	int remote_stdout_objs; /* active eio_obj_t's on the remote node */
+	int remote_stderr_objs; /* active eio_obj_t's on the remote node */
 	
 	/* outgoing variables */
 	List msg_queue;
@@ -183,7 +185,8 @@ _set_listensocks_nonblocking(srun_job_t *job)
  * IO server socket functions
  **********************************************************************/
 static eio_obj_t *
-_create_server_eio_obj(int fd, srun_job_t *job)
+_create_server_eio_obj(int fd, srun_job_t *job,
+		       int stdout_objs, int stderr_objs)
 {
 	struct server_io_info *info = NULL;
 	eio_obj_t *eio = NULL;
@@ -193,6 +196,8 @@ _create_server_eio_obj(int fd, srun_job_t *job)
 	info->in_msg = NULL;
 	info->in_remaining = 0;
 	info->in_eof = false;
+	info->remote_stdout_objs = stdout_objs;
+	info->remote_stderr_objs = stderr_objs;
 	info->msg_queue = list_create(NULL); /* FIXME! Add destructor */
 	info->out_msg = NULL;
 	info->out_remaining = 0;
@@ -207,7 +212,6 @@ static bool
 _server_readable(eio_obj_t *obj)
 {
 	struct server_io_info *s = (struct server_io_info *) obj->arg;
-	struct file_write_info *fout, *ferr;
 	int i;
 
 	debug2("Called _server_readable");
@@ -222,20 +226,10 @@ _server_readable(eio_obj_t *obj)
 		return false;
 	}
 
-	if (s->job->stdout) {
-		fout = (struct file_write_info *)s->job->stdout->arg;
-		if (fout->eof == false) {
-			debug3("  stdout no eof");
-			return true;
-		}
-	}
-
-	if (s->job->stderr) {
-		ferr = (struct file_write_info *)s->job->stderr->arg;
-		if (ferr->eof == false) {
-			debug3("  stderr no eof");
-			return true;
-		}
+	if (s->remote_stdout_objs > 0 || s->remote_stderr_objs > 0) {
+		debug3("remote_stdout_objs = %d", s->remote_stdout_objs);
+		debug3("remote_stderr_objs = %d", s->remote_stderr_objs);
+		return true;	
 	}
 
 	debug3("  false");
@@ -261,6 +255,17 @@ _server_read(eio_obj_t *obj, List objs)
 		if (n == 0) { /* got eof on socket read */
 			debug3(  "got eof on _server_read header");
 			s->in_eof = true;
+			list_enqueue(s->job->free_outgoing, s->in_msg);
+			s->in_msg = NULL;
+			return SLURM_SUCCESS;
+		}
+		if (s->header.length == 0) { /* eof message */
+			if (s->header.type == SLURM_IO_STDOUT)
+				s->remote_stdout_objs--;
+			else if (s->header.type == SLURM_IO_STDERR)
+				s->remote_stderr_objs--;
+			else
+				error("Unrecognized output message type");
 			list_enqueue(s->job->free_outgoing, s->in_msg);
 			s->in_msg = NULL;
 			return SLURM_SUCCESS;
@@ -540,8 +545,6 @@ static int _file_write(eio_obj_t *obj, List objs)
 			return SLURM_SUCCESS;
 		}
 		info->out_remaining = info->out_msg->length;
-		if (info->out_msg->length == 0) /* eof */
-			info->eof = true;
 	}
 	
 	/*
@@ -810,9 +813,13 @@ _read_io_init_msg(int fd, srun_job_t *job, char *host)
 	}
 	debug2("Validated IO connection from %s, node rank %u, sd=%d",
 	       host, msg.nodeid, fd);
-	
+
 	net_set_low_water(fd, 1);
-	job->ioserver[msg.nodeid] = _create_server_eio_obj(fd, job);
+	debug3("msg.stdout_objs = %d", msg.stdout_objs);
+	debug3("msg.stderr_objs = %d", msg.stderr_objs);
+	job->ioserver[msg.nodeid] = _create_server_eio_obj(fd, job,
+							   msg.stdout_objs,
+							   msg.stderr_objs);
 	list_enqueue(job->eio_objs, job->ioserver[msg.nodeid]);
 	job->ioservers_ready++;
 
@@ -893,7 +900,6 @@ _handle_io_init_msg(int fd, srun_job_t *job)
 
 		fd_set_nonblocking(sd);
 	}
-
 }
 
 static ssize_t 
