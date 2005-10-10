@@ -691,15 +691,14 @@ again:
 			list_enqueue(server->msg_queue, msg);
 		}
 	} else if (header.type == SLURM_IO_STDIN) {
-		fatal("Not yet implemented");
-#if 0
+		debug("SLURM_IO_STDIN");
 		int nodeid;
 		struct server_io_info *server;
 		msg->ref_count = 1;
-		nodeid = info->job->taskid_to_nodeid[header.gtaskid];
+		nodeid = info->job->hostid[header.gtaskid];
+		debug3("  taskid %d maps to nodeid %d", header.gtaskid, nodeid);
 		server = info->job->ioserver[nodeid]->arg;
 		list_enqueue(server->msg_queue, msg);
-#endif		
 	} else {
 		fatal("Unsupported header.type");
 	}

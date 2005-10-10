@@ -421,6 +421,9 @@ _is_local_file (io_filename_t *fname)
 {
 	if (fname->name == NULL)
 		return 1;
+	
+	if (fname->taskid != -1)
+		return 1;
 
 	return ((fname->type != IO_PER_TASK) && (fname->type != IO_ONE));
 }
@@ -441,7 +444,7 @@ _init_stdio_eio_objs(srun_job_t *job)
 	 */
 	if (_is_local_file(inname)) {
 		uint16_t type, destid;
-		if (inname->name == NULL) {
+		if (inname->name == NULL || inname->taskid != -1) {
 			infd = STDIN_FILENO;
 		} else {
 			infd = open(inname->name, O_RDONLY);
