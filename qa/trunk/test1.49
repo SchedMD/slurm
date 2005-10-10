@@ -42,7 +42,8 @@ set file_out_post        "$cwd/test$test_id.output_post"
 print_header $test_id
 
 #
-# Delete left-over scripts and rebuild
+# Delete left-over scripts and rebuild, 
+# The sleep command just forces slurmd to kill the user's (long running) epilog
 #
 exec $bin_rm -f $task_prolog $task_epilog $file_out_pre $file_out_post
 exec $bin_touch $file_out_pre
@@ -51,7 +52,7 @@ exec echo "#!$bin_bash"               >$task_prolog
 exec echo "date >> $file_out_pre"    >>$task_prolog
 exec echo "#!$bin_bash"               >$task_epilog
 exec echo "date >> $file_out_post"   >>$task_epilog
-exec echo "sleep 300"  >>$task_epilog
+exec echo "$bin_sleep 200"           >>$task_epilog
 exec $bin_chmod 700 $task_prolog $task_epilog
 
 #
