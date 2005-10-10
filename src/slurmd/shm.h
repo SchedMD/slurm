@@ -93,7 +93,6 @@ struct job_step {
 	task_t     *task_list;	/* list of this step's tasks             */
 };
 
-
 /* 
  * Attach to and initialize slurmd shared memory segment
  * startup (IN) - validate shared memory contents if true

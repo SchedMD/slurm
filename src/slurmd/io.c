@@ -568,7 +568,6 @@ again:
 	debug3("************************ %d bytes read from task %s", rc,
 	       out->type == SLURM_IO_STDOUT ? "STDOUT" : "STDERR");
 
-
 	/*
 	 * Put the message in client outgoing queues
 	 */
@@ -580,7 +579,7 @@ again:
 	if (cbuf_used(out->buf) == 0 && out->eof) {
 		_send_eof_msg(out);
 	}
-
+	
 	return SLURM_SUCCESS;
 }
 
@@ -954,12 +953,13 @@ _send_io_init_msg(int sock, srun_key_t *key, slurmd_job_t *job)
 	msg.nodeid = job->nodeid;
 	msg.stdout_objs = list_count(job->stdout_eio_objs);
 	msg.stderr_objs = list_count(job->stderr_eio_objs);
-
+	
 	if (io_init_msg_write_to_fd(sock, &msg) != SLURM_SUCCESS) {
 		error("Couldn't sent slurm_io_init_msg");
 		return SLURM_ERROR;
 	}
-
+	
+		
 	return SLURM_SUCCESS;
 }
 

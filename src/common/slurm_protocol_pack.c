@@ -1841,6 +1841,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->slurmd_pidfile, buffer);
 	pack32(build_ptr->slurmd_port, buffer);
 	packstr(build_ptr->slurmd_spooldir, buffer);
+	debug2("Packing string %s", build_ptr->slurmd_spooldir);
 	pack16(build_ptr->slurmd_timeout, buffer);
 	packstr(build_ptr->slurm_conf, buffer);
 	packstr(build_ptr->state_save_location, buffer);
@@ -2454,7 +2455,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	xassert(msg_ptr != NULL);
 	msg = xmalloc(sizeof(launch_tasks_request_msg_t));
 	*msg_ptr = msg;
-
+ 
 	safe_unpack32(&msg->job_id, buffer);
 	safe_unpack32(&msg->job_step_id, buffer);
 	safe_unpack32(&msg->nnodes, buffer);

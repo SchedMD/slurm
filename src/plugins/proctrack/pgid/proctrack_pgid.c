@@ -108,7 +108,7 @@ extern int slurm_container_add ( slurmd_job_t *job, pid_t pid )
 extern int slurm_container_signal  ( uint32_t id, int signal )
 {
 	pid_t pid = (pid_t) id;
-
+	
 	if (!id)	/* no container ID */
 		return ESRCH;
 
@@ -116,7 +116,7 @@ extern int slurm_container_signal  ( uint32_t id, int signal )
 		error("slurm_signal_container would kill caller!");
 		return ESRCH;
 	}
-
+			
 	return (int)killpg(pid, signal);
 }
 

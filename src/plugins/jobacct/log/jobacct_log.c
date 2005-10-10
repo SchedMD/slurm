@@ -680,10 +680,10 @@ int slurmd_jobacct_jobstep_launched(slurmd_job_t *job)
 	_jrec_t *jrec;
 	int	rc=SLURM_SUCCESS;
 
-	debug3("slurmd_jobacct_jobstep_launched() called");
+	info("slurmd_jobacct_jobstep_launched() called");
 	jrec = _alloc_jrec(job);
 	jrec->nodeid = job->nodeid;
-	debug2("jobacct(%d): in slurmd_jobacct_jobstep_launched with %d cpus,"
+	info("jobacct(%d): in slurmd_jobacct_jobstep_launched with %d cpus,"
 			" node0,1=%s,%s, this is node %d of %d",
 			getpid(), job->cpus, jrec->node0, jrec->node1,
 			job->nodeid, job->nnodes);

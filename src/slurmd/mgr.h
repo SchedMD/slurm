@@ -33,6 +33,13 @@
 #include "src/common/slurm_protocol_defs.h"
 
 #include "src/slurmd/slurmd_job.h"
+#include "src/slurmd/slurmd.h"
+
+typedef enum slurmd_step_tupe {
+	LAUNCH_BATCH_JOB = 0,
+	LAUNCH_TASKS,
+	SPAWN_TASKS
+} slurmd_step_type_t;
 
 /* Spawn a task / job step on this node
  */
@@ -57,5 +64,22 @@ int mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *client);
  */
 extern int run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid,
 		char *bgl_part_id);
+/*
+ * Same as slurm_get_addr but protected by pthread_atfork handlers
+ */
+extern void slurmd_get_addr(slurm_addr *a, uint16_t *port, 
+			    char *buf, uint32_t len);
+
+/*
+ * Pack information needed for the forked slurmd_step process.
+ * Does not pack everything from the slurm_conf_t struct.
+ */
+extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer);
+
+/*
+ * Unpack information needed for the forked slurmd_step process.
+ * Does not unpack everything from the slurm_conf_t struct.
+*/
+extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer);
 
 #endif

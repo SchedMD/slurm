@@ -73,9 +73,9 @@ sem_t * sem_open(const char *name, int oflag, ...)
     struct sembuf semval;
     struct semid_ds seminfo;
     sem_t *sem;
-
+    
     if (!name) {
-        return(SEM_FAILED);
+	    return(SEM_FAILED);
     }
 
     semid = -1;
@@ -148,8 +148,9 @@ sem_t * sem_open(const char *name, int oflag, ...)
                 errno = EINVAL;
                 goto err;
             }
-            /* Now increment sem by 'value' w/ semop() to set sem_otime nonzero.
-             */
+            /* Now increment sem by 'value' w/ semop() to set 
+	       sem_otime nonzero.
+	    */
             semval.sem_num = 0;
             semval.sem_op = value;
             semval.sem_flg = 0;
@@ -165,8 +166,7 @@ sem_t * sem_open(const char *name, int oflag, ...)
             goto err;
         }
     }
-
-
+    
     /* Open (presumably) existing semaphore.  Either O_CREAT was not specified,
      *   or O_CREAT was specified w/o O_EXCL and the semaphore already exists.
      */
@@ -176,7 +176,7 @@ sem_t * sem_open(const char *name, int oflag, ...)
     if ((semid = semget(key, 0, 0)) == -1) {
         goto err;
     }
-
+    		    
     /* If sem_otime is 0, sem has not yet been initialized by its creator.
      *   Spin up to MAX_TRIES before giving up.
      *

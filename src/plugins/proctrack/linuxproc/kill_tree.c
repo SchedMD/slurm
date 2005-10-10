@@ -267,7 +267,7 @@ extern int kill_proc_tree_not_top(pid_t top, int sig)
 		list = list->next;
 	}
 	_destroy_list(list);
-
+	
 	return rc;
 }
 

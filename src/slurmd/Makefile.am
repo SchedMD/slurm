@@ -4,7 +4,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-sbin_PROGRAMS = slurmd 
+sbin_PROGRAMS = slurmd slurmd_step
 
 INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS)
 
@@ -22,7 +22,7 @@ slurmd_SOURCES = 	        	\
 	task.c task.h			\
 	get_mach_stat.c get_mach_stat.h	\
 	read_proc.c 	        	\
-	slurmd_job.c slurmd_job.h			\
+	slurmd_job.c slurmd_job.h	\
 	io.c io.h			\
 	semaphore.c semaphore.h		\
 	shm.c shm.h			\
@@ -33,6 +33,29 @@ slurmd_SOURCES = 	        	\
 	pdebug.c pdebug.h
 
 slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)
+
+slurmd_step_LDADD = 					   \
+        $(top_builddir)/src/common/libcommon.la    \
+	$(top_builddir)/src/common/libdaemonize.la \
+	$(top_builddir)/src/common/libeio.la       \
+	$(SSL_LIBS) 
+
+
+slurmd_step_SOURCES = 	        	\
+	slurmd_step.c                   \
+	mgr.c mgr.h			\
+	task.c task.h			\
+	slurmd_job.c slurmd_job.h	\
+	io.c io.h			\
+	semaphore.c semaphore.h		\
+	shm.c shm.h			\
+	fname.c fname.h			\
+	ulimits.c ulimits.h     	\
+	proctrack.c proctrack.h		\
+	setproctitle.c setproctitle.h   \
+	pdebug.c pdebug.h
+
+slurmd_step_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)
 
 force:
 $(slurmd_LDADD) : force
