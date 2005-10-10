@@ -492,7 +492,7 @@ _init_stdio_eio_objs(srun_job_t *job)
 	 * the stdout eio_obj_t
 	 */
 	if (err_shares_out) {
-		error("Doh, sharing");
+		debug3("stdout and stderr sharing a file");
 		job->stderr = job->stdout;
 	} else if (_is_local_file(errname)) {
 		int refcount;
