@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
     simple messaging protocol.
     WARNING:  The stdio rewrite is incomplete (in particular --attach support
               is still missing), and not yet debugged.
+ -- New slurmd_step functionality added.  Fork exec instead of using shared
+    memory.  Not completely tested.
 
 * Changes in SLURM 0.7.0-pre1
 =============================

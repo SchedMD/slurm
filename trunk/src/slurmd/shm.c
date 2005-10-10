@@ -189,7 +189,8 @@ shm_fini(void)
 	for (i = 0; i < MAX_JOB_STEPS; i++) {
 		if (slurmd_shm->step[i].state > SLURMD_JOB_UNUSED) {
 			job_step_t *s = &slurmd_shm->step[i];
-			info ("Used shm for job %u.%u\n", s->jobid, s->stepid); 
+			info ("Used shm for job %u.%u\n", 
+			      s->jobid, s->stepid); 
 		}
 	}
 
@@ -217,6 +218,8 @@ shm_fini(void)
 	return 0;
 
     error:
+	// unlock wasn't here before, would be missed if got error above.
+	_shm_unlock();
 	return -1;
 }
 
@@ -400,16 +403,16 @@ _sem_open(const char *name, int oflag, ...)
 
 	if (!(lockname = _create_ipc_name(name)))
 		fatal("sem_open failed for [%s]: invalid IPC name", name);
-
+	
 	if (oflag & O_CREAT) {
 		va_start(ap, oflag);
 		mode = va_arg(ap, mode_t);
 		value = va_arg(ap, unsigned int);
 		va_end(ap);
 		sem = sem_open(lockname, oflag, mode, value);
-	} else 
+	} else {
 		sem = sem_open(lockname, oflag);
-
+	}
 	return(sem);
 }
 
@@ -1026,8 +1029,10 @@ _shm_reopen()
 	 *  exit with a failure
 	 */
 
-	if ((shm_lock == SEM_FAILED) || (!_shm_sane())) {
-		debug2("Shared memory not in sane state - reinitializing.");
+	if ((shm_lock == SEM_FAILED)) {
+		//if ((shm_lock == SEM_FAILED) || (!_shm_sane())) {
+		debug2("Shared memory not in sane state %d "
+		       "- reinitializing.", shm_lock->id);
 
 		/*
 		 * Unlink old lockfile, reopen semaphore with create flag,
@@ -1175,11 +1180,11 @@ _shm_sane(void)
 
 	sem_getvalue(shm_lock, &val);
 
-	debug3("shm lock val = %d, last accessed at %s", 
-	      val, ctime(&st.st_atime));
-
-	if ((val == 0) && ((time(NULL) - st.st_atime) > 30))
-	     return false;	
+	debug3("shm lock val = %d, last accessed at %s difference %d", 
+	      val, ctime(&st.st_atime), (time(NULL) - st.st_atime));
+	
+	/* if ((val == 0) && ((time(NULL) - st.st_atime) > 30)) */
+/* 	     return false;	 */
 
 	return true;
 }
@@ -1187,10 +1192,11 @@ _shm_sane(void)
 static void 
 _shm_lock()
 {
-    restart:
+restart:
 	if (sem_wait(shm_lock) == -1) {
 		if (errno == EINTR)
 			goto restart;
+		
 		fatal("_shm_lock: %m");
 	}
 	return;

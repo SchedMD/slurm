@@ -963,21 +963,3 @@ static void _install_fork_handlers(void)
 	return;
 }
 
-extern void
-slurmd_get_addr(slurm_addr *a, uint16_t *port, char *buf, uint32_t len) 
-{
-#if 0
-	slurm_mutex_lock(&fork_mutex);
-	slurm_get_addr(a, port, buf, len);
-	slurm_mutex_unlock(&fork_mutex);
-#else
-	/* This function is used only for printing debug information.
-	   Do not consult /etc/hosts or, more significantly, YP */
-	unsigned char *uc = (unsigned char *)&a->sin_addr.s_addr;
-	xassert(len > 15);
-	*port = a->sin_port;
-	sprintf(buf, "%u.%u.%u.%u", uc[0], uc[1], uc[2], uc[3]);
-#endif
-	return;
-}
-

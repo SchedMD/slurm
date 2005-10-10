@@ -226,7 +226,7 @@ g_slurmctld_jobacct_job_complete(struct job_record *job_ptr)
 	if ( g_context )
 		 retval = (*(g_context->ops.slurmctld_jobacct_job_complete))(job_ptr);
 	else {
-		error ("slurm_jobacct plugin context not initialized");
+		error ("slurm_jobacct plugin context not initialized 2");
 		retval = ENOENT;
 	}
 	return retval;
@@ -240,7 +240,7 @@ g_slurmctld_jobacct_job_start(struct job_record *job_ptr)
 	if ( g_context )
 		 retval = (*(g_context->ops.slurmctld_jobacct_job_start))(job_ptr);
 	else {
-		error ("slurm_jobacct plugin context not initialized");
+		error ("slurm_jobacct plugin context not initialized 1");
 		retval = ENOENT;
 	}
 	return retval;
@@ -258,7 +258,7 @@ g_slurm_jobacct_process_message(struct slurm_msg *msg)
 	if ( g_context )
 		 retval = (*(g_context->ops.slurm_jobacct_process_message))(msg);
 	else {
-		error ("slurm_jobacct plugin context not initialized");
+		error ("slurm_jobacct plugin context not initialized 3");
 		retval = ENOENT;
 	}
 	return retval;
@@ -288,7 +288,7 @@ g_slurmd_jobacct_jobstep_launched(slurmd_job_t *job)
 	if ( g_context )
 		 retval = (*(g_context->ops.slurmd_jobacct_jobstep_launched))(job);
 	else {
-		error ("slurm_jobacct plugin context not initialized");
+		error ("slurm_jobacct plugin context not initialized 4");
 		retval = ENOENT;
 	}
 	return retval;
@@ -303,7 +303,7 @@ g_slurmd_jobacct_jobstep_terminated(slurmd_job_t *job)
 	if ( g_context )
 		 retval = (*(g_context->ops.slurmd_jobacct_jobstep_terminated))(job);
 	else {
-		error ("slurm_jobacct plugin context not initialized");
+		error ("slurm_jobacct plugin context not initialized 5");
 		retval = ENOENT;
 	}
 	return retval;
@@ -318,7 +318,7 @@ g_slurmd_jobacct_smgr(void)
 	if ( g_context )
 		 retval = (*(g_context->ops.slurmd_jobacct_smgr))();
 	else {
-		error ("slurm_jobacct plugin context not initialized");
+		error ("slurm_jobacct plugin context not initialized 6");
 		retval = ENOENT;
 	}
 	return retval;
@@ -335,7 +335,7 @@ g_slurmd_jobacct_task_exit(slurmd_job_t *job, pid_t pid, int status,
 		 retval = (*(g_context->ops.slurmd_jobacct_task_exit))
 			(job, pid, status, rusage);
 	} else {
-		error ("slurm_jobacct plugin context not initialized");
+		error ("slurm_jobacct plugin context not initialized 7");
 		retval = ENOENT;
 	}
 	return retval;
