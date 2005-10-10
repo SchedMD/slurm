@@ -218,6 +218,8 @@ shm_fini(void)
 	return 0;
 
     error:
+	// unlock wasn't here before, would be missed if got error above.
+	_shm_unlock();
 	return -1;
 }
 
@@ -1027,8 +1029,8 @@ _shm_reopen()
 	 *  exit with a failure
 	 */
 
-	//if ((shm_lock == SEM_FAILED)) {
-	if ((shm_lock == SEM_FAILED) || (!_shm_sane())) {
+	if ((shm_lock == SEM_FAILED)) {
+		//if ((shm_lock == SEM_FAILED) || (!_shm_sane())) {
 		debug2("Shared memory not in sane state %d "
 		       "- reinitializing.", shm_lock->id);
 

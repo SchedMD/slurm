@@ -226,7 +226,7 @@ _fork_new_slurmd(slurmd_step_type_t type, void *req,
 	spawn_task_request_msg_t *spawn_req = NULL;
 	int len = 0;
 	Buf buffer;
-	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
+	slurm_msg_t *msg = NULL;
 	/* Idea taken from ConMan by Chris Dunlap:
 	 *  Create pipe for IPC so parent slurmd will wait
 	 *  to return until signaled by grandchild process that
@@ -313,6 +313,7 @@ _fork_new_slurmd(slurmd_step_type_t type, void *req,
 			}
 			free_buf(buffer);
 		}
+		msg = xmalloc(sizeof(slurm_msg_t));
 		switch(type) {
 		case LAUNCH_BATCH_JOB:
 			msg->msg_type = REQUEST_BATCH_JOB_LAUNCH;
@@ -346,6 +347,7 @@ _fork_new_slurmd(slurmd_step_type_t type, void *req,
 			       "buffer: %m", rc);
 		}
 		free_buf(buffer);
+		slurm_free_msg(msg);
 		/* Reap child */
 		if (waitpid(pid, NULL, 0) < 0)
 			error("Unable to reap slurmd child process");
@@ -387,7 +389,7 @@ _fork_new_slurmd(slurmd_step_type_t type, void *req,
 	 *  Reopen logfile by calling log_alter() without
 	 *    changing log options
 	 */   
-	log_alter(conf->log_opts, 0, conf->logfile);
+	//log_alter(conf->log_opts, 0, conf->logfile);
 	
 	if (dup2(fds[0], STDIN_FILENO) == -1) {
 		error("dup2 over STDIN_FILENO: %m");

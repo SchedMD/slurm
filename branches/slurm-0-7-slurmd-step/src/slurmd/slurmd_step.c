@@ -51,7 +51,9 @@ main (int argc, char *argv[])
 	conf->argv = &argv;
 	conf->argc = &argc;
 	init_setproctitle(argc, argv);
-	
+	if (slurm_proctrack_init() != SLURM_SUCCESS)
+		return SLURM_FAILURE;
+
 	/* recieve job type from main slurmd */
 	if((rc = read(STDIN_FILENO,&step_type,sizeof(int))) == -1) {
 		error ("slurmd_step: couldn't read step_type: %m",
@@ -86,6 +88,7 @@ main (int argc, char *argv[])
 	conf->log_opts.logfile_level = conf->debug_level;
 	conf->log_opts.syslog_level = conf->debug_level;
 	/* forward the log options to slurmd_step */
+	log_alter(conf->log_opts, 0, NULL);
 	//log_init(argv[0],conf->log_opts, LOG_DAEMON, conf->logfile);
 	g_slurmd_jobacct_init(conf->cf.job_acct_parameters);
 
@@ -158,6 +161,7 @@ main (int argc, char *argv[])
 	buffer = create_buf(incoming_buffer,len);
 
 	/* determine type and unpack appropriately */
+	
 	switch(step_type) {
 	case LAUNCH_BATCH_JOB:
 		debug2("running a batch_job");
@@ -166,7 +170,8 @@ main (int argc, char *argv[])
 			fatal("slurmd_step: we didn't unpack the "
 			      "request correctly");
 		free_buf(buffer);
-		exit (mgr_launch_batch_job(msg->data, cli));
+		rc = mgr_launch_batch_job(msg->data, cli);
+		slurm_free_job_launch_msg(msg->data);
 		break;
 	case LAUNCH_TASKS:
 		debug2("running a launch_task");
@@ -175,8 +180,8 @@ main (int argc, char *argv[])
 			fatal("slurmd_step: we didn't unpack the "
 			      "request correctly");
 		free_buf(buffer);
-		debug2("running a launch_task.");
-		exit (mgr_launch_tasks(msg->data, cli, self));
+		rc = mgr_launch_tasks(msg->data, cli, self);
+		slurm_free_launch_tasks_request_msg(msg->data);
 		break;
 	case SPAWN_TASKS:
 		debug2("running a spawn_task");
@@ -185,13 +190,24 @@ main (int argc, char *argv[])
 			fatal("slurmd_step: we didn't unpack the "
 			      "request correctly");
 		free_buf(buffer);
-		exit (mgr_spawn_task(msg->data, cli, self));
+		rc = mgr_spawn_task(msg->data, cli, self);
+		slurm_free_spawn_task_request_msg(msg->data);
 		break;
 	default:
 		fatal("Was sent a task I didn't understand");
 		break;
 	}
-	
+
+	xfree(cli);
+	xfree(self);
+	xfree(conf->hostname);
+	xfree(conf->spooldir);
+	xfree(conf->node_name);
+	xfree(conf->logfile);
+	xfree(conf->cf.job_acct_parameters);
+	xfree(conf);
+	slurm_free_msg(msg);
+
 
 
 	return 0;
