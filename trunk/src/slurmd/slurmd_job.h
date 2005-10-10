@@ -124,7 +124,7 @@ typedef struct slurmd_job {
 
 	struct passwd *pwd;   /* saved passwd struct for user job           */
 	slurmd_task_info_t  **task;  /* array of task information pointers  */
-	eio_t          eio;
+	eio_handle_t  *eio;
 	List           objs;  /* List of io_obj_t pointers (see eio.h)      */
 	List 	       sruns; /* List of srun_info_t pointers               */
 	List           clients; /* List of struct client_io_info pointers   */

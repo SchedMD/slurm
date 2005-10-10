@@ -52,7 +52,7 @@ struct eio_handle_components {
 /* Function prototypes
  */
 
-static int          _poll_loop_internal(eio_t eio, List objs);
+static int          _poll_loop_internal(eio_handle_t *eio, List objs);
 static int          _poll_internal(struct pollfd *pfds, unsigned int nfds);
 static unsigned int _poll_setup_pollfds(struct pollfd *, eio_obj_t **, List);
 static void         _poll_dispatch(struct pollfd *, unsigned int, eio_obj_t **,
@@ -60,9 +60,9 @@ static void         _poll_dispatch(struct pollfd *, unsigned int, eio_obj_t **,
 static void         _poll_handle_event(short revents, eio_obj_t *obj,
 		                       List objList);
 
-eio_t eio_handle_create(List eio_obj_list)
+eio_handle_t *eio_handle_create(List eio_obj_list)
 {
-	eio_t eio = xmalloc(sizeof(*eio));
+	eio_handle_t *eio = xmalloc(sizeof(*eio));
 
 	if (pipe(eio->fds) < 0) {
 		error ("eio_create: pipe: %m");
@@ -79,7 +79,7 @@ eio_t eio_handle_create(List eio_obj_list)
 	return eio;
 }
 
-void eio_handle_destroy(eio_t eio)
+void eio_handle_destroy(eio_handle_t *eio)
 {
 	xassert(eio != NULL);
 	xassert(eio->magic == EIO_MAGIC);
@@ -90,7 +90,7 @@ void eio_handle_destroy(eio_t eio)
 	xfree(eio);
 }
 
-int eio_signal_shutdown(eio_t eio)
+int eio_signal_shutdown(eio_handle_t *eio)
 {
 	char c = 1;
 	if (write(eio->fds[1], &c, sizeof(char)) != 1) 
@@ -98,7 +98,7 @@ int eio_signal_shutdown(eio_t eio)
 	return 0;
 }
 
-int eio_signal_wakeup(eio_t eio)
+int eio_signal_wakeup(eio_handle_t *eio)
 {
 	char c = 0;
 	if (write(eio->fds[1], &c, sizeof(char)) != 1) 
@@ -118,7 +118,7 @@ static void _mark_shutdown_true(List obj_list)
 	list_iterator_destroy(objs);
 }
 
-static int _eio_clear(eio_t eio)
+static int _eio_clear(eio_handle_t *eio)
 {
 	char c = 0;
 	int rc = 0;
@@ -133,7 +133,7 @@ static int _eio_clear(eio_t eio)
 	return 0;
 }
 
-int eio_handle_mainloop(eio_t eio)
+int eio_handle_mainloop(eio_handle_t *eio)
 {
 	xassert (eio != NULL);
 	xassert (eio->magic == EIO_MAGIC);
@@ -142,7 +142,7 @@ int eio_handle_mainloop(eio_t eio)
 }
 
 static int
-_poll_loop_internal(eio_t eio, List objs)
+_poll_loop_internal(eio_handle_t *eio, List objs)
 {
 	int            retval  = 0;
 	struct pollfd *pollfds = NULL;

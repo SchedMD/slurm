@@ -296,7 +296,10 @@ _server_read(eio_obj_t *obj, List objs)
 		if (s->in_remaining > 0)
 			return SLURM_SUCCESS;
 	}
-
+	else {
+		debug3("***** passing on eof message");
+	}
+	
 	/*
 	 * Route the message to the proper output
 	 */
@@ -840,7 +843,7 @@ static void
 _handle_io_init_msg(int fd, srun_job_t *job)
 {
 	int j;
-	debug2("Activity on IO server socket %d", fd);
+	debug2("Activity on IO listening socket %d", fd);
 
 	for (j = 0; j < 15; j++) {
 		int sd;

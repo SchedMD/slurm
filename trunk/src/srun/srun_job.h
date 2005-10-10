@@ -123,7 +123,7 @@ typedef struct srun_job {
 	int num_listen;		/* Number of stdio listen sockets */
 	int *listensock;	/* Array of stdio listen sockets  */
 	int *listenport;	/* Array of stdio listen ports 	  */
-	eio_t eio;              /* Event IO handle                */
+	eio_handle_t *eio;      /* Event IO handle                */
 	List eio_objs;          /* List of eio_obj_t pointers     */
 	int ioservers_ready;    /* Number of servers that established contact */
 	eio_obj_t **ioserver;	/* Array of nhosts pointers to eio_obj_t */

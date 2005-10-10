@@ -32,7 +32,7 @@
 
 typedef struct eio_obj eio_obj_t;
 
-typedef struct eio_handle_components * eio_t;
+typedef struct eio_handle_components eio_handle_t;
 
 /* Possible I/O operations on an I/O object
  * Each takes the io_obj being operated on as an argument
@@ -56,8 +56,8 @@ struct eio_obj {
 	bool shutdown;
 };
 
-eio_t eio_handle_create(List eio_obj_list);
-void eio_handle_destroy(eio_t eio);
+eio_handle_t *eio_handle_create(List eio_obj_list);
+void eio_handle_destroy(eio_handle_t *eio);
 
 /* This routine will watch for activtiy on the fd's as long
  * as obj->readable() or obj->writable() returns >0
@@ -67,10 +67,10 @@ void eio_handle_destroy(eio_t eio);
  *
  * returns -1 on error.
  */
-int eio_handle_mainloop(eio_t eio);
+int eio_handle_mainloop(eio_handle_t *eio);
 
-int eio_signal_wakeup(eio_t eio);
-int eio_signal_shutdown(eio_t eio);
+int eio_signal_wakeup(eio_handle_t *eio);
+int eio_signal_shutdown(eio_handle_t *eio);
 
 eio_obj_t *eio_obj_create(int fd, struct io_operations *ops, void *arg);
 void eio_obj_destroy(eio_obj_t *obj);

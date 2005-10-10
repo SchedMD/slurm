@@ -305,11 +305,13 @@ int srun(int ac, char **av)
 		error ("Waiting on launch thread: %m");
 
 	/*
-	 *  Wake up IO thread so it can clean up, then
-	 *    wait for all output to complete
+	 *  Signal the IO thread to shutdown, which will stop
+	 *  the listening socket and file read (stdin) event
+	 *  IO objects, but allow file write (stdout) objects to
+	 *  complete any writing that remains.
 	 */
 	debug("Waiting for IO thread");
-	eio_signal_wakeup(job->eio);
+	eio_signal_shutdown(job->eio);
 	if (pthread_join(job->ioid, NULL) < 0)
 		error ("Waiting on IO: %m");
 
