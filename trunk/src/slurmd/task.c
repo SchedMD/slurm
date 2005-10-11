@@ -59,6 +59,7 @@
 #include "src/common/slurm_jobacct.h"
 #include "src/common/switch.h"
 #include "src/common/xsignal.h"
+#include "src/common/xstring.h"
 
 #include "src/slurmd/task.h"
 #include "src/slurmd/ulimits.h"
@@ -204,7 +205,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 
 	/* task-specific pre-launch activities */
 	pre_launch(job);
-	if (0 && conf->task_prolog) {
+	if (conf->task_prolog) {
 		char *my_prolog;
 		slurm_mutex_lock(&conf->config_mutex);
 		my_prolog = xstrdup(conf->task_prolog);
@@ -213,7 +214,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 			job->uid, NULL, -1);
 		xfree(my_prolog);
 	}
-	if (0 && job->task_prolog) {
+	if (job->task_prolog) {
 		run_script("user task_prolog", job->task_prolog, job->jobid,
 			job->uid, NULL, -1);
 	}
