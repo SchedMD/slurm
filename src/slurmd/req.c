@@ -357,10 +357,6 @@ _fork_new_slurmd(slurmd_step_type_t type, void *req,
 		return ((int) pid);
 	}
 
-#ifdef DISABLE_LOCALTIME
-	disable_localtime();
-#endif
-	
 	if (setsid() < 0)
 		error("fork_slurmd: setsid: %m");
 	
