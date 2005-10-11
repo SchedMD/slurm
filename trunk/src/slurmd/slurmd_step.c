@@ -56,7 +56,7 @@ main (int argc, char *argv[])
 	if (slurm_proctrack_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;
 
-	/* recieve job type from main slurmd */
+	/* receive job type from main slurmd */
 	if((rc = read(STDIN_FILENO,&step_type,sizeof(int))) == -1) {
 		error ("slurmd_step: couldn't read step_type: %m",
 		       rc);
@@ -64,13 +64,13 @@ main (int argc, char *argv[])
 	}
 	debug3("got the number %d",step_type);
 	
-	/* recieve len of packed conf from main slurmd */
+	/* receive len of packed conf from main slurmd */
 	if((rc = read(STDIN_FILENO, &len, sizeof(int))) == -1) {
 		fatal("slurmd_step: couldn't read len: %m",
 		      rc);
 	}
 	
-	/* recieve packed conf from main slurmd */
+	/* receive packed conf from main slurmd */
 	incoming_buffer = xmalloc(len);
 	if((rc = read(STDIN_FILENO, incoming_buffer, 
 		      sizeof(char)*len)) == -1) {
@@ -94,14 +94,14 @@ main (int argc, char *argv[])
 	log_init(argv[0],conf->log_opts, LOG_DAEMON, conf->logfile);
 	g_slurmd_jobacct_init(conf->cf.job_acct_parameters);
 
-	/* recieve len of packed cli from main slurmd */
+	/* receive len of packed cli from main slurmd */
 	if((rc = read(STDIN_FILENO, &len, sizeof(int))) == -1) {
 		error ("slurmd_step: couldn't read len: %m",
 		       rc);
 		exit(1);
 	}
 
-	/* recieve packed cli from main slurmd */
+	/* receive packed cli from main slurmd */
 	incoming_buffer = xmalloc(len);
 	if((rc = read(STDIN_FILENO, incoming_buffer, 
 		      sizeof(char)*len)) == -1) {
@@ -119,7 +119,7 @@ main (int argc, char *argv[])
 	}
 	free_buf(buffer);
 
-	/* recieve len of packed self from main slurmd */
+	/* receive len of packed self from main slurmd */
 	if((rc = read(STDIN_FILENO, &len, sizeof(int))) == -1) {
 		error ("slurmd_step: couldn't read len: %m",
 		       rc);
@@ -127,7 +127,7 @@ main (int argc, char *argv[])
 	}
 	
 	if(len > 0) {
-		/* recieve packed self from main slurmd */
+		/* receive packed self from main slurmd */
 		incoming_buffer = xmalloc(len);
 		if((rc = read(STDIN_FILENO, incoming_buffer, 
 			      sizeof(char)*len)) == -1) {
@@ -146,13 +146,13 @@ main (int argc, char *argv[])
 		free_buf(buffer);
 	}
 		
-	/* recieve len of packed req from main slurmd */
+	/* receive len of packed req from main slurmd */
 	if((rc = read(STDIN_FILENO, &len, sizeof(int))) == -1) {
 		fatal("slurmd_step: couldn't read len: %m",
 		      rc);
 	}
 
-	/* recieve len of packed req from main slurmd */
+	/* receive len of packed req from main slurmd */
 	incoming_buffer = xmalloc(len);
 	if((rc = read(STDIN_FILENO, incoming_buffer, 
 		      sizeof(char)*len)) == -1) {
