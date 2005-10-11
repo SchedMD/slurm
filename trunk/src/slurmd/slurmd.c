@@ -65,6 +65,7 @@
 #include "src/slurmd/setproctitle.h"
 #include "src/slurmd/get_mach_stat.h"
 #include "src/slurmd/proctrack.h"
+#include "src/slurmd/task_plugin.h"
 
 #define GETOPT_ARGS	"L:Dvhcf:M"
 
@@ -488,6 +489,8 @@ _read_config()
 	_free_and_set(&conf->tmpfs,    xstrdup(conf->cf.tmp_fs));
 	_free_and_set(&conf->spooldir, xstrdup(conf->cf.slurmd_spooldir));
 	_free_and_set(&conf->pidfile,  xstrdup(conf->cf.slurmd_pidfile));
+	_free_and_set(&conf->task_prolog, xstrdup(conf->cf.task_prolog));
+	_free_and_set(&conf->task_epilog, xstrdup(conf->cf.task_epilog));
 	_free_and_set(&conf->pubkey,   path_pubkey);     
 
 	if ( (conf->node_name == NULL) ||
@@ -533,12 +536,14 @@ _print_conf()
 	debug3("Spool Dir   = `%s'",     conf->spooldir);
 	debug3("Pid File    = `%s'",     conf->pidfile);
 	debug3("Slurm UID   = %u",       conf->slurm_user_id);
+	debug3("TaskProlog  = `%s'",     conf->task_prolog);
+	debug3("TaskEpilog  = `%s'",     conf->task_epilog);
 }
 
 static void 
 _create_conf()
 {
-	conf = xmalloc(sizeof(*conf));
+	conf = xmalloc(sizeof(slurmd_conf_t));
 }
 
 static void
@@ -558,6 +563,8 @@ _init_conf()
 	conf->logfile     = NULL;
 	conf->pubkey      = NULL;
 	conf->prolog      = NULL;
+	conf->task_prolog = NULL;
+	conf->task_epilog = NULL;
 	conf->port        =  0;
 	conf->daemonize   =  1;
 	conf->lfd         = -1;
@@ -658,6 +665,8 @@ _slurmd_init()
 	_update_logging();
 	_print_conf();
 	if (slurm_proctrack_init() != SLURM_SUCCESS)
+		return SLURM_FAILURE;
+	if (slurmd_task_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;
 
 	if (getrlimit(RLIMIT_NOFILE,&rlim) == 0) {
@@ -766,7 +775,8 @@ static int
 _slurmd_fini()
 {
 	save_cred_state(conf->vctx);
-	shm_fini(); 
+	shm_fini();
+	slurmd_task_fini(); 
 	return SLURM_SUCCESS;
 }
 

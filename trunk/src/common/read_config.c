@@ -1426,6 +1426,9 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	/* see above for switch_type, order dependent */
 
+	if (ctl_conf_ptr->task_plugin == NULL)
+		ctl_conf_ptr->task_plugin = xstrdup(DEFAULT_TASK_PLUGIN);
+
 	if (ctl_conf_ptr->tmp_fs == NULL)
 		ctl_conf_ptr->tmp_fs = xstrdup(DEFAULT_TMP_FS);
 

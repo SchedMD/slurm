@@ -137,6 +137,8 @@ launch(void *arg)
 		r->nprocs          = opt.nprocs;
 		r->slurmd_debug    = opt.slurmd_debug;
 		r->switch_job      = job->switch_job;
+		r->task_prolog     = opt.task_prolog;
+		r->task_epilog     = opt.task_epilog;
 
 		r->ofname  = fname_remote_string (job->ofname);
 		r->efname  = fname_remote_string (job->efname);

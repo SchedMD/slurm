@@ -75,6 +75,8 @@ typedef struct slurmd_config {
 	char         *pubkey;		/* location of job cred public key */
 	char         *epilog;		/* Path to Epilog script	   */
 	char         *prolog;		/* Path to prolog script           */
+	char         *task_prolog;	/* per-task prolog script          */
+	char         *task_epilog;	/* per-task epilog script          */
 	int           port;	        /* local slurmd port               */
 	int           hbeat;		/* heartbeat interval		   */
 	slurm_fd      lfd;		/* slurmd listen file descriptor   */

@@ -69,6 +69,7 @@
 #define DEFAULT_SLURMD_TIMEOUT      300
 #define DEFAULT_SPOOLDIR            "/var/spool/slurmd"
 #define DEFAULT_SWITCH_TYPE         "switch/none"
+#define DEFAULT_TASK_PLUGIN         "task/none"
 #define DEFAULT_TMP_FS              "/tmp"
 #define DEFAULT_WAIT_TIME           0
 

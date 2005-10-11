@@ -119,9 +119,10 @@ typedef struct slurmd_job {
 
 	bool           batch;      /* true if this is a batch job           */
 	bool           run_prolog; /* true if need to run prolog            */
-	bool           spawn_task; /* stand-alone task */
+	bool           spawn_task; /* stand-alone task                      */
 	time_t         timelimit;  /* time at which job must stop           */
-
+	char          *task_prolog; /* per-task prolog                      */
+	char          *task_epilog; /* per-task epilog                      */
 	struct passwd *pwd;   /* saved passwd struct for user job           */
 	slurmd_task_info_t  **task;  /* array of task information pointers  */
 	eio_handle_t  *eio;

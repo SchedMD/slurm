@@ -76,6 +76,7 @@
 #include "src/slurmd/shm.h"
 #include "src/slurmd/proctrack.h"
 #include "src/slurmd/pdebug.h"
+#include "src/slurmd/task_plugin.h"
 
 /* 
  * Map session manager exit status to slurm errno:
@@ -287,15 +288,18 @@ mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *cli,
  * Run a prolog or epilog script. Sets environment variables:
  *   SLURM_JOBID = jobid, SLURM_UID=uid, and
  *   MPIRUN_PARTITION=bgl_part_id (if not NULL)
- * Returns -1 on failure. 
+ * name IN: class of program (prolog, epilog, etc.)
+ * path IN: pathname of program to run
+ * jobid, uid, bgl_part_id IN: info on associated job for setting env vars
+ * max_wait IN: maximum time to wait in seconds, -1 for no limit
+ * RET 0 on success, -1 on failure. 
  */
 extern int 
-run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid, 
-		char *bgl_part_id)
+run_script(const char *name, const char *path, uint32_t jobid, uid_t uid, 
+		char *bgl_part_id, int max_wait)
 {
-	int status;
+	int status, rc, opt;
 	pid_t cpid;
-	char *name = prolog ? "prolog" : "epilog";
 
 	if (path == NULL || path[0] == '\0')
 		return 0;
@@ -326,20 +330,35 @@ run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid,
 		if (bgl_part_id)
 			setenvf(&env, "MPIRUN_PARTITION", "%s", bgl_part_id);
 
+		setpgrp();
 		execve(path, argv, env);
 		error("help! %m");
 		exit(127);
 	}
 
-	do {
-		if (waitpid(cpid, &status, 0) < 0) {
+	if (max_wait < 0)
+		opt = 0;
+	else
+		opt = WNOHANG;
+
+	while (1) {
+		rc = waitpid(cpid, &status, opt);
+		if (rc < 0) {
 			if (errno == EINTR)
 				continue;
 			error("waidpid: %m");
 			return 0;
-		} else
+		} else if (rc == 0) {
+			sleep(1);
+			if ((--max_wait) == 0) {
+				killpg(cpid, SIGKILL);
+				opt = 0;
+			}
+		} else  {
+			killpg(cpid, SIGKILL);	/* kill children too */
 			return status;
-	} while(1);
+		}
+	}
 
 	/* NOTREACHED */
 }
@@ -863,6 +882,21 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			debug3("Process %d, task %d finished", (int)pid, i);
 			t->exited  = true;
 			t->estatus = status;
+			if (job->task_epilog) {
+				run_script("user task_epilog", job->task_epilog, 
+					job->jobid, job->uid, NULL, 2);
+			}
+			if (conf->task_epilog) {
+				char *my_epilog;
+				slurm_mutex_lock(&conf->config_mutex);
+				my_epilog = xstrdup(conf->task_epilog);
+				slurm_mutex_unlock(&conf->config_mutex);
+				run_script("slurm task_epilog", my_epilog, 
+					job->jobid, job->uid, NULL, -1);
+				xfree(my_epilog);
+			}
+			job->envtp->procid = i;
+			post_term(job);
 			g_slurmd_jobacct_task_exit(job, pid, status, &rusage);
 		}
 
