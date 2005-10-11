@@ -639,7 +639,8 @@ _job_create_internal(allocation_info_t *info)
 		job->ntasks += job->ntask[i];
 	}
 
-	_init_stdio_eio_objs(job);
+	if (!opt.allocate && !opt.batch)
+		_init_stdio_eio_objs(job);
 
 	/* Build task id list for each host */
 	job->tids   = xmalloc(job->nhosts * sizeof(uint32_t *));
@@ -659,7 +660,7 @@ _job_create_internal(allocation_info_t *info)
 	else
 		_dist_cyclic(job);
 
-/* 	job_update_io_fnames(job); */
+	job_update_io_fnames(job);
 
 	hostlist_destroy(hl);
 
