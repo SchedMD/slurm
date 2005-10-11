@@ -34,6 +34,7 @@ source ./globals
 set test_id              "1.49"
 set exit_code            0
 set cwd                  "[$bin_pwd]"
+set tasks                4
 set task_prolog          "$cwd/test$test_id.prolog"
 set task_epilog          "$cwd/test$test_id.epilog"
 set file_out_pre         "$cwd/test$test_id.output_pre"
@@ -59,7 +60,7 @@ exec $bin_chmod 700 $task_prolog $task_epilog
 # Submit a slurm job that will execute two tasks
 #
 set timeout $max_job_delay
-spawn $srun -N1 -n2 -O -t1 --task-prolog=$task_prolog --task-epilog=$task_epilog $bin_id -un  
+spawn $srun -N1 -n$tasks -O -t1 --task-prolog=$task_prolog --task-epilog=$task_epilog $bin_id -un  
 expect {
 	-re "error" {
 		send_user "\nFAILURE: Error running srun\n"
@@ -112,7 +113,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 2} {
+if {$matches != $tasks} {
 	send_user "\nFAILURE: task prolog output is missing or uid mismatch\n"
 	set exit_code 1
 }
@@ -129,7 +130,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 2} {
+if {$matches != $tasks} {
 	send_user "\nFAILURE: task epilog output is missing or uid mismatch\n"
 	set exit_code 1
 }
