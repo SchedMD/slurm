@@ -218,6 +218,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/jobcomp_filetxt.so
 %{_libdir}/slurm/jobcomp_script.so
 %{_libdir}/slurm/proctrack_pgid.so
+%{_libdir}/slurm/proctrack_rms.so
 %{_libdir}/slurm/sched_backfill.so
 %{_libdir}/slurm/sched_builtin.so
 %{_libdir}/slurm/sched_hold.so
@@ -307,6 +308,8 @@ fi
 
 
 %changelog
+* Tue Oct 11 2005 Morris Jette <jette1@llnl.gov>
+- Added proctrack/rms to main rpm
 * Thu Sep 01 2005 Morris Jette <jette1@llnl.gov>
 - added etc/slurm.epilog.clean
 * Fri Jul 22 2005 Mark Grondona <mgrondona@llnl.gov>
