@@ -454,15 +454,17 @@ _setup_io(slurmd_job_t *job)
 		error("sete{u/g}id(%lu/%lu): %m", 
 		      (u_long) spwd->pw_uid, (u_long) spwd->pw_gid);
 
-	if (io_thread_start(job) < 0)
-		return ESLURMD_IO_ERROR;
+	if (!job->batch)
+		if (io_thread_start(job) < 0)
+			return ESLURMD_IO_ERROR;
 
 	/*
 	 * Initialize log facility to copy errors back to srun
 	 */
 	_slurmd_job_log_init(job);
 
-	rc = io_client_connect(job);
+	if (!job->batch)
+		rc = io_client_connect(job);
 
 #ifndef NDEBUG
 #  ifdef PR_SET_DUMPABLE
@@ -651,7 +653,7 @@ _job_mgr(slurmd_job_t *job)
 	/*
 	 * Wait for io thread to complete (if there is one)
 	 */
-	if (!job->spawn_task) {
+	if (!job->batch && !job->spawn_task) {
 		eio_signal_shutdown(job->eio);
 		_wait_for_io(job);
 	}
