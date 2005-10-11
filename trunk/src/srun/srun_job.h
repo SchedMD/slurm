@@ -82,7 +82,7 @@ typedef enum {
 	SRUN_TASK_INIT = 0,
 	SRUN_TASK_RUNNING,
 	SRUN_TASK_FAILED,
-	SRUN_TASK_IO_WAIT,
+	SRUN_TASK_IO_WAIT, /* this state deprecated with new eio stdio engine */
 	SRUN_TASK_EXITED,
 	SRUN_TASK_ABNORMAL_EXIT
 } srun_task_state_t;

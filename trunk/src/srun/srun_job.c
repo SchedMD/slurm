@@ -366,9 +366,7 @@ report_task_status(srun_job_t *job)
 
 	for (i = 0; i < opt.nprocs; i++) {
 		int state = job->task_state[i];
-/* 		if ((state == SRUN_TASK_EXITED)  */
-/* 		    && ((job->err[i] >= 0) || (job->out[i] >= 0))) */
-/* 			state = 4; */
+		debug3("  state of task %d is %d", i, state);
 		snprintf(buf, 256, "task%d", i);
 		hostlist_push(hl[state], buf); 
 	}

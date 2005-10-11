@@ -572,11 +572,7 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 		if (status) 
 			job->task_state[taskid] = SRUN_TASK_ABNORMAL_EXIT;
 		else {
-/* 			if (   (job->err[taskid] != IO_DONE)  */
-/* 			    || (job->out[taskid] != IO_DONE) ) */
-/* 				job->task_state[taskid] = SRUN_TASK_IO_WAIT; */
-/* 			else */
-/* 				job->task_state[taskid] = SRUN_TASK_EXITED; */
+			job->task_state[taskid] = SRUN_TASK_EXITED;
 		}
 
 		slurm_mutex_unlock(&job->task_mutex);
