@@ -58,9 +58,10 @@ int mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *client);
 
 /*
  * Run a prolog or epilog script. Sets environment variables:
- *   SLURM_JOBID = jobid, SLURM_UID=uid, and
- *   MPIRUN_PARTITION=bgl_part_id (if not NULL)
- * name IN: class of program (prolog, epilog, etc.)
+ *	SLURM_JOBID = jobid, SLURM_UID=uid, and
+ *	MPIRUN_PARTITION=bgl_part_id (if not NULL)
+ * name IN: class of program (prolog, epilog, etc.),
+ *	if prefix is "user" then also set uid
  * path IN: pathname of program to run
  * jobid, uid, bgl_part_id IN: info on associated job for setting env vars
  * max_wait IN: maximum time to wait in seconds, -1 for no limit
