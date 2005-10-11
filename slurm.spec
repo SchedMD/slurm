@@ -228,6 +228,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/mpi_mpichgm.so
 %{_libdir}/slurm/mpi_mvapich.so
 %{_libdir}/slurm/mpi_lam.so
+%{_libdir}/slurm/task_none.so
 %dir %{_libdir}/slurm/src
 %config %{_sysconfdir}/slurm.conf.example
 %config %{_sysconfdir}/slurm.epilog.clean

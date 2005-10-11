@@ -205,6 +205,9 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	srun->ifname = xstrdup(msg->ifname);
 	job->buffered_stdio = msg->buffered_stdio;
 
+	job->task_prolog = xstrdup(msg->task_prolog);
+	job->task_epilog = xstrdup(msg->task_epilog);
+
 	job->argc    = msg->argc;
 	job->argv    = _array_copy(job->argc, msg->argv);
 
@@ -446,6 +449,8 @@ job_destroy(slurmd_job_t *job)
 	list_destroy(job->sruns);
 	list_destroy(job->objs);
 	xfree(job->envtp);
+	xfree(job->task_prolog);
+	xfree(job->task_epilog);
 	xfree(job);
 }
 

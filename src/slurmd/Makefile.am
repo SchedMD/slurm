@@ -27,6 +27,7 @@ slurmd_SOURCES = 	        	\
 	semaphore.c semaphore.h		\
 	shm.c shm.h			\
 	fname.c fname.h			\
+	task_plugin.c task_plugin.h	\
 	ulimits.c ulimits.h     	\
 	proctrack.c proctrack.h		\
 	setproctitle.c setproctitle.h   \
@@ -53,6 +54,7 @@ slurmd_step_SOURCES = 	        	\
 	ulimits.c ulimits.h     	\
 	proctrack.c proctrack.h		\
 	setproctitle.c setproctitle.h   \
+	task_plugin.c task_plugin.h	\
 	pdebug.c pdebug.h
 
 slurmd_step_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)

@@ -65,8 +65,9 @@
 #include "src/slurmd/io.h"
 #include "src/slurmd/proctrack.h"
 #include "src/slurmd/shm.h"
+#include "src/slurmd/slurmd.h"
 #include "src/slurmd/pdebug.h"
-
+#include "src/slurmd/task_plugin.h"
 
 /*
  * Static prototype definitions.
@@ -200,6 +201,22 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		_setup_spawn_io(job);
 	else
 		io_dup_stdio(job->task[i]);
+
+	/* task-specific pre-launch activities */
+	pre_launch(job);
+	if (0 && conf->task_prolog) {
+		char *my_prolog;
+		slurm_mutex_lock(&conf->config_mutex);
+		my_prolog = xstrdup(conf->task_prolog);
+		slurm_mutex_unlock(&conf->config_mutex);
+		run_script("slurm task_prolog", my_prolog, job->jobid,
+			job->uid, NULL, -1);
+		xfree(my_prolog);
+	}
+	if (0 && job->task_prolog) {
+		run_script("user task_prolog", job->task_prolog, job->jobid,
+			job->uid, NULL, -1);
+	}
 
 	execve(job->argv[0], job->argv, job->env);
 

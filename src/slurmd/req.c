@@ -1561,7 +1561,7 @@ _run_prolog(uint32_t jobid, uid_t uid, char *bgl_part_id)
 	my_prolog = xstrdup(conf->prolog);
 	slurm_mutex_unlock(&conf->config_mutex);
 
-	error_code = run_script(true, my_prolog, jobid, uid, bgl_part_id);
+	error_code = run_script("prolog", my_prolog, jobid, uid, bgl_part_id, -1);
 	xfree(my_prolog);
 
 	return error_code;
@@ -1577,7 +1577,7 @@ _run_epilog(uint32_t jobid, uid_t uid, char *bgl_part_id)
 	my_epilog = xstrdup(conf->epilog);
 	slurm_mutex_unlock(&conf->config_mutex);
 
-	error_code = run_script(false, my_epilog, jobid, uid, bgl_part_id);
+	error_code = run_script("epilog", my_epilog, jobid, uid, bgl_part_id, -1);
 	xfree(my_epilog);
 
 	return error_code;
