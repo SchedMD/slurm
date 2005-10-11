@@ -88,8 +88,8 @@ main (int argc, char *argv[])
 	conf->log_opts.logfile_level = conf->debug_level;
 	conf->log_opts.syslog_level = conf->debug_level;
 	/* forward the log options to slurmd_step */
-	log_alter(conf->log_opts, 0, NULL);
-	//log_init(argv[0],conf->log_opts, LOG_DAEMON, conf->logfile);
+	//log_alter(conf->log_opts, 0, NULL);
+	log_init(argv[0],conf->log_opts, LOG_DAEMON, conf->logfile);
 	g_slurmd_jobacct_init(conf->cf.job_acct_parameters);
 
 	/* recieve len of packed cli from main slurmd */
