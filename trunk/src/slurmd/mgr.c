@@ -286,9 +286,10 @@ mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *cli,
 
 /*
  * Run a prolog or epilog script. Sets environment variables:
- *   SLURM_JOBID = jobid, SLURM_UID=uid, and
- *   MPIRUN_PARTITION=bgl_part_id (if not NULL)
- * name IN: class of program (prolog, epilog, etc.)
+ *	SLURM_JOBID = jobid, SLURM_UID=uid, and
+ *	MPIRUN_PARTITION=bgl_part_id (if not NULL)
+ * name IN: class of program (prolog, epilog, etc.), 
+ *	if prefix is "user" then also set uid
  * path IN: pathname of program to run
  * jobid, uid, bgl_part_id IN: info on associated job for setting env vars
  * max_wait IN: maximum time to wait in seconds, -1 for no limit
@@ -330,9 +331,11 @@ run_script(const char *name, const char *path, uint32_t jobid, uid_t uid,
 		if (bgl_part_id)
 			setenvf(&env, "MPIRUN_PARTITION", "%s", bgl_part_id);
 
+		if (strncmp(name, "user", 4) == 0)
+			setuid(uid);
 		setpgrp();
 		execve(path, argv, env);
-		error("help! %m");
+		error("execve(): %m");
 		exit(127);
 	}
 
