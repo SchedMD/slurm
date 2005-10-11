@@ -6,7 +6,8 @@ AUTOMAKE_OPTIONS = foreign
 
 sbin_PROGRAMS = slurmd slurmd_step
 
-INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS)
+INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS) \
+	-DSLURMD_STEP_PATH=\"$(prefix)/sbin/slurmd_step\"
 
 slurmd_LDADD = 					   \
         $(top_builddir)/src/common/libcommon.la    \

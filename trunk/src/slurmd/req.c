@@ -392,10 +392,11 @@ _fork_new_slurmd(slurmd_step_type_t type, void *req,
 		exit(1);
 	}
 	argv = xmalloc(2 * sizeof(char *));
-	argv[0] = "slurmd_step";
+	argv[0] = SLURMD_STEP_PATH;
 	argv[1] = NULL;
-	execvp("slurmd_step", argv);
-       
+	execvp(argv[0], argv);
+	error("Unable to run slurmd_step in %s", SLURMD_STEP_PATH);
+
 	if (close(fds[0]) < 0)
 		error("Unable to close read-pipe in grandchild: %m");
 
