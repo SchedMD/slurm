@@ -103,7 +103,8 @@ if {$start_cnt < $job_cnt} {
 }
 
 #
-# Give the jobs a few seconds to get initiated, then kill them all
+# Give the jobs a few seconds to get initiated, check for steps, 
+# then kill them all
 #
 exec $bin_sleep $delay
 spawn $bin_id -un
@@ -114,6 +115,26 @@ expect {
 	eof {
 		wait
 	}
+}
+# There could be hundreds of job steps, we don't want to see 
+# the details, but want to make sure that we did start a bunch
+log_user 0
+set matches 0
+spawn $squeue --steps --user $user_name
+expect {
+	-re "sleep" {
+		incr matches
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$matches < 40} {
+	send_user "\nFAILURE: only started job steps $matches\n"
+	send_user "  We expected at least 40 and possibly hundreds\n"
+	set exit_code 1
 }
 spawn $scancel --quiet --user $user_name
 expect {
