@@ -293,11 +293,13 @@ mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *cli,
  * path IN: pathname of program to run
  * jobid, uid, bgl_part_id IN: info on associated job for setting env vars
  * max_wait IN: maximum time to wait in seconds, -1 for no limit
+ * env IN: environment variables to use on exec, sets minimal environment
+ *	if NULL
  * RET 0 on success, -1 on failure. 
  */
 extern int 
 run_script(const char *name, const char *path, uint32_t jobid, uid_t uid, 
-		char *bgl_part_id, int max_wait)
+		char *bgl_part_id, int max_wait, char **env)
 {
 	int status, rc, opt;
 	pid_t cpid;
@@ -317,19 +319,21 @@ run_script(const char *name, const char *path, uint32_t jobid, uid_t uid,
 		return -1;
 	}
 	if (cpid == 0) {
-		char *argv[4];
-		char **env;
-
-		env = xmalloc(sizeof(char *));
+		char *argv[2];
 
 		argv[0] = xstrdup(path);
 		argv[1] = NULL;
 
-		env[0]  = NULL;
-		setenvf(&env, "SLURM_JOBID", "%u", jobid);
-		setenvf(&env, "SLURM_UID",   "%u", uid);
-		if (bgl_part_id)
-			setenvf(&env, "MPIRUN_PARTITION", "%s", bgl_part_id);
+		if (!env) {
+			env = xmalloc(sizeof(char *));
+			env[0]  = NULL;
+			setenvf(&env, "SLURM_JOBID", "%u", jobid);
+			setenvf(&env, "SLURM_UID",   "%u", uid);
+			if (bgl_part_id) {
+				setenvf(&env, "MPIRUN_PARTITION", 
+					"%s", bgl_part_id);
+			}
+		}
 
 		if (strncmp(name, "user", 4) == 0)
 			setuid(uid);
@@ -887,9 +891,15 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			debug3("Process %d, task %d finished", (int)pid, i);
 			t->exited  = true;
 			t->estatus = status;
+			job->envtp->env = job->env;
+			job->envtp->procid = job->task[i]->gtid;
+			job->envtp->localid = job->task[i]->id;
+			setup_env(job->envtp);
+			job->env = job->envtp->env;
 			if (job->task_epilog) {
 				run_script("user task_epilog", job->task_epilog, 
-					job->jobid, job->uid, NULL, 2);
+					job->jobid, job->uid, NULL, 2, 
+					job->env);
 			}
 			if (conf->task_epilog) {
 				char *my_epilog;
@@ -897,7 +907,8 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 				my_epilog = xstrdup(conf->task_epilog);
 				slurm_mutex_unlock(&conf->config_mutex);
 				run_script("slurm task_epilog", my_epilog, 
-					job->jobid, job->uid, NULL, -1);
+					job->jobid, job->uid, NULL, -1,
+					job->env);
 				xfree(my_epilog);
 			}
 			job->envtp->procid = i;

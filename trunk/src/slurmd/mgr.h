@@ -65,10 +65,12 @@ int mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *client);
  * path IN: pathname of program to run
  * jobid, uid, bgl_part_id IN: info on associated job for setting env vars
  * max_wait IN: maximum time to wait in seconds, -1 for no limit
+ * env IN: environment variables to use on exec, sets minimal environment 
+ *	if NULL
  * RET 0 on success, -1 on failure.
  */
 extern int run_script(const char *name, const char *path, uint32_t jobid, 
-		uid_t uid, char *bgl_part_id, int max_wait);
+		uid_t uid, char *bgl_part_id, int max_wait, char **env);
 /*
  * Same as slurm_get_addr but protected by pthread_atfork handlers
  */

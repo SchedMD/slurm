@@ -211,12 +211,12 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		my_prolog = xstrdup(conf->task_prolog);
 		slurm_mutex_unlock(&conf->config_mutex);
 		run_script("slurm task_prolog", my_prolog, job->jobid,
-			job->uid, NULL, -1);
+			job->uid, NULL, -1, job->env);
 		xfree(my_prolog);
 	}
 	if (job->task_prolog) {
 		run_script("user task_prolog", job->task_prolog, job->jobid,
-			job->uid, NULL, -1);
+			job->uid, NULL, -1, job->env);
 	}
 
 	execve(job->argv[0], job->argv, job->env);
