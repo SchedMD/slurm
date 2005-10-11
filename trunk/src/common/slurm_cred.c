@@ -1118,7 +1118,7 @@ static char * timestr (const time_t *tp, char *buf, size_t n)
 	if (disabled) return NULL;
 #endif
 	if (!localtime_r (tp, &tmval))
-		error ("localtime: %m");
+		error ("localtime_r: %m");
 	strftime (buf, n, fmt, &tmval);
 	return (buf);
 }
