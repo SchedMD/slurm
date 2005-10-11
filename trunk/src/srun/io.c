@@ -59,6 +59,7 @@
 
 static int    fmt_width       = 0;
 
+static void     _init_stdio_eio_objs(srun_job_t *job);
 static void	_handle_io_init_msg(int fd, srun_job_t *job);
 static ssize_t	_readx(int fd, char *buf, size_t maxbytes);
 static int      _read_io_init_msg(int fd, srun_job_t *job, char *host);
@@ -757,6 +758,9 @@ io_thr_create(srun_job_t *job)
 	if (opt.labelio)
 		fmt_width = _wid(opt.nprocs);
 
+	if (!opt.allocate && !opt.batch)
+		_init_stdio_eio_objs(job);
+
 	for (i = 0; i < job->num_listen; i++) {
 		eio_obj_t *obj;
 
@@ -988,3 +992,97 @@ free_io_buf(struct io_buf *buf)
 		xfree(buf);
 	}
 }
+
+static int
+_is_local_file (io_filename_t *fname)
+{
+	if (fname->name == NULL)
+		return 1;
+	
+	if (fname->taskid != -1)
+		return 1;
+
+	return ((fname->type != IO_PER_TASK) && (fname->type != IO_ONE));
+}
+
+static void
+_init_stdio_eio_objs(srun_job_t *job)
+{
+	int infd, outfd, errfd;
+	bool err_shares_out = false;
+
+	/*
+	 * build stdin eio_obj_t
+	 */
+	if (_is_local_file(job->ifname)) {
+		uint16_t type, destid;
+		if (job->ifname->name == NULL || job->ifname->taskid != -1) {
+			infd = STDIN_FILENO;
+		} else {
+			infd = open(job->ifname->name, O_RDONLY);
+			if (infd == -1)
+				fatal("Could not open stdin file: %m");
+		}
+		fd_set_nonblocking(infd);
+		fd_set_close_on_exec(infd);
+		if (job->ifname->type == IO_ONE) {
+			type = SLURM_IO_STDIN;
+			destid = job->ifname->taskid;
+		} else {
+			type = SLURM_IO_ALLSTDIN;
+			destid = -1;
+		}
+		job->stdin = create_file_read_eio_obj(infd, job, type, destid);
+		list_enqueue(job->eio_objs, job->stdin);
+	}
+
+	/*
+	 * build stdout eio_obj_t
+	 */
+	if (_is_local_file(job->ofname)) {
+		int refcount;
+		if (job->ofname->name == NULL) {
+			outfd = STDOUT_FILENO;
+		} else {
+			outfd = open(job->ofname->name,
+				     O_CREAT|O_WRONLY|O_TRUNC, 0644);
+			if (outfd == -1)
+				fatal("Could not open stdout file: %m");
+		}
+		if (job->ofname->name != NULL
+		    && job->efname->name != NULL
+		    && !strcmp(job->ofname->name, job->efname->name)) {
+			refcount = job->ntasks * 2;
+			err_shares_out = true;
+		} else {
+			refcount = job->ntasks;
+		}
+		/*job->stdout = create_file_write_eio_obj(outfd, job, refcount);*/
+		job->stdout = create_file_write_eio_obj(outfd, job);
+		list_enqueue(job->eio_objs, job->stdout);
+	}
+
+	/*
+	 * build a seperate stderr eio_obj_t only if stderr is not sharing
+	 * the stdout eio_obj_t
+	 */
+	if (err_shares_out) {
+		debug3("stdout and stderr sharing a file");
+		job->stderr = job->stdout;
+	} else if (_is_local_file(job->efname)) {
+		int refcount;
+		if (job->efname->name == NULL) {
+			errfd = STDERR_FILENO;
+		} else {
+			errfd = open(job->efname->name,
+				     O_CREAT|O_WRONLY|O_TRUNC, 0644);
+			if (errfd == -1)
+				fatal("Could not open stderr file: %m");
+		}
+		refcount = job->ntasks;
+		/*job->stderr = create_file_write_eio_obj(errfd, job, refcount);*/
+		job->stderr = create_file_write_eio_obj(errfd, job);
+		list_enqueue(job->eio_objs, job->stderr);
+	}
+}
+
