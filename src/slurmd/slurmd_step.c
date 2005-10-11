@@ -50,6 +50,8 @@ main (int argc, char *argv[])
 	conf = xmalloc(sizeof(*conf));
 	conf->argv = &argv;
 	conf->argc = &argc;
+	conf->task_prolog = slurm_get_task_prolog();
+	conf->task_epilog = slurm_get_task_epilog();
 	init_setproctitle(argc, argv);
 	if (slurm_proctrack_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;
