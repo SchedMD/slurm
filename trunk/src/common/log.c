@@ -151,10 +151,12 @@ extern char * program_invocation_name;
 static void _atfork_prep()   { if (log) slurm_mutex_lock(&log_lock);   }
 static void _atfork_parent() { if (log) slurm_mutex_unlock(&log_lock); }
 static void _atfork_child()  { if (log) slurm_mutex_init(&log_lock);   }
+static bool at_forked = false;
 #  define atfork_install_handlers()                                           \
-          do {                                                                \
+          while (!at_forked) {                                                \
                 pthread_atfork(_atfork_prep, _atfork_parent, _atfork_child);  \
-	  } while (0)
+		at_forked = true;                                             \
+	  }
 #else 
 #  define atfork_install_handlers() (NULL)
 #endif
