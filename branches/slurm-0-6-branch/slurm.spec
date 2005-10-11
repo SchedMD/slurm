@@ -160,12 +160,19 @@ if [ -d /etc/init.d ]; then
 fi
 
 # Build file lists for optional plugin packages
-for plugin in auth_munge auth_authd sched_wiki switch_elan; do
+for plugin in auth_munge auth_authd sched_wiki; do
    LIST=./${plugin}.files
    touch $LIST
    test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/${plugin}.so &&
      echo %{_libdir}/slurm/${plugin}.so > $LIST
 done
+
+LIST=./switch_elan.files
+touch $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_elan.so &&
+  echo %{_libdir}/slurm/switch_elan.so            >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_rms.so &&
+  echo %{_libdir}/slurm/proctrack_rms.so          >> $LIST
 
 LIST=./aix_federation.files
 touch $LIST
@@ -218,7 +225,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/jobcomp_filetxt.so
 %{_libdir}/slurm/jobcomp_script.so
 %{_libdir}/slurm/proctrack_pgid.so
-%{_libdir}/slurm/proctrack_rms.so
 %{_libdir}/slurm/sched_backfill.so
 %{_libdir}/slurm/sched_builtin.so
 %{_libdir}/slurm/sched_hold.so
@@ -309,7 +315,7 @@ fi
 
 %changelog
 * Tue Oct 11 2005 Morris Jette <jette1@llnl.gov>
-- Added proctrack/rms to main rpm
+- Added proctrack/rms to switch_elan rpm
 * Thu Sep 01 2005 Morris Jette <jette1@llnl.gov>
 - added etc/slurm.epilog.clean
 * Fri Jul 22 2005 Mark Grondona <mgrondona@llnl.gov>
