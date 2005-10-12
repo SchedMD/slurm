@@ -285,13 +285,11 @@ mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *cli,
 }
 
 /*
- * Run a prolog or epilog script. Sets environment variables:
- *	SLURM_JOBID = jobid, SLURM_UID=uid, and
- *	MPIRUN_PARTITION=bgl_part_id (if not NULL)
+ * Run a prolog or epilog script
  * name IN: class of program (prolog, epilog, etc.), 
  *	if prefix is "user" then also set uid
  * path IN: pathname of program to run
- * jobid, uid, bgl_part_id IN: info on associated job for setting env vars
+ * jobid, uid IN: info on associated job
  * max_wait IN: maximum time to wait in seconds, -1 for no limit
  * env IN: environment variables to use on exec, sets minimal environment
  *	if NULL
@@ -299,11 +297,12 @@ mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *cli,
  */
 extern int 
 run_script(const char *name, const char *path, uint32_t jobid, uid_t uid, 
-		char *bgl_part_id, int max_wait, char **env)
+		int max_wait, char **env)
 {
 	int status, rc, opt;
 	pid_t cpid;
 
+	xassert(env);
 	if (path == NULL || path[0] == '\0')
 		return 0;
 
@@ -323,17 +322,6 @@ run_script(const char *name, const char *path, uint32_t jobid, uid_t uid,
 
 		argv[0] = xstrdup(path);
 		argv[1] = NULL;
-
-		if (!env) {
-			env = xmalloc(sizeof(char *));
-			env[0]  = NULL;
-			setenvf(&env, "SLURM_JOBID", "%u", jobid);
-			setenvf(&env, "SLURM_UID",   "%u", uid);
-			if (bgl_part_id) {
-				setenvf(&env, "MPIRUN_PARTITION", 
-					"%s", bgl_part_id);
-			}
-		}
 
 		if (strncmp(name, "user", 4) == 0)
 			setuid(uid);
@@ -898,8 +886,7 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			job->env = job->envtp->env;
 			if (job->task_epilog) {
 				run_script("user task_epilog", job->task_epilog, 
-					job->jobid, job->uid, NULL, 2, 
-					job->env);
+					job->jobid, job->uid, 2, job->env);
 			}
 			if (conf->task_epilog) {
 				char *my_epilog;
@@ -907,8 +894,7 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 				my_epilog = xstrdup(conf->task_epilog);
 				slurm_mutex_unlock(&conf->config_mutex);
 				run_script("slurm task_epilog", my_epilog, 
-					job->jobid, job->uid, NULL, -1,
-					job->env);
+					job->jobid, job->uid, -1, job->env);
 				xfree(my_epilog);
 			}
 			job->envtp->procid = i;
