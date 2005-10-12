@@ -35,6 +35,7 @@ set test_id              "1.49"
 set exit_code            0
 set cwd                  "[$bin_pwd]"
 set tasks                4
+set file_in		 "$cwd/test$test_id.in"
 set task_prolog          "$cwd/test$test_id.prolog"
 set task_epilog          "$cwd/test$test_id.epilog"
 set file_out_pre         "$cwd/test$test_id.output_pre"
@@ -46,22 +47,36 @@ print_header $test_id
 # Delete left-over scripts and rebuild, 
 # The sleep command just forces slurmd to kill the user's (long running) epilog
 #
-exec $bin_rm -f $task_prolog $task_epilog $file_out_pre $file_out_post
+exec $bin_rm -f $task_prolog $task_epilog $file_in
+exec $bin_rm -f $file_out_pre $file_out_post
 exec $bin_touch $file_out_pre
 exec $bin_touch $file_out_post
-exec echo "#!$bin_bash"                >$task_prolog
-exec echo "$bin_id >> $file_out_pre"  >>$task_prolog
-exec echo "#!$bin_bash"                >$task_epilog
-exec echo "$bin_id >> $file_out_post" >>$task_epilog
-exec echo "$bin_sleep 200"            >>$task_epilog
-exec $bin_chmod 700 $task_prolog $task_epilog
+
+exec echo "#!$bin_bash"                  >$task_prolog
+exec echo "$bin_id >> $file_out_pre"    >>$task_prolog
+exec echo "echo export TEST=prolog_qa"  >>$task_prolog
+
+exec echo "#!$bin_bash"                  >$task_epilog
+exec echo "$bin_id >> $file_out_post"   >>$task_epilog
+exec echo "$bin_sleep 200"              >>$task_epilog
+
+exec echo "#!$bin_bash"                  >$file_in
+exec echo "echo TEST==\$TEST"           >>$file_in
+#exec echo "env"                        >>$file_in
+
+exec $bin_chmod 700 $task_prolog $task_epilog $file_in
 
 #
 # Submit a slurm job that will execute two tasks
 #
+set matches 0
 set timeout $max_job_delay
-spawn $srun -N1 -n$tasks -O -t1 --task-prolog=$task_prolog --task-epilog=$task_epilog $bin_id -un  
+spawn $srun -N1-2 -n$tasks -O -t1 --task-prolog=$task_prolog --task-epilog=$task_epilog $file_in
 expect {
+	-re "TEST==prolog_qa" {
+		incr matches
+		exp_continue
+	}
 	-re "error" {
 		send_user "\nFAILURE: Error running srun\n"
 		set exit_code 1
@@ -79,6 +94,10 @@ expect {
 }
 if {$exit_code != 0} {
 	exit $exit_code
+}
+if {$matches != $tasks} {
+	send_user "\nFAILURE: prolog exported env var failure ($matches != $tasks)\n"
+	set exit_code 1
 }
 
 #
@@ -137,7 +156,8 @@ if {$matches != $tasks} {
 	
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $task_prolog $task_epilog $file_out_pre $file_out_post
+	exec $bin_rm -f $task_prolog $task_epilog $file_in 
+	exec $bin_rm -f $file_out_pre $file_out_post
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
