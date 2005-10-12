@@ -144,6 +144,7 @@ test1.57   Confirm node selection from within a job step on existing allocation
            (--relative, --nodes and --nprocs options).
 test1.58   Basic MPI functionality tests.
 **NOTE**   The above tests for mutliple processor/partition systems only
+test1.70   Test of running non-existant job, confirm timely termination.
 
 test2.#    Testing of scontrol options (to be run as unprivileged user). 
 ========================================================================
