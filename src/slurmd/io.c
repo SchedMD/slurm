@@ -627,6 +627,7 @@ _init_task_stdio_fds(slurmd_job_t *job, slurmd_task_info_t *task,
 	} else {
 		/* create pipe and eio object */
 		int pin[2];
+		debug3("  stdin uses an eio object");
 		if (pipe(pin) < 0) {
 			error("stdin pipe: %m");
 			return SLURM_ERROR;
@@ -656,6 +657,7 @@ _init_task_stdio_fds(slurmd_job_t *job, slurmd_task_info_t *task,
 	} else {
 		/* create pipe and eio object */
 		int pout[2];
+		debug3("  stdout uses an eio object");
 		if (pipe(pout) < 0) {
 			error("stdout pipe: %m");
 			return SLURM_ERROR;
@@ -687,6 +689,7 @@ _init_task_stdio_fds(slurmd_job_t *job, slurmd_task_info_t *task,
 	} else {
 		/* create pipe and eio object */
 		int perr[2];
+		debug3("  stderr uses an eio object");
 		if (pipe(perr) < 0) {
 			error("stderr pipe: %m");
 			return SLURM_ERROR;
@@ -698,7 +701,7 @@ _init_task_stdio_fds(slurmd_job_t *job, slurmd_task_info_t *task,
 		task->err = _create_task_out_eio(task->from_stderr,
 						 SLURM_IO_STDERR, job, task);
 		list_append(job->objs, (void *)task->err);
-		list_append(job->stderr_eio_objs, (void *)task->out);
+		list_append(job->stderr_eio_objs, (void *)task->err);
 	}
 }
 
