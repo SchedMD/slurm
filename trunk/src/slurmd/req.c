@@ -67,6 +67,7 @@
 
 
 static int  _abort_job(uint32_t job_id);
+static char ** _build_env(uint32_t jobid, uid_t uid, char *bgl_part_id);
 static bool _slurm_authorized_user(uid_t uid);
 static bool _job_still_running(uint32_t job_id);
 static int  _kill_all_active_steps(uint32_t jobid, int sig, bool batch);
@@ -1552,19 +1553,36 @@ _rpc_update_time(slurm_msg_t *msg, slurm_addr *cli)
 	slurm_send_rc_msg(msg, rc);
 }
 
+/* NOTE: xfree returned value */
+static char **
+_build_env(uint32_t jobid, uid_t uid, char *bgl_part_id)
+{
+	char **env = xmalloc(sizeof(char *));
+	env[0]  = NULL;
+	setenvf(&env, "SLURM_JOBID", "%u", jobid);
+	setenvf(&env, "SLURM_UID",   "%u", uid);
+	if (bgl_part_id) {
+		setenvf(&env, "MPIRUN_PARTITION",
+			"%s", bgl_part_id);
+	}
+	return env;
+}
+
 static int 
 _run_prolog(uint32_t jobid, uid_t uid, char *bgl_part_id)
 {
 	int error_code;
 	char *my_prolog;
+	char **my_env = _build_env(jobid, uid, bgl_part_id);
 
 	slurm_mutex_lock(&conf->config_mutex);
 	my_prolog = xstrdup(conf->prolog);
 	slurm_mutex_unlock(&conf->config_mutex);
 
 	error_code = run_script("prolog", my_prolog, jobid, uid, 
-			bgl_part_id, -1, NULL);
+			-1, my_env);
 	xfree(my_prolog);
+	xfree(my_env);
 
 	return error_code;
 }
@@ -1574,14 +1592,16 @@ _run_epilog(uint32_t jobid, uid_t uid, char *bgl_part_id)
 {
 	int error_code;
 	char *my_epilog;
+	char **my_env = _build_env(jobid, uid, bgl_part_id);
 
 	slurm_mutex_lock(&conf->config_mutex);
 	my_epilog = xstrdup(conf->epilog);
 	slurm_mutex_unlock(&conf->config_mutex);
 
 	error_code = run_script("epilog", my_epilog, jobid, uid, 
-			bgl_part_id, -1, NULL);
+			-1, my_env);
 	xfree(my_epilog);
+	xfree(my_env);
 
 	return error_code;
 }

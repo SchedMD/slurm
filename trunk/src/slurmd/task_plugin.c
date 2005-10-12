@@ -30,6 +30,7 @@
 #include "src/common/plugrack.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/slurmd/slurmd_job.h"
 
 typedef struct slurmd_task_ops {

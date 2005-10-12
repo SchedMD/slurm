@@ -26,8 +26,12 @@
 #ifndef _ENV_H
 #define _ENV_H
 
+#include <sys/types.h>
+#include <unistd.h>
 #include <slurm/slurm.h>
 #include <sys/utsname.h>
+
+#include "src/common/macros.h"
 
 enum distribution_t {
 	SRUN_DIST_BLOCK 	= 0, 
@@ -59,6 +63,7 @@ typedef struct env_options {
 	int gmpi;
 	int cpus_per_task;	/* --cpus-per-task=n, -c n	*/
 	int cpus_on_node;
+	pid_t task_pid;
 } env_t;
 
 

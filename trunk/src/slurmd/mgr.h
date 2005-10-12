@@ -57,20 +57,18 @@ int mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *client,
 int mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *client);
 
 /*
- * Run a prolog or epilog script. Sets environment variables:
- *	SLURM_JOBID = jobid, SLURM_UID=uid, and
- *	MPIRUN_PARTITION=bgl_part_id (if not NULL)
+ * Run a prolog or epilog script
  * name IN: class of program (prolog, epilog, etc.),
  *	if prefix is "user" then also set uid
  * path IN: pathname of program to run
- * jobid, uid, bgl_part_id IN: info on associated job for setting env vars
+ * jobid, uidIN: info on associated job
  * max_wait IN: maximum time to wait in seconds, -1 for no limit
  * env IN: environment variables to use on exec, sets minimal environment 
  *	if NULL
  * RET 0 on success, -1 on failure.
  */
 extern int run_script(const char *name, const char *path, uint32_t jobid, 
-		uid_t uid, char *bgl_part_id, int max_wait, char **env);
+		uid_t uid, int max_wait, char **env);
 /*
  * Same as slurm_get_addr but protected by pthread_atfork handlers
  */

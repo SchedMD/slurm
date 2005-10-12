@@ -487,7 +487,12 @@ environment variable
 .TP
 \fBTaskProlog\fR
 Fully qualified pathname of a program to be execute as the slurm job's 
-owner prior to initiation of each task. 
+owner prior to initiation of each task.
+Besides the normal environment variables, this has SLURM_TASK_PID 
+available to identify the process ID of the task being started. 
+Standard output from this program of the form 
+"export NAME=value" will be used to set environment variables 
+for the task being spawned. 
 See \fBTaskPlugin\fR for execution order details.
 .TP
 \fBTmpFS\fR

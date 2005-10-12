@@ -222,7 +222,13 @@ int setup_env(env_t *env)
 
 	if (env == NULL)
 		return SLURM_ERROR;
-	
+
+	if (env->task_pid
+	  && setenvf(&env->env, "SLURM_TASK_PID", "%d", (int)env->task_pid)) {
+		error("Unable to set SLURM_TASK_PID environment variable");
+		 rc = SLURM_FAILURE;
+	}
+
 	if (env->nprocs
 	   && setenvf(&env->env, "SLURM_NPROCS", "%d", env->nprocs)) {
 		error("Unable to set SLURM_NPROCS environment variable");

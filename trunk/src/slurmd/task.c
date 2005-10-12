@@ -54,6 +54,7 @@
 
 #include <slurm/slurm_errno.h>
 
+#include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/slurm_jobacct.h"
@@ -77,6 +78,9 @@ static void  _make_tmpdir(slurmd_job_t *job);
 static char *_signame(int signo);
 static void  _cleanup_file_descriptors(slurmd_job_t *job);
 static void  _setup_spawn_io(slurmd_job_t *job);
+static int   _run_script(const char *name, const char *path, 
+		slurmd_job_t *job);
+static void  _update_env(char *buf, char ***env);
 
 
 static void _setup_spawn_io(slurmd_job_t *job)
@@ -124,6 +128,112 @@ _cleanup_file_descriptors(slurmd_job_t *j)
 	}
 }
 
+/* Search for "export NAME=value" records in buf and 
+ * use them to add environment variables to env */
+static void
+_update_env(char *buf, char ***env)
+{
+	char *tmp_ptr, *name_ptr, *val_ptr, *buf_ptr = buf;
+
+	while ((tmp_ptr = strstr(buf_ptr, "export"))) {
+		buf_ptr += 6;
+		while (isspace(buf_ptr[0]))
+			buf_ptr++;
+		if (buf_ptr[0] == '=')	/* mal-formed */
+			continue;
+		name_ptr = buf_ptr;	/* start of env var name */
+		while ((buf_ptr[0] != '=') && (buf_ptr[0] != '\0'))
+			buf_ptr++;
+		if (buf_ptr[0] == '\0')	/* mal-formed */
+			continue;
+		buf_ptr[0] = '\0';	/* end of env var name */
+		buf_ptr++;
+		val_ptr = buf_ptr;	/* start of env var value */
+		while ((!isspace(buf_ptr[0])) && (buf_ptr[0] != '\0'))
+			buf_ptr++;
+		if (isspace(buf_ptr[0])) {
+			buf_ptr[0] = '\0';/* end of env var value */
+			buf_ptr++;
+		}
+		debug("name:%s:val:%s:",name_ptr,val_ptr);
+		if (setenvf(env, name_ptr, "%s", val_ptr))
+			error("Unable to set %s environment variable", name_ptr);
+	}		
+}
+
+/*
+ * Run a task prolog script
+ * name IN: class of program ("system prolog", "user prolog", etc.),
+ *	if prefix is "user" then also set uid
+ * path IN: pathname of program to run
+ * job IN/OUT: pointer to associated job, can update job->env 
+ *	if prolog
+ * RET 0 on success, -1 on failure.
+ */
+static int
+_run_script(const char *name, const char *path, slurmd_job_t *job)
+{
+	int status, rc, nread;
+	pid_t cpid;
+	int pfd[2];
+	char buf[4096];
+
+	xassert(job->env);
+	if (path == NULL || path[0] == '\0')
+		return 0;
+
+	debug("[job %u] attempting to run %s [%s]", job->jobid, name, path);
+
+	if (access(path, R_OK | X_OK) < 0) {
+		debug("Not running %s [%s]: %m", name, path);
+		return 0;
+	}
+	if (pipe(pfd) < 0) {
+		error("executing %s: pipe: %m", name);
+		return -1;
+	}
+	if ((cpid = fork()) < 0) {
+		error("executing %s: fork: %m", name);
+		return -1;
+	}
+	if (cpid == 0) {
+		char *argv[2];
+
+		argv[0] = xstrdup(path);
+		argv[1] = NULL;
+		close(1);
+		dup(pfd[1]);
+		close(2);
+		close(0);
+		setpgrp();
+		execve(path, argv, job->env);
+		error("execve(): %m");
+		exit(127);
+	}
+
+	close(pfd[1]);
+	while ((nread = read(pfd[0], buf, sizeof(buf))) > 0) {
+		buf[nread] = 0;
+		//debug("read %d:%s:", nread, buf);
+		_update_env(buf, &job->env);
+	}
+
+	close(pfd[0]);
+	while (1) {
+		rc = waitpid(cpid, &status, 0);
+		if (rc < 0) {
+			if (errno == EINTR)
+				continue;
+			error("waidpid: %m");
+			return 0;
+		} else  {
+			killpg(cpid, SIGKILL);  /* kill children too */
+			return status;
+		}
+	}
+
+	/* NOTREACHED */
+}
 
 /*
  *  Current process is running as the user when this is called.
@@ -173,6 +283,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	t = job->task[i];
 	job->envtp->procid = t->gtid;
 	job->envtp->localid = t->id;
+	job->envtp->task_pid = getpid();
 	job->envtp->gmpi = getenvp(job->env, "SLURM_GMPI") ? t->gtid : -1;
 	
 	
@@ -210,13 +321,11 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		slurm_mutex_lock(&conf->config_mutex);
 		my_prolog = xstrdup(conf->task_prolog);
 		slurm_mutex_unlock(&conf->config_mutex);
-		run_script("slurm task_prolog", my_prolog, job->jobid,
-			job->uid, NULL, -1, job->env);
+		_run_script("slurm task_prolog", my_prolog, job);
 		xfree(my_prolog);
 	}
 	if (job->task_prolog) {
-		run_script("user task_prolog", job->task_prolog, job->jobid,
-			job->uid, NULL, -1, job->env);
+		_run_script("user task_prolog", job->task_prolog, job); 
 	}
 
 	execve(job->argv[0], job->argv, job->env);
