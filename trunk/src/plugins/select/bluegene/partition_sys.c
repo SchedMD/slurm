@@ -51,6 +51,7 @@ List bgl_sys_allocated = NULL;
 static void _pre_allocate(bgl_record_t *bgl_record);
 static int _post_allocate(bgl_record_t *bgl_record);
 static int _post_bgl_init_read(void *object, void *arg);
+static int _split_block(bgl_record_t *bgl_record);
 
 #define MAX_ADD_RETRY 2
 
@@ -93,6 +94,7 @@ static void _print_list(List list)
 static void _pre_allocate(bgl_record_t *bgl_record)
 {
 	int rc;
+	int send_psets=numpsets;
 
 	if ((rc = rm_set_data(bgl_record->bgl_part, RM_PartitionBlrtsImg,   
 			bluegene_blrts)) != STATUS_OK)
@@ -113,13 +115,12 @@ static void _pre_allocate(bgl_record_t *bgl_record)
 	if ((rc = rm_set_data(bgl_record->bgl_part, RM_PartitionConnection, 
 			&bgl_record->conn_type)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionConnection)", bgl_err_str(rc));
-
-	/* if ((rc = rm_set_data(bgl_record->bgl_part, RM_PartitionMode,  */
-/* 			&bgl_record->node_use)) != STATUS_OK) */
-/* 		error("rm_set_data(RM_PartitionMode)", bgl_err_str(rc)); */
-
+	
+	if(bgl_record->cnodes_per_bp == (procs_per_node/4))
+		send_psets = numpsets/4;
+	
 	if ((rc = rm_set_data(bgl_record->bgl_part, RM_PartitionPsetsPerBP, 
-			&numpsets)) != STATUS_OK)
+			&send_psets)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionPsetsPerBP)", bgl_err_str(rc));
 
 	if ((rc = rm_set_data(bgl_record->bgl_part, RM_PartitionUserName, 
@@ -144,7 +145,8 @@ static int _post_allocate(bgl_record_t *bgl_record)
 	debug("adding partition\n");
 	
 	for(i=0;i<MAX_ADD_RETRY; i++) {
-		if ((rc = rm_add_partition(bgl_record->bgl_part)) != STATUS_OK) {
+		if ((rc = rm_add_partition(bgl_record->bgl_part)) 
+		    != STATUS_OK) {
 			error("rm_add_partition(): %s", bgl_err_str(rc));
 			rc = SLURM_ERROR;
 		} else {
@@ -197,14 +199,37 @@ static int _post_allocate(bgl_record_t *bgl_record)
 	return rc;
 }
 
+static int _post_bgl_init_read(void *object, void *arg)
+{
+	bgl_record_t *bgl_record = (bgl_record_t *) object;
+	int i = 1024;
+	bgl_record->nodes = xmalloc(i);
+	while (hostlist_ranged_string(bgl_record->hostlist, i,
+			bgl_record->nodes) < 0) {
+		i *= 2;
+		xrealloc(bgl_record->nodes, i);
+	}
+	
+	if (node_name2bitmap(bgl_record->nodes, 
+			     false, 
+			     &bgl_record->bitmap)) {
+		error("Unable to convert nodes %s to bitmap", 
+		      bgl_record->nodes);
+	}
+	//print_bgl_record(bgl_record);
+
+	return SLURM_SUCCESS;
+}
 
 extern int configure_partition(bgl_record_t *bgl_record)
 {
 	/* new partition to be added */
 	rm_new_partition(&bgl_record->bgl_part); 
 	_pre_allocate(bgl_record);
-
-	configure_partition_switches(bgl_record);
+	if(bgl_record->cnodes_per_bp < procs_per_node)
+		configure_small_partition(bgl_record);
+	else
+		configure_partition_switches(bgl_record);
 	
 	_post_allocate(bgl_record); 
 	return 1;
@@ -230,7 +255,8 @@ int read_bgl_partitions()
 	char *part_name = NULL;
 	rm_partition_list_t *part_list = NULL;
 	rm_partition_state_flag_t state = PARTITION_ALL_FLAG;
-	
+	rm_nodecard_t *ncard = NULL;
+	bool small = false;
 
 	if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
 		error("rm_set_serial(): %s\n", bgl_err_str(rc));
@@ -303,18 +329,53 @@ int read_bgl_partitions()
 		free(part_name);
 
 		bgl_record->state = -1;
-		if ((rc = rm_get_data(part_ptr, RM_PartitionBPNum, &bp_cnt)) 
+		bgl_record->quarter = -1;
+				
+		if ((rc = rm_get_data(part_ptr, 
+				      RM_PartitionBPNum, 
+				      &bp_cnt)) 
+		    != STATUS_OK) {
+			error("rm_get_data(RM_BPNum): %s", 
+			      bgl_err_str(rc));
+			bp_cnt = 0;
+		}
+				
+		if(bp_cnt==0)
+			goto clean_up;
+
+		if ((rc = rm_get_data(part_ptr, RM_PartitionSmall, &small)) 
 		    != STATUS_OK) {
 			error("rm_get_data(RM_BPNum): %s", bgl_err_str(rc));
 			bp_cnt = 0;
 		}
-		
-		if(bp_cnt==0)
-			goto clean_up;
+		if(small) {
+			if((rc = rm_get_data(part_ptr,
+					     RM_PartitionFirstNodeCard,
+					     &ncard))
+			   != STATUS_OK) {
+				error("rm_get_data(RM_FirstCard): %s",
+				      bgl_err_str(rc));
+				bp_cnt = 0;
+			}
+			if ((rc = rm_get_data(ncard, 
+				      RM_NodeCardQuarter, 
+				      &bgl_record->quarter)) != STATUS_OK) {
+				error("rm_get_data(CardQuarter): %d",rc);
+				bp_cnt = 0;
+			}
+			debug("%s is in quarter %d",
+			      bgl_record->bgl_part_id,
+			      bgl_record->quarter);
+		} 
 
 		bgl_record->bgl_part_list = list_create(NULL);
 		bgl_record->hostlist = hostlist_create(NULL);
-		
+
+		/* this needs to be changed for small partitions,
+		   we just don't know what they are suppose to look 
+		   like just yet. 
+		*/
+
 		for (i=0; i<bp_cnt; i++) {
 			if(i) {
 				if ((rc = rm_get_data(part_ptr, 
@@ -351,7 +412,7 @@ int read_bgl_partitions()
 				error("No BP ID was returned from database");
 				continue;
 			}
-
+			
 			coord = find_bp_loc(bpid);
 
 			free(bpid);
@@ -368,13 +429,17 @@ int read_bgl_partitions()
 		
 		// need to get the 000x000 range for nodes
 		// also need to get coords
-				
-		if ((rc = rm_get_data(part_ptr, RM_PartitionConnection,
-					 &bgl_record->conn_type))
-		    != STATUS_OK) {
-			error("rm_get_data(RM_PartitionConnection): %s",
-			      bgl_err_str(rc));
-		}
+		if(small)
+			bgl_record->conn_type = SELECT_SMALL;
+		else
+			if ((rc = rm_get_data(part_ptr, 
+					      RM_PartitionConnection,
+					      &bgl_record->conn_type))
+			    != STATUS_OK) {
+				error("rm_get_data"
+				      "(RM_PartitionConnection): %s",
+				      bgl_err_str(rc));
+			}
 		if ((rc = rm_get_data(part_ptr, RM_PartitionMode,
 					 &bgl_record->node_use))
 		    != STATUS_OK) {
@@ -457,7 +522,13 @@ int read_bgl_partitions()
 			error("rm_get_data(RM_PartitionSwitchNum): %s",
 			      bgl_err_str(rc));
 		} 
-				
+		
+		if(small)
+			bgl_record->cnodes_per_bp = procs_per_node/4;
+		else
+			bgl_record->cnodes_per_bp = procs_per_node;
+		
+		printf("got %d\n",bgl_record->cnodes_per_bp);
 		bgl_record->part_lifecycle = STATIC;
 						
 clean_up:	if (bgl_recover
@@ -471,28 +542,6 @@ clean_up:	if (bgl_recover
 	if(bgl_recover)
 		list_for_each(bgl_curr_part_list, _post_bgl_init_read, NULL);
 	return rc;
-}
-
-static int _post_bgl_init_read(void *object, void *arg)
-{
-	bgl_record_t *bgl_record = (bgl_record_t *) object;
-	int i = 1024;
-	bgl_record->nodes = xmalloc(i);
-	while (hostlist_ranged_string(bgl_record->hostlist, i,
-			bgl_record->nodes) < 0) {
-		i *= 2;
-		xrealloc(bgl_record->nodes, i);
-	}
-	
-	if (node_name2bitmap(bgl_record->nodes, 
-			     false, 
-			     &bgl_record->bitmap)) {
-		error("Unable to convert nodes %s to bitmap", 
-		      bgl_record->nodes);
-	}
-	//print_bgl_record(bgl_record);
-
-	return SLURM_SUCCESS;
 }
 
 #endif

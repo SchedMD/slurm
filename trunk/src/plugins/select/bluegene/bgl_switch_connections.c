@@ -305,6 +305,150 @@ static int _destroy_bgl_bp_list(List bgl_bp_list)
 	return SLURM_SUCCESS;
 }
 
+extern int configure_small_partition(bgl_record_t *bgl_record)
+{
+	bool small = true;
+	ListIterator itr;
+	pa_node_t* pa_node = NULL;
+	int rc = SLURM_SUCCESS;
+	rm_BP_t *curr_bp;
+	rm_bp_id_t bp_id = NULL;
+	int num_ncards = 4;
+	rm_nodecard_t *ncard;
+	rm_nodecard_list_t *ncard_list;
+	rm_quarter_t quarter;
+	int num, i;
+
+	if(bgl_record->bp_count != 1) {
+		error("Requesting small partition with %d bps, needs to be 1.",
+		      bgl_record->bp_count);
+		return SLURM_ERROR;
+	}
+	
+	/* set that we are doing a small partition */
+	if ((rc = rm_set_data(bgl_record->bgl_part, RM_PartitionSmall, 
+			      &small)) != STATUS_OK) {
+		fatal("rm_set_data(RM_PartitionPsetsPerBP)", bgl_err_str(rc));
+	}
+
+	if ((rc = rm_set_data(bgl_record->bgl_part,
+			      RM_PartitionNodeCardNum,
+			      &num_ncards))
+	    != STATUS_OK) {
+		fatal("rm_set_data: RM_PartitionBPNum: %s", bgl_err_str(rc));
+	}
+
+	itr = list_iterator_create(bgl_record->bgl_part_list);
+	pa_node = list_next(itr);
+	list_iterator_destroy(itr);
+
+	if (_get_bp_by_location(bgl, pa_node->coord, &curr_bp) 
+	    == SLURM_ERROR) {
+		fatal("_get_bp_by_location()");
+	}
+	
+	/* Set the one BP */
+	if ((rc = rm_set_data(bgl_record->bgl_part,
+			      RM_PartitionBPNum,
+			      &bgl_record->bp_count)) 
+	    != STATUS_OK) {
+		fatal("rm_set_data: RM_PartitionBPNum: %s", bgl_err_str(rc));
+		return SLURM_ERROR;
+	}	
+	if ((rc = rm_set_data(bgl_record->bgl_part,
+			      RM_PartitionFirstBP, 
+			      curr_bp)) 
+	    != STATUS_OK) {
+		fatal("rm_set_data("
+		      "RM_PartitionFirstBP): %s", 
+		      bgl_err_str(rc));
+		return SLURM_ERROR;
+	}
+	
+	/* find the bp_id of the bp to get the nodecards */
+	if ((rc = rm_get_data(curr_bp, RM_BPID, &bp_id))
+	    != STATUS_OK) {
+		error("rm_get_data(): %d", rc);
+		return SLURM_ERROR;
+	}
+
+	if ((rc = rm_get_nodecards(bp_id, &ncard_list))
+	    != STATUS_OK) {
+		error("rm_get_nodecards(%s): %d",
+		       bp_id, rc);
+		return SLURM_ERROR;
+	}
+	
+	if((rc = rm_get_data(ncard_list, RM_NodeCardListSize, &num))
+	   != STATUS_OK) {
+		error("rm_get_data(RM_NodeCardListSize): %s", bgl_err_str(rc));
+		return SLURM_ERROR;
+	}
+	num_ncards = 0;
+	for(i=0; i<num; i++) {
+		if (i) {
+			if ((rc = rm_get_data(ncard_list, 
+					      RM_NodeCardListNext, 
+					      &ncard)) != STATUS_OK) {
+				error("rm_get_data(RM_NodeCardListNext): %s",
+				      rc);
+				rc = SLURM_ERROR;
+				goto cleanup;
+			}
+		} else {
+			if ((rc = rm_get_data(ncard_list, 
+					      RM_NodeCardListFirst, 
+					      &ncard)) != STATUS_OK) {
+				error("rm_get_data(RM_NodeCardListFirst: %s",
+				      rc);
+				rc = SLURM_ERROR;
+				goto cleanup;
+			}
+		}
+		
+		if ((rc = rm_get_data(ncard, 
+				      RM_NodeCardQuarter, 
+				      &quarter)) != STATUS_OK) {
+			error("rm_get_data(PartitionID): %d",rc);
+			rc = SLURM_ERROR;
+			goto cleanup;
+		}
+		if(bgl_record->quarter != quarter)
+			continue;
+		if (num_ncards) {
+			if ((rc = rm_set_data(bgl_record->bgl_part,
+					      RM_PartitionNextNodeCard, 
+					      ncard)) 
+			    != STATUS_OK) {
+				fatal("rm_set_data("
+				      "RM_PartitionNextNodeCard): %s", 
+				      bgl_err_str(rc));
+				
+			}
+		} else {
+			if ((rc = rm_set_data(bgl_record->bgl_part,
+					      RM_PartitionFirstNodeCard, 
+					      ncard)) 
+			    != STATUS_OK) {
+				fatal("rm_set_data("
+				      "RM_PartitionFirstNodeCard): %s", 
+				      bgl_err_str(rc));
+			}
+		}
+		num_ncards++;
+		if(num_ncards == 4)
+			break;
+	}
+cleanup:
+	if ((rc = rm_free_nodecard_list(ncard_list)) != STATUS_OK) {
+		error("rm_free_nodecard_list(): %s", bgl_err_str(rc));
+		return SLURM_ERROR;
+	}
+	
+	debug("making the small partition");
+	return rc;
+}
+
 /**
  * connect the given switch up with the given connections
  */
@@ -427,12 +571,10 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 						      RM_PartitionFirstBP, 
 						      curr_bp)) 
 				    != STATUS_OK) {
+					list_iterator_destroy(bgl_itr);
 					fatal("rm_set_data("
 					      "RM_PartitionFirstBP): %s", 
 					      bgl_err_str(rc));
-					list_iterator_destroy(bgl_itr);
-					rc = SLURM_ERROR;
-					goto cleanup;
 				}
 				first_bp = 0;
 			} else {
@@ -440,21 +582,17 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 						      RM_PartitionNextBP, 
 						      curr_bp)) 
 				    != STATUS_OK) {
+					list_iterator_destroy(bgl_itr);
 					fatal("rm_set_data(RM_PartitionNextBP)"
 					      ": %s", bgl_err_str(rc));
-					list_iterator_destroy(bgl_itr);
-					rc = SLURM_ERROR;
-					goto cleanup;
 				}
 			}
 		}
 
 		if ((rc = rm_get_data(curr_bp,  RM_BPID, &bpid)) 
 		    != STATUS_OK) {
-			fatal("rm_get_data: RM_BPID: %s", bgl_err_str(rc));
 			list_iterator_destroy(bgl_itr);
-			rc = SLURM_ERROR;
-			goto cleanup;
+			fatal("rm_get_data: RM_BPID: %s", bgl_err_str(rc));
 		}		
 
 		if(!bpid) {
@@ -468,31 +606,25 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 				if ((rc = rm_get_data(bgl, RM_NextSwitch, 
 						      &curr_switch)) 
 				    != STATUS_OK) {
+					list_iterator_destroy(bgl_itr);
 					fatal("rm_get_data: RM_NextSwitch: %s",
 					      bgl_err_str(rc));
-					list_iterator_destroy(bgl_itr);
-					rc = SLURM_ERROR;
-					goto cleanup;
 				}
 			} else {
 				if ((rc = rm_get_data(bgl, RM_FirstSwitch, 
 						      &curr_switch)) 
 				    != STATUS_OK) {
+					list_iterator_destroy(bgl_itr);
 					fatal("rm_get_data: "
 					      "RM_FirstSwitch: %s",
 					      bgl_err_str(rc));
-					list_iterator_destroy(bgl_itr);
-					rc = SLURM_ERROR;
-					goto cleanup;
 				}
 			}
 			if ((rc = rm_get_data(curr_switch, RM_SwitchBPID, 
 					      &curr_bpid)) != STATUS_OK) {
+				list_iterator_destroy(bgl_itr);
 				fatal("rm_get_data: RM_SwitchBPID: %s", 
 				      bgl_err_str(rc));
-				list_iterator_destroy(bgl_itr);
-				rc = SLURM_ERROR;
-				goto cleanup;
 			}
 
 			if(!curr_bpid) {
@@ -515,7 +647,7 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 
 		if(found_bpid==PA_SYSTEM_DIMENSIONS) {
 						
-			debug2("adding midplane %d%d%d\n",
+			debug2("adding midplane %d%d%d",
 			       bgl_bp->coord[X],
 			       bgl_bp->coord[Y],
 			       bgl_bp->coord[Z]);
@@ -533,7 +665,7 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 /* 					rc = SLURM_ERROR; */
 /* 					goto cleanup; */
 /* 				} */
-				debug2("adding switch dim %d\n",
+				debug2("adding switch dim %d",
 				       bgl_switch->dim);
 				     
 				if (_add_switch_conns(coord_switch
@@ -553,15 +685,13 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 						     coord_switch
 						     [bgl_switch->dim])) 
 					    != STATUS_OK) {
+						list_iterator_destroy(
+							switch_itr);
+						list_iterator_destroy(bgl_itr);
 						fatal("rm_set_data("
 						      "RM_PartitionFirst"
 						      "Switch): %s", 
 						      bgl_err_str(rc));
-						list_iterator_destroy(
-							switch_itr);
-						list_iterator_destroy(bgl_itr);
-						rc = SLURM_ERROR;
-						goto cleanup;
 					}
 					
 					first_switch = 0;
@@ -572,15 +702,13 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 						     coord_switch
 						     [bgl_switch->dim])) 
 					    != STATUS_OK) {
+						list_iterator_destroy(
+							switch_itr);
+						list_iterator_destroy(bgl_itr);
 						fatal("rm_set_data("
 						      "RM_PartitionNext"
 						      "Switch:) %s", 
 						      bgl_err_str(rc));
-						list_iterator_destroy(
-							switch_itr);
-						list_iterator_destroy(bgl_itr);
-						rc = SLURM_ERROR;
-						goto cleanup;
 					}
 				}
 			}

@@ -30,6 +30,10 @@
 
 #define HUGE_BUF_SIZE (1024*16)
 
+
+/* global */
+int procs_per_node = 512;
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -210,6 +214,9 @@ extern int select_p_job_init(List job_list)
 /* All initialization is performed by select_p_part_init() */
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
+	if(node_cnt>0)
+		if(node_ptr->cpus > 0)
+			procs_per_node = node_ptr->cpus;
 	return SLURM_SUCCESS;
 }
 

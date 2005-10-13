@@ -124,18 +124,22 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 	debug("number of partitions to check: %d", list_count(bgl_list));
 	while ((record = (bgl_record_t*) list_next(itr))) {
 		/* Check processor count */
-		if (req_procs > 512) {
+		printf("%d\n",req_procs);
+		if (req_procs > record->cnodes_per_bp) {
 			/* We use the c-node count here. Job could start
 			 * twice this count if VIRTUAL_NODE_MODE, but this
-			 * is now controlled by mpirun, not SLURM */
-			proc_cnt = record->bp_count * 512;
+			 * is now controlled by mpirun, not SLURM 
+			 * We now use the number set by the admins in the
+			 * slurm.conf file.  This should never happen.
+			 */
+			proc_cnt = record->bp_count * record->cnodes_per_bp;
 			if (req_procs > proc_cnt) {
 				debug("partition %s CPU count too low",
 					record->bgl_part_id);
 				continue;
 			}
 		}
-
+		
 		/*
 		 * check that the number of nodes is suitable
 		 */
