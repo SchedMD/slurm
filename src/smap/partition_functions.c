@@ -42,10 +42,10 @@ typedef struct {
 	enum node_use_type bgl_node_use;
 	rm_partition_state_t state;
 	int letter_num;
-	int start[PA_SYSTEM_DIMENSIONS];
-	int end[PA_SYSTEM_DIMENSIONS];
 	List nodelist;
 	int size;
+	int cnodes_per_bp;
+	int quarter;	
 	bool printed;
 
 } db2_block_info_t;
@@ -62,7 +62,6 @@ static char *_part_state_str(rm_partition_state_t state);
 static int  _print_text_part(partition_info_t *part_ptr, 
 			     db2_block_info_t *db2_info_ptr);
 #ifdef HAVE_BGL
-static int _set_start_finish(db2_block_info_t *db2_info_ptr);
 static void _block_list_del(void *object);
 static void _nodelist_del(void *object);
 static int _list_match_all(void *object, void *key);
@@ -156,7 +155,7 @@ extern void get_slurm_part()
 extern void get_bgl_part()
 {
 #ifdef HAVE_BGL
-	int error_code, i, j, recs=0, count = 0;
+	int error_code, i, j, recs=0, count = 0, last_count = -1;
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
 	static node_select_info_msg_t *bgl_info_ptr = NULL;
@@ -259,8 +258,19 @@ extern void get_bgl_part()
 			= new_bgl_ptr->bgl_info_array[i].conn_type;
 		block_ptr->bgl_node_use 
 			= new_bgl_ptr->bgl_info_array[i].node_use;
-		_marknodes(block_ptr, i);		
-		_set_start_finish(block_ptr);
+		block_ptr->cnodes_per_bp
+			= new_bgl_ptr->bgl_info_array[i].cnodes_per_bp;
+		block_ptr->quarter 
+			= new_bgl_ptr->bgl_info_array[i].quarter;
+		if(block_ptr->quarter == -1 || last_count == -1) {
+			last_count++;
+			_marknodes(block_ptr, last_count);
+		} else 
+			block_ptr->letter_num = last_count;
+		
+		if(block_ptr->bgl_conn_type == SELECT_SMALL)
+			block_ptr->size = 0;
+		
 	}
 	
 	if (!params.no_header)
@@ -494,8 +504,19 @@ static int _print_text_part(partition_info_t *part_ptr,
 	char *nodes = NULL, time_buf[20];
 
 	if(!params.commandline) {
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "%c", part_ptr->root_only);
+		if((params.display == BGLPART) 
+		   && db2_info_ptr->quarter != -1) {
+			mvwprintw(pa_system_ptr->text_win, 
+				  pa_system_ptr->ycord,
+				  pa_system_ptr->xcord, "%c.%d", 
+				  part_ptr->root_only, 
+				  db2_info_ptr->quarter);
+		} else {
+			mvwprintw(pa_system_ptr->text_win, 
+				  pa_system_ptr->ycord,
+				  pa_system_ptr->xcord, "%c", 
+				  part_ptr->root_only);
+		}
 		pa_system_ptr->xcord += 4;
 
 		if (part_ptr->name) {
@@ -594,9 +615,15 @@ static int _print_text_part(partition_info_t *part_ptr,
 				pa_system_ptr->xcord += 10;
 			}
 		}
-
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "%d", part_ptr->total_nodes);
+		if(part_ptr->total_nodes == 0)
+			mvwprintw(pa_system_ptr->text_win, 
+				  pa_system_ptr->ycord,
+				  pa_system_ptr->xcord, ".25");
+		else	
+			mvwprintw(pa_system_ptr->text_win, 
+				  pa_system_ptr->ycord,
+				  pa_system_ptr->xcord, "%d", 
+				  part_ptr->total_nodes);
 		pa_system_ptr->xcord += 7;
 
 		tempxcord = pa_system_ptr->xcord;
@@ -633,7 +660,14 @@ static int _print_text_part(partition_info_t *part_ptr,
 
 			i++;
 		}
-
+		if((params.display == BGLPART) 
+		   && (db2_info_ptr->quarter != -1)) {
+			mvwprintw(pa_system_ptr->text_win, 
+				  pa_system_ptr->ycord,
+				  pa_system_ptr->xcord, ".%d",
+				  db2_info_ptr->quarter);
+		}
+			
 		pa_system_ptr->xcord = 1;
 		pa_system_ptr->ycord++;
 	} else {
@@ -657,8 +691,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 				}
 			
 				width = strlen(time_buf);
-				printf("%9.9s ", time_buf);
-				
+				printf("%9.9s ", time_buf);		
 			} 
 		}
 
@@ -675,7 +708,6 @@ static int _print_text_part(partition_info_t *part_ptr,
 					       db2_info_ptr->bgl_conn_type));
 				printf("%9.9s ",  _convert_node_use(
 					       db2_info_ptr->bgl_node_use));
-				
 			} 
 		}
 
@@ -687,7 +719,12 @@ static int _print_text_part(partition_info_t *part_ptr,
 			nodes = part_ptr->allow_groups;
 		else
 			nodes = part_ptr->nodes;
-		printf("%s\n",nodes);
+		
+		if((params.display == BGLPART) 
+		   && (db2_info_ptr->quarter != -1))
+			printf("%s.%d\n", nodes, db2_info_ptr->quarter);
+		else
+			printf("%s\n",nodes);
 	}
 	return printed;
 }
@@ -698,14 +735,10 @@ static void _block_list_del(void *object)
 	db2_block_info_t *block_ptr = (db2_block_info_t *)object;
 
 	if (block_ptr) {
-		if(block_ptr->bgl_user_name)
-			xfree(block_ptr->bgl_user_name);
-		if(block_ptr->bgl_block_name)
-			xfree(block_ptr->bgl_block_name);
-		if(block_ptr->slurm_part_name)
-			xfree(block_ptr->slurm_part_name);
-		if(block_ptr->nodes)
-			xfree(block_ptr->nodes);
+		xfree(block_ptr->bgl_user_name);
+		xfree(block_ptr->bgl_block_name);
+		xfree(block_ptr->slurm_part_name);
+		xfree(block_ptr->nodes);
 		if(block_ptr->nodelist)
 			list_destroy(block_ptr->nodelist);
 		
@@ -724,50 +757,6 @@ static void _nodelist_del(void *object)
 static int _list_match_all(void *object, void *key)
 {
 	
-	return 1;
-}
-
-
-static int _set_start_finish(db2_block_info_t *db2_info_ptr)
-{
-	int number;
-	int j=0;
-	
-	while (db2_info_ptr->nodes[j] != '\0') {
-		if ((db2_info_ptr->nodes[j]   == '[')
-		    && (db2_info_ptr->nodes[j+8] == ']')
-		    && ((db2_info_ptr->nodes[j+4] == 'x')
-			|| (db2_info_ptr->nodes[j+4] == '-'))) {
-			j++;
-			number = atoi(db2_info_ptr->nodes + j);
-			db2_info_ptr->start[X] = number / 100;
-			db2_info_ptr->start[Y] = (number % 100) / 10;
-			db2_info_ptr->start[Z] = (number % 10);
-			j += 4;
-			number = atoi(db2_info_ptr->nodes + j);
-			db2_info_ptr->end[X] = number / 100;
-			db2_info_ptr->end[Y] = (number % 100) / 10;
-			db2_info_ptr->end[Z] = (number % 10);
-			j += 5;
-			if(db2_info_ptr->nodes[j] != ',')
-				break;
-		} else if((db2_info_ptr->nodes[j] < 58 
-			   && db2_info_ptr->nodes[j] > 47) 
-			  && db2_info_ptr->nodes[j-1] != '[') {
-			number = atoi(db2_info_ptr->nodes + j);
-			db2_info_ptr->start[X] = db2_info_ptr->end[X] 
-				= number / 100;
-			db2_info_ptr->start[Y] = db2_info_ptr->end[Y] 
-				= (number % 100) / 10;
-			db2_info_ptr->start[Z] = db2_info_ptr->end[Z] 
-				= (number % 10);
-			j+=3;
-			if(db2_info_ptr->nodes[j] != ',')
-				break;	
-		}
-				
-		j++;
-	}
 	return 1;
 }
 
@@ -790,9 +779,7 @@ static int _in_slurm_partition(List slurm_nodes, List bgl_nodes)
 			   && (coord[Z] == slurm_coord[Z])) {
 				found=1;
 				break;
-			}
-			
-			
+			}			
 		}
 		if(!found) {
 			break;
@@ -917,6 +904,8 @@ static char* _convert_conn_type(enum connection_type conn_type)
 		return "MESH";
 	case (SELECT_TORUS):
 		return "TORUS";
+	case (SELECT_SMALL):
+		return "SMALL";
 	case (SELECT_NAV):
 		return "NAV";
 	}

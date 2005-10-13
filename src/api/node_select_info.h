@@ -43,6 +43,8 @@ typedef struct {
 	int state;
 	int conn_type;
 	int node_use;
+	int cnodes_per_bp;
+	int quarter;
 } bgl_info_record_t;
 
 typedef struct {

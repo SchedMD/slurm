@@ -11,6 +11,9 @@ documents those changes that are of interest to users and admins.
  -- Added task plugin and use task prolog/epilog(s).
  -- New slurmd_step functionality added.  Fork exec instead of using shared
     memory.  Not completely tested.
+ -- BGL small partition logic in place in plugin and smap.  Scheduler needs  
+    to be rewritten to handle multiple partitions on a single node. No 
+    documentation written on process yet.
 
 * Changes in SLURM 0.7.0-pre1
 =============================

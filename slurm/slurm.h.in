@@ -171,7 +171,8 @@ enum job_wait_reason {
 enum connection_type {
 	SELECT_MESH, 		/* nodes wired in mesh */
 	SELECT_TORUS, 		/* nodes wired in torus */
-	SELECT_NAV		/* nodes wired in torus else mesh */
+	SELECT_NAV,		/* nodes wired in torus else mesh */
+	SELECT_SMALL 		/* nodes in a small partition */
 };
 
 enum node_use_type {

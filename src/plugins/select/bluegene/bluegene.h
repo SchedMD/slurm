@@ -61,6 +61,7 @@ extern pthread_mutex_t part_state_mutex;
 extern int num_part_to_free;
 extern int num_part_freed;
 extern int partitions_are_created;
+extern int procs_per_node;
 
 typedef int lifecycle_type_t;
 enum part_lifecycle {DYNAMIC, STATIC};
@@ -95,6 +96,8 @@ typedef struct bgl_record {
 					   partition */
 	int job_running;                /* signal if there is a job running 
 					   on the partition */
+	int cnodes_per_bp;
+	int quarter;
 } bgl_record_t;
 
 typedef struct {
@@ -189,19 +192,20 @@ extern char *bgl_err_str(status_t inx);
  */
 extern int create_static_partitions(List part_list);
 
+extern int bgl_free_partition(bgl_record_t *bgl_record);
+extern void *mult_free_part(void *args);
+extern void *mult_destroy_part(void *args);
 extern int read_bgl_conf(void);
 
 /* partition_sys.c */
 /*****************************************************/
 extern int configure_partition(bgl_record_t * bgl_conf_record);
-extern int read_bgl_partitions(void);
+extern int read_bgl_partitions();
 
 /* bgl_switch_connections.c */
 /*****************************************************/
+extern int configure_small_partition(bgl_record_t *bgl_record);
 extern int configure_partition_switches(bgl_record_t * bgl_conf_record);
-extern int bgl_free_partition(bgl_record_t *bgl_record);
-extern void *mult_free_part(void *args);
-extern void *mult_destroy_part(void *args);
 
 
 #endif /* _BLUEGENE_H_ */

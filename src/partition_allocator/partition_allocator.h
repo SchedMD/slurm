@@ -76,7 +76,7 @@ extern bool have_db2;
 enum {X, Y, Z};
 
 /* */
-enum {MESH, TORUS};
+enum {MESH, TORUS, SMALL};
 enum {COPROCESSOR, VIRTUAL};
 
 /* NOTE: Definition of bgl_info_record_t moved to src/api/node_select_info.h */
@@ -106,7 +106,7 @@ typedef struct {
  * - letter            - filled in after the request is fulfilled
  * - geometry          - request size
  * - size              - node count for request
- * - conn_type         - MESH or TORUS
+ * - conn_type         - MESH or TORUS or SMALL
  * - rotate_count      - when rotating we keep a count so we aren't in an infinate loop.
  * - elongate_count    - when elongating we keep a count so we aren't in an infinate loop.
  * - rotate            - weather to allow rotating or not.
@@ -235,7 +235,7 @@ extern void destroy_bgl_info_record(void* object);
  * IN - elongate: if true, will try to fit different geometries of
  *      same size requests
  * IN - contig: enforce contiguous regions constraint
- * IN - conn_type: connection type of request (TORUS or MESH)
+ * IN - conn_type: connection type of request (TORUS or MESH or SMALL)
  * 
  * return success of allocation/validation of params
  */
