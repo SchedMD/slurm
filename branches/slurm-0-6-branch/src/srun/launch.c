@@ -77,6 +77,7 @@ static void   _p_launch(slurm_msg_t *req_array_ptr, srun_job_t *job);
 static void * _p_launch_task(void *args);
 static void   _print_launch_msg(launch_tasks_request_msg_t *msg, 
 		                char * hostname);
+static void   _update_failed_node(srun_job_t *j, int id);
 
 int 
 launch_thr_create(srun_job_t *job)
@@ -333,6 +334,8 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 
 		_spawn_launch_thr(&thd[i]);
 	}
+	for ( ; i < job->nhosts; i++)
+		_update_failed_node(job, i);
 
 	pthread_mutex_lock(&active_mutex);
 	while (active > 0) 
