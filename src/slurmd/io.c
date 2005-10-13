@@ -604,8 +604,7 @@ _local_filename (char *fname, int taskid)
 }
 
 static int
-_init_task_stdio_fds(slurmd_job_t *job, slurmd_task_info_t *task,
-		     srun_info_t *srun)
+_init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 {
 	char *name;
 	int single;
@@ -615,11 +614,10 @@ _init_task_stdio_fds(slurmd_job_t *job, slurmd_task_info_t *task,
 	/*
 	 *  Initialize stdin
 	 */
-	if ((name = _local_filename(srun->ifname, task->gtid)) != NULL) {
-		/* open file "name" on task's stdin */
-		name = fname_create(job, srun->ifname, task->gtid);
-		debug3("  stdin file name = %s", name);
-		if ((task->stdin = open(name, O_RDONLY)) == -1) {
+	if (task->ifname != NULL) {
+		/* open file on task's stdin */
+		debug3("  stdin file name = %s", task->ifname);
+		if ((task->stdin = open(task->ifname, O_RDONLY)) == -1) {
 			error("Could not open stdin file: %m");
 			return SLURM_ERROR;
 		}
@@ -643,12 +641,11 @@ _init_task_stdio_fds(slurmd_job_t *job, slurmd_task_info_t *task,
 	/*
 	 *  Initialize stdout
 	 */
-	if ((name = _local_filename(srun->ofname, task->gtid)) != NULL) {
-		/* open file "name" on task's stdout */
-		name = fname_create(job, srun->ofname, task->gtid);
-		debug3("  stdout file name = %s", name);
-		task->stdout = open(name, O_CREAT|O_WRONLY|O_TRUNC|O_APPEND,
-				    0666);
+	if (task->ofname != NULL) {
+		/* open file on task's stdout */
+		debug3("  stdout file name = %s", task->ofname);
+		task->stdout = open(task->ofname,
+				    O_CREAT|O_WRONLY|O_TRUNC|O_APPEND, 0666);
 		if (task->stdout == -1) {
 			error("Could not open stdout file: %m");
 			return SLURM_ERROR;
@@ -675,12 +672,11 @@ _init_task_stdio_fds(slurmd_job_t *job, slurmd_task_info_t *task,
 	/*
 	 *  Initialize stderr
 	 */
-	if ((name = _local_filename(srun->efname, task->gtid)) != NULL) {
-		/* open file "name" on task's stdout */
-		name = fname_create(job, srun->efname, task->gtid);
-		debug3("  stderr file name = %s", name);
-		task->stderr = open(name, O_CREAT|O_WRONLY|O_TRUNC|O_APPEND,
-				    0666);
+	if (task->efname != NULL) {
+		/* open file on task's stdout */
+		debug3("  stderr file name = %s", task->efname);
+		task->stderr = open(task->efname,
+				    O_CREAT|O_WRONLY|O_TRUNC|O_APPEND, 0666);
 		if (task->stderr == -1) {
 			error("Could not open stderr file: %m");
 			return SLURM_ERROR;
@@ -708,14 +704,10 @@ _init_task_stdio_fds(slurmd_job_t *job, slurmd_task_info_t *task,
 int
 io_init_tasks_stdio(slurmd_job_t *job)
 {
-	srun_info_t *srun;
 	int i;
 
-	srun = list_peek(job->sruns);
-	xassert(srun != NULL);
-
 	for (i = 0; i < job->ntasks; i++) {
-		_init_task_stdio_fds(job, job->task[i], srun);
+		_init_task_stdio_fds(job->task[i], job);
 	}
 }
 
@@ -933,7 +925,6 @@ io_client_connect(slurmd_job_t *job)
 
 	/* kick IO thread */
 	eio_signal_wakeup(job->eio);
-	debug3("  test 3");
 
 	return SLURM_SUCCESS;
 }

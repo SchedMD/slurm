@@ -440,6 +440,7 @@ _setup_io(slurmd_job_t *job)
 	if (_drop_privileges(job->pwd) < 0)
 		return ESLURMD_SET_UID_OR_GID_ERROR;
 
+	/* FIXME - need to check a return code for failures */
 	io_init_tasks_stdio(job);
 
 	if (_reclaim_privileges(spwd) < 0)

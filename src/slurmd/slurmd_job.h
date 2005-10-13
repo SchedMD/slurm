@@ -54,10 +54,6 @@ typedef struct srun_info {
 	srun_key_t *key;	   /* srun key for IO verification         */
 	slurm_addr resp_addr;	   /* response addr for task exit msg      */
 	slurm_addr ioaddr;         /* Address to connect on for I/O        */
-	char *	   ofname;         /* output file (if any)                 */
-	char *	   efname;         /* error file  (if any)	           */
-	char *     ifname;         /* input file  (if any) 		   */
-
 } srun_info_t;
 
 typedef enum task_state {
@@ -85,6 +81,9 @@ typedef struct task_info {
 	uint32_t        gtid;	    /* global task id                       */
 	pid_t           pid;	    /* task pid                             */
 
+	char           *ifname;     /* standard input file name             */
+	char           *ofname;     /* standard output file name            */
+	char           *efname;     /* standard error file name             */
 	int             stdin;      /* standard input file descriptor       */
 	int             stdout;     /* standard output file descriptor      */
 	int             stderr;     /* standard error file descriptor       */
@@ -167,7 +166,8 @@ struct srun_info * srun_info_create(slurm_cred_t cred, slurm_addr *respaddr,
 
 void  srun_info_destroy(struct srun_info *srun);
 
-slurmd_task_info_t * task_info_create(int taskid, int gtaskid);
+slurmd_task_info_t * task_info_create(int taskid, int gtaskid,
+				      char *ifname, char *ofname, char *efname);
 
 void task_info_destroy(slurmd_task_info_t *t);
 

@@ -54,7 +54,8 @@
 static char ** _array_copy(int n, char **src);
 static void _array_free(char ***array);
 static void _srun_info_destructor(void *arg);
-static void _job_init_task_info(slurmd_job_t *job, uint32_t *gtid);
+static void _job_init_task_info(slurmd_job_t *job, uint32_t *gtid,
+				char *ifname, char *ofname, char *efname);
 
 static struct passwd *
 _pwd_create(uid_t uid)
@@ -200,9 +201,6 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	slurm_set_addr(&io_addr,   msg->io_port,   NULL); 	
 	srun = srun_info_create(msg->cred, &resp_addr, &io_addr);
 
-	srun->ofname = xstrdup(msg->ofname);
-	srun->efname = xstrdup(msg->efname);
-	srun->ifname = xstrdup(msg->ifname);
 	job->buffered_stdio = msg->buffered_stdio;
 
 	job->task_prolog = xstrdup(msg->task_prolog);
@@ -221,7 +219,8 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	
 	list_append(job->sruns, (void *) srun);
 
-	_job_init_task_info(job, msg->global_task_ids);
+	_job_init_task_info(job, msg->global_task_ids,
+			    msg->ifname, msg->ofname, msg->efname);
 
 	return job;
 }
@@ -288,7 +287,10 @@ job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *cli_addr)
 
 	list_append(job->sruns, (void *) srun);
 
-	_job_init_task_info(job, &(msg->global_task_id));
+	job->task = (slurmd_task_info_t **)
+		xmalloc(sizeof(slurmd_task_info_t *));
+	job->task[0] = task_info_create(0, msg->global_task_id,
+					NULL, NULL, NULL);
 
 	return job;
 }
@@ -297,7 +299,7 @@ job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *cli_addr)
  * return the default output filename for a batch job
  */
 static char *
-_mkfilename(slurmd_job_t *job, const char *name)
+_batchfilename(slurmd_job_t *job, const char *name)
 {
 	if (name == NULL) 
 		return fname_create(job, "slurm-%J.out", 0);
@@ -312,6 +314,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	slurmd_job_t *job;
 	srun_info_t  *srun = NULL;
 	uint32_t      global_taskid = 0;
+	char         *ofname, *efname;
 
 	xassert(msg != NULL);
 	
@@ -355,9 +358,6 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	
 	srun = srun_info_create(NULL, NULL, NULL);
 
-	srun->ofname = _mkfilename(job, msg->out);
-	srun->efname = msg->err ? xstrdup(msg->err) : srun->ofname;
-	srun->ifname = xstrdup("/dev/null");
 	list_append(job->sruns, (void *) srun);
 
 	if (msg->argc) {
@@ -371,25 +371,69 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 		job->argv    = (char **) xmalloc(job->argc * sizeof(char *));
 	}
 
-	_job_init_task_info(job, &global_taskid);
+	job->task = (slurmd_task_info_t **)
+		xmalloc(sizeof(slurmd_task_info_t *));
+	if (msg->err == NULL)
+		msg->err = msg->out;
+	job->task[0] = task_info_create(0, global_taskid,
+					xstrdup("/dev/null"),
+					_batchfilename(job, msg->out),
+					_batchfilename(job, msg->err));
 
 	return job;
 }
 
+/*
+ * Expand a stdio file name.
+ *
+ * If "filename" is NULL it means that an eio object should be created
+ * for that stdio file rather than a directly connecting it to a file.
+ *
+ * If the "filename" is a valid task number in string form and the
+ * number matches "taskid", then NULL is returned so that an eio
+ * object will be used.  If is a valid number, but it does not match
+ * "taskid", then the file descriptor will be connected to /dev/null.
+ */
+static char *
+_expand_stdio_filename(char *filename, int gtaskid, slurmd_job_t *job)
+{
+	int id;
+
+	if (filename == NULL)
+		return NULL;
+
+	id = fname_single_task_io(filename);
+
+	if (id < 0)
+		return fname_create(job, filename, gtaskid);
+	if (id >= job->nprocs) {
+		error("Task ID in filename is invalid");
+		return NULL;
+	}
+
+	if (id == gtaskid)
+		return NULL;
+	else
+		return xstrdup("/dev/null");
+}
+
 static void
-_job_init_task_info(slurmd_job_t *job, uint32_t *gtid)
+_job_init_task_info(slurmd_job_t *job, uint32_t *gtid,
+		    char *ifname, char *ofname, char *efname)
 {
 	int          i;
 	int          n = job->ntasks;
+	char        *in, *out, *err;
 
 	job->task = (slurmd_task_info_t **) 
 		xmalloc(n * sizeof(slurmd_task_info_t *));
 
 	for (i = 0; i < n; i++){
-		job->task[i] = task_info_create(i, gtid[i]);
-		/* "srun" info is attached to task in 
-		 * io_add_connecting
-		 */
+		in = _expand_stdio_filename(ifname, gtid[i], job);
+		out = _expand_stdio_filename(ofname, gtid[i], job);
+		err = _expand_stdio_filename(efname, gtid[i], job);
+
+		job->task[i] = task_info_create(i, gtid[i], in, out, err);
 	}
 }
 
@@ -527,7 +571,8 @@ srun_info_destroy(struct srun_info *srun)
 }
 
 slurmd_task_info_t *
-task_info_create(int taskid, int gtaskid)
+task_info_create(int taskid, int gtaskid,
+		 char *ifname, char *ofname, char *efname)
 {
 	slurmd_task_info_t *t = (slurmd_task_info_t *) xmalloc(sizeof(*t));
 
@@ -540,6 +585,9 @@ task_info_create(int taskid, int gtaskid)
 	t->id          = taskid;
 	t->gtid	       = gtaskid;
 	t->pid         = (pid_t) -1;
+	t->ifname      = ifname;
+	t->ofname      = ofname;
+	t->efname      = efname;
 	t->stdin       = -1;
 	t->to_stdin    = -1;
 	t->stdout      = -1;
