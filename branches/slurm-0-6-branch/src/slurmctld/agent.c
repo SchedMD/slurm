@@ -551,7 +551,15 @@ static void *_thread_per_node_rpc(void *args)
 	int rc = SLURM_SUCCESS, timeout = 0;
 	slurm_msg_t msg;
 	task_info_t *task_ptr = (task_info_t *) args;
-	thd_t *thread_ptr = task_ptr->thread_struct_ptr;
+	/* we cache some pointers from task_info_t because we need 
+	 * to xfree args before being finished with their use. xfree 
+	 * is required for timely termination of this pthread because 
+	 * xfree could lock it at the end, preventing a timely
+	 * thread_exit */
+	pthread_mutex_t *thread_mutex_ptr   = task_ptr->thread_mutex_ptr;
+	pthread_cond_t  *thread_cond_ptr    = task_ptr->thread_cond_ptr;
+	uint32_t        *threads_active_ptr = task_ptr->threads_active_ptr;
+	thd_t           *thread_ptr         = task_ptr->thread_struct_ptr;
 	state_t thread_state = DSH_NO_RESP;
 	slurm_msg_type_t msg_type = task_ptr->msg_type;
 	bool is_kill_msg, srun_agent;
@@ -611,9 +619,9 @@ static void *_thread_per_node_rpc(void *args)
 	}
 #endif
 
-	slurm_mutex_lock(task_ptr->thread_mutex_ptr);
+	slurm_mutex_lock(thread_mutex_ptr);
 	thread_ptr->state = DSH_ACTIVE;
-	slurm_mutex_unlock(task_ptr->thread_mutex_ptr);
+	slurm_mutex_unlock(thread_mutex_ptr);
 
 	/* send request message */
 	msg.address  = thread_ptr->slurm_addr;
@@ -698,15 +706,15 @@ static void *_thread_per_node_rpc(void *args)
 
       cleanup:
 	xfree(args);
-	slurm_mutex_lock(task_ptr->thread_mutex_ptr);
+	slurm_mutex_lock(thread_mutex_ptr);
 	thread_ptr->state = thread_state;
 	thread_ptr->end_time = (time_t) difftime(time(NULL), 
 						thread_ptr->start_time);
 
 	/* Signal completion so another thread can replace us */
-	(*task_ptr->threads_active_ptr)--;
-	slurm_mutex_unlock(task_ptr->thread_mutex_ptr);
-	pthread_cond_signal(task_ptr->thread_cond_ptr);
+	(*threads_active_ptr)--;
+	slurm_mutex_unlock(thread_mutex_ptr);
+	pthread_cond_signal(thread_cond_ptr);
 	return (void *) NULL;
 }
 
