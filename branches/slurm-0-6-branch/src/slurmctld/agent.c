@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette@llnl.gov>, et. al.
+ *  Written by Morris Jette <jette@llnl.gov>, et. al.
  *  Derived from pdsh written by Jim Garlick <garlick1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
@@ -247,6 +247,12 @@ void *agent(void *args)
 
 	/* wait for termination of remaining threads */
 	pthread_join(thread_wdog, NULL);
+	slurm_mutex_lock(&agent_info_ptr->thread_mutex);
+	while (agent_info_ptr->threads_active != 0) {
+		pthread_cond_wait(&agent_info_ptr->thread_cond,
+				&agent_info_ptr->thread_mutex);
+	}
+	slurm_mutex_unlock(&agent_info_ptr->thread_mutex);
 
       cleanup:
 #if AGENT_IS_THREAD
@@ -691,6 +697,7 @@ static void *_thread_per_node_rpc(void *args)
 	}
 
       cleanup:
+	xfree(args);
 	slurm_mutex_lock(task_ptr->thread_mutex_ptr);
 	thread_ptr->state = thread_state;
 	thread_ptr->end_time = (time_t) difftime(time(NULL), 
@@ -700,8 +707,6 @@ static void *_thread_per_node_rpc(void *args)
 	(*task_ptr->threads_active_ptr)--;
 	slurm_mutex_unlock(task_ptr->thread_mutex_ptr);
 	pthread_cond_signal(task_ptr->thread_cond_ptr);
-
-	xfree(args);
 	return (void *) NULL;
 }
 
