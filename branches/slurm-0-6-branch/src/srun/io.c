@@ -74,7 +74,7 @@ static int	_do_task_output(int *fd, FILE *out, cbuf_t buf, int tasknum);
 static int 	_do_task_output_poll(fd_info_t *info);
 static int      _do_task_input(srun_job_t *job, int taskid);
 static int 	_do_task_input_poll(srun_job_t *job, fd_info_t *info);
-static inline int _io_thr_done(srun_job_t *job);
+static inline bool _io_thr_done(srun_job_t *job);
 static int	_handle_pollerr(fd_info_t *info);
 static ssize_t	_readx(int fd, char *buf, size_t maxbytes);
 static int      _read_io_header(int fd, srun_job_t *job, char *host);
@@ -94,7 +94,6 @@ static void     _terminate_node_io(int node_inx, srun_job_t *job);
 #define _poll_err(pfd)      ((pfd).revents & POLLERR)
 #define _poll_hup(pfd)      ((pfd).revents & POLLHUP)
 
-#define FAILED_TIMEOUT 5
 #define MAX_RETRIES 3
 
 /* True if an EOF needs to be broadcast to all tasks
@@ -385,7 +384,7 @@ _setup_pollfds(srun_job_t *job, struct pollfd *fds, fd_info_t *map)
 static void *
 _io_thr_poll(void *job_arg)
 {
-	int i, rc, job_state, timeout = -1;
+	int i, rc;
 	srun_job_t *job  = (srun_job_t *) job_arg;
 	int numfds  = (opt.nprocs*2) + job->niofds + 3;
 	nfds_t nfds = 0;
@@ -398,12 +397,10 @@ _io_thr_poll(void *job_arg)
 
 	_io_thr_init(job, fds);
 
-	while ((job_state = _io_thr_done(job)) != SRUN_JOB_FORCETERM) {
+	while (!_io_thr_done(job)) {
 
 		nfds = _setup_pollfds(job, fds, map);
-		if (job_state == SRUN_JOB_FAILED)
-			timeout = FAILED_TIMEOUT;
-		if ((rc = poll(fds, nfds, timeout)) <= 0) {
+		if ((rc = poll(fds, nfds, -1)) <= 0) {
 			switch(errno) {
 				case EINTR:
 				case EAGAIN:
@@ -473,27 +470,12 @@ _io_thr_poll(void *job_arg)
 	return NULL;
 }
 
-/* Report job state:
- * RET SRUN_JOB_FORCETERM to abort I/O and exit
- *     SRUN_JOB_FAILED if job failed, wait FAILED_TIMEOUT to abort
- *     0 if job still fully active */
-static inline int 
+static inline bool 
 _io_thr_done(srun_job_t *job)
 {
-	static time_t fail_time = (time_t) 0;
-	int retval;
-
+	bool retval;
 	slurm_mutex_lock(&job->state_mutex);
-	if (job->state >= SRUN_JOB_FORCETERM)
-		retval = SRUN_JOB_FORCETERM;
-	else if (job->state == SRUN_JOB_FAILED) {
-		retval = SRUN_JOB_FAILED;
-		if (!fail_time)
-			fail_time = time(NULL);
-		else if ((time(NULL)-fail_time) >= 
-				FAILED_TIMEOUT)
-			retval = SRUN_JOB_FORCETERM;
-	}
+	retval = (job->state >= SRUN_JOB_FORCETERM);
 	slurm_mutex_unlock(&job->state_mutex);
 	return retval;
 }
