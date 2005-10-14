@@ -589,11 +589,11 @@ task_info_create(int taskid, int gtaskid,
 	t->ifname      = ifname;
 	t->ofname      = ofname;
 	t->efname      = efname;
-	t->stdin       = -1;
+	t->stdin_fd    = -1;
 	t->to_stdin    = -1;
-	t->stdout      = -1;
+	t->stdout_fd   = -1;
 	t->from_stdout = -1;
-	t->stderr      = -1;
+	t->stderr_fd   = -1;
 	t->from_stderr = -1;
 	t->estatus     = -1;
 	t->in          = NULL;

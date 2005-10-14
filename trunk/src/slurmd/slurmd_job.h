@@ -84,9 +84,9 @@ typedef struct task_info {
 	char           *ifname;     /* standard input file name             */
 	char           *ofname;     /* standard output file name            */
 	char           *efname;     /* standard error file name             */
-	int             stdin;      /* standard input file descriptor       */
-	int             stdout;     /* standard output file descriptor      */
-	int             stderr;     /* standard error file descriptor       */
+	int             stdin_fd;   /* standard input file descriptor       */
+	int             stdout_fd;  /* standard output file descriptor      */
+	int             stderr_fd;  /* standard error file descriptor       */
 	int             to_stdin;   /* write file descriptor for task stdin */
 	int             from_stdout;/* read file descriptor from task stdout*/
 	int             from_stderr;/* read file descriptor from task stderr*/

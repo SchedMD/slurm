@@ -315,9 +315,9 @@ _server_read(eio_obj_t *obj, List objs)
 
 		s->in_msg->ref_count = 1;
 		if (s->in_msg->header.type == SLURM_IO_STDOUT)
-			obj = s->job->stdout;
+			obj = s->job->stdout_obj;
 		else
-			obj = s->job->stderr;
+			obj = s->job->stderr_obj;
 		info = (struct file_write_info *) obj->arg;
 		list_enqueue(info->msg_queue, s->in_msg);
 
@@ -1032,8 +1032,9 @@ _init_stdio_eio_objs(srun_job_t *job)
 			type = SLURM_IO_ALLSTDIN;
 			destid = -1;
 		}
-		job->stdin = create_file_read_eio_obj(infd, job, type, destid);
-		list_enqueue(job->eio_objs, job->stdin);
+		job->stdin_obj = create_file_read_eio_obj(infd, job,
+							  type, destid);
+		list_enqueue(job->eio_objs, job->stdin_obj);
 	}
 
 	/*
@@ -1057,9 +1058,8 @@ _init_stdio_eio_objs(srun_job_t *job)
 		} else {
 			refcount = job->ntasks;
 		}
-		/*job->stdout = create_file_write_eio_obj(outfd, job, refcount);*/
-		job->stdout = create_file_write_eio_obj(outfd, job);
-		list_enqueue(job->eio_objs, job->stdout);
+		job->stdout_obj = create_file_write_eio_obj(outfd, job);
+		list_enqueue(job->eio_objs, job->stdout_obj);
 	}
 
 	/*
@@ -1068,7 +1068,7 @@ _init_stdio_eio_objs(srun_job_t *job)
 	 */
 	if (err_shares_out) {
 		debug3("stdout and stderr sharing a file");
-		job->stderr = job->stdout;
+		job->stderr_obj = job->stdout_obj;
 	} else if (_is_local_file(job->efname)) {
 		int refcount;
 		if (job->efname->name == NULL) {
@@ -1080,9 +1080,8 @@ _init_stdio_eio_objs(srun_job_t *job)
 				fatal("Could not open stderr file: %m");
 		}
 		refcount = job->ntasks;
-		/*job->stderr = create_file_write_eio_obj(errfd, job, refcount);*/
-		job->stderr = create_file_write_eio_obj(errfd, job);
-		list_enqueue(job->eio_objs, job->stderr);
+		job->stderr_obj = create_file_write_eio_obj(errfd, job);
+		list_enqueue(job->eio_objs, job->stderr_obj);
 	}
 }
 

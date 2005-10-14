@@ -127,9 +127,9 @@ typedef struct srun_job {
 	List eio_objs;          /* List of eio_obj_t pointers     */
 	int ioservers_ready;    /* Number of servers that established contact */
 	eio_obj_t **ioserver;	/* Array of nhosts pointers to eio_obj_t */
-	eio_obj_t *stdout;      /* stdout eio_obj_t               */
-	eio_obj_t *stderr;      /* stderr eio_obj_t               */
-	eio_obj_t *stdin;       /* stdin eio_obj_t                */
+	eio_obj_t *stdin_obj;   /* stdin eio_obj_t                */
+	eio_obj_t *stdout_obj;  /* stdout eio_obj_t               */
+	eio_obj_t *stderr_obj;  /* stderr eio_obj_t               */
 	List free_incoming;     /* List of free struct io_buf * for incoming
 				 * traffic. "incoming" means traffic from srun
 				 * to the tasks.

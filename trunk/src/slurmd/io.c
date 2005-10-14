@@ -638,7 +638,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	if (task->ifname != NULL) {
 		/* open file on task's stdin */
 		debug3("  stdin file name = %s", task->ifname);
-		if ((task->stdin = open(task->ifname, O_RDONLY)) == -1) {
+		if ((task->stdin_fd = open(task->ifname, O_RDONLY)) == -1) {
 			error("Could not open stdin file: %m");
 			return SLURM_ERROR;
 		}
@@ -651,7 +651,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			error("stdin pipe: %m");
 			return SLURM_ERROR;
 		}
-		task->stdin = pin[0];
+		task->stdin_fd = pin[0];
 		task->to_stdin = pin[1];
 		fd_set_close_on_exec(task->to_stdin);
 		fd_set_nonblocking(task->to_stdin);
@@ -665,9 +665,9 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	if (task->ofname != NULL) {
 		/* open file on task's stdout */
 		debug3("  stdout file name = %s", task->ofname);
-		task->stdout = open(task->ofname,
+		task->stdout_fd = open(task->ofname,
 				    O_CREAT|O_WRONLY|O_TRUNC|O_APPEND, 0666);
-		if (task->stdout == -1) {
+		if (task->stdout_fd == -1) {
 			error("Could not open stdout file: %m");
 			return SLURM_ERROR;
 		}
@@ -680,7 +680,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			error("stdout pipe: %m");
 			return SLURM_ERROR;
 		}
-		task->stdout = pout[1];
+		task->stdout_fd = pout[1];
 		task->from_stdout = pout[0];
 		fd_set_close_on_exec(task->from_stdout);
 		fd_set_nonblocking(task->from_stdout);
@@ -696,9 +696,9 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	if (task->efname != NULL) {
 		/* open file on task's stdout */
 		debug3("  stderr file name = %s", task->efname);
-		task->stderr = open(task->efname,
+		task->stderr_fd = open(task->efname,
 				    O_CREAT|O_WRONLY|O_TRUNC|O_APPEND, 0666);
-		if (task->stderr == -1) {
+		if (task->stderr_fd == -1) {
 			error("Could not open stderr file: %m");
 			return SLURM_ERROR;
 		}
@@ -711,7 +711,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			error("stderr pipe: %m");
 			return SLURM_ERROR;
 		}
-		task->stderr = perr[1];
+		task->stderr_fd = perr[1];
 		task->from_stderr = perr[0];
 		fd_set_close_on_exec(task->from_stderr);
 		fd_set_nonblocking(task->from_stderr);
@@ -880,9 +880,9 @@ io_close_task_fds(slurmd_job_t *job)
 	int i;
 
 	for (i = 0; i < job->ntasks; i++) {
-		close(job->task[i]->stdin);
-		close(job->task[i]->stdout);
-		close(job->task[i]->stderr);
+		close(job->task[i]->stdin_fd);
+		close(job->task[i]->stdout_fd);
+		close(job->task[i]->stderr_fd);
 	}
 }
 
@@ -1015,17 +1015,17 @@ _send_io_init_msg(int sock, srun_key_t *key, slurmd_job_t *job)
 int
 io_dup_stdio(slurmd_task_info_t *t)
 {
-	if (dup2(t->stdin, STDIN_FILENO  ) < 0) {
+	if (dup2(t->stdin_fd, STDIN_FILENO  ) < 0) {
 		error("dup2(stdin): %m");
 		return SLURM_FAILURE;
 	}
 
-	if (dup2(t->stdout, STDOUT_FILENO) < 0) {
+	if (dup2(t->stdout_fd, STDOUT_FILENO) < 0) {
 		error("dup2(stdout): %m");
 		return SLURM_FAILURE;
 	}
 
-	if (dup2(t->stderr, STDERR_FILENO) < 0) {
+	if (dup2(t->stderr_fd, STDERR_FILENO) < 0) {
 		error("dup2(stderr): %m");
 		return SLURM_FAILURE;
 	}
