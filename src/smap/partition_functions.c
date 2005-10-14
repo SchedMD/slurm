@@ -618,7 +618,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 		if(part_ptr->total_nodes == 0)
 			mvwprintw(pa_system_ptr->text_win, 
 				  pa_system_ptr->ycord,
-				  pa_system_ptr->xcord, ".25");
+				  pa_system_ptr->xcord, "0.25");
 		else	
 			mvwprintw(pa_system_ptr->text_win, 
 				  pa_system_ptr->ycord,
@@ -712,7 +712,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 		}
 		
 		if(part_ptr->total_nodes == 0)
-			printf("%5s ", ".25");
+			printf("%5s ", "0.25");
 		else	
 			printf("%5d ", part_ptr->total_nodes);
 		
