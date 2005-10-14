@@ -44,26 +44,8 @@
 #include "src/partition_allocator/partition_allocator.h"
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
 
-/* Global variables */
-extern rm_BGL_t *bgl;
-extern char *bluegene_blrts;
-extern char *bluegene_linux;
-extern char *bluegene_mloader;
-extern char *bluegene_ramdisk;
-extern char *bridge_api_file;
-extern int numpsets;
-extern pa_system_t *pa_system_ptr;
-extern time_t last_bgl_update;
-extern List bgl_curr_part_list; 	/* Initial bgl partition state */
-extern List bgl_list;			/* List of configured BGL blocks */
-extern bool agent_fini;
-extern pthread_mutex_t part_state_mutex;
-extern int num_part_to_free;
-extern int num_part_freed;
-extern int partitions_are_created;
-extern int procs_per_node;
-
 typedef int lifecycle_type_t;
+
 enum part_lifecycle {DYNAMIC, STATIC};
 
 typedef struct bgl_record {
@@ -96,8 +78,9 @@ typedef struct bgl_record {
 					   partition */
 	int job_running;                /* signal if there is a job running 
 					   on the partition */
-	int cnodes_per_bp;
-	int quarter;
+	int cnodes_per_bp;              /* count of cnodes per Base part */
+	int quarter;                    /* used for small partitions 
+					   determine quarter of BP */
 } bgl_record_t;
 
 typedef struct {
@@ -115,6 +98,28 @@ typedef struct {
 	int used;
 	List switch_list;
 } bgl_bp_t;
+
+
+/* Global variables */
+extern rm_BGL_t *bgl;
+extern char *bluegene_blrts;
+extern char *bluegene_linux;
+extern char *bluegene_mloader;
+extern char *bluegene_ramdisk;
+extern char *bridge_api_file;
+extern int numpsets;
+extern pa_system_t *pa_system_ptr;
+extern time_t last_bgl_update;
+extern List bgl_curr_part_list; 	/* Initial bgl partition state */
+extern List bgl_list;			/* List of configured BGL blocks */
+extern bool agent_fini;
+extern pthread_mutex_t part_state_mutex;
+extern int num_part_to_free;
+extern int num_part_freed;
+extern int partitions_are_created;
+extern int procs_per_node;
+extern bgl_record_t *full_system_partition;
+
 
 #define MAX_PTHREAD_RETRIES  1
 

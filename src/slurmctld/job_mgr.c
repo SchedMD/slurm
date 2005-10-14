@@ -1600,7 +1600,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		requeue = 0;
 		if (job_return_code == 0)
 			job_return_code = 1;
-		info("Batch job launch failure, JobId=%u", job_ptr->job_id);	
+		info("Batch job launch failure, JobId=%u", job_ptr->job_id);
 	}
 
 	if (requeue && job_ptr->details && job_ptr->batch_flag) {

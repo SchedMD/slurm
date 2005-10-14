@@ -97,7 +97,8 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 	uint32_t req_procs = job_ptr->num_procs;
 	int rot_cnt = 0;
 	uint32_t proc_cnt;
-			
+	int job_running = 0;
+
 	if(!bgl_list) {
 		error("_find_best_partition_match: There is no bgl_list");
 		return SLURM_ERROR;
@@ -120,11 +121,29 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 
 	itr = list_iterator_create(bgl_list);
 	*found_bgl_record = NULL;
-
+	
+	if(full_system_partition->job_running) {
+		debug("_find_best_partition_match none found");
+		return SLURM_ERROR;
+	}
+	
 	debug("number of partitions to check: %d", list_count(bgl_list));
+     	itr = list_iterator_create(bgl_list);
 	while ((record = (bgl_record_t*) list_next(itr))) {
 		/* Check processor count */
-		printf("%d\n",req_procs);
+		if(record->job_running) {
+			job_running = 1;
+			debug("partition %s in use by %s", 
+			      record->bgl_part_id,
+			      record->user_name);
+			continue;
+		}
+		if(record->full_partition && job_running) {
+			debug("Can't run on full system partition "
+			      "another partition has a job running.");
+			continue;
+		}
+			
 		if (req_procs > record->cnodes_per_bp) {
 			/* We use the c-node count here. Job could start
 			 * twice this count if VIRTUAL_NODE_MODE, but this
@@ -210,12 +229,17 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 			if (!match) 
 				continue;	/* Not usable */
 		}
-
+		
+		/* mark as in use */ 
+		slurm_mutex_lock(&part_state_mutex);
+		record->job_running = 1;
+		slurm_mutex_unlock(&part_state_mutex);
+		
 		*found_bgl_record = record;
 		break;
 	}
 	list_iterator_destroy(itr);
-	
+
 	/* set the bitmap and do other allocation activities */
 	if (*found_bgl_record) {
 		debug("_find_best_partition_match %s <%s>", 
