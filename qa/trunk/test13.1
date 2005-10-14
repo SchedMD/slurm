@@ -82,7 +82,7 @@ if {$matches != 1} {
 set timeout $max_job_delay
 set job_id 0
 set matches 0
-spawn $srun --allocate -N1 --verbose -t1
+spawn $srun --allocate -N1 --verbose -t2
 expect {
 	-re "jobid ($number).*" {
 		set job_id $expect_out(1,string)
