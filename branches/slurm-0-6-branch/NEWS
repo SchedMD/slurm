@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Restructure slurmctld/agent.c logic to insure timely reaping of 
     terminating pthreads.
  -- Srun not to hang if job fails before task launches not all completed.
+ -- Fix for consumable resources properly scheduling nodes that have more 
+    nodes than configured (Susanne Balle, HP, cons_res_patch.10.14.2005)
 
 * Changes in SLURM 0.6.4
 ========================

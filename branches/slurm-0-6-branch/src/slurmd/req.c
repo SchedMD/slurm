@@ -385,10 +385,12 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 
                 host_index = hostset_index(hset, conf->node_name, jobid);
 
+                /* Left in here for debugging purposes
                 if(host_index >= 0)
                   debug3(" cons_res %u ntask_cnt %d task[%d] = %d = task_to_launch %d host %s ", 
                          arg.jobid, arg.ntask_cnt, host_index, arg.ntask[host_index], 
                          tasks_to_launch, conf->node_name);
+		*/
 
                 if (host_index < 0) { 
                         error("job cr credential invalid host_index %d for job %d",

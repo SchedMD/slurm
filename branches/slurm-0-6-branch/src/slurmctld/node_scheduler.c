@@ -700,6 +700,7 @@ _add_node_set_info(struct node_set *node_set_ptr,
                         if (bit_test (node_set_ptr->my_bitmap, i) == 0)
                         	continue;
                         allocated_cpus = 0;
+			
                         error_code = select_g_get_select_nodeinfo(&node_record_table_ptr[i], 
                                                                 SELECT_CR_USED_CPUS, 
                                                                 &allocated_cpus);
@@ -708,11 +709,11 @@ _add_node_set_info(struct node_set *node_set_ptr,
                                      node_record_table_ptr[i]);
                                return error_code;
                         }
-                        
-                        *node_cnt += 1;
-                        *cpu_cnt  += node_record_table_ptr[i].cpus - allocated_cpus;
+			*node_cnt += 1;
+			*cpu_cnt  += node_set_ptr->cpus_per_node - allocated_cpus;
                 }
-                debug3(" cons_res: _add_set_info node_cnt %d cpu_cnt %d ", *node_cnt, *cpu_cnt);
+                debug3(" cons_res: _add_node_set_info node_cnt %d cpu_cnt %d ", 
+		       *node_cnt, *cpu_cnt);
         }
         return error_code;
 }
