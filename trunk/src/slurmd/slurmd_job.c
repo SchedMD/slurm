@@ -179,13 +179,14 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->stdout_eio_objs = list_create(NULL); /* FIXME! Needs destructor */
 	job->stderr_eio_objs = list_create(NULL); /* FIXME! Needs destructor */
 	job->free_incoming = list_create(NULL); /* FIXME! Needs destructor */
-	for (i = 0; i < 10; i++) {
+	for (i = 0; i < STDIO_MAX_FREE_BUF; i++) {
 		list_enqueue(job->free_incoming, alloc_io_buf());
 	}
 	job->free_outgoing = list_create(NULL); /* FIXME! Needs destructor */
-	for (i = 0; i < 10; i++) {
+	for (i = 0; i < STDIO_MAX_FREE_BUF; i++) {
 		list_enqueue(job->free_outgoing, alloc_io_buf());
 	}
+	job->outgoing_cache = list_create(NULL); /* FIXME! Needs destructor */
 
 	job->envtp   = xmalloc(sizeof(env_t));
 	job->envtp->jobid = -1;

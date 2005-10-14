@@ -456,8 +456,11 @@ _setup_io(slurmd_job_t *job)
 	 */
 	_slurmd_job_log_init(job);
 
-	if (!job->batch)
-		rc = io_client_connect(job);
+	if (!job->batch) {
+		srun_info_t *srun = list_peek(job->sruns);
+		xassert(srun != NULL);
+		rc = io_client_connect(srun, job);
+	}
 
 #ifndef NDEBUG
 #  ifdef PR_SET_DUMPABLE
@@ -579,9 +582,6 @@ _job_mgr(slurmd_job_t *job)
 		rc = ESLURM_INTERCONNECT_FAILURE;
 		goto fail1;
 	}
-
-/* 	xsignal_block(mgr_sigarray); */
-/* 	xsignal(SIGHUP, _hup_handler); */
 
 	if (job->spawn_task)
 		rc = _setup_spawn_io(job);
@@ -1198,6 +1198,7 @@ static void
 _handle_attach_req(slurmd_job_t *job)
 {
 	srun_info_t *srun;
+	int rc;
 
 	debug("handling attach request for %u.%u", job->jobid, job->stepid);
 
@@ -1214,7 +1215,9 @@ _handle_attach_req(slurmd_job_t *job)
 
 	list_prepend(job->sruns, (void *) srun);
 
-	io_new_clients(job);
+	rc = io_client_connect(srun, job);
+	if (rc == SLURM_ERROR)
+		error("Failed attaching new stdio client");
 }
 
 
