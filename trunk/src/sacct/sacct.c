@@ -534,6 +534,11 @@ void doDump(void)
 		}
 		/* JOB_STEP */
 		for (js=jobs[j].first_jobstep; js>=0; js=jobsteps[js].next) {
+			if ((strcasecmp(jobsteps[js].cstatus, "R")==0) &&
+				jobs[j].job_terminated_seen) {
+					strcpy(jobsteps[js].cstatus,"f");
+					jobsteps[js].error=1;
+			}
 			dumpHeader(j);
 			printf("JOB_STEP %d %d %ld ",
 					1,
@@ -1035,6 +1040,11 @@ jstate:
 			for (js=jobs[j].first_jobstep;
 					js>=0;
 					js=jobsteps[js].next) {
+				if ((strcasecmp(jobsteps[js].cstatus,"R")==0) &&
+						jobs[j].job_terminated_seen) {
+					strcpy(jobsteps[js].cstatus,"f");
+					jobsteps[js].error=1;
+				}
 				if (opt_state_list) {
 				    for (i=0; i<NstatesSelected; i++) {
 					if (strcasecmp(jobsteps[js].cstatus,
@@ -2705,15 +2715,21 @@ void processJobStep(char *f[])
 	if (j<0) {	/* fake it for now */
 		j = initJobStruct(job,f);
 		if (opt_verbose && (opt_jobstep_list==NULL)) 
-			fprintf(stderr, "Note: JOB_STEP record %ld.%ld preceded "
-					"JOB_START record at line %ld\n",
+			fprintf(stderr, "Note: JOB_STEP record %ld.%ld preceded"
+					" JOB_START record at line %ld\n",
 					job, jobstep, lc);
 	}
-	if (findJobstepRecord(j, jobstep)>=0) {
-		fprintf(stderr, "Duplicate JOB_STEP record for jobstep %ld.%ld "
+	if ((js=findJobstepRecord(j, jobstep))>=0) {
+		if (strcasecmp(f[F_CSTATUS], "R")==0)
+			return; /* if "R" record preceded by F or CD; unusual */
+		if (strcasecmp(jobsteps[js].cstatus, "R")) { /* if not "R" */
+			fprintf(stderr,
+				"Duplicate JOB_STEP record for jobstep %ld.%ld "
 				"at line %ld -- ignoring it\n",
 				job, jobstep, lc);
-		return;
+			return;
+		}
+		goto replace_js;
 	}
 	if ((js = Njobsteps++)>=MAX_JOBSTEPS) {
 		fprintf(stderr, "Too many jobsteps, %ld, in the log file\n", js);
@@ -2725,6 +2741,7 @@ void processJobStep(char *f[])
 		linkJobstep(j, js);
 		jobs[j].job_step_seen = 1;
 	}
+  replace_js:
 	strcpy(jobsteps[js].finished, f[F_FINISHED]);
 	strcpy(jobsteps[js].cstatus, f[F_CSTATUS]);
 	jobsteps[js].error = strtol(f[F_ERROR], NULL, 10);

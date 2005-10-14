@@ -175,15 +175,10 @@ _build_proctable(srun_job_t *job, char *host, int nodeid, int ntasks, uint32_t *
 
 static void _dump_proctable(srun_job_t *job)
 {
-	int node_inx, task_inx, taskid, max_task = 0;
+	int node_inx, task_inx, taskid;
 	MPIR_PROCDESC *tv;
 
-	if (opt.overcommit)
-		max_task = opt.nprocs;
-
 	for (node_inx=0; node_inx<job->nhosts; node_inx++) {
-		if (!opt.overcommit)
-			max_task = job->cpus[node_inx];
 		for (task_inx=0; task_inx<job->ntask[node_inx]; task_inx++) {
 			taskid = job->tids[node_inx][task_inx];
 			tv = &MPIR_proctable[taskid];
