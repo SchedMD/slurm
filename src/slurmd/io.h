@@ -31,6 +31,13 @@
 #include "src/slurmd/slurmd_job.h"
 #include "src/common/eio.h"
 
+/*
+ * The message cache uses up free message buffers, so STDIO_MAX_MSG_CACHE
+ * must be a number smaller than STDIO_MAX_FREE_BUF.
+ */
+#define STDIO_MAX_FREE_BUF 10
+#define STDIO_MAX_MSG_CACHE 5
+
 struct io_buf {
 	int ref_count;
 	uint32_t length;
@@ -39,6 +46,14 @@ struct io_buf {
 
 struct io_buf *alloc_io_buf(void);
 void free_io_buf(struct io_buf *buf);
+
+/* 
+ * Initiate a TCP connection back to a waiting client (e.g. srun).
+ *
+ * Create a new eio client object and wake up the eio engine so that
+ * it can see the new object.
+ */
+int io_client_connect(srun_info_t *srun, slurmd_job_t *job);
 
 /*
  * Initialize each task's standard I/O file descriptors.  The file descriptors
@@ -53,13 +68,6 @@ int io_init_tasks_stdio(slurmd_job_t *job);
  * to job->objs list.
  */
 int io_thread_start(slurmd_job_t *job);
-
-/*
- * Create a set of new connecting clients for the running job
- * Grabs the latest srun object off the job's list of attached 
- * sruns, and duplicates stdout/err to this new client.
- */
-int io_new_clients(slurmd_job_t *job);
 
 int io_dup_stdio(slurmd_task_info_t *t);
 
