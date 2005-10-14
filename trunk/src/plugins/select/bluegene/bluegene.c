@@ -57,13 +57,14 @@ int partitions_are_created = 0;
 
 #ifdef HAVE_BGL_FILES
 static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
-static int _update_bgl_record_state();
+static int _update_bgl_record_state(List bgl_destroy_list);
 #endif
 
 /* some local functions */
 #ifdef HAVE_BGL
 static int  _addto_node_list(bgl_record_t *bgl_record, int *start, int *end);
-static int _update_bgl_record_state(List bgl_destroy_list);
+#endif
+#ifdef HAVE_BGL_FILES
 #endif
 static void _set_bgl_lists();
 static int  _validate_config_nodes(void);
@@ -962,45 +963,7 @@ extern int read_bgl_conf(void)
 	return error_code;
 }
 
-#ifdef HAVE_BGL
-static int _addto_node_list(bgl_record_t *bgl_record, int *start, int *end)
-{
-	int node_count=0;
-	int x,y,z;
-	char node_name_tmp[7];
-	debug3("%d%d%dx%d%d%d",
-	     start[X],
-	     start[Y],
-	     start[Z],
-	     end[X],
-	     end[Y],
-	     end[Z]);
-	debug3("%d%d%d",
-	     DIM_SIZE[X],
-	     DIM_SIZE[Y],
-	     DIM_SIZE[Z]);
-	     
-	assert(end[X] < DIM_SIZE[X]);
-	assert(start[X] >= 0);
-	assert(end[Y] < DIM_SIZE[Y]);
-	assert(start[Y] >= 0);
-	assert(end[Z] < DIM_SIZE[Z]);
-	assert(start[Z] >= 0);
-	
-	for (x = start[X]; x <= end[X]; x++) {
-		for (y = start[Y]; y <= end[Y]; y++) {
-			for (z = start[Z]; z <= end[Z]; z++) {
-				sprintf(node_name_tmp, "bgl%d%d%d", 
-					x, y, z);		
-				list_append(bgl_record->bgl_part_list, 
-					    &pa_system_ptr->grid[x][y][z]);
-				node_count++;
-			}
-		}
-	}
-	return node_count;
-}
-
+#ifdef HAVE_BGL_FILES
 static int _update_bgl_record_state(List bgl_destroy_list)
 {
 	rm_partition_state_flag_t part_state = PARTITION_ALL_FLAG;
@@ -1099,6 +1062,46 @@ static int _update_bgl_record_state(List bgl_destroy_list)
 	return func_rc;
 }
 #endif /* HAVE_BGL_FILES */
+
+#ifdef HAVE_BGL
+static int _addto_node_list(bgl_record_t *bgl_record, int *start, int *end)
+{
+	int node_count=0;
+	int x,y,z;
+	char node_name_tmp[7];
+	debug3("%d%d%dx%d%d%d",
+	     start[X],
+	     start[Y],
+	     start[Z],
+	     end[X],
+	     end[Y],
+	     end[Z]);
+	debug3("%d%d%d",
+	     DIM_SIZE[X],
+	     DIM_SIZE[Y],
+	     DIM_SIZE[Z]);
+	     
+	assert(end[X] < DIM_SIZE[X]);
+	assert(start[X] >= 0);
+	assert(end[Y] < DIM_SIZE[Y]);
+	assert(start[Y] >= 0);
+	assert(end[Z] < DIM_SIZE[Z]);
+	assert(start[Z] >= 0);
+	
+	for (x = start[X]; x <= end[X]; x++) {
+		for (y = start[Y]; y <= end[Y]; y++) {
+			for (z = start[Z]; z <= end[Z]; z++) {
+				sprintf(node_name_tmp, "bgl%d%d%d", 
+					x, y, z);		
+				list_append(bgl_record->bgl_part_list, 
+					    &pa_system_ptr->grid[x][y][z]);
+				node_count++;
+			}
+		}
+	}
+	return node_count;
+}
+#endif //HAVE_BGL
 
 static void _set_bgl_lists()
 {

@@ -710,8 +710,11 @@ static int _print_text_part(partition_info_t *part_ptr,
 					       db2_info_ptr->bgl_node_use));
 			} 
 		}
-
-		printf("%5d ", part_ptr->total_nodes);
+		
+		if(part_ptr->total_nodes == 0)
+			printf("%5s ", ".25");
+		else	
+			printf("%5d ", part_ptr->total_nodes);
 		
 		tempxcord = pa_system_ptr->xcord;
 		
