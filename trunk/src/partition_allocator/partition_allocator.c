@@ -635,7 +635,7 @@ extern void pa_init(node_info_msg_t *node_info_ptr)
 #endif
 		pa_system_ptr->num_of_proc = node_info_ptr->record_count;
         } 
-
+	
 #ifdef HAVE_BGL_FILES
 	if (have_db2
 	&&  (DIM_SIZE[X]==0) && (DIM_SIZE[X]==0) && (DIM_SIZE[X]==0)) {

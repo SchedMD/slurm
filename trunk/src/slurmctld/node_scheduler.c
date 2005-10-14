@@ -286,8 +286,19 @@ _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 	 * to this job */
 	if (job_ptr->details && job_ptr->details->req_node_bitmap)
 		bit_or(bitmap, job_ptr->details->req_node_bitmap);
+	
+#ifdef HAVE_BGL
+	/* here to reset the bitmap for small parititons the
+	 * BGL plugin will do the sched. 
+	 */
+	bit_or(bitmap, light_load_bit);
+#endif
 	error_code = select_g_job_test(job_ptr, bitmap, 
 			min_nodes, max_nodes);
+#ifdef HAVE_BGL
+	FREE_NULL_BITMAP(light_load_bit);
+	return error_code;
+#endif
 
 	/* now try to use idle and lightly loaded nodes */
 	if (error_code) {

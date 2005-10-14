@@ -428,7 +428,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 	/* remove the partition's users */
 	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
 	if(bgl_record) {
-		debug2("got the record %s user is %s",
+		debug("got the record %s user is %s",
 		      bgl_record->bgl_part_id,
 		      bgl_record->user_name);
 
@@ -674,25 +674,34 @@ extern int start_job(struct job_record *job_ptr)
 
 	_part_op(bgl_update_ptr);
 #else
-	if (bgl_list) {
-		ListIterator itr;
-		bgl_record_t *bgl_record;
-		char *part_id = NULL;
-		uint16_t node_use;
+	ListIterator itr;
+	bgl_record_t *bgl_record = NULL;
+	bgl_record_t *found_record = NULL;
+	char *part_id = NULL;
+	uint16_t node_use;
 
+	if (bgl_list) {
+		
 		select_g_get_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_PART_ID, &part_id);
 		select_g_get_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_NODE_USE, &node_use);
+		if(!part_id) {
+			error("NO part_id");
+			return rc;
+		}
+		bgl_record = find_bgl_record(part_id);
 		itr = list_iterator_create(bgl_list);
-		while ((bgl_record = (bgl_record_t *) list_next(itr))) {
-			if (!part_id)
-				break;
-			if ((!bgl_record->bgl_part_id)
-			||  (strcmp(part_id, bgl_record->bgl_part_id)))
+		while ((found_record = (bgl_record_t *) list_next(itr))) {
+			if (bgl_record->full_partition)
+				found_record->state = RM_PARTITION_FREE;
+			else if(found_record->full_partition)
+				found_record->state = RM_PARTITION_FREE;
+			if ((!found_record->bgl_part_id)
+			    ||  (strcmp(part_id, found_record->bgl_part_id)))
 				continue;
-			bgl_record->node_use = node_use;
-			bgl_record->state = RM_PARTITION_READY;
+			found_record->node_use = node_use;
+			found_record->state = RM_PARTITION_READY;
 			last_bgl_update = time(NULL);
 			break;
 		}
@@ -729,6 +738,24 @@ int term_job(struct job_record *job_ptr)
 	info("Queue termination of job %u in BGL partition %s",
 		job_ptr->job_id, bgl_update_ptr->bgl_part_id);
 	_part_op(bgl_update_ptr);
+#else
+	bgl_record_t *bgl_record;
+	char *part_id = NULL;
+		
+	if (bgl_list) {
+		
+		select_g_get_jobinfo(job_ptr->select_jobinfo,
+			SELECT_DATA_PART_ID, &part_id);
+		if(!part_id) {
+			error("NO part_id");
+			return rc;
+		}
+		bgl_record = find_bgl_record(part_id);
+		bgl_record->state = RM_PARTITION_FREE;
+		bgl_record->job_running = 0;
+		last_bgl_update = time(NULL);		
+		xfree(part_id);
+	}
 #endif
 	return rc;
 }

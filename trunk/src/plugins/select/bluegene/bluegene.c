@@ -54,6 +54,7 @@ pthread_mutex_t part_state_mutex = PTHREAD_MUTEX_INITIALIZER;
 int num_part_to_free = 0;
 int num_part_freed = 0;
 int partitions_are_created = 0;
+bgl_record_t *full_system_partition = NULL;
 
 #ifdef HAVE_BGL_FILES
 static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -620,7 +621,7 @@ extern int create_static_partitions(List part_list)
 
 	bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
 	bgl_record->nodes = xmalloc(sizeof(char)*13);
-
+	full_system_partition = bgl_record;
 #ifdef HAVE_BGL_FILES
 	bgl_record->geo[X] = DIM_SIZE[X] - 1;
 	bgl_record->geo[Y] = DIM_SIZE[Y] - 1;
@@ -638,7 +639,7 @@ extern int create_static_partitions(List part_list)
 			bgl_record->geo[X], bgl_record->geo[Y], 
 			bgl_record->geo[Z]);
 	bgl_record->quarter = -1;
-
+	bgl_record->full_partition = 1;
        	if(bgl_found_part_list) {
 		itr = list_iterator_create(bgl_found_part_list);
 		while ((found_record = (bgl_record_t *) list_next(itr)) 
@@ -742,7 +743,7 @@ no_total:
 				debug("full partiton = %s.", 
 				      bgl_record->bgl_part_id);
 				bgl_record->full_partition = 1;
-				
+				full_system_partition = bgl_record;
 				break;
 			}
 		}
@@ -1246,6 +1247,7 @@ static int _validate_config_nodes(void)
 						xmalloc(sizeof(bgl_record_t));
 					list_append(bgl_list, record);
 	
+					full_system_partition = record;
 					record->full_partition = 1;
 					record->bgl_part_id = xstrdup(
 						init_record->bgl_part_id);
