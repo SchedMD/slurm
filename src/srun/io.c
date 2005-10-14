@@ -253,8 +253,8 @@ _server_read(eio_obj_t *obj, List objs)
 		}
 
 		n = io_hdr_read_fd(obj->fd, &s->header);
-		if (n == 0) { /* got eof on socket read */
-			debug3(  "got eof on _server_read header");
+		if (n <= 0) { /* got eof or error on socket read */
+			debug3(  "got eof or error on _server_read header");
 			s->in_eof = true;
 			list_enqueue(s->job->free_outgoing, s->in_msg);
 			s->in_msg = NULL;
