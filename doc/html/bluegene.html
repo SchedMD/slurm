@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-213976">
-<meta name="LLNLRandRdate" content="15 July 2005">
+<meta name="LLNLRandRdate" content="15 October 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -200,12 +200,6 @@ keys scroll the window containing the text information.</p>
 
 <h3>System Administration</h3>
 
-<p><b>If running on a multi X-dim system external wiring may be different 
-that programmed into slurm.  If you have more than 2 nodes in the X-dim please 
-have a wiring diagram of your system and query slurm-dev@lists.llnl.gov 
-for advice.
-</b></p>  
-
 <p>Building a Blue Gene compatible system is dependent upon the <i>configure</i>
 program locating some expected files. 
 In particular, the configure script searches for <i>libdb2.so</i> in the 
@@ -374,7 +368,7 @@ may be required.
 Make use of the SLURM partition mechanism to control access to these 
 bglblocks. A sample <i>bluegene.conf</i> file is shown below.
 <pre>
-#
+###############################################################################
 # Global specifications for Blue Gene system
 #
 # BlrtsImage:     BlrtsImage used for creation of all bglblocks.
@@ -396,7 +390,7 @@ bglblocks. A sample <i>bluegene.conf</i> file is shown below.
 # 
 # NOTE: The bgl_serial value is set at configuration time using the 
 #       "--with-bgl-serial=" option. Its default value is "BGL".
-#
+###############################################################################
 BlrtsImage=/bgl/BlueLight/ppcfloor/bglsys/bin/rts_hw.rts
 LinuxImage=/bgl/BlueLight/ppcfloor/bglsys/bin/zImage.elf
 MloaderImage=/bgl/BlueLight/ppcfloor/bglsys/bin/mmcs-mloader.rts
@@ -406,23 +400,40 @@ Numpsets=8
 BridgeAPILogFile=/var/log/slurm/bridgeapi.log
 BridgeAPIVerbose=0
 
-#
+###############################################################################
 # Define the static partitions (bglblocks)
 #
 # Nodes: The base partitions (midplanes) in the bglblock using XYZ coordinates
-# Type:  Connection type "mesh" or "torus", default is "torus"
-# 
-# NOTE: A bglblock is implicitly created containing all resources on the system
-# NOTE: All Nodes defined here must also be defined in the slurm.conf file
+# Type:  Connection type "MESH" or "TORUS", default is "TORUS"
+# Split: Divide a midplane into multiple bglblocks,
+#        if non-zero creates 4 bglblocks each containing 128 c-nodes
+#        (smaller bglblocks are presently not supported)
 #
-
+# IMPORTANT NOTES:
+# * A bglblock is implicitly created containing all resources on the system
+# * Bglblocks must not overlap (except for implicitly created bglblock)
+#   This will be the case when smap is used to create a configuration file
+# * All Nodes defined here must also be defined in the slurm.conf file
+###############################################################################
+# LEAVE NEXT LINE AS A COMMENT, Full-system bglblock, implicitly created
+# Nodes=bgl[000x001] Type=TORUS       # 1x1x2 = 2 midplanes
+###############################################################################
 # volume = 1x1x1 = 1
-Nodes=bgl[000x000]
-Nodes=bgl[001x001]
+Nodes=bgl[000x000] Type=TORUS         # 1x1x1 =  1 midplane
+Nodes=bgl[001x001] Type=TORUS Split=4 # 1x1x1 =  1 midplane, in four bglblocks
 
-# volume = 1x1x2 = 2
-# Nodes=bgl[000x001]   Full-system bglblock, implicitly created 
 </pre></p>
+
+<p>The above <i>bluegene.conf</i> file defines multiple bglblocks to be 
+created in a single midplane (see the "Split" option). 
+Note that you can not presently control how many bglblocks are created 
+in a midplane, it will be at most four. 
+Using this mechanism, up to eight independent jobs can be executed 
+simultaneously on a one-rack Blue Gene system.
+If using split midplanes or "small bglblocks", the SLURM partition containing 
+them as defined in <i>slurm.conf</i> must have the parameter 
+<i>Shared=force</i> to enable scheduling of multiple jobs on what 
+SLURM considers a single node.</p>
 
 <p>One more thing is required to support SLURM interactions with 
 the DB2 database (at least as of the time this was written).
@@ -445,11 +456,7 @@ At that time the <i>bluegene.conf</i> configuration file will become obsolete.
 Dynamic partition does involve substantial overhead including the 
 rebooting of c-nodes and I/O nodes.</p>
 
-<p>SLURM versions 0.4.23 and higher are designed to utilize Bluegene driver 
-141(2005) or higher. This combination avoids rebooting bglblocks whenever
-possible so as to minimize the system overhead for boots (which can be tens 
-of minutes on large systems).
-When slurmctld is initially started on an idle system, the bglblocks 
+<p>When slurmctld is initially started on an idle system, the bglblocks 
 already defined in MMCS are read using the BGL Bridge APIs. 
 If these bglblocks do not correspond to those defined in the bluegene.conf 
 file, the old bglblocks with a prefix of "RMP" are destroyed and new ones 
@@ -516,7 +523,7 @@ nodes, so the message is more meaningful there). </p>
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-213976<br>
-Last modified 15 July 2005</p></td>
+Last modified 14 October 2005</p></td>
 </tr>
 </table>
 </td>
