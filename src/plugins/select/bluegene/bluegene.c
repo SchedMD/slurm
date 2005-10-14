@@ -1591,8 +1591,9 @@ static int _parse_bgl_spec(char *in_line)
 	bgl_record->cnodes_per_bp = procs_per_node;
 	bgl_record->quarter = -1;
 
-	/* number to split 2= 2x256 4= 4x128 6= 4x128, 2x256 */
-	if(node_split == 1) {
+	/* Automatically create 4-way split if node_split set > 0 in bluegene.conf
+	 * NOTE: Value does not control how many bglblocks are created */
+	if(node_split > 0) {
 		
 		itr = list_iterator_create(bgl_record->bgl_part_list);
 		while ((pa_node = list_next(itr)) != NULL) {
