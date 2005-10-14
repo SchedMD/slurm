@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- BGL small partition logic in place in plugin and smap.  Scheduler needs  
     to be rewritten to handle multiple partitions on a single node. No 
     documentation written on process yet.
+ -- If running select/bluegene plugin without access to BGL DB2, then 
+    full-system bglblock is of system size defined in bluegene.conf.
 
 * Changes in SLURM 0.7.0-pre1
 =============================
