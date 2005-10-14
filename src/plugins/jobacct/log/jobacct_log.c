@@ -231,7 +231,7 @@ static void	 _remove_jrec_from_list(List jrecs,
 			uint32_t jobid, uint32_t stepid);
 static int	 _send_data_to_mynode(_mynode_msg_type_t msgtype, _jrec_t *jrec);
 static int	 _send_data_to_node_0(_jrec_t *jrec);
-static int	 _send_data_to_slurmctld(_jrec_t *jrec); 
+static int	 _send_data_to_slurmctld(_jrec_t *jrec, int done); 
 static int	 _send_msg_to_slurmctld(_stats_msg_t *stats);
 static void	 _stagger_time(long nodeid, long n_contenders);
 static int	 _unpack_jobrec(_jrec_t *outrec, _jrec_t *inrec);
@@ -346,7 +346,7 @@ static int _send_msg_to_slurmctld(_stats_msg_t *stats) {
 		sleep(1+(rand()/(RAND_MAX/max_send_retry_delay)));
 	}
 	if (rc<0)
-		error("jobacct(%d): _send_data_to_slurmctld(msg, retmsg)"
+		error("jobacct(%d): _send_msg_to_slurmctld(msg, retmsg)"
 				" says %d (%m) after %d tries",
 				getpid(), rc, retry);
 	else {
@@ -1168,6 +1168,8 @@ static void _process_mynode_msg_launch(_jrec_t *inrec) {
 	jrec = xmalloc(sizeof(_jrec_t));
 	memcpy(jrec, inrec, sizeof(_jrec_t));
 	list_append(jobsteps_active, jrec);
+	if (jrec->nodeid==0)	/* Notify the logger that a step has started */
+		_send_data_to_slurmctld(jrec, 0);
 	slurm_mutex_unlock(&jobsteps_active_lock);
 }
 
@@ -1225,7 +1227,7 @@ static void _process_node0_data(_jrec_t *inrec) {
 			jrec->rusage.ru_utime.tv_sec,
 			jrec->rusage.ru_utime.tv_usec );
 	if (jrec->not_reported <= 0) {
-		_send_data_to_slurmctld(jrec);
+		_send_data_to_slurmctld(jrec, 1);
 		_remove_jrec_from_list(jobsteps_retiring, jrec->jobid,
 				jrec->stepid);
 		slurm_mutex_unlock(&jobsteps_retiring_lock);
@@ -1420,10 +1422,14 @@ static int _send_data_to_node_0(_jrec_t *jrec) {
 /*
  * Send data to slurmctld to be logged.
  *
+ * IN:	*jrec -- the jobstep data to be transmitted
+ * 	done  == 0 if we're creating the jobstep
+ * 	      <> 0 if this is the final data
+ *
  * Threads: jrec must be locked by the caller.
  */
 
-static int _send_data_to_slurmctld(_jrec_t *jrec) {
+static int _send_data_to_slurmctld(_jrec_t *jrec, int done) {
 #define DATETIME_SIZE 16
 	char		*comp_status,
 			*tbuf;
@@ -1434,11 +1440,15 @@ static int _send_data_to_slurmctld(_jrec_t *jrec) {
 	struct tm 	ts; /* timestamp decoder */
 	time_t		now;
 
-	debug2("jobacct(%d): in _send_data_to_slurmctld", getpid());
-	if (jrec->status)
-		comp_status = "F";
+	debug2("jobacct(%d): in _send_data_to_slurmctld(msg,%d)",
+			getpid(), done);
+	if (done)
+		if (jrec->status)
+			comp_status = "F";
+		else
+			comp_status = "CD";
 	else
-		comp_status = "CD";
+		comp_status = "R";
 	tbuf = xmalloc(DATETIME_SIZE);
 	now = time(NULL);
 	gmtime_r(&now, &ts);
