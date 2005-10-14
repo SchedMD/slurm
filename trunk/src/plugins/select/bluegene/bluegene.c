@@ -58,6 +58,8 @@ int partitions_are_created = 0;
 #ifdef HAVE_BGL_FILES
 static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int _update_bgl_record_state(List bgl_destroy_list);
+#else
+int max_dim[PA_SYSTEM_DIMENSIONS] = { 0, 0, 0 };
 #endif
 
 /* some local functions */
@@ -617,18 +619,24 @@ extern int create_static_partitions(List part_list)
 	reset_pa_system();
 
 	bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
-	
 	bgl_record->nodes = xmalloc(sizeof(char)*13);
-	if(DIM_SIZE[X]==1 && DIM_SIZE[Y]==1 && DIM_SIZE[Z]==1)
+
+#ifdef HAVE_BGL_FILES
+	bgl_record->geo[X] = DIM_SIZE[X] - 1;
+	bgl_record->geo[Y] = DIM_SIZE[Y] - 1;
+	bgl_record->geo[Z] = DIM_SIZE[Z] - 1;
+#else
+	bgl_record->geo[X] = max_dim[X];
+	bgl_record->geo[Y] = max_dim[Y];
+	bgl_record->geo[Z] = max_dim[Z];
+#endif
+	if((bgl_record->geo[X] == 0) && (bgl_record->geo[Y] == 0)
+	&& (bgl_record->geo[Z] == 0))
 		sprintf(bgl_record->nodes, "bgl000");
        	else
 		sprintf(bgl_record->nodes, "bgl[000x%d%d%d]", 
-			DIM_SIZE[X]-1,  
-			DIM_SIZE[Y]-1, 
-			DIM_SIZE[Z]-1);
-	bgl_record->geo[X] = DIM_SIZE[X]-1;
-	bgl_record->geo[Y] = DIM_SIZE[Y]-1;
-	bgl_record->geo[Z] = DIM_SIZE[Z]-1;
+			bgl_record->geo[X], bgl_record->geo[Y], 
+			bgl_record->geo[Z]);
 	bgl_record->quarter = -1;
 
        	if(bgl_found_part_list) {
@@ -1743,7 +1751,13 @@ static void _process_nodes(bgl_record_t *bgl_record)
 	       bgl_record->geo[X],
 	       bgl_record->geo[Y],
 	       bgl_record->geo[Z]);
-		     
+	
+#ifndef HAVE_BGL_FILES
+	max_dim[X] = MAX(max_dim[X], (bgl_record->start[X]+bgl_record->geo[X]-1));
+	max_dim[Y] = MAX(max_dim[Y], (bgl_record->start[Y]+bgl_record->geo[Y]-1));
+	max_dim[Z] = MAX(max_dim[Z], (bgl_record->start[Z]+bgl_record->geo[Z]-1));
+#endif
+   
 	if (node_name2bitmap(bgl_record->nodes, 
 			     false, 
 			     &bgl_record->bitmap)) {
