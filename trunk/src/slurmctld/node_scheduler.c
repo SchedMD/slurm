@@ -401,13 +401,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool runable_avail = false;	/* Job can run with available nodes */
         int cr_enabled = 0;
 
-#ifdef HAVE_BGL		/* no sharing Blue Gene nodes */
-	if (shared) {
-		error("attempt to share Blue Gene nodes ignored");
-		shared = 0;
-	}
-#endif
-
 	if (node_set_size == 0) {
 		info("_pick_best_nodes: empty node set for selection");
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
