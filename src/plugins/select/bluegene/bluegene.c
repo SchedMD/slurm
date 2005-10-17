@@ -621,7 +621,6 @@ extern int create_static_partitions(List part_list)
 
 	bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
 	bgl_record->nodes = xmalloc(sizeof(char)*13);
-	full_system_partition = bgl_record;
 #ifdef HAVE_BGL_FILES
 	bgl_record->geo[X] = DIM_SIZE[X] - 1;
 	bgl_record->geo[Y] = DIM_SIZE[Y] - 1;
@@ -1246,8 +1245,9 @@ static int _validate_config_nodes(void)
 					record = (bgl_record_t*) 
 						xmalloc(sizeof(bgl_record_t));
 					list_append(bgl_list, record);
-	
-					full_system_partition = record;
+					debug("full system %s",
+					      init_record->bgl_part_id);
+					full_system_partition = init_record;
 					record->full_partition = 1;
 					record->bgl_part_id = xstrdup(
 						init_record->bgl_part_id);

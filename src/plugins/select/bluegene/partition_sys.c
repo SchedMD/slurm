@@ -528,7 +528,6 @@ int read_bgl_partitions()
 		else
 			bgl_record->cnodes_per_bp = procs_per_node;
 		
-		printf("got %d\n",bgl_record->cnodes_per_bp);
 		bgl_record->part_lifecycle = STATIC;
 						
 clean_up:	if (bgl_recover

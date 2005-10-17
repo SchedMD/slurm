@@ -408,7 +408,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	}
 
         /* Is Consumable Resources enabled? */
-        error_code = select_g_get_info_from_plugin (SELECT_CR_PLUGIN, &cr_enabled);
+        error_code = select_g_get_info_from_plugin (SELECT_CR_PLUGIN, 
+						    &cr_enabled);
         if (error_code != SLURM_SUCCESS)
                 return error_code;
           
@@ -417,7 +418,9 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
                 job_ptr->cr_enabled = cr_enabled; /* CR enabled for this job */
 
                 debug3(" Is this Job %u in exclusive mode? %d cr_enabled %d", 
-                      job_ptr->job_id, job_ptr->details->exclusive, cr_enabled);
+		       job_ptr->job_id, 
+		       job_ptr->details->exclusive, 
+		       cr_enabled);
 
                 if (job_ptr->details->exclusive) {
                   partially_idle_node_bitmap = bit_copy(idle_node_bitmap);
@@ -438,10 +441,12 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		/* we have already confirmed that all of these nodes have a
 		 * usable configuration and are in the proper partition */
 		if (min_nodes != 0)
-			total_nodes = bit_set_count(job_ptr->details->req_node_bitmap);
+			total_nodes = bit_set_count(
+				job_ptr->details->req_node_bitmap);
 		if (job_ptr->num_procs != 0) {
                   if (cr_enabled) {
-                        error_code = select_g_get_extra_jobinfo (NULL, job_ptr, 
+                        error_code = select_g_get_extra_jobinfo (NULL, 
+								 job_ptr, 
                                                                  SELECT_CR_CPU_COUNT, 
                                                                  &total_cpus);
                         if (error_code != SLURM_SUCCESS) {
@@ -449,7 +454,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
                                 return error_code;
                         }
                   } else 
-                        total_cpus = count_cpus(job_ptr->details->req_node_bitmap);
+                        total_cpus = count_cpus(
+				job_ptr->details->req_node_bitmap);
                 }
 		if ((max_nodes != 0) &&
 		    (total_nodes > max_nodes)) {
@@ -465,32 +471,39 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 		}
 		if ((min_nodes <= total_nodes) && 
-		    (max_nodes <= min_nodes  ) &&
+		    (max_nodes <= min_nodes) &&
 		    (job_ptr->num_procs <= total_cpus )) {
 			if (!bit_super_set(job_ptr->details->req_node_bitmap, 
                                         avail_node_bitmap)) {
                                 if (cr_enabled) 
-                                       FREE_NULL_BITMAP(partially_idle_node_bitmap);
+                                       FREE_NULL_BITMAP(
+					       partially_idle_node_bitmap);
 				return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
                         }
 			if (shared) {
-				if (!bit_super_set(job_ptr->details->req_node_bitmap, 
+				if (!bit_super_set(job_ptr->details->
+						   req_node_bitmap, 
                                                    share_node_bitmap)) {
                                         if (cr_enabled) 
-                                          FREE_NULL_BITMAP(partially_idle_node_bitmap);
+                                          FREE_NULL_BITMAP(
+						  partially_idle_node_bitmap);
 					return ESLURM_NODES_BUSY;
                                 }
 			} else if (cr_enabled) {
-				if (!bit_super_set(job_ptr->details->req_node_bitmap, 
+				if (!bit_super_set(job_ptr->details->
+						   req_node_bitmap, 
                                                    partially_idle_node_bitmap)) {
-                                        FREE_NULL_BITMAP(partially_idle_node_bitmap);
+                                        FREE_NULL_BITMAP(
+						partially_idle_node_bitmap);
 					return ESLURM_NODES_BUSY;
                                 }
                         } else {
-				if (!bit_super_set(job_ptr->details->req_node_bitmap, 
+				if (!bit_super_set(job_ptr->details->
+						   req_node_bitmap, 
                                                    idle_node_bitmap)) {
                                         if (cr_enabled) 
-                                          FREE_NULL_BITMAP(partially_idle_node_bitmap);
+						FREE_NULL_BITMAP(
+							partially_idle_node_bitmap);
 					return ESLURM_NODES_BUSY;
                                 }
 			}
@@ -516,13 +529,15 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				continue;
 			if (!runable_ever) {
                                 int cr_disabled = 0;
-			        error_code = _add_node_set_info(&node_set_ptr[i],
-						   &total_bitmap, 
-						   &total_nodes, &total_cpus,
-                                                   cr_disabled);
+			        error_code = _add_node_set_info(
+					&node_set_ptr[i],
+					&total_bitmap, 
+					&total_nodes, &total_cpus,
+					cr_disabled);
                                 if (error_code != SLURM_SUCCESS) {
                                   if (cr_enabled) 
-                                          FREE_NULL_BITMAP(partially_idle_node_bitmap);
+                                          FREE_NULL_BITMAP(
+						  partially_idle_node_bitmap);
                                   return error_code;
                                 }
                         }
@@ -538,12 +553,15 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					idle_node_bitmap);
 			node_set_ptr[i].nodes =
 				bit_set_count(node_set_ptr[i].my_bitmap);
-                        error_code = _add_node_set_info(&node_set_ptr[i], &avail_bitmap, 
-                                                        &avail_nodes, &avail_cpus, 
+                        error_code = _add_node_set_info(&node_set_ptr[i], 
+							&avail_bitmap, 
+                                                        &avail_nodes, 
+							&avail_cpus, 
                                                         cr_enabled);
                         if (error_code != SLURM_SUCCESS) {
                                 if (cr_enabled) 
-                                        FREE_NULL_BITMAP(partially_idle_node_bitmap);
+                                        FREE_NULL_BITMAP(
+						partially_idle_node_bitmap);
                                 return error_code;
                         }
 			if ((job_ptr->details->req_node_bitmap) &&
@@ -560,12 +578,16 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 #ifndef HAVE_BGL
 			if (shared) {
-				pick_code = _pick_best_load(job_ptr, avail_bitmap, 
-							min_nodes, max_nodes);
+				pick_code = _pick_best_load(job_ptr, 
+							    avail_bitmap, 
+							    min_nodes, 
+							    max_nodes);
 			} else
 #else
-				pick_code = select_g_job_test(job_ptr, avail_bitmap, 
-						min_nodes, max_nodes);
+				pick_code = select_g_job_test(job_ptr, 
+							      avail_bitmap, 
+							      min_nodes, 
+							      max_nodes);
 #endif
 
 			if (pick_code == SLURM_SUCCESS) {
@@ -577,7 +599,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				}
 				FREE_NULL_BITMAP(total_bitmap);
                                 if (cr_enabled) 
- 				         FREE_NULL_BITMAP(partially_idle_node_bitmap);
+ 				         FREE_NULL_BITMAP(
+						 partially_idle_node_bitmap);
 				*select_bitmap = avail_bitmap;
 				return SLURM_SUCCESS;
 			}
@@ -618,8 +641,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				bit_and(avail_bitmap, avail_node_bitmap);
                                 if (cr_enabled)
                                         job_ptr->cr_enabled = 0;
-				pick_code = select_g_job_test(job_ptr, avail_bitmap, 
-						min_nodes, max_nodes);
+				pick_code = select_g_job_test(job_ptr, 
+							      avail_bitmap, 
+							      min_nodes, 
+							      max_nodes);
                                 if (cr_enabled)
                                         job_ptr->cr_enabled = 1;
 				if (pick_code == SLURM_SUCCESS) {
@@ -633,8 +658,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			if (!runable_ever) {
                                 if (cr_enabled)
                                         job_ptr->cr_enabled = 0;
-				pick_code = select_g_job_test(job_ptr, total_bitmap, 
-						min_nodes, max_nodes);
+				pick_code = select_g_job_test(job_ptr, 
+							      total_bitmap, 
+							      min_nodes, 
+							      max_nodes);
                                 if (cr_enabled)
                                         job_ptr->cr_enabled = 1;
 				if (pick_code == SLURM_SUCCESS)
@@ -658,7 +685,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		info("_pick_best_nodes: job never runnable");
 	}
-
+	job_ptr->checked = 0;
 	if (error_code == SLURM_SUCCESS)
 		error_code = ESLURM_NODES_BUSY;
 	return error_code;
@@ -699,9 +726,10 @@ _add_node_set_info(struct node_set *node_set_ptr,
                         if (bit_test (node_set_ptr->my_bitmap, i) == 0)
                         	continue;
                         allocated_cpus = 0;
-                        error_code = select_g_get_select_nodeinfo(&node_record_table_ptr[i], 
-                                                                SELECT_CR_USED_CPUS, 
-                                                                &allocated_cpus);
+                        error_code = select_g_get_select_nodeinfo(
+				&node_record_table_ptr[i], 
+				SELECT_CR_USED_CPUS, 
+				&allocated_cpus);
                         if (error_code != SLURM_SUCCESS) {
                                error(" cons_res: Invalid Node reference", 
                                      node_record_table_ptr[i]);
@@ -709,9 +737,11 @@ _add_node_set_info(struct node_set *node_set_ptr,
                         }
                         
                         *node_cnt += 1;
-                        *cpu_cnt  += node_record_table_ptr[i].cpus - allocated_cpus;
+                        *cpu_cnt  += 
+				node_record_table_ptr[i].cpus - allocated_cpus;
                 }
-                debug3(" cons_res: _add_set_info node_cnt %d cpu_cnt %d ", *node_cnt, *cpu_cnt);
+                debug3(" cons_res: _add_set_info node_cnt %d cpu_cnt %d ", 
+		       *node_cnt, *cpu_cnt);
         }
         return error_code;
 }
@@ -845,6 +875,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 		error_code = SLURM_SUCCESS;
 		goto cleanup;
 	}
+	info("starting job %u", job_ptr->job_id);
 	if (select_g_job_begin(job_ptr) != SLURM_SUCCESS) {
 		/* Leave job queued, something is hosed */
 		error("select_g_job_begin(%u): %m", job_ptr->job_id);

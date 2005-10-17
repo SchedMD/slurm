@@ -334,6 +334,9 @@ struct job_record {
                                            each of the ntask_cnt hosts */
 	uint16_t mail_type;		/* see MAIL_JOB_* in slurm.h */
 	char *mail_user;		/* user to get e-mail notification */
+	uint32_t checked;               /* for bgl to tell plugin it already 
+					   checked and all partitions were full
+					   looking for best choice now */
 };
 
 struct 	step_record {

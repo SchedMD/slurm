@@ -305,7 +305,9 @@ extern int update_partition_list()
 			break;
 		} else if(bgl_record->node_use != node_use) {
 			debug("node_use of Partition %s was %d and now is %d",
-			      name, bgl_record->node_use, node_use);
+			      bgl_record->bgl_part_id, 
+			      bgl_record->node_use, 
+			      node_use);
 			bgl_record->node_use = node_use;
 			updated = 1;
 		}
@@ -319,7 +321,9 @@ extern int update_partition_list()
 			break;
 		} else if(bgl_record->state != state) {
 			debug("state of Partition %s was %d and now is %d",
-			      name, bgl_record->state, state);
+			      bgl_record->bgl_part_id, 
+			      bgl_record->state, 
+			      state);
 			/* 
 			   check to make sure partition went 
 			   through freeing correctly 

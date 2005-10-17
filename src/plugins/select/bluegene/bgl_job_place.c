@@ -103,6 +103,18 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		error("_find_best_partition_match: There is no bgl_list");
 		return SLURM_ERROR;
 	}
+	/* have to check job_ptr->checked to see which time the node 
+	   scheduler is looking to see if it is runnable.  If checked >=2 
+	   we want to fall through to tell the scheduler that it is runnable
+	   just not right now. 
+	*/
+	if(full_system_partition->job_running && job_ptr->checked<2) {
+		job_ptr->checked++;
+		debug("_find_best_partition_match none found "
+		      "full system running on partition %s.",
+		      full_system_partition->bgl_part_id);
+		return SLURM_ERROR;
+	}
 
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_CONN_TYPE, &conn_type);
@@ -119,20 +131,19 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 	/* this is where we should have the control flow depending on
 	 * the spec arguement */
 
-	itr = list_iterator_create(bgl_list);
 	*found_bgl_record = NULL;
-	
-	if(full_system_partition->job_running) {
-		debug("_find_best_partition_match none found");
-		return SLURM_ERROR;
-	}
 	
 	debug("number of partitions to check: %d", list_count(bgl_list));
      	itr = list_iterator_create(bgl_list);
 	while ((record = (bgl_record_t*) list_next(itr))) {
 		/* Check processor count */
-		if(record->job_running) {
-			job_running = 1;
+		/* have to check job_ptr->checked to see which time the node 
+		   scheduler is looking to see if it is runnable.  
+		   If checked >=2 we want to fall through to tell the 
+		   scheduler that it is runnable just not right now. 
+		*/
+		if(record->job_running && job_ptr->checked<2) {
+			job_running++;
 			debug("partition %s in use by %s", 
 			      record->bgl_part_id,
 			      record->user_name);
@@ -163,8 +174,8 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		 * check that the number of nodes is suitable
 		 */
  		if ((record->bp_count < min_nodes)
-		||  (max_nodes != 0 && record->bp_count > max_nodes)
-		||  (record->bp_count < target_size)) {
+		    ||  (max_nodes != 0 && record->bp_count > max_nodes)
+		    ||  (record->bp_count < target_size)) {
 			debug("partition %s node count not suitable",
 				record->bgl_part_id);
 			continue;
@@ -230,16 +241,12 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 				continue;	/* Not usable */
 		}
 		
-		/* mark as in use */ 
-		slurm_mutex_lock(&part_state_mutex);
-		record->job_running = 1;
-		slurm_mutex_unlock(&part_state_mutex);
-		
 		*found_bgl_record = record;
 		break;
 	}
 	list_iterator_destroy(itr);
-
+	job_ptr->checked++;
+			
 	/* set the bitmap and do other allocation activities */
 	if (*found_bgl_record) {
 		debug("_find_best_partition_match %s <%s>", 
