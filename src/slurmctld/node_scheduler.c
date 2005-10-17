@@ -525,6 +525,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 	for (j = min_feature; j <= max_feature; j++) {
 		for (i = 0; i < node_set_size; i++) {
+			bool pick_light_load = false;
 			if (node_set_ptr[i].feature != j)
 				continue;
 			if (!runable_ever) {
@@ -542,10 +543,27 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
                                 }
                         }
 			bit_and(node_set_ptr[i].my_bitmap, avail_node_bitmap);
-			if (shared)
+			if (shared) {
+#ifdef HAVE_BGL
+				/* Exclude nodes which have jobs in COMPLETING
+				 * state in order to insure Epilog completes 
+				 * before possibly scheduling another job to
+				 * the same bglblock. */
+				int ni;
 				bit_and(node_set_ptr[i].my_bitmap,
 					share_node_bitmap);
-                        else if (cr_enabled)
+				for (ni = 0; ni < node_record_count; ni++) {
+					if (node_record_table_ptr[ni].node_state
+					==  NODE_STATE_COMPLETING)
+						bit_clear(node_set_ptr[i].my_bitmap, ni);
+				}
+				/* pick_light_load = false;  Non-overlapping blocks */
+#else
+				bit_and(node_set_ptr[i].my_bitmap,
+					share_node_bitmap);
+				pick_light_load = true;
+#endif
+                        } else if (cr_enabled)
                                 bit_and(node_set_ptr[i].my_bitmap,
 				        partially_idle_node_bitmap);
                         else
@@ -575,20 +593,16 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			if (slurmctld_conf.fast_schedule
 			&&  (avail_cpus   < job_ptr->num_procs))
 				continue;	/* Keep accumulating CPUs */
-
-#ifndef HAVE_BGL
-			if (shared) {
+			if (pick_light_load) {
 				pick_code = _pick_best_load(job_ptr, 
 							    avail_bitmap, 
 							    min_nodes, 
 							    max_nodes);
 			} else
-#else
 				pick_code = select_g_job_test(job_ptr, 
 							      avail_bitmap, 
 							      min_nodes, 
 							      max_nodes);
-#endif
 
 			if (pick_code == SLURM_SUCCESS) {
 				if ((node_lim != INFINITE) && 
