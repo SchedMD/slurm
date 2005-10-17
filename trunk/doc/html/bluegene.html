@@ -72,7 +72,7 @@ SLURM considers each <i>base partition</i> as one node with 1024 processors.
 The <i>c-nodes</i> can execute only one process and thus are unable to execute both 
 the user's jobs and SLURM's <i>slurmd</i> daemon.
 Thus the <i>slurmd</i> daemon executes on one of the Blue Gene <i>Front End Nodes</i>. 
-This <i>slurmd</i> daemon provides (almost) all of the normal SLURM services 
+This single <i>slurmd</i> daemon provides (almost) all of the normal SLURM services 
 for every <i>base partition</i> on the system. </p>
 
 <h3>User Tools</h3>
@@ -86,7 +86,12 @@ Four new srun options are available:
 <i>--no-rotate</i> (disable rotation of geometry), 
 <i>--conn-type</i> (specify interconnect type between base partitions, mesh or torus), and 
 You can also continue to use the <i>--nodes</i> option with a minimum and (optionally) 
-maximum node count. The <i>--ntasks</i> option continues to be supported. 
+maximum node count. 
+The <i>--ntasks</i> option continues to be supported and may be required to 
+control resource allocations less than a full <i>base partition</i> in size, 
+if the system is configured to support them.  
+For example "srun -nntasks 256 ..." indicates that the job requires a minimum 
+of 256 processors or one quarter of a midplane to execute. 
 See the srun man pages for details. </p>
 
 <p>To reiterate: srun is used to submit a job script, but mpirun is used to launch the parallel tasks. 
