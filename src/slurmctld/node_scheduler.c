@@ -287,18 +287,8 @@ _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 	if (job_ptr->details && job_ptr->details->req_node_bitmap)
 		bit_or(bitmap, job_ptr->details->req_node_bitmap);
 	
-#ifdef HAVE_BGL
-	/* here to reset the bitmap for small parititons the
-	 * BGL plugin will do the sched. 
-	 */
-	bit_or(bitmap, light_load_bit);
-#endif
 	error_code = select_g_job_test(job_ptr, bitmap, 
 			min_nodes, max_nodes);
-#ifdef HAVE_BGL
-	FREE_NULL_BITMAP(light_load_bit);
-	return error_code;
-#endif
 
 	/* now try to use idle and lightly loaded nodes */
 	if (error_code) {
@@ -568,12 +558,15 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			&&  (avail_cpus   < job_ptr->num_procs))
 				continue;	/* Keep accumulating CPUs */
 
+#ifndef HAVE_BGL
 			if (shared) {
 				pick_code = _pick_best_load(job_ptr, avail_bitmap, 
 							min_nodes, max_nodes);
 			} else
+#else
 				pick_code = select_g_job_test(job_ptr, avail_bitmap, 
 						min_nodes, max_nodes);
+#endif
 
 			if (pick_code == SLURM_SUCCESS) {
 				if ((node_lim != INFINITE) && 
