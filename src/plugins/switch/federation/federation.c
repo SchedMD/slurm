@@ -68,6 +68,7 @@ char* fed_conf = NULL;
 extern bool fed_need_state_save;
 
 mode_t fed_umask;
+
 /*
  * Data structures specific to Federation 
  *
@@ -143,6 +144,9 @@ typedef struct {
  */
 fed_libstate_t *fed_state = NULL;
 pthread_mutex_t global_lock = PTHREAD_MUTEX_INITIALIZER;
+
+/* slurmd/slurmd_step global variables */
+hostlist_t adapter_list;
 static fed_cache_entry_t lid_cache[FED_MAXADAPTERS];
 
 
@@ -171,6 +175,8 @@ static void _strip_cr_nl(char *line);
 static void _strip_comments(char *line);
 static int _set_up_adapter(fed_adapter_t *fed_adapter, char *adapter_name);
 static int _parse_fed_file(hostlist_t *adapter_list);
+static void _init_adapter_cache(void);
+static int _fill_in_adapter_cache(void);
 
 /* The _lock() and _unlock() functions are used to lock/unlock a 
  * global mutex.  Used to serialize access to the global library 
@@ -194,6 +200,51 @@ _unlock(void)
 	while(err) {
 		err = pthread_mutex_unlock(&global_lock);
 	}
+}
+
+int
+fed_slurmctld_init(void)
+{
+	return SLURM_SUCCESS;
+}
+
+int
+fed_slurmd_init(void)
+{
+	/*
+	 * This is a work-around for the ntbl_* functions calling umask(0)
+	 */
+	fed_umask = umask(0077);
+	umask(fed_umask);
+
+	/*_init_adapter_cache();*/
+
+	adapter_list = hostlist_create(NULL);
+	if (_parse_fed_file(&adapter_list) != SLURM_SUCCESS)
+		return SLURM_FAILURE;
+	assert(hostlist_count(adapter_list) <= FED_MAXADAPTERS);
+	return SLURM_SUCCESS;
+}
+
+int
+fed_slurmd_step_init(void)
+{
+	/*
+	 * This is a work-around for the ntbl_* functions calling umask(0)
+	 */
+	fed_umask = umask(0077);
+	umask(fed_umask);
+
+	_init_adapter_cache();
+
+	adapter_list = hostlist_create(NULL);
+	if (_parse_fed_file(&adapter_list) != SLURM_SUCCESS)
+		return SLURM_FAILURE;
+	assert(hostlist_count(adapter_list) <= FED_MAXADAPTERS);
+
+	_fill_in_adapter_cache();
+
+	return SLURM_SUCCESS;
 }
 
 static char *
@@ -258,13 +309,13 @@ char *fed_sprint_jobinfo(fed_jobinfo_t *j, char *buf,
 
 /* The lid caching functions were created to avoid unnecessary
  * function calls each time we need to load network tables on a node.
- * fed_init_cache() simply initializes the cache to sane values and 
+ * _init_cache() simply initializes the cache to sane values and 
  * needs to be called before any other cache functions are called.
  *
- * Used by: slurmd
+ * Used by: slurmd/slurmd_step
  */
-void
-fed_init_cache(void)
+static void
+_init_adapter_cache(void)
 {
 	int i;
 	
@@ -273,13 +324,43 @@ fed_init_cache(void)
 		lid_cache[i].lid = -1;
 		lid_cache[i].network_id = -1;
 	}
-
-	/*
-	 * This is a work-around for the ntbl_* functions calling umask(0)
-	 */
-	fed_umask = umask(0077);
-	umask(fed_umask);
 }
+
+/* Use ntbl_adapter_resources to cache information about local adapters.
+ *
+ * Used by: slurmd_step
+ */
+static int
+_fill_in_adapter_cache(void)
+{
+	hostlist_iterator_t adapters;
+	char *adapter_name = NULL;
+	ADAPTER_RESOURCES res;
+	int num;
+	int rc;
+	int i;
+	
+	adapters = hostlist_iterator_create(adapter_list);
+	for (i = 0; adapter_name = hostlist_next(adapters); i++) {
+		rc = ntbl_adapter_resources(NTBL_VERSION, adapter_name, &res);
+		if (rc != NTBL_SUCCESS)
+			return SLURM_ERROR;
+
+		num = adapter_name[3] - (int)'0';
+		assert(num < FED_MAXADAPTERS);
+		lid_cache[num].lid = res.lid;
+		lid_cache[num].network_id = res.network_id;
+		strncpy(lid_cache[num].name, adapter_name, FED_ADAPTERNAME_LEN);
+
+		free(res.window_list);
+		free(adapter_name);
+	}
+	hostlist_iterator_destroy(adapters);
+	umask(fed_umask);
+
+	return SLURM_SUCCESS;
+}
+
 
 /* Cache the lid and network_id of a given adapter.  Ex:  sni0 with lid 10
  * gets cached in array index 0 with a lid = 10 and a name = sni0.
@@ -508,43 +589,29 @@ static int _parse_fed_file(hostlist_t *adapter_list)
  * For all that exist, record vital adapter info plus status for all windows
  * available on that adapter.  Cache lid to adapter name mapping locally.
  *
- * Is not thread-safe.
- * 
  * Used by: slurmd
  */
 static int 
 _get_adapters(fed_adapter_t *list, int *count)
 {
-	static hostlist_t adapter_list = NULL;
-	static hostlist_iterator_t adapter_iter;
-	int i = 0;
+	hostlist_iterator_t adapter_iter;
 	char *adapter = NULL;
+	int i;
 
 	assert(list != NULL);
+	assert(adapter_list != NULL);
 		
-	if (adapter_list == NULL || hostlist_is_empty(adapter_list)) {
-		int rc; 
-		adapter_list = hostlist_create(NULL);
-		rc = _parse_fed_file(&adapter_list);
-		if (rc != SLURM_SUCCESS)
-			return rc;
-		assert(hostlist_count(adapter_list) <= FED_MAXADAPTERS);
-		adapter_iter = hostlist_iterator_create(adapter_list);
-	}
-	i=0;
-	*count = hostlist_count(adapter_list);
-	info("Number of adapters is = %d", *count);
-	assert(*count > 0);
-	//list = xmalloc(sizeof(fed_adapter_t) * (*count));
-	while (adapter = hostlist_next(adapter_iter)) {
-		if(_set_up_adapter(list + i, adapter)
-		   == SLURM_ERROR)
+	adapter_iter = hostlist_iterator_create(adapter_list);
+	for (i = 0; adapter = hostlist_next(adapter_iter); i++) {
+		if(_set_up_adapter(list + i, adapter) == SLURM_ERROR)
 			fatal("Failed to set up adapter %s.", adapter);
 		free(adapter);
-		i++;
 	}
-	hostlist_iterator_reset(adapter_iter);
+	hostlist_iterator_destroy(adapter_iter);
 
+	assert(i > 0);
+	*count = i;
+	info("Number of adapters is = %d", *count);
 	
 	if(!*count)
 		slurm_seterrno_ret(ENOADAPTER);

@@ -97,6 +97,9 @@ typedef struct slurm_switch_ops {
 	int          (*step_allocated)    ( switch_jobinfo_t jobinfo,
 					        char *nodelist );
 	int          (*state_clear)       ( void );
+	int          (*slurmctld_init)    ( void );
+	int          (*slurmd_init)       ( void );
+	int          (*slurmd_step_init)  ( void );
 } slurm_switch_ops_t;
 
 struct slurm_switch_context {
@@ -200,7 +203,10 @@ _slurm_switch_get_ops( slurm_switch_context_t c )
 		"switch_p_sprintf_node_info",
 		"switch_p_job_step_complete",
 		"switch_p_job_step_allocated",
-		"switch_p_libstate_clear"
+		"switch_p_libstate_clear",
+		"switch_p_slurmctld_init",
+		"switch_p_slurmd_init",
+		"switch_p_slurmd_step_init"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -550,4 +556,28 @@ extern int switch_g_job_step_allocated(switch_jobinfo_t jobinfo,
 		return SLURM_ERROR;
 
 	return (*(g_context->ops.step_allocated))( jobinfo, nodelist );
+}
+
+extern int switch_g_slurmctld_init(void)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_context->ops.slurmctld_init)) ();
+}
+
+extern int switch_g_slurmd_init(void)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_context->ops.slurmd_init)) ();
+}
+
+extern int switch_g_slurmd_step_init(void)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_context->ops.slurmd_step_init)) ();
 }

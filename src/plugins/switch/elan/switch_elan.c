@@ -806,3 +806,18 @@ extern int switch_p_job_step_allocated(switch_jobinfo_t jobinfo, char *nodelist)
 {
 	return qsw_restore_jobinfo((qsw_jobinfo_t) jobinfo);
 }
+
+extern int switch_p_slurmctld_init( void )
+{
+	return SLURM_SUCCESS;
+}
+
+extern int switch_p_slurmd_init( void )
+{
+	return SLURM_SUCCESS;
+}
+
+extern int switch_p_slurmd_step_init( void )
+{
+	return SLURM_SUCCESS;
+}
