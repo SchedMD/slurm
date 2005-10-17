@@ -186,7 +186,7 @@ static void _sync_agent(bgl_update_t *bgl_update_ptr)
 		error("No partition %s", bgl_update_ptr->bgl_part_id);
 		return;
 	}
-		
+	bgl_record->job_running = 1;				
 	if(bgl_record->state==RM_PARTITION_READY) {
 		if(bgl_record->user_uid != bgl_update_ptr->uid) {
 			slurm_mutex_lock(&part_state_mutex);
@@ -228,7 +228,6 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 	int retries;
 	
 	bgl_record = find_bgl_record(bgl_update_ptr->bgl_part_id);
-					
 	if(!bgl_record) {
 		error("partition %s not found in bgl_list",
 		      bgl_update_ptr->bgl_part_id);
@@ -238,7 +237,7 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 	slurm_mutex_lock(&part_state_mutex);
 	bgl_record->job_running = 1;
 	slurm_mutex_unlock(&part_state_mutex);
-		
+			
 	if(bgl_record->state == RM_PARTITION_DEALLOCATING) {
 		debug("Partition is in Deallocating state, waiting for free.");
 		bgl_free_partition(bgl_record);
@@ -751,6 +750,9 @@ int term_job(struct job_record *job_ptr)
 			return rc;
 		}
 		bgl_record = find_bgl_record(part_id);
+		info("Finished job %u in BGL partition %s",
+		     job_ptr->job_id, 
+		     bgl_recordr->bgl_part_id);
 		bgl_record->state = RM_PARTITION_FREE;
 		bgl_record->job_running = 0;
 		last_bgl_update = time(NULL);		
