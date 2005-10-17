@@ -752,7 +752,7 @@ int term_job(struct job_record *job_ptr)
 		bgl_record = find_bgl_record(part_id);
 		info("Finished job %u in BGL partition %s",
 		     job_ptr->job_id, 
-		     bgl_recordr->bgl_part_id);
+		     bgl_record->bgl_part_id);
 		bgl_record->state = RM_PARTITION_FREE;
 		bgl_record->job_running = 0;
 		last_bgl_update = time(NULL);		
