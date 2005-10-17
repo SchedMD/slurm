@@ -85,7 +85,7 @@ static void _setup_spawn_io(slurmd_job_t *job)
 	srun = list_peek(job->sruns);
 	xassert(srun);
 	if ((fd = (int) slurm_open_stream(&srun->ioaddr)) < 0) {
-		error("connect io: %m");
+		error("connect spawn io stream: %m");
 		exit(1);
 	}
 
@@ -102,7 +102,8 @@ static void _setup_spawn_io(slurmd_job_t *job)
 		exit(1);
 	}
 		
-	(void) close(fd);
+	if (fd > 2)
+		(void) close(fd);
 }
 
 /* Close write end of stdin (at the very least)
