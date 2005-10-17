@@ -638,6 +638,7 @@ extern int create_static_partitions(List part_list)
 			bgl_record->geo[X], bgl_record->geo[Y], 
 			bgl_record->geo[Z]);
 	bgl_record->quarter = -1;
+	full_system_partition = bgl_record;
 	bgl_record->full_partition = 1;
        	if(bgl_found_part_list) {
 		itr = list_iterator_create(bgl_found_part_list);
@@ -736,9 +737,15 @@ no_total:
 	if(bgl_list) {
 		itr = list_iterator_create(bgl_list);
 		while ((bgl_record = (bgl_record_t*) list_next(itr)) != NULL) {
+#ifdef HAVE_BGL_FILES
 			if ((bgl_record->geo[X] == DIM_SIZE[X])
-			    && (bgl_record->geo[Y] == DIM_SIZE[Y])
-			    && (bgl_record->geo[Z] == DIM_SIZE[Z])) {
+			&&  (bgl_record->geo[Y] == DIM_SIZE[Y])
+			&&  (bgl_record->geo[Z] == DIM_SIZE[Z])) {
+#else
+			if ((bgl_record->geo[X] == max_dim[X]+1)
+			&&  (bgl_record->geo[Y] == max_dim[Y]+1)
+			&&  (bgl_record->geo[Z] == max_dim[Z]+1)) {
+#endif
 				debug("full partiton = %s.", 
 				      bgl_record->bgl_part_id);
 				bgl_record->full_partition = 1;
