@@ -93,6 +93,7 @@ main (int argc, char *argv[])
 	//log_alter(conf->log_opts, 0, NULL);
 	log_init(argv[0],conf->log_opts, LOG_DAEMON, conf->logfile);
 	g_slurmd_jobacct_init(conf->cf.job_acct_parameters);
+	switch_g_slurmd_step_init();
 
 	/* receive len of packed cli from main slurmd */
 	if((rc = read(STDIN_FILENO, &len, sizeof(int))) == -1) {

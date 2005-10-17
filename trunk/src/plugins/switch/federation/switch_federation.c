@@ -1,4 +1,4 @@
-/*****************************************************************************\
+/***************************************************************************** \
  **  switch_federation.c - Library routines for initiating jobs on IBM 
  **	Federation
  **  $Id$
@@ -120,7 +120,6 @@ const uint32_t plugin_version   = 100;
 int init ( void )
 {
 	verbose("%s loaded", plugin_name);
-	fed_init_cache();
 
 	return SLURM_SUCCESS;
 }
@@ -128,6 +127,21 @@ int init ( void )
 int fini ( void )
 {
 	return SLURM_SUCCESS;
+}
+
+int switch_p_slurmctld_init( void )
+{
+	return fed_slurmctld_init();
+}
+
+int switch_p_slurmd_init( void )
+{
+	return fed_slurmd_init();
+}
+
+int switch_p_slurmd_step_init( void )
+{
+	return fed_slurmd_step_init();
 }
 
 /*
