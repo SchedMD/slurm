@@ -2769,8 +2769,10 @@ int hostset_index(hostset_t set, const char *host, int jobid)
 
         for (j = 0; j < nhosts; j++) {
                 this_host = hostlist_next(iterator);
-                debug3(" cons_res host_index %u j=%d host %s this_host %s", 
-                      jobid, j, host, this_host);
+                /* Left in here for debugging purposes
+		debug3(" cons_res host_index %u j=%d host %s this_host %s", 
+		        jobid, j, host, this_host); 
+		*/
                 if (strcmp(host, this_host) == 0) {
                         retval = j; 
                         free(this_host);
