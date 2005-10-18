@@ -401,7 +401,9 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool runable_ever  = false;	/* Job can ever run */
 	bool runable_avail = false;	/* Job can run with available nodes */
         int cr_enabled = 0;
-
+#ifdef HAVE_BGL
+	uint16_t checked = 0;
+#endif
 	if (node_set_size == 0) {
 		info("_pick_best_nodes: empty node set for selection");
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
@@ -699,7 +701,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		info("_pick_best_nodes: job never runnable");
 	}
-	job_ptr->checked = 0;
+#ifdef HAVE_BGL
+	select_g_set_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_CHECKED, &checked);
+#endif	
 	if (error_code == SLURM_SUCCESS)
 		error_code = ESLURM_NODES_BUSY;
 	return error_code;
