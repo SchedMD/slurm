@@ -131,9 +131,10 @@ expect {
 	}
 }
 log_user 1
-if {$matches < 40} {
+set desired_tasks [expr $task_cnt * 2 / 3] 
+if {$matches < $desired_tasks} {
 	send_user "\nFAILURE: only started job steps $matches\n"
-	send_user "  We expected at least 40 and possibly hundreds\n"
+	send_user "  We expected at least $desired_tasks and possibly hundreds\n"
 	set exit_code 1
 } else {
 	send_user "\nwe found $matches job steps\n"
