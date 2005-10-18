@@ -699,6 +699,7 @@ extern int start_job(struct job_record *job_ptr)
 			if ((!found_record->bgl_part_id)
 			    ||  (strcmp(part_id, found_record->bgl_part_id)))
 				continue;
+			found_record->job_running = 1;
 			found_record->node_use = node_use;
 			found_record->state = RM_PARTITION_READY;
 			last_bgl_update = time(NULL);
