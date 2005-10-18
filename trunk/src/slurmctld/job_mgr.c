@@ -3696,6 +3696,20 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	if (job_ptr == NULL)
 		return true;
 
+	/* There is a potential race condition this handles.
+	 * If slurmctld cold-starts while slurmd keeps running, 
+	 * slurmd could notify slurmctld of a job epilog completion 
+	 * before getting synced up with slurmctld state. If 
+	 * a new job arrives and the job_id is reused, we 
+	 * could try to note the termination of a job that 
+	 * hasn't really started. Very rare obviously. */
+	if ((job_ptr == JOB_PENDING)
+	||  (job_ptr->node_bitmap == NULL)) {
+		error("Epilog complete request for non-running job %u, "
+			"slurmctld and slurmd out of sync", job_id);
+		return false;
+	}
+
 #ifdef HAVE_FRONT_END		/* operate only on front-end node */
 {
 	int i;
