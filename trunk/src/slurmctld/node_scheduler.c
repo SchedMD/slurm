@@ -889,7 +889,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 		error_code = SLURM_SUCCESS;
 		goto cleanup;
 	}
-	info("starting job %u", job_ptr->job_id);
+	
 	if (select_g_job_begin(job_ptr) != SLURM_SUCCESS) {
 		/* Leave job queued, something is hosed */
 		error("select_g_job_begin(%u): %m", job_ptr->job_id);
