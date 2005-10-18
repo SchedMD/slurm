@@ -34,9 +34,9 @@ BridgeAPIVerbose=0
 # Define the static partitions (bglblocks)
 #
 # Nodes: The base partitions (midplanes) in the bglblock using XYZ coordinates
-# Type:  Connection type "MESH" or "TORUS", default is "TORUS"
-# Split: Divide a midplane into multiple bglblocks, 
-#        if non-zero creates 4 bglblocks each containing 128 c-nodes
+# Type:  Connection type "MESH" or "TORUS" or "SMALL", default is "TORUS" 
+#        Type SMALL will divide a midplane into multiple bglblocks
+#        4 bglblocks each containing 128 c-nodes
 #        (smaller bglblocks are presently not supported)
 # 
 # IMPORTANT NOTES: 
@@ -55,4 +55,4 @@ Nodes=bgl[300x313] Type=TORUS          # 1x2x4 =  8
 Nodes=bgl[320x323] Type=TORUS          # 1x1x4 =  4
 Nodes=bgl[330x331] Type=TORUS          # 1x1x2 =  2
 Nodes=bgl[332x332] Type=TORUS          # 1x1x1 =  1
-Nodes=bgl[333x333] Type=TORUS Split=1  # 1x1x1 =  1, in four bglblocks
+Nodes=bgl[333x333] Type=SMALL          # 1x1x1 =  1, in four bglblocks

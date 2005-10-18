@@ -118,7 +118,7 @@ static int _create_allocation(char *com, List allocated_partitions)
 		if(!strncasecmp(com+i, "mesh", 4)) {
 			request->conn_type=MESH;
 			i+=4;
-		} else if(!strncasecmp(com+i, "split", 5)) {
+		} else if(!strncasecmp(com+i, "small", 5)) {
 			request->conn_type = SMALL;
 			i+=5;
 		} else if(!strncasecmp(com+i, "rotate", 6)) {

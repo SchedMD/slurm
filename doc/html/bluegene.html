@@ -409,9 +409,9 @@ BridgeAPIVerbose=0
 # Define the static partitions (bglblocks)
 #
 # Nodes: The base partitions (midplanes) in the bglblock using XYZ coordinates
-# Type:  Connection type "MESH" or "TORUS", default is "TORUS"
-# Split: Divide a midplane into multiple bglblocks,
-#        if non-zero creates 4 bglblocks each containing 128 c-nodes
+# Type:  Connection type "MESH" or "TORUS" or "SMALL", default is "TORUS" 
+#        Type SMALL will divide a midplane into multiple bglblocks
+#        4 bglblocks each containing 128 c-nodes
 #        (smaller bglblocks are presently not supported)
 #
 # IMPORTANT NOTES:
@@ -425,17 +425,17 @@ BridgeAPIVerbose=0
 ###############################################################################
 # volume = 1x1x1 = 1
 Nodes=bgl[000x000] Type=TORUS         # 1x1x1 =  1 midplane
-Nodes=bgl[001x001] Type=TORUS Split=4 # 1x1x1 =  1 midplane, in four bglblocks
+Nodes=bgl[001x001] Type=SMALL         # 1x1x1 =  1 midplane, in four bglblocks
 
 </pre></p>
 
 <p>The above <i>bluegene.conf</i> file defines multiple bglblocks to be 
-created in a single midplane (see the "Split" option). 
+created in a single midplane (see the "SMALL" option). 
 Note that you can not presently control how many bglblocks are created 
 in a midplane, it will be at most four. 
 Using this mechanism, up to eight independent jobs can be executed 
 simultaneously on a one-rack Blue Gene system.
-If using split midplanes or "small bglblocks", the SLURM partition containing 
+If using small midplanes or "small bglblocks", the SLURM partition containing 
 them as defined in <i>slurm.conf</i> must have the parameter 
 <i>Shared=force</i> to enable scheduling of multiple jobs on what 
 SLURM considers a single node.</p>
