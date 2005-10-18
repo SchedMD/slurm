@@ -186,7 +186,8 @@ enum select_data_type {
 	SELECT_DATA_ROTATE,	/* data-> uint16_t rotate */
 	SELECT_DATA_NODE_USE,	/* data-> uint16_t node_use */
 	SELECT_DATA_CONN_TYPE,	/* data-> uint16_t connection_type */
-	SELECT_DATA_PART_ID	/* data-> char bgl_part_id */
+	SELECT_DATA_PART_ID,	/* data-> char bgl_part_id */
+	SELECT_DATA_CHECKED	/* data-> uint16_t checked */
 };
 
 enum select_print_mode {

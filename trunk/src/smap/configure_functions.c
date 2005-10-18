@@ -114,9 +114,13 @@ static int _create_allocation(char *com, List allocated_partitions)
 		while(com[i-1]!=' ' && i<len) {
 			i++;
 		}
+		
 		if(!strncasecmp(com+i, "mesh", 4)) {
 			request->conn_type=MESH;
 			i+=4;
+		} else if(!strncasecmp(com+i, "split", 5)) {
+			request->conn_type = SMALL;
+			i+=5;
 		} else if(!strncasecmp(com+i, "rotate", 6)) {
 			request->rotate=true;
 			i+=6;
@@ -134,7 +138,9 @@ static int _create_allocation(char *com, List allocated_partitions)
 		}
 		
 	}
-	
+
+		
+
 	if(i2<0) {
 		memset(error_string,0,255);
 		sprintf(error_string, 
@@ -610,9 +616,15 @@ static int _save_allocation(char *com, List allocated_partitions)
 			memset(save_string,0,255);
 			if(allocated_part->request->conn_type == TORUS)
 				conn_type = "TORUS";
-			else
+			else if(allocated_part->request->conn_type == MESH)
 				conn_type = "MESH";
+			else
+				conn_type = "SMALL";
 			
+			sprintf(save_string, "Nodes=bgl[%s] "
+				"Type=%s\n", 
+				allocated_part->request->save_name, 
+				conn_type);
 			fputs (save_string,file_ptr);
 		}
 		fclose (file_ptr);
@@ -658,9 +670,12 @@ static void _print_text_command(allocated_part_t *allocated_part)
 	if(allocated_part->request->conn_type==TORUS) 
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "TORUS");
-	else
+	else if (allocated_part->request->conn_type==MESH)
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "MESH");	
+			  pa_system_ptr->xcord, "MESH");
+	else 
+		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+			  pa_system_ptr->xcord, "SMALL");
 	pa_system_ptr->xcord += 7;
 				
 	if(allocated_part->request->force_contig)

@@ -193,7 +193,6 @@ extern void pack_partition(bgl_record_t *bgl_record, Buf buffer)
 	pack16((uint16_t)bgl_record->state, buffer);
 	pack16((uint16_t)bgl_record->conn_type, buffer);
 	pack16((uint16_t)bgl_record->node_use, buffer);	
-	pack16((uint16_t)bgl_record->cnodes_per_bp, buffer);	
 	pack32(bgl_record->quarter, buffer);	
 }
 

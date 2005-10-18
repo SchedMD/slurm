@@ -1523,7 +1523,7 @@ static int _parse_bgl_spec(char *in_line)
 	char *blrts_image = NULL,   *linux_image = NULL;
 	char *mloader_image = NULL, *ramdisk_image = NULL;
 	char *api_file = NULL;
-	int pset_num=-1, api_verb=-1, node_split=-1;
+	int pset_num=-1, api_verb=-1;
 	bgl_record_t *bgl_record = NULL;
 	bgl_record_t *small_bgl_record = NULL;
 	pa_node_t *pa_node = NULL;
@@ -1542,7 +1542,6 @@ static int _parse_bgl_spec(char *in_line)
 				  "Nodes=", 's', &nodes,
 				  "RamDiskImage=", 's', &ramdisk_image,
 				  "Type=", 's', &conn_type,
-				  "Split=", 'd', &node_split,
 				  "END");
 
 	if (error_code)
@@ -1587,44 +1586,47 @@ static int _parse_bgl_spec(char *in_line)
 	
 	bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
 	
-	bgl_record->user_name = xstrdup(slurmctld_conf.slurm_user_name);
+	bgl_record->user_name = 
+		xstrdup(slurmctld_conf.slurm_user_name);
 	if((pw_ent = getpwnam(bgl_record->user_name)) == NULL) {
 		error("getpwnam(%s): %m", bgl_record->user_name);
 	} else {
 		bgl_record->user_uid = pw_ent->pw_uid;
 	}
-	bgl_record->bgl_part_list = list_create(NULL);			
+	bgl_record->bgl_part_list = list_create(NULL);		
 	bgl_record->hostlist = hostlist_create(NULL);
 	/* bgl_record->boot_state = 0; 	Implicit */
 	/* bgl_record->state = 0;	Implicit */
-		
+	
 	bgl_record->nodes = xstrdup(nodes);
 	xfree(nodes);	/* pointer moved, nothing left to xfree */
 	
 	_process_nodes(bgl_record);
 	if (!conn_type || !strcasecmp(conn_type,"TORUS"))
 		bgl_record->conn_type = SELECT_TORUS;
-	else
+	else if(!strcasecmp(conn_type,"MESH"))
 		bgl_record->conn_type = SELECT_MESH;
-	
+	else
+		bgl_record->conn_type = SELECT_SMALL;
 	xfree(conn_type);
-
+	
 	bgl_record->node_use = SELECT_COPROCESSOR_MODE;
 	bgl_record->cnodes_per_bp = procs_per_node;
 	bgl_record->quarter = -1;
-
-	/* Automatically create 4-way split if node_split set > 0 in bluegene.conf
-	 * NOTE: Value does not control how many bglblocks are created */
-	if(node_split > 0) {
-		
+	
+	if(bgl_record->conn_type != SELECT_SMALL)
+		list_append(bgl_list, bgl_record);
+	else {
+		/* Automatically create 4-way split if 
+		 * conn_type == SELECT_SMALL in bluegene.conf
+		 */
 		itr = list_iterator_create(bgl_record->bgl_part_list);
 		while ((pa_node = list_next(itr)) != NULL) {
 			for(i=0; i<4 ; i++) {
-				small_bgl_record = 
-					(bgl_record_t*) 
+				small_bgl_record = (bgl_record_t*) 
 					xmalloc(sizeof(bgl_record_t));
 				list_append(bgl_list, small_bgl_record);
-
+				
 				small_bgl_record->user_name = 
 					xstrdup(bgl_record->user_name);
 				small_bgl_record->user_uid = 
@@ -1651,17 +1653,8 @@ static int _parse_bgl_spec(char *in_line)
 		}
 		list_iterator_destroy(itr);
 		destroy_bgl_record(bgl_record);
-	} else
-		list_append(bgl_list, bgl_record);
-	
+	} 
 
-no_split:
-#if _DEBUG
-	debug("_parse_bgl_spec: added nodes=%s type=%s use=%s", 
-	      bgl_record->nodes, 
-	      convert_conn_type(bgl_record->conn_type), 
-	      convert_node_use(bgl_record->node_use));
-#endif
 	return SLURM_SUCCESS;
 }
 

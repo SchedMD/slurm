@@ -93,23 +93,30 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 	bgl_record_t* record = NULL;
 	int i;
 	uint16_t req_geometry[PA_SYSTEM_DIMENSIONS];
-	uint16_t conn_type, node_use, rotate, target_size = 1;
+	uint16_t conn_type, rotate, target_size = 1, checked;
 	uint32_t req_procs = job_ptr->num_procs;
 	int rot_cnt = 0;
 	uint32_t proc_cnt;
 	int job_running = 0;
-
+       
 	if(!bgl_list) {
 		error("_find_best_partition_match: There is no bgl_list");
 		return SLURM_ERROR;
 	}
-	/* have to check job_ptr->checked to see which time the node 
+	
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_CHECKED, &checked);
+	
+	/* have to check checked to see which time the node 
 	   scheduler is looking to see if it is runnable.  If checked >=2 
 	   we want to fall through to tell the scheduler that it is runnable
 	   just not right now. 
 	*/
-	if(full_system_partition->job_running && job_ptr->checked<2) {
-		job_ptr->checked++;
+	if(full_system_partition->job_running && checked<2) {
+		checked++;
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+				     SELECT_DATA_CHECKED, &checked);
+	
 		debug("_find_best_partition_match none found "
 		      "full system running on partition %s.",
 		      full_system_partition->bgl_part_id);
@@ -120,8 +127,6 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		SELECT_DATA_CONN_TYPE, &conn_type);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_GEOMETRY, req_geometry);
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-		SELECT_DATA_NODE_USE, &node_use);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_ROTATE, &rotate);
 	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++)
@@ -137,12 +142,12 @@ static int _find_best_partition_match(struct job_record* job_ptr,
      	itr = list_iterator_create(bgl_list);
 	while ((record = (bgl_record_t*) list_next(itr))) {
 		/* Check processor count */
-		/* have to check job_ptr->checked to see which time the node 
+		/* have to check checked to see which time the node 
 		   scheduler is looking to see if it is runnable.  
 		   If checked >=2 we want to fall through to tell the 
 		   scheduler that it is runnable just not right now. 
 		*/
-		if(record->job_running && job_ptr->checked<2) {
+		if(record->job_running && checked<2) {
 			job_running++;
 			debug("partition %s in use by %s", 
 			      record->bgl_part_id,
@@ -245,8 +250,10 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		break;
 	}
 	list_iterator_destroy(itr);
-	job_ptr->checked++;
-			
+	checked++;
+	select_g_set_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_CHECKED, &checked);
+				
 	/* set the bitmap and do other allocation activities */
 	if (*found_bgl_record) {
 		debug("_find_best_partition_match %s <%s>", 

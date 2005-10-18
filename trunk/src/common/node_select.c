@@ -99,15 +99,19 @@ static pthread_mutex_t		g_select_context_lock =
 
 #ifdef HAVE_BGL		/* node selection specific logic */
 #  define JOBINFO_MAGIC 0x83ac
-    struct select_jobinfo {
+struct select_jobinfo {
 	uint16_t geometry[SYSTEM_DIMENSIONS];	/* node count in various
-				 * dimensions, e.g. X, Y, and Z */
+						 * dimensions, e.g. X, Y, and Z */
 	uint16_t conn_type;	/* see enum connection_type */
 	uint16_t rotate;	/* permit geometry rotation if set */
 	uint16_t node_use;	/* see enum node_use_type */
 	char *bgl_part_id;	/* Blue Gene partition ID */
 	uint16_t magic;		/* magic number */
-    };
+	uint32_t checked;       /* for bgl to tell plugin it already 
+				   checked and all partitions were full
+				   looking for best choice now */
+	
+};
 #endif
 
 /*
@@ -508,27 +512,30 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 	}
 
 	switch (data_type) {
-		case SELECT_DATA_GEOMETRY:
-			for (i=0; i<SYSTEM_DIMENSIONS; i++)
-				jobinfo->geometry[i] = tmp_16[i];
-			break;
-		case SELECT_DATA_ROTATE:
-			jobinfo->rotate = *tmp_16;
-			break;
-		case SELECT_DATA_NODE_USE:
-			jobinfo->node_use = *tmp_16;
-			break;
-		case SELECT_DATA_CONN_TYPE:
-			jobinfo->conn_type = *tmp_16;
-			break;
-		case SELECT_DATA_PART_ID:
-			/* we xfree() any preset value to avoid a memory leak */
-			xfree(jobinfo->bgl_part_id);
-			jobinfo->bgl_part_id = xstrdup(tmp_char);
-			break;
-		default:
-			debug("select_g_set_jobinfo data_type %d invalid", 
-				data_type);
+	case SELECT_DATA_GEOMETRY:
+		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+			jobinfo->geometry[i] = tmp_16[i];
+		break;
+	case SELECT_DATA_ROTATE:
+		jobinfo->rotate = *tmp_16;
+		break;
+	case SELECT_DATA_NODE_USE:
+		jobinfo->node_use = *tmp_16;
+		break;
+	case SELECT_DATA_CONN_TYPE:
+		jobinfo->conn_type = *tmp_16;
+		break;
+	case SELECT_DATA_PART_ID:
+		/* we xfree() any preset value to avoid a memory leak */
+		xfree(jobinfo->bgl_part_id);
+		jobinfo->bgl_part_id = xstrdup(tmp_char);
+		break;
+	case SELECT_DATA_CHECKED:
+		jobinfo->checked = *tmp_16;
+		break;		
+	default:
+		debug("select_g_set_jobinfo data_type %d invalid", 
+		      data_type);
 	}
 
 	return rc;
@@ -553,29 +560,32 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 	}
 
 	switch (data_type) {
-		case SELECT_DATA_GEOMETRY:
-			for (i=0; i<SYSTEM_DIMENSIONS; i++)
-				tmp_16[i] = jobinfo->geometry[i];
-			break;
-		case SELECT_DATA_ROTATE:
-			*tmp_16 = jobinfo->rotate;
-			break;
-		case SELECT_DATA_NODE_USE:
-			*tmp_16 = jobinfo->node_use;
-			break;
-		case SELECT_DATA_CONN_TYPE:
-			*tmp_16 = jobinfo->conn_type;
-			break;
-		case SELECT_DATA_PART_ID:
-			if ((jobinfo->bgl_part_id == NULL)
-			||  (jobinfo->bgl_part_id[0] == '\0'))
-				*tmp_char = NULL;
-			else
-				*tmp_char = xstrdup(jobinfo->bgl_part_id);
-			break;
-		default:
-			debug("select_g_get_jobinfo data_type %d invalid", 
-				data_type);
+	case SELECT_DATA_GEOMETRY:
+		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+			tmp_16[i] = jobinfo->geometry[i];
+		break;
+	case SELECT_DATA_ROTATE:
+		*tmp_16 = jobinfo->rotate;
+		break;
+	case SELECT_DATA_NODE_USE:
+		*tmp_16 = jobinfo->node_use;
+		break;
+	case SELECT_DATA_CONN_TYPE:
+		*tmp_16 = jobinfo->conn_type;
+		break;
+	case SELECT_DATA_PART_ID:
+		if ((jobinfo->bgl_part_id == NULL)
+		    ||  (jobinfo->bgl_part_id[0] == '\0'))
+			*tmp_char = NULL;
+		else
+			*tmp_char = xstrdup(jobinfo->bgl_part_id);
+		break;
+	case SELECT_DATA_CHECKED:
+		*tmp_16 = jobinfo->checked;
+		break;
+	default:
+		debug("select_g_get_jobinfo data_type %d invalid", 
+		      data_type);
 	}
 
 	return rc;
@@ -767,8 +777,6 @@ static int _unpack_node_info(bgl_info_record_t *bgl_info_record, Buf buffer)
 	bgl_info_record->conn_type = (int) uint16_tmp;
 	safe_unpack16(&uint16_tmp, buffer);
 	bgl_info_record->node_use = (int) uint16_tmp;
-	safe_unpack16(&uint16_tmp, buffer);
-	bgl_info_record->cnodes_per_bp = (int) uint16_tmp;
 	safe_unpack32(&uint32_tmp, buffer);
 	bgl_info_record->quarter = (int) uint32_tmp;
 
