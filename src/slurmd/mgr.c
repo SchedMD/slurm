@@ -563,7 +563,7 @@ _job_mgr(slurmd_job_t *job)
 	int rc = 0;
 
 	job->jmgr_pid = getpid();
-	debug3("Entered job_mgr for %d.%d pid=%lu",
+	debug3("Entered job_mgr for %u.%u pid=%lu",
 	       job->jobid, job->stepid, (unsigned long) job->jmgr_pid);
 	
 	if (shm_init(false) < 0)
