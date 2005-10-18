@@ -88,7 +88,7 @@ Partition state: \fBup\fR or \fBdown\fR.
 BGL Block Name\fR.
 .TP
 \fBCONN\fR
-Connection Type: \fBTORUS\fR or \fBMESH\fR.
+Connection Type: \fBTORUS\fR or \fBMESH\fR or \fBSMALL\fR (for small blocks).
 .TP
 \fBID\fR
 Key to identify the nodes associated with this entity in the node chart.
@@ -188,7 +188,7 @@ blocks.
 .I "BGL_BLOCK" BGL Block Name.
 .TP
 .I "CONN"
-Connection Type: \fBTORUS\fR or \fBMESH\fR.
+Connection Type: \fBTORUS\fR or \fBMESH\fR or \fBSMALL\fR (for small blocks).
 .TP
 .I "ID"
 Key to identify the nodes associated with this entity in the node chart.
@@ -219,9 +219,14 @@ and their values are case insensitive (e.g. "MESH" and "mesh" are equivalent).
 
 .RS
 .TP 10
-.I \fBConnection = MESH | TORUS\fR
+.I \fBConnection = MESH | TORUS | SMALL\fR
 Identify how the nodes should be connected in network. 
 The default value is TORUS.
+.TP
+.I \fBSmall\fR
+Equivalent to "Connection=Small".
+If a small connection is specified the midplanes chosen will create 4
+smaller partitions within the midplane each consisting of 128 c-nodes.
 .TP
 .I \fBMesh\fR
 Equivalent to "Connection=Mesh".
