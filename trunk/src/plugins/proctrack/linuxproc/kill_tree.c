@@ -55,7 +55,6 @@ typedef struct xppid_s {
 
 #define MAX_NAME_LEN 64
 #define HASH_LEN 64
-static xppid_t **hashtbl;
 
 #define GET_HASH_IDX(ppid) ((ppid)%HASH_LEN)
 
@@ -80,7 +79,7 @@ static xppid_t *_alloc_ppid(pid_t ppid, pid_t pid, xppid_t *next)
 	return new;
 }
 
-static void _push_to_hashtbl(pid_t ppid, pid_t pid)
+static void _push_to_hashtbl(pid_t ppid, pid_t pid, xppid_t **hashtbl)
 {
 	int idx;
 	xppid_t *ppids, *newppid;
@@ -100,17 +99,18 @@ static void _push_to_hashtbl(pid_t ppid, pid_t pid)
 	hashtbl[idx] = newppid;    
 }
 
-static void _build_hashtbl()
+static xppid_t **_build_hashtbl()
 {
 	DIR *dir;
 	struct dirent *de;
 	char path[MAX_NAME_LEN], *endptr, *num, rbuf[1024];
 	int fd;
 	long pid, ppid;
+	xppid_t **hashtbl;
 
 	if ((dir = opendir("/proc")) == NULL) {
 		error("opendir(/proc): %m");
-		return;
+		return NULL;
 	}
 
 	hashtbl = (xppid_t **)xmalloc(HASH_LEN * sizeof(xppid_t *));
@@ -133,12 +133,13 @@ static void _build_hashtbl()
 			continue;
 		}
 		close(fd);
-		_push_to_hashtbl((pid_t)ppid, (pid_t)pid);
+		_push_to_hashtbl((pid_t)ppid, (pid_t)pid, hashtbl);
 	}
 	closedir(dir);
+	return hashtbl;
 }
 
-static void _destroy_hashtbl()
+static void _destroy_hashtbl(xppid_t **hashtbl)
 {
 	int i;
 	xppid_t *ppid, *tmp2;
@@ -158,10 +159,11 @@ static void _destroy_hashtbl()
 			ppid = tmp2;
 		}
 	}
+	xfree(hashtbl);
 }
 
 
-static xpid_t *_get_list(int top, xpid_t *list)
+static xpid_t *_get_list(int top, xpid_t *list, xppid_t **hashtbl)
 {
 	xppid_t *ppid;
 	xpid_t *children;
@@ -176,7 +178,7 @@ static xpid_t *_get_list(int top, xpid_t *list)
 			}
 			children = ppid->list;
 			while (children) {
-				list = _get_list(children->pid, list);
+				list = _get_list(children->pid, list, hashtbl);
 				children = children->next;
 			}
 			break;
@@ -221,14 +223,16 @@ static int _kill_proclist(xpid_t *list, int sig)
 extern int kill_proc_tree(pid_t top, int sig)
 {
 	xpid_t *list;
-	int rc;
+	int rc = -1;
+	xppid_t **hashtbl;
 
-	_build_hashtbl();
-	list = _get_list(top, _alloc_pid(top, NULL));
+	if ((hashtbl = _build_hashtbl()) == NULL)
+		return -1;
+	
+	list = _get_list(top, _alloc_pid(top, NULL), hashtbl);
 	rc = _kill_proclist(list, sig);
-	_destroy_hashtbl();
+	_destroy_hashtbl(hashtbl);
 	_destroy_list(list);
-
 	return rc;
 }
 
@@ -256,11 +260,14 @@ extern int kill_proc_tree_not_top(pid_t top, int sig)
 {
 	xpid_t *list;
 	int rc;
+	xppid_t **hashtbl;
 
-	_build_hashtbl();
-	list = _get_list(top, _alloc_pid(top, NULL));
+	if ((hashtbl = _build_hashtbl()) == NULL)
+		return -1;
+
+	list = _get_list(top, _alloc_pid(top, NULL), hashtbl);
 	rc = _kill_proclist_exclude(list, top, sig);
-	_destroy_hashtbl();
+	_destroy_hashtbl(hashtbl);
 
 	while(list) {
 		find_ancestor(list->pid, "slurmd");

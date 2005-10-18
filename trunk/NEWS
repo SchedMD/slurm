@@ -30,6 +30,10 @@ documents those changes that are of interest to users and admins.
  -- Some infrastructure added for task launch controls (slurm.conf:
     TaskProlog, TaskEpilog, TaskPlugin; srun --task-prolog, --task-epilog).
 
+* Changes in SLURM 0.6.7
+========================
+ -- Make proctrack/linuxproc thread safe, could cause slurmd seg fault.
+
 * Changes in SLURM 0.6.6
 ========================
  -- Fix for bad socket close() in the spawn-io code.
