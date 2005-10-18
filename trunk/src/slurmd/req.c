@@ -768,7 +768,7 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 
 	if (req->step_id != NO_VAL && req->step_id != 0)
 		first_job_run = false;
-
+	
 	/*
 	 * Insert jobid into credential context to denote that
 	 * we've now "seen" an instance of the job
@@ -807,9 +807,10 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	if (slurm_cred_revoked(conf->vctx, req->job_id)) {
 		info("Job %u already killed, do not launch tasks",  
 			req->job_id);
+		rc = ESLURMD_CREDENTIAL_REVOKED;     /* job already ran */
 		goto done;
 	}
-	
+
 	slurm_mutex_lock(&launch_mutex);
 	if (req->step_id == NO_VAL)
 		info("Launching batch job %u for UID %d",
