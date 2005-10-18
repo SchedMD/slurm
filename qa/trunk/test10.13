@@ -47,7 +47,7 @@ print_header $test_id
 # Check the smap creation of bluegene.conf file
 # in curses format.
 #
- 
+
 spawn $smap -Dc
 expect {
 	-re "Screen is too small" {
@@ -58,7 +58,7 @@ expect {
 		set non_bgl 1
 		exp_continue	
 	}	
-	-re "both" {
+	-re "TORUS" {
 		set created 1
 		exp_continue
 	}
@@ -83,6 +83,8 @@ expect {
 		wait
       	}
 }
+
+
 if {$too_small != 0} {
 	send_user "\nWARNING: Screen is too small for test\n"
 	exit 0
@@ -150,8 +152,9 @@ if { $exit_code != 1 } {
 		send_user "\nFAILURE: smap bluegene.conf file was created but corrupt\n"
 		set exit_code 1
 	}
-	exec rm -f $file
+
 }
+exec rm -f $file	
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 }
