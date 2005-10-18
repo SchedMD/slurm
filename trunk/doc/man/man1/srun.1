@@ -232,6 +232,10 @@ the attached terminal. With \fB\-\-output\fR stdout may be redirected
 to a file, to one file per task, or to /dev/null. See section 
 \fBIO Redirection\fR below for the various forms of \fImode\fR.
 If the specified file already exists, it will be overwritten.
+.br
+
+If \fB\-\-error\fR is not also specified on the command line, both
+stdout and stderr will directed to the file specified by \fB\-\-output\fR.
 .TP
 \fB\-i\fR, \fB\-\-input\fR=\fImode\fR
 Specify how stdin is to redirected. By default,
@@ -765,7 +769,7 @@ The location of the SLURM configuration file.
 \fB\-p, --partition\fR=\fIpartition\fR
 .TP
 \fBSLURM_REMOTE_CWD\fR
-\fB\-D, --chdir=\R=\fIdir\fR
+\fB\-D, --chdir=\fR=\fIdir\fR
 .TP
 \fBSLURM_STDERRMODE\fR
 \fB\-e, \-\-error\fR=\fImode\fR
