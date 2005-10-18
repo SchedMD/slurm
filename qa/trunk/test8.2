@@ -51,9 +51,8 @@ if {[test_front_end] == 0} {
 # Set target environment variables
 #
 global env
-set env(SLURM_CONN_TYPE)    mesh
+set env(SLURM_CONN_TYPE)    torus
 set env(SLURM_GEOMETRY)     1x1x1
-set env(SLURM_NODE_USE)     coprocessor
 set env(SLURM_NO_ROTATE)    1
 
 #
@@ -96,15 +95,11 @@ if {$job_id == 0} {
 set matches 0
 spawn $scontrol show job $job_id
 expect {
-	-re "Connection=\[Mm\]" {
+	-re "Connection=\[Tt\]" {
 		incr matches
 		exp_continue
 	}
 	-re "Rotate=\[Nn\]" {
-		incr matches
-		exp_continue
-	}
-	-re "NodeUse=\[Cc\]" {
 		incr matches
 		exp_continue
 	}
@@ -121,7 +116,7 @@ expect {
 	}
 }
 
-if {$matches != 4} {
+if {$matches != 3} {
 	send_user "\nFAILURE: Blue Gene option processing error\n"
 	set exit_code 1
 }
@@ -134,7 +129,7 @@ if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
 		-re "MPIRUN_PARTITION" {
-			incr found_env
+			set found_env 1
 			exp_continue
 		}
 		eof {
@@ -142,7 +137,7 @@ if {[wait_for_file $file_out] == 0} {
 		}
 	}
 	if {$found_env != 1} {
-		send_user "\nFAILURE: failed to set BGL_PARTITION_ID env var\n"
+		send_user "\nFAILURE: failed to set MPIRUN_PARTITION env var\n"
 		set exit_code 1
 	}
 } else {
