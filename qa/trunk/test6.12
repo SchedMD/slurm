@@ -46,13 +46,28 @@ print_header $test_id
 
 #
 # Delete left-over input script plus stdout/err files
-# Build input script file
 #
 exec $bin_rm -f $file_in $file_out $file_err
-exec echo "#!$bin_bash"               >$file_in
-exec echo "$srun $bin_sleep 500 &"   >>$file_in
-exec echo "wait"                     >>$file_in
-exec $bin_chmod 700 $file_in
+
+#
+# Build input script file
+#
+set file [open $file_in "w"]
+puts $file "#!$bin_bash
+
+$srun $bin_sleep 500 &
+
+trap /bin/true SIGINT
+
+while /bin/true; do
+    wait
+    if \[ \$? -ge 128 \]; then
+	echo \"INTerrupted wait, resuming\"
+    else
+	break
+    fi
+done"
+close $file
 
 #
 # Spawn a srun batch job with arguments
@@ -93,6 +108,16 @@ expect {
 		wait
 	}
 }
+
+#
+# The intent of the following scancel is to send a SIGINT signal
+# to the batch script, and because srun ignores lone SIGINTs, the
+# job step should not be killed.  Our batch script, above, is crafted
+# to ignore all SIGINT and resume waiting for the child process
+# (the srun) to exit.  If it did not trap SIGINT, the "wait" would
+# be killed by the SIGINT, then the batch script would exit triggering
+# a kill of the entire job.
+# 
 spawn $scancel --batch -s INT $job_id
 expect {
 	eof {
