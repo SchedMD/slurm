@@ -59,8 +59,9 @@
  *
  *
  *****************************************************************************
- *  Produced at the High Performance Computing Division, Hewlett-Packard
- *  Written by Susanne M. Balle <susanne.balle@hp.com>
+ *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
+ *  Written by Susanne M. Balle <susanne.balle@hp.com>, who borrowed heavily
+ *  from select/linear 
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -821,7 +822,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 			_cr_dist(job);
 		}
 
-#if defined (__SELECT_CR_DEBUG)
+#if (__SELECT_CR_DEBUG)
 		for (i = 0; i < job->nhosts; i++)
 			debug3(" cons_res: after _cr_dist host %s cpus %u",
 			       job->host[i], job->ntask[i]);
@@ -907,11 +908,13 @@ extern int select_p_get_extra_jobinfo(struct node_record *node_ptr,
 					if (strcmp
 					    (node_ptr->name,
 					     job->host[i]) == 0) {
+#if (__SELECT_CR_DEBUG)
 						debug3
 						    (" cons_res: get_extra_jobinfo job_id %u %s tasks %d ",
 						     job->job_id,
 						     job->host[i],
 						     job->ntask[i]);
+#endif
 						*tmp_32 = job->ntask[i];
 						goto cleanup;
 					}
