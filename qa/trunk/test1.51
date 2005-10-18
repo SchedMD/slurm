@@ -43,6 +43,7 @@ print_header $test_id
 #
 set host_0      ""
 set task_cnt    0
+set can_not_run 0
 set timeout $max_job_delay
 spawn $srun -N1-1 -c 1 -l -t1 $bin_hostname -s
 expect {
