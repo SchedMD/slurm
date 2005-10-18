@@ -262,7 +262,7 @@ extern void get_bgl_part()
 			= new_bgl_ptr->bgl_info_array[i].cnodes_per_bp;
 		block_ptr->quarter 
 			= new_bgl_ptr->bgl_info_array[i].quarter;
-		if(block_ptr->quarter == -1 || last_count == -1) {
+		if(block_ptr->quarter < 1) {
 			last_count++;
 			_marknodes(block_ptr, last_count);
 		} else 

@@ -1329,9 +1329,11 @@ static int _validate_config_nodes(void)
  */
 static int _bgl_record_cmpf_inc(bgl_record_t* rec_a, bgl_record_t* rec_b)
 {
-	if (rec_a->bp_count < rec_b->bp_count)
+	int size_a = rec_a->bp_count * rec_a->cnodes_per_bp;
+	int size_b = rec_b->bp_count * rec_b->cnodes_per_bp;
+	if (size_a < size_b)
 		return -1;
-	else if (rec_a->bp_count > rec_b->bp_count)
+	else if (size_a > size_b)
 		return 1;
 	else
 		return 0;
