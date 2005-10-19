@@ -1761,9 +1761,9 @@ static void _process_nodes(bgl_record_t *bgl_record)
 	       bgl_record->geo[Z]);
 	
 #ifndef HAVE_BGL_FILES
-	max_dim[X] = MAX(max_dim[X], (bgl_record->start[X]+bgl_record->geo[X]-1));
-	max_dim[Y] = MAX(max_dim[Y], (bgl_record->start[Y]+bgl_record->geo[Y]-1));
-	max_dim[Z] = MAX(max_dim[Z], (bgl_record->start[Z]+bgl_record->geo[Z]-1));
+	max_dim[X] = MAX(max_dim[X], end[X]);
+	max_dim[Y] = MAX(max_dim[Y], end[Y]);
+	max_dim[Z] = MAX(max_dim[Z], end[Z]);
 #endif
    
 	if (node_name2bitmap(bgl_record->nodes, 

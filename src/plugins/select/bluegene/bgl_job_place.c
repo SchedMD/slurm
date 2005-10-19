@@ -205,7 +205,7 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		if (job_ptr->details->req_node_bitmap
 		&& (!bit_super_set(job_ptr->details->req_node_bitmap,
 				record->bitmap))) {
-			info("bgl partition %s lacks required nodes",
+			debug("bgl partition %s lacks required nodes",
 				record->bgl_part_id);
 			continue;
 		}
