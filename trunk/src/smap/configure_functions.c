@@ -621,8 +621,7 @@ static int _save_allocation(char *com, List allocated_partitions)
 			else
 				conn_type = "SMALL";
 			
-			sprintf(save_string, "Nodes=bgl[%s] "
-				"Type=%s\n", 
+			sprintf(save_string, "Nodes=%s Type=%s\n", 
 				allocated_part->request->save_name, 
 				conn_type);
 			fputs (save_string,file_ptr);
