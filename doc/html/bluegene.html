@@ -472,13 +472,13 @@ If these bglblocks do not correspond to those defined in the bluegene.conf
 file, the old bglblocks with a prefix of "RMP" are destroyed and new ones 
 created. 
 When a job is scheduled, the appropriate bglblock is identified, 
-its node use (virtual or coprocessor) set, its user set, and it is 
-booted. 
+its user set, and it is booted. 
+Node use (virtual or coprocessor) is set from the mpirun command line now,
+Slurm has nothing to do with setting the node use.
 Subsequent jobs use this same bglblock without rebooting by changing 
 the associated user field.
-The bglblock will be freed and then rebooted in order to change its 
-node use (from virtual to coprocessor or vise-versa). 
-Bglblocks will also be freed and rebooted when going to or from full-system 
+The only time bglblocks should be freed and rebooted, in normal operation,
+is when going to or from full-system 
 jobs (two or more bglblocks sharing base partitions can not be in a 
 ready state at the same time).
 When this logic became available at LLNL, approximately 85 percent of 
