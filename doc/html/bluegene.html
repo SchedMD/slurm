@@ -432,13 +432,18 @@ Nodes=bgl[001x001] Type=SMALL         # 1x1x1 =  1 midplane, in four bglblocks
 <p>The above <i>bluegene.conf</i> file defines multiple bglblocks to be 
 created in a single midplane (see the "SMALL" option). 
 Note that you can not presently control how many bglblocks are created 
-in a midplane, it will be at most four. 
+in a midplane, it will be four. 
 Using this mechanism, up to eight independent jobs can be executed 
 simultaneously on a one-rack Blue Gene system.
-If using small midplanes or "small bglblocks", the SLURM partition containing 
-them as defined in <i>slurm.conf</i> must have the parameter 
-<i>Shared=force</i> to enable scheduling of multiple jobs on what 
-SLURM considers a single node.</p>
+If defining bglblocks of <i>Type=SMALL</i>, the SLURM partition 
+containing them as defined in <i>slurm.conf</i> must have the 
+parameter <i>Shared=force</i> to enable scheduling of multiple 
+jobs on what SLURM considers a single node. 
+SLURM partitions that do not contain bglblocks of <i>Type=SMALL</i> 
+may have the parameter <i>Shared=no</i> for a slight improvement in 
+scheduler performance. 
+As in all SLURM configuration files, parameters and values 
+are case insensitive.</p>
 
 <p>One more thing is required to support SLURM interactions with 
 the DB2 database (at least as of the time this was written).
