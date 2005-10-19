@@ -172,8 +172,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->cwd     = xstrdup(msg->cwd);
 
 	job->env     = _array_copy(msg->envc, msg->env);
-	job->objs    = list_create(NULL); /* FIXME! Needs destructor */
-	job->eio     = eio_handle_create(job->objs);
+	job->eio     = eio_handle_create();
 	job->sruns   = list_create((ListDelF) _srun_info_destructor);
 	job->clients = list_create(NULL); /* FIXME! Needs destructor */
 	job->stdout_eio_objs = list_create(NULL); /* FIXME! Needs destructor */
@@ -259,8 +258,7 @@ job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *cli_addr)
 	job->cwd     = xstrdup(msg->cwd);
 
 	job->env     = _array_copy(msg->envc, msg->env);
-	job->objs    = list_create(NULL); /* Need destructor */
-	job->eio     = eio_handle_create(job->objs);
+	job->eio     = eio_handle_create();
 	job->sruns   = list_create((ListDelF) _srun_info_destructor);
 	job->envtp   = xmalloc(sizeof(env_t));
 	job->envtp->jobid = -1;
@@ -346,8 +344,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->cwd     = xstrdup(msg->work_dir);
 
 	job->env     = _array_copy(msg->envc, msg->environment);
-	job->objs    = list_create(NULL); /* FIXME - Need desctructor */
-	job->eio     = eio_handle_create(job->objs);
+	job->eio     = eio_handle_create();
 	job->sruns   = list_create((ListDelF) _srun_info_destructor);
 	job->envtp   = xmalloc(sizeof(env_t));
 	job->envtp->jobid = -1;
@@ -492,7 +489,6 @@ job_destroy(slurmd_job_t *job)
 	for (i = 0; i < job->ntasks; i++)
 		task_info_destroy(job->task[i]);
 	list_destroy(job->sruns);
-	list_destroy(job->objs);
 	xfree(job->envtp);
 	xfree(job->task_prolog);
 	xfree(job->task_epilog);

@@ -76,10 +76,12 @@ static int  _launch_tasks(launch_tasks_request_msg_t *, slurm_addr *,
 static void _rpc_launch_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_spawn_task(slurm_msg_t *, slurm_addr *);
 static void _rpc_batch_job(slurm_msg_t *, slurm_addr *);
-static void _rpc_kill_tasks(slurm_msg_t *, slurm_addr *);
+static void _rpc_signal_tasks(slurm_msg_t *, slurm_addr *);
+static void _rpc_terminate_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_timelimit(slurm_msg_t *, slurm_addr *);
 static void _rpc_reattach_tasks(slurm_msg_t *, slurm_addr *);
-static void _rpc_kill_job(slurm_msg_t *, slurm_addr *);
+static void _rpc_signal_job(slurm_msg_t *, slurm_addr *);
+static void _rpc_terminate_job(slurm_msg_t *, slurm_addr *);
 static void _rpc_update_time(slurm_msg_t *, slurm_addr *);
 static void _rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr);
 static void _rpc_reconfig(slurm_msg_t *msg, slurm_addr *cli_addr);
@@ -130,11 +132,17 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		slurm_mutex_unlock(&launch_mutex);
 		break;
 	case REQUEST_SIGNAL_TASKS:
+		debug2("Processing RPC: REQUEST_SIGNAL_TASKS");
+		_rpc_signal_tasks(msg, cli);
+		slurm_free_kill_tasks_msg(msg->data);
+		break;
 	case REQUEST_TERMINATE_TASKS:
-		_rpc_kill_tasks(msg, cli);
+		debug2("Processing RPC: REQUEST_TERMINATE_TASKS");
+		_rpc_terminate_tasks(msg, cli);
 		slurm_free_kill_tasks_msg(msg->data);
 		break;
 	case REQUEST_KILL_TIMELIMIT:
+		debug2("Processing RPC: REQUEST_KILL_TIMELIMIT");
 		_rpc_timelimit(msg, cli);
 		slurm_free_timelimit_msg(msg->data);
 		break; 
@@ -143,8 +151,13 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		slurm_free_reattach_tasks_request_msg(msg->data);
 		break;
 	case REQUEST_SIGNAL_JOB:
+		debug2("Processing RPC: REQUEST_SIGNAL_JOB");
+		_rpc_signal_job(msg, cli);
+		slurm_free_kill_job_msg(msg->data);
+		break;
 	case REQUEST_TERMINATE_JOB:
-		_rpc_kill_job(msg, cli);
+		debug2("Processing RPC: REQUEST_TERMINATE_JOB");
+		_rpc_terminate_job(msg, cli);
 		slurm_free_kill_job_msg(msg->data);
 		break;
 	case REQUEST_UPDATE_JOB_TIME:
@@ -904,7 +917,7 @@ _rpc_ping(slurm_msg_t *msg, slurm_addr *cli_addr)
 }
 
 static void
-_rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
+_rpc_signal_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 {
 	int               rc = SLURM_SUCCESS;
 	uid_t             req_uid;
@@ -928,7 +941,86 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	}
 
 	if (step->state == SLURMD_JOB_STARTING) {
-		debug ("kill req for starting job step %u.%u",
+		debug ("signal req for starting job step %u.%u",
+			req->job_id, req->job_step_id); 
+		rc = ESLURMD_JOB_NOTRUNNING;
+		goto done;
+	}
+
+#ifdef HAVE_AIX
+#  ifdef SIGMIGRATE
+#    ifdef SIGSOUND
+	/* SIGMIGRATE and SIGSOUND are used to initiate job checkpoint on AIX.
+	 * These signals are not sent to the entire process group, but just a
+	 * single process, namely the PMD. */
+	if (req->signal == SIGMIGRATE || req->signal == SIGSOUND) {
+		if (!step->task_list || step->task_list->pid <= (pid_t)1) {
+			verbose("Invalid pid for signal %d", req->signal);
+			goto done;
+		}
+		if (kill(step->task_list->pid, req->signal) == -1) {
+			rc = errno;
+			verbose("Error sending signal %d to pmd"
+				" for job %u.%u: %s",
+				req->signal, req->job_id, req->job_step_id,
+				slurm_strerror(errno));
+		}
+		goto done;
+	}
+#    endif
+#  endif
+#endif
+
+	if (step->pgid <= (pid_t)1) {
+		debug ("step %u.%u invalid in shm [mpid:%d pgid:%u]", 
+			req->job_id, req->job_step_id, 
+			step->mpid, step->pgid);
+		rc = ESLURMD_JOB_NOTRUNNING;
+	}
+
+	if (killpg(step->pgid, req->signal) == -1) {
+		rc = errno;
+		verbose("Error sending signal %d to %u.%u: %s", 
+			req->signal, req->job_id, req->job_step_id, 
+			slurm_strerror(rc));
+	} else {
+		verbose("Sent signal %d to %u.%u", 
+			req->signal, req->job_id, req->job_step_id);
+	}
+
+  done:
+	if (step)
+		shm_free_step(step);
+	slurm_send_rc_msg(msg, rc);
+}
+
+static void
+_rpc_terminate_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
+{
+	int               rc = SLURM_SUCCESS;
+	uid_t             req_uid;
+	job_step_t       *step = NULL;
+	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
+
+	debug3("Entering _rpc_terminate_tasks");
+	if (!(step = shm_get_step(req->job_id, req->job_step_id))) {
+		debug("kill for nonexistent job %u.%u requested",
+		      req->job_id, req->job_step_id);
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done;
+	} 
+
+	req_uid = g_slurm_auth_get_uid(msg->cred);
+	if ((req_uid != step->uid) && (!_slurm_authorized_user(req_uid))) {
+	       debug("kill req from uid %ld for job %u.%u owned by uid %ld",
+		     (long) req_uid, req->job_id, req->job_step_id, 
+		     (long) step->uid);       
+	       rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
+	       goto done;
+	}
+
+	if (step->state == SLURMD_JOB_STARTING) {
+		debug ("terminate req for starting job step %u.%u",
 			req->job_id, req->job_step_id); 
 		rc = ESLURMD_JOB_NOTRUNNING;
 		goto done;
@@ -942,47 +1034,15 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		goto done;
 	}
 
-#if 0
-	/* This code was used in an investigation of hung TotalView proceses */
-	if ((req->signal == SIGKILL)
-	    || (req->signal == SIGINT)) { /* for proctrack/linuxproc */
-		/*
-		 * Assume step termination request.
-		 * Send SIGCONT just in case the processes are stopped.
-		 */
-		slurm_container_signal(step->cont_id, SIGCONT);
-		if (slurm_container_signal(step->cont_id, req->signal) < 0)
-			rc = errno;
-	} else 
-#endif
-	if (req->signal == 0) {
-		if (slurm_container_signal(step->cont_id, req->signal) < 0)
-			rc = errno;
-/* SIGMIGRATE and SIGSOUND are used to initiate job checkpoint on AIX.
- * These signals are not sent to the entire process group, but just a
- * single process, namely the PMD. */
-#ifdef SIGMIGRATE
-#ifdef SIGSOUND
-	} else if ((req->signal == SIGMIGRATE) || 
-		   (req->signal == SIGSOUND)) {
-		if (step->task_list
-		    && (step->task_list->pid > (pid_t) 0)
-		    && (kill(step->task_list->pid, req->signal) < 0))
-			rc = errno;
-#endif
-#endif
-	} else {
-		if ((step->pgid > (pid_t) 0)
-		    &&  (killpg(step->pgid, req->signal) < 0))
-			rc = errno;
-	} 
-	if (rc == SLURM_SUCCESS)
-		verbose("Sent signal %d to %u.%u", 
-			req->signal, req->job_id, req->job_step_id);
-	else
+	if (slurm_container_signal(step->cont_id, req->signal) < 0) {
+		rc = errno;
 		verbose("Error sending signal %d to %u.%u: %s", 
 			req->signal, req->job_id, req->job_step_id, 
 			slurm_strerror(rc));
+	} else {
+		verbose("Sent signal %d to %u.%u", 
+			req->signal, req->job_id, req->job_step_id);
+	}
 
   done:
 	if (step)
@@ -1002,7 +1062,6 @@ _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 	kill_job_msg_t *req = msg->data;
 	int             nsteps;
 
-	debug2("Processing RPC: REQUEST_KILL_TIMELIMIT");
 	if (!_slurm_authorized_user(uid)) {
 		error ("Security violation: rpc_timelimit req from uid %ld", 
 		       (long) uid);
@@ -1022,7 +1081,7 @@ _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 	         req->job_id, nsteps );
 
 	/* Revoke credential, send SIGKILL, run epilog, etc. */
-	_rpc_kill_job(msg, cli_addr); 
+	_rpc_terminate_job(msg, cli_addr); 
 }
 
 static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
@@ -1331,8 +1390,13 @@ _epilog_complete(uint32_t jobid, int rc)
 	return ret;
 }
 
+
+/* FIXME - kill_job_msg_t doesn't have a signal number in the payload
+ *         so it won't suffice for this RPC.  Fortunately, no one calls
+ *         this RPC.
+ */
 static void 
-_rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
+_rpc_signal_job(slurm_msg_t *msg, slurm_addr *cli)
 {
 	int             rc     = SLURM_SUCCESS;
 	kill_job_msg_t *req    = msg->data;
@@ -1341,7 +1405,42 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	int		delay;
 	char           *bgl_part_id = NULL;
 
-	debug2("Processing RPC: REQUEST_SIGNAL_JOB");
+	error("_rpc_signal_job not yet implemented");
+	/* 
+	 * check that requesting user ID is the SLURM UID
+	 */
+	if (!_slurm_authorized_user(uid)) {
+		error("Security violation: kill_job(%ld) from uid %ld",
+		      req->job_id, (long) uid);
+		if (msg->conn_fd >= 0)
+			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		return;
+	} 
+
+	/*nsteps = _kill_all_active_steps(req->job_id, SIGTERM, true);*/
+
+	/*
+	 *  At this point, if connection still open, we send controller
+	 *   a "success" reply to indicate that we've recvd the msg.
+	 */
+	if (msg->conn_fd >= 0) {
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		if (slurm_close_accepted_conn(msg->conn_fd) < 0)
+			error ("_rpc_signal_job: close(%d): %m", msg->conn_fd);
+		msg->conn_fd = -1;
+	}
+}
+
+static void 
+_rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
+{
+	int             rc     = SLURM_SUCCESS;
+	kill_job_msg_t *req    = msg->data;
+	uid_t           uid    = g_slurm_auth_get_uid(msg->cred);
+	int             nsteps = 0;
+	int		delay;
+	char           *bgl_part_id = NULL;
+
 	/* 
 	 * check that requesting user ID is the SLURM UID
 	 */

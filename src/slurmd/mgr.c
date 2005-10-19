@@ -447,6 +447,16 @@ _setup_io(slurmd_job_t *job)
 		error("sete{u/g}id(%lu/%lu): %m", 
 		      (u_long) spwd->pw_uid, (u_long) spwd->pw_gid);
 
+	/*
+	 * MUST create the initial client object before starting
+	 * the IO thread, or we risk losing stdout/err traffic.
+	 */
+	if (!job->batch) {
+		srun_info_t *srun = list_peek(job->sruns);
+		xassert(srun != NULL);
+		rc = io_initial_client_connect(srun, job);
+	}
+
 	if (!job->batch)
 		if (io_thread_start(job) < 0)
 			return ESLURMD_IO_ERROR;
@@ -456,11 +466,6 @@ _setup_io(slurmd_job_t *job)
 	 */
 	_slurmd_job_log_init(job);
 
-	if (!job->batch) {
-		srun_info_t *srun = list_peek(job->sruns);
-		xassert(srun != NULL);
-		rc = io_client_connect(srun, job);
-	}
 
 #ifndef NDEBUG
 #  ifdef PR_SET_DUMPABLE

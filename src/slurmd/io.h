@@ -48,6 +48,15 @@ struct io_buf *alloc_io_buf(void);
 void free_io_buf(struct io_buf *buf);
 
 /* 
+ * Create a TCP connection back the initial client (e.g. srun).
+ *
+ * Since this is the first client connection and the IO engine has not
+ * yet started, we initialize the msg_queue as an empty list and
+ * directly add the eio_obj_t to the eio handle with eio_new_initial_handle.
+ */
+int io_initial_client_connect(srun_info_t *srun, slurmd_job_t *job);
+
+/* 
  * Initiate a TCP connection back to a waiting client (e.g. srun).
  *
  * Create a new eio client object and wake up the eio engine so that
