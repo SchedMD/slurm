@@ -56,8 +56,24 @@ struct eio_obj {
 	bool shutdown;
 };
 
-eio_handle_t *eio_handle_create(List eio_obj_list);
+eio_handle_t *eio_handle_create(void);
 void eio_handle_destroy(eio_handle_t *eio);
+
+/*
+ * Add an eio_obj_t "obj" to an eio_handle_t "eio"'s internal object list.
+ *
+ * This function can only be used to intialize "eio"'s list before
+ * calling eio_handle_mainloop.  If it is used after the eio engine's
+ * mainloop has started, segfaults are likely.
+ */
+void eio_new_initial_obj(eio_handle_t *eio, eio_obj_t *obj);
+
+/*
+ * Queue an eio_obj_t "obj" for inclusion in an already running
+ * eio_handle_t "eio"'s internal object list.
+ */
+void eio_new_obj(eio_handle_t *eio, eio_obj_t *obj);
+
 
 /* This routine will watch for activtiy on the fd's as long
  * as obj->readable() or obj->writable() returns >0

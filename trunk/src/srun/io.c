@@ -771,7 +771,7 @@ io_thr_create(srun_job_t *job)
 		      ntohs(job->listenport[i]));
 		/*net_set_low_water(job->listensock[i], 140);*/
 		obj = _create_listensock_eio(job->listensock[i], job);
-		list_enqueue(job->eio_objs, obj);
+		eio_new_initial_obj(job->eio, obj);
 	}
 
 	/* FIXME - Need to open files here (or perhaps earlier) */
@@ -823,7 +823,11 @@ _read_io_init_msg(int fd, srun_job_t *job, char *host)
 	job->ioserver[msg.nodeid] = _create_server_eio_obj(fd, job,
 							   msg.stdout_objs,
 							   msg.stderr_objs);
-	list_enqueue(job->eio_objs, job->ioserver[msg.nodeid]);
+	/* Normally using eio_new_initial_obj while the eio mainloop
+	 * is running is not safe, but since this code is running
+	 * inside of the eio mainloop there should be no problem.
+	 */
+	eio_new_initial_obj(job->eio, job->ioserver[msg.nodeid]);
 	job->ioservers_ready++;
 
 	return SLURM_SUCCESS;
@@ -1034,7 +1038,7 @@ _init_stdio_eio_objs(srun_job_t *job)
 		}
 		job->stdin_obj = create_file_read_eio_obj(infd, job,
 							  type, destid);
-		list_enqueue(job->eio_objs, job->stdin_obj);
+		eio_new_initial_obj(job->eio, job->stdin_obj);
 	}
 
 	/*
@@ -1059,7 +1063,7 @@ _init_stdio_eio_objs(srun_job_t *job)
 			refcount = job->ntasks;
 		}
 		job->stdout_obj = create_file_write_eio_obj(outfd, job);
-		list_enqueue(job->eio_objs, job->stdout_obj);
+		eio_new_initial_obj(job->eio, job->stdout_obj);
 	}
 
 	/*
@@ -1081,7 +1085,7 @@ _init_stdio_eio_objs(srun_job_t *job)
 		}
 		refcount = job->ntasks;
 		job->stderr_obj = create_file_write_eio_obj(errfd, job);
-		list_enqueue(job->eio_objs, job->stderr_obj);
+		eio_new_initial_obj(job->eio, job->stderr_obj);
 	}
 }
 

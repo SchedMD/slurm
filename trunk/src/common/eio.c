@@ -38,7 +38,11 @@
 #include "src/common/fd.h"
 #include "src/common/eio.h"
 
-
+/*
+ * outside threads can stick new objects on the new_objs List and
+ * the eio thread will move them to the main obj_list the next time
+ * it wakes up.
+ */
 struct eio_handle_components {
 #ifndef NDEBUG
 #       define EIO_MAGIC 0xe1e10
@@ -46,6 +50,7 @@ struct eio_handle_components {
 #endif
 	int  fds[2];
 	List obj_list;
+	List new_objs;
 };
 
 
@@ -60,7 +65,7 @@ static void         _poll_dispatch(struct pollfd *, unsigned int, eio_obj_t **,
 static void         _poll_handle_event(short revents, eio_obj_t *obj,
 		                       List objList);
 
-eio_handle_t *eio_handle_create(List eio_obj_list)
+eio_handle_t *eio_handle_create(void)
 {
 	eio_handle_t *eio = xmalloc(sizeof(*eio));
 
@@ -74,7 +79,8 @@ eio_handle_t *eio_handle_create(List eio_obj_list)
 
 	xassert(eio->magic = EIO_MAGIC);
 
-	eio->obj_list = eio_obj_list;
+	eio->obj_list = list_create(NULL); /* FIXME!  Needs destructor */
+	eio->new_objs = list_create(NULL);
 
 	return eio;
 }
@@ -85,7 +91,7 @@ void eio_handle_destroy(eio_handle_t *eio)
 	xassert(eio->magic == EIO_MAGIC);
 	close(eio->fds[0]);
 	close(eio->fds[1]);
-	/* FIXME - Destroy the eio object list here ? */
+	/* FIXME - Destroy obj_list and new_objs */
 	xassert(eio->magic = ~EIO_MAGIC);
 	xfree(eio);
 }
@@ -118,14 +124,20 @@ static void _mark_shutdown_true(List obj_list)
 	list_iterator_destroy(objs);
 }
 
-static int _eio_clear(eio_handle_t *eio)
+static int _eio_wakeup_handler(eio_handle_t *eio)
 {
 	char c = 0;
 	int rc = 0;
+	eio_obj_t *obj;
 
 	while ((rc = (read(eio->fds[0], &c, 1)) > 0)) {
 		if (c == 1)
 			_mark_shutdown_true(eio->obj_list);
+	}
+
+	/* move new eio objects from the new_objs to the obj_list */
+	while (obj = list_dequeue(eio->new_objs)) {
+		list_enqueue(eio->obj_list, obj);
 	}
 
 	if (rc < 0) return error("eio_clear: read: %m");
@@ -152,8 +164,9 @@ _poll_loop_internal(eio_handle_t *eio, List objs)
 
 	for (;;) {
 
-		/* Alloc memory for pfds and map if needed */                  
-		if (maxnfds < (n = list_count(objs))) {
+		/* Alloc memory for pfds and map if needed */
+		n = list_count(objs);
+		if (maxnfds < n) {
 			maxnfds = n;
 			xrealloc(pollfds, (maxnfds+1) * sizeof(struct pollfd));
 			xrealloc(map,     maxnfds     * sizeof(eio_obj_t *  ));
@@ -164,21 +177,18 @@ _poll_loop_internal(eio_handle_t *eio, List objs)
 
 		debug3("eio: handling events for %d objects", 
 				list_count(objs));
-		/*
-		 *  Clear any pending eio signals
-		 */
-		_eio_clear(eio);
-
 		if ((nfds = _poll_setup_pollfds(pollfds, map, objs)) <= 0) 
 			goto done;
 
 		/*
-		 *  Setup eio handle poll fd
+		 *  Setup eio handle signalling fd
 		 */
 		pollfds[nfds].fd     = eio->fds[0];
 		pollfds[nfds].events = POLLIN;
 		nfds++;
 
+		debug("nfds = %d, n = %d, maxnfds = %d",
+		      nfds, n, maxnfds);
 		xassert(nfds <= maxnfds + 1);
 
 
@@ -186,7 +196,7 @@ _poll_loop_internal(eio_handle_t *eio, List objs)
 			goto error;
 
 		if (pollfds[nfds-1].revents & POLLIN) 
-			_eio_clear(eio);
+			_eio_wakeup_handler(eio);
 
 		_poll_dispatch(pollfds, nfds-1, map, objs);
 	}
@@ -328,4 +338,33 @@ void eio_obj_destroy(eio_obj_t *obj)
 		}
 		xfree(obj);
 	}
+}
+
+
+/*
+ * Add an eio_obj_t "obj" to an eio_handle_t "eio"'s internal object list.
+ *
+ * This function can only be used to intialize "eio"'s list before
+ * calling eio_handle_mainloop.  If it is used after the eio engine's
+ * mainloop has started, segfaults are likely.
+ */
+void eio_new_initial_obj(eio_handle_t *eio, eio_obj_t *obj)
+{
+	xassert(eio != NULL);
+	xassert(eio->magic == EIO_MAGIC);
+	
+	list_enqueue(eio->obj_list, obj);
+}
+
+/*
+ * Queue an eio_obj_t "obj" for inclusion in an already running
+ * eio_handle_t "eio"'s internal object list.
+ */
+void eio_new_obj(eio_handle_t *eio, eio_obj_t *obj)
+{
+	xassert(eio != NULL);
+	xassert(eio->magic == EIO_MAGIC);
+
+	list_enqueue(eio->new_objs, obj);
+	eio_signal_wakeup(eio);
 }

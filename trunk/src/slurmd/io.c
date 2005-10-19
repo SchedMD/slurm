@@ -205,7 +205,8 @@ _client_writable(eio_obj_t *obj)
 	}
 
 	/* If this is a newly attached client its msg_queue needs
-	 * to be intialized from the outgoing_cache
+	 * to be intialized from the outgoing_cache, and then "obj" needs
+	 * to be added to the List of clients.
 	 */
 	if (client->msg_queue == NULL) {
 		ListIterator msgs;
@@ -217,6 +218,8 @@ _client_writable(eio_obj_t *obj)
 			list_enqueue(client->msg_queue, msg);
 		}
 		list_iterator_destroy(msgs);
+		/* and now make this object visible to tasks */
+		list_append(client->job->clients, (void *)obj);
 	}
 
 	if (client->out_msg != NULL)
@@ -656,7 +659,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 		fd_set_close_on_exec(task->to_stdin);
 		fd_set_nonblocking(task->to_stdin);
 		task->in = _create_task_in_eio(task->to_stdin, job);
-		list_append(job->objs, (void *)task->in);
+		eio_new_initial_obj(job->eio, (void *)task->in);
 	}
 	
 	/*
@@ -686,8 +689,8 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 		fd_set_nonblocking(task->from_stdout);
 		task->out = _create_task_out_eio(task->from_stdout,
 						 SLURM_IO_STDOUT, job, task);
-		list_append(job->objs, (void *)task->out);
 		list_append(job->stdout_eio_objs, (void *)task->out);
+		eio_new_initial_obj(job->eio, (void *)task->out);
 	}
 
 	/*
@@ -717,8 +720,8 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 		fd_set_nonblocking(task->from_stderr);
 		task->err = _create_task_out_eio(task->from_stderr,
 						 SLURM_IO_STDERR, job, task);
-		list_append(job->objs, (void *)task->err);
 		list_append(job->stderr_eio_objs, (void *)task->err);
+		eio_new_initial_obj(job->eio, (void *)task->err);
 	}
 }
 
@@ -929,6 +932,62 @@ _io_thr(void *arg)
 }
 
 /* 
+ * Create the initial TCP connection back to a waiting client (e.g. srun).
+ *
+ * Since this is the first client connection and the IO engine has not
+ * yet started, we initialize the msg_queue as an empty list and
+ * directly add the eio_obj_t to the eio handle with eio_new_initial_obj.
+ */
+int
+io_initial_client_connect(srun_info_t *srun, slurmd_job_t *job)
+{
+	int i;
+	int sock = -1;
+	struct client_io_info *client;
+	eio_obj_t *obj;
+
+	debug2 ("adding IO connection (logical node rank %d)", job->nodeid);
+
+	if (srun->ioaddr.sin_addr.s_addr) {
+		char         host[256];
+		uint16_t     port;
+		slurmd_get_addr(&srun->ioaddr, &port, host, sizeof(host));
+		debug2("connecting IO back to %s:%d", host, ntohs(port));
+	} 
+
+	if ((sock = (int) slurm_open_stream(&srun->ioaddr)) < 0) {
+		error("connect io: %m");
+		/* XXX retry or silently fail? 
+		 *     fail for now.
+		 */
+		return SLURM_ERROR;
+	}
+
+	fd_set_blocking(sock);  /* just in case... */
+
+	_send_io_init_msg(sock, srun->key, job);
+
+	debug3("  back from _send_io_init_msg");
+	fd_set_nonblocking(sock);
+	fd_set_close_on_exec(sock);
+
+	/* Now set up the eio object */
+	client = xmalloc(sizeof(struct client_io_info));
+#ifndef NDEBUG
+	client->magic = CLIENT_IO_MAGIC;
+#endif
+	client->job = job;
+	client->msg_queue = list_create(NULL); /* FIXME - destructor */
+
+	obj = eio_obj_create(sock, &client_ops, (void *)client);
+	list_append(job->clients, (void *)obj);
+	eio_new_initial_obj(job->eio, (void *)obj);
+	debug3("Now handling %d IO Client object(s)", list_count(job->clients));
+
+	return SLURM_SUCCESS;
+}
+
+/* 
  * Initiate a TCP connection back to a waiting client (e.g. srun).
  *
  * Create a new eio client object and wake up the eio engine so that
@@ -974,10 +1033,10 @@ io_client_connect(srun_info_t *srun, slurmd_job_t *job)
 #endif
 	client->job = job;
 	client->msg_queue = NULL; /* initialized in _client_writable */
+	/* client object adds itself to job->clients in _client_writable */
 
 	obj = eio_obj_create(sock, &client_ops, (void *)client);
-	list_append(job->clients, (void *)obj);
-	list_append(job->objs, (void *)obj);
+	eio_new_obj(job->eio, (void *)obj);
 
 	debug3("Now handling %d IO Client object(s)", list_count(job->clients));
 
@@ -1068,7 +1127,7 @@ _send_eof_msg(struct task_read_info *out)
 	clients = list_iterator_create(out->job->clients);
 	while(eio = list_next(clients)) {
 		client = (struct client_io_info *)eio->arg;
-		debug3("======================== Enqueued message");
+		debug3("======================== Enqueued eof message");
 		xassert(client->magic == CLIENT_IO_MAGIC);
 		if (list_enqueue(client->msg_queue, msg))
 			msg->ref_count++;
