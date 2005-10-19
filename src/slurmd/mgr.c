@@ -455,6 +455,8 @@ _setup_io(slurmd_job_t *job)
 		srun_info_t *srun = list_peek(job->sruns);
 		xassert(srun != NULL);
 		rc = io_initial_client_connect(srun, job);
+		if (rc < 0) 
+			return ESLURMD_IO_ERROR;
 	}
 
 	if (!job->batch)
@@ -473,9 +475,6 @@ _setup_io(slurmd_job_t *job)
 		debug ("Unable to set dumpable to 1");
 #  endif /* PR_SET_DUMPABLE */
 #endif   /* !NDEBUG         */
-
-	if (rc < 0) 
-		return ESLURMD_IO_ERROR;
 
 	debug2("Leaving  _setup_io");
 	return SLURM_SUCCESS;
