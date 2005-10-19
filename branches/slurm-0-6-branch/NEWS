@@ -4,6 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 0.6.7
 ========================
  -- Make proctrack/linuxproc thread safe, could cause slurmd seg fault.
+ -- Propagate umask from srun to spawned tasks.
 
 * Changes in SLURM 0.6.6
 ========================

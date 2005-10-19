@@ -103,6 +103,7 @@ static int   _is_file_text (char *, char**);
 static int   _run_batch_job (void);
 static int   _run_job_script(srun_job_t *job, env_t *env);
 static int   _set_rlimit_env(void);
+static int   _set_umask_env(void);
 static char *_task_count_string(srun_job_t *job);
 static void  _switch_standalone(srun_job_t *job);
 static int   _become_user (void);
@@ -148,8 +149,10 @@ int srun(int ac, char **av)
 		log_alter(logopt, 0, NULL);
 	}
 
-	if (!opt.allocate)
+	if (!opt.allocate) {
 		(void) _set_rlimit_env();
+		(void) _set_umask_env();
+	}
 	/* Set up slurmctld message handler */
 	slurmctld_msg_init();
 
@@ -698,6 +701,21 @@ _build_script (char *fname, int file_type)
 	_get_options(buffer);
 
 	return buffer;
+}
+
+/* Set SLURM_UMASK environment variable with current state */
+static int _set_umask_env(void)
+{
+	mode_t mask = (int)umask(0);
+	umask(mask);
+
+	if (setenvf(NULL, "SLURM_UMASK", "%d", (int)mask) < 0) {
+		error ("unable to set SLURM_UMASK in environment");
+		return SLURM_FAILURE;
+	}
+	debug ("propagating UMASK=0%d%d%d", 
+		((mask>>6)&07), ((mask>>3)&07), mask&07);
+	return SLURM_SUCCESS;
 }
 
 /* Set SLURM_RLIMIT_* environment variables with current resource 
