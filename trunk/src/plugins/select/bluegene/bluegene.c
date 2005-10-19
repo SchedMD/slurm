@@ -57,10 +57,14 @@ int partitions_are_created = 0;
 bgl_record_t *full_system_partition = NULL;
 
 #ifdef HAVE_BGL_FILES
-static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
-static int _update_bgl_record_state(List bgl_destroy_list);
+  static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
+  static int _update_bgl_record_state(List bgl_destroy_list);
 #else
-int max_dim[PA_SYSTEM_DIMENSIONS] = { 0, 0, 0 };
+# if PA_SYSTEM_DIMENSIONS==3
+    int max_dim[PA_SYSTEM_DIMENSIONS] = { 0, 0, 0 };
+# else
+    int max_dim[PA_SYSTEM_DIMENSIONS] = { 0 };
+# endif
 #endif
 
 /* some local functions */
