@@ -913,7 +913,6 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 	/* init */
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_COMPLETE_JOB_STEP");
-sleep(2);
 	uid = g_slurm_auth_get_uid(msg->cred);
 	if (!_is_super_user(uid)) {
 		/* Don't trust slurm_rc, it is not from slurmd */
