@@ -30,6 +30,8 @@
 #endif
 
 #include <sys/resource.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -50,6 +52,7 @@
 static int _get_env_val(char **env, const char *name, unsigned long *valp,
 		bool *u_req_propagate);
 static int _set_limit(char **env, slurm_rlimits_info_t *rli);
+static int _set_umask(char **env);
 
 /*
  * Set user resource limits using the values of the environment variables
@@ -67,6 +70,7 @@ int set_user_limits(slurmd_job_t *job)
 	for (rli = get_slurm_rlimits_info(); rli->name; rli++)
 		_set_limit( job->env, rli );
 
+	_set_umask(job->env);
 	return SLURM_SUCCESS;
 }
 
@@ -80,6 +84,22 @@ static char * rlim_to_string (unsigned long rlim, char *buf, size_t n)
 	else 
 		snprintf (buf, n, "%lu", rlim);
 	return (buf);
+}
+
+/* Set umask using value of env var SLURM_UMASK */
+static int
+_set_umask(char **env)
+{
+	mode_t mask;
+	char *val;
+	
+	if (!(val = getenvp(env, "SLURM_UMASK"))) {
+		error("Couldn't find SLURM_UMASK in environment");
+		return SLURM_ERROR;
+	}
+
+	mask = atoi(val);
+	umask(mask);
 }
 
 /*
