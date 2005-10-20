@@ -6,7 +6,6 @@ documents those changes that are of interest to users and admins.
  -- New stdio protocol.  Now srun has just a single TCP stream to each node
     of a job-step.  srun and slurmd comminicate over the TCP stream using a
     simple messaging protocol.
-    WARNING:  The stdio rewrite is incomplete and not yet fully debugged.
  -- Added task plugin and use task prolog/epilog(s).
  -- New slurmd_step functionality added.  Fork exec instead of using shared
     memory.  Not completely tested.
