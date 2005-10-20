@@ -30,6 +30,8 @@
 #include "src/common/io_hdr.h"
 #include "src/srun/srun_job.h"
 
+#define STDIO_MAX_FREE_BUF 1024
+
 struct io_buf {
 	int ref_count;
 	uint32_t length;
