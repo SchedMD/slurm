@@ -568,6 +568,16 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 			pfx = "debug3: ";
 			break;
 
+		case LOG_LEVEL_DEBUG4:
+			priority = LOG_DEBUG;
+			pfx = "debug4: ";
+			break;
+
+		case LOG_LEVEL_DEBUG5:
+			priority = LOG_DEBUG;
+			pfx = "debug5: ";
+			break;
+
 		default:
 			priority = LOG_ERR;
 			pfx = "internal error: ";
@@ -736,6 +746,28 @@ void debug3(const char *fmt, ...)
 
 	va_start(ap, fmt);
 	log_msg(LOG_LEVEL_DEBUG3, fmt, ap);
+	va_end(ap);
+}
+
+/*
+ * Debug levels higher than debug3 are not written to stderr in the
+ * slurmd_step process after stderr is connected back to the client (srun).
+ */
+void debug4(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	log_msg(LOG_LEVEL_DEBUG4, fmt, ap);
+	va_end(ap);
+}
+
+void debug5(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	log_msg(LOG_LEVEL_DEBUG5, fmt, ap);
 	va_end(ap);
 }
 

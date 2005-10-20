@@ -1294,8 +1294,16 @@ _slurmd_job_log_init(slurmd_job_t *job)
 	/*
 	 * Reset stderr logging to user requested level
 	 * (Logfile and syslog levels remain the same)
+	 *
+	 * The maximum stderr log level is LOG_LEVEL_DEBUG3 because
+	 * some higher level debug messages are generated in the
+	 * stdio code, which would otherwise create more stderr traffic
+	 * to srun and therefore more debug messages in an endless loop.
 	 */
 	conf->log_opts.stderr_level = LOG_LEVEL_ERROR + job->debug;
+	if (conf->log_opts.stderr_level > LOG_LEVEL_DEBUG3)
+		conf->log_opts.stderr_level = LOG_LEVEL_DEBUG3;
+
 
 	snprintf(argv0, sizeof(argv0), "slurmd[%s]", conf->hostname);
 
