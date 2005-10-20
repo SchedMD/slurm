@@ -175,7 +175,7 @@ _poll_loop_internal(eio_handle_t *eio, List objs)
 			 */
 		}
 
-		debug3("eio: handling events for %d objects", 
+		debug4("eio: handling events for %d objects", 
 				list_count(objs));
 		if ((nfds = _poll_setup_pollfds(pollfds, map, objs)) <= 0) 
 			goto done;
@@ -187,10 +187,7 @@ _poll_loop_internal(eio_handle_t *eio, List objs)
 		pollfds[nfds].events = POLLIN;
 		nfds++;
 
-		debug("nfds = %d, n = %d, maxnfds = %d",
-		      nfds, n, maxnfds);
 		xassert(nfds <= maxnfds + 1);
-
 
 		if (_poll_internal(pollfds, nfds) < 0)
 			goto error;
