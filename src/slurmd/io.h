@@ -35,8 +35,8 @@
  * The message cache uses up free message buffers, so STDIO_MAX_MSG_CACHE
  * must be a number smaller than STDIO_MAX_FREE_BUF.
  */
-#define STDIO_MAX_FREE_BUF 10
-#define STDIO_MAX_MSG_CACHE 5
+#define STDIO_MAX_FREE_BUF 1024
+#define STDIO_MAX_MSG_CACHE 128
 
 struct io_buf {
 	int ref_count;

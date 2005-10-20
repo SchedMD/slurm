@@ -494,11 +494,11 @@ _job_create_internal(allocation_info_t *info)
 	/* "nhosts" number of IO protocol sockets */
 	job->ioserver = (eio_obj_t **)xmalloc(job->nhosts*sizeof(eio_obj_t *));
 	job->free_incoming = list_create(NULL); /* FIXME! Needs destructor */
-	for (i = 0; i < 10; i++) {
+	for (i = 0; i < STDIO_MAX_FREE_BUF; i++) {
 		list_enqueue(job->free_incoming, alloc_io_buf());
 	}
 	job->free_outgoing = list_create(NULL); /* FIXME! Needs destructor */
-	for (i = 0; i < 10; i++) {
+	for (i = 0; i < STDIO_MAX_FREE_BUF; i++) {
 		list_enqueue(job->free_outgoing, alloc_io_buf());
 	}
 
