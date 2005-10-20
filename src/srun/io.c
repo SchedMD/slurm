@@ -490,28 +490,54 @@ static int _write_line(int fd, void *buf, int len)
 	return len;
 }
 
+
+/*
+ * Write as many lines from the message as possible.  Return
+ * the number of bytes from the message that have been written,
+ * or 0 on eof, or -1 on error.
+ *
+ * Prepend a label of the task number if labelio parameter was
+ * specified.
+ *
+ * If the message ends in a partial line (line does not end
+ * in a '\n'), then add a newline to the output file, but only
+ * in labelio mode.
+ */
 static int _write_msg(int fd, void *buf, int len, int taskid)
 {
 	void *start;
 	void *end;
+	int remaining = len;
+	int written = 0;
 	int line_len;
 	int rc;
-	
-	/* FIXME - should loop here, write as many lines as in the message */
-	start = buf;
-	end = memchr(start, '\n', len);
-	if (opt.labelio)
-		_write_label(fd, taskid);
-	if (end == NULL) { /* no newline found */
-		rc = _write_line(fd, start, len);
-		if (opt.labelio)
-			_write_newline(fd);
-	} else {
-		line_len = (int)(end - start) + 1;
-		rc = _write_line(fd, start, line_len);
-	}
 
-	return rc;
+	while (remaining > 0) {
+		start = buf + written;
+		end = memchr(start, '\n', remaining);
+		if (opt.labelio)
+			_write_label(fd, taskid);
+		if (end == NULL) { /* no newline found */
+			rc = _write_line(fd, start, remaining);
+			if (opt.labelio)
+				_write_newline(fd);
+		} else {
+			line_len = (int)(end - start) + 1;
+			rc = _write_line(fd, start, line_len);
+		}
+
+		if (rc <= 0) {
+			goto done;
+		} else {
+			remaining -= rc;
+			written += rc;
+		}
+	}
+done:
+	if (written > 0)
+		return written;
+	else
+		return rc;
 }
 
 static bool _file_writable(eio_obj_t *obj)
