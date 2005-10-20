@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Make proctrack/linuxproc thread safe, could cause slurmd seg fault.
  -- Propagate umask from srun to spawned tasks.
+ -- Fix problem in switch/elan error handling that could hang a slurmd 
+    step manager process.
 
 * Changes in SLURM 0.6.6
 ========================
