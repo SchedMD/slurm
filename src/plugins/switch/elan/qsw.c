@@ -1115,6 +1115,7 @@ qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 		 */
 		if (elanctrl_open(&handle) != 0) {
 			slurm_seterrno(EELAN3CONTROL);
+			_prg_destructor_send(fd, -1);
 			goto fail;
 		}
 
@@ -1123,6 +1124,7 @@ qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 			error("elanctrl_create_cap: %m");
 			slurm_seterrno(EELAN3CREATE);
 			/* elanctrl_close(handle); */
+			_prg_destructor_send(fd, -1);
 			goto fail;
 		}
 
@@ -1140,6 +1142,7 @@ qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 		if ((ctx = elan3_control_open(i)) == NULL 
 				|| ctx == (void *)-1) {
 			slurm_seterrno(EELAN3CONTROL);
+			_prg_destructor_send(fd, -1);
 			goto fail;
 		}
 		
@@ -1151,6 +1154,7 @@ qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 			 * which function failed? */
 		        error("elan3_create(%d): %m", i);
 			slurm_seterrno(EELAN3CREATE); 
+			_prg_destructor_send(fd, -1);
 			goto fail;
 		}
 	}
