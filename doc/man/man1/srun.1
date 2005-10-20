@@ -409,19 +409,15 @@ Attach to running job:
 This option will attach \fBsrun\fR
 to a running job with job id = \fIid\fR. Provided that the calling user
 has access to that running job, stdout and stderr will be redirected to the
-current session and signals received by
-.B srun
-will be forwarded to the remote processes.
+current session (assuming that the tasks' stdout and stderr are not connected
+directly to files).  stdin is not connected to the remote tasks, and signals
+are not forwarded unless the \fB\-\-join\fR parameter is also specified.
 .TP
 \fB\-j\fR, \fB\-\-join\fR
-Join with running job. This will duplicate stdout/stderr to the calling
-\fBsrun\fR. stdin and signals will not be propagated to the job.
-\fB\-\-join\fR is only allowed with \fB\-\-attach\fR.
-.TP
-\fB\-s\fR, \fB\-\-steal\fR
-Steal the connection to the running job. This will close any open
-sessions with the specified job and allow stdin and signals to be propagated.
-\fB\-\-steal\fR is only allowed with \fB\-\-attach\fR.
+Used in conjunction with \fB\-\-attach\fR to specify that stdin should
+also be connected to the remote tasks (assuming that the remote tasks'
+stdin are not directly connected to files), and signals sent to \fBsrun\fR
+will be forwarded to the remote tasks.  
 .PP
 Constraint Options. The following options all put constraints on the nodes
 that may be considered for the job:
@@ -672,9 +668,9 @@ stdout and stderr are duplicated to the attaching \fBsrun\fR, but
 signals are not forwarded to the remote processes (A single 
 Ctrl-C will detach this read-only \fBsrun\fR from the job). If
 the \fB-j\fR (\fB\-\-join\fR) option is is also specified, 
-\fBsrun\fR "joins" the running job, and is able to forward signals
-and acts for the most part much like the \fBsrun\fR process that
-initiated the job. 
+\fBsrun\fR "joins" the running job, and is able to forward signals,
+connects stdin, and acts for the most part much like the \fBsrun\fR
+process that initiated the job. 
 .PP 
 Attaching to running batch jobs is also supported, if the batch 
 job is being managed by SLURM (That is, a script submitted with
