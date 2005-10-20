@@ -91,6 +91,20 @@ main (int argc, char *argv[])
 	conf->log_opts.syslog_level = conf->debug_level;
 	/* forward the log options to slurmd_step */
 	//log_alter(conf->log_opts, 0, NULL);
+	/*
+	 * If daemonizing, turn off stderr logging -- also, if
+	 * logging to a file, turn off syslog.
+	 *
+	 * Otherwise, if remaining in foreground, turn off logging
+	 * to syslog (but keep logfile level)
+	 */
+	if (conf->daemonize) {
+		conf->log_opts.stderr_level = LOG_LEVEL_QUIET;
+		if (conf->logfile)
+			conf->log_opts.syslog_level = LOG_LEVEL_QUIET;
+	} else 
+		conf->log_opts.syslog_level  = LOG_LEVEL_QUIET;
+
 	log_init(argv[0],conf->log_opts, LOG_DAEMON, conf->logfile);
 	g_slurmd_jobacct_init(conf->cf.job_acct_parameters);
 	switch_g_slurmd_step_init();

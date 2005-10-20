@@ -384,19 +384,23 @@ extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer)
 	packstr(conf->logfile, buffer);
 	packstr(conf->cf.job_acct_parameters, buffer);
 	pack32(conf->debug_level, buffer);
+	pack32(conf->daemonize, buffer);
 	
 }
 extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 {
 	uint16_t uint16_tmp;
+	uint32_t uint32_tmp;
 	safe_unpackstr_xmalloc(&conf->hostname, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&conf->spooldir, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&conf->node_name, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&conf->logfile, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&conf->cf.job_acct_parameters, 
 			       &uint16_tmp, buffer);
-	safe_unpack32(&conf->debug_level, buffer);
-	
+	safe_unpack32(&uint32_tmp, buffer);
+	conf->debug_level = uint32_tmp;
+	safe_unpack32(&uint32_tmp, buffer);
+	conf->daemonize = uint32_tmp;
 	return SLURM_SUCCESS;
 unpack_error:
 	return SLURM_ERROR;
