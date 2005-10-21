@@ -421,7 +421,7 @@ static int _have_elan3 (void)
 
 /*  Initialize node for use of the Elan interconnect by loading 
  *   elanid/hostname pairs then spawning the Elan network error
- *   resover thread.
+ *   resolver thread.
  *
  *  Main thread waits for neterr thread to successfully start before
  *   continuing.
