@@ -518,7 +518,7 @@ _print_completing_job(job_info_t *job_ptr, node_info_msg_t *node_info_msg)
 {
 	int i;
 	node_info_t *node_info;
-	uint16_t node_state;
+	uint16_t node_state, base_state;
 	hostlist_t all_nodes, comp_nodes, down_nodes;
 	char node_buf[1024];
 
@@ -528,11 +528,12 @@ _print_completing_job(job_info_t *job_ptr, node_info_msg_t *node_info_msg)
 
 	node_info = node_info_msg->node_array;
 	for (i=0; i<node_info_msg->record_count; i++) {
-		node_state = node_info[i].node_state & (~NODE_STATE_NO_RESPOND);
-		if ((node_state == NODE_STATE_COMPLETING) && 
+		node_state = node_info[i].node_state;
+		base_state = node_info[i].node_state & NODE_STATE_BASE;
+		if ((node_state & NODE_STATE_COMPLETING) && 
 		    (_in_node_bit_list(i, job_ptr->node_inx)))
 			hostlist_push_host(comp_nodes, node_info[i].name);
-		else if ((node_state == NODE_STATE_DOWN) &&
+		else if ((base_state == NODE_STATE_DOWN) &&
 			 (hostlist_find(all_nodes, node_info[i].name) != -1))
 			hostlist_push_host(down_nodes, node_info[i].name);
 	}
@@ -1570,6 +1571,10 @@ _update_node (int argc, char *argv[])
 		}
 		else if (strncasecmp(argv[i], "State=NoResp", 12) == 0)
 			node_msg.node_state = NODE_STATE_NO_RESPOND;
+		else if (strncasecmp(argv[i], "State=DRAIN", 11) == 0)
+			node_msg.node_state = NODE_STATE_DRAIN;
+		else if (strncasecmp(argv[i], "State=RES", 9) == 0)
+			 node_msg.node_state = NODE_RESUME;
 		else if (strncasecmp(argv[i], "State=", 6) == 0) {
 			state_val = (uint16_t) NO_VAL;
 			for (j = 0; j <= NODE_STATE_END; j++) {
@@ -1578,23 +1583,13 @@ _update_node (int argc, char *argv[])
 					state_val = (uint16_t) j;
 					break;
 				}
-				if ((j == 0) && 
-				    (strcasecmp ("DRAIN", &argv[i][6]) == 0)) {
-					state_val = NODE_STATE_DRAINING;
-					break;
-				}
-				if ((j == 0) &&
-				    (strncasecmp ("RES", &argv[i][6], 3) == 0)) {
-					state_val = NODE_RESUME;
-					break;
-				}
 				if (strcmp(node_state_string(j),"END") == 0) {
 					exit_code = 1;
 					fprintf(stderr, "Invalid input: %s\n", 
 						argv[i]);
 					fprintf (stderr, "Request aborted\n");
 					fprintf (stderr, "Valid states are: ");
-					fprintf (stderr, "NoResp DRAIN ");
+					fprintf (stderr, "NoResp DRAIN RES ");
 					for (k = 0; k < NODE_STATE_END; k++) {
 						fprintf (stderr, "%s ", 
 						         node_state_string(k));
@@ -1613,8 +1608,7 @@ _update_node (int argc, char *argv[])
 		}
 	}
 
-	if (((node_msg.node_state == NODE_STATE_DRAINING) ||
-	     (node_msg.node_state == NODE_STATE_DRAINING)) &&
+	if ((node_msg.node_state == NODE_STATE_DRAIN)  &&
 	    (node_msg.reason == NULL)) {
 		fprintf (stderr, "You must specify a reason when DRAINING a node\n");
 		fprintf (stderr, "Request aborted\n");

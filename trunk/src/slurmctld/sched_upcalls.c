@@ -940,9 +940,6 @@ sched_get_node_state( sched_obj_list_t node_data,
 		{ NODE_STATE_UNKNOWN,	NODE_STATE_LABEL_DOWN },
 		{ NODE_STATE_IDLE,     	NODE_STATE_LABEL_IDLE },
 		{ NODE_STATE_ALLOCATED,	NODE_STATE_LABEL_ALLOCATED },
-		{ NODE_STATE_DRAINED,	NODE_STATE_LABEL_DRAINED },
-		{ NODE_STATE_DRAINING,	NODE_STATE_LABEL_DRAINING },
-		{ NODE_STATE_COMPLETING, NODE_STATE_LABEL_COMPLETING },
 		{ NODE_STATE_END,      	NODE_STATE_LABEL_UNKNOWN }
 	};
 
@@ -955,7 +952,15 @@ sched_get_node_state( sched_obj_list_t node_data,
 	if ( state & NODE_STATE_NO_RESPOND ) {
 		return NODE_STATE_LABEL_DOWN;
 	}
-	
+	if ( state & NODE_STATE_COMPLETING ) {
+		return NODE_STATE_LABEL_COMPLETING;
+	}
+	if ( state & NODE_STATE_DRAIN ) {
+		if ((state & NODE_STATE_COMPLETING)
+		||  ((state & NODE_STATE_BASE) == NODE_STATE_ALLOCATED))
+			return NODE_STATE_LABEL_DRAINING;
+		return NODE_STATE_LABEL_DRAINED;
+	}
 	for ( p = node_state_label_map;
 		  p->state != NODE_STATE_END;
 		  ++p ) {

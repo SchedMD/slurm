@@ -1,4 +1,4 @@
-.TH SMAP "1" "September 2005" "smap 0.6" "Slurm components"
+.TH SMAP "1" "October 2005" "smap 0.7" "Slurm components"
 
 .SH "NAME"
 smap \- graphically view information about SLURM jobs, partitions, and set 
@@ -31,12 +31,12 @@ configure mode.  Typing 'exit' will end the configuration mode and exit smap.
 Note that unallocated nodes are indicated by a '.' and DOWN or DRAINED 
 nodes by a '#'.
 \fB\-R <RACK_MIDPLANE_ID/XYZ>\fR, \fB\-\-resolve=<RACK_MIDPLANE_ID/XYZ>\fR
-Returns the XYZ coords for a Rack/Midplane id or vice-versa.
+Returns the XYZ coords for a Rack/Midplane id or vice\-versa.
 
-To get the XYZ coord for a Rack/Midplane id input -R R101 where 10 is the rack
+To get the XYZ coord for a Rack/Midplane id input \-R R101 where 10 is the rack
 and 1 is the midplane.  
 
-To get the Rack/Midplane id from a XYZ coord input -R 101 where X=1 Y=1 Z=1 with
+To get the Rack/Midplane id from a XYZ coord input \-R 101 where X=1 Y=1 Z=1 with
 no leading 'R'.  
 .RS
 .TP 15
@@ -168,7 +168,7 @@ a a a a b b c c
  a a a a . . e e              Y
 a a a a . . e e               |
                               |
-   a a a a . . d d            0----X
+   a a a a . . d d            0\-\-\-\-X
   a a a a . . d d            /
  a a a a . . . .            /
 a a a a . . . #            Z
@@ -200,12 +200,12 @@ Mode Type: \fBCOPROCESS\fR or \fBVIRTUAL\fR.
 \fBINPUT COMMANDS\fR
 .TP
 .I resolve <RACK_MIDPLANE_ID/XYZ>\fR
-Returns the XYZ coords for a Rack/Midplane id or vice-versa.
+Returns the XYZ coords for a Rack/Midplane id or vice\-versa.
 
-To get the XYZ coord for a Rack/Midplane id input -R R101 where 10 is the rack
+To get the XYZ coord for a Rack/Midplane id input \-R R101 where 10 is the rack
 and 1 is the midplane.  
 
-To get the Rack/Midplane id from a XYZ coord input -R 101 where X=1 Y=1 Z=1 with
+To get the Rack/Midplane id from a XYZ coord input \-R 101 where X=1 Y=1 Z=1 with
 no leading 'R'.  
 
 .RS
@@ -226,7 +226,7 @@ The default value is TORUS.
 .I \fBSmall\fR
 Equivalent to "Connection=Small".
 If a small connection is specified the midplanes chosen will create 4
-smaller partitions within the midplane each consisting of 128 c-nodes.
+smaller partitions within the midplane each consisting of 128 c\-nodes.
 .TP
 .I \fBMesh\fR
 Equivalent to "Connection=Mesh".
@@ -268,7 +268,7 @@ Delete the specified block or (default) the last partition created.
 .TP
 .I \fBdown <node_range>\fR
 Down a specific node or range of nodes. 
-i.e. 000, 000-111 [000x111]
+i.e. 000, 000\-111 [000x111]
 
 .TP
 .I \fBsave <file_name>\fR
@@ -285,16 +285,20 @@ Clear all partitions created.
 Node state codes are shortened as required for the field size.
 If the node state code is followed by "*", this indicates the
 node is presently not responding and will not be allocated
-any new work.  If the node remains non-responsive, it will
+any new work.  If the node remains non\-responsive, it will
 be placed in the \fBDOWN\fR state (except in the case of
 \fBDRAINED\fR, \fBDRAINING\fR, or \fBCOMPLETING\fR nodes).
 .TP 12
 ALLOCATED
 The node has been allocated to one or more jobs.
 .TP
+ALLOCATED+
+The node is allocated to one or more active jobs plus
+one or more jobs are in the process of COMPLETING.
+.TP
 COMPLETING
-One or more jobs have been allocated this node and are in
-the process of COMPLETING. This node state will be removed when
+All jobs associated with this node are in the process of 
+COMPLETING.  This node state will be removed when
 all of the job's processes have terminated and the SLURM
 epilog program (if any) has terminated. See the \fBEpilog\fR
 parameter description in the \fBslurm.conf\fR man page for
@@ -347,7 +351,7 @@ CG  COMPLETING
 Job is in the process of completing. Some processes on some nodes may still be active.
 .TP
 F   FAILED
-Job terminated with non-zero exit code or other failure condition.
+Job terminated with non\-zero exit code or other failure condition.
 .TP
 NF  NODE_FAIL
 Job terminated due to failure of one or more allocated nodes.
@@ -371,7 +375,7 @@ The location of the SLURM configuration file.
 .SH "COPYING"
 Copyright (C) 2004 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-UCRL-CODE-2002-040.
+UCRL\-CODE\-2002\-040.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.

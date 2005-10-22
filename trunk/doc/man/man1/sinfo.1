@@ -1,4 +1,4 @@
-.TH SINFO "1" "July 2005" "sinfo 0.5" "Slurm components"
+.TH SINFO "1" "October 2005" "sinfo 0.7" "Slurm components"
 
 .SH "NAME"
 sinfo \- view information about SLURM nodes and partitions.
@@ -189,23 +189,23 @@ Specification of the order in which records should be reported.
 This uses the same field specifciation as the <output_format>.
 Multiple sorts may be performed by listing multiple sort fields
 separated by commas.  The field specifications may be preceeded
-by "+" or "-" for assending (default) and desending order
+by "+" or "\-" for assending (default) and desending order
 respectively.  The partition field specification, "P", may be
 preceeded by a "#" to report partitions in the same order that
 they appear in SLURM's  configuration file, \fBslurm.conf\fR.
-For example, a sort value of "+P,-m" requests that records
+For example, a sort value of "+P,\-m" requests that records
 be printed in order of increasing partition name and within a
 partition by decreasing memory size.  The default value of sort
-is "#P,-t" (partitions ordered as configured then decreasing
-node state).  If the \fB--Node\fB option is selected, the
+is "#P,\-t" (partitions ordered as configured then decreasing
+node state).  If the \fB\-\-Node\fB option is selected, the
 default sort value is "N" (increasing node name).
 .TP
 \fB\-t <states>\fR , \fB\-\-states=<states>\fR
 List nodes only having the given state(s).  Multiple states
 may be comma separated and the comparison is case insensitive.
 Possible values include (case insensitive): ALLOC, ALLOCATED,
-COMP, COMPLETING, DOWN, DRAIN, DRAINED, DRAINING, IDLE, UNK,
-and UNKNOWN.  By default nodes in the specified state are
+COMP, COMPLETING, DOWN, DRAIN, DRAINED, DRNG, DRAINING, IDLE, 
+UNK, and UNKNOWN.  By default nodes in the specified state are
 reported whether they are responding or not.  The \fB\-\-dead\fR 
 and \fB\-\-responding\fR options may be used to filtering nodes by 
 the responding flag.
@@ -297,9 +297,13 @@ be placed in the \fBDOWN\fR state (except in the case of
 ALLOCATED
 The node has been allocated to one or more jobs.
 .TP
+ALLOCATED+
+The node is allocated to one or more active jobs plus
+one or more jobs are in the process of COMPLETING.
+.TP
 COMPLETING
-One or more jobs have been allocated this node and are in
-the process of COMPLETING. This node state will be removed when
+All jobs associated with this node are in the process of 
+COMPLETING.  This node state will be removed when
 all of the job's processes have terminated and the SLURM
 epilog program (if any) has terminated. See the \fBEpilog\fR
 parameter description in the \fBslurm.conf\fR man page for

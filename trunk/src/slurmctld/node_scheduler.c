@@ -152,7 +152,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 	kill_job_msg_t *kill_job;
 	agent_arg_t *agent_args;
 	int buf_rec_size = 0, down_node_cnt = 0;
-	uint16_t base_state, no_resp_flag;
+	uint16_t base_state;
 
 	xassert(job_ptr);
 	xassert(job_ptr->details);
@@ -177,8 +177,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 		struct node_record *node_ptr = &node_record_table_ptr[i];
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
-		base_state = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
-		no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
+		base_state = node_ptr->node_state & NODE_STATE_BASE;
 		if (base_state == NODE_STATE_DOWN) {
 			/* Issue the KILL RPC, but don't verify response */
 			down_node_cnt++;
@@ -556,7 +555,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					share_node_bitmap);
 				for (ni = 0; ni < node_record_count; ni++) {
 					if (node_record_table_ptr[ni].node_state
-					==  NODE_STATE_COMPLETING)
+					&  NODE_STATE_COMPLETING)
 						bit_clear(node_set_ptr[i].my_bitmap, ni);
 				}
 				/* pick_light_load = false;  Non-overlapping blocks */
@@ -1372,7 +1371,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 		if ((job_ptr->node_bitmap == NULL) ||
 		    (bit_test(job_ptr->node_bitmap, i) == 0))
 			continue;
-		if ((node_ptr->node_state & (~NODE_STATE_NO_RESPOND))
+		if ((node_ptr->node_state & NODE_STATE_BASE) 
 				== NODE_STATE_DOWN) {
 			/* Consider job already completed */
 			bit_clear(job_ptr->node_bitmap, i);

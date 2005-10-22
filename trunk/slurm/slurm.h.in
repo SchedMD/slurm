@@ -203,23 +203,27 @@ enum task_dist_states {
 	SLURM_DIST_BLOCK	/* distribute tasks filling node by node */
 };
 
-/* last entry must be STATE_END, keep in sync with node_state_string    */
-/* 	if a node ceases to respond, its last state is ORed with 	*/
-/* 	NODE_STATE_NO_RESPOND	*/
+/* The last entry in node_states must be STATE_END, keep in sync with 
+ * node_state_string. values may be ORed with NODE_STATE_FLAGS below. 
+ * Node states typically alternate between NODE_STATE_IDLE and 
+ * NODE_STATE_ALLOCATED. The NODE_STATE_COMPLETING flag will be set 
+ * when jobs are in the process of terminating. */
 enum node_states {
-	NODE_STATE_DOWN,	/* node is not responding */
 	NODE_STATE_UNKNOWN,	/* node's initial state, unknown */
+	NODE_STATE_DOWN,	/* node is not responding */
 	NODE_STATE_IDLE,	/* node idle and available for use */
 	NODE_STATE_ALLOCATED,	/* node has been allocated to a job */
-	NODE_STATE_DRAINED,	/* node idle and not to be allocated work */
-	NODE_STATE_DRAINING,	/* node in use, but not to be allocated work */
-	NODE_STATE_COMPLETING,	/* node is completing allocated job */
 	NODE_STATE_END		/* last entry in table */
 };
-#define NODE_RESUME 0x400	/* Restore a DRAINED, DRAINING, or DOWN
-				 * node to service (e.g. IDLE or ALLOCATED).
-				 * Used for slurm_update_node request */
-#define NODE_STATE_NO_RESPOND (0x8000)
+#define NODE_STATE_BASE       0x00ff
+#define NODE_STATE_FLAGS      0xff00
+#define NODE_RESUME           0x0100	/* Restore a DRAINED, DRAINING, or 
+					 * DOWN node to service (e.g. IDLE or 
+					 * ALLOCATED). Used in 
+					 * slurm_update_node() request */
+#define NODE_STATE_DRAIN      0x0200	/* node not be be allocated work */
+#define NODE_STATE_COMPLETING 0x0400	/* node is completing allocated job */
+#define NODE_STATE_NO_RESPOND 0x0800	/* node is not responding */
 
 /* used to define the size of the credential.signature size
  * used to define the key size of the io_stream_header_t

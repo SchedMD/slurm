@@ -216,7 +216,7 @@ extern void parse_command_line(int argc, char *argv[])
 	_parse_format( params.format );
 
 	if (params.list_reasons && (params.state_list == NULL)) {
-		params.states = xstrdup ("down,drain,draining");
+		params.states = xstrdup ("down,drain");
 		if (!(params.state_list = _build_state_list (params.states)))
 			fatal ("Unable to build state list for -R!");
 	}
@@ -256,7 +256,7 @@ _next_tok (char *sep, char **str)
 }
 
 /*
- * _build_state_list - build a list of job states
+ * _build_state_list - build a list of node states
  * IN str - comma separated list of job states
  * RET List of enum job_states values
  */
@@ -288,7 +288,7 @@ _build_state_list (char *state_str)
 }
 
 /*
- * _build_all_states_list - build a list containing all possible job states
+ * _build_all_states_list - build a list containing all possible node states
  * RET List of enum job_states values
  */
 static List 
@@ -299,11 +299,20 @@ _build_all_states_list( void )
 	uint16_t *state_id;
 
 	my_list = list_create( NULL );
-	for (i = 0; i<NODE_STATE_END; i++) {
+	for (i = 0; i < NODE_STATE_END; i++) {
 		state_id = xmalloc( sizeof( uint16_t ) );
 		*state_id = (uint16_t) i;
 		list_append( my_list, state_id );
 	}
+
+	state_id = xmalloc( sizeof( uint16_t ) );
+	*state_id = NODE_STATE_DRAIN;
+	list_append( my_list, state_id );
+
+	state_id = xmalloc( sizeof( uint16_t ) );
+	*state_id = NODE_STATE_COMPLETING;
+	list_append( my_list, state_id );
+
 	return my_list;
 }
 
@@ -321,6 +330,14 @@ _node_state_list (void)
 		xstrcat (all_states, node_state_string_compact(i));
 	}
 
+	xstrcat (all_states, ",");
+	xstrcat (all_states, 
+		node_state_string_compact(NODE_STATE_DRAIN));
+
+	xstrcat (all_states, ",");
+	xstrcat (all_states, 
+		node_state_string_compact(NODE_STATE_COMPLETING));
+
 	for (i = 0; i < strlen (all_states); i++)
 		all_states[i] = tolower (all_states[i]);
 
@@ -336,7 +353,6 @@ _node_state_equal (int i, const char *str)
 	if (  (strncasecmp (node_state_string_compact(i), str, len) == 0) 
 	   || (strncasecmp (node_state_string(i),         str, len) == 0)) 
 		return (true);
-
 	return (false);
 }
 
@@ -354,6 +370,12 @@ _node_state_id (char *str)
 		if (_node_state_equal (i, str))
 			return (i);
 	}
+
+	if  (_node_state_equal (NODE_STATE_DRAIN, str))
+		return NODE_STATE_DRAIN;
+
+	if (_node_state_equal (NODE_STATE_COMPLETING, str))
+		return NODE_STATE_COMPLETING;
 
 	return (-1);
 }

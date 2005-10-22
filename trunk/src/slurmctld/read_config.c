@@ -167,37 +167,19 @@ static int _build_bitmaps(void)
 
 		if (node_record_table_ptr[i].name[0] == '\0')
 			continue;	/* defunct */
-		base_state   = node_record_table_ptr[i].node_state & 
-			       (~NODE_STATE_NO_RESPOND);
+		base_state = node_record_table_ptr[i].node_state & 
+				NODE_STATE_BASE; 
 		no_resp_flag = node_record_table_ptr[i].node_state & 
-			       NODE_STATE_NO_RESPOND;
+				NODE_STATE_NO_RESPOND;
 		job_cnt = node_record_table_ptr[i].run_job_cnt +
 		          node_record_table_ptr[i].comp_job_cnt;
 
-		if ((base_state == NODE_STATE_DRAINED) &&
-		    (job_cnt > 0)) {
-			error("Bad node drain state for %s", 
-				node_record_table_ptr[i].name);
-			node_record_table_ptr[i].node_state =
-				NODE_STATE_DRAINING | no_resp_flag;
-		}
-		if ((base_state == NODE_STATE_DRAINING) &&
-		    (job_cnt == 0)) {
-			error("Bad node drain state for %s",
-				node_record_table_ptr[i].name);
-			node_record_table_ptr[i].node_state =
-				NODE_STATE_DRAINED | no_resp_flag;
-		}
-
-		if ((base_state == NODE_STATE_IDLE   ) ||
-		    (base_state == NODE_STATE_DOWN   ) ||
-		    (base_state == NODE_STATE_DRAINED))
+		if ((base_state == NODE_STATE_IDLE)
+		||  (base_state == NODE_STATE_DOWN))
 			bit_set(idle_node_bitmap, i);
-		if ((base_state != NODE_STATE_DOWN)     &&
-		    (base_state != NODE_STATE_UNKNOWN)  &&
-		    (base_state != NODE_STATE_DRAINING) &&
-		    (base_state != NODE_STATE_DRAINED)  &&
-		    (no_resp_flag == 0))
+		if ((base_state == NODE_STATE_IDLE)
+		||  (base_state == NODE_STATE_ALLOCATED)
+		&&  (no_resp_flag == 0))
 			bit_set(avail_node_bitmap, i);
 		if (node_record_table_ptr[i].config_ptr)
 			bit_set(node_record_table_ptr[i].config_ptr->
@@ -354,8 +336,9 @@ static int _parse_node_spec(char *in_line)
 				break;
 			}
 		}
-		if ((state_val == NO_VAL) ||
-		    (state_val == NODE_STATE_COMPLETING)) {
+		if ((i == 0) && (strncasecmp("DRAIN", state, 5) == 0))
+			state_val = NODE_STATE_IDLE | NODE_STATE_DRAIN;
+		if (state_val == NO_VAL) {
 			error("_parse_node_spec: invalid initial state %s for "
 				"node %s", state, node_name);
 			error_code = EINVAL;
@@ -464,8 +447,7 @@ static int _parse_node_spec(char *in_line)
 #endif
 			node_ptr->reason = xstrdup(reason);
 		} else {
-			error
-			    ("_parse_node_spec: reconfiguration for node %s",
+			error("_parse_node_spec: reconfiguration for node %s",
 			     this_node_name);
 			if ((state_val != NO_VAL) &&
 			    (state_val != NODE_STATE_UNKNOWN))
@@ -1080,14 +1062,17 @@ static int _sync_nodes_to_comp_job(void)
 static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 {
 	int i, cnt = 0;
-	uint16_t base_state, no_resp_flag;
+	uint16_t base_state, node_flags;
 
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 
 		base_state = node_record_table_ptr[i].node_state & 
-			     (~NODE_STATE_NO_RESPOND);
+				NODE_STATE_BASE;
+		node_flags = node_record_table_ptr[i].node_state & 
+				NODE_STATE_FLAGS;
+ 
 		node_record_table_ptr[i].run_job_cnt++; /* NOTE:
 				* This counter moved to comp_job_cnt 
 				* by _sync_nodes_to_comp_job() */
@@ -1103,19 +1088,11 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 			delete_all_step_records(job_ptr);
 			job_completion_logger(job_ptr);
 			cnt++;
-		} else {
-			no_resp_flag = node_record_table_ptr[i].node_state & 
-				       NODE_STATE_NO_RESPOND;
-			if ((base_state == NODE_STATE_UNKNOWN) || 
-			    (base_state == NODE_STATE_IDLE)) {
-				cnt++;
-				node_record_table_ptr[i].node_state =
-				    NODE_STATE_ALLOCATED | no_resp_flag;
-			} else if (base_state == NODE_STATE_DRAINED) {
-				cnt++;
-				node_record_table_ptr[i].node_state =
-				    NODE_STATE_DRAINING | no_resp_flag;
-			}
+		} else if ((base_state == NODE_STATE_UNKNOWN) || 
+			   (base_state == NODE_STATE_IDLE)) {
+			cnt++;
+			node_record_table_ptr[i].node_state =
+				NODE_STATE_ALLOCATED | node_flags;
 		} 
 	}
 	return cnt;
@@ -1145,8 +1122,8 @@ static void _validate_node_proc_count(void)
 				node_size = node_ptr->config_ptr->cpus;
 			else if (node_ptr->cpus < node_ptr->config_ptr->cpus)
 				continue;	/* node too small, will be DOWN */
-			else if ((node_ptr->node_state & (~NODE_STATE_NO_RESPOND))
-			     == NODE_STATE_DOWN)
+			else if ((node_ptr->node_state & NODE_STATE_BASE) 
+					== NODE_STATE_DOWN)
 				continue;
 			else
 				node_size = node_ptr->cpus;

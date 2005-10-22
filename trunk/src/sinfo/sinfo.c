@@ -359,15 +359,22 @@ static bool _filter_out(node_info_t *node_ptr)
 	if (params.state_list) {
 		int *node_state;
 		bool match = false;
+		uint16_t base_state = node_ptr->node_state & 
+			(~NODE_STATE_NO_RESPOND);
 		ListIterator iterator;
+
 		iterator = list_iterator_create(params.state_list);
 		while ((node_state = list_next(iterator))) {
-			if ( (node_ptr->node_state == *node_state) || 
-					((node_ptr->node_state & 
-					 (~NODE_STATE_NO_RESPOND)) == 
-					 *node_state) ) {
-				match = true;
-				break;
+			if (*node_state & NODE_STATE_FLAGS) {
+				if (*node_state & node_ptr->node_state) {
+					match = true;
+					break;
+				}
+			} else {
+				if (base_state == *node_state) { 
+					match = true;
+					break;
+				}
 			}
 		}
 		list_iterator_destroy(iterator);
@@ -473,6 +480,8 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 static void _update_sinfo(sinfo_data_t *sinfo_ptr, partition_info_t* part_ptr, 
 		node_info_t *node_ptr)
 {
+	uint16_t base_state;
+
 	if (sinfo_ptr->nodes_tot == 0) {	/* first node added */
 		sinfo_ptr->node_state = node_ptr->node_state;
 		sinfo_ptr->features   = node_ptr->features;
@@ -507,10 +516,11 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, partition_info_t* part_ptr,
 			sinfo_ptr->max_weight = node_ptr->weight;
 	}
 
-	if ((node_ptr->node_state == NODE_STATE_ALLOCATED) ||
-	    (node_ptr->node_state == NODE_STATE_COMPLETING))
+	base_state = node_ptr->node_state & NODE_STATE_BASE;
+	if ((base_state == NODE_STATE_ALLOCATED)
+	||  (node_ptr->node_state & NODE_STATE_COMPLETING))
 		sinfo_ptr->nodes_alloc++;
-	else if (node_ptr->node_state == NODE_STATE_IDLE)
+	else if (base_state == NODE_STATE_IDLE)
 		sinfo_ptr->nodes_idle++;
 	else 
 		sinfo_ptr->nodes_other++;
@@ -537,11 +547,13 @@ static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr,
 	sinfo_ptr->part_info = part_ptr;
 
 	if (node_ptr) {
+		uint16_t base_state = node_ptr->node_state & 
+			NODE_STATE_BASE;
 		sinfo_ptr->node_state = node_ptr->node_state;
-		if ((node_ptr->node_state == NODE_STATE_ALLOCATED) ||
-		    (node_ptr->node_state == NODE_STATE_COMPLETING))
+		if ((base_state == NODE_STATE_ALLOCATED)
+		||  (node_ptr->node_state & NODE_STATE_COMPLETING))
 			sinfo_ptr->nodes_alloc++;
-		else if (node_ptr->node_state == NODE_STATE_IDLE)
+		else if (base_state == NODE_STATE_IDLE)
 			sinfo_ptr->nodes_idle++;
 		else 
 			sinfo_ptr->nodes_other++;
