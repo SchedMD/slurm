@@ -43,9 +43,7 @@ extern int set_grid(int start, int end, int count)
 				if ((pa_system_ptr->grid[x][y][z].state 
 				     == NODE_STATE_DOWN)
 				    ||  (pa_system_ptr->grid[x][y][z].state 
-					 == NODE_STATE_DRAINED)
-				    ||  (pa_system_ptr->grid[x][y][z].state 
-					 == NODE_STATE_DRAINING))
+					 & NODE_STATE_DRAIN))
 					continue;
 				
 				pa_system_ptr->grid[x][y][z].letter = 
@@ -61,8 +59,7 @@ extern int set_grid(int start, int end, int count)
 		    ||  (pa_system_ptr->grid[x].indecies > end)) 
 			continue;
 		if ((pa_system_ptr->grid[x].state == NODE_STATE_DOWN)
-		    ||  (pa_system_ptr->grid[x].state == NODE_STATE_DRAINED)
-		    ||  (pa_system_ptr->grid[x].state == NODE_STATE_DRAINING))
+		    ||  (pa_system_ptr->grid[x].state & NODE_STATE_DRAIN))
 			continue;
 
 		pa_system_ptr->grid[x].letter = 

@@ -1051,16 +1051,13 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 				if(node_info_ptr!=NULL) {
 					node_ptr = 
 						&node_info_ptr->node_array[i];
-					node_base_state = 
-						(node_ptr->node_state) 
-						& (~NODE_STATE_NO_RESPOND);
+					node_base_state = node_ptr->node_state 
+						& NODE_STATE_BASE;
 					pa_system_ptr->grid[x][y][z].color = 7;
 					if ((node_base_state 
 					     == NODE_STATE_DOWN) || 
-					    (node_base_state 
-					     == NODE_STATE_DRAINED) || 
-					    (node_base_state 
-					     == NODE_STATE_DRAINING)) {
+					    (node_ptr->node_state &
+					     NODE_STATE_DRAIN)) {
 						pa_system_ptr->
 							grid[x][y][z].color 
 							= 0;
@@ -1093,13 +1090,10 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 	for (x = 0; x < DIM_SIZE[X]; x++) {
 		if(node_info_ptr!=NULL) {
 			node_ptr = &node_info_ptr->node_array[i];
-			node_base_state = 
-				(node_ptr->node_state) 
-				& (~NODE_STATE_NO_RESPOND);
+			node_base_state = node_ptr->node_state & NODE_STATE_BASE;
 			pa_system_ptr->grid[x].color = 7;
 			if ((node_base_state == NODE_STATE_DOWN) || 
-			    (node_base_state == NODE_STATE_DRAINED) || 
-			    (node_base_state == NODE_STATE_DRAINING)) {
+			    (node_ptr->node_state & NODE_STATE_DRAIN)) {
 				pa_system_ptr->grid[x].color = 0;
 				pa_system_ptr->grid[x].letter = '#';
 				if(_initialized) {
@@ -1114,8 +1108,7 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 		} else {
 			pa_system_ptr->grid[x].color = 7;
 			pa_system_ptr->grid[x].letter = '.';
-			pa_system_ptr->grid[x].state = 
-				NODE_STATE_IDLE;
+			pa_system_ptr->grid[x].state = NODE_STATE_IDLE;
 		}
 		pa_system_ptr->grid[x].indecies = i++;
 	}

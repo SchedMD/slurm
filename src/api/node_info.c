@@ -78,10 +78,22 @@ slurm_print_node_info_msg ( FILE * out, node_info_msg_t * node_info_msg_ptr,
 void
 slurm_print_node_table ( FILE * out, node_info_t * node_ptr, int one_liner )
 {
+	uint16_t my_state = node_ptr->node_state;
+	char *comp_str = "", *drain_str = "";
+
+	if (my_state & NODE_STATE_COMPLETING) {
+		my_state &= (~NODE_STATE_COMPLETING);
+		comp_str = "+COMPLETING";
+	}
+	if (my_state & NODE_STATE_DRAIN) {
+		my_state &= (~NODE_STATE_DRAIN);
+		drain_str = "+DRAIN";
+	}
+
 	/****** Line 1 ******/
-	fprintf ( out, "NodeName=%s State=%s CPUs=%u ", 
-		node_ptr->name, node_state_string(node_ptr->node_state), 
-		node_ptr->cpus);
+	fprintf ( out, "NodeName=%s State=%s%s%s CPUs=%u ", 
+		node_ptr->name, node_state_string(my_state),
+		comp_str, drain_str, node_ptr->cpus);
 	fprintf ( out, "RealMemory=%u TmpDisk=%u", 
 		node_ptr->real_memory, node_ptr->tmp_disk);
 	if (one_liner)

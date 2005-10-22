@@ -544,11 +544,12 @@ _get_avail_node_cnt(struct job_record *job_ptr)
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 		node_ptr = node_record_table_ptr + i;
-		base_state = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
-		if ( (base_state != NODE_STATE_DRAINING) &&
-		     (base_state != NODE_STATE_DRAINED)  &&
-		     (base_state != NODE_STATE_DOWN) )
-			cnt++;
+		if (node_ptr->node_state & NODE_STATE_DRAIN)
+			continue;
+		base_state = node_ptr->node_state & NODE_STATE_BASE;
+		if (base_state == NODE_STATE_DOWN)
+			continue;	
+		cnt++;
 	}
 
 	return cnt;

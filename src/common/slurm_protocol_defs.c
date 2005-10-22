@@ -530,90 +530,100 @@ char *job_state_string_compact(enum job_states inx)
 
 char *node_state_string(enum node_states inx)
 {
-	bool no_resp_flag;
+	bool drain_flag   = (inx & NODE_STATE_DRAIN);
+	bool comp_flag    = (inx & NODE_STATE_NO_RESPOND);
+	bool no_resp_flag = (inx & NODE_STATE_NO_RESPOND);
 
-	if (inx & NODE_STATE_NO_RESPOND) {
-		no_resp_flag = true;
-		inx = (uint16_t) (inx & (~NODE_STATE_NO_RESPOND));
-	} else
-		no_resp_flag = false;
+	inx = (uint16_t) (inx & NODE_STATE_BASE);
 
-	switch (inx) {
-		case NODE_STATE_DOWN:
-			if (no_resp_flag)
-				return "DOWN*";
-			return "DOWN";
-		case NODE_STATE_UNKNOWN:
-			if (no_resp_flag)
-				return "UNKNOWN*";
-			return "UNKNOWN";
-		case NODE_STATE_IDLE:
-			if (no_resp_flag)
-				return "IDLE*";
-			return "IDLE";
-		case NODE_STATE_ALLOCATED:
-			if (no_resp_flag)
-				return "ALLOCATED*";
-			return "ALLOCATED";
-		case NODE_STATE_DRAINED:
-			if (no_resp_flag)
-				return "DRAINED*";
-			return "DRAINED";
-		case NODE_STATE_DRAINING:
+	if (inx == NODE_STATE_DOWN) {
+		if (no_resp_flag)
+			return "DOWN*";
+		return "DOWN";
+	}
+	if (drain_flag) {
+		if (comp_flag || (inx == NODE_STATE_ALLOCATED)) {
 			if (no_resp_flag)
 				return "DRAINING*";
 			return "DRAINING";
-		case NODE_STATE_COMPLETING:
+		} else {
 			if (no_resp_flag)
-				return "COMPLETING*";
-			return "COMPLETING";
-		default:
-			return "?";
+				return "DRAINED*";
+			return "DRAINED";
+		}
 	}
+	if (inx == NODE_STATE_ALLOCATED) {
+		if (no_resp_flag)
+			return "ALLOCATED*";
+		if (comp_flag)
+			return "ALLOCATED+";
+		return "ALLOCATED";
+	}
+	if (comp_flag) {
+		if (no_resp_flag)
+			return "COMPLETING*";
+		return "COMPLETING";
+	}
+	if (inx == NODE_STATE_IDLE) {
+		if (no_resp_flag)
+			return "IDLE*";
+		return "IDLE";
+	}
+	if (inx == NODE_STATE_UNKNOWN) {
+		if (no_resp_flag)
+			return "UNKNOWN*";
+		return "UNKNOWN";
+	}
+	return "?";
 }
 
 char *node_state_string_compact(enum node_states inx)
 {
-	bool no_resp_flag;
+	bool drain_flag   = (inx & NODE_STATE_DRAIN);
+	bool comp_flag    = (inx & NODE_STATE_NO_RESPOND);
+	bool no_resp_flag = (inx & NODE_STATE_NO_RESPOND);
 
-	if (inx & NODE_STATE_NO_RESPOND) {
-		no_resp_flag = true;
-		inx = (uint16_t) (inx & (~NODE_STATE_NO_RESPOND));
-	} else
-		no_resp_flag = false;
+	inx = (uint16_t) (inx & NODE_STATE_BASE);
 
-	switch (inx) {
-		case NODE_STATE_DOWN:
-			if (no_resp_flag)
-				return "DOWN*";
-			return "DOWN";
-		case NODE_STATE_UNKNOWN:
-			if (no_resp_flag)
-				return "UNK*";
-			return "UNK";
-		case NODE_STATE_IDLE:
-			if (no_resp_flag)
-				return "IDLE*";
-			return "IDLE";
-		case NODE_STATE_ALLOCATED:
-			if (no_resp_flag)
-				return "ALLOC*";
-			return "ALLOC";
-		case NODE_STATE_DRAINED:
-			if (no_resp_flag)
-				return "DRAIN*";
-			return "DRAIN";
-		case NODE_STATE_DRAINING:
+	if (inx == NODE_STATE_DOWN) {
+		if (no_resp_flag)
+			return "DOWN*";
+		return "DOWN";
+	}
+	if (drain_flag) {
+		if (comp_flag || (inx == NODE_STATE_ALLOCATED)) {
 			if (no_resp_flag)
 				return "DRNG*";
 			return "DRNG";
-		case NODE_STATE_COMPLETING:
+		} else {
 			if (no_resp_flag)
-				return "COMP*";
-			return "COMP";
-		default:
-			return "?";
+				return "DRAIN*";
+			return "DRAIN";
+		}
 	}
+	if (inx == NODE_STATE_ALLOCATED) {
+		if (no_resp_flag)
+			return "ALLOC*";
+		if (comp_flag)
+			return "ALLOC+";
+		return "ALLOC";
+	}
+	if (comp_flag) {
+		if (no_resp_flag)
+			return "COMP*";
+		return "COMP";
+	}
+	if (inx == NODE_STATE_IDLE) {
+		if (no_resp_flag)
+			return "IDLE*";
+		return "IDLE";
+	}
+	if (inx == NODE_STATE_UNKNOWN) {
+		if (no_resp_flag)
+			return "UNK*";
+		return "UNK";
+	}
+	return "?";
 }
 
 /*
