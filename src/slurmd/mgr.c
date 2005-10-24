@@ -1012,7 +1012,8 @@ _wait_for_io(slurmd_job_t *job)
 	 */
 	if (job->ioid)
 		pthread_join(job->ioid, NULL);
-
+	else
+		info("_wait_for_io: ioid==0");
 	return;
 }
 
@@ -1023,10 +1024,10 @@ _make_batch_dir(slurmd_job_t *job)
 	char path[MAXPATHLEN]; 
 
 	if (job->stepid == NO_VAL)
-	  snprintf(path, 1024, "%s/job%05u", conf->spooldir, job->jobid);
+		snprintf(path, 1024, "%s/job%05u", conf->spooldir, job->jobid);
 	else
-	  snprintf(path, 1024, "%s/job%05u.%05u", conf->spooldir, job->jobid,
-		   job->stepid);
+		snprintf(path, 1024, "%s/job%05u.%05u", conf->spooldir, job->jobid,
+			job->stepid);
 
 	if ((mkdir(path, 0750) < 0) && (errno != EEXIST)) {
 		error("mkdir(%s): %m", path);
