@@ -1010,7 +1010,8 @@ _wait_for_io(slurmd_job_t *job)
 	/*
 	 * Wait until IO thread exits
 	 */
-	pthread_join(job->ioid, NULL);
+	if (job->ioid)
+		pthread_join(job->ioid, NULL);
 
 	return;
 }
