@@ -1,6 +1,9 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Stress test with maximum slurmctld message concurrency.
+#          We start a large number of job steps, the simultaneously 
+#          cancel them all. Message can get lost/restransmitted, so
+#          there is a delayed test for job step removal.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -61,10 +64,10 @@ exec echo "$bin_sleep $delay"       >>$file_in
 exec echo "inx=0"                   >>$file_in
 exec echo "while \[ \$inx -le $task_cnt ]" >>$file_in
 exec echo "do"                      >>$file_in
-exec echo "$srun $bin_sleep 120 &"  >>$file_in
+exec echo "$srun $bin_sleep 300 &"  >>$file_in
 exec echo "inx=\$((inx+1))"         >>$file_in
 exec echo "done"                    >>$file_in
-exec echo "$srun $bin_sleep 120 "   >>$file_in
+exec echo "$srun $bin_sleep 300 "   >>$file_in
 exec $bin_chmod 700 $file_in
 
 #
@@ -151,7 +154,7 @@ expect {
 # If message are lost, slurmctld re-sends job kill RPC 120 seconds later
 # In any case, make sure that all jobs get completed
 #
-exec $bin_sleep 5
+exec $bin_sleep 10
 set completing_jobs 0
 spawn $squeue --noheader --user $user_name
 expect {
