@@ -282,10 +282,9 @@ _client_read(eio_obj_t *obj, List objs)
 		if ((n = read(obj->fd, buf, client->in_remaining)) < 0) {
 			if (errno == EINTR)
 				goto again;
-			/* FIXME handle error */
-			return SLURM_ERROR;
+			debug5("  error in _client_read: %m");
 		}
-		if (n == 0) { /* got eof */
+		if (n <= 0) { /* got eof */
 			debug5("  got eof on _client_read body");
 			client->in_eof = true;
 			list_enqueue(client->job->free_incoming, client->in_msg);
@@ -579,9 +578,7 @@ again:
 				debug5("_task_read returned EAGAIN");
 				return SLURM_SUCCESS;
 			}
-			/* FIXME add error message */
-			debug5("  error in _task_read");
-			return SLURM_ERROR;
+			debug5("  error in _task_read: %m");
 		}
 		if (rc <= 0) {  /* got eof */
 			debug5("  got eof on task");
