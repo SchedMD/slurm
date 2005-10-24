@@ -469,7 +469,7 @@ long job_time_used(job_info_t * job_ptr)
 {
 	long delta_t;
 
-	if (job_ptr->job_state == JOB_PENDING)
+	if (job_ptr->start_time == 0)
 		delta_t = 0;
 	else if (job_ptr->job_state == JOB_RUNNING)
 		delta_t = difftime(time(NULL), job_ptr->start_time);
