@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of --kill-on-bad-exit option).
+#          Test of srun's --kill-on-bad-exit option.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -45,12 +45,18 @@ print_header $test_id
 # Delete left-over input script
 # Build input script file
 #
+# We have multiple sleep commands because if using proctrack/linuxproc, 
+# the first sleep will be killed before the shell, which would 
+# immediately execute the echo. 
+#
 exec $bin_rm -f $file_in
 exec echo "#!$bin_bash"                   >$file_in
 exec echo "if ((\$SLURM_PROCID== 1))"    >>$file_in
 exec echo "   then exit 2"               >>$file_in
 exec echo "fi"                           >>$file_in
-exec echo "$bin_sleep 10"                >>$file_in
+exec echo "$bin_sleep 4"                 >>$file_in
+exec echo "$bin_sleep 4"                 >>$file_in
+exec echo "$bin_sleep 4"                 >>$file_in
 exec echo "$bin_echo SHOULD_NOT_BE_HERE" >>$file_in
 exec $bin_chmod 700 $file_in
 
