@@ -583,7 +583,7 @@ again:
 			debug5("  error in _task_read");
 			return SLURM_ERROR;
 		}
-		if (rc == 0) {  /* got eof */
+		if (rc <= 0) {  /* got eof */
 			debug5("  got eof on task");
 			out->eof = true;
 		}
