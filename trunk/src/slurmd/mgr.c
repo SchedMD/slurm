@@ -569,6 +569,7 @@ static int
 _job_mgr(slurmd_job_t *job)
 {
 	int rc = 0;
+	bool io_initialized = false;
 
 	job->jmgr_pid = getpid();
 	debug3("Entered job_mgr for %u.%u pid=%lu",
@@ -595,8 +596,12 @@ _job_mgr(slurmd_job_t *job)
 		rc = _setup_spawn_io(job);
 	else
 		rc = _setup_io(job);
-	if (rc)
+	if (rc) {
+		error("IO setup failed: %m");
 		goto fail2;
+	} else {
+		io_initialized = true;
+	}
 
 	g_slurmd_jobacct_jobstep_launched(job);
 
@@ -654,7 +659,7 @@ _job_mgr(slurmd_job_t *job)
 	/*
 	 * Wait for io thread to complete (if there is one)
 	 */
-	if (!job->batch && !job->spawn_task) {
+	if (!job->batch && !job->spawn_task && io_initialized) {
 		eio_signal_shutdown(job->eio);
 		_wait_for_io(job);
 	}

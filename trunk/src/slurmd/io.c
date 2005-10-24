@@ -904,7 +904,7 @@ io_close_all(slurmd_job_t *job)
 	/* Signal IO thread to close appropriate 
 	 * client connections
 	 */
-	eio_signal_wakeup(job->eio);
+	eio_signal_shutdown(job->eio);
 }
 
 static void *
