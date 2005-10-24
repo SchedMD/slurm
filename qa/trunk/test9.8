@@ -39,6 +39,7 @@ set exit_code    0
 set file_in      "test$test_id.input"
 set job_cnt      10
 set delay        5
+set sleep_time   300
 set task_cnt     60
 
 print_header $test_id
@@ -59,15 +60,15 @@ if {[test_front_end] != 0} {
 #   This is especially important on very slow systems (e.g. AIX).
 #
 exec $bin_rm -f $file_in
-exec echo "#!$bin_bash"              >$file_in
-exec echo "$bin_sleep $delay"       >>$file_in
-exec echo "inx=0"                   >>$file_in
-exec echo "while \[ \$inx -le $task_cnt ]" >>$file_in
-exec echo "do"                      >>$file_in
-exec echo "$srun $bin_sleep 300 &"  >>$file_in
-exec echo "inx=\$((inx+1))"         >>$file_in
-exec echo "done"                    >>$file_in
-exec echo "$srun $bin_sleep 300 "   >>$file_in
+exec echo "#!$bin_bash"                      >$file_in
+exec echo "$bin_sleep $delay"               >>$file_in
+exec echo "inx=0"                           >>$file_in
+exec echo "while \[ \$inx -le $task_cnt ]"  >>$file_in
+exec echo "do"                              >>$file_in
+exec echo "$srun $bin_sleep $sleep_time &"  >>$file_in
+exec echo "inx=\$((inx+1))"                 >>$file_in
+exec echo "done"                            >>$file_in
+exec echo "$srun $bin_sleep $sleep_time "   >>$file_in
 exec $bin_chmod 700 $file_in
 
 #
@@ -194,6 +195,26 @@ if {$completing_jobs != 0} {
 		set exit_code 1
 	}
 }
+if {$completing_jobs != 0} {
+	set max_wait [expr $sleep_time - 120]
+	if {$max_wait > 0} {
+		set completing_jobs 0
+		exec $bin_sleep $max_wait
+		spawn $squeue --noheader --user $user_name
+		expect {
+			-re "$user_name *CG" {
+				incr completing_jobs
+				exp_continue
+			}
+			eof {
+				wait
+			}
+		}
+	}
+}
+if {$completing_jobs != 0} {
+	send_user "\nFAILURE: Jobs not completing. Subsequent tests may fail!\n"
+}		
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
