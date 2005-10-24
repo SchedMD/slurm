@@ -290,7 +290,7 @@ shm_free_steps(void)
 static bool
 _job_step_mgr_still_running(job_step_t *step)
 {
-	if (kill(step->mpid, 0) == 0)
+	if ((step->mpid == 0)|| (kill(step->mpid, 0) == 0))
 		return true;
 	else
 		return false;
