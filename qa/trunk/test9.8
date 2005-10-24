@@ -110,6 +110,7 @@ if {$start_cnt < $job_cnt} {
 # Give the jobs a few seconds to get initiated, check for steps, 
 # then kill them all
 #
+set user_name ""
 exec $bin_sleep [expr $delay + 5]
 spawn $bin_id -un
 expect {
