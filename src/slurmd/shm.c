@@ -1031,8 +1031,8 @@ _shm_reopen()
 
 	if ((shm_lock == SEM_FAILED)) {
 		//if ((shm_lock == SEM_FAILED) || (!_shm_sane())) {
-		debug2("Shared memory not in sane state %d "
-		       "- reinitializing.", shm_lock->id);
+		debug2("Shared memory not in sane state "
+		       "- reinitializing.");
 
 		/*
 		 * Unlink old lockfile, reopen semaphore with create flag,
