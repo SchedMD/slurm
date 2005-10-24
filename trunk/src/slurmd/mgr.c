@@ -1019,6 +1019,7 @@ _wait_for_io(slurmd_job_t *job)
 		pthread_join(job->ioid, NULL);
 	else
 		info("_wait_for_io: ioid==0");
+
 	return;
 }
 
