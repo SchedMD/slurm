@@ -539,18 +539,17 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 
 	hostset_destroy(hset);
 	xfree(arg.hostlist);
-        arg.ntask_cnt = 0;
-        if (arg.ntask) xfree(arg.ntask);
-        arg.ntask = NULL;
+	arg.ntask_cnt = 0;
+	xfree(arg.ntask);
 
 	return SLURM_SUCCESS;
 
     fail:
-	if (hset) hostset_destroy(hset);
+	if (hset)
+		hostset_destroy(hset);
 	xfree(arg.hostlist);
         arg.ntask_cnt = 0;
-        if (arg.ntask) xfree(arg.ntask);
-        arg.ntask = NULL;
+        xfree(arg.ntask);
 	slurm_seterrno_ret(ESLURMD_INVALID_JOB_CREDENTIAL);
 }
 
