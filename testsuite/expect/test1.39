@@ -63,7 +63,7 @@ if {$matches == 0} {
 # Delete left-over program and rebuild it
 #
 exec $bin_rm -f $file_prog
-exec $bin_make $file_prog
+exec $bin_make -f /dev/null $file_prog
 exec $bin_chmod 700 $file_prog
 
 #
