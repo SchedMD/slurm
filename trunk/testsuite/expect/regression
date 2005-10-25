@@ -3,9 +3,9 @@
 # Purpose: Test of SLURM functionality
 #          Executes the full battery of tests.
 #
-# Output:  "Failures:#\nCompletions:#" with a count of tests executed successfully 
-#          and failures respectively. The exit code is zero only if all tests 
-#          executed successfully.
+# Output:  "Failures:#\nCompletions:#" with a count of tests executed 
+#          successfully and failures respectively. The exit code is zero 
+#          only if all tests executed successfully.
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,6 +32,19 @@
 
 FAILURES=0
 COMPLETIONS=0
+
+# Make sure we are in the desired directory before possibly 
+# removing files the user does not want to lose.
+wc ./globals >/dev/null 2>/dev/null
+rc=$?
+if [ $rc -eq 0 ]; then
+	wc ./regression >/dev/null 2>/dev/null
+	rc=$?
+fi
+if [ $rc -ne 0 ]; then
+	echo "FAILURE: cd to testsuite/expect before starting regression"
+	exit 1
+fi
 
 # Remove any recently edited back-up files
 /bin/rm -f test*.*% test*input test*output test*error 
