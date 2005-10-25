@@ -177,6 +177,8 @@ shm_fini(void)
 {
 	int destroy = 0;
 	int i;
+	char tmp_str[32], *used_list = NULL;
+
 	xassert(slurmd_shm != NULL);
 	_shm_lock();
 
@@ -186,12 +188,23 @@ shm_fini(void)
 	debug("[%ld] shm_fini: shm_users = %d", 
 	      (long) getpid(), slurmd_shm->users); 
 
+	
 	for (i = 0; i < MAX_JOB_STEPS; i++) {
 		if (slurmd_shm->step[i].state > SLURMD_JOB_UNUSED) {
 			job_step_t *s = &slurmd_shm->step[i];
-			info ("Used shm for job %u.%u\n", 
-			      s->jobid, s->stepid); 
+			if (!used_list)
+				xstrcat(used_list, "Used shm  ");
+			if (strlen(used_list) > 70) {
+				info("%s", used_list);
+				strcpy(used_list,  " more shm ");
+			}
+			sprintf(tmp_str, "%u.%u ", s->jobid, s->stepid);
+			xstrcat(used_list, tmp_str);
 		}
+	}
+	if (used_list) {
+		info("%s", used_list);
+		xfree(used_list);
 	}
 
 	if (--slurmd_shm->users == 0)
