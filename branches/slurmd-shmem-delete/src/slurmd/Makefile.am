@@ -23,12 +23,9 @@ slurmd_SOURCES = 	        	\
 	read_proc.c 	        	\
 	semaphore.c semaphore.h		\
 	shm.c shm.h			\
-	fname.c fname.h			\
 	task_plugin.c task_plugin.h	\
-	ulimits.c ulimits.h     	\
 	proctrack.c proctrack.h		\
 	setproctitle.c setproctitle.h   \
-	pdebug.c pdebug.h		\
 	slurmd_step_init.c slurmd_step_init.h \
 	run_script.c run_script.h
 
