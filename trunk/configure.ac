@@ -240,6 +240,7 @@ AC_CONFIG_FILES([Makefile
 		 doc/Makefile
 		 doc/man/Makefile
 		 testsuite/Makefile
+		 testsuite/expect/Makefile
 		 testsuite/slurm_unit/Makefile
 		 testsuite/slurm_unit/common/Makefile
 		 testsuite/slurm_unit/slurmctld/Makefile

@@ -3,7 +3,7 @@
 AUTOMAKE_OPTIONS = dejagnu
 #RUNTESTDEFAULTFLAGS = --srcdir $$srcdir/testsuite
 
-SUBDIRS = slurm_unit
+SUBDIRS = expect slurm_unit
 
 noinst_HEADERS = dejagnu.h
 
