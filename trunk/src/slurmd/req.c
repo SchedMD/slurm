@@ -694,6 +694,11 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 		      (long) req_uid, host);
 		goto done;
 	}
+	if (slurm_cred_revoked(conf->vctx, jobid)) {
+		info("Job credential revoked for %u", jobid);
+		errnum = ESLURMD_CREDENTIAL_REVOKED;
+		goto done;
+	}
 
 	/* xassert(slurm_cred_jobid_cached(conf->vctx, req->job_id));*/
 
