@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
  -- Propagate umask from srun to spawned tasks.
  -- Fix problem in switch/elan error handling that could hang a slurmd 
     step manager process.
+ -- Build on AIX with -bmaxdata:0x70000000 for memory limit more than 256MB.
 
 * Changes in SLURM 0.6.6
 ========================
