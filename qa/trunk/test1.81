@@ -107,12 +107,13 @@ set host_0      ""
 set host_1      ""
 spawn $srun -N1-1 -l -t1 $bin_hostname -s  
 expect {
-	-re "0: ($alpha_numeric)" {
-		set host_0 $expect_out(1,string)
-		exp_continue
-	}
-	-re "1: ($alpha_numeric)" {
-		set host_1 $expect_out(1,string)
+	-re "($number): ($alpha_numeric)" {
+		if {$expect_out(1,string) == 0} {
+			set host_0 $expect_out(2,string)
+		}
+		if {$expect_out(1,string) == 1} {
+			set host_1 $expect_out(2,string)
+		}
 		exp_continue
 	}
 	timeout {
@@ -151,20 +152,19 @@ set host_3      ""
 set timeout $max_job_delay
 spawn $srun -N1-3 -l -t1 $bin_hostname -s  
 expect {
-	-re "0: ($alpha_numeric)" {
-		set host_0 $expect_out(1,string)
-		exp_continue
-	}
-	-re "1: ($alpha_numeric)" {
-		set host_1 $expect_out(1,string)
-		exp_continue
-	}
-	-re "2: ($alpha_numeric)" {
-		set host_2 $expect_out(1,string)
-		exp_continue
-	}
-	-re "3: ($alpha_numeric)" {
-		set host_3 $expect_out(1,string)
+	-re "($number): ($alpha_numeric)" {
+		if {$expect_out(1,string) == 0} {
+			set host_0 $expect_out(2,string)
+		}
+		if {$expect_out(1,string) == 1} {
+			set host_1 $expect_out(2,string)
+		}
+		if {$expect_out(1,string) == 2} {
+			set host_2 $expect_out(2,string)
+		}
+		if {$expect_out(1,string) == 3} {
+			set host_3 $expect_out(2,string)
+		}
 		exp_continue
 	}
 	timeout {
@@ -218,20 +218,19 @@ expect {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exit $exit_code
 	}
-	-re "0: ($alpha_numeric)" {
-		set host_0 $expect_out(1,string)
-		exp_continue
-	}
-	-re "1: ($alpha_numeric)" {
-		set host_1 $expect_out(1,string)
-		exp_continue
-	}
-	-re "2: ($alpha_numeric)" {
-		set host_2 $expect_out(1,string)
-		exp_continue
-	}
-	-re "3: ($alpha_numeric)" {
-		set host_3 $expect_out(1,string)
+	-re "($number): ($alpha_numeric)" {
+		if {$expect_out(1,string) == 0} {
+			set host_0 $expect_out(2,string)
+		}
+		if {$expect_out(1,string) == 1} {
+			set host_1 $expect_out(2,string)
+		}
+		if {$expect_out(1,string) == 2} {
+			set host_2 $expect_out(2,string)
+		}
+		if {$expect_out(1,string) == 3} {
+			set host_3 $expect_out(1,string)
+		}
 		exp_continue
 	}
 	timeout {
