@@ -37,7 +37,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.54"
+set test_id     "1.84"
 set exit_code   0
 
 print_header $test_id

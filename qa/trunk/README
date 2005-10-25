@@ -122,30 +122,30 @@ test1.46   Test srun option --kill-on-bad-exit
 test1.47   Tests #SLURM entry functionality in a batch script.
 test1.48   Test of srun mail options (--mail-type and --mail-user options).
 test1.49   Test of srun task-prolog and task-epilog options.
+test1.70   Test of running non-existant job, confirm timely termination.
+test1.71   Test propagation of umask to spawned tasks.
 
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
            The test will print "WARNING" and terminate with an exit code of 
            zero if the cluster configuration does not permit proper testing.
-test1.50   Confirm that a job executes with the proper task distribution
+test1.80   Confirm that a job executes with the proper task distribution
            (--nodes and --distribution options).
-test1.51   Confirm that a job executes with the proper node count
+test1.81   Confirm that a job executes with the proper node count
            (--nodes option).
-test1.52   Confirm that a job executes with the specified nodes
+test1.82   Confirm that a job executes with the specified nodes
            (--nodelist and --exclude options).
-test1.53   Test of contiguous option with multiple nodes (--contiguous option).
+test1.83   Test of contiguous option with multiple nodes (--contiguous option).
            Also see test1.14.
-test1.54   Test of cpus-per-task option on a single node (--cpus-per-task  
+test1.84   Test of cpus-per-task option on a single node (--cpus-per-task  
            option).
-test1.55   Test of partition specification on job submission (--partition  
+test1.85   Test of partition specification on job submission (--partition  
            option).
-test1.56   Confirm node selection from within a job step on existing allocation
+test1.86   Confirm node selection from within a job step on existing allocation
            (--nodelist, --exclude, --nodes and --nprocs options).
-test1.57   Confirm node selection from within a job step on existing allocation
+test1.87   Confirm node selection from within a job step on existing allocation
            (--relative, --nodes and --nprocs options).
-test1.58   Basic MPI functionality tests.
+test1.88   Basic MPI functionality tests.
 **NOTE**   The above tests for mutliple processor/partition systems only
-test1.70   Test of running non-existant job, confirm timely termination.
-test1.71   Test propagation of umask to spawned tasks.
 
 test2.#    Testing of scontrol options (to be run as unprivileged user). 
 ========================================================================

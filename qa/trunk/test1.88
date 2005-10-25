@@ -35,7 +35,7 @@
 ############################################################################
 source ./globals
 
-set test_id            "1.58"
+set test_id            "1.88"
 set exit_code          0
 set file_in            "test$test_id.input"
 set file_out           "test$test_id.output"

@@ -33,7 +33,7 @@
 ############################################################################
 source ./globals
 
-set test_id          "1.55"
+set test_id          "1.85"
 set def_part_name    ""
 set exit_code        0
 set file_in          "test$test_id.input"
