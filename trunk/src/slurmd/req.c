@@ -595,6 +595,11 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		      (long) req_uid, host);
 		goto done;
 	}
+	if (slurm_cred_revoked(conf->vctx, jobid)) {
+		info("Job credential revoked for %u", jobid);
+		errnum = ESLURMD_CREDENTIAL_REVOKED;
+		goto done;
+	}
 
 	/* Make an effort to not overflow shm records */
 	if (shm_free_steps() < 2) {
@@ -1272,8 +1277,8 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 
 		step_cnt++;
 
-		debug2("signal %d to job %u (cont_id:%u)",
-		       sig, jobid, s->cont_id);
+		debug2("signal %d to job %u.%u (cont_id:%u)",
+		       sig, jobid, s->stepid, s->cont_id);
 		if (slurm_container_signal(s->cont_id, sig) < 0)
 			error("kill jid %d cont_id %u: %m",
 			      s->jobid, s->cont_id);
@@ -1461,6 +1466,10 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	if (_waiter_init(req->job_id) == SLURM_ERROR) {
 		if (msg->conn_fd >= 0)
 			slurm_send_rc_msg (msg, SLURM_SUCCESS);
+		/* not the first time around, resend SIGKILL for 
+		 * job steps that were being created when the first
+		 * termination request was processed */
+		_kill_all_active_steps(req->job_id, SIGKILL, true);
 		return;
 	}
 
