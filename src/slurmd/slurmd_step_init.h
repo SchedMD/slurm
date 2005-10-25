@@ -1,9 +1,10 @@
 /*****************************************************************************\
- * src/slurmd/mgr.c - job management functions for slurmd
+ * src/slurmd/slurmd_step_init.h - slurmd_step intialization code shared
+ *                                 between slurmd and slurmd_step
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grondona <mgrondona@llnl.gov>.
+ *  Written by Danny Auble <da@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -23,31 +24,35 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
-#ifndef _MGR_H
-#define _MGR_H
+
+#ifndef _SLURMD_STEP_INIT_H
+#define _SLURMD_STEP_INIT_H
 
 #if HAVE_CONFIG_H
 #  include "config.h"
 #endif
 
 #include "src/common/slurm_protocol_defs.h"
-
 #include "src/slurmd/slurmd_job.h"
 #include "src/slurmd/slurmd.h"
 
-/* Spawn a task / job step on this node
- */
-int mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *client,
-		   slurm_addr *self);
+typedef enum slurmd_step_tupe {
+	LAUNCH_BATCH_JOB = 0,
+	LAUNCH_TASKS,
+	SPAWN_TASKS
+} slurmd_step_type_t;
 
-/* Launch a job step on this node
+/*
+ * Pack information needed for the forked slurmd_step process.
+ * Does not pack everything from the slurm_conf_t struct.
  */
-int mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *client,
-		     slurm_addr *self);
+void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer);
 
-/* 
- * Launch batch script on this node
- */
-int mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *client);
+/*
+ * Unpack information needed for the forked slurmd_step process.
+ * Does not unpack everything from the slurm_conf_t struct.
+*/
+int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer);
 
-#endif
+#endif /* _SLURMD_STEP_INIT_H */
+

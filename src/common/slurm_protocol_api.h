@@ -440,6 +440,16 @@ void inline slurm_set_addr_char(slurm_addr * slurm_address,
 void inline slurm_get_addr(slurm_addr * slurm_address,
 			   uint16_t * port, char *host, uint32_t buf_len);
 
+/* slurm_get_ip_str 
+ * given a slurm_address it returns its port and ip address string
+ * IN slurm_address	- slurm_addr to be queried
+ * OUT port		- port number
+ * OUT ip		- ip address in dotted-quad string form
+ * IN buf_len		- length of ip buffer
+ */
+void inline slurm_get_ip_str(slurm_addr * slurm_address, uint16_t * port,
+			     char *ip, unsigned int buf_len);
+
 /* slurm_get_peer_addr
  * get the slurm address of the peer connection, similar to getpeeraddr
  * IN fd		- an open connection
