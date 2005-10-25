@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-213976">
-<meta name="LLNLRandRdate" content="1 September 2005">
+<meta name="LLNLRandRdate" content="25 October 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -536,6 +536,20 @@ Slurmctld(primary/backup) at adevi/adevj are UP/UP
 adev0: scontrol shutdown
 </pre> <p class="footer"><a href="#top">top</a></p>
 
+<h3>Testing</h3>
+<p>An extensive test suite is available within the SLURM distribution 
+in <i>testsuite/expect</i>. 
+There are about 150 tests which will execute on the order of 1000 jobs 
+and 2000 job steps. 
+Depending upon your system configuration and performance, this test 
+suite will take roughly 40 minutes to complete.
+Depending upon where SLURM and other files are installed, you may need 
+to modify pathnames in the file <i>testsuite/expect/globals</i>.
+Tests may be executed individually by name (e.g. 
+<i>testsuite/expect/test1.1</i>) or the full test suite may be 
+executed with the single command <i>testsuite/expect/regression</i>.
+See <i>testsuite/expect/README</i> for more information.</p>
+
 <h3>Upgrades</h3>
 <p>When upgrading to a new major or minor release of SLURM (e.g. 0.3.x to 0.4.x) 
 all running and pending jobs will be purged due to changes in state save 
@@ -555,7 +569,7 @@ in the NEWS file.
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-213976<br>
-Last modified 1 September 2005</p></td>
+Last modified 25 October 2005</p></td>
 </tr>
 </table>
 </td>
