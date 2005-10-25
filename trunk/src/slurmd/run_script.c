@@ -69,7 +69,7 @@ run_script(const char *name, const char *path, uint32_t jobid, uid_t uid,
 	if (cpid == 0) {
 		char *argv[2];
 
-		argv[0] = xstrdup(path);
+		argv[0] = (char *)xstrdup(path);
 		argv[1] = NULL;
 
 		if (strncmp(name, "user", 4) == 0)
