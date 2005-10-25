@@ -949,10 +949,10 @@ io_initial_client_connect(srun_info_t *srun, slurmd_job_t *job)
 	debug4 ("adding IO connection (logical node rank %d)", job->nodeid);
 
 	if (srun->ioaddr.sin_addr.s_addr) {
-		char         host[256];
+		char         ip[256];
 		uint16_t     port;
-		slurmd_get_addr(&srun->ioaddr, &port, host, sizeof(host));
-		debug4("connecting IO back to %s:%d", host, ntohs(port));
+		slurm_get_ip_str(&srun->ioaddr, &port, ip, sizeof(ip));
+		debug4("connecting IO back to %s:%d", ip, ntohs(port));
 	} 
 
 	if ((sock = (int) slurm_open_stream(&srun->ioaddr)) < 0) {
@@ -1004,10 +1004,10 @@ io_client_connect(srun_info_t *srun, slurmd_job_t *job)
 	debug4 ("adding IO connection (logical node rank %d)", job->nodeid);
 
 	if (srun->ioaddr.sin_addr.s_addr) {
-		char         host[256];
+		char         ip[256];
 		uint16_t     port;
-		slurmd_get_addr(&srun->ioaddr, &port, host, sizeof(host));
-		debug4("connecting IO back to %s:%d", host, ntohs(port));
+		slurm_get_ip_str(&srun->ioaddr, &port, ip, sizeof(ip));
+		debug4("connecting IO back to %s:%d", ip, ntohs(port));
 	} 
 
 	if ((sock = (int) slurm_open_stream(&srun->ioaddr)) < 0) {

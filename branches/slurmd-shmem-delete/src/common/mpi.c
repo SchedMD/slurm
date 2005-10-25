@@ -28,6 +28,9 @@
 #  include "config.h"
 #endif
 
+#include <unistd.h>
+#include <stdlib.h>
+
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"

@@ -1,9 +1,9 @@
 /*****************************************************************************\
- * src/slurmd/mgr.c - job management functions for slurmd
+ * src/slurmd/run_script.h - code shared between slurmd and slurmd_step
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grondona <mgrondona@llnl.gov>.
+ *  Written by Christopher Morrone <morrone2@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -23,31 +23,26 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
-#ifndef _MGR_H
-#define _MGR_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#ifndef _RUN_SCRIPT_H
+#define _RUN_SCRIPT_H
 
-#include "src/common/slurm_protocol_defs.h"
+#include <unistd.h>
+#include <sys/types.h>
+#include <inttypes.h>
 
-#include "src/slurmd/slurmd_job.h"
-#include "src/slurmd/slurmd.h"
-
-/* Spawn a task / job step on this node
+/*
+ * Run a prolog or epilog script
+ * name IN: class of program (prolog, epilog, etc.),
+ *	if prefix is "user" then also set uid
+ * path IN: pathname of program to run
+ * jobid, uidIN: info on associated job
+ * max_wait IN: maximum time to wait in seconds, -1 for no limit
+ * env IN: environment variables to use on exec, sets minimal environment 
+ *	if NULL
+ * RET 0 on success, -1 on failure.
  */
-int mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *client,
-		   slurm_addr *self);
+int run_script(const char *name, const char *path, uint32_t jobid, 
+	       uid_t uid, int max_wait, char **env);
 
-/* Launch a job step on this node
- */
-int mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *client,
-		     slurm_addr *self);
-
-/* 
- * Launch batch script on this node
- */
-int mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *client);
-
-#endif
+#endif /* _RUN_SCRIPT_H */

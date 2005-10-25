@@ -55,11 +55,14 @@
 #include "src/common/xmalloc.h"
 #include "src/common/list.h"
 #include "src/common/util-net.h"
+/*#include "src/common/slurm_protocol_api.h"*/
 
 #include "src/slurmd/slurmd.h"
 #include "src/slurmd/shm.h"
 #include "src/slurmd/mgr.h"
 #include "src/slurmd/proctrack.h"
+#include "src/slurmd/slurmd_step_init.h"
+
 
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN	64
@@ -580,7 +583,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		goto done;
 	}
 
-	slurmd_get_addr(cli, &port, host, sizeof(host));
+	slurm_get_ip_str(cli, &port, host, sizeof(host));
 	info("launch task %u.%u request from %u.%u@%s", req->job_id, 
 	     req->job_step_id, req->uid, req->gid, host);
 
@@ -674,7 +677,7 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 		goto done;
 	}
 
-	slurmd_get_addr(cli, &port, host, sizeof(host));
+	slurm_get_ip_str(cli, &port, host, sizeof(host));
 	info("spawn task %u.%u request from %u@%s", req->job_id, 
 	     req->job_step_id, req->uid, host);
 
@@ -1158,7 +1161,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	reattach_tasks_response_msg_t  resp;
 
 	memset(&resp, 0, sizeof(reattach_tasks_response_msg_t));
-	slurmd_get_addr(cli, &port, host, sizeof(host));
+	slurm_get_ip_str(cli, &port, host, sizeof(host));
 	req_uid = g_slurm_auth_get_uid(msg->cred);
 	req_gid = g_slurm_auth_get_gid(msg->cred);
 
@@ -1198,7 +1201,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	 */
 	memcpy(&ioaddr, cli, sizeof(slurm_addr));
 	slurm_set_addr(&ioaddr, req->io_port, NULL);
-	slurmd_get_addr(&ioaddr, &port, host, sizeof(host));
+	slurm_get_ip_str(&ioaddr, &port, host, sizeof(host));
 
 	debug3("reattach: srun ioaddr: %s:%d", host, port);
 

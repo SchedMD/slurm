@@ -19,12 +19,8 @@ slurmd_LDADD = 					   \
 slurmd_SOURCES = 	        	\
 	slurmd.c slurmd.h       	\
 	req.c req.h			\
-	mgr.c mgr.h			\
-	task.c task.h			\
 	get_mach_stat.c get_mach_stat.h	\
 	read_proc.c 	        	\
-	slurmd_job.c slurmd_job.h	\
-	io.c io.h			\
 	semaphore.c semaphore.h		\
 	shm.c shm.h			\
 	fname.c fname.h			\
@@ -32,7 +28,9 @@ slurmd_SOURCES = 	        	\
 	ulimits.c ulimits.h     	\
 	proctrack.c proctrack.h		\
 	setproctitle.c setproctitle.h   \
-	pdebug.c pdebug.h
+	pdebug.c pdebug.h		\
+	slurmd_step_init.c slurmd_step_init.h \
+	run_script.c run_script.h
 
 slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)
 
@@ -56,7 +54,9 @@ slurmd_step_SOURCES = 	        	\
 	proctrack.c proctrack.h		\
 	setproctitle.c setproctitle.h   \
 	task_plugin.c task_plugin.h	\
-	pdebug.c pdebug.h
+	pdebug.c pdebug.h		\
+	slurmd_step_init.c slurmd_step_init.h \
+	run_script.c run_script.h
 
 slurmd_step_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)
 
