@@ -531,7 +531,7 @@ char *job_state_string_compact(enum job_states inx)
 char *node_state_string(enum node_states inx)
 {
 	bool drain_flag   = (inx & NODE_STATE_DRAIN);
-	bool comp_flag    = (inx & NODE_STATE_NO_RESPOND);
+	bool comp_flag    = (inx & NODE_STATE_COMPLETING);
 	bool no_resp_flag = (inx & NODE_STATE_NO_RESPOND);
 
 	inx = (uint16_t) (inx & NODE_STATE_BASE);
@@ -580,7 +580,7 @@ char *node_state_string(enum node_states inx)
 char *node_state_string_compact(enum node_states inx)
 {
 	bool drain_flag   = (inx & NODE_STATE_DRAIN);
-	bool comp_flag    = (inx & NODE_STATE_NO_RESPOND);
+	bool comp_flag    = (inx & NODE_STATE_COMPLETING);
 	bool no_resp_flag = (inx & NODE_STATE_NO_RESPOND);
 
 	inx = (uint16_t) (inx & NODE_STATE_BASE);
