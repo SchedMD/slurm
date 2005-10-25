@@ -1474,10 +1474,6 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	if (_waiter_init(req->job_id) == SLURM_ERROR) {
 		if (msg->conn_fd >= 0)
 			slurm_send_rc_msg (msg, SLURM_SUCCESS);
-		/* not the first time around, resend SIGKILL for 
-		 * job steps that were being created when the first
-		 * termination request was processed */
-		_kill_all_active_steps(req->job_id, SIGKILL, true);
 		return;
 	}
 
@@ -1629,18 +1625,22 @@ static int _waiter_complete (uint32_t jobid)
 }
 
 /*
- *  Like _wait_for_procs(), but only wait for up to maxtime seconds
+ *  Like _wait_for_procs(), but only wait for up to max_time seconds
+ *  if max_time == 0, send SIGKILL to tasks repeatedly
  *    
  *  Returns true if all job 
  */
 static bool
-_pause_for_job_completion (uint32_t jobid, int maxtime)
+_pause_for_job_completion (uint32_t job_id, int max_time)
 {
 	int sec = 0, rc = 0;
 
-	while ( ((sec++ < maxtime) || (maxtime == 0))
-	      && (rc = _job_still_running (jobid)))
+	while ( ((sec++ < max_time) || (max_time == 0))
+	      && (rc = _job_still_running (job_id))) {
+		if ((max_time == 0) && (sec > 1))
+			_kill_all_active_steps(job_id, SIGKILL, true);
 		sleep (1);
+	}
 	/* 
 	 * Return true if job is NOT running
 	 */
