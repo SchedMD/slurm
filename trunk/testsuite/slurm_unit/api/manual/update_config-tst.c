@@ -36,8 +36,8 @@ main (int argc, char *argv[]) {
 	_getnodename(node_name, NAME_LEN);
 	node_update1 . node_names = node_name ;
 	node_update2 . node_names = node_name ;
-	node_update1 . node_state = NODE_STATE_DRAINING ;
-	node_update2 . node_state = NODE_STATE_IDLE ; 
+	node_update1 . node_state = NODE_STATE_DRAIN ;
+	node_update2 . node_state = NODE_RESUME ; 
 
 	error_code = slurm_update_partition ( &part_update1);
 	if (error_code)
