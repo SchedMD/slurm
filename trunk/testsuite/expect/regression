@@ -42,7 +42,7 @@ if [ $rc -eq 0 ]; then
 	rc=$?
 fi
 if [ $rc -ne 0 ]; then
-	echo "FAILURE: cd to testsuite/expect before starting regression"
+	echo "FAILURE: cd to 'testsuite/expect' before starting 'regression'"
 	exit 1
 fi
 
