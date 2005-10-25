@@ -48,6 +48,7 @@ quick description of the subdirectories of the SLURM distribution follows:
   testsuite/  [ SLURM test suite ]
      The testsuite directory contains the framework for a set of 
      DejaGNU and "make check" type tests for SLURM components.
+     There is also an extensive collection of Expect scripts.
 
   auxdir/     [ autotools directory ]
      Directory for autotools scripts and files used to configure and
@@ -127,7 +128,6 @@ PROBLEMS
 --------
 
 If you experience problems compiling, installing, or running SLURM
-please send email to either Morris Jette <jette@llnl.gov> or Mark Grondona
-<mgrondona@llnl.gov>.
+please send e-mail to either slurm-dev@lists.llnl.gov.
 
 $Id$
