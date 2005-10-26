@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
  -- Fix problem in switch/elan error handling that could hang a slurmd 
     step manager process.
  -- Build on AIX with -bmaxdata:0x70000000 for memory limit more than 256MB.
+ -- Restore srun's return code support.
 
 * Changes in SLURM 0.6.6
 ========================

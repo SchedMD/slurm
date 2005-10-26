@@ -168,7 +168,7 @@ _update_task_io_state(srun_job_t *job, int taskid)
 			write(job->forked_msg->par_msg->msg_pipe[1],
 			      &taskid,sizeof(int));
 			write(job->forked_msg->par_msg->msg_pipe[1],
-			      &job->task_state[taskid],sizeof(int));
+			      &job->task_state[taskid], sizeof(int));
 		}
 	}
 	slurm_mutex_unlock(&job->task_mutex);

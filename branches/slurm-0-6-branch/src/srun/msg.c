@@ -537,6 +537,21 @@ _die_if_signaled(srun_job_t *job, int status)
 	}
 }
 
+static void
+_update_task_exitcode(srun_job_t *job, int taskid)
+{
+	pipe_enum_t pipe_enum = PIPE_TASK_EXITCODE;
+
+	if(message_thread) {
+		write(job->forked_msg->par_msg->msg_pipe[1],
+		      &pipe_enum, sizeof(int));
+		write(job->forked_msg->par_msg->msg_pipe[1],
+		      &taskid, sizeof(int));
+		write(job->forked_msg->par_msg->msg_pipe[1],
+		      &job->tstatus[taskid], sizeof(int));
+	}
+}
+
 static void 
 _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 {
@@ -564,6 +579,7 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 
 		slurm_mutex_lock(&job->task_mutex);
 		job->tstatus[taskid] = status;
+		_update_task_exitcode(job, taskid);
 		if (status) 
 			job->task_state[taskid] = SRUN_TASK_ABNORMAL_EXIT;
 		else {
@@ -881,7 +897,7 @@ par_thr(void *arg)
 	//slurm_uid = (uid_t) slurm_get_slurm_user_id();
 	close(msg_par->msg_pipe[0]); // close read end of pipe
 	close(par_msg->msg_pipe[1]); // close write end of pipe 
-	while(read(par_msg->msg_pipe[0],&c,sizeof(int))>0) {
+	while(read(par_msg->msg_pipe[0], &c, sizeof(int)) == sizeof(int)) {
 		// getting info from msg thread
 		if(type == PIPE_NONE) {
 			debug2("got type %d\n",c);
@@ -890,8 +906,10 @@ par_thr(void *arg)
 		} 
 
 		if(type == PIPE_JOB_STATE) {
+			debug("PIPE_JOB_STATE, c = %d", c);
 			update_job_state(job, c);
 		} else if(type == PIPE_TASK_STATE) {
+			debug("PIPE_TASK_STATE");
 			if(tid == -1) {
 				tid = c;
 				continue;
@@ -905,6 +923,18 @@ par_thr(void *arg)
 				debug2("all tasks exited");
 				update_job_state(job, SRUN_JOB_TERMINATED);
 			}
+			tid = -1;
+		} else if(type == PIPE_TASK_EXITCODE) {
+			debug("PIPE_TASK_EXITCODE");
+			if(tid == -1) {
+				debug("  setting tid");
+				tid = c;
+				continue;
+			}
+			slurm_mutex_lock(&job->task_mutex);
+			debug("  setting task %d exitcode %d", tid, c);
+			job->tstatus[tid] = c;
+			slurm_mutex_unlock(&job->task_mutex);
 			tid = -1;
 		} else if(type == PIPE_HOST_STATE) {
 			if(tid == -1) {
