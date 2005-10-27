@@ -54,6 +54,7 @@ slurmd_step_SOURCES = 	        	\
 	pdebug.c pdebug.h		\
 	slurmd_step_init.c slurmd_step_init.h \
 	run_script.c run_script.h	\
+	step_msg_api.c step_msg_api.h	\
 	step_req.c step_req.h
 
 slurmd_step_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)
@@ -61,6 +62,11 @@ slurmd_step_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)
 test_slurmd_step_LDADD =		\
 	$(top_builddir)/src/common/libcommon.la	\
 	$(SSL_LIBS) 
+
+test_slurmd_step_SOURCES =        	\
+	test_slurmd_step.c		\
+	step_msg_api.c step_msg_api.h
+
 
 force:
 $(slurmd_LDADD) : force

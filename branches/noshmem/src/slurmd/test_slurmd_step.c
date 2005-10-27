@@ -33,14 +33,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/un.h>
+#include "src/common/xmalloc.h"
 
 #include "src/slurmd/slurmd.h"
 #include "src/slurmd/mgr.h"
-#include "src/common/xmalloc.h"
+#include "src/slurmd/step_msg_api.h"
 
 static int sock_connect(const char *name);
 
@@ -48,36 +45,17 @@ static int sock_connect(const char *name);
 int
 main(int argc, char **argv)
 {
-	if (argc != 2) {
-		printf("Need domain socket path as sole parameter\n");
+	step_loc_t step;
+
+	if (argc != 5) {
+		fprintf(stderr, "Wrong number of arguments\n");
 		exit(1);
 	}
 
-	printf("argv[1] = %s\n", argv[1]);
-	sock_connect(argv[1]);
-}
-
-
-static int
-sock_connect(const char *name)
-{
-	int fd;
-	int len;
-	struct sockaddr_un addr;
-
-	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
-		return -1;
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sun_family = AF_UNIX;
-	strcpy(addr.sun_path, name);
-	len = strlen(addr.sun_path) + sizeof(addr.sun_family);
-
-	if (connect(fd, (struct sockaddr *) &addr, len) < 0) {
-		printf("connect to server socket %s FAILED!\n", name);
-		exit(2);
-	}
-
-	return fd;
+	step.directory = argv[1];
+	step.nodename = argv[2];
+	step.jobid = atoi(argv[3]);
+	step.stepid = atoi(argv[4]);
+	printf("Status is %d\n", step_request_status(step));
 }
 

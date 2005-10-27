@@ -43,8 +43,10 @@
 #include "src/slurmd/slurmd.h"
 #include "src/slurmd/slurmd_job.h"
 #include "src/slurmd/step_req.h"
+#include "src/slurmd/step_msg_api.h"
 
-static void _handle_message(int fd, slurmd_job_t *job);
+static void _handle_request(int fd, slurmd_job_t *job);
+static int _handle_request_status(int fd);
 static bool _msg_socket_readable(eio_obj_t *obj);
 static int _msg_socket_accept(eio_obj_t *obj, List objs);
 
@@ -105,21 +107,9 @@ _domain_socket_create(const char *dir, const char *nodename,
 		fatal("%s is not a directory", dir);
 
 	/*
-	 * Next check if the "nodename" subdirectory exists, and
-	 * create it if it does not.
+	 * Now build the the name of socket, and create the socket.
 	 */
-	xstrfmtcat(name, "%s/%s", dir, nodename);
-	if (stat(name, &stat_buf) < 0) {
-		if (mkdir(name, 0755) < 0)
-			fatal("Unable to create directory %s: %m", name);
-	} else if (!S_ISDIR(stat_buf.st_mode)) {
-		fatal("%s is not a directory", name);
-	}
-
-	/*
-	 * Now finish building the the name of socket, and create the socket.
-	 */
-	xstrfmtcat(name, "/%u.%u", jobid, stepid);
+	xstrfmtcat(name, "%s/%s_%u.%u", dir, nodename, jobid, stepid);
 	fd = _create_socket(name);
 	if (fd < 0)
 		fatal("Could not create domain socket: %m");
@@ -215,13 +205,47 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 	/* FIXME should really create a pthread to handle the message */
 
 	fd_set_blocking(fd);
-	_handle_message(fd, job);
+	_handle_request(fd, job);
 }
 
 static void
-_handle_message(int fd, slurmd_job_t *job)
+_handle_request(int fd, slurmd_job_t *job)
 {
+	int req;
+
 	debug3("Entering _handle_message");
+
+	if (read(fd, &req, sizeof(req)) != sizeof(req)) {
+		error("Could not read request type: %m");
+		goto fail;
+	}
+
+	switch (req) {
+	case REQUEST_SIGNAL:
+		debug("Handling REQUEST_SIGNAL");
+		break;
+	case REQUEST_TERMINATE:
+		debug("Handling REQUEST_TERMINATE");
+		break;
+	case REQUEST_STATUS:
+		debug("Handling REQUEST_STATUS");
+		_handle_request_status(fd);
+		break;
+	default:
+		error("Unrecognized request: %d", req);
+		break;
+	}
+
+fail:
 	close(fd);
 	debug3("Leaving  _handle_message");
+}
+
+static int
+_handle_request_status(int fd)
+{
+	static int status = 1;
+
+	write(fd, &status, sizeof(status));
+	status++;
 }

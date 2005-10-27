@@ -28,10 +28,22 @@
 #ifndef _STEP_MSG_API_H
 #define _STEP_MSG_API_H
 
+#include <inttypes.h>
+
 typedef enum {
 	REQUEST_SIGNAL = 0,
 	REQUEST_TERMINATE,
 	REQUEST_STATUS
 } step_msg_t;
+
+typedef struct step_location {
+	uint32_t jobid;
+	uint32_t stepid;
+	char *nodename;
+	char *directory;
+} step_loc_t;
+
+int step_request_status(step_loc_t step);
+int step_request_signal(step_loc_t step, int signal);
 
 #endif /* _STEP_MSG_API_H */

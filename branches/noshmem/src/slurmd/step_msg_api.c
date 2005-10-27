@@ -25,5 +25,55 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/un.h>
+
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
 #include "src/slurmd/step_msg_api.h"
 
+static int
+step_connect(step_loc_t step)
+{
+	int fd;
+	int len;
+	struct sockaddr_un addr;
+	char *name = NULL;
+
+	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
+		return -1;
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sun_family = AF_UNIX;
+	xstrfmtcat(name, "%s/%s_%u.%u", step.directory, step.nodename, 
+		   step.jobid, step.stepid);
+	strcpy(addr.sun_path, name);
+	len = strlen(addr.sun_path) + sizeof(addr.sun_family);
+
+	if (connect(fd, (struct sockaddr *) &addr, len) < 0) {
+		printf("connect to server socket %s FAILED!\n", name);
+		xfree(name);
+		exit(2);
+	}
+
+	xfree(name);
+	return fd;
+}
+
+int
+step_request_status(step_loc_t step)
+{
+	int fd;
+	int req	= REQUEST_STATUS;
+	int status = 0;
+
+	fd = step_connect(step);
+
+	write(fd, &req, sizeof(req));
+	read(fd, &status, sizeof(status));
+
+	return status;
+}
