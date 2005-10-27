@@ -905,16 +905,18 @@ uid_t *_get_groups_members(char *group_names)
 	one_group_name = strtok_r(tmp_names, ",", &name_ptr);
 	while (one_group_name) {
 		temp_uids = _get_group_members(one_group_name);
-		if (group_uids) {
-			/* concatenate the uid_lists and free the new one */
+		if (temp_uids == NULL)
+			;
+		else if (group_uids == NULL)
+			group_uids = temp_uids;
+		else {	/* concatenate the uid_lists and free the new one */
 			i = _uid_list_size(group_uids);
 			j = _uid_list_size(temp_uids);
 			xrealloc(group_uids, sizeof(uid_t) * (i + j + 1));
 			for (k = 0; k <= j; k++)
 				group_uids[i + k] = temp_uids[k];
 			xfree(temp_uids);
-		} else
-			group_uids = temp_uids;
+		}
 		one_group_name = strtok_r(NULL, ",", &name_ptr);
 	}
 	xfree(tmp_names);
