@@ -1,6 +1,6 @@
 /*****************************************************************************\
  *  src/slurmd/slurmd_step.c - SLURM job-step manager.
- *  $Id:$
+ *  $Id: $
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -257,7 +257,7 @@ handle_launch_message(slurm_addr *cli, slurm_addr *self, slurm_msg_t *msg)
 		slurm_free_spawn_task_request_msg(msg->data);
 		break;
 	default:
-		fatal("In run_step_manager, Unrecognized launch/spawn RPC");
+		fatal("handle_launch_message: Unrecognized launch/spawn RPC");
 		break;
 	}
 }

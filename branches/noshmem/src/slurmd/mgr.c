@@ -77,6 +77,7 @@
 #include "src/slurmd/proctrack.h"
 #include "src/slurmd/pdebug.h"
 #include "src/slurmd/task_plugin.h"
+#include "src/slurmd/step_req.h"
 
 /* 
  * Map session manager exit status to slurm errno:
@@ -448,6 +449,7 @@ _job_mgr(slurmd_job_t *job)
 {
 	int rc = 0;
 	bool io_initialized = false;
+	int fd;
 
 	job->jmgr_pid = getpid();
 	debug3("Entered job_mgr for %u.%u pid=%lu",
@@ -463,6 +465,8 @@ _job_mgr(slurmd_job_t *job)
 			rc = ESLURMD_STEP_EXISTS;
 		goto fail0;
 	}
+
+	msg_thr_create(job);
 
 	if (!job->batch && 
 	    (interconnect_preinit(job->switch_job) < 0)) {
@@ -546,6 +550,8 @@ _job_mgr(slurmd_job_t *job)
 	g_slurmd_jobacct_jobstep_terminated(job);
 
     fail1:
+	eio_signal_shutdown(job->msg_handle);
+	pthread_join(job->msgid, NULL);
 	job_delete_shm(job);
 	shm_fini();
     fail0:

@@ -4,7 +4,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-sbin_PROGRAMS = slurmd slurmd_step
+sbin_PROGRAMS = slurmd slurmd_step test_slurmd_step
 
 INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS) \
 	-DSLURMD_STEP_PATH=\"$(prefix)/sbin/slurmd_step\"
@@ -53,9 +53,14 @@ slurmd_step_SOURCES = 	        	\
 	task_plugin.c task_plugin.h	\
 	pdebug.c pdebug.h		\
 	slurmd_step_init.c slurmd_step_init.h \
-	run_script.c run_script.h
+	run_script.c run_script.h	\
+	step_req.c step_req.h
 
 slurmd_step_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)
+
+test_slurmd_step_LDADD =		\
+	$(top_builddir)/src/common/libcommon.la	\
+	$(SSL_LIBS) 
 
 force:
 $(slurmd_LDADD) : force
