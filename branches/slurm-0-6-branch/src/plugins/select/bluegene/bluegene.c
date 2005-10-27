@@ -365,14 +365,22 @@ extern int remove_all_users(char *bgl_part_id, char *user_name)
 
 extern void set_part_user(bgl_record_t *bgl_record) 
 {
+	int rc = 0;
 	debug("resetting the boot state flag and "
 	      "counter for partition %s.",
 	      bgl_record->bgl_part_id);
 	bgl_record->boot_state = 0;
 	bgl_record->boot_count = 0;
-	if(update_partition_user(bgl_record) == 1) 
+	if((rc = update_partition_user(bgl_record)) == 1) {
 		last_bgl_update = time(NULL);
-	
+	} else if (rc == -1) {
+		error("Unable to add user name to partition %s. "
+		      "Cancelling job.",
+		      bgl_record->bgl_part_id);
+		(void) slurm_fail_job(
+			bgl_record->job_running);
+		//term_jobs_on_part(bgl_record->bgl_part_id);
+	}	
 	xfree(bgl_record->target_name);
 	bgl_record->target_name = 
 		xstrdup(slurmctld_conf.slurm_user_name);

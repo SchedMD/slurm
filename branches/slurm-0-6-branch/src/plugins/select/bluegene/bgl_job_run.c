@@ -196,11 +196,10 @@ static void _sync_agent(bgl_update_t *bgl_update_ptr)
 			      bgl_update_ptr->bgl_part_id);
 			xfree(bgl_record->target_name);
 			bgl_record->target_name = 
-				xstrdup(uid_to_string(
-						bgl_update_ptr->uid));
+				xstrdup(uid_to_string(bgl_update_ptr->uid));
 				
-			if(update_partition_user(bgl_record) == 1)
-				last_bgl_update = time(NULL);
+			set_part_user(bgl_record);
+			
 			slurm_mutex_unlock(&part_state_mutex);
 		}
 	} else {
@@ -236,7 +235,7 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 	}
 
 	slurm_mutex_lock(&part_state_mutex);
-	bgl_record->job_running = 1;
+	bgl_record->job_running = bgl_update_ptr->job_id;
 	slurm_mutex_unlock(&part_state_mutex);
 		
 	if(bgl_record->state == RM_PARTITION_DEALLOCATING) {
@@ -302,7 +301,7 @@ static void _start_agent(bgl_update_t *bgl_update_ptr)
 			sleep(1);
 		}
 		
-		if(!bgl_record->job_running) 
+		if(bgl_record->job_running == -1) 
 			return;
 		if((rc = boot_part(bgl_record))
 		   != SLURM_SUCCESS) {
@@ -448,7 +447,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		}
 			
 		slurm_mutex_lock(&part_state_mutex);
-		bgl_record->job_running = 0;
+		bgl_record->job_running = -1;
 		
 		/*remove user from list */
 		if(bgl_record->target_name) {

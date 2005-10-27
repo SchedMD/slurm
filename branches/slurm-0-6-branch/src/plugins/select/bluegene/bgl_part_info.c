@@ -82,7 +82,6 @@ static int _partition_is_deallocating(bgl_record_t *bgl_record)
 				      "Job was lost.",
 				      bgl_record->bgl_part_id,
 				      bgl_record->user_name);
-				//update_partition_user(bgl_record);
 				term_jobs_on_part(bgl_record->bgl_part_id);
 			} else {
 				debug("Partition %s was in a ready state "
@@ -160,13 +159,13 @@ extern int part_ready(struct job_record *job_ptr)
 	bgl_record_t *bgl_record = NULL;
 	
 	rc = select_g_get_jobinfo(job_ptr->select_jobinfo,
-			SELECT_DATA_PART_ID, &part_id);
+				  SELECT_DATA_PART_ID, &part_id);
 	if (rc == SLURM_SUCCESS) {
 		bgl_record = find_bgl_record(part_id);
 		
 		if(bgl_record) {
 			if ((bgl_record->user_uid == job_ptr->user_id)
-			 && (bgl_record->state == RM_PARTITION_READY)) {
+			    && (bgl_record->state == RM_PARTITION_READY)) {
 				rc = 1;
 			} else if (bgl_record->user_uid != job_ptr->user_id)
 				rc = 0;
@@ -347,10 +346,8 @@ extern int update_partition_list()
 				debug("checking to make sure user %s "
 				      "is the user.", 
 				      bgl_record->target_name);
-				if(update_partition_user(bgl_record) 
-				   == 1) 
+				if(update_partition_user(bgl_record) == 1) 
 					last_bgl_update = time(NULL);
-			
 				break;
 			case RM_PARTITION_ERROR:
 				error("partition in an error state");
