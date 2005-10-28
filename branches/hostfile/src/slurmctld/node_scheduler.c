@@ -1146,13 +1146,7 @@ extern void build_node_details(struct job_record *job_ptr)
 	}
 
 	job_ptr->num_cpu_groups = 0;
-	job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap);
-	xrealloc(job_ptr->cpus_per_node, 
-		(sizeof(uint32_t) * job_ptr->node_cnt));
-	xrealloc(job_ptr->cpu_count_reps, 
-		(sizeof(uint32_t) * job_ptr->node_cnt));
-	xrealloc(job_ptr->node_addr, 
-		(sizeof(slurm_addr) * job_ptr->node_cnt));
+	
 	/* Use hostlist here to insure ordering of info matches that of srun */
 	if(job_ptr->req_nodes)
 		this_node_name = job_ptr->req_nodes;
@@ -1160,7 +1154,17 @@ extern void build_node_details(struct job_record *job_ptr)
 		this_node_name = job_ptr->nodes;
 	
 	if ((host_list = hostlist_create(this_node_name)) == NULL)
-		fatal("hostlist_create error for %s: %m", job_ptr->nodes);
+		fatal("hostlist_create error for %s: %m", this_node_name);
+	
+	job_ptr->node_cnt = hostlist_count(host_list);	
+
+	xrealloc(job_ptr->cpus_per_node, 
+		(sizeof(uint32_t) * job_ptr->node_cnt));
+	xrealloc(job_ptr->cpu_count_reps, 
+		(sizeof(uint32_t) * job_ptr->node_cnt));
+	xrealloc(job_ptr->node_addr, 
+		(sizeof(slurm_addr) * job_ptr->node_cnt));
+	
 
         job_ptr->ntask_cnt = 0;
         job_ptr->ntask = NULL; 

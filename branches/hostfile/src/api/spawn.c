@@ -128,8 +128,9 @@ slurm_step_ctx_create (job_step_create_request_msg_t *step_req)
 	old_job_req.uid		= getuid();
 	if (slurm_confirm_allocation(&old_job_req, &alloc_resp) < 0)
 		return NULL;
-
-	if ((slurm_job_step_create(step_req, &step_resp) < 0) ||
+	
+	step_req->node_list = alloc_resp->node_list;
+       	if ((slurm_job_step_create(step_req, &step_resp) < 0) ||
 	    (step_resp == NULL)) {
 		slurm_free_resource_allocation_response_msg(alloc_resp);
 		return NULL;	/* slurm errno already set */
@@ -143,7 +144,7 @@ slurm_step_ctx_create (job_step_create_request_msg_t *step_req)
 	rc->task_dist	= step_req->task_dist;
 	rc->step_resp	= step_resp;
 	rc->alloc_resp	= alloc_resp;
-	rc->hl		= hostlist_create(rc->step_resp->node_list);
+	rc->hl		= hostlist_create(alloc_resp->node_list);
 	rc->nhosts	= hostlist_count(rc->hl);
 	(void) _task_layout(rc);
 
@@ -173,35 +174,35 @@ slurm_step_ctx_get (slurm_step_ctx ctx, int ctx_key, ...)
 
 	va_start(ap, ctx_key);
 	switch (ctx_key) {
-		case SLURM_STEP_CTX_STEPID:
-			step_id_ptr = (uint32_t *) va_arg(ap, void *);
-			*step_id_ptr = ctx->step_resp->job_step_id;
-			break;
-		case SLURM_STEP_CTX_TASKS:
-			array_pptr = (uint32_t **) va_arg(ap, void *);
-			*array_pptr = ctx->tasks;
-			break;
-
-		case SLURM_STEP_CTX_TID:
-			node_inx = va_arg(ap, uint32_t);
-			if ((node_inx < 0) || (node_inx > ctx->nhosts)) {
-				slurm_seterrno(EINVAL);
-				rc = SLURM_ERROR;
-				break;
-			}
-			array_pptr = (uint32_t **) va_arg(ap, void *);
-			*array_pptr = ctx->tids[node_inx];
-			break;
-
-		case SLURM_STEP_CTX_RESP:
-			step_resp_pptr = (job_step_create_response_msg_t **) 
-				va_arg(ap, void *);
-			*step_resp_pptr = ctx->step_resp;
-			break;
-
-		default:
+	case SLURM_STEP_CTX_STEPID:
+		step_id_ptr = (uint32_t *) va_arg(ap, void *);
+		*step_id_ptr = ctx->step_resp->job_step_id;
+		break;
+	case SLURM_STEP_CTX_TASKS:
+		array_pptr = (uint32_t **) va_arg(ap, void *);
+		*array_pptr = ctx->tasks;
+		break;
+		
+	case SLURM_STEP_CTX_TID:
+		node_inx = va_arg(ap, uint32_t);
+		if ((node_inx < 0) || (node_inx > ctx->nhosts)) {
 			slurm_seterrno(EINVAL);
 			rc = SLURM_ERROR;
+			break;
+		}
+		array_pptr = (uint32_t **) va_arg(ap, void *);
+		*array_pptr = ctx->tids[node_inx];
+		break;
+		
+	case SLURM_STEP_CTX_RESP:
+		step_resp_pptr = (job_step_create_response_msg_t **) 
+			va_arg(ap, void *);
+		*step_resp_pptr = ctx->step_resp;
+		break;
+
+	default:
+		slurm_seterrno(EINVAL);
+		rc = SLURM_ERROR;
 	}
 	va_end(ap);
 
@@ -371,7 +372,7 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 		if (i >= 0)
 			slurmd_debug = i;
 	}
-	printf("hey I am setting the ports!!!!! %d\n", ctx->nhosts);
+	
 	/* validate fd_array and bind them to ports */
 	sock_array = xmalloc(ctx->nhosts * sizeof(int));
 	for (i=0; i<ctx->nhosts; i++) {
@@ -420,7 +421,7 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 		}
 		printf("using %d %s\n",j, ctx->host[j]);
 		hostlist_iterator_reset(itr);
-		printf("node_list %s\n",ctx->step_resp->node_list);
+		
 		/* Task specific message contents */
 		r->global_task_id	= ctx->tids[j][0];
 		r->cpus_allocated	= ctx->cpus[j];
