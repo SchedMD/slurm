@@ -5,6 +5,7 @@ SUBDIRS = man
 htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
 
 html_DATA = \
+	html/api.html \
 	html/arch.gif \
 	html/authplugins.html \
 	html/bluegene.html \
