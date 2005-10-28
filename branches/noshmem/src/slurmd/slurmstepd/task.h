@@ -1,10 +1,10 @@
 /*****************************************************************************\
- **  lam.h - Library routines for initiating jobs on with lam type mpi 
- **  $Id: mpi_gmpi.c,v 1.7 2005/06/07 18:25:32 morrone Exp $
+ * src/slurmd/slurmstepd/task.h - task launching functions for slurmstepd
+ * $Id$
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@llnl.gov>
+ *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -24,12 +24,22 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
+
+#ifndef _TASK_H
+#define _TASK_H
+
 #if HAVE_CONFIG_H
 #  include "config.h"
 #endif
 
-#include "src/srun/srun_job.h"
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
-#include "src/common/env.h"
+#include <slurm/slurm_errno.h>
 
-//extern int lam_thr_create(srun_job_t *job);
+#if HAVE_SYS_TYPES_H
+#  include <sys/types.h>
+#endif /* HAVE_SYS_TYPES_H */
+
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
+
+void exec_task(slurmd_job_t *job, int i, int waitfd);
+
+#endif /* !_TASK_H */

@@ -34,7 +34,7 @@
 
 #include <slurm/slurm_errno.h>
 #include "src/common/slurm_xlator.h"
-#include "src/slurmd/slurmd_job.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they

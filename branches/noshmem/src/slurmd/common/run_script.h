@@ -1,10 +1,9 @@
 /*****************************************************************************\
- **  lam.h - Library routines for initiating jobs on with lam type mpi 
- **  $Id: mpi_gmpi.c,v 1.7 2005/06/07 18:25:32 morrone Exp $
+ * src/slurmd/common/run_script.h - code shared between slurmd and slurmstepd
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@llnl.gov>
+ *  Written by Christopher Morrone <morrone2@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -24,12 +23,26 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
-#include "src/srun/srun_job.h"
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
-#include "src/common/env.h"
+#ifndef _RUN_SCRIPT_H
+#define _RUN_SCRIPT_H
 
-//extern int lam_thr_create(srun_job_t *job);
+#include <unistd.h>
+#include <sys/types.h>
+#include <inttypes.h>
+
+/*
+ * Run a prolog or epilog script
+ * name IN: class of program (prolog, epilog, etc.),
+ *	if prefix is "user" then also set uid
+ * path IN: pathname of program to run
+ * jobid, uidIN: info on associated job
+ * max_wait IN: maximum time to wait in seconds, -1 for no limit
+ * env IN: environment variables to use on exec, sets minimal environment 
+ *	if NULL
+ * RET 0 on success, -1 on failure.
+ */
+int run_script(const char *name, const char *path, uint32_t jobid, 
+	       uid_t uid, int max_wait, char **env);
+
+#endif /* _RUN_SCRIPT_H */

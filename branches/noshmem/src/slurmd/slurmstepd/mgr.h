@@ -1,10 +1,9 @@
 /*****************************************************************************\
- **  lam.h - Library routines for initiating jobs on with lam type mpi 
- **  $Id: mpi_gmpi.c,v 1.7 2005/06/07 18:25:32 morrone Exp $
+ * src/slurmd/slurmstepd/mgr.c - job management functions for slurmstepd
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@llnl.gov>
+ *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -24,12 +23,31 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
+#ifndef _MGR_H
+#define _MGR_H
+
 #if HAVE_CONFIG_H
 #  include "config.h"
 #endif
 
-#include "src/srun/srun_job.h"
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
-#include "src/common/env.h"
+#include "src/common/slurm_protocol_defs.h"
 
-//extern int lam_thr_create(srun_job_t *job);
+#include "src/slurmd/slurmd/slurmd.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
+
+/* Spawn a task / job step on this node
+ */
+int mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *client,
+		   slurm_addr *self);
+
+/* Launch a job step on this node
+ */
+int mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *client,
+		     slurm_addr *self);
+
+/* 
+ * Launch batch script on this node
+ */
+int mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *client);
+
+#endif

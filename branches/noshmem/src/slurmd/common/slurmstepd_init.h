@@ -1,8 +1,7 @@
 /*****************************************************************************\
- **  lam.h - Library routines for initiating jobs on with lam type mpi 
- **  $Id: mpi_gmpi.c,v 1.7 2005/06/07 18:25:32 morrone Exp $
+ * src/slurmd/slurmstepd_init.h - slurmstepd intialization code
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  UCRL-CODE-2002-040.
@@ -24,12 +23,36 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
+
+#ifndef _SLURMD_STEP_INIT_H
+#define _SLURMD_STEP_INIT_H
+
 #if HAVE_CONFIG_H
 #  include "config.h"
 #endif
 
-#include "src/srun/srun_job.h"
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
-#include "src/common/env.h"
+#include "src/common/slurm_protocol_defs.h"
 
-//extern int lam_thr_create(srun_job_t *job);
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
+#include "src/slurmd/slurmd/slurmd.h"
+
+typedef enum slurmd_step_tupe {
+	LAUNCH_BATCH_JOB = 0,
+	LAUNCH_TASKS,
+	SPAWN_TASKS
+} slurmd_step_type_t;
+
+/*
+ * Pack information needed for the forked slurmd_step process.
+ * Does not pack everything from the slurm_conf_t struct.
+ */
+void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer);
+
+/*
+ * Unpack information needed for the forked slurmd_step process.
+ * Does not unpack everything from the slurm_conf_t struct.
+*/
+int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer);
+
+#endif /* _SLURMD_STEP_INIT_H */
+

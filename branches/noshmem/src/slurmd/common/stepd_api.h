@@ -1,10 +1,10 @@
 /*****************************************************************************\
- **  lam.h - Library routines for initiating jobs on with lam type mpi 
- **  $Id: mpi_gmpi.c,v 1.7 2005/06/07 18:25:32 morrone Exp $
+ *  src/slurmd/common/stepd_api.h - slurmd_step message API
+ *  $Id: $
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@llnl.gov>
+ *  Written by Christopher Morrone <morrone2@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -24,12 +24,31 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
-#include "src/srun/srun_job.h"
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
-#include "src/common/env.h"
+#ifndef _STEP_MSG_API_H
+#define _STEP_MSG_API_H
 
-//extern int lam_thr_create(srun_job_t *job);
+#include <inttypes.h>
+
+#include "slurm/slurm.h"
+
+typedef enum {
+	REQUEST_SIGNAL = 0,
+	REQUEST_TERMINATE,
+	REQUEST_STATUS,
+	REQUEST_ATTACH,
+} step_msg_t;
+
+typedef struct step_location {
+	uint32_t jobid;
+	uint32_t stepid;
+	char *nodename;
+	char *directory;
+} step_loc_t;
+
+int step_request_status(step_loc_t step);
+int step_request_signal(step_loc_t step, int signal);
+int step_request_attach(step_loc_t step, slurm_addr *ioaddr,
+			slurm_addr *respaddr, char *cred_signature);
+
+#endif /* _STEP_MSG_API_H */

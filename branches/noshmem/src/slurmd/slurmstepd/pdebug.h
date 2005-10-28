@@ -1,10 +1,9 @@
 /*****************************************************************************\
- **  lam.h - Library routines for initiating jobs on with lam type mpi 
- **  $Id: mpi_gmpi.c,v 1.7 2005/06/07 18:25:32 morrone Exp $
+ * src/slurmd/slurmstepd/ptrace_debug.h - ptrace functions for slurmstepd
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@llnl.gov>
+ *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -24,12 +23,30 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
-#if HAVE_CONFIG_H
-#  include "config.h"
+#ifndef _PDEBUG_H
+#define _PDEBUG_H
+
+#include <sys/ptrace.h>
+#include <sys/wait.h>
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
+
+/*
+ * Stop current task on exec() for connection from a parallel debugger
+ */
+void pdebug_stop_current(slurmd_job_t *job);
+/*
+ * Prepare task for parallel debugger attach
+ */
+void pdebug_trace_process(slurmd_job_t *job, pid_t pid);
+
+#ifdef HAVE_PTRACE64
+#  define _PTRACE(r,p,a,d) ptrace64((r),(long long)(p),(long long)(a),(d),NULL)
+#else
+#  ifdef PTRACE_FIVE_ARGS
+#    define _PTRACE(r,p,a,d) ptrace((r),(p),(a),(d),NULL)
+#  else
+#    define _PTRACE(r,p,a,d) ptrace((r),(p),(a),(void *)(d))
+#  endif
 #endif
 
-#include "src/srun/srun_job.h"
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
-#include "src/common/env.h"
-
-//extern int lam_thr_create(srun_job_t *job);
+#endif

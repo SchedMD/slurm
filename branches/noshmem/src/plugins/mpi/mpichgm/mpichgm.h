@@ -29,7 +29,7 @@
 #endif
 
 #include "src/srun/srun_job.h"
-#include "src/slurmd/slurmd_job.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/common/env.h"
 
 extern int gmpi_thr_create(srun_job_t *job);
