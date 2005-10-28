@@ -157,9 +157,9 @@ static slurmd_job_t *reattach_job;
  */
 static void _hup_handler(int sig)
 {
-	if ((sig == SIGHUP)
-	    && (reattach_job != NULL))
-		_handle_attach_req(reattach_job);
+/* 	if ((sig == SIGHUP) */
+/* 	    && (reattach_job != NULL)) */
+/* 		_handle_attach_req(reattach_job); */
 }
 
 /*
@@ -1094,6 +1094,7 @@ info("sending REQUEST_COMPLETE_JOB_STEP");
 }
 
 
+/* FIXME obsolete, delete this */
 static void
 _handle_attach_req(slurmd_job_t *job)
 {

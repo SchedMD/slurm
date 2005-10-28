@@ -27,6 +27,7 @@ slurmd_SOURCES = 	        	\
 	proctrack.c proctrack.h		\
 	setproctitle.c setproctitle.h   \
 	slurmd_step_init.c slurmd_step_init.h \
+	step_msg_api.c step_msg_api.h	\
 	run_script.c run_script.h
 
 slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)
@@ -54,7 +55,7 @@ slurmd_step_SOURCES = 	        	\
 	pdebug.c pdebug.h		\
 	slurmd_step_init.c slurmd_step_init.h \
 	run_script.c run_script.h	\
-	step_msg_api.c step_msg_api.h	\
+	step_msg_api.h			\
 	step_req.c step_req.h
 
 slurmd_step_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)

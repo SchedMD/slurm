@@ -25,6 +25,7 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -66,14 +67,29 @@ step_connect(step_loc_t step)
 int
 step_request_status(step_loc_t step)
 {
-	int fd;
 	int req	= REQUEST_STATUS;
+	int fd;
 	int status = 0;
 
 	fd = step_connect(step);
 
-	write(fd, &req, sizeof(req));
-	read(fd, &status, sizeof(status));
+	write(fd, &req, sizeof(int));
+	read(fd, &status, sizeof(int));
 
 	return status;
+}
+
+int
+step_request_attach(step_loc_t step, slurm_addr *ioaddr,
+		    slurm_addr *respaddr, char *cred_signature)
+{
+	int req = REQUEST_ATTACH;
+	int fd;
+
+	fd = step_connect(step);
+
+	write(fd, &req, sizeof(int));
+	write(fd, ioaddr, sizeof(slurm_addr));
+	write(fd, respaddr, sizeof(slurm_addr));
+	write(fd, cred_signature, SLURM_CRED_SIGLEN);
 }

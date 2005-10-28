@@ -62,7 +62,7 @@
 #include "src/slurmd/mgr.h"
 #include "src/slurmd/proctrack.h"
 #include "src/slurmd/slurmd_step_init.h"
-
+#include "src/slurmd/step_msg_api.h"
 
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN	64
@@ -1168,6 +1168,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	slurm_msg_t                    resp_msg;
 	reattach_tasks_request_msg_t  *req = msg->data;
 	reattach_tasks_response_msg_t  resp;
+	step_loc_t step;
 
 	memset(&resp, 0, sizeof(reattach_tasks_response_msg_t));
 	slurm_get_ip_str(cli, &port, host, sizeof(host));
@@ -1217,14 +1218,15 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 
 	slurm_cred_get_signature(req->cred, &key, &len);
 
-	while (1) {
-		rc = shm_update_step_addrs( req->job_id, req->job_step_id,
-				            &ioaddr, &resp_msg.address,
-				            key ); 
-		if ((rc == 0) || (errno != EAGAIN))
-			break;
-		sched_yield();	/* relinquish processor */
-	}
+	/*
+	 * Use slurmstepd API to request that the slurmdstepd handle
+	 * the attach.
+	 */
+	step.directory = conf->spooldir;
+	step.nodename = "nodename";
+	step.jobid = req->job_id;
+	step.stepid = req->job_step_id;
+	step_request_attach(step, &ioaddr, &resp_msg.address, key);
 
 	resp.local_pids = xmalloc(step->ntasks * sizeof(*resp.local_pids));
 	resp.gtids      = xmalloc(step->ntasks * sizeof(*resp.local_pids));

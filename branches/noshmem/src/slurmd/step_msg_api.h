@@ -30,10 +30,13 @@
 
 #include <inttypes.h>
 
+#include "slurm/slurm.h"
+
 typedef enum {
 	REQUEST_SIGNAL = 0,
 	REQUEST_TERMINATE,
-	REQUEST_STATUS
+	REQUEST_STATUS,
+	REQUEST_ATTACH,
 } step_msg_t;
 
 typedef struct step_location {
@@ -45,5 +48,7 @@ typedef struct step_location {
 
 int step_request_status(step_loc_t step);
 int step_request_signal(step_loc_t step, int signal);
+int step_request_attach(step_loc_t step, slurm_addr *ioaddr,
+			slurm_addr *respaddr, char *cred_signature);
 
 #endif /* _STEP_MSG_API_H */

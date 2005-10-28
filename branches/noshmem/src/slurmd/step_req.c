@@ -47,6 +47,7 @@
 
 static void _handle_request(int fd, slurmd_job_t *job);
 static int _handle_request_status(int fd);
+static int _handle_request_attach(int fd, slurmd_job_t *job);
 static bool _msg_socket_readable(eio_obj_t *obj);
 static int _msg_socket_accept(eio_obj_t *obj, List objs);
 
@@ -231,6 +232,10 @@ _handle_request(int fd, slurmd_job_t *job)
 		debug("Handling REQUEST_STATUS");
 		_handle_request_status(fd);
 		break;
+	case REQUEST_ATTACH:
+		debug("Handling REQUEST_ATTACH");
+		_handle_request_attach(fd, job);
+		break;
 	default:
 		error("Unrecognized request: %d", req);
 		break;
@@ -248,4 +253,27 @@ _handle_request_status(int fd)
 
 	write(fd, &status, sizeof(status));
 	status++;
+}
+
+static int
+_handle_request_attach(int fd, slurmd_job_t *job)
+{
+	srun_info_t *srun;
+	int rc;
+
+	debug("_handle_request_attach for job %u.%u", job->jobid, job->stepid);
+
+	xassert(sizeof(*srun->key) <= SLURM_CRED_SIGLEN);
+	srun       = xmalloc(sizeof(*srun));
+	srun->key  = xmalloc(sizeof(*srun->key));
+
+	read(fd, &srun->ioaddr, sizeof(slurm_addr));
+	read(fd, &srun->resp_addr, sizeof(slurm_addr));
+	read(fd, srun->key, SLURM_CRED_SIGLEN);
+
+	list_prepend(job->sruns, (void *) srun);
+
+	rc = io_client_connect(srun, job);
+	if (rc == SLURM_ERROR)
+		error("Failed attaching new stdio client");
 }
