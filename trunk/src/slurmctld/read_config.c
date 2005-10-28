@@ -214,8 +214,10 @@ static int _build_bitmaps(void)
 		while ((this_node_name = hostlist_shift(host_list))) {
 			node_ptr = find_node_record(this_node_name);
 			if (node_ptr == NULL) {
-				fatal("_build_bitmaps: invalid node name "
-					"specified %s", this_node_name);
+				fatal("_build_bitmaps: node %s is referenced "
+					"but not defined in slurm.conf "
+					"(no NodeName specification)", 
+					this_node_name);
 				free(this_node_name);
 				continue;
 			}
