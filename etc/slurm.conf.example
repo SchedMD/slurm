@@ -549,7 +549,7 @@ JobAcctType=jobacct/none
 # o Partition Configuration
 #
 #   Paritions are groups of nodes which (possibly) have different limits
-#   and access controls. Nodes may only be in one partition and jobs will
+#   and access controls. Nodes may be in multiple partitions. Jobs will
 #   not be allowed to span partitions. The following partition configuration
 #   parameters are recognized:
 #

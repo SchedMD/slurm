@@ -167,7 +167,9 @@ struct node_record {
 	uint32_t real_memory;		/* MB real memory on the node */
 	uint32_t tmp_disk;		/* MB total disk in TMP_FS */
 	struct config_record *config_ptr;  /* configuration spec ptr */
-	struct part_record *partition_ptr; /* partition for this node */
+	uint16_t part_cnt;		/* number of associated partitions */
+	struct part_record **part_pptr;	/* array of pointers to partitions 
+					 * associated with this node*/
 	char comm_name[MAX_NAME_LEN];	/* communications path name to node */
 	slurm_addr slurm_addr;		/* network address */
 	uint16_t comp_job_cnt;		/* count of jobs completing on node */

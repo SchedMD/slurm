@@ -71,9 +71,43 @@ if {$found == 1} {
 }
 
 #
+# Identify usable nodes in default partition
+#
+set def_name ""
+set def_node ""
+spawn $sinfo -h -o %32P
+expect {
+	-re "($alpha_numeric_under)(\\*)" {
+		set def_name $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {[string compare $def_name ""] == 0} {
+	send_user "\nFAILURE: failed to find default partition\n"
+	exit 1
+}
+spawn $sinfo -h -o %N -p $def_name
+expect {
+	-re "(\[a-zA-Z0-9_-\]+)" {
+		set def_node $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {[string compare $def_node ""] == 0} {
+	send_user "\nFAILURE:default partition seems to have no nodes\n"
+	exit 1
+}
+
+#
 # Create a new partition
 #
-spawn $scontrol update PartitionName=$part_name 
+spawn $scontrol update PartitionName=$part_name Nodes=$def_node
 expect {
 	-re "slurm_update error: ($alpha_numeric) ($alpha_numeric)" {
 		set access_err 0
@@ -139,7 +173,7 @@ if {$allow != 1} {
 }
 
 #
-# Now set group to mine
+# Now set AllowGroups to mine and TimeLimit=1
 #
 spawn $bin_id -gn
 expect {
@@ -155,7 +189,7 @@ expect {
 		wait
 	}
 }
-spawn $scontrol update PartitionName=$part_name AllowGroups=$my_group
+spawn $scontrol update PartitionName=$part_name AllowGroups=$my_group MaxTime=1
 expect {
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
@@ -182,6 +216,38 @@ expect {
 }
 if {$found != 1} {
         send_user "\nFAILURE: partition group not reset\n"
+	set exit_code 1
+}
+
+#
+# Run a job in this new partition and validate the time limit
+#
+set timed_out 0
+set sleep_time 300
+set timeout [expr $max_job_delay + $sleep_time]
+spawn $srun -t1 -p $part_name $bin_sleep $sleep_time
+expect {
+	-re "job exceeded timelimit" {
+		set timed_out 1
+		exp_continue
+	}
+	-re "Terminated" {
+		set timed_out 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		kill_srun
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$timed_out == 1} {
+	send_user "Early termination is expected, no worries.\n"
+} else {
+	send_user "\nFAILURE: partition time limit not enforced\n"
 	set exit_code 1
 }
 

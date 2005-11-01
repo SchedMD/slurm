@@ -317,7 +317,7 @@ _attempt_backfill(struct part_record *part_ptr)
 static void 
 _get_part_specs(struct part_record *part_ptr, part_specs_t *part_specs)
 {
-	int i;
+	int i, j;
 
 	part_specs->idle_node_cnt = 0;
 	part_specs->max_cpus      = 0;
@@ -327,8 +327,15 @@ _get_part_specs(struct part_record *part_ptr, part_specs_t *part_specs)
 
 	for (i=0; i<node_record_count; i++) {
 		struct node_record *node_ptr = &node_record_table_ptr[i];
+		bool found_part = false;
 
-		if (node_ptr->partition_ptr != part_ptr)
+		for (j=0; j<node_ptr->part_cnt; j++) {
+			if (node_ptr->part_pptr[j] != part_ptr)
+				continue;
+			found_part = true;
+			break;
+		}
+		if (found_part == false)
 			continue;	/* different partition */
 		if (node_ptr->node_state == NODE_STATE_IDLE)
 			part_specs->idle_node_cnt++;

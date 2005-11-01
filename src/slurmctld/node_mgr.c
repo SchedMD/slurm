@@ -80,6 +80,7 @@ static void 	_list_delete_config (void *config_entry);
 static int	_list_find_config (void *config_entry, void *key);
 static void 	_make_node_down(struct node_record *node_ptr);
 static void	_node_did_resp(struct node_record *node_ptr);
+static bool	_node_is_hidden(struct node_record *node_ptr);
 static void	_node_not_resp (struct node_record *node_ptr, time_t msg_time);
 static void 	_pack_node (struct node_record *dump_node_ptr, Buf buffer);
 static void	_sync_bitmaps(struct node_record *node_ptr, int job_count);
@@ -197,7 +198,8 @@ create_node_record (struct config_record *config_ptr, char *node_name)
 	node_ptr->node_state = default_node_record.node_state;
 	node_ptr->last_response = default_node_record.last_response;
 	node_ptr->config_ptr = config_ptr;
-	node_ptr->partition_ptr = NULL;
+	node_ptr->part_cnt = 0;
+	node_ptr->part_pptr = NULL;
 	/* these values will be overwritten when the node actually registers */
 	node_ptr->cpus = config_ptr->cpus;
 	node_ptr->real_memory = config_ptr->real_memory;
@@ -414,6 +416,8 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->node_state    = node_state;
 			xfree(node_ptr->reason);
 			node_ptr->reason        = reason;
+			node_ptr->part_cnt      = 0;
+			xfree(node_ptr->part_pptr);
 			node_ptr->cpus          = cpus;
 			node_ptr->real_memory   = real_memory;
 			node_ptr->tmp_disk      = tmp_disk;
@@ -530,7 +534,8 @@ int init_node_conf (void)
 	default_node_record.real_memory = 1;
 	default_node_record.tmp_disk = 1;
 	default_node_record.config_ptr = NULL;
-	default_node_record.partition_ptr = NULL;
+	default_node_record.part_cnt = 0;
+	default_node_record.part_pptr = NULL;
 	default_config_record.cpus = 1;
 	default_config_record.real_memory = 1;
 	default_config_record.tmp_disk = 1;
@@ -650,6 +655,22 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
 	return rc;
 }
 
+static bool _node_is_hidden(struct node_record *node_ptr)
+{
+	int i;
+	bool shown = false;
+
+	for (i=0; i<node_ptr->part_cnt; i++) {
+		if (node_ptr->part_pptr[i]->hidden == 0) {
+			shown = true;
+			break;
+		}
+	}
+
+	if (shown || (node_ptr->part_cnt == 0))
+		return false;
+	return true;
+}
 
 /* 
  * pack_all_node - dump all configuration and node information for all nodes  
@@ -689,9 +710,8 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 		xassert (node_ptr->config_ptr->magic ==  
 			 CONFIG_MAGIC);
 
-		if (((show_flags & SHOW_ALL) == 0) && 
-		    (node_ptr->partition_ptr) && 
-		    (node_ptr->partition_ptr->hidden))
+		if (((show_flags & SHOW_ALL) == 0)
+		&&  (_node_is_hidden(node_ptr)))
 			continue;
 
 		_pack_node(node_ptr, buffer);
@@ -735,10 +755,6 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer)
 	}
 	pack32  (dump_node_ptr->config_ptr->weight, buffer);
 	packstr (dump_node_ptr->config_ptr->feature, buffer);
-	if (dump_node_ptr->partition_ptr)
-		packstr (dump_node_ptr->partition_ptr->name, buffer);
-	else
-		packstr (NULL, buffer);
 	packstr (dump_node_ptr->reason, buffer);
 }
 
@@ -1037,7 +1053,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 			uint32_t real_memory, uint32_t tmp_disk, 
 			uint32_t job_count, uint32_t status)
 {
-	int error_code;
+	int error_code, i;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
 	char *reason_down = NULL;
@@ -1056,9 +1072,13 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		error_code  = EINVAL;
 		reason_down = "Low CPUs";
 	}
-	if ((node_ptr->cpus != cpus) && (node_ptr->partition_ptr) &&
-	    (slurmctld_conf.fast_schedule == 0))
-		node_ptr->partition_ptr->total_cpus += (cpus - node_ptr->cpus);
+	if ((node_ptr->cpus != cpus)
+	&&  (slurmctld_conf.fast_schedule == 0)) {
+		for (i=0; i<node_ptr->part_cnt; i++) {
+			node_ptr->part_pptr[i]->total_cpus += 
+				(cpus - node_ptr->cpus);
+		}
+	}
 	node_ptr->cpus = cpus;
 
 	if (real_memory < config_ptr->real_memory) {
@@ -1849,8 +1869,10 @@ void node_fini(void)
 		config_list = NULL;
 	}
 
-	for (i=0; i< node_record_count; i++)
+	for (i=0; i< node_record_count; i++) {
+		xfree(node_record_table_ptr[i].part_pptr);
 		xfree(node_record_table_ptr[i].reason);
+	}
 
 	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(avail_node_bitmap);

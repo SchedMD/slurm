@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-213976">
-<meta name="LLNLRandRdate" content="25 October 2005">
+<meta name="LLNLRandRdate" content="1 November 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -315,8 +315,11 @@ In this case &quot;emcri&quot; is the private management network interface
 for the host &quot;mcri&quot;. Port numbers to be used for 
 communications are specified as well as various timer values.</p>
 
-<p>A description of the nodes and their grouping into non-overlapping partitions 
-is required. Partition and node specifications use node range expressions to identify 
+<p>A description of the nodes and their grouping into partitions is required. 
+Nodes can be in more than one partition and each partition can have different 
+constraints (permitted users, time limits, job size limits, etc.).
+Each partition can thus be considered a separate queue.
+Partition and node specifications use node range expressions to identify 
 nodes in a concise fashion. This configuration file defines a 1154-node cluster 
 for SLURM, but it might be used for a much larger cluster by just changing a few 
 node range expressions. Specify the minimum processor count (Procs), real memory 
@@ -571,7 +574,7 @@ in the NEWS file.
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-213976<br>
-Last modified 25 October 2005</p></td>
+Last modified 1 November 2005</p></td>
 </tr>
 </table>
 </td>
