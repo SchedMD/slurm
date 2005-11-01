@@ -124,7 +124,7 @@ slurm_step_ctx_create (job_step_create_request_msg_t *step_req)
 	old_job_alloc_msg_t old_job_req;
 	job_step_create_response_msg_t *step_resp = NULL;
 	resource_allocation_response_msg_t *alloc_resp;
-
+	char *temp = NULL;
 	old_job_req.job_id	= step_req->job_id;
 	old_job_req.uid		= getuid();
 	if (slurm_confirm_allocation(&old_job_req, &alloc_resp) < 0)
@@ -135,7 +135,11 @@ slurm_step_ctx_create (job_step_create_request_msg_t *step_req)
 		slurm_free_resource_allocation_response_msg(alloc_resp);
 		return NULL;	/* slurm errno already set */
 	}
-
+	
+	temp = step_req->node_list;
+	step_req->node_list = step_resp->node_list;
+	step_resp->node_list = temp;
+		
 	rc = xmalloc(sizeof(struct slurm_step_ctx_struct));
 	rc->magic	= STEP_CTX_MAGIC;
 	rc->job_id	= step_req->job_id;
@@ -144,10 +148,7 @@ slurm_step_ctx_create (job_step_create_request_msg_t *step_req)
 	rc->task_dist	= step_req->task_dist;
 	rc->step_resp	= step_resp;
 	rc->alloc_resp	= alloc_resp;
-	 
-	rc->hl		= hostlist_create(alloc_resp->node_list);
-	printf("nodelists here %s %s\n",alloc_resp->node_list, step_resp->node_list);
-	//rc->hl		= hostlist_create(step_resp->node_list);
+	rc->hl		= hostlist_create(step_req->node_list);
 	rc->nhosts	= hostlist_count(rc->hl);
 	(void) _task_layout(rc);
 
@@ -396,10 +397,9 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 	msg_array_ptr = xmalloc(sizeof(spawn_task_request_msg_t) *
 			ctx->nhosts);
 	req_array_ptr = xmalloc(sizeof(slurm_msg_t) * ctx->nhosts);
-	//hostlist = hostlist_create(ctx->job_resp->node_list);
-	printf("nodelist %s\n",j, ctx->step_resp->node_list);
-		
-	//itr = hostlist_iterator_create(hostlist);
+	hostlist = hostlist_create(ctx->alloc_resp->node_list);		
+	itr = hostlist_iterator_create(hostlist);
+
 	for (i=0; i<ctx->nhosts; i++) {
 		spawn_task_request_msg_t *r = &msg_array_ptr[i];
 		slurm_msg_t              *m = &req_array_ptr[i];
@@ -418,15 +418,7 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 		r->nprocs	= ctx->num_tasks;
 		r->switch_job	= ctx->step_resp->switch_job; 
 		r->slurmd_debug	= slurmd_debug;
-		/*  j=0; */
-/*  		while(host = hostlist_next(itr)) { */
-/*  			if(!strcmp(host,ctx->host[i])) */
-/*  				break; */
-/*  			j++; */
-/*  		} */
-		printf("using %d %s with %d tasks\n",i, ctx->host[i],
-		       r->nprocs);
-		//hostlist_iterator_reset(itr);
+		 
 		
 		/* Task specific message contents */
 		r->global_task_id	= ctx->tids[i][0];
@@ -435,15 +427,23 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 		r->io_port	= ntohs(sock_array[i]);
 		m->msg_type	= REQUEST_SPAWN_TASK;
 		m->data		= r;
-		
-		memcpy(&m->address, &ctx->alloc_resp->node_addr[i], 
+		j=0; 
+  		while(host = hostlist_next(itr)) { 
+  			if(!strcmp(host,ctx->host[i])) 
+  				break; 
+  			j++; 
+  		}
+		debug2("using %d %s with %d tasks\n", j, ctx->host[i],
+		       r->nprocs);
+		hostlist_iterator_reset(itr);
+		memcpy(&m->address, &ctx->alloc_resp->node_addr[j], 
 			sizeof(slurm_addr));
 #if		_DEBUG
 		printf("tid=%d, fd=%d, port=%u, node_id=%u\n",
 			ctx->tids[i][0], fd_array[i], r->io_port, i);
 #endif
 	}
-	//hostlist_iterator_destroy(itr);
+	hostlist_iterator_destroy(itr);
 
 	rc = _p_launch(req_array_ptr, ctx);
 
@@ -524,7 +524,7 @@ static int _validate_ctx(slurm_step_ctx ctx)
 static int _task_layout(slurm_step_ctx ctx)
 {
 	int cpu_cnt = 0, cpu_inx = 0, i;
-	printf("hey %d\n",ctx->cpus);
+
 	if (ctx->cpus)	/* layout already completed */
 		return SLURM_SUCCESS;
 
@@ -554,9 +554,10 @@ static int _task_layout(slurm_step_ctx ctx)
 		return SLURM_ERROR;
 	}
 
-	return _task_layout_hostfile(ctx);
 	if (ctx->task_dist == SLURM_DIST_CYCLIC)
 		return _task_layout_cyclic(ctx);
+	else if(ctx->task_dist == SLURM_DIST_HOSTFILE)
+		return _task_layout_hostfile(ctx);
 	else
 		return _task_layout_block(ctx);
 }
@@ -584,7 +585,7 @@ static int _task_layout_hostfile(slurm_step_ctx ctx)
 			if(!strcmp(host, host_task))
 				ctx->tasks[i]++;
 		}
-		printf("%s got %d tasks\n",
+		debug2("%s got %d tasks\n",
 		       host,
 		       ctx->tasks[i]);
 		if(ctx->tasks[i] == 0)
@@ -600,8 +601,8 @@ static int _task_layout_hostfile(slurm_step_ctx ctx)
 			}
 			taskid++;
 		}
-	reset_hosts:
 		i++;
+	reset_hosts:
 		hostlist_iterator_reset(itr_task);		
 	}
 

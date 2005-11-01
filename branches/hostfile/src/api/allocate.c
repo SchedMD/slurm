@@ -252,18 +252,9 @@ slurm_confirm_allocation (old_job_alloc_msg_t *req,
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 	
-	/*  job_step_create_request_msg_t *step_req =    */
-/*  		xmalloc(sizeof(job_step_create_request_msg_t));   */
-
 	req_msg.msg_type = REQUEST_OLD_JOB_RESOURCE_ALLOCATION;
 	req_msg.data     = req; 
 	
-	/*  if(_nodelist_from_hostfile(step_req) == 0)   */
-/*      		debug3("nodelist was NULL");    */
-/*    	printf("num tasks %d\n",step_req->num_tasks);  */
-/*    	req->req_nodes = (char *)xstrdup(step_req->node_list);  */
-/*    	xfree(step_req->node_list);  */
-/*   	xfree(step_req);  */
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
@@ -318,12 +309,6 @@ static int _nodelist_from_hostfile(job_step_create_request_msg_t *req)
 	int ret = 0;
 	int line_num = 0;
 	char *nodelist = NULL;
-	char *temp = NULL;
-	int num_tasks = 0;
-
-	/*  if(!(temp = (char *)getenv("SLURMLLAPI_PROCS"))) */
-/*  		return 0; */
-/*  	num_tasks = atoi(temp); */
 	
 	if (hostfile = (char *)getenv("SLURM_HOSTFILE")) {
 		if((hostfilep = fopen(hostfile, "r")) == NULL) {
@@ -404,6 +389,7 @@ no_hostfile:
 	if(nodelist) {
 		req->node_list = nodelist;
 		req->num_tasks = count;
+		req->task_dist = SLURM_DIST_HOSTFILE;
 	}
 	return count;
 }

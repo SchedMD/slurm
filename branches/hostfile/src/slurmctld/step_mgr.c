@@ -405,6 +405,10 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				step_spec->node_list, job_ptr->job_id);
 			goto cleanup;
 		}
+		if(step_spec->task_dist == SLURM_DIST_HOSTFILE) {
+			FREE_NULL_BITMAP(nodes_avail);
+			return nodes_picked;
+		}
 	} else if (step_spec->relative) {
 		/* Remove first (step_spec->relative) nodes from  
 		 * available list */
@@ -425,7 +429,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			fatal("bit_alloc malloc failure");
 	}
 
-	/* if user specifies step needs a specific processor count and  */
+	/* istep_specs->node_listf user specifies step needs a specific processor count and  */
 	/* all nodes have the same processor count, just translate this to */
 	/* a node count */
 	if (step_spec->cpu_count && (job_ptr->num_cpu_groups == 1)) {
@@ -523,7 +527,8 @@ step_create ( job_step_create_request_msg_t *step_specs,
 		return ESLURM_ALREADY_DONE;
 
 	if ((step_specs->task_dist != SLURM_DIST_CYCLIC) &&
-	    (step_specs->task_dist != SLURM_DIST_BLOCK))
+	    (step_specs->task_dist != SLURM_DIST_BLOCK) &&
+	    (step_specs->task_dist != SLURM_DIST_HOSTFILE))
 		return ESLURM_BAD_DIST;
 
 	if (job_ptr->kill_on_step_done)
@@ -537,7 +542,7 @@ step_create ( job_step_create_request_msg_t *step_specs,
 	if (nodeset == NULL)
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE ;
 	node_count = bit_set_count(nodeset);
-
+	
 	if (step_specs->num_tasks == NO_VAL) {
 		if (step_specs->cpu_count != NO_VAL)
 			step_specs->num_tasks = step_specs->cpu_count;
@@ -553,16 +558,13 @@ step_create ( job_step_create_request_msg_t *step_specs,
 		fatal ("create_step_record failed with no memory");
 
 	/* set the step_record values */
-	//step_ptr->step_node_list = bitmap2node_name(nodeset);
 	/* Here is where the node list is set for the job */
 	step_ptr->step_node_list = xstrdup(step_specs->node_list); 
-	//step_ptr->step_node_list = xstrdup("op02"); 
-	
-	info("node_list here %s %s %d\n", step_ptr->step_node_list, 
-	     step_specs->node_list, step_specs->num_tasks);
+	xfree(step_specs->node_list);
+	step_specs->node_list = bitmap2node_name(nodeset);
 	step_ptr->step_node_bitmap = nodeset;
-	step_ptr->cyclic_alloc = 0;
-	//(uint16_t) (step_specs->task_dist == SLURM_DIST_CYCLIC);
+	step_ptr->cyclic_alloc = 
+		(uint16_t) (step_specs->task_dist == SLURM_DIST_CYCLIC);
 	step_ptr->num_tasks = step_specs->num_tasks;
 	step_ptr->time_last_active = now;
 	step_ptr->port = step_specs->port;
@@ -590,9 +592,7 @@ step_create ( job_step_create_request_msg_t *step_specs,
 						   step_ptr->step_node_list, 
 						   step_ptr->num_tasks); 
 		int i=0;
-		for(i= 0; i<2;i++) {
-			printf("count %d = %d\n",i, tasks_per_node[i]);
-		}
+		
 		if (switch_alloc_jobinfo (&step_ptr->switch_job) < 0)
 			fatal ("step_create: switch_alloc_jobinfo error");
 		
