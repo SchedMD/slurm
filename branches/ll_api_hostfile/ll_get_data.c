@@ -762,7 +762,6 @@ static LL_element *_get_step_next_node(slurm_elem_t *slurm_elem,
 	node_inx = step_data->node_cnt - 
 		hostset_count(step_data->host_set_copy);
 	*node_name = hostset_shift(step_data->host_set_copy);
-	printf("Node name %d %s\n",node_inx, *node_name);
 	if (*node_name == NULL) {
 		VERBOSE("no more hosts in list\n");
 		return (LL_element *) NULL;
@@ -795,8 +794,6 @@ static LL_element *_get_step_next_node(slurm_elem_t *slurm_elem,
 	node_data->node_addr = strdup(dotted_quad);
 	node_data->node_inx  = node_inx;
 	node_data->task_cnt  = _get_task_cnt(step_data, node_inx);
-	printf("%d node_data->task_cnt %d\n",node_inx, 
-	       node_data->task_cnt);
 	_get_task_ids(step_data, node_data, node_inx);
 	node_data->step_elem = slurm_elem;
 
@@ -1349,7 +1346,7 @@ static slurm_elem_t *_build_adapter(slurm_elem_t *taski_elem, int adapter_idx)
 	   || !strcmp(step_data->device, "sn_single")) {
 		if(tableinfo) {
 			device = tableinfo[adapter_idx].adapter_name;
-			printf("device[%d] = %s\n",
+			VERBOSE("device[%d] = %s\n",
 				adapter_idx, device);
 			adapter_data->device = strdup(device);
 			
