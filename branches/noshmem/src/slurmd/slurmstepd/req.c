@@ -46,8 +46,8 @@
 #include "src/slurmd/slurmstepd/req.h"
 
 static void _handle_request(int fd, slurmd_job_t *job);
-static int _handle_request_status(int fd);
-static int _handle_request_attach(int fd, slurmd_job_t *job);
+static void _handle_request_status(int fd);
+static void _handle_request_attach(int fd, slurmd_job_t *job);
 static bool _msg_socket_readable(eio_obj_t *obj);
 static int _msg_socket_accept(eio_obj_t *obj, List objs);
 
@@ -246,7 +246,7 @@ fail:
 	debug3("Leaving  _handle_message");
 }
 
-static int
+static void
 _handle_request_status(int fd)
 {
 	static int status = 1;
@@ -255,25 +255,64 @@ _handle_request_status(int fd)
 	status++;
 }
 
-static int
+static void
 _handle_request_attach(int fd, slurmd_job_t *job)
 {
 	srun_info_t *srun;
-	int rc;
+	int rc = SLURM_SUCCESS;
+	int buf_len = 0;
+	Buf buf;
+	void *auth_cred;
+	slurm_cred_t job_cred;
+	int sig_len;
+	int uid, gid;
 
 	debug("_handle_request_attach for job %u.%u", job->jobid, job->stepid);
 
-	xassert(sizeof(*srun->key) <= SLURM_CRED_SIGLEN);
 	srun       = xmalloc(sizeof(*srun));
 	srun->key  = xmalloc(sizeof(*srun->key));
 
 	read(fd, &srun->ioaddr, sizeof(slurm_addr));
 	read(fd, &srun->resp_addr, sizeof(slurm_addr));
-	read(fd, srun->key, SLURM_CRED_SIGLEN);
+	read(fd, &buf_len, sizeof(int));
+	buf = init_buf(buf_len);
+	read(fd, get_buf_data(buf), buf_len);
+
+	debug3("buf_len = %d", buf_len);
+	auth_cred = g_slurm_auth_unpack(buf);
+	job_cred = slurm_cred_unpack(buf);
+	free_buf(buf); /* takes care of xfree'ing data as well */
+
+	/*
+	 * Authenticate the user using the auth credential.
+	 */
+	uid = g_slurm_auth_get_uid(auth_cred);
+	gid = g_slurm_auth_get_gid(auth_cred);
+	debug3("  uid = %d, gid = %d", uid, gid);
+	if (uid != job->uid && gid != job->gid) {
+		error("uid %ld attempt to attach to job %u.%u owned by %ld",
+				(long) uid, job->jobid, job->stepid,
+				(long) job->uid);
+		rc = EPERM;
+		goto done;
+	}
+
+	/*
+	 * Get the signature of the job credential to send back to srun.
+	 */
+	slurm_cred_get_signature(job_cred, (void *)&srun->key, &sig_len);
+	xassert(sig_len <= SLURM_CRED_SIGLEN);
 
 	list_prepend(job->sruns, (void *) srun);
 
 	rc = io_client_connect(srun, job);
-	if (rc == SLURM_ERROR)
+	if (rc == SLURM_ERROR) {
 		error("Failed attaching new stdio client");
+		rc = SLURM_ERROR;
+		goto done;
+	}
+
+done:
+	/* Send the return code */
+	write(fd, &rc, sizeof(int));
 }

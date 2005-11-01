@@ -33,6 +33,9 @@
 
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/pack.h"
+#include "src/common/slurm_auth.h"
+#include "src/common/slurm_cred.h"
 
 #include "src/slurmd/common/stepd_api.h"
 
@@ -80,16 +83,37 @@ step_request_status(step_loc_t step)
 }
 
 int
-step_request_attach(step_loc_t step, slurm_addr *ioaddr,
-		    slurm_addr *respaddr, char *cred_signature)
+stepd_request_attach(step_loc_t step, slurm_addr *ioaddr,
+		     slurm_addr *respaddr,
+		     void *auth_cred, slurm_cred_t job_cred)
 {
 	int req = REQUEST_ATTACH;
 	int fd;
+	Buf buf;
+	int buf_len;
+	int rc;
+
+	debug("uid = %d, gid = %d",
+	      g_slurm_auth_get_uid(auth_cred),
+	      g_slurm_auth_get_gid(auth_cred));
 
 	fd = step_connect(step);
-
 	write(fd, &req, sizeof(int));
+
+	buf = init_buf(0);
+	g_slurm_auth_pack(auth_cred, buf);
+	slurm_cred_pack(job_cred, buf);
+	buf_len = size_buf(buf);
+	debug("buf_len = %d", buf_len);
+
 	write(fd, ioaddr, sizeof(slurm_addr));
 	write(fd, respaddr, sizeof(slurm_addr));
-	write(fd, cred_signature, SLURM_CRED_SIGLEN);
+	write(fd, &buf_len, sizeof(int));
+	write(fd, get_buf_data(buf), buf_len);
+
+	/* Receive the return code */
+	read(fd, &rc, sizeof(int));
+
+	free_buf(buf);
+	return rc;
 }

@@ -1189,14 +1189,6 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		goto done;
 	}
 	
-	if ((step->uid != req_uid) && (req_uid != 0)) {
-		error("uid %ld attempt to attach to job %u.%u owned by %ld",
-				(long) req_uid, req->job_id, req->job_step_id,
-				(long) step->uid);
-		rc = EPERM;
-		goto done;
-	}
-
 	state = shm_lock_step_state(req->job_id, req->job_step_id);
 	if (  (*state != SLURMD_JOB_STARTING) 
 	   && (*state != SLURMD_JOB_STARTED)  ) {
@@ -1207,16 +1199,10 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	shm_unlock_step_state(req->job_id, req->job_step_id);
 
 	/* 
-	 * Set IO and response addresses in shared memory
+	 * Set IO address and by io_port and client address
 	 */
 	memcpy(&ioaddr, cli, sizeof(slurm_addr));
 	slurm_set_addr(&ioaddr, req->io_port, NULL);
-	slurm_get_ip_str(&ioaddr, &port, host, sizeof(host));
-
-	debug3("reattach: srun ioaddr: %s:%d", host, port);
-
-
-	slurm_cred_get_signature(req->cred, &key, &len);
 
 	/*
 	 * Use slurmstepd API to request that the slurmdstepd handle
@@ -1226,7 +1212,12 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	loc.nodename = "nodename";
 	loc.jobid = req->job_id;
 	loc.stepid = req->job_step_id;
-	step_request_attach(loc, &ioaddr, &resp_msg.address, key);
+	rc = stepd_request_attach(loc, &ioaddr, &resp_msg.address,
+				  msg->cred, req->cred);
+	if (rc != SLURM_SUCCESS) {
+		debug2("stepd_request_attach call failed");
+		goto done;
+	}
 
 	resp.local_pids = xmalloc(step->ntasks * sizeof(*resp.local_pids));
 	resp.gtids      = xmalloc(step->ntasks * sizeof(*resp.local_pids));

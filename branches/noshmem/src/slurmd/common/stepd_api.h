@@ -48,7 +48,8 @@ typedef struct step_location {
 
 int step_request_status(step_loc_t step);
 int step_request_signal(step_loc_t step, int signal);
-int step_request_attach(step_loc_t step, slurm_addr *ioaddr,
-			slurm_addr *respaddr, char *cred_signature);
+int stepd_request_attach(step_loc_t step, slurm_addr *ioaddr,
+			 slurm_addr *respaddr, void *auth_cred,
+			 slurm_cred_t job_cred);
 
 #endif /* _STEP_MSG_API_H */
