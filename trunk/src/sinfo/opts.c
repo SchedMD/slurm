@@ -117,7 +117,12 @@ extern void parse_command_line(int argc, char *argv[])
 			params.all_flag = true;
 			break;
 		case (int)'b':
+#ifdef HAVE_BGL
 			params.bgl_flag = true;
+#else
+			error("must be on a BGL system to use --bgl option");
+			exit(1);
+#endif
 			break;
 		case (int)'d':
 			params.dead_nodes = true;
