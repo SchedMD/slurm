@@ -82,10 +82,75 @@ step_request_status(step_loc_t step)
 	return status;
 }
 
+/*
+ * Send a signal to the process group of a job step.
+ */
 int
-stepd_request_attach(step_loc_t step, slurm_addr *ioaddr,
-		     slurm_addr *respaddr,
-		     void *auth_cred, slurm_cred_t job_cred)
+stepd_signal(step_loc_t step, void *auth_cred, int signal)
+{
+	int req = REQUEST_SIGNAL_PROCESS_GROUP;
+	int fd;
+	Buf buf;
+	int buf_len;
+	int rc;
+
+	fd = step_connect(step);
+	write(fd, &req, sizeof(int));
+
+	/* pack auth credential */
+	buf = init_buf(0);
+	g_slurm_auth_pack(auth_cred, buf);
+	buf_len = size_buf(buf);
+	debug("buf_len = %d", buf_len);
+
+	write(fd, &signal, sizeof(int));
+	write(fd, &buf_len, sizeof(int));
+	write(fd, get_buf_data(buf), buf_len);
+
+	/* Receive the return code */
+	read(fd, &rc, sizeof(int));
+
+	free_buf(buf);
+	return rc;
+}
+
+/*
+ * Send a signal to the process group of a job step.
+ */
+int
+stepd_signal_task_local(step_loc_t step, void *auth_cred,
+			int signal, int ltaskid)
+{
+	int req = REQUEST_SIGNAL_PROCESS_GROUP;
+	int fd;
+	Buf buf;
+	int buf_len;
+	int rc;
+
+	fd = step_connect(step);
+	write(fd, &req, sizeof(int));
+
+	/* pack auth credential */
+	buf = init_buf(0);
+	g_slurm_auth_pack(auth_cred, buf);
+	buf_len = size_buf(buf);
+	debug("buf_len = %d", buf_len);
+
+	write(fd, &signal, sizeof(int));
+	write(fd, &ltaskid, sizeof(int));
+	write(fd, &buf_len, sizeof(int));
+	write(fd, get_buf_data(buf), buf_len);
+
+	/* Receive the return code */
+	read(fd, &rc, sizeof(int));
+
+	free_buf(buf);
+	return rc;
+}
+
+int
+stepd_attach(step_loc_t step, slurm_addr *ioaddr, slurm_addr *respaddr,
+	     void *auth_cred, slurm_cred_t job_cred)
 {
 	int req = REQUEST_ATTACH;
 	int fd;
@@ -93,13 +158,10 @@ stepd_request_attach(step_loc_t step, slurm_addr *ioaddr,
 	int buf_len;
 	int rc;
 
-	debug("uid = %d, gid = %d",
-	      g_slurm_auth_get_uid(auth_cred),
-	      g_slurm_auth_get_gid(auth_cred));
-
 	fd = step_connect(step);
 	write(fd, &req, sizeof(int));
 
+	/* pack auth and job credentials */
 	buf = init_buf(0);
 	g_slurm_auth_pack(auth_cred, buf);
 	slurm_cred_pack(job_cred, buf);

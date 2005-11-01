@@ -935,6 +935,7 @@ _rpc_signal_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	uid_t             req_uid;
 	job_step_t       *step = NULL;
 	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
+	step_loc_t loc;
 
 	if (!(step = shm_get_step(req->job_id, req->job_step_id))) {
 		debug("kill for nonexistent job %u.%u requested",
@@ -943,21 +944,21 @@ _rpc_signal_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		goto done;
 	} 
 
-	req_uid = g_slurm_auth_get_uid(msg->cred);
-	if ((req_uid != step->uid) && (!_slurm_authorized_user(req_uid))) {
-	       debug("kill req from uid %ld for job %u.%u owned by uid %ld",
-		     (long) req_uid, req->job_id, req->job_step_id, 
-		     (long) step->uid);       
-	       rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
-	       goto done;
-	}
-
 	if (step->state == SLURMD_JOB_STARTING) {
 		debug ("signal req for starting job step %u.%u",
 			req->job_id, req->job_step_id); 
 		rc = ESLURMD_JOB_NOTRUNNING;
 		goto done;
 	}
+
+	/*
+	 * Use slurmstepd API to request that the slurmdstepd handle
+	 * the signalling.
+	 */
+	loc.directory = conf->spooldir;
+	loc.nodename = "nodename";
+	loc.jobid = req->job_id;
+	loc.stepid = req->job_step_id;
 
 #ifdef HAVE_AIX
 #  ifdef SIGMIGRATE
@@ -966,40 +967,15 @@ _rpc_signal_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	 * These signals are not sent to the entire process group, but just a
 	 * single process, namely the PMD. */
 	if (req->signal == SIGMIGRATE || req->signal == SIGSOUND) {
-		if (!step->task_list || step->task_list->pid <= (pid_t)1) {
-			verbose("Invalid pid for signal %d", req->signal);
-			goto done;
-		}
-		if (kill(step->task_list->pid, req->signal) == -1) {
-			rc = errno;
-			verbose("Error sending signal %d to pmd"
-				" for job %u.%u: %s",
-				req->signal, req->job_id, req->job_step_id,
-				slurm_strerror(errno));
-		}
+		rc = stepd_signal_task_local(loc, msg->cred, req->signal, 0);
 		goto done;
 	}
 #    endif
 #  endif
 #endif
 
-	if (step->pgid <= (pid_t)1) {
-		debug ("step %u.%u invalid in shm [mpid:%d pgid:%u]", 
-			req->job_id, req->job_step_id, 
-			step->mpid, step->pgid);
-		rc = ESLURMD_JOB_NOTRUNNING;
-	}
-
-	if (killpg(step->pgid, req->signal) == -1) {
-		rc = errno;
-		verbose("Error sending signal %d to %u.%u: %s", 
-			req->signal, req->job_id, req->job_step_id, 
-			slurm_strerror(rc));
-	} else {
-		verbose("Sent signal %d to %u.%u", 
-			req->signal, req->job_id, req->job_step_id);
-	}
-
+	rc = stepd_signal(loc, msg->cred, req->signal);
+	
   done:
 	if (step)
 		shm_free_step(step);
@@ -1212,8 +1188,8 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	loc.nodename = "nodename";
 	loc.jobid = req->job_id;
 	loc.stepid = req->job_step_id;
-	rc = stepd_request_attach(loc, &ioaddr, &resp_msg.address,
-				  msg->cred, req->cred);
+	rc = stepd_attach(loc, &ioaddr, &resp_msg.address,
+			  msg->cred, req->cred);
 	if (rc != SLURM_SUCCESS) {
 		debug2("stepd_request_attach call failed");
 		goto done;

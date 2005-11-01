@@ -33,7 +33,9 @@
 #include "slurm/slurm.h"
 
 typedef enum {
-	REQUEST_SIGNAL = 0,
+	REQUEST_SIGNAL_PROCESS_GROUP = 0,
+	REQUEST_SIGNAL_TASK_LOCAL,
+	REQUEST_SIGNAL_TASK_GLOBAL,
 	REQUEST_TERMINATE,
 	REQUEST_STATUS,
 	REQUEST_ATTACH,
@@ -47,9 +49,26 @@ typedef struct step_location {
 } step_loc_t;
 
 int step_request_status(step_loc_t step);
-int step_request_signal(step_loc_t step, int signal);
-int stepd_request_attach(step_loc_t step, slurm_addr *ioaddr,
-			 slurm_addr *respaddr, void *auth_cred,
-			 slurm_cred_t job_cred);
+
+/*
+ * Send a signal to the process group of a job step.
+ */
+int stepd_signal(step_loc_t step, void *auth_cred, int signal); 
+
+/*
+ * Send a signal to the process group of a job step.
+ */
+int stepd_signal_task_local(step_loc_t step, void *auth_cred,
+			    int signal, int ltaskid); 
+
+
+/*
+ * Send a signal to a single task in the step.
+ */
+int stepd_signal_task_local(step_loc_t step, void *auth_cred,
+			    int signal, int ltaskid);
+
+int stepd_attach(step_loc_t step, slurm_addr *ioaddr, slurm_addr *respaddr,
+		 void *auth_cred, slurm_cred_t job_cred);
 
 #endif /* _STEP_MSG_API_H */

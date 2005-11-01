@@ -47,7 +47,9 @@
 
 static void _handle_request(int fd, slurmd_job_t *job);
 static void _handle_request_status(int fd);
-static void _handle_request_attach(int fd, slurmd_job_t *job);
+static void _handle_signal_process_group(int fd, slurmd_job_t *job);
+static void _handle_signal_task_local(int fd, slurmd_job_t *job);
+static void _handle_attach(int fd, slurmd_job_t *job);
 static bool _msg_socket_readable(eio_obj_t *obj);
 static int _msg_socket_accept(eio_obj_t *obj, List objs);
 
@@ -57,6 +59,16 @@ struct io_operations msg_socket_ops = {
 };
 
 char *socket_name;
+
+/*
+ *  Returns true if "uid" is a "slurm authorized user" - i.e. uid == 0
+ *   or uid == slurm user id at this time.
+ */
+static bool
+_slurm_authorized_user(uid_t uid)
+{
+	return ((uid == (uid_t) 0) || (uid == conf->slurm_user_id));
+}
 
 /*
  * Create a named unix domain listening socket.
@@ -222,8 +234,16 @@ _handle_request(int fd, slurmd_job_t *job)
 	}
 
 	switch (req) {
-	case REQUEST_SIGNAL:
-		debug("Handling REQUEST_SIGNAL");
+	case REQUEST_SIGNAL_PROCESS_GROUP:
+		debug("Handling REQUEST_SIGNAL_PROCESS_GROUP");
+		_handle_signal_process_group(fd, job);
+		break;
+	case REQUEST_SIGNAL_TASK_LOCAL:
+		debug("Handling REQUEST_SIGNAL_TASK_LOCAL");
+		_handle_signal_task_local(fd, job);
+		break;
+	case REQUEST_SIGNAL_TASK_GLOBAL:
+		debug("Handling REQUEST_SIGNAL_TASK_LOCAL (not implemented)");
 		break;
 	case REQUEST_TERMINATE:
 		debug("Handling REQUEST_TERMINATE");
@@ -234,7 +254,7 @@ _handle_request(int fd, slurmd_job_t *job)
 		break;
 	case REQUEST_ATTACH:
 		debug("Handling REQUEST_ATTACH");
-		_handle_request_attach(fd, job);
+		_handle_attach(fd, job);
 		break;
 	default:
 		error("Unrecognized request: %d", req);
@@ -256,7 +276,147 @@ _handle_request_status(int fd)
 }
 
 static void
-_handle_request_attach(int fd, slurmd_job_t *job)
+_handle_signal_process_group(int fd, slurmd_job_t *job)
+{
+	int rc = SLURM_SUCCESS;
+	int signal;
+	int buf_len = 0;
+	Buf buf;
+	void *auth_cred;
+	int uid;
+
+	debug("_handle_signal_process_group for job %u.%u",
+	      job->jobid, job->stepid);
+
+	read(fd, &signal, sizeof(int));
+	read(fd, &buf_len, sizeof(int));
+	buf = init_buf(buf_len);
+	read(fd, get_buf_data(buf), buf_len);
+
+	debug3("  buf_len = %d", buf_len);
+	auth_cred = g_slurm_auth_unpack(buf);
+	free_buf(buf); /* takes care of xfree'ing data as well */
+
+	/*
+	 * Authenticate the user using the auth credential.
+	 */
+	uid = g_slurm_auth_get_uid(auth_cred);
+	debug3("  uid = %d", uid);
+	if (uid != job->uid && !_slurm_authorized_user(uid)) {
+		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
+		      (long)uid, job->jobid, job->stepid, (long)job->uid);
+		rc = EPERM;
+		goto done;
+	}
+
+	/*
+	 * Signal the process group
+	 */
+	if (job->pgid <= (pid_t)1) {
+		debug ("step %u.%u invalid [jmgr_pid:%d pgid:%u]", 
+                       job->jobid, job->stepid, job->jmgr_pid, job->pgid);
+		rc = ESLURMD_JOB_NOTRUNNING;
+		goto done;
+	}
+
+	if (killpg(job->pgid, signal) == -1) {
+		rc = errno;
+		verbose("Error sending signal %d to %u.%u, pgid %d: %s", 
+			signal, job->jobid, job->stepid, job->pgid,
+			slurm_strerror(rc));
+	} else {
+		verbose("Sent signal %d to %u.%u, pgid %d", 
+			signal, job->jobid, job->stepid, job->pgid);
+	}
+	
+
+done:
+	/* Send the return code */
+	write(fd, &rc, sizeof(int));
+}
+
+static void
+_handle_signal_task_local(int fd, slurmd_job_t *job)
+{
+	int rc = SLURM_SUCCESS;
+	int signal;
+	int ltaskid; /* local task index */
+	int buf_len = 0;
+	Buf buf;
+	void *auth_cred;
+	int uid;
+
+	debug("_handle_signal_task_local for job %u.%u",
+	      job->jobid, job->stepid);
+
+	read(fd, &signal, sizeof(int));
+	read(fd, &ltaskid, sizeof(int));
+	read(fd, &buf_len, sizeof(int));
+	buf = init_buf(buf_len);
+	read(fd, get_buf_data(buf), buf_len);
+
+	debug3("  buf_len = %d", buf_len);
+	auth_cred = g_slurm_auth_unpack(buf);
+	free_buf(buf); /* takes care of xfree'ing data as well */
+
+	/*
+	 * Authenticate the user using the auth credential.
+	 */
+	uid = g_slurm_auth_get_uid(auth_cred);
+	debug3("  uid = %d", uid);
+	if (uid != job->uid && !_slurm_authorized_user(uid)) {
+		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
+		      (long)uid, job->jobid, job->stepid, (long)job->uid);
+		rc = EPERM;
+		goto done;
+	}
+
+	/*
+	 * Sanity checks
+	 */
+	if (ltaskid < 0 || ltaskid >= job->ntasks) {
+		debug("step %u.%u invalid local task id %d", 
+		      job->jobid, job->stepid, ltaskid);
+		rc = SLURM_ERROR;
+		goto done;
+	}
+	if (!job->task
+	    || !job->task[ltaskid]) {
+		debug("step %u.%u no task info for task id %d",
+		      job->jobid, job->stepid, ltaskid);
+		rc = SLURM_ERROR;
+		goto done;
+	}
+	if (job->task[ltaskid]->pid <= 1) {
+		debug("step %u.%u invalid pid %d for task %d",
+		      job->jobid, job->stepid,
+		      job->task[ltaskid]->pid, ltaskid);
+		rc = SLURM_ERROR;
+		goto done;
+	}
+
+	/*
+	 * Signal the task
+	 */
+	if (kill(job->task[ltaskid]->pid, signal) == -1) {
+		rc = errno;
+		verbose("Error sending signal %d to %u.%u, pid %d: %s", 
+			signal, job->jobid, job->stepid,
+			job->task[ltaskid]->pid, slurm_strerror(rc));
+	} else {
+		verbose("Sent signal %d to %u.%u, pid %d", 
+			signal, job->jobid, job->stepid,
+			job->task[ltaskid]->pid);
+	}
+	
+
+done:
+	/* Send the return code */
+	write(fd, &rc, sizeof(int));
+}
+
+static void
+_handle_attach(int fd, slurmd_job_t *job)
 {
 	srun_info_t *srun;
 	int rc = SLURM_SUCCESS;
