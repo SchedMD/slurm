@@ -25,12 +25,13 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef _STEP_MSG_API_H
-#define _STEP_MSG_API_H
+#ifndef _STEPD_API_H
+#define _STEPD_API_H
 
 #include <inttypes.h>
 
 #include "slurm/slurm.h"
+#include "src/common/list.h"
 
 typedef enum {
 	REQUEST_SIGNAL_PROCESS_GROUP = 0,
@@ -48,7 +49,7 @@ typedef struct step_location {
 	char *directory;
 } step_loc_t;
 
-int step_request_status(step_loc_t step);
+int stepd_status(step_loc_t step);
 
 /*
  * Send a signal to the process group of a job step.
@@ -75,4 +76,13 @@ int stepd_signal_container(step_loc_t step, void *auth_cred, int signal);
 int stepd_attach(step_loc_t step, slurm_addr *ioaddr, slurm_addr *respaddr,
 		 void *auth_cred, slurm_cred_t job_cred);
 
-#endif /* _STEP_MSG_API_H */
+
+/*
+ * Scan for available running slurm step daemons by checking
+ * "directory" for unix domain sockets with names beginning in "nodename".
+ *
+ * Returns a List of pointers to step_loc_t structures.
+ */
+List stepd_available(const char *directory, const char *nodename);
+
+#endif /* _STEPD_API_H */

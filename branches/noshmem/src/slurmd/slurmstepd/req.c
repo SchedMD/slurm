@@ -46,7 +46,7 @@
 #include "src/slurmd/slurmstepd/req.h"
 
 static void _handle_request(int fd, slurmd_job_t *job);
-static void _handle_request_status(int fd);
+static void _handle_status(int fd, slurmd_job_t *job);
 static void _handle_signal_process_group(int fd, slurmd_job_t *job);
 static void _handle_signal_task_local(int fd, slurmd_job_t *job);
 static void _handle_signal_container(int fd, slurmd_job_t *job);
@@ -252,7 +252,7 @@ _handle_request(int fd, slurmd_job_t *job)
 		break;
 	case REQUEST_STATUS:
 		debug("Handling REQUEST_STATUS");
-		_handle_request_status(fd);
+		_handle_status(fd, job);
 		break;
 	case REQUEST_ATTACH:
 		debug("Handling REQUEST_ATTACH");
@@ -269,12 +269,11 @@ fail:
 }
 
 static void
-_handle_request_status(int fd)
+_handle_status(int fd, slurmd_job_t *job)
 {
-	static int status = 1;
+	int status = 0;
 
 	write(fd, &status, sizeof(status));
-	status++;
 }
 
 static void

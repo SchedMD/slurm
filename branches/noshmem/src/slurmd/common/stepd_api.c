@@ -30,13 +30,17 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/un.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <regex.h>
+#include <inttypes.h>
 
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
-
+#include "src/common/list.h"
 #include "src/slurmd/common/stepd_api.h"
 
 static int
@@ -68,13 +72,15 @@ step_connect(step_loc_t step)
 }
 
 int
-step_request_status(step_loc_t step)
+stepd_status(step_loc_t step)
 {
 	int req	= REQUEST_STATUS;
 	int fd;
 	int status = 0;
 
 	fd = step_connect(step);
+	if (fd = -1)
+		return -1;
 
 	write(fd, &req, sizeof(int));
 	read(fd, &status, sizeof(int));
@@ -210,4 +216,115 @@ stepd_attach(step_loc_t step, slurm_addr *ioaddr, slurm_addr *respaddr,
 
 	free_buf(buf);
 	return rc;
+}
+
+static void
+_free_step_loc_t(step_loc_t *loc)
+{
+	if (loc->directory)
+		xfree(loc->directory);
+	if (loc->nodename)
+		xfree(loc->nodename);
+	xfree(loc);
+}
+
+static int
+_sockname_regex_init(regex_t *re, const char *nodename)
+{
+	char *pattern = NULL;
+
+	xstrcat(pattern, "^");
+	xstrcat(pattern, nodename);
+	xstrcat(pattern, "_([[:digit:]]*)\\.([[:digit:]]*)$");
+
+	if (regcomp(re, pattern, REG_EXTENDED) != 0) {
+                error("sockname regex compilation failed\n");
+                return -1;
+        }
+
+	xfree(pattern);
+}
+
+static int
+_sockname_regex(regex_t *re, const char *filename,
+		uint32_t *jobid, uint32_t *stepid)
+{
+        size_t nmatch = 5;
+        regmatch_t pmatch[5];
+        char *match;
+
+	memset(pmatch, 0, sizeof(regmatch_t)*nmatch);
+	if (regexec(re, filename, nmatch, pmatch, 0) == REG_NOMATCH) {
+		printf("regexec failed: No match\n");
+		return -1;
+	}
+
+	match = strndup(filename + pmatch[1].rm_so,
+			(size_t)(pmatch[1].rm_eo - pmatch[1].rm_so));
+	*jobid = (uint32_t)atol(match);
+	free(match);
+
+	match = strndup(filename + pmatch[2].rm_so,
+			(size_t)(pmatch[2].rm_eo - pmatch[2].rm_so));
+	*stepid = (uint32_t)atol(match);
+	free(match);
+
+	return 0;
+}		     
+
+/*
+ * Scan for available running slurm step daemons by checking
+ * "directory" for unix domain sockets with names beginning in "nodename".
+ *
+ * Returns a List of pointers to step_loc_t structures.
+ */
+List
+stepd_available(const char *directory, const char *nodename)
+{
+	List l;
+	DIR *dp;
+	struct dirent *ent;
+	regex_t re;
+	struct stat stat_buf;
+
+	l = list_create((ListDelF) &_free_step_loc_t);
+	_sockname_regex_init(&re, nodename);
+
+	/*
+	 * Make sure that "directory" exists and is a directory.
+	 */
+	if (stat(directory, &stat_buf) < 0) {
+		error("Domain socket directory %s: %m", directory);
+		goto done;
+	} else if (!S_ISDIR(stat_buf.st_mode)) {
+		error("%s is not a directory", directory);
+		goto done;
+	}
+
+	if ((dp = opendir(directory)) == NULL) {
+		error("Unable to open directory: %m");
+		goto done;
+	}
+
+	while ((ent = readdir(dp)) != NULL) {
+		step_loc_t *loc;
+		uint32_t jobid, stepid;
+
+		debug("  ent = \"%s\"", ent->d_name);
+		if (_sockname_regex(&re, ent->d_name, &jobid, &stepid) == 0) {
+			debug("    jobid = %u, stepid = %u", jobid, stepid);
+			loc = xmalloc(sizeof(step_loc_t));
+			loc->directory = xstrdup(directory);
+			loc->nodename = xstrdup(nodename);
+			loc->jobid = jobid;
+			loc->stepid = stepid;
+			list_append(l, (void *)loc);
+		}
+	}
+
+done2:
+	closedir(dp);
+done:
+	regfree(&re);
+	return l;
 }

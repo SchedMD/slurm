@@ -73,7 +73,8 @@ static int  _abort_job(uint32_t job_id);
 static char ** _build_env(uint32_t jobid, uid_t uid, char *bgl_part_id);
 static bool _slurm_authorized_user(uid_t uid);
 static bool _job_still_running(uint32_t job_id);
-static int  _kill_all_active_steps(uint32_t jobid, int sig, bool batch);
+static int  _kill_all_active_steps(void *auth_cred, uint32_t jobid,
+				   int sig, bool batch);
 static int  _launch_tasks(launch_tasks_request_msg_t *, slurm_addr *,
 			slurm_addr *);
 static void _rpc_launch_tasks(slurm_msg_t *, slurm_addr *);
@@ -95,7 +96,8 @@ static int  _run_epilog(uint32_t jobid, uid_t uid, char *bgl_part_id);
 static int  _spawn_task(spawn_task_request_msg_t *, slurm_addr *,
 			slurm_addr *);
 
-static bool _pause_for_job_completion (uint32_t jobid, int maxtime);
+static bool _pause_for_job_completion(void *auth_cred, uint32_t jobid,
+				      int maxtime);
 static int _waiter_init (uint32_t jobid);
 static int _waiter_complete (uint32_t jobid);
 
@@ -604,14 +606,6 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		goto done;
 	}
 
-	/* Make an effort to not overflow shm records */
-	if (shm_free_steps() < 2) {
-		errnum = ESLURMD_TOOMANYSTEPS;
-		error("reject task %u.%u, too many steps", req->job_id,
-			req->job_step_id);
-		goto done;
-	}
-
 	/* xassert(slurm_cred_jobid_cached(conf->vctx, req->job_id));*/
 
 	/* Run job prolog if necessary */
@@ -670,14 +664,6 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 		error("spawn task request from uid %u",
 		      (unsigned int) req_uid);
 		errnum = ESLURM_USER_ID_MISSING;	/* or invalid user */
-		goto done;
-	}
-
-	/* Make an effort to not overflow shm records */
-	if (shm_free_steps() < 2) {
-		errnum = ESLURMD_TOOMANYSTEPS;
-		error("reject task %u.%u, too many steps", req->job_id,
-			req->job_step_id);
 		goto done;
 	}
 
@@ -782,14 +768,6 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
 		goto done;
 	} 
-
-	/* Make an effort to not overflow shm records */
-	if (shm_free_steps() < 2) {
-		rc = ESLURMD_TOOMANYSTEPS;
-		error("reject job %u, too many steps", req->job_id);
-		_prolog_error(req, rc);
-		goto done;
-	}
 
 	if (req->step_id != NO_VAL && req->step_id != 0)
 		first_job_run = false;
@@ -933,23 +911,8 @@ _rpc_signal_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 {
 	int               rc = SLURM_SUCCESS;
 	uid_t             req_uid;
-	job_step_t       *step = NULL;
 	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
 	step_loc_t loc;
-
-	if (!(step = shm_get_step(req->job_id, req->job_step_id))) {
-		debug("kill for nonexistent job %u.%u requested",
-		      req->job_id, req->job_step_id);
-		rc = ESLURM_INVALID_JOB_ID;
-		goto done;
-	} 
-
-	if (step->state == SLURMD_JOB_STARTING) {
-		debug ("signal req for starting job step %u.%u",
-			req->job_id, req->job_step_id); 
-		rc = ESLURMD_JOB_NOTRUNNING;
-		goto done;
-	}
 
 	/*
 	 * Use slurmstepd API to request that the slurmdstepd handle
@@ -977,8 +940,6 @@ _rpc_signal_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	rc = stepd_signal(loc, msg->cred, req->signal);
 	
   done:
-	if (step)
-		shm_free_step(step);
 	slurm_send_rc_msg(msg, rc);
 }
 
@@ -992,20 +953,6 @@ _rpc_terminate_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	step_loc_t        loc;
 
 	debug3("Entering _rpc_terminate_tasks");
-	if (!(step = shm_get_step(req->job_id, req->job_step_id))) {
-		debug("kill for nonexistent job %u.%u requested",
-		      req->job_id, req->job_step_id);
-		rc = ESLURM_INVALID_JOB_ID;
-		goto done;
-	} 
-
-	if (step->state == SLURMD_JOB_STARTING) {
-		debug ("terminate req for starting job step %u.%u",
-			req->job_id, req->job_step_id); 
-		rc = ESLURMD_JOB_NOTRUNNING;
-		goto done;
-	}
-
 	/*
 	 * Use slurmstepd API to request that the slurmdstepd handle
 	 * the signalling.
@@ -1017,8 +964,6 @@ _rpc_terminate_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	rc = stepd_signal_container(loc, msg->cred, req->signal);
 
   done:
-	if (step)
-		shm_free_step(step);
 	slurm_send_rc_msg(msg, rc);
 }
 
@@ -1048,7 +993,7 @@ _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 	slurm_close_accepted_conn(msg->conn_fd);
 	msg->conn_fd = -1;
 
-	nsteps = _kill_all_active_steps(req->job_id, SIGTERM, false);
+	nsteps = _kill_all_active_steps(msg->cred, req->job_id, SIGTERM, false);
 	verbose( "Job %u: timeout: sent SIGTERM to %d active steps", 
 	         req->job_id, nsteps );
 
@@ -1213,36 +1158,32 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
  * RET count of signaled job steps (plus batch script, if applicable)
  */
 static int
-_kill_all_active_steps(uint32_t jobid, int sig, bool batch)
+_kill_all_active_steps(void *auth_cred, uint32_t jobid, int sig, bool batch)
 {
-	List         steps = shm_get_steps();
-	ListIterator i     = list_iterator_create(steps);
-	job_step_t  *s     = NULL; 
-	int step_cnt       = 0;  
+	List steps;
+	ListIterator i;
+	step_loc_t *step;
+	int step_cnt  = 0;  
 
-	while ((s = list_next(i))) {
-		if (s->jobid != jobid) {
+	steps = stepd_available(conf->spooldir, "nodename");
+	i = list_iterator_create(steps);
+	while ((step = list_next(i))) {
+		if (step->jobid != jobid) {
 			/* multiple jobs expected on shared nodes */
-			debug3("Step from other job: s->jobid=%d, jobid=%d",
-			      s->jobid, jobid);
+			debug3("Step from other job: jobid=%d (this jobid=%d)",
+			      step->jobid, jobid);
 			continue;
 		}
 
-		if (s->cont_id == 0) {
-			debug ("bad cont_id value in shm for %d!", jobid);
-			continue;
-		}
-
-		if ((s->stepid == NO_VAL) && (!batch))
+		if ((step->stepid == NO_VAL) && (!batch))
 			continue;
 
 		step_cnt++;
 
-		debug2("signal %d to job %u.%u (cont_id:%u)",
-		       sig, jobid, s->stepid, s->cont_id);
-		if (slurm_container_signal(s->cont_id, sig) < 0)
-			error("kill jid %d cont_id %u: %m",
-			      s->jobid, s->cont_id);
+		debug2("container signal %d to job %u.%u",
+		       sig, jobid, step->stepid);
+		if (stepd_signal_container(*step, auth_cred, sig) < 0)
+			error("kill jid %d: %m", jobid);
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);
@@ -1254,14 +1195,15 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 static bool
 _job_still_running(uint32_t job_id)
 {
-	bool        retval = false;
-	List         steps = shm_get_steps();
+	bool         retval = false;
+	List         steps;
 	ListIterator i     = list_iterator_create(steps);
-	job_step_t  *s     = NULL;   
+	step_loc_t  *s     = NULL;   
 
+	steps = stepd_available(conf->spooldir, "nodename");
+	i = list_iterator_create(steps);
 	while ((s = list_next(i))) {
-		if ((s->jobid == job_id) &&
-		    (shm_step_still_running(job_id, s->stepid))) {
+		if ((s->jobid == job_id) && (stepd_status(*s) != -1)) {
 			retval = true;
 			break;
 		}
@@ -1445,9 +1387,9 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	 * Tasks might be stopped (possibly by a debugger)
 	 * so send SIGCONT first.
 	 */
-	_kill_all_active_steps(req->job_id, SIGCONT, true);
+	_kill_all_active_steps(msg->cred, req->job_id, SIGCONT, true);
 
-	nsteps = _kill_all_active_steps(req->job_id, SIGTERM, true);
+	nsteps = _kill_all_active_steps(msg->cred, req->job_id, SIGTERM, true);
 
 	/*
 	 *  If there are currently no active job steps and no
@@ -1483,12 +1425,12 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	 *  Check for corpses
 	 */
 	delay = MAX(conf->cf.kill_wait, 5);
-	if ( !_pause_for_job_completion (req->job_id, delay)
-	   && _kill_all_active_steps(req->job_id, SIGKILL, true) ) {
+	if ( !_pause_for_job_completion (msg->cred, req->job_id, delay)
+	     && _kill_all_active_steps(msg->cred, req->job_id, SIGKILL, true) ) {
 		/*
 		 *  Block until all user processes are complete.
 		 */
-		_pause_for_job_completion (req->job_id, 0);
+		_pause_for_job_completion (msg->cred, req->job_id, 0);
 	}
 
 	/*
@@ -1584,14 +1526,15 @@ static int _waiter_complete (uint32_t jobid)
  *  Returns true if all job 
  */
 static bool
-_pause_for_job_completion (uint32_t job_id, int max_time)
+_pause_for_job_completion (void *auth_cred, uint32_t job_id, int max_time)
 {
 	int sec = 0, rc = 0;
 
 	while ( ((sec++ < max_time) || (max_time == 0))
 	      && (rc = _job_still_running (job_id))) {
 		if ((max_time == 0) && (sec > 1))
-			_kill_all_active_steps(job_id, SIGKILL, true);
+			_kill_all_active_steps(auth_cred, job_id,
+					       SIGKILL, true);
 		sleep (1);
 	}
 	/* 
