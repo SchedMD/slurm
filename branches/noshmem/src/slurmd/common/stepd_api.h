@@ -36,7 +36,7 @@ typedef enum {
 	REQUEST_SIGNAL_PROCESS_GROUP = 0,
 	REQUEST_SIGNAL_TASK_LOCAL,
 	REQUEST_SIGNAL_TASK_GLOBAL,
-	REQUEST_TERMINATE,
+	REQUEST_SIGNAL_CONTAINER,
 	REQUEST_STATUS,
 	REQUEST_ATTACH,
 } step_msg_t;
@@ -56,17 +56,21 @@ int step_request_status(step_loc_t step);
 int stepd_signal(step_loc_t step, void *auth_cred, int signal); 
 
 /*
- * Send a signal to the process group of a job step.
+ * Send a signal to a single task in a job step.
  */
 int stepd_signal_task_local(step_loc_t step, void *auth_cred,
 			    int signal, int ltaskid); 
 
+/*
+ * Send a signal to a single task in a job step.
+ */
+int stepd_signal_task_global(step_loc_t step, void *auth_cred,
+			     int signal, int gtaskid);
 
 /*
- * Send a signal to a single task in the step.
+ * Send a signal to the proctrack container of a job step.
  */
-int stepd_signal_task_local(step_loc_t step, void *auth_cred,
-			    int signal, int ltaskid);
+int stepd_signal_container(step_loc_t step, void *auth_cred, int signal);
 
 int stepd_attach(step_loc_t step, slurm_addr *ioaddr, slurm_addr *respaddr,
 		 void *auth_cred, slurm_cred_t job_cred);

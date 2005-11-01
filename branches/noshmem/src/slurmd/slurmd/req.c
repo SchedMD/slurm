@@ -989,6 +989,7 @@ _rpc_terminate_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	uid_t             req_uid;
 	job_step_t       *step = NULL;
 	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
+	step_loc_t        loc;
 
 	debug3("Entering _rpc_terminate_tasks");
 	if (!(step = shm_get_step(req->job_id, req->job_step_id))) {
@@ -998,15 +999,6 @@ _rpc_terminate_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		goto done;
 	} 
 
-	req_uid = g_slurm_auth_get_uid(msg->cred);
-	if ((req_uid != step->uid) && (!_slurm_authorized_user(req_uid))) {
-	       debug("kill req from uid %ld for job %u.%u owned by uid %ld",
-		     (long) req_uid, req->job_id, req->job_step_id, 
-		     (long) step->uid);       
-	       rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
-	       goto done;
-	}
-
 	if (step->state == SLURMD_JOB_STARTING) {
 		debug ("terminate req for starting job step %u.%u",
 			req->job_id, req->job_step_id); 
@@ -1014,23 +1006,15 @@ _rpc_terminate_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		goto done;
 	}
 
-	if (step->cont_id == 0) {
-		debug ("step %u.%u invalid in shm [mpid:%d cont_id:%u]", 
-			req->job_id, req->job_step_id, 
-			step->mpid, step->cont_id);
-		rc = ESLURMD_JOB_NOTRUNNING;
-		goto done;
-	}
-
-	if (slurm_container_signal(step->cont_id, req->signal) < 0) {
-		rc = errno;
-		verbose("Error sending signal %d to %u.%u: %s", 
-			req->signal, req->job_id, req->job_step_id, 
-			slurm_strerror(rc));
-	} else {
-		verbose("Sent signal %d to %u.%u", 
-			req->signal, req->job_id, req->job_step_id);
-	}
+	/*
+	 * Use slurmstepd API to request that the slurmdstepd handle
+	 * the signalling.
+	 */
+	loc.directory = conf->spooldir;
+	loc.nodename = "nodename";
+	loc.jobid = req->job_id;
+	loc.stepid = req->job_step_id;
+	rc = stepd_signal_container(loc, msg->cred, req->signal);
 
   done:
 	if (step)

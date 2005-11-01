@@ -115,7 +115,7 @@ stepd_signal(step_loc_t step, void *auth_cred, int signal)
 }
 
 /*
- * Send a signal to the process group of a job step.
+ * Send a signal to a single task in a job step.
  */
 int
 stepd_signal_task_local(step_loc_t step, void *auth_cred,
@@ -138,6 +138,38 @@ stepd_signal_task_local(step_loc_t step, void *auth_cred,
 
 	write(fd, &signal, sizeof(int));
 	write(fd, &ltaskid, sizeof(int));
+	write(fd, &buf_len, sizeof(int));
+	write(fd, get_buf_data(buf), buf_len);
+
+	/* Receive the return code */
+	read(fd, &rc, sizeof(int));
+
+	free_buf(buf);
+	return rc;
+}
+
+/*
+ * Send a signal to the proctrack container of a job step.
+ */
+int
+stepd_signal_container(step_loc_t step, void *auth_cred, int signal)
+{
+	int req = REQUEST_SIGNAL_CONTAINER;
+	int fd;
+	Buf buf;
+	int buf_len;
+	int rc;
+
+	fd = step_connect(step);
+	write(fd, &req, sizeof(int));
+
+	/* pack auth credential */
+	buf = init_buf(0);
+	g_slurm_auth_pack(auth_cred, buf);
+	buf_len = size_buf(buf);
+	debug("buf_len = %d", buf_len);
+
+	write(fd, &signal, sizeof(int));
 	write(fd, &buf_len, sizeof(int));
 	write(fd, get_buf_data(buf), buf_len);
 

@@ -49,6 +49,7 @@ static void _handle_request(int fd, slurmd_job_t *job);
 static void _handle_request_status(int fd);
 static void _handle_signal_process_group(int fd, slurmd_job_t *job);
 static void _handle_signal_task_local(int fd, slurmd_job_t *job);
+static void _handle_signal_container(int fd, slurmd_job_t *job);
 static void _handle_attach(int fd, slurmd_job_t *job);
 static bool _msg_socket_readable(eio_obj_t *obj);
 static int _msg_socket_accept(eio_obj_t *obj, List objs);
@@ -245,8 +246,9 @@ _handle_request(int fd, slurmd_job_t *job)
 	case REQUEST_SIGNAL_TASK_GLOBAL:
 		debug("Handling REQUEST_SIGNAL_TASK_LOCAL (not implemented)");
 		break;
-	case REQUEST_TERMINATE:
-		debug("Handling REQUEST_TERMINATE");
+	case REQUEST_SIGNAL_CONTAINER:
+		debug("Handling REQUEST_SIGNAL_CONTAINER");
+		_handle_signal_container(fd, job);
 		break;
 	case REQUEST_STATUS:
 		debug("Handling REQUEST_STATUS");
@@ -409,6 +411,66 @@ _handle_signal_task_local(int fd, slurmd_job_t *job)
 			job->task[ltaskid]->pid);
 	}
 	
+
+done:
+	/* Send the return code */
+	write(fd, &rc, sizeof(int));
+}
+
+static void
+_handle_signal_container(int fd, slurmd_job_t *job)
+{
+	int rc = SLURM_SUCCESS;
+	int signal;
+	int buf_len = 0;
+	Buf buf;
+	void *auth_cred;
+	int uid;
+
+	debug("_handle_signal_container for job %u.%u",
+	      job->jobid, job->stepid);
+
+	read(fd, &signal, sizeof(int));
+	read(fd, &buf_len, sizeof(int));
+	buf = init_buf(buf_len);
+	read(fd, get_buf_data(buf), buf_len);
+
+	debug3("  buf_len = %d", buf_len);
+	auth_cred = g_slurm_auth_unpack(buf);
+	free_buf(buf); /* takes care of xfree'ing data as well */
+
+	/*
+	 * Authenticate the user using the auth credential.
+	 */
+	uid = g_slurm_auth_get_uid(auth_cred);
+	debug3("  uid = %d", uid);
+	if (uid != job->uid && !_slurm_authorized_user(uid)) {
+		debug("kill container req from uid %ld for job %u.%u "
+		      "owned by uid %ld",
+		      (long)uid, job->jobid, job->stepid, (long)job->uid);
+		rc = EPERM;
+		goto done;
+	}
+
+	/*
+	 * Signal the container
+	 */
+	if (job->cont_id == 0) {
+		debug ("step %u.%u invalid container [cont_id:%u]", 
+			job->jobid, job->stepid, job->cont_id);
+		rc = ESLURMD_JOB_NOTRUNNING;
+		goto done;
+	}
+
+	if (slurm_container_signal(job->cont_id, signal) < 0) {
+		rc = errno;
+		verbose("Error sending signal %d to %u.%u: %s", 
+			signal, job->jobid, job->stepid, 
+			slurm_strerror(rc));
+	} else {
+		verbose("Sent signal %d to %u.%u", 
+			signal, job->jobid, job->stepid);
+	}
 
 done:
 	/* Send the return code */
