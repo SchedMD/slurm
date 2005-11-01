@@ -67,8 +67,6 @@ slurm_allocate_resources (job_desc_msg_t *req,
 	bool host_set = false;
 	char host[64];
 	
-	//req->req_nodes = (char *)_nodelist_from_hostfile();
-	
 	/* 
 	 * set Node and session id for this request
 	 */
@@ -209,14 +207,17 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 {
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
-	char *nodelist = NULL;
+	char *temp = NULL;
 	int count=0;
 
 	req_msg.msg_type = REQUEST_JOB_STEP_CREATE;
 	req_msg.data     = req; 
-	if((count = _nodelist_from_hostfile(req)) == 0) 
-  		error("nodelist was NULL");  
-	
+	if(temp = (char*)getenv("MP_PARTITION")) {
+		if(strlen(temp)>0) {
+			if((count = _nodelist_from_hostfile(req)) == 0) 
+				debug("nodelist was NULL");  
+		}
+	}
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
@@ -310,7 +311,9 @@ static int _nodelist_from_hostfile(job_step_create_request_msg_t *req)
 	int line_num = 0;
 	char *nodelist = NULL;
 	
-	if (hostfile = (char *)getenv("SLURM_HOSTFILE")) {
+	if (hostfile = (char *)getenv("MP_HOSTFILE")) {
+		if(strlen(hostfile)<1)
+			goto no_hostfile;
 		if((hostfilep = fopen(hostfile, "r")) == NULL) {
 			error("slurm_allocate_resources "
 			      "error opening file %s, %m", 
@@ -378,7 +381,7 @@ static int _nodelist_from_hostfile(job_step_create_request_msg_t *req)
 			len += ret;
 		}
 		nodelist[--len] = '\0';
-		info("Hostlist from SLURM_HOSTFILE = %s\n",
+		debug2("Hostlist from MP_HOSTFILE = %s\n",
 		     nodelist);
 					
 	cleanup_hostfile:
@@ -387,6 +390,8 @@ static int _nodelist_from_hostfile(job_step_create_request_msg_t *req)
 	}
 no_hostfile:
 	if(nodelist) {
+		if(req->node_list)
+			xfree(req->node_list);
 		req->node_list = nodelist;
 		req->num_tasks = count;
 		req->task_dist = SLURM_DIST_HOSTFILE;

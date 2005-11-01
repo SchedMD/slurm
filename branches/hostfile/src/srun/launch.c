@@ -313,7 +313,6 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 
 	thd = xmalloc (job->nhosts * sizeof (thd_t));
 	for (i = 0; i < job->nhosts; i++) {
-		printf("job->host[%d] = %s\n",i, job->host[i]);
 		if (job->ntask[i] == 0)	{	/* No tasks for this node */
 			debug("Node %s is unused",job->host[i]);
 			job->host_state[i] = SRUN_HOST_REPLIED;

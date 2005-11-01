@@ -191,6 +191,7 @@ int srun(int ac, char **av)
 			info ("Warning: unable to assume uid=%lu\n", opt.uid);
 		if (_verbose)
 			_print_job_information(resp);
+		
 		job = job_create_allocation(resp); 
 		if (msg_thr_create(job) < 0)
 			job_fatal(job, "Unable to create msg thread");
@@ -229,6 +230,7 @@ int srun(int ac, char **av)
 			_print_job_information(resp);
 
 		job = job_create_allocation(resp); 
+		
 		if (create_job_step(job) < 0) {
 			srun_job_destroy(job, 0);
 			exit(1);
@@ -257,7 +259,6 @@ int srun(int ac, char **av)
 		env->select_jobinfo = job->select_jobinfo;
 		env->nhosts = job->nhosts;
 		env->nodelist = job->nodelist;
-		printf("nodelist = %s\n",job->nodelist);
 		env->task_count = _task_count_string (job);
 		env->jobid = job->jobid;
 		env->stepid = job->stepid;

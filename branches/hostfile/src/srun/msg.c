@@ -345,8 +345,9 @@ _launch_handler(srun_job_t *job, slurm_msg_t *resp)
 	launch_tasks_response_msg_t *msg = resp->data;
 	pipe_enum_t pipe_enum = PIPE_HOST_STATE;
 	
-	printf("received launch resp from %s nodeid=%d\n", msg->node_name,
-			msg->srun_node_id);
+	debug3("received launch resp from %s nodeid=%d", 
+	       msg->node_name,
+	       msg->srun_node_id);
 	
 	if (msg->return_code != 0)  {
 
