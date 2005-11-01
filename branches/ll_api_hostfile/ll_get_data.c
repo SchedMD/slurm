@@ -717,7 +717,7 @@ static LL_element *_get_step_first_node(slurm_elem_t *slurm_elem,
 		*node_name = NULL;
 		return (LL_element *) NULL;
 	}
-	printf("nodelist = %s\n",job_data->job_alloc_resp->node_list);
+	//printf("nodelist = %s\n",job_data->job_alloc_resp->node_list);
 	if (step_data->host_set == NULL)
 		step_data->host_set = hostset_create(
 			job_data->job_alloc_resp->node_list);
@@ -795,6 +795,8 @@ static LL_element *_get_step_next_node(slurm_elem_t *slurm_elem,
 	node_data->node_addr = strdup(dotted_quad);
 	node_data->node_inx  = node_inx;
 	node_data->task_cnt  = _get_task_cnt(step_data, node_inx);
+	printf("%d node_data->task_cnt %d\n",node_inx, 
+	       node_data->task_cnt);
 	_get_task_ids(step_data, node_data, node_inx);
 	node_data->step_elem = slurm_elem;
 
@@ -1283,7 +1285,7 @@ static slurm_elem_t *_build_adapter(slurm_elem_t *taski_elem, int adapter_idx)
 	int adapters_per_task;
 	fed_tableinfo_t *tableinfo;
 	NTBL *table;
-	static int networkid = 0;
+	
 	/* Walk through data structures to find switch credential.
 	 * This is ugly, but should be pretty fast.
 	 */
@@ -1347,9 +1349,10 @@ static slurm_elem_t *_build_adapter(slurm_elem_t *taski_elem, int adapter_idx)
 	   || !strcmp(step_data->device, "sn_single")) {
 		if(tableinfo) {
 			device = tableinfo[adapter_idx].adapter_name;
-			VERBOSE("device[%d] = %s\n",
+			printf("device[%d] = %s\n",
 				adapter_idx, device);
 			adapter_data->device = strdup(device);
+			
 			if(adapter_data->device[2] == 'i') {
 				ntbl_adapter_resources(NTBL_VERSION, 
 						       adapter_data->device, 
