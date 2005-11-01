@@ -1168,7 +1168,6 @@ _unpack_node_info_members(node_info_t * node, Buf buffer)
 	safe_unpack32(&node->tmp_disk, buffer);
 	safe_unpack32(&node->weight, buffer);
 	safe_unpackstr_xmalloc(&node->features, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&node->partition, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&node->reason, &uint16_tmp, buffer);
 
 	return SLURM_SUCCESS;
@@ -1176,7 +1175,6 @@ _unpack_node_info_members(node_info_t * node, Buf buffer)
       unpack_error:
 	xfree(node->name);
 	xfree(node->features);
-	xfree(node->partition);
 	xfree(node->reason);
 	return SLURM_ERROR;
 }

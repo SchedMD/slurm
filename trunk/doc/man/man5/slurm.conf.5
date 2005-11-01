@@ -666,9 +666,13 @@ Weight is an integer value with a default value of 1.
 .LP
 The partition configuration permits you to establish different job 
 limits or access controls for various groups (or partitions) of nodes. 
-Nodes may be in only one partition. Jobs are allocated resources 
-within a single partition. The partition configuration 
-file contains the following information: 
+Nodes may be in more than one partition, making partitions serve 
+as general purpose queues. 
+For example one may put the same set of nodes into two different 
+partitions, each with different constraints (time limit, job sizes, 
+groups allowed to use the partition, etc.).
+Jobs are allocated resources within a single partition.
+The partition configuration file contains the following information: 
 .TP
 \fBAllowGroups\fR
 Comma separated list of group IDs which may execute jobs in the partition. 
@@ -843,11 +847,13 @@ NodeName=dev20 State=DOWN Reason="power,ETA=Dec25"
 .br
 #
 .br
-PartitionName=DEFAULT MaxTime=30 MaxNodes=10
+PartitionName=DEFAULT MaxTime=30 MaxNodes=10 State=UP
 .br
-PartitionName=debug Nodes=dev[0-8,18-25] State=UP Default=YES
+PartitionName=debug Nodes=dev[0-8,18-25] Default=YES
 .br
-PartitionName=batch Nodes=dev[9-17] State=UP MinNodes=4
+PartitionName=batch Nodes=dev[9-17]  MinNodes=4
+.br
+PartitionName=long Nodes=dev[9-17] MaxTime=120 AllowGroups=admin
 
 .SH "COPYING"
 Copyright (C) 2002 The Regents of the University of California.

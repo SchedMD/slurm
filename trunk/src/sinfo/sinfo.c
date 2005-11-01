@@ -57,8 +57,7 @@ static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr,
 		uint16_t part_inx, node_info_t *node_ptr);
 static bool _filter_out(node_info_t *node_ptr);
 static void _sinfo_list_delete(void *data);
-static partition_info_t *_find_part(char *part_name, 
-		partition_info_msg_t *partition_msg, uint16_t *part_inx);
+static node_info_t *_find_node(char *node_name, node_info_msg_t *node_msg); 
 static bool _match_node_data(sinfo_data_t *sinfo_ptr, 
                              node_info_t *node_ptr);
 static bool _match_part_data(sinfo_data_t *sinfo_ptr, 
@@ -67,8 +66,7 @@ static int  _query_server(partition_info_msg_t ** part_pptr,
 		node_info_msg_t ** node_pptr);
 static void _sort_hostlist(List sinfo_list);
 static int  _strcmp(char *data1, char *data2);
-static void _update_sinfo(sinfo_data_t *sinfo_ptr, 
-		partition_info_t* part_ptr, node_info_t *node_ptr);
+static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr);
 
 int main(int argc, char *argv[])
 {
@@ -277,7 +275,9 @@ static int _build_sinfo_data(List sinfo_list,
 	partition_info_t* part_ptr;
 	ListIterator i;
 	int j;
-	uint16_t part_inx;
+	hostlist_t hl;
+	sinfo_data_t *sinfo_ptr;
+	char *node_name = NULL;
 
 	/* by default every partition is shown, even if no nodes */
 	if ((!params.node_flag) && params.match_flags.partition_flag) {
@@ -290,37 +290,42 @@ static int _build_sinfo_data(List sinfo_list,
 		}
 	}
 
-	/* make sinfo_list entries for each node */
-	for (j=0; j<node_msg->record_count; j++) {
-		sinfo_data_t *sinfo_ptr;
-		node_ptr = &(node_msg->node_array[j]);
-
-		if (params.filtering && _filter_out(node_ptr))
+	/* make sinfo_list entries for every node in every partition */
+	for (j=0; j<partition_msg->record_count; j++, part_ptr++) {
+		part_ptr = &(partition_msg->partition_array[j]);
+		if (params.filtering
+		&&  _strcmp(part_ptr->name, params.partition))
 			continue;
-
-		part_ptr = _find_part(node_ptr->partition, partition_msg, 
-				&part_inx);
-		if ( ! part_ptr )
-			continue;
-		i = list_iterator_create(sinfo_list);
-		/* test if node can be added to existing sinfo_data entry */
-		while ((sinfo_ptr = list_next(i))) {
-			if (!_match_part_data(sinfo_ptr, part_ptr))
+		hl = hostlist_create(part_ptr->nodes);
+		while (1) {
+			if (node_name)
+				free(node_name);
+			node_name = hostlist_shift(hl);
+			if (!node_name)
+				break;
+			node_ptr = _find_node(node_name, node_msg);
+			if (!node_ptr)
 				continue;
-			if (sinfo_ptr->nodes_tot &&
-			    (!_match_node_data(sinfo_ptr, node_ptr)))
+			if (params.filtering && _filter_out(node_ptr))
 				continue;
-
-			/* This node has the same configuration as this 
-			 * sinfo_data, just add to this record */
-			_update_sinfo(sinfo_ptr, part_ptr, node_ptr);
-			break;
+			i = list_iterator_create(sinfo_list);
+			while ((sinfo_ptr = list_next(i))) {
+				if (!_match_part_data(sinfo_ptr, part_ptr))
+					continue;
+				if (sinfo_ptr->nodes_tot
+				&& (!_match_node_data(sinfo_ptr, node_ptr)))
+					continue;
+				_update_sinfo(sinfo_ptr, node_ptr);
+				break;
+			}
+			/* if no match, create new sinfo_data entry */
+			if (sinfo_ptr == NULL) {
+				_create_sinfo(sinfo_list, part_ptr, 
+					(uint16_t) j, node_ptr);
+			}
+			list_iterator_destroy(i);
 		}
-	
-		/* no match, create new sinfo_data entry */
-		if (sinfo_ptr == NULL)
-			_create_sinfo(sinfo_list, part_ptr, part_inx, node_ptr);
-		list_iterator_destroy(i);
+		hostlist_destroy(hl);
 	}
 
 	_sort_hostlist(sinfo_list);
@@ -336,10 +341,6 @@ static int _build_sinfo_data(List sinfo_list,
 static bool _filter_out(node_info_t *node_ptr)
 {
 	static hostlist_t host_list = NULL;
-
-	if (params.partition && 
-	    _strcmp(node_ptr->partition, params.partition))
-		return true;
 
 	if (params.nodes) {
 		if (host_list == NULL)
@@ -477,8 +478,7 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 	return true;
 }
 
-static void _update_sinfo(sinfo_data_t *sinfo_ptr, partition_info_t* part_ptr, 
-		node_info_t *node_ptr)
+static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 {
 	uint16_t base_state;
 
@@ -494,6 +494,10 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, partition_info_t* part_ptr,
 		sinfo_ptr->max_mem    = node_ptr->real_memory;
 		sinfo_ptr->min_weight = node_ptr->weight;
 		sinfo_ptr->max_weight = node_ptr->weight;
+	} else if (hostlist_find(sinfo_ptr->nodes, node_ptr->name) != -1) {
+		/* we already have this node in this record,
+		 * just return, don't duplicate */
+		return;
 	} else {
 		if (sinfo_ptr->min_cpus > node_ptr->cpus)
 			sinfo_ptr->min_cpus = node_ptr->cpus;
@@ -585,25 +589,23 @@ static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr,
 }
 
 /* 
- * _find_part - find a partition by name
- * part_name IN     - name of partition to locate
- * partition_msg IN - partition information message from API
- * part_inx OUT     - index of the partition within the table (0-origin)
+ * _find_node - find a node by name
+ * node_name IN     - name of node to locate
+ * node_msg IN      - node information message from API
  */
-static partition_info_t *_find_part(char *part_name, 
-			partition_info_msg_t *partition_msg, 
-			uint16_t *part_inx) 
+static node_info_t *_find_node(char *node_name, node_info_msg_t *node_msg)
 {
 	int i;
-	for (i=0; i<partition_msg->record_count; i++) {
-		if (_strcmp(part_name, 
-		            partition_msg->partition_array[i].name))
+	if (node_name == NULL)
+		return NULL;
+
+	for (i=0; i<node_msg->record_count; i++) {
+		if (_strcmp(node_name, node_msg->node_array[i].name))
 			continue;
-		*part_inx = i;
-		return &(partition_msg->partition_array[i]);
+		return &(node_msg->node_array[i]);
 	}
 
-	*part_inx = 0;	/* not correct, but better than random data */
+	/* not found */
 	return NULL;
 }
 

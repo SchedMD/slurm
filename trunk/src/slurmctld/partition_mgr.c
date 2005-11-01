@@ -72,7 +72,8 @@ static uid_t *_get_group_members(char *group_name);
 static time_t _get_group_tlm(void);
 static void   _list_delete_part(void *part_entry);
 static int    _uid_list_size(uid_t * uid_list_ptr);
-static void   _unlink_free_nodes(bitstr_t *old_bitmap);
+static void   _unlink_free_nodes(bitstr_t *old_bitmap, 
+			struct part_record *part_ptr);
 
 /*
  * _build_part_bitmap - update the total_cpus, total_nodes, and node_bitmap 
@@ -109,7 +110,7 @@ static int _build_part_bitmap(struct part_record *part_ptr)
 	}
 
 	if (part_ptr->nodes == NULL) {	/* no nodes in partition */
-		_unlink_free_nodes(old_bitmap);
+		_unlink_free_nodes(old_bitmap, part_ptr);
 		FREE_NULL_BITMAP(old_bitmap);
 		return 0;
 	}
@@ -136,7 +137,10 @@ static int _build_part_bitmap(struct part_record *part_ptr)
 			part_ptr->total_cpus += node_ptr->config_ptr->cpus;
 		else
 			part_ptr->total_cpus += node_ptr->cpus;
-		node_ptr->partition_ptr = part_ptr;
+		node_ptr->part_cnt++;
+		xrealloc(node_ptr->part_pptr, (node_ptr->part_cnt *
+			sizeof(struct part_record *)));
+		node_ptr->part_pptr[node_ptr->part_cnt-1] = part_ptr;
 		if (old_bitmap)
 			bit_clear(old_bitmap,
 				  (int) (node_ptr -
@@ -147,27 +151,41 @@ static int _build_part_bitmap(struct part_record *part_ptr)
 	}
 	hostlist_destroy(host_list);
 
-	_unlink_free_nodes(old_bitmap);
+	_unlink_free_nodes(old_bitmap, part_ptr);
 	last_node_update = time(NULL);
 	FREE_NULL_BITMAP(old_bitmap);
 	return 0;
 }
 
-/* unlink nodes removed from the partition */
-static void _unlink_free_nodes(bitstr_t *old_bitmap)
+/* unlink nodes removed from a partition */
+static void _unlink_free_nodes(bitstr_t *old_bitmap, 
+		struct part_record *part_ptr)
 {
-	int i, update_nodes = 0;
+	int i, j, k, update_nodes = 0;
+	struct node_record *node_ptr;
 
-	if (old_bitmap) {
-		for (i = 0; i < node_record_count; i++) {
-			if (bit_test(old_bitmap, i) == 0)
+	if (old_bitmap == NULL)
+		return;
+
+	node_ptr = &node_record_table_ptr[0];
+	for (i = 0; i < node_record_count; i++, node_ptr++) {
+		if (bit_test(old_bitmap, i) == 0)
+			continue;
+		for (j=0; j<node_ptr->part_cnt; j++) {
+			if (node_ptr->part_pptr[j] != part_ptr)
 				continue;
-			node_record_table_ptr[i].partition_ptr = NULL;
-			update_nodes = 1;
+			node_ptr->part_cnt--;
+			for (k=j; k<node_ptr->part_cnt; k++) {
+				node_ptr->part_pptr[k] = 
+					node_ptr->part_pptr[k+1];
+			}
+			break;
 		}
-		if (update_nodes)
-			last_node_update = time(NULL);
+		update_nodes = 1;
 	}
+
+	if (update_nodes)
+		last_node_update = time(NULL);
 }
 
 
@@ -537,14 +555,22 @@ int init_part_conf(void)
 static void _list_delete_part(void *part_entry)
 {
 	struct part_record *part_ptr;
-	int i;
+	struct node_record *node_ptr;
+	int i, j, k;
 
 	part_ptr = (struct part_record *) part_entry;
-	for (i = 0; i < node_record_count; i++) {
-		if (node_record_table_ptr[i].partition_ptr !=
-		    part_ptr)
-			continue;
-		node_record_table_ptr[i].partition_ptr = NULL;
+	node_ptr = &node_record_table_ptr[0];
+	for (i = 0; i < node_record_count; i++, node_ptr++) {
+		for (j=0; j<node_ptr->part_cnt; j++) {
+			if (node_ptr->part_pptr[j] != part_ptr)
+				continue;
+			node_ptr->part_cnt--;
+			for (k=j; k<node_ptr->part_cnt; k++) {
+				node_ptr->part_pptr[k] = 
+					node_ptr->part_pptr[k+1];
+			}
+			break;
+		}
 	}
 	xfree(part_ptr->allow_groups);
 	xfree(part_ptr->allow_uids);
@@ -1038,6 +1064,10 @@ extern int delete_partition(delete_part_msg_t *part_desc_ptr)
 	if (part_ptr == NULL)	/* No such partition */
 		return ESLURM_INVALID_PARTITION_NAME;
 
+	if (default_part_loc == part_ptr) {
+		error("Deleting default partition %s", part_ptr->name);
+		default_part_loc = NULL;
+	}
 	(void) kill_job_by_part_name(part_desc_ptr->name);
 	list_delete_all(part_list, list_find_part, part_desc_ptr->name);
 	last_part_update = time(NULL);

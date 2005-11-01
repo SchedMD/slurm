@@ -1010,6 +1010,11 @@ sched_get_node_tmp_disk( sched_obj_list_t node_data,
 
 /* ************************************************************************ */
 /*  TAG(                       sched_get_node_partition                  )  */
+/* NOTE: A SLURM node can be in multiple partitions/queues at the same time */
+/* We return only the first of these partition names here or NULL if there  */
+/* are no associated partitions. There are 'part_cnt' partitions associated */
+/* with each node. There is an array of pointers to these partitions in the */
+/* array 'part_pptr'. We probably want to change this function accordingly. */
 /* ************************************************************************ */
 void *
 sched_get_node_partition( sched_obj_list_t node_data,
@@ -1017,7 +1022,11 @@ sched_get_node_partition( sched_obj_list_t node_data,
 			  char *type )
 {
 	if ( type ) *type = 's';
-	return ( (struct node_record *) node_data->data )[ idx ].partition_ptr->name;
+	if ( ((struct node_record *) node_data->data )[ idx ].part_cnt == 0 )
+		return NULL;
+
+	return ( (struct node_record *) node_data->data )[ idx ].
+			part_pptr[0]->name;
 }
 
 /* ************************************************************************ */

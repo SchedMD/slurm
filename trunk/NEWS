@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
     with a DRAIN flag. COMPLETING state is changed to a COMPLETING flag. 
  -- Test suite moved into testsuite/expect from separate repository.
  -- Added new document describing slurm APIs (doc/html/api.html).
+ -- Permit nodes to be in multiple partitions simultaneously.
 
 * Changes in SLURM 0.7.0-pre2
 =============================

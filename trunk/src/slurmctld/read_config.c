@@ -106,7 +106,6 @@ static int _build_bitmaps(void)
 	struct node_record   *node_ptr;
 	struct job_record    *job_ptr;
 	ListIterator job_iterator;
-	bitstr_t *all_part_node_bitmap;
 	hostlist_t host_list;
 
 	last_node_update = time(NULL);
@@ -187,9 +186,6 @@ static int _build_bitmaps(void)
 	}
 
 	/* scan partition table and identify nodes in each */
-	all_part_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
-	if (all_part_node_bitmap == NULL)
-		fatal ("bit_alloc malloc failure");
 	part_iterator = list_iterator_create(part_list);
 	if (part_iterator == NULL)
 		fatal ("memory allocation failure");
@@ -222,29 +218,22 @@ static int _build_bitmaps(void)
 				continue;
 			}
 			j = node_ptr - node_record_table_ptr;
-			if (bit_test(all_part_node_bitmap, j) == 1) {
-				error("_build_bitmaps: node %s defined in "
-					"more than one partition", 
-					this_node_name);
-				error("_build_bitmaps: only the first "
-					"specification is honored");
-			} else {
-				bit_set(part_ptr->node_bitmap, j);
-				bit_set(all_part_node_bitmap, j);
-				part_ptr->total_nodes++;
-				if (slurmctld_conf.fast_schedule)
-					part_ptr->total_cpus += 
-						node_ptr->config_ptr->cpus;
-				else
-					part_ptr->total_cpus += node_ptr->cpus;
-				node_ptr->partition_ptr = part_ptr;
-			}
+			bit_set(part_ptr->node_bitmap, j);
+			part_ptr->total_nodes++;
+			if (slurmctld_conf.fast_schedule)
+				part_ptr->total_cpus += 
+					node_ptr->config_ptr->cpus;
+			else
+				part_ptr->total_cpus += node_ptr->cpus;
+			node_ptr->part_cnt++;
+			xrealloc(node_ptr->part_pptr, (node_ptr->part_cnt *
+				sizeof(struct part_record *)));
+			node_ptr->part_pptr[node_ptr->part_cnt-1] = part_ptr;
 			free(this_node_name);
 		}
 		hostlist_destroy(host_list);
 	}
 	list_iterator_destroy(part_iterator);
-	bit_free(all_part_node_bitmap);
 	return error_code;
 }
 
@@ -934,8 +923,10 @@ static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 {
 	int i;
 
-	for (i = 0; i < old_node_record_count; i++)
+	for (i = 0; i < old_node_record_count; i++) {
+		xfree(old_node_table_ptr[i].part_pptr);
 		xfree(old_node_table_ptr[i].reason);
+	}
 	xfree(old_node_table_ptr);
 }
 
