@@ -1778,7 +1778,7 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 		full_node_cnt = nprocs % nnodes;
 		min_procs_per_node = nprocs / nnodes;
 		max_procs_per_node = (nprocs + nnodes - 1) / nnodes;
-		//max_procs_per_node = 2;
+		
 		info("max procs %d",max_procs_per_node);
 		proc_cnt = 0;
 		_lock();
@@ -1791,6 +1791,8 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 				task_cnt = max_procs_per_node;
 			else
 				task_cnt = min_procs_per_node;
+			printf("looking at host %s %d\n",host,
+			       task_cnt);
 			
 			for (j = 0; j < task_cnt; j++) {
 				rc = _allocate_windows(jp->tables_per_task,

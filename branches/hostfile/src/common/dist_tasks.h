@@ -58,6 +58,13 @@
  * NOTE: allocates memory that should be xfreed by caller
  */
 int * distribute_tasks(const char *mlist,
+		       uint16_t num_cpu_groups,
+		       uint32_t *cpus_per_node,
+		       uint32_t *cpu_count_reps,
+		       const char *tlist,
+		       uint32_t num_tasks);
+
+int * distribute_tasks2(const char *mlist,
 			uint16_t num_cpu_groups,
 			uint32_t *cpus_per_node,
 			uint32_t *cpu_count_reps,

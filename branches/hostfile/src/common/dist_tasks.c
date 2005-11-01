@@ -47,7 +47,6 @@
 #include "src/common/log.h"
 #include "src/common/xmalloc.h"
 
-
 /* 
  * distribute_tasks - determine how many tasks of a job will be run on each.
  *                    node. Distribution is influenced by number of cpus on
@@ -79,7 +78,7 @@ int *distribute_tasks(const char *mlist, uint16_t num_cpu_groups,
 		fatal("hostlist_create error for %s: %m", tlist);
 
 	nnodes = hostlist_count(task_hl);
-	info("nnodes %d",nnodes);
+	
 	ntask = (int *) xmalloc(sizeof(int *) * nnodes);
 	if (!ntask) {
 		hostlist_destroy(master_hl);
@@ -92,14 +91,13 @@ int *distribute_tasks(const char *mlist, uint16_t num_cpu_groups,
 	count = 1;
 	i = 0;
 	ncpus = 0;
-	while ((this_node_name = hostlist_shift(task_hl))) {
+	while ((this_node_name = hostlist_shift(master_hl))) {
 
-		if (hostlist_find(master_hl, this_node_name) >= 0) {
+		if (hostlist_find(task_hl, this_node_name) >= 0) {
 			if (i >= nnodes) { 
   				fatal("Internal error: duplicate nodes? " 
 				      "(%s)(%s):%m", mlist, tlist); 
   			} 
-			info("add one to %s = %d",this_node_name, i);
 			ntask[i++] = cpus_per_node[index];
 			ncpus += cpus_per_node[index];
 		}
@@ -112,8 +110,7 @@ int *distribute_tasks(const char *mlist, uint16_t num_cpu_groups,
 	}
 	hostlist_destroy(master_hl);
 	hostlist_destroy(task_hl);
-	info("%d %d", num_tasks, ncpus);
-	
+		
 	if (num_tasks >= ncpus) {
 		/*
 		 * Evenly overcommit tasks over the hosts
@@ -156,5 +153,69 @@ int *distribute_tasks(const char *mlist, uint16_t num_cpu_groups,
 			hostid = 0;
 	}
 	xfree(cpus);
+	return ntask;
+}
+
+/* 
+ * distribute_tasks2 - determine how many tasks of a job will be run on each.
+ *                    node. Distribution is influenced by number of cpus on
+ *                    each host. 
+ * IN mlist - hostlist corresponding to cpu arrays
+ * IN num_cpu_groups - elements in below cpu arrays
+ * IN cpus_per_node - cpus per node
+ * IN cpu_count_reps - how many nodes have same cpu count
+ * IN tlist - hostlist of nodes on which to distribute tasks
+ * IN num_tasks - number of tasks to distribute across these cpus
+ * RET a pointer to an integer array listing task counts per node
+ * NOTE: allocates memory that should be xfreed by caller
+ */
+int *distribute_tasks2(const char *mlist, uint16_t num_cpu_groups,
+		       uint32_t *cpus_per_node, uint32_t *cpu_count_reps,
+		       const char *tlist, uint32_t num_tasks) 
+{
+	hostlist_t master_hl = NULL, task_hl = NULL;
+	int i, index, count, hostid, nnodes, ncpus, *cpus, *ntask = NULL;
+	char *this_node_name;
+	char *host = NULL;
+	int host_count;
+	hostlist_iterator_t itr = NULL;
+
+	if (!tlist || num_tasks == 0)
+		return NULL;
+
+	if ((master_hl = hostlist_create(mlist)) == NULL)
+		fatal("hostlist_create error for %s: %m", mlist);
+	
+	if ((task_hl = hostlist_create(tlist)) == NULL)
+		fatal("hostlist_create error for %s: %m", tlist);
+
+	nnodes = hostlist_count(master_hl);
+	
+	ntask = (int *) xmalloc(sizeof(int *) * nnodes);
+	if (!ntask) {
+		hostlist_destroy(master_hl);
+		hostlist_destroy(task_hl);
+		slurm_seterrno(ENOMEM);
+		return NULL;
+	}
+	
+	index = 0;
+	count = 1;
+	i = 0;
+	ncpus = 0;
+	itr = hostlist_iterator_create(task_hl);
+       	while ((this_node_name = hostlist_shift(master_hl))) {
+		ntask[i] = 0;
+		while(host = hostlist_next(itr)) {
+			if(!strcmp(host, this_node_name))
+				ntask[i]++;
+		}
+		i++;
+		hostlist_iterator_reset(itr);
+	}
+	hostlist_iterator_destroy(itr);
+	hostlist_destroy(master_hl);
+	hostlist_destroy(task_hl);
+	
 	return ntask;
 }

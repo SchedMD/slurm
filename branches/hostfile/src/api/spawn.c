@@ -103,6 +103,7 @@ static void	_free_char_array(char ***argv_p, int cnt);
 static int	_p_launch(slurm_msg_t *req, slurm_step_ctx ctx);
 static int	_sock_bind_wild(int sockfd);
 static int	_task_layout(slurm_step_ctx ctx);
+static int      _task_layout_hostfile(slurm_step_ctx ctx);
 static int	_task_layout_block(slurm_step_ctx ctx);
 static int	_task_layout_cyclic(slurm_step_ctx ctx);
 static void *	_thread_per_node_rpc(void *args);
@@ -129,8 +130,7 @@ slurm_step_ctx_create (job_step_create_request_msg_t *step_req)
 	if (slurm_confirm_allocation(&old_job_req, &alloc_resp) < 0)
 		return NULL;
 	
-	step_req->node_list = alloc_resp->node_list;
-       	if ((slurm_job_step_create(step_req, &step_resp) < 0) ||
+	if ((slurm_job_step_create(step_req, &step_resp) < 0) ||
 	    (step_resp == NULL)) {
 		slurm_free_resource_allocation_response_msg(alloc_resp);
 		return NULL;	/* slurm errno already set */
@@ -144,7 +144,10 @@ slurm_step_ctx_create (job_step_create_request_msg_t *step_req)
 	rc->task_dist	= step_req->task_dist;
 	rc->step_resp	= step_resp;
 	rc->alloc_resp	= alloc_resp;
+	 
 	rc->hl		= hostlist_create(alloc_resp->node_list);
+	printf("nodelists here %s %s\n",alloc_resp->node_list, step_resp->node_list);
+	//rc->hl		= hostlist_create(step_resp->node_list);
 	rc->nhosts	= hostlist_count(rc->hl);
 	(void) _task_layout(rc);
 
@@ -393,8 +396,10 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 	msg_array_ptr = xmalloc(sizeof(spawn_task_request_msg_t) *
 			ctx->nhosts);
 	req_array_ptr = xmalloc(sizeof(slurm_msg_t) * ctx->nhosts);
-	hostlist = hostlist_create(ctx->alloc_resp->node_list);
-	itr = hostlist_iterator_create(hostlist);
+	//hostlist = hostlist_create(ctx->job_resp->node_list);
+	printf("nodelist %s\n",j, ctx->step_resp->node_list);
+		
+	//itr = hostlist_iterator_create(hostlist);
 	for (i=0; i<ctx->nhosts; i++) {
 		spawn_task_request_msg_t *r = &msg_array_ptr[i];
 		slurm_msg_t              *m = &req_array_ptr[i];
@@ -413,31 +418,32 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 		r->nprocs	= ctx->num_tasks;
 		r->switch_job	= ctx->step_resp->switch_job; 
 		r->slurmd_debug	= slurmd_debug;
-		j=0;
-		while(host = hostlist_next(itr)) {
-			if(!strcmp(host,ctx->host[i]))
-				break;
-			j++;
-		}
-		printf("using %d %s\n",j, ctx->host[j]);
-		hostlist_iterator_reset(itr);
+		/*  j=0; */
+/*  		while(host = hostlist_next(itr)) { */
+/*  			if(!strcmp(host,ctx->host[i])) */
+/*  				break; */
+/*  			j++; */
+/*  		} */
+		printf("using %d %s with %d tasks\n",i, ctx->host[i],
+		       r->nprocs);
+		//hostlist_iterator_reset(itr);
 		
 		/* Task specific message contents */
-		r->global_task_id	= ctx->tids[j][0];
-		r->cpus_allocated	= ctx->cpus[j];
-		r->srun_node_id	= (uint32_t) j;
-		r->io_port	= ntohs(sock_array[j]);
+		r->global_task_id	= ctx->tids[i][0];
+		r->cpus_allocated	= ctx->cpus[i];
+		r->srun_node_id	= (uint32_t) i;
+		r->io_port	= ntohs(sock_array[i]);
 		m->msg_type	= REQUEST_SPAWN_TASK;
 		m->data		= r;
 		
-		memcpy(&m->address, &ctx->alloc_resp->node_addr[j], 
+		memcpy(&m->address, &ctx->alloc_resp->node_addr[i], 
 			sizeof(slurm_addr));
 #if		_DEBUG
 		printf("tid=%d, fd=%d, port=%u, node_id=%u\n",
 			ctx->tids[i][0], fd_array[i], r->io_port, i);
 #endif
 	}
-	hostlist_iterator_destroy(itr);
+	//hostlist_iterator_destroy(itr);
 
 	rc = _p_launch(req_array_ptr, ctx);
 
@@ -518,7 +524,7 @@ static int _validate_ctx(slurm_step_ctx ctx)
 static int _task_layout(slurm_step_ctx ctx)
 {
 	int cpu_cnt = 0, cpu_inx = 0, i;
-
+	printf("hey %d\n",ctx->cpus);
 	if (ctx->cpus)	/* layout already completed */
 		return SLURM_SUCCESS;
 
@@ -548,12 +554,63 @@ static int _task_layout(slurm_step_ctx ctx)
 		return SLURM_ERROR;
 	}
 
+	return _task_layout_hostfile(ctx);
 	if (ctx->task_dist == SLURM_DIST_CYCLIC)
 		return _task_layout_cyclic(ctx);
 	else
 		return _task_layout_block(ctx);
 }
 
+/* use specific set run tasks on each host listed in hostfile
+ */
+static int _task_layout_hostfile(slurm_step_ctx ctx)
+{
+	int i=0, j, taskid = 0;
+	bool over_subscribe = false;
+	hostlist_iterator_t itr = NULL, itr_task = NULL;
+	char *host = NULL;
+	char *host_task = NULL;
+	hostlist_t job_alloc_hosts = NULL;
+	hostlist_t step_alloc_hosts = NULL;
+	
+	job_alloc_hosts = hostlist_create(ctx->alloc_resp->node_list);
+	itr = hostlist_iterator_create(job_alloc_hosts);
+	step_alloc_hosts = hostlist_create(ctx->step_resp->node_list);
+	itr_task = hostlist_iterator_create(step_alloc_hosts);
+	while(host = hostlist_next(itr)) {
+
+		ctx->tasks[i] = 0;
+		while(host_task = hostlist_next(itr_task)) {
+			if(!strcmp(host, host_task))
+				ctx->tasks[i]++;
+		}
+		printf("%s got %d tasks\n",
+		       host,
+		       ctx->tasks[i]);
+		if(ctx->tasks[i] == 0)
+			goto reset_hosts;
+		ctx->tids[i] = xmalloc(sizeof(uint32_t) * ctx->tasks[i]);
+		hostlist_iterator_reset(itr_task);
+		taskid = 0;
+		j = 0;
+		while(host_task = hostlist_next(itr_task)) {
+			if(!strcmp(host, host_task)) {
+				ctx->tids[i][j] = taskid;
+				j++;
+			}
+			taskid++;
+		}
+	reset_hosts:
+		i++;
+		hostlist_iterator_reset(itr_task);		
+	}
+
+	hostlist_iterator_destroy(itr);
+	hostlist_iterator_destroy(itr_task);
+	hostlist_destroy(job_alloc_hosts);
+
+	return SLURM_SUCCESS;
+}
 
 /* to effectively deal with heterogeneous nodes, we fake a cyclic
  * distribution to figure out how many tasks go on each node and

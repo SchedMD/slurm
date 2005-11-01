@@ -405,8 +405,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				step_spec->node_list, job_ptr->job_id);
 			goto cleanup;
 		}
-	}
-	else if (step_spec->relative) {
+	} else if (step_spec->relative) {
 		/* Remove first (step_spec->relative) nodes from  
 		 * available list */
 		bitstr_t *relative_nodes = NULL;
@@ -420,8 +419,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		bit_not (relative_nodes);
 		bit_and (nodes_avail, relative_nodes);
 		bit_free (relative_nodes);
-	}
-	else {
+	} else {
 		nodes_picked = bit_alloc (bit_size (nodes_avail) );
 		if (nodes_picked == NULL)
 			fatal("bit_alloc malloc failure");
@@ -558,9 +556,10 @@ step_create ( job_step_create_request_msg_t *step_specs,
 	//step_ptr->step_node_list = bitmap2node_name(nodeset);
 	/* Here is where the node list is set for the job */
 	step_ptr->step_node_list = xstrdup(step_specs->node_list); 
+	//step_ptr->step_node_list = xstrdup("op02"); 
 	
-	info("node_list here %s %d", step_ptr->step_node_list, 
-	       step_specs->num_tasks);
+	info("node_list here %s %s %d\n", step_ptr->step_node_list, 
+	     step_specs->node_list, step_specs->num_tasks);
 	step_ptr->step_node_bitmap = nodeset;
 	step_ptr->cyclic_alloc = 0;
 	//(uint16_t) (step_specs->task_dist == SLURM_DIST_CYCLIC);
@@ -583,17 +582,17 @@ step_create ( job_step_create_request_msg_t *step_specs,
 
 	/* a batch script does not need switch info */
 	if (!batch_step) {
-		int *tasks_per_node, i;
-/*  		tasks_per_node = distribute_tasks(job_ptr->nodes, */
-/*  						  job_ptr->num_cpu_groups, */
-/*  						  job_ptr->cpus_per_node, */
-/*  						  job_ptr->cpu_count_reps, */
-/*  						  step_ptr->step_node_list, */
-/*  						  step_ptr->num_tasks); */
-		tasks_per_node = xmalloc(sizeof(int)*step_specs->num_tasks); 
-  		for(i=0;i<step_specs->num_tasks;i++) { 
-  			tasks_per_node[i] = 1; 
-  		} 
+		int *tasks_per_node;
+		tasks_per_node = distribute_tasks(job_ptr->nodes, 
+						   job_ptr->num_cpu_groups, 
+						   job_ptr->cpus_per_node, 
+						   job_ptr->cpu_count_reps, 
+						   step_ptr->step_node_list, 
+						   step_ptr->num_tasks); 
+		int i=0;
+		for(i= 0; i<2;i++) {
+			printf("count %d = %d\n",i, tasks_per_node[i]);
+		}
 		if (switch_alloc_jobinfo (&step_ptr->switch_job) < 0)
 			fatal ("step_create: switch_alloc_jobinfo error");
 		

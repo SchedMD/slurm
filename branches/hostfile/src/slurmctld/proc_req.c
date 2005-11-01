@@ -1288,11 +1288,11 @@ static void _slurm_rpc_old_job_alloc(slurm_msg_t * msg)
 			slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		if(job_desc_msg->req_nodes) {
-			node_list = job_desc_msg->req_nodes;
-			job_ptr->req_nodes = xstrdup(node_list);
-			build_node_details(job_ptr);
-		} else
+		/*  if(job_desc_msg->req_nodes) { */
+/*  			node_list = job_desc_msg->req_nodes; */
+/*  			job_ptr->req_nodes = xstrdup(node_list); */
+/*  			build_node_details(job_ptr); */
+/*  		} else */
 			node_list = job_ptr->nodes;
 		info("_slurm_rpc_old_job_alloc JobId=%u NodeList=%s %s",
 			job_desc_msg->job_id, node_list, TIME_STR);
