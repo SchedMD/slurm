@@ -76,7 +76,7 @@ typedef struct bgl_record {
 					   of partition */
 	int full_partition;             /* wether or not partition is the full
 					   partition */
-	int job_running;                /* signal if there is a job running 
+	int job_running;                /* job id if there is a job running 
 					   on the partition */
 	int cnodes_per_bp;              /* count of cnodes per Base part */
 	int quarter;                    /* used for small partitions 
