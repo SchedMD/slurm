@@ -55,11 +55,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/list.h"
 #include "src/common/util-net.h"
-/*#include "src/common/slurm_protocol_api.h"*/
 
 #include "src/slurmd/slurmd/slurmd.h"
-#include "src/slurmd/common/shm.h"
-/*#include "src/slurmd/slurmstepd/mgr.h"*/
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/stepd_api.h"
@@ -946,11 +943,9 @@ _rpc_signal_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 static void
 _rpc_terminate_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 {
-	int               rc = SLURM_SUCCESS;
-	uid_t             req_uid;
-	job_step_t       *step = NULL;
 	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
 	step_loc_t        loc;
+	int               rc = SLURM_SUCCESS;
 
 	debug3("Entering _rpc_terminate_tasks");
 	/*
@@ -1044,50 +1039,24 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 static void 
 _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 {
+	reattach_tasks_request_msg_t  *req = msg->data;
+	reattach_tasks_response_msg_t  resp;
+	slurm_msg_t                    resp_msg;
 	int          rc   = SLURM_SUCCESS;
 	uint16_t     port = 0;
 	char         host[MAXHOSTNAMELEN];
 	int          i;
-	job_step_t  *step;
-	slurmd_job_state_t *state;
-	task_t      *t;
-	uid_t        req_uid;
-	gid_t        req_gid;
 	slurm_addr   ioaddr;
-	char        *key;
-	int          len;
-	slurm_msg_t                    resp_msg;
-	reattach_tasks_request_msg_t  *req = msg->data;
-	reattach_tasks_response_msg_t  resp;
 	step_loc_t loc;
 
 	memset(&resp, 0, sizeof(reattach_tasks_response_msg_t));
 	slurm_get_ip_str(cli, &port, host, sizeof(host));
-	req_uid = g_slurm_auth_get_uid(msg->cred);
-	req_gid = g_slurm_auth_get_gid(msg->cred);
-
-	info("reattach request from %ld@%s for %u.%u", 
-	     (long) req_uid, host, req->job_id, req->job_step_id);
 
 	/* 
 	 * Set response addr by resp_port and client address
 	 */
 	memcpy(&resp_msg.address, cli, sizeof(slurm_addr));
 	slurm_set_addr(&resp_msg.address, req->resp_port, NULL); 
-
-	if (!(step = shm_get_step(req->job_id, req->job_step_id))) {
-		rc = ESRCH;
-		goto done;
-	}
-	
-	state = shm_lock_step_state(req->job_id, req->job_step_id);
-	if (  (*state != SLURMD_JOB_STARTING) 
-	   && (*state != SLURMD_JOB_STARTED)  ) {
-		shm_unlock_step_state(req->job_id, req->job_step_id);
-		rc = ESLURMD_JOB_NOTRUNNING;
-		goto done;
-	}
-	shm_unlock_step_state(req->job_id, req->job_step_id);
 
 	/* 
 	 * Set IO address and by io_port and client address
@@ -1110,16 +1079,15 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		goto done;
 	}
 
-	resp.local_pids = xmalloc(step->ntasks * sizeof(*resp.local_pids));
-	resp.gtids      = xmalloc(step->ntasks * sizeof(*resp.local_pids));
-	resp.ntasks     = step->ntasks;
-	for (t = step->task_list, i = 0; t; t = t->next, i++) {
-		resp.gtids[t->id] = t->global_id;
-		resp.local_pids[t->id] = t->pid;
-	}
-	resp.executable_name  = xstrdup(step->exec_name);
-
-	shm_free_step(step);
+/* FIXME ! */
+/* 	resp.local_pids = xmalloc(step->ntasks * sizeof(*resp.local_pids)); */
+/* 	resp.gtids      = xmalloc(step->ntasks * sizeof(*resp.local_pids)); */
+/* 	resp.ntasks     = step->ntasks; */
+/* 	for (t = step->task_list, i = 0; t; t = t->next, i++) { */
+/* 		resp.gtids[t->id] = t->global_id; */
+/* 		resp.local_pids[t->id] = t->pid; */
+/* 	} */
+/* 	resp.executable_name  = xstrdup(step->exec_name); */
 
     done:
 	debug2("update step addrs rc = %d", rc);
@@ -1229,21 +1197,22 @@ _wait_state_completed(uint32_t jobid, int max_delay)
 static bool
 _steps_completed_now(uint32_t jobid)
 {
-	List   steps = shm_get_steps();
-	ListIterator i = list_iterator_create(steps);
-	job_step_t *s = NULL;
+/* FIXME! */
+/* 	List   steps = shm_get_steps(); */
+/* 	ListIterator i = list_iterator_create(steps); */
+/* 	job_step_t *s = NULL; */
 	bool rc = true;
 
-	while ((s = list_next(i))) {
-		if (s->jobid != jobid)
-			continue;
-		if (s->state != SLURMD_JOB_COMPLETE) {
-			rc = false;
-			break;
-		}
-	}
-	list_iterator_destroy(i);
-	list_destroy(steps);
+/* 	while ((s = list_next(i))) { */
+/* 		if (s->jobid != jobid) */
+/* 			continue; */
+/* 		if (s->state != SLURMD_JOB_COMPLETE) { */
+/* 			rc = false; */
+/* 			break; */
+/* 		} */
+/* 	} */
+/* 	list_iterator_destroy(i); */
+/* 	list_destroy(steps); */
 
 	return rc;
 }
@@ -1543,11 +1512,12 @@ _rpc_update_time(slurm_msg_t *msg, slurm_addr *cli)
 		goto done;
 	} 
 
-	if (shm_update_job_timelimit(req->job_id, req->expiration_time) < 0) {
-		error("updating lifetime for job %u: %m", req->job_id);
-		rc = ESLURM_INVALID_JOB_ID;
-	} else
-		debug("reset job %u lifetime", req->job_id);
+/* FIXME */
+/* 	if (shm_update_job_timelimit(req->job_id, req->expiration_time) < 0) { */
+/* 		error("updating lifetime for job %u: %m", req->job_id); */
+/* 		rc = ESLURM_INVALID_JOB_ID; */
+/* 	} else */
+/* 		debug("reset job %u lifetime", req->job_id); */
 
     done:
 	slurm_send_rc_msg(msg, rc);

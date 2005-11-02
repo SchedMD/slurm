@@ -25,10 +25,6 @@ slurmstepd_SOURCES = 	        	\
 	ulimits.c ulimits.h     	\
 	pdebug.c pdebug.h		\
 	req.c req.h			\
-	$(top_builddir)/src/slurmd/common/semaphore.c \
-	$(top_builddir)/src/slurmd/common/semaphore.h \
-	$(top_builddir)/src/slurmd/common/shm.c \
-	$(top_builddir)/src/slurmd/common/shm.h	\
 	$(top_builddir)/src/slurmd/common/proctrack.c \
 	$(top_builddir)/src/slurmd/common/proctrack.h \
 	$(top_builddir)/src/slurmd/common/setproctitle.c \

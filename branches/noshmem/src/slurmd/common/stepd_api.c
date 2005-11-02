@@ -256,7 +256,6 @@ _sockname_regex(regex_t *re, const char *filename,
 
 	memset(pmatch, 0, sizeof(regmatch_t)*nmatch);
 	if (regexec(re, filename, nmatch, pmatch, 0) == REG_NOMATCH) {
-		printf("regexec failed: No match\n");
 		return -1;
 	}
 
@@ -311,9 +310,8 @@ stepd_available(const char *directory, const char *nodename)
 		step_loc_t *loc;
 		uint32_t jobid, stepid;
 
-		debug("  ent = \"%s\"", ent->d_name);
 		if (_sockname_regex(&re, ent->d_name, &jobid, &stepid) == 0) {
-			debug("    jobid = %u, stepid = %u", jobid, stepid);
+			debug4("found jobid = %u, stepid = %u", jobid, stepid);
 			loc = xmalloc(sizeof(step_loc_t));
 			loc->directory = xstrdup(directory);
 			loc->nodename = xstrdup(nodename);

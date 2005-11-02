@@ -176,10 +176,4 @@ slurmd_task_info_t * task_info_create(int taskid, int gtaskid,
 
 void task_info_destroy(slurmd_task_info_t *t);
 
-int job_update_shm(slurmd_job_t *job);
-
-int job_update_state(slurmd_job_t *job, slurmd_job_state_t s);
-
-void job_delete_shm(slurmd_job_t *job);
-
 #endif /* !_JOB_H */

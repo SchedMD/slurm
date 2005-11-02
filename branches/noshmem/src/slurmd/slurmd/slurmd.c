@@ -62,7 +62,6 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/req.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
-#include "src/slurmd/common/shm.h"
 #include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/task_plugin.h"
@@ -390,9 +389,6 @@ send_registration_msg(uint32_t status, bool startup)
 static void
 _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 {
-	List         steps;
-	ListIterator i;
-	job_step_t  *s;
 	int          n;
 
 	msg->node_name = xstrdup (conf->node_name);
@@ -410,35 +406,35 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 			error("switch_g_build_node_info: %m");
 	}
 
-	steps          = shm_get_steps();
-	msg->job_count = list_count(steps);
-	msg->job_id    = xmalloc(msg->job_count * sizeof(*msg->job_id));
+/* 	msg->job_count = list_count(steps); */
+/* 	msg->job_id    = xmalloc(msg->job_count * sizeof(*msg->job_id)); */
 	
 	/* Note: Running batch jobs will have step_id == NO_VAL
 	 */
-	msg->step_id   = xmalloc(msg->job_count * sizeof(*msg->step_id));
+/* 	msg->step_id   = xmalloc(msg->job_count * sizeof(*msg->step_id)); */
 
-	i = list_iterator_create(steps);
-	n = 0;
-	while ((s = list_next(i))) {
-		if (!shm_step_still_running(s->jobid, s->stepid)) {
-			debug("deleting stale reference to %u.%u in shm",
-			      s->jobid, (int32_t) s->stepid);
-			shm_delete_step(s->jobid, s->stepid);
-			--(msg->job_count);
-			continue;
-		}
-		if (s->stepid == NO_VAL)
-			debug("found apparently running job %u", s->jobid);
-		else
-			debug("found apparently running step %u.%u", 
-			      s->jobid, s->stepid);
-		msg->job_id[n]  = s->jobid;
-		msg->step_id[n] = s->stepid;
-		n++;
-	}
-	list_iterator_destroy(i);
-	list_destroy(steps);
+/* FIXME! */
+/* 	i = list_iterator_create(steps); */
+/* 	n = 0; */
+/* 	while ((s = list_next(i))) { */
+/* 		if (!shm_step_still_running(s->jobid, s->stepid)) { */
+/* 			debug("deleting stale reference to %u.%u in shm", */
+/* 			      s->jobid, (int32_t) s->stepid); */
+/* 			shm_delete_step(s->jobid, s->stepid); */
+/* 			--(msg->job_count); */
+/* 			continue; */
+/* 		} */
+/* 		if (s->stepid == NO_VAL) */
+/* 			debug("found apparently running job %u", s->jobid); */
+/* 		else */
+/* 			debug("found apparently running step %u.%u",  */
+/* 			      s->jobid, s->stepid); */
+/* 		msg->job_id[n]  = s->jobid; */
+/* 		msg->step_id[n] = s->stepid; */
+/* 		n++; */
+/* 	} */
+/* 	list_iterator_destroy(i); */
+/* 	list_destroy(steps); */
 
 	msg->timestamp = time(NULL);
 
@@ -696,28 +692,12 @@ _slurmd_init()
 		return SLURM_FAILURE;
 	}
 
-	/*
-	 * Cleanup shared memory if so configured
-	 */
 	if (conf->cleanstart) {
 		/* 
-		 * Need to kill any running slurmd's here so they do
-		 *  not fail to lock shared memory on exit
+		 * Need to kill any running slurmd's here
 		 */
 		_kill_old_slurmd(); 
-
-		shm_cleanup();
 	}
-
-	/*
-	 * Initialize slurmd shared memory
-	 *  This *must* be called after _set_slurmd_spooldir()
-	 *  since the default location of the slurmd lockfile is
-	 *  _in_ the spooldir.
-	 *
-	 */
-	if (shm_init(true) < 0)
-		return SLURM_FAILURE;
 
 	if (conf->daemonize && (chdir("/tmp") < 0)) {
 		error("Unable to chdir to /tmp");
@@ -776,7 +756,6 @@ static int
 _slurmd_fini()
 {
 	save_cred_state(conf->vctx);
-	shm_fini();
 	slurmd_task_fini(); 
 	return SLURM_SUCCESS;
 }

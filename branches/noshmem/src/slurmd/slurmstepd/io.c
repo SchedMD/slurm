@@ -59,7 +59,6 @@
 #include "src/common/xsignal.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
-#include "src/slurmd/common/shm.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/fname.h"
 

@@ -69,7 +69,6 @@
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/setproctitle.h"
-#include "src/slurmd/common/shm.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/task_plugin.h"
 #include "src/slurmd/slurmstepd/mgr.h"
@@ -452,17 +451,6 @@ _job_mgr(slurmd_job_t *job)
 	debug3("Entered job_mgr for %u.%u pid=%lu",
 	       job->jobid, job->stepid, (unsigned long) job->jmgr_pid);
 	
-	if (shm_init(false) < 0)
-		goto fail0;
-
-	if (job_update_shm(job) < 0) {
-		if (errno == ENOSPC) 
-			rc = ESLURMD_TOOMANYSTEPS;
-		else if (errno == EEXIST)
-			rc = ESLURMD_STEP_EXISTS;
-		goto fail0;
-	}
-
 	msg_thr_create(job);
 
 	if (!job->batch && 
@@ -502,8 +490,8 @@ _job_mgr(slurmd_job_t *job)
 	reattach_job = job;
 	xsignal(SIGHUP, _hup_handler);
 
-	if (job_update_state(job, SLURMD_JOB_STARTED) < 0)
-		goto fail2;
+/* 	if (job_update_state(job, SLURMD_JOB_STARTED) < 0) */
+/* 		goto fail2; */
 
 	/* Send job launch response with list of pids */
 	_send_launch_resp(job, 0);
@@ -519,7 +507,7 @@ _job_mgr(slurmd_job_t *job)
 		exit(1);
 	}
 
-	job_update_state(job, SLURMD_JOB_ENDING);
+/* 	job_update_state(job, SLURMD_JOB_ENDING); */
 
     fail2:
 	/*
@@ -543,14 +531,12 @@ _job_mgr(slurmd_job_t *job)
 		_wait_for_io(job);
 	}
 
-	job_update_state(job, SLURMD_JOB_COMPLETE);
+/* 	job_update_state(job, SLURMD_JOB_COMPLETE); */
 	g_slurmd_jobacct_jobstep_terminated(job);
 
     fail1:
 	eio_signal_shutdown(job->msg_handle);
 	pthread_join(job->msgid, NULL);
-	job_delete_shm(job);
-	shm_fini();
     fail0:
 	/* If interactive job startup was abnormal, 
 	 * be sure to notify client.
@@ -608,7 +594,7 @@ _fork_all_tasks(slurmd_job_t *job)
 	 */
 	for (i = 0; i < job->ntasks; i++) {
 		pid_t pid;
-		task_t task;
+/* 		task_t task; */
 
 		if ((pid = fork ()) < 0) {
 			error("fork: %m");
@@ -656,10 +642,10 @@ _fork_all_tasks(slurmd_job_t *job)
 			exit(3);
 		}
 		    
-		task.id        = i;
-		task.global_id = job->task[i]->gtid;
-		task.pid       = job->task[i]->pid;
-		task.ppid      = job->jmgr_pid;
+/* 		task.id        = i; */
+/* 		task.global_id = job->task[i]->gtid; */
+/* 		task.pid       = job->task[i]->pid; */
+/* 		task.ppid      = job->jmgr_pid; */
 	}
 
 	/*

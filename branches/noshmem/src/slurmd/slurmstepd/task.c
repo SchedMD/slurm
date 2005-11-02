@@ -64,7 +64,6 @@
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/proctrack.h"
-#include "src/slurmd/common/shm.h"
 #include "src/slurmd/common/task_plugin.h"
 #include "src/slurmd/slurmstepd/task.h"
 #include "src/slurmd/slurmstepd/ulimits.h"

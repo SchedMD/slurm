@@ -21,10 +21,6 @@ slurmd_SOURCES = 	        	\
 	req.c req.h			\
 	get_mach_stat.c get_mach_stat.h	\
 	read_proc.c 	        	\
-	$(top_builddir)/src/slurmd/common/semaphore.c \
-	$(top_builddir)/src/slurmd/common/semaphore.h \
-	$(top_builddir)/src/slurmd/common/shm.c \
-	$(top_builddir)/src/slurmd/common/shm.h	\
 	$(top_builddir)/src/slurmd/common/proctrack.c \
 	$(top_builddir)/src/slurmd/common/proctrack.h \
 	$(top_builddir)/src/slurmd/common/setproctitle.c \

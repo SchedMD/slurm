@@ -46,7 +46,6 @@
 #include "src/common/slurm_protocol_api.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
-#include "src/slurmd/common/shm.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/fname.h"
@@ -581,51 +580,4 @@ task_info_destroy(slurmd_task_info_t *t)
 	slurm_mutex_unlock(&t->mutex);
 	slurm_mutex_destroy(&t->mutex);
 	xfree(t);
-}
-
-int
-job_update_shm(slurmd_job_t *job)
-{
-	job_step_t s;
-
-	s.uid	    = job->uid;
-	s.jobid     = job->jobid;
-	s.stepid    = job->stepid;
-	s.ntasks    = job->ntasks;
-	s.timelimit = job->timelimit;
-	strncpy(s.exec_name, job->argv[0], MAXPATHLEN);
-	s.sw_id     = 0;
-	s.mpid      = job->jmgr_pid;
-	s.cont_id   = 0;
-	s.io_update = false;
-	/*
-	 * State not set in shm_insert_step()
-	 * s.state     = SLURMD_JOB_STARTING;
-	 */
-
-	if (shm_insert_step(&s) < 0) 
-		return SLURM_ERROR;
-
-	if (job->stepid == NO_VAL)
-		debug("updated shm with job %u", job->jobid);
-	else
-		debug("updated shm with step %u.%u", job->jobid, job->stepid);
-
-	job_update_state(job, SLURMD_JOB_STARTING);
-
-	return SLURM_SUCCESS;
-}
-
-int
-job_update_state(slurmd_job_t *job, slurmd_job_state_t s)
-{
-	return shm_update_step_state(job->jobid, job->stepid, s);
-}
-
-void 
-job_delete_shm(slurmd_job_t *job)
-{
-	if (shm_delete_step(job->jobid, job->stepid) == SLURM_FAILURE)
-		error("deleting step:  %u.%u not found in shmem", 
-				job->jobid, job->stepid); 
 }
