@@ -1141,7 +1141,7 @@ extern void build_node_details(struct job_record *job_ptr)
 		job_ptr->cpu_count_reps = NULL;
 		job_ptr->node_addr = NULL;
                 job_ptr->ntask_cnt = 0;
-		job_ptr->ntask = NULL; 
+		xfree(job_ptr->ntask);
 		return;
 	}
 
@@ -1158,7 +1158,7 @@ extern void build_node_details(struct job_record *job_ptr)
 		fatal("hostlist_create error for %s: %m", job_ptr->nodes);
 
         job_ptr->ntask_cnt = 0;
-        job_ptr->ntask = NULL; 
+        xfree(job_ptr->ntask);
         if (job_ptr->cr_enabled) {
                 cr_enabled = job_ptr->cr_enabled;
                 job_ptr->ntask = xmalloc(job_ptr->node_cnt * sizeof(int));
@@ -1169,27 +1169,26 @@ extern void build_node_details(struct job_record *job_ptr)
 		node_ptr = find_node_record(this_node_name);
 		if (node_ptr) {
 			int usable_cpus = 0;
-                        if (cr_enabled) {
-                          error_code = select_g_get_extra_jobinfo (node_ptr, job_ptr, 
-                                                                   SELECT_CR_USABLE_CPUS, 
-                                                                   &usable_cpus);
-                          job_ptr->ntask[cr_count++] = usable_cpus;
-                          if(error_code != SLURM_SUCCESS) {
-                                   if (job_ptr->ntask) {
-                                          xfree(job_ptr->ntask); 
-                                          job_ptr->ntask = NULL;
-                                   }
-                                   free(this_node_name);
-                                   error("Invalid node %s in JobId=%u",
-                                         this_node_name, job_ptr->job_id);
-                          }
-                        } else if (slurmctld_conf.fast_schedule) {
-                          usable_cpus = node_ptr->config_ptr->cpus;
-                        } else {
-                          usable_cpus = node_ptr->cpus;
-                        }
+			if (cr_enabled) {
+				error_code = select_g_get_extra_jobinfo( 
+					node_ptr, job_ptr, 
+					SELECT_CR_USABLE_CPUS, &usable_cpus);
+				job_ptr->ntask[cr_count++] = usable_cpus;
+				if(error_code != SLURM_SUCCESS) {
+					xfree(job_ptr->ntask); 
+					free(this_node_name);
+					error("Invalid node %s in JobId=%u",
+						this_node_name, 
+						job_ptr->job_id);
+				}
+			} else if (slurmctld_conf.fast_schedule) {
+				usable_cpus = node_ptr->config_ptr->cpus;
+			} else {
+				usable_cpus = node_ptr->cpus;
+			}
 
-			if (usable_cpus <= 0) continue;
+			if (usable_cpus <= 0)
+				continue;
 			memcpy(&job_ptr->node_addr[node_inx++],
 			       &node_ptr->slurm_addr, sizeof(slurm_addr));
 			if ((cpu_inx == -1) ||
@@ -1197,7 +1196,7 @@ extern void build_node_details(struct job_record *job_ptr)
 			     usable_cpus)) {
 				cpu_inx++;
 				job_ptr->cpus_per_node[cpu_inx] =
-				    usable_cpus;
+						usable_cpus;
 				job_ptr->cpu_count_reps[cpu_inx] = 1;
 			} else
 				job_ptr->cpu_count_reps[cpu_inx]++;
