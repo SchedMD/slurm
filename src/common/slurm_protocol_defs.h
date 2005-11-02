@@ -321,6 +321,7 @@ typedef struct spawn_task_request_msg {
 
 	slurm_cred_t cred;	/* job credential            */
 	switch_jobinfo_t switch_job;	/* switch credential for the job */
+
 } spawn_task_request_msg_t;
 
 typedef struct task_ext_msg {
