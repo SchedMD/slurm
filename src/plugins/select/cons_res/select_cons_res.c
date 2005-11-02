@@ -880,9 +880,6 @@ extern int select_p_get_extra_jobinfo(struct node_record *node_ptr,
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
 
-	xassert(node_ptr);
-	xassert(node_ptr->magic == NODE_MAGIC);
-
 	switch (info) {
 	case SELECT_CR_CPU_COUNT:
 		{
@@ -899,6 +896,9 @@ extern int select_p_get_extra_jobinfo(struct node_record *node_ptr,
 			struct select_cr_job *job = NULL;
 			ListIterator iterator =
 			    list_iterator_create(select_cr_job_list);
+			xassert(node_ptr);
+			xassert(node_ptr->magic == NODE_MAGIC);
+
 			while ((job =
 				(struct select_cr_job *)
 				list_next(iterator)) != NULL) {
