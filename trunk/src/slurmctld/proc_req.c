@@ -571,18 +571,10 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		error_code = _make_step_cred(step_rec, &slurm_cred);
 		END_TIMER;
-                if (job_ptr->ntask) {
-                       xfree(job_ptr->ntask);         
-                       job_ptr->ntask = NULL;
-                }
 	}
 
 	/* note: no need to free step_rec, pointer to global job step record */
 	if (error_code) {
-                if (job_ptr->ntask) {
-                       xfree(job_ptr->ntask);
-                       job_ptr->ntask = NULL;
-                }
 		job_complete(job_ptr->job_id, job_desc_msg->user_id, false, 0);
 		unlock_slurmctld(job_write_lock);
 		info("_slurm_rpc_allocate_and_run creating job step: %s",
