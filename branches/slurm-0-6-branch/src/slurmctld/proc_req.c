@@ -1043,11 +1043,8 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		lock_slurmctld(job_write_lock);
 		error_code = step_create(req_step_msg, &step_rec, false, false);
 	}
-	if (error_code == SLURM_SUCCESS) {
+	if (error_code == SLURM_SUCCESS)
 		error_code = _make_step_cred(step_rec, &slurm_cred);
-                if (step_rec->job_ptr->ntask) 
-                        xfree(step_rec->job_ptr->ntask);      
-        }
 	END_TIMER;
 
 	/* return result */
