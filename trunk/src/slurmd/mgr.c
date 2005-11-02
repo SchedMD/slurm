@@ -889,7 +889,7 @@ _wait_for_io(slurmd_job_t *job)
 {
 	debug("Waiting for IO");
 	io_close_all(job);
-
+	
 	/*
 	 * Wait until IO thread exits
 	 */
