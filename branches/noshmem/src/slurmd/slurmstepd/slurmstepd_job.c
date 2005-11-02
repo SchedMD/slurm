@@ -450,32 +450,6 @@ job_signal_tasks(slurmd_job_t *job, int signal)
 	}
 }
 
-
-/* remove job from shared memory, kill initiated tasks, etc */
-void 
-job_kill(slurmd_job_t *job, int rc)
-{
-	slurmd_job_state_t *state;
-
-	xassert(job != NULL);
-
-	if (!(state = shm_lock_step_state(job->jobid, job->stepid))) 
-		return;
-
-	if (*state > SLURMD_JOB_STARTING) {
-		/* signal all tasks on step->task_list 
-		 * This will result in task exit msgs being sent to srun
-		 * XXX IMPLEMENT
-		 */
-		job_signal_tasks(job, SIGKILL);
-	}
-	*state = SLURMD_JOB_ENDING;
-	shm_unlock_step_state(job->jobid, job->stepid);
-	
-	return;
-}
-
-
 void 
 job_destroy(slurmd_job_t *job)
 {

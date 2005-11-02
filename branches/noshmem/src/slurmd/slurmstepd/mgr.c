@@ -127,7 +127,6 @@ static int  _reclaim_privileges(struct passwd *pwd);
 static void _send_launch_resp(slurmd_job_t *job, int rc);
 static void _slurmd_job_log_init(slurmd_job_t *job);
 static void _wait_for_io(slurmd_job_t *job);
-static void _handle_attach_req(slurmd_job_t *job);
 static int  _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, 
 		int status);
 static void _set_unexited_task_status(slurmd_job_t *job, int status);
@@ -153,12 +152,11 @@ static slurmd_job_t *reattach_job;
 /*
  * SIGHUP signal handler.  A SIGHUP is a message from the main slurmd
  * that a reattach request needs to be processed.
+ *
+ * FIXME - obsolete, reattach handled through the stepd API
  */
 static void _hup_handler(int sig)
 {
-/* 	if ((sig == SIGHUP) */
-/* 	    && (reattach_job != NULL)) */
-/* 		_handle_attach_req(reattach_job); */
 }
 
 /*
@@ -662,16 +660,12 @@ _fork_all_tasks(slurmd_job_t *job)
 		task.global_id = job->task[i]->gtid;
 		task.pid       = job->task[i]->pid;
 		task.ppid      = job->jmgr_pid;
-		if (shm_add_task(job->jobid, job->stepid, &task) < 0)
-			debug("shm_add_task: %m");	/* see comment above */
 	}
 
 	/*
 	 * All tasks are now forked and running as the user, but
 	 * will wait for our signal before calling exec.
 	 */
-	shm_update_step_pgid(job->jobid, job->stepid, job->pgid);
-	shm_update_step_cont_id(job->jobid, job->stepid, job->cont_id);
 
 	/*
 	 * Now it's ok to unblock the tasks, so they may call exec.
@@ -847,30 +841,17 @@ _set_unexited_task_status(slurmd_job_t *job, int status)
 static void
 _kill_running_tasks(slurmd_job_t *job)
 {
-	List         steps;
-	ListIterator i;
-	job_step_t  *s     = NULL;
 	int          delay = 1;
 
 	if (job->batch)
 		return;
 
-	steps = shm_get_steps();
-	i = list_iterator_create(steps);
-
-	/* find the job_step_t for this job step in the list from shared mem */
-	while ((s = list_next(i)))
-		if ((s->jobid == job->jobid) && (s->stepid == job->stepid))
-			break;
-	if (!s)
-		return;
-
-	if (s->cont_id) {
-		slurm_container_signal(s->cont_id, SIGKILL);
+	if (job->cont_id) {
+		slurm_container_signal(job->cont_id, SIGKILL);
 
 		/* Spin until the container is successfully destroyed */
-		while (slurm_container_destroy(s->cont_id) != SLURM_SUCCESS) {
-			slurm_container_signal(s->cont_id, SIGKILL);
+		while (slurm_container_destroy(job->cont_id) != SLURM_SUCCESS) {
+			slurm_container_signal(job->cont_id, SIGKILL);
 			sleep(delay);
 			if (delay < 120) {
 				delay *= 2;
@@ -881,8 +862,6 @@ _kill_running_tasks(slurmd_job_t *job)
 		}
 	}
 
-	list_iterator_destroy(i);
-	list_destroy(steps);
 	return;
 }
 
@@ -1090,34 +1069,6 @@ info("sending REQUEST_COMPLETE_JOB_STEP");
 		slurm_seterrno_ret(rc);
 
 	return SLURM_SUCCESS;
-}
-
-
-/* FIXME obsolete, delete this */
-static void
-_handle_attach_req(slurmd_job_t *job)
-{
-	srun_info_t *srun;
-	int rc;
-
-	debug("handling attach request for %u.%u", job->jobid, job->stepid);
-
-	srun       = xmalloc(sizeof(*srun));
-	srun->key  = xmalloc(sizeof(*srun->key));
-
-	if (shm_step_addrs( job->jobid, job->stepid, 
-			    &srun->ioaddr, &srun->resp_addr,
-			    srun->key ) < 0) {
-		if (errno)
-			error("Unable to update client addrs from shm: %m");
-		return;
-	}
-
-	list_prepend(job->sruns, (void *) srun);
-
-	rc = io_client_connect(srun, job);
-	if (rc == SLURM_ERROR)
-		error("Failed attaching new stdio client");
 }
 
 

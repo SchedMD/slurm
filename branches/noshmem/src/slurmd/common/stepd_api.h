@@ -40,6 +40,8 @@ typedef enum {
 	REQUEST_SIGNAL_CONTAINER,
 	REQUEST_STATUS,
 	REQUEST_ATTACH,
+	REQUEST_PID_IN_CONTAINER,
+	REQUEST_DAEMON_PID
 } step_msg_t;
 
 typedef struct step_location {
@@ -76,7 +78,6 @@ int stepd_signal_container(step_loc_t step, void *auth_cred, int signal);
 int stepd_attach(step_loc_t step, slurm_addr *ioaddr, slurm_addr *respaddr,
 		 void *auth_cred, slurm_cred_t job_cred);
 
-
 /*
  * Scan for available running slurm step daemons by checking
  * "directory" for unix domain sockets with names beginning in "nodename".
@@ -84,5 +85,17 @@ int stepd_attach(step_loc_t step, slurm_addr *ioaddr, slurm_addr *respaddr,
  * Returns a List of pointers to step_loc_t structures.
  */
 List stepd_available(const char *directory, const char *nodename);
+
+/*
+ * Return true if the process with process ID "pid" is found in
+ * the proctrack container of the slurmstepd "step".
+ */
+bool stepd_pid_in_container(step_loc_t step, pid_t pid);
+
+
+/*
+ * Return the process ID of the slurmstepd.
+ */
+pid_t stepd_daemon_pid(step_loc_t step);
 
 #endif /* _STEPD_API_H */

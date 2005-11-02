@@ -51,6 +51,8 @@ static void _handle_signal_process_group(int fd, slurmd_job_t *job);
 static void _handle_signal_task_local(int fd, slurmd_job_t *job);
 static void _handle_signal_container(int fd, slurmd_job_t *job);
 static void _handle_attach(int fd, slurmd_job_t *job);
+static void _handle_pid_in_container(int fd, slurmd_job_t *job);
+static void _handle_daemon_pid(int fd, slurmd_job_t *job);
 static bool _msg_socket_readable(eio_obj_t *obj);
 static int _msg_socket_accept(eio_obj_t *obj, List objs);
 
@@ -257,6 +259,14 @@ _handle_request(int fd, slurmd_job_t *job)
 	case REQUEST_ATTACH:
 		debug("Handling REQUEST_ATTACH");
 		_handle_attach(fd, job);
+		break;
+	case REQUEST_PID_IN_CONTAINER:
+		debug("Handling REQUEST_PID_IN_CONTAINER");
+		_handle_pid_in_container(fd, job);
+		break;
+	case REQUEST_DAEMON_PID:
+		debug("Handling REQUEST_DAEMON_PID");
+		_handle_daemon_pid(fd, job);
 		break;
 	default:
 		error("Unrecognized request: %d", req);
@@ -537,3 +547,34 @@ done:
 	/* Send the return code */
 	write(fd, &rc, sizeof(int));
 }
+
+static void
+_handle_pid_in_container(int fd, slurmd_job_t *job)
+{
+	bool rc = false;
+	pid_t pid;
+
+	debug("_handle_pid_in_container for job %u.%u",
+	      job->jobid, job->stepid);
+
+	read(fd, &pid, sizeof(pid_t));
+	
+	/*
+	 * FIXME - we should add a new call in the proctrack API
+	 *         that simply returns "true" if a pid is in the step
+	 */
+	if (job->cont_id == slurm_container_find(pid))
+		rc = true;
+
+	/* Send the return code */
+	write(fd, &rc, sizeof(bool));
+
+	debug("Leaving _handle_pid_in_container");
+}
+
+static void
+_handle_daemon_pid(int fd, slurmd_job_t *job)
+{
+	write(fd, &job->jmgr_pid, sizeof(pid_t));
+}
+

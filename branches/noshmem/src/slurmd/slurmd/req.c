@@ -1007,40 +1007,26 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 	slurm_msg_t           resp_msg;
 	job_id_response_msg_t resp;
 	bool         found = false; 
-	uint32_t     my_cont = slurm_container_find(req->job_pid);
-	List         steps = shm_get_steps();
-	ListIterator i     = list_iterator_create(steps);
-	job_step_t  *s     = NULL;
+	List         steps;
+	ListIterator i;
+	step_loc_t *stepd;
 
-	if (my_cont == 0) {
-		debug("slurm_container_find(%u): process not found",
-		      (uint32_t) req->job_pid);
-		/*
-		 * Check if the job_pid matches the pid of a job step slurmd.
-		 * LCRM gets confused if a session leader process
-		 * (the job step slurmd) is not labelled as a process in the
-		 * job step.
-		 */
-		while ((s = list_next(i))) {
-			if (s->mpid == req->job_pid) {
-				resp.job_id = s->jobid;
-				found = true;
-				break;
-			}
-		}
-	} else {
-		while ((s = list_next(i))) {
-			if (s->cont_id == my_cont) {
-				resp.job_id = s->jobid;
-				found = true;
-				break;
-			}
+	steps = stepd_available(conf->spooldir, "nodename");
+	i = list_iterator_create(steps);
+	while (stepd = list_next(i)) {
+		if (stepd_pid_in_container(*stepd, req->job_pid)
+		    || req->job_pid == stepd_daemon_pid(*stepd)) {
+			resp.job_id = stepd->jobid;
+			found = true;
+			break;
 		}
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);
 
 	if (found) {
+		debug3("_rpc_pid2jid: pid(%u) found in %u",
+		       req->job_pid, resp.job_id);
 		resp_msg.address      = msg->address;
 		resp_msg.msg_type     = RESPONSE_JOB_ID;
 		resp_msg.data         = &resp;
@@ -1162,27 +1148,27 @@ _kill_all_active_steps(void *auth_cred, uint32_t jobid, int sig, bool batch)
 {
 	List steps;
 	ListIterator i;
-	step_loc_t *step;
+	step_loc_t *stepd;
 	int step_cnt  = 0;  
 
 	steps = stepd_available(conf->spooldir, "nodename");
 	i = list_iterator_create(steps);
-	while ((step = list_next(i))) {
-		if (step->jobid != jobid) {
+	while (stepd = list_next(i)) {
+		if (stepd->jobid != jobid) {
 			/* multiple jobs expected on shared nodes */
 			debug3("Step from other job: jobid=%d (this jobid=%d)",
-			      step->jobid, jobid);
+			      stepd->jobid, jobid);
 			continue;
 		}
 
-		if ((step->stepid == NO_VAL) && (!batch))
+		if ((stepd->stepid == NO_VAL) && (!batch))
 			continue;
 
 		step_cnt++;
 
 		debug2("container signal %d to job %u.%u",
-		       sig, jobid, step->stepid);
-		if (stepd_signal_container(*step, auth_cred, sig) < 0)
+		       sig, jobid, stepd->stepid);
+		if (stepd_signal_container(*stepd, auth_cred, sig) < 0)
 			error("kill jid %d: %m", jobid);
 	}
 	list_iterator_destroy(i);

@@ -64,7 +64,8 @@ step_connect(step_loc_t step)
 	if (connect(fd, (struct sockaddr *) &addr, len) < 0) {
 		printf("connect to server socket %s FAILED!\n", name);
 		xfree(name);
-		exit(2);
+		close(fd);
+		return -1;
 	}
 
 	xfree(name);
@@ -79,7 +80,7 @@ stepd_status(step_loc_t step)
 	int status = 0;
 
 	fd = step_connect(step);
-	if (fd = -1)
+	if (fd == -1)
 		return -1;
 
 	write(fd, &req, sizeof(int));
@@ -327,4 +328,48 @@ done2:
 done:
 	regfree(&re);
 	return l;
+}
+
+/*
+ * Return true if the process with process ID "pid" is found in
+ * the proctrack container of the slurmstepd "step".
+ */
+bool
+stepd_pid_in_container(step_loc_t step, pid_t pid)
+{
+	int req = REQUEST_PID_IN_CONTAINER;
+	int fd;
+	bool rc;
+
+	fd = step_connect(step);
+	if (fd == -1)
+		return false;
+
+	write(fd, &req, sizeof(int));
+	write(fd, &pid, sizeof(pid_t));
+
+	/* Receive the return code */
+	read(fd, &rc, sizeof(bool));
+
+	debug("Leaving stepd_pid_in_container");
+	return rc;
+}
+
+/*
+ * Return the process ID of the slurmstepd.
+ */
+pid_t
+stepd_daemon_pid(step_loc_t step)
+{
+	int req	= REQUEST_DAEMON_PID;
+	int fd;
+	pid_t pid;
+
+	fd = step_connect(step);
+	if (fd == -1)
+		return (pid_t)-1;
+	write(fd, &req, sizeof(int));
+	read(fd, &pid, sizeof(pid_t));
+
+	return pid;
 }
