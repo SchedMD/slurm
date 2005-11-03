@@ -36,11 +36,13 @@
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/slurmstepd_init.h"
+#include "src/slurmd/common/stepd_api.h"
 #include "src/slurmd/slurmstepd/mgr.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-static int _init_from_slurmd(char **argv, slurm_addr **_cli,
+static int _init_from_slurmd(int sock, char **argv, slurm_addr **_cli,
 			    slurm_addr **_self, slurm_msg_t **_msg);
+static void _send_ok_to_slurmd(int sock);
 static slurmd_job_t *_step_setup(slurm_addr *cli, slurm_addr *self,
 				 slurm_msg_t *msg);
 static void _step_cleanup(slurmd_job_t *job, int rc);
@@ -64,11 +66,15 @@ main (int argc, char *argv[])
 	if (slurm_proctrack_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;
 
-	_init_from_slurmd(argv, &cli, &self, &msg);
+	_init_from_slurmd(STDIN_FILENO, argv, &cli, &self, &msg);
+	close(STDIN_FILENO);
 
 	job = _step_setup(cli, self, msg);
 
 	msg_thr_create(job); /* sets job->msg_handle and job->msgid */
+
+	_send_ok_to_slurmd(STDOUT_FILENO);
+	close(STDOUT_FILENO);
 
 	rc = job_manager(job); /* blocks until step is complete */
 
@@ -91,11 +97,21 @@ main (int argc, char *argv[])
 	return 0;
 }
 
+static void
+_send_ok_to_slurmd(int sock)
+{
+	int ok = 42;
+	safe_write(sock, &ok, sizeof(int));
+	return;
+rwfail:
+	error("Unable to send \"ok\" to slurmd");
+}
+
+
 static int
-_init_from_slurmd(char **argv,
+_init_from_slurmd(int sock, char **argv,
 		  slurm_addr **_cli, slurm_addr **_self, slurm_msg_t **_msg)
 {
-	int sock = STDIN_FILENO;
 	char *incoming_buffer = NULL;
 	Buf buffer;
 	int step_type;
@@ -106,32 +122,17 @@ _init_from_slurmd(char **argv,
 	slurm_addr *self = NULL;
 	slurm_msg_t *msg = NULL;
 
-	/* receive job type from main slurmd */
-	if((rc = read(sock,&step_type,sizeof(int))) == -1) {
-		error ("slurmd_step: couldn't read step_type: %m",
-		       rc);
-		exit(1);
-	}
-	debug3("got the number %d",step_type);
+	/* receive job type from slurmd */
+	safe_read(sock, &step_type, sizeof(int));
+	debug3("step_type = %d", step_type);
 	
-	/* receive len of packed conf from main slurmd */
-	if((rc = read(sock, &len, sizeof(int))) == -1) {
-		fatal("slurmd_step: couldn't read len: %m",
-		      rc);
-	}
-	
-	/* receive packed conf from main slurmd */
+	/* receive conf from slurmd */
+	safe_read(sock, &len, sizeof(int));
 	incoming_buffer = xmalloc(len);
-	if((rc = read(sock, incoming_buffer, 
-		      sizeof(char)*len)) == -1) {
-		fatal("slurmd_step: couldn't read launch_req: %m",
-		      rc);
-	}
+	safe_read(sock, incoming_buffer, len);
 	buffer = create_buf(incoming_buffer,len);
-	if(unpack_slurmd_conf_lite_no_alloc(conf, buffer)
-	   == SLURM_ERROR) {
-		fatal("slurmd_step: problem with unpack of "
-		       "slurmd_conf");
+	if(unpack_slurmd_conf_lite_no_alloc(conf, buffer) == SLURM_ERROR) {
+		fatal("slurmd_step: problem with unpack of slurmd_conf");
 	}
 	free_buf(buffer);
 				
@@ -159,49 +160,24 @@ _init_from_slurmd(char **argv,
 	g_slurmd_jobacct_init(conf->cf.job_acct_parameters);
 	switch_g_slurmd_step_init();
 
-	/* receive len of packed cli from main slurmd */
-	if((rc = read(sock, &len, sizeof(int))) == -1) {
-		error ("slurmd_step: couldn't read len: %m",
-		       rc);
-		exit(1);
-	}
-
-	/* receive packed cli from main slurmd */
+	/* receive cli from slurmd */
+	safe_read(sock, &len, sizeof(int));
 	incoming_buffer = xmalloc(len);
-	if((rc = read(sock, incoming_buffer, 
-		      sizeof(char)*len)) == -1) {
-		error ("slurmd_step: couldn't read launch_req: %m",
-		       rc);
-		exit(1);
-	}
-
+	safe_read(sock, incoming_buffer, len);
 	buffer = create_buf(incoming_buffer,len);	
 	cli = xmalloc(sizeof(slurm_addr));
-	if(slurm_unpack_slurm_addr_no_alloc(cli, buffer)
-	   == SLURM_ERROR) {
-		fatal("slurmd_step: problem with unpack of "
-		      "slurmd_conf");
+	if(slurm_unpack_slurm_addr_no_alloc(cli, buffer) == SLURM_ERROR) {
+		fatal("slurmd_step: problem with unpack of slurmd_conf");
 	}
 	free_buf(buffer);
 
-	/* receive len of packed self from main slurmd */
-	if((rc = read(sock, &len, sizeof(int))) == -1) {
-		error ("slurmd_step: couldn't read len: %m",
-		       rc);
-		exit(1);
-	}
-	
+	/* receive self from slurmd */
+	safe_read(sock, &len, sizeof(int));
 	if(len > 0) {
 		/* receive packed self from main slurmd */
 		incoming_buffer = xmalloc(len);
-		if((rc = read(sock, incoming_buffer, 
-			      sizeof(char)*len)) == -1) {
-			error ("slurmd_step: couldn't read launch_req: %m",
-			       rc);
-			exit(1);
-		}
+		safe_read(sock, incoming_buffer, len);
 		buffer = create_buf(incoming_buffer,len);
-		
 		self = xmalloc(sizeof(slurm_addr));
 		if(slurm_unpack_slurm_addr_no_alloc(self, buffer)
 		   == SLURM_ERROR) {
@@ -211,20 +187,10 @@ _init_from_slurmd(char **argv,
 		free_buf(buffer);
 	}
 		
-	/* receive len of packed req from main slurmd */
-	if((rc = read(sock, &len, sizeof(int))) == -1) {
-		fatal("slurmd_step: couldn't read len: %m",
-		      rc);
-	}
-
-	/* receive len of packed req from main slurmd */
+	/* receive req from slurmd */
+	safe_read(sock, &len, sizeof(int));
 	incoming_buffer = xmalloc(len);
-	if((rc = read(sock, incoming_buffer, 
-		      sizeof(char)*len)) == -1) {
-		error ("slurmd_step: couldn't read launch_req: %m",
-		       rc);
-		exit(1);
-	}
+	safe_read(sock, incoming_buffer, len);
 	buffer = create_buf(incoming_buffer,len);
 
 	msg = xmalloc(sizeof(slurm_msg_t));
@@ -249,6 +215,12 @@ _init_from_slurmd(char **argv,
 	*_cli = cli;
 	*_self = self;
 	*_msg = msg;
+
+	return 1;
+
+rwfail:
+	fatal("Error reading initialization data from slurmd");
+	exit(1);
 }
 
 static slurmd_job_t *
