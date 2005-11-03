@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-213976">
-<meta name="LLNLRandRdate" content="1 November 2005">
+<meta name="LLNLRandRdate" content="2 November 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -301,7 +301,7 @@ even those allocated to other users.</p>
 <h3>Configuration</h3>
 <p>The SLURM configuration file includes a wide variety of parameters. 
 This configuration file must be available on each node of the cluster. A full
-description of the parameters is included in the slurm.conf man page. Rather than 
+description of the parameters is included in the <i>slurm.conf</i> man page. Rather than 
 duplicate that information, a minimal sample configuration file is shown below. 
 Your slurm.conf file should define at least the configuration parameters defined 
 in this sample and likely additional ones. Any text 
@@ -327,7 +327,9 @@ space (RealMemory, megabytes), and temporary disk space (TmpDisk, megabytes) tha
 a node should have to be considered available for use. Any node lacking these 
 minimum configuration values will be considered DOWN and not scheduled.
 Note that a more extensive sample configuration file is provided in
-<b>etc/slurm.conf.example</b>.</p>
+<b>etc/slurm.conf.example</b>. We also have a web-based 
+<a href="configurator.html">configuration tool</a> which can 
+be used to build a simple configuration file.</p>
 <pre>
 # 
 # Sample /etc/slurm.conf for mcr.llnl.gov
@@ -574,7 +576,7 @@ in the NEWS file.
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-213976<br>
-Last modified 1 November 2005</p></td>
+Last modified 2 November 2005</p></td>
 </tr>
 </table>
 </td>

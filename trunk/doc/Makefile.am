@@ -11,6 +11,7 @@ html_DATA = \
 	html/bluegene.html \
 	html/checkpoint_plugins.html \
 	html/coding_style.pdf \
+	html/configurator.html \
 	html/cons_res.html \
 	html/documentation.html \
 	html/download.html \
