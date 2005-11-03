@@ -26,7 +26,7 @@ $Id$
 <HTML>
 <HEAD><TITLE>SLURM System Configuration</TITLE>
 <SCRIPT type="text/javascript">
-
+<!--
 function get_field(name,form)
 {
   if (form.value)
@@ -126,19 +126,16 @@ function displayfile()
    " Nodes=" + document.config.node_name.value + 
    " Default=YES"+
    " MaxTime=" + document.config.max_time.value +
-   " State=UP <br>" +
-   "<br>"
+   " State=UP"
     
     document.write(printme);
                        
 }
 
-
+-->
 </SCRIPT>
 </HEAD>
 <BODY>
-<!-- <FORM ACTION="http://www.cs.tut.fi/cgi-bin/run/~jkorpela/echo.cgi">
--->
 <FORM name=config>
 <H1>SLURM Configration</H1>
 <P>This form can be used to create a SLURM configuration file with 
@@ -417,7 +414,7 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 
 <BR> 
 <BR>
-<input type=submit value="Submit" name="send" onClick="displayfile()">
+<input type=submit value="Submit" onClick="javascript:displayfile()">
 <input type=reset value="Reset Form">
 <P>
 </FORM>
