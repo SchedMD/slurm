@@ -72,8 +72,6 @@ static bool _slurm_authorized_user(uid_t uid);
 static bool _job_still_running(uint32_t job_id);
 static int  _kill_all_active_steps(void *auth_cred, uint32_t jobid,
 				   int sig, bool batch);
-static int  _launch_tasks(launch_tasks_request_msg_t *, slurm_addr *,
-			slurm_addr *);
 static void _rpc_launch_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_spawn_task(slurm_msg_t *, slurm_addr *);
 static void _rpc_batch_job(slurm_msg_t *, slurm_addr *);
@@ -90,8 +88,6 @@ static void _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *);
 static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
 static int  _run_prolog(uint32_t jobid, uid_t uid, char *bgl_part_id);
 static int  _run_epilog(uint32_t jobid, uid_t uid, char *bgl_part_id);
-static int  _spawn_task(spawn_task_request_msg_t *, slurm_addr *,
-			slurm_addr *);
 
 static bool _pause_for_job_completion(void *auth_cred, uint32_t jobid,
 				      int maxtime);
@@ -405,25 +401,6 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 }
 
 static int
-_launch_batch_job(batch_job_launch_msg_t *req, slurm_addr *cli)
-{	
-	return _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, NULL);
-}
-
-static int
-_launch_tasks(launch_tasks_request_msg_t *req, slurm_addr *cli,
-	      slurm_addr *self)
-{
-	return _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, self);
-}
-
-static int
-_spawn_task(spawn_task_request_msg_t *req, slurm_addr *cli, slurm_addr *self)
-{
-	return _forkexec_slurmstepd(SPAWN_TASKS, (void *)req, cli, self);
-}
-
-static int
 _check_job_credential(slurm_cred_t cred, uint32_t jobid, 
 		      uint32_t stepid, uid_t uid, int tasks_to_launch)
 {
@@ -577,8 +554,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 
 	adlen = sizeof(self);
 	_slurm_getsockname(msg->conn_fd, (struct sockaddr *)&self, &adlen);
-	if (_launch_tasks(req, cli, &self) < 0)
-		errnum = errno;
+	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, &self);
 
     done:
 	if (slurm_send_rc_msg(msg, errnum) < 0) {
@@ -660,8 +636,7 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 
 	adlen = sizeof(self);
 	_slurm_getsockname(msg->conn_fd, (struct sockaddr *)&self, &adlen);
-	if (_spawn_task(req, cli, &self) < 0)
-		errnum = errno;
+	errnum = _forkexec_slurmstepd(SPAWN_TASKS, (void *)req, cli, &self);
 
     done:
 	if (slurm_send_rc_msg(msg, errnum) < 0) {
@@ -781,7 +756,7 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	else
 		info("Launching batch job %u.%u for UID %d",
 			req->job_id, req->step_id, req->uid);
-	rc = _launch_batch_job(req, cli);
+	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, NULL);
 	slurm_mutex_unlock(&launch_mutex);
 
     done:
