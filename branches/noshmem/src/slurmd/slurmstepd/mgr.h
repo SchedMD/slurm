@@ -35,19 +35,32 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-/* Spawn a task / job step on this node
+/*
+ * Initialize a slurmd_job_t structure for a spawn task
  */
-int mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *client,
-		   slurm_addr *self);
+slurmd_job_t *mgr_spawn_task_setup(spawn_task_request_msg_t *msg,
+				   slurm_addr *client, slurm_addr *self);
 
-/* Launch a job step on this node
+/*
+ * Initialize a slurmd_job_t structure for a launch tasks
  */
-int mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *client,
-		     slurm_addr *self);
+slurmd_job_t *mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg,
+				     slurm_addr *client, slurm_addr *self);
 
 /* 
- * Launch batch script on this node
+ * Initialize a slurmd_job_t structure for a batch job
  */
-int mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *client);
+slurmd_job_t *mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg,
+					 slurm_addr *client);
+
+/*
+ * Finalize a batch job.
+ */
+void mgr_launch_batch_job_cleanup(slurmd_job_t *job, int rc);
+
+/*
+ * Launch and manage the tasks in a job step.
+ */
+int job_manager(slurmd_job_t *job);
 
 #endif

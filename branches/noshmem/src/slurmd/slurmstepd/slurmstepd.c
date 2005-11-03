@@ -37,11 +37,14 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/slurmstepd/mgr.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-static int init_from_slurmd(char **argv, slurm_addr **_cli,
+static int _init_from_slurmd(char **argv, slurm_addr **_cli,
 			    slurm_addr **_self, slurm_msg_t **_msg);
-static int handle_launch_message(slurm_addr *cli, slurm_addr *self,
+static slurmd_job_t *_step_setup(slurm_addr *cli, slurm_addr *self,
 				 slurm_msg_t *msg);
+static void _step_cleanup(slurmd_job_t *job, int rc);
+
 
 int 
 main (int argc, char *argv[])
@@ -49,6 +52,8 @@ main (int argc, char *argv[])
 	slurm_addr *cli;
 	slurm_addr *self;
 	slurm_msg_t *msg;
+	slurmd_job_t *job;
+	int rc;
 
 	conf = xmalloc(sizeof(*conf));
 	conf->argv = &argv;
@@ -59,9 +64,19 @@ main (int argc, char *argv[])
 	if (slurm_proctrack_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;
 
-	init_from_slurmd(argv, &cli, &self, &msg);
+	_init_from_slurmd(argv, &cli, &self, &msg);
 
-	handle_launch_message(cli, self, msg);
+	job = _step_setup(cli, self, msg);
+
+	msg_thr_create(job); /* sets job->msg_handle and job->msgid */
+
+	rc = job_manager(job); /* blocks until step is complete */
+
+	/* signal the message thread to shutdown, and wait for it */
+	eio_signal_shutdown(job->msg_handle);
+	pthread_join(job->msgid, NULL);
+
+	_step_cleanup(job, rc);
 
 	xfree(cli);
 	xfree(self);
@@ -77,8 +92,8 @@ main (int argc, char *argv[])
 }
 
 static int
-init_from_slurmd(char **argv,
-		 slurm_addr **_cli, slurm_addr **_self, slurm_msg_t **_msg)
+_init_from_slurmd(char **argv,
+		  slurm_addr **_cli, slurm_addr **_self, slurm_msg_t **_msg)
 {
 	int sock = STDIN_FILENO;
 	char *incoming_buffer = NULL;
@@ -236,29 +251,41 @@ init_from_slurmd(char **argv,
 	*_msg = msg;
 }
 
-static int
-handle_launch_message(slurm_addr *cli, slurm_addr *self, slurm_msg_t *msg)
+static slurmd_job_t *
+_step_setup(slurm_addr *cli, slurm_addr *self, slurm_msg_t *msg)
 {
-	int rc;
+	slurmd_job_t *job;
 
 	switch(msg->msg_type) {
 	case REQUEST_BATCH_JOB_LAUNCH:
-		debug2("running a batch_job");
-		rc = mgr_launch_batch_job(msg->data, cli);
+		debug2("setup for a batch_job");
+		job = mgr_launch_batch_job_setup(msg->data, cli);
 		slurm_free_job_launch_msg(msg->data);
 		break;
 	case REQUEST_LAUNCH_TASKS:
-		debug2("running a launch_task");
-		rc = mgr_launch_tasks(msg->data, cli, self);
+		debug2("setup for a launch_task");
+		job = mgr_launch_tasks_setup(msg->data, cli, self);
 		slurm_free_launch_tasks_request_msg(msg->data);
 		break;
 	case REQUEST_SPAWN_TASK:
-		debug2("running a spawn_task");
-		rc = mgr_spawn_task(msg->data, cli, self);
+		debug2("setup for a spawn_task");
+		job = mgr_spawn_task_setup(msg->data, cli, self);
 		slurm_free_spawn_task_request_msg(msg->data);
 		break;
 	default:
 		fatal("handle_launch_message: Unrecognized launch/spawn RPC");
 		break;
 	}
+	job->jmgr_pid = getpid();
+
+	return job;
+}
+
+static void
+_step_cleanup(slurmd_job_t *job, int rc)
+{
+	if (job->batch)
+		mgr_launch_batch_job_cleanup(job, rc);
+	else
+		job_destroy(job);
 }

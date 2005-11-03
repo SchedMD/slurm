@@ -115,7 +115,6 @@ static int mgr_sigarray[] = {
  */
 static void _send_launch_failure(launch_tasks_request_msg_t *, 
                                  slurm_addr *, int);
-static int  _job_mgr(slurmd_job_t *job);
 static int  _fork_all_tasks(slurmd_job_t *job);
 static int  _become_user(slurmd_job_t *job);
 static void _set_job_log_prefix(slurmd_job_t *job);
@@ -161,15 +160,15 @@ static void _hup_handler(int sig)
 /*
  * Launch an job step on the current node
  */
-extern int
-mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli,
-		 slurm_addr *self)
+extern slurmd_job_t *
+mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr *cli,
+		       slurm_addr *self)
 {
 	slurmd_job_t *job = NULL;
 	
 	if (!(job = job_create(msg, cli))) {
 		_send_launch_failure (msg, cli, errno);
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	_set_job_log_prefix(job);
@@ -179,26 +178,45 @@ mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli,
 	job->envtp->cli = cli;
 	job->envtp->self = self;
 	
-	if (_job_mgr(job) < 0) 
-		return SLURM_ERROR;
-	
-		
-	job_destroy(job);
-
-	return SLURM_SUCCESS;
+	return job;
 }
 
+static void
+_batch_cleanup(slurmd_job_t *job, int level, int status)
+{
+	int rc = 0;
+
+	switch(level) {
+	default:
+	case 2:
+		if (job->argv[0] && (unlink(job->argv[0]) < 0))
+			error("unlink(%s): %m", job->argv[0]);
+        case 1:
+		if (job->batchdir && (rmdir(job->batchdir) < 0))
+			error("rmdir(%s): %m",  job->batchdir);
+		xfree(job->batchdir);
+	case 0:
+		if (job->stepid == NO_VAL) 
+			verbose("job %u completed with slurm_rc = %d, "
+				"job_rc = %d", 
+				job->jobid, rc, status);
+		else
+			verbose("job %u.%u completed with slurm_rc = %d, "
+				"job_rc = %d", 
+				job->jobid, job->stepid, rc, status);
+		_complete_job(job->jobid, job->stepid, rc, status);
+
+	}
+}
 /*
  * Launch a batch job script on the current node
  */
-int
-mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
+slurmd_job_t *
+mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr *cli)
 {
-	int           rc     = 0;
 	int           status = 0;
 	uint32_t      jobid  = msg->job_id;
 	slurmd_job_t *job = NULL;
-	char         *batchdir = NULL;
 	char       buf[1024];
 	hostlist_t hl = hostlist_create(msg->nodes);
 	if (!hl)
@@ -211,20 +229,25 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 		 *  Set "job" status to returned errno and cleanup job.
 		 */
 		status = errno;
-		goto cleanup;
+		_batch_cleanup(job, 0, status);
+		return NULL;
 	}
 
 	_set_job_log_prefix(job);
 
 	_setargs(job);
 
-	if ((batchdir = _make_batch_dir(job)) == NULL) 
-		goto cleanup1;
+	if ((job->batchdir = _make_batch_dir(job)) == NULL) {
+		_batch_cleanup(job, 1, status);
+		return NULL;
+	}
 
 	xfree(job->argv[0]);
 
-	if ((job->argv[0] = _make_batch_script(msg, batchdir)) == NULL)
-		goto cleanup2;
+	if ((job->argv[0] = _make_batch_script(msg, job->batchdir)) == NULL) {
+		_batch_cleanup(job, 2, status);
+		return NULL;
+	}
 	
 	job->envtp->nprocs = msg->nprocs;
 	job->envtp->select_jobinfo = msg->select_jobinfo;
@@ -233,37 +256,26 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	job->envtp->nodelist = buf;
 	job->envtp->task_count = _sprint_task_cnt(msg);
 	
-	status = _job_mgr(job);
-	
-   cleanup2:
-	if (job->argv[0] && (unlink(job->argv[0]) < 0))
-		error("unlink(%s): %m", job->argv[0]);
-   cleanup1:
-	if (batchdir && (rmdir(batchdir) < 0))
-		error("rmdir(%s): %m",  batchdir);
-	xfree(batchdir);
-   cleanup :
-	if (job->stepid == NO_VAL) 
-		verbose("job %u completed with slurm_rc = %d, job_rc = %d", 
-			jobid, rc, status);
-	else
-		verbose("job %u.%u completed with slurm_rc = %d, job_rc = %d", 
-			jobid, job->stepid, rc, status);
-	_complete_job(jobid, job->stepid, rc, status);
-	return 0; 
+	return job;
+}
+
+void
+mgr_launch_batch_job_cleanup(slurmd_job_t *job, int rc)
+{
+	_batch_cleanup(job, 2, rc);
 }
 
 /*
  * Spawn a task / job step on the current node
  */
-int
-mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *cli,
-	       slurm_addr *self)
+slurmd_job_t *
+mgr_spawn_task_setup(spawn_task_request_msg_t *msg, slurm_addr *cli,
+		     slurm_addr *self)
 {
 	slurmd_job_t *job = NULL;
 	
 	if (!(job = job_spawn_create(msg, cli)))
-		return SLURM_ERROR;
+		return NULL;
 
 	job->spawn_task = true;
 	_set_job_log_prefix(job);
@@ -273,12 +285,7 @@ mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *cli,
 	job->envtp->cli = cli;
 	job->envtp->self = self;
 	
-	if (_job_mgr(job) < 0) 
-		return SLURM_ERROR;
-	
-	job_destroy(job);
-
-	return SLURM_SUCCESS;
+	return job;
 }
 
 static void
@@ -440,19 +447,16 @@ _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, int status)
  * Returns errno if job startup failed.
  *
  */
-static int 
-_job_mgr(slurmd_job_t *job)
+int 
+job_manager(slurmd_job_t *job)
 {
 	int rc = 0;
 	bool io_initialized = false;
 	int fd;
 
-	job->jmgr_pid = getpid();
-	debug3("Entered job_mgr for %u.%u pid=%lu",
+	debug3("Entered job_manager for %u.%u pid=%lu",
 	       job->jobid, job->stepid, (unsigned long) job->jmgr_pid);
 	
-	msg_thr_create(job);
-
 	if (!job->batch && 
 	    (interconnect_preinit(job->switch_job) < 0)) {
 		rc = ESLURM_INTERCONNECT_FAILURE;
@@ -535,14 +539,12 @@ _job_mgr(slurmd_job_t *job)
 	g_slurmd_jobacct_jobstep_terminated(job);
 
     fail1:
-	eio_signal_shutdown(job->msg_handle);
-	pthread_join(job->msgid, NULL);
     fail0:
 	/* If interactive job startup was abnormal, 
 	 * be sure to notify client.
 	 */
 	if (rc != 0) {
-		error("_job_mgr exiting abnormally, rc = %d", rc);
+		error("job_manager exiting abnormally, rc = %d", rc);
 		_send_launch_resp(job, rc);
 	}
 

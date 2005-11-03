@@ -1151,7 +1151,7 @@ _job_still_running(uint32_t job_id)
 {
 	bool         retval = false;
 	List         steps;
-	ListIterator i     = list_iterator_create(steps);
+	ListIterator i;
 	step_loc_t  *s     = NULL;   
 
 	steps = stepd_available(conf->spooldir, "nodename");
