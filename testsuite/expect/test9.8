@@ -121,8 +121,26 @@ expect {
 		wait
 	}
 }
-# There could be hundreds of job steps, we don't want to see 
+#
+# There could be hundreds of job steps, we don't want to see
 # the details, but want to make sure that we did start a bunch
+#
+# Determine if this is AIX (for task count, federation switch 
+# prevents each node from running more than 16 tasks)
+#
+spawn $bin_uname
+set desired_tasks [expr $task_cnt * 2 / 3]
+expect {
+	-re "AIX" {
+		if {$desired_tasks > 15} {
+			set desired_tasks 15
+		}
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
 log_user 0
 set matches 0
 spawn $squeue --steps --user $user_name
@@ -136,7 +154,6 @@ expect {
 	}
 }
 log_user 1
-set desired_tasks [expr $task_cnt * 2 / 3] 
 if {$matches < $desired_tasks} {
 	send_user "\nFAILURE: only started $matches job steps\n"
 	send_user "  We expected at least $desired_tasks and possibly hundreds\n"
