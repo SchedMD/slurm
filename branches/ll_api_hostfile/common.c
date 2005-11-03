@@ -240,8 +240,7 @@ extern int build_step_ctx(slurm_elem_t *job_elem, slurm_elem_t *step_elem)
 	
 	free(job_init_data->job_alloc_resp->node_list);
 	job_init_data->job_alloc_resp->node_list = strdup(req->node_list);
-	printf("nodelist %s\n", job_init_data->job_alloc_resp->node_list);
-		
+			
 	if (slurm_step_ctx_get(step_data->ctx, SLURM_STEP_CTX_STEPID, 
 			&step_id) == SLURM_SUCCESS) {
 		char *step_str = malloc(32);
