@@ -52,6 +52,7 @@
 #include "src/srun/fname.h"
 #include "src/srun/attach.h"
 #include "src/srun/io.h"
+#include "src/srun/msg.h"
 
 
 /*
@@ -135,34 +136,6 @@ _dist_cyclic(srun_job_t *job)
 	}
 }
 
-/*
- * Create an srun job structure from a resource allocation response msg
- */
-srun_job_t *
-job_create_allocation(resource_allocation_response_msg_t *resp)
-{
-	srun_job_t *job;
-	allocation_info_t *i = xmalloc(sizeof(*i));
-
-	i->nodelist       = _normalize_hostlist(resp->node_list);
-	i->nnodes	  = resp->node_cnt;
-	i->jobid          = resp->job_id;
-	i->stepid         = NO_VAL;
-	i->num_cpu_groups = resp->num_cpu_groups;
-	i->cpus_per_node  = resp->cpus_per_node;
-	i->cpu_count_reps = resp->cpu_count_reps;
-	i->addrs          = resp->node_addr;
-	i->select_jobinfo = select_g_copy_jobinfo(resp->select_jobinfo);
-
-	job = _job_create_internal(i);
-
-	xfree(i->nodelist);
-	xfree(i);
-
-	return (job);
-}
-
-
 /* 
  * Create an srun job structure w/out an allocation response msg.
  * (i.e. use the command line options)
@@ -220,6 +193,232 @@ job_create_noalloc(void)
 
 }
 
+/*
+ * Create an srun job structure from a resource allocation response msg
+ */
+extern srun_job_t *
+job_create_allocation(resource_allocation_response_msg_t *resp)
+{
+	srun_job_t *job;
+	allocation_info_t *i = xmalloc(sizeof(*i));
+
+	i->nodelist       = _normalize_hostlist(resp->node_list);
+	i->nnodes	  = resp->node_cnt;
+	i->jobid          = resp->job_id;
+	i->stepid         = NO_VAL;
+	i->num_cpu_groups = resp->num_cpu_groups;
+	i->cpus_per_node  = resp->cpus_per_node;
+	i->cpu_count_reps = resp->cpu_count_reps;
+	i->addrs          = resp->node_addr;
+	i->select_jobinfo = select_g_copy_jobinfo(resp->select_jobinfo);
+
+	job = _job_create_internal(i);
+
+	xfree(i->nodelist);
+	xfree(i);
+
+	return (job);
+}
+
+/*
+ * Create an srun job structure from a resource allocation response msg
+ */
+extern srun_job_t *
+job_create_structure(resource_allocation_response_msg_t *resp)
+{
+	srun_job_t *job = xmalloc(sizeof(srun_job_t));
+	hostlist_t hl;
+	int i, cpu_inx, cpu_cnt;
+
+	slurm_mutex_init(&job->state_mutex);
+	pthread_cond_init(&job->state_cond, NULL);
+	job->state = SRUN_JOB_INIT;
+
+	job->nhosts   = resp->node_cnt;
+	job->signaled = false;
+	job->rc       = -1;
+	job->nodelist = xstrdup(resp->node_list);
+	hl = hostlist_create(job->nodelist);
+#ifdef HAVE_FRONT_END	/* Limited job step support */
+	/* All jobs execute through front-end on Blue Gene/L.
+	 * Normally we would not permit execution of job steps, 
+	 * but can fake it by just allocating all tasks to 
+	 * one of the allocated nodes. */
+	job->nhosts    = 1;
+	opt.overcommit = true;
+#else
+	job->nhosts = hostlist_count(hl);
+#endif
+
+ 	job->select_jobinfo = select_g_copy_jobinfo(resp->select_jobinfo);
+	job->jobid   = resp->job_id;
+	job->stepid  = NO_VAL;
+	job->old_job = false;
+	job->removed = false;
+
+	/* 
+	 *  Initialize Launch and Exit timeout values
+	 */
+	job->ltimeout = 0;
+	job->etimeout = 0;
+
+	job->slurmd_addr = xmalloc(job->nhosts * sizeof(slurm_addr));
+	if (resp->node_addr)
+		memcpy( job->slurmd_addr, resp->node_addr, 
+			sizeof(slurm_addr)*job->nhosts);
+
+	job->host  = (char **) xmalloc(job->nhosts * sizeof(char *));
+	job->cpus  = (int *)   xmalloc(job->nhosts * sizeof(int) );
+
+	/* Compute number of file descriptors / Ports needed for Job 
+	 * control info server
+	 */
+	job->njfds = _estimate_nports(opt.nprocs, 48);
+	job->jfd   = (slurm_fd *)   xmalloc(job->njfds * sizeof(slurm_fd));
+	job->jaddr = (slurm_addr *) xmalloc(job->njfds * sizeof(slurm_addr));
+
+	debug3("njfds = %d", job->njfds);
+
+	/* Compute number of listening sockets needed to allow
+	 * all of the slurmds to establish IO streams with srun, without
+	 * overstressing the TCP/IP backoff/retry algorithm
+	 */
+	job->num_listen = _estimate_nports(opt.nprocs, 64);
+	job->listensock = (int *) xmalloc(job->num_listen * sizeof(int));
+	job->listenport = (int *) xmalloc(job->num_listen * sizeof(int));
+
+	job->eio = eio_handle_create();
+	job->ioservers_ready = 0;
+	/* "nhosts" number of IO protocol sockets */
+	job->ioserver = (eio_obj_t **)xmalloc(job->nhosts*sizeof(eio_obj_t *));
+	job->free_incoming = list_create(NULL); /* FIXME! Needs destructor */
+	for (i = 0; i < STDIO_MAX_FREE_BUF; i++) {
+		list_enqueue(job->free_incoming, alloc_io_buf());
+	}
+	job->free_outgoing = list_create(NULL); /* FIXME! Needs destructor */
+	for (i = 0; i < STDIO_MAX_FREE_BUF; i++) {
+		list_enqueue(job->free_outgoing, alloc_io_buf());
+	}
+	
+	/* nhost host states */
+	job->host_state =  xmalloc(job->nhosts * sizeof(srun_host_state_t));
+
+	/* ntask task states and statii*/
+	job->task_state  =  xmalloc(opt.nprocs * sizeof(srun_task_state_t));
+	job->tstatus	 =  xmalloc(opt.nprocs * sizeof(int));
+
+	slurm_mutex_init(&job->task_mutex);
+
+	printf("hey I am here\n");
+	job_update_io_fnames(job);
+	
+	hostlist_destroy(hl);
+	printf("hey I am here\n");
+	return (job);
+	
+	for(i = 0; i < job->nhosts; i++) {
+		job->host[i]  = hostlist_shift(hl);
+
+		job->cpus[i] = resp->cpus_per_node[cpu_inx];
+		if ((++cpu_cnt) >= resp->cpu_count_reps[cpu_inx]) {
+			/* move to next record */
+			cpu_inx++;
+			cpu_cnt = 0;
+		}
+	}
+
+#ifdef HAVE_FRONT_END
+		job->ntask = (int *) xmalloc(sizeof(int *));
+		job->ntask[0] = opt.nprocs;
+#else
+		job->ntask = distribute_tasks(job->nodelist, 
+					      resp->num_cpu_groups,
+					      resp->cpus_per_node, 
+					      resp->cpu_count_reps,
+					      job->nodelist, 
+					      opt.nprocs);
+#endif
+
+	job->ntasks = 0;
+	for (i = 0; i < job->nhosts; i++) {
+		debug3("distribute_tasks placed %d tasks on host %d",
+		       job->ntask[i], i);
+		job->ntasks += job->ntask[i];
+	}
+
+	/* Build task id list for each host */
+	job->tids   = xmalloc(job->nhosts * sizeof(uint32_t *));
+	job->hostid = xmalloc(opt.nprocs  * sizeof(uint32_t));
+	for (i = 0; i < job->nhosts; i++)
+		job->tids[i] = xmalloc(job->ntask[i] * sizeof(uint32_t));
+
+	if (opt.distribution == SLURM_DIST_UNKNOWN) {
+		if (opt.nprocs <= job->nhosts)
+			opt.distribution = SLURM_DIST_CYCLIC;
+		else
+			opt.distribution = SLURM_DIST_BLOCK;
+	}
+
+	if (opt.distribution == SLURM_DIST_BLOCK)
+		_dist_block(job);
+	else
+		_dist_cyclic(job);
+
+	job_update_io_fnames(job);
+
+	hostlist_destroy(hl);
+
+	return (job);
+}
+
+extern int build_step_ctx(srun_job_t *job)
+{
+	resource_allocation_response_msg_t *resp = job->alloc_resp;
+	job_step_create_request_msg_t  *r  = NULL;
+	r = xmalloc(sizeof(job_step_create_request_msg_t));
+	if (r == NULL) {
+		error("calloc error");
+		return -1;
+	}
+	r->job_id     = resp->job_id;
+	r->user_id    = opt.uid;
+	r->node_count = resp->node_cnt;
+	/* Processor count not relevant to poe */
+	r->cpu_count  = resp->node_cnt;
+	r->num_tasks  = opt.nprocs;
+	r->node_list  = resp->node_list;
+	switch (opt.distribution) {
+	case SLURM_DIST_UNKNOWN:
+		r->task_dist = (opt.nprocs <= resp->node_cnt) 
+			? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
+		break;
+	case SLURM_DIST_CYCLIC:
+		r->task_dist = SLURM_DIST_CYCLIC;
+		break;
+	case SLURM_DIST_HOSTFILE:
+		r->task_dist = SLURM_DIST_HOSTFILE;
+		break;
+	default: /* (opt.distribution == SLURM_DIST_BLOCK) */
+		r->task_dist = SLURM_DIST_BLOCK;
+		break;
+	}
+	
+	r->network = opt.network;
+	if (slurmctld_comm_addr.port) {
+		r->host = strdup(slurmctld_comm_addr.hostname);
+		r->port = slurmctld_comm_addr.port;
+	}
+	job->step_ctx = slurm_step_ctx_create(r);
+	if (job->step_ctx == NULL) {
+		error("slurm_step_ctx_create: %s", 
+		      slurm_strerror(slurm_get_errno()));
+		return -1;
+	}
+	
+	xfree(job->alloc_resp->node_list);
+	job->alloc_resp->node_list = xstrdup(r->node_list);	
+	slurm_free_job_step_create_request_msg(r);	
+}
 
 void
 update_job_state(srun_job_t *job, srun_job_state_t state)
@@ -544,14 +743,14 @@ _job_create_internal(allocation_info_t *info)
 	for (i = 0; i < job->nhosts; i++)
 		job->tids[i] = xmalloc(job->ntask[i] * sizeof(uint32_t));
 
-	if (opt.distribution == SRUN_DIST_UNKNOWN) {
+	if (opt.distribution == SLURM_DIST_UNKNOWN) {
 		if (opt.nprocs <= job->nhosts)
-			opt.distribution = SRUN_DIST_CYCLIC;
+			opt.distribution = SLURM_DIST_CYCLIC;
 		else
-			opt.distribution = SRUN_DIST_BLOCK;
+			opt.distribution = SLURM_DIST_BLOCK;
 	}
 
-	if (opt.distribution == SRUN_DIST_BLOCK)
+	if (opt.distribution == SLURM_DIST_BLOCK)
 		_dist_block(job);
 	else
 		_dist_cyclic(job);
@@ -1025,3 +1224,4 @@ _normalize_hostlist(const char *hostlist)
 
 	return xstrdup(buf);
 }
+

@@ -115,7 +115,7 @@ static int   _run_srun_script (srun_job_t *job, char *script);
 int srun(int ac, char **av)
 {
 	allocation_resp *resp;
-	srun_job_t *job;
+	srun_job_t *job = NULL;
 	char *task_cnt, *bgl_part_id = NULL;
 	int exitcode = 0;
 	env_t *env = xmalloc(sizeof(env_t));
@@ -223,19 +223,24 @@ int srun(int ac, char **av)
 		exit (0);
 
 	} else {
+		printf("hey\n");
 		sig_setup_sigmask();
 		if ( !(resp = allocate_nodes()) ) 
 			exit(1);
 		if (_verbose)
 			_print_job_information(resp);
-
-		job = job_create_allocation(resp); 
+		job = job_create_structure(resp); 
+	
+		job->alloc_resp = resp;
+		build_step_ctx(job);
+				
+		/*  job = job_create_allocation(resp);  */
 		
-		if (create_job_step(job) < 0) {
-			srun_job_destroy(job, 0);
-			exit(1);
-		}
-		slurm_free_resource_allocation_response_msg(resp);
+/*  		if (create_job_step(job) < 0) { */
+/*  			srun_job_destroy(job, 0); */
+/*  			exit(1); */
+/*  		} */
+/*  		slurm_free_resource_allocation_response_msg(resp); */
 	}
 
 	/*
@@ -281,9 +286,16 @@ int srun(int ac, char **av)
 	if (sig_thr_create(job) < 0)
 		job_fatal(job, "Unable to create signals thread: %m");
 
-	if (launch_thr_create(job) < 0)
-		job_fatal(job, "Unable to create launch thread: %m");
-
+	/*  if (launch_thr_create(job) < 0) */
+/*  		job_fatal(job, "Unable to create launch thread: %m"); */
+	update_job_state(job, SRUN_JOB_LAUNCHING);
+	if (slurm_launch(job->step_ctx, job->task_mutex, job->forked_msg,
+			 job->listenport, job->jaddr, job->njfds,
+			 job->num_listen)) {
+		fatal("slurm_launch: %s", 
+			slurm_strerror(slurm_get_errno()));
+	}
+	update_job_state(job, SRUN_JOB_STARTING);
 	/* wait for job to terminate 
 	 */
 	slurm_mutex_lock(&job->state_mutex);
@@ -370,7 +382,7 @@ _task_count_string (srun_job_t *job)
 static void
 _switch_standalone(srun_job_t *job)
 {
-	int cyclic = (opt.distribution == SRUN_DIST_CYCLIC);
+	int cyclic = (opt.distribution == SLURM_DIST_CYCLIC);
 
 	if (switch_alloc_jobinfo(&job->switch_job) < 0)
 		fatal("switch_alloc_jobinfo: %m");

@@ -80,6 +80,16 @@ struct slurm_step_ctx_struct {
 	uint32_t **tids;	/* host id => task id mapping */
 	hostlist_t hl;		/* hostlist of assigned nodes */
 	uint32_t nhosts;	/* node count */
+
+	/*launch specific */
+	uint32_t gid;	        /* group the job runs as */
+	char *task_epilog;	/* task-epilog */
+	char *task_prolog;	/* task-prolog */
+	bool unbuffered;        /* unbuffered */
+	char *ofname;		/* output filename */
+	char *ifname;		/* input filename */
+	char *efname;		/* error filename */
+	bool parallel_debug;	/* srun controlled by debugger	*/	
 };
 
 typedef enum {DSH_NEW, DSH_ACTIVE, DSH_DONE, DSH_FAILED} state_t;
@@ -250,40 +260,73 @@ slurm_step_ctx_set (slurm_step_ctx ctx, int ctx_key, ...)
 
 	va_start(ap, ctx_key);
 	switch (ctx_key) {
-		case SLURM_STEP_CTX_ARGS:
-			if (ctx->argv)
-				_xfree_char_array(&ctx->argv, ctx->argc);
-			ctx->argc = va_arg(ap, int);
-			if ((ctx->argc < 1) || (ctx->argc > 1024)) {
-				slurm_seterrno(EINVAL);
-				break;
-			}
-			_xcopy_char_array(&ctx->argv, va_arg(ap, char **), 
-					ctx->argc);
-			break;
-
-		case SLURM_STEP_CTX_CHDIR:
-			if (ctx->cwd)
-				xfree(ctx->cwd);
-			ctx->cwd = xstrdup(va_arg(ap, char *));
-			break;
-
-		case SLURM_STEP_CTX_ENV:
-			ctx->env_set = 1;
-			if (ctx->env)
-				_xfree_char_array(&ctx->env, ctx->envc);
-			ctx->envc = va_arg(ap, int);
-			if ((ctx->envc < 1) || (ctx->envc > 1024)) {
-				slurm_seterrno(EINVAL);
-				break;
-			}
-			_xcopy_char_array(&ctx->env, va_arg(ap, char **), 
-					ctx->envc);
-			break;
-
-		default:
+	case SLURM_STEP_CTX_ARGS:
+		if (ctx->argv)
+			_xfree_char_array(&ctx->argv, ctx->argc);
+		ctx->argc = va_arg(ap, int);
+		if ((ctx->argc < 1) || (ctx->argc > 1024)) {
 			slurm_seterrno(EINVAL);
-			rc = SLURM_ERROR;
+			break;
+		}
+		_xcopy_char_array(&ctx->argv, va_arg(ap, char **), 
+				  ctx->argc);
+		break;
+
+	case SLURM_STEP_CTX_CHDIR:
+		if (ctx->cwd)
+			xfree(ctx->cwd);
+		ctx->cwd = xstrdup(va_arg(ap, char *));
+		break;
+
+	case SLURM_STEP_CTX_ENV:
+		ctx->env_set = 1;
+		if (ctx->env)
+			_xfree_char_array(&ctx->env, ctx->envc);
+		ctx->envc = va_arg(ap, int);
+		if ((ctx->envc < 1) || (ctx->envc > 1024)) {
+			slurm_seterrno(EINVAL);
+			break;
+		}
+		_xcopy_char_array(&ctx->env, va_arg(ap, char **), 
+				  ctx->envc);
+		break;
+	case SLURM_STEP_CTX_GID:
+		ctx->gid = va_arg(ap, int);
+		break;
+	case SLURM_STEP_CTX_UNBUFFERED:
+		ctx->unbuffered = va_arg(ap, int);
+		break;
+	case SLURM_STEP_CTX_PDEBUG:
+		ctx->parallel_debug = va_arg(ap, int);
+		break;
+	case SLURM_STEP_CTX_TASK_EPILOG:
+		if (ctx->task_epilog)
+			xfree(ctx->task_epilog);
+		ctx->task_epilog = xstrdup(va_arg(ap, char *));
+		break;
+	case SLURM_STEP_CTX_TASK_PROLOG:
+		if (ctx->task_prolog)
+			xfree(ctx->task_prolog);
+		ctx->task_prolog = xstrdup(va_arg(ap, char *));
+		break;
+	case SLURM_STEP_CTX_OFNAME:
+		if (ctx->ofname)
+			xfree(ctx->ofname);
+		ctx->ofname = xstrdup(va_arg(ap, char *));
+		break;
+	case SLURM_STEP_CTX_IFNAME:
+		if (ctx->ifname)
+			xfree(ctx->ifname);
+		ctx->ifname = xstrdup(va_arg(ap, char *));
+		break;
+	case SLURM_STEP_CTX_EFNAME:
+		if (ctx->efname)
+			xfree(ctx->efname);
+		ctx->efname = xstrdup(va_arg(ap, char *));
+		break;
+	default:
+		slurm_seterrno(EINVAL);
+		rc = SLURM_ERROR;
 	}
 	va_end(ap);
 
@@ -429,9 +472,12 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 
 		j=0; 
   		while(host = hostlist_next(itr)) { 
-  			if(!strcmp(host,ctx->host[i])) 
-  				break; 
+  			if(!strcmp(host,ctx->host[i])) {
+  				free(host);
+				break; 
+			}
   			j++; 
+			free(host);
   		}
 		debug2("using %d %s with %d tasks\n", j, ctx->host[i],
 		       r->nprocs);
@@ -443,7 +489,8 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 			ctx->tids[i][0], fd_array[i], r->io_port, i);
 #endif
 	}
-
+	hostlist_iterator_destroy(itr);
+	hostlist_destroy(hostlist);
 	rc = _p_launch(req_array_ptr, ctx);
 
 	xfree(msg_array_ptr);
@@ -453,6 +500,114 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 	return rc;
 }
 
+extern int slurm_launch(slurm_step_ctx ctx, 
+			pthread_mutex_t task_mutex,
+			forked_msg_t *forked_msg,
+			int *listenport,
+			slurm_addr *jaddr,
+			int njfds,
+			int num_listen)
+{
+	slurm_msg_t *req_array_ptr;
+	launch_tasks_request_msg_t *msg_array_ptr;
+	int i, j;
+	uint16_t slurmd_debug = 0;
+	char *env_var = NULL;
+	char *host = NULL;
+	hostlist_t hostlist = NULL;
+	hostlist_iterator_t itr = NULL;
+	int rc = SLURM_SUCCESS;
+
+	if (_validate_ctx(ctx))
+		return SLURM_ERROR;
+
+	/* get slurmd_debug level from SLURMD_DEBUG env var */
+	env_var = getenv("SLURMD_DEBUG");
+	if (env_var) {
+		i = atoi(env_var);
+		if (i >= 0)
+			slurmd_debug = i;
+	}
+	
+	debug("going to launch %d tasks on %d hosts", 
+	      ctx->num_tasks, ctx->nhosts);
+	debug("sending to slurmd port %d", slurm_get_slurmd_port());
+
+	msg_array_ptr = xmalloc(sizeof(launch_tasks_request_msg_t) * 
+				ctx->nhosts);
+	req_array_ptr = xmalloc(sizeof(slurm_msg_t) * ctx->nhosts);
+
+	hostlist = hostlist_create(ctx->alloc_resp->node_list);		
+	itr = hostlist_iterator_create(hostlist);
+
+	for (i = 0; i < ctx->nhosts; i++) {
+		launch_tasks_request_msg_t *r = &msg_array_ptr[i];
+		slurm_msg_t                *m = &req_array_ptr[i];
+
+		/* Common message contents */
+		r->job_id          = ctx->job_id;
+		r->uid             = ctx->user_id;
+		r->gid             = ctx->gid; 
+		r->argc            = ctx->argc;
+		r->argv            = ctx->argv;
+		r->cred            = ctx->step_resp->cred;
+		r->job_step_id     = ctx->step_resp->job_step_id;
+		r->envc            = ctx->envc;
+		r->env             = ctx->env;
+		r->cwd             = ctx->cwd;
+		r->nnodes          = ctx->nhosts;
+		r->nprocs          = ctx->num_tasks;
+		r->slurmd_debug    = slurmd_debug;
+		r->switch_job      = ctx->step_resp->switch_job;
+		r->task_prolog     = ctx->task_prolog;
+		r->task_epilog     = ctx->task_epilog;
+
+		r->ofname  = (char *)fname_remote_string (ctx->ofname);
+		r->efname  = (char *)fname_remote_string (ctx->efname);
+		r->ifname  = (char *)fname_remote_string (ctx->ifname);
+		r->buffered_stdio = !ctx->unbuffered;
+
+		if (ctx->parallel_debug)
+			r->task_flags |= TASK_PARALLEL_DEBUG;
+
+		/* Node specific message contents */
+		if (slurm_mpi_single_task_per_node ()) 
+			r->tasks_to_launch = 1; 
+		else
+			r->tasks_to_launch = ctx->tasks[i];
+		r->global_task_ids = ctx->tids[i];
+		r->cpus_allocated  = ctx->cpus[i];
+		r->srun_node_id    = (uint32_t)i;
+		r->io_port         = ntohs(listenport[i%num_listen]);
+		r->resp_port       = ntohs(jaddr[i%njfds].sin_port);
+		m->msg_type        = REQUEST_LAUNCH_TASKS;
+		m->data            = r;
+		j=0; 
+  		while(host = hostlist_next(itr)) { 
+  			if(!strcmp(host,ctx->host[i])) {
+  				free(host);
+				break; 
+			}
+  			j++; 
+			free(host);
+  		}
+		debug2("using %d %s with %d tasks\n", j, ctx->host[i],
+		       r->nprocs);
+		hostlist_iterator_reset(itr);
+		
+		memcpy(&m->address, &ctx->alloc_resp->node_addr[j], 
+		       sizeof(slurm_addr));
+	}
+	hostlist_iterator_destroy(itr);
+	hostlist_destroy(hostlist);
+	
+	rc = _p_launch(req_array_ptr, ctx);
+
+	xfree(msg_array_ptr);
+	xfree(req_array_ptr);
+
+	return rc;
+}
 
 /*
  * slurm_spawn_kill - send the specified signal to an existing job step
@@ -599,10 +754,12 @@ static int _task_layout_hostfile(slurm_step_ctx ctx)
 				j++;
 			}
 			taskid++;
+			free(host_task);
 		}
 		i++;
 	reset_hosts:
-		hostlist_iterator_reset(itr_task);		
+		hostlist_iterator_reset(itr_task);	
+		free(host);
 	}
 
 	hostlist_iterator_destroy(itr);

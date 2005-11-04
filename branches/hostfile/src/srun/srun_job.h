@@ -158,6 +158,9 @@ typedef struct srun_job {
 	/* Output streams and stdin fileno */
 	forked_msg_t *forked_msg;
 	select_jobinfo_t select_jobinfo;
+	resource_allocation_response_msg_t *alloc_resp;
+	struct slurm_step_ctx_struct *step_ctx;
+	
 } srun_job_t;
 
 extern int message_thread;
@@ -167,8 +170,12 @@ void    job_force_termination(srun_job_t *job);
 
 srun_job_state_t job_state(srun_job_t *job);
 
-srun_job_t * job_create_noalloc(void);
-srun_job_t * job_create_allocation(resource_allocation_response_msg_t *resp);
+extern srun_job_t * job_create_noalloc(void);
+extern srun_job_t * job_create_allocation(
+	resource_allocation_response_msg_t *resp);
+extern srun_job_t * job_create_structure(
+	resource_allocation_response_msg_t *resp);
+extern int build_step_ctx(srun_job_t *job);
 
 /*
  *  Update job filenames and modes for stderr, stdout, and stdin.
