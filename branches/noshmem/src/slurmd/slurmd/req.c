@@ -322,7 +322,7 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 	}
 
 	if ((pid = fork()) < 0) {
-		error("fork_slurmd: fork: %m");
+		error("_forkexec_slurmstepd: fork: %m");
 		close(to_stepd[0]);
 		close(to_stepd[1]);
 		close(to_slurmd[0]);
@@ -366,9 +366,10 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 		 * Child forks and exits
 		 */
 		if (setsid() < 0)
-			error("fork_slurmd: setsid: %m");
+			error("_forkexec_slurmstepd: setsid: %m");
 		if ((pid = fork()) < 0)
-			error("fork_slurmd: Unable to fork grandchild: %m");
+			error("_forkexec_slurmstepd: "
+			      "Unable to fork grandchild: %m");
 		else if (pid > 0) { /* child */
 			exit(0);
 		}
@@ -1428,7 +1429,7 @@ _pause_for_job_completion (void *auth_cred, uint32_t job_id, int max_time)
 }
 
 /*
- * Does nothing and returns SLURM_SUCCESS.
+ * Does nothing and returns SLURM_SUCCESS (if uid authenticates).
  *
  * Timelimit is not currently used in the slurmd or slurmstepd.
  */
