@@ -45,7 +45,7 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmstepd/req.h"
 
-static void _handle_request(int fd, slurmd_job_t *job);
+static void *_handle_request(void *arg);
 static void _handle_state(int fd, slurmd_job_t *job);
 static void _handle_signal_process_group(int fd, slurmd_job_t *job);
 static void _handle_signal_task_local(int fd, slurmd_job_t *job);
@@ -62,6 +62,11 @@ struct io_operations msg_socket_ops = {
 };
 
 char *socket_name;
+
+struct request_params {
+	int fd;
+	slurmd_job_t *job;
+};
 
 /*
  *  Returns true if "uid" is a "slurm authorized user" - i.e. uid == 0
@@ -199,8 +204,10 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 	slurmd_job_t *job = (slurmd_job_t *)obj->arg;
 	int fd;
 	struct sockaddr_un addr;
-	struct stat statbuf;
 	int len = sizeof(addr);
+	struct request_params *param = NULL;
+	pthread_attr_t attr;
+	pthread_t id;
 
 	debug3("Called _msg_socket_read");
 
@@ -221,17 +228,34 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 	/* FIXME should really create a pthread to handle the message */
 
 	fd_set_blocking(fd);
-	_handle_request(fd, job);
+
+	slurm_attr_init(&attr);
+	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) != 0) {
+		close(fd);
+		error("Unable to set detachstate on attr: %m");
+		return SLURM_ERROR;
+	}
+
+	param = xmalloc(sizeof(struct request_params));
+	param->fd = fd;
+	param->job = job;
+	if (pthread_create(&id, &attr, &_handle_request, (void *)param) != 0) {
+		error("stepd_api message engine pthread_create: %m");
+		_handle_request((void *)param);
+	}
+
+	return SLURM_SUCCESS;
 }
 
-static void
-_handle_request(int fd, slurmd_job_t *job)
+static void *
+_handle_request(void *arg)
 {
+	struct request_params *param = (struct request_params *)arg;
 	int req;
 
 	debug3("Entering _handle_message");
 
-	if (read(fd, &req, sizeof(req)) != sizeof(req)) {
+	if (read(param->fd, &req, sizeof(req)) != sizeof(req)) {
 		error("Could not read request type: %m");
 		goto fail;
 	}
@@ -239,34 +263,34 @@ _handle_request(int fd, slurmd_job_t *job)
 	switch (req) {
 	case REQUEST_SIGNAL_PROCESS_GROUP:
 		debug("Handling REQUEST_SIGNAL_PROCESS_GROUP");
-		_handle_signal_process_group(fd, job);
+		_handle_signal_process_group(param->fd, param->job);
 		break;
 	case REQUEST_SIGNAL_TASK_LOCAL:
 		debug("Handling REQUEST_SIGNAL_TASK_LOCAL");
-		_handle_signal_task_local(fd, job);
+		_handle_signal_task_local(param->fd, param->job);
 		break;
 	case REQUEST_SIGNAL_TASK_GLOBAL:
 		debug("Handling REQUEST_SIGNAL_TASK_LOCAL (not implemented)");
 		break;
 	case REQUEST_SIGNAL_CONTAINER:
 		debug("Handling REQUEST_SIGNAL_CONTAINER");
-		_handle_signal_container(fd, job);
+		_handle_signal_container(param->fd, param->job);
 		break;
 	case REQUEST_STATE:
 		debug("Handling REQUEST_STATE");
-		_handle_state(fd, job);
+		_handle_state(param->fd, param->job);
 		break;
 	case REQUEST_ATTACH:
 		debug("Handling REQUEST_ATTACH");
-		_handle_attach(fd, job);
+		_handle_attach(param->fd, param->job);
 		break;
 	case REQUEST_PID_IN_CONTAINER:
 		debug("Handling REQUEST_PID_IN_CONTAINER");
-		_handle_pid_in_container(fd, job);
+		_handle_pid_in_container(param->fd, param->job);
 		break;
 	case REQUEST_DAEMON_PID:
 		debug("Handling REQUEST_DAEMON_PID");
-		_handle_daemon_pid(fd, job);
+		_handle_daemon_pid(param->fd, param->job);
 		break;
 	default:
 		error("Unrecognized request: %d", req);
@@ -274,7 +298,8 @@ _handle_request(int fd, slurmd_job_t *job)
 	}
 
 fail:
-	close(fd);
+	close(param->fd);
+	xfree(arg);
 	debug3("Leaving  _handle_message");
 }
 

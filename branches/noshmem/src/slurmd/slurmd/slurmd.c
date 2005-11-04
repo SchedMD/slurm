@@ -703,6 +703,8 @@ _slurmd_init()
 		 * Need to kill any running slurmd's here
 		 */
 		_kill_old_slurmd(); 
+
+		stepd_cleanup_sockets(conf->spooldir, "nodename");
 	}
 
 	if (conf->daemonize && (chdir("/tmp") < 0)) {

@@ -383,6 +383,60 @@ done:
 }
 
 /*
+ * Unlink all of the unix domain socket files for a given directory
+ * and nodename.
+ * Returns SLURM_ERROR if any sockets could not be unlinked.
+ */
+int
+stepd_cleanup_sockets(const char *directory, const char *nodename)
+{
+	DIR *dp;
+	struct dirent *ent;
+	regex_t re;
+	struct stat stat_buf;
+	int rc = SLURM_SUCCESS;
+
+	_sockname_regex_init(&re, nodename);
+
+	/*
+	 * Make sure that "directory" exists and is a directory.
+	 */
+	if (stat(directory, &stat_buf) < 0) {
+		error("Domain socket directory %s: %m", directory);
+		goto done;
+	} else if (!S_ISDIR(stat_buf.st_mode)) {
+		error("%s is not a directory", directory);
+		goto done;
+	}
+
+	if ((dp = opendir(directory)) == NULL) {
+		error("Unable to open directory: %m");
+		goto done;
+	}
+
+	while ((ent = readdir(dp)) != NULL) {
+		uint32_t jobid, stepid;
+		if (_sockname_regex(&re, ent->d_name, &jobid, &stepid) == 0) {
+			char *path;
+			path = NULL;
+			xstrfmtcat(path, "%s/%s", directory, ent->d_name);
+			verbose("Unlinking stray socket %s", path);
+			if (unlink(path) == -1) {
+				error("Unable to clean up stray socket %s: %m",
+				      path);
+				rc = SLURM_ERROR;
+			}
+			xfree(path);
+		}
+	}
+
+	closedir(dp);
+done:
+	regfree(&re);
+	return rc;
+}
+
+/*
  * Return true if the process with process ID "pid" is found in
  * the proctrack container of the slurmstepd "step".
  */
