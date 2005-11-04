@@ -45,6 +45,7 @@ typedef struct {
 	int start[PA_SYSTEM_DIMENSIONS];
 	int end[PA_SYSTEM_DIMENSIONS];
 	List nodelist;
+	bitstr_t* bitmap;
 	int size;
 	bool printed;
 
@@ -250,7 +251,6 @@ extern void get_bgl_part()
 			= xstrdup(new_bgl_ptr->bgl_info_array[i].nodes);
 		block_ptr->nodelist = list_create(_nodelist_del);
 		_make_nodelist(block_ptr->nodes,block_ptr->nodelist);
-		
 		block_ptr->bgl_user_name 
 			= xstrdup(new_bgl_ptr->bgl_info_array[i].owner_name);
 		block_ptr->state 
