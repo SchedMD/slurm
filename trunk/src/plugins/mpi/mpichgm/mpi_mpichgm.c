@@ -79,9 +79,11 @@ int mpi_p_init(slurmd_job_t *job, int rank)
 	
 	if ((p = strchr (addrbuf, ':')) != NULL)
 		*p = '\0';
-	
+		
 	setenvf (&job->env, "GMPI_MASTER", "%s", addr);
 	setenvf (&job->env, "GMPI_SLAVE",  "%s", addrbuf);
+	setenvf (&job->env, "GMPI_ID",  "%d", rank);
+	debug2("init for mpi rank %d\n", rank);
 	
 	return SLURM_SUCCESS;
 }
