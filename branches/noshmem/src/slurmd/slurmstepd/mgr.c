@@ -102,7 +102,7 @@ static int exit_errno[] =
 static int mgr_sigarray[] = {
 	SIGINT,  SIGTERM, SIGTSTP,
 	SIGQUIT, SIGPIPE, SIGUSR1,
-	SIGUSR2, SIGALRM, 0
+	SIGUSR2, SIGALRM, SIGHUP, 0
 };
 
 
@@ -146,16 +146,6 @@ static int    _complete_job(uint32_t jobid, uint32_t stepid,
 			    int err, int status);
 
 static slurmd_job_t *reattach_job;
-
-/*
- * SIGHUP signal handler.  A SIGHUP is a message from the main slurmd
- * that a reattach request needs to be processed.
- *
- * FIXME - obsolete, reattach handled through the stepd API
- */
-static void _hup_handler(int sig)
-{
-}
 
 /*
  * Launch an job step on the current node
@@ -492,10 +482,8 @@ job_manager(slurmd_job_t *job)
 
 	xsignal_block(mgr_sigarray);
 	reattach_job = job;
-	xsignal(SIGHUP, _hup_handler);
 
-/* 	if (job_update_state(job, SLURMD_JOB_STARTED) < 0) */
-/* 		goto fail2; */
+	job->state = SLURMSTEPD_STEP_RUNNING;
 
 	/* Send job launch response with list of pids */
 	_send_launch_resp(job, 0);
@@ -505,13 +493,13 @@ job_manager(slurmd_job_t *job)
 
 	_wait_for_all_tasks(job);
 
+	job->state = SLURMSTEPD_STEP_ENDING;
+
 	if (!job->batch && 
 	    (interconnect_fini(job->switch_job) < 0)) {
 		error("interconnect_fini: %m");
 		exit(1);
 	}
-
-/* 	job_update_state(job, SLURMD_JOB_ENDING); */
 
     fail2:
 	/*
@@ -535,7 +523,6 @@ job_manager(slurmd_job_t *job)
 		_wait_for_io(job);
 	}
 
-/* 	job_update_state(job, SLURMD_JOB_COMPLETE); */
 	g_slurmd_jobacct_jobstep_terminated(job);
 
     fail1:

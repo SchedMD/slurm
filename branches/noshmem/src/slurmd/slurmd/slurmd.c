@@ -62,6 +62,7 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/req.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
+#include "src/slurmd/common/stepd_api.h"
 #include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/task_plugin.h"
@@ -124,6 +125,11 @@ static void      _atfork_prepare(void);
 static void      _atfork_final(void);
 static void      _install_fork_handlers(void);
 
+static void
+_step_state_free(void *state)
+{
+	xfree(state);
+}
 
 int 
 main (int argc, char *argv[])
@@ -149,7 +155,7 @@ main (int argc, char *argv[])
 
 	/* 
 	 * Run slurmd_init() here in order to report early errors
-	 * (with shared memory and public keyfile)
+	 * (with public keyfile)
 	 */
 	if (_slurmd_init() < 0) {
 		error( "slurmd initialization failed" );
@@ -389,6 +395,9 @@ send_registration_msg(uint32_t status, bool startup)
 static void
 _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 {
+	List steps;
+	ListIterator i;
+	step_loc_t *stepd;
 	int          n;
 
 	msg->node_name = xstrdup (conf->node_name);
@@ -406,35 +415,32 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 			error("switch_g_build_node_info: %m");
 	}
 
-/* 	msg->job_count = list_count(steps); */
-/* 	msg->job_id    = xmalloc(msg->job_count * sizeof(*msg->job_id)); */
-	
-	/* Note: Running batch jobs will have step_id == NO_VAL
-	 */
-/* 	msg->step_id   = xmalloc(msg->job_count * sizeof(*msg->step_id)); */
+	steps = stepd_available(conf->spooldir, "nodename");
+	msg->job_count = list_count(steps);
+	msg->job_id    = xmalloc(msg->job_count * sizeof(*msg->job_id));
+	/* Note: Running batch jobs will have step_id == NO_VAL */
+	msg->step_id   = xmalloc(msg->job_count * sizeof(*msg->step_id));
 
-/* FIXME! */
-/* 	i = list_iterator_create(steps); */
-/* 	n = 0; */
-/* 	while ((s = list_next(i))) { */
-/* 		if (!shm_step_still_running(s->jobid, s->stepid)) { */
-/* 			debug("deleting stale reference to %u.%u in shm", */
-/* 			      s->jobid, (int32_t) s->stepid); */
-/* 			shm_delete_step(s->jobid, s->stepid); */
-/* 			--(msg->job_count); */
-/* 			continue; */
-/* 		} */
-/* 		if (s->stepid == NO_VAL) */
-/* 			debug("found apparently running job %u", s->jobid); */
-/* 		else */
-/* 			debug("found apparently running step %u.%u",  */
-/* 			      s->jobid, s->stepid); */
-/* 		msg->job_id[n]  = s->jobid; */
-/* 		msg->step_id[n] = s->stepid; */
-/* 		n++; */
-/* 	} */
-/* 	list_iterator_destroy(i); */
-/* 	list_destroy(steps); */
+	i = list_iterator_create(steps);
+	n = 0;
+	while (stepd = list_next(i)) {
+		if (stepd_state(*stepd) == SLURMSTEPD_NOT_RUNNING) {
+			debug("stale domain socket for stepd %u.%u ",
+			      stepd->jobid, stepd->stepid);
+			--(msg->job_count);
+			continue;
+		}
+		if (stepd->stepid == NO_VAL)
+			debug("found apparently running job %u", stepd->jobid);
+		else
+			debug("found apparently running step %u.%u", 
+			      stepd->jobid, stepd->stepid);
+		msg->job_id[n]  = stepd->jobid;
+		msg->step_id[n] = stepd->stepid;
+		n++;
+	}
+	list_iterator_destroy(i);
+	list_destroy(steps);
 
 	msg->timestamp = time(NULL);
 

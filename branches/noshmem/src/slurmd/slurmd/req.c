@@ -655,7 +655,7 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 	 *  If job prolog failed, indicate failure to slurmctld
 	 */
 	if (errnum == ESLURMD_PROLOG_FAILED)
-		send_registration_msg(errnum, false);	
+		send_registration_msg(errnum, false);
 }
 
 static void
@@ -1011,21 +1011,11 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	loc.jobid = req->job_id;
 	loc.stepid = req->job_step_id;
 	rc = stepd_attach(loc, &ioaddr, &resp_msg.address,
-			  msg->cred, req->cred);
+			  msg->cred, req->cred, &resp);
 	if (rc != SLURM_SUCCESS) {
-		debug2("stepd_request_attach call failed");
+		debug2("stepd_attach call failed");
 		goto done;
 	}
-
-/* FIXME ! */
-/* 	resp.local_pids = xmalloc(step->ntasks * sizeof(*resp.local_pids)); */
-/* 	resp.gtids      = xmalloc(step->ntasks * sizeof(*resp.local_pids)); */
-/* 	resp.ntasks     = step->ntasks; */
-/* 	for (t = step->task_list, i = 0; t; t = t->next, i++) { */
-/* 		resp.gtids[t->id] = t->global_id; */
-/* 		resp.local_pids[t->id] = t->pid; */
-/* 	} */
-/* 	resp.executable_name  = xstrdup(step->exec_name); */
 
     done:
 	debug2("update step addrs rc = %d", rc);
@@ -1095,7 +1085,8 @@ _job_still_running(uint32_t job_id)
 	steps = stepd_available(conf->spooldir, "nodename");
 	i = list_iterator_create(steps);
 	while ((s = list_next(i))) {
-		if ((s->jobid == job_id) && (stepd_status(*s) != -1)) {
+		if (s->jobid == job_id
+		    && stepd_state(*s) != SLURMSTEPD_NOT_RUNNING) {
 			retval = true;
 			break;
 		}
@@ -1135,22 +1126,22 @@ _wait_state_completed(uint32_t jobid, int max_delay)
 static bool
 _steps_completed_now(uint32_t jobid)
 {
-/* FIXME! */
-/* 	List   steps = shm_get_steps(); */
-/* 	ListIterator i = list_iterator_create(steps); */
-/* 	job_step_t *s = NULL; */
+	List steps;
+	ListIterator i;
+	step_loc_t *stepd;
 	bool rc = true;
 
-/* 	while ((s = list_next(i))) { */
-/* 		if (s->jobid != jobid) */
-/* 			continue; */
-/* 		if (s->state != SLURMD_JOB_COMPLETE) { */
-/* 			rc = false; */
-/* 			break; */
-/* 		} */
-/* 	} */
-/* 	list_iterator_destroy(i); */
-/* 	list_destroy(steps); */
+	steps = stepd_available(conf->spooldir, "nodename");
+	i = list_iterator_create(steps);
+	while (stepd = list_next(i)) {
+		if (stepd->jobid == jobid
+		    && stepd_state(*stepd) != SLURMSTEPD_NOT_RUNNING) {
+			rc = false;
+			break;
+		}
+	}
+	list_iterator_destroy(i);
+	list_destroy(steps);
 
 	return rc;
 }

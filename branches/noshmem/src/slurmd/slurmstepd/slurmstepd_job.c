@@ -160,6 +160,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	}
 	job = xmalloc(sizeof(*job));
 
+	job->state   = SLURMSTEPD_STEP_STARTING;
 	job->pwd     = pwd;
 	job->ntasks  = msg->tasks_to_launch;
 	job->nprocs  = msg->nprocs;
@@ -245,6 +246,7 @@ job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *cli_addr)
 	}
 	job = xmalloc(sizeof(*job));
 
+	job->state   = SLURMSTEPD_STEP_STARTING;
 	job->pwd     = pwd;
 	job->ntasks  = 1;	/* tasks to launch always one */
 	job->nprocs  = msg->nprocs;
@@ -331,6 +333,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	
 	job = xmalloc(sizeof(*job));
 	
+	job->state   = SLURMSTEPD_STEP_STARTING;
 	job->pwd     = pwd;
 	job->ntasks  = 1; 
 	job->nprocs  = msg->nprocs;

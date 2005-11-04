@@ -72,20 +72,21 @@ step_connect(step_loc_t step)
 	return fd;
 }
 
-int
-stepd_status(step_loc_t step)
+slurmstepd_state_t
+stepd_state(step_loc_t step)
 {
-	int req	= REQUEST_STATUS;
+	int req	= REQUEST_STATE;
 	int fd;
-	int status = 0;
+	slurmstepd_state_t status = SLURMSTEPD_NOT_RUNNING;
 
 	fd = step_connect(step);
 	if (fd == -1)
-		return -1;
+		return status;
 
-	write(fd, &req, sizeof(int));
-	read(fd, &status, sizeof(int));
+	safe_write(fd, &req, sizeof(int));
+	safe_read(fd, &status, sizeof(slurmstepd_state_t));
 
+rwfail:
 	return status;
 }
 
@@ -187,15 +188,23 @@ stepd_signal_container(step_loc_t step, void *auth_cred, int signal)
 	return rc;
 }
 
+
+/*
+ * Attach a client to a running job step.
+ *
+ * On success returns SLURM_SUCCESS and fills in resp->local_pids,
+ * resp->gtids, resp->ntasks, and resp->executable.
+ */
 int
 stepd_attach(step_loc_t step, slurm_addr *ioaddr, slurm_addr *respaddr,
-	     void *auth_cred, slurm_cred_t job_cred)
+	     void *auth_cred, slurm_cred_t job_cred,
+	     reattach_tasks_response_msg_t  *resp)
 {
 	int req = REQUEST_ATTACH;
 	int fd;
 	Buf buf;
 	int buf_len;
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	fd = step_connect(step);
 	write(fd, &req, sizeof(int));
@@ -207,16 +216,39 @@ stepd_attach(step_loc_t step, slurm_addr *ioaddr, slurm_addr *respaddr,
 	buf_len = size_buf(buf);
 	debug("buf_len = %d", buf_len);
 
-	write(fd, ioaddr, sizeof(slurm_addr));
-	write(fd, respaddr, sizeof(slurm_addr));
-	write(fd, &buf_len, sizeof(int));
-	write(fd, get_buf_data(buf), buf_len);
+	safe_write(fd, ioaddr, sizeof(slurm_addr));
+	safe_write(fd, respaddr, sizeof(slurm_addr));
+	safe_write(fd, &buf_len, sizeof(int));
+	safe_write(fd, get_buf_data(buf), buf_len);
 
 	/* Receive the return code */
-	read(fd, &rc, sizeof(int));
+	safe_read(fd, &rc, sizeof(int));
+
+	if (rc == SLURM_SUCCESS) {
+		/* Receive response info */
+		uint32_t ntasks;
+		int len;
+
+		safe_read(fd, &ntasks, sizeof(uint32_t));
+		resp->ntasks = ntasks;
+		len = ntasks * sizeof(uint32_t);
+
+		resp->local_pids = xmalloc(len);
+		safe_read(fd, resp->local_pids, len);
+
+		resp->gtids = xmalloc(len);
+		safe_read(fd, resp->gtids, len);
+
+		safe_read(fd, &len, sizeof(int));
+		resp->executable_name = xmalloc(len);
+		safe_read(fd, resp->executable_name, len);
+	}
 
 	free_buf(buf);
 	return rc;
+
+rwfail:
+	return SLURM_ERROR;
 }
 
 static void

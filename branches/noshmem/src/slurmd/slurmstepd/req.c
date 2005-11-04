@@ -46,7 +46,7 @@
 #include "src/slurmd/slurmstepd/req.h"
 
 static void _handle_request(int fd, slurmd_job_t *job);
-static void _handle_status(int fd, slurmd_job_t *job);
+static void _handle_state(int fd, slurmd_job_t *job);
 static void _handle_signal_process_group(int fd, slurmd_job_t *job);
 static void _handle_signal_task_local(int fd, slurmd_job_t *job);
 static void _handle_signal_container(int fd, slurmd_job_t *job);
@@ -252,9 +252,9 @@ _handle_request(int fd, slurmd_job_t *job)
 		debug("Handling REQUEST_SIGNAL_CONTAINER");
 		_handle_signal_container(fd, job);
 		break;
-	case REQUEST_STATUS:
-		debug("Handling REQUEST_STATUS");
-		_handle_status(fd, job);
+	case REQUEST_STATE:
+		debug("Handling REQUEST_STATE");
+		_handle_state(fd, job);
 		break;
 	case REQUEST_ATTACH:
 		debug("Handling REQUEST_ATTACH");
@@ -279,11 +279,11 @@ fail:
 }
 
 static void
-_handle_status(int fd, slurmd_job_t *job)
+_handle_state(int fd, slurmd_job_t *job)
 {
 	int status = 0;
 
-	write(fd, &status, sizeof(status));
+	write(fd, &job->state, sizeof(slurmstepd_state_t));
 }
 
 static void
@@ -503,16 +503,24 @@ _handle_attach(int fd, slurmd_job_t *job)
 	srun       = xmalloc(sizeof(*srun));
 	srun->key  = xmalloc(sizeof(*srun->key));
 
-	read(fd, &srun->ioaddr, sizeof(slurm_addr));
-	read(fd, &srun->resp_addr, sizeof(slurm_addr));
-	read(fd, &buf_len, sizeof(int));
+	safe_read(fd, &srun->ioaddr, sizeof(slurm_addr));
+	safe_read(fd, &srun->resp_addr, sizeof(slurm_addr));
+	safe_read(fd, &buf_len, sizeof(int));
 	buf = init_buf(buf_len);
-	read(fd, get_buf_data(buf), buf_len);
+	safe_read(fd, get_buf_data(buf), buf_len);
 
 	debug3("buf_len = %d", buf_len);
 	auth_cred = g_slurm_auth_unpack(buf);
 	job_cred = slurm_cred_unpack(buf);
 	free_buf(buf); /* takes care of xfree'ing data as well */
+
+	/*
+	 * Check if jobstep is actually running.
+	 */
+	if (job->state != SLURMSTEPD_STEP_RUNNING) {
+		rc = ESLURMD_JOB_NOTRUNNING;
+		goto done;
+	}
 
 	/*
 	 * Authenticate the user using the auth credential.
@@ -537,15 +545,43 @@ _handle_attach(int fd, slurmd_job_t *job)
 	list_prepend(job->sruns, (void *) srun);
 
 	rc = io_client_connect(srun, job);
-	if (rc == SLURM_ERROR) {
-		error("Failed attaching new stdio client");
-		rc = SLURM_ERROR;
-		goto done;
-	}
-
 done:
 	/* Send the return code */
-	write(fd, &rc, sizeof(int));
+	safe_write(fd, &rc, sizeof(int));
+
+	debug("In _handle_attach rc = %d", rc);
+	if (rc == SLURM_SUCCESS) {
+		/* Send response info */
+		uint32_t *pids, *gtids;
+		int len, i;
+
+		debug("In _handle_attach sending response info");
+		len = job->ntasks * sizeof(uint32_t);
+		pids = xmalloc(len);
+		gtids = xmalloc(gtids);
+		
+		if (job->task != NULL) {
+			for (i = 0; i < job->ntasks; i++) {
+				if (job->task == NULL)
+					continue;
+				pids[i] = (uint32_t)job->task[i]->pid;
+				gtids[i] = job->task[i]->gtid;
+			}
+		}
+
+		safe_write(fd, &job->ntasks, sizeof(uint32_t));
+		safe_write(fd, pids, len);
+		safe_write(fd, gtids, len);
+		xfree(pids);
+		xfree(gtids);
+
+		len = strlen(job->argv[0]) + 1; /* +1 to include the \0 */
+		safe_write(fd, &len, sizeof(int));
+		safe_write(fd, job->argv[0], len);
+	}
+
+rwfail:
+	return;
 }
 
 static void

@@ -41,6 +41,7 @@
 #include "src/common/switch.h"
 #include "src/common/env.h"
 
+#include "src/slurmd/common/stepd_api.h"
 
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN	64
@@ -64,14 +65,14 @@ typedef enum task_state {
 } slurmd_task_state_t;
 
 /* local job states */
-typedef enum job_state {
-	SLURMD_JOB_UNUSED = 0,
-	SLURMD_JOB_ALLOCATED,
-	SLURMD_JOB_STARTING,
-	SLURMD_JOB_STARTED,
-	SLURMD_JOB_ENDING,
-	SLURMD_JOB_COMPLETE
-} slurmd_job_state_t;
+/* typedef enum job_state { */
+/* 	SLURMD_JOB_UNUSED = 0, */
+/* 	SLURMD_JOB_ALLOCATED, */
+/* 	SLURMD_JOB_STARTING, */
+/* 	SLURMD_JOB_STARTED, */
+/* 	SLURMD_JOB_ENDING, */
+/* 	SLURMD_JOB_COMPLETE */
+/* } slurmd_job_state_t; */
 
 typedef struct task_info {
 	pthread_mutex_t mutex;	    /* mutex to protect task state          */
@@ -100,6 +101,7 @@ typedef struct task_info {
 } slurmd_task_info_t;
 
 typedef struct slurmd_job {
+	slurmstepd_state_t state;
 	uint32_t       jobid;  /* Current SLURM job id                      */
 	uint32_t       stepid; /* Current step id (or NO_VAL)               */
 	uint32_t       nnodes; /* number of nodes in current job            */
