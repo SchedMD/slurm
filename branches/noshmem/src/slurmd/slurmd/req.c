@@ -1427,6 +1427,11 @@ _pause_for_job_completion (void *auth_cred, uint32_t job_id, int max_time)
 	return (!rc);
 }
 
+/*
+ * Does nothing and returns SLURM_SUCCESS.
+ *
+ * Timelimit is not currently used in the slurmd or slurmstepd.
+ */
 static void 
 _rpc_update_time(slurm_msg_t *msg, slurm_addr *cli)
 {
@@ -1441,7 +1446,6 @@ _rpc_update_time(slurm_msg_t *msg, slurm_addr *cli)
 		goto done;
 	} 
 
-/* FIXME */
 /* 	if (shm_update_job_timelimit(req->job_id, req->expiration_time) < 0) { */
 /* 		error("updating lifetime for job %u: %m", req->job_id); */
 /* 		rc = ESLURM_INVALID_JOB_ID; */
