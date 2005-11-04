@@ -47,6 +47,7 @@
 #include "src/common/log.h"
 #include "src/common/xmalloc.h"
 
+
 /* 
  * distribute_tasks - determine how many tasks of a job will be run on each.
  *                    node. Distribution is influenced by number of cpus on
@@ -91,6 +92,7 @@ int *distribute_tasks(const char *mlist, uint16_t num_cpu_groups,
 	i = 0;
 	ncpus = 0;
 	while ((this_node_name = hostlist_shift(master_hl))) {
+
 		if (hostlist_find(task_hl, this_node_name) >= 0) {
 			if (i >= nnodes) {
 				fatal("Internal error: duplicate nodes? "
@@ -108,6 +110,7 @@ int *distribute_tasks(const char *mlist, uint16_t num_cpu_groups,
 	}
 	hostlist_destroy(master_hl);
 	hostlist_destroy(task_hl);
+
 	if (num_tasks >= ncpus) {
 		/*
 		 * Evenly overcommit tasks over the hosts

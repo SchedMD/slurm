@@ -50,7 +50,6 @@ typedef struct launch_thr {
 	int 		i;	       /* temporary index into array	     */
 } launch_thr_t;
 
-//int    launch_thr_create(srun_job_t *job);
 int    launch_thr_create(srun_job_t *job);
 void * launch(void *arg);
 
