@@ -190,7 +190,6 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->envtp   = xmalloc(sizeof(env_t));
 	job->envtp->jobid = -1;
 	job->envtp->stepid = -1;
-	job->envtp->gmpi = -1;
 	job->envtp->procid = -1;
 	job->envtp->localid = -1;
 	job->envtp->nodeid = -1;	
@@ -263,7 +262,6 @@ job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *cli_addr)
 	job->envtp   = xmalloc(sizeof(env_t));
 	job->envtp->jobid = -1;
 	job->envtp->stepid = -1;
-	job->envtp->gmpi = -1;
 	job->envtp->procid = -1;
 	job->envtp->localid = -1;
 	job->envtp->nodeid = -1;
@@ -349,7 +347,6 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->envtp   = xmalloc(sizeof(env_t));
 	job->envtp->jobid = -1;
 	job->envtp->stepid = -1;
-	job->envtp->gmpi = -1;
 	job->envtp->procid = -1;
 	job->envtp->localid = -1;
 	job->envtp->nodeid = -1;

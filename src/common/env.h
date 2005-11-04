@@ -60,7 +60,6 @@ typedef struct env_options {
 	int procid;		/* global task id (across nodes) */
 	int localid;		/* local task id (within node) */
 	int nodeid;
-	int gmpi;
 	int cpus_per_task;	/* --cpus-per-task=n, -c n	*/
 	int cpus_on_node;
 	pid_t task_pid;
