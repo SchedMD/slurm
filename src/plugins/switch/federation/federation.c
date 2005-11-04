@@ -1773,11 +1773,12 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 		int min_procs_per_node;
 		int max_procs_per_node;
 
-		debug("Allocating windows in non-cyclic mode");
+		debug("Allocating windows in block mode");
 		nnodes = hostlist_count(hl);
 		full_node_cnt = nprocs % nnodes;
 		min_procs_per_node = nprocs / nnodes;
 		max_procs_per_node = (nprocs + nnodes - 1) / nnodes;
+	
 		proc_cnt = 0;
 		_lock();
 		for  (i = 0; i < nnodes; i++) {
@@ -1789,7 +1790,7 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 				task_cnt = max_procs_per_node;
 			else
 				task_cnt = min_procs_per_node;
-						
+			
 			for (j = 0; j < task_cnt; j++) {
 				rc = _allocate_windows(jp->tables_per_task,
 						       jp->tableinfo,

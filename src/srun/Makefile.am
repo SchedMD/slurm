@@ -14,7 +14,7 @@ srun_SOURCES = \
 	msg.c msg.h \
 	signals.c signals.h \
 	io.c io.h   \
-	launch2.c    \
+	launch.c    \
 	launch.h    \
 	attach.h    \
 	attach.c    \
