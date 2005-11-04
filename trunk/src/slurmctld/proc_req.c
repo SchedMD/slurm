@@ -1045,7 +1045,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	/* return result */
 	if (error_code) {
 		unlock_slurmctld(job_write_lock);
-		info("_slurm_rpc_job_step_create: %s", 
+		error("_slurm_rpc_job_step_create: %s", 
 			slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
@@ -1053,7 +1053,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		     step_rec->job_ptr->job_id, step_rec->step_id, TIME_STR);
 
 		job_step_resp.job_step_id = step_rec->step_id;
-		job_step_resp.node_list   = xstrdup(step_rec->step_node_list);
+		job_step_resp.node_list   = xstrdup(req_step_msg->node_list);
 		job_step_resp.cred        = slurm_cred;
 		job_step_resp.switch_job  = switch_copy_jobinfo(
 						step_rec->switch_job);
@@ -1279,7 +1279,7 @@ static void _slurm_rpc_old_job_alloc(slurm_msg_t * msg)
 			slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		debug2("_slurm_rpc_old_job_alloc JobId=%u NodeList=%s %s",
+		info("_slurm_rpc_old_job_alloc JobId=%u NodeList=%s %s",
 			job_desc_msg->job_id, job_ptr->nodes, TIME_STR);
 
 		/* send job_ID  and node_name_ptr */

@@ -472,18 +472,21 @@ _step_req_create(srun_job_t *j)
 	r->cpu_count  = opt.overcommit ? j->nhosts 
 		                       : (opt.nprocs*opt.cpus_per_task);
 	r->num_tasks  = opt.nprocs;
-	r->node_list  = j->nodelist;
+	r->node_list  = xstrdup(j->nodelist);
 	r->network    = opt.network;
 	r->name       = opt.job_name;
 	r->relative   = false;      /* XXX fix this oneday */
 
 	switch (opt.distribution) {
-	case SRUN_DIST_UNKNOWN:
+	case SLURM_DIST_UNKNOWN:
 		r->task_dist = (opt.nprocs <= j->nhosts) ? SLURM_DIST_CYCLIC
 			                                 : SLURM_DIST_BLOCK;
 		break;
-	case SRUN_DIST_CYCLIC:
+	case SLURM_DIST_CYCLIC:
 		r->task_dist = SLURM_DIST_CYCLIC;
+		break;
+	case SLURM_DIST_HOSTFILE:
+		r->task_dist = SLURM_DIST_HOSTFILE;
 		break;
 	default: /* (opt.distribution == SRUN_DIST_BLOCK) */
 		r->task_dist = SLURM_DIST_BLOCK;
@@ -503,6 +506,7 @@ _step_req_destroy(job_step_create_request_msg_t *r)
 {
 	if (r) {
 		xfree(r->host);
+		xfree(r->node_list);
 		xfree(r);
 	}
 }
@@ -512,6 +516,7 @@ create_job_step(srun_job_t *job)
 {
 	job_step_create_request_msg_t  *req  = NULL;
 	job_step_create_response_msg_t *resp = NULL;
+	char *temp = NULL;
 
 	if (!(req = _step_req_create(job))) { 
 		error ("Unable to allocate step request message");
@@ -521,7 +526,10 @@ create_job_step(srun_job_t *job)
 		error ("Unable to create job step: %m");
 		return -1;
 	}
-
+	temp = req->node_list;
+	req->node_list = resp->node_list;
+	resp->node_list = temp;
+	
 	job->stepid  = resp->job_step_id;
 	job->cred    = resp->cred;
 	job->switch_job = resp->switch_job;

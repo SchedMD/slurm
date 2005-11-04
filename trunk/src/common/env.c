@@ -250,8 +250,8 @@ int setup_env(env_t *env)
 	} 
 
 	if (env->distribution 
-	    && env->distribution != SRUN_DIST_UNKNOWN) {
-		dist = (env->distribution == SRUN_DIST_BLOCK) ?  
+	    && env->distribution != SLURM_DIST_UNKNOWN) {
+		dist = (env->distribution == SLURM_DIST_BLOCK) ?  
 			"block" : "cyclic";
 		
 		if (setenvf(&env->env, "SLURM_DISTRIBUTION", "%s", dist)) {
