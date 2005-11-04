@@ -374,7 +374,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->task = (slurmd_task_info_t **)
 		xmalloc(sizeof(slurmd_task_info_t *));
 	if (msg->err == NULL)
-		msg->err = msg->out;
+		msg->err = xstrdup(msg->out);
 	job->task[0] = task_info_create(0, global_taskid,
 					xstrdup("/dev/null"),
 					_batchfilename(job, msg->out),
