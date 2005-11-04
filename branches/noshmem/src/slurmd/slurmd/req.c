@@ -966,9 +966,6 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 		resp_msg.data         = &resp;
 		slurm_send_node_msg(msg->conn_fd, &resp_msg);
 	} else {
-		/* We could possibly scan the proc table and figure 
-		 * out which job this pid belongs to, but for now 
-		 * we only handle the job's top level pid */
 		debug3("_rpc_pid2jid: pid(%u) not found", req->job_pid);
 		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
 	}
