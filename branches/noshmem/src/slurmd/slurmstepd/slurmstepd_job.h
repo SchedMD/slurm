@@ -64,16 +64,6 @@ typedef enum task_state {
 	SLURMD_TASK_COMPLETE
 } slurmd_task_state_t;
 
-/* local job states */
-/* typedef enum job_state { */
-/* 	SLURMD_JOB_UNUSED = 0, */
-/* 	SLURMD_JOB_ALLOCATED, */
-/* 	SLURMD_JOB_STARTING, */
-/* 	SLURMD_JOB_STARTED, */
-/* 	SLURMD_JOB_ENDING, */
-/* 	SLURMD_JOB_COMPLETE */
-/* } slurmd_job_state_t; */
-
 typedef struct task_info {
 	pthread_mutex_t mutex;	    /* mutex to protect task state          */
 	slurmd_task_state_t state;  /* task state                           */

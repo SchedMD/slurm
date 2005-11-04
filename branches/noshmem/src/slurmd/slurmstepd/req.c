@@ -283,7 +283,9 @@ _handle_state(int fd, slurmd_job_t *job)
 {
 	int status = 0;
 
-	write(fd, &job->state, sizeof(slurmstepd_state_t));
+	safe_write(fd, &job->state, sizeof(slurmstepd_state_t));
+rwfail:
+	return;
 }
 
 static void
@@ -299,10 +301,10 @@ _handle_signal_process_group(int fd, slurmd_job_t *job)
 	debug("_handle_signal_process_group for job %u.%u",
 	      job->jobid, job->stepid);
 
-	read(fd, &signal, sizeof(int));
-	read(fd, &buf_len, sizeof(int));
+	safe_read(fd, &signal, sizeof(int));
+	safe_read(fd, &buf_len, sizeof(int));
 	buf = init_buf(buf_len);
-	read(fd, get_buf_data(buf), buf_len);
+	safe_read(fd, get_buf_data(buf), buf_len);
 
 	debug3("  buf_len = %d", buf_len);
 	auth_cred = g_slurm_auth_unpack(buf);
@@ -343,7 +345,9 @@ _handle_signal_process_group(int fd, slurmd_job_t *job)
 
 done:
 	/* Send the return code */
-	write(fd, &rc, sizeof(int));
+	safe_write(fd, &rc, sizeof(int));
+rwfail:
+	return;
 }
 
 static void
@@ -360,11 +364,11 @@ _handle_signal_task_local(int fd, slurmd_job_t *job)
 	debug("_handle_signal_task_local for job %u.%u",
 	      job->jobid, job->stepid);
 
-	read(fd, &signal, sizeof(int));
-	read(fd, &ltaskid, sizeof(int));
-	read(fd, &buf_len, sizeof(int));
+	safe_read(fd, &signal, sizeof(int));
+	safe_read(fd, &ltaskid, sizeof(int));
+	safe_read(fd, &buf_len, sizeof(int));
 	buf = init_buf(buf_len);
-	read(fd, get_buf_data(buf), buf_len);
+	safe_read(fd, get_buf_data(buf), buf_len);
 
 	debug3("  buf_len = %d", buf_len);
 	auth_cred = g_slurm_auth_unpack(buf);
@@ -423,7 +427,9 @@ _handle_signal_task_local(int fd, slurmd_job_t *job)
 
 done:
 	/* Send the return code */
-	write(fd, &rc, sizeof(int));
+	safe_write(fd, &rc, sizeof(int));
+rwfail:
+	return;
 }
 
 static void
@@ -439,10 +445,10 @@ _handle_signal_container(int fd, slurmd_job_t *job)
 	debug("_handle_signal_container for job %u.%u",
 	      job->jobid, job->stepid);
 
-	read(fd, &signal, sizeof(int));
-	read(fd, &buf_len, sizeof(int));
+	safe_read(fd, &signal, sizeof(int));
+	safe_read(fd, &buf_len, sizeof(int));
 	buf = init_buf(buf_len);
-	read(fd, get_buf_data(buf), buf_len);
+	safe_read(fd, get_buf_data(buf), buf_len);
 
 	debug3("  buf_len = %d", buf_len);
 	auth_cred = g_slurm_auth_unpack(buf);
@@ -483,7 +489,9 @@ _handle_signal_container(int fd, slurmd_job_t *job)
 
 done:
 	/* Send the return code */
-	write(fd, &rc, sizeof(int));
+	safe_write(fd, &rc, sizeof(int));
+rwfail:
+	return;
 }
 
 static void
@@ -593,7 +601,7 @@ _handle_pid_in_container(int fd, slurmd_job_t *job)
 	debug("_handle_pid_in_container for job %u.%u",
 	      job->jobid, job->stepid);
 
-	read(fd, &pid, sizeof(pid_t));
+	safe_read(fd, &pid, sizeof(pid_t));
 	
 	/*
 	 * FIXME - we should add a new call in the proctrack API
@@ -603,14 +611,17 @@ _handle_pid_in_container(int fd, slurmd_job_t *job)
 		rc = true;
 
 	/* Send the return code */
-	write(fd, &rc, sizeof(bool));
+	safe_write(fd, &rc, sizeof(bool));
 
+rwfail:
 	debug("Leaving _handle_pid_in_container");
 }
 
 static void
 _handle_daemon_pid(int fd, slurmd_job_t *job)
 {
-	write(fd, &job->jmgr_pid, sizeof(pid_t));
+	safe_write(fd, &job->jmgr_pid, sizeof(pid_t));
+rwfail:
+	return;
 }
 

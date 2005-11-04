@@ -103,7 +103,7 @@ stepd_signal(step_loc_t step, void *auth_cred, int signal)
 	int rc;
 
 	fd = step_connect(step);
-	write(fd, &req, sizeof(int));
+	safe_write(fd, &req, sizeof(int));
 
 	/* pack auth credential */
 	buf = init_buf(0);
@@ -111,15 +111,17 @@ stepd_signal(step_loc_t step, void *auth_cred, int signal)
 	buf_len = size_buf(buf);
 	debug("buf_len = %d", buf_len);
 
-	write(fd, &signal, sizeof(int));
-	write(fd, &buf_len, sizeof(int));
-	write(fd, get_buf_data(buf), buf_len);
+	safe_write(fd, &signal, sizeof(int));
+	safe_write(fd, &buf_len, sizeof(int));
+	safe_write(fd, get_buf_data(buf), buf_len);
 
 	/* Receive the return code */
-	read(fd, &rc, sizeof(int));
+	safe_read(fd, &rc, sizeof(int));
 
 	free_buf(buf);
 	return rc;
+rwfail:
+	return -1;
 }
 
 /*
@@ -136,7 +138,7 @@ stepd_signal_task_local(step_loc_t step, void *auth_cred,
 	int rc;
 
 	fd = step_connect(step);
-	write(fd, &req, sizeof(int));
+	safe_write(fd, &req, sizeof(int));
 
 	/* pack auth credential */
 	buf = init_buf(0);
@@ -144,16 +146,18 @@ stepd_signal_task_local(step_loc_t step, void *auth_cred,
 	buf_len = size_buf(buf);
 	debug("buf_len = %d", buf_len);
 
-	write(fd, &signal, sizeof(int));
-	write(fd, &ltaskid, sizeof(int));
-	write(fd, &buf_len, sizeof(int));
-	write(fd, get_buf_data(buf), buf_len);
+	safe_write(fd, &signal, sizeof(int));
+	safe_write(fd, &ltaskid, sizeof(int));
+	safe_write(fd, &buf_len, sizeof(int));
+	safe_write(fd, get_buf_data(buf), buf_len);
 
 	/* Receive the return code */
-	read(fd, &rc, sizeof(int));
+	safe_read(fd, &rc, sizeof(int));
 
 	free_buf(buf);
 	return rc;
+rwfail:
+	return -1;
 }
 
 /*
@@ -169,7 +173,7 @@ stepd_signal_container(step_loc_t step, void *auth_cred, int signal)
 	int rc;
 
 	fd = step_connect(step);
-	write(fd, &req, sizeof(int));
+	safe_write(fd, &req, sizeof(int));
 
 	/* pack auth credential */
 	buf = init_buf(0);
@@ -177,15 +181,17 @@ stepd_signal_container(step_loc_t step, void *auth_cred, int signal)
 	buf_len = size_buf(buf);
 	debug("buf_len = %d", buf_len);
 
-	write(fd, &signal, sizeof(int));
-	write(fd, &buf_len, sizeof(int));
-	write(fd, get_buf_data(buf), buf_len);
+	safe_write(fd, &signal, sizeof(int));
+	safe_write(fd, &buf_len, sizeof(int));
+	safe_write(fd, get_buf_data(buf), buf_len);
 
 	/* Receive the return code */
-	read(fd, &rc, sizeof(int));
+	safe_read(fd, &rc, sizeof(int));
 
 	free_buf(buf);
 	return rc;
+rwfail:
+	return -1;
 }
 
 
@@ -207,7 +213,7 @@ stepd_attach(step_loc_t step, slurm_addr *ioaddr, slurm_addr *respaddr,
 	int rc = SLURM_SUCCESS;
 
 	fd = step_connect(step);
-	write(fd, &req, sizeof(int));
+	safe_write(fd, &req, sizeof(int));
 
 	/* pack auth and job credentials */
 	buf = init_buf(0);
@@ -375,14 +381,16 @@ stepd_pid_in_container(step_loc_t step, pid_t pid)
 	if (fd == -1)
 		return false;
 
-	write(fd, &req, sizeof(int));
-	write(fd, &pid, sizeof(pid_t));
+	safe_write(fd, &req, sizeof(int));
+	safe_write(fd, &pid, sizeof(pid_t));
 
 	/* Receive the return code */
-	read(fd, &rc, sizeof(bool));
+	safe_read(fd, &rc, sizeof(bool));
 
 	debug("Leaving stepd_pid_in_container");
 	return rc;
+rwfail:
+	return false;
 }
 
 /*
@@ -398,8 +406,10 @@ stepd_daemon_pid(step_loc_t step)
 	fd = step_connect(step);
 	if (fd == -1)
 		return (pid_t)-1;
-	write(fd, &req, sizeof(int));
-	read(fd, &pid, sizeof(pid_t));
+	safe_write(fd, &req, sizeof(int));
+	safe_read(fd, &pid, sizeof(pid_t));
 
 	return pid;
+rwfail:
+	return (pid_t)-1;
 }
