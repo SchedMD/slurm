@@ -313,7 +313,6 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 
 	thd = xmalloc (job->nhosts * sizeof (thd_t));
 	for (i = 0; i < job->nhosts; i++) {
-
 		if (job->ntask[i] == 0)	{	/* No tasks for this node */
 			debug("Node %s is unused",job->host[i]);
 			job->host_state[i] = SRUN_HOST_REPLIED;
@@ -494,7 +493,7 @@ _print_launch_msg(launch_tasks_request_msg_t *msg, char * hostname)
 	int i;
 	char tmp_str[10], task_list[4096];
 
-	if (opt.distribution == SRUN_DIST_BLOCK) {
+	if (opt.distribution == SLURM_DIST_BLOCK) {
 		sprintf(task_list, "%u-%u", 
 		        msg->global_task_ids[0],
 			msg->global_task_ids[(msg->tasks_to_launch-1)]);

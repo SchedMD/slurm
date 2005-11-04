@@ -1146,16 +1146,20 @@ extern void build_node_details(struct job_record *job_ptr)
 	}
 
 	job_ptr->num_cpu_groups = 0;
-	job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap);
+	
+	/* Use hostlist here to insure ordering of info matches that of srun */
+	if ((host_list = hostlist_create(job_ptr->nodes)) == NULL)
+		fatal("hostlist_create error for %s: %m", this_node_name);
+	
+	job_ptr->node_cnt = hostlist_count(host_list);	
+
 	xrealloc(job_ptr->cpus_per_node, 
 		(sizeof(uint32_t) * job_ptr->node_cnt));
 	xrealloc(job_ptr->cpu_count_reps, 
 		(sizeof(uint32_t) * job_ptr->node_cnt));
 	xrealloc(job_ptr->node_addr, 
 		(sizeof(slurm_addr) * job_ptr->node_cnt));
-	/* Use hostlist here to insure ordering of info matches that of srun */
-	if ((host_list = hostlist_create(job_ptr->nodes)) == NULL)
-		fatal("hostlist_create error for %s: %m", job_ptr->nodes);
+	
 
         job_ptr->ntask_cnt = 0;
         xfree(job_ptr->ntask);
@@ -1176,17 +1180,16 @@ extern void build_node_details(struct job_record *job_ptr)
 				job_ptr->ntask[cr_count++] = usable_cpus;
 				if(error_code != SLURM_SUCCESS) {
 					xfree(job_ptr->ntask); 
-					free(this_node_name);
-					error("Invalid node %s in JobId=%u",
-						this_node_name, 
-						job_ptr->job_id);
+					error("unable to get extra_jobinfo "
+					      "from JobId=%u",
+					      job_ptr->job_id);
 				}
 			} else if (slurmctld_conf.fast_schedule) {
 				usable_cpus = node_ptr->config_ptr->cpus;
 			} else {
 				usable_cpus = node_ptr->cpus;
 			}
-
+			
 			if (usable_cpus <= 0)
 				continue;
 			memcpy(&job_ptr->node_addr[node_inx++],
@@ -1196,11 +1199,12 @@ extern void build_node_details(struct job_record *job_ptr)
 			     usable_cpus)) {
 				cpu_inx++;
 				job_ptr->cpus_per_node[cpu_inx] =
-						usable_cpus;
+					usable_cpus;
+				
 				job_ptr->cpu_count_reps[cpu_inx] = 1;
 			} else
 				job_ptr->cpu_count_reps[cpu_inx]++;
-
+			
 		} else {
 			error("Invalid node %s in JobId=%u",
 			      this_node_name, job_ptr->job_id);
@@ -1215,10 +1219,11 @@ extern void build_node_details(struct job_record *job_ptr)
 	}
 	job_ptr->num_cpu_groups = cpu_inx + 1;
 	if ((cr_enabled) && (error_code == SLURM_SUCCESS)) {
-                error_code = select_g_update_nodeinfo(job_ptr, SELECT_CR_USED_CPUS);
+                error_code = select_g_update_nodeinfo(job_ptr, 
+						      SELECT_CR_USED_CPUS);
                 if(error_code != SLURM_SUCCESS)
-                      error("Invalid node %s in JobId=%u",
-                            this_node_name, job_ptr->job_id);
+                      error("Unable to update nodeinfo for JobId=%u",
+                            job_ptr->job_id);
         }
 }
 
