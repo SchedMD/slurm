@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Invalid AllowGroup value in slurm.conf to not cause seg fault.
  -- Fix bug that would cause slurmctld to seg-fault with select/cons_res
     and batch job containing more than one step.
+ -- Fix bug in mpi plugin to set the ID correctly
 
 * Changes in SLURM 0.6.7
 ========================

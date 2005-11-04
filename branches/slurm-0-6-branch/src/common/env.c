@@ -323,12 +323,6 @@ int setup_env(env_t *env)
 		rc = SLURM_FAILURE;
 	}
 	
-	if (env->gmpi >= 0
-	    && setenvf(&env->env, "GMPI_ID", "%d", env->gmpi)) {
-		error("Unable to set GMPI_ID environment");
-		rc = SLURM_FAILURE;
-	}
-	
 	if (env->nhosts
 	    && setenvf(&env->env, "SLURM_NNODES", "%d", env->nhosts)) {
 		error("Unable to set SLURM_NNODES environment var");
@@ -359,18 +353,7 @@ int setup_env(env_t *env)
 
 		if ((dist = strchr (addrbuf, ':')) != NULL)
 			*dist = '\0';
-
 		setenvf (&env->env, "SLURM_LAUNCH_NODE_IPADDR", "%s", addrbuf);
-
-		if (getenvp(env->env, "SLURM_GMPI")) {
-			setenvf (&env->env, "GMPI_MASTER", "%s", addrbuf);
-			slurm_print_slurm_addr (env->self, 
-						addrbuf, INET_ADDRSTRLEN);
-			if ((dist = strchr (addrbuf, ':')) != NULL) 
-				*dist = '\0';
-			setenvf (&env->env, "GMPI_SLAVE", "%s", addrbuf);
-		}
-
 	}
 
 #ifdef HAVE_AIX
