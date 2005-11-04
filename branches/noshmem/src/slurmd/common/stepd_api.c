@@ -62,7 +62,6 @@ step_connect(step_loc_t step)
 	len = strlen(addr.sun_path) + sizeof(addr.sun_family);
 
 	if (connect(fd, (struct sockaddr *) &addr, len) < 0) {
-		printf("connect to server socket %s FAILED!\n", name);
 		xfree(name);
 		close(fd);
 		return -1;
@@ -87,6 +86,7 @@ stepd_state(step_loc_t step)
 	safe_read(fd, &status, sizeof(slurmstepd_state_t));
 
 rwfail:
+	close(fd);
 	return status;
 }
 
@@ -103,6 +103,8 @@ stepd_signal(step_loc_t step, void *auth_cred, int signal)
 	int rc;
 
 	fd = step_connect(step);
+	if (fd == -1)
+		return -1;
 	safe_write(fd, &req, sizeof(int));
 
 	/* pack auth credential */
@@ -119,8 +121,10 @@ stepd_signal(step_loc_t step, void *auth_cred, int signal)
 	safe_read(fd, &rc, sizeof(int));
 
 	free_buf(buf);
+	close(fd);
 	return rc;
 rwfail:
+	close(fd);
 	return -1;
 }
 
@@ -138,6 +142,8 @@ stepd_signal_task_local(step_loc_t step, void *auth_cred,
 	int rc;
 
 	fd = step_connect(step);
+	if (fd == -1)
+		return -1;
 	safe_write(fd, &req, sizeof(int));
 
 	/* pack auth credential */
@@ -155,8 +161,10 @@ stepd_signal_task_local(step_loc_t step, void *auth_cred,
 	safe_read(fd, &rc, sizeof(int));
 
 	free_buf(buf);
+	close(fd);
 	return rc;
 rwfail:
+	close(fd);
 	return -1;
 }
 
@@ -173,6 +181,8 @@ stepd_signal_container(step_loc_t step, void *auth_cred, int signal)
 	int rc;
 
 	fd = step_connect(step);
+	if (fd == -1)
+		return -1;
 	safe_write(fd, &req, sizeof(int));
 
 	/* pack auth credential */
@@ -189,8 +199,10 @@ stepd_signal_container(step_loc_t step, void *auth_cred, int signal)
 	safe_read(fd, &rc, sizeof(int));
 
 	free_buf(buf);
+	close(fd);
 	return rc;
 rwfail:
+	close(fd);
 	return -1;
 }
 
@@ -213,6 +225,8 @@ stepd_attach(step_loc_t step, slurm_addr *ioaddr, slurm_addr *respaddr,
 	int rc = SLURM_SUCCESS;
 
 	fd = step_connect(step);
+	if (fd == -1)
+		return SLURM_ERROR;
 	safe_write(fd, &req, sizeof(int));
 
 	/* pack auth and job credentials */
@@ -251,9 +265,11 @@ stepd_attach(step_loc_t step, slurm_addr *ioaddr, slurm_addr *respaddr,
 	}
 
 	free_buf(buf);
+	close(fd);
 	return rc;
 
 rwfail:
+	close(fd);
 	return SLURM_ERROR;
 }
 
@@ -388,8 +404,10 @@ stepd_pid_in_container(step_loc_t step, pid_t pid)
 	safe_read(fd, &rc, sizeof(bool));
 
 	debug("Leaving stepd_pid_in_container");
+	close(fd);
 	return rc;
 rwfail:
+	close(fd);
 	return false;
 }
 
@@ -409,7 +427,9 @@ stepd_daemon_pid(step_loc_t step)
 	safe_write(fd, &req, sizeof(int));
 	safe_read(fd, &pid, sizeof(pid_t));
 
+	close(fd);
 	return pid;
 rwfail:
+	close(fd);
 	return (pid_t)-1;
 }
