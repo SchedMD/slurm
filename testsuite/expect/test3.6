@@ -122,22 +122,14 @@ if {$found == 1} {
 #
 spawn $scontrol update PartitionName=$part_name Hidden=YES
 expect {
-	-re "slurm_update error: ($alpha_numeric) ($alpha_numeric)" {
-		set access_err 0
-		set err_msg1 $expect_out(1,string)
-		set err_msg2 $expect_out(2,string)
-		if {[string compare $err_msg1 "Invalid"] == 0} {
-			set access_err 1
-		}
-		if {[string compare $err_msg2 "user"] == 0} {
-			set access_err 1
-		}
-		if {$access_err == 1} {
-			send_user "\nWARNING: user not authorized to create partition\n"
-			exit $exit_code
-		} else {
-			set authorized 0
-		}
+	-re "slurm_update error: Invalid user" {
+		send_user "\nWARNING: user not authorized to create partition\n"
+		exit $exit_code
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: something bad happened on partitiion create\n"
+		set exit_code 1
 		exp_continue
 	}
 	timeout {
