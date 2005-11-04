@@ -31,8 +31,7 @@ global sacct scancel scontrol sinfo smap squeue srun
 # Specify the slurm install directory.
 # Used to locate binaries, libraries, and header files.
 #
-#set slurm_dir   "/usr"
-set slurm_dir	"/home/jette/slurm.way"
+set slurm_dir   "/usr"
 set sacct       "${slurm_dir}/bin/sacct"
 set scancel     "${slurm_dir}/bin/scancel"
 set scontrol    "${slurm_dir}/bin/scontrol"

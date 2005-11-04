@@ -35,16 +35,15 @@ COMPLETIONS=0
 
 # Make sure we are in the desired directory before possibly 
 # removing files the user does not want to lose.
-wc ./globals >/dev/null 2>/dev/null
-rc=$?
-if [ $rc -eq 0 ]; then
-	wc ./regression >/dev/null 2>/dev/null
-	rc=$?
-fi
-if [ $rc -ne 0 ]; then
+if [ ! -x ./regression ]; then
 	echo "FAILURE: cd to 'testsuite/expect' before starting 'regression'"
 	exit 1
 fi
+if [ ! -x ./globals ]; then
+	echo "FAILURE: copy 'globals.example' to 'globals' and modify as needed"
+	exit 1
+fi
+
 
 # Remove any recently edited back-up files
 /bin/rm -f test*.*% test*input test*output test*error 
