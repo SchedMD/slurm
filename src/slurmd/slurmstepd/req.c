@@ -99,7 +99,7 @@ _create_socket(const char *name)
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
 	strcpy(addr.sun_path, name);
-	len = strlen(addr.sun_path) + sizeof(addr.sun_family);
+	len = strlen(addr.sun_path)+1 + sizeof(addr.sun_family);
 
 	/* bind the name to the descriptor */
 	if (bind(fd, (struct sockaddr *) &addr, len) < 0)
