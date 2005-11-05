@@ -59,7 +59,7 @@ step_connect(step_loc_t step)
 	xstrfmtcat(name, "%s/%s_%u.%u", step.directory, step.nodename, 
 		   step.jobid, step.stepid);
 	strcpy(addr.sun_path, name);
-	len = strlen(addr.sun_path) + sizeof(addr.sun_family);
+	len = strlen(addr.sun_path)+1 + sizeof(addr.sun_family);
 
 	if (connect(fd, (struct sockaddr *) &addr, len) < 0) {
 		xfree(name);
