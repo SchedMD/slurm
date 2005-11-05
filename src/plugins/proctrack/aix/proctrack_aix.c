@@ -42,7 +42,7 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 #include "src/common/log.h"
-#include "src/slurmd/slurmd_job.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 extern int proctrack_job_reg_pid(int *jobid, int *pid_ptr); /* register a job */
 extern int proctrack_job_unreg(int *jobid);	/* unregister a job */
