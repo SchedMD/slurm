@@ -42,7 +42,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmd/slurmd.h"
+#include "src/slurmd/slurmd/slurmd.h"
 #include "src/common/slurm_jobacct.h"
 
 /*

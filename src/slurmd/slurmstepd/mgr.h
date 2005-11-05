@@ -1,10 +1,9 @@
 /*****************************************************************************\
- *  prog1.32.prog.c - Simple signal catching test program for SLURM regression 
- *  test1.32. Report caught signals. Exit after SIGUSR1 and SIGUSR2 received.
+ * src/slurmd/slurmstepd/mgr.c - job management functions for slurmstepd
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov>
+ *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -24,58 +23,44 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <unistd.h>
+#ifndef _MGR_H
+#define _MGR_H
 
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
 
-int sigusr1_cnt = 0, sigusr2_cnt = 0;
+#include "src/common/slurm_protocol_defs.h"
 
-void sig_handler(int sig)
-{
-	switch (sig)
-	{
-		case SIGUSR1:
-			printf("Received SIGUSR1\n");
-			fflush(NULL);
-			sigusr1_cnt++;
-			break;
-		case SIGUSR2:
-			printf("Received SIGUSR2\n");
-			fflush(NULL);
-			sigusr2_cnt++;
-			break;
-		default:
-			printf("Received signal %d\n", sig);
-			fflush(NULL);
-	}
-}
+#include "src/slurmd/slurmd/slurmd.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-main (int argc, char **argv) 
-{
-	struct sigaction act;
+/*
+ * Initialize a slurmd_job_t structure for a spawn task
+ */
+slurmd_job_t *mgr_spawn_task_setup(spawn_task_request_msg_t *msg,
+				   slurm_addr *client, slurm_addr *self);
 
-	act.sa_handler = sig_handler;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-	if (sigaction(SIGUSR1, &act, NULL) < 0) {
-		perror("setting SIGUSR1 handler");
-		exit(2);
-	}
-	if (sigaction(SIGUSR2, &act, NULL) < 0) {
-		perror("setting SIGUSR2 handler");
-		exit(2);
-	}
+/*
+ * Initialize a slurmd_job_t structure for a launch tasks
+ */
+slurmd_job_t *mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg,
+				     slurm_addr *client, slurm_addr *self);
 
-	printf("WAITING\n");
-	fflush(NULL);
+/* 
+ * Initialize a slurmd_job_t structure for a batch job
+ */
+slurmd_job_t *mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg,
+					 slurm_addr *client);
 
-	while (!sigusr1_cnt || !sigusr2_cnt) {
-		sleep(1);
-	}
+/*
+ * Finalize a batch job.
+ */
+void mgr_launch_batch_job_cleanup(slurmd_job_t *job, int rc);
 
-	exit(0);
-}
+/*
+ * Launch and manage the tasks in a job step.
+ */
+int job_manager(slurmd_job_t *job);
+
+#endif

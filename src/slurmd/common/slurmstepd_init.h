@@ -1,10 +1,9 @@
 /*****************************************************************************\
- *  prog1.32.prog.c - Simple signal catching test program for SLURM regression 
- *  test1.32. Report caught signals. Exit after SIGUSR1 and SIGUSR2 received.
+ * src/slurmd/slurmstepd_init.h - slurmstepd intialization code
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov>
+ *  Written by Danny Auble <da@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -24,58 +23,36 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <unistd.h>
 
+#ifndef _SLURMD_STEP_INIT_H
+#define _SLURMD_STEP_INIT_H
 
-int sigusr1_cnt = 0, sigusr2_cnt = 0;
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
 
-void sig_handler(int sig)
-{
-	switch (sig)
-	{
-		case SIGUSR1:
-			printf("Received SIGUSR1\n");
-			fflush(NULL);
-			sigusr1_cnt++;
-			break;
-		case SIGUSR2:
-			printf("Received SIGUSR2\n");
-			fflush(NULL);
-			sigusr2_cnt++;
-			break;
-		default:
-			printf("Received signal %d\n", sig);
-			fflush(NULL);
-	}
-}
+#include "src/common/slurm_protocol_defs.h"
 
-main (int argc, char **argv) 
-{
-	struct sigaction act;
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
+#include "src/slurmd/slurmd/slurmd.h"
 
-	act.sa_handler = sig_handler;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-	if (sigaction(SIGUSR1, &act, NULL) < 0) {
-		perror("setting SIGUSR1 handler");
-		exit(2);
-	}
-	if (sigaction(SIGUSR2, &act, NULL) < 0) {
-		perror("setting SIGUSR2 handler");
-		exit(2);
-	}
+typedef enum slurmd_step_tupe {
+	LAUNCH_BATCH_JOB = 0,
+	LAUNCH_TASKS,
+	SPAWN_TASKS
+} slurmd_step_type_t;
 
-	printf("WAITING\n");
-	fflush(NULL);
+/*
+ * Pack information needed for the forked slurmstepd process.
+ * Does not pack everything from the slurm_conf_t struct.
+ */
+void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer);
 
-	while (!sigusr1_cnt || !sigusr2_cnt) {
-		sleep(1);
-	}
+/*
+ * Unpack information needed for the forked slurmstepd process.
+ * Does not unpack everything from the slurm_conf_t struct.
+*/
+int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer);
 
-	exit(0);
-}
+#endif /* _SLURMD_STEP_INIT_H */
+

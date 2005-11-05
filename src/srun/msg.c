@@ -287,6 +287,29 @@ _process_launch_resp(srun_job_t *job, launch_tasks_response_msg_t *msg)
 }
 
 static void
+update_tasks_state(srun_job_t *job, uint32_t nodeid)
+{
+	int i;
+	pipe_enum_t pipe_enum = PIPE_TASK_STATE;
+	debug2("updating %d running tasks for node %d", 
+			job->ntask[nodeid], nodeid);
+	slurm_mutex_lock(&job->task_mutex);
+	for (i = 0; i < job->ntask[nodeid]; i++) {
+		uint32_t tid = job->tids[nodeid][i];
+
+		if(message_thread) {
+			write(job->forked_msg->
+			      par_msg->msg_pipe[1],&pipe_enum,sizeof(int));
+			write(job->forked_msg->
+			      par_msg->msg_pipe[1],&tid,sizeof(int));
+			write(job->forked_msg->par_msg->msg_pipe[1],
+			      &job->task_state[tid],sizeof(int));
+		}
+	}
+	slurm_mutex_unlock(&job->task_mutex);
+}
+
+static void
 update_running_tasks(srun_job_t *job, uint32_t nodeid)
 {
 	int i;
@@ -598,6 +621,8 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 		}
 	}
 
+	update_tasks_state(job, hostid);
+
 	_print_exit_status(job, hl, host, status);
 
 	hostlist_destroy(hl);
@@ -905,7 +930,7 @@ par_thr(void *arg)
 			debug("PIPE_JOB_STATE, c = %d", c);
 			update_job_state(job, c);
 		} else if(type == PIPE_TASK_STATE) {
-			debug("PIPE_TASK_STATE");
+			debug("PIPE_TASK_STATE, c = %d", c);
 			if(tid == -1) {
 				tid = c;
 				continue;

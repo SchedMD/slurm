@@ -1,10 +1,9 @@
 /*****************************************************************************\
- *  prog1.32.prog.c - Simple signal catching test program for SLURM regression 
- *  test1.32. Report caught signals. Exit after SIGUSR1 and SIGUSR2 received.
+ *  task_plugin.h - Define plugin functions for task pre_launch and post_term.
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov>
+ *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -24,58 +23,45 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <unistd.h>
 
+#ifndef _SLURMD_TASK_PLUGIN_H_
+#define _SLURMD_TASK_PLUGIN_H_
 
-int sigusr1_cnt = 0, sigusr2_cnt = 0;
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-void sig_handler(int sig)
-{
-	switch (sig)
-	{
-		case SIGUSR1:
-			printf("Received SIGUSR1\n");
-			fflush(NULL);
-			sigusr1_cnt++;
-			break;
-		case SIGUSR2:
-			printf("Received SIGUSR2\n");
-			fflush(NULL);
-			sigusr2_cnt++;
-			break;
-		default:
-			printf("Received signal %d\n", sig);
-			fflush(NULL);
-	}
-}
+/*
+ * Initialize the task plugin.
+ *
+ * RET - slurm error code
+ */
+extern int slurmd_task_init( void );
 
-main (int argc, char **argv) 
-{
-	struct sigaction act;
+/*
+ * Terminate the task plugin, free memory.
+ * 
+ * RET - slurm error code
+ */
+extern int slurmd_task_fini(void);
 
-	act.sa_handler = sig_handler;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-	if (sigaction(SIGUSR1, &act, NULL) < 0) {
-		perror("setting SIGUSR1 handler");
-		exit(2);
-	}
-	if (sigaction(SIGUSR2, &act, NULL) < 0) {
-		perror("setting SIGUSR2 handler");
-		exit(2);
-	}
+/*
+ **************************************************************************
+ *                          P L U G I N   C A L L S                       *
+ **************************************************************************
+ */
 
-	printf("WAITING\n");
-	fflush(NULL);
+/*
+ * Note that a task launch is about to occur.
+ *
+ * RET - slurm error code
+ */
+extern int pre_launch(slurmd_job_t *job);
 
-	while (!sigusr1_cnt || !sigusr2_cnt) {
-		sleep(1);
-	}
+/*
+ * Note that a task has terminated.
+ *
+ * RET - slurm error code
+ */
+extern int post_term(slurmd_job_t *job);
 
-	exit(0);
-}
+#endif /* _SLURMD_TASK_PLUGIN_H_ */
+

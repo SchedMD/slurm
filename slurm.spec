@@ -211,7 +211,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/*
 %{_sbindir}/slurmctld
 %{_sbindir}/slurmd
-%{_sbindir}/slurmd_step
+%{_sbindir}/slurmstepd
 %{_libdir}/*.so*
 %{_libdir}/slurm/src/*
 %{_mandir}/man1/*

@@ -751,7 +751,7 @@ void debug3(const char *fmt, ...)
 
 /*
  * Debug levels higher than debug3 are not written to stderr in the
- * slurmd_step process after stderr is connected back to the client (srun).
+ * slurmstepd process after stderr is connected back to the client (srun).
  */
 void debug4(const char *fmt, ...)
 {
