@@ -48,7 +48,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmd/slurmd_job.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /*
  * WARNING:  Do not change the order of these fields or add additional

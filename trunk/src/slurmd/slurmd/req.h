@@ -1,10 +1,10 @@
 /*****************************************************************************\
- *  prog1.32.prog.c - Simple signal catching test program for SLURM regression 
- *  test1.32. Report caught signals. Exit after SIGUSR1 and SIGUSR2 received.
+ * src/slurmd/slurmd/req.h - slurmd request handling
+ * $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov>
+ *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -24,58 +24,14 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <unistd.h>
+#ifndef _REQ_H
+#define _REQ_H
 
+#include "src/common/slurm_protocol_defs.h"
 
-int sigusr1_cnt = 0, sigusr2_cnt = 0;
+/* Process request contained in slurm message `msg' from client at
+ * "*client_addr"
+ */
+void slurmd_req(slurm_msg_t *msg, slurm_addr *client_addr);
 
-void sig_handler(int sig)
-{
-	switch (sig)
-	{
-		case SIGUSR1:
-			printf("Received SIGUSR1\n");
-			fflush(NULL);
-			sigusr1_cnt++;
-			break;
-		case SIGUSR2:
-			printf("Received SIGUSR2\n");
-			fflush(NULL);
-			sigusr2_cnt++;
-			break;
-		default:
-			printf("Received signal %d\n", sig);
-			fflush(NULL);
-	}
-}
-
-main (int argc, char **argv) 
-{
-	struct sigaction act;
-
-	act.sa_handler = sig_handler;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-	if (sigaction(SIGUSR1, &act, NULL) < 0) {
-		perror("setting SIGUSR1 handler");
-		exit(2);
-	}
-	if (sigaction(SIGUSR2, &act, NULL) < 0) {
-		perror("setting SIGUSR2 handler");
-		exit(2);
-	}
-
-	printf("WAITING\n");
-	fflush(NULL);
-
-	while (!sigusr1_cnt || !sigusr2_cnt) {
-		sleep(1);
-	}
-
-	exit(0);
-}
+#endif

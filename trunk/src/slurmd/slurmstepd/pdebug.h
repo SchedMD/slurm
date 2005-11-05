@@ -1,10 +1,9 @@
 /*****************************************************************************\
- *  prog1.32.prog.c - Simple signal catching test program for SLURM regression 
- *  test1.32. Report caught signals. Exit after SIGUSR1 and SIGUSR2 received.
+ * src/slurmd/slurmstepd/ptrace_debug.h - ptrace functions for slurmstepd
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov>
+ *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -24,58 +23,30 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <unistd.h>
+#ifndef _PDEBUG_H
+#define _PDEBUG_H
 
+#include <sys/ptrace.h>
+#include <sys/wait.h>
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-int sigusr1_cnt = 0, sigusr2_cnt = 0;
+/*
+ * Stop current task on exec() for connection from a parallel debugger
+ */
+void pdebug_stop_current(slurmd_job_t *job);
+/*
+ * Prepare task for parallel debugger attach
+ */
+void pdebug_trace_process(slurmd_job_t *job, pid_t pid);
 
-void sig_handler(int sig)
-{
-	switch (sig)
-	{
-		case SIGUSR1:
-			printf("Received SIGUSR1\n");
-			fflush(NULL);
-			sigusr1_cnt++;
-			break;
-		case SIGUSR2:
-			printf("Received SIGUSR2\n");
-			fflush(NULL);
-			sigusr2_cnt++;
-			break;
-		default:
-			printf("Received signal %d\n", sig);
-			fflush(NULL);
-	}
-}
+#ifdef HAVE_PTRACE64
+#  define _PTRACE(r,p,a,d) ptrace64((r),(long long)(p),(long long)(a),(d),NULL)
+#else
+#  ifdef PTRACE_FIVE_ARGS
+#    define _PTRACE(r,p,a,d) ptrace((r),(p),(a),(d),NULL)
+#  else
+#    define _PTRACE(r,p,a,d) ptrace((r),(p),(a),(void *)(d))
+#  endif
+#endif
 
-main (int argc, char **argv) 
-{
-	struct sigaction act;
-
-	act.sa_handler = sig_handler;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-	if (sigaction(SIGUSR1, &act, NULL) < 0) {
-		perror("setting SIGUSR1 handler");
-		exit(2);
-	}
-	if (sigaction(SIGUSR2, &act, NULL) < 0) {
-		perror("setting SIGUSR2 handler");
-		exit(2);
-	}
-
-	printf("WAITING\n");
-	fflush(NULL);
-
-	while (!sigusr1_cnt || !sigusr2_cnt) {
-		sleep(1);
-	}
-
-	exit(0);
-}
+#endif

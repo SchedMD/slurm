@@ -1,10 +1,9 @@
 /*****************************************************************************\
- *  prog1.32.prog.c - Simple signal catching test program for SLURM regression 
- *  test1.32. Report caught signals. Exit after SIGUSR1 and SIGUSR2 received.
+ * src/slurmd/common/run_script.h - code shared between slurmd and slurmstepd
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov>
+ *  Written by Christopher Morrone <morrone2@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -24,58 +23,26 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <sys/types.h>
+
+#ifndef _RUN_SCRIPT_H
+#define _RUN_SCRIPT_H
+
 #include <unistd.h>
+#include <sys/types.h>
+#include <inttypes.h>
 
+/*
+ * Run a prolog or epilog script
+ * name IN: class of program (prolog, epilog, etc.),
+ *	if prefix is "user" then also set uid
+ * path IN: pathname of program to run
+ * jobid, uidIN: info on associated job
+ * max_wait IN: maximum time to wait in seconds, -1 for no limit
+ * env IN: environment variables to use on exec, sets minimal environment 
+ *	if NULL
+ * RET 0 on success, -1 on failure.
+ */
+int run_script(const char *name, const char *path, uint32_t jobid, 
+	       uid_t uid, int max_wait, char **env);
 
-int sigusr1_cnt = 0, sigusr2_cnt = 0;
-
-void sig_handler(int sig)
-{
-	switch (sig)
-	{
-		case SIGUSR1:
-			printf("Received SIGUSR1\n");
-			fflush(NULL);
-			sigusr1_cnt++;
-			break;
-		case SIGUSR2:
-			printf("Received SIGUSR2\n");
-			fflush(NULL);
-			sigusr2_cnt++;
-			break;
-		default:
-			printf("Received signal %d\n", sig);
-			fflush(NULL);
-	}
-}
-
-main (int argc, char **argv) 
-{
-	struct sigaction act;
-
-	act.sa_handler = sig_handler;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-	if (sigaction(SIGUSR1, &act, NULL) < 0) {
-		perror("setting SIGUSR1 handler");
-		exit(2);
-	}
-	if (sigaction(SIGUSR2, &act, NULL) < 0) {
-		perror("setting SIGUSR2 handler");
-		exit(2);
-	}
-
-	printf("WAITING\n");
-	fflush(NULL);
-
-	while (!sigusr1_cnt || !sigusr2_cnt) {
-		sleep(1);
-	}
-
-	exit(0);
-}
+#endif /* _RUN_SCRIPT_H */
