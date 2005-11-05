@@ -60,15 +60,17 @@ if {[test_front_end] != 0} {
 #   This is especially important on very slow systems (e.g. AIX).
 #
 exec $bin_rm -f $file_in
-exec echo "#!$bin_bash"                      >$file_in
-exec echo "$bin_sleep $delay"               >>$file_in
-exec echo "inx=0"                           >>$file_in
-exec echo "while \[ \$inx -le $task_cnt ]"  >>$file_in
-exec echo "do"                              >>$file_in
-exec echo "$srun $bin_sleep $sleep_time &"  >>$file_in
-exec echo "inx=\$((inx+1))"                 >>$file_in
-exec echo "done"                            >>$file_in
-exec echo "$srun $bin_sleep $sleep_time "   >>$file_in
+
+set file [open $file_in "w"]
+puts $file "#!$bin_bash
+
+$bin_sleep $delay
+for ((inx=0; inx < $task_cnt; inx++)) ; do
+        $srun $bin_sleep $sleep_time &
+done
+$srun $bin_sleep $sleep_time
+"
+close $file
 exec $bin_chmod 700 $file_in
 
 #
