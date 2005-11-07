@@ -206,18 +206,12 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 {
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
-	char *temp = NULL;
-	int count=0;
 
 	req_msg.msg_type = REQUEST_JOB_STEP_CREATE;
 	req_msg.data     = req; 
 	
-	if(temp = (char*)getenv("MP_PROCS")) {
-		if(strlen(temp)>0) {
-			if((count = _nodelist_from_hostfile(req)) == 0) 
-				debug("nodelist was NULL");  
-		}
-	}
+	if(_nodelist_from_hostfile(req) == 0) 
+		debug("nodelist was NULL");  
 
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;

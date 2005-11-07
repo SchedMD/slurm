@@ -228,7 +228,6 @@ job_create_structure(resource_allocation_response_msg_t *resp)
 {
 	srun_job_t *job = xmalloc(sizeof(srun_job_t));
 	int i, cpu_inx, cpu_cnt;
-	hostlist_t hl;
 	
 	debug2("creating job with %d tasks", opt.nprocs);
 
@@ -244,6 +243,7 @@ job_create_structure(resource_allocation_response_msg_t *resp)
 	job->gid = opt.gid;
 	job->unbuffered = opt.unbuffered;
 	job->gid = opt.parallel_debug;
+	
 	job->task_prolog = xstrdup(opt.task_prolog);
 	job->task_epilog = xstrdup(opt.task_epilog);
 	/* Compute number of file descriptors / Ports needed for Job 
@@ -264,7 +264,9 @@ job_create_structure(resource_allocation_response_msg_t *resp)
 		xmalloc(job->num_listen * sizeof(int));
 	job->listenport = (int *) 
 		xmalloc(job->num_listen * sizeof(int));
-
+	
+	job->hostid = xmalloc(opt.nprocs * sizeof(uint32_t));
+	
  	slurm_mutex_init(&job->task_mutex);
 	
 	job->stepid  = NO_VAL;
@@ -289,21 +291,7 @@ job_create_structure(resource_allocation_response_msg_t *resp)
 	if (resp->node_addr)
 		memcpy( job->slurmd_addr, resp->node_addr,
 			sizeof(slurm_addr)*job->nhosts);
-	/* job->host  = (char **) xmalloc(job->nhosts * sizeof(char *)); */
-/* 	job->cpus  = (int *)   xmalloc(job->nhosts * sizeof(int) ); */
-	
-/* 	hl = hostlist_create(job->nodelist);  */
-/* 	for(i = 0; i < job->nhosts; i++) { */
-/* 		job->host[i]  = hostlist_shift(hl); */
 
-/* 		job->cpus[i] = resp->cpus_per_node[cpu_inx]; */
-/* 		if ((++cpu_cnt) >= resp->cpu_count_reps[cpu_inx]) { */
-/* 			/\* move to next record *\/ */
-/* 			cpu_inx++; */
-/* 			cpu_cnt = 0; */
-/* 		} */
-/* 	} */
-/* 	hostlist_destroy(hl); */
 	job->free_incoming = list_create(NULL); /* FIXME! Needs destructor */
 	for (i = 0; i < STDIO_MAX_FREE_BUF; i++) {
 		list_enqueue(job->free_incoming, alloc_io_buf());
@@ -381,7 +369,6 @@ extern int build_step_ctx(srun_job_t *job)
 		      slurm_strerror(slurm_get_errno()));
 		return -1;
 	}
-	job->hostid = xmalloc(opt.nprocs * sizeof(uint32_t));
 	
 	if (slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_NHOSTS, 
 			       &job->nhosts) != SLURM_SUCCESS) {
@@ -406,7 +393,6 @@ extern int build_step_ctx(srun_job_t *job)
 	job->tids   = xmalloc(job->nhosts * sizeof(uint32_t *));
 	job->host   = xmalloc(job->nhosts * sizeof(char *));
 	for(i=0;i<job->nhosts;i++) {
-		//job->tids[i] = xmalloc(job->ntask[i] * sizeof(uint32_t));
 		if (slurm_step_ctx_get(job->step_ctx, 
 				       SLURM_STEP_CTX_TID, i,
 				       &job->tids[i]) != SLURM_SUCCESS) {
@@ -431,7 +417,6 @@ extern int build_step_ctx(srun_job_t *job)
 	}
 	slurm_free_job_step_create_request_msg(r);
 	job_update_io_fnames(job);
-
 }
 
 void

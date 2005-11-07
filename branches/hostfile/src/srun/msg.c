@@ -859,7 +859,6 @@ _msg_thr_poll(srun_job_t *job)
 		}
 		
 	}
-	printf("done\n");
 	
 	xfree(fds);	/* if we were to break out of while loop */
 }
