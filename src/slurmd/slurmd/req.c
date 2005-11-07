@@ -874,6 +874,8 @@ _rpc_signal_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 #endif
 
 	rc = stepd_signal(loc, msg->cred, req->signal);
+	if (rc == -1)
+		rc = ESLURMD_JOB_NOTRUNNING;
 	
   done:
 	slurm_send_rc_msg(msg, rc);
@@ -896,6 +898,8 @@ _rpc_terminate_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	loc.jobid = req->job_id;
 	loc.stepid = req->job_step_id;
 	rc = stepd_signal_container(loc, msg->cred, req->signal);
+	if (rc == -1)
+		rc = ESLURMD_JOB_NOTRUNNING;
 
   done:
 	slurm_send_rc_msg(msg, rc);
