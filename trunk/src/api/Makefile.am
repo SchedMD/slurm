@@ -41,7 +41,8 @@ current = $(SLURM_API_CURRENT)
 age     = $(SLURM_API_AGE)
 rev     = $(SLURM_API_REVISION)
 
-lib_LTLIBRARIES = libslurm.la
+lib_LTLIBRARIES = libslurm.la \
+	libpmi.la
 
 libslurm_la_SOURCES =    \
 	allocate.c       \
@@ -61,19 +62,21 @@ libslurm_la_SOURCES =    \
 	reconfigure.c    \
 	update_config.c  
 
+libpmi_la_SOURCES = pmi.c
+
 BUILT_SOURCES = 	\
 	$(VERSION_SCRIPT)
 
 common_dir = $(top_builddir)/src/common
 
-libslurm_la_LIBADD         = $(common_dir)/libcommon.la -lpthread
+libslurm_la_LIBADD	= $(common_dir)/libcommon.la -lpthread
+libpmi_la_LIBADDR	= $(common_dir)/libpmi.la -lpthread
 
 libslurm_la_LDFLAGS        = \
 	$(LIB_LDFLAGS)       \
 	-version-info $(current):$(rev):$(age) \
 	$(OTHER_FLAGS)
-
-libslurm_la_DEPENDENCIES   = $(common_dir)/libcommon.la
+libpmi_la_LBFLAGS = $(LIB_LDFLAGS)
 
 force:
 $(libslurm_la_LIBADD) : force
@@ -81,7 +84,6 @@ $(libslurm_la_LIBADD) : force
 
 $(VERSION_SCRIPT) :
 	(echo "{ global:";   \
-	 echo "   BNR_*;";   \
 	 echo "   slurm_*;"; \
 	 echo "  local: *;"; \
 	 echo "};") > $(VERSION_SCRIPT)
