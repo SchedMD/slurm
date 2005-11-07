@@ -359,7 +359,7 @@ _handle_signal_process_group(int fd, slurmd_job_t *job)
 	}
 
 	if (killpg(job->pgid, signal) == -1) {
-		rc = errno;
+		rc = -1;
 		verbose("Error sending signal %d to %u.%u, pgid %d: %s", 
 			signal, job->jobid, job->stepid, job->pgid,
 			slurm_strerror(rc));
@@ -440,7 +440,7 @@ _handle_signal_task_local(int fd, slurmd_job_t *job)
 	 * Signal the task
 	 */
 	if (kill(job->task[ltaskid]->pid, signal) == -1) {
-		rc = errno;
+		rc = -1;
 		verbose("Error sending signal %d to %u.%u, pid %d: %s", 
 			signal, job->jobid, job->stepid,
 			job->task[ltaskid]->pid, slurm_strerror(rc));
@@ -504,7 +504,7 @@ _handle_signal_container(int fd, slurmd_job_t *job)
 	}
 
 	if (slurm_container_signal(job->cont_id, signal) < 0) {
-		rc = errno;
+		rc = -1;
 		verbose("Error sending signal %d to %u.%u: %s", 
 			signal, job->jobid, job->stepid, 
 			slurm_strerror(rc));
