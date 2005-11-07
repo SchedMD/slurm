@@ -45,7 +45,7 @@ static int _init_from_slurmd(int sock, char **argv, slurm_addr **_cli,
 static void _send_ok_to_slurmd(int sock);
 static slurmd_job_t *_step_setup(slurm_addr *cli, slurm_addr *self,
 				 slurm_msg_t *msg);
-static void _step_cleanup(slurmd_job_t *job, int rc);
+static void _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc);
 
 
 int 
@@ -82,7 +82,7 @@ main (int argc, char *argv[])
 	eio_signal_shutdown(job->msg_handle);
 	pthread_join(job->msgid, NULL);
 
-	_step_cleanup(job, rc);
+	_step_cleanup(job, msg, rc);
 
 	xfree(cli);
 	xfree(self);
@@ -92,7 +92,6 @@ main (int argc, char *argv[])
 	xfree(conf->logfile);
 	xfree(conf->cf.job_acct_parameters);
 	xfree(conf);
-	slurm_free_msg(msg);
 
 	return 0;
 }
@@ -232,17 +231,14 @@ _step_setup(slurm_addr *cli, slurm_addr *self, slurm_msg_t *msg)
 	case REQUEST_BATCH_JOB_LAUNCH:
 		debug2("setup for a batch_job");
 		job = mgr_launch_batch_job_setup(msg->data, cli);
-		slurm_free_job_launch_msg(msg->data);
 		break;
 	case REQUEST_LAUNCH_TASKS:
 		debug2("setup for a launch_task");
 		job = mgr_launch_tasks_setup(msg->data, cli, self);
-		slurm_free_launch_tasks_request_msg(msg->data);
 		break;
 	case REQUEST_SPAWN_TASK:
 		debug2("setup for a spawn_task");
 		job = mgr_spawn_task_setup(msg->data, cli, self);
-		slurm_free_spawn_task_request_msg(msg->data);
 		break;
 	default:
 		fatal("handle_launch_message: Unrecognized launch/spawn RPC");
@@ -254,10 +250,31 @@ _step_setup(slurm_addr *cli, slurm_addr *self, slurm_msg_t *msg)
 }
 
 static void
-_step_cleanup(slurmd_job_t *job, int rc)
+_step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
 {
 	if (job->batch)
 		mgr_launch_batch_job_cleanup(job, rc);
 	else
 		job_destroy(job);
+
+	/* 
+	 * The message cannot be freed until the jobstep is complete
+	 * because the job struct has pointers into the msg, such
+	 * as the switch jobinfo pointer.
+	 */
+	switch(msg->msg_type) {
+	case REQUEST_BATCH_JOB_LAUNCH:
+		slurm_free_job_launch_msg(msg->data);
+		break;
+	case REQUEST_LAUNCH_TASKS:
+		slurm_free_launch_tasks_request_msg(msg->data);
+		break;
+	case REQUEST_SPAWN_TASK:
+		slurm_free_spawn_task_request_msg(msg->data);
+		break;
+	default:
+		fatal("handle_launch_message: Unrecognized launch/spawn RPC");
+		break;
+	}
+	slurm_free_msg(msg);
 }
