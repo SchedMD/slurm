@@ -229,18 +229,18 @@ int srun(int ac, char **av)
 			exit(1);
 		if (_verbose)
 			_print_job_information(resp);
-		job = job_create_structure(resp); 
+		job = job_create_structure(resp);
 	
-		job->alloc_resp = resp;
 		build_step_ctx(job);
 				
-		/*  job = job_create_allocation(resp);  */
+		/* job = job_create_allocation(resp); */
+/* 		build_step_ctx(job); */
 		
 /*  		if (create_job_step(job) < 0) { */
 /*  			srun_job_destroy(job, 0); */
 /*  			exit(1); */
 /*  		} */
-/*  		slurm_free_resource_allocation_response_msg(resp); */
+ 		slurm_free_resource_allocation_response_msg(resp);
 	}
 
 	/*
@@ -285,18 +285,19 @@ int srun(int ac, char **av)
 
 	if (sig_thr_create(job) < 0)
 		job_fatal(job, "Unable to create signals thread: %m");
-
-	/*  if (launch_thr_create(job) < 0) */
-/*  		job_fatal(job, "Unable to create launch thread: %m"); */
-	update_job_state(job, SRUN_JOB_LAUNCHING);
-	if (slurm_launch(job->step_ctx, job->task_mutex, job->forked_msg,
-			 job->listenport, job->jaddr, job->njfds,
-			 job->num_listen)) {
-		fatal("slurm_launch: %s", 
-			slurm_strerror(slurm_get_errno()));
-	}
-	update_job_state(job, SRUN_JOB_STARTING);
-	/* wait for job to terminate 
+	printf("hey I am here\n");
+	if (launch_thr_create(job) < 0)
+ 		job_fatal(job, "Unable to create launch thread: %m");
+	
+/* 	update_job_state(job, SRUN_JOB_LAUNCHING); */
+/* 	printf("launching job\n"); */
+/* 	if (slurm_launch(job->job_step)) { */
+/* 		fatal("slurm_launch: %s", */
+/* 			slurm_strerror(slurm_get_errno())); */
+/* 	} */
+/* 	update_job_state(job, SRUN_JOB_STARTING); */
+	printf("done launching\n");
+/* wait for job to terminate 
 	 */
 	slurm_mutex_lock(&job->state_mutex);
 	while (job->state < SRUN_JOB_TERMINATED) {

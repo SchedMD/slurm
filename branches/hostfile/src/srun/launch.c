@@ -37,6 +37,7 @@
 
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/hostlist.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
@@ -105,13 +106,13 @@ launch(void *arg)
 	slurm_msg_t *req_array_ptr;
 	launch_tasks_request_msg_t *msg_array_ptr;
 	srun_job_t *job = (srun_job_t *) arg;
-	int i, my_envc;
-	char hostname[MAXHOSTNAMELEN];
+	int i, j, my_envc;
+	hostlist_t hostlist = NULL;
+	hostlist_iterator_t itr = NULL;
+	char *host = NULL;
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
-	if (gethostname(hostname, MAXHOSTNAMELEN) < 0)
-		error("gethostname: %m");
-
+	
 	debug("going to launch %d tasks on %d hosts", opt.nprocs, job->nhosts);
 	debug("sending to slurmd port %d", slurm_get_slurmd_port());
 
@@ -119,6 +120,10 @@ launch(void *arg)
 		xmalloc(sizeof(launch_tasks_request_msg_t)*job->nhosts);
 	req_array_ptr = xmalloc(sizeof(slurm_msg_t) * job->nhosts);
 	my_envc = envcount(environ);
+
+	hostlist = hostlist_create(job->nodelist);		
+	itr = hostlist_iterator_create(hostlist);
+
 	for (i = 0; i < job->nhosts; i++) {
 		launch_tasks_request_msg_t *r = &msg_array_ptr[i];
 		slurm_msg_t                *m = &req_array_ptr[i];
@@ -159,11 +164,23 @@ launch(void *arg)
 		r->srun_node_id    = (uint32_t)i;
 		r->io_port         = ntohs(job->listenport[i%job->num_listen]);
 		r->resp_port       = ntohs(job->jaddr[i%job->njfds].sin_port);
+		
 		m->msg_type        = REQUEST_LAUNCH_TASKS;
-		m->data            = &msg_array_ptr[i];
-		memcpy(&m->address, &job->slurmd_addr[i], sizeof(slurm_addr));
+		m->data            = r;
+		j=0; 
+  		while(host = hostlist_next(itr)) { 
+  			if(!strcmp(host,job->host[i])) {
+  				free(host);
+				break; 
+			}
+  			j++; 
+			free(host);
+  		}
+		memcpy(&m->address, &job->slurmd_addr[j], sizeof(slurm_addr));
 	}
-
+	hostlist_iterator_destroy(itr);
+	hostlist_destroy(hostlist);
+	
 	_p_launch(req_array_ptr, job);
 
 	xfree(msg_array_ptr);

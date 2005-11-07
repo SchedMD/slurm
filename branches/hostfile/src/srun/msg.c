@@ -265,7 +265,6 @@ _process_launch_resp(srun_job_t *job, launch_tasks_response_msg_t *msg)
 		error ("Bad launch response from %s", msg->node_name);
 		return;
 	}
-
 	pthread_mutex_lock(&job->task_mutex);
 	job->host_state[msg->srun_node_id] = SRUN_HOST_REPLIED;
 	pthread_mutex_unlock(&job->task_mutex);
@@ -390,8 +389,10 @@ static void
 _confirm_launch_complete(srun_job_t *job)
 {
 	int i;
-
+	printf("job->nhosts %d\n",job->nhosts);
+		
 	for (i=0; i<job->nhosts; i++) {
+		printf("job->nhosts %d\n",job->nhosts);
 		if (job->host_state[i] != SRUN_HOST_REPLIED) {
 			error ("Node %s not responding, terminating job step",
 			       job->host[i]);
@@ -632,7 +633,7 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 	uid_t uid     = getuid();
 	srun_timeout_msg_t *to;
 	srun_node_fail_msg_t *nf;
-
+	
 	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
 		error ("Security violation, slurm message from uid %u", 
 		       (unsigned int) req_uid);
@@ -832,21 +833,21 @@ _msg_thr_poll(srun_job_t *job)
 {
 	struct pollfd *fds;
 	int i;
-
+	
 	fds = xmalloc((job->njfds + 1) * sizeof(*fds));
 
 	_set_jfds_nonblocking(job);
-
+		
 	for (i = 0; i < job->njfds; i++)
 		_poll_set_rd(fds[i], job->jfd[i]);
 	_poll_set_rd(fds[i], slurmctld_fd);
-
+	
 	while (!_job_msg_done(job)) {
 		if (_do_poll(job, fds, _get_next_timeout(job)) == 0) {
 			_do_poll_timeout(job);
 			continue;
 		}
-
+		
 		for (i = 0; i < (job->njfds + 1) ; i++) {
 			unsigned short revents = fds[i].revents;
 			if ((revents & POLLERR) || 
@@ -858,6 +859,8 @@ _msg_thr_poll(srun_job_t *job)
 		}
 		
 	}
+	printf("done\n");
+	
 	xfree(fds);	/* if we were to break out of while loop */
 }
 
@@ -1005,7 +1008,8 @@ msg_thr_create(srun_job_t *job)
 	for (i = 0; i < job->njfds; i++) {
 		if ((job->jfd[i] = slurm_init_msg_engine_port(0)) < 0)
 			fatal("init_msg_engine_port: %m");
-		if (slurm_get_stream_addr(job->jfd[i], &job->jaddr[i]) 
+		if (slurm_get_stream_addr(job->jfd[i], 
+					  &job->jaddr[i]) 
 		    < 0)
 			fatal("slurm_get_stream_addr: %m");
 		debug("initialized job control port %d\n",

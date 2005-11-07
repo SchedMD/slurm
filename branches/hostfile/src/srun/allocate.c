@@ -523,9 +523,6 @@ create_job_step(srun_job_t *job)
 		error ("Unable to create job step: %m");
 		return -1;
 	}
-	temp = req->node_list;
-	req->node_list = resp->node_list;
-	resp->node_list = temp;
 	
 	job->stepid  = resp->job_step_id;
 	job->cred    = resp->cred;
