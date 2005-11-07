@@ -46,7 +46,6 @@ lib_LTLIBRARIES = libslurm.la \
 
 libslurm_la_SOURCES =    \
 	allocate.c       \
-	bnr.c            \
 	cancel.c         \
 	checkpoint.c     \
 	complete.c       \
