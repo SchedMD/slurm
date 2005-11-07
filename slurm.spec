@@ -246,6 +246,8 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %dir %attr(0755,root,root) %{_prefix}/include/slurm
 %{_prefix}/include/slurm/*
+%{_libdir}/libpmi.a
+%{_libdir}/libpmi.la
 %{_libdir}/libslurm.a
 %{_libdir}/libslurm.la
 %{_mandir}/man3/*
@@ -316,6 +318,8 @@ fi
 
 
 %changelog
+* Mon Nov 07 2005 Morris Jette <jette1@llnl.gov>
+- Added PMI libary
 * Tue Oct 11 2005 Morris Jette <jette1@llnl.gov>
 - Added proctrack/rms to switch_elan rpm
 * Thu Sep 01 2005 Morris Jette <jette1@llnl.gov>

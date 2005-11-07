@@ -1,11 +1,11 @@
 /*****************************************************************************\
- *  pmi.h - Process Management Interface for MPICH2, implemented by SLURM
+ *  pmi.c - Process Management Interface for MPICH2
  *  See http://www-unix.mcs.anl.gov/mpi/mpich2/
  *
  *  NOTE: Dynamic Process Management functions (PMI part 2) are not supported
  *  at this time. Functions required for MPI-1 (PMI part 1) are supported.
  *****************************************************************************
- *  COPYRIGHT
+ *  COPYRIGHT: For the function definitions
  *
  *  The following is a notice of limited availability of the code, and
  *  disclaimer which must be included in the prologue of the code and in all
@@ -43,62 +43,58 @@
  *
  *  MCS Division <http://www.mcs.anl.gov>        Argonne National Laboratory
  *  <http://www.anl.gov>     University of Chicago <http://www.uchicago.edu>
+ *****************************************************************************
+ *  COPYRIGHT: For the implementation of the functions
+ *
+ *  Copyright (C) 2005 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Morris Jette <jette1@llnl.gov>
+ *  UCRL-CODE-2002-040.
+ *
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef PMI_H
-#define PMI_H
+#include <stdint.h>
+#include <stdlib.h>
+#include <slurm/pmi.h>
 
-/* prototypes for the PMI interface in MPICH2 */
+/* These values should probaby be moved to a location easily 
+ * accessible to other SLURM tools. */
+#define PMI_MAX_GRP_ID_LEN 32	/* Maximum size of a process group ID */
+#define PMI_MAX_KEY_LEN 256	/* Maximum size of a PMI key */
+#define PMI_MAX_KVSNAME_LEN 256	/* Maximum size of KVS name */
+#define PMI_MAX_VAL_LEN  256	/* Maximum size of a PMI value */
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
-/*D
-PMI_CONSTANTS - PMI definitions
-
-Error Codes:
-+ PMI_SUCCESS - operation completed successfully
-. PMI_FAIL - operation failed
-. PMI_ERR_NOMEM - input buffer not large enough
-. PMI_ERR_INIT - PMI not initialized
-. PMI_ERR_INVALID_ARG - invalid argument
-. PMI_ERR_INVALID_KEY - invalid key argument
-. PMI_ERR_INVALID_KEY_LENGTH - invalid key length argument
-. PMI_ERR_INVALID_VAL - invalid val argument
-. PMI_ERR_INVALID_VAL_LENGTH - invalid val length argument
-. PMI_ERR_INVALID_LENGTH - invalid length argument
-. PMI_ERR_INVALID_NUM_ARGS - invalid number of arguments
-. PMI_ERR_INVALID_ARGS - invalid args argument
-. PMI_ERR_INVALID_NUM_PARSED - invalid num_parsed length argument
-. PMI_ERR_INVALID_KEYVALP - invalid keyvalp argument
-- PMI_ERR_INVALID_SIZE - invalid size argument
-
-Booleans:
-+ PMI_TRUE - true
-- PMI_FALSE - false
-
-D*/
-#define PMI_SUCCESS                  0
-#define PMI_FAIL                    -1
-#define PMI_ERR_INIT                 1
-#define PMI_ERR_NOMEM                2
-#define PMI_ERR_INVALID_ARG          3
-#define PMI_ERR_INVALID_KEY          4
-#define PMI_ERR_INVALID_KEY_LENGTH   5
-#define PMI_ERR_INVALID_VAL          6
-#define PMI_ERR_INVALID_VAL_LENGTH   7
-#define PMI_ERR_INVALID_LENGTH       8
-#define PMI_ERR_INVALID_NUM_ARGS     9
-#define PMI_ERR_INVALID_ARGS        10
-#define PMI_ERR_INVALID_NUM_PARSED  11
-#define PMI_ERR_INVALID_KEYVALP     12
-#define PMI_ERR_INVALID_SIZE        13
-#define PMI_ERR_INVALID_KVS         14
-
-typedef int PMI_BOOL;
-#define PMI_TRUE     1
-#define PMI_FALSE    0
+/* Global variables */
+int pmi_init;
+int pmi_size;
+int pmi_spawned;
+int pmi_rank;
 
 /* PMI Group functions */
 
@@ -115,11 +111,50 @@ Return values:
 
 Notes:
 Initialize PMI for this process group. The value of spawned indicates whether
-this process was created by 'PMI_Spawn_multiple'.  'spawned' will be 'PMI_TRUE' if
-this process group has a parent and 'PMI_FALSE' if it does not.
+this process was created by 'PMI_Spawn_multiple'.  'spawned' will be 'PMI_TRUE' 
+if this process group has a parent and 'PMI_FALSE' if it does not.
 
 @*/
-int PMI_Init( int *spawned );
+int PMI_Init( int *spawned )
+{
+	char *env;
+
+	if (spawned == NULL)
+		return PMI_ERR_INVALID_ARG;
+
+	if (pmi_init)
+		goto replay;
+
+	env = getenv("PMI_SPAWNED");
+	if (env)
+		pmi_spawned = atoi(env);
+	else
+		pmi_spawned = 0;
+
+	env = getenv("SLURM_NPROCS");
+	if (!env)
+		env = getenv("PMI_SIZE");
+	if (env)
+		pmi_size = atoi(env);
+	else
+		pmi_size = 1;
+
+	env = getenv("SLURM_PROCID");
+	if (!env)
+		env = getenv("PMI_RANK");
+	if (env)
+		pmi_rank = atoi(env);
+	else
+		pmi_rank = 0;
+
+	pmi_init = 1;
+
+replay:	if (pmi_spawned)
+		*spawned = PMI_TRUE;
+	else
+		*spawned = PMI_FALSE;
+	return PMI_SUCCESS;
+}
 
 /*@
 PMI_Initialized - check if PMI has been initialized
@@ -139,7 +174,18 @@ On successful output, initialized will either be 'PMI_TRUE' or 'PMI_FALSE'.
 - PMI_FALSE - initialize has not been called or previously failed.
 
 @*/
-int PMI_Initialized( PMI_BOOL *initialized );
+int PMI_Initialized( PMI_BOOL *initialized )
+{
+	if (initialized == NULL)
+		return PMI_ERR_INVALID_ARG;
+
+	if (pmi_init)
+		*initialized = PMI_TRUE;
+	else
+		*initialized = PMI_FALSE;
+
+	return PMI_SUCCESS;
+}
 
 /*@
 PMI_Finalize - finalize the Process Manager Interface
@@ -152,7 +198,12 @@ Notes:
  Finalize PMI for this process group.
 
 @*/
-int PMI_Finalize( void );
+int PMI_Finalize( void )
+{
+	pmi_init = 0;
+
+	return PMI_SUCCESS;
+}
 
 /*@
 PMI_Get_size - obtain the size of the process group
@@ -170,7 +221,21 @@ This function returns the size of the process group to which the local process
 belongs.
 
 @*/
-int PMI_Get_size( int *size );
+int PMI_Get_size( int *size )
+{
+	if (size == NULL)
+		return PMI_ERR_INVALID_ARG;
+
+	if (!pmi_init) {
+		int spawned;
+		PMI_Init(&spawned);
+		if (!pmi_init)
+			return PMI_FAIL;
+	}
+ 
+	*size = pmi_size;
+	return PMI_SUCCESS;
+}
 
 /*@
 PMI_Get_rank - obtain the rank of the local process in the process group
@@ -187,10 +252,26 @@ Notes:
 This function returns the rank of the local process in its process group.
 
 @*/
-int PMI_Get_rank( int *rank );
+int PMI_Get_rank( int *rank )
+{
+	if (rank == NULL)
+		return PMI_ERR_INVALID_ARG;
+
+	if (!pmi_init) {
+		int spawned;
+		PMI_Init(&spawned);
+		if (!pmi_init)
+			return PMI_FAIL;
+	}
+
+	*rank = pmi_rank;
+	return PMI_SUCCESS;
+}
 
 /*@
 PMI_Get_universe_size - obtain the universe size
+(NOTE: "universe size" indicates the maximum recommended 
+process count for the job.)
 
 Output Parameters:
 . size - pointer to an integer that receives the size
@@ -202,7 +283,31 @@ Return values:
 
 
 @*/
-int PMI_Get_universe_size( int *size );
+int PMI_Get_universe_size( int *size )
+{
+	char *env;
+
+	if (size == NULL)
+		return PMI_ERR_INVALID_ARG;
+
+	env = getenv("SLURM_NPROCS");
+	if (!env)
+		env = getenv("PMI_SIZE");
+	if (env) {
+		*size = atoi(env);
+		return PMI_SUCCESS;
+	}
+
+	env = getenv("SLURM_NNODES");
+	if (env) {
+		/* FIXME: We want a processor count here */
+		*size = atoi(env);
+		return PMI_SUCCESS;
+	}
+
+	*size = 1;
+	return PMI_SUCCESS;
+}
 
 /*@
 PMI_Get_appnum - obtain the application number
@@ -217,7 +322,14 @@ Return values:
 
 
 @*/
-int PMI_Get_appnum( int *appnum );
+int PMI_Get_appnum( int *appnum )
+{
+	if (appnum == NULL)
+		return PMI_ERR_INVALID_ARG;
+
+	/* FIXME: What is "application number"? */
+	return PMI_FAIL;
+}
 
 /*@
 PMI_Publish_name - publish a name 
@@ -233,7 +345,14 @@ Return values:
 
 
 @*/
-int PMI_Publish_name( const char service_name[], const char port[] );
+int PMI_Publish_name( const char service_name[], const char port[] )
+{
+	if ((service_name == NULL) || (port == NULL))
+		return PMI_ERR_INVALID_ARG;
+
+	/* FIXME */
+	return PMI_FAIL;
+}
 
 /*@
 PMI_Unpublish_name - unpublish a name
@@ -248,7 +367,14 @@ Return values:
 
 
 @*/
-int PMI_Unpublish_name( const char service_name[] );
+int PMI_Unpublish_name( const char service_name[] )
+{
+	if (service_name == NULL)
+		return PMI_ERR_INVALID_ARG;
+
+	/* FIXME */
+	return PMI_FAIL;
+}
 
 /*@
 PMI_Lookup_name - lookup a service by name
@@ -266,7 +392,14 @@ Return values:
 
 
 @*/
-int PMI_Lookup_name( const char service_name[], char port[] );
+int PMI_Lookup_name( const char service_name[], char port[] )
+{
+	if ((service_name == NULL) || (port == NULL))
+		return PMI_ERR_INVALID_ARG;
+
+	/* FIXME */
+	return PMI_FAIL;
+}
 
 /*@
 PMI_Get_id - obtain the id of the process group
@@ -289,7 +422,31 @@ that the local process belongs to.  The string passed in must be at least
 as long as the number returned by 'PMI_Get_id_length_max()'.
 
 @*/
-int PMI_Get_id( char id_str[], int length );
+int PMI_Get_id( char id_str[], int length )
+{
+	char *env;
+	uint32_t job_id, step_id;
+
+	if (id_str == NULL)
+		return PMI_ERR_INVALID_ARG;
+	if (length < PMI_MAX_GRP_ID_LEN)
+		return PMI_ERR_INVALID_LENGTH;
+
+	env = getenv("SLURM_JOBID");
+	if (env)
+		job_id = atoi(env);
+	else
+		return PMI_FAIL;
+
+	env = getenv("SLURM_STEPID");
+	if (env) {
+		step_id = atoi(env);
+		snprintf(id_str, length, "%u.%u", job_id, step_id);
+	} else
+		snprintf(id_str, length, "%u", job_id);	
+
+	return PMI_SUCCESS;
+}
 
 /*@
 PMI_Get_kvs_domain_id - obtain the id of the PMI domain
@@ -312,7 +469,14 @@ where keyval spaces can be shared.  The string passed in must be at least
 as long as the number returned by 'PMI_Get_id_length_max()'.
 
 @*/
-int PMI_Get_kvs_domain_id( char id_str[], int length );
+int PMI_Get_kvs_domain_id( char id_str[], int length )
+{
+	if (id_str == NULL)
+		return PMI_ERR_INVALID_ARG;
+
+	/* FIXME */
+	return PMI_FAIL;
+}
 
 /*@
 PMI_Get_id_length_max - obtain the maximum length of an id string
@@ -329,7 +493,14 @@ Notes:
 This function returns the maximum length of a process group id string.
 
 @*/
-int PMI_Get_id_length_max( int *length );
+int PMI_Get_id_length_max( int *length )
+{
+	if (length == NULL)
+		return PMI_ERR_INVALID_ARG;
+
+	*length = PMI_MAX_GRP_ID_LEN;
+	return PMI_FAIL;
+}
 
 /*@
 PMI_Barrier - barrier across the process group
@@ -344,7 +515,11 @@ the local process belongs to.  It will not return until all the processes
 have called 'PMI_Barrier()'.
 
 @*/
-int PMI_Barrier( void );
+int PMI_Barrier( void )
+{
+	/* FIXME */
+	return PMI_FAIL;
+}
 
 /*@
 PMI_Get_clique_size - obtain the number of processes on the local node
@@ -364,7 +539,14 @@ function to distinguish between processes that can communicate through IPC
 mechanisms (e.g., shared memory) and other network mechanisms.
 
 @*/
-int PMI_Get_clique_size( int *size );
+int PMI_Get_clique_size( int *size )
+{
+	if (size == NULL)
+		return PMI_ERR_INVALID_ARG;
+
+	/* FIXME */
+	return PMI_FAIL;
+}
 
 /*@
 PMI_Get_clique_ranks - get the ranks of the local processes in the process group
@@ -389,7 +571,14 @@ communicate through IPC mechanisms (e.g., shared memory) and other network
 mechanisms.
 
 @*/
-int PMI_Get_clique_ranks( int ranks[], int length );
+int PMI_Get_clique_ranks( int ranks[], int length )
+{
+	if (ranks == NULL)
+		return PMI_ERR_INVALID_ARG;
+
+	/* FIXME */
+	return PMI_FAIL;
+}
 
 /*@
 PMI_Abort - abort the process group associated with this process
@@ -401,7 +590,11 @@ Input Parameters:
 Return values:
 . none - this function should not return
 @*/
-int PMI_Abort(int exit_code, const char error_msg[]);
+int PMI_Abort(int exit_code, const char error_msg[])
+{
+	/* FIXME */
+	return PMI_FAIL;
+}
 
 /* PMI Keymap functions */
 /*@
@@ -426,7 +619,16 @@ kvsname, must be at least as long as the value returned by
 'PMI_KVS_Get_name_length_max()'.
 
 @*/
-int PMI_KVS_Get_my_name( char kvsname[], int length );
+int PMI_KVS_Get_my_name( char kvsname[], int length )
+{
+	if (kvsname == NULL)
+		return PMI_ERR_INVALID_ARG;
+	if (length < PMI_MAX_KVSNAME_LEN)
+		return PMI_ERR_INVALID_LENGTH;
+
+	/* FIXME */
+	return PMI_FAIL;
+}
 
 /*@
 PMI_KVS_Get_name_length_max - obtain the length necessary to store a kvsname
@@ -448,7 +650,14 @@ different implementations may allow different maximum lengths; by using a
 routine here, we can interface with a variety of implementations of PMI.
 
 @*/
-int PMI_KVS_Get_name_length_max( int *length );
+int PMI_KVS_Get_name_length_max( int *length )
+{
+	if (length == NULL)
+		return PMI_ERR_INVALID_ARG;
+
+	*length = PMI_MAX_KVSNAME_LEN;
+	return PMI_SUCCESS;
+}
 
 /*@
 PMI_KVS_Get_key_length_max - obtain the length necessary to store a key
@@ -465,7 +674,14 @@ Notes:
 This function returns the string length required to store a key.
 
 @*/
-int PMI_KVS_Get_key_length_max( int *length );
+int PMI_KVS_Get_key_length_max( int *length )
+{
+	if (length == NULL)
+		return PMI_ERR_INVALID_ARG;
+
+	*length = PMI_MAX_KEY_LEN;
+	return PMI_SUCCESS;
+}
 
 /*@
 PMI_KVS_Get_value_length_max - obtain the length necessary to store a value
@@ -483,7 +699,14 @@ This function returns the string length required to store a value from a
 keyval space.
 
 @*/
-int PMI_KVS_Get_value_length_max( int *length );
+int PMI_KVS_Get_value_length_max( int *length )
+{
+	if (length == NULL)
+		return PMI_ERR_INVALID_ARG;
+
+	*length = PMI_MAX_VAL_LEN;
+	return PMI_SUCCESS;
+}
 
 /*@
 PMI_KVS_Create - create a new keyval space
@@ -508,7 +731,16 @@ parameter, kvsname, must be at least as long as the value returned by
 'PMI_KVS_Get_name_length_max()'.
 
 @*/
-int PMI_KVS_Create( char kvsname[], int length );
+int PMI_KVS_Create( char kvsname[], int length )
+{
+	if (kvsname == NULL)
+		return PMI_ERR_INVALID_ARG;
+	if (length < PMI_MAX_KVSNAME_LEN)
+		return PMI_ERR_INVALID_LENGTH;
+
+	/* FIXME */
+	return PMI_FAIL;
+}
 
 /*@
 PMI_KVS_Destroy - destroy keyval space
@@ -525,7 +757,14 @@ Notes:
 This function destroys a keyval space created by 'PMI_KVS_Create()'.
 
 @*/
-int PMI_KVS_Destroy( const char kvsname[] );
+int PMI_KVS_Destroy( const char kvsname[] )
+{
+	if (kvsname == NULL)
+		return PMI_ERR_INVALID_ARG;
+
+	/* FIXME */
+	return PMI_FAIL;
+}
 
 /*@
 PMI_KVS_Put - put a key/value pair in a keyval space
@@ -551,7 +790,18 @@ space must be unique to the keyval space.  You may not put more than once
 with the same key.
 
 @*/
-int PMI_KVS_Put( const char kvsname[], const char key[], const char value[]);
+int PMI_KVS_Put( const char kvsname[], const char key[], const char value[])
+{
+	if ((kvsname == NULL) || (strlen(kvsname) > PMI_MAX_KVSNAME_LEN))
+		return PMI_ERR_INVALID_KVS;
+	if ((key == NULL) || (strlen(key) >PMI_MAX_KEY_LEN))
+		return PMI_ERR_INVALID_KEY;
+	if ((value == NULL) || (strlen(value) > PMI_MAX_VAL_LEN))
+		return PMI_ERR_INVALID_VAL;
+
+	/* FIXME */
+	return PMI_FAIL;
+}
 
 /*@
 PMI_KVS_Commit - commit all previous puts to the keyval space
@@ -569,7 +819,14 @@ This function commits all previous puts since the last 'PMI_KVS_Commit()' into
 the specified keyval space. It is a process local operation.
 
 @*/
-int PMI_KVS_Commit( const char kvsname[] );
+int PMI_KVS_Commit( const char kvsname[] )
+{
+	if ((kvsname == NULL) || (strlen(kvsname) > PMI_MAX_KVSNAME_LEN))
+		return PMI_ERR_INVALID_ARG;
+
+	/* FIXME */
+	return PMI_FAIL;
+}
 
 /*@
 PMI_KVS_Get - get a key/value pair from a keyval space
@@ -594,7 +851,20 @@ Notes:
 This function gets the value of the specified key in the keyval space.
 
 @*/
-int PMI_KVS_Get( const char kvsname[], const char key[], char value[], int length);
+int PMI_KVS_Get( const char kvsname[], const char key[], char value[], int length)
+{
+	if ((kvsname == NULL) || (strlen(kvsname) > PMI_MAX_KVSNAME_LEN))
+		return PMI_ERR_INVALID_KVS;
+	if ((key == NULL) || (strlen(key) >PMI_MAX_KEY_LEN))
+		return PMI_ERR_INVALID_KEY;
+	if (value == NULL)
+		return PMI_ERR_INVALID_VAL;
+	if (length < PMI_MAX_VAL_LEN)
+		return PMI_ERR_INVALID_LENGTH;
+
+	/* FIXME */
+	return PMI_FAIL;
+}
 
 /*@
 PMI_KVS_Iter_first - initialize the iterator and get the first value
@@ -625,7 +895,22 @@ the values returned by 'PMI_KVS_Get_key_length_max()' and
 'PMI_KVS_Get_value_length_max()'.
 
 @*/
-int PMI_KVS_Iter_first(const char kvsname[], char key[], int key_len, char val[], int val_len);
+int PMI_KVS_Iter_first(const char kvsname[], char key[], int key_len, char val[], int val_len)
+{
+	if ((kvsname == NULL) || (strlen(kvsname) > PMI_MAX_KVSNAME_LEN))
+		return PMI_ERR_INVALID_KVS;
+	if (key == NULL)
+		return PMI_ERR_INVALID_KEY;
+	if (key_len < PMI_MAX_KEY_LEN)
+		return PMI_ERR_INVALID_KEY_LENGTH;
+	if (val == NULL)
+		return PMI_ERR_INVALID_VAL;
+	if (val_len < PMI_MAX_VAL_LEN)
+		return PMI_ERR_INVALID_VAL_LENGTH;
+
+	/* FIXME */
+	return PMI_FAIL;
+}
 
 /*@
 PMI_KVS_Iter_next - get the next keyval pair from the keyval space
@@ -656,23 +941,24 @@ key and val, must be at least as long as the values returned by
 'PMI_KVS_Get_key_length_max()' and 'PMI_KVS_Get_value_length_max()'.
 
 @*/
-int PMI_KVS_Iter_next(const char kvsname[], char key[], int key_len, char val[], int val_len);
+int PMI_KVS_Iter_next(const char kvsname[], char key[], int key_len, char val[], int val_len)
+{
+	if ((kvsname == NULL) || (strlen(kvsname) > PMI_MAX_KVSNAME_LEN))
+		return PMI_ERR_INVALID_KVS;
+	if (key == NULL)
+		return PMI_ERR_INVALID_KEY;
+	if (key_len < PMI_MAX_KEY_LEN)
+		return PMI_ERR_INVALID_KEY_LENGTH;
+	if (val == NULL)
+		return PMI_ERR_INVALID_VAL;
+	if (val_len < PMI_MAX_VAL_LEN)
+		return PMI_ERR_INVALID_VAL_LENGTH;
+
+	/* FIXME */
+	return PMI_FAIL;
+}
 
 /* PMI Process Creation functions */
-
-/*S
-PMI_keyval_t - keyval structure used by PMI_Spawn_mulitiple
-
-Fields:
-+ key - name of the key
-- val - value of the key
-
-S*/
-typedef struct PMI_keyval_t
-{
-    char * key;
-    char * val;
-} PMI_keyval_t;
 
 /*@
 PMI_Spawn_multiple - spawn a new set of processes
@@ -718,8 +1004,14 @@ int PMI_Spawn_multiple(int count,
                        const PMI_keyval_t * info_keyval_vectors[],
                        int preput_keyval_size,
                        const PMI_keyval_t preput_keyval_vector[],
-                       int errors[]);
+                       int errors[])
+{
+	if (cmds == NULL)
+		return PMI_ERR_INVALID_ARG;
 
+	/* FIXME */
+	return PMI_FAIL;
+}
 
 /*@
 PMI_Parse_option - create keyval structures from a single command line argument
@@ -746,13 +1038,24 @@ Notes:
 This function removes one PMI specific argument from the command line and
 creates the corresponding 'PMI_keyval_t' structure for it.  It returns
 an array and size to the caller.  The array must be freed by 'PMI_Free_keyvals()'.
-If the first element of the args array is not a PMI specific argument, the function
-returns success and sets num_parsed to zero.  If there are multiple PMI specific
-arguments in the args array, this function may parse more than one argument as long
-as the options are contiguous in the args array.
+If the first element of the args array is not a PMI specific argument, the 
+function returns success and sets num_parsed to zero.  If there are multiple PMI 
+specific arguments in the args array, this function may parse more than one 
+argument as long as the options are contiguous in the args array.
 
 @*/
-int PMI_Parse_option(int num_args, char *args[], int *num_parsed, PMI_keyval_t **keyvalp, int *size);
+int PMI_Parse_option(int num_args, char *args[], int *num_parsed, PMI_keyval_t **keyvalp, int *size)
+{
+	if (num_parsed == NULL)
+		return PMI_ERR_INVALID_NUM_PARSED;
+	if (keyvalp == NULL)
+		return PMI_ERR_INVALID_KEYVALP;
+	if (size == NULL)
+		return PMI_ERR_INVALID_SIZE;
+
+	/* FIXME */
+	return PMI_FAIL;
+}
 
 /*@
 PMI_Args_to_keyval - create keyval structures from command line arguments
@@ -779,7 +1082,15 @@ not be used to free this array as there is no requirement that the array be
 allocated with 'malloc()'.
 
 @*/
-int PMI_Args_to_keyval(int *argcp, char *((*argvp)[]), PMI_keyval_t **keyvalp, int *size);
+int PMI_Args_to_keyval(int *argcp, char *((*argvp)[]), PMI_keyval_t **keyvalp, 
+		int *size)
+{
+	if ((keyvalp == NULL) || (size == NULL))
+		return PMI_ERR_INVALID_ARG;
+
+	/* FIXME */
+	return PMI_FAIL;
+}
 
 /*@
 PMI_Free_keyvals - free the keyval structures created by PMI_Args_to_keyval
@@ -798,7 +1109,14 @@ Notes:
  Using this routine instead of 'free' allows the PMI package to track 
  allocation of storage or to use interal storage as it sees fit.
 @*/
-int PMI_Free_keyvals(PMI_keyval_t keyvalp[], int size);
+int PMI_Free_keyvals(PMI_keyval_t keyvalp[], int size)
+{
+	if ((keyvalp == NULL) && size)
+		return PMI_ERR_INVALID_ARG;
+
+	/* FIXME */
+	return PMI_FAIL;
+}
 
 /*@
 PMI_Get_options - get a string of command line argument descriptions that may be printed to the user
@@ -820,10 +1138,11 @@ Return values:
 Notes:
  This function returns the command line options specific to the pmi implementation
 @*/
-int PMI_Get_options(char *str, int *length);
+int PMI_Get_options(char *str, int *length)
+{
+	if ((str == NULL) || (length == NULL))
+		return PMI_ERR_INVALID_ARG;
 
-#if defined(__cplusplus)
+	/* FIXME */
+	return PMI_FAIL;
 }
-#endif
-
-#endif

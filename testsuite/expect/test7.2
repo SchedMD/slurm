@@ -1,15 +1,13 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of BNR functions available via API library.
+#          Test of PMI functions available via API library.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
-#
-# NOTE: Add more tasks and nodes when BNR is fully implemented
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2005 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
@@ -59,9 +57,9 @@ expect {
 #
 exec $bin_rm -f $file_prog_get
 if {$aix == 0} {
-	exec $bin_cc ${file_prog_get}.c -g -pthread -o $file_prog_get -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm
+	exec $bin_cc ${file_prog_get}.c -g -pthread -o $file_prog_get -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lpmi
 } else {
-	exec $bin_cc ${file_prog_get}.c -g -pthread -o $file_prog_get -I${slurm_dir}/include -L${slurm_dir}/lib -lslurm
+	exec $bin_cc ${file_prog_get}.c -g -pthread -o $file_prog_get -I${slurm_dir}/include -L${slurm_dir}/lib -lpmi
 }
 exec $bin_chmod 700 $file_prog_get
 

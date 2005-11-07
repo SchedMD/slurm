@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  test7.2.prog.c - Test of basic BNR library functionality
+ *  test7.2.prog.c - Test of basic PMI library functionality
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
@@ -25,7 +25,7 @@
 \*****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
-#include <slurm/bnr.h>
+#include <slurm/pmi.h>
 
 #define OFFSET_1  1234
 #define OFFSET_2  5678
@@ -35,8 +35,8 @@ main (int argc, char **argv)
 	int i, j;
 	int nprocs, procid;
 	char *nprocs_ptr, *procid_ptr;
-	BNR_gid bnr_gid;
-	int bnr_rank, bnr_cnt;
+	int pmi_rank, pmi_size;
+	PMI_BOOL initialized;
 	char attr[20], val[20];
 
 	/* Get process count and our id from environment variables */
@@ -60,30 +60,40 @@ main (int argc, char **argv)
 		exit(1);
 	}
 
-	/* Get process count and our id from BNR and validate */
-	if (BNR_Init(&bnr_gid) != BNR_SUCCESS) {
-		printf("FAILURE: BNR_Init: %m\n");
+	/* Get process count and size from PMI and validate */
+	if (PMI_Init(&i) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_Init: %m\n");
 		exit(1);
 	}
-	if (BNR_Rank(bnr_gid, &bnr_rank) != BNR_SUCCESS) {
-		printf("FAILURE: BNR_Rank: %m\n");
+	initialized = PMI_FALSE;
+	if (PMI_Initialized(&initialized) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_Initialized: %m\n");
 		exit(1);
 	}
-	if (BNR_Nprocs(bnr_gid, &bnr_cnt) != BNR_SUCCESS) {
-		printf("FAILURE: BNR_Nprocs: %m\n");
+	if (initialized != PMI_TRUE) {
+		printf("FAILURE: PMI_Initialized returned false\n");
 		exit(1);
 	}
-	if (bnr_rank != procid) {
+	if (PMI_Get_rank(&pmi_rank) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_Get_rank: %m\n");
+		exit(1);
+	}
+	if (PMI_Get_size(&pmi_size) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_Get_size: %m\n");
+		exit(1);
+	}
+	if (pmi_rank != procid) {
 		printf("FAILURE: Rank(%d) != PROCID(%d)\n",
-			bnr_rank, procid);
+			pmi_rank, procid);
 		exit(1);
 	}
-	if (bnr_cnt != nprocs) {
-		printf("FAILURE: Nprocs(%d) != NPROCS(%d)\n",
-			bnr_cnt, nprocs);
+	if (pmi_size != nprocs) {
+		printf("FAILURE: Size(%d) != NPROCS(%d)\n",
+			pmi_size, nprocs);
 		exit(1);
 	}
 
+#if 0
 	/*  Build and set some attr=val pairs */
 	snprintf(attr, sizeof(attr), "ATTR_1_%d", procid);
 	snprintf(val,  sizeof(val),  "A%d", procid+OFFSET_1);
@@ -120,13 +130,14 @@ main (int argc, char **argv)
 		}
 		printf("Read keypair %s=%s\n", attr, val);
 	}
+#endif
 
-	if (BNR_Finalize() != BNR_SUCCESS) {
-		printf("FAILURE: BNR_Finalize: %m\n");
+	if (PMI_Finalize() != PMI_SUCCESS) {
+		printf("FAILURE: PMI_Finalize: %m\n");
 		exit(1);
 	}
 
-	printf("BNR test ran successfully\n");
+	printf("PMI test ran successfully\n");
 	exit(0);
 }
 

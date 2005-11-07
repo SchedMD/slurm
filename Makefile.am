@@ -24,7 +24,7 @@ EXTRA_DIST =			\
 	config.xml
 
 pkginclude_HEADERS =		\
-	slurm/bnr.h		\
+	slurm/pmi.h		\
 	slurm/slurm.h 		\
 	slurm/slurm_errno.h
 
