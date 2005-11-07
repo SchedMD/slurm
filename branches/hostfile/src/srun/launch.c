@@ -169,13 +169,17 @@ launch(void *arg)
 		m->data            = r;
 		j=0; 
   		while(host = hostlist_next(itr)) { 
-  			if(!strcmp(host,job->host[i])) {
+			if(!strcmp(host,job->host[i])) {
   				free(host);
 				break; 
 			}
   			j++; 
 			free(host);
   		}
+		hostlist_iterator_reset(itr);
+		debug2("using %d %s with %d tasks\n", j, job->host[i],
+		       r->nprocs);
+		
 		memcpy(&m->address, &job->slurmd_addr[j], sizeof(slurm_addr));
 	}
 	hostlist_iterator_destroy(itr);
