@@ -39,6 +39,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/fd.h"
 #include "src/common/eio.h"
+#include "src/common/slurm_auth.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/stepd_api.h"
