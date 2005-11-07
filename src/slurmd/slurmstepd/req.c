@@ -591,7 +591,7 @@ done:
 		debug("In _handle_attach sending response info");
 		len = job->ntasks * sizeof(uint32_t);
 		pids = xmalloc(len);
-		gtids = xmalloc(gtids);
+		gtids = xmalloc(len);
 		
 		if (job->task != NULL) {
 			for (i = 0; i < job->ntasks; i++) {
