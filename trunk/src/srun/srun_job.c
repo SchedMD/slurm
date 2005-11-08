@@ -335,7 +335,8 @@ _job_create_structure(allocation_info_t *info)
 	
 }
 
-extern int build_step_ctx(srun_job_t *job)
+extern int build_step_ctx(srun_job_t *job,
+			  resource_allocation_response_msg_t *alloc_resp)
 {
 	job_step_create_request_msg_t  *r  = NULL;
 	uint32_t step_id;
@@ -353,6 +354,7 @@ extern int build_step_ctx(srun_job_t *job)
 	r->cpu_count  = job->nhosts;
 	r->num_tasks  = opt.nprocs;
 	r->node_list  = xstrdup(job->nodelist);
+	r->name       = xstrdup(opt.job_name);
 	switch (opt.distribution) {
 	case SLURM_DIST_UNKNOWN:
 		r->task_dist = (opt.nprocs <= job->nhosts) 
@@ -374,6 +376,7 @@ extern int build_step_ctx(srun_job_t *job)
 		r->host = xstrdup(slurmctld_comm_addr.hostname);
 		r->port = slurmctld_comm_addr.port;
 	}
+	//job->step_ctx = slurm_step_ctx_create(r, alloc_resp);
 	job->step_ctx = slurm_step_ctx_create(r);
 	if (job->step_ctx == NULL) {
 		error("slurm_step_ctx_create: %s", 
