@@ -78,10 +78,12 @@ main (int argc, char **argv)
 		printf("FAILURE: PMI_Get_rank: %d\n", rc);
 		exit(1);
 	}
+	printf("PMI_Get_rank = %d\n", pmi_rank);
 	if ((rc = PMI_Get_size(&pmi_size)) != PMI_SUCCESS) {
 		printf("FAILURE: PMI_Get_size: %d\n", rc);
 		exit(1);
 	}
+	printf("PMI_Get_size = %d\n", pmi_size);
 	if (pmi_rank != procid) {
 		printf("FAILURE: Rank(%d) != PROCID(%d)\n",
 			pmi_rank, procid);
@@ -97,11 +99,13 @@ main (int argc, char **argv)
 		printf("FAILURE: PMI_KVS_Get_name_length_max: %d\n", rc);
 		exit(1);
 	}
+	printf("PMI_KVS_Get_name_length_max = %d\n", kvs_name_len);
 	kvs_name = malloc(kvs_name_len);
 	if ((rc = PMI_KVS_Get_my_name(kvs_name, kvs_name_len)) != PMI_SUCCESS) {
 		printf("FAILURE: PMI_KVS_Get_my_name: %d\n", rc);
 		exit(1);
 	}
+	printf("PMI_KVS_Get_my_name = %s\n", kvs_name);
 	if ((rc = PMI_KVS_Get_key_length_max(&key_len)) != PMI_SUCCESS) {
 		printf("FAILURE: PMI_KVS_Get_key_length_max: %d\n", rc);
 		exit(1);
@@ -111,6 +115,7 @@ main (int argc, char **argv)
 		printf("FAILURE: PMI_KVS_Get_value_length_max: %d\n", rc);
 		exit(1);
 	}
+	printf("PMI_KVS_Get_value_length_max = %d\n", val_len);
 	val = malloc(val_len);
 
 	/*  Build and set some key=val pairs */
@@ -147,7 +152,7 @@ main (int argc, char **argv)
 			printf("FAILURE: Bad keypair %s=%s\n", key, val);
 			exit(1);
 		}
-		printf("Read keypair %s=%s\n", key, val);
+		printf("PMI_KVS_Get(%s,%s) %s\n", kvs_name, key, val);
 
 		snprintf(key, key_len, "attr_2_%d", i);
 		if ((rc = PMI_KVS_Get(kvs_name, key, val, val_len)) != 
@@ -159,7 +164,7 @@ main (int argc, char **argv)
 			printf("FAILURE: Bad keypair %s=%s\n", key, val);
 			exit(1);
 		}
-		printf("Read keypair %s=%s\n", key, val);
+		printf("PMI_KVS_Get(%s,%s) %s\n", kvs_name, key, val);
 	}
 
 	/* use iterator */
@@ -175,7 +180,7 @@ main (int argc, char **argv)
 			}
 			break;
 		}
-		printf("iter(%d): %s=%s\n", i, key, val);
+		printf("PMI_KVS_Iter_next(%s,%d): %s=%s\n", kvs_name, i, key, val);
 		if ((rc = PMI_KVS_Iter_next(kvs_name, key, key_len, val, val_len)) != 
 				PMI_SUCCESS) {
 			printf("FAILURE: PMI_KVS_iter_next: %d\n", rc);
