@@ -7,6 +7,10 @@ documents those changes that are of interest to users and admins.
     implemented yet)
  -- Added Hostfile support for POE and srun.  MP_HOSTFILE env var to set
     location of hostfile.  Tasks will run from list order in the file.  
+ -- Removes the slurmd's use of SysV shared memory.  Instead the slurmd
+    communicates with the slurmstepd processes through the slurmstepd's
+    new named unix domain socket.  The "stepd_api" is used to talk to the
+    slurmstepd (src/slurmd/common/stepd_api.[ch]).
 
 * Changes in SLURM 0.7.0-pre3
 =============================
