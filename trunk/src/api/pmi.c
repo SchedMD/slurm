@@ -78,23 +78,52 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
+#define _GNU_SOURCE
 
+#include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <slurm/pmi.h>
 
-/* These values should probaby be moved to a location easily 
+/* These define values should probaby be moved to a location easily 
  * accessible to other SLURM tools. */
 #define PMI_MAX_GRP_ID_LEN 32	/* Maximum size of a process group ID */
 #define PMI_MAX_KEY_LEN 256	/* Maximum size of a PMI key */
 #define PMI_MAX_KVSNAME_LEN 256	/* Maximum size of KVS name */
 #define PMI_MAX_VAL_LEN  256	/* Maximum size of a PMI value */
 
+/* default key names form is jobid.stepid[.sequence] */
+struct kvs_rec {
+	char	kvs_name[PMI_MAX_KVSNAME_LEN];
+	int	kvs_cnt;
+	int	kvs_inx;	/* iteration index */
+	char **	kvs_keys;
+	char ** kvs_values;
+};
+
+static void _init_kvs( char kvsname[] );
+
 /* Global variables */
-int pmi_init;
+long pmi_jobid = -1;
+long pmi_stepid = -1;
+
+int pmi_init = 0;
 int pmi_size;
 int pmi_spawned;
 int pmi_rank;
+
+#if 1
+  pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
+#else
+  int kvs_mutex;
+  static inline int pthread_mutex_unlock(int *kvs_mutex) { return 0; }
+  static inline int pthread_mutex_unlock(int *kvs_mutex) { return 0; }
+#endif
+
+int kvs_rec_cnt = 0;
+struct kvs_rec *kvs_recs;
+int kvs_name_sequence = 0;
 
 /* PMI Group functions */
 
@@ -124,6 +153,14 @@ int PMI_Init( int *spawned )
 
 	if (pmi_init)
 		goto replay;
+
+	env = getenv("SLURM_JOBID");
+	if (env)
+		pmi_jobid = atoi(env);
+
+	env = getenv("SLURM_JOBID");
+	if (env)
+		pmi_stepid = atoi(env);
 
 	env = getenv("PMI_SPAWNED");
 	if (env)
@@ -424,27 +461,14 @@ as long as the number returned by 'PMI_Get_id_length_max()'.
 @*/
 int PMI_Get_id( char id_str[], int length )
 {
-	char *env;
-	uint32_t job_id, step_id;
-
 	if (id_str == NULL)
 		return PMI_ERR_INVALID_ARG;
 	if (length < PMI_MAX_GRP_ID_LEN)
 		return PMI_ERR_INVALID_LENGTH;
-
-	env = getenv("SLURM_JOBID");
-	if (env)
-		job_id = atoi(env);
-	else
+	if ((pmi_jobid < 0) || (pmi_stepid < 0))
 		return PMI_FAIL;
 
-	env = getenv("SLURM_STEPID");
-	if (env) {
-		step_id = atoi(env);
-		snprintf(id_str, length, "%u.%u", job_id, step_id);
-	} else
-		snprintf(id_str, length, "%u", job_id);	
-
+	snprintf(id_str, length, "%ld.%ld", pmi_jobid, pmi_stepid);
 	return PMI_SUCCESS;
 }
 
@@ -598,7 +622,8 @@ int PMI_Abort(int exit_code, const char error_msg[])
 
 /* PMI Keymap functions */
 /*@
-PMI_KVS_Get_my_name - obtain the name of the keyval space the local process group has access to
+PMI_KVS_Get_my_name - obtain the name of the keyval space the local process 
+group has access to
 
 Input Parameters:
 . length - length of the kvsname character array
@@ -625,9 +650,29 @@ int PMI_KVS_Get_my_name( char kvsname[], int length )
 		return PMI_ERR_INVALID_ARG;
 	if (length < PMI_MAX_KVSNAME_LEN)
 		return PMI_ERR_INVALID_LENGTH;
+	if ((pmi_jobid < 0) || (pmi_stepid < 0))
+		return PMI_FAIL;
 
-	/* FIXME */
-	return PMI_FAIL;
+	pthread_mutex_lock(&kvs_mutex);
+	snprintf(kvsname, PMI_MAX_KVSNAME_LEN, "%ld.%ld", pmi_jobid, 
+			pmi_stepid);
+	_init_kvs(kvsname);
+	pthread_mutex_unlock(&kvs_mutex);
+	return PMI_SUCCESS;
+}
+
+static void _init_kvs( char kvsname[] )
+{
+	int i;
+
+	i = kvs_rec_cnt;
+	kvs_rec_cnt++;
+	kvs_recs = realloc(kvs_recs, (sizeof(struct kvs_rec *) * kvs_rec_cnt));
+	strncpy(kvs_recs[i].kvs_name, kvsname, PMI_MAX_KVSNAME_LEN);
+	kvs_recs[i].kvs_cnt = 0;
+	kvs_recs[i].kvs_inx = 0;
+	kvs_recs[i].kvs_keys = NULL;
+	kvs_recs[i].kvs_values = NULL;
 }
 
 /*@
@@ -792,6 +837,8 @@ with the same key.
 @*/
 int PMI_KVS_Put( const char kvsname[], const char key[], const char value[])
 {
+	int i, j, rc;
+
 	if ((kvsname == NULL) || (strlen(kvsname) > PMI_MAX_KVSNAME_LEN))
 		return PMI_ERR_INVALID_KVS;
 	if ((key == NULL) || (strlen(key) >PMI_MAX_KEY_LEN))
@@ -799,8 +846,50 @@ int PMI_KVS_Put( const char kvsname[], const char key[], const char value[])
 	if ((value == NULL) || (strlen(value) > PMI_MAX_VAL_LEN))
 		return PMI_ERR_INVALID_VAL;
 
-	/* FIXME */
-	return PMI_FAIL;
+	/* find the proper kvs record */
+	pthread_mutex_lock(&kvs_mutex);
+	for (i=0; i<kvs_rec_cnt; i++) {
+		if (strncmp(kvs_recs[i].kvs_name, kvsname, PMI_MAX_KVSNAME_LEN))
+			continue;
+		/* search for duplicate key */
+		for (j=0; j<kvs_recs[i].kvs_cnt; j++) {
+			if (strncmp(kvs_recs[i].kvs_keys[j], key, 
+					PMI_MAX_KEY_LEN))
+				continue;
+			/* replace the existing value */
+			free(kvs_recs[i].kvs_values[j]);
+			kvs_recs[i].kvs_values[j] = 
+					strndup(value, PMI_MAX_VAL_LEN);
+			if (kvs_recs[i].kvs_values[j] == NULL)
+				rc = PMI_FAIL;	/* malloc error */
+			else
+				rc = PMI_SUCCESS;
+			goto fini;
+		}
+		/* create new key */
+		kvs_recs[i].kvs_cnt++;
+		kvs_recs[i].kvs_values = realloc(kvs_recs[i].kvs_values, 
+			(sizeof (char *) * kvs_recs[i].kvs_cnt));
+		kvs_recs[i].kvs_keys = realloc(kvs_recs[i].kvs_keys,
+			(sizeof (char *) * kvs_recs[i].kvs_cnt));
+		if ((kvs_recs[i].kvs_values == NULL)
+		||  (kvs_recs[i].kvs_keys == NULL)) {
+			rc = PMI_FAIL;	/* malloc error */
+			goto fini;
+		}
+		kvs_recs[i].kvs_values[j] = strndup(value, PMI_MAX_VAL_LEN);
+		kvs_recs[i].kvs_keys[j]   = strndup(key, PMI_MAX_KEY_LEN);
+		if ((kvs_recs[i].kvs_values[j] == NULL)
+		||  (kvs_recs[i].kvs_keys[j] == NULL))
+			rc = PMI_FAIL;	/* malloc error */
+		else
+			rc = PMI_SUCCESS;
+		goto fini;
+	}
+	rc = PMI_ERR_INVALID_KVS;
+
+fini:	pthread_mutex_unlock(&kvs_mutex);
+	return rc;
 }
 
 /*@
@@ -853,17 +942,39 @@ This function gets the value of the specified key in the keyval space.
 @*/
 int PMI_KVS_Get( const char kvsname[], const char key[], char value[], int length)
 {
+	int i, j, rc;
+
 	if ((kvsname == NULL) || (strlen(kvsname) > PMI_MAX_KVSNAME_LEN))
 		return PMI_ERR_INVALID_KVS;
 	if ((key == NULL) || (strlen(key) >PMI_MAX_KEY_LEN))
 		return PMI_ERR_INVALID_KEY;
 	if (value == NULL)
 		return PMI_ERR_INVALID_VAL;
-	if (length < PMI_MAX_VAL_LEN)
-		return PMI_ERR_INVALID_LENGTH;
 
-	/* FIXME */
-	return PMI_FAIL;
+	/* find the proper kvs record */
+	pthread_mutex_lock(&kvs_mutex);
+	for (i=0; i<kvs_rec_cnt; i++) {
+		if (strncmp(kvs_recs[i].kvs_name, kvsname, PMI_MAX_KVSNAME_LEN))
+			continue;
+		for (j=0; j<kvs_recs[i].kvs_cnt; j++) {
+			if (strncmp(kvs_recs[i].kvs_keys[j], key, PMI_MAX_KEY_LEN))
+				continue;
+			if (strlen(kvs_recs[i].kvs_values[j]) > (length-1))
+				rc = PMI_ERR_INVALID_LENGTH;
+			else {
+				strncpy(value, kvs_recs[i].kvs_values[j], 
+					PMI_MAX_VAL_LEN);
+				rc = PMI_SUCCESS;
+			}
+			goto fini;
+		}
+		rc = PMI_ERR_INVALID_KEY;
+		goto fini;
+	}
+	rc = PMI_ERR_INVALID_KVS;
+
+fini:	pthread_mutex_unlock(&kvs_mutex);
+	return rc;
 }
 
 /*@
@@ -897,19 +1008,44 @@ the values returned by 'PMI_KVS_Get_key_length_max()' and
 @*/
 int PMI_KVS_Iter_first(const char kvsname[], char key[], int key_len, char val[], int val_len)
 {
+	int i, rc;
+
 	if ((kvsname == NULL) || (strlen(kvsname) > PMI_MAX_KVSNAME_LEN))
 		return PMI_ERR_INVALID_KVS;
 	if (key == NULL)
 		return PMI_ERR_INVALID_KEY;
-	if (key_len < PMI_MAX_KEY_LEN)
-		return PMI_ERR_INVALID_KEY_LENGTH;
 	if (val == NULL)
 		return PMI_ERR_INVALID_VAL;
-	if (val_len < PMI_MAX_VAL_LEN)
-		return PMI_ERR_INVALID_VAL_LENGTH;
 
-	/* FIXME */
-	return PMI_FAIL;
+	/* find the proper kvs record */
+	pthread_mutex_lock(&kvs_mutex);
+	for (i=0; i<kvs_rec_cnt; i++) {
+		if (strncmp(kvs_recs[i].kvs_name, kvsname, PMI_MAX_KVSNAME_LEN))
+			continue;
+		kvs_recs[i].kvs_inx = 0;
+		if (kvs_recs[i].kvs_inx >= kvs_recs[i].kvs_cnt) {
+			key[0] = '\0';
+			val[0] = '\0';
+			rc = PMI_SUCCESS;
+		} else if (strlen(kvs_recs[i].kvs_keys[kvs_recs[i].kvs_inx]) >
+				(key_len-1)) {
+			rc = PMI_ERR_INVALID_KEY_LENGTH;
+		} else if (strlen(kvs_recs[i].kvs_values[kvs_recs[i].kvs_inx]) >
+				(val_len-1)) {
+			rc = PMI_ERR_INVALID_VAL_LENGTH;
+		} else {
+			strncpy(key, kvs_recs[i].kvs_keys[kvs_recs[i].kvs_inx], 
+				PMI_MAX_KEY_LEN);
+			strncpy(val, kvs_recs[i].kvs_values[kvs_recs[i].kvs_inx],
+				PMI_MAX_VAL_LEN);
+			rc = PMI_SUCCESS;
+		}
+		goto fini;
+	} 
+	rc = PMI_ERR_INVALID_KVS;
+
+fini:	pthread_mutex_unlock(&kvs_mutex);
+	return rc;
 }
 
 /*@
@@ -941,21 +1077,47 @@ key and val, must be at least as long as the values returned by
 'PMI_KVS_Get_key_length_max()' and 'PMI_KVS_Get_value_length_max()'.
 
 @*/
-int PMI_KVS_Iter_next(const char kvsname[], char key[], int key_len, char val[], int val_len)
+int PMI_KVS_Iter_next(const char kvsname[], char key[], int key_len, 
+		char val[], int val_len)
 {
+	int i, rc;
+
 	if ((kvsname == NULL) || (strlen(kvsname) > PMI_MAX_KVSNAME_LEN))
 		return PMI_ERR_INVALID_KVS;
 	if (key == NULL)
 		return PMI_ERR_INVALID_KEY;
-	if (key_len < PMI_MAX_KEY_LEN)
-		return PMI_ERR_INVALID_KEY_LENGTH;
 	if (val == NULL)
 		return PMI_ERR_INVALID_VAL;
-	if (val_len < PMI_MAX_VAL_LEN)
-		return PMI_ERR_INVALID_VAL_LENGTH;
 
-	/* FIXME */
-	return PMI_FAIL;
+	/* find the proper kvs record */
+	pthread_mutex_lock(&kvs_mutex);
+	for (i=0; i<kvs_rec_cnt; i++) {
+		if (strncmp(kvs_recs[i].kvs_name, kvsname, PMI_MAX_KVSNAME_LEN))
+			continue;
+		kvs_recs[i].kvs_inx++;
+		if (kvs_recs[i].kvs_inx >= kvs_recs[i].kvs_cnt) {
+			key[0] = '\0';
+			val[0] = '\0';
+			rc = PMI_SUCCESS;
+		} else if (strlen(kvs_recs[i].kvs_keys[kvs_recs[i].kvs_inx]) >
+				(key_len-1)) {
+			rc = PMI_ERR_INVALID_KEY_LENGTH;
+		} else if (strlen(kvs_recs[i].kvs_values[kvs_recs[i].kvs_inx]) >
+				(val_len-1)) {
+			rc = PMI_ERR_INVALID_VAL_LENGTH;
+		} else {
+			strncpy(key, kvs_recs[i].kvs_keys[kvs_recs[i].kvs_inx],
+				PMI_MAX_KEY_LEN);
+			strncpy(val, kvs_recs[i].kvs_values[kvs_recs[i].kvs_inx],
+				PMI_MAX_VAL_LEN);
+			rc = PMI_SUCCESS;
+		}
+		goto fini;
+	}
+	rc = PMI_ERR_INVALID_KVS;
+
+fini:	pthread_mutex_unlock(&kvs_mutex);
+	return rc;
 }
 
 /* PMI Process Creation functions */

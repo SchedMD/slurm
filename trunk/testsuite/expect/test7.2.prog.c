@@ -32,12 +32,12 @@
 
 main (int argc, char **argv)
 {
-	int i, j;
+	int i, j, rc;
 	int nprocs, procid;
 	char *nprocs_ptr, *procid_ptr;
-	int pmi_rank, pmi_size;
+	int pmi_rank, pmi_size, kvs_name_len, key_len, val_len;
 	PMI_BOOL initialized;
-	char attr[20], val[20];
+	char *key, *val, *kvs_name;
 
 	/* Get process count and our id from environment variables */
 	nprocs_ptr = getenv("SLURM_NPROCS");
@@ -61,25 +61,25 @@ main (int argc, char **argv)
 	}
 
 	/* Get process count and size from PMI and validate */
-	if (PMI_Init(&i) != PMI_SUCCESS) {
-		printf("FAILURE: PMI_Init: %m\n");
+	if ((rc = PMI_Init(&i)) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_Init: %d\n", rc);
 		exit(1);
 	}
 	initialized = PMI_FALSE;
-	if (PMI_Initialized(&initialized) != PMI_SUCCESS) {
-		printf("FAILURE: PMI_Initialized: %m\n");
+	if ((rc = PMI_Initialized(&initialized)) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_Initialized: %d\n", rc);
 		exit(1);
 	}
 	if (initialized != PMI_TRUE) {
 		printf("FAILURE: PMI_Initialized returned false\n");
 		exit(1);
 	}
-	if (PMI_Get_rank(&pmi_rank) != PMI_SUCCESS) {
-		printf("FAILURE: PMI_Get_rank: %m\n");
+	if ((rc = PMI_Get_rank(&pmi_rank)) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_Get_rank: %d\n", rc);
 		exit(1);
 	}
-	if (PMI_Get_size(&pmi_size) != PMI_SUCCESS) {
-		printf("FAILURE: PMI_Get_size: %m\n");
+	if ((rc = PMI_Get_size(&pmi_size)) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_Get_size: %d\n", rc);
 		exit(1);
 	}
 	if (pmi_rank != procid) {
@@ -93,47 +93,98 @@ main (int argc, char **argv)
 		exit(1);
 	}
 
-#if 0
-	/*  Build and set some attr=val pairs */
-	snprintf(attr, sizeof(attr), "ATTR_1_%d", procid);
-	snprintf(val,  sizeof(val),  "A%d", procid+OFFSET_1);
-	if (BNR_Put(bnr_gid, attr, val) != BNR_SUCCESS)
+	if ((rc = PMI_KVS_Get_name_length_max(&kvs_name_len)) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_KVS_Get_name_length_max: %d\n", rc);
 		exit(1);
-	snprintf(attr, sizeof(attr), "attr_2_%d", procid);
-	snprintf(val,  sizeof(val),  "B%d", procid+OFFSET_2);
-	if (BNR_Put(bnr_gid, attr, val) != BNR_SUCCESS)
+	}
+	kvs_name = malloc(kvs_name_len);
+	if ((rc = PMI_KVS_Get_my_name(kvs_name, kvs_name_len)) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_KVS_Get_my_name: %d\n", rc);
 		exit(1);
+	}
+	if ((rc = PMI_KVS_Get_key_length_max(&key_len)) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_KVS_Get_key_length_max: %d\n", rc);
+		exit(1);
+	}
+	key = malloc(key_len);
+	if ((rc = PMI_KVS_Get_value_length_max(&val_len)) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_KVS_Get_value_length_max: %d\n", rc);
+		exit(1);
+	}
+	val = malloc(val_len);
 
+	/*  Build and set some key=val pairs */
+	snprintf(key, key_len, "ATTR_1_%d", procid);
+	snprintf(val, val_len, "A%d", procid+OFFSET_1);
+	if ((rc = PMI_KVS_Put(kvs_name, key, val)) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_KVS_Put(%s,%s,%s): %d\n", 
+			kvs_name, key, val, rc);
+		exit(1);
+	}
+	printf("PMI_KVS_Put(%s,%s,%s)\n", kvs_name, key, val);
+	snprintf(key, key_len, "attr_2_%d", procid);
+	snprintf(val, val_len, "B%d", procid+OFFSET_2);
+	if ((rc = PMI_KVS_Put(kvs_name, key, val)) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_KVS_Put(%s,%s,%s): %d\n",
+			kvs_name, key, val, rc);
+		exit(1);
+	}
+	printf("PMI_KVS_Put(%s,%s,%s)\n", kvs_name, key, val);
+#if 0
 	/* Fence to sync with other tasks */
 	if (BNR_Fence(bnr_gid) != BNR_SUCCESS)
 		exit(1);
-
+#endif
 	/* Now lets get all keypairs and validate */
-	for (i=0; i<bnr_cnt; i++) {
-		snprintf(attr, sizeof(attr), "ATTR_1_%d", i);
-		if (BNR_Get(bnr_gid, attr, val) != BNR_SUCCESS) {
-			printf("FAILURE: BNR_Get(%s): %m\n", attr);
+	for (i=0; i<pmi_size; i++) {
+		snprintf(key, key_len, "ATTR_1_%d", i);
+		if ((rc = PMI_KVS_Get(kvs_name, key, val, val_len)) != 
+				PMI_SUCCESS) {
+			printf("FAILURE: PMI_KVS_Get(%s): %d\n", key, rc);
 			exit(1);
 		}
 		if ((val[0] != 'A') || ((atoi(&val[1])-OFFSET_1) != i)) {
-			printf("FAILURE: Bad keypair %s=%s\n", attr, val);
+			printf("FAILURE: Bad keypair %s=%s\n", key, val);
 			exit(1);
 		}
-		printf("Read keypair %s=%s\n", attr, val);
+		printf("Read keypair %s=%s\n", key, val);
 
-		snprintf(attr, sizeof(attr), "attr_2_%d", i);
-		if (BNR_Get(bnr_gid, attr, val) != BNR_SUCCESS)
+		snprintf(key, key_len, "attr_2_%d", i);
+		if ((rc = PMI_KVS_Get(kvs_name, key, val, val_len)) != 
+				PMI_SUCCESS) {
+			printf("FAILURE: PMI_KVS_Get(%s): %d\n", key, rc);
 			exit(1);
+		}
 		if ((val[0] != 'B') || ((atoi(&val[1])-OFFSET_2) != i)) {
-			printf("FAILURE: Bad keypair %s=%s\n", attr, val);
+			printf("FAILURE: Bad keypair %s=%s\n", key, val);
 			exit(1);
 		}
-		printf("Read keypair %s=%s\n", attr, val);
+		printf("Read keypair %s=%s\n", key, val);
 	}
-#endif
 
-	if (PMI_Finalize() != PMI_SUCCESS) {
-		printf("FAILURE: PMI_Finalize: %m\n");
+	/* use iterator */
+	if ((rc = PMI_KVS_Iter_first(kvs_name, key, key_len, val, val_len)) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_KVS_iter_first: %d\n", rc);
+		exit(1);
+	}
+	for (i=0; ; i++) {
+		if (key[0] == '\0') {
+			if (i != (pmi_size * 2)) {
+				printf("FAILURE: PMI_KVS_iter_next cycle count(%d, %d)\n",
+					i, pmi_size);
+			}
+			break;
+		}
+		printf("iter(%d): %s=%s\n", i, key, val);
+		if ((rc = PMI_KVS_Iter_next(kvs_name, key, key_len, val, val_len)) != 
+				PMI_SUCCESS) {
+			printf("FAILURE: PMI_KVS_iter_next: %d\n", rc);
+			exit(1);
+		}
+	}
+
+	if ((rc = PMI_Finalize()) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_Finalize: %\n", rc);
 		exit(1);
 	}
 
