@@ -25,6 +25,7 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -33,6 +34,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <regex.h>
+#include <string.h>
 #include <inttypes.h>
 
 #include "src/common/xmalloc.h"
