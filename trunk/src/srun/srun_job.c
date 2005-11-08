@@ -233,6 +233,7 @@ _job_create_structure(allocation_info_t *info)
 	srun_job_t *job = xmalloc(sizeof(srun_job_t));
 	int i, cpu_inx, cpu_cnt;
 	
+	_set_nprocs(info);
 	debug2("creating job with %d tasks", opt.nprocs);
 
 	slurm_mutex_init(&job->state_mutex);
@@ -256,6 +257,7 @@ _job_create_structure(allocation_info_t *info)
 	job->select_jobinfo = info->select_jobinfo;
 	job->jobid   = info->jobid;
 	
+	job->ntasks  = opt.nprocs;
 	job->task_prolog = xstrdup(opt.task_prolog);
 	job->task_epilog = xstrdup(opt.task_epilog);
 	/* Compute number of file descriptors / Ports needed for Job 
