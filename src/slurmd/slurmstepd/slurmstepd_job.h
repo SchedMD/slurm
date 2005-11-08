@@ -129,6 +129,15 @@ typedef struct slurmd_job {
 			       * traffic "outgoing" means traffic from the
 			       * tasks to srun.
 			       */
+	int incoming_count;   /* Count of total incoming message buffers
+			       * including free_incoming buffers and
+			       * buffers in use.
+			       */
+	int outgoing_count;   /* Count of total incoming message buffers
+			       * including free_incoming buffers and
+			       * buffers in use.
+			       */
+
 	List outgoing_cache;  /* cache of outgoing stdio messages
 			       * used when a new client attaches
 			       */

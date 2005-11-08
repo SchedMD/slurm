@@ -64,6 +64,8 @@ static void	_handle_io_init_msg(int fd, srun_job_t *job);
 static ssize_t	_readx(int fd, char *buf, size_t maxbytes);
 static int      _read_io_init_msg(int fd, srun_job_t *job, char *host);
 static int      _wid(int n);
+static bool     _incoming_buf_free(srun_job_t *job);
+static bool     _outgoing_buf_free(srun_job_t *job);
 
 /**********************************************************************
  * Listening socket declarations
@@ -217,7 +219,7 @@ _server_readable(eio_obj_t *obj)
 
 	debug2("Called _server_readable");
 
-	if (list_is_empty(s->job->free_outgoing)) {
+	if (!_outgoing_buf_free(s->job)) {
 		debug3("  false, free_io_buf is empty");
 		return false;
 	}
@@ -246,8 +248,9 @@ _server_read(eio_obj_t *obj, List objs)
 
 	debug3("Entering _server_read");
 	if (s->in_msg == NULL) {
-		s->in_msg = list_dequeue(s->job->free_outgoing);
-		if (s->in_msg == NULL) {
+		if (_outgoing_buf_free(s->job)) {
+			s->in_msg = list_dequeue(s->job->free_outgoing);
+		} else {
 			debug("List free_outgoing is empty!");
 			return SLURM_ERROR;
 		}
@@ -649,7 +652,7 @@ static bool _file_readable(eio_obj_t *obj)
 		info->eof = true;
 		return false;
 	}
-	if (!list_is_empty(info->job->free_incoming))
+	if (_incoming_buf_free(info->job))
 		return true;
 
 	debug3("  false");
@@ -666,8 +669,9 @@ static int _file_read(eio_obj_t *obj, List objs)
 	int len;
 
 	debug2("Entering _file_read");
-	msg = list_dequeue(info->job->free_incoming);
-	if (msg == NULL) {
+	if (_incoming_buf_free(info->job)) {
+		msg = list_dequeue(info->job->free_incoming);
+	} else {
 		debug3("  List free_incoming is empty, no file read");
 		return SLURM_SUCCESS;
 	}
@@ -1115,3 +1119,40 @@ _init_stdio_eio_objs(srun_job_t *job)
 	}
 }
 
+static bool
+_incoming_buf_free(srun_job_t *job)
+{
+	struct io_buf *buf;
+
+	if (list_count(job->free_incoming) > 0) {
+		return true;
+	} else if (job->incoming_count < STDIO_MAX_FREE_BUF) {
+		buf = alloc_io_buf();
+		if (buf != NULL) {
+			list_enqueue(job->free_incoming, buf);
+			job->incoming_count++;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static bool
+_outgoing_buf_free(srun_job_t *job)
+{
+	struct io_buf *buf;
+
+	if (list_count(job->free_outgoing) > 0) {
+		return true;
+	} else if (job->outgoing_count < STDIO_MAX_FREE_BUF) {
+		buf = alloc_io_buf();
+		if (buf != NULL) {
+			list_enqueue(job->free_outgoing, buf);
+			job->outgoing_count++;
+			return true;
+		}
+	}
+
+	return false;
+}
