@@ -93,9 +93,13 @@
 #define PMI_MAX_KVSNAME_LEN 256	/* Maximum size of KVS name */
 #define PMI_MAX_VAL_LEN  256	/* Maximum size of a PMI value */
 
+#define KVS_STATE_LOCAL    0
+#define KVS_STATE_DEFUNCT  1
+
 /* default key names form is jobid.stepid[.sequence] */
 struct kvs_rec {
 	char *	kvs_name;
+	int	kvs_state;	/* see KVS_STATE_* */
 	int	kvs_cnt;
 	int	kvs_inx;	/* iteration index */
 	char **	kvs_keys;
@@ -267,7 +271,6 @@ static void _del_kvs_rec(struct kvs_rec *kvs_ptr)
 	}
 	if (kvs_ptr->kvs_name)
 		free(kvs_ptr->kvs_name);
-	free(kvs_ptr);
 	return;
 }
 
@@ -807,13 +810,25 @@ parameter, kvsname, must be at least as long as the value returned by
 @*/
 int PMI_KVS_Create( char kvsname[], int length )
 {
+	int size, rc;
+
 	if (kvsname == NULL)
 		return PMI_ERR_INVALID_ARG;
-	if (length < PMI_MAX_KVSNAME_LEN)
-		return PMI_ERR_INVALID_LENGTH;
+	if ((pmi_jobid < 0) || (pmi_stepid < 0))
+		return PMI_FAIL;
 
-	/* FIXME */
-	return PMI_FAIL;
+	pthread_mutex_lock(&kvs_mutex);
+	size = snprintf(kvsname, length, "%ld.%ld.%d.%d", pmi_jobid, 
+			pmi_stepid, pmi_rank, kvs_name_sequence);
+	if (size >= length)	/* truncated */
+		rc = PMI_ERR_INVALID_LENGTH;
+	else {
+		kvs_name_sequence++;
+		_init_kvs(kvsname);
+		rc = PMI_SUCCESS;
+	}
+	pthread_mutex_unlock(&kvs_mutex);
+	return rc;
 }
 
 /*@
@@ -833,11 +848,23 @@ This function destroys a keyval space created by 'PMI_KVS_Create()'.
 @*/
 int PMI_KVS_Destroy( const char kvsname[] )
 {
+	int i, found = 0;
+
 	if (kvsname == NULL)
 		return PMI_ERR_INVALID_ARG;
 
-	/* FIXME */
-	return PMI_FAIL;
+	pthread_mutex_lock(&kvs_mutex);
+	for (i=0; i<kvs_rec_cnt; i++) {
+		if (strncmp(kvs_recs[i].kvs_name, kvsname, PMI_MAX_KVSNAME_LEN))
+			continue;
+		kvs_recs[i].kvs_state = KVS_STATE_DEFUNCT;
+		found = 1;
+		break;
+	}
+	pthread_mutex_unlock(&kvs_mutex);
+	if (found == 0)
+		return PMI_ERR_INVALID_ARG;
+	return PMI_SUCCESS;
 }
 
 /*@
@@ -983,6 +1010,8 @@ int PMI_KVS_Get( const char kvsname[], const char key[], char value[], int lengt
 	/* find the proper kvs record */
 	pthread_mutex_lock(&kvs_mutex);
 	for (i=0; i<kvs_rec_cnt; i++) {
+		if (kvs_recs[i].kvs_state == KVS_STATE_DEFUNCT)
+			continue;
 		if (strncmp(kvs_recs[i].kvs_name, kvsname, PMI_MAX_KVSNAME_LEN))
 			continue;
 		for (j=0; j<kvs_recs[i].kvs_cnt; j++) {
@@ -1049,6 +1078,8 @@ int PMI_KVS_Iter_first(const char kvsname[], char key[], int key_len, char val[]
 	/* find the proper kvs record */
 	pthread_mutex_lock(&kvs_mutex);
 	for (i=0; i<kvs_rec_cnt; i++) {
+		if (kvs_recs[i].kvs_state == KVS_STATE_DEFUNCT)
+			continue;
 		if (strncmp(kvs_recs[i].kvs_name, kvsname, PMI_MAX_KVSNAME_LEN))
 			continue;
 		kvs_recs[i].kvs_inx = 0;
@@ -1121,6 +1152,8 @@ int PMI_KVS_Iter_next(const char kvsname[], char key[], int key_len,
 	/* find the proper kvs record */
 	pthread_mutex_lock(&kvs_mutex);
 	for (i=0; i<kvs_rec_cnt; i++) {
+		if (kvs_recs[i].kvs_state == KVS_STATE_DEFUNCT)
+			continue;
 		if (strncmp(kvs_recs[i].kvs_name, kvsname, PMI_MAX_KVSNAME_LEN))
 			continue;
 		kvs_recs[i].kvs_inx++;
