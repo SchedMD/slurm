@@ -115,7 +115,7 @@ static int   _run_srun_script (srun_job_t *job, char *script);
 int srun(int ac, char **av)
 {
 	allocation_resp *resp;
-	srun_job_t *job;
+	srun_job_t *job = NULL;
 	char *task_cnt, *bgl_part_id = NULL;
 	int exitcode = 0;
 	env_t *env = xmalloc(sizeof(env_t));
@@ -190,7 +190,9 @@ int srun(int ac, char **av)
 			info ("Warning: unable to assume uid=%lu\n", opt.uid);
 		if (_verbose)
 			_print_job_information(resp);
-		job = job_create_allocation(resp); 
+		
+		job = job_create_allocation(resp);
+		
 		if (msg_thr_create(job) < 0)
 			job_fatal(job, "Unable to create msg thread");
 		exitcode = _run_job_script(job, env);
@@ -209,11 +211,13 @@ int srun(int ac, char **av)
 		}
 		if (job_resp_hack_for_step(resp))	/* FIXME */
 			exit(1);
+		
 		job = job_create_allocation(resp);
+		
 		job->old_job = true;
 		sig_setup_sigmask();
-		if (create_job_step(job) < 0)
-			exit(1);
+		build_step_ctx(job);
+	
 		slurm_free_resource_allocation_response_msg(resp);
 		
 	} else if (mode == MODE_ATTACH) {
@@ -226,13 +230,11 @@ int srun(int ac, char **av)
 			exit(1);
 		if (_verbose)
 			_print_job_information(resp);
-
-		job = job_create_allocation(resp); 
-		if (create_job_step(job) < 0) {
-			srun_job_destroy(job, 0);
-			exit(1);
-		}
-		slurm_free_resource_allocation_response_msg(resp);
+						
+		job = job_create_allocation(resp);
+		build_step_ctx(job);
+		
+ 		slurm_free_resource_allocation_response_msg(resp);
 	}
 
 	/*
@@ -277,10 +279,10 @@ int srun(int ac, char **av)
 
 	if (sig_thr_create(job) < 0)
 		job_fatal(job, "Unable to create signals thread: %m");
-
+	
 	if (launch_thr_create(job) < 0)
-		job_fatal(job, "Unable to create launch thread: %m");
-
+ 		job_fatal(job, "Unable to create launch thread: %m");
+	
 	/* wait for job to terminate 
 	 */
 	slurm_mutex_lock(&job->state_mutex);
@@ -340,7 +342,8 @@ _task_count_string (srun_job_t *job)
 	int i, last_val, last_cnt;
 	char tmp[16];
 	char *str = xstrdup ("");
-
+	if(job->ntasks == 0)
+		return (str);
 	last_val = job->ntask[0];
 	last_cnt = 1;
 	for (i=1; i<job->nhosts; i++) {
@@ -367,7 +370,7 @@ _task_count_string (srun_job_t *job)
 static void
 _switch_standalone(srun_job_t *job)
 {
-	int cyclic = (opt.distribution == SRUN_DIST_CYCLIC);
+	int cyclic = (opt.distribution == SLURM_DIST_CYCLIC);
 
 	if (switch_alloc_jobinfo(&job->switch_job) < 0)
 		fatal("switch_alloc_jobinfo: %m");
@@ -816,7 +819,7 @@ static int _run_job_script (srun_job_t *job, env_t *env)
 		env->jobid = job->jobid;
 		env->nhosts = job->nhosts;
 		env->nodelist = job->nodelist;
-		env->task_count = _task_count_string (job);
+		//env->task_count = _task_count_string (job);
 	}
 	
 	if (setup_env(env) != SLURM_SUCCESS) 

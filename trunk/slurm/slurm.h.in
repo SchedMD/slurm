@@ -200,7 +200,9 @@ enum select_print_mode {
 /* Possible task distributions across the nodes */
 enum task_dist_states {
 	SLURM_DIST_CYCLIC,	/* distribute tasks 1 per node, round robin */
-	SLURM_DIST_BLOCK	/* distribute tasks filling node by node */
+	SLURM_DIST_BLOCK,	/* distribute tasks filling node by node */
+	SLURM_DIST_HOSTFILE,	/* distribute tasks from what hostfile says */
+	SLURM_DIST_UNKNOWN	/* unknown dist */
 };
 
 /* The last entry in node_states must be STATE_END, keep in sync with 
@@ -243,7 +245,12 @@ enum ctx_keys {
 	SLURM_STEP_CTX_STEPID,	/* get the created job step id */
 	SLURM_STEP_CTX_TASKS,	/* get array of task count on each node */
 	SLURM_STEP_CTX_TID,	/* get array of task IDs for specified node */
-	SLURM_STEP_CTX_RESP	/* get job step create response message */
+	SLURM_STEP_CTX_RESP,	/* get job step create response message */
+	SLURM_STEP_CTX_CRED,
+	SLURM_STEP_CTX_SWITCH_JOB,
+	SLURM_STEP_CTX_NHOSTS,
+	SLURM_STEP_CTX_CPUS,
+	SLURM_STEP_CTX_HOST
 };
 
 /*****************************************************************************\

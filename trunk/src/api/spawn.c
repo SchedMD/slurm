@@ -103,6 +103,7 @@ static void	_free_char_array(char ***argv_p, int cnt);
 static int	_p_launch(slurm_msg_t *req, slurm_step_ctx ctx);
 static int	_sock_bind_wild(int sockfd);
 static int	_task_layout(slurm_step_ctx ctx);
+static int      _task_layout_hostfile(slurm_step_ctx ctx);
 static int	_task_layout_block(slurm_step_ctx ctx);
 static int	_task_layout_cyclic(slurm_step_ctx ctx);
 static void *	_thread_per_node_rpc(void *args);
@@ -123,29 +124,41 @@ slurm_step_ctx_create (job_step_create_request_msg_t *step_req)
 	old_job_alloc_msg_t old_job_req;
 	job_step_create_response_msg_t *step_resp = NULL;
 	resource_allocation_response_msg_t *alloc_resp;
-
+	char *temp = NULL;
 	old_job_req.job_id	= step_req->job_id;
 	old_job_req.uid		= getuid();
 	if (slurm_confirm_allocation(&old_job_req, &alloc_resp) < 0)
 		return NULL;
-
+	
 	if ((slurm_job_step_create(step_req, &step_resp) < 0) ||
 	    (step_resp == NULL)) {
 		slurm_free_resource_allocation_response_msg(alloc_resp);
 		return NULL;	/* slurm errno already set */
 	}
-
+	
+	temp = step_req->node_list;
+	step_req->node_list = step_resp->node_list;
+	step_resp->node_list = temp;
+		
 	rc = xmalloc(sizeof(struct slurm_step_ctx_struct));
 	rc->magic	= STEP_CTX_MAGIC;
 	rc->job_id	= step_req->job_id;
 	rc->user_id	= step_req->user_id;
-	rc->num_tasks	= step_req->num_tasks;
 	rc->task_dist	= step_req->task_dist;
+	rc->num_tasks	= step_req->num_tasks;
 	rc->step_resp	= step_resp;
 	rc->alloc_resp	= alloc_resp;
+	rc->hl		= hostlist_create(step_req->node_list);
 
-	rc->hl		= hostlist_create(rc->step_resp->node_list);
-	rc->nhosts	= hostlist_count(rc->hl);
+#ifdef HAVE_FRONT_END	/* Limited job step support */
+	/* All jobs execute through front-end on Blue Gene/L.
+	 * Normally we would not permit execution of job steps,
+	 * but can fake it by just allocating all tasks to
+	 * one of the allocated nodes. */
+	rc->nhosts    = 1;
+#else
+	rc->nhosts = hostlist_count(rc->hl);
+#endif
 	(void) _task_layout(rc);
 
 	return rc;
@@ -162,10 +175,13 @@ slurm_step_ctx_get (slurm_step_ctx ctx, int ctx_key, ...)
 	va_list ap;
 	int rc = SLURM_SUCCESS;
 	uint32_t node_inx;
-	uint32_t *step_id_ptr;
-	uint32_t **array_pptr = (uint32_t **) NULL;
+	uint32_t *uint32_ptr;
+	uint32_t **uint32_array_pptr = (uint32_t **) NULL;
+	char **char_array_pptr = (char **) NULL;
 	job_step_create_response_msg_t ** step_resp_pptr;
-
+	slurm_cred_t  *cred;     /* Slurm job credential    */
+	switch_jobinfo_t *switch_job;
+	
 	if ((ctx == NULL) ||
 	    (ctx->magic != STEP_CTX_MAGIC)) {
 		slurm_seterrno(EINVAL);
@@ -174,35 +190,60 @@ slurm_step_ctx_get (slurm_step_ctx ctx, int ctx_key, ...)
 
 	va_start(ap, ctx_key);
 	switch (ctx_key) {
-		case SLURM_STEP_CTX_STEPID:
-			step_id_ptr = (uint32_t *) va_arg(ap, void *);
-			*step_id_ptr = ctx->step_resp->job_step_id;
-			break;
-		case SLURM_STEP_CTX_TASKS:
-			array_pptr = (uint32_t **) va_arg(ap, void *);
-			*array_pptr = ctx->tasks;
-			break;
-
-		case SLURM_STEP_CTX_TID:
-			node_inx = va_arg(ap, uint32_t);
-			if ((node_inx < 0) || (node_inx > ctx->nhosts)) {
-				slurm_seterrno(EINVAL);
-				rc = SLURM_ERROR;
-				break;
-			}
-			array_pptr = (uint32_t **) va_arg(ap, void *);
-			*array_pptr = ctx->tids[node_inx];
-			break;
-
-		case SLURM_STEP_CTX_RESP:
-			step_resp_pptr = (job_step_create_response_msg_t **) 
-				va_arg(ap, void *);
-			*step_resp_pptr = ctx->step_resp;
-			break;
-
-		default:
+	case SLURM_STEP_CTX_STEPID:
+		uint32_ptr = (uint32_t *) va_arg(ap, void *);
+		*uint32_ptr = ctx->step_resp->job_step_id;
+		break;
+	case SLURM_STEP_CTX_TASKS:
+		uint32_array_pptr = (uint32_t **) va_arg(ap, void *);
+		*uint32_array_pptr = ctx->tasks;
+		break;
+		
+	case SLURM_STEP_CTX_TID:
+		node_inx = va_arg(ap, uint32_t);
+		if ((node_inx < 0) || (node_inx > ctx->nhosts)) {
 			slurm_seterrno(EINVAL);
 			rc = SLURM_ERROR;
+			break;
+		}
+		uint32_array_pptr = (uint32_t **) va_arg(ap, void *);
+		*uint32_array_pptr = ctx->tids[node_inx];
+		break;
+		
+	case SLURM_STEP_CTX_RESP:
+		step_resp_pptr = (job_step_create_response_msg_t **) 
+			va_arg(ap, void *);
+		*step_resp_pptr = ctx->step_resp;
+		break;
+	case SLURM_STEP_CTX_CRED:
+		cred = (slurm_cred_t *) va_arg(ap, void *);
+		*cred = ctx->step_resp->cred;
+		break;
+	case SLURM_STEP_CTX_SWITCH_JOB:
+		switch_job = (switch_jobinfo_t *) va_arg(ap, void *);
+		*switch_job = ctx->step_resp->switch_job;
+		break;
+	case SLURM_STEP_CTX_NHOSTS:
+		uint32_ptr = (uint32_t *) va_arg(ap, void *);
+		*uint32_ptr = ctx->nhosts;
+		break;
+	case SLURM_STEP_CTX_CPUS:
+		uint32_array_pptr = (uint32_t **) va_arg(ap, void *);
+		*uint32_array_pptr = ctx->cpus;
+		break;
+	case SLURM_STEP_CTX_HOST:
+		node_inx = va_arg(ap, uint32_t);
+		if ((node_inx < 0) || (node_inx > ctx->nhosts)) {
+			slurm_seterrno(EINVAL);
+			rc = SLURM_ERROR;
+			break;
+		}
+		char_array_pptr = (char **) va_arg(ap, void *);
+		*char_array_pptr = ctx->host[node_inx];
+		break;
+	default:
+		slurm_seterrno(EINVAL);
+		rc = SLURM_ERROR;
 	}
 	va_end(ap);
 
@@ -246,40 +287,39 @@ slurm_step_ctx_set (slurm_step_ctx ctx, int ctx_key, ...)
 
 	va_start(ap, ctx_key);
 	switch (ctx_key) {
-		case SLURM_STEP_CTX_ARGS:
-			if (ctx->argv)
-				_xfree_char_array(&ctx->argv, ctx->argc);
-			ctx->argc = va_arg(ap, int);
-			if ((ctx->argc < 1) || (ctx->argc > 1024)) {
-				slurm_seterrno(EINVAL);
-				break;
-			}
-			_xcopy_char_array(&ctx->argv, va_arg(ap, char **), 
-					ctx->argc);
-			break;
-
-		case SLURM_STEP_CTX_CHDIR:
-			if (ctx->cwd)
-				xfree(ctx->cwd);
-			ctx->cwd = xstrdup(va_arg(ap, char *));
-			break;
-
-		case SLURM_STEP_CTX_ENV:
-			ctx->env_set = 1;
-			if (ctx->env)
-				_xfree_char_array(&ctx->env, ctx->envc);
-			ctx->envc = va_arg(ap, int);
-			if ((ctx->envc < 1) || (ctx->envc > 1024)) {
-				slurm_seterrno(EINVAL);
-				break;
-			}
-			_xcopy_char_array(&ctx->env, va_arg(ap, char **), 
-					ctx->envc);
-			break;
-
-		default:
+	case SLURM_STEP_CTX_ARGS:
+		if (ctx->argv)
+			_xfree_char_array(&ctx->argv, ctx->argc);
+		ctx->argc = va_arg(ap, int);
+		if ((ctx->argc < 1) || (ctx->argc > 1024)) {
 			slurm_seterrno(EINVAL);
-			rc = SLURM_ERROR;
+			break;
+		}
+		_xcopy_char_array(&ctx->argv, va_arg(ap, char **), 
+				  ctx->argc);
+		break;
+
+	case SLURM_STEP_CTX_CHDIR:
+		if (ctx->cwd)
+			xfree(ctx->cwd);
+		ctx->cwd = xstrdup(va_arg(ap, char *));
+		break;
+
+	case SLURM_STEP_CTX_ENV:
+		ctx->env_set = 1;
+		if (ctx->env)
+			_xfree_char_array(&ctx->env, ctx->envc);
+		ctx->envc = va_arg(ap, int);
+		if ((ctx->envc < 1) || (ctx->envc > 1024)) {
+			slurm_seterrno(EINVAL);
+			break;
+		}
+		_xcopy_char_array(&ctx->env, va_arg(ap, char **), 
+				  ctx->envc);
+		break;
+	default:
+		slurm_seterrno(EINVAL);
+		rc = SLURM_ERROR;
 	}
 	va_end(ap);
 
@@ -348,9 +388,12 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 	spawn_task_request_msg_t *msg_array_ptr;
 	int *sock_array;
 	slurm_msg_t *req_array_ptr;
-	int i, rc = SLURM_SUCCESS;
+	int i, j, rc = SLURM_SUCCESS;
 	uint16_t slurmd_debug = 0;
 	char *env_var;
+	hostlist_t hostlist = NULL;
+	hostlist_iterator_t itr = NULL;
+	char *host = NULL;
 
 	if ((ctx == NULL) ||
 	    (ctx->magic != STEP_CTX_MAGIC) ||
@@ -390,6 +433,10 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 	msg_array_ptr = xmalloc(sizeof(spawn_task_request_msg_t) *
 			ctx->nhosts);
 	req_array_ptr = xmalloc(sizeof(slurm_msg_t) * ctx->nhosts);
+
+	hostlist = hostlist_create(ctx->alloc_resp->node_list);		
+	itr = hostlist_iterator_create(hostlist);
+
 	for (i=0; i<ctx->nhosts; i++) {
 		spawn_task_request_msg_t *r = &msg_array_ptr[i];
 		slurm_msg_t              *m = &req_array_ptr[i];
@@ -408,7 +455,6 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 		r->nprocs	= ctx->num_tasks;
 		r->switch_job	= ctx->step_resp->switch_job; 
 		r->slurmd_debug	= slurmd_debug;
-
 		/* Task specific message contents */
 		r->global_task_id	= ctx->tids[i][0];
 		r->cpus_allocated	= ctx->cpus[i];
@@ -416,14 +462,28 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 		r->io_port	= ntohs(sock_array[i]);
 		m->msg_type	= REQUEST_SPAWN_TASK;
 		m->data		= r;
-		memcpy(&m->address, &ctx->alloc_resp->node_addr[i], 
+
+		j=0; 
+  		while(host = hostlist_next(itr)) { 
+  			if(!strcmp(host,ctx->host[i])) {
+  				free(host);
+				break; 
+			}
+  			j++; 
+			free(host);
+  		}
+		debug2("using %d %s with %d tasks\n", j, ctx->host[i],
+		       r->nprocs);
+		hostlist_iterator_reset(itr);
+		memcpy(&m->address, &ctx->alloc_resp->node_addr[j], 
 			sizeof(slurm_addr));
 #if		_DEBUG
 		printf("tid=%d, fd=%d, port=%u, node_id=%u\n",
 			ctx->tids[i][0], fd_array[i], r->io_port, i);
 #endif
 	}
-
+	hostlist_iterator_destroy(itr);
+	hostlist_destroy(hostlist);
 	rc = _p_launch(req_array_ptr, ctx);
 
 	xfree(msg_array_ptr);
@@ -432,7 +492,6 @@ extern int slurm_spawn (slurm_step_ctx ctx, int *fd_array)
 
 	return rc;
 }
-
 
 /*
  * slurm_spawn_kill - send the specified signal to an existing job step
@@ -535,10 +594,64 @@ static int _task_layout(slurm_step_ctx ctx)
 
 	if (ctx->task_dist == SLURM_DIST_CYCLIC)
 		return _task_layout_cyclic(ctx);
+	else if(ctx->task_dist == SLURM_DIST_HOSTFILE)
+		return _task_layout_hostfile(ctx);
 	else
 		return _task_layout_block(ctx);
 }
 
+/* use specific set run tasks on each host listed in hostfile
+ */
+static int _task_layout_hostfile(slurm_step_ctx ctx)
+{
+	int i=0, j, taskid = 0;
+	bool over_subscribe = false;
+	hostlist_iterator_t itr = NULL, itr_task = NULL;
+	char *host = NULL;
+	char *host_task = NULL;
+	hostlist_t job_alloc_hosts = NULL;
+	hostlist_t step_alloc_hosts = NULL;
+	
+	job_alloc_hosts = hostlist_create(ctx->alloc_resp->node_list);
+	itr = hostlist_iterator_create(job_alloc_hosts);
+	step_alloc_hosts = hostlist_create(ctx->step_resp->node_list);
+	itr_task = hostlist_iterator_create(step_alloc_hosts);
+	while(host = hostlist_next(itr)) {
+
+		ctx->tasks[i] = 0;
+		while(host_task = hostlist_next(itr_task)) {
+			if(!strcmp(host, host_task))
+				ctx->tasks[i]++;
+		}
+		debug2("%s got %d tasks\n",
+		       host,
+		       ctx->tasks[i]);
+		if(ctx->tasks[i] == 0)
+			goto reset_hosts;
+		ctx->tids[i] = xmalloc(sizeof(uint32_t) * ctx->tasks[i]);
+		hostlist_iterator_reset(itr_task);
+		taskid = 0;
+		j = 0;
+		while(host_task = hostlist_next(itr_task)) {
+			if(!strcmp(host, host_task)) {
+				ctx->tids[i][j] = taskid;
+				j++;
+			}
+			taskid++;
+			free(host_task);
+		}
+		i++;
+	reset_hosts:
+		hostlist_iterator_reset(itr_task);	
+		free(host);
+	}
+
+	hostlist_iterator_destroy(itr);
+	hostlist_iterator_destroy(itr_task);
+	hostlist_destroy(job_alloc_hosts);
+
+	return SLURM_SUCCESS;
+}
 
 /* to effectively deal with heterogeneous nodes, we fake a cyclic
  * distribution to figure out how many tasks go on each node and

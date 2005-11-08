@@ -113,6 +113,7 @@ if {$start_cnt < $job_cnt} {
 # then kill them all
 #
 set user_name ""
+
 exec $bin_sleep [expr $delay + 5]
 spawn $bin_id -un
 expect {
@@ -122,6 +123,7 @@ expect {
 	eof {
 		wait
 	}
+	
 }
 #
 # There could be hundreds of job steps, we don't want to see
@@ -145,11 +147,15 @@ expect {
 }
 log_user 0
 set matches 0
+set timeout 60
 spawn $squeue --steps --user $user_name
 expect {
 	-re "sleep" {
 		incr matches
 		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: squeue not responding\n"
 	}
 	eof {
 		wait

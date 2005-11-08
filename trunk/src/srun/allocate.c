@@ -63,8 +63,8 @@ static void  _wait_for_resources(resource_allocation_response_msg_t **resp);
 static bool  _retry();
 static void  _intr_handler(int signo);
 
-static job_step_create_request_msg_t * _step_req_create(srun_job_t *j);
-static void _step_req_destroy(job_step_create_request_msg_t *r);
+/* static job_step_create_request_msg_t * _step_req_create(srun_job_t *j); */
+/* static void _step_req_destroy(job_step_create_request_msg_t *r); */
 
 static sig_atomic_t destroy_job = 0;
 static srun_job_t *allocate_job = NULL;
@@ -462,77 +462,79 @@ job_desc_msg_destroy(job_desc_msg_t *j)
 	}
 }
 
-static job_step_create_request_msg_t *
-_step_req_create(srun_job_t *j)
-{
-	job_step_create_request_msg_t *r = xmalloc(sizeof(*r));
-	r->job_id     = j->jobid;
-	r->user_id    = opt.uid;
-	r->node_count = j->nhosts; 
-	r->cpu_count  = opt.overcommit ? j->nhosts 
-		                       : (opt.nprocs*opt.cpus_per_task);
-	r->num_tasks  = opt.nprocs;
-	r->node_list  = j->nodelist;
-	r->network    = opt.network;
-	r->name       = opt.job_name;
-	r->relative   = false;      /* XXX fix this oneday */
+/* static job_step_create_request_msg_t * */
+/* _step_req_create(srun_job_t *j) */
+/* { */
+/* 	job_step_create_request_msg_t *r = xmalloc(sizeof(*r)); */
+/* 	r->job_id     = j->jobid; */
+/* 	r->user_id    = opt.uid; */
+/* 	r->node_count = j->nhosts;  */
+/* 	r->cpu_count  = opt.overcommit ? j->nhosts  */
+/* 		                       : (opt.nprocs*opt.cpus_per_task); */
+/* 	r->num_tasks  = opt.nprocs; */
+/* 	r->node_list  = xstrdup(j->nodelist); */
+/* 	r->network    = opt.network; */
+/* 	r->name       = opt.job_name; */
+/* 	r->relative   = false;      /\* XXX fix this oneday *\/ */
 
-	switch (opt.distribution) {
-	case SRUN_DIST_UNKNOWN:
-		r->task_dist = (opt.nprocs <= j->nhosts) ? SLURM_DIST_CYCLIC
-			                                 : SLURM_DIST_BLOCK;
-		break;
-	case SRUN_DIST_CYCLIC:
-		r->task_dist = SLURM_DIST_CYCLIC;
-		break;
-	default: /* (opt.distribution == SRUN_DIST_BLOCK) */
-		r->task_dist = SLURM_DIST_BLOCK;
-		break;
-	}
+/* 	switch (opt.distribution) { */
+/* 	case SRUN_DIST_UNKNOWN: */
+/* 		r->task_dist = (opt.nprocs <= j->nhosts) ? SLURM_DIST_CYCLIC */
+/* 			                                 : SLURM_DIST_BLOCK; */
+/* 		break; */
+/* 	case SRUN_DIST_CYCLIC: */
+/* 		r->task_dist = SLURM_DIST_CYCLIC; */
+/* 		break; */
+/* 	default: /\* (opt.distribution == SRUN_DIST_BLOCK) *\/ */
+/* 		r->task_dist = SLURM_DIST_BLOCK; */
+/* 		break; */
+/* 	} */
 
-	if (slurmctld_comm_addr.port) {
-		r->host = xstrdup(slurmctld_comm_addr.hostname);
-		r->port = slurmctld_comm_addr.port;
-	}
+/* 	if (slurmctld_comm_addr.port) { */
+/* 		r->host = xstrdup(slurmctld_comm_addr.hostname); */
+/* 		r->port = slurmctld_comm_addr.port; */
+/* 	} */
 
-	return(r);
-}
+/* 	return(r); */
+/* } */
 
-static void
-_step_req_destroy(job_step_create_request_msg_t *r)
-{
-	if (r) {
-		xfree(r->host);
-		xfree(r);
-	}
-}
+/* static void */
+/* _step_req_destroy(job_step_create_request_msg_t *r) */
+/* { */
+/* 	if (r) { */
+/* 		xfree(r->host); */
+/* 		xfree(r->node_list); */
+/* 		xfree(r); */
+/* 	} */
+/* } */
 
-int
-create_job_step(srun_job_t *job)
-{
-	job_step_create_request_msg_t  *req  = NULL;
-	job_step_create_response_msg_t *resp = NULL;
+/* int */
+/* create_job_step(srun_job_t *job) */
+/* { */
+/* 	job_step_create_request_msg_t  *req  = NULL; */
+/* 	job_step_create_response_msg_t *resp = NULL; */
+/* 	char *temp = NULL; */
 
-	if (!(req = _step_req_create(job))) { 
-		error ("Unable to allocate step request message");
-		return -1;
-	}
-	if ((slurm_job_step_create(req, &resp) < 0) || (resp == NULL)) { 
-		error ("Unable to create job step: %m");
-		return -1;
-	}
+/* 	if (!(req = _step_req_create(job))) {  */
+/* 		error ("Unable to allocate step request message"); */
+/* 		return -1; */
+/* 	} */
+/* 	if ((slurm_job_step_create(req, &resp) < 0) || (resp == NULL)) {  */
+/* 		error ("Unable to create job step: %m"); */
+/* 		return -1; */
+/* 	} */
+	
+/* 	job->stepid  = resp->job_step_id; */
+/* 	job->cred    = resp->cred; */
+/* 	job->switch_job = resp->switch_job; */
+/* 	/\*  */
+/* 	 * Recreate filenames which may depend upon step id */
+/* 	 *\/ */
+/* 	job_update_io_fnames(job); */
 
-	job->stepid  = resp->job_step_id;
-	job->cred    = resp->cred;
-	job->switch_job = resp->switch_job;
-	/* 
-	 * Recreate filenames which may depend upon step id
-	 */
-	job_update_io_fnames(job);
-
-	_step_req_destroy(req);
-	return 0;
-}
+/* 	_step_req_destroy(req); */
+/* 	return 0; */
+/* } */
 
 void 
 set_allocate_job(srun_job_t *job) 

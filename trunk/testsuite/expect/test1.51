@@ -63,7 +63,7 @@ exec $bin_chmod 700 $file_in $file_script
 set matches 0
 spawn $file_script
 expect {
-	-re 0123 {
+	-re (0123|123) {
 		set matches 1
 		exp_continue
 	}

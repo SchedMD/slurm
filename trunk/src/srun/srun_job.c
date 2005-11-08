@@ -52,6 +52,7 @@
 #include "src/srun/fname.h"
 #include "src/srun/attach.h"
 #include "src/srun/io.h"
+#include "src/srun/msg.h"
 
 
 /*
@@ -80,8 +81,11 @@ static void       _dist_cyclic(srun_job_t *job);
 static inline int _estimate_nports(int nclients, int cli_per_port);
 static int        _compute_task_count(allocation_info_t *info);
 static void       _set_nprocs(allocation_info_t *info);
-static srun_job_t *    _job_create_internal(allocation_info_t *info);
+static srun_job_t *_job_create_internal(allocation_info_t *info);
+static srun_job_t *_job_create_structure(allocation_info_t *info);
 static void       _job_fake_cred(srun_job_t *job);
+static void       _job_noalloc_step_create(srun_job_t *job,
+					   allocation_info_t *info);
 static int        _job_resp_add_nodes(bitstr_t *req_bitmap, 
 				bitstr_t *exc_bitmap, int node_cnt);
 static int        _job_resp_bitmap(hostlist_t resp_node_hl, char *nodelist, 
@@ -135,34 +139,6 @@ _dist_cyclic(srun_job_t *job)
 	}
 }
 
-/*
- * Create an srun job structure from a resource allocation response msg
- */
-srun_job_t *
-job_create_allocation(resource_allocation_response_msg_t *resp)
-{
-	srun_job_t *job;
-	allocation_info_t *i = xmalloc(sizeof(*i));
-
-	i->nodelist       = _normalize_hostlist(resp->node_list);
-	i->nnodes	  = resp->node_cnt;
-	i->jobid          = resp->job_id;
-	i->stepid         = NO_VAL;
-	i->num_cpu_groups = resp->num_cpu_groups;
-	i->cpus_per_node  = resp->cpus_per_node;
-	i->cpu_count_reps = resp->cpu_count_reps;
-	i->addrs          = resp->node_addr;
-	i->select_jobinfo = select_g_copy_jobinfo(resp->select_jobinfo);
-
-	job = _job_create_internal(i);
-
-	xfree(i->nodelist);
-	xfree(i);
-
-	return (job);
-}
-
-
 /* 
  * Create an srun job structure w/out an allocation response msg.
  * (i.e. use the command line options)
@@ -203,7 +179,8 @@ job_create_noalloc(void)
 	/* 
 	 * Create job, then fill in host addresses
 	 */
-	job = _job_create_internal(ai);
+	job = _job_create_structure(ai);
+	_job_noalloc_step_create(job, ai);
 
 	for (i = 0; i < job->nhosts; i++) {
 		char *nd = get_conf_node_hostname(job->host[i]);
@@ -213,13 +190,243 @@ job_create_noalloc(void)
 	}
 
 	_job_fake_cred(job);
-
+	
    error:
 	xfree(ai);
 	return (job);
 
 }
 
+/*
+ * Create an srun job structure from a resource allocation response msg
+ */
+extern srun_job_t *
+job_create_allocation(resource_allocation_response_msg_t *resp)
+{
+	srun_job_t *job;
+	allocation_info_t *i = xmalloc(sizeof(*i));
+
+	i->nodelist       = _normalize_hostlist(resp->node_list);
+	i->nnodes	  = resp->node_cnt;
+	i->jobid          = resp->job_id;
+	i->stepid         = NO_VAL;
+	i->num_cpu_groups = resp->num_cpu_groups;
+	i->cpus_per_node  = resp->cpus_per_node;
+	i->cpu_count_reps = resp->cpu_count_reps;
+	i->addrs          = resp->node_addr;
+	i->select_jobinfo = select_g_copy_jobinfo(resp->select_jobinfo);
+
+	job = _job_create_structure(i);
+
+	xfree(i->nodelist);
+	xfree(i);
+
+	return (job);
+}
+
+/*
+ * Create an srun job structure from a resource allocation response msg
+ */
+static srun_job_t *
+_job_create_structure(allocation_info_t *info)
+{
+	srun_job_t *job = xmalloc(sizeof(srun_job_t));
+	int i, cpu_inx, cpu_cnt;
+	
+	debug2("creating job with %d tasks", opt.nprocs);
+
+	slurm_mutex_init(&job->state_mutex);
+	pthread_cond_init(&job->state_cond, NULL);
+	job->state = SRUN_JOB_INIT;
+
+ 	job->nodelist = xstrdup(info->nodelist); 
+	job->stepid  = info->stepid;
+	
+#ifdef HAVE_FRONT_END	/* Limited job step support */
+	/* All jobs execute through front-end on Blue Gene/L.
+	 * Normally we would not permit execution of job steps,
+	 * but can fake it by just allocating all tasks to
+	 * one of the allocated nodes. */
+	job->nhosts    = 1;
+	opt.overcommit = true;
+#else
+	job->nhosts   = info->nnodes;
+#endif
+
+	job->select_jobinfo = info->select_jobinfo;
+	job->jobid   = info->jobid;
+	
+	job->task_prolog = xstrdup(opt.task_prolog);
+	job->task_epilog = xstrdup(opt.task_epilog);
+	/* Compute number of file descriptors / Ports needed for Job 
+	 * control info server
+	 */
+	job->njfds = _estimate_nports(opt.nprocs, 48);
+	debug3("njfds = %d", job->njfds);
+	job->jfd = (slurm_fd *)
+		xmalloc(job->njfds * sizeof(slurm_fd));
+	job->jaddr = (slurm_addr *) 
+		xmalloc(job->njfds * sizeof(slurm_addr));
+	/* Compute number of listening sockets needed to allow
+	 * all of the slurmds to establish IO streams with srun, without
+	 * overstressing the TCP/IP backoff/retry algorithm
+	 */
+	job->num_listen = _estimate_nports(opt.nprocs, 64);
+	job->listensock = (int *) 
+		xmalloc(job->num_listen * sizeof(int));
+	job->listenport = (int *) 
+		xmalloc(job->num_listen * sizeof(int));
+	
+	job->hostid = xmalloc(opt.nprocs * sizeof(uint32_t));
+	
+ 	slurm_mutex_init(&job->task_mutex);
+	
+	job->old_job = false;
+	job->removed = false;
+	job->signaled = false;
+	job->rc       = -1;
+	
+	/* 
+	 *  Initialize Launch and Exit timeout values
+	 */
+	job->ltimeout = 0;
+	job->etimeout = 0;
+	
+	
+	job->eio = eio_handle_create();
+	job->ioservers_ready = 0;
+	/* "nhosts" number of IO protocol sockets */
+	job->ioserver = (eio_obj_t **)xmalloc(job->nhosts*sizeof(eio_obj_t *));
+	
+	job->slurmd_addr = xmalloc(job->nhosts * sizeof(slurm_addr));
+	if (info->addrs)
+		memcpy( job->slurmd_addr, info->addrs,
+			sizeof(slurm_addr)*job->nhosts);
+
+	job->free_incoming = list_create(NULL); /* FIXME! Needs destructor */
+	for (i = 0; i < STDIO_MAX_FREE_BUF; i++) {
+		list_enqueue(job->free_incoming, alloc_io_buf());
+	}
+	job->free_outgoing = list_create(NULL); /* FIXME! Needs destructor */
+	for (i = 0; i < STDIO_MAX_FREE_BUF; i++) {
+		list_enqueue(job->free_outgoing, alloc_io_buf());
+	}
+	
+	/* ntask task states and statii*/
+	job->task_state  =  xmalloc(opt.nprocs * sizeof(srun_task_state_t));
+	job->tstatus	 =  xmalloc(opt.nprocs * sizeof(int));
+	job->free_incoming = list_create(NULL); /* FIXME! Needs destructor */
+	job->incoming_count = 0;
+	for (i = 0; i < STDIO_MAX_FREE_BUF; i++) {
+		list_enqueue(job->free_incoming, alloc_io_buf());
+	}
+	job->free_outgoing = list_create(NULL); /* FIXME! Needs destructor */
+	job->outgoing_count = 0;
+	for (i = 0; i < STDIO_MAX_FREE_BUF; i++) {
+		list_enqueue(job->free_outgoing, alloc_io_buf());
+	}
+	
+	job_update_io_fnames(job);
+	
+	return (job);
+	
+	
+}
+
+extern int build_step_ctx(srun_job_t *job)
+{
+	job_step_create_request_msg_t  *r  = NULL;
+	uint32_t step_id;
+	int i;
+	char *temp = NULL;
+	r = xmalloc(sizeof(job_step_create_request_msg_t));
+	if (r == NULL) {
+		error("calloc error");
+		return -1;
+	}
+	r->job_id     = job->jobid;
+	r->user_id    = opt.uid;
+	r->node_count = job->nhosts;
+	/* Processor count not relevant to poe */
+	r->cpu_count  = job->nhosts;
+	r->num_tasks  = opt.nprocs;
+	r->node_list  = xstrdup(job->nodelist);
+	switch (opt.distribution) {
+	case SLURM_DIST_UNKNOWN:
+		r->task_dist = (opt.nprocs <= job->nhosts) 
+			? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
+		break;
+	case SLURM_DIST_CYCLIC:
+		r->task_dist = SLURM_DIST_CYCLIC;
+		break;
+	case SLURM_DIST_HOSTFILE:
+		r->task_dist = SLURM_DIST_HOSTFILE;
+		break;
+	default: /* (opt.distribution == SLURM_DIST_BLOCK) */
+		r->task_dist = SLURM_DIST_BLOCK;
+		break;
+	}
+	
+	r->network = xstrdup(opt.network);
+	if (slurmctld_comm_addr.port) {
+		r->host = xstrdup(slurmctld_comm_addr.hostname);
+		r->port = slurmctld_comm_addr.port;
+	}
+	job->step_ctx = slurm_step_ctx_create(r);
+	if (job->step_ctx == NULL) {
+		error("slurm_step_ctx_create: %s", 
+		      slurm_strerror(slurm_get_errno()));
+		return -1;
+	}
+	
+	if (slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_NHOSTS, 
+			       &job->nhosts) != SLURM_SUCCESS) {
+		error("unable to get nhosts from ctx");
+	}
+	/* nhost host states */
+	job->host_state =  xmalloc(job->nhosts * sizeof(srun_host_state_t));
+	
+	if (slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_CPUS, 
+			       &job->cpus) != SLURM_SUCCESS) {
+		error("unable to get hosts from ctx");
+	}
+	
+	if (slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_STEPID, 
+			       &job->stepid) != SLURM_SUCCESS) {
+		error("unable to get step id from ctx");
+	}
+	if (slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_TASKS, 
+			       &job->ntask) != SLURM_SUCCESS) {
+		error("unable to get step id from ctx");
+	}
+	job->tids   = xmalloc(job->nhosts * sizeof(uint32_t *));
+	job->host   = xmalloc(job->nhosts * sizeof(char *));
+	for(i=0;i<job->nhosts;i++) {
+		if (slurm_step_ctx_get(job->step_ctx, 
+				       SLURM_STEP_CTX_TID, i,
+				       &job->tids[i]) != SLURM_SUCCESS) {
+			error("unable to get task id %d from ctx",i);
+		}
+		if (slurm_step_ctx_get(job->step_ctx, 
+				       SLURM_STEP_CTX_HOST, i,
+				       &temp) != SLURM_SUCCESS) {
+			error("unable to get host %d from ctx", i);
+		} else 
+			job->host[i] = xstrdup(temp);		
+	}
+	if (slurm_step_ctx_get(job->step_ctx, 
+			       SLURM_STEP_CTX_CRED,
+			       &job->cred) != SLURM_SUCCESS) {
+		error("unable to get cred from ctx");
+	}
+	if (slurm_step_ctx_get(job->step_ctx, 
+			       SLURM_STEP_CTX_SWITCH_JOB,
+			       &job->switch_job) != SLURM_SUCCESS) {
+		error("unable to get switch_job from ctx");
+	}
+	slurm_free_job_step_create_request_msg(r);
+	job_update_io_fnames(job);
+}
 
 void
 update_job_state(srun_job_t *job, srun_job_state_t state)
@@ -414,98 +621,36 @@ _set_nprocs(allocation_info_t *info)
 	}
 }
 
-static srun_job_t *
-_job_create_internal(allocation_info_t *info)
+void
+job_update_io_fnames(srun_job_t *job)
 {
-	int i;
-	int cpu_cnt = 0;
-	int cpu_inx = 0;
+	job->ifname = fname_create(job, opt.ifname);
+	job->ofname = fname_create(job, opt.ofname);
+	job->efname = opt.efname ? fname_create(job, opt.efname) : job->ofname;
+}
+
+static void
+_job_fake_cred(srun_job_t *job)
+{
+	slurm_cred_arg_t arg;
+	arg.jobid    = job->jobid;
+	arg.stepid   = job->stepid;
+	arg.uid      = opt.uid;
+	arg.hostlist = job->nodelist;
+        arg.ntask_cnt = 0;    
+        arg.ntask    =  NULL; 
+	job->cred = slurm_cred_faker(&arg);
+}
+
+static void
+_job_noalloc_step_create(srun_job_t *job, allocation_info_t *info)
+{
+	int i=0, cpu_inx=0, cpu_cnt=0;
 	hostlist_t hl;
-	srun_job_t *job;
-	eio_obj_t *obj;
-
-	/* Reset nprocs if necessary 
-	 */
-	_set_nprocs(info);
-
-	debug2("creating job with %d tasks", opt.nprocs);
-
-	job = xmalloc(sizeof(*job));
-
-	slurm_mutex_init(&job->state_mutex);
-	pthread_cond_init(&job->state_cond, NULL);
-	job->state = SRUN_JOB_INIT;
-
-	job->signaled = false;
-	job->rc       = -1;
-
-	job->nodelist = xstrdup(info->nodelist);
 	hl = hostlist_create(job->nodelist);
-#ifdef HAVE_FRONT_END	/* Limited job step support */
-	/* All jobs execute through front-end on Blue Gene/L.
-	 * Normally we would not permit execution of job steps, 
-	 * but can fake it by just allocating all tasks to 
-	 * one of the allocated nodes. */
-	job->nhosts    = 1;
-	opt.overcommit = true;
-#else
-	job->nhosts = hostlist_count(hl);
-#endif
-
- 	job->select_jobinfo = info->select_jobinfo;
-	job->jobid   = info->jobid;
-	job->stepid  = info->stepid;
-	job->old_job = false;
-	job->removed = false;
-
-	/* 
-	 *  Initialize Launch and Exit timeout values
-	 */
-	job->ltimeout = 0;
-	job->etimeout = 0;
-
-	job->slurmd_addr = xmalloc(job->nhosts * sizeof(slurm_addr));
-	if (info->addrs)
-		memcpy( job->slurmd_addr, info->addrs, 
-			sizeof(slurm_addr)*job->nhosts);
 
 	job->host  = (char **) xmalloc(job->nhosts * sizeof(char *));
 	job->cpus  = (int *)   xmalloc(job->nhosts * sizeof(int) );
-
-	/* Compute number of file descriptors / Ports needed for Job 
-	 * control info server
-	 */
-	job->njfds = _estimate_nports(opt.nprocs, 48);
-	job->jfd   = (slurm_fd *)   xmalloc(job->njfds * sizeof(slurm_fd));
-	job->jaddr = (slurm_addr *) xmalloc(job->njfds * sizeof(slurm_addr));
-
-	debug3("njfds = %d", job->njfds);
-
-	/* Compute number of listening sockets needed to allow
-	 * all of the slurmds to establish IO streams with srun, without
-	 * overstressing the TCP/IP backoff/retry algorithm
-	 */
-	job->num_listen = _estimate_nports(opt.nprocs, 64);
-	job->listensock = (int *) xmalloc(job->num_listen * sizeof(int));
-	job->listenport = (int *) xmalloc(job->num_listen * sizeof(int));
-
-	job->eio = eio_handle_create();
-	job->ioservers_ready = 0;
-	/* "nhosts" number of IO protocol sockets */
-	job->ioserver = (eio_obj_t **)xmalloc(job->nhosts*sizeof(eio_obj_t *));
-	job->free_incoming = list_create(NULL); /* FIXME! Needs destructor */
-	job->incoming_count = 0;
-	job->free_outgoing = list_create(NULL); /* FIXME! Needs destructor */
-	job->outgoing_count = 0;
-
-	/* nhost host states */
-	job->host_state =  xmalloc(job->nhosts * sizeof(srun_host_state_t));
-
-	/* ntask task states and statii*/
-	job->task_state  =  xmalloc(opt.nprocs * sizeof(srun_task_state_t));
-	job->tstatus	 =  xmalloc(opt.nprocs * sizeof(int));
-
-	slurm_mutex_init(&job->task_mutex);
 
 	for(i = 0; i < job->nhosts; i++) {
 		job->host[i]  = hostlist_shift(hl);
@@ -517,7 +662,9 @@ _job_create_internal(allocation_info_t *info)
 			cpu_cnt = 0;
 		}
 	}
-
+	/* nhost host states */
+	job->host_state =  xmalloc(job->nhosts * sizeof(srun_host_state_t));
+	job->hostid = xmalloc(opt.nprocs * sizeof(uint32_t));
 #ifdef HAVE_FRONT_END
 		job->ntask = (int *) xmalloc(sizeof(int *));
 		job->ntask[0] = opt.nprocs;
@@ -540,14 +687,14 @@ _job_create_internal(allocation_info_t *info)
 	for (i = 0; i < job->nhosts; i++)
 		job->tids[i] = xmalloc(job->ntask[i] * sizeof(uint32_t));
 
-	if (opt.distribution == SRUN_DIST_UNKNOWN) {
+	if (opt.distribution == SLURM_DIST_UNKNOWN) {
 		if (opt.nprocs <= job->nhosts)
-			opt.distribution = SRUN_DIST_CYCLIC;
+			opt.distribution = SLURM_DIST_CYCLIC;
 		else
-			opt.distribution = SRUN_DIST_BLOCK;
+			opt.distribution = SLURM_DIST_BLOCK;
 	}
 
-	if (opt.distribution == SRUN_DIST_BLOCK)
+	if (opt.distribution == SLURM_DIST_BLOCK)
 		_dist_block(job);
 	else
 		_dist_cyclic(job);
@@ -555,32 +702,8 @@ _job_create_internal(allocation_info_t *info)
 	job_update_io_fnames(job);
 
 	hostlist_destroy(hl);
-
-	return job;
+	return;
 }
-
-void
-job_update_io_fnames(srun_job_t *job)
-{
-	job->ifname = fname_create(job, opt.ifname);
-	job->ofname = fname_create(job, opt.ofname);
-	job->efname = opt.efname ? fname_create(job, opt.efname) : job->ofname;
-}
-
-static void
-_job_fake_cred(srun_job_t *job)
-{
-	slurm_cred_arg_t arg;
-	arg.jobid    = job->jobid;
-	arg.stepid   = job->stepid;
-	arg.uid      = opt.uid;
-	arg.hostlist = job->nodelist;
-        arg.ntask_cnt = 0;    
-        arg.ntask    =  NULL; 
-	job->cred = slurm_cred_faker(&arg);
-}
-
-
 
 static char *
 _task_state_name(srun_task_state_t state_inx)
@@ -1021,3 +1144,4 @@ _normalize_hostlist(const char *hostlist)
 
 	return xstrdup(buf);
 }
+

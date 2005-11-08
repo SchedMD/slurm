@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Remove BNR libary functions and add those for PMI (not fully 
     implemented yet)
+ -- Added Hostfile support for POE and srun.  MP_HOSTFILE env var to set
+    location of hostfile.  Tasks will run from list order in the file.  
 
 * Changes in SLURM 0.7.0-pre3
 =============================

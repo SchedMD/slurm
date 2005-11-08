@@ -42,8 +42,13 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/hostlist.h"
+#include "src/common/xmalloc.h"
+
+#define BUF_SIZE 1024
 
 static int _handle_rc_msg(slurm_msg_t *msg);
+static int _nodelist_from_hostfile(job_step_create_request_msg_t *req);
 
 /*
  * slurm_allocate_resources - allocate resources for a job request
@@ -61,7 +66,6 @@ slurm_allocate_resources (job_desc_msg_t *req,
 	slurm_msg_t resp_msg;
 	bool host_set = false;
 	char host[64];
-
 	/* 
 	 * set Node and session id for this request
 	 */
@@ -205,6 +209,9 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 
 	req_msg.msg_type = REQUEST_JOB_STEP_CREATE;
 	req_msg.data     = req; 
+	
+	if(_nodelist_from_hostfile(req) == 0) 
+		debug("nodelist was NULL");  
 
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
@@ -281,4 +288,107 @@ _handle_rc_msg(slurm_msg_t *msg)
 		slurm_seterrno_ret(rc);
 	else
 		return SLURM_SUCCESS;
+}
+
+static int _nodelist_from_hostfile(job_step_create_request_msg_t *req)
+{
+	char *hostfile = NULL;
+	char *hostname = NULL;
+	FILE *hostfilep = NULL;
+	char in_line[BUF_SIZE];	/* input line */
+	int i, j;
+	int line_size;
+	hostlist_t hostlist = NULL;
+	int count;
+	int len = 0;
+	int ret = 0;
+	int line_num = 0;
+	char *nodelist = NULL;
+	
+	if (hostfile = (char *)getenv("MP_HOSTFILE")) {
+		if(strlen(hostfile)<1)
+			goto no_hostfile;
+		if((hostfilep = fopen(hostfile, "r")) == NULL) {
+			error("slurm_allocate_resources "
+			      "error opening file %s, %m", 
+			      hostfile);
+			goto no_hostfile;
+		}
+		hostlist = hostlist_create(NULL);
+		
+		while (fgets (in_line, BUF_SIZE, hostfilep) != NULL) {
+			line_num++;
+			line_size = strlen(in_line);
+			if (line_size >= (BUF_SIZE - 1)) {
+				error ("Line %d, of hostfile %s too long",
+				       line_num, hostfile);
+				fclose (hostfilep);
+				goto no_hostfile;
+			}
+			for (i = 0; i < line_size; i++) {
+				if (in_line[i] == '\n') {
+					in_line[i] = '\0';
+					break;
+				}
+				if (in_line[i] == '\0')
+					break;
+				if (in_line[i] != '#')
+					continue;
+				if ((i > 0) && (in_line[i - 1] == '\\')) {
+					for (j = i; j < line_size; j++) {
+						in_line[j - 1] = in_line[j];
+					}
+					line_size--;
+					continue;
+				}	
+				in_line[i] = '\0';
+				break;
+			}
+			
+			len += strlen(in_line)+1;
+			hostlist_push(hostlist,in_line);	
+			if(req->num_tasks && (line_num+1)>req->num_tasks) 
+  				break; 
+		}
+		fclose (hostfilep);
+		
+		nodelist = (char *)xmalloc(sizeof(char)*len);
+		memset(nodelist, 0, len);
+
+		count = hostlist_count(hostlist);
+		if (count <= 0) {
+			error("Hostlist is empty!\n");
+			xfree(*nodelist);
+			goto cleanup_hostfile;
+		}
+		
+		len = 0;
+		while (hostname = hostlist_shift(hostlist)) {
+			line_num = strlen(hostname)+1;
+			ret = sprintf(nodelist+len, 
+				       "%s,", hostname);
+			if (ret < 0 || ret > line_num) {
+				error("bad snprintf only %d printed",ret);
+				xfree(*nodelist);
+				goto cleanup_hostfile;
+			}
+			len += ret;
+		}
+		nodelist[--len] = '\0';
+		debug2("Hostlist from MP_HOSTFILE = %s\n",
+		     nodelist);
+					
+	cleanup_hostfile:
+		hostlist_destroy(hostlist);
+		
+	}
+no_hostfile:
+	if(nodelist) {
+		if(req->node_list)
+			xfree(req->node_list);
+		req->node_list = nodelist;
+		req->num_tasks = count;
+		req->task_dist = SLURM_DIST_HOSTFILE;
+	}
+	return count;
 }
