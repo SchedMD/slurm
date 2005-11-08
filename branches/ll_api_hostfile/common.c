@@ -253,7 +253,9 @@ extern int build_step_ctx(slurm_elem_t *job_elem, slurm_elem_t *step_elem)
 		if (setenv("SLURM_STEPID", step_str, 1) != 0)
 			ERROR("slurm_step_ctx_create: SLURM_STEPID set error");
 	}
-
+	free(req->node_list); 
+  	free(req->host); 
+  	free(req); 
 	return 0;
 }
 
@@ -285,9 +287,9 @@ static job_step_create_request_msg_t *_step_req_create(
 		totalview_jobid = strndup(job_id, 15);
 	}
 
-	r = calloc(1, sizeof(job_step_create_request_msg_t));
+	r = malloc(sizeof(job_step_create_request_msg_t));
 	if (r == NULL) {
-		ERROR("calloc error");
+		ERROR("malloc error");
 		return NULL;
 	}
 
