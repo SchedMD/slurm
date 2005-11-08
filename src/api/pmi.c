@@ -95,7 +95,7 @@
 
 /* default key names form is jobid.stepid[.sequence] */
 struct kvs_rec {
-	char	kvs_name[PMI_MAX_KVSNAME_LEN];
+	char *	kvs_name;
 	int	kvs_cnt;
 	int	kvs_inx;	/* iteration index */
 	char **	kvs_keys;
@@ -103,6 +103,7 @@ struct kvs_rec {
 };
 
 static void _init_kvs( char kvsname[] );
+static void _del_kvs_rec( struct kvs_rec *kvs_ptr );
 
 /* Global variables */
 long pmi_jobid = -1;
@@ -117,7 +118,7 @@ int pmi_rank;
   pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
 #else
   int kvs_mutex;
-  static inline int pthread_mutex_unlock(int *kvs_mutex) { return 0; }
+  static inline int pthread_mutex_lock(int *kvs_mutex) { return 0; }
   static inline int pthread_mutex_unlock(int *kvs_mutex) { return 0; }
 #endif
 
@@ -158,7 +159,7 @@ int PMI_Init( int *spawned )
 	if (env)
 		pmi_jobid = atoi(env);
 
-	env = getenv("SLURM_JOBID");
+	env = getenv("SLURM_STEPID");
 	if (env)
 		pmi_stepid = atoi(env);
 
@@ -237,9 +238,37 @@ Notes:
 @*/
 int PMI_Finalize( void )
 {
+	int i;
 	pmi_init = 0;
+	pthread_mutex_lock(&kvs_mutex);
+	for (i=0; i<kvs_rec_cnt; i++)
+		_del_kvs_rec(&kvs_recs[i]);
+	if (kvs_recs)
+		free(kvs_recs);
+	kvs_recs = NULL;
+	kvs_rec_cnt = 0;
+	pthread_mutex_unlock(&kvs_mutex);
 
 	return PMI_SUCCESS;
+}
+
+static void _del_kvs_rec(struct kvs_rec *kvs_ptr)
+{
+	int i;
+
+	if (kvs_ptr == NULL)
+		return;
+
+	for (i=0; i<kvs_ptr->kvs_cnt; i++) {
+		if (kvs_ptr->kvs_keys[i])
+			free(kvs_ptr->kvs_keys[i]);
+		if (kvs_ptr->kvs_values[i])
+			free(kvs_ptr->kvs_values[i]);
+	}
+	if (kvs_ptr->kvs_name)
+		free(kvs_ptr->kvs_name);
+	free(kvs_ptr);
+	return;
 }
 
 /*@
@@ -328,8 +357,6 @@ int PMI_Get_universe_size( int *size )
 		return PMI_ERR_INVALID_ARG;
 
 	env = getenv("SLURM_NPROCS");
-	if (!env)
-		env = getenv("PMI_SIZE");
 	if (env) {
 		*size = atoi(env);
 		return PMI_SUCCESS;
@@ -646,16 +673,18 @@ kvsname, must be at least as long as the value returned by
 @*/
 int PMI_KVS_Get_my_name( char kvsname[], int length )
 {
+	int size;
+
 	if (kvsname == NULL)
 		return PMI_ERR_INVALID_ARG;
-	if (length < PMI_MAX_KVSNAME_LEN)
-		return PMI_ERR_INVALID_LENGTH;
 	if ((pmi_jobid < 0) || (pmi_stepid < 0))
 		return PMI_FAIL;
 
+	size = snprintf(kvsname, length, "%ld.%ld", pmi_jobid, pmi_stepid);
+	if (size >= length)	/* truncated */
+		return PMI_ERR_INVALID_LENGTH;
+
 	pthread_mutex_lock(&kvs_mutex);
-	snprintf(kvsname, PMI_MAX_KVSNAME_LEN, "%ld.%ld", pmi_jobid, 
-			pmi_stepid);
 	_init_kvs(kvsname);
 	pthread_mutex_unlock(&kvs_mutex);
 	return PMI_SUCCESS;
@@ -667,8 +696,8 @@ static void _init_kvs( char kvsname[] )
 
 	i = kvs_rec_cnt;
 	kvs_rec_cnt++;
-	kvs_recs = realloc(kvs_recs, (sizeof(struct kvs_rec *) * kvs_rec_cnt));
-	strncpy(kvs_recs[i].kvs_name, kvsname, PMI_MAX_KVSNAME_LEN);
+	kvs_recs = realloc(kvs_recs, (sizeof(struct kvs_rec) * kvs_rec_cnt));
+	kvs_recs[i].kvs_name = strndup(kvsname, PMI_MAX_KVSNAME_LEN);
 	kvs_recs[i].kvs_cnt = 0;
 	kvs_recs[i].kvs_inx = 0;
 	kvs_recs[i].kvs_keys = NULL;
@@ -748,7 +777,7 @@ int PMI_KVS_Get_value_length_max( int *length )
 {
 	if (length == NULL)
 		return PMI_ERR_INVALID_ARG;
-
+printf("PMI_KVS_Get_value_length_max, name[0]=%s\n",kvs_recs[0].kvs_name);
 	*length = PMI_MAX_VAL_LEN;
 	return PMI_SUCCESS;
 }
