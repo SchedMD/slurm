@@ -210,7 +210,7 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	char       buf[1024];
 	hostlist_t hl = hostlist_create(msg->nodes);
 	if (!hl)
-		return SLURM_ERROR;
+		return NULL;
 		
 	hostlist_ranged_string(hl, 1024, buf);
 	
