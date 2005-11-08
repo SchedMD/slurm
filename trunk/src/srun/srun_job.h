@@ -138,6 +138,14 @@ typedef struct srun_job {
 				 * traffic "outgoing" means traffic from the
 				 * tasks to srun.
 				 */
+	int incoming_count;     /* Count of total incoming message buffers
+			         * including free_incoming buffers and
+			         * buffers in use.
+			         */
+	int outgoing_count;     /* Count of total incoming message buffers
+			         * including free_incoming buffers and
+			         * buffers in use.
+			         */
 
 	pthread_t lid;		  /* launch thread id */
 

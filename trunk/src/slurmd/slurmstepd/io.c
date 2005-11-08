@@ -159,6 +159,8 @@ static void _route_msg_task_to_client(eio_obj_t *obj);
 static void _free_outgoing_msg(struct io_buf *msg, slurmd_job_t *job);
 static void _free_incoming_msg(struct io_buf *msg, slurmd_job_t *job);
 static void _free_all_outgoing_msgs(List msg_queue, slurmd_job_t *job);
+static bool _incoming_buf_free(slurmd_job_t *job);
+static bool _outgoing_buf_free(slurmd_job_t *job);
 
 /**********************************************************************
  * IO client socket functions
@@ -183,7 +185,7 @@ _client_readable(eio_obj_t *obj)
 	}
 
 	if (client->in_msg != NULL
-	    || !list_is_empty(client->job->free_incoming))
+	    || _incoming_buf_free(client->job))
 		return true;
 
 	debug5("  false");
@@ -249,8 +251,10 @@ _client_read(eio_obj_t *obj, List objs)
 	 * Read the header, if a message read is not already in progress
 	 */
 	if (client->in_msg == NULL) {
-		client->in_msg = list_dequeue(client->job->free_incoming);
-		if (client->in_msg == NULL) {
+		if (_incoming_buf_free(client->job)) {
+			client->in_msg =
+				list_dequeue(client->job->free_incoming);
+		} else {
 			debug5("  _client_read free_incoming is empty");
 			return SLURM_SUCCESS;
 		}
@@ -786,7 +790,7 @@ _route_msg_task_to_client(eio_obj_t *obj)
 
 	/* Pack task output into messages for transfer to a client */
 	while (cbuf_used(out->buf) > 0
-	       && !list_is_empty(out->job->free_outgoing)) {
+	       && _outgoing_buf_free(out->job)) {
 		debug5("cbuf_used = %d", cbuf_used(out->buf));
 		msg = _task_build_message(out, out->job, out->buf);
 		if (msg == NULL)
@@ -846,12 +850,12 @@ _free_outgoing_msg(struct io_buf *msg, slurmd_job_t *job)
 		for (i = 0; i < job->ntasks; i++) {
 			if (job->task[i]->err != NULL) {
 				_route_msg_task_to_client(job->task[i]->err);
-				if (list_is_empty(job->free_outgoing))
+				if (!_outgoing_buf_free(job))
 					break;
 			}
 			if (job->task[i]->out != NULL) {
 				_route_msg_task_to_client(job->task[i]->out);
-				if (list_is_empty(job->free_outgoing))
+				if (!_outgoing_buf_free(job))
 					break;
 			}
 		}
@@ -1103,8 +1107,10 @@ _send_eof_msg(struct task_read_info *out)
 	Buf packbuf;
 
 	debug4("Entering _send_eof_msg");
-	msg = list_dequeue(out->job->free_outgoing);
-	if (msg == NULL) {
+	
+	if (_outgoing_buf_free(out->job)) {
+		msg = list_dequeue(out->job->free_outgoing);
+	} else {
 		debug5("  free_outgoing msg list empty, can't send eof_msg");
 		return;
 	}
@@ -1147,9 +1153,11 @@ _task_build_message(struct task_read_info *out, slurmd_job_t *job, cbuf_t cbuf)
 	int n;
 
 	debug4("Entering _task_build_message");
-	msg = list_dequeue(job->free_outgoing);
-	if (msg == NULL)
+	if (_outgoing_buf_free(job)) {
+		msg = list_dequeue(job->free_outgoing);
+	} else {
 		return NULL;
+	}
 	ptr = msg->data + io_hdr_packed_size();
 
 	if (job->buffered_stdio) {
@@ -1221,4 +1229,42 @@ free_io_buf(struct io_buf *buf)
 			xfree(buf->data);
 		xfree(buf);
 	}
+}
+
+static bool
+_incoming_buf_free(slurmd_job_t *job)
+{
+	struct io_buf *buf;
+
+	if (list_count(job->free_incoming) > 0) {
+		return true;
+	} else if (job->incoming_count < STDIO_MAX_FREE_BUF) {
+		buf = alloc_io_buf();
+		if (buf != NULL) {
+			list_enqueue(job->free_incoming, buf);
+			job->incoming_count++;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static bool
+_outgoing_buf_free(slurmd_job_t *job)
+{
+	struct io_buf *buf;
+
+	if (list_count(job->free_outgoing) > 0) {
+		return true;
+	} else if (job->outgoing_count < STDIO_MAX_FREE_BUF) {
+		buf = alloc_io_buf();
+		if (buf != NULL) {
+			list_enqueue(job->free_outgoing, buf);
+			job->outgoing_count++;
+			return true;
+		}
+	}
+
+	return false;
 }
