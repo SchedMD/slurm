@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "src/api/slurm_pmi.h"
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
@@ -260,6 +261,12 @@ static void _pack_buffer_msg(slurm_msg_t * msg, Buf buffer);
 static void _pack_jobacct_data(jobacct_msg_t * msg , Buf buffer );
 
 static int _unpack_jobacct_data(jobacct_msg_t ** msg_ptr , Buf buffer );
+
+static void _dump_kvs_data(struct kvs_comm_set *msg);
+static void _pack_kvs_rec(struct kvs_comm *msg_ptr, Buf buffer);
+static int  _unpack_kvs_rec(struct kvs_comm **msg_ptr, Buf buffer);
+static void _pack_kvs_data(struct kvs_comm_set *msg_ptr, Buf buffer);
+static int  _unpack_kvs_data(struct kvs_comm_set **msg_ptr, Buf buffer);
 
 /* pack_header
  * packs a slurm protocol header that proceeds every slurm message
@@ -535,6 +542,13 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	 case MESSAGE_JOBACCT_DATA:
 		_pack_jobacct_data((jobacct_msg_t *) msg->data, buffer);
 		break;
+	 case PMI_KVS_PUT_REQ:
+	 case PMI_KVS_GET_RESP:
+		_pack_kvs_data((struct kvs_comm_set *) msg->data, buffer);
+		break;
+	 case PMI_KVS_GET_REQ:
+	 case PMI_KVS_PUT_RESP:
+		break;	/* no data */
 	 default:
 		 debug("No pack method for msg type %i", msg->msg_type);
 		 return EINVAL;
@@ -806,6 +820,14 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_jobacct_data( (jobacct_msg_t **) 
 				& msg->data, buffer);
 		break;
+	 case PMI_KVS_PUT_REQ:
+	 case PMI_KVS_GET_RESP:
+		rc = _unpack_kvs_data((struct kvs_comm_set **) &msg->data, 
+				buffer);
+		break;
+	 case PMI_KVS_GET_REQ:
+	 case PMI_KVS_PUT_RESP:
+		break;	/* no data */
 	 default:
 		 debug("No unpack method for msg type %i", msg->msg_type);
 		 return EINVAL;
@@ -3258,6 +3280,98 @@ static int _unpack_jobacct_data(jobacct_msg_t ** msg_ptr , Buf buffer )
 
     unpack_error:
 	xfree(msg -> data);
+	xfree(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_kvs_rec(struct kvs_comm *msg_ptr, Buf buffer)
+{
+	int i;
+	xassert(msg_ptr != NULL);
+
+	packstr(msg_ptr->kvs_name, buffer);
+	pack16(msg_ptr->kvs_cnt, buffer);
+	for (i=0; i<msg_ptr->kvs_cnt; i++) {
+		packstr(msg_ptr->kvs_keys[i], buffer);
+		packstr(msg_ptr->kvs_values[i], buffer);
+	}
+}
+static int  _unpack_kvs_rec(struct kvs_comm **msg_ptr, Buf buffer)
+{
+	uint16_t uint16_tmp;
+	int i;
+	struct kvs_comm *msg;
+
+	msg = xmalloc(sizeof(struct kvs_comm));
+	*msg_ptr = msg;
+	safe_unpackstr_xmalloc(&msg->kvs_name, &uint16_tmp, buffer);
+	safe_unpack16(&msg->kvs_cnt, buffer);
+	msg->kvs_keys   = xmalloc(sizeof(char *) * msg->kvs_cnt);
+	msg->kvs_values = xmalloc(sizeof(char *) * msg->kvs_cnt);
+	for (i=0; i<msg->kvs_cnt; i++) {
+		safe_unpackstr_xmalloc(&msg->kvs_keys[i], 
+				&uint16_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->kvs_values[i], 
+				&uint16_tmp, buffer);
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+}
+static void _pack_kvs_data(struct kvs_comm_set *msg_ptr, Buf buffer)
+{
+	int i;
+	xassert(msg_ptr != NULL);
+
+	pack16(msg_ptr->task_id, buffer);
+	pack16(msg_ptr->kvs_comm_recs, buffer);
+	for (i=0; i<msg_ptr->kvs_comm_recs; i++) 
+		_pack_kvs_rec(msg_ptr->kvs_comm_ptr[i], buffer);
+}
+static void _dump_kvs_data(struct kvs_comm_set *msg)
+{
+	int i, j;
+
+	info("KVS: task:%u, recs:%u", msg->task_id, msg->kvs_comm_recs);
+	for (i=0; i<msg->kvs_comm_recs; i++) {
+		info("KVS: name:%s cnt:%u", msg->kvs_comm_ptr[i]->kvs_name,
+			 msg->kvs_comm_ptr[i]->kvs_cnt);
+		for (j=0; j<msg->kvs_comm_ptr[i]->kvs_cnt; j++) {
+			info("KVS: %s=%s", msg->kvs_comm_ptr[i]->kvs_keys[j],
+				 msg->kvs_comm_ptr[i]->kvs_values[j]);
+		}
+	}
+}
+
+static int  _unpack_kvs_data(struct kvs_comm_set **msg_ptr, Buf buffer)
+{
+	struct kvs_comm_set *msg;
+	int i, j;
+
+	msg = xmalloc(sizeof(struct kvs_comm_set));
+	*msg_ptr = msg;
+	safe_unpack16(&msg->task_id, buffer);
+	safe_unpack16(&msg->kvs_comm_recs, buffer);
+	msg->kvs_comm_ptr = xmalloc(sizeof(struct kvs_comm) * 
+			msg->kvs_comm_recs);
+	for (i=0; i<msg->kvs_comm_recs; i++) {
+		if (_unpack_kvs_rec(&msg->kvs_comm_ptr[i], buffer))
+			goto unpack_error;
+	}
+	_dump_kvs_data(msg);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	for (i=0; i<msg->kvs_comm_recs; i++) {
+		xfree(msg->kvs_comm_ptr[i]->kvs_name);
+		for (j=0; j<msg->kvs_comm_ptr[i]->kvs_cnt; j++) {
+			xfree(msg->kvs_comm_ptr[i]->kvs_keys[j]);
+			xfree(msg->kvs_comm_ptr[i]->kvs_values[j]);
+		}
+	}
+	xfree(msg->kvs_comm_ptr);
 	xfree(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;

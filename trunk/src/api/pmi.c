@@ -81,29 +81,24 @@
 #define _GNU_SOURCE
 
 #include <pthread.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <slurm/pmi.h>
+#include <slurm/slurm_errno.h>
 
-/* These define values should probaby be moved to a location easily 
- * accessible to other SLURM tools. */
-#define PMI_MAX_GRP_ID_LEN 32	/* Maximum size of a process group ID */
-#define PMI_MAX_KEY_LEN 256	/* Maximum size of a PMI key */
-#define PMI_MAX_KVSNAME_LEN 256	/* Maximum size of KVS name */
-#define PMI_MAX_VAL_LEN  256	/* Maximum size of a PMI value */
+#include "src/api/slurm_pmi.h"
 
 #define KVS_STATE_LOCAL    0
 #define KVS_STATE_DEFUNCT  1
 
-/* default key names form is jobid.stepid[.sequence] */
+/* default key names form is jobid.stepid[.taskid.sequence] */
 struct kvs_rec {
-	char *	kvs_name;
-	int	kvs_state;	/* see KVS_STATE_* */
-	int	kvs_cnt;
-	int	kvs_inx;	/* iteration index */
-	char **	kvs_keys;
-	char ** kvs_values;
+	char *		kvs_name;
+	uint16_t	kvs_state;	/* see KVS_STATE_* */
+	uint16_t	kvs_cnt;	/* count of key-pairs */
+	uint16_t	kvs_inx;	/* iteration index */
+	char **		kvs_keys;
+	char **		kvs_values;
 };
 
 static void _init_kvs( char kvsname[] );
@@ -118,13 +113,7 @@ int pmi_size;
 int pmi_spawned;
 int pmi_rank;
 
-#if 1
-  pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
-#else
-  int kvs_mutex;
-  static inline int pthread_mutex_lock(int *kvs_mutex) { return 0; }
-  static inline int pthread_mutex_unlock(int *kvs_mutex) { return 0; }
-#endif
+pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int kvs_rec_cnt = 0;
 struct kvs_rec *kvs_recs;
@@ -491,15 +480,7 @@ as long as the number returned by 'PMI_Get_id_length_max()'.
 @*/
 int PMI_Get_id( char id_str[], int length )
 {
-	if (id_str == NULL)
-		return PMI_ERR_INVALID_ARG;
-	if (length < PMI_MAX_GRP_ID_LEN)
-		return PMI_ERR_INVALID_LENGTH;
-	if ((pmi_jobid < 0) || (pmi_stepid < 0))
-		return PMI_FAIL;
-
-	snprintf(id_str, length, "%ld.%ld", pmi_jobid, pmi_stepid);
-	return PMI_SUCCESS;
+	return PMI_FAIL;
 }
 
 /*@
@@ -549,10 +530,6 @@ This function returns the maximum length of a process group id string.
 @*/
 int PMI_Get_id_length_max( int *length )
 {
-	if (length == NULL)
-		return PMI_ERR_INVALID_ARG;
-
-	*length = PMI_MAX_GRP_ID_LEN;
 	return PMI_FAIL;
 }
 
@@ -571,8 +548,30 @@ have called 'PMI_Barrier()'.
 @*/
 int PMI_Barrier( void )
 {
-	/* FIXME */
-	return PMI_FAIL;
+	struct kvs_comm_set *kvs_set_ptr = NULL;
+	struct kvs_comm *kvs_ptr;
+	int i, j, k, rc = PMI_SUCCESS;
+
+	/* Issue the RPC */
+	if (slurm_get_kvs_comm_set(&kvs_set_ptr) != SLURM_SUCCESS)
+		return PMI_FAIL;
+	if (kvs_set_ptr == NULL)
+		return PMI_SUCCESS;
+
+	for (i=0; i<kvs_set_ptr->kvs_comm_recs; i++) {
+		kvs_ptr = kvs_set_ptr->kvs_comm_ptr[i];
+		for (j=0; j<kvs_ptr->kvs_cnt; j++) {
+			k = PMI_KVS_Put(kvs_ptr->kvs_name, 
+				kvs_ptr->kvs_keys[j], 
+				kvs_ptr->kvs_values[j]);
+			if (k != PMI_SUCCESS)
+				rc = k;
+		}
+	}
+
+	/* Release temporary storage from RPC */
+	slurm_free_kvs_comm_set(kvs_set_ptr);
+	return rc;
 }
 
 /*@
@@ -966,11 +965,53 @@ the specified keyval space. It is a process local operation.
 @*/
 int PMI_KVS_Commit( const char kvsname[] )
 {
+	struct kvs_comm_set kvs_set;
+	int i, rc;
+	Buf buffer;
+
 	if ((kvsname == NULL) || (strlen(kvsname) > PMI_MAX_KVSNAME_LEN))
 		return PMI_ERR_INVALID_ARG;
 
-	/* FIXME */
-	return PMI_FAIL;
+	/* Pack records into RPC for sending to slurmd_step
+	 * NOTE: For arrays we copy pointers, not values */
+	kvs_set.task_id       = pmi_rank;
+	kvs_set.kvs_comm_recs = 0;
+	kvs_set.kvs_comm_ptr  = NULL;
+
+	pthread_mutex_lock(&kvs_mutex);
+	for (i=0; i<kvs_rec_cnt; i++) {
+		if (kvs_recs[i].kvs_state == KVS_STATE_DEFUNCT)
+			continue;
+		kvs_set.kvs_comm_ptr = realloc(kvs_set.kvs_comm_ptr, 
+			(sizeof(struct kvs_comm *) *
+			(kvs_set.kvs_comm_recs+1)));
+		kvs_set.kvs_comm_ptr[kvs_set.kvs_comm_recs] = 
+			malloc(sizeof(struct kvs_comm));
+		kvs_set.kvs_comm_ptr[kvs_set.kvs_comm_recs]->kvs_name   =
+			kvs_recs[i].kvs_name;
+		kvs_set.kvs_comm_ptr[kvs_set.kvs_comm_recs]->kvs_cnt    =
+			kvs_recs[i].kvs_cnt;
+		kvs_set.kvs_comm_ptr[kvs_set.kvs_comm_recs]->kvs_keys   =
+			kvs_recs[i].kvs_keys;
+		kvs_set.kvs_comm_ptr[kvs_set.kvs_comm_recs]->kvs_values =
+			kvs_recs[i].kvs_values;
+		kvs_set.kvs_comm_recs++;
+	}
+
+	/* Send the RPC */
+	if (slurm_send_kvs_comm_set(&kvs_set) != SLURM_SUCCESS)
+		rc = PMI_FAIL;
+	else
+		rc = PMI_SUCCESS;
+	pthread_mutex_unlock(&kvs_mutex);
+
+	/* Free any temporary storage */
+	for (i=0; i<kvs_set.kvs_comm_recs; i++)
+		free(kvs_set.kvs_comm_ptr[i]);
+	if (kvs_set.kvs_comm_ptr)
+		free(kvs_set.kvs_comm_ptr);
+
+	return rc;
 }
 
 /*@
