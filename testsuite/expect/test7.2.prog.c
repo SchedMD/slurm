@@ -175,21 +175,49 @@ main (int argc, char **argv)
 	for (i=0; ; i++) {
 		if (key[0] == '\0') {
 			if (i != (pmi_size * 2)) {
-				printf("FAILURE: PMI_KVS_iter_next cycle count(%d, %d)\n",
-					i, pmi_size);
+				printf("FAILURE: PMI_KVS_iter_next cycle count"
+					"(%d, %d)\n", i, pmi_size);
 			}
 			break;
 		}
-		printf("PMI_KVS_Iter_next(%s,%d): %s=%s\n", kvs_name, i, key, val);
-		if ((rc = PMI_KVS_Iter_next(kvs_name, key, key_len, val, val_len)) != 
-				PMI_SUCCESS) {
+		printf("PMI_KVS_Iter_next(%s,%d): %s=%s\n", kvs_name, i, key, 
+				val);
+		if ((rc = PMI_KVS_Iter_next(kvs_name, key, key_len, val, 
+				val_len)) != PMI_SUCCESS) {
 			printf("FAILURE: PMI_KVS_iter_next: %d\n", rc);
 			exit(1);
 		}
 	}
 
+	/* create new keyspace and test it */
+	if ((rc = PMI_KVS_Create(kvs_name, kvs_name_len)) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_KVS_Create: %d\n", rc);
+		exit(1);
+	}
+	printf("PMI_KVS_Create %s\n", kvs_name);
+	if ((rc = PMI_KVS_Put(kvs_name, "KVS_KEY", "KVS_VAL")) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_KVS_Put: %d\n", rc);
+		exit(1);
+	}
+	printf("PMI_KVS_Put(%s,KVS_KEY,KVS_VAL)\n", kvs_name);
+	if ((rc =  PMI_KVS_Get(kvs_name, "KVS_KEY", val, val_len)) != 
+			PMI_SUCCESS) {
+		printf("FAILURE: PMI_KVS_Get: %d\n", rc);
+		exit(1);
+	}
+	printf("PMI_KVS_Get(%s,%s) %s\n", kvs_name, "KVS_KEY", val);
+	if ((rc = PMI_KVS_Destroy(kvs_name)) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_KVS_Destroy(%s): %d\n", kvs_name, rc);
+		exit(1);
+	}
+	if ((rc =  PMI_KVS_Get(kvs_name, "KVS_KEY", val, val_len)) != 
+			PMI_ERR_INVALID_KVS) {
+		printf("FAILURE: PMI_KVS_Get: %d\n", rc);
+		exit(1);
+	}
+
 	if ((rc = PMI_Finalize()) != PMI_SUCCESS) {
-		printf("FAILURE: PMI_Finalize: %\n", rc);
+		printf("FAILURE: PMI_Finalize: %d\n", rc);
 		exit(1);
 	}
 
