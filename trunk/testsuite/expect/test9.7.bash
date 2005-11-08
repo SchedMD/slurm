@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash 
 ############################################################################
 # Simple SLURM stress test
 # Usage: <prog> <exec1> <exec2> <exec3> <sleep_time> <iterations>
@@ -63,27 +63,33 @@ do
 	$exec1                                  >>$log 2>&1
 	rc=$?
 	if [ $rc -ne 0 ]; then
+		echo "exec1 rc=$rc" >> $log
 		exit_code=$rc
 	fi
 	sleep $sleep_time
 	$exec2 -N1-$inx -n$inx -O -s -l hostname         >>$log 2>&1
 	rc=$?
 	if [ $rc -ne 0 ]; then
+		echo "exec2 rc=$rc" >> $log
 		exit_code=$rc
 	fi
 	sleep $sleep_time
 	$exec3                                  >>$log 2>&1
 	rc=$?
 	if [ $rc -ne 0 ]; then
+		echo "exec3 rc=$rc" >> $log
 		exit_code=$rc
 	fi
 	sleep $sleep_time
 	inx=$((inx+1))
 done
 
+echo "########## EXIT_CODE $exit_code ########## " >>$log 2>&1
+
 if [ $exit_code -ne 0 ]; then
 	cat $log
+else
+	rm $log
 fi
-rm $log
 echo "########## EXIT_CODE $exit_code ########## "
 exit $exit_code
