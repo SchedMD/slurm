@@ -335,8 +335,9 @@ _job_create_structure(allocation_info_t *info)
 	
 }
 
-extern int build_step_ctx(srun_job_t *job,
-			  resource_allocation_response_msg_t *alloc_resp)
+/* extern int build_step_ctx(srun_job_t *job, */
+/* 			  resource_allocation_response_msg_t *alloc_resp) */
+extern int build_step_ctx(srun_job_t *job)
 {
 	job_step_create_request_msg_t  *r  = NULL;
 	uint32_t step_id;
