@@ -62,8 +62,9 @@ enum modes {
 
 enum modes mode;
 
-#define format_distribution_t(t) (t == SRUN_DIST_BLOCK) ? "block" :   \
-		                 (t == SRUN_DIST_CYCLIC) ? "cyclic" : \
+#define format_task_dist_states(t) (t == SLURM_DIST_BLOCK) ? "block" :   \
+		                 (t == SLURM_DIST_CYCLIC) ? "cyclic" : \
+			         (t == SLURM_DIST_HOSTFILE) ? "hostfile" : \
 			         "unknown"
 
 enum io_t {
@@ -97,7 +98,7 @@ typedef struct srun_options {
 	bool nodes_set;		/* true if nodes explicitly set */
 	int  time_limit;	/* --time,   -t			*/
 	char *partition;	/* --partition=n,   -p n   	*/
-	enum distribution_t
+	enum task_dist_states
 		distribution;	/* --distribution=, -m dist	*/
 	char *job_name;		/* --job-name=,     -J name	*/
 	unsigned int jobid;     /* --jobid=jobid                */

@@ -45,7 +45,28 @@ set host_0      ""
 set task_cnt    0
 set can_not_run 0
 set timeout $max_job_delay
-spawn $srun -N1-1 -c 1 -l -t1 $bin_hostname -s
+
+#
+# Determine if this is AIX (for appropriate build line)
+#
+set aix 0
+spawn $bin_uname
+expect {
+        -re "AIX" {
+                set aix 1
+                exp_continue
+        }
+        eof {
+                wait
+        }
+}
+
+if {$aix == 0} {
+	set run_hostname "$bin_hostname -s"
+} else {
+	set run_hostname "$bin_hostname"	
+}
+spawn $srun -N1-1 -c 1 -l -t1 $run_hostname
 expect {
 	-re "Unable to create job step: Task count specification invalid" {
 		send_user "\nWARNING: This is not a real error for some system configurations\n"
@@ -76,7 +97,7 @@ if {[string compare $host_0 ""] == 0} {
 
 set alloc_fail 0
 set task_cnt2  0
-spawn $srun -N1-1 -w $host_0 -n [expr $task_cnt + 1] -l -t1 $bin_hostname -s
+spawn $srun -N1-1 -w $host_0 -n [expr $task_cnt + 1] -l -t1 $run_hostname 
 expect {
 	-re "($number):" {
 		incr task_cnt2
@@ -105,7 +126,7 @@ if { $task_cnt2 != 0 } {
 #
 set host_0      ""
 set host_1      ""
-spawn $srun -N1-1 -l -t1 $bin_hostname -s  
+spawn $srun -N1-1 -l -t1 $run_hostname  
 expect {
 	-re "($number): ($alpha_numeric)" {
 		if {$expect_out(1,string) == 0} {
@@ -150,7 +171,7 @@ set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-spawn $srun -N1-3 -l -t1 $bin_hostname -s  
+spawn $srun -N1-3 -l -t1 $run_hostname 
 expect {
 	-re "($number): ($alpha_numeric)" {
 		if {$expect_out(1,string) == 0} {
@@ -212,7 +233,7 @@ set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-spawn $srun -N2-3 -l -t1 $bin_hostname -s  
+spawn $srun -N2-3 -l -t1 $run_hostname   
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"

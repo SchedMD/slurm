@@ -116,14 +116,10 @@ typedef struct srun_job {
 	pthread_t sigid;	/* signals thread tid		  */
 
 	pthread_t jtid;		/* job control thread id 	  */
-	int njfds;		/* number of job control info fds */
 	slurm_fd *jfd;		/* job control info fd   	  */
-	slurm_addr *jaddr;	/* job control info ports 	  */
-
+	
 	pthread_t ioid;		/* stdio thread id 		  */
-	int num_listen;		/* Number of stdio listen sockets */
 	int *listensock;	/* Array of stdio listen sockets  */
-	int *listenport;	/* Array of stdio listen ports 	  */
 	eio_handle_t *eio;      /* Event IO handle                */
 	int ioservers_ready;    /* Number of servers that established contact */
 	eio_obj_t **ioserver;	/* Array of nhosts pointers to eio_obj_t */
@@ -156,16 +152,24 @@ typedef struct srun_job {
 
 	int *tstatus;	          /* ntask exit statii */
 	srun_task_state_t *task_state; /* ntask task states */
-	pthread_mutex_t task_mutex;
-
+	
 	switch_jobinfo_t switch_job;
 	io_filename_t *ifname;
 	io_filename_t *ofname;
 	io_filename_t *efname;
+	forked_msg_t *forked_msg;
+	struct slurm_step_ctx_struct *step_ctx;
+	char *task_epilog;	/* task-epilog */
+	char *task_prolog;	/* task-prolog */
+	pthread_mutex_t task_mutex;
+	int njfds;		/* number of job control info fds */
+	slurm_addr *jaddr;	/* job control info ports 	  */
+	int num_listen;		/* Number of stdio listen sockets */
+	int *listenport;	/* Array of stdio listen ports 	  */
 
 	/* Output streams and stdin fileno */
-	forked_msg_t *forked_msg;
 	select_jobinfo_t select_jobinfo;
+	
 } srun_job_t;
 
 extern int message_thread;
@@ -175,8 +179,12 @@ void    job_force_termination(srun_job_t *job);
 
 srun_job_state_t job_state(srun_job_t *job);
 
-srun_job_t * job_create_noalloc(void);
-srun_job_t * job_create_allocation(resource_allocation_response_msg_t *resp);
+extern srun_job_t * job_create_noalloc(void);
+extern srun_job_t * job_create_allocation(
+	resource_allocation_response_msg_t *resp);
+extern srun_job_t * job_create_structure(
+	resource_allocation_response_msg_t *resp);
+extern int build_step_ctx(srun_job_t *job);
 
 /*
  *  Update job filenames and modes for stderr, stdout, and stdin.

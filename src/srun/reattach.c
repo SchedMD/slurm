@@ -306,8 +306,12 @@ _attach_to_job(srun_job_t *job)
 		r->job_id          = job->jobid;
 		r->job_step_id     = job->stepid;
 		r->srun_node_id    = (uint32_t) i;
-		r->io_port         = ntohs(job->listenport[i%job->num_listen]);
-		r->resp_port       = ntohs(job->jaddr[i%job->njfds].sin_port);
+		r->io_port         = 
+			ntohs(job->
+			      listenport[i%job->num_listen]);
+		r->resp_port       = 
+			ntohs(job->
+			      jaddr[i%job->njfds].sin_port);
 		r->cred            = job->cred;
 
 

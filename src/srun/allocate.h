@@ -83,7 +83,7 @@ uint32_t jobid_from_env(void);
  *
  * Returns -1 if job step creation failure, 0 otherwise
  */
-int create_job_step(srun_job_t *j);
+/* int create_job_step(srun_job_t *j); */
 
 /* set the job for debugging purpose */
 void set_allocate_job(srun_job_t *job);
