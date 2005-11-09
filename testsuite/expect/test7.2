@@ -57,9 +57,9 @@ expect {
 #
 exec $bin_rm -f $file_prog_get
 if {$aix == 0} {
-	exec $bin_cc ${file_prog_get}.c -g -pthread -o $file_prog_get -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lpmi
+	exec $bin_cc ${file_prog_get}.c -g -pthread -o $file_prog_get -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lpmi -lslurm
 } else {
-	exec $bin_cc ${file_prog_get}.c -g -pthread -o $file_prog_get -I${slurm_dir}/include -L${slurm_dir}/lib -lpmi
+	exec $bin_cc ${file_prog_get}.c -g -pthread -o $file_prog_get -I${slurm_dir}/include -L${slurm_dir}/lib -lpmi -lslurm
 }
 exec $bin_chmod 700 $file_prog_get
 
