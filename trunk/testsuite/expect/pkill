@@ -1,4 +1,4 @@
-#!/usr/local/bin/bash
+#!/bin/bash
 ############################################################################
 # This shell processes pkill commands as required by the test scripts 
 # on systems lacking the pkill commands (e.g. AIX). It does not 
@@ -66,19 +66,19 @@ if [ $user_id -eq -1 ]; then
 fi
 # Find the appropriate processes and signal them
 if [ $signal == "INT" ]; then
-	ps -U $user_id | grep " $command$" | awk '{printf "kill -s INT %s\n",$2}' | bash
+        ps -o "%p %c" -U $user_id | grep " $command$" | awk '{printf "kill -s INT %s\n",$1}' | bash
 	exit 0
 fi
 if [ $signal == "KILL" ]; then
-	ps -U $user_id | grep " $command$" | awk '{printf "kill -s KILL %s\n",$2}' | bash
+        ps -o "%p %c" -U $user_id | grep " $command$" | awk '{printf "kill -s KILL %s\n",$1}' | bash
 	exit 0
 fi
 if [ $signal == "USR1" ]; then
-	ps -U $user_id | grep " $command$" | awk '{printf "kill -s USR1 %s\n",$2}' | bash
+	ps -o "%p %c" -U $user_id | grep " $command$" | awk '{printf "kill -s USR1 %s\n",$1}' | bash
 	exit 0
 fi
 if [ $signal == "USR2" ]; then
-	ps -U $user_id | grep " $command$" | awk '{printf "kill -s USR2 %s\n",$2}' | bash
+	ps -o "%p %c" -U $user_id | grep " $command$" | awk '{printf "kill -s USR2 %s\n",$1}' | bash
 	exit 0
 fi
 echo "Unsupported signal $signal"

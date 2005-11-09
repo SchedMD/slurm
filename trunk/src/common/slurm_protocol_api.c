@@ -1081,10 +1081,6 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 	
 	if (msg->conn_fd < 0)
 		return (ENOTCONN);
-
-	if (msg->conn_fd < 0)
-		return (ENOTCONN);
-
 	rc_msg.return_code = rc;
 
 	resp_msg.address  = msg->address;
@@ -1146,14 +1142,14 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 	/* If the backup controller is in the process of assuming 
 	 * control, we sleep and retry later */
 	while (((rc =_send_and_recv_msg(fd, req, resp, 0)) == SLURM_SUCCESS) &&
-		(resp->msg_type == RESPONSE_SLURM_RC) &&
-		((((return_code_msg_t *) resp->data)->return_code) ==
-			ESLURM_IN_STANDBY_MODE) &&
-		(req->msg_type != MESSAGE_NODE_REGISTRATION_STATUS) &&
-		(slurmctld_conf.backup_controller) &&
-		(difftime(time(NULL), start_time) < 
-			(slurmctld_conf.slurmctld_timeout +
-			slurmctld_conf.heartbeat_interval))) {
+	       (resp->msg_type == RESPONSE_SLURM_RC) &&
+	       ((((return_code_msg_t *) resp->data)->return_code) ==
+		ESLURM_IN_STANDBY_MODE) &&
+	       (req->msg_type != MESSAGE_NODE_REGISTRATION_STATUS) &&
+	       (slurmctld_conf.backup_controller) &&
+	       (difftime(time(NULL), start_time) < 
+		(slurmctld_conf.slurmctld_timeout +
+		 slurmctld_conf.heartbeat_interval))) {
 		debug("Neither primary nor backup controller responding, "
 		      "sleep and retry");
 		slurm_free_return_code_msg(resp->data);
@@ -1161,7 +1157,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 		if ((fd = slurm_open_controller_conn()) < 0) 
 			return SLURM_SOCKET_ERROR;
 	}
-
+	
       cleanup:
 	if (rc != SLURM_SUCCESS) 
  		_remap_slurmctld_errno(); 

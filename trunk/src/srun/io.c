@@ -975,7 +975,8 @@ io_node_fail(char *nodelist, srun_job_t *job)
 
 	while ( (node_name = hostlist_shift(fail_list)) ) {
 		for (node_inx=0; node_inx<job->nhosts; node_inx++) {
-			if (strcmp(node_name, job->host[node_inx]))
+			if (strcmp(node_name, 
+				   job->step_layout->host[node_inx]))
 				continue;
 			break;
 		}

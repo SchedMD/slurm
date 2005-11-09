@@ -57,6 +57,7 @@ expect {
 		exp_continue
 	}
 	-re "\[Ee\]xit 2" {
+		send_user "This error was expected, no worries\n"
 		set match 1
 		exp_continue
 	}

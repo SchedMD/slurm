@@ -378,7 +378,7 @@ _p_reattach_task(void *arg)
 	int rc     = 0;
 	reattach_tasks_request_msg_t *req = t->msg->data;
 	int nodeid = req->srun_node_id; 
-	char *host = t->job->host[nodeid];
+	char *host = t->job->step_layout->host[nodeid];
 	
 	t->state = THD_ACTIVE;
 	debug3("sending reattach request to %s", host);
@@ -438,7 +438,7 @@ int reattach()
 
 	job->jobid  = s->jobid;
 	job->stepid = s->stepid;
-	job->tids   = xmalloc(job->nhosts * sizeof(uint32_t *));
+	job->step_layout->tids   = xmalloc(job->nhosts * sizeof(uint32_t *));
 	job->hostid = xmalloc(s->ntasks   * sizeof(uint32_t *));
 
 	if (job->stepid == NO_VAL) {

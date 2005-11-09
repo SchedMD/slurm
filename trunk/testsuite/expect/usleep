@@ -1,4 +1,4 @@
-#!/usr/local/bin/bash
+#!/bin/bash
 ############################################################################
 # This shell processes usleep commands as required by the test scripts 
 # on systems lacking the usleep command (e.g. AIX). It does not 
