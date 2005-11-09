@@ -95,6 +95,7 @@ static void _free_kvs_comm(struct kvs_comm *kvs_comm_ptr)
 	xfree(kvs_comm_ptr->kvs_name);
 	xfree(kvs_comm_ptr->kvs_keys);
 	xfree(kvs_comm_ptr->kvs_values);
+	xfree(kvs_comm_ptr);
 }
 
 /* Free kvs_comm_set returned by slurm_get_kvs_comm_set() */
