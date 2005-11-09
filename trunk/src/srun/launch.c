@@ -113,12 +113,14 @@ launch(void *arg)
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
 	
-	debug("going to launch %d tasks on %d hosts", opt.nprocs, job->nhosts);
+	debug("going to launch %d tasks on %d hosts", 
+	      opt.nprocs, job->step_layout->num_hosts);
 	debug("sending to slurmd port %d", slurm_get_slurmd_port());
 
-	msg_array_ptr = 
-		xmalloc(sizeof(launch_tasks_request_msg_t)*job->nhosts);
-	req_array_ptr = xmalloc(sizeof(slurm_msg_t) * job->nhosts);
+	msg_array_ptr = xmalloc(sizeof(launch_tasks_request_msg_t) 
+				* job->step_layout->num_hosts);
+	req_array_ptr = xmalloc(sizeof(slurm_msg_t) 
+				* job->step_layout->num_hosts);
 	my_envc = envcount(environ);
 
 	hostlist = hostlist_create(job->nodelist);		
@@ -307,7 +309,7 @@ static int _wait_on_active(thd_t *thd, srun_job_t *job)
 			             &timeout      );
 
 	if (rc == ETIMEDOUT)
-		_check_pending_threads(thd, job->nhosts);
+		_check_pending_threads(thd, job->step_layout->num_hosts);
 
 	return rc;
 }
@@ -333,8 +335,8 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 	 */
 	job->ltimeout = time(NULL) + opt.max_launch_time;
 
-	thd = xmalloc (job->nhosts * sizeof (thd_t));
-	for (i = 0; i < job->nhosts; i++) {
+	thd = xmalloc (job->step_layout->num_hosts * sizeof (thd_t));
+	for (i = 0; i < job->step_layout->num_hosts; i++) {
 		if (job->step_layout->tasks[i] == 0)	{	
 			/* No tasks for this node */
 			debug("Node %s is unused",job->step_layout->host[i]);
@@ -350,7 +352,8 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 		while (active >= opt.max_threads || rc < 0) 
 			rc = _wait_on_active(thd, job);
 		if (joinable >= (opt.max_threads/2))
-			_join_attached_threads(job->nhosts, thd);
+			_join_attached_threads(job->step_layout->num_hosts, 
+					       thd);
 		active++;
 		pthread_mutex_unlock(&active_mutex);
 
@@ -359,7 +362,7 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 
 		_spawn_launch_thr(&thd[i]);
 	}
-	for ( ; i < job->nhosts; i++)
+	for ( ; i < job->step_layout->num_hosts; i++)
 		_update_failed_node(job, i);
 
 	pthread_mutex_lock(&active_mutex);
@@ -367,7 +370,7 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 		_wait_on_active(thd, job);
 	pthread_mutex_unlock(&active_mutex);
 
-	_join_attached_threads (job->nhosts, thd);
+	_join_attached_threads (job->step_layout->num_hosts, thd);
 
 	/*
 	 * xsignal_restore_mask(&set);
