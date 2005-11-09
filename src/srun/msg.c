@@ -135,7 +135,7 @@ _build_proctable(srun_job_t *job, char *host, int nodeid, int ntasks, uint32_t *
 	}
 
 	for (i = 0; i < ntasks; i++) {
-		int taskid          = job->tids[nodeid][i];
+		int taskid          = job->step_layout->tids[nodeid][i];
 		/* MPIR_PROCDESC *tv   = &MPIR_proctable[taskid]; */
 /* 		tv->host_name       = job->host[nodeid]; */
 /* 		tv->executable_name = remote_argv[0]; */
@@ -179,8 +179,8 @@ static void _dump_proctable(srun_job_t *job)
 	MPIR_PROCDESC *tv;
 
 	for (node_inx=0; node_inx<job->nhosts; node_inx++) {
-		for (task_inx=0; task_inx<job->ntask[node_inx]; task_inx++) {
-			taskid = job->tids[node_inx][task_inx];
+		for (task_inx=0; task_inx<job->step_layout->tasks[node_inx]; task_inx++) {
+			taskid = job->step_layout->tids[node_inx][task_inx];
 			tv = &MPIR_proctable[taskid];
 			info("task:%d, host:%s, pid:%d",
 				taskid, tv->host_name, tv->pid);
@@ -291,10 +291,10 @@ update_tasks_state(srun_job_t *job, uint32_t nodeid)
 	int i;
 	pipe_enum_t pipe_enum = PIPE_TASK_STATE;
 	debug2("updating %d running tasks for node %d", 
-			job->ntask[nodeid], nodeid);
+			job->step_layout->tasks[nodeid], nodeid);
 	slurm_mutex_lock(&job->task_mutex);
-	for (i = 0; i < job->ntask[nodeid]; i++) {
-		uint32_t tid = job->tids[nodeid][i];
+	for (i = 0; i < job->step_layout->tasks[nodeid]; i++) {
+		uint32_t tid = job->step_layout->tids[nodeid][i];
 
 		if(message_thread) {
 			write(job->forked_msg->
@@ -314,10 +314,10 @@ update_running_tasks(srun_job_t *job, uint32_t nodeid)
 	int i;
 	pipe_enum_t pipe_enum = PIPE_TASK_STATE;
 	debug2("updating %d running tasks for node %d", 
-			job->ntask[nodeid], nodeid);
+			job->step_layout->tasks[nodeid], nodeid);
 	slurm_mutex_lock(&job->task_mutex);
-	for (i = 0; i < job->ntask[nodeid]; i++) {
-		uint32_t tid = job->tids[nodeid][i];
+	for (i = 0; i < job->step_layout->tasks[nodeid]; i++) {
+		uint32_t tid = job->step_layout->tids[nodeid][i];
 		job->task_state[tid] = SRUN_TASK_RUNNING;
 
 		if(message_thread) {
@@ -339,8 +339,8 @@ update_failed_tasks(srun_job_t *job, uint32_t nodeid)
 	pipe_enum_t pipe_enum = PIPE_TASK_STATE;
 	
 	slurm_mutex_lock(&job->task_mutex);
-	for (i = 0; i < job->ntask[nodeid]; i++) {
-		uint32_t tid = job->tids[nodeid][i];
+	for (i = 0; i < job->step_layout->tasks[nodeid]; i++) {
+		uint32_t tid = job->step_layout->tids[nodeid][i];
 		job->task_state[tid] = SRUN_TASK_FAILED;
 
 		if(message_thread) {
@@ -418,7 +418,7 @@ _confirm_launch_complete(srun_job_t *job)
 		printf("job->nhosts %d\n",job->nhosts);
 		if (job->host_state[i] != SRUN_HOST_REPLIED) {
 			error ("Node %s not responding, terminating job step",
-			       job->host[i]);
+			       job->step_layout->host[i]);
 			info("sending Ctrl-C to remaining tasks");
 			fwd_signal(job, SIGINT);
 			job->rc = 124;
@@ -475,13 +475,13 @@ _reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 	/* 
 	 * store global task id information as returned from slurmd
 	 */
-	job->tids[resp->srun_node_id]  = 
+	job->step_layout->tids[resp->srun_node_id]  = 
 		xmalloc( resp->ntasks * sizeof(uint32_t) );
 
-	job->ntask[resp->srun_node_id] = resp->ntasks;      
+	job->step_layout->tasks[resp->srun_node_id] = resp->ntasks;      
 
 	for (i = 0; i < resp->ntasks; i++) {
-		job->tids[resp->srun_node_id][i] = resp->gtids[i];
+		job->step_layout->tids[resp->srun_node_id][i] = resp->gtids[i];
 		job->hostid[resp->gtids[i]]      = resp->srun_node_id;
 	}
 
@@ -583,7 +583,7 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 	task_exit_msg_t *msg       = (task_exit_msg_t *) exit_msg->data;
 	hostlist_t       hl        = hostlist_create(NULL);
 	int              hostid    = job->hostid[msg->task_id_list[0]]; 
-	char            *host      = job->host[hostid];
+	char            *host      = job->step_layout->host[hostid];
 	int              status    = msg->return_code;
 	int              i;
 	char             buf[1024];
@@ -992,7 +992,7 @@ par_thr(void *arg)
 				continue;
 			}
 			MPIR_PROCDESC *tv   = &MPIR_proctable[tid];
-			tv->host_name       = job->host[nodeid];
+			tv->host_name       = job->step_layout->host[nodeid];
 			tv->executable_name = remote_argv[0];
 			tv->pid             = c;
 			tid = -1;

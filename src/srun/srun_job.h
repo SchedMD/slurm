@@ -40,6 +40,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/dist_tasks.h"
 //#include "src/common/global_srun.h"
 
 #include "src/srun/signals.h"
@@ -89,11 +90,15 @@ typedef enum {
 } srun_task_state_t;
 
 typedef struct srun_job {
+	slurm_step_layout_t *step_layout; /* holds info about how the task is 
+					     laid out */
 	uint32_t jobid;		/* assigned job id 	                  */
 	uint32_t stepid;	/* assigned step id 	                  */
 	bool old_job;           /* run job step under previous allocation */
 	bool removed;       /* job has been removed from SLURM */
 
+	uint32_t nhosts;	/* node count */
+	uint32_t ntasks;	/* task count */
 	srun_job_state_t state;	/* job state	   	                  */
 	pthread_mutex_t state_mutex; 
 	pthread_cond_t  state_cond;
@@ -103,12 +108,6 @@ typedef struct srun_job {
 
 	slurm_cred_t  cred;     /* Slurm job credential    */
 	char *nodelist;		/* nodelist in string form */
-	int nhosts;
-	char **host;		/* hostname vector */
-	int *cpus; 		/* number of processors on each host */
-	int *ntask; 		/* number of tasks to run on each host */
-	int ntasks;             /* total number of tasks in the job step */
-	uint32_t **tids;	/* host id => task ids mapping    */
 	uint32_t *hostid;	/* task id => host id mapping     */
 
 	slurm_addr *slurmd_addr;/* slurm_addr vector to slurmd's */
@@ -158,7 +157,6 @@ typedef struct srun_job {
 	io_filename_t *ofname;
 	io_filename_t *efname;
 	forked_msg_t *forked_msg;
-	struct slurm_step_ctx_struct *step_ctx;
 	char *task_epilog;	/* task-epilog */
 	char *task_prolog;	/* task-prolog */
 	pthread_mutex_t task_mutex;
@@ -184,7 +182,6 @@ extern srun_job_t * job_create_allocation(
 	resource_allocation_response_msg_t *resp);
 extern srun_job_t * job_create_structure(
 	resource_allocation_response_msg_t *resp);
-extern int build_step_ctx(srun_job_t *job);
 
 /*
  *  Update job filenames and modes for stderr, stdout, and stdin.

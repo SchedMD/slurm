@@ -135,6 +135,11 @@ typedef struct {
  */
 slurm_cred_t slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg);
 
+/*
+ * Copy a slurm credential.
+ * Returns NULL on failure.
+ */
+slurm_cred_t slurm_cred_copy(slurm_cred_t cred);
 
 /*
  * Create a "fake" credential with bogus data in the signature.

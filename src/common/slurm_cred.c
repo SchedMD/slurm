@@ -388,6 +388,49 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg)
 }
 
 slurm_cred_t
+slurm_cred_copy(slurm_cred_t cred)
+{
+	slurm_cred_t rcred = NULL;
+
+	xassert(cred != NULL);
+	
+	slurm_mutex_lock(&cred->mutex);
+
+	rcred = _slurm_cred_alloc();
+
+	xassert(rcred != NULL);
+
+	slurm_mutex_lock(&rcred->mutex);
+
+	xassert(rcred->magic == CRED_MAGIC);
+
+	rcred->jobid  = cred->jobid;
+	rcred->stepid = cred->stepid;
+	rcred->uid    = cred->uid;
+	rcred->nodes  = xstrdup(cred->nodes);
+        rcred->ntask_cnt = cred->ntask_cnt;
+        rcred->ntask  = NULL;
+        if (rcred->ntask_cnt > 0) {
+                rcred->ntask =  xmalloc(rcred->ntask_cnt * sizeof(int));
+                memcpy(rcred->ntask, cred->ntask, 
+		       rcred->ntask_cnt * sizeof(int));
+        }
+	rcred->ctime  = cred->ctime;
+	rcred->signature = xstrdup(cred->signature);
+	
+	slurm_mutex_unlock(&cred->mutex);
+	slurm_mutex_unlock(&rcred->mutex);
+
+	return rcred;
+
+    fail:
+	slurm_mutex_unlock(&cred->mutex);
+	slurm_mutex_unlock(&rcred->mutex);
+	slurm_cred_destroy(rcred);
+	return NULL;
+}
+
+slurm_cred_t
 slurm_cred_faker(slurm_cred_arg_t *arg)
 {
 	int fd;

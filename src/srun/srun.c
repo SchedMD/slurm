@@ -192,7 +192,8 @@ int srun(int ac, char **av)
 			_print_job_information(resp);
 		
 		job = job_create_allocation(resp);
-		
+		job->step_layout = step_layout_create(NULL, NULL, NULL);
+
 		if (msg_thr_create(job) < 0)
 			job_fatal(job, "Unable to create msg thread");
 		exitcode = _run_job_script(job, env);
@@ -216,8 +217,10 @@ int srun(int ac, char **av)
 		
 		job->old_job = true;
 		sig_setup_sigmask();
-		build_step_ctx(job);
-	
+		
+		if (create_job_step(job, resp) < 0)
+			exit(1);
+		
 		slurm_free_resource_allocation_response_msg(resp);
 		
 	} else if (mode == MODE_ATTACH) {
@@ -232,9 +235,10 @@ int srun(int ac, char **av)
 			_print_job_information(resp);
 						
 		job = job_create_allocation(resp);
-		build_step_ctx(job);
+		if (create_job_step(job, resp) < 0)
+			exit(1);
 		
- 		slurm_free_resource_allocation_response_msg(resp);
+		slurm_free_resource_allocation_response_msg(resp);
 	}
 
 	/*
@@ -342,12 +346,12 @@ _task_count_string (srun_job_t *job)
 	int i, last_val, last_cnt;
 	char tmp[16];
 	char *str = xstrdup ("");
-	if(job->ntasks == 0)
+	if(job->step_layout->tasks == NULL)
 		return (str);
-	last_val = job->ntask[0];
+	last_val = job->step_layout->tasks[0];
 	last_cnt = 1;
 	for (i=1; i<job->nhosts; i++) {
-		if (last_val == job->ntask[i])
+		if (last_val == job->step_layout->tasks[i])
 			last_cnt++;
 		else {
 			if (last_cnt > 1)
@@ -355,7 +359,7 @@ _task_count_string (srun_job_t *job)
 			else
 				sprintf(tmp, "%d,", last_val);
 			xstrcat(str, tmp);
-			last_val = job->ntask[i];
+			last_val = job->step_layout->tasks[i];
 			last_cnt = 1;
 		}
 	}
@@ -374,8 +378,10 @@ _switch_standalone(srun_job_t *job)
 
 	if (switch_alloc_jobinfo(&job->switch_job) < 0)
 		fatal("switch_alloc_jobinfo: %m");
-	if (switch_build_jobinfo(job->switch_job, job->nodelist, job->ntask, 
-				cyclic, opt.network) < 0)
+	if (switch_build_jobinfo(job->switch_job, 
+				 job->nodelist, 
+				 job->step_layout->tasks, 
+				 cyclic, opt.network) < 0)
 		fatal("switch_build_jobinfo: %m");
 }
 
@@ -819,7 +825,7 @@ static int _run_job_script (srun_job_t *job, env_t *env)
 		env->jobid = job->jobid;
 		env->nhosts = job->nhosts;
 		env->nodelist = job->nodelist;
-		//env->task_count = _task_count_string (job);
+		env->task_count = _task_count_string(job);
 	}
 	
 	if (setup_env(env) != SLURM_SUCCESS) 

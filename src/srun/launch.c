@@ -124,7 +124,7 @@ launch(void *arg)
 	hostlist = hostlist_create(job->nodelist);		
 	itr = hostlist_iterator_create(hostlist);
 
-	for (i = 0; i < job->nhosts; i++) {
+	for (i = 0; i < job->step_layout->num_hosts; i++) {
 		launch_tasks_request_msg_t *r = &msg_array_ptr[i];
 		slurm_msg_t                *m = &req_array_ptr[i];
 
@@ -139,7 +139,7 @@ launch(void *arg)
 		r->envc            = my_envc;
 		r->env             = environ;
 		r->cwd             = opt.cwd;
-		r->nnodes          = job->nhosts;
+		r->nnodes          = job->step_layout->num_hosts;
 		r->nprocs          = opt.nprocs;
 		r->slurmd_debug    = opt.slurmd_debug;
 		r->switch_job      = job->switch_job;
@@ -158,9 +158,9 @@ launch(void *arg)
 		if (slurm_mpi_single_task_per_node ()) 
 			r->tasks_to_launch = 1; 
 		else
-			r->tasks_to_launch = job->ntask[i];
-		r->global_task_ids = job->tids[i];
-		r->cpus_allocated  = job->cpus[i];
+			r->tasks_to_launch = job->step_layout->tasks[i];
+		r->global_task_ids = job->step_layout->tids[i];
+		r->cpus_allocated  = job->step_layout->cpus[i];
 		r->srun_node_id    = (uint32_t)i;
 		r->io_port         = ntohs(job->listenport[i%job->num_listen]);
 		r->resp_port       = ntohs(job->jaddr[i%job->njfds].sin_port);
@@ -169,7 +169,7 @@ launch(void *arg)
 		m->data            = r;
 		j=0; 
   		while(host = hostlist_next(itr)) { 
-			if(!strcmp(host,job->host[i])) {
+			if(!strcmp(host,job->step_layout->host[i])) {
   				free(host);
 				break; 
 			}
@@ -177,7 +177,8 @@ launch(void *arg)
 			free(host);
   		}
 		hostlist_iterator_reset(itr);
-		debug2("using %d %s with %d tasks\n", j, job->host[i],
+		debug2("using %d %s with %d tasks\n", j, 
+		       job->step_layout->host[i],
 		       r->nprocs);
 		
 		memcpy(&m->address, &job->slurmd_addr[j], sizeof(slurm_addr));
@@ -334,8 +335,9 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 
 	thd = xmalloc (job->nhosts * sizeof (thd_t));
 	for (i = 0; i < job->nhosts; i++) {
-		if (job->ntask[i] == 0)	{	/* No tasks for this node */
-			debug("Node %s is unused",job->host[i]);
+		if (job->step_layout->tasks[i] == 0)	{	
+			/* No tasks for this node */
+			debug("Node %s is unused",job->step_layout->host[i]);
 			job->host_state[i] = SRUN_HOST_REPLIED;
 			thd[i].thread = (pthread_t) NULL;
 			continue;
@@ -411,16 +413,17 @@ _update_failed_node(srun_job_t *j, int id)
 	}
 
 	pipe_enum = PIPE_TASK_STATE;
-	for (i = 0; i < j->ntask[id]; i++) {
-		j->task_state[j->tids[id][i]] = SRUN_TASK_FAILED;
+	for (i = 0; i < j->step_layout->tasks[id]; i++) {
+		j->task_state[j->step_layout->tids[id][i]] = SRUN_TASK_FAILED;
 
 		if(message_thread) {
 			write(j->forked_msg->par_msg->msg_pipe[1],
 			      &pipe_enum,sizeof(int));
 			write(j->forked_msg->par_msg->msg_pipe[1],
-			      &j->tids[id][i],sizeof(int));
+			      &j->step_layout->tids[id][i],sizeof(int));
 			write(j->forked_msg->par_msg->msg_pipe[1],
-			      &j->task_state[j->tids[id][i]],sizeof(int));
+			      &j->task_state[j->step_layout->tids[id][i]],
+			      sizeof(int));
 		}
 	}
 	pthread_mutex_unlock(&j->task_mutex);
@@ -465,14 +468,14 @@ static void * _p_launch_task(void *arg)
 	th->tstart = time(NULL);
 
 	if (_verbose)
-	        _print_launch_msg(msg, job->host[nodeid]);
+	        _print_launch_msg(msg, job->step_layout->host[nodeid]);
 
     again:
 	if (_send_msg_rc(req) < 0) {	/* Has timeout */
 
 		if (errno != EINTR)
-			verbose("fisrt launch error on %s: %m", 
-				job->host[nodeid]);
+			verbose("first launch error on %s: %m", 
+				job->step_layout->host[nodeid]);
 
 		if ((errno != ETIMEDOUT) 
 		    && (job->state == SRUN_JOB_LAUNCHING)
@@ -483,10 +486,11 @@ static void * _p_launch_task(void *arg)
 		}
 
 		if (errno == EINTR)
-			verbose("launch on %s canceled", job->host[nodeid]);
+			verbose("launch on %s canceled", 
+				job->step_layout->host[nodeid]);
 		else
 			error("second launch error on %s: %m", 
-			      job->host[nodeid]);
+			      job->step_layout->host[nodeid]);
 
 		_update_failed_node(job, nodeid);
 
@@ -516,7 +520,7 @@ _print_launch_msg(launch_tasks_request_msg_t *msg, char * hostname)
 	int i;
 	char tmp_str[10], task_list[4096];
 
-	if (opt.distribution == SRUN_DIST_BLOCK) {
+	if (opt.distribution == SLURM_DIST_BLOCK) {
 		sprintf(task_list, "%u-%u", 
 		        msg->global_task_ids[0],
 			msg->global_task_ids[(msg->tasks_to_launch-1)]);

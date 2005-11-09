@@ -37,7 +37,6 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/cbuf.h"
-#include "src/common/dist_tasks.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
@@ -57,7 +56,7 @@
 
 /*
  * allocation information structure used to store general information
- * about node allocation to be passed to _job_create_internal()
+ * about node allocation to be passed to _job_create_structure()
  */
 typedef struct allocation_info {
 	uint32_t                jobid;
@@ -76,16 +75,11 @@ typedef struct allocation_info {
 /*
  * Prototypes:
  */
-static void       _dist_block(srun_job_t *job);
-static void       _dist_cyclic(srun_job_t *job);
 static inline int _estimate_nports(int nclients, int cli_per_port);
 static int        _compute_task_count(allocation_info_t *info);
 static void       _set_nprocs(allocation_info_t *info);
-static srun_job_t *_job_create_internal(allocation_info_t *info);
 static srun_job_t *_job_create_structure(allocation_info_t *info);
 static void       _job_fake_cred(srun_job_t *job);
-static void       _job_noalloc_step_create(srun_job_t *job,
-					   allocation_info_t *info);
 static int        _job_resp_add_nodes(bitstr_t *req_bitmap, 
 				bitstr_t *exc_bitmap, int node_cnt);
 static int        _job_resp_bitmap(hostlist_t resp_node_hl, char *nodelist, 
@@ -100,44 +94,6 @@ static char *     _task_state_name(srun_task_state_t state_inx);
 static char *     _host_state_name(srun_host_state_t state_inx);
 static char *     _normalize_hostlist(const char *hostlist);
 
-/* assign taskids and hostids in a block fashion */
-static void
-_dist_block(srun_job_t *job)
-{
-	int i, j, taskid = 0;
-
-	for (i=0; i < job->nhosts; i++) {
-		for (j=0; j < job->ntask[i]; j++) {
-			job->hostid[taskid] = i;
-			job->tids[i][j]     = taskid++;
-		}
-	}
-}
-
-/* assign taskids and hostids in a cyclic fashion. for example:
- *
- * tasks per node        5  3  5  3
- *                      -- -- -- --
- * task distribution:    0  1  2  3
- *                       4  5  6  7
- *                       8  9 10 11
- *                      12    13
- *                      14    15  all tasks allocated now
- */
-static void
-_dist_cyclic(srun_job_t *job)
-{
-	int i, j, taskid = 0;
-
-	for (j=0; (taskid < opt.nprocs); j++) {   /* cycle counter */
-		for (i=0; ((i < job->nhosts) && (taskid < opt.nprocs)); i++) {
-			if (j < job->ntask[i]) {
-				job->hostid[taskid]     = i;
-				job->tids[i][j] = taskid++;
-			}
-		}
-	}
-}
 
 /* 
  * Create an srun job structure w/out an allocation response msg.
@@ -180,17 +136,28 @@ job_create_noalloc(void)
 	 * Create job, then fill in host addresses
 	 */
 	job = _job_create_structure(ai);
-	_job_noalloc_step_create(job, ai);
+	job->step_layout = step_layout_create(NULL, NULL, NULL);
+	job->step_layout->alloc_nodes = (char *)xstrdup(job->nodelist);
+	job->step_layout->step_nodes = (char *)xstrdup(job->nodelist);
+	job->step_layout->hl	= hostlist_create(job->nodelist);
+	job->step_layout->cpus_per_node = ai->cpus_per_node;
+	job->step_layout->cpu_count_reps = ai->cpu_count_reps;
+	job->step_layout->num_hosts = job->nhosts;
+	job->step_layout->num_tasks = job->ntasks;
+
+	task_layout(job->step_layout);
+
 
 	for (i = 0; i < job->nhosts; i++) {
-		char *nd = get_conf_node_hostname(job->host[i]);
+		char *nd = get_conf_node_hostname(job->step_layout->host[i]);
 		slurm_set_addr ( &job->slurmd_addr[i], 
 				  slurm_get_slurmd_port(), nd );
 		xfree(nd);
 	}
 
 	_job_fake_cred(job);
-	
+	job_update_io_fnames(job);
+
    error:
 	xfree(ai);
 	return (job);
@@ -297,6 +264,9 @@ _job_create_structure(allocation_info_t *info)
 	
 	job->eio = eio_handle_create();
 	job->ioservers_ready = 0;
+	
+	job->host_state =  xmalloc(job->nhosts * sizeof(srun_host_state_t));
+
 	/* "nhosts" number of IO protocol sockets */
 	job->ioserver = (eio_obj_t **)xmalloc(job->nhosts*sizeof(eio_obj_t *));
 	
@@ -333,105 +303,6 @@ _job_create_structure(allocation_info_t *info)
 	return (job);
 	
 	
-}
-
-/* extern int build_step_ctx(srun_job_t *job, */
-/* 			  resource_allocation_response_msg_t *alloc_resp) */
-extern int build_step_ctx(srun_job_t *job)
-{
-	job_step_create_request_msg_t  *r  = NULL;
-	uint32_t step_id;
-	int i;
-	char *temp = NULL;
-	r = xmalloc(sizeof(job_step_create_request_msg_t));
-	if (r == NULL) {
-		error("calloc error");
-		return -1;
-	}
-	r->job_id     = job->jobid;
-	r->user_id    = opt.uid;
-	r->node_count = job->nhosts;
-	/* Processor count not relevant to poe */
-	r->cpu_count  = job->nhosts;
-	r->num_tasks  = opt.nprocs;
-	r->node_list  = xstrdup(job->nodelist);
-	r->name       = xstrdup(opt.job_name);
-	switch (opt.distribution) {
-	case SLURM_DIST_UNKNOWN:
-		r->task_dist = (opt.nprocs <= job->nhosts) 
-			? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
-		break;
-	case SLURM_DIST_CYCLIC:
-		r->task_dist = SLURM_DIST_CYCLIC;
-		break;
-	case SLURM_DIST_HOSTFILE:
-		r->task_dist = SLURM_DIST_HOSTFILE;
-		break;
-	default: /* (opt.distribution == SLURM_DIST_BLOCK) */
-		r->task_dist = SLURM_DIST_BLOCK;
-		break;
-	}
-	
-	r->network = xstrdup(opt.network);
-	if (slurmctld_comm_addr.port) {
-		r->host = xstrdup(slurmctld_comm_addr.hostname);
-		r->port = slurmctld_comm_addr.port;
-	}
-	//job->step_ctx = slurm_step_ctx_create(r, alloc_resp);
-	job->step_ctx = slurm_step_ctx_create(r);
-	if (job->step_ctx == NULL) {
-		error("slurm_step_ctx_create: %s", 
-		      slurm_strerror(slurm_get_errno()));
-		return -1;
-	}
-	
-	if (slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_NHOSTS, 
-			       &job->nhosts) != SLURM_SUCCESS) {
-		error("unable to get nhosts from ctx");
-	}
-	/* nhost host states */
-	job->host_state =  xmalloc(job->nhosts * sizeof(srun_host_state_t));
-	
-	if (slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_CPUS, 
-			       &job->cpus) != SLURM_SUCCESS) {
-		error("unable to get hosts from ctx");
-	}
-	
-	if (slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_STEPID, 
-			       &job->stepid) != SLURM_SUCCESS) {
-		error("unable to get step id from ctx");
-	}
-	if (slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_TASKS, 
-			       &job->ntask) != SLURM_SUCCESS) {
-		error("unable to get step id from ctx");
-	}
-	job->tids   = xmalloc(job->nhosts * sizeof(uint32_t *));
-	job->host   = xmalloc(job->nhosts * sizeof(char *));
-	for(i=0;i<job->nhosts;i++) {
-		if (slurm_step_ctx_get(job->step_ctx, 
-				       SLURM_STEP_CTX_TID, i,
-				       &job->tids[i]) != SLURM_SUCCESS) {
-			error("unable to get task id %d from ctx",i);
-		}
-		if (slurm_step_ctx_get(job->step_ctx, 
-				       SLURM_STEP_CTX_HOST, i,
-				       &temp) != SLURM_SUCCESS) {
-			error("unable to get host %d from ctx", i);
-		} else 
-			job->host[i] = xstrdup(temp);		
-	}
-	if (slurm_step_ctx_get(job->step_ctx, 
-			       SLURM_STEP_CTX_CRED,
-			       &job->cred) != SLURM_SUCCESS) {
-		error("unable to get cred from ctx");
-	}
-	if (slurm_step_ctx_get(job->step_ctx, 
-			       SLURM_STEP_CTX_SWITCH_JOB,
-			       &job->switch_job) != SLURM_SUCCESS) {
-		error("unable to get switch_job from ctx");
-	}
-	slurm_free_job_step_create_request_msg(r);
-	job_update_io_fnames(job);
 }
 
 void
@@ -560,7 +431,7 @@ report_job_status(srun_job_t *job)
 	int i;
 
 	for (i = 0; i < job->nhosts; i++) {
-		info ("host:%s state:%s", job->host[i], 
+		info ("host:%s state:%s", job->step_layout->host[i], 
 		      _host_state_name(job->host_state[i]));
 	}
 }
@@ -646,69 +517,6 @@ _job_fake_cred(srun_job_t *job)
         arg.ntask_cnt = 0;    
         arg.ntask    =  NULL; 
 	job->cred = slurm_cred_faker(&arg);
-}
-
-static void
-_job_noalloc_step_create(srun_job_t *job, allocation_info_t *info)
-{
-	int i=0, cpu_inx=0, cpu_cnt=0;
-	hostlist_t hl;
-	hl = hostlist_create(job->nodelist);
-
-	job->host  = (char **) xmalloc(job->nhosts * sizeof(char *));
-	job->cpus  = (int *)   xmalloc(job->nhosts * sizeof(int) );
-
-	for(i = 0; i < job->nhosts; i++) {
-		job->host[i]  = hostlist_shift(hl);
-
-		job->cpus[i] = info->cpus_per_node[cpu_inx];
-		if ((++cpu_cnt) >= info->cpu_count_reps[cpu_inx]) {
-			/* move to next record */
-			cpu_inx++;
-			cpu_cnt = 0;
-		}
-	}
-	/* nhost host states */
-	job->host_state =  xmalloc(job->nhosts * sizeof(srun_host_state_t));
-	job->hostid = xmalloc(opt.nprocs * sizeof(uint32_t));
-#ifdef HAVE_FRONT_END
-		job->ntask = (int *) xmalloc(sizeof(int *));
-		job->ntask[0] = opt.nprocs;
-#else
-		job->ntask = distribute_tasks(job->nodelist, info->num_cpu_groups,
-				info->cpus_per_node, info->cpu_count_reps,
-				job->nodelist, opt.nprocs);
-#endif
-
-	job->ntasks = 0;
-	for (i = 0; i < job->nhosts; i++) {
-		debug3("distribute_tasks placed %d tasks on host %d",
-		       job->ntask[i], i);
-		job->ntasks += job->ntask[i];
-	}
-
-	/* Build task id list for each host */
-	job->tids   = xmalloc(job->nhosts * sizeof(uint32_t *));
-	job->hostid = xmalloc(opt.nprocs  * sizeof(uint32_t));
-	for (i = 0; i < job->nhosts; i++)
-		job->tids[i] = xmalloc(job->ntask[i] * sizeof(uint32_t));
-
-	if (opt.distribution == SLURM_DIST_UNKNOWN) {
-		if (opt.nprocs <= job->nhosts)
-			opt.distribution = SLURM_DIST_CYCLIC;
-		else
-			opt.distribution = SLURM_DIST_BLOCK;
-	}
-
-	if (opt.distribution == SLURM_DIST_BLOCK)
-		_dist_block(job);
-	else
-		_dist_cyclic(job);
-
-	job_update_io_fnames(job);
-
-	hostlist_destroy(hl);
-	return;
 }
 
 static char *
@@ -898,7 +706,7 @@ _apply_relative_option(resource_allocation_response_msg_t *resp,
 
 /* The below functions are used to support job steps *\
 \* with different allocations than the parent job.   */
-int    job_resp_hack_for_step(resource_allocation_response_msg_t *resp)
+int job_resp_hack_for_step(resource_allocation_response_msg_t *resp)
 {
 	bitstr_t *exc_bitmap = NULL, *req_bitmap = NULL;
 	hostlist_t resp_nodes = hostlist_create(resp->node_list);

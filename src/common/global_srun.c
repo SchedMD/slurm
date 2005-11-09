@@ -107,7 +107,8 @@ fwd_signal(srun_job_t *job, int signo)
 
 	for (i = 0; i < job->nhosts; i++) {
 		if (job->host_state[i] != SRUN_HOST_REPLIED) {
-			debug2("%s has not yet replied\n", job->host[i]);
+			debug2("%s has not yet replied\n", 
+			       job->step_layout->host[i]);
 			continue;
 		}
 		if (job_active_tasks_on_host(job, i) == 0)
@@ -133,8 +134,8 @@ job_active_tasks_on_host(srun_job_t *job, int hostid)
 	int retval = 0;
 
 	slurm_mutex_lock(&job->task_mutex);
-	for (i = 0; i < job->ntask[hostid]; i++) {
-		uint32_t tid = job->tids[hostid][i];
+	for (i = 0; i < job->step_layout->tasks[hostid]; i++) {
+		uint32_t tid = job->step_layout->tids[hostid][i];
 		debug("Task %d state: %d", tid, job->task_state[tid]);
 		if (job->task_state[tid] == SRUN_TASK_RUNNING) 
 			retval++;
@@ -193,7 +194,7 @@ static void * _p_signal_task(void *args)
 	task_info_t *info = (task_info_t *)args;
 	slurm_msg_t *req  = info->req_ptr;
 	srun_job_t  *job  = info->job_ptr;
-	char        *host = job->host[info->host_inx];
+	char        *host = job->step_layout->host[info->host_inx];
 
 	debug3("sending signal to host %s", host);
 	if (slurm_send_recv_rc_msg(req, &rc, 0) < 0) { 

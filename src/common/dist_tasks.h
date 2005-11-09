@@ -42,6 +42,26 @@
 #  endif			/* HAVE_INTTYPES_H */
 #endif
 
+#include "src/common/hostlist.h"
+
+typedef struct slurm_step_layout {
+	char *alloc_nodes;
+	char *step_nodes;
+	char **host;		/* name for each host */
+
+	uint32_t *cpus_per_node;
+	uint32_t *cpu_count_reps;
+	uint32_t *cpus;		/* count of processors on each host */
+	uint32_t *tasks;	/* number of tasks on each host */
+	
+	uint32_t **tids;	/* host id => task id mapping */
+	
+	uint32_t num_hosts;	/* node count */
+	uint32_t num_tasks;	/* number of tasks to execute */
+	uint16_t task_dist;	/* see enum task_dist_state */
+
+	hostlist_t hl;
+} slurm_step_layout_t;
 
 /* 
  * distribute_tasks - determine how many tasks of a job will be run on each.
@@ -64,4 +84,14 @@ int * distribute_tasks(const char *mlist,
 		       const char *tlist,
 		       uint32_t num_tasks);
 
+/* creates structure for step layout */
+extern slurm_step_layout_t *step_layout_create(
+	resource_allocation_response_msg_t *alloc_resp,
+	job_step_create_response_msg_t *step_resp,
+	job_step_create_request_msg_t *step_req);
+/* destroys structure for step layout */
+extern int step_layout_destroy(slurm_step_layout_t *step_layout);
+/* build maps for task layout on nodes */
+extern int task_layout(slurm_step_layout_t *step_layout);
+ 
 #endif /* !_DIST_TASKS_H */

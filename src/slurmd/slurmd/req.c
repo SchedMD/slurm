@@ -343,6 +343,7 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 
 		if ((rc = _send_slurmstepd_init(to_stepd[1], type,
 						req, cli, self)) < 0) {
+			error("Unable to init slurmstepd");
 			rc = -1;
 		}
 		if (read(to_slurmd[0], &ok, sizeof(int)) != sizeof(int)) {
@@ -552,7 +553,6 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		errnum = ESLURMD_PROLOG_FAILED;
 		goto done;
 	}
-
 	adlen = sizeof(self);
 	_slurm_getsockname(msg->conn_fd, (struct sockaddr *)&self, &adlen);
 	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, &self);
