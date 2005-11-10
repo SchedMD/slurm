@@ -181,7 +181,7 @@ msg_thr_create(slurmd_job_t *job)
 	pthread_attr_t attr;
 
 	errno = 0;
-	fd = _domain_socket_create(conf->spooldir, "nodename",
+	fd = _domain_socket_create(conf->spooldir, conf->node_name,
 				  job->jobid, job->stepid);
 	if (fd == -1)
 		return SLURM_ERROR;

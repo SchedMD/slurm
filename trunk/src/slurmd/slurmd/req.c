@@ -856,7 +856,7 @@ _rpc_signal_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	 * the signalling.
 	 */
 	loc.directory = conf->spooldir;
-	loc.nodename = "nodename";
+	loc.nodename = conf->node_name;
 	loc.jobid = req->job_id;
 	loc.stepid = req->job_step_id;
 
@@ -895,7 +895,7 @@ _rpc_terminate_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	 * the signalling.
 	 */
 	loc.directory = conf->spooldir;
-	loc.nodename = "nodename";
+	loc.nodename = conf->node_name;
 	loc.jobid = req->job_id;
 	loc.stepid = req->job_step_id;
 	rc = stepd_signal_container(loc, msg->cred, req->signal);
@@ -950,7 +950,7 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 	ListIterator i;
 	step_loc_t *stepd;
 
-	steps = stepd_available(conf->spooldir, "nodename");
+	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
 	while (stepd = list_next(i)) {
 		if (stepd_pid_in_container(*stepd, req->job_pid)
@@ -1010,7 +1010,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	 * the attach.
 	 */
 	loc.directory = conf->spooldir;
-	loc.nodename = "nodename";
+	loc.nodename = conf->node_name;
 	loc.jobid = req->job_id;
 	loc.stepid = req->job_step_id;
 	rc = stepd_attach(loc, &ioaddr, &resp_msg.address,
@@ -1050,7 +1050,7 @@ _kill_all_active_steps(void *auth_cred, uint32_t jobid, int sig, bool batch)
 	step_loc_t *stepd;
 	int step_cnt  = 0;  
 
-	steps = stepd_available(conf->spooldir, "nodename");
+	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
 	while (stepd = list_next(i)) {
 		if (stepd->jobid != jobid) {
@@ -1085,7 +1085,7 @@ _job_still_running(uint32_t job_id)
 	ListIterator i;
 	step_loc_t  *s     = NULL;   
 
-	steps = stepd_available(conf->spooldir, "nodename");
+	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
 	while ((s = list_next(i))) {
 		if (s->jobid == job_id
@@ -1134,7 +1134,7 @@ _steps_completed_now(uint32_t jobid)
 	step_loc_t *stepd;
 	bool rc = true;
 
-	steps = stepd_available(conf->spooldir, "nodename");
+	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
 	while (stepd = list_next(i)) {
 		if (stepd->jobid == jobid

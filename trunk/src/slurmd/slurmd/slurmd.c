@@ -415,7 +415,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 			error("switch_g_build_node_info: %m");
 	}
 
-	steps = stepd_available(conf->spooldir, "nodename");
+	steps = stepd_available(conf->spooldir, conf->node_name);
 	msg->job_count = list_count(steps);
 	msg->job_id    = xmalloc(msg->job_count * sizeof(*msg->job_id));
 	/* Note: Running batch jobs will have step_id == NO_VAL */
@@ -704,7 +704,7 @@ _slurmd_init()
 		 */
 		_kill_old_slurmd(); 
 
-		stepd_cleanup_sockets(conf->spooldir, "nodename");
+		stepd_cleanup_sockets(conf->spooldir, conf->node_name);
 	}
 
 	if (conf->daemonize && (chdir("/tmp") < 0)) {
