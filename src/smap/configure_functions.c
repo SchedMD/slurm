@@ -72,7 +72,7 @@ static allocated_part_t *_make_request(pa_request_t *request)
 	
 	if (!allocate_part(request, results)){
 		memset(error_string,0,255);
-		sprintf(error_string,"allocate failure for %d%d%d", 
+		sprintf(error_string,"allocate failure for %dx%dx%d", 
 			  request->geometry[0], request->geometry[1], 
 			  request->geometry[2]);
 		return NULL;
@@ -97,7 +97,7 @@ static allocated_part_t *_make_request(pa_request_t *request)
 
 static int _create_allocation(char *com, List allocated_partitions)
 {
-	int i=6, i2=-1, i3=0;
+	int i=6, geoi=-1, starti=-1, i2=0;
 	int len = strlen(com);
 	
 	allocated_part_t *allocated_part = NULL;
@@ -108,7 +108,8 @@ static int _create_allocation(char *com, List allocated_partitions)
 	request->rotate = false;
 	request->elongate = false;
 	request->force_contig = false;
-
+	request->start_req=0;
+			
 	while(i<len) {
 		
 		while(com[i-1]!=' ' && i<len) {
@@ -130,8 +131,16 @@ static int _create_allocation(char *com, List allocated_partitions)
 		} else if(!strncasecmp(com+i, "force", 5)) {
 			request->force_contig=true;
 			i+=5;
-		} else if(i2<0 && (com[i] < 58 && com[i] > 47)) {
-			i2=i;
+		} else if(!strncasecmp(com+i, "start", 5)) {
+			request->start_req=1;
+			i+=5;					
+		} else if(request->start_req 
+			  && starti<0 
+			  && (com[i] < 58 && com[i] > 47)) {
+			starti=i;
+			i++;
+		} else if(geoi<0 && (com[i] < 58 && com[i] > 47)) {
+			geoi=i;
 			i++;
 		} else {
 			i++;
@@ -141,48 +150,59 @@ static int _create_allocation(char *com, List allocated_partitions)
 
 		
 
-	if(i2<0) {
+	if(geoi<0) {
 		memset(error_string,0,255);
 		sprintf(error_string, 
 			"No size or dimension specified, please re-enter");
 	} else {
-		i3=i2;
-		while(i3<len) {
-			if(com[i3]==' ' || i3==(len-1)) {
+		i2=geoi;
+		while(i2<len) {
+			if(com[i2]==' ' || i2==(len-1)) {
 				/* for size */
-				request->size = atoi(&com[i2]);
+				request->size = atoi(&com[geoi]);
 				break;
 			}
-			if(com[i3]=='x') {
+			if(com[i2]=='x') {
 				
 				/* for geometery */
-				request->geometry[0] = atoi(&com[i2]);
-				i2++;
-				while(com[i2-1]!='x' && i2<len)
-					i2++;
-				if(i2==len){
-					memset(error_string,0,255);
-					sprintf(error_string, 
-						"Error in dimension "
-						"specified, please re-enter");
-					break;
-				} 
-				request->geometry[1] = atoi(&com[i2]);
-				i2++;
-				while(com[i2-1]!='x' && i2<len)
-					i2++;
-				if(i2==len){
-					memset(error_string,0,255);
-					sprintf(error_string, 
-						"Error in dimension "
-						"specified, please re-enter");
-					break;
-				} 
-				request->geometry[2] = atoi(&com[i2]);
+				request->geometry[0] = atoi(&com[geoi]);
+				geoi++;
+				while(com[geoi-1]!='x' && geoi<len)
+					geoi++;
+				if(geoi==len)
+					goto geo_error_message;
+				
+				request->geometry[1] = atoi(&com[geoi]);
+				geoi++;
+				while(com[geoi-1]!='x' && geoi<len)
+					geoi++;
+				if(geoi==len)
+					goto geo_error_message;
+				
+				request->geometry[2] = atoi(&com[geoi]);
 				request->size = -1;
 				break;
 			}
-			i3++;
+			i2++;
+		}
+
+		if(request->start_req) {
+			/* for size */
+			request->start[0] = atoi(&com[starti]);
+			starti++;
+			while(com[starti-1]!='x' && starti<len)
+				starti++;
+			if(starti==len)
+				goto start_error_message;
+			
+			request->start[1] = atoi(&com[starti]);
+			starti++;
+			while(com[starti-1]!='x' && starti<len)
+				starti++;
+			if(starti==len)
+				goto start_error_message;
+			
+			request->start[2] = atoi(&com[starti]);
 		}
 	
 		/*
@@ -202,7 +222,7 @@ static int _create_allocation(char *com, List allocated_partitions)
 					request->size);
 			} else
 				sprintf(error_string, 
-					"Problems with request for %d%d%d\n"
+					"Problems with request for %dx%dx%d\n"
 					"Either you put in something "
 					"that doesn't work,\n"
 					"or we are unable to process "
@@ -216,8 +236,21 @@ static int _create_allocation(char *com, List allocated_partitions)
 					    allocated_part);
 		}
 	}
-	
 	return 1;
+	
+start_error_message:
+	memset(error_string,0,255);
+	sprintf(error_string, 
+		"Error in start dimension "
+		"specified, please re-enter");
+	return 0;
+geo_error_message:
+	memset(error_string,0,255);
+	sprintf(error_string, 
+		"Error in geo dimension "
+		"specified, please re-enter");
+	
+	return 0;
 }
 
 static int _resolve(char *com)
