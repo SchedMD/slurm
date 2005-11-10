@@ -34,23 +34,3 @@ libpartition_allocator_la_LDFLAGS        = \
 
 libpartition_allocator_la_DEPENDENCIES  = \
 	$(top_builddir)/src/common/libcommon.la 
-####
-
-# force:
-# $(convenience_libs) : force
-# 	@cd `dirname $@` && $(MAKE) `basename $@`
-
-
-#########
-
-# attach.o : attach.c
-# 	$(COMPILE) -c -g -o attach.o $(srcdir)/attach.c 
-
-#install-exec-local:
-#	umask 022; \
-#	if [ -x /usr/lib/rpm/debugedit ]; then \
-#	  srcdir=`cd $(top_srcdir) && pwd`; \
-#	  /usr/lib/rpm/debugedit -b $$srcdir -d $(pkglibdir) \
-#	                         $(DESTDIR)$(bindir)/srun; fi; \
-#	$(INSTALL) -D -m 644 $(top_srcdir)/src/srun/srun.wrapper.c \
-#	                       $(DESTDIR)$(pkglibdir)/src/srun/srun.wrapper.c
