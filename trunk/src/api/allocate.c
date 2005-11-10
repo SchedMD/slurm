@@ -306,7 +306,7 @@ static int _nodelist_from_hostfile(job_step_create_request_msg_t *req)
 	char *nodelist = NULL;
 	
 	if (hostfile = (char *)getenv("MP_HOSTFILE")) {
-		if(strlen(hostfile)<1)
+		if(strlen(hostfile)<1 || !strcmp(hostfile,"NULL")) 
 			goto no_hostfile;
 		if((hostfilep = fopen(hostfile, "r")) == NULL) {
 			error("slurm_allocate_resources "
