@@ -80,7 +80,7 @@ main (int argc, char **argv)
 	}
 	printf("PMI_Get_rank = %d\n", pmi_rank);
 	if ((rc = PMI_Get_size(&pmi_size)) != PMI_SUCCESS) {
-		printf("FAILURE: PMI_Get_size: %d\n", rc);
+		printf("FAILURE: PMI_Get_size: %d, task %d\n", rc, pmi_rank);
 		exit(1);
 	}
 	printf("PMI_Get_size = %d\n", pmi_size);
@@ -90,29 +90,32 @@ main (int argc, char **argv)
 		exit(1);
 	}
 	if (pmi_size != nprocs) {
-		printf("FAILURE: Size(%d) != NPROCS(%d)\n",
-			pmi_size, nprocs);
+		printf("FAILURE: Size(%d) != NPROCS(%d), task %d\n",
+			pmi_size, nprocs, pmi_rank);
 		exit(1);
 	}
 
 	if ((rc = PMI_KVS_Get_name_length_max(&kvs_name_len)) != PMI_SUCCESS) {
-		printf("FAILURE: PMI_KVS_Get_name_length_max: %d\n", rc);
+		printf("FAILURE: PMI_KVS_Get_name_length_max: %d, task %d\n", 
+			rc, pmi_rank);
 		exit(1);
 	}
 	printf("PMI_KVS_Get_name_length_max = %d\n", kvs_name_len);
 	kvs_name = malloc(kvs_name_len);
 	if ((rc = PMI_KVS_Get_my_name(kvs_name, kvs_name_len)) != PMI_SUCCESS) {
-		printf("FAILURE: PMI_KVS_Get_my_name: %d\n", rc);
+		printf("FAILURE: PMI_KVS_Get_my_name: %d, task %d\n", rc, pmi_rank);
 		exit(1);
 	}
 	printf("PMI_KVS_Get_my_name = %s\n", kvs_name);
 	if ((rc = PMI_KVS_Get_key_length_max(&key_len)) != PMI_SUCCESS) {
-		printf("FAILURE: PMI_KVS_Get_key_length_max: %d\n", rc);
+		printf("FAILURE: PMI_KVS_Get_key_length_max: %d, task %d\n", 
+			rc, pmi_rank);
 		exit(1);
 	}
 	key = malloc(key_len);
 	if ((rc = PMI_KVS_Get_value_length_max(&val_len)) != PMI_SUCCESS) {
-		printf("FAILURE: PMI_KVS_Get_value_length_max: %d\n", rc);
+		printf("FAILURE: PMI_KVS_Get_value_length_max: %d, task %d\n", 
+			rc, pmi_rank);
 		exit(1);
 	}
 	printf("PMI_KVS_Get_value_length_max = %d\n", val_len);
@@ -122,43 +125,45 @@ main (int argc, char **argv)
 	snprintf(key, key_len, "ATTR_1_%d", procid);
 	snprintf(val, val_len, "A%d", procid+OFFSET_1);
 	if ((rc = PMI_KVS_Put(kvs_name, key, val)) != PMI_SUCCESS) {
-		printf("FAILURE: PMI_KVS_Put(%s,%s,%s): %d\n", 
-			kvs_name, key, val, rc);
+		printf("FAILURE: PMI_KVS_Put(%s,%s,%s): %d, task %d\n", 
+			kvs_name, key, val, rc, pmi_rank);
 		exit(1);
 	}
 	printf("PMI_KVS_Put(%s,%s,%s)\n", kvs_name, key, val);
 	snprintf(key, key_len, "attr_2_%d", procid);
 	snprintf(val, val_len, "B%d", procid+OFFSET_2);
 	if ((rc = PMI_KVS_Put(kvs_name, key, val)) != PMI_SUCCESS) {
-		printf("FAILURE: PMI_KVS_Put(%s,%s,%s): %d\n",
-			kvs_name, key, val, rc);
+		printf("FAILURE: PMI_KVS_Put(%s,%s,%s): %d, task %d\n",
+			kvs_name, key, val, rc, pmi_rank);
 		exit(1);
 	}
 	printf("PMI_KVS_Put(%s,%s,%s)\n", kvs_name, key, val);
 
 	/* Sync KVS across all tasks */
 	if ((rc = PMI_KVS_Commit(kvs_name)) != PMI_SUCCESS) {
-		printf("FAILURE: PMI_KVS_Commit: %d\n", rc);
+		printf("FAILURE: PMI_KVS_Commit: %d, task %d\n", rc, pmi_rank);
 		exit(1);
 	}
+	printf("PMI_KVS_Commit completed\n");
 	if ((rc = PMI_Barrier()) != PMI_SUCCESS) {
-		printf("FAILURE: PMI_Barrier: %d\n", rc);
+		printf("FAILURE: PMI_Barrier: %d, task %d\n", rc, pmi_rank);
 		exit(1);
 	}
-
+	printf("PMI_Barrier completed\n");
 	/* Task 0 only: Now lets get all keypairs and validate */
 	if (pmi_rank == 0) {
 		for (i=0; i<pmi_size; i++) {
 			snprintf(key, key_len, "ATTR_1_%d", i);
 			if ((rc = PMI_KVS_Get(kvs_name, key, val, val_len)) 
 					!= PMI_SUCCESS) {
-				printf("FAILURE: PMI_KVS_Get(%s): %d\n", 
-					key, rc);
+				printf("FAILURE: PMI_KVS_Get(%s): %d, task %d\n", 
+					key, rc, pmi_rank);
 				exit(1);
 			}
 			if ((val[0] != 'A') 
 			||  ((atoi(&val[1])-OFFSET_1) != i)) {
-				printf("FAILURE: Bad keypair %s=%s\n",key,val);
+				printf("FAILURE: Bad keypair %s=%s, task %d\n",
+					key, val, pmi_rank);
 				exit(1);
 			}
 			printf("PMI_KVS_Get(%s,%s) %s\n", kvs_name, key, val);
@@ -166,13 +171,14 @@ main (int argc, char **argv)
 			snprintf(key, key_len, "attr_2_%d", i);
 			if ((rc = PMI_KVS_Get(kvs_name, key, val, val_len))
 					!= PMI_SUCCESS) {
-				printf("FAILURE: PMI_KVS_Get(%s): %d\n", 
-					key, rc);
+				printf("FAILURE: PMI_KVS_Get(%s): %d, task %d\n", 
+					key, rc, pmi_rank);
 				exit(1);
 			}
 			if ((val[0] != 'B') 
 			||  ((atoi(&val[1])-OFFSET_2) != i)) {
-				printf("FAILURE: Bad keypair %s=%s\n",key,val);
+				printf("FAILURE: Bad keypair %s=%s, task %d\n",
+					key,val, pmi_rank);
 				exit(1);
 			}
 			printf("PMI_KVS_Get(%s,%s) %s\n", kvs_name, key, val);
@@ -181,15 +187,16 @@ main (int argc, char **argv)
 		/* use iterator */
 		if ((rc = PMI_KVS_Iter_first(kvs_name, key, key_len, val, 
 				val_len)) != PMI_SUCCESS) {
-			printf("FAILURE: PMI_KVS_iter_first: %d\n", rc);
+			printf("FAILURE: PMI_KVS_iter_first: %d, task %d\n", rc,
+				pmi_rank);
 			exit(1);
 		}
 		for (i=0; ; i++) {
 			if (key[0] == '\0') {
 				if (i != (pmi_size * 2)) {
 					printf("FAILURE: PMI_KVS_iter_next "
-						"cycle count(%d, %d)\n", 
-						i, pmi_size);
+						"cycle count(%d, %d), task %d\n", 
+						i, pmi_size, pmi_rank);
 				}
 				break;
 			}
@@ -197,7 +204,8 @@ main (int argc, char **argv)
 					i, key, val);
 			if ((rc = PMI_KVS_Iter_next(kvs_name, key, key_len, 
 					val, val_len)) != PMI_SUCCESS) {
-				printf("FAILURE: PMI_KVS_iter_next: %d\n", rc);
+				printf("FAILURE: PMI_KVS_iter_next: %d, task %d\n", 
+					rc, pmi_rank);
 				exit(1);
 			}
 		}
@@ -205,37 +213,38 @@ main (int argc, char **argv)
 
 	/* create new keyspace and test it */
 	if ((rc = PMI_KVS_Create(kvs_name, kvs_name_len)) != PMI_SUCCESS) {
-		printf("FAILURE: PMI_KVS_Create: %d\n", rc);
+		printf("FAILURE: PMI_KVS_Create: %d, task %d\n", rc, pmi_rank);
 		exit(1);
 	}
 	printf("PMI_KVS_Create %s\n", kvs_name);
 	if ((rc = PMI_KVS_Put(kvs_name, "KVS_KEY", "KVS_VAL")) != PMI_SUCCESS) {
-		printf("FAILURE: PMI_KVS_Put: %d\n", rc);
+		printf("FAILURE: PMI_KVS_Put: %d, task %d\n", rc, pmi_rank);
 		exit(1);
 	}
 	printf("PMI_KVS_Put(%s,KVS_KEY,KVS_VAL)\n", kvs_name);
 	if ((rc =  PMI_KVS_Get(kvs_name, "KVS_KEY", val, val_len)) != 
 			PMI_SUCCESS) {
-		printf("FAILURE: PMI_KVS_Get: %d\n", rc);
+		printf("FAILURE: PMI_KVS_Get: %d, task %d\n", rc, pmi_rank);
 		exit(1);
 	}
 	printf("PMI_KVS_Get(%s,%s) %s\n", kvs_name, "KVS_KEY", val);
 	if ((rc = PMI_KVS_Destroy(kvs_name)) != PMI_SUCCESS) {
-		printf("FAILURE: PMI_KVS_Destroy(%s): %d\n", kvs_name, rc);
+		printf("FAILURE: PMI_KVS_Destroy(%s): %d, task %d\n", 
+			kvs_name, rc, pmi_rank);
 		exit(1);
 	}
 	if ((rc =  PMI_KVS_Get(kvs_name, "KVS_KEY", val, val_len)) != 
 			PMI_ERR_INVALID_KVS) {
-		printf("FAILURE: PMI_KVS_Get: %d\n", rc);
+		printf("FAILURE: PMI_KVS_Get: %d, task %d\n", rc, pmi_rank);
 		exit(1);
 	}
 
 	if ((rc = PMI_Finalize()) != PMI_SUCCESS) {
-		printf("FAILURE: PMI_Finalize: %d\n", rc);
+		printf("FAILURE: PMI_Finalize: %d, task %d\n", rc, pmi_rank);
 		exit(1);
 	}
 
-	printf("PMI test ran successfully\n");
+	printf("PMI test ran successfully, for task %d\n", pmi_rank);
 	exit(0);
 }
 
