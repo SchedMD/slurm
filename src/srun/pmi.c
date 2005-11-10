@@ -33,6 +33,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/api/slurm_pmi.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 
 #define _DEBUG 1
@@ -97,6 +98,7 @@ static void _print_kvs(void)
 #if _DEBUG
 	int i, j;
 
+	info("KVS dump start");
 	for (i=0; i<kvs_comm_cnt; i++) {
 		for (j=0; j<kvs_comm_ptr[i]->kvs_cnt; j++) {
 			info("KVS: %s:%s:%s", kvs_comm_ptr[i]->kvs_name,
@@ -111,6 +113,7 @@ extern int pmi_kvs_put(struct kvs_comm_set *kvs_set_ptr)
 {
 	int i;
 	struct kvs_comm *kvs_ptr;
+
 	/* Merge new data with old.
 	 * NOTE: We just move pointers rather than copy data where 
 	 * possible for improved performance */
@@ -131,3 +134,10 @@ extern int pmi_kvs_put(struct kvs_comm_set *kvs_set_ptr)
 	pthread_mutex_unlock(&kvs_mutex);
 	return SLURM_SUCCESS;
 }
+
+extern int pmi_kvs_get(kvs_get_msg_t *kvs_get_ptr)
+{
+debug("pmi_kvs_get: rank:%u port:%u, host:%s", kvs_get_ptr->task_id, kvs_get_ptr->port, kvs_get_ptr->hostname); 
+	return SLURM_SUCCESS;
+}
+

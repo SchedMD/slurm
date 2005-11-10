@@ -266,6 +266,8 @@ static void _pack_kvs_rec(struct kvs_comm *msg_ptr, Buf buffer);
 static int  _unpack_kvs_rec(struct kvs_comm **msg_ptr, Buf buffer);
 static void _pack_kvs_data(struct kvs_comm_set *msg_ptr, Buf buffer);
 static int  _unpack_kvs_data(struct kvs_comm_set **msg_ptr, Buf buffer);
+static void _pack_kvs_get(kvs_get_msg_t *msg_ptr, Buf buffer);
+static int  _unpack_kvs_get(kvs_get_msg_t **msg_ptr, Buf buffer);
 
 /* pack_header
  * packs a slurm protocol header that proceeds every slurm message
@@ -546,8 +548,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_kvs_data((struct kvs_comm_set *) msg->data, buffer);
 		break;
 	 case PMI_KVS_GET_REQ:
+		_pack_kvs_get((kvs_get_msg_t *) msg->data, buffer);
+		break;
 	 case PMI_KVS_PUT_RESP:
-		break;	/* no data */
+		break;	/* no data in message */
 	 default:
 		 debug("No pack method for msg type %i", msg->msg_type);
 		 return EINVAL;
@@ -825,6 +829,8 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 				buffer);
 		break;
 	 case PMI_KVS_GET_REQ:
+		rc = _unpack_kvs_get((kvs_get_msg_t **) &msg->data, buffer);
+		break;
 	 case PMI_KVS_PUT_RESP:
 		break;	/* no data */
 	 default:
@@ -3356,6 +3362,31 @@ unpack_error:
 		}
 	}
 	xfree(msg->kvs_comm_ptr);
+	xfree(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_kvs_get(kvs_get_msg_t *msg_ptr, Buf buffer)
+{
+	pack16(msg_ptr->task_id, buffer);
+	pack16(msg_ptr->port, buffer);
+	packstr(msg_ptr->hostname, buffer);
+}
+
+static int  _unpack_kvs_get(kvs_get_msg_t **msg_ptr, Buf buffer)
+{
+	uint16_t uint16_tmp;
+	kvs_get_msg_t *msg;
+
+	msg = xmalloc(sizeof(struct kvs_get_msg));
+	*msg_ptr = msg;
+	safe_unpack16(&msg->task_id, buffer);
+	safe_unpack16(&msg->port, buffer);
+	safe_unpackstr_xmalloc(&msg->hostname, &uint16_tmp, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
 	xfree(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;

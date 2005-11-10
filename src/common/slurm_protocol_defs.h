@@ -453,6 +453,12 @@ typedef struct jobacct_msg {
 	char *data;		/* data structure; we just pass it to them. */
 } jobacct_msg_t;
 
+typedef struct kvs_get_msg {
+	uint16_t task_id;	/* job step's task id */
+	uint16_t port;		/* port to be sent the kvs data */
+	char * hostname;	/* hostname to be sent the kvs data */
+} kvs_get_msg_t;
+
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
@@ -552,6 +558,7 @@ void slurm_free_job_step_info_response_msg(
 		job_step_info_response_msg_t * msg);
 void slurm_free_node_info_msg(node_info_msg_t * msg);
 void slurm_free_partition_info_msg(partition_info_msg_t * msg);
+void slurm_free_get_kvs_msg(kvs_get_msg_t *msg);
 
 extern char *job_reason_string(enum job_wait_reason inx);
 extern char *job_state_string(enum job_states inx);

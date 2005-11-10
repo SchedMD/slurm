@@ -75,39 +75,54 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr)
 	if (msg_rcv.msg_type != RESPONSE_SLURM_RC)
 		return SLURM_UNEXPECTED_MSG_ERROR;
 	rc = ((return_code_msg_t *) msg_rcv.data)->return_code;
+	slurm_free_return_code_msg((return_code_msg_t *) msg_rcv.data);
 	return rc;
 }
 
 /* Wait for barrier and get full PMI Keyval space data */
-int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr)
+int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr, int pmi_rank)
 {
-	int rc;
-	slurm_msg_t req_msg;
-	slurm_msg_t resp_msg;
+	int rc, pmi_fd;
+	slurm_msg_t msg_send, msg_rcv;
+	slurm_addr slurm_address;
+	char hostname[64];
+	uint16_t port;
+	kvs_get_msg_t data;
 
 	if (kvs_set_ptr == NULL)
 		return EINVAL;
 
 	if ((rc = _get_addr()) != SLURM_SUCCESS)
 		return rc;
-
-	req_msg.msg_type = PMI_KVS_GET_REQ;
-	req_msg.data = NULL;
-
-	/* Send the RPC to the local slurmd_step manager */
-/* FIXME, sending to slurmctld right now */
-#if 0
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+	if ((pmi_fd = slurm_init_msg_engine_port(0)) < 0)
 		return SLURM_ERROR;
+	if (slurm_get_stream_addr(pmi_fd, &slurm_address) < 0)
+		return SLURM_ERROR;
+	fd_set_nonblocking(pmi_fd);
+	port = slurm_address.sin_port;
+	getnodename(hostname, sizeof(hostname));
 
-	slurm_free_cred(resp_msg.cred);
-	if (resp_msg.msg_type == PMI_KVS_GET_RESP)
-		*kvs_set_ptr = (struct kvs_comm_set *) resp_msg.data;
-	else
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
-#else
+	data.task_id = pmi_rank;
+	data.port = port;
+	data.hostname = hostname;
+	msg_send.address = srun_addr;
+	msg_send.msg_type = PMI_KVS_GET_REQ;
+	msg_send.data = &data;
+
+	/* Send the RPC to the local srun communcation manager */
+	if (slurm_send_recv_node_msg(&msg_send, &msg_rcv, 0) < 0)
+		return SLURM_ERROR;
+	if (msg_rcv.msg_type != RESPONSE_SLURM_RC)
+		return SLURM_UNEXPECTED_MSG_ERROR;
+	rc = ((return_code_msg_t *) msg_rcv.data)->return_code;
+	slurm_free_return_code_msg((return_code_msg_t *) msg_rcv.data);
+	if (rc != SLURM_SUCCESS)
+		return rc;
+
+	/* get the message after all tasks reach the barrier */
+/*	slurm_close_accepted_conn(pmi_fd); Consider leaving socket open */
 	*kvs_set_ptr = NULL;
-#endif
+
 	return SLURM_SUCCESS;
 }
 
@@ -132,6 +147,9 @@ static void _free_kvs_comm(struct kvs_comm *kvs_comm_ptr)
 void slurm_free_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr)
 {
 	int i;
+
+	if (kvs_set_ptr == NULL)
+		return;
 
 	for (i=0; i<kvs_set_ptr->kvs_comm_recs; i++)
 		_free_kvs_comm(kvs_set_ptr->kvs_comm_ptr[i]);
