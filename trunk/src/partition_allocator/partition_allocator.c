@@ -1954,34 +1954,47 @@ static int _find_match(pa_request_t *pa_request, List results)
 	if(startx == -1)
 		startx = DIM_SIZE[X]-1;
 	if(pa_request->start_req) {
+		if(pa_request->start[X]>DIM_SIZE[X] 
+#ifdef HAVE_BGL
+		   || pa_request->start[Y]>DIM_SIZE[Y]
+		   || pa_request->start[Z]>DIM_SIZE[Z]
+#endif
+			)
+			return 0;
 		for(x=0;x<PA_SYSTEM_DIMENSIONS;x++) {
 			start[x] = pa_request->start[x];
 		}
 	}
 	x=0;
 	
-#ifdef HAVE_BGL
 	if(pa_request->geometry[X]>DIM_SIZE[X] 
+#ifdef HAVE_BGL
 	   || pa_request->geometry[Y]>DIM_SIZE[Y]
-	   || pa_request->geometry[Z]>DIM_SIZE[Z])
+	   || pa_request->geometry[Z]>DIM_SIZE[Z]
+#endif
+		)
 		if(!_check_for_options(pa_request))
 			return 0;
-#endif
 
 start_again:
 	while(x!=startx) {
 		x++;
 		debug3("finding %d%d%d try %d",
 		       pa_request->geometry[X],
+#ifdef HAVE_BGL
 		       pa_request->geometry[Y],
 		       pa_request->geometry[Z],
+#endif
 		       x);
 	new_node:
 		debug("starting at %d%d%d",
-		     start[X],
-		     start[Y],
-		     start[Z]);
-					
+		      start[X],
+#ifdef HAVE_BGL
+		      start[Y],
+		      start[Z]
+#endif
+			);
+		
 		pa_node = &pa_system_ptr->
 			grid[start[X]]
 #ifdef HAVE_BGL
@@ -2028,8 +2041,10 @@ start_again:
 						return 0;
 					else {
 						start[X]=0;
+#ifdef HAVE_BGL
 						start[Y]=0;
 						start[Z]=0;
+#endif
 						goto start_again;
 					}
 				}
