@@ -43,6 +43,22 @@ pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
 int kvs_comm_cnt = 0;
 struct kvs_comm **kvs_comm_ptr = NULL;
 
+struct barrier_resp {
+	uint16_t port;
+	char *hostname;
+};
+struct barrier_resp *barrier_ptr = NULL;
+uint16_t barrier_resp_cnt = 0;
+uint16_t barrier_cnt = 0;
+
+/* transmit the KVS keypairs to all tasks, waiting at a barrier */
+static void _kvs_xmit_tasks(void)
+{
+#if _DEBUG
+	info("All tasks at barrier, transmit KVS keypairs now");
+#endif
+}
+
 /* return pointer to named kvs element or NULL if not found */
 static struct kvs_comm *_find_kvs_by_name(char *name)
 {
@@ -137,7 +153,44 @@ extern int pmi_kvs_put(struct kvs_comm_set *kvs_set_ptr)
 
 extern int pmi_kvs_get(kvs_get_msg_t *kvs_get_ptr)
 {
-debug("pmi_kvs_get: rank:%u port:%u, host:%s", kvs_get_ptr->task_id, kvs_get_ptr->port, kvs_get_ptr->hostname); 
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+
+#if _DEBUG
+	info("pmi_kvs_get: rank:%u size:%u port:%u, host:%s", kvs_get_ptr->task_id, 
+		kvs_get_ptr->size, kvs_get_ptr->port, kvs_get_ptr->hostname);
+#endif
+	if (kvs_get_ptr->size == 0) {
+		error("PMK_KVS_Barrier reached with size == 0");
+		return SLURM_ERROR;
+	}
+
+	pthread_mutex_lock(&kvs_mutex);
+	if (barrier_cnt == 0) {
+		barrier_cnt = kvs_get_ptr->size;
+		barrier_ptr = xmalloc(sizeof(struct barrier_resp) * barrier_cnt);
+	} else if (barrier_cnt != kvs_get_ptr->size) {
+		error("PMK_KVS_Barrier task count inconsistent (%u != %u)",
+			barrier_cnt, kvs_get_ptr->size);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+	if (kvs_get_ptr->task_id >= barrier_cnt) {
+		error("PMK_KVS_Barrier task count(%u) >= size(%u)", 
+			kvs_get_ptr->task_id, barrier_cnt);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+	if (barrier_ptr[kvs_get_ptr->task_id].port == 0)
+		barrier_resp_cnt++;
+	else
+		error("PMK_KVS_Barrier duplicate request from task %u",
+			kvs_get_ptr->task_id);
+	barrier_ptr[kvs_get_ptr->task_id].port = kvs_get_ptr->port;
+	barrier_ptr[kvs_get_ptr->task_id].hostname = kvs_get_ptr->hostname;
+	kvs_get_ptr->hostname = NULL; /* just moved the pointer */
+	if (barrier_resp_cnt == barrier_cnt)
+		_kvs_xmit_tasks();
+fini:	pthread_mutex_unlock(&kvs_mutex); 
+	return rc;
 }
 

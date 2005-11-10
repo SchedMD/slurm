@@ -62,7 +62,8 @@ struct kvs_comm_set {
 int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr);
 
 /* Wait for barrier and get full PMI Keyval space data */
-int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr, int pmi_rank);
+int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr, 
+		int pmi_rank, int pmi_size);
 
 /* Free kvs_comm_set returned by slurm_get_kvs_comm_set() */
 void slurm_free_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr);

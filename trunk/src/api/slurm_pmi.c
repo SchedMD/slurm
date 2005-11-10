@@ -80,7 +80,8 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr)
 }
 
 /* Wait for barrier and get full PMI Keyval space data */
-int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr, int pmi_rank)
+int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr, 
+		int pmi_rank, int pmi_size)
 {
 	int rc, pmi_fd;
 	slurm_msg_t msg_send, msg_rcv;
@@ -103,6 +104,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr, int pmi_rank)
 	getnodename(hostname, sizeof(hostname));
 
 	data.task_id = pmi_rank;
+	data.size = pmi_size;
 	data.port = port;
 	data.hostname = hostname;
 	msg_send.address = srun_addr;
