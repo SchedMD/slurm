@@ -323,8 +323,10 @@ slurm_step_ctx_destroy (slurm_step_ctx ctx)
 	step_layout_destroy(ctx->step_layout);
 	slurm_free_job_step_create_response_msg(ctx->step_resp);
 	slurm_free_resource_allocation_response_msg(ctx->alloc_resp);
-	_xfree_char_array(&ctx->argv, ctx->argc);
-	_xfree_char_array(&ctx->env, ctx->envc);
+	if (ctx->argv)
+		_xfree_char_array(&ctx->argv, ctx->argc);
+	if (ctx->env_set)
+		_xfree_char_array(&ctx->env, ctx->envc);
 	xfree(ctx->cwd);
 	xfree(ctx);
 	return SLURM_SUCCESS;
@@ -760,7 +762,6 @@ static void _xfree_char_array(char ***argv_p, int cnt)
 {
 	char **argv = *argv_p;
 	int i;
-
 	for (i=0; i<cnt; i++)
 		xfree(argv[i]);
 	xfree(*argv_p);
