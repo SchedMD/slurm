@@ -11,6 +11,9 @@ documents those changes that are of interest to users and admins.
     communicates with the slurmstepd processes through the slurmstepd's
     new named unix domain socket.  The "stepd_api" is used to talk to the
     slurmstepd (src/slurmd/common/stepd_api.[ch]).
+ -- partition allocator will find most any partition size now.  Added support 
+    to start at any point in partition allocator to request a partition 
+    instead of always starting at 000.
 
 * Changes in SLURM 0.7.0-pre3
 =============================
