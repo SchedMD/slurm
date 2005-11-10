@@ -117,6 +117,8 @@ typedef struct {
 typedef struct {
 	char *save_name;
 	int geometry[PA_SYSTEM_DIMENSIONS];
+	int start[PA_SYSTEM_DIMENSIONS];
+	int start_req;
 	int size; 
 	int conn_type;
 	int rotate_count;
