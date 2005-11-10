@@ -11,9 +11,12 @@ documents those changes that are of interest to users and admins.
     communicates with the slurmstepd processes through the slurmstepd's
     new named unix domain socket.  The "stepd_api" is used to talk to the
     slurmstepd (src/slurmd/common/stepd_api.[ch]).
- -- partition allocator will find most any partition size now.  Added support 
-    to start at any point in partition allocator to request a partition 
-    instead of always starting at 000.
+ -- Bluegene specific - bluegene block allocator will find most any 
+    partition size now.  Added support to start at any point in smap 
+    to request a partition instead of always starting at 000.
+ -- Bluegene specific - Support to smap to down or bring up nodes in 
+    configure mode.  Added commands include allup, alldown, 
+    up [range], down [range]
 
 * Changes in SLURM 0.7.0-pre3
 =============================

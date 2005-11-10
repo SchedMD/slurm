@@ -40,7 +40,8 @@ static void	_delete_allocated_parts(List allocated_partitions);
 static allocated_part_t *_make_request(pa_request_t *request);
 static int	_create_allocation(char *com, List allocated_partitions);
 static int	_resolve(char *com);
-static int	_down_bps(char *com);
+static int	_change_state_all_bps(char *com, int state);
+static int	_change_state_bps(char *com, int state);
 static int	_remove_allocation(char *com, List allocated_partitions);
 static int	_alter_allocation(char *com, List allocated_partitions);
 static int	_copy_allocation(char *com, List allocated_partitions);
@@ -192,19 +193,17 @@ static int _create_allocation(char *com, List allocated_partitions)
 			starti++;
 			while(com[starti-1]!='x' && starti<len)
 				starti++;
-			if(starti==len)
-				goto start_error_message;
-			
+			if(starti==len) 
+				goto start_request;
 			request->start[1] = atoi(&com[starti]);
 			starti++;
 			while(com[starti-1]!='x' && starti<len)
 				starti++;
 			if(starti==len)
-				goto start_error_message;
-			
+				goto start_request;
 			request->start[2] = atoi(&com[starti]);
 		}
-	
+	start_request:
 		/*
 		  Here is where we do the allocating of the partition. 
 		  It will send a request back which we will throw into
@@ -234,16 +233,23 @@ static int _create_allocation(char *com, List allocated_partitions)
 			if((allocated_part = _make_request(request)) != NULL)
 				list_append(allocated_partitions, 
 					    allocated_part);
+			else {
+				i2 = strlen(error_string);
+				sprintf(error_string+i2,
+					"\nGeo requested was %d (%dx%dx%d)\n"
+					"Start position was %dx%dx%d",
+					request->size,
+					request->geometry[0], 
+					request->geometry[1], 
+					request->geometry[2],
+					request->start[0], 
+					request->start[1], 
+					request->start[2]);
+			}
 		}
 	}
 	return 1;
 	
-start_error_message:
-	memset(error_string,0,255);
-	sprintf(error_string, 
-		"Error in start dimension "
-		"specified, please re-enter");
-	return 0;
 geo_error_message:
 	memset(error_string,0,255);
 	sprintf(error_string, 
@@ -312,21 +318,44 @@ resolve_error:
 
 	return 1;
 }
-static int _down_bps(char *com)
+static int _change_state_all_bps(char *com, int state)
 {
-	int i=4,x;
+	char allnodes[50];
+	memset(allnodes,0,50);
+		
+#ifdef HAVE_BGL
+	sprintf(allnodes, "[000x%d%d%d]", 
+		DIM_SIZE[X]-1, DIM_SIZE[Y]-1, DIM_SIZE[Z]-1);
+#else
+	sprintf(allnodes, "[0-%d]", 
+		DIM_SIZE[X]);
+#endif
+	return _change_state_bps(allnodes, state);
+	
+}
+static int _change_state_bps(char *com, int state)
+{
+	int i=1,x;
 	int len = strlen(com);
 	int start[SYSTEM_DIMENSIONS], end[SYSTEM_DIMENSIONS];
 #ifdef HAVE_BGL
 	int number=0, y=0, z=0;
 #endif
+	char letter = '.';
+	bool used = false;
+	char *c_state = "up";
 
-	while(com[i-1] != ' ' && i<len)
+	if(state == NODE_STATE_DOWN) {
+		letter = '#';
+		used = true;
+		c_state = "down";
+	}
+	while((com[i-1] > 57 || com[i-1] < 48) && com[i-1] != '[') 
 		i++;
 	if(i>(len-1)) {
 		memset(error_string,0,255);
 		sprintf(error_string, 
-			"You didn't specify any nodes to down.");	
+			"You didn't specify any nodes to make %s. %s", c_state, com);
 		return 0;
 	}
 		
@@ -368,13 +397,23 @@ static int _down_bps(char *com)
 		start[Y] = end[Y] = (number % 100) / 10;
 		start[Z] = end[Z] = (number % 10);		
 	}
+	if((start[X]>end[X]
+	    || start[Y]>end[Y]
+	    || start[Z]>end[Z])
+	   || (start[X]<0
+	       && start[Y]<0
+	       && start[Z]<0)
+	   || (end[X]>DIM_SIZE[X]-1
+	       || end[Y]>DIM_SIZE[Y]-1
+	       || end[Z]>DIM_SIZE[Z]-1))
+		goto error_message;
 
 	for(x=start[X];x<=end[X];x++) {
 		for(y=start[Y];y<=end[Y];y++) {
 			for(z=start[Z];z<=end[Z];z++) {
 				pa_system_ptr->grid[x][y][z].color = 0;
-				pa_system_ptr->grid[x][y][z].letter = '#';
-				pa_system_ptr->grid[x][y][z].used = true;
+				pa_system_ptr->grid[x][y][z].letter = letter;
+				pa_system_ptr->grid[x][y][z].used = used;
 			}
 		}
 	}
@@ -400,14 +439,31 @@ static int _down_bps(char *com)
 		start[X] = end[X] = atoi(com + i);
 				
 	}
+	if((start[X]>end[X])
+	   || (start[X]<0)
+	   || (end[X]>DIM_SIZE[X]-1))
+		goto error_message;
 
 	for(x=start[X];x<=end[X];x++) {
 		pa_system_ptr->grid[x].color = 0;
-		pa_system_ptr->grid[x].letter = '#';
-		pa_system_ptr->grid[x].used = true;
+		pa_system_ptr->grid[x].letter = letter;
+		pa_system_ptr->grid[x].used = used;
 	}	
 #endif
 	return 1;
+error_message:
+	memset(error_string,0,255);
+#ifdef HAVE_BGL
+	sprintf(error_string, 
+		"Problem with nodes specified range was %d%d%dx%d%d%d",
+		start[X],start[Y],start[Z],
+		end[X],end[Y],end[Z]);
+#else
+	sprintf(error_string, 
+		"Problem with nodes specified range was %d-%d",
+		start[X],end[X]);
+#endif	
+	return 0;
 }
 static int _remove_allocation(char *com, List allocated_partitions)
 {
@@ -848,8 +904,14 @@ void get_command(void)
 			mvwprintw(pa_system_ptr->text_win, 
 				pa_system_ptr->ycord, 
 				pa_system_ptr->xcord, "%s", com);
+		} else if (!strncasecmp(com, "alldown", 7)) {
+			_change_state_all_bps(com, NODE_STATE_DOWN);
 		} else if (!strncasecmp(com, "down", 4)) {
-			_down_bps(com);
+			_change_state_bps(com, NODE_STATE_DOWN);
+		} else if (!strncasecmp(com, "allup", 5)) {
+			_change_state_all_bps(com, NODE_STATE_IDLE);
+		} else if (!strncasecmp(com, "up", 2)) {
+			_change_state_bps(com, NODE_STATE_IDLE);
 		} else if (!strncasecmp(com, "remove", 6)
 			|| !strncasecmp(com, "delete", 6) 
 			|| !strncasecmp(com, "drop", 4)) {
