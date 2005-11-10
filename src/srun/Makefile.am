@@ -12,6 +12,7 @@ srun_SOURCES = \
 	opt.c opt.h \
 	srun_job.c srun_job.h \
 	msg.c msg.h \
+	pmi.c pmi.h \
 	signals.c signals.h \
 	io.c io.h   \
 	launch.c    \

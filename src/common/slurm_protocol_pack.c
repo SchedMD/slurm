@@ -262,7 +262,6 @@ static void _pack_jobacct_data(jobacct_msg_t * msg , Buf buffer );
 
 static int _unpack_jobacct_data(jobacct_msg_t ** msg_ptr , Buf buffer );
 
-static void _dump_kvs_data(struct kvs_comm_set *msg);
 static void _pack_kvs_rec(struct kvs_comm *msg_ptr, Buf buffer);
 static int  _unpack_kvs_rec(struct kvs_comm **msg_ptr, Buf buffer);
 static void _pack_kvs_data(struct kvs_comm_set *msg_ptr, Buf buffer);
@@ -3330,20 +3329,6 @@ static void _pack_kvs_data(struct kvs_comm_set *msg_ptr, Buf buffer)
 	for (i=0; i<msg_ptr->kvs_comm_recs; i++) 
 		_pack_kvs_rec(msg_ptr->kvs_comm_ptr[i], buffer);
 }
-static void _dump_kvs_data(struct kvs_comm_set *msg)
-{
-	int i, j;
-
-	info("KVS: task:%u, recs:%u", msg->task_id, msg->kvs_comm_recs);
-	for (i=0; i<msg->kvs_comm_recs; i++) {
-		info("KVS: name:%s cnt:%u", msg->kvs_comm_ptr[i]->kvs_name,
-			 msg->kvs_comm_ptr[i]->kvs_cnt);
-		for (j=0; j<msg->kvs_comm_ptr[i]->kvs_cnt; j++) {
-			info("KVS: %s=%s", msg->kvs_comm_ptr[i]->kvs_keys[j],
-				 msg->kvs_comm_ptr[i]->kvs_values[j]);
-		}
-	}
-}
 
 static int  _unpack_kvs_data(struct kvs_comm_set **msg_ptr, Buf buffer)
 {
@@ -3360,7 +3345,6 @@ static int  _unpack_kvs_data(struct kvs_comm_set **msg_ptr, Buf buffer)
 		if (_unpack_kvs_rec(&msg->kvs_comm_ptr[i], buffer))
 			goto unpack_error;
 	}
-	_dump_kvs_data(msg);
 	return SLURM_SUCCESS;
 
 unpack_error:

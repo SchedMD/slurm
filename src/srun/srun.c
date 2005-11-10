@@ -258,6 +258,8 @@ int srun(int ac, char **av)
 	env->overcommit = opt.overcommit;
 	env->slurmd_debug = opt.slurmd_debug;
 	env->labelio = opt.labelio;
+	env->comm_port = slurmctld_comm_addr.port;
+	env->comm_hostname = slurmctld_comm_addr.hostname;
 	if(job) {
 		env->select_jobinfo = job->select_jobinfo;
 		env->nhosts = job->nhosts;
@@ -820,6 +822,8 @@ static int _run_job_script (srun_job_t *job, env_t *env)
 	env->overcommit = opt.overcommit;
 	env->slurmd_debug = opt.slurmd_debug;
 	env->labelio = opt.labelio;
+	env->comm_port = slurmctld_comm_addr.port;
+	env->comm_hostname = slurmctld_comm_addr.hostname;
 	if(job) {
 		env->select_jobinfo = job->select_jobinfo;
 		env->jobid = job->jobid;

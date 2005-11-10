@@ -24,6 +24,7 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#include <stdlib.h>
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
@@ -31,39 +32,65 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 
+uint16_t srun_port = 0;
+slurm_addr srun_addr;
+
+static int _get_addr(void)
+{
+	char *env_host, *env_port;
+
+	if (srun_port)
+		return SLURM_SUCCESS;
+
+	env_host = getenv("SLURM_SRUN_COMM_HOST");
+	env_port = getenv("SLURM_SRUN_COMM_PORT");
+	if (!env_host || !env_port)
+		return SLURM_ERROR;
+
+	srun_port = (uint16_t) atol(env_port);
+	slurm_set_addr(&srun_addr, srun_port, env_host);
+	return SLURM_SUCCESS;
+}
+
 /* Transmit PMI Keyval space data */
 int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr)
 {
-	slurm_msg_t msg;
+	slurm_msg_t msg_send, msg_rcv;
 	int rc;
+	slurm_fd srun_fd;
 
 	if (kvs_set_ptr == NULL)
 		return EINVAL;
 
-	msg.msg_type = PMI_KVS_PUT_REQ;
-	msg.data = (void *) kvs_set_ptr;
+	if ((rc = _get_addr()) != SLURM_SUCCESS)
+		return rc; 
 
-	/* Send the RPC to the local slurmd_step manager */
-/* FIXME, sending to slurmctld right now */
-/* The RPC has been verified to function properly */
-#if 0
-	if (slurm_send_recv_controller_rc_msg(&msg, &rc) < 0)
-		return SLURM_FAILURE;
+	msg_send.address = srun_addr;
+	msg_send.msg_type = PMI_KVS_PUT_REQ;
+	msg_send.data = (void *) kvs_set_ptr;
 
-	if (rc)
-		slurm_seterrno_ret(rc);
-#endif
-	return SLURM_SUCCESS;
+	/* Send the RPC to the local srun communcation manager */
+	if (slurm_send_recv_node_msg(&msg_send, &msg_rcv, 0) < 0)
+		return SLURM_ERROR;
+	if (msg_rcv.msg_type != RESPONSE_SLURM_RC)
+		return SLURM_UNEXPECTED_MSG_ERROR;
+	rc = ((return_code_msg_t *) msg_rcv.data)->return_code;
+	return rc;
 }
 
 /* Wait for barrier and get full PMI Keyval space data */
 int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr)
 {
+	int rc;
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 
 	if (kvs_set_ptr == NULL)
 		return EINVAL;
+
+	if ((rc = _get_addr()) != SLURM_SUCCESS)
+		return rc;
+
 	req_msg.msg_type = PMI_KVS_GET_REQ;
 	req_msg.data = NULL;
 
@@ -87,6 +114,9 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr)
 static void _free_kvs_comm(struct kvs_comm *kvs_comm_ptr)
 {
 	int i;
+
+	if (kvs_comm_ptr == NULL)
+		return;
 
 	for (i=0; i<kvs_comm_ptr->kvs_cnt; i++) {
 		xfree(kvs_comm_ptr->kvs_keys[i]);

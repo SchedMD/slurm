@@ -58,6 +58,7 @@
 #include "src/srun/opt.h"
 #include "src/srun/io.h"
 #include "src/srun/msg.h"
+#include "src/srun/pmi.h"
 #include "src/srun/sigstr.h"
 #include "src/srun/attach.h"
 
@@ -656,6 +657,7 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 {
 	uid_t req_uid = g_slurm_auth_get_uid(msg->cred);
 	uid_t uid     = getuid();
+	int rc;
 	srun_timeout_msg_t *to;
 	srun_node_fail_msg_t *nf;
 	
@@ -701,6 +703,14 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 			debug3("resource allocation response received");
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			slurm_free_resource_allocation_response_msg(msg->data);
+			break;
+		case PMI_KVS_PUT_REQ:
+			info("PMI_KVS_PUT_REQ received");
+			rc = pmi_kvs_put((struct kvs_comm_set *) msg->data);
+			slurm_send_rc_msg(msg, rc);
+			break;
+		case PMI_KVS_GET_REQ:
+			info("PMI_KVS_GET_REQ received");
 			break;
 		default:
 			error("received spurious message type: %d\n",

@@ -348,6 +348,17 @@ int setup_env(env_t *env)
 		rc = SLURM_FAILURE;
 	}
 	
+	if (env->comm_port
+	    && setenvf (&env->env, "SLURM_SRUN_COMM_PORT", "%u", env->comm_port)) {
+		error ("Can't set SLURM_SRUN_COMM_PORT env variable");
+		rc = SLURM_FAILURE;
+	}
+	if (env->comm_hostname
+	    && setenvf (&env->env, "SLURM_SRUN_COMM_HOST", "%s", env->comm_hostname)) {
+		error ("Can't set SLURM_SRUN_COMM_HOST env variable");
+		rc = SLURM_FAILURE;
+	}
+		
 	if (env->cli) {
 		
 		slurm_print_slurm_addr (env->cli, addrbuf, INET_ADDRSTRLEN);
