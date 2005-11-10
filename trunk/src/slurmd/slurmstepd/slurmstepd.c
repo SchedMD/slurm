@@ -43,6 +43,7 @@
 static int _init_from_slurmd(int sock, char **argv, slurm_addr **_cli,
 			    slurm_addr **_self, slurm_msg_t **_msg);
 static void _send_ok_to_slurmd(int sock);
+static void _send_fail_to_slurmd(int sock);
 static slurmd_job_t *_step_setup(slurm_addr *cli, slurm_addr *self,
 				 slurm_msg_t *msg);
 static void _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc);
@@ -71,7 +72,11 @@ main (int argc, char *argv[])
 
 	job = _step_setup(cli, self, msg);
 
-	msg_thr_create(job); /* sets job->msg_handle and job->msgid */
+	/* sets job->msg_handle and job->msgid */
+	if (msg_thr_create(job) == SLURM_ERROR) {
+		_send_fail_to_slurmd(STDOUT_FILENO);
+		return -1;
+	}
 
 	_send_ok_to_slurmd(STDOUT_FILENO);
 	close(STDOUT_FILENO);
@@ -99,13 +104,25 @@ main (int argc, char *argv[])
 static void
 _send_ok_to_slurmd(int sock)
 {
-	int ok = 42;
+	int ok = SLURM_SUCCESS;
 	safe_write(sock, &ok, sizeof(int));
 	return;
 rwfail:
 	error("Unable to send \"ok\" to slurmd");
 }
 
+static void
+_send_fail_to_slurmd(int sock)
+{
+	int fail = SLURM_FAILURE;
+
+	if (errno)
+		fail = errno;
+	safe_write(sock, &fail, sizeof(int));
+	return;
+rwfail:
+	error("Unable to send \"fail\" to slurmd");
+}
 
 static int
 _init_from_slurmd(int sock, char **argv,

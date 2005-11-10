@@ -318,7 +318,7 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 
 	if (pipe(to_stepd) < 0 || pipe(to_slurmd) < 0) {
 		error("_forkexec_slurmstepd pipe failed: %m");
-		return -1;
+		return SLURM_FAILURE;
 	}
 
 	if ((pid = fork()) < 0) {
@@ -327,13 +327,12 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 		close(to_stepd[1]);
 		close(to_slurmd[0]);
 		close(to_slurmd[1]);
-		return -1;
+		return SLURM_FAILURE;
 	} else if (pid > 0) {
-		int ok;
 		int rc = 0;
 		/*
 		 * Parent sends initialization data to the slurmstepd
-		 * over the to_stepd pipe, and waits for an "ok"
+		 * over the to_stepd pipe, and waits for the return code
 		 * reply on the to_slurmd pipe.
 		 */
 		if (close(to_stepd[0]) < 0)
@@ -344,14 +343,16 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 		if ((rc = _send_slurmstepd_init(to_stepd[1], type,
 						req, cli, self)) < 0) {
 			error("Unable to init slurmstepd");
-			rc = -1;
+			rc = SLURM_FAILURE;
+			goto done;
 		}
-		if (read(to_slurmd[0], &ok, sizeof(int)) != sizeof(int)) {
-			error("Error reading \"ok\" message "
+		if (read(to_slurmd[0], &rc, sizeof(int)) != sizeof(int)) {
+			error("Error reading return code message "
 			      " from slurmstepd: %m");
-			rc = -2;
+			rc = SLURM_FAILURE;
 		}
 
+	done:
 		/* Reap child */
 		if (waitpid(pid, NULL, 0) < 0)
 			error("Unable to reap slurmd child process");
