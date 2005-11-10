@@ -553,7 +553,8 @@ int PMI_Barrier( void )
 	int i, j, k, rc = PMI_SUCCESS;
 
 	/* Issue the RPC */
-	if (slurm_get_kvs_comm_set(&kvs_set_ptr, pmi_rank) != SLURM_SUCCESS)
+	if (slurm_get_kvs_comm_set(&kvs_set_ptr, pmi_rank, pmi_size) 
+			!= SLURM_SUCCESS)
 		return PMI_FAIL;
 	if (kvs_set_ptr == NULL)
 		return PMI_SUCCESS;
