@@ -705,12 +705,15 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 			slurm_free_resource_allocation_response_msg(msg->data);
 			break;
 		case PMI_KVS_PUT_REQ:
-			info("PMI_KVS_PUT_REQ received");
+			debug3("PMI_KVS_PUT_REQ received");
 			rc = pmi_kvs_put((struct kvs_comm_set *) msg->data);
 			slurm_send_rc_msg(msg, rc);
 			break;
 		case PMI_KVS_GET_REQ:
-			info("PMI_KVS_GET_REQ received");
+			debug3("PMI_KVS_GET_REQ received");
+			rc = pmi_kvs_get((kvs_get_msg_t *) msg->data);
+			slurm_send_rc_msg(msg, rc);
+			slurm_free_get_kvs_msg((kvs_get_msg_t *) msg->data);
 			break;
 		default:
 			error("received spurious message type: %d\n",

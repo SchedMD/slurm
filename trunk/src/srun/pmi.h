@@ -33,4 +33,8 @@
 /* Put the supplied kvs values into the common store */
 extern int pmi_kvs_put(struct kvs_comm_set *kvs_set_ptr);
 
+/* Note that a task has reached a barrier,
+ * transmit the kvs values to the task */
+extern int pmi_kvs_get(kvs_get_msg_t *kvs_get_ptr);
+
 #endif

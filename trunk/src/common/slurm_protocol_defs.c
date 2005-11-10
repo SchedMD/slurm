@@ -478,6 +478,14 @@ void inline slurm_free_jobacct_msg(jobacct_msg_t *msg)
 	xfree(msg);
 }
 
+void inline slurm_free_get_kvs_msg(kvs_get_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->hostname);
+		xfree(msg);
+	}
+}
+
 char *job_state_string(enum job_states inx)
 {
 	if (inx & JOB_COMPLETING)
