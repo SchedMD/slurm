@@ -95,8 +95,6 @@ _create_socket(const char *name)
 		return -1;
 	fd_set_close_on_exec(fd);
 
-	unlink(name);  /* in case it already exists */
-
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
 	strcpy(addr.sun_path, name);
@@ -123,15 +121,29 @@ _domain_socket_create(const char *dir, const char *nodename,
 	/*
 	 * Make sure that "dir" exists and is a directory.
 	 */
-	if (stat(dir, &stat_buf) < 0)
-		fatal("Domain socket directory %s: %m", dir);
-	else if (!S_ISDIR(stat_buf.st_mode))
-		fatal("%s is not a directory", dir);
+	if (stat(dir, &stat_buf) < 0) {
+		error("Domain socket directory %s: %m", dir);
+		return -1;
+	} else if (!S_ISDIR(stat_buf.st_mode)) {
+		error("%s is not a directory", dir);
+		return -1;
+	}
 
 	/*
 	 * Now build the the name of socket, and create the socket.
 	 */
 	xstrfmtcat(name, "%s/%s_%u.%u", dir, nodename, jobid, stepid);
+
+	/*
+	 * First check to see if the named socket already exists.
+	 */
+	if (stat(name, &stat_buf) == 0) {
+		error("Socket %s already exists", name);
+		xfree(name);
+		errno = ESLURMD_STEP_EXISTS;
+		return -1;
+	}
+
 	fd = _create_socket(name);
 	if (fd < 0)
 		fatal("Could not create domain socket: %m");
@@ -161,15 +173,19 @@ _msg_thr_internal(void *job_arg)
 	debug("Message thread exited");
 }
 
-void
+int
 msg_thr_create(slurmd_job_t *job)
 {
 	int fd;
 	eio_obj_t *eio_obj;
 	pthread_attr_t attr;
 
+	errno = 0;
 	fd = _domain_socket_create(conf->spooldir, "nodename",
 				  job->jobid, job->stepid);
+	if (fd == -1)
+		return SLURM_ERROR;
+
 	fd_set_nonblocking(fd);
 
 	eio_obj = eio_obj_create(fd, &msg_socket_ops, (void *)job);
@@ -178,8 +194,12 @@ msg_thr_create(slurmd_job_t *job)
 
 	slurm_attr_init(&attr);
 	if (pthread_create(&job->msgid, &attr,
-			   &_msg_thr_internal, (void *)job) != 0)
-		fatal("pthread_create: %m");
+			   &_msg_thr_internal, (void *)job) != 0) {
+		error("pthread_create: %m");
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 static bool 

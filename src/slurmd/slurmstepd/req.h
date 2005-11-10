@@ -30,6 +30,6 @@
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-void msg_thr_create(slurmd_job_t *job);
+int msg_thr_create(slurmd_job_t *job);
 
 #endif /* _STEP_REQ_H */
