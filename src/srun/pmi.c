@@ -96,17 +96,20 @@ static void _kvs_xmit_tasks(void)
 	/* Spawn a pthread to transmit it */
 	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-//	if (pthread_create(&agent_id, &attr, _agent, (void *) &args))
-//		fatal("pthread_create");
+#if 0
 /* FIXME: signaling problem if pthread */
+	if (pthread_create(&agent_id, &attr, _agent, (void *) &args))
+		fatal("pthread_create");
+#else
 _agent((void *) &args);
+#endif
 }
 
 static void *_agent(void *x)
 {
 	struct agent_arg *args = (struct agent_arg *) x;
 	struct kvs_comm_set kvs_set;
-	int i, j, rc;
+	int i, j, rc, task_fd;
 	slurm_msg_t msg_send, msg_rcv;
 
 	/* send the message */
@@ -121,23 +124,27 @@ static void *_agent(void *x)
 		slurm_set_addr(&msg_send.address, 
 			args->barrier_xmit_ptr[i].port,
 			args->barrier_xmit_ptr[i].hostname);
-		//if (slurm_send_recv_node_msg(&msg_send, &msg_rcv, 0) < 0) {
-		if (slurm_send_only_node_msg(&msg_send) < 0) {
-			error("KVS_Barrier reply fail to %s","TEST",
+		if ((task_fd = slurm_open_msg_conn(&msg_send.address)) < 0) {
+			error("slurm_init_msg_engine_port:  %m");
+			break;
+		}
+		rc = slurm_send_node_msg(task_fd, &msg_send);
+		if (rc < 0) {
+			error("KVS_Barrier send data fail to %s",
 				args->barrier_xmit_ptr[i].hostname);
+			(void) slurm_shutdown_msg_conn(task_fd);
 			continue;
 		}
-continue;
-/* FIXME: timing problem waiting for reply */
-		if (msg_rcv.msg_type != RESPONSE_SLURM_RC) {
-			error("KVS_Barrier msg reply type %d bad",
-				msg_rcv.msg_type);
-			continue;
+#if 0
+info("get reply @ %ld", (long)time(NULL));
+		rc = slurm_receive_msg(task_fd, &msg_rcv, 0);
+info("got reply, rc=%d @ %ld", rc, (long)time(NULL));
+#endif
+		(void) slurm_shutdown_msg_conn(task_fd);
+		if (rc < 0) {
+			error("KVS_Barrier confirm fail from %s",
+				args->barrier_xmit_ptr[i].hostname);
 		}
-		rc = ((return_code_msg_t *) msg_rcv.data)->return_code;
-		slurm_free_return_code_msg((return_code_msg_t *) msg_rcv.data);
-		if (rc != SLURM_SUCCESS)
-			error("KVS_Barrier rc=%d", rc);
 	}
 
 	/* Release allocated memory */
