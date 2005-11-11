@@ -475,7 +475,7 @@ _io_thr_done(srun_job_t *job)
 {
 	bool retval;
 	slurm_mutex_lock(&job->state_mutex);
-	retval = (job->state >= SRUN_JOB_FORCETERM);
+	retval = (job->state >= SRUN_JOB_FAILED);
 	slurm_mutex_unlock(&job->state_mutex);
 	return retval;
 }
