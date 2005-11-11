@@ -650,7 +650,6 @@ extern int create_static_partitions(List part_list)
 			bgl_record->geo[X], bgl_record->geo[Y], 
 			bgl_record->geo[Z]);
 	bgl_record->quarter = -1;
-	full_system_partition = bgl_record;
 	bgl_record->full_partition = 1;
        	if(bgl_found_part_list) {
 		itr = list_iterator_create(bgl_found_part_list);
@@ -685,6 +684,7 @@ extern int create_static_partitions(List part_list)
 		slurm_mutex_unlock(&part_state_mutex);
 		return SLURM_ERROR;
 	}
+	full_system_partition = bgl_record;
 	bgl_record->bgl_part_list = list_create(NULL);			
 	bgl_record->hostlist = hostlist_create(NULL);
 	/* bgl_record->boot_state = 0;		Implicit */
