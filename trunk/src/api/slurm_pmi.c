@@ -155,25 +155,8 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 		error("slurm_get_kvs_comm_set msg_type=%d", msg_rcv.msg_type);
 		return SLURM_UNEXPECTED_MSG_ERROR;
 	}
-#if 0
-info("send kvs confirmation @ %ld", (long)time(NULL));
 	if (slurm_send_rc_msg(&msg_rcv, SLURM_SUCCESS) < 0)
 		error("slurm_send_rc_msg: %m");
-info("sent kvs confirmation @ %ld", (long)time(NULL));
-#endif
-#if 0
-info("send kvs confirmation @ %ld", (long)time(NULL));
-{
-	return_code_msg_t rc_msg;
-	rc_msg.return_code = SLURM_SUCCESS;
-	msg_send.msg_type  = RESPONSE_SLURM_RC;
-	msg_send.address   = msg_rcv.address;
-	msg_send.data      = &rc_msg;
-	if (slurm_send_node_msg(srun_fd, &msg_send) < 0)
-		error("slurm_send_node_msg");
-}
-info("sent kvs confirmation @ %ld", (long)time(NULL));
-#endif
 	slurm_close_accepted_conn(srun_fd);
 	*kvs_set_ptr = msg_rcv.data;
 	return SLURM_SUCCESS;

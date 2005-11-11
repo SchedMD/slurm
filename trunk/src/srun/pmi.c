@@ -39,7 +39,7 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
-#define _DEBUG 1
+#define _DEBUG 0
 
 /* Global variables */
 pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -131,11 +131,7 @@ static void *_agent(void *x)
 			(void) slurm_shutdown_msg_conn(task_fd);
 			continue;
 		}
-#if 0
-info("get reply @ %ld", (long)time(NULL));
 		rc = slurm_receive_msg(task_fd, &msg_rcv, 0);
-info("got reply, rc=%d @ %ld", rc, (long)time(NULL));
-#endif
 		(void) slurm_shutdown_msg_conn(task_fd);
 		if (rc < 0) {
 			error("KVS_Barrier confirm fail from %s",
