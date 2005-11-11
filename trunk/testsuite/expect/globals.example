@@ -351,18 +351,28 @@ proc wait_for_job { job_id state } {
 # Purpose: Determine if the execution host is one in which the
 # slurmd daemon executes on a front-end node rather than the 
 # compute hosts (e.g. Blue Gene systems). This is based upon 
-# our ability to locate a specific Blue Gene library file.
+# the value of SelectType in the slurm.conf.
 #
 # Returns 1 if the system uses a front-end, 0 otherwise
 #
 ################################################################
 
 proc test_front_end { } {
-	if [file exists "/bgl/BlueLight/ppcfloor/bglsys/bin/mpirun"] {
-		return 1
-	}
+	global scontrol bin_bash bin_grep
 
-	return 0
+	set bluegene 0
+	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectType"
+	expect {
+		"select/bluegene" {
+			set bluegene 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}	
+	
+	return $bluegene
 }
 
 ################################################################
