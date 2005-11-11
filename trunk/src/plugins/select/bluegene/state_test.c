@@ -53,8 +53,7 @@ extern bool node_already_down(char *node_name)
 		base_state = node_ptr->node_state & 
 			(~NODE_STATE_NO_RESPOND);
 		if ((base_state == NODE_STATE_DOWN)
-		||  (base_state == NODE_STATE_DRAINED)
-		||  (base_state == NODE_STATE_DRAINING))
+		||  (base_state == NODE_STATE_DRAIN))
 			return true;
 		else
 			return false;
