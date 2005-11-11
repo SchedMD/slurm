@@ -181,6 +181,7 @@ stepd_signal_container(step_loc_t step, void *auth_cred, int signal)
 	Buf buf;
 	int buf_len;
 	int rc;
+	int errnum = 0;
 
 	fd = step_connect(step);
 	if (fd == -1)
@@ -197,11 +198,13 @@ stepd_signal_container(step_loc_t step, void *auth_cred, int signal)
 	safe_write(fd, &buf_len, sizeof(int));
 	safe_write(fd, get_buf_data(buf), buf_len);
 
-	/* Receive the return code */
+	/* Receive the return code and errno */
 	safe_read(fd, &rc, sizeof(int));
+	safe_read(fd, &errnum, sizeof(int));
 
 	free_buf(buf);
 	close(fd);
+	errno = errnum;
 	return rc;
 rwfail:
 	close(fd);

@@ -509,7 +509,8 @@ _handle_signal_container(int fd, slurmd_job_t *job)
 		debug("kill container req from uid %ld for job %u.%u "
 		      "owned by uid %ld",
 		      (long)uid, job->jobid, job->stepid, (long)job->uid);
-		rc = EPERM;
+		rc = -1;
+		errno = EPERM;
 		goto done;
 	}
 
@@ -519,7 +520,8 @@ _handle_signal_container(int fd, slurmd_job_t *job)
 	if (job->cont_id == 0) {
 		debug ("step %u.%u invalid container [cont_id:%u]", 
 			job->jobid, job->stepid, job->cont_id);
-		rc = ESLURMD_JOB_NOTRUNNING;
+		rc = -1;
+		errno = ESLURMD_JOB_NOTRUNNING;
 		goto done;
 	}
 
@@ -534,8 +536,9 @@ _handle_signal_container(int fd, slurmd_job_t *job)
 	}
 
 done:
-	/* Send the return code */
+	/* Send the return code and errno */
 	safe_write(fd, &rc, sizeof(int));
+	safe_write(fd, &errno, sizeof(int));
 rwfail:
 	return;
 }
