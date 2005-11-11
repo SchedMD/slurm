@@ -446,7 +446,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		}
 			
 		slurm_mutex_lock(&part_state_mutex);
-		bgl_record->job_running = -1;
+		bgl_record->job_running = 0;
 		
 		/*remove user from list */
 		if(bgl_record->target_name) {
