@@ -147,6 +147,7 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		   If checked >=2 we want to fall through to tell the 
 		   scheduler that it is runnable just not right now. 
 		*/
+		debug3("job_running = %d", record->job_running);
 		if(record->job_running && checked<2) {
 			job_running++;
 			debug("partition %s in use by %s", 
