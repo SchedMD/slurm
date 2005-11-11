@@ -227,7 +227,7 @@ extern int step_layout_destroy(slurm_step_layout_t *step_layout)
 		xfree(step_layout->alloc_nodes);
 		xfree(step_layout->step_nodes);
 		for (i=0; i<step_layout->num_hosts; i++) {
-			xfree(step_layout->host[i]);
+			free(step_layout->host[i]);
 			xfree(step_layout->tids[i]);
 		}
 		xfree(step_layout->host);

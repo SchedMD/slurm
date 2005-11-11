@@ -1973,7 +1973,9 @@ static int _find_match(pa_request_t *pa_request, List results)
 	   || pa_request->geometry[Z]>DIM_SIZE[Z]
 #endif
 		)
+#ifdef HAVE_BGL
 		if(!_check_for_options(pa_request))
+#endif
 			return 0;
 
 start_again:
