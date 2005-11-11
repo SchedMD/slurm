@@ -1988,9 +1988,9 @@ start_again:
 		       x);
 	new_node:
 		debug("starting at %d%d%d",
-		      start[X],
+		      start[X]
 #ifdef HAVE_BGL
-		      start[Y],
+		      , start[Y],
 		      start[Z]
 #endif
 			);
@@ -3115,8 +3115,9 @@ static int _find_next_free_using_port_2(pa_switch_t *curr_switch,
 		if(node_tar[X] == pa_node->coord[X] 
 #ifdef HAVE_BGL
 		   && node_tar[Y] == pa_node->coord[Y] 
-		   && node_tar[Z] == pa_node->coord[Z]) 
+		   && node_tar[Z] == pa_node->coord[Z] 
 #endif
+			)
 		{
 			broke = 1;
 			break;
