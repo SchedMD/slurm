@@ -77,7 +77,7 @@ static void _print_kvs(void);
  * completely independent of this one. */
 static void _kvs_xmit_tasks(void)
 {
-	struct agent_arg args;
+	struct agent_arg *args;
 	pthread_attr_t attr;
 	pthread_t agent_id;
 
@@ -85,24 +85,20 @@ static void _kvs_xmit_tasks(void)
 	info("All tasks at barrier, transmit KVS keypairs now");
 #endif
 	/* copy the data */
-	args.barrier_xmit_ptr = barrier_ptr;
-	args.barrier_xmit_cnt = barrier_cnt;
+	args = xmalloc(sizeof(struct agent_arg));
+	args->barrier_xmit_ptr = barrier_ptr;
+	args->barrier_xmit_cnt = barrier_cnt;
 	barrier_ptr = NULL;
 	barrier_resp_cnt = 0;
 	barrier_cnt = 0;
-	args.kvs_xmit_ptr = _kvs_comm_dup();
-	args.kvs_xmit_cnt = kvs_comm_cnt;
+	args->kvs_xmit_ptr = _kvs_comm_dup();
+	args->kvs_xmit_cnt = kvs_comm_cnt;
 
 	/* Spawn a pthread to transmit it */
 	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-#if 0
-/* FIXME: signaling problem if pthread */
-	if (pthread_create(&agent_id, &attr, _agent, (void *) &args))
+	if (pthread_create(&agent_id, &attr, _agent, (void *) args))
 		fatal("pthread_create");
-#else
-_agent((void *) &args);
-#endif
 }
 
 static void *_agent(void *x)
@@ -162,6 +158,7 @@ info("got reply, rc=%d @ %ld", rc, (long)time(NULL));
 		xfree(args->kvs_xmit_ptr[i]);
 	}
 	xfree(args->kvs_xmit_ptr);
+	xfree(args);
 	return NULL;
 }
 
