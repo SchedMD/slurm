@@ -751,7 +751,7 @@ void _slurm_get_addr (slurm_addr *addr, uint16_t *port, char *host,
                                (void *) &h_buf, sizeof(h_buf), &h_err );
 
         if (he != NULL) {
-                *port = addr->sin_port;
+                *port = ntohs(addr->sin_port);
                 strncpy(host, he->h_name, buflen);
         } else {
                 error("Lookup failed: %s", host_strerror(h_err));

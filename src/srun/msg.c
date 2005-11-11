@@ -1166,12 +1166,12 @@ extern slurm_fd slurmctld_msg_init(void)
 	if (slurm_get_stream_addr(slurmctld_fd, &slurm_address) < 0)
 		fatal("slurm_get_stream_addr error %m");
 	fd_set_nonblocking(slurmctld_fd);
-	/* hostname is not set, so slurm_get_addr fails
+	/* hostname is not set,  so slurm_get_addr fails
 	slurm_get_addr(&slurm_address, &port, hostname, sizeof(hostname)); */
-	port = slurm_address.sin_port;
+	port = ntohs(slurm_address.sin_port);
 	getnodename(hostname, sizeof(hostname));
 	slurmctld_comm_addr.hostname = xstrdup(hostname);
-	slurmctld_comm_addr.port     = ntohs(port);
+	slurmctld_comm_addr.port     = port;
 	debug2("slurmctld messasges to host=%s,port=%u", 
 			slurmctld_comm_addr.hostname, 
 			slurmctld_comm_addr.port);

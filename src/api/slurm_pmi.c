@@ -32,6 +32,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 
+int pmi_fd = -1;
 uint16_t srun_port = 0;
 slurm_addr srun_addr;
 
@@ -83,9 +84,9 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr)
 int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr, 
 		int pmi_rank, int pmi_size)
 {
-	int rc, pmi_fd;
+	int rc, srun_fd;
 	slurm_msg_t msg_send, msg_rcv;
-	slurm_addr slurm_address;
+	slurm_addr slurm_addr;
 	char hostname[64];
 	uint16_t port;
 	kvs_get_msg_t data;
@@ -93,14 +94,24 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	if (kvs_set_ptr == NULL)
 		return EINVAL;
 
-	if ((rc = _get_addr()) != SLURM_SUCCESS)
+	if ((rc = _get_addr()) != SLURM_SUCCESS) {
+		error("_get_addr: %m");
 		return rc;
-	if ((pmi_fd = slurm_init_msg_engine_port(0)) < 0)
+	}
+	if (pmi_fd < 0) {
+		if ((pmi_fd = slurm_init_msg_engine_port(0)) < 0) {
+			error("slurm_init_msg_engine_port: %m");
+			return SLURM_ERROR;
+		}
+		fd_set_blocking(pmi_fd);
+	}
+	if (slurm_get_stream_addr(pmi_fd, &slurm_addr) < 0) {
+		error("slurm_get_stream_addr: %m");
 		return SLURM_ERROR;
-	if (slurm_get_stream_addr(pmi_fd, &slurm_address) < 0)
-		return SLURM_ERROR;
-	fd_set_nonblocking(pmi_fd);
-	port = slurm_address.sin_port;
+	}
+	/* hostname is not set here, so slurm_get_addr fails
+	slurm_get_addr(&slurm_addr, &port, hostname, sizeof(hostname)); */
+	port = ntohs(slurm_addr.sin_port); 
 	getnodename(hostname, sizeof(hostname));
 
 	data.task_id = pmi_rank;
@@ -111,19 +122,44 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	msg_send.msg_type = PMI_KVS_GET_REQ;
 	msg_send.data = &data;
 
-	/* Send the RPC to the local srun communcation manager */
-	if (slurm_send_recv_node_msg(&msg_send, &msg_rcv, 0) < 0)
+	/* Send the RPC to the srun communcation manager */
+	if (slurm_send_recv_node_msg(&msg_send, &msg_rcv, 0) < 0) {
+		error("slurm_send_recv_node_msg: %m");
 		return SLURM_ERROR;
-	if (msg_rcv.msg_type != RESPONSE_SLURM_RC)
+	}
+	if (msg_rcv.msg_type != RESPONSE_SLURM_RC) {
+		error("slurm_get_kvs_comm_set msg_type=%d", msg_rcv.msg_type);
 		return SLURM_UNEXPECTED_MSG_ERROR;
+	}
 	rc = ((return_code_msg_t *) msg_rcv.data)->return_code;
 	slurm_free_return_code_msg((return_code_msg_t *) msg_rcv.data);
-	if (rc != SLURM_SUCCESS)
+	if (rc != SLURM_SUCCESS) {
+		error("slurm_get_kvs_comm_set error_code=%d", rc);
 		return rc;
+	}
 
 	/* get the message after all tasks reach the barrier */
-/*	slurm_close_accepted_conn(pmi_fd); Consider leaving socket open */
-	*kvs_set_ptr = NULL;
+info("waiting for msg on port %u", port);
+	srun_fd = slurm_accept_msg_conn(pmi_fd, &srun_addr);
+	if (srun_fd < 0) {
+		error("slurm_accept_msg_conn: %m");
+		return errno;
+	}
+again:	if (slurm_receive_msg(srun_fd, &msg_rcv, 0) < 0) {
+		if (errno == EINTR)
+			goto again;
+		error("slurm_receive_msg: %m");
+		return errno;
+	}
+info("got msg");
+	if (msg_rcv.msg_type != PMI_KVS_GET_RESP) {
+		error("slurm_get_kvs_comm_set msg_type=%d", msg_rcv.msg_type);
+		return SLURM_UNEXPECTED_MSG_ERROR;
+	}
+	slurm_send_rc_msg(&msg_rcv, SLURM_SUCCESS);
+info("sent reply");
+	slurm_close_accepted_conn(srun_fd);
+	*kvs_set_ptr = msg_rcv.data;
 
 	return SLURM_SUCCESS;
 }

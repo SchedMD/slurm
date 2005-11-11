@@ -150,8 +150,8 @@ main (int argc, char **argv)
 		exit(1);
 	}
 	printf("PMI_Barrier completed\n");
-	/* Task 0 only: Now lets get all keypairs and validate */
-	if (pmi_rank == 0) {
+	/* Tasks 0 and 1  only: Now lets get all keypairs and validate */
+	if (pmi_rank <= 1) {
 		for (i=0; i<pmi_size; i++) {
 			snprintf(key, key_len, "ATTR_1_%d", i);
 			if ((rc = PMI_KVS_Get(kvs_name, key, val, val_len)) 
