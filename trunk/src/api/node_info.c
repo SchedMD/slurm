@@ -105,10 +105,7 @@ slurm_print_node_table ( FILE * out, node_info_t * node_ptr, int one_liner )
 	fprintf ( out, "Weight=%u Features=%s " , 
 		node_ptr->weight, node_ptr->features);
 	fprintf ( out, "Reason=%s", node_ptr->reason);
-	if (one_liner)
-		fprintf ( out, " ");
-	else
-		fprintf ( out, "\n   ");
+	fprintf ( out, "\n");
 }
 
 
