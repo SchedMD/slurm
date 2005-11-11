@@ -342,11 +342,13 @@ static int _change_state_bps(char *com, int state)
 	int number=0, y=0, z=0;
 #endif
 	char letter = '.';
+	char opposite = '#';
 	bool used = false;
 	char *c_state = "up";
 
 	if(state == NODE_STATE_DOWN) {
 		letter = '#';
+		opposite = '.';
 		used = true;
 		c_state = "down";
 	}
@@ -401,8 +403,8 @@ static int _change_state_bps(char *com, int state)
 	    || start[Y]>end[Y]
 	    || start[Z]>end[Z])
 	   || (start[X]<0
-	       && start[Y]<0
-	       && start[Z]<0)
+	       || start[Y]<0
+	       || start[Z]<0)
 	   || (end[X]>DIM_SIZE[X]-1
 	       || end[Y]>DIM_SIZE[Y]-1
 	       || end[Z]>DIM_SIZE[Z]-1))
@@ -411,6 +413,9 @@ static int _change_state_bps(char *com, int state)
 	for(x=start[X];x<=end[X];x++) {
 		for(y=start[Y];y<=end[Y];y++) {
 			for(z=start[Z];z<=end[Z];z++) {
+				if(pa_system_ptr->grid[x][y][z].letter 
+				   != opposite)
+					continue;
 				pa_system_ptr->grid[x][y][z].color = 0;
 				pa_system_ptr->grid[x][y][z].letter = letter;
 				pa_system_ptr->grid[x][y][z].used = used;

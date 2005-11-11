@@ -201,8 +201,12 @@ extern int new_pa_request(pa_request_t* pa_request)
 			if ((geo[i] < 1) 
 			    ||  (geo[i] > DIM_SIZE[i])){
 				error("new_pa_request Error, "
-				      "request geometry is invalid %d", 
-				      geo[i]); 
+				      "request geometry is invalid %d "
+				      "DIMS are %d%d%d", 
+				      geo[i],
+				      DIM_SIZE[X],
+				      DIM_SIZE[Y],
+				      DIM_SIZE[Z]); 
 				return 0;
 			}
 		}
@@ -609,6 +613,14 @@ extern void pa_init(node_info_msg_t *node_info_ptr)
 		for (i = 0; i < node_info_ptr->record_count; i++) {
 			node_ptr = &node_info_ptr->node_array[i];
 			start = 0;
+			
+			if(!node_ptr->name) {
+				DIM_SIZE[X] = 0;
+				DIM_SIZE[Y] = 0;
+				DIM_SIZE[Z] = 0;
+				goto node_info_error;
+			}
+
 			numeric = node_ptr->name;
 			while (numeric) {
 				if ((numeric[0] < '0')
@@ -619,6 +631,7 @@ extern void pa_init(node_info_msg_t *node_info_ptr)
 				start = atoi(numeric);
 				break;
 			}
+			
 			temp = start / 100;
 			if (DIM_SIZE[X] < temp)
 				DIM_SIZE[X] = temp;
@@ -637,10 +650,10 @@ extern void pa_init(node_info_msg_t *node_info_ptr)
 #endif
 		pa_system_ptr->num_of_proc = node_info_ptr->record_count;
         } 
-	
+node_info_error:
 #ifdef HAVE_BGL_FILES
 	if (have_db2
-	&&  (DIM_SIZE[X]==0) && (DIM_SIZE[X]==0) && (DIM_SIZE[X]==0)) {
+	    && (DIM_SIZE[X]==0) || (DIM_SIZE[Y]==0) || (DIM_SIZE[Z]==0)) {
 		if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
 			error("rm_set_serial(%s): %d", BGL_SERIAL, rc);
 			return;
@@ -665,19 +678,20 @@ extern void pa_init(node_info_msg_t *node_info_ptr)
 #endif
 
 #ifdef HAVE_BGL
-	if ((DIM_SIZE[X]==0) && (DIM_SIZE[X]==0) && (DIM_SIZE[X]==0)) {
+	if ((DIM_SIZE[X]==0) || (DIM_SIZE[X]==0) || (DIM_SIZE[X]==0)) {
 		debug("Setting default system dimensions");
 		DIM_SIZE[X]=8;
 		DIM_SIZE[Y]=4;
 		DIM_SIZE[Z]=4;
 	}
+	debug("DIM_SIZE = %d%d%d", DIM_SIZE[X], DIM_SIZE[Y], DIM_SIZE[Z]);
+	
 #else 
 	if (DIM_SIZE[X]==0) {
 		debug("Setting default system dimensions");
 		DIM_SIZE[X]=100;
 	}	
 #endif
-	
 	if(!pa_system_ptr->num_of_proc)
 		pa_system_ptr->num_of_proc = 
 			DIM_SIZE[X] 
@@ -950,13 +964,6 @@ extern char *set_bgl_part(List results, int *start,
 	if(!pa_node)
 		return NULL;
 	
-#ifdef HAVE_BGL
-	debug2("starting at %d%d%d",pa_node->coord[X],
-	       pa_node->coord[Y],pa_node->coord[Z]);
-#else
-	debug2("starting at %d",pa_node->coord[X]);
-#endif
-	
 	list_append(results, pa_node);
 	found = _find_x_path(results, pa_node,
 			     pa_node->coord, 
@@ -1004,7 +1011,7 @@ extern char *set_bgl_part(List results, int *start,
 	if(name!=NULL) {
 		debug2("name = %s", name);
 	} else {
-		debug2("can't allocte");
+		debug2("can't allocate");
 		xfree(name);
 		return NULL;
 	}
@@ -1979,6 +1986,9 @@ static int _find_match(pa_request_t *pa_request, List results)
 			return 0;
 
 start_again:
+	x=0;
+	if(x == startx)
+		x = startx-1;
 	while(x!=startx) {
 		x++;
 		debug3("finding %d%d%d try %d",
@@ -3649,17 +3659,18 @@ int main(int argc, char** argv)
 	List results;
 //	List results2;
 //	int i,j;
-	DIM_SIZE[X]=8;
-	DIM_SIZE[Y]=4;
-	DIM_SIZE[Z]=4;
-	pa_init(NULL);
-	init_wires(NULL);
 	log_opts.stderr_level  = debug_level;
 	log_opts.logfile_level = debug_level;
 	log_opts.syslog_level  = debug_level;
 	
 	log_alter(log_opts, LOG_DAEMON, 
 		  "/dev/null");
+	
+	DIM_SIZE[X]=0;
+	DIM_SIZE[Y]=0;
+	DIM_SIZE[Z]=0;
+	pa_init(NULL);
+	init_wires(NULL);
 						
 	/* results = list_create(NULL); */
 /* 	request->geometry[0] = 1; */
@@ -3685,13 +3696,13 @@ int main(int argc, char** argv)
 
 	results = list_create(NULL);
 	request->geometry[0] = 1;
-	request->geometry[1] = 4;
-	request->geometry[2] = 4;
-	request->start[0] = 2;
+	request->geometry[1] = 1;
+	request->geometry[2] = 1;
+	request->start[0] = 0;
 	request->start[1] = 0;
 	request->start[2] = 0;
 	request->start_req = 1;
-	request->size = 32;
+	request->size = 1;
 	request->rotate = 0;
 	request->elongate = 0;
 	request->conn_type = TORUS;
@@ -3706,11 +3717,11 @@ int main(int argc, char** argv)
 	list_destroy(results);
 
 	results = list_create(NULL);
-	request->geometry[0] = 6;
-	request->geometry[1] = 4;
-	request->geometry[2] = 4;
+	request->geometry[0] = 1;
+	request->geometry[1] = 1;
+	request->geometry[2] = 1;
 	request->start_req = 0;
-	request->size = 112;
+	request->size = 1;
 	request->conn_type = TORUS;
 	new_pa_request(request);
 	print_pa_request(request);
