@@ -33,7 +33,10 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/api/slurm_pmi.h"
+#include "src/common/macros.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/xsignal.h"
+#include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
 #define _DEBUG 1
@@ -51,12 +54,133 @@ struct barrier_resp *barrier_ptr = NULL;
 uint16_t barrier_resp_cnt = 0;
 uint16_t barrier_cnt = 0;
 
-/* transmit the KVS keypairs to all tasks, waiting at a barrier */
+struct agent_arg {
+	struct barrier_resp *barrier_xmit_ptr;
+	int barrier_xmit_cnt;
+	struct kvs_comm **kvs_xmit_ptr;
+	int kvs_xmit_cnt;
+};
+
+static void *_agent(void *x);
+static struct kvs_comm *_find_kvs_by_name(char *name);
+struct kvs_comm **_kvs_comm_dup(void);
+static void _kvs_xmit_tasks(void);
+static void _merge_named_kvs(struct kvs_comm *kvs_orig,
+		struct kvs_comm *kvs_new);
+static void _move_kvs(struct kvs_comm *kvs_new);
+static void _print_kvs(void);
+
+/* Transmit the KVS keypairs to all tasks, waiting at a barrier
+ * This will take some time, so we work with a copy of the KVS keypairs.
+ * We also work with a private copy of the barrier data and clear the 
+ * global data pointers so any new barrier requests get treated as
+ * completely independent of this one. */
 static void _kvs_xmit_tasks(void)
 {
+	struct agent_arg args;
+	pthread_attr_t attr;
+	pthread_t agent_id;
+
 #if _DEBUG
 	info("All tasks at barrier, transmit KVS keypairs now");
 #endif
+	/* copy the data */
+	args.barrier_xmit_ptr = barrier_ptr;
+	args.barrier_xmit_cnt = barrier_cnt;
+	barrier_ptr = NULL;
+	barrier_resp_cnt = 0;
+	barrier_cnt = 0;
+	args.kvs_xmit_ptr = _kvs_comm_dup();
+	args.kvs_xmit_cnt = kvs_comm_cnt;
+
+	/* Spawn a pthread to transmit it */
+	slurm_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+//	if (pthread_create(&agent_id, &attr, _agent, (void *) &args))
+//		fatal("pthread_create");
+/* FIXME: signaling problem if pthread */
+_agent((void *) &args);
+}
+
+static void *_agent(void *x)
+{
+	struct agent_arg *args = (struct agent_arg *) x;
+	struct kvs_comm_set kvs_set;
+	int i, j, rc;
+	slurm_msg_t msg_send, msg_rcv;
+
+	/* send the message */
+	kvs_set.kvs_comm_recs = args->kvs_xmit_cnt;
+	kvs_set.kvs_comm_ptr  = args->kvs_xmit_ptr;
+	msg_send.msg_type = PMI_KVS_GET_RESP;
+	msg_send.data = (void *) &kvs_set;
+	for (i=0; i<args->barrier_xmit_cnt; i++) {
+		debug2("KVS_Barrier msg to %s:%u", 
+			args->barrier_xmit_ptr[i].hostname, 
+			args->barrier_xmit_ptr[i].port);
+		slurm_set_addr(&msg_send.address, 
+			args->barrier_xmit_ptr[i].port,
+			args->barrier_xmit_ptr[i].hostname);
+		//if (slurm_send_recv_node_msg(&msg_send, &msg_rcv, 0) < 0) {
+		if (slurm_send_only_node_msg(&msg_send) < 0) {
+			error("KVS_Barrier reply fail to %s","TEST",
+				args->barrier_xmit_ptr[i].hostname);
+			continue;
+		}
+continue;
+/* FIXME: timing problem waiting for reply */
+		if (msg_rcv.msg_type != RESPONSE_SLURM_RC) {
+			error("KVS_Barrier msg reply type %d bad",
+				msg_rcv.msg_type);
+			continue;
+		}
+		rc = ((return_code_msg_t *) msg_rcv.data)->return_code;
+		slurm_free_return_code_msg((return_code_msg_t *) msg_rcv.data);
+		if (rc != SLURM_SUCCESS)
+			error("KVS_Barrier rc=%d", rc);
+	}
+
+	/* Release allocated memory */
+	for (i=0; i<args->barrier_xmit_cnt; i++)
+		xfree(args->barrier_xmit_ptr[i].hostname);
+	xfree(args->barrier_xmit_ptr);
+	for (i=0; i<args->kvs_xmit_cnt; i++) {
+		for (j=0; j<args->kvs_xmit_ptr[i]->kvs_cnt; j++) {
+			xfree(args->kvs_xmit_ptr[i]->kvs_keys[j]);
+			xfree(args->kvs_xmit_ptr[i]->kvs_values[j]);
+		}
+		xfree(args->kvs_xmit_ptr[i]->kvs_keys);
+		xfree(args->kvs_xmit_ptr[i]->kvs_values);
+		xfree(args->kvs_xmit_ptr[i]->kvs_name);
+		xfree(args->kvs_xmit_ptr[i]);
+	}
+	xfree(args->kvs_xmit_ptr);
+	return NULL;
+}
+
+/* duplicate the current KVS comm structure */
+struct kvs_comm **_kvs_comm_dup(void)
+{
+	int i, j;
+	struct kvs_comm **rc_kvs;
+
+	rc_kvs = xmalloc(sizeof(struct kvs_comm *) * kvs_comm_cnt);
+	for (i=0; i<kvs_comm_cnt; i++) {
+		rc_kvs[i] = xmalloc(sizeof(struct kvs_comm));
+		rc_kvs[i]->kvs_name = xstrdup(kvs_comm_ptr[i]->kvs_name);
+		rc_kvs[i]->kvs_cnt = kvs_comm_ptr[i]->kvs_cnt;
+		rc_kvs[i]->kvs_keys = 
+				xmalloc(sizeof(char *) * rc_kvs[i]->kvs_cnt);
+		rc_kvs[i]->kvs_values = 
+				xmalloc(sizeof(char *) * rc_kvs[i]->kvs_cnt);
+		for (j=0; j<rc_kvs[i]->kvs_cnt; j++) {
+			rc_kvs[i]->kvs_keys[j] = 
+					xstrdup(kvs_comm_ptr[i]->kvs_keys[j]);
+			rc_kvs[i]->kvs_values[j] = 
+					xstrdup(kvs_comm_ptr[i]->kvs_values[j]);
+		}
+	}
+	return rc_kvs;
 }
 
 /* return pointer to named kvs element or NULL if not found */
@@ -76,6 +200,7 @@ static void _merge_named_kvs(struct kvs_comm *kvs_orig,
 		struct kvs_comm *kvs_new)
 {
 	int i, j;
+
 	for (i=0; i<kvs_new->kvs_cnt; i++) {
 		for (j=0; j<kvs_orig->kvs_cnt; j++) {
 			if (strcmp(kvs_new->kvs_keys[i], kvs_orig->kvs_keys[j]))
@@ -156,8 +281,9 @@ extern int pmi_kvs_get(kvs_get_msg_t *kvs_get_ptr)
 	int rc = SLURM_SUCCESS;
 
 #if _DEBUG
-	info("pmi_kvs_get: rank:%u size:%u port:%u, host:%s", kvs_get_ptr->task_id, 
-		kvs_get_ptr->size, kvs_get_ptr->port, kvs_get_ptr->hostname);
+	info("pmi_kvs_get: rank:%u size:%u port:%u, host:%s", 
+		kvs_get_ptr->task_id, kvs_get_ptr->size, 
+		kvs_get_ptr->port, kvs_get_ptr->hostname);
 #endif
 	if (kvs_get_ptr->size == 0) {
 		error("PMK_KVS_Barrier reached with size == 0");
@@ -167,7 +293,7 @@ extern int pmi_kvs_get(kvs_get_msg_t *kvs_get_ptr)
 	pthread_mutex_lock(&kvs_mutex);
 	if (barrier_cnt == 0) {
 		barrier_cnt = kvs_get_ptr->size;
-		barrier_ptr = xmalloc(sizeof(struct barrier_resp) * barrier_cnt);
+		barrier_ptr = xmalloc(sizeof(struct barrier_resp)*barrier_cnt);
 	} else if (barrier_cnt != kvs_get_ptr->size) {
 		error("PMK_KVS_Barrier task count inconsistent (%u != %u)",
 			barrier_cnt, kvs_get_ptr->size);
