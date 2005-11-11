@@ -121,7 +121,7 @@ pid_t stepd_daemon_pid(step_loc_t step);
 
 #define safe_read(fd, ptr, size) do {					\
 		if (read(fd, ptr, size) != size) {			\
-			error("%s:%d: %s: read (%d bytes) failed: %m",	\
+			debug("%s:%d: %s: read (%d bytes) failed: %m",	\
 			      __FILE__, __LINE__, __CURRENT_FUNC__,	\
 			      (int)size);				\
 			goto rwfail;					\
@@ -130,7 +130,7 @@ pid_t stepd_daemon_pid(step_loc_t step);
 
 #define safe_write(fd, ptr, size) do {					\
 		if (write(fd, ptr, size) != size) {			\
-			error("%s:%d: %s: write (%d bytes) failed: %m",	\
+			debug("%s:%d: %s: write (%d bytes) failed: %m",	\
 			      __FILE__, __LINE__, __CURRENT_FUNC__,	\
 			      (int)size);				\
 			goto rwfail;					\

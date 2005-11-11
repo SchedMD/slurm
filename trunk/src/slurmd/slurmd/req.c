@@ -1068,7 +1068,7 @@ _kill_all_active_steps(void *auth_cred, uint32_t jobid, int sig, bool batch)
 		debug2("container signal %d to job %u.%u",
 		       sig, jobid, stepd->stepid);
 		if (stepd_signal_container(*stepd, auth_cred, sig) < 0)
-			error("kill jid %d: %m", jobid);
+			debug("kill jid %d: %m", jobid);
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);
