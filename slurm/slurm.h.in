@@ -212,7 +212,7 @@ enum task_dist_states {
  * when jobs are in the process of terminating. */
 enum node_states {
 	NODE_STATE_UNKNOWN,	/* node's initial state, unknown */
-	NODE_STATE_DOWN,	/* node is not responding */
+	NODE_STATE_DOWN,	/* node in non-usable state */
 	NODE_STATE_IDLE,	/* node idle and available for use */
 	NODE_STATE_ALLOCATED,	/* node has been allocated to a job */
 	NODE_STATE_END		/* last entry in table */
