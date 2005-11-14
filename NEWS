@@ -57,7 +57,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 0.6.9
 ========================
  -- Fix bug in mpi plugin to set the ID correctly
-
+ -- Accounting bug causing segv fixed (Andy Riebs, 14oct.jobacct.patch)
 
 * Changes in SLURM 0.6.8
 ========================

@@ -725,24 +725,34 @@ int slurmd_jobacct_smgr(void)
 
 int slurmd_jobacct_task_exit(slurmd_job_t *job, pid_t pid, int status, struct rusage *rusage)
 {
-	_jrec_t *jrec;
-	int	rc=SLURM_SUCCESS;
+	_jrec_t		*jrec;
+	int		rc=SLURM_SUCCESS;
+	static int	active=0;
 
-	debug2("slurmd_jobacct_task_exit for job %u.%u,"
-			" node %d, status=%d",
-			job->jobid, job->stepid, job->nodeid, status/256);
+	if (active==0)
+		active = job->ntasks-1;
+	else
+		active--;
+
+	debug2("slurmd_jobacct_task_exit(%d) for job %u.%u,"
+			" node %d, status=%d, nprocs %d, active %d",
+			getpid(),
+			job->jobid, job->stepid, job->nodeid, status/256,
+			job->nprocs, active);
 	jrec = _alloc_jrec(job);
 	jrec->nodeid			= job->nodeid;
 	memcpy(&jrec->rusage, rusage, sizeof(struct rusage));
 	jrec->status		 	= status/256;
-	if (prec_frequency) {	/* if dynamic monitoring */
-		slurm_mutex_lock(&precTable_lock); /* let watcher finish loop */
-		pthread_cancel(_watch_tasks_thread_id); 
-		pthread_join(_watch_tasks_thread_id,NULL);
-		slurm_mutex_unlock(&precTable_lock);
-		jrec->max_psize			= max_psize;
-		jrec->max_vsize			= max_vsize;
-	}
+	if (prec_frequency)	/* if dynamic monitoring */
+		if (active==0) {
+			debug3("slurmd_jobacct_task_exit(%d) cancelling "
+					"_watch_tasks",
+				getpid(), job->jobid, job->stepid);
+			pthread_cancel(_watch_tasks_thread_id); 
+			pthread_join(_watch_tasks_thread_id,NULL);
+		}
+	jrec->max_psize			= max_psize;
+	jrec->max_vsize			= max_vsize;
 	rc = _send_data_to_mynode(TASKDATA, jrec);
 	xfree(jrec);
 	return rc;
@@ -856,6 +866,7 @@ static _jrec_t *_get_jrec_by_jobstep(List jrecs, uint32_t jobid,
 		uint32_t stepid) {
 	_jrec_t *jrec = NULL;
 	ListIterator i;
+
 	if (jrecs==NULL) {
 		error("no accounting job list");
 		return jrec;
@@ -1360,11 +1371,6 @@ static int _send_data_to_node_0(_jrec_t *jrec) {
 	int		rc=SLURM_SUCCESS,
 			retry;
 
-	if (!strcmp(jrec->node0, NOT_FOUND)) {
-		error("jobacct(%d): job %d has no node0");
-		return SLURM_SUCCESS;	/* can't do anything here */
-	}
-
 	debug2("jobacct(%d): in _send_data_to_node_0(job %u), nodes0,1=%s,%s"
 			", utime=%d.%06d",
 			getpid(), jrec->jobid, jrec->node0, jrec->node1,
@@ -1374,6 +1380,12 @@ static int _send_data_to_node_0(_jrec_t *jrec) {
 	if (jrec->nodeid==0) { /* don't need to send it to ourselves */
 		_process_node0_data(jrec);
 		return rc;
+	}
+
+	if (strcmp(jrec->node0, NOT_FOUND)==0) {
+		error("jobacct(%d): job %d has no node0",
+				getpid(), jrec->jobid);
+		return SLURM_SUCCESS;	/* can't do anything here */
 	}
 
 	/* make a stats_msg */
@@ -1602,8 +1614,8 @@ static void *_watch_tasks(void *arg) {
 	while(1) {	/* Do this until slurm_jobacct_task_exit() stops us */
 		sleep(prec_frequency);
 		pthread_testcancel();
-		slurm_mutex_lock(&precTable_lock);
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &tmp);
+		slurm_mutex_lock(&precTable_lock);
 		_get_process_data();	/* Update the data */ 
 		slurm_mutex_unlock(&precTable_lock);
 		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &tmp);
