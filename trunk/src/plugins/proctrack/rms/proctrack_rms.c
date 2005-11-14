@@ -42,7 +42,7 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 #include "src/common/log.h"
-#include "src/slurmd/proctrack.h"
+#include "src/slurmd/common/proctrack.h"
 
 const char plugin_name[] = "Process tracking for QsNet via the rms module";
 const char plugin_type[]      = "proctrack/rms";
