@@ -3,8 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.7.0-pre4
 =============================
- -- Remove BNR libary functions and add those for PMI (not fully 
-    implemented yet)
+ -- Remove BNR libary functions and add those for PMI (KVS and basic
+    MPI-1 functions only for now)
  -- Added Hostfile support for POE and srun.  MP_HOSTFILE env var to set
     location of hostfile.  Tasks will run from list order in the file.  
  -- Removes the slurmd's use of SysV shared memory.  Instead the slurmd
