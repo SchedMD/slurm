@@ -30,22 +30,23 @@ AC_DEFUN([X_AC_BGL],
 
       # Search for required BGL API libraries in the directory
       if test -z "$have_bgl_ar" -a -f "$bgl_dir/lib/bglbootload.a" -a -f "$bgl_dir/lib/bglsp440supt.a" ; then
-         if test ! -f "$bgl_dir/lib/libbglbridge.a" ; then
+         if test ! -f "$bgl_dir/lib64/libbglbridge_s.a" ; then
             # Establish a link as required. Libtool requires the "lib" prefix
             # to function properly. See 
             # "How to use --whole-archive arg with libtool"
             # http://www.mail-archive.com/libtool@gnu.org/msg02792.html
-            AC_MSG_ERROR([$bgl_dir/lib/libbglbridge.a is required and does not exist])
+            AC_MSG_ERROR([$bgl_dir/lib64/libbglbridge_s.a is required and does not exist])
          fi
 
          have_bgl_ar=yes
-         bgl_ldflags="$bgl_ldflags -Wl,-rpath $bgl_dir/lib -Wl,-L$bgl_dir/lib -Wl,-whole-archive -Wl,-lbglbridge -Wl,-no-whole-archive $bgl_dir/lib/bglbootload.a $bgl_dir/lib/bglsp440supt.a -lsaymessage -lbgldb -lbglmachine -ltableapi -lexpat -lbglsp"
+         bgl_ldflags="$bgl_ldflags -Wl,-rpath $bgl_dir/lib64 -Wl,-L$bgl_dir/lib64 -Wl,-whole-archive -Wl,-lbglbridge_s -Wl,-no-whole-archive $bgl_dir/lib/bglbootload.a $bgl_dir/lib/bglsp440supt.a -lsaymessage -lbgldb -lbglmachine -ltableapi -Wl,-rpath /usr/lib64 -L/usr/lib64 -lexpat"
+      
       fi
-
+      
       # Search for required DB2 library in the directory
-      if test -z "$have_db2" -a -f "$bgl_dir/lib/libdb2.so" ; then
+      if test -z "$have_db2" -a -f "$bgl_dir/lib64/libdb2.so" ; then
          have_db2=yes
-         bgl_ldflags="$bgl_ldflags -Wl,-rpath $bgl_dir/lib -L$bgl_dir/lib -ldb2"
+         bgl_ldflags="$bgl_ldflags -Wl,-rpath $bgl_dir/lib64 -L$bgl_dir/lib64 -ldb2"
       fi
 
       # Search for headers in the directory
@@ -54,7 +55,7 @@ AC_DEFUN([X_AC_BGL],
          bgl_includes="-I$bgl_dir/include"
       fi
    done
-
+	
    if test ! -z "$have_bgl_ar" -a ! -z "$have_bgl_hdr" -a ! -z "$have_db2" ; then
       AC_DEFINE(HAVE_BGL, 1, [Define to 1 if emulating or running on Blue Gene system])
       AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end o
