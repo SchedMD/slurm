@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in mpi plugin to set the ID correctly
  -- Fix for smap to save correctly already correct in 0.7
  -- Fix for srun IO thread failing to exit on SRUN_JOB_FAILED state.
+ -- Accounting bug causing segv fixed (Andy Riebs, 14oct.jobacct.patch)
 
 * Changes in SLURM 0.6.8
 ========================
