@@ -40,7 +40,7 @@
 #include "src/common/xmalloc.h"
 
 #define _DEBUG           0	/* non-zero for extra KVS logging */
-#define MSG_RE_TRANSMIT  1	/* re-transmit KVS messages this number of times */
+#define MSG_TRANSMITS    2	/* transmit KVS messages this number times */
 #define MSG_PARALLELISM 50	/* count of simultaneous KVS message threads */
 
 /* Global variables */
@@ -56,12 +56,18 @@ struct barrier_resp *barrier_ptr = NULL;
 uint16_t barrier_resp_cnt = 0;	/* tasks having reached barrier */
 uint16_t barrier_cnt = 0;	/* tasks needing to reach barrier */
 
+pthread_mutex_t agent_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t  agent_cond  = PTHREAD_COND_INITIALIZER;
 struct agent_arg {
 	struct barrier_resp *barrier_xmit_ptr;
 	int barrier_xmit_cnt;
 	struct kvs_comm **kvs_xmit_ptr;
 	int kvs_xmit_cnt;
 };				/* details for message agent manager */
+struct msg_arg {
+	struct barrier_resp *bar_ptr;
+	struct kvs_comm_set *kvs_ptr;
+};
 int agent_cnt = 0;		/* number of active message agents */
 
 static void *_agent(void *x);
@@ -71,6 +77,7 @@ static void _kvs_xmit_tasks(void);
 static void _merge_named_kvs(struct kvs_comm *kvs_orig,
 		struct kvs_comm *kvs_new);
 static void _move_kvs(struct kvs_comm *kvs_new);
+static void *_msg_thread(void *x);
 static void _print_kvs(void);
 
 /* Transmit the KVS keypairs to all tasks, waiting at a barrier
@@ -104,64 +111,98 @@ static void _kvs_xmit_tasks(void)
 		fatal("pthread_create");
 }
 
+static void *_msg_thread(void *x)
+{
+	struct msg_arg *msg_arg_ptr = (struct msg_arg *) x;
+	int rc, success = 0, task_fd;
+	slurm_msg_t msg_send, msg_rcv;
+
+	debug2("KVS_Barrier msg to %s:%u",
+		msg_arg_ptr->bar_ptr->hostname,
+		msg_arg_ptr->bar_ptr->port);
+	msg_send.msg_type = PMI_KVS_GET_RESP;
+	msg_send.data = (void *) msg_arg_ptr->kvs_ptr;
+	slurm_set_addr(&msg_send.address,
+		msg_arg_ptr->bar_ptr->port,
+		msg_arg_ptr->bar_ptr->hostname);
+	if ((task_fd = slurm_open_msg_conn(&msg_send.address)) < 0) {
+		error("slurm_init_msg_engine_port: %m");
+		goto fini;
+	}
+	if ((rc = slurm_send_node_msg(task_fd, &msg_send)) < 0) {
+		error("KVS_Barrier send data fail to %s",
+			msg_arg_ptr->bar_ptr->hostname);
+		(void) slurm_shutdown_msg_conn(task_fd);
+		goto fini;
+	}
+	rc = slurm_receive_msg(task_fd, &msg_rcv, 0);
+	(void) slurm_shutdown_msg_conn(task_fd);
+	if (rc < 0) {
+		error("KVS_Barrier confirm fail from %s",
+			msg_arg_ptr->bar_ptr->hostname);
+		goto fini;
+	}
+	if (msg_rcv.msg_type != RESPONSE_SLURM_RC) {
+		error("KVS_Barrier confirm type %d from %s",
+			msg_rcv.msg_type,
+			msg_arg_ptr->bar_ptr->hostname);
+		goto fini;
+	}
+	rc = ((return_code_msg_t *) msg_rcv.data)->return_code;
+	slurm_free_return_code_msg((return_code_msg_t *) msg_rcv.data);
+	if (rc != SLURM_SUCCESS) {
+		error("KVS_Barrier confirm from %s, rc=%d",
+			msg_arg_ptr->bar_ptr->hostname, rc);
+	} else {
+		/* successfully transmitted KVS keypairs */
+		success = 1;
+	}
+
+fini:	slurm_mutex_lock(&agent_mutex);
+	agent_cnt--;
+	if (success)
+		msg_arg_ptr->bar_ptr->port = 0;
+	slurm_mutex_unlock(&agent_mutex);
+	pthread_cond_signal(&agent_cond);
+	xfree(x);
+	return NULL;
+}
+
 static void *_agent(void *x)
 {
 	struct agent_arg *args = (struct agent_arg *) x;
 	struct kvs_comm_set kvs_set;
-	int i, j, rc, task_fd;
-	int success_xmit = 0, retries = 0;
-	slurm_msg_t msg_send, msg_rcv;
+	struct msg_arg *msg_args;
+	int i, j;
+	pthread_t msg_id;
+	pthread_attr_t attr;
 
 	/* send the messages */
 	kvs_set.kvs_comm_recs = args->kvs_xmit_cnt;
 	kvs_set.kvs_comm_ptr  = args->kvs_xmit_ptr;
-	msg_send.msg_type = PMI_KVS_GET_RESP;
-	msg_send.data = (void *) &kvs_set;
-	for (i=0; i<args->barrier_xmit_cnt; i++) {
-		if (args->barrier_xmit_ptr[i].port == 0)
-			continue;
-		debug2("KVS_Barrier msg to %s:%u", 
-			args->barrier_xmit_ptr[i].hostname, 
-			args->barrier_xmit_ptr[i].port);
-		slurm_set_addr(&msg_send.address, 
-			args->barrier_xmit_ptr[i].port,
-			args->barrier_xmit_ptr[i].hostname);
-		if ((task_fd = slurm_open_msg_conn(&msg_send.address)) < 0) {
-			error("slurm_init_msg_engine_port:  %m");
-			break;
+	for (i=0; i<MSG_TRANSMITS; i++) {
+		for (j=0; j<args->barrier_xmit_cnt; j++) {
+			if (args->barrier_xmit_ptr[j].port == 0)
+				continue;
+			slurm_mutex_lock(&agent_mutex);
+			while (agent_cnt >= MSG_PARALLELISM)
+				pthread_cond_wait(&agent_cond, &agent_mutex);
+			agent_cnt++;
+			slurm_mutex_unlock(&agent_mutex);
+
+			msg_args = xmalloc(sizeof(struct msg_arg));
+			msg_args->bar_ptr = &args->barrier_xmit_ptr[j];
+			msg_args->kvs_ptr = &kvs_set;
+			slurm_attr_init(&attr);
+			pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+			if (pthread_create(&msg_id, &attr, _msg_thread, 
+					(void *) msg_args)) {
+				fatal("pthread_create: %m");
+			}
 		}
-		rc = slurm_send_node_msg(task_fd, &msg_send);
-		if (rc < 0) {
-			error("KVS_Barrier send data fail to %s",
-				args->barrier_xmit_ptr[i].hostname);
-			(void) slurm_shutdown_msg_conn(task_fd);
-			continue;
-		}
-		rc = slurm_receive_msg(task_fd, &msg_rcv, 0);
-		(void) slurm_shutdown_msg_conn(task_fd);
-		if (rc < 0) {
-			error("KVS_Barrier confirm fail from %s",
-				args->barrier_xmit_ptr[i].hostname);
-			continue;
-		}
-		if (msg_rcv.msg_type != RESPONSE_SLURM_RC) {
-			error("KVS_Barrier confirm type %d from %s",
-				msg_rcv.msg_type,
-				args->barrier_xmit_ptr[i].hostname);
-			continue;
-		}
-		rc = ((return_code_msg_t *) msg_rcv.data)->return_code;
-		slurm_free_return_code_msg((return_code_msg_t *) msg_rcv.data);
-		if (rc != SLURM_SUCCESS) {
-			error("KVS_Barrier confirm from %s, rc=%d",
-				args->barrier_xmit_ptr[i].hostname, rc);
-		} else {
-			/* successfully transmitted KVS keypairs */
-			args->barrier_xmit_ptr[i].port = 0;
-			success_xmit++;
-		}
+		while (agent_cnt > 0)
+			pthread_cond_wait(&agent_cond, &agent_mutex);
 	}
-	
 
 	/* Release allocated memory */
 	for (i=0; i<args->barrier_xmit_cnt; i++)
