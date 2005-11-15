@@ -360,6 +360,7 @@ proc wait_for_job { job_id state } {
 proc test_front_end { } {
 	global scontrol bin_bash bin_grep
 
+	log_user 0
 	set bluegene 0
 	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectType"
 	expect {
@@ -370,7 +371,8 @@ proc test_front_end { } {
 		eof {
 			wait
 		}
-	}	
+	}
+	log_user 1
 	
 	return $bluegene
 }
