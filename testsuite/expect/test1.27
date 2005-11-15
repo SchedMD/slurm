@@ -44,55 +44,78 @@ set timeout $max_job_delay
 spawn $srun -N1 -n1 -t1 $bin_env
 expect {
 	-re "SLURM_($alpha_under)=($alpha_numeric)" {
-                if {[string compare $expect_out(1,string) "JOBID"] == 0 &&
-		    $expect_out(2,string) > 0} {
+		if {[string compare $expect_out(1,string) "CPUS_ON_NODE"] == 0
+		&& $expect_out(2,string) > 0} {
 			incr matches
 			exp_continue
 		}
-                if {[string compare $expect_out(1,string) "NODEID"] == 0 && 
-		    $expect_out(2,string) == 0} {
+		if {[string compare $expect_out(1,string) "CPUS_PER_TASK"] == 0
+		&& $expect_out(2,string) > 0} {
+			incr matches
+			exp_continue
+		}
+                if {[string compare $expect_out(1,string) "JOBID"] == 0
+		&& $expect_out(2,string) > 0} {
+			incr matches
+			exp_continue
+		}
+                if {[string compare $expect_out(1,string) "LAUNCH_NODE_IPADDR"] == 0} {
                         incr matches
 			exp_continue
                 }
-                if {[string compare $expect_out(1,string) "PROCID"] == 0 && 
-		    $expect_out(2,string) == 0} {
+                if {[string compare $expect_out(1,string) "LOCALID"] == 0} {
                         incr matches
 			exp_continue
                 }
-                if {[string compare $expect_out(1,string) "NNODES"] == 0 && 
-		    $expect_out(2,string) == 1} {
+                if {[string compare $expect_out(1,string) "NNODES"] == 0
+		&& $expect_out(2,string) > 0} {
                         incr matches
 			exp_continue
                 }
-                if {[string compare $expect_out(1,string) "NPROCS"] == 0 && 
-		    $expect_out(2,string) == 1} {
+                if {[string compare $expect_out(1,string) "NODEID"] == 0} {
                         incr matches
 			exp_continue
                 }
-		if {[string compare $expect_out(1,string) "CPUS_ON_NODE"] == 0 &&
-		    $expect_out(2,string) > 0} {
+		if {[string compare $expect_out(1,string) "NODELIST"] == 0} {
 			incr matches
 			exp_continue
 		}
-		if {[string compare $expect_out(1,string) "LAUNCH_NODE_IPADDR"] == 0 &&
-		    $expect_out(2,string) > 0} {
+		if {[string compare $expect_out(1,string) "NPROCS"] == 0
+		&& $expect_out(2,string) > 0} {
 			incr matches
 			exp_continue
 		}
-		if {[string compare $expect_out(1,string) "NODELIST"] == 0 &&
-		    $expect_out(2,string) > 0} {
+		if {[string compare $expect_out(1,string) "PROCID"] == 0} {
 			incr matches
 			exp_continue
 		}
-		if {[string compare $expect_out(1,string) "TASKS_PER_NODE"] == 0} {
+		if {[string compare $expect_out(1,string) "SRUN_COMM_HOST"] == 0} {
 			incr matches
 			exp_continue
 		}
-		if {[string compare $expect_out(1,string) "DISTRIBUTION"] == 0 } {
+		if {[string compare $expect_out(1,string) "SRUN_COMM_PORT"] == 0
+		&& $expect_out(2,string) > 0} {
 			incr matches
 			exp_continue
 		}
-
+		if {[string compare $expect_out(1,string) "STEPID"] == 0} {
+			incr matches
+			exp_continue
+		}
+		if {[string compare $expect_out(1,string) "TASKS_PER_NODE"] == 0
+		&& $expect_out(2,string) > 0} {
+			incr matches
+			exp_continue
+		}
+		if {[string compare $expect_out(1,string) "TASK_PID"] == 0
+		&& $expect_out(2,string) > 0} {
+			incr matches
+			exp_continue
+		}
+		if {[string compare $expect_out(1,string) "UMASK"] == 0} {
+			incr matches
+			exp_continue
+		}
 		exp_continue
 	}
 	timeout {
@@ -106,7 +129,7 @@ expect {
 	}
 }
 
-if {$matches != 10} {
+if {$matches != 16} {
 	send_user "\nFAILURE: Not all SLURM environment variables set ($matches of 10)\n"
 	set exit_code 1
 }
