@@ -1108,7 +1108,7 @@ char *elapsedTime(long secs, long usecs)
 	minutes = res.quot;
 	seconds = res.rem;
 	if (days) {
-		snprintf(daybuf, sizeof(daybuf), "%d:", days);
+		snprintf(daybuf, sizeof(daybuf), "%d-", days);
 		snprintf(hourbuf, sizeof(hourbuf), "%02d:", hours);
 	} else if (hours)
 		snprintf(hourbuf, sizeof(hourbuf), "%2d:", hours);

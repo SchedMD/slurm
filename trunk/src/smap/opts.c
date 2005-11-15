@@ -124,7 +124,7 @@ extern void snprint_time(char *buf, size_t buf_size, time_t time)
 
 		if (days)
 			snprintf(buf, buf_size,
-				"%ld:%2.2ld:%2.2ld:%2.2ld",
+				"%ld-%2.2ld:%2.2ld:%2.2ld",
 				days, hours, minutes, seconds);
 		else if (hours)
 			snprintf(buf, buf_size,

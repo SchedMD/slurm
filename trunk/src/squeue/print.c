@@ -205,7 +205,7 @@ int _print_secs(long time, int width, bool right, bool cut_output)
 
 	if (days) 
 		snprintf(str, FORMAT_STRING_SIZE,
-			 "%ld:%2.2ld:%2.2ld:%2.2ld",
+			 "%ld-%2.2ld:%2.2ld:%2.2ld",
 		         days, hours, minutes, seconds);
 	else if (hours)
 		snprintf(str, FORMAT_STRING_SIZE,

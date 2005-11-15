@@ -20,6 +20,8 @@ documents those changes that are of interest to users and admins.
  -- Change SLURM libraries and associated header files from GPL to LGPL 
     licensing. All other SLURM components are still distributed under 
     the GPL license.
+ -- Time format in sinfo/squeue/smap/sacct changed from D:HH:MM:SS to 
+    D-HH:MM:SS per POSIX standards document.
 
 * Changes in SLURM 0.7.0-pre3
 =============================
