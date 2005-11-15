@@ -1055,7 +1055,7 @@ _kill_all_active_steps(void *auth_cred, uint32_t jobid, int sig, bool batch)
 	while (stepd = list_next(i)) {
 		if (stepd->jobid != jobid) {
 			/* multiple jobs expected on shared nodes */
-			debug3("Step from other job: jobid=%d (this jobid=%d)",
+			debug3("Step from other job: jobid=%u (this jobid=%u)",
 			      stepd->jobid, jobid);
 			continue;
 		}
@@ -1068,12 +1068,12 @@ _kill_all_active_steps(void *auth_cred, uint32_t jobid, int sig, bool batch)
 		debug2("container signal %d to job %u.%u",
 		       sig, jobid, stepd->stepid);
 		if (stepd_signal_container(*stepd, auth_cred, sig) < 0)
-			debug("kill jid %d: %m", jobid);
+			debug("kill jobid=%u: %m", jobid);
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);
 	if (step_cnt == 0)
-		debug2("No steps in jobid %d to send signal %d", jobid, sig);
+		debug2("No steps in jobid %u to send signal %d", jobid, sig);
 	return step_cnt;
 }
 
