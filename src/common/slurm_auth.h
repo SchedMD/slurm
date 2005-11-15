@@ -142,7 +142,14 @@ extern int	g_slurm_auth_verify( void *cred, void *hosts, int timeout );
 extern uid_t	g_slurm_auth_get_uid( void *cred );
 extern gid_t	g_slurm_auth_get_gid( void *cred );
 extern int	g_slurm_auth_pack( void *cred, Buf buf );
+
+/*
+ * WARNING!  The returned auth pointer WILL have pointers
+ *           into "buf" so do NOT free "buf" until you are done
+ *           with the auth pointer.
+ */
 extern void	*g_slurm_auth_unpack( Buf buf );
+
 int	g_slurm_auth_print( void *cred, FILE *fp );
 int	g_slurm_auth_errno( void *cred );
 const char *g_slurm_auth_errstr( int slurm_errno );
