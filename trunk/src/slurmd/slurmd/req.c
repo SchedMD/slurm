@@ -1068,7 +1068,7 @@ _kill_all_active_steps(void *auth_cred, uint32_t jobid, int sig, bool batch)
 		debug2("container signal %d to job %u.%u",
 		       sig, jobid, stepd->stepid);
 		if (stepd_signal_container(*stepd, auth_cred, sig) < 0)
-			debug("kill jobid=%u: %m", jobid);
+			debug("kill jobid=%u failed: %m", jobid);
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);
@@ -1235,6 +1235,7 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	int		delay;
 	char           *bgl_part_id = NULL;
 
+	debug("_rpc_terminate_job, uid = %d", uid);
 	/* 
 	 * check that requesting user ID is the SLURM UID
 	 */

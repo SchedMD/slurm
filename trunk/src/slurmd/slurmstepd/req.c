@@ -353,8 +353,11 @@ _handle_signal_process_group(int fd, slurmd_job_t *job)
 	safe_read(fd, get_buf_data(buf), buf_len);
 
 	debug3("  buf_len = %d", buf_len);
-	auth_cred = g_slurm_auth_unpack(buf);
-	free_buf(buf); /* takes care of xfree'ing data as well */
+	if ((auth_cred = g_slurm_auth_unpack(buf)) == NULL) {
+		error("unpack of the auth_cred unsuccessful")
+		rc = EPERM;
+		goto done;
+	}
 
 	/*
 	 * Authenticate the user using the auth credential.
@@ -365,7 +368,7 @@ _handle_signal_process_group(int fd, slurmd_job_t *job)
 		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
 		      (long)uid, job->jobid, job->stepid, (long)job->uid);
 		rc = EPERM;
-		goto done;
+		goto done2;
 	}
 
 	/*
@@ -375,7 +378,7 @@ _handle_signal_process_group(int fd, slurmd_job_t *job)
 		debug ("step %u.%u invalid [jmgr_pid:%d pgid:%u]", 
                        job->jobid, job->stepid, job->jmgr_pid, job->pgid);
 		rc = ESLURMD_JOB_NOTRUNNING;
-		goto done;
+		goto done2;
 	}
 
 	if (killpg(job->pgid, signal) == -1) {
@@ -388,8 +391,10 @@ _handle_signal_process_group(int fd, slurmd_job_t *job)
 			signal, job->jobid, job->stepid, job->pgid);
 	}
 	
-
+done2:
+	g_slurm_auth_destroy(auth_cred);
 done:
+	free_buf(buf); /* takes care of xfree'ing data as well */
 	/* Send the return code */
 	safe_write(fd, &rc, sizeof(int));
 rwfail:
@@ -417,8 +422,11 @@ _handle_signal_task_local(int fd, slurmd_job_t *job)
 	safe_read(fd, get_buf_data(buf), buf_len);
 
 	debug3("  buf_len = %d", buf_len);
-	auth_cred = g_slurm_auth_unpack(buf);
-	free_buf(buf); /* takes care of xfree'ing data as well */
+	if ((auth_cred = g_slurm_auth_unpack(buf)) == NULL) {
+		error("unpack of the auth_cred unsuccessful");
+		rc = EPERM;
+		goto done;
+	}
 
 	/*
 	 * Authenticate the user using the auth credential.
@@ -429,7 +437,7 @@ _handle_signal_task_local(int fd, slurmd_job_t *job)
 		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
 		      (long)uid, job->jobid, job->stepid, (long)job->uid);
 		rc = EPERM;
-		goto done;
+		goto done2;
 	}
 
 	/*
@@ -439,21 +447,21 @@ _handle_signal_task_local(int fd, slurmd_job_t *job)
 		debug("step %u.%u invalid local task id %d", 
 		      job->jobid, job->stepid, ltaskid);
 		rc = SLURM_ERROR;
-		goto done;
+		goto done2;
 	}
 	if (!job->task
 	    || !job->task[ltaskid]) {
 		debug("step %u.%u no task info for task id %d",
 		      job->jobid, job->stepid, ltaskid);
 		rc = SLURM_ERROR;
-		goto done;
+		goto done2;
 	}
 	if (job->task[ltaskid]->pid <= 1) {
 		debug("step %u.%u invalid pid %d for task %d",
 		      job->jobid, job->stepid,
 		      job->task[ltaskid]->pid, ltaskid);
 		rc = SLURM_ERROR;
-		goto done;
+		goto done2;
 	}
 
 	/*
@@ -470,8 +478,10 @@ _handle_signal_task_local(int fd, slurmd_job_t *job)
 			job->task[ltaskid]->pid);
 	}
 	
-
+done2:
+	g_slurm_auth_destroy(auth_cred);
 done:
+	free_buf(buf); /* takes care of xfree'ing data as well */
 	/* Send the return code */
 	safe_write(fd, &rc, sizeof(int));
 rwfail:
@@ -497,8 +507,12 @@ _handle_signal_container(int fd, slurmd_job_t *job)
 	safe_read(fd, get_buf_data(buf), buf_len);
 
 	debug3("  buf_len = %d", buf_len);
-	auth_cred = g_slurm_auth_unpack(buf);
-	free_buf(buf); /* takes care of xfree'ing data as well */
+	if ((auth_cred = g_slurm_auth_unpack(buf)) == NULL) {
+		error("unpack of the auth_cred unsuccessful");
+		rc = -1;
+		errno = EPERM;
+		goto done;
+	}
 
 	/*
 	 * Authenticate the user using the auth credential.
@@ -511,7 +525,7 @@ _handle_signal_container(int fd, slurmd_job_t *job)
 		      (long)uid, job->jobid, job->stepid, (long)job->uid);
 		rc = -1;
 		errno = EPERM;
-		goto done;
+		goto done2;
 	}
 
 	/*
@@ -522,7 +536,7 @@ _handle_signal_container(int fd, slurmd_job_t *job)
 			job->jobid, job->stepid, job->cont_id);
 		rc = -1;
 		errno = ESLURMD_JOB_NOTRUNNING;
-		goto done;
+		goto done2;
 	}
 
 	if (slurm_container_signal(job->cont_id, signal) < 0) {
@@ -535,7 +549,10 @@ _handle_signal_container(int fd, slurmd_job_t *job)
 			signal, job->jobid, job->stepid);
 	}
 
+done2:
+	g_slurm_auth_destroy(auth_cred);
 done:
+	free_buf(buf); /* takes care of xfree'ing data as well */
 	/* Send the return code and errno */
 	safe_write(fd, &rc, sizeof(int));
 	safe_write(fd, &errno, sizeof(int));
@@ -567,16 +584,19 @@ _handle_attach(int fd, slurmd_job_t *job)
 	safe_read(fd, get_buf_data(buf), buf_len);
 
 	debug3("buf_len = %d", buf_len);
-	auth_cred = g_slurm_auth_unpack(buf);
+	if ((auth_cred = g_slurm_auth_unpack(buf)) == NULL) {
+		error("unpack of the auth_cred unsuccessful");
+		rc = EPERM;
+		goto done;
+	}
 	job_cred = slurm_cred_unpack(buf);
-	free_buf(buf); /* takes care of xfree'ing data as well */
 
 	/*
 	 * Check if jobstep is actually running.
 	 */
 	if (job->state != SLURMSTEPD_STEP_RUNNING) {
 		rc = ESLURMD_JOB_NOTRUNNING;
-		goto done;
+		goto done2;
 	}
 
 	/*
@@ -590,7 +610,7 @@ _handle_attach(int fd, slurmd_job_t *job)
 				(long) uid, job->jobid, job->stepid,
 				(long) job->uid);
 		rc = EPERM;
-		goto done;
+		goto done2;
 	}
 
 	/*
@@ -602,7 +622,10 @@ _handle_attach(int fd, slurmd_job_t *job)
 	list_prepend(job->sruns, (void *) srun);
 
 	rc = io_client_connect(srun, job);
+done2:
+	g_slurm_auth_destroy(auth_cred);
 done:
+	free_buf(buf); /* takes care of xfree'ing data as well */
 	/* Send the return code */
 	safe_write(fd, &rc, sizeof(int));
 

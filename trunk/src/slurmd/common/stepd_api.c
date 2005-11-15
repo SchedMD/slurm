@@ -111,7 +111,8 @@ stepd_signal(step_loc_t step, void *auth_cred, int signal)
 
 	/* pack auth credential */
 	buf = init_buf(0);
-	g_slurm_auth_pack(auth_cred, buf);
+	if (g_slurm_auth_pack(auth_cred, buf) == SLURM_ERROR)
+		error("g_slurm_auth_pack failed!: %m");
 	buf_len = size_buf(buf);
 	debug("buf_len = %d", buf_len);
 
@@ -150,7 +151,8 @@ stepd_signal_task_local(step_loc_t step, void *auth_cred,
 
 	/* pack auth credential */
 	buf = init_buf(0);
-	g_slurm_auth_pack(auth_cred, buf);
+	if (g_slurm_auth_pack(auth_cred, buf) == SLURM_ERROR)
+		error("g_slurm_auth_pack failed!: %m");
 	buf_len = size_buf(buf);
 	debug("buf_len = %d", buf_len);
 
@@ -190,7 +192,8 @@ stepd_signal_container(step_loc_t step, void *auth_cred, int signal)
 
 	/* pack auth credential */
 	buf = init_buf(0);
-	g_slurm_auth_pack(auth_cred, buf);
+	if (g_slurm_auth_pack(auth_cred, buf) == SLURM_ERROR)
+		error("g_slurm_auth_pack failed!: %m");
 	buf_len = size_buf(buf);
 	debug("buf_len = %d", buf_len);
 
@@ -236,7 +239,8 @@ stepd_attach(step_loc_t step, slurm_addr *ioaddr, slurm_addr *respaddr,
 
 	/* pack auth and job credentials */
 	buf = init_buf(0);
-	g_slurm_auth_pack(auth_cred, buf);
+	if (g_slurm_auth_pack(auth_cred, buf) == SLURM_ERROR)
+		error("g_slurm_auth_pack failed!: %m");
 	slurm_cred_pack(job_cred, buf);
 	buf_len = size_buf(buf);
 	debug("buf_len = %d", buf_len);
