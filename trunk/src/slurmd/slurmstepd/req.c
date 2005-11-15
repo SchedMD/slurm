@@ -354,7 +354,8 @@ _handle_signal_process_group(int fd, slurmd_job_t *job)
 
 	debug3("  buf_len = %d", buf_len);
 	if ((auth_cred = g_slurm_auth_unpack(buf)) == NULL) {
-		error("unpack of the auth_cred unsuccessful")
+		error("g_slurm_auth_unpack: %s", 
+			g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
 		rc = EPERM;
 		goto done;
 	}
@@ -508,7 +509,8 @@ _handle_signal_container(int fd, slurmd_job_t *job)
 
 	debug3("  buf_len = %d", buf_len);
 	if ((auth_cred = g_slurm_auth_unpack(buf)) == NULL) {
-		error("unpack of the auth_cred unsuccessful");
+		error("g_slurm_auth_unpack: %s", 
+			g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
 		rc = -1;
 		errno = EPERM;
 		goto done;
