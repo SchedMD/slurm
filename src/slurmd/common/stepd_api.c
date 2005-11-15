@@ -53,8 +53,10 @@ step_connect(step_loc_t step)
 	struct sockaddr_un addr;
 	char *name = NULL;
 
-	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
+	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+		debug("step_connect: socket: %m");
 		return -1;
+	}
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
@@ -64,6 +66,7 @@ step_connect(step_loc_t step)
 	len = strlen(addr.sun_path)+1 + sizeof(addr.sun_family);
 
 	if (connect(fd, (struct sockaddr *) &addr, len) < 0) {
+		debug("step_connect: connect: %m");
 		xfree(name);
 		close(fd);
 		return -1;
@@ -192,8 +195,10 @@ stepd_signal_container(step_loc_t step, void *auth_cred, int signal)
 
 	/* pack auth credential */
 	buf = init_buf(0);
-	if (g_slurm_auth_pack(auth_cred, buf) == SLURM_ERROR)
-		error("g_slurm_auth_pack failed!: %m");
+	if (g_slurm_auth_pack(auth_cred, buf) == SLURM_ERROR) {
+		error("g_slurm_auth_pack: %s",
+			g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+	}
 	buf_len = size_buf(buf);
 	debug("buf_len = %d", buf_len);
 
