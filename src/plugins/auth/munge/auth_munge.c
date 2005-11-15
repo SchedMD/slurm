@@ -111,7 +111,7 @@ static munge_info_t * cred_info_create(munge_ctx_t ctx);
 static void           cred_info_destroy(munge_info_t *);
 static void           _print_cred_info(munge_info_t *mi);
 static void           _print_cred(munge_ctx_t ctx);
-static int            _decode_cred(char *m, slurm_auth_credential_t *c);
+static int            _decode_cred(slurm_auth_credential_t *c);
 
 
 /*
@@ -201,7 +201,8 @@ slurm_auth_destroy( slurm_auth_credential_t *cred )
 	/*
 	 * Note: Munge cred not encoded with xmalloc()
 	 */
-	if (cred->m_str) free(cred->m_str);
+	if (cred->m_str)
+		free(cred->m_str);
 	xfree(cred);
 	return SLURM_SUCCESS;
 }
@@ -224,7 +225,7 @@ slurm_auth_verify( slurm_auth_credential_t *c, void *argv )
 	if (c->verified) 
 		return SLURM_SUCCESS;
 
-	if (_decode_cred(c->m_str, c) < 0) 
+	if (_decode_cred(c) < 0) 
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -241,7 +242,7 @@ slurm_auth_get_uid( slurm_auth_credential_t *cred )
 		plugin_errno = SLURM_AUTH_BADARG;
 		return SLURM_AUTH_NOBODY;
 	}
-	if (!cred->verified) {
+	if ((!cred->verified) && (_decode_cred(cred) < 0)) {
 		cred->cr_errno = SLURM_AUTH_INVALID;
 		return SLURM_AUTH_NOBODY;
 	}
@@ -262,7 +263,7 @@ slurm_auth_get_gid( slurm_auth_credential_t *cred )
 		plugin_errno = SLURM_AUTH_BADARG;
 		return SLURM_AUTH_NOBODY;
 	}
-	if (!cred->verified) {
+	if ((!cred->verified) && (_decode_cred(cred) < 0)) {
 		cred->cr_errno = SLURM_AUTH_INVALID;
 		return SLURM_AUTH_NOBODY;
 	}
@@ -313,7 +314,6 @@ slurm_auth_unpack( Buf buf )
 {
 	slurm_auth_credential_t *cred;
 	char    *type;
-	char    *m;	
 	uint16_t size;
 	uint32_t version;
 	
@@ -352,14 +352,10 @@ slurm_auth_unpack( Buf buf )
 
 	xassert(cred->magic = MUNGE_MAGIC);
 
-	if (unpackmem_ptr(&m, &size, buf) < 0) {
+	if (unpackstr_malloc(&cred->m_str, &size, buf) < 0) {
 		plugin_errno = SLURM_AUTH_UNPACK;
 		goto unpack_error;
 	}
-
-	if (_decode_cred(m, cred) < 0) 
-		goto unpack_error;
-
 	return cred;
 
  unpack_error:
@@ -424,17 +420,17 @@ slurm_auth_errstr( int slurm_errno )
 
 
 /*
- * Decode the munge encoded credential `m' placing results, if validated,
+ * Decode the munge encoded credential `m_str' placing results, if validated,
  * into slurm credential `c'
  */
 static int 
-_decode_cred(char *m, slurm_auth_credential_t *c)
+_decode_cred(slurm_auth_credential_t *c)
 {
 	int retry = 2;
 	munge_err_t e;
 	munge_ctx_t ctx;
 
-	if ((c == NULL) || (m == NULL)) 
+	if (c == NULL) 
 		return SLURM_ERROR;
 
 	xassert(c->magic == MUNGE_MAGIC);
@@ -448,7 +444,7 @@ _decode_cred(char *m, slurm_auth_credential_t *c)
 	}
 
     again:
-	if ((e = munge_decode(m, ctx, &c->buf, &c->len, &c->uid, &c->gid))) {
+	if ((e = munge_decode(c->m_str, ctx, &c->buf, &c->len, &c->uid, &c->gid))) {
 		error ("Munge decode failed: %s %s", 
 			munge_ctx_strerror(ctx), retry ? "(retrying ...)": "");
 
