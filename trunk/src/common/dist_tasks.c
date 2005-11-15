@@ -47,6 +47,7 @@
 #include "src/common/dist_tasks.h"
 #include "src/common/log.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 static int _task_layout_hostfile(slurm_step_layout_t *step_layout);
 static int _task_layout_block(slurm_step_layout_t *step_layout);
