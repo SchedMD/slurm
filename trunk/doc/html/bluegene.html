@@ -205,8 +205,11 @@ keys scroll the window containing the text information.</p>
 
 <h3>System Administration</h3>
 
-<p>Building a Blue Gene compatible system is dependent upon the <i>configure</i>
-program locating some expected files. 
+<p>As of IBM's REV 2 driver SLURM must be built in 64bit mod.  
+This can be done by specifying <i>CFLAGS=-m64 CXX="g++ -m64"</i>.  Both CFLAGS
+and CXX must be set for slurm to compile correctly.
+<p>Building a Blue Gene compatible system is dependent upon the 
+<i>configure</i> program locating some expected files. 
 In particular, the configure script searches for <i>libdb2.so</i> in the 
 directories <i>/home/bgdb2cli/sqllib</i> and <i>/u/bgdb2cli/sqllib</i>.
 If your DB2 library file is in a different location, use the configure 
