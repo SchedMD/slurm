@@ -92,13 +92,26 @@ expect {
 		}
 		exp_continue
 	}
+	-re "cannot open shared object" {
+		send_user "\nWARNING: Set LD_LIBRARY_PATH environment variable "
+		send_user "to include this object's directory\n"
+		exp_continue
+	}
 	-re "Do you want to stop the job now?.*:" {
 		incr matches
 		send "yes\n"
 		exp_continue
 	}
-	-re "Attached to parallel task 5" {
+	-re "Attached to parallel task ($number).*" {
 		incr matches
+		if {$expect_out(1,string) == 5} {
+			send "G\n"
+		}
+		exp_continue
+	}
+	-re "Loaded MPI.*($number).*" {
+#		This would be a re-send of "G" above, but totalviewcli
+#		seems to ignore any input until after sending this message
 		send "G\n"
 		exp_continue
 	}
@@ -132,8 +145,8 @@ if {$no_capability != 0} {
 	send_user "\nWARNING: Unable to run test with present configuration\n"
 	exit 0
 }
-if {$matches != 9} {
-	send_user "\nFAILURE: totalviewcli operation matches = $matches\n"
+if {$matches != 12} {
+	send_user "\nFAILURE: totalviewcli operation matches $matches of 12\n"
 	send_user "Remove your ~/.totalview directory and try again\n"
 	set exit_code 1
 }
