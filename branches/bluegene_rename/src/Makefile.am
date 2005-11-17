@@ -1,3 +1,3 @@
 # $Id$
 
-SUBDIRS = common api slurmctld slurmd srun sacct scontrol scancel squeue sinfo bgl_block_allocator smap plugins 
+SUBDIRS = common api slurmctld slurmd plugins srun sacct scontrol scancel squeue sinfo smap
