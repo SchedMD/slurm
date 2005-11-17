@@ -68,7 +68,7 @@ extern void parse_command_line(int argc, char *argv[])
 			else if (!strcmp(optarg, "s"))
 				tmp = SLURMPART;
 			else if (!strcmp(optarg, "b"))
-				tmp = BGLPART;
+				tmp = BGPART;
 			else if (!strcmp(optarg, "c"))
 				tmp = COMMANDS;
 

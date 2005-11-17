@@ -719,8 +719,9 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 		/* 
 	 	 * Run job prolog on this node
 	 	 */
-		select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_PART_ID, 
-			&bgl_part_id);
+		select_g_get_jobinfo(req->select_jobinfo, 
+				     SELECT_DATA_BLOCK_ID, 
+				     &bgl_part_id);
 
 #ifdef HAVE_BGL
 		/* BlueGene prolog waits for partition boot and is very slow.
@@ -1333,7 +1334,7 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	}
 
 	save_cred_state(conf->vctx);
-	select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_PART_ID,
+	select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_BLOCK_ID,
 		&bgl_part_id);
 	rc = _run_epilog(req->job_id, req->job_uid, bgl_part_id);
 	xfree(bgl_part_id);

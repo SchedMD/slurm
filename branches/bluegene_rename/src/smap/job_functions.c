@@ -177,9 +177,9 @@ static void _print_header_job(void)
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "PARTITION");
 		pa_system_ptr->xcord += 10;
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "BGL_BLOCK");
+			  pa_system_ptr->xcord, "BG_BLOCK");
 		pa_system_ptr->xcord += 18;
 #endif
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
@@ -204,8 +204,8 @@ static void _print_header_job(void)
 	} else {
 		printf("JOBID ");
 		printf("PARTITION ");
-#ifdef HAVE_BGL
-		printf("       BGL_BLOCK ");
+#ifdef HAVE_BG
+		printf("       BG_BLOCK ");
 #endif
 		printf("    USER ");
 		printf("  NAME ");
@@ -236,13 +236,13 @@ static int _print_text_job(job_info_t * job_ptr)
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "%.10s", job_ptr->partition);
 		pa_system_ptr->xcord += 10;
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "%.16s", 
 			  select_g_sprint_jobinfo(job_ptr->select_jobinfo, 
 						  time_buf, 
 						  sizeof(time_buf), 
-						  SELECT_PRINT_BGL_ID));
+						  SELECT_PRINT_BG_ID));
 		pa_system_ptr->xcord += 18;
 #endif
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
@@ -299,12 +299,12 @@ static int _print_text_job(job_info_t * job_ptr)
 	} else {
 		printf("%5d ", job_ptr->job_id);
 		printf("%9.9s ", job_ptr->partition);
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 		printf("%16.16s ", 
 		       select_g_sprint_jobinfo(job_ptr->select_jobinfo, 
 					       time_buf, 
 					       sizeof(time_buf), 
-					       SELECT_PRINT_BGL_ID));
+					       SELECT_PRINT_BG_ID));
 #endif
 		printf("%8.8s ", uid_to_string((uid_t) job_ptr->user_id));
 		printf("%6.6s ", job_ptr->name);

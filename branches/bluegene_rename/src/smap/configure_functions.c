@@ -58,7 +58,7 @@ static void _delete_allocated_parts(List allocated_partitions)
 	while ((allocated_part = list_pop(allocated_partitions)) != NULL) {
 		remove_part(allocated_part->nodes,0);
 		list_destroy(allocated_part->nodes);
-		delete_pa_request(allocated_part->request);
+		delete_ba_request(allocated_part->request);
 		xfree(allocated_part);
 	}
 	list_destroy(allocated_partitions);
@@ -209,7 +209,7 @@ static int _create_allocation(char *com, List allocated_partitions)
 		  It will send a request back which we will throw into
 		  a list just incase we change something later.		   
 		*/
-		if(!new_pa_request(request)) {
+		if(!new_ba_request(request)) {
 			memset(error_string,0,255);
 			if(request->size!=-1) {
 				sprintf(error_string, 
@@ -262,7 +262,7 @@ geo_error_message:
 static int _resolve(char *com)
 {
 	int i=0;
-#ifdef HAVE_BGL_FILES
+#ifdef HAVE_BG_FILES
 	int len=strlen(com);
 	char *rack_mid = NULL;
 	int *coord = NULL;
@@ -274,9 +274,9 @@ static int _resolve(char *com)
 		com[i] = 'R';
 		
 	memset(error_string,0,255);		
-#ifdef HAVE_BGL_FILES
+#ifdef HAVE_BG_FILES
 	if (!have_db2) {
-		sprintf(error_string, "Must be on BGL SN to resolve\n"); 
+		sprintf(error_string, "Must be on BG SN to resolve\n"); 
 		goto resolve_error;
 	}
 
@@ -301,7 +301,7 @@ static int _resolve(char *com)
 		
 		if(coord)
 			sprintf(error_string, 
-				"%s resolves to X=%d Y=%d Z=%d or bgl%d%d%d\n",
+				"%s resolves to X=%d Y=%d Z=%d or bg%d%d%d\n",
 				com+i,coord[X],coord[Y],coord[Z],
 				coord[X],coord[Y],coord[Z]);
 		else
@@ -311,7 +311,7 @@ static int _resolve(char *com)
 resolve_error:
 #else
 			sprintf(error_string, 
-				"Must be on BGL SN to resolve.\n"); 
+				"Must be on BG SN to resolve.\n"); 
 #endif
 	wnoutrefresh(pa_system_ptr->text_win);
 	doupdate();
@@ -323,7 +323,7 @@ static int _change_state_all_bps(char *com, int state)
 	char allnodes[50];
 	memset(allnodes,0,50);
 		
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	sprintf(allnodes, "[000x%d%d%d]", 
 		DIM_SIZE[X]-1, DIM_SIZE[Y]-1, DIM_SIZE[Z]-1);
 #else
@@ -338,7 +338,7 @@ static int _change_state_bps(char *com, int state)
 	int i=1,x;
 	int len = strlen(com);
 	int start[SYSTEM_DIMENSIONS], end[SYSTEM_DIMENSIONS];
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	int number=0, y=0, z=0;
 #endif
 	char letter = '.';
@@ -361,7 +361,7 @@ static int _change_state_bps(char *com, int state)
 		return 0;
 	}
 		
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	if ((com[i]   == '[')
 	    && (com[i+8] == ']')
 	    && ((com[i+4] == 'x')
@@ -458,7 +458,7 @@ static int _change_state_bps(char *com, int state)
 	return 1;
 error_message:
 	memset(error_string,0,255);
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	sprintf(error_string, 
 		"Problem with nodes specified range was %d%d%dx%d%d%d",
 		start[X],start[Y],start[Z],
@@ -512,7 +512,7 @@ static int _remove_allocation(char *com, List allocated_partitions)
 				found=1;
 				remove_part(allocated_part->nodes,color_count);
 				list_destroy(allocated_part->nodes);
-				delete_pa_request(allocated_part->request);
+				delete_ba_request(allocated_part->request);
 				list_remove(results_i);
 				color_count--;
 			}

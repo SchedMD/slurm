@@ -39,7 +39,7 @@
 typedef struct {
 	char *nodes;
 	char *owner_name;
-	char *bg_part_id;
+	char *bg_block_id;
 	int state;
 	int conn_type;
 	int node_use;

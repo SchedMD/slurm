@@ -15,7 +15,7 @@ if HAVE_SOME_CURSES
 bin_PROGRAMS = smap
 
 smap_LDADD = \
-	$(top_builddir)/src/partition_allocator/libpartition_allocator.la 
+	$(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la 
 
 noinst_HEADERS = smap.h 
 smap_SOURCES = smap.c \

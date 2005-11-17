@@ -60,7 +60,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
-#include "src/partition_allocator/partition_allocator.h"
+#include "src/plugins/select/bluegene/block_allocator/block_allocator.h"
 #include "src/common/slurm_protocol_api.h"
 
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
@@ -70,7 +70,7 @@
 #define OPT_LONG_USAGE	0x101
 #define OPT_LONG_HIDE	0x102
 
-enum { JOBS, SLURMPART, BGLPART, COMMANDS };
+enum { JOBS, SLURMPART, BGPART, COMMANDS };
 
 typedef void (*sighandler_t) (int);
 
@@ -109,7 +109,7 @@ extern int quiet_flag;
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid(int start, int end, int count);
-extern int set_grid_bgl(int *start, int *end, int count, int set);
+extern int set_grid_bg(int *start, int *end, int count, int set);
 extern void print_grid(int dir);
 
 extern void parse_command_line(int argc, char *argv[]);
@@ -118,7 +118,7 @@ extern void print_date();
 extern void clear_window(WINDOW *win);
 
 extern void get_slurm_part();
-extern void get_bgl_part();
+extern void get_bg_part();
 extern void get_job();
 extern void get_command();
 

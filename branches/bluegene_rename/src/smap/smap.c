@@ -32,7 +32,7 @@
 #include <signal.h>
 #include "src/smap/smap.h"
 
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 #define MIN_SCREEN_WIDTH 92
 #else
 #define MIN_SCREEN_WIDTH 72
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 	int end = 0;
 	int i;
 	int rc;
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	int mapset = 0;	
 #endif
 	//char *name;	
@@ -90,9 +90,9 @@ int main(int argc, char *argv[])
 	
 	if(params.partition) {
 			
-#ifdef HAVE_BGL_FILES
+#ifdef HAVE_BG_FILES
 		if (!have_db2) {
-			printf("must be on BGL SN to resolve.\n");
+			printf("must be on BG SN to resolve.\n");
 			goto part_fini;
 		}
 
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 		} else {
 			int *coord = find_bp_loc(params.partition);
 			if(coord)
-				printf("%s resolves to X=%d Y=%d Z=%d or bgl%d%d%d\n",
+				printf("%s resolves to X=%d Y=%d Z=%d or bg%d%d%d\n",
 				       params.partition,
 				       coord[X], coord[Y], coord[Z],
 				       coord[X], coord[Y], coord[Z]);
@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
 		}
 part_fini:
 #else
-		printf("must be on BGL SN to resolve.\n");
+		printf("must be on BG SN to resolve.\n");
 #endif
 		pa_fini();
 		exit(0);
@@ -143,7 +143,7 @@ part_fini:
 		signal(SIGWINCH, (sighandler_t) _resize_handler);
 		initscr();
 		
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 		height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
 		width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
 		if (COLS < (MIN_SCREEN_WIDTH + width) || LINES < height) {
@@ -182,7 +182,7 @@ part_fini:
 			*pa_system_ptr->grid_win->_maxx;
 		//scrollok(pa_system_ptr->grid_win, TRUE);
 		
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 		startx = width;
 		COLS -= 2;
 		width = COLS - width;
@@ -221,7 +221,7 @@ part_fini:
 		case SLURMPART:
 			get_slurm_part();
 			break;
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 		case COMMANDS:
 			if(!mapset) {
 				mapset = set_bp_map();
@@ -231,12 +231,12 @@ part_fini:
 			}
 			get_command();
 			break;
-		case BGLPART:
-			get_bgl_part();
+		case BGPART:
+			get_bg_part();
 			break;
 #else
 		default:
-			error("must be on a BGL SYSTEM to run this command");
+			error("must be on a BG SYSTEM to run this command");
 			endwin();
 			pa_fini();
 			exit(0);
@@ -357,11 +357,11 @@ static int _get_option()
 		params.display = JOBS;
 		return 1;
 		break;
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	case 'b':
 		text_line_cnt = 0;
 		grid_line_cnt = 0;
-		params.display = BGLPART;
+		params.display = BGPART;
 		return 1;
 		break;
 	case 'c':
@@ -370,7 +370,7 @@ static int _get_option()
 		break;
 #endif
 
-#ifndef HAVE_BGL
+#ifndef HAVE_BG
 	case 'u':
 	case KEY_UP:
 		grid_line_cnt--;
@@ -417,7 +417,7 @@ static void *_resize_handler(int sig)
 	initscr();
 	getmaxyx(stdscr,LINES,COLS);
 
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
 	width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
 	if (COLS < (MIN_SCREEN_WIDTH + width) || LINES < height) {
@@ -440,7 +440,7 @@ static void *_resize_handler(int sig)
 	max_display = pa_system_ptr->grid_win->_maxy*
 		pa_system_ptr->grid_win->_maxx;
 		
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	startx = width;
 	COLS -= 2;
 	width = COLS - width;
@@ -462,12 +462,12 @@ static void *_resize_handler(int sig)
 	case SLURMPART:
 		get_slurm_part();
 		break;
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	case COMMANDS:
 		get_command();
 		break;
-	case BGLPART:
-		get_bgl_part();
+	case BGPART:
+		get_bg_part();
 		break;
 #endif
 	}

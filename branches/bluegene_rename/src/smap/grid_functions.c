@@ -30,7 +30,7 @@
 extern int set_grid(int start, int end, int count)
 {
 	int x;
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	int y, z;
 	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
 		for (z = 0; z < DIM_SIZE[Z]; z++) {
@@ -71,11 +71,11 @@ extern int set_grid(int start, int end, int count)
 	return 1;
 }
 
-extern int set_grid_bgl(int *start, int *end, int count, int set)
+extern int set_grid_bg(int *start, int *end, int count, int set)
 {
 	int x=0;
 	int i = 0;
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	int y=0, z=0;
 #endif
 	assert(end[X] < DIM_SIZE[X]);
@@ -83,7 +83,7 @@ extern int set_grid_bgl(int *start, int *end, int count, int set)
 	assert(count >= 0);
 	assert(set >= 0);
 	assert(set <= 2);
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	assert(end[Y] < DIM_SIZE[Y]);
 	assert(start[Y] >= 0);
 	assert(end[Z] < DIM_SIZE[Z]);
@@ -126,7 +126,7 @@ extern void print_grid(int dir)
 	int x;
 	int grid_xcord, grid_ycord = 2;
 
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	int y, z, offset = DIM_SIZE[Z];
 	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
 		offset = DIM_SIZE[Z] + 1;
