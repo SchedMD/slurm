@@ -40,8 +40,8 @@ set exit_code     0
 set test_prog     "test$test_id.prog"
 set job_id        0
 # Note this appears as a single argv value to totalviewcli
-set bulk          "set issue_dgo false"
-set no_bulk       "set issue_dgo false; dset TV::bulk_launch_enabled false"
+set bulk          "set issue_dgo false; set bulk_launch_enabled true"
+set no_bulk       "set issue_dgo false; set bulk_launch_enabled false"
 
 print_header $test_id
 
