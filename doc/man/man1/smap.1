@@ -1,4 +1,4 @@
-.TH SMAP "1" "October 2005" "smap 0.7" "Slurm components"
+.TH SMAP "1" "November 2005" "smap 0.7" "Slurm components"
 
 .SH "NAME"
 smap \- graphically view information about SLURM jobs, partitions, and set 
@@ -122,9 +122,10 @@ abbreviated forms: down, unk, idle, alloc, drain, drng, and
 comp respectively.  Note that the suffix "*" identifies nodes
 that are presently not responding.
 See \fBNODE STATE CODES\fR section below for more information.
+.TP
 \fBTIMELIMIT\fR
 Maximum time limit for any user job in
-days:hours:minutes:seconds.  \fBinfinite\fR is used to identify
+days\-hours:minutes:seconds.  \fBinfinite\fR is used to identify
 jobs or partitions without a job time limit.
 .TP
 
@@ -132,7 +133,7 @@ jobs or partitions without a job time limit.
 .PP
 The node chart is designed to indicate relative locations of 
 the nodes. 
-On most Linux clusters this will represent a one-dimensional 
+On most Linux clusters this will represent a one\-dimensional 
 array of nodes. Larger clusters will utilize multiple as needed 
 with right side of one line being logically followed by the 
 left side of the next line.
