@@ -40,6 +40,7 @@ set exit_code     0
 set test_prog     "test$test_id.prog"
 set job_id        0
 # Note this appears as a single argv value to totalviewcli
+set bulk          "set issue_dgo false"
 set no_bulk       "set issue_dgo false; dset TV::bulk_launch_enabled false"
 
 print_header $test_id
@@ -80,6 +81,88 @@ exec $mpicc -o $test_prog ${test_prog}.c
 set matches 0
 set no_capability 0
 set timeout $max_job_delay
+send_user "======================================================================\n"
+send_user "=======================  Run with bunk transfer ======================\n"
+send_user "======================================================================\n"
+spawn $totalviewcli -verbosity info -e $bulk $srun -a -n4 -N1-2 -O -t1 $test_prog
+expect {
+	-re "d1.<>" {
+		if {$matches == 0} {
+			incr matches
+			send "G\n"
+		}
+		if {$no_capability != 0} {
+			send "quit\n"
+		}
+		exp_continue
+	}
+	-re "cannot open shared object" {
+		send_user "\nWARNING: Set LD_LIBRARY_PATH environment variable "
+		send_user "to include this object's directory\n"
+		exp_continue
+	}
+	-re "Do you want to stop the job now?.*:" {
+		incr matches
+		send "yes\n"
+		exp_continue
+	}
+	-re "Attached to parallel task ($number).*" {
+		incr matches
+		if {$expect_out(1,string) == 5} {
+			send "G\n"
+		}
+		exp_continue
+	}
+	-re "Loaded MPI.*($number).*" {
+#		This would be a re-send of "G" above, but totalviewcli
+#		seems to ignore any input until after sending this message
+		send "G\n"
+		exp_continue
+	}
+	-re "I just received msg from Rank" {
+		incr matches
+		exp_continue
+	}
+	-re "elan_init: No capability, can't continue" {
+		incr no_capability
+		exp_continue
+	}
+	-re "Process 1 has exited" {
+		incr matches
+		send "quit\n"
+		exp_continue
+	}
+	-re "Do you really wish to exit TotalView?" {
+		incr matches
+		send "yes\n"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: totalviewcli not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$no_capability != 0} {
+	send_user "\nWARNING: Unable to run test with present configuration\n"
+	exit 0
+}
+if {$matches != 12} {
+	send_user "\nFAILURE: totalviewcli operation matches $matches of 12\n"
+	send_user "Remove your ~/.totalview directory and try again\n"
+	set exit_code 1
+}
+
+#
+# Now run totalviewcli (command line interface to TotalView)
+#
+set matches 0
+set no_capability 0
+send_user "======================================================================\n"
+send_user "=====================  Run without bunk transfer =====================\n"
+send_user "======================================================================\n"
 spawn $totalviewcli -verbosity info -e $no_bulk $srun -a -n4 -N1-2 -O -t1 $test_prog
 expect {
 	-re "d1.<>" {
