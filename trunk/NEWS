@@ -17,9 +17,6 @@ documents those changes that are of interest to users and admins.
  -- Bluegene specific - Support to smap to down or bring up nodes in 
     configure mode.  Added commands include allup, alldown, 
     up [range], down [range]
- -- Change SLURM libraries and associated header files from GPL to LGPL 
-    licensing. All other SLURM components are still distributed under 
-    the GPL license.
  -- Time format in sinfo/squeue/smap/sacct changed from D:HH:MM:SS to 
     D-HH:MM:SS per POSIX standards document.
  -- Treat scontrol update request without any requested changes as an 
