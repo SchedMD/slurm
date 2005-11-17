@@ -133,6 +133,7 @@ EXTRA_DIST = \
 	test7.3.io.c			\
 	test7.3.prog.c			\
 	test7.4				\
+	test7.4.bash			\
 	test7.4.prog.c			\
 	test8.1				\
 	test8.2				\

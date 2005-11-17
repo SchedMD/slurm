@@ -33,17 +33,24 @@
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 ############################################################################
-source ./globals
+source ./globals.example
 
 set test_id       "7.4"
 set exit_code     0
 set test_prog     "test$test_id.prog"
-set job_id        0
+
 # Note this appears as a single argv value to totalviewcli
-set bulk          "set issue_dgo false; set bulk_launch_enabled true"
-set no_bulk       "set issue_dgo false; set bulk_launch_enabled false"
+set bulk          "set issue_dgo false; dset TV::bulk_launch_enabled true; dset TV::bulk_launch_string {$srun -N%N -n%N --jobid=`test7.4.bash %t1` -l --input=none %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
+set no_bulk       "set issue_dgo false; dset TV::bulk_launch_enabled false"
 
 print_header $test_id
+
+#
+# Put desired SLURM install directory at head of search path for bulk launch 
+# command to work (runs "srun" without path)
+#
+set env(PATH) "$slurm_dir/bin:$env(PATH)"
+send_user "\n $env(PATH)\n"
 
 #
 # Test for existence of mpi compiler and totalview
@@ -82,9 +89,9 @@ set matches 0
 set no_capability 0
 set timeout $max_job_delay
 send_user "======================================================================\n"
-send_user "=======================  Run with bunk transfer ======================\n"
+send_user "=======================  Run without bunk transfer ===================\n"
 send_user "======================================================================\n"
-spawn $totalviewcli -verbosity info -e $bulk $srun -a -n4 -N1-2 -O -t1 $test_prog
+spawn $totalviewcli -verbosity info -e $no_bulk $srun -a -n4 -N1-2 -O -t1 $test_prog
 expect {
 	-re "d1.<>" {
 		if {$matches == 0} {
@@ -153,6 +160,8 @@ if {$matches != 12} {
 	send_user "\nFAILURE: totalviewcli operation matches $matches of 12\n"
 	send_user "Remove your ~/.totalview directory and try again\n"
 	set exit_code 1
+} else {
+	send_user "\nSo far, so good...\n\n\n"
 }
 
 #
@@ -161,9 +170,9 @@ if {$matches != 12} {
 set matches 0
 set no_capability 0
 send_user "======================================================================\n"
-send_user "=====================  Run without bunk transfer =====================\n"
+send_user "=====================  Run with bunk transfer ========================\n"
 send_user "======================================================================\n"
-spawn $totalviewcli -verbosity info -e $no_bulk $srun -a -n4 -N1-2 -O -t1 $test_prog
+spawn $totalviewcli -verbosity info -e $bulk $srun -a -n4 -N1-2 -O -t1 $test_prog
 expect {
 	-re "d1.<>" {
 		if {$matches == 0} {
