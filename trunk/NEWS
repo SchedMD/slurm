@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
     the GPL license.
  -- Time format in sinfo/squeue/smap/sacct changed from D:HH:MM:SS to 
     D-HH:MM:SS per POSIX standards document.
+ -- Treat scontrol update request without any requested changes as an 
+    error condition.
 
 * Changes in SLURM 0.7.0-pre3
 =============================
