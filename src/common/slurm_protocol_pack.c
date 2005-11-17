@@ -1880,6 +1880,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->job_credential_public_certificate, buffer);
 	packstr(build_ptr->srun_prolog, buffer);
 	packstr(build_ptr->srun_epilog, buffer);
+	packstr(build_ptr->node_prefix, buffer);
 }
 
 static int
@@ -1968,6 +1969,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 			       &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->srun_prolog, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->srun_epilog, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->node_prefix, &uint16_tmp, buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:
@@ -2008,6 +2010,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	xfree(build_ptr->tmp_fs);
 	xfree(build_ptr->srun_prolog);
 	xfree(build_ptr->srun_epilog);
+	xfree(build_ptr->node_prefix);
 	xfree(build_ptr);
 	*build_buffer_ptr = NULL;
 	return SLURM_ERROR;

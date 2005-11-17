@@ -346,6 +346,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->wait_time           = slurmctld_conf.wait_time;
 	conf_ptr->srun_prolog         = xstrdup(slurmctld_conf.srun_prolog);
 	conf_ptr->srun_epilog         = xstrdup(slurmctld_conf.srun_epilog);
+	conf_ptr->node_prefix         = xstrdup(slurmctld_conf.node_prefix);
 	return;
 }
 
