@@ -42,7 +42,7 @@ _STMT_START {		\
 } _STMT_END
 
 static int  _find_best_block_match(struct job_record* job_ptr,
-				bitstr_t* slurm_part_bitmap,
+				bitstr_t* slurm_block_bitmap,
 				int min_nodes, int max_nodes,
 				int spec, bg_record_t** found_bg_record);
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
@@ -81,18 +81,18 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
  * specification as to the importance of certain job params, for
  * instance, geometry, type, size, etc.
  * 
- * OUT - part_id of matched block, NULL otherwise
+ * OUT - block_id of matched block, NULL otherwise
  * returns 1 for error (no match)
  * 
  */
 static int _find_best_block_match(struct job_record* job_ptr, 
-		bitstr_t* slurm_part_bitmap, int min_nodes, int max_nodes,
+		bitstr_t* slurm_block_bitmap, int min_nodes, int max_nodes,
 		int spec, bg_record_t** found_bg_record)
 {
 	ListIterator itr;
 	bg_record_t* record = NULL;
 	int i;
-	uint16_t req_geometry[PA_SYSTEM_DIMENSIONS];
+	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
 	uint16_t conn_type, rotate, target_size = 1, checked;
 	uint32_t req_procs = job_ptr->num_procs;
 	int rot_cnt = 0;
@@ -119,7 +119,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	
 		debug("_find_best_block_match none found "
 		      "full system running on block %s.",
-		      full_system_block->bg_part_id);
+		      full_system_block->bg_block_id);
 		return SLURM_ERROR;
 	}
 
@@ -129,7 +129,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		SELECT_DATA_GEOMETRY, req_geometry);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_ROTATE, &rotate);
-	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++)
+	for (i=0; i<BA_SYSTEM_DIMENSIONS; i++)
 		target_size *= req_geometry[i];
 	if (target_size == 0)	/* no geometry specified */
 		target_size = min_nodes;
@@ -151,7 +151,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		if(record->job_running && checked<2) {
 			job_running++;
 			debug("block %s in use by %s", 
-			      record->bg_part_id,
+			      record->bg_block_id,
 			      record->user_name);
 			continue;
 		}
@@ -171,7 +171,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 			proc_cnt = record->bp_count * record->cnodes_per_bp;
 			if (req_procs > proc_cnt) {
 				debug("block %s CPU count too low",
-					record->bg_part_id);
+					record->bg_block_id);
 				continue;
 			}
 		}
@@ -183,7 +183,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		    ||  (max_nodes != 0 && record->bp_count > max_nodes)
 		    ||  (record->bp_count < target_size)) {
 			debug("block %s node count not suitable",
-				record->bg_part_id);
+				record->bg_block_id);
 			continue;
 		}
 		
@@ -194,9 +194,9 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		 * drained, allocated to some other job, or in some 
 		 * SLURM block not available to this job.
 		 */
-		if (!bit_super_set(record->bitmap, slurm_part_bitmap)) {
+		if (!bit_super_set(record->bitmap, slurm_block_bitmap)) {
 			debug("bg block %s has nodes not usable by this "
-				"job", record->bg_part_id);
+				"job", record->bg_block_id);
 			continue;
 		}
 
@@ -207,7 +207,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		&& (!bit_super_set(job_ptr->details->req_node_bitmap,
 				record->bitmap))) {
 			debug("bg block %s lacks required nodes",
-				record->bg_part_id);
+				record->bg_block_id);
 			continue;
 		}
 
@@ -217,7 +217,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		if ((conn_type != record->conn_type)
 		&&  (conn_type != SELECT_NAV)) {
 			debug("bg block %s conn-type not usable", 
-				record->bg_part_id);
+				record->bg_block_id);
 			continue;
 		} 
 
@@ -258,9 +258,9 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	/* set the bitmap and do other allocation activities */
 	if (*found_bg_record) {
 		debug("_find_best_block_match %s <%s>", 
-			(*found_bg_record)->bg_part_id, 
+			(*found_bg_record)->bg_block_id, 
 			(*found_bg_record)->nodes);
-		bit_and(slurm_part_bitmap, (*found_bg_record)->bitmap);
+		bit_and(slurm_block_bitmap, (*found_bg_record)->bitmap);
 		return SLURM_SUCCESS;
 	}
 	
@@ -277,13 +277,13 @@ static int _find_best_block_match(struct job_record* job_ptr,
  *	to this job (considers slurm block limits)
  * RET - SLURM_SUCCESS if job runnable now, error code otherwise
  */
-extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
+extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		      int min_nodes, int max_nodes)
 {
 	int spec = 1; /* this will be like, keep TYPE a priority, etc,  */
 	bg_record_t* record = NULL;
 	char buf[100];
-	char bg_part_id[BITSIZE];
+	char bg_block_id[BITSIZE];
 		
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 		SELECT_PRINT_MIXED);
@@ -292,14 +292,14 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 	      min_nodes, 
 	      max_nodes);
 	
-	if ((_find_best_block_match(job_ptr, slurm_part_bitmap, min_nodes, 
+	if ((_find_best_block_match(job_ptr, slurm_block_bitmap, min_nodes, 
 				max_nodes, spec, &record)) == SLURM_ERROR) {
 		return SLURM_ERROR;
 	} else {
-		/* we place the part_id into the env of the script to run */
-		snprintf(bg_part_id, BITSIZE, "%s", record->bg_part_id);
+		/* we place the block_id into the env of the script to run */
+		snprintf(bg_block_id, BITSIZE, "%s", record->bg_block_id);
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
-			SELECT_DATA_PART_ID, bg_part_id);
+			SELECT_DATA_BLOCK_ID, bg_block_id);
 	}
 
 	return SLURM_SUCCESS;

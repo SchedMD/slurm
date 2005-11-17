@@ -1,6 +1,7 @@
 # $Id$
 # Makefile for select/bluegene plugin
 
+SUBDIRS = block_allocator
 CPPFLAGS =  -DBLUEGENE_CONFIG_FILE=\"$(sysconfdir)/bluegene.conf\"
 AUTOMAKE_OPTIONS = foreign
 
@@ -14,7 +15,7 @@ pkglib_LTLIBRARIES = select_bluegene.la
 select_bluegene_la_SOURCES = select_bluegene.c \
 				bg_job_place.c bg_job_place.h \
 				bg_job_run.c bg_job_run.h \
-				bg_part_info.c bg_part_info.h \
+				bg_block_info.c bg_block_info.h \
 				bluegene.c bluegene.h \
 				state_test.c state_test.h \
 				bg_switch_connections.c \
@@ -23,7 +24,7 @@ select_bluegene_la_SOURCES = select_bluegene.c \
 
 select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
-select_bluegene_la_LIBADD  = $(top_builddir)/src/bgl_block_allocator/libpartition_allocator.la 
+select_bluegene_la_LIBADD  = block_allocator/libbluegene_block_allocator.la 
 
 sbin_PROGRAMS = slurm_prolog slurm_epilog sfree
 

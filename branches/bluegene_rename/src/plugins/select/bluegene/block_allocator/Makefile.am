@@ -1,5 +1,5 @@
 # $Id$
-# Makefile.am for graph_solver
+# Makefile.am for bluegene_block_allocator
 
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
@@ -21,16 +21,16 @@ INCLUDES = -I$(top_srcdir) $(BGL_INCLUDES)
 
 
 # making a .la
-noinst_LTLIBRARIES = libpartition_allocator.la 
-libpartition_allocator_la_SOURCES =    \
-	partition_allocator.c partition_allocator.h 
+noinst_LTLIBRARIES = libbluegene_block_allocator.la 
+libbluegene_block_allocator_la_SOURCES =    \
+	block_allocator.c block_allocator.h 
 
-libpartition_allocator_la_LIBADD  =  \
+libbluegene_block_allocator_la_LIBADD  =  \
 	$(top_builddir)/src/common/libcommon.la -lpthread \
 	$(top_builddir)/src/api/libslurm.la
 
-libpartition_allocator_la_LDFLAGS        = \
+libbluegene_block_allocator_la_LDFLAGS        = \
 	$(LIB_LDFLAGS) -lm    
 
-libpartition_allocator_la_DEPENDENCIES  = \
+libbluegene_block_allocator_la_DEPENDENCIES  = \
 	$(top_builddir)/src/common/libcommon.la 

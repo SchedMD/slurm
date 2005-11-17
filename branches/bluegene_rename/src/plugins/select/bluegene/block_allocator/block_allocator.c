@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  partition_allocator.c - Assorted functions for layout of bglblocks, 
+ *  block_allocator.c - Assorted functions for layout of bglblocks, 
  *	 wiring, mapping for smap, etc.
  *  $Id$
  *****************************************************************************
@@ -32,7 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "src/bgl_block_allocator/partition_allocator.h"
+#include "block_allocator.h"
 
 #ifdef HAVE_BG_FILES
 # include "src/plugins/select/bluegene/wrap_rm_api.h"
@@ -42,9 +42,9 @@
 #define BEST_COUNT_INIT 20
 
 #ifdef HAVE_BG
-int DIM_SIZE[PA_SYSTEM_DIMENSIONS] = {0,0,0};
+int DIM_SIZE[BA_SYSTEM_DIMENSIONS] = {0,0,0};
 #else
-int DIM_SIZE[PA_SYSTEM_DIMENSIONS] = {0};
+int DIM_SIZE[BA_SYSTEM_DIMENSIONS] = {0};
 #endif
 
 bool _initialized = false;
@@ -52,7 +52,7 @@ bool _wires_initialized = false;
 bool _bp_map_initialized = false;
 bool have_db2 = false;
 
-/* _pa_system is the "current" system that the structures will work
+/* _ba_system is the "current" system that the structures will work
  *  on */
 pa_system_t *pa_system_ptr = NULL;
 List path = NULL;
@@ -89,19 +89,19 @@ static int _create_config_even(pa_node_t *grid);
 #endif
 
 /** */
-static void _new_pa_node(pa_node_t *pa_node, 
+static void _new_ba_node(pa_node_t *pa_node, 
 		int *coord);
 /** */
 static int _reset_the_path(pa_switch_t *curr_switch, int source, 
 			   int target, int dim);
 /** */
-static void _create_pa_system(void);
+static void _create_ba_system(void);
 /* */
-static void _delete_pa_system(void);
+static void _delete_ba_system(void);
 /* */
 static void _delete_path_list(void *object);
 
-/* find the first partition match in the system */
+/* find the first block match in the system */
 static int _find_match(pa_request_t* pa_request, List results);
 
 static bool _node_used(pa_node_t* pa_node, int *geometry);
@@ -155,21 +155,21 @@ extern void destroy_bg_info_record(void* object)
 			xfree(bg_info_record->nodes);
 		if(bg_info_record->owner_name)
 			xfree(bg_info_record->owner_name);
-		if(bg_info_record->bg_part_id)
-			xfree(bg_info_record->bg_part_id);
+		if(bg_info_record->bg_block_id)
+			xfree(bg_info_record->bg_block_id);
 		
 		xfree(bg_info_record);
 	}
 }
 
 /**
- * create a partition request.  Note that if the geometry is given,
+ * create a block request.  Note that if the geometry is given,
  * then size is ignored.  
  * 
  * OUT - pa_request: structure to allocate and fill in.  
- * IN - geometry: requested geometry of partition
- * IN - size: requested size of partition
- * IN - rotate: if true, allows rotation of partition during fit
+ * IN - geometry: requested geometry of block
+ * IN - size: requested size of block
+ * IN - rotate: if true, allows rotation of block during fit
  * IN - elongate: if true, will try to fit different geometries of
  *      same size requests
  * IN - contig: enforce contiguous regions constraint
@@ -177,12 +177,12 @@ extern void destroy_bg_info_record(void* object)
  * 
  * return SUCCESS of operation.
  */
-extern int new_pa_request(pa_request_t* pa_request)
+extern int new_ba_request(pa_request_t* pa_request)
 {
 	int i=0;
 #ifdef HAVE_BG
 	float sz=1;
-	int geo[PA_SYSTEM_DIMENSIONS] = {0,0,0};
+	int geo[BA_SYSTEM_DIMENSIONS] = {0,0,0};
 	int i2, i3, picked, total_sz=1 , size2, size3;
 	ListIterator itr;
 	int checked[8];
@@ -197,10 +197,10 @@ extern int new_pa_request(pa_request_t* pa_request)
 	geo[Z] = pa_request->geometry[Z];
 		
 	if(geo[X] != -1) { 
-		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
+		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++){
 			if ((geo[i] < 1) 
 			    ||  (geo[i] > DIM_SIZE[i])){
-				error("new_pa_request Error, "
+				error("new_ba_request Error, "
 				      "request geometry is invalid %d "
 				      "DIMS are %d%d%d", 
 				      geo[i],
@@ -212,7 +212,7 @@ extern int new_pa_request(pa_request_t* pa_request)
 		}
 		_append_geo(geo, pa_request->elongate_geos, 0);
 		sz=1;
-		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++)
+		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++)
 			sz *= pa_request->geometry[i];
 		pa_request->size = sz;
 		sz=0;
@@ -224,7 +224,7 @@ extern int new_pa_request(pa_request_t* pa_request)
 		pa_request->rotate= 1;
 		pa_request->elongate = 1;		
 		
-		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++) { 
+		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++) { 
 			total_sz *= DIM_SIZE[i];
 			geo[i] = 1;
 		}
@@ -281,7 +281,7 @@ extern int new_pa_request(pa_request_t* pa_request)
 		
 		size3=pa_request->size;
 		
-		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++) {
+		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++) {
 			total_sz *= DIM_SIZE[i];
 			geo[i] = 1;
 		}
@@ -296,7 +296,7 @@ extern int new_pa_request(pa_request_t* pa_request)
 			size2=pa_request->size;
 		//messedup:
 
-		for (i=picked; i<PA_SYSTEM_DIMENSIONS; i++) { 
+		for (i=picked; i<BA_SYSTEM_DIMENSIONS; i++) { 
 			if(size2<=1) 
 				break;
 			sz = size2%DIM_SIZE[i];
@@ -321,7 +321,7 @@ extern int new_pa_request(pa_request_t* pa_request)
 							goto tryagain;
 						}
 						if((i2-1)!=1 && 
-						   i!=(PA_SYSTEM_DIMENSIONS-1))
+						   i!=(BA_SYSTEM_DIMENSIONS-1))
 							break;
 					}		
 				}				
@@ -417,20 +417,20 @@ extern int new_pa_request(pa_request_t* pa_request)
 	
 		/* see if We can find a cube or square root of the 
 		   size to make an easy cube */
-		for(i=0;i<PA_SYSTEM_DIMENSIONS-1;i++) {
+		for(i=0;i<BA_SYSTEM_DIMENSIONS-1;i++) {
 			sz = powf((float)pa_request->size,
-				  (float)1/(PA_SYSTEM_DIMENSIONS-i));
-			if(pow(sz,(PA_SYSTEM_DIMENSIONS-i))==pa_request->size)
+				  (float)1/(BA_SYSTEM_DIMENSIONS-i));
+			if(pow(sz,(BA_SYSTEM_DIMENSIONS-i))==pa_request->size)
 				break;
 		}
 	
-		if(i<PA_SYSTEM_DIMENSIONS-1) {
+		if(i<BA_SYSTEM_DIMENSIONS-1) {
 			/* we found something that looks like a cube! */
 			i3=i;
 			for (i=0; i<i3; i++) 
 				geo[i] = 1;			
 			
-			for (i=i3; i<PA_SYSTEM_DIMENSIONS; i++)  
+			for (i=i3; i<BA_SYSTEM_DIMENSIONS; i++)  
 				if(sz<=DIM_SIZE[i]) 
 					geo[i] = sz;	
 				else
@@ -455,12 +455,12 @@ endit:
 	pa_request->geometry[Y] = geo_ptr[Y];
 	pa_request->geometry[Z] = geo_ptr[Z];
 	sz=1;
-	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++)
+	for (i=0; i<BA_SYSTEM_DIMENSIONS; i++)
 		sz *= pa_request->geometry[i];
 	pa_request->size = sz;
 	
 #else
-	int geo[PA_SYSTEM_DIMENSIONS] = {0};
+	int geo[BA_SYSTEM_DIMENSIONS] = {0};
 	
 	pa_request->rotate_count= 0;
 	pa_request->elongate_count = 0;
@@ -468,10 +468,10 @@ endit:
 	geo[X] = pa_request->geometry[X];
 		
 	if(geo[X] != -1) { 
-		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
+		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++){
 			if ((geo[i] < 1) 
 			    ||  (geo[i] > DIM_SIZE[i])){
-				error("new_pa_request Error, "
+				error("new_ba_request Error, "
 				      "request geometry is invalid %d", 
 				      geo[i]); 
 				return 0;
@@ -490,9 +490,9 @@ endit:
 }
 
 /**
- * delete a partition request 
+ * delete a block request 
  */
-extern void delete_pa_request(pa_request_t *pa_request)
+extern void delete_ba_request(pa_request_t *pa_request)
 {
 	int *geo_ptr;
 
@@ -506,19 +506,19 @@ extern void delete_pa_request(pa_request_t *pa_request)
 }
 
 /**
- * print a partition request 
+ * print a block request 
  */
-extern void print_pa_request(pa_request_t* pa_request)
+extern void print_ba_request(pa_request_t* pa_request)
 {
 	int i;
 
 	if (pa_request == NULL){
-		error("print_pa_request Error, request is NULL");
+		error("print_ba_request Error, request is NULL");
 		return;
 	}
 	debug("  pa_request:");
 	debug("    geometry:\t");
-	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
+	for (i=0; i<BA_SYSTEM_DIMENSIONS; i++){
 		debug("%d", pa_request->geometry[i]);
 	}
 	debug("        size:\t%d", pa_request->size);
@@ -550,7 +550,7 @@ static void _db2_check(void)
 }
 
 /**
- * Initialize internal structures by either reading previous partition
+ * Initialize internal structures by either reading previous block
  * configurations from a file or by running the graph solver.
  * 
  * IN: node_info_msg_t * can be null, 
@@ -701,7 +701,7 @@ node_info_error:
 #endif 
 			;
 
-	_create_pa_system();
+	_create_ba_system();
 	
 	init_grid(node_info_ptr);
 	
@@ -769,7 +769,7 @@ extern void pa_fini()
 	if (bp_map_list)
 		list_destroy(bp_map_list);
 #endif
-	_delete_pa_system();
+	_delete_ba_system();
 
 //	debug2("pa system destroyed");
 }
@@ -802,7 +802,7 @@ extern void pa_set_node_down(pa_node_t *pa_node)
 }
 
 /** 
- * Try to allocate a partition.
+ * Try to allocate a block.
  * 
  * IN - pa_request: allocation request
  * OUT - results: List of results of the allocation request.  Each
@@ -825,7 +825,7 @@ extern int allocate_part(pa_request_t* pa_request, List results)
 		return 0;
 	}
 	
-	// _backup_pa_system();
+	// _backup_ba_system();
 	if (_find_match(pa_request, results)){
 		return 1;
 	} else {
@@ -852,7 +852,7 @@ extern int remove_part(List nodes, int new_count)
 		pa_node->used = false;
 		pa_node->color = 7;
 		pa_node->letter = '.';
-		for(dim=0;dim<PA_SYSTEM_DIMENSIONS;dim++) {		
+		for(dim=0;dim<BA_SYSTEM_DIMENSIONS;dim++) {		
 			curr_switch = &pa_node->axis_switch[dim];
 			if(curr_switch->int_wire[0].used) {
 				_reset_the_path(curr_switch, 0, 1, dim);
@@ -884,7 +884,7 @@ extern int alter_part(List nodes, int conn_type)
 /* 	while ((pa_node = list_next(results_i)) != NULL) { */
 /* 		pa_node->used = false; */
 		
-/* 		for(dim=0;dim<PA_SYSTEM_DIMENSIONS;dim++) { */
+/* 		for(dim=0;dim<BA_SYSTEM_DIMENSIONS;dim++) { */
 /* 			curr_switch = &pa_node->axis_switch[dim]; */
 /* 			if(curr_switch->int_wire[0].used) { */
 /* 				_reset_the_path(curr_switch, 0, 1, dim); */
@@ -902,7 +902,7 @@ extern int alter_part(List nodes, int conn_type)
 }
 
 /** 
- * After a partition is deleted or altered following allocations must
+ * After a block is deleted or altered following allocations must
  * be redone to make sure correct path will be used in the real system
  *
  */
@@ -1020,10 +1020,10 @@ extern char *set_bg_part(List results, int *start,
 	
 }
 
-extern int reset_pa_system()
+extern int reset_ba_system()
 {
 	int x, y, z;
-	int coord[PA_SYSTEM_DIMENSIONS];
+	int coord[BA_SYSTEM_DIMENSIONS];
 
 	for (x = 0; x < DIM_SIZE[X]; x++)
 		for (y = 0; y < DIM_SIZE[Y]; y++)
@@ -1032,11 +1032,11 @@ extern int reset_pa_system()
 				coord[X] = x;
 				coord[Y] = y;
 				coord[Z] = z;
-				_new_pa_node(&pa_system_ptr->grid[x][y][z], 
+				_new_ba_node(&pa_system_ptr->grid[x][y][z], 
 					     coord);
 #else
 				coord[X] = x;
-				_new_pa_node(&pa_system_ptr->grid[x], coord);
+				_new_ba_node(&pa_system_ptr->grid[x], coord);
 
 #endif
 			}
@@ -1158,7 +1158,7 @@ extern char *find_bp_rack_mid(char* xyz)
 	pa_bp_map_t *bp_map = NULL;
 	ListIterator itr;
 	int number;
-	int coord[PA_SYSTEM_DIMENSIONS];
+	int coord[BA_SYSTEM_DIMENSIONS];
 	int len = strlen(xyz);
 	len -= 3;
 	if(len<0)
@@ -1216,14 +1216,14 @@ static int _check_for_options(pa_request_t* pa_request)
 	rotate_again:
 		debug2("Rotating! %d",pa_request->rotate_count);
 		
-		if (pa_request->rotate_count==(PA_SYSTEM_DIMENSIONS-1)) {
+		if (pa_request->rotate_count==(BA_SYSTEM_DIMENSIONS-1)) {
 			temp=pa_request->geometry[X];
 			pa_request->geometry[X]=pa_request->geometry[Z];
 			pa_request->geometry[Z]=temp;
 			pa_request->rotate_count++;
 			set=1;
 		
-		} else if(pa_request->rotate_count<(PA_SYSTEM_DIMENSIONS*2)) {
+		} else if(pa_request->rotate_count<(BA_SYSTEM_DIMENSIONS*2)) {
 			temp=pa_request->geometry[X];
 			pa_request->geometry[X]=pa_request->geometry[Y];
 			pa_request->geometry[Y]=pa_request->geometry[Z];
@@ -1280,7 +1280,7 @@ static int _append_geo(int *geometry, List geos, int rotate)
 	int i, j;
 	geo = xmalloc(sizeof(int)*3);
 	if(rotate) {
-		for (i = (PA_SYSTEM_DIMENSIONS - 1); i >= 0; i--) {
+		for (i = (BA_SYSTEM_DIMENSIONS - 1); i >= 0; i--) {
 			for (j = 1; j <= i; j++) {
 				if (geometry[j-1] > geometry[j]) {
 					temp_geo = geometry[j-1];
@@ -1852,12 +1852,12 @@ extern int set_bp_map(void)
 	
 }
 
-static void _new_pa_node(pa_node_t *pa_node, int *coord)
+static void _new_ba_node(pa_node_t *pa_node, int *coord)
 {
 	int i,j;
 	pa_node->used = false;
 	
-	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
+	for (i=0; i<BA_SYSTEM_DIMENSIONS; i++){
 		pa_node->coord[i] = coord[i];
 		
 		for(j=0;j<NUM_PORTS_PER_NODE;j++) {
@@ -1872,10 +1872,10 @@ static void _new_pa_node(pa_node_t *pa_node, int *coord)
 	}
 }
 
-static void _create_pa_system(void)
+static void _create_ba_system(void)
 {
 	int x;
-	int coord[PA_SYSTEM_DIMENSIONS];
+	int coord[BA_SYSTEM_DIMENSIONS];
 				
 #ifdef HAVE_BG
 	int y,z;
@@ -1896,19 +1896,19 @@ static void _create_pa_system(void)
 				coord[X] = x;
 				coord[Y] = y;
 				coord[Z] = z;
-				_new_pa_node(&pa_system_ptr->grid[x][y][z], 
+				_new_ba_node(&pa_system_ptr->grid[x][y][z], 
 					     coord);
 			}
 		}
 #else
 		coord[X] = x;
-		_new_pa_node(&pa_system_ptr->grid[x], coord);
+		_new_ba_node(&pa_system_ptr->grid[x], coord);
 #endif
 	}
 }
 
 /** */
-static void _delete_pa_system(void)
+static void _delete_ba_system(void)
 {
 #ifdef HAVE_BG
 	int x=0;
@@ -1951,9 +1951,9 @@ static int _find_match(pa_request_t *pa_request, List results)
 {
 	int x=0;
 #ifdef HAVE_BG
-	int start[PA_SYSTEM_DIMENSIONS] = {0,0,0};
+	int start[BA_SYSTEM_DIMENSIONS] = {0,0,0};
 #else
-	int start[PA_SYSTEM_DIMENSIONS] = {0};
+	int start[BA_SYSTEM_DIMENSIONS] = {0};
 #endif
 	pa_node_t *pa_node = NULL;
 	char *name=NULL;
@@ -1968,7 +1968,7 @@ static int _find_match(pa_request_t *pa_request, List results)
 #endif
 			)
 			return 0;
-		for(x=0;x<PA_SYSTEM_DIMENSIONS;x++) {
+		for(x=0;x<BA_SYSTEM_DIMENSIONS;x++) {
 			start[x] = pa_request->start[x];
 		}
 	}
@@ -2077,13 +2077,13 @@ static bool _node_used(pa_node_t* pa_node, int *geometry)
 	int i=0;
 	pa_switch_t* pa_switch = NULL;
 	
-	/* if we've used this node in another partition already */
+	/* if we've used this node in another block already */
 	if (!pa_node || pa_node->used) {
 		debug3("node used");
 		return true;
 	}
 	/* if we've used this nodes switches completely in another 
-	   partition already */
+	   block already */
 	for(i=0;i<1;i++) {
 		if(geometry[i]>1) {
 			pa_switch = &pa_node->axis_switch[i];
@@ -2112,7 +2112,7 @@ static void _switch_config(pa_node_t* source, pa_node_t* target, int dim,
 	
 	config = &source->axis_switch[dim];
 	config_tar = &target->axis_switch[dim];
-	for(i=0;i<PA_SYSTEM_DIMENSIONS;i++) {
+	for(i=0;i<BA_SYSTEM_DIMENSIONS;i++) {
 		/* Set the coord of the source target node to the target */
 		config->ext_wire[port_src].node_tar[i] = target->coord[i];
 	
@@ -2510,7 +2510,7 @@ static int _find_x_path(List results, pa_node_t *pa_node,
 				ext_wire[ports_to_try[i]].port_tar;
 
 			/* check to see if we are back at the start of the
-			   partition */
+			   block */
 			if((node_tar[X] == 
 			    start[X] && 
 			    node_tar[Y] == 
@@ -3626,7 +3626,7 @@ static int _set_one_dim(int *start, int *end, int *coord)
 	int dim;
 	pa_switch_t *curr_switch = NULL; 
 	
-	for(dim=0;dim<PA_SYSTEM_DIMENSIONS;dim++) {
+	for(dim=0;dim<BA_SYSTEM_DIMENSIONS;dim++) {
 		if(start[dim]==end[dim]) {
 			curr_switch = &pa_system_ptr->grid[coord[X]]
 #ifdef HAVE_BG
@@ -3684,8 +3684,8 @@ int main(int argc, char** argv)
 /* 	request->rotate = 0; */
 /* 	request->elongate = 0; */
 /* 	request->conn_type = TORUS; */
-/* 	new_pa_request(request); */
-/* 	print_pa_request(request); */
+/* 	new_ba_request(request); */
+/* 	print_ba_request(request); */
 /* 	if(!allocate_part(request, results)) { */
 /*        		debug("couldn't allocate %d%d%d", */
 /* 		       request->geometry[0], */
@@ -3706,8 +3706,8 @@ int main(int argc, char** argv)
 	request->rotate = 0;
 	request->elongate = 0;
 	request->conn_type = TORUS;
-	new_pa_request(request);
-	print_pa_request(request);
+	new_ba_request(request);
+	print_ba_request(request);
 	if(!allocate_part(request, results)) {
        		debug("couldn't allocate %d%d%d",
 		       request->geometry[0],
@@ -3723,8 +3723,8 @@ int main(int argc, char** argv)
 	request->start_req = 0;
 	request->size = 1;
 	request->conn_type = TORUS;
-	new_pa_request(request);
-	print_pa_request(request);
+	new_ba_request(request);
+	print_ba_request(request);
 	if(!allocate_part(request, results)) {
        		debug("couldn't allocate %d%d%d",
 		       request->geometry[0],
@@ -3739,8 +3739,8 @@ int main(int argc, char** argv)
 /* 	request->geometry[2] = 4; */
 /* 	//request->size = 2; */
 /* 	request->conn_type = TORUS; */
-/* 	new_pa_request(request); */
-/* 	print_pa_request(request); */
+/* 	new_ba_request(request); */
+/* 	print_ba_request(request); */
 /* 	if(!allocate_part(request, results)) { */
 /*        		printf("couldn't allocate %d%d%d\n", */
 /* 		       request->geometry[0], */
@@ -3754,8 +3754,8 @@ int main(int argc, char** argv)
 /* 	request->geometry[2] = 4; */
 /* 	//request->size = 2; */
 /* 	request->conn_type = TORUS; */
-/* 	new_pa_request(request); */
-/* 	print_pa_request(request); */
+/* 	new_ba_request(request); */
+/* 	print_ba_request(request); */
 /* 	if(!allocate_part(request, results)) { */
 /*        		printf("couldn't allocate %d%d%d\n", */
 /* 		       request->geometry[0], */
@@ -3813,7 +3813,7 @@ int main(int argc, char** argv)
 
 /* 	pa_fini(); */
 
-/* 	delete_pa_request(request); */
+/* 	delete_ba_request(request); */
 	
 	return 0;
 }

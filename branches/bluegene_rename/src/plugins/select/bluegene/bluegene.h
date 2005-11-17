@@ -41,8 +41,8 @@
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/bgl_block_allocator/partition_allocator.h"
-#include "src/plugins/select/bluegene/wrap_rm_api.h"
+#include "block_allocator/block_allocator.h"
+#include "wrap_rm_api.h"
 
 typedef int lifecycle_type_t;
 
@@ -58,8 +58,8 @@ typedef struct bg_record {
 	pm_partition_id_t bg_block_id;	/* ID returned from MMCS	*/
 	lifecycle_type_t block_lifecycle;/* either STATIC or DYNAMIC	*/
 	rm_partition_state_t state;   	/* the allocated block   */
-	int start[PA_SYSTEM_DIMENSIONS];/* start node */
-	int geo[PA_SYSTEM_DIMENSIONS];  /* geometry */
+	int start[BA_SYSTEM_DIMENSIONS];/* start node */
+	int geo[BA_SYSTEM_DIMENSIONS];  /* geometry */
 	rm_connection_type_t conn_type;	/* Mesh or Torus or NAV */
 	rm_partition_mode_t node_use;	/* either COPROCESSOR or VIRTUAL */
 	rm_partition_t *bg_block;       /* structure to hold info from db2 */

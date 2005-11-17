@@ -167,7 +167,7 @@ extern int fini ( void )
 
 /*
  * Called by slurmctld when a new configuration file is loaded
- * or scontrol is used to change partition configuration
+ * or scontrol is used to change block configuration
  */
  extern int select_p_part_init(List part_list)
 {
@@ -178,14 +178,13 @@ extern int fini ( void )
 		return SLURM_ERROR;
 	}
 #else
-	/*looking for partitions only I created */
-	if (create_static_partitions(part_list) == SLURM_ERROR) {
-		/* error in creating the static partitions, so
-		 * partitions referenced by submitted jobs won't
-		 * correspond to actual slurm partitions/bg
-		 * partitions.
+	/*looking for blocks only I created */
+	if (create_static_blocks(part_list) == SLURM_ERROR) {
+		/* error in creating the static blocks, so
+		 * blocks referenced by submitted jobs won't
+		 * correspond to actual slurm blocks.
 		 */
-		fatal("Error, could not create the static partitions");
+		fatal("Error, could not create the static blocks");
 		return SLURM_ERROR;
 	}
 #endif
@@ -237,14 +236,14 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			     int min_nodes, int max_nodes)
 {
-	/* bg partition test - is there a partition where we have:
+	/* bg block test - is there a block where we have:
 	 * 1) geometry requested
 	 * 2) min/max nodes (BPs) requested
 	 * 3) type: TORUS or MESH or NAV (torus else mesh)
 	 * 4) use: VIRTUAL or COPROCESSOR
 	 * 
 	 * note: we don't have to worry about security at this level
-	 * as the SLURM partition logic will handle access rights.
+	 * as the SLURM block logic will handle access rights.
 	 */
 
 	return submit_job(job_ptr, bitmap, min_nodes, max_nodes);
@@ -263,7 +262,7 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 extern int select_p_job_ready(struct job_record *job_ptr)
 {
 #ifdef HAVE_BG_FILES
-	return part_ready(job_ptr);
+	return block_ready(job_ptr);
 #else
 	if (job_ptr->job_state == JOB_RUNNING)
 		return 1;
@@ -275,7 +274,7 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 {
 	ListIterator itr;
 	bg_record_t *bg_record = NULL;
-	uint32_t partitions_packed = 0, tmp_offset;
+	uint32_t blocks_packed = 0, tmp_offset;
 	Buf buffer;
 
 	/* check to see if data has changed */
@@ -286,17 +285,17 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 	} else {
 		*buffer_ptr = NULL;
 		buffer = init_buf(HUGE_BUF_SIZE);
-		pack32(partitions_packed, buffer);
+		pack32(blocks_packed, buffer);
 		pack_time(last_bg_update, buffer);
 
 		if(bg_list) {
 			itr = list_iterator_create(bg_list);
 			while ((bg_record = (bg_record_t *) list_next(itr)) 
 			       != NULL) {
-				xassert(bg_record->bg_part_id != NULL);
+				xassert(bg_record->bg_block_id != NULL);
 				
-				pack_partition(bg_record, buffer);
-				partitions_packed++;
+				pack_block(bg_record, buffer);
+				blocks_packed++;
 			}
 			list_iterator_destroy(itr);
 		} else {
@@ -305,7 +304,7 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 		}
 		tmp_offset = get_buf_offset(buffer);
 		set_buf_offset(buffer, 0);
-		pack32(partitions_packed, buffer);
+		pack32(blocks_packed, buffer);
 		set_buf_offset(buffer, tmp_offset);
 
 		*buffer_ptr = buffer;
