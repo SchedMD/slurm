@@ -7,7 +7,7 @@ Daniel Christians <Daniel.Christians@hp.com>
 Chris Dunlap <cdunlap@llnl.gov>
 Joey Ekstrom <ekstrom1@llnl.gov>
 Jim Garlick <garlick@llnl.gov>
-Mark Grondona <mgrondona@llnl.gov>
+Mark Grondona <grondona1@llnl.gov>
 Christopher Holmes <cholmes@hp.com>
 Takae Hatazaki <takao.hatazaki@hp.com>
 Nathan Huff <nhuff@geekshanty.com>
@@ -28,24 +28,19 @@ UCRL-CODE-2002-040.
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.
 
-SLURM is free software; You can redistribute the libraries and/or modify 
-them under the terms of the GNU Lesser General Public License as published 
-by the Free Software Foundation; either version 2.1 of the License, or 
-(at your option) any later version.  You can redistribute all other 
-components of SLURM (the commands, daemons, documentation, etc.)  and/or 
-modify them under the terms of the GNU General Public License as published 
-by the Free Software Foundation; either version 2 of the License, or (at 
-your option) any later version. 
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
 
 SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
-You should have received a copy of the GNU General Public License and the 
-GNU Lesser General Public License along with SLURM; if not, write to the 
-Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  
-02111-1301  USA.
+You should have received a copy of the GNU General Public License along
+with SLURM; if not, write to the Free Software Foundation, Inc.,
+59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 
 
 This work was produced at the University of California, Lawrence Livermore
@@ -76,7 +71,6 @@ advertising or product endorsement purposes.
 
 
 OUR NOTICE AND TERMS OF AND CONDITIONS OF THE GNU GENERAL PUBLIC LICENSE
-AND GNU LESSER GENERAL PUBLIC LICENSE
 
 Our Preamble Notice
 
