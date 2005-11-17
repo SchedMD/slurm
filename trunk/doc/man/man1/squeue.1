@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "August 2005" "squeue 0.6" "Slurm components"
+.TH SQUEUE "1" "November 2005" "squeue 0.7" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -64,10 +64,10 @@ various options are
 .I "default"
 "%.7i %.9P %.8j %.8u %.2t %.9M %.6D %R"
 .TP
-.I "-l, --long"
+.I "\-l, \-\-long"
 ".7i %.9P %.8j %.8u %.8T %.9M %.9l %.6D %R"
 .TP
-.I "-s, --steps"
+.I "\-s, \-\-steps"
 "%10i %.8j %.9P %.8u %.9M %N"
 .RE
 
@@ -84,12 +84,12 @@ Time at which the job began execution
 .TP
 \fB%c\fR 
 Minimum number of CPUs (processors) per node requested by the job.
-This reports the value of the \fBsrun --mincpus\fR option with a 
+This reports the value of the \fBsrun \-\-mincpus\fR option with a 
 default value of zero.
 .TP
 \fB%C\fR 
 Number of CPUs (processors) requested to the job or job step.
-This reports the value of the \fBsrun --ntasks\fR option with a
+This reports the value of the \fBsrun \-\-ntasks\fR option with a
 default value of zero.
 .TP
 \fB%d\fR 
@@ -127,14 +127,14 @@ Job or job step id
 Job or job step name
 .TP
 \fB%l\fR
-Time limit of the job in days:hours:minutes:seconds. 
+Time limit of the job in days\-hours:minutes:seconds. 
 The value may be "NOT_SET" if not yet established or "UNLIMITED" for no limit.
 .TP
 \fB%m\fR
 Minimum size of memory (in MB) requested by the job
 .TP
 \fB%M\fR
-Time used by the job in days:hours:minutes:seconds. 
+Time used by the job in days\-hours:minutes:seconds. 
 The days and hours are printed only as needed.
 .TP
 \fB%n\fR
@@ -224,11 +224,11 @@ Specification of the order in which records should be reported.
 This uses the same field specifciation as the <output_format>.
 Multiple sorts may be performed by listing multiple sort fields 
 separated by commas.
-The field specifications may be preceeded by "+" or "-" for 
+The field specifications may be preceeded by "+" or "\-" for 
 assending (default) and desending order respectively. 
 For example, a sort value of "P,U" will sort the
 records by partition name then by user id. 
-The default value of sort for jobs is "P,t,-p" (increasing partition 
+The default value of sort for jobs is "P,t,\-p" (increasing partition 
 name then within a given partition by increasing node state and then 
 decreasing priority).
 The default value of sort for job steps is "P,i" (increasing partition 
@@ -298,7 +298,7 @@ CG  COMPLETING
 Job is in the process of completing. Some processes on some nodes may still be active.
 .TP
 F   FAILED
-Job terminated with non-zero exit code or other failure condition.
+Job terminated with non\-zero exit code or other failure condition.
 .TP
 NF  NODE_FAIL
 Job terminated due to failure of one or more allocated nodes.
