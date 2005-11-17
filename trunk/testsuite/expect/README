@@ -125,6 +125,7 @@ test1.48   Test of srun mail options (--mail-type and --mail-user options).
 test1.49   Test of srun task-prolog and task-epilog options.
 test1.50   Test of running non-existant job, confirm timely termination.
 test1.51   Test propagation of umask to spawned tasks.
+test1.52   Test of hostfile logic
 
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
            The test will print "WARNING" and terminate with an exit code of 
@@ -282,6 +283,7 @@ test11.3   Test running of Network protocol option (-msg_api)
 test11.4   Test mpi jobs (must run make in mpi-testscripts dir)
 test11.5   Test of checkpoint logic (direct with srun)
 test11.6   Test of checkpoint logic (with poe)
+test11.7   Test of hostfile logic (with poe)
 
 
 test12.#   Testing of sacct command and options
