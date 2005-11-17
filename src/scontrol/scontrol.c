@@ -1362,7 +1362,7 @@ _update_it (int argc, char *argv[])
 static int
 _update_job (int argc, char *argv[]) 
 {
-	int i;
+	int i, update_cnt = 0;
 	job_desc_msg_t job_msg;
 
 	slurm_init_job_desc_msg (&job_msg);	
@@ -1380,35 +1380,52 @@ _update_job (int argc, char *argv[])
 				job_msg.time_limit = 
 					(uint32_t) strtol(&argv[i][10], 
 							  (char **) NULL, 10);
+			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "Priority=", 9) == 0)
+		else if (strncasecmp(argv[i], "Priority=", 9) == 0) {
 			job_msg.priority = 
 				(uint32_t) strtoll(&argv[i][9], 
 						(char **) NULL, 10);
-		else if (strncasecmp(argv[i], "ReqProcs=", 9) == 0)
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "ReqProcs=", 9) == 0) {
 			job_msg.num_procs = 
 				(uint32_t) strtol(&argv[i][9], 
 						(char **) NULL, 10);
-		else if (strncasecmp(argv[i], "MinNodes=", 9) == 0)
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "MinNodes=", 9) == 0) {
 			job_msg.min_nodes = 
 				(uint32_t) strtol(&argv[i][9],
 						 (char **) NULL, 10);
-		else if (strncasecmp(argv[i], "MinProcs=", 9) == 0)
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "MinProcs=", 9) == 0) {
 			job_msg.min_procs = 
 				(uint32_t) strtol(&argv[i][9], 
 						(char **) NULL, 10);
-		else if (strncasecmp(argv[i], "MinMemory=", 10) == 0)
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "MinMemory=", 10) == 0) {
 			job_msg.min_memory = 
 				(uint32_t) strtol(&argv[i][10], 
 						(char **) NULL, 10);
-		else if (strncasecmp(argv[i], "MinTmpDisk=", 11) == 0)
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "MinTmpDisk=", 11) == 0) {
 			job_msg.min_tmp_disk = 
 				(uint32_t) strtol(&argv[i][11], 
 						(char **) NULL, 10);
-		else if (strncasecmp(argv[i], "Partition=", 10) == 0)
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "Partition=", 10) == 0) {
 			job_msg.partition = &argv[i][10];
-		else if (strncasecmp(argv[i], "Name=", 5) == 0)
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "Name=", 5) == 0) {
 			job_msg.name = &argv[i][5];
+			update_cnt++;
+		}
 		else if (strncasecmp(argv[i], "Shared=", 7) == 0) {
 			if (strcasecmp(&argv[i][7], "YES") == 0)
 				job_msg.shared = 1;
@@ -1418,6 +1435,7 @@ _update_job (int argc, char *argv[])
 				job_msg.shared = 
 					(uint16_t) strtol(&argv[i][7], 
 							(char **) NULL, 10);
+			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "Contiguous=", 11) == 0) {
 			if (strcasecmp(&argv[i][11], "YES") == 0)
@@ -1428,17 +1446,26 @@ _update_job (int argc, char *argv[])
 				job_msg.contiguous = 
 					(uint16_t) strtol(&argv[i][11], 
 							(char **) NULL, 10);
+			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "ReqNodeList=", 12) == 0)
+		else if (strncasecmp(argv[i], "ReqNodeList=", 12) == 0) {
 			job_msg.req_nodes = &argv[i][12];
-		else if (strncasecmp(argv[i], "Features=", 9) == 0)
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "Features=", 9) == 0) {
 			job_msg.features = &argv[i][9];
-		else if (strncasecmp(argv[i], "Account=", 8) == 0)
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "Account=", 8) == 0) {
 			job_msg.account = &argv[i][8];
-		else if (strncasecmp(argv[i], "Dependency=", 11) == 0)
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "Dependency=", 11) == 0) {
 			job_msg.dependency =
 				(uint32_t) strtol(&argv[i][11],
 					(char **) NULL, 10);
+			update_cnt++;
+		}
 #if SYSTEM_DIMENSIONS
 		else if (strncasecmp(argv[i], "Geometry=", 9) == 0) {
 			char* token, *delimiter = ",x", *next_ptr;
@@ -1448,7 +1475,8 @@ _update_job (int argc, char *argv[])
 			token = strtok_r(geometry_tmp, delimiter, &next_ptr);
 			for (j=0; j<SYSTEM_DIMENSIONS; j++) {
 				if (token == NULL) {
-					error("insufficient dimensions in Geometry");
+					error("insufficient dimensions in "
+						"Geometry");
 					rc = -1;
 					break;
 				}
@@ -1459,7 +1487,8 @@ _update_job (int argc, char *argv[])
 					break;
 				}
 				geometry_tmp = next_ptr;
-				token = strtok_r(geometry_tmp, delimiter, &next_ptr);
+				token = strtok_r(geometry_tmp, delimiter, 
+					&next_ptr);
 			}
 			if (token != NULL) {
 				error("too many dimensions in Geometry");
@@ -1472,7 +1501,8 @@ _update_job (int argc, char *argv[])
 				for (j=0; j<SYSTEM_DIMENSIONS; j++)
 					job_msg.geometry[j] = (uint16_t) NO_VAL;
 				exit_code = 1;
-			}
+			} else
+				update_cnt++;
 		}
 #endif
 		else if (strncasecmp(argv[i], "Rotate=", 7) == 0) {
@@ -1484,6 +1514,7 @@ _update_job (int argc, char *argv[])
 				job_msg.rotate = 
 					(uint32_t) strtol(&argv[i][7], 
 						(char **) NULL, 10);
+			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "Connection=", 11) == 0) {
 			if (strcasecmp(&argv[i][11], "torus") == 0)
@@ -1496,9 +1527,11 @@ _update_job (int argc, char *argv[])
 				job_msg.conn_type = 
 					(uint16_t) strtol(&argv[i][11], 
 							(char **) NULL, 10);
+			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "StartTime=", 10) == 0) {
 			job_msg.begin_time = parse_time(&argv[i][10]);
+			update_cnt++;
 		}
 		else {
 			exit_code = 1;
@@ -1506,6 +1539,12 @@ _update_job (int argc, char *argv[])
 			fprintf (stderr, "Request aborted\n");
 			return 0;
 		}
+	}
+
+	if (update_cnt == 0) {
+		exit_code = 1;
+		fprintf (stderr, "No changes specified\n");
+		return 0;
 	}
 
 	if (slurm_update_job(&job_msg))
@@ -1525,7 +1564,7 @@ _update_job (int argc, char *argv[])
 static int
 _update_node (int argc, char *argv[]) 
 {
-	int i, j, k, rc = 0;
+	int i, j, k, rc = 0, update_cnt = 0;
 	uint16_t state_val;
 	update_node_msg_t node_msg;
 	char *reason_str = NULL;
@@ -1568,13 +1607,20 @@ _update_node (int argc, char *argv[])
 			xstrcat(reason_str, time_buf);
 				
 			node_msg.reason = reason_str;
+			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "State=NoResp", 12) == 0)
+		else if (strncasecmp(argv[i], "State=NoResp", 12) == 0) {
 			node_msg.node_state = NODE_STATE_NO_RESPOND;
-		else if (strncasecmp(argv[i], "State=DRAIN", 11) == 0)
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "State=DRAIN", 11) == 0) {
 			node_msg.node_state = NODE_STATE_DRAIN;
-		else if (strncasecmp(argv[i], "State=RES", 9) == 0)
-			 node_msg.node_state = NODE_RESUME;
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "State=RES", 9) == 0) {
+			node_msg.node_state = NODE_RESUME;
+			update_cnt++;
+		}
 		else if (strncasecmp(argv[i], "State=", 6) == 0) {
 			state_val = (uint16_t) NO_VAL;
 			for (j = 0; j <= NODE_STATE_END; j++) {
@@ -1599,6 +1645,7 @@ _update_node (int argc, char *argv[])
 				}
 			}	
 			node_msg.node_state = state_val;
+			update_cnt++;
 		}
 		else {
 			exit_code = 1;
@@ -1610,9 +1657,15 @@ _update_node (int argc, char *argv[])
 
 	if ((node_msg.node_state == NODE_STATE_DRAIN)  &&
 	    (node_msg.reason == NULL)) {
-		fprintf (stderr, "You must specify a reason when DRAINING a node\n");
-		fprintf (stderr, "Request aborted\n");
+		fprintf (stderr, "You must specify a reason when DRAINING a "
+			"node\nRequest aborted\n");
 		goto done;
+	}
+
+	if (update_cnt == 0) {
+		exit_code = 1;
+		fprintf (stderr, "No changes specified\n");
+		return 0;
 	}
 
 	rc = slurm_update_node(&node_msg);
@@ -1636,7 +1689,7 @@ done:	xfree(reason_str);
 static int
 _update_part (int argc, char *argv[]) 
 {
-	int i;
+	int i, update_cnt = 0;
 	update_part_msg_t part_msg;
 
 	slurm_init_part_desc_msg ( &part_msg );
@@ -1651,8 +1704,9 @@ _update_part (int argc, char *argv[])
 				part_msg.max_time = 
 					(uint32_t) strtol(&argv[i][8], 
 						(char **) NULL, 10);
+			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "MaxNodes=", 9) == 0)
+		else if (strncasecmp(argv[i], "MaxNodes=", 9) == 0) {
 			if ((strcasecmp(&argv[i][9],"UNLIMITED") == 0) ||
 			    (strcasecmp(&argv[i][8],"INFINITE") == 0))
 				part_msg.max_nodes = INFINITE;
@@ -1660,7 +1714,9 @@ _update_part (int argc, char *argv[])
 				part_msg.max_nodes = 
 					(uint32_t) strtol(&argv[i][9], 
 						(char **) NULL, 10);
-		else if (strncasecmp(argv[i], "MinNodes=", 9) == 0)
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "MinNodes=", 9) == 0) {
 			if ((strcasecmp(&argv[i][9],"UNLIMITED") == 0) ||
 			    (strcasecmp(&argv[i][8],"INFINITE") == 0))
 				part_msg.min_nodes = INFINITE;
@@ -1668,6 +1724,8 @@ _update_part (int argc, char *argv[])
 				part_msg.min_nodes = 
 					(uint32_t) strtol(&argv[i][9], 
 						(char **) NULL, 10);
+			update_cnt++;
+		}
 		else if (strncasecmp(argv[i], "Default=", 8) == 0) {
 			if (strcasecmp(&argv[i][8], "NO") == 0)
 				part_msg.default_part = 0;
@@ -1677,10 +1735,11 @@ _update_part (int argc, char *argv[])
 				exit_code = 1;
 				fprintf (stderr, "Invalid input: %s\n", 
 					 argv[i]);
-				fprintf (stderr, 
-				         "Acceptable Default values are YES and NO\n");
+				fprintf (stderr, "Acceptable Default values "
+					"are YES and NO\n");
 				return 0;
 			}
+			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "Hidden=", 4) == 0) {
 			if (strcasecmp(&argv[i][7], "NO") == 0)
@@ -1691,10 +1750,11 @@ _update_part (int argc, char *argv[])
 				exit_code = 1;
 				fprintf (stderr, "Invalid input: %s\n", 
 					 argv[i]);
-				fprintf (stderr, 
-				         "Acceptable Hidden values are YES and NO\n");
+				fprintf (stderr, "Acceptable Hidden values "
+					"are YES and NO\n");
 				return 0;
 			}
+			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "RootOnly=", 4) == 0) {
 			if (strcasecmp(&argv[i][9], "NO") == 0)
@@ -1705,10 +1765,11 @@ _update_part (int argc, char *argv[])
 				exit_code = 1;
 				fprintf (stderr, "Invalid input: %s\n", 
 					 argv[i]);
-				fprintf (stderr, 
-				         "Acceptable RootOnly values are YES and NO\n");
+				fprintf (stderr, "Acceptable RootOnly values "
+					"are YES and NO\n");
 				return 0;
 			}
+			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "Shared=", 7) == 0) {
 			if (strcasecmp(&argv[i][7], "NO") == 0)
@@ -1721,11 +1782,11 @@ _update_part (int argc, char *argv[])
 				exit_code = 1;
 				fprintf (stderr, "Invalid input: %s\n", 
 					 argv[i]);
-				fprintf (stderr, 
-				         "Acceptable Shared values are "
-				         "YES, NO and FORCE\n");
+				fprintf (stderr, "Acceptable Shared values "
+					"are YES, NO and FORCE\n");
 				return 0;
 			}
+			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "State=", 6) == 0) {
 			if (strcasecmp(&argv[i][6], "DOWN") == 0)
@@ -1736,21 +1797,32 @@ _update_part (int argc, char *argv[])
 				exit_code = 1;
 				fprintf (stderr, "Invalid input: %s\n", 
 					 argv[i]);
-				fprintf (stderr, 
-				         "Acceptable State values are UP and DOWN\n");
+				fprintf (stderr, "Acceptable State values "
+					"are UP and DOWN\n");
 				return 0;
 			}
+			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "Nodes=", 6) == 0)
+		else if (strncasecmp(argv[i], "Nodes=", 6) == 0) {
 			part_msg.nodes = &argv[i][6];
-		else if (strncasecmp(argv[i], "AllowGroups=", 12) == 0)
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "AllowGroups=", 12) == 0) {
 			part_msg.allow_groups = &argv[i][12];
+			update_cnt++;
+		}
 		else {
 			exit_code = 1;
 			fprintf (stderr, "Invalid input: %s\n", argv[i]);
 			fprintf (stderr, "Request aborted\n");
 			return 0;
 		}
+	}
+
+	if (update_cnt == 0) {
+		exit_code = 1;
+		fprintf (stderr, "No changes specified\n");
+		return 0;
 	}
 
 	if (slurm_update_partition(&part_msg)) {
@@ -1765,10 +1837,10 @@ void
 _usage () {
 	printf ("\
 scontrol [<OPTION>] [<COMMAND>]                                            \n\
-    Valid <OPTION> values are:                                            \n\
-     -a or --all: equivalent to \"all\" command                             \n\
+    Valid <OPTION> values are:                                             \n\
+     -a or --all: equivalent to \"all\" command                            \n\
      -h or --help: equivalent to \"help\" command                          \n\
-     --hide: equivalent to \"hide\" command                          \n\
+     --hide: equivalent to \"hide\" command                                \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
      -q or --quiet: equivalent to \"quite\" command                        \n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
@@ -1781,9 +1853,9 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
     Valid <COMMAND> values are:                                            \n\
      abort                    shutdown slurm controller immediately        \n\
                               generating a core file.                      \n\
-     all                      display information about all partitions, including\n\
-                              hidden partitions.                            \n\
-     checkpoint <CH_OP><step> perform a checkpoint operation on identified  \n\
+     all                      display information about all partitions,    \n\
+                              including hidden partitions.                 \n\
+     checkpoint <CH_OP><step> perform a checkpoint operation on identified \n\
                               job step \n\
      completing               display jobs in completing state along with  \n\
                               their completing or down nodes               \n\
