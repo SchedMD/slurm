@@ -445,15 +445,16 @@ _decode_cred(slurm_auth_credential_t *c)
 
     again:
 	if ((e = munge_decode(c->m_str, ctx, &c->buf, &c->len, &c->uid, &c->gid))) {
-		error ("Munge decode failed: %s %s", 
-			munge_ctx_strerror(ctx), retry ? "(retrying ...)": "");
-
-		if ((e == EMUNGE_SOCKET) && retry--)
+		if ((e == EMUNGE_SOCKET) && retry--) {
+			error ("Munge decode failed: %s (retrying ...)",
+				munge_ctx_strerror(ctx));
 			goto again;
+		}
 
 		/*
 		 *  Print any valid credential data 
 		 */
+		error ("Munge decode failed: %s", munge_ctx_strerror(ctx));
 		_print_cred(ctx); 
 
 		plugin_errno = e + MUNGE_ERRNO_OFFSET;
