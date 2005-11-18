@@ -36,8 +36,9 @@
 void pdebug_stop_current(slurmd_job_t *job);
 /*
  * Prepare task for parallel debugger attach
+ * Returns SLURM_SUCCESS or SLURM_ERROR.
  */
-void pdebug_trace_process(slurmd_job_t *job, pid_t pid);
+int pdebug_trace_process(slurmd_job_t *job, pid_t pid);
 
 #ifdef HAVE_PTRACE64
 #  define _PTRACE(r,p,a,d) ptrace64((r),(long long)(p),(long long)(a),(d),NULL)
