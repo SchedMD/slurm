@@ -67,7 +67,7 @@
 
 
 static int  _abort_job(uint32_t job_id);
-static char ** _build_env(uint32_t jobid, uid_t uid, char *bgl_part_id);
+static char ** _build_env(uint32_t jobid, uid_t uid, char *bg_part_id);
 static bool _slurm_authorized_user(uid_t uid);
 static bool _job_still_running(uint32_t job_id);
 static int  _kill_all_active_steps(void *auth_cred, uint32_t jobid,
@@ -86,8 +86,8 @@ static void _rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr);
 static void _rpc_reconfig(slurm_msg_t *msg, slurm_addr *cli_addr);
 static void _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *);
 static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
-static int  _run_prolog(uint32_t jobid, uid_t uid, char *bgl_part_id);
-static int  _run_epilog(uint32_t jobid, uid_t uid, char *bgl_part_id);
+static int  _run_prolog(uint32_t jobid, uid_t uid, char *bg_part_id);
+static int  _run_epilog(uint32_t jobid, uid_t uid, char *bg_part_id);
 
 static bool _pause_for_job_completion(void *auth_cred, uint32_t jobid,
 				      int maxtime);
@@ -696,7 +696,7 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	bool     first_job_run = true;
 	int      rc = SLURM_SUCCESS;
 	uid_t    req_uid = g_slurm_auth_get_uid(msg->cred);
-	char    *bgl_part_id = NULL;
+	char    *bg_part_id = NULL;
 	bool	replied = false;
 
 	if (!_slurm_authorized_user(req_uid)) {
@@ -721,9 +721,9 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	 	 */
 		select_g_get_jobinfo(req->select_jobinfo, 
 				     SELECT_DATA_BLOCK_ID, 
-				     &bgl_part_id);
+				     &bg_part_id);
 
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 		/* BlueGene prolog waits for partition boot and is very slow.
 		 * Just reply now and send a separate kill job request if the 
 		 * prolog or launch fail. */
@@ -731,8 +731,8 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 		replied = true;
 #endif
 
-		rc = _run_prolog(req->job_id, req->uid, bgl_part_id);
-		xfree(bgl_part_id);
+		rc = _run_prolog(req->job_id, req->uid, bg_part_id);
+		xfree(bg_part_id);
 		if (rc != 0) {
 			error("[job %u] prolog failed", req->job_id);
 			_prolog_error(req, rc);
@@ -1198,7 +1198,7 @@ _rpc_signal_job(slurm_msg_t *msg, slurm_addr *cli)
 	uid_t           uid    = g_slurm_auth_get_uid(msg->cred);
 	int             nsteps = 0;
 	int		delay;
-	char           *bgl_part_id = NULL;
+	char           *bg_part_id = NULL;
 
 	error("_rpc_signal_job not yet implemented");
 	/* 
@@ -1234,7 +1234,7 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	uid_t           uid    = g_slurm_auth_get_uid(msg->cred);
 	int             nsteps = 0;
 	int		delay;
-	char           *bgl_part_id = NULL;
+	char           *bg_part_id = NULL;
 
 	debug("_rpc_terminate_job, uid = %d", uid);
 	/* 
@@ -1335,9 +1335,9 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 
 	save_cred_state(conf->vctx);
 	select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_BLOCK_ID,
-		&bgl_part_id);
-	rc = _run_epilog(req->job_id, req->job_uid, bgl_part_id);
-	xfree(bgl_part_id);
+		&bg_part_id);
+	rc = _run_epilog(req->job_id, req->job_uid, bg_part_id);
+	xfree(bg_part_id);
 	if (rc != 0) {
 		error ("[job %u] epilog failed", req->job_id);
 		rc = ESLURMD_EPILOG_FAILED;
@@ -1463,25 +1463,25 @@ _rpc_update_time(slurm_msg_t *msg, slurm_addr *cli)
 
 /* NOTE: xfree returned value */
 static char **
-_build_env(uint32_t jobid, uid_t uid, char *bgl_part_id)
+_build_env(uint32_t jobid, uid_t uid, char *bg_part_id)
 {
 	char **env = xmalloc(sizeof(char *));
 	env[0]  = NULL;
 	setenvf(&env, "SLURM_JOBID", "%u", jobid);
 	setenvf(&env, "SLURM_UID",   "%u", uid);
-	if (bgl_part_id) {
+	if (bg_part_id) {
 		setenvf(&env, "MPIRUN_PARTITION",
-			"%s", bgl_part_id);
+			"%s", bg_part_id);
 	}
 	return env;
 }
 
 static int 
-_run_prolog(uint32_t jobid, uid_t uid, char *bgl_part_id)
+_run_prolog(uint32_t jobid, uid_t uid, char *bg_part_id)
 {
 	int error_code;
 	char *my_prolog;
-	char **my_env = _build_env(jobid, uid, bgl_part_id);
+	char **my_env = _build_env(jobid, uid, bg_part_id);
 
 	slurm_mutex_lock(&conf->config_mutex);
 	my_prolog = xstrdup(conf->prolog);
@@ -1496,11 +1496,11 @@ _run_prolog(uint32_t jobid, uid_t uid, char *bgl_part_id)
 }
 
 static int 
-_run_epilog(uint32_t jobid, uid_t uid, char *bgl_part_id)
+_run_epilog(uint32_t jobid, uid_t uid, char *bg_part_id)
 {
 	int error_code;
 	char *my_epilog;
-	char **my_env = _build_env(jobid, uid, bgl_part_id);
+	char **my_env = _build_env(jobid, uid, bg_part_id);
 
 	slurm_mutex_lock(&conf->config_mutex);
 	my_epilog = xstrdup(conf->epilog);

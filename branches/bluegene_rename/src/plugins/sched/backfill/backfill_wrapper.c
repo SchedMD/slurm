@@ -51,7 +51,7 @@ static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 /**************************************************************************/
 int init( void )
 {
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	/* Backfill scheduling on Blue Gene is possible, 
 	 * but difficult and would require substantial 
 	 * software development to accomplish. 

@@ -158,7 +158,7 @@ strong_alias(hostset_within,		slurm_hostset_within);
 /* ----[ Internal Data Structures ]---- */
 
 
-#ifdef HAVE_BGL		
+#ifdef HAVE_BG		
 /* logic for block node description */
 /* We allocate space for three digits, 
  * each with values 0 to 9 even if they are not all used */
@@ -2186,7 +2186,7 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
 	return len;
 }
 
-#ifdef HAVE_BGL		
+#ifdef HAVE_BG		
 
 /* logic for block node description */
 /* write the next bracketed hostlist, i.e. prefix[n-m,k,...]
@@ -2334,7 +2334,7 @@ size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
   
 	LOCK_HOSTLIST(hl);
 
-#ifdef HAVE_BGL		/* logic for block node description */
+#ifdef HAVE_BG		/* logic for block node description */
 	if (hl->nranges < 1)
 		goto notbox;	/* no data */
 	if (hl->hr[0]->width != 3)
@@ -2864,9 +2864,9 @@ int main(int ac, char **av)
 	printf("after delete = `%s'\n", buf);
 	hostlist_destroy(hl3);
 
-	hl3 = hostlist_create("bgl[012x123]");
+	hl3 = hostlist_create("bg[012x123]");
 	hostlist_ranged_string(hl3, 102400, buf);
-	printf("bgl[012x123] == `%s'\n", buf);
+	printf("bg[012x123] == `%s'\n", buf);
 	i = hostlist_count(hl3);
 	assert(i == 8);
 	hostlist_ranged_string(hl3, 102400, buf);

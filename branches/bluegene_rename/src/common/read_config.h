@@ -58,7 +58,7 @@
 #define DEFAULT_SAVE_STATE_LOC      "/tmp"
 #define DEFAULT_SCHEDROOTFILTER     1
 #define DEFAULT_SCHEDTYPE           "sched/builtin"
-#ifdef HAVE_BGL		/* Blue Gene specific default configuration parameters */
+#ifdef HAVE_BG		/* Blue Gene specific default configuration parameters */
 #  define DEFAULT_SELECT_TYPE       "select/bluegene"
 #else
 #  define DEFAULT_SELECT_TYPE       "select/linear"

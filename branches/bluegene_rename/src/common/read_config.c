@@ -609,7 +609,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	if ( inactive_limit != -1) {
 		if ( ctl_conf_ptr->inactive_limit != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "InactiveLimit");
-#ifdef HAVE_BGL		/* Inactive limit must be zero on Blue Gene */
+#ifdef HAVE_BG		/* Inactive limit must be zero on Blue Gene */
 		if (inactive_limit) {
 			error("InactiveLimit=%ld is invalid on Blue Gene",
 				inactive_limit);

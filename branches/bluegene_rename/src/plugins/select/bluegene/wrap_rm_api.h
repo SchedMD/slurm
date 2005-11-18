@@ -1,14 +1,14 @@
 /* Wrapper for rm_api.h */
 
-#ifndef ATTACH_BGL_H
-#define ATTACH_BGL_H
+#ifndef ATTACH_BG_H
+#define ATTACH_BG_H
 
 #if HAVE_CONFIG_H
 #  include "config.h"
 #endif
 
-#ifdef HAVE_BGL_FILES
-  /* Over-ride attach_bgl.h inclusion due to problems in compiling it 
+#ifdef HAVE_BG_FILES
+  /* Over-ride attach_bg.h inclusion due to problems in compiling it 
    * with gcc and missing externals in that file */
 
   /* MPI Debug support */
@@ -33,7 +33,7 @@
   typedef int      rm_BP_state_t;
 
   /* these are the typedefs that we will need to have 
-   * if we want the states on the Front End Node of a BGL system
+   * if we want the states on the Front End Node of a BG system
    * make certain they match the rm_api.h values on the Service Node */
   enum rm_partition_state {RM_PARTITION_FREE,
 			   RM_PARTITION_CONFIGURING,

@@ -400,7 +400,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool runable_ever  = false;	/* Job can ever run */
 	bool runable_avail = false;	/* Job can run with available nodes */
         int cr_enabled = 0;
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	uint16_t checked = 0;
 #endif
 	if (node_set_size == 0) {
@@ -545,11 +545,11 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
                         }
 			bit_and(node_set_ptr[i].my_bitmap, avail_node_bitmap);
 			if (shared) {
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 				/* Exclude nodes which have jobs in COMPLETING
 				 * state in order to insure Epilog completes 
 				 * before possibly scheduling another job to
-				 * the same bglblock. */
+				 * the same bgblock. */
 				int ni;
 				bit_and(node_set_ptr[i].my_bitmap,
 					share_node_bitmap);
@@ -700,7 +700,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		info("_pick_best_nodes: job never runnable");
 	}
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	select_g_set_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_CHECKED, &checked);
 #endif	
