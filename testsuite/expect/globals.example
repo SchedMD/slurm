@@ -40,8 +40,14 @@ set smap        "${slurm_dir}/bin/smap"
 set squeue      "${slurm_dir}/bin/squeue"
 set srun        "${slurm_dir}/bin/srun"
 
-set poe         "/usr/bin/poe"
-set mpicc	"/usr/local/bin/mpicc"
+# If using MPICH-2 or other version of MPI requiring pmi libary, use this
+#set mpicc	"/home/jette/mpich2-install/bin/mpicc"
+#set use_pmi	1
+# OR for other versions of MPICH, use this
+set mpicc       "/usr/local/bin/mpicc"
+set use_pmi	0
+
+set poe		"/usr/bin/poe"
 set mpirun	"mpirun"
 set totalviewcli	"/usr/local/bin/totalviewcli"
 
