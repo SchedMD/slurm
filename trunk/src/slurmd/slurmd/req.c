@@ -846,19 +846,34 @@ _rpc_ping(slurm_msg_t *msg, slurm_addr *cli_addr)
 static void
 _rpc_signal_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 {
+	int               fd;
 	int               rc = SLURM_SUCCESS;
 	uid_t             req_uid;
 	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
-	step_loc_t loc;
+	slurmstepd_info_t *step;
 
-	/*
-	 * Use slurmstepd API to request that the slurmdstepd handle
-	 * the signalling.
-	 */
-	loc.directory = conf->spooldir;
-	loc.nodename = conf->node_name;
-	loc.jobid = req->job_id;
-	loc.stepid = req->job_step_id;
+	fd = stepd_connect(conf->spooldir, conf->node_name,
+			   req->job_id, req->job_step_id);
+	if (fd == -1) {
+		error("stepd_connect failed: %m");
+		rc = EPERM;
+		goto done;
+	}
+	if ((step = stepd_get_info(fd)) == NULL) {
+		debug("kill for nonexistent job %u.%u requested",
+		      req->job_id, req->job_step_id);
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done2;
+	} 
+
+	req_uid = g_slurm_auth_get_uid(msg->cred);
+	if ((req_uid != step->uid) && (!_slurm_authorized_user(req_uid))) {
+		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
+		      (long) req_uid, req->job_id, req->job_step_id, 
+		      (long) step->uid);       
+		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */
+		goto done3;
+	}
 
 #ifdef HAVE_AIX
 #  ifdef SIGMIGRATE
@@ -867,18 +882,22 @@ _rpc_signal_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	 * These signals are not sent to the entire process group, but just a
 	 * single process, namely the PMD. */
 	if (req->signal == SIGMIGRATE || req->signal == SIGSOUND) {
-		rc = stepd_signal_task_local(loc, msg->cred, req->signal, 0);
+		rc = stepd_signal_task_local(fd, req->signal, 0);
 		goto done;
 	}
 #    endif
 #  endif
 #endif
 
-	rc = stepd_signal(loc, msg->cred, req->signal);
+	rc = stepd_signal(fd, req->signal);
 	if (rc == -1)
 		rc = ESLURMD_JOB_NOTRUNNING;
 	
-  done:
+done3:
+	xfree(step);
+done2:
+	close(fd);
+done:
 	slurm_send_rc_msg(msg, rc);
 }
 
@@ -886,23 +905,44 @@ static void
 _rpc_terminate_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 {
 	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
-	step_loc_t        loc;
 	int               rc = SLURM_SUCCESS;
+	int               fd;
+	uid_t             req_uid;
+	slurmstepd_info_t *step;
 
 	debug3("Entering _rpc_terminate_tasks");
-	/*
-	 * Use slurmstepd API to request that the slurmdstepd handle
-	 * the signalling.
-	 */
-	loc.directory = conf->spooldir;
-	loc.nodename = conf->node_name;
-	loc.jobid = req->job_id;
-	loc.stepid = req->job_step_id;
-	rc = stepd_signal_container(loc, msg->cred, req->signal);
+	fd = stepd_connect(conf->spooldir, conf->node_name,
+			   req->job_id, req->job_step_id);
+	if (fd == -1) {
+		error("stepd_connect failed: %m");
+		rc = EPERM;
+		goto done;
+	}
+	if (!(step = stepd_get_info(fd))) {
+		debug("kill for nonexistent job %u.%u requested",
+		      req->job_id, req->job_step_id);
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done2;
+	} 
+
+	req_uid = g_slurm_auth_get_uid(msg->cred);
+	if ((req_uid != step->uid) && (!_slurm_authorized_user(req_uid))) {
+		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
+		      (long) req_uid, req->job_id, req->job_step_id, 
+		      (long) step->uid);       
+		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */
+		goto done3;
+	}
+
+	rc = stepd_signal_container(fd, req->signal);
 	if (rc == -1)
 		rc = ESLURMD_JOB_NOTRUNNING;
 
-  done:
+done3:
+	xfree(step);
+done2:
+	close(fd);
+done:
 	slurm_send_rc_msg(msg, rc);
 }
 
@@ -953,12 +993,19 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
 	while (stepd = list_next(i)) {
-		if (stepd_pid_in_container(*stepd, req->job_pid)
-		    || req->job_pid == stepd_daemon_pid(*stepd)) {
+		int fd;
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   stepd->jobid, stepd->stepid);
+		if (fd == -1)
+			continue;
+		if (stepd_pid_in_container(fd, req->job_pid)
+		    || req->job_pid == stepd_daemon_pid(fd)) {
 			resp.job_id = stepd->jobid;
 			found = true;
+			close(fd);
 			break;
 		}
+		close(fd);
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);
@@ -981,58 +1028,93 @@ static void
 _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 {
 	reattach_tasks_request_msg_t  *req = msg->data;
-	reattach_tasks_response_msg_t  resp;
+	reattach_tasks_response_msg_t *resp;
 	slurm_msg_t                    resp_msg;
 	int          rc   = SLURM_SUCCESS;
 	uint16_t     port = 0;
 	char         host[MAXHOSTNAMELEN];
 	int          i;
 	slurm_addr   ioaddr;
-	step_loc_t loc;
+	void        *job_cred_sig;
+	int          len;
+	int               fd;
+	uid_t             req_uid;
+	slurmstepd_info_t *step;
 
-	memset(&resp, 0, sizeof(reattach_tasks_response_msg_t));
+	resp = xmalloc(sizeof(reattach_tasks_response_msg_t));
+	memset(&resp_msg, 0, sizeof(slurm_msg_t));
+	fd = stepd_connect(conf->spooldir, conf->node_name,
+			   req->job_id, req->job_step_id);
+	if (fd == -1) {
+		error("stepd_connect failed: %m");
+		rc = EPERM;
+		goto done;
+	}
+	if ((step = stepd_get_info(fd)) == NULL) {
+		debug("kill for nonexistent job %u.%u requested",
+		      req->job_id, req->job_step_id);
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done2;
+	} 
+
+	if ((req_uid != step->uid) && (!_slurm_authorized_user(req_uid))) {
+		error("uid %ld attempt to attach to job %u.%u owned by %ld",
+		      (long) req_uid, req->job_id, req->job_step_id,
+		      (long) step->uid);
+		rc = EPERM;
+		goto done3;
+	}
+
+	memset(resp, 0, sizeof(reattach_tasks_response_msg_t));
 	slurm_get_ip_str(cli, &port, host, sizeof(host));
 
 	/* 
-	 * Set response addr by resp_port and client address
+	 * Set response address by resp_port and client address
 	 */
 	memcpy(&resp_msg.address, cli, sizeof(slurm_addr));
 	slurm_set_addr(&resp_msg.address, req->resp_port, NULL); 
 
 	/* 
-	 * Set IO address and by io_port and client address
+	 * Set IO address by io_port and client address
 	 */
 	memcpy(&ioaddr, cli, sizeof(slurm_addr));
 	slurm_set_addr(&ioaddr, req->io_port, NULL);
 
 	/*
-	 * Use slurmstepd API to request that the slurmdstepd handle
-	 * the attach.
+	 * Get the signature of the job credential.  slurmstepd will need
+	 * this to prove its identity when it connects back to srun.
 	 */
-	loc.directory = conf->spooldir;
-	loc.nodename = conf->node_name;
-	loc.jobid = req->job_id;
-	loc.stepid = req->job_step_id;
-	rc = stepd_attach(loc, &ioaddr, &resp_msg.address,
-			  msg->cred, req->cred, &resp);
+	slurm_cred_get_signature(req->cred, (char **)(&job_cred_sig), &len);
+	xassert(len == SLURM_CRED_SIGLEN);
+
+	resp->gtids = NULL;
+	resp->local_pids = NULL;
+	/* Following call fills in gtids and local_pids when successful */
+	rc = stepd_attach(fd, &ioaddr, &resp_msg.address, job_cred_sig, resp);
 	if (rc != SLURM_SUCCESS) {
 		debug2("stepd_attach call failed");
-		goto done;
+		goto done3;
 	}
 
-    done:
+done3:
+	xfree(step);
+done2:
+	close(fd);
+done:
 	debug2("update step addrs rc = %d", rc);
-	resp_msg.data         = &resp;
+	resp_msg.data         = resp;
 	resp_msg.msg_type     = RESPONSE_REATTACH_TASKS;
-	resp.node_name        = conf->node_name;
-	resp.srun_node_id     = req->srun_node_id;
-	resp.return_code      = rc;
+	resp->node_name        = conf->node_name;
+	resp->srun_node_id     = req->srun_node_id;
+	resp->return_code      = rc;
 
 	slurm_send_only_node_msg(&resp_msg);
 
-	xfree(resp.gtids);
-	xfree(resp.local_pids);
-
+	if (resp->gtids)
+		xfree(resp->gtids);
+	if (resp->local_pids)
+		xfree(resp->local_pids);
+	xfree(resp);
 }
 
 /*
@@ -1049,6 +1131,7 @@ _kill_all_active_steps(void *auth_cred, uint32_t jobid, int sig, bool batch)
 	ListIterator i;
 	step_loc_t *stepd;
 	int step_cnt  = 0;  
+	int fd;
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
@@ -1065,10 +1148,19 @@ _kill_all_active_steps(void *auth_cred, uint32_t jobid, int sig, bool batch)
 
 		step_cnt++;
 
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   stepd->jobid, stepd->stepid);
+		if (fd == -1) {
+			debug3("Unable to connect to step %u.%u",
+			       stepd->jobid, stepd->stepid);
+			continue;
+		}
+
 		debug2("container signal %d to job %u.%u",
 		       sig, jobid, stepd->stepid);
-		if (stepd_signal_container(*stepd, auth_cred, sig) < 0)
+		if (stepd_signal_container(fd, sig) < 0)
 			debug("kill jobid=%u failed: %m", jobid);
+		close(fd);
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);
@@ -1088,10 +1180,18 @@ _job_still_running(uint32_t job_id)
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
 	while ((s = list_next(i))) {
-		if (s->jobid == job_id
-		    && stepd_state(*s) != SLURMSTEPD_NOT_RUNNING) {
-			retval = true;
-			break;
+		if (s->jobid == job_id) {
+			int fd;
+			fd = stepd_connect(s->directory, s->nodename,
+					   s->jobid, s->stepid);
+			if (fd == -1)
+				continue;
+			if (stepd_state(fd) != SLURMSTEPD_NOT_RUNNING) {
+				retval = true;
+				close(fd);
+				break;
+			}
+			close(fd);
 		}
 	}
 	list_iterator_destroy(i);
@@ -1137,10 +1237,18 @@ _steps_completed_now(uint32_t jobid)
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
 	while (stepd = list_next(i)) {
-		if (stepd->jobid == jobid
-		    && stepd_state(*stepd) != SLURMSTEPD_NOT_RUNNING) {
-			rc = false;
-			break;
+		if (stepd->jobid == jobid) {
+			int fd;
+			fd = stepd_connect(stepd->directory, stepd->nodename,
+					   stepd->jobid, stepd->stepid);
+			if (fd == -1)
+				continue;
+			if (stepd_state(fd) != SLURMSTEPD_NOT_RUNNING) {
+				rc = false;
+				close(fd);
+				break;
+			}
+			close(fd);
 		}
 	}
 	list_iterator_destroy(i);

@@ -424,12 +424,21 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	i = list_iterator_create(steps);
 	n = 0;
 	while (stepd = list_next(i)) {
-		if (stepd_state(*stepd) == SLURMSTEPD_NOT_RUNNING) {
-			debug("stale domain socket for stepd %u.%u ",
-			      stepd->jobid, stepd->stepid);
+		int fd;
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   stepd->jobid, stepd->stepid);
+		if (fd == -1) {
 			--(msg->job_count);
 			continue;
 		}
+		if (stepd_state(fd) == SLURMSTEPD_NOT_RUNNING) {
+			debug("stale domain socket for stepd %u.%u ",
+			      stepd->jobid, stepd->stepid);
+			--(msg->job_count);
+			close(fd);
+			continue;
+		}
+		close(fd);
 		if (stepd->stepid == NO_VAL)
 			debug("found apparently running job %u", stepd->jobid);
 		else
