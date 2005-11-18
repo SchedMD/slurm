@@ -42,11 +42,13 @@ typedef struct step_location {
 } step_loc_t;
 
 typedef enum {
-	REQUEST_SIGNAL_PROCESS_GROUP = 0,
+	REQUEST_CONNECT = 0,
+	REQUEST_SIGNAL_PROCESS_GROUP,
 	REQUEST_SIGNAL_TASK_LOCAL,
 	REQUEST_SIGNAL_TASK_GLOBAL,
 	REQUEST_SIGNAL_CONTAINER,
 	REQUEST_STATE,
+	REQUEST_INFO,
 	REQUEST_ATTACH,
 	REQUEST_PID_IN_CONTAINER,
 	REQUEST_DAEMON_PID
@@ -59,32 +61,52 @@ typedef enum {
 	SLURMSTEPD_STEP_ENDING
 } slurmstepd_state_t;
 
+typedef struct {
+	uid_t uid;
+	uint32_t jobid;
+	uint32_t stepid;
+} slurmstepd_info_t;
+
+/*
+ * Connect to a slurmstepd proccess by way of its unix domain socket.
+ *
+ * Returns a socket descriptor for the opened socket on success, 
+ * and -1 on error.
+ */
+int stepd_connect(char *directory, char *nodename,
+		  uint32_t jobid, uint32_t stepid);
+
 /*
  * Retrieve a job step's current state.
  */
-slurmstepd_state_t stepd_state(step_loc_t step);
+slurmstepd_state_t stepd_state(int fd);
+
+/*
+ * Retrieve slurmstepd_info_t structure for a job step.
+ *
+ * Must be xfree'd by the caller.
+ */
+slurmstepd_info_t *stepd_get_info(int fd);
 
 /*
  * Send a signal to the process group of a job step.
  */
-int stepd_signal(step_loc_t step, void *auth_cred, int signal);
+int stepd_signal(int fd, int signal);
 
 /*
  * Send a signal to a single task in a job step.
  */
-int stepd_signal_task_local(step_loc_t step, void *auth_cred,
-			    int signal, int ltaskid); 
+int stepd_signal_task_local(int fd, int signal, int ltaskid); 
 
 /*
  * Send a signal to a single task in a job step.
  */
-int stepd_signal_task_global(step_loc_t step, void *auth_cred,
-			     int signal, int gtaskid);
+int stepd_signal_task_global(int fd, int signal, int gtaskid);
 
 /*
  * Send a signal to the proctrack container of a job step.
  */
-int stepd_signal_container(step_loc_t step, void *auth_cred, int signal);
+int stepd_signal_container(int fd, int signal);
 
 /*
  * Attach a client to a running job step.
@@ -96,9 +118,8 @@ int stepd_signal_container(step_loc_t step, void *auth_cred, int signal);
  *         probably be moved into a more generic stepd_api call so that
  *         this header does not need to include slurm_protocol_defs.h.
  */
-int stepd_attach(step_loc_t step, slurm_addr *ioaddr, slurm_addr *respaddr,
-		 void *auth_cred, slurm_cred_t job_cred,
-		 reattach_tasks_response_msg_t *resp);
+int stepd_attach(int fd, slurm_addr *ioaddr, slurm_addr *respaddr,
+		 void *job_cred_sig, reattach_tasks_response_msg_t *resp);
 
 /*
  * Scan for available running slurm step daemons by checking
@@ -112,12 +133,12 @@ List stepd_available(const char *directory, const char *nodename);
  * Return true if the process with process ID "pid" is found in
  * the proctrack container of the slurmstepd "step".
  */
-bool stepd_pid_in_container(step_loc_t step, pid_t pid);
+bool stepd_pid_in_container(int fd, pid_t pid);
 
 /*
  * Return the process ID of the slurmstepd.
  */
-pid_t stepd_daemon_pid(step_loc_t step);
+pid_t stepd_daemon_pid(int fd);
 
 #define safe_read(fd, ptr, size) do {					\
 		if (read(fd, ptr, size) != size) {			\

@@ -649,7 +649,7 @@ _fork_all_tasks(slurmd_job_t *job)
 	 * Now it's ok to unblock the tasks, so they may call exec.
 	 */
 	for (i = 0; i < job->ntasks; i++) {
-		char c;
+		char c = '\0';
 		
 		debug3("Unblocking %u.%u task %d, writefd = %d",
 		       job->jobid, job->stepid, i, writefds[i]);

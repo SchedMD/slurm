@@ -46,7 +46,7 @@
 #include "src/slurmd/common/stepd_api.h"
 
 static int
-step_connect(step_loc_t step)
+_step_connect(char *directory, char *nodename, uint32_t jobid, uint32_t stepid)
 {
 	int fd;
 	int len;
@@ -54,19 +54,18 @@ step_connect(step_loc_t step)
 	char *name = NULL;
 
 	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-		debug("step_connect: socket: %m");
+		debug("_step_connect: socket: %m");
 		return -1;
 	}
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
-	xstrfmtcat(name, "%s/%s_%u.%u", step.directory, step.nodename, 
-		   step.jobid, step.stepid);
+	xstrfmtcat(name, "%s/%s_%u.%u", directory, nodename, jobid, stepid);
 	strcpy(addr.sun_path, name);
 	len = strlen(addr.sun_path)+1 + sizeof(addr.sun_family);
 
 	if (connect(fd, (struct sockaddr *) &addr, len) < 0) {
-		debug("step_connect: connect: %m");
+		debug("_step_connect: connect: %m");
 		xfree(name);
 		close(fd);
 		return -1;
@@ -76,61 +75,125 @@ step_connect(step_loc_t step)
 	return fd;
 }
 
-slurmstepd_state_t
-stepd_state(step_loc_t step)
-{
-	int req	= REQUEST_STATE;
-	int fd;
-	slurmstepd_state_t status = SLURMSTEPD_NOT_RUNNING;
 
-	fd = step_connect(step);
+/*
+ * Connect to a slurmstepd proccess by way of its unix domain socket.
+ *
+ * Returns a socket descriptor for the opened socket on success, 
+ * and -1 on error.
+ */
+int
+stepd_connect(char *directory, char *nodename, uint32_t jobid, uint32_t stepid)
+{
+	int req = REQUEST_CONNECT;
+	int fd = -1;
+	int rc;
+	void *auth_cred;
+	Buf buffer;
+	int len;
+
+	buffer = init_buf(0);
+	/* Create an auth credential */
+	auth_cred = g_slurm_auth_create(NULL, 2);
+	if (auth_cred == NULL) {
+		error("Creating authentication credential: %s",
+		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+		slurm_seterrno(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
+		goto fail1;
+	}
+
+	/* Pack the auth credential */
+	rc = g_slurm_auth_pack(auth_cred, buffer);
+	(void) g_slurm_auth_destroy(auth_cred);
+	if (rc) {
+		error("Packing authentication credential: %s",
+		      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+		slurm_seterrno(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
+		goto fail1;
+	}
+
+	/* Connect to the step */
+	fd = _step_connect(directory, nodename, jobid, stepid);
 	if (fd == -1)
-		return status;
+		goto fail1;
 
 	safe_write(fd, &req, sizeof(int));
-	safe_read(fd, &status, sizeof(slurmstepd_state_t));
+	len = size_buf(buffer);
+	safe_write(fd, &len, sizeof(int));
+	safe_write(fd, get_buf_data(buffer), len);
+
+	safe_read(fd, &rc, sizeof(int));
+	if (rc < 0) {
+		error("slurmstepd refused authentication: %m");
+		slurm_seterrno(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
+		goto rwfail;
+	}
+
+	free_buf(buffer);
+	return fd;
 
 rwfail:
 	close(fd);
+fail1:
+	free_buf(buffer);
+	return -1;
+}
+
+
+/*
+ * Retrieve a job step's current state.
+ */
+slurmstepd_state_t
+stepd_state(int fd)
+{
+	int req	= REQUEST_STATE;
+	slurmstepd_state_t status = SLURMSTEPD_NOT_RUNNING;
+
+	safe_write(fd, &req, sizeof(int));
+	safe_read(fd, &status, sizeof(slurmstepd_state_t));
+rwfail:
 	return status;
+}
+
+/*
+ * Retrieve slurmstepd_info_t structure for a job step.
+ *
+ * Must be xfree'd by the caller.
+ */
+slurmstepd_info_t *
+stepd_get_info(int fd)
+{
+	int req = REQUEST_INFO;
+	slurmstepd_info_t *info;
+
+	info = xmalloc(sizeof(slurmstepd_info_t));
+	safe_write(fd, &req, sizeof(int));
+	safe_read(fd, &info->uid, sizeof(uid_t));
+	safe_read(fd, &info->jobid, sizeof(uint32_t));
+	safe_read(fd, &info->stepid, sizeof(uint32_t));
+
+	return info;
+rwfail:
+	return NULL;
 }
 
 /*
  * Send a signal to the process group of a job step.
  */
 int
-stepd_signal(step_loc_t step, void *auth_cred, int signal)
+stepd_signal(int fd, int signal)
 {
 	int req = REQUEST_SIGNAL_PROCESS_GROUP;
-	int fd;
-	Buf buf;
-	int buf_len;
 	int rc;
 
-	fd = step_connect(step);
-	if (fd == -1)
-		return -1;
 	safe_write(fd, &req, sizeof(int));
-
-	/* pack auth credential */
-	buf = init_buf(0);
-	if (g_slurm_auth_pack(auth_cred, buf) == SLURM_ERROR)
-		error("g_slurm_auth_pack failed!: %m");
-	buf_len = size_buf(buf);
-	debug("buf_len = %d", buf_len);
-
 	safe_write(fd, &signal, sizeof(int));
-	safe_write(fd, &buf_len, sizeof(int));
-	safe_write(fd, get_buf_data(buf), buf_len);
 
 	/* Receive the return code */
 	safe_read(fd, &rc, sizeof(int));
 
-	free_buf(buf);
-	close(fd);
 	return rc;
 rwfail:
-	close(fd);
 	return -1;
 }
 
@@ -138,40 +201,20 @@ rwfail:
  * Send a signal to a single task in a job step.
  */
 int
-stepd_signal_task_local(step_loc_t step, void *auth_cred,
-			int signal, int ltaskid)
+stepd_signal_task_local(int fd, int signal, int ltaskid)
 {
 	int req = REQUEST_SIGNAL_PROCESS_GROUP;
-	int fd;
-	Buf buf;
-	int buf_len;
 	int rc;
 
-	fd = step_connect(step);
-	if (fd == -1)
-		return -1;
 	safe_write(fd, &req, sizeof(int));
-
-	/* pack auth credential */
-	buf = init_buf(0);
-	if (g_slurm_auth_pack(auth_cred, buf) == SLURM_ERROR)
-		error("g_slurm_auth_pack failed!: %m");
-	buf_len = size_buf(buf);
-	debug("buf_len = %d", buf_len);
-
 	safe_write(fd, &signal, sizeof(int));
 	safe_write(fd, &ltaskid, sizeof(int));
-	safe_write(fd, &buf_len, sizeof(int));
-	safe_write(fd, get_buf_data(buf), buf_len);
 
 	/* Receive the return code */
 	safe_read(fd, &rc, sizeof(int));
 
-	free_buf(buf);
-	close(fd);
 	return rc;
 rwfail:
-	close(fd);
 	return -1;
 }
 
@@ -179,43 +222,22 @@ rwfail:
  * Send a signal to the proctrack container of a job step.
  */
 int
-stepd_signal_container(step_loc_t step, void *auth_cred, int signal)
+stepd_signal_container(int fd, int signal)
 {
 	int req = REQUEST_SIGNAL_CONTAINER;
-	int fd;
-	Buf buf;
-	int buf_len;
 	int rc;
 	int errnum = 0;
 
-	fd = step_connect(step);
-	if (fd == -1)
-		return -1;
 	safe_write(fd, &req, sizeof(int));
-
-	/* pack auth credential */
-	buf = init_buf(0);
-	if (g_slurm_auth_pack(auth_cred, buf) == SLURM_ERROR) {
-		error("g_slurm_auth_pack: %s",
-			g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
-	}
-	buf_len = size_buf(buf);
-	debug("buf_len = %d", buf_len);
-
 	safe_write(fd, &signal, sizeof(int));
-	safe_write(fd, &buf_len, sizeof(int));
-	safe_write(fd, get_buf_data(buf), buf_len);
 
 	/* Receive the return code and errno */
 	safe_read(fd, &rc, sizeof(int));
 	safe_read(fd, &errnum, sizeof(int));
 
-	free_buf(buf);
-	close(fd);
 	errno = errnum;
 	return rc;
 rwfail:
-	close(fd);
 	return -1;
 }
 
@@ -227,33 +249,16 @@ rwfail:
  * resp->gtids, resp->ntasks, and resp->executable.
  */
 int
-stepd_attach(step_loc_t step, slurm_addr *ioaddr, slurm_addr *respaddr,
-	     void *auth_cred, slurm_cred_t job_cred,
-	     reattach_tasks_response_msg_t  *resp)
+stepd_attach(int fd, slurm_addr *ioaddr, slurm_addr *respaddr,
+	     void *job_cred_sig, reattach_tasks_response_msg_t *resp)
 {
 	int req = REQUEST_ATTACH;
-	int fd;
-	Buf buf;
-	int buf_len;
 	int rc = SLURM_SUCCESS;
 
-	fd = step_connect(step);
-	if (fd == -1)
-		return SLURM_ERROR;
 	safe_write(fd, &req, sizeof(int));
-
-	/* pack auth and job credentials */
-	buf = init_buf(0);
-	if (g_slurm_auth_pack(auth_cred, buf) == SLURM_ERROR)
-		error("g_slurm_auth_pack failed!: %m");
-	slurm_cred_pack(job_cred, buf);
-	buf_len = size_buf(buf);
-	debug("buf_len = %d", buf_len);
-
 	safe_write(fd, ioaddr, sizeof(slurm_addr));
 	safe_write(fd, respaddr, sizeof(slurm_addr));
-	safe_write(fd, &buf_len, sizeof(int));
-	safe_write(fd, get_buf_data(buf), buf_len);
+	safe_write(fd, job_cred_sig, SLURM_CRED_SIGLEN);
 
 	/* Receive the return code */
 	safe_read(fd, &rc, sizeof(int));
@@ -278,12 +283,8 @@ stepd_attach(step_loc_t step, slurm_addr *ioaddr, slurm_addr *respaddr,
 		safe_read(fd, resp->executable_name, len);
 	}
 
-	free_buf(buf);
-	close(fd);
 	return rc;
-
 rwfail:
-	close(fd);
 	return SLURM_ERROR;
 }
 
@@ -455,15 +456,10 @@ done:
  * the proctrack container of the slurmstepd "step".
  */
 bool
-stepd_pid_in_container(step_loc_t step, pid_t pid)
+stepd_pid_in_container(int fd, pid_t pid)
 {
 	int req = REQUEST_PID_IN_CONTAINER;
-	int fd;
 	bool rc;
-
-	fd = step_connect(step);
-	if (fd == -1)
-		return false;
 
 	safe_write(fd, &req, sizeof(int));
 	safe_write(fd, &pid, sizeof(pid_t));
@@ -472,10 +468,8 @@ stepd_pid_in_container(step_loc_t step, pid_t pid)
 	safe_read(fd, &rc, sizeof(bool));
 
 	debug("Leaving stepd_pid_in_container");
-	close(fd);
 	return rc;
 rwfail:
-	close(fd);
 	return false;
 }
 
@@ -483,21 +477,15 @@ rwfail:
  * Return the process ID of the slurmstepd.
  */
 pid_t
-stepd_daemon_pid(step_loc_t step)
+stepd_daemon_pid(int fd)
 {
 	int req	= REQUEST_DAEMON_PID;
-	int fd;
 	pid_t pid;
 
-	fd = step_connect(step);
-	if (fd == -1)
-		return (pid_t)-1;
 	safe_write(fd, &req, sizeof(int));
 	safe_read(fd, &pid, sizeof(pid_t));
 
-	close(fd);
 	return pid;
 rwfail:
-	close(fd);
 	return (pid_t)-1;
 }

@@ -46,14 +46,16 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmstepd/req.h"
 
-static void *_handle_request(void *arg);
-static void _handle_state(int fd, slurmd_job_t *job);
-static void _handle_signal_process_group(int fd, slurmd_job_t *job);
-static void _handle_signal_task_local(int fd, slurmd_job_t *job);
-static void _handle_signal_container(int fd, slurmd_job_t *job);
-static void _handle_attach(int fd, slurmd_job_t *job);
-static void _handle_pid_in_container(int fd, slurmd_job_t *job);
-static void _handle_daemon_pid(int fd, slurmd_job_t *job);
+static void *_handle_accept(void *arg);
+static int _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid);
+static int _handle_state(int fd, slurmd_job_t *job);
+static int _handle_info(int fd, slurmd_job_t *job);
+static int _handle_signal_process_group(int fd, slurmd_job_t *job, uid_t uid);
+static int _handle_signal_task_local(int fd, slurmd_job_t *job, uid_t uid);
+static int _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid);
+static int _handle_attach(int fd, slurmd_job_t *job, uid_t uid);
+static int _handle_pid_in_container(int fd, slurmd_job_t *job);
+static int _handle_daemon_pid(int fd, slurmd_job_t *job);
 static bool _msg_socket_readable(eio_obj_t *obj);
 static int _msg_socket_accept(eio_obj_t *obj, List objs);
 
@@ -193,6 +195,8 @@ msg_thr_create(slurmd_job_t *job)
 	eio_new_initial_obj(job->msg_handle, eio_obj);
 
 	slurm_attr_init(&attr);
+	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate: %m");
 	if (pthread_create(&job->msgid, &attr,
 			   &_msg_thr_internal, (void *)job) != 0) {
 		error("pthread_create: %m");
@@ -230,7 +234,7 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 	pthread_attr_t attr;
 	pthread_t id;
 
-	debug3("Called _msg_socket_read");
+	debug3("Called _msg_socket_accept");
 
 	while ((fd = accept(obj->fd, (struct sockaddr *)&addr,
 			    (socklen_t *)&len)) < 0) {
@@ -246,8 +250,7 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 		return SLURM_SUCCESS;
 	}
 
-	/* FIXME should really create a pthread to handle the message */
-
+	fd_set_close_on_exec(fd);
 	fd_set_blocking(fd);
 
 	slurm_attr_init(&attr);
@@ -260,116 +263,191 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 	param = xmalloc(sizeof(struct request_params));
 	param->fd = fd;
 	param->job = job;
-	if (pthread_create(&id, &attr, &_handle_request, (void *)param) != 0) {
+	if (pthread_create(&id, &attr, &_handle_accept, (void *)param) != 0) {
 		error("stepd_api message engine pthread_create: %m");
-		_handle_request((void *)param);
+		_handle_accept((void *)param);
 	}
+	param = NULL;
 
+	debug3("Leaving _msg_socket_accept");
 	return SLURM_SUCCESS;
 }
 
 static void *
-_handle_request(void *arg)
+_handle_accept(void *arg)
 {
-	struct request_params *param = (struct request_params *)arg;
+	/*struct request_params *param = (struct request_params *)arg;*/
+	int fd = ((struct request_params *)arg)->fd;
+	slurmd_job_t *job = ((struct request_params *)arg)->job;
 	int req;
+	int len;
+	Buf buffer;
+	void *auth_cred;
+	int rc;
+	uid_t uid;
+	gid_t gid;
 
-	debug3("Entering _handle_message");
+	debug3("Entering _handle_accept (new thread)");
+	xfree(arg);
 
-	if (read(param->fd, &req, sizeof(req)) != sizeof(req)) {
-		error("Could not read request type: %m");
+	safe_read(fd, &req, sizeof(int));
+	if (req != REQUEST_CONNECT) {
+		error("First message must be REQUEST_CONNECT");
 		goto fail;
 	}
 
+	safe_read(fd, &len, sizeof(int));
+	buffer = init_buf(len);
+	safe_read(fd, get_buf_data(buffer), len);
+
+	/* Unpack and verify the auth credential */
+	auth_cred = g_slurm_auth_unpack(buffer);
+	if (auth_cred == NULL) {
+		error("Unpacking authentication credential: %s",
+		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+		free_buf(buffer);
+		goto fail;
+	}
+	rc = g_slurm_auth_verify(auth_cred, NULL, 2);
+	if (rc != SLURM_SUCCESS) {
+		error("Verifying authentication credential: %s",
+		      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+		(void) g_slurm_auth_destroy(auth_cred);
+		free_buf(buffer);
+		goto fail;
+	}
+
+	/* Get the uid & gid from the credential, then destroy it. */
+	uid = g_slurm_auth_get_uid(auth_cred);
+	gid = g_slurm_auth_get_gid(auth_cred);
+	debug3("  Identity: uid=%d, gid=%d", uid, gid);
+	g_slurm_auth_destroy(auth_cred);
+	free_buf(buffer);
+
+	rc = SLURM_SUCCESS;
+	safe_write(fd, &rc, sizeof(int));
+	
+	while (1) {
+		rc = _handle_request(fd, job, uid, gid);
+		if (rc != SLURM_SUCCESS)
+			break;
+	}
+
+	if (close(fd) == -1)
+		error("Closing accepted fd: %m");
+	debug("Leaving  _handle_accept");
+	return NULL;
+
+fail:
+	rc = SLURM_FAILURE;
+	safe_write(fd, &rc, sizeof(int));
+rwfail:
+	if (close(fd) == -1)
+		error("Closing accepted fd after error: %m");
+	debug("Leaving  _handle_accept on an error");
+	return NULL;
+}
+
+
+int
+_handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid)
+{
+	int rc = SLURM_SUCCESS;
+	int req;
+
+	debug3("Entering _handle_request");
+	safe_read(fd, &req, sizeof(int));
+	debug3("Got request");
 	switch (req) {
 	case REQUEST_SIGNAL_PROCESS_GROUP:
 		debug("Handling REQUEST_SIGNAL_PROCESS_GROUP");
-		_handle_signal_process_group(param->fd, param->job);
+		rc = _handle_signal_process_group(fd, job, uid);
 		break;
 	case REQUEST_SIGNAL_TASK_LOCAL:
 		debug("Handling REQUEST_SIGNAL_TASK_LOCAL");
-		_handle_signal_task_local(param->fd, param->job);
+		rc = _handle_signal_task_local(fd, job, uid);
 		break;
 	case REQUEST_SIGNAL_TASK_GLOBAL:
 		debug("Handling REQUEST_SIGNAL_TASK_LOCAL (not implemented)");
 		break;
 	case REQUEST_SIGNAL_CONTAINER:
 		debug("Handling REQUEST_SIGNAL_CONTAINER");
-		_handle_signal_container(param->fd, param->job);
+		rc = _handle_signal_container(fd, job, uid);
 		break;
 	case REQUEST_STATE:
 		debug("Handling REQUEST_STATE");
-		_handle_state(param->fd, param->job);
+		rc = _handle_state(fd, job);
+		break;
+	case REQUEST_INFO:
+		debug("Handling REQUEST_INFO");
+		rc = _handle_info(fd, job);
 		break;
 	case REQUEST_ATTACH:
 		debug("Handling REQUEST_ATTACH");
-		_handle_attach(param->fd, param->job);
+		rc = _handle_attach(fd, job, uid);
 		break;
 	case REQUEST_PID_IN_CONTAINER:
 		debug("Handling REQUEST_PID_IN_CONTAINER");
-		_handle_pid_in_container(param->fd, param->job);
+		rc = _handle_pid_in_container(fd, job);
 		break;
 	case REQUEST_DAEMON_PID:
 		debug("Handling REQUEST_DAEMON_PID");
-		_handle_daemon_pid(param->fd, param->job);
+		rc = _handle_daemon_pid(fd, job);
 		break;
 	default:
 		error("Unrecognized request: %d", req);
+		rc = SLURM_FAILURE;
 		break;
 	}
 
-fail:
-	close(param->fd);
-	xfree(arg);
-	debug3("Leaving  _handle_message");
+	debug3("Leaving  _handle_request: %s",
+	       rc ? "SLURM_FAILURE" : "SLURM_SUCCESS");
+	return rc;
+
+rwfail:
+	debug3("Leaving _handle_request on read error");
+	return SLURM_FAILURE;
 }
 
-static void
+static int
 _handle_state(int fd, slurmd_job_t *job)
 {
-	int status = 0;
-
 	safe_write(fd, &job->state, sizeof(slurmstepd_state_t));
+
+	return SLURM_SUCCESS;
 rwfail:
-	return;
+	return SLURM_FAILURE;
 }
 
-static void
-_handle_signal_process_group(int fd, slurmd_job_t *job)
+static int
+_handle_info(int fd, slurmd_job_t *job)
+{
+	safe_write(fd, &job->uid, sizeof(uid_t));
+	safe_write(fd, &job->jobid, sizeof(uint32_t));
+	safe_write(fd, &job->stepid, sizeof(uint32_t));
+
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_FAILURE;
+}
+
+static int
+_handle_signal_process_group(int fd, slurmd_job_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int signal;
-	int buf_len = 0;
-	Buf buf;
-	void *auth_cred;
-	int uid;
 
 	debug("_handle_signal_process_group for job %u.%u",
 	      job->jobid, job->stepid);
 
 	safe_read(fd, &signal, sizeof(int));
-	safe_read(fd, &buf_len, sizeof(int));
-	buf = init_buf(buf_len);
-	safe_read(fd, get_buf_data(buf), buf_len);
 
-	debug3("  buf_len = %d", buf_len);
-	if ((auth_cred = g_slurm_auth_unpack(buf)) == NULL) {
-		error("g_slurm_auth_unpack: %s", 
-			g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
-		rc = EPERM;
-		goto done;
-	}
-
-	/*
-	 * Authenticate the user using the auth credential.
-	 */
-	uid = g_slurm_auth_get_uid(auth_cred);
 	debug3("  uid = %d", uid);
 	if (uid != job->uid && !_slurm_authorized_user(uid)) {
 		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
 		      (long)uid, job->jobid, job->stepid, (long)job->uid);
 		rc = EPERM;
-		goto done2;
+		goto done;
 	}
 
 	/*
@@ -379,7 +457,7 @@ _handle_signal_process_group(int fd, slurmd_job_t *job)
 		debug ("step %u.%u invalid [jmgr_pid:%d pgid:%u]", 
                        job->jobid, job->stepid, job->jmgr_pid, job->pgid);
 		rc = ESLURMD_JOB_NOTRUNNING;
-		goto done2;
+		goto done;
 	}
 
 	if (killpg(job->pgid, signal) == -1) {
@@ -392,53 +470,33 @@ _handle_signal_process_group(int fd, slurmd_job_t *job)
 			signal, job->jobid, job->stepid, job->pgid);
 	}
 	
-done2:
-	g_slurm_auth_destroy(auth_cred);
 done:
-	free_buf(buf); /* takes care of xfree'ing data as well */
 	/* Send the return code */
 	safe_write(fd, &rc, sizeof(int));
+	return SLURM_SUCCESS;
 rwfail:
-	return;
+	return SLURM_FAILURE;
 }
 
-static void
-_handle_signal_task_local(int fd, slurmd_job_t *job)
+static int
+_handle_signal_task_local(int fd, slurmd_job_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int signal;
 	int ltaskid; /* local task index */
-	int buf_len = 0;
-	Buf buf;
-	void *auth_cred;
-	int uid;
 
 	debug("_handle_signal_task_local for job %u.%u",
 	      job->jobid, job->stepid);
 
 	safe_read(fd, &signal, sizeof(int));
 	safe_read(fd, &ltaskid, sizeof(int));
-	safe_read(fd, &buf_len, sizeof(int));
-	buf = init_buf(buf_len);
-	safe_read(fd, get_buf_data(buf), buf_len);
 
-	debug3("  buf_len = %d", buf_len);
-	if ((auth_cred = g_slurm_auth_unpack(buf)) == NULL) {
-		error("unpack of the auth_cred unsuccessful");
-		rc = EPERM;
-		goto done;
-	}
-
-	/*
-	 * Authenticate the user using the auth credential.
-	 */
-	uid = g_slurm_auth_get_uid(auth_cred);
 	debug3("  uid = %d", uid);
 	if (uid != job->uid && !_slurm_authorized_user(uid)) {
 		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
 		      (long)uid, job->jobid, job->stepid, (long)job->uid);
 		rc = EPERM;
-		goto done2;
+		goto done;
 	}
 
 	/*
@@ -448,21 +506,21 @@ _handle_signal_task_local(int fd, slurmd_job_t *job)
 		debug("step %u.%u invalid local task id %d", 
 		      job->jobid, job->stepid, ltaskid);
 		rc = SLURM_ERROR;
-		goto done2;
+		goto done;
 	}
 	if (!job->task
 	    || !job->task[ltaskid]) {
 		debug("step %u.%u no task info for task id %d",
 		      job->jobid, job->stepid, ltaskid);
 		rc = SLURM_ERROR;
-		goto done2;
+		goto done;
 	}
 	if (job->task[ltaskid]->pid <= 1) {
 		debug("step %u.%u invalid pid %d for task %d",
 		      job->jobid, job->stepid,
 		      job->task[ltaskid]->pid, ltaskid);
 		rc = SLURM_ERROR;
-		goto done2;
+		goto done;
 	}
 
 	/*
@@ -479,47 +537,25 @@ _handle_signal_task_local(int fd, slurmd_job_t *job)
 			job->task[ltaskid]->pid);
 	}
 	
-done2:
-	g_slurm_auth_destroy(auth_cred);
 done:
-	free_buf(buf); /* takes care of xfree'ing data as well */
 	/* Send the return code */
 	safe_write(fd, &rc, sizeof(int));
+	return SLURM_SUCCESS;
 rwfail:
-	return;
+	return SLURM_FAILURE;
 }
 
-static void
-_handle_signal_container(int fd, slurmd_job_t *job)
+static int
+_handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int signal;
-	int buf_len = 0;
-	Buf buf;
-	void *auth_cred;
-	int uid;
 
 	debug("_handle_signal_container for job %u.%u",
 	      job->jobid, job->stepid);
 
 	safe_read(fd, &signal, sizeof(int));
-	safe_read(fd, &buf_len, sizeof(int));
-	buf = init_buf(buf_len);
-	safe_read(fd, get_buf_data(buf), buf_len);
 
-	debug3("  buf_len = %d", buf_len);
-	if ((auth_cred = g_slurm_auth_unpack(buf)) == NULL) {
-		error("g_slurm_auth_unpack: %s", 
-			g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
-		rc = -1;
-		errno = EPERM;
-		goto done;
-	}
-
-	/*
-	 * Authenticate the user using the auth credential.
-	 */
-	uid = g_slurm_auth_get_uid(auth_cred);
 	debug3("  uid = %d", uid);
 	if (uid != job->uid && !_slurm_authorized_user(uid)) {
 		debug("kill container req from uid %ld for job %u.%u "
@@ -527,7 +563,7 @@ _handle_signal_container(int fd, slurmd_job_t *job)
 		      (long)uid, job->jobid, job->stepid, (long)job->uid);
 		rc = -1;
 		errno = EPERM;
-		goto done2;
+		goto done;
 	}
 
 	/*
@@ -538,7 +574,7 @@ _handle_signal_container(int fd, slurmd_job_t *job)
 			job->jobid, job->stepid, job->cont_id);
 		rc = -1;
 		errno = ESLURMD_JOB_NOTRUNNING;
-		goto done2;
+		goto done;
 	}
 
 	if (slurm_container_signal(job->cont_id, signal) < 0) {
@@ -551,100 +587,69 @@ _handle_signal_container(int fd, slurmd_job_t *job)
 			signal, job->jobid, job->stepid);
 	}
 
-done2:
-	g_slurm_auth_destroy(auth_cred);
 done:
-	free_buf(buf); /* takes care of xfree'ing data as well */
 	/* Send the return code and errno */
 	safe_write(fd, &rc, sizeof(int));
 	safe_write(fd, &errno, sizeof(int));
+	return SLURM_SUCCESS;
 rwfail:
-	return;
+	return SLURM_FAILURE;
 }
 
-static void
-_handle_attach(int fd, slurmd_job_t *job)
+static int
+_handle_attach(int fd, slurmd_job_t *job, uid_t uid)
 {
 	srun_info_t *srun;
 	int rc = SLURM_SUCCESS;
-	int buf_len = 0;
-	Buf buf;
-	void *auth_cred;
-	slurm_cred_t job_cred;
 	int sig_len;
-	int uid, gid;
 
 	debug("_handle_request_attach for job %u.%u", job->jobid, job->stepid);
 
 	srun       = xmalloc(sizeof(*srun));
-	srun->key  = xmalloc(sizeof(*srun->key));
+	srun->key  = (srun_key_t *)xmalloc(sizeof(SLURM_CRED_SIGLEN));
 
+	debug("sizeof(srun_info_t) = %d, sizeof(slurm_addr) = %d",
+	      sizeof(srun_info_t), sizeof(slurm_addr));
 	safe_read(fd, &srun->ioaddr, sizeof(slurm_addr));
 	safe_read(fd, &srun->resp_addr, sizeof(slurm_addr));
-	safe_read(fd, &buf_len, sizeof(int));
-	buf = init_buf(buf_len);
-	safe_read(fd, get_buf_data(buf), buf_len);
-
-	debug3("buf_len = %d", buf_len);
-	if ((auth_cred = g_slurm_auth_unpack(buf)) == NULL) {
-		error("unpack of the auth_cred unsuccessful");
-		rc = EPERM;
-		goto done;
-	}
-	job_cred = slurm_cred_unpack(buf);
+	safe_read(fd, srun->key, SLURM_CRED_SIGLEN);
 
 	/*
 	 * Check if jobstep is actually running.
 	 */
 	if (job->state != SLURMSTEPD_STEP_RUNNING) {
 		rc = ESLURMD_JOB_NOTRUNNING;
-		goto done2;
+		goto done;
 	}
 
-	/*
-	 * Authenticate the user using the auth credential.
-	 */
-	uid = g_slurm_auth_get_uid(auth_cred);
-	gid = g_slurm_auth_get_gid(auth_cred);
-	debug3("  uid = %d, gid = %d", uid, gid);
-	if (uid != job->uid && gid != job->gid) {
+	if (!_slurm_authorized_user(uid)) {
 		error("uid %ld attempt to attach to job %u.%u owned by %ld",
-				(long) uid, job->jobid, job->stepid,
-				(long) job->uid);
+		      (long) uid, job->jobid, job->stepid, (long)job->uid);
 		rc = EPERM;
-		goto done2;
+		goto done;
 	}
-
-	/*
-	 * Get the signature of the job credential to send back to srun.
-	 */
-	slurm_cred_get_signature(job_cred, (void *)&srun->key, &sig_len);
-	xassert(sig_len <= SLURM_CRED_SIGLEN);
 
 	list_prepend(job->sruns, (void *) srun);
-
 	rc = io_client_connect(srun, job);
-done2:
-	g_slurm_auth_destroy(auth_cred);
+	debug("  back from io_client_connect, rc = %d", rc);
 done:
-	free_buf(buf); /* takes care of xfree'ing data as well */
 	/* Send the return code */
 	safe_write(fd, &rc, sizeof(int));
 
-	debug("In _handle_attach rc = %d", rc);
+	debug("  in _handle_attach rc = %d", rc);
 	if (rc == SLURM_SUCCESS) {
 		/* Send response info */
 		uint32_t *pids, *gtids;
 		int len, i;
 
-		debug("In _handle_attach sending response info");
+		debug("  in _handle_attach sending response info");
 		len = job->ntasks * sizeof(uint32_t);
 		pids = xmalloc(len);
 		gtids = xmalloc(len);
 		
 		if (job->task != NULL) {
 			for (i = 0; i < job->ntasks; i++) {
-				if (job->task == NULL)
+				if (job->task[i] == NULL)
 					continue;
 				pids[i] = (uint32_t)job->task[i]->pid;
 				gtids[i] = job->task[i]->gtid;
@@ -662,11 +667,12 @@ done:
 		safe_write(fd, job->argv[0], len);
 	}
 
+	return SLURM_SUCCESS;
 rwfail:
-	return;
+	return SLURM_FAILURE;
 }
 
-static void
+static int
 _handle_pid_in_container(int fd, slurmd_job_t *job)
 {
 	bool rc = false;
@@ -687,15 +693,19 @@ _handle_pid_in_container(int fd, slurmd_job_t *job)
 	/* Send the return code */
 	safe_write(fd, &rc, sizeof(bool));
 
-rwfail:
 	debug("Leaving _handle_pid_in_container");
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_FAILURE;
 }
 
-static void
+static int
 _handle_daemon_pid(int fd, slurmd_job_t *job)
 {
 	safe_write(fd, &job->jmgr_pid, sizeof(pid_t));
+
+	return SLURM_SUCCESS;
 rwfail:
-	return;
+	return SLURM_FAILURE;
 }
 
