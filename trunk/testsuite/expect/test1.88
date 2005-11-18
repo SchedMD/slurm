@@ -65,7 +65,13 @@ if {[test_front_end] != 0} {
 # Delete left-over program and rebuild it
 #
 exec $bin_rm -f $test_prog ${test_prog}.o
-exec $mpicc -o $test_prog ${test_prog}.c
+if {$use_pmi} {
+	set pmi_link "-rpath $slurm_dir/lib -L $slurm_dir/lib -lpmi"
+	exec $mpicc -Xlinker $pmi_link -o $test_prog ${test_prog}.c
+} else {
+	exec $mpicc -o $test_prog ${test_prog}.c
+}
+	
 
 #
 # Delete left-over input script plus stdout/err files
