@@ -98,7 +98,7 @@ typedef struct {
 	int dim;
 	int in; 
 	int out;
-} pa_path_switch_t; 
+} ba_path_switch_t; 
 
 /** 
  * structure that holds the configuration settings for each request
@@ -127,7 +127,7 @@ typedef struct {
 	bool elongate; 
 	bool force_contig;
 	List elongate_geos;
-} pa_request_t; 
+} ba_request_t; 
 
 /** 
  * structure that holds the configuration settings for each connection
@@ -149,7 +149,7 @@ typedef struct
 	/* target label */
 	int node_tar[BA_SYSTEM_DIMENSIONS];
 	bool used;	
-} pa_connection_t;
+} ba_connection_t;
 /** 
  * structure that holds the configuration settings for each switch
  * which pretty much means the wiring information 
@@ -161,13 +161,13 @@ typedef struct
  */
 typedef struct
 {
-	pa_connection_t int_wire[NUM_PORTS_PER_NODE];
-	pa_connection_t ext_wire[NUM_PORTS_PER_NODE];
+	ba_connection_t int_wire[NUM_PORTS_PER_NODE];
+	ba_connection_t ext_wire[NUM_PORTS_PER_NODE];
 
-} pa_switch_t;
+} ba_switch_t;
 
 /*
- * pa_node_t: node within the allocation system.
+ * ba_node_t: node within the allocation system.
  */
 typedef struct {
 	/* set if using this node in a block*/
@@ -175,7 +175,7 @@ typedef struct {
 
 	/* coordinates */
 	int coord[BA_SYSTEM_DIMENSIONS];
-	pa_switch_t axis_switch[BA_SYSTEM_DIMENSIONS];
+	ba_switch_t axis_switch[BA_SYSTEM_DIMENSIONS];
 	char letter;
 	int color;
 	int indecies;
@@ -183,7 +183,7 @@ typedef struct {
 	int conn_type;
 	int phys_x;
 	
-} pa_node_t;
+} ba_node_t;
 
 typedef struct {
 	int xcord;
@@ -197,13 +197,13 @@ typedef struct {
 #endif
 	time_t now_time;
 
-	/* made to hold info about a system, which right now is only a grid of pa_nodes*/
+	/* made to hold info about a system, which right now is only a grid of ba_nodes*/
 #ifdef HAVE_BG
-	pa_node_t ***grid;
+	ba_node_t ***grid;
 #else
-	pa_node_t *grid;
+	ba_node_t *grid;
 #endif
-} pa_system_t;
+} ba_system_t;
 
 /* Used to Keep track of where the Base Blocks are at all times
    Rack and Midplane is the bp_id and XYZ is the coords.
@@ -212,7 +212,7 @@ typedef struct {
 typedef struct {
 	char *bp_id;
 	int coord[BA_SYSTEM_DIMENSIONS];	
-} pa_bp_map_t;
+} ba_bp_map_t;
 
 /* Global */
 extern List bp_map_list;
@@ -230,7 +230,7 @@ extern void destroy_bg_info_record(void* object);
  * elongated geometries.  (ie, 2x2x2 -> 4x2x1 -> 8x1x1). Note that
  * size must be a power of 2, given 3 dimensions.
  * 
- * OUT - pa_request: structure to allocate and fill in.  
+ * OUT - ba_request: structure to allocate and fill in.  
  * IN - geometry: requested geometry of block
  * IN - size: requested size of block
  * IN - rotate: if true, allows rotation of block during fit
@@ -241,17 +241,17 @@ extern void destroy_bg_info_record(void* object);
  * 
  * return success of allocation/validation of params
  */
-extern int new_ba_request(pa_request_t* pa_request);
+extern int new_ba_request(ba_request_t* ba_request);
 
 /**
  * delete a block request 
  */
-extern void delete_ba_request(pa_request_t* pa_request);
+extern void delete_ba_request(ba_request_t* ba_request);
 
 /**
  * print a block request 
  */
-extern void print_ba_request(pa_request_t* pa_request);
+extern void print_ba_request(ba_request_t* ba_request);
 
 /**
  * Initialize internal structures by either reading previous block
@@ -261,33 +261,33 @@ extern void print_ba_request(pa_request_t* pa_request);
  * 
  * return: success or error of the intialization.
  */
-extern void pa_init();
+extern void ba_init();
 /**
  */
 extern void init_wires();
 /** 
  * destroy all the internal (global) data structs.
  */
-extern void pa_fini();
+extern void ba_fini();
 
 /** 
  * set the node in the internal configuration as unusable
  * 
  * IN c: coordinate of the node to put down
  */
-extern void pa_set_node_down(pa_node_t *pa_node);
+extern void ba_set_node_down(ba_node_t *ba_node);
 
 /** 
  * Try to allocate a block.
  * 
- * IN - pa_request: allocation request
+ * IN - ba_request: allocation request
  * OUT - results: List of results of the allocation request.  Each
  * list entry will be a coordinate.  allocate_part will create the
  * list, but the caller must destroy it.
  * 
  * return: success or error of request
  */
-extern int allocate_part(pa_request_t* pa_request, List results);
+extern int allocate_part(ba_request_t* ba_request, List results);
 
 /** 
  * Admin wants to remove a previous allocation.

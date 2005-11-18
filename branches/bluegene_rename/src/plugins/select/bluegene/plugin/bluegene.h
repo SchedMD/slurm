@@ -108,7 +108,7 @@ extern char *bluegene_mloader;
 extern char *bluegene_ramdisk;
 extern char *bridge_api_file;
 extern int numpsets;
-extern pa_system_t *pa_system_ptr;
+extern ba_system_t *ba_system_ptr;
 extern time_t last_bg_update;
 extern List bg_curr_block_list; 	/* Initial bg block state */
 extern List bg_list;			/* List of configured BG blocks */

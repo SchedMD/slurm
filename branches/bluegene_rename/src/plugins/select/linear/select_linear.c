@@ -154,7 +154,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_part_init(List part_list)
+extern int select_p_block_init(List part_list)
 {
 	return SLURM_SUCCESS;
 }

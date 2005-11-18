@@ -346,6 +346,28 @@ static int _parse_node_spec(char *in_line)
 		goto cleanup;
 	}
 #endif
+	if (strcasecmp(node_name, "DEFAULT") != 0) {
+		i=1;
+		while (node_name[i] != '\0') {
+			if((node_name[i-1] == '[') 
+			   || (node_name[i-1] < 58 
+			       && node_name[i-1] > 47))
+				break;
+			i++;
+		}
+		xfree(slurmctld_conf.node_prefix);
+		if(node_name[i] == '\0')
+			slurmctld_conf.node_prefix = xstrdup(node_name);
+		else {
+			this_node_name = xmalloc(sizeof(char)*i+1);
+			memset(this_node_name,0,i+1);
+			snprintf(this_node_name, i, "%s", node_name);
+			slurmctld_conf.node_prefix = xstrdup(this_node_name);
+			xfree(this_node_name);
+		}
+		debug3("Prefix is %s %s %d",slurmctld_conf.node_prefix, 
+		       node_name, i);
+	}
 
 	if ((host_list = hostlist_create(node_name)) == NULL) {
 		error("hostlist_create error for %s: %m", node_name);
@@ -867,7 +889,7 @@ int read_slurm_conf(int recover)
 #endif
 	if ((select_g_node_init(node_record_table_ptr, node_record_count)
 			!= SLURM_SUCCESS) 
-	|| (select_g_part_init(part_list) != SLURM_SUCCESS) 
+	|| (select_g_block_init(part_list) != SLURM_SUCCESS) 
 	|| (select_g_job_init(job_list) != SLURM_SUCCESS)) {
 		error("failed to initialize node selection plugin state");
 		abort();

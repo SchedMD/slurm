@@ -103,7 +103,7 @@ extern int text_line_cnt;
 
 extern void parse_command_line(int argc, char *argv[]);
 
-extern pa_system_t *pa_system_ptr;
+extern ba_system_t *ba_system_ptr;
 extern int quiet_flag;
 
 

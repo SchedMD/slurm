@@ -20,7 +20,7 @@ AC_DEFUN([X_AC_BLUEGENE],
       [ trydb2dir=$withval ]
    )
 
-   bg_default_dirs="/bg/BlueLight/ppcfloor/bgsys /opt/IBM/db2/V8.1 /u/bgdb2cli/sqllib /home/bgdb2cli/sqllib"
+   bg_default_dirs="/bgl/BlueLight/ppcfloor/bglsys /opt/IBM/db2/V8.1 /u/bgdb2cli/sqllib /home/bgdb2cli/sqllib"
 
    for bg_dir in $trydb2dir "" $bg_default_dirs; do
       # Skip directories that don't exist
@@ -29,13 +29,13 @@ AC_DEFUN([X_AC_BLUEGENE],
       fi
 
       # Search for required BG API libraries in the directory
-      if test -z "$have_bg_ar" -a -f "$bg_dir/lib/bgbootload.a" -a -f "$bg_dir/lib/bgsp440supt.a" ; then
-         if test ! -f "$bg_dir/lib64/libbgbridge_s.a" ; then
+      if test -z "$have_bg_ar" -a -f "$bg_dir/lib/bglbootload.a" -a -f "$bg_dir/lib/bglsp440supt.a" ; then
+         if test ! -f "$bg_dir/lib64/libbglbridge_s.a" ; then
             # Establish a link as required. Libtool requires the "lib" prefix
             # to function properly. See 
             # "How to use --whole-archive arg with libtool"
             # http://www.mail-archive.com/libtool@gnu.org/msg02792.html
-            AC_MSG_ERROR([$bg_dir/lib64/libbgbridge_s.a is required and does not exist])
+            AC_MSG_ERROR([$bg_dir/lib64/libbglbridge_s.a is required and does not exist])
          fi
 
          have_bg_ar=yes

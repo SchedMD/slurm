@@ -105,7 +105,7 @@ struct select_jobinfo {
 	uint16_t conn_type;	/* see enum connection_type */
 	uint16_t rotate;	/* permit geometry rotation if set */
 	uint16_t node_use;	/* see enum node_use_type */
-	char *bg_part_id;	/* Blue Gene partition ID */
+	char *bg_block_id;	/* Blue Gene partition ID */
 	uint16_t magic;		/* magic number */
 	uint32_t checked;       /* for bg to tell plugin it already 
 				   checked and all partitions were full
@@ -134,7 +134,7 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
 		"select_p_state_restore",
 		"select_p_job_init",
 		"select_p_node_init",
-		"select_p_part_init",
+		"select_p_block_init",
 		"select_p_job_test",
 		"select_p_job_begin",
 		"select_p_job_ready",
@@ -327,7 +327,7 @@ extern int select_g_node_init(struct node_record *node_ptr, int node_cnt)
  * Note re/initialization of partition record data structure
  * IN part_list - list of partition records
  */
-extern int select_g_part_init(List part_list)
+extern int select_g_block_init(List part_list)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
@@ -525,10 +525,10 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 	case SELECT_DATA_CONN_TYPE:
 		jobinfo->conn_type = *tmp_16;
 		break;
-	case SELECT_DATA_PART_ID:
+	case SELECT_DATA_BLOCK_ID:
 		/* we xfree() any preset value to avoid a memory leak */
-		xfree(jobinfo->bg_part_id);
-		jobinfo->bg_part_id = xstrdup(tmp_char);
+		xfree(jobinfo->bg_block_id);
+		jobinfo->bg_block_id = xstrdup(tmp_char);
 		break;
 	case SELECT_DATA_CHECKED:
 		jobinfo->checked = *tmp_16;
@@ -545,7 +545,7 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
  * IN jobinfo  - updated select job credential
  * IN data_type - type of data to enter into job credential
  * OUT data - the data to get from job credential, caller must xfree 
- *	data for data_tyep == SELECT_DATA_PART_ID 
+ *	data for data_tyep == SELECT_DATA_BLOCK_ID 
  */
 extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 		enum select_data_type data_type, void *data)
@@ -573,12 +573,12 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 	case SELECT_DATA_CONN_TYPE:
 		*tmp_16 = jobinfo->conn_type;
 		break;
-	case SELECT_DATA_PART_ID:
-		if ((jobinfo->bg_part_id == NULL)
-		    ||  (jobinfo->bg_part_id[0] == '\0'))
+	case SELECT_DATA_BLOCK_ID:
+		if ((jobinfo->bg_block_id == NULL)
+		    ||  (jobinfo->bg_block_id[0] == '\0'))
 			*tmp_char = NULL;
 		else
-			*tmp_char = xstrdup(jobinfo->bg_part_id);
+			*tmp_char = xstrdup(jobinfo->bg_block_id);
 		break;
 	case SELECT_DATA_CHECKED:
 		*tmp_16 = jobinfo->checked;
@@ -613,7 +613,7 @@ extern select_jobinfo_t select_g_copy_jobinfo(select_jobinfo_t jobinfo)
 		rc->rotate = jobinfo->rotate;
 		rc->conn_type = jobinfo->conn_type;
 		rc->rotate = jobinfo->rotate;
-		rc->bg_part_id = xstrdup(jobinfo->bg_part_id);
+		rc->bg_block_id = xstrdup(jobinfo->bg_block_id);
 	}
 
 	return rc;
@@ -634,7 +634,7 @@ extern int select_g_free_jobinfo  (select_jobinfo_t *jobinfo)
 		rc = EINVAL;
 	} else {
 		(*jobinfo)->magic = 0;
-		xfree((*jobinfo)->bg_part_id);
+		xfree((*jobinfo)->bg_block_id);
 		xfree(*jobinfo);
 	}
 	return rc;
@@ -654,7 +654,7 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
 			pack16(jobinfo->geometry[i], buffer);		
 		pack16(jobinfo->conn_type, buffer);
 		pack16(jobinfo->rotate, buffer);
-		packstr(jobinfo->bg_part_id, buffer);
+		packstr(jobinfo->bg_block_id, buffer);
 	} else {
 		for (i=0; i<(SYSTEM_DIMENSIONS+3); i++)
 			pack16((uint16_t) 0, buffer);
@@ -679,7 +679,7 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer)
 		safe_unpack16(&(jobinfo->geometry[i]), buffer);
 	safe_unpack16(&(jobinfo->conn_type), buffer);
 	safe_unpack16(&(jobinfo->rotate), buffer);
-	safe_unpackstr_xmalloc(&(jobinfo->bg_part_id), &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&(jobinfo->bg_block_id), &uint16_tmp, buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:
@@ -734,7 +734,7 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _job_rotate_string(jobinfo->rotate),
 			 geometry[0], geometry[1], geometry[2],
-			 jobinfo->bg_part_id);
+			 jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_MIXED:
 		snprintf(buf, size, 
@@ -743,10 +743,10 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _job_rotate_string(jobinfo->rotate),
 			 geometry[0], geometry[1], geometry[2],
-			 jobinfo->bg_part_id);
+			 jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_BG_ID:
-		return jobinfo->bg_part_id;
+		return jobinfo->bg_block_id;
 		break;
 	default:
 		error("select_g_sprint_jobinfo: bad mode %d", mode);
@@ -768,7 +768,7 @@ static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 	safe_unpackstr_xmalloc(&(bg_info_record->nodes), &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&bg_info_record->owner_name, &uint16_tmp, 
 		buffer);
-	safe_unpackstr_xmalloc(&bg_info_record->bg_part_id, &uint16_tmp, 
+	safe_unpackstr_xmalloc(&bg_info_record->bg_block_id, &uint16_tmp, 
 		buffer);
 
 	safe_unpack16(&uint16_tmp, buffer);
@@ -787,8 +787,8 @@ unpack_error:
 		xfree(bg_info_record->nodes);
 	if(bg_info_record->owner_name)
 		xfree(bg_info_record->owner_name);
-	if(bg_info_record->bg_part_id)
-		xfree(bg_info_record->bg_part_id);
+	if(bg_info_record->bg_block_id)
+		xfree(bg_info_record->bg_block_id);
 	return SLURM_ERROR;
 }
 
@@ -798,8 +798,8 @@ static void _free_node_info(bg_info_record_t *bg_info_record)
 		xfree(bg_info_record->nodes);
 	if(bg_info_record->owner_name)
 		xfree(bg_info_record->owner_name);
-	if(bg_info_record->bg_part_id)
-		xfree(bg_info_record->bg_part_id);
+	if(bg_info_record->bg_block_id)
+		xfree(bg_info_record->bg_block_id);
 }
 
 /* Unpack node select info from a buffer */

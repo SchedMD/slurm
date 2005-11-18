@@ -54,11 +54,11 @@ extern void get_job()
 
 	if (error_code) {
 		if (quiet_flag != 1) {
-			mvwprintw(pa_system_ptr->text_win,
-				pa_system_ptr->ycord, 1,
+			mvwprintw(ba_system_ptr->text_win,
+				ba_system_ptr->ycord, 1,
 				"slurm_load_job: %s", 
 				slurm_strerror(slurm_get_errno()));
-			pa_system_ptr->ycord++;
+			ba_system_ptr->ycord++;
 		}
 	}
 
@@ -98,21 +98,21 @@ extern void get_job()
 			if(!params.commandline) {
 				if((count>=text_line_cnt)
 				   && (printed_jobs 
-				       < (pa_system_ptr->text_win->_maxy-3))) {
+				       < (ba_system_ptr->text_win->_maxy-3))) {
 					job.num_procs = (int)letters[count%62];
-					wattron(pa_system_ptr->text_win,
+					wattron(ba_system_ptr->text_win,
 						COLOR_PAIR(colors[count%6]));
 					_print_text_job(&job);
-					wattroff(pa_system_ptr->text_win,
+					wattroff(ba_system_ptr->text_win,
 						 COLOR_PAIR(colors[count%6]));
 					printed_jobs++;
 				} 
 			} else {
 				job.num_procs = (int)letters[count%62];
-				wattron(pa_system_ptr->text_win,
+				wattron(ba_system_ptr->text_win,
 					COLOR_PAIR(colors[count%6]));
 				_print_text_job(&job);
-				wattroff(pa_system_ptr->text_win,
+				wattroff(ba_system_ptr->text_win,
 					 COLOR_PAIR(colors[count%6]));
 			}
 			count++;			
@@ -130,23 +130,23 @@ extern void get_job()
 		if(!params.commandline) {
 			if((count>=text_line_cnt)
 			   && (printed_jobs 
-			       < (pa_system_ptr->text_win->_maxy-3))) {
+			       < (ba_system_ptr->text_win->_maxy-3))) {
 				job.nodes = "waiting...";
 				job.num_procs = (int) letters[count%62];
-				wattron(pa_system_ptr->text_win,
+				wattron(ba_system_ptr->text_win,
 					COLOR_PAIR(colors[count%6]));
 				_print_text_job(&job);
-				wattroff(pa_system_ptr->text_win,
+				wattroff(ba_system_ptr->text_win,
 					 COLOR_PAIR(colors[count%6]));
 				printed_jobs++;
 			} 
 		} else {
 			job.nodes = "waiting...";
 			job.num_procs = (int) letters[count%62];
-			wattron(pa_system_ptr->text_win,
+			wattron(ba_system_ptr->text_win,
 				COLOR_PAIR(colors[count%6]));
 			_print_text_job(&job);
-			wattroff(pa_system_ptr->text_win,
+			wattroff(ba_system_ptr->text_win,
 				 COLOR_PAIR(colors[count%6]));
 			printed_jobs++;
 		}
@@ -159,7 +159,7 @@ extern void get_job()
 	if (params.commandline && params.iterate)
 		printf("\n");
 
-	pa_system_ptr->ycord++;
+	ba_system_ptr->ycord++;
 	
 	job_info_ptr = new_job_ptr;
 	return;
@@ -168,39 +168,39 @@ extern void get_job()
 static void _print_header_job(void)
 {
 	if(!params.commandline) {
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "ID");
-		pa_system_ptr->xcord += 3;
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "JOBID");
-		pa_system_ptr->xcord += 7;
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "PARTITION");
-		pa_system_ptr->xcord += 10;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "ID");
+		ba_system_ptr->xcord += 3;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "JOBID");
+		ba_system_ptr->xcord += 7;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "PARTITION");
+		ba_system_ptr->xcord += 10;
 #ifdef HAVE_BG
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "BG_BLOCK");
-		pa_system_ptr->xcord += 18;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "BG_BLOCK");
+		ba_system_ptr->xcord += 18;
 #endif
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "USER");
-		pa_system_ptr->xcord += 9;
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "NAME");
-		pa_system_ptr->xcord += 10;
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "ST");
-		pa_system_ptr->xcord += 6;
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "TIME");
-		pa_system_ptr->xcord += 5;
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "NODES");
-		pa_system_ptr->xcord += 6;
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "NODELIST");
-		pa_system_ptr->xcord = 1;
-		pa_system_ptr->ycord++;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "USER");
+		ba_system_ptr->xcord += 9;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "NAME");
+		ba_system_ptr->xcord += 10;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "ST");
+		ba_system_ptr->xcord += 6;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "TIME");
+		ba_system_ptr->xcord += 5;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "NODES");
+		ba_system_ptr->xcord += 6;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "NODELIST");
+		ba_system_ptr->xcord = 1;
+		ba_system_ptr->ycord++;
 	} else {
 		printf("JOBID ");
 		printf("PARTITION ");
@@ -227,75 +227,75 @@ static int _print_text_job(job_info_t * job_ptr)
 	char time_buf[20];
 
 	if(!params.commandline) {
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "%c", job_ptr->num_procs);
-		pa_system_ptr->xcord += 3;
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "%d", job_ptr->job_id);
-		pa_system_ptr->xcord += 7;
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "%.10s", job_ptr->partition);
-		pa_system_ptr->xcord += 10;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "%c", job_ptr->num_procs);
+		ba_system_ptr->xcord += 3;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "%d", job_ptr->job_id);
+		ba_system_ptr->xcord += 7;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "%.10s", job_ptr->partition);
+		ba_system_ptr->xcord += 10;
 #ifdef HAVE_BG
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "%.16s", 
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "%.16s", 
 			  select_g_sprint_jobinfo(job_ptr->select_jobinfo, 
 						  time_buf, 
 						  sizeof(time_buf), 
 						  SELECT_PRINT_BG_ID));
-		pa_system_ptr->xcord += 18;
+		ba_system_ptr->xcord += 18;
 #endif
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "%.8s", 
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "%.8s", 
 			  uid_to_string((uid_t) job_ptr->user_id));
-		pa_system_ptr->xcord += 9;
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "%.9s", job_ptr->name);
-		pa_system_ptr->xcord += 10;
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "%.2s",
+		ba_system_ptr->xcord += 9;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "%.9s", job_ptr->name);
+		ba_system_ptr->xcord += 10;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "%.2s",
 			  job_state_string_compact(job_ptr->job_state));
-		pa_system_ptr->xcord += 0;
+		ba_system_ptr->xcord += 0;
 		if(!strcasecmp(job_ptr->nodes,"waiting...")) {
 			sprintf(time_buf,"0:00:00");
 		} else {
-			time = pa_system_ptr->now_time - job_ptr->start_time;
+			time = ba_system_ptr->now_time - job_ptr->start_time;
 			snprint_time(time_buf, sizeof(time_buf), time);
 		}
 		width = strlen(time_buf);
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord + (10 - width), "%s",
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord + (10 - width), "%s",
 			  time_buf);
-		pa_system_ptr->xcord += 11;
+		ba_system_ptr->xcord += 11;
 
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "%d", job_ptr->num_nodes);
-		pa_system_ptr->xcord += 6;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "%d", job_ptr->num_nodes);
+		ba_system_ptr->xcord += 6;
 
-		tempxcord = pa_system_ptr->xcord;
+		tempxcord = ba_system_ptr->xcord;
 		
 
 		while (job_ptr->nodes[i] != '\0') {
-			if ((printed = mvwaddch(pa_system_ptr->text_win,
-						pa_system_ptr->ycord, 
-						pa_system_ptr->xcord,
+			if ((printed = mvwaddch(ba_system_ptr->text_win,
+						ba_system_ptr->ycord, 
+						ba_system_ptr->xcord,
 						job_ptr->nodes[i])) < 0)
 				return printed;
-			pa_system_ptr->xcord++;
-			width = pa_system_ptr->text_win->_maxx 
-				- pa_system_ptr->xcord;
+			ba_system_ptr->xcord++;
+			width = ba_system_ptr->text_win->_maxx 
+				- ba_system_ptr->xcord;
 			if (job_ptr->nodes[i] == '[')
 				prefixlen = i + 1;
 			else if (job_ptr->nodes[i] == ',' 
 				 && (width - 9) <= 0) {
-				pa_system_ptr->ycord++;
-				pa_system_ptr->xcord = tempxcord + prefixlen;
+				ba_system_ptr->ycord++;
+				ba_system_ptr->xcord = tempxcord + prefixlen;
 			}
 			i++;
 		}
 			
-		pa_system_ptr->xcord = 1;
-		pa_system_ptr->ycord++;
+		ba_system_ptr->xcord = 1;
+		ba_system_ptr->ycord++;
 	} else {
 		printf("%5d ", job_ptr->job_id);
 		printf("%9.9s ", job_ptr->partition);
@@ -313,7 +313,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		if(!strcasecmp(job_ptr->nodes,"waiting...")) {
 			sprintf(time_buf,"0:00:00");
 		} else {
-			time = pa_system_ptr->now_time - job_ptr->start_time;
+			time = ba_system_ptr->now_time - job_ptr->start_time;
 			snprint_time(time_buf, sizeof(time_buf), time);
 		}
 		

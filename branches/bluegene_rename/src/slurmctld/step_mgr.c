@@ -594,10 +594,10 @@ step_create ( job_step_create_request_msg_t *step_specs,
 			fatal ("step_create: switch_alloc_jobinfo error");
 		
 		if (switch_build_jobinfo(step_ptr->switch_job, 
-					step_ptr->step_node_list,
-					tasks_per_node, 
-					step_ptr->cyclic_alloc,
-					step_ptr->network) < 0) {
+					 step_ptr->step_node_list,
+					 tasks_per_node, 
+					 step_ptr->cyclic_alloc,
+					 step_ptr->network) < 0) {
 			error("switch_build_jobinfo: %m");
 			xfree(tasks_per_node);
 			delete_step_record (job_ptr, step_ptr->step_id);

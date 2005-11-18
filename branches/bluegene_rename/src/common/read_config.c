@@ -300,9 +300,9 @@ void
 free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 {
 	xfree (ctl_conf_ptr->authtype);
+	xfree (ctl_conf_ptr->checkpoint_type);
 	xfree (ctl_conf_ptr->backup_addr);
 	xfree (ctl_conf_ptr->backup_controller);
-	xfree (ctl_conf_ptr->checkpoint_type);
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->epilog);
@@ -316,9 +316,9 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->proctrack_type);
-	xfree (ctl_conf_ptr->propagate_rlimits);
-	xfree (ctl_conf_ptr->propagate_rlimits_except);
 	xfree (ctl_conf_ptr->prolog);
+	xfree (ctl_conf_ptr->propagate_rlimits_except);
+	xfree (ctl_conf_ptr->propagate_rlimits);
 	xfree (ctl_conf_ptr->schedauth);
 	xfree (ctl_conf_ptr->schedtype);
 	xfree (ctl_conf_ptr->select_type);
@@ -332,7 +332,14 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->state_save_location);
 	xfree (ctl_conf_ptr->switch_type);
 	xfree (ctl_conf_ptr->tmp_fs);
-
+	xfree (ctl_conf_ptr->task_epilog);
+	xfree (ctl_conf_ptr->task_prolog);
+	xfree (ctl_conf_ptr->task_plugin);
+	xfree (ctl_conf_ptr->tmp_fs);
+	xfree (ctl_conf_ptr->srun_prolog);
+	xfree (ctl_conf_ptr->srun_epilog);
+	xfree (ctl_conf_ptr->node_prefix);
+	
 	_free_name_hashtbl();
 }
 
@@ -401,6 +408,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->wait_time			= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->srun_prolog);
 	xfree (ctl_conf_ptr->srun_epilog);
+	xfree (ctl_conf_ptr->node_prefix);
 	
 	_free_name_hashtbl();
 	_init_name_hashtbl();

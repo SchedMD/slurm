@@ -8,7 +8,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 LIBS=$(NCURSES) 
-INCLUDES = -I$(top_srcdir) $(BGL_INCLUDES) 
+INCLUDES = -I$(top_srcdir) $(BG_INCLUDES) 
 
 if HAVE_SOME_CURSES
 
@@ -26,7 +26,7 @@ force:
 $(smap_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-smap_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BGL_LDFLAGS) 
+smap_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BG_LDFLAGS) 
 
 else
 

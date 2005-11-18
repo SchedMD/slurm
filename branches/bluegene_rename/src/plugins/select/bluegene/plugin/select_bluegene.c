@@ -169,7 +169,7 @@ extern int fini ( void )
  * Called by slurmctld when a new configuration file is loaded
  * or scontrol is used to change block configuration
  */
- extern int select_p_part_init(List part_list)
+ extern int select_p_block_init(List part_list)
 {
 	xassert(part_list);
 #ifdef HAVE_BG
@@ -210,7 +210,7 @@ extern int select_p_job_init(List job_list)
 	return sync_jobs(job_list);
 }
 
-/* All initialization is performed by select_p_part_init() */
+/* All initialization is performed by select_p_block_init() */
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
 	if(node_cnt>0)

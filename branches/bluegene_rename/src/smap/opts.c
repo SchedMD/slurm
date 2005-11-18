@@ -138,15 +138,15 @@ extern void snprint_time(char *buf, size_t buf_size, time_t time)
 
 extern void print_date()
 {
-	pa_system_ptr->now_time = time(NULL);
+	ba_system_ptr->now_time = time(NULL);
 
 	if (params.commandline) {
-		printf("%s", ctime(&pa_system_ptr->now_time));
+		printf("%s", ctime(&ba_system_ptr->now_time));
 	} else {
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "%s",
-			  ctime(&pa_system_ptr->now_time));
-		pa_system_ptr->ycord++;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "%s",
+			  ctime(&ba_system_ptr->now_time));
+		ba_system_ptr->ycord++;
 	}
 }
 

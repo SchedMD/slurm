@@ -96,40 +96,40 @@ static void _pre_allocate(bg_record_t *bg_record)
 	int rc;
 	int send_psets=numpsets;
 
-	if ((rc = rm_set_data(bg_record->bg_part, RM_PartitionBlrtsImg,   
+	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionBlrtsImg,   
 			bluegene_blrts)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionBlrtsImg)", bg_err_str(rc));
 
-	if ((rc = rm_set_data(bg_record->bg_part, RM_PartitionLinuxImg,   
+	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionLinuxImg,   
 			bluegene_linux)) != STATUS_OK) 
 		error("rm_set_data(RM_PartitionLinuxImg)", bg_err_str(rc));
 
-	if ((rc = rm_set_data(bg_record->bg_part, RM_PartitionMloaderImg, 
+	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionMloaderImg, 
 			bluegene_mloader)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionMloaderImg)", bg_err_str(rc));
 
-	if ((rc = rm_set_data(bg_record->bg_part, RM_PartitionRamdiskImg, 
+	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionRamdiskImg, 
 			bluegene_ramdisk)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionRamdiskImg)", bg_err_str(rc));
 
-	if ((rc = rm_set_data(bg_record->bg_part, RM_PartitionConnection, 
+	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionConnection, 
 			&bg_record->conn_type)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionConnection)", bg_err_str(rc));
 	
 	if(bg_record->cnodes_per_bp == (procs_per_node/4))
 		send_psets = numpsets/4;
 	
-	if ((rc = rm_set_data(bg_record->bg_part, RM_PartitionPsetsPerBP, 
+	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionPsetsPerBP, 
 			&send_psets)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionPsetsPerBP)", bg_err_str(rc));
 
-	if ((rc = rm_set_data(bg_record->bg_part, RM_PartitionUserName, 
+	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionUserName, 
 			slurmctld_conf.slurm_user_name)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionUserName)", bg_err_str(rc));
 /* 	info("setting it here"); */
-/* 	bg_record->bg_part_id = "RMP101"; */
-/* 	if ((rc = rm_set_data(bg_record->bg_part, RM_PartitionID,  */
-/* 			&bg_record->bg_part_id)) != STATUS_OK) */
+/* 	bg_record->bg_block_id = "RMP101"; */
+/* 	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionID,  */
+/* 			&bg_record->bg_block_id)) != STATUS_OK) */
 /* 		error("rm_set_data(RM_PartitionID)", bg_err_str(rc)); */
 }
 
@@ -139,13 +139,13 @@ static void _pre_allocate(bg_record_t *bg_record)
 static int _post_allocate(bg_record_t *bg_record)
 {
 	int rc, i;
-	pm_partition_id_t part_id;
+	pm_partition_id_t block_id;
 	struct passwd *pw_ent = NULL;
 	/* Add partition record to the DB */
 	debug("adding partition\n");
 	
 	for(i=0;i<MAX_ADD_RETRY; i++) {
-		if ((rc = rm_add_partition(bg_record->bg_part)) 
+		if ((rc = rm_add_partition(bg_record->bg_block)) 
 		    != STATUS_OK) {
 			error("rm_add_partition(): %s", bg_err_str(rc));
 			rc = SLURM_ERROR;
@@ -156,7 +156,7 @@ static int _post_allocate(bg_record_t *bg_record)
 		sleep(3);
 	}
 	if(rc == SLURM_ERROR) {
-		if ((rc = rm_free_partition(bg_record->bg_part)) 
+		if ((rc = rm_free_partition(bg_record->bg_block)) 
 		    != STATUS_OK)
 			error("rm_free_partition(): %s", bg_err_str(rc));
 		fatal("couldn't add last partition.");
@@ -164,18 +164,18 @@ static int _post_allocate(bg_record_t *bg_record)
 	debug("done adding\n");
 	
 	/* Get back the new partition id */
-	if ((rc = rm_get_data(bg_record->bg_part, RM_PartitionID, &part_id))
+	if ((rc = rm_get_data(bg_record->bg_block, RM_PartitionID, &block_id))
 			 != STATUS_OK) {
 		error("rm_get_data(RM_PartitionID): %s", bg_err_str(rc));
-		bg_record->bg_part_id = xstrdup("UNKNOWN");
+		bg_record->bg_block_id = xstrdup("UNKNOWN");
 	} else {
-		if(!part_id) {
+		if(!block_id) {
 			error("No Partition ID was returned from database");
 			return SLURM_ERROR;
 		}
-		bg_record->bg_part_id = xstrdup(part_id);
+		bg_record->bg_block_id = xstrdup(block_id);
 		
-		free(part_id);
+		free(block_id);
 		
 		xfree(bg_record->target_name);
 		bg_record->target_name = 
@@ -194,7 +194,7 @@ static int _post_allocate(bg_record_t *bg_record)
 		
 	}
 	/* We are done with the partition */
-	if ((rc = rm_free_partition(bg_record->bg_part)) != STATUS_OK)
+	if ((rc = rm_free_partition(bg_record->bg_block)) != STATUS_OK)
 		error("rm_free_partition(): %s", bg_err_str(rc));	
 	return rc;
 }
@@ -221,39 +221,39 @@ static int _post_bg_init_read(void *object, void *arg)
 	return SLURM_SUCCESS;
 }
 
-extern int configure_partition(bg_record_t *bg_record)
+extern int configure_block(bg_record_t *bg_record)
 {
 	/* new partition to be added */
-	rm_new_partition(&bg_record->bg_part); 
+	rm_new_partition(&bg_record->bg_block); 
 	_pre_allocate(bg_record);
 	if(bg_record->cnodes_per_bp < procs_per_node)
-		configure_small_partition(bg_record);
+		configure_small_block(bg_record);
 	else
-		configure_partition_switches(bg_record);
+		configure_block_switches(bg_record);
 	
 	_post_allocate(bg_record); 
 	return 1;
 }
 
 /*
- * Download from MMCS the initial BG partition information
+ * Download from MMCS the initial BG block information
  */
-int read_bg_partitions()
+int read_bg_blocks()
 {
 	int rc = SLURM_SUCCESS;
 
 	int bp_cnt, i;
 	rm_element_t *bp_ptr = NULL;
 	rm_bp_id_t bpid;
-	rm_partition_t *part_ptr = NULL;
+	rm_partition_t *block_ptr = NULL;
 	char node_name_tmp[7], *user_name = NULL;
 	bg_record_t *bg_record = NULL;
 	struct passwd *pw_ent = NULL;
 	
 	int *coord;
-	int part_number, part_count;
-	char *part_name = NULL;
-	rm_partition_list_t *part_list = NULL;
+	int block_number, block_count;
+	char *block_name = NULL;
+	rm_partition_list_t *block_list = NULL;
 	rm_partition_state_flag_t state = PARTITION_ALL_FLAG;
 	rm_nodecard_t *ncard = NULL;
 	bool small = false;
@@ -263,75 +263,75 @@ int read_bg_partitions()
 		return SLURM_ERROR;
 	}			
 	set_bp_map();
-	if ((rc = rm_get_partitions_info(state, &part_list))
+	if ((rc = rm_get_partitions_info(state, &block_list))
 			!= STATUS_OK) {
 		error("rm_get_partitions_info(): %s", bg_err_str(rc));
 		return SLURM_ERROR;
 		
 	}
 	
-	if ((rc = rm_get_data(part_list, RM_PartListSize, &part_count))
+	if ((rc = rm_get_data(block_list, RM_PartListSize, &block_count))
 			!= STATUS_OK) {
 		error("rm_get_data(RM_PartListSize): %s", bg_err_str(rc));
-		part_count = 0;
+		block_count = 0;
 	}
 	
-	for(part_number=0; part_number<part_count; part_number++) {
+	for(block_number=0; block_number<block_count; block_number++) {
 		
-		if (part_number) {
-			if ((rc = rm_get_data(part_list, RM_PartListNextPart,
-					&part_ptr)) != STATUS_OK) {
+		if (block_number) {
+			if ((rc = rm_get_data(block_list, RM_PartListNextPart,
+					&block_ptr)) != STATUS_OK) {
 				error("rm_get_data(RM_PartListNextPart): %s",
 					bg_err_str(rc));
 				break;
 			}
 		} else {
-			if ((rc = rm_get_data(part_list, RM_PartListFirstPart, 
-					&part_ptr)) != STATUS_OK) {
+			if ((rc = rm_get_data(block_list, RM_PartListFirstPart, 
+					&block_ptr)) != STATUS_OK) {
 				error("rm_get_data(RM_PartListFirstPart): %s",
 					bg_err_str(rc));
 				break;
 			}
 		}
 
-		if ((rc = rm_get_data(part_ptr, RM_PartitionID, &part_name))
+		if ((rc = rm_get_data(block_ptr, RM_PartitionID, &block_name))
 				!= STATUS_OK) {
 			error("rm_get_data(RM_PartitionID): %s", 
 				bg_err_str(rc));
 			continue;
 		}
 
-		if(!part_name) {
+		if(!block_name) {
 			error("No Partition ID was returned from database");
 			continue;
 		}
 
-		if(strncmp("RMP", part_name, 3)) {
-			free(part_name);
+		if(strncmp("RMP", block_name, 3)) {
+			free(block_name);
 			continue;
 		}
 		if(bg_recover) 
-			if ((rc = rm_get_partition(part_name, &part_ptr))
+			if ((rc = rm_get_partition(block_name, &block_ptr))
 			    != STATUS_OK) {
 				error("Partition %s doesn't exist.",
-				      part_name);
+				      block_name);
 				rc = SLURM_ERROR;
-				free(part_name);
+				free(block_name);
 				break;
 			}
 		/* New BG partition record */		
 		
 		bg_record = xmalloc(sizeof(bg_record_t));
-		list_push(bg_curr_part_list, bg_record);
+		list_push(bg_curr_block_list, bg_record);
 									
-		bg_record->bg_part_id = xstrdup(part_name);
+		bg_record->bg_block_id = xstrdup(block_name);
 		
-		free(part_name);
+		free(block_name);
 
 		bg_record->state = -1;
 		bg_record->quarter = -1;
 				
-		if ((rc = rm_get_data(part_ptr, 
+		if ((rc = rm_get_data(block_ptr, 
 				      RM_PartitionBPNum, 
 				      &bp_cnt)) 
 		    != STATUS_OK) {
@@ -343,13 +343,13 @@ int read_bg_partitions()
 		if(bp_cnt==0)
 			goto clean_up;
 
-		if ((rc = rm_get_data(part_ptr, RM_PartitionSmall, &small)) 
+		if ((rc = rm_get_data(block_ptr, RM_PartitionSmall, &small)) 
 		    != STATUS_OK) {
 			error("rm_get_data(RM_BPNum): %s", bg_err_str(rc));
 			bp_cnt = 0;
 		}
 		if(small) {
-			if((rc = rm_get_data(part_ptr,
+			if((rc = rm_get_data(block_ptr,
 					     RM_PartitionFirstNodeCard,
 					     &ncard))
 			   != STATUS_OK) {
@@ -364,11 +364,11 @@ int read_bg_partitions()
 				bp_cnt = 0;
 			}
 			debug("%s is in quarter %d",
-			      bg_record->bg_part_id,
+			      bg_record->bg_block_id,
 			      bg_record->quarter);
 		} 
 
-		bg_record->bg_part_list = list_create(NULL);
+		bg_record->bg_block_list = list_create(NULL);
 		bg_record->hostlist = hostlist_create(NULL);
 
 		/* this needs to be changed for small partitions,
@@ -378,7 +378,7 @@ int read_bg_partitions()
 
 		for (i=0; i<bp_cnt; i++) {
 			if(i) {
-				if ((rc = rm_get_data(part_ptr, 
+				if ((rc = rm_get_data(block_ptr, 
 						      RM_PartitionNextBP, 
 						      &bp_ptr))
 				    != STATUS_OK) {
@@ -388,7 +388,7 @@ int read_bg_partitions()
 					break;
 				}
 			} else {
-				if ((rc = rm_get_data(part_ptr, 
+				if ((rc = rm_get_data(block_ptr, 
 						      RM_PartitionFirstBP, 
 						      &bp_ptr))
 				    != STATUS_OK) {
@@ -396,7 +396,7 @@ int read_bg_partitions()
 					      bg_err_str(rc));
 					rc = SLURM_ERROR;
 					if (bg_recover)
-						rm_free_partition(part_ptr);
+						rm_free_partition(block_ptr);
 					return rc;
 				}	
 			}
@@ -432,7 +432,7 @@ int read_bg_partitions()
 		if(small)
 			bg_record->conn_type = SELECT_SMALL;
 		else
-			if ((rc = rm_get_data(part_ptr, 
+			if ((rc = rm_get_data(block_ptr, 
 					      RM_PartitionConnection,
 					      &bg_record->conn_type))
 			    != STATUS_OK) {
@@ -440,14 +440,14 @@ int read_bg_partitions()
 				      "(RM_PartitionConnection): %s",
 				      bg_err_str(rc));
 			}
-		if ((rc = rm_get_data(part_ptr, RM_PartitionMode,
+		if ((rc = rm_get_data(block_ptr, RM_PartitionMode,
 					 &bg_record->node_use))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionMode): %s",
 			      bg_err_str(rc));
 		}
 			
-		if ((rc = rm_get_data(part_ptr, RM_PartitionState,
+		if ((rc = rm_get_data(block_ptr, RM_PartitionState,
 					 &bg_record->state)) != STATUS_OK) {
 			error("rm_get_data(RM_PartitionState): %s",
 			      bg_err_str(rc));
@@ -457,10 +457,10 @@ int read_bg_partitions()
 			bg_record->boot_state = 0;
 			
 		debug("Partition %s is in state %d",
-		      bg_record->bg_part_id, 
+		      bg_record->bg_block_id, 
 		      bg_record->state);
 		
-		if ((rc = rm_get_data(part_ptr, RM_PartitionUsersNum,
+		if ((rc = rm_get_data(block_ptr, RM_PartitionUsersNum,
 					 &bp_cnt)) != STATUS_OK) {
 			error("rm_get_data(RM_PartitionUsersNum): %s",
 			      bg_err_str(rc));
@@ -474,7 +474,7 @@ int read_bg_partitions()
 						slurm_user_name);
 			} else {
 				user_name = NULL;
-				if ((rc = rm_get_data(part_ptr, 
+				if ((rc = rm_get_data(block_ptr, 
 						      RM_PartitionFirstUser, 
 						      &user_name)) 
 				    != STATUS_OK) {
@@ -509,7 +509,7 @@ int read_bg_partitions()
 			} 
 		}
 
-		if ((rc = rm_get_data(part_ptr, RM_PartitionBPNum,
+		if ((rc = rm_get_data(block_ptr, RM_PartitionBPNum,
 				&bg_record->bp_count)) != STATUS_OK) {
 			error("rm_get_data(RM_PartitionBPNum): %s",
 			      bg_err_str(rc));
@@ -517,7 +517,7 @@ int read_bg_partitions()
 		debug("has %d BPs",
 		      bg_record->bp_count);
 				
-		if ((rc = rm_get_data(part_ptr, RM_PartitionSwitchNum,
+		if ((rc = rm_get_data(block_ptr, RM_PartitionSwitchNum,
 				&bg_record->switch_count)) != STATUS_OK) {
 			error("rm_get_data(RM_PartitionSwitchNum): %s",
 			      bg_err_str(rc));
@@ -528,18 +528,18 @@ int read_bg_partitions()
 		else
 			bg_record->cnodes_per_bp = procs_per_node;
 		
-		bg_record->part_lifecycle = STATIC;
+		bg_record->block_lifecycle = STATIC;
 						
 clean_up:	if (bg_recover
-		&&  ((rc = rm_free_partition(part_ptr)) != STATUS_OK)) {
+		&&  ((rc = rm_free_partition(block_ptr)) != STATUS_OK)) {
 			error("rm_free_partition(): %s", bg_err_str(rc));
 		}
 	}
-	rm_free_partition_list(part_list);
+	rm_free_partition_list(block_list);
 
 	/* perform post-processing for each bluegene partition */
 	if(bg_recover)
-		list_for_each(bg_curr_part_list, _post_bg_init_read, NULL);
+		list_for_each(bg_curr_block_list, _post_bg_init_read, NULL);
 	return rc;
 }
 

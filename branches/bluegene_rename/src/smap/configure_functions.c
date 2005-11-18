@@ -33,11 +33,11 @@ typedef struct {
 	int color;
 	char letter;
 	List nodes;
-	pa_request_t *request; 
+	ba_request_t *request; 
 } allocated_part_t;
 
 static void	_delete_allocated_parts(List allocated_partitions);
-static allocated_part_t *_make_request(pa_request_t *request);
+static allocated_part_t *_make_request(ba_request_t *request);
 static int	_create_allocation(char *com, List allocated_partitions);
 static int	_resolve(char *com);
 static int	_change_state_all_bps(char *com, int state);
@@ -64,12 +64,12 @@ static void _delete_allocated_parts(List allocated_partitions)
 	list_destroy(allocated_partitions);
 }
 
-static allocated_part_t *_make_request(pa_request_t *request)
+static allocated_part_t *_make_request(ba_request_t *request)
 {
 	List results = list_create(NULL);
 	ListIterator results_i;		
 	allocated_part_t *allocated_part = NULL;
-	pa_node_t *current = NULL;
+	ba_node_t *current = NULL;
 	
 	if (!allocate_part(request, results)){
 		memset(error_string,0,255);
@@ -102,7 +102,7 @@ static int _create_allocation(char *com, List allocated_partitions)
 	int len = strlen(com);
 	
 	allocated_part_t *allocated_part = NULL;
-	pa_request_t *request = (pa_request_t*) xmalloc(sizeof(pa_request_t)); 
+	ba_request_t *request = (ba_request_t*) xmalloc(sizeof(ba_request_t)); 
 	
 	request->geometry[0] = -1;
 	request->conn_type=TORUS;
@@ -313,7 +313,7 @@ resolve_error:
 			sprintf(error_string, 
 				"Must be on BG SN to resolve.\n"); 
 #endif
-	wnoutrefresh(pa_system_ptr->text_win);
+	wnoutrefresh(ba_system_ptr->text_win);
 	doupdate();
 
 	return 1;
@@ -413,12 +413,12 @@ static int _change_state_bps(char *com, int state)
 	for(x=start[X];x<=end[X];x++) {
 		for(y=start[Y];y<=end[Y];y++) {
 			for(z=start[Z];z<=end[Z];z++) {
-				if(pa_system_ptr->grid[x][y][z].letter 
+				if(ba_system_ptr->grid[x][y][z].letter 
 				   != opposite)
 					continue;
-				pa_system_ptr->grid[x][y][z].color = 0;
-				pa_system_ptr->grid[x][y][z].letter = letter;
-				pa_system_ptr->grid[x][y][z].used = used;
+				ba_system_ptr->grid[x][y][z].color = 0;
+				ba_system_ptr->grid[x][y][z].letter = letter;
+				ba_system_ptr->grid[x][y][z].used = used;
 			}
 		}
 	}
@@ -450,9 +450,9 @@ static int _change_state_bps(char *com, int state)
 		goto error_message;
 
 	for(x=start[X];x<=end[X];x++) {
-		pa_system_ptr->grid[x].color = 0;
-		pa_system_ptr->grid[x].letter = letter;
-		pa_system_ptr->grid[x].used = used;
+		ba_system_ptr->grid[x].color = 0;
+		ba_system_ptr->grid[x].letter = letter;
+		ba_system_ptr->grid[x].used = used;
 	}	
 #endif
 	return 1;
@@ -565,7 +565,7 @@ static int _copy_allocation(char *com, List allocated_partitions)
 	ListIterator results_i;
 	allocated_part_t *allocated_part = NULL;
 	allocated_part_t *temp_part = NULL;
-	pa_request_t *request = NULL; 
+	ba_request_t *request = NULL; 
 	
 	int i=0;
 	int len = strlen(com);
@@ -613,7 +613,7 @@ static int _copy_allocation(char *com, List allocated_partitions)
 	}
 	
 	for(i=0;i<count;i++) {
-		request = (pa_request_t*) xmalloc(sizeof(pa_request_t)); 
+		request = (ba_request_t*) xmalloc(sizeof(ba_request_t)); 
 		
 		request->geometry[X] = allocated_part->request->geometry[X];
 		request->geometry[Y] = allocated_part->request->geometry[Y];
@@ -681,9 +681,9 @@ static int _save_allocation(char *com, List allocated_partitions)
 			}
 		}
 	if(filename[0]=='\0') {
-		pa_system_ptr->now_time = time(NULL);		
+		ba_system_ptr->now_time = time(NULL);		
 		sprintf(filename,"bluegene.conf.%ld",
-			(long int) pa_system_ptr->now_time);
+			(long int) ba_system_ptr->now_time);
 	}
 	file_ptr = fopen(filename,"w");
 	if (file_ptr!=NULL) {
@@ -727,83 +727,83 @@ static int _save_allocation(char *com, List allocated_partitions)
 
 static void _print_header_command(void)
 {
-	pa_system_ptr->ycord=2;
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "ID");
-	pa_system_ptr->xcord += 4;
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "TYPE");
-	pa_system_ptr->xcord += 7;
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "CONTIG");
-	pa_system_ptr->xcord += 7;
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "ROTATE");
-	pa_system_ptr->xcord += 7;
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "ELONG");
-	pa_system_ptr->xcord += 7;
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "NODES");
-	pa_system_ptr->xcord += 7;
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "NODELIST");
-	pa_system_ptr->xcord = 1;
-	pa_system_ptr->ycord++;
+	ba_system_ptr->ycord=2;
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "ID");
+	ba_system_ptr->xcord += 4;
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "TYPE");
+	ba_system_ptr->xcord += 7;
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "CONTIG");
+	ba_system_ptr->xcord += 7;
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "ROTATE");
+	ba_system_ptr->xcord += 7;
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "ELONG");
+	ba_system_ptr->xcord += 7;
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "NODES");
+	ba_system_ptr->xcord += 7;
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "NODELIST");
+	ba_system_ptr->xcord = 1;
+	ba_system_ptr->ycord++;
 }
 
 static void _print_text_command(allocated_part_t *allocated_part)
 {
-	wattron(pa_system_ptr->text_win,
+	wattron(ba_system_ptr->text_win,
 		COLOR_PAIR(allocated_part->color));
 			
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "%c",allocated_part->letter);
-	pa_system_ptr->xcord += 4;
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "%c",allocated_part->letter);
+	ba_system_ptr->xcord += 4;
 	if(allocated_part->request->conn_type==TORUS) 
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "TORUS");
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "TORUS");
 	else if (allocated_part->request->conn_type==MESH)
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "MESH");
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "MESH");
 	else 
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "SMALL");
-	pa_system_ptr->xcord += 7;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "SMALL");
+	ba_system_ptr->xcord += 7;
 				
 	if(allocated_part->request->force_contig)
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "Y");
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "Y");
 	else
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "N");
-	pa_system_ptr->xcord += 7;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "N");
+	ba_system_ptr->xcord += 7;
 				
 	if(allocated_part->request->rotate)
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "Y");
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "Y");
 	else
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "N");
-	pa_system_ptr->xcord += 7;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "N");
+	ba_system_ptr->xcord += 7;
 				
 	if(allocated_part->request->elongate)
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "Y");
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "Y");
 	else
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "N");
-	pa_system_ptr->xcord += 7;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "N");
+	ba_system_ptr->xcord += 7;
 
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "%d",allocated_part->request->size);
-	pa_system_ptr->xcord += 7;
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "%s",
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "%d",allocated_part->request->size);
+	ba_system_ptr->xcord += 7;
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "%s",
 		  allocated_part->request->save_name);
-	pa_system_ptr->xcord = 1;
-	pa_system_ptr->ycord++;
-	wattroff(pa_system_ptr->text_win,
+	ba_system_ptr->xcord = 1;
+	ba_system_ptr->ycord++;
+	wattroff(ba_system_ptr->text_win,
 		 COLOR_PAIR(allocated_part->color));
 	return;
 }
@@ -824,23 +824,23 @@ void get_command(void)
 	if(params.commandline) {
 		printf("Configure won't work with commandline mode.\n");
 		printf("Please remove the -c from the commandline.\n");
-		pa_fini();
+		ba_fini();
 		exit(0);
 	}
 	init_wires();
 	allocated_partitions = list_create(NULL);
 				
-	text_width = pa_system_ptr->text_win->_maxx;	
-	text_startx = pa_system_ptr->text_win->_begx;
+	text_width = ba_system_ptr->text_win->_maxx;	
+	text_startx = ba_system_ptr->text_win->_begx;
 	command_win = newwin(3, text_width - 1, LINES - 4, text_startx + 1);
 	echo();
 	
 	while (strcmp(com, "quit")) {
-		clear_window(pa_system_ptr->grid_win);
+		clear_window(ba_system_ptr->grid_win);
 		print_grid(0);
-		clear_window(pa_system_ptr->text_win);
-		box(pa_system_ptr->text_win, 0, 0);
-		box(pa_system_ptr->grid_win, 0, 0);
+		clear_window(ba_system_ptr->text_win);
+		box(ba_system_ptr->text_win, 0, 0);
+		box(ba_system_ptr->grid_win, 0, 0);
 		
 		if (!params.no_header)
 			_print_header_command();
@@ -849,25 +849,25 @@ void get_command(void)
 			i=0;
 			while(error_string[i]!='\0') {
 				if(error_string[i]=='\n') {
-					pa_system_ptr->ycord++;
-					pa_system_ptr->xcord=1;
+					ba_system_ptr->ycord++;
+					ba_system_ptr->xcord=1;
 					i++;
 				}
-				mvwprintw(pa_system_ptr->text_win, 
-					  pa_system_ptr->ycord,
-					  pa_system_ptr->xcord, 
+				mvwprintw(ba_system_ptr->text_win, 
+					  ba_system_ptr->ycord,
+					  ba_system_ptr->xcord, 
 					  "%c",
 					  error_string[i++]);
-				pa_system_ptr->xcord++;
+				ba_system_ptr->xcord++;
 			}
-			pa_system_ptr->ycord++;
-			pa_system_ptr->xcord=1;	
+			ba_system_ptr->ycord++;
+			ba_system_ptr->xcord=1;	
 			memset(error_string,0,255);			
 		}
 		results_i = list_iterator_create(allocated_partitions);
 		
 		count = list_count(allocated_partitions) 
-			- (LINES-(pa_system_ptr->ycord+5)); 
+			- (LINES-(ba_system_ptr->ycord+5)); 
 		
 		if(count<0)
 			count=0;
@@ -879,8 +879,8 @@ void get_command(void)
 		}
 		list_iterator_destroy(results_i);		
 		
-		wnoutrefresh(pa_system_ptr->text_win);
-		wnoutrefresh(pa_system_ptr->grid_win);
+		wnoutrefresh(ba_system_ptr->text_win);
+		wnoutrefresh(ba_system_ptr->grid_win);
 		doupdate();
 		clear_window(command_win);
 		
@@ -894,7 +894,7 @@ void get_command(void)
 		if (!strcmp(com, "exit")) {
 			endwin();
 			_delete_allocated_parts(allocated_partitions);
-			pa_fini();
+			ba_fini();
 			exit(0);
 		} if (!strcmp(com, "quit")) {
 			break;
@@ -902,13 +902,13 @@ void get_command(void)
 			   !strncasecmp(com, "r ", 2)) {
 			_resolve(com);
 		} else if (!strncasecmp(com, "resume", 6)) {
-			mvwprintw(pa_system_ptr->text_win,
-				pa_system_ptr->ycord,
-				pa_system_ptr->xcord, "%s", com);
+			mvwprintw(ba_system_ptr->text_win,
+				ba_system_ptr->ycord,
+				ba_system_ptr->xcord, "%s", com);
 		} else if (!strncasecmp(com, "drain", 5)) {
-			mvwprintw(pa_system_ptr->text_win, 
-				pa_system_ptr->ycord, 
-				pa_system_ptr->xcord, "%s", com);
+			mvwprintw(ba_system_ptr->text_win, 
+				ba_system_ptr->ycord, 
+				ba_system_ptr->xcord, "%s", com);
 		} else if (!strncasecmp(com, "alldown", 7)) {
 			_change_state_all_bps(com, NODE_STATE_DOWN);
 		} else if (!strncasecmp(com, "down", 4)) {
@@ -944,9 +944,9 @@ void get_command(void)
 	params.display = 0;
 	noecho();
 	
-	clear_window(pa_system_ptr->text_win);
-	pa_system_ptr->xcord = 1;
-	pa_system_ptr->ycord = 1;
+	clear_window(ba_system_ptr->text_win);
+	ba_system_ptr->xcord = 1;
+	ba_system_ptr->ycord = 1;
 	print_date();
 	get_job(0);
 	return;

@@ -35,11 +35,11 @@ List bg_bp_list;
 static int _get_bp_by_location(rm_BGL_t* my_bg, 
 			       int* curr_coord, 
 			       rm_BP_t** bp);
-//static int _set_switch(rm_switch_t* curr_switch, pa_connection_t *int_wire);
+//static int _set_switch(rm_switch_t* curr_switch, ba_connection_t *int_wire);
 static int _add_switch_conns(rm_switch_t* curr_switch, 
 			     bg_switch_t *bg_switch);
 static int _lookat_path(bg_bp_t *bg_bp, 
-			pa_switch_t *curr_switch, 
+			ba_switch_t *curr_switch, 
 			int source, 
 			int target, 
 			int dim);
@@ -171,7 +171,7 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 	return SLURM_SUCCESS;
 }
 
-static int _lookat_path(bg_bp_t *bg_bp, pa_switch_t *curr_switch, 
+static int _lookat_path(bg_bp_t *bg_bp, ba_switch_t *curr_switch, 
 			int source, int target, int dim) 
 {
 	ListIterator bg_itr, switch_itr, conn_itr;
@@ -181,7 +181,7 @@ static int _lookat_path(bg_bp_t *bg_bp, pa_switch_t *curr_switch,
 	int port_tar;
 	int port_tar1;
 	int *node_src;
-	pa_switch_t *next_switch; 
+	ba_switch_t *next_switch; 
 	
 	switch_itr = list_iterator_create(bg_bp->switch_list);
 	while((bg_switch = list_next(switch_itr)) != NULL) {
@@ -266,7 +266,7 @@ static int _lookat_path(bg_bp_t *bg_bp, pa_switch_t *curr_switch,
 		bg_bp->used = 0;
 	}
 	
-	next_switch = &pa_system_ptr->
+	next_switch = &ba_system_ptr->
 		grid[node_tar[X]][node_tar[Y]][node_tar[Z]].axis_switch[dim];
 	
 	if(_lookat_path(bg_bp, next_switch, port_tar, target, dim) 
@@ -305,11 +305,11 @@ static int _destroy_bg_bp_list(List bg_bp_list)
 	return SLURM_SUCCESS;
 }
 
-extern int configure_small_partition(bg_record_t *bg_record)
+extern int configure_small_block(bg_record_t *bg_record)
 {
 	bool small = true;
 	ListIterator itr;
-	pa_node_t* pa_node = NULL;
+	ba_node_t* ba_node = NULL;
 	int rc = SLURM_SUCCESS;
 	rm_BP_t *curr_bp;
 	rm_bp_id_t bp_id = NULL;
@@ -320,42 +320,42 @@ extern int configure_small_partition(bg_record_t *bg_record)
 	int num, i;
 
 	if(bg_record->bp_count != 1) {
-		error("Requesting small partition with %d bps, needs to be 1.",
+		error("Requesting small block with %d bps, needs to be 1.",
 		      bg_record->bp_count);
 		return SLURM_ERROR;
 	}
 	
-	/* set that we are doing a small partition */
-	if ((rc = rm_set_data(bg_record->bg_part, RM_PartitionSmall, 
+	/* set that we are doing a small block */
+	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionSmall, 
 			      &small)) != STATUS_OK) {
 		fatal("rm_set_data(RM_PartitionPsetsPerBP)", bg_err_str(rc));
 	}
 
-	if ((rc = rm_set_data(bg_record->bg_part,
+	if ((rc = rm_set_data(bg_record->bg_block,
 			      RM_PartitionNodeCardNum,
 			      &num_ncards))
 	    != STATUS_OK) {
 		fatal("rm_set_data: RM_PartitionBPNum: %s", bg_err_str(rc));
 	}
 
-	itr = list_iterator_create(bg_record->bg_part_list);
-	pa_node = list_next(itr);
+	itr = list_iterator_create(bg_record->bg_block_list);
+	ba_node = list_next(itr);
 	list_iterator_destroy(itr);
 
-	if (_get_bp_by_location(bg, pa_node->coord, &curr_bp) 
+	if (_get_bp_by_location(bg, ba_node->coord, &curr_bp) 
 	    == SLURM_ERROR) {
 		fatal("_get_bp_by_location()");
 	}
 	
 	/* Set the one BP */
-	if ((rc = rm_set_data(bg_record->bg_part,
+	if ((rc = rm_set_data(bg_record->bg_block,
 			      RM_PartitionBPNum,
 			      &bg_record->bp_count)) 
 	    != STATUS_OK) {
 		fatal("rm_set_data: RM_PartitionBPNum: %s", bg_err_str(rc));
 		return SLURM_ERROR;
 	}	
-	if ((rc = rm_set_data(bg_record->bg_part,
+	if ((rc = rm_set_data(bg_record->bg_block,
 			      RM_PartitionFirstBP, 
 			      curr_bp)) 
 	    != STATUS_OK) {
@@ -416,7 +416,7 @@ extern int configure_small_partition(bg_record_t *bg_record)
 		if(bg_record->quarter != quarter)
 			continue;
 		if (num_ncards) {
-			if ((rc = rm_set_data(bg_record->bg_part,
+			if ((rc = rm_set_data(bg_record->bg_block,
 					      RM_PartitionNextNodeCard, 
 					      ncard)) 
 			    != STATUS_OK) {
@@ -426,7 +426,7 @@ extern int configure_small_partition(bg_record_t *bg_record)
 				
 			}
 		} else {
-			if ((rc = rm_set_data(bg_record->bg_part,
+			if ((rc = rm_set_data(bg_record->bg_block,
 					      RM_PartitionFirstNodeCard, 
 					      ncard)) 
 			    != STATUS_OK) {
@@ -445,23 +445,23 @@ cleanup:
 		return SLURM_ERROR;
 	}
 	
-	debug("making the small partition");
+	debug("making the small block");
 	return rc;
 }
 
 /**
  * connect the given switch up with the given connections
  */
-extern int configure_partition_switches(bg_record_t * bg_record)
+extern int configure_block_switches(bg_record_t * bg_record)
 {
 	int i, rc = SLURM_SUCCESS;
 	ListIterator itr, switch_itr, bg_itr;
-	pa_node_t* pa_node;
+	ba_node_t* ba_node;
 	char *name2;
 	rm_BP_t *curr_bp;
-	rm_switch_t *coord_switch[PA_SYSTEM_DIMENSIONS];
+	rm_switch_t *coord_switch[BA_SYSTEM_DIMENSIONS];
 	rm_switch_t *curr_switch;
-	pa_switch_t *pa_switch;
+	ba_switch_t *ba_switch;
 	char *bpid, *curr_bpid;
 	int found_bpid = 0;
 	int switch_count;
@@ -474,38 +474,38 @@ extern int configure_partition_switches(bg_record_t * bg_record)
 	bg_record->switch_count = 0;
 	bg_record->bp_count = 0;
 		
-	itr = list_iterator_create(bg_record->bg_part_list);
-	while ((pa_node = (pa_node_t *) list_next(itr)) != NULL) {
+	itr = list_iterator_create(bg_record->bg_block_list);
+	while ((ba_node = (ba_node_t *) list_next(itr)) != NULL) {
 		debug("node %d%d%d",
-		      pa_node->coord[X], 
-		      pa_node->coord[Y], 
-		      pa_node->coord[Z]);
+		      ba_node->coord[X], 
+		      ba_node->coord[Y], 
+		      ba_node->coord[Z]);
 		bg_itr = list_iterator_create(bg_bp_list);
 		while((bg_bp = list_next(bg_itr)) != NULL) {
-			if((bg_bp->coord[X] == pa_node->coord[X])
-			   && (bg_bp->coord[Y] == pa_node->coord[Y])
-			   && (bg_bp->coord[Z] == pa_node->coord[Z]))
+			if((bg_bp->coord[X] == ba_node->coord[X])
+			   && (bg_bp->coord[Y] == ba_node->coord[Y])
+			   && (bg_bp->coord[Z] == ba_node->coord[Z]))
 				break;
 		}
 		list_iterator_destroy(bg_itr);
 		
 		if(bg_bp == NULL) {
 			bg_bp = xmalloc(sizeof(bg_bp_t));
-			bg_bp->coord = pa_node->coord;
+			bg_bp->coord = ba_node->coord;
 			bg_bp->switch_list = list_create(NULL);
 			list_append(bg_bp_list, bg_bp);
 		}
 		bg_record->bp_count++;
 		bg_bp->used = 1;
-		for(i=0;i<PA_SYSTEM_DIMENSIONS;i++) {
+		for(i=0;i<BA_SYSTEM_DIMENSIONS;i++) {
 			
-			pa_switch = &pa_node->axis_switch[i];
-			if(pa_switch->int_wire[0].used) {
-				_lookat_path(bg_bp, pa_switch, 0, 1, i);
+			ba_switch = &ba_node->axis_switch[i];
+			if(ba_switch->int_wire[0].used) {
+				_lookat_path(bg_bp, ba_switch, 0, 1, i);
 			}
 			
-		/* 	if(pa_switch->int_wire[1].used) { */
-/* 				_lookat_path(bg_bp, pa_switch, 1, 0, i); */
+		/* 	if(ba_switch->int_wire[1].used) { */
+/* 				_lookat_path(bg_bp, ba_switch, 1, 0, i); */
 /* 			} */
 		}
 	}
@@ -525,7 +525,7 @@ extern int configure_partition_switches(bg_record_t * bg_record)
 	}
 	list_iterator_destroy(bg_itr);
 
-	if ((rc = rm_set_data(bg_record->bg_part,
+	if ((rc = rm_set_data(bg_record->bg_block,
 			      RM_PartitionBPNum,
 			      &bg_record->bp_count)) 
 	    != STATUS_OK) {
@@ -534,7 +534,7 @@ extern int configure_partition_switches(bg_record_t * bg_record)
 		goto cleanup;
 	}
 	debug3("BP count %d",bg_record->bp_count);
-	if ((rc = rm_set_data(bg_record->bg_part,
+	if ((rc = rm_set_data(bg_record->bg_block,
 			      RM_PartitionSwitchNum,
 			      &bg_record->switch_count)) 
 	    != STATUS_OK) {
@@ -567,7 +567,7 @@ extern int configure_partition_switches(bg_record_t * bg_record)
 		
 		if(bg_bp->used) {
 			if (first_bp){
-				if ((rc = rm_set_data(bg_record->bg_part,
+				if ((rc = rm_set_data(bg_record->bg_block,
 						      RM_PartitionFirstBP, 
 						      curr_bp)) 
 				    != STATUS_OK) {
@@ -578,7 +578,7 @@ extern int configure_partition_switches(bg_record_t * bg_record)
 				}
 				first_bp = 0;
 			} else {
-				if ((rc = rm_set_data(bg_record->bg_part,
+				if ((rc = rm_set_data(bg_record->bg_block,
 						      RM_PartitionNextBP, 
 						      curr_bp)) 
 				    != STATUS_OK) {
@@ -635,7 +635,7 @@ extern int configure_partition_switches(bg_record_t * bg_record)
 			if (!strcasecmp((char *)bpid, (char *)curr_bpid)) {
 				coord_switch[found_bpid] = curr_switch;
 				found_bpid++;
-				if(found_bpid==PA_SYSTEM_DIMENSIONS) {
+				if(found_bpid==BA_SYSTEM_DIMENSIONS) {
 					free(curr_bpid);
 					break;
 				}
@@ -645,7 +645,7 @@ extern int configure_partition_switches(bg_record_t * bg_record)
 
 		free(bpid);
 
-		if(found_bpid==PA_SYSTEM_DIMENSIONS) {
+		if(found_bpid==BA_SYSTEM_DIMENSIONS) {
 						
 			debug2("adding midplane %d%d%d",
 			       bg_bp->coord[X],
@@ -669,7 +669,7 @@ extern int configure_partition_switches(bg_record_t * bg_record)
 				
 				if (first_switch){
 					if ((rc = rm_set_data(
-						     bg_record->bg_part,
+						     bg_record->bg_block,
 						     RM_PartitionFirstSwitch,
 						     coord_switch
 						     [bg_switch->dim])) 
@@ -686,7 +686,7 @@ extern int configure_partition_switches(bg_record_t * bg_record)
 					first_switch = 0;
 				} else {
 					if ((rc = rm_set_data(
-						     bg_record->bg_part,
+						     bg_record->bg_block,
 						     RM_PartitionNextSwitch,
 						     coord_switch
 						     [bg_switch->dim])) 

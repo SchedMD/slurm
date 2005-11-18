@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  bgl_job_place.c - blue gene job placement (e.g. base block selection)
+ *  bg_job_place.c - blue gene job placement (e.g. base block selection)
  *  functions.
  *
  *  $Id$ 

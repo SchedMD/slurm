@@ -261,7 +261,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 					retries = 0;
 					while (pthread_create(&thread_agent, 
 							      &attr_agent, 
-							      mult_free_part, 
+							      mult_free_block, 
 							      (void *)
 							      found_record)) {
 						error("pthread_create "
@@ -388,7 +388,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 			      jobs);
 			break;
 		}
-		if ((rc = rm_get_data(job_elem, RM_JobBlockID, &block_id))
+		if ((rc = rm_get_data(job_elem, RM_JobPartitionID, &block_id))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_JobPartitionID) %s: %s", 
 			      block_id, bg_err_str(rc));
@@ -625,7 +625,7 @@ static int _excise_block(List block_list, pm_partition_id_t bg_block_id,
  * many seconds. Do not call from slurmctld  or any other entity that 
  * can not wait.
  */
-int term_jobs_on_part(pm_block_id_t bg_block_id)
+int term_jobs_on_block(pm_partition_id_t bg_block_id)
 {
 	int rc = SLURM_SUCCESS;
 	bg_update_t *bg_update_ptr;

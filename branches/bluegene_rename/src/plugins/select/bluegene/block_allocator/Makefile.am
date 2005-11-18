@@ -4,7 +4,7 @@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 
-INCLUDES = -I$(top_srcdir) $(BGL_INCLUDES)
+INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 
 #to build the executable
 # noinst_PROGRAMS = partition_allocator
@@ -15,7 +15,7 @@ INCLUDES = -I$(top_srcdir) $(BGL_INCLUDES)
 # 	$(top_builddir)/src/common/libcommon.la -lpthread \
 # 	$(top_builddir)/src/api/libslurm.la
 
-# partition_allocator_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS) $(BGL_LDFLAGS)
+# partition_allocator_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS) $(BG_LDFLAGS)
 
 # CPPFLAGS = -DBUILD_EXE
 

@@ -1,7 +1,7 @@
 /* Wrapper for rm_api.h */
 
-#ifndef ATTACH_BG_H
-#define ATTACH_BG_H
+#ifndef ATTACH_BGL_H
+#define ATTACH_BGL_H
 
 #if HAVE_CONFIG_H
 #  include "config.h"
@@ -19,7 +19,7 @@
     int    pid;                    /* The pid of the process */
   } MPIR_PROCDESC;
 
-#  include "rm_api.h"
+#include "rm_api.h"
 
 #else
   typedef char *   pm_partition_id_t;

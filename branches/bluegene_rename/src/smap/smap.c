@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
 			exit(1);
 		sleep(10);	/* keep trying to reconnect */
 	}
-	pa_init(new_node_ptr);
+	ba_init(new_node_ptr);
 	
 	if(params.partition) {
 			
@@ -135,7 +135,7 @@ part_fini:
 #else
 		printf("must be on BG SN to resolve.\n");
 #endif
-		pa_fini();
+		ba_fini();
 		exit(0);
 	}
 	if(!params.commandline) {
@@ -161,7 +161,7 @@ part_fini:
 			      height, 
 			      COLS, 
 			      LINES);
-			pa_fini();
+			ba_fini();
 			exit(0);
 		}
 		
@@ -174,13 +174,13 @@ part_fini:
 		start_color();
 		_set_pairs();
 		
-		pa_system_ptr->grid_win = newwin(height, 
+		ba_system_ptr->grid_win = newwin(height, 
 						 width, 
 						 starty, 
 						 startx);
-		max_display = pa_system_ptr->grid_win->_maxy
-			*pa_system_ptr->grid_win->_maxx;
-		//scrollok(pa_system_ptr->grid_win, TRUE);
+		max_display = ba_system_ptr->grid_win->_maxy
+			*ba_system_ptr->grid_win->_maxx;
+		//scrollok(ba_system_ptr->grid_win, TRUE);
 		
 #ifdef HAVE_BG
 		startx = width;
@@ -194,7 +194,7 @@ part_fini:
 		
 #endif
 		
-		pa_system_ptr->text_win = newwin(height, 
+		ba_system_ptr->text_win = newwin(height, 
 						 width, 
 						 starty, 
 						 startx);
@@ -204,14 +204,14 @@ part_fini:
 			_get_option();
 		redraw:
 			
-			clear_window(pa_system_ptr->text_win);
-			clear_window(pa_system_ptr->grid_win);
+			clear_window(ba_system_ptr->text_win);
+			clear_window(ba_system_ptr->grid_win);
 			doupdate();
 			move(0,0);
 			
 			init_grid(new_node_ptr);
-			pa_system_ptr->xcord = 1;
-			pa_system_ptr->ycord = 1;
+			ba_system_ptr->xcord = 1;
+			ba_system_ptr->ycord = 1;
 		}
 		print_date();
 		switch (params.display) {
@@ -225,7 +225,7 @@ part_fini:
 		case COMMANDS:
 			if(!mapset) {
 				mapset = set_bp_map();
-				wclear(pa_system_ptr->text_win);
+				wclear(ba_system_ptr->text_win);
 				//doupdate();
 				//move(0,0);
 			}
@@ -238,21 +238,21 @@ part_fini:
 		default:
 			error("must be on a BG SYSTEM to run this command");
 			endwin();
-			pa_fini();
+			ba_fini();
 			exit(0);
 			break;
 #endif
 		}
 			
 		if(!params.commandline) {
-			//wscrl(pa_system_ptr->grid_win,-1);
-			box(pa_system_ptr->text_win, 0, 0);
-			wnoutrefresh(pa_system_ptr->text_win);
+			//wscrl(ba_system_ptr->grid_win,-1);
+			box(ba_system_ptr->text_win, 0, 0);
+			wnoutrefresh(ba_system_ptr->text_win);
 			
 			print_grid(grid_line_cnt*
-				     (pa_system_ptr->grid_win->_maxx-1));
-			box(pa_system_ptr->grid_win, 0, 0);
-			wnoutrefresh(pa_system_ptr->grid_win);
+				     (ba_system_ptr->grid_win->_maxx-1));
+			box(ba_system_ptr->grid_win, 0, 0);
+			wnoutrefresh(ba_system_ptr->grid_win);
 			
 			doupdate();
 			
@@ -276,13 +276,13 @@ part_fini:
 			if (error_code && (quiet_flag != 1)) {
 				if(!params.commandline) {
 					mvwprintw(
-						pa_system_ptr->text_win,
-						pa_system_ptr->ycord, 
+						ba_system_ptr->text_win,
+						ba_system_ptr->ycord, 
 						1,
 						"slurm_load_node: %s",
 						slurm_strerror(
 							slurm_get_errno()));
-					pa_system_ptr->ycord++;
+					ba_system_ptr->ycord++;
 				} else {
 					printf("slurm_load_node: %s",
 					       slurm_strerror(
@@ -298,9 +298,9 @@ part_fini:
 				if(!params.commandline) {
 					if ((rc = _get_option()) == 1)
 						goto redraw;
-					else if (pa_system_ptr->
+					else if (ba_system_ptr->
 						 resize_screen) {
-						pa_system_ptr->
+						ba_system_ptr->
 							resize_screen = 0;
 						goto redraw;
 					}
@@ -316,7 +316,7 @@ part_fini:
 		getch();
 		endwin();
 	}
-	pa_fini();
+	ba_fini();
         
 	exit(0);
 }
@@ -383,7 +383,7 @@ static int _get_option()
 	case 'd':
 	case KEY_DOWN:
 		grid_line_cnt++;
-		if((((grid_line_cnt-2)*(pa_system_ptr->grid_win->_maxx-1)) + 
+		if((((grid_line_cnt-2)*(ba_system_ptr->grid_win->_maxx-1)) + 
 		    max_display) > DIM_SIZE[X]) {
 			grid_line_cnt--;
 			return 0;		
@@ -395,7 +395,7 @@ static int _get_option()
 	case 'q':
 	case '\n':
 		endwin();
-		pa_fini();
+		ba_fini();
 		exit(0);
 		break;
 	}
@@ -406,10 +406,10 @@ static void *_resize_handler(int sig)
 {
 	int startx=0, starty=0;
 	int height, width;
-	pa_system_ptr->ycord = 1;
+	ba_system_ptr->ycord = 1;
 	
-	delwin(pa_system_ptr->grid_win);
-	delwin(pa_system_ptr->text_win);
+	delwin(ba_system_ptr->grid_win);
+	delwin(ba_system_ptr->text_win);
 	
 	endwin();
 	COLS=0;
@@ -432,13 +432,13 @@ static void *_resize_handler(int sig)
 		error("Screen is too small make sure "
 		      "the screen is at least %dx%d\n"
 		      "Right now it is %dx%d\n", width, height, COLS, LINES);
-		pa_fini();
+		ba_fini();
 		exit(0);
 	}
         
-	pa_system_ptr->grid_win = newwin(height, width, starty, startx);
-	max_display = pa_system_ptr->grid_win->_maxy*
-		pa_system_ptr->grid_win->_maxx;
+	ba_system_ptr->grid_win = newwin(height, width, starty, startx);
+	max_display = ba_system_ptr->grid_win->_maxy*
+		ba_system_ptr->grid_win->_maxx;
 		
 #ifdef HAVE_BG
 	startx = width;
@@ -452,7 +452,7 @@ static void *_resize_handler(int sig)
 	
 #endif
 	
-	pa_system_ptr->text_win = newwin(height, width, starty, startx);
+	ba_system_ptr->text_win = newwin(height, width, starty, startx);
 	
 	print_date();
 	switch (params.display) {
@@ -472,13 +472,13 @@ static void *_resize_handler(int sig)
 #endif
 	}
 
-	print_grid(grid_line_cnt*(pa_system_ptr->grid_win->_maxx-1));
-	box(pa_system_ptr->text_win, 0, 0);
-	box(pa_system_ptr->grid_win, 0, 0);
-	wnoutrefresh(pa_system_ptr->text_win);
-	wnoutrefresh(pa_system_ptr->grid_win);
+	print_grid(grid_line_cnt*(ba_system_ptr->grid_win->_maxx-1));
+	box(ba_system_ptr->text_win, 0, 0);
+	box(ba_system_ptr->grid_win, 0, 0);
+	wnoutrefresh(ba_system_ptr->text_win);
+	wnoutrefresh(ba_system_ptr->grid_win);
 	doupdate();
-	pa_system_ptr->resize_screen = 1;
+	ba_system_ptr->resize_screen = 1;
 	return NULL;
 }
 

@@ -54,7 +54,7 @@
 #endif
 
 /* Define to 1 if you have Blue Gene system support. */
-#undef HAVE_BGL
+#undef HAVE_BG
 
 /* Define to 1 if you have the `elan3' library (-lelan3). */
 #undef HAVE_ELAN
@@ -162,7 +162,7 @@ enum job_wait_reason {
 	WAIT_TIME		/* job waiting for specific begin time */
 };
 
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 #  define SYSTEM_DIMENSIONS 3	/* for job geometry */
 #else
 #  define SYSTEM_DIMENSIONS 0	/* for job geometry */
@@ -186,7 +186,7 @@ enum select_data_type {
 	SELECT_DATA_ROTATE,	/* data-> uint16_t rotate */
 	SELECT_DATA_NODE_USE,	/* data-> uint16_t node_use */
 	SELECT_DATA_CONN_TYPE,	/* data-> uint16_t connection_type */
-	SELECT_DATA_BLOCK_ID,	/* data-> char bgl_block_id */
+	SELECT_DATA_BLOCK_ID,	/* data-> char bg_block_id */
 	SELECT_DATA_CHECKED	/* data-> uint16_t checked */
 };
 
@@ -194,7 +194,7 @@ enum select_print_mode {
 	SELECT_PRINT_HEAD,	/* Print just the header */
 	SELECT_PRINT_DATA,	/* Print just the data */
 	SELECT_PRINT_MIXED,	/* Print "field=value" */
-	SELECT_PRINT_BGL_ID	/* Print just the BGL_ID */
+	SELECT_PRINT_BG_ID	/* Print just the BG_ID */
 };
 
 /* Possible task distributions across the nodes */
@@ -594,6 +594,7 @@ typedef struct slurm_ctl_conf {
 	char *job_credential_public_certificate;/* path to public certificate*/
 	char *srun_prolog;      /* srun prolog program */
 	char *srun_epilog;      /* srun epilog program */
+	char *node_prefix;      /* prefix of nodes in partition */
 } slurm_ctl_conf_t;
 
 typedef struct submit_response_msg {

@@ -111,7 +111,7 @@ extern int init_bg(void)
 	DIM_SIZE[Y]=bp_size.Y;
 	DIM_SIZE[Z]=bp_size.Z;
 #endif
-	pa_init(NULL);
+	ba_init(NULL);
 
 	info("BlueGene plugin loaded successfully");
 
@@ -151,7 +151,7 @@ extern void fini_bg(void)
 		if ((rc = rm_free_BGL(bg)) != STATUS_OK)
 			error("rm_free_BGL(): %s", bg_err_str(rc));
 #endif	
-	pa_fini();
+	ba_fini();
 }
 
 extern void print_bg_record(bg_record_t* bg_record)
@@ -544,7 +544,7 @@ extern int create_static_blocks(List block_list)
 	init_wires();
 #endif
 	slurm_mutex_lock(&block_state_mutex);
-	reset_pa_system();
+	reset_ba_system();
 		
 	if(bg_list) {
 		itr = list_iterator_create(bg_list);
@@ -629,7 +629,7 @@ extern int create_static_blocks(List block_list)
 	   just in case it isn't in the bluegene.conf file.
 	*/
 	
-	reset_pa_system();
+	reset_ba_system();
 
 	bg_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));
 	bg_record->nodes = xmalloc(sizeof(char)*13);
@@ -644,9 +644,9 @@ extern int create_static_blocks(List block_list)
 #endif
 	if((bg_record->geo[X] == 0) && (bg_record->geo[Y] == 0)
 	&& (bg_record->geo[Z] == 0))
-		sprintf(bg_record->nodes, "bg000");
+		sprintf(bg_record->nodes, "000");
        	else
-		sprintf(bg_record->nodes, "bg[000x%d%d%d]", 
+		sprintf(bg_record->nodes, "[000x%d%d%d]",
 			bg_record->geo[X], bg_record->geo[Y], 
 			bg_record->geo[Z]);
 	bg_record->quarter = -1;
@@ -1120,7 +1120,7 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 				sprintf(node_name_tmp, "bg%d%d%d", 
 					x, y, z);		
 				list_append(bg_record->bg_block_list, 
-					    &pa_system_ptr->grid[x][y][z]);
+					    &ba_system_ptr->grid[x][y][z]);
 				node_count++;
 			}
 		}
@@ -1537,7 +1537,7 @@ static int _parse_bg_spec(char *in_line)
 	int pset_num=-1, api_verb=-1;
 	bg_record_t *bg_record = NULL;
 	bg_record_t *small_bg_record = NULL;
-	pa_node_t *pa_node = NULL;
+	ba_node_t *ba_node = NULL;
 	struct passwd *pw_ent = NULL;
 	ListIterator itr;
 	int i=0;
@@ -1632,7 +1632,7 @@ static int _parse_bg_spec(char *in_line)
 		 * conn_type == SELECT_SMALL in bluegene.conf
 		 */
 		itr = list_iterator_create(bg_record->bg_block_list);
-		while ((pa_node = list_next(itr)) != NULL) {
+		while ((ba_node = list_next(itr)) != NULL) {
 			for(i=0; i<4 ; i++) {
 				small_bg_record = (bg_record_t*) 
 					xmalloc(sizeof(bg_record_t));
@@ -1673,10 +1673,10 @@ static void _process_nodes(bg_record_t *bg_record)
 {
 #ifdef HAVE_BG
 	int j=0, number;
-	int start[PA_SYSTEM_DIMENSIONS];
-	int end[PA_SYSTEM_DIMENSIONS];
+	int start[BA_SYSTEM_DIMENSIONS];
+	int end[BA_SYSTEM_DIMENSIONS];
 	ListIterator itr;
-	pa_node_t* pa_node = NULL;
+	ba_node_t* ba_node = NULL;
 	
 	bg_record->bp_count = 0;
 				
@@ -1747,18 +1747,18 @@ static void _process_nodes(bg_record_t *bg_record)
 	end[Z] = -1;
 	
 	itr = list_iterator_create(bg_record->bg_block_list);
-	while ((pa_node = list_next(itr)) != NULL) {
-		if(pa_node->coord[X]>end[X]) {
+	while ((ba_node = list_next(itr)) != NULL) {
+		if(ba_node->coord[X]>end[X]) {
 			bg_record->geo[X]++;
-			end[X] = pa_node->coord[X];
+			end[X] = ba_node->coord[X];
 		}
-		if(pa_node->coord[Y]>end[Y]) {
+		if(ba_node->coord[Y]>end[Y]) {
 			bg_record->geo[Y]++;
-			end[Y] = pa_node->coord[Y];
+			end[Y] = ba_node->coord[Y];
 		}
-		if(pa_node->coord[Z]>end[Z]) {
+		if(ba_node->coord[Z]>end[Z]) {
 			bg_record->geo[Z]++;
-			end[Z] = pa_node->coord[Z];
+			end[Z] = ba_node->coord[Z];
 		}
 	}
 	list_iterator_destroy(itr);
