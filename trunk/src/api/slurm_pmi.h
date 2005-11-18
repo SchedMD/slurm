@@ -42,6 +42,7 @@
 
 #include "src/common/pack.h"
 
+#define PMI_MAX_ID_LEN       16	/* Maximim size of PMI process group ID */
 #define PMI_MAX_KEY_LEN     256	/* Maximum size of a PMI key */
 #define PMI_MAX_KVSNAME_LEN 256	/* Maximum size of KVS name */
 #define PMI_MAX_VAL_LEN     256	/* Maximum size of a PMI value */
