@@ -52,26 +52,26 @@ extern int start_job(struct job_record *job_ptr);
 extern int term_job(struct job_record *job_ptr);
 
 /*
- * Perform any work required to terminate a jobs on a partition
- * bg_part_id IN - partition name
+ * Perform any work required to terminate a jobs on a block
+ * bg_block_id IN - partition name
  * RET - SLURM_SUCCESS or an error code
  *
  * NOTE: This happens when new partitions are created and we
  * need to clean up jobs on them.
  */
-extern int term_jobs_on_part(pm_partition_id_t bg_part_id);
+extern int term_jobs_on_block(pm_partition_id_t bg_block_id);
 
 /*
  * Synchronize BG block state to that of currently active jobs.
- * This can recover from slurmctld crashes when partition ownership 
+ * This can recover from slurmctld crashes when block ownership 
  * changes were queued
  */
 extern int sync_jobs(List job_list);
 
 /*
- * Boot a partition. Partition state expected to be FREE upon entry. 
+ * Boot a block. Partition state expected to be FREE upon entry. 
  * NOTE: This function does not wait for the boot to complete.
  * the slurm prolog script needs to perform the waiting.
  */
-extern int boot_part(bg_record_t *bg_record);
+extern int boot_block(bg_record_t *bg_record);
 #endif /* _BG_JOB_RUN_H_ */

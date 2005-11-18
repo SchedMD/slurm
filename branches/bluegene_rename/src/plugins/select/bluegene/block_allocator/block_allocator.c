@@ -806,22 +806,22 @@ extern void ba_set_node_down(ba_node_t *ba_node)
  * 
  * IN - ba_request: allocation request
  * OUT - results: List of results of the allocation request.  Each
- * list entry will be a coordinate.  allocate_part will create the
+ * list entry will be a coordinate.  allocate_block will create the
  * list, but the caller must destroy it.
  * 
  * return: success or error of request
  */
-extern int allocate_part(ba_request_t* ba_request, List results)
+extern int allocate_block(ba_request_t* ba_request, List results)
 {
 
 	if (!_initialized){
-		error("allocate_part Error, configuration not initialized, "
+		error("allocate_block Error, configuration not initialized, "
 		      "call init_configuration first");
 		return 0;
 	}
 
 	if (!ba_request){
-		error("allocate_part Error, request not initialized");
+		error("allocate_block Error, request not initialized");
 		return 0;
 	}
 	
@@ -840,7 +840,7 @@ extern int allocate_part(ba_request_t* ba_request, List results)
  *
  * returns SLURM_SUCCESS if undo was successful.
  */
-extern int remove_part(List nodes, int new_count)
+extern int remove_block(List nodes, int new_count)
 {
 	int dim;
 	ba_node_t* ba_node = NULL;
@@ -870,7 +870,7 @@ extern int remove_part(List nodes, int new_count)
  *
  * returns SLURM_SUCCESS if undo was successful.
  */
-extern int alter_part(List nodes, int conn_type)
+extern int alter_block(List nodes, int conn_type)
 {
 	/* int dim; */
 /* 	ba_node_t* ba_node = NULL; */
@@ -906,7 +906,7 @@ extern int alter_part(List nodes, int conn_type)
  * be redone to make sure correct path will be used in the real system
  *
  */
-extern int redo_part(List nodes, int *geo, int conn_type, int new_count)
+extern int redo_block(List nodes, int *geo, int conn_type, int new_count)
 {
        	ba_node_t* ba_node;
 	char *name = NULL;
@@ -916,11 +916,11 @@ extern int redo_part(List nodes, int *geo, int conn_type, int new_count)
 	ba_node = list_next(itr);
 	list_iterator_destroy(itr);
 
-	remove_part(nodes, new_count);
+	remove_block(nodes, new_count);
 	list_destroy(nodes);
 	nodes = list_create(NULL);
 	
-	name = set_bg_part(nodes, ba_node->coord, geo, conn_type);
+	name = set_bg_block(nodes, ba_node->coord, geo, conn_type);
 	if(!name)
 		return SLURM_ERROR;
 	else {
@@ -929,7 +929,7 @@ extern int redo_part(List nodes, int *geo, int conn_type, int new_count)
 	}
 }
 
-extern char *set_bg_part(List results, int *start, 
+extern char *set_bg_block(List results, int *start, 
 			  int *geometry, int conn_type)
 {
 	char *name = NULL;
@@ -974,7 +974,7 @@ extern char *set_bg_part(List results, int *start,
 
 	if(!found) {
 		debug("trying less efficient code");
-		remove_part(results, color_count);
+		remove_block(results, color_count);
 		list_destroy(results);
 		results = list_create(NULL);
 		list_append(results, ba_node);
@@ -2016,7 +2016,7 @@ start_again:
 			;
 
 		if (!_node_used(ba_node, ba_request->geometry)) {
-			name = set_bg_part(results,
+			name = set_bg_block(results,
 					    start, 
 					    ba_request->geometry, 
 					    ba_request->conn_type);
@@ -2029,7 +2029,7 @@ start_again:
 				goto requested_end;
 			//exit(0);
 			debug("trying something else");
-			remove_part(results, color_count);
+			remove_block(results, color_count);
 			list_destroy(results);
 			results = list_create(NULL);
 		}
@@ -2413,7 +2413,7 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 		return NULL;
 	itr = list_iterator_create(nodes);
 	while((ba_node[count] = (ba_node_t*) list_next(itr))) {
-		sprintf(name, "bg%d%d%d\0", 
+		sprintf(name, "%d%d%d\0", 
 			ba_node[count]->coord[X],
 			ba_node[count]->coord[Y],
 			ba_node[count]->coord[Z]);
@@ -3686,7 +3686,7 @@ int main(int argc, char** argv)
 /* 	request->conn_type = TORUS; */
 /* 	new_ba_request(request); */
 /* 	print_ba_request(request); */
-/* 	if(!allocate_part(request, results)) { */
+/* 	if(!allocate_block(request, results)) { */
 /*        		debug("couldn't allocate %d%d%d", */
 /* 		       request->geometry[0], */
 /* 		       request->geometry[1], */
@@ -3708,7 +3708,7 @@ int main(int argc, char** argv)
 	request->conn_type = TORUS;
 	new_ba_request(request);
 	print_ba_request(request);
-	if(!allocate_part(request, results)) {
+	if(!allocate_block(request, results)) {
        		debug("couldn't allocate %d%d%d",
 		       request->geometry[0],
 		       request->geometry[1],
@@ -3725,7 +3725,7 @@ int main(int argc, char** argv)
 	request->conn_type = TORUS;
 	new_ba_request(request);
 	print_ba_request(request);
-	if(!allocate_part(request, results)) {
+	if(!allocate_block(request, results)) {
        		debug("couldn't allocate %d%d%d",
 		       request->geometry[0],
 		       request->geometry[1],
@@ -3741,7 +3741,7 @@ int main(int argc, char** argv)
 /* 	request->conn_type = TORUS; */
 /* 	new_ba_request(request); */
 /* 	print_ba_request(request); */
-/* 	if(!allocate_part(request, results)) { */
+/* 	if(!allocate_block(request, results)) { */
 /*        		printf("couldn't allocate %d%d%d\n", */
 /* 		       request->geometry[0], */
 /* 		       request->geometry[1], */
@@ -3756,7 +3756,7 @@ int main(int argc, char** argv)
 /* 	request->conn_type = TORUS; */
 /* 	new_ba_request(request); */
 /* 	print_ba_request(request); */
-/* 	if(!allocate_part(request, results)) { */
+/* 	if(!allocate_block(request, results)) { */
 /*        		printf("couldn't allocate %d%d%d\n", */
 /* 		       request->geometry[0], */
 /* 		       request->geometry[1], */

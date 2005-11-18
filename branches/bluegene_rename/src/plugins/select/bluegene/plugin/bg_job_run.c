@@ -302,7 +302,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		
 		if(bg_record->job_running == -1) 
 			return;
-		if((rc = boot_part(bg_record))
+		if((rc = boot_block(bg_record))
 		   != SLURM_SUCCESS) {
 			sleep(2);	
 			/* wait for the slurmd to begin 
@@ -866,7 +866,7 @@ extern int sync_jobs(List job_list)
  * NOTE: This function does not wait for the boot to complete.
  * the slurm prolog script needs to perform the waiting.
  */
-extern int boot_part(bg_record_t *bg_record)
+extern int boot_block(bg_record_t *bg_record)
 {
 #ifdef HAVE_BG_FILES
 	int rc;

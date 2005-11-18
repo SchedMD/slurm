@@ -282,18 +282,18 @@ extern void ba_set_node_down(ba_node_t *ba_node);
  * 
  * IN - ba_request: allocation request
  * OUT - results: List of results of the allocation request.  Each
- * list entry will be a coordinate.  allocate_part will create the
+ * list entry will be a coordinate.  allocate_block will create the
  * list, but the caller must destroy it.
  * 
  * return: success or error of request
  */
-extern int allocate_part(ba_request_t* ba_request, List results);
+extern int allocate_block(ba_request_t* ba_request, List results);
 
 /** 
  * Admin wants to remove a previous allocation.
  * will allow Admin to delete a previous allocation retrival by letter code.
  */
-extern int remove_part(List nodes, int new_count);
+extern int remove_block(List nodes, int new_count);
 
 /** 
  * Admin wants to change something about a previous allocation. 
@@ -301,16 +301,16 @@ extern int remove_part(List nodes, int new_count);
  * letter code for the allocation and the variable to alter
  *
  */
-extern int alter_part(List nodes, int conn_type);
+extern int alter_block(List nodes, int conn_type);
 
 /** 
  * After a block is deleted or altered following allocations must
  * be redone to make sure correct path will be used in the real system
  *
  */
-extern int redo_part(List nodes, int *geo, int conn_type, int new_count);
+extern int redo_block(List nodes, int *geo, int conn_type, int new_count);
 
-extern char *set_bg_part(List results, int *start, 
+extern char *set_bg_block(List results, int *start, 
 			  int *geometry, int conn_type);
 
 extern int reset_ba_system();

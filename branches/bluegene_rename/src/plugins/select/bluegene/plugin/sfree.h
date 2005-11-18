@@ -43,8 +43,8 @@
 
 typedef void (*sighandler_t) (int);
 
-extern char *bg_part_id;
-extern int all_parts;
+extern char *bg_block_id;
+extern int all_blocks;
 
 extern void parse_command_line(int argc, char *argv[]);
 

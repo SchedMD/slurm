@@ -59,10 +59,10 @@
 #define RETRY_BOOT_COUNT 3
 
 #ifdef HAVE_BG_FILES
-static int  _partition_is_deallocating(bg_record_t *bg_record);
+static int  _block_is_deallocating(bg_record_t *bg_record);
 static void _drain_as_needed(char *node_list, char *reason);
 
-static int _partition_is_deallocating(bg_record_t *bg_record)
+static int _block_is_deallocating(bg_record_t *bg_record)
 {
 	if(remove_all_users(bg_record->bg_block_id, NULL) 
 	   == REMOVE_USER_ERR) {
@@ -82,7 +82,7 @@ static int _partition_is_deallocating(bg_record_t *bg_record)
 				      "Job was lost.",
 				      bg_record->bg_block_id,
 				      bg_record->user_name);
-				term_jobs_on_part(bg_record->bg_block_id);
+				term_jobs_on_block(bg_record->bg_block_id);
 			} else {
 				debug("Partition %s was in a ready state "
 				      "but is being freed. No job running.",
@@ -184,7 +184,7 @@ extern int block_ready(struct job_record *job_ptr)
 }				
 
 /* Pack all relevent information about a partition */
-extern void pack_partition(bg_record_t *bg_record, Buf buffer)
+extern void pack_block(bg_record_t *bg_record, Buf buffer)
 {
 	packstr(bg_record->nodes, buffer);
 	packstr(bg_record->user_name, buffer);
@@ -195,11 +195,11 @@ extern void pack_partition(bg_record_t *bg_record, Buf buffer)
 	pack32(bg_record->quarter, buffer);	
 }
 
-extern int update_partition_list()
+extern int update_block_list()
 {
 	int updated = 0;
 #ifdef HAVE_BG_FILES
-	int j, rc, num_parts = 0;
+	int j, rc, num_blocks = 0;
 	rm_partition_t *block_ptr = NULL;
 	rm_partition_mode_t node_use;
 	rm_partition_state_t state;
@@ -222,14 +222,14 @@ extern int update_partition_list()
 		return -1; 
 	}
 
-	if ((rc = rm_get_data(block_list, RM_PartListSize, &num_parts))
+	if ((rc = rm_get_data(block_list, RM_PartListSize, &num_blocks))
 		   != STATUS_OK) {
 		error("rm_get_data(RM_PartListSize): %s", bg_err_str(rc));
 		updated = -1;
-		num_parts = 0;
+		num_blocks = 0;
 	}
 			
-	for (j=0; j<num_parts; j++) {
+	for (j=0; j<num_blocks; j++) {
 		if (j) {
 			if ((rc = rm_get_data(block_list, RM_PartListNextPart, 
 					      &block_ptr)) != STATUS_OK) {
@@ -267,7 +267,7 @@ extern int update_partition_list()
 		if(bg_record == NULL) {
 			error("Partition %s not found in bg_list "
 			      "removing from database", name);
-			term_jobs_on_part(name);
+			term_jobs_on_block(name);
 			if ((rc = pm_destroy_partition(name)) 
 			    != STATUS_OK) {
 				if(rc == PARTITION_NOT_FOUND) {
@@ -331,9 +331,9 @@ extern int update_partition_list()
 				skipped_dealloc = 1;
 			bg_record->state = state;
 			if(bg_record->state == RM_PARTITION_DEALLOCATING) {
-				_partition_is_deallocating(bg_record);
+				_block_is_deallocating(bg_record);
 			} else if(skipped_dealloc) {
-				_partition_is_deallocating(bg_record);
+				_block_is_deallocating(bg_record);
 				skipped_dealloc = 0;
 			} else if(bg_record->state 
 				  == RM_PARTITION_CONFIGURING)
@@ -351,7 +351,7 @@ extern int update_partition_list()
 				debug("checking to make sure user %s "
 				      "is the user.", 
 				      bg_record->target_name);
-				if(update_partition_user(bg_record) == 1) 
+				if(update_block_user(bg_record) == 1) 
 					last_bg_update = time(NULL);
 				break;
 			case RM_PARTITION_ERROR:
@@ -359,7 +359,7 @@ extern int update_partition_list()
 			case RM_PARTITION_FREE:
 				if(bg_record->boot_count < RETRY_BOOT_COUNT) {
 					slurm_mutex_unlock(&block_state_mutex);
-					if((rc = boot_part(bg_record))
+					if((rc = boot_block(bg_record))
 					   != SLURM_SUCCESS) {
 						updated = -1;
 					}
@@ -377,7 +377,7 @@ extern int update_partition_list()
 					now = time(NULL);
 					time_ptr = localtime(&now);
 					strftime(reason, sizeof(reason),
-						"update_partition_list: "
+						"update_block_list: "
 						"Boot fails "
 						"[SLURM@%b %d %H:%M]",
 						time_ptr);

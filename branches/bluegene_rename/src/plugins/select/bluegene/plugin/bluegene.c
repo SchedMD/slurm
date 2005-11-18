@@ -264,10 +264,10 @@ extern int update_block_user(bg_record_t *bg_record)
 			     bg_record->target_name, 
 			     bg_record->bg_block_id);
 		
-			if ((rc = rm_add_block_user(bg_record->bg_block_id, 
+			if ((rc = rm_add_part_user(bg_record->bg_block_id, 
 						   bg_record->target_name)) 
 			    != STATUS_OK) {
-				error("rm_add_block_user(%s,%s): %s", 
+				error("rm_add_part_user(%s,%s): %s", 
 				      bg_record->bg_block_id, 
 				      bg_record->target_name,
 				      bg_err_str(rc));
@@ -359,7 +359,7 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 		info("Removing user %s from Block %s", 
 		      user, 
 		      bg_block_id);
-		if ((rc = rm_remove_block_user(bg_block_id, user)) 
+		if ((rc = rm_remove_part_user(bg_block_id, user)) 
 		    != STATUS_OK) {
 			debug("user %s isn't on block %s",
 			      user, 
@@ -390,7 +390,6 @@ extern void set_block_user(bg_record_t *bg_record)
 		      bg_record->bg_block_id);
 		(void) slurm_fail_job(
 			bg_record->job_running);
-		//term_jobs_on_part(bg_record->bg_block_id);
 	}	
 	xfree(bg_record->target_name);
 	bg_record->target_name = 
@@ -558,7 +557,7 @@ extern int create_static_blocks(List block_list)
 				      bg_record->start[X],
 				      bg_record->start[Y],
 				      bg_record->start[Z]);
-				name = set_bg_part(NULL,
+				name = set_bg_block(NULL,
 						    bg_record->start, 
 						    bg_record->geo, 
 						    bg_record->conn_type);
@@ -632,7 +631,8 @@ extern int create_static_blocks(List block_list)
 	reset_ba_system();
 
 	bg_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));
-	bg_record->nodes = xmalloc(sizeof(char)*13);
+	
+
 #ifdef HAVE_BG_FILES
 	bg_record->geo[X] = DIM_SIZE[X] - 1;
 	bg_record->geo[Y] = DIM_SIZE[Y] - 1;
@@ -642,13 +642,17 @@ extern int create_static_blocks(List block_list)
 	bg_record->geo[Y] = max_dim[Y];
 	bg_record->geo[Z] = max_dim[Z];
 #endif
+	name = xmalloc(sizeof(char)*(10+strlen(slurmctld_conf.node_prefix)));
 	if((bg_record->geo[X] == 0) && (bg_record->geo[Y] == 0)
 	&& (bg_record->geo[Z] == 0))
-		sprintf(bg_record->nodes, "000");
+		sprintf(name, "%s000\0", slurmctld_conf.node_prefix);
        	else
-		sprintf(bg_record->nodes, "[000x%d%d%d]",
+		sprintf(name, "%s[000x%d%d%d]\0",
+			slurmctld_conf.node_prefix,
 			bg_record->geo[X], bg_record->geo[Y], 
 			bg_record->geo[Z]);
+	bg_record->nodes = xstrdup(name);
+	xfree(name);
 	bg_record->quarter = -1;
 	bg_record->full_block = 1;
        	if(bg_found_block_list) {
@@ -702,7 +706,7 @@ extern int create_static_blocks(List block_list)
 		bg_record->user_uid = pw_ent->pw_uid;
 	}
 	
-	name = set_bg_part(NULL,
+	name = set_bg_block(NULL,
 			    bg_record->start, 
 			    bg_record->geo, 
 			    bg_record->conn_type);
@@ -771,7 +775,7 @@ no_total:
 	}
 	last_bg_update = time(NULL);
 	slurm_mutex_unlock(&block_state_mutex);
-#ifdef _PRINT_PARTS_AND_EXIT
+#ifdef _PRINT_BLOCKS_AND_EXIT
 	if(bg_list) {
 		itr = list_iterator_create(bg_list);
 		debug("\n\n");
@@ -784,7 +788,7 @@ no_total:
 		error("create_static_blocks: no bg_list 5");
 	}
  	exit(0);
-#endif	/* _PRINT_PARTS_AND_EXIT */
+#endif	/* _PRINT_BLOCKS_AND_EXIT */
 	rc = SLURM_SUCCESS;
 	//exit(0);
 	return rc;
@@ -827,7 +831,7 @@ extern int bg_free_block(bg_record_t *bg_record)
 }
 
 /* Free multiple blocks in parallel */
-extern void *mult_free_part(void *args)
+extern void *mult_free_block(void *args)
 {
 #ifdef HAVE_BG_FILES
 	bg_record_t *bg_record = (bg_record_t*) args;
@@ -843,7 +847,7 @@ extern void *mult_free_part(void *args)
 }
 
 /* destroy multiple blocks in parallel */
-extern void *mult_destroy_part(void *args)
+extern void *mult_destroy_block(void *args)
 {
 #ifdef HAVE_BG_FILES
 	bg_record_t *bg_record = (bg_record_t*) args;
@@ -851,16 +855,16 @@ extern void *mult_destroy_part(void *args)
 
 	debug("removing the jobs on block %s\n",
 	      bg_record->bg_block_id);
-	term_jobs_on_part(bg_record->bg_block_id);
+	term_jobs_on_block(bg_record->bg_block_id);
 	
 	debug("destroying %s\n",
 	      (char *)bg_record->bg_block_id);
 	bg_free_block(bg_record);
 	
-	rc = rm_remove_block(
+	rc = rm_remove_partition(
 		bg_record->bg_block_id);
 	if (rc != STATUS_OK) {
-		error("rm_remove_block(%s): %s",
+		error("rm_remove_partition(%s): %s",
 		      bg_record->bg_block_id,
 		      bg_err_str(rc));
 	} else
@@ -995,7 +999,7 @@ static int _update_bg_record_state(List bg_destroy_list)
 	rm_partition_state_flag_t block_state = PARTITION_ALL_FLAG;
 	char *name = NULL;
 	rm_partition_list_t *block_list = NULL;
-	int j, rc, func_rc = SLURM_SUCCESS, num_parts = 0;
+	int j, rc, func_rc = SLURM_SUCCESS, num_blocks = 0;
 	rm_partition_state_t state;
 	rm_partition_t *block_ptr = NULL;
 	ListIterator itr;
@@ -1011,14 +1015,14 @@ static int _update_bg_record_state(List bg_destroy_list)
 		return SLURM_ERROR; 
 	}
 
-	if ((rc = rm_get_data(block_list, RM_PartListSize, &num_parts))
+	if ((rc = rm_get_data(block_list, RM_PartListSize, &num_blocks))
 	    != STATUS_OK) {
 		error("rm_get_data(RM_PartListSize): %s", bg_err_str(rc));
 		func_rc = SLURM_ERROR;
-		num_parts = 0;
+		num_blocks = 0;
 	}
 			
-	for (j=0; j<num_parts; j++) {
+	for (j=0; j<num_blocks; j++) {
 		if (j) {
 			if ((rc = rm_get_data(block_list, 
 					      RM_PartListNextPart, 
@@ -1094,7 +1098,7 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 {
 	int node_count=0;
 	int x,y,z;
-	char node_name_tmp[7];
+	char node_name_tmp[255];
 	debug3("%d%d%dx%d%d%d",
 	     start[X],
 	     start[Y],
@@ -1117,7 +1121,8 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 	for (x = start[X]; x <= end[X]; x++) {
 		for (y = start[Y]; y <= end[Y]; y++) {
 			for (z = start[Z]; z <= end[Z]; z++) {
-				sprintf(node_name_tmp, "bg%d%d%d", 
+				sprintf(node_name_tmp, "%s%d%d%d\0", 
+					slurmctld_conf.node_prefix,
 					x, y, z);		
 				list_append(bg_record->bg_block_list, 
 					    &ba_system_ptr->grid[x][y][z]);
@@ -1379,7 +1384,7 @@ static int _delete_old_blocks(void)
 				retries = 0;
 				while (pthread_create(&thread_agent, 
 						      &attr_agent, 
-						      mult_destroy_part, 
+						      mult_destroy_block, 
 						      (void *)
 						      init_record)) {
 					error("pthread_create "
@@ -1440,7 +1445,7 @@ static int _delete_old_blocks(void)
 					while (pthread_create(
 						       &thread_agent, 
 						       &attr_agent, 
-						       mult_destroy_part, 
+						       mult_destroy_block, 
 						       (void *)init_record)) {
 						error("pthread_create "
 						      "error %m");
@@ -1525,7 +1530,7 @@ static void _strip_13_10(char *line)
  * RET 0 if no error, error code otherwise
  * Note: Operates on common variables
  * global: block_list - global block list pointer
- *	default_part - default parameters for a block
+ *	default_block - default parameters for a block
  */
 static int _parse_bg_spec(char *in_line)
 {
@@ -1608,9 +1613,26 @@ static int _parse_bg_spec(char *in_line)
 	bg_record->hostlist = hostlist_create(NULL);
 	/* bg_record->boot_state = 0; 	Implicit */
 	/* bg_record->state = 0;	Implicit */
-	
-	bg_record->nodes = xstrdup(nodes);
-	xfree(nodes);	/* pointer moved, nothing left to xfree */
+	api_verb = strlen(nodes);
+	i=0;
+	while((nodes[i] != '[' 
+	       && (nodes[i] > 57 || nodes[i] < 48)) 
+	      && (i<api_verb)) {
+		
+		i++;
+	}
+	if(i<api_verb) {
+		api_verb -= i;
+		bg_record->nodes = xmalloc(sizeof(char)*
+					   (api_verb
+					    +strlen(slurmctld_conf.node_prefix)
+					    +1));
+		
+		sprintf(bg_record->nodes, "%s%s\0", 
+			slurmctld_conf.node_prefix, nodes+i);
+	} else 
+		fatal("Nodes=%s is in a weird format", nodes); 
+	xfree(nodes); 
 	
 	_process_nodes(bg_record);
 	if (!conn_type || !strcasecmp(conn_type,"TORUS"))

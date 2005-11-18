@@ -246,7 +246,7 @@ int read_bg_blocks()
 	rm_element_t *bp_ptr = NULL;
 	rm_bp_id_t bpid;
 	rm_partition_t *block_ptr = NULL;
-	char node_name_tmp[7], *user_name = NULL;
+	char node_name_tmp[255], *user_name = NULL;
 	bg_record_t *bg_record = NULL;
 	struct passwd *pw_ent = NULL;
 	
@@ -420,10 +420,11 @@ int read_bg_blocks()
 			if(!coord)
 				fatal("No contact with db2. Shutting down.");
 				
-			snprintf(node_name_tmp, sizeof(node_name_tmp), 
-				"bg%d%d%d", 
-				coord[X], coord[Y], coord[Z]);
-		
+			sprintf(node_name_tmp, 
+				 "%s%d%d%d/0", 
+				 slurmctld_conf.node_prefix,
+				 coord[X], coord[Y], coord[Z]);
+			
 			hostlist_push(bg_record->hostlist, node_name_tmp);
 		}	
 		

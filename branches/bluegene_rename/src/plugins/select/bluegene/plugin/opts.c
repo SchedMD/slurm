@@ -60,14 +60,14 @@ void parse_command_line(int argc, char *argv[])
 			exit(1);
 			break;
 		case (int) 'a':
-			all_parts = 1;
+			all_blocks = 1;
 			break;
 		case (int) 'V':
 			_print_version();
 			exit(0);
 		case (int) 'b':
 		case (int) 'p':
-			bg_part_id = optarg;
+			bg_block_id = optarg;
 			break;
 		case (int) 'h':
 		case (int) OPT_LONG_HELP:

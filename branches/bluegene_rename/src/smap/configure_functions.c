@@ -34,44 +34,44 @@ typedef struct {
 	char letter;
 	List nodes;
 	ba_request_t *request; 
-} allocated_part_t;
+} allocated_block_t;
 
-static void	_delete_allocated_parts(List allocated_partitions);
-static allocated_part_t *_make_request(ba_request_t *request);
-static int	_create_allocation(char *com, List allocated_partitions);
+static void	_delete_allocated_blocks(List allocated_blocks);
+static allocated_block_t *_make_request(ba_request_t *request);
+static int	_create_allocation(char *com, List allocated_blocks);
 static int	_resolve(char *com);
 static int	_change_state_all_bps(char *com, int state);
 static int	_change_state_bps(char *com, int state);
-static int	_remove_allocation(char *com, List allocated_partitions);
-static int	_alter_allocation(char *com, List allocated_partitions);
-static int	_copy_allocation(char *com, List allocated_partitions);
-static int	_save_allocation(char *com, List allocated_partitions);
+static int	_remove_allocation(char *com, List allocated_blocks);
+static int	_alter_allocation(char *com, List allocated_blocks);
+static int	_copy_allocation(char *com, List allocated_blocks);
+static int	_save_allocation(char *com, List allocated_blocks);
 static void	_print_header_command(void);
-static void	_print_text_command(allocated_part_t *allocated_part);
+static void	_print_text_command(allocated_block_t *allocated_block);
 
 char error_string[255];
 
-static void _delete_allocated_parts(List allocated_partitions)
+static void _delete_allocated_blocks(List allocated_blocks)
 {
-	allocated_part_t *allocated_part = NULL;
+	allocated_block_t *allocated_block = NULL;
 	
-	while ((allocated_part = list_pop(allocated_partitions)) != NULL) {
-		remove_part(allocated_part->nodes,0);
-		list_destroy(allocated_part->nodes);
-		delete_ba_request(allocated_part->request);
-		xfree(allocated_part);
+	while ((allocated_block = list_pop(allocated_blocks)) != NULL) {
+		remove_block(allocated_block->nodes,0);
+		list_destroy(allocated_block->nodes);
+		delete_ba_request(allocated_block->request);
+		xfree(allocated_block);
 	}
-	list_destroy(allocated_partitions);
+	list_destroy(allocated_blocks);
 }
 
-static allocated_part_t *_make_request(ba_request_t *request)
+static allocated_block_t *_make_request(ba_request_t *request)
 {
 	List results = list_create(NULL);
 	ListIterator results_i;		
-	allocated_part_t *allocated_part = NULL;
+	allocated_block_t *allocated_block = NULL;
 	ba_node_t *current = NULL;
 	
-	if (!allocate_part(request, results)){
+	if (!allocate_block(request, results)){
 		memset(error_string,0,255);
 		sprintf(error_string,"allocate failure for %dx%dx%d", 
 			  request->geometry[0], request->geometry[1], 
@@ -79,29 +79,29 @@ static allocated_part_t *_make_request(ba_request_t *request)
 		return NULL;
 	} else {
 				
-		allocated_part = (allocated_part_t *)xmalloc(
-			sizeof(allocated_part_t));
-		allocated_part->request = request;
-		allocated_part->nodes = list_create(NULL);
+		allocated_block = (allocated_block_t *)xmalloc(
+			sizeof(allocated_block_t));
+		allocated_block->request = request;
+		allocated_block->nodes = list_create(NULL);
 		results_i = list_iterator_create(results);
 		while ((current = list_next(results_i)) != NULL) {
-			list_append(allocated_part->nodes,current);
-			allocated_part->color = current->color;
-			allocated_part->letter = current->letter;
+			list_append(allocated_block->nodes,current);
+			allocated_block->color = current->color;
+			allocated_block->letter = current->letter;
 		}
 		list_iterator_destroy(results_i);
 	}
 	list_destroy(results);
-	return(allocated_part);
+	return(allocated_block);
 
 }
 
-static int _create_allocation(char *com, List allocated_partitions)
+static int _create_allocation(char *com, List allocated_blocks)
 {
 	int i=6, geoi=-1, starti=-1, i2=0;
 	int len = strlen(com);
 	
-	allocated_part_t *allocated_part = NULL;
+	allocated_block_t *allocated_block = NULL;
 	ba_request_t *request = (ba_request_t*) xmalloc(sizeof(ba_request_t)); 
 	
 	request->geometry[0] = -1;
@@ -230,9 +230,9 @@ static int _create_allocation(char *com, List allocated_partitions)
 					request->geometry[1], 
 					request->geometry[2]);
 		} else {
-			if((allocated_part = _make_request(request)) != NULL)
-				list_append(allocated_partitions, 
-					    allocated_part);
+			if((allocated_block = _make_request(request)) != NULL)
+				list_append(allocated_blocks, 
+					    allocated_block);
 			else {
 				i2 = strlen(error_string);
 				sprintf(error_string+i2,
@@ -470,10 +470,10 @@ error_message:
 #endif	
 	return 0;
 }
-static int _remove_allocation(char *com, List allocated_partitions)
+static int _remove_allocation(char *com, List allocated_blocks)
 {
 	ListIterator results_i;
-	allocated_part_t *allocated_part = NULL;
+	allocated_block_t *allocated_block = NULL;
 	int i=6, found=0;
 	int len = strlen(com);
 	char letter;
@@ -490,12 +490,12 @@ static int _remove_allocation(char *com, List allocated_partitions)
 		return 0;
 	} else {
 		letter = com[i];
-		results_i = list_iterator_create(allocated_partitions);
-		while((allocated_part = list_next(results_i)) != NULL) {
+		results_i = list_iterator_create(allocated_blocks);
+		while((allocated_block = list_next(results_i)) != NULL) {
 			if(found) {
-				if(redo_part(allocated_part->nodes, 
-					     allocated_part->request->geometry,
-					     allocated_part->
+				if(redo_block(allocated_block->nodes, 
+					     allocated_block->request->geometry,
+					     allocated_block->
 					     request->conn_type, 
 					     color_count) == SLURM_ERROR) {
 					memset(error_string,0,255);
@@ -503,16 +503,16 @@ static int _remove_allocation(char *com, List allocated_partitions)
 						"problem redoing the part.");
 					return 0;
 				}
-				allocated_part->letter = 
+				allocated_block->letter = 
 					letters[color_count%62];
-				allocated_part->color =
+				allocated_block->color =
 					colors[color_count%6];
 				
-			} else if(allocated_part->letter == letter) {
+			} else if(allocated_block->letter == letter) {
 				found=1;
-				remove_part(allocated_part->nodes,color_count);
-				list_destroy(allocated_part->nodes);
-				delete_ba_request(allocated_part->request);
+				remove_block(allocated_block->nodes,color_count);
+				list_destroy(allocated_block->nodes);
+				delete_ba_request(allocated_block->request);
 				list_remove(results_i);
 				color_count--;
 			}
@@ -524,7 +524,7 @@ static int _remove_allocation(char *com, List allocated_partitions)
 	return 1;
 }
 
-static int _alter_allocation(char *com, List allocated_partitions)
+static int _alter_allocation(char *com, List allocated_blocks)
 {
 	int torus=TORUS, i=5, i2=0;
 	int len = strlen(com);
@@ -560,11 +560,11 @@ static int _alter_allocation(char *com, List allocated_partitions)
 	return 1;
 }
 
-static int _copy_allocation(char *com, List allocated_partitions)
+static int _copy_allocation(char *com, List allocated_blocks)
 {
 	ListIterator results_i;
-	allocated_part_t *allocated_part = NULL;
-	allocated_part_t *temp_part = NULL;
+	allocated_block_t *allocated_block = NULL;
+	allocated_block_t *temp_block = NULL;
 	ba_request_t *request = NULL; 
 	
 	int i=0;
@@ -593,19 +593,19 @@ static int _copy_allocation(char *com, List allocated_partitions)
 		}
 	}
 
-	results_i = list_iterator_create(allocated_partitions);
-	while((allocated_part = list_next(results_i)) != NULL) {
-		temp_part = allocated_part;
-		if(allocated_part->letter != letter)
+	results_i = list_iterator_create(allocated_blocks);
+	while((allocated_block = list_next(results_i)) != NULL) {
+		temp_block = allocated_block;
+		if(allocated_block->letter != letter)
 			continue;
 		break;
 	}
 	list_iterator_destroy(results_i);
 	
 	if(!letter)
-		allocated_part = temp_part;
+		allocated_block = temp_block;
 	
-	if(!allocated_part) {
+	if(!allocated_block) {
 		memset(error_string,0,255);
 		sprintf(error_string, 
 			"Could not find requested record to copy");
@@ -615,14 +615,14 @@ static int _copy_allocation(char *com, List allocated_partitions)
 	for(i=0;i<count;i++) {
 		request = (ba_request_t*) xmalloc(sizeof(ba_request_t)); 
 		
-		request->geometry[X] = allocated_part->request->geometry[X];
-		request->geometry[Y] = allocated_part->request->geometry[Y];
-		request->geometry[Z] = allocated_part->request->geometry[Z];
-		request->size = allocated_part->request->size;
-		request->conn_type=allocated_part->request->conn_type;
-		request->rotate =allocated_part->request->rotate;
-		request->elongate = allocated_part->request->elongate;
-		request->force_contig = allocated_part->request->force_contig;
+		request->geometry[X] = allocated_block->request->geometry[X];
+		request->geometry[Y] = allocated_block->request->geometry[Y];
+		request->geometry[Z] = allocated_block->request->geometry[Z];
+		request->size = allocated_block->request->size;
+		request->conn_type=allocated_block->request->conn_type;
+		request->rotate =allocated_block->request->rotate;
+		request->elongate = allocated_block->request->elongate;
+		request->force_contig = allocated_block->request->force_contig;
 				
 		request->rotate_count= 0;
 		request->elongate_count = 0;
@@ -639,7 +639,7 @@ static int _copy_allocation(char *com, List allocated_partitions)
 		}
 		list_iterator_destroy(results_i);
 		
-		if((allocated_part = _make_request(request)) == NULL) {
+		if((allocated_block = _make_request(request)) == NULL) {
 			memset(error_string,0,255);
 			sprintf(error_string, 
 				"Problem with the copy\n"
@@ -647,18 +647,18 @@ static int _copy_allocation(char *com, List allocated_partitions)
 			xfree(request);
 			return 0;
 		}
-		list_append(allocated_partitions, allocated_part);
+		list_append(allocated_blocks, allocated_block);
 		
 	}
 	return 1;
 	
 }
 
-static int _save_allocation(char *com, List allocated_partitions)
+static int _save_allocation(char *com, List allocated_blocks)
 {
 	int len = strlen(com);
 	int i=5, j=0;
-	allocated_part_t *allocated_part = NULL;
+	allocated_block_t *allocated_block = NULL;
 	char filename[20];
 	char save_string[255];
 	FILE *file_ptr = NULL;
@@ -705,18 +705,18 @@ static int _save_allocation(char *com, List allocated_partitions)
 		fputs ("Numpsets=8\n", file_ptr);
 		fputs ("BridgeAPIVerbose=0\n", file_ptr);
 
-		results_i = list_iterator_create(allocated_partitions);
-		while((allocated_part = list_next(results_i)) != NULL) {
+		results_i = list_iterator_create(allocated_blocks);
+		while((allocated_block = list_next(results_i)) != NULL) {
 			memset(save_string,0,255);
-			if(allocated_part->request->conn_type == TORUS)
+			if(allocated_block->request->conn_type == TORUS)
 				conn_type = "TORUS";
-			else if(allocated_part->request->conn_type == MESH)
+			else if(allocated_block->request->conn_type == MESH)
 				conn_type = "MESH";
 			else
 				conn_type = "SMALL";
 			
 			sprintf(save_string, "Nodes=%s Type=%s\n", 
-				allocated_part->request->save_name, 
+				allocated_block->request->save_name, 
 				conn_type);
 			fputs (save_string,file_ptr);
 		}
@@ -752,18 +752,18 @@ static void _print_header_command(void)
 	ba_system_ptr->ycord++;
 }
 
-static void _print_text_command(allocated_part_t *allocated_part)
+static void _print_text_command(allocated_block_t *allocated_block)
 {
 	wattron(ba_system_ptr->text_win,
-		COLOR_PAIR(allocated_part->color));
+		COLOR_PAIR(allocated_block->color));
 			
 	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-		  ba_system_ptr->xcord, "%c",allocated_part->letter);
+		  ba_system_ptr->xcord, "%c",allocated_block->letter);
 	ba_system_ptr->xcord += 4;
-	if(allocated_part->request->conn_type==TORUS) 
+	if(allocated_block->request->conn_type==TORUS) 
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "TORUS");
-	else if (allocated_part->request->conn_type==MESH)
+	else if (allocated_block->request->conn_type==MESH)
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "MESH");
 	else 
@@ -771,7 +771,7 @@ static void _print_text_command(allocated_part_t *allocated_part)
 			  ba_system_ptr->xcord, "SMALL");
 	ba_system_ptr->xcord += 7;
 				
-	if(allocated_part->request->force_contig)
+	if(allocated_block->request->force_contig)
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "Y");
 	else
@@ -779,7 +779,7 @@ static void _print_text_command(allocated_part_t *allocated_part)
 			  ba_system_ptr->xcord, "N");
 	ba_system_ptr->xcord += 7;
 				
-	if(allocated_part->request->rotate)
+	if(allocated_block->request->rotate)
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "Y");
 	else
@@ -787,7 +787,7 @@ static void _print_text_command(allocated_part_t *allocated_part)
 			  ba_system_ptr->xcord, "N");
 	ba_system_ptr->xcord += 7;
 				
-	if(allocated_part->request->elongate)
+	if(allocated_block->request->elongate)
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "Y");
 	else
@@ -796,15 +796,15 @@ static void _print_text_command(allocated_part_t *allocated_part)
 	ba_system_ptr->xcord += 7;
 
 	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-		  ba_system_ptr->xcord, "%d",allocated_part->request->size);
+		  ba_system_ptr->xcord, "%d",allocated_block->request->size);
 	ba_system_ptr->xcord += 7;
 	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 		  ba_system_ptr->xcord, "%s",
-		  allocated_part->request->save_name);
+		  allocated_block->request->save_name);
 	ba_system_ptr->xcord = 1;
 	ba_system_ptr->ycord++;
 	wattroff(ba_system_ptr->text_win,
-		 COLOR_PAIR(allocated_part->color));
+		 COLOR_PAIR(allocated_block->color));
 	return;
 }
 
@@ -813,12 +813,12 @@ void get_command(void)
 	char com[255];
 	
 	int text_width, text_startx;
-	allocated_part_t *allocated_part = NULL;
+	allocated_block_t *allocated_block = NULL;
 	int i=0;
 	int count=0;
 	
 	WINDOW *command_win;
-        List allocated_partitions;
+        List allocated_blocks;
 	ListIterator results_i;
 		
 	if(params.commandline) {
@@ -828,7 +828,7 @@ void get_command(void)
 		exit(0);
 	}
 	init_wires();
-	allocated_partitions = list_create(NULL);
+	allocated_blocks = list_create(NULL);
 				
 	text_width = ba_system_ptr->text_win->_maxx;	
 	text_startx = ba_system_ptr->text_win->_begx;
@@ -864,17 +864,17 @@ void get_command(void)
 			ba_system_ptr->xcord=1;	
 			memset(error_string,0,255);			
 		}
-		results_i = list_iterator_create(allocated_partitions);
+		results_i = list_iterator_create(allocated_blocks);
 		
-		count = list_count(allocated_partitions) 
+		count = list_count(allocated_blocks) 
 			- (LINES-(ba_system_ptr->ycord+5)); 
 		
 		if(count<0)
 			count=0;
 		i=0;
-		while((allocated_part = list_next(results_i)) != NULL) {
+		while((allocated_block = list_next(results_i)) != NULL) {
 			if(i>=count)
-				_print_text_command(allocated_part);
+				_print_text_command(allocated_block);
 			i++;
 		}
 		list_iterator_destroy(results_i);		
@@ -893,7 +893,7 @@ void get_command(void)
 		
 		if (!strcmp(com, "exit")) {
 			endwin();
-			_delete_allocated_parts(allocated_partitions);
+			_delete_allocated_blocks(allocated_blocks);
 			ba_fini();
 			exit(0);
 		} if (!strcmp(com, "quit")) {
@@ -920,27 +920,27 @@ void get_command(void)
 		} else if (!strncasecmp(com, "remove", 6)
 			|| !strncasecmp(com, "delete", 6) 
 			|| !strncasecmp(com, "drop", 4)) {
-			_remove_allocation(com, allocated_partitions);
+			_remove_allocation(com, allocated_blocks);
 		} else if (!strncasecmp(com, "alter", 5)) {
-			_alter_allocation(com, allocated_partitions);
+			_alter_allocation(com, allocated_blocks);
 		} else if (!strncasecmp(com, "create", 6)) {
-			_create_allocation(com, allocated_partitions);
+			_create_allocation(com, allocated_blocks);
 		} else if (!strncasecmp(com, "copy", 4)
 			|| !strncasecmp(com, "c ", 2) 
 			|| !strncasecmp(com, "c\0", 2)) {
-			_copy_allocation(com, allocated_partitions);
+			_copy_allocation(com, allocated_blocks);
 		} else if (!strncasecmp(com, "save", 4)) {
-			_save_allocation(com, allocated_partitions);
+			_save_allocation(com, allocated_blocks);
 		} else if (!strncasecmp(com, "clear all", 9)
 			|| !strncasecmp(com, "clear", 5)) {
-			_delete_allocated_parts(allocated_partitions);
-			allocated_partitions = list_create(NULL);
+			_delete_allocated_blocks(allocated_blocks);
+			allocated_blocks = list_create(NULL);
 		} else {
 			memset(error_string,0,255);
 			sprintf(error_string, "Unknown command '%s'",com);
 		}
 	}
-	_delete_allocated_parts(allocated_partitions);
+	_delete_allocated_blocks(allocated_blocks);
 	params.display = 0;
 	noecho();
 	
