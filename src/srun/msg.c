@@ -183,6 +183,8 @@ static void _dump_proctable(srun_job_t *job)
 		for (task_inx=0; task_inx<job->step_layout->tasks[node_inx]; task_inx++) {
 			taskid = job->step_layout->tids[node_inx][task_inx];
 			tv = &MPIR_proctable[taskid];
+			if (!tv)
+				break;
 			info("task:%d, host:%s, pid:%d",
 				taskid, tv->host_name, tv->pid);
 		}

@@ -470,11 +470,13 @@ job_manager(slurmd_job_t *job)
 	if (!job->batch && 
 	    (interconnect_init(job->switch_job, job->uid) < 0)) {
 		/* error("interconnect_init: %m"); already logged */
+		rc = ESLURM_INTERCONNECT_FAILURE;
 		goto fail2;
 	}
 
 	if (_fork_all_tasks(job) < 0) {
 		debug("_fork_all_tasks failed");
+		rc = ESLURMD_EXECVE_FAILED;
 		goto fail2;
 	}
 
@@ -544,6 +546,7 @@ job_manager(slurmd_job_t *job)
 static int
 _fork_all_tasks(slurmd_job_t *job)
 {
+	int rc = SLURM_SUCCESS;
 	int i;
 	int *writefds; /* array of write file descriptors */
 	int *readfds; /* array of read file descriptors */
@@ -659,12 +662,15 @@ _fork_all_tasks(slurmd_job_t *job)
 		 * Prepare process for attach by parallel debugger 
 		 * (if specified and able)
 		 */
+		if (pdebug_trace_process(job, job->task[i]->pid)
+				== SLURM_ERROR)
+			rc = SLURM_ERROR;
 		pdebug_trace_process(job, job->task[i]->pid);
 	}
 	xfree(writefds);
 	xfree(readfds);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 

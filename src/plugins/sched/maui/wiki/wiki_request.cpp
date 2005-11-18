@@ -370,6 +370,7 @@ wiki_request_t::postproc_string( char * const field,
 		char * (*post_processor)( const char * const val );
 	} post_proc_map [] = {
 		{ JOB_FIELD_REQ_NODES,	wiki_request_t::colonify_commas },
+		{ JOB_FIELD_ALLOC_NODES,wiki_request_t::colonify_commas },
 		{ NULL,			NULL }
 	};
 
@@ -472,6 +473,7 @@ wiki_getnodes_t::map_enum( char * const field,
 		{ NODE_STATE_LABEL_IDLE,       	"Idle" },
 		{ NODE_STATE_LABEL_DRAINED,    	"Draining" },
 		{ NODE_STATE_LABEL_DRAINING,	"Draining" },
+		{ NODE_STATE_LABEL_ALLOCATED,	"Running" },
 		{ NODE_STATE_LABEL_COMPLETING,	"Busy" },
 		
 		{ NULL,				NULL }
