@@ -62,6 +62,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include "src/common/list.h"
 #include "src/common/log.h"

@@ -27,6 +27,7 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <strings.h>
 
 #define _RUN_STAND_ALONE 0
 
