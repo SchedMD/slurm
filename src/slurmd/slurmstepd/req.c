@@ -64,7 +64,7 @@ struct io_operations msg_socket_ops = {
 	handle_read:	&_msg_socket_accept
 };
 
-char *socket_name;
+static char *socket_name;
 
 struct request_params {
 	int fd;
@@ -159,9 +159,10 @@ static void
 _domain_socket_destroy(int fd)
 {
 	if (close(fd) < 0)
-		error("Unable to close domain socket");
+		error("Unable to close domain socket: %m");
 
-	unlink(socket_name);
+	if (unlink(socket_name) == -1)
+		error("Unable to unlink domain socket: %m");
 }
 
 
@@ -195,8 +196,6 @@ msg_thr_create(slurmd_job_t *job)
 	eio_new_initial_obj(job->msg_handle, eio_obj);
 
 	slurm_attr_init(&attr);
-	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate: %m");
 	if (pthread_create(&job->msgid, &attr,
 			   &_msg_thr_internal, (void *)job) != 0) {
 		error("pthread_create: %m");
