@@ -416,7 +416,7 @@ slurm_cred_copy(slurm_cred_t cred)
 		       rcred->ntask_cnt * sizeof(int));
         }
 	rcred->ctime  = cred->ctime;
-	rcred->signature = xstrdup(cred->signature);
+	rcred->signature = (unsigned char *)xstrdup((char *)cred->signature);
 	
 	slurm_mutex_unlock(&cred->mutex);
 	slurm_mutex_unlock(&rcred->mutex);

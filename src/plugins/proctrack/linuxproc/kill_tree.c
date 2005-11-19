@@ -38,6 +38,7 @@
 #include <signal.h>
 #include <strings.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "src/common/xmalloc.h"
 #include "src/common/log.h"
