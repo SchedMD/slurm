@@ -376,10 +376,8 @@ _client_write(eio_obj_t *obj, List objs)
 	 * Write message to socket.
 	 */
 	buf = client->out_msg->data + (client->out_msg->length - client->out_remaining);
-	debug5("made it here");
 again:
 	if ((n = write(obj->fd, buf, client->out_remaining)) < 0) {
-		debug5("made it here too");
 		if (errno == EINTR)
 			goto again;
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
