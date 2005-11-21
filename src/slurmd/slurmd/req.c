@@ -1057,6 +1057,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		goto done2;
 	} 
 
+	req_uid = g_slurm_auth_get_uid(msg->cred);
 	if ((req_uid != step->uid) && (!_slurm_authorized_user(req_uid))) {
 		error("uid %ld attempt to attach to job %u.%u owned by %ld",
 		      (long) req_uid, req->job_id, req->job_step_id,
