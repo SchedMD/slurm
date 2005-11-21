@@ -52,16 +52,16 @@ exec $bin_rm -f $file_in
 exec echo "#!$bin_bash"       >$file_in
 exec echo "umask"            >>$file_in
 
-exec echo "#!$bin_bash"             >$file_script
-exec echo "umask 0123"             >>$file_script
-exec echo "$srun -N1 -t1 $file_in" >>$file_script
+exec echo "#!$bin_bash"               >$file_script
+exec echo "umask 0123"               >>$file_script
+exec echo "$srun -N1 -t1 ./$file_in" >>$file_script
 exec $bin_chmod 700 $file_in $file_script
 
 #
 # Set umask and confirm it is propagated
 #
 set matches 0
-spawn $file_script
+spawn ./$file_script
 expect {
 	-re (0123|123) {
 		set matches 1

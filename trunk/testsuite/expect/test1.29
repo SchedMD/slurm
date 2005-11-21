@@ -72,7 +72,7 @@ set cur_fsize  -1
 set cur_nofile -1
 set cur_nproc  -1
 set cur_stack  -1
-spawn $file_prog_get
+spawn ./$file_prog_get
 expect {
 	-re "USER_CORE=($number)" {
 		set cur_core $expect_out(1,string)
@@ -122,18 +122,18 @@ if {$cur_stack != -1} {
 #
 # Spawn a job via srun to print environment variables and user limits
 #
-exec echo "#!$bin_bash"               >$file_in
-exec echo "ulimit -c $limit_core"    >>$file_in
-exec echo "ulimit -f $limit_fsize"   >>$file_in
-exec echo "ulimit -n $limit_nofile"  >>$file_in
-exec echo "ulimit -u $limit_nproc"   >>$file_in
-exec echo "ulimit -s $limit_stack"   >>$file_in
-exec echo "$srun -N1 $file_prog_get" >>$file_in
+exec echo "#!$bin_bash"                 >$file_in
+exec echo "ulimit -c $limit_core"      >>$file_in
+exec echo "ulimit -f $limit_fsize"     >>$file_in
+exec echo "ulimit -n $limit_nofile"    >>$file_in
+exec echo "ulimit -u $limit_nproc"     >>$file_in
+exec echo "ulimit -s $limit_stack"     >>$file_in
+exec echo "$srun -N1 ./$file_prog_get" >>$file_in
 
 exec $bin_chmod 700 $file_in
 
 set timeout $max_job_delay
-spawn $srun --batch --output=$file_out --error=$file_err -t1 $file_in
+spawn $srun --batch --output=$file_out --error=$file_err -t1 ./$file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
