@@ -41,29 +41,29 @@
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/partition_allocator/partition_allocator.h"
-#include "src/plugins/select/bluegene/wrap_rm_api.h"
+#include "../block_allocator/block_allocator.h"
+#include "../wrap_rm_api.h"
 
 typedef int lifecycle_type_t;
 
-enum part_lifecycle {DYNAMIC, STATIC};
+enum block_lifecycle {DYNAMIC, STATIC};
 
-typedef struct bgl_record {
-	char *nodes;			/* String of nodes in partition */
-	char *user_name;		/* user using the partition */
-	char *target_name;		/* when a partition is freed this 
+typedef struct bg_record {
+	char *nodes;			/* String of nodes in block */
+	char *user_name;		/* user using the block */
+	char *target_name;		/* when a block is freed this 
 					   is the name of the user we 
-					   want on the partition */
-	uid_t user_uid;   		/* Owner of partition uid	*/
-	pm_partition_id_t bgl_part_id;	/* ID returned from MMCS	*/
-	lifecycle_type_t part_lifecycle;/* either STATIC or DYNAMIC	*/
-	rm_partition_state_t state;   	/* the allocated partition   */
-	int start[PA_SYSTEM_DIMENSIONS];/* start node */
-	int geo[PA_SYSTEM_DIMENSIONS];  /* geometry */
+					   want on the block */
+	uid_t user_uid;   		/* Owner of block uid	*/
+	pm_partition_id_t bg_block_id;	/* ID returned from MMCS	*/
+	lifecycle_type_t block_lifecycle;/* either STATIC or DYNAMIC	*/
+	rm_partition_state_t state;   	/* the allocated block   */
+	int start[BA_SYSTEM_DIMENSIONS];/* start node */
+	int geo[BA_SYSTEM_DIMENSIONS];  /* geometry */
 	rm_connection_type_t conn_type;	/* Mesh or Torus or NAV */
 	rm_partition_mode_t node_use;	/* either COPROCESSOR or VIRTUAL */
-	rm_partition_t *bgl_part;       /* structure to hold info from db2 */
-	List bgl_part_list;             /* node list of blocks in partition */
+	rm_partition_t *bg_block;       /* structure to hold info from db2 */
+	List bg_block_list;             /* node list of blocks in block */
 	hostlist_t hostlist;		/* expanded form of hosts */
 	int bp_count;                   /* size */
 	int switch_count;               /* number of switches used. */
@@ -73,144 +73,132 @@ typedef struct bgl_record {
 					   1 = booting */
 	int boot_count;                 /* number of attemts boot attempts */
 	bitstr_t *bitmap;               /* bitmap to check the name 
-					   of partition */
-	int full_partition;             /* wether or not partition is the full
-					   partition */
+					   of block */
+	int full_block;             /* wether or not block is the full
+					   block */
 	int job_running;                /* job id if there is a job running 
-					   on the partition */
-	int cnodes_per_bp;              /* count of cnodes per Base part */
-	int quarter;                    /* used for small partitions 
+					   on the block */
+	int cnodes_per_bp;              /* count of cnodes per Base block */
+	int quarter;                    /* used for small blocks 
 					   determine quarter of BP */
-} bgl_record_t;
+} bg_record_t;
 
 typedef struct {
 	int source;
 	int target;
-} bgl_conn_t;
+} bg_conn_t;
 
 typedef struct {
 	int dim;
 	List conn_list;
-} bgl_switch_t;
+} bg_switch_t;
 
 typedef struct {
 	int *coord;
 	int used;
 	List switch_list;
-} bgl_bp_t;
+} bg_bp_t;
 
 
 /* Global variables */
-extern rm_BGL_t *bgl;
+extern rm_BGL_t *bg;
 extern char *bluegene_blrts;
 extern char *bluegene_linux;
 extern char *bluegene_mloader;
 extern char *bluegene_ramdisk;
 extern char *bridge_api_file;
 extern int numpsets;
-extern pa_system_t *pa_system_ptr;
-extern time_t last_bgl_update;
-extern List bgl_curr_part_list; 	/* Initial bgl partition state */
-extern List bgl_list;			/* List of configured BGL blocks */
+extern ba_system_t *ba_system_ptr;
+extern time_t last_bg_update;
+extern List bg_curr_block_list; 	/* Initial bg block state */
+extern List bg_list;			/* List of configured BG blocks */
 extern bool agent_fini;
-extern pthread_mutex_t part_state_mutex;
-extern int num_part_to_free;
-extern int num_part_freed;
-extern int partitions_are_created;
+extern pthread_mutex_t block_state_mutex;
+extern int num_block_to_free;
+extern int num_block_freed;
+extern int blocks_are_created;
 extern int procs_per_node;
-extern bgl_record_t *full_system_partition;
+extern bg_record_t *full_system_block;
 
 
 #define MAX_PTHREAD_RETRIES  1
 
-#include "bgl_part_info.h"
-#include "bgl_job_place.h"
-#include "bgl_job_run.h"
+#include "bg_block_info.h"
+#include "bg_job_place.h"
+#include "bg_job_run.h"
 #include "state_test.h"
-/*
- * bgl_conf_record is used to store the elements read from the bluegene.conf
- * file and is loaded by init().
- */
-/* typedef struct bgl_conf_record { */
-/* 	char* nodes; */
-/* 	rm_connection_type_t conn_type;/\* Mesh or Torus or NAV *\/ */
-/* 	rm_partition_mode_t node_use; */
-/* 	rm_partition_t *bgl_part; */
-/* } bgl_conf_record_t; */
-
-
 
 /* bluegene.c */
 /**********************************************/
 
 /* Initialize all plugin variables */
-extern int init_bgl(void);
+extern int init_bg(void);
 
 /* Purge all plugin variables */
-extern void fini_bgl(void);
+extern void fini_bg(void);
 
-/* Log a bgl_record's contents */
-extern void print_bgl_record(bgl_record_t* record);
-extern void destroy_bgl_record(void* object);
+/* Log a bg_record's contents */
+extern void print_bg_record(bg_record_t* record);
+extern void destroy_bg_record(void* object);
 
-/* return bgl_record from bgl_list */
-extern bgl_record_t *find_bgl_record(char *bgl_part_id);
+/* return bg_record from bg_list */
+extern bg_record_t *find_bg_record(char *bg_block_id);
 
-/* change username of a partition bgl_record_t target_name needs to be 
+/* change username of a block bg_record_t target_name needs to be 
    updated before call of function. 
 */
-extern int update_partition_user(bgl_record_t *bgl_part_id); 
+extern int update_block_user(bg_record_t *bg_block_id); 
 
-/* remove all users from a partition but what is in user_name */
+/* remove all users from a block but what is in user_name */
 /* Note return codes */
 #define REMOVE_USER_ERR  -1
 #define REMOVE_USER_NONE  0
 #define REMOVE_USER_FOUND 2
-extern int remove_all_users(char *bgl_part_id, char *user_name);
-extern void set_part_user(bgl_record_t *bgl_record);
+extern int remove_all_users(char *bg_block_id, char *user_name);
+extern void set_block_user(bg_record_t *bg_record);
 
 /* Return strings representing blue gene data types */
 extern char *convert_lifecycle(lifecycle_type_t lifecycle);
 extern char *convert_conn_type(rm_connection_type_t conn_type);
 extern char *convert_node_use(rm_partition_mode_t pt);
 
-/* sort a list of bgl_records by size (node count) */
-extern void sort_bgl_record_inc_size(List records);
+/* sort a list of bg_records by size (node count) */
+extern void sort_bg_record_inc_size(List records);
 
 /* bluegene_agent - detached thread periodically tests status of bluegene 
  * nodes and switches */
 extern void *bluegene_agent(void *args);
 
 /*
- * Convert a BGL API error code to a string
- * IN inx - error code from any of the BGL Bridge APIs
+ * Convert a BG API error code to a string
+ * IN inx - error code from any of the BG Bridge APIs
  * RET - string describing the error condition
  */
-extern char *bgl_err_str(status_t inx);
+extern char *bg_err_str(status_t inx);
 
 /*
- * create_static_partitions - create the static partitions that will be used
+ * create_static_blocks - create the static blocks that will be used
  *   for scheduling.
- * IN/OUT part_list - (global, from slurmctld): SLURM's partition 
- *   configurations. Fill in bgl_part_id                 
+ * IN/OUT block_list - (global, from slurmctld): SLURM's block 
+ *   configurations. Fill in bg_block_id                 
  * RET - success of fitting all configurations
  */
-extern int create_static_partitions(List part_list);
+extern int create_static_blocks(List block_list);
 
-extern int bgl_free_partition(bgl_record_t *bgl_record);
-extern void *mult_free_part(void *args);
-extern void *mult_destroy_part(void *args);
-extern int read_bgl_conf(void);
+extern int bg_free_block(bg_record_t *bg_record);
+extern void *mult_free_block(void *args);
+extern void *mult_destroy_block(void *args);
+extern int read_bg_conf(void);
 
-/* partition_sys.c */
+/* block_sys.c */
 /*****************************************************/
-extern int configure_partition(bgl_record_t * bgl_conf_record);
-extern int read_bgl_partitions();
+extern int configure_block(bg_record_t * bg_conf_record);
+extern int read_bg_blocks();
 
-/* bgl_switch_connections.c */
+/* bg_switch_connections.c */
 /*****************************************************/
-extern int configure_small_partition(bgl_record_t *bgl_record);
-extern int configure_partition_switches(bgl_record_t * bgl_conf_record);
+extern int configure_small_block(bg_record_t *bg_record);
+extern int configure_block_switches(bg_record_t * bg_conf_record);
 
 
 #endif /* _BLUEGENE_H_ */

@@ -7,8 +7,8 @@
 #  include "config.h"
 #endif
 
-#ifdef HAVE_BGL_FILES
-  /* Over-ride attach_bgl.h inclusion due to problems in compiling it 
+#ifdef HAVE_BG_FILES
+  /* Over-ride attach_bg.h inclusion due to problems in compiling it 
    * with gcc and missing externals in that file */
 
   /* MPI Debug support */
@@ -19,7 +19,7 @@
     int    pid;                    /* The pid of the process */
   } MPIR_PROCDESC;
 
-#  include "rm_api.h"
+#include "rm_api.h"
 
 #else
   typedef char *   pm_partition_id_t;
@@ -33,7 +33,7 @@
   typedef int      rm_BP_state_t;
 
   /* these are the typedefs that we will need to have 
-   * if we want the states on the Front End Node of a BGL system
+   * if we want the states on the Front End Node of a BG system
    * make certain they match the rm_api.h values on the Service Node */
   enum rm_partition_state {RM_PARTITION_FREE,
 			   RM_PARTITION_CONFIGURING,

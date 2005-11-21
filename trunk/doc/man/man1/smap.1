@@ -220,6 +220,11 @@ and their values are case insensitive (e.g. "MESH" and "mesh" are equivalent).
 
 .RS
 .TP 10
+.I \fBStart = XxYxZ\fR
+Identify where to start the partition.  This is primarily for testing 
+purposes.  For convenience one can only put the X coord or XxY will also work.
+The default value is 0x0x0.
+.TP
 .I \fBConnection = MESH | TORUS | SMALL\fR
 Identify how the nodes should be connected in network. 
 The default value is TORUS.
@@ -264,12 +269,22 @@ By default, one copy is made.
 
 .TP
 .I \fBdelete <id>\fR
-Delete the specified block or (default) the last partition created. 
+Delete the specified block. 
 
 .TP
 .I \fBdown <node_range>\fR
 Down a specific node or range of nodes. 
 i.e. 000, 000\-111 [000x111]
+.TP
+.I \fBup <node_range>\fR
+Bring a specific node or range of nodes up. 
+i.e. 000, 000\-111 [000x111]
+.TP
+.I \fBalldown\fR
+Set all nodes to down state.
+.TP
+.I \fBallup\fR
+Set all nodes to up state.
 
 .TP
 .I \fBsave <file_name>\fR

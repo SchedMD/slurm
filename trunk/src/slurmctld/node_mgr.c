@@ -1259,9 +1259,9 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if ((job_ptr->job_state != JOB_RUNNING) ||
 		    (job_ptr->batch_flag == 0)          ||
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 		    /* slurmd does not report job presence until after prolog 
-		     * completes which waits for bglblock boot to complete.  
+		     * completes which waits for bgblock boot to complete.  
 		     * This can take several minutes on BlueGene. */
 		    (difftime(now, job_ptr->time_last_active) <= 
 				(1400 + 5 * job_ptr->node_cnt)))

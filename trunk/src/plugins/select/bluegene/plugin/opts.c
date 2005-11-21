@@ -42,7 +42,7 @@ void parse_command_line(int argc, char *argv[])
 	
 	static struct option long_options[] = {
 		{"all",       no_argument,       0, 'a'},
-		{"bglblock",  required_argument, 0, 'b'},
+		{"bgblock",  required_argument, 0, 'b'},
 		{"partition", required_argument, 0, 'p'},
 		{"version",   no_argument,       0, 'V'},
 		{"help",      no_argument,       0, 'h'},
@@ -60,14 +60,14 @@ void parse_command_line(int argc, char *argv[])
 			exit(1);
 			break;
 		case (int) 'a':
-			all_parts = 1;
+			all_blocks = 1;
 			break;
 		case (int) 'V':
 			_print_version();
 			exit(0);
 		case (int) 'b':
 		case (int) 'p':
-			bgl_part_id = optarg;
+			bg_block_id = optarg;
 			break;
 		case (int) 'h':
 		case (int) OPT_LONG_HELP:
@@ -124,8 +124,8 @@ static void _help(void)
 
 	printf("\
 Usage: sfree [OPTIONS]\n\
-  -b, --bglblock             free specific bglblock named\n\
-  -a, --all                  free all bglblocks\n\
+  -b, --bgblock             free specific bgblock named\n\
+  -a, --all                  free all bgblocks\n\
   -V, --version              output version information and exit\n\
 \nHelp options:\n\
   --help                     show this help message\n\

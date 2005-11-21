@@ -280,7 +280,7 @@ int setup_env(env_t *env)
 
 	if(env->select_jobinfo) {
 		select_g_get_jobinfo(env->select_jobinfo, 
-				     SELECT_DATA_PART_ID, &bgl_part_id);
+				     SELECT_DATA_BLOCK_ID, &bgl_part_id);
 		if (bgl_part_id) {
 			if(setenvf(&env->env, 
 				   "MPIRUN_PARTITION", "%s", bgl_part_id))

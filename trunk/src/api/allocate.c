@@ -39,6 +39,7 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #endif
 
 #include <slurm/slurm.h>
+#include <stdlib.h>
 
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
@@ -305,7 +306,7 @@ static int _nodelist_from_hostfile(job_step_create_request_msg_t *req)
 	int line_num = 0;
 	char *nodelist = NULL;
 	
-	if (hostfile = (char *)getenv("MP_HOSTFILE")) {
+	if (hostfile = getenv("MP_HOSTFILE")) {
 		if(strlen(hostfile)<1 || !strcmp(hostfile,"NULL")) 
 			goto no_hostfile;
 		if((hostfilep = fopen(hostfile, "r")) == NULL) {

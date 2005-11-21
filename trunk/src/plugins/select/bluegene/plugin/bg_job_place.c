@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  bgl_job_place.c - blue gene job placement (e.g. base partition selection)
+ *  bg_job_place.c - blue gene job placement (e.g. base block selection)
  *  functions.
  *
  *  $Id$ 
@@ -41,10 +41,10 @@ _STMT_START {		\
 	(b) = (t);	\
 } _STMT_END
 
-static int  _find_best_partition_match(struct job_record* job_ptr,
-				bitstr_t* slurm_part_bitmap,
+static int  _find_best_block_match(struct job_record* job_ptr,
+				bitstr_t* slurm_block_bitmap,
 				int min_nodes, int max_nodes,
-				int spec, bgl_record_t** found_bgl_record);
+				int spec, bg_record_t** found_bg_record);
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
 
 /* Rotate a 3-D geometry array through its six permutations */
@@ -81,26 +81,26 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
  * specification as to the importance of certain job params, for
  * instance, geometry, type, size, etc.
  * 
- * OUT - part_id of matched partition, NULL otherwise
+ * OUT - block_id of matched block, NULL otherwise
  * returns 1 for error (no match)
  * 
  */
-static int _find_best_partition_match(struct job_record* job_ptr, 
-		bitstr_t* slurm_part_bitmap, int min_nodes, int max_nodes,
-		int spec, bgl_record_t** found_bgl_record)
+static int _find_best_block_match(struct job_record* job_ptr, 
+		bitstr_t* slurm_block_bitmap, int min_nodes, int max_nodes,
+		int spec, bg_record_t** found_bg_record)
 {
 	ListIterator itr;
-	bgl_record_t* record = NULL;
+	bg_record_t* record = NULL;
 	int i;
-	uint16_t req_geometry[PA_SYSTEM_DIMENSIONS];
+	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
 	uint16_t conn_type, rotate, target_size = 1, checked;
 	uint32_t req_procs = job_ptr->num_procs;
 	int rot_cnt = 0;
 	uint32_t proc_cnt;
 	int job_running = 0;
        
-	if(!bgl_list) {
-		error("_find_best_partition_match: There is no bgl_list");
+	if(!bg_list) {
+		error("_find_best_block_match: There is no bg_list");
 		return SLURM_ERROR;
 	}
 	
@@ -112,14 +112,14 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 	   we want to fall through to tell the scheduler that it is runnable
 	   just not right now. 
 	*/
-	if(full_system_partition->job_running && checked<2) {
+	if(full_system_block->job_running && checked<2) {
 		checked++;
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
 				     SELECT_DATA_CHECKED, &checked);
 	
-		debug("_find_best_partition_match none found "
-		      "full system running on partition %s.",
-		      full_system_partition->bgl_part_id);
+		debug("_find_best_block_match none found "
+		      "full system running on block %s.",
+		      full_system_block->bg_block_id);
 		return SLURM_ERROR;
 	}
 
@@ -129,35 +129,39 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		SELECT_DATA_GEOMETRY, req_geometry);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_ROTATE, &rotate);
-	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++)
+	for (i=0; i<BA_SYSTEM_DIMENSIONS; i++)
 		target_size *= req_geometry[i];
 	if (target_size == 0)	/* no geometry specified */
 		target_size = min_nodes;
 	/* this is where we should have the control flow depending on
 	 * the spec arguement */
 
-	*found_bgl_record = NULL;
+	*found_bg_record = NULL;
 	
-	debug("number of partitions to check: %d", list_count(bgl_list));
-     	itr = list_iterator_create(bgl_list);
-	while ((record = (bgl_record_t*) list_next(itr))) {
+	debug("number of blocks to check: %d", list_count(bg_list));
+     	itr = list_iterator_create(bg_list);
+	while ((record = (bg_record_t*) list_next(itr))) {
 		/* Check processor count */
 		/* have to check checked to see which time the node 
 		   scheduler is looking to see if it is runnable.  
 		   If checked >=2 we want to fall through to tell the 
 		   scheduler that it is runnable just not right now. 
 		*/
+		slurm_mutex_lock(&block_state_mutex);
 		debug3("job_running = %d", record->job_running);
 		if(record->job_running && checked<2) {
 			job_running++;
-			debug("partition %s in use by %s", 
-			      record->bgl_part_id,
+			debug("block %s in use by %s", 
+			      record->bg_block_id,
 			      record->user_name);
+			slurm_mutex_unlock(&block_state_mutex);
 			continue;
 		}
-		if(record->full_partition && job_running) {
-			debug("Can't run on full system partition "
-			      "another partition has a job running.");
+		slurm_mutex_unlock(&block_state_mutex);
+	
+		if(record->full_block && job_running) {
+			debug("Can't run on full system block "
+			      "another block has a job running.");
 			continue;
 		}
 			
@@ -170,8 +174,8 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 			 */
 			proc_cnt = record->bp_count * record->cnodes_per_bp;
 			if (req_procs > proc_cnt) {
-				debug("partition %s CPU count too low",
-					record->bgl_part_id);
+				debug("block %s CPU count too low",
+					record->bg_block_id);
 				continue;
 			}
 		}
@@ -182,32 +186,32 @@ static int _find_best_partition_match(struct job_record* job_ptr,
  		if ((record->bp_count < min_nodes)
 		    ||  (max_nodes != 0 && record->bp_count > max_nodes)
 		    ||  (record->bp_count < target_size)) {
-			debug("partition %s node count not suitable",
-				record->bgl_part_id);
+			debug("block %s node count not suitable",
+				record->bg_block_id);
 			continue;
 		}
 		
 		/*
-		 * Next we check that this partition's bitmap is within 
+		 * Next we check that this block's bitmap is within 
 		 * the set of nodes which the job can use. 
 		 * Nodes not available for the job could be down,
 		 * drained, allocated to some other job, or in some 
-		 * SLURM partition not available to this job.
+		 * SLURM block not available to this job.
 		 */
-		if (!bit_super_set(record->bitmap, slurm_part_bitmap)) {
-			debug("bgl partition %s has nodes not usable by this "
-				"job", record->bgl_part_id);
+		if (!bit_super_set(record->bitmap, slurm_block_bitmap)) {
+			debug("bg block %s has nodes not usable by this "
+				"job", record->bg_block_id);
 			continue;
 		}
 
 		/*
-		 * Insure that any required nodes are in this BGL partition
+		 * Insure that any required nodes are in this BG block
 		 */
 		if (job_ptr->details->req_node_bitmap
 		&& (!bit_super_set(job_ptr->details->req_node_bitmap,
 				record->bitmap))) {
-			debug("bgl partition %s lacks required nodes",
-				record->bgl_part_id);
+			debug("bg block %s lacks required nodes",
+				record->bg_block_id);
 			continue;
 		}
 
@@ -216,8 +220,8 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		/***********************************************/
 		if ((conn_type != record->conn_type)
 		&&  (conn_type != SELECT_NAV)) {
-			debug("bgl partition %s conn-type not usable", 
-				record->bgl_part_id);
+			debug("bg block %s conn-type not usable", 
+				record->bg_block_id);
 			continue;
 		} 
 
@@ -247,7 +251,7 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 				continue;	/* Not usable */
 		}
 		
-		*found_bgl_record = record;
+		*found_bg_record = record;
 		break;
 	}
 	list_iterator_destroy(itr);
@@ -256,15 +260,15 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 			     SELECT_DATA_CHECKED, &checked);
 				
 	/* set the bitmap and do other allocation activities */
-	if (*found_bgl_record) {
-		debug("_find_best_partition_match %s <%s>", 
-			(*found_bgl_record)->bgl_part_id, 
-			(*found_bgl_record)->nodes);
-		bit_and(slurm_part_bitmap, (*found_bgl_record)->bitmap);
+	if (*found_bg_record) {
+		debug("_find_best_block_match %s <%s>", 
+			(*found_bg_record)->bg_block_id, 
+			(*found_bg_record)->nodes);
+		bit_and(slurm_block_bitmap, (*found_bg_record)->bitmap);
 		return SLURM_SUCCESS;
 	}
 	
-	debug("_find_best_partition_match none found");
+	debug("_find_best_block_match none found");
 	return SLURM_ERROR;
 }
 
@@ -274,16 +278,16 @@ static int _find_best_partition_match(struct job_record* job_ptr,
  * IN/OUT bitmap - nodes availble for assignment to job, clear those not to
  *	be used
  * IN min_nodes, max_nodes  - minimum and maximum number of nodes to allocate
- *	to this job (considers slurm partition limits)
+ *	to this job (considers slurm block limits)
  * RET - SLURM_SUCCESS if job runnable now, error code otherwise
  */
-extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
+extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		      int min_nodes, int max_nodes)
 {
 	int spec = 1; /* this will be like, keep TYPE a priority, etc,  */
-	bgl_record_t* record = NULL;
+	bg_record_t* record = NULL;
 	char buf[100];
-	char bgl_part_id[BITSIZE];
+	char bg_block_id[BITSIZE];
 		
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 		SELECT_PRINT_MIXED);
@@ -292,14 +296,14 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 	      min_nodes, 
 	      max_nodes);
 	
-	if ((_find_best_partition_match(job_ptr, slurm_part_bitmap, min_nodes, 
+	if ((_find_best_block_match(job_ptr, slurm_block_bitmap, min_nodes, 
 				max_nodes, spec, &record)) == SLURM_ERROR) {
 		return SLURM_ERROR;
 	} else {
-		/* we place the part_id into the env of the script to run */
-		snprintf(bgl_part_id, BITSIZE, "%s", record->bgl_part_id);
+		/* we place the block_id into the env of the script to run */
+		snprintf(bg_block_id, BITSIZE, "%s", record->bg_block_id);
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
-			SELECT_DATA_PART_ID, bgl_part_id);
+			SELECT_DATA_BLOCK_ID, bg_block_id);
 	}
 
 	return SLURM_SUCCESS;

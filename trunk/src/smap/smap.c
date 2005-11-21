@@ -32,7 +32,7 @@
 #include <signal.h>
 #include "src/smap/smap.h"
 
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 #define MIN_SCREEN_WIDTH 92
 #else
 #define MIN_SCREEN_WIDTH 72
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 	int end = 0;
 	int i;
 	int rc;
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	int mapset = 0;	
 #endif
 	//char *name;	
@@ -86,13 +86,13 @@ int main(int argc, char *argv[])
 			exit(1);
 		sleep(10);	/* keep trying to reconnect */
 	}
-	pa_init(new_node_ptr);
+	ba_init(new_node_ptr);
 	
 	if(params.partition) {
 			
-#ifdef HAVE_BGL_FILES
+#ifdef HAVE_BG_FILES
 		if (!have_db2) {
-			printf("must be on BGL SN to resolve.\n");
+			printf("must be on BG SN to resolve.\n");
 			goto part_fini;
 		}
 
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 		} else {
 			int *coord = find_bp_loc(params.partition);
 			if(coord)
-				printf("%s resolves to X=%d Y=%d Z=%d or bgl%d%d%d\n",
+				printf("%s resolves to X=%d Y=%d Z=%d or bg%d%d%d\n",
 				       params.partition,
 				       coord[X], coord[Y], coord[Z],
 				       coord[X], coord[Y], coord[Z]);
@@ -133,9 +133,9 @@ int main(int argc, char *argv[])
 		}
 part_fini:
 #else
-		printf("must be on BGL SN to resolve.\n");
+		printf("must be on BG SN to resolve.\n");
 #endif
-		pa_fini();
+		ba_fini();
 		exit(0);
 	}
 	if(!params.commandline) {
@@ -143,7 +143,7 @@ part_fini:
 		signal(SIGWINCH, (sighandler_t) _resize_handler);
 		initscr();
 		
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 		height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
 		width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
 		if (COLS < (MIN_SCREEN_WIDTH + width) || LINES < height) {
@@ -161,7 +161,7 @@ part_fini:
 			      height, 
 			      COLS, 
 			      LINES);
-			pa_fini();
+			ba_fini();
 			exit(0);
 		}
 		
@@ -174,15 +174,15 @@ part_fini:
 		start_color();
 		_set_pairs();
 		
-		pa_system_ptr->grid_win = newwin(height, 
+		ba_system_ptr->grid_win = newwin(height, 
 						 width, 
 						 starty, 
 						 startx);
-		max_display = pa_system_ptr->grid_win->_maxy
-			*pa_system_ptr->grid_win->_maxx;
-		//scrollok(pa_system_ptr->grid_win, TRUE);
+		max_display = ba_system_ptr->grid_win->_maxy
+			*ba_system_ptr->grid_win->_maxx;
+		//scrollok(ba_system_ptr->grid_win, TRUE);
 		
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 		startx = width;
 		COLS -= 2;
 		width = COLS - width;
@@ -194,7 +194,7 @@ part_fini:
 		
 #endif
 		
-		pa_system_ptr->text_win = newwin(height, 
+		ba_system_ptr->text_win = newwin(height, 
 						 width, 
 						 starty, 
 						 startx);
@@ -204,14 +204,14 @@ part_fini:
 			_get_option();
 		redraw:
 			
-			clear_window(pa_system_ptr->text_win);
-			clear_window(pa_system_ptr->grid_win);
+			clear_window(ba_system_ptr->text_win);
+			clear_window(ba_system_ptr->grid_win);
 			doupdate();
 			move(0,0);
 			
 			init_grid(new_node_ptr);
-			pa_system_ptr->xcord = 1;
-			pa_system_ptr->ycord = 1;
+			ba_system_ptr->xcord = 1;
+			ba_system_ptr->ycord = 1;
 		}
 		print_date();
 		switch (params.display) {
@@ -221,38 +221,38 @@ part_fini:
 		case SLURMPART:
 			get_slurm_part();
 			break;
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 		case COMMANDS:
 			if(!mapset) {
 				mapset = set_bp_map();
-				wclear(pa_system_ptr->text_win);
+				wclear(ba_system_ptr->text_win);
 				//doupdate();
 				//move(0,0);
 			}
 			get_command();
 			break;
-		case BGLPART:
-			get_bgl_part();
+		case BGPART:
+			get_bg_part();
 			break;
 #else
 		default:
-			error("must be on a BGL SYSTEM to run this command");
+			error("must be on a BG SYSTEM to run this command");
 			endwin();
-			pa_fini();
+			ba_fini();
 			exit(0);
 			break;
 #endif
 		}
 			
 		if(!params.commandline) {
-			//wscrl(pa_system_ptr->grid_win,-1);
-			box(pa_system_ptr->text_win, 0, 0);
-			wnoutrefresh(pa_system_ptr->text_win);
+			//wscrl(ba_system_ptr->grid_win,-1);
+			box(ba_system_ptr->text_win, 0, 0);
+			wnoutrefresh(ba_system_ptr->text_win);
 			
 			print_grid(grid_line_cnt*
-				     (pa_system_ptr->grid_win->_maxx-1));
-			box(pa_system_ptr->grid_win, 0, 0);
-			wnoutrefresh(pa_system_ptr->grid_win);
+				     (ba_system_ptr->grid_win->_maxx-1));
+			box(ba_system_ptr->grid_win, 0, 0);
+			wnoutrefresh(ba_system_ptr->grid_win);
 			
 			doupdate();
 			
@@ -276,13 +276,13 @@ part_fini:
 			if (error_code && (quiet_flag != 1)) {
 				if(!params.commandline) {
 					mvwprintw(
-						pa_system_ptr->text_win,
-						pa_system_ptr->ycord, 
+						ba_system_ptr->text_win,
+						ba_system_ptr->ycord, 
 						1,
 						"slurm_load_node: %s",
 						slurm_strerror(
 							slurm_get_errno()));
-					pa_system_ptr->ycord++;
+					ba_system_ptr->ycord++;
 				} else {
 					printf("slurm_load_node: %s",
 					       slurm_strerror(
@@ -298,9 +298,9 @@ part_fini:
 				if(!params.commandline) {
 					if ((rc = _get_option()) == 1)
 						goto redraw;
-					else if (pa_system_ptr->
+					else if (ba_system_ptr->
 						 resize_screen) {
-						pa_system_ptr->
+						ba_system_ptr->
 							resize_screen = 0;
 						goto redraw;
 					}
@@ -316,7 +316,7 @@ part_fini:
 		getch();
 		endwin();
 	}
-	pa_fini();
+	ba_fini();
         
 	exit(0);
 }
@@ -357,11 +357,11 @@ static int _get_option()
 		params.display = JOBS;
 		return 1;
 		break;
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	case 'b':
 		text_line_cnt = 0;
 		grid_line_cnt = 0;
-		params.display = BGLPART;
+		params.display = BGPART;
 		return 1;
 		break;
 	case 'c':
@@ -370,7 +370,7 @@ static int _get_option()
 		break;
 #endif
 
-#ifndef HAVE_BGL
+#ifndef HAVE_BG
 	case 'u':
 	case KEY_UP:
 		grid_line_cnt--;
@@ -383,7 +383,7 @@ static int _get_option()
 	case 'd':
 	case KEY_DOWN:
 		grid_line_cnt++;
-		if((((grid_line_cnt-2)*(pa_system_ptr->grid_win->_maxx-1)) + 
+		if((((grid_line_cnt-2)*(ba_system_ptr->grid_win->_maxx-1)) + 
 		    max_display) > DIM_SIZE[X]) {
 			grid_line_cnt--;
 			return 0;		
@@ -395,7 +395,7 @@ static int _get_option()
 	case 'q':
 	case '\n':
 		endwin();
-		pa_fini();
+		ba_fini();
 		exit(0);
 		break;
 	}
@@ -406,10 +406,10 @@ static void *_resize_handler(int sig)
 {
 	int startx=0, starty=0;
 	int height, width;
-	pa_system_ptr->ycord = 1;
+	ba_system_ptr->ycord = 1;
 	
-	delwin(pa_system_ptr->grid_win);
-	delwin(pa_system_ptr->text_win);
+	delwin(ba_system_ptr->grid_win);
+	delwin(ba_system_ptr->text_win);
 	
 	endwin();
 	COLS=0;
@@ -417,7 +417,7 @@ static void *_resize_handler(int sig)
 	initscr();
 	getmaxyx(stdscr,LINES,COLS);
 
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
 	width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
 	if (COLS < (MIN_SCREEN_WIDTH + width) || LINES < height) {
@@ -432,15 +432,15 @@ static void *_resize_handler(int sig)
 		error("Screen is too small make sure "
 		      "the screen is at least %dx%d\n"
 		      "Right now it is %dx%d\n", width, height, COLS, LINES);
-		pa_fini();
+		ba_fini();
 		exit(0);
 	}
         
-	pa_system_ptr->grid_win = newwin(height, width, starty, startx);
-	max_display = pa_system_ptr->grid_win->_maxy*
-		pa_system_ptr->grid_win->_maxx;
+	ba_system_ptr->grid_win = newwin(height, width, starty, startx);
+	max_display = ba_system_ptr->grid_win->_maxy*
+		ba_system_ptr->grid_win->_maxx;
 		
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	startx = width;
 	COLS -= 2;
 	width = COLS - width;
@@ -452,7 +452,7 @@ static void *_resize_handler(int sig)
 	
 #endif
 	
-	pa_system_ptr->text_win = newwin(height, width, starty, startx);
+	ba_system_ptr->text_win = newwin(height, width, starty, startx);
 	
 	print_date();
 	switch (params.display) {
@@ -462,23 +462,23 @@ static void *_resize_handler(int sig)
 	case SLURMPART:
 		get_slurm_part();
 		break;
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	case COMMANDS:
 		get_command();
 		break;
-	case BGLPART:
-		get_bgl_part();
+	case BGPART:
+		get_bg_part();
 		break;
 #endif
 	}
 
-	print_grid(grid_line_cnt*(pa_system_ptr->grid_win->_maxx-1));
-	box(pa_system_ptr->text_win, 0, 0);
-	box(pa_system_ptr->grid_win, 0, 0);
-	wnoutrefresh(pa_system_ptr->text_win);
-	wnoutrefresh(pa_system_ptr->grid_win);
+	print_grid(grid_line_cnt*(ba_system_ptr->grid_win->_maxx-1));
+	box(ba_system_ptr->text_win, 0, 0);
+	box(ba_system_ptr->grid_win, 0, 0);
+	wnoutrefresh(ba_system_ptr->text_win);
+	wnoutrefresh(ba_system_ptr->grid_win);
 	doupdate();
-	pa_system_ptr->resize_screen = 1;
+	ba_system_ptr->resize_screen = 1;
 	return NULL;
 }
 

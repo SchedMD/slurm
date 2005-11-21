@@ -75,7 +75,7 @@ extern void parse_command_line(int argc, char *argv[])
 	int option_index;
 	static struct option long_options[] = {
 		{"all",       no_argument,       0, 'a'},
-		{"bgl",       no_argument,       0, 'b'},
+		{"bg",       no_argument,       0, 'b'},
 		{"dead",      no_argument,       0, 'd'},
 		{"exact",     no_argument,       0, 'e'},
 		{"noheader",  no_argument,       0, 'h'},
@@ -117,10 +117,10 @@ extern void parse_command_line(int argc, char *argv[])
 			params.all_flag = true;
 			break;
 		case (int)'b':
-#ifdef HAVE_BGL
-			params.bgl_flag = true;
+#ifdef HAVE_BG
+			params.bg_flag = true;
 #else
-			error("must be on a BGL system to use --bgl option");
+			error("must be on a BG system to use --bg option");
 			exit(1);
 #endif
 			break;
@@ -613,7 +613,7 @@ void _print_options( void )
 	printf("all_flag        = %s\n", params.all_flag ? "true" : "false");
 	printf("avail_flag      = %s\n", params.match_flags.avail_flag ?
 			"true" : "false");
-	printf("bgl_flag        = %s\n", params.bgl_flag ? "true" : "false");
+	printf("bg_flag        = %s\n", params.bg_flag ? "true" : "false");
 	printf("cpus_flag       = %s\n", params.match_flags.cpus_flag ?
 			"true" : "false");
 	printf("disk_flag       = %s\n", params.match_flags.disk_flag ?
@@ -662,7 +662,7 @@ static void _help( void )
 Usage: sinfo [OPTIONS]\n\
   -a, --all                  show all partitions (including hidden and those\n\
                              not accessible)\n\
-  -b, --bgl                  show bglblocks (on Blue Gene systems)\n\
+  -b, --bg                   show bgblocks (on Blue Gene systems)\n\
   -d, --dead                 show only non-responding nodes\n\
   -e, --exact                group nodes only on exact match of configuration\n\
   -h, --noheader             no headers on output\n\
