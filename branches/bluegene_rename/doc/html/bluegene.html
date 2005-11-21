@@ -108,7 +108,7 @@ is ready for use before initiating any mpirun commands.
 SLURM will assume this responsibility for batch jobs. 
 The script that you submit to SLURM can contain multiple invocations of mpirun as
 well as any desired commands for pre- and post-processing.
-The mpirun command will get its <i>bgblock</i> or BG partition information from the
+The mpirun command will get its <i>bgblock</i> or BG block information from the
 <i>MPIRUN_PARTITION</i> as set by SLURM. A sample script is shown below.
 <pre>
 #!/bin/bash
@@ -148,12 +148,12 @@ Values in the X dimension increase to the right.
 Values in the Z dimension increase down and toward the left.</p>
 
 <pre>
-   a a a a b b d d       ID JOBID PARTITION USER   NAME ST TIME NODES NODELIST
-  a a a a b b d d        a  12345 batch     joseph tst1 R  43:12   64 bg[000x333]
- a a a a b b c c         b  12346 debug     chris  sim3 R  12:34   16 bg[420x533]
-a a a a b b c c          c  12350 debug     danny  job3 R   0:12    8 bg[622x733]
-                         d  12356 debug     dan    colu R  18:05   16 bg[600x731]
-   a a a a b b d d       e  12378 debug     joseph asx4 R   0:34    4 bg[612x713]
+   a a a a b b d d       ID JOBID PARTITION BGL_BLOCK USER   NAME ST TIME NODES NODELIST
+  a a a a b b d d        a  12345 batch     RMP0      joseph tst1 R  43:12   64 bg[000x333]
+ a a a a b b c c         b  12346 debug     RMP1      chris  sim3 R  12:34   16 bg[420x533]
+a a a a b b c c          c  12350 debug     RMP2      danny  job3 R   0:12    8 bg[622x733]
+                         d  12356 debug     RMP3      dan    colu R  18:05   16 bg[600x731]
+   a a a a b b d d       e  12378 debug     RMP4      joseph asx4 R   0:34    4 bg[612x713]
   a a a a b b d d
  a a a a b b c c
 a a a a b b c c
@@ -312,6 +312,9 @@ the scontrol reconfig command. </p>
 <p>SLURM node and partition descriptions should make use of the 
 <a href="#naming">naming</a> conventions described above. For example,
 "NodeName=bg[000x733] NodeAddr=frontend0 NodeHostname=frontend0 Procs=1024". 
+Based on the prefix you give to the noderange in the NodeName= variable 
+the bgl blocks will be named by such.  Thus this can be anything you want, but
+needs to be consitant throughout the slurm.conf file.
 Note that the values of both NodeAddr and NodeHostname for all 
 128 base partitions is the name of the front end node executing 
 the slurmd daemon. 
@@ -397,7 +400,7 @@ bgblocks. A sample <i>bluegene.conf</i> file is shown below.
 #                    4: Log all messages
 # 
 # NOTE: The bg_serial value is set at configuration time using the 
-#       "--with-bg-serial=" option. Its default value is "BG".
+#       "--with-bg-serial=" option. Its default value is "BGL".
 ###############################################################################
 BlrtsImage=/bgl/BlueLight/ppcfloor/bglsys/bin/rts_hw.rts
 LinuxImage=/bgl/BlueLight/ppcfloor/bglsys/bin/zImage.elf
@@ -418,17 +421,20 @@ BridgeAPIVerbose=0
 #        (smaller bgblocks are presently not supported)
 #
 # IMPORTANT NOTES:
+# * Ordering is very important for laying out switch wires.  Please create
+#   blocks with smap, and once done don't move the order of blocks
+#   created.
 # * A bgblock is implicitly created containing all resources on the system
 # * Bgblocks must not overlap (except for implicitly created bgblock)
 #   This will be the case when smap is used to create a configuration file
 # * All Nodes defined here must also be defined in the slurm.conf file
 ###############################################################################
 # LEAVE NEXT LINE AS A COMMENT, Full-system bgblock, implicitly created
-# Nodes=bg[000x001] Type=TORUS       # 1x1x2 = 2 midplanes
+# Nodes=[000x001] Type=TORUS       # 1x1x2 = 2 midplanes
 ###############################################################################
 # volume = 1x1x1 = 1
-Nodes=bg[000x000] Type=TORUS         # 1x1x1 =  1 midplane
-Nodes=bg[001x001] Type=SMALL         # 1x1x1 =  1 midplane, in four bgblocks
+Nodes=[000x000] Type=TORUS         # 1x1x1 =  1 midplane
+Nodes=[001x001] Type=SMALL         # 1x1x1 =  1 midplane, in four bgblocks
 
 </pre></p>
 
@@ -507,7 +513,7 @@ Failure to do so may result in errors being reported by both slurmd
 and slurmctld due to bgblocks that previously existed being deleted.</p>
 
 <p>A new tool <b>sfree</b> has also been added to help admins free a BG 
-partition on request.  
+block on request.  
 <br>For usage use <b>sfree -u</b> and for help <b>-h</b>.</p>
 
 <h4>Debugging</h4>
