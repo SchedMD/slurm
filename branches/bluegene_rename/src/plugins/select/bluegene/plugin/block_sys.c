@@ -421,7 +421,7 @@ int read_bg_blocks()
 				fatal("No contact with db2. Shutting down.");
 				
 			sprintf(node_name_tmp, 
-				 "%s%d%d%d/0", 
+				 "%s%d%d%d\0", 
 				 slurmctld_conf.node_prefix,
 				 coord[X], coord[Y], coord[Z]);
 			

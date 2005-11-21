@@ -147,14 +147,18 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		   If checked >=2 we want to fall through to tell the 
 		   scheduler that it is runnable just not right now. 
 		*/
+		slurm_mutex_lock(&block_state_mutex);
 		debug3("job_running = %d", record->job_running);
 		if(record->job_running && checked<2) {
 			job_running++;
 			debug("block %s in use by %s", 
 			      record->bg_block_id,
 			      record->user_name);
+			slurm_mutex_unlock(&block_state_mutex);
 			continue;
 		}
+		slurm_mutex_unlock(&block_state_mutex);
+	
 		if(record->full_block && job_running) {
 			debug("Can't run on full system block "
 			      "another block has a job running.");

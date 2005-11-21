@@ -285,7 +285,7 @@ _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 	 * to this job */
 	if (job_ptr->details && job_ptr->details->req_node_bitmap)
 		bit_or(bitmap, job_ptr->details->req_node_bitmap);
-	
+	info("hey choosing here\n");
 	error_code = select_g_job_test(job_ptr, bitmap, 
 			min_nodes, max_nodes);
 
@@ -554,11 +554,12 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				bit_and(node_set_ptr[i].my_bitmap,
 					share_node_bitmap);
 				for (ni = 0; ni < node_record_count; ni++) {
-					if (node_record_table_ptr[ni].node_state
-					&  NODE_STATE_COMPLETING)
-						bit_clear(node_set_ptr[i].my_bitmap, ni);
+					if (node_record_table_ptr[ni].
+					    node_state
+					    &  NODE_STATE_COMPLETING)
+						bit_clear(node_set_ptr[i].
+							  my_bitmap, ni);
 				}
-				/* pick_light_load = false;  Non-overlapping blocks */
 #else
 				bit_and(node_set_ptr[i].my_bitmap,
 					share_node_bitmap);
@@ -599,12 +600,12 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 							    avail_bitmap, 
 							    min_nodes, 
 							    max_nodes);
-			} else
+			} else 
 				pick_code = select_g_job_test(job_ptr, 
 							      avail_bitmap, 
 							      min_nodes, 
 							      max_nodes);
-
+			
 			if (pick_code == SLURM_SUCCESS) {
 				if ((node_lim != INFINITE) && 
 				    (bit_set_count(avail_bitmap) > node_lim)) {

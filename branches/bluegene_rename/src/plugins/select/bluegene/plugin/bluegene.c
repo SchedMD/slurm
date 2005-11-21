@@ -411,6 +411,8 @@ extern char* convert_conn_type(rm_connection_type_t conn_type)
 		return "MESH"; 
 	case (SELECT_TORUS): 
 		return "TORUS"; 
+	case (SELECT_SMALL): 
+		return "SMALL"; 
 	case (SELECT_NAV):
 		return "NAV";
 	default:

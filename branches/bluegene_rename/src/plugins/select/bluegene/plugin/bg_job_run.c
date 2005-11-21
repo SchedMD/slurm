@@ -186,7 +186,8 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 		error("No block %s", bg_update_ptr->bg_block_id);
 		return;
 	}
-	bg_record->job_running = 1;				
+	bg_record->job_running = bg_update_ptr->job_id;
+	
 	if(bg_record->state==RM_PARTITION_READY) {
 		if(bg_record->user_uid != bg_update_ptr->uid) {
 			slurm_mutex_lock(&block_state_mutex);
@@ -300,7 +301,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			sleep(1);
 		}
 		
-		if(bg_record->job_running == -1) 
+		if(bg_record->job_running == 0) 
 			return;
 		if((rc = boot_block(bg_record))
 		   != SLURM_SUCCESS) {
@@ -698,7 +699,7 @@ extern int start_job(struct job_record *job_ptr)
 			if ((!found_record->bg_block_id)
 			    ||  (strcmp(block_id, found_record->bg_block_id)))
 				continue;
-			found_record->job_running = 1;
+			found_record->job_running = job_ptr->job_id;
 			found_record->node_use = node_use;
 			found_record->state = RM_PARTITION_READY;
 			last_bg_update = time(NULL);
