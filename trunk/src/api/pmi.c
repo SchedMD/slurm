@@ -79,7 +79,6 @@
 
 #include "src/api/slurm_pmi.h"
 
-#define _DEBUG             0	/* detailed logging of API calls if set */
 #define KVS_STATE_LOCAL    0
 #define KVS_STATE_DEFUNCT  1
 
@@ -104,6 +103,7 @@ int pmi_init = 0;
 int pmi_size;
 int pmi_spawned;
 int pmi_rank;
+int pmi_debug;
 
 pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -133,9 +133,14 @@ if this process group has a parent and 'PMI_FALSE' if it does not.
 int PMI_Init( int *spawned )
 {
 	char *env;
-#if _DEBUG
-	fprintf(stderr, "In: PMI_Init\n");
-#endif
+
+	env = getenv("PMI_DEBUG");
+	if (env)
+		pmi_debug = atoi(env);
+	else
+		pmi_debug = 0;
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_Init\n");
 
 	if (spawned == NULL)
 		return PMI_ERR_INVALID_ARG;
@@ -206,9 +211,9 @@ On successful output, initialized will either be 'PMI_TRUE' or 'PMI_FALSE'.
 @*/
 int PMI_Initialized( PMI_BOOL *initialized )
 {
-#if _DEBUG
-	fprintf(stderr, "In: PMI_Initialized\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_Initialized\n");
+
 	if (initialized == NULL)
 		return PMI_ERR_INVALID_ARG;
 
@@ -235,9 +240,9 @@ int PMI_Finalize( void )
 {
 	int i;
 
-#if _DEBUG
-	fprintf(stderr, "In: PMI_Finalize\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_Finalize\n");
+
 	pmi_init = 0;
 	pthread_mutex_lock(&kvs_mutex);
 	for (i=0; i<kvs_rec_cnt; i++)
@@ -287,9 +292,9 @@ belongs.
 @*/
 int PMI_Get_size( int *size )
 {
-#if _DEBUG
-	fprintf(stderr, "In: PMI_Get_size\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_Get_size\n");
+
 	if (size == NULL)
 		return PMI_ERR_INVALID_ARG;
 
@@ -321,9 +326,9 @@ This function returns the rank of the local process in its process group.
 @*/
 int PMI_Get_rank( int *rank )
 {
-#if _DEBUG
-	fprintf(stderr, "In: PMI_Get_rank\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_Get_rank\n");
+
 	if (rank == NULL)
 		return PMI_ERR_INVALID_ARG;
 
@@ -357,9 +362,9 @@ int PMI_Get_universe_size( int *size )
 {
 	char *env;
 
-#if _DEBUG
-	fprintf(stderr, "In: PMI_Get_universe_size\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_Get_universe_size\n");
+
 	if (size == NULL)
 		return PMI_ERR_INVALID_ARG;
 
@@ -397,9 +402,9 @@ int PMI_Get_appnum( int *appnum )
 {
 	char *env;
 
-#if _DEBUG
-	fprintf(stderr, "In: PMI_Get_appnum\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_Get_appnum\n");
+
 	if (appnum == NULL)
 		return PMI_ERR_INVALID_ARG;
 
@@ -429,9 +434,9 @@ Return values:
 @*/
 int PMI_Publish_name( const char service_name[], const char port[] )
 {
-#if _DEBUG
-	fprintf(stderr, "In: PMI_Publish_name - NOT DONE\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_Publish_name - NOT SUPPORTED\n");
+
 	if ((service_name == NULL) || (port == NULL))
 		return PMI_ERR_INVALID_ARG;
 
@@ -454,9 +459,9 @@ Return values:
 @*/
 int PMI_Unpublish_name( const char service_name[] )
 {
-#if _DEBUG
-	fprintf(stderr, "In: PMI_Unpublish_name - NOT DONE\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_Unpublish_name - NOT SUPPORTED\n");
+
 	if (service_name == NULL)
 		return PMI_ERR_INVALID_ARG;
 
@@ -482,9 +487,9 @@ Return values:
 @*/
 int PMI_Lookup_name( const char service_name[], char port[] )
 {
-#if _DEBUG
-	fprintf(stderr, "In: PMI_Lookup_name - NOT DONE\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_Lookup_name - NOT SUPPORTED\n");
+
 	if ((service_name == NULL) || (port == NULL))
 		return PMI_ERR_INVALID_ARG;
 
@@ -515,9 +520,9 @@ as long as the number returned by 'PMI_Get_id_length_max()'.
 @*/
 int PMI_Get_id( char id_str[], int length )
 {
-#if _DEBUG
-	fprintf(stderr, "In: PMI_Get_id\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_Get_id\n");
+
 	if (length < PMI_MAX_ID_LEN)
 		return PMI_ERR_INVALID_LENGTH;
 	if (id_str == NULL)
@@ -552,9 +557,9 @@ as long as the number returned by 'PMI_Get_id_length_max()'.
 @*/
 int PMI_Get_kvs_domain_id( char id_str[], int length )
 {
-#if _DEBUG
-	fprintf(stderr, "In: PMI_Get_kvs_domain_id\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_Get_kvs_domain_id\n");
+
 	if (length < PMI_MAX_ID_LEN)
 		return PMI_ERR_INVALID_LENGTH;
 	if (id_str == NULL)
@@ -583,9 +588,9 @@ This function returns the maximum length of a process group id string.
 @*/
 int PMI_Get_id_length_max( int *length )
 {
-#if _DEBUG
-	fprintf(stderr, "In: PMI_Get_id_length_max\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_Get_id_length_max\n");
+
 	if (length == NULL)
 		return PMI_ERR_INVALID_ARG;
 
@@ -612,9 +617,9 @@ int PMI_Barrier( void )
 	struct kvs_comm *kvs_ptr;
 	int i, j, k, rc = PMI_SUCCESS;
 
-#if _DEBUG
-	fprintf(stderr, "In: PMI_Barrier\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_Barrier\n");
+
 	/* Issue the RPC */
 	if (slurm_get_kvs_comm_set(&kvs_set_ptr, pmi_rank, pmi_size) 
 			!= SLURM_SUCCESS)
@@ -658,9 +663,9 @@ mechanisms (e.g., shared memory) and other network mechanisms.
 @*/
 int PMI_Get_clique_size( int *size )
 {
-#if _DEBUG
-       fprintf(stderr, "In: PMI_Get_clique_size - NOT DONE\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_Get_clique_size - NOT SUPPORTED\n");
+
 	if (size == NULL)
 		return PMI_ERR_INVALID_ARG;
 
@@ -693,9 +698,9 @@ mechanisms.
 @*/
 int PMI_Get_clique_ranks( int ranks[], int length )
 {
-#if _DEBUG
-	fprintf(stderr, "In: PMI_Get_clique_ranks - NOT DONE\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_Get_clique_ranks - NOT SUPPORTED\n");
+
 	if (ranks == NULL)
 		return PMI_ERR_INVALID_ARG;
 
@@ -715,11 +720,12 @@ Return values:
 @*/
 int PMI_Abort(int exit_code, const char error_msg[])
 {
-#if _DEBUG
-	if (error_msg == NULL)
-		error_msg = "NULL";
-	fprintf(stderr, "In: PMI_Abort(%d, %s)\n", exit_code, error_msg);
-#endif
+	if (pmi_debug) {
+		if (error_msg == NULL)
+			error_msg = "NULL";
+		fprintf(stderr, "In: PMI_Abort(%d, %s)\n", exit_code, error_msg);
+	}
+
 	exit(exit_code);
 }
 
@@ -751,9 +757,9 @@ int PMI_KVS_Get_my_name( char kvsname[], int length )
 {
 	int size;
 
-#if _DEBUG
-	fprintf(stderr, "In: PMI_KVS_Get_my_name\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_KVS_Get_my_name\n");
+
 	if (kvsname == NULL)
 		return PMI_ERR_INVALID_ARG;
 	if (pmi_init == 0)
@@ -805,9 +811,9 @@ routine here, we can interface with a variety of implementations of PMI.
 @*/
 int PMI_KVS_Get_name_length_max( int *length )
 {
-#if _DEBUG
-	fprintf(stderr, "In: PMI_KVS_Get_name_length_max\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_KVS_Get_name_length_max\n");
+
 	if (length == NULL)
 		return PMI_ERR_INVALID_ARG;
 
@@ -832,9 +838,9 @@ This function returns the string length required to store a key.
 @*/
 int PMI_KVS_Get_key_length_max( int *length )
 {
-#if _DEBUG
-	fprintf(stderr, "In: PMI_KVS_Get_key_length_max\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_KVS_Get_key_length_max\n");
+
 	if (length == NULL)
 		return PMI_ERR_INVALID_ARG;
 
@@ -860,9 +866,9 @@ keyval space.
 @*/
 int PMI_KVS_Get_value_length_max( int *length )
 {
-#if _DEBUG
-	fprintf(stderr, "In: PMI_KVS_Get_value_length_max\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_KVS_Get_value_length_max\n");
+
 	if (length == NULL)
 		return PMI_ERR_INVALID_ARG;
 
@@ -897,9 +903,9 @@ int PMI_KVS_Create( char kvsname[], int length )
 {
 	int size, rc;
 
-#if _DEBUG
-	fprintf(stderr, "In: PMI_KVS_Create\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_KVS_Create\n");
+
 	if (kvsname == NULL)
 		return PMI_ERR_INVALID_ARG;
 	if ((pmi_jobid < 0) || (pmi_stepid < 0))
@@ -938,9 +944,9 @@ int PMI_KVS_Destroy( const char kvsname[] )
 {
 	int i, found = 0;
 
-#if _DEBUG
-	fprintf(stderr, "In: PMI_KVS_Destroy\n");
-#endif
+	if  (pmi_debug)
+		fprintf(stderr, "In: PMI_KVS_Destroy - NOT SUPPORTED\n");
+
 	if (kvsname == NULL)
 		return PMI_ERR_INVALID_ARG;
 
@@ -955,6 +961,7 @@ int PMI_KVS_Destroy( const char kvsname[] )
 	pthread_mutex_unlock(&kvs_mutex);
 	if (found == 0)
 		return PMI_ERR_INVALID_ARG;
+	/* FIXME: We need to add mechanism to remove these keys from srun's master copy */
 	return PMI_SUCCESS;
 }
 
@@ -986,9 +993,9 @@ int PMI_KVS_Put( const char kvsname[], const char key[], const char value[])
 {
 	int i, j, rc;
 
-#if _DEBUG
-	fprintf(stderr, "In: PMI_KVS_Put\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_KVS_Put\n");
+
 	if ((kvsname == NULL) || (strlen(kvsname) > PMI_MAX_KVSNAME_LEN))
 		return PMI_ERR_INVALID_KVS;
 	if ((key == NULL) || (strlen(key) >PMI_MAX_KEY_LEN))
@@ -1064,9 +1071,9 @@ int PMI_KVS_Commit( const char kvsname[] )
 	int i, rc;
 	Buf buffer;
 
-#if _DEBUG
-	fprintf(stderr, "In: PMI_KVS_Commit\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_KVS_Commit\n");
+
 	if ((kvsname == NULL) || (strlen(kvsname) > PMI_MAX_KVSNAME_LEN))
 		return PMI_ERR_INVALID_ARG;
 
@@ -1139,9 +1146,9 @@ int PMI_KVS_Get( const char kvsname[], const char key[], char value[], int lengt
 {
 	int i, j, rc;
 
-#if _DEBUG
-	fprintf(stderr, "In: PMI_KVS_Get\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_KVS_Get\n");
+	
 	if ((kvsname == NULL) || (strlen(kvsname) > PMI_MAX_KVSNAME_LEN))
 		return PMI_ERR_INVALID_KVS;
 	if ((key == NULL) || (strlen(key) >PMI_MAX_KEY_LEN))
@@ -1210,9 +1217,9 @@ int PMI_KVS_Iter_first(const char kvsname[], char key[], int key_len, char val[]
 {
 	int i, rc;
 
-#if _DEBUG
-	fprintf(stderr, "In: PMI_KVS_Iter_first\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_KVS_Iter_first\n");
+
 	if ((kvsname == NULL) || (strlen(kvsname) > PMI_MAX_KVSNAME_LEN))
 		return PMI_ERR_INVALID_KVS;
 	if (key == NULL)
@@ -1287,9 +1294,9 @@ int PMI_KVS_Iter_next(const char kvsname[], char key[], int key_len,
 {
 	int i, rc;
 
-#if _DEBUG
-	fprintf(stderr, "In: PMI_KVS_Iter_next\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_KVS_Iter_next\n");
+
 	if ((kvsname == NULL) || (strlen(kvsname) > PMI_MAX_KVSNAME_LEN))
 		return PMI_ERR_INVALID_KVS;
 	if (key == NULL)
@@ -1378,9 +1385,9 @@ int PMI_Spawn_multiple(int count,
                        const PMI_keyval_t preput_keyval_vector[],
                        int errors[])
 {
-#if _DEBUG
-	fprintf(stderr, "In: PMI_Spawn_multiple - NOT DONE\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_Spawn_multiple - NOT SUPPORTED\n");
+
 	if (cmds == NULL)
 		return PMI_ERR_INVALID_ARG;
 
@@ -1419,11 +1426,12 @@ specific arguments in the args array, this function may parse more than one
 argument as long as the options are contiguous in the args array.
 
 @*/
-int PMI_Parse_option(int num_args, char *args[], int *num_parsed, PMI_keyval_t **keyvalp, int *size)
+int PMI_Parse_option(int num_args, char *args[], int *num_parsed, PMI_keyval_t **keyvalp, 
+		int *size)
 {
-#if _DEBUG
-	fprintf(stderr, "In: PMI_Parse_option - NOT DONE\n");
-#endif
+if (pmi_debug)
+		fprintf(stderr, "In: PMI_Parse_option - NOT SUPPORTED\n");
+
 	if (num_parsed == NULL)
 		return PMI_ERR_INVALID_NUM_PARSED;
 	if (keyvalp == NULL)
@@ -1463,9 +1471,9 @@ allocated with 'malloc()'.
 int PMI_Args_to_keyval(int *argcp, char *((*argvp)[]), PMI_keyval_t **keyvalp, 
 		int *size)
 {
-#if _DEBUG
-	fprintf(stderr, "In: PMI_Args_to_keyval - NOT DONE\n");
-#endif
+	if  (pmi_debug)
+		fprintf(stderr, "In: PMI_Args_to_keyval - NOT SUPPORTED\n");
+
 	if ((keyvalp == NULL) || (size == NULL))
 		return PMI_ERR_INVALID_ARG;
 
@@ -1492,9 +1500,9 @@ Notes:
 @*/
 int PMI_Free_keyvals(PMI_keyval_t keyvalp[], int size)
 {
-#if _DEBUG
-	fprintf(stderr, "In: PMI_Free_keyvals - NOT DONE\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_Free_keyvals - NOT SUPPORTED\n");
+
 	if ((keyvalp == NULL) && size)
 		return PMI_ERR_INVALID_ARG;
 
@@ -1503,7 +1511,8 @@ int PMI_Free_keyvals(PMI_keyval_t keyvalp[], int size)
 }
 
 /*@
-PMI_Get_options - get a string of command line argument descriptions that may be printed to the user
+PMI_Get_options - get a string of command line argument descriptions that may be printed 
+	to the user
 
 Input Parameters:
 . length - length of str
@@ -1524,9 +1533,9 @@ Notes:
 @*/
 int PMI_Get_options(char *str, int *length)
 {
-#if _DEBUG
-	fprintf(stderr, "In: PMI_Get_options - NOT DONE\n");
-#endif
+	if (pmi_debug)
+		fprintf(stderr, "In: PMI_Get_options - NOT SUPPORTED\n");
+
 	if ((str == NULL) || (length == NULL))
 		return PMI_ERR_INVALID_ARG;
 
