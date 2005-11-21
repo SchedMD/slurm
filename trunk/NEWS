@@ -21,6 +21,10 @@ documents those changes that are of interest to users and admins.
     D-HH:MM:SS per POSIX standards document.
  -- Treat scontrol update request without any requested changes as an 
     error condition.
+ -- Bluegene plugin renamed with BG instead of BGL.  partition_allocator moved 
+    into bluegene plugin and renamed block_allocator.  Format for bluegene.conf
+    file changed also.  Read bluegene html page.  Code is backwards compatable
+    smap will generate in new form
 
 * Changes in SLURM 0.7.0-pre3
 =============================
