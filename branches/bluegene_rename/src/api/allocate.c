@@ -304,7 +304,7 @@ static int _nodelist_from_hostfile(job_step_create_request_msg_t *req)
 	int ret = 0;
 	int line_num = 0;
 	char *nodelist = NULL;
-	if(slurmctld_conf->switch_type)
+	
 	if (hostfile = (char *)getenv("MP_HOSTFILE")) {
 		if(strlen(hostfile)<1 || !strcmp(hostfile,"NULL")) 
 			goto no_hostfile;
