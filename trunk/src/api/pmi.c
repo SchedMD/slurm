@@ -945,7 +945,7 @@ int PMI_KVS_Destroy( const char kvsname[] )
 	int i, found = 0;
 
 	if  (pmi_debug)
-		fprintf(stderr, "In: PMI_KVS_Destroy - NOT SUPPORTED\n");
+		fprintf(stderr, "In: PMI_KVS_Destroy - NOT FULLY SUPPORTED\n");
 
 	if (kvsname == NULL)
 		return PMI_ERR_INVALID_ARG;
