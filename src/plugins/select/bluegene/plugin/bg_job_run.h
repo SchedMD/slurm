@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  bgl_job_run.h - header for blue gene job execution (e.g. initiation and
+ *  bg_job_run.h - header for blue gene job execution (e.g. initiation and
  *  termination) functions. 
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
@@ -24,8 +24,8 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef _BGL_JOB_RUN_H_
-#define _BGL_JOB_RUN_H_
+#ifndef _BG_JOB_RUN_H_
+#define _BG_JOB_RUN_H_
 
 #include "src/slurmctld/slurmctld.h"
 
@@ -36,7 +36,7 @@
  *
  * NOTE: This happens in parallel with srun and slurmd spawning 
  * the job. A prolog script is expected to defer initiation of 
- * the job script until the BGL block is available for use.
+ * the job script until the BG block is available for use.
  */
 extern int start_job(struct job_record *job_ptr);
 
@@ -52,26 +52,26 @@ extern int start_job(struct job_record *job_ptr);
 extern int term_job(struct job_record *job_ptr);
 
 /*
- * Perform any work required to terminate a jobs on a partition
- * bgl_part_id IN - partition name
+ * Perform any work required to terminate a jobs on a block
+ * bg_block_id IN - partition name
  * RET - SLURM_SUCCESS or an error code
  *
  * NOTE: This happens when new partitions are created and we
  * need to clean up jobs on them.
  */
-extern int term_jobs_on_part(pm_partition_id_t bgl_part_id);
+extern int term_jobs_on_block(pm_partition_id_t bg_block_id);
 
 /*
- * Synchronize BGL block state to that of currently active jobs.
- * This can recover from slurmctld crashes when partition ownership 
+ * Synchronize BG block state to that of currently active jobs.
+ * This can recover from slurmctld crashes when block ownership 
  * changes were queued
  */
 extern int sync_jobs(List job_list);
 
 /*
- * Boot a partition. Partition state expected to be FREE upon entry. 
+ * Boot a block. Partition state expected to be FREE upon entry. 
  * NOTE: This function does not wait for the boot to complete.
  * the slurm prolog script needs to perform the waiting.
  */
-extern int boot_part(bgl_record_t *bgl_record);
-#endif /* _BGL_JOB_RUN_H_ */
+extern int boot_block(bg_record_t *bg_record);
+#endif /* _BG_JOB_RUN_H_ */

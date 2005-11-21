@@ -390,7 +390,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 
 	if ( step_spec->node_count == INFINITE)	/* use all nodes */
 		return nodes_avail;
-
+try_again:
 	if (step_spec->node_list) {
 		error_code = node_name2bitmap (step_spec->node_list, false, 
 						&nodes_picked);
@@ -406,6 +406,16 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			goto cleanup;
 		}
 		if(step_spec->task_dist == SLURM_DIST_HOSTFILE) {
+			if (!strcmp(slurmctld_conf.switch_type,
+				    "switch/elan")) {
+				error("Can't do a HOSTFILE with switch "
+				      "type elan. Switching DIST type to "
+				      "BLOCK");
+				xfree(step_spec->node_list);
+				step_spec->task_dist == SLURM_DIST_BLOCK;
+				FREE_NULL_BITMAP(nodes_picked);
+				goto try_again;
+			}
 			FREE_NULL_BITMAP(nodes_avail);
 			return nodes_picked;
 		}
@@ -416,8 +426,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		relative_nodes = 
 			bit_pick_cnt (nodes_avail, step_spec->relative);
 		if (relative_nodes == NULL) {
-			info ("_pick_step_nodes: Invalid relative value (%u) for job %u",
-				step_spec->relative, job_ptr->job_id);
+			info ("_pick_step_nodes: "
+			      "Invalid relative value (%u) for job %u",
+			      step_spec->relative, job_ptr->job_id);
 			goto cleanup;
 		}
 		bit_not (relative_nodes);
@@ -557,7 +568,10 @@ step_create ( job_step_create_request_msg_t *step_specs,
 
 	/* set the step_record values */
 	/* Here is where the node list is set for the job */
-	step_ptr->step_node_list = xstrdup(step_specs->node_list); 
+	if(step_specs->node_list)
+		step_ptr->step_node_list = xstrdup(step_specs->node_list);
+	else
+		step_ptr->step_node_list = bitmap2node_name(nodeset);
 	xfree(step_specs->node_list);
 	step_specs->node_list = bitmap2node_name(nodeset);
 	step_ptr->step_node_bitmap = nodeset;

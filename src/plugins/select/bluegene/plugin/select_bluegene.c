@@ -66,7 +66,7 @@ const char plugin_name[]       	= "Blue Gene node selection plugin";
 const char plugin_type[]       	= "select/bluegene";
 const uint32_t plugin_version	= 90;
 
-/* pthread stuff for updating BGL node status */
+/* pthread stuff for updating BG node status */
 static pthread_t bluegene_thread = 0;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -79,14 +79,14 @@ static int _init_status_pthread(void);
  */
 extern int init ( void )
 {
-#ifndef HAVE_BGL
+#ifndef HAVE_BG
 	fatal("Plugin select/bluegene is illegal on non-BlueGene computers");
 #endif
 #if (SYSTEM_DIMENSIONS != 3)
 	fatal("SYSTEM_DIMENSIONS value (%d) invalid for Blue Gene",
 		SYSTEM_DIMENSIONS);
 #endif
-#ifdef HAVE_BGL_FILES
+#ifdef HAVE_BG_FILES
 	if (!getenv("CLASSPATH") || !getenv("DB2INSTANCE") 
 	||  !getenv("VWSPATH"))
 		fatal("db2profile has not been run to setup DB2 environment");
@@ -102,7 +102,7 @@ extern int init ( void )
 #endif
 
 	verbose("%s loading...", plugin_name);
-	if (init_bgl() || _init_status_pthread())
+	if (init_bg() || _init_status_pthread())
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -155,7 +155,7 @@ extern int fini ( void )
 	}
 	pthread_mutex_unlock( &thread_flag_mutex );
 
-	fini_bgl();
+	fini_bg();
 
 	return rc;
 }
@@ -167,29 +167,28 @@ extern int fini ( void )
 
 /*
  * Called by slurmctld when a new configuration file is loaded
- * or scontrol is used to change partition configuration
+ * or scontrol is used to change block configuration
  */
- extern int select_p_part_init(List part_list)
+ extern int select_p_block_init(List part_list)
 {
 	xassert(part_list);
-#ifdef HAVE_BGL
-	if(read_bgl_conf() == SLURM_ERROR) {
+#ifdef HAVE_BG
+	if(read_bg_conf() == SLURM_ERROR) {
 		fatal("Error, could not read the file");
 		return SLURM_ERROR;
 	}
 #else
-	/*looking for partitions only I created */
-	if (create_static_partitions(part_list) == SLURM_ERROR) {
-		/* error in creating the static partitions, so
-		 * partitions referenced by submitted jobs won't
-		 * correspond to actual slurm partitions/bgl
-		 * partitions.
+	/*looking for blocks only I created */
+	if (create_static_blocks(part_list) == SLURM_ERROR) {
+		/* error in creating the static blocks, so
+		 * blocks referenced by submitted jobs won't
+		 * correspond to actual slurm blocks.
 		 */
-		fatal("Error, could not create the static partitions");
+		fatal("Error, could not create the static blocks");
 		return SLURM_ERROR;
 	}
 #endif
-	sort_bgl_record_inc_size(bgl_list);
+	sort_bg_record_inc_size(bg_list);
 
 	return SLURM_SUCCESS; 
 }
@@ -205,13 +204,13 @@ extern int select_p_state_restore(char *dir_name)
 	return SLURM_SUCCESS;
 }
 
-/* Sync BGL blocks to currently active jobs */
+/* Sync BG blocks to currently active jobs */
 extern int select_p_job_init(List job_list)
 {
 	return sync_jobs(job_list);
 }
 
-/* All initialization is performed by select_p_part_init() */
+/* All initialization is performed by select_p_block_init() */
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
 	if(node_cnt>0)
@@ -237,14 +236,14 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			     int min_nodes, int max_nodes)
 {
-	/* bgl partition test - is there a partition where we have:
+	/* bg block test - is there a block where we have:
 	 * 1) geometry requested
 	 * 2) min/max nodes (BPs) requested
 	 * 3) type: TORUS or MESH or NAV (torus else mesh)
 	 * 4) use: VIRTUAL or COPROCESSOR
 	 * 
 	 * note: we don't have to worry about security at this level
-	 * as the SLURM partition logic will handle access rights.
+	 * as the SLURM block logic will handle access rights.
 	 */
 
 	return submit_job(job_ptr, bitmap, min_nodes, max_nodes);
@@ -262,8 +261,8 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 
 extern int select_p_job_ready(struct job_record *job_ptr)
 {
-#ifdef HAVE_BGL_FILES
-	return part_ready(job_ptr);
+#ifdef HAVE_BG_FILES
+	return block_ready(job_ptr);
 #else
 	if (job_ptr->job_state == JOB_RUNNING)
 		return 1;
@@ -274,38 +273,38 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 {
 	ListIterator itr;
-	bgl_record_t *bgl_record = NULL;
-	uint32_t partitions_packed = 0, tmp_offset;
+	bg_record_t *bg_record = NULL;
+	uint32_t blocks_packed = 0, tmp_offset;
 	Buf buffer;
 
 	/* check to see if data has changed */
-	if (last_query_time >= last_bgl_update) {
+	if (last_query_time >= last_bg_update) {
 		debug2("Node select info hasn't changed since %d", 
-			last_bgl_update);
+			last_bg_update);
 		return SLURM_NO_CHANGE_IN_DATA;
 	} else {
 		*buffer_ptr = NULL;
 		buffer = init_buf(HUGE_BUF_SIZE);
-		pack32(partitions_packed, buffer);
-		pack_time(last_bgl_update, buffer);
+		pack32(blocks_packed, buffer);
+		pack_time(last_bg_update, buffer);
 
-		if(bgl_list) {
-			itr = list_iterator_create(bgl_list);
-			while ((bgl_record = (bgl_record_t *) list_next(itr)) 
+		if(bg_list) {
+			itr = list_iterator_create(bg_list);
+			while ((bg_record = (bg_record_t *) list_next(itr)) 
 			       != NULL) {
-				xassert(bgl_record->bgl_part_id != NULL);
+				xassert(bg_record->bg_block_id != NULL);
 				
-				pack_partition(bgl_record, buffer);
-				partitions_packed++;
+				pack_block(bg_record, buffer);
+				blocks_packed++;
 			}
 			list_iterator_destroy(itr);
 		} else {
-			error("select_p_pack_node_info: no bgl_list");
+			error("select_p_pack_node_info: no bg_list");
 			return SLURM_ERROR;
 		}
 		tmp_offset = get_buf_offset(buffer);
 		set_buf_offset(buffer, 0);
-		pack32(partitions_packed, buffer);
+		pack32(blocks_packed, buffer);
 		set_buf_offset(buffer, tmp_offset);
 
 		*buffer_ptr = buffer;

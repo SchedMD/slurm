@@ -37,7 +37,7 @@
 #include "src/sinfo/sinfo.h"
 #include "src/sinfo/print.h"
 
-#ifdef HAVE_BGL_FILES
+#ifdef HAVE_BG_FILES
 # include "src/plugins/select/bluegene/wrap_rm_api.h"
 #endif
 
@@ -49,7 +49,7 @@ struct sinfo_parameters params;
 /************
  * Funtions *
  ************/
-static int  _bgl_report(void);
+static int  _bg_report(void);
 static int  _build_sinfo_data(List sinfo_list, 
 		partition_info_msg_t *partition_msg,
 		node_info_msg_t *node_msg);
@@ -83,8 +83,8 @@ int main(int argc, char *argv[])
 		&&  (params.iterate || params.verbose || params.long_output))
 			print_date();
 
-		if (params.bgl_flag)
-			(void) _bgl_report();
+		if (params.bg_flag)
+			(void) _bg_report();
 		else {
 			if (_query_server(&partition_msg, &node_msg) != 0)
 				exit(1);
@@ -132,7 +132,7 @@ static char *_part_state_str(int state)
 {
 	static char tmp[16];
 
-#ifdef HAVE_BGL_FILES
+#ifdef HAVE_BG_FILES
 	switch (state) {
 		case RM_PARTITION_BUSY:
 			return "BUSY";
@@ -154,25 +154,25 @@ static char *_part_state_str(int state)
 }
 
 /*
- * _bgl_report - download and print current bglblock state information
+ * _bg_report - download and print current bgblock state information
  */
-static int _bgl_report(void)
+static int _bg_report(void)
 {
-	static node_select_info_msg_t *old_bgl_ptr = NULL, *new_bgl_ptr;
+	static node_select_info_msg_t *old_bg_ptr = NULL, *new_bg_ptr;
 	int error_code, i;
 
-	if (old_bgl_ptr) {
-		error_code = slurm_load_node_select(old_bgl_ptr->last_update, 
-				&new_bgl_ptr);
+	if (old_bg_ptr) {
+		error_code = slurm_load_node_select(old_bg_ptr->last_update, 
+				&new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
-			select_g_free_node_info(&new_bgl_ptr);
+			select_g_free_node_info(&new_bg_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
-			new_bgl_ptr = old_bgl_ptr;
+			new_bg_ptr = old_bg_ptr;
 		}
 	} else {
 		error_code = slurm_load_node_select((time_t) NULL, 
-				&new_bgl_ptr);
+				&new_bg_ptr);
 	}
 	if (error_code) {
 		slurm_perror("slurm_load_node_select");
@@ -180,18 +180,18 @@ static int _bgl_report(void)
 	}
 
 	if (!params.no_header)
-		printf("BGL_BLOCK        NODES        OWNER    STATE    CONNECTION USE\n");
+		printf("BG_BLOCK        NODES        OWNER    STATE    CONNECTION USE\n");
 /*                      1234567890123456 123456789012 12345678 12345678 1234567890 12345+ */
-/*                      RMP_22Apr1544018 bgl[123x456] name     READY    TORUS      COPROCESSOR */
+/*                      RMP_22Apr1544018 bg[123x456] name     READY    TORUS      COPROCESSOR */
 
-	for (i=0; i<new_bgl_ptr->record_count; i++) {
+	for (i=0; i<new_bg_ptr->record_count; i++) {
 		printf("%-16.16s %-12.12s %-8.8s %-8.8s %-10.10s %s\n",
-			new_bgl_ptr->bgl_info_array[i].bgl_part_id,
-			new_bgl_ptr->bgl_info_array[i].nodes,
-			new_bgl_ptr->bgl_info_array[i].owner_name,
-			_part_state_str(new_bgl_ptr->bgl_info_array[i].state),
-			_conn_type_str(new_bgl_ptr->bgl_info_array[i].conn_type),
-			_node_use_str(new_bgl_ptr->bgl_info_array[i].node_use));
+			new_bg_ptr->bg_info_array[i].bg_block_id,
+			new_bg_ptr->bg_info_array[i].nodes,
+			new_bg_ptr->bg_info_array[i].owner_name,
+			_part_state_str(new_bg_ptr->bg_info_array[i].state),
+			_conn_type_str(new_bg_ptr->bg_info_array[i].conn_type),
+			_node_use_str(new_bg_ptr->bg_info_array[i].node_use));
 	}
 
 	return SLURM_SUCCESS;

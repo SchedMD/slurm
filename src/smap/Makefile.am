@@ -8,14 +8,14 @@
 AUTOMAKE_OPTIONS = foreign
 
 LIBS=$(NCURSES) 
-INCLUDES = -I$(top_srcdir) $(BGL_INCLUDES) 
+INCLUDES = -I$(top_srcdir) $(BG_INCLUDES) 
 
 if HAVE_SOME_CURSES
 
 bin_PROGRAMS = smap
 
 smap_LDADD = \
-	$(top_builddir)/src/partition_allocator/libpartition_allocator.la 
+	$(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la 
 
 noinst_HEADERS = smap.h 
 smap_SOURCES = smap.c \
@@ -26,7 +26,7 @@ force:
 $(smap_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-smap_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BGL_LDFLAGS) 
+smap_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BG_LDFLAGS) 
 
 else
 

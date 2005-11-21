@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  partition_allocator.h
+ *  block_allocator.h
  * 
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
@@ -24,8 +24,8 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef _PARTITION_ALLOCATOR_H_
-#define _PARTITION_ALLOCATOR_H_
+#ifndef _BLOCK_ALLOCATOR_H_
+#define _BLOCK_ALLOCATOR_H_
 /* This must be included first for AIX systems */
 #include "src/common/macros.h"
 
@@ -64,10 +64,10 @@
 
 #define NUM_PORTS_PER_NODE 6
 
-#ifdef HAVE_BGL
-#define PA_SYSTEM_DIMENSIONS 3
+#ifdef HAVE_BG
+#define BA_SYSTEM_DIMENSIONS 3
 #else
-#define PA_SYSTEM_DIMENSIONS 1
+#define BA_SYSTEM_DIMENSIONS 1
 #endif
 
 extern bool _initialized;
@@ -79,9 +79,9 @@ enum {X, Y, Z};
 enum {MESH, TORUS, SMALL};
 enum {COPROCESSOR, VIRTUAL};
 
-/* NOTE: Definition of bgl_info_record_t moved to src/api/node_select_info.h */
+/* NOTE: Definition of bg_info_record_t moved to src/api/node_select_info.h */
 
-extern List bgl_info_list;			/* List of BGL blocks */
+extern List bg_info_list;			/* List of BG blocks */
 
 /** 
  * structure that holds switch path information for finding the wiring 
@@ -94,11 +94,11 @@ extern List bgl_info_list;			/* List of BGL blocks */
  * 
  */
 typedef struct {
-	int geometry[PA_SYSTEM_DIMENSIONS];
+	int geometry[BA_SYSTEM_DIMENSIONS];
 	int dim;
 	int in; 
 	int out;
-} pa_path_switch_t; 
+} ba_path_switch_t; 
 
 /** 
  * structure that holds the configuration settings for each request
@@ -116,8 +116,8 @@ typedef struct {
  */
 typedef struct {
 	char *save_name;
-	int geometry[PA_SYSTEM_DIMENSIONS];
-	int start[PA_SYSTEM_DIMENSIONS];
+	int geometry[BA_SYSTEM_DIMENSIONS];
+	int start[BA_SYSTEM_DIMENSIONS];
 	int start_req;
 	int size; 
 	int conn_type;
@@ -127,7 +127,7 @@ typedef struct {
 	bool elongate; 
 	bool force_contig;
 	List elongate_geos;
-} pa_request_t; 
+} ba_request_t; 
 
 /** 
  * structure that holds the configuration settings for each connection
@@ -147,9 +147,9 @@ typedef struct
 	int port_tar;
 
 	/* target label */
-	int node_tar[PA_SYSTEM_DIMENSIONS];
+	int node_tar[BA_SYSTEM_DIMENSIONS];
 	bool used;	
-} pa_connection_t;
+} ba_connection_t;
 /** 
  * structure that holds the configuration settings for each switch
  * which pretty much means the wiring information 
@@ -161,21 +161,21 @@ typedef struct
  */
 typedef struct
 {
-	pa_connection_t int_wire[NUM_PORTS_PER_NODE];
-	pa_connection_t ext_wire[NUM_PORTS_PER_NODE];
+	ba_connection_t int_wire[NUM_PORTS_PER_NODE];
+	ba_connection_t ext_wire[NUM_PORTS_PER_NODE];
 
-} pa_switch_t;
+} ba_switch_t;
 
 /*
- * pa_node_t: node within the allocation system.
+ * ba_node_t: node within the allocation system.
  */
 typedef struct {
-	/* set if using this node in a partition*/
+	/* set if using this node in a block*/
 	bool used;
 
 	/* coordinates */
-	int coord[PA_SYSTEM_DIMENSIONS];
-	pa_switch_t axis_switch[PA_SYSTEM_DIMENSIONS];
+	int coord[BA_SYSTEM_DIMENSIONS];
+	ba_switch_t axis_switch[BA_SYSTEM_DIMENSIONS];
 	char letter;
 	int color;
 	int indecies;
@@ -183,7 +183,7 @@ typedef struct {
 	int conn_type;
 	int phys_x;
 	
-} pa_node_t;
+} ba_node_t;
 
 typedef struct {
 	int xcord;
@@ -197,43 +197,43 @@ typedef struct {
 #endif
 	time_t now_time;
 
-	/* made to hold info about a system, which right now is only a grid of pa_nodes*/
-#ifdef HAVE_BGL
-	pa_node_t ***grid;
+	/* made to hold info about a system, which right now is only a grid of ba_nodes*/
+#ifdef HAVE_BG
+	ba_node_t ***grid;
 #else
-	pa_node_t *grid;
+	ba_node_t *grid;
 #endif
-} pa_system_t;
+} ba_system_t;
 
-/* Used to Keep track of where the Base Partitions are at all times
+/* Used to Keep track of where the Base Blocks are at all times
    Rack and Midplane is the bp_id and XYZ is the coords.
 */
 
 typedef struct {
 	char *bp_id;
-	int coord[PA_SYSTEM_DIMENSIONS];	
-} pa_bp_map_t;
+	int coord[BA_SYSTEM_DIMENSIONS];	
+} ba_bp_map_t;
 
 /* Global */
 extern List bp_map_list;
 extern char letters[62];
 extern char colors[6];
-extern int DIM_SIZE[PA_SYSTEM_DIMENSIONS];
+extern int DIM_SIZE[BA_SYSTEM_DIMENSIONS];
 
-/* destroy a bgl_info_record_t */
-extern void destroy_bgl_info_record(void* object);
+/* destroy a bg_info_record_t */
+extern void destroy_bg_info_record(void* object);
 
 /**
- * create a partition request.  Note that if the geometry is given,
+ * create a block request.  Note that if the geometry is given,
  * then size is ignored.  If elongate is true, the algorithm will try
- * to fit that a partition of cubic shape and then it will try other
+ * to fit that a block of cubic shape and then it will try other
  * elongated geometries.  (ie, 2x2x2 -> 4x2x1 -> 8x1x1). Note that
  * size must be a power of 2, given 3 dimensions.
  * 
- * OUT - pa_request: structure to allocate and fill in.  
- * IN - geometry: requested geometry of partition
- * IN - size: requested size of partition
- * IN - rotate: if true, allows rotation of partition during fit
+ * OUT - ba_request: structure to allocate and fill in.  
+ * IN - geometry: requested geometry of block
+ * IN - size: requested size of block
+ * IN - rotate: if true, allows rotation of block during fit
  * IN - elongate: if true, will try to fit different geometries of
  *      same size requests
  * IN - contig: enforce contiguous regions constraint
@@ -241,59 +241,59 @@ extern void destroy_bgl_info_record(void* object);
  * 
  * return success of allocation/validation of params
  */
-extern int new_pa_request(pa_request_t* pa_request);
+extern int new_ba_request(ba_request_t* ba_request);
 
 /**
- * delete a partition request 
+ * delete a block request 
  */
-extern void delete_pa_request(pa_request_t* pa_request);
+extern void delete_ba_request(ba_request_t* ba_request);
 
 /**
- * print a partition request 
+ * print a block request 
  */
-extern void print_pa_request(pa_request_t* pa_request);
+extern void print_ba_request(ba_request_t* ba_request);
 
 /**
- * Initialize internal structures by either reading previous partition
+ * Initialize internal structures by either reading previous block
  * configurations from a file or by running the graph solver.
  * 
  * IN: dunno yet, probably some stuff denoting downed nodes, etc.
  * 
  * return: success or error of the intialization.
  */
-extern void pa_init();
+extern void ba_init();
 /**
  */
 extern void init_wires();
 /** 
  * destroy all the internal (global) data structs.
  */
-extern void pa_fini();
+extern void ba_fini();
 
 /** 
  * set the node in the internal configuration as unusable
  * 
  * IN c: coordinate of the node to put down
  */
-extern void pa_set_node_down(pa_node_t *pa_node);
+extern void ba_set_node_down(ba_node_t *ba_node);
 
 /** 
- * Try to allocate a partition.
+ * Try to allocate a block.
  * 
- * IN - pa_request: allocation request
+ * IN - ba_request: allocation request
  * OUT - results: List of results of the allocation request.  Each
- * list entry will be a coordinate.  allocate_part will create the
+ * list entry will be a coordinate.  allocate_block will create the
  * list, but the caller must destroy it.
  * 
  * return: success or error of request
  */
-extern int allocate_part(pa_request_t* pa_request, List results);
+extern int allocate_block(ba_request_t* ba_request, List results);
 
 /** 
  * Admin wants to remove a previous allocation.
  * will allow Admin to delete a previous allocation retrival by letter code.
  */
-extern int remove_part(List nodes, int new_count);
+extern int remove_block(List nodes, int new_count);
 
 /** 
  * Admin wants to change something about a previous allocation. 
@@ -301,19 +301,19 @@ extern int remove_part(List nodes, int new_count);
  * letter code for the allocation and the variable to alter
  *
  */
-extern int alter_part(List nodes, int conn_type);
+extern int alter_block(List nodes, int conn_type);
 
 /** 
- * After a partition is deleted or altered following allocations must
+ * After a block is deleted or altered following allocations must
  * be redone to make sure correct path will be used in the real system
  *
  */
-extern int redo_part(List nodes, int *geo, int conn_type, int new_count);
+extern int redo_block(List nodes, int *geo, int conn_type, int new_count);
 
-extern char *set_bgl_part(List results, int *start, 
+extern char *set_bg_block(List results, int *start, 
 			  int *geometry, int conn_type);
 
-extern int reset_pa_system();
+extern int reset_ba_system();
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 
@@ -323,7 +323,7 @@ extern void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_bp_map(void);
 
 /**
- * find a base partitions bgl location 
+ * find a base blocks bg location 
  */
 extern int *find_bp_loc(char* bp_id);
 
@@ -332,4 +332,4 @@ extern int *find_bp_loc(char* bp_id);
  */
 extern char *find_bp_rack_mid(char* xyz);
 
-#endif /* _PARTITION_ALLOCATOR_H_ */
+#endif /* _BLOCK_ALLOCATOR_H_ */

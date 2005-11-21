@@ -1,9 +1,9 @@
 /*****************************************************************************\
- *  slurm_ prolog.c - Wait until the specified partition is ready and owned by 
- *	this user. This is executed via SLURM to synchronize the user's job 
- *	execution with slurmctld configuration of partitions.
+ * slurm_ epilog.c - Wait until the specified partition is no longer ready and 
+ *      owned by this user. This is executed via SLURM to synchronize the 
+ *      user's job execution with slurmctld configuration of partitions.
  *
- *  $Id$
+ * $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -43,18 +43,14 @@
 
 #include "src/api/job_info.h"
 #include "src/common/hostlist.h"
-#include "src/common/node_select.h"
-#include "src/api/node_select_info.h"
 
 #define _DEBUG 0
 
 /*
- * Check the bglblock's status every POLL_SLEEP seconds. 
- * Retry for a period of MIN_DELAY + 
- * (INCR_DELAY * POLL_SLEEP * base partition count).
- * For example if MIN_DELAY=300 and INCR_DELAY=20 and POLL_SLEEP=3, 
- * wait up to 1260 seconds.
- * For a 16 base partition bglblock to be ready (300 + (20 * 3 * 16).
+ * Check the bgblock's status every POLL_SLEEP seconds. 
+ * Retry for a period of MIN_DELAY + (INCR_DELAY * base partition count).
+ * For example if MIN_DELAY=300 and INCR_DELAY=20, wait up to 428 seconds
+ * for a 16 base partition bgblock to ready (300 + 20 * 16).
  */ 
 #define POLL_SLEEP 3			/* retry interval in seconds  */
 #define MIN_DELAY  300			/* time in seconds */
@@ -62,18 +58,9 @@
 
 int max_delay = MIN_DELAY;
 int cur_delay = 0; 
-  
-enum rm_partition_state {RM_PARTITION_FREE, 
-			 RM_PARTITION_CONFIGURING,
-			 RM_PARTITION_READY,
-			 RM_PARTITION_BUSY,
-			 RM_PARTITION_DEALLOCATING,
-			 RM_PARTITION_ERROR,
-			 RM_PARTITION_NAV};
 
 static int  _get_job_size(uint32_t job_id);
-static int  _wait_part_ready(uint32_t job_id);
-static int  _partitions_dealloc();
+static void _wait_part_not_ready(uint32_t job_id);
 
 int main(int argc, char *argv[])
 {
@@ -83,37 +70,33 @@ int main(int argc, char *argv[])
 	job_id_char = getenv("SLURM_JOBID");		/* get SLURM job ID */
 	if (!job_id_char) {
 		fprintf(stderr, "SLURM_JOBID not set\n");
-		exit(1);				/* abort job */
+		exit(0);
 	}
 
 	job_id = (uint32_t) atol(job_id_char);
 	if (job_id == 0) {
 		fprintf(stderr, "SLURM_JOBID invalid: %s\n", job_id_char);
-		exit(1);				/* abort job */
+		exit(0);
 	}
 
-	if (_wait_part_ready(job_id) == 1)
-		exit(0);				/* Success */
-
-	exit(1);					/* abort job */
+	_wait_part_not_ready(job_id);
+	exit(0);
 }
 
-/* returns 1 if job and nodes are ready for job to begin, 0 otherwise */
-static int _wait_part_ready(uint32_t job_id)
+static void _wait_part_not_ready(uint32_t job_id)
 {
-	int is_ready = 0, i, rc;
-	
+	int is_ready = 1, i, rc;
+
 	max_delay = MIN_DELAY + (INCR_DELAY * _get_job_size(job_id));
 
 #if _DEBUG
-	printf("Waiting for job %u to become ready.", job_id);
+	printf("Waiting for job %u to be not ready.", job_id);
 #endif
 
 	for (i=0; (cur_delay < max_delay); i++) {
 		if (i) {
 			sleep(POLL_SLEEP);
-			if(_partitions_dealloc() == 0) 
-				cur_delay += POLL_SLEEP;
+			cur_delay += POLL_SLEEP;
 #if _DEBUG
 			printf(".");
 #endif
@@ -124,23 +107,21 @@ static int _wait_part_ready(uint32_t job_id)
 			break;				/* fatal error */
 		if (rc == READY_JOB_ERROR)		/* error */
 			continue;			/* retry */
-		if ((rc & READY_JOB_STATE) == 0)	/* job killed */
-			break;
-		if (rc & READY_NODE_STATE) {		/* job and node ready */
-			is_ready = 1;
+		if ((rc & READY_NODE_STATE) == 0) {
+			is_ready = 0;
 			break;
 		}
 	}
 
 #if _DEBUG
-	if (is_ready == 0)
+	if (is_ready == 1)
 		printf("\n");
 	else
-     		printf("\nJob %u is ready.\n", job_id);
+     		printf("\nJob %u is not ready.\n", job_id);
 #endif
-	if (is_ready == 0)
-		fprintf(stderr, "Job %u is not ready.\n", job_id);
-	return is_ready;
+	if (is_ready == 1)
+		fprintf(stderr, "Job %u is still ready.\n", job_id);
+
 }
 
 static int _get_job_size(uint32_t job_id)
@@ -172,44 +153,4 @@ static int _get_job_size(uint32_t job_id)
 	printf("Size is %d\n", size);
 #endif
 	return size;
-}
-
-/*
- * Test if any BGL blocks are in deallocating state 
- * RET	1:  deallocate in progress
- *	0:  no deallocate in progress
- *	-1: error occurred
- */
-static int _partitions_dealloc()
-{
-	static node_select_info_msg_t *bgl_info_ptr = NULL, *new_bgl_ptr = NULL;
-	int rc = 0, error_code = 0, i;
-	
-	if (bgl_info_ptr) {
-		error_code = slurm_load_node_select(bgl_info_ptr->last_update, 
-						   &new_bgl_ptr);
-		if (error_code == SLURM_SUCCESS)
-			select_g_free_node_info(&bgl_info_ptr);
-		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
-			error_code = SLURM_SUCCESS;
-			new_bgl_ptr = bgl_info_ptr;
-		}
-	} else {
-		error_code = slurm_load_node_select((time_t) NULL, &new_bgl_ptr);
-	}
-
-	if (error_code) {
-		fprintf(stderr, "slurm_load_partitions: %s\n",
-		       slurm_strerror(slurm_get_errno()));
-		return -1;
-	}
-	for (i=0; i<new_bgl_ptr->record_count; i++) {
-		if(new_bgl_ptr->bgl_info_array[i].state 
-		   == RM_PARTITION_DEALLOCATING) {
-			rc = 1;
-			break;
-		}
-	}
-	bgl_info_ptr = new_bgl_ptr;
-	return rc;
 }

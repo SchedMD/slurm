@@ -3299,7 +3299,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 #endif
 
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	if (job_specs->conn_type != (uint16_t) NO_VAL) {
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_CONN_TYPE,

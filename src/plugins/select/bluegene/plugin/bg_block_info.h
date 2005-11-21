@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  bgl_part_info.h - header for blue gene partition information.
+ *  bg_part_info.h - header for blue gene partition information.
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -23,14 +23,14 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef _BGL_PART_INFO_H_
-#define _BGL_PART_INFO_H_
+#ifndef _BG_PART_INFO_H_
+#define _BG_PART_INFO_H_
 
 #include "bluegene.h"
 
 /*****************************************************/
 extern int part_ready(struct job_record *job_ptr);
-extern void pack_partition(bgl_record_t *bgl_record, Buf buffer);
-extern int unpack_partition(bgl_info_record_t *bgl_info_record, Buf buffer);
+extern void pack_partition(bg_record_t *bg_record, Buf buffer);
+extern int unpack_partition(bg_info_record_t *bg_info_record, Buf buffer);
 extern int update_partition_list();
-#endif /* _BGL_PART_INFO_H_ */
+#endif /* _BG_PART_INFO_H_ */

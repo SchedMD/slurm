@@ -33,45 +33,45 @@ typedef struct {
 	int color;
 	char letter;
 	List nodes;
-	pa_request_t *request; 
-} allocated_part_t;
+	ba_request_t *request; 
+} allocated_block_t;
 
-static void	_delete_allocated_parts(List allocated_partitions);
-static allocated_part_t *_make_request(pa_request_t *request);
-static int	_create_allocation(char *com, List allocated_partitions);
+static void	_delete_allocated_blocks(List allocated_blocks);
+static allocated_block_t *_make_request(ba_request_t *request);
+static int	_create_allocation(char *com, List allocated_blocks);
 static int	_resolve(char *com);
 static int	_change_state_all_bps(char *com, int state);
 static int	_change_state_bps(char *com, int state);
-static int	_remove_allocation(char *com, List allocated_partitions);
-static int	_alter_allocation(char *com, List allocated_partitions);
-static int	_copy_allocation(char *com, List allocated_partitions);
-static int	_save_allocation(char *com, List allocated_partitions);
+static int	_remove_allocation(char *com, List allocated_blocks);
+static int	_alter_allocation(char *com, List allocated_blocks);
+static int	_copy_allocation(char *com, List allocated_blocks);
+static int	_save_allocation(char *com, List allocated_blocks);
 static void	_print_header_command(void);
-static void	_print_text_command(allocated_part_t *allocated_part);
+static void	_print_text_command(allocated_block_t *allocated_block);
 
 char error_string[255];
 
-static void _delete_allocated_parts(List allocated_partitions)
+static void _delete_allocated_blocks(List allocated_blocks)
 {
-	allocated_part_t *allocated_part = NULL;
+	allocated_block_t *allocated_block = NULL;
 	
-	while ((allocated_part = list_pop(allocated_partitions)) != NULL) {
-		remove_part(allocated_part->nodes,0);
-		list_destroy(allocated_part->nodes);
-		delete_pa_request(allocated_part->request);
-		xfree(allocated_part);
+	while ((allocated_block = list_pop(allocated_blocks)) != NULL) {
+		remove_block(allocated_block->nodes,0);
+		list_destroy(allocated_block->nodes);
+		delete_ba_request(allocated_block->request);
+		xfree(allocated_block);
 	}
-	list_destroy(allocated_partitions);
+	list_destroy(allocated_blocks);
 }
 
-static allocated_part_t *_make_request(pa_request_t *request)
+static allocated_block_t *_make_request(ba_request_t *request)
 {
 	List results = list_create(NULL);
 	ListIterator results_i;		
-	allocated_part_t *allocated_part = NULL;
-	pa_node_t *current = NULL;
+	allocated_block_t *allocated_block = NULL;
+	ba_node_t *current = NULL;
 	
-	if (!allocate_part(request, results)){
+	if (!allocate_block(request, results)){
 		memset(error_string,0,255);
 		sprintf(error_string,"allocate failure for %dx%dx%d", 
 			  request->geometry[0], request->geometry[1], 
@@ -79,30 +79,30 @@ static allocated_part_t *_make_request(pa_request_t *request)
 		return NULL;
 	} else {
 				
-		allocated_part = (allocated_part_t *)xmalloc(
-			sizeof(allocated_part_t));
-		allocated_part->request = request;
-		allocated_part->nodes = list_create(NULL);
+		allocated_block = (allocated_block_t *)xmalloc(
+			sizeof(allocated_block_t));
+		allocated_block->request = request;
+		allocated_block->nodes = list_create(NULL);
 		results_i = list_iterator_create(results);
 		while ((current = list_next(results_i)) != NULL) {
-			list_append(allocated_part->nodes,current);
-			allocated_part->color = current->color;
-			allocated_part->letter = current->letter;
+			list_append(allocated_block->nodes,current);
+			allocated_block->color = current->color;
+			allocated_block->letter = current->letter;
 		}
 		list_iterator_destroy(results_i);
 	}
 	list_destroy(results);
-	return(allocated_part);
+	return(allocated_block);
 
 }
 
-static int _create_allocation(char *com, List allocated_partitions)
+static int _create_allocation(char *com, List allocated_blocks)
 {
 	int i=6, geoi=-1, starti=-1, i2=0;
 	int len = strlen(com);
 	
-	allocated_part_t *allocated_part = NULL;
-	pa_request_t *request = (pa_request_t*) xmalloc(sizeof(pa_request_t)); 
+	allocated_block_t *allocated_block = NULL;
+	ba_request_t *request = (ba_request_t*) xmalloc(sizeof(ba_request_t)); 
 	
 	request->geometry[0] = -1;
 	request->conn_type=TORUS;
@@ -209,7 +209,7 @@ static int _create_allocation(char *com, List allocated_partitions)
 		  It will send a request back which we will throw into
 		  a list just incase we change something later.		   
 		*/
-		if(!new_pa_request(request)) {
+		if(!new_ba_request(request)) {
 			memset(error_string,0,255);
 			if(request->size!=-1) {
 				sprintf(error_string, 
@@ -230,9 +230,9 @@ static int _create_allocation(char *com, List allocated_partitions)
 					request->geometry[1], 
 					request->geometry[2]);
 		} else {
-			if((allocated_part = _make_request(request)) != NULL)
-				list_append(allocated_partitions, 
-					    allocated_part);
+			if((allocated_block = _make_request(request)) != NULL)
+				list_append(allocated_blocks, 
+					    allocated_block);
 			else {
 				i2 = strlen(error_string);
 				sprintf(error_string+i2,
@@ -262,7 +262,7 @@ geo_error_message:
 static int _resolve(char *com)
 {
 	int i=0;
-#ifdef HAVE_BGL_FILES
+#ifdef HAVE_BG_FILES
 	int len=strlen(com);
 	char *rack_mid = NULL;
 	int *coord = NULL;
@@ -274,9 +274,9 @@ static int _resolve(char *com)
 		com[i] = 'R';
 		
 	memset(error_string,0,255);		
-#ifdef HAVE_BGL_FILES
+#ifdef HAVE_BG_FILES
 	if (!have_db2) {
-		sprintf(error_string, "Must be on BGL SN to resolve\n"); 
+		sprintf(error_string, "Must be on BG SN to resolve\n"); 
 		goto resolve_error;
 	}
 
@@ -301,7 +301,7 @@ static int _resolve(char *com)
 		
 		if(coord)
 			sprintf(error_string, 
-				"%s resolves to X=%d Y=%d Z=%d or bgl%d%d%d\n",
+				"%s resolves to X=%d Y=%d Z=%d or bg%d%d%d\n",
 				com+i,coord[X],coord[Y],coord[Z],
 				coord[X],coord[Y],coord[Z]);
 		else
@@ -311,9 +311,9 @@ static int _resolve(char *com)
 resolve_error:
 #else
 			sprintf(error_string, 
-				"Must be on BGL SN to resolve.\n"); 
+				"Must be on BG SN to resolve.\n"); 
 #endif
-	wnoutrefresh(pa_system_ptr->text_win);
+	wnoutrefresh(ba_system_ptr->text_win);
 	doupdate();
 
 	return 1;
@@ -323,7 +323,7 @@ static int _change_state_all_bps(char *com, int state)
 	char allnodes[50];
 	memset(allnodes,0,50);
 		
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	sprintf(allnodes, "[000x%d%d%d]", 
 		DIM_SIZE[X]-1, DIM_SIZE[Y]-1, DIM_SIZE[Z]-1);
 #else
@@ -338,7 +338,7 @@ static int _change_state_bps(char *com, int state)
 	int i=1,x;
 	int len = strlen(com);
 	int start[SYSTEM_DIMENSIONS], end[SYSTEM_DIMENSIONS];
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	int number=0, y=0, z=0;
 #endif
 	char letter = '.';
@@ -361,7 +361,7 @@ static int _change_state_bps(char *com, int state)
 		return 0;
 	}
 		
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	if ((com[i]   == '[')
 	    && (com[i+8] == ']')
 	    && ((com[i+4] == 'x')
@@ -413,12 +413,12 @@ static int _change_state_bps(char *com, int state)
 	for(x=start[X];x<=end[X];x++) {
 		for(y=start[Y];y<=end[Y];y++) {
 			for(z=start[Z];z<=end[Z];z++) {
-				if(pa_system_ptr->grid[x][y][z].letter 
+				if(ba_system_ptr->grid[x][y][z].letter 
 				   != opposite)
 					continue;
-				pa_system_ptr->grid[x][y][z].color = 0;
-				pa_system_ptr->grid[x][y][z].letter = letter;
-				pa_system_ptr->grid[x][y][z].used = used;
+				ba_system_ptr->grid[x][y][z].color = 0;
+				ba_system_ptr->grid[x][y][z].letter = letter;
+				ba_system_ptr->grid[x][y][z].used = used;
 			}
 		}
 	}
@@ -450,15 +450,15 @@ static int _change_state_bps(char *com, int state)
 		goto error_message;
 
 	for(x=start[X];x<=end[X];x++) {
-		pa_system_ptr->grid[x].color = 0;
-		pa_system_ptr->grid[x].letter = letter;
-		pa_system_ptr->grid[x].used = used;
+		ba_system_ptr->grid[x].color = 0;
+		ba_system_ptr->grid[x].letter = letter;
+		ba_system_ptr->grid[x].used = used;
 	}	
 #endif
 	return 1;
 error_message:
 	memset(error_string,0,255);
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	sprintf(error_string, 
 		"Problem with nodes specified range was %d%d%dx%d%d%d",
 		start[X],start[Y],start[Z],
@@ -470,10 +470,10 @@ error_message:
 #endif	
 	return 0;
 }
-static int _remove_allocation(char *com, List allocated_partitions)
+static int _remove_allocation(char *com, List allocated_blocks)
 {
 	ListIterator results_i;
-	allocated_part_t *allocated_part = NULL;
+	allocated_block_t *allocated_block = NULL;
 	int i=6, found=0;
 	int len = strlen(com);
 	char letter;
@@ -490,12 +490,12 @@ static int _remove_allocation(char *com, List allocated_partitions)
 		return 0;
 	} else {
 		letter = com[i];
-		results_i = list_iterator_create(allocated_partitions);
-		while((allocated_part = list_next(results_i)) != NULL) {
+		results_i = list_iterator_create(allocated_blocks);
+		while((allocated_block = list_next(results_i)) != NULL) {
 			if(found) {
-				if(redo_part(allocated_part->nodes, 
-					     allocated_part->request->geometry,
-					     allocated_part->
+				if(redo_block(allocated_block->nodes, 
+					     allocated_block->request->geometry,
+					     allocated_block->
 					     request->conn_type, 
 					     color_count) == SLURM_ERROR) {
 					memset(error_string,0,255);
@@ -503,16 +503,16 @@ static int _remove_allocation(char *com, List allocated_partitions)
 						"problem redoing the part.");
 					return 0;
 				}
-				allocated_part->letter = 
+				allocated_block->letter = 
 					letters[color_count%62];
-				allocated_part->color =
+				allocated_block->color =
 					colors[color_count%6];
 				
-			} else if(allocated_part->letter == letter) {
+			} else if(allocated_block->letter == letter) {
 				found=1;
-				remove_part(allocated_part->nodes,color_count);
-				list_destroy(allocated_part->nodes);
-				delete_pa_request(allocated_part->request);
+				remove_block(allocated_block->nodes,color_count);
+				list_destroy(allocated_block->nodes);
+				delete_ba_request(allocated_block->request);
 				list_remove(results_i);
 				color_count--;
 			}
@@ -524,7 +524,7 @@ static int _remove_allocation(char *com, List allocated_partitions)
 	return 1;
 }
 
-static int _alter_allocation(char *com, List allocated_partitions)
+static int _alter_allocation(char *com, List allocated_blocks)
 {
 	int torus=TORUS, i=5, i2=0;
 	int len = strlen(com);
@@ -560,12 +560,12 @@ static int _alter_allocation(char *com, List allocated_partitions)
 	return 1;
 }
 
-static int _copy_allocation(char *com, List allocated_partitions)
+static int _copy_allocation(char *com, List allocated_blocks)
 {
 	ListIterator results_i;
-	allocated_part_t *allocated_part = NULL;
-	allocated_part_t *temp_part = NULL;
-	pa_request_t *request = NULL; 
+	allocated_block_t *allocated_block = NULL;
+	allocated_block_t *temp_block = NULL;
+	ba_request_t *request = NULL; 
 	
 	int i=0;
 	int len = strlen(com);
@@ -593,19 +593,19 @@ static int _copy_allocation(char *com, List allocated_partitions)
 		}
 	}
 
-	results_i = list_iterator_create(allocated_partitions);
-	while((allocated_part = list_next(results_i)) != NULL) {
-		temp_part = allocated_part;
-		if(allocated_part->letter != letter)
+	results_i = list_iterator_create(allocated_blocks);
+	while((allocated_block = list_next(results_i)) != NULL) {
+		temp_block = allocated_block;
+		if(allocated_block->letter != letter)
 			continue;
 		break;
 	}
 	list_iterator_destroy(results_i);
 	
 	if(!letter)
-		allocated_part = temp_part;
+		allocated_block = temp_block;
 	
-	if(!allocated_part) {
+	if(!allocated_block) {
 		memset(error_string,0,255);
 		sprintf(error_string, 
 			"Could not find requested record to copy");
@@ -613,16 +613,16 @@ static int _copy_allocation(char *com, List allocated_partitions)
 	}
 	
 	for(i=0;i<count;i++) {
-		request = (pa_request_t*) xmalloc(sizeof(pa_request_t)); 
+		request = (ba_request_t*) xmalloc(sizeof(ba_request_t)); 
 		
-		request->geometry[X] = allocated_part->request->geometry[X];
-		request->geometry[Y] = allocated_part->request->geometry[Y];
-		request->geometry[Z] = allocated_part->request->geometry[Z];
-		request->size = allocated_part->request->size;
-		request->conn_type=allocated_part->request->conn_type;
-		request->rotate =allocated_part->request->rotate;
-		request->elongate = allocated_part->request->elongate;
-		request->force_contig = allocated_part->request->force_contig;
+		request->geometry[X] = allocated_block->request->geometry[X];
+		request->geometry[Y] = allocated_block->request->geometry[Y];
+		request->geometry[Z] = allocated_block->request->geometry[Z];
+		request->size = allocated_block->request->size;
+		request->conn_type=allocated_block->request->conn_type;
+		request->rotate =allocated_block->request->rotate;
+		request->elongate = allocated_block->request->elongate;
+		request->force_contig = allocated_block->request->force_contig;
 				
 		request->rotate_count= 0;
 		request->elongate_count = 0;
@@ -639,7 +639,7 @@ static int _copy_allocation(char *com, List allocated_partitions)
 		}
 		list_iterator_destroy(results_i);
 		
-		if((allocated_part = _make_request(request)) == NULL) {
+		if((allocated_block = _make_request(request)) == NULL) {
 			memset(error_string,0,255);
 			sprintf(error_string, 
 				"Problem with the copy\n"
@@ -647,18 +647,18 @@ static int _copy_allocation(char *com, List allocated_partitions)
 			xfree(request);
 			return 0;
 		}
-		list_append(allocated_partitions, allocated_part);
+		list_append(allocated_blocks, allocated_block);
 		
 	}
 	return 1;
 	
 }
 
-static int _save_allocation(char *com, List allocated_partitions)
+static int _save_allocation(char *com, List allocated_blocks)
 {
 	int len = strlen(com);
 	int i=5, j=0;
-	allocated_part_t *allocated_part = NULL;
+	allocated_block_t *allocated_block = NULL;
 	char filename[20];
 	char save_string[255];
 	FILE *file_ptr = NULL;
@@ -681,9 +681,9 @@ static int _save_allocation(char *com, List allocated_partitions)
 			}
 		}
 	if(filename[0]=='\0') {
-		pa_system_ptr->now_time = time(NULL);		
+		ba_system_ptr->now_time = time(NULL);		
 		sprintf(filename,"bluegene.conf.%ld",
-			(long int) pa_system_ptr->now_time);
+			(long int) ba_system_ptr->now_time);
 	}
 	file_ptr = fopen(filename,"w");
 	if (file_ptr!=NULL) {
@@ -705,18 +705,18 @@ static int _save_allocation(char *com, List allocated_partitions)
 		fputs ("Numpsets=8\n", file_ptr);
 		fputs ("BridgeAPIVerbose=0\n", file_ptr);
 
-		results_i = list_iterator_create(allocated_partitions);
-		while((allocated_part = list_next(results_i)) != NULL) {
+		results_i = list_iterator_create(allocated_blocks);
+		while((allocated_block = list_next(results_i)) != NULL) {
 			memset(save_string,0,255);
-			if(allocated_part->request->conn_type == TORUS)
+			if(allocated_block->request->conn_type == TORUS)
 				conn_type = "TORUS";
-			else if(allocated_part->request->conn_type == MESH)
+			else if(allocated_block->request->conn_type == MESH)
 				conn_type = "MESH";
 			else
 				conn_type = "SMALL";
 			
 			sprintf(save_string, "Nodes=%s Type=%s\n", 
-				allocated_part->request->save_name, 
+				allocated_block->request->save_name, 
 				conn_type);
 			fputs (save_string,file_ptr);
 		}
@@ -727,84 +727,84 @@ static int _save_allocation(char *com, List allocated_partitions)
 
 static void _print_header_command(void)
 {
-	pa_system_ptr->ycord=2;
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "ID");
-	pa_system_ptr->xcord += 4;
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "TYPE");
-	pa_system_ptr->xcord += 7;
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "CONTIG");
-	pa_system_ptr->xcord += 7;
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "ROTATE");
-	pa_system_ptr->xcord += 7;
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "ELONG");
-	pa_system_ptr->xcord += 7;
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "NODES");
-	pa_system_ptr->xcord += 7;
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "NODELIST");
-	pa_system_ptr->xcord = 1;
-	pa_system_ptr->ycord++;
+	ba_system_ptr->ycord=2;
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "ID");
+	ba_system_ptr->xcord += 4;
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "TYPE");
+	ba_system_ptr->xcord += 7;
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "CONTIG");
+	ba_system_ptr->xcord += 7;
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "ROTATE");
+	ba_system_ptr->xcord += 7;
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "ELONG");
+	ba_system_ptr->xcord += 7;
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "NODES");
+	ba_system_ptr->xcord += 7;
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "NODELIST");
+	ba_system_ptr->xcord = 1;
+	ba_system_ptr->ycord++;
 }
 
-static void _print_text_command(allocated_part_t *allocated_part)
+static void _print_text_command(allocated_block_t *allocated_block)
 {
-	wattron(pa_system_ptr->text_win,
-		COLOR_PAIR(allocated_part->color));
+	wattron(ba_system_ptr->text_win,
+		COLOR_PAIR(allocated_block->color));
 			
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "%c",allocated_part->letter);
-	pa_system_ptr->xcord += 4;
-	if(allocated_part->request->conn_type==TORUS) 
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "TORUS");
-	else if (allocated_part->request->conn_type==MESH)
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "MESH");
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "%c",allocated_block->letter);
+	ba_system_ptr->xcord += 4;
+	if(allocated_block->request->conn_type==TORUS) 
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "TORUS");
+	else if (allocated_block->request->conn_type==MESH)
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "MESH");
 	else 
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "SMALL");
-	pa_system_ptr->xcord += 7;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "SMALL");
+	ba_system_ptr->xcord += 7;
 				
-	if(allocated_part->request->force_contig)
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "Y");
+	if(allocated_block->request->force_contig)
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "Y");
 	else
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "N");
-	pa_system_ptr->xcord += 7;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "N");
+	ba_system_ptr->xcord += 7;
 				
-	if(allocated_part->request->rotate)
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "Y");
+	if(allocated_block->request->rotate)
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "Y");
 	else
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "N");
-	pa_system_ptr->xcord += 7;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "N");
+	ba_system_ptr->xcord += 7;
 				
-	if(allocated_part->request->elongate)
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "Y");
+	if(allocated_block->request->elongate)
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "Y");
 	else
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "N");
-	pa_system_ptr->xcord += 7;
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "N");
+	ba_system_ptr->xcord += 7;
 
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "%d",allocated_part->request->size);
-	pa_system_ptr->xcord += 7;
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "%s",
-		  allocated_part->request->save_name);
-	pa_system_ptr->xcord = 1;
-	pa_system_ptr->ycord++;
-	wattroff(pa_system_ptr->text_win,
-		 COLOR_PAIR(allocated_part->color));
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "%d",allocated_block->request->size);
+	ba_system_ptr->xcord += 7;
+	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+		  ba_system_ptr->xcord, "%s",
+		  allocated_block->request->save_name);
+	ba_system_ptr->xcord = 1;
+	ba_system_ptr->ycord++;
+	wattroff(ba_system_ptr->text_win,
+		 COLOR_PAIR(allocated_block->color));
 	return;
 }
 
@@ -813,34 +813,34 @@ void get_command(void)
 	char com[255];
 	
 	int text_width, text_startx;
-	allocated_part_t *allocated_part = NULL;
+	allocated_block_t *allocated_block = NULL;
 	int i=0;
 	int count=0;
 	
 	WINDOW *command_win;
-        List allocated_partitions;
+        List allocated_blocks;
 	ListIterator results_i;
 		
 	if(params.commandline) {
 		printf("Configure won't work with commandline mode.\n");
 		printf("Please remove the -c from the commandline.\n");
-		pa_fini();
+		ba_fini();
 		exit(0);
 	}
 	init_wires();
-	allocated_partitions = list_create(NULL);
+	allocated_blocks = list_create(NULL);
 				
-	text_width = pa_system_ptr->text_win->_maxx;	
-	text_startx = pa_system_ptr->text_win->_begx;
+	text_width = ba_system_ptr->text_win->_maxx;	
+	text_startx = ba_system_ptr->text_win->_begx;
 	command_win = newwin(3, text_width - 1, LINES - 4, text_startx + 1);
 	echo();
 	
 	while (strcmp(com, "quit")) {
-		clear_window(pa_system_ptr->grid_win);
+		clear_window(ba_system_ptr->grid_win);
 		print_grid(0);
-		clear_window(pa_system_ptr->text_win);
-		box(pa_system_ptr->text_win, 0, 0);
-		box(pa_system_ptr->grid_win, 0, 0);
+		clear_window(ba_system_ptr->text_win);
+		box(ba_system_ptr->text_win, 0, 0);
+		box(ba_system_ptr->grid_win, 0, 0);
 		
 		if (!params.no_header)
 			_print_header_command();
@@ -849,38 +849,38 @@ void get_command(void)
 			i=0;
 			while(error_string[i]!='\0') {
 				if(error_string[i]=='\n') {
-					pa_system_ptr->ycord++;
-					pa_system_ptr->xcord=1;
+					ba_system_ptr->ycord++;
+					ba_system_ptr->xcord=1;
 					i++;
 				}
-				mvwprintw(pa_system_ptr->text_win, 
-					  pa_system_ptr->ycord,
-					  pa_system_ptr->xcord, 
+				mvwprintw(ba_system_ptr->text_win, 
+					  ba_system_ptr->ycord,
+					  ba_system_ptr->xcord, 
 					  "%c",
 					  error_string[i++]);
-				pa_system_ptr->xcord++;
+				ba_system_ptr->xcord++;
 			}
-			pa_system_ptr->ycord++;
-			pa_system_ptr->xcord=1;	
+			ba_system_ptr->ycord++;
+			ba_system_ptr->xcord=1;	
 			memset(error_string,0,255);			
 		}
-		results_i = list_iterator_create(allocated_partitions);
+		results_i = list_iterator_create(allocated_blocks);
 		
-		count = list_count(allocated_partitions) 
-			- (LINES-(pa_system_ptr->ycord+5)); 
+		count = list_count(allocated_blocks) 
+			- (LINES-(ba_system_ptr->ycord+5)); 
 		
 		if(count<0)
 			count=0;
 		i=0;
-		while((allocated_part = list_next(results_i)) != NULL) {
+		while((allocated_block = list_next(results_i)) != NULL) {
 			if(i>=count)
-				_print_text_command(allocated_part);
+				_print_text_command(allocated_block);
 			i++;
 		}
 		list_iterator_destroy(results_i);		
 		
-		wnoutrefresh(pa_system_ptr->text_win);
-		wnoutrefresh(pa_system_ptr->grid_win);
+		wnoutrefresh(ba_system_ptr->text_win);
+		wnoutrefresh(ba_system_ptr->grid_win);
 		doupdate();
 		clear_window(command_win);
 		
@@ -893,8 +893,8 @@ void get_command(void)
 		
 		if (!strcmp(com, "exit")) {
 			endwin();
-			_delete_allocated_parts(allocated_partitions);
-			pa_fini();
+			_delete_allocated_blocks(allocated_blocks);
+			ba_fini();
 			exit(0);
 		} if (!strcmp(com, "quit")) {
 			break;
@@ -902,13 +902,13 @@ void get_command(void)
 			   !strncasecmp(com, "r ", 2)) {
 			_resolve(com);
 		} else if (!strncasecmp(com, "resume", 6)) {
-			mvwprintw(pa_system_ptr->text_win,
-				pa_system_ptr->ycord,
-				pa_system_ptr->xcord, "%s", com);
+			mvwprintw(ba_system_ptr->text_win,
+				ba_system_ptr->ycord,
+				ba_system_ptr->xcord, "%s", com);
 		} else if (!strncasecmp(com, "drain", 5)) {
-			mvwprintw(pa_system_ptr->text_win, 
-				pa_system_ptr->ycord, 
-				pa_system_ptr->xcord, "%s", com);
+			mvwprintw(ba_system_ptr->text_win, 
+				ba_system_ptr->ycord, 
+				ba_system_ptr->xcord, "%s", com);
 		} else if (!strncasecmp(com, "alldown", 7)) {
 			_change_state_all_bps(com, NODE_STATE_DOWN);
 		} else if (!strncasecmp(com, "down", 4)) {
@@ -920,33 +920,33 @@ void get_command(void)
 		} else if (!strncasecmp(com, "remove", 6)
 			|| !strncasecmp(com, "delete", 6) 
 			|| !strncasecmp(com, "drop", 4)) {
-			_remove_allocation(com, allocated_partitions);
+			_remove_allocation(com, allocated_blocks);
 		} else if (!strncasecmp(com, "alter", 5)) {
-			_alter_allocation(com, allocated_partitions);
+			_alter_allocation(com, allocated_blocks);
 		} else if (!strncasecmp(com, "create", 6)) {
-			_create_allocation(com, allocated_partitions);
+			_create_allocation(com, allocated_blocks);
 		} else if (!strncasecmp(com, "copy", 4)
 			|| !strncasecmp(com, "c ", 2) 
 			|| !strncasecmp(com, "c\0", 2)) {
-			_copy_allocation(com, allocated_partitions);
+			_copy_allocation(com, allocated_blocks);
 		} else if (!strncasecmp(com, "save", 4)) {
-			_save_allocation(com, allocated_partitions);
+			_save_allocation(com, allocated_blocks);
 		} else if (!strncasecmp(com, "clear all", 9)
 			|| !strncasecmp(com, "clear", 5)) {
-			_delete_allocated_parts(allocated_partitions);
-			allocated_partitions = list_create(NULL);
+			_delete_allocated_blocks(allocated_blocks);
+			allocated_blocks = list_create(NULL);
 		} else {
 			memset(error_string,0,255);
 			sprintf(error_string, "Unknown command '%s'",com);
 		}
 	}
-	_delete_allocated_parts(allocated_partitions);
+	_delete_allocated_blocks(allocated_blocks);
 	params.display = 0;
 	noecho();
 	
-	clear_window(pa_system_ptr->text_win);
-	pa_system_ptr->xcord = 1;
-	pa_system_ptr->ycord = 1;
+	clear_window(ba_system_ptr->text_win);
+	ba_system_ptr->xcord = 1;
+	ba_system_ptr->ycord = 1;
 	print_date();
 	get_job(0);
 	return;

@@ -39,17 +39,17 @@
 typedef struct {
 	char *nodes;
 	char *owner_name;
-	char *bgl_part_id;
+	char *bg_block_id;
 	int state;
 	int conn_type;
 	int node_use;
 	int quarter;
-} bgl_info_record_t;
+} bg_info_record_t;
 
 typedef struct {
 	time_t    last_update;
 	uint32_t  record_count;
-	bgl_info_record_t *bgl_info_array;
+	bg_info_record_t *bg_info_array;
 } node_select_info_msg_t;
 
 /*

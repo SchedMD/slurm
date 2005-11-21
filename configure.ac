@@ -100,7 +100,7 @@ LDFLAGS="$LDFLAGS "
 CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 LIBS="$PTHREAD_LIBS $LIBS"
 
-X_AC_BGL
+X_AC_BLUEGENE
 X_AC_SLURM_SEMAPHORE
 
 X_AC_NCURSES
@@ -197,7 +197,6 @@ AC_CONFIG_FILES([Makefile
 		 src/squeue/Makefile
 		 src/sinfo/Makefile
 		 src/smap/Makefile
-		 src/partition_allocator/Makefile
 		 src/plugins/Makefile
 		 src/plugins/auth/Makefile
 		 src/plugins/auth/authd/Makefile
@@ -226,6 +225,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/sched/maui/wiki/Makefile
 		 src/plugins/select/Makefile
 		 src/plugins/select/bluegene/Makefile
+		 src/plugins/select/bluegene/block_allocator/Makefile
+		 src/plugins/select/bluegene/plugin/Makefile
 		 src/plugins/select/linear/Makefile
 		 src/plugins/select/cons_res/Makefile
 		 src/plugins/switch/Makefile

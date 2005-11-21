@@ -30,52 +30,52 @@
 extern int set_grid(int start, int end, int count)
 {
 	int x;
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	int y, z;
 	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
 		for (z = 0; z < DIM_SIZE[Z]; z++) {
 			for (x = 0; x < DIM_SIZE[X]; x++) {
-				if ((pa_system_ptr->grid[x][y][z].indecies 
+				if ((ba_system_ptr->grid[x][y][z].indecies 
 				     < start)
-				||  (pa_system_ptr->grid[x][y][z].indecies 
+				||  (ba_system_ptr->grid[x][y][z].indecies 
 				     > end)) 
 					continue;
-				if ((pa_system_ptr->grid[x][y][z].state 
+				if ((ba_system_ptr->grid[x][y][z].state 
 				     == NODE_STATE_DOWN)
-				    ||  (pa_system_ptr->grid[x][y][z].state 
+				    ||  (ba_system_ptr->grid[x][y][z].state 
 					 & NODE_STATE_DRAIN))
 					continue;
 				
-				pa_system_ptr->grid[x][y][z].letter = 
+				ba_system_ptr->grid[x][y][z].letter = 
 					letters[count%62];
-				pa_system_ptr->grid[x][y][z].color = 
+				ba_system_ptr->grid[x][y][z].color = 
 					colors[count%6];
 			}
 		}
 	}
 #else
 	for (x = 0; x < DIM_SIZE[X]; x++) {
-		if ((pa_system_ptr->grid[x].indecies < start)
-		    ||  (pa_system_ptr->grid[x].indecies > end)) 
+		if ((ba_system_ptr->grid[x].indecies < start)
+		    ||  (ba_system_ptr->grid[x].indecies > end)) 
 			continue;
-		if ((pa_system_ptr->grid[x].state == NODE_STATE_DOWN)
-		    ||  (pa_system_ptr->grid[x].state & NODE_STATE_DRAIN))
+		if ((ba_system_ptr->grid[x].state == NODE_STATE_DOWN)
+		    ||  (ba_system_ptr->grid[x].state & NODE_STATE_DRAIN))
 			continue;
 
-		pa_system_ptr->grid[x].letter = 
+		ba_system_ptr->grid[x].letter = 
 			letters[count%62];
-		pa_system_ptr->grid[x].color = 
+		ba_system_ptr->grid[x].color = 
 			colors[count%6];
 	}
 #endif
 	return 1;
 }
 
-extern int set_grid_bgl(int *start, int *end, int count, int set)
+extern int set_grid_bg(int *start, int *end, int count, int set)
 {
 	int x=0;
 	int i = 0;
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	int y=0, z=0;
 #endif
 	assert(end[X] < DIM_SIZE[X]);
@@ -83,7 +83,7 @@ extern int set_grid_bgl(int *start, int *end, int count, int set)
 	assert(count >= 0);
 	assert(set >= 0);
 	assert(set <= 2);
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	assert(end[Y] < DIM_SIZE[Y]);
 	assert(start[Y] >= 0);
 	assert(end[Z] < DIM_SIZE[Z]);
@@ -93,10 +93,10 @@ extern int set_grid_bgl(int *start, int *end, int count, int set)
 		for (y = start[Y]; y <= end[Y]; y++) {
 			for (z = start[Z]; z <= end[Z]; z++) {
 				if(!set) {
-					if(pa_system_ptr->grid[x][y][z].letter != '#') {
-						pa_system_ptr->grid[x][y][z].letter = 
+					if(ba_system_ptr->grid[x][y][z].letter != '#') {
+						ba_system_ptr->grid[x][y][z].letter = 
 							letters[count%62];
-						pa_system_ptr->grid[x][y][z].color = 
+						ba_system_ptr->grid[x][y][z].color = 
 							colors[count%6];
 					}
 				}
@@ -107,9 +107,9 @@ extern int set_grid_bgl(int *start, int *end, int count, int set)
 #else
 	for (x = start[X]; x <= end[X]; x++) {
 		if(!set) {
-			pa_system_ptr->grid[x].letter = 
+			ba_system_ptr->grid[x].letter = 
 				letters[count%62];
-			pa_system_ptr->grid[x].color = 
+			ba_system_ptr->grid[x].color = 
 				colors[count%6];
 		}
 		i++;
@@ -126,7 +126,7 @@ extern void print_grid(int dir)
 	int x;
 	int grid_xcord, grid_ycord = 2;
 
-#ifdef HAVE_BGL
+#ifdef HAVE_BG
 	int y, z, offset = DIM_SIZE[Z];
 	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
 		offset = DIM_SIZE[Z] + 1;
@@ -134,28 +134,28 @@ extern void print_grid(int dir)
 			grid_xcord = offset;
 
 			for (x = 0; x < DIM_SIZE[X]; x++) {
-				if (pa_system_ptr->grid[x][y][z].color)
-					init_pair(pa_system_ptr->
+				if (ba_system_ptr->grid[x][y][z].color)
+					init_pair(ba_system_ptr->
 						  grid[x][y][z].color,
-						  pa_system_ptr->
+						  ba_system_ptr->
 						  grid[x][y][z].color,
 						  COLOR_BLACK);
 				else
-					init_pair(pa_system_ptr->
+					init_pair(ba_system_ptr->
 						  grid[x][y][z].color,
-						  pa_system_ptr->
+						  ba_system_ptr->
 						  grid[x][y][z].color, 
                                                   7);
 
-				wattron(pa_system_ptr->grid_win,
-					COLOR_PAIR(pa_system_ptr->
+				wattron(ba_system_ptr->grid_win,
+					COLOR_PAIR(ba_system_ptr->
 						   grid[x][y][z].color));
 
-				mvwprintw(pa_system_ptr->grid_win,
+				mvwprintw(ba_system_ptr->grid_win,
 					  grid_ycord, grid_xcord, "%c",
-					  pa_system_ptr->grid[x][y][z].letter);
-				wattroff(pa_system_ptr->grid_win,
-					 COLOR_PAIR(pa_system_ptr->
+					  ba_system_ptr->grid[x][y][z].letter);
+				wattroff(ba_system_ptr->grid_win,
+					 COLOR_PAIR(ba_system_ptr->
 						    grid[x][y][z].color));
 				grid_xcord++;
 			}
@@ -169,30 +169,30 @@ extern void print_grid(int dir)
 	grid_ycord=1;
 
 	for (x = dir; x < DIM_SIZE[X]; x++) {
-		if (pa_system_ptr->grid[x].color)
-			init_pair(pa_system_ptr->grid[x].color,
-				  pa_system_ptr->grid[x].color,
+		if (ba_system_ptr->grid[x].color)
+			init_pair(ba_system_ptr->grid[x].color,
+				  ba_system_ptr->grid[x].color,
 				  COLOR_BLACK);
 		else
-			init_pair(pa_system_ptr->grid[x].color,
-				  pa_system_ptr->grid[x].color, 
+			init_pair(ba_system_ptr->grid[x].color,
+				  ba_system_ptr->grid[x].color, 
 				  7);
 		
-		wattron(pa_system_ptr->grid_win,
-			COLOR_PAIR(pa_system_ptr->grid[x].color));
+		wattron(ba_system_ptr->grid_win,
+			COLOR_PAIR(ba_system_ptr->grid[x].color));
 		
-		mvwprintw(pa_system_ptr->grid_win,
+		mvwprintw(ba_system_ptr->grid_win,
 			  grid_ycord, grid_xcord, "%c",
-			  pa_system_ptr->grid[x].letter);
-		wattroff(pa_system_ptr->grid_win,
-			 COLOR_PAIR(pa_system_ptr->grid[x].color));
+			  ba_system_ptr->grid[x].letter);
+		wattroff(ba_system_ptr->grid_win,
+			 COLOR_PAIR(ba_system_ptr->grid[x].color));
 		
 		grid_xcord++;
-		if(grid_xcord==pa_system_ptr->grid_win->_maxx) {
+		if(grid_xcord==ba_system_ptr->grid_win->_maxx) {
 			grid_xcord=1;
 			grid_ycord++;
 		}
-		if(grid_ycord==pa_system_ptr->grid_win->_maxy) {
+		if(grid_ycord==ba_system_ptr->grid_win->_maxy) {
 			break;
 		}
 	}

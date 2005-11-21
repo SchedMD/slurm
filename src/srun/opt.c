@@ -1678,7 +1678,7 @@ static void _usage(void)
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "            [--mpi=type] [--account=name] [--dependency=jobid]\n"
 "            [--kill-on-bad-exit] [--propagate[=rlimits] ]\n"
-#ifdef HAVE_BGL		/* Blue gene specific options */
+#ifdef HAVE_BG		/* Blue gene specific options */
 "            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
 #endif
 "            [--mail-type=type] [mail-user=user]\n"
@@ -1766,7 +1766,7 @@ static void _help(void)
   "\n"
 #endif
 
-#ifdef HAVE_BGL				/* Blue gene specific options */
+#ifdef HAVE_BG				/* Blue gene specific options */
   "Blue Gene related options:\n"
   "  -g, --geometry=XxYxZ        geometry constraints of the job\n"
   "  -R, --no-rotate             disable geometry rotation\n"
