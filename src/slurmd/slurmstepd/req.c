@@ -621,7 +621,11 @@ _handle_attach(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	if ((uid != job->uid) && !_slurm_authorized_user(uid)) {
+	/*
+	 * At the moment, it only makes sense for the slurmd to make this
+	 * call, so only _slurm_authorized_user is allowed.
+	 */
+	if (!_slurm_authorized_user(uid)) {
 		error("uid %ld attempt to attach to job %u.%u owned by %ld",
 		      (long) uid, job->jobid, job->stepid, (long)job->uid);
 		rc = EPERM;
