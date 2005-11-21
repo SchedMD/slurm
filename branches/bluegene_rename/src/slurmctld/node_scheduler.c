@@ -285,7 +285,7 @@ _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 	 * to this job */
 	if (job_ptr->details && job_ptr->details->req_node_bitmap)
 		bit_or(bitmap, job_ptr->details->req_node_bitmap);
-	info("hey choosing here\n");
+	
 	error_code = select_g_job_test(job_ptr, bitmap, 
 			min_nodes, max_nodes);
 
