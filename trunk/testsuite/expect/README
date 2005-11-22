@@ -262,15 +262,15 @@ test10.1   Confirm smap usage option works (--usage option).
 test10.2   Confirm smap help option works (--help option).
 test10.3   Test slurm partition information (-Ds option).
 test10.4   Test slurm partition information, in command mode (-Ds -c option).
-test10.5   Test bgl partition information (-Db option).
-test10.6   Test bgl partition information, in command mode (-Db -c option).
+test10.5   Test bg partition information (-Db option).
+test10.6   Test bg partition information, in command mode (-Db -c option).
 test10.7   Test job information, (-Dj option).
 test10.8   Test job information, in commandline mode (-Dj -c option).
 test10.9   Test smap iteration (--iterate option).
 test10.10  Check smap output without header (--noheader option).
 test10.11  Confirm that smap reports a proper version number 
            (--version option).
-test10.12  Test bgl base partition XYZ to Rack Midplane and back 
+test10.12  Test bg base partition XYZ to Rack Midplane and back 
            resolution (--resolve option).
 test10.13  Test bluegene.conf file creation and validate it (-Dc option).
 

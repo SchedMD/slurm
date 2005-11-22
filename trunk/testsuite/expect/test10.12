@@ -34,7 +34,7 @@ source ./globals
 set test_id     "10.12"
 set exit_code   0
 set check       0
-set non_bgl     0
+set non_bg     0
 
 print_header $test_id
 
@@ -44,8 +44,8 @@ print_header $test_id
 #
 spawn $smap --resolve 000
 expect {
-	-re "must be on BGL SN to resolve." {
-		set non_bgl 1
+	-re "must be on BG SN to resolve." {
+		set non_bg 1
 		exp_continue;
 	}
 	-re "resolves" {
@@ -61,7 +61,7 @@ expect {
 		wait
 	}
 }
-if {$non_bgl != 0} {
+if {$non_bg != 0} {
 	send_user "\nWARNING: This test is only valid on a Blue Gene system Service Node\n"
 	exit 0
 }
@@ -78,7 +78,7 @@ if {$exit_code != 1} {
 	#
 	spawn $smap --resolve R000
 	expect {
-		-re "must be on BGL SN to resolve." {
+		-re "must be on BG SN to resolve." {
 			send_user "\nERROR: This test is only valid on a Blue Gene system Service Node\n"
 			exit 0
 		}
