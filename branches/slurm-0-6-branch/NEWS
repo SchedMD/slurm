@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
  -- Wiki plugin fix for tracking allocated nodes (Ernest Artiaga, BSC).
  -- Fix memory leaks in slurmctld and federation plugin.
  -- Fix sefault in federation plugin function fed_libstate_clear().
+ -- Align job accounting data (Andy Riebs, slurm.hp.unal_jobacct.patch)
 
 * Changes in SLURM 0.6.8
 ========================
