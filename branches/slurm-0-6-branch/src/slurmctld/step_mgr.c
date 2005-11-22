@@ -109,6 +109,8 @@ delete_all_step_records (struct job_record *job_ptr)
 		xfree(step_ptr->name);
 		xfree(step_ptr->step_node_list);
 		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
+		if (step_ptr->network)
+			xfree(step_ptr->network);
 		xfree(step_ptr);
 	}		
 
@@ -152,6 +154,8 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 			xfree(step_ptr->name);
 			xfree(step_ptr->step_node_list);
 			FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
+			if (step_ptr->network)
+				xfree(step_ptr->network);
 			xfree(step_ptr);
 			error_code = 0;
 			break;
