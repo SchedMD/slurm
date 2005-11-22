@@ -602,7 +602,7 @@ _handle_attach(int fd, slurmd_job_t *job, uid_t uid)
 	int rc = SLURM_SUCCESS;
 	int sig_len;
 
-	debug("_handle_request_attach for job %u.%u", job->jobid, job->stepid);
+	debug("_handle_attach for job %u.%u", job->jobid, job->stepid);
 
 	srun       = xmalloc(sizeof(*srun));
 	srun->key  = (srun_key_t *)xmalloc(sizeof(SLURM_CRED_SIGLEN));
