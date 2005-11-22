@@ -1661,6 +1661,8 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 		node = _find_node(fed_state, host);
 		jp->tables_per_task = node ? node->adapter_count : 0;
 		_unlock();
+		if (host != NULL)
+			free(host);
 		hostlist_iterator_reset(hi);
 	} else {
 		jp->tables_per_task = 1;
@@ -2437,10 +2439,12 @@ fed_libstate_clear(void)
 			continue;
 		for (j = 0; j < node->adapter_count; j++) {
 			adapter = &node->adapter_list[i];
-			if (!adapter->window_list)
+			if (!adapter || !adapter->window_list)
 				continue;
 			for (k = 0; k < adapter->window_count; k++) {
 				window = &adapter->window_list[k];
+				if (!window)
+					continue;
 				window->status = NTBL_UNLOADED_STATE;
 			}
 		}
