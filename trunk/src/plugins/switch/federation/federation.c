@@ -123,7 +123,6 @@ struct fed_jobinfo {
 	char job_desc[DESCLEN];
 	uint32_t window_memory;
 	uint8_t bulk_xfer;  /* flag */
-	uint8_t cyclic;     /* flag */
 	uint16_t tables_per_task;
 	fed_tableinfo_t *tableinfo;
 };
@@ -1579,7 +1578,11 @@ _job_step_window_state(fed_jobinfo_t *jp, hostlist_t hl, enum NTBL_RC state)
 	int nnodes;
 	int i, j;
 	int rc;
-
+	int task_cnt;
+	int full_node_cnt;
+	int min_procs_per_node;
+	int max_procs_per_node;
+	
 	xassert(!hostlist_is_empty(hl));
 	xassert(jp);
 	xassert(jp->magic == FED_JOBINFO_MAGIC);
@@ -1598,57 +1601,35 @@ _job_step_window_state(fed_jobinfo_t *jp, hostlist_t hl, enum NTBL_RC state)
 	nprocs = jp->tableinfo[0].table_length;
 	hi = hostlist_iterator_create(hl);
 
-	if (jp->cyclic) {
-		_lock();
-		for (proc_cnt = 0; proc_cnt < nprocs; proc_cnt++) {
-			host = hostlist_next(hi);
-			if(!host) {
-				hostlist_iterator_reset(hi);
-				host = hostlist_next(hi);
-			}
+	debug("Allocating windows");
+	nnodes = hostlist_count(hl);
+	full_node_cnt = nprocs % nnodes;
+	min_procs_per_node = nprocs / nnodes;
+	max_procs_per_node = (nprocs + nnodes - 1) / nnodes;
+	
+	proc_cnt = 0;
+	_lock();
+	for  (i = 0; i < nnodes; i++) {
+		host = hostlist_next(hi);
+		if(!host)
+			error("Failed to get next host");
+		
+		if(i < full_node_cnt)
+			task_cnt = max_procs_per_node;
+		else
+			task_cnt = min_procs_per_node;
+		
+		for (j = 0; j < task_cnt; j++) {
 			rc = _window_state_set(jp->tables_per_task,
 					       jp->tableinfo,
 					       host, proc_cnt,
 					       state);
-			free(host);
+			proc_cnt++;
 		}
-		_unlock();
-	} else {
-		int task_cnt;
-		int full_node_cnt;
-		int min_procs_per_node;
-		int max_procs_per_node;
-
-		debug("Allocating windows in block mode");
-		nnodes = hostlist_count(hl);
-		full_node_cnt = nprocs % nnodes;
-		min_procs_per_node = nprocs / nnodes;
-		max_procs_per_node = (nprocs + nnodes - 1) / nnodes;
-	
-		proc_cnt = 0;
-		_lock();
-		for  (i = 0; i < nnodes; i++) {
-			host = hostlist_next(hi);
-			if(!host)
-				error("Failed to get next host");
-
-			if(i < full_node_cnt)
-				task_cnt = max_procs_per_node;
-			else
-				task_cnt = min_procs_per_node;
-			
-			for (j = 0; j < task_cnt; j++) {
-				rc = _window_state_set(jp->tables_per_task,
-						       jp->tableinfo,
-						       host, proc_cnt,
-						       state);
-				proc_cnt++;
-			}
-			free(host);
-		}
-		_unlock();
+		free(host);
 	}
-
+	_unlock();
+	
 	hostlist_iterator_destroy(hi);
 	return SLURM_SUCCESS;
 }
@@ -1682,14 +1663,14 @@ fed_job_step_allocated(fed_jobinfo_t *jp, hostlist_t hl)
 
 
 /* Setup everything for the job.  Assign tasks across
- * nodes in a block or cyclic fashion and create the network table used
+ * nodes based on the hostlist given and create the network table used
  * on all nodes of the job.
  *
  * Used by: slurmctld
  */
 int
 fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
-		  int cyclic, bool sn_all, int bulk_xfer)
+		  bool sn_all, int bulk_xfer)
 {
 	int nnodes;
 	hostlist_iterator_t hi;
@@ -1699,7 +1680,11 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 	int i, j;
 	fed_nodeinfo_t *node;
 	int rc;
-	
+	int task_cnt;
+	int full_node_cnt;
+	int min_procs_per_node;
+	int max_procs_per_node;
+
 	assert(jp);
 	assert(jp->magic == FED_JOBINFO_MAGIC);
 	assert(!hostlist_is_empty(hl));
@@ -1707,7 +1692,6 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 	if(nprocs <= 0)
 		slurm_seterrno_ret(EINVAL);
 
-	jp->cyclic = (uint8_t) cyclic;
 	jp->bulk_xfer = (uint8_t) bulk_xfer;
 	jp->job_key = _next_key();
 	snprintf(jp->job_desc, DESCLEN,
@@ -1746,17 +1730,24 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 		}
 	}
 
-
-	if (cyclic) {
-		/* Allocate tables for one process per node at a time */
-		debug("Allocating windows in cyclic mode");
-		_lock();
-		for (proc_cnt = 0; proc_cnt < nprocs; proc_cnt++) {
-			host = hostlist_next(hi);
-			if(!host) {
-				hostlist_iterator_reset(hi);
-				host = hostlist_next(hi);
-			}
+	debug("Allocating windows");
+	nnodes = hostlist_count(hl);
+	full_node_cnt = nprocs % nnodes;
+	min_procs_per_node = nprocs / nnodes;
+	max_procs_per_node = (nprocs + nnodes - 1) / nnodes;
+	proc_cnt = 0;
+	_lock();
+	for  (i = 0; i < nnodes; i++) {
+		host = hostlist_next(hi);
+		if(!host)
+			error("Failed to get next host");
+		
+		if(i < full_node_cnt)
+			task_cnt = max_procs_per_node;
+		else
+			task_cnt = min_procs_per_node;
+		
+		for (j = 0; j < task_cnt; j++) {
 			rc = _allocate_windows(jp->tables_per_task,
 					       jp->tableinfo,
 					       host, proc_cnt);
@@ -1764,46 +1755,12 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 				_unlock();
 				goto fail;
 			}
-			free(host);
+			proc_cnt++;
 		}
-		_unlock();
-	} else {
-		int task_cnt;
-		int full_node_cnt;
-		int min_procs_per_node;
-		int max_procs_per_node;
-
-		debug("Allocating windows in non-cyclic mode");
-		nnodes = hostlist_count(hl);
-		full_node_cnt = nprocs % nnodes;
-		min_procs_per_node = nprocs / nnodes;
-		max_procs_per_node = (nprocs + nnodes - 1) / nnodes;
-		proc_cnt = 0;
-		_lock();
-		for  (i = 0; i < nnodes; i++) {
-			host = hostlist_next(hi);
-			if(!host)
-				error("Failed to get next host");
-
-			if(i < full_node_cnt)
-				task_cnt = max_procs_per_node;
-			else
-				task_cnt = min_procs_per_node;
-						
-			for (j = 0; j < task_cnt; j++) {
-				rc = _allocate_windows(jp->tables_per_task,
-						       jp->tableinfo,
-						       host, proc_cnt);
-				if (rc != SLURM_SUCCESS) {
-					_unlock();
-					goto fail;
-				}
-				proc_cnt++;
-			}
-			free(host);
-		}
-		_unlock();
+		free(host);
 	}
+	_unlock();
+	
 
 #if FED_DEBUG
 	_print_table(jp->tableinfo[i].table, jp->tableinfo[i].table_length);
@@ -1848,7 +1805,6 @@ fed_pack_jobinfo(fed_jobinfo_t *j, Buf buf)
 	packmem(j->job_desc, DESCLEN, buf);
 	pack32(j->window_memory, buf);
 	pack8(j->bulk_xfer, buf);
-	pack8(j->cyclic, buf);
 	pack16(j->tables_per_task, buf);
 	for (i = 0; i < j->tables_per_task; i++) {
 		_pack_tableinfo(&j->tableinfo[i], buf);
@@ -1903,7 +1859,6 @@ fed_unpack_jobinfo(fed_jobinfo_t *j, Buf buf)
 		goto unpack_error;
 	safe_unpack32(&j->window_memory, buf);
 	safe_unpack8(&j->bulk_xfer, buf);
-	safe_unpack8(&j->cyclic, buf);
 	safe_unpack16(&j->tables_per_task, buf);
 
 	j->tableinfo = (fed_tableinfo_t *) xmalloc(j->tables_per_task
