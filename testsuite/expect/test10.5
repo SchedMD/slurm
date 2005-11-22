@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Check BGL partition display in smap in curses mode 
+#          Check BG partition display in smap in curses mode 
 #          (-Db option).
 # 
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -35,13 +35,13 @@ source ./globals
 set test_id       "10.5"
 set exit_code     0
 set matches       0
-set non_bgl       0
+set non_bg       0
 set too_small     0
 
 print_header $test_id
 
 #
-# Check the smap format of header for displaying bgl partitions
+# Check the smap format of header for displaying bg partitions
 # in curses format.
 #
  
@@ -51,8 +51,8 @@ expect {
 		set too_small 1
 		exp_continue
 	}
-	-re "BGL SYSTEM" {
-		set non_bgl 1
+	-re "BG SYSTEM" {
+		set non_bg 1
 		exp_continue
 	}	
 	-re "ID" {
@@ -63,7 +63,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "BGL_BLOCK" {
+	-re "BG_BLOCK" {
 		incr matches
 		exp_continue
 	}
@@ -105,12 +105,12 @@ if {$too_small != 0} {
 	send_user "\nWARNING: Screen is too small for test.\n"
 	exit 0
 }
-if {$non_bgl != 0} {
-	send_user "\nWARNING: Must be on a BGL SYSTEM to run this command\n"
+if {$non_bg != 0} {
+	send_user "\nWARNING: Must be on a BG SYSTEM to run this command\n"
 	exit 0
 }
 if {$matches != 9} {
-	send_user "\nFAILURE: smap bgl partition display in curses mode\n"
+	send_user "\nFAILURE: smap bg partition display in curses mode\n"
 	set exit_code 1
 }
 

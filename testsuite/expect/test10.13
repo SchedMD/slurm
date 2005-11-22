@@ -35,7 +35,7 @@ source ./globals
 set test_id       "10.13"
 set exit_code     0
 set matches       0
-set non_bgl       0
+set non_bg       0
 set prompt        ".*$"
 set created       0
 set file          "bluegene-test.conf"
@@ -54,8 +54,8 @@ expect {
 		set too_small 1
 		exp_continue
 	}
-	-re "BGL SYSTEM" {
-		set non_bgl 1
+	-re "BG SYSTEM" {
+		set non_bg 1
 		exp_continue	
 	}	
 	-re "TORUS" {
@@ -89,8 +89,8 @@ if {$too_small != 0} {
 	send_user "\nWARNING: Screen is too small for test\n"
 	exit 0
 }
-if {$non_bgl != 0} {
-	send_user "\nWARNING: Must be on a BGL SYSTEM to run this command\n"
+if {$non_bg != 0} {
+	send_user "\nWARNING: Must be on a BG SYSTEM to run this command\n"
 	exit 0
 }
 if {$created != 1} {
