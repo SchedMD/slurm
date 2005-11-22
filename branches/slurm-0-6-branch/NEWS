@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
  -- Fix memory leaks in slurmctld and federation plugin.
  -- Fix sefault in federation plugin function fed_libstate_clear().
  -- Align job accounting data (Andy Riebs, slurm.hp.unal_jobacct.patch)
+ -- Restore switch state in backup controller restarts
 
 * Changes in SLURM 0.6.8
 ========================

@@ -280,6 +280,11 @@ int main(int argc, char *argv[])
 			error("failed to restore node selection state");
 			abort();
 		}
+		if (switch_restore(slurmctld_conf.state_save_location, true)
+				!= SLURM_SUCCESS ) {
+			error("failed to restore switch state");
+			abort();
+		} 
 
 		/*
 		 * create attached thread to process RPCs
