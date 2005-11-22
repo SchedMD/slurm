@@ -705,15 +705,17 @@ _build_script (char *fname, int file_type)
 /* Set SLURM_UMASK environment variable with current state */
 static int _set_umask_env(void)
 {
+	char mask_char[5];
 	mode_t mask = (int)umask(0);
 	umask(mask);
 
-	if (setenvf(NULL, "SLURM_UMASK", "%d", (int)mask) < 0) {
+	sprintf(mask_char, "0%d%d%d", 
+		((mask>>6)&07), ((mask>>3)&07), mask&07);
+	if (setenvf(NULL, "SLURM_UMASK", "%s", mask_char) < 0) {
 		error ("unable to set SLURM_UMASK in environment");
 		return SLURM_FAILURE;
 	}
-	debug ("propagating UMASK=0%d%d%d", 
-		((mask>>6)&07), ((mask>>3)&07), mask&07);
+	debug ("propagating UMASK=%s", mask_char); 
 	return SLURM_SUCCESS;
 }
 
