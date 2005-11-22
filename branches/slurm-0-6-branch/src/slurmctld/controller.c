@@ -256,6 +256,11 @@ int main(int argc, char *argv[])
 		    (strcmp(node_name,
 			    slurmctld_conf.backup_controller) == 0)) {
 			run_backup();
+			if (switch_restore(slurmctld_conf.state_save_location, true)
+					!= SLURM_SUCCESS ) {
+				error("failed to restore switch state");
+				abort();
+			}
 		} else if (slurmctld_conf.control_machine &&
 			 (strcmp(node_name, slurmctld_conf.control_machine) 
 			  == 0)) {
@@ -280,11 +285,6 @@ int main(int argc, char *argv[])
 			error("failed to restore node selection state");
 			abort();
 		}
-		if (switch_restore(slurmctld_conf.state_save_location, true)
-				!= SLURM_SUCCESS ) {
-			error("failed to restore switch state");
-			abort();
-		} 
 
 		/*
 		 * create attached thread to process RPCs
