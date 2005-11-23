@@ -159,7 +159,10 @@ void run_backup(void)
 
 	/* clear old state and read new state */
 	job_fini();
-	switch_clear();
+	if (switch_restore(slurmctld_conf.state_save_location, true)) {
+		error("failed to restore switch state");
+		abort();
+	}
 	if (read_slurm_conf(2)) {	/* Recover all state */
 		error("Unable to recover slurm state");
 		abort();
