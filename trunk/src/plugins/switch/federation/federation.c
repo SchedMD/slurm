@@ -1712,6 +1712,8 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 		node = _find_node(fed_state, host);
 		jp->tables_per_task = node ? node->adapter_count : 0;
 		_unlock();
+		if (host != NULL)
+			free(host);
 		hostlist_iterator_reset(hi);
 	} else {
 		jp->tables_per_task = 1;
@@ -2431,6 +2433,7 @@ fed_libstate_restore(Buf buffer)
 	fed_state = _alloc_libstate();
 	if(!fed_state) {
 		error("fed_libstate_restore fed_state is NULL");
+		_unlock();
 		return SLURM_FAILURE;
 	}
 	_unpack_libstate(fed_state, buffer);
@@ -2449,8 +2452,11 @@ fed_libstate_clear(void)
 
 	debug3("Clearing state on all windows in global fed state");
 	_lock();
-	if (!fed_state || !fed_state->node_list)
+	if (!fed_state || !fed_state->node_list) {
+		error("fed_state or node_list not initialized!");
+		_unlock();
 		return SLURM_ERROR;
+	}
 
 	for (i = 0; i < fed_state->node_count; i++) {
 		node = &fed_state->node_list[i];
@@ -2458,10 +2464,12 @@ fed_libstate_clear(void)
 			continue;
 		for (j = 0; j < node->adapter_count; j++) {
 			adapter = &node->adapter_list[i];
-			if (!adapter->window_list)
+			if (!adapter || !adapter->window_list)
 				continue;
 			for (k = 0; k < adapter->window_count; k++) {
 				window = &adapter->window_list[k];
+				if (!window)
+					continue;
 				window->status = NTBL_UNLOADED_STATE;
 			}
 		}

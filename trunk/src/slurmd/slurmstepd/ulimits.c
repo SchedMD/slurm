@@ -98,7 +98,7 @@ _set_umask(char **env)
 		return SLURM_ERROR;
 	}
 
-	mask = atoi(val);
+	mask = strtol(val, (char **)NULL, 8);
 	umask(mask);
 }
 

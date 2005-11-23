@@ -122,7 +122,7 @@ typedef struct _stats_msg {
 	_stats_msg_type_t	msg_type;
 	uint32_t	 	jobid;   /* in network order! */
 	uint32_t		stepid;  /* ditto */
-	uint16_t		datalen; /* ditto */
+	uint32_t		datalen; /* ditto (and make 'data' aligned) */
 	char			data[MAX_MSG_SIZE];
 } _stats_msg_t;
 
