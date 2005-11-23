@@ -415,6 +415,7 @@ qsw_clear(void)
 	int rc = 0;
 
 	_lock_qsw();
+	assert(qsw_internal_state);
 	assert(qsw_internal_state->ls_magic == QSW_LIBSTATE_MAGIC);
 	if (qsw_internal_state->step_ctx_list)
 		list_destroy(qsw_internal_state->step_ctx_list);
