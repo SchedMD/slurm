@@ -2412,6 +2412,7 @@ fed_libstate_restore(Buf buffer)
 	fed_state = _alloc_libstate();
 	if(!fed_state) {
 		error("fed_libstate_restore fed_state is NULL");
+		_unlock();
 		return SLURM_FAILURE;
 	}
 	_unpack_libstate(fed_state, buffer);
@@ -2430,8 +2431,11 @@ fed_libstate_clear(void)
 
 	debug3("Clearing state on all windows in global fed state");
 	_lock();
-	if (!fed_state || !fed_state->node_list)
+	if (!fed_state || !fed_state->node_list) {
+		error("fed_state or node_list not initialized!");
+		_unlock();
 		return SLURM_ERROR;
+	}
 
 	for (i = 0; i < fed_state->node_count; i++) {
 		node = &fed_state->node_list[i];
