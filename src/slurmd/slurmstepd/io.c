@@ -1036,10 +1036,7 @@ io_client_connect(srun_info_t *srun, slurmd_job_t *job)
 	obj = eio_obj_create(sock, &client_ops, (void *)client);
 	eio_new_obj(job->eio, (void *)obj);
 
-	debug5("Now handling %d IO Client object(s)", list_count(job->clients));
-
-	/* kick IO thread */
-	eio_signal_wakeup(job->eio);
+	debug5("New IO Client object added");
 
 	return SLURM_SUCCESS;
 }
