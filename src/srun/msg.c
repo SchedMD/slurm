@@ -117,9 +117,6 @@ _build_proctable(srun_job_t *job, char *host, int nodeid, int ntasks, uint32_t *
 	
 	if (MPIR_proctable_size == 0) {
 		MPIR_proctable_size = opt.nprocs;
-/* 		MPIR_proctable = xmalloc(sizeof(MPIR_PROCDESC) * opt.nprocs); */
-/* 		totalview_jobid = NULL; */
-/* 		xstrfmtcat(totalview_jobid, "%lu", job->jobid);		 */
 		
 		if(message_thread) {
 			write(job->forked_msg->par_msg->msg_pipe[1],
@@ -137,10 +134,6 @@ _build_proctable(srun_job_t *job, char *host, int nodeid, int ntasks, uint32_t *
 
 	for (i = 0; i < ntasks; i++) {
 		int taskid          = job->step_layout->tids[nodeid][i];
-		/* MPIR_PROCDESC *tv   = &MPIR_proctable[taskid]; */
-/* 		tv->host_name       = job->host[nodeid]; */
-/* 		tv->executable_name = remote_argv[0]; */
-/* 		tv->pid             = pid[i]; */
 		
 		if(message_thread) {
 			pipe_enum = PIPE_MPIR_PROCDESC;
@@ -158,11 +151,6 @@ _build_proctable(srun_job_t *job, char *host, int nodeid, int ntasks, uint32_t *
 	}
 
 	if (tasks_recorded == opt.nprocs) {
-		/* MPIR_debug_state = MPIR_DEBUG_SPAWNED; */
-/* 		MPIR_Breakpoint(); */
-/* 		if (opt.debugger_test) */
-/* 			_dump_proctable(job);  */
-		
 		if(message_thread) {
 			i = MPIR_DEBUG_SPAWNED;
 			pipe_enum = PIPE_MPIR_DEBUG_STATE;
@@ -197,8 +185,6 @@ void debugger_launch_failure(srun_job_t *job)
 	pipe_enum_t pipe_enum = PIPE_MPIR_DEBUG_STATE;
 	
 	if (opt.parallel_debug) {
-		/* MPIR_debug_state = MPIR_DEBUG_ABORTING; */
-/* 		MPIR_Breakpoint();  */
 		if(message_thread && job) {
 			i = MPIR_DEBUG_ABORTING;
 			write(job->forked_msg->par_msg->msg_pipe[1],
