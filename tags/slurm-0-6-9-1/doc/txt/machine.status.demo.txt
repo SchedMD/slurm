@@ -1,0 +1,45 @@
+# Get system state info, speed in MHz, memory and disk in MB
+linux{jette}693: ./Get_Mach_Stat
+Name=linux OS=Linux2.4.7-10 CPUs=1 Speed=863.877014 RealMemory=248 VirtualMemory=517 TmpDisk=13511
+
+
+# A sample node configuration file
+linux{jette}695: cat sample.node.conf
+# 
+# Sample sample.node.conf
+# Author: John Doe
+# Date: 11/06/2001
+#
+Name=DEFAULT OS=Linux2.4.7-1 CPUs=2 Speed=1.0 RealMemory=2048 VirtualMemory=4096 TmpDisk=16384 Partition=1
+#
+Name=lx01 Partition=
+Name=lx02
+Name=lx03 Speed=1.5 RealMemory=3072 Partition=1,2
+Name=lx04 CPUs=1 Speed=1.3 Partition=1,3
+Name=lx05 
+Name=lx06 
+#
+Name=DEFAULT OS=Linux3.0 CPUs=4 Speed=1.6, Partition=9
+Name=mx01
+Name=mx02 Pool=5 RealMemory=567
+
+
+# Read configuration and exercise a variety of operations (write, update, save state, etc.)
+linux{jette}696: ./Mach_Stat_Mgr sample.node.conf tmp.1 tmp.2
+Show_Node_Record: Name=mx03 OS=UNKNOWN CPUs=4 Speed=1.000000 RealMemory=0 VirtualMemory=0 TmpDisk=16384 Partition=0,9 State=IDLE LastResponse=123
+
+
+# Full dump of node configuration and state
+linux{jette}697: cat tmp.1
+#
+# Written by SLURM: Fri Dec 14 15:00:24 2001
+#
+Name=lx01 OS=Linux2.4.7-1 CPUs=2 Speed=1.000000 RealMemory=2048 VirtualMemory=4096 TmpDisk=16384 Partition=0 State=UNKNOWN, LastResponse=0
+Name=lx02 OS=Linux2.4.7-1 CPUs=2 Speed=1.000000 RealMemory=2048 VirtualMemory=4096 TmpDisk=16384 Partition=0,1 State=UNKNOWN, LastResponse=0
+Name=lx03 OS=Linux2.4.7-1 CPUs=2 Speed=1.500000 RealMemory=3072 VirtualMemory=4096 TmpDisk=16384 Partition=0,1,2 State=UNKNOWN, LastResponse=0
+Name=lx04 OS=Linux2.4.7-1 CPUs=1 Speed=1.300000 RealMemory=2048 VirtualMemory=4096 TmpDisk=16384 Partition=0,1,3 State=UNKNOWN, LastResponse=0
+Name=lx05 OS=Linux2.4.7-1 CPUs=2 Speed=1.000000 RealMemory=2048 VirtualMemory=4096 TmpDisk=16384 Partition=0,1 State=UNKNOWN, LastResponse=0
+Name=lx06 OS=Linux2.4.7-1 CPUs=2 Speed=1.000000 RealMemory=2048 VirtualMemory=4096 TmpDisk=16384 Partition=0,1 State=UNKNOWN, LastResponse=0
+Name=mx01 OS=Linux3.0 CPUs=3 Speed=1.600000 RealMemory=2048 VirtualMemory=4096 TmpDisk=12345 Partition=0,9 State=UNKNOWN, LastResponse=0
+Name=mx02 OS=Linux3.0 CPUs=4 Speed=1.600000 RealMemory=567 VirtualMemory=4096 TmpDisk=16384 Partition=0,9 State=UNKNOWN, LastResponse=0
+Name=mx03 OS=UNKNOWN CPUs=4 Speed=1.000000 RealMemory=0 VirtualMemory=0 TmpDisk=16384 Partition=0,9 State=IDLE, LastResponse=123
