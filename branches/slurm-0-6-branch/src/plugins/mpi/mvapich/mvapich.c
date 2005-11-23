@@ -133,7 +133,7 @@ static struct mvapich_info * mvapich_info_create (int fd)
 
 		mvi->pid = xmalloc (mvi->pidlen);
 
-		if (fd_read_n (fd, &mvi->pid, mvi->pidlen) < 0)
+		if (fd_read_n (fd, mvi->pid, mvi->pidlen) < 0)
 			E_RET ("mvapich: Unable to read pid for rank %d: %m", mvi->rank);
 	}
 
