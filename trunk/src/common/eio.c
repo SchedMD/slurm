@@ -57,7 +57,6 @@ struct eio_handle_components {
 /* Function prototypes
  */
 
-static int          _poll_loop_internal(eio_handle_t *eio, List objs);
 static int          _poll_internal(struct pollfd *pfds, unsigned int nfds);
 static unsigned int _poll_setup_pollfds(struct pollfd *, eio_obj_t **, List);
 static void         _poll_dispatch(struct pollfd *, unsigned int, eio_obj_t **,
@@ -147,25 +146,19 @@ static int _eio_wakeup_handler(eio_handle_t *eio)
 
 int eio_handle_mainloop(eio_handle_t *eio)
 {
-	xassert (eio != NULL);
-	xassert (eio->magic == EIO_MAGIC);
-
-	return _poll_loop_internal(eio, eio->obj_list);
-}
-
-static int
-_poll_loop_internal(eio_handle_t *eio, List objs)
-{
 	int            retval  = 0;
 	struct pollfd *pollfds = NULL;
 	eio_obj_t    **map     = NULL;
 	unsigned int   maxnfds = 0, nfds = 0;
 	unsigned int   n       = 0;
 
+	xassert (eio != NULL);
+	xassert (eio->magic == EIO_MAGIC);
+
 	for (;;) {
 
 		/* Alloc memory for pfds and map if needed */
-		n = list_count(objs);
+		n = list_count(eio->obj_list);
 		if (maxnfds < n) {
 			maxnfds = n;
 			xrealloc(pollfds, (maxnfds+1) * sizeof(struct pollfd));
@@ -176,8 +169,9 @@ _poll_loop_internal(eio_handle_t *eio, List objs)
 		}
 
 		debug4("eio: handling events for %d objects", 
-				list_count(objs));
-		if ((nfds = _poll_setup_pollfds(pollfds, map, objs)) <= 0) 
+		       list_count(eio->obj_list));
+		nfds = _poll_setup_pollfds(pollfds, map, eio->obj_list);
+		if (nfds <= 0) 
 			goto done;
 
 		/*
@@ -195,7 +189,7 @@ _poll_loop_internal(eio_handle_t *eio, List objs)
 		if (pollfds[nfds-1].revents & POLLIN) 
 			_eio_wakeup_handler(eio);
 
-		_poll_dispatch(pollfds, nfds-1, map, objs);
+		_poll_dispatch(pollfds, nfds-1, map, eio->obj_list);
 	}
   error:
 	retval = -1;

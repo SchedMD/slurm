@@ -55,7 +55,6 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 	conf->daemonize = uint32_tmp;
 	safe_unpack32(&uint32_tmp, buffer);
 	conf->slurm_user_id = (uid_t)uint32_tmp;
-	debug("slurm_user_id in slurmstepd = %u", conf->slurm_user_id);
 	return SLURM_SUCCESS;
 
 unpack_error:
