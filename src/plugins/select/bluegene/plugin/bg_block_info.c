@@ -79,7 +79,7 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 				  bg_record->user_name)) {
 				error("Partition %s was in a ready state "
 				      "for user %s but is being freed. "
-				      "Job %u was lost.",
+				      "Job %d was lost.",
 				      bg_record->bg_block_id,
 				      bg_record->user_name,
 				      bg_record->job_running);
