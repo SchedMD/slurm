@@ -122,7 +122,8 @@ SLURM plugins for IBM AIX and Federation switch.
     %{?_enable_debug}			\
     %{?with_proctrack}			\
     %{?with_ssl}			\
-    %{?with_munge}
+    %{?with_munge}                      \
+    %{?with_cflags}
 
 #
 # The following was stolen from the E17 packages:
