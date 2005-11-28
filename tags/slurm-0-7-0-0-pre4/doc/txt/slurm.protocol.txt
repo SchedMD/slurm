@@ -1,0 +1,559 @@
+Title: SLURM Protocol Definition 
+Author: Kevin Tew (tew1@llnl.gov)
+Date: May 15, 2002
+
+Section 1 Overview:
+	The SLURM Protocol defines a standard message passing interface
+between the server, client, and utility modules of SLURM.  The protocol
+consists of mostly asyncronous request response messages pairs.  The
+underlying transport protocol will provide connectionless yet reliable and
+secure transpoirt.  A few messages such as node registration, accounting
+information update, are singleton messages without a corresponding request or
+response.  
+
+Section 2 Protocol Definition:
+
+	SLURM Header
+	0           1            2           3       
+	--------------------------------------------------
+	| Version                |Flags                  |
+	--------------------------------------------------
+	|Message Type            |
+	--------------------------------------------------
+	|Body Length (Bytes)                             |
+	--------------------------------------------------
+
+
+	MessageTypes
+	RESGISTRATION MESSAGES
+	Node Registation
+	1 REQUEST_NODE_REGISRATION_STATUS
+	2 MESSAGE_NODE_REGISRATION_STATUS 
+		This message will also occur without a corresponding request when a slurmd first somes up.
+
+	
+	RESOURCE ALLOCATION MESSAGES
+	Resource Allocation / Inquiry
+	3 REQUEST_RESOURCE_ALLOCATION
+	4 RESPONSE_RESOURCE_ALLOCATIN
+
+	Batch Job Submission
+	22 REQUEST_SUBMIT_BATCH_JOB
+	23 RESPONSE_SUBMIT_BATCH_JOB
+
+	Run Batch Job on Resource Allocation
+	30 REQUEST_BATCH_JOB_LAUNCH
+	31 RESPONSE_BATCH_JOB_LAUNCH
+	To be used by DPCS to launch job once resources have become available.
+	Ask Moe about this one and DPCS job launch.
+
+
+	JOB MESSAGES	
+	Signal Job
+	26 REQUEST_SIGNAL_JOB
+	27 RESPONSE_SIGNAL_JOB
+	
+	Cancel Job
+	5 REQUEST_CANCEL_JOB
+	7 RESPONSE_CANCEL_JOB
+	
+
+	JOB STEP MESSAGES
+
+	Create Job Step
+	35 REQUEST_CREATE_JOB_STEP
+	36 RESPONSE_CREATE_JOB_STEP
+	
+	Get Job Step Info
+	44 REQUEST_GET_JOB_STEP_INFO
+	45 RESPONSE_GET_JOB_STEP_INFO
+	
+	Job Resource Request
+	46 REQUEST_JOB_RESOURCE
+	47 RESPONSE_JOB_RESOURCE
+	
+	Template
+	??? Job Step
+	?? REQUEST__JOB_STEP
+	?? RESPONSE__JOB_STEP
+	
+	Run Job Step
+	37 REQUEST_RUN_JOB_STEP
+	38 RESPONSE_RUN_JOB_STEP
+	
+	Signal Job Step
+	28 REQUEST_SIGNAL_JOB_STEP
+	29 RESPONSE_SIGNAL_JOB_STEP
+	
+	Cancel Job Step
+	24 REQUEST_CANCEL_JOB_STEP
+	25 RESPONSE_CANCEL_JOB_STEP
+	
+
+	RECONFIGURE MESSAGES
+	Reconfigure
+	6 REQUEST_RECONFIGURE
+	21 RESPONSE_RECONFIGURE
+
+	
+	INFO MESSAGES
+	Job Info
+	8 REQUEST_JOB_INFO
+	9 RESPONSE_JOB_INFO
+
+	Job Step Info
+	10 REQUEST_JOB_STEP_INFO
+	11 RESPONSE_JOB_STEP_INFO
+
+	Node Info
+	12 REQUEST_NODE_INFO
+	13 RESPONSE_NODE_INFO
+
+	Partition Info
+	14 REQUEST_PARTITION_INFO
+	15 RESPONSE_JOB_INFO
+
+	Accounting Info
+	16 REQUEST_ACCTING_INFO
+	17 RESPONSE_ACCOUNTING_INFO
+
+	Build Info
+	18 REQUEST_BUILD_INFO
+	19 RESPONSE_BUILD_INFO
+
+	
+	ACCOUNTING UPLOAD MESSAGES
+	Upload Accounting
+	20 MESSAGE_UPLOAD_ACCOUNTING_INFO
+
+
+	TASK MESSAGES
+	Launch Tasks
+	34 REQUEST_LAUNCH_TASKS
+	41 RESPONSE_LAUNCH_TASKS 
+	Task Exit
+	32 MESSAGE_TASK_EXIT	
+
+	
+	CREDENTIAL MESSAGES
+	Revoke Credential
+	33 MESSAGE_REVOKE_JOB_CREDENTIAL ??
+
+	
+	JOB ATTACH MESSAGES
+	39 REQUEST_JOB_ATTACH
+	40 RESPONSE_JOB_ATTACH
+
+	DPCS KEY MESSAGES
+	42 REQUEST_GET_KEY
+	43 RESPONSE_GET_KEY
+
+
+	Message Bodies:
+	
+	Types of Message Bodies
+	REQUEST: to be followed by a RESPONSE
+	RESPONSE: to follow a REQUEST
+	MESSAGE: a single message not requireing a response
+
+	MessageType 1 REQUEST_NODE_REGISTRATION_STATUS
+	0           1            2           3       
+	--------------------------------------------------
+
+	MessageType 2 MESSAGE_NODE_REGISRATION_STATUS
+	0           1            2           3       
+	--------------------------------------------------
+	|Time-Stamp                                      |
+	--------------------------------------------------
+	|Memory Size (MB)                                |
+	--------------------------------------------------
+	|Temporary Disk Space (MB)                       |
+	--------------------------------------------------
+
+	MessageType 3 REQUEST_RESOURCE_ALLOCATION
+	MessageType 22 REQUEST_SUBMIT_BATCH_JOB
+	0           1            2           3       
+	--------------------------------------------------
+	|UserID                                          |
+	--------------------------------------------------
+	|Number of Nodes                                 |
+	--------------------------------------------------
+	|Number of Tasks                                 |
+	--------------------------------------------------
+	|CPUs per Task                                   |
+	--------------------------------------------------
+	|Task Distribution (Block or Cyclic)             |
+	--------------------------------------------------
+	|Wait for Response       |Test Only              |
+	--------------------------------------------------
+	These last two flag fields are invalid and will be ignored for a REQUEST_SUBMIT_BATCH_JOB message
+	
+	0           1            2           3       
+	--------------------------------------------------
+	|Option 1                |Length                 |
+	--------------------------------------------------
+	|Partition                                       |
+	--------------------------------------------------
+
+	0           1            2           3       
+	--------------------------------------------------
+	|Option 2                |Length                 |
+	--------------------------------------------------
+	|Time Limit                                      |
+	--------------------------------------------------
+
+	0           1            2           3       
+	--------------------------------------------------
+	|Option 3                |Length                 |
+	--------------------------------------------------
+	|Constraints                                     |
+	--------------------------------------------------
+
+	0           1            2           3       
+	--------------------------------------------------
+	|Option 4                |Length                 |
+	--------------------------------------------------
+	|Features                                        |
+	--------------------------------------------------
+
+	0           1            2           3       
+	--------------------------------------------------
+	|Option 5                |Length                 |
+	--------------------------------------------------
+	|IO Location ie stdin, stdout, stderr            |
+	--------------------------------------------------
+
+	0           1            2           3       
+	--------------------------------------------------
+	|Option 6                |Length                 |
+	--------------------------------------------------
+	|Signal Handling Destination                     |
+	--------------------------------------------------
+
+	MessageType 4 RESPONSE_RESOURCE_ALLOCATION
+	0           1            2           3       
+	--------------------------------------------------
+	|Return Code                                     |
+	--------------------------------------------------
+	|Job ID                                          |
+	--------------------------------------------------
+	|Node List Nodes/CPU                             |
+	|TBD                                             |
+	--------------------------------------------------
+
+	MessageType 23 RESPONSE_SUBMIT_BATCH_JOB
+	0           1            2           3       
+	--------------------------------------------------
+	|Return Code                                     |
+	--------------------------------------------------
+	|Job ID                                          |
+	--------------------------------------------------
+
+
+	MessageType 5 REQUEST_CANCEL_JOB
+	0           1            2           3       
+	--------------------------------------------------
+	|UserID                                          |
+	--------------------------------------------------
+	|Job ID                                          |
+	--------------------------------------------------
+
+	MessageType 24 REQUEST_CANCEL_JOB_STEP
+	0           1            2           3       
+	--------------------------------------------------
+	|UserID                                          |
+	--------------------------------------------------
+	|Job ID                                          |
+	--------------------------------------------------
+	|Job Step ID                                     |
+	--------------------------------------------------
+
+	MessageType 26 REQUEST_SIGNAL_JOB
+	0           1            2           3       
+	--------------------------------------------------
+	|UserID                                          |
+	--------------------------------------------------
+	|Job ID                                          |
+	--------------------------------------------------
+	|Signal Number                                   |
+	--------------------------------------------------
+
+	MessageType 28 REQUEST_SIGNAL_JOB_STEP
+	0           1            2           3       
+	--------------------------------------------------
+	|UserID                                          |
+	--------------------------------------------------
+	|Job ID                                          |
+	--------------------------------------------------
+	|Job Step ID                                     |
+	--------------------------------------------------
+	|Signal Number                                   |
+	--------------------------------------------------
+	0           1            2           3       
+	--------------------------------------------------
+	|Option 1                                        |
+	--------------------------------------------------
+	|Task ID                                         |
+	--------------------------------------------------
+
+	MessageType 6 REQUEST_RECONFIGURE
+	0           1            2           3      
+	--------------------------------------------------
+	|UserID                                          |
+	--------------------------------------------------
+
+
+	MessageType 7 RESPONSE_CANCEL_JOB
+	MessageType 21 RESPONSE_RECONFIGURE
+	MessageType 25 RESPONSE_CANCEL_JOB
+	MessageType 27 RESPONSE_SIGNAL_JOB
+	MessageType 29 RESPONSE_SIGNAL_JOB_STEP
+	0           1            2           3       
+	--------------------------------------------------
+	|Return Code                                     |
+	--------------------------------------------------
+	Desc: Returns return-code of cancel job and reconfigure commands
+
+	MessageType 8 REQUEST_INFO_*
+	0           1            2           3       
+	--------------------------------------------------
+	|Time-Stamp                                      |
+	--------------------------------------------------
+
+	MessageType 9 RESPONSE_INFO_*
+	0           1            2           3       
+	--------------------------------------------------
+	|Return Code                                     |
+	--------------------------------------------------
+	|Time-Stamp                                      |
+	--------------------------------------------------
+	|Record Count                                    |
+	--------------------------------------------------
+	|Array of Records                                |
+	|                                                |
+	--------------------------------------------------
+
+	MessageType 39 REQUEST_JOB_ATTACH
+	0           1            2           3       
+	--------------------------------------------------
+	|User ID                                         |
+	--------------------------------------------------
+	|Job Step ID                                     |
+	--------------------------------------------------
+	|stdin/stdout Port                               |
+	--------------------------------------------------
+	|signals/stderr Port                             |
+	--------------------------------------------------
+
+	MessageType 40 RESPONSE_JOB_ATTACH
+	0           1            2           3       
+	--------------------------------------------------
+	|Return Code                                     |
+	--------------------------------------------------
+
+	MessageType 34 REQUEST_LAUNCH_TASKS
+	0           1            2           3       
+	--------------------------------------------------
+	|User ID                                         |
+	--------------------------------------------------
+	|Job ID                                          |
+	--------------------------------------------------
+	|Job Step ID                                     |
+	--------------------------------------------------
+	|Credential                                      |
+	--------------------------------------------------
+	|Number of Tasks                                 |
+	--------------------------------------------------
+	|Environment                                     |
+	--------------------------------------------------
+	|Current Working Directory                       |
+	--------------------------------------------------
+	|Command Line                                    |
+	--------------------------------------------------
+	|stdin location                                  |
+	--------------------------------------------------
+	|stdout location                                 |
+	--------------------------------------------------
+	|stderr location                                 |
+	--------------------------------------------------
+	|Task Completion Reporting Port                  |
+	--------------------------------------------------
+
+	MessageType 41 RESPONSE_LAUNCH_TASKS
+	0           1            2           3       
+	--------------------------------------------------
+	|Return Code                                     |
+	--------------------------------------------------
+
+	MessageType 44 REQUEST_GET_JOB_STEP_INFO
+	0           1            2           3       
+	--------------------------------------------------
+	|Job ID                                          |
+	--------------------------------------------------
+	|Job Step ID                                     |
+	--------------------------------------------------
+	|User ID                                         |
+	--------------------------------------------------
+
+	MessageType 45 RESPONSE_GET_JOB_STEP_INFO
+	0           1            2           3       
+	--------------------------------------------------
+	|Job Step ID                                     |
+	--------------------------------------------------
+	|elan contxt                                     |
+	--------------------------------------------------
+
+	MessageType 46 REQUEST_JOB_RESOURCE
+	0           1            2           3       
+	--------------------------------------------------
+	|Job Step ID                                     |
+	--------------------------------------------------
+
+	MessageType 47 RESPONSE_JOB_RESOURCE
+	0           1            2           3       
+	--------------------------------------------------
+	|Return Code                                     |
+	--------------------------------------------------
+	|Credentials                                     |
+	--------------------------------------------------
+	|Node List Nodes/CPU                             |
+	|TBD                                             |
+	--------------------------------------------------
+	
+	MessageType 48 REQUEST_RUN_JOB_STEP
+	0           1            2           3       
+	--------------------------------------------------
+	??
+	--------------------------------------------------
+
+	MessageType 49 RESPONSE_RUN_JOB_STEP
+	0           1            2           3       
+	--------------------------------------------------
+	??
+	--------------------------------------------------
+
+
+	MessageType 42 REQUEST_GET_KEY
+	0           1            2           3       
+	--------------------------------------------------
+	|User ID (must be root)                          |
+	--------------------------------------------------
+
+	MessageType 43 RESPONSE_GET_KEY
+	0           1            2           3       
+	--------------------------------------------------
+	|Key                                             |
+	--------------------------------------------------
+
+	MessageType 32 MESSAGE_TASK_EXIT
+	0           1            2           3       
+	--------------------------------------------------
+	|Return Code                                     |
+	--------------------------------------------------
+	|Job ID                                          |
+	--------------------------------------------------
+	|Job Step ID                                     |
+	--------------------------------------------------
+	|Task ID                                         |
+	--------------------------------------------------
+
+	MessageType 20 MESSAGE_UPLOAD_ACCOUNTING_INFO
+	0           1            2           3       
+	--------------------------------------------------
+	|Time-Stamp                                      |
+	--------------------------------------------------
+	|Record Count                                    |
+	--------------------------------------------------
+	|Array of Accounting Records                     |
+	|                                                |
+	--------------------------------------------------
+
+	Accounting Record
+	--------------------------------------------------
+	|User ID                                         |
+	--------------------------------------------------
+	|Memory Used (MB)                                |
+	--------------------------------------------------
+	|CPU Time Used (Sec)                             |
+	--------------------------------------------------
+	|CPU Time Allocated (Sec)                        |
+	--------------------------------------------------
+	
+Section 3 SLURM Programmers API:
+	3.1 High Level API
+		MessageFunctions
+			Registration Functions
+				request_node_registration ( IN address )
+					slurmctld -> slurmd
+				send_node_registration ( IN address , IN node_registration_msg_struct ) 
+					slurmd -> slurmctld
+
+			ResourceAllocation
+				request_resource_allocation ( IN job_spec_struct )
+					utility -> slurmctld
+				send_resource_allocation_acknowledgement ( IN resource_allocation_mesg_struct )
+					slurmctld -> utility
+
+			Information Functions
+				request_job_info ( IN timestamp )
+					utility -> slurmctld
+				send_job_info ( IN job_info_mesg_struct )
+					slurmctld -> utility
+				request_node_info ( IN timestamp )
+					utility -> slurmctld
+				send_node_info ( IN node_info_mesg_struct )
+					slurmctld -> utility
+				request_job_step_info ( IN timestamp ) 
+					utility -> slurmctld
+				send_job_step_info ( IN job_step_info_mesg_struct )
+					slurmctld -> utility
+				request_partition_info ( IN timestamp )
+					utility -> slurmctld
+				send_partition_info ( IN partitiion_infor_mesg_struct )
+					slurmctld -> utility
+				request_accounting_info ( IN timestamp )
+					utility -> slurmctld
+				send_accounting_info ( IN accounting_info_mesg_struct )
+					slurmctld -> utility
+				request_build_info ( IN timestamp )
+					utility -> slurmctld
+				send_build_info ( IN build_info_mesg_struct )
+					slurmctld -> utility
+
+			Cancel Job
+				request_cancel_job ( cancel_job_mesg_struct )
+					utility -> slurmctld
+				send_cancel_job_confirmation ( cancel_job_confirmation_mesg_struct )
+					slurmctld -> utility
+
+			Reconfigure
+				request_reconfigure ( reconfigure_msg_struct ) 
+					utility -> slurmctld
+				send_reconfigure_confirmation ( reconfigure_confirmation_message_struct )
+					slurmctld -> utility
+
+			Upload Accouting Information
+				send_accounting_info ( accouting_update_mesg_struct )
+
+			get_message ( OUT address , OUT abstract_mesg_struct ) 
+
+			
+		GeneralFunctions
+	3.2 Additional Low Level API
+		slurm_init_message_engine ( IN slurm_address )
+		slurm_shutdown_message_engine ( IN slurm_address )
+		slurm_send_server_message ( IN mesg_type , IN buffer , IN buffer_len , IN message )
+			This call attempts to connect to the primary slurmctld and upon failure falls back to the backup slurmctld.
+		send_node_message ( IN address , IN mesg_type , IN buffer , IN buffer_len , IN message )			
+		recv_message ( OUT address , OUT mesg_type , OUT buffer ,IN/OUTbuffer_len ) 
+
+		file_descriptor slurm_listen_stream ( IN port )
+		file_descriptor slurm_accept_stream ( IN file_descriptor , IN/OUT slurm_address )
+		file_descriptor slurm_connect_stream ( IN slurm_address ) 
+		return_code slurm_close_stream ( IN file_descriptor )
+		size slurm_send ( IN file_descriptor , IN buffer , IN length , IN flags )
+		size slurm_recv ( IN file_descriptor , IN/OUT buffer , IN/OUT length , IN flags )
+		
+Section 4 Lower Level Interface (LLI) API:
+	Almost an exact replicate of the mongo/socket function prototypes that will wrap either sockets or
+mongo based on a build configuration option.
