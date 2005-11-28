@@ -79,10 +79,11 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 				  bg_record->user_name)) {
 				error("Partition %s was in a ready state "
 				      "for user %s but is being freed. "
-				      "Job was lost.",
+				      "Job %s was lost.",
 				      bg_record->bg_block_id,
-				      bg_record->user_name);
-				term_jobs_on_block(bg_record->bg_block_id);
+				      bg_record->user_name,
+				      bg_record->job_running);
+				(void) slurm_fail_job(bg_record->job_running);
 			} else {
 				debug("Partition %s was in a ready state "
 				      "but is being freed. No job running.",

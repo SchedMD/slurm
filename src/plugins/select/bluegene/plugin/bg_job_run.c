@@ -186,7 +186,9 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 		error("No block %s", bg_update_ptr->bg_block_id);
 		return;
 	}
+	slurm_mutex_lock(&block_state_mutex);
 	bg_record->job_running = bg_update_ptr->job_id;
+	slurm_mutex_unlock(&block_state_mutex);
 	
 	if(bg_record->state==RM_PARTITION_READY) {
 		if(bg_record->user_uid != bg_update_ptr->uid) {
@@ -301,7 +303,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			sleep(1);
 		}
 		
-		if(bg_record->job_running == 0) 
+		if(bg_record->job_running == -1) 
 			return;
 		if((rc = boot_block(bg_record))
 		   != SLURM_SUCCESS) {
@@ -447,7 +449,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		}
 			
 		slurm_mutex_lock(&block_state_mutex);
-		bg_record->job_running = 0;
+		bg_record->job_running = -1;
 		
 		/*remove user from list */
 		if(bg_record->target_name) {
@@ -755,7 +757,7 @@ int term_job(struct job_record *job_ptr)
 		     job_ptr->job_id, 
 		     bg_record->bg_block_id);
 		bg_record->state = RM_PARTITION_FREE;
-		bg_record->job_running = 0;
+		bg_record->job_running = -1;
 		last_bg_update = time(NULL);		
 		xfree(block_id);
 	}

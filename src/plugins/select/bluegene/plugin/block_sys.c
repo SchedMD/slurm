@@ -286,8 +286,8 @@ int read_bg_blocks()
 				break;
 			}
 		} else {
-			if ((rc = rm_get_data(block_list, RM_PartListFirstPart, 
-					&block_ptr)) != STATUS_OK) {
+			if ((rc = rm_get_data(block_list, RM_PartListFirstPart,
+					      &block_ptr)) != STATUS_OK) {
 				error("rm_get_data(RM_PartListFirstPart): %s",
 					bg_err_str(rc));
 				break;
@@ -330,6 +330,7 @@ int read_bg_blocks()
 
 		bg_record->state = -1;
 		bg_record->quarter = -1;
+		bg_record->job_running = -1;
 				
 		if ((rc = rm_get_data(block_ptr, 
 				      RM_PartitionBPNum, 

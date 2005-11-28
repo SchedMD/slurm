@@ -112,7 +112,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	   we want to fall through to tell the scheduler that it is runnable
 	   just not right now. 
 	*/
-	if(full_system_block->job_running && checked<2) {
+	if((full_system_block->job_running != -1) && checked<2) {
 		checked++;
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
 				     SELECT_DATA_CHECKED, &checked);
@@ -149,7 +149,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		*/
 		slurm_mutex_lock(&block_state_mutex);
 		debug3("job_running = %d", record->job_running);
-		if(record->job_running && checked<2) {
+		if((record->job_running != -1) && checked<2) {
 			job_running++;
 			debug("block %s in use by %s", 
 			      record->bg_block_id,
