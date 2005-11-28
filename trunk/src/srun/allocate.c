@@ -370,6 +370,8 @@ job_desc_msg_create_from_opts (char *script)
 	j->num_tasks      = opt.nprocs;
 	j->user_id        = opt.uid;
 	j->dependency     = opt.dependency;
+	if (opt.nice)
+		j->nice   = NICE_OFFSET + opt.nice;
 	j->exclusive      = opt.exclusive;
 	j->group_id       = opt.gid;
 	j->mail_type      = opt.mail_type;

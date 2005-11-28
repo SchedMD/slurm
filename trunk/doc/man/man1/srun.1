@@ -75,6 +75,15 @@ dependency and these jobs may belong to different users.
 The value may be changed after job submission using the 
 \fBscontrol\fR command.
 .TP
+\fB\-\-nice\fR[=\fIadjustment]\fR
+Run the job with an adjusted scheduling priority. 
+With no adjustment value the scheduling priority is decreased 
+by 100. The adjustment range is from -10000 (highest priority)
+to 10000 (lowest priority). Only privileged users can specify 
+a negative adjustment. NOTE: This option is presently 
+ignored if \fISchedulerType=sched/maui\fR.
+
+.TP
 \fB\-\-begin\fR=\fItime\fR
 Defer initiation of this job until the specified time.
 It accepts times of the form \fIHH:MM:SS\fR to run a job at 

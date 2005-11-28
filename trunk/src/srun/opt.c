@@ -111,6 +111,7 @@
 #define LONG_OPT_MAIL_USER 0x11b
 #define LONG_OPT_TASK_PROLOG 0x11c
 #define LONG_OPT_TASK_EPILOG 0x11d
+#define LONG_OPT_NICE        0x11e
 
 /*---- forward declarations of static functions  ----*/
 
@@ -790,6 +791,7 @@ void set_options(const int argc, char **argv, int first)
 		{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
 		{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
 		{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
+		{"nice",             optional_argument, 0, LONG_OPT_NICE},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1197,7 +1199,18 @@ void set_options(const int argc, char **argv, int first)
 			xfree(opt.task_epilog);
 			opt.task_epilog = xstrdup(optarg);
 			break;
-		}
+		case LONG_OPT_NICE:
+			if (optarg)
+				opt.nice = strtol(optarg, NULL, 10);
+			else
+				opt.nice = 100;
+			if (abs(opt.nice) > NICE_OFFSET) {
+				error("Invalid nice value, must be between "
+					"-%d and %d", NICE_OFFSET, NICE_OFFSET);
+				exit(1);
+			}
+			break;
+		} 
 	}
 }
 
@@ -1624,6 +1637,8 @@ static void _opt_list()
 	else
 		info("time_limit     : %d", opt.time_limit);
 	info("wait           : %d", opt.max_wait);
+	if (opt.nice)
+		info("nice           : %d", opt.nice);
 	info("account        : %s", opt.account);
 	if (opt.dependency == NO_VAL)
 		info("dependency     : none");
@@ -1681,7 +1696,7 @@ static void _usage(void)
 #ifdef HAVE_BG		/* Blue gene specific options */
 "            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
 #endif
-"            [--mail-type=type] [mail-user=user]\n"
+"            [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "            [--prolog=fname] [--epilog=fname]\n"
 "            [-w hosts...] [-x hosts...] executable [args...]\n");
 }
@@ -1728,6 +1743,7 @@ static void _help(void)
 "      --core=type             change default corefile format type\n"
 "                              (type=\"list\" to list of valid formats)\n"
 "  -P, --dependency=jobid      defer job until specified jobid completes\n"
+"      --nice[=value]          decrease secheduling priority by value\n"
 "  -U, --account=name          charge job to specified account\n"
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
 "      --mpi=type              specifies version of MPI to use\n"

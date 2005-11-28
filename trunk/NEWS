@@ -25,6 +25,7 @@ documents those changes that are of interest to users and admins.
     into bluegene plugin and renamed block_allocator.  Format for bluegene.conf
     file changed also.  Read bluegene html page.  Code is backwards compatable
     smap will generate in new form
+ -- Add srun option --nice to give user some control over job priority.
 
 * Changes in SLURM 0.7.0-pre3
 =============================

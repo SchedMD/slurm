@@ -291,6 +291,7 @@ proc wait_for_job { job_id state } {
 	set is_running  0
 	set sleep_time  1
 
+	log_user 0
 	while { 1 == 1 } {
 		spawn -noecho $scontrol -o show job $job_id
 		expect {
@@ -324,12 +325,14 @@ proc wait_for_job { job_id state } {
 			}
 			timeout {
 				send_user "\nFAILURE: scontrol not responding\n"
+				log_user 1
 				return 1
 			}
 			eof {
 				wait
 			}
 		}
+		log_user 1
 	
 		if {[string compare $state "DONE"] == 0    && $is_done == 1 } {
 			exec $bin_sleep  2
