@@ -31,8 +31,10 @@
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <signal.h>
 
 #include "src/common/xmalloc.h"
+#include "src/common/xsignal.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/slurmstepd_init.h"
@@ -49,6 +51,10 @@ static slurmd_job_t *_step_setup(slurm_addr *cli, slurm_addr *self,
 static void _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc);
 
 
+static int block_signals[] = {
+	SIGPIPE, SIGHUP, 0
+};
+
 int 
 main (int argc, char *argv[])
 {
@@ -58,6 +64,7 @@ main (int argc, char *argv[])
 	slurmd_job_t *job;
 	int rc;
 
+	xsignal_block(block_signals);
 	conf = xmalloc(sizeof(*conf));
 	conf->argv = &argv;
 	conf->argc = &argc;
