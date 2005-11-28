@@ -104,6 +104,7 @@ typedef struct srun_options {
 	unsigned int jobid;     /* --jobid=jobid                */
 	char *mpi_type;		/* --mpi=type			*/
 	unsigned int dependency;/* --dependency, -P jobid	*/
+	int nice;		/* --nice			*/
 	char *account;		/* --account, -U acct_name	*/
 
 	char *ofname;		/* --output -o filename         */

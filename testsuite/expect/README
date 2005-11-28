@@ -126,6 +126,7 @@ test1.49   Test of srun task-prolog and task-epilog options.
 test1.50   Test of running non-existant job, confirm timely termination.
 test1.51   Test propagation of umask to spawned tasks.
 test1.52   Test of hostfile logic
+test1.53   Test of nice value specification (--nice option).
 
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
            The test will print "WARNING" and terminate with an exit code of 

@@ -1221,8 +1221,9 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		job_specs->host, job_specs->port,
 		dependency, job_specs->account);
 
-	debug3("   mail_type=%u, mail_user=%s",
-		job_specs->mail_type, job_specs->mail_user);
+	debug3("   mail_type=%u mail_user=%s nice=%d",
+		job_specs->mail_type, job_specs->mail_user,
+		(int)job_specs->nice - NICE_OFFSET);
 
 	_make_time_str(&job_specs->begin_time, buf);
 	cpus_per_task = (job_specs->cpus_per_task != (uint16_t) NO_VAL) ?
@@ -2213,8 +2214,10 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 
 	if (job_desc->priority != NO_VAL) /* already confirmed submit_uid==0 */
 		job_ptr->priority = job_desc->priority;
-	else
+	else {
 		_set_job_prio(job_ptr);
+		job_ptr->priority -= ((int)job_desc->nice - NICE_OFFSET);
+	}
 
 	if (job_desc->kill_on_node_fail != (uint16_t) NO_VAL)
 		job_ptr->kill_on_node_fail = job_desc->kill_on_node_fail;
@@ -2457,9 +2460,13 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			_purge_job_record(job_desc_msg->job_id);
 	}
 
-	if ((submit_uid != 0) &&	/* only root can set job priority */
-	    (job_desc_msg->priority != 0))
-		job_desc_msg->priority = NO_VAL;
+	if ((submit_uid != 0) 	/* only root or SlurmUser can set job prio */
+	&&  (submit_uid != slurmctld_conf.slurm_user_id)) {
+		if (job_desc_msg->priority != 0)
+			job_desc_msg->priority = NO_VAL;
+		if (job_desc_msg->nice < NICE_OFFSET)
+			job_desc_msg->nice = NICE_OFFSET;
+	}
 
 	if (job_desc_msg->num_procs == NO_VAL)
 		job_desc_msg->num_procs = 1;	/* default cpu count of 1 */

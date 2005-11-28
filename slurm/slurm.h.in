@@ -148,6 +148,8 @@ enum job_states {
 #define MAIL_JOB_END   0x0002	/* notify when job ends */
 #define MAIL_JOB_FAIL  0x0004	/* notify if job fails */
 
+#define NICE_OFFSET 10000	/* offset for job's nice value */
+
 /* Reason for job to be pending rather than executing. If multiple reasons 
  * exists, only one is given for the sake of system efficiency */
 enum job_wait_reason {
@@ -319,6 +321,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t port;		/* port to contact initiating srun */
 	char *host;		/* host to contact initiating srun */
 	uint32_t dependency;	/* defer until specified job completes */
+	uint16_t nice;		/* requested priority change, 
+				 * NICE_OFFSET == no change */
 	char *account;		/* charge to specified account */
 	char *network;		/* network use spec */
 	uint16_t exclusive;	/* 1 if job requires exclusive nodes,
