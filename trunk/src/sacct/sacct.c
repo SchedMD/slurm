@@ -898,7 +898,7 @@ void doFdump(char* fields[])
 		{ "partition",	"partition",	"partition" },	/*  1 */
 		{ "submitted",	"submitted",	"submitted" },	/*  2 */
 		{ "starttime",	"starttime",	"starttime" },	/*  3 */
-		{ "uid.gid",	"reserved-2",	"uid.gid" },	/*  4 */
+		{ "uid.gid",	"uid.gid",	"uid.gid" },	/*  4 */
 		{ "reserved-1",	"reserved-1",	"reserved-1" },	/*  5 */
 		{ "recordType", "recordType",	"recordType" },	/*  6 */
 		{ "recordVers",	"recordVers",	"recordVers" },	/*  7 */
@@ -2564,11 +2564,19 @@ void printUser(print_what_t which, long idx)
 			printf("%-9s", "---------");
 			break;
 		case JOB:
-		case JOBSTEP:
 			{
 				char	*tmp="(unknown)";
 				struct	passwd *pw;
 				if ((pw=getpwuid(jobs[idx].uid)))
+					tmp=pw->pw_name;
+				printf("%-9s", tmp);
+			}
+			break;
+		case JOBSTEP:
+			{
+				char	*tmp="(unknown)";
+				struct	passwd *pw;
+				if ((pw=getpwuid(jobs[jobsteps[idx].j].uid)))
 					tmp=pw->pw_name;
 				printf("%-9s", tmp);
 			}
