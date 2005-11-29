@@ -69,7 +69,6 @@ typedef struct thd {
 	srun_job_t          *job;
 } thd_t;
 
-static inline bool	 _job_all_done(srun_job_t *job);
 static void		 _p_reattach(slurm_msg_t *req, srun_job_t *job);
 static void 		*_p_reattach_task(void *args);
 
@@ -472,14 +471,22 @@ int reattach()
 	_attach_to_job(job);
 
 	slurm_mutex_lock(&job->state_mutex);
-	while (!_job_all_done(job)) 
+	while (job->state < SRUN_JOB_TERMINATED) {
 		pthread_cond_wait(&job->state_cond, &job->state_mutex);
+	}
 	slurm_mutex_unlock(&job->state_mutex);
 
 	if (job->state == SRUN_JOB_FAILED)
-		error ("Attach to job failed!");
+		info("Job terminated abnormally.");
 
-	/* wait for stdio */
+	/*
+	 *  Signal the IO thread to shutdown, which will stop
+	 *  the listening socket and file read (stdin) event
+	 *  IO objects, but allow file write (stdout) objects to
+	 *  complete any writing that remains.
+	 */
+	debug("Waiting for IO thread");
+	eio_signal_shutdown(job->eio);
 	if (pthread_join(job->ioid, NULL) < 0)
 		error ("Waiting on IO: %m");
 
@@ -490,10 +497,3 @@ int reattach()
 	
 	exit(0);
 }
-
-
-static bool _job_all_done(srun_job_t *job)
-{
-	return (job->state >= SRUN_JOB_TERMINATED);
-}
-
