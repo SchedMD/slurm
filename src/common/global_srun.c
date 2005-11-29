@@ -135,9 +135,10 @@ job_active_tasks_on_host(srun_job_t *job, int hostid)
 
 	slurm_mutex_lock(&job->task_mutex);
 	for (i = 0; i < job->step_layout->tasks[hostid]; i++) {
-		uint32_t tid = job->step_layout->tids[hostid][i];
-		debug("Task %d state: %d", tid, job->task_state[tid]);
-		if (job->task_state[tid] == SRUN_TASK_RUNNING) 
+		uint32_t *tids = job->step_layout->tids[hostid];
+		xassert(tids != NULL);
+		debug("Task %d state: %d", tids[i], job->task_state[tids[i]]);
+		if (job->task_state[tids[i]] == SRUN_TASK_RUNNING) 
 			retval++;
 	}
 	slurm_mutex_unlock(&job->task_mutex);
