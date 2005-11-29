@@ -1337,9 +1337,6 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 	/* Locks: Write configuration, job, node and partition */
 	slurmctld_lock_t config_write_lock = { 
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
-	/* Locks: Read node */
-	slurmctld_lock_t node_read_lock = { 
-		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 	uid_t uid;
 
 	START_TIMER;
@@ -1359,12 +1356,9 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 			_update_cred_key();
 			set_slurmctld_state_loc();
 		}
-		unlock_slurmctld(config_write_lock);
-		if (error_code == SLURM_SUCCESS) {
-			lock_slurmctld(node_read_lock);
+		if (error_code == SLURM_SUCCESS)
 			msg_to_slurmd(REQUEST_RECONFIGURE);
-			unlock_slurmctld(node_read_lock);
-		}
+		unlock_slurmctld(config_write_lock);
 	}
 	END_TIMER;
 
