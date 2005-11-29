@@ -112,7 +112,8 @@ static int _wait_part_ready(uint32_t job_id)
 	for (i=0; (cur_delay < max_delay); i++) {
 		if (i) {
 			sleep(POLL_SLEEP);
-			if(_partitions_dealloc() == 0) 
+			rc = _partitions_dealloc();
+			if ((rc == 0) || (rc == -1)) 
 				cur_delay += POLL_SLEEP;
 #if _DEBUG
 			printf(".");
