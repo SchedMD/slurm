@@ -388,8 +388,7 @@ extern void set_block_user(bg_record_t *bg_record)
 		error("Unable to add user name to block %s. "
 		      "Cancelling job.",
 		      bg_record->bg_block_id);
-		(void) slurm_fail_job(
-			bg_record->job_running);
+		(void) slurm_fail_job(bg_record->job_running);
 	}	
 	xfree(bg_record->target_name);
 	bg_record->target_name = 

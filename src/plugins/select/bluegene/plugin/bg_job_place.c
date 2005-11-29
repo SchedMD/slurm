@@ -112,8 +112,10 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	   we want to fall through to tell the scheduler that it is runnable
 	   just not right now. 
 	*/
+	slurm_mutex_lock(&block_state_mutex);
 	if((full_system_block->job_running != -1) && checked<2) {
 		checked++;
+		slurm_mutex_unlock(&block_state_mutex);
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
 				     SELECT_DATA_CHECKED, &checked);
 	
@@ -122,7 +124,8 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		      full_system_block->bg_block_id);
 		return SLURM_ERROR;
 	}
-
+	slurm_mutex_unlock(&block_state_mutex);
+			
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_CONN_TYPE, &conn_type);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
@@ -208,8 +211,8 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		 * Insure that any required nodes are in this BG block
 		 */
 		if (job_ptr->details->req_node_bitmap
-		&& (!bit_super_set(job_ptr->details->req_node_bitmap,
-				record->bitmap))) {
+		    && (!bit_super_set(job_ptr->details->req_node_bitmap,
+				       record->bitmap))) {
 			debug("bg block %s lacks required nodes",
 				record->bg_block_id);
 			continue;
