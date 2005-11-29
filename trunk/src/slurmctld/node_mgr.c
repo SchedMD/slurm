@@ -796,7 +796,9 @@ void rehash_node (void)
 void set_slurmd_addr (void) 
 {
 	int i;
+	DEF_TIMERS;
 
+	START_TIMER;
 	for (i = 0; i < node_record_count; i++) {
 		if (node_record_table_ptr[i].name[0] == '\0')
 			continue;
@@ -819,6 +821,9 @@ void set_slurmd_addr (void)
 		       node_record_table_ptr[i].comm_name);
 	}
 
+	END_TIMER;
+	debug("set_slurmd_addr: got IP addresses for all nodes %s",
+		TIME_STR);
 	return;
 }
 
@@ -1638,7 +1643,6 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	int i, pos;
 	shutdown_msg_t *shutdown_req;
 
-	int kill_buf_rec_size = 0;
 	agent_arg_t *kill_agent_args;
 	pthread_attr_t kill_attr_agent;
 	pthread_t kill_thread_agent;
@@ -1647,6 +1651,11 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	kill_agent_args = xmalloc (sizeof (agent_arg_t));
 	kill_agent_args->msg_type = msg_type;
 	kill_agent_args->retry = 0;
+	kill_agent_args->slurm_addr = xmalloc (
+		sizeof (struct sockaddr_in) *
+		(kill_agent_args->node_count + 1));
+	kill_agent_args->node_names = xmalloc (MAX_NAME_LEN * 
+		(kill_agent_args->node_count + 1));
 	if (msg_type == REQUEST_SHUTDOWN) {
  		shutdown_req = xmalloc(sizeof(shutdown_msg_t));
 		shutdown_req->core = 0;
@@ -1654,28 +1663,22 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	}
 
 	for (i = 0; i < node_record_count; i++) {
-		if ((kill_agent_args->node_count+1) > kill_buf_rec_size) {
-			kill_buf_rec_size += 64;
-			xrealloc ((kill_agent_args->slurm_addr), 
-			          (sizeof (struct sockaddr_in) * 
-				  kill_buf_rec_size));
-			xrealloc ((kill_agent_args->node_names), 
-			          (MAX_NAME_LEN * kill_buf_rec_size));
-		}
 		kill_agent_args->slurm_addr[kill_agent_args->node_count] = 
-					node_record_table_ptr[i].slurm_addr;
+			node_record_table_ptr[i].slurm_addr;
 		pos = MAX_NAME_LEN * kill_agent_args->node_count;
 		strncpy (&kill_agent_args->node_names[pos],
-		         node_record_table_ptr[i].name, MAX_NAME_LEN);
+			node_record_table_ptr[i].name, MAX_NAME_LEN);
 		kill_agent_args->node_count++;
 #ifdef HAVE_FRONT_END		/* Operate only on front-end */
 		break;
 #endif
 	}
 
-	if (kill_agent_args->node_count == 0)
+	if (kill_agent_args->node_count == 0) {
+		xfree (kill_agent_args->slurm_addr);
+		xfree (kill_agent_args->node_names);
 		xfree (kill_agent_args);
-	else {
+	} else {
 		debug ("Spawning agent msg_type=%d", msg_type);
 		slurm_attr_init (&kill_attr_agent);
 		if (pthread_attr_setdetachstate (&kill_attr_agent, 
