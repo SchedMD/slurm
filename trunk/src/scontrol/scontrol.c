@@ -1388,6 +1388,22 @@ _update_job (int argc, char *argv[])
 						(char **) NULL, 10);
 			update_cnt++;
 		}
+		else if (strncasecmp(argv[i], "Nice=", 5) == 0) {
+			int nice;
+			nice = strtoll(&argv[i][5], (char **) NULL, 10);
+			if (abs(nice) > NICE_OFFSET) {
+				error("Invalid nice value, must be between "
+					"-%d and %d", NICE_OFFSET, NICE_OFFSET);
+				exit_code = 1;
+				return 0;
+			}
+			job_msg.nice = NICE_OFFSET + nice;
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "Nice", 4) == 0) {
+			job_msg.nice = NICE_OFFSET + 100;
+			update_cnt++;
+		}		
 		else if (strncasecmp(argv[i], "ReqProcs=", 9) == 0) {
 			job_msg.num_procs = 
 				(uint32_t) strtol(&argv[i][9], 

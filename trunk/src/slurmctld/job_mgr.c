@@ -3077,7 +3077,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		    (job_ptr->priority > job_specs->priority)) {
 			job_ptr->priority = job_specs->priority;
 			info("update_job: setting priority to %u for "
-				"job_id %u", job_specs->priority, 
+				"job_id %u", job_ptr->priority, 
 				job_specs->job_id);
 		} else {
 			error("Attempt to increase priority for job %u",
@@ -3086,6 +3086,20 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
+	if (job_specs->nice != NICE_OFFSET) {
+		if (super_user || (job_specs->nice < NICE_OFFSET)) {
+			job_ptr->priority -= ((int)job_specs->nice - 
+					NICE_OFFSET);
+			info("update_job: setting priority to %u for "
+				"job_id %u", job_ptr->priority,
+				job_specs->job_id);
+		} else {
+			error("Attempt to increase priority for job %u",
+				job_specs->job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
+	}
+ 
 	if (job_specs->min_procs != NO_VAL && detail_ptr) {
 		if (super_user ||
 		    (detail_ptr->min_procs > job_specs->min_procs)) {

@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "October 2005" "scontrol 0.7" "Slurm components"
+.TH SCONTROL "1" "November 2005" "scontrol 0.7" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -207,6 +207,9 @@ Set the job's partition to the specified value.
 .TP
 \fIPriority\fP=<number>
 Set the job's priority to the specified value.
+.TP
+\fINice\fP[=delta]
+Adjust job's priority by the specified value. Default value is 100.
 .TP
 \fIReqNodeList\fP=<nodes>
 Set the job's list of required node. Multiple node names may be specified using 
