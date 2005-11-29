@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.6.10
+=========================
+ -- Sacct bug fixes: Report correct user name for job step, show "uid.gid"
+    as fifth field of job step record (Andy Riebs, slurm.hp.sacct_uid.patch).
+
 * Changes in SLURM 0.6.9
 ========================
  -- Fix bug in mpi plugin to set the ID correctly
