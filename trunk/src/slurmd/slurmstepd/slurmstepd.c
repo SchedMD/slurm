@@ -39,6 +39,7 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/stepd_api.h"
+#include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/mgr.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
@@ -50,9 +51,8 @@ static slurmd_job_t *_step_setup(slurm_addr *cli, slurm_addr *self,
 				 slurm_msg_t *msg);
 static void _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc);
 
-
-static int block_signals[] = {
-	SIGPIPE, SIGHUP, 0
+int slurmstepd_blocked_signals[] = {
+	SIGPIPE, 0
 };
 
 int 
@@ -64,7 +64,7 @@ main (int argc, char *argv[])
 	slurmd_job_t *job;
 	int rc;
 
-	xsignal_block(block_signals);
+	xsignal_block(slurmstepd_blocked_signals);
 	conf = xmalloc(sizeof(*conf));
 	conf->argv = &argv;
 	conf->argc = &argc;

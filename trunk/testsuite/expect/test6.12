@@ -152,8 +152,10 @@ exec $scancel --quiet $job_id
 # Build and run second test script
 #
 exec $bin_rm -f $file_in $file_out $file_err
-exec echo "#!$bin_bash"               >$file_in
-exec echo "$bin_sleep 500"           >>$file_in
+set file [open $file_in "w"]
+puts $file "#!$bin_bash"
+puts $file "$bin_sleep 500"
+close $file
 exec $bin_chmod 700 $file_in
 
 set job_id 0
@@ -233,9 +235,11 @@ if {$exit_code != 0} {
 #
 set job_id      0
 exec $bin_rm -f $file_in $file_out $file_err
-exec echo "#!$bin_bash"               >$file_in
-exec echo "$srun $bin_sleep 500 &"   >>$file_in
-#exec echo "wait"                     >>$file_in
+set file [open $file_in "w"]
+puts $file "#!$bin_bash"
+puts $file "$srun $bin_sleep 500"
+#puts $file "wait"
+close $file
 exec $bin_chmod 700 $file_in
 
 spawn $srun --batch --output=$file_out --error=$file_err -t2 $file_in
