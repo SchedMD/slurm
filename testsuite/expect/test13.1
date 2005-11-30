@@ -55,6 +55,7 @@ proc run_tasks { } {
 # Report the slurm configuration
 #
 set matches     0
+log_user 0
 spawn $scontrol show config
 expect {
 	-re "switch/elan" {
@@ -69,6 +70,7 @@ expect {
 		wait
 	}
 }
+log_user 1
 if {$matches != 1} {
 	send_user "\nWARNING: not running elan switch, this test is not applicable\n"
 	exit 0
