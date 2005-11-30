@@ -62,11 +62,17 @@ expect {
 }
 
 if {$aix == 0} {
-	set run_hostname "$bin_hostname -s"
+	set hostname_arg "--short"
+	set have_arg 1
 } else {
-	set run_hostname "$bin_hostname"	
+	set hostname_arg ""
+	set have_arg 0
 }
-spawn $srun -N1-1 -c 1 -l -t1 $run_hostname
+if {$have_arg == 0} {
+	spawn $srun -N1-1 -c 1 -l -t1 $bin_hostname
+} else {
+	spawn $srun -N1-1 -c 1 -l -t1 $bin_hostname $hostname_arg
+} 
 expect {
 	-re "Unable to create job step: Task count specification invalid" {
 		send_user "\nWARNING: This is not a real error for some system configurations\n"
@@ -97,7 +103,11 @@ if {[string compare $host_0 ""] == 0} {
 
 set alloc_fail 0
 set task_cnt2  0
-spawn $srun -N1-1 -w $host_0 -n [expr $task_cnt + 1] -l -t1 $run_hostname 
+if {$have_arg == 0} {
+	spawn $srun -N1-1 -w $host_0 -n [expr $task_cnt + 1] -l -t1 $bin_hostname
+} else {
+	spawn $srun -N1-1 -w $host_0 -n [expr $task_cnt + 1] -l -t1 $bin_hostname $hostname_arg 
+}
 expect {
 	-re "($number):" {
 		incr task_cnt2
@@ -126,7 +136,11 @@ if { $task_cnt2 != 0 } {
 #
 set host_0      ""
 set host_1      ""
-spawn $srun -N1-1 -l -t1 $run_hostname  
+if {$have_arg == 0} {
+	spawn $srun -N1-1 -l -t1 $bin_hostname
+} else {
+	spawn $srun -N1-1 -l -t1 $bin_hostname $hostname_arg  
+}
 expect {
 	-re "($number): ($alpha_numeric)" {
 		if {$expect_out(1,string) == 0} {
@@ -171,7 +185,11 @@ set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-spawn $srun -N1-3 -l -t1 $run_hostname 
+if {$have_arg == 0} {
+	spawn $srun -N1-3 -l -t1 $bin_hostname
+} else {
+	spawn $srun -N1-3 -l -t1 $bin_hostname $hostname_arg 
+}
 expect {
 	-re "($number): ($alpha_numeric)" {
 		if {$expect_out(1,string) == 0} {
@@ -233,7 +251,11 @@ set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-spawn $srun -N2-3 -l -t1 $run_hostname   
+if {$have_arg == 0} {
+	spawn $srun -N2-3 -l -t1 $bin_hostname
+} else {
+	spawn $srun -N2-3 -l -t1 $bin_hostname $hostname_arg   
+}
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
