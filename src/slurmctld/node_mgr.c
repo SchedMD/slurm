@@ -1653,9 +1653,9 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	kill_agent_args->retry = 0;
 	kill_agent_args->slurm_addr = xmalloc (
 		sizeof (struct sockaddr_in) *
-		(kill_agent_args->node_count + 1));
+		(node_record_count + 1));
 	kill_agent_args->node_names = xmalloc (MAX_NAME_LEN * 
-		(kill_agent_args->node_count + 1));
+		(node_record_count + 1));
 	if (msg_type == REQUEST_SHUTDOWN) {
  		shutdown_req = xmalloc(sizeof(shutdown_msg_t));
 		shutdown_req->core = 0;
