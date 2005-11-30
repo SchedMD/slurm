@@ -71,6 +71,7 @@
 #include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/task_plugin.h"
+#include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/mgr.h"
 #include "src/slurmd/slurmstepd/task.h"
 #include "src/slurmd/slurmstepd/io.h"
@@ -593,6 +594,7 @@ _fork_all_tasks(slurmd_job_t *job)
 			return SLURM_ERROR;
 		} else if (pid == 0)  { /* child */
 			int j;
+
 #ifdef HAVE_AIX
 			(void) mkcrid(0);
 #endif
@@ -607,6 +609,8 @@ _fork_all_tasks(slurmd_job_t *job)
 				exit(2);
 
 			log_fini();
+
+			xsignal_unblock(slurmstepd_blocked_signals);
 
 			exec_task(job, i, readfds[i]);
 		}

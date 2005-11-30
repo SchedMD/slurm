@@ -16,7 +16,7 @@ slurmstepd_LDADD = 				   \
 
 
 slurmstepd_SOURCES = 	        	\
-	slurmstepd.c			\
+	slurmstepd.c slurmstepd.h	\
 	mgr.c mgr.h			\
 	task.c task.h			\
 	slurmstepd_job.c slurmstepd_job.h \
