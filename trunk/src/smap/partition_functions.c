@@ -451,7 +451,7 @@ static void _print_header_part(void)
 			printf("AVAIL ");
 			printf("TIMELIMIT ");
 		} else {
-			printf("       BG_BLOCK ");
+			printf("        BG_BLOCK ");
 			printf("STATE ");
 			printf("    USER ");
 			printf(" CONN ");
