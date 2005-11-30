@@ -546,19 +546,19 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			bit_and(node_set_ptr[i].my_bitmap, avail_node_bitmap);
 			if (shared) {
 #ifdef HAVE_BG
-				/* Exclude nodes which have jobs in COMPLETING
-				 * state in order to insure Epilog completes 
-				 * before possibly scheduling another job to
-				 * the same bgblock. */
+				/* If any nodes which can be used have jobs in 
+				 * COMPLETING state then do not schedule the  
+				 * job, this give time to insure Epilog 
+				 * completes before possibly scheduling another 
+				 * job to the same bgblock. We also want to 
+				 * route the job to the smallest usable block */
 				int ni;
 				bit_and(node_set_ptr[i].my_bitmap,
 					share_node_bitmap);
 				for (ni = 0; ni < node_record_count; ni++) {
 					if (node_record_table_ptr[ni].
-					    node_state
-					    &  NODE_STATE_COMPLETING)
-						bit_clear(node_set_ptr[i].
-							  my_bitmap, ni);
+					    node_state & NODE_STATE_COMPLETING)
+						continue;
 				}
 #else
 				bit_and(node_set_ptr[i].my_bitmap,
