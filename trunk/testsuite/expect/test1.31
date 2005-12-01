@@ -126,7 +126,6 @@ expect {
 		wait
 	}
 }
-exec $bin_rm -f $env_valu_stdout
 
 if {$task_cnt != $env_valu_nprocs} {
 	send_user "\nFAILURE: did not process"
@@ -150,6 +149,7 @@ if {$max_node_val > $max_nodes} {
 # Post processing
 #
 if {$exit_code == 0} {
+	exec $bin_rm -f $env_valu_stdout
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
