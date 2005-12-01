@@ -51,6 +51,9 @@ set poe		"/usr/bin/poe"
 set mpirun	"mpirun"
 set totalviewcli	"/usr/local/bin/totalviewcli"
 
+# Pattern to match your shell prompt
+set prompt "(%|#|\\\$) $"
+
 #
 # Specify locations of other executable files used
 # Only the shell names (e.g. bin_bash) must be full pathnames

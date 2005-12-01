@@ -36,25 +36,10 @@ set exit_code   0
 
 print_header $test_id
 
-# Execute srun processes within an existing allocation
-# We go through 2049 (32*64+1) switch contexts here
-# Return 0 on successful completion, returns 1 otherwise
-proc run_tasks { } {
-	global srun bin_sleep bin_usleep
-	set delay 10
-	send "$srun -N1 $bin_sleep $delay &\n"
-	for {set inx 0} {$inx < 50} {incr inx} {
-		exec $bin_usleep 1000 
-		send "$srun -N1 -O -n32 true\n"
-	}
-	send "$bin_sleep $delay\n"
-	return 0
-}
-
 #
 # Report the slurm configuration
 #
-set matches     0
+set matches 0
 log_user 0
 spawn $scontrol show config
 expect {
@@ -77,34 +62,44 @@ if {$matches != 1} {
 }
 
 #
-# Submit a slurm allocate job
-# Interactively print $SLURM_JOBID
-# Then run a bunch of job steps within that allocation
+# Submit a slurm allocate job, then run a bunch of job
+# steps within that allocation
 #
 set timeout $max_job_delay
 set job_id 0
 set matches 0
+
 spawn $srun --allocate -N1 --verbose -t2
-expect {
-	-re "jobid ($number).*" {
-		set job_id $expect_out(1,string)
-		send "$bin_echo MY_ID=\$SLURM_JOBID \n"
-		exp_continue
-	}
-	-re "MY_ID=($number)" {
-		if {[run_tasks]} {
+
+expect -re "jobid ($number).*"
+set job_id $expect_out(1,string)
+#send_user "SLURM_JOBID is $job_id\n"
+
+expect -re $prompt
+
+for {set inx 0} {$inx < 50} {incr inx} {
+	#sleep 0.001
+	send "$srun -N1 -O -n32 true\n"
+
+	expect {
+		-re "error" {
+			send_user "\nFAILURE: some error occurred\n"
 			set exit_code 1
+			exp_continue
 		}
-		send "exit\n"
-		exp_continue
+		-re $prompt {}
 	}
+}
+
+send "exit\n"
+
+expect {
 	-re "error" {
 		send_user "\nFAILURE: some error occurred\n"
 		set exit_code 1
-		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		send_user "\nFAILURE: srun (from --allocate) not responding\n"
 		kill_srun
 		set exit_code 1
 		exp_continue
