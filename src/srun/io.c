@@ -686,6 +686,9 @@ again:
 				error("_file_read returned EAGAIN");
 				goto again;
 			}
+			/* Any other errors, we pretend we got eof */
+			debug("Other error on _file_read: %m");
+			len = 0;
 	}
 	if (len == 0) { /* got eof */
 		debug3("got eof on _file_read");

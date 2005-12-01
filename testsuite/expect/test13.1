@@ -58,7 +58,7 @@ set matches     0
 log_user 0
 spawn $scontrol show config
 expect {
-	-re "switch/elan" {
+	-re "switch/((elan)|(none))" {
 		incr matches
 		exp_continue
 	}
