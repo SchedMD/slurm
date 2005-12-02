@@ -418,9 +418,11 @@ int read_bg_blocks()
 
 			free(bpid);
 
-			if(!coord)
-				fatal("No contact with db2. Shutting down.");
-				
+			if(!coord) {
+				fatal("Could not find coordinates for BP ID %s",
+					(char *) bpid);
+			}
+
 			sprintf(node_name_tmp, 
 				 "%s%d%d%d\0", 
 				 slurmctld_conf.node_prefix,
