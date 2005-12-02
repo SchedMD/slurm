@@ -207,8 +207,10 @@ static void * _p_signal_task(void *args)
 	 *  Report error unless it is "Invalid job id" which 
 	 *    probably just means the tasks exited in the meanwhile.
 	 */
-	if ((rc != 0) && (rc != ESLURM_INVALID_JOB_ID)
-	&&  (rc != ESLURMD_JOB_NOTRUNNING) && (rc != ESRCH)) {
+	if ((rc != 0)
+	    && (rc != ESLURM_INVALID_JOB_ID)
+	    && (rc != ESLURMD_JOB_NOTRUNNING)
+	    && (rc != ESRCH)) {
 		error("%s: signal: %s", host, slurm_strerror(rc));
 	}
 
