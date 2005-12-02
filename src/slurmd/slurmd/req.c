@@ -857,7 +857,7 @@ _rpc_signal_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 			   req->job_id, req->job_step_id);
 	if (fd == -1) {
 		error("stepd_connect failed: %m");
-		rc = EPERM;
+		rc = ESLURM_INVALID_JOB_ID;
 		goto done;
 	}
 	if ((step = stepd_get_info(fd)) == NULL) {
@@ -916,7 +916,7 @@ _rpc_terminate_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 			   req->job_id, req->job_step_id);
 	if (fd == -1) {
 		error("stepd_connect failed: %m");
-		rc = EPERM;
+		rc = ESLURM_INVALID_JOB_ID;
 		goto done;
 	}
 	if (!(step = stepd_get_info(fd))) {
@@ -1048,7 +1048,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 			   req->job_id, req->job_step_id);
 	if (fd == -1) {
 		error("stepd_connect failed: %m");
-		rc = EPERM;
+		rc = ESLURM_INVALID_JOB_ID;
 		goto done;
 	}
 	if ((step = stepd_get_info(fd)) == NULL) {
