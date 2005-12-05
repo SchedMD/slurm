@@ -58,8 +58,7 @@ AC_DEFUN([X_AC_BLUEGENE],
 	
    if test ! -z "$have_bg_ar" -a ! -z "$have_bg_hdr" -a ! -z "$have_db2" ; then
       AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
-      AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end o
-nly])
+      AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
       ac_with_readline="no"
 
       saved_LDFLAGS="$LDFLAGS"
