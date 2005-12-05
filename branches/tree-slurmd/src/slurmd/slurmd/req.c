@@ -108,7 +108,7 @@ void
 slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 {
 	int rc;
-
+	
 	switch(msg->msg_type) {
 	case REQUEST_BATCH_JOB_LAUNCH:
 		/* Mutex locking moved into _rpc_batch_job() due to 

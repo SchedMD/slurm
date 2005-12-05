@@ -58,6 +58,15 @@
 #include "src/common/xstring.h"
 #include "src/common/log.h"
 
+/* STRUCTURES */
+
+typedef struct forward_message {
+	header_t header;
+	char *buf;
+	int buf_len;
+	slurm_addr addr;
+} forward_msg_t;
+
 /* EXTERNAL VARIABLES */
 
 /* #DEFINES */
@@ -72,6 +81,7 @@ static slurm_ctl_conf_t slurmctld_conf;
 
 /* STATIC FUNCTIONS */
 static void _remap_slurmctld_errno(void);
+static int _forward_msg(header_t *old_header, Buf buffer);
 
 /**********************************************************************\
  * protocol configuration functions
@@ -455,8 +465,8 @@ char *slurm_get_task_epilog(void)
 char *slurm_get_task_prolog(void)
 {
         char *task_prolog;
-                                                                                
-        _lock_update_config();
+        
+	_lock_update_config();
         task_prolog = xstrdup(slurmctld_conf.task_prolog);
         slurm_mutex_unlock(&config_lock);
         return task_prolog;
@@ -488,6 +498,64 @@ static void _remap_slurmctld_errno(void)
 		slurm_seterrno(SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR);
 }
 
+void *_forward_thread(void *arg)
+{
+	forward_msg_t *msg = (forward_msg_t *)arg;
+	slurm_fd fd;
+	Buf buffer = init_buf(0);
+       
+	if ((fd = slurm_open_msg_conn(&msg->addr)) < 0) {
+		error("forward_thread: can't open msg conn");
+		goto cleanup;
+	}
+	pack_header(&msg->header, buffer);
+	packmem(msg->buf, msg->buf_len, buffer);
+	/*
+	 * Send message
+	 */
+	if(_slurm_msg_sendto( fd, get_buf_data(buffer), 
+				get_buf_offset(buffer),
+			      SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) < 0)
+		error("slurm_msg_sendto: %m");
+cleanup:
+	free_buf(buffer);
+
+}
+
+static int _forward_msg(header_t *old_header, Buf buffer)
+{
+	forward_msg_t *msg = xmalloc(sizeof(forward_msg_t)
+				    * old_header->forward_cnt);
+	int i=0;
+	header_t header;
+	
+	header.version = old_header->version;
+	header.flags = old_header->flags;
+	header.msg_type = old_header->msg_type;
+	header.body_length = 0;	/* over-written later */
+	/*FIXME: !!!!! */
+	/*find out these if needed */
+	/* header->forward_cnt = msg->forward_cnt; */
+/* 	header->forward_addr = msg->forward_addr; */
+
+	for(i=0; i<old_header->forward_cnt; i++) {
+		pthread_attr_t attr_agent;
+		pthread_t thread_agent;
+		slurm_attr_init(&attr_agent);
+		if (pthread_attr_setdetachstate
+				(&attr_agent, PTHREAD_CREATE_DETACHED))
+			error("pthread_attr_setdetachstate error %m");
+		msg[i].header = header;
+		msg[i].addr = old_header->forward_addr[i];
+		msg[i].buf = buffer->head+buffer->processed;
+		msg[i].buf_len = buffer->size-buffer->processed;
+		if (pthread_create(&thread_agent, &attr_agent,
+					_forward_thread, (void *) msg) == 0)
+			return;
+	}
+	xfree(msg);
+	return SLURM_SUCCESS;
+}
 /**********************************************************************\
  * general message management functions used by slurmctld, slurmd
 \**********************************************************************/
@@ -681,6 +749,10 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t * msg, int timeout)
 		free_buf(buffer);
 		slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
 	}
+	
+	/* Forward message to other nodes */
+	if(header.forward_cnt > 0)
+		_forward_msg(&header, buffer);
 
 	if ((auth_cred = g_slurm_auth_unpack(buffer)) == NULL) {
 		error( "authentication: %s ",
@@ -690,7 +762,7 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t * msg, int timeout)
 	}
 
 	rc = g_slurm_auth_verify( auth_cred, NULL, 2 );
-
+	
 	if (rc != SLURM_SUCCESS) {
 		error( "authentication: %s ",
 		       g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
@@ -765,7 +837,7 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
 
-	init_header(&header, msg->msg_type, SLURM_PROTOCOL_NO_FLAGS);
+	init_header(&header, msg, SLURM_PROTOCOL_NO_FLAGS);
 
 	/*
 	 * Pack header into buffer for transmission

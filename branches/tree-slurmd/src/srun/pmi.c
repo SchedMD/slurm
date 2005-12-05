@@ -194,7 +194,8 @@ static void *_agent(void *x)
 			msg_args->bar_ptr = &args->barrier_xmit_ptr[j];
 			msg_args->kvs_ptr = &kvs_set;
 			slurm_attr_init(&attr);
-			pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+			pthread_attr_setdetachstate(&attr, 
+						    PTHREAD_CREATE_DETACHED);
 			if (pthread_create(&msg_id, &attr, _msg_thread, 
 					(void *) msg_args)) {
 				fatal("pthread_create: %m");

@@ -56,13 +56,15 @@ int check_header_version(header_t * header)
  * IN msg_type - type of message to be send
  * IN flags - message flags to be send
  */
-void init_header(header_t * header, slurm_msg_type_t msg_type,
+void init_header(header_t * header, slurm_msg_t *msg,
 		 uint16_t flags)
 {
 	header->version = SLURM_PROTOCOL_VERSION;
 	header->flags = flags;
-	header->msg_type = msg_type;
+	header->msg_type = msg->msg_type;
 	header->body_length = 0;	/* over-written later */
+	header->forward_cnt = msg->forward_cnt;
+	header->forward_addr = msg->forward_addr;
 }
 
 /*
