@@ -290,7 +290,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	int spec = 1; /* this will be like, keep TYPE a priority, etc,  */
 	bg_record_t* record = NULL;
 	char buf[100];
-	char bg_block_id[BITSIZE];
 		
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 		SELECT_PRINT_MIXED);
@@ -303,10 +302,11 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				max_nodes, spec, &record)) == SLURM_ERROR) {
 		return SLURM_ERROR;
 	} else {
-		/* we place the block_id into the env of the script to run */
-		snprintf(bg_block_id, BITSIZE, "%s", record->bg_block_id);
+		/* set the block id and quarter (if any) */
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
-			SELECT_DATA_BLOCK_ID, bg_block_id);
+			SELECT_DATA_BLOCK_ID, record->bg_block_id);
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+			SELECT_DATA_QUARTER, record->quarter);
 	}
 
 	return SLURM_SUCCESS;

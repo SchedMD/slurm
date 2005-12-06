@@ -107,6 +107,8 @@ struct select_jobinfo {
 	uint16_t node_use;	/* see enum node_use_type */
 	char *bg_block_id;	/* Blue Gene partition ID */
 	uint16_t magic;		/* magic number */
+	uint32_t quarter;       /* for bg to tell which quarter of a small
+				   partition the job is running */ 
 	uint32_t checked;       /* for bg to tell plugin it already 
 				   checked and all partitions were full
 				   looking for best choice now */
@@ -503,6 +505,7 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 		enum select_data_type data_type, void *data)
 {
 	int i, rc = SLURM_SUCCESS;
+	uint32_t *tmp_32 = (uint32_t *) data;
 	uint16_t *tmp_16 = (uint16_t *) data;
 	char * tmp_char = (char *) data;
 
@@ -530,6 +533,9 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 		xfree(jobinfo->bg_block_id);
 		jobinfo->bg_block_id = xstrdup(tmp_char);
 		break;
+	case SELECT_DATA_QUARTER:
+		jobinfo->quarter = *tmp_32;
+		break;
 	case SELECT_DATA_CHECKED:
 		jobinfo->checked = *tmp_16;
 		break;		
@@ -551,6 +557,7 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 		enum select_data_type data_type, void *data)
 {
 	int i, rc = SLURM_SUCCESS;
+	uint32_t *tmp_32 = (uint32_t *) data;
 	uint16_t *tmp_16 = (uint16_t *) data;
 	char **tmp_char = (char **) data;
 
@@ -579,6 +586,9 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 			*tmp_char = NULL;
 		else
 			*tmp_char = xstrdup(jobinfo->bg_block_id);
+		break;
+	case SELECT_DATA_QUARTER:
+		*tmp_32 = jobinfo->quarter;
 		break;
 	case SELECT_DATA_CHECKED:
 		*tmp_16 = jobinfo->checked;
@@ -655,6 +665,7 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
 		pack16(jobinfo->conn_type, buffer);
 		pack16(jobinfo->rotate, buffer);
 		packstr(jobinfo->bg_block_id, buffer);
+		pack32(jobinfo->quarter, buffer);
 	} else {
 		for (i=0; i<(SYSTEM_DIMENSIONS+3); i++)
 			pack16((uint16_t) 0, buffer);
@@ -680,6 +691,7 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer)
 	safe_unpack16(&(jobinfo->conn_type), buffer);
 	safe_unpack16(&(jobinfo->rotate), buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->bg_block_id), &uint16_tmp, buffer);
+	safe_unpack32(&(jobinfo->quarter), buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:
