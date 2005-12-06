@@ -205,7 +205,7 @@ static void _print_header_job(void)
 		printf("JOBID ");
 		printf("PARTITION ");
 #ifdef HAVE_BG
-		printf("       BG_BLOCK ");
+		printf("        BG_BLOCK ");
 #endif
 		printf("    USER ");
 		printf("  NAME ");
@@ -331,7 +331,17 @@ static int _print_text_job(job_info_t * job_ptr)
 		
 		printf("%8.8s ", time_buf);
 		printf("%5d ", job_ptr->num_nodes);
-		printf("%s\n", job_ptr->nodes);
+		printf("%s", job_ptr->nodes);
+#ifdef HAVE_BG
+		select_g_get_jobinfo(job_ptr->select_jobinfo, 
+				     SELECT_DATA_QUARTER, 
+				     &quarter);
+		if(quarter != -1) {
+			printf(".%d",quarter);
+		}
+#endif
+		printf("\n");
+#		
 	}
 	return printed;
 }
