@@ -225,6 +225,7 @@ static int _print_text_job(job_info_t * job_ptr)
 	int i = 0;
 	int width = 0;
 	char time_buf[20];
+	int quarter = -1;
 
 	if(!params.commandline) {
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
@@ -293,7 +294,18 @@ static int _print_text_job(job_info_t * job_ptr)
 			}
 			i++;
 		}
-			
+#ifdef HAVE_BG
+		select_g_get_jobinfo(job_ptr->select_jobinfo, 
+				     SELECT_DATA_QUARTER, 
+				     &quarter);
+		if(quarter != -1) {
+			mvwprintw(ba_system_ptr->text_win, 
+				  ba_system_ptr->ycord,
+				  ba_system_ptr->xcord, ".%d", 
+				  quarter);		
+			ba_system_ptr->xcord += 2;
+		}
+#endif	
 		ba_system_ptr->xcord = 1;
 		ba_system_ptr->ycord++;
 	} else {

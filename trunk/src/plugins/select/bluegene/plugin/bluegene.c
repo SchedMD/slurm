@@ -735,6 +735,7 @@ extern int create_static_blocks(List block_list)
 			if (bg_record->bg_block_id)
 				continue;
 			bg_record->bg_block_id = xmalloc(8);
+			bg_record->job_running = -1;
 			snprintf(bg_record->bg_block_id, 8, "RMP%d", 
 				 block_inx++);
 			info("BG BlockID:%s Nodes:%s Conn:%s Mode:%s",

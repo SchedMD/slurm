@@ -107,7 +107,7 @@ struct select_jobinfo {
 	uint16_t node_use;	/* see enum node_use_type */
 	char *bg_block_id;	/* Blue Gene partition ID */
 	uint16_t magic;		/* magic number */
-	uint32_t quarter;       /* for bg to tell which quarter of a small
+	int32_t quarter;       /* for bg to tell which quarter of a small
 				   partition the job is running */ 
 	uint32_t checked;       /* for bg to tell plugin it already 
 				   checked and all partitions were full
@@ -493,6 +493,7 @@ extern int select_g_alloc_jobinfo (select_jobinfo_t *jobinfo)
 
 	*jobinfo = xmalloc(sizeof(struct select_jobinfo));
 	(*jobinfo)->magic = JOBINFO_MAGIC;
+	(*jobinfo)->quarter = -1;
 	return SLURM_SUCCESS;
 }
 
@@ -505,10 +506,10 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 		enum select_data_type data_type, void *data)
 {
 	int i, rc = SLURM_SUCCESS;
-	uint32_t *tmp_32 = (uint32_t *) data;
 	uint16_t *tmp_16 = (uint16_t *) data;
+	int32_t *tmp_32 = (uint32_t *) data;
 	char * tmp_char = (char *) data;
-
+	
 	if (jobinfo->magic != JOBINFO_MAGIC) {
 		error("select_g_set_jobinfo: jobinfo magic bad");
 		return SLURM_ERROR;
@@ -557,7 +558,7 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 		enum select_data_type data_type, void *data)
 {
 	int i, rc = SLURM_SUCCESS;
-	uint32_t *tmp_32 = (uint32_t *) data;
+	int32_t *tmp_32 = (uint32_t *) data;
 	uint16_t *tmp_16 = (uint16_t *) data;
 	char **tmp_char = (char **) data;
 
