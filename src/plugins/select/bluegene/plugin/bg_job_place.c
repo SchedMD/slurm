@@ -120,8 +120,8 @@ static int _find_best_block_match(struct job_record* job_ptr,
 				     SELECT_DATA_CHECKED, &checked);
 	
 		debug("_find_best_block_match none found "
-		      "full system running on block %s.",
-		      full_system_block->bg_block_id);
+		      "full system running on block %s. %d",
+		      full_system_block->bg_block_id, full_system_block->job_running);
 		return SLURM_ERROR;
 	}
 	slurm_mutex_unlock(&block_state_mutex);
@@ -306,7 +306,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_BLOCK_ID, record->bg_block_id);
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
-			SELECT_DATA_QUARTER, record->quarter);
+			SELECT_DATA_QUARTER, &record->quarter);
 	}
 
 	return SLURM_SUCCESS;
