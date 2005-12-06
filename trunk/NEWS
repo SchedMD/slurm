@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Enhanced performance and debugging for slurmctld reconfiguration.
  -- Add "scontrol update Jobid=# Nice=#" support.
+ -- Basic slurmctld and tool functionality validated to 16k nodes.
 
 * Changes in SLURM 0.7.0-pre4
 =============================

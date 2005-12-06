@@ -74,7 +74,7 @@
  *  Maximum message size. Messages larger than this value (in bytes)
  *  will not be received.
  */
-#define MAX_MSG_SIZE     (512*1024)
+#define MAX_MSG_SIZE     (1024*1024)
 
 /****************************************************************
  * MIDDLE LAYER MSG FUNCTIONS
