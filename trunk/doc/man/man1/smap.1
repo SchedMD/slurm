@@ -147,13 +147,6 @@ The Z dimension will increase within a plane from the back
 line to the front line of a plane.
 Note the example below:
 
-ID JOBID PARTITION USER   NAME ST TIME NODES NODELIST
-a  12345 batch    joseph tst1 R  43:12   64 bgl[000x333]
-b  12346 debug    chris  sim3 R  12:34   16 bgl[420x533]
-c  12350 debug    danny  job3 R   0:12    8 bgl[622x733]
-d  12356 debug    dan    colu R  18:05   16 bgl[600x731]
-e  12378 debug    joseph asx4 R   0:34    4 bgl[612x713]
-
    a a a a b b d d
   a a a a b b d d
  a a a a b b c c
@@ -173,6 +166,13 @@ a a a a . . e e               |
   a a a a . . d d            /
  a a a a . . . .            /
 a a a a . . . #            Z
+
+ID JOBID PARTITION USER   NAME ST TIME NODES NODELIST
+a  12345 batch    joseph tst1 R  43:12   64 bgl[000x333]
+b  12346 debug    chris  sim3 R  12:34   16 bgl[420x533]
+c  12350 debug    danny  job3 R   0:12    8 bgl[622x733]
+d  12356 debug    dan    colu R  18:05   16 bgl[600x731]
+e  12378 debug    joseph asx4 R   0:34    4 bgl[612x713]
 
 .fi
 
