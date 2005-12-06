@@ -536,6 +536,9 @@ int _print_job_nodes(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_reason_list(job_info_t * job, int width, bool right, 
 		char* suffix)
 {
+	int quarter = -1;
+	char tmp_char[3];
+	
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("NODELIST(REASON)", width, right, false);
 	else if (job->job_state == JOB_PENDING) {
@@ -543,9 +546,19 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		snprintf(id, FORMAT_STRING_SIZE, "(%s)", 
 			job_reason_string(job->wait_reason));
 		_print_str(id, width, right, true);
-	} else
+	} else {
+#ifdef HAVE_BG
+		select_g_get_jobinfo(job->select_jobinfo, 
+				     SELECT_DATA_QUARTER, 
+				     &quarter);
+#endif
+		
 		_print_nodes(job->nodes, width, right, false);
-
+		if(quarter != -1) {
+			sprintf(tmp_char,"\.%d\0",quarter);
+			_print_str(tmp_char, width, right, false);
+		}
+	}
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
@@ -586,10 +599,22 @@ int _print_job_num_procs(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_num_nodes(job_info_t * job, int width, bool right_justify, 
 			 char* suffix)
 {
+	int quarter = -1;
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("NODES", width, right_justify, true);
-	else
-		_print_int(_get_node_cnt(job), width, right_justify, true);
+	else {
+#ifdef HAVE_BG
+		select_g_get_jobinfo(job->select_jobinfo, 
+				     SELECT_DATA_QUARTER, 
+				     &quarter);
+#endif
+		
+		if(quarter != -1)
+			_print_str("0.25", width, right_justify, true);
+		else
+			_print_int(_get_node_cnt(job), width, 
+				   right_justify, true);
+	}
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
@@ -981,7 +1006,7 @@ int _print_step_nodes(job_step_info_t * step, int width, bool right,
 {
 	if (step == NULL)	/* Print the Header instead */
 		_print_str("NODELIST", width, right, false);
-	else
+	else 
 		_print_nodes(step->nodes, width, right, false);
 	if (suffix)
 		printf("%s", suffix);
