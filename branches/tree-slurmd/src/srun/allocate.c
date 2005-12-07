@@ -100,7 +100,7 @@ allocate_nodes(void)
 		if (destroy_job)
 			goto done;
 	} 
-
+		
 	if ((rc == 0) && (resp->node_list == NULL)) {
 		if (resp->error_code)
 			info("Warning: %s", slurm_strerror(resp->error_code));
@@ -260,7 +260,8 @@ _accept_msg_connection(slurm_fd slurmctld_fd,
 	debug2("got message connection from %s:%d", host, port);
 
 	msg = xmalloc(sizeof(*msg));
-
+	msg->forward_cnt = 0;
+	msg->forward_addr = NULL;
   again:
 	if (slurm_receive_msg(fd, msg, 0) < 0) {
 		if (errno == EINTR)
@@ -271,7 +272,6 @@ _accept_msg_connection(slurm_fd slurmctld_fd,
 		msg->conn_fd = fd;
 		rc = _handle_msg(msg, resp); /* handle_msg frees msg */
 	}
-
 	slurm_close_accepted_conn(fd);
 	return rc;
 }

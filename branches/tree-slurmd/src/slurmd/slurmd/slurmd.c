@@ -348,7 +348,9 @@ _service_connection(void *arg)
  	 *  possibility for slurmd_req () to close accepted connection
 	 */
 	msg->conn_fd = con->fd;
-
+	msg->forward_cnt = 0;
+	msg->forward_addr = NULL;
+	
 	if ((rc = slurm_receive_msg(con->fd, msg, 0)) < 0) 
 		error("slurm_receive_msg: %m");
 	else 
@@ -371,7 +373,12 @@ send_registration_msg(uint32_t status, bool startup)
 	slurm_msg_t req;
 	slurm_msg_t resp;
 	slurm_node_registration_status_msg_t *msg = xmalloc (sizeof (*msg));
-
+	
+	req.forward_cnt = 0;
+	req.forward_addr = NULL;
+	resp.forward_cnt = 0;
+	resp.forward_addr = NULL;
+	
 	msg->startup = (uint16_t) startup;
 	_fill_registration_msg(msg);
 	msg->status  = status;

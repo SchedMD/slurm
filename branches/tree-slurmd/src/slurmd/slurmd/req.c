@@ -282,6 +282,8 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	}
 	buffer = init_buf(0);
 	msg->data = req;
+	/* FIXME!!!!!!
+	   get forward addresses */
 	pack_msg(msg, buffer);
 	len = get_buf_offset(buffer);
 	safe_write(fd, &len, sizeof(int));
@@ -1017,6 +1019,9 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 		resp_msg.address      = msg->address;
 		resp_msg.msg_type     = RESPONSE_JOB_ID;
 		resp_msg.data         = &resp;
+		resp_msg.forward_cnt = msg->forward_cnt;
+		resp_msg.forward_addr = msg->forward_addr;
+	
 		slurm_send_node_msg(msg->conn_fd, &resp_msg);
 	} else {
 		debug3("_rpc_pid2jid: pid(%u) not found", req->job_pid);
@@ -1283,7 +1288,9 @@ _epilog_complete(uint32_t jobid, int rc)
 
 	msg.msg_type    = MESSAGE_EPILOG_COMPLETE;
 	msg.data        = &req;
-
+	msg.forward_cnt = 0;
+	msg.forward_addr = NULL;
+	
 	if (slurm_send_only_controller_msg(&msg) < 0) {
 		error("Unable to send epilog complete message: %m");
 		ret = SLURM_ERROR;

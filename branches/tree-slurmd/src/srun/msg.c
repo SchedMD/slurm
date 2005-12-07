@@ -872,6 +872,8 @@ _accept_msg_connection(srun_job_t *job, int fdnum)
 	       uc[0], uc[1], uc[2], uc[3], ntohs(port));
 
 	msg = xmalloc(sizeof(*msg));
+	msg->forward_cnt = 0;
+	msg->forward_addr = NULL;
 
 	/* multiple jobs (easily induced via no_alloc) sometimes result
 	 * in slow message responses and timeouts. Raise the timeout
@@ -886,11 +888,11 @@ _accept_msg_connection(srun_job_t *job, int fdnum)
 		      uc[0],uc[1],uc[2],uc[3]);
 		xfree(msg);
 	} else {
-
+		
 		msg->conn_fd = fd;
 		_handle_msg(job, msg); /* handle_msg frees msg */
 	}
-
+	
 	slurm_close_accepted_conn(fd);
 	return;
 }
@@ -1289,7 +1291,7 @@ extern slurm_fd slurmctld_msg_init(void)
 	getnodename(hostname, sizeof(hostname));
 	slurmctld_comm_addr.hostname = xstrdup(hostname);
 	slurmctld_comm_addr.port     = port;
-	debug2("slurmctld messasges to host=%s,port=%u", 
+	debug2("slurmctld messages to host=%s,port=%u", 
 			slurmctld_comm_addr.hostname, 
 			slurmctld_comm_addr.port);
 

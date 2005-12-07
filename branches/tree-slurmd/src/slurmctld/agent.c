@@ -372,7 +372,11 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 			thread_ptr[i].forward_cnt = j;
 			j--;
 			i += j;
-		}		
+		} else {
+			thread_ptr[i].forward_cnt = 0;
+			thread_ptr[i].forward_addr = NULL;	
+		}
+		       
 	}
 
 	return agent_info_ptr;

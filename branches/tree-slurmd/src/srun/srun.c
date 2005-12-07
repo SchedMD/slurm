@@ -154,7 +154,7 @@ int srun(int ac, char **av)
 	}
 	/* Set up slurmctld message handler */
 	slurmctld_msg_init();
-
+	
 	/* now global "opt" should be filled in and available,
 	 * create a job from opt
 	 */

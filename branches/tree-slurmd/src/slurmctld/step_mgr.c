@@ -786,6 +786,9 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 	checkpoint_resp_msg_t resp_data;
 	slurm_msg_t resp_msg;
 
+	resp_msg.forward_cnt = 0;
+	resp_msg.forward_addr = NULL;
+
 	/* find the job */
 	job_ptr = find_job_record (ckpt_ptr->job_id);
 	if (job_ptr == NULL) {
@@ -869,6 +872,9 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
 	struct step_record *step_ptr;
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
+	
+	resp_msg.forward_cnt = 0;
+	resp_msg.forward_addr = NULL;
 
 	/* find the job */
 	job_ptr = find_job_record (ckpt_ptr->job_id);

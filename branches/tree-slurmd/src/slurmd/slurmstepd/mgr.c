@@ -1035,7 +1035,7 @@ _complete_job(uint32_t jobid, uint32_t stepid, int err, int status)
 	req.node_name	= conf->node_name;
 	req_msg.msg_type= REQUEST_COMPLETE_JOB_STEP;
 	req_msg.data	= &req;	
-info("sending REQUEST_COMPLETE_JOB_STEP");
+	info("sending REQUEST_COMPLETE_JOB_STEP");
 	/* Note: these log messages don't go to slurmd.log from here */
 	for (i=0; i<=MAX_RETRY; i++) {
 		if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) >= 0)

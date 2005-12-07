@@ -726,7 +726,8 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t * msg, int timeout)
 	Buf buffer;
 
 	xassert(fd >= 0);
-
+	info("got %d forward cnt",msg->forward_cnt);
+	
 	if ((timeout*=1000) == 0)
 		timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
 
@@ -744,15 +745,19 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t * msg, int timeout)
 	buffer = create_buf(buf, buflen);
 
 	unpack_header(&header, buffer);
-
+	info("got %d forward cnt",header.forward_cnt);
+	
 	if (check_header_version(&header) < 0) {
 		free_buf(buffer);
 		slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
 	}
 	
 	/* Forward message to other nodes */
-	if(header.forward_cnt > 0)
+	if(header.forward_cnt > 0) {
+		info("forwarding messages to %d nodes!!!!", 
+		     header.forward_cnt);
 		_forward_msg(&header, buffer);
+	}
 
 	if ((auth_cred = g_slurm_auth_unpack(buffer)) == NULL) {
 		error( "authentication: %s ",
@@ -811,6 +816,7 @@ _pack_msg(slurm_msg_t *msg, header_t *hdr, Buf buffer)
 	/* repack updated header */
 	tmplen = get_buf_offset(buffer);
 	set_buf_offset(buffer, 0);
+	info("2 packing header have %d forward count",hdr->forward_cnt);
 	pack_header(hdr, buffer);
 	set_buf_offset(buffer, tmplen);
 }
@@ -843,6 +849,7 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 	 * Pack header into buffer for transmission
 	 */
 	buffer = init_buf(0);
+	info("1 packing header have %d forward count",header.forward_cnt);
 	pack_header(&header, buffer);
 
 	/* 
@@ -1158,7 +1165,9 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 	resp_msg.address  = msg->address;
 	resp_msg.msg_type = RESPONSE_SLURM_RC;
 	resp_msg.data     = &rc_msg;
-
+	resp_msg.forward_cnt = msg->forward_cnt;
+	resp_msg.forward_addr = msg->forward_addr;
+	info("Hey got this forward count %d", msg->forward_cnt);
 	/* send message */
 	return slurm_send_node_msg(msg->conn_fd, &resp_msg);
 }
@@ -1210,7 +1219,12 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 		rc = SLURM_SOCKET_ERROR;
 		goto cleanup;
 	}
-
+	req->forward_cnt = 0;
+	req->forward_addr = 0;
+	resp->forward_cnt = 0;
+	resp->forward_addr = 0;
+	info("here 2");
+	
 	/* If the backup controller is in the process of assuming 
 	 * control, we sleep and retry later */
 	while (((rc =_send_and_recv_msg(fd, req, resp, 0)) == SLURM_SUCCESS) &&
@@ -1249,7 +1263,8 @@ int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0)
 		return SLURM_SOCKET_ERROR;
-
+	info("here 3");
+	
 	return _send_and_recv_msg(fd, req, resp, timeout);
 
 }
@@ -1303,7 +1318,9 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	int      rc = SLURM_SUCCESS;
 	int      retry = 0;
 	slurm_fd fd = -1;
-
+	req->forward_cnt = 0;
+	req->forward_addr = NULL;
+	
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0)
 		return SLURM_SOCKET_ERROR;
 
@@ -1330,7 +1347,9 @@ static int _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int *rc,
 {
 	int		retval = SLURM_SUCCESS;
 	slurm_msg_t	msg;
- 
+	info("here 1");
+	msg.forward_cnt=0;
+	msg.forward_addr=NULL;
 	retval = _send_and_recv_msg(fd, req, &msg, timeout);
 
 	if (retval != SLURM_SUCCESS) 
@@ -1369,7 +1388,8 @@ int slurm_send_recv_rc_msg(slurm_msg_t *req, int *rc, int timeout)
 int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 {
 	slurm_fd fd = -1;
-
+	req->forward_cnt = 0;
+	req->forward_addr = NULL;
 	if ((fd = slurm_open_controller_conn()) < 0)
 		return SLURM_SOCKET_ERROR;
 

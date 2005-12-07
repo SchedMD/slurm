@@ -169,6 +169,9 @@ launch(void *arg)
 		
 		m->msg_type        = REQUEST_LAUNCH_TASKS;
 		m->data            = r;
+		m->forward_cnt = 0;
+		m->forward_addr = NULL;
+
 		j=0; 
   		while(host = hostlist_next(itr)) { 
 			if(!strcmp(host,job->step_layout->host[i])) {
@@ -469,7 +472,6 @@ static void * _p_launch_task(void *arg)
 
 	th->state  = DSH_ACTIVE;
 	th->tstart = time(NULL);
-
 	if (_verbose)
 	        _print_launch_msg(msg, job->step_layout->host[nodeid]);
 
@@ -503,7 +505,6 @@ static void * _p_launch_task(void *arg)
 
 	} else 
 		_update_contacted_node(job, nodeid);
-
 	pthread_mutex_lock(&active_mutex);
 	th->state = DSH_DONE;
 	active--;
