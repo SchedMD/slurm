@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-213976">
-<meta name="LLNLRandRdate" content="20 November 2005">
+<meta name="LLNLRandRdate" content="6 December 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -53,6 +53,7 @@ structure:Laboratories and Other Field Facilities">
 <a href="quickstart_admin.html" class="nav">Guide</a></p></td>
 <td><img src="spacer.gif" width="10" height="1" alt=""></td>
 <td valign="top"><h2>Quick Start User Guide</h2>
+
 <h3>Overview</h3>
 <p>The Simple Linux Utility for Resource Management (SLURM) is an open source, 
 fault-tolerant, and highly scalable cluster management and job scheduling system 
@@ -64,20 +65,24 @@ can perform work. Second, it provides a framework for starting, executing, and
 monitoring work (normally a parallel job) on the set of allocated nodes. Finally, 
 it arbitrates conflicting requests for resources by managing a queue of pending 
 work.</p>
+
 <h3>Architecture</h3>
 <p>As depicted in Figure 1, SLURM consists of a <b>slurmd</b> daemon running on 
 each compute node, a central <b>slurmctld</b> daemon running on a management node 
-(with optional fail-over twin), and five command line utilities: <b>srun</b>, 
-<b>scancel</b>, <b>sinfo</b>, <b>squeue</b>, and <b>scontrol</b>, which can run 
-anywhere in the cluster.</p>
-<p><img src="arch.gif" width="552" height="432"> 
+(with optional fail-over twin), and six utility programs: <b>srun</b>, <b>scancel</b>, 
+<b>sinfo</b>, <b>srun</b>, <b>smap</b>, <b>squeue</b>, and <b>scontrol</b>.  
+All of the commands can run anywhere in the cluster.</p>
+<p><img src="arch.gif" width="600"> 
 <p><b>Figure 1. SLURM components</b></p>
 <p>The entities managed by these SLURM daemons, shown in Figure 2, include <b>nodes</b>, 
 the compute resource in SLURM, <b>partitions</b>, which group nodes into logical 
-disjoint sets, <b>jobs</b>, or allocations of resources assigned to a user for 
+sets, <b>jobs</b>, or allocations of resources assigned to a user for 
 a specified amount of time, and <b>job steps</b>, which are sets of (possibly 
-parallel) tasks within a job. Priority-ordered jobs are allocated nodes within 
-a partition until the resources (nodes) within that partition are exhausted. Once 
+parallel) tasks within a job. 
+The partitions can be considered job queues, each of which has an assortment of 
+constraints such as job size limit, job time limit, users permitted to use it, etc.
+Priority-ordered jobs are allocated nodes within a partition until the resources 
+(nodes, processors, memory, etc.) within that partition are exhausted. Once 
 a job is assigned a set of nodes, the user is able to initiate parallel work in 
 the form of job steps in any configuration within the allocation. For instance, 
 a single job step may be started that utilizes all nodes allocated to the job, 
@@ -85,6 +90,7 @@ or several job steps may independently use a portion of the allocation.</p>
 <p><img src="entities.gif" width="291" height="218"> 
 <p><b>Figure 2. SLURM entities</b></p>
 <p class="footer"><a href="#top">top</a></p>
+
 <h3>Commands</h3>
 <p>Man pages exist for all SLURM daemons, commands, and API functions. The command 
 option <span class="commandline">--help</span> also provides a brief summary of 
@@ -111,7 +117,11 @@ options.</p>
 job steps. It has a wide variety of filtering, sorting, and formatting options. 
 By default, it reports the running jobs in priority order and then the pending 
 jobs in priority order.</p>
+<p><span class="commandline"><b>smap</b></span> reports state information for 
+jobs, partitions, and nodes managed by SLURM, but graphically displays the 
+information to reflect network topology.</p>
 <p class="footer"><a href="#top">top</a></p>
+
 <h3>Examples</h3>
 <p>Execute <span class="commandline">/bin/hostname</span> on four nodes (<span class="commandline">-N4</span>). 
 Include task numbers on the output (<span class="commandline">-l</span>). The 
@@ -162,20 +172,24 @@ adev9
 1: /home/jette
 2: /home/jette
 3: /home/jette
-</pre> <p>Submit a job, get its status, and cancel it. </p>
+</pre>
+
+<p>Submit a job, get its status, and cancel it. </p>
 <pre>
 adev0: srun -b my.sleeper
 srun: jobid 473 submitted
 
 adev0: squeue
-  JobId Partition Name     User     St TimeLim Prio Nodes                        
-    473 batch     my.sleep jette    R  UNLIMIT 0.99 adev9 
+  JobId Partition Name     User     St TimeLimit Prio Nodes                        
+    473 batch     my.sleep jette    R  UNLIMITED 0.99 adev9 
                        
 adev0: scancel 473
 
 adev0: squeue
-  JobId Partition Name     User     St TimeLim Prio Nodes            
-</pre> <p>Get the SLURM partition and node status.</p>
+  JobId Partition Name     User     St TimeLimit Prio Nodes            
+</pre>
+
+<p>Get the SLURM partition and node status.</p>
 <pre>
 adev0: sinfo
 PARTITION  NODES STATE     CPUS    MEMORY    TMP_DISK NODES
@@ -183,7 +197,9 @@ PARTITION  NODES STATE     CPUS    MEMORY    TMP_DISK NODES
 debug          8 IDLE         2      3448       82306 adev[0-7]
 batch          1 DOWN         2      3448       82306 adev8
                7 IDLE         2 3448-3458       82306 adev[9-15]
-</pre> <p class="footer"><a href="#top">top</a></p>
+</pre>
+<p class="footer"><a href="#top">top</a></p>
+
 <h3>MPI</h3>
 <p>MPI use depends upon the type of MPI being used. 
 Instructions for using several varieties of MPI with SLURM are
@@ -226,7 +242,7 @@ $MPI_ROOT/bin/mpirun -TCP -srun -N8 ./a.out
 
 <p><a href="http:://www-unix.mcs.anl.gov/mpi/mpich2/">MPICH2</a> jobs 
 are launched using the <b>srun</b> command. Just link your program with 
-SLURM's implemenation of the PMI library so that tasks can communication 
+SLURM's implementation of the PMI library so that tasks can communication 
 host and port information at startup. For example:
 <pre>
 $ mpicc -lXlinker "-lpmi" ...
@@ -249,7 +265,11 @@ the script to SLURM using <span class="commandline">srun</span>
 command with the <b>--batch</b> option. For example:
 <pre>
 srun -N2 --batch my.script
-</pre></p>
+</pre>
+Note that the node count specified with the <i>-N</i> option indicates
+the base partition count.
+See <a href="bluegene.html">BlueGene User and Administrator Guide</a> 
+for more information.</p>
 
 </td>
 </tr>
@@ -257,7 +277,7 @@ srun -N2 --batch my.script
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-213976<br>
-Last modified 20 November 2005</p></td>
+Last modified 6 December 2005</p></td>
 </tr>
 </table>
 </td>
