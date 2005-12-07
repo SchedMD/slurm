@@ -71,7 +71,8 @@ message_t *
 wiki_canceljob_t::action( void )
 {
 	u_int32_t id = (u_int32_t) atol( m_jobid );
+	int rc;
 	verbose( "Wiki canceling job %s", m_jobid );
-	return new wiki_status_t( ( sched_cancel_job( id )
-				    == SLURM_SUCCESS ) ? 0 : -1 );
+	rc = sched_cancel_job( id );
+	return new wiki_status_t( ( rc == SLURM_SUCCESS ) ? 0 : -rc );
 }
