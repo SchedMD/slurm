@@ -148,12 +148,12 @@ Values in the X dimension increase to the right.
 Values in the Z dimension increase down and toward the left.</p>
 
 <pre>
-   a a a a b b d d       ID JOBID PARTITION BGL_BLOCK USER   NAME ST TIME NODES NODELIST
-  a a a a b b d d        a  12345 batch     RMP0      joseph tst1 R  43:12   64 bg[000x333]
- a a a a b b c c         b  12346 debug     RMP1      chris  sim3 R  12:34   16 bg[420x533]
-a a a a b b c c          c  12350 debug     RMP2      danny  job3 R   0:12    8 bg[622x733]
-                         d  12356 debug     RMP3      dan    colu R  18:05   16 bg[600x731]
-   a a a a b b d d       e  12378 debug     RMP4      joseph asx4 R   0:34    4 bg[612x713]
+   a a a a b b d d    ID JOBID PARTITION BGL_BLOCK USER   NAME ST TIME NODES NODELIST
+  a a a a b b d d     a  12345 batch     RMP0      joseph tst1 R  43:12   64 bg[000x333]
+ a a a a b b c c      b  12346 debug     RMP1      chris  sim3 R  12:34   16 bg[420x533]
+a a a a b b c c       c  12350 debug     RMP2      danny  job3 R   0:12    8 bg[622x733]
+                      d  12356 debug     RMP3      dan    colu R  18:05   16 bg[600x731]
+   a a a a b b d d    e  12378 debug     RMP4      joseph asx4 R   0:34    4 bg[612x713]
   a a a a b b d d
  a a a a b b c c
 a a a a b b c c
@@ -189,7 +189,7 @@ before draining the associated nodes and aborting the job.</p>
 
 <p>The job will continue to be in a RUNNING state until the bgjob has 
 completed and the bgblock ownership is changed. 
-The time for completing a bgjob has freqently been on the order of 
+The time for completing a bgjob has frequently been on the order of 
 five minutes.
 In summary, your job may appear in SLURM as RUNNING for 15 minutes 
 before the script actually begins to 5 minutes after it completes.
@@ -206,8 +206,8 @@ keys scroll the window containing the text information.</p>
 <h3>System Administration</h3>
 
 <p>As of IBM's REV 2 driver SLURM must be built in 64bit mod.  
-This can be done by specifying <i>CFLAGS=-m64 CXX="g++ -m64"</i>.  Both CFLAGS
-and CXX must be set for slurm to compile correctly.
+This can be done by specifying <b>CFLAGS=-m64 CXX="g++ -m64"</b>.  
+Both CFLAGS and CXX must be set for SLURM to compile correctly.
 <p>Building a Blue Gene compatible system is dependent upon the 
 <i>configure</i> program locating some expected files. 
 In particular, the configure script searches for <i>libdb2.so</i> in the 
@@ -237,7 +237,7 @@ row/rack/midplane data.</p>
 to configure and build two sets of files for installation. 
 One set will be for the Service Node (SN), which has direct access to the BG Bridge APIs. 
 The second set will be for the Front End Nodes (FEN), whick lack access to the 
-Bridge APIs and interact with using Remote Proceedure Calls to the slurmctld daemon.
+Bridge APIs and interact with using Remote Procedure Calls to the slurmctld daemon.
 You should see "#define HAVE_BG 1" and "#define HAVE_FRONT_END 1" in the "config.h" 
 file for both the SN and FEN builds. 
 You should also see "#define HAVE_BG_FILES 1" in config.h on the SN before 
@@ -297,7 +297,7 @@ etc.).  Sample prolog and epilog scripts follow. </p>
 with each other's scheduling, backfill scheduling is not presently meaningful.
 SLURM's builtin scheduler on Blue Gene will sort pending jobs and then attempt 
 to schedule all of them in priority order. 
-This essentailly functions as if there is a separate queue for each job size.
+This essentially functions as if there is a separate queue for each job size.
 Note that SLURM does support different partitions with an assortment of 
 different scheduling parameters.
 For example, SLURM can have defined a partition for full system jobs that 
@@ -314,7 +314,7 @@ the scontrol reconfig command. </p>
 "NodeName=bg[000x733] NodeAddr=frontend0 NodeHostname=frontend0 Procs=1024". 
 Based on the prefix you give to the noderange in the NodeName= variable 
 the bgl blocks will be named by such.  Thus this can be anything you want, but
-needs to be consitant throughout the slurm.conf file.
+needs to be consistent throughout the slurm.conf file.
 Note that the values of both NodeAddr and NodeHostname for all 
 128 base partitions is the name of the front end node executing 
 the slurmd daemon. 
@@ -365,7 +365,7 @@ both be cold-started (e.g. <b>/etc/init.d/slurm startclean</b>).
 If you which to modify the Image and Numpsets values for existing
 bgblocks, either modify them manually or destroy the bgblocks
 and let SLURM recreate them. 
-Note that in addition to the bgblocks defined in blugene.conf, an 
+Note that in addition to the bgblocks defined in bluegene.conf, an 
 additional bgblock is created containing all resources defined 
 all of the other defined bgblocks. 
 If you modify the bgblocks, it is recommended that you restart 
@@ -394,7 +394,7 @@ bgblocks. A sample <i>bluegene.conf</i> file is shown below.
 #                    Bridge API logs.
 # BridgeAPIVerbose:  How verbose the BG Bridge API logs should be
 #                    0: Log only error and warning messages
-#                    1: Log level 0 and information messasges
+#                    1: Log level 0 and information messages
 #                    2: Log level 1 and basic debug messages
 #                    3: Log level 2 and more debug message
 #                    4: Log all messages
@@ -470,7 +470,7 @@ prior to initiating the SLURM daemons.</p>
 
 <p>At some time in the future, we expect SLURM to support <i>dynamic 
 partitioning</i> in which Blue Gene job partitions are created and destroyed 
-as needed to accomodate the workload.
+as needed to accommodate the workload.
 At that time the <i>bluegene.conf</i> configuration file will become obsolete.
 Dynamic partition does involve substantial overhead including the 
 rebooting of c-nodes and I/O nodes.</p>
@@ -523,7 +523,7 @@ block on request.
 apply to Blue Gene systems.
 One can start the <b>slurmctld</b> and <b>slurmd</b> in the foreground 
 with extensive debugging to establish basic functionality. 
-Once runnning in production, the configured <b>SlurmctldLog</b> and 
+Once running in production, the configured <b>SlurmctldLog</b> and 
 <b>SlurmdLog</b> files will provide historical system information.
 On Blue Gene systems, there is also a <b>BridgeAPILogFile</b> defined 
 in <b>bluegene.conf</b> which can be configured to contain detailed 
@@ -532,7 +532,7 @@ information about every Bridge API call issued.</p>
 <p>Note that slurmcltld log messages of the sort 
 <i>Nodes bg[000x133] not responding</i> are indicative of the slurmd 
 daemon serving as a front-end to those nodes is not responding (on 
-non-Blue Gene systems, the slurmd actaully does run on the compute 
+non-Blue Gene systems, the slurmd actually does run on the compute 
 nodes, so the message is more meaningful there). </p>
 
 <p class="footer"><a href="#top">top</a></p></td>
