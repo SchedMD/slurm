@@ -244,9 +244,8 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	job->envtp->select_jobinfo = msg->select_jobinfo;
 	job->envtp->nhosts = hostlist_count(hl);
 	hostlist_destroy(hl);
-	job->envtp->nodelist = buf;
+	job->envtp->nodelist = xstrdup(buf);
 	job->envtp->task_count = _sprint_task_cnt(msg);
-	
 	return job;
 }
 
@@ -448,12 +447,12 @@ job_manager(slurmd_job_t *job)
 	debug3("Entered job_manager for %u.%u pid=%lu",
 	       job->jobid, job->stepid, (unsigned long) job->jmgr_pid);
 	
-	if (!job->batch && 
+	if (!job->batch &&
 	    (interconnect_preinit(job->switch_job) < 0)) {
 		rc = ESLURM_INTERCONNECT_FAILURE;
 		goto fail1;
 	}
-
+	
 	if (job->spawn_task)
 		rc = _setup_spawn_io(job);
 	else
@@ -474,7 +473,7 @@ job_manager(slurmd_job_t *job)
 		rc = ESLURM_INTERCONNECT_FAILURE;
 		goto fail2;
 	}
-
+	
 	if (_fork_all_tasks(job) < 0) {
 		debug("_fork_all_tasks failed");
 		rc = ESLURMD_EXECVE_FAILED;
@@ -1035,7 +1034,8 @@ _complete_job(uint32_t jobid, uint32_t stepid, int err, int status)
 	req.node_name	= conf->node_name;
 	req_msg.msg_type= REQUEST_COMPLETE_JOB_STEP;
 	req_msg.data	= &req;	
-info("sending REQUEST_COMPLETE_JOB_STEP");
+
+	info("sending REQUEST_COMPLETE_JOB_STEP");
 	/* Note: these log messages don't go to slurmd.log from here */
 	for (i=0; i<=MAX_RETRY; i++) {
 		if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) >= 0)
