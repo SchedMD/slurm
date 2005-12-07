@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-213976">
-<meta name="LLNLRandRdate" content="29 November 2005">
+<meta name="LLNLRandRdate" content="7 December 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -112,7 +112,7 @@ are denoted below.
 Please see the <a href=download.html>Download</a> page for references to
 required software to build these plugins.</p>
 
-<p>To build RPMs directly, copy the distribued tar-ball into the directory
+<p>To build RPMs directly, copy the distributed tar-ball into the directory
 <b>/usr/src/redhat/SOURCES</b> and execute a command of this sort (substitute
 the appropriate SLURM version number):<br>
 <span class="commandline">rpmbuild -ta slurm-0.5.0-1.tgz</span> or <br>
@@ -132,7 +132,7 @@ Some macro definitions that may be used in building SLURM include:
 <dt>with_munge
 <dd>Specifies munge (authentication library) installation location
 <dt>with_proctrack
-<dd>Specifies AIX process tracking kernel extention header file location
+<dd>Specifies AIX process tracking kernel extension header file location
 <dt>with_ssl
 <dd>Specifies SSL libary installation location
 </dl>
@@ -203,11 +203,11 @@ be synchronized. </p>
 
 <h4>MPI support</h4>
 <p>Quadrics MPI works directly with SLURM on systems having Quadrics 
-interconnects and is the prefered version of MPI for those systems.
+interconnects and is the preferred version of MPI for those systems.
 Set the <b>MpiDefault=none</b> configuration parameter in slurm.conf.</p>
 
 <p>For <a href="http://www.myricom.com/">Myrinet</a> systems, MPICH-GM
-is prefered. In order to use MPICH-GM, set <b>MpiDefault=mpichgm</b> and 
+is preferred. In order to use MPICH-GM, set <b>MpiDefault=mpichgm</b> and 
 <b>ProctrackType=proctrack/linuxproc</b> configuration parameters in 
 slurm.conf.</p>
 
@@ -233,7 +233,7 @@ nodes in the slurm.conf configuration file. SLURM presently lacks the ability
 to arbitrarily order tasks across nodes.</p> 
 
 <h4>Scheduler support</h4>
-<p>The scheduler used by SLURM is controled by the <b>SchedType</b> configuration 
+<p>The scheduler used by SLURM is controlled by the <b>SchedType</b> configuration 
 parameter. This is meant to control the relative importance of pending jobs.
 SLURM's default scheduler is FIFO (First-In First-Out). A backfill scheduler 
 plugin is also available. Backfill scheduling will initiate a lower-priority job 
@@ -254,7 +254,7 @@ is recommended.
 For more information, please see 
 <a href="cons_res.html">Consumable Resources in SLURM</a>. 
 For BlueGene systems, <i>bluegene</i> plugin is required (it is topology 
-aware and interactes with the BlueGene bridge API).</p>
+aware and interacts with the BlueGene bridge API).</p>
 
 <h4>Logging</h4>
 <p>SLURM uses the syslog function to record events. It uses a range of importance
@@ -290,7 +290,7 @@ environment.
 <h4>Compute node access</h4>
 <p>SLURM does not by itself limit access to allocated compute nodes, 
 but it does provide mechanisms to accomplish this. 
-There is a Pluggable Authentication Module (PAM) for resticting access 
+There is a Pluggable Authentication Module (PAM) for restricting access 
 to compute nodes available for download. 
 When installed, the SLURM PAM module will prevent users from logging 
 into any node that has not be assigned to that user.
@@ -553,9 +553,10 @@ There are about 150 tests which will execute on the order of 1000 jobs
 and 2000 job steps. 
 Depending upon your system configuration and performance, this test 
 suite will take roughly 40 minutes to complete.
-Depending upon where SLURM and other files are installed, you may need 
-to modify pathnames in the file <i>testsuite/expect/globals</i>.
-Change your working directory to <i>testsuite/expect</i> before 
+You must copy the file <i>testsuite/expect/globals.examples</i>
+to <i>testsuite/expect/globals</i> and modify pathnames depending 
+upon where SLURM and other tools are installed.
+Set your working directory to <i>testsuite/expect</i> before 
 starting these tests.
 Tests may be executed individually by name (e.g.  <i>test1.1</i>) 
 or the full test suite may be executed with the single command 
@@ -581,7 +582,7 @@ in the NEWS file.
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-213976<br>
-Last modified 29 November 2005</p></td>
+Last modified 7 December 2005</p></td>
 </tr>
 </table>
 </td>
