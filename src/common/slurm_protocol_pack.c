@@ -2244,7 +2244,6 @@ _pack_old_job_desc_msg(old_job_alloc_msg_t * job_desc_ptr, Buf buffer)
 {
 	/* load the data values */
 	pack32(job_desc_ptr->job_id, buffer);
-	pack32(job_desc_ptr->uid, buffer);
 }
 
 static int
@@ -2260,7 +2259,6 @@ _unpack_old_job_desc_msg(old_job_alloc_msg_t **
 
 	/* load the data values */
 	safe_unpack32(&job_desc_ptr->job_id, buffer);
-	safe_unpack32(&job_desc_ptr->uid, buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:

@@ -14,6 +14,7 @@ documents those changes that are of interest to users and admins.
     slurm_allocation_lookup instead.
  -- New API calls slurm_signal_job and slurm_signal_job_step to send
     signals directly to the slurmds without triggering the shutdown sequence.
+ -- remove "uid" from old_job_alloc_msg_t, no longer needed.
 
 * Changes in SLURM 0.7.0-pre4
 =============================

@@ -117,7 +117,6 @@ slurm_step_ctx_create (job_step_create_request_msg_t *step_req)
 	resource_allocation_response_msg_t *alloc_resp = NULL;
 	
 	old_job_req.job_id	= step_req->job_id;
-	old_job_req.uid		= getuid();
 
 	if (slurm_confirm_allocation(&old_job_req, &alloc_resp) < 0)
 		return NULL;
