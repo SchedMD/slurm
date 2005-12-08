@@ -9,9 +9,9 @@ documents those changes that are of interest to users and admins.
  -- squeue and smap now display correct info for jobs in bluegene enviornment.
  -- Fix setting of SLURM_NODELIST for batch jobs.
  -- Add SubmitTime to job information available for display.
- -- API function slurm_allocation_lookup has been marked OBSOLETE
+ -- API function slurm_confirm_allocation() has been marked OBSOLETE
     and will go away in some future version of SLURM.  Use
-    slurm_allocation_lookup instead.
+    slurm_allocation_lookup() instead.
  -- New API calls slurm_signal_job and slurm_signal_job_step to send
     signals directly to the slurmds without triggering the shutdown sequence.
  -- remove "uid" from old_job_alloc_msg_t, no longer needed.
