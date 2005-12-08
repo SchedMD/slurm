@@ -269,11 +269,6 @@ extern int kill_proc_tree_not_top(pid_t top, int sig)
 	list = _get_list(top, _alloc_pid(top, NULL), hashtbl);
 	rc = _kill_proclist_exclude(list, top, sig);
 	_destroy_hashtbl(hashtbl);
-
-	while(list) {
-		find_ancestor(list->pid, "slurmd");
-		list = list->next;
-	}
 	_destroy_list(list);
 	
 	return rc;
