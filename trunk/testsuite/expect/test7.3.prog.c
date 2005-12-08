@@ -83,7 +83,6 @@ int main (int argc, char *argv[])
 		printf("Waiting for resource allocation\n");
 		fflush(stdout);
 		old_alloc.job_id = job_resp->job_id;
-		old_alloc.uid    = job_req.user_id;
 		while ((job_resp->node_list == NULL) ||
 		       (strlen(job_resp->node_list) == 0)) {
 			sleep(5);
