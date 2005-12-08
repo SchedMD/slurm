@@ -475,7 +475,6 @@ typedef struct node_info_msg {
 
 typedef struct old_job_alloc_msg {
 	uint32_t job_id;	/* job ID */
-	uint32_t uid;		/* user the job runs as */
 } old_job_alloc_msg_t;
 
 typedef struct partition_info {

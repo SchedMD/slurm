@@ -293,7 +293,6 @@ slurm_allocation_lookup(uint32_t jobid,
 	slurm_msg_t resp_msg;
 
 	req.job_id = jobid;
-	req.uid = 0xdeadbeef; /* vestigial paramter ignored by the server */
 	req_msg.msg_type = REQUEST_OLD_JOB_RESOURCE_ALLOCATION;
 	req_msg.data     = &req; 
 

@@ -139,7 +139,6 @@ existing_allocation(void)
 
 	if ((job.job_id = jobid_from_env()) == 0)
 		return NULL;
-	job.uid = getuid();
 
 	if (slurm_confirm_allocation(&job, &resp) < 0) {
 		if (opt.parallel_debug)
@@ -168,7 +167,6 @@ _wait_for_resources(resource_allocation_response_msg_t **resp)
 	info ("job %u queued and waiting for resources", r->job_id);
 
 	old.job_id = r->job_id;
-	old.uid = (uint32_t) getuid();
 	slurm_free_resource_allocation_response_msg(r);
 
 	/* Keep polling until the job is allocated resources */
