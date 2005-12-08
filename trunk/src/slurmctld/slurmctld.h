@@ -246,7 +246,7 @@ struct job_details {
 	bitstr_t *exc_node_bitmap;	/* bitmap of excluded nodes */
 	char *features;			/* required features */
 	uint16_t req_tasks;		/* required number of tasks */
-	uint16_t shared;		/* set node can be shared*/
+	uint16_t shared;		/* set node can be shared */
 	uint16_t contiguous;		/* set if requires contiguous nodes */
         uint16_t exclusive;             /* set if requires exclusive
                                          * nodes, Only useful when
