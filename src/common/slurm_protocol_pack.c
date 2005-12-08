@@ -1746,6 +1746,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpack32(&job->alloc_sid,  buffer);
 	safe_unpack32(&job->time_limit, buffer);
 
+	safe_unpack_time(&job->submit_time, buffer);
 	safe_unpack_time(&job->start_time, buffer);
 	safe_unpack_time(&job->end_time, buffer);
 	safe_unpack32(&job->priority, buffer);

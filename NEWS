@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
  -- Basic slurmctld and tool functionality validated to 16k nodes.
  -- squeue and smap now display correct info for jobs in bluegene enviornment.
  -- Fix setting of SLURM_NODELIST for batch jobs.
+ -- Add SubmitTime to job information available for display.
 
 * Changes in SLURM 0.7.0-pre4
 =============================

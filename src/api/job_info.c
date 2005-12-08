@@ -216,9 +216,16 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 		if (job_ptr->exc_node_inx[j] == -1)
 			break;
 	}
+	if (one_liner)
+		fprintf ( out, " ");
+	else
+		fprintf ( out, "\n   ");
 
+	/****** Line 12 ******/
+	slurm_make_time_str ((time_t *)&job_ptr->submit_time, time_str);
+	fprintf ( out, "SubmitTime=%s ", time_str);
 
-	/****** Line 12 (optional) ******/
+	/****** Line 13 (optional) ******/
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
 		select_buf, sizeof(select_buf), SELECT_PRINT_MIXED);
 	if (select_buf[0] != '\0') {

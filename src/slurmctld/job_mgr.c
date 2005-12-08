@@ -2675,6 +2675,10 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	else
 		pack32(dump_job_ptr->time_limit, buffer);
 
+	if (dump_job_ptr->details)
+		 pack_time(dump_job_ptr->details->submit_time, buffer);
+	else
+		pack_time((time_t) 0, buffer);
 	if (IS_JOB_PENDING(dump_job_ptr)) {
 		if (dump_job_ptr->details)
 			pack_time(dump_job_ptr->details->begin_time,
