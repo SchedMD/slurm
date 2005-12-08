@@ -1,6 +1,6 @@
 /*****************************************************************************\
  *  src/slurmd/common/stepd_api.h - slurmstepd message API
- *  $Id: $
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

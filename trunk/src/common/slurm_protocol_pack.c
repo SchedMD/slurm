@@ -111,6 +111,9 @@ static int _unpack_job_step_create_request_msg(
 static void _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer);
 static int _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer);
 
+static void _pack_signal_job_msg(signal_job_msg_t * msg, Buf buffer);
+static int _unpack_signal_job_msg(signal_job_msg_t ** msg, Buf buffer);
+
 static void _pack_epilog_comp_msg(epilog_complete_msg_t * msg, Buf buffer);
 static int  _unpack_epilog_comp_msg(epilog_complete_msg_t ** msg, Buf buffer);
 
@@ -442,8 +445,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		 _pack_complete_job_step_msg((complete_job_step_msg_t *)
 					     msg->data, buffer);
 		 break;
-	 case REQUEST_KILL_TIMELIMIT:
 	 case REQUEST_SIGNAL_JOB:
+		 _pack_signal_job_msg((signal_job_msg_t *) msg->data, buffer);
+		 break;
+	 case REQUEST_KILL_TIMELIMIT:
 	 case REQUEST_TERMINATE_JOB:
 		 _pack_kill_job_msg((kill_job_msg_t *) msg->data, buffer);
 		 break;
@@ -709,8 +714,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 						     **) & (msg->data),
 						    buffer);
 		 break;
-	 case REQUEST_KILL_TIMELIMIT:
 	 case REQUEST_SIGNAL_JOB:
+		 rc = _unpack_signal_job_msg((signal_job_msg_t **)&(msg->data),
+					     buffer);
+		 break;
+	 case REQUEST_KILL_TIMELIMIT:
 	 case REQUEST_TERMINATE_JOB:
 		 rc = _unpack_kill_job_msg((kill_job_msg_t **) & (msg->data), 
 					   buffer);
@@ -1382,6 +1390,38 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer)
 	if (select_g_alloc_jobinfo (&tmp_ptr->select_jobinfo)
 	||  select_g_unpack_jobinfo(tmp_ptr->select_jobinfo, buffer))
 		goto unpack_error;
+
+	return SLURM_SUCCESS;
+
+      unpack_error:
+	xfree(tmp_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_signal_job_msg(signal_job_msg_t * msg, Buf buffer)
+{
+	xassert(msg != NULL);
+
+	pack32(msg->job_id,  buffer);
+	pack32(msg->signal, buffer);
+	debug("_pack_signal_job_msg signal = %d", msg->signal);
+}
+
+static int
+_unpack_signal_job_msg(signal_job_msg_t ** msg, Buf buffer)
+{
+	signal_job_msg_t *tmp_ptr;
+
+	/* alloc memory for structure */
+	xassert(msg);
+	tmp_ptr = xmalloc(sizeof(signal_job_msg_t));
+	*msg = tmp_ptr;
+
+	safe_unpack32(&(tmp_ptr->job_id), buffer);
+	safe_unpack32(&(tmp_ptr->signal), buffer);
+	debug("_unpack_signal_job_msg signal = %d", tmp_ptr->signal);
 
 	return SLURM_SUCCESS;
 

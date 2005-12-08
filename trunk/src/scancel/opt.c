@@ -211,7 +211,7 @@ static void _opt_default()
 	opt.job_cnt	= 0;
 	opt.job_name	= NULL;
 	opt.partition	= NULL;
-	opt.signal	= SIGKILL;
+	opt.signal	= (uint16_t)-1; /* no signal specified */
 	opt.state	= JOB_END;
 	opt.user_name	= NULL;
 	opt.user_id	= 0;
@@ -399,7 +399,7 @@ _xlate_job_step_ids(char **rest)
 			}
 			opt.step_id[i] = tmp_l;
 		} else 
-			opt.step_id[i] = NO_VAL;
+			opt.step_id[i] = SLURM_BATCH_SCRIPT;
 
 		if (next_str[0] != '\0') {
 			error ("Invalid job ID %s", rest[i]);

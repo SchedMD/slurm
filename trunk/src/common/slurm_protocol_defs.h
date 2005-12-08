@@ -352,6 +352,11 @@ typedef struct kill_job_msg {
 	select_jobinfo_t select_jobinfo;	/* opaque data type */
 } kill_job_msg_t;
 
+typedef struct signal_job_msg {
+	uint32_t job_id;
+	uint32_t signal;
+} signal_job_msg_t;
+
 typedef struct job_time_msg {
 	uint32_t job_id;
 	time_t expiration_time;
@@ -532,6 +537,7 @@ void inline
 slurm_free_reattach_tasks_response_msg(reattach_tasks_response_msg_t * msg);
 
 void inline slurm_free_kill_job_msg(kill_job_msg_t * msg);
+void inline slurm_free_signal_job_msg(signal_job_msg_t * msg);
 void inline slurm_free_update_job_time_msg(job_time_msg_t * msg);
 
 void inline slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg);

@@ -56,6 +56,7 @@ libslurm_la_SOURCES =    \
 	node_info.c      \
 	node_select_info.c node_select_info.h \
 	partition_info.c \
+	signal.c         \
 	slurm_pmi.c slurm_pmi.h	\
 	spawn.c          \
 	submit.c         \

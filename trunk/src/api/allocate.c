@@ -236,6 +236,9 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 }
 
 /*
+ * OBSOLETE! This function, along with the old_job_alloc_msg_t
+ *           structure, will go away in a future version of SLURM.  Use
+ *           slurm_allocation_lookup() instead.
  * slurm_confirm_allocation - confirm an existing resource allocation
  * IN job_desc_msg - description of existing job request
  * OUT slurm_alloc_msg - response to request
@@ -264,6 +267,48 @@ slurm_confirm_allocation (old_job_alloc_msg_t *req,
 		break;
 	case RESPONSE_RESOURCE_ALLOCATION:
 		*resp = (resource_allocation_response_msg_t *) resp_msg.data;
+		return SLURM_PROTOCOL_SUCCESS;
+		break;
+	default:
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
+	}
+
+	return SLURM_PROTOCOL_SUCCESS;
+}
+
+/*
+ * slurm_allocation_lookup - retrieve info for an existing resource allocation
+ * IN jobid - job allocation identifier
+ * OUT info - job allocation information
+ * RET 0 on success or slurm error code
+ * NOTE: free the "resp" using slurm_free_resource_allocation_response_msg
+ */
+int
+slurm_allocation_lookup(uint32_t jobid,
+			resource_allocation_response_msg_t **info)
+{
+	old_job_alloc_msg_t req;
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
+
+	req.job_id = jobid;
+	req.uid = 0xdeadbeef; /* vestigial paramter ignored by the server */
+	req_msg.msg_type = REQUEST_OLD_JOB_RESOURCE_ALLOCATION;
+	req_msg.data     = &req; 
+
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+		return SLURM_ERROR;
+
+	slurm_free_cred(resp_msg.cred);
+	switch(resp_msg.msg_type) {
+	case RESPONSE_SLURM_RC:
+		if (_handle_rc_msg(&resp_msg) < 0)
+			return SLURM_ERROR;
+		*info = NULL;
+		break;
+	case RESPONSE_RESOURCE_ALLOCATION:
+		*info = (resource_allocation_response_msg_t *) resp_msg.data;
 		return SLURM_PROTOCOL_SUCCESS;
 		break;
 	default:
