@@ -370,6 +370,7 @@ typedef struct job_info {
 	uint32_t group_id;	/* group job sumitted as */
 	uint16_t job_state;	/* state of the job, see enum job_states */
 	uint32_t time_limit;	/* maximum run time in minutes or INFINITE */
+	time_t submit_time;	/* time of job submission */
 	time_t start_time;	/* time execution begins, actual or expected */
 	time_t end_time;	/* time of termination, actual or expected */
 	uint32_t priority;	/* relative priority of the job, 
