@@ -2670,7 +2670,10 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	pack16((uint16_t) dump_job_ptr->job_state, buffer);
 	pack16((uint16_t) dump_job_ptr->batch_flag, buffer);
 	pack32(dump_job_ptr->alloc_sid, buffer);
-	pack32(dump_job_ptr->time_limit, buffer);
+	if ((dump_job_ptr->time_limit == NO_VAL) && dump_job_ptr->part_ptr)
+		pack32(dump_job_ptr->part_ptr->max_time, buffer);
+	else
+		pack32(dump_job_ptr->time_limit, buffer);
 
 	if (IS_JOB_PENDING(dump_job_ptr)) {
 		if (dump_job_ptr->details)
