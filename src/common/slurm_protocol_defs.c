@@ -290,6 +290,11 @@ void slurm_free_kill_job_msg(kill_job_msg_t * msg)
 	}
 }
 
+void slurm_free_signal_job_msg(signal_job_msg_t * msg)
+{
+	xfree(msg);
+}
+
 void slurm_free_update_job_time_msg(job_time_msg_t * msg)
 {
 	xfree(msg);

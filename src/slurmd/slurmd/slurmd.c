@@ -135,6 +135,7 @@ int
 main (int argc, char *argv[])
 {
 	int pidfd;
+	int blocked_signals[] = {SIGPIPE, 0};
 
 	/*
 	 * Create and set default values for the slurmd global
@@ -152,6 +153,7 @@ main (int argc, char *argv[])
 	xsignal(SIGTERM, &_term_handler);
 	xsignal(SIGINT,  &_term_handler);
 	xsignal(SIGHUP,  &_hup_handler );
+	xsignal_block(blocked_signals);
 
 	/* 
 	 * Run slurmd_init() here in order to report early errors

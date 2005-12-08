@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
 #if HAVE_INTTYPES_H
 #  include <inttypes.h>
@@ -175,7 +176,7 @@ _cancel_jobs (void)
 				if (opt.interactive && 
 				    (_confirmation(i, opt.step_id[j]) == 0))
 					break;
-				if (opt.step_id[j] == NO_VAL)
+				if (opt.step_id[j] == SLURM_BATCH_SCRIPT)
 					_cancel_job_id (opt.job_id[j], 
 							opt.signal);
 				else
@@ -191,7 +192,7 @@ _cancel_jobs (void)
 
 	} else if (opt.job_cnt) {	/* delete specific jobs */
 		for (j = 0; j < opt.job_cnt; j++ ) {
-			if (opt.step_id[j] == NO_VAL)
+			if (opt.step_id[j] == SLURM_BATCH_SCRIPT)
 				_cancel_job_id (opt.job_id[j], 
 						opt.signal);
 			else
@@ -206,7 +207,7 @@ _cancel_jobs (void)
 			if (job_ptr[i].job_id == 0) 
 				continue;
 			if (opt.interactive && 
-			    (_confirmation(i, NO_VAL) == 0))
+			    (_confirmation(i, SLURM_BATCH_SCRIPT) == 0))
 				continue;
 			_cancel_job_id (job_ptr[i].job_id, opt.signal);
 		}
@@ -219,9 +220,19 @@ _cancel_job_id (uint32_t job_id, uint16_t signal)
 	int error_code = SLURM_SUCCESS, i;
 
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
-		verbose("Signal %u to job %u", signal, job_id);
-		error_code = slurm_kill_job (job_id, signal, 
-				(uint16_t)opt.batch);
+		if (signal == (uint16_t)-1) {
+			verbose("Signal %u to job %u", SIGKILL, job_id);
+			error_code = slurm_kill_job (job_id, SIGKILL,
+						     (uint16_t)opt.batch);
+		} else {
+			verbose("Signal %u to job %u", signal, job_id);
+			if (opt.batch)
+				error_code = slurm_signal_job_step(job_id,
+							   SLURM_BATCH_SCRIPT,
+							   signal);
+			else
+				error_code = slurm_signal_job (job_id, signal);
+		}
 		if ((error_code == 0) || 
 		    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
 			break;
@@ -244,8 +255,17 @@ _cancel_step_id (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	int error_code = SLURM_SUCCESS, i;
 
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
-		verbose("Signal %u to step %u.u", signal, job_id, step_id);
-		error_code = slurm_kill_job_step (job_id, step_id, signal);
+		if (signal == (uint16_t)-1) {
+			verbose("Signal %u to step %u.u",
+				SIGKILL, job_id, step_id);
+			error_code = slurm_kill_job_step (job_id, step_id,
+							  SIGKILL);
+		} else {
+			verbose("Signal %u to step %u.u",
+				signal, job_id, step_id);
+			error_code = slurm_signal_job_step(job_id, step_id,
+							   signal);
+		}
 		if ((error_code == 0) || 
 		    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
 			break;
@@ -269,7 +289,7 @@ _confirmation (int i, uint32_t step_id)
 
 	job_ptr = job_buffer_ptr->job_array ;
 	while (1) {
-		if (step_id == NO_VAL) {
+		if (step_id == SLURM_BATCH_SCRIPT) {
 			printf ("Cancel job_id=%u name=%s partition=%s [y/n]? ", 
 			        job_ptr[i].job_id, job_ptr[i].name, 
 				job_ptr[i].partition);

@@ -70,8 +70,7 @@ static int  _abort_job(uint32_t job_id);
 static char ** _build_env(uint32_t jobid, uid_t uid, char *bg_part_id);
 static bool _slurm_authorized_user(uid_t uid);
 static bool _job_still_running(uint32_t job_id);
-static int  _kill_all_active_steps(void *auth_cred, uint32_t jobid,
-				   int sig, bool batch);
+static int  _kill_all_active_steps(uint32_t jobid, int sig, bool batch);
 static void _rpc_launch_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_spawn_task(slurm_msg_t *, slurm_addr *);
 static void _rpc_batch_job(slurm_msg_t *, slurm_addr *);
@@ -89,13 +88,13 @@ static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
 static int  _run_prolog(uint32_t jobid, uid_t uid, char *bg_part_id);
 static int  _run_epilog(uint32_t jobid, uid_t uid, char *bg_part_id);
 
-static bool _pause_for_job_completion(void *auth_cred, uint32_t jobid,
-				      int maxtime);
+static bool _pause_for_job_completion(uint32_t jobid, int maxtime);
 static int _waiter_init (uint32_t jobid);
 static int _waiter_complete (uint32_t jobid);
 
 static bool _steps_completed_now(uint32_t jobid);
 static void _wait_state_completed(uint32_t jobid, int max_delay);
+static uid_t _get_job_uid(uint32_t jobid);
 
 /*
  *  List of threads waiting for jobs to complete
@@ -151,7 +150,7 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 	case REQUEST_SIGNAL_JOB:
 		debug2("Processing RPC: REQUEST_SIGNAL_JOB");
 		_rpc_signal_job(msg, cli);
-		slurm_free_kill_job_msg(msg->data);
+		slurm_free_signal_job_msg(msg->data);
 		break;
 	case REQUEST_TERMINATE_JOB:
 		debug2("Processing RPC: REQUEST_TERMINATE_JOB");
@@ -973,7 +972,7 @@ _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 	slurm_close_accepted_conn(msg->conn_fd);
 	msg->conn_fd = -1;
 
-	nsteps = _kill_all_active_steps(msg->cred, req->job_id, SIGTERM, false);
+	nsteps = _kill_all_active_steps(req->job_id, SIGTERM, false);
 	verbose( "Job %u: timeout: sent SIGTERM to %d active steps", 
 	         req->job_id, nsteps );
 
@@ -1119,15 +1118,58 @@ done:
 	xfree(resp);
 }
 
+static uid_t
+_get_job_uid(uint32_t jobid)
+{
+	List steps;
+	ListIterator i;
+	step_loc_t *stepd;
+	slurmstepd_info_t *info;
+	int fd;
+	uid_t uid;
+
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	i = list_iterator_create(steps);
+	while (stepd = list_next(i)) {
+		if (stepd->jobid != jobid) {
+			/* multiple jobs expected on shared nodes */
+			continue;
+		}
+
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   stepd->jobid, stepd->stepid);
+		if (fd == -1) {
+			debug3("Unable to connect to step %u.%u",
+			       stepd->jobid, stepd->stepid);
+			continue;
+		}
+
+		info = stepd_get_info(fd);
+		close(fd);
+		if (info == NULL) {
+			debug("stepd_get_info failed %u.%u: %m",
+			      stepd->jobid, stepd->stepid);
+			continue;
+		}
+		break;
+	}
+	list_iterator_destroy(i);
+	list_destroy(steps);
+
+	uid = (uid_t)info->uid;
+	xfree(info);
+	return uid;
+}
+
 /*
- * _kill_all_active_steps - signals all steps of a job
+ * _kill_all_active_steps - signals the container of all steps of a job
  * jobid IN - id of job to signal
  * sig   IN - signal to send
  * batch IN - if true signal batch script, otherwise skip it
  * RET count of signaled job steps (plus batch script, if applicable)
  */
 static int
-_kill_all_active_steps(void *auth_cred, uint32_t jobid, int sig, bool batch)
+_kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 {
 	List steps;
 	ListIterator i;
@@ -1145,7 +1187,7 @@ _kill_all_active_steps(void *auth_cred, uint32_t jobid, int sig, bool batch)
 			continue;
 		}
 
-		if ((stepd->stepid == NO_VAL) && (!batch))
+		if ((stepd->stepid == SLURM_BATCH_SCRIPT) && (!batch))
 			continue;
 
 		step_cnt++;
@@ -1295,33 +1337,78 @@ _epilog_complete(uint32_t jobid, int rc)
 }
 
 
-/* FIXME - kill_job_msg_t doesn't have a signal number in the payload
- *         so it won't suffice for this RPC.  Fortunately, no one calls
- *         this RPC.
+/*
+ * Send a signal through the appropriate slurmstepds for each job step
+ * belonging to a given job allocation.
  */
 static void 
 _rpc_signal_job(slurm_msg_t *msg, slurm_addr *cli)
 {
-	int             rc     = SLURM_SUCCESS;
-	kill_job_msg_t *req    = msg->data;
-	uid_t           uid    = g_slurm_auth_get_uid(msg->cred);
-	int             nsteps = 0;
-	int		delay;
-	char           *bg_part_id = NULL;
+	int rc = SLURM_SUCCESS;
+	signal_job_msg_t *req = msg->data;
+	uid_t req_uid = g_slurm_auth_get_uid(msg->cred);
+	uid_t job_uid;
+	List steps;
+	ListIterator i;
+	step_loc_t *stepd;
+	int step_cnt  = 0;  
+	int fd;
 
-	error("_rpc_signal_job not yet implemented");
+	debug("_rpc_signal_job, uid = %d, signal = %d", req_uid, req->signal);
+	job_uid = _get_job_uid(req->job_id);
 	/* 
 	 * check that requesting user ID is the SLURM UID
 	 */
-	if (!_slurm_authorized_user(uid)) {
+	if ((req_uid != job_uid) && (!_slurm_authorized_user(req_uid))) {
 		error("Security violation: kill_job(%ld) from uid %ld",
-		      req->job_id, (long) uid);
-		if (msg->conn_fd >= 0)
+		      req->job_id, (long) req_uid);
+		if (msg->conn_fd >= 0) {
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+			if (slurm_close_accepted_conn(msg->conn_fd) < 0)
+				error ("_rpc_signal_job: close(%d): %m",
+				       msg->conn_fd);
+		}
 		return;
 	} 
 
-	/*nsteps = _kill_all_active_steps(req->job_id, SIGTERM, true);*/
+	/*
+	 * Loop through all job steps for this job and signal the
+	 * step's process group through the slurmstepd.
+	 */
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	i = list_iterator_create(steps);
+	while (stepd = list_next(i)) {
+		if (stepd->jobid != req->job_id) {
+			/* multiple jobs expected on shared nodes */
+			debug3("Step from other job: jobid=%u (this jobid=%u)",
+			      stepd->jobid, req->job_id);
+			continue;
+		}
+
+		if (stepd->stepid == SLURM_BATCH_SCRIPT)
+			continue;
+
+		step_cnt++;
+
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   stepd->jobid, stepd->stepid);
+		if (fd == -1) {
+			debug3("Unable to connect to step %u.%u",
+			       stepd->jobid, stepd->stepid);
+			continue;
+		}
+
+		debug2("  signal %d to job %u.%u",
+		       req->signal, stepd->jobid, stepd->stepid);
+		if (stepd_signal(fd, req->signal) < 0)
+			debug("signal jobid=%u failed: %m", stepd->jobid);
+		close(fd);
+	}
+	list_iterator_destroy(i);
+	list_destroy(steps);
+	if (step_cnt == 0)
+		debug2("No steps in jobid %u to send signal %d",
+		       req->job_id, req->signal);
 
 	/*
 	 *  At this point, if connection still open, we send controller
@@ -1385,9 +1472,9 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	 * Tasks might be stopped (possibly by a debugger)
 	 * so send SIGCONT first.
 	 */
-	_kill_all_active_steps(msg->cred, req->job_id, SIGCONT, true);
+	_kill_all_active_steps(req->job_id, SIGCONT, true);
 
-	nsteps = _kill_all_active_steps(msg->cred, req->job_id, SIGTERM, true);
+	nsteps = _kill_all_active_steps(req->job_id, SIGTERM, true);
 
 	/*
 	 *  If there are currently no active job steps and no
@@ -1423,12 +1510,12 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	 *  Check for corpses
 	 */
 	delay = MAX(conf->cf.kill_wait, 5);
-	if ( !_pause_for_job_completion (msg->cred, req->job_id, delay)
-	     && _kill_all_active_steps(msg->cred, req->job_id, SIGKILL, true) ) {
+	if ( !_pause_for_job_completion (req->job_id, delay)
+	     && _kill_all_active_steps(req->job_id, SIGKILL, true) ) {
 		/*
 		 *  Block until all user processes are complete.
 		 */
-		_pause_for_job_completion (msg->cred, req->job_id, 0);
+		_pause_for_job_completion (req->job_id, 0);
 	}
 
 	/*
@@ -1524,15 +1611,14 @@ static int _waiter_complete (uint32_t jobid)
  *  Returns true if all job 
  */
 static bool
-_pause_for_job_completion (void *auth_cred, uint32_t job_id, int max_time)
+_pause_for_job_completion (uint32_t job_id, int max_time)
 {
 	int sec = 0, rc = 0;
 
 	while ( ((sec++ < max_time) || (max_time == 0))
 	      && (rc = _job_still_running (job_id))) {
 		if ((max_time == 0) && (sec > 1))
-			_kill_all_active_steps(auth_cred, job_id,
-					       SIGKILL, true);
+			_kill_all_active_steps(job_id, SIGKILL, true);
 		sleep (1);
 	}
 	/* 

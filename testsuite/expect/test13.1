@@ -91,21 +91,33 @@ if {$step_delay == 0} {
 set timeout $max_job_delay
 set job_id 0
 set matches 0
+
 spawn $srun --allocate -N1 --verbose -t2
 expect -re "jobid ($number).*"
 set job_id $expect_out(1,string)
 
 # start initial job step to claim some switch windows
+expect -re $prompt
 send "$srun -N1 -O -n$windows_used $bin_sleep $step_delay &\n"
 
 # start more job steps to check see if any switch window conflicts occur
 for {set inx 0} {$inx < $windows_interations} {incr inx} {
-	#exec $bin_usleep 1000
+        expect {
+                -re "error" {
+                        send_user "\nFAILURE: some error occurred\n"
+                        set exit_code 1
+                        exp_continue
+                }
+                -re $prompt
+        }
+
 	send "$srun -N1 -O -n$windows_used true\n"
 }
 
 # wait for initial job step to complete
-send "$bin_sleep $step_delay\n"
+expect -re $prompt
+send_user "(sleeping for $step_delay seconds) "
+sleep $step_delay
 send "exit\n"
 
 expect {
