@@ -115,6 +115,6 @@ extern int slurm_container_destroy ( uint32_t id )
 
 extern uint32_t slurm_container_find(pid_t pid)
 {
-	return (uint32_t) find_ancestor(pid, "slurmd");
+	return (uint32_t) find_ancestor(pid, "slurmstepd");
 }
 
