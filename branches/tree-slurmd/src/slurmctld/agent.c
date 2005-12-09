@@ -100,7 +100,7 @@ typedef struct thd {
 	struct sockaddr_in slurm_addr;	/* network address */
 	slurm_addr	*forward_addr;	/* array of network addresses 
 					   to forward to */	
-	int forward_cnt;                /* number of addresses to forward */
+	uint16_t forward_cnt;           /* number of addresses to forward */
 	char node_name[MAX_NAME_LEN];	/* node's name */
 } thd_t;
 
@@ -331,6 +331,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	agent_info_t *agent_info_ptr;
 	thd_t *thread_ptr;
 	int span = 0;
+	int thr_count = 0;
 	agent_info_ptr = xmalloc(sizeof(agent_info_t));
 
 	slurm_mutex_init(&agent_info_ptr->thread_mutex);
@@ -353,32 +354,34 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		while(span > AGENT_SPREAD_COUNT)
 			span = agent_info_ptr->thread_count / 2;
 	}
+	//span = 1;
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
 		thread_ptr[i].state      = DSH_NEW;
 		thread_ptr[i].slurm_addr = agent_arg_ptr->slurm_addr[i];
 		strncpy(thread_ptr[i].node_name,
 			&agent_arg_ptr->node_names[i * MAX_NAME_LEN],
 			MAX_NAME_LEN);
+		info("Span %d per slurmd",span);
 		if(span > 0) {
 			thread_ptr[i].forward_addr = xmalloc(
 				sizeof(struct sockaddr_in) * span);
-			j = 0;			
-			while(j<span 
+			j = 1;			
+			while(j<=span 
 			      && ((i+j) < agent_info_ptr->thread_count)) {
-				thread_ptr[i].forward_addr[j] = 
+				thread_ptr[i].forward_addr[j-1] = 
 					agent_arg_ptr->slurm_addr[i+j];
 				j++;
 			}
-			thread_ptr[i].forward_cnt = j;
 			j--;
+			thread_ptr[i].forward_cnt = j;
 			i += j;
 		} else {
 			thread_ptr[i].forward_cnt = 0;
 			thread_ptr[i].forward_addr = NULL;	
 		}
-		       
+		thr_count++;		       
 	}
-
+	agent_info_ptr->thread_count = thr_count;
 	return agent_info_ptr;
 }
 
@@ -676,7 +679,9 @@ static void *_thread_per_node_rpc(void *args)
 	msg.address  = thread_ptr->slurm_addr;
 	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
-
+	msg.forward_cnt = thread_ptr->forward_cnt;
+	msg.forward_addr = thread_ptr->forward_addr;
+	info("forwarding to %d",msg.forward_cnt);
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {
 		if (slurm_send_recv_rc_msg(&msg, &rc, timeout) < 0) {

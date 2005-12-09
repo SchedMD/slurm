@@ -162,12 +162,12 @@ void ping_nodes (void)
 		node_ptr = &node_record_table_ptr[i];
 		if (node_ptr->last_response >= still_live_time)
 			continue;
-
+		info("node name to check %s",node_ptr->name);
 		base_state   = node_ptr->node_state & NODE_STATE_BASE;
 		no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 		if ((node_ptr->last_response != (time_t)0)
-		&&  (node_ptr->last_response <= node_dead_time)
-		&&  (base_state != NODE_STATE_DOWN)) {
+		    &&  (node_ptr->last_response <= node_dead_time)
+		    &&  (base_state != NODE_STATE_DOWN)) {
 			if (down_hostlist)
 				(void) hostlist_push_host(down_hostlist,
 					node_ptr->name);

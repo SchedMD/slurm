@@ -282,9 +282,10 @@ pack_header(header_t * header, Buf buffer)
 	pack16(header->flags, buffer);
 	pack16((uint16_t) header->msg_type, buffer);
 	pack32(header->body_length, buffer);
-	pack32(header->forward_cnt, buffer);
-/* 	_pack_slurm_addr_array(header->forward_addr,  */
-/* 			       header->forward_cnt, buffer); */
+	pack16(header->forward_cnt, buffer);
+	if (header->forward_cnt > 0) 
+		_pack_slurm_addr_array(header->forward_addr,
+				       header->forward_cnt, buffer);
 }
 
 /* unpack_header
@@ -304,15 +305,15 @@ unpack_header(header_t * header, Buf buffer)
 	safe_unpack16(&tmp, buffer);
 	header->msg_type = (slurm_msg_type_t) tmp;
 	safe_unpack32(&header->body_length, buffer);
-	safe_unpack32(&header->forward_cnt, buffer);
-/* 	if (header->forward_cnt > 0) { */
-/* 		if(_unpack_slurm_addr_array(&(header->forward_addr),  */
-/* 					    &tmp, buffer)) */
-/* 			goto unpack_error; */
-/* 		if(tmp != header->forward_cnt) */
-/* 			goto unpack_error; */
-/* 	} else */
-/* 		header->forward_addr = NULL; */
+	safe_unpack16(&header->forward_cnt, buffer);
+	if (header->forward_cnt > 0) {
+		if(_unpack_slurm_addr_array(&(header->forward_addr),
+					    &tmp, buffer))
+			goto unpack_error;
+		if(tmp != header->forward_cnt)
+			goto unpack_error;
+	} else
+		header->forward_addr = NULL;
 	
 	
 	return SLURM_SUCCESS;
