@@ -1,17 +1,96 @@
-h2 {  font-family: Arial, Verdana, sans-serif; font-size: 16px; font-weight: bold; color: #6699CC;  text-align: center; }
-h3 {  font-family: Arial, Verdana, sans-serif; font-size: 14px; font-weight: bold; color: #6699CC}
-h4 {  font-family: Arial, Verdana, sans-serif; font-size: 12px; font-weight: bold; color: #6699CC}
-p,ol,ul,li,td {  font-family: Arial, Verdana, sans-serif; font-size: 12px; color: #000000}
-pre {  font-family: "Courier New", Courier, mono; font-size: 12px; color: #000000}
-.whitetext {  font-family: Arial, Verdana, sans-serif; font-size: 12px; font-weight: bold; color: #FFFFFF}
-.footer {  font-family: Arial, Verdana, sans-serif; font-size: 10px; color: #000000}
-a:link {  font-family: Arial, Verdana, sans-serif; color: #6699CC; text-decoration: underline}
-a:visited {  font-family: Arial, Verdana, sans-serif; color: #6699CC; text-decoration: underline}
-a:active { font-family: Arial, Helvetica, sans-serif; color: #6699CC; text-decoration: none }
-a:hover {  font-family: Arial, Verdana, sans-serif; color: #6699CC; text-decoration: none}
-a.nav:link {  font-family: Arial, Verdana, sans-serif; color: #6699CC; font-weight: bold; text-decoration: none}
-a.nav:visited {  font-family: Arial, Verdana, sans-serif; color: #6699CC; font-weight: bold; text-decoration: none}
-a.nav:active { font-family: Arial, Helvetica, sans-serif; font-weight: bold; color: #6699CC; text-decoration: none }
-a.nav:hover {  font-family: Arial, Verdana, sans-serif; color: #6699CC; font-weight: bold; text-decoration: underline}.commandline {
-	font-family: "Courier New", Courier, mono;
+body { 
+  background-color: #000000;
+}
+h1 { font-size: 150% }
+h2 { font-size: 130% }
+h3 { font-size: 115% }
+p  { font-size: 100% }
+
+pre {
+  width: 90%;
+  margin: 0 0 15px 20px;
+  padding: 15px;
+  border: 1px solid gray;
+  background-color: #ddd;
+  font-family: monospace;
+  white-space: pre;
+  overflow: auto;
+}
+
+#container {
+  width: 95%;
+  margin: 10px auto;
+  background-color: #fff;
+  color: #333;
+  border: 0px solid gray;
+  line-height: 130%;
+}
+
+#banner {
+  /*
+   * In IE6, the "banner" div is a little taller than the slurm_banner.jpg
+   * (who knows why...) and if the background-color was #000000, a line of
+   * black would appear under the banner.
+   */
+  background-color: #FFFFFF;
+  /*background-color: #000000;*/
+  background-image: url(slurm_banner_filler.jpg);
+  background-repeat: repeat-x;
+  /*border-bottom: 1px solid gray;*/
+}
+#banner_right_img {
+  position: absolute;
+  right: 5%;
+  z-index: 1;
+}
+
+#navigation {
+  float: left;
+  width: 160px;
+  padding: 1em;
+}
+
+#content {
+  margin-left: 200px;
+  border-left: 1px solid gray;
+  padding: 1em;
+  /*max-width: 36em;*/
+}
+#content h1 { text-align: center; }
+#content dt { font-weight: bold; } /* normal, bold, 900 */
+
+#footer {
+  clear: both;
+  margin: 0;
+  padding: .5em;
+  color: #333;
+  background-color: #ddd;
+  border-top: 1px solid gray;
+  text-align: center;
+}
+
+div.figure {
+  float: right;
+  margin: 0 0 15px 20px;
+  padding: 15px;
+  border: 1px solid gray;
+  text-align: center;
+  font-style: italic;
+}
+
+div.terminal {
+  width: 90%;
+  margin: 0 0 15px 20px;
+  padding: 15px;
+  border: 1px solid gray;
+  background-color: #ddd;
+  font-family: monospace;
+  white-space: pre;
+  overflow: auto;
+}
+
+@media print {
+  #navigation { display: none }
+  #content { margin-left: 0px; border-left: 0px solid gray; }
+  }
 }
