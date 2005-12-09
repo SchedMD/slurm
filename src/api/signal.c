@@ -48,7 +48,7 @@ static int _signal_job_step(const job_step_info_t *step,
 			    uint16_t signal);
 static int _signal_batch_script_step(
 	const resource_allocation_response_msg_t *allocation, uint16_t signal);
-static int _p_send_recv_rc_msg(int num_nodes, const slurm_msg_t msg[],
+static int _p_send_recv_rc_msg(int num_nodes, slurm_msg_t msg[],
 			       int rc[], int timeout);
 static void *_thr_send_recv_rc_msg(void *args);
 struct send_recv_rc {
@@ -284,7 +284,7 @@ static int _signal_batch_script_step(
  * can be running at the same time.
  */
 static int
-_p_send_recv_rc_msg(int messages, const slurm_msg_t msg[],
+_p_send_recv_rc_msg(int messages, slurm_msg_t msg[],
 		    int rc[], int timeout)
 {
 	pthread_mutex_t active_mutex;
