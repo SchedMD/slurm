@@ -52,6 +52,9 @@ pre {
   padding-top: 1em;
   /*overflow: auto;*/
 }
+/* The following eliminates the indenting and bullet-points
+ * that are normally found in unordered lists.
+ */
 #navigation ul {
   margin: 0;
   padding: 0;
