@@ -95,8 +95,6 @@ int fini ( void )
  */
 int task_pre_launch ( slurmd_job_t *job )
 {
-	FILE *fp;
-
 	debug("affinity task_pre_launch: %u.%u, task %d", 
 		job->jobid, job->stepid, job->envtp->procid);
 
@@ -119,9 +117,6 @@ int task_pre_launch ( slurmd_job_t *job )
 		slurm_chkaffinity(setval ? &new_mask : &cur_mask, job, setval);
 	}
 
-	fp = fopen("/tmp/testit", "w");
-	fprintf(fp, "hello\n");
-	fclose(fp);
 	return SLURM_SUCCESS;
 }
 
