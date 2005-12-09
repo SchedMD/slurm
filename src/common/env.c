@@ -183,6 +183,9 @@ void unsetenvp(char **env, const char *name)
 {
 	char **ep;
 
+	if (env == NULL)
+		return;
+
 	ep = env;
 	while ((ep = _find_name_in_env (ep, name)) && (*ep != NULL)) {
 		char **dp = ep;
@@ -256,6 +259,61 @@ int setup_env(env_t *env)
 		
 		if (setenvf(&env->env, "SLURM_DISTRIBUTION", "%s", dist)) {
 			error("Can't set SLURM_DISTRIBUTION env variable");
+			rc = SLURM_FAILURE;
+		}
+	}
+
+	if (env->cpu_bind_type) {
+		unsetenvp(env->env, "SLURM_CPU_BIND");	/* don't propagate SLURM_CPU_BIND */
+		int setstat = 0;
+		if (env->cpu_bind_type & CPU_BIND_VERBOSE) {
+			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_VERBOSE", "verbose");
+		} else {
+			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_VERBOSE", "quiet");
+		}
+		if (setstat) {
+			error("Unable to set SLURM_CPU_BIND_VERBOSE");
+			rc = SLURM_FAILURE;
+		}
+
+		setstat = 0;
+		if (env->cpu_bind_type & CPU_BIND_NONE) {
+			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_TYPE", "none");
+		} else if (env->cpu_bind_type & CPU_BIND_RANK) {
+			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_TYPE", "rank");
+		} else if (env->cpu_bind_type & CPU_BIND_MAPCPU) {
+			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_TYPE", "map_cpu:");
+		} else if (env->cpu_bind_type & CPU_BIND_MASKCPU) {
+			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_TYPE", "mask_cpu:");
+		} else if (env->cpu_bind_type & (~CPU_BIND_VERBOSE)) {
+			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_TYPE", "unknown");
+		} else {
+			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_TYPE", "");
+		}
+		if (setstat) {
+			error("Unable to set SLURM_CPU_BIND_TYPE");
+			rc = SLURM_FAILURE;
+		}
+
+		setstat = 0;
+		if (env->cpu_bind) {
+			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_LIST", env->cpu_bind);
+		} else {
+			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_LIST", "");
+		}
+		if (setenvf(&env->env, "SLURM_CPU_BIND_LIST", env->cpu_bind)) {
+			error("Unable to set SLURM_CPU_BIND_LIST");
+			rc = SLURM_FAILURE;
+		}
+	} else {
+		unsetenvp(env->env, "SLURM_CPU_BIND");	/* don't propagate SLURM_CPU_BIND */
+		/* set SLURM_CPU_BIND_* env vars to defaults */
+		int setstat = 0;
+		setstat |= setenvf(&env->env, "SLURM_CPU_BIND_VERBOSE", "quiet");
+		setstat |= setenvf(&env->env, "SLURM_CPU_BIND_TYPE", "");
+		setstat |= setenvf(&env->env, "SLURM_CPU_BIND_LIST", "");
+		if (setstat) {
+			error("Unable to clear SLURM_CPU_BIND_*");
 			rc = SLURM_FAILURE;
 		}
 	}

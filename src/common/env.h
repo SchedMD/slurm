@@ -46,6 +46,9 @@ typedef struct env_options {
 	bool cpus_set;		/* true if cpus_per_task explicitly set */
 	enum distribution_t
 		distribution;	/* --distribution=, -m dist	*/
+	cpu_bind_type_t
+		cpu_bind_type;	/* --cpu_bind=			*/
+	char *cpu_bind;		/* binding map for map/mask_cpu	*/
 	bool overcommit;	/* --overcommit,   -O		*/
 	int  slurmd_debug;	/* --slurmd-debug, -D           */
 	bool labelio;		/* --label-output, -l		*/
