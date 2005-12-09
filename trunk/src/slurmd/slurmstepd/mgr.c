@@ -607,7 +607,7 @@ _fork_all_tasks(slurmd_job_t *job)
 			if (_become_user(job) < 0) 
 				exit(2);
 
-			log_fini();
+			/* log_fini(); */ /* note: moved into exec_task() */
 
 			xsignal_unblock(slurmstepd_blocked_signals);
 

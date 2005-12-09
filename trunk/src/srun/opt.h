@@ -95,6 +95,8 @@ typedef struct srun_options {
 	int  max_threads;	/* --threads, -T (threads in srun) */
 	int  min_nodes;		/* --nodes=n,       -N n	*/ 
 	int  max_nodes;		/* --nodes=x-n,       -N x-n	*/ 
+	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=           */
+	char *cpu_bind;		/* binding map for map/mask_cpu */
 	bool nodes_set;		/* true if nodes explicitly set */
 	int  time_limit;	/* --time,   -t			*/
 	char *partition;	/* --partition=n,   -p n   	*/

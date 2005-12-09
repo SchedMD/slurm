@@ -250,12 +250,14 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		      job->cwd);
 		if (chdir("/tmp") < 0) {
 			error("couldn't chdir to /tmp either. dying.");
+			log_fini();
 			exit(4);
 		}
 	}
 
 	if ((!job->spawn_task) && (set_user_limits(job) < 0)) {
 		debug("Unable to set user limits");
+		log_fini();
 		exit(5);
 	}
 
@@ -268,6 +270,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	 */
         if ((rc = read (waitfd, &c, sizeof (c))) != 1) {
 	        error ("_exec_task read failed, fd = %d, rc=%d: %m", waitfd, rc);
+		log_fini();
 		exit(1);
 	}
 	close(waitfd);
@@ -284,6 +287,8 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	job->envtp->procid = t->gtid;
 	job->envtp->localid = t->id;
 	job->envtp->task_pid = getpid();
+	job->envtp->cpu_bind = xstrdup(job->cpu_bind);
+	job->envtp->cpu_bind_type = job->cpu_bind_type;
 	
 	setup_env(job->envtp);
 	job->env = job->envtp->env;
@@ -295,6 +300,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 				job->nodeid, (uint32_t) i, job->nnodes,
 				job->nprocs, job->task[i]->gtid) < 0) {
 			error("Unable to attach to interconnect: %m");
+			log_fini();
 			exit(1);
 		}
 
@@ -326,6 +332,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		_run_script("user task_prolog", job->task_prolog, job); 
 	}
 
+	log_fini();
 	execve(job->argv[0], job->argv, job->env);
 
 	/* 

@@ -450,20 +450,21 @@ JobAcctType=jobacct/none
 #
 # o Define task launch specific parameters
 #
-#    "TaskProlog" : Define a program to be executed as root before each 
+#    "TaskProlog" : Define a program to be executed as the user before each 
 #                   task begins execution.
-#    "TaskEpilog" : Define a program to be executed as root after each 
+#    "TaskEpilog" : Define a program to be executed as the user after each 
 #                   task terminates.
 #    "TaskPlugin" : Define a task launch plugin. This may be used to 
 #                   provide resource management within a node (e.g. pinning
-#                   tasks to specific processors). Permissible values are
-#      "task/none" : no task launch actions, the default.
+#                   tasks to specific processors). Permissible values are:
+#      "task/none"     : no task launch actions, the default.
+#      "task/affinity" : CPU affinity support (see "srun --cpu_bind=")
 #
 # Example:
 #
 # TaskProlog=/usr/local/slurm/etc/task_prolog # default is none
 # TaskEpilog=/usr/local/slurm/etc/task_epilog # default is none
-# TaskPlugin=task/none                        # default is task/none
+# TaskPlugin=task/affinity                    # default is task/none
 
 
 #

@@ -461,7 +461,8 @@ Identifies the type of task launch plugin, typically used to provide
 resource management within a node (e.g. pinning tasks to specific 
 processors).
 Acceptable values include
-"task/none" for systems requiring no special handling.
+"task/none" for systems requiring no special handling
+or "tasks/affinity" to enable the --cpu_bind CPU affinity srun option.
 The default value is "task/none".
 The order of task prolog/epilog execution is as follows:
 .RS

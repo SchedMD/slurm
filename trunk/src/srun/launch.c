@@ -147,6 +147,8 @@ launch(void *arg)
 		r->switch_job      = job->switch_job;
 		r->task_prolog     = opt.task_prolog;
 		r->task_epilog     = opt.task_epilog;
+		r->cpu_bind_type   = opt.cpu_bind_type;
+		r->cpu_bind        = opt.cpu_bind;
 
 		r->ofname  = fname_remote_string (job->ofname);
 		r->efname  = fname_remote_string (job->efname);

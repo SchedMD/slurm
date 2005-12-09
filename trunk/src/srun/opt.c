@@ -81,6 +81,7 @@
 #define OPT_NO_ROTATE	0x0a
 #define OPT_GEOMETRY	0x0b
 #define OPT_MPI         0x0c
+#define OPT_CPU_BIND    0x0d
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP     0x100
@@ -107,11 +108,13 @@
 #define LONG_OPT_PROLOG   0x117
 #define LONG_OPT_EPILOG   0x118
 #define LONG_OPT_BEGIN    0x119
-#define LONG_OPT_MAIL_TYPE 0x11a
-#define LONG_OPT_MAIL_USER 0x11b
+#define LONG_OPT_MAIL_TYPE   0x11a
+#define LONG_OPT_MAIL_USER   0x11b
 #define LONG_OPT_TASK_PROLOG 0x11c
 #define LONG_OPT_TASK_EPILOG 0x11d
 #define LONG_OPT_NICE        0x11e
+#define LONG_OPT_CPU_BIND    0x11f
+
 
 /*---- forward declarations of static functions  ----*/
 
@@ -159,6 +162,8 @@ static void  _usage(void);
 static bool  _valid_node_list(char **node_list_pptr);
 static enum  task_dist_states _verify_dist_type(const char *arg);
 static bool  _verify_node_count(const char *arg, int *min, int *max);
+static int   _verify_cpu_bind(const char *arg, char **cpu_bind,
+					cpu_bind_type_t *cpu_bind_type);
 static int   _verify_geometry(const char *arg, int *geometry);
 static int   _verify_conn_type(const char *arg);
 
@@ -301,6 +306,100 @@ static int _verify_geometry(const char *arg, int *geometry)
 		xfree(original_ptr);
 
 	return rc;
+}
+
+/*
+ * verify cpu_bind arguments
+ * returns -1 on error, 0 otherwise
+ */
+static int _verify_cpu_bind(const char *arg, char **cpu_bind, cpu_bind_type_t *cpu_bind_type)
+{
+    	char *buf = xstrdup(arg);
+	char *pos = buf;
+	/* we support different launch policy names
+	 * we also allow a verbose setting to be specified
+	 *     -cpu_bind=v
+	 *     -cpu_bind=rank,v
+	 *     -cpu_bind=rank
+	 *     -cpu_bind={MAP_CPU|MAP_MASK}:0,1,2,3,4
+	 */
+	if (*pos) {
+		/* parse --cpu_bind command line arguments */
+		bool fl_cpubind_verbose = 0;
+	        char *cmd_line_affinity = NULL;
+	        char *cmd_line_mapping  = NULL;
+		char *mappos = strchr(pos,':');
+		if (!mappos) {
+		    	mappos = strchr(pos,'=');
+		}
+		if (strncasecmp(pos, "quiet", 5) == 0) {
+			fl_cpubind_verbose=0;
+			pos+=5;
+		} else if (*pos=='q' || *pos=='Q') {
+			fl_cpubind_verbose=0;
+			pos++;
+		}
+		if (strncasecmp(pos, "verbose", 7) == 0) {
+			fl_cpubind_verbose=1;
+			pos+=7;
+		} else if (*pos=='v' || *pos=='V') {
+			fl_cpubind_verbose=1;
+			pos++;
+		}
+		if (*pos==',') {
+			pos++;
+		}
+		if (*pos) {
+			char *vpos=NULL;
+			cmd_line_affinity = pos;
+			if (((vpos=strstr(pos,",q")) !=0  ) ||
+			    ((vpos=strstr(pos,",Q")) !=0  )) {
+				*vpos='\0';
+				fl_cpubind_verbose=0;
+			}
+			if (((vpos=strstr(pos,",v")) !=0  ) ||
+			    ((vpos=strstr(pos,",V")) !=0  )) {
+				*vpos='\0';
+				fl_cpubind_verbose=1;
+			}
+		}
+		if (mappos) {
+			*mappos='\0'; 
+			mappos++;
+			cmd_line_mapping=mappos;
+		}
+
+		/* convert parsed command line args into interface */
+		if (cmd_line_mapping) {
+			xfree(*cpu_bind);
+			*cpu_bind = xstrdup(cmd_line_mapping);
+		}
+		if (fl_cpubind_verbose) {
+		        *cpu_bind_type |= CPU_BIND_VERBOSE;
+		}
+		if (cmd_line_affinity) {
+			*cpu_bind_type &= CPU_BIND_VERBOSE;	/* clear any previous type */
+			if ((strcasecmp(cmd_line_affinity, "no") == 0) ||
+			    (strcasecmp(cmd_line_affinity, "none") == 0)) {
+				*cpu_bind_type |= CPU_BIND_NONE;
+			} else if (strcasecmp(cmd_line_affinity, "rank") == 0) {
+				*cpu_bind_type |= CPU_BIND_RANK;
+			} else if ((strcasecmp(cmd_line_affinity, "map_cpu") == 0) ||
+			           (strcasecmp(cmd_line_affinity, "mapcpu") == 0)) {
+				*cpu_bind_type |= CPU_BIND_MAPCPU;
+			} else if ((strcasecmp(cmd_line_affinity, "mask_cpu") == 0) ||
+			           (strcasecmp(cmd_line_affinity, "maskcpu") == 0)) {
+				*cpu_bind_type |= CPU_BIND_MASKCPU;
+			} else {
+				error("unrecognized --cpu_bind argument \"%s\"", cmd_line_affinity);
+				xfree(buf);
+				return 1;
+			}
+		}
+	}
+
+	xfree(buf);
+	return 0;
 }
 
 /* 
@@ -455,6 +554,8 @@ static void _opt_default()
 	opt.min_nodes = 1;
 	opt.max_nodes = 0;
 	opt.nodes_set = false;
+	opt.cpu_bind_type = 0;
+	opt.cpu_bind = NULL;
 	opt.time_limit = -1;
 	opt.partition = NULL;
 	opt.max_threads = MAX_THREADS;
@@ -564,6 +665,7 @@ env_vars_t env_vars[] = {
   {"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set  },
   {"SLURM_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
   {"SLURM_CORE_FORMAT",   OPT_CORE,       NULL,               NULL           },
+  {"SLURM_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL           },
   {"SLURM_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
   {"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL           },
   {"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
@@ -645,6 +747,12 @@ _process_env_var(env_vars_t *e, const char *val)
 		          "ignoring...", e->var, val);
 	    } else 
 		    opt.distribution = dt;
+	    break;
+
+	case OPT_CPU_BIND:
+	    if (_verify_cpu_bind(val, &opt.cpu_bind,
+					    &opt.cpu_bind_type))
+		    exit(1);
 	    break;
 
 	case OPT_NODES:
@@ -764,7 +872,8 @@ void set_options(const int argc, char **argv, int first)
 		{"disable-status", no_argument,      0, 'X'},
 		{"no-allocate",   no_argument,       0, 'Z'},
 		{"contiguous",       no_argument,       0, LONG_OPT_CONT},
-                {"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
+		{"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
+		{"cpu_bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 		{"core",             required_argument, 0, LONG_OPT_CORE},
 		{"mincpus",          required_argument, 0, LONG_OPT_MINCPU},
 		{"mem",              required_argument, 0, LONG_OPT_MEM},
@@ -1078,6 +1187,11 @@ void set_options(const int argc, char **argv, int first)
                 case LONG_OPT_EXCLUSIVE:
                         opt.exclusive = true;
                         break;
+                case LONG_OPT_CPU_BIND:
+			if (_verify_cpu_bind(optarg, &opt.cpu_bind,
+							&opt.cpu_bind_type))
+				exit(1);
+			break;
 		case LONG_OPT_CORE:
 			opt.core_type = core_format_type (optarg);
 			if (opt.core_type == CORE_INVALID)
@@ -1621,6 +1735,8 @@ static void _opt_list()
 	     opt.partition == NULL ? "default" : opt.partition);
 	info("job name       : `%s'", opt.job_name);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
+	info("cpu_bind       : %s", 
+	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind);
 	info("core format    : %s", core_format_name (opt.core_type));
 	info("verbose        : %d", _verbose);
 	info("slurmd_debug   : %d", opt.slurmd_debug);
@@ -1692,12 +1808,13 @@ static void _usage(void)
 "            [--core=type] [-T threads] [-W sec] [--attach] [--join] \n"
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "            [--mpi=type] [--account=name] [--dependency=jobid]\n"
-"            [--kill-on-bad-exit] [--propagate[=rlimits] ]\n"
+"            [--kill-on-bad-exit] [--propagate[=rlimits] ] [--cpu_bind=...]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 "            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
 #endif
 "            [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "            [--prolog=fname] [--epilog=fname]\n"
+"            [--task-prolog=fname] [--task-epilog=fname]\n"
 "            [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -1749,6 +1866,8 @@ static void _help(void)
 "      --mpi=type              specifies version of MPI to use\n"
 "      --prolog=program        run \"program\" before launching job step\n"
 "      --epilog=program        run \"program\" after launching job step\n"
+"      --task-prolog=program   run \"program\" before launching task\n"
+"      --task-epilog=program   run \"program\" after launching task\n"
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
@@ -1775,6 +1894,17 @@ static void _help(void)
 "Consumable resources related options:\n" 
 "      --exclusive             allocate nodes in exclusive mode when\n" 
 "                              cpu consumable resource is enabled\n"
+"\n"
+"Affinity/Multi-core options: (when the task/affinity plugin is enabled)\n" 
+"      --cpu_bind=             Bind tasks to CPUs\n" 
+"             q[uiet],           quietly bind before task runs (default)\n"
+"             v[erbose],         verbosely report binding before task runs\n"
+"             no[ne]             don't bind tasks to CPUs (default)\n"
+"             rank               bind by task rank\n"
+"             map_cpu:<list>     bind by mapping CPU IDs to tasks as specified\n"
+"                                where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
+"             mask_cpu:<list>    bind by setting CPU masks on tasks as specified\n"
+"                                where <list> is <mask1>,<mask2>,...<maskN>\n"
 "\n"
 #ifdef HAVE_AIX				/* AIX/Federation specific options */
   "AIX related options:\n"

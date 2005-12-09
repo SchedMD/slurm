@@ -92,6 +92,9 @@ AC_CHECK_DECLS([hstrerror, strsignal, sys_siglist])
 AC_CHECK_FUNCS(unsetenv, [have_unsetenv=yes])
 AM_CONDITIONAL(HAVE_UNSETENV, test "x$have_unsetenv" = "xyes")
 
+AC_CHECK_FUNCS(sched_setaffinity, [have_sched_setaffinity=yes])
+AM_CONDITIONAL(HAVE_SCHED_SETAFFINITY, test "x$have_sched_setaffinity" = "xyes")
+
 ACX_PTHREAD([], AC_MSG_ERROR([Error: Cannot figure out how to use pthreads!]))
 
 # Always define WITH_PTHREADS if we make it this far
@@ -239,6 +242,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/mpi/lam/Makefile
 		 src/plugins/mpi/none/Makefile
 		 src/plugins/task/Makefile
+		 src/plugins/task/affinity/Makefile
 		 src/plugins/task/none/Makefile
 		 doc/Makefile
 		 doc/man/Makefile

@@ -104,6 +104,8 @@ typedef struct slurmd_job {
 	char         **env;    /* job environment                           */
 	char         **argv;   /* job argument vector                       */
 	char          *cwd;    /* path to current working directory         */
+	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=                       */
+	char          *cpu_bind;       /* binding map for map/mask_cpu      */
 	switch_jobinfo_t switch_job; /* switch-specific job information     */
 	uid_t         uid;     /* user id for job                           */
 	gid_t         gid;     /* group ID for job                          */

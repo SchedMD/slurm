@@ -275,6 +275,8 @@ typedef struct launch_tasks_request_msg {
 	char    **env;
 	char    **argv;
 	char     *cwd;
+	cpu_bind_type_t cpu_bind_type;	/* --cpu_bind=                    */
+	char     *cpu_bind;	/* binding map for map/mask_cpu           */
 	uint16_t  resp_port;
 	uint16_t  io_port;
 	uint16_t  task_flags;

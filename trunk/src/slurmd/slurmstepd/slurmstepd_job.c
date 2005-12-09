@@ -170,6 +170,8 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->uid     = (uid_t) msg->uid;
 	job->gid     = (gid_t) msg->gid;
 	job->cwd     = xstrdup(msg->cwd);
+	job->cpu_bind_type = msg->cpu_bind_type;
+	job->cpu_bind = xstrdup(msg->cpu_bind);
 
 	job->env     = _array_copy(msg->envc, msg->env);
 	job->eio     = eio_handle_create();
@@ -189,6 +191,8 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->envtp->procid = -1;
 	job->envtp->localid = -1;
 	job->envtp->nodeid = -1;	
+	job->envtp->cpu_bind_type = 0;
+	job->envtp->cpu_bind = NULL;
 	
 	memcpy(&resp_addr, cli_addr, sizeof(slurm_addr));
 	slurm_set_addr(&resp_addr, msg->resp_port, NULL); 
@@ -262,6 +266,8 @@ job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *cli_addr)
 	job->envtp->procid = -1;
 	job->envtp->localid = -1;
 	job->envtp->nodeid = -1;
+	job->envtp->cpu_bind_type = 0;
+	job->envtp->cpu_bind = NULL;
 	
 	memcpy(&io_addr,   cli_addr, sizeof(slurm_addr));
 	slurm_set_addr(&io_addr,   msg->io_port,   NULL); 
@@ -348,6 +354,8 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->envtp->procid = -1;
 	job->envtp->localid = -1;
 	job->envtp->nodeid = -1;
+	job->envtp->cpu_bind_type = 0;
+	job->envtp->cpu_bind = NULL;
 	
 	srun = srun_info_create(NULL, NULL, NULL);
 
