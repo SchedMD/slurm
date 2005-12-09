@@ -49,6 +49,7 @@ pre {
   float: left;
   margin-left: 20px;
   width: 160px;
+  padding-top: 1em;
   overflow: auto;
 }
 
