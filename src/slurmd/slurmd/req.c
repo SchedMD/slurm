@@ -1608,12 +1608,13 @@ static int _waiter_complete (uint32_t jobid)
  *  Like _wait_for_procs(), but only wait for up to max_time seconds
  *  if max_time == 0, send SIGKILL to tasks repeatedly
  *    
- *  Returns true if all job 
+ *  Returns true if all job processes are gone
  */
 static bool
 _pause_for_job_completion (uint32_t job_id, int max_time)
 {
-	int sec = 0, rc = 0;
+	int sec = 0;
+	bool rc = false;
 
 	while ( ((sec++ < max_time) || (max_time == 0))
 	      && (rc = _job_still_running (job_id))) {
