@@ -1,0 +1,10 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Publications</h1>
+<p><a href="slurm_design.pdf">SLURM: Simple Linux Utility for Resource Management</a> 
+[PDF] submitted to the ClusterWorld Conference and Expo held in San Jose, California, 
+June 23-26, 2003 (UCRL-MA-147996, Rev. 3, June 2003).</p>
+
+<p style="text-align:center;">Last modified 15 January 2004</p>
+
+<!--#include virtual="footer.txt"-->
