@@ -50,7 +50,12 @@ pre {
   margin-left: 20px;
   width: 160px;
   padding-top: 1em;
-  overflow: auto;
+  /*overflow: auto;*/
+}
+#navigation ul {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
 }
 
 /* The main info of the page is wrapped in a "content" div */
@@ -58,6 +63,7 @@ pre {
   margin-left: 200px;
   border-left: 1px solid gray;
   padding: 1em;
+  text-align: justify;
   /*max-width: 36em;*/
 }
 #content h1 { text-align: center; }
