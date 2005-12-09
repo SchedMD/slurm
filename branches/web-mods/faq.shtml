@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h2>Frequently Asked Questions</h2>
+<h1>Frequently Asked Questions</h1>
 <ol>
 <li><a href="#comp">Why is my job/node in &quot;completing&quot; state?</a></li>
 <li><a href="#rlimit">Why do I see the error &quot;Can't propagate RLIMIT_...&quot;?</a></li>

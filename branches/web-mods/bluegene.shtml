@@ -1,8 +1,8 @@
 <!--#include virtual="header.txt"-->
 
-<h2>Blue Gene User and Administrator Guide</h2>
+<h1>Blue Gene User and Administrator Guide</h1>
 
-<h3>Overview</h3>
+<h2>Overview</h2>
 
 <p>This document describes the unique features of SLURM on the
 <a href="http://www.research.ibm.com/bluegene">IBM Blue Gene</a> systems. 
@@ -23,7 +23,7 @@ Thus the <i>slurmd</i> daemon executes on one of the Blue Gene <i>Front End Node
 This single <i>slurmd</i> daemon provides (almost) all of the normal SLURM services 
 for every <i>base partition</i> on the system. </p>
 
-<h3>User Tools</h3>
+<h2>User Tools</h2>
 
 <p>The normal set of SLURM user tools: srun, scancel, sinfo, squeue and scontrol 
 provide all of the expected services except support for job steps. 
@@ -151,7 +151,7 @@ keys scroll the window containing the text information.</p>
  
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>System Administration</h3>
+<h2>System Administration</h2>
 
 <p>As of IBM's REV 2 driver SLURM must be built in 64bit mod.  
 This can be done by specifying <b>CFLAGS=-m64 CXX="g++ -m64"</b>.  

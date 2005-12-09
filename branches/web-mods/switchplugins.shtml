@@ -1,8 +1,8 @@
 <!--#include virtual="header.txt"-->
 
-<h2><a name="top">SLURM Switch Plugin API</a></h2>
+<h1><a name="top">SLURM Switch Plugin API</a></h1>
 
-<h3> Overview</h3>
+<h2> Overview</h2>
 <p> This document describes SLURM switch (interconnect) plugins and the API that defines 
 them. It is intended as a resource to programmers wishing to write their own SLURM 
 switch plugins. This is version 0 of the API.
@@ -36,7 +36,7 @@ Note carefully, however, the versioning discussion below.</p>
 for sample implementations of a SLURM switch plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>Data Objects</h3>
+<h2>Data Objects</h2>
 <p> The implementation must support two opaque data classes.
 One is used as an job's switch &quot;credential.&quot; 
 This class must encapsulate all job-specific information necessary 
@@ -68,11 +68,11 @@ the initial value of any errno, prior to any error condition arising, should be
 SLURM_SUCCESS. </p>
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>API Functions</h3>
+<h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented should 
 be stubbed.</p>
 
-<h4>Global Switch State Functions</h4>
+<h3>Global Switch State Functions</h3>
 <p class="commandline">int switch_p_libstate_save (char *dir_name);</p>
 <p style="margin-left:.2in"><b>Description</b>: Save any global switch state to a file 
 within the specified directory. The actual file name used is plugin specific. It is recommended 
@@ -116,7 +116,7 @@ If so, delay scheduling a new job while another is in the process of terminating
 any other job is in the process of terminating.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<h4>Node's Switch State Monitoring Functions</h4>
+<h3>Node's Switch State Monitoring Functions</h3>
 
 <p>Nodes will register with current switch state information when the slurmd daemon 
 is initiated. The slurmctld daemon will also request that slurmd supply current 
@@ -198,7 +198,7 @@ of buf in bytes.<br>
 of buf in bytes.</p>
 <p style="margin-left:.2in"><b>Returns</b>: Location of buffer, same as <i>buf</i>.</p>
 
-<h4>Job's Switch Credential Management Functions</h4>
+<h3>Job's Switch Credential Management Functions</h3>
 <p class="commandline">int switch_p_alloc_jobinfo(switch_jobinfo_t *switch_job);</p>
 <p style="margin-left:.2in"><b>Description</b>: Allocate storage for a job's switch credential.
 It is recommended that the credential contain a magic number for validation purposes.</p>
@@ -336,7 +336,7 @@ to indicate the reason for failure.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<h4>Node Specific Switch Management Functions</h4>
+<h3>Node Specific Switch Management Functions</h3>
 <p class="commandline">int switch_p_node_init (void);</p>
 <p style="margin-left:.2in"><b>Description</b>: This function is run from the top level slurmd 
 only once per slurmd run. It may be used, for instance, to perform some one-time
@@ -355,7 +355,7 @@ the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<h4>Job Management Functions</h4>
+<h3>Job Management Functions</h3>
 <blockquote><pre>
 =========================================================================
 Process 1 (root)        Process 2 (root, user)  |  Process 3 (user task) 
@@ -468,7 +468,7 @@ the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<h4>Error Handling Functions</h4>
+<h3>Error Handling Functions</h3>
 <a name="get_errno"><p class="commandline">int switch_p_get_errno (void);</p></a>
 <p style="margin-left:.2in"><b>Description</b>: Return the number of a switch
 specific error.</p>
@@ -486,7 +486,7 @@ specific error code.</p>
 or NULL if no description found in this plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>Versioning</h3>
+<h2>Versioning</h2>
 <p> This document describes version 0 of the SLURM Switch API. Future 
 releases of SLURM may revise this API. A switch plugin conveys its ability 
 to implement a particular API version using the mechanism outlined for SLURM plugins. 

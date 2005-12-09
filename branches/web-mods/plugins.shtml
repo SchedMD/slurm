@@ -1,12 +1,12 @@
 <!--#include virtual="header.txt"-->
 
-<h2><a name="top">SLURM Plugin API</a></h2>
-<h3>Overview</h3>
+<h1><a name="top">SLURM Plugin API</a></h1>
+<h2>Overview</h2>
 <p>A SLURM plugin is a dynamically linked code object which is loaded explicitly 
 at run time by the SLURM libraries. A plugin provides a customized implementation 
 of a well-defined API connected to tasks such as authentication, interconnect 
 fabric, and task scheduling.</p>
-<h3>Identification</h3>
+<h2>Identification</h2>
 <p>A SLURM plugin identifies itself by a short character string formatted similarly 
 to a MIME type: <i>&lt;major&gt;/&lt;minor&gt;</i>. The major type identifies 
 which API the plugin implements. The minor type uniquely distinguishes a plugin 
@@ -14,7 +14,7 @@ from other plugins that implement that same API, by such means as the intended
 platform or the internal algorithm. For example, a plugin to interface to the 
 Maui scheduler would give its type as &quot;sched/maui.&quot; It would implement 
 the SLURM Scheduler API.</p>
-<h3>Versioning</h3>
+<h2>Versioning</h2>
 <p>SLURM plugin version numbers comprise a major and minor revision number. As 
 SLURM evolves, changes to the individual plugin APIs may be necessary to implement 
 new features. The major number identifies the version of the applicable API that 
@@ -34,7 +34,7 @@ and denotes revisions or upgrades particular to that implementation. If two or
 more plugins of the same type are provided in an installation, the plugin with 
 the highest minor revision will be selected.</p>
 <p class="footer"><a href="#top">top</a></p>
-<h3>Data Objects</h3>
+<h2>Data Objects</h2>
 <p>A plugin must define and export the following symbols:</p>
 <ul>
 <li><span class="commandline">char plugin_type[]<br>
@@ -62,7 +62,7 @@ rounded to the next lowest 1,000. Only the major version number of this symbol
 is significant.</li>
 </ul>
 <p class="footer"><a href="#top">top</a></p>
-<h3>API Functions</h3>
+<h2>API Functions</h2>
 <p class="commandline">int init (void);</p>
 <p style="margin-left:.2in"><b>Description</b>: If present, this function is called 
 just after the plugin is loaded. This allows the plugin to perform any global 
@@ -85,12 +85,12 @@ before the SLURM <span class="commandline">plugininit()</span>, and the SLURM
 <p>The functions need not appear. The plugin may provide either <span class="commandline">init()</span> 
 or <span class="commandline">fini()</span> or both.</p>
 <p class="footer"><a href="#top">top</a></p>
-<h3>Thread Safety</h3>
+<h2>Thread Safety</h2>
 <p>SLURM is a multithreaded application. The SLURM plugin library may exercise 
 the plugin functions in a re-entrant fashion. It is the responsibility of the 
 plugin author to provide the necessarily mutual exclusion and synchronization 
 in order to avoid the pitfalls of re-entrant code.</p>
-<h3>Run-time Support</h3>
+<h2>Run-time Support</h2>
 <p>The standard system libraries are available to the plugin. The SLURM libraries 
 are also available and plugin authors are encouraged to make use of them rather 
 than develop their own substitutes. Plugins should use the SLURM log to print 
@@ -99,7 +99,7 @@ error messages.</p>
 needed for correct operation. Plugins will not load if their dependent libraries 
 are not available, so it is the installer's job to make sure the specified libraries 
 are available.</p>
-<h3>Performance</h3>
+<h2>Performance</h2>
 <p>All plugin functions are expected to execute very quickly. If any function 
 entails delays (e.g. transations with other systems), it should be written to 
 utilize a thread for that functionality. This thread may be created by the 

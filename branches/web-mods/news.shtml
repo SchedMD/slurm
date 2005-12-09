@@ -1,8 +1,8 @@
 <!--#include virtual="header.txt"-->
 
-<h2>What's New</h2>
+<h1>What's New</h1>
 
-<h3>Index</h3>
+<h2>Index</h2>
 <ul>
 <li><a href="#04">SLURM Version 0.4, January 2005</a></li>
 <li><a href="#05">SLURM Version 0.5, July 2005</a></li>
@@ -12,7 +12,7 @@
 <li><a href="#12">SLURM Version 1.2 and beyond</a></li>
 </ul>
 
-<h3><a name="04">Major Updates in SLURM Version 0.4</a></h3>
+<h2><a name="04">Major Updates in SLURM Version 0.4</a></h2>
 <p>SLURM Version 0.4 became available in January 2005. 
 Major enhancements included: 
 <ul>
@@ -28,7 +28,7 @@ Major enhancements included:
 <li>New graphical user interface, smap.</li>
 </ul>
 
-<h3><a name="05">Major Updates in SLURM Version 0.5</a></h3>
+<h2><a name="05">Major Updates in SLURM Version 0.5</a></h2>
 <p>SLURM Version 0.5 became available in July 2005.
 Major enhancements included:
 <ul>
@@ -40,7 +40,7 @@ Major enhancements included:
 <li>Added AIX checkpoint plugin (CheckpointType).</li>
 </ul>
 
-<h3><a name="06">Major Updates in SLURM Version 0.6</a></h3>
+<h2><a name="06">Major Updates in SLURM Version 0.6</a></h2>
 <p>SLURM Version 0.6 became available in September 2005.
 Major enhancements include:
 <ul>
@@ -51,7 +51,7 @@ Major enhancements include:
 <li>Names (not just numbers) for job step identification.</li>
 </ul>
 
-<h3><a name="10">Major Updates in SLURM Version 1.0</a></h3>
+<h2><a name="10">Major Updates in SLURM Version 1.0</a></h2>
 <p>We expect to make SLURM Version 1.0 available in January 2006.
 Major enhancements include:
 <ul>
@@ -68,7 +68,7 @@ managing the SLURM partitions as queues.</li>
 <li>Web-based <a href="configurator.html">configuration tool</a>.</li>
 </ul>
 
-<h3><a name="11">Major Updates in SLURM Version 1.1</a></h3>
+<h2><a name="11">Major Updates in SLURM Version 1.1</a></h2>
 <p>We expect to make SLURM Version 1.1 available in May 2006.
 Major enhancements include:
 <ul>
@@ -76,7 +76,7 @@ Major enhancements include:
 <li>Preempt/resume jobs per scheduler directives.</li>
 </ul>
 
-<h3><a name="12">Major Updates in SLURM Version 1.2 and beyond</a></h3>
+<h2><a name="12">Major Updates in SLURM Version 1.2 and beyond</a></h2>
 <p> Detailed plans for release dates and contents of future SLURM releases have 
 not been finalized. Anyone desiring to perform SLURM development should notify
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>

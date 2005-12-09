@@ -1,8 +1,8 @@
 <!--#include virtual="header.txt"-->
 
-<h2>Quick Start User Guide</h2>
+<h1>Quick Start User Guide</h1>
 
-<h3>Overview</h3>
+<h2>Overview</h2>
 <p>The Simple Linux Utility for Resource Management (SLURM) is an open source, 
 fault-tolerant, and highly scalable cluster management and job scheduling system 
 for large and small Linux clusters. SLURM requires no kernel modifications for 
@@ -14,14 +14,18 @@ monitoring work (normally a parallel job) on the set of allocated nodes. Finally
 it arbitrates conflicting requests for resources by managing a queue of pending 
 work.</p>
 
-<h3>Architecture</h3>
+<h2>Architecture</h2>
 <p>As depicted in Figure 1, SLURM consists of a <b>slurmd</b> daemon running on 
 each compute node, a central <b>slurmctld</b> daemon running on a management node 
 (with optional fail-over twin), and six utility programs: <b>srun</b>, <b>scancel</b>, 
 <b>sinfo</b>, <b>srun</b>, <b>smap</b>, <b>squeue</b>, and <b>scontrol</b>.  
 All of the commands can run anywhere in the cluster.</p>
-<p><img src="arch.gif" width="600"> 
-<p><b>Figure 1. SLURM components</b></p>
+
+<div class="figure">
+  <img src="arch.gif" width="600"><br />
+  Figure 1. SLURM components
+</div>
+
 <p>The entities managed by these SLURM daemons, shown in Figure 2, include <b>nodes</b>, 
 the compute resource in SLURM, <b>partitions</b>, which group nodes into logical 
 sets, <b>jobs</b>, or allocations of resources assigned to a user for 
@@ -35,11 +39,15 @@ a job is assigned a set of nodes, the user is able to initiate parallel work in
 the form of job steps in any configuration within the allocation. For instance, 
 a single job step may be started that utilizes all nodes allocated to the job, 
 or several job steps may independently use a portion of the allocation.</p>
-<p><img src="entities.gif" width="291" height="218"> 
-<p><b>Figure 2. SLURM entities</b></p>
+
+<div class="figure">
+  <img src="entities.gif" width="291" height="218"><br />
+  Figure 2. SLURM entities
+</div>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>Commands</h3>
+<h2>Commands</h2>
 <p>Man pages exist for all SLURM daemons, commands, and API functions. The command 
 option <span class="commandline">--help</span> also provides a brief summary of 
 options. Note that the command options are all case insensitive.</p>
@@ -70,7 +78,7 @@ jobs, partitions, and nodes managed by SLURM, but graphically displays the
 information to reflect network topology.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>Examples</h3>
+<h2>Examples</h2>
 <p>Execute <span class="commandline">/bin/hostname</span> on four nodes (<span class="commandline">-N4</span>). 
 Include task numbers on the output (<span class="commandline">-l</span>). The 
 default partition will be used. One task per node will be used by default. </p>
@@ -148,7 +156,7 @@ batch          1 DOWN         2      3448       82306 adev8
 </pre>
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>MPI</h3>
+<h2>MPI</h2>
 <p>MPI use depends upon the type of MPI being used. 
 Instructions for using several varieties of MPI with SLURM are
 provided below.</p> 

@@ -1,11 +1,11 @@
 <!--#include virtual="header.txt"-->
 
-<h2>Quick Start Administrator Guide</h2>
-<h3>Overview</h3>
+<h1>Quick Start Administrator Guide</h1>
+<h2>Overview</h2>
 Please see the <a href="quickstart.html">Quick Start User Guide</a> for a general 
 overview. 
  
-<h3>Building and Installing</h3>
+<h2>Building and Installing</h2>
 
 <p>Instructions to build and install SLURM manually are shown below. 
 See the README and INSTALL files in the source distribution for more details.
@@ -101,7 +101,7 @@ To build SLURM on our AIX system, the following .rpmmacros file is used:
 
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>Daemons</h3>
+<h2>Daemons</h2>
 <p><b>slurmctld</b> is sometimes called the &quot;controller&quot; daemon. It 
 orchestrates SLURM activities, including queuing of job, monitoring node state, 
 and allocating resources (nodes) to jobs. There is an optional backup controller 
@@ -130,8 +130,8 @@ A file <b>etc/init.d/slurm</b> is provided for this purpose.
 This script accepts commands <b>start</b>, <b>startclean</b> (ignores 
 all saved state), <b>restart</b>, and <b>stop</b>.</p>
 
-<h3>Infrastructure</h3>
-<h4>Authentication of SLURM communications</h4>
+<h2>Infrastructure</h2>
+<h3>Authentication of SLURM communications</h3>
 <p>All communications between SLURM components are authenticated. The 
 authentication infrastructure is provided by a dynamically loaded
 plugin chosen at runtame via the <b>AuthType</b> keyword in the SLURM 
@@ -149,7 +149,7 @@ may have this requirement. For instance, if SLURM is making use of the
 auth/munge plugin for communication, the clocks on all nodes will need to 
 be synchronized. </p>
 
-<h4>MPI support</h4>
+<h3>MPI support</h3>
 <p>Quadrics MPI works directly with SLURM on systems having Quadrics 
 interconnects and is the preferred version of MPI for those systems.
 Set the <b>MpiDefault=none</b> configuration parameter in slurm.conf.</p>
@@ -180,7 +180,7 @@ for use of Open MPI.</p>
 nodes in the slurm.conf configuration file. SLURM presently lacks the ability 
 to arbitrarily order tasks across nodes.</p> 
 
-<h4>Scheduler support</h4>
+<h3>Scheduler support</h3>
 <p>The scheduler used by SLURM is controlled by the <b>SchedType</b> configuration 
 parameter. This is meant to control the relative importance of pending jobs.
 SLURM's default scheduler is FIFO (First-In First-Out). A backfill scheduler 
@@ -191,7 +191,7 @@ SLURM also supports a plugin for use of <a href="http://supercluster.org/maui">
 The Maui Scheduler</a>, which offers sophisticated scheduling algorithms. 
 Motivated users can even develop their own scheduler plugin if so desired. </p>
 
-<h4>Node selection</h4>
+<h3>Node selection</h3>
 <p>The node selection mechanism used by SLURM is controlled by the 
 <b>SelectType</b> configuration parameter. 
 If you want to execute multiple jobs per node, but apportion the processors, 
@@ -204,19 +204,19 @@ For more information, please see
 For BlueGene systems, <i>bluegene</i> plugin is required (it is topology 
 aware and interacts with the BlueGene bridge API).</p>
 
-<h4>Logging</h4>
+<h3>Logging</h3>
 <p>SLURM uses the syslog function to record events. It uses a range of importance
 levels for these messages. Be certain that your system's syslog functionality
 is operational. </p>
 
-<h4>Corefile format</h4>
+<h3>Corefile format</h3>
 <p>SLURM is designed to support generating a variety of core file formats for 
 application codes that fail (see the <i>--core</i> option of the <i>srun</i>
 command).  As of now, SLURM only supports a locally developed lightweight
 corefile library which has not yet been released to the public. It is 
 expected that this library will be available in the near future. </p>
 
-<h4>Parallel debugger support</h4>
+<h3>Parallel debugger support</h3>
 <p>SLURM exports information for parallel debuggers using the specification
 detailed  <a href=http://www-unix.mcs.anl.gov/mpi/mpi-debug/mpich-attach.txt>here</a>.
 This is meant to be exploited by any parallel debugger (notably, TotalView),
@@ -235,7 +235,7 @@ because the SLRUM_JOBID environment variable is set in the allocation shell
 environment.
 </p>
 
-<h4>Compute node access</h4>
+<h3>Compute node access</h3>
 <p>SLURM does not by itself limit access to allocated compute nodes, 
 but it does provide mechanisms to accomplish this. 
 There is a Pluggable Authentication Module (PAM) for restricting access 
@@ -251,7 +251,7 @@ even those allocated to other users.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>Configuration</h3>
+<h2>Configuration</h2>
 <p>The SLURM configuration file includes a wide variety of parameters. 
 This configuration file must be available on each node of the cluster. A full
 description of the parameters is included in the <i>slurm.conf</i> man page. Rather than 
@@ -321,7 +321,7 @@ PartitionName=DEFAULT State=UP
 PartitionName=pdebug Nodes=mcr[0-191] MaxTime=30 MaxNodes=32 Default=YES
 PartitionName=pbatch Nodes=mcr[192-1151]
 </pre> 
-<h3>Security</h3>
+<h2>Security</h2>
 <p>You will should create unique job credential keys for your site
 using the program <a href="http://www.openssl.org/">openssl</a>. 
 <b>You must use openssl and not ssh-genkey to construct these keys.</b>
@@ -351,7 +351,7 @@ can prevent a user from accessing a node which he has not been allocated, if tha
 mode of operation is desired.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>Starting the Daemons</h3>
+<h2>Starting the Daemons</h2>
 <p>For testing purposes you may want to start by just running slurmctld and slurmd 
 on one node. By default, they execute in the background. Use the <span class="commandline">-D</span> 
 option for each daemon to execute them in the foreground and logging will be done 
@@ -380,7 +380,7 @@ In practice, SLURM restarts with preservation consistently.</p>
 available. </p>
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>Administration Examples</h3>
+<h2>Administration Examples</h2>
 <p><span class="commandline">scontrol</span> can be used to print all system information 
 and modify most of it. Only a few examples are shown below. Please see the scontrol 
 man page for full details. The commands and options are all case insensitive.</p>
@@ -494,7 +494,7 @@ Slurmctld(primary/backup) at adevi/adevj are UP/UP
 adev0: scontrol shutdown
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<h3>Testing</h3>
+<h2>Testing</h2>
 <p>An extensive test suite is available within the SLURM distribution 
 in <i>testsuite/expect</i>. 
 There are about 150 tests which will execute on the order of 1000 jobs 
@@ -511,7 +511,7 @@ or the full test suite may be executed with the single command
 <i>regression</i>.
 See <i>testsuite/expect/README</i> for more information.</p>
 
-<h3>Upgrades</h3>
+<h2>Upgrades</h2>
 <p>When upgrading to a new major or minor release of SLURM (e.g. 0.3.x to 0.4.x) 
 all running and pending jobs will be purged due to changes in state save 
 information. It is possible to develop software to translate state information 

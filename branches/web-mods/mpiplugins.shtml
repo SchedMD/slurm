@@ -1,8 +1,8 @@
 <!--#include virtual="header.txt"-->
 
-<h2><a name="top">SLURM MPI Plugin API</a></h2>
+<h1><a name="top">SLURM MPI Plugin API</a></h1>
 
-<h3> Overview</h3>
+<h2> Overview</h2>
 <p> This document describes SLURM MPI selection plugins and the API that defines 
 them. It is intended as a resource to programmers wishing to write their own SLURM 
 node selection plugins. This is version 0 of the API.</p>
@@ -44,7 +44,7 @@ which will set configure the slurmd to use the correct mpi as well to interact w
 
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>Data Objects</h3>
+<h2>Data Objects</h2>
 <p> These functions are expected to read and/or modify data structures directly in 
 the slurmd daemon's and srun memory. Slurmd is a multi-threaded program with independent 
 read and write locks on each data structure type. Thererfore the type of operations 
@@ -52,7 +52,7 @@ permitted on various data structures is identified for each function.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>API Functions</h3>
+<h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented should 
 be stubbed.</p>
 
@@ -93,7 +93,7 @@ the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>Versioning</h3>
+<h2>Versioning</h2>
 <p> This document describes version 0 of the SLURM node selection API. Future 
 releases of SLURM may revise this API. A node selection plugin conveys its ability 
 to implement a particular API version using the mechanism outlined for SLURM plugins. 

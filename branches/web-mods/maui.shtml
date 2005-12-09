@@ -1,7 +1,7 @@
 <!--#include virtual="header.txt"-->
 
-<h2>Maui Scheduler Integration Guide</h2>
-<h3>Overview</h3>
+<h1>Maui Scheduler Integration Guide</h1>
+<h2>Overview</h2>
 <p>Maui configuration is quite complicated and is really beyond the scope
 of any documents we could supply with SLURM.  We don't intend SLURM to
 be a "wrapper" for Maui, or to subordinate Maui.  The best (and
@@ -10,7 +10,7 @@ documents at the site of Maui's developers:
 <a href="http://www.clusterresources.com/products/maui/docs/mauiadmin.shtml">
 http://www.clusterresources.com/products/maui/docs/mauiadmin.shtml</a>.
 
-<h3>Configuration</h3>
+<h2>Configuration</h2>
 <p>First, download the Maui scheduler kit from their web site
 <a href="http://www.clusterresources.com/products/maui">
 http://www.clusterresources.com/products/maui</a>. 

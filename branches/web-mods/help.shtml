@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h2>Getting Help</h2>
+<h1>Getting Help</h1>
 <p>Try the following steps if you are having problems with SLURM:</p>
 <ol>
 <li>See if the problem is addressed in the <a href="faq.html">SLURM FAQ</a>.</li>

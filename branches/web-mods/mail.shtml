@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h2>Mailing Lists</h2>
+<h1>Mailing Lists</h1>
 <p>We maintain two SLURM mailing lists: 
 <ul>
 <li><b>slurm-announce</b> is designated for communications about SLURM releases.</li>

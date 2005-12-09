@@ -1,8 +1,8 @@
 <!--#include virtual="header.txt"-->
 
-<h2><a name="top">SLURM Programmer's Guide</a></h2>
+<h1><a name="top">SLURM Programmer's Guide</a></h1>
 
-<h3>Overview</h3>
+<h2>Overview</h2>
 
 <p>Simple Linux Utility for Resource Management (SLURM) is an open source, fault-tolerant, 
 and highly scalable cluster management and job scheduling system for large and 
@@ -26,7 +26,7 @@ including Red Hat Linux, IBM's AIX, Sun's Solaris, and Compaq's Tru-64. The only
 module at this time that is operating system dependent is <span class="commandline">src/slurmd/read_proc.c</span>. 
 We will be porting and testing on additional platforms in future releases. 
 
-<h3>Plugins</h3>
+<h2>Plugins</h2>
 
 <p>To make the use of different infrastructures possible, SLURM uses a general 
 purpose plugin mechanism. A SLURM plugin is a dynamically linked code object that 
@@ -43,7 +43,7 @@ types also have their own documenation available, such as
 
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>Directory Structure</h3>
+<h2>Directory Structure</h2>
 
 <p>The contents of the SLURM directory structure will be described below in increasing 
 detail as the structure is descended. The top level directory contains the scripts 
@@ -72,14 +72,14 @@ are here.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>Documentation</h3>
+<h2>Documentation</h2>
 <p>All of the documentation is in the subdirectory <b>doc</b>. Man pages for the 
 APIs, configuration file, commands, and daemons are in <b>doc/man</b>. Various 
 documents suitable for public consumption are in <b>doc/html</b>. Overall SLURM 
 design documents including various figures are in <b>doc/pubdesign</b>. Various 
 design documents (many of which are dated) can be found in <b>doc/slides</b> and 
 <b>doc/txt</b>. A survey of available resource managers as of 2001 is in <b>doc/survey</b>. 
-<h3>Source Code</h3>
+<h2>Source Code</h2>
 
 <p>Functions are divided into several categories, each in its own subdirectory. 
 The details of each directory's contents are proved below. The directories are 
@@ -114,7 +114,7 @@ a parallel job step.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>Configuration</h3>
+<h2>Configuration</h2>
 <p>Configuration files are included in the <b>etc</b> subdirectory. <b>slurm.conf.example</b> 
 includes a description of all configuration options and default settings. See 
 <b>doc/man/man5/slurm.conf.5</b> for more details.
@@ -123,7 +123,7 @@ is a script that determines which SLURM daemon(s) should execute on any node bas
 upon the configuration file contents. It will also manage these daemons: starting, 
 signalling, restarting, and stopping them.</p> 
 
-<h3>Test Suite</h3>
+<h2>Test Suite</h2>
 <p>The <b>testsuite</b> files use a DejaGnu framework for testing. These tests 
 are very limited in scope. We also have a set of Expect SLURM tests available 
 as a separate distribution. These tests are executed after SLURM has been installed 
@@ -131,12 +131,12 @@ and the daemons initiated. About 110 test scripts exercise all SLURM commands
 and options including stress tests. Get these test from
 <a href="ftp://ftp.llnl.gov/pub/linux/slurm-qa">ftp://ftp.llnl.gov/pub/linux/slurm-qa</a></p>
 
-<h3>Adding Files and Directories</h3>
+<h2>Adding Files and Directories</h2>
 <p>If you are adding files and directories to SLURM, it will be necessary to
 re-build configuration files before executing the <b>configure</b> command.
 You can do this by executing the command <b>autoreconf --force --install</b>.
 
-<h3>Tricks of the Trade</h3>
+<h2>Tricks of the Trade</h2>
 <p>You can make a single node appear to SLURM as a Linux cluster by manually 
 defining <b>HAVE_FRONT_END</b> to have a non-zero value in the file <b>config.h</b>.
 All (fake) nodes should be defined in the <b>slurm.conf</b> file.

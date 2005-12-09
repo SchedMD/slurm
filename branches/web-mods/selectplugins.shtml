@@ -1,8 +1,8 @@
 <!--#include virtual="header.txt"-->
 
-<h2><a name="top">SLURM Node Selection Plugin API</a></h2>
+<h1><a name="top">SLURM Node Selection Plugin API</a></h1>
 
-<h3> Overview</h3>
+<h2> Overview</h2>
 <p> This document describes SLURM node selection plugins and the API that defines 
 them. It is intended as a resource to programmers wishing to write their own SLURM 
 node selection plugins. This is version 0 of the API.</p>
@@ -77,7 +77,7 @@ to syncronize the plugin's state with that of slurmctld.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>Data Objects</h3>
+<h2>Data Objects</h2>
 <p> These functions are expected to read and/or modify data structures directly in 
 the slurmctld daemon's memory. Slurmctld is a multi-threaded program with independent 
 read and write locks on each data structure type. Thererfore the type of operations 
@@ -91,11 +91,11 @@ manipulations (these functions are directly accessible from the plugin).</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>API Functions</h3>
+<h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented should 
 be stubbed.</p>
 
-<h4>Global Node Selection Functions</h4>
+<h3>Global Node Selection Functions</h3>
 <p class="commandline">int select_p_state_save (char *dir_name);</p>
 <p style="margin-left:.2in"><b>Description</b>: Save any global node selection state 
 information to a file within the specified directory. The actual file name used is plugin specific. 
@@ -155,7 +155,7 @@ SLURM_NO_CHANGE_IN_DATA if data has not changed since last packed, otherwise SLU
 
 <p class="footer"><a href="#top">top</a></p>
 
-<h4>Job-Specific Node Selection Functions</h4>
+<h3>Job-Specific Node Selection Functions</h3>
 <p class="commandline">int select_p_job_test (struct job_record *job_ptr,
 bitstr_t *bitmap, int min_nodes, int max_nodes);</p>
 <p style="margin-left:.2in"><b>Description</b>: Given a job's scheduling requirement 
@@ -231,7 +231,7 @@ the plugin should return SLURM_ERROR.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<h4>Get/set plugin information</h4>
+<h3>Get/set plugin information</h3>
 <p class="commandline">int select_p_get_extra_jobinfo(struct node_record *node_ptr,
 struct job_record *job_ptr, enum select_data_info info, void *data);</p>
 <p style="margin-left:.2in"><b>Description</b>: Get plugin-specific information 
@@ -291,7 +291,7 @@ list of slurm jobs from slurmctld job records.</p>
 the plugin should return SLURM_ERROR.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>Versioning</h3>
+<h2>Versioning</h2>
 <p> This document describes version 0 of the SLURM node selection API. Future 
 releases of SLURM may revise this API. A node selection plugin conveys its ability 
 to implement a particular API version using the mechanism outlined for SLURM plugins. 

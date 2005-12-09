@@ -1,8 +1,8 @@
 <!--#include virtual="header.txt"-->
 
-<h2>IBM AIX User and Administrator Guide</h2>
+<h1>IBM AIX User and Administrator Guide</h1>
 
-<h3>Overview</h3>
+<h2>Overview</h2>
 
 <p>This document describes the unique features of SLURM on the
 IBM AIX computers with a Federation switch.
@@ -10,7 +10,7 @@ You should be familiar with the SLURM's mode of operation on Linux clusters
 before studying the relatively few differences in IBM system operation 
 described in this document.</p>
 
-<h3>User Tools</h3>
+<h2>User Tools</h2>
 
 <p>The normal set of SLURM user tools: srun, scancel, sinfo, smap, squeue and scontrol 
 provide all of the expected services except support for job steps. 
@@ -37,7 +37,7 @@ The format of SLURM_NETWORK is "network.[protocol],[type],[usage],[mode]".
 For example "network.mpi,en0,shared,ip". 
 See LoadLeveler documentation for more details.</p>
 
-<h3>Checkpoint</h3>
+<h2>Checkpoint</h2>
 
 <p>SLURM supports checkpoint via poe. 
 In order to enable checkpoint, the shell executing the poe command must 
@@ -56,7 +56,7 @@ To initiate a checkpoint in which the job step will terminate afterwards,
 use the command: <br>
 <b>scontrol check vacate <i>job_id.step_id</i></b></p>
 
-<h3>System Administration</h3>
+<h2>System Administration</h2>
 
 <p>Three unique components are required to use SLURM on an IBM system.
 <ol>

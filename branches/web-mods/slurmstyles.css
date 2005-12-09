@@ -70,10 +70,10 @@ pre {
 }
 
 div.figure {
-  float: right;
+  #float: right;
   margin: 0 0 15px 20px;
   padding: 15px;
-  border: 1px solid gray;
+  #border: 1px solid gray;
   text-align: center;
   font-style: italic;
 }

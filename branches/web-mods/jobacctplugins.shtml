@@ -1,8 +1,8 @@
 <!--#include virtual="header.txt"-->
 
-<h2><a name="top">SLURM Job Accounting Plugin API</a></h2>
+<h1><a name="top">SLURM Job Accounting Plugin API</a></h1>
 
-<h3> Overview</h3>
+<h2> Overview</h2>
 <p> This document describes SLURM job accounting plugins and the API that
 defines them. It is intended as a resource to programmers wishing to write
 their own SLURM job accounting plugins. This is version 0 of the API.
@@ -35,7 +35,7 @@ for a sample implementation of a SLURM job accounting plugin.
 <p class="footer"><a href="#top">top</a>
 
 
-<h3>API Functions</h3>
+<h2>API Functions</h2>
 
 The job accounting API uses hooks in four distinct processes:
 <p>
@@ -247,7 +247,7 @@ should return
 <p class="footer"><a href="#top">top</a>
 
 
-<h3>Job Accounting Messages</h3>
+<h2>Job Accounting Messages</h2>
 <p>If messages are passed between components of a job accounting plugin,
 the <span class="commandline">slurm_send_recv</span> calls must be
 used.
@@ -261,7 +261,7 @@ invokes <span class="commandline">slurm_jobacct_process_message()</span>.
 <p class="footer"><a href="#top">top</a>
 
 
-<h3>Parameters</h3>
+<h2>Parameters</h2>
 <p>Rather than proliferate slurm.conf parameters for new or evolved
 plugins, the job accounting API counts on three parameters:
 <dl>
@@ -279,7 +279,7 @@ should be specified in a comma-separated list.
 <p class="footer"><a href="#top">top</a>
 
 
-<h3>Versioning</h3>
+<h2>Versioning</h2>
 <p> This document describes version 0 of the SLURM Job Accounting API. Future 
 releases of SLURM may revise this API. A job accounting plugin conveys its
 ability to implement a particular API version using the mechanism outlined

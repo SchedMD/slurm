@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h2>SLURM Team</h2>
+<h1>SLURM Team</h1>
 <p>SLURM development has been a joint effort of 
 <a href="http://www.llnl.gov/">Lawrence Livermore National Laboratory</a> (LLNL),
 <a href="http://www.hp.com/">HP</a>,

@@ -1,8 +1,8 @@
 <!--#include virtual="header.txt"-->
 
-<h2><a name="top">SLURM Scheduler Plugin API</a></h2>
+<h1><a name="top">SLURM Scheduler Plugin API</a></h1>
 
-<h3> Overview</h3>
+<h2> Overview</h2>
 <p> This document describes SLURM scheduler plugins and the API that defines 
 them. It is intended as a resource to programmers wishing to write their own SLURM 
 scheduler plugins. This is version 0 of the API.</p>
@@ -41,7 +41,7 @@ Note carefully, however, the versioning discussion below.</p>
 for sample implementations of a SLURM scheduler plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>Data Objects</h3>
+<h2>Data Objects</h2>
 <p>The implementation must maintain (though not necessarily directly export) an
 enumerated <span class="commandline">errno</span>  to allow SLURM to discover
 as practically as possible the reason for any failed API call. Plugin-specific enumerated
@@ -65,7 +65,7 @@ the initial value of any errno, prior to any error condition arising, should be
 SLURM_SUCCESS. </p>
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>API Functions</h3>
+<h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented should 
 be stubbed.</p>
 
@@ -109,7 +109,7 @@ specific error code.</p>
 or NULL if no description found in this plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<h3>Versioning</h3>
+<h2>Versioning</h2>
 <p> This document describes version 0 of the SLURM Scheduler API. Future 
 releases of SLURM may revise this API. A scheduler plugin conveys its ability 
 to implement a particular API version using the mechanism outlined for SLURM plugins.</p>
