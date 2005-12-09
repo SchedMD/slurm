@@ -24,7 +24,7 @@ def url_rewrite(matchobj):
            and os.access(matchobj.group(2), os.F_OK):
         location = matchobj.group(2)
         newname = location[:-6] + '.html'
-        #print 'Converting', location, 'to', newname
+        #print 'Rewriting', location, 'to', newname
         return matchobj.group(1) + newname + matchobj.group(3)
     else:
         return matchobj.group(0)
@@ -39,8 +39,10 @@ for f in sys.argv[1:]:
         pass
 
 for filename in files:
+    newfilename = filename[:-6] + '.html'
+    print 'Converting', filename, '->', newfilename
     shtml = file(filename, 'r')
-    html = file('%s.html' % (filename[:-6]), 'w')
+    html = file(newfilename, 'w')
 
     for line in shtml.readlines():
         line = include_regex.sub(include_virtual, line)
