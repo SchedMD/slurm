@@ -4,24 +4,19 @@ SUBDIRS = man
 
 htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
 
-html_DATA = \
+generated_html = \
 	html/api.html \
-	html/arch.gif \
 	html/authplugins.html \
 	html/bluegene.html \
 	html/checkpoint_plugins.html \
-	html/coding_style.pdf \
-	html/configurator.html \
 	html/cons_res.html \
 	html/documentation.html \
 	html/download.html \
-	html/entities.gif \
 	html/faq.html \
 	html/help.html \
 	html/ibm.html \
 	html/jobacctplugins.html \
 	html/jobcompplugins.html \
-	html/lll.gif \
 	html/mail.html \
 	html/maui.html \
 	html/news.html \
@@ -34,14 +29,24 @@ html_DATA = \
 	html/quickstart.html \
 	html/schedplugins.html \
 	html/selectplugins.html \
+	html/slurm.html \
+	html/switchplugins.html \
+	html/team.html
+
+html_DATA = \
+	${generated_html} \
+	html/arch.gif \
+	html/configurator.html \
+	html/coding_style.pdf \
+	html/entities.gif \
+	html/lll.gif \
 	html/slurm_banner_filler.jpg \
 	html/slurm_banner_left.jpg \
 	html/slurm_banner_right.jpg \
 	html/slurm_design.pdf \
-	html/slurm.html \
-	html/slurmstyles.css \
-	html/switchplugins.html \
-	html/team.html
+	html/slurmstyles.css
+
+MOSTLYCLEANFILES = ${generated_html}
 
 EXTRA_DIST = \
 	pubdesign/Makefile \
