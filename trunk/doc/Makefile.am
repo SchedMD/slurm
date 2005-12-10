@@ -34,11 +34,12 @@ html_DATA = \
 	html/quickstart.html \
 	html/schedplugins.html \
 	html/selectplugins.html \
-	html/slurm_banner.jpg \
+	html/slurm_banner_filler.jpg \
+	html/slurm_banner_left.jpg \
+	html/slurm_banner_right.jpg \
 	html/slurm_design.pdf \
 	html/slurm.html \
 	html/slurmstyles.css \
-	html/spacer.gif \
 	html/switchplugins.html \
 	html/team.html
 
@@ -49,3 +50,8 @@ EXTRA_DIST = \
 	figures \
 	common \
 	$(html_DATA)
+
+SUFFIXES = .html
+
+.shtml.html:
+	cd html && ./shtml2html.py `basename $<`
