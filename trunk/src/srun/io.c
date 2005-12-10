@@ -683,8 +683,10 @@ again:
 			if (errno == EINTR)
 				goto again;
 			if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
-				error("_file_read returned EAGAIN");
-				goto again;
+				debug("_file_read returned %s",
+				      errno==EAGAIN?"EAGAIN":"EWOULDBLOCK");
+				list_enqueue(info->job->free_incoming, msg);
+				return SLURM_SUCCESS;
 			}
 			/* Any other errors, we pretend we got eof */
 			debug("Other error on _file_read: %m");
