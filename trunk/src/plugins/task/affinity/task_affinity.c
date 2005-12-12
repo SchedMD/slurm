@@ -74,7 +74,6 @@ const uint32_t plugin_version   = 100;
 int init ( void )
 {
 	verbose("%s loaded", plugin_name);
-	use_3arg_affinity();	/* initialize check for older affinity */
 	return SLURM_SUCCESS;
 }
 
