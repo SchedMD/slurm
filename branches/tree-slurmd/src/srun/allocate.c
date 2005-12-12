@@ -263,7 +263,7 @@ _accept_msg_connection(slurm_fd slurmctld_fd,
 	msg->forward_cnt = 0;
 	msg->forward_addr = NULL;
   again:
-	if (slurm_receive_msg(fd, msg, 0) < 0) {
+	if (slurm_receive_msg_only_one(fd, msg, 0) < 0) {
 		if (errno == EINTR)
 			goto again;
 		error("slurm_receive_msg[%s]: %m", host);

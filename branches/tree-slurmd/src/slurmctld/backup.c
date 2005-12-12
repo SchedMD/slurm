@@ -298,7 +298,7 @@ static void *_background_rpc_mgr(void *no_data)
 
 		msg = xmalloc(sizeof(slurm_msg_t));
 		msg->conn_fd = newsockfd;
-		if (slurm_receive_msg(newsockfd, msg, 0) < 0)
+		if (slurm_receive_msg_only_one(newsockfd, msg, 0) < 0)
 			error("slurm_receive_msg: %m");
 		else {
 			error_code = _background_process_msg(msg);
@@ -374,7 +374,7 @@ static int _ping_controller(void)
 
 	req.msg_type = REQUEST_PING;
 
-	if (slurm_send_recv_rc_msg(&req, &rc, 0) < 0) {
+	if (slurm_send_recv_rc_msg_only_one(&req, &rc, 0) < 0) {
 		error("_ping_controller/slurm_send_node_msg error: %m");
 		return SLURM_ERROR;
 	}

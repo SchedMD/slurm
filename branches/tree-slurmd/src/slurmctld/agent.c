@@ -614,6 +614,10 @@ static void *_thread_per_node_rpc(void *args)
 	state_t thread_state = DSH_NO_RESP;
 	slurm_msg_type_t msg_type = task_ptr->msg_type;
 	bool is_kill_msg, srun_agent;
+	List ret_list = NULL;
+	ListIterator itr;
+	ret_forward_t *ret_forward = NULL;
+	
 #if AGENT_IS_THREAD
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = { 
@@ -684,7 +688,9 @@ static void *_thread_per_node_rpc(void *args)
 	info("forwarding to %d",msg.forward_cnt);
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {
-		if (slurm_send_recv_rc_msg(&msg, &rc, timeout) < 0) {
+		if ((ret_list = slurm_send_recv_rc_msg(&msg, timeout)) 
+		    == NULL) {
+			errno = SLURM_SOCKET_ERROR;
 			if (!srun_agent)
 				_comm_err(thread_ptr->node_name);
 			goto cleanup;
@@ -697,74 +703,80 @@ static void *_thread_per_node_rpc(void *args)
 			thread_state = DSH_DONE;
 		goto cleanup;
 	}
-
+	itr = list_iterator_create(ret_list);		
+	while((ret_forward = list_next(itr)) != NULL) {
+		rc = ret_forward->msg_rc;
 #if AGENT_IS_THREAD
-	/* SPECIAL CASE: Mark node as IDLE if job already complete */
-	if (is_kill_msg && (rc == ESLURMD_KILL_JOB_ALREADY_COMPLETE)) {
-		kill_job_msg_t *kill_job;
-		kill_job = (kill_job_msg_t *) task_ptr->msg_args_ptr;
-		rc = SLURM_SUCCESS;
-		lock_slurmctld(job_write_lock);
-		if (job_epilog_complete(kill_job->job_id, 
-		                        thread_ptr->node_name, rc))
-			run_scheduler = true;
-		unlock_slurmctld(job_write_lock);
-	}
+		/* SPECIAL CASE: Mark node as IDLE if job already complete */
+		if (is_kill_msg && (rc == ESLURMD_KILL_JOB_ALREADY_COMPLETE)) {
+			kill_job_msg_t *kill_job;
+			kill_job = (kill_job_msg_t *) task_ptr->msg_args_ptr;
+			rc = SLURM_SUCCESS;
+			lock_slurmctld(job_write_lock);
+			if (job_epilog_complete(kill_job->job_id, 
+						thread_ptr->node_name, rc))
+				run_scheduler = true;
+			unlock_slurmctld(job_write_lock);
+		}
 
-	/* SPECIAL CASE: Kill non-startable batch job */
-	if ((msg_type == REQUEST_BATCH_JOB_LAUNCH) && rc) {
-		batch_job_launch_msg_t *launch_msg_ptr = task_ptr->msg_args_ptr;
-		uint32_t job_id = launch_msg_ptr->job_id;
-		info("Killing non-startable batch job %u: %s", 
-			job_id, slurm_strerror(rc));
-		thread_state = DSH_DONE;
-		lock_slurmctld(job_write_lock);
-		job_complete(job_id, 0, false, 1);
-		unlock_slurmctld(job_write_lock);
-		goto cleanup;
-	}
+		/* SPECIAL CASE: Kill non-startable batch job */
+		if ((msg_type == REQUEST_BATCH_JOB_LAUNCH) && rc) {
+			batch_job_launch_msg_t *launch_msg_ptr = task_ptr->msg_args_ptr;
+			uint32_t job_id = launch_msg_ptr->job_id;
+			info("Killing non-startable batch job %u: %s", 
+			     job_id, slurm_strerror(rc));
+			thread_state = DSH_DONE;
+			lock_slurmctld(job_write_lock);
+			job_complete(job_id, 0, false, 1);
+			unlock_slurmctld(job_write_lock);
+			continue;
+			//goto cleanup;
+		}
 #endif
-	if (((msg_type == REQUEST_SIGNAL_TASKS) 
-	||   (msg_type == REQUEST_TERMINATE_TASKS)) &&  (rc == ESRCH)) {
-		/* process is already dead, not a real error */
-		rc = SLURM_SUCCESS;
-	}
+		if (((msg_type == REQUEST_SIGNAL_TASKS) 
+		     ||   (msg_type == REQUEST_TERMINATE_TASKS)) &&  (rc == ESRCH)) {
+			/* process is already dead, not a real error */
+			rc = SLURM_SUCCESS;
+		}
 
-	switch (rc) {
-	case SLURM_SUCCESS:
+		switch (rc) {
+		case SLURM_SUCCESS:
 /*		debug3("agent processed RPC to node %s", 
-			thread_ptr->node_name); */
-		thread_state = DSH_DONE;
-		break;
-	case ESLURMD_EPILOG_FAILED:
-		error("Epilog failure on host %s, setting DOWN", 
-		      thread_ptr->node_name);
-		thread_state = DSH_FAILED;
-		break;
-	case ESLURMD_PROLOG_FAILED:
-		error("Prolog failure on host %s, setting DOWN",
-		      thread_ptr->node_name);
-		thread_state = DSH_FAILED;
-		break;
-	case ESLURM_INVALID_JOB_ID:  /* Not indicative of a real error */
-	case ESLURMD_JOB_NOTRUNNING: /* Not indicative of a real error */
-		debug2("agent processed RPC to node %s: %s",
-		       thread_ptr->node_name, slurm_strerror(rc));
-		thread_state = DSH_DONE;
-		break;
-	default:
-		error("agent error from host %s for msg type %d: %s", 
-		      thread_ptr->node_name, task_ptr->msg_type, 
-		      slurm_strerror(rc));
-		thread_state = DSH_DONE;
+		thread_ptr->node_name); */
+			thread_state = DSH_DONE;
+			break;
+		case ESLURMD_EPILOG_FAILED:
+			error("Epilog failure on host %s, setting DOWN", 
+			      thread_ptr->node_name);
+			thread_state = DSH_FAILED;
+			break;
+		case ESLURMD_PROLOG_FAILED:
+			error("Prolog failure on host %s, setting DOWN",
+			      thread_ptr->node_name);
+			thread_state = DSH_FAILED;
+			break;
+		case ESLURM_INVALID_JOB_ID:  /* Not indicative of a real error */
+		case ESLURMD_JOB_NOTRUNNING: /* Not indicative of a real error */
+			debug2("agent processed RPC to node %s: %s",
+			       thread_ptr->node_name, slurm_strerror(rc));
+			thread_state = DSH_DONE;
+			break;
+		default:
+			error("agent error from host %s for msg type %d: %s", 
+			      thread_ptr->node_name, task_ptr->msg_type, 
+			      slurm_strerror(rc));
+			thread_state = DSH_DONE;
+		}
 	}
+	list_iterator_destroy(itr);
+	list_destroy(ret_list);
 
-      cleanup:
+cleanup:
 	xfree(args);
 	slurm_mutex_lock(thread_mutex_ptr);
 	thread_ptr->state = thread_state;
 	thread_ptr->end_time = (time_t) difftime(time(NULL), 
-						thread_ptr->start_time);
+						 thread_ptr->start_time);
 
 	/* Signal completion so another thread can replace us */
 	(*threads_active_ptr)--;

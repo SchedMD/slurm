@@ -881,7 +881,7 @@ _accept_msg_connection(srun_job_t *job, int fdnum)
 	if (opt.no_alloc)
 		timeout = 5;
   again:
-	if (slurm_receive_msg(fd, msg, timeout) < 0) {
+	if (slurm_receive_msg_only_one(fd, msg, timeout) < 0) {
 		if (errno == EINTR)
 			goto again;
 		error("slurm_receive_msg[%u.%u.%u.%u]: %m",

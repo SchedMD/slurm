@@ -324,7 +324,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	req_msg.msg_type = REQUEST_JOB_ID;
 	req_msg.data     = &req;
 
-	if (slurm_send_recv_node_msg(&req_msg, &resp_msg, 0) < 0)
+	if (slurm_send_recv_node_msg_only_one(&req_msg, &resp_msg, 0) < 0)
 		return SLURM_ERROR;
 
 	slurm_free_cred(resp_msg.cred);

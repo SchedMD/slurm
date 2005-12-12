@@ -866,7 +866,7 @@ static void *_thread_per_node_rpc(void *args)
 	thread_ptr->tstart = time(NULL);
 	thread_ptr->state = DSH_ACTIVE;
 
-	if (slurm_send_recv_rc_msg(thread_ptr->req, &rc, 0) < 0) {
+	if (slurm_send_recv_rc_msg_only_one(thread_ptr->req, &rc, 0) < 0) {
 		new_state = DSH_FAILED;
 		goto cleanup;
 	}

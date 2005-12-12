@@ -351,7 +351,7 @@ _service_connection(void *arg)
 	msg->forward_cnt = 0;
 	msg->forward_addr = NULL;
 	
-	if ((rc = slurm_receive_msg(con->fd, msg, 0)) < 0) 
+	if ((rc = slurm_receive_msg_only_one(con->fd, msg, 0)) < 0) 
 		error("slurm_receive_msg: %m");
 	else 
 		slurmd_req(msg, con->cli_addr);

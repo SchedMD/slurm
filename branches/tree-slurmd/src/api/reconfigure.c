@@ -117,32 +117,47 @@ slurm_shutdown (uint16_t core)
 int
 _send_message_controller (enum controller_id dest, slurm_msg_t *req) 
 {
-	int rc;
+	int rc = SLURM_PROTOCOL_SUCCESS;
 	slurm_fd fd = -1;
-	slurm_msg_t resp_msg ;
+	slurm_msg_t *resp_msg;
+
+	List ret_list = NULL;
+	ret_forward_t *ret_forward = NULL;
+
+	/*always only going to 1 node */
+	req->forward_cnt = 0;
+	req->forward_addr = NULL;
 
 	if ((fd = slurm_open_controller_conn_spec(dest)) < 0)
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
 
 	if (slurm_send_node_msg(fd, req) < 0) 
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_SEND_ERROR);
+	
+	ret_list = slurm_receive_msg(fd, 0);
+	if(!ret_list)
+		return SLURM_ERROR;
 
-	if ((rc = slurm_receive_msg(fd, &resp_msg, 0)) < 0)
-		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR);
+	ret_forward = list_pop(ret_list);
+	if(ret_forward) {
+		resp_msg = ret_forward->resp;
+		rc = ret_forward->rc;
+		if(rc < 0) {
+			rc = SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
+		}
+		if (slurm_shutdown_msg_conn(ret_forward->fd) != SLURM_SUCCESS)
+			rc = SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR;
 
-	slurm_free_cred(resp_msg.cred);
-	if (slurm_shutdown_msg_conn(fd) != SLURM_SUCCESS)
-		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR);
+		if (resp_msg->msg_type != RESPONSE_SLURM_RC)
+			rc = SLURM_UNEXPECTED_MSG_ERROR;
 
-	if (resp_msg.msg_type != RESPONSE_SLURM_RC)
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
-
-	rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-
-	slurm_free_return_code_msg(resp_msg.data);
+		rc = ((return_code_msg_t *) resp_msg->data)->return_code;
+		destroy_ret_forward(ret_forward);
+	}
+	list_destroy(ret_list);
 
 	if (rc) slurm_seterrno_ret(rc);
 
-        return SLURM_PROTOCOL_SUCCESS;
+        return rc;
 }
 

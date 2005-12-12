@@ -1337,7 +1337,7 @@ static int _send_data_to_mynode(_mynode_msg_type_t msgtype, _jrec_t *jrec) {
 		if (jrec->nnodes)
 			_stagger_time(-1, jrec->nprocs/jrec->nnodes);
 			/* avoid simultaneous msgs from all processes */
-		if (( rc = slurm_send_recv_node_msg(msg, retmsg, 0)) >=0 )
+		if (( rc = slurm_send_recv_node_msg_only_one(msg, retmsg, 0)) >=0 )
 				break;
 		if (retry==0)
 			srand( (getpid()*times(NULL))%RAND_MAX );
@@ -1410,7 +1410,7 @@ static int _send_data_to_node_0(_jrec_t *jrec) {
 	for (retry=0; retry<max_send_retries; retry++) {
 		_stagger_time(jrec->nodeid, jrec->nnodes);
 			/* avoid simultaneous msgs from all processes */
-		if ((rc = slurm_send_recv_node_msg(msg, retmsg, 0))>=0 )
+		if ((rc = slurm_send_recv_node_msg_only_one(msg, retmsg, 0))>=0 )
 			break;
 		if (retry==0)
 			srand( (getpid()*times(NULL))%RAND_MAX );

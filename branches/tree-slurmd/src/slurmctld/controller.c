@@ -607,7 +607,7 @@ static void *_service_connection(void *arg)
 	msg = xmalloc(sizeof(slurm_msg_t));
 	msg->forward_cnt = 0;
 	msg->forward_addr = NULL;
-	if (slurm_receive_msg(newsockfd, msg, 0) < 0) {
+	if (slurm_receive_msg_only_one(newsockfd, msg, 0) < 0) {
 		if (slurm_get_errno() == SLURM_PROTOCOL_VERSION_ERROR) {
 			msg->conn_fd = newsockfd;
 			slurm_send_rc_msg(msg, SLURM_PROTOCOL_VERSION_ERROR);
@@ -1000,7 +1000,7 @@ static int _shutdown_backup_controller(int wait_time)
 	req.msg_type = REQUEST_CONTROL;
 	req.data = NULL;
 
-	if (slurm_send_recv_rc_msg(&req, &rc, CONTROL_TIMEOUT) < 0) {
+	if (slurm_send_recv_rc_msg_only_one(&req, &rc, CONTROL_TIMEOUT) < 0) {
 		error("shutdown_backup:send/recv: %m");
 		return SLURM_ERROR;
 	}

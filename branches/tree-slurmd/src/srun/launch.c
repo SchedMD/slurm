@@ -389,7 +389,7 @@ _send_msg_rc(slurm_msg_t *msg)
 	int rc     = 0;
 	int errnum = 0;
 
-       	if ((rc = slurm_send_recv_rc_msg(msg, &errnum, opt.msg_timeout)) < 0) 
+       	if ((rc = slurm_send_recv_rc_msg_only_one(msg, &errnum, opt.msg_timeout)) < 0) 
 		return SLURM_ERROR;
 
 	if (errnum != 0)
