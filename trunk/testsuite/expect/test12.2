@@ -36,7 +36,6 @@ set exit_code   0
 set file_prog   "test$test_id.prog"
 set job_id      0
 set matches     0
-set not_support 0
 
 # job paramters
 set mem_size    100000
@@ -44,6 +43,27 @@ set sleep_time  25
 set ret_code    42
 
 print_header $test_id
+
+#
+# Check if accounting is enabled
+#
+set supported 0
+log_user 0
+spawn $scontrol show config
+expect {
+	-re "jobacct/log" {
+		set supported 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$supported == 0} {
+	send_user "\nWARNING: job accounting not configured on this system\n"
+	exit 0
+}
 
 #
 # Delete left-over program and rebuild it
@@ -85,10 +105,6 @@ exec $bin_sleep 5
  
 spawn $sacct --noheader --jobstep=$job_id.0 --fields jobstep,jobname,status,error
 expect {
-	-re "SLURM accounting is disabled" {
-		set not_support 1
-		exp_continue
-	}
 	-re "$job_id\.0" {
 		incr matches
 		exp_continue
@@ -112,11 +128,6 @@ expect {
 	eof {
 		wait
 	}
-}
-
-if {$not_support != 0} {
-	send_user "\nWARNING: can not test without accounting enabled\n"
-	exit 0
 }
 if {$matches != 4} {
 	send_user "\nFAILURE: sacct reporting failed\n"
