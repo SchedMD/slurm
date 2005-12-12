@@ -44,9 +44,9 @@
 #include <string.h>
 #include <sys/utsname.h>
 
+#define _GNU_SOURCE
 #define __USE_GNU
 #include <sched.h> /* SMB */
-#undef __USE_GNU
 
 #if HAVE_STDLIB_H
 #  include <stdlib.h>

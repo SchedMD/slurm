@@ -165,7 +165,7 @@ int slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask)
 	int rval;
 	char mstr[1 + CPU_SETSIZE / 4];
 
-#ifdef HAVE_SCHED_SETAFFINITY
+#ifdef SCHED_GETAFFINITY_THREE_ARGS
 	rval = sched_setaffinity(pid, size, mask);
 #else
 	rval = sched_setaffinity(pid, mask);

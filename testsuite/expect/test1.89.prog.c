@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+#define __USE_GNU
 #include <errno.h>
 #include <sched.h>
 #include <stdio.h>
