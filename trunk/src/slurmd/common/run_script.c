@@ -29,6 +29,7 @@
 #include <sys/errno.h>
 
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/common/xassert.h"
 
 #include "src/slurmd/common/run_script.h"
