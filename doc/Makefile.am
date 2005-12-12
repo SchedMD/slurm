@@ -19,6 +19,7 @@ generated_html = \
 	html/jobcompplugins.html \
 	html/mail.html \
 	html/maui.html \
+	html/mpiplugins.html \
 	html/news.html \
 	html/overview.html \
 	html/platforms.html \
