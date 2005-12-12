@@ -70,8 +70,6 @@ exec $bin_chmod 700 $file_prog
 # Create an allocation
 #
 spawn $srun --allocate -N1 --verbose -t2
-expect -re "jobid ($number).*"
-set job_id $expect_out(1,string)
 
 #
 # Run a job step to get allocated processor count and affinity
@@ -94,7 +92,6 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun (from --allocate) not responding\n"
 		set exit_code 1
-		exp_continue
 	}
 	-re $prompt
 }
@@ -117,7 +114,6 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun (from --allocate) not responding\n"
 		set exit_code 1
-		exp_continue
 	}
 	-re $prompt
 }
@@ -149,7 +145,6 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun (from --allocate) not responding\n"
 		set exit_code 1
-		exp_continue
 	}
 	-re $prompt
 }
@@ -180,7 +175,6 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun (from --allocate) not responding\n"
 		set exit_code 1
-		exp_continue
 	}
 	-re $prompt
 }
@@ -202,7 +196,6 @@ expect {
 		send_user "\nFAILURE: srun (from --allocate) not responding\n"
 		kill_srun
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

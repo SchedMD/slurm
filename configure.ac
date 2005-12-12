@@ -63,6 +63,10 @@ dnl Check if ptrace takes four or five arguments
 dnl
 X_AC_PTRACE
 
+dnl Check of sched_getaffinity exists and it's argument count
+dnl
+X_AC_AFFINITY
+
 dnl Checks for types.
 dnl
 X_AC_SLURM_BIGENDIAN
@@ -91,9 +95,6 @@ AC_CHECK_DECLS([hstrerror, strsignal, sys_siglist])
 
 AC_CHECK_FUNCS(unsetenv, [have_unsetenv=yes])
 AM_CONDITIONAL(HAVE_UNSETENV, test "x$have_unsetenv" = "xyes")
-
-AC_CHECK_FUNCS(sched_setaffinity, [have_sched_setaffinity=yes])
-AM_CONDITIONAL(HAVE_SCHED_SETAFFINITY, test "x$have_sched_setaffinity" = "xyes")
 
 ACX_PTHREAD([], AC_MSG_ERROR([Error: Cannot figure out how to use pthreads!]))
 

@@ -160,57 +160,16 @@ int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
 	return false;
 }
 
-/* user_older_affinity
- *
- * NOTE: some confusion in this.
- * At first it seems:
- * if glibc 2.3.2 then
- *     call sched_setaffinity(pid,mask)
- * else
- *     call sched_setaffinity(pid,len,mask)
- * but then some 2.4 kernels also have the
- * 3 arg version - so its a mess.
- */
-#if defined __GLIBC__
-#include <gnu/libc-version.h>		/* for gnu_get_libc_version */
-#endif
-bool use_3arg_affinity()
-{
-	static bool has_3arg_affinity = true;
-	static bool already_checked   = false;
-	if (already_checked) {
-	    	return has_3arg_affinity;
-	}
-#if defined __GLIBC__
-	const char *glibc_vers = gnu_get_libc_version();
-	if (glibc_vers != NULL) {
-	    	int scnt = 0, major = 0, minor = 0, point = 0;
-		scnt = sscanf (glibc_vers, "%d.%d.%d", &major,
-			       &minor, &point);
-		if (scnt == 3) {
-			if ((major <= 2) && (minor <= 3) && (point <= 2)) {
-				has_3arg_affinity = false;
-			}
-		}
-		debug3("glibc version: %d.%d.%d (%d)\n",
-				major, minor, point, has_3arg_affinity);
-	}
-#endif
-	already_checked = true;
-	return has_3arg_affinity;
-}
-
 int slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask)
 {
-	int (*fptr_sched_setaffinity)() = sched_setaffinity;
-	int rval = 0;
-        if (use_3arg_affinity()) {
-                rval = (*fptr_sched_setaffinity)(pid, size, mask);
-        } else {
-                rval = (*fptr_sched_setaffinity)(pid, mask);
-        }
-
+	int rval;
 	char mstr[1 + CPU_SETSIZE / 4];
+
+#ifdef HAVE_SCHED_SETAFFINITY
+	rval = sched_setaffinity(pid, size, mask);
+#else
+	rval = sched_setaffinity(pid, mask);
+#endif
 	if (rval)
 		verbose("sched_setaffinity(%d,%d,0x%s) failed with status %d",
 				pid, size, cpuset_to_str(mask, mstr), rval);
@@ -219,16 +178,15 @@ int slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask)
 
 int slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask)
 {
-	int (*fptr_sched_getaffinity)() = sched_getaffinity;
-	int rval = 0;
-	CPU_ZERO(mask);
-        if (use_3arg_affinity()) {
-                rval = (*fptr_sched_getaffinity)(pid, size, mask);
-        } else {
-                rval = (*fptr_sched_getaffinity)(pid, mask);
-        }
-
+	int rval;
 	char mstr[1 + CPU_SETSIZE / 4];
+
+	CPU_ZERO(mask);
+#ifdef SCHED_GETAFFINITY_THREE_ARGS
+	rval = sched_getaffinity(pid, size, mask);
+#else
+	rval = sched_getaffinity(pid, mask);
+#endif
 	if (rval)
 		verbose("sched_getaffinity(%d,%d,0x%s) failed with status %d",
 				pid, size, cpuset_to_str(mask, mstr), rval);
