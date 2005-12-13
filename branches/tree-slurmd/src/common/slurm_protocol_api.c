@@ -68,6 +68,8 @@ typedef struct forward_message {
 	int timeout;
 	ret_forward_t *ret_forward;
 	List ret_list;
+	pthread_mutex_t *forward_mutex;
+	pthread_cond_t *notify;
 /* 	slurm_msg_t *resp; */
 /* 	slurm_fd fd; */
 /* 	int rc; */
@@ -563,13 +565,13 @@ void *_forward_thread(void *arg)
 
 	ret_list = slurm_receive_msg(ret_forward->fd,
 				     msg->timeout);
-	info("got the return of %d msg",list_count(ret_list));
-
 	while((ret_forward = list_pop(ret_list)) != NULL) {
-		list_push(msg->ret_list, ret_forward); 
+		pthread_mutex_lock(msg->forward_mutex);
+		list_push(msg->ret_list, ret_forward);
+		pthread_mutex_unlock(msg->forward_mutex);
 	}
+	pthread_cond_signal(msg->notify);
 
-	info("Done returning");
 	list_destroy(ret_list);
 cleanup:
 	xfree(msg->buf);
@@ -824,12 +826,19 @@ List slurm_receive_msg(slurm_fd fd, int timeout)
 	/* Forward message to other nodes */
 	if(header.forward_cnt > 0) {
 		forward_struct = xmalloc(sizeof(forward_struct_t));
+		slurm_mutex_init(&forward_struct->forward_mutex);
+		pthread_cond_init(&forward_struct->notify, NULL);
+	
 		forward_struct->forward_msg = 
 			xmalloc(sizeof(forward_msg_t) * header.forward_cnt);
 		for(i=0; i< header.forward_cnt; i++) {
 			forward_struct->forward_msg[i].ret_forward = 
 				xmalloc(sizeof(ret_forward_t));
 			forward_struct->forward_msg[i].ret_list = ret_list;
+			forward_struct->forward_msg[i].notify = 
+				&forward_struct->notify;
+			forward_struct->forward_msg[i].forward_mutex = 
+				&forward_struct->forward_mutex;
 		}
 		forward_struct->forward = header.forward_cnt;
 		forward_struct->header.version = header.version;
@@ -874,6 +883,7 @@ List slurm_receive_msg(slurm_fd fd, int timeout)
 	 * Unpack message body 
 	 */
 	ret_forward->resp->msg_type = header.msg_type;
+	info("mssage type = %d",ret_forward->resp->msg_type);
 	if ( (header.body_length > remaining_buf(buffer)) ||
 	     (unpack_msg(ret_forward->resp, buffer) != SLURM_SUCCESS) ) {
 		(void) g_slurm_auth_destroy(auth_cred);
@@ -886,6 +896,17 @@ List slurm_receive_msg(slurm_fd fd, int timeout)
 
 	free_buf(buffer);
 	ret_forward->rc = SLURM_SUCCESS;
+	if(forward_struct) {
+		pthread_mutex_lock(&forward_struct->forward_mutex);
+		while(list_count(ret_list) < (header.forward_cnt+1)) {
+			pthread_cond_wait(&forward_struct->notify, 
+					  &forward_struct->forward_mutex);
+			info("got %d out of %d forwarded messages",
+			     list_count(ret_list), 
+			     (header.forward_cnt+1));
+		}
+		pthread_mutex_unlock(&forward_struct->forward_mutex);
+	}
 total_return:
 	return ret_list;
 		
@@ -905,7 +926,9 @@ int slurm_receive_msg_only_one(slurm_fd fd, slurm_msg_t *resp, int timeout)
 	if(ret_forward) {
 		resp = ret_forward->resp;
 		rc = ret_forward->rc;
+		info("type = %d",resp->msg_type);
 		xfree(ret_forward);
+		info("type = %d",resp->msg_type);		
 	}
 	list_destroy(ret_list);
 	return rc;

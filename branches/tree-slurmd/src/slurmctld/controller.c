@@ -605,8 +605,7 @@ static void *_service_connection(void *arg)
 	void *return_code = NULL;
 
 	msg = xmalloc(sizeof(slurm_msg_t));
-	msg->forward_cnt = 0;
-	msg->forward_addr = NULL;
+	
 	if (slurm_receive_msg_only_one(newsockfd, msg, 0) < 0) {
 		if (slurm_get_errno() == SLURM_PROTOCOL_VERSION_ERROR) {
 			msg->conn_fd = newsockfd;

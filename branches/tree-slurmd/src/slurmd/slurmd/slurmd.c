@@ -342,26 +342,38 @@ _service_connection(void *arg)
 {
 	int rc;
 	conn_t *con = (conn_t *) arg;
-	slurm_msg_t *msg = xmalloc(sizeof(*msg));
+	List ret_list = NULL;
+	ListIterator itr;
+	ret_forward_t *ret_forward = NULL;
 
-	/* set msg connection fd to accepted fd. This allows 
- 	 *  possibility for slurmd_req () to close accepted connection
-	 */
-	msg->conn_fd = con->fd;
-	msg->forward_cnt = 0;
-	msg->forward_addr = NULL;
-	
-	if ((rc = slurm_receive_msg_only_one(con->fd, msg, 0)) < 0) 
+	ret_list = slurm_receive_msg(con->fd, 0);	
+	if(!ret_list) {
+		errno = SLURM_SOCKET_ERROR;
 		error("slurm_receive_msg: %m");
-	else 
-		slurmd_req(msg, con->cli_addr);
+		if ((con->fd >= 0) && slurm_close_accepted_conn(con->fd) < 0)
+			error ("close(%d): %m", con->fd);
 
-	if ((msg->conn_fd >= 0) && slurm_close_accepted_conn(msg->conn_fd) < 0)
-		error ("close(%d): %m", con->fd);
+		goto cleanup;
+	}
 
+	itr = list_iterator_create(ret_list);		
+	while((ret_forward = list_next(itr)) != NULL) {
+		/* set msg connection fd to accepted fd. This allows 
+		 *  possibility for slurmd_req () to close accepted connection
+		 */
+		ret_forward->resp->conn_fd = ret_forward->fd;
+		slurmd_req(ret_forward->resp, con->cli_addr);
+		slurm_free_msg(ret_forward->resp);
+		if ((ret_forward->resp->conn_fd >= 0) 
+		    && slurm_close_accepted_conn(ret_forward->resp->conn_fd) 
+		    < 0)
+			error ("close(%d): %m",  ret_forward->fd);
+	}
+	
+cleanup:
+	
 	xfree(con->cli_addr);
 	xfree(con);
-	slurm_free_msg(msg);
 	_decrement_thd_count();
 	return NULL;
 }
