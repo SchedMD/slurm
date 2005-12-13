@@ -7,7 +7,7 @@ import os
 include_pat = r'(<!--\s*#include\s*virtual\s*=\s*"([^"]+)"\s*-->)'
 include_regex = re.compile(include_pat)
 
-url_pat = r'(<\s*a\s*href\s*=\s*")([^"]+)(.*?>)'
+url_pat = r'(\s+href\s*=\s*")([^"]+)(")'
 url_regex = re.compile(url_pat)
 
 def include_virtual(matchobj):
