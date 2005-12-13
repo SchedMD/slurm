@@ -5,32 +5,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <gnu/libc-version.h>
+#include "../../config.h"
 
 static void _load_mask(cpu_set_t *mask)
 {
-	int rc, affinity_args = 3;
-	int (*fptr_sched_getaffinity)() = sched_getaffinity;
+	int rc;
 
-#if defined __GLIBC__
-	const char *glibc_vers = gnu_get_libc_version();
-	if (glibc_vers != NULL) {
-		int scnt = 0, major = 0, minor = 0, point = 0;
-		scnt = sscanf (glibc_vers, "%d.%d.%d", &major,
-			&minor, &point);
-		if (scnt == 3) {
-			if ((major <= 2) && (minor <= 3) && (point <= 2)) {
-				affinity_args = 2;
-			}
-		}
-	}
+#ifdef SCHED_GETAFFINITY_THREE_ARGS
+	rc = sched_getaffinity((pid_t) 0, (unsigned int) sizeof(cpu_set_t), 
+		mask);
+#else
+	rc = sched_getaffinity((pid_t) 0, mask);
 #endif
-	if (affinity_args == 3) {
-		rc = (*fptr_sched_getaffinity)((pid_t) 0, 
-			(unsigned int) sizeof(cpu_set_t), mask);
-	} else {
-		rc = (*fptr_sched_getaffinity)((pid_t) 0, mask);
-	}
 	if (rc != 0) {
 		fprintf(stderr, "ERROR: sched_getaffinity: %s\n",
 			strerror(errno));
