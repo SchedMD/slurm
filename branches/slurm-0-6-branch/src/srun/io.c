@@ -198,7 +198,7 @@ _do_output_line(cbuf_t buf, FILE *out, int tasknum)
 			 * Check here for a null character, and 
 			 * write it to the stream.
 			 */
-			if (line[n] == (char)0) {
+			if (n >= 0 && line[n] == (char)0) {
 				verbose("null character in output stream, "
 					"rewinding %d bytes", rewind-1);
 				fputc(0, out);
