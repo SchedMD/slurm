@@ -190,13 +190,31 @@ _do_output_line(cbuf_t buf, FILE *out, int tasknum)
 
 		if ((n = fprintf(out, "%s", line)) < len) { 
 			int rewind = (n < 0) ? len : len-n;
+
+			/*
+			 * If there are null characters in the "line"
+			 * string, fprintf will always write too few
+			 * characters, and no progress will be made.
+			 * Check here for a null character, and 
+			 * write it to the stream.
+			 */
+			if (line[n] == (char)0) {
+				verbose("null character in output stream, "
+					"rewinding %d bytes", rewind-1);
+				fputc(0, out);
+				tot += 1;
+				cbuf_rewind(buf, rewind-1);
+				continue;
+			}
+
 			error("Rewinding %d of %d bytes: %m", rewind, len);
 			cbuf_rewind(buf, rewind);
 			if (ferror(out))
 				clearerr(out);
 			goto done;
-		} else
+		} else {
 			tot += n;
+		}
 	}
   done:
 	if(fflush(out)) {
