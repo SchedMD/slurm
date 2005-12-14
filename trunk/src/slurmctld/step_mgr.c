@@ -444,9 +444,9 @@ try_again:
 			fatal("bit_alloc malloc failure");
 	}
 
-	/* istep_specs->node_listf user specifies step needs a specific processor count and  */
-	/* all nodes have the same processor count, just translate this to */
-	/* a node count */
+	/* if user specifies step needs a specific processor count and 
+	 * all nodes have the same processor count, just translate this to
+	 * a node count */
 	if (step_spec->cpu_count && (job_ptr->num_cpu_groups == 1)) {
 		i = (step_spec->cpu_count + (job_ptr->cpus_per_node[0] - 1) ) 
 				/ job_ptr->cpus_per_node[0];
