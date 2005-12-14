@@ -1050,8 +1050,9 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 			slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		info("_slurm_rpc_job_step_create: StepId=%u.%u %s",
-		     step_rec->job_ptr->job_id, step_rec->step_id, TIME_STR);
+		info("_slurm_rpc_job_step_create: StepId=%u.%u %s %s",
+			step_rec->job_ptr->job_id, step_rec->step_id, 
+			req_step_msg->node_list, TIME_STR);
 
 		job_step_resp.job_step_id = step_rec->step_id;
 		job_step_resp.node_list   = xstrdup(req_step_msg->node_list);
