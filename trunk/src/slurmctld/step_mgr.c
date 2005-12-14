@@ -381,7 +381,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		job_step_create_request_msg_t *step_spec )
 {
 
-	bitstr_t *nodes_avail = NULL, *nodes_picked = NULL, *node_tmp = NULL;
+	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL;
+	bitstr_t *nodes_picked = NULL, *node_tmp = NULL;
 	int error_code, nodes_picked_cnt = 0, cpus_picked_cnt, i;
 
 	if (job_ptr->node_bitmap == NULL)
@@ -439,9 +440,17 @@ try_again:
 		bit_and (nodes_avail, relative_nodes);
 		bit_free (relative_nodes);
 	} else {
+		ListIterator step_iterator;
+		struct step_record *step_p;
 		nodes_picked = bit_alloc (bit_size (nodes_avail) );
-		if (nodes_picked == NULL)
+		nodes_idle = bit_alloc (bit_size (nodes_avail) );
+		if ((nodes_picked == NULL) || (nodes_idle == NULL))
 			fatal("bit_alloc malloc failure");
+		while ((step_p = (struct step_record *) list_next (step_iterator)))
+			bit_or (nodes_idle, step_p->step_node_bitmap); 
+		list_iterator_destroy (step_iterator);
+		bit_not(nodes_idle);
+		bit_and(nodes_idle, nodes_avail);
 	}
 
 	/* if user specifies step needs a specific processor count and 
@@ -457,10 +466,25 @@ try_again:
 
 	if (step_spec->node_count) {
 		nodes_picked_cnt = bit_set_count(nodes_picked);
+		if (nodes_idle 
+		&&  (step_spec->node_count > nodes_picked_cnt)) {
+			node_tmp = bit_pick_cnt(nodes_idle,
+					(step_spec->node_count -
+					nodes_picked_cnt));
+			if (node_tmp == NULL)
+				goto cleanup;
+			bit_or  (nodes_picked, node_tmp);
+			bit_not (node_tmp);
+			bit_and (nodes_idle, node_tmp);
+			bit_and (nodes_avail, node_tmp);
+			bit_free (node_tmp);
+			node_tmp = NULL;
+			nodes_picked_cnt = step_spec->node_count;
+		}
 		if (step_spec->node_count > nodes_picked_cnt) {
 			node_tmp = bit_pick_cnt(nodes_avail, 
-						(step_spec->node_count - 
-						 nodes_picked_cnt));
+					(step_spec->node_count - 
+					nodes_picked_cnt));
 			if (node_tmp == NULL)
 				goto cleanup;
 			bit_or  (nodes_picked, node_tmp);
@@ -474,6 +498,25 @@ try_again:
 
 	if (step_spec->cpu_count) {
 		cpus_picked_cnt = count_cpus(nodes_picked);
+		if (nodes_idle
+		&&  (step_spec->cpu_count > cpus_picked_cnt)) {
+			int first_bit, last_bit;
+			first_bit = bit_ffs(nodes_idle);
+			last_bit  = bit_fls(nodes_idle);
+			for (i = first_bit; i <= last_bit; i++) {
+				if (bit_test (nodes_idle, i) != 1)
+					continue;
+				bit_set (nodes_picked, i);
+				bit_clear (nodes_avail, i);
+				/* bit_clear (nodes_idle, i);	unused */
+				cpus_picked_cnt +=
+					node_record_table_ptr[i].cpus;
+				if (cpus_picked_cnt >= step_spec->cpu_count)
+					break;
+			}
+			if (step_spec->cpu_count > cpus_picked_cnt)
+				goto cleanup;
+		}
 		if (step_spec->cpu_count > cpus_picked_cnt) {
 			int first_bit, last_bit;
 			first_bit = bit_ffs(nodes_avail);
@@ -493,10 +536,12 @@ try_again:
 	}
 
 	FREE_NULL_BITMAP(nodes_avail);
+	FREE_NULL_BITMAP(nodes_idle);
 	return nodes_picked;
 
 cleanup:
 	FREE_NULL_BITMAP(nodes_avail);
+	FREE_NULL_BITMAP(nodes_idle);
 	FREE_NULL_BITMAP(nodes_picked);
 	return NULL;
 }
