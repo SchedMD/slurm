@@ -122,8 +122,7 @@ _send_message_controller (enum controller_id dest, slurm_msg_t *req)
 	slurm_msg_t *resp_msg;
 
 	List ret_list = NULL;
-	ret_forward_t *ret_forward = NULL;
-
+	
 	/*always only going to 1 node */
 	req->forward_cnt = 0;
 	req->forward_addr = NULL;
@@ -134,28 +133,26 @@ _send_message_controller (enum controller_id dest, slurm_msg_t *req)
 	if (slurm_send_node_msg(fd, req) < 0) 
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_SEND_ERROR);
 	
-	ret_list = slurm_receive_msg(fd, 0);
+	ret_list = slurm_receive_msg(fd, resp_msg, 0);
 	if(!ret_list)
 		return SLURM_ERROR;
-
-	ret_forward = list_pop(ret_list);
-	if(ret_forward) {
-		resp_msg = ret_forward->resp;
-		rc = ret_forward->rc;
-		if(rc < 0) {
-			rc = SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
-		}
-		if (slurm_shutdown_msg_conn(ret_forward->fd) != SLURM_SUCCESS)
-			rc = SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR;
-
-		if (resp_msg->msg_type != RESPONSE_SLURM_RC)
-			rc = SLURM_UNEXPECTED_MSG_ERROR;
-
-		rc = ((return_code_msg_t *) resp_msg->data)->return_code;
-		destroy_ret_forward(ret_forward);
+	if(list_count(ret_list)>0) {
+		error("_send_message_controller: expected 0 back, but got %d",
+		      list_count(ret_list));
 	}
 	list_destroy(ret_list);
+	rc = errno;
+	if(rc < 0) {
+		rc = SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
+	}
+	if (slurm_shutdown_msg_conn(fd) != SLURM_SUCCESS)
+		rc = SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR;
+	
+	if (resp_msg->msg_type != RESPONSE_SLURM_RC)
+			rc = SLURM_UNEXPECTED_MSG_ERROR;
 
+	rc = ((return_code_msg_t *) resp_msg->data)->return_code;
+	
 	if (rc) slurm_seterrno_ret(rc);
 
         return rc;

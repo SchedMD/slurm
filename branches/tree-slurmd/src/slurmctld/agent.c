@@ -100,8 +100,11 @@ typedef struct thd {
 	struct sockaddr_in slurm_addr;	/* network address */
 	slurm_addr	*forward_addr;	/* array of network addresses 
 					   to forward to */	
+	char    	*forward_name;	/* array of node names  
+					   to forward to */	
 	uint16_t forward_cnt;           /* number of addresses to forward */
 	char node_name[MAX_NAME_LEN];	/* node's name */
+	List ret_list;
 } thd_t;
 
 typedef struct agent_info {
@@ -347,6 +350,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	if ((agent_arg_ptr->msg_type != REQUEST_SHUTDOWN) &&
 	    (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE))
 		agent_info_ptr->get_reply = true;
+
 	if(agent_info_ptr->thread_count > AGENT_SPREAD_COUNT) {
 		/* FIXME:!!!!! */
 		/* come up with better algo to spead out to the nodes */
@@ -354,6 +358,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		while(span > AGENT_SPREAD_COUNT)
 			span = agent_info_ptr->thread_count / 2;
 	}
+
 	//span = 1;
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
 		thread_ptr[i].state      = DSH_NEW;
@@ -363,13 +368,20 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 			MAX_NAME_LEN);
 		info("Span %d per slurmd",span);
 		if(span > 0) {
-			thread_ptr[i].forward_addr = xmalloc(
-				sizeof(struct sockaddr_in) * span);
+			thread_ptr[i].forward_addr = 
+				xmalloc(sizeof(struct sockaddr_in) * span);
+			thread_ptr[i].forward_name = 
+				xmalloc(sizeof(char) * (MAX_NAME_LEN * span));
 			j = 1;			
 			while(j<=span 
 			      && ((i+j) < agent_info_ptr->thread_count)) {
 				thread_ptr[i].forward_addr[j-1] = 
 					agent_arg_ptr->slurm_addr[i+j];
+				strncpy(&thread_ptr[i].
+					forward_name[(j-1) * MAX_NAME_LEN], 
+					&agent_arg_ptr->
+					node_names[(i+j) * MAX_NAME_LEN], 
+					MAX_NAME_LEN);
 				j++;
 			}
 			j--;
@@ -377,7 +389,8 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 			i += j;
 		} else {
 			thread_ptr[i].forward_cnt = 0;
-			thread_ptr[i].forward_addr = NULL;	
+			thread_ptr[i].forward_addr = NULL;
+			thread_ptr[i].forward_name = NULL;
 		}
 		thr_count++;		       
 	}
@@ -616,7 +629,8 @@ static void *_thread_per_node_rpc(void *args)
 	bool is_kill_msg, srun_agent;
 	List ret_list = NULL;
 	ListIterator itr;
-	ret_forward_t *ret_forward = NULL;
+	ret_types_t *ret_type = NULL;
+	char *node_name;
 	
 #if AGENT_IS_THREAD
 	/* Locks: Write job, write node */
@@ -685,12 +699,12 @@ static void *_thread_per_node_rpc(void *args)
 	msg.data     = task_ptr->msg_args_ptr;
 	msg.forward_cnt = thread_ptr->forward_cnt;
 	msg.forward_addr = thread_ptr->forward_addr;
+	msg.forward_name = thread_ptr->forward_name;
 	info("forwarding to %d",msg.forward_cnt);
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {
 		if ((ret_list = slurm_send_recv_rc_msg(&msg, timeout)) 
 		    == NULL) {
-			errno = SLURM_SOCKET_ERROR;
 			if (!srun_agent)
 				_comm_err(thread_ptr->node_name);
 			goto cleanup;
@@ -703,69 +717,93 @@ static void *_thread_per_node_rpc(void *args)
 			thread_state = DSH_DONE;
 		goto cleanup;
 	}
+	
+	info("got %d states back from the send", list_count(ret_list));
+	
 	itr = list_iterator_create(ret_list);		
-	while((ret_forward = list_next(itr)) != NULL) {
-		rc = ret_forward->msg_rc;
+	while((ret_type = list_next(itr)) != NULL) {
+		rc = ret_type->msg_rc;
+		info("got rc of %d",rc);
+		while((node_name = list_pop(ret_type->names)) != NULL) {
+			if(!strcmp(node_name,"localhost")) {
+				xfree(node_name);
+				node_name = xstrdup(thread_ptr->node_name);
+			}
+			info("response for %s",node_name);
+			
 #if AGENT_IS_THREAD
-		/* SPECIAL CASE: Mark node as IDLE if job already complete */
-		if (is_kill_msg && (rc == ESLURMD_KILL_JOB_ALREADY_COMPLETE)) {
-			kill_job_msg_t *kill_job;
-			kill_job = (kill_job_msg_t *) task_ptr->msg_args_ptr;
-			rc = SLURM_SUCCESS;
-			lock_slurmctld(job_write_lock);
-			if (job_epilog_complete(kill_job->job_id, 
-						thread_ptr->node_name, rc))
-				run_scheduler = true;
-			unlock_slurmctld(job_write_lock);
-		}
-
-		/* SPECIAL CASE: Kill non-startable batch job */
-		if ((msg_type == REQUEST_BATCH_JOB_LAUNCH) && rc) {
-			batch_job_launch_msg_t *launch_msg_ptr = task_ptr->msg_args_ptr;
-			uint32_t job_id = launch_msg_ptr->job_id;
-			info("Killing non-startable batch job %u: %s", 
-			     job_id, slurm_strerror(rc));
-			thread_state = DSH_DONE;
-			lock_slurmctld(job_write_lock);
-			job_complete(job_id, 0, false, 1);
-			unlock_slurmctld(job_write_lock);
-			continue;
-			//goto cleanup;
-		}
+			/* SPECIAL CASE: Mark node as IDLE if job already 
+			   complete */
+			if (is_kill_msg 
+			    && (rc == ESLURMD_KILL_JOB_ALREADY_COMPLETE)) {
+				kill_job_msg_t *kill_job;
+				kill_job = (kill_job_msg_t *) 
+					task_ptr->msg_args_ptr;
+				rc = SLURM_SUCCESS;
+				lock_slurmctld(job_write_lock);
+				if (job_epilog_complete(kill_job->job_id, 
+							node_name, 
+							rc))
+					run_scheduler = true;
+				unlock_slurmctld(job_write_lock);
+			}
+			
+			/* SPECIAL CASE: Kill non-startable batch job */
+			if ((msg_type == REQUEST_BATCH_JOB_LAUNCH) && rc) {
+				batch_job_launch_msg_t *launch_msg_ptr = 
+					task_ptr->msg_args_ptr;
+				uint32_t job_id = launch_msg_ptr->job_id;
+				info("Killing non-startable batch job %u: %s", 
+				     job_id, slurm_strerror(rc));
+				thread_state = DSH_DONE;
+				lock_slurmctld(job_write_lock);
+				job_complete(job_id, 0, false, 1);
+				unlock_slurmctld(job_write_lock);
+				continue;
+				//goto cleanup;
+			}
 #endif
-		if (((msg_type == REQUEST_SIGNAL_TASKS) 
-		     ||   (msg_type == REQUEST_TERMINATE_TASKS)) &&  (rc == ESRCH)) {
-			/* process is already dead, not a real error */
-			rc = SLURM_SUCCESS;
-		}
+			if (((msg_type == REQUEST_SIGNAL_TASKS) 
+			     ||   (msg_type == REQUEST_TERMINATE_TASKS)) 
+			    && (rc == ESRCH)) {
+				/* process is already dead, not a real error */
+				rc = SLURM_SUCCESS;
+			}
 
-		switch (rc) {
-		case SLURM_SUCCESS:
-/*		debug3("agent processed RPC to node %s", 
-		thread_ptr->node_name); */
-			thread_state = DSH_DONE;
-			break;
-		case ESLURMD_EPILOG_FAILED:
-			error("Epilog failure on host %s, setting DOWN", 
-			      thread_ptr->node_name);
-			thread_state = DSH_FAILED;
-			break;
-		case ESLURMD_PROLOG_FAILED:
-			error("Prolog failure on host %s, setting DOWN",
-			      thread_ptr->node_name);
-			thread_state = DSH_FAILED;
-			break;
-		case ESLURM_INVALID_JOB_ID:  /* Not indicative of a real error */
-		case ESLURMD_JOB_NOTRUNNING: /* Not indicative of a real error */
-			debug2("agent processed RPC to node %s: %s",
-			       thread_ptr->node_name, slurm_strerror(rc));
-			thread_state = DSH_DONE;
-			break;
-		default:
-			error("agent error from host %s for msg type %d: %s", 
-			      thread_ptr->node_name, task_ptr->msg_type, 
-			      slurm_strerror(rc));
-			thread_state = DSH_DONE;
+			switch (rc) {
+			case SLURM_SUCCESS:
+				/*debug3("agent processed RPC to node %s", 
+				  node_name); */
+				thread_state = DSH_DONE;
+				break;
+			case ESLURMD_EPILOG_FAILED:
+				error("Epilog failure on host %s, "
+				      "setting DOWN", node_name);
+				thread_state = DSH_FAILED;
+				break;
+			case ESLURMD_PROLOG_FAILED:
+				error("Prolog failure on host %s, "
+				      "setting DOWN", node_name);
+				thread_state = DSH_FAILED;
+				break;
+			case ESLURM_INVALID_JOB_ID:  
+				/* Not indicative of a real error */
+			case ESLURMD_JOB_NOTRUNNING: 
+				/* Not indicative of a real error */
+				debug2("agent processed RPC to node %s: %s",
+				       node_name,
+				       slurm_strerror(rc));
+				thread_state = DSH_DONE;
+				break;
+			default:
+				error("agent error from host %s for msg "
+				      "type %d: %s", 
+				      node_name, 
+				      task_ptr->msg_type, 
+				      slurm_strerror(rc));
+				thread_state = DSH_DONE;
+			}
+			xfree(node_name);
 		}
 	}
 	list_iterator_destroy(itr);

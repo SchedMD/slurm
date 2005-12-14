@@ -853,6 +853,7 @@ _accept_msg_connection(srun_job_t *job, int fdnum)
 	unsigned char *uc;
 	short        port;
 	int          timeout = 0;	/* slurm default value */
+	List         ret_list;
 
 	if (fdnum < job->njfds)
 		fd = slurm_accept_msg_conn(job->jfd[fdnum], &cli_addr);
@@ -881,17 +882,25 @@ _accept_msg_connection(srun_job_t *job, int fdnum)
 	if (opt.no_alloc)
 		timeout = 5;
   again:
-	if (slurm_receive_msg_only_one(fd, msg, timeout) < 0) {
+	ret_list = slurm_receive_msg(fd, msg, timeout);
+
+	if(!ret_list || errno != SLURM_SUCCESS) {
 		if (errno == EINTR)
 			goto again;
 		error("slurm_receive_msg[%u.%u.%u.%u]: %m",
 		      uc[0],uc[1],uc[2],uc[3]);
-		xfree(msg);
-	} else {
-		
-		msg->conn_fd = fd;
-		_handle_msg(job, msg); /* handle_msg frees msg */
+		slurm_free_msg(msg);
+		return;
 	}
+	if(list_count(ret_list)>0) {
+		error("_accept_msg_connection: "
+		      "got %d from receive, expecting 0",
+		      list_count(ret_list));
+	}
+	list_destroy(ret_list);
+		
+	msg->conn_fd = fd;
+	_handle_msg(job, msg); /* handle_msg frees msg */
 	
 	slurm_close_accepted_conn(fd);
 	return;

@@ -32,6 +32,6 @@
 /* Process request contained in slurm message `msg' from client at
  * "*client_addr"
  */
-void slurmd_req(slurm_msg_t *msg, slurm_addr *client_addr);
+void slurmd_req(slurm_msg_t *msg, slurm_addr *client_addr, List ret_list);
 
 #endif

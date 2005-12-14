@@ -41,12 +41,13 @@
 #  include <inttypes.h>
 #endif				/*  HAVE_CONFIG_H */
 
+#define MAX_NAME_LEN 64
+
 #include <sys/types.h>
 #include <stdarg.h>
 
 #include <slurm/slurm_errno.h>
 
-#include "src/common/list.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -55,12 +56,12 @@
 #define MIN_NOALLOC_JOBID ((uint32_t) 0xffff0000)
 #define MAX_NOALLOC_JOBID ((uint32_t) 0xfffffffd)
 
-typedef struct ret_forward {
-	slurm_fd fd;
-	slurm_msg_t *resp;
-	int rc;
+typedef struct ret_types {
 	int msg_rc;
-} ret_forward_t;
+	int err;
+	int type;
+	List names;
+} ret_types_t;
 
 enum controller_id {
 	PRIMARY_CONTROLLER = 1,
@@ -273,8 +274,7 @@ int inline slurm_shutdown_msg_engine(slurm_fd open_fd);
  *  Returns SLURM_SUCCESS if an entire message is successfully 
  *    received. Otherwise SLURM_ERROR is returned.
  */
-List slurm_receive_msg(slurm_fd fd, int timeout);
-int slurm_receive_msg_only_one(slurm_fd fd, slurm_msg_t *resp, int timeout);
+List slurm_receive_msg(slurm_fd fd, slurm_msg_t *resp, int timeout);
 
 /**********************************************************************\
  * send message functions
@@ -527,18 +527,9 @@ int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
  * OUT response_msg	- slurm_msg response
  * RET List 		- return list from multiple nodes
  */
-List slurm_send_recv_node_msg(slurm_msg_t * request_msg, int timeout);
-
-/* slurm_send_recv_node_msg_only_one
- * opens a connection to node, sends the node a message, listens 
- * for the response, then closes the connection
- * IN request_msg	- slurm_msg request
- * OUT response_msg	- slurm_msg response
- * RET int 		- return code
- */
-int slurm_send_recv_node_msg_only_one(slurm_msg_t * request_msg, 
-				      slurm_msg_t * response_msg, 
-				      int timeout);
+List slurm_send_recv_node_msg(slurm_msg_t * request_msg, 
+			      slurm_msg_t * response_msg, 
+			      int timeout);
 
 /*
  *  Open a connection to req->address, send message (forward if told) 
@@ -576,5 +567,6 @@ int slurm_send_only_node_msg(slurm_msg_t * request_msg);
 /* Slurm message functions */
 void slurm_free_msg(slurm_msg_t * msg);
 void slurm_free_cred(void *cred);
-void destroy_ret_forward(void *object);
+void destroy_names(void *object);
+void destroy_ret_types(void *object);
 #endif

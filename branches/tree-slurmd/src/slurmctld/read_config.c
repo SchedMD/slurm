@@ -59,7 +59,6 @@
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE	1024
-#define MAX_NAME_LEN	32
 
 static int  _build_bitmaps(void);
 static int  _init_all_slurm_conf(void);

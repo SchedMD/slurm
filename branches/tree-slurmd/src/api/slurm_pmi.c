@@ -59,6 +59,7 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr)
 	slurm_msg_t msg_send, msg_rcv;
 	int rc;
 	slurm_fd srun_fd;
+	List ret_list;
 
 	if (kvs_set_ptr == NULL)
 		return EINVAL;
@@ -69,10 +70,23 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr)
 	msg_send.address = srun_addr;
 	msg_send.msg_type = PMI_KVS_PUT_REQ;
 	msg_send.data = (void *) kvs_set_ptr;
-
+	msg_send.forward_cnt = 0;
+	msg_send.forward_addr = NULL;
+	msg_send.forward_name = NULL;
 	/* Send the RPC to the local srun communcation manager */
-	if (slurm_send_recv_node_msg(&msg_send, &msg_rcv, 0) < 0)
+	ret_list = slurm_send_recv_node_msg(&msg_send, &msg_rcv, 0);
+
+	if(!ret_list || errno != SLURM_SUCCESS) {
+		error("slurm_send_kvs_comm_set: %m");
 		return SLURM_ERROR;
+	}
+	if(list_count(ret_list)>0) {
+		error("slurm_send_kvs_comm_set: "
+		      "got %d from receive, expecting 0",
+		      list_count(ret_list));
+	}
+	list_destroy(ret_list);
+	
 	if (msg_rcv.msg_type != RESPONSE_SLURM_RC)
 		return SLURM_UNEXPECTED_MSG_ERROR;
 	rc = ((return_code_msg_t *) msg_rcv.data)->return_code;
@@ -90,6 +104,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	char hostname[64];
 	uint16_t port;
 	kvs_get_msg_t data;
+	List ret_list;
 
 	if (kvs_set_ptr == NULL)
 		return EINVAL;
@@ -123,10 +138,23 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	msg_send.data = &data;
 
 	/* Send the RPC to the srun communcation manager */
-	if (slurm_send_recv_node_msg(&msg_send, &msg_rcv, 0) < 0) {
+	msg_send.forward_cnt = 0;
+	msg_send.forward_addr = NULL;
+	msg_send.forward_name = NULL;
+	/* Send the RPC to the local srun communcation manager */
+	ret_list = slurm_send_recv_node_msg(&msg_send, &msg_rcv, 0);
+
+	if(!ret_list || errno != SLURM_SUCCESS) {
 		error("slurm_send_recv_node_msg: %m");
 		return SLURM_ERROR;
 	}
+	if(list_count(ret_list)>0) {
+		error("slurm_send_recv_node_msg: "
+		      "got %d from receive, expecting 0",
+		      list_count(ret_list));
+	}
+	list_destroy(ret_list);
+	
 	if (msg_rcv.msg_type != RESPONSE_SLURM_RC) {
 		error("slurm_get_kvs_comm_set msg_type=%d", msg_rcv.msg_type);
 		return SLURM_UNEXPECTED_MSG_ERROR;

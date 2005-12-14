@@ -343,37 +343,31 @@ _service_connection(void *arg)
 	int rc;
 	conn_t *con = (conn_t *) arg;
 	List ret_list = NULL;
-	ListIterator itr;
-	ret_forward_t *ret_forward = NULL;
+	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
 
-	ret_list = slurm_receive_msg(con->fd, 0);	
+	info("in the service_connection");
+	msg->conn_fd = con->fd;
+
+	ret_list = slurm_receive_msg(con->fd, msg, 0);	
 	if(!ret_list) {
 		errno = SLURM_SOCKET_ERROR;
 		error("slurm_receive_msg: %m");
-		if ((con->fd >= 0) && slurm_close_accepted_conn(con->fd) < 0)
-			error ("close(%d): %m", con->fd);
-
 		goto cleanup;
 	}
-
-	itr = list_iterator_create(ret_list);		
-	while((ret_forward = list_next(itr)) != NULL) {
-		/* set msg connection fd to accepted fd. This allows 
-		 *  possibility for slurmd_req () to close accepted connection
-		 */
-		ret_forward->resp->conn_fd = ret_forward->fd;
-		slurmd_req(ret_forward->resp, con->cli_addr);
-		slurm_free_msg(ret_forward->resp);
-		if ((ret_forward->resp->conn_fd >= 0) 
-		    && slurm_close_accepted_conn(ret_forward->resp->conn_fd) 
-		    < 0)
-			error ("close(%d): %m",  ret_forward->fd);
-	}
+	
+	/* set msg connection fd to accepted fd. This allows 
+	 *  possibility for slurmd_req () to close accepted connection
+	 */
+	info("got this type of message %d",msg->msg_type);
+	slurmd_req(msg, con->cli_addr, ret_list);
 	
 cleanup:
-	
+	if ((msg->conn_fd >= 0) && slurm_close_accepted_conn(msg->conn_fd) < 0)
+		error ("close(%d): %m", con->fd);
+
 	xfree(con->cli_addr);
 	xfree(con);
+	slurm_free_msg(msg);
 	_decrement_thd_count();
 	return NULL;
 }

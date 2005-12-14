@@ -283,9 +283,11 @@ pack_header(header_t * header, Buf buffer)
 	pack16((uint16_t) header->msg_type, buffer);
 	pack32(header->body_length, buffer);
 	pack16(header->forward_cnt, buffer);
-	if (header->forward_cnt > 0) 
+	if (header->forward_cnt > 0) {
 		_pack_slurm_addr_array(header->forward_addr,
 				       header->forward_cnt, buffer);
+		packstr(header->forward_name, buffer);
+	}
 }
 
 /* unpack_header
@@ -312,6 +314,9 @@ unpack_header(header_t * header, Buf buffer)
 			goto unpack_error;
 		if(tmp != header->forward_cnt)
 			goto unpack_error;
+		safe_unpackstr_xmalloc(&header->forward_name, 
+				       &tmp, 
+				       buffer);
 	} else
 		header->forward_addr = NULL;
 	
@@ -319,7 +324,7 @@ unpack_header(header_t * header, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	
+	xfree(header->forward_name);	
 	return SLURM_ERROR;
 }
 

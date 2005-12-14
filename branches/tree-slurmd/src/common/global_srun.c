@@ -195,10 +195,10 @@ static void * _p_signal_task(void *args)
 	task_info_t *info = (task_info_t *)args;
 	slurm_msg_t *req  = info->req_ptr;
 	srun_job_t  *job  = info->job_ptr;
-	char        *host = job->step_layout->host[info->host_inx];
+	char        *host = NULL;
 	List ret_list = NULL;
 	ListIterator itr;
-	ret_forward_t *ret_forward = NULL;
+	ret_types_t *ret_type = NULL;
 	
 	debug3("sending signal to host %s", host);
 	
@@ -208,15 +208,31 @@ static void * _p_signal_task(void *args)
 		goto done;
 	}
 	itr = list_iterator_create(ret_list);		
-	while((ret_forward = list_next(itr)) != NULL) {
-		rc = ret_forward->rc;
+	while((ret_type = list_next(itr)) != NULL) {
+		rc = ret_type->err;
+		if(!ret_type->names)
+			host = job->step_layout->host[info->host_inx];
+		else 
+			host = NULL;
 		/*
 		 *  Report error unless it is "Invalid job id" which 
 		 *    probably just means the tasks exited in the meanwhile.
 		 */
 		if ((rc != 0) && (rc != ESLURM_INVALID_JOB_ID)
 		    &&  (rc != ESLURMD_JOB_NOTRUNNING) && (rc != ESRCH)) {
-			error("%s: signal: %s", host, slurm_strerror(rc));
+			if(!host) {
+				while(host = list_pop(ret_type->names)) {
+					error("%s: signal: %s", 
+					      host, 
+					      slurm_strerror(rc));
+					xfree(host);
+				}
+				list_destroy(ret_type->names);
+			} else {
+				error("%s: signal: %s", 
+				      host, 
+				      slurm_strerror(rc));
+			}
 		}
 	}
 	list_iterator_destroy(itr);

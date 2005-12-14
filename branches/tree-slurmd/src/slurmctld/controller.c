@@ -601,27 +601,39 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 static void *_service_connection(void *arg)
 {
 	slurm_fd newsockfd = ((connection_arg_t *) arg)->newsockfd;
-	slurm_msg_t *msg = NULL;
 	void *return_code = NULL;
-
-	msg = xmalloc(sizeof(slurm_msg_t));
+	List ret_list = NULL;
+	ListIterator itr;
+	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
 	
-	if (slurm_receive_msg_only_one(newsockfd, msg, 0) < 0) {
-		if (slurm_get_errno() == SLURM_PROTOCOL_VERSION_ERROR) {
-			msg->conn_fd = newsockfd;
+	msg->conn_fd = newsockfd;
+	ret_list = slurm_receive_msg(newsockfd, msg, 0);	
+	if(!ret_list) {
+		error("slurm_receive_msg: %m");
+		/* close should only be called when the socket implementation is 
+		 * being used the following call will be a no-op in a 
+		 * message/mongo implementation */
+		slurm_close_accepted_conn(newsockfd);	/* close the new socket */
+		goto cleanup;
+	}
+	/* set msg connection fd to accepted fd. This allows 
+	 *  possibility for slurmd_req () to close accepted connection
+	 */
+	if(errno < 0) {
+		if (errno == SLURM_PROTOCOL_VERSION_ERROR) {
 			slurm_send_rc_msg(msg, SLURM_PROTOCOL_VERSION_ERROR);
 		} else
 			info("_service_connection/slurm_receive_msg %m");
 	} else {
-		msg->conn_fd = newsockfd;
-		slurmctld_req (msg);	/* process the request */
+		/* process the request */
+		slurmctld_req (msg, ret_list);
 	}
+	if ((newsockfd >= 0) && slurm_close_accepted_conn(newsockfd) < 0)
+		error ("close(%d): %m",  newsockfd);
 
-	/* close should only be called when the socket implementation is 
-	 * being used the following call will be a no-op in a 
-	 * message/mongo implementation */
-	slurm_close_accepted_conn(newsockfd);	/* close the new socket */
+	list_destroy(ret_list);
 
+cleanup:
 	slurm_free_msg(msg);
 	xfree(arg);
 	_free_server_thread();

@@ -60,7 +60,7 @@ extern inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2,
  * slurmctld_req  - Process an individual RPC request
  * IN/OUT msg - the request message, data associated with the message is freed
  */
-void slurmctld_req (slurm_msg_t * msg);
+void slurmctld_req (slurm_msg_t * msg, List ret_list);
 
 /*
  * slurm_drain_nodes - process a request to drain a list of nodes,

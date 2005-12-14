@@ -44,6 +44,7 @@
 
 #include <slurm/slurm.h>
 
+#include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/switch.h"
@@ -178,6 +179,7 @@ typedef struct slurm_protocol_header {
 	uint32_t body_length;
 	uint16_t forward_cnt;
 	slurm_addr *forward_addr;
+	char *forward_name;
 } header_t;
 
 typedef struct slurm_msg {
@@ -185,6 +187,7 @@ typedef struct slurm_msg {
 	slurm_addr address;
 	uint16_t forward_cnt;
 	slurm_addr *forward_addr;
+	char *forward_name;
 	slurm_fd conn_fd;
 	void *cred;
 	void *data;
