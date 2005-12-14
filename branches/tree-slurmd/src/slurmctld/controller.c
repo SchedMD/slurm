@@ -616,6 +616,9 @@ static void *_service_connection(void *arg)
 		slurm_close_accepted_conn(newsockfd);	/* close the new socket */
 		goto cleanup;
 	}
+
+	msg->ret_list = ret_list;
+
 	/* set msg connection fd to accepted fd. This allows 
 	 *  possibility for slurmd_req () to close accepted connection
 	 */
@@ -626,7 +629,7 @@ static void *_service_connection(void *arg)
 			info("_service_connection/slurm_receive_msg %m");
 	} else {
 		/* process the request */
-		slurmctld_req (msg, ret_list);
+		slurmctld_req (msg);
 	}
 	if ((newsockfd >= 0) && slurm_close_accepted_conn(newsockfd) < 0)
 		error ("close(%d): %m",  newsockfd);

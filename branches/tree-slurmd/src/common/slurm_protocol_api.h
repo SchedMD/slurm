@@ -57,9 +57,9 @@
 #define MAX_NOALLOC_JOBID ((uint32_t) 0xfffffffd)
 
 typedef struct ret_types {
-	int msg_rc;
-	int err;
-	int type;
+	int32_t msg_rc;
+	int32_t err;
+	int32_t type;
 	List names;
 } ret_types_t;
 

@@ -70,15 +70,11 @@ typedef struct forward_message {
 	pthread_mutex_t *forward_mutex;
 	pthread_cond_t *notify;
 	char node_name[MAX_NAME_LEN];
-/* 	slurm_msg_t *resp; */
-/* 	slurm_fd fd; */
-/* 	int rc; */
 } forward_msg_t;
 
 typedef struct forward_struct {
 	int timeout;
 	int forward;
-	int replied;
 	pthread_mutex_t forward_mutex;
 	pthread_cond_t notify;
 	forward_msg_t *forward_msg;
@@ -618,6 +614,7 @@ void *_forward_thread(void *arg)
 	list_destroy(ret_list);
 cleanup:
 	xfree(fwd_msg->buf);
+	//xfree(fwd_msg->addr);
 	free_buf(buffer);	
 }
 
@@ -861,7 +858,12 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
 	}
-	
+	if(header.ret_cnt > 0) {
+		ret_type = list_pop(header.ret_list);
+		list_push(ret_list, ret_type);
+		list_destroy(header.ret_list);
+		header.ret_cnt = 0;
+	}
 	/* Forward message to other nodes */
 	if(header.forward_cnt > 0) {
 		forward_struct = xmalloc(sizeof(forward_struct_t));
@@ -880,6 +882,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 			forward_struct->forward_msg[i].forward_mutex = 
 				&forward_struct->forward_mutex;
 		}
+		xfree(header.forward_name);
 		forward_struct->forward = header.forward_cnt;
 		forward_struct->header.version = header.version;
 		forward_struct->header.flags = header.flags;
@@ -949,6 +952,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	}
 		
 total_return:
+	
 	if(rc != SLURM_SUCCESS) {
 		error("slurm_receive_msg: %s", slurm_strerror(rc));
 	}
@@ -1351,7 +1355,7 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 	if(err == SLURM_SUCCESS) {
 		ret_list = slurm_receive_msg(fd, resp, timeout);
 	}
-
+	info("Hey I got this count here %d",list_count(ret_list));
 	/* 
 	 *  Attempt to close an open connection
 	 */
@@ -1549,6 +1553,7 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 	if(!ret_list) {
 		return ret_list;
 	}
+	info("received %d types",list_count(ret_list));
 	err = errno;
 	msg_rc = ((return_code_msg_t *)msg.data)->return_code;
 	
@@ -1665,6 +1670,8 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 void slurm_free_msg(slurm_msg_t * msg)
 {
 	(void) g_slurm_auth_destroy(msg->cred);
+	if(msg->ret_list)
+		list_destroy(msg->ret_list);
 	xfree(msg);
 }
 

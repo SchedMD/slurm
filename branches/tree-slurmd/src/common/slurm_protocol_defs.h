@@ -178,20 +178,24 @@ typedef struct slurm_protocol_header {
 	slurm_msg_type_t msg_type;
 	uint32_t body_length;
 	uint16_t forward_cnt;
+	uint16_t ret_cnt;
 	slurm_addr *forward_addr;
 	char *forward_name;
+	List ret_list;
 } header_t;
 
 typedef struct slurm_msg {
 	slurm_msg_type_t msg_type;
 	slurm_addr address;
 	uint16_t forward_cnt;
+	uint16_t ret_cnt;
 	slurm_addr *forward_addr;
 	char *forward_name;
 	slurm_fd conn_fd;
 	void *cred;
 	void *data;
 	uint32_t data_size;
+	List ret_list;
 } slurm_msg_t;
 
 

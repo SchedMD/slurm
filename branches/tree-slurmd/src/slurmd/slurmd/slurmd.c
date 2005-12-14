@@ -358,8 +358,10 @@ _service_connection(void *arg)
 	/* set msg connection fd to accepted fd. This allows 
 	 *  possibility for slurmd_req () to close accepted connection
 	 */
-	info("got this type of message %d",msg->msg_type);
-	slurmd_req(msg, con->cli_addr, ret_list);
+	info("got this type of message %d with %d other responses",
+	     msg->msg_type, list_count(ret_list));
+	msg->ret_list = ret_list;
+	slurmd_req(msg, con->cli_addr);
 	
 cleanup:
 	if ((msg->conn_fd >= 0) && slurm_close_accepted_conn(msg->conn_fd) < 0)

@@ -127,7 +127,7 @@ inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2,
  * slurmctld_req  - Process an individual RPC request
  * IN/OUT msg - the request message, data associated with the message is freed
  */
-void slurmctld_req (slurm_msg_t * msg, List ret_list)
+void slurmctld_req (slurm_msg_t * msg)
 {
 	switch (msg->msg_type) {
 	case REQUEST_RESOURCE_ALLOCATION:

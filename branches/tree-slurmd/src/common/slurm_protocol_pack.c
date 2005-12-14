@@ -224,6 +224,9 @@ static void _pack_slurm_addr_array(slurm_addr * slurm_address,
 static int _unpack_slurm_addr_array(slurm_addr ** slurm_address,
 				    uint16_t * size_val, Buf buffer);
 
+static void _pack_ret_list(List ret_list, uint16_t size_val, Buf buffer);
+static int _unpack_ret_list(List *ret_list, uint16_t size_val, Buf buffer);
+
 static void _pack_job_id_request_msg(job_id_request_msg_t * msg, Buf buffer);
 static int  _unpack_job_id_request_msg(job_id_request_msg_t ** msg, Buf buffer);
 
@@ -278,6 +281,7 @@ static int  _unpack_kvs_get(kvs_get_msg_t **msg_ptr, Buf buffer);
 void
 pack_header(header_t * header, Buf buffer)
 {
+	
 	pack16(header->version, buffer);
 	pack16(header->flags, buffer);
 	pack16((uint16_t) header->msg_type, buffer);
@@ -287,6 +291,11 @@ pack_header(header_t * header, Buf buffer)
 		_pack_slurm_addr_array(header->forward_addr,
 				       header->forward_cnt, buffer);
 		packstr(header->forward_name, buffer);
+	}
+	pack16(header->ret_cnt, buffer);	
+	if(header->ret_cnt> 0) {
+		_pack_ret_list(header->ret_list,
+			       header->ret_cnt, buffer);		
 	}
 }
 
@@ -317,9 +326,17 @@ unpack_header(header_t * header, Buf buffer)
 		safe_unpackstr_xmalloc(&header->forward_name, 
 				       &tmp, 
 				       buffer);
-	} else
+	} else {
 		header->forward_addr = NULL;
+		header->forward_name = NULL;
+	}
 	
+	safe_unpack16(&header->ret_cnt, buffer);	
+	if(header->ret_cnt> 0) {
+		if(_unpack_ret_list(&(header->ret_list),
+				    header->ret_cnt, buffer))
+			goto unpack_error;
+	}
 	
 	return SLURM_SUCCESS;
 
@@ -2907,6 +2924,62 @@ _unpack_slurm_addr_array(slurm_addr ** slurm_address,
       unpack_error:
 	xfree(*slurm_address);
 	*slurm_address = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_ret_list(List ret_list,
+	       uint16_t size_val, Buf buffer)
+{
+	uint16_t i = 0;
+	ListIterator itr;
+	ListIterator itr_name;
+	ret_types_t *ret_type = NULL;
+	char *name = NULL;
+	
+	itr = list_iterator_create(ret_list);		
+	while((ret_type = list_next(itr)) != NULL) {
+		pack32(ret_type->msg_rc, buffer);
+		pack32(ret_type->err, buffer);
+		pack32(ret_type->type, buffer);
+		i = list_count(ret_type->names);
+		pack16(i, buffer);
+		itr = list_iterator_create(ret_type->names);
+		while((name = list_next(itr)) != NULL) {
+			packstr(name,buffer);
+		}
+	}
+}
+
+static int
+_unpack_ret_list(List *ret_list,
+		 uint16_t size_val, Buf buffer)
+{
+	int i = 0, j = 0;
+	uint16_t nl, uint16_tmp;
+	ret_types_t *ret_type = NULL;
+	char *name = NULL;
+	
+	*ret_list = list_create(destroy_ret_types);
+	
+	for (i=0; i<size_val; i++) {
+		ret_type = xmalloc(sizeof(ret_types_t));
+		list_push(*ret_list, ret_type);
+		safe_unpack32(&ret_type->msg_rc, buffer);
+		safe_unpack32(&ret_type->err, buffer);
+		safe_unpack32(&ret_type->type, buffer);
+		safe_unpack16(&nl, buffer);
+		ret_type->names = list_create(destroy_names);
+		for(j=0; j<nl; j++) {
+			safe_unpackstr_xmalloc(&name, &uint16_tmp, buffer);
+			list_push(ret_type->names, name);
+		}
+	}
+	return SLURM_SUCCESS;
+
+      unpack_error:
+	list_destroy(*ret_list);
+	*ret_list = NULL;
 	return SLURM_ERROR;
 }
 

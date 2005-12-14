@@ -105,7 +105,7 @@ static List waiters;
 static pthread_mutex_t launch_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void
-slurmd_req(slurm_msg_t *msg, slurm_addr *cli, List ret_list)
+slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 {
 	int rc;
 	
