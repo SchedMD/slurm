@@ -91,7 +91,7 @@ set timeout $max_job_delay
 send_user "======================================================================\n"
 send_user "=======================  Run without bunk transfer ===================\n"
 send_user "======================================================================\n"
-spawn $totalviewcli -verbosity info -e $no_bulk $srun -a -n4 -N1-2 -O -t1 $test_prog
+spawn $totalviewcli -verbosity info -e $no_bulk $srun -a --input=none -n4 -N1-2 -O -t1 $test_prog
 expect {
 	-re "d1.<>" {
 		if {$matches == 0} {
@@ -172,7 +172,7 @@ set no_capability 0
 send_user "======================================================================\n"
 send_user "=====================  Run with bunk transfer ========================\n"
 send_user "======================================================================\n"
-spawn $totalviewcli -verbosity info -e $bulk $srun -a -n4 -N1-2 -O -t1 $test_prog
+spawn $totalviewcli -verbosity info -e $bulk $srun -a --input=none -n4 -N1-2 -O -t1 $test_prog
 expect {
 	-re "d1.<>" {
 		if {$matches == 0} {
