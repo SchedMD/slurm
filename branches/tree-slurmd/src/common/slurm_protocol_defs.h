@@ -188,7 +188,6 @@ typedef struct slurm_msg {
 	slurm_msg_type_t msg_type;
 	slurm_addr address;
 	uint16_t forward_cnt;
-	uint16_t ret_cnt;
 	slurm_addr *forward_addr;
 	char *forward_name;
 	slurm_fd conn_fd;
@@ -198,6 +197,12 @@ typedef struct slurm_msg {
 	List ret_list;
 } slurm_msg_t;
 
+typedef struct ret_types {
+	int32_t msg_rc;
+	int32_t err;
+	int32_t type;
+	List names;
+} ret_types_t;
 
 /*****************************************************************************\
  * Slurm Protocol Data Structures

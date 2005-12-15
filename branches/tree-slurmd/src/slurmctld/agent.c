@@ -104,7 +104,6 @@ typedef struct thd {
 					   to forward to */	
 	uint16_t forward_cnt;           /* number of addresses to forward */
 	char node_name[MAX_NAME_LEN];	/* node's name */
-	List ret_list;
 } thd_t;
 
 typedef struct agent_info {
@@ -700,6 +699,7 @@ static void *_thread_per_node_rpc(void *args)
 	msg.forward_cnt = thread_ptr->forward_cnt;
 	msg.forward_addr = thread_ptr->forward_addr;
 	msg.forward_name = thread_ptr->forward_name;
+	msg.ret_list = NULL;
 	info("forwarding to %d",msg.forward_cnt);
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {

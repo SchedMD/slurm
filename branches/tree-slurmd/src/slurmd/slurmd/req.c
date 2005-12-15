@@ -787,6 +787,8 @@ _abort_job(uint32_t job_id)
 	resp.node_name    = NULL;	/* unused */
 	resp_msg.msg_type = REQUEST_COMPLETE_JOB_STEP;
 	resp_msg.data     = &resp;
+	resp_msg.forward_cnt = 0;
+	resp_msg.ret_list = NULL;
 	return slurm_send_only_controller_msg(&resp_msg);
 }
 
@@ -1021,7 +1023,8 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 		resp_msg.data         = &resp;
 		resp_msg.forward_cnt = msg->forward_cnt;
 		resp_msg.forward_addr = msg->forward_addr;
-	
+		resp_msg.ret_list = msg->ret_list;
+
 		slurm_send_node_msg(msg->conn_fd, &resp_msg);
 	} else {
 		debug3("_rpc_pid2jid: pid(%u) not found", req->job_pid);
@@ -1111,6 +1114,9 @@ done:
 	debug2("update step addrs rc = %d", rc);
 	resp_msg.data         = resp;
 	resp_msg.msg_type     = RESPONSE_REATTACH_TASKS;
+	resp_msg.forward_cnt = msg->forward_cnt;
+	resp_msg.forward_addr = msg->forward_addr;
+	resp_msg.ret_list = msg->ret_list;
 	resp->node_name        = conf->node_name;
 	resp->srun_node_id     = req->srun_node_id;
 	resp->return_code      = rc;

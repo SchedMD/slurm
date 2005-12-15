@@ -384,6 +384,7 @@ send_registration_msg(uint32_t status, bool startup)
 	
 	req.forward_cnt = 0;
 	req.forward_addr = NULL;
+	req.ret_list = NULL;
 	resp.forward_cnt = 0;
 	resp.forward_addr = NULL;
 	

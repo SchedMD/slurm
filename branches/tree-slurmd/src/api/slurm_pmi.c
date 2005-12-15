@@ -71,10 +71,11 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr)
 	msg_send.msg_type = PMI_KVS_PUT_REQ;
 	msg_send.data = (void *) kvs_set_ptr;
 	msg_send.forward_cnt = 0;
+	msg_send.ret_list = NULL;
 	msg_send.forward_addr = NULL;
 	msg_send.forward_name = NULL;
 	/* Send the RPC to the local srun communcation manager */
-	ret_list = slurm_send_recv_node_msg(&msg_send, &msg_rcv, 0);
+	ret_list = (List) slurm_send_recv_node_msg(&msg_send, &msg_rcv, 0);
 
 	if(!ret_list || errno != SLURM_SUCCESS) {
 		error("slurm_send_kvs_comm_set: %m");
@@ -139,10 +140,11 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 
 	/* Send the RPC to the srun communcation manager */
 	msg_send.forward_cnt = 0;
+	msg_send.ret_list = NULL;
 	msg_send.forward_addr = NULL;
 	msg_send.forward_name = NULL;
 	/* Send the RPC to the local srun communcation manager */
-	ret_list = slurm_send_recv_node_msg(&msg_send, &msg_rcv, 0);
+	ret_list = (List) slurm_send_recv_node_msg(&msg_send, &msg_rcv, 0);
 
 	if(!ret_list || errno != SLURM_SUCCESS) {
 		error("slurm_send_recv_node_msg: %m");

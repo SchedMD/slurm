@@ -562,6 +562,7 @@ void *_forward_thread(void *arg)
 
 	msg->forward_cnt = fwd_msg->header.forward_cnt;
 	msg->forward_addr = fwd_msg->header.forward_addr;
+	msg->ret_list = fwd_msg->header.ret_list;
 
 	ret_list = slurm_receive_msg(fd, msg, fwd_msg->timeout);
 	
@@ -858,11 +859,14 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
 	}
+	info("replies from %d forwards %d", 
+	     header.ret_cnt, header.forward_cnt);
 	if(header.ret_cnt > 0) {
-		ret_type = list_pop(header.ret_list);
-		list_push(ret_list, ret_type);
-		list_destroy(header.ret_list);
+		while((ret_type = list_pop(header.ret_list)) != NULL)
+			list_push(ret_list, ret_type);
 		header.ret_cnt = 0;
+		list_destroy(header.ret_list);
+		header.ret_list = NULL;
 	}
 	/* Forward message to other nodes */
 	if(header.forward_cnt > 0) {
@@ -894,7 +898,8 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		/* 	forward_header.forward_addr = msg->forward_addr; */
 		forward_struct->header.forward_cnt = 0;
 		forward_struct->header.forward_addr = NULL;
-		
+		forward_struct->header.ret_cnt = 0;
+		forward_struct->header.ret_list = NULL;
 		forward_struct->buffer = buffer;
 		info("forwarding messages to %d nodes!!!!", 
 		     header.forward_cnt);
@@ -1333,6 +1338,7 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 	resp_msg.data     = &rc_msg;
 	resp_msg.forward_cnt = msg->forward_cnt;
 	resp_msg.forward_addr = msg->forward_addr;
+	resp_msg.ret_list = msg->ret_list;
 	/* send message */
 	return slurm_send_node_msg(msg->conn_fd, &resp_msg);
 }
@@ -1397,6 +1403,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 		goto cleanup;
 	}
 	req->forward_cnt = 0;
+	req->ret_list = NULL;
 	req->forward_addr = 0;
 	resp->forward_cnt = 0;
 	resp->forward_addr = 0;
@@ -1513,6 +1520,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	int      retry = 0;
 	slurm_fd fd = -1;
 	req->forward_cnt = 0;
+	req->ret_list = NULL;
 	req->forward_addr = NULL;
 	
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0)
@@ -1644,6 +1652,7 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 	int ret_val = SLURM_ERROR;
 
 	req->forward_cnt = 0;
+	req->ret_list = NULL;
 	req->forward_addr = NULL;
 	if ((fd = slurm_open_controller_conn()) < 0)
 		return SLURM_SOCKET_ERROR;

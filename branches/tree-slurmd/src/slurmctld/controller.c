@@ -634,8 +634,6 @@ static void *_service_connection(void *arg)
 	if ((newsockfd >= 0) && slurm_close_accepted_conn(newsockfd) < 0)
 		error ("close(%d): %m",  newsockfd);
 
-	list_destroy(ret_list);
-
 cleanup:
 	slurm_free_msg(msg);
 	xfree(arg);
@@ -1013,7 +1011,8 @@ static int _shutdown_backup_controller(int wait_time)
 	/* send request message */
 	req.msg_type = REQUEST_CONTROL;
 	req.data = NULL;
-
+	req.forward_cnt = 0;
+	req.ret_list = NULL;
 	if (slurm_send_recv_rc_msg_only_one(&req, &rc, CONTROL_TIMEOUT) < 0) {
 		error("shutdown_backup:send/recv: %m");
 		return SLURM_ERROR;

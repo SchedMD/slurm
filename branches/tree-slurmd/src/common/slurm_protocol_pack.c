@@ -293,7 +293,7 @@ pack_header(header_t * header, Buf buffer)
 		packstr(header->forward_name, buffer);
 	}
 	pack16(header->ret_cnt, buffer);	
-	if(header->ret_cnt> 0) {
+	if(header->ret_cnt > 0) {
 		_pack_ret_list(header->ret_list,
 			       header->ret_cnt, buffer);		
 	}
@@ -332,10 +332,12 @@ unpack_header(header_t * header, Buf buffer)
 	}
 	
 	safe_unpack16(&header->ret_cnt, buffer);	
-	if(header->ret_cnt> 0) {
+	if(header->ret_cnt > 0) {
 		if(_unpack_ret_list(&(header->ret_list),
 				    header->ret_cnt, buffer))
 			goto unpack_error;
+	} else {
+		header->ret_list = NULL;
 	}
 	
 	return SLURM_SUCCESS;
