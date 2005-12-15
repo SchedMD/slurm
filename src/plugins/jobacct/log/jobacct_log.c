@@ -98,9 +98,9 @@ const uint32_t plugin_version = 100;
  * Data and routines common to the slurmctld and slurmd plugins
  */
 
-#define DEFAULT_SEND_RETRIES 3
-#define DEFAULT_SEND_RETRY_DELAY 5
-#define DEFAULT_STAGGER_SLOT_SIZE 1
+#define DEFAULT_SEND_RETRIES 5
+#define DEFAULT_SEND_RETRY_DELAY 120
+#define DEFAULT_STAGGER_SLOT_SIZE 5
 #ifndef HOST_NAME_MAX
 #ifdef MAXHOSTNAMELEN
 #define HOST_NAME_MAX MAXHOSTNAMELEN
@@ -1347,11 +1347,10 @@ static int _send_data_to_mynode(_mynode_msg_type_t msgtype, _jrec_t *jrec) {
 		error("jobacct(%d): _send_data_to_mynode(msg, %d, localhost)"
 				" says %d (%m) after %d tries",
 				getpid(), slurmd_port, rc, retry);
-	else {
-		slurm_free_cred(retmsg->cred);
+	else 
 		debug2("jobacct(%d): _send_data_to_mynode(msg, %d, localhost) "
 				"succeeded", getpid(), slurmd_port);
-	}
+	slurm_free_cred(retmsg->cred);
 	xfree(msg);
 	xfree(retmsg);
 	return rc;
@@ -1543,8 +1542,6 @@ static void _stagger_time(long nodeid, long n_contenders) {
 		return;		/* Nothing for us to do here. */
 
 	debug3("jobacct: in _stagger_time(%ld, %ld)", nodeid, n_contenders);
-	if (n_contenders<10)	/* There should be no cause for concern */
-		return;
 
 	if (nodeid<0) {	/* Randomly select a time slot */
 		srand( (getpid()*times(NULL))%RAND_MAX );
