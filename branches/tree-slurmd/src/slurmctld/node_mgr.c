@@ -1421,6 +1421,7 @@ void node_did_resp (char *name)
 		_node_did_resp(node_ptr);
 	}
 #else
+	info("updating %s",name);
 	node_ptr = find_node_record (name);
 	if (node_ptr == NULL) {
 		error ("node_did_resp unable to find node %s", name);

@@ -104,6 +104,7 @@ typedef struct thd {
 					   to forward to */	
 	uint16_t forward_cnt;           /* number of addresses to forward */
 	char node_name[MAX_NAME_LEN];	/* node's name */
+	List ret_list;
 } thd_t;
 
 typedef struct agent_info {
@@ -428,6 +429,10 @@ static void *_wdog(void *args)
 	thd_t *thread_ptr = agent_ptr->thread_struct;
 	unsigned long usec = 125000;
 	time_t now;
+	ListIterator itr;
+	ret_types_t *ret_type = NULL;
+	state_t state;
+	int is_ret_list = 1;
 
 	if ( (agent_ptr->msg_type == SRUN_PING) ||
 	     (agent_ptr->msg_type == SRUN_TIMEOUT) ||
@@ -447,46 +452,78 @@ static void *_wdog(void *args)
 
 		slurm_mutex_lock(&agent_ptr->thread_mutex);
 		for (i = 0; i < agent_ptr->thread_count; i++) {
-			switch (thread_ptr[i].state) {
-			case DSH_ACTIVE:
-				work_done = false;
-				if (thread_ptr[i].end_time <= now) {
-					debug3("agent thread %lu timed out\n", 
-					       (unsigned long) thread_ptr[i].thread);
-					if (pthread_kill(thread_ptr[i].thread,
-						     SIGALRM) == ESRCH)
-						thread_ptr[i].state = DSH_NO_RESP;
-				}
-				break;
-			case DSH_NEW:
-				work_done = false;
-				break;
-			case DSH_DONE:
-				if (max_delay < (int)thread_ptr[i].end_time)
-					max_delay = (int)thread_ptr[i].end_time;
-				break;
-			case DSH_NO_RESP:
-				no_resp_cnt++;
-				retry_cnt++;
-				break;
-			case DSH_FAILED:
-				fail_cnt++;
-				break;
+			if(!thread_ptr[i].ret_list) {
+				state = thread_ptr[i].state;
+				is_ret_list = 0;
+				goto switch_on_state;
 			}
+			is_ret_list = 1;
+			itr = list_iterator_create(thread_ptr[i].ret_list);
+			while((ret_type = list_next(itr)) != NULL) {
+				state = ret_type->msg_rc;
+			switch_on_state:
+				switch(state) {
+				case DSH_ACTIVE:
+					work_done = false;
+					if (thread_ptr[i].end_time <= now) {
+						debug3("agent thread %lu "
+						       "timed out\n", 
+						       (unsigned long) 
+						       thread_ptr[i].thread);
+						if (pthread_kill(thread_ptr[i].
+								 thread,
+								 SIGALRM) 
+						    == ESRCH) {
+							if(is_ret_list)
+								ret_type->
+								  msg_rc = 
+								DSH_NO_RESP;
+							else
+								thread_ptr[i].
+									state =
+								DSH_NO_RESP;
+						}
+					}
+					break;
+				case DSH_NEW:
+					work_done = false;
+					break;
+				case DSH_DONE:
+					if (max_delay < 
+					    (int)thread_ptr[i].end_time)
+						max_delay = 
+							(int)thread_ptr[i].
+							end_time;
+					break;
+				case DSH_NO_RESP:
+					no_resp_cnt++;
+					retry_cnt++;
+					break;
+				case DSH_FAILED:
+					fail_cnt++;
+					break;
+				}
+				if(!is_ret_list)
+					goto is_work_done;
+			}
+			list_iterator_destroy(itr);
 		}
+	is_work_done:
 		if (work_done)
 			break;
 		slurm_mutex_unlock(&agent_ptr->thread_mutex);
 	}
 
-	if (srun_agent)
+	if (srun_agent) {
+		info("notifying jobs");
 		_notify_slurmctld_jobs(agent_ptr);
-	else
+	} else {
+		info("notifying nodes");		
 		_notify_slurmctld_nodes(agent_ptr, no_resp_cnt, retry_cnt);
-
+	}
 	if (max_delay)
 		debug2("agent maximum delay %d seconds", max_delay);
-
+	
 	slurm_mutex_unlock(&agent_ptr->thread_mutex);
 	return (void *) NULL;
 }
@@ -535,6 +572,13 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 static void _notify_slurmctld_nodes(agent_info_t *agent_ptr, 
 		int no_resp_cnt, int retry_cnt)
 {
+	ListIterator itr;
+	ListIterator name_itr;
+	ret_types_t *ret_type = NULL;
+	char *node_name = NULL;
+	state_t state;
+	int is_ret_list = 1;
+
 #if AGENT_IS_THREAD
 	/* Locks: Read config, write job, write node */
 	slurmctld_lock_t node_write_lock =
@@ -548,11 +592,6 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 #if AGENT_IS_THREAD
 		/* Update node table data for non-responding nodes */
 		lock_slurmctld(node_write_lock);
-		for (i = 0; i < agent_ptr->thread_count; i++) {
-			if (thread_ptr[i].state == DSH_NO_RESP)
-				node_not_resp(thread_ptr[i].node_name,
-				              thread_ptr[i].start_time);
-		}
 		if (agent_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH) {
 			/* Requeue the request */
 			batch_job_launch_msg_t *launch_msg_ptr = 
@@ -572,14 +611,84 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 #if AGENT_IS_THREAD
 	lock_slurmctld(node_write_lock);
 	for (i = 0; i < agent_ptr->thread_count; i++) {
-		if (thread_ptr[i].state == DSH_FAILED)
-			set_node_down(thread_ptr[i].node_name, 
-			              "Prolog/epilog failure");
-		if (thread_ptr[i].state == DSH_DONE)
-			node_did_resp(thread_ptr[i].node_name);
+		if(!thread_ptr[i].ret_list) {
+			state = thread_ptr[i].state;
+			is_ret_list = 0;
+			goto switch_on_state;
+		} 
+		is_ret_list = 1;
+		
+		itr = list_iterator_create(thread_ptr[i].ret_list);
+		while((ret_type = list_next(itr)) != NULL) {
+			state = ret_type->msg_rc;
+		switch_on_state:
+			switch(state) {
+			case DSH_NO_RESP:
+				if(!is_ret_list) {
+					node_not_resp(thread_ptr[i].node_name,
+						      thread_ptr[i].
+						      start_time);
+					break;
+				}
+				name_itr = 
+					list_iterator_create(ret_type->names);
+				while((node_name = list_next(name_itr)) 
+				      != NULL) 
+					node_not_resp(node_name,
+						      thread_ptr[i].
+						      start_time);
+				list_iterator_destroy(name_itr);
+				break;
+			case DSH_FAILED:
+				if(!is_ret_list) {
+					set_node_down(thread_ptr[i].node_name, 
+						      "Prolog/epilog failure");
+					break;
+				}
+				name_itr = 
+					list_iterator_create(ret_type->names);
+				while((node_name = list_next(name_itr)) 
+				      != NULL) 
+					set_node_down(node_name, 
+						      "Prolog/epilog failure");
+				list_iterator_destroy(name_itr);
+				break;
+			case DSH_DONE:
+				if(!is_ret_list) {
+					node_did_resp(thread_ptr[i].node_name);
+					break;
+				}
+				name_itr = 
+					list_iterator_create(ret_type->names);
+				while((node_name = list_next(name_itr)) 
+				      != NULL) 
+					node_did_resp(node_name);
+				list_iterator_destroy(name_itr);
+				break;
+			default:
+				if(!is_ret_list) {
+					error("unknown state returned for %s",
+					      thread_ptr[i].node_name);
+					break;
+				}
+				name_itr = 
+					list_iterator_create(ret_type->names);
+				while((node_name = list_next(name_itr)) 
+				      != NULL) 
+					error("unknown state returned for %s",
+					      node_name);
+				list_iterator_destroy(name_itr);
+				break;
+			}
+			if(!is_ret_list)
+				goto finished;
+		}
+		list_iterator_destroy(itr);
+		list_destroy(thread_ptr[i].ret_list);
 	}
+finished:
 	unlock_slurmctld(node_write_lock);
-
+	info("here the run_scheduler is %d",run_scheduler);
 	if (run_scheduler) {
 		run_scheduler = false;
 		/* below functions all have their own locking */
@@ -628,8 +737,9 @@ static void *_thread_per_node_rpc(void *args)
 	bool is_kill_msg, srun_agent;
 	List ret_list = NULL;
 	ListIterator itr;
+	ListIterator name_itr;
 	ret_types_t *ret_type = NULL;
-	char *node_name;
+	char *node_name = NULL;
 	
 #if AGENT_IS_THREAD
 	/* Locks: Write job, write node */
@@ -722,34 +832,41 @@ static void *_thread_per_node_rpc(void *args)
 	
 	itr = list_iterator_create(ret_list);		
 	while((ret_type = list_next(itr)) != NULL) {
-		rc = ret_type->msg_rc;
-		info("got rc of %d",rc);
-		while((node_name = list_pop(ret_type->names)) != NULL) {
+		name_itr = list_iterator_create(ret_type->names);
+		
+		while((node_name = list_next(name_itr)) != NULL) {
+			rc = ret_type->msg_rc;
 			if(!strcmp(node_name,"localhost")) {
+				info("got localhost");
 				xfree(node_name);
 				node_name = xstrdup(thread_ptr->node_name);
 			}
-			info("response for %s",node_name);
+			info("response for %s rc = %d",
+			     node_name,
+			     ret_type->msg_rc);
 			
 #if AGENT_IS_THREAD
 			/* SPECIAL CASE: Mark node as IDLE if job already 
 			   complete */
-			if (is_kill_msg 
-			    && (rc == ESLURMD_KILL_JOB_ALREADY_COMPLETE)) {
+			if (is_kill_msg && 
+			    (rc == ESLURMD_KILL_JOB_ALREADY_COMPLETE)) {
 				kill_job_msg_t *kill_job;
 				kill_job = (kill_job_msg_t *) 
 					task_ptr->msg_args_ptr;
 				rc = SLURM_SUCCESS;
 				lock_slurmctld(job_write_lock);
+				info("hey job is already done");
 				if (job_epilog_complete(kill_job->job_id, 
 							node_name, 
 							rc))
 					run_scheduler = true;
+				info("finished epilog");
 				unlock_slurmctld(job_write_lock);
 			}
 			
 			/* SPECIAL CASE: Kill non-startable batch job */
-			if ((msg_type == REQUEST_BATCH_JOB_LAUNCH) && rc) {
+			if ((msg_type == REQUEST_BATCH_JOB_LAUNCH)
+			    && rc) {
 				batch_job_launch_msg_t *launch_msg_ptr = 
 					task_ptr->msg_args_ptr;
 				uint32_t job_id = launch_msg_ptr->job_id;
@@ -763,55 +880,72 @@ static void *_thread_per_node_rpc(void *args)
 				//goto cleanup;
 			}
 #endif
-			if (((msg_type == REQUEST_SIGNAL_TASKS) 
-			     ||   (msg_type == REQUEST_TERMINATE_TASKS)) 
-			    && (rc == ESRCH)) {
-				/* process is already dead, not a real error */
-				rc = SLURM_SUCCESS;
-			}
-
-			switch (rc) {
-			case SLURM_SUCCESS:
-				/*debug3("agent processed RPC to node %s", 
-				  node_name); */
-				thread_state = DSH_DONE;
-				break;
-			case ESLURMD_EPILOG_FAILED:
+		}
+		list_iterator_destroy(name_itr);
+	
+		if (((msg_type == REQUEST_SIGNAL_TASKS) 
+		     ||   (msg_type == REQUEST_TERMINATE_TASKS)) 
+		    && (rc == ESRCH)) {
+			/* process is already dead, not a real error */
+			rc = SLURM_SUCCESS;
+		}
+		
+		switch (rc) {
+		case SLURM_SUCCESS:
+			/*debug3("agent processed RPC to node %s", 
+			  node_name); */
+			thread_state = DSH_DONE;
+			break;
+		case ESLURMD_EPILOG_FAILED:
+			name_itr = list_iterator_create(ret_type->names);
+			while((node_name = list_next(name_itr)) != NULL) 
 				error("Epilog failure on host %s, "
 				      "setting DOWN", node_name);
-				thread_state = DSH_FAILED;
-				break;
-			case ESLURMD_PROLOG_FAILED:
-				error("Prolog failure on host %s, "
-				      "setting DOWN", node_name);
-				thread_state = DSH_FAILED;
-				break;
-			case ESLURM_INVALID_JOB_ID:  
-				/* Not indicative of a real error */
-			case ESLURMD_JOB_NOTRUNNING: 
-				/* Not indicative of a real error */
+			list_iterator_destroy(name_itr);
+	
+			thread_state = DSH_FAILED;
+			break;
+		case ESLURMD_PROLOG_FAILED:
+			error("Prolog failure on host %s, "
+			      "setting DOWN", node_name);
+			thread_state = DSH_FAILED;
+			break;
+		case ESLURM_INVALID_JOB_ID:  
+			/* Not indicative of a real error */
+		case ESLURMD_JOB_NOTRUNNING: 
+			/* Not indicative of a real error */
+			name_itr = list_iterator_create(ret_type->names);
+			while((node_name = list_next(name_itr)) != NULL) 
 				debug2("agent processed RPC to node %s: %s",
 				       node_name,
 				       slurm_strerror(rc));
-				thread_state = DSH_DONE;
-				break;
-			default:
+			list_iterator_destroy(name_itr);
+	
+			thread_state = DSH_DONE;
+			break;
+		default:
+			name_itr = list_iterator_create(ret_type->names);
+			while((node_name = list_next(name_itr)) != NULL) 
 				error("agent error from host %s for msg "
 				      "type %d: %s", 
 				      node_name, 
 				      task_ptr->msg_type, 
 				      slurm_strerror(rc));
-				thread_state = DSH_DONE;
-			}
-			xfree(node_name);
-		}
+			list_iterator_destroy(name_itr);
+			thread_state = DSH_DONE;
+		}	
+		ret_type->msg_rc = thread_state;
 	}
 	list_iterator_destroy(itr);
-	list_destroy(ret_list);
+	info("ok the run_scheduler is %d",run_scheduler);
+	
 
 cleanup:
 	xfree(args);
+	xfree(thread_ptr->forward_name);
+	xfree(thread_ptr->forward_addr);
 	slurm_mutex_lock(thread_mutex_ptr);
+	thread_ptr->ret_list = ret_list;
 	thread_ptr->state = thread_state;
 	thread_ptr->end_time = (time_t) difftime(time(NULL), 
 						 thread_ptr->start_time);

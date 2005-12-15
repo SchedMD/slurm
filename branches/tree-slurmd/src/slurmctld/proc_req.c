@@ -1080,6 +1080,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		resp.data = &job_step_resp;
 		resp.forward_cnt = 0;
 		resp.forward_addr = NULL;
+		resp.ret_list = NULL;
 		
 		slurm_send_node_msg(msg->conn_fd, &resp);
 		xfree(job_step_resp.node_list);

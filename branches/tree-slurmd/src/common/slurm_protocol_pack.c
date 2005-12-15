@@ -667,7 +667,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	 case REQUEST_SHUTDOWN_IMMEDIATE:
 	 case REQUEST_PING:
 	 case REQUEST_CONTROL:
-		 info("got a nice packet here %d",msg->msg_type);
 		 /* Message contains no body/information */
 		 break;
 	 case REQUEST_SHUTDOWN:

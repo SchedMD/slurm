@@ -171,6 +171,7 @@ launch(void *arg)
 		m->data            = r;
 		m->forward_cnt = 0;
 		m->forward_addr = NULL;
+		m->ret_list = NULL;
 
 		j=0; 
   		while(host = hostlist_next(itr)) { 

@@ -566,8 +566,6 @@ void *_forward_thread(void *arg)
 
 	ret_list = slurm_receive_msg(fd, msg, fwd_msg->timeout);
 	
-	info("got %d returns back", list_count(ret_list));
-	
 	type = xmalloc(sizeof(ret_types_t));
 	list_push(ret_list, type);
 	type->type = msg->msg_type;
@@ -581,8 +579,6 @@ void *_forward_thread(void *arg)
 	if ((fd >= 0) && slurm_close_accepted_conn(fd) < 0)
 		error ("close(%d): %m", fd);
 
-	info("now %d returns",list_count(ret_list));
-	
 	while((returned_type = list_pop(ret_list)) != NULL) {
 		pthread_mutex_lock(fwd_msg->forward_mutex);
 		itr = list_iterator_create(fwd_msg->ret_list);	
@@ -859,8 +855,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
 	}
-	info("replies from %d forwards %d", 
-	     header.ret_cnt, header.forward_cnt);
+	
 	if(header.ret_cnt > 0) {
 		while((ret_type = list_pop(header.ret_list)) != NULL)
 			list_push(ret_list, ret_type);
@@ -931,7 +926,6 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	 * Unpack message body 
 	 */
 	msg->msg_type = header.msg_type;
-	info("mssage type = %d",msg->msg_type);
 	if ( (header.body_length > remaining_buf(buffer)) ||
 	     (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
 		(void) g_slurm_auth_destroy(auth_cred);
@@ -949,11 +943,9 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		while(list_count(ret_list) < (header.forward_cnt)) {
 			pthread_cond_wait(&forward_struct->notify, 
 					  &forward_struct->forward_mutex);
-			info("got %d out of %d forwarded messages",
-			     list_count(ret_list), 
-			     (header.forward_cnt));
 		}
 		pthread_mutex_unlock(&forward_struct->forward_mutex);
+		xfree(header.forward_addr);
 	}
 		
 total_return:
@@ -1361,7 +1353,7 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 	if(err == SLURM_SUCCESS) {
 		ret_list = slurm_receive_msg(fd, resp, timeout);
 	}
-	info("Hey I got this count here %d",list_count(ret_list));
+	
 	/* 
 	 *  Attempt to close an open connection
 	 */
@@ -1371,12 +1363,7 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 			break;
 		}
 	}
-	info("returned %d state %d",
-	     resp->msg_type, 
-	     ((return_code_msg_t *) resp->data)->return_code);
-	
-
- 	if (err) 
+	if (err) 
 		errno = err; 
 
 	return ret_list;
@@ -1421,7 +1408,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 			      list_count(ret_list));
 			list_destroy(ret_list);
 		}
-		info("here message type = %d",resp->msg_type);
+		
 		if((rc == SLURM_SUCCESS) &&
 		   (resp->msg_type == RESPONSE_SLURM_RC) &&
 		   ((((return_code_msg_t *) resp->data)->return_code) 
@@ -1561,11 +1548,11 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 	if(!ret_list) {
 		return ret_list;
 	}
-	info("received %d types",list_count(ret_list));
+	
 	err = errno;
 	msg_rc = ((return_code_msg_t *)msg.data)->return_code;
 	
-	info("got errno of %d",errno);
+	
 	itr = list_iterator_create(ret_list);		
 	while((ret_type = list_next(itr)) != NULL) {
 		if(ret_type->msg_rc == msg_rc) {
@@ -1679,8 +1666,10 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 void slurm_free_msg(slurm_msg_t * msg)
 {
 	(void) g_slurm_auth_destroy(msg->cred);
-	if(msg->ret_list)
+	if(msg->ret_list) {
 		list_destroy(msg->ret_list);
+		msg->ret_list = NULL;
+	}
 	xfree(msg);
 }
 
@@ -1704,8 +1693,10 @@ void destroy_ret_types(void *object)
 {
 	ret_types_t *ret_type = (ret_types_t *)object;
 	if(ret_type) {
-		if(ret_type->names)
+		if(ret_type->names) {
 			list_destroy(ret_type->names);
+			ret_type->names = NULL;
+		}
 		xfree(ret_type);
 	}
 }
