@@ -113,7 +113,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	   just not right now. 
 	*/
 	slurm_mutex_lock(&block_state_mutex);
-	if((full_system_block->job_running != -1) && checked<2) {
+	if((full_system_block->job_running != -1) && (checked < 2)) {
 		checked++;
 		slurm_mutex_unlock(&block_state_mutex);
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
@@ -152,7 +152,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		*/
 		slurm_mutex_lock(&block_state_mutex);
 		debug3("job_running = %d", record->job_running);
-		if((record->job_running != -1) && checked<2) {
+		if((record->job_running != -1) && (checked < 2)) {
 			job_running++;
 			debug("block %s in use by %s", 
 			      record->bg_block_id,
