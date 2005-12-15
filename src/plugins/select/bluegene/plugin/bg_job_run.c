@@ -658,9 +658,11 @@ int term_jobs_on_block(pm_partition_id_t bg_block_id)
 extern int start_job(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
+	bg_record_t *bg_record = NULL;
+
 #ifdef HAVE_BG_FILES
 	bg_update_t *bg_update_ptr = NULL;
-		
+
 	bg_update_ptr = xmalloc(sizeof(bg_update_t));
 	bg_update_ptr->op = START_OP;
 	bg_update_ptr->uid = job_ptr->user_id;
@@ -669,14 +671,17 @@ extern int start_job(struct job_record *job_ptr)
 		SELECT_DATA_BLOCK_ID, &(bg_update_ptr->bg_block_id));
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_NODE_USE, &(bg_update_ptr->node_use));
+	bg_record = find_bg_record(bg_update_ptr->bg_block_id);
+	if (bg_record) {
+		job_ptr->num_procs = (bg_record->cnodes_per_bp *
+			bg_record->bp_count);
+	}
 	info("Queue start of job %u in BG block %s",
 	     job_ptr->job_id, 
 	     bg_update_ptr->bg_block_id);
-
 	_block_op(bg_update_ptr);
 #else
 	ListIterator itr;
-	bg_record_t *bg_record = NULL;
 	bg_record_t *found_record = NULL;
 	char *block_id = NULL;
 	uint16_t node_use;
@@ -692,6 +697,10 @@ extern int start_job(struct job_record *job_ptr)
 			return rc;
 		}
 		bg_record = find_bg_record(block_id);
+		if (bg_record) {
+			job_ptr->num_procs = (bg_record->cnodes_per_bp *
+				bg_record->bp_count);
+		}
 		itr = list_iterator_create(bg_list);
 		while ((found_record = (bg_record_t *) list_next(itr))) {
 			if (bg_record->full_block)
