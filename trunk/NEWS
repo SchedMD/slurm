@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Fix issue with NODE_STATE_COMPLETING, could start job on node before
     epilog completed.
+ -- Added some infrastructure for job suspend/resume (scontrol, api, and 
+    slurmctld stub).
 
 * Changes in SLURM 0.7.0-pre6
 =============================

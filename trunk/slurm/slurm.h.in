@@ -1230,6 +1230,26 @@ extern int slurm_reconfigure PARAMS(( void ));
 extern int slurm_shutdown PARAMS(( uint16_t core ));
 
 /*****************************************************************************\
+ *      SLURM JOB SUSPEND FUNCTIONS
+\*****************************************************************************/
+
+/*
+ * slurm_suspend - suspend execution of a job step.
+ * IN job_id  - job on which to perform operation
+ * IN step_id - job step on which to perform operation
+ * RET 0 or a slurm error code
+ */
+extern int slurm_suspend PARAMS(( uint32_t job_id, uint32_t step_id ));
+
+/*
+ * slurm_resume - resume execution of a previously suspended job step.
+ * IN job_id  - job on which to perform operation
+ * IN step_id - job step on which to perform operation
+ * RET 0 or a slurm error code
+ */
+extern int slurm_resume PARAMS(( uint32_t job_id, uint32_t step_id ));
+
+/*****************************************************************************\
  *      SLURM JOB CHECKPOINT FUNCTIONS
 \*****************************************************************************/
 

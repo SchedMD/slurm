@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "November 2005" "scontrol 0.7" "Slurm components"
+.TH SCONTROL "1" "December 2005" "scontrol 0.7" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -126,6 +126,12 @@ parameters are to be changed: AuthType, BackupAddr, BackupController,
 ControlAddr, ControlMach, PluginDir, StateSaveLocation, SlurmctldPort 
 or SlurmdPort.
 .TP
+\fIresume\fP \fIID\fP
+Resume a previously suspended job or job step.
+\fIID\fP can be used to identify a specific job (e.g. "<job_id>",
+which applies to all of its existing steps)
+or a specific job step (e.g. "<job_id>.<step_id>").
+.TP
 \fIshow\fP \fIENTITY\fP \fIID\fP
 Display the state of the specified entity with the specified identification.
 \fIENTITY\fP may be \fIconfig\fP, \fIdaemons\fP, \fIjob\fP, \fInode\fP, 
@@ -143,6 +149,13 @@ By default, all elements of the entity type specified are printed.
 Instruct all Slurm daemons to save current state and terminate.
 The Slurm controller (slurmctld) forwards the request all other daemons 
 (slurmd daemon on each compute node). 
+.TP
+\fIsuspend\fP \fIID\fP
+Suspend a running job or job step. 
+Use the \fIresume\fP command to resume its execution.
+\fIID\fP can be used to identify a specific job (e.g. "<job_id>",
+which applies to all of its existing steps)
+or a specific job step (e.g. "<job_id>.<step_id>").
 .TP
 \fIupdate\fP \fISPECIFICATION\fP 
 Update job, node or partition configuration per the supplied specification.
@@ -406,7 +419,8 @@ details.
 \fBslurm_load_ctl_conf\fR(3), 
 \fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3), 
 \fBslurm_load_partitions\fR(3), 
-\fBslurm_reconfigure\fR(3), \fBslurm_shutdown\fR(3), 
+\fBslurm_reconfigure\fR(3), \fBslurm_resume\fR(3),
+\fBslurm_shutdown\fR(3), \fBslurm_suspend\fR(3),
 \fBslurm_update_job\fR(3), \fBslurm_update_node\fR(3), 
 \fBslurm_update_partition\fR(3),
 \fBslurm.conf\fR(5)

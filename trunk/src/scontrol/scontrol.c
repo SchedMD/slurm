@@ -110,6 +110,7 @@ static void	_print_ping (void);
 static void	_print_step (char *job_step_id_str);
 static void     _print_version( void );
 static int	_process_command (int argc, char *argv[]);
+static int	_suspend(char *op, char *job_step_id_str);
 static void	_update_it (int argc, char *argv[]);
 static int	_update_job (int argc, char *argv[]);
 static int	_update_node (int argc, char *argv[]);
@@ -1129,7 +1130,7 @@ _process_command (int argc, char *argv[])
 		}
 		exit_flag = 1;
 	}
-	else if (strncasecmp (argv[0], "reconfigure", 1) == 0) {
+	else if (strncasecmp (argv[0], "reconfigure", 3) == 0) {
 		if (argc > 2) {
 			exit_code = 1;
 			fprintf (stderr, "too many arguments for keyword:%s\n",
@@ -1163,6 +1164,30 @@ _process_command (int argc, char *argv[])
 				exit_code = 1;
 				if (quiet_flag != 1)
 					slurm_perror ("slurm_checkpoint error");
+			}
+		}
+	}
+	else if ((strncasecmp (argv[0], "suspend", 3) == 0)
+	||       (strncasecmp (argv[0], "resume", 3) == 0)) {
+		if (argc > 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr,
+					"too many arguments for keyword:%s\n",
+					argv[0]);
+		}
+		else if (argc < 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr,
+					"too few arguments for keyword:%s\n",
+					argv[0]);
+		} else {
+			error_code =_suspend(argv[0], argv[1]);
+			if (error_code) {
+				exit_code = 1;
+				if (quiet_flag != 1)
+					slurm_perror ("slurm_suspend error");
 			}
 		}
 	}
@@ -1888,7 +1913,9 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      show <ENTITY> [<ID>]     display state of identified entity, default  \n\
                               is all records.                              \n\
      shutdown                 shutdown slurm controller.                   \n\
-     update <SPECIFICATIONS>  update job, node, or partition configuration.\n\
+     suspend <job[.step]>     susend specified job or job step             \n\
+     resume <job[.step]>      resume previously suspended job or job step  \n\
+     update <SPECIFICATIONS>  update job, node, or partition configuration \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\
      !!                       Repeat the last command entered.             \n\
@@ -1917,8 +1944,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
 }
 
 /* 
- * _checkpoint - update the slurm partition configuration per the 
- *	supplied arguments 
+ * _checkpoint - perform some checkpoint/resume operation
  * IN op - checkpoint operation
  * IN job_step_id_str - either a job name (for all steps of the given job) or 
  *			a step name: "<jid>.<step_id>"
@@ -1997,6 +2023,43 @@ static int _checkpoint(char *op, char *job_step_id_str)
 		fprintf (stderr, "Invalid checkpoint operation: %s\n", op);
 		return 0;
 	}
+
+	return rc;
+}
+
+/*
+ * _suspend - perform some suspend/resume operation
+ * IN op - suspend/resume operation
+ * IN job_step_id_str - either a job name (for all steps of the given job) or
+ *		a step name: "<jid>.<step_id>"
+ * RET 0 if no slurm error, errno otherwise. parsing error prints
+ *		error message and returns 0
+ */
+static int _suspend(char *op, char *job_step_id_str)
+{
+	int rc = SLURM_SUCCESS;
+	uint32_t job_id = 0, step_id = 0;
+	char *next_str;
+
+	if (job_step_id_str) {
+		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
+		if (next_str[0] == '.') {
+			step_id = (uint32_t) strtol (&next_str[1], &next_str, 10);
+		} else
+			step_id = NO_VAL;
+		if (next_str[0] != '\0') {
+			fprintf(stderr, "Invalid job step name\n");
+			return 0;
+		}
+	} else {
+		fprintf(stderr, "Invalid job step name\n");
+		return 0;
+	}
+
+	if (strncasecmp(op, "suspend", 3) == 0)
+		rc = slurm_suspend (job_id, step_id);
+	else
+		rc = slurm_resume (job_id, step_id);
 
 	return rc;
 }

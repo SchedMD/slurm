@@ -60,6 +60,7 @@ libslurm_la_SOURCES =    \
 	slurm_pmi.c slurm_pmi.h	\
 	spawn.c          \
 	submit.c         \
+	suspend.c        \
 	reconfigure.c    \
 	update_config.c  
 
