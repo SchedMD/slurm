@@ -536,11 +536,12 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					&total_bitmap, 
 					&total_nodes, &total_cpus,
 					cr_disabled);
-                                if (error_code != SLURM_SUCCESS) {
-                                  if (cr_enabled) 
-                                          FREE_NULL_BITMAP(
-						  partially_idle_node_bitmap);
-                                  return error_code;
+				if (error_code != SLURM_SUCCESS) {
+					if (cr_enabled) {
+						FREE_NULL_BITMAP(
+							partially_idle_node_bitmap);
+					}
+					return error_code;
                                 }
                         }
 			bit_and(node_set_ptr[i].my_bitmap, avail_node_bitmap);
