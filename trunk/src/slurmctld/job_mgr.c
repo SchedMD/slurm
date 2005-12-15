@@ -2704,10 +2704,14 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	select_g_pack_jobinfo(dump_job_ptr->select_jobinfo, buffer);
 
 	detail_ptr = dump_job_ptr->details;
-	if (detail_ptr)		/* pack "features" for prolog/epilog use */
+	/* A few details are always dumped here, others are only dumped 
+	 * until the job starts running (at which time they become 
+	 * meaningless) */
+	if (detail_ptr) {
 		packstr(detail_ptr->features, buffer);
-	else
+	} else {
 		packstr(NULL, buffer);
+	}
 
 	if (detail_ptr && dump_job_ptr->job_state == JOB_PENDING)
 		_pack_job_details(detail_ptr, buffer);
