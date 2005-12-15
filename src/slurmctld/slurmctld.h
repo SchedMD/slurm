@@ -731,6 +731,16 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
 		uid_t uid, slurm_fd conn_fd);
 
+/*
+ * job_step_suspend - perform some suspend/resume operation
+ * IN sus_ptr - suspend/resume request message
+ * IN uid - user id of the user issuing the RPC
+ * IN conn_fd - file descriptor on which to send reply
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_step_suspend(suspend_msg_t *ckpt_ptr,
+                uid_t uid, slurm_fd conn_fd);
+
 /* 
  * job_complete - note the normal termination the specified job
  * IN job_id - id of the job which completed

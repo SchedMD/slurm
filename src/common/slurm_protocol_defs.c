@@ -409,9 +409,7 @@ void slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg)
 
 void inline slurm_free_srun_ping_msg(srun_ping_msg_t * msg)
 {
-	if (msg) {
-		xfree(msg);
-	}
+	xfree(msg);
 }
 
 void inline slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg)
@@ -424,16 +422,12 @@ void inline slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg)
 
 void inline slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg)
 {
-	if (msg) {
-		xfree(msg);
-	}
+	xfree(msg);
 }
 
 void inline slurm_free_checkpoint_msg(checkpoint_msg_t *msg)
 {
-	if (msg) {
-		xfree(msg);
-	}
+	xfree(msg);
 }
 
 void inline slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg)
@@ -450,6 +444,10 @@ void inline slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg)
 		xfree(msg->error_msg);
 		xfree(msg);
 	}
+}
+void inline slurm_free_suspend_msg(suspend_msg_t *msg)
+{
+	xfree(msg);
 }
 
 /* Given a job's reason for waiting, return a descriptive string */

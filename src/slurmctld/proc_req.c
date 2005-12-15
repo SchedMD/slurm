@@ -98,6 +98,7 @@ inline static void  _slurm_rpc_shutdown_controller(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller_immediate(slurm_msg_t *
 							     msg);
 inline static void  _slurm_rpc_submit_batch_job(slurm_msg_t * msg);
+inline static void  _slurm_rpc_suspend(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_node(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
@@ -238,6 +239,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_CHECKPOINT_COMP:
 		_slurm_rpc_checkpoint_comp(msg);
 		slurm_free_checkpoint_comp_msg(msg->data);
+		break;
+	case REQUEST_SUSPEND:
+		_slurm_rpc_suspend(msg);
+		slurm_free_suspend_msg(msg->data);
 		break;
 	case REQUEST_JOB_READY:
 		_slurm_rpc_job_ready(msg);
@@ -1854,6 +1859,57 @@ static void _update_cred_key(void)
 {
 	slurm_cred_ctx_key_update(slurmctld_config.cred_ctx, 
 				  slurmctld_conf.job_credential_private_key);
+}
+
+inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
+{
+	int error_code = SLURM_SUCCESS;
+	DEF_TIMERS;
+	suspend_msg_t *sus_ptr = (suspend_msg_t *) msg->data;
+	/* Locks: write job */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+	uid_t uid;
+	char *op;
+
+	START_TIMER;
+	switch (sus_ptr->op) {
+		case SUSPEND_STEP:
+			op = "suspend";
+			break;
+		case RESUME_STEP:
+			op = "resume";
+			break;
+		default:
+			op = "unknown";
+	}
+	info("Processing RPC: REQUEST_SUSPEND %s", op);
+	uid = g_slurm_auth_get_uid(msg->cred);
+
+	lock_slurmctld(job_write_lock);
+	error_code = job_step_suspend(sus_ptr, uid, msg->conn_fd);
+	unlock_slurmctld(job_write_lock);
+	END_TIMER;
+
+	if (error_code) {
+		if (sus_ptr->step_id == NO_VAL)
+			info("_slurm_rpc_suspend %s %u: %s", op,
+				sus_ptr->job_id, slurm_strerror(error_code));
+		else
+			info("_slurm_rpc_suspend %s %u.%u  %s", op,
+				sus_ptr->job_id, sus_ptr->step_id,
+				slurm_strerror(error_code));
+	} else {
+		if (sus_ptr->step_id == NO_VAL)
+			info("_slurm_rpc_suspend %s for %u %s", op,
+				sus_ptr->job_id, TIME_STR);
+		else
+			info("_slurm_rpc_suspend %s for %u.%u %s", op,
+				sus_ptr->job_id, sus_ptr->step_id,
+				TIME_STR);
+		/* NOTE: This function provides it own locks */
+		schedule_job_save();
+	}
 }
 
 /* Assorted checkpoint operations */

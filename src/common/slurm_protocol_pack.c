@@ -259,6 +259,9 @@ static void _pack_checkpoint_comp(checkpoint_comp_msg_t *msg, Buf buffer);
 static int  _unpack_checkpoint_comp(checkpoint_comp_msg_t **msg_ptr, 
 		Buf buffer);
 
+static void _pack_suspend_msg(suspend_msg_t *msg, Buf buffer);
+static int  _unpack_suspend_msg(suspend_msg_t **msg_ptr, Buf buffer);
+
 static void _pack_buffer_msg(slurm_msg_t * msg, Buf buffer);
 
 static void _pack_jobacct_data(jobacct_msg_t * msg , Buf buffer );
@@ -535,6 +538,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_checkpoint_resp_msg((checkpoint_resp_msg_t *)msg->data, 
 			buffer);
 		break;
+	 case REQUEST_SUSPEND:
+		_pack_suspend_msg((suspend_msg_t *)msg->data, buffer);
+		break;
+
 	 case REQUEST_JOB_READY:
 		_pack_job_ready_msg((job_id_msg_t *)msg->data, buffer);
 		break;
@@ -814,8 +821,13 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_checkpoint_resp_msg((checkpoint_resp_msg_t **)
 				& msg->data, buffer);
 		break;
+	 case REQUEST_SUSPEND:
+		rc = _unpack_suspend_msg((suspend_msg_t **) &msg->data, 
+				buffer);
+		break;
+
 	 case REQUEST_JOB_READY:
-		 rc = _unpack_job_ready_msg((job_id_msg_t **)
+		rc = _unpack_job_ready_msg((job_id_msg_t **)
 				& msg->data, buffer);
 		break;
 	 case REQUEST_NODE_SELECT_INFO:
@@ -3200,6 +3212,34 @@ _unpack_srun_timeout_msg(srun_timeout_msg_t ** msg_ptr, Buf buffer)
 	safe_unpack32 ( & msg -> job_id  , buffer ) ;
 	safe_unpack32 ( & msg -> step_id , buffer ) ;
 	safe_unpack_time ( & msg -> timeout , buffer );
+	return SLURM_SUCCESS;
+
+    unpack_error:
+	*msg_ptr = NULL;
+	xfree(msg);
+	return SLURM_ERROR;
+}
+
+static void _pack_suspend_msg(suspend_msg_t *msg, Buf buffer)
+{
+	xassert ( msg != NULL );
+
+	pack16 ( msg -> op,      buffer ) ;
+	pack32 ( msg -> job_id,  buffer ) ;
+	pack32 ( msg -> step_id, buffer ) ;
+}
+
+static int  _unpack_suspend_msg(suspend_msg_t **msg_ptr, Buf buffer)
+{
+	suspend_msg_t * msg;
+	xassert ( msg_ptr != NULL );
+
+	msg = xmalloc ( sizeof (suspend_msg_t) );
+	*msg_ptr = msg ;
+
+	safe_unpack16 ( & msg -> op ,      buffer ) ;
+	safe_unpack32 ( & msg -> job_id  , buffer ) ;
+	safe_unpack32 ( & msg -> step_id , buffer ) ;
 	return SLURM_SUCCESS;
 
     unpack_error:

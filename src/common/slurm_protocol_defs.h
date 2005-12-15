@@ -64,6 +64,12 @@ enum part_shared {
 	SHARED_YES,		/* Nodes possible to share in partition */
 	SHARED_FORCE		/* Nodes always shares in partition */
 };
+
+enum suspend_opts {
+	SUSPEND_STEP,		/* Suspend a job step now */
+	RESUME_STEP		/* Resume a job step now */
+};
+
 /* SLURM Message types */
 typedef enum {
 	REQUEST_NODE_REGISTRATION_STATUS = 1001,
@@ -130,6 +136,8 @@ typedef enum {
 	RESPONSE_CHECKPOINT,
 	REQUEST_CHECKPOINT_COMP,
 	RESPONSE_CHECKPOINT_COMP,
+	REQUEST_SUSPEND,
+	RESPONSE_SUSPEND,
 
 	REQUEST_LAUNCH_TASKS = 6001,
 	RESPONSE_LAUNCH_TASKS,
@@ -455,6 +463,12 @@ typedef struct checkpoint_resp_msg {
 	char   * error_msg;	/* error message on failure */
 } checkpoint_resp_msg_t;
 
+typedef struct suspend_msg {
+	uint16_t op;            /* suspend operation, see enum suspend_opts */
+	uint32_t job_id;        /* slurm job_id */
+	uint32_t step_id;       /* slurm step_id */
+} suspend_msg_t;
+
 typedef struct jobacct_msg {
 	uint16_t len;		/* job accounting plugins specify their own */
 	char *data;		/* data structure; we just pass it to them. */
@@ -552,6 +566,9 @@ void inline slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg);
 void inline slurm_free_checkpoint_msg(checkpoint_msg_t *msg);
 void inline slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg);
 void inline slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg);
+
+void inline slurm_free_suspend_msg(suspend_msg_t *msg);
+
 void inline slurm_free_jobacct_msg(jobacct_msg_t *msg);
 
 void slurm_free_resource_allocation_response_msg (
