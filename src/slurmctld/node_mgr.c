@@ -1461,7 +1461,8 @@ static void _node_did_resp(struct node_record *node_ptr)
 		xfree(node_ptr->reason);
 	}
 	base_state = node_ptr->node_state & NODE_STATE_BASE;
-	if (base_state == NODE_STATE_IDLE) {
+	if ((base_state == NODE_STATE_IDLE) 
+	&&  ((node_flags & NODE_STATE_COMPLETING) == 0)) {
 		bit_set (idle_node_bitmap, node_inx);
 		bit_set (share_node_bitmap, node_inx);
 	}
@@ -1857,7 +1858,8 @@ void make_node_idle(struct node_record *node_ptr,
 		node_ptr->node_state = NODE_STATE_ALLOCATED | node_flags;
 	} else {
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
-		if ((node_flags & NODE_STATE_NO_RESPOND) == 0)
+		if (((node_flags & NODE_STATE_NO_RESPOND) == 0)
+		&&  ((node_flags & NODE_STATE_COMPLETING) == 0))
 			bit_set(idle_node_bitmap, inx);
 	}
 }

@@ -173,7 +173,7 @@ static int _build_bitmaps(void)
 		job_cnt = node_record_table_ptr[i].run_job_cnt +
 		          node_record_table_ptr[i].comp_job_cnt;
 
-		if ((base_state == NODE_STATE_IDLE)
+		if (((base_state == NODE_STATE_IDLE) && (job_cnt == 0))
 		||  (base_state == NODE_STATE_DOWN))
 			bit_set(idle_node_bitmap, i);
 		if ((base_state == NODE_STATE_IDLE)
