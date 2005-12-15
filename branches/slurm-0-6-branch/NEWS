@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
     as fifth field of job step record (Andy Riebs, slurm.hp.sacct_uid.patch).
  -- Add job_id to maui scheduler plugin start job status message.
  -- Fix for srun's handling of null characters in stdout or stderr.
+ -- Update job accounting for larger systems (Andy Riebs, uptodate.patch).
 
 * Changes in SLURM 0.6.9
 ========================

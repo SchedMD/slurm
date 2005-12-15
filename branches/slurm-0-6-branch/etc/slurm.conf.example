@@ -282,8 +282,8 @@ JobAcctType=jobacct/none
 #                                the third process pauses two increments
 #                                before sending, and so on.  
 #
-# JobAcctParameters="Frequency=30,MaxSendRetries=3,MaxSendRetryDelay=5,\
-#                     StaggerSlotSize=1" 
+# JobAcctParameters="Frequency=30,MaxSendRetries=5,MaxSendRetryDelay=120,\
+#                     StaggerSlotSize=5" 
 #
 # o Define the places to look for SLURM plugins.  This is a
 #   colon-separated list of directories, just like the PATH
