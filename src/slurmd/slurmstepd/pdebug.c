@@ -43,16 +43,29 @@ pdebug_trace_process(slurmd_job_t *job, pid_t pid)
 		int status;
 		waitpid(pid, &status, WUNTRACED);
 		if (!WIFSTOPPED(status)) {
-			debug("pdebug_trace_process WIFSTOPPED false"
+			int i;
+			error("pdebug_trace_process WIFSTOPPED false"
 			      " for pid %lu", pid);
 			if (WIFEXITED(status)) {
-				debug("Process %lu exited \"normally\""
+				error("Process %lu exited \"normally\""
 				      " with return code %d",
 				      pid, WEXITSTATUS(status));
 			} else if (WIFSIGNALED(status)) {
-				debug("Process %lu kill by signal %d",
+				error("Process %lu killed by signal %d",
 				      pid, WTERMSIG(status));
 			}
+
+			/*
+			 * Mark this process as complete since it died
+			 * prematurely.
+			 */
+			for (i = 0; i < job->ntasks; i++) {
+				if (job->task[i]->pid == pid) {
+					job->task[i]->state =
+						SLURMD_TASK_COMPLETE;
+				}
+			}
+
 			return SLURM_ERROR;
 		}
 		if ((pid > (pid_t) 0) && (kill(pid, SIGSTOP) < 0)) {
