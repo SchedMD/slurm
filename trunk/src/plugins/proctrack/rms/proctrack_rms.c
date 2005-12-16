@@ -218,10 +218,21 @@ _prg_destructor_fork()
 	} else if (pid > 0) {
 		/* parent */
 		close(fdpair[0]);
+		waitpid(pid, (int *)NULL, 0);
 		return fdpair[1];
 	}
 	
 	/****************************************/
+	/* fork again so the destructor process
+         * will not be a child of the slurmd
+	 */
+	pid = fork();
+	if (pid < 0) {
+		error("_prg_destructor_fork: second fork failed");
+	} else if (pid > 0) {
+		exit(0);
+	}
+
 	/* child */
 	close(fdpair[1]);
 

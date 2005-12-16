@@ -39,12 +39,15 @@
 #include <strings.h>
 #include <unistd.h>
 #include <string.h>
+#include <limits.h>
 
 #include "src/common/xmalloc.h"
 #include "src/common/log.h"
 
 typedef struct xpid_s {
 	pid_t pid;
+	int is_usercmd;
+	char *cmd;
 	struct xpid_s *next;
 } xpid_t;
 
@@ -54,33 +57,36 @@ typedef struct xppid_s {
 	struct xppid_s *next;
 } xppid_t;
 
-#define MAX_NAME_LEN 64
 #define HASH_LEN 64
 
 #define GET_HASH_IDX(ppid) ((ppid)%HASH_LEN)
 
-static xpid_t *_alloc_pid(pid_t pid, xpid_t *next)
+static xpid_t *_alloc_pid(pid_t pid, int is_usercmd, char *cmd, xpid_t *next)
 {
 	xpid_t *new;
 
 	new = (xpid_t *)xmalloc(sizeof(*new));
 	new->pid = pid;
+	new->is_usercmd = is_usercmd;
+	new->cmd = xstrdup(cmd);
 	new->next = next;
 	return new;
 }
 
-static xppid_t *_alloc_ppid(pid_t ppid, pid_t pid, xppid_t *next)
+static xppid_t *_alloc_ppid(pid_t ppid, pid_t pid, int is_usercmd, char *cmd,
+			    xppid_t *next)
 {
 	xppid_t *new;
 
 	new = xmalloc(sizeof(*new));
 	new->ppid = ppid;
-	new->list = _alloc_pid(pid, NULL);
+	new->list = _alloc_pid(pid, is_usercmd, cmd, NULL);
 	new->next = next;
 	return new;
 }
 
-static void _push_to_hashtbl(pid_t ppid, pid_t pid, xppid_t **hashtbl)
+static void _push_to_hashtbl(pid_t ppid, pid_t pid,
+			     int is_usercmd, char *cmd, xppid_t **hashtbl)
 {
 	int idx;
 	xppid_t *ppids, *newppid;
@@ -90,21 +96,45 @@ static void _push_to_hashtbl(pid_t ppid, pid_t pid, xppid_t **hashtbl)
 	ppids = hashtbl[idx];
 	while (ppids) {
 		if (ppids->ppid == ppid) {
-			newpid = _alloc_pid(pid, ppids->list);
+			newpid = _alloc_pid(pid, is_usercmd, cmd, ppids->list);
 			ppids->list = newpid;
 			return;
 		}
 		ppids = ppids->next;
 	}
-	newppid = _alloc_ppid(ppid, pid, hashtbl[idx]);
+	newppid = _alloc_ppid(ppid, pid, is_usercmd, cmd, hashtbl[idx]);
 	hashtbl[idx] = newppid;    
+}
+
+static int get_myname(char *s)
+{
+	char path[PATH_MAX], rbuf[1024];
+	int fd;
+
+	sprintf(path, "/proc/%ld/stat", (long)getpid());
+	if ((fd = open(path, O_RDONLY)) < 0) {
+		error("Cannot open /proc/getpid()/stat");
+		return -1;
+	}
+	if (read(fd, rbuf, 1024) <= 0) {
+		error("Cannot read /proc/getpid()/stat");
+		close(fd);
+		return -1;
+	}
+	close(fd);
+	if (sscanf(rbuf, "%*ld %s ", s) != 1) {
+		error("Cannot get the command name from /proc/getpid()/stat");
+		return -1;
+	}
+	return 0;
 }
 
 static xppid_t **_build_hashtbl()
 {
 	DIR *dir;
 	struct dirent *de;
-	char path[MAX_NAME_LEN], *endptr, *num, rbuf[1024];
+	char path[PATH_MAX], *endptr, *num, rbuf[1024];
+	char myname[1024], cmd[1024];
 	int fd;
 	long pid, ppid;
 	xppid_t **hashtbl;
@@ -113,6 +143,8 @@ static xppid_t **_build_hashtbl()
 		error("opendir(/proc): %m");
 		return NULL;
 	}
+	if (get_myname(myname) < 0) return NULL;
+	debug3("Myname in build_hashtbl: %s", myname);
 
 	hashtbl = (xppid_t **)xmalloc(HASH_LEN * sizeof(xppid_t *));
 
@@ -121,7 +153,7 @@ static xppid_t **_build_hashtbl()
 		strtol(num, &endptr, 10);
 		if (endptr == NULL || *endptr != 0)
 			continue;
-		snprintf(path, MAX_NAME_LEN, "/proc/%s/stat", num);
+		sprintf(path, "/proc/%s/stat", num);
 		if ((fd = open(path, O_RDONLY)) < 0) {
 			continue;
 		}
@@ -129,35 +161,44 @@ static xppid_t **_build_hashtbl()
 			close(fd);
 			continue;
 		}
-		if (sscanf(rbuf, "%ld %*s %*s %ld", &pid, &ppid) != 2) {
+		if (sscanf(rbuf, "%ld %s %*s %ld", &pid, cmd, &ppid) != 3) {
 			close(fd);
 			continue;
 		}
 		close(fd);
-		_push_to_hashtbl((pid_t)ppid, (pid_t)pid, hashtbl);
+
+		/* Record cmd for debugging purpose */
+		_push_to_hashtbl((pid_t)ppid, (pid_t)pid, 
+				 strcmp(myname, cmd), cmd, hashtbl);
 	}
 	closedir(dir);
 	return hashtbl;
 }
 
+static void _destroy_list(xpid_t *list)
+{
+	xpid_t *tmp;
+
+	while (list) {
+		tmp = list->next;
+		xfree(list->cmd);
+		xfree(list);
+		list = tmp;
+	}
+}
+
 static void _destroy_hashtbl(xppid_t **hashtbl)
 {
 	int i;
-	xppid_t *ppid, *tmp2;
-	xpid_t *list, *tmp;
+	xppid_t *ppid, *tmp;
 
 	for (i=0; i<HASH_LEN; i++) {
 		ppid = hashtbl[i];
 		while (ppid) {
-			list = ppid->list;
-			while (list) {
-				tmp = list->next;
-				xfree(list);
-				list = tmp;
-			}
-			tmp2 = ppid->next;
+			_destroy_list(ppid->list);
+			tmp = ppid->next;
 			xfree(ppid);
-			ppid = tmp2;
+			ppid = tmp;
 		}
 	}
 	xfree(hashtbl);
@@ -174,7 +215,10 @@ static xpid_t *_get_list(int top, xpid_t *list, xppid_t **hashtbl)
 		if (ppid->ppid == top) {
 			children = ppid->list;
 			while (children) {
-				list = _alloc_pid(children->pid, list);
+				list = _alloc_pid(children->pid,
+						  children->is_usercmd,
+						  children->cmd,
+						  list);
 				children = children->next;
 			}
 			children = ppid->list;
@@ -189,25 +233,23 @@ static xpid_t *_get_list(int top, xpid_t *list, xppid_t **hashtbl)
 	return list;
 }
 
-static void _destroy_list(xpid_t *list)
-{
-	xpid_t *tmp;
-
-	while (list) {
-		tmp = list->next;
-		xfree(list);
-		list = tmp;
-	}
-}
-
 static int _kill_proclist(xpid_t *list, int sig)
 {
-	int rc = -1;
+	int rc, rc0;
 
+	rc = 0;
 	while (list) {
 		if (list->pid > 1) {
-			verbose("Sending %d to %d", sig, list->pid);
-			rc &= kill(list->pid, sig);
+			if (! list->is_usercmd) {
+				debug2("%ld %s is not a user command.  "
+				       "Skipped sending signal %d",
+				       (long)list->pid, list->cmd, sig);
+			} else {
+				verbose("Sending %d to %d %s",
+					sig, list->pid, list->cmd);
+				rc0 = kill(list->pid, sig);
+				if (rc0) rc = errno; /* save the last error */
+			}
 		}
 		list = list->next;
 	}
@@ -230,47 +272,10 @@ extern int kill_proc_tree(pid_t top, int sig)
 	if ((hashtbl = _build_hashtbl()) == NULL)
 		return -1;
 	
-	list = _get_list(top, _alloc_pid(top, NULL), hashtbl);
+	list = _get_list(top, NULL, hashtbl);
 	rc = _kill_proclist(list, sig);
 	_destroy_hashtbl(hashtbl);
 	_destroy_list(list);
-	return rc;
-}
-
-
-static int _kill_proclist_exclude(xpid_t *list, pid_t exclude, int sig)
-{
-	int rc = -1;
-
-	while (list) {
-		if (list->pid > 1 && list->pid != exclude) {
-			verbose("Sending %d to %d", sig, list->pid);
-			rc &= kill(list->pid, sig);
-		}
-		list = list->next;
-	}
-
-	return rc;
-}
-
-
-/*
- * Send signal "sig" to every process in the tree EXCEPT for the top.
- */
-extern int kill_proc_tree_not_top(pid_t top, int sig)
-{
-	xpid_t *list;
-	int rc;
-	xppid_t **hashtbl;
-
-	if ((hashtbl = _build_hashtbl()) == NULL)
-		return -1;
-
-	list = _get_list(top, _alloc_pid(top, NULL), hashtbl);
-	rc = _kill_proclist_exclude(list, top, sig);
-	_destroy_hashtbl(hashtbl);
-	_destroy_list(list);
-	
 	return rc;
 }
 
@@ -281,7 +286,7 @@ extern int kill_proc_tree_not_top(pid_t top, int sig)
  */
 extern pid_t find_ancestor(pid_t process, char *process_name)
 {
-	char path[MAX_NAME_LEN], rbuf[1024];
+	char path[PATH_MAX], rbuf[1024];
 	int fd;
 	long pid, ppid;
 
@@ -291,7 +296,7 @@ extern pid_t find_ancestor(pid_t process, char *process_name)
 			return 0;
 		}
 
-		snprintf(path, MAX_NAME_LEN, "/proc/%d/stat", ppid);
+		sprintf(path, "/proc/%d/stat", ppid);
 		if ((fd = open(path, O_RDONLY)) < 0) {
 			return 0;
 		}
@@ -304,7 +309,7 @@ extern pid_t find_ancestor(pid_t process, char *process_name)
 			return 0;
 		}
 
-		snprintf(path, MAX_NAME_LEN, "/proc/%d/cmdline", pid);
+		sprintf(path, "/proc/%d/cmdline", pid);
 		if ((fd = open(path, O_RDONLY)) < 0) {
 			continue;
 		}

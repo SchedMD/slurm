@@ -105,7 +105,7 @@ extern int slurm_container_add ( slurmd_job_t *job, pid_t pid )
 
 extern int slurm_container_signal ( uint32_t id, int signal )
 {
-	return kill_proc_tree_not_top((pid_t)id, signal);
+	return kill_proc_tree((pid_t)id, signal);
 }
 
 extern int slurm_container_destroy ( uint32_t id )
