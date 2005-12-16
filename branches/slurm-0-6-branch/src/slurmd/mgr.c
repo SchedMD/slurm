@@ -789,6 +789,9 @@ _send_pending_exit_msgs(slurmd_job_t *job)
  *
  * If waitflag is false, do repeated non-blocking waits until
  * there are no more processes to reap (waitpid returns 0).
+ *
+ * Returns the number of tasks for which a wait3() was succesfully
+ * performed, or -1 if there are no child tasks.
  */
 static int
 _wait_for_any_task(slurmd_job_t *job, bool waitflag)
@@ -802,8 +805,19 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 
 	do {
 		pid = wait3(&status, waitflag ? 0 : WNOHANG, &rusage);
-		if (pid <= 0)
-			continue;
+		if (pid == -1) {
+			if (errno == ECHILD) {
+				debug("No child processes");
+				completed = -1;
+				break;
+			} else if (errno == EINTR) {
+				debug("wait3 was interrupted");
+				continue;
+			} else {
+				debug("Unknown errno %d", errno);
+				continue;
+			}
+		}
 
 		/* See if the pid matches that of one of the tasks */
 		for (i = 0; i < job->ntasks; i++) {
@@ -829,12 +843,30 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 static void
 _wait_for_all_tasks(slurmd_job_t *job)
 {
+	int tasks_left = 0;
 	int i;
 
-	for (i = 0; i < job->ntasks; ) {
-		i += _wait_for_any_task(job, true);
-		if (i < job->ntasks)
-			i += _wait_for_any_task(job, false);
+	for (i = 0; i < job->ntasks; i++) {
+		if (job->task[i]->state < SLURMD_TASK_COMPLETE) {
+			tasks_left++;
+		}
+	}
+	if (tasks_left < job->ntasks)
+		verbose("Only %d of %d requested tasks successfully launched",
+			tasks_left, job->ntasks);
+
+	for (i = 0; i < tasks_left; ) {
+		int rc;
+		rc = _wait_for_any_task(job, true);
+		if (rc == -1) /* Got ECHILD */
+			break;
+		i += rc;
+		if (i < job->ntasks) {
+			rc = _wait_for_any_task(job, false);
+			if (rc == -1) /* Got ECHILD */
+				break;
+			i += rc;
+		}
 
 		while (_send_pending_exit_msgs(job)) {;}
 	}
