@@ -330,13 +330,13 @@ static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 
 static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 {
-	int i, count = 0, j;
+	int i, j;
 	agent_info_t *agent_info_ptr;
 	thd_t *thread_ptr;
 	int span = 0;
 	int thr_count = 0;
 	agent_info_ptr = xmalloc(sizeof(agent_info_t));
-
+	
 	slurm_mutex_init(&agent_info_ptr->thread_mutex);
 	if (pthread_cond_init(&agent_info_ptr->thread_cond, NULL))
 		fatal("pthread_cond_init error %m");
@@ -351,46 +351,49 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	    (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE))
 		agent_info_ptr->get_reply = true;
 
-	if(agent_info_ptr->thread_count > AGENT_SPREAD_COUNT) {
-		/* FIXME:!!!!! */
-		/* come up with better algo to spead out to the nodes */
-		span = agent_info_ptr->thread_count;
-		while(span > AGENT_SPREAD_COUNT)
-			span = agent_info_ptr->thread_count / 2;
-	}
-
 	//span = 1;
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
-		thread_ptr[i].state      = DSH_NEW;
-		thread_ptr[i].slurm_addr = agent_arg_ptr->slurm_addr[i];
-		strncpy(thread_ptr[i].node_name,
+	        if((agent_info_ptr->thread_count-i) 
+		   > (AGENT_SPREAD_COUNT-thr_count)) {
+		        /* FIXME:!!!!! */
+		        /* I think this is the way to go, but am not sure */
+	                span = (agent_info_ptr->thread_count-i)
+			  / AGENT_SPREAD_COUNT;
+			span *= AGENT_SPREAD_COUNT;
+		} else 
+		        span = 0;
+		thread_ptr[thr_count].state      = DSH_NEW;
+		thread_ptr[thr_count].slurm_addr = 
+		   agent_arg_ptr->slurm_addr[thr_count];
+		strncpy(thread_ptr[thr_count].node_name,
 			&agent_arg_ptr->node_names[i * MAX_NAME_LEN],
 			MAX_NAME_LEN);
-		info("Span %d per slurmd",span);
+		//info("Span %d per slurmd",span);
 		if(span > 0) {
-			thread_ptr[i].forward_addr = 
+			thread_ptr[thr_count].forward_addr = 
 				xmalloc(sizeof(struct sockaddr_in) * span);
-			thread_ptr[i].forward_name = 
+			thread_ptr[thr_count].forward_name = 
 				xmalloc(sizeof(char) * (MAX_NAME_LEN * span));
 			j = 1;			
-			while(j<=span 
+			while(j<span 
 			      && ((i+j) < agent_info_ptr->thread_count)) {
-				thread_ptr[i].forward_addr[j-1] = 
+				thread_ptr[thr_count].forward_addr[j-1] = 
 					agent_arg_ptr->slurm_addr[i+j];
-				strncpy(&thread_ptr[i].
+				strncpy(&thread_ptr[thr_count].
 					forward_name[(j-1) * MAX_NAME_LEN], 
 					&agent_arg_ptr->
 					node_names[(i+j) * MAX_NAME_LEN], 
 					MAX_NAME_LEN);
+				
 				j++;
 			}
 			j--;
-			thread_ptr[i].forward_cnt = j;
+			thread_ptr[thr_count].forward_cnt = j;
 			i += j;
 		} else {
-			thread_ptr[i].forward_cnt = 0;
-			thread_ptr[i].forward_addr = NULL;
-			thread_ptr[i].forward_name = NULL;
+			thread_ptr[thr_count].forward_cnt = 0;
+			thread_ptr[thr_count].forward_addr = NULL;
+			thread_ptr[thr_count].forward_name = NULL;
 		}
 		thr_count++;		       
 	}
@@ -515,11 +518,9 @@ static void *_wdog(void *args)
 	}
 
 	if (srun_agent) {
-		info("notifying jobs");
-		_notify_slurmctld_jobs(agent_ptr);
+	        _notify_slurmctld_jobs(agent_ptr);
 	} else {
-		info("notifying nodes");		
-		_notify_slurmctld_nodes(agent_ptr, no_resp_cnt, retry_cnt);
+	        _notify_slurmctld_nodes(agent_ptr, no_resp_cnt, retry_cnt);
 	}
 	if (max_delay)
 		debug2("agent maximum delay %d seconds", max_delay);
@@ -811,7 +812,7 @@ static void *_thread_per_node_rpc(void *args)
 	msg.forward_addr = thread_ptr->forward_addr;
 	msg.forward_name = thread_ptr->forward_name;
 	msg.ret_list = NULL;
-	info("forwarding to %d",msg.forward_cnt);
+	//info("forwarding to %d",msg.forward_cnt);
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {
 		if ((ret_list = slurm_send_recv_rc_msg(&msg, timeout)) 
@@ -829,7 +830,7 @@ static void *_thread_per_node_rpc(void *args)
 		goto cleanup;
 	}
 	
-	info("got %d states back from the send", list_count(ret_list));
+	//info("got %d states back from the send", list_count(ret_list));
 	
 	itr = list_iterator_create(ret_list);		
 	while((ret_type = list_next(itr)) != NULL) {
@@ -838,16 +839,16 @@ static void *_thread_per_node_rpc(void *args)
 			rc = ret_type->msg_rc;
 			if(!found 
 			   && !strcmp(ret_data_info->node_name,"localhost")) {
-				info("got localhost");
+			  //info("got localhost");
 				xfree(ret_data_info->node_name);
 				ret_data_info->node_name = 
 					xstrdup(thread_ptr->node_name);
 				found = 1;
 			}
-			info("response for %s rc = %d",
+			/*	info("response for %s rc = %d",
 			     ret_data_info->node_name,
 			     ret_type->msg_rc);
-			
+			*/
 #if AGENT_IS_THREAD
 			/* SPECIAL CASE: Mark node as IDLE if job already 
 			   complete */
@@ -858,13 +859,11 @@ static void *_thread_per_node_rpc(void *args)
 					task_ptr->msg_args_ptr;
 				rc = SLURM_SUCCESS;
 				lock_slurmctld(job_write_lock);
-				info("hey job is already done");
 				if (job_epilog_complete(kill_job->job_id, 
 							ret_data_info->
 							node_name, 
 							rc))
 					run_scheduler = true;
-				info("finished epilog");
 				unlock_slurmctld(job_write_lock);
 			}
 			
@@ -960,7 +959,6 @@ cleanup:
 	thread_ptr->state = thread_state;
 	thread_ptr->end_time = (time_t) difftime(time(NULL), 
 						 thread_ptr->start_time);
-	info("hey I am at the end of the thread");
 	/* Signal completion so another thread can replace us */
 	(*threads_active_ptr)--;
 	slurm_mutex_unlock(thread_mutex_ptr);

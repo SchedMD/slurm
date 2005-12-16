@@ -290,7 +290,9 @@ pack_header(header_t * header, Buf buffer)
 	if (header->forward_cnt > 0) {
 		_pack_slurm_addr_array(header->forward_addr,
 				       header->forward_cnt, buffer);
-		packstr(header->forward_name, buffer);
+		packmem(header->forward_name, 
+			(header->forward_cnt * MAX_NAME_LEN), 
+			buffer);
 	}
 	pack16(header->ret_cnt, buffer);	
 	if(header->ret_cnt > 0) {
@@ -323,7 +325,7 @@ unpack_header(header_t * header, Buf buffer)
 			goto unpack_error;
 		if(tmp != header->forward_cnt)
 			goto unpack_error;
-		safe_unpackstr_xmalloc(&header->forward_name, 
+		safe_unpackmem_xmalloc(&header->forward_name, 
 				       &tmp, 
 				       buffer);
 	} else {
@@ -2955,7 +2957,7 @@ _pack_ret_list(List ret_list,
 			packstr(ret_data_info->node_name, buffer);
 			msg.data = ret_data_info->data;
 			pack_msg(&msg, buffer);
- 		} 
+		} 
 		list_iterator_destroy(itr_data);		
 	}
 	list_iterator_destroy(itr);
@@ -2990,7 +2992,6 @@ _unpack_ret_list(List *ret_list,
 					       &uint16_tmp, buffer);
 			unpack_msg(&msg, buffer);
 			ret_data_info->data = msg.data;
-			info("Hey here is the data %s",ret_data_info->data);
 		}
 	}
 	return SLURM_SUCCESS;

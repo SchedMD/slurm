@@ -831,7 +831,6 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	forward_struct_t *forward_struct = NULL;
 	ret_types_t *ret_type = NULL;
 	ListIterator itr;
-	
 	int i=0;
 	List ret_list = list_create(destroy_ret_types);
 	
@@ -950,10 +949,12 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 			pthread_cond_wait(&forward_struct->notify, 
 					  &forward_struct->forward_mutex);
 			count = 0;
+			info("nodes accounted for:");
 			itr = list_iterator_create(ret_list);
 			while((ret_type = (ret_types_t *) list_next(itr)) 
-			      != NULL) 
+			      != NULL) {
 				count += list_count(ret_type->ret_data_list);
+			}
 			list_iterator_destroy(itr);
 		}
 		xfree(header.forward_addr);
