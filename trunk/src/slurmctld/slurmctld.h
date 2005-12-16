@@ -738,8 +738,8 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
  * IN conn_fd - file descriptor on which to send reply
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_step_suspend(suspend_msg_t *ckpt_ptr,
-                uid_t uid, slurm_fd conn_fd);
+extern int job_suspend(suspend_msg_t *ckpt_ptr, uid_t uid, 
+		slurm_fd conn_fd);
 
 /* 
  * job_complete - note the normal termination the specified job

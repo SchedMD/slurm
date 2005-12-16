@@ -32,15 +32,15 @@
 #include <slurm/slurm.h>
 #include "src/common/slurm_protocol_api.h"
 
-static int _suspend_op (uint16_t op, uint32_t job_id, uint32_t step_id);
+static int _suspend_op (uint16_t op, uint32_t job_id);
 /*
- * _suspend_op - perform a suspend/resume operation for some job step.
+ * _suspend_op - perform a suspend/resume operation for some job.
  * IN op      - operation to perform
  * IN job_id  - job on which to perform operation
  * IN step_id - job step on which to perform operation
  * RET 0 or a slurm error code
  */
-static int _suspend_op (uint16_t op, uint32_t job_id, uint32_t step_id)
+static int _suspend_op (uint16_t op, uint32_t job_id)
 {
 	int rc;
 	checkpoint_msg_t sus_req;
@@ -48,7 +48,6 @@ static int _suspend_op (uint16_t op, uint32_t job_id, uint32_t step_id)
 
 	sus_req.op       = op;
 	sus_req.job_id   = job_id;
-	sus_req.step_id  = step_id;
 	req_msg.msg_type = REQUEST_SUSPEND;
 	req_msg.data     = &sus_req;
 
@@ -60,25 +59,21 @@ static int _suspend_op (uint16_t op, uint32_t job_id, uint32_t step_id)
 }
 
 /*
- * slurm_suspend - suspend execution of a job step.
+ * slurm_suspend - suspend execution of a job.
  * IN job_id  - job on which to perform operation
- * IN step_id - job step on which to perform operation or NO_VAL 
- *		for all of the job's steps
  * RET 0 or a slurm error code
  */
-extern int slurm_suspend (uint32_t job_id, uint32_t step_id)
+extern int slurm_suspend (uint32_t job_id)
 {
-	return _suspend_op (SUSPEND_STEP, job_id, step_id);
+	return _suspend_op (SUSPEND_JOB, job_id);
 }
 
 /*
- * slurm_resume - resume execution of a previously suspended job step.
+ * slurm_resume - resume execution of a previously suspended job.
  * IN job_id  - job on which to perform operation
- * IN step_id - job step on which to perform operation or NO_VAL 
- *		for all of the job's steps
  * RET 0 or a slurm error code
  */
-extern int slurm_resume (uint32_t job_id, uint32_t step_id)
+extern int slurm_resume (uint32_t job_id)
 {
-	return _suspend_op (RESUME_STEP, job_id, step_id);
+	return _suspend_op (RESUME_JOB, job_id);
 }

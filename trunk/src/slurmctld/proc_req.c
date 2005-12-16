@@ -1874,10 +1874,10 @@ inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
 
 	START_TIMER;
 	switch (sus_ptr->op) {
-		case SUSPEND_STEP:
+		case SUSPEND_JOB:
 			op = "suspend";
 			break;
-		case RESUME_STEP:
+		case RESUME_JOB:
 			op = "resume";
 			break;
 		default:
@@ -1887,26 +1887,16 @@ inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
 	uid = g_slurm_auth_get_uid(msg->cred);
 
 	lock_slurmctld(job_write_lock);
-	error_code = job_step_suspend(sus_ptr, uid, msg->conn_fd);
+	error_code = job_suspend(sus_ptr, uid, msg->conn_fd);
 	unlock_slurmctld(job_write_lock);
 	END_TIMER;
 
 	if (error_code) {
-		if (sus_ptr->step_id == NO_VAL)
-			info("_slurm_rpc_suspend %s %u: %s", op,
-				sus_ptr->job_id, slurm_strerror(error_code));
-		else
-			info("_slurm_rpc_suspend %s %u.%u  %s", op,
-				sus_ptr->job_id, sus_ptr->step_id,
-				slurm_strerror(error_code));
+		info("_slurm_rpc_suspend %s %u: %s", op,
+			sus_ptr->job_id, slurm_strerror(error_code));
 	} else {
-		if (sus_ptr->step_id == NO_VAL)
-			info("_slurm_rpc_suspend %s for %u %s", op,
-				sus_ptr->job_id, TIME_STR);
-		else
-			info("_slurm_rpc_suspend %s for %u.%u %s", op,
-				sus_ptr->job_id, sus_ptr->step_id,
-				TIME_STR);
+		info("_slurm_rpc_suspend %s for %u %s", op,
+			sus_ptr->job_id, TIME_STR);
 		/* NOTE: This function provides it own locks */
 		schedule_job_save();
 	}

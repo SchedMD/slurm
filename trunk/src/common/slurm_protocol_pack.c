@@ -3226,7 +3226,6 @@ static void _pack_suspend_msg(suspend_msg_t *msg, Buf buffer)
 
 	pack16 ( msg -> op,      buffer ) ;
 	pack32 ( msg -> job_id,  buffer ) ;
-	pack32 ( msg -> step_id, buffer ) ;
 }
 
 static int  _unpack_suspend_msg(suspend_msg_t **msg_ptr, Buf buffer)
@@ -3239,7 +3238,6 @@ static int  _unpack_suspend_msg(suspend_msg_t **msg_ptr, Buf buffer)
 
 	safe_unpack16 ( & msg -> op ,      buffer ) ;
 	safe_unpack32 ( & msg -> job_id  , buffer ) ;
-	safe_unpack32 ( & msg -> step_id , buffer ) ;
 	return SLURM_SUCCESS;
 
     unpack_error:

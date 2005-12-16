@@ -3869,3 +3869,48 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * job__suspend - perform some suspend/resume operation
+ * IN sus_ptr - suspend/resume request message
+ * IN uid - user id of the user issuing the RPC
+ * IN conn_fd - file descriptor on which to send reply
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_suspend(suspend_msg_t *ckpt_ptr, uid_t uid, 
+		slurm_fd conn_fd)
+{
+	int rc = SLURM_SUCCESS;
+	struct job_record *job_ptr;
+	struct step_record *step_ptr;
+	slurm_msg_t resp_msg;
+	return_code_msg_t rc_msg;
+
+	/* find the job */
+	job_ptr = find_job_record (ckpt_ptr->job_id);
+	if (job_ptr == NULL) {
+		rc = ESLURM_INVALID_JOB_ID;
+		goto reply;
+	}
+	if ((uid != job_ptr->user_id) && (uid != 0)) {
+		rc = ESLURM_ACCESS_DENIED ;
+		goto reply;
+	}
+	if (job_ptr->job_state == JOB_PENDING) {
+		rc = ESLURM_JOB_PENDING;
+		goto reply;
+	} else if (job_ptr->job_state != JOB_RUNNING) {
+		rc = ESLURM_ALREADY_DONE;
+		goto reply;
+	}
+
+	/* Not fully supported yet */
+	rc = ESLURM_NOT_SUPPORTED;
+
+    reply:
+	rc_msg.return_code = rc;
+	resp_msg.msg_type  = RESPONSE_SLURM_RC;
+	resp_msg.data      = &rc_msg;
+	(void) slurm_send_node_msg(conn_fd, &resp_msg);
+	return rc;
+}
+

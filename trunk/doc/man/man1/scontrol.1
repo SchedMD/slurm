@@ -126,11 +126,8 @@ parameters are to be changed: AuthType, BackupAddr, BackupController,
 ControlAddr, ControlMach, PluginDir, StateSaveLocation, SlurmctldPort 
 or SlurmdPort.
 .TP
-\fIresume\fP \fIID\fP
-Resume a previously suspended job or job step.
-\fIID\fP can be used to identify a specific job (e.g. "<job_id>",
-which applies to all of its existing steps)
-or a specific job step (e.g. "<job_id>.<step_id>").
+\fIresume\fP \fIjob_id\fP
+Resume a previously suspended job.
 .TP
 \fIshow\fP \fIENTITY\fP \fIID\fP
 Display the state of the specified entity with the specified identification.
@@ -150,12 +147,9 @@ Instruct all Slurm daemons to save current state and terminate.
 The Slurm controller (slurmctld) forwards the request all other daemons 
 (slurmd daemon on each compute node). 
 .TP
-\fIsuspend\fP \fIID\fP
-Suspend a running job or job step. 
+\fIsuspend\fP \fIjob_id\fP
+Suspend a running job.
 Use the \fIresume\fP command to resume its execution.
-\fIID\fP can be used to identify a specific job (e.g. "<job_id>",
-which applies to all of its existing steps)
-or a specific job step (e.g. "<job_id>.<step_id>").
 .TP
 \fIupdate\fP \fISPECIFICATION\fP 
 Update job, node or partition configuration per the supplied specification.
