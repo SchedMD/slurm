@@ -895,7 +895,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 		error_code = SLURM_SUCCESS;
 		goto cleanup;
 	}
-	
+
+	job_ptr->node_bitmap = select_bitmap;
 	if (select_g_job_begin(job_ptr) != SLURM_SUCCESS) {
 		/* Leave job queued, something is hosed */
 		error("select_g_job_begin(%u): %m", job_ptr->job_id);
@@ -907,7 +908,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 	if (detail_ptr)
 		detail_ptr->wait_reason = WAIT_NO_REASON;
 	job_ptr->nodes = bitmap2node_name(select_bitmap);
-	job_ptr->node_bitmap = select_bitmap;
 	job_ptr->details->shared = shared;
 	select_bitmap = NULL;	/* nothing left to free */
 	allocate_nodes(job_ptr);
