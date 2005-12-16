@@ -66,8 +66,8 @@ enum part_shared {
 };
 
 enum suspend_opts {
-	SUSPEND_STEP,		/* Suspend a job step now */
-	RESUME_STEP		/* Resume a job step now */
+	SUSPEND_JOB,		/* Suspend a job now */
+	RESUME_JOB		/* Resume a job now */
 };
 
 /* SLURM Message types */
@@ -466,7 +466,6 @@ typedef struct checkpoint_resp_msg {
 typedef struct suspend_msg {
 	uint16_t op;            /* suspend operation, see enum suspend_opts */
 	uint32_t job_id;        /* slurm job_id */
-	uint32_t step_id;       /* slurm step_id */
 } suspend_msg_t;
 
 typedef struct jobacct_msg {
