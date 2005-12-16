@@ -560,6 +560,6 @@ int slurm_send_only_node_msg(slurm_msg_t * request_msg);
 /* Slurm message functions */
 void slurm_free_msg(slurm_msg_t * msg);
 void slurm_free_cred(void *cred);
-void destroy_names(void *object);
+void destroy_data_info(void *object);
 void destroy_ret_types(void *object);
 #endif

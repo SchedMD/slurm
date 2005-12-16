@@ -573,9 +573,9 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 		int no_resp_cnt, int retry_cnt)
 {
 	ListIterator itr;
-	ListIterator name_itr;
+	ListIterator data_itr;
 	ret_types_t *ret_type = NULL;
-	char *node_name = NULL;
+	ret_data_info_t *ret_data_info = NULL;
 	state_t state;
 	int is_ret_list = 1;
 
@@ -630,14 +630,14 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 						      start_time);
 					break;
 				}
-				name_itr = 
-					list_iterator_create(ret_type->names);
-				while((node_name = list_next(name_itr)) 
+				data_itr = list_iterator_create(
+					ret_type->ret_data_list);
+				while((ret_data_info = list_next(data_itr)) 
 				      != NULL) 
-					node_not_resp(node_name,
+					node_not_resp(ret_data_info->node_name,
 						      thread_ptr[i].
 						      start_time);
-				list_iterator_destroy(name_itr);
+				list_iterator_destroy(data_itr);
 				break;
 			case DSH_FAILED:
 				if(!is_ret_list) {
@@ -645,25 +645,26 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 						      "Prolog/epilog failure");
 					break;
 				}
-				name_itr = 
-					list_iterator_create(ret_type->names);
-				while((node_name = list_next(name_itr)) 
-				      != NULL) 
-					set_node_down(node_name, 
+				data_itr = list_iterator_create(
+					ret_type->ret_data_list);
+				while((ret_data_info = list_next(data_itr)) 
+				      != NULL)
+					set_node_down(ret_data_info->node_name,
 						      "Prolog/epilog failure");
-				list_iterator_destroy(name_itr);
+				list_iterator_destroy(data_itr);
 				break;
 			case DSH_DONE:
 				if(!is_ret_list) {
 					node_did_resp(thread_ptr[i].node_name);
 					break;
 				}
-				name_itr = 
-					list_iterator_create(ret_type->names);
-				while((node_name = list_next(name_itr)) 
-				      != NULL) 
-					node_did_resp(node_name);
-				list_iterator_destroy(name_itr);
+				data_itr = list_iterator_create(
+					ret_type->ret_data_list);
+				while((ret_data_info = list_next(data_itr)) 
+				      != NULL)
+					node_did_resp(
+						ret_data_info->node_name);
+				list_iterator_destroy(data_itr);
 				break;
 			default:
 				if(!is_ret_list) {
@@ -671,13 +672,13 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 					      thread_ptr[i].node_name);
 					break;
 				}
-				name_itr = 
-					list_iterator_create(ret_type->names);
-				while((node_name = list_next(name_itr)) 
-				      != NULL) 
+				data_itr = list_iterator_create(
+					ret_type->ret_data_list);
+				while((ret_data_info = list_next(data_itr)) 
+				      != NULL)
 					error("unknown state returned for %s",
-					      node_name);
-				list_iterator_destroy(name_itr);
+					      ret_data_info->node_name);
+				list_iterator_destroy(data_itr);
 				break;
 			}
 			if(!is_ret_list)
@@ -688,7 +689,6 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 	}
 finished:
 	unlock_slurmctld(node_write_lock);
-	info("here the run_scheduler is %d",run_scheduler);
 	if (run_scheduler) {
 		run_scheduler = false;
 		/* below functions all have their own locking */
@@ -737,10 +737,11 @@ static void *_thread_per_node_rpc(void *args)
 	bool is_kill_msg, srun_agent;
 	List ret_list = NULL;
 	ListIterator itr;
-	ListIterator name_itr;
+	ListIterator data_itr;
 	ret_types_t *ret_type = NULL;
-	char *node_name = NULL;
-	
+	ret_data_info_t *ret_data_info = NULL;
+	int found = 0;
+
 #if AGENT_IS_THREAD
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = { 
@@ -832,17 +833,19 @@ static void *_thread_per_node_rpc(void *args)
 	
 	itr = list_iterator_create(ret_list);		
 	while((ret_type = list_next(itr)) != NULL) {
-		name_itr = list_iterator_create(ret_type->names);
-		
-		while((node_name = list_next(name_itr)) != NULL) {
+		data_itr = list_iterator_create(ret_type->ret_data_list);
+		while((ret_data_info = list_next(data_itr)) != NULL) {
 			rc = ret_type->msg_rc;
-			if(!strcmp(node_name,"localhost")) {
+			if(!found 
+			   && !strcmp(ret_data_info->node_name,"localhost")) {
 				info("got localhost");
-				xfree(node_name);
-				node_name = xstrdup(thread_ptr->node_name);
+				xfree(ret_data_info->node_name);
+				ret_data_info->node_name = 
+					xstrdup(thread_ptr->node_name);
+				found = 1;
 			}
 			info("response for %s rc = %d",
-			     node_name,
+			     ret_data_info->node_name,
 			     ret_type->msg_rc);
 			
 #if AGENT_IS_THREAD
@@ -857,6 +860,7 @@ static void *_thread_per_node_rpc(void *args)
 				lock_slurmctld(job_write_lock);
 				info("hey job is already done");
 				if (job_epilog_complete(kill_job->job_id, 
+							ret_data_info->
 							node_name, 
 							rc))
 					run_scheduler = true;
@@ -881,7 +885,7 @@ static void *_thread_per_node_rpc(void *args)
 			}
 #endif
 		}
-		list_iterator_destroy(name_itr);
+		list_iterator_destroy(data_itr);
 	
 		if (((msg_type == REQUEST_SIGNAL_TASKS) 
 		     ||   (msg_type == REQUEST_TERMINATE_TASKS)) 
@@ -893,52 +897,59 @@ static void *_thread_per_node_rpc(void *args)
 		switch (rc) {
 		case SLURM_SUCCESS:
 			/*debug3("agent processed RPC to node %s", 
-			  node_name); */
+			  ret_data_info->node_name); */
 			thread_state = DSH_DONE;
 			break;
 		case ESLURMD_EPILOG_FAILED:
-			name_itr = list_iterator_create(ret_type->names);
-			while((node_name = list_next(name_itr)) != NULL) 
+			data_itr = 
+				list_iterator_create(ret_type->ret_data_list);
+			while((ret_data_info = list_next(data_itr)) != NULL) 
 				error("Epilog failure on host %s, "
-				      "setting DOWN", node_name);
-			list_iterator_destroy(name_itr);
+				      "setting DOWN", 
+				      ret_data_info->node_name);
+			list_iterator_destroy(data_itr);
 	
 			thread_state = DSH_FAILED;
 			break;
 		case ESLURMD_PROLOG_FAILED:
-			error("Prolog failure on host %s, "
-			      "setting DOWN", node_name);
+			data_itr = 
+				list_iterator_create(ret_type->ret_data_list);
+			while((ret_data_info = list_next(data_itr)) != NULL) 
+				error("Prolog failure on host %s, "
+				      "setting DOWN", 
+				      ret_data_info->node_name);
+			list_iterator_destroy(data_itr);
 			thread_state = DSH_FAILED;
 			break;
 		case ESLURM_INVALID_JOB_ID:  
 			/* Not indicative of a real error */
 		case ESLURMD_JOB_NOTRUNNING: 
 			/* Not indicative of a real error */
-			name_itr = list_iterator_create(ret_type->names);
-			while((node_name = list_next(name_itr)) != NULL) 
+			data_itr = 
+				list_iterator_create(ret_type->ret_data_list);
+			while((ret_data_info = list_next(data_itr)) != NULL) 
 				debug2("agent processed RPC to node %s: %s",
-				       node_name,
+				       ret_data_info->node_name,
 				       slurm_strerror(rc));
-			list_iterator_destroy(name_itr);
+			list_iterator_destroy(data_itr);
 	
 			thread_state = DSH_DONE;
 			break;
 		default:
-			name_itr = list_iterator_create(ret_type->names);
-			while((node_name = list_next(name_itr)) != NULL) 
+			data_itr = 
+				list_iterator_create(ret_type->ret_data_list);
+			while((ret_data_info = list_next(data_itr)) != NULL) 
 				error("agent error from host %s for msg "
 				      "type %d: %s", 
-				      node_name, 
+				      ret_data_info->node_name, 
 				      task_ptr->msg_type, 
 				      slurm_strerror(rc));
-			list_iterator_destroy(name_itr);
+			list_iterator_destroy(data_itr);
 			thread_state = DSH_DONE;
 		}	
 		ret_type->msg_rc = thread_state;
 	}
 	list_iterator_destroy(itr);
-	info("ok the run_scheduler is %d",run_scheduler);
-	
 
 cleanup:
 	xfree(args);
@@ -949,7 +960,7 @@ cleanup:
 	thread_ptr->state = thread_state;
 	thread_ptr->end_time = (time_t) difftime(time(NULL), 
 						 thread_ptr->start_time);
-
+	info("hey I am at the end of the thread");
 	/* Signal completion so another thread can replace us */
 	(*threads_active_ptr)--;
 	slurm_mutex_unlock(thread_mutex_ptr);

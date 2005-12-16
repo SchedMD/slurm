@@ -529,6 +529,7 @@ void *_forward_thread(void *arg)
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_fd fd;
 	char *name;
+	ret_data_info_t *ret_data_info = NULL;
 	ListIterator itr;
 	
 	if ((fd = slurm_open_msg_conn(&fwd_msg->addr)) < 0) {
@@ -571,10 +572,11 @@ void *_forward_thread(void *arg)
 	type->type = msg->msg_type;
 	type->msg_rc = ((return_code_msg_t *)msg->data)->return_code;
 	type->err = errno;
-	type->names = list_create(destroy_names);
-	name = xstrdup(fwd_msg->node_name);
-	list_push(type->names, name);
-		
+	type->ret_data_list = list_create(destroy_data_info);
+	ret_data_info = xmalloc(sizeof(ret_types_t));
+	list_push(type->ret_data_list, ret_data_info);
+	ret_data_info->node_name = xstrdup(fwd_msg->node_name);
+	ret_data_info->data = msg->data;		
 	
 	if ((fd >= 0) && slurm_close_accepted_conn(fd) < 0)
 		error ("close(%d): %m", fd);
@@ -585,33 +587,36 @@ void *_forward_thread(void *arg)
 		while((type = (ret_types_t *) 
 		       list_next(itr)) != NULL) {
 			if(type->msg_rc == returned_type->msg_rc) {
-				while(name = list_pop(returned_type->names)) 
-					list_push(type->names, name);
-				list_destroy(returned_type->names);
+				while(ret_data_info = 
+				      list_pop(returned_type->ret_data_list)) {
+					list_push(type->ret_data_list, 
+						  ret_data_info);
+				}
 				break;
 			}
 		}
+		list_iterator_destroy(itr);
+		
 		if(!type) {
 			type = xmalloc(sizeof(ret_types_t));
 			list_push(fwd_msg->ret_list, type);
 			type->type = returned_type->type;
 			type->msg_rc = returned_type->msg_rc;
 			type->err = returned_type->err;
-			type->names = list_create(destroy_names);
-			while(name = list_pop(returned_type->names)) 
-				list_push(type->names, name);
-			
-		}
-		list_iterator_destroy(itr);
+			type->ret_data_list = list_create(destroy_data_info);
+			while(ret_data_info = 
+			      list_pop(returned_type->ret_data_list)) {
+				list_push(type->ret_data_list, 
+					  ret_data_info);
+			}
+		}		
 		destroy_ret_types(returned_type);
 		pthread_mutex_unlock(fwd_msg->forward_mutex);
 	}
 	pthread_cond_signal(fwd_msg->notify);
-
 	list_destroy(ret_list);
 cleanup:
 	xfree(fwd_msg->buf);
-	//xfree(fwd_msg->addr);
 	free_buf(buffer);	
 }
 
@@ -822,10 +827,11 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	int rc;
 	void *auth_cred = NULL;
 	Buf buffer;
-
+	int count = 0;
 	forward_struct_t *forward_struct = NULL;
 	ret_types_t *ret_type = NULL;
-
+	ListIterator itr;
+	
 	int i=0;
 	List ret_list = list_create(destroy_ret_types);
 	
@@ -940,12 +946,19 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	rc = SLURM_SUCCESS;
 	if(forward_struct) {
 		pthread_mutex_lock(&forward_struct->forward_mutex);
-		while(list_count(ret_list) < (header.forward_cnt)) {
+		while(count < (header.forward_cnt)) {
 			pthread_cond_wait(&forward_struct->notify, 
 					  &forward_struct->forward_mutex);
+			count = 0;
+			itr = list_iterator_create(ret_list);
+			while((ret_type = (ret_types_t *) list_next(itr)) 
+			      != NULL) 
+				count += list_count(ret_type->ret_data_list);
+			list_iterator_destroy(itr);
 		}
-		pthread_mutex_unlock(&forward_struct->forward_mutex);
 		xfree(header.forward_addr);
+		pthread_mutex_unlock(&forward_struct->forward_mutex);
+		
 	}
 		
 total_return:
@@ -1538,7 +1551,7 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 	List ret_list = NULL;
 	ListIterator itr = NULL;
 	ret_types_t *ret_type = NULL;
-	char *name = xstrdup("localhost");
+	ret_data_info_t *ret_data_info = NULL;
 	int msg_rc;
 	int set = 0;
 	int err;
@@ -1551,12 +1564,15 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 	
 	err = errno;
 	msg_rc = ((return_code_msg_t *)msg.data)->return_code;
-	
-	
+
+	ret_data_info = xmalloc(sizeof(ret_data_info_t));
+	ret_data_info->node_name = xstrdup("localhost");
+	ret_data_info->data = msg.data;
+
 	itr = list_iterator_create(ret_list);		
 	while((ret_type = list_next(itr)) != NULL) {
 		if(ret_type->msg_rc == msg_rc) {
-			list_push(ret_type->names, name);
+			list_push(ret_type->ret_data_list, ret_data_info);
 			set = 1;
 		}
 		if (ret_type->err != SLURM_SUCCESS) 
@@ -1572,8 +1588,8 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 		ret_type->type = msg.msg_type;
 		ret_type->msg_rc = msg_rc;
 		ret_type->err = err;
-		ret_type->names = list_create(destroy_names);
-		list_push(ret_type->names, name);
+		ret_type->ret_data_list = list_create(destroy_data_info);
+		list_push(ret_type->ret_data_list, ret_data_info);
 	}
 	
 	return ret_list;
@@ -1681,10 +1697,16 @@ void slurm_free_cred(void *cred)
 	(void) g_slurm_auth_destroy(cred);
 }
 
-void destroy_names(void *object)
+void destroy_data_info(void *object)
 {
-	char *name = (char *)object;
-	xfree(name);	       
+	ret_data_info_t *ret_data_info = (ret_data_info_t *)object;
+	if(ret_data_info) {
+		xfree(ret_data_info->node_name);
+		/*FIXME: needs to probably be something for all 
+		  types or messages */
+		xfree(ret_data_info->data);
+		xfree(ret_data_info);
+	}
 }
 /* 
  * Free just the list from forwarded messages
@@ -1693,9 +1715,9 @@ void destroy_ret_types(void *object)
 {
 	ret_types_t *ret_type = (ret_types_t *)object;
 	if(ret_type) {
-		if(ret_type->names) {
-			list_destroy(ret_type->names);
-			ret_type->names = NULL;
+		if(ret_type->ret_data_list) {
+			list_destroy(ret_type->ret_data_list);
+			ret_type->ret_data_list = NULL;
 		}
 		xfree(ret_type);
 	}

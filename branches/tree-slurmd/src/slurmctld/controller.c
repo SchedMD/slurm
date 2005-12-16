@@ -606,6 +606,7 @@ static void *_service_connection(void *arg)
 	ListIterator itr;
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
 	
+	info("in the connection");
 	msg->conn_fd = newsockfd;
 	ret_list = slurm_receive_msg(newsockfd, msg, 0);	
 	if(!ret_list) {

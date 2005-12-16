@@ -613,7 +613,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 {
 	int rc = SLURM_SUCCESS;
 	msg->data = NULL;	/* Initialize to no data for now */
-
+	
 	switch (msg->msg_type) {
 	 case REQUEST_NODE_INFO:
 		rc = _unpack_node_info_request_msg((node_info_request_msg_t **)
@@ -2934,22 +2934,31 @@ _pack_ret_list(List ret_list,
 {
 	uint16_t i = 0;
 	ListIterator itr;
-	ListIterator itr_name;
+	ListIterator itr_data;
 	ret_types_t *ret_type = NULL;
-	char *name = NULL;
+	ret_data_info_t *ret_data_info = NULL;
+	slurm_msg_t msg;
+
 	
 	itr = list_iterator_create(ret_list);		
 	while((ret_type = list_next(itr)) != NULL) {
 		pack32(ret_type->msg_rc, buffer);
 		pack32(ret_type->err, buffer);
 		pack32(ret_type->type, buffer);
-		i = list_count(ret_type->names);
+		
+		msg.msg_type = ret_type->type;
+
+		i = list_count(ret_type->ret_data_list);
 		pack16(i, buffer);
-		itr = list_iterator_create(ret_type->names);
-		while((name = list_next(itr)) != NULL) {
-			packstr(name,buffer);
-		}
+		itr_data = list_iterator_create(ret_type->ret_data_list);
+		while((ret_data_info = list_next(itr_data)) != NULL) {
+			packstr(ret_data_info->node_name, buffer);
+			msg.data = ret_data_info->data;
+			pack_msg(&msg, buffer);
+ 		} 
+		list_iterator_destroy(itr_data);		
 	}
+	list_iterator_destroy(itr);
 }
 
 static int
@@ -2959,8 +2968,8 @@ _unpack_ret_list(List *ret_list,
 	int i = 0, j = 0;
 	uint16_t nl, uint16_tmp;
 	ret_types_t *ret_type = NULL;
-	char *name = NULL;
-	
+	ret_data_info_t *ret_data_info = NULL;
+	slurm_msg_t msg;
 	*ret_list = list_create(destroy_ret_types);
 	
 	for (i=0; i<size_val; i++) {
@@ -2969,11 +2978,19 @@ _unpack_ret_list(List *ret_list,
 		safe_unpack32(&ret_type->msg_rc, buffer);
 		safe_unpack32(&ret_type->err, buffer);
 		safe_unpack32(&ret_type->type, buffer);
+		
+		msg.msg_type = ret_type->type;
+			
 		safe_unpack16(&nl, buffer);
-		ret_type->names = list_create(destroy_names);
+		ret_type->ret_data_list = list_create(destroy_data_info);
 		for(j=0; j<nl; j++) {
-			safe_unpackstr_xmalloc(&name, &uint16_tmp, buffer);
-			list_push(ret_type->names, name);
+			ret_data_info = xmalloc(sizeof(ret_data_info_t));
+			list_push(ret_type->ret_data_list, ret_data_info);
+			safe_unpackstr_xmalloc(&ret_data_info->node_name, 
+					       &uint16_tmp, buffer);
+			unpack_msg(&msg, buffer);
+			ret_data_info->data = msg.data;
+			info("Hey here is the data %s",ret_data_info->data);
 		}
 	}
 	return SLURM_SUCCESS;
