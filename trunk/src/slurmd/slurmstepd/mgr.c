@@ -668,7 +668,6 @@ _fork_all_tasks(slurmd_job_t *job)
 		if (pdebug_trace_process(job, job->task[i]->pid)
 				== SLURM_ERROR)
 			rc = SLURM_ERROR;
-		pdebug_trace_process(job, job->task[i]->pid);
 	}
 	xfree(writefds);
 	xfree(readfds);
