@@ -961,6 +961,7 @@ par_thr(void *arg)
 			totalview_jobid = NULL;
 			xstrfmtcat(totalview_jobid, "%lu", c);
 		} else if(type == PIPE_MPIR_PROCDESC) {
+			MPIR_PROCDESC *tv;
 			if(tid == -1) {
 				tid = c;
 				continue;
@@ -969,7 +970,7 @@ par_thr(void *arg)
 				nodeid = c;
 				continue;
 			}
-			MPIR_PROCDESC *tv   = &MPIR_proctable[tid];
+			tv   = &MPIR_proctable[tid];
 			tv->host_name       = job->host[nodeid];
 			tv->executable_name = remote_argv[0];
 			tv->pid             = c;
