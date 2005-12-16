@@ -792,6 +792,7 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	job_step_t       *step = NULL;
 	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
 
+	debug2("Processing RPC: REQUEST_KILL_TASKS");
 	if (!(step = shm_get_step(req->job_id, req->job_step_id))) {
 		debug("kill for nonexistent job %u.%u requested",
 		      req->job_id, req->job_step_id);
@@ -853,9 +854,14 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 #endif
 #endif
 	} else {
-		if ((step->pgid > (pid_t) 0)
-		    &&  (killpg(step->pgid, req->signal) < 0))
-			rc = errno;
+		if (strcasecmp(conf->cf.proctrack_type,
+			       "proctrack/linuxproc") == 0) {
+			rc = slurm_container_signal(step->cont_id,req->signal);
+		} else {
+			if (killpg(step->pgid, req->signal) < 0) {
+				rc = errno;
+			}
+		}
 	} 
 	if (rc == SLURM_SUCCESS)
 		verbose("Sent signal %d to %u.%u", 
