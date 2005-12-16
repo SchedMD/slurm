@@ -7,7 +7,7 @@ documents those changes that are of interest to users and admins.
     epilog completed.
  -- Added some infrastructure for job suspend/resume (scontrol, api, and 
     slurmctld stub).
- -- Set job's num_procs to the actual processor count in allocated BlueGene block.
+ -- Set job's num_procs to the actual processor count allocated to the job.
 
 * Changes in SLURM 0.7.0-pre6
 =============================

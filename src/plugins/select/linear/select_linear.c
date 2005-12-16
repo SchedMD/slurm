@@ -415,6 +415,25 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 extern int select_p_job_begin(struct job_record *job_ptr)
 {
+	int i;
+	uint32_t cnt=0;
+
+	xassert(job_ptr);
+	xassert(job_ptr->node_bitmap);
+
+	/* set job's processor count (for accounting purposes) */
+	for (i=0; i<select_node_cnt; i++) {
+		if (bit_test(job_ptr->node_bitmap, i) == 0)
+			continue;
+		if (select_fast_schedule)
+			cnt += select_node_ptr[i].config_ptr->cpus;
+		else
+			cnt += select_node_ptr[i].cpus;
+	}
+	debug2("reset num_proc for %u from %u to %u",job_ptr->job_id,
+			job_ptr->num_procs, cnt);
+	job_ptr->num_procs = cnt;
+	
 	return SLURM_SUCCESS;
 }
 

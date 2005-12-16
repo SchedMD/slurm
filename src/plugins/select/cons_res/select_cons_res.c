@@ -842,6 +842,30 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 
 extern int select_p_job_begin(struct job_record *job_ptr)
 {
+	ListIterator job_iterator;
+	struct select_cr_job *job;
+	uint32_t cnt = 0;
+	int i;
+
+	xassert(job_ptr);
+	xassert(select_cr_job_list);
+
+	/* set job's processor count (for accounting purposes) */
+	job_iterator = list_iterator_create(select_cr_job_list);
+	if (job_iterator == NULL)
+		fatal("list_iterator_create: %m");
+	while ((job = (struct select_cr_job *) list_next(job_iterator))) {
+		if (job->job_id != job_ptr->job_id)
+			continue;
+		for (i=0; i<job->nhosts; i++)
+			cnt += job->cpus[i];
+		debug2("reset num_proc for %u from %u to %u",job_ptr->job_id,
+				job_ptr->num_procs, cnt);
+		job_ptr->num_procs = cnt;
+		break; 
+	}
+	list_iterator_destroy(job_iterator);
+
 	return SLURM_SUCCESS;
 }
 
