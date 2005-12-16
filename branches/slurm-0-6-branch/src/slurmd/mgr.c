@@ -808,8 +808,9 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 		if (pid == -1) {
 			if (errno == ECHILD) {
 				debug("No child processes");
-				completed = -1;
-				break;
+				if (completed == 0)
+					completed = -1;
+				goto done;
 			} else if (errno == EINTR) {
 				debug("wait3 was interrupted");
 				continue;
@@ -817,6 +818,8 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 				debug("Unknown errno %d", errno);
 				continue;
 			}
+		} else if (pid == 0) { /* WNOHANG and no pids available */
+			goto done;
 		}
 
 		/* See if the pid matches that of one of the tasks */
@@ -836,6 +839,7 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 
 	} while ((pid > 0) && !waitflag);
 
+done:
 	return completed;
 }
 	
@@ -858,14 +862,14 @@ _wait_for_all_tasks(slurmd_job_t *job)
 	for (i = 0; i < tasks_left; ) {
 		int rc;
 		rc = _wait_for_any_task(job, true);
-		if (rc == -1) /* Got ECHILD */
-			break;
-		i += rc;
-		if (i < job->ntasks) {
-			rc = _wait_for_any_task(job, false);
-			if (rc == -1) /* Got ECHILD */
-				break;
+		if (rc != -1) {
 			i += rc;
+			if (i < job->ntasks) {
+				rc = _wait_for_any_task(job, false);
+				if (rc != -1) {
+					i += rc;
+				}
+			}
 		}
 
 		while (_send_pending_exit_msgs(job)) {;}
