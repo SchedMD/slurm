@@ -65,8 +65,7 @@ extern int set_forward_addrs (forward_t *forward,
 	if((total - *pos) > (FORWARD_COUNT-thr_count)) {
 		/* FIXME:!!!!! */
 		/* I think this is the way to go, but am not sure */
-		span = (total - *pos) / FORWARD_COUNT;
-		span *= FORWARD_COUNT;
+	        span = FORWARD_COUNT;
 	} else 
 		span = 0;
 	if(span > 0) {

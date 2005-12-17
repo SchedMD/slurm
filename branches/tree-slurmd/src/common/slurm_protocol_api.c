@@ -953,7 +953,6 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 			pthread_cond_wait(&forward_struct->notify, 
 					  &forward_struct->forward_mutex);
 			count = 0;
-			info("nodes accounted for:");
 			itr = list_iterator_create(ret_list);
 			while((ret_type = (ret_types_t *) list_next(itr)) 
 			      != NULL) {
@@ -1705,7 +1704,7 @@ void destroy_data_info(void *object)
 		xfree(ret_data_info->node_name);
 		/*FIXME: needs to probably be something for all 
 		  types or messages */
-		xfree(ret_data_info->data);
+		//xfree(ret_data_info->data);
 		xfree(ret_data_info);
 	}
 }
