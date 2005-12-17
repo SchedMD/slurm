@@ -36,7 +36,7 @@ source ./globals
 
 set test_id     "1.46"
 set exit_code   0
-set file_in     "test$test_id.input"
+set file_in     "test$test_id.prog"
 set matches     0
 
 print_header $test_id
@@ -45,19 +45,29 @@ print_header $test_id
 # Delete left-over input script
 # Build input script file
 #
-# We have multiple sleep commands because if using proctrack/linuxproc, 
-# the first sleep will be killed before the shell, which would 
-# immediately execute the echo. 
+# We have the last of the tasks exit.  proctrack/linuxproc will not
+# signal processes named "slurmstepd" and later user tasks could still
+# be named "slurmstepd" when the termination signal comes in.
 #
 exec $bin_rm -f $file_in
-exec echo "#!$bin_bash"                   >$file_in
-exec echo "if ((\$SLURM_PROCID== 1))"    >>$file_in
-exec echo "   then exit 2"               >>$file_in
-exec echo "fi"                           >>$file_in
-exec echo "$bin_sleep 4"                 >>$file_in
-exec echo "$bin_sleep 4"                 >>$file_in
-exec echo "$bin_sleep 4"                 >>$file_in
-exec echo "$bin_echo SHOULD_NOT_BE_HERE" >>$file_in
+set fd [open "$file_in.c" w]
+puts $fd {
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+main()
+{
+    char *id = getenv("SLURM_PROCID");
+    if (atoi(id) == 9) {
+        exit(2);
+    }
+    sleep(15);
+    printf("SHOULD_NOT_BE_HERE\n");
+}
+}
+close $fd
+exec $bin_make -f /dev/null $file_in
 exec $bin_chmod 700 $file_in
 
 #
@@ -92,6 +102,7 @@ if {$matches != 1} {
 }
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
+	#exec $bin_rm -f $file_in.c
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
