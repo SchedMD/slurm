@@ -110,7 +110,7 @@ void ping_end (void)
 	end = end_time.tv_sec;
 	end *= 1000000;
 	end += end_time.tv_usec;
-	info("done with ping took %.6f",(end-start)/1000000);
+	info("done with ping took %ld",(end-start));
 }
 
 /*
