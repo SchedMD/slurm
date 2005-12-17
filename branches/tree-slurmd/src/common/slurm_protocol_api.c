@@ -861,7 +861,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
 	}
-	
+	info("ret_cnt = %d",header.ret_cnt);
 	if(header.ret_cnt > 0) {
 		while((ret_type = list_pop(header.ret_list)) != NULL)
 			list_push(ret_list, ret_type);
@@ -970,6 +970,7 @@ total_return:
 	if(rc != SLURM_SUCCESS) {
 		error("slurm_receive_msg: %s", slurm_strerror(rc));
 	}
+	info("rc= %d count of ret is %d",rc, list_count(ret_list));
 	errno = rc;
 	return ret_list;
 		
