@@ -63,9 +63,7 @@ void init_header(header_t * header, slurm_msg_t *msg,
 	header->flags = flags;
 	header->msg_type = msg->msg_type;
 	header->body_length = 0;	/* over-written later */
-	header->forward_cnt = msg->forward_cnt;
-	header->forward_addr = msg->forward_addr;
-	header->forward_name = msg->forward_name;
+	header->forward = msg->forward;
 	if(msg->ret_list)
 		header->ret_cnt = list_count(msg->ret_list);
 	else

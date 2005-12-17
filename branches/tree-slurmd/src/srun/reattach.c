@@ -323,8 +323,8 @@ _attach_to_job(srun_job_t *job)
 
 		m->data            = r;
 		m->msg_type        = REQUEST_REATTACH_TASKS;
-		m->forward_cnt = 0;
-		m->forward_addr = NULL;
+		m->forward.cnt = 0;
+		m->ret_list = NULL;
 
 		memcpy(&m->address, &job->slurmd_addr[i], sizeof(slurm_addr));
 	}

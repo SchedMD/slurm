@@ -873,8 +873,8 @@ _accept_msg_connection(srun_job_t *job, int fdnum)
 	       uc[0], uc[1], uc[2], uc[3], ntohs(port));
 
 	msg = xmalloc(sizeof(*msg));
-	msg->forward_cnt = 0;
-	msg->forward_addr = NULL;
+	msg->forward.cnt = 0;
+	msg->ret_list = NULL;
 
 	/* multiple jobs (easily induced via no_alloc) sometimes result
 	 * in slow message responses and timeouts. Raise the timeout

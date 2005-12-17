@@ -98,11 +98,9 @@ typedef struct thd {
 	time_t end_time;		/* end time or delta time 
 					 * upon termination */
 	struct sockaddr_in slurm_addr;	/* network address */
-	slurm_addr	*forward_addr;	/* array of network addresses 
-					   to forward to */	
-	char    	*forward_name;	/* array of node names  
-					   to forward to */	
-	uint16_t forward_cnt;           /* number of addresses to forward */
+	forward_t forward;	        /* structure holding info for all
+					   forwarding info
+					*/	
 	char node_name[MAX_NAME_LEN];	/* node's name */
 	List ret_list;
 } thd_t;
@@ -353,48 +351,19 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 
 	//span = 1;
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
-	        if((agent_info_ptr->thread_count-i) 
-		   > (AGENT_SPREAD_COUNT-thr_count)) {
-		        /* FIXME:!!!!! */
-		        /* I think this is the way to go, but am not sure */
-	                span = (agent_info_ptr->thread_count-i)
-			  / AGENT_SPREAD_COUNT;
-			span *= AGENT_SPREAD_COUNT;
-		} else 
-		        span = 0;
 		thread_ptr[thr_count].state      = DSH_NEW;
 		thread_ptr[thr_count].slurm_addr = 
 		   agent_arg_ptr->slurm_addr[thr_count];
 		strncpy(thread_ptr[thr_count].node_name,
 			&agent_arg_ptr->node_names[i * MAX_NAME_LEN],
 			MAX_NAME_LEN);
-		//info("Span %d per slurmd",span);
-		if(span > 0) {
-			thread_ptr[thr_count].forward_addr = 
-				xmalloc(sizeof(struct sockaddr_in) * span);
-			thread_ptr[thr_count].forward_name = 
-				xmalloc(sizeof(char) * (MAX_NAME_LEN * span));
-			j = 1;			
-			while(j<span 
-			      && ((i+j) < agent_info_ptr->thread_count)) {
-				thread_ptr[thr_count].forward_addr[j-1] = 
-					agent_arg_ptr->slurm_addr[i+j];
-				strncpy(&thread_ptr[thr_count].
-					forward_name[(j-1) * MAX_NAME_LEN], 
-					&agent_arg_ptr->
-					node_names[(i+j) * MAX_NAME_LEN], 
-					MAX_NAME_LEN);
-				
-				j++;
-			}
-			j--;
-			thread_ptr[thr_count].forward_cnt = j;
-			i += j;
-		} else {
-			thread_ptr[thr_count].forward_cnt = 0;
-			thread_ptr[thr_count].forward_addr = NULL;
-			thread_ptr[thr_count].forward_name = NULL;
-		}
+
+		set_forward_addrs(&thread_ptr[thr_count].forward,
+				  thr_count,
+				  &i,
+				  agent_info_ptr->thread_count,
+				  agent_arg_ptr->slurm_addr,
+				  agent_arg_ptr->node_names);
 		thr_count++;		       
 	}
 	agent_info_ptr->thread_count = thr_count;
@@ -808,11 +777,9 @@ static void *_thread_per_node_rpc(void *args)
 	msg.address  = thread_ptr->slurm_addr;
 	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
-	msg.forward_cnt = thread_ptr->forward_cnt;
-	msg.forward_addr = thread_ptr->forward_addr;
-	msg.forward_name = thread_ptr->forward_name;
+	msg.forward = thread_ptr->forward;
 	msg.ret_list = NULL;
-	//info("forwarding to %d",msg.forward_cnt);
+	info("forwarding to %d",msg.forward.cnt);
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {
 		if ((ret_list = slurm_send_recv_rc_msg(&msg, timeout)) 
@@ -952,8 +919,8 @@ static void *_thread_per_node_rpc(void *args)
 
 cleanup:
 	xfree(args);
-	xfree(thread_ptr->forward_name);
-	xfree(thread_ptr->forward_addr);
+	xfree(thread_ptr->forward.name);
+	xfree(thread_ptr->forward.addr);
 	slurm_mutex_lock(thread_mutex_ptr);
 	thread_ptr->ret_list = ret_list;
 	thread_ptr->state = thread_state;

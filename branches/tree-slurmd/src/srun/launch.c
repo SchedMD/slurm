@@ -169,8 +169,7 @@ launch(void *arg)
 		
 		m->msg_type        = REQUEST_LAUNCH_TASKS;
 		m->data            = r;
-		m->forward_cnt = 0;
-		m->forward_addr = NULL;
+		m->forward.cnt = 0;
 		m->ret_list = NULL;
 
 		j=0; 

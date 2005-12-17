@@ -49,6 +49,7 @@
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/switch.h"
 #include "src/common/xassert.h"
+#include "src/common/forward.h"
 
 
 /* used to define flags of the launch_tasks_request_msg_t.and
@@ -177,23 +178,19 @@ typedef struct slurm_protocol_header {
 	uint16_t flags;
 	slurm_msg_type_t msg_type;
 	uint32_t body_length;
-	uint16_t forward_cnt;
 	uint16_t ret_cnt;
-	slurm_addr *forward_addr;
-	char *forward_name;
+	forward_t forward;
 	List ret_list;
 } header_t;
 
 typedef struct slurm_msg {
 	slurm_msg_type_t msg_type;
 	slurm_addr address;
-	uint16_t forward_cnt;
-	slurm_addr *forward_addr;
-	char *forward_name;
 	slurm_fd conn_fd;
 	void *cred;
 	void *data;
 	uint32_t data_size;
+	forward_t forward;
 	List ret_list;
 } slurm_msg_t;
 

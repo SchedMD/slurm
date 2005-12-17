@@ -116,10 +116,10 @@ static void *_msg_thread(void *x)
 	struct msg_arg *msg_arg_ptr = (struct msg_arg *) x;
 	int rc, success = 0, task_fd;
 	slurm_msg_t msg_send, msg_rcv;
-	msg_send.forward_cnt = 0;
-	msg_send.forward_addr = NULL;
-	msg_rcv.forward_cnt = 0;
-	msg_rcv.forward_addr = NULL;
+	msg_send.forward.cnt = 0;
+	msg_send.ret_list = NULL;
+	msg_rcv.forward.cnt = 0;
+	msg_rcv.ret_list = NULL;
 
 	debug2("KVS_Barrier msg to %s:%u",
 		msg_arg_ptr->bar_ptr->hostname,

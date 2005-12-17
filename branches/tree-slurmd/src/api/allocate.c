@@ -81,10 +81,10 @@ slurm_allocate_resources (job_desc_msg_t *req,
 
 	req_msg.msg_type = REQUEST_RESOURCE_ALLOCATION;
 	req_msg.data     = req; 
-	req_msg.forward_cnt = 0;
-	req_msg.forward_addr = NULL;
-	resp_msg.forward_cnt = 0;
-	resp_msg.forward_addr = NULL;
+	
+	req_msg.forward.cnt = 0;
+	resp_msg.forward.cnt = 0;
+	
 	
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
 
@@ -130,8 +130,8 @@ int slurm_job_will_run (job_desc_msg_t *req)
 
 	req_msg.msg_type = REQUEST_JOB_WILL_RUN;
 	req_msg.data     = req; 
-	req_msg.forward_cnt = 0;
-	req_msg.forward_addr = NULL;
+	req_msg.forward.cnt = 0;
+	req_msg.forward.addr = NULL;
 	
 	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0)
 		return SLURM_SOCKET_ERROR;
@@ -172,10 +172,10 @@ slurm_allocate_resources_and_run (job_desc_msg_t *req,
 
 	req_msg.msg_type = REQUEST_ALLOCATION_AND_RUN_JOB_STEP;
 	req_msg.data     = req; 
-	req_msg.forward_cnt = 0;
-	req_msg.forward_addr = NULL;
-	resp_msg.forward_cnt = 0;
-	resp_msg.forward_addr = NULL;
+	req_msg.forward.cnt = 0;
+	req_msg.forward.addr = NULL;
+	resp_msg.forward.cnt = 0;
+	resp_msg.forward.addr = NULL;
 	
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
 
@@ -220,10 +220,10 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 
 	req_msg.msg_type = REQUEST_JOB_STEP_CREATE;
 	req_msg.data     = req; 
-	req_msg.forward_cnt = 0;
-	req_msg.forward_addr = NULL;
-	resp_msg.forward_cnt = 0;
-	resp_msg.forward_addr = NULL;
+	req_msg.forward.cnt = 0;
+	req_msg.forward.addr = NULL;
+	resp_msg.forward.cnt = 0;
+	resp_msg.forward.addr = NULL;
 	
 	if(_nodelist_from_hostfile(req) == 0) 
 		debug("nodelist was NULL");  
@@ -265,10 +265,10 @@ slurm_confirm_allocation (old_job_alloc_msg_t *req,
 
 	req_msg.msg_type = REQUEST_OLD_JOB_RESOURCE_ALLOCATION;
 	req_msg.data     = req; 
-	req_msg.forward_cnt = 0;
-	req_msg.forward_addr = NULL;
-	resp_msg.forward_cnt = 0;
-	resp_msg.forward_addr = NULL;
+	req_msg.forward.cnt = 0;
+	req_msg.forward.addr = NULL;
+	resp_msg.forward.cnt = 0;
+	resp_msg.forward.addr = NULL;
 	
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;

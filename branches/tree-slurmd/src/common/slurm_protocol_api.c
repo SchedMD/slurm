@@ -561,8 +561,7 @@ void *_forward_thread(void *arg)
 		error("slurm_msg_sendto: %m");
 	}
 
-	msg->forward_cnt = fwd_msg->header.forward_cnt;
-	msg->forward_addr = fwd_msg->header.forward_addr;
+	msg->forward = fwd_msg->header.forward;
 	msg->ret_list = fwd_msg->header.ret_list;
 
 	ret_list = slurm_receive_msg(fd, msg, fwd_msg->timeout);
@@ -640,7 +639,7 @@ static int _forward_msg(forward_struct_t *forward_struct, header_t *header)
 		forward_msg = &forward_struct->forward_msg[i];
 		forward_msg->header = forward_struct->header;
 			
-		forward_msg->addr = header->forward_addr[i];
+		forward_msg->addr = header->forward.addr[i];
 		forward_msg->buf_len = remaining_buf(buffer);
 		forward_msg->buf = 
 			xmalloc(sizeof(char)*forward_msg->buf_len);
@@ -832,6 +831,8 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	ret_types_t *ret_type = NULL;
 	ListIterator itr;
 	int i=0;
+	int fwd_cnt = 0;
+
 	List ret_list = list_create(destroy_ret_types);
 	
 	xassert(fd >= 0);
@@ -868,17 +869,20 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		list_destroy(header.ret_list);
 		header.ret_list = NULL;
 	}
+
+	fwd_cnt = header.forward.cnt;
 	/* Forward message to other nodes */
-	if(header.forward_cnt > 0) {
+	if(fwd_cnt > 0) {
 		forward_struct = xmalloc(sizeof(forward_struct_t));
 		slurm_mutex_init(&forward_struct->forward_mutex);
 		pthread_cond_init(&forward_struct->notify, NULL);
 	
 		forward_struct->forward_msg = 
-			xmalloc(sizeof(forward_msg_t) * header.forward_cnt);
-		for(i=0; i< header.forward_cnt; i++) {
+			xmalloc(sizeof(forward_msg_t) * fwd_cnt);
+				
+		for(i=0; i<fwd_cnt; i++) {
 			strncpy(forward_struct->forward_msg[i].node_name,
-				&header.forward_name[i * MAX_NAME_LEN],
+				&header.forward.name[i * MAX_NAME_LEN],
 				MAX_NAME_LEN);
 			forward_struct->forward_msg[i].ret_list = ret_list;
 			forward_struct->forward_msg[i].notify = 
@@ -886,23 +890,23 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 			forward_struct->forward_msg[i].forward_mutex = 
 				&forward_struct->forward_mutex;
 		}
-		xfree(header.forward_name);
-		forward_struct->forward = header.forward_cnt;
+		xfree(header.forward.name);
+		forward_struct->forward = fwd_cnt;
 		forward_struct->header.version = header.version;
 		forward_struct->header.flags = header.flags;
 		forward_struct->header.msg_type = header.msg_type;
 		forward_struct->header.body_length = header.body_length;
 		/*FIXME: !!!!! */
 		/*find out these if needed */
-		/* forward_header.forward_cnt = msg->forward_cnt; */
-		/* 	forward_header.forward_addr = msg->forward_addr; */
-		forward_struct->header.forward_cnt = 0;
-		forward_struct->header.forward_addr = NULL;
+		/* forward_struct->header.forward.cnt = msg->forward.cnt; */
+		/* 	forward_header.forward.addr = msg->forward.addr; */
+		forward_struct->header.forward.cnt = 0;
+		forward_struct->header.forward.addr = NULL;
 		forward_struct->header.ret_cnt = 0;
 		forward_struct->header.ret_list = NULL;
 		forward_struct->buffer = buffer;
 		info("forwarding messages to %d nodes!!!!", 
-		     header.forward_cnt);
+		     header.forward.cnt);
 		
 		if(_forward_msg(forward_struct, &header) == SLURM_ERROR) {
 			error("problem with forward msg");
@@ -945,7 +949,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	rc = SLURM_SUCCESS;
 	if(forward_struct) {
 		pthread_mutex_lock(&forward_struct->forward_mutex);
-		while(count < (header.forward_cnt)) {
+		while(count < (fwd_cnt)) {
 			pthread_cond_wait(&forward_struct->notify, 
 					  &forward_struct->forward_mutex);
 			count = 0;
@@ -957,7 +961,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 			}
 			list_iterator_destroy(itr);
 		}
-		xfree(header.forward_addr);
+		xfree(header.forward.addr);
 		pthread_mutex_unlock(&forward_struct->forward_mutex);
 		
 	}
@@ -1342,8 +1346,7 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 	resp_msg.address  = msg->address;
 	resp_msg.msg_type = RESPONSE_SLURM_RC;
 	resp_msg.data     = &rc_msg;
-	resp_msg.forward_cnt = msg->forward_cnt;
-	resp_msg.forward_addr = msg->forward_addr;
+	resp_msg.forward = msg->forward;
 	resp_msg.ret_list = msg->ret_list;
 	/* send message */
 	return slurm_send_node_msg(msg->conn_fd, &resp_msg);
@@ -1403,11 +1406,8 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 		rc = SLURM_SOCKET_ERROR;
 		goto cleanup;
 	}
-	req->forward_cnt = 0;
+	req->forward.cnt = 0;
 	req->ret_list = NULL;
-	req->forward_addr = 0;
-	resp->forward_cnt = 0;
-	resp->forward_addr = 0;
 	info("here 2");
 	
 	while(retry) {
@@ -1520,10 +1520,10 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	int      rc = SLURM_SUCCESS;
 	int      retry = 0;
 	slurm_fd fd = -1;
-	req->forward_cnt = 0;
-	req->ret_list = NULL;
-	req->forward_addr = NULL;
 	
+	req->forward.cnt = 0;
+	req->ret_list = NULL;
+		
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0)
 		return SLURM_SOCKET_ERROR;
 
@@ -1655,9 +1655,9 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 	ret_types_t *ret_type = NULL;
 	int ret_val = SLURM_ERROR;
 
-	req->forward_cnt = 0;
+	req->forward.cnt = 0;
 	req->ret_list = NULL;
-	req->forward_addr = NULL;
+	
 	if ((fd = slurm_open_controller_conn()) < 0)
 		return SLURM_SOCKET_ERROR;
 	ret_list = _send_recv_rc_msg(fd, req, 0);

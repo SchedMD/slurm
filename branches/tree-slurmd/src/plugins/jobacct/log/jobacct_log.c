@@ -1331,10 +1331,9 @@ static int _send_data_to_mynode(_mynode_msg_type_t msgtype, _jrec_t *jrec) {
 	msg->msg_type  = MESSAGE_JOBACCT_DATA;
 	msg->data      = &jmsg;
 	msg->data_size = sizeof(jobacct_msg_t);
-	msg->forward_cnt = 0;
-	msg->forward_addr = NULL;
-	msg->forward_name = NULL;
-
+	msg->forward.cnt = 0;
+	msg->ret_list = NULL;
+	
 	debug2("jobacct(%d): attempting send_recv_node_msg(msg, %d, localhost)"
 			" for job %u.%u",
 			getpid(), slurmd_port, jrec->jobid, jrec->stepid);

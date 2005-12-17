@@ -1011,7 +1011,7 @@ static int _shutdown_backup_controller(int wait_time)
 	/* send request message */
 	req.msg_type = REQUEST_CONTROL;
 	req.data = NULL;
-	req.forward_cnt = 0;
+	req.forward.cnt = 0;
 	req.ret_list = NULL;
 	if (slurm_send_recv_rc_msg_only_one(&req, &rc, CONTROL_TIMEOUT) < 0) {
 		error("shutdown_backup:send/recv: %m");

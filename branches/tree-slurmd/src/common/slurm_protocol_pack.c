@@ -286,12 +286,12 @@ pack_header(header_t * header, Buf buffer)
 	pack16(header->flags, buffer);
 	pack16((uint16_t) header->msg_type, buffer);
 	pack32(header->body_length, buffer);
-	pack16(header->forward_cnt, buffer);
-	if (header->forward_cnt > 0) {
-		_pack_slurm_addr_array(header->forward_addr,
-				       header->forward_cnt, buffer);
-		packmem(header->forward_name, 
-			(header->forward_cnt * MAX_NAME_LEN), 
+	pack16(header->forward.cnt, buffer);
+	if (header->forward.cnt > 0) {
+		_pack_slurm_addr_array(header->forward.addr,
+				       header->forward.cnt, buffer);
+		packmem(header->forward.name, 
+			(header->forward.cnt * MAX_NAME_LEN), 
 			buffer);
 	}
 	pack16(header->ret_cnt, buffer);	
@@ -313,24 +313,27 @@ unpack_header(header_t * header, Buf buffer)
 {
 	uint16_t tmp = 0;
 
+	header->forward.addr = NULL;
+	header->forward.name = NULL;
+
 	safe_unpack16(&header->version, buffer);
 	safe_unpack16(&header->flags, buffer);
 	safe_unpack16(&tmp, buffer);
 	header->msg_type = (slurm_msg_type_t) tmp;
 	safe_unpack32(&header->body_length, buffer);
-	safe_unpack16(&header->forward_cnt, buffer);
-	if (header->forward_cnt > 0) {
-		if(_unpack_slurm_addr_array(&(header->forward_addr),
+	safe_unpack16(&header->forward.cnt, buffer);
+	if (header->forward.cnt > 0) {
+		if(_unpack_slurm_addr_array(&(header->forward.addr),
 					    &tmp, buffer))
 			goto unpack_error;
-		if(tmp != header->forward_cnt)
+		if(tmp != header->forward.cnt)
 			goto unpack_error;
-		safe_unpackmem_xmalloc(&header->forward_name, 
+		safe_unpackmem_xmalloc(&header->forward.name, 
 				       &tmp, 
 				       buffer);
 	} else {
-		header->forward_addr = NULL;
-		header->forward_name = NULL;
+		header->forward.addr = NULL;
+		header->forward.name = NULL;
 	}
 	
 	safe_unpack16(&header->ret_cnt, buffer);	
@@ -345,7 +348,8 @@ unpack_header(header_t * header, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	xfree(header->forward_name);	
+	xfree(header->forward.name);	
+	xfree(header->forward.addr);	
 	return SLURM_ERROR;
 }
 

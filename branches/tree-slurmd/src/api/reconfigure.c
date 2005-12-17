@@ -124,9 +124,9 @@ _send_message_controller (enum controller_id dest, slurm_msg_t *req)
 	List ret_list = NULL;
 	
 	/*always only going to 1 node */
-	req->forward_cnt = 0;
-	req->forward_addr = NULL;
-
+	req->forward.cnt = 0;
+	req->ret_list = NULL;
+	
 	if ((fd = slurm_open_controller_conn_spec(dest)) < 0)
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
 

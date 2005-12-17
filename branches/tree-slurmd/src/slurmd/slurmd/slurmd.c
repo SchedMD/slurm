@@ -382,11 +382,10 @@ send_registration_msg(uint32_t status, bool startup)
 	slurm_msg_t resp;
 	slurm_node_registration_status_msg_t *msg = xmalloc (sizeof (*msg));
 	
-	req.forward_cnt = 0;
-	req.forward_addr = NULL;
+	req.forward.cnt = 0;
 	req.ret_list = NULL;
-	resp.forward_cnt = 0;
-	resp.forward_addr = NULL;
+	resp.forward.cnt = 0;
+	resp.ret_list = NULL;
 	
 	msg->startup = (uint16_t) startup;
 	_fill_registration_msg(msg);
