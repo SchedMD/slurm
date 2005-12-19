@@ -318,7 +318,6 @@ _p_send_recv_rc_msg(int messages, slurm_msg_t msg[],
 		active++;
 		slurm_mutex_unlock(&active_mutex);
 		
-		_thr_send_recv_rc_msg((void *)args);
 		if (pthread_create(&thread_id, &attr,
 				   _thr_send_recv_rc_msg, (void *)args)) {
 			fprintf(stderr, "pthread_create failed");
