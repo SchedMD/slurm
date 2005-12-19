@@ -39,7 +39,7 @@ information. APIs are available for all functions.</p>
 </div>
 
 <p>SLURM has a general-purpose plugin mechanism available to easily support various 
-infrastructure. This permits a wide variety of SLURM configurations using a 
+infrastructures. This permits a wide variety of SLURM configurations using a 
 building block approach. These plugins presently include: 
 <ul>
 <li><a href="authplugins.html">Authentication of communications</a>: 
