@@ -102,10 +102,12 @@ struct client_io_info {
  **********************************************************************/
 static bool _task_writable(eio_obj_t *);
 static int  _task_write(eio_obj_t *, List);
+static int _task_write_error(eio_obj_t *obj, List objs);
 
 struct io_operations task_write_ops = {
 	writable:	&_task_writable,
 	handle_write:	&_task_write,
+	handle_error:   &_task_write_error,
 };
 
 struct task_write_info {
@@ -436,6 +438,11 @@ _task_writable(eio_obj_t *obj)
 
 	debug5("Called _task_writable");
 
+	if (obj->fd == -1) {
+		debug5("  false, fd == -1");
+		return false;
+	}
+
 	if (t->msg != NULL || list_count(t->msg_queue) > 0) {
 		debug5("  true, list_count = %d", list_count(t->msg_queue));
 		return true;
@@ -443,6 +450,19 @@ _task_writable(eio_obj_t *obj)
 
 	debug5("  false (list_count = %d)", list_count(t->msg_queue));
 	return false;
+}
+
+static int
+_task_write_error(eio_obj_t *obj, List objs)
+{
+	struct task_write_info *t = (struct task_write_info *) obj->arg;
+
+	debug4("Called _task_write_error, closing fd %d", obj->fd);
+
+	close(obj->fd);
+	obj->fd = -1;
+
+	return SLURM_SUCCESS;
 }
 
 static int
