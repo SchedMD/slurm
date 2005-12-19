@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
  -- Added some infrastructure for job suspend/resume (scontrol, api, and 
     slurmctld stub).
  -- Set job's num_procs to the actual processor count allocated to the job.
+ -- Fix bug in HAVE_FRONT_END support for cluster emulation.
 
 * Changes in SLURM 0.7.0-pre6
 =============================
