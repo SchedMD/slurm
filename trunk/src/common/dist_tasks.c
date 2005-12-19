@@ -184,7 +184,7 @@ extern slurm_step_layout_t *step_layout_create(
 		step_layout->cpus_per_node = alloc_resp->cpus_per_node;
 		step_layout->cpu_count_reps = alloc_resp->cpu_count_reps;
 #ifdef HAVE_FRONT_END	/* Limited job step support */
-		/* All jobs execute through front-end on Blue Gene/L.
+		/* All jobs execute through front-end on Blue Gene.
 		 * Normally we would not permit execution of job steps,
 		 * but can fake it by just allocating all tasks to
 		 * one of the allocated nodes. */
@@ -208,10 +208,17 @@ extern slurm_step_layout_t *step_layout_create(
 
 	if(step_req) {
 		step_layout->hl	= hostlist_create(step_req->node_list);
+#ifdef HAVE_FRONT_END   /* Limited job step support */
+		/* All jobs execute through front-end on Blue Gene.
+		 * Normally we would not permit execution of job steps,
+		 * but can fake it by just allocating all tasks to
+		 * one of the allocated nodes. */
+		step_layout->num_hosts = 1;
+#else
 		step_layout->num_hosts = hostlist_count(step_layout->hl);
+#endif
 		step_layout->task_dist	= step_req->task_dist;
-		step_layout->num_tasks	= step_req->num_tasks;
-	
+		step_layout->num_tasks  = step_req->num_tasks;
 	} else {
 		debug("no step_req given for step_layout_create");
 		step_layout->hl = NULL;
