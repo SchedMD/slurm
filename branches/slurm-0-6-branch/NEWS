@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- Fix for srun's handling of null characters in stdout or stderr.
  -- Update job accounting for larger systems (Andy Riebs, uptodate.patch).
  -- Fixes for proctrack/linuxproc and mpich-gm support (Takao Hatazaki, HP).
+ -- Fix bug in switch/elan for large task count job having irregular task 
+    distribution across nodes.
 
 * Changes in SLURM 0.6.9
 ========================
