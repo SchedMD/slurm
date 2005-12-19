@@ -754,15 +754,9 @@ _free_hwcontext(uint32_t prog_num)
 static int
 _init_elan_capability(ELAN_CAPABILITY *cap, uint32_t prognum, int ntasks, 
 		int nnodes, bitstr_t *nodeset, int *tasks_per_node,
-		int cyclic_alloc)
+		int cyclic_alloc, int max_tasks_per_node)
 {
-	int i, node_index, max_tasks_per_node = tasks_per_node[0];
-
-	/* Determine maximum number of tasks on any one node */
-	for (i = 1; i < nnodes; i++) {
-		if (tasks_per_node[i] > max_tasks_per_node)
-			max_tasks_per_node = tasks_per_node[i];
-	}
+	int i, node_index;
 
 	_srand_if_needed();
 
@@ -861,21 +855,30 @@ int
 qsw_setup_jobinfo(qsw_jobinfo_t j, int ntasks, bitstr_t *nodeset, 
 		int *tasks_per_node, int cyclic_alloc)
 {
+	int i, max_tasks_per_node = 0;
 	int nnodes = bit_set_count(nodeset);
 
 	assert(j != NULL);
 	assert(j->j_magic == QSW_JOBINFO_MAGIC);
-
+	assert(nodeset);
+	assert(tasks_per_node);
+	
 	/* sanity check on args */
-	/* Note: ELAN_MAX_VPS is 512 on "old" Elan driver, 16384 on new. */
-	if ((ntasks <= 0) || (ntasks > ELAN_MAX_VPS) || (nnodes <= 0)) {
+	if ((ntasks <= 0) || (nnodes <= 0))
 		slurm_seterrno_ret(EINVAL);
+	for (i = 0; i < nnodes; i++) {
+		if (tasks_per_node[i] > max_tasks_per_node)
+			max_tasks_per_node = tasks_per_node[i];
 	}
+	/* Note: ELAN_MAX_VPS is 512 on "old" Elan driver, 16384 on new. */
+	if ((max_tasks_per_node * nnodes) > ELAN_MAX_VPS)
+		slurm_seterrno_ret(EINVAL);
       
 	/* initialize jobinfo */
 	j->j_prognum = _generate_prognum();
 	if (_init_elan_capability(&j->j_cap, j->j_prognum, ntasks, nnodes, 
-			nodeset, tasks_per_node, cyclic_alloc) == -1) {
+			nodeset, tasks_per_node, cyclic_alloc, 
+			max_tasks_per_node) == -1) {
 		slurm_seterrno_ret(EAGAIN); /* failed to allocate hw ctx */
 	}
 
