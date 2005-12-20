@@ -1270,12 +1270,12 @@ static int _validate_config_nodes(void)
 					record = (bg_record_t*) 
 						xmalloc(sizeof(bg_record_t));
 					list_append(bg_list, record);
-					debug("full system %s",
-					      init_record->bg_block_id);
-					full_system_block = init_record;
+					full_system_block = record;
 					record->full_block = 1;
 					record->bg_block_id = xstrdup(
 						init_record->bg_block_id);
+					debug("full system %s",
+					      record->bg_block_id);
 					record->nodes = xstrdup(
 						init_record->nodes);
 					record->state = init_record->state;
