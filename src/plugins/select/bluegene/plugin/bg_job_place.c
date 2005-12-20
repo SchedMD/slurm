@@ -121,7 +121,9 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	
 		debug("_find_best_block_match none found "
 		      "full system running on block %s. %d",
-		      full_system_block->bg_block_id, full_system_block->job_running);
+		      full_system_block->bg_block_id, 
+		      full_system_block->job_running);
+
 		return SLURM_ERROR;
 	}
 	slurm_mutex_unlock(&block_state_mutex);
