@@ -352,7 +352,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
 		thread_ptr[thr_count].state      = DSH_NEW;
 		thread_ptr[thr_count].slurm_addr = 
-		   agent_arg_ptr->slurm_addr[thr_count];
+		   agent_arg_ptr->slurm_addr[i];
 		strncpy(thread_ptr[thr_count].node_name,
 			&agent_arg_ptr->node_names[i * MAX_NAME_LEN],
 			MAX_NAME_LEN);

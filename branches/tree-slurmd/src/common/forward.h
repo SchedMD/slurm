@@ -32,7 +32,7 @@
 #include <stdint.h>
 #include "src/common/slurm_protocol_api.h"
 
-#define FORWARD_COUNT	5	/* maximum number of 
+#define FORWARD_COUNT	50	/* maximum number of 
 				   forwards per node */
 
 /* STRUCTURES */
