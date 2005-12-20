@@ -42,6 +42,7 @@
 #include <limits.h>
 
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/common/log.h"
 
 typedef struct xpid_s {
