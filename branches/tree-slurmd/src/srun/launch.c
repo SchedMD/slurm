@@ -41,6 +41,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
+#include "src/common/forward.h"
 
 #include "src/srun/srun_job.h"
 #include "src/srun/launch.h"
@@ -103,13 +104,16 @@ launch_thr_create(srun_job_t *job)
 void *
 launch(void *arg)
 {
-	slurm_msg_t *req_array_ptr;
-	launch_tasks_request_msg_t *msg_array_ptr;
+	slurm_msg_t *msg_array_ptr;
+	launch_tasks_request_msg_t *req_array_ptr;
 	srun_job_t *job = (srun_job_t *) arg;
+	forward_launch_t forward_launch;
 	int i, j, my_envc;
 	hostlist_t hostlist = NULL;
 	hostlist_iterator_t itr = NULL;
 	char *host = NULL;
+	int *span = set_span(job->step_layout->num_hosts);
+	int thr_count = 0;
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
 	
@@ -117,9 +121,9 @@ launch(void *arg)
 	      opt.nprocs, job->step_layout->num_hosts);
 	debug("sending to slurmd port %d", slurm_get_slurmd_port());
 
-	msg_array_ptr = xmalloc(sizeof(launch_tasks_request_msg_t) 
+	req_array_ptr = xmalloc(sizeof(launch_tasks_request_msg_t) 
 				* job->step_layout->num_hosts);
-	req_array_ptr = xmalloc(sizeof(slurm_msg_t) 
+	msg_array_ptr = xmalloc(sizeof(slurm_msg_t) 
 				* job->step_layout->num_hosts);
 	my_envc = envcount(environ);
 
@@ -127,8 +131,8 @@ launch(void *arg)
 	itr = hostlist_iterator_create(hostlist);
 
 	for (i = 0; i < job->step_layout->num_hosts; i++) {
-		launch_tasks_request_msg_t *r = &msg_array_ptr[i];
-		slurm_msg_t                *m = &req_array_ptr[i];
+		launch_tasks_request_msg_t *r = &req_array_ptr[i];
+		slurm_msg_t                *m = &msg_array_ptr[i];
 
 		/* Common message contents */
 		r->job_id          = job->jobid;
@@ -169,9 +173,16 @@ launch(void *arg)
 		
 		m->msg_type        = REQUEST_LAUNCH_TASKS;
 		m->data            = r;
-		m->forward.cnt = 0;
 		m->ret_list = NULL;
-
+		forward_launch.r = req_array_ptr;
+		forward_launch.m = msg_array_ptr;
+		forward_launch.job = job;
+		set_forward_launch(&forward_launch,
+				   span[thr_count],
+				   &i,
+				   job->step_layout->num_hosts,
+				   hostlist);
+		
 		j=0; 
   		while(host = hostlist_next(itr)) { 
 			if(!strcmp(host,job->step_layout->host[i])) {
@@ -187,11 +198,12 @@ launch(void *arg)
 		       r->nprocs);
 		
 		memcpy(&m->address, &job->slurmd_addr[j], sizeof(slurm_addr));
+		thr_count++;
 	}
 	hostlist_iterator_destroy(itr);
 	hostlist_destroy(hostlist);
 	
-	_p_launch(req_array_ptr, job);
+	_p_launch(msg_array_ptr, job);
 
 	xfree(msg_array_ptr);
 	xfree(req_array_ptr);

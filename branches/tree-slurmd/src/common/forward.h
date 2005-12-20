@@ -31,11 +31,17 @@
 
 #include <stdint.h>
 #include "src/common/slurm_protocol_api.h"
+#include "src/srun/srun_job.h"
 
 #define FORWARD_COUNT	50	/* maximum number of 
 				   forwards per node */
 
 /* STRUCTURES */
+typedef struct forward_launch {
+	launch_tasks_request_msg_t *r;
+	slurm_msg_t *m;
+	srun_job_t *job;
+} forward_launch_t;
 
 extern int forward_msg(forward_struct_t *forward_struct, 
 		       header_t *header);
@@ -53,12 +59,25 @@ extern int forward_msg(forward_struct_t *forward_struct,
  * RET: SLURM_SUCCESS - int
  */
 extern int set_forward_addrs (forward_t *forward, 
-			      int thr_count,
+			      int span,
 			      int *pos,
 			      int total,
 			      struct sockaddr_in *forward_addr,
 			      char *forward_names);
 
+extern int set_forward_launch (forward_launch_t *forward_launch,
+			       int span,
+			       int *pos,
+			       int total,
+			       hostlist_t hostlist);
+
 extern int *set_span(int total);
+
+/* destroyers */
+extern void destroy_data_info(void *object);
+extern void destroy_forward_struct(void *object);
+extern void destroy_forward(void *object);
+extern void destroy_forward_msg(void *object);
+void destroy_ret_types(void *object);
 
 #endif

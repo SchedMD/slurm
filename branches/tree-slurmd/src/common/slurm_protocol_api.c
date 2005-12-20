@@ -57,6 +57,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/log.h"
+#include "src/common/forward.h"
 
 /* EXTERNAL VARIABLES */
 
@@ -705,34 +706,11 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	/* Forward message to other nodes */
 	if(fwd_cnt > 0) {
 		forward_struct = xmalloc(sizeof(forward_struct_t));
-					
-		/* for(i=0; i<fwd_cnt; i++) { */
-/* 			strncpy(forward_struct->forward_msg[i].node_name, */
-/* 				&header.forward.name[i * MAX_NAME_LEN], */
-/* 				MAX_NAME_LEN); */
-/* 			forward_struct->forward_msg[i].ret_list = ret_list; */
-/* 			forward_struct->forward_msg[i].notify =  */
-/* 				&forward_struct->notify; */
-/* 			forward_struct->forward_msg[i].forward_mutex =  */
-/* 				&forward_struct->forward_mutex; */
-/* 		} */
-/* 		forward_struct->ret_list = ret_list; */
-/* 		forward_struct->header.version = header.version; */
-/* 		forward_struct->header.flags = header.flags; */
-/* 		forward_struct->header.msg_type = header.msg_type; */
-/* 		forward_struct->header.body_length = header.body_length; */
-		/*FIXME: !!!!! */
-		/*find out these if needed */
-		/* forward_struct->header.forward.cnt = msg->forward.cnt; */
-		/* 	forward_header.forward.addr = msg->forward.addr; */
-		/* forward_struct->header.forward.cnt = 0; */
-/* 		forward_struct->header.forward.addr = NULL; */
-/* 		forward_struct->header.ret_cnt = 0; */
-/* 		forward_struct->header.ret_list = NULL; */
 		forward_struct->buffer = buffer;
 		forward_struct->ret_list = ret_list;
-		
-		info("forwarding messages to %d nodes!!!!", 
+		forward_struct->timeout = timeout;
+
+		debug3("forwarding messages to %d nodes!!!!", 
 		     header.forward.cnt);
 		
 		if(forward_msg(forward_struct, &header) == SLURM_ERROR) {
@@ -788,9 +766,10 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 			}
 			list_iterator_destroy(itr);
 		}
-		xfree(header.forward.addr);
 		pthread_mutex_unlock(&forward_struct->forward_mutex);
-		
+		xfree(header.forward.addr);
+		xfree(forward_struct->forward_msg);
+		xfree(forward_struct);
 	}
 		
 total_return:
@@ -1236,13 +1215,15 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 	}
 	req->forward.cnt = 0;
 	req->ret_list = NULL;
-	info("here 2");
+	//info("here 2");
 	
 	while(retry) {
 		retry = 0;
 		/* If the backup controller is in the process of assuming 
 		 * control, we sleep and retry later */
 		ret_list = _send_and_recv_msg(fd, req, resp, 0);
+		slurm_free_cred(resp->cred);
+
 		rc = errno;
 		if(list_count(ret_list)>0) {
 			error("We didn't do things correctly "
@@ -1293,7 +1274,7 @@ List slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0)
 		return NULL; //SLURM_SOCKET_ERROR;
-	info("here 3");
+	//info("here 3");
 	
 	return _send_and_recv_msg(fd, req, resp, timeout);
 
@@ -1384,7 +1365,7 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 	int msg_rc;
 	int set = 0;
 	int err;
-	info("here 1");
+	//info("here 1");
 	
 	ret_list = _send_and_recv_msg(fd, req, &msg, timeout);
 	if(!ret_list) {
@@ -1520,6 +1501,7 @@ void slurm_free_msg(slurm_msg_t * msg)
 		list_destroy(msg->ret_list);
 		msg->ret_list = NULL;
 	}
+	destroy_forward(&msg->forward);
 	xfree(msg);
 }
 
@@ -1529,32 +1511,6 @@ void slurm_free_msg(slurm_msg_t * msg)
 void slurm_free_cred(void *cred)
 {
 	(void) g_slurm_auth_destroy(cred);
-}
-
-void destroy_data_info(void *object)
-{
-	ret_data_info_t *ret_data_info = (ret_data_info_t *)object;
-	if(ret_data_info) {
-		xfree(ret_data_info->node_name);
-		/*FIXME: needs to probably be something for all 
-		  types or messages */
-		//xfree(ret_data_info->data);
-		xfree(ret_data_info);
-	}
-}
-/* 
- * Free just the list from forwarded messages
- */
-void destroy_ret_types(void *object)
-{
-	ret_types_t *ret_type = (ret_types_t *)object;
-	if(ret_type) {
-		if(ret_type->ret_data_list) {
-			list_destroy(ret_type->ret_data_list);
-			ret_type->ret_data_list = NULL;
-		}
-		xfree(ret_type);
-	}
 }
 
 #if _DEBUG

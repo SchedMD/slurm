@@ -227,6 +227,7 @@ typedef struct forward_message {
 } forward_msg_t;
 
 typedef struct forward_struct {
+	int timeout;
 	pthread_mutex_t forward_mutex;
 	pthread_cond_t notify;
 	forward_msg_t *forward_msg;

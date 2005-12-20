@@ -399,7 +399,7 @@ static void *_wdog(void *args)
 	int i, max_delay = 0;
 	agent_info_t *agent_ptr = (agent_info_t *) args;
 	thd_t *thread_ptr = agent_ptr->thread_struct;
-	unsigned long usec = 50000;
+	unsigned long usec = 1250000;
 	time_t now;
 	ListIterator itr;
 	ret_types_t *ret_type = NULL;
@@ -419,7 +419,7 @@ static void *_wdog(void *args)
 		retry_cnt   = 0;	/* assume no required retries */
 
 		usleep(usec);
-		//usec = MIN((usec * 2), 1000000);
+		usec = MIN((usec * 2), 1000000);
 		now = time(NULL);
 
 		slurm_mutex_lock(&agent_ptr->thread_mutex);
@@ -779,7 +779,7 @@ static void *_thread_per_node_rpc(void *args)
 	msg.data     = task_ptr->msg_args_ptr;
 	msg.forward = thread_ptr->forward;
 	msg.ret_list = NULL;
-	info("forwarding to %d",msg.forward.cnt);
+	//info("forwarding to %d",msg.forward.cnt);
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {
 		if ((ret_list = slurm_send_recv_rc_msg(&msg, timeout)) 
@@ -919,8 +919,7 @@ static void *_thread_per_node_rpc(void *args)
 
 cleanup:
 	xfree(args);
-	xfree(thread_ptr->forward.name);
-	xfree(thread_ptr->forward.addr);
+	destroy_forward(&thread_ptr->forward);
 	slurm_mutex_lock(thread_mutex_ptr);
 	thread_ptr->ret_list = ret_list;
 	thread_ptr->state = thread_state;

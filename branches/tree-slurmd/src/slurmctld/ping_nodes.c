@@ -53,7 +53,7 @@
 static pthread_mutex_t lock_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int ping_count = 0;
 
-struct timeval start_time, end_time;
+/* struct timeval start_time, end_time; */
 
 /*
  * is_ping_done - test if the last node ping cycle has completed.
@@ -103,14 +103,14 @@ void ping_end (void)
 		fatal ("ping_count < 0");
 	slurm_mutex_unlock(&lock_mutex);
 	
-	gettimeofday(&end_time, NULL);
-	start = start_time.tv_sec;
-	start *= 1000000;
-	start += start_time.tv_usec;
-	end = end_time.tv_sec;
-	end *= 1000000;
-	end += end_time.tv_usec;
-	info("done with ping took %ld",(end-start));
+	/* gettimeofday(&end_time, NULL); */
+/* 	start = start_time.tv_sec; */
+/* 	start *= 1000000; */
+/* 	start += start_time.tv_usec; */
+/* 	end = end_time.tv_sec; */
+/* 	end *= 1000000; */
+/* 	end += end_time.tv_usec; */
+/* 	info("done with ping took %ld",(end-start)); */
 }
 
 /*
@@ -145,7 +145,7 @@ void ping_nodes (void)
 	reg_agent_args = xmalloc (sizeof (agent_arg_t));
 	reg_agent_args->msg_type = REQUEST_NODE_REGISTRATION_STATUS;
 	reg_agent_args->retry = 0;
-	gettimeofday(&start_time, NULL);
+	/* gettimeofday(&start_time, NULL); */
 		
 	/*
 	 * If there are a large number of down nodes, the node ping
