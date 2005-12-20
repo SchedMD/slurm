@@ -35,6 +35,7 @@
 #include <pthread.h>
 
 #include <slurm/slurm.h>
+#include <slurm/slurm_errno.h>
 
 #include "src/common/xmalloc.h"
 #include "src/common/hostlist.h"
@@ -76,9 +77,10 @@ slurm_signal_job (uint32_t job_id, uint16_t signal)
 	int *rc_array;
 	int i;
 
-	rc = slurm_allocation_lookup(job_id, &alloc_info);
-	if (rc != 0)
+	if (slurm_allocation_lookup(job_id, &alloc_info)) {
+		rc = slurm_get_errno(); 
 		goto fail1;
+	}
 
 	/* same remote procedure call for each node */
 	rpc.job_id = job_id;
