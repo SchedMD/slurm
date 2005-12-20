@@ -58,38 +58,11 @@
 #include "src/common/xstring.h"
 #include "src/common/log.h"
 
-/* STRUCTURES */
-
-typedef struct forward_message {
-	header_t header;
-	char *buf;
-	int buf_len;
-	slurm_addr addr;
-	int timeout;
-	List ret_list;
-	pthread_mutex_t *forward_mutex;
-	pthread_cond_t *notify;
-	char node_name[MAX_NAME_LEN];
-} forward_msg_t;
-
-typedef struct forward_struct {
-	int timeout;
-	int forward;
-	pthread_mutex_t forward_mutex;
-	pthread_cond_t notify;
-	forward_msg_t *forward_msg;
-	header_t header;
-	Buf buffer;
-} forward_struct_t;
-
-
-
 /* EXTERNAL VARIABLES */
 
 /* #DEFINES */
 #define _DEBUG	0
 #define MAX_SHUTDOWN_RETRY 5
-#define BUF_SIZE 4096
 #define MAX_RETRIES 3
 
 /* STATIC VARIABLES */
@@ -100,7 +73,6 @@ static slurm_ctl_conf_t slurmctld_conf;
 
 /* STATIC FUNCTIONS */
 static void _remap_slurmctld_errno(void);
-static int _forward_msg(forward_struct_t *forward_struct, header_t *header);
 
 /**********************************************************************\
  * protocol configuration functions
@@ -517,147 +489,6 @@ static void _remap_slurmctld_errno(void)
 		slurm_seterrno(SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR);
 }
 
-void *_forward_thread(void *arg)
-{
-	forward_msg_t *fwd_msg = (forward_msg_t *)arg;
-	unsigned int tmplen, msglen;
-	Buf buffer = init_buf(0);
-	int retry = 0;
-	List ret_list = NULL;
-	ret_types_t *type = NULL;
-	ret_types_t *returned_type = NULL;
-	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
-	slurm_fd fd;
-	char *name;
-	ret_data_info_t *ret_data_info = NULL;
-	ListIterator itr;
-	
-	if ((fd = slurm_open_msg_conn(&fwd_msg->addr)) < 0) {
-		error("forward_thread: can't open msg conn");
-		goto cleanup;
-	}
-	pack_header(&fwd_msg->header, buffer);
-	
-	tmplen = get_buf_offset(buffer);
-
-	/* add forward data to buffer */
-	if (remaining_buf(buffer) < fwd_msg->buf_len) {
-		buffer->size += (fwd_msg->buf_len + BUF_SIZE);
-		xrealloc(buffer->head, buffer->size);
-	}
-	if (fwd_msg->buf_len) {
-		memcpy(&buffer->head[buffer->processed], 
-		       fwd_msg->buf, fwd_msg->buf_len);
-		buffer->processed += fwd_msg->buf_len;
-	}
-	
-	/*
-	 * forward message
-	 */
-	if((_slurm_msg_sendto(fd, 
-			      get_buf_data(buffer), 
-			      get_buf_offset(buffer),
-			      SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) < 0)) {
-		error("slurm_msg_sendto: %m");
-	}
-
-	msg->forward = fwd_msg->header.forward;
-	msg->ret_list = fwd_msg->header.ret_list;
-
-	ret_list = slurm_receive_msg(fd, msg, fwd_msg->timeout);
-	
-	type = xmalloc(sizeof(ret_types_t));
-	list_push(ret_list, type);
-	type->type = msg->msg_type;
-	type->msg_rc = ((return_code_msg_t *)msg->data)->return_code;
-	type->err = errno;
-	type->ret_data_list = list_create(destroy_data_info);
-	ret_data_info = xmalloc(sizeof(ret_types_t));
-	list_push(type->ret_data_list, ret_data_info);
-	ret_data_info->node_name = xstrdup(fwd_msg->node_name);
-	ret_data_info->data = msg->data;		
-	
-	if ((fd >= 0) && slurm_close_accepted_conn(fd) < 0)
-		error ("close(%d): %m", fd);
-
-	while((returned_type = list_pop(ret_list)) != NULL) {
-		pthread_mutex_lock(fwd_msg->forward_mutex);
-		itr = list_iterator_create(fwd_msg->ret_list);	
-		while((type = (ret_types_t *) 
-		       list_next(itr)) != NULL) {
-			if(type->msg_rc == returned_type->msg_rc) {
-				while(ret_data_info = 
-				      list_pop(returned_type->ret_data_list)) {
-					list_push(type->ret_data_list, 
-						  ret_data_info);
-				}
-				break;
-			}
-		}
-		list_iterator_destroy(itr);
-		
-		if(!type) {
-			type = xmalloc(sizeof(ret_types_t));
-			list_push(fwd_msg->ret_list, type);
-			type->type = returned_type->type;
-			type->msg_rc = returned_type->msg_rc;
-			type->err = returned_type->err;
-			type->ret_data_list = list_create(destroy_data_info);
-			while(ret_data_info = 
-			      list_pop(returned_type->ret_data_list)) {
-				list_push(type->ret_data_list, 
-					  ret_data_info);
-			}
-		}		
-		destroy_ret_types(returned_type);
-		pthread_mutex_unlock(fwd_msg->forward_mutex);
-	}
-	pthread_cond_signal(fwd_msg->notify);
-	list_destroy(ret_list);
-cleanup:
-	xfree(fwd_msg->buf);
-	free_buf(buffer);	
-}
-
-static int _forward_msg(forward_struct_t *forward_struct, header_t *header)
-{
-	header_t forward_header;
-	int i;
-	int retries = 0;
-	forward_msg_t *forward_msg;
-	Buf buffer = forward_struct->buffer;
-
-	for(i=0; i<forward_struct->forward; i++) {
-		pthread_attr_t attr_agent;
-		pthread_t thread_agent;
-		
-		slurm_attr_init(&attr_agent);
-		if (pthread_attr_setdetachstate
-		    (&attr_agent, PTHREAD_CREATE_DETACHED))
-			error("pthread_attr_setdetachstate error %m");
-		
-		forward_msg = &forward_struct->forward_msg[i];
-		forward_msg->header = forward_struct->header;
-			
-		forward_msg->addr = header->forward.addr[i];
-		forward_msg->buf_len = remaining_buf(buffer);
-		forward_msg->buf = 
-			xmalloc(sizeof(char)*forward_msg->buf_len);
-		memcpy(forward_msg->buf, 
-		       &buffer->head[buffer->processed], 
-		       forward_msg->buf_len);
-			
-		while(pthread_create(&thread_agent, &attr_agent,
-				   _forward_thread, 
-				   (void *)forward_msg)) {
-			error("pthread_create error %m");
-			if (++retries > MAX_RETRIES)
-				fatal("Can't create pthread");
-			sleep(1);	/* sleep and try again */
-		}
-	}
-	return SLURM_SUCCESS;
-}
 /**********************************************************************\
  * general message management functions used by slurmctld, slurmd
 \**********************************************************************/
@@ -861,7 +692,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
 	}
-	info("ret_cnt = %d",header.ret_cnt);
+	//info("ret_cnt = %d",header.ret_cnt);
 	if(header.ret_cnt > 0) {
 		while((ret_type = list_pop(header.ret_list)) != NULL)
 			list_push(ret_list, ret_type);
@@ -874,43 +705,40 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	/* Forward message to other nodes */
 	if(fwd_cnt > 0) {
 		forward_struct = xmalloc(sizeof(forward_struct_t));
-		slurm_mutex_init(&forward_struct->forward_mutex);
-		pthread_cond_init(&forward_struct->notify, NULL);
-	
-		forward_struct->forward_msg = 
-			xmalloc(sizeof(forward_msg_t) * fwd_cnt);
-				
-		for(i=0; i<fwd_cnt; i++) {
-			strncpy(forward_struct->forward_msg[i].node_name,
-				&header.forward.name[i * MAX_NAME_LEN],
-				MAX_NAME_LEN);
-			forward_struct->forward_msg[i].ret_list = ret_list;
-			forward_struct->forward_msg[i].notify = 
-				&forward_struct->notify;
-			forward_struct->forward_msg[i].forward_mutex = 
-				&forward_struct->forward_mutex;
-		}
-		xfree(header.forward.name);
-		forward_struct->forward = fwd_cnt;
-		forward_struct->header.version = header.version;
-		forward_struct->header.flags = header.flags;
-		forward_struct->header.msg_type = header.msg_type;
-		forward_struct->header.body_length = header.body_length;
+					
+		/* for(i=0; i<fwd_cnt; i++) { */
+/* 			strncpy(forward_struct->forward_msg[i].node_name, */
+/* 				&header.forward.name[i * MAX_NAME_LEN], */
+/* 				MAX_NAME_LEN); */
+/* 			forward_struct->forward_msg[i].ret_list = ret_list; */
+/* 			forward_struct->forward_msg[i].notify =  */
+/* 				&forward_struct->notify; */
+/* 			forward_struct->forward_msg[i].forward_mutex =  */
+/* 				&forward_struct->forward_mutex; */
+/* 		} */
+/* 		forward_struct->ret_list = ret_list; */
+/* 		forward_struct->header.version = header.version; */
+/* 		forward_struct->header.flags = header.flags; */
+/* 		forward_struct->header.msg_type = header.msg_type; */
+/* 		forward_struct->header.body_length = header.body_length; */
 		/*FIXME: !!!!! */
 		/*find out these if needed */
 		/* forward_struct->header.forward.cnt = msg->forward.cnt; */
 		/* 	forward_header.forward.addr = msg->forward.addr; */
-		forward_struct->header.forward.cnt = 0;
-		forward_struct->header.forward.addr = NULL;
-		forward_struct->header.ret_cnt = 0;
-		forward_struct->header.ret_list = NULL;
+		/* forward_struct->header.forward.cnt = 0; */
+/* 		forward_struct->header.forward.addr = NULL; */
+/* 		forward_struct->header.ret_cnt = 0; */
+/* 		forward_struct->header.ret_list = NULL; */
 		forward_struct->buffer = buffer;
+		forward_struct->ret_list = ret_list;
+		
 		info("forwarding messages to %d nodes!!!!", 
 		     header.forward.cnt);
 		
-		if(_forward_msg(forward_struct, &header) == SLURM_ERROR) {
+		if(forward_msg(forward_struct, &header) == SLURM_ERROR) {
 			error("problem with forward msg");
 		}
+		xfree(header.forward.name);
 	}
 
 	if ((auth_cred = g_slurm_auth_unpack(buffer)) == NULL) {
@@ -970,7 +798,7 @@ total_return:
 	if(rc != SLURM_SUCCESS) {
 		error("slurm_receive_msg: %s", slurm_strerror(rc));
 	}
-	info("rc= %d count of ret is %d",rc, list_count(ret_list));
+	//info("rc= %d count of ret is %d",rc, list_count(ret_list));
 	errno = rc;
 	return ret_list;
 		
@@ -1564,11 +1392,16 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 	}
 	
 	err = errno;
-	msg_rc = ((return_code_msg_t *)msg.data)->return_code;
-
+	if(errno != SLURM_SUCCESS) 
+		msg_rc = errno;	
+	else {
+		msg_rc = ((return_code_msg_t *)msg.data)->return_code;
+		slurm_free_return_code_msg(msg.data);
+		g_slurm_auth_destroy(msg.cred);
+	}
 	ret_data_info = xmalloc(sizeof(ret_data_info_t));
 	ret_data_info->node_name = xstrdup("localhost");
-	ret_data_info->data = msg.data;
+	ret_data_info->data = NULL;
 
 	itr = list_iterator_create(ret_list);		
 	while((ret_type = list_next(itr)) != NULL) {

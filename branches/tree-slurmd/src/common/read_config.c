@@ -54,7 +54,6 @@
 #include "src/common/slurm_rlimits_info.h"
 
 #define BUF_SIZE 1024
-#define MAX_NAME_LEN	32
 #define MULTIPLE_VALUE_MSG "Multiple values for %s, latest one used"
 
 inline static void _normalize_debug_level(uint16_t *level);

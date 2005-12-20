@@ -30,16 +30,15 @@
 #define _FORWARD_H
 
 #include <stdint.h>
+#include "src/common/slurm_protocol_api.h"
 
-#define FORWARD_COUNT	50	/* maximum number of 
+#define FORWARD_COUNT	5	/* maximum number of 
 				   forwards per node */
-typedef struct forward {
-	slurm_addr *addr;	  /* array of network addresses 
-				     to forward to */	
-	char       *name;	  /* array of node names  
-				     to forward to */	
-	uint16_t   cnt;           /* number of addresses to forward */
-} forward_t;
+
+/* STRUCTURES */
+
+extern int forward_msg(forward_struct_t *forward_struct, 
+		       header_t *header);
 
 /*
  * set_forward_addrs - add to the message possible forwards to go to
@@ -59,5 +58,7 @@ extern int set_forward_addrs (forward_t *forward,
 			      int total,
 			      struct sockaddr_in *forward_addr,
 			      char *forward_names);
+
+extern int *set_span(int total);
 
 #endif

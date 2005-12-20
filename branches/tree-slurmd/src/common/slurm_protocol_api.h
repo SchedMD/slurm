@@ -41,8 +41,6 @@
 #  include <inttypes.h>
 #endif				/*  HAVE_CONFIG_H */
 
-#define MAX_NAME_LEN 64
-
 #include <sys/types.h>
 #include <stdarg.h>
 

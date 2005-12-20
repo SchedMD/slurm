@@ -49,8 +49,8 @@
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/switch.h"
 #include "src/common/xassert.h"
-#include "src/common/forward.h"
 
+#define MAX_NAME_LEN 64
 
 /* used to define flags of the launch_tasks_request_msg_t.and
  * spawn task_request_msg_t task_flags
@@ -167,6 +167,14 @@ typedef enum {
 /*****************************************************************************\
  * core api configuration struct 
 \*****************************************************************************/
+typedef struct forward {
+	slurm_addr *addr;	  /* array of network addresses 
+				     to forward to */	
+	char       *name;	  /* array of node names  
+				     to forward to */	
+	uint16_t   cnt;           /* number of addresses to forward */
+} forward_t;
+
 typedef struct slurm_protocol_config {
 	slurm_addr primary_controller;
 	slurm_addr secondary_controller;
@@ -205,6 +213,26 @@ typedef struct ret_types {
 	int32_t type;
 	List ret_data_list;
 } ret_types_t;
+
+typedef struct forward_message {
+	header_t header;
+	char *buf;
+	int buf_len;
+	slurm_addr addr;
+	int timeout;
+	List ret_list;
+	pthread_mutex_t *forward_mutex;
+	pthread_cond_t *notify;
+	char node_name[MAX_NAME_LEN];
+} forward_msg_t;
+
+typedef struct forward_struct {
+	pthread_mutex_t forward_mutex;
+	pthread_cond_t notify;
+	forward_msg_t *forward_msg;
+	Buf buffer;
+	List ret_list;
+} forward_struct_t;
 
 /*****************************************************************************\
  * Slurm Protocol Data Structures

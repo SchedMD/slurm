@@ -331,7 +331,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	int i, j;
 	agent_info_t *agent_info_ptr;
 	thd_t *thread_ptr;
-	int span = 0;
+	int *span = (int *)set_span(agent_arg_ptr->node_count);
 	int thr_count = 0;
 	agent_info_ptr = xmalloc(sizeof(agent_info_t));
 	
@@ -349,7 +349,6 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	    (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE))
 		agent_info_ptr->get_reply = true;
 
-	//span = 1;
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
 		thread_ptr[thr_count].state      = DSH_NEW;
 		thread_ptr[thr_count].slurm_addr = 
@@ -359,13 +358,14 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 			MAX_NAME_LEN);
 
 		set_forward_addrs(&thread_ptr[thr_count].forward,
-				  thr_count,
+				  span[thr_count],
 				  &i,
 				  agent_info_ptr->thread_count,
 				  agent_arg_ptr->slurm_addr,
 				  agent_arg_ptr->node_names);
 		thr_count++;		       
 	}
+	xfree(span);
 	agent_info_ptr->thread_count = thr_count;
 	return agent_info_ptr;
 }
@@ -399,7 +399,7 @@ static void *_wdog(void *args)
 	int i, max_delay = 0;
 	agent_info_t *agent_ptr = (agent_info_t *) args;
 	thd_t *thread_ptr = agent_ptr->thread_struct;
-	unsigned long usec = 125000;
+	unsigned long usec = 50000;
 	time_t now;
 	ListIterator itr;
 	ret_types_t *ret_type = NULL;
@@ -419,7 +419,7 @@ static void *_wdog(void *args)
 		retry_cnt   = 0;	/* assume no required retries */
 
 		usleep(usec);
-		usec = MIN((usec * 2), 1000000);
+		//usec = MIN((usec * 2), 1000000);
 		now = time(NULL);
 
 		slurm_mutex_lock(&agent_ptr->thread_mutex);
