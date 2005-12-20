@@ -589,7 +589,7 @@ _task_read(eio_obj_t *obj, List objs)
 
 	debug4("Entering _task_read");
 	len = cbuf_free(out->buf);
-	if (len > 0) {
+	if (len > 0 && !out->eof) {
 again:
 		if ((rc = cbuf_write_from_fd(out->buf, obj->fd, len, NULL))
 		    < 0) {
@@ -1184,7 +1184,12 @@ _task_build_message(struct task_read_info *out, slurmd_job_t *job, cbuf_t cbuf)
 	debug5("  buffered_stdio is %s", job->buffered_stdio ? "true" : "false");
 	debug5("  must_truncate  is %s", must_truncate ? "true" : "false");
 
-	if (must_truncate || !job->buffered_stdio) {
+	/*
+	 * If eof has been read from a tasks stdout or stderr, we need to
+	 * ignore normal line buffering and send the buffer immediately.
+	 * Hence the "|| out->eof".
+	 */
+	if (must_truncate || !job->buffered_stdio || out->eof) {
 		n = cbuf_read(cbuf, ptr, MAX_MSG_LEN);
 	} else {
 		n = cbuf_read_line(cbuf, ptr, MAX_MSG_LEN, -1);
