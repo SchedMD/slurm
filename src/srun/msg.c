@@ -1144,8 +1144,14 @@ par_thr(void *arg)
 	return (void *)1;
 }
 
-/* NOTE: call this before creating any pthreads to avoid having forked process 
- * hang on localtime_t() mutex locked in parent processes pthread */
+/*
+ * Forks the srun process that handles messages even if the main srun
+ * process is stopped (for instance, by totalview).  Also creates
+ * the various pthreads used in the original and monitor process.
+ *
+ * NOTE: call this before creating any pthreads to avoid having forked process 
+ * hang on localtime_t() mutex locked in parent processes pthread.
+ */
 extern int 
 msg_thr_create(srun_job_t *job)
 {
@@ -1212,15 +1218,25 @@ msg_thr_create(srun_job_t *job)
 		debug("Started msg to parent server thread (%lu)", 
 		      (unsigned long) job->jtid);
 		
-		while(read(job->forked_msg->
-			   msg_par->msg_pipe[0],&c,sizeof(int))>0)
-			; // make sure my parent doesn't leave me hangin
+		/*
+		 * Wait for the main srun process to exit.  When it
+		 * does, the other end of the msg_par->msg_pipe will
+		 * close.
+		 */
+		while(read(job->forked_msg->msg_par->msg_pipe[0],
+			   &c, sizeof(int))
+		      > 0)
+			; /* do nothing */
 		
-		close(job->forked_msg->
-		      msg_par->msg_pipe[0]); // close excess fildes    
-		xfree(job->forked_msg->par_msg);	
-		xfree(job->forked_msg->msg_par);	
-		xfree(job->forked_msg);	
+		close(job->forked_msg->msg_par->msg_pipe[0]);
+		/*
+		 * These xfree aren't really necessary if we are just going
+		 * to exit, and they can cause the message thread to
+		 * segfault.
+		 */
+		/* xfree(job->forked_msg->par_msg); */
+		/* xfree(job->forked_msg->msg_par); */
+		/* xfree(job->forked_msg); */
 		_exit(0);
 	} else {
 		/* parent */
