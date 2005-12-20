@@ -1,5 +1,5 @@
 /*****************************************************************************\
- **  mpi_gmpi.c - Library routines for initiating jobs on with gmpi type mpi 
+ **  mpi_mpichgm.c - Library routines for initiating jobs on with gmpi type mpi 
  **  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
