@@ -70,7 +70,7 @@ struct send_recv_rc {
 int 
 slurm_signal_job (uint32_t job_id, uint16_t signal)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	resource_allocation_response_msg_t *alloc_info;
 	slurm_msg_t *msg; /* array of message structs, one per node */
 	signal_job_msg_t rpc;
