@@ -796,29 +796,20 @@ void rehash_node (void)
 void set_slurmd_addr (void) 
 {
 	int i;
+	struct node_record *node_ptr = node_record_table_ptr;
 	DEF_TIMERS;
 
 	START_TIMER;
-	for (i = 0; i < node_record_count; i++) {
-		if (node_record_table_ptr[i].name[0] == '\0')
+	for (i = 0; i < node_record_count; i++, node_ptr++) {
+		if (node_ptr->name[0] == '\0')
 			continue;
-		slurm_set_addr (& node_record_table_ptr[i].slurm_addr, 
+		slurm_set_addr (&node_ptr->slurm_addr, 
 				slurmctld_conf.slurmd_port, 
-				node_record_table_ptr[i].comm_name);
-		if (node_record_table_ptr[i].slurm_addr.sin_port)
-			continue;
-		error ("slurm_set_addr failure on %s", 
-		       node_record_table_ptr[i].comm_name);
-		strncpy (node_record_table_ptr[i].name,
-			 node_record_table_ptr[i].comm_name, 
-			 MAX_NAME_LEN);
-		slurm_set_addr (& node_record_table_ptr[i].slurm_addr, 
-				slurmctld_conf.slurmd_port, 
-				node_record_table_ptr[i].comm_name);
-		if (node_record_table_ptr[i].slurm_addr.sin_port)
+				node_ptr->comm_name);
+		if (node_ptr->slurm_addr.sin_port)
 			continue;
 		fatal ("slurm_set_addr failure on %s", 
-		       node_record_table_ptr[i].comm_name);
+		       node_ptr->comm_name);
 	}
 
 	END_TIMER;
