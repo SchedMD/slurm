@@ -4,7 +4,7 @@
 <p>
 SLURM source can be downloaded from <br>
 <a href="ftp://ftp.llnl.gov/pub/linux/slurm/">
-ftp://ftp.llnl.gov:/pub/linux/slurm</a><br>
+ftp://ftp.llnl.gov/pub/linux/slurm</a><br>
 The latest stable release is version 0.6.</p>
 
 <p><b>NOTE:</b> This server will only download files to computers 
@@ -22,14 +22,14 @@ Includes a collection of about 150 functionality and stress tests for SLURM.
 NOTE: These tests are now within the main SLURM distribution in the 
 directory <i>testsuite/expect</i>.  
 For older versions of SLURM, the test suite may be downloaded from 
-<a href="ftp://ftp.llnl.gov/pub/linux/slurm-qa/">ftp://ftp.llnl.gov:/pub/linux/slurm-qa</a>
+<a href="ftp://ftp.llnl.gov/pub/linux/slurm-qa/">ftp://ftp.llnl.gov/pub/linux/slurm-qa</a>
 </li>
 <li><b>PAM Modules (pam_slurm)</b><br>
 Pluggable Authentication Module (PAM) for restricting access to compute nodes 
 where SLURM performs resource management. Access to the node is restricted to 
 user root and users who have been allocated resources on that node. <br>
 pam_slurm is available for download from 
-<a href="ftp://ftp.llnl.gov/pub/linux/pam_slurm/">ftp://ftp.llnl.gov:/pub/linux/pam_slurm</a>
+<a href="ftp://ftp.llnl.gov/pub/linux/pam_slurm/">ftp://ftp.llnl.gov/pub/linux/pam_slurm</a>
 </ul>
 <h1>Related Software</h1>
 <ul>
@@ -38,7 +38,7 @@ pam_slurm is available for download from
 <li><b>Munge</b><br>
 In order to compile the "auth/munge" authentication plugin for SLURM, you will need
 to build and install Munge, available from 
-<a href="ftp://ftp.llnl.gov/pub/linux/munge/">ftp://ftp.llnl.gov:/pub/linux/munge</a>.
+<a href="ftp://ftp.llnl.gov/pub/linux/munge/">ftp://ftp.llnl.gov/pub/linux/munge</a>.
 </li> </ul>
 <li>Interconnect plugins</li>
 <ul>
@@ -49,7 +49,7 @@ the <b>qsnetlibs</b> development libraries from
 plugin also requires the <b>libelanhosts</b> library and
 a corresponding /etc/elanhosts configuration file, used to map
 hostnames to Elan IDs. The libelanhosts source is available from
-<a href="ftp://ftp.llnl.gov/pub/linux/libelanhosts/">ftp://ftp.llnl.gov:/pub/linux/libelanhosts</a>.
+<a href="ftp://ftp.llnl.gov/pub/linux/libelanhosts/">ftp://ftp.llnl.gov/pub/linux/libelanhosts</a>.
 </ul>
 <li>MPI versions supported</li>
 <ul>
@@ -71,6 +71,6 @@ Moab Cluster Suite</a></li>
 </ul>
 </ul>
 
-<p style="text-align:center;">Last modified 20 November 2005</p>
+<p style="text-align:center;">Last modified 21 December 2005</p>
 
 <!--#include virtual="footer.txt"-->
