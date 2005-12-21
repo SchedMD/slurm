@@ -1,9 +1,9 @@
 /*****************************************************************************\
- * scancel - cancel specified job(s) and/or job step(s)
+ *  scancel - cancel specified job(s) and/or job step(s)
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette@llnl.gov>
+ *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -116,8 +116,9 @@ _filter_job_records (void)
 		if (job_ptr[i].job_id == 0) 
 			continue;
 
-		if ((job_ptr[i].job_state != JOB_PENDING) && 
-		    (job_ptr[i].job_state != JOB_RUNNING)) {
+		if ((job_ptr[i].job_state != JOB_PENDING)
+		&&  (job_ptr[i].job_state != JOB_RUNNING)
+		&&  (job_ptr[i].job_state != JOB_SUSPENDED)) {
 			job_ptr[i].job_id = 0;
 			continue;
 		}

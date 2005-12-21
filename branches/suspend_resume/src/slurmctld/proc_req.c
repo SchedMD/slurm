@@ -1866,9 +1866,9 @@ inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	suspend_msg_t *sus_ptr = (suspend_msg_t *) msg->data;
-	/* Locks: write job */
+	/* Locks: write job and node */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	uid_t uid;
 	char *op;
 
@@ -1883,7 +1883,7 @@ inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
 		default:
 			op = "unknown";
 	}
-	info("Processing RPC: REQUEST_SUSPEND %s", op);
+	info("Processing RPC: REQUEST_SUSPEND(%s)", op);
 	uid = g_slurm_auth_get_uid(msg->cred);
 
 	lock_slurmctld(job_write_lock);
@@ -1892,12 +1892,14 @@ inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
 	END_TIMER;
 
 	if (error_code) {
-		info("_slurm_rpc_suspend %s %u: %s", op,
+		info("_slurm_rpc_suspend(%s) %u: %s", op,
 			sus_ptr->job_id, slurm_strerror(error_code));
 	} else {
-		info("_slurm_rpc_suspend %s for %u %s", op,
+		info("_slurm_rpc_suspend(%s) for %u %s", op,
 			sus_ptr->job_id, TIME_STR);
-		/* NOTE: This function provides it own locks */
+		/* Functions below provide their own locking */
+		if (sus_ptr->op == SUSPEND_JOB)
+			(void) schedule();
 		schedule_job_save();
 	}
 }

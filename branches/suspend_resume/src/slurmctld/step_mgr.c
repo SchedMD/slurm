@@ -845,6 +845,11 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 	if (job_ptr->job_state == JOB_PENDING) {
 		rc = ESLURM_JOB_PENDING;
 		goto reply;
+	} else if (job_ptr->job_state == JOB_SUSPENDED) {
+		/* job can't get cycles for checkpoint 
+		 * if it is already suspended */
+		rc = ESLURM_DISABLED;
+		goto reply;
 	} else if (job_ptr->job_state != JOB_RUNNING) {
 		rc = ESLURM_ALREADY_DONE;
 		goto reply;
@@ -874,7 +879,8 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 		step_iterator = list_iterator_create (job_ptr->step_list);
 		while ((step_ptr = (struct step_record *) 
 					list_next (step_iterator))) {
-			update_rc = checkpoint_op(ckpt_ptr->op, ckpt_ptr->data, (void *)step_ptr,
+			update_rc = checkpoint_op(ckpt_ptr->op, ckpt_ptr->data, 
+				(void *)step_ptr,
 				&resp_data.event_time, &resp_data.error_code,
 				&resp_data.error_msg);
 			rc = MAX(rc, update_rc);
@@ -929,7 +935,8 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
 	if (job_ptr->job_state == JOB_PENDING) {
 		rc = ESLURM_JOB_PENDING;
 		goto reply;
-	} else if (job_ptr->job_state != JOB_RUNNING) {
+	} else if ((job_ptr->job_state != JOB_RUNNING)
+	&&         (job_ptr->job_state != JOB_SUSPENDED)) {
 		rc = ESLURM_ALREADY_DONE;
 		goto reply;
 	}

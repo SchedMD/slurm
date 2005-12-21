@@ -40,10 +40,14 @@ Zero is returned upon success.
 On error, -1 is returned, and the Slurm error code is set appropriately.
 .SH "ERRORS"
 .LP
+\fBESLURM_DISABLED\fR the operation is currently disabled
+(e.g. attempt to suspend a job that is not running or resume a 
+job that is not currently suspended).
+.LP
 \fBESLURM_INVALID_JOB_ID\fR the requested job id does not exist. 
 .LP
-\fBESLURM_ACCESS_DENIED\fR the requesting user lacks authorization for the requested 
-action (e.g. trying to delete or modify another user's job). 
+\fBESLURM_ACCESS_DENIED\fR the requesting user lacks authorization for the 
+requested action (e.g. not user root or SlurmUser). 
 .LP
 \fBESLURM_JOB_PENDING\fR the requested job is still pending.
 .LP

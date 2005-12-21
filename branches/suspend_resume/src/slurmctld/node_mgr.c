@@ -1750,7 +1750,6 @@ extern void make_node_comp(struct node_record *node_ptr,
 	    (node_ptr->run_job_cnt  == 0) &&
 	    (node_ptr->comp_job_cnt == 0)) {
 		bit_set(idle_node_bitmap, inx);
-		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 	}
 
 	if (base_state == NODE_STATE_DOWN) {

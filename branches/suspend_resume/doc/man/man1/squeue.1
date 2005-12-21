@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "November 2005" "squeue 0.7" "Slurm components"
+.TH SQUEUE "1" "December 2005" "squeue 1.1" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -187,7 +187,7 @@ See the \fBJOB STATE CODES\fR section below for more information.
 .TP
 \fB%T\fR 
 Job state, extended form: 
-PENDING, RUNNING, CANCELLED, COMPLETING, COMPLETED, FAILED, TIMEOUT, 
+PENDING, RUNNING, SUSPENDED, CANCELLED, COMPLETING, COMPLETED, FAILED, TIMEOUT, 
 and NODE_FAIL.
 See the \fBJOB STATE CODES\fR section below for more information.
 .TP
@@ -239,7 +239,8 @@ Specify the states of jobs to view.  Accepts a comma separated list of
 state names or "all". If "all" is specified then jobs of all states will be 
 reported. If no state is specified then pending, running, and completing
 jobs are reported. Valid states (in both extended and compact form) include:
-PENDING (PD), RUNNING (R), COMPLETING (CG), COMPLETED (CD), CANCELLED (CA),
+PENDING (PD), RUNNING (R), SUSPENDED (S), 
+COMPLETING (CG), COMPLETED (CD), CANCELLED (CA),
 FAILED (F), TIMEOUT (TO), and NODE_FAIL (NF). Note the \fB<state_list>\fR
 supplied is case insensitve ("pd" and "PD" work the same).
 See the \fBJOB STATE CODES\fR section below for more information.
@@ -284,7 +285,7 @@ The job is waiting for resources to become availble.
 .SH "JOB STATE CODES"
 Jobs typically pass through several states in the course of their 
 execution. 
-The typical states are PENDING, RUNNING, COMPLETING, and COMPLETED.
+The typical states are PENDING, RUNNING, SUSPENDED, COMPLETING, and COMPLETED.
 An explanation of each state follows.
 .TP 20
 CA  CANCELLED
@@ -308,6 +309,9 @@ Job is awaiting resource allocation.
 .TP
 R   RUNNING
 Job currently has an allocation.
+.TP
+S   SUSPENDED
+Job has an allocation, but execution has been suspended.
 .TP
 TO  TIMEOUT
 Job terminated upon reaching its time limit.

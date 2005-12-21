@@ -1801,6 +1801,8 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpack_time(&job->submit_time, buffer);
 	safe_unpack_time(&job->start_time, buffer);
 	safe_unpack_time(&job->end_time, buffer);
+	safe_unpack_time(&job->suspend_time, buffer);
+	safe_unpack_time(&job->pre_sus_time, buffer);
 	safe_unpack32(&job->priority, buffer);
 
 	safe_unpackstr_xmalloc(&job->nodes, &uint16_tmp, buffer);

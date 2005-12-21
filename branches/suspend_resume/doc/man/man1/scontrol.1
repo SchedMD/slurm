@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "December 2005" "scontrol 0.7" "Slurm components"
+.TH SCONTROL "1" "December 2005" "scontrol 1.1" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -150,6 +150,9 @@ The Slurm controller (slurmctld) forwards the request all other daemons
 \fIsuspend\fP \fIjob_id\fP
 Suspend a running job.
 Use the \fIresume\fP command to resume its execution.
+User processes must stop on receipt of SIGSTOP signal and resume 
+upon receipt of SIGCONT for this operation to be effective.
+Not all architectures and configurations support job suspension.
 .TP
 \fIupdate\fP \fISPECIFICATION\fP 
 Update job, node or partition configuration per the supplied specification.

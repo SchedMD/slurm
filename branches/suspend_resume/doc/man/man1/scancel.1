@@ -1,4 +1,4 @@
-.TH SCANCEL "1" "March 2005" "scancel 0.5" "Slurm components"
+.TH SCANCEL "1" "December 2005" "scancel 1.1" "Slurm components"
 .SH "NAME"
 scancel \- Used to signal jobs or job steps that are under the control of Slurm.
 .SH "SYNOPSIS"
@@ -40,7 +40,7 @@ The name or number of the signal to be send. Default value is "KILL".
 .TP
 \fB\-t\fR, \fB\-\-state\fR=\fIjob_state_name\fR
 The state of the jobs are to be signaled. \fIjob_state_name\fR may have a value of 
-either "PENDING" or "RUNNING".
+either "PENDING", "RUNNING" or "SUSPENDED".
 .TP
 \fB\-u\fR, \fB\-\-user\fR=\fIuser_name\fR
 The name of the user whose jobs are to be signaled.

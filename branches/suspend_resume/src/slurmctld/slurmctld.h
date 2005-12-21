@@ -70,7 +70,7 @@
 		_X	= NULL; 	\
 	} while (0)
 #define IS_JOB_FINISHED(_X)		\
-	((_X->job_state & (~JOB_COMPLETING)) >  JOB_RUNNING)
+	((_X->job_state & (~JOB_COMPLETING)) >  JOB_SUSPENDED)
 #define IS_JOB_PENDING(_X)		\
 	((_X->job_state & (~JOB_COMPLETING)) == JOB_PENDING)
 
@@ -297,6 +297,8 @@ struct job_record {
 					 * actual or expected */
 	time_t end_time;		/* time of termination, 
 					 * actual or expected */
+	time_t suspend_time;		/* time job last suspended or resumed */
+	time_t pre_sus_time;		/* time job ran prior to last suspend */
 	time_t time_last_active;	/* time of last job activity */
 	uint32_t priority;		/* relative priority of the job,
 					 * zero == held (don't initiate) */
@@ -738,7 +740,7 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
  * IN conn_fd - file descriptor on which to send reply
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_suspend(suspend_msg_t *ckpt_ptr, uid_t uid, 
+extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid, 
 		slurm_fd conn_fd);
 
 /* 
