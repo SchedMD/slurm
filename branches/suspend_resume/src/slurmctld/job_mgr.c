@@ -72,7 +72,7 @@
 
 #define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
 
-#define JOB_STATE_VERSION      "VER002"
+#define JOB_STATE_VERSION      "VER003"
 
 /* Global variables */
 List   job_list = NULL;		/* job_record list */
@@ -3991,10 +3991,30 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
 
-#ifdef HAVE_BG
-	rc = ESLURM_NOT_SUPPORTED;
-	goto reply;
-#endif
+	/* test if this system configuration
+	 * supports job suspend/resume */
+	if ((strcasecmp(slurmctld_conf.select_type, 
+			"select/bluegene") == 0) {
+		/* Never suppored on BlueGene */
+		rc = ESLURM_NOT_SUPPORTED;
+		goto reply;
+	}
+	if ((strcasecmp(slurmctld_conf.select_type,
+			"select/cons_res") == 0) {
+		/* Work is needed to support the
+		 * release and reuse of consumable
+		 * resources associated with a job */
+		rc = ESLURM_NOT_SUPPORTED;
+		goto reply;
+	}
+	if ((strcasecmp(slurmctld_conf.switch_type,
+			"switch/federation") == 0) {
+		/* Work is needed to support the
+		 * release and reuse of switch
+		 * windows associated with a job */
+		rc = ESLURM_NOT_SUPPORTED;
+		goto reply;
+	}
 
 	/* find the job */
 	job_ptr = find_job_record (sus_ptr->job_id);
