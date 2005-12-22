@@ -1648,6 +1648,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	pthread_attr_t kill_attr_agent;
 	pthread_t kill_thread_agent;
 	int retries = 0;
+	char name[MAX_NAME_LEN];
 
 	kill_agent_args = xmalloc (sizeof (agent_arg_t));
 	kill_agent_args->msg_type = msg_type;
@@ -1668,6 +1669,8 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 			node_record_table_ptr[i].slurm_addr;
 		pos = MAX_NAME_LEN * kill_agent_args->node_count;
 		strncpy (&kill_agent_args->node_names[pos],
+			node_record_table_ptr[i].name, MAX_NAME_LEN);
+		strncpy (name,
 			node_record_table_ptr[i].name, MAX_NAME_LEN);
 		kill_agent_args->node_count++;
 #ifdef HAVE_FRONT_END		/* Operate only on front-end */

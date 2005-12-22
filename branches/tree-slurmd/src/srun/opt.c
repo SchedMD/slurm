@@ -1383,7 +1383,7 @@ static bool _opt_verify(void)
 	} else if (opt.max_threads > MAX_THREADS) {
 		error("Thread value exceeds defined limit, reset to %d", 
 			MAX_THREADS);
-		opt.max_threads = MAX_THREADS;
+		//opt.max_threads = MAX_THREADS;
 	}
 
 	if (opt.labelio && opt.unbuffered) {

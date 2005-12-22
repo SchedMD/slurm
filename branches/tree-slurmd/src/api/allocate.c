@@ -98,7 +98,6 @@ slurm_allocate_resources (job_desc_msg_t *req,
 	if (rc == SLURM_SOCKET_ERROR) 
 		return SLURM_SOCKET_ERROR;
 
-	slurm_free_cred(resp_msg.cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
 		if (_handle_rc_msg(&resp_msg) < 0)
@@ -185,7 +184,6 @@ slurm_allocate_resources_and_run (job_desc_msg_t *req,
 	if (rc == SLURM_SOCKET_ERROR) 
 		return SLURM_SOCKET_ERROR;
 
-	slurm_free_cred(resp_msg.cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
 		if (_handle_rc_msg(&resp_msg) < 0)
@@ -231,7 +229,6 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
-	slurm_free_cred(resp_msg.cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
 		if (_handle_rc_msg(&resp_msg) < 0)
@@ -273,7 +270,6 @@ slurm_confirm_allocation (old_job_alloc_msg_t *req,
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
-	slurm_free_cred(resp_msg.cred);
 	switch(resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
 		if (_handle_rc_msg(&resp_msg) < 0)

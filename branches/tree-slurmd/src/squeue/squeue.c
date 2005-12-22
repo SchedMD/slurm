@@ -70,12 +70,12 @@ main (int argc, char *argv[])
 		if ((!params.no_header)
 		 && (params.iterate || params.verbose || params.long_list))
 			_print_date ();
-
+		
 		if ( params.step_flag )
 			_print_job_steps( );
 		else 
 			_print_job( );
-
+		
 		if ( params.iterate ) {
 			printf( "\n");
 			sleep( params.iterate );

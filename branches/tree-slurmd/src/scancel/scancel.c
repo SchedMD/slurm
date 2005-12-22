@@ -68,11 +68,13 @@ main (int argc, char *argv[])
 
 	log_init (xbasename(argv[0]), log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 	initialize_and_process_args(argc, argv);
+	info("hey\n");
 	if (opt.verbose) {
 		log_opts.stderr_level += opt.verbose;
 		log_alter (log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 	} 
-
+	info("hey\n");
+	
 	if ((opt.interactive) ||
 	    (opt.job_name) ||
 	    (opt.partition) ||
@@ -81,7 +83,6 @@ main (int argc, char *argv[])
 		_load_job_records ();
 		_filter_job_records ();
 	}
-
 	_cancel_jobs ();
 
 	exit (0);
@@ -95,7 +96,7 @@ _load_job_records (void)
 	int error_code;
 
 	error_code = slurm_load_jobs ((time_t) NULL, &job_buffer_ptr, 1);
-
+	
 	if (error_code) {
 		slurm_perror ("slurm_load_jobs error");
 		exit (1);

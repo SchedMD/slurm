@@ -810,7 +810,6 @@ _pack_msg(slurm_msg_t *msg, header_t *hdr, Buf buffer)
 	set_buf_offset(buffer, tmplen);
 }
 
-
 /* 
  *  Send a slurm message over an open file descriptor `fd'
  *    Returns the size of the message sent in bytes, or -1 on failure.
@@ -1330,8 +1329,8 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	int      retry = 0;
 	slurm_fd fd = -1;
 	
-	req->forward.cnt = 0;
-	req->ret_list = NULL;
+	/* req->forward.cnt = 0; */
+/* 	req->ret_list = NULL; */
 		
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0)
 		return SLURM_SOCKET_ERROR;

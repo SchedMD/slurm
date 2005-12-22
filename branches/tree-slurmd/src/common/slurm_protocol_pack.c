@@ -50,6 +50,10 @@
 #include "src/common/xassert.h"
 #include "src/common/forward.h"
 
+struct timeval start_time, end_time;
+long start, end;
+
+
 #define _pack_job_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_job_step_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 #define _pack_node_select_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
@@ -2492,6 +2496,7 @@ _unpack_launch_tasks_response_msg(launch_tasks_response_msg_t **
 static void
 _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 {
+	
 	xassert(msg != NULL);
 	pack32(msg->job_id, buffer);
 	pack32(msg->job_step_id, buffer);
@@ -2519,6 +2524,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	pack32_array(msg->global_task_ids,
 		     msg->tasks_to_launch, buffer);
 	switch_pack_jobinfo(msg->switch_job, buffer);
+	
 }
 
 static int
@@ -2567,7 +2573,6 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		switch_free_jobinfo(msg->switch_job);
 		goto unpack_error;
 	}
-
 	return SLURM_SUCCESS;
 
       unpack_error:

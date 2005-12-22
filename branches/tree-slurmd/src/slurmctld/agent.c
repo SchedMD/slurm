@@ -151,7 +151,7 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr);
 static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count);
 static void _slurmctld_free_job_launch_msg(batch_job_launch_msg_t * msg);
 static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr);
-static void *_thread_per_node_rpc(void *args);
+static void *_thread_per_group_rpc(void *args);
 static int   _valid_agent_arg(agent_arg_t *agent_arg_ptr);
 static void *_wdog(void *args);
 
@@ -225,6 +225,7 @@ void *agent(void *args)
 #if 	AGENT_THREAD_COUNT < 1
 	fatal("AGENT_THREAD_COUNT value is invalid");
 #endif
+	info("got %d threads to send out",agent_info_ptr->thread_count);
 	/* start all the other threads (up to AGENT_THREAD_COUNT active) */
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
 
@@ -237,7 +238,7 @@ void *agent(void *args)
 		}
 
 		/* create thread specific data, NOTE: freed from 
-		 *      _thread_per_node_rpc() */
+		 *      _thread_per_group_rpc() */
 		task_specific_ptr = _make_task_data(agent_info_ptr, i);
 
 		slurm_attr_init(&thread_ptr[i].attr);
@@ -246,7 +247,7 @@ void *agent(void *args)
 			error("pthread_attr_setdetachstate error %m");
 		while ((rc = pthread_create(&thread_ptr[i].thread,
 					    &thread_ptr[i].attr,
-					    _thread_per_node_rpc,
+					    _thread_per_group_rpc,
 					    (void *) task_specific_ptr))) {
 			error("pthread_create error %m");
 			if (agent_info_ptr->threads_active)
@@ -333,6 +334,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	thd_t *thread_ptr;
 	int *span = (int *)set_span(agent_arg_ptr->node_count);
 	int thr_count = 0;
+       	
 	agent_info_ptr = xmalloc(sizeof(agent_info_t));
 	
 	slurm_mutex_init(&agent_info_ptr->thread_mutex);
@@ -345,10 +347,11 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	agent_info_ptr->thread_struct  = thread_ptr;
 	agent_info_ptr->msg_type       = agent_arg_ptr->msg_type;
 	agent_info_ptr->msg_args_pptr  = &agent_arg_ptr->msg_args;
+	
 	if ((agent_arg_ptr->msg_type != REQUEST_SHUTDOWN) &&
 	    (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE))
 		agent_info_ptr->get_reply = true;
-
+	
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
 		thread_ptr[thr_count].state      = DSH_NEW;
 		thread_ptr[thr_count].slurm_addr = 
@@ -356,7 +359,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		strncpy(thread_ptr[thr_count].node_name,
 			&agent_arg_ptr->node_names[i * MAX_NAME_LEN],
 			MAX_NAME_LEN);
-
+		
 		set_forward_addrs(&thread_ptr[thr_count].forward,
 				  span[thr_count],
 				  &i,
@@ -685,10 +688,12 @@ static inline void _comm_err(char *node_name)
 }
 
 /*
- * _thread_per_node_rpc - thread to issue an RPC on a single node
+ * _thread_per_group_rpc - thread to issue an RPC for a group of nodes
+ *                         sending message out to one and forwarding it to
+ *                         others if necessary.
  * IN/OUT args - pointer to task_info_t, xfree'd on completion
  */
-static void *_thread_per_node_rpc(void *args)
+static void *_thread_per_group_rpc(void *args)
 {
 	int rc = SLURM_SUCCESS, timeout = 0;
 	slurm_msg_t msg;

@@ -93,7 +93,18 @@ void *_forward_thread(void *arg)
 
 	msg->forward = fwd_msg->header.forward;
 	msg->ret_list = fwd_msg->header.ret_list;
-
+	if ((fwd_msg->header.msg_type == REQUEST_SHUTDOWN) ||
+	    (fwd_msg->header.msg_type == REQUEST_RECONFIGURE)) {
+		type = xmalloc(sizeof(ret_types_t));
+		list_push(fwd_msg->ret_list, type);
+		type->ret_data_list = list_create(destroy_data_info);
+		ret_data_info = xmalloc(sizeof(ret_types_t));
+		list_push(type->ret_data_list, ret_data_info);
+		ret_data_info->node_name = xstrdup(fwd_msg->node_name);
+		pthread_cond_signal(fwd_msg->notify);
+	
+		goto cleanup;
+	}
 	ret_list = slurm_receive_msg(fd, msg, fwd_msg->timeout);
 	
 	type = xmalloc(sizeof(ret_types_t));
@@ -249,12 +260,12 @@ extern int set_forward_addrs (forward_t *forward,
 			      char *forward_names)
 {
         int j = 1;
-	/* char name[MAX_NAME_LEN]; */
+	char name[MAX_NAME_LEN];
 	
-	/* strncpy(name,  */
-/* 		&forward_names[(*pos) * MAX_NAME_LEN],  */
-/* 		MAX_NAME_LEN); */
-/* 	info("forwarding to %s",name); */
+	strncpy(name,
+		&forward_names[(*pos) * MAX_NAME_LEN],
+		MAX_NAME_LEN);
+	info("forwarding to %s",name);
 	
 	if(span > 0) {
 		forward->addr = 
@@ -268,10 +279,10 @@ extern int set_forward_addrs (forward_t *forward,
 			strncpy(&forward->name[(j-1) * MAX_NAME_LEN], 
 				&forward_names[(*pos+j) * MAX_NAME_LEN], 
 				MAX_NAME_LEN);
-			/* strncpy(name,  */
-/* 				&forward_names[(*pos+j) * MAX_NAME_LEN],  */
-/* 				MAX_NAME_LEN); */
-/* 			info("along with %s",name); */		
+			strncpy(name,
+				&forward_names[(*pos+j) * MAX_NAME_LEN],
+				MAX_NAME_LEN);
+			info("along with %s",name);		
 			j++;
 		}
 		j--;
@@ -287,7 +298,7 @@ extern int set_forward_addrs (forward_t *forward,
 }
 
 extern int set_forward_launch (forward_launch_t *forward_launch,
-			       int thr_count,
+			       int span,
 			       int *pos,
 			       int total,
 			       hostlist_t hostlist)
@@ -296,6 +307,55 @@ extern int set_forward_launch (forward_launch_t *forward_launch,
 	slurm_msg_t                *send_m = &forward_launch->m[*pos];
 	launch_tasks_request_msg_t *attach_r = NULL;
 	slurm_msg_t                *attach_m = NULL;
+	forward_t                  *forward = &send_m->forward;
+	int j=0, i;
+	hostlist_iterator_t itr = NULL;
+	char *host = NULL;
+	
+	return SLURM_SUCCESS;
+
+	if(span > 0) {
+		forward->addr = 
+			xmalloc(sizeof(struct sockaddr_in) * span);
+		forward->name = 
+			xmalloc(sizeof(char) * (MAX_NAME_LEN * span));
+
+		itr = hostlist_iterator_create(hostlist);
+		while(j<span 
+		      && ((*pos+j) < total)) {
+			i=0; 
+			while(host = hostlist_next(itr)) { 
+				if(!strcmp(host,
+					   forward_launch->
+					   job->step_layout->host[*pos])) {
+					free(host);
+					break; 
+				}
+				i++; 
+				free(host);
+			}
+			hostlist_iterator_reset(itr);			
+			forward->addr[j-1] = 
+				forward_launch->job->slurmd_addr[i];
+			strncpy(&forward->name[(j-1) * MAX_NAME_LEN], 
+				forward_launch->job->step_layout->host[*pos], 
+				MAX_NAME_LEN);
+			/* strncpy(name,  */
+/* 				&job->step_layout->host[*pos],  */
+/* 				MAX_NAME_LEN); */
+/* 			info("along with %s",name); */		
+			j++;
+		}
+		hostlist_iterator_destroy(itr);
+	
+		j--;
+		forward->cnt = j;
+		*pos += j;
+	} else {
+		forward->cnt = 0;
+		forward->addr = NULL;
+		forward->name = NULL;
+	}
 
 	return SLURM_SUCCESS;
 }

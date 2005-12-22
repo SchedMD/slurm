@@ -279,7 +279,6 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
-	slurm_free_cred(resp_msg.cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_INFO:
 		*resp = (job_info_msg_t *)resp_msg.data;
@@ -327,7 +326,6 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	req_msg.forward.cnt = 0;
 	req_msg.forward.addr = NULL;
 	req_msg.forward.name = NULL;
-
 	ret_list = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
 
 	if(!ret_list || errno != SLURM_SUCCESS) {

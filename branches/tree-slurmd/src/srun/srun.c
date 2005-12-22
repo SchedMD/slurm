@@ -123,6 +123,8 @@ int srun(int ac, char **av)
 	char *epilog = NULL;
 
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
+struct timeval start_time, end_time;
+long start, end;
 
 	env->stepid = -1;
 	env->procid = -1;
@@ -286,6 +288,7 @@ int srun(int ac, char **av)
 	if (sig_thr_create(job) < 0)
 		job_fatal(job, "Unable to create signals thread: %m");
 	
+	gettimeofday(&start_time, NULL);
 	if (launch_thr_create(job) < 0)
  		job_fatal(job, "Unable to create launch thread: %m");
 	
@@ -296,7 +299,15 @@ int srun(int ac, char **av)
 		pthread_cond_wait(&job->state_cond, &job->state_mutex);
 	}
 	slurm_mutex_unlock(&job->state_mutex);
-		
+	gettimeofday(&end_time, NULL);
+	start = start_time.tv_sec;
+	start *= 1000000;
+	start += start_time.tv_usec;
+	end = end_time.tv_sec;
+	end *= 1000000;
+	end += end_time.tv_usec;
+	info("done with unpack of launch request %ld",(end-start));
+	
 	/* job is now overdone, clean up  
 	 *
 	 * If job is "forcefully terminated" exit immediately.
