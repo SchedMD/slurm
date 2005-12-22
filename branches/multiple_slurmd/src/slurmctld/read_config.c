@@ -289,10 +289,12 @@ static int _parse_node_spec(char *in_line)
 #ifndef HAVE_FRONT_END	/* Fake node addresses for front-end */
 	char *this_node_addr;
 #endif
+	int port;
 
 	node_addr = node_name = state = feature = (char *) NULL;
 	cpus_val = real_memory_val = state_val = NO_VAL;
 	tmp_disk_val = weight_val = NO_VAL;
+	port = NO_VAL;
 	if ((error_code = load_string(&node_name, "NodeName=", in_line)))
 		return error_code;
 	if (node_name == NULL)
@@ -307,6 +309,7 @@ static int _parse_node_spec(char *in_line)
 				  "Feature=", 's', &feature,
 				  "NodeAddr=", 's', &node_addr,
 				  "NodeHostname=", 's', &node_hostname,
+				  "Port=", 'd', &port,
 				  "Procs=", 'd', &cpus_val,
 				  "RealMemory=", 'd', &real_memory_val,
 				  "Reason=", 's', &reason,
@@ -396,6 +399,8 @@ static int _parse_node_spec(char *in_line)
 				default_config_record.feature = feature;
 				feature = NULL;
 			}
+			if (port != NO_VAL)
+				default_node_record.port = port;
 			free(this_node_name);
 			break;
 		}
@@ -458,6 +463,8 @@ static int _parse_node_spec(char *in_line)
 				strncpy(node_ptr->comm_name, 
 				        node_ptr->name, MAX_NAME_LEN);
 #endif
+			if (port != NO_VAL)
+				node_ptr->port = port;
 			node_ptr->reason = xstrdup(reason);
 		} else {
 			error("_parse_node_spec: reconfiguration for node %s",

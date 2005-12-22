@@ -174,7 +174,7 @@ int slurm_api_set_default_config()
 void slurm_api_clear_config(void)
 {
 	slurm_mutex_lock(&config_lock);
-	slurmctld_conf.slurmd_port = 0;
+/* 	slurmctld_conf.slurmd_port = 0; */
 	free_slurm_conf(&slurmctld_conf);
 	slurm_mutex_unlock(&config_lock);
 }
@@ -329,13 +329,15 @@ char *slurm_get_proctrack_type(void)
 /* slurm_get_slurmd_port
  * returns slurmd port from slurmctld_conf object
  * RET uint16_t	- slurmd port
+ * FIXME - this call needs to be replaced with something that
+ *         returns an individual port for a specified node.
  */
 uint16_t slurm_get_slurmd_port(void)
 {
-	uint16_t slurmd_port;
+	uint16_t slurmd_port = 0;
 
 	_lock_update_config();
-	slurmd_port = slurmctld_conf.slurmd_port;
+	/*slurmd_port = slurmctld_conf.slurmd_port;*/
 	slurm_mutex_unlock(&config_lock);
 	return slurmd_port;
 }

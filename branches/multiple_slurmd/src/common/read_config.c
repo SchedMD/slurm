@@ -267,6 +267,7 @@ extern char *get_conf_node_name(char *node_hostname)
 /* getnodename - equivalent to gethostname, but return only the first 
  * component of the fully qualified name 
  * (e.g. "linux123.foo.bar" becomes "linux123") 
+ * OUT name
  */
 int
 getnodename (char *name, size_t len)
@@ -396,7 +397,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->slurmd_debug		= (uint16_t) NO_VAL; 
 	xfree (ctl_conf_ptr->slurmd_logfile);
 	xfree (ctl_conf_ptr->slurmd_pidfile);
-	ctl_conf_ptr->slurmd_port		= (uint32_t) NO_VAL;
+/* 	ctl_conf_ptr->slurmd_port		= (uint32_t) NO_VAL; */
 	xfree (ctl_conf_ptr->slurmd_spooldir);
 	ctl_conf_ptr->slurmd_timeout		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->state_save_location);
@@ -922,14 +923,14 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		ctl_conf_ptr->slurmd_logfile = slurmd_logfile;
 	}
 
-	if ( slurmd_port != -1) {
-		if ( ctl_conf_ptr->slurmd_port != (uint32_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "SlurmdPort");
-		else if (slurmd_port < 0)
-			error ("SlurmdPort=%ld is invalid", slurmd_port);
-		else
-			ctl_conf_ptr->slurmd_port = slurmd_port;
-	}
+/* 	if ( slurmd_port != -1) { */
+/* 		if ( ctl_conf_ptr->slurmd_port != (uint32_t) NO_VAL) */
+/* 			error (MULTIPLE_VALUE_MSG, "SlurmdPort"); */
+/* 		else if (slurmd_port < 0) */
+/* 			error ("SlurmdPort=%ld is invalid", slurmd_port); */
+/* 		else */
+/* 			ctl_conf_ptr->slurmd_port = slurmd_port; */
+/* 	} */
 
 	if ( slurmd_spooldir ) {
 		if ( ctl_conf_ptr->slurmd_spooldir ) {
@@ -1047,12 +1048,14 @@ _parse_node_spec (char *in_line, bool slurmd_hosts)
 	char *state = NULL, *reason=NULL;
 	char *node_hostname = NULL;
 	int cpus_val, real_memory_val, tmp_disk_val, weight_val;
+	int port;
 
 	error_code = slurm_parser (in_line,
 		"Feature=", 's', &feature, 
 		"NodeAddr=", 's', &node_addr, 
 		"NodeName=", 's', &node_name, 
 		"NodeHostname=", 's', &node_hostname, 
+		"Port=", 'd', &port,
 		"Procs=", 'd', &cpus_val, 
 		"RealMemory=", 'd', &real_memory_val, 
 		"Reason=", 's', &reason, 
@@ -1065,7 +1068,7 @@ _parse_node_spec (char *in_line, bool slurmd_hosts)
 		return error_code;
 
 	if (node_name
-	&&  (node_hostname || slurmd_hosts)) {
+	    && (node_hostname || slurmd_hosts)) {
 		all_slurmd_hosts = true;
 		_register_conf_node_aliases(node_name, node_hostname);
 	}
@@ -1419,8 +1422,8 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 	if (ctl_conf_ptr->slurmd_pidfile == NULL)
 		ctl_conf_ptr->slurmd_pidfile = xstrdup(DEFAULT_SLURMD_PIDFILE);
 
-	if (ctl_conf_ptr->slurmd_port == (uint32_t) NO_VAL) 
-		ctl_conf_ptr->slurmd_port = SLURMD_PORT;
+/* 	if (ctl_conf_ptr->slurmd_port == (uint32_t) NO_VAL)  */
+/* 		ctl_conf_ptr->slurmd_port = SLURMD_PORT; */
 
 	if (ctl_conf_ptr->slurmd_spooldir == NULL)
 		ctl_conf_ptr->slurmd_spooldir = xstrdup(DEFAULT_SPOOLDIR);

@@ -67,7 +67,7 @@
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/task_plugin.h"
 
-#define GETOPT_ARGS	"L:Dvhcf:M"
+#define GETOPT_ARGS	"L:Dvhcf:MN:P:"
 
 #ifndef MAXHOSTNAMELEN
 #  define MAXHOSTNAMELEN	64
@@ -176,7 +176,7 @@ main (int argc, char *argv[])
 	info("slurmd version %s started", SLURM_VERSION);
 	debug3("finished daemonize");
 
-	_kill_old_slurmd();
+	/*_kill_old_slurmd();*/
 
 	if (conf->mlock_pages) {
 		/*
@@ -473,7 +473,6 @@ _free_and_set(char **confvar, char *newval)
 /*
  * Read the slurm configuration file (slurm.conf) and substitute some
  * values into the slurmd configuration in preference of the defaults.
- *
  */
 static void
 _read_config()
@@ -489,7 +488,7 @@ _read_config()
 	if (conf->conffile == NULL)
 		conf->conffile = xstrdup(conf->cf.slurm_conf);
 
-	conf->port          =  conf->cf.slurmd_port;
+/* 	conf->port          =  conf->cf.slurmd_port; */
 	conf->slurm_user_id =  conf->cf.slurm_user_id;
 
 	path_pubkey = xstrdup(conf->cf.job_credential_public_certificate);
@@ -497,7 +496,10 @@ _read_config()
 	if (!conf->logfile)
 		conf->logfile = xstrdup(conf->cf.slurmd_logfile);
 
-	_free_and_set(&conf->node_name, get_conf_node_name(conf->hostname));
+	/* FIXME - temporary way to have multiple node_name slurmds on a node */
+	if (conf->node_name == NULL)
+		_free_and_set(&conf->node_name,
+			      get_conf_node_name(conf->hostname));
 	_free_and_set(&conf->epilog,   xstrdup(conf->cf.epilog));
 	_free_and_set(&conf->prolog,   xstrdup(conf->cf.prolog));
 	_free_and_set(&conf->tmpfs,    xstrdup(conf->cf.tmp_fs));
@@ -624,6 +626,12 @@ _process_cmdline(int ac, char **av)
 		case 'M':
 			conf->mlock_pages = 1;
 			break;
+		case 'N':
+			conf->node_name = xstrdup(optarg);
+			break;
+		case 'P':
+			conf->port = (uint16_t)atoi(optarg);
+			break;
 		default:
 			_usage(c);
 			exit(1);
@@ -713,7 +721,7 @@ _slurmd_init()
 		/* 
 		 * Need to kill any running slurmd's here
 		 */
-		_kill_old_slurmd(); 
+		/*_kill_old_slurmd(); */
 
 		stepd_cleanup_sockets(conf->spooldir, conf->node_name);
 	}
