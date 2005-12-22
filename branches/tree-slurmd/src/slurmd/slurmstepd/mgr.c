@@ -406,6 +406,8 @@ _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, int status)
 	msg.return_code  = status;
 	resp.data        = &msg;
 	resp.msg_type    = MESSAGE_TASK_EXIT;
+	resp.forward.cnt = 0;
+	resp.ret_list = NULL;
 
 	/*
 	 *  XXX Hack for TCP timeouts on exit of large, synchronized
@@ -978,6 +980,8 @@ _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr *cli, int rc)
 	slurm_set_addr(&resp_msg.address, msg->resp_port, NULL); 
 	resp_msg.data = &resp;
 	resp_msg.msg_type = RESPONSE_LAUNCH_TASKS;
+	resp_msg.forward.cnt = 0;
+	resp_msg.ret_list = NULL;
 
 	resp.node_name     = conf->node_name;
 	resp.srun_node_id  = msg->srun_node_id;
@@ -1005,6 +1009,8 @@ _send_launch_resp(slurmd_job_t *job, int rc)
         resp_msg.address      = srun->resp_addr;
 	resp_msg.data         = &resp;
 	resp_msg.msg_type     = RESPONSE_LAUNCH_TASKS;
+	resp_msg.forward.cnt = 0;
+	resp_msg.ret_list = NULL;
 
 	resp.node_name        = conf->node_name;
 	resp.srun_node_id     = job->nodeid;

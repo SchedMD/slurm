@@ -50,10 +50,6 @@
 #include "src/common/xassert.h"
 #include "src/common/forward.h"
 
-struct timeval start_time, end_time;
-long start, end;
-
-
 #define _pack_job_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_job_step_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 #define _pack_node_select_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)

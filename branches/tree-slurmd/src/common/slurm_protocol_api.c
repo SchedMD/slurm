@@ -671,7 +671,6 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	
 	if ((timeout*=1000) == 0)
 		timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
-
 	/*
 	 * Receive a msg. slurm_msg_recvfrom() will read the message
 	 *  length and allocate space on the heap for a buffer containing
@@ -681,6 +680,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		rc = SLURM_ERROR;
 		goto total_return;
 	}
+	
 #if	_DEBUG
 	_print_data (buftemp, rc);
 #endif
@@ -1438,7 +1438,6 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
 		return SLURM_SOCKET_ERROR;
 	}
-	
 	ret_list = _send_recv_rc_msg(fd, req, timeout);
 	if(ret_list) {
 		if(list_count(ret_list)>1) 

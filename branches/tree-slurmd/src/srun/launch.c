@@ -174,14 +174,14 @@ launch(void *arg)
 		m->msg_type        = REQUEST_LAUNCH_TASKS;
 		m->data            = r;
 		m->ret_list = NULL;
-		forward_launch.r = req_array_ptr;
-		forward_launch.m = msg_array_ptr;
-		forward_launch.job = job;
-		set_forward_launch(&forward_launch,
-				   span[thr_count],
-				   &i,
-				   job->step_layout->num_hosts,
-				   hostlist);
+		/* forward_launch.r = req_array_ptr; */
+/* 		forward_launch.m = msg_array_ptr; */
+/* 		forward_launch.job = job; */
+/* 		set_forward_launch(&forward_launch, */
+/* 				   span[thr_count], */
+/* 				   &i, */
+/* 				   job->step_layout->num_hosts, */
+/* 				   hostlist); */
 		
 		j=0; 
   		while(host = hostlist_next(itr)) { 

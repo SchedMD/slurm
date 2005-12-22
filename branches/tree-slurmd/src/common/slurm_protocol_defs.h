@@ -200,7 +200,6 @@ typedef struct slurm_msg {
 	uint32_t data_size;
 	forward_t forward;
 	List ret_list;
-	List send_list;
 } slurm_msg_t;
 
 typedef struct ret_data_info {
