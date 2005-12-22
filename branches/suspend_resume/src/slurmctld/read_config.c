@@ -1078,23 +1078,22 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 {
 	int i, cnt = 0;
 	uint16_t base_state, node_flags;
+	struct node_record *node_ptr = node_record_table_ptr;
 
-	for (i = 0; i < node_record_count; i++) {
+	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 
-		base_state = node_record_table_ptr[i].node_state & 
-				NODE_STATE_BASE;
-		node_flags = node_record_table_ptr[i].node_state & 
-				NODE_STATE_FLAGS;
+		base_state = node_ptr->node_state & NODE_STATE_BASE;
+		node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
  
-		node_record_table_ptr[i].run_job_cnt++; /* NOTE:
+		node_ptr->run_job_cnt++; /* NOTE:
 				* This counter moved to comp_job_cnt 
 				* by _sync_nodes_to_comp_job() */
 		if (((job_ptr->job_state == JOB_RUNNING) ||
 		     (job_ptr->job_state &  JOB_COMPLETING)) &&
 		    (job_ptr->details) && (job_ptr->details->shared == 0))
-			node_record_table_ptr[i].no_share_job_cnt++;
+			node_ptr->no_share_job_cnt++;
 
 		if (base_state == NODE_STATE_DOWN) {
 			time_t now = time(NULL);
@@ -1106,7 +1105,7 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 		} else if ((base_state == NODE_STATE_UNKNOWN) || 
 			   (base_state == NODE_STATE_IDLE)) {
 			cnt++;
-			node_record_table_ptr[i].node_state =
+			node_ptr->node_state =
 				NODE_STATE_ALLOCATED | node_flags;
 		} 
 	}
