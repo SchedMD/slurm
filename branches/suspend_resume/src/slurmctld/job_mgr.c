@@ -964,36 +964,6 @@ struct job_record *find_job_record(uint32_t job_id)
 }
 
 /*
- * find_running_job_by_node_name - Given a node name, return a pointer to any 
- *	job currently running on that node
- * IN node_name - name of a node
- * RET pointer to the job's record, NULL if no job on node found
- */
-struct job_record *find_running_job_by_node_name(char *node_name)
-{
-	ListIterator job_iterator;
-	struct job_record  *job_ptr;
-	struct node_record *node_ptr;
-	int bit_position;
-
-	node_ptr = find_node_record(node_name);
-	if (node_ptr == NULL)	/* No such node */
-		return NULL;
-	bit_position = node_ptr - node_record_table_ptr;
-
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (job_ptr->job_state != JOB_RUNNING)
-			continue;	/* job not active */
-		if (bit_test(job_ptr->node_bitmap, bit_position))
-			break;	/* found job here */
-	}
-	list_iterator_destroy(job_iterator);
-
-	return job_ptr;
-}
-
-/*
  * kill_job_by_part_name - Given a partition name, deallocate resource for 
  *	its jobs and kill them. All jobs associated with this partition 
  *	will have their partition pointer cleared.
@@ -1013,17 +983,23 @@ extern int kill_job_by_part_name(char *part_name)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		bool suspended = false;
 		if (job_ptr->part_ptr != part_ptr)
 			continue;
 		job_ptr->part_ptr = NULL;
 
-		if (job_ptr->job_state == JOB_RUNNING) {
+		if (job_ptr->job_state == JOB_SUSPENDED)
+			suspended = true;
+		if ((job_ptr->job_state == JOB_RUNNING) || suspended) {
 			job_count++;
 			info("Killing job_id %u on defunct partition %s",
 			      job_ptr->job_id, part_name);
 			job_ptr->job_state = JOB_NODE_FAIL | JOB_COMPLETING;
-			job_ptr->end_time = time(NULL);
-			deallocate_nodes(job_ptr, false, false);
+			if (suspended)
+				job_ptr->end_time = job_ptr->suspend_time;
+			else
+				job_ptr->end_time = time(NULL);
+			deallocate_nodes(job_ptr, false, suspended);
 			delete_all_step_records(job_ptr);
 			job_completion_logger(job_ptr);
 		}
@@ -1058,9 +1034,12 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		bool suspended = false;
 		if ((job_ptr->node_bitmap == NULL) ||
 		    (!bit_test(job_ptr->node_bitmap, bit_position)))
 			continue;	/* job not on this node */
+		if (job_ptr->job_state == JOB_SUSPENDED)
+			suspended = true;
 		if (job_ptr->job_state & JOB_COMPLETING) {
 			job_count++;
 			bit_clear(job_ptr->node_bitmap, bit_position);
@@ -1077,7 +1056,7 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				error("Node %s comp_job_cnt underflow, "
 					"JobId=%u", 
 					node_ptr->name, job_ptr->job_id);
-		} else if (job_ptr->job_state == JOB_RUNNING) {
+		} else if ((job_ptr->job_state == JOB_RUNNING) || suspended) {
 			if (step_test && 
 			    (step_on_node(job_ptr, node_ptr) == 0))
 				continue;
@@ -1091,8 +1070,11 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				      job_ptr->job_id, node_name);
 				job_ptr->job_state = JOB_NODE_FAIL | 
 						     JOB_COMPLETING;
-				job_ptr->end_time = time(NULL);
-				deallocate_nodes(job_ptr, false, false);
+				if (suspended)
+					job_ptr->end_time = job_ptr->suspend_time;
+				else
+					job_ptr->end_time = time(NULL);
+				deallocate_nodes(job_ptr, false, suspended);
 				delete_all_step_records(job_ptr);
 				job_completion_logger(job_ptr);
 			} else {
@@ -1426,6 +1408,7 @@ extern int job_fail(uint32_t job_id)
 {
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
+	bool suspended = false;
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -1435,13 +1418,15 @@ extern int job_fail(uint32_t job_id)
 
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
-	if (job_ptr->job_state == JOB_RUNNING) {
+	if (job_ptr->job_state == JOB_SUSPENDED)
+		suspended = true;
+	if ((job_ptr->job_state == JOB_RUNNING) || suspended) {
 		/* No need to signal steps, deallocate kills them */
 		job_ptr->time_last_active       = now;
 		job_ptr->end_time               = now;
 		last_job_update                 = now;
 		job_ptr->job_state = JOB_FAILED | JOB_COMPLETING;
-		deallocate_nodes(job_ptr, false, false);
+		deallocate_nodes(job_ptr, false, suspended);
 		job_completion_logger(job_ptr);
 		return SLURM_SUCCESS;
 	}
@@ -1586,6 +1571,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
 	uint32_t job_comp_flag = 0;
+	bool suspended = false;
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -1607,6 +1593,10 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 
 	if (job_ptr->job_state == JOB_RUNNING)
 		job_comp_flag = JOB_COMPLETING;
+	if (job_ptr->job_state == JOB_SUSPENDED) {
+		job_comp_flag = JOB_COMPLETING;
+		suspended = true;
+	}
 
 	if (requeue && (job_ptr->batch_flag > 1)) {
 		/* Failed one requeue, just kill it */
@@ -1633,14 +1623,17 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 			job_ptr->job_state = JOB_TIMEOUT  | job_comp_flag;
 		else
 			job_ptr->job_state = JOB_COMPLETE | job_comp_flag;
-		job_ptr->end_time = now;
+		if (suspended)
+			job_ptr->end_time = job_ptr->suspend_time;
+		else
+			job_ptr->end_time = now;
 		delete_all_step_records(job_ptr);
 		job_completion_logger(job_ptr);
 	}
 
 	last_job_update = now;
 	if (job_comp_flag) 	/* job was running */
-		deallocate_nodes(job_ptr, false, false);
+		deallocate_nodes(job_ptr, false, suspended);
 	info("job_complete for JobId=%u successful", job_id);
 
 	return SLURM_SUCCESS;
@@ -2861,6 +2854,10 @@ void reset_job_bitmaps(void)
 				job_ptr->end_time = time(NULL);
 				job_ptr->job_state = JOB_NODE_FAIL | 
 						     JOB_COMPLETING;
+			} else if (job_ptr->job_state == JOB_SUSPENDED) {
+				job_ptr->end_time = job_ptr->suspend_time;
+				job_ptr->job_state = JOB_NODE_FAIL |
+						     JOB_COMPLETING;
 			}
 			delete_all_step_records(job_ptr);
 			job_completion_logger(job_ptr);
@@ -3409,7 +3406,8 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 			kill_job_on_node(job_id_ptr[i], job_ptr, node_ptr);
 		}
 
-		else if (job_ptr->job_state == JOB_RUNNING) {
+		else if ((job_ptr->job_state == JOB_RUNNING) ||
+				(job_ptr->job_state == JOB_SUSPENDED)) {
 			if (bit_test(job_ptr->node_bitmap, node_inx)) {
 				debug3("Registered job %u.%u on node %s ",
 				       job_id_ptr[i], step_id_ptr[i], 
@@ -3485,7 +3483,9 @@ static void _purge_lost_batch_jobs(int node_inx, time_t now)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if ((job_ptr->job_state != JOB_RUNNING) ||
+		bool job_active = ((job_ptr->job_state == JOB_RUNNING) ||
+				   (job_ptr->job_state == JOB_SUSPENDED));
+		if ((!job_active)                       ||
 		    (job_ptr->batch_flag == 0)          ||
 		    (job_ptr->time_last_active == now)  ||
 		    (node_inx != bit_ffs(job_ptr->node_bitmap)))
@@ -4079,7 +4079,6 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		}
 		_signal_job(job_ptr, SIGCONT);
 		_signal_batch_job(job_ptr, SIGCONT);
-		/* re-allocate resources */
 		job_ptr->job_state = JOB_RUNNING;
 		if (job_ptr->time_limit != INFINITE) {
 			/* adjust effective time_limit */

@@ -545,14 +545,6 @@ extern struct node_record *find_node_record (char *name);
 extern struct part_record *find_part_record (char *name);
 
 /*
- * find_running_job_by_node_name - Given a node name, return a pointer to any 
- *	job currently running on that node
- * IN node_name - name of a node
- * RET pointer to the job's record, NULL if no job on node found
- */
-extern struct job_record *find_running_job_by_node_name (char *node_name);
-
-/*
  * get_job_env - return the environment variables and their count for a 
  *	given job
  * IN job_ptr - pointer to job for which data is required
