@@ -187,12 +187,13 @@ if {$job_id2 == 0} {
 }
 
 #
-# Allow time for job 1 to begin the job step then
 # Stop job 1 and let job 2 begin,
 # Stop job 2 and let job 1 complete, 
 # Then resume job 2
+# The sleep commands are added so the program can recognize 
+# that it has been suspended.
 #
-exec $bin_sleep 2
+exec $bin_sleep 5
 suspend_job $job_id1 suspend
 if {$not_supported == 0} {
 	if {[wait_for_job $job_id2 RUNNING] != 0} {
@@ -200,6 +201,7 @@ if {$not_supported == 0} {
 		kill_srun
 		exit 1
 	}
+	exec $bin_sleep 5
 	suspend_job $job_id2 suspend
 	suspend_job $job_id1 resume
 	if {[wait_for_job $job_id1 DONE] != 0} {
