@@ -66,6 +66,7 @@ managing the SLURM partitions as queues.</li>
 <li>Better control over task distribution.</li>
 <li>User control of job prioritization via <i>nice</i> option.</li>
 <li>Web-based <a href="configurator.html">configuration tool</a>.</li>
+<li>Support to preempt/resume jobs.</li>
 </ul>
 
 <h2><a name="11">Major Updates in SLURM Version 1.1</a></h2>
@@ -73,7 +74,9 @@ managing the SLURM partitions as queues.</li>
 Major enhancements include:
 <ul>
 <li>Communications enhancements, validated up to 16,384 node clusters.</li>
-<li>Preempt/resume jobs per scheduler directives.</li>
+<li>More complete support for resource management down to the core level
+on a node.</li>
+<li>File broadcast support.</li>
 </ul>
 
 <h2><a name="12">Major Updates in SLURM Version 1.2 and beyond</a></h2>
@@ -90,6 +93,6 @@ to coordinate activies. Future development plans includes:
 </ul>
 
 
-<p style="text-align:center;">Last modified 6 December 2005</p>
+<p style="text-align:center;">Last modified 27 December 2005</p>
 
 <!--#include virtual="footer.txt"-->
