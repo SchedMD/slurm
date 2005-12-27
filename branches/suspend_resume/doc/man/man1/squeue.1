@@ -134,8 +134,10 @@ The value may be "NOT_SET" if not yet established or "UNLIMITED" for no limit.
 Minimum size of memory (in MB) requested by the job
 .TP
 \fB%M\fR
-Time used by the job in days\-hours:minutes:seconds. 
+Time used by the job or job step in days\-hours:minutes:seconds. 
 The days and hours are printed only as needed.
+For job steps this field shows the elapsed time since execution began 
+and thus will be inaccurate for job steps which have been suspended.
 .TP
 \fB%n\fR
 List of node names explicitly requested by the job
