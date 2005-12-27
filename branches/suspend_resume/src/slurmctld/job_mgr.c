@@ -3933,7 +3933,7 @@ static void _suspend_job_nodes(struct job_record *job_ptr)
 					node_flags;
 		}
 	}
-	last_node_update = time(NULL);
+	last_job_update = last_node_update = time(NULL);
 }
 
 /* Specified job is being resumed, re-allocate the nodes */
@@ -3969,7 +3969,7 @@ static int _resume_job_nodes(struct job_record *job_ptr)
 		node_ptr->node_state = NODE_STATE_ALLOCATED |
 				node_flags;
 	}
-	last_node_update = time(NULL);
+	last_job_update = last_node_update = time(NULL);
 	return SLURM_SUCCESS;
 }
 
@@ -4045,6 +4045,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 			goto reply;
 		}
 		_suspend_job_nodes(job_ptr);
+		_signal_batch_job(job_ptr, SIGSTOP);
 		_signal_job(job_ptr, SIGSTOP);
 		job_ptr->job_state = JOB_SUSPENDED;
 		if (job_ptr->suspend_time) {
@@ -4066,6 +4067,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 			goto reply;
 		}
 		_signal_job(job_ptr, SIGCONT);
+		_signal_batch_job(job_ptr, SIGCONT);
 		/* re-allocate resources */
 		job_ptr->job_state = JOB_RUNNING;
 		if (job_ptr->time_limit != INFINITE) {
