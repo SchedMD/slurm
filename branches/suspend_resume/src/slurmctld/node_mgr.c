@@ -1214,7 +1214,8 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 			kill_job_on_node(job_id_ptr[i], job_ptr, node_ptr);
 		}
 
-		else if (job_ptr->job_state == JOB_RUNNING) {
+		else if ((job_ptr->job_state == JOB_RUNNING)
+		||       (job_ptr->job_state == JOB_SUSPENDED)) {
 			debug3("Registered job %u.%u",
 			       job_id_ptr[i], step_id_ptr[i]);
 			if (job_ptr->batch_flag) {
@@ -1253,18 +1254,20 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 	/* purge orphan batch jobs */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if ((job_ptr->job_state != JOB_RUNNING) ||
-		    (job_ptr->batch_flag == 0)          ||
+		if ((job_ptr->job_state != JOB_RUNNING)
+		||  (job_ptr->batch_flag == 0))
+			continue;
 #ifdef HAVE_BG
 		    /* slurmd does not report job presence until after prolog 
 		     * completes which waits for bgblock boot to complete.  
 		     * This can take several minutes on BlueGene. */
-		    (difftime(now, job_ptr->time_last_active) <= 
-				(1400 + 5 * job_ptr->node_cnt)))
-#else
-		    (difftime(now, job_ptr->time_last_active) <= 5))
-#endif
+		if (difftime(now, job_ptr->time_last_active) <= 
+				(1400 + 5 * job_ptr->node_cnt))
 			continue;
+#else
+		if (difftime(now, job_ptr->time_last_active) <= 5)
+			continue;
+#endif
 
 		info("Killing orphan batch job %u", job_ptr->job_id);
 		job_complete(job_ptr->job_id, 0, false, 0);
