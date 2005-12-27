@@ -257,12 +257,12 @@ _cancel_step_id (uint32_t job_id, uint32_t step_id, uint16_t signal)
 
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
 		if (signal == (uint16_t)-1) {
-			verbose("Signal %u to step %u.u",
+			verbose("Signal %u to step %u.%u",
 				SIGKILL, job_id, step_id);
 			error_code = slurm_kill_job_step (job_id, step_id,
 							  SIGKILL);
 		} else {
-			verbose("Signal %u to step %u.u",
+			verbose("Signal %u to step %u.%u",
 				signal, job_id, step_id);
 			error_code = slurm_signal_job_step(job_id, step_id,
 							   signal);
@@ -277,7 +277,8 @@ _cancel_step_id (uint32_t job_id, uint32_t step_id, uint16_t signal)
 		error_code = slurm_get_errno();
 		if ((opt.verbose >= 0) || (error_code != ESLURM_ALREADY_DONE ))
 			error("Kill job error on job id %u.%u: %s", 
-		 		job_id, step_id, slurm_strerror(slurm_get_errno()));
+		 		job_id, step_id, 
+				slurm_strerror(slurm_get_errno()));
 	}
 }
 
