@@ -3917,8 +3917,7 @@ static void _suspend_job_nodes(struct job_record *job_ptr)
 		}
 		base_state = node_ptr->node_state & NODE_STATE_BASE;
 		node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
-		if ((node_ptr->node_state & NODE_STATE_DRAIN)
-		&&  (node_ptr->run_job_cnt  == 0)
+		if ((node_ptr->run_job_cnt  == 0)
 		&&  (node_ptr->comp_job_cnt == 0)) {
 			bit_set(idle_node_bitmap, i);
 		}
