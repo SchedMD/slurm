@@ -3988,18 +3988,19 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 	time_t now = time(NULL);
 	struct job_record *job_ptr;
 	struct step_record *step_ptr;
+	ListIterator step_iterator;
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
 
 	/* test if this system configuration
 	 * supports job suspend/resume */
-	if ((strcasecmp(slurmctld_conf.select_type, 
+	if (strcasecmp(slurmctld_conf.select_type, 
 			"select/bluegene") == 0) {
-		/* Never suppored on BlueGene */
+		/* Never supported on BlueGene */
 		rc = ESLURM_NOT_SUPPORTED;
 		goto reply;
 	}
-	if ((strcasecmp(slurmctld_conf.select_type,
+	if (strcasecmp(slurmctld_conf.select_type,
 			"select/cons_res") == 0) {
 		/* Work is needed to support the
 		 * release and reuse of consumable
@@ -4007,7 +4008,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		rc = ESLURM_NOT_SUPPORTED;
 		goto reply;
 	}
-	if ((strcasecmp(slurmctld_conf.switch_type,
+	if (strcasecmp(slurmctld_conf.switch_type,
 			"switch/federation") == 0) {
 		/* Work is needed to support the
 		 * release and reuse of switch
@@ -4067,9 +4068,21 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		_signal_job(job_ptr, SIGCONT);
 		/* re-allocate resources */
 		job_ptr->job_state = JOB_RUNNING;
+		if (job_ptr->time_limit != INFINITE) {
+			/* adjust effective time_limit */
+			job_ptr->end_time = now +
+				(job_ptr->time_limit * 60)
+				- job_ptr->pre_sus_time;
+		}
 	}
 	job_ptr->time_last_active = now;
 	job_ptr->suspend_time = now;
+	step_iterator = list_iterator_create(job_ptr->step_list);
+	while ((step_ptr = (struct step_record *)
+			list_next(step_iterator))) {
+		step_ptr->time_last_active = now;
+	}
+	list_iterator_destroy(step_iterator);
 
     reply:
 	rc_msg.return_code = rc;
