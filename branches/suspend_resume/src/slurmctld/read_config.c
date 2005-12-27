@@ -1063,7 +1063,7 @@ static int _sync_nodes_to_comp_job(void)
 		    (job_ptr->job_state & JOB_COMPLETING)) {
 			update_cnt++;
 			info("Killing job_id %u", job_ptr->job_id);
-			deallocate_nodes(job_ptr, false);
+			deallocate_nodes(job_ptr, false, false);
 		}
 	}
 	if (update_cnt)

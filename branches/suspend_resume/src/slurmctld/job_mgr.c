@@ -1023,7 +1023,7 @@ extern int kill_job_by_part_name(char *part_name)
 			      job_ptr->job_id, part_name);
 			job_ptr->job_state = JOB_NODE_FAIL | JOB_COMPLETING;
 			job_ptr->end_time = time(NULL);
-			deallocate_nodes(job_ptr, false);
+			deallocate_nodes(job_ptr, false, false);
 			delete_all_step_records(job_ptr);
 			job_completion_logger(job_ptr);
 		}
@@ -1092,7 +1092,7 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				job_ptr->job_state = JOB_NODE_FAIL | 
 						     JOB_COMPLETING;
 				job_ptr->end_time = time(NULL);
-				deallocate_nodes(job_ptr, false);
+				deallocate_nodes(job_ptr, false, false);
 				delete_all_step_records(job_ptr);
 				job_completion_logger(job_ptr);
 			} else {
@@ -1441,7 +1441,7 @@ extern int job_fail(uint32_t job_id)
 		job_ptr->end_time               = now;
 		last_job_update                 = now;
 		job_ptr->job_state = JOB_FAILED | JOB_COMPLETING;
-		deallocate_nodes(job_ptr, false);
+		deallocate_nodes(job_ptr, false, false);
 		job_completion_logger(job_ptr);
 		return SLURM_SUCCESS;
 	}
@@ -1495,6 +1495,18 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 		return SLURM_SUCCESS;
 	}
 
+	if ((job_ptr->job_state == JOB_SUSPENDED)
+	&&  (signal == SIGKILL)) {
+		last_job_update         = now;
+		job_ptr->end_time       = job_ptr->suspend_time;
+		job_ptr->job_state      = JOB_CANCELLED | JOB_COMPLETING;
+		deallocate_nodes(job_ptr, false, true);
+		job_completion_logger(job_ptr);
+		verbose("job_signal %u of suspended job %u successful",
+			signal, job_id);
+		return SLURM_SUCCESS;
+	}
+	
 	if (job_ptr->job_state == JOB_RUNNING) {
 		if (signal == SIGKILL) {
 			/* No need to signal steps, deallocate kills them */
@@ -1502,7 +1514,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 			job_ptr->end_time		= now;
 			last_job_update			= now;
 			job_ptr->job_state = JOB_CANCELLED | JOB_COMPLETING;
-			deallocate_nodes(job_ptr, false);
+			deallocate_nodes(job_ptr, false, false);
 			job_completion_logger(job_ptr);
 		} else if (batch_flag) {
 			if (job_ptr->batch_flag)
@@ -1628,7 +1640,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 
 	last_job_update = now;
 	if (job_comp_flag) 	/* job was running */
-		deallocate_nodes(job_ptr, false);
+		deallocate_nodes(job_ptr, false, false);
 	info("job_complete for JobId=%u successful", job_id);
 
 	return SLURM_SUCCESS;
@@ -2394,7 +2406,7 @@ static void _job_timed_out(struct job_record *job_ptr)
 		job_ptr->end_time           = now;
 		job_ptr->time_last_active   = now;
 		job_ptr->job_state          = JOB_TIMEOUT | JOB_COMPLETING;
-		deallocate_nodes(job_ptr, true);
+		deallocate_nodes(job_ptr, true, false);
 		job_completion_logger(job_ptr);
 	} else
 		job_signal(job_ptr->job_id, SIGKILL, 0, 0);

@@ -884,9 +884,10 @@ extern void make_node_alloc(struct node_record *node_ptr,
 /* make_node_comp - flag specified node as completing a job
  * IN node_ptr - pointer to node marked for completion of job
  * IN job_ptr  - pointer to job that is completing
+ * IN suspended - true if job was previously suspended
  */
 extern void make_node_comp(struct node_record *node_ptr,
-			   struct job_record *job_ptr);
+			   struct job_record *job_ptr, bool suspended);
 
 /*
  * make_node_idle - flag specified node as having finished with a job

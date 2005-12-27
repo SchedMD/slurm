@@ -1717,28 +1717,31 @@ extern void make_node_alloc(struct node_record *node_ptr,
 /* make_node_comp - flag specified node as completing a job
  * IN node_ptr - pointer to node marked for completion of job
  * IN job_ptr - pointer to job that is completing
+ * IN suspended - true if job was previously suspended
  */
 extern void make_node_comp(struct node_record *node_ptr,
-			   struct job_record *job_ptr)
+			   struct job_record *job_ptr, bool suspended)
 {
 	int inx = node_ptr - node_record_table_ptr;
 	uint16_t node_flags, base_state;
 
 	xassert(node_ptr);
 	last_node_update = time (NULL);
-	if (node_ptr->run_job_cnt)
-		(node_ptr->run_job_cnt)--;
-	else
-		error("Node %s run_job_cnt underflow", node_ptr->name);
-
-	if (job_ptr->details && (job_ptr->details->shared == 0)) {
-		if (node_ptr->no_share_job_cnt)
-			(node_ptr->no_share_job_cnt)--;
+	if (!suspended) {
+		if (node_ptr->run_job_cnt)
+			(node_ptr->run_job_cnt)--;
 		else
-			error("Node %s no_share_job_cnt underflow", 
-				node_ptr->name);
-		if (node_ptr->no_share_job_cnt == 0)
-			bit_set(share_node_bitmap, inx);
+			error("Node %s run_job_cnt underflow", node_ptr->name);
+
+		if (job_ptr->details && (job_ptr->details->shared == 0)) {
+			if (node_ptr->no_share_job_cnt)
+				(node_ptr->no_share_job_cnt)--;
+			else
+				error("Node %s no_share_job_cnt underflow", 
+					node_ptr->name);
+			if (node_ptr->no_share_job_cnt == 0)
+				bit_set(share_node_bitmap, inx);
+		}
 	}
 
 	base_state = node_ptr->node_state & NODE_STATE_BASE;
@@ -1749,9 +1752,8 @@ extern void make_node_comp(struct node_record *node_ptr,
 	} 
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 
-	if ((node_ptr->node_state & NODE_STATE_DRAIN) && 
-	    (node_ptr->run_job_cnt  == 0) &&
-	    (node_ptr->comp_job_cnt == 0)) {
+	if ((node_ptr->run_job_cnt  == 0)
+	&&  (node_ptr->comp_job_cnt == 0)) {
 		bit_set(idle_node_bitmap, inx);
 	}
 
