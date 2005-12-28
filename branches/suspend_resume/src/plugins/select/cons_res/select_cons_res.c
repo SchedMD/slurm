@@ -380,15 +380,18 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 					      name);
 					select_node_ptr[j].used_cpus = 0;
 					rc = SLURM_ERROR;
+					list_remove(iterator);
+					_xfree_select_cr_job(job);
+					goto cleanup;
 				}
-				break;
 			}
 		}
 		list_remove(iterator);
 		_xfree_select_cr_job(job);
-		break;
+		goto cleanup;
 	}
 
+       cleanup:
 	list_iterator_destroy(iterator);
 
 	debug3
