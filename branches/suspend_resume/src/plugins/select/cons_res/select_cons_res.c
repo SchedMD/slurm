@@ -383,7 +383,7 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 				break;
 			}
 			if (j == select_node_cnt) {
-				error("cons_res: could not find node %s",
+				error(" cons_res: could not find node %s",
 					job->host[i]);
 			}
 		}
@@ -391,7 +391,6 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 		_xfree_select_cr_job(job);
 		break;
 	}
-
 	list_iterator_destroy(iterator);
 
 	debug3(" cons_res: _clear_select_jobinfo Job_id %u: "
@@ -477,10 +476,6 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	select_node_ptr =
 	    xmalloc(sizeof(struct node_resource_table) *
 		    (select_node_cnt));
-	if (!select_node_ptr) {
-		error("select_node_ptr == NULL");
-		return SLURM_ERROR;
-	}
 
 	for (i = 0; i < select_node_cnt; i++) {
 		select_node_ptr[i].node_ptr = &node_ptr[i];
@@ -886,9 +881,9 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	int rc = SLURM_SUCCESS;
 	rc = _clear_select_jobinfo(job_ptr);
 	if (rc != SLURM_SUCCESS) {
-		error
-		    (" Error for %u in select/cons_res:_clear_select_jobinfo",
-		     job_ptr->job_id);
+		error(" Error for %u in select/cons_res: "
+			"_clear_select_jobinfo",
+			job_ptr->job_id);
 	}
 
 	return rc;
