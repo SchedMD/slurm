@@ -12,6 +12,7 @@ to run on nodes?</a></li>
 <li><a href="#cred">Why are &quot;Invalid job credential&quot; errors generated?</a></li>
 <li><a href="#backfill">Why is the SLURM backfill scheduler not starting my 
 job?</a></li>
+<li><a href="#suspend">How is job suspend/resume useful?</a></li>
 </ol>
 <p><a name="comp"><b>1. Why is my job/node in &quot;completing&quot; state?</b></a><br>
 When a job is terminating, both the job and its nodes enter the state &quot;completing.&quot; 
@@ -146,6 +147,27 @@ satisfy the request, no lower priority job in that partition's queue
 will be considered as a backfill candidate. Any programmer wishing 
 to augment the existing code is welcome to do so. 
 
-<p style="text-align:center;">Last modified 27 April 2005</p>
+<p><a name="suspend"><b>9. How is job suspend/resume useful?</b></a><br>
+Job suspend/resume is most useful to get particularly large jobs initiated 
+in a timely fashion with minimal overhead. Say you want to get a full-system
+job initiated. Normally you would need to either cancel all running jobs 
+or wait for them to terminate. Canceling jobs results in the loss of 
+their work to that point from either their beginning or last checkpoint.
+Waiting for the jobs to terminate can take hours, depending upon your
+system configuration. A more attractive alternative is to suspend the 
+running jobs, run the full-system job, then resume the suspended jobs. 
+This can easily be accomplished by configuring a special queue for 
+full-system jobs and using a script to control the process. 
+The script would stop the other partitions, suspend running jobs in those 
+partitions, and start the full-system partition. 
+The process can be reversed when desired.  
+One can effectively gang schedule (time-slice) multiple jobs 
+using this mechanism, although the algorithms to do so can get quite 
+complex.
+Suspending and resuming a job makes use of the SIGSTOP and SIGCONT 
+signals respectively, so swap and disk space should be sufficient to 
+accommodate all jobs allocated to a node, either running or suspended.
+
+<p style="text-align:center;">Last modified 22 December 2005</p>
 
 <!--#include virtual="footer.txt"-->

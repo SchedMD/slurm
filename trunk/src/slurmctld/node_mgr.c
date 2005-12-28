@@ -1214,7 +1214,8 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 			kill_job_on_node(job_id_ptr[i], job_ptr, node_ptr);
 		}
 
-		else if (job_ptr->job_state == JOB_RUNNING) {
+		else if ((job_ptr->job_state == JOB_RUNNING)
+		||       (job_ptr->job_state == JOB_SUSPENDED)) {
 			debug3("Registered job %u.%u",
 			       job_id_ptr[i], step_id_ptr[i]);
 			if (job_ptr->batch_flag) {
@@ -1253,18 +1254,20 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 	/* purge orphan batch jobs */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if ((job_ptr->job_state != JOB_RUNNING) ||
-		    (job_ptr->batch_flag == 0)          ||
+		if ((job_ptr->job_state != JOB_RUNNING)
+		||  (job_ptr->batch_flag == 0))
+			continue;
 #ifdef HAVE_BG
 		    /* slurmd does not report job presence until after prolog 
 		     * completes which waits for bgblock boot to complete.  
 		     * This can take several minutes on BlueGene. */
-		    (difftime(now, job_ptr->time_last_active) <= 
-				(1400 + 5 * job_ptr->node_cnt)))
-#else
-		    (difftime(now, job_ptr->time_last_active) <= 5))
-#endif
+		if (difftime(now, job_ptr->time_last_active) <= 
+				(1400 + 5 * job_ptr->node_cnt))
 			continue;
+#else
+		if (difftime(now, job_ptr->time_last_active) <= 5)
+			continue;
+#endif
 
 		info("Killing orphan batch job %u", job_ptr->job_id);
 		job_complete(job_ptr->job_id, 0, false, 0);
@@ -1714,28 +1717,31 @@ extern void make_node_alloc(struct node_record *node_ptr,
 /* make_node_comp - flag specified node as completing a job
  * IN node_ptr - pointer to node marked for completion of job
  * IN job_ptr - pointer to job that is completing
+ * IN suspended - true if job was previously suspended
  */
 extern void make_node_comp(struct node_record *node_ptr,
-			   struct job_record *job_ptr)
+			   struct job_record *job_ptr, bool suspended)
 {
 	int inx = node_ptr - node_record_table_ptr;
 	uint16_t node_flags, base_state;
 
 	xassert(node_ptr);
 	last_node_update = time (NULL);
-	if (node_ptr->run_job_cnt)
-		(node_ptr->run_job_cnt)--;
-	else
-		error("Node %s run_job_cnt underflow", node_ptr->name);
-
-	if (job_ptr->details && (job_ptr->details->shared == 0)) {
-		if (node_ptr->no_share_job_cnt)
-			(node_ptr->no_share_job_cnt)--;
+	if (!suspended) {
+		if (node_ptr->run_job_cnt)
+			(node_ptr->run_job_cnt)--;
 		else
-			error("Node %s no_share_job_cnt underflow", 
-				node_ptr->name);
-		if (node_ptr->no_share_job_cnt == 0)
-			bit_set(share_node_bitmap, inx);
+			error("Node %s run_job_cnt underflow", node_ptr->name);
+
+		if (job_ptr->details && (job_ptr->details->shared == 0)) {
+			if (node_ptr->no_share_job_cnt)
+				(node_ptr->no_share_job_cnt)--;
+			else
+				error("Node %s no_share_job_cnt underflow", 
+					node_ptr->name);
+			if (node_ptr->no_share_job_cnt == 0)
+				bit_set(share_node_bitmap, inx);
+		}
 	}
 
 	base_state = node_ptr->node_state & NODE_STATE_BASE;
@@ -1746,11 +1752,9 @@ extern void make_node_comp(struct node_record *node_ptr,
 	} 
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 
-	if ((node_ptr->node_state & NODE_STATE_DRAIN) && 
-	    (node_ptr->run_job_cnt  == 0) &&
-	    (node_ptr->comp_job_cnt == 0)) {
+	if ((node_ptr->run_job_cnt  == 0)
+	&&  (node_ptr->comp_job_cnt == 0)) {
 		bit_set(idle_node_bitmap, inx);
-		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 	}
 
 	if (base_state == NODE_STATE_DOWN) {

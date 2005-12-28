@@ -467,16 +467,23 @@ int _print_job_time_used(job_info_t * job, int width, bool right,
 
 long job_time_used(job_info_t * job_ptr)
 {
-	long delta_t;
+	time_t end_time;
 
 	if (job_ptr->start_time == 0)
-		delta_t = 0;
-	else if (job_ptr->job_state == JOB_RUNNING)
-		delta_t = difftime(time(NULL), job_ptr->start_time);
-	else
-		delta_t = difftime(job_ptr->end_time, job_ptr->start_time);
+		return 0L;
 
-	return delta_t;
+	if (job_ptr->job_state == JOB_SUSPENDED)
+		return (long) job_ptr->pre_sus_time;
+
+	if (job_ptr->job_state == JOB_RUNNING)
+		end_time = time(NULL);
+	else
+		end_time = job_ptr->end_time;
+
+	if (job_ptr->suspend_time)
+		return (long) (difftime(end_time, job_ptr->suspend_time)
+				+ job_ptr->pre_sus_time);
+	return (long) (difftime(end_time, job_ptr->start_time));
 }
 
 int _print_job_time_start(job_info_t * job, int width, bool right, 
@@ -1066,9 +1073,10 @@ static int _filter_job(job_info_t * job)
 		if (filter == 1)
 			return 3;
 	} else {
-		if ((job->job_state != JOB_PENDING) &&
-		    (job->job_state != JOB_RUNNING) &&
-		    ((job->job_state & JOB_COMPLETING) == 0))
+		if ((job->job_state != JOB_PENDING)
+		&&  (job->job_state != JOB_RUNNING)
+		&&  (job->job_state != JOB_SUSPENDED)
+		&&  ((job->job_state & JOB_COMPLETING) == 0))
 			return 4;
 	}
 

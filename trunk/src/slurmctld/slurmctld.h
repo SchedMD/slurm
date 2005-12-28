@@ -70,7 +70,7 @@
 		_X	= NULL; 	\
 	} while (0)
 #define IS_JOB_FINISHED(_X)		\
-	((_X->job_state & (~JOB_COMPLETING)) >  JOB_RUNNING)
+	((_X->job_state & (~JOB_COMPLETING)) >  JOB_SUSPENDED)
 #define IS_JOB_PENDING(_X)		\
 	((_X->job_state & (~JOB_COMPLETING)) == JOB_PENDING)
 
@@ -297,6 +297,8 @@ struct job_record {
 					 * actual or expected */
 	time_t end_time;		/* time of termination, 
 					 * actual or expected */
+	time_t suspend_time;		/* time job last suspended or resumed */
+	time_t pre_sus_time;		/* time job ran prior to last suspend */
 	time_t time_last_active;	/* time of last job activity */
 	uint32_t priority;		/* relative priority of the job,
 					 * zero == held (don't initiate) */
@@ -543,14 +545,6 @@ extern struct node_record *find_node_record (char *name);
 extern struct part_record *find_part_record (char *name);
 
 /*
- * find_running_job_by_node_name - Given a node name, return a pointer to any 
- *	job currently running on that node
- * IN node_name - name of a node
- * RET pointer to the job's record, NULL if no job on node found
- */
-extern struct job_record *find_running_job_by_node_name (char *node_name);
-
-/*
  * get_job_env - return the environment variables and their count for a 
  *	given job
  * IN job_ptr - pointer to job for which data is required
@@ -738,7 +732,7 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
  * IN conn_fd - file descriptor on which to send reply
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_suspend(suspend_msg_t *ckpt_ptr, uid_t uid, 
+extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid, 
 		slurm_fd conn_fd);
 
 /* 
@@ -882,9 +876,10 @@ extern void make_node_alloc(struct node_record *node_ptr,
 /* make_node_comp - flag specified node as completing a job
  * IN node_ptr - pointer to node marked for completion of job
  * IN job_ptr  - pointer to job that is completing
+ * IN suspended - true if job was previously suspended
  */
 extern void make_node_comp(struct node_record *node_ptr,
-			   struct job_record *job_ptr);
+			   struct job_record *job_ptr, bool suspended);
 
 /*
  * make_node_idle - flag specified node as having finished with a job

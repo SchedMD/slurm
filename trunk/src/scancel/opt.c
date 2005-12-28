@@ -465,7 +465,7 @@ static void _opt_list(void)
 static void _usage(void)
 {
 	printf("Usage: scancel [-n job_name] [-u user] [-p partition] [-q] [-s name | integer]\n");
-	printf("               [--batch] [-t PENDING | RUNNING] [--usage] [-v] [-V]\n");
+	printf("               [--batch] [-t PENDING | RUNNING | SUSPENDED] [--usage] [-v] [-V]\n");
 	printf("               [job_id[.step_id]]\n");
 }
 
@@ -479,7 +479,8 @@ static void _help(void)
 	printf("  -q, --quiet                     disable warnings\n");
 	printf("  -s, --signal=name | integer     signal to send to job, default is SIGKILL\n");
 	printf("  -t, --states=states             states to jobs to cancel,\n");
-	printf("                                  default is pending and running,\n");
+	printf("                                  default is pending, running, and\n");
+	printf("                                  suspended\n");
 	printf("  -u, --user=user                 name or id of user to have jobs cancelled\n");
 	printf("  -v, --verbose                   verbosity level\n");
 	printf("  -V, --version                   output version information and exit\n");

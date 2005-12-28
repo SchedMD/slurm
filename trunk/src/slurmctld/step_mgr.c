@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov>, Joseph Ekstrom <ekstrom1@llnl.gov>
+ *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -237,13 +237,18 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
-
 		error("job_step_cancel: invalid job id %u", job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
+	if (job_ptr->job_state != JOB_RUNNING) {
+		verbose("job_step_signal: step %u.%u can not be sent signal "
+			"%u from state=%s", job_id, step_id, signal,
+			job_state_string(job_ptr->job_state));
+		return ESLURM_TRANSITION_STATE_NO_UPDATE;
+	}
 
 	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
 		error("Security violation, JOB_CANCEL RPC from uid %d",
@@ -845,6 +850,11 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 	if (job_ptr->job_state == JOB_PENDING) {
 		rc = ESLURM_JOB_PENDING;
 		goto reply;
+	} else if (job_ptr->job_state == JOB_SUSPENDED) {
+		/* job can't get cycles for checkpoint 
+		 * if it is already suspended */
+		rc = ESLURM_DISABLED;
+		goto reply;
 	} else if (job_ptr->job_state != JOB_RUNNING) {
 		rc = ESLURM_ALREADY_DONE;
 		goto reply;
@@ -874,7 +884,8 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 		step_iterator = list_iterator_create (job_ptr->step_list);
 		while ((step_ptr = (struct step_record *) 
 					list_next (step_iterator))) {
-			update_rc = checkpoint_op(ckpt_ptr->op, ckpt_ptr->data, (void *)step_ptr,
+			update_rc = checkpoint_op(ckpt_ptr->op, ckpt_ptr->data, 
+				(void *)step_ptr,
 				&resp_data.event_time, &resp_data.error_code,
 				&resp_data.error_msg);
 			rc = MAX(rc, update_rc);
@@ -929,7 +940,8 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
 	if (job_ptr->job_state == JOB_PENDING) {
 		rc = ESLURM_JOB_PENDING;
 		goto reply;
-	} else if (job_ptr->job_state != JOB_RUNNING) {
+	} else if ((job_ptr->job_state != JOB_RUNNING)
+	&&         (job_ptr->job_state != JOB_SUSPENDED)) {
 		rc = ESLURM_ALREADY_DONE;
 		goto reply;
 	}

@@ -138,6 +138,7 @@ BEGIN_C_DECLS
 enum job_states {
 	JOB_PENDING,		/* queued waiting for initiation */
 	JOB_RUNNING,		/* allocated resources and executing */
+	JOB_SUSPENDED,		/* allocated resources, execution suspended */
 	JOB_COMPLETE,		/* completed execution successfully */
 	JOB_CANCELLED,		/* cancelled by user */
 	JOB_FAILED,		/* completed execution unsuccessfully */
@@ -384,6 +385,8 @@ typedef struct job_info {
 	time_t submit_time;	/* time of job submission */
 	time_t start_time;	/* time execution begins, actual or expected */
 	time_t end_time;	/* time of termination, actual or expected */
+	time_t suspend_time;	/* time job last suspended or resumed */
+	time_t pre_sus_time;	/* time job ran prior to last suspend */
 	uint32_t priority;	/* relative priority of the job, 
 				 * 0=held, 1=required nodes DOWN/DRAINED */
 	char *nodes;		/* list of nodes allocated to job */
