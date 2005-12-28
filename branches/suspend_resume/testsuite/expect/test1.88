@@ -97,7 +97,7 @@ exec $bin_chmod 700 $file_in
 #
 set timeout $max_job_delay
 set no_start 0
-spawn $srun -N3 --batch --output=$file_out --error=$file_err -t1 $file_in
+spawn $srun -N3 -n6 --batch --output=$file_out --error=$file_err -t1 $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
