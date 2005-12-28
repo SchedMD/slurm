@@ -427,7 +427,8 @@ extern int init(void)
 extern int fini(void)
 {
 	_clear_job_list();
-	list_destroy(select_cr_job_list);
+	if (select_cr_job_list);
+		list_destroy(select_cr_job_list);
 	select_cr_job_list = NULL;
 	xfree(select_node_ptr);
 	select_node_ptr = NULL;
@@ -546,10 +547,9 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 
 	xassert(bitmap);
 
-	debug3
-	    (" cons_res plug-in: Job_id %u min %d max nodes %d cr_enabled %d host %s ",
-	     job_ptr->job_id, min_nodes, max_nodes, cr_enabled,
-	     bitmap2node_name(bitmap));
+	debug3(" cons_res plug-in: Job_id %u min %d max nodes %d "
+		"cr_enabled %d host %s ", job_ptr->job_id, min_nodes, 
+		max_nodes, cr_enabled, bitmap2node_name(bitmap));
 
 	consec_index = 0;
 	consec_size = 50;	/* start allocation for 50 sets of 
