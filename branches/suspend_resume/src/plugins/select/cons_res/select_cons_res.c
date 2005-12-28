@@ -249,8 +249,7 @@ static void _append_to_job_list(struct select_cr_job *new_job)
 	struct select_cr_job *old_job = NULL;
 
 	ListIterator iterator = list_iterator_create(select_cr_job_list);
-	while ((old_job =
-		(struct select_cr_job *) list_next(iterator)) != NULL) {
+	while ((old_job = (struct select_cr_job *) list_next(iterator))) {
 		if (old_job->job_id != job_id)
 			continue;
 		list_remove(iterator);	/* Delete record for JobId job_id */
@@ -260,9 +259,8 @@ static void _append_to_job_list(struct select_cr_job *new_job)
 
 	list_iterator_destroy(iterator);
 	list_append(select_cr_job_list, new_job);
-	debug3
-	    (" cons_res: _append_to_job_list job_id %d to list. list_count %d ",
-	     job_id, list_count(select_cr_job_list));
+	debug3 (" cons_res: _append_to_job_list job_id %d to list. "
+		"list_count %d ", job_id, list_count(select_cr_job_list));
 }
 
 /*
@@ -344,7 +342,7 @@ static int _synchronize_bitmaps(bitstr_t ** partially_idle_bitmap)
 
 static int _clear_select_jobinfo(struct job_record *job_ptr)
 {
-	int rc = SLURM_SUCCESS, i, j;
+	int rc = SLURM_SUCCESS, i, j, nodes;
 	struct select_cr_job *job = NULL;
 	int job_id;
 	ListIterator iterator;
@@ -357,13 +355,14 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 
 	job_id = job_ptr->job_id;
 	iterator = list_iterator_create(select_cr_job_list);
-	while ((job =
-		(struct select_cr_job *) list_next(iterator)) != NULL) {
+	while ((job = (struct select_cr_job *) list_next(iterator))) {
 		if (job->job_id != job_id)
 			continue;
 		if (job->state & CR_JOB_STATE_SUSPENDED)
-			job->nhosts = 0;
-		for (i = 0; i < job->nhosts; i++) {
+			nodes = 0;
+		else
+			nodes = job->nhosts;
+		for (i = 0; i < nodes; i++) {
 			for (j = 0; j < select_node_cnt; j++) {
 				if (!bit_test(job->node_bitmap, j))
 					continue;
@@ -380,23 +379,24 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 					      name);
 					select_node_ptr[j].used_cpus = 0;
 					rc = SLURM_ERROR;
-					list_remove(iterator);
-					_xfree_select_cr_job(job);
-					goto cleanup;
 				}
+				break;
+			}
+			if (j == select_node_cnt) {
+				error("cons_res: could not find node %s",
+					job->host[i]);
 			}
 		}
 		list_remove(iterator);
 		_xfree_select_cr_job(job);
-		goto cleanup;
+		break;
 	}
 
-       cleanup:
 	list_iterator_destroy(iterator);
 
-	debug3
-	    (" cons_res: _clear_select_jobinfo Job_id %u: list_count: %d",
-	     job_ptr->job_id, list_count(select_cr_job_list));
+	debug3(" cons_res: _clear_select_jobinfo Job_id %u: "
+		"list_count: %d", job_ptr->job_id, 
+		list_count(select_cr_job_list));
 
 	return rc;
 }
@@ -789,7 +789,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		job->job_id = jobid;
 		job_nodecnt = bit_set_count(bitmap);
 		job->nhosts = job_nodecnt;
-		job->nprocs = job_ptr->num_procs;
+		job->nprocs = MAX(job_ptr->num_procs,
+			job_nodecnt);
 
 		size = bit_size(bitmap);
 		job->node_bitmap = (bitstr_t *) bit_alloc(size);
@@ -1038,6 +1039,8 @@ extern int select_p_get_extra_jobinfo(struct node_record *node_ptr,
 						goto cleanup;
 					}
 				}
+				error(" cons_res could not find %s", 
+					node_ptr->name);
 			}
 		      cleanup:
 			list_iterator_destroy(iterator);
@@ -1076,8 +1079,8 @@ extern int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 			uint32_t *tmp_32 = (uint32_t *) data;
 			*tmp_32 = select_node_ptr[incr].used_cpus;
 		} else {
-			error
-			    ("select_g_get_select_nodeinfo: no node record match ");
+			error("select_g_get_select_nodeinfo: "
+				"no node record match ");
 			rc = SLURM_ERROR;
 		}
 		break;
@@ -1094,7 +1097,9 @@ extern int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 extern int select_p_update_nodeinfo(struct job_record *job_ptr,
 				    enum select_data_info info)
 {
-	int rc = SLURM_SUCCESS, i, j, job_id;
+	int rc = SLURM_SUCCESS, i, j, job_id, nodes;
+	struct select_cr_job *job = NULL;
+	ListIterator iterator;
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -1102,39 +1107,36 @@ extern int select_p_update_nodeinfo(struct job_record *job_ptr,
 
 	switch (info) {
 	case SELECT_CR_USED_CPUS:
-		{
-			struct select_cr_job *job = NULL;
-			ListIterator iterator =
-			    list_iterator_create(select_cr_job_list);
-			while ((job =
-				(struct select_cr_job *)
+		iterator = list_iterator_create(select_cr_job_list);
+		while ((job = (struct select_cr_job *)
 				list_next(iterator)) != NULL) {
-				if (job->job_id != job_id)
-					continue;
-				for (i = 0; i < job->nhosts; i++) {
-					for (j = 0; j < select_node_cnt;
-					     j++) {
-						if (bit_test
-						    (job->node_bitmap,
-						     j) == 0)
-							continue;
-						if (strcmp
-						    (select_node_ptr[j].
-						     node_ptr->name,
-						     job->host[i]) == 0) {
-							select_node_ptr[j].
-							    used_cpus +=
-							    job->ntask[i];
-							continue;
-						}
-					}
+			if (job->job_id != job_id)
+				continue;
+			if (job->state & CR_JOB_STATE_SUSPENDED)
+				nodes = 0;
+			else
+				nodes = job->nhosts;
+			for (i = 0; i < nodes; i++) {
+				for (j = 0; j < select_node_cnt;
+				     j++) {
+					if (bit_test
+					    (job->node_bitmap,
+					     j) == 0)
+						continue;
+					if (strcmp
+					    (select_node_ptr[j].
+					     node_ptr->name,
+					     job->host[i]))
+						continue;
+					select_node_ptr[j].
+						used_cpus +=
+						job->ntask[i];
+					break;
 				}
-				goto cleanup;
 			}
-
-		      cleanup:
-			list_iterator_destroy(iterator);
+			break;
 		}
+		list_iterator_destroy(iterator);
 		break;
 	default:
 		error("select_g_update_nodeinfo info %d invalid", info);
