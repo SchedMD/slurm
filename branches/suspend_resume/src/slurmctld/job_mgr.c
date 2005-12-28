@@ -129,7 +129,7 @@ static void _set_job_id(struct job_record *job_ptr);
 static void _set_job_prio(struct job_record *job_ptr);
 static void _signal_batch_job(struct job_record *job_ptr, uint16_t signal);
 static void _signal_job(struct job_record *job_ptr, int signal);
-static void _suspend_job_nodes(struct job_record *job_ptr);
+static int  _suspend_job_nodes(struct job_record *job_ptr);
 static bool _top_priority(struct job_record *job_ptr);
 static int  _validate_job_create_req(job_desc_msg_t * job_desc);
 static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
@@ -3887,25 +3887,63 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 /* Send specified signal to all steps associated with a job */
 static void _signal_job(struct job_record *job_ptr, int signal)
 {
-	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	agent_arg_t *agent_args;
+	signal_job_msg_t *signal_job_msg;
+	int i, buf_rec_size = 0;
 
-	step_iterator = list_iterator_create (job_ptr->step_list);
-	while ((step_ptr = (struct step_record *)
-			list_next (step_iterator))) {
-		signal_step_tasks(step_ptr, signal);
+	agent_args = xmalloc(sizeof(agent_arg_t));
+	if (signal == SIGKILL)
+		agent_args->msg_type = REQUEST_TERMINATE_JOB;
+	else
+		agent_args->msg_type = REQUEST_SIGNAL_JOB;
+	agent_args->retry = 1;
+	signal_job_msg = xmalloc(sizeof(kill_tasks_msg_t));
+	signal_job_msg->job_id = job_ptr->job_id;
+	signal_job_msg->signal = signal;
+
+	for (i = 0; i < node_record_count; i++) {
+		if (bit_test(job_ptr->node_bitmap, i) == 0)
+			continue;
+		if ((agent_args->node_count + 1) > buf_rec_size) {
+			buf_rec_size += 128;
+			xrealloc((agent_args->slurm_addr),
+				(sizeof(struct sockaddr_in) *
+				buf_rec_size));
+			xrealloc((agent_args->node_names),
+				(MAX_NAME_LEN * buf_rec_size));
+		}
+		agent_args->slurm_addr[agent_args->node_count] =
+			node_record_table_ptr[i].slurm_addr;
+		strncpy(&agent_args->
+			node_names[MAX_NAME_LEN * agent_args->node_count],
+			node_record_table_ptr[i].name, MAX_NAME_LEN);
+		agent_args->node_count++;
+#ifdef HAVE_FRONT_END	/* Operate only on front-end */
+		break;
+#endif
 	}
-	list_iterator_destroy (step_iterator);
+
+	if (agent_args->node_count == 0) {
+		xfree(signal_job_msg);
+		xfree(agent_args);
+		return;
+	}
+
+	agent_args->msg_args = signal_job_msg;
+	agent_queue_request(agent_args);
+	return;
 }
 
 /* Specified job is being suspended, release allocated nodes */
-static void _suspend_job_nodes(struct job_record *job_ptr)
+static int _suspend_job_nodes(struct job_record *job_ptr)
 {
-	int i;
+	int i, rc;
 	struct node_record *node_ptr = node_record_table_ptr;
 	uint16_t base_state, node_flags;
 
-/* FIXME: Update state info for select/cons_res if applicable */
+	if ((rc = select_g_job_suspend(job_ptr)) != SLURM_SUCCESS)
+		return rc;
+
 	for (i=0; i<node_record_count; i++, node_ptr++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
@@ -3945,14 +3983,18 @@ static void _suspend_job_nodes(struct job_record *job_ptr)
 		}
 	}
 	last_job_update = last_node_update = time(NULL);
+	return rc;
 }
 
 /* Specified job is being resumed, re-allocate the nodes */
 static int _resume_job_nodes(struct job_record *job_ptr)
 {
-	int i;
+	int i, rc;
 	struct node_record *node_ptr = node_record_table_ptr;
 	uint16_t base_state, node_flags;
+
+	if ((rc = select_g_job_resume(job_ptr)) != SLURM_SUCCESS)
+		return rc;
 
 	for (i=0; i<node_record_count; i++, node_ptr++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
@@ -3962,7 +4004,6 @@ static int _resume_job_nodes(struct job_record *job_ptr)
 			return SLURM_ERROR;
 	}
 
-/* FIXME: Update state info for select/cons_res if applicable */
 	node_ptr = node_record_table_ptr;
 	for (i=0; i<node_record_count; i++, node_ptr++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
@@ -3981,7 +4022,7 @@ static int _resume_job_nodes(struct job_record *job_ptr)
 				node_flags;
 	}
 	last_job_update = last_node_update = time(NULL);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 
@@ -4005,20 +4046,6 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 
 	/* test if this system configuration
 	 * supports job suspend/resume */
-	if (strcasecmp(slurmctld_conf.select_type, 
-			"select/bluegene") == 0) {
-		/* Never supported on BlueGene */
-		rc = ESLURM_NOT_SUPPORTED;
-		goto reply;
-	}
-	if (strcasecmp(slurmctld_conf.select_type,
-			"select/cons_res") == 0) {
-		/* Work is needed to support the
-		 * release and reuse of consumable
-		 * resources associated with a job */
-		rc = ESLURM_NOT_SUPPORTED;
-		goto reply;
-	}
 	if (strcasecmp(slurmctld_conf.switch_type,
 			"switch/federation") == 0) {
 		/* Work is needed to support the
@@ -4055,7 +4082,9 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 			rc = ESLURM_DISABLED;
 			goto reply;
 		}
-		_suspend_job_nodes(job_ptr);
+		rc = _suspend_job_nodes(job_ptr);
+		if (rc != SLURM_SUCCESS)
+			goto reply;
 		_signal_batch_job(job_ptr, SIGSTOP);
 		_signal_job(job_ptr, SIGSTOP);
 		job_ptr->job_state = JOB_SUSPENDED;
@@ -4073,10 +4102,9 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 			rc = ESLURM_DISABLED;
 			goto reply;
 		}
-		if (_resume_job_nodes(job_ptr) != SLURM_SUCCESS) {
-			rc = ESLURM_DISABLED;
+		rc = _resume_job_nodes(job_ptr);
+		if (rc != SLURM_SUCCESS)
 			goto reply;
-		}
 		_signal_job(job_ptr, SIGCONT);
 		_signal_batch_job(job_ptr, SIGCONT);
 		job_ptr->job_state = JOB_RUNNING;

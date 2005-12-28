@@ -147,8 +147,11 @@ struct node_resource_table {
 	uint32_t used_cpus;	/* cpu count reserved by already scheduled jobs */
 };
 
+#define CR_JOB_STATE_SUSPENDED 1
+
 struct select_cr_job {
 	uint32_t job_id;	/* job ID, default set by SLURM        */
+	uint16_t state;		/* job state information               */
 	int nprocs;		/* --nprocs=n,      -n n               */
 	int nhosts;		/* number of hosts allocated to job    */
 	char **host;		/* hostname vector                     */
@@ -358,6 +361,8 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 		(struct select_cr_job *) list_next(iterator)) != NULL) {
 		if (job->job_id != job_id)
 			continue;
+		if (job->state & CR_JOB_STATE_SUSPENDED)
+			job->nhosts = 0;
 		for (i = 0; i < job->nhosts; i++) {
 			for (j = 0; j < select_node_cnt; j++) {
 				if (!bit_test(job->node_bitmap, j))
@@ -367,25 +372,23 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 				     job->host[i]) != 0)
 					continue;
 				select_node_ptr[j].used_cpus -=
-				    job->ntask[i];
+						job->ntask[i];
 				if (select_node_ptr[j].used_cpus < 0) {
 					error(" used_cpus < 0 %d on %s",
 					      select_node_ptr[j].used_cpus,
 					      select_node_ptr[j].node_ptr->
 					      name);
+					select_node_ptr[j].used_cpus = 0;
 					rc = SLURM_ERROR;
-					list_remove(iterator);
-					_xfree_select_cr_job(job);
-					goto cleanup;
 				}
+				break;
 			}
 		}
 		list_remove(iterator);
 		_xfree_select_cr_job(job);
-		goto cleanup;
+		break;
 	}
 
-      cleanup:
 	list_iterator_destroy(iterator);
 
 	debug3
@@ -883,6 +886,95 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 		    (" Error for %u in select/cons_res:_clear_select_jobinfo",
 		     job_ptr->job_id);
 	}
+
+	return rc;
+}
+
+extern int select_p_job_suspend(struct job_record *job_ptr)
+{
+	ListIterator job_iterator;
+	struct select_cr_job *job;
+	int i, j, rc = ESLURM_INVALID_JOB_ID;
+ 
+	xassert(job_ptr);
+	xassert(select_cr_job_list);
+
+	job_iterator = list_iterator_create(select_cr_job_list);
+	if (job_iterator == NULL)
+		fatal("list_iterator_create: %m");
+	while ((job = (struct select_cr_job *) list_next(job_iterator))) {
+		if (job->job_id != job_ptr->job_id)
+			continue;
+		if (job->state & CR_JOB_STATE_SUSPENDED) {
+			error("select: job %u already suspended",
+				job->job_id);
+			break;
+		}
+		job->state |= CR_JOB_STATE_SUSPENDED;
+		for (i = 0; i < job->nhosts; i++) {
+			for (j = 0; j < select_node_cnt; j++) {
+				if (!bit_test(job->node_bitmap, j))
+					continue;
+				if (strcmp(select_node_ptr[j].node_ptr->name,
+						job->host[i]) != 0)
+					continue;
+				select_node_ptr[j].used_cpus -=
+					job->ntask[i];
+				if (select_node_ptr[j].used_cpus < 0) {
+					error(" used_cpus < 0 %d on %s",
+						select_node_ptr[j].used_cpus,
+						select_node_ptr[j].node_ptr->
+						name);
+					select_node_ptr[j].used_cpus = 0;
+				}
+				break;
+			}
+		}
+		rc = SLURM_SUCCESS;
+		break;
+	}
+	list_iterator_destroy(job_iterator);
+
+	return rc;
+}
+
+extern int select_p_job_resume(struct job_record *job_ptr)
+{
+	ListIterator job_iterator;
+	struct select_cr_job *job;
+	int i, j, rc = ESLURM_INVALID_JOB_ID;
+
+	xassert(job_ptr);
+	xassert(select_cr_job_list);
+
+	job_iterator = list_iterator_create(select_cr_job_list);
+	if (job_iterator == NULL)
+		fatal("list_iterator_create: %m");
+	while ((job = (struct select_cr_job *) list_next(job_iterator))) {
+		if (job->job_id != job_ptr->job_id)
+			continue;
+		if ((job->state & CR_JOB_STATE_SUSPENDED) == 0) {
+			error("select: job %s not suspended",
+				job->job_id);
+			break;
+		}
+		job->state &= (~CR_JOB_STATE_SUSPENDED);
+		for (i = 0; i < job->nhosts; i++) {
+			for (j = 0; j < select_node_cnt; j++) {
+				if (!bit_test(job->node_bitmap, j))
+					continue;
+				if (strcmp(select_node_ptr[j].node_ptr->name,
+						job->host[i]) != 0)
+					continue;
+				select_node_ptr[j].used_cpus +=
+						job->ntask[i];
+				break;
+			}
+		}
+		rc = SLURM_SUCCESS;
+		break;
+	}
+	list_iterator_destroy(job_iterator);
 
 	return rc;
 }
