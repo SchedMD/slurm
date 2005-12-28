@@ -34,6 +34,7 @@
 #include <grp.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <time.h>
 
@@ -224,6 +225,14 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 	/****** Line 12 ******/
 	slurm_make_time_str ((time_t *)&job_ptr->submit_time, time_str);
 	fprintf ( out, "SubmitTime=%s ", time_str);
+	if (job_ptr->suspend_time) {
+		slurm_make_time_str ((time_t *)&job_ptr->suspend_time, 
+			time_str);
+	} else {
+		strncpy(time_str, "None", sizeof(time_str));
+	}
+	fprintf ( out, "SuspendTime=%s PreSusTime=%ld", 
+		time_str, job_ptr->pre_sus_time);
 
 	/****** Line 13 (optional) ******/
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,

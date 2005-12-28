@@ -9,7 +9,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-5 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
@@ -57,20 +57,19 @@ expect {
 		kill_srun
 		exit 0
 	}
-	-re "0: ($alpha_numeric)" {
-		set host_0 $expect_out(1,string)
-		exp_continue
-	}
-	-re "1: ($alpha_numeric)" {
-		set host_1 $expect_out(1,string)
-		exp_continue
-	}
-	-re "2: ($alpha_numeric)" {
-		set host_2 $expect_out(1,string)
-		exp_continue
-	}
-	-re "3: ($alpha_numeric)" {
-		set host_3 $expect_out(1,string)
+	-re "($number): ($alpha_numeric)" {
+		if {$expect_out(1,string) == 0} {
+			set host_0 $expect_out(2,string)
+		}
+		if {$expect_out(1,string) == 1} {
+			set host_1 $expect_out(2,string)
+		}
+		if {$expect_out(1,string) == 2} {
+			set host_2 $expect_out(2,string)
+		}
+		if {$expect_out(1,string) == 3} {
+			set host_3 $expect_out(2,string)
+		}
 		exp_continue
 	}
 	timeout {
@@ -131,16 +130,16 @@ set host_2      ""
 set timeout $max_job_delay
 spawn $srun -N2 -l --exclude=$exclude_node -t1 $bin_hostname  
 expect {
-	-re "0: ($alpha_numeric)" {
-		set host_0 $expect_out(1,string)
-		exp_continue
-	}
-	-re "1: ($alpha_numeric)" {
-		set host_1 $expect_out(1,string)
-		exp_continue
-	}
-	-re "2: ($alpha_numeric)" {
-		set host_2 $expect_out(1,string)
+	-re "($number): ($alpha_numeric)" {
+		if {$expect_out(1,string) == 0} {
+			set host_0 $expect_out(2,string)
+		}
+		if {$expect_out(1,string) == 1} {
+			set host_1 $expect_out(2,string)
+		}
+		if {$expect_out(1,string) == 2} {
+			set host_2 $expect_out(2,string)
+		}
 		exp_continue
 	}
 	timeout {
@@ -188,12 +187,13 @@ set host_1      ""
 set timeout $max_job_delay
 spawn $srun -N1 -l --nodelist=$include_node -t1 $bin_hostname  
 expect {
-	-re "0: ($alpha_numeric)" {
-		set host_0 $expect_out(1,string)
-		exp_continue
-	}
-	-re "1: ($alpha_numeric)" {
-		set host_1 $expect_out(1,string)
+	-re "($number): ($alpha_numeric)" {
+		if {$expect_out(1,string) == 0} {
+			set host_0 $expect_out(2,string)
+		}
+		if {$expect_out(1,string) == 1} {
+			set host_1 $expect_out(2,string)
+		}
 		exp_continue
 	}
 	timeout {

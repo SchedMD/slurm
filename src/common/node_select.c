@@ -70,6 +70,8 @@ typedef struct slurm_select_ops {
 	int		(*job_begin)		( struct job_record *job_ptr );
 	int		(*job_ready)		( struct job_record *job_ptr );
 	int		(*job_fini)		( struct job_record *job_ptr );
+	int		(*job_suspend)		( struct job_record *job_ptr );
+	int		(*job_resume)		( struct job_record *job_ptr );
 	int		(*pack_node_info)	( time_t last_query_time,
                                                   Buf *buffer_ptr);
         int             (*get_extra_jobinfo)    ( struct node_record *node_ptr,
@@ -141,6 +143,8 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
 		"select_p_job_begin",
 		"select_p_job_ready",
 		"select_p_job_fini",
+		"select_p_job_suspend",
+		"select_p_job_resume",
 		"select_p_pack_node_info",
                 "select_p_get_extra_jobinfo",
                 "select_p_get_select_nodeinfo",
@@ -452,6 +456,31 @@ extern int select_g_job_fini(struct job_record *job_ptr)
 		return SLURM_ERROR;
 
 	return (*(g_select_context->ops.job_fini))(job_ptr);
+}
+/*
+ * Suspend a job. Executed from slurmctld.
+ * IN job_ptr - pointer to job being suspended
+ * RET SLURM_SUCCESS or error code
+ */
+extern int select_g_job_suspend(struct job_record *job_ptr)
+{
+	if (slurm_select_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(g_select_context->ops.job_suspend))(job_ptr);
+}
+                                                                                
+/*
+ * Resume a job. Executed from slurmctld.
+ * IN job_ptr - pointer to job being resumed
+ * RET SLURM_SUCCESS or error code
+ */
+extern int select_g_job_resume(struct job_record *job_ptr)
+{
+	if (slurm_select_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(g_select_context->ops.job_resume))(job_ptr);
 }
 
 extern int select_g_pack_node_info(time_t last_query_time, Buf *buffer)

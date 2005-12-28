@@ -86,7 +86,7 @@ exec $bin_chmod 700 $file_in
 # with sharing permitted. Insure the first job completes before the 
 # second job is started.
 #
-spawn $srun --batch -N1 --nodelist=$host_name -t1 --output=$file_out --error=$file_err  $file_in
+spawn $srun --batch -N1 --exclusive --nodelist=$host_name -t1 --output=$file_out --error=$file_err  $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id1 $expect_out(1,string)

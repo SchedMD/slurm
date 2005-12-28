@@ -53,15 +53,18 @@ extern void build_node_details(struct job_record *job_ptr);
 extern int count_cpus(unsigned *bitmap);
 
 /*
- * deallocate_nodes - for a given job, deallocate its nodes and make 
+ * deallocate_nodes - for a given job, deallocate its nodes and make
  *	their state NODE_STATE_COMPLETING
  * IN job_ptr - pointer to terminating job (already in some COMPLETING state)
- * IN timeout - true of job exhausted time limit, send REQUEST_KILL_TIMELIMIT
+ * IN timeout - true if job exhausted time limit, send REQUEST_KILL_TIMELIMIT
  *	RPC instead of REQUEST_TERMINATE_JOB
+ * IN suspended - true if job was already suspended (node's job_run_cnt
+ *	already decremented);
  * globals: node_record_count - number of nodes in the system
  *	node_record_table_ptr - pointer to global node table
  */
-extern void deallocate_nodes(struct job_record *job_ptr, bool timeout);
+extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
+		bool suspended);
 
 /*
  * re_kill_job - for a given job, deallocate its nodes for a second time, 

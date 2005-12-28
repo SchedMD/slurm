@@ -268,7 +268,7 @@ if {$matches < 2} {
 #
 set matches 0
 set warning 0
-send "$srun -l -N2 -n2 --relative=3 $bin_hostname\n"
+send "$srun -l -N2 -n2 -O --relative=3 $bin_hostname\n"
 expect {
 	-re "Warning:" {
 		set warning 1

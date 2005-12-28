@@ -1121,15 +1121,15 @@ done:
 	xfree(resp);
 }
 
-static uid_t
+static uid_t 
 _get_job_uid(uint32_t jobid)
 {
 	List steps;
 	ListIterator i;
 	step_loc_t *stepd;
-	slurmstepd_info_t *info;
+	slurmstepd_info_t *info = NULL;
 	int fd;
-	uid_t uid;
+	uid_t uid = 0;
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
@@ -1154,12 +1154,12 @@ _get_job_uid(uint32_t jobid)
 			      stepd->jobid, stepd->stepid);
 			continue;
 		}
+		uid = (uid_t)info->uid;
 		break;
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);
 
-	uid = (uid_t)info->uid;
 	xfree(info);
 	return uid;
 }

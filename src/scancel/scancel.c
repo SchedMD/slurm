@@ -1,9 +1,9 @@
 /*****************************************************************************\
- * scancel - cancel specified job(s) and/or job step(s)
+ *  scancel - cancel specified job(s) and/or job step(s)
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette@llnl.gov>
+ *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -116,8 +116,9 @@ _filter_job_records (void)
 		if (job_ptr[i].job_id == 0) 
 			continue;
 
-		if ((job_ptr[i].job_state != JOB_PENDING) && 
-		    (job_ptr[i].job_state != JOB_RUNNING)) {
+		if ((job_ptr[i].job_state != JOB_PENDING)
+		&&  (job_ptr[i].job_state != JOB_RUNNING)
+		&&  (job_ptr[i].job_state != JOB_SUSPENDED)) {
 			job_ptr[i].job_id = 0;
 			continue;
 		}
@@ -256,12 +257,12 @@ _cancel_step_id (uint32_t job_id, uint32_t step_id, uint16_t signal)
 
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
 		if (signal == (uint16_t)-1) {
-			verbose("Signal %u to step %u.u",
+			verbose("Signal %u to step %u.%u",
 				SIGKILL, job_id, step_id);
 			error_code = slurm_kill_job_step (job_id, step_id,
 							  SIGKILL);
 		} else {
-			verbose("Signal %u to step %u.u",
+			verbose("Signal %u to step %u.%u",
 				signal, job_id, step_id);
 			error_code = slurm_signal_job_step(job_id, step_id,
 							   signal);
@@ -275,8 +276,9 @@ _cancel_step_id (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	if (error_code) {
 		error_code = slurm_get_errno();
 		if ((opt.verbose >= 0) || (error_code != ESLURM_ALREADY_DONE ))
-			error("Kill job error on job id %u.%u: %s", 
-		 		job_id, step_id, slurm_strerror(slurm_get_errno()));
+			error("Kill job error on job step id %u.%u: %s", 
+		 		job_id, step_id, 
+				slurm_strerror(slurm_get_errno()));
 	}
 }
 

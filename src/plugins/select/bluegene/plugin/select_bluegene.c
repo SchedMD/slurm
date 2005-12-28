@@ -259,6 +259,16 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	return term_job(job_ptr);
 }
 
+extern int select_p_job_suspend(struct job_record *job_ptr)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
+extern int select_p_job_resume(struct job_record *job_ptr)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
 extern int select_p_job_ready(struct job_record *job_ptr)
 {
 #ifdef HAVE_BG_FILES

@@ -213,7 +213,8 @@ _get_job_info(srun_step_t *s)
 		goto done;
 	}
 
-	if (job->job_state != JOB_RUNNING) {
+	if ((job->job_state != JOB_RUNNING)
+	&&  (job->job_state != JOB_SUSPENDED)) {
 		error ("Cannot attach to job %d in state %s",
 		       job->job_id, job_state_string(job->job_state));
 		goto done;
