@@ -74,9 +74,5 @@ wiki_canceljob_t::action( void )
 	int rc;
 	verbose( "Wiki canceling job %s", m_jobid );
 	rc = sched_cancel_job( id );
-#ifdef NEW_MAUI_SCHED
 	return new wiki_status_t( ( rc == SLURM_SUCCESS ) ? 0 : -rc );
-#else
-	return new wiki_status_t( ( rc == SLURM_SUCCESS ) ? 0 : -1 );
-#endif
 }
