@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.6.10
 =========================
+ -- Fix for slurmd job termination logic (could hang in COMPLETING state).
  -- Sacct bug fixes: Report correct user name for job step, show "uid.gid"
     as fifth field of job step record (Andy Riebs, slurm.hp.sacct_uid.patch).
  -- Add job_id to maui scheduler plugin start job status message.
