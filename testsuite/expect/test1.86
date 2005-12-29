@@ -9,7 +9,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-5 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
@@ -52,7 +52,7 @@ if {[test_front_end] != 0} {
 exec $bin_rm -f $file_in
 exec echo "#!$bin_bash"                >$file_in
 exec echo "export PS1=\"$prompt\"  "  >>$file_in
-exec echo "$bin_bash -norc"           >>$file_in
+exec echo "$bin_bash --norc"          >>$file_in
 exec $bin_chmod 700 $file_in
 
 #
@@ -289,9 +289,12 @@ if {$matches == 0} {
 
 #
 # Error test: Overlapping include/exclude node list
+# NOTE: some versions of Expect have a problem with long input
+#	lines, so we use two send commands for this  execute line
 #
 set matches 0
-send "$srun -l -N1 -n1 --nodelist=$host_0 --exclude=$host_0 $bin_hostname\n"
+send "$srun -l -N1 -n1 --nodelist=$host_0"
+send " --exclude=$host_0 $bin_hostname\n"
 expect {
 	-re "0: ($alpha_numeric)" {
 		send_user "\nFAILURE: wrong node responded\n"
