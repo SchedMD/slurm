@@ -1,0 +1,45 @@
+Notes for SLURM use with Blue Gene/L
+As of 19 August 2004
+
+There is still much development work required, but some basic functionality is 
+in place and usable for development purposes.
+
+
+TO BUILD
+Download a current version of the SLURM code (version 0.4 or later).
+Execute "configure".
+Manually add "#define HAVE_BGL" to the file "config.h". This will 
+  be fixed later with autoconf.
+Execute "make".
+Execute "make install".
+Build a configuration file:
+  Set "InactiveLimit=0" (or leave to the default value of zero).
+  Define the base partitions using a three-digit suffix indicating its 
+    position in the X, Y, and Z dimentions. Set their NodeAddr to the
+    location where the slurmd daemon will execute (the same node for 
+    all of the base partitions). Note that SLURM itself is not aware 
+    of the actual node location, but this will work.
+
+
+TO RUN
+Execute "slurmctld" and *one* copy of "slurmd".
+The scontrol, scancel, squeue, and sinfo commands execute as desired.
+The srun command works fine too, but BGL will not support proper job 
+  steps. There will be a job allocation and mpirun will use the 
+  allocated BGL resources by virtue of environment variables. Attempts 
+  to launch job steps will function, but all tasks get started on the 
+  one node where the slurmd daemon executes.
+Most of the existing SLURM test suite runs, but some tests fail due to 
+  the defined node names (e.g. "bgl123") not matching the real node 
+  names reported by the hostname command. srun's attach option will 
+  only work for batch jobs, which will be the normal BGL mode of operation.
+
+OTHER
+Execution of job steps has been disabled except for super-users (root or 
+  SlurmUser). This is required to avoid overwhelming the one slurmd for 
+  the entire system. The parallel tasks will be initiated exclusively 
+  by mpirun. We could wrap mpirun to record the initiated of job steps, 
+  but real support of that job step as a real SLURM entity (initiation, 
+  signals, completion, etc.) would require a fair bit of work and provide 
+  little real benefit. 
+ 
