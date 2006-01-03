@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.6.11
+=========================
+ -- Fix bug in sinfo partition sorting order.
+
 * Changes in SLURM 0.6.10
 =========================
  -- Fix for slurmd job termination logic (could hang in COMPLETING state).

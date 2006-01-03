@@ -563,10 +563,10 @@ static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr,
 		sinfo_ptr->reason   = node_ptr->reason;
 
 		sinfo_ptr->nodes = hostlist_create(node_ptr->name);
-
 		sinfo_ptr->part_inx = part_inx;
 	} else {
 		sinfo_ptr->nodes = hostlist_create("");
+		sinfo_ptr->part_inx = part_inx;
 	}
 
 	list_append(sinfo_list, sinfo_ptr);
