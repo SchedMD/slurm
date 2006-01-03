@@ -2,7 +2,7 @@
  *  src/slurmd/slurmd/req.c - slurmd request handling
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-5 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  UCRL-CODE-2002-040.
@@ -79,6 +79,7 @@ static void _rpc_terminate_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_timelimit(slurm_msg_t *, slurm_addr *);
 static void _rpc_reattach_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_signal_job(slurm_msg_t *, slurm_addr *);
+static void _rpc_suspend_job(slurm_msg_t *, slurm_addr *);
 static void _rpc_terminate_job(slurm_msg_t *, slurm_addr *);
 static void _rpc_update_time(slurm_msg_t *, slurm_addr *);
 static void _rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr);
@@ -151,6 +152,10 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		debug2("Processing RPC: REQUEST_SIGNAL_JOB");
 		_rpc_signal_job(msg, cli);
 		slurm_free_signal_job_msg(msg->data);
+		break;
+	case REQUEST_SUSPEND:
+		_rpc_suspend_job(msg, cli);
+		slurm_free_suspend_msg(msg->data);
 		break;
 	case REQUEST_TERMINATE_JOB:
 		debug2("Processing RPC: REQUEST_TERMINATE_JOB");
@@ -1419,6 +1424,95 @@ _rpc_signal_job(slurm_msg_t *msg, slurm_addr *cli)
 	 */
 	if (msg->conn_fd >= 0) {
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		if (slurm_close_accepted_conn(msg->conn_fd) < 0)
+			error ("_rpc_signal_job: close(%d): %m", msg->conn_fd);
+		msg->conn_fd = -1;
+	}
+}
+
+/*
+ * Send a job suspend/resume request through the appropriate slurmstepds for 
+ * each job step belonging to a given job allocation.
+ */
+static void 
+_rpc_suspend_job(slurm_msg_t *msg, slurm_addr *cli)
+{
+	suspend_msg_t *req = msg->data;
+	uid_t req_uid = g_slurm_auth_get_uid(msg->cred);
+	uid_t job_uid;
+	List steps;
+	ListIterator i;
+	step_loc_t *stepd;
+	int step_cnt  = 0;  
+	int fd, rc = SLURM_SUCCESS, sig_num;
+	char *sig_name;
+
+	if (req->op == SUSPEND_JOB) {
+		sig_name = "STOP";
+		sig_num = SIGSTOP;
+	} else if (req->op == RESUME_JOB) {
+		sig_name = "CONT";
+		sig_num = SIGCONT;
+	} else {
+		error("REQUEST_SUSPEND: bad op code %u",
+			req->op);
+		rc = ESLURM_NOT_SUPPORTED;
+		goto fini;
+	}
+	debug("_rpc_suspend_job jobid=%u uid=%d signal=%s", 
+		req->job_id, req_uid, sig_name);
+	job_uid = _get_job_uid(req->job_id);
+	/* 
+	 * check that requesting user ID is the SLURM UID
+	 */
+	if (!_slurm_authorized_user(req_uid)) {
+		error("Security violation: signal_job(%u) from uid %ld",
+		      req->job_id, (long) req_uid);
+		rc =  ESLURM_USER_ID_MISSING;
+		goto fini;
+	} 
+
+	/*
+	 * Loop through all job steps for this job and signal the
+	 * step's process group through the slurmstepd.
+	 */
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	i = list_iterator_create(steps);
+	while (stepd = list_next(i)) {
+		if (stepd->jobid != req->job_id) {
+			/* multiple jobs expected on shared nodes */
+			debug3("Step from other job: jobid=%u (this jobid=%u)",
+			      stepd->jobid, req->job_id);
+			continue;
+		}
+		step_cnt++;
+
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   stepd->jobid, stepd->stepid);
+		if (fd == -1) {
+			debug3("Unable to connect to step %u.%u",
+			       stepd->jobid, stepd->stepid);
+			continue;
+		}
+
+		debug2("  signal %d to job %u.%u",
+		       sig_num, stepd->jobid, stepd->stepid);
+		if (stepd_signal(fd, sig_num) < 0)
+			debug("signal jobid=%u failed: %m", stepd->jobid);
+		close(fd);
+	}
+	list_iterator_destroy(i);
+	list_destroy(steps);
+	if (step_cnt == 0)
+		debug2("No steps in jobid %u to send signal %d",
+		       req->job_id, sig_num);
+
+	/*
+	 *  At this point, if connection still open, we send controller
+	 *  a reply.
+	 */
+ fini:	if (msg->conn_fd >= 0) {
+		slurm_send_rc_msg(msg, rc);
 		if (slurm_close_accepted_conn(msg->conn_fd) < 0)
 			error ("_rpc_signal_job: close(%d): %m", msg->conn_fd);
 		msg->conn_fd = -1;

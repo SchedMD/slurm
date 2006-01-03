@@ -5,7 +5,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-5 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
@@ -129,6 +129,7 @@ static void _set_job_id(struct job_record *job_ptr);
 static void _set_job_prio(struct job_record *job_ptr);
 static void _signal_batch_job(struct job_record *job_ptr, uint16_t signal);
 static void _signal_job(struct job_record *job_ptr, int signal);
+static void _suspend_job(struct job_record *job_ptr, uint16_t op);
 static int  _suspend_job_nodes(struct job_record *job_ptr);
 static bool _top_priority(struct job_record *job_ptr);
 static int  _validate_job_create_req(job_desc_msg_t * job_desc);
@@ -3934,6 +3935,52 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 	return;
 }
 
+/* Send suspend request to slumrd of all nodes associated with a job */
+static void _suspend_job(struct job_record *job_ptr, uint16_t op)
+{
+	agent_arg_t *agent_args;
+	suspend_msg_t *sus_ptr;
+	int i, buf_rec_size = 0;
+
+	agent_args = xmalloc(sizeof(agent_arg_t));
+	agent_args->msg_type = REQUEST_SUSPEND;
+	agent_args->retry = 1;
+	sus_ptr = xmalloc(sizeof(suspend_msg_t));
+	sus_ptr->job_id = job_ptr->job_id;
+	sus_ptr->op = op;
+
+	for (i = 0; i < node_record_count; i++) {
+		if (bit_test(job_ptr->node_bitmap, i) == 0)
+			continue;
+		if ((agent_args->node_count + 1) > buf_rec_size) {
+			buf_rec_size += 128;
+			xrealloc((agent_args->slurm_addr),
+				(sizeof(struct sockaddr_in) *
+				buf_rec_size));
+			xrealloc((agent_args->node_names),
+				(MAX_NAME_LEN * buf_rec_size));
+		}
+		agent_args->slurm_addr[agent_args->node_count] =
+			node_record_table_ptr[i].slurm_addr;
+		strncpy(&agent_args->
+			node_names[MAX_NAME_LEN * agent_args->node_count],
+			node_record_table_ptr[i].name, MAX_NAME_LEN);
+		agent_args->node_count++;
+#ifdef HAVE_FRONT_END	/* Operate only on front-end */
+		break;
+#endif
+	}
+
+	if (agent_args->node_count == 0) {
+		xfree(sus_ptr);
+		xfree(agent_args);
+		return;
+	}
+
+	agent_args->msg_args = sus_ptr;
+	agent_queue_request(agent_args);
+	return;
+}
 /* Specified job is being suspended, release allocated nodes */
 static int _suspend_job_nodes(struct job_record *job_ptr)
 {
@@ -4085,8 +4132,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		rc = _suspend_job_nodes(job_ptr);
 		if (rc != SLURM_SUCCESS)
 			goto reply;
-		_signal_batch_job(job_ptr, SIGSTOP);
-		_signal_job(job_ptr, SIGSTOP);
+		_suspend_job(job_ptr, sus_ptr->op);
 		job_ptr->job_state = JOB_SUSPENDED;
 		if (job_ptr->suspend_time) {
 			job_ptr->pre_sus_time +=
@@ -4105,8 +4151,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		rc = _resume_job_nodes(job_ptr);
 		if (rc != SLURM_SUCCESS)
 			goto reply;
-		_signal_job(job_ptr, SIGCONT);
-		_signal_batch_job(job_ptr, SIGCONT);
+		_suspend_job(job_ptr, sus_ptr->op);
 		job_ptr->job_state = JOB_RUNNING;
 		if (job_ptr->time_limit != INFINITE) {
 			/* adjust effective time_limit */
