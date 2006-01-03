@@ -348,7 +348,7 @@ static int _sort_by_partition(void *void1, void *void2)
 	char *val1 = "", *val2 = "";
 
 	if (part_order) {
-		diff = sinfo1->part_inx - sinfo2->part_inx;
+		diff = (int)sinfo1->part_inx - (int)sinfo2->part_inx;
 	} else {
 		if (sinfo1->part_info && sinfo1->part_info->name)
 			val1 = sinfo1->part_info->name;
@@ -422,7 +422,7 @@ static int _sort_by_state(void *void1, void *void2)
 	sinfo_data_t *sinfo1 = (sinfo_data_t *) void1;
 	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
 
-	diff = sinfo1->node_state - sinfo2->node_state;
+	diff = (int)sinfo1->node_state - (int)sinfo2->node_state;
 
 	if (reverse_order)
 		diff = -diff;
