@@ -1080,9 +1080,11 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 	uint16_t base_state, node_flags;
 	struct node_record *node_ptr = node_record_table_ptr;
 
+	job_ptr->node_cnt = 0;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
+		job_ptr->node_cnt++;
 
 		base_state = node_ptr->node_state & NODE_STATE_BASE;
 		node_flags = node_ptr->node_state & NODE_STATE_FLAGS;

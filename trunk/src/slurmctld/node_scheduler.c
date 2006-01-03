@@ -1220,7 +1220,6 @@ extern void build_node_details(struct job_record *job_ptr)
 	if (job_ptr->node_cnt != node_inx) {
 		error("Node count mismatch for JobId=%u (%u,%u)",
 		      job_ptr->job_id, job_ptr->node_cnt, node_inx);
-		job_ptr->node_cnt = node_inx;
 	}
 	job_ptr->num_cpu_groups = cpu_inx + 1;
 	if ((cr_enabled) && (error_code == SLURM_SUCCESS)) {
