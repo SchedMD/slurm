@@ -527,17 +527,17 @@ static int _print_text_part(partition_info_t *part_ptr,
 					mvwprintw(ba_system_ptr->text_win, 
 						  ba_system_ptr->ycord,
 						  ba_system_ptr->xcord, 
-						  "UP");
+						  "up");
 				else
 					mvwprintw(ba_system_ptr->text_win, 
 						  ba_system_ptr->ycord,
 						  ba_system_ptr->xcord, 
-						  "DOWN");
+						  "down");
 				ba_system_ptr->xcord += 7;
 			
 				if (part_ptr->max_time == INFINITE)
 					snprintf(time_buf, sizeof(time_buf), 
-						 "UNLIMITED");
+						 "infinite");
 				else {
 					snprint_time(time_buf, 
 						     sizeof(time_buf), 
@@ -673,13 +673,13 @@ static int _print_text_part(partition_info_t *part_ptr,
 			
 			if (params.display != BGPART) {
 				if (part_ptr->state_up)
-					printf("   UP ");
+					printf("   up ");
 				else
-					printf(" DOWN ");
+					printf(" down ");
 							
 				if (part_ptr->max_time == INFINITE)
 					snprintf(time_buf, sizeof(time_buf), 
-						 "UNLIMITED");
+						 "infinite");
 				else {
 					snprint_time(time_buf, 
 						     sizeof(time_buf), 
