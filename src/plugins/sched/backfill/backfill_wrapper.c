@@ -5,8 +5,8 @@
  *****************************************************************************
  *  Copyright (C) 2003 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Jay Windley <jwindley@lnxi.com>, Moe Jette <jette1@llnl.gov>
- *  UCRL-CODE-2002-040.
+ *  Written by Jay Windley <jwindley@lnxi.com>, Morris Jette <jette1@llnl.gov>
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.

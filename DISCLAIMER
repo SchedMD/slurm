@@ -25,7 +25,7 @@ Jeff Squyres <jsquyres@lam-mpi.org>
 Keven Tew <tew1@llnl.gov>
 Jay Windley <jwindley@lnxi.com>
 
-UCRL-CODE-2002-040.
+UCRL-CODE-217948.
 
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -70,6 +70,12 @@ University of California.  The views and opinions of authors expressed
 herein do not necessarily state or reflect those of the United States
 Government or the University of California, and shall not be used for
 advertising or product endorsement purposes.
+
+
+NOTICE OF COMMERCIAL USE
+
+Commercialization of this product is prohibited without notifying the 
+Department of Energy (DOE) or Lawrence Livermore National Laboratory (LLNL).
 
 
 OUR NOTICE AND TERMS OF AND CONDITIONS OF THE GNU GENERAL PUBLIC LICENSE
