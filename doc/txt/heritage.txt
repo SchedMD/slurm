@@ -11,31 +11,72 @@ Notes:  	modules to do whatever
 
 ======================================================================
 
-Origin: 	
-Date:    	
-Destination:	
-License: 	
-Imported by:	
+Origin:		LLNL Software Development Toolbox 	
+Date:    	2002
+Destination:	src/common/cbuf.[ch]
+License:	GPL 	
+Imported by:	Mark Grondona
 Notes:    	
 
-Origin: 	
-Date:    	
-Destination:	
-License: 	
-Imported by:	
+Origin: 	LLNL ConMan, http://www.llnl.gov/linux/conman
+Date:    	2001
+Destination:	src/common/fd.[ch]
+License: 	GPL
+Imported by:	Mark Grondona
 Notes:    	
 
-Origin: 	
-Date:    	
-Destination:	
-License: 	
-Imported by:	
+Origin: 	GNU libc
+Date:    	2001
+Destination:	src/common/getopt1.c, getopt.[ch]
+License: 	GPL
+Imported by:	Morris Jette
 Notes:    	
 
-Origin: 	
-Date:    	
-Destination:	
-License: 	
-Imported by:	
+Origin: 	LLNL Software Development Toolbox
+Date:    	2001
+Destination:	src/common/list.[ch]
+License: 	GPL
+Imported by:	Mark Grondona
 Notes:    	
 
+Origin:		?????????????????
+Date:		2001
+Destination:	src/common/log.[ch]
+License:	"All rights reserved", "can be used freely for any purpose."
+Imported by:	Mark Grondona
+Notes:		SLURM code is based upon SSL code with substantial changes
+
+Origin:		GNU autoconf info document
+Date:		2005
+Destination:	src/common/malloc.[ch]
+License:	GPL
+Imported by:	Morris Jette
+Notes:
+
+Origin:		OpenBSD libc
+Date:		2001
+Destination:	src/common/strlcpy.[ch]
+License:	OpenBSD
+Imported by:	Mark Grondona
+Notes:
+
+Origin:		LLNL ConMan, http://www.llnl.gov/linux/conman
+Date:		2002
+Destination:	src/common/util-net.[ch]
+License:	GPL
+Imported by:	Mark Grondona
+Notes:
+
+Origin:		GNU taskset command source
+Date:		2005
+Destination:	src/plugins/task/affinity/schedutils.c	
+License:	GPL
+Imported by:	Andy Riebs
+Notes:
+
+Origin:
+Date:
+Destination:
+License:
+Imported by:
+Notes:
