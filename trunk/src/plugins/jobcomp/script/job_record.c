@@ -4,7 +4,7 @@
  *  Produced at Center for High Performance Computing, North Dakota State
  *  University
  *  Written by Nathan Huff <nhuff@acm.org>
- *  UCRL-CODE-2002-040.
+ *  UCRL-CODE-217948.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.

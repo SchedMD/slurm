@@ -4,8 +4,8 @@
  *****************************************************************************
  *  Copyright (C) 2003 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette@llnl.com> et. al.
- *  UCRL-CODE-2002-040.
+ *  Written by Morris Jette <jette@llnl.com> et. al.
+ *  UCRL-CODE-217948.
  *  
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *
@@ -32,7 +32,7 @@
  *
  *  19 Jan 2005 by Andy Riebs <andy.riebs@hp.com>
  *       This file is derived from the file slurm_JOBACCT.c, written by
- *       Moe Jette, et al.
+ *       Morris Jette, et al.
 \*****************************************************************************/
 
 
