@@ -59,7 +59,7 @@ exec $bin_chmod 700 $file_in
 set timeout $max_job_delay
 spawn $srun -o $file_out -b $file_in
 expect {
-	-re "More nodes requested than permitted" {	
+	-re "More .* requested than permitted" {	
 		send_user "This error was expected, no worries\n\n"
 		incr matches
 		exp_continue
