@@ -836,7 +836,7 @@ void set_options(const int argc, char **argv, int first)
 			}
 			break;
 		case (int)'c':
-			if(!first && opt.cpus_per_task)
+			if(!first && opt.cpus_set)
 				break;
 			opt.cpus_set = true;
 			opt.cpus_per_task = 
@@ -923,7 +923,7 @@ void set_options(const int argc, char **argv, int first)
 			}
 			break;
 		case (int)'n':
-			if(!first && opt.nprocs)
+			if(!first && opt.nprocs_set)
 				break;
 						
 			opt.nprocs_set = true;
@@ -1160,6 +1160,9 @@ void set_options(const int argc, char **argv, int first)
 			break;
 		}
 	}
+
+	if (!first && !_opt_verify())
+		exit(1);
 }
 
 /*
@@ -1526,14 +1529,18 @@ static void _opt_list()
 	info("uid            : %ld", (long) opt.uid);
 	info("gid            : %ld", (long) opt.gid);
 	info("cwd            : %s", opt.cwd);
-	info("nprocs         : %d", opt.nprocs);
-	info("cpus_per_task  : %d", opt.cpus_per_task);
+	info("nprocs         : %d %s", opt.nprocs,
+		opt.nprocs_set ? "(set)" : "(default)");
+	info("cpus_per_task  : %d %s", opt.cpus_per_task,
+		opt.cpus_set ? "(set)" : "(default)");
 	if (opt.max_nodes)
 		info("nodes          : %d-%d", opt.min_nodes, opt.max_nodes);
-	else
-		info("nodes          : %d", opt.min_nodes);
+	else {
+		info("nodes          : %d %s", opt.min_nodes,
+			opt.nodes_set ? "(set)" : "(default)");
+	}
 	info("partition      : %s",
-	     opt.partition == NULL ? "default" : opt.partition);
+		opt.partition == NULL ? "default" : opt.partition);
 	info("job name       : `%s'", opt.job_name);
 	info("distribution   : %s", format_distribution_t(opt.distribution));
 	info("core format    : %s", core_format_name (opt.core_type));
