@@ -217,7 +217,7 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu_bind=... */
 	CPU_BIND_NONE	= 0x02,	/* =no */
 	CPU_BIND_RANK  	= 0x04,	/* =rank */
 	CPU_BIND_MAPCPU	= 0x08,	/* =map_cpu:<list of CPU IDs> */
-	CPU_BIND_MASKCPU= 0x10,	/* =mask_cpu:<list of CPU masks> */
+	CPU_BIND_MASKCPU= 0x10	/* =mask_cpu:<list of CPU masks> */
 } cpu_bind_type_t;
 
 /* The last entry in node_states must be STATE_END, keep in sync with 
