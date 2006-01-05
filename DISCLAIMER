@@ -76,7 +76,10 @@ NOTICE OF COMMERCIAL USE
 
 Commercialization of this product is prohibited without notifying the 
 Department of Energy (DOE) or Lawrence Livermore National Laboratory (LLNL).
-
+(NOTE: Since you can already freely distribute the code under the GNU 
+General Public License, we just ask that you notify us at jette1@llnl.gov 
+and ipac@llnl.gov. Identify your organization, the SLURM code, and its
+release number UCRL-CODE-217948).
 
 OUR NOTICE AND TERMS OF AND CONDITIONS OF THE GNU GENERAL PUBLIC LICENSE
 
