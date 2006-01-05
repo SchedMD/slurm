@@ -741,6 +741,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	 * Unpack message body 
 	 */
 	msg->msg_type = header.msg_type;
+	msg->srun_node_id = header.srun_node_id;
 	if ( (header.body_length > remaining_buf(buffer)) ||
 	     (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
 		(void) g_slurm_auth_destroy(auth_cred);

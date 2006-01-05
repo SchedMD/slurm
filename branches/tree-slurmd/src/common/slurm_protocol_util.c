@@ -68,6 +68,7 @@ void init_header(header_t * header, slurm_msg_t *msg,
 		header->ret_cnt = list_count(msg->ret_list);
 	else
 		header->ret_cnt = 0;
+	header->srun_node_id = msg->srun_node_id;
 	header->ret_list = msg->ret_list;
 }
 
@@ -105,8 +106,8 @@ void slurm_print_launch_task_msg(launch_tasks_request_msg_t * msg)
 	debug3("msg -> io_port    = %d", msg->io_port);
 	debug3("msg -> task_flags = %x", msg->task_flags);
 
-	for (i = 0; i < msg->tasks_to_launch; i++) {
+	for (i = 0; i < msg->tasks_to_launch[msg->srun_node_id]; i++) {
 		debug3("global_task_id[%i]: %i ", i,
-		       msg->global_task_ids[i]);
+		       msg->global_task_ids[msg->srun_node_id][i]);
 	}
 }

@@ -68,12 +68,10 @@ main (int argc, char *argv[])
 
 	log_init (xbasename(argv[0]), log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 	initialize_and_process_args(argc, argv);
-	info("hey\n");
 	if (opt.verbose) {
 		log_opts.stderr_level += opt.verbose;
 		log_alter (log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 	} 
-	info("hey\n");
 	
 	if ((opt.interactive) ||
 	    (opt.job_name) ||

@@ -324,6 +324,14 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 		}
 		xfree(msg->argv);
 	}
+	if(msg->nnodes)
+		for(i=0; i<msg->nnodes; i++) {
+			xfree(msg->global_task_ids[i]);
+		}
+	xfree(msg->tasks_to_launch);
+	xfree(msg->cpus_allocated);
+	xfree(msg->resp_port);
+	xfree(msg->io_port);
 	xfree(msg->global_task_ids);
 	xfree(msg->ifname);
 	xfree(msg->ofname);

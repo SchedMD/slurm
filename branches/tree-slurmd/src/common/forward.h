@@ -37,11 +37,6 @@
 				   forwards per node */
 
 /* STRUCTURES */
-typedef struct forward_launch {
-	launch_tasks_request_msg_t *r;
-	slurm_msg_t *m;
-	srun_job_t *job;
-} forward_launch_t;
 
 extern int forward_msg(forward_struct_t *forward_struct, 
 		       header_t *header);
@@ -63,13 +58,14 @@ extern int set_forward_addrs (forward_t *forward,
 			      int *pos,
 			      int total,
 			      struct sockaddr_in *forward_addr,
-			      char *forward_names);
+			      char *forward_names,
+			      int *forward_ids);
 
-extern int set_forward_launch (forward_launch_t *forward_launch,
+extern int set_forward_launch (forward_t *forward, 
 			       int span,
 			       int *pos,
-			       int total,
-			       hostlist_t hostlist);
+			       srun_job_t *job,
+			       hostlist_iterator_t itr);
 
 extern int *set_span(int total);
 

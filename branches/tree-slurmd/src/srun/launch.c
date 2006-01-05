@@ -78,7 +78,7 @@ static int    _wait_on_active(thd_t *thd, srun_job_t *job);
 static void   _p_launch(slurm_msg_t *req_array_ptr, srun_job_t *job);
 static void * _p_launch_task(void *args);
 static void   _print_launch_msg(launch_tasks_request_msg_t *msg, 
-		                char * hostname);
+		                char * hostname, int nodeid);
 static void   _update_failed_node(srun_job_t *j, int id);
 
 int 
@@ -105,84 +105,79 @@ void *
 launch(void *arg)
 {
 	slurm_msg_t *msg_array_ptr;
-	launch_tasks_request_msg_t *req_array_ptr;
+	launch_tasks_request_msg_t r;
 	srun_job_t *job = (srun_job_t *) arg;
-	forward_launch_t forward_launch;
 	int i, j, my_envc;
 	hostlist_t hostlist = NULL;
 	hostlist_iterator_t itr = NULL;
 	char *host = NULL;
 	int *span = set_span(job->step_layout->num_hosts);
-	int thr_count = 0;
-
+	
 	update_job_state(job, SRUN_JOB_LAUNCHING);
 	
 	debug("going to launch %d tasks on %d hosts", 
 	      opt.nprocs, job->step_layout->num_hosts);
 	debug("sending to slurmd port %d", slurm_get_slurmd_port());
 
-	req_array_ptr = xmalloc(sizeof(launch_tasks_request_msg_t) 
-				* job->step_layout->num_hosts);
 	msg_array_ptr = xmalloc(sizeof(slurm_msg_t) 
 				* job->step_layout->num_hosts);
 	my_envc = envcount(environ);
 
-	hostlist = hostlist_create(job->nodelist);		
-	itr = hostlist_iterator_create(hostlist);
+/* Common message contents */
+	r.job_id          = job->jobid;
+	r.uid             = opt.uid;
+	r.gid             = opt.gid;
+	r.argc            = remote_argc;
+	r.argv            = remote_argv;
+	r.cred            = job->cred;
+	r.job_step_id     = job->stepid;
+	r.envc            = my_envc;
+	r.env             = environ;
+	r.cwd             = opt.cwd;
+	r.nnodes          = job->step_layout->num_hosts;
+	r.nprocs          = opt.nprocs;
+	r.slurmd_debug    = opt.slurmd_debug;
+	r.switch_job      = job->switch_job;
+	r.task_prolog     = opt.task_prolog;
+	r.task_epilog     = opt.task_epilog;
+	
+	r.ofname  = fname_remote_string (job->ofname);
+	r.efname  = fname_remote_string (job->efname);
+	r.ifname  = fname_remote_string (job->ifname);
+	r.buffered_stdio = !opt.unbuffered;
+	
+	if (opt.parallel_debug)
+		r.task_flags |= TASK_PARALLEL_DEBUG;
+	
+	/* Node specific message contents */
+	if (slurm_mpi_single_task_per_node ()) {
+		for (i = 0; i < job->step_layout->num_hosts; i++)
+			job->step_layout->tasks[i] = 1;
+	} 
+	r.tasks_to_launch = job->step_layout->tasks;
 
+	r.global_task_ids = job->step_layout->tids;
+	r.cpus_allocated  = job->step_layout->cpus;
+	
+	r.io_port = xmalloc(sizeof(uint16_t) * job->step_layout->num_hosts);
+	r.resp_port = xmalloc(sizeof(uint16_t) * job->step_layout->num_hosts);
+	
 	for (i = 0; i < job->step_layout->num_hosts; i++) {
-		launch_tasks_request_msg_t *r = &req_array_ptr[i];
-		slurm_msg_t                *m = &msg_array_ptr[i];
+		r.io_port[i]      = ntohs(job->listenport[i%job->num_listen]);
+		r.resp_port[i]    = ntohs(job->jaddr[i%job->njfds].sin_port);
+	}
+	
+	hostlist = hostlist_create(job->nodelist); 		
+	itr = hostlist_iterator_create(hostlist);
+	job->thr_count = 0;
+	for (i = 0; i < job->step_layout->num_hosts; i++) {
+		slurm_msg_t                *m = &msg_array_ptr[job->thr_count];
 
-		/* Common message contents */
-		r->job_id          = job->jobid;
-		r->uid             = opt.uid;
-		r->gid             = opt.gid;
-		r->argc            = remote_argc;
-		r->argv            = remote_argv;
-		r->cred            = job->cred;
-		r->job_step_id     = job->stepid;
-		r->envc            = my_envc;
-		r->env             = environ;
-		r->cwd             = opt.cwd;
-		r->nnodes          = job->step_layout->num_hosts;
-		r->nprocs          = opt.nprocs;
-		r->slurmd_debug    = opt.slurmd_debug;
-		r->switch_job      = job->switch_job;
-		r->task_prolog     = opt.task_prolog;
-		r->task_epilog     = opt.task_epilog;
-
-		r->ofname  = fname_remote_string (job->ofname);
-		r->efname  = fname_remote_string (job->efname);
-		r->ifname  = fname_remote_string (job->ifname);
-		r->buffered_stdio = !opt.unbuffered;
-
-		if (opt.parallel_debug)
-			r->task_flags |= TASK_PARALLEL_DEBUG;
-
-		/* Node specific message contents */
-		if (slurm_mpi_single_task_per_node ()) 
-			r->tasks_to_launch = 1; 
-		else
-			r->tasks_to_launch = job->step_layout->tasks[i];
-		r->global_task_ids = job->step_layout->tids[i];
-		r->cpus_allocated  = job->step_layout->cpus[i];
-		r->srun_node_id    = (uint32_t)i;
-		r->io_port         = ntohs(job->listenport[i%job->num_listen]);
-		r->resp_port       = ntohs(job->jaddr[i%job->njfds].sin_port);
-		
+		m->srun_node_id    = (uint32_t)i;
+				
 		m->msg_type        = REQUEST_LAUNCH_TASKS;
-		m->data            = r;
+		m->data            = &r;
 		m->ret_list = NULL;
-		/* forward_launch.r = req_array_ptr; */
-/* 		forward_launch.m = msg_array_ptr; */
-/* 		forward_launch.job = job; */
-/* 		set_forward_launch(&forward_launch, */
-/* 				   span[thr_count], */
-/* 				   &i, */
-/* 				   job->step_layout->num_hosts, */
-/* 				   hostlist); */
-		
 		j=0; 
   		while(host = hostlist_next(itr)) { 
 			if(!strcmp(host,job->step_layout->host[i])) {
@@ -195,19 +190,26 @@ launch(void *arg)
 		hostlist_iterator_reset(itr);
 		debug2("using %d %s with %d tasks\n", j, 
 		       job->step_layout->host[i],
-		       r->nprocs);
+		       r.nprocs);
 		
-		memcpy(&m->address, &job->slurmd_addr[j], sizeof(slurm_addr));
-		thr_count++;
+		m->address = job->slurmd_addr[j];
+		set_forward_launch(&m->forward,
+				   span[job->thr_count],
+				   &i,
+				   job,
+				   itr);
+		
+		job->thr_count++;
 	}
+	xfree(span);
 	hostlist_iterator_destroy(itr);
 	hostlist_destroy(hostlist);
 	
 	_p_launch(msg_array_ptr, job);
-
 	xfree(msg_array_ptr);
-	xfree(req_array_ptr);
-
+	xfree(r.io_port);
+	xfree(r.resp_port);
+	
 	if (fail_launch_cnt) {
 		srun_job_state_t jstate;
 
@@ -324,7 +326,7 @@ static int _wait_on_active(thd_t *thd, srun_job_t *job)
 			             &timeout      );
 
 	if (rc == ETIMEDOUT)
-		_check_pending_threads(thd, job->step_layout->num_hosts);
+		_check_pending_threads(thd, job->thr_count);
 
 	return rc;
 }
@@ -350,15 +352,15 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 	 */
 	job->ltimeout = time(NULL) + opt.max_launch_time;
 
-	thd = xmalloc (job->step_layout->num_hosts * sizeof (thd_t));
-	for (i = 0; i < job->step_layout->num_hosts; i++) {
-		if (job->step_layout->tasks[i] == 0)	{	
-			/* No tasks for this node */
-			debug("Node %s is unused",job->step_layout->host[i]);
-			job->host_state[i] = SRUN_HOST_REPLIED;
-			thd[i].thread = (pthread_t) NULL;
-			continue;
-		}
+	thd = xmalloc (job->thr_count * sizeof (thd_t));
+	for (i = 0; i < job->thr_count; i++) {
+		/* if (job->step_layout->tasks[i] == 0)	{	 */
+/* 			/\* No tasks for this node *\/ */
+/* 			debug("Node %s is unused",job->step_layout->host[i]); */
+/* 			job->host_state[i] = SRUN_HOST_REPLIED; */
+/* 			thd[i].thread = (pthread_t) NULL; */
+/* 			continue; */
+/* 		} */
 
 		if (job->state > SRUN_JOB_LAUNCHING)
 			break;
@@ -367,7 +369,7 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 		while (active >= opt.max_threads || rc < 0) 
 			rc = _wait_on_active(thd, job);
 		if (joinable >= (opt.max_threads/2))
-			_join_attached_threads(job->step_layout->num_hosts, 
+			_join_attached_threads(job->thr_count, 
 					       thd);
 		active++;
 		pthread_mutex_unlock(&active_mutex);
@@ -377,7 +379,7 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 
 		_spawn_launch_thr(&thd[i]);
 	}
-	for ( ; i < job->step_layout->num_hosts; i++)
+	for ( ; i < job->thr_count; i++)
 		_update_failed_node(job, i);
 
 	pthread_mutex_lock(&active_mutex);
@@ -385,7 +387,7 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 		_wait_on_active(thd, job);
 	pthread_mutex_unlock(&active_mutex);
 
-	_join_attached_threads (job->step_layout->num_hosts, thd);
+	_join_attached_threads (job->thr_count, thd);
 
 	/*
 	 * xsignal_restore_mask(&set);
@@ -400,7 +402,7 @@ _send_msg_rc(slurm_msg_t *msg)
 {
 	int rc     = 0;
 	int errnum = 0;
-
+	/* FIXME!!!!!!!!!!!!!!!!!!! This is where a problem lies here */
        	if ((rc = slurm_send_recv_rc_msg_only_one(msg, &errnum, opt.msg_timeout)) < 0) 
 		return SLURM_ERROR;
 
@@ -478,14 +480,14 @@ static void * _p_launch_task(void *arg)
 	slurm_msg_t                *req    = tp->req;
 	launch_tasks_request_msg_t *msg    = req->data;
 	srun_job_t                 *job    = tp->job;
-	int                        nodeid  = msg->srun_node_id;
+	int                        nodeid  = req->srun_node_id;
 	int                        failure = 0;
 	int                        retry   = 3; /* retry thrice */
 
 	th->state  = DSH_ACTIVE;
 	th->tstart = time(NULL);
-	if (_verbose)
-	        _print_launch_msg(msg, job->step_layout->host[nodeid]);
+	//if (_verbose)
+	        _print_launch_msg(msg, job->step_layout->host[nodeid], nodeid);
 
     again:
 	if (_send_msg_rc(req) < 0) {	/* Has timeout */
@@ -531,18 +533,20 @@ static void * _p_launch_task(void *arg)
 
 
 static void 
-_print_launch_msg(launch_tasks_request_msg_t *msg, char * hostname)
+_print_launch_msg(launch_tasks_request_msg_t *msg, char * hostname, int nodeid)
 {
 	int i;
 	char tmp_str[10], task_list[4096];
 
 	if (opt.distribution == SLURM_DIST_BLOCK) {
 		sprintf(task_list, "%u-%u", 
-		        msg->global_task_ids[0],
-			msg->global_task_ids[(msg->tasks_to_launch-1)]);
+		        msg->global_task_ids[nodeid][0],
+			msg->global_task_ids[nodeid]
+			[(msg->tasks_to_launch[nodeid]-1)]);
 	} else {
-		for (i=0; i<msg->tasks_to_launch; i++) {
-			sprintf(tmp_str, ",%u", msg->global_task_ids[i]);
+		for (i=0; i<msg->tasks_to_launch[nodeid]; i++) {
+			sprintf(tmp_str, ",%u", 
+				msg->global_task_ids[nodeid][i]);
 			if (i == 0)
 				strcpy(task_list, &tmp_str[1]);
 			else if ((strlen(tmp_str) + strlen(task_list)) < 
@@ -558,5 +562,5 @@ _print_launch_msg(launch_tasks_request_msg_t *msg, char * hostname)
 	     msg->tasks_to_launch, task_list);
 
 	debug3("uid:%ld gid:%ld cwd:%s %d", (long) msg->uid,
-		(long) msg->gid, msg->cwd, msg->srun_node_id);
+		(long) msg->gid, msg->cwd, nodeid);
 }

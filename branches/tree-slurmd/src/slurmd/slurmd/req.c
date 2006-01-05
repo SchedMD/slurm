@@ -516,6 +516,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	socklen_t adlen;
 
 	req_uid = g_slurm_auth_get_uid(msg->cred);
+	req->srun_node_id = msg->srun_node_id;
 
 	super_user = _slurm_authorized_user(req_uid);
 
@@ -536,7 +537,8 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 #endif
 
 	if (_check_job_credential(req->cred, jobid, stepid, req_uid,
-			req->tasks_to_launch) < 0) {
+				  req->tasks_to_launch[req->srun_node_id]) 
+	    < 0) {
 		errnum = errno;
 		error("Invalid job credential from %ld@%s: %m", 
 		      (long) req_uid, host);

@@ -365,7 +365,8 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 				  &i,
 				  agent_info_ptr->thread_count,
 				  agent_arg_ptr->slurm_addr,
-				  agent_arg_ptr->node_names);
+				  agent_arg_ptr->node_names,
+				  NULL);
 		thr_count++;		       
 	}
 	xfree(span);

@@ -977,7 +977,9 @@ _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr *cli, int rc)
 	debug ("sending launch failure message: %s", slurm_strerror (rc));
 
 	memcpy(&resp_msg.address, cli, sizeof(slurm_addr));
-	slurm_set_addr(&resp_msg.address, msg->resp_port, NULL); 
+	slurm_set_addr(&resp_msg.address, 
+		       msg->resp_port[msg->srun_node_id], 
+		       NULL); 
 	resp_msg.data = &resp;
 	resp_msg.msg_type = RESPONSE_LAUNCH_TASKS;
 	resp_msg.forward.cnt = 0;

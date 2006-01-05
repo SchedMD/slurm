@@ -172,6 +172,8 @@ typedef struct forward {
 				     to forward to */	
 	char       *name;	  /* array of node names  
 				     to forward to */	
+	uint32_t  *node_id;       /* node id of this node (relative to job) */
+
 	uint16_t   cnt;           /* number of addresses to forward */
 } forward_t;
 
@@ -188,6 +190,7 @@ typedef struct slurm_protocol_header {
 	uint32_t body_length;
 	uint16_t ret_cnt;
 	forward_t forward;
+	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
 	List ret_list;
 } header_t;
 
@@ -198,6 +201,7 @@ typedef struct slurm_msg {
 	void *cred;
 	void *data;
 	uint32_t data_size;
+	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
 	forward_t forward;
 	List ret_list;
 } slurm_msg_t;
@@ -315,17 +319,17 @@ typedef struct launch_tasks_request_msg {
 	uint32_t  uid;
 	uint32_t  gid;
 	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
-	uint32_t  tasks_to_launch;
+	uint32_t  *tasks_to_launch;
 	uint16_t  envc;
 	uint16_t  argc;
-	uint16_t  cpus_allocated;
+	uint32_t  *cpus_allocated;
 	char    **env;
 	char    **argv;
 	char     *cwd;
-	uint16_t  resp_port;
-	uint16_t  io_port;
+	uint16_t  *resp_port;
+	uint16_t  *io_port;
 	uint16_t  task_flags;
-	uint32_t *global_task_ids;
+	uint32_t **global_task_ids;
 
 	/* stdout/err/in per task filenames */
 	char     *ofname;

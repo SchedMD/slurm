@@ -162,7 +162,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 
 	job->state   = SLURMSTEPD_STEP_STARTING;
 	job->pwd     = pwd;
-	job->ntasks  = msg->tasks_to_launch;
+	job->ntasks  = msg->tasks_to_launch[msg->srun_node_id];
 	job->nprocs  = msg->nprocs;
 	job->jobid   = msg->job_id;
 	job->stepid  = msg->job_step_id;
@@ -191,9 +191,9 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->envtp->nodeid = -1;	
 	
 	memcpy(&resp_addr, cli_addr, sizeof(slurm_addr));
-	slurm_set_addr(&resp_addr, msg->resp_port, NULL); 
+	slurm_set_addr(&resp_addr, msg->resp_port[msg->srun_node_id], NULL); 
 	memcpy(&io_addr,   cli_addr, sizeof(slurm_addr));
-	slurm_set_addr(&io_addr,   msg->io_port,   NULL); 	
+	slurm_set_addr(&io_addr, msg->io_port[msg->srun_node_id], NULL);
 	srun = srun_info_create(msg->cred, &resp_addr, &io_addr);
 
 	job->buffered_stdio = msg->buffered_stdio;
@@ -207,14 +207,14 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->nnodes  = msg->nnodes;
 	job->nodeid  = msg->srun_node_id;
 	job->debug   = msg->slurmd_debug;
-	job->cpus    = msg->cpus_allocated;
+	job->cpus    = msg->cpus_allocated[msg->srun_node_id];
 	job->timelimit   = (time_t) -1;
 	job->task_flags  = msg->task_flags;
 	job->switch_job = msg->switch_job;
 	
 	list_append(job->sruns, (void *) srun);
 
-	_job_init_task_info(job, msg->global_task_ids,
+	_job_init_task_info(job, msg->global_task_ids[msg->srun_node_id],
 			    msg->ifname, msg->ofname, msg->efname);
 
 	return job;
