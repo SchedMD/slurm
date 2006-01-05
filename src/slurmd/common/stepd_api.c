@@ -36,6 +36,7 @@
 #include <regex.h>
 #include <string.h>
 #include <inttypes.h>
+#include <signal.h>
 
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -398,8 +399,8 @@ done:
 }
 
 /*
- * Unlink all of the unix domain socket files for a given directory
- * and nodename.
+ * Send the termination signal to all of the unix domain socket files
+ * for a given directory and nodename, and then unlink the files.
  * Returns SLURM_ERROR if any sockets could not be unlinked.
  */
 int
@@ -433,10 +434,24 @@ stepd_cleanup_sockets(const char *directory, const char *nodename)
 		uint32_t jobid, stepid;
 		if (_sockname_regex(&re, ent->d_name, &jobid, &stepid) == 0) {
 			char *path;
+			int fd;
+
 			path = NULL;
 			xstrfmtcat(path, "%s/%s", directory, ent->d_name);
-			verbose("Unlinking stray socket %s", path);
-			if (unlink(path) == -1) {
+			verbose("Cleaning up stray job step %u.%u", 
+				jobid, stepid);
+
+			/* signal the slurmstepd to terminate its step */
+			fd = stepd_connect(directory, nodename, jobid, stepid);
+			if (fd == -1) {
+				debug("Unable to connect to socket %s", path);
+			} else {
+				stepd_signal_container(fd, SIGKILL);
+				close(fd);
+			}
+
+			/* make sure that the socket has been removed */
+			if (unlink(path) == -1 && errno != ENOENT) {
 				error("Unable to clean up stray socket %s: %m",
 				      path);
 				rc = SLURM_ERROR;
