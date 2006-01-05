@@ -3,7 +3,7 @@
  *	parallel jobs.
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona@llnl.gov>, et. al.
  *  UCRL-CODE-217948.
@@ -99,6 +99,7 @@ static char *_build_script (char *pathname, int file_type);
 static char *_get_shell (void);
 static void  _send_options(const int argc, char **argv);
 static void  _get_options (const char *buffer);
+static char *_get_token(char *buf_ptr);
 static int   _is_file_text (char *, char**);
 static int   _run_batch_job (void);
 static int   _run_job_script(srun_job_t *job, env_t *env);
@@ -501,68 +502,42 @@ _get_shell (void)
 	return pw_ent_ptr->pw_shell;
 }
 
-/* _get_opts - gather options put in user script.  Used for batch scripts. */
+static char *_get_token(char *buf_ptr)
+{
+	int i, token_size = 0;
+	char *token;
 
+	for (i=1; (buf_ptr[i] != '\n') && (buf_ptr[i] != '\0');
+			i++) {
+		if (isspace(buf_ptr[i]))
+			break;
+	}
+	token_size = i;
+
+	token = xmalloc(token_size + 1);
+	strncpy(token, buf_ptr, token_size);
+	return token;
+}
+
+/* _get_opts - gather options put in user script.  Used for batch scripts. */
 static void
 _get_options (const char *buffer)
 {
-	int i=0, i2=0;
 	int argc = 1;
 	char *argv[MAX_ENTRIES];
-	
-	while(buffer[i]) {
-		if(!strncmp(buffer+i, "#SLURM ",7)) {
-			i += 7;
-			i2 = i;
-			while(buffer[i2]!= '\n') {
-				if(buffer[i2] == '-') {
-					i = i2;
-					while(buffer[i] != '\n') {
-						if(i != i2 && i != (i2+1) 
-						   && buffer[i] == '-') {
-							argv[argc] = xmalloc(
-								sizeof(char)
-								*(i-i2));
-							memset(argv[argc], 0,
-							       (i-i2));
-							strncpy(argv[argc],
-								buffer+i2,
-								(i-i2-1));
-							argc++;
-							if(argc>=MAX_ENTRIES) {
-								_send_options(
-									argc, 
-									argv);
-								argc = 1;
-							}
-							i2 = i;
-						}
-						i++;
-						
-					}
-					argv[argc] = xmalloc(
-						sizeof(char)
-						*(i-i2+1));
-					memset(argv[argc], 0,
-					       (i-i2+1));
-					strncpy(argv[argc],
-						buffer+i2,
-						(i-i2));
-					i2 = i;
-					argc++;
-					if(argc>=MAX_ENTRIES) {
-						_send_options(argc, argv);
-						argc = 1;
-					}
-							
-					break;
-				} else
-					i2++;				
-			}
-			i = i2;
+	char *buf_loc = (char *) buffer;
+
+	while ((buf_loc = strstr(buf_loc, "#SLURM"))) {
+		buf_loc += 6;
+		/* find the tokens and move them to argv */
+		for ( ; ((buf_loc[0] != '\n') && (buf_loc[0] != '\0')); 
+				buf_loc++) {
+			if (isspace(buf_loc[0]))
+				continue;
+			argv[argc] = _get_token(buf_loc);
+			buf_loc += (strlen(argv[argc]) - 1);
+			argc++;
 		}
-			
-		i++;
 	}
 	if(argc > 1)
 		_send_options(argc, argv);
