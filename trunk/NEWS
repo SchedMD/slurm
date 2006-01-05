@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Add support for job suspend/resume.
  -- Add slurmd cache for group IDs (Takao Hatazaki, HP).
+ -- Fix bug in processing of "#SLURM" batch script option parsing.
 
 * Changes in SLURM 0.7.0-pre7
 =============================

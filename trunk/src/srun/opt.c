@@ -2,7 +2,7 @@
  *  opt.c - options processing for srun
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  UCRL-CODE-217948.
@@ -829,6 +829,7 @@ _get_int(const char *arg, const char *what)
 void set_options(const int argc, char **argv, int first)
 {
 	int opt_char, option_index = 0;
+	static bool set_cwd=false, set_name=false;
 	struct utsname name;
 	static struct option long_options[] = {
 		{"attach",        required_argument, 0, 'a'},
@@ -986,9 +987,10 @@ void set_options(const int argc, char **argv, int first)
 				_get_int(optarg, "slurmd-debug");
 			break;
 		case (int)'D':
-			if(!first && opt.cwd)
+			if(!first && set_cwd)
 				break;
-			
+
+			set_cwd = true;
 			xfree(opt.cwd);
 			opt.cwd = xstrdup(optarg);
 			break;
@@ -1026,9 +1028,10 @@ void set_options(const int argc, char **argv, int first)
 			opt.join = true;
 			break;
 		case (int)'J':
-			if(!first && opt.job_name)
+			if(!first && set_name)
 				break;
-						
+
+			set_name = true;
 			xfree(opt.job_name);
 			opt.job_name = xstrdup(optarg);
 			break;
@@ -1327,8 +1330,12 @@ void set_options(const int argc, char **argv, int first)
 		} 
 	}
 
-	if (!first && !_opt_verify())
-		exit(1);
+	if (!first) {
+		if (!_opt_verify())
+			exit(1);
+		if (_verbose > 3)
+			_opt_list();
+	}
 }
 
 /*

@@ -10,7 +10,7 @@
 # Note:    This script generates and then deletes files in the working directory
 #          named test1.47.input and test1.47.output
 ############################################################################
-# Copyright (C) 2005 The Regents of the University of California.
+# Copyright (C) 2005-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Danny Auble <da@llnl.gov>
 # UCRL-CODE-217948.
@@ -38,10 +38,67 @@ set test_id     "1.47"
 set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
-set matches     0
+set job_acct    "TEST_ACCT"
+set job_name    "TEST_NAME"
 set delay       1
 
 print_header $test_id
+
+#
+# Delete left-over input script
+exec $bin_rm -f $file_in
+exec echo "#!$bin_bash"                   >$file_in
+exec echo "#SLURM --job-name=$job_name"  >>$file_in
+exec echo "#SLURM --account=$job_acct"   >>$file_in
+exec echo "$bin_sleep $delay"            >>$file_in
+exec $bin_chmod 700 $file_in
+
+set timeout $max_job_delay
+set job_id 0
+spawn $srun -o $file_out -b $file_in
+expect {
+	-re "jobid ($number) submitted" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		kill_srun
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: batch submit failure\n"
+	exit 1
+}
+set matches 0
+spawn $scontrol show job $job_id
+expect {
+	-re "Name=$job_name" {
+		incr matches
+		exp_continue
+	}
+	-re "Account=$job_acct" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 2} {
+	send_user "\nFAILURE: did not set job name and account from batch script\n"
+	set exit_code 1
+}
 
 #
 # Delete left-over input script
@@ -56,7 +113,7 @@ exec echo "#SLURM -N65000"          >>$file_in
 exec echo "$bin_sleep $delay"       >>$file_in
 exec $bin_chmod 700 $file_in
 
-set timeout $max_job_delay
+set matches 0
 spawn $srun -o $file_out -b $file_in
 expect {
 	-re "More .* requested than permitted" {	
@@ -85,11 +142,11 @@ exec echo "#SLURM -N650000"         >>$file_in
 exec echo "$bin_sleep $delay"       >>$file_in
 exec $bin_chmod 700 $file_in
 
-set timeout $max_job_delay
 spawn $srun -N1 -o $file_out -b $file_in
 expect {
 	-re "More nodes requested than permitted" {
-		send_user "\nFAILURE: srun read from the batch file options over writing the commandline options\n"
+		send_user "\nFAILURE: srun read from the batch file options"
+		send_user "over writing the commandline options\n"
 		set exit_code 1
 		exp_continue
 	}
