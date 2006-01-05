@@ -324,10 +324,10 @@ static int _change_state_all_bps(char *com, int state)
 	memset(allnodes,0,50);
 		
 #ifdef HAVE_BG
-	sprintf(allnodes, "[000x%d%d%d]", 
+	sprintf(allnodes, "000x%d%d%d", 
 		DIM_SIZE[X]-1, DIM_SIZE[Y]-1, DIM_SIZE[Z]-1);
 #else
-	sprintf(allnodes, "[0-%d]", 
+	sprintf(allnodes, "0-%d", 
 		DIM_SIZE[X]);
 #endif
 	return _change_state_bps(allnodes, state);
@@ -335,7 +335,7 @@ static int _change_state_all_bps(char *com, int state)
 }
 static int _change_state_bps(char *com, int state)
 {
-	int i=1,x;
+	int i=0, j=0, x;
 	int len = strlen(com);
 	int start[SYSTEM_DIMENSIONS], end[SYSTEM_DIMENSIONS];
 #ifdef HAVE_BG
@@ -352,48 +352,41 @@ static int _change_state_bps(char *com, int state)
 		used = true;
 		c_state = "down";
 	}
-	while((com[i-1] > 57 || com[i-1] < 48) && com[i-1] != '[') 
+	while((com[i] > 57 || com[i] < 48) && i<len) 
 		i++;
 	if(i>(len-1)) {
 		memset(error_string,0,255);
 		sprintf(error_string, 
-			"You didn't specify any nodes to make %s. %s", c_state, com);
+			"You didn't specify any nodes to make %s. "
+			"in statement '%s'", 
+			c_state, com);
 		return 0;
 	}
 		
 #ifdef HAVE_BG
-	if ((com[i]   == '[')
-	    && (com[i+8] == ']')
-	    && ((com[i+4] == 'x')
-		|| (com[i+4] == '-'))) {
-		i++;
+	if ((com[i+3] == 'x')
+	    || (com[i+3] == '-')) {
+		j=i;
+		for(j=0; j<3; j++) 
+			if(com[i+j] > 57 || com[i+j] < 48 || (i+j)>len) 
+				goto error_message2;
 		number = atoi(com + i);
 		start[X] = number / 100;
 		start[Y] = (number % 100) / 10;
 		start[Z] = (number % 10);
 		i += 4;
-		number = atoi(com + i);
+		for(j=0; j<3; j++) 
+			if(com[i+j] > 57 || com[i+j] < 48 || (i+j)>len) 
+				goto error_message2;
+		number = atoi(com + i);		
 		end[X] = number / 100;
 		end[Y] = (number % 100) / 10;
 		end[Z] = (number % 10);		
 		
-	} else if ((com[i] < 58 && com[i] > 47)
-		   && (com[i+6] < 58 && com[i+6] > 47)
-		   && ((com[i+3] == 'x')
-		|| (com[i+3] == '-'))) {
-		
-		number = atoi(com + i);
-		start[X] = number / 100;
-		start[Y] = (number % 100) / 10;
-		start[Z] = (number % 10);
-		i += 4;
-		number = atoi(com + i);
-		end[X] = number / 100;
-		end[Y] = (number % 100) / 10;
-		end[Z] = (number % 10);		
-		
-	} else if((com[i] < 58 && com[i] > 47) 
-		  && com[i-1] != '[') {
+	} else {
+		for(j=0; j<3; j++) 
+			if(com[i+j] > 57 || com[i+j] < 48 || (i+j)>len) 
+				goto error_message2;
 		number = atoi(com + i);
 		start[X] = end[X] = number / 100;
 		start[Y] = end[Y] = (number % 100) / 10;
@@ -409,7 +402,7 @@ static int _change_state_bps(char *com, int state)
 	       || end[Y]>DIM_SIZE[Y]-1
 	       || end[Z]>DIM_SIZE[Z]-1))
 		goto error_message;
-
+	
 	for(x=start[X];x<=end[X];x++) {
 		for(y=start[Y];y<=end[Y];y++) {
 			for(z=start[Z];z<=end[Z];z++) {
@@ -423,27 +416,15 @@ static int _change_state_bps(char *com, int state)
 		}
 	}
 #else
-	if ((com[i]   == '[')
-	    && (com[i+8] == ']')
-	    && ((com[i+4] == 'x')
-		|| (com[i+4] == '-'))) {
-		i++;
+	if ((com[i+3] == 'x')
+	    || (com[i+3] == '-')) {
 		start[X] = atoi(com + i);
 		i += 4;
-		end[X] = atoi(com + i);	
-	} else if ((com[i] < 58 && com[i] > 47)
-		   && (com[i+6] < 58 && com[i+6] > 47)
-		   && ((com[i+3] == 'x')
-		|| (com[i+3] == '-'))) {
-		
-		start[X] = atoi(com + i);
-		i += 4;
-		end[X] = atoi(com + i);		
-	} else if((com[i] < 58 && com[i] > 47) 
-		  && com[i-1] != '[') {
-		start[X] = end[X] = atoi(com + i);
-				
+		end[X] = atoi(com + i);j=i;
+	} else {
+		start[X] = end[X] = atoi(com + i);		
 	}
+	
 	if((start[X]>end[X])
 	   || (start[X]<0)
 	   || (end[X]>DIM_SIZE[X]-1))
@@ -468,6 +449,13 @@ error_message:
 		"Problem with nodes specified range was %d-%d",
 		start[X],end[X]);
 #endif	
+	return 0;
+error_message2:
+	memset(error_string,0,255);
+	sprintf(error_string, 
+		"There was a problem with '%s'\nIn your request '%s'"
+		"You need to specify XYZ or XYZxXYZ",
+		com+i,com);
 	return 0;
 }
 static int _remove_allocation(char *com, List allocated_blocks)
