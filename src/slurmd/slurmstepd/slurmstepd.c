@@ -44,7 +44,9 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 static int _init_from_slurmd(int sock, char **argv, slurm_addr **_cli,
-			    slurm_addr **_self, slurm_msg_t **_msg);
+			     slurm_addr **_self, slurm_msg_t **_msg,
+			     int *_ngids, gid_t **_gids);
+
 static void _send_ok_to_slurmd(int sock);
 static void _send_fail_to_slurmd(int sock);
 static slurmd_job_t *_step_setup(slurm_addr *cli, slurm_addr *self,
@@ -62,6 +64,8 @@ main (int argc, char *argv[])
 	slurm_addr *self;
 	slurm_msg_t *msg;
 	slurmd_job_t *job;
+	int ngids;
+	gid_t *gids;
 	int rc;
 
 	xsignal_block(slurmstepd_blocked_signals);
@@ -74,10 +78,13 @@ main (int argc, char *argv[])
 	if (slurm_proctrack_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;
 
-	_init_from_slurmd(STDIN_FILENO, argv, &cli, &self, &msg);
+	_init_from_slurmd(STDIN_FILENO, argv, &cli, &self, &msg,
+			  &ngids, &gids);
 	close(STDIN_FILENO);
 
 	job = _step_setup(cli, self, msg);
+	job->ngids = ngids;
+	job->gids = gids;
 
 	/* sets job->msg_handle and job->msgid */
 	if (msg_thr_create(job) == SLURM_ERROR) {
@@ -131,9 +138,14 @@ rwfail:
 	error("Unable to send \"fail\" to slurmd");
 }
 
+/*
+ *  This function handles the initialization information from slurmd
+ *  sent by _send_slurmstepd_init() in src/slurmd/slurmd/req.c.
+ */
 static int
 _init_from_slurmd(int sock, char **argv,
-		  slurm_addr **_cli, slurm_addr **_self, slurm_msg_t **_msg)
+		  slurm_addr **_cli, slurm_addr **_self, slurm_msg_t **_msg,
+		  int *_ngids, gid_t **_gids)
 {
 	char *incoming_buffer = NULL;
 	Buf buffer;
@@ -144,6 +156,8 @@ _init_from_slurmd(int sock, char **argv,
 	slurm_addr *cli = NULL;
 	slurm_addr *self = NULL;
 	slurm_msg_t *msg = NULL;
+	int ngids = 0;
+	gid_t *gids = NULL;
 
 	/* receive job type from slurmd */
 	safe_read(sock, &step_type, sizeof(int));
@@ -235,9 +249,25 @@ _init_from_slurmd(int sock, char **argv,
 		fatal("slurmstepd: we didn't unpack the request correctly");
 	free_buf(buffer);
 
+	/* receive cached group ids array for the relevant uid */
+	safe_read(sock, &ngids, sizeof(int));
+	if (ngids > 0) {
+		int i;
+		uint32_t tmp32;
+
+		gids = (gid_t *)xmalloc(sizeof(gid_t) * ngids);
+		for (i = 0; i < ngids; i++) {
+			safe_read(sock, &tmp32, sizeof(uint32_t));
+			gids[i] = (gid_t)tmp32;
+			debug2("got gid %d", gids[i]);
+		}
+	}
+
 	*_cli = cli;
 	*_self = self;
 	*_msg = msg;
+	*_ngids = ngids;
+	*_gids = gids;
 
 	return 1;
 

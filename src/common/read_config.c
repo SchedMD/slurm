@@ -354,6 +354,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 {
 	ctl_conf_ptr->last_update		= time(NULL);
 	xfree (ctl_conf_ptr->authtype);
+	ctl_conf_ptr->cache_groups		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->checkpoint_type);
 	xfree (ctl_conf_ptr->backup_addr);
 	xfree (ctl_conf_ptr->backup_controller);
@@ -441,7 +442,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	long slurmctld_debug = -1, slurmd_debug = -1;
 	long max_job_cnt = -1, min_job_age = -1, wait_time = -1;
 	long slurmctld_port = -1, slurmd_port = -1;
-	long mpich_gm_dir = -1, kill_tree = -1;
+	long mpich_gm_dir = -1, kill_tree = -1, cache_groups = -1;
 	char *backup_addr = NULL, *backup_controller = NULL;
 	char *checkpoint_type = NULL, *control_addr = NULL;
 	char *control_machine = NULL, *epilog = NULL, *mpi_default = NULL;
@@ -467,6 +468,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	error_code = slurm_parser (in_line,
 		"AuthType=", 's', &auth_type,
 		"CheckpointType=", 's', &checkpoint_type,
+		"CacheGroups=", 'l', &cache_groups,
 		"BackupAddr=", 's', &backup_addr, 
 		"BackupController=", 's', &backup_controller, 
 		"ControlAddr=", 's', &control_addr, 
@@ -536,6 +538,15 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 			xfree( ctl_conf_ptr->authtype );
 		}
 		ctl_conf_ptr->authtype = auth_type;
+	}
+
+	if ( cache_groups != -1) {
+		if ( ctl_conf_ptr->cache_groups != (uint16_t) NO_VAL)
+			error (MULTIPLE_VALUE_MSG, "CacheGroups");
+		if ((cache_groups < 0) || (cache_groups > 0xffff))
+			error("CacheGroups=%ld is invalid", cache_groups);
+		else
+			ctl_conf_ptr->cache_groups = cache_groups;
 	}
 
 	if ( checkpoint_type ) {
@@ -1305,6 +1316,9 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	if (ctl_conf_ptr->authtype == NULL)
 		ctl_conf_ptr->authtype = xstrdup(DEFAULT_AUTH_TYPE);
+
+	if (ctl_conf_ptr->cache_groups == (uint16_t) NO_VAL)
+		ctl_conf_ptr->cache_groups = DEFAULT_CACHE_GROUPS;
 
 	if (ctl_conf_ptr->checkpoint_type == NULL)
 		 ctl_conf_ptr->checkpoint_type = 

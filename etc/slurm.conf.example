@@ -75,6 +75,26 @@
 
 
 #
+# o If you have a slow NIS environment,
+#
+#   big parallel jobs take a long time to start up (and may eventually
+#   time-out) because the NIS server(s) may not be able to quickly
+#   respond to simultaneous requests from multiple slurmd's.  You can
+#   instruct slurmd to cache /etc/groups entries to prevent this from
+#   happening by setting "CacheGroups=1".  Reconfiguring ("scontrol reconfig") 
+#   with CacheGroups=0  will cause slurmd to purge the cache.
+#
+#   WARNING: The group ID cache does not try to keep itself in sync with
+#            the system.  You MUST run "scontrol reconfig" to update the
+#            cache after making any changes to system password or group
+#            databases.
+#
+# Example:
+#
+# CacheGroups=1		# default is `0'
+
+
+#
 # o Define the slurmctld and slurmd server port numbers
 #
 #  by default, the slurmctld ports are set by checking for an entry in

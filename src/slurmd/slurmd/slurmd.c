@@ -521,6 +521,8 @@ _read_config()
 static void
 _reconfigure(void)
 {
+	_reconfig = 0;
+
 	_read_config();
 
 	_update_logging();
@@ -532,6 +534,11 @@ _reconfigure(void)
 	slurm_cred_ctx_key_update(conf->vctx, conf->pubkey);
 
 	/*
+	 * Reinitialize the groups cache
+	 */
+	init_gids_cache(conf->cf.cache_groups);
+
+	/*
 	 * XXX: reopen slurmd port?
 	 */
 }
@@ -539,6 +546,7 @@ _reconfigure(void)
 static void
 _print_conf()
 {
+	debug3("CacheGroups = %d",       conf->cf.cache_groups);
 	debug3("Confile     = `%s'",     conf->conffile);
 	debug3("Debug       = %d",       conf->cf.slurmd_debug);
 	debug3("Epilog      = `%s'",     conf->epilog);
@@ -728,6 +736,11 @@ _slurmd_init()
 	 */
 	g_slurmd_jobacct_init(conf->cf.job_acct_parameters);
 
+
+	/*
+	 * Cache the group access list
+	 */
+	init_gids_cache(conf->cf.cache_groups);
 
 	return SLURM_SUCCESS;
 }
