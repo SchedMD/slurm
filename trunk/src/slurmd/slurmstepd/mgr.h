@@ -63,4 +63,11 @@ void mgr_launch_batch_job_cleanup(slurmd_job_t *job, int rc);
  */
 int job_manager(slurmd_job_t *job);
 
+/*
+ * Register passwd entries so that we do not need to call initgroups(2)
+ * frequently.
+ */
+extern void init_initgroups(int);
+
+
 #endif

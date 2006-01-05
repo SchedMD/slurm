@@ -47,6 +47,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/utsname.h>
+#include <sys/types.h>
 
 #if HAVE_STDLIB_H
 #  include <stdlib.h>
@@ -121,8 +122,9 @@ static int  _become_user(slurmd_job_t *job);
 static void _set_job_log_prefix(slurmd_job_t *job);
 static int  _setup_io(slurmd_job_t *job);
 static int  _setup_spawn_io(slurmd_job_t *job);
-static int  _drop_privileges(struct passwd *pwd);
-static int  _reclaim_privileges(struct passwd *pwd);
+static int  _drop_privileges(slurmd_job_t *job,
+			     int *n_old_gids, gid_t **old_gids);
+static int  _reclaim_privileges(struct passwd *pwd, int, gid_t *);
 static void _send_launch_resp(slurmd_job_t *job, int rc);
 static void _slurmd_job_log_init(slurmd_job_t *job);
 static void _wait_for_io(slurmd_job_t *job);
@@ -145,6 +147,13 @@ static char * _make_batch_dir(slurmd_job_t *job);
 static char * _make_batch_script(batch_job_launch_msg_t *msg, char *path);
 static int    _complete_job(uint32_t jobid, uint32_t stepid, 
 			    int err, int status);
+
+/*
+ * Initialize the group list using the list of gids from the slurmd if
+ * available.  Otherwise initialize the groups with initgroups().
+ */
+static int _initgroups(slurmd_job_t *job);
+
 
 static slurmd_job_t *reattach_job;
 
@@ -299,6 +308,8 @@ _setup_io(slurmd_job_t *job)
 {
 	int            rc   = 0;
 	struct passwd *spwd = NULL;
+	gid_t *old_gids;
+	int n_old_gids;
 
 	debug2("Entering _setup_io");
 
@@ -313,13 +324,13 @@ _setup_io(slurmd_job_t *job)
 	 * decriptors (which may be connected to files), then
 	 * reclaim privileges.
 	 */
-	if (_drop_privileges(job->pwd) < 0)
+	if (_drop_privileges(job, &n_old_gids, &old_gids) < 0)
 		return ESLURMD_SET_UID_OR_GID_ERROR;
 
 	/* FIXME - need to check a return code for failures */
 	io_init_tasks_stdio(job);
 
-	if (_reclaim_privileges(spwd) < 0)
+	if (_reclaim_privileges(spwd, n_old_gids, old_gids) < 0)
 		error("sete{u/g}id(%lu/%lu): %m", 
 		      (u_long) spwd->pw_uid, (u_long) spwd->pw_gid);
 
@@ -1093,7 +1104,7 @@ _complete_job(uint32_t jobid, uint32_t stepid, int err, int status)
 
 
 static int
-_drop_privileges(struct passwd *pwd)
+_drop_privileges(slurmd_job_t *job, int *n_old_gids, gid_t **old_gids)
 {
 	/*
 	 * No need to drop privileges if we're not running as root
@@ -1101,16 +1112,20 @@ _drop_privileges(struct passwd *pwd)
 	if (getuid() != (uid_t) 0)
 		return SLURM_SUCCESS;
 
-	if (setegid(pwd->pw_gid) < 0) {
+	*n_old_gids = getgroups(0, NULL);
+	*old_gids = (gid_t *)xmalloc(*n_old_gids * sizeof(gid_t));
+	getgroups(*n_old_gids, *old_gids);
+
+	if (setegid(job->pwd->pw_gid) < 0) {
 		error("setegid: %m");
 		return -1;
 	}
 
-	if (initgroups(pwd->pw_name, pwd->pw_gid) < 0) {
-		error("initgroups: %m"); 
+	if (_initgroups(job) < 0) {
+		error("_initgroups: %m"); 
 	}
 
-	if (seteuid(pwd->pw_uid) < 0) {
+	if (seteuid(job->pwd->pw_uid) < 0) {
 		error("seteuid: %m");
 		return -1;
 	}
@@ -1119,7 +1134,7 @@ _drop_privileges(struct passwd *pwd)
 }
 
 static int
-_reclaim_privileges(struct passwd *pwd)
+_reclaim_privileges(struct passwd *pwd, int n_old_gids, gid_t *old_gids)
 {
 	/* 
 	 * No need to reclaim privileges if our uid == pwd->pw_uid
@@ -1137,10 +1152,8 @@ _reclaim_privileges(struct passwd *pwd)
 		return -1;
 	}
 
-	if (initgroups(pwd->pw_name, pwd->pw_gid) < 0) {
-		error("initgroups: %m"); 
-		return -1;
-	}
+	setgroups(n_old_gids, old_gids);
+	xfree(old_gids);
 
 	return SLURM_SUCCESS;
 }
@@ -1208,9 +1221,9 @@ _become_user(slurmd_job_t *job)
 		return -1;
 	}
 
-	if (initgroups(job->pwd->pw_name, job->pwd->pw_gid) < 0) {
+	if (_initgroups(job) < 0) {
 		;
-		/* error("initgroups: %m"); */
+		/* error("_initgroups: %m"); */
 	}
 
 	if (setuid(job->pwd->pw_uid) < 0) {
@@ -1222,3 +1235,26 @@ _become_user(slurmd_job_t *job)
 }	
 
 
+static int
+_initgroups(slurmd_job_t *job)
+{
+	int rc;
+	char *username;
+	gid_t gid;
+
+	if (job->ngids > 0) {
+		xassert(job->gids);
+		debug2("Using gid list sent by slurmd");
+		return setgroups(job->ngids, job->gids);
+	}
+
+	username = job->pwd->pw_name;
+	gid = job->pwd->pw_gid;
+	debug2("Uncached user/gid: %s/%ld", username, (long)gid);
+	if (rc = initgroups(username, gid)) {
+		error("Error in initgroups(%s, %ld)",
+		      username, (long)gid);
+		return -1;
+	}
+	return 0;
+}

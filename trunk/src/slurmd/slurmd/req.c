@@ -49,6 +49,7 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_jobacct.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/xstring.h"
@@ -65,6 +66,10 @@
 #define MAXHOSTNAMELEN	64
 #endif
 
+typedef struct {
+	int ngids;
+	gid_t *gids;
+} gids_t;
 
 static int  _abort_job(uint32_t job_id);
 static char ** _build_env(uint32_t jobid, uid_t uid, char *bg_part_id);
@@ -96,6 +101,8 @@ static int _waiter_complete (uint32_t jobid);
 static bool _steps_completed_now(uint32_t jobid);
 static void _wait_state_completed(uint32_t jobid, int max_delay);
 static uid_t _get_job_uid(uint32_t jobid);
+
+static gids_t *_gids_cache_lookup(char *user, gid_t gid);
 
 /*
  *  List of threads waiting for jobs to complete
@@ -235,6 +242,9 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	int len = 0;
 	Buf buffer;
 	slurm_msg_t *msg = NULL;
+	uid_t uid = (uid_t)-1;
+	struct passwd *pw = NULL;
+	gids_t *gids = NULL;
 
 	/* send type over to slurmstepd */
 	safe_write(fd, &type, sizeof(int));
@@ -247,7 +257,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	safe_write(fd, get_buf_data(buffer), len);
 	free_buf(buffer);
 
-	/* send cli over to slurmstepd */
+	/* send cli address over to slurmstepd */
 	buffer = init_buf(0);
 	slurm_pack_slurm_addr(cli, buffer);
 	len = get_buf_offset(buffer);
@@ -255,7 +265,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	safe_write(fd, get_buf_data(buffer), len);
 	free_buf(buffer);
 
-	/* send self over to slurmstepd */
+	/* send self address over to slurmstepd */
 	if(self) {
 		buffer = init_buf(0);
 		slurm_pack_slurm_addr(self, buffer);
@@ -272,12 +282,30 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	msg = xmalloc(sizeof(slurm_msg_t));
 	switch(type) {
 	case LAUNCH_BATCH_JOB:
+		/*
+		 * The validity of req->uid was verified against the
+		 * auth credential in _rpc_batch_job().  req->gid
+		 * has NOT yet been checked!
+		 */
+		uid = (uid_t)((batch_job_launch_msg_t *)req)->uid;
 		msg->msg_type = REQUEST_BATCH_JOB_LAUNCH;
 		break;
 	case LAUNCH_TASKS:
+		/*
+		 * The validity of req->uid was verified against the
+		 * auth credential in _rpc_launch_tasks().  req->gid
+		 * has NOT yet been checked!
+		 */
+		uid = (uid_t)((launch_tasks_request_msg_t *)req)->uid;
 		msg->msg_type = REQUEST_LAUNCH_TASKS;
 		break;
 	case SPAWN_TASKS:
+		/*
+		 * The validity of req->uid was verified against the
+		 * auth credential in _rpc_spawn_task().  req->gid
+		 * has NOT yet been checked!
+		 */
+		uid = (uid_t)((spawn_task_request_msg_t *)req)->uid;
 		msg->msg_type = REQUEST_SPAWN_TASK;
 		break;
 	default:
@@ -293,6 +321,25 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	free_buf(buffer);
 	slurm_free_msg(msg);
 
+	/* send cached group ids array for the relevant uid */
+	if (!(pw = getpwuid(uid))) {
+		error("_send_slurmstepd_init getpwuid: %m");
+		len = 0;
+		safe_write(fd, &len, sizeof(int));
+		return -1;
+	}
+	if (gids = _gids_cache_lookup(pw->pw_name, pw->pw_gid)) {
+		int i;
+		uint32_t tmp32;
+		safe_write(fd, &gids->ngids, sizeof(int));
+		for (i = 0; i < gids->ngids; i++) {
+			tmp32 = (uint32_t)gids->gids[i];
+			safe_write(fd, &tmp32, sizeof(uint32_t));
+		}
+	} else {
+		len = 0;
+		safe_write(fd, &len, sizeof(int));
+	}
 	return 0;
 
 rwfail:
@@ -703,7 +750,7 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	char    *bg_part_id = NULL;
 	bool	replied = false;
 
-	if (!_slurm_authorized_user(req_uid)) {
+	if (!_slurm_authorized_user(req_uid) && (req_uid != req->uid)) {
 		error("Security violation, batch launch RPC from uid %u",
 		      (unsigned int) req_uid);
 		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
@@ -1805,4 +1852,173 @@ _run_epilog(uint32_t jobid, uid_t uid, char *bg_part_id)
 	xfree(my_env);
 
 	return error_code;
+}
+
+
+/**********************************************************************/
+/* Because calling initgroups(2) in Linux 2.4/2.6 looks very costly,  */
+/* we cache the group access list and call setgroups(2).              */
+/**********************************************************************/
+
+typedef struct gid_cache_s {
+	char *user;
+	gid_t gid;
+	gids_t *gids;
+	struct gid_cache_s *next;
+} gids_cache_t;
+
+#define GIDS_HASH_LEN 64
+static gids_cache_t *gids_hashtbl[GIDS_HASH_LEN] = {NULL};
+
+
+static gids_t *
+_alloc_gids(int n, gid_t *gids)
+{
+	gids_t *new;
+
+	new = (gids_t *)xmalloc(sizeof(gids_t));
+	new->ngids = n;
+	new->gids = gids;
+	return new;
+}
+
+static void
+_dealloc_gids(gids_t *p)
+{
+	xfree(p->gids);
+	xfree(p);
+}
+
+static gids_cache_t *
+_alloc_gids_cache(char *user, gid_t gid, gids_t *gids, gids_cache_t *next)
+{
+	gids_cache_t *p;
+
+	p = (gids_cache_t *)xmalloc(sizeof(gids_cache_t));
+	p->user = xstrdup(user);
+	p->gid = gid;
+	p->gids = gids;
+	p->next = next;
+	return p;
+}
+
+static void
+_dealloc_gids_cache(gids_cache_t *p)
+{
+	xfree(p->user);
+	_dealloc_gids(p->gids);
+	xfree(p);
+}
+
+static int
+_gids_hashtbl_idx(char *user)
+{
+	unsigned char *p = (unsigned char *)user;
+	unsigned int x = 0;
+
+	while (*p) {
+		x += (unsigned int)*p;
+		p++;
+	}
+	return x % GIDS_HASH_LEN;
+}
+
+static void
+_gids_cache_purge(void)
+{
+	int i;
+	gids_cache_t *p, *q;
+
+	for (i=0; i<GIDS_HASH_LEN; i++) {
+		p = gids_hashtbl[i];
+		while (p) {
+			q = p->next;
+			_dealloc_gids_cache(p);
+			p = q;
+		}
+		gids_hashtbl[i] = NULL;
+	}
+}
+
+static gids_t *
+_gids_cache_lookup(char *user, gid_t gid)
+{
+	int idx;
+	gids_cache_t *p;
+
+	idx = _gids_hashtbl_idx(user);
+	p = gids_hashtbl[idx];
+	while (p) {
+		if (strcmp(p->user, user) == 0 && p->gid == gid) {
+			return p->gids;
+		}
+		p = p->next;
+	}
+	return NULL;
+}
+
+static void
+_gids_cache_register(char *user, gid_t gid, gids_t *gids)
+{
+	int idx;
+	gids_cache_t *p, *q;
+
+	idx = _gids_hashtbl_idx(user);
+	q = gids_hashtbl[idx];
+	p = _alloc_gids_cache(user, gid, gids, q);
+	gids_hashtbl[idx] = p;
+	debug2("Cached group access list for %s/%d", user, gid);
+}
+
+static gids_t *
+_getgroups(void)
+{
+	int n, i, found;
+	gid_t *gg;
+
+	if ((n = getgroups(0, NULL)) < 0) {
+		error("getgroups:_getgroups: %m");
+		return NULL;
+	}
+	gg = (gid_t *)xmalloc(n * sizeof(gid_t));
+	getgroups(n, gg);
+	return _alloc_gids(n, gg);
+}
+
+
+extern void
+init_gids_cache(int cache)
+{
+	struct passwd *pwd;
+	int ngids;
+	gid_t *orig_gids;
+	gids_t *gids;
+
+	if (!cache) {
+		_gids_cache_purge();
+		return;
+	}
+
+	if ((ngids = getgroups(0, NULL)) < 0) {
+		error("getgroups: init_gids_cache: %m");
+		return;
+	}
+	orig_gids = (gid_t *)xmalloc(ngids * sizeof(gid_t));
+	getgroups(ngids, orig_gids);
+
+	while (pwd = getpwent()) {
+		if (_gids_cache_lookup(pwd->pw_name, pwd->pw_gid))
+			continue;
+		if (initgroups(pwd->pw_name, pwd->pw_gid)) {
+			error("initgroups:init_gids_cache: %m");
+			continue;
+		}
+		if ((gids = _getgroups()) == NULL)
+			continue;
+		_gids_cache_register(pwd->pw_name, pwd->pw_gid, gids);
+	}
+	endpwent();
+
+	setgroups(ngids, orig_gids);		
+	xfree(orig_gids);
 }

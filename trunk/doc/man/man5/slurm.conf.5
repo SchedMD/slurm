@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "October 2005" "slurm.conf 0.7" "Slurm configuration file"
+.TH "slurm.conf" "5" "December 2005" "slurm.conf 0.7" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -59,6 +59,12 @@ as a controller only upon the failure of ControlMachine and will revert
 to a "standby" mode when the ControlMachine becomes available once again. 
 This should be a node name without the full domain name (e.g. "lx0002"). 
 While not essential, it is recommended that you specify a backup controller.
+.TP
+\fBCacheGroups\fR
+If set to 1, the slurmd daemon will  cache /etc/groups entries.
+This can improve performance for highly parallel jobs if NIS servers
+are used and unable to respond very quickly.
+The default value is 0 to disable caching group data.
 .TP
 \fBCheckpointType\fR
 Define the system-initiated checkpoint method to be used for user jobs. 

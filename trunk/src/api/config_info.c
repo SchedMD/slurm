@@ -71,6 +71,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->backup_addr);
 	fprintf(out, "BackupController  = %s\n", 
 		slurm_ctl_conf_ptr->backup_controller);
+	fprintf(out, "CacheGroups       = %u\n", 
+		slurm_ctl_conf_ptr->cache_groups);
 	fprintf(out, "CheckpointType    = %s\n",
 		slurm_ctl_conf_ptr->checkpoint_type);
 	fprintf(out, "ControlAddr       = %s\n", 

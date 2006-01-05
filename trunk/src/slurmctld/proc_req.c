@@ -283,6 +283,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->backup_addr         = xstrdup(slurmctld_conf.backup_addr);
 	conf_ptr->backup_controller   = xstrdup(slurmctld_conf.
 					backup_controller);
+	conf_ptr->cache_groups        = slurmctld_conf.cache_groups;
 	conf_ptr->checkpoint_type     = xstrdup(slurmctld_conf.checkpoint_type);
 	conf_ptr->control_addr        = xstrdup(slurmctld_conf.control_addr);
 	conf_ptr->control_machine     = xstrdup(slurmctld_conf.

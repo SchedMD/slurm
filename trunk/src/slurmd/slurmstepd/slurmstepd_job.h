@@ -109,6 +109,8 @@ typedef struct slurmd_job {
 	switch_jobinfo_t switch_job; /* switch-specific job information     */
 	uid_t         uid;     /* user id for job                           */
 	gid_t         gid;     /* group ID for job                          */
+	int           ngids;   /* length of the following gids array        */
+	gid_t        *gids;    /* array of gids for user specified in uid   */
 
 	bool           batch;      /* true if this is a batch job           */
 	bool           run_prolog; /* true if need to run prolog            */
