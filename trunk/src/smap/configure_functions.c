@@ -366,7 +366,6 @@ static int _change_state_bps(char *com, int state)
 #ifdef HAVE_BG
 	if ((com[i+3] == 'x')
 	    || (com[i+3] == '-')) {
-		j=i;
 		for(j=0; j<3; j++) 
 			if(com[i+j] > 57 || com[i+j] < 48 || (i+j)>len) 
 				goto error_message2;
@@ -420,7 +419,7 @@ static int _change_state_bps(char *com, int state)
 	    || (com[i+3] == '-')) {
 		start[X] = atoi(com + i);
 		i += 4;
-		end[X] = atoi(com + i);j=i;
+		end[X] = atoi(com + i);
 	} else {
 		start[X] = end[X] = atoi(com + i);		
 	}
