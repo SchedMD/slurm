@@ -1265,17 +1265,10 @@ static void _slurm_rpc_old_job_alloc(slurm_msg_t * msg)
 
 	/* do RPC call */
 	uid = g_slurm_auth_get_uid(msg->cred);
-	if ( !_is_super_user(uid) ) {
-		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, RESOURCE_ALLOCATE from uid=%u",
-		      (unsigned int) uid);
-	}
-	if (error_code == SLURM_SUCCESS) {
-		do_unlock = true;
-		lock_slurmctld(job_read_lock);
-		error_code = old_job_info(uid, job_desc_msg->job_id, &job_ptr);
-		END_TIMER;
-	}
+	do_unlock = true;
+	lock_slurmctld(job_read_lock);
+	error_code = old_job_info(uid, job_desc_msg->job_id, &job_ptr);
+	END_TIMER;
 
 	/* return result */
 	if (error_code || (job_ptr == NULL)) {
