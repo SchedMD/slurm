@@ -53,6 +53,7 @@ void *_forward_thread(void *arg)
 	unsigned int tmplen, msglen;
 	Buf buffer = init_buf(0);
 	int retry = 0;
+	int rc = SLURM_SUCCESS;
 	List ret_list = NULL;
 	ret_types_t *type = NULL;
 	ret_types_t *returned_type = NULL;
@@ -62,13 +63,9 @@ void *_forward_thread(void *arg)
 	ListIterator itr;
 	
 	if ((fd = slurm_open_msg_conn(&fwd_msg->addr)) < 0) {
-		error("forward_thread: can't open msg conn");
-		/* FIXME!!!!!
-		   this needs to handle replies for everything or go to the
-		   next node or something.  It isn't good this way.
-		*/
-			
-		goto cleanup;
+		error("forward_thread: %m");
+		ret_list = list_create(destroy_ret_types);
+		goto nothing_sent;
 	}
 	pack_header(&fwd_msg->header, buffer);
 	
@@ -88,34 +85,33 @@ void *_forward_thread(void *arg)
 	/*
 	 * forward message
 	 */
-	if((_slurm_msg_sendto(fd, 
-			      get_buf_data(buffer), 
-			      get_buf_offset(buffer),
-			      SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) < 0)) {
+	if(_slurm_msg_sendto(fd, 
+			     get_buf_data(buffer), 
+			     get_buf_offset(buffer),
+			     SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) < 0) {
 		error("slurm_msg_sendto: %m");
-		/* FIXME!!!!!
-		   this needs to handle replies for everything or go to the
-		   next node or something.  It isn't good this way.
-		*/
-		goto cleanup;
+		ret_list = list_create(destroy_ret_types);
+		goto nothing_sent;
 	}
 
 	msg->forward = fwd_msg->header.forward;
 	msg->ret_list = fwd_msg->header.ret_list;
 	if ((fwd_msg->header.msg_type == REQUEST_SHUTDOWN) ||
 	    (fwd_msg->header.msg_type == REQUEST_RECONFIGURE)) {
+		pthread_mutex_lock(fwd_msg->forward_mutex);
 		type = xmalloc(sizeof(ret_types_t));
 		list_push(fwd_msg->ret_list, type);
 		type->ret_data_list = list_create(destroy_data_info);
 		ret_data_info = xmalloc(sizeof(ret_types_t));
 		list_push(type->ret_data_list, ret_data_info);
 		ret_data_info->node_name = xstrdup(fwd_msg->node_name);
+		pthread_mutex_unlock(fwd_msg->forward_mutex);
 		pthread_cond_signal(fwd_msg->notify);
 	
 		goto cleanup;
 	}
 	ret_list = slurm_receive_msg(fd, msg, fwd_msg->timeout);
-	
+nothing_sent:
 	type = xmalloc(sizeof(ret_types_t));
 	list_push(ret_list, type);
 
@@ -126,7 +122,7 @@ void *_forward_thread(void *arg)
 	ret_data_info->node_name = xstrdup(fwd_msg->node_name);
 
 	if(errno != SLURM_SUCCESS) {
-		type->type = SLURM_ERROR;
+		type->type = REQUEST_PING;
 		type->msg_rc = SLURM_ERROR;
 		ret_data_info->data = NULL;
 	} else {
@@ -425,7 +421,7 @@ void destroy_data_info(void *object)
 void destroy_forward_struct(void *object)
 {
 	forward_struct_t *forward_struct = (forward_struct_t *)object;
-	xfree(forward_struct->forward_msg);
+	destroy_forward_msg(forward_struct->forward_msg);
 }
 
 void destroy_forward(void *object) 

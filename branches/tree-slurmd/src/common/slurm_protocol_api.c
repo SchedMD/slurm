@@ -1420,7 +1420,8 @@ List slurm_send_recv_rc_msg(slurm_msg_t *req, int timeout)
 	slurm_fd fd = -1;
 	
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
-		return NULL; //SLURM_SOCKET_ERROR
+		errno = SLURM_SOCKET_ERROR;
+		return NULL;
 	}
 	return _send_recv_rc_msg(fd, req, timeout);
 }

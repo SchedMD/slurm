@@ -822,7 +822,12 @@ static void *_thread_per_group_rpc(void *args)
 			     ret_data_info->node_name,
 			     ret_type->msg_rc);
 			*/
+			if(rc == SLURM_ERROR) {
+				errno = ret_type->err;
+				continue;
+			}
 #if AGENT_IS_THREAD
+			
 			/* SPECIAL CASE: Mark node as IDLE if job already 
 			   complete */
 			if (is_kill_msg && 
@@ -911,13 +916,10 @@ static void *_thread_per_group_rpc(void *args)
 			data_itr = 
 				list_iterator_create(ret_type->ret_data_list);
 			while((ret_data_info = list_next(data_itr)) != NULL) 
-				error("agent error from host %s for msg "
-				      "type %d: %s", 
-				      ret_data_info->node_name, 
-				      task_ptr->msg_type, 
-				      slurm_strerror(rc));
+				if (!srun_agent)
+					_comm_err(ret_data_info->node_name);
 			list_iterator_destroy(data_itr);
-			thread_state = DSH_DONE;
+			thread_state = DSH_FAILED;
 		}	
 		ret_type->msg_rc = thread_state;
 	}
