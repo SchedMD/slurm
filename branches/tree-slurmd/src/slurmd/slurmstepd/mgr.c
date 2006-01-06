@@ -339,13 +339,11 @@ _setup_io(slurmd_job_t *job)
 	if (!job->batch)
 		if (io_thread_start(job) < 0)
 			return ESLURMD_IO_ERROR;
-
 	/*
 	 * Initialize log facility to copy errors back to srun
 	 */
 	_slurmd_job_log_init(job);
-
-
+	
 #ifndef NDEBUG
 #  ifdef PR_SET_DUMPABLE
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
@@ -1142,13 +1140,13 @@ _slurmd_job_log_init(slurmd_job_t *job)
 
 
 	snprintf(argv0, sizeof(argv0), "slurmd[%s]", conf->hostname);
-
 	/* 
 	 * reinitialize log 
 	 */
+	
 	log_alter(conf->log_opts, 0, NULL);
 	log_set_argv0(argv0);
-
+	
 	/* Connect slurmd stderr to job's stderr */
 	if ((!job->spawn_task) && 
 	    (dup2(job->task[0]->stderr_fd, STDERR_FILENO) < 0)) {

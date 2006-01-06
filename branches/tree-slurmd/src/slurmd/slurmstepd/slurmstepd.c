@@ -217,6 +217,7 @@ _init_from_slurmd(int sock, char **argv,
 	buffer = create_buf(incoming_buffer,len);
 
 	msg = xmalloc(sizeof(slurm_msg_t));
+	msg->ret_list = NULL;
 	switch(step_type) {
 	case LAUNCH_BATCH_JOB:
 		msg->msg_type = REQUEST_BATCH_JOB_LAUNCH;

@@ -329,8 +329,7 @@ extern int set_forward_launch (forward_t *forward,
 	info("forwarding to %s",name);
 	
 	if(span > 0) {
-		forward->addr = 
-			xmalloc(sizeof(struct sockaddr_in) * span);
+		forward->addr = xmalloc(sizeof(struct sockaddr_in) * span);
 		forward->name = 
 			xmalloc(sizeof(char) * (MAX_NAME_LEN * span));
 		forward->node_id = xmalloc(sizeof(int) * span);

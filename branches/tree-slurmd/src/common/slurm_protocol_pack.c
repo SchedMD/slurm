@@ -2559,7 +2559,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	if (!(msg->cred = slurm_cred_unpack(buffer)))
 		goto unpack_error;
 	msg->tasks_to_launch = xmalloc(sizeof(uint32_t) * msg->nnodes);
-	msg->cpus_allocated = xmalloc(sizeof(uint16_t) * msg->nnodes);
+	msg->cpus_allocated = xmalloc(sizeof(uint32_t) * msg->nnodes);
 	msg->resp_port = xmalloc(sizeof(uint16_t) * msg->nnodes);
 	msg->io_port = xmalloc(sizeof(uint16_t) * msg->nnodes);
 	msg->global_task_ids = xmalloc(sizeof(uint32_t) * msg->nnodes);
