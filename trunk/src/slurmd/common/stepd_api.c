@@ -504,3 +504,56 @@ stepd_daemon_pid(int fd)
 rwfail:
 	return (pid_t)-1;
 }
+
+/*
+ * Suspend execution of the job step.  Only root or SlurmUser is
+ * authorized to use this call.
+ *
+ * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
+ * and sets errno.
+ */
+int
+stepd_suspend(int fd)
+{
+	int req = REQUEST_STEP_SUSPEND;
+	int rc;
+	int errnum = 0;
+
+	safe_write(fd, &req, sizeof(int));
+
+	/* Receive the return code and errno */
+	safe_read(fd, &rc, sizeof(int));
+	safe_read(fd, &errnum, sizeof(int));
+
+	errno = errnum;
+	return rc;
+rwfail:
+	return -1;
+}
+
+/*
+ * Resume execution of the job step that has been suspended by a
+ * call to stepd_suspend().  Only root or SlurmUser is
+ * authorized to use this call.
+ *
+ * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
+ * and sets errno.
+ */
+int
+stepd_resume(int fd)
+{
+	int req = REQUEST_STEP_RESUME;
+	int rc;
+	int errnum = 0;
+
+	safe_write(fd, &req, sizeof(int));
+
+	/* Receive the return code and errno */
+	safe_read(fd, &rc, sizeof(int));
+	safe_read(fd, &errnum, sizeof(int));
+
+	errno = errnum;
+	return rc;
+rwfail:
+	return -1;
+}

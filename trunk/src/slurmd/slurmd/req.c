@@ -1412,7 +1412,7 @@ _rpc_signal_job(slurm_msg_t *msg, slurm_addr *cli)
 	debug("_rpc_signal_job, uid = %d, signal = %d", req_uid, req->signal);
 	job_uid = _get_job_uid(req->job_id);
 	/* 
-	 * check that requesting user ID is the SLURM UID
+	 * check that requesting user ID is the SLURM UID or root
 	 */
 	if ((req_uid != job_uid) && (!_slurm_authorized_user(req_uid))) {
 		error("Security violation: kill_job(%ld) from uid %ld",
@@ -1491,26 +1491,18 @@ _rpc_suspend_job(slurm_msg_t *msg, slurm_addr *cli)
 	ListIterator i;
 	step_loc_t *stepd;
 	int step_cnt  = 0;  
-	int fd, rc = SLURM_SUCCESS, sig_num;
-	char *sig_name;
+	int fd, rc = SLURM_SUCCESS;
 
-	if (req->op == SUSPEND_JOB) {
-		sig_name = "STOP";
-		sig_num = SIGSTOP;
-	} else if (req->op == RESUME_JOB) {
-		sig_name = "CONT";
-		sig_num = SIGCONT;
-	} else {
-		error("REQUEST_SUSPEND: bad op code %u",
-			req->op);
+	if (req->op != SUSPEND_JOB && req->op != RESUME_JOB) {
+		error("REQUEST_SUSPEND: bad op code %u", req->op);
 		rc = ESLURM_NOT_SUPPORTED;
 		goto fini;
 	}
-	debug("_rpc_suspend_job jobid=%u uid=%d signal=%s", 
-		req->job_id, req_uid, sig_name);
+	debug("_rpc_suspend_job jobid=%u uid=%d", 
+		req->job_id, req_uid);
 	job_uid = _get_job_uid(req->job_id);
 	/* 
-	 * check that requesting user ID is the SLURM UID
+	 * check that requesting user ID is the SLURM UID or root
 	 */
 	if (!_slurm_authorized_user(req_uid)) {
 		error("Security violation: signal_job(%u) from uid %ld",
@@ -1520,8 +1512,8 @@ _rpc_suspend_job(slurm_msg_t *msg, slurm_addr *cli)
 	} 
 
 	/*
-	 * Loop through all job steps for this job and signal the
-	 * step's process group through the slurmstepd.
+	 * Loop through all job steps and call stepd_suspend or stepd_resume
+	 * as appropriate.
 	 */
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
@@ -1542,17 +1534,24 @@ _rpc_suspend_job(slurm_msg_t *msg, slurm_addr *cli)
 			continue;
 		}
 
-		debug2("  signal %d to job %u.%u",
-		       sig_num, stepd->jobid, stepd->stepid);
-		if (stepd_signal(fd, sig_num) < 0)
-			debug("signal jobid=%u failed: %m", stepd->jobid);
+		if (req->op == SUSPEND_JOB) {
+			debug2("Suspending job step %u.%u",
+			       stepd->jobid, stepd->stepid);
+			if (stepd_suspend(fd) < 0)
+				debug("  suspend failed: %m", stepd->jobid);
+		} else {
+			debug2("Resuming job step %u.%u",
+			       stepd->jobid, stepd->stepid);
+			if (stepd_resume(fd) < 0)
+				debug("  resume failed: %m", stepd->jobid);
+		}
+
 		close(fd);
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);
 	if (step_cnt == 0)
-		debug2("No steps in jobid %u to send signal %d",
-		       req->job_id, sig_num);
+		debug2("No steps in jobid %u to suspend/resume", req->job_id);
 
 	/*
 	 *  At this point, if connection still open, we send controller

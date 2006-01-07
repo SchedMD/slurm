@@ -228,6 +228,10 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Job step already in shared memory"	        	},
 	{ ESLURMD_JOB_NOTRUNNING,
 	  "Job step not running"	        	        },
+ 	{ ESLURMD_STEP_SUSPENDED,
+	  "Job step is suspended"                               },
+ 	{ ESLURMD_STEP_NOTSUSPENDED,
+	  "Job step is not currently suspended"                 },
 
 	/* slurmd errors in user batch job */
 	{ ESCRIPT_CHDIR_FAILED,

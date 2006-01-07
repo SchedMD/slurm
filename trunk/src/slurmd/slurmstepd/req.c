@@ -34,6 +34,7 @@
 #include <sys/un.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
@@ -56,6 +57,8 @@ static int _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_attach(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_pid_in_container(int fd, slurmd_job_t *job);
 static int _handle_daemon_pid(int fd, slurmd_job_t *job);
+static int _handle_suspend(int fd, slurmd_job_t *job, uid_t uid);
+static int _handle_resume(int fd, slurmd_job_t *job, uid_t uid);
 static bool _msg_socket_readable(eio_obj_t *obj);
 static int _msg_socket_accept(eio_obj_t *obj, List objs);
 
@@ -65,6 +68,8 @@ struct io_operations msg_socket_ops = {
 };
 
 static char *socket_name;
+static pthread_mutex_t suspend_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool suspended = false;
 
 struct request_params {
 	int fd;
@@ -334,7 +339,7 @@ _handle_accept(void *arg)
 
 	if (close(fd) == -1)
 		error("Closing accepted fd: %m");
-	debug("Leaving  _handle_accept");
+	debug3("Leaving  _handle_accept");
 	return NULL;
 
 fail:
@@ -351,12 +356,20 @@ rwfail:
 int
 _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid)
 {
-	int rc = SLURM_SUCCESS;
+	int rc = 0;
 	int req;
 
 	debug3("Entering _handle_request");
-	safe_read(fd, &req, sizeof(int));
+	if ((rc = read(fd, &req, sizeof(int))) != sizeof(int)) {
+		if (rc == 0) { /* EOF, normal */
+			return -1;
+		} else {
+			debug3("Leaving _handle_request on read error");
+			return SLURM_FAILURE;
+		}
+	}
 	debug3("Got request");
+	rc = SLURM_SUCCESS;
 	switch (req) {
 	case REQUEST_SIGNAL_PROCESS_GROUP:
 		debug("Handling REQUEST_SIGNAL_PROCESS_GROUP");
@@ -393,6 +406,14 @@ _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid)
 		debug("Handling REQUEST_DAEMON_PID");
 		rc = _handle_daemon_pid(fd, job);
 		break;
+	case REQUEST_STEP_SUSPEND:
+		debug("Handling REQUEST_STEP_SUSPEND");
+		rc = _handle_suspend(fd, job, uid);
+		break;
+	case REQUEST_STEP_RESUME:
+		debug("Handling REQUEST_STEP_RESUME");
+		rc = _handle_resume(fd, job, uid);
+		break;
 	default:
 		error("Unrecognized request: %d", req);
 		rc = SLURM_FAILURE;
@@ -402,10 +423,6 @@ _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid)
 	debug3("Leaving  _handle_request: %s",
 	       rc ? "SLURM_FAILURE" : "SLURM_SUCCESS");
 	return rc;
-
-rwfail:
-	debug3("Leaving _handle_request on read error");
-	return SLURM_FAILURE;
 }
 
 static int
@@ -450,12 +467,22 @@ _handle_signal_process_group(int fd, slurmd_job_t *job, uid_t uid)
 	}
 
 	/*
-	 * Signal the process group
+	 * Sanity checks
 	 */
 	if (job->pgid <= (pid_t)1) {
 		debug ("step %u.%u invalid [jmgr_pid:%d pgid:%u]", 
                        job->jobid, job->stepid, job->jmgr_pid, job->pgid);
 		rc = ESLURMD_JOB_NOTRUNNING;
+		goto done;
+	}
+
+	/*
+	 * Signal the process group
+	 */
+	pthread_mutex_lock(&suspend_mutex);
+	if (suspended) {
+		rc = ESLURMD_STEP_SUSPENDED;
+		pthread_mutex_unlock(&suspend_mutex);
 		goto done;
 	}
 
@@ -468,6 +495,7 @@ _handle_signal_process_group(int fd, slurmd_job_t *job, uid_t uid)
 		verbose("Sent signal %d to %u.%u, pgid %d", 
 			signal, job->jobid, job->stepid, job->pgid);
 	}
+	pthread_mutex_unlock(&suspend_mutex);
 	
 done:
 	/* Send the return code */
@@ -525,6 +553,13 @@ _handle_signal_task_local(int fd, slurmd_job_t *job, uid_t uid)
 	/*
 	 * Signal the task
 	 */
+	pthread_mutex_lock(&suspend_mutex);
+	if (suspended) {
+		rc = ESLURMD_STEP_SUSPENDED;
+		pthread_mutex_unlock(&suspend_mutex);
+		goto done;
+	}
+
 	if (kill(job->task[ltaskid]->pid, signal) == -1) {
 		rc = -1;
 		verbose("Error sending signal %d to %u.%u, pid %d: %s", 
@@ -535,6 +570,7 @@ _handle_signal_task_local(int fd, slurmd_job_t *job, uid_t uid)
 			signal, job->jobid, job->stepid,
 			job->task[ltaskid]->pid);
 	}
+	pthread_mutex_unlock(&suspend_mutex);
 	
 done:
 	/* Send the return code */
@@ -548,6 +584,7 @@ static int
 _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
+	int errnum = 0;
 	int signal;
 
 	debug("_handle_signal_container for job %u.%u",
@@ -561,23 +598,35 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 		      "owned by uid %ld",
 		      (long)uid, job->jobid, job->stepid, (long)job->uid);
 		rc = -1;
-		errno = EPERM;
+		errnum = EPERM;
+		goto done;
+	}
+
+	/*
+	 * Sanity checks
+	 */
+	if (job->cont_id == 0) {
+		debug ("step %u.%u invalid container [cont_id:%u]", 
+			job->jobid, job->stepid, job->cont_id);
+		rc = -1;
+		errnum = ESLURMD_JOB_NOTRUNNING;
 		goto done;
 	}
 
 	/*
 	 * Signal the container
 	 */
-	if (job->cont_id == 0) {
-		debug ("step %u.%u invalid container [cont_id:%u]", 
-			job->jobid, job->stepid, job->cont_id);
+	pthread_mutex_lock(&suspend_mutex);
+	if (suspended) {
 		rc = -1;
-		errno = ESLURMD_JOB_NOTRUNNING;
+		errnum = ESLURMD_STEP_SUSPENDED;
+		pthread_mutex_unlock(&suspend_mutex);
 		goto done;
 	}
 
 	if (slurm_container_signal(job->cont_id, signal) < 0) {
 		rc = -1;
+		errnum = errno;
 		verbose("Error sending signal %d to %u.%u: %s", 
 			signal, job->jobid, job->stepid, 
 			slurm_strerror(rc));
@@ -585,11 +634,12 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 		verbose("Sent signal %d to %u.%u", 
 			signal, job->jobid, job->stepid);
 	}
+	pthread_mutex_unlock(&suspend_mutex);
 
 done:
-	/* Send the return code and errno */
+	/* Send the return code and errnum */
 	safe_write(fd, &rc, sizeof(int));
-	safe_write(fd, &errno, sizeof(int));
+	safe_write(fd, &errnum, sizeof(int));
 	return SLURM_SUCCESS;
 rwfail:
 	return SLURM_FAILURE;
@@ -712,3 +762,96 @@ rwfail:
 	return SLURM_FAILURE;
 }
 
+static int
+_handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
+{
+	int rc = SLURM_SUCCESS;
+	int errnum = 0;
+
+	debug("_handle_suspend for job %u.%u",
+	      job->jobid, job->stepid);
+
+	debug3("  uid = %d", uid);
+	if (!_slurm_authorized_user(uid)) {
+		debug("job step suspend request from uid %ld for job %u.%u ",
+		      (long)uid, job->jobid, job->stepid);
+		rc = -1;
+		errnum = EPERM;
+		goto done;
+	}
+
+	/*
+	 * Signal the container
+	 */
+	pthread_mutex_lock(&suspend_mutex);
+	if (suspended) {
+		rc = -1;
+		errnum = ESLURMD_STEP_SUSPENDED;
+		pthread_mutex_unlock(&suspend_mutex);
+		goto done;
+	} else {
+		if (slurm_container_signal(job->cont_id, SIGSTOP) < 0) {
+			verbose("Error suspending %u.%u: %m", 
+			        job->jobid, job->stepid);
+		} else {
+			verbose("Suspended %u.%u", job->jobid, job->stepid);
+		}
+		suspended = true;
+	}
+	pthread_mutex_unlock(&suspend_mutex);
+
+done:
+	/* Send the return code and errno */
+	safe_write(fd, &rc, sizeof(int));
+	safe_write(fd, &errnum, sizeof(int));
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_FAILURE;
+}
+
+static int
+_handle_resume(int fd, slurmd_job_t *job, uid_t uid)
+{
+	int rc = SLURM_SUCCESS;
+	int errnum = 0;
+
+	debug("_handle_resume for job %u.%u",
+	      job->jobid, job->stepid);
+
+	debug3("  uid = %d", uid);
+	if (!_slurm_authorized_user(uid)) {
+		debug("job step resume request from uid %ld for job %u.%u ",
+		      (long)uid, job->jobid, job->stepid);
+		rc = -1;
+		errnum = EPERM;
+		goto done;
+	}
+
+	/*
+	 * Signal the container
+	 */
+	pthread_mutex_lock(&suspend_mutex);
+	if (!suspended) {
+		rc = -1;
+		errnum = ESLURMD_STEP_NOTSUSPENDED;
+		pthread_mutex_unlock(&suspend_mutex);
+		goto done;
+	} else {
+		if (slurm_container_signal(job->cont_id, SIGCONT) < 0) {
+			verbose("Error resuming %u.%u: %m", 
+			        job->jobid, job->stepid);
+		} else {
+			verbose("Resumed %u.%u", job->jobid, job->stepid);
+		}
+		suspended = false;
+	}
+	pthread_mutex_unlock(&suspend_mutex);
+
+done:
+	/* Send the return code and errno */
+	safe_write(fd, &rc, sizeof(int));
+	safe_write(fd, &errnum, sizeof(int));
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_FAILURE;
+}
