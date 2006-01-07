@@ -51,7 +51,9 @@ typedef enum {
 	REQUEST_INFO,
 	REQUEST_ATTACH,
 	REQUEST_PID_IN_CONTAINER,
-	REQUEST_DAEMON_PID
+	REQUEST_DAEMON_PID,
+	REQUEST_STEP_SUSPEND,
+	REQUEST_STEP_RESUME
 } step_msg_t;
 
 typedef enum {
@@ -139,6 +141,25 @@ bool stepd_pid_in_container(int fd, pid_t pid);
  * Return the process ID of the slurmstepd.
  */
 pid_t stepd_daemon_pid(int fd);
+
+/*
+ * Suspend execution of the job step.  Only root or SlurmUser is
+ * authorized to use this call.
+ *
+ * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
+ * and sets errno.
+ */
+int stepd_suspend(int fd);
+
+/*
+ * Resume execution of the job step that has been suspended by a
+ * call to stepd_suspend().  Only root or SlurmUser is
+ * authorized to use this call.
+ *
+ * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
+ * and sets errno.
+ */
+int stepd_resume(int fd);
 
 #define safe_read(fd, ptr, size) do {					\
 		if (read(fd, ptr, size) != size) {			\
