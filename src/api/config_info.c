@@ -99,9 +99,9 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->job_comp_loc);
 	fprintf(out, "JobCompType       = %s\n", 
 		slurm_ctl_conf_ptr->job_comp_type);
-	fprintf(out, "JobCredPrivateKey = %s\n", 
+	fprintf(out, "JobCredentialPrivateKey = %s\n", 
 		slurm_ctl_conf_ptr->job_credential_private_key);
-	fprintf(out, "JobCredPublicKey  = %s\n", 
+	fprintf(out, "JobCredentialPublicCertificate = %s\n", 
 		slurm_ctl_conf_ptr->job_credential_public_certificate);
 	fprintf(out, "KillWait          = %u\n", 
 		slurm_ctl_conf_ptr->kill_wait);

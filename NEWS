@@ -4,6 +4,9 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 0.7.0-pre9
 =============================
  -- Fix sinfo filtering bug, especially "sinfo -R" output.
+ -- Fix "scontrol show config" to display JobCredentialPrivateKey instead
+    of JobCredPrivateKey and JobCredentialPublicCertificate instead of
+    JobCredPublicKey.  They now match the options in the slurm.conf.
 
 * Changes in SLURM 0.7.0-pre8
 =============================
