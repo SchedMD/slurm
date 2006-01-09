@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Fix "scontrol show config" to display JobCredentialPrivateKey instead
     of JobCredPrivateKey and JobCredentialPublicCertificate instead of
     JobCredPublicKey.  They now match the options in the slurm.conf.
+ -- Fix bug in job accounting for very long node list records (Andy Riebs,
+    HP, sacct_buf.patch).
 
 * Changes in SLURM 0.7.0-pre8
 =============================

@@ -154,8 +154,9 @@
 
 #define BRIEF_FIELDS "jobstep,status,error"
 #define DEFAULT_FIELDS "jobstep,jobname,partition,ncpus,status,error"
-#define BUFSIZE 1024
 #define LONG_FIELDS "jobstep,usercpu,systemcpu,minflt,majflt,nprocs,ncpus,elapsed,status,error"
+
+#define MINBUFSIZE 1024
 
 /* The following literals define how many significant characters
  * are used in a yyyymmddHHMMSS timestamp. */
@@ -260,6 +261,7 @@ char *elapsedTime(long secs, long usecs);
 int findJobRecord(long job);
 int findJobstepRecord(long j, long jobstep);
 void getData(void);
+char *fgetLine(char **buf, int *bsize, FILE *stream);
 void getOptions(int argc, char **argv);
 void helpFieldsMsg(void);
 void helpMsg(void);
@@ -657,14 +659,15 @@ void doExpire(void)
 {
 #define EXP_STG_LENGTH 12
 #define TERM_REC_FIELDS 11
-	char	buf[BUFSIZE],
+	char	*buf,
 		exp_stg[EXP_STG_LENGTH+1], /* YYYYMMDDhhmm */
 		*expired_logfile_name,
 		*f[TERM_REC_FIELDS],
 		*fptr,
 		*new_logfile_name,
 		*old_logfile_name;
-	int	new_file,
+	int	bufsize=MINBUFSIZE,
+		new_file,
 		i;
 	long	*exp_table = NULL;	/* table of expired job numbers */
 	int	exp_table_allocated = 0,
@@ -724,8 +727,11 @@ void doExpire(void)
 				old_logfile_name);
 		exit(1);
 	}
+
+	/* create our initial buffer */
+	buf = malloc(bufsize);
 	while (1) {
-		if (fgets(buf, BUFSIZE, logfile) == NULL)
+		if (fgetLine(&buf, &bufsize, logfile) == NULL)
 			break;
 		lc++;
 		fptr = buf;	/* break the record into NULL-
@@ -813,7 +819,7 @@ void doExpire(void)
 		fprintf(stderr, "\n---- debug: end of exp_table ---\n");
 	}
 	rewind(logfile);
-	while (fgets(buf, BUFSIZE, logfile)) {
+	while (fgetLine(&buf, &bufsize, logfile)) {
 		long tmp;
 		tmp = strtol(buf, NULL, 10);
 		if (bsearch(&tmp, exp_table, exp_table_entries,
@@ -872,7 +878,7 @@ void doExpire(void)
 		perror("looking for late-arriving records");
 		exit(1);
 	}
-	while (fgets(buf, BUFSIZE, logfile)) {
+	while (fgetLine(&buf, &bufsize, logfile)) {
 		if (fputs(buf, new_logfile)<0) {
 			perror("writing final records");
 			exit(1);
@@ -1124,6 +1130,29 @@ char *elapsedTime(long secs, long usecs)
 	return(outbuf);
 }
 
+/*
+ * Ensure that we can handle very long lines of data from the file.
+ * Note that callers probably should NOT free() the buffer between
+ * calls, since it is perfectly reusable.
+ */
+char *fgetLine(char **buf, int *bsize, FILE *stream)
+{
+	int	eob;
+	char	*ret;
+
+	if ((ret=fgets(*buf, *bsize, stream))) {
+		while (strlen(*buf) == (*bsize-1)) {
+			eob = *bsize-1;
+			*bsize += MINBUFSIZE;
+			*buf = realloc(*buf, *bsize);
+			ret=fgets(*buf+eob, *bsize, stream);
+		}
+		ret=*buf;
+	} 
+	return ret;
+}
+
+
 int findJobRecord(long job)
 {
 	int	i;
@@ -1148,14 +1177,16 @@ int findJobstepRecord(long j, long jobstep)
 
 void getData(void)
 {
-	char	buf[BUFSIZE],
+	char	*buf,
 		*f[MAX_RECORD_FIELDS+1],	/* End list with null entry */
 		*fptr;
-	int	i;
+	int	bufsize=MINBUFSIZE,
+		i;
 
 	openLogFile();
+	buf=malloc(MINBUFSIZE);
 	while (1) {
-		if (fgets(buf, BUFSIZE, logfile) == NULL)
+		if (fgetLine(&buf, &bufsize, logfile) == NULL)
 			break;
 		lc++;
 		fptr = buf;	/* break the record into NULL-
@@ -1237,7 +1268,7 @@ void getData(void)
 	}
 	fclose(logfile);
 	return;
-}
+} 
 
 void getOptions(int argc, char **argv)
 {
