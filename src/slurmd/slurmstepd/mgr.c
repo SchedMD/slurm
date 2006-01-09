@@ -1252,7 +1252,7 @@ _initgroups(slurmd_job_t *job)
 	gid = job->pwd->pw_gid;
 	debug2("Uncached user/gid: %s/%ld", username, (long)gid);
 	if (rc = initgroups(username, gid)) {
-		error("Error in initgroups(%s, %ld)",
+		error("Error in initgroups(%s, %ld): %m",
 		      username, (long)gid);
 		return -1;
 	}
