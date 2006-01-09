@@ -46,8 +46,8 @@
 #include "src/sinfo/sinfo.h"
 
 /* getopt_long options, integers but not characters */
-#define OPT_LONG_HELP  0x100
-#define OPT_LONG_USAGE 0x101
+#define OPT_LONG_HELP   0x100
+#define OPT_LONG_USAGE  0x101
 #define OPT_LONG_HIDE	0x102
 
 /* FUNCTIONS */
@@ -75,7 +75,7 @@ extern void parse_command_line(int argc, char *argv[])
 	int option_index;
 	static struct option long_options[] = {
 		{"all",       no_argument,       0, 'a'},
-		{"bg",       no_argument,       0, 'b'},
+		{"bg",        no_argument,       0, 'b'},
 		{"dead",      no_argument,       0, 'd'},
 		{"exact",     no_argument,       0, 'e'},
 		{"noheader",  no_argument,       0, 'h'},
@@ -94,7 +94,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"version",   no_argument,       0, 'V'},
 		{"help",      no_argument,       0, OPT_LONG_HELP},
 		{"usage",     no_argument,       0, OPT_LONG_USAGE},
-		{"hide",     no_argument, 0, OPT_LONG_HIDE},
+		{"hide",      no_argument,       0, OPT_LONG_HIDE},
 		{NULL,        0,                 0, 0}
 	};
 
