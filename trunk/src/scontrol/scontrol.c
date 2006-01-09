@@ -1670,7 +1670,7 @@ _update_node (int argc, char *argv[])
 					state_val = (uint16_t) j;
 					break;
 				}
-				if (strcmp(node_state_string(j),"END") == 0) {
+				if (j == NODE_STATE_END) {
 					exit_code = 1;
 					fprintf(stderr, "Invalid input: %s\n", 
 						argv[i]);
@@ -1684,7 +1684,7 @@ _update_node (int argc, char *argv[])
 					fprintf (stderr, "\n");
 					goto done;
 				}
-			}	
+			}
 			node_msg.node_state = state_val;
 			update_cnt++;
 		}
