@@ -1,7 +1,7 @@
-.TH "Slurm API" "3" "February 2005" "Morris Jette" "Slurm job initiation functions"
+.TH "Slurm API" "3" "January 2006" "Morris Jette" "Slurm job initiation functions"
 .SH "NAME"
 slurm_allocate_resources, slurm_allocate_resources_and_run,
-slurm_confirm_allocation, 
+slurm_allocation_lookup, slurm_confirm_allocation, 
 slurm_free_resource_allocation_and_run_response_msg, 
 slurm_free_submit_response_response_msg, slurm_init_job_desc_msg, 
 slurm_job_will_run, slurm_submit_batch_job
@@ -24,6 +24,14 @@ int \fBslurm_allocate_resources_and_run\fR (
 .br 
 	resource_allocation_and_run_response_msg_t **\fIslurm_alloc_run_msg_pptr\fP
 .br 
+);
+.LP
+int \fBslurm_allocation_lookup\fR {
+.br
+	uint32_t \fIjobid\fP,
+.br
+	resource_allocation_response_msg_t **\fIslurm_alloc_msg_pptr\fP
+.br
 );
 .LP 
 int \fBslurm_confirm_allocation\fR (
@@ -90,7 +98,8 @@ structure's contents.
 .TP 
 \fIslurm_alloc_msg_ptr\fP
 Specifies the pointer to the structure to be created and filled in by the function 
-\fIslurm_allocate_resources\fP, \fIslurm_confirm_allocation\fP or \fIslurm_job_will_run\fP.
+\fIslurm_allocate_resources\fP, \fIslurm_allocation_lookup\fP, 
+\fIslurm_confirm_allocation\fP or \fIslurm_job_will_run\fP.
 .TP 
 \fIslurm_alloc_run_msg_pptr\fP
 Specifies the double pointer to the structure to be created and filled with a 
@@ -123,17 +132,22 @@ including the initiation of a job step to span the full allocation. If resources
 The list of host names returned may be matched to their data in the proper order by 
 using the functions \fBhostlist_create\fR, \fBhostlist_shift\fR, and 
 \fBhostlist_destroy\fR.
-.LP 
-\fBslurm_confirm_allocation\fR Return detailed information on a specific existing job 
-allocation.  This function may only be successfully executed by the job's owner or user 
-root.
+.LP
+\fBslurm_allocation_lookup\fR Return detailed information on a specific
+existing job allocation. This function may only be sucessfully executed
+by the job's owner or user root. 
+.LP
+\fBslurm_confirm_allocation\fR Return detailed information on a specific 
+existing job allocation. \fBOBSOLETE FUNCTION: Use slurm_allocation_lookup
+instead.\fR This function may only be successfully executed by the job's 
+owner or user root.
 .LP 
 \fBslurm_free_resource_allocation_and_run_response_msg\fR Release the storage generated 
 in response to a call of the function \fBslurm_allocate_resources_and_run\fR.
 .LP 
 \fBslurm_free_resource_allocation_response_msg\fR Release the storage generated in response 
 to a call of the function \fBslurm_allocate_resources\fR, or
-\fBslurm_confirm_allocation\fR.
+\fBslurm_allocation_lookup\fR.
 .LP 
 \fBslurm_free_submit_response_msg\fR Release the storage generated in response 
 to a call of the function \fBslurm_submit_batch_job\fR.
@@ -275,7 +289,7 @@ int main (int argc, char *argv[])
 }
 
 .SH "COPYING"
-Copyright (C) 2002 The Regents of the University of California.
+Copyright (C) 2002-2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 UCRL-CODE-217948.
 .LP
