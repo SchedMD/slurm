@@ -84,7 +84,7 @@ static bool	_node_is_hidden(struct node_record *node_ptr);
 static void	_node_not_resp (struct node_record *node_ptr, time_t msg_time);
 static void 	_pack_node (struct node_record *dump_node_ptr, Buf buffer);
 static void	_sync_bitmaps(struct node_record *node_ptr, int job_count);
-static bool 	_valid_node_state_change(uint16_t old, uint16_t *new); 
+static bool 	_valid_node_state_change(uint16_t old, uint16_t new); 
 #if _DEBUG
 static void	_dump_hash (void);
 #endif
@@ -830,7 +830,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 	struct node_record *node_ptr;
 	char  *this_node_name ;
 	hostlist_t host_list;
-	uint16_t no_resp_flag = 0, state_val;
+	uint16_t node_flags = 0, state_val;
 
 	if (update_node_msg -> node_names == NULL ) {
 		error ("update_node: invalid node name  %s", 
@@ -861,7 +861,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 
 		if (state_val != (uint16_t) NO_VAL) {
 			base_state = node_ptr->node_state; 
-			if (!_valid_node_state_change(base_state, &state_val)) {
+			if (!_valid_node_state_change(base_state, state_val)) {
 				info ("Invalid node state transition requested "
 					"for node %s from=%s to=%s",
 					this_node_name, 
@@ -872,6 +872,14 @@ int update_node ( update_node_msg_t * update_node_msg )
 			}
 		}
 		if (state_val != (uint16_t) NO_VAL) {
+			if (state_val == NODE_RESUME) {
+				node_ptr->node_state &= (~NODE_STATE_DRAIN);
+				base_state &= NODE_STATE_BASE;
+				if (base_state == NODE_STATE_DOWN)
+					state_val = NODE_STATE_IDLE;
+				else
+					state_val = base_state;
+			}
 			if (state_val == NODE_STATE_DOWN) {
 				/* We must set node DOWN before killing 
 				 * its jobs */
@@ -901,9 +909,9 @@ int update_node ( update_node_msg_t * update_node_msg )
 			}
 
 			if (err_code == 0) {
-				no_resp_flag = node_ptr->node_state & 
-				               NODE_STATE_NO_RESPOND;
-				node_ptr->node_state = state_val | no_resp_flag;
+				node_flags = node_ptr->node_state & 
+						NODE_STATE_FLAGS;
+				node_ptr->node_state = state_val | node_flags;
 				info ("update_node: node %s state set to %s",
 					this_node_name, 
 					node_state_string(state_val));
@@ -988,29 +996,26 @@ extern int drain_nodes ( char *nodes, char *reason )
 	return error_code;
 }
 /* Return true if admin request to change node state from old to new is valid */
-static bool _valid_node_state_change(uint16_t old, uint16_t *new)
+static bool _valid_node_state_change(uint16_t old, uint16_t new)
 {
 	uint16_t base_state, node_flags;
-	if (old == *new)
+	if (old == new)
 		return true;
 
 	base_state = (old) & NODE_STATE_BASE;
 	node_flags = (old) & NODE_STATE_FLAGS;
-	switch (*new) {
+	switch (new) {
 		case NODE_STATE_DOWN:
 		case NODE_STATE_DRAIN:
 			return true;
 			break;
 
 		case NODE_RESUME:
-			if (base_state == NODE_STATE_DOWN) {
-				*new = NODE_STATE_IDLE | node_flags;
+			if (base_state == NODE_STATE_UNKNOWN)
+				return false;
+			if ((base_state == NODE_STATE_DOWN)
+			||  (node_flags & NODE_STATE_DRAIN))
 				return true;
-			}
-			if (node_flags & NODE_STATE_DRAIN) {
-				*new = old & (~NODE_STATE_DRAIN);
-				return true;
-			}
 			break;
 
 		case NODE_STATE_IDLE:
