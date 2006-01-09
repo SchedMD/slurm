@@ -120,8 +120,8 @@ daemons. Please see: slurmctld(8), slurmd(8), scontrol(1), sinfo(1),
 squeue(1), scancel(1), and srun(1).
 
 Also, take a look at the Quickstart Guide to get acquainted with
-running and managing jobs with SLURM: doc/html/quick.start.guide.html
-or PREFIX/share/doc/quick.start.guide.html.
+running and managing jobs with SLURM: doc/html/quickstart_admin.html
+or PREFIX/share/doc/quickstart_admin.html.
 
 
 PROBLEMS
