@@ -31,7 +31,9 @@ Install architecture-independent files in PREFIX; default value is /usr/local.</
 </i> 
 Specify location of SLURM configuration file. </p>
 
-<p>Optional SLURM plugins will be built automatically when the
+<p>If required libraries or header files are in non-standard locations, 
+set CFLAG and LDLFLAG environment variables accordingly.
+Optional SLURM plugins will be built automatically when the
 <span class="commandline">configure</span> script detects that the required 
 build requirements are present. Build dependencies for various plugins
 are denoted below.
@@ -525,6 +527,6 @@ in the NEWS file.
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 7 December 2005</p>
+<p style="text-align:center;">Last modified 9 January 2006</p>
 
 <!--#include virtual="footer.txt"-->
