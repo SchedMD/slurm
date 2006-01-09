@@ -51,9 +51,12 @@ set host           ""
 set timeout $max_job_delay
 spawn $srun -N1 --cpus-per-task=1 -l -t1 $bin_hostname  
 expect {
-	-re "$number: ($alpha_numeric)" {
-		set host $expect_out(1,string)
-		incr cpu_count
+	-re "($number): ($alpha_numeric)" {
+		set task $expect_out(1,string)
+		set host $expect_out(2,string)
+		if {$task >= $cpu_count} {
+			set cpu_count [expr $task + 1]
+		}
 		exp_continue
 	}
 	-re "Task count specification invalid" {
