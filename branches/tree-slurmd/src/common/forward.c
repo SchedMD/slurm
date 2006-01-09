@@ -105,6 +105,7 @@ void *_forward_thread(void *arg)
 		ret_data_info = xmalloc(sizeof(ret_types_t));
 		list_push(type->ret_data_list, ret_data_info);
 		ret_data_info->node_name = xstrdup(fwd_msg->node_name);
+		ret_data_info->nodeid = fwd_msg->header.srun_node_id;
 		pthread_mutex_unlock(fwd_msg->forward_mutex);
 		pthread_cond_signal(fwd_msg->notify);
 	
@@ -120,7 +121,8 @@ nothing_sent:
 	ret_data_info = xmalloc(sizeof(ret_types_t));
 	list_push(type->ret_data_list, ret_data_info);
 	ret_data_info->node_name = xstrdup(fwd_msg->node_name);
-
+	ret_data_info->nodeid = fwd_msg->header.srun_node_id;
+						
 	if(errno != SLURM_SUCCESS) {
 		type->type = REQUEST_PING;
 		type->msg_rc = SLURM_ERROR;
@@ -338,7 +340,7 @@ extern int set_forward_launch (forward_t *forward,
 			i=0; 
 			while(host = hostlist_next(itr)) { 
 				if(!strcmp(host,
-					   job->step_layout->host[*pos])) {
+					   job->step_layout->host[*pos+j])) {
 					free(host);
 					break; 
 				}
@@ -346,7 +348,6 @@ extern int set_forward_launch (forward_t *forward,
 				free(host);
 			}
 			hostlist_iterator_reset(itr);
-			
 			forward->addr[j-1] = job->slurmd_addr[i];
 			strncpy(&forward->name[(j-1) * MAX_NAME_LEN], 
 				job->step_layout->host[*pos+j], 

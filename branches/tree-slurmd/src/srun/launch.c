@@ -397,19 +397,10 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 	xfree(thd);
 }
 
-static int
+static List
 _send_msg_rc(slurm_msg_t *msg)
 {
-	int rc     = 0;
-	int errnum = 0;
-	/* FIXME!!!!!!!!!!!!!!!!!!! This is where a problem lies here */
-       	if ((rc = slurm_send_recv_rc_msg_only_one(msg, &errnum, opt.msg_timeout)) < 0) 
-		return SLURM_ERROR;
-
-	if (errnum != 0)
-		slurm_seterrno_ret (errnum);
-
-	return SLURM_SUCCESS;
+	return slurm_send_recv_rc_msg(msg, opt.msg_timeout); 
 }
 
 static void
@@ -483,51 +474,74 @@ static void * _p_launch_task(void *arg)
 	int                        nodeid  = req->srun_node_id;
 	int                        failure = 0;
 	int                        retry   = 3; /* retry thrice */
-
+	List ret_list = NULL;
+	ListIterator itr;
+	ListIterator data_itr;
+	ret_types_t *ret_type = NULL;
+	ret_data_info_t *ret_data_info = NULL;
+	int found = 0;
+	
 	th->state  = DSH_ACTIVE;
 	th->tstart = time(NULL);
 	//if (_verbose)
-	        _print_launch_msg(msg, job->step_layout->host[nodeid], nodeid);
-
-    again:
-	if (_send_msg_rc(req) < 0) {	/* Has timeout */
-
-		if (errno != EINTR)
-			verbose("first launch error on %s: %m", 
-				job->step_layout->host[nodeid]);
-
-		if ((errno != ETIMEDOUT) 
-		    && (job->state == SRUN_JOB_LAUNCHING)
-		    && (errno != ESLURMD_INVALID_JOB_CREDENTIAL) 
-		    &&  retry--                                  ) {
-			sleep(1);
-			goto again;
-		}
-
-		if (errno == EINTR)
-			verbose("launch on %s canceled", 
-				job->step_layout->host[nodeid]);
-		else
-			error("second launch error on %s: %m", 
-			      job->step_layout->host[nodeid]);
-
-		_update_failed_node(job, nodeid);
-
+	_print_launch_msg(msg, job->step_layout->host[nodeid], nodeid);
+	
+again:
+	ret_list = _send_msg_rc(req);
+	if(!ret_list) {
 		th->state = DSH_FAILED;
-
-		failure = 1;
-
-	} else 
-		_update_contacted_node(job, nodeid);
+			
+		goto cleanup;
+	}
+	itr = list_iterator_create(ret_list);		
+	while((ret_type = list_next(itr)) != NULL) {
+		data_itr = list_iterator_create(ret_type->ret_data_list);
+		while((ret_data_info = list_next(data_itr)) != NULL) {
+			if(ret_type->msg_rc != SLURM_ERROR) {
+				_update_contacted_node(job, 
+						       ret_data_info->nodeid);
+				continue;
+			}
+			errno = ret_type->err;
+			if (errno != EINTR)
+				verbose("first launch error on %s: %m",
+					job->step_layout->
+					host[ret_data_info->nodeid]);
+			
+			if ((errno != ETIMEDOUT) 
+			    && (job->state == SRUN_JOB_LAUNCHING)
+			    && (errno != ESLURMD_INVALID_JOB_CREDENTIAL) 
+			    &&  retry--) {
+				sleep(1);
+				goto again;
+			}
+			
+			if (errno == EINTR)
+				verbose("launch on %s canceled", 
+					job->step_layout->
+					host[ret_data_info->nodeid]);
+			else
+				error("second launch error on %s: %m", 
+				      job->step_layout->
+				      host[ret_data_info->nodeid]);
+			
+			_update_failed_node(job, ret_data_info->nodeid);
+			
+			th->state = DSH_FAILED;
+			
+			pthread_mutex_lock(&active_mutex);
+			fail_launch_cnt++;
+			pthread_mutex_unlock(&active_mutex);
+		}
+	}
+cleanup:
 	pthread_mutex_lock(&active_mutex);
 	th->state = DSH_DONE;
 	active--;
 	if (opt.parallel_debug)
 		joinable++;
-	fail_launch_cnt += failure;
 	pthread_cond_signal(&active_cond);
-	pthread_mutex_unlock(&active_mutex);
-
+	
 	return NULL;
 }
 

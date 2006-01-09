@@ -2985,6 +2985,7 @@ _pack_ret_list(List ret_list,
 		itr_data = list_iterator_create(ret_type->ret_data_list);
 		while((ret_data_info = list_next(itr_data)) != NULL) {
 			packstr(ret_data_info->node_name, buffer);
+			pack32(ret_data_info->nodeid, buffer);
 			msg.data = ret_data_info->data;
 			pack_msg(&msg, buffer);
 		} 
@@ -3020,6 +3021,7 @@ _unpack_ret_list(List *ret_list,
 			list_push(ret_type->ret_data_list, ret_data_info);
 			safe_unpackstr_xmalloc(&ret_data_info->node_name, 
 					       &uint16_tmp, buffer);
+			safe_unpack32(&ret_data_info->nodeid, buffer);
 			unpack_msg(&msg, buffer);
 			ret_data_info->data = msg.data;
 		}
