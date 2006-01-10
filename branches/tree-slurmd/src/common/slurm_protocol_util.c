@@ -70,6 +70,7 @@ void init_header(header_t * header, slurm_msg_t *msg,
 		header->ret_cnt = 0;
 	header->srun_node_id = msg->srun_node_id;
 	header->ret_list = msg->ret_list;
+	header->orig_addr = msg->orig_addr;
 }
 
 /*

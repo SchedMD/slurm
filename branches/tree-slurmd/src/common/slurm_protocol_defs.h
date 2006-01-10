@@ -191,18 +191,20 @@ typedef struct slurm_protocol_header {
 	uint16_t ret_cnt;
 	forward_t forward;
 	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
+	slurm_addr orig_addr;       
 	List ret_list;
 } header_t;
 
 typedef struct slurm_msg {
 	slurm_msg_type_t msg_type;
-	slurm_addr address;
+	slurm_addr address;       
 	slurm_fd conn_fd;
 	void *cred;
 	void *data;
 	uint32_t data_size;
 	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
 	forward_t forward;
+	slurm_addr orig_addr;       
 	List ret_list;
 } slurm_msg_t;
 
@@ -331,7 +333,8 @@ typedef struct launch_tasks_request_msg {
 	uint16_t  *io_port;
 	uint16_t  task_flags;
 	uint32_t **global_task_ids;
-
+	slurm_addr io_addr;	  /* where message really came from for io */ 
+	
 	/* stdout/err/in per task filenames */
 	char     *ofname;
 	char     *efname;

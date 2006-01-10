@@ -303,7 +303,8 @@ pack_header(header_t * header, Buf buffer)
 		_pack_ret_list(header->ret_list,
 			       header->ret_cnt, buffer);		
 	}
-	pack32(header->srun_node_id, buffer);	
+	pack32(header->srun_node_id, buffer);
+	slurm_pack_slurm_addr(&header->orig_addr, buffer);
 }
 
 /* unpack_header
@@ -321,7 +322,7 @@ unpack_header(header_t * header, Buf buffer)
 
 	header->forward.addr = NULL;
 	header->forward.name = NULL;
-
+	
 	safe_unpack16(&header->version, buffer);
 	safe_unpack16(&header->flags, buffer);
 	safe_unpack16(&tmp, buffer);
@@ -355,6 +356,7 @@ unpack_header(header_t * header, Buf buffer)
 		header->ret_list = NULL;
 	}
 	safe_unpack32(&header->srun_node_id, buffer);
+	slurm_unpack_slurm_addr_no_alloc(&header->orig_addr, buffer);
 	
 	return SLURM_SUCCESS;
 
@@ -2521,6 +2523,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 			     msg->tasks_to_launch[i], 
 			     buffer);	
 	}
+	slurm_pack_slurm_addr(&msg->io_addr, buffer);
 	packstr_array(msg->env, msg->envc, buffer);
 	packstr(msg->cwd, buffer);
 	packstr_array(msg->argv, msg->argc, buffer);
@@ -2575,6 +2578,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 			goto unpack_error;
 
 	}
+	slurm_unpack_slurm_addr_no_alloc(&msg->io_addr, buffer);
 	safe_unpackstr_array(&msg->env, &msg->envc, buffer);
 	safe_unpackstr_xmalloc(&msg->cwd, &uint16_tmp, buffer);
 	safe_unpackstr_array(&msg->argv, &msg->argc, buffer);

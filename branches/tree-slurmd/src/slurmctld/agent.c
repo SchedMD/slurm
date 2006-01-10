@@ -785,6 +785,8 @@ static void *_thread_per_group_rpc(void *args)
 	msg.data     = task_ptr->msg_args_ptr;
 	msg.forward = thread_ptr->forward;
 	msg.ret_list = NULL;
+	msg.orig_addr.sin_addr.s_addr = 0;
+	
 	//info("forwarding to %d",msg.forward.cnt);
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {

@@ -664,6 +664,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	ListIterator itr;
 	int i=0;
 	int fwd_cnt = 0;
+	char addrbuf[INET_ADDRSTRLEN];
 
 	List ret_list = list_create(destroy_ret_types);
 	
@@ -701,7 +702,12 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		list_destroy(header.ret_list);
 		header.ret_list = NULL;
 	}
-
+	
+	if(header.orig_addr.sin_addr.s_addr != 0) {
+		msg->orig_addr = header.orig_addr;
+	} else {
+		header.orig_addr = msg->orig_addr;
+	}
 	fwd_cnt = header.forward.cnt;
 	/* Forward message to other nodes */
 	if(fwd_cnt > 0) {
@@ -742,6 +748,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	 */
 	msg->msg_type = header.msg_type;
 	msg->srun_node_id = header.srun_node_id;
+	
 	if ( (header.body_length > remaining_buf(buffer)) ||
 	     (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
 		(void) g_slurm_auth_destroy(auth_cred);

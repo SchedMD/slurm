@@ -112,7 +112,8 @@ launch(void *arg)
 	hostlist_iterator_t itr = NULL;
 	char *host = NULL;
 	int *span = set_span(job->step_layout->num_hosts);
-	
+	char addrbuf[INET_ADDRSTRLEN];
+
 	update_job_state(job, SRUN_JOB_LAUNCHING);
 	
 	debug("going to launch %d tasks on %d hosts", 
@@ -158,6 +159,10 @@ launch(void *arg)
 
 	r.global_task_ids = job->step_layout->tids;
 	r.cpus_allocated  = job->step_layout->cpus;
+	//slurm_get_stream_addr(job->listensock[0], &r.io_addr);
+	/* //r.io_addr = job->jaddr[0]; */
+/* 	slurm_print_slurm_addr (&r.io_addr, addrbuf, INET_ADDRSTRLEN); */
+/* 	info("addrbuf = %s %d",addrbuf, job->listensock[0]); */
 	
 	r.io_port = xmalloc(sizeof(uint16_t) * job->step_layout->num_hosts);
 	r.resp_port = xmalloc(sizeof(uint16_t) * job->step_layout->num_hosts);
@@ -178,6 +183,8 @@ launch(void *arg)
 		m->msg_type        = REQUEST_LAUNCH_TASKS;
 		m->data            = &r;
 		m->ret_list = NULL;
+		m->orig_addr.sin_addr.s_addr = 0;
+
 		j=0; 
   		while(host = hostlist_next(itr)) { 
 			if(!strcmp(host,job->step_layout->host[i])) {
@@ -540,6 +547,7 @@ cleanup:
 	active--;
 	if (opt.parallel_debug)
 		joinable++;
+	pthread_mutex_unlock(&active_mutex);
 	pthread_cond_signal(&active_cond);
 	
 	return NULL;

@@ -207,7 +207,8 @@ extern int forward_msg(forward_struct_t *forward_struct,
 		forward_msg->timeout = forward_struct->timeout;
 		forward_msg->notify = &forward_struct->notify;
 		forward_msg->forward_mutex = &forward_struct->forward_mutex;
-
+		
+		forward_msg->header.orig_addr = header->orig_addr;
 		forward_msg->header.version = header->version;
 		forward_msg->header.flags = header->flags;
 		forward_msg->header.msg_type = header->msg_type;
