@@ -76,6 +76,7 @@ static char ** _build_env(uint32_t jobid, uid_t uid, char *bg_part_id);
 static bool _slurm_authorized_user(uid_t uid);
 static bool _job_still_running(uint32_t job_id);
 static int  _kill_all_active_steps(uint32_t jobid, int sig, bool batch);
+static int  _terminate_all_steps(uint32_t jobid, bool batch);
 static void _rpc_launch_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_spawn_task(slurm_msg_t *, slurm_addr *);
 static void _rpc_batch_job(slurm_msg_t *, slurm_addr *);
@@ -988,7 +989,7 @@ _rpc_terminate_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		goto done3;
 	}
 
-	rc = stepd_signal_container(fd, req->signal);
+	rc = stepd_terminate(fd);
 	if (rc == -1)
 		rc = ESLURMD_JOB_NOTRUNNING;
 
@@ -1265,6 +1266,56 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 	list_destroy(steps);
 	if (step_cnt == 0)
 		debug2("No steps in jobid %u to send signal %d", jobid, sig);
+	return step_cnt;
+}
+
+/*
+ * _terminate_all_steps - signals the container of all steps of a job
+ * jobid IN - id of job to signal
+ * batch IN - if true signal batch script, otherwise skip it
+ * RET count of signaled job steps (plus batch script, if applicable)
+ */
+static int
+_terminate_all_steps(uint32_t jobid, bool batch)
+{
+	List steps;
+	ListIterator i;
+	step_loc_t *stepd;
+	int step_cnt  = 0;  
+	int fd;
+
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	i = list_iterator_create(steps);
+	while (stepd = list_next(i)) {
+		if (stepd->jobid != jobid) {
+			/* multiple jobs expected on shared nodes */
+			debug3("Step from other job: jobid=%u (this jobid=%u)",
+			       stepd->jobid, jobid);
+			continue;
+		}
+
+		if ((stepd->stepid == SLURM_BATCH_SCRIPT) && (!batch))
+			continue;
+
+		step_cnt++;
+
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   stepd->jobid, stepd->stepid);
+		if (fd == -1) {
+			debug3("Unable to connect to step %u.%u",
+			       stepd->jobid, stepd->stepid);
+			continue;
+		}
+
+		debug2("terminsate job step %u.%u", jobid, stepd->stepid);
+		if (stepd_terminate(fd) < 0)
+			debug("kill jobid=%u failed: %m", jobid);
+		close(fd);
+	}
+	list_iterator_destroy(i);
+	list_destroy(steps);
+	if (step_cnt == 0)
+		debug2("No steps in job %u to terminate", jobid);
 	return step_cnt;
 }
 
@@ -1616,8 +1667,16 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	 * so send SIGCONT first.
 	 */
 	_kill_all_active_steps(req->job_id, SIGCONT, true);
-
-	nsteps = _kill_all_active_steps(req->job_id, SIGTERM, true);
+	if (errno == ESLURMD_STEP_SUSPENDED) {
+		/*
+		 * If the job step is currently suspended, we don't
+		 * bother with a "nice" termination.
+		 */
+		debug2("Job is currently suspened, terminating");
+		nsteps = _terminate_all_steps(req->job_id, true);
+	} else {
+		nsteps = _kill_all_active_steps(req->job_id, SIGTERM, true);
+	}
 
 	/*
 	 *  If there are currently no active job steps and no
@@ -1654,7 +1713,7 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	 */
 	delay = MAX(conf->cf.kill_wait, 5);
 	if ( !_pause_for_job_completion (req->job_id, delay)
-	     && _kill_all_active_steps(req->job_id, SIGKILL, true) ) {
+	     && _terminate_all_steps(req->job_id, true) ) {
 		/*
 		 *  Block until all user processes are complete.
 		 */
@@ -1762,7 +1821,7 @@ _pause_for_job_completion (uint32_t job_id, int max_time)
 	while ( ((sec++ < max_time) || (max_time == 0))
 	      && (rc = _job_still_running (job_id))) {
 		if ((max_time == 0) && (sec > 1))
-			_kill_all_active_steps(job_id, SIGKILL, true);
+			_terminate_all_steps(job_id, true);
 		sleep (1);
 	}
 	/* 
