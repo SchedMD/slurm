@@ -1800,7 +1800,7 @@ static void _process_nodes(bg_record_t *bg_record)
 	if (node_name2bitmap(bg_record->nodes, 
 			     false, 
 			     &bg_record->bitmap)) {
-		error("Unable to convert nodes %s to bitmap", 
+		fatal("Unable to convert nodes %s to bitmap", 
 		      bg_record->nodes);
 	}
 #endif

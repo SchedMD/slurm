@@ -213,7 +213,7 @@ static int _post_bg_init_read(void *object, void *arg)
 	if (node_name2bitmap(bg_record->nodes, 
 			     false, 
 			     &bg_record->bitmap)) {
-		error("Unable to convert nodes %s to bitmap", 
+		fatal("Unable to convert nodes %s to bitmap", 
 		      bg_record->nodes);
 	}
 	//print_bg_record(bg_record);
