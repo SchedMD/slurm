@@ -487,7 +487,6 @@ _read_config()
 	if (conf->conffile == NULL)
 		conf->conffile = xstrdup(conf->cf.slurm_conf);
 
-/* 	conf->port          =  conf->cf.slurmd_port; */
 	conf->slurm_user_id =  conf->cf.slurm_user_id;
 
 	path_pubkey = xstrdup(conf->cf.job_credential_public_certificate);
