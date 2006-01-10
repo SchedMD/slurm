@@ -105,7 +105,6 @@ static void      _create_msg_socket();
 static void      _msg_engine();
 static int       _slurmd_init();
 static int       _slurmd_fini();
-static void      _create_conf();
 static void      _init_conf();
 static void      _print_conf();
 static void      _read_config();
@@ -141,7 +140,7 @@ main (int argc, char *argv[])
 	 * Create and set default values for the slurmd global
 	 * config variable "conf"
 	 */
-	_create_conf();
+	conf = xmalloc(sizeof(slurmd_conf_t));
 	_init_conf();
 	conf->argv = &argv;
 	conf->argc = &argc;
@@ -176,7 +175,7 @@ main (int argc, char *argv[])
 	info("slurmd version %s started", SLURM_VERSION);
 	debug3("finished daemonize");
 
-	/*_kill_old_slurmd();*/
+	_kill_old_slurmd();
 
 	if (conf->mlock_pages) {
 		/*
@@ -496,7 +495,7 @@ _read_config()
 	if (!conf->logfile)
 		conf->logfile = xstrdup(conf->cf.slurmd_logfile);
 
-	/* FIXME - temporary way to have multiple node_name slurmds on a node */
+	/* node_name may already be set from a command line parameter */
 	if (conf->node_name == NULL)
 		_free_and_set(&conf->node_name,
 			      get_conf_node_name(conf->hostname));
@@ -504,7 +503,11 @@ _read_config()
 	_free_and_set(&conf->prolog,   xstrdup(conf->cf.prolog));
 	_free_and_set(&conf->tmpfs,    xstrdup(conf->cf.tmp_fs));
 	_free_and_set(&conf->spooldir, xstrdup(conf->cf.slurmd_spooldir));
+	/* append the NodeName to the spooldir to make it unique */
+	xstrfmtcat(conf->spooldir, ".%s", conf->node_name);
 	_free_and_set(&conf->pidfile,  xstrdup(conf->cf.slurmd_pidfile));
+	/* append the NodeName to the pidfile name to make it unique */
+	xstrfmtcat(conf->pidfile, ".%s", conf->node_name);
 	_free_and_set(&conf->task_prolog, xstrdup(conf->cf.task_prolog));
 	_free_and_set(&conf->task_epilog, xstrdup(conf->cf.task_epilog));
 	_free_and_set(&conf->pubkey,   path_pubkey);     
@@ -562,12 +565,6 @@ _print_conf()
 	debug3("Slurm UID   = %u",       conf->slurm_user_id);
 	debug3("TaskProlog  = `%s'",     conf->task_prolog);
 	debug3("TaskEpilog  = `%s'",     conf->task_epilog);
-}
-
-static void 
-_create_conf()
-{
-	conf = xmalloc(sizeof(slurmd_conf_t));
 }
 
 static void
@@ -729,7 +726,7 @@ _slurmd_init()
 		/* 
 		 * Need to kill any running slurmd's here
 		 */
-		/*_kill_old_slurmd(); */
+		_kill_old_slurmd();
 
 		stepd_cleanup_sockets(conf->spooldir, conf->node_name);
 	}
