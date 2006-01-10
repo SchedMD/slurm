@@ -32,7 +32,8 @@ Install architecture-independent files in PREFIX; default value is /usr/local.</
 Specify location of SLURM configuration file. </p>
 
 <p>If required libraries or header files are in non-standard locations, 
-set CFLAG and LDLFLAG environment variables accordingly.
+set CFLAGS and LDFLAGS environment variables accordingly.
+Type <i>control --help</i> for a more complete description of options.
 Optional SLURM plugins will be built automatically when the
 <span class="commandline">configure</span> script detects that the required 
 build requirements are present. Build dependencies for various plugins
@@ -271,12 +272,14 @@ for the host &quot;mcri&quot;. Port numbers to be used for
 communications are specified as well as various timer values.</p>
 
 <p>A description of the nodes and their grouping into partitions is required. 
-Node names can have up to three names specifications: 
-<b>NodeName</b> is the name used in all SLURM tools when referring to the node,
+Node names can have up to three name specifications: 
+<b>NodeName</b> is the name used by all SLURM tools when referring to the node,
 <b>NodeAddr</b> is the name or IP address SLURM uses to communicate with the node, and 
 <b>NodeHostname</b> is the name returned by the command <i>/bin/hostname -s</i>.
-Only <b>NodeName</b> is required, although by supporting all three parameters 
-provides complete control over naming and addressing the nodes.</p>
+Only <b>NodeName</b> is required (the others default to the same name), 
+although supporting all three parameters provides complete control over 
+naming and addressing the nodes.  See the <i>slurm.conf</i> man page for 
+details on all configuration parameters.</p>
 
 <p>Nodes can be in more than one partition and each partition can have different 
 constraints (permitted users, time limits, job size limits, etc.).
@@ -335,17 +338,24 @@ PartitionName=pbatch Nodes=mcr[192-1151]
 using the program <a href="http://www.openssl.org/">openssl</a>. 
 <b>You must use openssl and not ssh-genkey to construct these keys.</b>
 An example of how to do this is shown below. Specify file names that 
-match the values of JobCredentialPrivateKey and JobCredentialPublicCertificate 
-in your configuration file. The JobCredentialPrivateKey 
-file must be readable only by SlurmUser. The JobCredentialPublicCertificate file 
-must be readable by all users. 
-Both files must be available on all nodes in the cluster. </p>
+match the values of <b>JobCredentialPrivateKey</b> and 
+<b>JobCredentialPublicCertificate</b> in your configuration file. 
+The <b>JobCredentialPrivateKey</b> file must be readable only by <b>SlurmUser</b>. 
+The <b>JobCredentialPublicCertificate</b> file must be readable by all users. 
+Both files must be available on all nodes in the cluster. 
+These keys are used by <i>slurmctld</i> to construct a job credential, 
+which is sent to <i>srun</i> and then forwarded to <i>slurmd</i> to 
+initiate job steps.</p>
+
 <p class="commandline" style="margin-left:.2in">openssl genrsa -out /usr/local/etc/slurm.key 
 1024<br>
 openssl rsa -in /usr/local/etc/slurm.key -pubout -out /usr/local/etc/slurm.cert 
 </p>
-<p>SLURM does not use reserved ports to authenticate communication between components. 
-You will need to have at least one &quot;auth&quot; plugin. Currently, only three 
+<p>SLURM does not use reserved ports to authenticate communication between 
+components, but relies upon an external entity to determine the user who 
+initiated a request.  
+You must specify one &quot;auth&quot; plugin for this purpose. 
+Currently, only three 
 authentication plugins are supported: <b>auth/none</b>, <b>auth/authd</b>, and 
 <b>auth/munge</b>. The auth/none plugin is built and used by default, but either 
 Brent Chun's <a href="http://www.theether.org/authd/">authd</a>, or Chris Dunlap's 
@@ -355,6 +365,7 @@ Unless you are experience with authd, we recommend the use of munge.
 The configure script in the top-level directory of this distribution will determine 
 which authentication plugins may be built. The configuration file specifies which 
 of the available plugins will be utilized. </p>
+
 <p>A PAM module (Pluggable Authentication Module) is available for SLURM that 
 can prevent a user from accessing a node which he has not been allocated, if that 
 mode of operation is desired.</p>
