@@ -271,7 +271,14 @@ for the host &quot;mcri&quot;. Port numbers to be used for
 communications are specified as well as various timer values.</p>
 
 <p>A description of the nodes and their grouping into partitions is required. 
-Nodes can be in more than one partition and each partition can have different 
+Node names can have up to three names specifications: 
+<b>NodeName</b> is the name used in all SLURM tools when referring to the node,
+<b>NodeAddr</b> is the name or IP address SLURM uses to communicate with the node, and 
+<b>NodeHostname</b> is the name returned by the command <i>/bin/hostname -s</i>.
+Only <b>NodeName</b> is required, although by supporting all three parameters 
+provides complete control over naming and addressing the nodes.</p>
+
+<p>Nodes can be in more than one partition and each partition can have different 
 constraints (permitted users, time limits, job size limits, etc.).
 Each partition can thus be considered a separate queue.
 Partition and node specifications use node range expressions to identify 
