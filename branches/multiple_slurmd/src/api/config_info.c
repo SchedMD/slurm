@@ -152,8 +152,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->slurmd_logfile);
 	fprintf(out, "SlurmdPidFile     = %s\n", 
 		slurm_ctl_conf_ptr->slurmd_pidfile);
-	fprintf(out, "SlurmdPort        = %u\n", 
-		slurm_ctl_conf_ptr->slurmd_port);
+/* 	fprintf(out, "SlurmdPort        = %u\n",  */
+/* 		slurm_ctl_conf_ptr->slurmd_port); */
 	fprintf(out, "SlurmdSpoolDir    = %s\n", 
 		slurm_ctl_conf_ptr->slurmd_spooldir);
 	fprintf(out, "SlurmdTimeout     = %u\n", 

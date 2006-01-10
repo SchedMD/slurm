@@ -115,7 +115,7 @@ launch(void *arg)
 	
 	debug("going to launch %d tasks on %d hosts", 
 	      opt.nprocs, job->step_layout->num_hosts);
-	debug("sending to slurmd port %d", slurm_get_slurmd_port());
+/*	debug("sending to slurmd port %d", slurm_get_slurmd_port());*/
 
 	msg_array_ptr = xmalloc(sizeof(launch_tasks_request_msg_t) 
 				* job->step_layout->num_hosts);
