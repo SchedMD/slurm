@@ -192,7 +192,6 @@ stepd_signal(int fd, int signal)
 
 	/* Receive the return code */
 	safe_read(fd, &rc, sizeof(int));
-
 	return rc;
 rwfail:
 	return -1;
@@ -204,7 +203,7 @@ rwfail:
 int
 stepd_signal_task_local(int fd, int signal, int ltaskid)
 {
-	int req = REQUEST_SIGNAL_PROCESS_GROUP;
+	int req = REQUEST_SIGNAL_TASK_LOCAL;
 	int rc;
 
 	safe_write(fd, &req, sizeof(int));
@@ -543,6 +542,31 @@ int
 stepd_resume(int fd)
 {
 	int req = REQUEST_STEP_RESUME;
+	int rc;
+	int errnum = 0;
+
+	safe_write(fd, &req, sizeof(int));
+
+	/* Receive the return code and errno */
+	safe_read(fd, &rc, sizeof(int));
+	safe_read(fd, &errnum, sizeof(int));
+
+	errno = errnum;
+	return rc;
+rwfail:
+	return -1;
+}
+
+/*
+ * Terminate the job step.
+ *
+ * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
+ * and sets errno.
+ */
+int
+stepd_terminate(int fd)
+{
+	int req = REQUEST_STEP_TERMINATE;
 	int rc;
 	int errnum = 0;
 
