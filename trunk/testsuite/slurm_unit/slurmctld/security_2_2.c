@@ -62,6 +62,11 @@ main (int argc, char *argv[])
 	if (error_code == SLURM_SUCCESS) {
 		fprintf (stderr, "ERROR: The allocate succeeded\n");
 		exit(1);
+	} else if (slurm_get_errno() != SLURM_PROTOCOL_AUTHENTICATION_ERROR) {
+		fprintf (stderr, "ERROR: The allocation failed for some "
+			 "reason other then authentication\n");
+		fprintf (stderr, "Error message was: %s\n",
+			 slurm_strerror(slurm_get_errno()));
 	} else {
 		printf ("SUCCESS!\n");
 		printf ("The allocate request was rejected as expected.\n");
