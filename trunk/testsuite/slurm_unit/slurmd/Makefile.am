@@ -16,6 +16,8 @@ LDADD   = \
 	$(top_builddir)/src/api/libslurm.la \
 	$(SSL_LIBS)
 
+LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+
 force :
 $(LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
