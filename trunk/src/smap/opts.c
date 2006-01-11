@@ -179,7 +179,7 @@ Usage: smap [OPTIONS]\n\
   -D, --display              set which Display mode to use\n\
       j=jobs\n\
       s=slurm partitions\n\
-      b=BG/L partitions\n\
+      b=Bluegene blocks\n\
       c=set configuration\n\
   -h, --noheader             no headers on output\n\
   -i, --iterate=seconds      specify an interation period\n\
