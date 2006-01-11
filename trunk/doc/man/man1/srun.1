@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "October 2005" "srun 0.7" "slurm components"
+.TH SRUN "1" "January 2006" "srun 0.7" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -550,6 +550,8 @@ Blue Gene).
 Require the partition connection type to be of a certain type.  
 On Blue Gene the acceptable of \fItype\fR are MESH, TORUS and NAV.  
 If NAV, or if not set, then SLURM will try to fit a TORUS else MESH.
+You should not normally set this option.
+SLURM will normally allocate a TORUS if possible for a given geometry.
 .TP
 \fB\-R\fR, \fB\-\-no-rotate\fR
 Disables rotation of the job's requested geometry in order to fit an 
