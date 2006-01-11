@@ -227,6 +227,11 @@ static int _print_text_job(job_info_t * job_ptr)
 	char time_buf[20];
 	int quarter = -1;
 
+#ifdef HAVE_BG
+	select_g_get_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_QUARTER, 
+			     &quarter);
+#endif
 	if(!params.commandline) {
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "%c", job_ptr->num_procs);
@@ -269,8 +274,16 @@ static int _print_text_job(job_info_t * job_ptr)
 			  time_buf);
 		ba_system_ptr->xcord += 11;
 
-		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-			  ba_system_ptr->xcord, "%d", job_ptr->num_nodes);
+		if(quarter != -1)
+			mvwprintw(ba_system_ptr->text_win, 
+				  ba_system_ptr->ycord,
+				  ba_system_ptr->xcord, "%5s", 
+				  "0.25");
+		else
+			mvwprintw(ba_system_ptr->text_win, 
+				  ba_system_ptr->ycord,
+				  ba_system_ptr->xcord, "%5d", 
+				  job_ptr->num_nodes);
 		ba_system_ptr->xcord += 6;
 
 		tempxcord = ba_system_ptr->xcord;
@@ -294,10 +307,6 @@ static int _print_text_job(job_info_t * job_ptr)
 			}
 			i++;
 		}
-#ifdef HAVE_BG
-		select_g_get_jobinfo(job_ptr->select_jobinfo, 
-				     SELECT_DATA_QUARTER, 
-				     &quarter);
 		if(quarter != -1) {
 			mvwprintw(ba_system_ptr->text_win, 
 				  ba_system_ptr->ycord,
@@ -305,7 +314,7 @@ static int _print_text_job(job_info_t * job_ptr)
 				  quarter);		
 			ba_system_ptr->xcord += 2;
 		}
-#endif	
+
 		ba_system_ptr->xcord = 1;
 		ba_system_ptr->ycord++;
 	} else {
@@ -330,18 +339,19 @@ static int _print_text_job(job_info_t * job_ptr)
 		}
 		
 		printf("%8.8s ", time_buf);
-		printf("%5d ", job_ptr->num_nodes);
+		
+		if(quarter != -1)
+			printf("%5s ", "0.25");
+		else
+			printf("%5d ", job_ptr->num_nodes);
+		
 		printf("%s", job_ptr->nodes);
-#ifdef HAVE_BG
-		select_g_get_jobinfo(job_ptr->select_jobinfo, 
-				     SELECT_DATA_QUARTER, 
-				     &quarter);
 		if(quarter != -1) {
 			printf(".%d",quarter);
 		}
-#endif
+
 		printf("\n");
-#		
+		
 	}
 	return printed;
 }
