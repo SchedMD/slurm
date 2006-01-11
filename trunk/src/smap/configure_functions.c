@@ -46,6 +46,8 @@ static int	_remove_allocation(char *com, List allocated_blocks);
 static int	_alter_allocation(char *com, List allocated_blocks);
 static int	_copy_allocation(char *com, List allocated_blocks);
 static int	_save_allocation(char *com, List allocated_blocks);
+static void     _strip_13_10(char *line);
+static int	_load_configuration(char *com, List allocated_blocks);
 static void	_print_header_command(void);
 static void	_print_text_command(allocated_block_t *allocated_block);
 
@@ -147,9 +149,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 			i++;
 		}
 		
-	}
-
-		
+	}		
 
 	if(geoi<0) {
 		memset(error_string,0,255);
@@ -166,21 +166,21 @@ static int _create_allocation(char *com, List allocated_blocks)
 			if(com[i2]=='x') {
 				
 				/* for geometery */
-				request->geometry[0] = atoi(&com[geoi]);
+				request->geometry[X] = atoi(&com[geoi]);
 				geoi++;
 				while(com[geoi-1]!='x' && geoi<len)
 					geoi++;
 				if(geoi==len)
 					goto geo_error_message;
 				
-				request->geometry[1] = atoi(&com[geoi]);
+				request->geometry[Y] = atoi(&com[geoi]);
 				geoi++;
 				while(com[geoi-1]!='x' && geoi<len)
 					geoi++;
 				if(geoi==len)
 					goto geo_error_message;
 				
-				request->geometry[2] = atoi(&com[geoi]);
+				request->geometry[Z] = atoi(&com[geoi]);
 				request->size = -1;
 				break;
 			}
@@ -189,19 +189,19 @@ static int _create_allocation(char *com, List allocated_blocks)
 
 		if(request->start_req) {
 			/* for size */
-			request->start[0] = atoi(&com[starti]);
+			request->start[X] = atoi(&com[starti]);
 			starti++;
 			while(com[starti-1]!='x' && starti<len)
 				starti++;
 			if(starti==len) 
 				goto start_request;
-			request->start[1] = atoi(&com[starti]);
+			request->start[Y] = atoi(&com[starti]);
 			starti++;
 			while(com[starti-1]!='x' && starti<len)
 				starti++;
 			if(starti==len)
 				goto start_request;
-			request->start[2] = atoi(&com[starti]);
+			request->start[Z] = atoi(&com[starti]);
 		}
 	start_request:
 		/*
@@ -712,6 +712,211 @@ static int _save_allocation(char *com, List allocated_blocks)
 	return 1;
 }
 
+/* Explicitly strip out  new-line and carriage-return */
+static void _strip_13_10(char *line)
+{
+	int len = strlen(line);
+	int i;
+
+	for(i=0;i<len;i++) {
+		if(line[i]==13 || line[i]==10) {
+			line[i] = '\0';
+			return;
+		}
+	}
+}
+
+static int _parse_bg_spec(char *in_line, List allocated_blocks)
+{
+#ifdef HAVE_BG
+	int error_code = SLURM_SUCCESS;
+	char *nodes = NULL, *conn_type = NULL;
+	int bp_count = 0;
+	int start[BA_SYSTEM_DIMENSIONS];
+	int end[BA_SYSTEM_DIMENSIONS];
+	int start1[BA_SYSTEM_DIMENSIONS];
+	int end1[BA_SYSTEM_DIMENSIONS];
+	int geo[BA_SYSTEM_DIMENSIONS];
+	char com[255];
+	int j = 0, number;
+	int len = 0;
+	int x,y,z;
+	
+	geo[X] = 0;
+	geo[Y] = 0;
+	geo[Z] = 0;
+	
+	end1[X] = -1;
+	end1[Y] = -1;
+	end1[Z] = -1;
+	
+	error_code = slurm_parser(in_line,
+				  "Nodes=", 's', &nodes,
+				  "Type=", 's', &conn_type,
+				  "END");
+	if(!nodes)
+		return SLURM_SUCCESS;
+	len = strlen(nodes);
+	while (nodes[j] != '\0') {
+		if(j > len)
+			break;
+		else if ((nodes[j] == '[' || nodes[j] == ',')
+		    && (nodes[j+8] == ']' || nodes[j+8] == ',')
+		    && (nodes[j+4] == 'x' || nodes[j+4] == '-')) {
+			j++;
+			number = atoi(nodes + j);
+			start[X] = number / 100;
+			start[Y] = (number % 100) / 10;
+			start[Z] = (number % 10);
+			j += 4;
+			number = atoi(nodes + j);
+			end[X] = number / 100;
+			end[Y] = (number % 100) / 10;
+			end[Z] = (number % 10);
+			j += 3;
+			if(!bp_count) {
+				start1[X] = start[X];
+				start1[Y] = start[Y];
+				start1[Z] = start[Z];
+			}
+			for (x = start[X]; x <= end[X]; x++) 
+				for (y = start[Y]; y <= end[Y]; y++) 
+					for (z = start[Z]; z <= end[Z]; z++) {
+						if(x>end1[X]) {
+						        geo[X]++;
+							end1[X] = x;
+						}
+						if(y>end1[Y]) {
+							geo[Y]++;
+							end1[Y] = y;
+						}
+						if(z>end1[Z]) {
+							geo[Z]++;
+							end1[Z] = z;
+						}
+						bp_count++;
+					}
+			if(nodes[j] != ',')
+				break;
+			j--;
+		} else if((nodes[j] < 58 && nodes[j] > 47)) {
+			number = atoi(nodes + j);
+			start[X] = number / 100;
+			start[Y] = (number % 100) / 10;
+			start[Z] = (number % 10);
+			j+=3;
+			if(!bp_count) {
+				start1[X] = start[X];
+				start1[Y] = start[Y];
+				start1[Z] = start[Z];
+			}
+			if(start[X]>end1[X]) {
+				geo[X]++;
+				end1[X] = start[X];
+			}
+			if(start[Y]>end1[Y]) {
+				geo[Y]++;
+				end1[Y] = start[Y];
+			}
+			if(start[Z]>end1[Z]) {
+				geo[Z]++;
+				end1[Z] = start[Z];
+			}
+			bp_count++;
+			if(nodes[j] != ',')
+				break;
+		}
+		j++;
+	}
+	memset(com,0,255);
+	sprintf(com,"create %dx%dx%d %s start %dx%dx%d",
+		geo[X], geo[Y], geo[Z], conn_type, 
+		start1[X], start1[Y], start1[Z]);
+	_create_allocation(com, allocated_blocks);
+#endif
+	return SLURM_SUCCESS;
+}
+static int _load_configuration(char *com, List allocated_blocks)
+{
+	int len = strlen(com);
+	int i=5, j=0;
+	char filename[100];
+	FILE *file_ptr = NULL;
+	char in_line[BUFSIZE];	/* input line */
+	int line_num = 0;	/* line number in input file */
+	
+	ListIterator results_i;		
+	_delete_allocated_blocks(allocated_blocks);
+	allocated_blocks = list_create(NULL);
+
+	memset(filename,0,100);
+	if(len>5)
+		while(i<len) {			
+			while(com[i-1]!=' ' && i<len) {
+				i++;
+			}
+			while(i<len && com[i]!=' ') {
+				filename[j] = com[i];
+				i++;
+				j++;
+				if(j>100) {
+					memset(error_string,0,255);
+					sprintf(error_string, 
+						"filename is too long needs "
+						"to be under 100 chars");
+					return 0;
+				}
+			}
+		}
+	if(filename[0]=='\0') {
+		sprintf(filename,"bluegene.conf");
+	}
+	file_ptr = fopen(filename,"r");
+	if (file_ptr==NULL) {
+		memset(error_string,0,255);
+		sprintf(error_string, "problem reading file %s", filename);
+		return 0;
+	}
+
+	while (fgets(in_line, BUFSIZE, file_ptr) != NULL) {
+		line_num++;
+		_strip_13_10(in_line);
+		if (strlen(in_line) >= (BUFSIZE - 1)) {
+			memset(error_string,0,255);
+			sprintf(error_string, 
+				"_read_bg_config line %d, of input file %s "
+				"too long", line_num, filename);
+			fclose(file_ptr);
+			return 0;
+		}
+
+		/* everything after a non-escaped "#" is a comment */
+		/* replace comment flag "#" with an end of string (NULL) */
+		/* escape sequence "\#" translated to "#" */
+		for (i = 0; i < BUFSIZE; i++) {
+			if (in_line[i] == (char) NULL)
+				break;
+			if (in_line[i] != '#')
+				continue;
+			if ((i > 0) && (in_line[i - 1] == '\\')) {
+				for (j = i; j < BUFSIZE; j++) {
+					in_line[j - 1] = in_line[j];
+				}
+				continue;
+			}
+			in_line[i] = (char) NULL;
+			break;
+		}
+		
+		/* parse what is left, non-comments */
+		/* block configuration parameters */
+		_parse_bg_spec(in_line, allocated_blocks);
+	}
+	fclose(file_ptr);
+	
+	return 1;
+}
+
 static void _print_header_command(void)
 {
 	ba_system_ptr->ycord=2;
@@ -918,6 +1123,8 @@ void get_command(void)
 			_copy_allocation(com, allocated_blocks);
 		} else if (!strncasecmp(com, "save", 4)) {
 			_save_allocation(com, allocated_blocks);
+		} else if (!strncasecmp(com, "load", 4)) {
+			_load_configuration(com, allocated_blocks);
 		} else if (!strncasecmp(com, "clear all", 9)
 			|| !strncasecmp(com, "clear", 5)) {
 			_delete_allocated_blocks(allocated_blocks);
