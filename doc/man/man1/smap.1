@@ -212,15 +212,19 @@ no leading 'R'.
 
 .RS
 .TP
-.I \fBcreate <size> <options>\fR
+.I \fBload <bluegene.conf file>\fR
+Load an already exsistant bluegene.conf file. This will varify and mapout a
+bluegene.conf file.  After loaded the configuration may be edited and 
+saved as a new file.
+.RS
+.TP .I \fBcreate <size> <options>\fR
 Submit request for partition creation. The size may be specified either 
 as a count of base partitions or specific dimensions in the X, Y and Z 
 directions separated by "x", for example "2x3x4". A variety of options 
 may be specified. Valid options are listed below. Note that the option
 and their values are case insensitive (e.g. "MESH" and "mesh" are equivalent).
-
 .RS
-.TP 10
+.TP
 .I \fBStart = XxYxZ\fR
 Identify where to start the partition.  This is primarily for testing 
 purposes.  For convenience one can only put the X coord or XxY will also work.
