@@ -615,11 +615,12 @@ static int _print_text_part(partition_info_t *part_ptr,
 		if(part_ptr->total_nodes == 0)
 			mvwprintw(ba_system_ptr->text_win, 
 				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "0.25");
+				  ba_system_ptr->xcord, "%5s", 
+				  "0.25");
 		else	
 			mvwprintw(ba_system_ptr->text_win, 
 				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "%d", 
+				  ba_system_ptr->xcord, "%5d", 
 				  part_ptr->total_nodes);
 		ba_system_ptr->xcord += 7;
 
