@@ -804,7 +804,7 @@ static void *_thread_per_group_rpc(void *args)
 			thread_state = DSH_DONE;
 		goto cleanup;
 	}
-	
+
 	//info("got %d states back from the send", list_count(ret_list));
 	
 	itr = list_iterator_create(ret_list);		

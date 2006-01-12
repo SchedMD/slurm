@@ -678,7 +678,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	 *  the message. 
 	 */
 	if (_slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
-		rc = SLURM_ERROR;
+		rc = errno;
 		goto total_return;
 	}
 	
@@ -763,7 +763,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	rc = SLURM_SUCCESS;
 	if(forward_struct) {
 		pthread_mutex_lock(&forward_struct->forward_mutex);
-		while(count < (fwd_cnt)) {
+		while((count < fwd_cnt)) {
 			pthread_cond_wait(&forward_struct->notify, 
 					  &forward_struct->forward_mutex);
 			count = 0;
@@ -773,6 +773,8 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 				count += list_count(ret_type->ret_data_list);
 			}
 			list_iterator_destroy(itr);
+			info("Got back %d",count);
+				
 		}
 		pthread_mutex_unlock(&forward_struct->forward_mutex);
 		xfree(header.forward.addr);
@@ -1450,7 +1452,7 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 	ret_list = _send_recv_rc_msg(fd, req, timeout);
 	if(ret_list) {
 		if(list_count(ret_list)>1) 
-			error("Got %d, expecting 1 from message recieving",
+			error("Got %d, expecting 1 from message receiving",
 			      list_count(ret_list));
 
 		ret_type = list_pop(ret_list);
@@ -1508,7 +1510,6 @@ void slurm_free_msg(slurm_msg_t * msg)
 		list_destroy(msg->ret_list);
 		msg->ret_list = NULL;
 	}
-	destroy_forward(&msg->forward);
 	xfree(msg);
 }
 

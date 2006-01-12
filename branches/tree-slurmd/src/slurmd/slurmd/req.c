@@ -516,7 +516,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 
 	req_uid = g_slurm_auth_get_uid(msg->cred);
 	req->srun_node_id = msg->srun_node_id;
-	req->io_addr = msg->orig_addr;
+	req->orig_addr = msg->orig_addr;
 
 	super_user = _slurm_authorized_user(req_uid);
 

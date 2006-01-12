@@ -306,7 +306,7 @@ long start, end;
 	end = end_time.tv_sec;
 	end *= 1000000;
 	end += end_time.tv_usec;
-	info("done with unpack of launch request %ld",(end-start));
+	//info("done with unpack of launch request %ld",(end-start));
 	
 	/* job is now overdone, clean up  
 	 *

@@ -408,6 +408,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->srun_prolog);
 	xfree (ctl_conf_ptr->srun_epilog);
 	xfree (ctl_conf_ptr->node_prefix);
+	forward_span_count       		= (uint16_t) NO_VAL;
 	
 	_free_name_hashtbl();
 	_init_name_hashtbl();
@@ -437,7 +438,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	long inactive_limit = -1, kill_wait = -1;
 	long ret2service = -1, slurmctld_timeout = -1, slurmd_timeout = -1;
 	long sched_port = -1, sched_rootfltr = -1;
-	long slurmctld_debug = -1, slurmd_debug = -1;
+	long slurmctld_debug = -1, slurmd_debug = -1, span_count = -1;
 	long max_job_cnt = -1, min_job_age = -1, wait_time = -1;
 	long slurmctld_port = -1, slurmd_port = -1;
 	long mpich_gm_dir = -1, kill_tree = -1;
@@ -524,6 +525,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"TaskPlugin=", 's', &task_plugin,
 		"TmpFS=", 's', &tmp_fs,
 		"WaitTime=", 'l', &wait_time,
+		"SpanCount=", 'l', &span_count,
 		"END");
 
 	if (error_code)
@@ -1028,6 +1030,15 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 			ctl_conf_ptr->wait_time = wait_time;
 	}
 
+	if ( span_count != -1) {
+		if ( forward_span_count != (uint16_t) NO_VAL)
+			error (MULTIPLE_VALUE_MSG, "SpanCount");
+		if ((span_count < 0) || (span_count > 0xffff))
+			error("SpanCount=%ld is invalid", span_count);
+		else
+			forward_span_count = span_count;
+	}
+
 	return 0;
 }
 
@@ -1441,6 +1452,9 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	if (ctl_conf_ptr->wait_time == (uint16_t) NO_VAL)
 		ctl_conf_ptr->wait_time = DEFAULT_WAIT_TIME;
+	
+	if (forward_span_count == (uint16_t) NO_VAL)
+		forward_span_count = DEFAULT_SPAN_COUNT;
 }
 
 /* Normalize supplied debug level to be in range per log.h definitions */

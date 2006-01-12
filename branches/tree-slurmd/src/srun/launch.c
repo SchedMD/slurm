@@ -113,6 +113,8 @@ launch(void *arg)
 	char *host = NULL;
 	int *span = set_span(job->step_layout->num_hosts);
 	char addrbuf[INET_ADDRSTRLEN];
+struct timeval start_time, end_time;
+long start, end;
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
 	
@@ -120,6 +122,7 @@ launch(void *arg)
 	      opt.nprocs, job->step_layout->num_hosts);
 	debug("sending to slurmd port %d", slurm_get_slurmd_port());
 
+	gettimeofday(&start_time, NULL);
 	msg_array_ptr = xmalloc(sizeof(slurm_msg_t) 
 				* job->step_layout->num_hosts);
 	my_envc = envcount(environ);
@@ -195,9 +198,9 @@ launch(void *arg)
 			free(host);
   		}
 		hostlist_iterator_reset(itr);
-		debug2("using %d %s with %d tasks\n", j, 
-		       job->step_layout->host[i],
-		       r.nprocs);
+		/* debug2("using %d %s with %d tasks\n", j,  */
+/* 		       job->step_layout->host[i], */
+/* 		       r.nprocs); */
 		
 		m->address = job->slurmd_addr[j];
 		set_forward_launch(&m->forward,
@@ -235,7 +238,15 @@ launch(void *arg)
 		debug("All task launch requests sent");
 		update_job_state(job, SRUN_JOB_STARTING);
 	}
-
+	gettimeofday(&end_time, NULL);
+	start = start_time.tv_sec;
+	start *= 1000000;
+	start += start_time.tv_usec;
+	end = end_time.tv_sec;
+	end *= 1000000;
+	end += end_time.tv_usec;
+	printf("done with unpack of launch request %ld\n",(end-start));
+	
 	return(void *)(0);
 }
 
@@ -386,7 +397,7 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 
 		_spawn_launch_thr(&thd[i]);
 	}
-	for ( ; i < job->thr_count; i++)
+	for ( ; i < job->step_layout->num_hosts; i++)
 		_update_failed_node(job, i);
 
 	pthread_mutex_lock(&active_mutex);
@@ -490,11 +501,12 @@ static void * _p_launch_task(void *arg)
 	
 	th->state  = DSH_ACTIVE;
 	th->tstart = time(NULL);
-	//if (_verbose)
-	_print_launch_msg(msg, job->step_layout->host[nodeid], nodeid);
+	if (_verbose)
+		_print_launch_msg(msg, job->step_layout->host[nodeid], nodeid);
 	
 again:
 	ret_list = _send_msg_rc(req);
+	
 	if(!ret_list) {
 		th->state = DSH_FAILED;
 			
@@ -540,9 +552,13 @@ again:
 			fail_launch_cnt++;
 			pthread_mutex_unlock(&active_mutex);
 		}
+		list_iterator_destroy(data_itr);
 	}
+	list_iterator_destroy(itr);
+	list_destroy(ret_list);	
 cleanup:
 	pthread_mutex_lock(&active_mutex);
+	destroy_forward(&req->forward);
 	th->state = DSH_DONE;
 	active--;
 	if (opt.parallel_debug)

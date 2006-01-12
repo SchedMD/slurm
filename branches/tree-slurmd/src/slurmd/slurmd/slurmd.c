@@ -346,7 +346,7 @@ _service_connection(void *arg)
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
 	char addrbuf[INET_ADDRSTRLEN];
 
-	info("in the service_connection");
+	debug3("in the service_connection");
 	msg->conn_fd = con->fd;
 	memcpy(&msg->orig_addr, con->cli_addr, sizeof(slurm_addr));
 	
@@ -356,13 +356,11 @@ _service_connection(void *arg)
 		error("slurm_receive_msg: %m");
 		goto cleanup;
 	}
-	slurm_print_slurm_addr (&msg->orig_addr, addrbuf, INET_ADDRSTRLEN);
-	info("first = %s",addrbuf);
-		
+	
 	/* set msg connection fd to accepted fd. This allows 
 	 *  possibility for slurmd_req () to close accepted connection
 	 */
-	info("got this type of message %d with %d other responses",
+	debug2("got this type of message %d with %d other responses",
 	     msg->msg_type, list_count(ret_list));
 	msg->ret_list = ret_list;
 	slurmd_req(msg, con->cli_addr);

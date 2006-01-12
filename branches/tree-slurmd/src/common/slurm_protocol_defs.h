@@ -333,7 +333,7 @@ typedef struct launch_tasks_request_msg {
 	uint16_t  *io_port;
 	uint16_t  task_flags;
 	uint32_t **global_task_ids;
-	slurm_addr io_addr;	  /* where message really came from for io */ 
+	slurm_addr orig_addr;	  /* where message really came from for io */ 
 	
 	/* stdout/err/in per task filenames */
 	char     *ofname;
@@ -533,6 +533,7 @@ typedef struct slurm_node_registration_status_msg {
 } slurm_node_registration_status_msg_t;
 
 typedef struct slurm_ctl_conf slurm_ctl_conf_info_msg_t;
+int forward_span_count;         /* number of forwards per node */
 
 /* free message functions */
 void inline slurm_free_last_update_msg(last_update_msg_t * msg);

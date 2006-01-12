@@ -57,7 +57,7 @@ void *_forward_thread(void *arg)
 	List ret_list = NULL;
 	ret_types_t *type = NULL;
 	ret_types_t *returned_type = NULL;
-	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
+	slurm_msg_t msg;
 	slurm_fd fd;
 	ret_data_info_t *ret_data_info = NULL;
 	ListIterator itr;
@@ -94,8 +94,6 @@ void *_forward_thread(void *arg)
 		goto nothing_sent;
 	}
 
-	msg->forward = fwd_msg->header.forward;
-	msg->ret_list = fwd_msg->header.ret_list;
 	if ((fwd_msg->header.msg_type == REQUEST_SHUTDOWN) ||
 	    (fwd_msg->header.msg_type == REQUEST_RECONFIGURE)) {
 		pthread_mutex_lock(fwd_msg->forward_mutex);
@@ -111,7 +109,9 @@ void *_forward_thread(void *arg)
 	
 		goto cleanup;
 	}
-	ret_list = slurm_receive_msg(fd, msg, fwd_msg->timeout);
+	ret_list = slurm_receive_msg(fd, &msg, fwd_msg->timeout);
+	if ((fd >= 0) && slurm_close_accepted_conn(fd) < 0)
+		error ("close(%d): %m", fd);
 nothing_sent:
 	type = xmalloc(sizeof(ret_types_t));
 	list_push(ret_list, type);
@@ -128,14 +128,11 @@ nothing_sent:
 		type->msg_rc = SLURM_ERROR;
 		ret_data_info->data = NULL;
 	} else {
-		type->type = msg->msg_type;
-		type->msg_rc = ((return_code_msg_t *)msg->data)->return_code;
-		ret_data_info->data = msg->data;
+		type->type = msg.msg_type;
+		type->msg_rc = ((return_code_msg_t *)msg.data)->return_code;
+		ret_data_info->data = msg.data;
 	}
 	
-	if ((fd >= 0) && slurm_close_accepted_conn(fd) < 0)
-		error ("close(%d): %m", fd);
-
 	while((returned_type = list_pop(ret_list)) != NULL) {
 		pthread_mutex_lock(fwd_msg->forward_mutex);
 		itr = list_iterator_create(fwd_msg->ret_list);	
@@ -170,16 +167,16 @@ nothing_sent:
 	list_destroy(ret_list);
 cleanup:
 	xfree(fwd_msg->buf);
-	xfree(fwd_msg->header.forward.addr);
-	xfree(fwd_msg->header.forward.name);
-	slurm_free_msg(msg);
+	destroy_forward(&fwd_msg->header.forward);
+	
+	//I think this needs to be in here
+	//g_slurm_auth_destroy(msg.cred);
 	free_buf(buffer);	
 }
 
 extern int forward_msg(forward_struct_t *forward_struct, 
 		       header_t *header)
 {
-	header_t forward_header;
 	int i;
 	int retries = 0;
 	forward_msg_t *forward_msg;
@@ -280,9 +277,8 @@ extern int set_forward_addrs (forward_t *forward,
 	info("forwarding to %s",name);
 	
 	if(span > 0) {
-		forward->addr = xmalloc(sizeof(struct sockaddr_in) * span);
-		forward->name = 
-			xmalloc(sizeof(char) * (MAX_NAME_LEN * span));
+		forward->addr = xmalloc(sizeof(slurm_addr) * span);
+		forward->name = xmalloc(sizeof(char) * (MAX_NAME_LEN * span));
 		forward->node_id = xmalloc(sizeof(int) * span);
 					
 		while(j<span && ((*pos+j) < total)) {
@@ -324,17 +320,17 @@ extern int set_forward_launch (forward_t *forward,
 	
 	int j=1, i;
 	char *host = NULL;
-	char name[MAX_NAME_LEN];
 	int total = job->step_layout->num_hosts;
-	strncpy(name,
-		job->step_layout->host[*pos],
-		MAX_NAME_LEN);
-	info("forwarding to %s",name);
+	
+	/* char name[MAX_NAME_LEN]; */
+/* 	strncpy(name, */
+/* 		job->step_layout->host[*pos], */
+/* 		MAX_NAME_LEN); */
+/* 	info("forwarding to %s",name); */
 	
 	if(span > 0) {
-		forward->addr = xmalloc(sizeof(struct sockaddr_in) * span);
-		forward->name = 
-			xmalloc(sizeof(char) * (MAX_NAME_LEN * span));
+		forward->addr = xmalloc(sizeof(slurm_addr) * span);
+		forward->name = xmalloc(sizeof(char) * (MAX_NAME_LEN * span));
 		forward->node_id = xmalloc(sizeof(int) * span);
 		
 		while(j<span && ((*pos+j) < total)) {
@@ -354,10 +350,10 @@ extern int set_forward_launch (forward_t *forward,
 				job->step_layout->host[*pos+j], 
 				MAX_NAME_LEN);
 			forward->node_id[j-1] = (*pos+j);
-			strncpy(name,
-				job->step_layout->host[*pos+j],
-				MAX_NAME_LEN);
-			info("along with %s",name);		
+			/* strncpy(name, */
+/* 				job->step_layout->host[*pos+j], */
+/* 				MAX_NAME_LEN); */
+/* 			info("along with %s",name);	 */	
 			j++;
 		}
 			
@@ -375,18 +371,18 @@ extern int set_forward_launch (forward_t *forward,
 }
 extern int *set_span(int total)
 {
-	int *span = xmalloc(sizeof(int)*FORWARD_COUNT);
+	int *span = xmalloc(sizeof(int)*forward_span_count);
 	int left = total;
 	int i = 0;
 	
-	memset(span,0,FORWARD_COUNT);
-	if(total <= FORWARD_COUNT) {
+	memset(span,0,forward_span_count);
+	if(total <= forward_span_count) {
 		return span;
 	} 
 	
 	while(left>0) {
-		for(i=0; i<FORWARD_COUNT; i++) {
-			if((FORWARD_COUNT-i)>=left) {
+		for(i=0; i<forward_span_count; i++) {
+			if((forward_span_count-i)>=left) {
 				if(span[i] == 0) {
 					left = 0;
 					break;
@@ -395,13 +391,13 @@ extern int *set_span(int total)
 					left = 0;
 					break;
 				}
-			} else if(left<=FORWARD_COUNT) {
+			} else if(left<=forward_span_count) {
 				span[i]+=left;
 				left = 0;
 				break;
 			}
-			span[i] += FORWARD_COUNT;
-			left -= FORWARD_COUNT;
+			span[i] += forward_span_count;
+			left -= forward_span_count;
 		}
 	}
 	return span;

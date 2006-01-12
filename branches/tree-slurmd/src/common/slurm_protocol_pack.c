@@ -1961,7 +1961,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->backup_controller, &uint16_tmp,
 			       buffer);
 	safe_unpackstr_xmalloc(&build_ptr->checkpoint_type, &uint16_tmp,
-				buffer);
+			       buffer);
 	safe_unpackstr_xmalloc(&build_ptr->control_addr, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->control_machine, &uint16_tmp,
 			       buffer);
@@ -1972,7 +1972,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack16(&build_ptr->inactive_limit, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_acct_loc, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_acct_parameters, &uint16_tmp,
-				buffer);
+			       buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_acct_type, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_loc, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_type, &uint16_tmp, buffer);
@@ -1981,7 +1981,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack16(&build_ptr->min_job_age, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->mpi_default, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->plugindir, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->proctrack_type, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->proctrack_type, &uint16_tmp, 
+			       buffer);
 	safe_unpackstr_xmalloc(&build_ptr->prolog, &uint16_tmp, buffer);
         safe_unpackstr_xmalloc(&build_ptr->propagate_rlimits,
                                &uint16_tmp, buffer);
@@ -2523,7 +2524,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 			     msg->tasks_to_launch[i], 
 			     buffer);	
 	}
-	slurm_pack_slurm_addr(&msg->io_addr, buffer);
+	slurm_pack_slurm_addr(&msg->orig_addr, buffer);
 	packstr_array(msg->env, msg->envc, buffer);
 	packstr(msg->cwd, buffer);
 	packstr_array(msg->argv, msg->argc, buffer);
@@ -2578,7 +2579,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 			goto unpack_error;
 
 	}
-	slurm_unpack_slurm_addr_no_alloc(&msg->io_addr, buffer);
+	slurm_unpack_slurm_addr_no_alloc(&msg->orig_addr, buffer);
 	safe_unpackstr_array(&msg->env, &msg->envc, buffer);
 	safe_unpackstr_xmalloc(&msg->cwd, &uint16_tmp, buffer);
 	safe_unpackstr_array(&msg->argv, &msg->argc, buffer);

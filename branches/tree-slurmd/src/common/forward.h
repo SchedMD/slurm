@@ -33,9 +33,6 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/srun/srun_job.h"
 
-#define FORWARD_COUNT	50	/* maximum number of 
-				   forwards per node */
-
 /* STRUCTURES */
 
 extern int forward_msg(forward_struct_t *forward_struct, 

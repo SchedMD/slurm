@@ -143,8 +143,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	slurm_addr     resp_addr;
 	slurm_addr     io_addr;
 	int i;
-	char addrbuf[INET_ADDRSTRLEN];
-
+	
 	xassert(msg != NULL);
 
 	debug3("entering job_create");
@@ -191,15 +190,11 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->envtp->localid = -1;
 	job->envtp->nodeid = -1;	
 	
-	memcpy(&resp_addr, cli_addr, sizeof(slurm_addr));
+	memcpy(&resp_addr, &msg->orig_addr, sizeof(slurm_addr));
 	slurm_set_addr(&resp_addr, msg->resp_port[msg->srun_node_id], NULL);
-	memcpy(&io_addr,   &msg->io_addr, sizeof(slurm_addr));
+	memcpy(&io_addr,   &msg->orig_addr, sizeof(slurm_addr));
 	slurm_set_addr(&io_addr, msg->io_port[msg->srun_node_id], NULL);
-	slurm_print_slurm_addr (&resp_addr, addrbuf, INET_ADDRSTRLEN);
-	info("addrbuf = %s",addrbuf);
-	slurm_print_slurm_addr (&io_addr, addrbuf, INET_ADDRSTRLEN);
-	info("addrbuf = %s",addrbuf);
-	
+		
 	srun = srun_info_create(msg->cred, &resp_addr, &io_addr);
 
 	job->buffered_stdio = msg->buffered_stdio;
