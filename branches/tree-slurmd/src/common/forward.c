@@ -156,8 +156,6 @@ void *_forward_thread(void *arg)
 				fwd_msg->header.forward.node_id[i];
 		}
 		pthread_mutex_unlock(fwd_msg->forward_mutex);
-		pthread_cond_signal(fwd_msg->notify);
-	
 		goto cleanup;
 	}
 	ret_list = slurm_receive_msg(fd, &msg, fwd_msg->timeout);
@@ -217,12 +215,13 @@ nothing_sent:
 		destroy_ret_types(returned_type);
 		pthread_mutex_unlock(fwd_msg->forward_mutex);
 	}
-	pthread_cond_signal(fwd_msg->notify);
 	list_destroy(ret_list);
 cleanup:
-	xfree(fwd_msg->buf);
+	if (fwd_msg->buf_len) 
+		xfree(fwd_msg->buf);
 	destroy_forward(&fwd_msg->header.forward);
 	free_buf(buffer);	
+	pthread_cond_signal(fwd_msg->notify);	
 }
 
 extern int forward_msg(forward_struct_t *forward_struct, 

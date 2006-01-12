@@ -162,10 +162,6 @@ long start, end;
 
 	r.global_task_ids = job->step_layout->tids;
 	r.cpus_allocated  = job->step_layout->cpus;
-	//slurm_get_stream_addr(job->listensock[0], &r.io_addr);
-	/* //r.io_addr = job->jaddr[0]; */
-/* 	slurm_print_slurm_addr (&r.io_addr, addrbuf, INET_ADDRSTRLEN); */
-/* 	info("addrbuf = %s %d",addrbuf, job->listensock[0]); */
 	
 	r.io_port = xmalloc(sizeof(uint16_t) * job->step_layout->num_hosts);
 	r.resp_port = xmalloc(sizeof(uint16_t) * job->step_layout->num_hosts);
