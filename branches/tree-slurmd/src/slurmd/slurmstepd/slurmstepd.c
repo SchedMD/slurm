@@ -217,7 +217,6 @@ _init_from_slurmd(int sock, char **argv,
 	buffer = create_buf(incoming_buffer,len);
 
 	msg = xmalloc(sizeof(slurm_msg_t));
-	msg->ret_list = NULL;
 	switch(step_type) {
 	case LAUNCH_BATCH_JOB:
 		msg->msg_type = REQUEST_BATCH_JOB_LAUNCH;
@@ -301,5 +300,5 @@ _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
 		fatal("handle_launch_message: Unrecognized launch/spawn RPC");
 		break;
 	}
-	slurm_free_msg(msg);
+	xfree(msg);
 }

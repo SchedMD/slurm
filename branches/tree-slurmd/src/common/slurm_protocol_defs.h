@@ -29,7 +29,7 @@
 #ifndef _SLURM_PROTOCOL_DEFS_H
 #define _SLURM_PROTOCOL_DEFS_H
 
-#if HAVE_CONFIG_H
+#if HAVE_CONFIG_H 
 #  include "config.h"
 #  if HAVE_INTTYPES_H
 #    include <inttypes.h>

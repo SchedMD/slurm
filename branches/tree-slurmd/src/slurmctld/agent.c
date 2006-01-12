@@ -73,6 +73,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/forward.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
@@ -332,11 +333,10 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	int i, j;
 	agent_info_t *agent_info_ptr;
 	thd_t *thread_ptr;
-	int *span = (int *)set_span(agent_arg_ptr->node_count);
+	int *span = set_span(agent_arg_ptr->node_count);
 	int thr_count = 0;
        	
 	agent_info_ptr = xmalloc(sizeof(agent_info_t));
-	
 	slurm_mutex_init(&agent_info_ptr->thread_mutex);
 	if (pthread_cond_init(&agent_info_ptr->thread_cond, NULL))
 		fatal("pthread_cond_init error %m");
@@ -359,7 +359,6 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		strncpy(thread_ptr[thr_count].node_name,
 			&agent_arg_ptr->node_names[i * MAX_NAME_LEN],
 			MAX_NAME_LEN);
-		
 		set_forward_addrs(&thread_ptr[thr_count].forward,
 				  span[thr_count],
 				  &i,

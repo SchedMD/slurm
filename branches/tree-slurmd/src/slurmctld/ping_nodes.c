@@ -127,7 +127,7 @@ void ping_nodes (void)
 	hostlist_t ping_hostlist = hostlist_create("");
 	hostlist_t reg_hostlist  = hostlist_create("");
 	hostlist_t down_hostlist = NULL;
-	char host_str[64];
+	char host_str[MAX_NAME_LEN];
 
 	int ping_buf_rec_size = 0;
 	agent_arg_t *ping_agent_args;
@@ -272,7 +272,8 @@ void ping_nodes (void)
 		hostlist_uniq(reg_hostlist);
 		hostlist_ranged_string(reg_hostlist, 
 			sizeof(host_str), host_str);
-		debug2 ("Spawning registration agent for %s", host_str);
+		debug2 ("Spawning registration agent for %s %d hosts", 
+			host_str, reg_agent_args->node_count);
 		ping_begin();
 		slurm_attr_init (&reg_attr_agent);
 		if (pthread_attr_setdetachstate (&reg_attr_agent, 

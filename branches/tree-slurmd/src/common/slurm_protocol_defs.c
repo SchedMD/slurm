@@ -306,7 +306,7 @@ void slurm_free_task_exit_msg(task_exit_msg_t * msg)
 void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 {
 	int i;
-	info("freeing things");
+	info("freeing things %d", msg->nnodes);
 	if (msg == NULL)
 		return;
 
@@ -325,7 +325,7 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 		}
 		xfree(msg->argv);
 	}
-	if(msg->nnodes)
+	if(msg->nnodes && msg->global_task_ids)
 		for(i=0; i<msg->nnodes; i++) {
 			xfree(msg->global_task_ids[i]);
 		}

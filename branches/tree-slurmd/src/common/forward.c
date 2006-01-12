@@ -293,7 +293,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 				fatal("Can't create pthread");
 			sleep(1);	/* sleep and try again */
 		}
-		thr_count++;
+		thr_count++; 
 	}
 	xfree(span);
 	return SLURM_SUCCESS;
@@ -425,7 +425,6 @@ extern int *set_span(int total)
 	int *span = xmalloc(sizeof(int)*forward_span_count);
 	int left = total;
 	int i = 0;
-	
 	memset(span,0,forward_span_count);
 	if(total <= forward_span_count) {
 		return span;

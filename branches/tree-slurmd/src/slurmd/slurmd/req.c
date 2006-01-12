@@ -230,7 +230,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	int rc;
 	int len = 0;
 	Buf buffer;
-	slurm_msg_t *msg = NULL;
+	slurm_msg_t msg;
 
 	/* send type over to slurmstepd */
 	safe_write(fd, &type, sizeof(int));
@@ -265,31 +265,28 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	}
 
 	/* send req over to slurmstepd */
-	msg = xmalloc(sizeof(slurm_msg_t));
 	switch(type) {
 	case LAUNCH_BATCH_JOB:
-		msg->msg_type = REQUEST_BATCH_JOB_LAUNCH;
+		msg.msg_type = REQUEST_BATCH_JOB_LAUNCH;
 		break;
 	case LAUNCH_TASKS:
-		msg->msg_type = REQUEST_LAUNCH_TASKS;
+		msg.msg_type = REQUEST_LAUNCH_TASKS;
 		break;
 	case SPAWN_TASKS:
-		msg->msg_type = REQUEST_SPAWN_TASK;
+		msg.msg_type = REQUEST_SPAWN_TASK;
 		break;
 	default:
 		error("Was sent a task I didn't understand");
 		break;
 	}
 	buffer = init_buf(0);
-	msg->data = req;
-	msg->ret_list = NULL;
-	pack_msg(msg, buffer);
+	msg.data = req;
+	pack_msg(&msg, buffer);
 	len = get_buf_offset(buffer);
 	safe_write(fd, &len, sizeof(int));
 	safe_write(fd, get_buf_data(buffer), len);
 	free_buf(buffer);
-	slurm_free_msg(msg);
-
+	
 	return 0;
 
 rwfail:
