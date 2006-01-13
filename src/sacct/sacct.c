@@ -352,6 +352,7 @@ static struct {
 	"nivcsw", &printNivcsw}, {
 	"nodes", &printNodes}, {
 	"nprocs", &printNprocs}, {
+	"ntasks", &printNprocs}, {
 	"nsignals", &printNsignals}, {
 	"nswap", &printNswap}, {
 	"nvcsw", &printNvcsw}, {
@@ -1806,9 +1807,8 @@ void helpMsg(void)
        "	    seconds and integral microseconds\n"
        "    * If --dump is not specified, elapsed time fields are presented\n"
        "      as [[days:]hours:]minutes:seconds.hundredths\n"
-       "    * The default input file is the file named in /etc/slurm.conf\n"
-       "      or /hptc_cluster/slurm/etc/slurm.conf. If no slurm.conf file\n"
-       "      is found, try to use /var/log/slurm_accounting.log.\n"
+       "    * The default input file is the file named in the \"jobacct_loc\"\n"
+       "      parameter in " SLURM_CONFIG_FILE ".\n"
        "\n"
        "Options:\n"
        "\n"
