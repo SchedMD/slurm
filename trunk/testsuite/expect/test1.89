@@ -58,6 +58,7 @@ if {$affinity == 0} {
 	send_user "\nWARNING: task affinity not supported on this system\n"
 	exit 0
 }
+send_user "\ntask affinity plugin installed\n"
 
 #
 # Build a test program to report affinity by task
@@ -133,6 +134,10 @@ expect {
 		incr task_mask $expect_out(2,string)
 		exp_continue
 	}
+	-re "setting affinity of task" {
+		incr verbose_cnt
+		exp_continue
+	}
 	-re "error" {
 		send_user "\nFAILURE: some error occurred\n"
 		set exit_code 1
@@ -153,7 +158,7 @@ send "$srun -c1 --cpu_bind=verbose,map_cpu:0 $file_prog\n"
 expect {
 	-re "setting affinity of task" {
 		incr verbose_cnt
-		exp_continue
+		 exp_continue
 	}
 	-re "error" {
 		send_user "\nFAILURE: some error occurred\n"
@@ -166,16 +171,130 @@ expect {
 	}
 	-re $prompt
 }
+
 if {$verbose_cnt != $task_cnt} {
 	send_user "\nFAILURE: verbose messages count inconsisent ($verbose_cnt,$task_cnt)\n"
 	set exit_code 1
 }
 
 #
-# Run a job step all tasks on CPU 0 by specifying mask
+# Run all tasks all bound to the same CPU by specifying a map (for each CPU)
+#
+set cpu_cnt 0
+while {$cpu_cnt < $task_cnt} {
+	set mask_sum 0
+	set mask [ expr 1 << $cpu_cnt ]
+	send "$srun -c1 --cpu_bind=map_cpu:$cpu_cnt $file_prog\n"
+	expect {
+		-re "TASK_ID:($number),MASK:($number)" {
+			incr mask_sum $expect_out(2,string)
+			exp_continue
+		}
+		-re "error" {
+			send_user "\nFAILURE: some error occurred\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun (from --allocate) not responding\n"
+			set exit_code 1
+			exp_continue
+		}
+		-re $prompt
+	}
+	if {$mask_sum != $task_cnt * $mask} {
+		send_user "\nFAILURE: affinity mask inconsistent ($mask_sum,$task_cnt)\n"
+		set exit_code 1
+	}
+	incr cpu_cnt 1
+}
+
+#
+# Run all tasks all bound to the same CPU by specifying a mask (for each CPU)
+#
+set cpu_cnt 0
+while {$cpu_cnt < $task_cnt} {
+	set mask_sum 0
+	set mask [ expr 1 << $cpu_cnt ]
+	### fixme: mstr needs to be formatted as hex
+	set mstr [ expr 1 << $cpu_cnt ]
+	send "$srun -c1 --cpu_bind=mask_cpu:$mstr $file_prog\n"
+	expect {
+		-re "TASK_ID:($number),MASK:($number)" {
+			incr mask_sum $expect_out(2,string)
+			exp_continue
+		}
+		-re "error" {
+			send_user "\nFAILURE: some error occurred\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun (from --allocate) not responding\n"
+			set exit_code 1
+			exp_continue
+		}
+		-re $prompt
+	}
+	if {$mask_sum != $task_cnt * $mask} {
+		send_user "\nFAILURE: affinity mask inconsistent ($mask_sum,$task_cnt)\n"
+		set exit_code 1
+	}
+	incr cpu_cnt 1
+}
+
+#
+# Generate foward and reverse masks and maps
+#
+set cpu_cnt 0
+set fwd_mask ""
+set fwd_map  ""
+set rev_mask ""
+set rev_map  ""
+set alt_mask ""
+set alt_map  ""
+set full_mask [ expr (1 << $task_cnt) - 1 ]
+while {$cpu_cnt < $task_cnt} {
+	set mask_sum 0
+	set mask [ expr 1 << $cpu_cnt ]
+	### fixme: mstr needs to be formatted as hex
+	set mstr [ expr 1 << $cpu_cnt ]
+	set fwd_mask "$fwd_mask,$mstr"
+	set fwd_map  "$fwd_map,$cpu_cnt"
+	set rev_mask "$mstr,$rev_mask"
+	set rev_map  "$cpu_cnt,$rev_map"
+	if { $cpu_cnt % 2 } {
+		set alt_mask "$mstr,$alt_mask"
+		set alt_map  "$cpu_cnt,$alt_map"
+	} else {
+		set alt_mask "$alt_mask,$mstr"
+		set alt_map  "$alt_map,$cpu_cnt"
+	}
+	if { $cpu_cnt == 0 } {
+		set fwd_mask "$mstr"
+		set fwd_map  "$cpu_cnt"
+		set rev_mask "$mstr"
+		set rev_map  "$cpu_cnt"
+		set alt_mask "$mstr"
+		set alt_map  "$cpu_cnt"
+	}
+	incr cpu_cnt 1
+}
+
+send_user "\n"
+send_user "full_mask: $full_mask\n"
+send_user "fwd_map:  $fwd_map\n"
+send_user "fwd_mask: $fwd_mask\n"
+send_user "rev_map:  $rev_map\n"
+send_user "rev_mask: $rev_mask\n"
+send_user "alt_map:  $alt_map\n"
+send_user "alt_mask: $alt_mask\n"
+
+#
+# Run all tasks bound to a different CPU by specifying a forward map
 #
 set task_mask 0
-send "$srun -c1 --cpu_bind=mask_cpu:1 $file_prog\n"
+send "$srun -c1 --cpu_bind=map_cpu:$fwd_map $file_prog\n"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
@@ -189,11 +308,147 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun (from --allocate) not responding\n"
 		set exit_code 1
+		exp_continue
 	}
 	-re $prompt
 }
-if {$task_mask != $task_cnt} {
-	send_user "\nFAILURE: affinity mask inconsistent ($task_mask,$task_cnt)\n"
+if {$task_mask != $full_mask} {
+	send_user "\nFAILURE: affinity mask inconsistent ($task_mask,$full_mask)\n"
+	set exit_code 1
+}
+
+#
+# Run all tasks bound to a different CPU by specifying a reverse map
+#
+set task_mask 0
+send "$srun -c1 --cpu_bind=map_cpu:$rev_map $file_prog\n"
+expect {
+	-re "TASK_ID:($number),MASK:($number)" {
+		incr task_mask $expect_out(2,string)
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: some error occurred\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun (from --allocate) not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re $prompt
+}
+if {$task_mask != $full_mask} {
+	send_user "\nFAILURE: affinity mask inconsistent ($task_mask,$full_mask)\n"
+	set exit_code 1
+}
+
+#
+# Run all tasks bound to a different CPU by specifying an alternating map
+#
+set task_mask 0
+send "$srun -c1 --cpu_bind=map_cpu:$alt_map $file_prog\n"
+expect {
+	-re "TASK_ID:($number),MASK:($number)" {
+		incr task_mask $expect_out(2,string)
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: some error occurred\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun (from --allocate) not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re $prompt
+}
+if {$task_mask != $full_mask} {
+	send_user "\nFAILURE: affinity mask inconsistent ($task_mask,$full_mask)\n"
+	set exit_code 1
+}
+
+#
+# Run all tasks bound to a different CPU by specifying a forward mask
+#
+set task_mask 0
+send "$srun -c1 --cpu_bind=mask_cpu:$fwd_mask $file_prog\n"
+expect {
+	-re "TASK_ID:($number),MASK:($number)" {
+		incr task_mask $expect_out(2,string)
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: some error occurred\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun (from --allocate) not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re $prompt
+}
+if {$task_mask != $full_mask} {
+	send_user "\nFAILURE: affinity mask inconsistent ($task_mask,$full_mask)\n"
+	set exit_code 1
+}
+
+#
+# Run all tasks bound to a different CPU by specifying a reverse mask
+#
+set task_mask 0
+send "$srun -c1 --cpu_bind=mask_cpu:$rev_mask $file_prog\n"
+expect {
+	-re "TASK_ID:($number),MASK:($number)" {
+		incr task_mask $expect_out(2,string)
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: some error occurred\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun (from --allocate) not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re $prompt
+}
+if {$task_mask != $full_mask} {
+	send_user "\nFAILURE: affinity mask inconsistent ($task_mask,$full_mask)\n"
+	set exit_code 1
+}
+
+#
+# Run all tasks bound to a different CPU by specifying an alternating mask
+#
+set task_mask 0
+send "$srun -c1 --cpu_bind=mask_cpu:$alt_mask $file_prog\n"
+expect {
+	-re "TASK_ID:($number),MASK:($number)" {
+		incr task_mask $expect_out(2,string)
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: some error occurred\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun (from --allocate) not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re $prompt
+}
+if {$task_mask != $full_mask} {
+	send_user "\nFAILURE: affinity mask inconsistent ($task_mask,$full_mask)\n"
 	set exit_code 1
 }
 
@@ -221,3 +476,4 @@ if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
+
