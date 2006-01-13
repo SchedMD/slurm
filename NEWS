@@ -18,6 +18,8 @@ documents those changes that are of interest to users and admins.
     (Andy Riebs, HP, slurm.hp.sacct_dup.patch).
  -- Fix some inconsistencies in sacct's help message (Andy Riebs, HP, 
     slurm.hp.sacct_help.patch).
+ -- Validate input to sacct command and allows embeeded spaces in 
+    arguments (Andy Riebs, HP, slurm.hp.sacct_validate.patch).
 
 * Changes in SLURM 0.7.0-pre8
 =============================

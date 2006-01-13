@@ -1346,6 +1346,7 @@ void getData(void)
 
 void getOptions(int argc, char **argv)
 {
+	extern int optind;
 	int c, i, optionIndex = 0;
 	char *end, *start, *acct_type;
 	struct stat stat_buf;
@@ -1503,6 +1504,11 @@ void getOptions(int argc, char **argv)
 			break;
 
 		case 'j':
+			if (strspn(optarg, "0123456789, ") < strlen(optarg)) {
+				fprintf(stderr, "Invalid jobs list: %s\n",
+						optarg);
+				exit(1);
+			}
 			opt_job_list =
 			    (char *) _my_realloc(opt_job_list,
 						 (opt_job_list==NULL? 0 :
@@ -1513,6 +1519,11 @@ void getOptions(int argc, char **argv)
 			break;
 
 		case 'J':
+			if (strspn(optarg, ".0123456789, ") < strlen(optarg)) {
+				fprintf(stderr, "Invalid jobstep list: %s\n",
+						optarg);
+				exit(1);
+			}
 			opt_jobstep_list =
 			    (char *) _my_realloc(opt_jobstep_list,
 						 (opt_jobstep_list==NULL? 0 :
@@ -1685,6 +1696,8 @@ void getOptions(int argc, char **argv)
 		start = opt_jobstep_list;
 		while ((end = strstr(start, ","))) {
 			*end = 0;;
+			while (isspace(*start))
+				start++;	/* discard whitespace */
 			dot = strstr(start, ".");
 			if (dot == NULL) {
 				fprintf(stderr, "Invalid jobstep: %s\n",
@@ -1711,6 +1724,8 @@ void getOptions(int argc, char **argv)
 	if (opt_job_list) { 
 		start = opt_job_list;
 		while ((end = strstr(start, ","))) {
+			while (isspace(*start))
+				start++;	/* discard whitespace */
 			*end = 0;
 			jobstepsSelected[NjobstepsSelected].job = start;
 			jobstepsSelected[NjobstepsSelected].step = NULL;
@@ -1746,7 +1761,7 @@ void getOptions(int argc, char **argv)
 	/* select the output fields */
 	if (opt_field_list==NULL) {
 		if (opt_dump || opt_expire)
-			return;
+			goto endopt;
 		opt_field_list = _my_malloc(sizeof(DEFAULT_FIELDS)+1);
 		strcpy(opt_field_list,DEFAULT_FIELDS); 
 		strcat(opt_field_list, ",");
@@ -1774,6 +1789,14 @@ void getOptions(int argc, char **argv)
 			fprintf(stderr,
 				"\t%s\n",
 				fields[printFields[i]].name);
+	} 
+endopt:
+	if (optind < argc) {
+		fprintf(stderr, "Error: Unknown arguments:");
+		for (i=optind; i<argc; i++)
+			fprintf(stderr, " %s", argv[i]);
+		fprintf(stderr, "\n");
+		exit(1);
 	}
 	return;
 }
