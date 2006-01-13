@@ -27,11 +27,15 @@ def main(argv=None):
         options.prefix = '/usr/local'
         print 'Assuming installation prefix is "%s"' % (options.prefix)
     if options.conf is None:
-        options.conf = options.prefix + '/etc'
+        options.conf = options.prefix + '/etc/slurm.conf'
         print 'Assuming slurm conf file is "%s"' % (options.conf)
 
     # Parse the slurm.conf file
-    conf = open(options.conf, 'r')
+    try:
+        conf = open(options.conf, 'r')
+    except:
+        print >>sys.stderr, "Unable to open slurm configuration file", options.conf
+        return -3
     for line in conf.readlines():
         line = line.rstrip()
         line = line.split('#')[0] # eliminate comments
@@ -114,7 +118,12 @@ def append_dir(l, d, key):
 
 def check_perms(filename, perm_bits):
     """Returns 'True' if the file's permissions contain the bits 'perm_bits'"""
-    perm = S_IMODE(os.stat(filename).st_mode)
+    try:
+        perm = S_IMODE(os.stat(filename).st_mode)
+    except:
+        print >>sys.stderr, 'ERROR: Unable to stat', filename
+        return True
+    
     if perm & perm_bits:
         print >>sys.stderr, 'ERROR: %s: %o has bits %.3o set' % (filename, perm, perm_bits)
         return True
