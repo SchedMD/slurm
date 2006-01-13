@@ -34,7 +34,13 @@ slurmd_SOURCES = 	        	\
 	$(top_builddir)/src/slurmd/common/task_plugin.c \
 	$(top_builddir)/src/slurmd/common/task_plugin.h
 
+if HAVE_AIX
+# We need to set maxdata back to 0 because this effects the "max memory size"
+# ulimit, and the ulimit is inherited by child processes.
+slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS) -Wl,-bmaxdata:0x0
+else
 slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)
+endif
 
 force:
 $(slurmd_LDADD) : force
