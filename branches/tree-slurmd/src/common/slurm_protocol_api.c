@@ -722,7 +722,6 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		if(forward_msg(forward_struct, &header) == SLURM_ERROR) {
 			error("problem with forward msg");
 		}
-		xfree(header.forward.name);
 	}
 
 	if ((auth_cred = g_slurm_auth_unpack(buffer)) == NULL) {
@@ -777,7 +776,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 				
 		}
 		pthread_mutex_unlock(&forward_struct->forward_mutex);
-		xfree(header.forward.addr);
+		destroy_forward(&header.forward);
 		xfree(forward_struct->forward_msg);
 		xfree(forward_struct);
 	}
@@ -1180,13 +1179,19 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 	List ret_list = NULL;
 	ListIterator itr;
 	ret_types_t *ret_type = NULL;
-	
+	ret_data_info_t *ret_data_info = NULL;
+	char name[MAX_NAME_LEN];
+
 	if ((slurm_send_node_msg(fd, req) < 0)) 
 		err = errno;
 	if(err == SLURM_SUCCESS) {
 		ret_list = slurm_receive_msg(fd, resp, timeout);
 	}
 	
+	if(!ret_list || list_count(ret_list)==0) {
+		no_resp_forwards(&req->forward, &ret_list, errno);
+	}
+
 	/* 
 	 *  Attempt to close an open connection
 	 */
@@ -1379,7 +1384,7 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 	ret_list = _send_and_recv_msg(fd, req, &msg, timeout);
 	if(!ret_list) {
 		return ret_list;
-	}
+	} 
 	
 	err = errno;
 	if(errno != SLURM_SUCCESS) 

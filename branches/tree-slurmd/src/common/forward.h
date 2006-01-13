@@ -65,6 +65,7 @@ extern int set_forward_launch (forward_t *forward,
 			       hostlist_iterator_t itr);
 
 extern int *set_span(int total);
+extern int no_resp_forwards(forward_t *forward, List *ret_list, int err);
 
 /* destroyers */
 extern void destroy_data_info(void *object);

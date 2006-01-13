@@ -64,28 +64,14 @@ void *_forward_thread(void *arg)
 	ListIterator itr;
 	char name[MAX_NAME_LEN];
 
+	msg.forward.addr = NULL;
+	msg.forward.name = NULL;
+	msg.forward.node_id = NULL;
+
 	if ((fd = slurm_open_msg_conn(&fwd_msg->addr)) < 0) {
 		error("forward_thread: %m");
 		ret_list = list_create(destroy_ret_types);
-		if(fwd_msg->header.forward.cnt == 0)
-			goto nothing_sent;
-		type = xmalloc(sizeof(ret_types_t));
-		list_push(ret_list, type);
-		type->type = REQUEST_PING;
-		type->msg_rc = SLURM_ERROR;
-		ret_data_info->data = NULL;
-		type->err = errno;
-		for(i=0; i<fwd_msg->header.forward.cnt; i++) {
-			strncpy(name,
-				&fwd_msg->header.
-				forward.name[i * MAX_NAME_LEN],
-				MAX_NAME_LEN);
-			ret_data_info = xmalloc(sizeof(ret_types_t));
-			list_push(type->ret_data_list, ret_data_info);
-			ret_data_info->node_name = xstrdup(name);
-			ret_data_info->nodeid = 
-				fwd_msg->header.forward.node_id[i];
-		}
+		no_resp_forwards(&fwd_msg->header.forward, &ret_list, errno);
 		goto nothing_sent;
 	}
 	pack_header(&fwd_msg->header, buffer);
@@ -112,25 +98,7 @@ void *_forward_thread(void *arg)
 			     SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) < 0) {
 		error("slurm_msg_sendto: %m");
 		ret_list = list_create(destroy_ret_types);
-		if(fwd_msg->header.forward.cnt == 0)
-			goto nothing_sent;
-		type = xmalloc(sizeof(ret_types_t));
-		list_push(ret_list, type);
-		type->type = REQUEST_PING;
-		type->msg_rc = SLURM_ERROR;
-		ret_data_info->data = NULL;
-		type->err = errno;
-		for(i=0; i<fwd_msg->header.forward.cnt; i++) {
-			strncpy(name,
-				&fwd_msg->header.
-				forward.name[i * MAX_NAME_LEN],
-				MAX_NAME_LEN);
-			ret_data_info = xmalloc(sizeof(ret_types_t));
-			list_push(type->ret_data_list, ret_data_info);
-			ret_data_info->node_name = xstrdup(name);
-			ret_data_info->nodeid =
-				fwd_msg->header.forward.node_id[i];
-		}
+		no_resp_forwards(&fwd_msg->header.forward, &ret_list, errno);
 		goto nothing_sent;
 	}
 
@@ -140,7 +108,7 @@ void *_forward_thread(void *arg)
 		type = xmalloc(sizeof(ret_types_t));
 		list_push(fwd_msg->ret_list, type);
 		type->ret_data_list = list_create(destroy_data_info);
-		ret_data_info = xmalloc(sizeof(ret_types_t));
+		ret_data_info = xmalloc(sizeof(ret_data_info_t));
 		list_push(type->ret_data_list, ret_data_info);
 		ret_data_info->node_name = xstrdup(fwd_msg->node_name);
 		ret_data_info->nodeid = fwd_msg->header.srun_node_id;
@@ -149,7 +117,7 @@ void *_forward_thread(void *arg)
 				&fwd_msg->header.
 				forward.name[i * MAX_NAME_LEN],
 				MAX_NAME_LEN);
-			ret_data_info = xmalloc(sizeof(ret_types_t));
+			ret_data_info = xmalloc(sizeof(ret_data_info_t));
 			list_push(type->ret_data_list, ret_data_info);
 			ret_data_info->node_name = xstrdup(name);
 			ret_data_info->nodeid = 
@@ -170,7 +138,7 @@ nothing_sent:
 
 	type->err = errno;
 	type->ret_data_list = list_create(destroy_data_info);
-	ret_data_info = xmalloc(sizeof(ret_types_t));
+	ret_data_info = xmalloc(sizeof(ret_data_info_t));
 	list_push(type->ret_data_list, ret_data_info);
 	ret_data_info->node_name = xstrdup(fwd_msg->node_name);
 	ret_data_info->nodeid = fwd_msg->header.srun_node_id;
@@ -419,6 +387,7 @@ extern int set_forward_launch (forward_t *forward,
 
 	return SLURM_SUCCESS;
 }
+
 extern int *set_span(int total)
 {
 	int *span = xmalloc(sizeof(int)*forward_span_count);
@@ -452,6 +421,34 @@ extern int *set_span(int total)
 	return span;
 }
 
+extern int no_resp_forwards(forward_t *forward, List *ret_list, int err)
+{
+	ret_types_t *type = NULL;
+	ret_data_info_t *ret_data_info = NULL;
+	char name[MAX_NAME_LEN];
+	int i=0;
+	if(forward->cnt == 0)
+		goto no_forward;
+	error("something bad happened");
+	if(!*ret_list)
+		*ret_list = list_create(destroy_ret_types);
+	type = xmalloc(sizeof(ret_types_t));
+	list_push(*ret_list, type);
+	type->type = REQUEST_PING;
+	type->msg_rc = SLURM_ERROR;
+	type->err = err;
+	type->ret_data_list = list_create(destroy_data_info);
+	for(i=0; i<forward->cnt; i++) {
+		strncpy(name, &forward->name[i * MAX_NAME_LEN],	MAX_NAME_LEN);
+		ret_data_info = xmalloc(sizeof(ret_data_info_t));
+		list_push(type->ret_data_list, ret_data_info);
+		ret_data_info->node_name = xstrdup(name);
+		ret_data_info->nodeid = forward->node_id[i];
+	}
+no_forward:
+	return SLURM_SUCCESS;
+}
+
 void destroy_data_info(void *object)
 {
 	ret_data_info_t *ret_data_info = (ret_data_info_t *)object;
@@ -476,6 +473,7 @@ void destroy_forward(void *object)
 	xfree(forward->addr);
 	xfree(forward->name);
 	xfree(forward->node_id);
+	forward->cnt = 0;
 }
 
 void destroy_forward_msg(void *object)
