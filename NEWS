@@ -12,6 +12,10 @@ documents those changes that are of interest to users and admins.
     HP, sacct_buf.patch).
  -- BLUEGENE SPECIFIC - added load function to smap to load an already 
     exsistant bluegene.conf file.
+ -- Fix bug in sacct: If user requests specific job or job step ID,
+    only the last one with that ID will be reported. If multiple 
+    nodes fail, the job has its state recorded as "JOB_TERMINATED...nf"
+    Andy Riebs, HP, slurm.hp.sacct_dup.patch)
 
 * Changes in SLURM 0.7.0-pre8
 =============================

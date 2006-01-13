@@ -179,6 +179,8 @@
 #define SECONDS_IN_HOUR (60*SECONDS_IN_MINUTE)
 #define SECONDS_IN_DAY (24*SECONDS_IN_HOUR)
 
+#define TIMESTAMP_LENGTH 15
+
 #ifndef SLURM_CONFIG_FILE
 #define SLURM_CONFIG_FILE "sacct was built with no default slurm.conf path"
 #endif
@@ -249,7 +251,12 @@ typedef enum {	HEADLINE,
 	JOBSTEP
 } print_what_t;
 
-int  cmp_long(const void *l1, const void *l2); 
+typedef struct	expired_table {  /* table of expired jobs */
+	long	job;
+	char	submitted[TIMESTAMP_LENGTH];
+} 	expired_table_t;
+
+int  cmp_jrec(const void *l1, const void *l2); 
 char *decodeCstatus(char *cs);
 void doDump(void);
 void doExpire(void);
@@ -258,7 +265,7 @@ void doHelp(void);
 void doList(void);
 void dumpHeader(long j);
 char *elapsedTime(long secs, long usecs);
-int findJobRecord(long job);
+int findJobRecord(long job, char *submitted);
 int findJobstepRecord(long j, long jobstep);
 void getData(void);
 char *fgetLine(char **buf, int *bsize, FILE *stream);
@@ -374,6 +381,7 @@ long opt_expire = 0;		/* --expire= */
 
 int  opt_debug = 0,		/* Option flags */
      opt_dump = 0,		/* --dump */
+     opt_dup = -1,		/* --duplicates; +1 = explicitly set */
      opt_fdump = 0,		/* --formattted_dump */
      opt_gid = -1,		/* --gid (-1=wildcard, 0=root) */
      opt_header = 1,		/* can only be cleared */
@@ -407,12 +415,15 @@ char *statesSelected[MAX_STATES];
 int NstatesSelected = 0;
 
 struct {
-	int	job_start_seen, job_step_seen, job_terminated_seen;	/* useful flags */
+	int	job_start_seen,		/* useful flags */
+		job_step_seen,
+		job_terminated_seen,
+		jobnum_superseded;	/* older jobnum was reused */
 	long	first_jobstep; /* linked list into jobsteps */
 	/* fields retrieved from JOB_START and JOB_TERMINATED records */
 	long	job;
 	char	*partition;
-	char	submitted[15];	/* YYYYMMDDhhmmss */
+	char	submitted[TIMESTAMP_LENGTH];	/* YYYYMMDDhhmmss */
 	time_t	starttime;
 	int	uid;
 	int	gid;
@@ -465,13 +476,14 @@ struct {
 } jobsteps[MAX_JOBSTEPS];
 long Njobsteps = 0;
 
-int  cmp_long(const void *a1, const void *a2) {
-	long *l1 = (long *) a1;
-	long *l2 = (long *) a2;
-	if (*l1 <  *l2)
+int  cmp_jrec(const void *a1, const void *a2) {
+	expired_table_t *j1 = (expired_table_t *) a1;
+	expired_table_t *j2 = (expired_table_t *) a2;
+
+	if (j1->job <  j2->job)
 		return -1;
-	else if (*l1 == *l2)
-		return 0;
+	else if (j1->job == j2->job)
+		return strncmp(j1->submitted, j2->submitted, TIMESTAMP_LENGTH);
 	return 1;
 }
 
@@ -505,6 +517,17 @@ void doDump(void)
 	long	j, js;
 
 	for (j=0; j<Njobs; j++) {
+		if (opt_dup==0)
+			if (jobs[j].jobnum_superseded) {
+				if (opt_verbose)
+					fprintf(stderr,
+						"Note: Skipping older,"
+						" duplicate job %ld"
+						" dated %s\n",
+						jobs[j].job,
+						jobs[j].submitted);
+				continue;
+			}
 		if (opt_uid>=0)
 			if (jobs[j].uid != opt_uid)
 				continue;
@@ -639,7 +662,7 @@ void doDump(void)
  *     - capture the ownership and permissions
  *  3. scan logfile.orig for JOB_TERMINATED records with F_FINISHED dates
  *     that precede the specified expiration date. Build exp_table as
- *     a list of expired job numbers.
+ *     a list of expired jobs.
  *  4. Open logfile.expired for append
  *  5. Create logfile.new as ".new.<logfile>" (output with line buffering)
  *  6. Re-scan logfile.orig, writing
@@ -669,7 +692,7 @@ void doExpire(void)
 	int	bufsize=MINBUFSIZE,
 		new_file,
 		i;
-	long	*exp_table = NULL;	/* table of expired job numbers */
+	expired_table_t *exp_table;
 	int	exp_table_allocated = 0,
 		exp_table_entries = 0;
 	pid_t	pid;
@@ -729,7 +752,7 @@ void doExpire(void)
 	}
 
 	/* create our initial buffer */
-	buf = malloc(bufsize);
+	buf = _my_malloc(bufsize);
 	while (1) {
 		if (fgetLine(&buf, &bufsize, logfile) == NULL)
 			break;
@@ -768,16 +791,25 @@ void doExpire(void)
 		    pmatch: 
 			if (exp_table_allocated <= exp_table_entries)
 				exp_table = _my_realloc( exp_table,
-				    sizeof(long)*(exp_table_allocated+=10000));
-			exp_table[exp_table_entries++] =
+				    sizeof(expired_table_t) *
+				    	(exp_table_allocated+=10000));
+			exp_table[exp_table_entries].job =
 				strtol(f[F_JOB], NULL, 10);
+			strncpy(exp_table[exp_table_entries].submitted,
+					f[F_SUBMITTED], TIMESTAMP_LENGTH);
+			exp_table_entries++;
+			if (opt_debug)
+				fprintf(stderr, "Selected: %8ld %s\n",
+					exp_table[exp_table_entries].job,
+					exp_table[exp_table_entries].submitted);
 		}
 	}
 	if (exp_table_entries == 0) {
 		printf("No job records were purged.\n");
 		exit(0);
 	}
-	expired_logfile_name = _my_malloc(strlen(opt_filein)+sizeof(".expired"));
+	expired_logfile_name =
+		_my_malloc(strlen(opt_filein)+sizeof(".expired"));
 	sprintf(expired_logfile_name, "%s.expired", opt_filein);
 	new_file = stat(expired_logfile_name, &statbuf);
 	if ((expired_logfile = fopen(expired_logfile_name, "a"))==NULL) {
@@ -806,7 +838,7 @@ void doExpire(void)
 		exit(1);
 	}
 
-	qsort(exp_table, exp_table_entries, sizeof(long), cmp_long);
+	qsort(exp_table, exp_table_entries, sizeof(expired_table_t), cmp_jrec);
 	if (opt_debug) {
 		fprintf(stderr, "--- debug: contents of exp_table ---");
 		for (i=0; i<exp_table_entries; i++) {
@@ -814,16 +846,26 @@ void doExpire(void)
 				fprintf(stderr, "\n");
 			else
 				fprintf(stderr, "\t");
-			fprintf(stderr, "%ld", exp_table[i]);
+			fprintf(stderr, "%ld", exp_table[i].job);
 		}
 		fprintf(stderr, "\n---- debug: end of exp_table ---\n");
 	}
 	rewind(logfile);
 	while (fgetLine(&buf, &bufsize, logfile)) {
-		long tmp;
-		tmp = strtol(buf, NULL, 10);
+		expired_table_t tmp;
+		fptr = buf;
+		for (i=0; i<F_SUBMITTED; i++) {
+			fptr = strstr(fptr, " ");
+			if (fptr == NULL)
+				break;
+			else
+				fptr++;
+		}
+		tmp.job = strtol(buf, NULL, 10);
+		strncpy(tmp.submitted, fptr, TIMESTAMP_LENGTH);
+		tmp.submitted[TIMESTAMP_LENGTH-1] = 0;
 		if (bsearch(&tmp, exp_table, exp_table_entries,
-					sizeof(long), cmp_long)) {
+					sizeof(expired_table_t), cmp_jrec)) {
 			if (fputs(buf, expired_logfile)<0) {
 				perror("writing expired_logfile");
 				exit(1);
@@ -994,6 +1036,17 @@ void doList(void)
 	else if (opt_jobstep_list)
 		doJobs = 0;
 	for (j=0; j<Njobs; j++) {
+		if (opt_dup==0)
+			if (jobs[j].jobnum_superseded) {
+				if (opt_verbose)
+					fprintf(stderr,
+						"Note: Skipping older,"
+						" duplicate job %ld"
+						" dated %s\n",
+						jobs[j].job,
+						jobs[j].submitted);
+				continue;
+			}
 		if ((jobs[j].job_start_seen==0) && jobs[j].job_step_seen) {
 			/* If we only saw JOB_TERMINATED, the job was
 			 * probably canceled. */
@@ -1153,12 +1206,27 @@ char *fgetLine(char **buf, int *bsize, FILE *stream)
 }
 
 
-int findJobRecord(long job)
+int findJobRecord(long job, char *submitted)
 {
-	int	i;
+	int	cmp,
+		i;
+
 	for (i=0; i<Njobs; i++) {
-		if (jobs[i].job == job)
-			return i;
+		if (jobs[i].job == job) {
+			cmp = strncmp(jobs[i].submitted, submitted,
+					TIMESTAMP_LENGTH);
+			if ( cmp == 0)
+				return i;
+			else if (cmp < 0)
+				/* If we're looking for a later
+				 * record with this job number, we
+				 * know that this one is an older,
+				 * duplicate record.
+				 *   We assume that the newer record
+				 * will be created if it doesn't
+				 * already exist. */
+				jobs[i].jobnum_superseded = 1;
+		}
 	}
 	return -1;
 }
@@ -1184,7 +1252,7 @@ void getData(void)
 		i;
 
 	openLogFile();
-	buf=malloc(MINBUFSIZE);
+	buf=malloc(bufsize);
 	while (1) {
 		if (fgetLine(&buf, &bufsize, logfile) == NULL)
 			break;
@@ -1194,8 +1262,12 @@ void getData(void)
 		for (i = 0; i < MAX_RECORD_FIELDS; i++) {
 			f[i] = fptr;
 			fptr = strstr(fptr, " ");
-			if (fptr == NULL)
+			if (fptr == NULL) {
+				fptr = strstr(f[i], "\n");
+				if (fptr)
+					*fptr = 0;
 				break; 
+			}
 			else
 				*fptr++ = 0;
 		}
@@ -1265,8 +1337,9 @@ void getData(void)
 	if (ferror(logfile)) {
 		perror(opt_filein);
 		exit(1);
-	}
+	} 
 	fclose(logfile);
+
 	return;
 } 
 
@@ -1279,6 +1352,7 @@ void getOptions(int argc, char **argv)
 		{"all", 0,0, 'a'},
 		{"brief", 0, 0, 'b'},
 		{"debug", 0, 0, 'D'},
+		{"duplicates", 0, &opt_dup, 1},
 		{"dump", 0, 0, 'd'},
 		{"expire", 1, 0, 'e'},
 		{"fields", 1, 0, 'F'},
@@ -1292,6 +1366,7 @@ void getOptions(int argc, char **argv)
 		{"jobstep", 1, 0, 'J'},
 		{"long", 0, 0, 'l'},
 		{"big_logfile", 0, &opt_lowmem, 1},
+		{"noduplicates", 0, &opt_dup, 0},
 		{"noheader", 0, &opt_header, 0},
 		{"partition", 1, 0, 'p'},
 		{"state", 1, 0, 's'},
@@ -1527,10 +1602,18 @@ void getOptions(int argc, char **argv)
 		}
 	}
 
+	/* Now set opt_dup, unless they've already done so */
+	if (opt_dup < 0)	/* not already set explicitly */
+		if (opt_job_list || opt_jobstep_list)
+			/* They probably want the most recent job N if
+			 * they requested specific jobs or steps. */
+			opt_dup = 0;
+
 	if (opt_debug) {
 		fprintf(stderr, "Options selected:\n"
 			"\topt_debug=%d\n"
 			"\topt_dump=%d\n"
+			"\topt_dup=%d\n"
 			"\topt_expire=%s (%lu seconds)\n"
 			"\topt_fdump=%d\n"
 			"\topt_field_list=%s\n"
@@ -1547,6 +1630,7 @@ void getOptions(int argc, char **argv)
 			"\topt_verbose=%d\n",
 			opt_debug,
 			opt_dump,
+			opt_dup,
 			opt_expire_timespec, opt_expire,
 			opt_fdump,
 			opt_field_list,
@@ -1710,88 +1794,108 @@ void helpFieldsMsg(void)
 void helpMsg(void)
 {
 	printf("\n"
-	       "By default, sacct displays accounting data for all jobs and job\n"
-	       "steps that are present in the log.\n"
-	       "\n"
-	       "Notes:\n"
-	       "\n"
-	       "    * If --dump is specified,\n"
-	       "          * The field selection options (--brief, --fields, ...)\n"
-	       "	    have no effect\n"
-	       "	  * Elapsed time fields are presented as 2 fields, integral\n"
-	       "	    seconds and integral microseconds\n"
-	       "    * If --dump is not specified, elapsed time fields are presented\n"
-	       "      as [[days:]hours:]minutes:seconds.hundredths\n"
-	       "    * The default input file is the file named in /etc/slurm.conf\n"
-	       "      or /hptc_cluster/slurm/etc/slurm.conf. If no slurm.conf file\n"
-	       "      is found, try to use /var/log/slurm_accounting.log.\n"
-	       "\n"
-	       "Options:\n"
-	       "\n"
-	       "-a, --all\n"
-	       "    Display job accounting data for all users. By default, only\n"
-	       "    data for the current user is displayed for users other than\n"
-	       "    root.\n"
-	       "-b, --brief\n"
-	       "    Equivalent to \"--fields=jobstep,status,error\". This option\n"
-	       "    has no effect if --dump is specified.\n"
-	       "-d, --dump\n"
-	       "    Dump the raw data records\n"
-	       "-e <timespec>, --expire=<timespec>\n"
-	       "    Remove jobs from SLURM's current accounting log file (or the\n"
-	       "    file specified with --file) that completed more than <timespec>\n"
-	       "    ago.  If <timespec> is an integer, it is interpreted as\n" 
-	       "    minutes. If <timespec> is an integer followed by \"h\", it is\n"
-	       "    interpreted as a number of hours. If <timespec> is an integer\n"
-	       "    followed by \"d\", it is interpreted as number of days. For\n"
-	       "    example, \"--expire=14d\" means that you wish to purge the job\n"
-	       "    accounting log of all jobs that completed more than 14 days ago.\n" 
-	       "-F <field-list>, --fields=<field-list>\n"
-	       "    Display the specified data (use \"--help-fields\" for a\n"
-	       "    list of available fields). If no field option is specified,\n"
-	       "    we use \"--fields=jobstep,jobname,partition,ncpus,status,error\".\n"
-	       "-f<file>, --file=<file>\n"
-	       "    Read data from the specified file, rather than SLURM's current\n"
-	       "    accounting log file.\n"
-	       "-l, --long\n"
-	       "    Equivalent to specifying\n"
-	       "    \"--fields=jobstep,usercpu,systemcpu,minflt,majflt,nprocs,\n"
-	       "    ncpus,elapsed,status,error\"\n"
-	       "-O, --formatted_dump\n"
-	       "    Dump accounting records in an easy-to-read format, primarily\n"
-	       "    for debugging.\n"
-	       "-g <gid>, --gid <gid>\n"
-	       "    Select only jobs submitted from the <gid> group.\n"
-	       "-h, --help\n"
-	       "    Print a general help message.\n"
-	       "--help-fields\n"
-	       "    Print a list of fields that can be specified with the\n"
-	       "    \"--fields\" option\n"
-	       "-j <job_list>, --jobs=<job_list>\n"
-	       "    Display information about this job or comma-separated\n"
-	       "    list of jobs. The default is all jobs.\n"
-	       "-J <job.step>, --jobstep=<job.step>\n"
-	       "    Show data only for the specified step of the specified job\n"
-	       "--noheader\n"
-	       "    Print (or don't print) a header. The default is to print a\n"
-	       "    header; the option has no effect if --dump is specified\n"
-	       "-p <part_list>, --partition=<part_list>\n"
-	       "    Display or purge information about jobs and job steps in the\n"
-	       "    <part_list> partition(s). The default is all partitions.\n"
-	       "-s <state-list>, --state=<state-list>\n"
-	       "    Select jobs based on their current status: running (r),\n"
-	       "    completed (cd), failed (f), timeout (to), and node_fail (nf).\n"
-	       "-t, --total\n"
-	       "    Only show cumulative statistics for each job, not the\n"
-	       "    intermediate steps\n"
-	       "-u <uid>, --uid <uid>\n"
-	       "    Select only jobs submitted by the user with uid <uid>.  Only\n"
-	       "    root users are allowed to specify a uid other than their own.\n"
-	       "--usage\n"
-	       "    Pointer to this message.\n"
-	       "-V, --verbose\n"
-	       "    Primarily for debugging purposes, report the state of various\n"
-	       "    variables during processing.\n");
+       "By default, sacct displays accounting data for all jobs and job\n"
+       "steps that are present in the log.\n"
+       "\n"
+       "Notes:\n"
+       "\n"
+       "    * If --dump is specified,\n"
+       "          * The field selection options (--brief, --fields, ...)\n"
+       "	    have no effect\n"
+       "	  * Elapsed time fields are presented as 2 fields, integral\n"
+       "	    seconds and integral microseconds\n"
+       "    * If --dump is not specified, elapsed time fields are presented\n"
+       "      as [[days:]hours:]minutes:seconds.hundredths\n"
+       "    * The default input file is the file named in /etc/slurm.conf\n"
+       "      or /hptc_cluster/slurm/etc/slurm.conf. If no slurm.conf file\n"
+       "      is found, try to use /var/log/slurm_accounting.log.\n"
+       "\n"
+       "Options:\n"
+       "\n"
+       "-a, --all\n"
+       "    Display job accounting data for all users. By default, only\n"
+       "    data for the current user is displayed for users other than\n"
+       "    root.\n"
+       "-b, --brief\n"
+       "    Equivalent to \"--fields=jobstep,status,error\". This option\n"
+       "    has no effect if --dump is specified.\n"
+       "-d, --dump\n"
+       "    Dump the raw data records\n"
+       "--duplicates\n"
+       "    If SLURM job ids are reset, but the job accounting log file\n"
+       "    isn't reset at the same time (with -e, for example), some\n"
+       "    job numbers will probably appear more than once in the\n"
+       "    accounting log file to refer to different jobs; such jobs\n"
+       "    can be distinguished by the \"submitted\" time stamp in the\n"
+       "    data records.\n"
+       "      When data for specific jobs or jobsteps are requested with\n"
+       "    the --jobs or --jobsteps options, we assume that the user\n"
+       "    wants to see only the most recent job with that number. This\n"
+       "    behavior can be overridden by specifying --duplicates, in\n"
+       "    which case all records that match the selection criteria\n"
+       "    will be returned.\n"
+       "      When neither --jobs or --jobsteps is specified, we report\n"
+       "    data for all jobs that match the selection criteria, even if\n"
+       "    some of the job numbers are reused. Specify that you only\n"
+       "    want the most recent job for each selected job number with\n"
+       "    the --noduplicates option.\n"
+       "-e <timespec>, --expire=<timespec>\n"
+       "    Remove jobs from SLURM's current accounting log file (or the\n"
+       "    file specified with --file) that completed more than <timespec>\n"
+       "    ago.  If <timespec> is an integer, it is interpreted as\n" 
+       "    minutes. If <timespec> is an integer followed by \"h\", it is\n"
+       "    interpreted as a number of hours. If <timespec> is an integer\n"
+       "    followed by \"d\", it is interpreted as number of days. For\n"
+       "    example, \"--expire=14d\" means that you wish to purge the job\n"
+       "    accounting log of all jobs that completed more than 14 days ago.\n" 
+       "-F <field-list>, --fields=<field-list>\n"
+       "    Display the specified data (use \"--help-fields\" for a\n"
+       "    list of available fields). If no field option is specified,\n"
+       "    we use \"--fields=jobstep,jobname,partition,ncpus,status,error\".\n"
+       "-f<file>, --file=<file>\n"
+       "    Read data from the specified file, rather than SLURM's current\n"
+       "    accounting log file.\n"
+       "-l, --long\n"
+       "    Equivalent to specifying\n"
+       "    \"--fields=jobstep,usercpu,systemcpu,minflt,majflt,nprocs,\n"
+       "    ncpus,elapsed,status,error\"\n"
+       "-O, --formatted_dump\n"
+       "    Dump accounting records in an easy-to-read format, primarily\n"
+       "    for debugging.\n"
+       "-g <gid>, --gid <gid>\n"
+       "    Select only jobs submitted from the <gid> group.\n"
+       "-h, --help\n"
+       "    Print a general help message.\n"
+       "--help-fields\n"
+       "    Print a list of fields that can be specified with the\n"
+       "    \"--fields\" option\n"
+       "-j <job_list>, --jobs=<job_list>\n"
+       "    Display information about this job or comma-separated\n"
+       "    list of jobs. The default is all jobs.\n"
+       "-J <job.step>, --jobstep=<job.step>\n"
+       "    Show data only for the specified step of the specified job.\n"
+       "--noduplicates\n"
+       "    See the discussion under --duplicates.\n"
+       "--noheader\n"
+       "    Print (or don't print) a header. The default is to print a\n"
+       "    header; the option has no effect if --dump is specified\n"
+       "-p <part_list>, --partition=<part_list>\n"
+       "    Display or purge information about jobs and job steps in the\n"
+       "    <part_list> partition(s). The default is all partitions.\n"
+       "-s <state-list>, --state=<state-list>\n"
+       "    Select jobs based on their current status: running (r),\n"
+       "    completed (cd), failed (f), timeout (to), and node_fail (nf).\n"
+       "-t, --total\n"
+       "    Only show cumulative statistics for each job, not the\n"
+       "    intermediate steps\n"
+       "-u <uid>, --uid <uid>\n"
+       "    Select only jobs submitted by the user with uid <uid>.  Only\n"
+       "    root users are allowed to specify a uid other than their own.\n"
+       "--usage\n"
+       "    Pointer to this message.\n"
+       "-V, --verbose\n"
+       "    Primarily for debugging purposes, report the state of various\n"
+       "    variables during processing.\n");
 	return;
 }
 
@@ -1899,6 +2003,7 @@ long initJobStruct(long job, char *f[])
 	jobs[j].job_start_seen = 0;
 	jobs[j].job_step_seen = 0;
 	jobs[j].job_terminated_seen = 0;
+	jobs[j].jobnum_superseded = 0;
 	jobs[j].first_jobstep = -1;
 	jobs[j].partition = _my_malloc(strlen(f[F_PARTITION])+1);
 	strcpy(jobs[j].partition, f[F_PARTITION]);
@@ -2709,7 +2814,7 @@ void processJobStart(char *f[])
 	long	job;
 
 	job = strtol(f[F_JOB], NULL, 10);
-	j = findJobRecord(job);
+	j = findJobRecord(job, f[F_SUBMITTED]);
 	if (j >= 0 ) {	/* Hmmm... that's odd */
 		if (jobs[j].job_start_seen) {
 			fprintf(stderr,
@@ -2750,7 +2855,7 @@ void processJobStep(char *f[])
 		jobstep = -2;
 	else
 		jobstep = strtol(f[F_JOBSTEP], NULL, 10);
-	j = findJobRecord(job);
+	j = findJobRecord(job, f[F_SUBMITTED]);
 	if (j<0) {	/* fake it for now */
 		j = initJobStruct(job,f);
 		if (opt_verbose && (opt_jobstep_list==NULL)) 
@@ -2861,7 +2966,7 @@ void processJobTerminated(char *f[])
 		job;
 
 	job = strtol(f[F_JOB], NULL, 10);
-	j = findJobRecord(job);
+	j = findJobRecord(job, f[F_SUBMITTED]);
 	if (j<0) {	/* fake it for now */
 		j = initJobStruct(job,f);
 		if (opt_verbose) 
@@ -2869,11 +2974,24 @@ void processJobTerminated(char *f[])
 					"%ld preceded "
 					"other job records at line %ld\n",
 					job, lc);
-	}
-	if (jobs[j].job_terminated_seen) {
-		fprintf(stderr, "Duplicate JOB_TERMINATED record for job "
-				"%ld -- ignoring it\n",
-				job);
+	} else if (jobs[j].job_terminated_seen) {
+		if (strcasecmp(f[F_CSTATUS],"nf")==0) {
+			/* multiple node failures -> extra TERMINATED records */
+			if (opt_verbose)
+				fprintf(stderr, "Note: Duplicate JOB_TERMINATED"
+						" record (nf) for job %ld at"
+						" line %ld\n", 
+						job, lc);
+			/* JOB_TERMINATED/NF records may be preceded
+			 * by a JOB_TERMINATED/CA record; NF is much
+			 * more interesting.
+			 */
+			strncpy(jobs[j].cstatus, "nf", 3);
+			return;
+		}
+		fprintf(stderr, "Duplicate JOB_TERMINATED record (%s) for job"
+				" %ld at line %ld -- ignoring it\n",
+				f[F_CSTATUS], job, lc);
 		return;
 	}
 	jobs[j].job_terminated_seen = 1;
