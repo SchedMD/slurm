@@ -460,3 +460,20 @@ proc test_super_user { } {
 	return $super_user
 }
 
+# Create a 16 bit hex number from a signed decimal number
+# Replace all non-decimal characters
+# Courtesy of Chris Cornish
+# http://aspn.activestate.com/ASPN/Cookbook/Tcl/Recipe/415982
+proc dec2hex16 {value} {
+	regsub -all {[^0-x\.-]} $value {} newtemp
+	set value [string trim $newtemp]
+	if {$value < 32767 && $value > -32768} {
+		set tempvalue [format "%#010X" [expr $value]]
+		return [string range $tempvalue 6 9]
+	} elseif {$value < 32768} {
+		return "8000"
+	} else {
+		return "7FFF"
+	}
+}
+
