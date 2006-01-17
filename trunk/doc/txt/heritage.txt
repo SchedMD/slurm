@@ -83,6 +83,35 @@ License:	GPL
 Imported by:	Andy Riebs
 Notes:
 
+Origin:		http://aspn.activestate.com/ASPN/Cookbook/Tcl/Recipe/415982
+Date:		1/13/2006
+Destination:	testsuite/expect/globals.example
+License:	None
+Imported by:	Morris Jette
+Notes:		Just the function dec2hex16 imported from on-line code 
+		"cookbook."
+
+Origin:
+Date:
+Destination:
+License:
+Imported by:
+Notes:
+
+Origin:
+Date:
+Destination:
+License:
+Imported by:
+Notes:
+
+Origin:
+Date:
+Destination:
+License:
+Imported by:
+Notes:
+
 Origin:
 Date:
 Destination:
