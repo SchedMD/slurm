@@ -261,7 +261,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "%.2s",
 			  job_state_string_compact(job_ptr->job_state));
-		ba_system_ptr->xcord += 3;
+		ba_system_ptr->xcord += 2;
 		if(!strcasecmp(job_ptr->nodes,"waiting...")) {
 			sprintf(time_buf,"0:00:00");
 		} else {
