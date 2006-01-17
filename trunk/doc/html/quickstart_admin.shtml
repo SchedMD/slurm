@@ -57,8 +57,15 @@ are denoted below.
 		  configuration file <i>slurm.conf</i> in the same order as 
 		  defined in the <i>elanhosts</i> configuration file so that 
 		  node allocation for jobs can be performed so as to optimize
-		  their performance. Finally, the "ptrack" kernel 
-		  patch is required for process tracking.
+		  their performance. We recommend assigning the nodes a numeric
+		  suffix equal to its Elan address for ease of administration
+		  (e.g. /etc/elanhosts to contain two lines of this sort:<br>
+		  eip  [0-15]  linux[0-15]<br>
+		  eth  [0-15]  linux[0-15]<br>
+		  for fifteen nodes with a prefix of &quot;linux&quot; and 
+		  numeric suffix between zero and 15).  Finally, the 
+		  &quot;ptrack&quot; kernel patch is required for process 
+		  tracking.
 </ul>
 Please see the <a href=download.html>Download</a> page for references to
 required software to build these plugins.</p>
