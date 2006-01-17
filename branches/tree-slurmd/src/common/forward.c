@@ -289,10 +289,10 @@ extern int set_forward_addrs (forward_t *forward,
         int j = 1;
 	char name[MAX_NAME_LEN];
 	
-	strncpy(name,
-		&forward_names[(*pos) * MAX_NAME_LEN],
-		MAX_NAME_LEN);
-	info("forwarding to %s",name);
+	/* strncpy(name, */
+/* 		&forward_names[(*pos) * MAX_NAME_LEN], */
+/* 		MAX_NAME_LEN); */
+/* 	info("forwarding to %s",name); */
 	
 	if(span > 0) {
 		forward->addr = xmalloc(sizeof(slurm_addr) * span);
@@ -310,10 +310,10 @@ extern int set_forward_addrs (forward_t *forward,
 			else
 				forward->node_id[j-1] = 0;
 
-			strncpy(name,
-				&forward_names[(*pos+j) * MAX_NAME_LEN],
-				MAX_NAME_LEN);
-			info("along with %s",name);		
+			/* strncpy(name, */
+/* 				&forward_names[(*pos+j) * MAX_NAME_LEN], */
+/* 				MAX_NAME_LEN); */
+/* 			info("along with %s",name);		 */
 			j++;
 		}
 		j--;
