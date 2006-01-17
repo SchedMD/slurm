@@ -337,10 +337,13 @@ The \fBslurmctld\fR daemon must be restarted for a change in
 scheduler type to become effective.
 .TP
 \fBSelectType\fR
-Identifies the type of node selection algorithm to be used. 
+Identifies the type of resource selection algorithm to be used. 
 Acceptable values include 
-"select/linear" for a one-dimentional array of nodes in which 
-sequentially ordered nodes are preferable, and
+"select/linear" for allocation of entire nodes assuming a
+one-dimentional array of nodes in which sequentially ordered 
+nodes are preferable, 
+"select/cons_res" for allocation of individual processors 
+within the available nodes, and  
 "select/bluegene" for a three-dimentional Blue Gene system. 
 The default value is "select/bluegene" for Blue Gene systems 
 and "select/linear" for all other systems.
