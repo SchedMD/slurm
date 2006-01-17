@@ -30,6 +30,7 @@
 
 #include "src/api/slurm_pmi.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 
 int pmi_fd = -1;

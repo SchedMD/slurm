@@ -2537,7 +2537,6 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	packstr(msg->task_epilog, buffer);
 	pack32(msg->slurmd_debug, buffer);
 	switch_pack_jobinfo(msg->switch_job, buffer);
-	
 }
 
 static int
@@ -2566,7 +2565,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	msg->cpus_allocated = xmalloc(sizeof(uint32_t) * msg->nnodes);
 	msg->resp_port = xmalloc(sizeof(uint16_t) * msg->nnodes);
 	msg->io_port = xmalloc(sizeof(uint16_t) * msg->nnodes);
-	msg->global_task_ids = xmalloc(sizeof(uint32_t) * msg->nnodes);
+	msg->global_task_ids = xmalloc(sizeof(uint32_t *) * msg->nnodes);
 	for(i=0; i<msg->nnodes; i++) {
 		safe_unpack32(&msg->tasks_to_launch[i], buffer);
 		safe_unpack32(&msg->cpus_allocated[i], buffer);
@@ -3089,22 +3088,17 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	safe_unpack32(&launch_msg_ptr->nprocs, buffer);
 
 	safe_unpack16(&launch_msg_ptr->num_cpu_groups, buffer);
-	if (launch_msg_ptr->num_cpu_groups > 0) {
-		safe_unpack32_array((uint32_t **) &
-				(launch_msg_ptr->cpus_per_node), &uint32_tmp,
-				buffer);
-		if (launch_msg_ptr->num_cpu_groups != uint32_tmp)
-			goto unpack_error;
-		safe_unpack32_array((uint32_t **) &
-				(launch_msg_ptr->cpu_count_reps), &uint32_tmp,
-				buffer);
-		if (launch_msg_ptr->num_cpu_groups != uint32_tmp)
-			goto unpack_error;
-	} else {
-		launch_msg_ptr->cpus_per_node = NULL;
-		launch_msg_ptr->cpu_count_reps = NULL;
-	}
-
+	safe_unpack32_array((uint32_t **) &(launch_msg_ptr->cpus_per_node), 
+			    &uint32_tmp,
+			    buffer);
+	if (launch_msg_ptr->num_cpu_groups != uint32_tmp)
+		goto unpack_error;
+	safe_unpack32_array((uint32_t **) &(launch_msg_ptr->cpu_count_reps), 
+			    &uint32_tmp,
+			    buffer);
+	if (launch_msg_ptr->num_cpu_groups != uint32_tmp)
+		goto unpack_error;
+	
 	safe_unpackstr_xmalloc(&launch_msg_ptr->nodes, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&launch_msg_ptr->script, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&launch_msg_ptr->work_dir, &uint16_tmp,
@@ -3137,6 +3131,8 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	xfree(launch_msg_ptr->out);
 	xfree(launch_msg_ptr->argv);
 	xfree(launch_msg_ptr->environment);
+	xfree(launch_msg_ptr->cpus_per_node);
+	xfree(launch_msg_ptr->cpu_count_reps);
 	select_g_free_jobinfo(&launch_msg_ptr->select_jobinfo);
 	xfree(launch_msg_ptr);
 	*msg = NULL;
