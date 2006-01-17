@@ -568,7 +568,12 @@ ranges of nodes to avoid building a configuration file with large
 numbers of entries. The node range expression can contain one  
 pair of square brackets with a sequence of comma separated 
 numbers and/or ranges of numbers separated by a "-"
-(e.g. "linux[0-64,128]", or "lx[15,18,32-33]"). 
+(e.g. "linux[0-64,128]", or "lx[15,18,32-33]").
+On BlueGene systems only, the square brackets should contain
+pairs of three digit numbers separated by a "x".
+These numbers indicate the boundaries of a rectangular prism
+(e.g. "bgl[000x144,400x544]").
+See BlueGene documentation for more details. 
 Presently the numeric range must be the last characters in the 
 node name (e.g. "unit[0-31]rack1" is invalid). 
 The node configuration specified the following information:
