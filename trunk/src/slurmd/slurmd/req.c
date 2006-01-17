@@ -2068,7 +2068,10 @@ init_gids_cache(int cache)
 		if (_gids_cache_lookup(pwd->pw_name, pwd->pw_gid))
 			continue;
 		if (initgroups(pwd->pw_name, pwd->pw_gid)) {
-			error("initgroups:init_gids_cache: %m");
+			if ((errno == EPERM) && (getuid() != (uid_t) 0))
+				debug("initgroups:init_gids_cache: %m");
+			else
+				error("initgroups:init_gids_cache: %m");
 			continue;
 		}
 		if ((gids = _getgroups()) == NULL)
