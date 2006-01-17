@@ -71,8 +71,8 @@ date
  
 <a name="naming">
 <p>The naming of nodes includes a three-digit suffix representing the base partition's 
-location in the X, Y and Z dimensions with a zero origin.
-For example, "bg012" represents the base partition whose location is at X=0, Y=1 and Z=2. 
+coordinates in the X, Y and Z dimensions with a zero origin.
+For example, "bg012" represents the base partition whose coordinate is at X=0, Y=1 and Z=2. 
 Since jobs must be allocated consecutive nodes in all three dimensions, we have developed 
 an abbreviated format for describing the nodes in one of these three-dimensional blocks. 
 The node's prefix of "bg" is followed by the end-points of the block enclosed in square-brackets. 
@@ -259,17 +259,16 @@ the scontrol reconfig command. </p>
 
 <p>SLURM node and partition descriptions should make use of the 
 <a href="#naming">naming</a> conventions described above. For example,
-"NodeName=bg[000x733] NodeAddr=frontend0 NodeHostname=frontend0 Procs=1024". 
-Based on the prefix you give to the noderange in the NodeName= variable 
-the bgl blocks will be named by such.  Thus this can be anything you want, but
-needs to be consistent throughout the slurm.conf file.
+"NodeName=bg[000x733] NodeAddr=frontend0 NodeHostname=frontend0 Procs=1024"
+is used in <i>slurm.conf</i> to define a BlueGene system with 128 midplanes
+in an 8 by 4 by 4 matrix.
+The node name prefix of "bg" defined by NodeName can be anything you want, 
+but needs to be consistent throughout the <i>slurm.conf</i> file.
 Note that the values of both NodeAddr and NodeHostname for all 
-128 base partitions is the name of the front end node executing 
+128 base partitions is the name of the front-end node executing 
 the slurmd daemon. 
-The NodeName values represent base partitions. 
-No computers are actually expected to return a value of "bg000"
-in response to the <i>hostname</i> command nor will any attempt 
-be made to route message traffic to this address. </p>
+No computer is actually expected to a hostname of "bg000" and no
+attempt will be made to route message traffic to this address. </p>
 
 <p>While users are unable to initiate SLURM job steps on Blue Gene systems, 
 this restriction does not apply to user root or SlurmUser. 
@@ -278,7 +277,7 @@ large number of job steps, so this ability should be used only to verify normal
 SLURM operation. 
 If large numbers of job steps are initiated by slurmd, expect the daemon to 
 fail due to lack of memory or other resources. 
-It is best to minimize other work on the front end node executing slurmd
+It is best to minimize other work on the front-end node executing slurmd
 so as to maximize its performance and minimize other risk factors.</p>
 
 <p>Presently the system administrator must explicitly define each of the 
@@ -303,7 +302,10 @@ Note that the defined bgblocks may not overlap (except for the
 full-system bgblock, which is implicitly created).
 See the smap man page for more information.
 You must insure that the nodes defined in <i>bluegene.conf</i> are 
-consistent with those defined in <i>slurm.conf</i>.
+consistent with those defined in <i>slurm.conf</i> although the 
+<i>bluegene.conf</i> file contains only the numeric coordinates of 
+nodes while <i>slurm.conf</i> contains the name prefix in addition 
+to the numeric coordinates.
 Note that the Image and Numpsets values defined in <i>bluegene.conf</i>
 are used only when SLURM creates bgblocks.
 If previously defined bgblocks are used by SLURM, their configurations 
@@ -376,6 +378,8 @@ BridgeAPIVerbose=0
 # * Bgblocks must not overlap (except for implicitly created bgblock)
 #   This will be the case when smap is used to create a configuration file
 # * All Nodes defined here must also be defined in the slurm.conf file
+# * Define only the numeric coordinates of the bglblocks here. The prefix
+#   will be based upon the name defined in slurm.conf
 ###############################################################################
 # LEAVE NEXT LINE AS A COMMENT, Full-system bgblock, implicitly created
 # Nodes=[000x001] Type=TORUS       # 1x1x2 = 2 midplanes
@@ -485,6 +489,6 @@ nodes, so the message is more meaningful there). </p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 14 October 2005</p>
+<p style="text-align:center;">Last modified 16 January 2006</p>
 
 <!--#include virtual="footer.txt"-->

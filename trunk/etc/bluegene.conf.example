@@ -40,19 +40,24 @@ BridgeAPIVerbose=0
 #        (smaller bglblocks are presently not supported)
 # 
 # IMPORTANT NOTES: 
+# * Ordering is very important for laying out switch wires.  Please create
+#   blocks with smap, and once done don't move the order of blocks
+#   created.
 # * A bglblock is implicitly created containing all resources on the system
 # * Bglblocks must not overlap (except for implicitly created bglblock)
 #   This will be the case when smap is used to create a configuration file
 # * All Nodes defined here must also be defined in the slurm.conf file
+# * Define only the numeric coordinates of the bglblocks here. The prefix
+#   will be based upon the NodeName defined in slurm.conf
 ###############################################################################
 # LEAVE NEXT LINE AS A COMMENT, Full-system bglblock, implicitly created
-# Nodes=bgl[000x333] Type=TORUS        # 4x4x4 = 64 midplanes
+# Nodes=[000x333] Type=TORUS        # 4x4x4 = 64 midplanes
 ###############################################################################
 # smap bglblock layout here:
-Nodes=bgl[000x133] Type=TORUS          # 2x4x4 = 32
-Nodes=bgl[200x233] Type=TORUS          # 1x4x4 = 16
-Nodes=bgl[300x313] Type=TORUS          # 1x2x4 =  8
-Nodes=bgl[320x323] Type=TORUS          # 1x1x4 =  4
-Nodes=bgl[330x331] Type=TORUS          # 1x1x2 =  2
-Nodes=bgl[332x332] Type=TORUS          # 1x1x1 =  1
-Nodes=bgl[333x333] Type=SMALL          # 1x1x1 =  1, in four bglblocks
+Nodes=[000x133] Type=TORUS          # 2x4x4 = 32
+Nodes=[200x233] Type=TORUS          # 1x4x4 = 16
+Nodes=[300x313] Type=TORUS          # 1x2x4 =  8
+Nodes=[320x323] Type=TORUS          # 1x1x4 =  4
+Nodes=[330x331] Type=TORUS          # 1x1x2 =  2
+Nodes=[332x332] Type=TORUS          # 1x1x1 =  1
+Nodes=[333x333] Type=SMALL          # 1x1x1 =  1, in four bglblocks
