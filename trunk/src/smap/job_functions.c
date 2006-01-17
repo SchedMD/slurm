@@ -190,7 +190,7 @@ static void _print_header_job(void)
 		ba_system_ptr->xcord += 10;
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "ST");
-		ba_system_ptr->xcord += 6;
+		ba_system_ptr->xcord += 8;
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "TIME");
 		ba_system_ptr->xcord += 5;
@@ -210,7 +210,7 @@ static void _print_header_job(void)
 		printf("    USER ");
 		printf("  NAME ");
 		printf("ST ");
-		printf("    TIME ");
+		printf("      TIME ");
 		printf("NODES ");
 		printf("NODELIST\n");
 	}
@@ -261,7 +261,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "%.2s",
 			  job_state_string_compact(job_ptr->job_state));
-		ba_system_ptr->xcord += 0;
+		ba_system_ptr->xcord += 3;
 		if(!strcasecmp(job_ptr->nodes,"waiting...")) {
 			sprintf(time_buf,"0:00:00");
 		} else {
@@ -338,7 +338,7 @@ static int _print_text_job(job_info_t * job_ptr)
 			snprint_time(time_buf, sizeof(time_buf), time);
 		}
 		
-		printf("%8.8s ", time_buf);
+		printf("%10.10s ", time_buf);
 		
 		if(quarter != -1)
 			printf("%5s ", "0.25");
