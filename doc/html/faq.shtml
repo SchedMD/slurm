@@ -26,8 +26,11 @@ the job and one or more nodes can remain in the completing state for an extended
 period of time. This may be indicative of processes hung waiting for a core file 
 to complete I/O or operating system failure. If this state persists, the system 
 administrator should use the <span class="commandline">scontrol</span> command 
-to change the node's state to &quot;down,&quot; reboot the node, then reset the 
-node's state to idle.</p>
+to change the node's state to <i>DOWN</i> (e.g. &quot;scontrol update 
+NodeName=<i>name</i> State=DOWN Reason=hung_completing&quot;), reboot the node, 
+then reset the node's state to IDLE (e.g. &quot;scontrol update 
+NodeName=<i>name</i> State=RESUME&quot;).</p>
+
 <p><a name="rlimit"><b>2. Why do I see the error &quot;Can't propagate RLIMIT_...&quot;?</b></a><br>
 When the <span class="commandline">srun</span> command executes, it captures the 
 resource limits in effect at that time. These limits are propagated to the allocated 
@@ -168,6 +171,6 @@ Suspending and resuming a job makes use of the SIGSTOP and SIGCONT
 signals respectively, so swap and disk space should be sufficient to 
 accommodate all jobs allocated to a node, either running or suspended.
 
-<p style="text-align:center;">Last modified 22 December 2005</p>
+<p style="text-align:center;">Last modified 16 January 2006</p>
 
 <!--#include virtual="footer.txt"-->
