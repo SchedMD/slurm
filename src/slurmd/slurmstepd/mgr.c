@@ -1252,8 +1252,13 @@ _initgroups(slurmd_job_t *job)
 	gid = job->pwd->pw_gid;
 	debug2("Uncached user/gid: %s/%ld", username, (long)gid);
 	if (rc = initgroups(username, gid)) {
-		error("Error in initgroups(%s, %ld): %m",
-		      username, (long)gid);
+		if ((errno == EPERM) && (getuid != (uid_t) 0)) {
+			debug("Error in initgroups(%s, %ld): %m",
+				username, (long)gid);
+		} else {
+			error("Error in initgroups(%s, %ld): %m",
+				username, (long)gid);
+		}
 		return -1;
 	}
 	return 0;
