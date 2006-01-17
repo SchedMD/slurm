@@ -272,7 +272,22 @@ for the host &quot;mcri&quot;. Port numbers to be used for
 communications are specified as well as various timer values.</p>
 
 <p>A description of the nodes and their grouping into partitions is required. 
-Node names can have up to three name specifications: 
+A simple node range expression may optionally be used to specify
+ranges of nodes to avoid building a configuration file with large
+numbers of entries. The node range expression can contain one
+pair of square brackets with a sequence of comma separated
+numbers and/or ranges of numbers separated by a &quot;-&quot;
+(e.g. &quot;linux[0-64,128]&quot;, or &quot;lx[15,18,32-33]&quot;).
+On BlueGene systems only, the square brackets should contain
+pairs of three digit numbers separated by a &quot;x&quot;.
+These numbers indicate the boundaries of a rectangular prism
+(e.g. &quot;bgl[000x144,400x544]&quot;).
+See our <a href="bluegene.html">Blue Gene User and Administrator Guide</a>
+for more details.
+Presently the numeric range must be the last characters in the
+node name (e.g. &quot;unit[0-31]rack1&quot; is invalid).</p>
+
+<p>Node names can have up to three name specifications: 
 <b>NodeName</b> is the name used by all SLURM tools when referring to the node,
 <b>NodeAddr</b> is the name or IP address SLURM uses to communicate with the node, and 
 <b>NodeHostname</b> is the name returned by the command <i>/bin/hostname -s</i>.
