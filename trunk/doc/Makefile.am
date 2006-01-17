@@ -7,6 +7,7 @@ htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
 generated_html = \
 	html/api.html \
 	html/authplugins.html \
+	html/big_sys.html \
 	html/bluegene.html \
 	html/checkpoint_plugins.html \
 	html/cons_res.html \

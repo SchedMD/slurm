@@ -13,6 +13,7 @@
 <h2>SLURM Administrators</h2>
 <ul>
 <li><a href="quickstart_admin.shtml">Quick Start Administrator Guide</a></li>
+<li><a href="big_sys.shtml">Large Cluster Administration Guide</a></li>
 <li><a href="cons_res.shtml">Consumable Resources Guide</a></li>
 <li><a href="bluegene.shtml">Blue Gene User and Administrator Guide</a></li>
 <li><a href="ibm.shtml">IBM AIX User and Administrator Guide</a></li>
