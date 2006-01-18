@@ -67,7 +67,7 @@ void *_forward_thread(void *arg)
 	msg.forward.cnt = 0;
 	
 	if ((fd = slurm_open_msg_conn(&fwd_msg->addr)) < 0) {
-		error("forward_thread: %m");
+		error("forward_thread: %m",fwd_msg->header.forward.cnt);
 		ret_list = list_create(destroy_ret_types);
 		no_resp_forwards(&fwd_msg->header.forward, &ret_list, errno);
 		goto nothing_sent;
@@ -126,8 +126,6 @@ void *_forward_thread(void *arg)
 	
 	ret_list = slurm_receive_msg(fd, &msg, fwd_msg->timeout);
 
-	if ((fd >= 0) && slurm_close_accepted_conn(fd) < 0)
-		error ("close(%d): %m", fd);
 	if(!ret_list || list_count(ret_list) == 0) {
 		no_resp_forwards(&fwd_msg->header.forward, &ret_list, errno);
 	}
@@ -179,14 +177,18 @@ nothing_sent:
 				list_push(type->ret_data_list, ret_data_info);
 			}
 		}		
-		destroy_ret_types(returned_type);
+		//destroy_ret_types(returned_type);
 	}
 	pthread_mutex_unlock(fwd_msg->forward_mutex);
 	list_destroy(ret_list);
 cleanup:
+	if ((fd >= 0) && slurm_close_accepted_conn(fd) < 0)
+		error ("close(%d): %m", fd);
 	destroy_forward_msg(fwd_msg);
 	free_buf(buffer);	
-	pthread_cond_signal(fwd_msg->notify);	
+	pthread_mutex_lock(fwd_msg->forward_mutex);
+	pthread_cond_signal(fwd_msg->notify);
+	pthread_mutex_unlock(fwd_msg->forward_mutex);
 }
 
 extern int forward_msg(forward_struct_t *forward_struct, 

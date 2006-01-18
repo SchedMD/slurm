@@ -761,6 +761,14 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	rc = SLURM_SUCCESS;
 	if(forward_struct) {
 		pthread_mutex_lock(&forward_struct->forward_mutex);
+		count = 0;
+		itr = list_iterator_create(ret_list);
+		while((ret_type = (ret_types_t *) list_next(itr)) 
+		      != NULL) {
+			count += list_count(ret_type->ret_data_list);
+		}
+		list_iterator_destroy(itr);
+		debug("Got back %d",count);
 		while((count < fwd_cnt)) {
 			pthread_cond_wait(&forward_struct->notify, 
 					  &forward_struct->forward_mutex);

@@ -158,7 +158,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 		_pwd_destroy(pwd);
 		return NULL;
 	}
-	job = xmalloc(sizeof(*job));
+	job = xmalloc(sizeof(slurmd_job_t));
 
 	job->state   = SLURMSTEPD_STEP_STARTING;
 	job->pwd     = pwd;
@@ -240,7 +240,7 @@ job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *cli_addr)
 		slurm_seterrno (ESLURMD_UID_NOT_FOUND);
 		return NULL;
 	}
-	job = xmalloc(sizeof(*job));
+	job = xmalloc(sizeof(slurmd_job_t));
 
 	job->state   = SLURMSTEPD_STEP_STARTING;
 	job->pwd     = pwd;
@@ -326,7 +326,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 		return NULL;
 	}
 	
-	job = xmalloc(sizeof(*job));
+	job = xmalloc(sizeof(slurmd_job_t));
 	
 	job->state   = SLURMSTEPD_STEP_STARTING;
 	job->pwd     = pwd;
@@ -491,8 +491,8 @@ srun_info_create(slurm_cred_t cred, slurm_addr *resp_addr, slurm_addr *ioaddr)
 {
 	char             *data = NULL;
 	int               len  = 0;
-	struct srun_info *srun = xmalloc(sizeof(*srun));
-	srun_key_t       *key  = xmalloc(sizeof(*key ));
+	struct srun_info *srun = xmalloc(sizeof(struct srun_info));
+	srun_key_t       *key  = xmalloc(sizeof(srun_key_t));
 
 	srun->key    = key;
 
@@ -541,7 +541,7 @@ slurmd_task_info_t *
 task_info_create(int taskid, int gtaskid,
 		 char *ifname, char *ofname, char *efname)
 {
-	slurmd_task_info_t *t = (slurmd_task_info_t *) xmalloc(sizeof(*t));
+	slurmd_task_info_t *t = xmalloc(sizeof(slurmd_task_info_t));
 
 	xassert(taskid >= 0);
 	xassert(gtaskid >= 0);

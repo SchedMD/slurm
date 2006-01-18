@@ -190,6 +190,7 @@ void *agent(void *args)
 	thd_t *thread_ptr;
 	task_info_t *task_specific_ptr;
 
+	//info("I am here and agent_cnt is %d of %d",agent_cnt, MAX_AGENT_CNT);
 	slurm_mutex_lock(&agent_cnt_mutex);
 	while (1) {
 		if (agent_cnt < MAX_AGENT_CNT) {
@@ -226,7 +227,7 @@ void *agent(void *args)
 #if 	AGENT_THREAD_COUNT < 1
 	fatal("AGENT_THREAD_COUNT value is invalid");
 #endif
-	info("got %d threads to send out",agent_info_ptr->thread_count);
+	debug2("got %d threads to send out",agent_info_ptr->thread_count);
 	/* start all the other threads (up to AGENT_THREAD_COUNT active) */
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
 
@@ -264,11 +265,10 @@ void *agent(void *args)
 						   thread_mutex);
 			}
 		}
-
 		agent_info_ptr->threads_active++;
 		slurm_mutex_unlock(&agent_info_ptr->thread_mutex);
 	}
-
+		
 	/* wait for termination of remaining threads */
 	pthread_join(thread_wdog, NULL);
 	slurm_mutex_lock(&agent_info_ptr->thread_mutex);
@@ -287,7 +287,6 @@ void *agent(void *args)
 		xfree(agent_info_ptr->thread_struct);
 		xfree(agent_info_ptr);
 	}
-
 	slurm_mutex_lock(&agent_cnt_mutex);
 	if (agent_cnt > 0)
 		agent_cnt--;
@@ -532,10 +531,10 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 			agent_ptr->msg_type);
 		return;
 	}
-
 	lock_slurmctld(job_write_lock);
-	if  (thread_ptr[0].state == DSH_DONE)
+	if  (thread_ptr[0].state == DSH_DONE) {
 		srun_response(job_id, step_id);
+	}
 	unlock_slurmctld(job_write_lock);
 #else
 	fatal("Code development needed here if agent is not thread");
@@ -806,7 +805,7 @@ static void *_thread_per_group_rpc(void *args)
 	}
 
 	//info("got %d states back from the send", list_count(ret_list));
-	
+	found = 0;
 	itr = list_iterator_create(ret_list);		
 	while((ret_type = list_next(itr)) != NULL) {
 		data_itr = list_iterator_create(ret_type->ret_data_list);
@@ -820,10 +819,9 @@ static void *_thread_per_group_rpc(void *args)
 					xstrdup(thread_ptr->node_name);
 				found = 1;
 			}
-			/*	info("response for %s rc = %d",
-			     ret_data_info->node_name,
-			     ret_type->msg_rc);
-			*/
+			/* info("response for %s rc = %d", */
+/* 			     ret_data_info->node_name, */
+/* 			     ret_type->msg_rc); */
 			if(rc == SLURM_ERROR) {
 				errno = ret_type->err;
 				continue;

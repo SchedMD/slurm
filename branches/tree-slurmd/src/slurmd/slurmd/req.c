@@ -121,6 +121,7 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		slurm_mutex_lock(&launch_mutex);
 		_rpc_launch_tasks(msg, cli);
 		slurm_free_launch_tasks_request_msg(msg->data);
+		info("done with job launch";	
 		slurm_mutex_unlock(&launch_mutex);
 		break;
 	case REQUEST_SPAWN_TASK:
@@ -358,7 +359,6 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 			error("close write to_stepd in parent: %m");
 		if (close(to_slurmd[0]) < 0)
 			error("close read to_slurmd in parent: %m");
-
 		return rc;
 	} else {
 		char **argv = NULL;
@@ -513,7 +513,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 
 	req_uid = g_slurm_auth_get_uid(msg->cred);
 	req->srun_node_id = msg->srun_node_id;
-	req->orig_addr = msg->orig_addr;
+	memcpy(&req->orig_addr, &msg->orig_addr, sizeof(slurm_addr));
 
 	super_user = _slurm_authorized_user(req_uid);
 
