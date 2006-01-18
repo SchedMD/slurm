@@ -101,7 +101,7 @@ void *_forward_thread(void *arg)
 
 	if ((fwd_msg->header.msg_type == REQUEST_SHUTDOWN) ||
 	    (fwd_msg->header.msg_type == REQUEST_RECONFIGURE)) {
-		pthread_mutex_lock(fwd_msg->forward_mutex);
+		slurm_mutex_lock(fwd_msg->forward_mutex);
 		type = xmalloc(sizeof(ret_types_t));
 		list_push(fwd_msg->ret_list, type);
 		type->ret_data_list = list_create(destroy_data_info);
@@ -120,7 +120,6 @@ void *_forward_thread(void *arg)
 			ret_data_info->nodeid = 
 				fwd_msg->header.forward.node_id[i];
 		}
-		pthread_mutex_unlock(fwd_msg->forward_mutex);
 		goto cleanup;
 	}
 	
@@ -150,7 +149,7 @@ nothing_sent:
 		ret_data_info->data = msg.data;
 		g_slurm_auth_destroy(msg.cred);
 	}
-	pthread_mutex_lock(fwd_msg->forward_mutex);
+	slurm_mutex_lock(fwd_msg->forward_mutex);
 	while((returned_type = list_pop(ret_list)) != NULL) {
 		itr = list_iterator_create(fwd_msg->ret_list);	
 		while((type = (ret_types_t *) list_next(itr)) != NULL) {
@@ -179,16 +178,14 @@ nothing_sent:
 		}		
 		//destroy_ret_types(returned_type);
 	}
-	pthread_mutex_unlock(fwd_msg->forward_mutex);
 	list_destroy(ret_list);
 cleanup:
 	if ((fd >= 0) && slurm_close_accepted_conn(fd) < 0)
 		error ("close(%d): %m", fd);
-	destroy_forward_msg(fwd_msg);
+	destroy_forward(&fwd_msg->header.forward);
 	free_buf(buffer);	
-	pthread_mutex_lock(fwd_msg->forward_mutex);
+	slurm_mutex_unlock(fwd_msg->forward_mutex);
 	pthread_cond_signal(fwd_msg->notify);
-	pthread_mutex_unlock(fwd_msg->forward_mutex);
 }
 
 extern int forward_msg(forward_struct_t *forward_struct, 
@@ -199,8 +196,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 	forward_msg_t *forward_msg;
 	int thr_count = 0;
 	int *span = set_span(header->forward.cnt);
-	Buf buffer = forward_struct->buffer;
-
+	
 	slurm_mutex_init(&forward_struct->forward_mutex);
 	pthread_cond_init(&forward_struct->notify, NULL);
 	
@@ -221,6 +217,8 @@ extern int forward_msg(forward_struct_t *forward_struct,
 		forward_msg->timeout = forward_struct->timeout;
 		forward_msg->notify = &forward_struct->notify;
 		forward_msg->forward_mutex = &forward_struct->forward_mutex;
+		forward_msg->buf_len = forward_struct->buf_len;
+		forward_msg->buf = forward_struct->buf;
 		
 		memcpy(&forward_msg->header.orig_addr, 
 		       &header->orig_addr, 
@@ -249,13 +247,6 @@ extern int forward_msg(forward_struct_t *forward_struct,
 				  header->forward.name,
 				  header->forward.node_id);
 				  
-		forward_msg->buf_len = remaining_buf(buffer);
-		forward_msg->buf = 
-			xmalloc(sizeof(char) * forward_msg->buf_len);
-		memcpy(forward_msg->buf, 
-		       &buffer->head[buffer->processed], 
-		       forward_msg->buf_len);
-			
 		while(pthread_create(&thread_agent, &attr_agent,
 				   _forward_thread, 
 				   (void *)forward_msg)) {
@@ -482,11 +473,15 @@ void destroy_forward(forward_t *forward)
 	}
 }
 
-void destroy_forward_msg(forward_msg_t *forward_msg)
+void destroy_forward_struct(forward_struct_t *forward_struct)
 {
 	//forward_msg_t *forward_msg = (forward_msg_t *)object;
-	destroy_forward(&forward_msg->header.forward);	
-	xfree(forward_msg->buf);
+	if(forward_struct) {
+		xfree(forward_struct->buf);
+		xfree(forward_struct->forward_msg);
+		slurm_mutex_destroy(&forward_struct->forward_mutex);
+		xfree(forward_struct);
+	}
 }
 /* 
  * Free just the list from forwarded messages

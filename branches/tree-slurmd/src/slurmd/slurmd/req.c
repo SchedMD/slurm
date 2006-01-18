@@ -121,7 +121,7 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		slurm_mutex_lock(&launch_mutex);
 		_rpc_launch_tasks(msg, cli);
 		slurm_free_launch_tasks_request_msg(msg->data);
-		info("done with job launch";	
+		info("done with job launch");	
 		slurm_mutex_unlock(&launch_mutex);
 		break;
 	case REQUEST_SPAWN_TASK:
@@ -1408,7 +1408,6 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	 */
 #ifndef HAVE_AIX
 	if ((nsteps == 0) && !conf->epilog) {
-		info("got here 1");
 		if (msg->conn_fd >= 0)
 			slurm_send_rc_msg(msg,
 					  ESLURMD_KILL_JOB_ALREADY_COMPLETE);

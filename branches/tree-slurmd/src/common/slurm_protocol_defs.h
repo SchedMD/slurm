@@ -238,7 +238,8 @@ typedef struct forward_struct {
 	pthread_mutex_t forward_mutex;
 	pthread_cond_t notify;
 	forward_msg_t *forward_msg;
-	Buf buffer;
+	char *buf;
+	int buf_len;
 	List ret_list;
 } forward_struct_t;
 

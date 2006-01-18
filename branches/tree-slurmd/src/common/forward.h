@@ -70,7 +70,7 @@ extern int no_resp_forwards(forward_t *forward, List *ret_list, int err);
 /* destroyers */
 extern void destroy_data_info(void *object);
 extern void destroy_forward(forward_t *forward);
-extern void destroy_forward_msg(forward_msg_t *forward_msg);
+extern void destroy_forward_struct(forward_struct_t *forward_struct);
 extern void destroy_ret_types(void *object);
 
 #endif

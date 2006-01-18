@@ -712,7 +712,12 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	/* Forward message to other nodes */
 	if(fwd_cnt > 0) {
 		forward_struct = xmalloc(sizeof(forward_struct_t));
-		forward_struct->buffer = buffer;
+		forward_struct->buf_len = remaining_buf(buffer);
+		forward_struct->buf = 
+			xmalloc(sizeof(char) * forward_struct->buf_len);
+		memcpy(forward_struct->buf, 
+		       &buffer->head[buffer->processed], 
+		       forward_struct->buf_len);
 		forward_struct->ret_list = ret_list;
 		forward_struct->timeout = timeout;
 
@@ -760,7 +765,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	free_buf(buffer);
 	rc = SLURM_SUCCESS;
 	if(forward_struct) {
-		pthread_mutex_lock(&forward_struct->forward_mutex);
+		slurm_mutex_lock(&forward_struct->forward_mutex);
 		count = 0;
 		itr = list_iterator_create(ret_list);
 		while((ret_type = (ret_types_t *) list_next(itr)) 
@@ -783,13 +788,12 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 				
 		}
 		debug("Got them all");
-		pthread_mutex_unlock(&forward_struct->forward_mutex);
-		destroy_forward(&header.forward);
-		xfree(forward_struct->forward_msg);
-		xfree(forward_struct);
+		slurm_mutex_unlock(&forward_struct->forward_mutex);
 	}
-		
+	
 total_return:
+	destroy_forward(&header.forward);
+	destroy_forward_struct(forward_struct);
 	
 	if(rc != SLURM_SUCCESS) {
 		error("slurm_receive_msg: %s", slurm_strerror(rc));
