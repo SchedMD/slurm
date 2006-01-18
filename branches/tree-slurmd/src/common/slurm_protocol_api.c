@@ -773,7 +773,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 			count += list_count(ret_type->ret_data_list);
 		}
 		list_iterator_destroy(itr);
-		debug("Got back %d",count);
+		debug3("Got back %d",count);
 		while((count < fwd_cnt)) {
 			pthread_cond_wait(&forward_struct->notify, 
 					  &forward_struct->forward_mutex);
@@ -784,10 +784,10 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 				count += list_count(ret_type->ret_data_list);
 			}
 			list_iterator_destroy(itr);
-			debug("Got back %d",count);
+			debug3("Got back %d",count);
 				
 		}
-		debug("Got them all");
+		debug2("Got them all");
 		slurm_mutex_unlock(&forward_struct->forward_mutex);
 	}
 	
@@ -1360,9 +1360,6 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	int      retry = 0;
 	slurm_fd fd = -1;
 	
-	/* req->forward.cnt = 0; */
-/* 	req->ret_list = NULL; */
-		
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0)
 		return SLURM_SOCKET_ERROR;
 

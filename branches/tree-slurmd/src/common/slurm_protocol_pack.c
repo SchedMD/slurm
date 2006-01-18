@@ -317,26 +317,28 @@ pack_header(header_t * header, Buf buffer)
 int
 unpack_header(header_t * header, Buf buffer)
 {
-	uint16_t tmp = 0;
+	uint16_t uint16_tmp = 0;
 	uint32_t uint32_tmp = 0;
 
 	header->forward.addr = NULL;
 	header->forward.name = NULL;
-	
+	header->forward.node_id = NULL;
+	header->ret_list = NULL;
+
 	safe_unpack16(&header->version, buffer);
 	safe_unpack16(&header->flags, buffer);
-	safe_unpack16(&tmp, buffer);
-	header->msg_type = (slurm_msg_type_t) tmp;
+	safe_unpack16(&uint16_tmp, buffer);
+	header->msg_type = (slurm_msg_type_t) uint16_tmp;
 	safe_unpack32(&header->body_length, buffer);
 	safe_unpack16(&header->forward.cnt, buffer);
 	if (header->forward.cnt > 0) {
 		if(_unpack_slurm_addr_array(&(header->forward.addr),
-					    &tmp, buffer))
+					    &uint16_tmp, buffer))
 			goto unpack_error;
-		if(tmp != header->forward.cnt)
+		if(uint16_tmp != header->forward.cnt)
 			goto unpack_error;
 		safe_unpackmem_xmalloc(&header->forward.name, 
-				       &tmp, 
+				       &uint16_tmp, 
 				       buffer);
 		safe_unpack32_array(&header->forward.node_id, 
 				    &uint32_tmp,
@@ -361,8 +363,8 @@ unpack_header(header_t * header, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	xfree(header->forward.name);	
-	xfree(header->forward.addr);	
+	destroy_forward(&header->forward);
+	list_destroy(header->ret_list);
 	return SLURM_ERROR;
 }
 
