@@ -306,7 +306,7 @@ void slurm_free_task_exit_msg(task_exit_msg_t * msg)
 void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 {
 	int i;
-	info("freeing things %d", msg->nnodes);
+	
 	if (msg == NULL)
 		return;
 

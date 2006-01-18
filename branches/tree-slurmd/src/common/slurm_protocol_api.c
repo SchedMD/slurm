@@ -663,7 +663,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	ret_types_t *ret_type = NULL;
 	ListIterator itr;
 	int i=0;
-	int fwd_cnt = 0;
+	int16_t fwd_cnt = 0;
 	char addrbuf[INET_ADDRSTRLEN];
 
 	List ret_list = list_create(destroy_ret_types);
@@ -704,9 +704,9 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	}
 	
 	if(header.orig_addr.sin_addr.s_addr != 0) {
-		msg->orig_addr = header.orig_addr;
+		memcpy(&msg->orig_addr, &header.orig_addr, sizeof(slurm_addr));
 	} else {
-		header.orig_addr = msg->orig_addr;
+		memcpy(&header.orig_addr, &msg->orig_addr, sizeof(slurm_addr));
 	}
 	fwd_cnt = header.forward.cnt;
 	/* Forward message to other nodes */
@@ -716,8 +716,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		forward_struct->ret_list = ret_list;
 		forward_struct->timeout = timeout;
 
-		debug3("forwarding messages to %d nodes!!!!", 
-		     header.forward.cnt);
+		debug3("forwarding messages to %d nodes!!!!", fwd_cnt);
 		
 		if(forward_msg(forward_struct, &header) == SLURM_ERROR) {
 			error("problem with forward msg");
@@ -772,9 +771,10 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 				count += list_count(ret_type->ret_data_list);
 			}
 			list_iterator_destroy(itr);
-			info("Got back %d",count);
+			debug("Got back %d",count);
 				
 		}
+		debug("Got them all");
 		pthread_mutex_unlock(&forward_struct->forward_mutex);
 		destroy_forward(&header.forward);
 		xfree(forward_struct->forward_msg);
@@ -829,7 +829,7 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 	Buf      buffer;
 	int      rc;
 	void *   auth_cred;
-
+	
 	/* 
 	 * Initialize header with Auth credential and message type.
 	 */
@@ -1163,6 +1163,9 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 	resp_msg.data     = &rc_msg;
 	resp_msg.forward = msg->forward;
 	resp_msg.ret_list = msg->ret_list;
+	resp_msg.orig_addr = msg->orig_addr;
+	resp_msg.srun_node_id = msg->srun_node_id;
+	
 	/* send message */
 	return slurm_send_node_msg(msg->conn_fd, &resp_msg);
 }
@@ -1188,7 +1191,7 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 		ret_list = slurm_receive_msg(fd, resp, timeout);
 	}
 	
-	if(!ret_list || list_count(ret_list)==0) {
+	if(!ret_list || list_count(ret_list) == 0) {
 		no_resp_forwards(&req->forward, &ret_list, errno);
 	}
 
@@ -1236,7 +1239,8 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 		/* If the backup controller is in the process of assuming 
 		 * control, we sleep and retry later */
 		ret_list = _send_and_recv_msg(fd, req, resp, 0);
-		slurm_free_cred(resp->cred);
+		if(errno == SLURM_SUCCESS)
+			slurm_free_cred(resp->cred);
 
 		rc = errno;
 		if(list_count(ret_list)>0) {

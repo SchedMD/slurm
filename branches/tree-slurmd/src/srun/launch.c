@@ -197,8 +197,10 @@ long start, end;
 		/* debug2("using %d %s with %d tasks\n", j,  */
 /* 		       job->step_layout->host[i], */
 /* 		       r.nprocs); */
+		memcpy(&m->address, 
+		       &job->slurmd_addr[j], 
+		       sizeof(slurm_addr));
 		
-		m->address = job->slurmd_addr[j];
 		set_forward_launch(&m->forward,
 				   span[job->thr_count],
 				   &i,
@@ -501,7 +503,7 @@ static void * _p_launch_task(void *arg)
 		_print_launch_msg(msg, job->step_layout->host[nodeid], nodeid);
 	
 again:
-	ret_list = _send_msg_rc(req);
+	ret_list = slurm_send_recv_rc_msg(req, opt.msg_timeout);
 	
 	if(!ret_list) {
 		th->state = DSH_FAILED;

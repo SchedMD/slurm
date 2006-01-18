@@ -1408,9 +1408,10 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	 */
 #ifndef HAVE_AIX
 	if ((nsteps == 0) && !conf->epilog) {
+		info("got here 1");
 		if (msg->conn_fd >= 0)
-			slurm_send_rc_msg(msg, 
-				ESLURMD_KILL_JOB_ALREADY_COMPLETE);
+			slurm_send_rc_msg(msg,
+					  ESLURMD_KILL_JOB_ALREADY_COMPLETE);
 		slurm_cred_begin_expiration(conf->vctx, req->job_id);
 		_waiter_complete(req->job_id);
 		return;
@@ -1422,6 +1423,7 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	 *   a "success" reply to indicate that we've recvd the msg.
 	 */
 	if (msg->conn_fd >= 0) {
+		info("got here");
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		if (slurm_close_accepted_conn(msg->conn_fd) < 0)
 			error ("rpc_kill_job: close(%d): %m", msg->conn_fd);

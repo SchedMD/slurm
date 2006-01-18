@@ -243,7 +243,7 @@ _msg_engine()
 
 	msg_pthread = pthread_self();
 	while (!_shutdown) {
-		slurm_addr *cli = xmalloc (sizeof (*cli));
+		slurm_addr *cli = xmalloc (sizeof (slurm_addr));
 		if ((sock = slurm_accept_msg_conn(conf->lfd, cli)) >= 0) {
 			_handle_connection(sock, cli);
 			continue;
@@ -311,7 +311,7 @@ _handle_connection(slurm_fd fd, slurm_addr *cli)
 	int            rc;
 	pthread_attr_t attr;
 	pthread_t      id;
-	conn_t         *arg = xmalloc(sizeof(*arg));
+	conn_t         *arg = xmalloc(sizeof(conn_t));
 
 	arg->fd       = fd;
 	arg->cli_addr = cli;
@@ -349,11 +349,12 @@ _service_connection(void *arg)
 	debug3("in the service_connection");
 	msg->conn_fd = con->fd;
 	memcpy(&msg->orig_addr, con->cli_addr, sizeof(slurm_addr));
-	
+	msg->forward.cnt = 0;
+	msg->ret_list = NULL;
+
 	ret_list = slurm_receive_msg(con->fd, msg, 0);	
-	if(!ret_list) {
-		errno = SLURM_SOCKET_ERROR;
-		error("slurm_receive_msg: %m");
+	if(!ret_list || errno != SLURM_SUCCESS) {
+		error("service_connection: slurm_receive_msg: %m");
 		goto cleanup;
 	}
 	
@@ -382,7 +383,8 @@ send_registration_msg(uint32_t status, bool startup)
 	int retval = SLURM_SUCCESS;
 	slurm_msg_t req;
 	slurm_msg_t resp;
-	slurm_node_registration_status_msg_t *msg = xmalloc (sizeof (*msg));
+	slurm_node_registration_status_msg_t *msg = 
+		xmalloc (sizeof (slurm_node_registration_status_msg_t));
 	
 	req.forward.cnt = 0;
 	req.ret_list = NULL;
@@ -767,7 +769,7 @@ _restore_cred_state(slurm_cred_ctx_t ctx)
 		goto cleanup;
 
 	data_allocated = 1024;
-	data = xmalloc(data_allocated);
+	data = xmalloc(sizeof(char)*data_allocated);
 	while ((data_read = read(cred_fd, &data[data_size], 1024)) == 1024) {
 		data_size += data_read;
 		data_allocated += 1024;

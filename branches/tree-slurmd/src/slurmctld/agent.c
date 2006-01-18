@@ -320,7 +320,7 @@ static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 		(agent_arg_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH) || 
 		(agent_arg_ptr->msg_type == REQUEST_SHUTDOWN) || 
 		(agent_arg_ptr->msg_type == REQUEST_RECONFIGURE) ||
-	        (agent_arg_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION) ||	
+	        (agent_arg_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION) ||
 		(agent_arg_ptr->msg_type == REQUEST_NODE_REGISTRATION_STATUS));
 
 	if (agent_arg_ptr->node_count == 0)
@@ -785,7 +785,8 @@ static void *_thread_per_group_rpc(void *args)
 	msg.forward = thread_ptr->forward;
 	msg.ret_list = NULL;
 	msg.orig_addr.sin_addr.s_addr = 0;
-	
+	msg.srun_node_id = 0;
+
 	//info("forwarding to %d",msg.forward.cnt);
 	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {
@@ -969,9 +970,9 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 	agent_arg_ptr = xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->node_count = count;
 	agent_arg_ptr->retry = 1;
-	agent_arg_ptr->slurm_addr = xmalloc(sizeof(struct sockaddr_in)
-					    * count);
-	agent_arg_ptr->node_names = xmalloc(MAX_NAME_LEN * count);
+	agent_arg_ptr->slurm_addr = xmalloc(sizeof(slurm_addr) * count);
+	agent_arg_ptr->node_names = 
+		xmalloc(sizeof(char) * MAX_NAME_LEN * count);
 	agent_arg_ptr->msg_type = agent_info_ptr->msg_type;
 	agent_arg_ptr->msg_args = *(agent_info_ptr->msg_args_pptr);
 	*(agent_info_ptr->msg_args_pptr) = NULL;
@@ -1278,7 +1279,7 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 	} else
 		mi->user_name = xstrdup(job_ptr->mail_user);
 
-	mi->message = xmalloc(128);
+	mi->message = xmalloc(sizeof(char)*128);
 	sprintf(mi->message, "SLURM Job_id=%u Name=%.24s %s",
 		job_ptr->job_id, job_ptr->name, 
 		_mail_type_str(mail_type));
