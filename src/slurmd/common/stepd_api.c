@@ -441,7 +441,8 @@ stepd_cleanup_sockets(const char *directory, const char *nodename)
 				jobid, stepid);
 
 			/* signal the slurmstepd to terminate its step */
-			fd = stepd_connect(directory, nodename, jobid, stepid);
+			fd = stepd_connect((char *) directory, (char *) nodename, 
+					jobid, stepid);
 			if (fd == -1) {
 				debug("Unable to connect to socket %s", path);
 			} else {
