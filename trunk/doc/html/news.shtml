@@ -4,40 +4,10 @@
 
 <h2>Index</h2>
 <ul>
-<li><a href="#04">SLURM Version 0.4, January 2005</a></li>
-<li><a href="#05">SLURM Version 0.5, July 2005</a></li>
 <li><a href="#06">SLURM Version 0.6, September 2005</a></li>
 <li><a href="#10">SLURM Version 1.0, January 2006</a></li>
 <li><a href="#11">SLURM Version 1.1, May 2006</a></li>
 <li><a href="#12">SLURM Version 1.2 and beyond</a></li>
-</ul>
-
-<h2><a name="04">Major Updates in SLURM Version 0.4</a></h2>
-<p>SLURM Version 0.4 became available in January 2005. 
-Major enhancements included: 
-<ul>
-<li>Support for <a href="http://www.platform.com/">Load Sharing Facility (LSF)</a></li>
-<li>Add support for <a href="http://www.myri.com/scs/">MPICH-GM</a>
-(<a href="http:www.myri.com/">Myricom's</a> version of MPI).</li>
-<li>Support for the IBM AIX operating system.</li>
-<li>Support for the IBM 
-<a href="http://www.research.ibm.com/bluegene/">IBM BlueGene</a> system.</li>
-<li>Support for dependent jobs.</li>
-<li>Support for job account numbers.</li>
-<li>Add "reason"  field to show what pending jobs are waiting for.</li>
-<li>New graphical user interface, smap.</li>
-</ul>
-
-<h2><a name="05">Major Updates in SLURM Version 0.5</a></h2>
-<p>SLURM Version 0.5 became available in July 2005.
-Major enhancements included:
-<ul>
-<li>Moved slurm process tracking options to plugin (ProctrackType).</li>
-<li>Support for the IBM Federation switch.</li>
-<li>Manage consumable resources</li>
-<li>Perform job accounting (record resource utilization).</li>
-<li>Added BlueGene bglblock freeing tool, sfree.</li>
-<li>Added AIX checkpoint plugin (CheckpointType).</li>
 </ul>
 
 <h2><a name="06">Major Updates in SLURM Version 0.6</a></h2>
@@ -100,6 +70,6 @@ to coordinate activies. Future development plans includes:
 </ul>
 
 
-<p style="text-align:center;">Last modified 14 January 2006</p>
+<p style="text-align:center;">Last modified 18 January 2006</p>
 
 <!--#include virtual="footer.txt"-->
