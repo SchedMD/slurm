@@ -2,7 +2,7 @@
 
 <h1>Frequently Asked Questions</h1>
 <ol>
-<li><a href="#comp">Why is my job/node in &quot;completing&quot; state?</a></li>
+<li><a href="#comp">Why is my job/node in COMPLETING state?</a></li>
 <li><a href="#rlimit">Why do I see the error &quot;Can't propagate RLIMIT_...&quot;?</a></li>
 <li><a href="#pending">Why is my job not running?</a></li>
 <li><a href="#sharing">Why does the srun --overcommit option not permit multiple jobs 
@@ -13,8 +13,12 @@ to run on nodes?</a></li>
 <li><a href="#backfill">Why is the SLURM backfill scheduler not starting my 
 job?</a></li>
 <li><a href="#suspend">How is job suspend/resume useful?</a></li>
+<li><a href="#fast_schedule">How can I configure SLURM to use the resources actually 
+found on a node rather than what is defined in <i>slurm.conf</i>?</li>
+<li><a href="#return_to_service">Why is a node shown in state DOWN when the node 
+has registered for service?</li>
 </ol>
-<p><a name="comp"><b>1. Why is my job/node in &quot;completing&quot; state?</b></a><br>
+<p><a name="comp"><b>1. Why is my job/node in COMPLETING state?</b></a><br>
 When a job is terminating, both the job and its nodes enter the state &quot;completing.&quot; 
 As the SLURM daemon on each node determines that all processes associated with 
 the job have terminated, that node changes state to &quot;idle&quot; or some other 
@@ -26,7 +30,7 @@ the job and one or more nodes can remain in the completing state for an extended
 period of time. This may be indicative of processes hung waiting for a core file 
 to complete I/O or operating system failure. If this state persists, the system 
 administrator should use the <span class="commandline">scontrol</span> command 
-to change the node's state to <i>DOWN</i> (e.g. &quot;scontrol update 
+to change the node's state to DOWN (e.g. &quot;scontrol update 
 NodeName=<i>name</i> State=DOWN Reason=hung_completing&quot;), reboot the node, 
 then reset the node's state to IDLE (e.g. &quot;scontrol update 
 NodeName=<i>name</i> State=RESUME&quot;).</p>
@@ -171,6 +175,31 @@ Suspending and resuming a job makes use of the SIGSTOP and SIGCONT
 signals respectively, so swap and disk space should be sufficient to 
 accommodate all jobs allocated to a node, either running or suspended.
 
+<p><a name="fast_schedule"><b>10. How can I configure SLURM to use 
+the resources actually found on a node rather than what is defined 
+in <i>slurm.conf</i>?</b></a><br>
+SLURM can either base it's scheduling decisions upon the node 
+configuration defined in <i>slurm.conf</i> or what each node 
+actually returns as available resources. 
+This is controlled using the configuration parameter <i>FastSchedule</i>.
+Set it's value to zero in order to use the resources actually 
+found on each node, but with a higher overhead for scheduling.
+A value of one is the default and results in the node configuration 
+defined in <i>slurm.conf</i> being used. See &quot;man slurm.conf&quot;
+for more details.
+
+<p><a name="return_to_service"><b>11. Why is a node shown in state 
+DOWN when the node has registered for service?</b></a><br>
+The configuration parameter <i>ReturnToService</i> in <i>slurm.conf</i>
+controls how DOWN nodes are handled. 
+Set its value to one in order for DOWN nodes to automatically be 
+returned to service once the <i>slurmd</i> daemon registers 
+with a valid node configuration.
+A value of zero is the default and results in a node staying DOWN 
+until an administrator explicity returns it to service using 
+the command &quot;scontrol update NodeName=whatever State=RESUME&quot;.
+See &quot;man slurm.conf&quot; and &quot;man scontrol&quot; for more details.
+ 
 <p style="text-align:center;">Last modified 16 January 2006</p>
 
 <!--#include virtual="footer.txt"-->
