@@ -19,6 +19,7 @@
 AC_DEFUN([X_AC_MUNGE], [
 
   _x_ac_munge_dirs="/usr /usr/local /opt/freeware /opt/munge"
+  _x_ac_munge_libs="lib64 lib"
 
   AC_ARG_WITH(
     [munge],
@@ -35,13 +36,18 @@ AC_DEFUN([X_AC_MUNGE], [
         test -d "$d" || continue
         test -d "$d/include" || continue
         test -f "$d/include/munge.h" || continue
-        test -d "$d/lib" || continue
-        _x_ac_munge_libs_save="$LIBS"
-        LIBS="-L$d/lib -lmunge $LIBS"
-        AC_LINK_IFELSE(
-          AC_LANG_CALL([], munge_encode),
-          AS_VAR_SET(x_ac_cv_munge_dir, $d))
-        LIBS="$_x_ac_munge_libs_save"
+	for bit in $_x_ac_munge_libs; do
+          test -d "$d/$bit" || continue
+        
+ 	  _x_ac_munge_libs_save="$LIBS"
+          LIBS="-L$d/$bit -lmunge $LIBS"
+	  AC_MSG_WARN([$x_ac_cv_munge_dir $bit $LIBS])
+          AC_LINK_IFELSE(
+            AC_LANG_CALL([], munge_encode),
+            AS_VAR_SET(x_ac_cv_munge_dir, $d))
+          LIBS="$_x_ac_munge_libs_save"
+          test -n "$x_ac_cv_munge_dir" && break
+	done
         test -n "$x_ac_cv_munge_dir" && break
       done
     ])
@@ -50,11 +56,10 @@ AC_DEFUN([X_AC_MUNGE], [
     AC_MSG_WARN([unable to locate munge installation])
   else
     MUNGE_LIBS="-lmunge"
-    if test "$x_ac_cv_munge_dir" != "/usr"; then
-      MUNGE_CPPFLAGS="-I$x_ac_cv_munge_dir/include"
-      MUNGE_LDFLAGS="-L$x_ac_cv_munge_dir/lib"
-    fi
+    MUNGE_CPPFLAGS="-I$x_ac_cv_munge_dir/include"
+    MUNGE_LDFLAGS="-L$x_ac_cv_munge_dir/$bit"
   fi
+  AC_MSG_WARN([$MUNGE_LIBS $MUNGE_CPPFLAGS $MUNGE_LDFLAGS])
 
   AC_SUBST(MUNGE_LIBS)
   AC_SUBST(MUNGE_CPPFLAGS)
