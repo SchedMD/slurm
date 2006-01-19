@@ -41,7 +41,6 @@ AC_DEFUN([X_AC_MUNGE], [
         
  	  _x_ac_munge_libs_save="$LIBS"
           LIBS="-L$d/$bit -lmunge $LIBS"
-	  AC_MSG_WARN([$x_ac_cv_munge_dir $bit $LIBS])
           AC_LINK_IFELSE(
             AC_LANG_CALL([], munge_encode),
             AS_VAR_SET(x_ac_cv_munge_dir, $d))
@@ -59,7 +58,6 @@ AC_DEFUN([X_AC_MUNGE], [
     MUNGE_CPPFLAGS="-I$x_ac_cv_munge_dir/include"
     MUNGE_LDFLAGS="-L$x_ac_cv_munge_dir/$bit"
   fi
-  AC_MSG_WARN([$MUNGE_LIBS $MUNGE_CPPFLAGS $MUNGE_LDFLAGS])
 
   AC_SUBST(MUNGE_LIBS)
   AC_SUBST(MUNGE_CPPFLAGS)
