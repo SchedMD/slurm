@@ -14,9 +14,10 @@ to run on nodes?</a></li>
 job?</a></li>
 <li><a href="#suspend">How is job suspend/resume useful?</a></li>
 <li><a href="#fast_schedule">How can I configure SLURM to use the resources actually 
-found on a node rather than what is defined in <i>slurm.conf</i>?</li>
+found on a node rather than what is defined in <i>slurm.conf</i>?</a></li>
 <li><a href="#return_to_service">Why is a node shown in state DOWN when the node 
-has registered for service?</li>
+has registered for service?</a></li>
+<li><a href="#down_node">What happens when a node crashes?</a></li>
 </ol>
 <p><a name="comp"><b>1. Why is my job/node in COMPLETING state?</b></a><br>
 When a job is terminating, both the job and its nodes enter the state &quot;completing.&quot; 
@@ -186,7 +187,7 @@ Set it's value to zero in order to use the resources actually
 found on each node, but with a higher overhead for scheduling.
 A value of one is the default and results in the node configuration 
 defined in <i>slurm.conf</i> being used. See &quot;man slurm.conf&quot;
-for more details.
+for more details.</p>
 
 <p><a name="return_to_service"><b>11. Why is a node shown in state 
 DOWN when the node has registered for service?</b></a><br>
@@ -198,8 +199,19 @@ with a valid node configuration.
 A value of zero is the default and results in a node staying DOWN 
 until an administrator explicity returns it to service using 
 the command &quot;scontrol update NodeName=whatever State=RESUME&quot;.
-See &quot;man slurm.conf&quot; and &quot;man scontrol&quot; for more details.
+See &quot;man slurm.conf&quot; and &quot;man scontrol&quot; for more 
+details.</p>
+
+<p><a name="down_node"><b>12. What happens when a node crashes?</b></a><br>
+A node is set DOWN when the slurmd daemon on it stops responding 
+for <i>SlurmdTimeout</i> as defined in <i>slurm.conf</i>.
+The node can also be set DOWN when certain errors occur or the 
+node's configuration is inconsistent with that defined in <i>slurm.conf</i>.
+Any active job on that node will be killed unless it was submitted 
+with the srun option <i>--no-kill</i>.
+Any active job step on that node will be killed. 
+See the slurm.conf and srun man pages for more information.</p>
  
-<p style="text-align:center;">Last modified 16 January 2006</p>
+<p style="text-align:center;">Last modified 18 January 2006</p>
 
 <!--#include virtual="footer.txt"-->
