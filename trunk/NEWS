@@ -1,8 +1,12 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.0.1
+========================
+ -- Assorted updates and clarifications in documentation.
+
 * Changes in SLURM 1.0.0
-=============================
+========================
  -- Fix sinfo filtering bug, especially "sinfo -R" output.
  -- Fix node state change bug, resuming down or drained nodes.
  -- Fix "scontrol show config" to display JobCredentialPrivateKey instead
