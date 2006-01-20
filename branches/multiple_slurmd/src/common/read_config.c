@@ -398,7 +398,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->slurmd_debug		= (uint16_t) NO_VAL; 
 	xfree (ctl_conf_ptr->slurmd_logfile);
 	xfree (ctl_conf_ptr->slurmd_pidfile);
-/* 	ctl_conf_ptr->slurmd_port		= (uint32_t) NO_VAL; */
+ 	ctl_conf_ptr->slurmd_port		= (uint32_t) NO_VAL;
 	xfree (ctl_conf_ptr->slurmd_spooldir);
 	ctl_conf_ptr->slurmd_timeout		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->state_save_location);
@@ -934,14 +934,16 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		ctl_conf_ptr->slurmd_logfile = slurmd_logfile;
 	}
 
-/* 	if ( slurmd_port != -1) { */
-/* 		if ( ctl_conf_ptr->slurmd_port != (uint32_t) NO_VAL) */
-/* 			error (MULTIPLE_VALUE_MSG, "SlurmdPort"); */
-/* 		else if (slurmd_port < 0) */
-/* 			error ("SlurmdPort=%ld is invalid", slurmd_port); */
-/* 		else */
-/* 			ctl_conf_ptr->slurmd_port = slurmd_port; */
-/* 	} */
+#ifndef MULTIPLE_SLURMD
+	if ( slurmd_port != -1) {
+		if ( ctl_conf_ptr->slurmd_port != (uint32_t) NO_VAL)
+			error (MULTIPLE_VALUE_MSG, "SlurmdPort");
+		else if (slurmd_port < 0)
+			error ("SlurmdPort=%ld is invalid", slurmd_port);
+		else
+			ctl_conf_ptr->slurmd_port = slurmd_port;
+	}
+#endif
 
 	if ( slurmd_spooldir ) {
 		if ( ctl_conf_ptr->slurmd_spooldir ) {
@@ -1436,8 +1438,10 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 	if (ctl_conf_ptr->slurmd_pidfile == NULL)
 		ctl_conf_ptr->slurmd_pidfile = xstrdup(DEFAULT_SLURMD_PIDFILE);
 
-/* 	if (ctl_conf_ptr->slurmd_port == (uint32_t) NO_VAL)  */
-/* 		ctl_conf_ptr->slurmd_port = SLURMD_PORT; */
+#ifndef MULTIPLE_SLURMD
+	if (ctl_conf_ptr->slurmd_port == (uint32_t) NO_VAL) 
+		ctl_conf_ptr->slurmd_port = SLURMD_PORT;
+#endif
 
 	if (ctl_conf_ptr->slurmd_spooldir == NULL)
 		ctl_conf_ptr->slurmd_spooldir = xstrdup(DEFAULT_SPOOLDIR);

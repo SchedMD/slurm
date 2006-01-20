@@ -337,7 +337,9 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 					slurmd_logfile);
 	conf_ptr->slurmd_pidfile      = xstrdup(slurmctld_conf.
 					slurmd_pidfile);
-/* 	conf_ptr->slurmd_port         = slurmctld_conf.slurmd_port; */
+#ifndef MULTIPLE_SLURMD
+	conf_ptr->slurmd_port         = slurmctld_conf.slurmd_port;
+#endif
 	conf_ptr->slurmd_spooldir     = xstrdup(slurmctld_conf.
 					slurmd_spooldir);
 	conf_ptr->slurmd_timeout      = slurmctld_conf.slurmd_timeout;

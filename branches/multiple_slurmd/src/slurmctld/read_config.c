@@ -309,7 +309,9 @@ static int _parse_node_spec(char *in_line)
 				  "Feature=", 's', &feature,
 				  "NodeAddr=", 's', &node_addr,
 				  "NodeHostname=", 's', &node_hostname,
+#ifdef MULTIPLE_SLURMD
 				  "Port=", 'd', &port,
+#endif
 				  "Procs=", 'd', &cpus_val,
 				  "RealMemory=", 'd', &real_memory_val,
 				  "Reason=", 's', &reason,
@@ -399,8 +401,10 @@ static int _parse_node_spec(char *in_line)
 				default_config_record.feature = feature;
 				feature = NULL;
 			}
+#ifdef MULTIPLE_SLURMD
 			if (port != NO_VAL)
 				default_node_record.port = port;
+#endif
 			free(this_node_name);
 			break;
 		}
@@ -463,8 +467,10 @@ static int _parse_node_spec(char *in_line)
 				strncpy(node_ptr->comm_name, 
 				        node_ptr->name, MAX_NAME_LEN);
 #endif
+#ifdef MULTIPLE_SLURMD
 			if (port != NO_VAL)
 				node_ptr->port = port;
+#endif
 			node_ptr->reason = xstrdup(reason);
 		} else {
 			error("_parse_node_spec: reconfiguration for node %s",

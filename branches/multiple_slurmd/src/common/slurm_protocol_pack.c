@@ -1920,7 +1920,9 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->slurmd_debug, buffer);
 	packstr(build_ptr->slurmd_logfile, buffer);
 	packstr(build_ptr->slurmd_pidfile, buffer);
-/* 	pack32(build_ptr->slurmd_port, buffer); */
+#ifndef MULTIPLE_SLURMD
+	pack32(build_ptr->slurmd_port, buffer);
+#endif
 	packstr(build_ptr->slurmd_spooldir, buffer);
 	debug2("Packing string %s", build_ptr->slurmd_spooldir);
 	pack16(build_ptr->slurmd_timeout, buffer);
@@ -2006,7 +2008,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 			       buffer);
 	safe_unpackstr_xmalloc(&build_ptr->slurmd_pidfile, &uint16_tmp,
 			       buffer);
-/* 	safe_unpack32(&build_ptr->slurmd_port, buffer); */
+#ifndef MULTIPLE_SLURMD
+	safe_unpack32(&build_ptr->slurmd_port, buffer);
+#endif
 	safe_unpackstr_xmalloc(&build_ptr->slurmd_spooldir, &uint16_tmp,
 			       buffer);
 	safe_unpack16(&build_ptr->slurmd_timeout, buffer);
