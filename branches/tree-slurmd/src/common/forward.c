@@ -398,7 +398,7 @@ extern int *set_span(int total)
 	int *span = xmalloc(sizeof(int)*forward_span_count);
 	int left = total;
 	int i = 0;
-	info("span count = %d",forward_span_count);
+	//info("span count = %d",forward_span_count);
 	memset(span,0,forward_span_count);
 	if(total <= forward_span_count) {
 		return span;
