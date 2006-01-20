@@ -702,7 +702,7 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 {
 	task_exit_msg_t *msg       = (task_exit_msg_t *) exit_msg->data;
 	hostlist_t       hl        = hostlist_create(NULL);
-	int              hostid    = job->hostid[msg->task_id_list[0]]; 
+	int              hostid    = exit_msg->srun_node_id; 
 	char            *host      = job->step_layout->host[hostid];
 	int              status    = msg->return_code;
 	int              i;
@@ -836,10 +836,9 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 			break;
 		default:
 			error("received spurious message type: %d\n",
-					msg->msg_type);
+			      msg->msg_type);
 			break;
 	}
-	slurm_free_msg(msg);
 	return;
 }
 
@@ -872,10 +871,11 @@ _accept_msg_connection(srun_job_t *job, int fdnum)
 	debug2("got message connection from %u.%u.%u.%u:%d",
 	       uc[0], uc[1], uc[2], uc[3], ntohs(port));
 
-	msg = xmalloc(sizeof(*msg));
-	msg->forward.cnt = 0;
+	msg = xmalloc(sizeof(slurm_msg_t));
+	forward_init(&msg->forward, NULL);
 	msg->ret_list = NULL;
-
+	msg->conn_fd = fd;
+	
 	/* multiple jobs (easily induced via no_alloc) sometimes result
 	 * in slow message responses and timeouts. Raise the timeout
 	 * to 5 seconds for no_alloc option only */
@@ -883,26 +883,30 @@ _accept_msg_connection(srun_job_t *job, int fdnum)
 		timeout = 5;
   again:
 	ret_list = slurm_receive_msg(fd, msg, timeout);
-
 	if(!ret_list || errno != SLURM_SUCCESS) {
-		if (errno == EINTR)
+		if (errno == EINTR) {
+			list_destroy(ret_list);
 			goto again;
+		}
 		error("slurm_receive_msg[%u.%u.%u.%u]: %m",
 		      uc[0],uc[1],uc[2],uc[3]);
 		slurm_free_msg(msg);
-		return;
+		goto cleanup;
 	}
 	if(list_count(ret_list)>0) {
 		error("_accept_msg_connection: "
 		      "got %d from receive, expecting 0",
 		      list_count(ret_list));
 	}
-	list_destroy(ret_list);
-		
-	msg->conn_fd = fd;
+	msg->ret_list = ret_list;
+			
 	_handle_msg(job, msg); /* handle_msg frees msg */
+cleanup:
+	if ((msg->conn_fd >= 0) && slurm_close_accepted_conn(msg->conn_fd) < 0)
+		error ("close(%d): %m", msg->conn_fd);
+	slurm_free_msg(msg);
 	
-	slurm_close_accepted_conn(fd);
+
 	return;
 }
 
@@ -1062,7 +1066,6 @@ par_thr(void *arg)
 	int c;
 	pipe_enum_t type=0;
 	int tid=-1;
-	int nodeid=-1;
 	int status;
 	debug3("par thread pid = %lu", (unsigned long) getpid());
 

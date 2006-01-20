@@ -113,8 +113,6 @@ launch(void *arg)
 	char *host = NULL;
 	int *span = set_span(job->step_layout->num_hosts);
 	char addrbuf[INET_ADDRSTRLEN];
-struct timeval start_time, end_time;
-long start, end;
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
 	
@@ -122,7 +120,6 @@ long start, end;
 	      opt.nprocs, job->step_layout->num_hosts);
 	debug("sending to slurmd port %d", slurm_get_slurmd_port());
 
-	gettimeofday(&start_time, NULL);
 	msg_array_ptr = xmalloc(sizeof(slurm_msg_t) 
 				* job->step_layout->num_hosts);
 	my_envc = envcount(environ);
@@ -201,11 +198,12 @@ long start, end;
 		       &job->slurmd_addr[j], 
 		       sizeof(slurm_addr));
 		
-		set_forward_launch(&m->forward,
+		forward_set_launch(&m->forward,
 				   span[job->thr_count],
 				   &i,
 				   job,
-				   itr);
+				   itr,
+				   opt.msg_timeout);
 		
 		job->thr_count++;
 	}
@@ -214,9 +212,6 @@ long start, end;
 	hostlist_destroy(hostlist);
 	
 	_p_launch(msg_array_ptr, job);
-	xfree(msg_array_ptr);
-	xfree(r.io_port);
-	xfree(r.resp_port);
 	
 	if (fail_launch_cnt) {
 		srun_job_state_t jstate;
@@ -236,15 +231,11 @@ long start, end;
 		debug("All task launch requests sent");
 		update_job_state(job, SRUN_JOB_STARTING);
 	}
-	gettimeofday(&end_time, NULL);
-	start = start_time.tv_sec;
-	start *= 1000000;
-	start += start_time.tv_usec;
-	end = end_time.tv_sec;
-	end *= 1000000;
-	end += end_time.tv_usec;
-	printf("done with unpack of launch request %ld\n",(end-start));
-	
+	info("deleting all the msg_pointers");
+	xfree(msg_array_ptr);
+	xfree(r.io_port);
+	xfree(r.resp_port);
+		
 	return(void *)(0);
 }
 
@@ -529,6 +520,9 @@ again:
 			    && (job->state == SRUN_JOB_LAUNCHING)
 			    && (errno != ESLURMD_INVALID_JOB_CREDENTIAL) 
 			    &&  retry--) {
+				list_iterator_destroy(data_itr);
+				list_iterator_destroy(itr);
+				list_destroy(ret_list);	
 				sleep(1);
 				goto again;
 			}
@@ -555,8 +549,9 @@ again:
 	list_iterator_destroy(itr);
 	list_destroy(ret_list);	
 cleanup:
-	pthread_mutex_lock(&active_mutex);
+	info("deleting forwards %d",req->forward.cnt);
 	destroy_forward(&req->forward);
+	pthread_mutex_lock(&active_mutex);
 	th->state = DSH_DONE;
 	active--;
 	if (opt.parallel_debug)
@@ -595,7 +590,7 @@ _print_launch_msg(launch_tasks_request_msg_t *msg, char * hostname, int nodeid)
 
 	info("launching %u.%u on host %s, %u tasks: %s", 
 	     msg->job_id, msg->job_step_id, hostname, 
-	     msg->tasks_to_launch, task_list);
+	     msg->tasks_to_launch[nodeid], task_list);
 
 	debug3("uid:%ld gid:%ld cwd:%s %d", (long) msg->uid,
 		(long) msg->gid, msg->cwd, nodeid);

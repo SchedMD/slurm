@@ -175,6 +175,7 @@ typedef struct forward {
 	uint32_t  *node_id;       /* node id of this node (relative to job) */
 
 	uint16_t   cnt;           /* number of addresses to forward */
+	uint32_t   timeout;       /* original timeout increments */
 } forward_t;
 
 typedef struct slurm_protocol_config {

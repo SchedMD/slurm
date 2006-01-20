@@ -297,6 +297,7 @@ pack_header(header_t * header, Buf buffer)
 		pack32_array(header->forward.node_id, 
 			     header->forward.cnt, 
 			     buffer);
+		pack32(header->forward.timeout, buffer);
 	}
 	pack16(header->ret_cnt, buffer);	
 	if(header->ret_cnt > 0) {
@@ -320,9 +321,7 @@ unpack_header(header_t * header, Buf buffer)
 	uint16_t uint16_tmp = 0;
 	uint32_t uint32_tmp = 0;
 
-	header->forward.addr = NULL;
-	header->forward.name = NULL;
-	header->forward.node_id = NULL;
+	forward_init(&header->forward, NULL);
 	header->ret_list = NULL;
 
 	safe_unpack16(&header->version, buffer);
@@ -337,17 +336,18 @@ unpack_header(header_t * header, Buf buffer)
 			goto unpack_error;
 		if(uint16_tmp != header->forward.cnt)
 			goto unpack_error;
-		safe_unpackmem_xmalloc(&header->forward.name, 
+		safe_unpackmem_xmalloc(&(header->forward.name), 
 				       &uint16_tmp, 
 				       buffer);
-		safe_unpack32_array(&header->forward.node_id, 
+		
+		safe_unpack32_array(&(header->forward.node_id), 
 				    &uint32_tmp,
 				    buffer);
-	} else {
-		header->forward.addr = NULL;
-		header->forward.name = NULL;
-		header->forward.node_id = NULL;
-	}
+		if(uint32_tmp != (uint32_t)header->forward.cnt) {
+			goto unpack_error;
+		}
+		safe_unpack32(&header->forward.timeout, buffer);
+	} 
 	
 	safe_unpack16(&header->ret_cnt, buffer);	
 	if(header->ret_cnt > 0) {
@@ -363,8 +363,10 @@ unpack_header(header_t * header, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
+	error("unpacking header");
 	destroy_forward(&header->forward);
-	list_destroy(header->ret_list);
+	if(header->ret_list)
+		list_destroy(header->ret_list);
 	return SLURM_ERROR;
 }
 

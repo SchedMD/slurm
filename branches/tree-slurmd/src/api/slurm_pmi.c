@@ -71,10 +71,9 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr)
 	msg_send.address = srun_addr;
 	msg_send.msg_type = PMI_KVS_PUT_REQ;
 	msg_send.data = (void *) kvs_set_ptr;
-	msg_send.forward.cnt = 0;
+	forward_init(&msg_send.forward, NULL);
 	msg_send.ret_list = NULL;
-	msg_send.forward.addr = NULL;
-	msg_send.forward.name = NULL;
+	
 	/* Send the RPC to the local srun communcation manager */
 	ret_list = (List) slurm_send_recv_node_msg(&msg_send, &msg_rcv, 0);
 
@@ -140,10 +139,9 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	msg_send.data = &data;
 
 	/* Send the RPC to the srun communcation manager */
-	msg_send.forward.cnt = 0;
+	forward_init(&msg_send.forward, NULL);
 	msg_send.ret_list = NULL;
-	msg_send.forward.addr = NULL;
-	msg_send.forward.name = NULL;
+	
 	/* Send the RPC to the local srun communcation manager */
 	ret_list = (List) slurm_send_recv_node_msg(&msg_send, &msg_rcv, 0);
 

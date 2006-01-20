@@ -665,6 +665,7 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	int i=0;
 	int16_t fwd_cnt = 0;
 	char addrbuf[INET_ADDRSTRLEN];
+	int steps = 0;
 
 	List ret_list = list_create(destroy_ret_types);
 	
@@ -687,7 +688,11 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 #endif
 	buffer = create_buf(buf, buflen);
 
-	unpack_header(&header, buffer);
+	if(unpack_header(&header, buffer) == SLURM_ERROR) {
+		free_buf(buffer);
+		rc = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
+		goto total_return;
+	}
 	
 	if (check_header_version(&header) < 0) {
 		free_buf(buffer);
@@ -719,8 +724,9 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		       &buffer->head[buffer->processed], 
 		       forward_struct->buf_len);
 		forward_struct->ret_list = ret_list;
-		forward_struct->timeout = timeout;
 
+		forward_struct->timeout = timeout - header.forward.timeout;
+		
 		debug3("forwarding messages to %d nodes!!!!", fwd_cnt);
 		
 		if(forward_msg(forward_struct, &header) == SLURM_ERROR) {
@@ -1196,7 +1202,16 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 	ret_types_t *ret_type = NULL;
 	ret_data_info_t *ret_data_info = NULL;
 	char name[MAX_NAME_LEN];
+	int steps = 0;
 
+	if ((timeout*=1000) == 0)
+		timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
+	
+	if(req->forward.cnt>0) {
+		steps = req->forward.cnt/forward_span_count;
+		steps += 1;
+		timeout += (req->forward.timeout*steps);
+	} 
 	if ((slurm_send_node_msg(fd, req) < 0)) 
 		err = errno;
 	if(err == SLURM_SUCCESS) {

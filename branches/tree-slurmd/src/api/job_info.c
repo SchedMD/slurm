@@ -323,9 +323,8 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	req.job_pid      = job_pid;
 	req_msg.msg_type = REQUEST_JOB_ID;
 	req_msg.data     = &req;
-	req_msg.forward.cnt = 0;
-	req_msg.forward.addr = NULL;
-	req_msg.forward.name = NULL;
+	forward_init(&req_msg.forward, NULL);
+
 	ret_list = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
 
 	if(!ret_list || errno != SLURM_SUCCESS) {

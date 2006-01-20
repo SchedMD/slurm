@@ -73,6 +73,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_interface.h"
 #include "src/common/forward.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
@@ -334,7 +335,8 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	thd_t *thread_ptr;
 	int *span = set_span(agent_arg_ptr->node_count);
 	int thr_count = 0;
-       	
+       	forward_t forward;
+
 	agent_info_ptr = xmalloc(sizeof(agent_info_t));
 	slurm_mutex_init(&agent_info_ptr->thread_mutex);
 	if (pthread_cond_init(&agent_info_ptr->thread_cond, NULL))
@@ -342,7 +344,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	agent_info_ptr->thread_count   = agent_arg_ptr->node_count;
 	agent_info_ptr->retry          = agent_arg_ptr->retry;
 	agent_info_ptr->threads_active = 0;
-	thread_ptr = xmalloc(agent_arg_ptr->node_count * sizeof(thd_t));
+	thread_ptr = xmalloc(agent_info_ptr->thread_count * sizeof(thd_t));
 	agent_info_ptr->thread_struct  = thread_ptr;
 	agent_info_ptr->msg_type       = agent_arg_ptr->msg_type;
 	agent_info_ptr->msg_args_pptr  = &agent_arg_ptr->msg_args;
@@ -350,7 +352,13 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	if ((agent_arg_ptr->msg_type != REQUEST_SHUTDOWN) &&
 	    (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE))
 		agent_info_ptr->get_reply = true;
-	
+
+	forward.cnt = agent_info_ptr->thread_count;
+	forward.name = agent_arg_ptr->node_names;
+	forward.addr = agent_arg_ptr->slurm_addr;
+	forward.node_id = NULL;
+	forward.timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
+
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
 		thread_ptr[thr_count].state      = DSH_NEW;
 		thread_ptr[thr_count].slurm_addr = 
@@ -358,13 +366,12 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		strncpy(thread_ptr[thr_count].node_name,
 			&agent_arg_ptr->node_names[i * MAX_NAME_LEN],
 			MAX_NAME_LEN);
-		set_forward_addrs(&thread_ptr[thr_count].forward,
-				  span[thr_count],
-				  &i,
-				  agent_info_ptr->thread_count,
-				  agent_arg_ptr->slurm_addr,
-				  agent_arg_ptr->node_names,
-				  NULL);
+
+		forward_set(&thread_ptr[thr_count].forward,
+			    span[thr_count],
+			    &i,
+			    &forward);
+
 		thr_count++;		       
 	}
 	xfree(span);
@@ -694,7 +701,7 @@ static inline void _comm_err(char *node_name)
  */
 static void *_thread_per_group_rpc(void *args)
 {
-	int rc = SLURM_SUCCESS, timeout = 0;
+	int rc = SLURM_SUCCESS, timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
 	slurm_msg_t msg;
 	task_info_t *task_ptr = (task_info_t *) args;
 	/* we cache some pointers from task_info_t because we need 

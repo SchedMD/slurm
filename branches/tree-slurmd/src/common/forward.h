@@ -34,6 +34,7 @@
 #include "src/srun/srun_job.h"
 
 /* STRUCTURES */
+extern void forward_init(forward_t *forward, forward_t *from);
 
 extern int forward_msg(forward_struct_t *forward_struct, 
 		       header_t *header);
@@ -50,19 +51,17 @@ extern int forward_msg(forward_struct_t *forward_struct,
  * IN: forward_names - char *      - list of names in MAX_NAME_LEN increments
  * RET: SLURM_SUCCESS - int
  */
-extern int set_forward_addrs (forward_t *forward, 
-			      int span,
-			      int *pos,
-			      int total,
-			      struct sockaddr_in *forward_addr,
-			      char *forward_names,
-			      int *forward_ids);
+extern int forward_set (forward_t *forward, 
+			int span,
+			int *pos,
+			forward_t *from);
 
-extern int set_forward_launch (forward_t *forward, 
+extern int forward_set_launch (forward_t *forward, 
 			       int span,
 			       int *pos,
 			       srun_job_t *job,
-			       hostlist_iterator_t itr);
+			       hostlist_iterator_t itr,
+			       int32_t timeout);
 
 extern int *set_span(int total);
 extern int no_resp_forwards(forward_t *forward, List *ret_list, int err);

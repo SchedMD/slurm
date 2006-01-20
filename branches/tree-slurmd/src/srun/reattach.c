@@ -290,11 +290,11 @@ static int
 _attach_to_job(srun_job_t *job)
 {
 	int i;
-	reattach_tasks_request_msg_t *req;
-	slurm_msg_t *msg;
+	reattach_tasks_request_msg_t *req = NULL;
+	slurm_msg_t *msg = NULL;
 
-	req = xmalloc(job->nhosts * sizeof(*req));
-	msg = xmalloc(job->nhosts * sizeof(*msg));
+	req = xmalloc(job->nhosts * sizeof(reattach_tasks_request_msg_t));
+	msg = xmalloc(job->nhosts * sizeof(slurm_msg_t));
 
 	debug("Going to attach to job %u.%u", job->jobid, job->stepid);
 
@@ -323,7 +323,7 @@ _attach_to_job(srun_job_t *job)
 
 		m->data            = r;
 		m->msg_type        = REQUEST_REATTACH_TASKS;
-		m->forward.cnt = 0;
+		forward_init(&m->forward.cnt, NULL);
 		m->ret_list = NULL;
 
 		memcpy(&m->address, &job->slurmd_addr[i], sizeof(slurm_addr));

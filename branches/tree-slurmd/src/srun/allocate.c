@@ -260,15 +260,21 @@ _accept_msg_connection(slurm_fd slurmctld_fd,
 	slurm_get_addr(&cli_addr, &port, host, sizeof(host));
 	debug2("got message connection from %s:%d", host, port);
 
-	msg = xmalloc(sizeof(*msg));
-	msg->forward.cnt = 0;
+	msg = xmalloc(sizeof(slurm_msg_t));
+	forward_init(&msg->forward, NULL);
 	msg->ret_list = NULL;
+	msg->conn_fd = fd;
+	
   again:
 	ret_list = slurm_receive_msg(fd, msg, 0);
 
 	if(!ret_list || errno != SLURM_SUCCESS) {
-		if (errno == EINTR)
+		if (errno == EINTR) {
 			goto again;
+		}
+		if(ret_list)
+			list_destroy(ret_list);
+			
 		error("_accept_msg_connection[%s]: %m", host);
 		slurm_free_msg(msg);
 		return SLURM_ERROR;
@@ -278,12 +284,12 @@ _accept_msg_connection(slurm_fd slurmctld_fd,
 		      "got %d from receive, expecting 0",
 		      list_count(ret_list));
 	}
-	list_destroy(ret_list);
-
+	msg->ret_list = ret_list;
 	
-	msg->conn_fd = fd;
+	
 	rc = _handle_msg(msg, resp); /* handle_msg frees msg */
-	
+	slurm_free_msg(msg);
+		
 	slurm_close_accepted_conn(fd);
 	return rc;
 }
@@ -322,7 +328,6 @@ _handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
 			error("received spurious message type: %d\n",
 				 msg->msg_type);
 	}
-	slurm_free_msg(msg);
 	return rc;
 }
 
