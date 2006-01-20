@@ -37,7 +37,11 @@ each having four Itanium2 processors</li>
 <li><a href="http://www.llnl.gov/asci/platforms/purple/">ASC Purple</a> an IBM SP/AIX cluster 
 with about 1500 nodes each having eight Power5 processors</li>
 </ul>
+As of January 2006, SLURM has been downloaded over 2400 times to over 500 
+distinct sites in 34 countries. 
+SLURM is also distributed and supported by <a href="http://www.hp.com">
+Hewlett-Packard</a> as the resource manager in their XC System Software.</p>
 
-<p style="text-align:center;">Last modified 7 December 2005</p>
+<p style="text-align:center;">Last modified 20 January 2006</p>
 
 <!--#include virtual="footer.txt"-->
