@@ -521,8 +521,10 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 	}
 
 	base_state = node_ptr->node_state & NODE_STATE_BASE;
-	if ((base_state == NODE_STATE_ALLOCATED)
-	||  (node_ptr->node_state & NODE_STATE_COMPLETING))
+	if (node_ptr->node_state & NODE_STATE_DRAIN)
+		sinfo_ptr->nodes_other++;
+	else if ((base_state == NODE_STATE_ALLOCATED)
+	||       (node_ptr->node_state & NODE_STATE_COMPLETING))
 		sinfo_ptr->nodes_alloc++;
 	else if (base_state == NODE_STATE_IDLE)
 		sinfo_ptr->nodes_idle++;
