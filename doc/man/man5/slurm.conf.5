@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "December 2005" "slurm.conf 0.7" "Slurm configuration file"
+.TH "slurm.conf" "5" "January 2006" "slurm.conf 1.0" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -145,7 +145,7 @@ For jobacct/log this is the fully-qualified file name for the data file.
 .TP
 \fBJobAcctParameters\fR
 Define any parameters to pass to the job accounting plugin, in a
-comma-separated list.
+quoted and comma-separated list.
 For jobacct/none this parameter is ignored.
 For jobacct/log the parameters available are
 .RS
@@ -840,6 +840,12 @@ JobCredentialPrivateKey=/usr/local/slurm/private.key
 .br
 JobCredentialPublicCertificate=/usr/local/slurm/public.cert
 .br
+JobAcctType=jobacct/log
+.br
+JobAcctLoc=/var/log/slurm_accounting.log
+.br
+JobAcctParameters="Frequency=30,MaxSendRetries=5"
+.br
 #
 .br
 # Node Configurations
@@ -871,7 +877,7 @@ PartitionName=batch Nodes=dev[9-17]  MinNodes=4
 PartitionName=long Nodes=dev[9-17] MaxTime=120 AllowGroups=admin
 
 .SH "COPYING"
-Copyright (C) 2002 The Regents of the University of California.
+Copyright (C) 2002-2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 UCRL-CODE-217948.
 .LP

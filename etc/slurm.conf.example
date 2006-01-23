@@ -277,7 +277,8 @@ JobAcctType=jobacct/none
 # JobAcctLoc=/var/log/slurm_accounting.log
 
 #
-# o Define any parameters to pass to the job accounting plugin. For
+# o Define any parameters to pass to the job accounting plugin. Parameters
+#   should be comma separated and quoted as shown in the example below. For
 #    - jobacct/none - this parameter is ignored
 #    - jobacct/log  - the parameters available are
 #          - Frequency=N       - where N is the number of seconds
