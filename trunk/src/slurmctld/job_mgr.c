@@ -2455,6 +2455,10 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			info("attempt by uid %u to set job_id", submit_uid);
 			return ESLURM_DUPLICATE_JOB_ID;
 		}
+		if (job_desc_msg->job_id == 0) {
+			info("attempt by uid %u to set zero job_id", submit_uid);
+			return ESLURM_DUPLICATE_JOB_ID;
+		}
 		dup_job_ptr = find_job_record((uint32_t) job_desc_msg->job_id);
 		if (dup_job_ptr && 
 		    (!(IS_JOB_FINISHED(dup_job_ptr)))) {
