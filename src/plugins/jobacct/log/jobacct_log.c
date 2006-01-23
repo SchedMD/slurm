@@ -1540,7 +1540,7 @@ static void _stagger_time(long nodeid, long n_contenders) {
 	long long	sleep_time;
 	struct timespec	req;
 
-	if (stagger_slot_size==0)
+	if (stagger_slot_size==0 || n_contenders<=0)
 		return;		/* Nothing for us to do here. */
 
 	debug3("jobacct: in _stagger_time(%ld, %ld)", nodeid, n_contenders);
