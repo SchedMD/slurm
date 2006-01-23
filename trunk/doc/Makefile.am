@@ -33,7 +33,8 @@ generated_html = \
 	html/selectplugins.html \
 	html/slurm.html \
 	html/switchplugins.html \
-	html/team.html
+	html/team.html \
+	html/testimonials.html
 
 html_DATA = \
 	${generated_html} \

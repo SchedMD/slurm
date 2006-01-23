@@ -1,0 +1,43 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Customer Testimonials</h1>
+
+<i><pre>
+"[SLURM's PAM module is the] coolest thing since the invention of UNIX...
+We now can control who can log into [compute nodes] or at least can control
+which ones to allow logging into.  This will be a tremendous help for users
+who are developing their apps."<br>
+Partners Health Care
+</pre></i>
+
+<i><pre>
+"As a result of our critical need to run very large, massively parallel jobs
+on thousands of processors and to do so in a cost effective way, LLNL,
+Hewlett-Packard and Linux NetworX researched and developed, over a period of 
+years, a resource management tool that would optimize our workload through 
+our computers. Today our largest IBM computers, BlueGene/L and Purple, ranked
+#1 and #3 respectively on the November 2005 Top500 list, use SLURM instead 
+of IBM's LoadLeveler. This decision reduces large job launch times from tens 
+of minutes with LoadLeveler to seconds using SLURM. This effectivley provides 
+us with millions of dollars with of additional compute resources without 
+additional cost.  It also allows our computational scientists to use their 
+time more effectively.  SLURM is scalable to very large numbers of processors, 
+another essential ingredient for use at LLNL. This means larger computer 
+systems can be used than otherwise possible with a commensurate increase in 
+the scale of problems that can be solved. SLURM's scalability has eliminated 
+resource management from being a concern for computers of any foreseeable 
+size."<br>
+Dona Crawford, Associated Directory Lawrence Livermore National Laboratory
+</pre></i>
+
+<i><pre>
+"The new system provides us with greater capacity to run high performance
+message passing parallel applications.  We are very happy with the 
+performance of the system and the integration of components provided in 
+the HP XC cluster software."<br>
+Rob Simmons, Chief Technology Officer, WestGrid
+</pre></i>
+
+<p style="text-align:center;">Last modified 23 January 2006</p>
+
+<!--#include virtual="footer.txt"-->
