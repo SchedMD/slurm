@@ -1,10 +1,14 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.0.2
+========================
+ -- Correctly report DRAINED node state as type OTHER for "sinfo --summarize".
+
 * Changes in SLURM 1.0.1
 ========================
  -- Assorted updates and clarifications in documentation.
- -- able to detect which munge installation to use 32/64 bit
+ -- Detect which munge installation to use 32/64 bit.
 
 * Changes in SLURM 1.0.0
 ========================
