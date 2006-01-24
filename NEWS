@@ -4,6 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.0.2
 ========================
  -- Correctly report DRAINED node state as type OTHER for "sinfo --summarize".
+ -- Fixes in sacct use of malloc (Andy Riebs, HP, sacct_malloc.patch).
 
 * Changes in SLURM 1.0.1
 ========================
