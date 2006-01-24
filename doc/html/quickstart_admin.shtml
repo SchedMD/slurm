@@ -57,8 +57,10 @@ are denoted below.
 		  configuration file <i>slurm.conf</i> in the same order as 
 		  defined in the <i>elanhosts</i> configuration file so that 
 		  node allocation for jobs can be performed so as to optimize
-		  their performance. We recommend assigning the nodes a numeric
-		  suffix equal to its Elan address for ease of administration
+		  their performance. We highly recommend assigning the nodes 
+		  a numeric suffix equal to its Elan address for ease of 
+		  administration and because the Elan driver does not seem 
+		  to function otherwise
 		  (e.g. /etc/elanhosts to contain two lines of this sort:<br>
 		  eip  [0-15]  linux[0-15]<br>
 		  eth  [0-15]  linux[0-15]<br>
