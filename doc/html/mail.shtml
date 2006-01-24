@@ -3,8 +3,10 @@
 <h1>Mailing Lists</h1>
 <p>We maintain two SLURM mailing lists: 
 <ul>
-<li><b>slurm-announce</b> is designated for communications about SLURM releases.</li>
-<li><b>slurm-dev</b> is designated for communications to SLURM developers.</li>
+<li><b>slurm-announce</b> is designated for communications about SLURM releases
+[low traffic].</li>
+<li><b>slurm-dev</b> is designated for communications to SLURM developers
+[high traffic at times].</li>
 </ul>
 To subscribe to either list, send a message to 
 <a href="mailto:majordomo@lists.llnl.gov">majordomo@lists.llnl.gov</a> with the body of the 
