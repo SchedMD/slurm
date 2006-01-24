@@ -128,44 +128,56 @@ All of these operations are straightforward, but performing
 resource management on clusters containing thousands of 
 nodes and over 100,000 processor cores requires more 
 than a high degree of parallelism.
-In many respects data management and fault-tolerance issues
+In many respects, data management and fault-tolerance issues
 are paramount.
 
 SLURM is a resource manager jointly developed by Lawrence 
 Livermore National Laboratory (LLNL), 
-Hewlett-Packard Corporation, and Linux NetworX.
+Hewlett-Packard, and Linux NetworX
+\cite{SLURM2003,Yoo2003,SlurmWeb}.
 SLURM's general characteristics include:
-Simplicity: SLURM is simple enough to allow motivated end users
-  to understand its source code and add functionality. 
-  It supports only a few simple scheduling algorithms, 
-  but relies upon an external scheduler for sophisticated
-  workload prioritization.
-Open Source: SLURM is available to everyone and will remain free.
-  Its source code is distributed under the GNU General Public
-  License \cite{GPL2002}.
-Portability: SLURM is written in the C language, with a GNU
-  {\em autoconf} configuration engine.
-  SLURM has a fully functional skeleton of functionality with a
-  wide assortment of plugins available for customization. 
-  A total of 30 different plugins are available and provide a 
-  great deal of flexibility in configuring SLURM using a 
-  building block approach.
-Scalability: SLURM is designed for scalability to clusters of
-  thousands of nodes. Time to fully execute (allocate, launch
-  tasks, process I/O, and deallocate resources) a simple program
-  is only 2 seconds for 4,800 tasks on 2,400 nodes. Clusters 
-  containing up to 16,384 nodes have been emulated with highly 
-  scalable performance. 
-Fault Tolerance SLURM can handle a variety of failure
-  modes without terminating workloads.
-Security: SLURM employs crypto technology to authenticate
-  users to services and services to each other with a variety of options
-  available through the plugin mechanism.  
-System Administrator Friendly: SLURM utilizes
-  a simple configuration file and minimizes distributed state.
-  Its configuration may be changed at any time without impacting running
-  jobs.  Heterogeneous nodes within a cluster may be easily managed.  SLURM
-  interfaces are usable by scripts and its behavior is highly deterministic.
+
+\begin{itemize}
+\item {\tt Simplicity}: SLURM is simple enough to allow motivated 
+end users to understand its source code and add functionality. 
+It supports only a few simple scheduling algorithms, 
+but relies upon an external scheduler for sophisticated
+workload prioritization.
+
+\item {\tt Open Source}: SLURM is available to everyone and 
+will remain free.
+Its source code is distributed under the GNU General Public
+License \cite{GPL2002}.
+
+\item {\tt Portability}: SLURM is written in the C language, 
+with a GNU {\em autoconf} configuration engine.
+SLURM has a fully functional skeleton of functionality with a
+wide assortment of plugins available for customization. 
+A total of 30 different plugins are available and provide a 
+great deal of flexibility in configuring SLURM using a 
+building block approach.
+
+\item {\tt Scalability}: SLURM is designed for scalability to clusters 
+of thousands of nodes. Time to fully execute (allocate, launch
+tasks, process I/O, and deallocate resources) a simple program
+is only 2 seconds for 4,800 tasks on 2,400 nodes. Clusters 
+containing up to 16,384 nodes have been emulated with highly 
+scalable performance. 
+
+\item {\tt Fault Tolerance}: SLURM can handle a variety of failure
+modes without terminating workloads.
+
+\item {\tt Security}: SLURM employs crypto technology to authenticate
+users to services and services to each other with a variety of options
+available through the plugin mechanism.  
+
+\item {\tt System Administrator Friendly}: SLURM utilizes
+a simple configuration file and minimizes distributed state.
+Its configuration may be changed at any time without impacting running
+jobs.  Heterogeneous nodes within a cluster may be easily managed.  SLURM
+interfaces are usable by scripts and its behavior is highly deterministic.
+
+\end{itemize}
 
 \section{Architecture}
 
@@ -174,6 +186,8 @@ System Administrator Friendly: SLURM utilizes
 \caption{\small SLURM architecture}
 \label{arch}
 \end{figure}
+
+% \includegraphics{../figures/arch.epsi}
 
 SLURM's commands and daemons are illustrated in Figure~\ref{arch}.
 The main SLURM control program {\tt slurmctld} orchestrates
@@ -185,16 +199,26 @@ Each node in the cluster available for running user applications
 has a relatively small daemon called {\tt slurmd} that monitors
 and manages resources and work within that node. 
 Several user tools are provided:
-{\tt scontrol} is a system administrator tool to monitor and change
-system configuration, 
-{\tt sinfo} reports status and configuration of the nodes and queues,
-{\tt squeue} reports status of jobs, 
-{\tt scancel} can signal and/or cancel jobs or job steps
-{\tt smap} reports node, queue, and job status including 
-topological state information,
-{\tt sacct} reports job accounting information, 
-{\tt sbcast} copies a file to local file systems on a job's allocated nodes, and
-{\tt srun} is used to allocate resources and spawn the job's tasks.
+
+\begin{itemize}
+\item {\tt scontrol} is a system administrator tool to monitor and change
+system configuration
+
+\item {\tt sinfo} reports status and configuration of the nodes and queues
+
+\item {\tt squeue} reports status of jobs
+
+\item {\tt scancel} can signal and/or cancel jobs or job steps
+
+\item {\tt smap} reports node, queue, and job status including 
+topological state information
+
+\item {\tt sacct} reports job accounting information
+
+\item {\tt sbcast} copies a file to local file systems on a job's allocated nodes
+
+\item {\tt srun} is used to allocate resources and spawn the job's tasks.
+\end{itemize}
 
 \begin{figure}[tcb]
 \centerline{\epsfig{file=../figures/entities.eps,scale=0.5}}
@@ -221,24 +245,23 @@ general purpose queues for jobs.
 
 \section{Implementation}
 
-Very high scalability was treated as the most important design 
-criterion for SLURM. 
+Very high scalability was treated as a high priority for SLURM. 
 More comprehensive support for smaller clusters in fact was 
 added in later revisions.
 For example, the initial implementation allocated whole nodes 
-to jobs in part to avoid the extra overhead of tracking individual
+to jobs, in part to avoid the extra overhead of tracking individual
 processors.
-While that is still a recommended mode of operation for very large 
-clusters, an alternate SLURM plugin provides resource management 
-down the the resolution of individual processors.
+While allocation of entire nodes to jobs is still a recommended mode of 
+operation for very large clusters, an alternate SLURM plugin provides 
+resource management down the the resolution of individual processors.
 
 The SLURM daemons and the command {\tt srun} are extensively 
 multi-threaded. 
 {\tt slurmctld} also maintains independent read and 
 write locks for critical data structures. 
-The combination of these tow features means that, 
-for example, three users can concurrently get job state information
-while the system administrator is modifying the time limit 
+The combination of these two features means that, 
+for example, three users can get job state information at the same
+time that a system administrator is modifying the time limit 
 for a partition.
 
 \begin{figure}[tcb]
@@ -260,13 +283,17 @@ can communicate directly with {\tt slurmd} daemons on 32 nodes
 Each of those {\tt slurmd} will simultaneously forward the request
 to {\tt slurmd} programs on another 32 nodes. 
 This improves performance by distributing the workload.
+Note that every communication is authenticated and acknowleged.
 
-A number of interesting papers have recently been written about
+A number of interesting papers 
+\cite{Jones2003,Kerbyson2001 Petrini2003,Phillips2003,Tsafrir2005}
+have recently been written about
 the impact of system daemons and other system overhead on 
 parallel job performance. This {\tt system noise} can have a 
 dramatic impact upon the performance of highly parallel jobs. 
-In a simplified example, consider system daemons that run for 
-one second out of every 100 seconds. For serial jobs this 
+In a simplified example, consider a system daemon that run for 
+one second out of every 100 seconds on every node in a cluster. 
+For serial jobs this 
 reduces throughput by one percent, but the impact is compounded 
 on parallel computers if these daemons do not all execute concurrently. 
 If the parallel program runs on 100 nodes and tries to synchronize 
@@ -275,19 +302,21 @@ one second delay from the daemon running on one of the 100 nodes.
 This effectively limits job parallelism to about 50-way, orders 
 of magnitude smaller than the largest systems currently available.
 SLURM addresses this issue by:
-1. Making the {\tt slurmd} daemon resource requirements negligible 
-2. Supporting configurations that let the {\tt slurmd} daemon sleep 
-and not interfere at all with running jobs
-3. If the {\tt slurmd} daemons are given work, it is done on a 
-highly synchronized fashion across all nodes.
+\begin{itemize}
+\item Making the {\tt slurmd} daemon resource requirements negligible 
+\item Supporting configurations that let the {\tt slurmd} daemon sleep 
+during the entire job execution period
+\item If the {\tt slurmd} daemons are given work, it is done on a 
+highly synchronized fashion across all nodes
+\end{itemize}
 In addition, the default mode of operation is to allocate entire 
 nodes to applications rather than individual processors on each node. 
 This eliminates the possibility of interference between jobs 
 which could severely degrade performance of parallel applications.
 Allocation of resources to the resolution of individual processors 
 on each node is supported by SLURM, but this comes at a higher cost 
-in terms of the data managed and this capability is provided by an 
-optional plugin.
+in terms of the data managed.
+The selection of resource resolution is provided by different plugins.
 These factors permit SLURM to effectively run highly parallel jobs.
 
 Resource management of large clusters entails the processing of 
@@ -347,7 +376,7 @@ The {\tt srun} command open sockets for task input and output then
 gets a second credential and sends the job step credential directly 
 to the {\tt slurmd} daemons in order to launch the tasks.
 Note the {\tt slurmctld} and {\tt slurmd} daemons do not directly 
-communicate in the task launch operation in order to minimize the 
+communicate during the task launch operation in order to minimize the 
 workload on the {\tt slurmctld}, which has to manage the entire 
 cluster.
 
@@ -358,8 +387,8 @@ and notifies {\tt slurmctld} of the job step termination.
 {\tt Slurmctld} authenticates the request and sends messages to 
 the {\tt slurmd} daemons to insure that all processes associated 
 with the job have terminated. 
-Upon receipt of job termination confirmation, {\tt slurmctld} 
-releases the resources for use by another job.
+Upon receipt of job termination confirmation on each node, 
+{\tt slurmctld} releases the resources for use by another job.
 
 The full time for execution of a simple parallel application across 
 a few nodes is a few milliseconds. 
@@ -375,19 +404,13 @@ It provides resource management on several clusters containing
 over 2,000 compute nodes and has emulated clusters containing 
 up to 16,384 compute nodes, four times the size of of the 
 largest parallel computer in use today. 
-The cluster size is presently limited by the size of some 
+The cluster size is presently limited by the size of some SLURM 
 data structures, but operation on larger systems is certainly 
 feasible with minor code changes.
 
-\section{Acknowledgments}
-
-SLURM was jointly developed by LLNL, Hewlett-Packard Company
-and Linux NetworX. A multitude of programmers have contributed 
-to it's development.
-
 \raggedright
 % make the bibliography
-\bibliographystyle{splncs}
+\bibliographystyle{plain}
 \bibliography{project}
 
 % make the back cover page
