@@ -754,6 +754,8 @@ void doExpire(void)
 
 	/* create our initial buffer */
 	buf = _my_malloc(bufsize);
+	exp_table = _my_malloc( sizeof(expired_table_t)
+				* (exp_table_allocated=10000));
 	while (1) {
 		if (fgetLine(&buf, &bufsize, logfile) == NULL)
 			break;
@@ -1247,13 +1249,13 @@ int findJobstepRecord(long j, long jobstep)
 void getData(void)
 {
 	char	*buf,
-		*f[MAX_RECORD_FIELDS+1],	/* End list with null entry */
+		*f[MAX_RECORD_FIELDS+1],
 		*fptr;
 	int	bufsize=MINBUFSIZE,
 		i;
 
 	openLogFile();
-	buf=malloc(bufsize);
+	buf=_my_malloc(bufsize);
 	while (1) {
 		if (fgetLine(&buf, &bufsize, logfile) == NULL)
 			break;
@@ -1272,15 +1274,17 @@ void getData(void)
 			else
 				*fptr++ = 0;
 		}
-		f[++i] = NULL;
-		if (i < F_NUMFIELDS) {
+		if (++i < F_NUMFIELDS) {
 			fprintf(stderr,
 				"Invalid record (too short) "
 				"at input line %ld\n", lc);
 			if (opt_debug)
 				fprintf(stderr, "rec> %s\n", buf);
 			continue;
-		}
+		} else if (i >= MAX_RECORD_FIELDS)
+			if (opt_debug)
+				fprintf(stderr,
+					"Extra data at input line %ld\n", lc);
 		if (strcmp(f[F_RECVERSION], "1")) {
 			fprintf(stderr,
 				"Invalid record version at input line %ld\n",
@@ -1335,6 +1339,13 @@ void getData(void)
 				fprintf(stderr, "rec> %s\n", buf);
 		}
 	}
+	if (opt_debug)
+		fprintf(stderr,
+			"Info: %ld job%s and %ld jobstep%s passed initial"
+			" filters\n",
+			Njobs, (Njobs==1? "" : "s"),
+			Njobsteps, (Njobsteps==1? "" : "s"));
+
 	if (ferror(logfile)) {
 		perror(opt_filein);
 		exit(1);
@@ -3035,7 +3046,7 @@ void usage(void)
 void *_my_malloc(size_t size)
 {
 	void *tmp;
-	tmp = (void *) malloc(size);
+	tmp = (void *) calloc(size, sizeof(char));
 	if (tmp)
 		return tmp;
 	perror("malloc");
@@ -3045,7 +3056,10 @@ void *_my_malloc(size_t size)
 void *_my_realloc(void *ptr, size_t size)
 {
 	void *tmp;
-	tmp = (void *) realloc(ptr, size);
+	if (ptr==NULL)
+		tmp = (void *) _my_malloc(size);
+	else
+		tmp = (void *) realloc(ptr, size);
 	if (tmp)
 		return tmp;
 	perror("realloc");
