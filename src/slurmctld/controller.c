@@ -2,7 +2,7 @@
  *  controller.c - main control machine daemon for slurm
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, Kevin Tew <tew1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -642,14 +642,16 @@ static bool _wait_for_server_thread(void)
 			rc = false;
 			break;
 		}
-		if (slurmctld_config.server_thread_count < 
-		    MAX_SERVER_THREADS) {
+		if (slurmctld_config.server_thread_count < MAX_SERVER_THREADS) {
 			slurmctld_config.server_thread_count++;
 			break;
-		} else { /* wait for state change and retry */
+		} else {
+			/* wait for state change and retry, 
+			 * just a delay and not an error */
 			if (print_it) {
-				debug("server_thread_count over limit: %d", 
-				      slurmctld_config.server_thread_count);
+				info("server_thread_count over limit (%d), "
+					"waiting", 
+					slurmctld_config.server_thread_count);
 				print_it = false;
 			}
 			pthread_cond_wait(&server_thread_cond, 
