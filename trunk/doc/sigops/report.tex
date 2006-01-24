@@ -37,6 +37,7 @@
 
 \usepackage{verbatim,moreverb}
 \usepackage{float}
+\usepackage{graphicx}
 
 % Needed for LLNL cover page / TID bibliography style
 \usepackage{calc}
@@ -182,12 +183,10 @@ interfaces are usable by scripts and its behavior is highly deterministic.
 \section{Architecture}
 
 \begin{figure}[tb]
-\centerline{\epsfig{file=../figures/arch.eps,scale=0.35}}
+\centerline{\includegraphics[width=4in]{../figures/arch2.eps}}
 \caption{\small SLURM architecture}
 \label{arch}
 \end{figure}
-
-% \includegraphics{../figures/arch.epsi}
 
 SLURM's commands and daemons are illustrated in Figure~\ref{arch}.
 The main SLURM control program {\tt slurmctld} orchestrates
@@ -221,7 +220,7 @@ topological state information
 \end{itemize}
 
 \begin{figure}[tcb]
-\centerline{\epsfig{file=../figures/entities.eps,scale=0.5}}
+\centerline{\includegraphics[width=4in]{../figures/comm.eps}}
 \caption{\small SLURM entities: nodes, partitions, jobs, and job steps}
 \label{entities}
 \end{figure}
@@ -265,7 +264,7 @@ time that a system administrator is modifying the time limit
 for a partition.
 
 \begin{figure}[tcb]
-\centerline{\epsfig{file=../figures/entities.eps,scale=0.5}}
+\centerline{\includegraphics[width=4in]{../figures/entities.eps}}
 \caption{\small Hierarchical SLURM communications with fanout=2}
 \label{comms}
 \end{figure}
