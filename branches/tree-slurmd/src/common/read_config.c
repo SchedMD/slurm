@@ -53,7 +53,7 @@
 #include "src/common/xstring.h"
 #include "src/common/slurm_rlimits_info.h"
 
-#define BUF_SIZE 1024
+#define BUFFER_SIZE 1024
 #define MULTIPLE_VALUE_MSG "Multiple values for %s, latest one used"
 
 inline static void _normalize_debug_level(uint16_t *level);
@@ -1147,7 +1147,7 @@ read_slurm_conf_ctl (slurm_ctl_conf_t *ctl_conf_ptr, bool slurmd_hosts)
 	FILE *slurm_spec_file;	/* pointer to input data file */
 	int line_num;		/* line number in input file */
 	int line_size;		/* bytes in current input line */
-	char in_line[BUF_SIZE];	/* input line */
+	char in_line[BUFFER_SIZE];	/* input line */
 	int error_code, i, j;
 
 	assert (ctl_conf_ptr);
@@ -1169,10 +1169,10 @@ read_slurm_conf_ctl (slurm_ctl_conf_t *ctl_conf_ptr, bool slurmd_hosts)
 
 	/* process the data file */
 	line_num = 0;
-	while (fgets (in_line, BUF_SIZE, slurm_spec_file) != NULL) {
+	while (fgets (in_line, BUFFER_SIZE, slurm_spec_file) != NULL) {
 		line_num++;
 		line_size = strlen (in_line);
-		if (line_size >= (BUF_SIZE - 1)) {
+		if (line_size >= (BUFFER_SIZE - 1)) {
 			error ("Line %d, of configuration file %s too long",
 			       line_num, ctl_conf_ptr->slurm_conf);
 			fclose (slurm_spec_file);

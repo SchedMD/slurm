@@ -271,6 +271,9 @@ List slurm_receive_msg(slurm_fd fd, slurm_msg_t *resp, int timeout);
  * send message functions
 \**********************************************************************/
 
+
+int slurm_add_header_and_send(slurm_fd fd, slurm_msg_t *msg);
+
 /* sends a message to an arbitrary node
  *
  * IN open_fd		- file descriptor to send msg on
@@ -470,6 +473,8 @@ void inline slurm_print_slurm_addr(slurm_addr * address,
  * slurm_addr pack routines
 \**********************************************************************/
 
+Buf slurm_pack_msg_no_header(slurm_msg_t * msg);
+
 /* slurm_pack_slurm_addr
  * packs a slurm_addr into a buffer to serialization transport
  * IN slurm_address	- slurm_addr to pack
@@ -521,6 +526,13 @@ int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 List slurm_send_recv_node_msg(slurm_msg_t * request_msg, 
 			      slurm_msg_t * response_msg, 
 			      int timeout);
+
+/*
+ *  Open a connection to req->address, send message (forward if told), 
+ *  req must contain the message already packed in it's buffer variable,
+ *  and receive List of "return codes" from all nodes
+ */
+List slurm_send_recv_rc_packed_msg(slurm_msg_t *req, int timeout);
 
 /*
  *  Open a connection to req->address, send message (forward if told) 

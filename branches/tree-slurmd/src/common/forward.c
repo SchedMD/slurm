@@ -44,13 +44,11 @@
 #  include <pthread.h>
 #endif /* WITH_PTHREADS */
 
-#define BUF_SIZE 4096
 #define MAX_RETRIES 3
 
 void *_forward_thread(void *arg)
 {
 	forward_msg_t *fwd_msg = (forward_msg_t *)arg;
-	unsigned int tmplen, msglen;
 	Buf buffer = init_buf(0);
 	int retry = 0;
 	int i=0;
@@ -73,8 +71,7 @@ void *_forward_thread(void *arg)
 		goto nothing_sent;
 	}
 	pack_header(&fwd_msg->header, buffer);
-	tmplen = get_buf_offset(buffer);
-
+	
 	/* add forward data to buffer */
 	if (remaining_buf(buffer) < fwd_msg->buf_len) {
 		buffer->size += (fwd_msg->buf_len + BUF_SIZE);

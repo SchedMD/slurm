@@ -168,7 +168,7 @@ ssize_t _slurm_msg_recvfrom_timeout(slurm_fd fd, char **pbuf, size_t *lenp,
                 return SLURM_ERROR;
 
         msglen = ntohl(msglen);
-
+	
         if (msglen > MAX_MSG_SIZE) 
                 slurm_seterrno_ret(SLURM_PROTOCOL_INSANE_MSG_LENGTH);
 

@@ -47,7 +47,7 @@
 
 #include "src/plugins/switch/elan/qsw.h"
 
-#define BUF_SIZE 1024
+#define BUFFER_SIZE 1024
 #define QSW_STATE_VERSION "VER001"
 
 /*
@@ -231,11 +231,11 @@ int switch_p_libstate_restore (char *dir_name, bool recover)
 	xstrcat(file_name, "/qsw_state");
 	state_fd = open (file_name, O_RDONLY);
 	if (state_fd >= 0) {
-		data_allocated = BUF_SIZE;
+		data_allocated = BUFFER_SIZE;
 		data = xmalloc(data_allocated);
 		while (1) {
 			data_read = read (state_fd, &data[data_size],
-					BUF_SIZE);
+					  BUFFER_SIZE);
 			if ((data_read < 0) && (errno == EINTR))
 				continue;
 			if (data_read < 0) {

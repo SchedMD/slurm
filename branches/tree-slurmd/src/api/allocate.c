@@ -46,7 +46,7 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #include "src/common/hostlist.h"
 #include "src/common/xmalloc.h"
 
-#define BUF_SIZE 1024
+#define BUFFER_SIZE 1024
 
 static int _handle_rc_msg(slurm_msg_t *msg);
 static int _nodelist_from_hostfile(job_step_create_request_msg_t *req);
@@ -310,7 +310,7 @@ static int _nodelist_from_hostfile(job_step_create_request_msg_t *req)
 	char *hostfile = NULL;
 	char *hostname = NULL;
 	FILE *hostfilep = NULL;
-	char in_line[BUF_SIZE];	/* input line */
+	char in_line[BUFFER_SIZE];	/* input line */
 	int i, j;
 	int line_size;
 	hostlist_t hostlist = NULL;
@@ -331,10 +331,10 @@ static int _nodelist_from_hostfile(job_step_create_request_msg_t *req)
 		}
 		hostlist = hostlist_create(NULL);
 		
-		while (fgets (in_line, BUF_SIZE, hostfilep) != NULL) {
+		while (fgets (in_line, BUFFER_SIZE, hostfilep) != NULL) {
 			line_num++;
 			line_size = strlen(in_line);
-			if (line_size >= (BUF_SIZE - 1)) {
+			if (line_size >= (BUFFER_SIZE - 1)) {
 				error ("Line %d, of hostfile %s too long",
 				       line_num, hostfile);
 				fclose (hostfilep);

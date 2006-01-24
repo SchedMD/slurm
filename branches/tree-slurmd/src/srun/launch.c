@@ -39,7 +39,9 @@
 #include "src/common/macros.h"
 #include "src/common/hostlist.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_interface.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/common/xsignal.h"
 #include "src/common/forward.h"
 
@@ -113,6 +115,7 @@ launch(void *arg)
 	char *host = NULL;
 	int *span = set_span(job->step_layout->num_hosts);
 	char addrbuf[INET_ADDRSTRLEN];
+	Buf buffer = NULL;
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
 	
@@ -167,6 +170,10 @@ launch(void *arg)
 		r.io_port[i]      = ntohs(job->listenport[i%job->num_listen]);
 		r.resp_port[i]    = ntohs(job->jaddr[i%job->njfds].sin_port);
 	}
+
+	msg_array_ptr[0].msg_type = REQUEST_LAUNCH_TASKS;
+	msg_array_ptr[0].data            = &r;
+	buffer = slurm_pack_msg_no_header(&msg_array_ptr[0]);
 	
 	hostlist = hostlist_create(job->nodelist); 		
 	itr = hostlist_iterator_create(hostlist);
@@ -180,6 +187,7 @@ launch(void *arg)
 		m->data            = &r;
 		m->ret_list = NULL;
 		m->orig_addr.sin_addr.s_addr = 0;
+		m->buffer = buffer;
 
 		j=0; 
   		while(host = hostlist_next(itr)) { 
@@ -231,10 +239,10 @@ launch(void *arg)
 		debug("All task launch requests sent");
 		update_job_state(job, SRUN_JOB_STARTING);
 	}
-	info("deleting all the msg_pointers");
 	xfree(msg_array_ptr);
 	xfree(r.io_port);
 	xfree(r.resp_port);
+	free_buf(buffer);
 		
 	return(void *)(0);
 }
@@ -404,12 +412,6 @@ static void _p_launch(slurm_msg_t *req, srun_job_t *job)
 	xfree(thd);
 }
 
-static List
-_send_msg_rc(slurm_msg_t *msg)
-{
-	return slurm_send_recv_rc_msg(msg, opt.msg_timeout); 
-}
-
 static void
 _update_failed_node(srun_job_t *j, int id)
 {
@@ -494,8 +496,8 @@ static void * _p_launch_task(void *arg)
 		_print_launch_msg(msg, job->step_layout->host[nodeid], nodeid);
 	
 again:
-	ret_list = slurm_send_recv_rc_msg(req, opt.msg_timeout);
-	
+	//ret_list = slurm_send_recv_rc_msg(req, opt.msg_timeout);
+	ret_list = slurm_send_recv_rc_packed_msg(req, opt.msg_timeout);
 	if(!ret_list) {
 		th->state = DSH_FAILED;
 			
@@ -505,7 +507,8 @@ again:
 	while((ret_type = list_next(itr)) != NULL) {
 		data_itr = list_iterator_create(ret_type->ret_data_list);
 		while((ret_data_info = list_next(data_itr)) != NULL) {
-			if(ret_type->msg_rc != SLURM_ERROR) {
+			
+			if(ret_type->msg_rc == SLURM_SUCCESS) {
 				_update_contacted_node(job, 
 						       ret_data_info->nodeid);
 				continue;
@@ -549,15 +552,14 @@ again:
 	list_iterator_destroy(itr);
 	list_destroy(ret_list);	
 cleanup:
-	info("deleting forwards %d",req->forward.cnt);
 	destroy_forward(&req->forward);
 	pthread_mutex_lock(&active_mutex);
 	th->state = DSH_DONE;
 	active--;
 	if (opt.parallel_debug)
 		joinable++;
-	pthread_mutex_unlock(&active_mutex);
 	pthread_cond_signal(&active_cond);
+	pthread_mutex_unlock(&active_mutex);
 	
 	return NULL;
 }

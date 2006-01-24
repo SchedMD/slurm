@@ -207,6 +207,7 @@ typedef struct slurm_msg {
 	forward_t forward;
 	slurm_addr orig_addr;       
 	List ret_list;
+	Buf buffer;
 } slurm_msg_t;
 
 typedef struct ret_data_info {

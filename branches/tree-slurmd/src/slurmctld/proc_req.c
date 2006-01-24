@@ -65,7 +65,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
 
-#define BUF_SIZE	  1024	/* Temporary buffer size */
+#define BUFFER_SIZE	  1024	/* Temporary buffer size */
 
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static inline bool 	_is_super_user(uid_t uid);
@@ -1108,7 +1108,7 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 		debug2("_slurm_rpc_job_step_get_info, no change");
 		error_code = SLURM_NO_CHANGE_IN_DATA;
 	} else {
-		Buf buffer = init_buf(BUF_SIZE);
+		Buf buffer = init_buf(BUFFER_SIZE);
 		uid_t uid = g_slurm_auth_get_uid(msg->cred);
 		error_code = pack_ctld_job_step_info_response_msg(
 				request->job_id, request->step_id, 

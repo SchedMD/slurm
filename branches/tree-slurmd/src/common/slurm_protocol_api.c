@@ -838,6 +838,77 @@ _pack_msg(slurm_msg_t *msg, header_t *hdr, Buf buffer)
 }
 
 /* 
+ *  Adds header to buffer and sends message over an open file descriptor `fd'
+ *    Returns the size of the message sent in bytes, or -1 on failure.
+ */
+int slurm_add_header_and_send(slurm_fd fd, slurm_msg_t *msg)
+{
+	Buf send_buf = NULL;
+	header_t header;
+	int buf_len = get_buf_offset(msg->buffer);
+	int rc = SLURM_SUCCESS;
+	void *auth_cred = NULL;
+
+	init_header(&header, msg, SLURM_PROTOCOL_NO_FLAGS);
+	header.body_length = buf_len;
+	send_buf = init_buf(BUF_SIZE+buf_len);
+	
+	/*
+	 * Pack header into buffer for transmission
+	 */
+	pack_header(&header, send_buf);
+	/* 
+	 * Initialize header with Auth credential and message type.
+	 */
+	auth_cred = g_slurm_auth_create(NULL, 2);
+	if (auth_cred == NULL) {
+		error("authentication: %s",
+		       g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );
+		errno = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
+		goto ret_error;
+	}
+	/* 
+	 * Pack auth credential
+	 */
+	rc = g_slurm_auth_pack(auth_cred, send_buf);
+	(void) g_slurm_auth_destroy(auth_cred);
+	if (rc) {
+		error("authentication: %s",
+		       g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+		free_buf(send_buf);
+		send_buf = NULL;
+		errno = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
+		goto ret_error;
+	}
+
+	/* add to send_buf */
+	if (remaining_buf(send_buf) < buf_len) {
+		send_buf->size += (buf_len + BUF_SIZE);
+		xrealloc(send_buf->head, send_buf->size);
+	}
+	if (buf_len) {
+		memcpy(&send_buf->head[send_buf->processed],
+		       msg->buffer->head, buf_len);
+		send_buf->processed += buf_len;
+	}
+	
+	/*
+	 * send message
+	 */
+	rc = _slurm_msg_sendto(fd, 
+			       get_buf_data(send_buf), 
+			       get_buf_offset(send_buf),
+			       SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
+ret_error:
+	if (rc < 0) 
+		error("slurm_add_header_and_send: %m");
+	free_buf(send_buf);
+	return rc;
+
+}
+
+
+/* 
  *  Send a slurm message over an open file descriptor `fd'
  *    Returns the size of the message sent in bytes, or -1 on failure.
  */
@@ -865,7 +936,7 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 	 */
 	buffer = init_buf(0);
 	pack_header(&header, buffer);
-
+	
 	/* 
 	 * Pack auth credential
 	 */
@@ -1133,6 +1204,27 @@ void slurm_print_slurm_addr(slurm_addr * address, char *buf, size_t n)
  * slurm_addr pack routines
 \**********************************************************************/
 
+/* 
+ *  Pack just the message with no header and send back the buffer.
+ */
+Buf slurm_pack_msg_no_header(slurm_msg_t * msg)
+{
+	Buf      buffer = NULL;
+	void *   auth_cred;
+	int rc;
+
+	buffer = init_buf(0);
+	
+	/*
+	 * Pack message into buffer
+	 */
+	pack_msg(msg, buffer);
+	
+ret_error:
+
+	return buffer;
+}
+
 /* slurm_pack_slurm_addr
  * packs a slurm_addr into a buffer to serialization transport
  * IN slurm_address	- slurm_addr to pack
@@ -1198,23 +1290,22 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 	int err = SLURM_SUCCESS;
 	int retry = 0;
 	List ret_list = NULL;
-	ListIterator itr;
-	ret_types_t *ret_type = NULL;
-	ret_data_info_t *ret_data_info = NULL;
-	char name[MAX_NAME_LEN];
 	int steps = 0;
 
-	if ((timeout*=1000) == 0)
-		timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
-	
-	if(req->forward.cnt>0) {
-		steps = req->forward.cnt/forward_span_count;
-		steps += 1;
-		timeout += (req->forward.timeout*steps);
-	} 
-	if ((slurm_send_node_msg(fd, req) < 0)) 
+	if (slurm_send_node_msg(fd, req) < 0)
 		err = errno;
+	/* if (slurm_add_header_and_send(fd, req) < 0)  */
+/* 		err = errno; */
+		
 	if(err == SLURM_SUCCESS) {
+		if ((timeout*=1000) == 0)
+			timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
+		
+		if(req->forward.cnt>0) {
+			steps = req->forward.cnt/forward_span_count;
+			steps += 1;
+			timeout += (req->forward.timeout*steps);
+		}
 		ret_list = slurm_receive_msg(fd, resp, timeout);
 	}
 	
@@ -1416,7 +1507,7 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 	
 	err = errno;
 	if(errno != SLURM_SUCCESS) 
-		msg_rc = errno;	
+		msg_rc = SLURM_ERROR;	
 	else {
 		msg_rc = ((return_code_msg_t *)msg.data)->return_code;
 		slurm_free_return_code_msg(msg.data);
@@ -1428,15 +1519,11 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 
 	itr = list_iterator_create(ret_list);		
 	while((ret_type = list_next(itr)) != NULL) {
-		if(ret_type->msg_rc == msg_rc) {
+		if(ret_type->err == err) {
 			list_push(ret_type->ret_data_list, ret_data_info);
 			set = 1;
+			break;
 		}
-		if (ret_type->err != SLURM_SUCCESS) 
-			continue;
-
-		if (ret_type->type != RESPONSE_SLURM_RC) 
-			ret_type->err = SLURM_UNEXPECTED_MSG_ERROR;
 	}
 	list_iterator_destroy(itr);
 	if(!set) {
@@ -1448,8 +1535,94 @@ static List _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int timeout)
 		ret_type->ret_data_list = list_create(destroy_data_info);
 		list_push(ret_type->ret_data_list, ret_data_info);
 	}
-	
+	errno = err;
 	return ret_list;
+}
+
+List slurm_send_recv_rc_packed_msg(slurm_msg_t *msg, int timeout)
+{
+	slurm_fd fd = -1;
+	int err = SLURM_SUCCESS;
+	int steps = 0;
+	slurm_msg_t resp;
+	List ret_list = NULL;
+	ListIterator itr;
+	ret_types_t *ret_type = NULL;
+	ret_data_info_t *ret_data_info = NULL;
+	int msg_rc;
+	int set = 0;
+	int retry = 0;
+
+	if(!msg->buffer) {
+		err = SLURMCTLD_COMMUNICATIONS_SEND_ERROR;
+		goto failed;	
+	}
+
+	if ((fd = slurm_open_msg_conn(&msg->address)) < 0) {
+		err = SLURM_SOCKET_ERROR;
+		goto failed;
+	}
+
+	if(slurm_add_header_and_send(fd, msg) >= 0) {
+		if ((timeout*=1000) == 0)
+			timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
+		
+		if(msg->forward.cnt>0) {
+			steps = msg->forward.cnt/forward_span_count;
+			steps += 1;
+			timeout += (msg->forward.timeout*steps);
+		}
+
+		ret_list = slurm_receive_msg(fd, &resp, timeout);
+	}
+	err = errno;
+			
+	/* 
+	 *  Attempt to close an open connection
+	 */
+	while ((slurm_shutdown_msg_conn(fd) < 0) && (errno == EINTR) ) {
+		if (retry++ > MAX_RETRIES) {
+			err = errno;
+			break;
+		}
+	}
+	
+failed:
+	if(!ret_list || list_count(ret_list) == 0) {
+		no_resp_forwards(&msg->forward, &ret_list, err);
+	}
+	
+	if(err != SLURM_SUCCESS) 
+		msg_rc = SLURM_ERROR;	
+	else {
+		msg_rc = ((return_code_msg_t *)resp.data)->return_code;
+		slurm_free_return_code_msg(resp.data);
+		g_slurm_auth_destroy(resp.cred);
+	}
+	ret_data_info = xmalloc(sizeof(ret_data_info_t));
+	ret_data_info->node_name = xstrdup("localhost");
+	ret_data_info->data = NULL;
+
+	itr = list_iterator_create(ret_list);		
+	while((ret_type = list_next(itr)) != NULL) {
+		if(ret_type->msg_rc == msg_rc) {
+			list_push(ret_type->ret_data_list, ret_data_info);
+			set = 1;
+			break;
+		}
+	}
+	list_iterator_destroy(itr);
+	if(!set) {
+		ret_type = xmalloc(sizeof(ret_types_t));
+		list_push(ret_list, ret_type);
+		ret_type->type = resp.msg_type;
+		ret_type->msg_rc = msg_rc;
+		ret_type->err = err;
+		ret_type->ret_data_list = list_create(destroy_data_info);
+		list_push(ret_type->ret_data_list, ret_data_info);
+	}
+	
+	return ret_list; 
 }
 
 /*

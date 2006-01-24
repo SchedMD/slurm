@@ -55,7 +55,6 @@
 #include "src/slurmctld/slurmctld.h"
 
 #define _DEBUG		0
-#define BUF_SIZE 	4096
 #define MAX_RETRIES	10
 
 /* Global variables */

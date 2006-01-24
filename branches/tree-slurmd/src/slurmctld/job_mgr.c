@@ -62,7 +62,7 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
 
-#define BUF_SIZE 1024
+#define BUFFER_SIZE 1024
 #define DETAILS_FLAG 0xdddd
 #define HUGE_BUF_SIZE (1024*16)
 #define MAX_RETRIES  10
@@ -1870,22 +1870,22 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
  * RET 0 or error code */
 static int _validate_job_create_req(job_desc_msg_t * job_desc)
 {
-	if (job_desc->err && (strlen(job_desc->err) > BUF_SIZE)) {
+	if (job_desc->err && (strlen(job_desc->err) > BUFFER_SIZE)) {
 		info("_validate_job_create_req: strlen(err) too big (%d)",
 		     strlen(job_desc->err));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
-	if (job_desc->in && (strlen(job_desc->in) > BUF_SIZE)) {
+	if (job_desc->in && (strlen(job_desc->in) > BUFFER_SIZE)) {
 		info("_validate_job_create_req: strlen(in) too big (%d)",
 		     strlen(job_desc->in));
 		return  ESLURM_PATHNAME_TOO_LONG;
 	}
-	if (job_desc->out && (strlen(job_desc->out) > BUF_SIZE)) {
+	if (job_desc->out && (strlen(job_desc->out) > BUFFER_SIZE)) {
 		info("_validate_job_create_req: strlen(out) too big (%d)",
 		     strlen(job_desc->out));
 		return  ESLURM_PATHNAME_TOO_LONG;
 	}
-	if (job_desc->work_dir && (strlen(job_desc->work_dir) > BUF_SIZE)) {
+	if (job_desc->work_dir && (strlen(job_desc->work_dir) > BUFFER_SIZE)) {
 		info("_validate_job_create_req: strlen(work_dir) too big (%d)",
 		     strlen(job_desc->work_dir));
 		return  ESLURM_PATHNAME_TOO_LONG;

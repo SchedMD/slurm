@@ -42,7 +42,7 @@
 #include "src/common/xstring.h"
 
 
-#define BUF_SIZE 1024
+#define BUFFER_SIZE 1024
 #define SEPCHARS " \n\t"
 
 static int   _load_long (long *destination, char *keyword, char *in_line) ;
@@ -121,7 +121,7 @@ slurm_parser (char *spec, ...)
 static int 
 _load_float (float *destination, char *keyword, char *in_line) 
 {
-	char scratch[BUF_SIZE];	/* scratch area for parsing the input line */
+	char scratch[BUFFER_SIZE];	/* scratch area for parsing the input line */
 	char *str_ptr1, *str_ptr2, *str_ptr3;
 	int i, str_len1, str_len2;
 
@@ -159,7 +159,7 @@ _load_float (float *destination, char *keyword, char *in_line)
 static int 
 _load_integer (int *destination, char *keyword, char *in_line) 
 {
-	char scratch[BUF_SIZE];	/* scratch area for parsing the input line */
+	char scratch[BUFFER_SIZE];	/* scratch area for parsing the input line */
 	char *str_ptr1, *str_ptr2, *str_ptr3;
 	int i, str_len1, str_len2;
 
@@ -216,7 +216,7 @@ _load_integer (int *destination, char *keyword, char *in_line)
 static int 
 _load_long (long *destination, char *keyword, char *in_line) 
 {
-	char scratch[BUF_SIZE];	/* scratch area for parsing the input line */
+	char scratch[BUFFER_SIZE];	/* scratch area for parsing the input line */
 	char *str_ptr1, *str_ptr2, *str_ptr3;
 	int i, str_len1, str_len2;
 
@@ -274,7 +274,7 @@ _load_long (long *destination, char *keyword, char *in_line)
 int 
 load_string  (char **destination, char *keyword, char *in_line) 
 {
-	char scratch[BUF_SIZE];	/* scratch area for parsing the input line */
+	char scratch[BUFFER_SIZE];/* scratch area for parsing the input line */
 	char *str_ptr1, *str_ptr2, *str_ptr3;
 	int i, str_len1, str_len2;
 
