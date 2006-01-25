@@ -1305,7 +1305,7 @@ extern slurm_fd slurmctld_msg_init(void)
 	getnodename(hostname, sizeof(hostname));
 	slurmctld_comm_addr.hostname = xstrdup(hostname);
 	slurmctld_comm_addr.port     = port;
-	debug2("slurmctld messasges to host=%s,port=%u", 
+	debug2("slurmctld messages to host=%s,port=%u", 
 			slurmctld_comm_addr.hostname, 
 			slurmctld_comm_addr.port);
 
