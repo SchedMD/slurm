@@ -67,7 +67,11 @@
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/task_plugin.h"
 
+#ifdef MULTIPLE_SLURMD
+#define GETOPT_ARGS	"L:Dvhcf:MN:P:"
+#else
 #define GETOPT_ARGS	"L:Dvhcf:M"
+#endif
 
 #ifndef MAXHOSTNAMELEN
 #  define MAXHOSTNAMELEN	64
@@ -105,7 +109,6 @@ static void      _create_msg_socket();
 static void      _msg_engine();
 static int       _slurmd_init();
 static int       _slurmd_fini();
-static void      _create_conf();
 static void      _init_conf();
 static void      _print_conf();
 static void      _read_config();
@@ -141,7 +144,7 @@ main (int argc, char *argv[])
 	 * Create and set default values for the slurmd global
 	 * config variable "conf"
 	 */
-	_create_conf();
+	conf = xmalloc(sizeof(slurmd_conf_t));
 	_init_conf();
 	conf->argv = &argv;
 	conf->argc = &argc;
@@ -473,7 +476,6 @@ _free_and_set(char **confvar, char *newval)
 /*
  * Read the slurm configuration file (slurm.conf) and substitute some
  * values into the slurmd configuration in preference of the defaults.
- *
  */
 static void
 _read_config()
@@ -489,7 +491,9 @@ _read_config()
 	if (conf->conffile == NULL)
 		conf->conffile = xstrdup(conf->cf.slurm_conf);
 
+#ifndef MULTIPLE_SLURMD
 	conf->port          =  conf->cf.slurmd_port;
+#endif
 	conf->slurm_user_id =  conf->cf.slurm_user_id;
 
 	path_pubkey = xstrdup(conf->cf.job_credential_public_certificate);
@@ -497,12 +501,23 @@ _read_config()
 	if (!conf->logfile)
 		conf->logfile = xstrdup(conf->cf.slurmd_logfile);
 
-	_free_and_set(&conf->node_name, get_conf_node_name(conf->hostname));
+	/* node_name may already be set from a command line parameter */
+	if (conf->node_name == NULL)
+		_free_and_set(&conf->node_name,
+			      get_conf_node_name(conf->hostname));
 	_free_and_set(&conf->epilog,   xstrdup(conf->cf.epilog));
 	_free_and_set(&conf->prolog,   xstrdup(conf->cf.prolog));
 	_free_and_set(&conf->tmpfs,    xstrdup(conf->cf.tmp_fs));
 	_free_and_set(&conf->spooldir, xstrdup(conf->cf.slurmd_spooldir));
+#ifdef MULTIPLE_SLURMD
+	/* append the NodeName to the spooldir to make it unique */
+	xstrfmtcat(conf->spooldir, ".%s", conf->node_name);
+#endif
 	_free_and_set(&conf->pidfile,  xstrdup(conf->cf.slurmd_pidfile));
+#ifdef MULTIPLE_SLURMD
+	/* append the NodeName to the pidfile name to make it unique */
+	xstrfmtcat(conf->pidfile, ".%s", conf->node_name);
+#endif
 	_free_and_set(&conf->task_prolog, xstrdup(conf->cf.task_prolog));
 	_free_and_set(&conf->task_epilog, xstrdup(conf->cf.task_epilog));
 	_free_and_set(&conf->pubkey,   path_pubkey);     
@@ -560,12 +575,6 @@ _print_conf()
 	debug3("Slurm UID   = %u",       conf->slurm_user_id);
 	debug3("TaskProlog  = `%s'",     conf->task_prolog);
 	debug3("TaskEpilog  = `%s'",     conf->task_epilog);
-}
-
-static void 
-_create_conf()
-{
-	conf = xmalloc(sizeof(slurmd_conf_t));
 }
 
 static void
@@ -632,6 +641,14 @@ _process_cmdline(int ac, char **av)
 		case 'M':
 			conf->mlock_pages = 1;
 			break;
+#ifdef MULTIPLE_SLURMD
+		case 'N':
+			conf->node_name = xstrdup(optarg);
+			break;
+		case 'P':
+			conf->port = (uint16_t)atoi(optarg);
+			break;
+#endif
 		default:
 			_usage(c);
 			exit(1);
@@ -721,7 +738,7 @@ _slurmd_init()
 		/* 
 		 * Need to kill any running slurmd's here
 		 */
-		_kill_old_slurmd(); 
+		_kill_old_slurmd();
 
 		stepd_cleanup_sockets(conf->spooldir, conf->node_name);
 	}

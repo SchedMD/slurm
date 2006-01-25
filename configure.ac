@@ -159,6 +159,27 @@ dnl Check for compilation of SLURM auth modules:
 dnl
 X_AC_MUNGE
 
+dnl
+dnl Check if multiple-slurmd support is requested and define MULTIPLE_SLURMD
+dnl if it is.
+dnl
+AC_MSG_CHECKING(whether to enable multiple-slurmd support)
+AC_ARG_ENABLE([multiple-slurmd],
+  AC_HELP_STRING([--enable-multiple-slurmd], [enable multiple-slurmd support]),
+    [ case "$enableval" in
+      yes) multiple_slurmd=yes ;;
+      no)  multiple_slurmd=no ;;
+      *)   AC_MSG_ERROR([bad value "$enableval" for --enable-multiple-slurmd]);;
+    esac ]
+)
+if test "x$multiple_slurmd" = "xyes"; then
+  AC_DEFINE([MULTIPLE_SLURMD], [1], [Enable multiple slurmd on one node])
+  AC_MSG_RESULT([yes])
+else
+  AC_MSG_RESULT([no])
+fi
+
+
 AUTHD_LIBS="-lauth -le"
 savedLIBS="$LIBS"
 savedCFLAGS="$CFLAGS"

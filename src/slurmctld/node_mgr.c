@@ -197,6 +197,7 @@ create_node_record (struct config_record *config_ptr, char *node_name)
 	strcpy (node_ptr->name, node_name);
 	node_ptr->node_state = default_node_record.node_state;
 	node_ptr->last_response = default_node_record.last_response;
+	node_ptr->port = default_node_record.port;
 	node_ptr->config_ptr = config_ptr;
 	node_ptr->part_cnt = 0;
 	node_ptr->part_pptr = NULL;
@@ -803,8 +804,10 @@ void set_slurmd_addr (void)
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if (node_ptr->name[0] == '\0')
 			continue;
+		if (node_ptr->port == 0)
+			node_ptr->port = slurmctld_conf.slurmd_port;
 		slurm_set_addr (&node_ptr->slurm_addr, 
-				slurmctld_conf.slurmd_port, 
+				node_ptr->port,
 				node_ptr->comm_name);
 		if (node_ptr->slurm_addr.sin_port)
 			continue;
