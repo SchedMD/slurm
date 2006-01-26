@@ -32,8 +32,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
-#include <slurm/slurm.h>
 
+#include "slurm/slurm.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/env.h"
@@ -253,9 +253,20 @@ int setup_env(env_t *env)
 	} 
 
 	if (env->distribution 
-	    && env->distribution != SRUN_DIST_UNKNOWN) {
-		dist = (env->distribution == SRUN_DIST_BLOCK) ?  
-			"block" : "cyclic";
+	    && env->distribution != SLURM_DIST_UNKNOWN) {
+		switch(env->distribution) {
+		case SLURM_DIST_CYCLIC:
+			dist = "cyclic";
+			break;
+		case SLURM_DIST_BLOCK:
+			dist = "block";
+			break;
+		case SLURM_DIST_ARBITRARY:
+			dist = "arbitrary";
+			break;
+		default:
+			dist = "unknown";
+		}
 		
 		if (setenvf(&env->env, "SLURM_DISTRIBUTION", "%s", dist)) {
 			error("Can't set SLURM_DISTRIBUTION env variable");
