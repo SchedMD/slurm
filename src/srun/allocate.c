@@ -476,6 +476,8 @@ _step_req_create(srun_job_t *j)
 	r->name       = xstrdup(opt.job_name);
 	r->relative   = false;      /* XXX fix this oneday */
 
+	/* CJM - why are "UNKNOWN" and "default" behaviours different? */
+	/*       why do we even HAVE the SLURM_DIST_UNKNOWN state?? */
 	switch (opt.distribution) {
 	case SLURM_DIST_UNKNOWN:
 		r->task_dist = (opt.nprocs <= j->nhosts) ? SLURM_DIST_CYCLIC
@@ -484,10 +486,11 @@ _step_req_create(srun_job_t *j)
 	case SLURM_DIST_CYCLIC:
 		r->task_dist = SLURM_DIST_CYCLIC;
 		break;
-	case SLURM_DIST_HOSTFILE:
-		r->task_dist = SLURM_DIST_HOSTFILE;
+	case SLURM_DIST_ARBITRARY:
+		r->task_dist = SLURM_DIST_ARBITRARY;
 		break;
-	default: /* (opt.distribution == SLURM_DIST_BLOCK) */
+	case SLURM_DIST_BLOCK:
+	default:
 		r->task_dist = SLURM_DIST_BLOCK;
 		break;
 	}

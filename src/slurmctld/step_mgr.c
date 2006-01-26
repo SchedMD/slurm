@@ -415,12 +415,12 @@ try_again:
 				step_spec->node_list, job_ptr->job_id);
 			goto cleanup;
 		}
-		if(step_spec->task_dist == SLURM_DIST_HOSTFILE) {
+		if(step_spec->task_dist == SLURM_DIST_ARBITRARY) {
 			if (!strcmp(slurmctld_conf.switch_type,
 				    "switch/elan")) {
-				error("Can't do a HOSTFILE with switch "
-				      "type elan. Switching DIST type to "
-				      "BLOCK");
+				error("Can't do an ARBITRARY task layout with "
+				      "switch type elan. Switching DIST type "
+				      "to BLOCK");
 				xfree(step_spec->node_list);
 				step_spec->task_dist == SLURM_DIST_BLOCK;
 				FREE_NULL_BITMAP(nodes_picked);
@@ -593,7 +593,7 @@ step_create ( job_step_create_request_msg_t *step_specs,
 
 	if ((step_specs->task_dist != SLURM_DIST_CYCLIC) &&
 	    (step_specs->task_dist != SLURM_DIST_BLOCK) &&
-	    (step_specs->task_dist != SLURM_DIST_HOSTFILE))
+	    (step_specs->task_dist != SLURM_DIST_ARBITRARY))
 		return ESLURM_BAD_DIST;
 
 	if (job_ptr->kill_on_step_done)
