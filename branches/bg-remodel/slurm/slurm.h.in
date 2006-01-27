@@ -615,7 +615,7 @@ typedef struct slurm_ctl_conf {
 	char *srun_prolog;      /* srun prolog program */
 	char *srun_epilog;      /* srun epilog program */
 	char *node_prefix;      /* prefix of nodes in partition */
-	uint16_t span_count;    /* number of threads per node to span */
+	uint16_t tree_width;    /* number of threads per node to span */
 } slurm_ctl_conf_t;
 
 typedef struct submit_response_msg {

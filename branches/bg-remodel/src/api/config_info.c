@@ -160,8 +160,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->slurmd_spooldir);
 	fprintf(out, "SlurmdTimeout     = %u\n", 
 		slurm_ctl_conf_ptr->slurmd_timeout);
-	fprintf(out, "SpanCount         = %u\n", 
-		slurm_ctl_conf_ptr->span_count);
+	fprintf(out, "TreeWidth         = %u\n", 
+		slurm_ctl_conf_ptr->tree_width);
 	fprintf(out, "SLURM_CONFIG_FILE = %s\n", 
 		slurm_ctl_conf_ptr->slurm_conf);
 	fprintf(out, "SrunProlog        = %s\n",
