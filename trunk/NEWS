@@ -6,6 +6,11 @@ documents those changes that are of interest to users and admins.
  -- New --enable-multiple-slurmd configure parameter to allow running
     more than one copy of slurmd on a node at the same time.  Only
     really useful for developers.
+ -- New communication is now branched on all processes to slurmd's from 
+    slurmctld and srun launch command.  This is done with a tree type 
+    algorythm.  Spawn and batch mode work the same as before.  New slurm.conf
+    variable SpanCount=50 is default.  This is the number of threads per 
+    stop on the tree.  
 
 * Changes in SLURM 1.0.2
 ========================

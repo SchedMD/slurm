@@ -193,7 +193,7 @@ parse_command_line( int argc, char* argv[] )
 				break;
 		}
 	}
-
+	
 	if (optind < argc) {
 		if (params.job_flag) {
 			params.jobs = xstrdup(argv[optind++]);

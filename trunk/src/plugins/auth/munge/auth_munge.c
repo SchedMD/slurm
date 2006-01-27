@@ -329,6 +329,7 @@ slurm_auth_unpack( Buf buf )
 		plugin_errno = SLURM_AUTH_UNPACK;
 		return NULL;
 	}
+	
 	if ( strcmp( type, plugin_type ) != 0 ) {
 		plugin_errno = SLURM_AUTH_MISMATCH;
 		return NULL;

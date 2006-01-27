@@ -195,24 +195,50 @@ static void * _p_signal_task(void *args)
 	task_info_t *info = (task_info_t *)args;
 	slurm_msg_t *req  = info->req_ptr;
 	srun_job_t  *job  = info->job_ptr;
-	char        *host = job->step_layout->host[info->host_inx];
+	char        *host = NULL;
+	List ret_list = NULL;
+	ListIterator itr;
+	ret_types_t *ret_type = NULL;
+	ret_data_info_t *ret_data_info = NULL;
 
 	debug3("sending signal to host %s", host);
-	if (slurm_send_recv_rc_msg(req, &rc, 0) < 0) { 
+	
+	if ((ret_list = slurm_send_recv_rc_msg(req, 0)) == NULL) { 
+		errno = SLURM_SOCKET_ERROR;
 		error("%s: signal: %m", host);
 		goto done;
 	}
 
-	/*
-	 *  Report error unless it is "Invalid job id" which 
-	 *    probably just means the tasks exited in the meanwhile.
-	 */
-	if ((rc != 0)
-	    && (rc != ESLURM_INVALID_JOB_ID)
-	    && (rc != ESLURMD_JOB_NOTRUNNING)
-	    && (rc != ESRCH)) {
-		error("%s: signal: %s", host, slurm_strerror(rc));
+	itr = list_iterator_create(ret_list);		
+	while((ret_type = list_next(itr)) != NULL) {
+		rc = ret_type->msg_rc;
+		if(!ret_type->ret_data_list)
+			host = job->step_layout->host[info->host_inx];
+		else 
+			host = NULL;
+		/*
+		 *  Report error unless it is "Invalid job id" which 
+		 *    probably just means the tasks exited in the meanwhile.
+		 */
+		if ((rc != 0) && (rc != ESLURM_INVALID_JOB_ID)
+		    &&  (rc != ESLURMD_JOB_NOTRUNNING) && (rc != ESRCH)) {
+			if(!host) {
+				while(ret_data_info 
+				      = list_pop(ret_type->ret_data_list)) {
+					error("%s: signal: %s", 
+					      ret_data_info->node_name, 
+					      slurm_strerror(rc));
+					destroy_data_info(ret_data_info);
+				}
+			} else {
+				error("%s: signal: %s", 
+				      host, 
+				      slurm_strerror(rc));
+			}
+		}
 	}
+	list_iterator_destroy(itr);
+	list_destroy(ret_list);
 
     done:
 	slurm_mutex_lock(&active_mutex);

@@ -160,6 +160,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->slurmd_spooldir);
 	fprintf(out, "SlurmdTimeout     = %u\n", 
 		slurm_ctl_conf_ptr->slurmd_timeout);
+	fprintf(out, "SpanCount         = %u\n", 
+		slurm_ctl_conf_ptr->span_count);
 	fprintf(out, "SLURM_CONFIG_FILE = %s\n", 
 		slurm_ctl_conf_ptr->slurm_conf);
 	fprintf(out, "SrunProlog        = %s\n",
@@ -206,7 +208,6 @@ slurm_load_ctl_conf (time_t update_time, slurm_ctl_conf_t **confp)
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0) 
 		return SLURM_ERROR;
 
-	slurm_free_cred(resp_msg.cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_BUILD_INFO:
 		*confp = (slurm_ctl_conf_info_msg_t *) resp_msg.data;

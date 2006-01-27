@@ -162,6 +162,13 @@
 # AuthType=auth/none
 
 
+# o Define span count for pushing information to slurmd's
+#
+# Default is 50
+#
+# SpanCount=50
+
+
 #
 # o Define a scheduler.
 #

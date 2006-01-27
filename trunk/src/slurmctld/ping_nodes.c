@@ -53,6 +53,8 @@
 static pthread_mutex_t lock_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int ping_count = 0;
 
+/* struct timeval start_time, end_time; */
+
 /*
  * is_ping_done - test if the last node ping cycle has completed.
  *	Use this to avoid starting a new set of ping requests before the 
@@ -92,12 +94,23 @@ void ping_begin (void)
  */
 void ping_end (void)
 {
+  long start, end;
+
 	slurm_mutex_lock(&lock_mutex);
 	if (ping_count > 0)
 		ping_count--;
 	else
 		fatal ("ping_count < 0");
 	slurm_mutex_unlock(&lock_mutex);
+	
+	/* gettimeofday(&end_time, NULL); */
+/* 	start = start_time.tv_sec; */
+/* 	start *= 1000000; */
+/* 	start += start_time.tv_usec; */
+/* 	end = end_time.tv_sec; */
+/* 	end *= 1000000; */
+/* 	end += end_time.tv_usec; */
+/* 	info("done with ping took %ld",(end-start)); */
 }
 
 /*
@@ -114,7 +127,7 @@ void ping_nodes (void)
 	hostlist_t ping_hostlist = hostlist_create("");
 	hostlist_t reg_hostlist  = hostlist_create("");
 	hostlist_t down_hostlist = NULL;
-	char host_str[64];
+	char host_str[MAX_NAME_LEN];
 
 	int ping_buf_rec_size = 0;
 	agent_arg_t *ping_agent_args;
@@ -132,7 +145,8 @@ void ping_nodes (void)
 	reg_agent_args = xmalloc (sizeof (agent_arg_t));
 	reg_agent_args->msg_type = REQUEST_NODE_REGISTRATION_STATUS;
 	reg_agent_args->retry = 0;
-
+	/* gettimeofday(&start_time, NULL); */
+		
 	/*
 	 * If there are a large number of down nodes, the node ping
 	 * can take a long time to complete: 
@@ -162,12 +176,12 @@ void ping_nodes (void)
 		node_ptr = &node_record_table_ptr[i];
 		if (node_ptr->last_response >= still_live_time)
 			continue;
-
+		//info("need to ping %s",node_ptr->name);
 		base_state   = node_ptr->node_state & NODE_STATE_BASE;
 		no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 		if ((node_ptr->last_response != (time_t)0)
-		&&  (node_ptr->last_response <= node_dead_time)
-		&&  (base_state != NODE_STATE_DOWN)) {
+		    &&  (node_ptr->last_response <= node_dead_time)
+		    &&  (base_state != NODE_STATE_DOWN)) {
 			if (down_hostlist)
 				(void) hostlist_push_host(down_hostlist,
 					node_ptr->name);
@@ -258,7 +272,8 @@ void ping_nodes (void)
 		hostlist_uniq(reg_hostlist);
 		hostlist_ranged_string(reg_hostlist, 
 			sizeof(host_str), host_str);
-		debug2 ("Spawning registration agent for %s", host_str);
+		debug2 ("Spawning registration agent for %s %d hosts", 
+			host_str, reg_agent_args->node_count);
 		ping_begin();
 		slurm_attr_init (&reg_attr_agent);
 		if (pthread_attr_setdetachstate (&reg_attr_agent, 

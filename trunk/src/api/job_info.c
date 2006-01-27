@@ -295,7 +295,6 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
-	slurm_free_cred(resp_msg.cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_INFO:
 		*resp = (job_info_msg_t *)resp_msg.data;
@@ -329,6 +328,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 	job_id_request_msg_t req;
+	List ret_list;
 
 	/*
 	 *  Set request message address to slurmd on localhost
@@ -339,10 +339,23 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	req.job_pid      = job_pid;
 	req_msg.msg_type = REQUEST_JOB_ID;
 	req_msg.data     = &req;
+	forward_init(&req_msg.forward, NULL);
+	req_msg.ret_list = NULL;
+	req_msg.orig_addr.sin_addr.s_addr = 0; 
+	
+	ret_list = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
 
-	if (slurm_send_recv_node_msg(&req_msg, &resp_msg, 0) < 0)
+	if(!ret_list || errno != SLURM_SUCCESS) {
+		error("slurm_pid2jobid: %m");
+		if(ret_list)
+			list_destroy(ret_list);
 		return SLURM_ERROR;
-
+	}
+	if(list_count(ret_list)>0) {
+		error("slurm_pid2jobid: got %d from receive, expecting 0",
+		      list_count(ret_list));
+	}
+	list_destroy(ret_list);
 	slurm_free_cred(resp_msg.cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_ID:

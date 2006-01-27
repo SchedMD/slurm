@@ -46,7 +46,7 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #include "src/common/hostlist.h"
 #include "src/common/xmalloc.h"
 
-#define BUF_SIZE 1024
+#define BUFFER_SIZE 1024
 
 static int _handle_rc_msg(slurm_msg_t *msg);
 static int _nodelist_from_hostfile(job_step_create_request_msg_t *req);
@@ -81,7 +81,11 @@ slurm_allocate_resources (job_desc_msg_t *req,
 
 	req_msg.msg_type = REQUEST_RESOURCE_ALLOCATION;
 	req_msg.data     = req; 
-
+	forward_init(&req_msg.forward, NULL);
+	forward_init(&resp_msg.forward, NULL);
+	req_msg.ret_list = NULL;
+	resp_msg.ret_list = NULL;
+		
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
 
 	/*
@@ -94,7 +98,6 @@ slurm_allocate_resources (job_desc_msg_t *req,
 	if (rc == SLURM_SOCKET_ERROR) 
 		return SLURM_SOCKET_ERROR;
 
-	slurm_free_cred(resp_msg.cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
 		if (_handle_rc_msg(&resp_msg) < 0)
@@ -126,7 +129,9 @@ int slurm_job_will_run (job_desc_msg_t *req)
 
 	req_msg.msg_type = REQUEST_JOB_WILL_RUN;
 	req_msg.data     = req; 
-
+	forward_init(&req_msg.forward, NULL);
+	req_msg.ret_list = NULL;
+	
 	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0)
 		return SLURM_SOCKET_ERROR;
 
@@ -166,7 +171,11 @@ slurm_allocate_resources_and_run (job_desc_msg_t *req,
 
 	req_msg.msg_type = REQUEST_ALLOCATION_AND_RUN_JOB_STEP;
 	req_msg.data     = req; 
-
+	forward_init(&req_msg.forward, NULL);
+	req_msg.ret_list = NULL;
+	forward_init(&resp_msg.forward, NULL);
+	resp_msg.ret_list = NULL;
+		
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
 
 	if (host_set)	/* reset (clear) alloc_node */
@@ -175,7 +184,6 @@ slurm_allocate_resources_and_run (job_desc_msg_t *req,
 	if (rc == SLURM_SOCKET_ERROR) 
 		return SLURM_SOCKET_ERROR;
 
-	slurm_free_cred(resp_msg.cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
 		if (_handle_rc_msg(&resp_msg) < 0)
@@ -210,6 +218,10 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 
 	req_msg.msg_type = REQUEST_JOB_STEP_CREATE;
 	req_msg.data     = req; 
+	forward_init(&req_msg.forward, NULL);
+	req_msg.ret_list = NULL;
+	forward_init(&resp_msg.forward, NULL);
+	resp_msg.ret_list = NULL;
 	
 	if(_nodelist_from_hostfile(req) == 0) 
 		debug("nodelist was NULL");  
@@ -217,7 +229,6 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
-	slurm_free_cred(resp_msg.cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
 		if (_handle_rc_msg(&resp_msg) < 0)
@@ -254,11 +265,14 @@ slurm_confirm_allocation (old_job_alloc_msg_t *req,
 
 	req_msg.msg_type = REQUEST_OLD_JOB_RESOURCE_ALLOCATION;
 	req_msg.data     = req; 
-
+	forward_init(&req_msg.forward, NULL);
+	req_msg.ret_list = NULL;
+	forward_init(&resp_msg.forward, NULL);
+	resp_msg.ret_list = NULL;
+	
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
-	slurm_free_cred(resp_msg.cred);
 	switch(resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
 		if (_handle_rc_msg(&resp_msg) < 0)
@@ -299,7 +313,6 @@ slurm_allocation_lookup(uint32_t jobid,
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
-	slurm_free_cred(resp_msg.cred);
 	switch(resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
 		if (_handle_rc_msg(&resp_msg) < 0)
@@ -340,7 +353,7 @@ static int _nodelist_from_hostfile(job_step_create_request_msg_t *req)
 	char *hostfile = NULL;
 	char *hostname = NULL;
 	FILE *hostfilep = NULL;
-	char in_line[BUF_SIZE];	/* input line */
+	char in_line[BUFFER_SIZE];	/* input line */
 	int i, j;
 	int line_size;
 	hostlist_t hostlist = NULL;
@@ -361,10 +374,10 @@ static int _nodelist_from_hostfile(job_step_create_request_msg_t *req)
 		}
 		hostlist = hostlist_create(NULL);
 		
-		while (fgets (in_line, BUF_SIZE, hostfilep) != NULL) {
+		while (fgets (in_line, BUFFER_SIZE, hostfilep) != NULL) {
 			line_num++;
 			line_size = strlen(in_line);
-			if (line_size >= (BUF_SIZE - 1)) {
+			if (line_size >= (BUFFER_SIZE - 1)) {
 				error ("Line %d, of hostfile %s too long",
 				       line_num, hostfile);
 				fclose (hostfilep);

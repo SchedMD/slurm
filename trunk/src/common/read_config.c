@@ -53,8 +53,7 @@
 #include "src/common/xstring.h"
 #include "src/common/slurm_rlimits_info.h"
 
-#define BUF_SIZE 1024
-#define MAX_NAME_LEN	32
+#define BUFFER_SIZE 1024
 #define MULTIPLE_VALUE_MSG "Multiple values for %s, latest one used"
 
 inline static void _normalize_debug_level(uint16_t *level);
@@ -411,6 +410,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->srun_prolog);
 	xfree (ctl_conf_ptr->srun_epilog);
 	xfree (ctl_conf_ptr->node_prefix);
+	ctl_conf_ptr->span_count       		= (uint16_t) NO_VAL;
 	
 	_free_name_hashtbl();
 	_init_name_hashtbl();
@@ -440,7 +440,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	long inactive_limit = -1, kill_wait = -1;
 	long ret2service = -1, slurmctld_timeout = -1, slurmd_timeout = -1;
 	long sched_port = -1, sched_rootfltr = -1;
-	long slurmctld_debug = -1, slurmd_debug = -1;
+	long slurmctld_debug = -1, slurmd_debug = -1, span_count = -1;
 	long max_job_cnt = -1, min_job_age = -1, wait_time = -1;
 	long slurmctld_port = -1, slurmd_port = -1;
 	long mpich_gm_dir = -1, kill_tree = -1, cache_groups = -1;
@@ -528,6 +528,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"TaskPlugin=", 's', &task_plugin,
 		"TmpFS=", 's', &tmp_fs,
 		"WaitTime=", 'l', &wait_time,
+		"SpanCount=", 'l', &span_count,
 		"END");
 
 	if (error_code)
@@ -1043,6 +1044,15 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 			ctl_conf_ptr->wait_time = wait_time;
 	}
 
+	if ( span_count != -1) {
+		if ( ctl_conf_ptr->span_count != (uint16_t) NO_VAL)
+			error (MULTIPLE_VALUE_MSG, "SpanCount");
+		if ((span_count < 1) || (span_count > 0xffff))
+			error("SpanCount=%ld is invalid", span_count);
+		else 
+			ctl_conf_ptr->span_count = span_count;
+	}
+
 	return 0;
 }
 
@@ -1153,7 +1163,7 @@ read_slurm_conf_ctl (slurm_ctl_conf_t *ctl_conf_ptr, bool slurmd_hosts)
 	FILE *slurm_spec_file;	/* pointer to input data file */
 	int line_num;		/* line number in input file */
 	int line_size;		/* bytes in current input line */
-	char in_line[BUF_SIZE];	/* input line */
+	char in_line[BUFFER_SIZE];	/* input line */
 	int error_code, i, j;
 
 	assert (ctl_conf_ptr);
@@ -1175,10 +1185,10 @@ read_slurm_conf_ctl (slurm_ctl_conf_t *ctl_conf_ptr, bool slurmd_hosts)
 
 	/* process the data file */
 	line_num = 0;
-	while (fgets (in_line, BUF_SIZE, slurm_spec_file) != NULL) {
+	while (fgets (in_line, BUFFER_SIZE, slurm_spec_file) != NULL) {
 		line_num++;
 		line_size = strlen (in_line);
-		if (line_size >= (BUF_SIZE - 1)) {
+		if (line_size >= (BUFFER_SIZE - 1)) {
 			error ("Line %d, of configuration file %s too long",
 			       line_num, ctl_conf_ptr->slurm_conf);
 			fclose (slurm_spec_file);
@@ -1463,6 +1473,10 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	if (ctl_conf_ptr->wait_time == (uint16_t) NO_VAL)
 		ctl_conf_ptr->wait_time = DEFAULT_WAIT_TIME;
+	
+	if (ctl_conf_ptr->span_count == (uint16_t) NO_VAL) 
+		ctl_conf_ptr->span_count = DEFAULT_SPAN_COUNT;
+
 }
 
 /* Normalize supplied debug level to be in range per log.h definitions */

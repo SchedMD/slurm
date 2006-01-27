@@ -58,8 +58,7 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 
-#define BUF_SIZE	1024
-#define MAX_NAME_LEN	32
+#define BUFFER_SIZE	1024
 
 static int  _build_bitmaps(void);
 static int  _init_all_slurm_conf(void);
@@ -764,7 +763,7 @@ int read_slurm_conf(int recover)
 	DEF_TIMERS;
 	FILE *slurm_spec_file;	/* pointer to input data file */
 	int line_num;		/* line number in input file */
-	char in_line[BUF_SIZE];	/* input line */
+	char in_line[BUFFER_SIZE];	/* input line */
 	int i, j, error_code;
 	int old_node_record_count;
 	struct node_record *old_node_table_ptr;
@@ -795,9 +794,9 @@ int read_slurm_conf(int recover)
 
 	/* process the data file */
 	line_num = 0;
-	while (fgets(in_line, BUF_SIZE, slurm_spec_file) != NULL) {
+	while (fgets(in_line, BUFFER_SIZE, slurm_spec_file) != NULL) {
 		line_num++;
-		if (strlen(in_line) >= (BUF_SIZE - 1)) {
+		if (strlen(in_line) >= (BUFFER_SIZE - 1)) {
 			error("read_slurm_conf line %d, of input file %s "
 				"too long", 
 				line_num, slurmctld_conf.slurm_conf);
@@ -810,13 +809,13 @@ int read_slurm_conf(int recover)
 		/* everything after a non-escaped "#" is a comment */
 		/* replace comment flag "#" with an end of string (NULL) */
 		/* escape sequence "\#" translated to "#" */
-		for (i = 0; i < BUF_SIZE; i++) {
+		for (i = 0; i < BUFFER_SIZE; i++) {
 			if (in_line[i] == (char) NULL)
 				break;
 			if (in_line[i] != '#')
 				continue;
 			if ((i > 0) && (in_line[i - 1] == '\\')) {
-				for (j = i; j < BUF_SIZE; j++) {
+				for (j = i; j < BUFFER_SIZE; j++) {
 					in_line[j - 1] = in_line[j];
 				}
 				continue;

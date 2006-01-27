@@ -58,7 +58,7 @@ set host_1_num       0
 set host_2_num       0
 set waiting          0
 set timeout $max_job_delay
-spawn $srun -N3-3 --contiguous -l -t1 $bin_hostname  
+spawn $srun -N3-3 --contiguous -l -t1 $bin_hostname
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
@@ -72,7 +72,7 @@ expect {
 		set waiting 1
 		exp_continue
 	}
-	-re "($number): ($alpha_numeric)($number)" {
+	-re "($number): ($alpha)($number)" {
 		set task_id $expect_out(1,string)
 		if {$task_id == 0} {
 			set host_0_name $expect_out(2,string)

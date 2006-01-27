@@ -114,8 +114,9 @@ static void _kvs_xmit_tasks(void)
 static void *_msg_thread(void *x)
 {
 	struct msg_arg *msg_arg_ptr = (struct msg_arg *) x;
-	int rc, success = 0, task_fd;
-	slurm_msg_t msg_send, msg_rcv;
+	int rc, success = 0;//, task_fd;
+	slurm_msg_t msg_send;//, msg_rcv;
+	
 
 	debug2("KVS_Barrier msg to %s:%u",
 		msg_arg_ptr->bar_ptr->hostname,
@@ -125,31 +126,33 @@ static void *_msg_thread(void *x)
 	slurm_set_addr(&msg_send.address,
 		msg_arg_ptr->bar_ptr->port,
 		msg_arg_ptr->bar_ptr->hostname);
-	if ((task_fd = slurm_open_msg_conn(&msg_send.address)) < 0) {
-		error("slurm_init_msg_engine_port: %m");
-		goto fini;
-	}
-	if ((rc = slurm_send_node_msg(task_fd, &msg_send)) < 0) {
-		error("KVS_Barrier send data fail to %s",
-			msg_arg_ptr->bar_ptr->hostname);
-		(void) slurm_shutdown_msg_conn(task_fd);
-		goto fini;
-	}
-	rc = slurm_receive_msg(task_fd, &msg_rcv, 0);
-	(void) slurm_shutdown_msg_conn(task_fd);
-	if (rc < 0) {
-		error("KVS_Barrier confirm fail from %s",
-			msg_arg_ptr->bar_ptr->hostname);
-		goto fini;
-	}
-	if (msg_rcv.msg_type != RESPONSE_SLURM_RC) {
-		error("KVS_Barrier confirm type %d from %s",
-			msg_rcv.msg_type,
-			msg_arg_ptr->bar_ptr->hostname);
-		goto fini;
-	}
-	rc = ((return_code_msg_t *) msg_rcv.data)->return_code;
-	slurm_free_return_code_msg((return_code_msg_t *) msg_rcv.data);
+	
+	slurm_send_recv_rc_msg_only_one(&msg_send, &rc, 0);
+	/* if ((task_fd = slurm_open_msg_conn(&msg_send.address)) < 0) { */
+/* 		error("slurm_init_msg_engine_port: %m"); */
+/* 		goto fini; */
+/* 	} */
+/* 	if ((rc = slurm_send_node_msg(task_fd, &msg_send)) < 0) { */
+/* 		error("KVS_Barrier send data fail to %s", */
+/* 			msg_arg_ptr->bar_ptr->hostname); */
+/* 		(void) slurm_shutdown_msg_conn(task_fd); */
+/* 		goto fini; */
+/* 	} */
+/* 	rc = slurm_receive_msg(task_fd, &msg_rcv, 0); */
+/* 	(void) slurm_shutdown_msg_conn(task_fd); */
+/* 	if (rc < 0) { */
+/* 		error("KVS_Barrier confirm fail from %s", */
+/* 			msg_arg_ptr->bar_ptr->hostname); */
+/* 		goto fini; */
+/* 	} */
+/* 	if (msg_rcv.msg_type != RESPONSE_SLURM_RC) { */
+/* 		error("KVS_Barrier confirm type %d from %s", */
+/* 			msg_rcv.msg_type, */
+/* 			msg_arg_ptr->bar_ptr->hostname); */
+/* 		goto fini; */
+/* 	} */
+/* 	rc = ((return_code_msg_t *) msg_rcv.data)->return_code; */
+/* 	slurm_free_return_code_msg((return_code_msg_t *) msg_rcv.data); */
 	if (rc != SLURM_SUCCESS) {
 		error("KVS_Barrier confirm from %s, rc=%d",
 			msg_arg_ptr->bar_ptr->hostname, rc);
@@ -194,7 +197,8 @@ static void *_agent(void *x)
 			msg_args->bar_ptr = &args->barrier_xmit_ptr[j];
 			msg_args->kvs_ptr = &kvs_set;
 			slurm_attr_init(&attr);
-			pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+			pthread_attr_setdetachstate(&attr, 
+						    PTHREAD_CREATE_DETACHED);
 			if (pthread_create(&msg_id, &attr, _msg_thread, 
 					(void *) msg_args)) {
 				fatal("pthread_create: %m");

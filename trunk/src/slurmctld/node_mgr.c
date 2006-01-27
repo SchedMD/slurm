@@ -55,7 +55,6 @@
 #include "src/slurmctld/slurmctld.h"
 
 #define _DEBUG		0
-#define BUF_SIZE 	4096
 #define MAX_RETRIES	10
 
 /* Global variables */
@@ -1423,6 +1422,7 @@ void node_did_resp (char *name)
 		_node_did_resp(node_ptr);
 	}
 #else
+	debug3("updating %s",name);
 	node_ptr = find_node_record (name);
 	if (node_ptr == NULL) {
 		error ("node_did_resp unable to find node %s", name);
@@ -1650,7 +1650,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	pthread_attr_t kill_attr_agent;
 	pthread_t kill_thread_agent;
 	int retries = 0;
-
+	
 	kill_agent_args = xmalloc (sizeof (agent_arg_t));
 	kill_agent_args->msg_type = msg_type;
 	kill_agent_args->retry = 0;
