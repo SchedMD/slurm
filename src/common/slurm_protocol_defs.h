@@ -29,7 +29,7 @@
 #ifndef _SLURM_PROTOCOL_DEFS_H
 #define _SLURM_PROTOCOL_DEFS_H
 
-#if HAVE_CONFIG_H
+#if HAVE_CONFIG_H 
 #  include "config.h"
 #  if HAVE_INTTYPES_H
 #    include <inttypes.h>
@@ -44,11 +44,14 @@
 
 #include <slurm/slurm.h>
 
+#include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/switch.h"
 #include "src/common/xassert.h"
 
+#define MAX_NAME_LEN 64
+#define FORWARD_INIT -1
 
 /* used to define flags of the launch_tasks_request_msg_t.and
  * spawn task_request_msg_t task_flags
@@ -173,6 +176,18 @@ typedef enum {
 /*****************************************************************************\
  * core api configuration struct 
 \*****************************************************************************/
+typedef struct forward {
+	slurm_addr *addr;	  /* array of network addresses 
+				     to forward to */	
+	char       *name;	  /* array of node names  
+				     to forward to */	
+	uint32_t  *node_id;       /* node id of this node (relative to job) */
+
+	uint16_t   cnt;           /* number of addresses to forward */
+	uint32_t   timeout;       /* original timeout increments */
+	int16_t    init;          /*tell me it has been set (-1) */
+} forward_t;
+
 typedef struct slurm_protocol_config {
 	slurm_addr primary_controller;
 	slurm_addr secondary_controller;
@@ -184,17 +199,61 @@ typedef struct slurm_protocol_header {
 	uint16_t flags;
 	slurm_msg_type_t msg_type;
 	uint32_t body_length;
+	uint16_t ret_cnt;
+	forward_t forward;
+	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
+	slurm_addr orig_addr;       
+	List ret_list;
 } header_t;
 
 typedef struct slurm_msg {
 	slurm_msg_type_t msg_type;
-	slurm_addr address;
+	slurm_addr address;       
 	slurm_fd conn_fd;
 	void *cred;
 	void *data;
 	uint32_t data_size;
+	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
+	forward_t forward;
+	slurm_addr orig_addr;       
+	List ret_list;
+	Buf buffer;
 } slurm_msg_t;
 
+typedef struct ret_data_info {
+	char *node_name;
+	int32_t nodeid;
+	void *data;
+} ret_data_info_t;
+
+typedef struct ret_types {
+	int32_t msg_rc;
+	int32_t err;
+	int32_t type;
+	List ret_data_list;
+} ret_types_t;
+
+typedef struct forward_message {
+	header_t header;
+	char *buf;
+	int buf_len;
+	slurm_addr addr;
+	int timeout;
+	List ret_list;
+	pthread_mutex_t *forward_mutex;
+	pthread_cond_t *notify;
+	char node_name[MAX_NAME_LEN];
+} forward_msg_t;
+
+typedef struct forward_struct {
+	int timeout;
+	pthread_mutex_t forward_mutex;
+	pthread_cond_t notify;
+	forward_msg_t *forward_msg;
+	char *buf;
+	int buf_len;
+	List ret_list;
+} forward_struct_t;
 
 /*****************************************************************************\
  * Slurm Protocol Data Structures
@@ -276,20 +335,22 @@ typedef struct launch_tasks_request_msg {
 	uint32_t  uid;
 	uint32_t  gid;
 	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
-	uint32_t  tasks_to_launch;
+	uint32_t  *tasks_to_launch;
 	uint16_t  envc;
 	uint16_t  argc;
-	uint16_t  cpus_allocated;
+	uint32_t  *cpus_allocated;
 	char    **env;
 	char    **argv;
 	char     *cwd;
 	cpu_bind_type_t cpu_bind_type;	/* --cpu_bind=                    */
 	char     *cpu_bind;	/* binding map for map/mask_cpu           */
-	uint16_t  resp_port;
-	uint16_t  io_port;
-	uint16_t  task_flags;
-	uint32_t *global_task_ids;
+	uint16_t  *resp_port;
+	uint16_t  *io_port;
 
+	uint16_t  task_flags;
+	uint32_t **global_task_ids;
+	slurm_addr orig_addr;	  /* where message really came from for io */ 
+	
 	/* stdout/err/in per task filenames */
 	char     *ofname;
 	char     *efname;
@@ -498,6 +559,7 @@ typedef struct slurm_node_registration_status_msg {
 } slurm_node_registration_status_msg_t;
 
 typedef struct slurm_ctl_conf slurm_ctl_conf_info_msg_t;
+int forward_span_count;         /* number of forwards per node */
 
 /* free message functions */
 void inline slurm_free_last_update_msg(last_update_msg_t * msg);

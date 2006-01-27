@@ -73,10 +73,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#define	BUF_SIZE        1024
 #define CKPT_WAIT	10
 #define OPT_LONG_HIDE	0x102
-#define MAX_NAME_LEN	64
 #define	MAX_INPUT_FIELDS 128
 
 static char *command_name;

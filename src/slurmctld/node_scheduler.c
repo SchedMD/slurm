@@ -52,7 +52,6 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 
-#define BUF_SIZE 1024
 #define MAX_RETRIES 10
 
 struct node_set {		/* set of nodes with same configuration */

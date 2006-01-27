@@ -167,7 +167,7 @@ if {[wait_for_file $file_out] == 0} {
                 }
         }
 	if {$matches != [expr 6 + 6 + 4 + 4 + 4]} {
-		send_user "\nFAILURE: unexpected output\n"
+		send_user "\nFAILURE: unexpected output $matches\n"
 		set exit_code 1
 	} elseif {$complete == 0} {
 		send_user "\nFAILURE: test failed to complete\n"

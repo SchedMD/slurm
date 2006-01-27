@@ -130,7 +130,7 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	job_step_info_response_msg_t *step_info;
 	int rc;
 	int i;
-
+	
 	if (slurm_allocation_lookup(job_id, &alloc_info)) {
 		rc = slurm_get_errno();
                 goto fail1;
@@ -149,12 +149,13 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	 * Otherwise, look through the list of job step info and find
 	 * the one matching step_id.  Signal that step.
 	 */
-	rc = slurm_get_job_steps((time_t)0, job_id, step_id, &step_info, SHOW_ALL);
+	rc = slurm_get_job_steps((time_t)0, job_id, step_id, 
+				 &step_info, SHOW_ALL);
 	if (rc != 0)
 		goto fail2;
 	for (i = 0; i < step_info->job_step_count; i++) {
 		printf("slurm_signal_job_step job_id=%u, stepid=%u\n", 
-			step_info->job_steps[i].job_id,
+		       step_info->job_steps[i].job_id,
 		       step_info->job_steps[i].step_id);
 		if (step_info->job_steps[i].job_id == job_id
 		    && step_info->job_steps[i].step_id == step_id) {
@@ -273,7 +274,7 @@ static int _signal_batch_script_step(
 	msg.data = &rpc;
 	msg.address = allocation->node_addr[0];
 
-	slurm_send_recv_rc_msg(&msg, &rc, 10);
+	slurm_send_recv_rc_msg_only_one(&msg, &rc, 10);
 	
 	return rc;
 }
@@ -347,7 +348,8 @@ _thr_send_recv_rc_msg(void *args)
 	pthread_cond_t *cond = params->cond;
 	int *active = params->active;
 
-	slurm_send_recv_rc_msg(params->msg, params->rc, params->timeout);
+	slurm_send_recv_rc_msg_only_one(params->msg, 
+					params->rc, params->timeout);
 
 	xfree(args);
 	slurm_mutex_lock(lock);

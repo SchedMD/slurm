@@ -137,7 +137,6 @@ extern int bg_recover;		/* state recovery mode */
 /*****************************************************************************\
  *  NODE parameters and data structures
 \*****************************************************************************/
-#define MAX_NAME_LEN	32
 #define MAX_JOBNAME_LEN 256
 #define CONFIG_MAGIC 0xc065eded
 #define NODE_MAGIC   0x0de575ed

@@ -719,7 +719,7 @@ _handle_attach(int fd, slurmd_job_t *job, uid_t uid)
 
 	debug("_handle_attach for job %u.%u", job->jobid, job->stepid);
 
-	srun       = xmalloc(sizeof(*srun));
+	srun       = xmalloc(sizeof(srun_info_t));
 	srun->key  = (srun_key_t *)xmalloc(SLURM_CRED_SIGLEN);
 
 	debug("sizeof(srun_info_t) = %d, sizeof(slurm_addr) = %d",

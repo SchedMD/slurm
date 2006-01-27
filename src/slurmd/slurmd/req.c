@@ -116,7 +116,7 @@ void
 slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 {
 	int rc;
-
+	
 	switch(msg->msg_type) {
 	case REQUEST_BATCH_JOB_LAUNCH:
 		/* Mutex locking moved into _rpc_batch_job() due to 
@@ -242,7 +242,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	int rc;
 	int len = 0;
 	Buf buffer;
-	slurm_msg_t *msg = NULL;
+	slurm_msg_t msg;
 	uid_t uid = (uid_t)-1;
 	struct passwd *pw = NULL;
 	gids_t *gids = NULL;
@@ -280,7 +280,6 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	}
 
 	/* send req over to slurmstepd */
-	msg = xmalloc(sizeof(slurm_msg_t));
 	switch(type) {
 	case LAUNCH_BATCH_JOB:
 		/*
@@ -289,7 +288,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		 * has NOT yet been checked!
 		 */
 		uid = (uid_t)((batch_job_launch_msg_t *)req)->uid;
-		msg->msg_type = REQUEST_BATCH_JOB_LAUNCH;
+		msg.msg_type = REQUEST_BATCH_JOB_LAUNCH;
 		break;
 	case LAUNCH_TASKS:
 		/*
@@ -298,7 +297,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		 * has NOT yet been checked!
 		 */
 		uid = (uid_t)((launch_tasks_request_msg_t *)req)->uid;
-		msg->msg_type = REQUEST_LAUNCH_TASKS;
+		msg.msg_type = REQUEST_LAUNCH_TASKS;
 		break;
 	case SPAWN_TASKS:
 		/*
@@ -307,21 +306,20 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		 * has NOT yet been checked!
 		 */
 		uid = (uid_t)((spawn_task_request_msg_t *)req)->uid;
-		msg->msg_type = REQUEST_SPAWN_TASK;
+		msg.msg_type = REQUEST_SPAWN_TASK;
 		break;
 	default:
 		error("Was sent a task I didn't understand");
 		break;
 	}
 	buffer = init_buf(0);
-	msg->data = req;
-	pack_msg(msg, buffer);
+	msg.data = req;
+	pack_msg(&msg, buffer);
 	len = get_buf_offset(buffer);
 	safe_write(fd, &len, sizeof(int));
 	safe_write(fd, get_buf_data(buffer), len);
 	free_buf(buffer);
-	slurm_free_msg(msg);
-
+	
 	/* send cached group ids array for the relevant uid */
 	if (!(pw = getpwuid(uid))) {
 		error("_send_slurmstepd_init getpwuid: %m");
@@ -412,7 +410,6 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 			error("close write to_stepd in parent: %m");
 		if (close(to_slurmd[0]) < 0)
 			error("close read to_slurmd in parent: %m");
-
 		return rc;
 	} else {
 		char **argv = NULL;
@@ -566,6 +563,8 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	socklen_t adlen;
 
 	req_uid = g_slurm_auth_get_uid(msg->cred);
+	req->srun_node_id = msg->srun_node_id;
+	memcpy(&req->orig_addr, &msg->orig_addr, sizeof(slurm_addr));
 
 	super_user = _slurm_authorized_user(req_uid);
 
@@ -586,7 +585,8 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 #endif
 
 	if (_check_job_credential(req->cred, jobid, stepid, req_uid,
-			req->tasks_to_launch) < 0) {
+				  req->tasks_to_launch[req->srun_node_id]) 
+	    < 0) {
 		errnum = errno;
 		error("Invalid job credential from %ld@%s: %m", 
 		      (long) req_uid, host);
@@ -760,7 +760,7 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 
 	if (req->step_id != NO_VAL && req->step_id != 0)
 		first_job_run = false;
-	
+		
 	/*
 	 * Insert jobid into credential context to denote that
 	 * we've now "seen" an instance of the job
@@ -837,6 +837,8 @@ _abort_job(uint32_t job_id)
 	resp.node_name    = NULL;	/* unused */
 	resp_msg.msg_type = REQUEST_COMPLETE_JOB_STEP;
 	resp_msg.data     = &resp;
+	resp_msg.forward.cnt = 0;
+	resp_msg.ret_list = NULL;
 	return slurm_send_only_controller_msg(&resp_msg);
 }
 
@@ -1071,6 +1073,9 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 		resp_msg.address      = msg->address;
 		resp_msg.msg_type     = RESPONSE_JOB_ID;
 		resp_msg.data         = &resp;
+		resp_msg.forward = msg->forward;
+		resp_msg.ret_list = msg->ret_list;
+
 		slurm_send_node_msg(msg->conn_fd, &resp_msg);
 	} else {
 		debug3("_rpc_pid2jid: pid(%u) not found", req->job_pid);
@@ -1161,9 +1166,11 @@ done:
 	debug2("update step addrs rc = %d", rc);
 	resp_msg.data         = resp;
 	resp_msg.msg_type     = RESPONSE_REATTACH_TASKS;
-	resp->node_name        = conf->node_name;
-	resp->srun_node_id     = req->srun_node_id;
-	resp->return_code      = rc;
+	resp_msg.forward      = msg->forward;
+	resp_msg.ret_list     = msg->ret_list;
+	resp->node_name       = conf->node_name;
+	resp->srun_node_id    = req->srun_node_id;
+	resp->return_code     = rc;
 
 	slurm_send_only_node_msg(&resp_msg);
 
@@ -1431,7 +1438,9 @@ _epilog_complete(uint32_t jobid, int rc)
 
 	msg.msg_type    = MESSAGE_EPILOG_COMPLETE;
 	msg.data        = &req;
-
+	forward_init(&msg.forward, NULL);
+	msg.ret_list = NULL;
+	
 	if (slurm_send_only_controller_msg(&msg) < 0) {
 		error("Unable to send epilog complete message: %m");
 		ret = SLURM_ERROR;
@@ -1688,8 +1697,8 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 #ifndef HAVE_AIX
 	if ((nsteps == 0) && !conf->epilog) {
 		if (msg->conn_fd >= 0)
-			slurm_send_rc_msg(msg, 
-				ESLURMD_KILL_JOB_ALREADY_COMPLETE);
+			slurm_send_rc_msg(msg,
+					  ESLURMD_KILL_JOB_ALREADY_COMPLETE);
 		slurm_cred_begin_expiration(conf->vctx, req->job_id);
 		_waiter_complete(req->job_id);
 		return;

@@ -217,25 +217,25 @@ _server_readable(eio_obj_t *obj)
 	struct server_io_info *s = (struct server_io_info *) obj->arg;
 	int i;
 
-	debug2("Called _server_readable");
+	debug4("Called _server_readable");
 
 	if (!_outgoing_buf_free(s->job)) {
-		debug3("  false, free_io_buf is empty");
+		debug4("  false, free_io_buf is empty");
 		return false;
 	}
 
 	if (s->in_eof) {
-		debug3("  false, eof");
+		debug4("  false, eof");
 		return false;
 	}
 
 	if (s->remote_stdout_objs > 0 || s->remote_stderr_objs > 0) {
-		debug3("remote_stdout_objs = %d", s->remote_stdout_objs);
-		debug3("remote_stderr_objs = %d", s->remote_stderr_objs);
+		debug4("remote_stdout_objs = %d", s->remote_stdout_objs);
+		debug4("remote_stderr_objs = %d", s->remote_stderr_objs);
 		return true;	
 	}
 
-	debug3("  false");
+	debug4("  false");
 	return false;
 }
 
@@ -246,7 +246,7 @@ _server_read(eio_obj_t *obj, List objs)
 	void *buf;
 	int n;
 
-	debug3("Entering _server_read");
+	debug4("Entering _server_read");
 	if (s->in_msg == NULL) {
 		if (_outgoing_buf_free(s->job)) {
 			s->in_msg = list_dequeue(s->job->free_outgoing);
@@ -335,24 +335,24 @@ _server_writable(eio_obj_t *obj)
 {
 	struct server_io_info *s = (struct server_io_info *) obj->arg;
 
-	debug3("Called _server_writable");
+	debug4("Called _server_writable");
 
 	if (s->out_eof) {
-		debug3("  false, eof");
+		debug4("  false, eof");
 		return false;
 	}
 	if (obj->shutdown == true) {
-		debug3("  false, shutdown");
+		debug4("  false, shutdown");
 		return false;
 	}
 	if (s->out_msg != NULL
 	    || !list_is_empty(s->msg_queue)) {
-		debug3("  true, s->msg_queue length = %d",
+		debug4("  true, s->msg_queue length = %d",
 		       list_count(s->msg_queue));
 		return true;
 	}
 
-	debug3("  false");
+	debug4("  false");
 	return false;
 }
 
@@ -363,7 +363,7 @@ _server_write(eio_obj_t *obj, List objs)
 	void *buf;
 	int n;
 
-	debug2("Entering _server_write");
+	debug4("Entering _server_write");
 
 	/*
 	 * If we aren't already in the middle of sending a message, get the

@@ -122,6 +122,16 @@ extern int slurm_set_auth_type(char *auth_type);
  */
 extern uint16_t slurm_get_fast_schedule(void);
 
+/* slurm_set_span_count
+ * sets the value of span_count in slurmctld_conf object
+ * RET 0 or error code
+ */
+extern int slurm_set_span_count(uint16_t span_count);
+/* slurm_get_span_count
+ * returns the value of span_count in slurmctld_conf object
+ */
+extern uint16_t slurm_get_span_count(void);
+
 /* slurm_get_jobacct_loc
  * returns the job accounting loc from slurmctld_conf object
  * RET char *    - job accounting location,  MUST be xfreed by caller
@@ -265,11 +275,14 @@ int inline slurm_shutdown_msg_engine(slurm_fd open_fd);
  *  Returns SLURM_SUCCESS if an entire message is successfully 
  *    received. Otherwise SLURM_ERROR is returned.
  */
-int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout);
+List slurm_receive_msg(slurm_fd fd, slurm_msg_t *resp, int timeout);
 
 /**********************************************************************\
  * send message functions
 \**********************************************************************/
+
+
+int slurm_add_header_and_send(slurm_fd fd, slurm_msg_t *msg);
 
 /* sends a message to an arbitrary node
  *
@@ -470,6 +483,8 @@ void inline slurm_print_slurm_addr(slurm_addr * address,
  * slurm_addr pack routines
 \**********************************************************************/
 
+Buf slurm_pack_msg_no_header(slurm_msg_t * msg);
+
 /* slurm_pack_slurm_addr
  * packs a slurm_addr into a buffer to serialization transport
  * IN slurm_address	- slurm_addr to pack
@@ -511,20 +526,35 @@ int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 				   slurm_msg_t * response_msg);
 
 /* slurm_send_recv_node_msg
- * opens a connection to node, sends the node a message, listens 
- * for the response, then closes the connection
+ * opens a connection to node, usually multiple nodes, 
+ * and sends the nodes a message, listens 
+ * for the response, then closes the connections
  * IN request_msg	- slurm_msg request
  * OUT response_msg	- slurm_msg response
- * RET int 		- return code
+ * RET List 		- return list from multiple nodes
  */
-int slurm_send_recv_node_msg(slurm_msg_t * request_msg,
-			     slurm_msg_t * response_msg, int timeout);
+List slurm_send_recv_node_msg(slurm_msg_t * request_msg, 
+			      slurm_msg_t * response_msg, 
+			      int timeout);
 
 /*
- *  Open a connection to req->address, send message and receive 
- *    a "return code" message, returning return code in "rc"
+ *  Open a connection to req->address, send message (forward if told), 
+ *  req must contain the message already packed in it's buffer variable,
+ *  and receive List of "return codes" from all nodes
  */
-int slurm_send_recv_rc_msg(slurm_msg_t *req, int *rc, int timeout);
+List slurm_send_recv_rc_packed_msg(slurm_msg_t *req, int timeout);
+
+/*
+ *  Open a connection to req->address, send message (forward if told) 
+ *  and receive List of "return codes" from all nodes
+ */
+List slurm_send_recv_rc_msg(slurm_msg_t *req, int timeout);
+
+/*
+ *  Same as above, but only to one node
+ */
+
+int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout);
 
 /*
  *  Same as above, but send to controller
@@ -548,6 +578,7 @@ int slurm_send_only_controller_msg(slurm_msg_t * request_msg);
 int slurm_send_only_node_msg(slurm_msg_t * request_msg);
 
 /* Slurm message functions */
+int *set_span(int total);
 void slurm_free_msg(slurm_msg_t * msg);
 void slurm_free_cred(void *cred);
 #endif

@@ -56,13 +56,21 @@ int check_header_version(header_t * header)
  * IN msg_type - type of message to be send
  * IN flags - message flags to be send
  */
-void init_header(header_t * header, slurm_msg_type_t msg_type,
+void init_header(header_t * header, slurm_msg_t *msg,
 		 uint16_t flags)
 {
 	header->version = SLURM_PROTOCOL_VERSION;
 	header->flags = flags;
-	header->msg_type = msg_type;
+	header->msg_type = msg->msg_type;
 	header->body_length = 0;	/* over-written later */
+	header->forward = msg->forward;
+	if(msg->ret_list)
+		header->ret_cnt = list_count(msg->ret_list);
+	else
+		header->ret_cnt = 0;
+	header->srun_node_id = msg->srun_node_id;
+	header->ret_list = msg->ret_list;
+	header->orig_addr = msg->orig_addr;
 }
 
 /*
@@ -99,8 +107,8 @@ void slurm_print_launch_task_msg(launch_tasks_request_msg_t * msg)
 	debug3("msg -> io_port    = %d", msg->io_port);
 	debug3("msg -> task_flags = %x", msg->task_flags);
 
-	for (i = 0; i < msg->tasks_to_launch; i++) {
+	for (i = 0; i < msg->tasks_to_launch[msg->srun_node_id]; i++) {
 		debug3("global_task_id[%i]: %i ", i,
-		       msg->global_task_ids[i]);
+		       msg->global_task_ids[msg->srun_node_id][i]);
 	}
 }

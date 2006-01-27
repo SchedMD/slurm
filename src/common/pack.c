@@ -43,8 +43,6 @@
 #include "src/common/macros.h"
 #include "src/common/xmalloc.h"
 
-#define BUF_SIZE 4096
-
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
  * for details. 
@@ -107,7 +105,7 @@ Buf init_buf(int size)
 	my_buf->magic = BUF_MAGIC;
 	my_buf->size = size;
 	my_buf->processed = 0;
-	my_buf->head = xmalloc(size);
+	my_buf->head = xmalloc(sizeof(char)*size);
 
 	return my_buf;
 }

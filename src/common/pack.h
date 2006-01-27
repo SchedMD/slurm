@@ -46,6 +46,7 @@
 #include <string.h>
 
 #define BUF_MAGIC 0x42554545
+#define BUF_SIZE 4096
 
 struct slurm_buf {
 	uint32_t magic;

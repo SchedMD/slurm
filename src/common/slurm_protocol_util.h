@@ -62,7 +62,7 @@ extern int check_header_version(header_t * header);
  * IN flags - message flags to be send
  */
 extern void 
-init_header(header_t * header, slurm_msg_type_t msg_type, uint16_t flags);
+init_header(header_t * header, slurm_msg_t *msg, uint16_t flags);
 
 
 /*

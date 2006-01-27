@@ -76,11 +76,6 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "ST " {
-		set stuff [concat $stuff "7"]
-		incr matches
-		exp_continue
-	}
 	-re "TIME" {
 		set stuff [concat $stuff "8"]
 		incr matches
@@ -110,7 +105,7 @@ if {$too_small != 0} {
 	send_user "\nWARNING: Screen is too small for test\n"
 	exit 0
 }
-if {$matches != 9} {
+if {$matches != 8} {
 	#send_user $matches ."\n"
 	send_user $stuff
 	send_user "\nFAILURE: smap job information display\n"

@@ -54,7 +54,7 @@ slurm_reconfigure ( void )
 	slurm_msg_t req;
 
 	req.msg_type = REQUEST_RECONFIGURE;
-
+	
 	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
 		return SLURM_ERROR;
 
@@ -75,7 +75,7 @@ slurm_ping (int primary)
 	int rc ;
 	slurm_msg_t request_msg ;
 
-	request_msg . msg_type = REQUEST_PING ;
+	request_msg.msg_type = REQUEST_PING ;
 
 	if (primary == 1)
 		rc = _send_message_controller ( PRIMARY_CONTROLLER,
@@ -105,7 +105,7 @@ slurm_shutdown (uint16_t core)
 	shutdown_msg.core = core;
 	req_msg.msg_type  = REQUEST_SHUTDOWN;
 	req_msg.data      = &shutdown_msg;
-
+		
 	/* 
 	 * Explicity send the message to both primary 
 	 *   and backup controllers 
@@ -117,32 +117,44 @@ slurm_shutdown (uint16_t core)
 int
 _send_message_controller (enum controller_id dest, slurm_msg_t *req) 
 {
-	int rc;
+	int rc = SLURM_PROTOCOL_SUCCESS;
 	slurm_fd fd = -1;
-	slurm_msg_t resp_msg ;
+	slurm_msg_t resp_msg;
 
+	List ret_list = NULL;
+	
+	/*always only going to 1 node */
+	forward_init(&req->forward, NULL);
+	req->ret_list = NULL;
+	
 	if ((fd = slurm_open_controller_conn_spec(dest)) < 0)
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
 
 	if (slurm_send_node_msg(fd, req) < 0) 
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_SEND_ERROR);
-
-	if ((rc = slurm_receive_msg(fd, &resp_msg, 0)) < 0)
-		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR);
-
-	slurm_free_cred(resp_msg.cred);
+	
+	ret_list = slurm_receive_msg(fd, &resp_msg, 0);
+	if(!ret_list)
+		return SLURM_ERROR;
+	if(list_count(ret_list)>0) {
+		error("_send_message_controller: expected 0 back, but got %d",
+		      list_count(ret_list));
+	}
+	list_destroy(ret_list);
+	rc = errno;
+	if(rc < 0) {
+		rc = SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
+	}
 	if (slurm_shutdown_msg_conn(fd) != SLURM_SUCCESS)
-		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR);
-
+		rc = SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR;
+	
 	if (resp_msg.msg_type != RESPONSE_SLURM_RC)
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+			rc = SLURM_UNEXPECTED_MSG_ERROR;
 
 	rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-
-	slurm_free_return_code_msg(resp_msg.data);
-
+	
 	if (rc) slurm_seterrno_ret(rc);
 
-        return SLURM_PROTOCOL_SUCCESS;
+        return rc;
 }
 

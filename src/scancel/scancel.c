@@ -73,7 +73,7 @@ main (int argc, char *argv[])
 		log_opts.stderr_level += opt.verbose;
 		log_alter (log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 	} 
-
+	
 	if ((opt.interactive) ||
 	    (opt.job_name) ||
 	    (opt.partition) ||
@@ -82,7 +82,6 @@ main (int argc, char *argv[])
 		_load_job_records ();
 		_filter_job_records ();
 	}
-
 	_cancel_jobs ();
 
 	exit (0);
@@ -96,7 +95,7 @@ _load_job_records (void)
 	int error_code;
 
 	error_code = slurm_load_jobs ((time_t) NULL, &job_buffer_ptr, 1);
-
+	
 	if (error_code) {
 		slurm_perror ("slurm_load_jobs error");
 		exit (1);

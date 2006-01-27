@@ -308,9 +308,9 @@ static void _launch_job(struct job_record *job_ptr)
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->node_count = 1;
 	agent_arg_ptr->retry = 0;
-	agent_arg_ptr->slurm_addr = xmalloc(sizeof(struct sockaddr_in));
+	agent_arg_ptr->slurm_addr = xmalloc(sizeof(slurm_addr));
 	memcpy(agent_arg_ptr->slurm_addr,
-	       &(node_ptr->slurm_addr), sizeof(struct sockaddr_in));
+	       &(node_ptr->slurm_addr), sizeof(slurm_addr));
 	agent_arg_ptr->node_names = xstrdup(node_ptr->name);
 	agent_arg_ptr->msg_type = REQUEST_BATCH_JOB_LAUNCH;
 	agent_arg_ptr->msg_args = (void *) launch_msg_ptr;

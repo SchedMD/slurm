@@ -1307,6 +1307,7 @@ static int _send_data_to_mynode(_mynode_msg_type_t msgtype, _jrec_t *jrec) {
 	_stats_msg_t	stats;
 	int		rc=SLURM_SUCCESS,
 			retry;
+	List            ret_list;
 
 	debug2("jobacct(%d): in _send_data_to_mynode(msgtype %d, job %u)",
 			getpid(), msgtype, jrec->jobid);
@@ -1331,6 +1332,9 @@ static int _send_data_to_mynode(_mynode_msg_type_t msgtype, _jrec_t *jrec) {
 	msg->msg_type  = MESSAGE_JOBACCT_DATA;
 	msg->data      = &jmsg;
 	msg->data_size = sizeof(jobacct_msg_t);
+	msg->forward.cnt = 0;
+	msg->ret_list = NULL;
+	
 	debug2("jobacct(%d): attempting send_recv_node_msg(msg, %d, localhost)"
 			" for job %u.%u",
 			getpid(), slurmd_port, jrec->jobid, jrec->stepid);
@@ -1338,7 +1342,19 @@ static int _send_data_to_mynode(_mynode_msg_type_t msgtype, _jrec_t *jrec) {
 		if (jrec->nprocs/jrec->nnodes > 0)
 			_stagger_time(-1, jrec->nprocs/jrec->nnodes);
 			/* avoid simultaneous msgs from all processes */
-		if (( rc = slurm_send_recv_node_msg(msg, retmsg, 0)) >=0 )
+		ret_list = slurm_send_recv_node_msg(msg, retmsg, 0);
+
+		if(!ret_list || errno != SLURM_SUCCESS) {
+			error("_send_data_to_mynode: %m");
+			return SLURM_ERROR;
+		}
+		if(list_count(ret_list)>0) {
+			error("_send_data_to_mynode: got %d from "
+			      "receive, expecting 0",
+			      list_count(ret_list));
+		}
+		list_destroy(ret_list);
+		if (( rc = slurm_send_recv_node_msg_only_one(msg, retmsg, 0)) >=0 )
 				break;
 		if (retry==0)
 			srand( (getpid()*times(NULL))%RAND_MAX );
@@ -1411,7 +1427,7 @@ static int _send_data_to_node_0(_jrec_t *jrec) {
 		if (jrec->nnodes > 0)
 			_stagger_time(jrec->nodeid, jrec->nnodes);
 			/* avoid simultaneous msgs from all processes */
-		if ((rc = slurm_send_recv_node_msg(msg, retmsg, 0))>=0 )
+		if ((rc = slurm_send_recv_node_msg_only_one(msg, retmsg, 0))>=0 )
 			break;
 		if (retry==0)
 			srand( (getpid()*times(NULL))%RAND_MAX );

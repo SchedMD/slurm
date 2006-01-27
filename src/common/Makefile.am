@@ -23,6 +23,7 @@ libcommon_la_SOURCES = 			\
 	xassert.c xassert.h		\
 	xstring.c xstring.h		\
 	xsignal.c xsignal.h		\
+	forward.c forward.h     	\
 	global_srun.c                   \
 	global_srun.h                   \
 	strlcpy.c strlcpy.h		\

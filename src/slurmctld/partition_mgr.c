@@ -53,7 +53,7 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/slurmctld.h"
 
-#define BUF_SIZE 1024
+#define BUFFER_SIZE 1024
 #define HUGE_BUF_SIZE (16 * 1024)
 
 /* Global variables */
@@ -696,7 +696,7 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 void pack_part(struct part_record *part_ptr, Buf buffer)
 {
 	uint16_t default_part_flag;
-	char node_inx_ptr[BUF_SIZE];
+	char node_inx_ptr[BUFFER_SIZE];
 
 	if (default_part_loc == part_ptr)
 		default_part_flag = 1;
@@ -719,7 +719,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 	packstr(part_ptr->allow_groups, buffer);
 	packstr(part_ptr->nodes, buffer);
 	if (part_ptr->node_bitmap) {
-		bit_fmt(node_inx_ptr, BUF_SIZE,
+		bit_fmt(node_inx_ptr, BUFFER_SIZE,
 			part_ptr->node_bitmap);
 		packstr(node_inx_ptr, buffer);
 	} else

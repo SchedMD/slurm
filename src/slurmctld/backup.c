@@ -257,6 +257,8 @@ static void *_background_rpc_mgr(void *no_data)
 	slurm_addr cli_addr;
 	slurm_msg_t *msg = NULL;
 	int error_code;
+	List ret_list = NULL;
+
 	/* Read configuration only */
 	slurmctld_lock_t config_read_lock = { 
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -298,7 +300,14 @@ static void *_background_rpc_mgr(void *no_data)
 
 		msg = xmalloc(sizeof(slurm_msg_t));
 		msg->conn_fd = newsockfd;
-		if (slurm_receive_msg(newsockfd, msg, 0) < 0)
+		ret_list = slurm_receive_msg(newsockfd, msg, 0);
+		if(ret_list) {
+			if(list_count(ret_list)>0) 
+				error("Got %d, expecting 0 from "
+				      "message recieving",
+				      list_count(ret_list));
+			list_destroy(ret_list);
+		} else if(errno != SLURM_SUCCESS) 
 			error("slurm_receive_msg: %m");
 		else {
 			error_code = _background_process_msg(msg);
@@ -374,7 +383,7 @@ static int _ping_controller(void)
 
 	req.msg_type = REQUEST_PING;
 
-	if (slurm_send_recv_rc_msg(&req, &rc, 0) < 0) {
+	if (slurm_send_recv_rc_msg_only_one(&req, &rc, 0) < 0) {
 		error("_ping_controller/slurm_send_node_msg error: %m");
 		return SLURM_ERROR;
 	}

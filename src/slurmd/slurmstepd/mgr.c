@@ -349,13 +349,11 @@ _setup_io(slurmd_job_t *job)
 	if (!job->batch)
 		if (io_thread_start(job) < 0)
 			return ESLURMD_IO_ERROR;
-
 	/*
 	 * Initialize log facility to copy errors back to srun
 	 */
 	_slurmd_job_log_init(job);
-
-
+	
 #ifndef NDEBUG
 #  ifdef PR_SET_DUMPABLE
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
@@ -416,6 +414,10 @@ _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, int status)
 	msg.return_code  = status;
 	resp.data        = &msg;
 	resp.msg_type    = MESSAGE_TASK_EXIT;
+	resp.srun_node_id = job->nodeid;
+	resp.forward.cnt = 0;
+	resp.ret_list = NULL;
+	resp.orig_addr.sin_addr.s_addr = 0;
 
 	/*
 	 *  XXX Hack for TCP timeouts on exit of large, synchronized
@@ -455,7 +457,7 @@ job_manager(slurmd_job_t *job)
 	bool io_initialized = false;
 	int fd;
 
-	debug3("Entered job_manager for %u.%u pid=%lu",
+	debug3("Entered job_manager for %u.%u %d pid=%lu",
 	       job->jobid, job->stepid, (unsigned long) job->jmgr_pid);
 	
 	if (!job->batch &&
@@ -1020,9 +1022,14 @@ _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr *cli, int rc)
 	debug ("sending launch failure message: %s", slurm_strerror (rc));
 
 	memcpy(&resp_msg.address, cli, sizeof(slurm_addr));
-	slurm_set_addr(&resp_msg.address, msg->resp_port, NULL); 
+	slurm_set_addr(&resp_msg.address, 
+		       msg->resp_port[msg->srun_node_id], 
+		       NULL); 
 	resp_msg.data = &resp;
 	resp_msg.msg_type = RESPONSE_LAUNCH_TASKS;
+	forward_init(&resp_msg.forward, NULL);
+	resp_msg.ret_list = NULL;
+	resp_msg.orig_addr.sin_addr.s_addr = 0;
 
 	resp.node_name     = conf->node_name;
 	resp.srun_node_id  = msg->srun_node_id;
@@ -1050,6 +1057,9 @@ _send_launch_resp(slurmd_job_t *job, int rc)
         resp_msg.address      = srun->resp_addr;
 	resp_msg.data         = &resp;
 	resp_msg.msg_type     = RESPONSE_LAUNCH_TASKS;
+	forward_init(&resp_msg.forward, NULL);
+	resp_msg.ret_list = NULL;
+	resp_msg.orig_addr.sin_addr.s_addr = 0;
 
 	resp.node_name        = conf->node_name;
 	resp.srun_node_id     = job->nodeid;
@@ -1080,8 +1090,11 @@ _complete_job(uint32_t jobid, uint32_t stepid, int err, int status)
 	req.node_name	= conf->node_name;
 	req_msg.msg_type= REQUEST_COMPLETE_JOB_STEP;
 	req_msg.data	= &req;	
-
+	forward_init(&req_msg.forward, NULL);
+	req_msg.ret_list = NULL;
+	
 	info("sending REQUEST_COMPLETE_JOB_STEP");
+
 	/* Note: these log messages don't go to slurmd.log from here */
 	for (i=0; i<=MAX_RETRY; i++) {
 		if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) >= 0)
@@ -1182,13 +1195,13 @@ _slurmd_job_log_init(slurmd_job_t *job)
 
 
 	snprintf(argv0, sizeof(argv0), "slurmd[%s]", conf->hostname);
-
 	/* 
 	 * reinitialize log 
 	 */
+	
 	log_alter(conf->log_opts, 0, NULL);
 	log_set_argv0(argv0);
-
+	
 	/* Connect slurmd stderr to job's stderr */
 	if ((!job->spawn_task) && 
 	    (dup2(job->task[0]->stderr_fd, STDERR_FILENO) < 0)) {

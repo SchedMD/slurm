@@ -163,6 +163,7 @@ typedef struct srun_job {
 	slurm_addr *jaddr;	/* job control info ports 	  */
 	int num_listen;		/* Number of stdio listen sockets */
 	int *listenport;	/* Array of stdio listen ports 	  */
+	int thr_count;  	/* count of threads in job launch */
 
 	/* Output streams and stdin fileno */
 	select_jobinfo_t select_jobinfo;
