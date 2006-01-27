@@ -162,11 +162,12 @@
 # AuthType=auth/none
 
 
-# o Define span count for pushing information to slurmd's
+# o Define TreeWidth for communication to the slurmds.  Slurmds use
+# a virtual tree network, this variable specifies the width of the tree
 #
 # Default is 50
 #
-# SpanCount=50
+# TreeWidth=50
 
 
 #
