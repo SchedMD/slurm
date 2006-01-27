@@ -137,6 +137,7 @@ re-build configuration files before executing the <b>configure</b> command.
 You can do this by executing the command <b>autoreconf --force --install</b>.
 
 <h2>Tricks of the Trade</h2>
+<h3>HAVE_FRONT_END</h3>
 <p>You can make a single node appear to SLURM as a Linux cluster by manually 
 defining <b>HAVE_FRONT_END</b> to have a non-zero value in the file <b>config.h</b>.
 All (fake) nodes should be defined in the <b>slurm.conf</b> file.
@@ -146,6 +147,41 @@ executes.  Initiate one <span class="commandline">slurmd</span> and one
 <span class="commandline">slurmctld</span> daemon. Do not initiate too many 
 simultaneous job steps to avoid overloading the 
 <span class="commandline">slurmd</span> daemon executing them all.</p>
+
+<h3>Multiple slurmd support</h3>
+<p>It is possible to run mutiple slurmd daemons on a single node, each using
+a different port number and NodeName alias.  This is very useful for testing
+networking and protocol changes, or anytime you want to simulate a larger
+cluster than you really have.  The author uses this on his desktop to simulate
+multiple nodes.  However, multiple slurmd mode should not be used in
+production, because not all slurm functions are working under this mode (e.g.
+many switch plugins will not work, srun reattachs won't work, etc.).</p>
+
+<p>Multiple support is enabled at configure-time with the
+"--enable-multiple-slurmd" parameter.  This enables a new parameter in the
+slurm.conf file on the NodeName line, "Port=<port number>", and adds two new command
+line parameters to slurmd, "-N" and "-P".</p>
+
+<p>Each slurmd needs to have its own NodeName, and its own TCP port number. Here is
+an example of the NodeName lines for running three slurmd daemons on each
+of ten nodes:</p>
+
+<pre>
+NodeName=foo[1-10] NodeAddr=host[1-10]  Port=17001
+NodeName=foo[11-20] NodeAddr=host[1-10] Port=17002
+NodeName=foo[21-30] NodeAddr=host[1-10] Port=17003
+</pre>
+
+<p>
+It is then up to you to start the slurmd daemons with the proper NodeName and
+Port values.  For example, to start the slurmd daemons for host1 from the
+above slurm.conf example:</p>
+
+<pre>
+host1> slurmd -N foo1 -P 17001
+host1> slurmd -N foo11 -P 17002
+host1> slurmd -N foo21 -P 17003
+</pre>
 
 <p class="footer"><a href="#top">top</a></p>
 
