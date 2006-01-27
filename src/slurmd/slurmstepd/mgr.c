@@ -457,7 +457,7 @@ job_manager(slurmd_job_t *job)
 	bool io_initialized = false;
 	int fd;
 
-	debug3("Entered job_manager for %u.%u %d pid=%lu",
+	debug3("Entered job_manager for %u.%u pid=%lu",
 	       job->jobid, job->stepid, (unsigned long) job->jmgr_pid);
 	
 	if (!job->batch &&

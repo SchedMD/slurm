@@ -126,7 +126,7 @@ launch(void *arg)
 				* job->step_layout->num_hosts);
 	my_envc = envcount(environ);
 
-/* Common message contents */
+	/* Common message contents */
 	r.job_id          = job->jobid;
 	r.uid             = opt.uid;
 	r.gid             = opt.gid;
