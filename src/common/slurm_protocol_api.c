@@ -244,30 +244,30 @@ extern uint16_t slurm_get_fast_schedule(void)
 	return fast_val;
 }
 
-/* slurm_set_span_count
- * sets the value of span_count in slurmctld_conf object
+/* slurm_set_tree_width
+ * sets the value of tree_width in slurmctld_conf object
  * RET 0 or error code
  */
-extern int slurm_set_span_count(uint16_t span_count)
+extern int slurm_set_tree_width(uint16_t tree_width)
 {
-	if (span_count == 0) {
+	if (tree_width == 0) {
 		error("can't have span count of 0");
 		return SLURM_ERROR;
 	}
-	slurmctld_conf.span_count = span_count;
+	slurmctld_conf.tree_width = tree_width;
 	return SLURM_SUCCESS;
 }
-/* slurm_get_span_count
- * returns the value of span_count in slurmctld_conf object
+/* slurm_get_tree_width
+ * returns the value of tree_width in slurmctld_conf object
  */
-extern uint16_t slurm_get_span_count(void)
+extern uint16_t slurm_get_tree_width(void)
 {
-	uint16_t span_count;
+	uint16_t tree_width;
 
 	_lock_update_config();
-	span_count = slurmctld_conf.span_count;
+	tree_width = slurmctld_conf.tree_width;
 	slurm_mutex_unlock(&config_lock);
-	return span_count;
+	return tree_width;
 }
 
 /* slurm_set_auth_type
@@ -1331,7 +1331,7 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 			timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
 		
 		if(req->forward.cnt>0) {
-			steps = req->forward.cnt/slurmctld_conf.span_count;
+			steps = req->forward.cnt/slurmctld_conf.tree_width;
 			steps += 1;
 			timeout += (req->forward.timeout*steps);
 		}
@@ -1598,7 +1598,7 @@ List slurm_send_recv_rc_packed_msg(slurm_msg_t *msg, int timeout)
 			timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
 		
 		if(msg->forward.cnt>0) {
-			steps = msg->forward.cnt/slurmctld_conf.span_count;
+			steps = msg->forward.cnt/slurmctld_conf.tree_width;
 			steps += 1;
 			timeout += (msg->forward.timeout*steps);
 		}
@@ -1746,18 +1746,18 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 
 extern int *set_span(int total)
 {
-	int *span = xmalloc(sizeof(int)*slurmctld_conf.span_count);
+	int *span = xmalloc(sizeof(int)*slurmctld_conf.tree_width);
 	int left = total;
 	int i = 0;
-	//info("span count = %d",slurmctld_conf.span_count);
-	memset(span,0,slurmctld_conf.span_count);
-	if(total <= slurmctld_conf.span_count) {
+	//info("span count = %d",slurmctld_conf.tree_width);
+	memset(span,0,slurmctld_conf.tree_width);
+	if(total <= slurmctld_conf.tree_width) {
 		return span;
 	} 
 	
 	while(left>0) {
-		for(i=0; i<slurmctld_conf.span_count; i++) {
-			if((slurmctld_conf.span_count-i)>=left) {
+		for(i=0; i<slurmctld_conf.tree_width; i++) {
+			if((slurmctld_conf.tree_width-i)>=left) {
 				if(span[i] == 0) {
 					left = 0;
 					break;
@@ -1766,13 +1766,13 @@ extern int *set_span(int total)
 					left = 0;
 					break;
 				}
-			} else if(left<=slurmctld_conf.span_count) {
+			} else if(left<=slurmctld_conf.tree_width) {
 				span[i]+=left;
 				left = 0;
 				break;
 			}
-			span[i] += slurmctld_conf.span_count;
-			left -= slurmctld_conf.span_count;
+			span[i] += slurmctld_conf.tree_width;
+			left -= slurmctld_conf.tree_width;
 		}
 	}
 	return span;

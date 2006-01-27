@@ -122,15 +122,15 @@ extern int slurm_set_auth_type(char *auth_type);
  */
 extern uint16_t slurm_get_fast_schedule(void);
 
-/* slurm_set_span_count
- * sets the value of span_count in slurmctld_conf object
+/* slurm_set_tree_width
+ * sets the value of tree_width in slurmctld_conf object
  * RET 0 or error code
  */
-extern int slurm_set_span_count(uint16_t span_count);
-/* slurm_get_span_count
- * returns the value of span_count in slurmctld_conf object
+extern int slurm_set_tree_width(uint16_t tree_width);
+/* slurm_get_tree_width
+ * returns the value of tree_width in slurmctld_conf object
  */
-extern uint16_t slurm_get_span_count(void);
+extern uint16_t slurm_get_tree_width(void);
 
 /* slurm_get_jobacct_loc
  * returns the job accounting loc from slurmctld_conf object

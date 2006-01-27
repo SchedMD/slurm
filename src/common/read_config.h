@@ -73,7 +73,7 @@
 #define DEFAULT_TASK_PLUGIN         "task/none"
 #define DEFAULT_TMP_FS              "/tmp"
 #define DEFAULT_WAIT_TIME           0
-#define DEFAULT_SPAN_COUNT          50
+#define DEFAULT_TREE_WIDTH          50
 
 /* 
  * init_slurm_conf - initialize or re-initialize the slurm configuration 
