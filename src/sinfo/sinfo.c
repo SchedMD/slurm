@@ -95,8 +95,10 @@ int main(int argc, char *argv[])
 			print_sinfo_list(sinfo_list);
 		}
 		if (params.iterate) {
-			if (sinfo_list)
+			if (sinfo_list) {
 				list_destroy(sinfo_list);
+				sinfo_list = NULL:
+			}
 			printf("\n");
 			sleep(params.iterate);
 		} else
