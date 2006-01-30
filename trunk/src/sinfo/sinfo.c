@@ -3,7 +3,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -74,6 +74,7 @@ int main(int argc, char *argv[])
 	partition_info_msg_t *partition_msg = NULL;
 	node_info_msg_t *node_msg = NULL;
 	List sinfo_list = NULL;
+	int rc = 0;
 
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
@@ -85,10 +86,9 @@ int main(int argc, char *argv[])
 
 		if (params.bg_flag)
 			(void) _bg_report();
+		else if (_query_server(&partition_msg, &node_msg) != 0)
+			rc = 1;
 		else {
-			if (_query_server(&partition_msg, &node_msg) != 0)
-				exit(1);
-
 			sinfo_list = list_create(_sinfo_list_delete);
 			_build_sinfo_data(sinfo_list, partition_msg, node_msg);
 	 		sort_sinfo_list(sinfo_list);
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 			break;
 	}
 
-	exit(0);
+	exit(rc);
 }
 
 static char *_conn_type_str(int conn_type)
