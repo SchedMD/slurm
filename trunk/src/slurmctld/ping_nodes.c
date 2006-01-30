@@ -2,7 +2,7 @@
  *  ping_nodes.c - ping the slurmd daemons to test if they respond
  *	Note: there is a global node table (node_record_table_ptr)
  *****************************************************************************
- *  Copyright (C) 2003 The Regents of the University of California.
+ *  Copyright (C) 2003-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-217948.
@@ -162,7 +162,7 @@ void ping_nodes (void)
 		node_dead_time = (time_t) 0;
 	else
 		node_dead_time = last_ping_time - slurmctld_conf.slurmd_timeout;
-	still_live_time = now - slurmctld_conf.heartbeat_interval;
+	still_live_time = now - (slurmctld_conf.slurmd_timeout / 2);
 	last_ping_time  = now;
 
 	offset += MAX_REG_THREADS;
@@ -179,7 +179,11 @@ void ping_nodes (void)
 		//info("need to ping %s",node_ptr->name);
 		base_state   = node_ptr->node_state & NODE_STATE_BASE;
 		no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
-		if ((node_ptr->last_response != (time_t)0)
+		if ((slurmctld_conf.slurmd_timeout == 0)
+		&&  (base_state != NODE_STATE_UNKNOWN))
+			continue;
+
+		if ((node_ptr->last_response != (time_t) 0)
 		    &&  (node_ptr->last_response <= node_dead_time)
 		    &&  (base_state != NODE_STATE_DOWN)) {
 			if (down_hostlist)
@@ -191,7 +195,7 @@ void ping_nodes (void)
 			continue;
 		}
 
-		if (node_ptr->last_response == (time_t)0) {
+		if (node_ptr->last_response == (time_t) 0) {
 			no_resp_flag = 1;
 			node_ptr->last_response = slurmctld_conf.last_update;
 		}

@@ -2,7 +2,7 @@
  *  slurm_protocol_api.c - high-level slurm communication functions
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  UCRL-CODE-217948.
@@ -1407,7 +1407,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 		   (slurmctld_conf.backup_controller) &&
 		   (difftime(time(NULL), start_time) < 
 		    (slurmctld_conf.slurmctld_timeout +
-		     slurmctld_conf.heartbeat_interval))) {
+		     (slurmctld_conf.slurmctld_timeout / 2)))) {
 			debug("Neither primary nor backup controller "
 			      "responding, sleep and retry");
 			slurm_free_return_code_msg(resp->data);

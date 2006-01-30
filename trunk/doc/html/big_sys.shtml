@@ -53,19 +53,17 @@ will both make for easier administration and better performance.</p>
 
 <h2>Timers</h2>
 
-<p>The parameter <i>HeartBeatInterval</i> determines the interval 
+<p>The configuration parameter <i>SlurmdTimeout</i> determines the interval 
 at which <i>slurmctld</i> routinely communicates with <i>slurmd</i>.
+Communications occur at half the <i>SlurmdTimeout</i> value.
 The purpose of this is to determine when a compute node fails 
 and thus should not be allocated work. 
 Longer intervals decrease system noise on compute nodes (we do 
 synchronize these requests across the cluster, but there will 
 be some impact upon applications).
-For really large clusters, <i>HeartBeatInterval</i> values of 
-60 seconds or more are reasonable. 
-The values of <i>SlurmctldTimeout</i> and <i>SlurmdTimeout</i>
-may also need to be increased (say to double the value of 
-<i>HeartBeatInterval</i>).</p>
+For really large clusters, <i>SlurmdTimeoutl</i> values of 
+120 seconds or more are reasonable.</p> 
 
-<p style="text-align:center;">Last modified 14 January 2006</p>
+<p style="text-align:center;">Last modified 28 January 2006</p>
 
 <!--#include virtual="footer.txt"-->

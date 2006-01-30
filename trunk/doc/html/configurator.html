@@ -1,5 +1,5 @@
 <!--
-Copyright (C) 2005 The Regents of the University of California.
+Copyright (C) 2005-2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 Written by Morris Jette <jette1@llnl.gov> and Danny Auble <da@llnl.gov>
 UCRL-WEB-217616.
@@ -95,7 +95,6 @@ function displayfile()
    "# TIMERS <br>" +
    "SlurmctldTimeout=" + document.config.slurmctld_timeout.value + "<br>" +
    "SlurmdTimeout=" + document.config.slurmd_timeout.value + "<br>" +
-   "HeartbeatInterval=" + document.config.heartbeat_interval.value + "<br>" +
    "InactiveLimit=" + document.config.inactive_limit.value + "<br>" +
    "MinJobAge=" + document.config.min_job_age.value + "<br>" +
    "KillWait=" + document.config.kill_wait.value + "<br>" +
@@ -404,10 +403,6 @@ becoming the master controller
 <input type="text" name="slurmd_timeout" value="300">
 <B>SlurmdTimeout</B>: How many seconds the SLURM controller waits for the slurmd 
 to respond to a request before considering the node DOWN
-<P>
-<input type="text" name="heartbeat_interval" value="60">
-<B>HeartbeatInterval</B>: How many seconds between SLURM controller attempts to 
-contace the slurmd daemons 
 <P>
 <input type="text" name="inactive_limit" value="0">
 <B>InactiveLimit</B>: How many seconds the SLURM controller waits for srun 
