@@ -515,6 +515,11 @@ temporary storage. This parameter is used in establishing a node's \fBTmpDisk\fR
 space. 
 The default value is "/tmp".
 .TP
+\fBTreeWidth\fR
+\fBSlurmd\fR daemons use a virtual tree network for communications.
+\fBTreeWidth\fR specifies the width of the tree (i.e. the fanout).
+The defautl value is 50.
+.TP
 \fBWaitTime\fR
 Specifies how many seconds the srun command should by default wait after 
 the first task terminates before terminating all remaining tasks. The 
