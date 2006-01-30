@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Correctly report DRAINED node state as type OTHER for "sinfo --summarize".
  -- Fixes in sacct use of malloc (Andy Riebs, HP, sacct_malloc.patch).
+ -- Smap mods: eliminate screen flicker, fix window resize, report more clear
+    message if window too small (Dan Palermo, HP, patch.1.0.0.1.060126.smap).
 
 * Changes in SLURM 1.0.1
 ========================
