@@ -216,7 +216,8 @@ AC_CONFIG_FILES([Makefile
 		 src/slurmd/Makefile 
 		 src/slurmd/slurmd/Makefile 
 		 src/slurmd/slurmstepd/Makefile 
-		 src/slurmctld/Makefile 
+		 src/slurmctld/Makefile
+		 src/sbcast/Makefile 
 		 src/scontrol/Makefile
 		 src/scancel/Makefile
 		 src/squeue/Makefile
