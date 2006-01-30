@@ -2,7 +2,7 @@
  *  config_info.c - get/print the system configuration information of slurm
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> and Kevin Tew <tew1@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -85,8 +85,6 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->fast_schedule);
 	fprintf(out, "FirstJobId        = %u\n", 
 		slurm_ctl_conf_ptr->first_job_id);
-	fprintf(out, "HeartbeatInterval = %u\n", 
-		slurm_ctl_conf_ptr->heartbeat_interval);
 	fprintf(out, "InactiveLimit     = %u\n", 
 		slurm_ctl_conf_ptr->inactive_limit);
 	fprintf(out, "JobAcctLoc        = %s\n", 

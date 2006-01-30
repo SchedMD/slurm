@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  backup.c - backup slurm controller
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, Kevin Tew <tew1@llnl.gov>, et. al.
  *  UCRL-CODE-217948.
@@ -109,8 +109,9 @@ void run_backup(void)
 	while (slurmctld_config.shutdown_time == 0) {
 		sleep(1);
 		/* Lock of slurmctld_conf below not important */
-		if (difftime(time(NULL), last_ping) <
-		    slurmctld_conf.heartbeat_interval)
+		if (slurmctld_conf.slurmctld_timeout
+		&&  (difftime(time(NULL), last_ping) <
+		     (slurmctld_conf.slurmctld_timeout / 2)))
 			continue;
 
 		last_ping = time(NULL);

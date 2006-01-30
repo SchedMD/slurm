@@ -701,6 +701,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_timelimit_time;
 	static time_t last_assert_primary_time;
 	time_t now;
+	int ping_interval;
 
 	/* Locks: Read config */
 	slurmctld_lock_t config_read_lock = { 
@@ -723,8 +724,11 @@ static void *_slurmctld_background(void *no_data)
 	now = time(NULL);
 	last_sched_time = last_checkpoint_time = last_group_time = now;
 	last_timelimit_time = last_assert_primary_time = now;
-	last_ping_node_time = now + (time_t)MIN_CHECKIN_TIME -
-			 (time_t)slurmctld_conf.heartbeat_interval;
+	if (slurmctld_conf.slurmd_timeout)
+		ping_interval = slurmctld_conf.slurmd_timeout / 2;
+	else
+		ping_interval = 60;
+	last_ping_node_time = now + (time_t)MIN_CHECKIN_TIME - ping_interval;
 	last_ping_srun_time = now;
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -762,12 +766,9 @@ static void *_slurmctld_background(void *no_data)
 			unlock_slurmctld(job_write_lock);
 		}
 
-		if (slurmctld_conf.heartbeat_interval &&
-		    (difftime(now, last_ping_node_time) >=
-		     slurmctld_conf.heartbeat_interval) &&
-		    (is_ping_done())) {
+		if ((difftime(now, last_ping_node_time) >= ping_interval)
+		&&  (is_ping_done())) {
 			last_ping_node_time = now;
-			debug2("Performing node ping");
 			lock_slurmctld(node_write_lock);
 			ping_nodes();
 			unlock_slurmctld(node_write_lock);

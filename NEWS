@@ -11,6 +11,9 @@ documents those changes that are of interest to users and admins.
     algorythm.  Spawn and batch mode work the same as before.  New slurm.conf
     variable SpanCount=50 is default.  This is the number of threads per 
     stop on the tree.  
+ -- Configuration parameter HeartBeatInterval is depracated. Now used half
+    of SlurmdTimeout and SlurmctldTimeout for communications to slurmd and
+    slurmctld daemons repsectively.
 
 * Changes in SLURM 1.0.2
 ========================

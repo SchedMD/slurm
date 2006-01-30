@@ -3,7 +3,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -363,7 +363,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->epilog);
 	ctl_conf_ptr->fast_schedule		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->first_job_id		= (uint32_t) NO_VAL;
-	ctl_conf_ptr->heartbeat_interval	= (uint16_t) NO_VAL;
 	ctl_conf_ptr->inactive_limit		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->job_acct_loc);
 	xfree (ctl_conf_ptr->job_acct_parameters);
@@ -617,15 +616,8 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 			ctl_conf_ptr->first_job_id = first_job_id;
 	}
 
-	if ( heartbeat_interval != -1) {
-		if ( ctl_conf_ptr->heartbeat_interval != (uint16_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "HeartbeatInterval");
-		if ((heartbeat_interval < 0) || (heartbeat_interval > 0xffff))
-			error("HeartbeatInterval=%ld is invalid", 
-				heartbeat_interval);
-		else
-			ctl_conf_ptr->heartbeat_interval = heartbeat_interval;
-	}
+	if ( heartbeat_interval != -1)
+		error("HeartbeatInterval is defunct, see man slurm.conf");
 
 	if ( inactive_limit != -1) {
 		if ( ctl_conf_ptr->inactive_limit != (uint16_t) NO_VAL)
@@ -876,10 +868,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	if ( slurmctld_debug != -1) {
 		if ( ctl_conf_ptr->slurmctld_debug != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "SlurmctldDebug");
-		if ((slurmctld_debug < 0) || (slurmctld_debug > 0xffff))
-			error("SlurmctldDebug=%ld is invalid");
-		else
-			ctl_conf_ptr->slurmctld_debug = slurmctld_debug;
+		ctl_conf_ptr->slurmctld_debug = slurmctld_debug;
 	}
 
 	if ( slurmctld_pidfile ) {
@@ -1344,9 +1333,6 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	if (ctl_conf_ptr->first_job_id == (uint32_t) NO_VAL)
 		ctl_conf_ptr->first_job_id = DEFAULT_FIRST_JOB_ID;
-
-	if (ctl_conf_ptr->heartbeat_interval == (uint16_t) NO_VAL)
-		ctl_conf_ptr->heartbeat_interval = DEFAULT_HEARTBEAT_INTERVAL;
 
 	if (ctl_conf_ptr->inactive_limit == (uint16_t) NO_VAL)
 		ctl_conf_ptr->inactive_limit = DEFAULT_INACTIVE_LIMIT;

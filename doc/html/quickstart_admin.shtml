@@ -500,7 +500,6 @@ ControlMachine    = adevi
 Epilog            = (null)
 FastSchedule      = 1
 FirstJobId        = 1
-HeartbeatInterval = 60
 InactiveLimit     = 0
 JobCompLoc        = /var/tmp/jette/slurm.job.log
 JobCompType       = jobcomp/filetxt
