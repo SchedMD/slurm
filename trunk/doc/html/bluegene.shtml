@@ -38,7 +38,7 @@ maximum node count.
 The <i>--ntasks</i> option continues to be supported and may be required to 
 control resource allocations less than a full <i>base partition</i> in size, 
 if the system is configured to support them.  
-For example "srun -nntasks 256 ..." indicates that the job requires a minimum 
+For example "srun --nntasks 256 ..." indicates that the job requires a minimum 
 of 256 processors or one quarter of a midplane to execute. 
 See the srun man pages for details. </p>
 
