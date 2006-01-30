@@ -152,6 +152,7 @@ part_fini:
 		height = 10;
 		width = COLS;
 	        if (COLS < MIN_SCREEN_WIDTH || LINES < height) {
+			width = MIN_SCREEN_WIDTH;
 #endif			
 			endwin();
 			error("Screen is too small make sure the screen "
@@ -206,7 +207,6 @@ part_fini:
 			
 			clear_window(ba_system_ptr->text_win);
 			clear_window(ba_system_ptr->grid_win);
-			doupdate();
 			move(0,0);
 			
 			init_grid(new_node_ptr);
@@ -408,6 +408,10 @@ static void *_resize_handler(int sig)
 	int height, width;
 	ba_system_ptr->ycord = 1;
 	
+	/* clear existing data and update to avoid ghost during resize */
+	clear_window(ba_system_ptr->text_win);
+	clear_window(ba_system_ptr->grid_win);
+	doupdate();
 	delwin(ba_system_ptr->grid_win);
 	delwin(ba_system_ptr->text_win);
 	
@@ -415,6 +419,7 @@ static void *_resize_handler(int sig)
 	COLS=0;
 	LINES=0;
 	initscr();
+	doupdate();	/* update now to make sure we get the new size */
 	getmaxyx(stdscr,LINES,COLS);
 
 #ifdef HAVE_BG
@@ -426,6 +431,7 @@ static void *_resize_handler(int sig)
 	height = 10;
 	width = COLS;
 	if (COLS < MIN_SCREEN_WIDTH || LINES < height) {
+		width = MIN_SCREEN_WIDTH;
 #endif
 
 		endwin();
