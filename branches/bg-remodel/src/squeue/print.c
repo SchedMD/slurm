@@ -543,8 +543,9 @@ int _print_job_nodes(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_reason_list(job_info_t * job, int width, bool right, 
 		char* suffix)
 {
-	int quarter = -1;
-	char tmp_char[3];
+	int16_t quarter = -1;
+	int16_t segment = -1;
+	char tmp_char[6];
 	
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("NODELIST(REASON)", width, right, false);
@@ -558,11 +559,18 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		select_g_get_jobinfo(job->select_jobinfo, 
 				     SELECT_DATA_QUARTER, 
 				     &quarter);
+		select_g_get_jobinfo(job->select_jobinfo, 
+				     SELECT_DATA_SEGMENT, 
+				     &segment);
 #endif
 		
 		_print_nodes(job->nodes, width, right, false);
 		if(quarter != -1) {
-			sprintf(tmp_char,"0.%d",quarter);
+			if(segment != -1) 
+				sprintf(tmp_char,"0.%d.%d\0",quarter,segment);
+			else
+				sprintf(tmp_char,"0.%d\0",quarter);
+		
 			_print_str(tmp_char, width, right, false);
 		}
 	}
@@ -606,20 +614,26 @@ int _print_job_num_procs(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_num_nodes(job_info_t * job, int width, bool right_justify, 
 			 char* suffix)
 {
-	int quarter = -1;
+	uint32_t node_cnt = 0;
+	char tmp_char[6];
+	
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("NODES", width, right_justify, true);
 	else {
 #ifdef HAVE_BG
 		select_g_get_jobinfo(job->select_jobinfo, 
-				     SELECT_DATA_QUARTER, 
-				     &quarter);
+				     SELECT_DATA_NODE_CNT, 
+				     &node_cnt);
 #endif
-		
-		if(quarter != -1)
-			_print_str("0.25", width, right_justify, true);
-		else
-			_print_int(_get_node_cnt(job), width, 
+		if(node_cnt == 0)
+			node_cnt = _get_node_cnt(job);
+
+		if(node_cnt > 1024) {
+			node_cnt /= 1024;
+			sprintf(tmp_char,"%dk\0",node_cnt);
+			_print_str(tmp_char, width, right_justify, true);
+		} else
+			_print_int(node_cnt, width, 
 				   right_justify, true);
 	}
 	if (suffix)

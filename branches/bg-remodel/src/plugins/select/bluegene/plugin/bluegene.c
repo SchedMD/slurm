@@ -1140,26 +1140,19 @@ static void _set_bg_lists()
 	bg_record_t *bg_record = NULL;
 	
 	slurm_mutex_lock(&block_state_mutex);
-	if (bg_found_block_list) {
-		while ((bg_record = list_pop(bg_found_block_list)) != NULL) {
-		}
-	} else
-		bg_found_block_list = list_create(NULL);
+	if (bg_found_block_list) 
+		list_destroy(bg_found_block_list);
+	bg_found_block_list = list_create(NULL);
 	
-	if (bg_curr_block_list){
-		while ((bg_record = list_pop(bg_curr_block_list)) != NULL){
-			destroy_bg_record(bg_record);
-		}
-	} else
-		bg_curr_block_list = list_create(destroy_bg_record);
+	if (bg_curr_block_list)
+		list_destroy(bg_curr_block_list);
+	
+	bg_curr_block_list = list_create(destroy_bg_record);
 	
 /* empty the old list before reading new data */
-	if (bg_list) {
-		while ((bg_record = list_pop(bg_list)) != NULL) {
-			destroy_bg_record(bg_record);		
-		}
-	} else
-		bg_list = list_create(destroy_bg_record);
+	if (bg_list) 
+		list_destroy(bg_list);
+	bg_list = list_create(destroy_bg_record);
 	slurm_mutex_unlock(&block_state_mutex);
 		
 }

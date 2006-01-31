@@ -815,6 +815,8 @@ static int _print_rest(db2_block_info_t *block_ptr)
 	ListIterator itr;
 	int set = 0;
 		
+	if(block_ptr->node_cnt == 0)
+		block_ptr->node_cnt = block_ptr->size;
 	part.total_nodes = block_ptr->node_cnt;
 	if(block_ptr->slurm_part_name)
 		part.name = block_ptr->slurm_part_name;

@@ -311,11 +311,11 @@ extern int configure_small_block(bg_record_t *bg_record)
 	ListIterator itr;
 	ba_node_t* ba_node = NULL;
 	int rc = SLURM_SUCCESS;
-	rm_BP_t *curr_bp;
+	rm_BP_t *curr_bp = NULL;
 	rm_bp_id_t bp_id = NULL;
 	int num_ncards = 0;
 	rm_nodecard_t *ncard;
-	rm_nodecard_list_t *ncard_list;
+	rm_nodecard_list_t *ncard_list = NULL;
 	rm_quarter_t quarter;
 	int num, i;
 
@@ -418,7 +418,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 		if(bg_record->quarter != quarter)
 			continue;
 		if(bg_record->segment != -1) {
-			if(bg_record->segment != i%4)
+			if(bg_record->segment != (i%4))
 				continue;
 		}
 		if (num_ncards) {
