@@ -346,7 +346,7 @@ g_slurm_auth_create( void *hosts, int timeout )
         if ( ( argv = slurm_auth_marshal_args( hosts, timeout ) ) == NULL ) {
                 return NULL;
         }
-
+       
         ret = (*(g_context->ops.create))( argv );
         xfree( argv );
         return ret;
