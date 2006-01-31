@@ -1157,6 +1157,24 @@ static void _set_bg_lists()
 		
 }
 
+static int _format_node_name(bg_record_t *bg_record, char tmp_char[])
+{
+	if(bg_record->quarter != -1) {
+		if(bg_record->segment != -1) {
+			sprintf(tmp_char,"%s.%d.%d\0",
+				bg_record->nodes,
+				bg_record->quarter,
+				bg_record->segment);
+		} else {
+			sprintf(tmp_char,"%s.%d\0",
+				bg_record->nodes,
+				bg_record->quarter);
+		}
+	} else {
+		sprintf(tmp_char,"%s\0",bg_record->nodes);
+	}
+	return SLURM_SUCCESS;
+}
 /*
  * Match slurm configuration information with current BG block 
  * configuration. Return SLURM_SUCCESS if they match, else an error 
@@ -1167,12 +1185,12 @@ static int _validate_config_nodes(void)
 {
 	int rc = SLURM_ERROR;
 #ifdef HAVE_BG_FILES
-	bg_record_t* record = NULL;	
-	bg_record_t* init_record = NULL;
+	bg_record_t* bg_record = NULL;	
+	bg_record_t* init_bg_record = NULL;
 	ListIterator itr_conf;
 	ListIterator itr_curr;
 	rm_partition_mode_t node_use;
-	
+	char tmp_char[256];
 	/* read current bg block info into bg_curr_block_list */
 	if (read_bg_blocks() == SLURM_ERROR)
 		return SLURM_ERROR;
@@ -1182,7 +1200,7 @@ static int _validate_config_nodes(void)
 	
 	if(bg_list) {
 		itr_conf = list_iterator_create(bg_list);
-		while ((record = (bg_record_t*) list_next(itr_conf))) {
+		while ((bg_record = (bg_record_t*) list_next(itr_conf))) {
 			/* translate hostlist to ranged 
 			   string for consistent format
 			   search here 
@@ -1192,31 +1210,35 @@ static int _validate_config_nodes(void)
 			if(bg_curr_block_list) {
 				itr_curr = list_iterator_create(
 					bg_curr_block_list);	
-				while ((init_record = (bg_record_t*) 
+				while ((init_bg_record = (bg_record_t*) 
 					list_next(itr_curr)) 
 				       != NULL) {
-					if (strcasecmp(record->nodes, 
-						       init_record->nodes))
+					if (strcasecmp(bg_record->nodes, 
+						       init_bg_record->nodes))
 						continue; /* wrong nodes */
-					if (record->conn_type 
-					    != init_record->conn_type)
+					if (bg_record->conn_type 
+					    != init_bg_record->conn_type)
 						continue; /* wrong conn_type */
-					if(record->quarter !=
-					    init_record->quarter)
+					if(bg_record->quarter !=
+					    init_bg_record->quarter)
 						continue; /* wrong quart */
-					record->bg_block_id = xstrdup(
-						init_record->bg_block_id);
-					record->state = init_record->state;
-					record->node_use = 
-						init_record->node_use;
-					record->user_uid = 
-						init_record->user_uid;
-					record->user_name = xstrdup(
-						init_record->user_name);
-					record->target_name = xstrdup(
-						init_record->target_name);
-					record->boot_state = 
-						init_record->boot_state;
+					if(bg_record->segment !=
+					    init_bg_record->segment)
+						continue; /* wrong segment */
+					bg_record->bg_block_id = xstrdup(
+						init_bg_record->bg_block_id);
+					bg_record->state = 
+						init_bg_record->state;
+					bg_record->node_use = 
+						init_bg_record->node_use;
+					bg_record->user_uid = 
+						init_bg_record->user_uid;
+					bg_record->user_name = xstrdup(
+						init_bg_record->user_name);
+					bg_record->target_name = xstrdup(
+						init_bg_record->target_name);
+					bg_record->boot_state = 
+						init_bg_record->boot_state;
 					break;
 				}
 				list_iterator_destroy(itr_curr);
@@ -1224,93 +1246,99 @@ static int _validate_config_nodes(void)
 				error("_validate_config_nodes: "
 				      "no bg_curr_block_list");
 			}
-			if (!record->bg_block_id) {
+			if (!bg_record->bg_block_id) {
+				_format_node_name(bg_record, tmp_char);
+				
 				info("Block found in bluegene.conf to be "
 				     "created: Nodes:%s", 
-				     record->nodes);
+				     tmp_char,
+				     bg_record->quarter,
+				     bg_record->segment);
 				rc = SLURM_ERROR;
 			} else {
-				list_append(bg_found_block_list, record);
+				list_append(bg_found_block_list, bg_record);
+				_format_node_name(bg_record, tmp_char);
+				
 				info("Found existing BG BlockID:%s "
-				     "Nodes:%s Conn:%s Mode:%s",
-				     record->bg_block_id, 
-				     record->nodes,
-				     convert_conn_type(record->conn_type),
-				     convert_node_use(record->node_use));
+				     "Nodes:%s Conn:%s",
+				     bg_record->bg_block_id, 
+				     tmp_char,
+				     convert_conn_type(bg_record->conn_type));
 			}
 		}		
 		list_iterator_destroy(itr_conf);
 		if(bg_curr_block_list) {
 			itr_curr = list_iterator_create(
 				bg_curr_block_list);
-			while ((init_record = (bg_record_t*) 
+			while ((init_bg_record = (bg_record_t*) 
 				list_next(itr_curr)) 
 			       != NULL) {
-				_process_nodes(init_record);
+				_process_nodes(init_bg_record);
 				debug3("%s %d %d%d%d %d%d%d",
-				       init_record->bg_block_id, 
-				       init_record->bp_count, 
-				       init_record->geo[X],
-				       init_record->geo[Y],
-				       init_record->geo[Z],
+				       init_bg_record->bg_block_id, 
+				       init_bg_record->bp_count, 
+				       init_bg_record->geo[X],
+				       init_bg_record->geo[Y],
+				       init_bg_record->geo[Z],
 				       DIM_SIZE[X],
 				       DIM_SIZE[Y],
 				       DIM_SIZE[Z]);
-				if ((init_record->geo[X] == DIM_SIZE[X])
-				    && (init_record->geo[Y] == DIM_SIZE[Y])
-				    && (init_record->geo[Z] == DIM_SIZE[Z])) {
-					record = (bg_record_t*) 
+				if ((init_bg_record->geo[X] == DIM_SIZE[X])
+				    && (init_bg_record->geo[Y] == DIM_SIZE[Y])
+				    && (init_bg_record->geo[Z] == DIM_SIZE[Z]))
+				{
+					bg_record = (bg_record_t*) 
 						xmalloc(sizeof(bg_record_t));
-					list_append(bg_list, record);
-					full_system_block = record;
-					record->full_block = 1;
-					record->bg_block_id = xstrdup(
-						init_record->bg_block_id);
+					list_append(bg_list, bg_record);
+					full_system_block = bg_record;
+					bg_record->full_block = 1;
+					bg_record->bg_block_id = xstrdup(
+						init_bg_record->bg_block_id);
 					debug("full system %s",
-					      record->bg_block_id);
-					record->nodes = xstrdup(
-						init_record->nodes);
-					record->state = init_record->state;
-					record->node_use =
-						init_record->node_use;
-					record->user_uid =
-						init_record->user_uid;
-					record->user_name = xstrdup(
-						init_record->user_name);
-					record->target_name = xstrdup(
-						init_record->target_name);
-					record->conn_type = 
-						init_record->conn_type;
-					record->node_use = 
-						init_record->node_use;
-					record->bp_count = 
-						init_record->bp_count;
-					record->boot_state = 
-						init_record->boot_state;
-					record->switch_count = 
-						init_record->switch_count;
-					record->cpus_per_bp = 
-						init_record->cpus_per_bp;
-					record->quarter = 
-						init_record->quarter;
-					if((record->bitmap = 
-					    bit_copy(init_record->bitmap)) 
+					      bg_record->bg_block_id);
+					bg_record->nodes = xstrdup(
+						init_bg_record->nodes);
+					bg_record->state = 
+						init_bg_record->state;
+					bg_record->node_use =
+						init_bg_record->node_use;
+					bg_record->user_uid =
+						init_bg_record->user_uid;
+					bg_record->user_name = xstrdup(
+						init_bg_record->user_name);
+					bg_record->target_name = xstrdup(
+						init_bg_record->target_name);
+					bg_record->conn_type = 
+						init_bg_record->conn_type;
+					bg_record->node_use = 
+						init_bg_record->node_use;
+					bg_record->bp_count = 
+						init_bg_record->bp_count;
+					bg_record->boot_state = 
+						init_bg_record->boot_state;
+					bg_record->switch_count = 
+						init_bg_record->switch_count;
+					bg_record->cpus_per_bp = 
+						init_bg_record->cpus_per_bp;
+					bg_record->quarter = 
+						init_bg_record->quarter;
+					if((bg_record->bitmap = 
+					    bit_copy(init_bg_record->bitmap)) 
 					   == NULL) {
 						error("Unable to copy "
 						      "bitmap for", 
-						      init_record->nodes);
+						      init_bg_record->nodes);
 					}
 					list_append(bg_found_block_list, 
-						    record);
+						    bg_record);
+					_format_node_name(bg_record, tmp_char);
 					info("Found existing BG "
 					     "BlockID:%s "
-					     "Nodes:%s Conn:%s Mode:%s",
-					     record->bg_block_id, 
-					     record->nodes,
+					     "Nodes:%s Conn:%s",
+					     bg_record->bg_block_id, 
+					     tmp_char,
 					     convert_conn_type(
-						     record->conn_type),
-					     convert_node_use(
-						     record->node_use));
+						     bg_record->conn_type));
 					break;
 				}
 			}
@@ -1645,6 +1673,7 @@ static int _parse_bg_spec(char *in_line)
 	
 	bg_record->node_use = SELECT_COPROCESSOR_MODE;
 	bg_record->cpus_per_bp = procs_per_node;
+	bg_record->node_cnt = BP_NODE_CNT * bg_record->bp_count;
 	bg_record->quarter = -1;
 	bg_record->segment = -1;
 	

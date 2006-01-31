@@ -214,7 +214,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 
 	if (params.all_flag)
 		show_flags |= SHOW_ALL;
-
+		
 	if (old_part_ptr) {
 		error_code =
 		    slurm_load_partitions(old_part_ptr->last_update,
@@ -236,7 +236,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 
 	old_part_ptr = new_part_ptr;
 	*part_pptr = new_part_ptr;
-
+	
 	if (old_node_ptr) {
 		error_code =
 		    slurm_load_node(old_node_ptr->last_update,

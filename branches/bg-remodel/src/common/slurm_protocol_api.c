@@ -1387,6 +1387,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 		/* If the backup controller is in the process of assuming 
 		 * control, we sleep and retry later */
 		ret_list = _send_and_recv_msg(fd, req, resp, 0);
+		printf("freeing it here");
 		if(errno == SLURM_SUCCESS)
 			slurm_free_cred(resp->cred);
 

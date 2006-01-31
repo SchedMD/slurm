@@ -231,22 +231,39 @@ static int _find_32node_segment(bg_record_t *bg_record,
 	int card_count = 0;
 	int num = 0;
 	int i=0;
+	int rc;
 	rm_nodecard_list_t *ncard_list = NULL;
+	rm_nodecard_t *ncard = NULL;
+	rm_BP_t *curr_bp = NULL;
 	
 	if((rc = rm_get_data(block_ptr,
+			     RM_PartitionFirstNodeCard,
+			     &ncard))
+	   != STATUS_OK) {
+		error("rm_get_data(RM_FirstCard): %s",
+		      bg_err_str(rc));
+	}
+	if((rc = rm_get_data(ncard,
 			     RM_NodeCardID,
 			     &my_card_name))
 	   != STATUS_OK) {
 		error("rm_get_data(RM_NodeCardID): %s",
 		      bg_err_str(rc));
 	}
+	
 	if((rc = rm_get_data(block_ptr,
 			     RM_PartitionFirstBP,
-			     &bp_id))
+			     &curr_bp))
 	   != STATUS_OK) {
-		error("rm_get_data(RM_NodeCardID): %s",
+		error("rm_get_data(RM_PartitionFirstBP): %s",
 		      bg_err_str(rc));
 	}
+	if ((rc = rm_get_data(curr_bp, RM_BPID, &bp_id))
+	    != STATUS_OK) {
+		error("rm_get_data(RM_BPID): %d", rc);
+		return SLURM_ERROR;
+	}
+	
 	if ((rc = rm_get_nodecards(bp_id, &ncard_list))
 	    != STATUS_OK) {
 		error("rm_get_nodecards(%s): %d",
@@ -298,8 +315,9 @@ static int _find_32node_segment(bg_record_t *bg_record,
 		bg_record->segment = (i%4);
 		break;
 	}
+cleanup:
 	free(my_card_name);
-	return segment;
+	return SLURM_SUCCESS;
 }
 
 extern int configure_block(bg_record_t *bg_record)
@@ -331,7 +349,7 @@ int read_bg_blocks()
 	bg_record_t *bg_record = NULL;
 	struct passwd *pw_ent = NULL;
 	
-	int *coord;
+	int *coord = NULL;
 	int block_number, block_count;
 	char *block_name = NULL;
 	rm_partition_list_t *block_list = NULL;

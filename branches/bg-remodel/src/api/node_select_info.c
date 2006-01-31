@@ -64,10 +64,12 @@ extern int slurm_load_node_select (time_t update_time,
         req.last_update  = update_time;
         req_msg.msg_type = REQUEST_NODE_SELECT_INFO;
         req_msg.data     = &req;
-
+	info("hey\n");
+	
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
-
+	info("hey\n");
+	
 	switch (resp_msg.msg_type) {
 	case RESPONSE_NODE_SELECT_INFO:
 		*node_select_info_msg_pptr = (node_select_info_msg_t *) 
@@ -75,7 +77,9 @@ extern int slurm_load_node_select (time_t update_time,
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		printf("hey\n");
 		slurm_free_return_code_msg(resp_msg.data);	
+		printf("hey\n");
 		if (rc) 
 			slurm_seterrno_ret(rc);
 		*node_select_info_msg_pptr = NULL;
