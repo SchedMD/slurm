@@ -44,6 +44,9 @@
 #include "../block_allocator/block_allocator.h"
 #include "../wrap_rm_api.h"
 
+#define BP_NODE_CNT 512
+#define NC_NODE_CNT 32
+
 typedef int lifecycle_type_t;
 
 enum block_lifecycle {DYNAMIC, STATIC};
@@ -74,13 +77,16 @@ typedef struct bg_record {
 	int boot_count;                 /* number of attemts boot attempts */
 	bitstr_t *bitmap;               /* bitmap to check the name 
 					   of block */
-	int full_block;             /* wether or not block is the full
+	int full_block;                 /* wether or not block is the full
 					   block */
 	int job_running;                /* job id if there is a job running 
 					   on the block */
-	int cnodes_per_bp;              /* count of cnodes per Base block */
+	int cpus_per_bp;                /* count of cpus per base part */
+	int node_cnt;                   /* count of nodes per block */
 	int quarter;                    /* used for small blocks 
 					   determine quarter of BP */
+	int segment;                    /* used for small blocks 
+					   determine segment of quarter */
 } bg_record_t;
 
 typedef struct {

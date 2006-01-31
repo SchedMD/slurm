@@ -116,7 +116,7 @@ static void _pre_allocate(bg_record_t *bg_record)
 			&bg_record->conn_type)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionConnection)", bg_err_str(rc));
 	
-	if(bg_record->cnodes_per_bp == (procs_per_node/4))
+	if(bg_record->cpus_per_bp == (procs_per_node/4))
 		send_psets = numpsets/4;
 	
 	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionPsetsPerBP, 
@@ -220,13 +220,78 @@ static int _post_bg_init_read(void *object, void *arg)
 
 	return SLURM_SUCCESS;
 }
+static int _find_32node_segment(bg_record_t *bg_record, 
+				rm_partition_t *block_ptr)
+{
+	char *my_card_name = NULL;
+	char *card_name = NULL;
+	rm_bp_id_t bp_id = NULL;
+	int segment = -1;
+	int num_ncards = 0;
+	
+	if((rc = rm_get_data(block_ptr,
+			     RM_NodeCardID,
+			     &my_card_name))
+	   != STATUS_OK) {
+		error("rm_get_data(RM_NodeCardID): %s",
+		      bg_err_str(rc));
+	}
+	if((rc = rm_get_data(block_ptr,
+			     RM_PartitionFirstBP,
+			     &bp_name))
+	   != STATUS_OK) {
+		error("rm_get_data(RM_NodeCardID): %s",
+		      bg_err_str(rc));
+	}
+	if ((rc = rm_get_nodecards(bp_id, &ncard_list))
+	    != STATUS_OK) {
+		error("rm_get_nodecards(%s): %d",
+		       bp_id, rc);
+		free(bp_id);
+		return SLURM_ERROR;
+	}
+	free(bp_id);
+	if((rc = rm_get_data(ncard_list, RM_NodeCardListSize, &num))
+	   != STATUS_OK) {
+		error("rm_get_data(RM_NodeCardListSize): %s", bg_err_str(rc));
+		return SLURM_ERROR;
+	}
+	
+	card_count = 0;
+	for(i=0; i<card_cnt; i++) {
+		if (i) {
+			if ((rc = 
+			     rm_get_data(ncard_list, 
+					 RM_NodeCardListNext, 
+					 &ncard)) != STATUS_OK) {
+				error("rm_get_data(RM_NodeCardListNext): %s",
+				      rc);
+				rc = SLURM_ERROR;
+				goto cleanup;
+			}
+		} else {
+			if ((rc = rm_get_data(ncard_list, 
+					      RM_NodeCardListFirst, 
+					      &ncard)) != STATUS_OK) {
+				error("rm_get_data(RM_NodeCardListFirst: %s",
+				      rc);
+				rc = SLURM_ERROR;
+				goto cleanup;
+			}
+		}
+		if(strcmp(my_card_name,card_name);
+	
+	}
+	free(card_name);
+	return segment;
+}
 
 extern int configure_block(bg_record_t *bg_record)
 {
 	/* new partition to be added */
 	rm_new_partition(&bg_record->bg_block); 
 	_pre_allocate(bg_record);
-	if(bg_record->cnodes_per_bp < procs_per_node)
+	if(bg_record->cpus_per_bp < procs_per_node)
 		configure_small_block(bg_record);
 	else
 		configure_block_switches(bg_record);
@@ -528,9 +593,9 @@ int read_bg_blocks()
 		} 
 		
 		if(small)
-			bg_record->cnodes_per_bp = procs_per_node/4;
+			bg_record->cpus_per_bp = procs_per_node/4;
 		else
-			bg_record->cnodes_per_bp = procs_per_node;
+			bg_record->cpus_per_bp = procs_per_node;
 		
 		bg_record->block_lifecycle = STATIC;
 						

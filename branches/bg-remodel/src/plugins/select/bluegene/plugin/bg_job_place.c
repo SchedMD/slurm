@@ -170,14 +170,14 @@ static int _find_best_block_match(struct job_record* job_ptr,
 			continue;
 		}
 			
-		if (req_procs > record->cnodes_per_bp) {
+		if (req_procs > record->cpus_per_bp) {
 			/* We use the c-node count here. Job could start
 			 * twice this count if VIRTUAL_NODE_MODE, but this
 			 * is now controlled by mpirun, not SLURM 
 			 * We now use the number set by the admins in the
 			 * slurm.conf file.  This should never happen.
 			 */
-			proc_cnt = record->bp_count * record->cnodes_per_bp;
+			proc_cnt = record->bp_count * record->cpus_per_bp;
 			if (req_procs > proc_cnt) {
 				debug("block %s CPU count too low",
 					record->bg_block_id);
@@ -309,6 +309,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			SELECT_DATA_BLOCK_ID, record->bg_block_id);
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_QUARTER, &record->quarter);
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+			SELECT_DATA_SEGMENT, &record->segment);
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+			SELECT_DATA_NODE_CNT, &record->node_cnt);
 	}
 
 	return SLURM_SUCCESS;

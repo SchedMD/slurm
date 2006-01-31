@@ -225,12 +225,20 @@ static int _print_text_job(job_info_t * job_ptr)
 	int i = 0;
 	int width = 0;
 	char time_buf[20];
-	int quarter = -1;
+	int16_t quarter = -1;
+	int16_t segment = -1;
+	uint32_t node_cnt = 0;
 
 #ifdef HAVE_BG
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
 			     SELECT_DATA_QUARTER, 
 			     &quarter);
+	select_g_get_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_SEGMENT, 
+			     &segment);
+	select_g_get_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_NODE_CNT, 
+			     &node_cnt);
 #endif
 	if(!params.commandline) {
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
@@ -274,16 +282,16 @@ static int _print_text_job(job_info_t * job_ptr)
 			  time_buf);
 		ba_system_ptr->xcord += 11;
 
-		if(quarter != -1)
+		if(node_cnt >= 1024)
 			mvwprintw(ba_system_ptr->text_win, 
 				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "%5s", 
-				  "0.25");
+				  ba_system_ptr->xcord, "%4dk", 
+				  node_cnt/1024);
 		else
 			mvwprintw(ba_system_ptr->text_win, 
 				  ba_system_ptr->ycord,
 				  ba_system_ptr->xcord, "%5d", 
-				  job_ptr->num_nodes);
+				  node_cnt);
 		ba_system_ptr->xcord += 6;
 
 		tempxcord = ba_system_ptr->xcord;
@@ -308,11 +316,20 @@ static int _print_text_job(job_info_t * job_ptr)
 			i++;
 		}
 		if(quarter != -1) {
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, ".%d", 
-				  quarter);		
-			ba_system_ptr->xcord += 2;
+			if(segment != -1) {
+				mvwprintw(ba_system_ptr->text_win, 
+					  ba_system_ptr->ycord,
+					  ba_system_ptr->xcord, ".%d.%d", 
+					  quarter,
+					  segment);
+				ba_system_ptr->xcord += 4;
+			} else {
+				mvwprintw(ba_system_ptr->text_win, 
+					  ba_system_ptr->ycord,
+					  ba_system_ptr->xcord, ".%d", 
+					  quarter);
+				ba_system_ptr->xcord += 2;
+			}
 		}
 
 		ba_system_ptr->xcord = 1;
@@ -340,14 +357,17 @@ static int _print_text_job(job_info_t * job_ptr)
 		
 		printf("%10.10s ", time_buf);
 		
-		if(quarter != -1)
-			printf("%5s ", "0.25");
+		if(node_cnt >= 1024)
+			printf("%4dk ", node_cnt/1024);
 		else
-			printf("%5d ", job_ptr->num_nodes);
+			printf("%5d ", node_cnt);
 		
 		printf("%s", job_ptr->nodes);
 		if(quarter != -1) {
-			printf(".%d",quarter);
+			if(segment != -1)
+				printf(".%d.%d", quarter, segment);
+			else
+				printf(".%d", quarter);
 		}
 
 		printf("\n");

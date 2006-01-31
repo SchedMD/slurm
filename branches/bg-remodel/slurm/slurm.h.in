@@ -193,7 +193,9 @@ enum select_data_type {
 	SELECT_DATA_NODE_USE,	/* data-> uint16_t node_use */
 	SELECT_DATA_CONN_TYPE,	/* data-> uint16_t connection_type */
 	SELECT_DATA_BLOCK_ID,	/* data-> char bg_block_id */
-	SELECT_DATA_QUARTER,	/* data-> uint32_t quarter */
+	SELECT_DATA_QUARTER,	/* data-> int16_t quarter */
+	SELECT_DATA_SEGMENT,	/* data-> int16_t segment */
+	SELECT_DATA_NODE_CNT,	/* data-> uint32_t node_cnt */
 	SELECT_DATA_CHECKED	/* data-> uint16_t checked */
 };
 

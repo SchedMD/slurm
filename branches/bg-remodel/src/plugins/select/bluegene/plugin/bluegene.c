@@ -548,11 +548,10 @@ extern int create_static_blocks(List block_list)
 		
 	if(bg_list) {
 		itr = list_iterator_create(bg_list);
-		while ((bg_record = (bg_record_t *) list_next(itr)) 
-		       != NULL) {			
+		while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
 			if(bg_record->bp_count>0 
 			   && !bg_record->full_block
-			   && bg_record->cnodes_per_bp == procs_per_node) {
+			   && bg_record->cpus_per_bp == procs_per_node) {
 				debug("adding %s %d%d%d",
 				      bg_record->nodes,
 				      bg_record->start[X],
@@ -720,7 +719,7 @@ extern int create_static_blocks(List block_list)
 	}
 	xfree(name);
 	bg_record->node_use = SELECT_COPROCESSOR_MODE;
-	bg_record->cnodes_per_bp = procs_per_node;
+	bg_record->cpus_per_bp = procs_per_node;
 #ifdef HAVE_BG_FILES
 	if((rc = configure_block(bg_record)) == SLURM_ERROR) {
 		slurm_mutex_unlock(&block_state_mutex);
@@ -1297,8 +1296,8 @@ static int _validate_config_nodes(void)
 						init_record->boot_state;
 					record->switch_count = 
 						init_record->switch_count;
-					record->cnodes_per_bp = 
-						init_record->cnodes_per_bp;
+					record->cpus_per_bp = 
+						init_record->cpus_per_bp;
 					record->quarter = 
 						init_record->quarter;
 					if((record->bitmap = 
@@ -1347,8 +1346,8 @@ static int _validate_config_nodes(void)
  */
 static int _bg_record_cmpf_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 {
-	int size_a = rec_a->bp_count * rec_a->cnodes_per_bp;
-	int size_b = rec_b->bp_count * rec_b->cnodes_per_bp;
+	int size_a = rec_a->bp_count * rec_a->cpus_per_bp;
+	int size_b = rec_b->bp_count * rec_b->cpus_per_bp;
 	if (size_a < size_b)
 		return -1;
 	else if (size_a > size_b)
@@ -1541,14 +1540,18 @@ static int _parse_bg_spec(char *in_line)
 	char *blrts_image = NULL,   *linux_image = NULL;
 	char *mloader_image = NULL, *ramdisk_image = NULL;
 	char *api_file = NULL;
-	int pset_num=-1, api_verb=-1;
+	int pset_num=-1, api_verb=-1, num32=0, num128=0;
 	bg_record_t *bg_record = NULL;
 	bg_record_t *small_bg_record = NULL;
 	ba_node_t *ba_node = NULL;
 	struct passwd *pw_ent = NULL;
 	ListIterator itr;
 	int i=0;
-	
+	int small_size = 0;
+	int small_count = 0;
+	int quarter = 0;
+	int node_cnt = 0;
+
 	//info("in_line = %s",in_line);
 	error_code = slurm_parser(in_line,
 				  "BlrtsImage=", 's', &blrts_image,
@@ -1560,6 +1563,8 @@ static int _parse_bg_spec(char *in_line)
 				  "Nodes=", 's', &nodes,
 				  "RamDiskImage=", 's', &ramdisk_image,
 				  "Type=", 's', &conn_type,
+				  "Num32=", 'd', &num32,
+				  "Num128=", 'd', &num128,
 				  "END");
 
 	if (error_code)
@@ -1646,18 +1651,40 @@ static int _parse_bg_spec(char *in_line)
 	xfree(conn_type);
 	
 	bg_record->node_use = SELECT_COPROCESSOR_MODE;
-	bg_record->cnodes_per_bp = procs_per_node;
+	bg_record->cpus_per_bp = procs_per_node;
 	bg_record->quarter = -1;
+	bg_record->segment = -1;
 	
 	if(bg_record->conn_type != SELECT_SMALL)
 		list_append(bg_list, bg_record);
 	else {
+		if(num32==0 && num128==0) {
+			info("No specs given for this small block, "
+			     "I am spliting this block into 4 quarters");
+			num128=4;
+		}
+		if(((num32*32) + (num128*128)) != BP_NODE_CNT)
+			fatal("There is an error in your bluegene.conf file.\n"
+			      "I am unable to request %d nodes in one "
+			      "midplane.", ((num32*32) + (num128*128)));
+		small_count = num32+num128; 
+		
 		/* Automatically create 4-way split if 
 		 * conn_type == SELECT_SMALL in bluegene.conf
+		 * Here we go through each node listed and do the same thing
+		 * for each node.
 		 */
 		itr = list_iterator_create(bg_record->bg_block_list);
 		while ((ba_node = list_next(itr)) != NULL) {
-			for(i=0; i<4 ; i++) {
+			/* break midplane up into 16 parts */
+			small_size = 16;
+			node_cnt = 0;
+			quarter = 0;
+			for(i=0; i<small_count; i++) {
+				if(i == num32) {
+					/* break midplane up into 4 parts */
+					small_size = 4;
+				}
 				small_bg_record = (bg_record_t*) 
 					xmalloc(sizeof(bg_record_t));
 				list_append(bg_list, small_bg_record);
@@ -1681,9 +1708,23 @@ static int _parse_bg_spec(char *in_line)
 				small_bg_record->node_use = 
 					SELECT_COPROCESSOR_MODE;
 				
-				small_bg_record->cnodes_per_bp = 
-					procs_per_node/4;
-				small_bg_record->quarter = i; 
+				small_bg_record->cpus_per_bp = 
+					procs_per_node/small_size;
+				small_bg_record->node_cnt = 
+					BP_NODE_CNT/small_size;
+				small_bg_record->quarter = quarter; 
+				
+				node_cnt += small_bg_record->node_cnt;
+				if(node_cnt == 128) {
+					node_cnt = 0;
+					quarter++;
+				}
+				
+				if(small_bg_record->node_cnt == 128)
+					small_bg_record->segment = -1;
+				else
+					small_bg_record->segment = i%4; 
+				
 			}
 		}
 		list_iterator_destroy(itr);
@@ -1804,6 +1845,8 @@ static void _process_nodes(bg_record_t *bg_record)
 		      bg_record->nodes);
 	}
 #endif
+	bg_record->node_cnt = BP_NODE_CNT * bg_record->bp_count;
+	
 	return;
 }
 

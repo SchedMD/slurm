@@ -313,7 +313,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 	int rc = SLURM_SUCCESS;
 	rm_BP_t *curr_bp;
 	rm_bp_id_t bp_id = NULL;
-	int num_ncards = 4;
+	int num_ncards = 0;
 	rm_nodecard_t *ncard;
 	rm_nodecard_list_t *ncard_list;
 	rm_quarter_t quarter;
@@ -330,6 +330,8 @@ extern int configure_small_block(bg_record_t *bg_record)
 			      &small)) != STATUS_OK) {
 		fatal("rm_set_data(RM_PartitionPsetsPerBP)", bg_err_str(rc));
 	}
+
+	num_ncards = bg_record->node_cnt/NC_NODE_CNT;
 
 	if ((rc = rm_set_data(bg_record->bg_block,
 			      RM_PartitionNodeCardNum,
@@ -415,6 +417,10 @@ extern int configure_small_block(bg_record_t *bg_record)
 		}
 		if(bg_record->quarter != quarter)
 			continue;
+		if(bg_record->segment != -1) {
+			if(bg_record->segment != i%4)
+				continue;
+		}
 		if (num_ncards) {
 			if ((rc = rm_set_data(bg_record->bg_block,
 					      RM_PartitionNextNodeCard, 

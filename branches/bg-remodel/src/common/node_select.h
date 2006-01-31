@@ -74,14 +74,16 @@ extern int select_g_node_init(struct node_record *node_ptr, int node_cnt);
  * IN/OUT data  - the data to get from node record
  */
 extern int select_g_get_select_nodeinfo (struct node_record *node_ptr, 
-                                         enum select_data_info cr_info, void *data);
+                                         enum select_data_info cr_info, 
+					 void *data);
 
 /* 
  * Update select data for a specific node record for a specific job 
  * IN cr_info   - type of data to update for a given job record
  * IN job_ptr - current job record
  */
-extern int select_g_update_nodeinfo (struct job_record *job_ptr, enum select_data_info cr_info);
+extern int select_g_update_nodeinfo (struct job_record *job_ptr, 
+				     enum select_data_info cr_info);
 
 /* 
  * Get select data from a plugin
@@ -89,7 +91,8 @@ extern int select_g_update_nodeinfo (struct job_record *job_ptr, enum select_dat
  * IN cr_info   - type of data to get from the node record (see enum select_data_info)
  * IN/OUT data  - the data to get from node record
  */
-extern int select_g_get_info_from_plugin (enum select_data_info cr_info, void *data);
+extern int select_g_get_info_from_plugin (enum select_data_info cr_info, 
+					  void *data);
 
 /*
  * Note re/initialization of partition record data structure
@@ -116,7 +119,7 @@ extern int select_g_job_init(List job_list);
  * IN max_nodes - maximum number of nodes to allocate to job 
  */
 extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-	int min_nodes, int max_nodes);
+			     int min_nodes, int max_nodes);
 
 /*
  * Note initiation of job is about to begin. Called immediately 
@@ -165,7 +168,7 @@ extern int select_g_alloc_jobinfo (select_jobinfo_t *jobinfo);
  * IN data - the data to enter into job credential
  */
 extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
-		enum select_data_type data_type, void *data);
+				 enum select_data_type data_type, void *data);
 
 /* get data from a select job credential
  * IN jobinfo  - updated select job credential
@@ -174,7 +177,7 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
  *	data for data_tyep == SELECT_DATA_PART_ID
  */
 extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
-		enum select_data_type data_type, void *data);
+				 enum select_data_type data_type, void *data);
 
 /* copy a select job credential
  * IN jobinfo - the select job credential to be copied
@@ -197,7 +200,7 @@ extern int select_g_free_jobinfo  (select_jobinfo_t *jobinfo);
  * IN/OUT data  - the data to get from node record
  */
 extern int select_g_get_extra_jobinfo (struct node_record *node_ptr, 
-                                      struct job_record *job_ptr, 
+				       struct job_record *job_ptr, 
                                        enum select_data_info cr_info,
                                        void *data);
 
@@ -224,7 +227,7 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer);
  * RET        - the string, same as buf
  */
 extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
-		char *buf, size_t size, int mode);
+				     char *buf, size_t size, int mode);
 
 /******************************************************\
  * NODE-SELECT PLUGIN SPECIFIC INFORMATION FUNCTIONS  *
@@ -240,10 +243,10 @@ extern int select_g_pack_node_info(time_t last_query_time, Buf *buffer);
  
 /* Unpack node select info from a buffer */
 extern int select_g_unpack_node_info(node_select_info_msg_t **
-		node_select_info_msg_pptr, Buf buffer);
+				     node_select_info_msg_pptr, Buf buffer);
 
 /* Free a node select information buffer */
 extern int select_g_free_node_info(node_select_info_msg_t **
-		node_select_info_msg_pptr);
+				   node_select_info_msg_pptr);
 
 #endif /*__SELECT_PLUGIN_API_H__*/

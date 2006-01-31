@@ -673,7 +673,7 @@ extern int start_job(struct job_record *job_ptr)
 		SELECT_DATA_NODE_USE, &(bg_update_ptr->node_use));
 	bg_record = find_bg_record(bg_update_ptr->bg_block_id);
 	if (bg_record) {
-		job_ptr->num_procs = (bg_record->cnodes_per_bp *
+		job_ptr->num_procs = (bg_record->cpus_per_bp *
 			bg_record->bp_count);
 	}
 	info("Queue start of job %u in BG block %s",
@@ -698,7 +698,7 @@ extern int start_job(struct job_record *job_ptr)
 		}
 		bg_record = find_bg_record(block_id);
 		if (bg_record) {
-			job_ptr->num_procs = (bg_record->cnodes_per_bp *
+			job_ptr->num_procs = (bg_record->cpus_per_bp *
 				bg_record->bp_count);
 		}
 		itr = list_iterator_create(bg_list);
