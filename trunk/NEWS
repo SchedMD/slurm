@@ -23,6 +23,9 @@ documents those changes that are of interest to users and admins.
     message if window too small (Dan Palermo, HP, patch.1.0.0.1.060126.smap).
  -- Sacct mods for inconsistent records (race condition) and replace --debug
     option with --verbose (Andy Riebs, HP, slurm.hp.sacct_exp_vvv.patch).
+ -- scancel of a job step will now send a job-step-completed message
+    to the controller after verifying that the step has completed on all nodes.
+ -- Fix task layout bug in srun.
 
 * Changes in SLURM 1.0.1
 ========================
@@ -155,6 +158,8 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Fix bug in sinfo partition sorting order.
  -- Fix bugs in srun use of #SLURM options in batch script.
+ -- Use full Elan credential space rather than re-using credentials as soon 
+    as job step completes (helps with fault-tolerance).
 
 * Changes in SLURM 0.6.10
 =========================
