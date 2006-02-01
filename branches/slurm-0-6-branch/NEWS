@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Fix bug in sinfo partition sorting order.
  -- Fix bugs in srun use of #SLURM options in batch script.
+ -- Use full Elan credential space rather than re-using credentials as soon 
+    as job step completes (helps with fault-tolerance).
 
 * Changes in SLURM 0.6.10
 =========================

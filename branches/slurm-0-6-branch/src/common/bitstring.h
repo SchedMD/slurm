@@ -139,6 +139,7 @@ bitoff_t bit_ffs(bitstr_t *b);
 /* new */
 bitoff_t bit_nffs(bitstr_t *b, int n);
 bitoff_t bit_nffc(bitstr_t *b, int n);
+bitoff_t bit_noc(bitstr_t *b, int n, int seed);
 void	bit_free(bitstr_t *b);
 bitstr_t *bit_realloc(bitstr_t *b, bitoff_t nbits);
 bitoff_t bit_size(bitstr_t *b);

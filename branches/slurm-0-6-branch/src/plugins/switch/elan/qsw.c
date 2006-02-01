@@ -639,6 +639,7 @@ static int
 _alloc_hwcontext(bitstr_t *nodeset, uint32_t prognum, int num)
 {
 	int new = -1;
+	static int seed = 0;
 
 	assert(nodeset);
 	if (qsw_internal_state) {
@@ -661,8 +662,9 @@ _alloc_hwcontext(bitstr_t *nodeset, uint32_t prognum, int num)
 						step_ctx_p->st_high);
 		}
 		list_iterator_destroy(iter);
-		bit = bit_nffc(busy_context, num);
+		bit = bit_noc(busy_context, num, seed);
 		if (bit != -1) {
+			seed = bit + num;
 			step_ctx_p = xmalloc(sizeof(struct step_ctx));
 			step_ctx_p->st_prognum   = prognum;
 			step_ctx_p->st_low       = bit;

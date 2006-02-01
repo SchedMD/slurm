@@ -89,6 +89,7 @@
 #define	bit_pick_cnt		slurm_bit_pick_cnt
 #define	bitfmt2int		slurm_bitfmt2int
 #define bit_nffc		slurm_bit_nffc
+#define bit_noc			slurm_bit_noc
 #define bit_nffs		slurm_bit_nffs
 #define bit_unfmt		slurm_bit_unfmt
 #define bit_copybits		slurm_bit_copybits
