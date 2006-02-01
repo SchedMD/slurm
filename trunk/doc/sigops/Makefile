@@ -13,16 +13,10 @@ REPORT = report
 TEX = ../common/llnlCoverPage.tex $(REPORT).tex 
 
 FIGDIR = ../figures
-FIGS = $(FIGDIR)/allocate-init.eps \
-       $(FIGDIR)/arch.eps \
-       $(FIGDIR)/connections.eps \
-       $(FIGDIR)/entities.eps \
-       $(FIGDIR)/interactive-job-init.eps \
-       $(FIGDIR)/queued-job-init.eps \
-       $(FIGDIR)/slurm-arch.eps \
-       $(FIGDIR)/times.eps
-
-PLOTS = $(FIGDIR)/times.eps 
+FIGS = $(FIGDIR)/arch2.eps \
+       $(FIGDIR)/comm.eps \
+       $(FIGDIR)/entities2.eps \
+       $(FIGDIR)/launch.eps
 
 BIB = ../common/project.bib
 
@@ -42,7 +36,7 @@ BIB = ../common/project.bib
 all: $(REPORT).ps 
 
 
-$(REPORT).dvi: $(TEX) $(FIGS) $(PLOTS) $(BIB)
+$(REPORT).dvi: $(TEX) $(FIGS) $(BIB)
 	rm -f *.log *.aux *.blg *.bbl
 	(TEXINPUTS=.:../common::; export TEXINPUTS; \
 	 BIBINPUTS=.:../common::; export BIBINPUTS; \

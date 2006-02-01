@@ -1,39 +1,14 @@
 % Presenter info: 
-% Operating Systems Reviews
+% SIGOPS
 %
-% Main Text Layout
-% Set the main text in 10 point Times Roman or Times New Roman (normal), 
-% (no boldface), using single line spacing. All text should be in a single 
-% column and justified. 
+% Use a two-column, 8.5" x 11" document format
+% Use a 0.75" margin everywhere
+% All fonts MUST be Type 1 or 3 PostScript fornst from the Latin 1 Fontset.
+% Do not use TruType, bitmapped, or Ryumin fonts.
+% Use 10-point font size.
 %
-% Opening Style (First Page)
-% This includes the title of the paper, the author names, organization and 
-% country, the abstract, and the first part of the paper.
-% * Start the title 35mm down from the top margin in Times Roman font, 16 
-%   point bold, range left. Capitalize only the first letter of the first 
-%   word and proper nouns.
-% * On a new line, type the authors' names, organizations, and country only 
-%   (not the full postal address, although you may add the name of your 
-%   department), in Times Roman, 11 point italic, range left.
-% * Start the abstract with the heading two lines below the last line of the 
-%   address. Set the abstract in Times Roman, 12 point bold.
-% * Leave one line, then type the abstract in Times Roman 10 point, justified 
-%   with single line spacing.
-%
-% Other Pages
-% For the second and subsequent pages, use the full 190 x 115mm area and type 
-% in one column beginning at the upper right of each page, inserting tables 
-% and figures as required.
-% 
-% We're recommending the Lecture Notes in Computer Science styles from
-% Springer Verlag --- google on Springer Verlag LaTeX.  These work nicely,
-% *except* that it does not work with the hyperref package. Sigh.
-%
-% http://www.springer.de/comp/lncs/authors.html
-%
-% NOTE: This is an excerpt from the document in slurm/doc/pubdesign
 
-\documentclass[10pt,onecolumn,times]{../common/llncs}
+\documentclass[10pt,twocolumn,times]{../common/llncs}
 
 \usepackage{verbatim,moreverb}
 \usepackage{float}
@@ -59,11 +34,16 @@
 %\usepackage{times}
 \renewcommand{\labelitemi}{$\bullet$}
 
-\setlength{\textwidth}{115mm}
-\setlength{\textheight}{190mm}
-\setlength{\oddsidemargin}{(\paperwidth-\textwidth)/2 - 1in}
-\setlength{\topmargin}{(\paperheight-\textheight -\headheight-\headsep-\footskip
-)/2 - 1in + .5in }
+\setlength{\oddsidemargin}{-0.25in}
+\setlength{\evensidemargin}{-0.25in}
+\setlength{\topmargin}{0.0in} % was{-0.75in}
+\setlength{\headsep}{0.5in}
+\setlength{\footskip}{24.0pt}
+\setlength{\textheight}{9.0in}
+\setlength{\columnwidth}{3.32in}
+\setlength{\textwidth}{7.0in}
+\setlength{\columnsep}{0.30in}
+\setlength{\columnseprule}{0.0pt}
 
 % couple of macros for the title page and document
 \def\ctit{Scalable Resource Management with SLURM}
@@ -78,7 +58,6 @@
 %\makeLLNLCover{\ucrl}{\ctit}{\auth}{\journal}{\pubdate}{0in}{0in}
 
 % Title - 16pt bold
-\vspace*{35mm}
 \noindent\Large
 \textbf{\ctit}
 \vskip1\baselineskip
@@ -107,8 +86,9 @@ as the "glue" to run applications on the parallel computer.
 One very popular resource manager is the Simple Linux
 Utility for Resource Management (SLURM, 
 http://www.llnl.gov/linux/slurm). 
-SLURM performs resource management on many of the largest 
-computers in the world.
+SLURM performs resource management on about 1000 parallel 
+computers around the world, including many of the largest 
+systems. 
 This paper will describe resource management scalability 
 issues and SLURM's implementation.
 
@@ -184,7 +164,7 @@ interfaces are usable by scripts and its behavior is highly deterministic.
 \section{Architecture}
 
 \begin{figure}[tb]
-\centerline{\includegraphics[width=4in]{../figures/arch2.eps}}
+\centerline{\includegraphics[width=3.32in]{../figures/arch2.eps}}
 \caption{\small SLURM architecture}
 \label{arch}
 \end{figure}
@@ -221,7 +201,7 @@ topological state information
 \end{itemize}
 
 \begin{figure}[tcb]
-\centerline{\includegraphics[width=4in]{../figures/entities.eps}}
+\centerline{\includegraphics[width=3.32in]{../figures/entities2.eps}}
 \caption{\small SLURM entities: nodes, partitions, jobs, and job steps}
 \label{entities}
 \end{figure}
@@ -265,7 +245,7 @@ time that a system administrator is modifying the time limit
 for a partition.
 
 \begin{figure}[tcb]
-\centerline{\includegraphics[width=4in]{../figures/comm.eps}}
+\centerline{\includegraphics[width=3.32in]{../figures/comm.eps}}
 \caption{\small Hierarchical SLURM communications with fanout=2}
 \label{comms}
 \end{figure}
@@ -353,7 +333,7 @@ signals may be forwarded from the terminal transparently to the remote
 tasks.
 
 \begin{figure}[tb]
-\centerline{\epsfig{file=../figures/arch.eps,scale=0.35}}
+\centerline{\includegraphics[width=3.32in]{../figures/launch.eps}}
 \caption{\small SLURM Job Launch}
 \label{launch}
 \end{figure}
