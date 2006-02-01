@@ -127,7 +127,7 @@ Upon the program termination, it's allocated resources
 are released for use by other programs. 
 All of these operations are straightforward, but performing 
 resource management on clusters containing thousands of 
-nodes and over 100,000 processor cores requires more 
+nodes and over 130,000 processor cores requires more 
 than a high degree of parallelism.
 In many respects, data management and fault-tolerance issues
 are paramount.
@@ -135,7 +135,7 @@ are paramount.
 SLURM is a resource manager jointly developed by Lawrence 
 Livermore National Laboratory (LLNL), 
 Hewlett-Packard, and Linux NetworX
-\cite{SLURM2003,Yoo2003,SlurmWeb}.
+~\cite{SLURM2003,Yoo2003,SlurmWeb}.
 SLURM's general characteristics include:
 
 \begin{itemize}
@@ -148,7 +148,7 @@ workload prioritization.
 \item {\tt Open Source}: SLURM is available to everyone and 
 will remain free.
 Its source code is distributed under the GNU General Public
-License \cite{GPL2002}.
+License~\cite{GPL2002}.
 
 \item {\tt Portability}: SLURM is written in the C language, 
 with a GNU {\em autoconf} configuration engine.
@@ -165,8 +165,9 @@ is only 2 seconds for 4,800 tasks on 2,400 nodes. Clusters
 containing up to 16,384 nodes have been emulated with highly 
 scalable performance. 
 
-\item {\tt Fault Tolerance}: SLURM can handle a variety of failure
-modes without terminating workloads.
+\item {\tt Fault Tolerance}: SLURM can handle a variety of failures
+in hardward or the infrastructure without inducing failures in 
+the workload.
 
 \item {\tt Security}: SLURM employs crypto technology to authenticate
 users to services and services to each other with a variety of options
@@ -189,7 +190,7 @@ interfaces are usable by scripts and its behavior is highly deterministic.
 \end{figure}
 
 SLURM's commands and daemons are illustrated in Figure~\ref{arch}.
-The main SLURM control program {\tt slurmctld} orchestrates
+The main SLURM control program, {\tt slurmctld}, orchestrates
 activities throughout the cluster. While highly optimized, 
 {\tt slurmctld} is best run on a dedicated node of the cluster for optimal performance. 
 In addition, SLURM provides the option of running  a backup controller 
@@ -235,8 +236,8 @@ to a user for a specified amount of time, and
 Each node must be capable of independent scheduling and job execution
 \footnote{On BlueGene computers, the c-nodes can not be independently 
 scheduled. Each midplane or base partition is considered a SLURM node 
-with 1,024 processors. SLURM configuration supports small bglblocks 
-and permits the execution of more than one job per node.}.
+with 1,024 processors. SLURM supports the execution of more than one 
+job per BlueGene node.}.
 Each job in the priority-ordered queue is allocated nodes within a single 
 partition.
 Since nodes can be in multiple partitions, one can think of them as 
@@ -254,7 +255,7 @@ While allocation of entire nodes to jobs is still a recommended mode of
 operation for very large clusters, an alternate SLURM plugin provides 
 resource management down the the resolution of individual processors.
 
-The SLURM daemons and the command {\tt srun} are extensively 
+The SLURM's {\tt srun} command and  daemons are extensively 
 multi-threaded. 
 {\tt slurmctld} also maintains independent read and 
 write locks for critical data structures. 
@@ -281,11 +282,12 @@ can communicate directly with {\tt slurmd} daemons on 32 nodes
 (the degree of fanout in communications is configurable). 
 Each of those {\tt slurmd} will simultaneously forward the request
 to {\tt slurmd} programs on another 32 nodes. 
-This improves performance by distributing the workload.
-Note that every communication is authenticated and acknowleged.
+This improves performance by distributing the communication workload.
+Note that every communication is authenticated and acknowleged 
+for fault-tolerance.
 
 A number of interesting papers 
-\cite{Jones2003,Kerbyson2001 Petrini2003,Phillips2003,Tsafrir2005}
+~\cite{Jones2003,Kerbyson2001,Petrini2003,Phillips2003,Tsafrir2005}
 have recently been written about
 the impact of system daemons and other system overhead on 
 parallel job performance. This {\tt system noise} can have a 
@@ -309,8 +311,9 @@ during the entire job execution period
 highly synchronized fashion across all nodes
 \end{itemize}
 In addition, the default mode of operation is to allocate entire 
-nodes to applications rather than individual processors on each node. 
-This eliminates the possibility of interference between jobs 
+nodes with all of their processors to applications rather than 
+individual processors on each node. 
+This eliminates the possibility of interference between jobs, 
 which could severely degrade performance of parallel applications.
 Allocation of resources to the resolution of individual processors 
 on each node is supported by SLURM, but this comes at a higher cost 
@@ -329,8 +332,9 @@ a prefix of "linux" and numeric suffix from 1 to 4096.
 These naming convention permits even the largest clusters 
 to be described in a configure file containing only a 
 couple of dozen lines. 
-State information output from various SLURM commands is 
-equally terse.
+State information output from various SLURM commands uses
+the same convention to maintain a modest volume of output
+on even large cluster. 
 
 Extensive use is made of bitmaps to represent nodes in the cluster. 
 For example, bitmaps are maintained for each unique node configuration, 
@@ -341,12 +345,18 @@ scheduling operations to very rapid AND and OR operations on those bitmaps.
 \section{Application Launch}
 
 To better illustrate SLURM's operation, the execution of an 
-application is detailed below.
+application is detailed below and illustrated in Figure~\ref{launch}.
 This example is based upon a typical configuration and the 
 {\em interactive} mode, in which stdout and
 stderr are displayed on the user's terminal in real time, and stdin and
 signals may be forwarded from the terminal transparently to the remote
 tasks.
+
+\begin{figure}[tb]
+\centerline{\epsfig{file=../figures/arch.eps,scale=0.35}}
+\caption{\small SLURM Job Launch}
+\label{launch}
+\end{figure}
 
 The task launch request is initiated by a user's execution of the 
 {\tt srun} command. {\tt Srun} has a multitude of options to specify 
@@ -354,7 +364,7 @@ resource requirements such as minimum memory per node, minimum
 temporary disk space per node, features associated with nodes, 
 partition to use, node count, task count, etc.
 {\tt Srun} gets a credential to identify the user and his group 
-then sends the request to {\tt slurmctld}. 
+then sends the request to {\tt slurmctld} (message 1). 
 
 {\tt Slurmctld} authenticates the request and identifies the resources 
 to be allocated using a series of bitmap operations.
@@ -369,11 +379,12 @@ The requested node and/or processor count is then satisfied from
 the nodes identified with the resulting bitmap.
 This completes the job allocation process, but for interactive 
 mode, a job step credential is also constructed for the allocation 
-and sent to {\tt srun} in the launch reply.
+and sent to {\tt srun} in the reply (message 2).
 
 The {\tt srun} command open sockets for task input and output then
-gets a second credential and sends the job step credential directly 
-to the {\tt slurmd} daemons in order to launch the tasks.
+sends the job step credential directly to the {\tt slurmd} daemons 
+(message 3) in order to launch the tasks, which is acknowledged
+(message 4).
 Note the {\tt slurmctld} and {\tt slurmd} daemons do not directly 
 communicate during the task launch operation in order to minimize the 
 workload on the {\tt slurmctld}, which has to manage the entire 
@@ -381,12 +392,13 @@ cluster.
 
 Task termination is communicated to {\tt srun} over the same 
 socket used for input and output. 
-When all tasks have terminated, {\tt srun} gets its third credential 
-and notifies {\tt slurmctld} of the job step termination.
-{\tt Slurmctld} authenticates the request and sends messages to 
-the {\tt slurmd} daemons to insure that all processes associated 
-with the job have terminated. 
-Upon receipt of job termination confirmation on each node, 
+When all tasks have terminated, {\tt srun} notifies {\tt slurmctld} 
+of the job step termination (message 5).
+{\tt Slurmctld} authenticates the request, acknowledges it 
+(message 6) and sends messages to the {\tt slurmd} daemons to 
+insure that all processes associated with the job have 
+terminated (message 7). 
+Upon receipt of job termination confirmation on each node (message 8), 
 {\tt slurmctld} releases the resources for use by another job.
 
 The full time for execution of a simple parallel application across 
