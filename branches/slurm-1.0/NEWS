@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
     option with --verbose (Andy Riebs, HP, slurm.hp.sacct_exp_vvv.patch).
  -- scancel of a job step will now send a job-step-completed message
     to the controller after verifying that the step has completed on all nodes.
+ -- Fix task layout bug in srun.
 
 * Changes in SLURM 1.0.1
 ========================

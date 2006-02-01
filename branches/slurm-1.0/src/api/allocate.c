@@ -433,7 +433,7 @@ no_hostfile:
 			xfree(req->node_list);
 		req->node_list = nodelist;
 		req->num_tasks = count;
-		req->task_dist = SLURM_DIST_HOSTFILE;
+		req->task_dist = SLURM_DIST_ARBITRARY;
 	}
 	return count;
 }
