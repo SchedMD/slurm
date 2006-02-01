@@ -49,8 +49,8 @@ int
 slurm_complete_job ( uint32_t job_id, uint32_t job_return_code,
                      uint32_t system_return_code )
 {
-	return slurm_complete_job_step ( job_id, NO_VAL, job_return_code, 
-	                                 system_return_code);
+	return slurm_complete_job_step ( job_id, SLURM_BATCH_SCRIPT,
+					 job_return_code, system_return_code);
 }
 
 /*
