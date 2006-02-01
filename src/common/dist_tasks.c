@@ -291,7 +291,7 @@ extern int task_layout(slurm_step_layout_t *step_layout)
 
 	if (step_layout->task_dist == SLURM_DIST_CYCLIC)
 		return _task_layout_cyclic(step_layout);
-	else if(step_layout->task_dist == SLURM_DIST_HOSTFILE)
+	else if(step_layout->task_dist == SLURM_DIST_ARBITRARY)
 		return _task_layout_hostfile(step_layout);
 	else
 		return _task_layout_block(step_layout);

@@ -33,18 +33,12 @@
 
 #include "src/common/macros.h"
 
-enum distribution_t {
-	SRUN_DIST_BLOCK 	= 0, 
-	SRUN_DIST_CYCLIC 	= 1,
-	SRUN_DIST_UNKNOWN 	= 2
-};
-
 typedef struct env_options {
 	int nprocs;		/* --nprocs=n,      -n n	*/
 	char *task_count;
 	bool nprocs_set;	/* true if nprocs explicitly set */
 	bool cpus_set;		/* true if cpus_per_task explicitly set */
-	enum distribution_t
+	enum task_dist_states
 		distribution;	/* --distribution=, -m dist	*/
 	cpu_bind_type_t
 		cpu_bind_type;	/* --cpu_bind=			*/
