@@ -45,7 +45,7 @@ print_header $test_id
 #
 exec $bin_rm -f $file_in
 exec echo "#!$bin_bash"          >$file_in
-exec echo "$srun $bin_sleep 10" >>$file_in
+exec echo "$srun $bin_sleep 600" >>$file_in
 exec $bin_chmod 700 $file_in
 
 #
@@ -71,7 +71,7 @@ if {$job_id1 == 0} {
 	send_user "\nFAILURE: job submit failure\n"
 	exit 1
 }
-exec $bin_rm -f $file_in
+#exec $bin_rm -f $file_in
 
 #
 # Test interactive scancel

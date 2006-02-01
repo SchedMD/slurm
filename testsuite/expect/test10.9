@@ -8,7 +8,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Danny Auble <da@llnl.gov>
 # UCRL-CODE-217948.
@@ -44,19 +44,24 @@ print_header $test_id
 # Check the smap --iterate option
 # in curses format.
 #
- 
+set timeout 10
 spawn $smap -i 1
 expect {
 	-re "Screen is too small" {
 		set too_small 1
 		exp_continue
 	}
-	-re "JOBID" {
-		set stuff [concat $stuff "2"]
+	-re "NODELIST" {
 		incr matches
-		if { $matches > 2 } {
-			send "q"
-		}	
+		if { $matches == 1 } {
+			send "s"
+		}
+		if { $matches == 2 } {
+			send "j"
+		}
+		if { $matches >= 3 } {
+			send "\n"
+		}
 		exp_continue
 	}
 	
@@ -73,7 +78,7 @@ if {$too_small != 0} {
 	exit 0
 }
 if {$matches <= 2} {
-	send_user "\nFAILURE: smap --iterate failed\n"
+	send_user "\nFAILURE: smap --iterate failed ($matches)\n"
 	set exit_code 1
 }
 

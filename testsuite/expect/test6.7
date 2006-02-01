@@ -104,7 +104,7 @@ if {$matches != 1} {
 set matches 0
 spawn $scancel --verbose $job_id1
 expect {
-	-re "Signal 9 to job" {
+	-re "Terminating job" {
 		incr matches
 		exp_continue
 	}
