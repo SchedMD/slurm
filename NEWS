@@ -14,6 +14,7 @@ documents those changes that are of interest to users and admins.
  -- Fix task layout bug in srun.
  -- Added times to node "Reason" field when set down for insufficient 
     resources or if not responding.
+ -- Validate operation with Elan switch and heterogeneous nodes.
 
 * Changes in SLURM 1.0.1
 ========================

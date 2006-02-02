@@ -78,18 +78,18 @@ if {$use_pmi} {
 # Build input script file
 #
 exec $bin_rm -f $file_in $file_out $file_err
-exec echo "#!$bin_bash"							 >$file_in
-exec echo "$bin_echo test1_N3_n6_cyclic"				>>$file_in
-exec echo "$srun -N3 -n6 --distribution=cyclic $test_prog"		>>$file_in
-exec echo "$bin_echo test2_N3_n6_block"					>>$file_in
-exec echo "$srun -N3 -n6 --distribution=block  $test_prog"		>>$file_in
-exec echo "$bin_echo test3_N3_n4_cyclic"				>>$file_in
-exec echo "$srun -N3 -n4 --distribution=cyclic $test_prog"		>>$file_in
-exec echo "$bin_echo test4_N3_n4_block"					>>$file_in
-exec echo "$srun -N3 -n4 --distribution=block  $test_prog"		>>$file_in
-exec echo "$bin_echo test5_N2_n4_with_hole"				>>$file_in
-exec echo "$srun -N2 -n4 --distribution=cyclic --relative=\[0,2\]  $test_prog" >>$file_in
-exec echo "$bin_echo TEST_COMPLETE"					>>$file_in
+exec echo "#!$bin_bash"						 >$file_in
+exec echo "$bin_echo test1_N3_n6_cyclic"			>>$file_in
+exec echo "$srun -n6 --distribution=cyclic $test_prog"		>>$file_in
+exec echo "$bin_echo test2_n6_block"				>>$file_in
+exec echo "$srun -n6 --distribution=block  $test_prog"		>>$file_in
+exec echo "$bin_echo test3_n4_cyclic"				>>$file_in
+exec echo "$srun -n4 --distribution=cyclic $test_prog"		>>$file_in
+exec echo "$bin_echo test4_n4_block"				>>$file_in
+exec echo "$srun -n4 --distribution=block  $test_prog"		>>$file_in
+exec echo "$bin_echo test5_N2_n4_with_hole"			>>$file_in
+exec echo "$srun -N2 -n4 -O --distribution=cyclic --relative=\[0,2\]  $test_prog" >>$file_in
+exec echo "$bin_echo TEST_COMPLETE"				>>$file_in
 exec $bin_chmod 700 $file_in
 
 #

@@ -1100,17 +1100,6 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	}
 	node_ptr->tmp_disk = tmp_disk;
 
-	/* Every node in a given partition must have the same
-	 * processor count with elan switch at present */
-	if ((slurmctld_conf.fast_schedule == 0)  &&
-	    (node_ptr->config_ptr->cpus != cpus) &&
-	    (strcmp(slurmctld_conf.switch_type, "switch/elan") == 0)) {
-		error ("Node %s processor count inconsistent with rest "
-			"of partition", node_name);
-		error_code = EINVAL;
-		reason_down = "Inconsistent CPU count in partition";
-	}
-
 	if (node_ptr->node_state & NODE_STATE_NO_RESPOND) {
 		last_node_update = time (NULL);
 		reset_job_priority();
