@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
  -- scancel of a job step will now send a job-step-completed message
     to the controller after verifying that the step has completed on all nodes.
  -- Fix task layout bug in srun.
+ -- Added times to node "Reason" field when set down for insufficient 
+    resources or if not responding.
 
 * Changes in SLURM 1.0.1
 ========================

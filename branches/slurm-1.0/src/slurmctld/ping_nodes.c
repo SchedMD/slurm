@@ -165,19 +165,27 @@ void ping_nodes (void)
 
 		base_state   = node_ptr->node_state & NODE_STATE_BASE;
 		no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
-		if ((node_ptr->last_response != (time_t)0)
+		if ((node_ptr->last_response != (time_t) 0)
 		&&  (node_ptr->last_response <= node_dead_time)
 		&&  (base_state != NODE_STATE_DOWN)) {
+			char reason_down[128], time_buf[64];
+			struct tm *time_ptr;
+
+			time_ptr = localtime(&now);
+			strftime(time_buf, sizeof(time_buf), 
+				"[slurm@%b %d %H:%M]", time_ptr);
+			snprintf(reason_down, sizeof(reason_down), 
+				"Not responding %s", time_buf);
 			if (down_hostlist)
 				(void) hostlist_push_host(down_hostlist,
 					node_ptr->name);
 			else
 				down_hostlist = hostlist_create(node_ptr->name);
-			set_node_down(node_ptr->name, "Not responding");
+			set_node_down(node_ptr->name, reason_down);
 			continue;
 		}
 
-		if (node_ptr->last_response == (time_t)0) {
+		if (node_ptr->last_response == (time_t) 0) {
 			no_resp_flag = 1;
 			node_ptr->last_response = slurmctld_conf.last_update;
 		}
