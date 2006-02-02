@@ -1059,20 +1059,13 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	int error_code, i;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
-	char reason_down[128], time_buf[64];
-	struct tm *time_ptr;
-	time_t now;
+	char *reason_down = NULL;
 	uint16_t base_state, node_flags;
 
 	node_ptr = find_node_record (node_name);
 	if (node_ptr == NULL)
 		return ENOENT;
-
-	now = time (NULL);
-	time_ptr = localtime(&now);
-	strftime(time_buf, sizeof(time_buf), "[slurm@%b %d %H:%M]",
-		time_ptr);
-	node_ptr->last_response = now;
+	node_ptr->last_response = time (NULL);
 
 	config_ptr = node_ptr->config_ptr;
 	error_code = 0;
@@ -1080,8 +1073,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	if (cpus < config_ptr->cpus) {
 		error ("Node %s has low cpu count %u", node_name, cpus);
 		error_code  = EINVAL;
-		snprintf(reason_down, sizeof(reason_down), 
-			"Low CPUs %s", time_buf);
+		reason_down = "Low CPUs";
 	}
 	if ((node_ptr->cpus != cpus)
 	&&  (slurmctld_conf.fast_schedule == 0)) {
@@ -1096,8 +1088,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		error ("Node %s has low real_memory size %u", 
 		       node_name, real_memory);
 		error_code  = EINVAL;
-		snprintf(reason_down, sizeof(reason_down), 
-			"Low RealMemory %s", time_buf);
+		reason_down = "Low RealMemory";
 	}
 	node_ptr->real_memory = real_memory;
 
@@ -1105,8 +1096,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		error ("Node %s has low tmp_disk size %u",
 		       node_name, tmp_disk);
 		error_code = EINVAL;
-		snprintf(reason_down, sizeof(reason_down),
-			"Low TmpDisk %s", time_buf);
+		reason_down = "Low TmpDisk";
 	}
 	node_ptr->tmp_disk = tmp_disk;
 
@@ -1118,9 +1108,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		error ("Node %s processor count inconsistent with rest "
 			"of partition", node_name);
 		error_code = EINVAL;
-		snprintf(reason_down, sizeof(reason_down),
-			"Inconsistent CPU count in partition %s", 
-			time_buf);
+		reason_down = "Inconsistent CPU count in partition";
 	}
 
 	if (node_ptr->node_state & NODE_STATE_NO_RESPOND) {
@@ -1557,8 +1545,18 @@ void set_node_down (char *name, char *reason)
 
 	_make_node_down(node_ptr);
 	(void) kill_running_job_by_node_name(name, false);
-	if (node_ptr->reason == NULL)
-		node_ptr->reason = xstrdup(reason);
+	if (node_ptr->reason == NULL) {
+		time_t now;
+		struct tm *time_ptr;
+		char time_buf[64];
+
+		now = time (NULL);
+		time_ptr = localtime(&now);
+		strftime(time_buf, sizeof(time_buf), " [slurm@%b %d %H:%M]",
+			time_ptr);
+                node_ptr->reason = xstrdup(reason);
+		xstrcat(node_ptr->reason, time_buf);
+	}
 
 	return;
 }
