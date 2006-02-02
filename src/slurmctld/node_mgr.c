@@ -890,6 +890,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 							       false);
 			}
 			else if (state_val == NODE_STATE_IDLE) {
+				/* assume they want to clear DRAIN flag too */
+				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				bit_set (avail_node_bitmap, node_inx);
 				bit_set (idle_node_bitmap, node_inx);
 				reset_job_priority();
@@ -1455,7 +1457,7 @@ static void _node_did_resp(struct node_record *node_ptr)
 	if ((base_state == NODE_STATE_DOWN) &&
 	    (slurmctld_conf.ret2service == 1) &&
 	    (node_ptr->reason != NULL) && 
-	    (strcmp(node_ptr->reason, "Not responding") == 0)) {
+	    (strncmp(node_ptr->reason, "Not responding", 14) == 0)) {
 		last_node_update = time (NULL);
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 		info("node_did_resp: node %s returned to service", 
@@ -1546,8 +1548,18 @@ void set_node_down (char *name, char *reason)
 
 	_make_node_down(node_ptr);
 	(void) kill_running_job_by_node_name(name, false);
-	if (node_ptr->reason == NULL)
-		node_ptr->reason = xstrdup(reason);
+	if (node_ptr->reason == NULL) {
+		time_t now;
+		struct tm *time_ptr;
+		char time_buf[64];
+
+		now = time (NULL);
+		time_ptr = localtime(&now);
+		strftime(time_buf, sizeof(time_buf), " [slurm@%b %d %H:%M]",
+			time_ptr);
+                node_ptr->reason = xstrdup(reason);
+		xstrcat(node_ptr->reason, time_buf);
+	}
 
 	return;
 }
