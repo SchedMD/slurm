@@ -1059,13 +1059,20 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	int error_code, i;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
-	char *reason_down = NULL;
+	char reason_down[128], time_buf[64];
+	struct tm *time_ptr;
+	time_t now;
 	uint16_t base_state, node_flags;
 
 	node_ptr = find_node_record (node_name);
 	if (node_ptr == NULL)
 		return ENOENT;
-	node_ptr->last_response = time (NULL);
+
+	now = time (NULL);
+	time_ptr = localtime(&now);
+	strftime(time_buf, sizeof(time_buf), "[slurm@%b %d %H:%M]",
+		time_ptr);
+	node_ptr->last_response = now;
 
 	config_ptr = node_ptr->config_ptr;
 	error_code = 0;
@@ -1073,7 +1080,8 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	if (cpus < config_ptr->cpus) {
 		error ("Node %s has low cpu count %u", node_name, cpus);
 		error_code  = EINVAL;
-		reason_down = "Low CPUs";
+		snprintf(reason_down, sizeof(reason_down), 
+			"Low CPUs %s", time_buf);
 	}
 	if ((node_ptr->cpus != cpus)
 	&&  (slurmctld_conf.fast_schedule == 0)) {
@@ -1088,7 +1096,8 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		error ("Node %s has low real_memory size %u", 
 		       node_name, real_memory);
 		error_code  = EINVAL;
-		reason_down = "Low RealMemory";
+		snprintf(reason_down, sizeof(reason_down), 
+			"Low RealMemory %s", time_buf);
 	}
 	node_ptr->real_memory = real_memory;
 
@@ -1096,7 +1105,8 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		error ("Node %s has low tmp_disk size %u",
 		       node_name, tmp_disk);
 		error_code = EINVAL;
-		reason_down = "Low TmpDisk";
+		snprintf(reason_down, sizeof(reason_down),
+			"Low TmpDisk %s", time_buf);
 	}
 	node_ptr->tmp_disk = tmp_disk;
 
@@ -1108,7 +1118,9 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		error ("Node %s processor count inconsistent with rest "
 			"of partition", node_name);
 		error_code = EINVAL;
-		reason_down = "Inconsistent CPU count in partition";
+		snprintf(reason_down, sizeof(reason_down),
+			"Inconsistent CPU count in partition %s", 
+			time_buf);
 	}
 
 	if (node_ptr->node_state & NODE_STATE_NO_RESPOND) {
@@ -1454,7 +1466,7 @@ static void _node_did_resp(struct node_record *node_ptr)
 	if ((base_state == NODE_STATE_DOWN) &&
 	    (slurmctld_conf.ret2service == 1) &&
 	    (node_ptr->reason != NULL) && 
-	    (strcmp(node_ptr->reason, "Not responding") == 0)) {
+	    (strncmp(node_ptr->reason, "Not responding", 14) == 0)) {
 		last_node_update = time (NULL);
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 		info("node_did_resp: node %s returned to service", 
