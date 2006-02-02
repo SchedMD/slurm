@@ -334,18 +334,19 @@ extern int forward_set(forward_t *forward,
 extern int forward_set_launch(forward_t *forward, 
 			      int span,
 			      int *pos,
-			      srun_job_t *job,
+			      slurm_step_layout_t *step_layout,
+			      slurm_addr *slurmd_addr,
 			      hostlist_iterator_t itr,
 			      int32_t timeout)
 {
 	
 	int j=1, i;
 	char *host = NULL;
-	int total = job->step_layout->num_hosts;
+	int total = step_layout->num_hosts;
 	
 	/* char name[MAX_NAME_LEN]; */
 /* 	strncpy(name, */
-/* 		job->step_layout->host[*pos], */
+/* 		step_layout->host[*pos], */
 /* 		MAX_NAME_LEN); */
 /* 	info("forwarding to %s",name); */
 	
@@ -360,7 +361,7 @@ extern int forward_set_launch(forward_t *forward,
 			i=0; 
 			while(host = hostlist_next(itr)) { 
 				if(!strcmp(host,
-					   job->step_layout->host[*pos+j])) {
+					   step_layout->host[*pos+j])) {
 					free(host);
 					break; 
 				}
@@ -369,15 +370,15 @@ extern int forward_set_launch(forward_t *forward,
 			}
 			hostlist_iterator_reset(itr);
 			memcpy(&forward->addr[j-1], 
-			       &job->slurmd_addr[i], 
+			       &slurmd_addr[i], 
 			       sizeof(slurm_addr));
-			//forward->addr[j-1] = job->slurmd_addr[i];
+			//forward->addr[j-1] = slurmd_addr[i];
 			strncpy(&forward->name[(j-1) * MAX_NAME_LEN], 
-				job->step_layout->host[*pos+j], 
+				step_layout->host[*pos+j], 
 				MAX_NAME_LEN);
 			forward->node_id[j-1] = (*pos+j);
 			/* strncpy(name, */
-/* 				job->step_layout->host[*pos+j], */
+/* 				step_layout->host[*pos+j], */
 /* 				MAX_NAME_LEN); */
 /* 			info("along with %s",name);	 */
 			j++;

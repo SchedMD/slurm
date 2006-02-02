@@ -31,7 +31,7 @@
 
 #include <stdint.h>
 #include "src/common/slurm_protocol_api.h"
-#include "src/srun/srun_job.h"
+#include "src/common/dist_tasks.h"
 
 /* STRUCTURES */
 extern void forward_init(forward_t *forward, forward_t *from);
@@ -54,7 +54,8 @@ extern int forward_set (forward_t *forward,
 extern int forward_set_launch (forward_t *forward, 
 			       int span,
 			       int *pos,
-			       srun_job_t *job,
+			       slurm_step_layout_t *step_layout,
+			       slurm_addr *slurmd_addr,
 			       hostlist_iterator_t itr,
 			       int32_t timeout);
 
