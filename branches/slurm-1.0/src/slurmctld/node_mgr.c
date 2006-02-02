@@ -888,6 +888,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 							       false);
 			}
 			else if (state_val == NODE_STATE_IDLE) {
+				/* assume they want to clear DRAIN flag too */
+				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				bit_set (avail_node_bitmap, node_inx);
 				bit_set (idle_node_bitmap, node_inx);
 				reset_job_priority();
