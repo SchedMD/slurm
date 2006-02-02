@@ -160,9 +160,6 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	if (rc != 0)
 		goto fail2;
 	for (i = 0; i < step_info->job_step_count; i++) {
-		printf("slurm_signal_job_step job_id=%u, stepid=%u\n", 
-			step_info->job_steps[i].job_id,
-		       step_info->job_steps[i].step_id);
 		if (step_info->job_steps[i].job_id == job_id
 		    && step_info->job_steps[i].step_id == step_id) {
 			_signal_job_step(&step_info->job_steps[i],
@@ -200,8 +197,6 @@ _get_step_addresses(const job_step_info_t *step,
 	char *hostname;
 	int i;
 	
-	printf("allocation->node_list = %s\n", allocation->node_list);
-	printf("step->nodes = %s\n", step->nodes);
 	alloc_nodes = hostset_create(allocation->node_list);
 	step_nodes = hostset_create(step->nodes);
 	step_nodes_it = hostset_iterator_create(step_nodes);
@@ -465,9 +460,6 @@ slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)
 	if (rc != 0)
 		goto fail2;
 	for (i = 0; i < step_info->job_step_count; i++) {
-		printf("slurm_terminate_job_step job_id=%u, stepid=%u\n", 
-			step_info->job_steps[i].job_id,
-		       step_info->job_steps[i].step_id);
 		if (step_info->job_steps[i].job_id == job_id
 		    && step_info->job_steps[i].step_id == step_id) {
 			rc = _terminate_job_step(&step_info->job_steps[i],
