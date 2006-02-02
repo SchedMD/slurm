@@ -1119,12 +1119,10 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	base_state = node_ptr->node_state & NODE_STATE_BASE;
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 	if (error_code) {
-		if ((base_state != NODE_STATE_DOWN)
-		&&  ((node_flags & NODE_STATE_DRAIN) == 0)) {
-			last_node_update = time (NULL);
+		if (base_state != NODE_STATE_DOWN)
 			error ("Setting node %s state to DOWN", node_name);
-			set_node_down(node_name, reason_down);
-		}
+		last_node_update = time (NULL);
+		set_node_down(node_name, reason_down);
 		_sync_bitmaps(node_ptr, job_count);
 	} else if (status == ESLURMD_PROLOG_FAILED) {
 		if ((node_flags & NODE_STATE_DRAIN) == 0) {
@@ -1148,7 +1146,10 @@ validate_node_specs (char *node_name, uint32_t cpus,
 			}
 			xfree(node_ptr->reason);
 		} else if ((base_state == NODE_STATE_DOWN) &&
-		           (slurmctld_conf.ret2service == 1)) {
+		           (slurmctld_conf.ret2service == 1) &&
+			   (node_ptr->reason != NULL) && 
+			   (strncmp(node_ptr->reason, "Not responding", 14) 
+					== 0)) {
 			last_node_update = time (NULL);
 			if (job_count) {
 				node_ptr->node_state = NODE_STATE_ALLOCATED |
@@ -1545,7 +1546,8 @@ void set_node_down (char *name, char *reason)
 
 	_make_node_down(node_ptr);
 	(void) kill_running_job_by_node_name(name, false);
-	if (node_ptr->reason == NULL) {
+	if ((node_ptr->reason == NULL)
+	||  (strncmp(node_ptr->reason, "Not responding", 14) == 0)) {
 		time_t now;
 		struct tm *time_ptr;
 		char time_buf[64];
