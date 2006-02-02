@@ -619,8 +619,10 @@ static int _terminate_batch_script_step(
 	msg.data = &rpc;
 	msg.address = allocation->node_addr[0];
 
-	rc = slurm_send_recv_rc_msg(&msg, 10);
-	
+	i = slurm_send_recv_rc_msg_only_one(&msg, &rc, 10);
+	if (i != SLURM_SUCCESS)
+		rc = i;
+
 	return rc;
 }
 
