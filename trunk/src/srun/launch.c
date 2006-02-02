@@ -209,7 +209,8 @@ launch(void *arg)
 		forward_set_launch(&m->forward,
 				   span[job->thr_count],
 				   &i,
-				   job,
+				   job->step_layout,
+				   job->slurmd_addr,
 				   itr,
 				   opt.msg_timeout);
 		
