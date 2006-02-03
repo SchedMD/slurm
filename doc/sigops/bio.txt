@@ -1,9 +1,0 @@
-Morris Jette is a computer scientist with the Integrated 
-Computational Resource Management Group at Lawrence Livermore 
-National Laboratory. His primary research interest computer 
-scheduling, from individual tasks and processors to distributed 
-applications running across a computational grid.
-
-Mark Grondona is a computer scientist with the Production 
-Linux Group at Lawrence Livermore National Laboratory, where 
-he works on cluster administration tools and resource management.
