@@ -576,8 +576,10 @@ _fork_all_tasks(slurmd_job_t *job)
 	 */
 	debug3("num tasks on this node = %d", job->ntasks);
 	writefds = (int *) xmalloc (job->ntasks * sizeof(int));
-	if (!writefds)
+	if (!writefds) {
 		error("writefds xmalloc failed!");
+		return SLURM_ERROR;
+	}
 	readfds = (int *) xmalloc (job->ntasks * sizeof(int));
 	if (!readfds)
 		error("readfds xmalloc failed!");
