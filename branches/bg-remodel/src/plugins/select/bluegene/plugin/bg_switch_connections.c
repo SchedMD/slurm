@@ -331,7 +331,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 		fatal("rm_set_data(RM_PartitionPsetsPerBP)", bg_err_str(rc));
 	}
 
-	num_ncards = bg_record->node_cnt/NC_NODE_CNT;
+	num_ncards = bg_record->node_cnt/bluegene_nc_node_cnt;
 
 	if ((rc = rm_set_data(bg_record->bg_block,
 			      RM_PartitionNodeCardNum,

@@ -116,7 +116,7 @@ static void _pre_allocate(bg_record_t *bg_record)
 			      &bg_record->conn_type)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionConnection)", bg_err_str(rc));
 	
-	rc = BP_NODE_CNT/bg_record->node_cnt;
+	rc = bluegene_mp_node_cnt/bg_record->node_cnt;
 	if(rc > 1)
 		send_psets = numpsets/rc;
 	
@@ -478,7 +478,7 @@ int read_bg_blocks()
 			} 
 			
 			bg_record->cpus_per_bp = procs_per_node/i;
-			bg_record->node_cnt = BP_NODE_CNT/i;
+			bg_record->node_cnt = bluegene_mp_node_cnt/i;
 			
 			debug("%s is in quarter %d segment %d",
 			      bg_record->bg_block_id,
@@ -488,7 +488,7 @@ int read_bg_blocks()
 			
 		} else {
 			bg_record->cpus_per_bp = procs_per_node;
-			bg_record->node_cnt = BP_NODE_CNT;
+			bg_record->node_cnt =  bluegene_mp_node_cnt;
 
 			if ((rc = rm_get_data(block_ptr, 
 					      RM_PartitionConnection,

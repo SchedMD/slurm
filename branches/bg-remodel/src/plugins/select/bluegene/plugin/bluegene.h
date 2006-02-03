@@ -44,21 +44,20 @@
 #include "../block_allocator/block_allocator.h"
 #include "../wrap_rm_api.h"
 
-#define BP_NODE_CNT 512
-#define NC_NODE_CNT 32
-
 typedef int lifecycle_type_t;
 
 enum block_lifecycle {DYNAMIC, STATIC};
 
 typedef struct bg_record {
+	pm_partition_id_t bg_block_id;	/* ID returned from MMCS	*/
 	char *nodes;			/* String of nodes in block */
 	char *user_name;		/* user using the block */
 	char *target_name;		/* when a block is freed this 
 					   is the name of the user we 
 					   want on the block */
+	int full_block;                 /* wether or not block is the full
+					   block */
 	uid_t user_uid;   		/* Owner of block uid	*/
-	pm_partition_id_t bg_block_id;	/* ID returned from MMCS	*/
 	lifecycle_type_t block_lifecycle;/* either STATIC or DYNAMIC	*/
 	rm_partition_state_t state;   	/* the allocated block   */
 	int start[BA_SYSTEM_DIMENSIONS];/* start node */
@@ -77,8 +76,6 @@ typedef struct bg_record {
 	int boot_count;                 /* number of attemts boot attempts */
 	bitstr_t *bitmap;               /* bitmap to check the name 
 					   of block */
-	int full_block;                 /* wether or not block is the full
-					   block */
 	int job_running;                /* job id if there is a job running 
 					   on the block */
 	int cpus_per_bp;                /* count of cpus per base part */
@@ -113,7 +110,10 @@ extern char *bluegene_linux;
 extern char *bluegene_mloader;
 extern char *bluegene_ramdisk;
 extern char *bridge_api_file;
-extern int numpsets;
+extern char *bluegene_layout_mode;
+extern int bluegene_numpsets;
+extern int bluegene_mp_node_cnt;
+extern int bluegene_nc_node_cnt;
 extern ba_system_t *ba_system_ptr;
 extern time_t last_bg_update;
 extern List bg_curr_block_list; 	/* Initial bg block state */
@@ -144,8 +144,9 @@ extern int init_bg(void);
 extern void fini_bg(void);
 
 /* Log a bg_record's contents */
-extern void print_bg_record(bg_record_t* record);
-extern void destroy_bg_record(void* object);
+extern void print_bg_record(bg_record_t *record);
+extern void destroy_bg_record(void *object);
+extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record);
 
 /* return bg_record from bg_list */
 extern bg_record_t *find_bg_record(char *bg_block_id);
@@ -183,13 +184,12 @@ extern void *bluegene_agent(void *args);
 extern char *bg_err_str(status_t inx);
 
 /*
- * create_static_blocks - create the static blocks that will be used
+ * create_*_blocks - functions for creating blocks that will be used
  *   for scheduling.
- * IN/OUT block_list - (global, from slurmctld): SLURM's block 
- *   configurations. Fill in bg_block_id                 
  * RET - success of fitting all configurations
  */
-extern int create_static_blocks(List block_list);
+extern int create_static_blocks(int overlayed);
+extern int create_full_system_block();
 
 extern int bg_free_block(bg_record_t *bg_record);
 extern void *mult_free_block(void *args);

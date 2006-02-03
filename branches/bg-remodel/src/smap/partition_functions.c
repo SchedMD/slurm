@@ -363,22 +363,16 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 			end[Z] = (number % 10);
 			j += 3;
 			
-			if(start[X] == 0
-			   && start[Y] == 0
-			   && start[Z] == 0
-			   && end[X] == (DIM_SIZE[X]-1) 
-			   && end[Y] == (DIM_SIZE[Y]-1)
-			   && end[Z] == (DIM_SIZE[Z]-1) 
-			   && block_ptr->state == RM_PARTITION_FREE) 
+			if(block_ptr->state != RM_PARTITION_FREE) 
 				block_ptr->size += set_grid_bg(start,
-								end,
-								count,
-								1);
+							       end,
+							       count,
+							       1);
 			else
 				block_ptr->size += set_grid_bg(start, 
-								end, 
-								count, 
-								0);
+							       end, 
+							       count, 
+							       0);
 			if(block_ptr->nodes[j] != ',')
 				break;
 			j--;

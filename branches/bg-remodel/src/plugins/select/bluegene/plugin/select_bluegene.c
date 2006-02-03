@@ -171,7 +171,6 @@ extern int fini ( void )
  */
  extern int select_p_block_init(List part_list)
 {
-	xassert(part_list);
 #ifdef HAVE_BG
 	if(read_bg_conf() == SLURM_ERROR) {
 		fatal("Error, could not read the file");
@@ -179,7 +178,7 @@ extern int fini ( void )
 	}
 #else
 	/*looking for blocks only I created */
-	if (create_static_blocks(part_list) == SLURM_ERROR) {
+	if (create_static_blocks() == SLURM_ERROR) {
 		/* error in creating the static blocks, so
 		 * blocks referenced by submitted jobs won't
 		 * correspond to actual slurm blocks.
@@ -188,8 +187,7 @@ extern int fini ( void )
 		return SLURM_ERROR;
 	}
 #endif
-	sort_bg_record_inc_size(bg_list);
-
+	
 	return SLURM_SUCCESS; 
 }
 

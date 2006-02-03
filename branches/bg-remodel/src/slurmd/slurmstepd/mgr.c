@@ -585,8 +585,11 @@ _fork_all_tasks(slurmd_job_t *job)
 		error("readfds xmalloc failed!");
 	for (i = 0; i < job->ntasks; i++) {
 		fdpair[0] = -1; fdpair[1] = -1;
-		if (pipe (fdpair) < 0)
+		if (pipe (fdpair) < 0) {
 			error ("exec_all_tasks: pipe: %m");
+			return SLURM_ERROR;
+		}
+				
 		debug("New fdpair[0] = %d, fdpair[1] = %d", fdpair[0], fdpair[1]);
 		fd_set_close_on_exec(fdpair[0]);
 		fd_set_close_on_exec(fdpair[1]);
