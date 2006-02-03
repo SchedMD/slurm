@@ -484,12 +484,14 @@ job_manager(slurmd_job_t *job)
 	    (interconnect_init(job->switch_job, job->uid) < 0)) {
 		/* error("interconnect_init: %m"); already logged */
 		rc = ESLURM_INTERCONNECT_FAILURE;
+		io_close_task_fds(job);
 		goto fail2;
 	}
 	
 	if (_fork_all_tasks(job) < 0) {
 		debug("_fork_all_tasks failed");
 		rc = ESLURMD_EXECVE_FAILED;
+		io_close_task_fds(job);
 		goto fail2;
 	}
 
@@ -578,15 +580,21 @@ _fork_all_tasks(slurmd_job_t *job)
 	 */
 	debug3("num tasks on this node = %d", job->ntasks);
 	writefds = (int *) xmalloc (job->ntasks * sizeof(int));
-	if (!writefds)
+	if (!writefds) {
 		error("writefds xmalloc failed!");
+		return SLURM_ERROR;
+	}
 	readfds = (int *) xmalloc (job->ntasks * sizeof(int));
-	if (!readfds)
+	if (!readfds) {
 		error("readfds xmalloc failed!");
+		return SLURM_ERROR;
+	}
 	for (i = 0; i < job->ntasks; i++) {
 		fdpair[0] = -1; fdpair[1] = -1;
-		if (pipe (fdpair) < 0)
+		if (pipe (fdpair) < 0) {
 			error ("exec_all_tasks: pipe: %m");
+			return SLURM_ERROR;
+		}
 		debug("New fdpair[0] = %d, fdpair[1] = %d", fdpair[0], fdpair[1]);
 		fd_set_close_on_exec(fdpair[0]);
 		fd_set_close_on_exec(fdpair[1]);
@@ -649,11 +657,6 @@ _fork_all_tasks(slurmd_job_t *job)
 			error("slurm_container_create: %m");
 			exit(3);
 		}
-		    
-/* 		task.id        = i; */
-/* 		task.global_id = job->task[i]->gtid; */
-/* 		task.pid       = job->task[i]->pid; */
-/* 		task.ppid      = job->jmgr_pid; */
 	}
 
 	/*
