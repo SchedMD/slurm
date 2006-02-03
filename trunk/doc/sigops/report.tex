@@ -8,7 +8,7 @@
 % Use 10-point font size.
 %
 
-\documentclass[10pt,twocolumn,times]{../common/llncs}
+\documentclass{../common/acm}
 
 \usepackage{verbatim,moreverb}
 \usepackage{float}
@@ -57,21 +57,17 @@
 % make the cover page
 %\makeLLNLCover{\ucrl}{\ctit}{\auth}{\journal}{\pubdate}{0in}{0in}
 
-% Title - 16pt bold
-\noindent\Large
-\textbf{\ctit}
-\vskip1\baselineskip
-% Authors - 11pt
-\noindent\large
-{Morris Jette \\
-{\em Lawrence Livermore National Laboratory, USA}
-\vskip2\baselineskip
-% Abstract heading - 12pt bold
-\noindent\large
-\textbf{Abstract}
-\vskip1\baselineskip
-% Abstract itself - 10pt
-\noindent\normalsize
+\title{\ctit}
+\numberofauthors{1}
+\author{
+\alignauthor Morris Jette\\
+	\affaddr{Lawrence Livermore National Laboratory}\\
+	\affaddr{Livermore, CA, USA}\\
+	\email{jette1@llnl.gov}
+}
+
+\maketitle
+\begin{abstract}
 While the increase in performance of individual computer 
 processors through the years has been impressive, the demand
 for compute resources has grown even more rapidly. 
@@ -91,6 +87,7 @@ computers around the world, including many of the largest
 systems. 
 This paper will describe resource management scalability 
 issues and SLURM's implementation.
+\end{abstract}
 
 
 \section{Introduction}
