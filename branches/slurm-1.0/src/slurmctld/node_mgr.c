@@ -1545,7 +1545,8 @@ void set_node_down (char *name, char *reason)
 		time_ptr = localtime(&now);
 		strftime(time_buf, sizeof(time_buf), " [slurm@%b %d %H:%M]",
 			time_ptr);
-                node_ptr->reason = xstrdup(reason);
+		xfree(node_ptr->reason);
+		node_ptr->reason = xstrdup(reason);
 		xstrcat(node_ptr->reason, time_buf);
 	}
 
