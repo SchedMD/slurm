@@ -222,7 +222,7 @@ _cancel_job_id (uint32_t job_id, uint16_t signal)
 
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
 		if (signal == (uint16_t)-1) {
-			verbose("Terminating job %u", SIGKILL, job_id);
+			verbose("Terminating job %u", job_id);
 			error_code = slurm_kill_job (job_id, SIGKILL,
 						     (uint16_t)opt.batch);
 		} else {
