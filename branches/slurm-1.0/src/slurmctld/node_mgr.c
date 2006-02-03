@@ -1784,6 +1784,7 @@ static void _make_node_down(struct node_record *node_ptr)
 	xassert(node_ptr);
 	last_node_update = time (NULL);
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
+	node_flags &= (~NODE_STATE_COMPLETING);
 	node_ptr->node_state = NODE_STATE_DOWN | node_flags;
 	bit_clear (avail_node_bitmap, inx);
 	bit_set   (idle_node_bitmap,  inx);
