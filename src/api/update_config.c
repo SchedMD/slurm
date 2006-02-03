@@ -43,7 +43,7 @@ static int _slurm_update (void * data, slurm_msg_type_t msg_type);
  * slurm_update_job - issue RPC to a job's configuration per request, 
  *	only usable by user root or (for some parameters) the job's owner
  * IN job_msg - description of job updates
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int 
 slurm_update_job ( job_desc_msg_t * job_msg ) 
@@ -55,7 +55,7 @@ slurm_update_job ( job_desc_msg_t * job_msg )
  * slurm_update_node - issue RPC to a node's configuration per request, 
  *	only usable by user root
  * IN node_msg - description of node updates
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int 
 slurm_update_node ( update_node_msg_t * node_msg ) 
@@ -67,7 +67,7 @@ slurm_update_node ( update_node_msg_t * node_msg )
  * slurm_update_partition - issue RPC to a partition's configuration per  
  *	request, only usable by user root
  * IN part_msg - description of partition updates
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int 
 slurm_update_partition ( update_part_msg_t * part_msg ) 
@@ -79,7 +79,7 @@ slurm_update_partition ( update_part_msg_t * part_msg )
  * slurm_delete_partition - issue RPC to delete a partition, only usable 
  *	by user root
  * IN part_msg - description of partition updates
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int 
 slurm_delete_partition ( delete_part_msg_t * part_msg ) 

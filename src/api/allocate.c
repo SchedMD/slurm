@@ -55,7 +55,7 @@ static int _nodelist_from_hostfile(job_step_create_request_msg_t *req);
  * slurm_allocate_resources - allocate resources for a job request
  * IN job_desc_msg - description of resource allocation request
  * OUT slurm_alloc_msg - response to request
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the allocated using slurm_free_resource_allocation_response_msg
  */
 int
@@ -118,7 +118,7 @@ slurm_allocate_resources (job_desc_msg_t *req,
  * slurm_job_will_run - determine if a job would execute immediately if 
  *	submitted now
  * IN job_desc_msg - description of resource allocation request
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int slurm_job_will_run (job_desc_msg_t *req)
 {
@@ -146,7 +146,7 @@ int slurm_job_will_run (job_desc_msg_t *req)
  *	initiate a job step
  * IN job_desc_msg - description of resource allocation request
  * OUT slurm_alloc_msg - response to request
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using 
  *	slurm_free_resource_allocation_and_run_response_msg
  */
@@ -206,7 +206,7 @@ slurm_allocate_resources_and_run (job_desc_msg_t *req,
  * slurm_job_step_create - create a job step for a given job id
  * IN slurm_step_alloc_req_msg - description of job step request
  * OUT slurm_step_alloc_resp_msg - response to request
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using slurm_free_job_step_create_response_msg
  */
 int
@@ -253,7 +253,7 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
  * slurm_confirm_allocation - confirm an existing resource allocation
  * IN job_desc_msg - description of existing job request
  * OUT slurm_alloc_msg - response to request
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using slurm_free_resource_allocation_response_msg
  */
 int 
@@ -295,7 +295,7 @@ slurm_confirm_allocation (old_job_alloc_msg_t *req,
  * slurm_allocation_lookup - retrieve info for an existing resource allocation
  * IN jobid - job allocation identifier
  * OUT info - job allocation information
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the "resp" using slurm_free_resource_allocation_response_msg
  */
 int
