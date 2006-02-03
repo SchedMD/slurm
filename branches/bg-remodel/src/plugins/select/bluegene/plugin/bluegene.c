@@ -78,7 +78,6 @@ static int  _addto_node_list(bg_record_t *bg_record, int *start, int *end);
 #ifdef HAVE_BG_FILES
 #endif
 static void _set_bg_lists();
-static int _format_node_name(bg_record_t *bg_record, char tmp_char[]);
 static int  _validate_config_nodes(void);
 static int  _bg_record_cmpf_inc(bg_record_t *rec_a, bg_record_t *rec_b);
 static int _delete_old_blocks(void);
@@ -198,7 +197,7 @@ extern void print_bg_record(bg_record_t* bg_record)
 		info("\tbitmap: %s", bitstring);
 	}
 #else
-	_format_node_name(bg_record, tmp_char);
+	format_node_name(bg_record, tmp_char);
 	info("bg_block_id=%s nodes=%s", bg_record->bg_block_id, 
 	     tmp_char);
 #endif
@@ -338,6 +337,50 @@ extern int update_block_user(bg_record_t *bg_record)
 	
 #endif
 	return 0;
+}
+
+extern int format_node_name(bg_record_t *bg_record, char tmp_char[])
+{
+	if(bg_record->quarter != -1) {
+		if(bg_record->segment != -1) {
+			sprintf(tmp_char,"%s.%d.%d\0",
+				bg_record->nodes,
+				bg_record->quarter,
+				bg_record->segment);
+		} else {
+			sprintf(tmp_char,"%s.%d\0",
+				bg_record->nodes,
+				bg_record->quarter);
+		}
+	} else {
+		sprintf(tmp_char,"%s\0",bg_record->nodes);
+	}
+	return SLURM_SUCCESS;
+}
+
+extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
+{
+	if (!bit_super_set(rec_a->bitmap,
+			   rec_b->bitmap)
+	    && !bit_super_set(rec_b->bitmap,
+			      rec_a->bitmap)) {
+		return false;
+	}
+	
+	if(rec_a->quarter != -1) {
+		if(rec_b->quarter == -1)
+			return true;
+		else if(rec_a->quarter != rec_b->quarter)
+			return false;
+		if(rec_a->segment != -1) {
+			if(rec_b->segment == -1)
+				return true;
+			else if(rec_a->segment 
+				!= rec_b->segment)
+				return false;
+		}				
+	}
+	return true;
 }
 
 extern int remove_all_users(char *bg_block_id, char *user_name) 
@@ -715,7 +758,7 @@ extern int create_static_blocks(int overlayed)
 			bg_record->job_running = -1;
 			snprintf(bg_record->bg_block_id, 8, "RMP%d", 
 				 block_inx++);
-			_format_node_name(bg_record, tmp_char);
+			format_node_name(bg_record, tmp_char);
 			info("BG BlockID:%s Nodes:%s Conn:%s Mode:%s",
 			     bg_record->bg_block_id, tmp_char,
 			     convert_conn_type(bg_record->conn_type),
@@ -1386,24 +1429,6 @@ static void _set_bg_lists()
 		
 }
 
-static int _format_node_name(bg_record_t *bg_record, char tmp_char[])
-{
-	if(bg_record->quarter != -1) {
-		if(bg_record->segment != -1) {
-			sprintf(tmp_char,"%s.%d.%d\0",
-				bg_record->nodes,
-				bg_record->quarter,
-				bg_record->segment);
-		} else {
-			sprintf(tmp_char,"%s.%d\0",
-				bg_record->nodes,
-				bg_record->quarter);
-		}
-	} else {
-		sprintf(tmp_char,"%s\0",bg_record->nodes);
-	}
-	return SLURM_SUCCESS;
-}
 /*
  * Match slurm configuration information with current BG block 
  * configuration. Return SLURM_SUCCESS if they match, else an error 

@@ -155,6 +155,9 @@ extern bg_record_t *find_bg_record(char *bg_block_id);
    updated before call of function. 
 */
 extern int update_block_user(bg_record_t *bg_block_id); 
+extern int format_node_name(bg_record_t *bg_record, char tmp_char[]);
+extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b);
+
 
 /* remove all users from a block but what is in user_name */
 /* Note return codes */

@@ -249,53 +249,53 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		num_block_to_free = 0;
 		num_block_freed = 0;
 		itr = list_iterator_create(bg_list);
-		if(bg_record->full_block) {
-			debug("Using full block freeing all others");
-			while ((found_record = (bg_record_t*) 
-				list_next(itr)) != NULL) {
-				if(found_record->state != RM_PARTITION_FREE) {
-					slurm_attr_init(&attr_agent);
-					if (pthread_attr_setdetachstate(
-						    &attr_agent, 
-						    PTHREAD_CREATE_JOINABLE))
-						error("pthread_attr_setdetach"
-						      "state error %m");
+		debug("freeing all other blocks that use these midplanes");
+		while ((found_record = (bg_record_t*) 
+			list_next(itr)) != NULL) {
+			if ((!found_record->bg_block_id)
+			    || (strcmp(bg_record->bg_block_id, 
+				       found_record->bg_block_id)))
+				continue;
 
-					retries = 0;
-					while (pthread_create(&thread_agent, 
-							      &attr_agent, 
-							      mult_free_block, 
-							      (void *)
-							      found_record)) {
-						error("pthread_create "
-						      "error %m");
-						if (++retries 
-						    > MAX_PTHREAD_RETRIES)
-							fatal("Can't create "
-							      "pthread");
-						/* sleep and retry */
-						usleep(1000);	
-					}
-					num_block_to_free++;
-				}
-			}		
-		} else {
-			while ((found_record = (bg_record_t*) 
-				list_next(itr)) != NULL) {
-				if (found_record->full_block) {
-					if(found_record->state 
-					   != RM_PARTITION_FREE) {
-						debug("destroying the "
-						      "full block %s.", 
-						      found_record->
-						      bg_block_id);
-						bg_free_block(
-							found_record);
-					}
-					break;
-				}
+			if(!blocks_overlap(bg_record, found_record)) {
+				debug("block %s isn't part of %s",
+				      found_record->bg_block_id, 
+				      bg_record->bg_block_id);
+				continue;
 			}
-		} 
+									
+			if(found_record->state != RM_PARTITION_FREE) {
+				format_node_name(found_record, tmp_char);
+				format_node_name(bg_record, tmp_char2);
+				debug("need to free %s it's part of %s",
+				      found_record->bg_block_id, 
+				      bg_record->bg_block_id);
+				
+				slurm_attr_init(&attr_agent);
+				if (pthread_attr_setdetachstate(
+					    &attr_agent, 
+					    PTHREAD_CREATE_JOINABLE))
+					error("pthread_attr_setdetach"
+					      "state error %m");
+
+				retries = 0;
+				while (pthread_create(&thread_agent, 
+						      &attr_agent, 
+						      mult_free_block, 
+						      (void *)
+						      found_record)) {
+					error("pthread_create "
+					      "error %m");
+					if (++retries 
+					    > MAX_PTHREAD_RETRIES)
+						fatal("Can't create "
+						      "pthread");
+					/* sleep and retry */
+					usleep(1000);	
+				}
+				num_block_to_free++;
+			}
+		}		
 		list_iterator_destroy(itr);
 		
 		/* wait for all necessary blocks to be freed */
@@ -684,6 +684,7 @@ extern int start_job(struct job_record *job_ptr)
 	ListIterator itr;
 	bg_record_t *found_record = NULL;
 	char *block_id = NULL;
+	char tmp_char[256], tmp_char2[256];
 	uint16_t node_use;
 
 	if (bg_list) {
@@ -703,21 +704,31 @@ extern int start_job(struct job_record *job_ptr)
 		}
 		itr = list_iterator_create(bg_list);
 		while ((found_record = (bg_record_t *) list_next(itr))) {
-			if (bg_record->full_block)
-				found_record->state = RM_PARTITION_FREE;
-			else if(found_record->full_block)
-				found_record->state = RM_PARTITION_FREE;
-			if ((!found_record->bg_block_id)
-			    ||  (strcmp(block_id, found_record->bg_block_id)))
+			if (!strcmp(block_id, found_record->bg_block_id)) {
+				found_record->job_running = job_ptr->job_id;
+				found_record->node_use = node_use;
+				found_record->state = RM_PARTITION_READY;
+				last_bg_update = time(NULL);
 				continue;
-			found_record->job_running = job_ptr->job_id;
-			found_record->node_use = node_use;
-			found_record->state = RM_PARTITION_READY;
-			last_bg_update = time(NULL);
-			break;
+			}
+			if(!blocks_overlap(bg_record, found_record)) {
+				format_node_name(found_record, tmp_char);
+				format_node_name(bg_record, tmp_char2);
+				debug("block %s isn't part of %s",
+				      tmp_char, tmp_char2);
+				continue;
+			}
+			
+			format_node_name(found_record, tmp_char);
+			format_node_name(bg_record, tmp_char2);
+			debug("need to free %s it's part of %s",
+			      tmp_char, tmp_char2);
+				
+			found_record->state = RM_PARTITION_FREE;
 		}
 		list_iterator_destroy(itr);
 		xfree(block_id);
+	
 	}
 #endif
 	return rc;
