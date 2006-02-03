@@ -72,7 +72,7 @@ struct send_recv_rc {
  * slurm_signal_job - send the specified signal to all steps of an existing job
  * IN job_id     - the job's id
  * IN signal     - signal number
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int 
 slurm_signal_job (uint32_t job_id, uint16_t signal)
@@ -128,7 +128,7 @@ fail1:
  * IN step_id - the job step's id - use SLURM_BATCH_SCRIPT as the step_id
  *              to send a signal to a job's batch script
  * IN signal  - signal number
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int 
 slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
@@ -137,10 +137,10 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	job_step_info_response_msg_t *step_info;
 	int rc;
 	int i;
-	
+	int save_errno;
+
 	if (slurm_allocation_lookup(job_id, &alloc_info)) {
-		rc = slurm_get_errno();
-                goto fail1;
+		return -1;
 	}
 
 	/*
@@ -149,7 +149,9 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	 */
 	if (step_id == SLURM_BATCH_SCRIPT) {
 		rc = _signal_batch_script_step(alloc_info, signal);
-		goto done;
+		slurm_free_resource_allocation_response_msg(alloc_info);
+		errno = rc;
+		return rc ? -1 : 0;
 	}
 
 	/*
@@ -158,27 +160,24 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	 */
 	rc = slurm_get_job_steps((time_t)0, job_id, step_id, 
 				 &step_info, SHOW_ALL);
-	if (rc != 0)
-		goto fail2;
+ 	if (rc != 0) {
+ 		save_errno = errno;
+ 		goto fail;
+ 	}
 	for (i = 0; i < step_info->job_step_count; i++) {
 		if (step_info->job_steps[i].job_id == job_id
 		    && step_info->job_steps[i].step_id == step_id) {
-			_signal_job_step(&step_info->job_steps[i],
-					 alloc_info, signal);
+ 			rc = _signal_job_step(&step_info->job_steps[i],
+ 					      alloc_info, signal);
+ 			save_errno = errno;
 			break;
 		}
 	}
 	slurm_free_job_step_info_response_msg(step_info);
-fail2:
-done:
+fail:
 	slurm_free_resource_allocation_response_msg(alloc_info);
-fail1:
-	if (rc) {
-		slurm_seterrno_ret(rc);
-		return SLURM_FAILURE;
-	} else {
-		return SLURM_SUCCESS;
-	}
+ 	errno = save_errno;
+ 	return rc ? -1 : 0;
 }
 
 /*
@@ -369,7 +368,7 @@ _thr_send_recv_rc_msg(void *args)
  * 	a REQUEST_TERMINATE_JOB rpc to all slurmd in the the job allocation,
  *      and then calls slurm_complete_job().
  * IN job_id     - the job's id
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int 
 slurm_terminate_job (uint32_t job_id)
@@ -430,19 +429,19 @@ fail1:
  * IN job_id  - the job's id
  * IN step_id - the job step's id - use SLURM_BATCH_SCRIPT as the step_id
  *              to terminate a job's batch script
- * RET 0 on success or slurm error code
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int 
 slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)
 {
 	resource_allocation_response_msg_t *alloc_info;
 	job_step_info_response_msg_t *step_info;
-	int rc;
+	int rc = 0;
 	int i;
+	int save_errno;
 
 	if (slurm_allocation_lookup(job_id, &alloc_info)) {
-		rc = slurm_get_errno();
-                goto fail1;
+		return -1;
 	}
 
 	/*
@@ -451,7 +450,9 @@ slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)
 	 */
 	if (step_id == SLURM_BATCH_SCRIPT) {
 		rc = _terminate_batch_script_step(alloc_info);
-		goto done;
+		slurm_free_resource_allocation_response_msg(alloc_info);
+		errno = rc;
+		return rc ? -1 : 0;
 	}
 
 	/*
@@ -459,27 +460,24 @@ slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)
 	 * the one matching step_id.  Terminate that step.
 	 */
 	rc = slurm_get_job_steps((time_t)0, job_id, step_id, &step_info, SHOW_ALL);
-	if (rc != 0)
-		goto fail2;
+	if (rc != 0) {
+		save_errno = errno;
+		goto fail;
+	}
 	for (i = 0; i < step_info->job_step_count; i++) {
 		if (step_info->job_steps[i].job_id == job_id
 		    && step_info->job_steps[i].step_id == step_id) {
 			rc = _terminate_job_step(&step_info->job_steps[i],
 						 alloc_info);
+			save_errno = errno;
 			break;
 		}
 	}
 	slurm_free_job_step_info_response_msg(step_info);
-fail2:
-done:
+fail:
 	slurm_free_resource_allocation_response_msg(alloc_info);
-fail1:
-	if (rc) {
-		slurm_seterrno_ret(rc);
-		return SLURM_FAILURE;
-	} else {
-		return SLURM_SUCCESS;
-	}
+	errno = save_errno;
+	return rc ? -1 : 0;
 }
 
 
@@ -597,6 +595,11 @@ _terminate_job_step(const job_step_info_t *step,
 	 */
 	if (rc == 0) {
 		rc = slurm_complete_job_step(step->job_id, step->step_id, 0, 0);
+	}
+
+	if (rc == -1 && errno == ESLURM_ALREADY_DONE) {
+		rc = 0;
+		errno = 0;
 	}
 
 	return rc;
