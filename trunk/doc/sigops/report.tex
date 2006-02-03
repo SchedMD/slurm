@@ -128,7 +128,8 @@ workload prioritization.
 \item {\tt Open Source}: SLURM is available to everyone and 
 will remain free.
 Its source code is distributed under the GNU General Public
-License~\cite{GPL2002}.
+License
+~\cite{GPL2002}.
 
 \item {\tt Portability}: SLURM is written in the C language, 
 with a GNU {\em autoconf} configuration engine.
@@ -235,7 +236,7 @@ While allocation of entire nodes to jobs is still a recommended mode of
 operation for very large clusters, an alternate SLURM plugin provides 
 resource management down the the resolution of individual processors.
 
-The SLURM's {\tt srun} command and  daemons are extensively 
+The SLURM's {\tt srun} command and the daemons are extensively 
 multi-threaded. 
 {\tt slurmctld} also maintains independent read and 
 write locks for critical data structures. 
@@ -266,8 +267,8 @@ This improves performance by distributing the communication workload.
 Note that every communication is authenticated and acknowleged 
 for fault-tolerance.
 
-A number of interesting papers 
-~\cite{Jones2003,Kerbyson2001,Petrini2003,Phillips2003,Tsafrir2005}
+A number of interesting papers
+~\cite{Jones2003,Kerbyson2001,Petrini2003,Phillips2003,Tsafrir2005} 
 have recently been written about
 the impact of system daemons and other system overhead on 
 parallel job performance. This {\tt system noise} can have a 
@@ -287,7 +288,7 @@ SLURM addresses this issue by:
 \item Making the {\tt slurmd} daemon resource requirements negligible 
 \item Supporting configurations that let the {\tt slurmd} daemon sleep 
 during the entire job execution period
-\item If the {\tt slurmd} daemons are given work, it is done on a 
+\item If the {\tt slurmd} daemons do perform work, it is done on a 
 highly synchronized fashion across all nodes
 \end{itemize}
 In addition, the default mode of operation is to allocate entire 
@@ -299,7 +300,6 @@ Allocation of resources to the resolution of individual processors
 on each node is supported by SLURM, but this comes at a higher cost 
 in terms of the data managed.
 The selection of resource resolution is provided by different plugins.
-These factors permit SLURM to effectively run highly parallel jobs.
 
 Resource management of large clusters entails the processing of 
 large quantities of data, both for the software and the 
