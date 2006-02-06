@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Fix bug that could refuse to queue batch jobs for BlueGene system.
  -- Add BlueGene plugin mutex lock for reconfig.
+ -- Ignore BlueGene bgljobs in ERROR state (don't try to kill).
 
 * Changes in SLURM 1.0.2
 ========================
