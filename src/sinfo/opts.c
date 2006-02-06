@@ -206,7 +206,7 @@ extern void parse_command_line(int argc, char *argv[])
 
 		} else if (params.list_reasons) {
 			params.format = params.long_output ?  
-			  "%35R %6t %N" : 
+			  "%50R %6t %N" : 
 			  "%35R %N";
 
 		} else if ((env_val = getenv ("SINFO_FORMAT"))) {
