@@ -1335,9 +1335,10 @@ static int _send_data_to_mynode(_mynode_msg_type_t msgtype, _jrec_t *jrec) {
 			" for job %u.%u",
 			getpid(), slurmd_port, jrec->jobid, jrec->stepid);
 	for (retry=0; retry<max_send_retries; retry++) {
-		if (jrec->nprocs/jrec->nnodes > 0)
-			_stagger_time(-1, jrec->nprocs/jrec->nnodes);
-			/* avoid simultaneous msgs from all processes */
+		if (jrec->nnodes) /* Beware batch jobs! */
+			if (jrec->nprocs/jrec->nnodes > 0)
+				_stagger_time(-1, jrec->nprocs/jrec->nnodes);
+				/* avoid simultaneous msgs from all processes */
 		if (( rc = slurm_send_recv_node_msg(msg, retmsg, 0)) >=0 )
 				break;
 		if (retry==0)
