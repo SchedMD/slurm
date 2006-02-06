@@ -439,7 +439,9 @@ extern char* convert_node_use(rm_partition_mode_t pt)
 extern void sort_bg_record_inc_size(List records){
 	if (records == NULL)
 		return;
+	slurm_mutex_lock(&block_state_mutex);
 	list_sort(records, (ListCmpF) _bg_record_cmpf_inc);
+	slurm_mutex_unlock(&block_state_mutex);
 }
 
 /*
