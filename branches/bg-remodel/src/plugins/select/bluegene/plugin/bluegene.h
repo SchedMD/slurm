@@ -48,6 +48,14 @@ typedef int lifecycle_type_t;
 
 enum block_lifecycle {DYNAMIC, STATIC};
 
+typedef enum bg_layout_type {
+	LAYOUT_STATIC,  /* no overlaps, except for full system block
+			   blocks never change */
+	LAYOUT_OVERLAP, /* overlaps permitted, must be defined in 
+			   bluegene.conf file */
+	LAYOUT_DYNAMIC	/* slurm will make all blocks */
+}bg_layout_t;
+
 typedef struct bg_record {
 	pm_partition_id_t bg_block_id;	/* ID returned from MMCS	*/
 	char *nodes;			/* String of nodes in block */
@@ -110,7 +118,7 @@ extern char *bluegene_linux;
 extern char *bluegene_mloader;
 extern char *bluegene_ramdisk;
 extern char *bridge_api_file;
-extern char *bluegene_layout_mode;
+extern bg_layout_t bluegene_layout_mode;
 extern int bluegene_numpsets;
 extern int bluegene_mp_node_cnt;
 extern int bluegene_nc_node_cnt;
@@ -193,7 +201,8 @@ extern char *bg_err_str(status_t inx);
  *   for scheduling.
  * RET - success of fitting all configurations
  */
-extern int create_static_blocks(int overlayed);
+extern int create_defined_blocks(bg_layout_t overlapped);
+extern int create_dynamic_block();
 extern int create_full_system_block();
 
 extern int bg_free_block(bg_record_t *bg_record);

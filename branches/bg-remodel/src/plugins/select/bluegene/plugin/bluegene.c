@@ -47,7 +47,7 @@ List bg_job_block_list = NULL;  	/* jobs running in these blocks */
 List bg_booted_block_list = NULL;  	/* blocks that are booted */
 char *bluegene_blrts = NULL, *bluegene_linux = NULL, *bluegene_mloader = NULL;
 char *bluegene_ramdisk = NULL, *bridge_api_file = NULL; 
-char *bluegene_layout_mode = NULL;
+bg_layout_t bluegene_layout_mode = -1;
 int bluegene_numpsets = 0;
 int bluegene_mp_node_cnt = 0;
 int bluegene_nc_node_cnt = 0;
@@ -613,14 +613,14 @@ extern char *bg_err_str(status_t inx)
 }
 
 /*
- * create_static_blocks - create the static blocks that will be used
+ * create_defined_blocks - create the static blocks that will be used
  * for scheduling, all partitions must be able to be created and booted
  * at once.  
- * IN - int overlayed, 1 if partitions are to be overlayed, 0 if they are
+ * IN - int overlapped, 1 if partitions are to be overlapped, 0 if they are
  * static.
  * RET - success of fitting all configurations
  */
-extern int create_static_blocks(int overlayed)
+extern int create_defined_blocks(bg_layout_t overlapped)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -642,7 +642,7 @@ extern int create_static_blocks(int overlayed)
 			if(bg_record->bp_count>0 
 			   && !bg_record->full_block
 			   && bg_record->cpus_per_bp == procs_per_node) {
-				if(overlayed)
+				if(overlapped == LAYOUT_OVERLAP)
 					reset_ba_system();
 				debug("adding %s starting at %d%d%d",
 				      bg_record->nodes,
@@ -664,7 +664,7 @@ extern int create_static_blocks(int overlayed)
 		}
 		list_iterator_destroy(itr);
 	} else {
-		error("create_static_blocks: no bg_list 1");
+		error("create_defined_blocks: no bg_list 1");
 		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_ERROR;
 	}
@@ -697,7 +697,7 @@ extern int create_static_blocks(int overlayed)
 				}
 				list_iterator_destroy(itr_found);
 			} else {
-				error("create_static_blocks: "
+				error("create_defined_blocks: "
 				      "no bg_found_block_list 1");
 			}
 			if(found_record == NULL) {
@@ -712,7 +712,7 @@ extern int create_static_blocks(int overlayed)
 		}
 		list_iterator_destroy(itr);
 	} else {
-		error("create_static_blocks: no bg_list 2");
+		error("create_defined_blocks: no bg_list 2");
 		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_ERROR;
 	}
@@ -745,7 +745,7 @@ extern int create_static_blocks(int overlayed)
 		}
 		list_iterator_destroy(itr);
 	} else {
-		error("create_static_blocks: no bg_list 4");
+		error("create_defined_blocks: no bg_list 4");
 		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_ERROR;
 	}
@@ -765,7 +765,7 @@ extern int create_static_blocks(int overlayed)
 		}
 		list_iterator_destroy(itr);
 	} else {
-		error("create_static_blocks: no bg_list 5");
+		error("create_defined_blocks: no bg_list 5");
 	}
  	exit(0);
 #endif	/* _PRINT_BLOCKS_AND_EXIT */
@@ -822,7 +822,7 @@ extern int create_dynamic_block()
 		}
 		list_iterator_destroy(itr);
 	} else {
-		error("create_static_blocks: no bg_list 1");
+		error("create_defined_blocks: no bg_list 1");
 		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_ERROR;
 	}
@@ -855,7 +855,7 @@ extern int create_dynamic_block()
 				}
 				list_iterator_destroy(itr_found);
 			} else {
-				error("create_static_blocks: "
+				error("create_defined_blocks: "
 				      "no bg_found_block_list 1");
 			}
 			if(found_record == NULL) {
@@ -870,7 +870,7 @@ extern int create_dynamic_block()
 		}
 		list_iterator_destroy(itr);
 	} else {
-		error("create_static_blocks: no bg_list 2");
+		error("create_defined_blocks: no bg_list 2");
 		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_ERROR;
 	}
@@ -940,7 +940,7 @@ extern int create_full_system_block()
 		}
 		list_iterator_destroy(itr);
 	} else {
-		error("create_overlayed_blocks: no bg_found_block_list 2");
+		error("create_overlapped_blocks: no bg_found_block_list 2");
 	}
 	
 	if(bg_list) {
@@ -956,7 +956,7 @@ extern int create_full_system_block()
 		}
 		list_iterator_destroy(itr);
 	} else {
-		error("create_overlayed_blocks: no bg_list 3");
+		error("create_overlapped_blocks: no bg_list 3");
 		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_ERROR;
 	}
@@ -1191,11 +1191,19 @@ extern int read_bg_conf(void)
 		fatal("MloaderImage not configured in bluegene.conf");
 	if (!bluegene_ramdisk)
 		fatal("RamDiskImage not configured in bluegene.conf");
-	if (!bluegene_layout_mode) {
+	if (!bluegene_mp_node_cnt)
+		fatal("MidplaneNodeCnt not configured in bluegene.conf "
+		      "make sure it is set before any Nodes= line");
+	if (!bluegene_nc_node_cnt)
+		fatal("NodeCardNodeCnt not configured in bluegene.conf "
+		      "make sure it is set before any Nodes= line");
+
+	if (bluegene_layout_mode == -1) {
 		info("Warning: LayoutMode was not specified in bluegene.conf "
 		     "defaulting to STATIC partitioning");
-		bluegene_layout_mode = xstrdup("STATIC");
+		bluegene_layout_mode = LAYOUT_STATIC;
 	}
+	
 	if (!bridge_api_file)
 		info("BridgeAPILogFile not configured in bluegene.conf");
 	else
@@ -1209,31 +1217,23 @@ extern int read_bg_conf(void)
 	}
 //#endif
 	/* looking for blocks only I created */
-	if(!strcasecmp(bluegene_layout_mode,"STATIC")) {
-		if (create_static_blocks(0) == SLURM_ERROR) {
-			/* error in creating the static blocks, so
-			 * blocks referenced by submitted jobs won't
-			 * correspond to actual slurm blocks.
-			 */
-			fatal("Error, could not create the static blocks");
-			return SLURM_ERROR;
-		}
-	} else if (!strcasecmp(bluegene_layout_mode,"OVERLAP")) {
-		if (create_static_blocks(1) == SLURM_ERROR) {
-			/* error in creating the static blocks, so
-			 * blocks referenced by submitted jobs won't
-			 * correspond to actual slurm blocks.
-			 */
-			fatal("Error, could not create the static blocks");
-			return SLURM_ERROR;
-		}
-	} else if (!strcasecmp(bluegene_layout_mode,"DYNAMIC")) {
+	if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
 		init_wires();
+		slurm_mutex_lock(&block_state_mutex);
+		last_bg_update = time(NULL);
+		slurm_mutex_unlock(&block_state_mutex);
 		info("No blocks created until jobs are submitted");
 	} else {
-		fatal("I don't understand this LayoutMode = %s", 
-		      bluegene_layout_mode);
-	}
+		if (create_defined_blocks(bluegene_layout_mode) 
+		    == SLURM_ERROR) {
+			/* error in creating the static blocks, so
+			 * blocks referenced by submitted jobs won't
+			 * correspond to actual slurm blocks.
+			 */
+			fatal("Error, could not create the static blocks");
+			return SLURM_ERROR;
+		}
+	} 
 	debug("Blocks have finished being created.");
 	blocks_are_created = 1;
 	
@@ -1808,11 +1808,19 @@ static int _parse_bg_spec(char *in_line)
 		api_file = NULL;	/* nothing left to xfree */
 	}
 	if (layout) {
-		xfree(bluegene_layout_mode);
-		bluegene_layout_mode = layout;
-		layout = NULL;
+		if(!strcasecmp(layout,"STATIC")) 
+			bluegene_layout_mode = LAYOUT_STATIC;
+		else if(!strcasecmp(layout,"OVERLAP")) 
+			bluegene_layout_mode = LAYOUT_OVERLAP;
+		else if(!strcasecmp(layout,"DYNAMIC")) 
+			bluegene_layout_mode = LAYOUT_DYNAMIC;
+		else {
+			fatal("I don't understand this LayoutMode = %s", 
+			      layout);
+		}
+		xfree(layout);
 	}
-
+	
 	if (pset_num > 0) {
 		bluegene_numpsets = pset_num;
 	}
@@ -1825,10 +1833,16 @@ static int _parse_bg_spec(char *in_line)
 	if (nc_node_cnt > 0) {
 		bluegene_nc_node_cnt = nc_node_cnt;
 	}
-
+	
 	/* Process node information */
 	if (!nodes)
 		return SLURM_SUCCESS;	/* not block line. */
+	
+	if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
+		xfree(nodes);
+		xfree(conn_type);
+		return SLURM_SUCCESS;
+	}
 	
 	if (!bluegene_mp_node_cnt)
 		fatal("MidplaneNodeCnt not configured in bluegene.conf "
