@@ -90,7 +90,9 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		int spec, bg_record_t** found_bg_record)
 {
 	ListIterator itr;
-	bg_record_t* record = NULL;
+	ListIterator itr2;
+	bg_record_t *record = NULL;
+	bg_record_t *found_record = NULL;
 	int i;
 	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
 	uint16_t conn_type, rotate, target_size = 1, checked;
@@ -154,7 +156,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		*/
 		slurm_mutex_lock(&block_state_mutex);
 		debug3("job_running = %d", record->job_running);
-		if((record->job_running != -1) && (checked < 2)) {
+		if((record->job_running != -1) && (checked < 1)) {
 			job_running++;
 			debug("block %s in use by %s", 
 			      record->bg_block_id,
@@ -220,6 +222,34 @@ static int _find_best_block_match(struct job_record* job_ptr,
 			continue;
 		}
 
+		/* Make sure no other partitions are under this partition 
+		   are booted and running jobs
+		*/
+		itr2 = list_iterator_create(bg_list);
+		while ((found_record = (bg_record_t*) 
+			list_next(itr2)) != NULL) {
+			if ((!found_record->bg_block_id)
+			    || (!strcmp(record->bg_block_id, 
+					found_record->bg_block_id)))
+				continue;
+			if(blocks_overlap(record, found_record)) {
+				if(found_record->job_running != -1) {
+					debug("can't use %s, everything is "
+					      "cool, but there is a job (%d) "
+					      "running on %s", 
+					      record->bg_block_id,
+					      found_record->job_running,
+					      found_record->bg_block_id);
+					break;
+				}
+			} 
+		}
+		list_iterator_destroy(itr2);
+		if(found_record) {
+			continue;
+		} 
+				
+			
 		/***********************************************/
 		/* check the connection type specified matches */
 		/***********************************************/

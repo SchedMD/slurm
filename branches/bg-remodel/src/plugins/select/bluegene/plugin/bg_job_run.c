@@ -253,12 +253,12 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		while ((found_record = (bg_record_t*) 
 			list_next(itr)) != NULL) {
 			if ((!found_record->bg_block_id)
-			    || (strcmp(bg_record->bg_block_id, 
-				       found_record->bg_block_id)))
+			    || (!strcmp(bg_record->bg_block_id, 
+					found_record->bg_block_id)))
 				continue;
 
 			if(!blocks_overlap(bg_record, found_record)) {
-				debug("block %s isn't part of %s",
+				debug3("block %s isn't part of %s",
 				      found_record->bg_block_id, 
 				      bg_record->bg_block_id);
 				continue;
@@ -714,7 +714,7 @@ extern int start_job(struct job_record *job_ptr)
 			if(!blocks_overlap(bg_record, found_record)) {
 				format_node_name(found_record, tmp_char);
 				format_node_name(bg_record, tmp_char2);
-				debug("block %s isn't part of %s",
+				debug3("block %s isn't part of %s",
 				      tmp_char, tmp_char2);
 				continue;
 			}
