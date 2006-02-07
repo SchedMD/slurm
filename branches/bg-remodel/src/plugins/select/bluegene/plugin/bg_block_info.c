@@ -242,7 +242,7 @@ extern int update_block_list()
 				break;
 			}
 		} else {
-			if ((rc = rm_get_data(block_list, RM_PartListFirstPart, 
+			if ((rc = rm_get_data(block_list, RM_PartListFirstPart,
 					      &block_ptr)) != STATUS_OK) {
 				error("rm_get_data(RM_PartListFirstPart: %s",
 				      bg_err_str(rc));

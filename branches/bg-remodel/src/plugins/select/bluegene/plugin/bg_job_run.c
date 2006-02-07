@@ -52,8 +52,6 @@
 #include "src/slurmctld/proc_req.h"
 #include "bluegene.h"
 
-#ifdef HAVE_BG_FILES
-
 #define MAX_POLL_RETRIES    220
 #define POLL_INTERVAL        3
 #define MAX_AGENT_COUNT      130
@@ -72,6 +70,10 @@ static List bg_update_list = NULL;
 static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int agent_cnt = 0;
 
+#ifdef HAVE_BG_FILES
+static int	_remove_job(db_job_id_t job_id);
+#endif
+
 static void	_bg_list_del(void *x);
 static int	_excise_block(List block_list, 
 			      pm_partition_id_t bg_block_id, 
@@ -79,23 +81,12 @@ static int	_excise_block(List block_list,
 static List	_get_all_blocks(void);
 static void *	_block_agent(void *args);
 static void	_block_op(bg_update_t *bg_update_ptr);
-static int	_remove_job(db_job_id_t job_id);
 static void	_start_agent(bg_update_t *bg_update_ptr);
 static void	_sync_agent(bg_update_t *bg_update_ptr);
 static void	_term_agent(bg_update_t *bg_update_ptr);
 
 
-/* Delete a bg_update_t record */
-static void _bg_list_del(void *x)
-{
-	bg_update_t *bg_update_ptr = (bg_update_t *) x;
-
-	if (bg_update_ptr) {
-		xfree(bg_update_ptr->bg_block_id);
-		xfree(bg_update_ptr);
-	}
-}
-
+#ifdef HAVE_BG_FILES
 /* Kill a job and remove its record from MMCS */
 static int _remove_job(db_job_id_t job_id)
 {
@@ -173,8 +164,18 @@ static int _remove_job(db_job_id_t job_id)
 	error("Failed to remove job %d from MMCS", job_id);
 	return INTERNAL_ERROR;
 }
+#endif
 
+/* Delete a bg_update_t record */
+static void _bg_list_del(void *x)
+{
+	bg_update_t *bg_update_ptr = (bg_update_t *) x;
 
+	if (bg_update_ptr) {
+		xfree(bg_update_ptr->bg_block_id);
+		xfree(bg_update_ptr);
+	}
+}
 
 /* Update block user and reboot as needed */
 static void _sync_agent(bg_update_t *bg_update_ptr)
@@ -259,14 +260,12 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 
 			if(!blocks_overlap(bg_record, found_record)) {
 				debug3("block %s isn't part of %s",
-				      found_record->bg_block_id, 
-				      bg_record->bg_block_id);
+				       found_record->bg_block_id, 
+				       bg_record->bg_block_id);
 				continue;
 			}
 									
 			if(found_record->state != RM_PARTITION_FREE) {
-				format_node_name(found_record, tmp_char);
-				format_node_name(bg_record, tmp_char2);
 				debug("need to free %s it's part of %s",
 				      found_record->bg_block_id, 
 				      bg_record->bg_block_id);
@@ -334,28 +333,34 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 				
 		set_block_user(bg_record); 
 	}
+	list_push(bg_job_block_list, bg_record);
 	slurm_mutex_unlock(&block_state_mutex);	
 }
 
 /* Perform job termination work */
 static void _term_agent(bg_update_t *bg_update_ptr)
 {
-	int i, jobs, rc;
-	rm_job_list_t *job_list = NULL;
-	int live_states;
-	rm_element_t *job_elem = NULL;
-	pm_partition_id_t block_id;
-	db_job_id_t job_id;
 	bg_record_t *bg_record = NULL;
+	bg_record_t *found_record = NULL;
 	time_t now;
 	struct tm *time_ptr;
 	char reason[128];
 	int job_remove_failed = 0;
-
+	ListIterator itr;
+	
+#ifdef HAVE_BG_FILES
+	rm_element_t *job_elem = NULL;
+	rm_job_list_t *job_list = NULL;
+	db_job_id_t job_id;
+	int live_states;
+	pm_partition_id_t block_id;
+	int i, jobs, rc;
+	
 	debug2("getting the job info");
 	live_states = JOB_ALL_FLAG 
 		& (~JOB_TERMINATED_FLAG) 
-		& (~JOB_KILLED_FLAG);
+		& (~JOB_KILLED_FLAG)
+		& (~JOB_ERROR_FLAG);
 	if ((rc = rm_get_jobs(live_states, &job_list)) != STATUS_OK) {
 		error("rm_get_jobs(): %s", bg_err_str(rc));
 		return;
@@ -425,7 +430,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 			break;
 		}
 	}
-	
+#endif
 	/* remove the block's users */
 	bg_record = find_bg_record(bg_update_ptr->bg_block_id);
 	if(bg_record) {
@@ -471,11 +476,24 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		bg_record->boot_count = 0;
 		
 		last_bg_update = time(NULL);
+		itr = list_iterator_create(bg_job_block_list);
+		while ((found_record = 
+			(bg_record_t *) list_next(itr)) != NULL) {
+			if(found_record->bg_block_id)
+				if (!strcmp(found_record->bg_block_id, 
+					    bg_record->bg_block_id)) {
+					list_remove(itr);
+					break;
+				}
+		}
+		list_iterator_destroy(itr);
 		slurm_mutex_unlock(&block_state_mutex);
 	} 
-not_removed:
+#ifdef HAVE_BG_FILES
 	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
 		error("rm_free_job_list(): %s", bg_err_str(rc));
+#endif
+	
 }
 	
 /* Process requests off the bg_update_list queue and exit when done */
@@ -644,8 +662,6 @@ int term_jobs_on_block(pm_partition_id_t bg_block_id)
 	return rc;
 }
 
-#endif
-
 /*
  * Perform any setup required to initiate a job
  * job_ptr IN - pointer to the job being initiated
@@ -660,7 +676,6 @@ extern int start_job(struct job_record *job_ptr)
 	int rc = SLURM_SUCCESS;
 	bg_record_t *bg_record = NULL;
 
-#ifdef HAVE_BG_FILES
 	bg_update_t *bg_update_ptr = NULL;
 
 	bg_update_ptr = xmalloc(sizeof(bg_update_t));
@@ -680,57 +695,6 @@ extern int start_job(struct job_record *job_ptr)
 	     job_ptr->job_id, 
 	     bg_update_ptr->bg_block_id);
 	_block_op(bg_update_ptr);
-#else
-	ListIterator itr;
-	bg_record_t *found_record = NULL;
-	char *block_id = NULL;
-	char tmp_char[256], tmp_char2[256];
-	uint16_t node_use;
-
-	if (bg_list) {
-		
-		select_g_get_jobinfo(job_ptr->select_jobinfo,
-			SELECT_DATA_BLOCK_ID, &block_id);
-		select_g_get_jobinfo(job_ptr->select_jobinfo,
-			SELECT_DATA_NODE_USE, &node_use);
-		if(!block_id) {
-			error("NO block_id");
-			return rc;
-		}
-		bg_record = find_bg_record(block_id);
-		if (bg_record) {
-			job_ptr->num_procs = (bg_record->cpus_per_bp *
-				bg_record->bp_count);
-		}
-		itr = list_iterator_create(bg_list);
-		while ((found_record = (bg_record_t *) list_next(itr))) {
-			if (!strcmp(block_id, found_record->bg_block_id)) {
-				found_record->job_running = job_ptr->job_id;
-				found_record->node_use = node_use;
-				found_record->state = RM_PARTITION_READY;
-				last_bg_update = time(NULL);
-				continue;
-			}
-			if(!blocks_overlap(bg_record, found_record)) {
-				format_node_name(found_record, tmp_char);
-				format_node_name(bg_record, tmp_char2);
-				debug3("block %s isn't part of %s",
-				      tmp_char, tmp_char2);
-				continue;
-			}
-			
-			format_node_name(found_record, tmp_char);
-			format_node_name(bg_record, tmp_char2);
-			debug("need to free %s it's part of %s",
-			      tmp_char, tmp_char2);
-				
-			found_record->state = RM_PARTITION_FREE;
-		}
-		list_iterator_destroy(itr);
-		xfree(block_id);
-	
-	}
-#endif
 	return rc;
 }
 
@@ -747,8 +711,6 @@ extern int start_job(struct job_record *job_ptr)
 int term_job(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
-#ifdef HAVE_BG_FILES
-
 	bg_update_t *bg_update_ptr = NULL;
 	
 	bg_update_ptr = xmalloc(sizeof(bg_update_t));
@@ -760,28 +722,7 @@ int term_job(struct job_record *job_ptr)
 	info("Queue termination of job %u in BG block %s",
 		job_ptr->job_id, bg_update_ptr->bg_block_id);
 	_block_op(bg_update_ptr);
-#else
-	bg_record_t *bg_record;
-	char *block_id = NULL;
-		
-	if (bg_list) {
-		
-		select_g_get_jobinfo(job_ptr->select_jobinfo,
-			SELECT_DATA_BLOCK_ID, &block_id);
-		if(!block_id) {
-			error("NO block_id");
-			return rc;
-		}
-		bg_record = find_bg_record(block_id);
-		info("Finished job %u in BG block %s",
-		     job_ptr->job_id, 
-		     bg_record->bg_block_id);
-		bg_record->state = RM_PARTITION_FREE;
-		bg_record->job_running = -1;
-		last_bg_update = time(NULL);		
-		xfree(block_id);
-	}
-#endif
+
 	return rc;
 }
 
@@ -792,7 +733,6 @@ int term_job(struct job_record *job_ptr)
  */
 extern int sync_jobs(List job_list)
 {
-#ifdef HAVE_BG_FILES
 	ListIterator job_iterator, block_iterator;
 	struct job_record  *job_ptr = NULL;
 	bg_update_t *bg_update_ptr = NULL;
@@ -880,7 +820,6 @@ extern int sync_jobs(List job_list)
 		error("sync_jobs: no block_list");
 		return SLURM_ERROR;
 	}
-#endif
 	return SLURM_SUCCESS;
 }
 
@@ -930,6 +869,13 @@ extern int boot_block(bg_record_t *bg_record)
 	//bg_record->boot_count = 0;
 	last_bg_update = time(NULL);
 	slurm_mutex_unlock(&block_state_mutex);
+#else
+	slurm_mutex_lock(&block_state_mutex);
+	bg_record->state = RM_PARTITION_READY;
+	last_bg_update = time(NULL);
+	slurm_mutex_unlock(&block_state_mutex);				
 #endif
+	
+
 	return SLURM_SUCCESS;
 }

@@ -60,8 +60,8 @@ int num_block_freed = 0;
 int blocks_are_created = 0;
 bg_record_t *full_system_block = NULL;
 
+static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 #ifdef HAVE_BG_FILES
-  static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
   static int _update_bg_record_state(List bg_destroy_list);
 #else
 # if BA_SYSTEM_DIMENSIONS==3
@@ -265,8 +265,7 @@ extern bg_record_t *find_bg_record(char *bg_block_id)
 			
 	if(bg_list) {
 		itr = list_iterator_create(bg_list);
-		while ((bg_record = 
-			(bg_record_t *) list_next(itr)) != NULL) {
+		while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
 			if(bg_record->bg_block_id)
 				if (!strcmp(bg_record->bg_block_id, 
 					    bg_block_id))
@@ -484,6 +483,7 @@ extern void set_block_user(bg_record_t *bg_record)
 	xfree(bg_record->target_name);
 	bg_record->target_name = 
 		xstrdup(slurmctld_conf.slurm_user_name);
+	list_push(bg_booted_block_list, bg_record);			
 }
 
 extern char* convert_lifecycle(lifecycle_type_t lifecycle)
@@ -1047,8 +1047,10 @@ no_total:
 
 extern int bg_free_block(bg_record_t *bg_record)
 {
-#ifdef HAVE_BG_FILES
 	int rc;
+	ListIterator itr;
+	bg_record_t *found_record = NULL;
+	
 	if(!bg_record) {
 		error("bg_free_block: there was no bg_record");
 		return SLURM_ERROR;
@@ -1057,6 +1059,7 @@ extern int bg_free_block(bg_record_t *bg_record)
 		if (bg_record->state != -1
 		    && bg_record->state != RM_PARTITION_FREE 
 		    && bg_record->state != RM_PARTITION_DEALLOCATING) {
+#ifdef HAVE_BG_FILES
 			debug("pm_destroy %s",bg_record->bg_block_id);
 			if ((rc = pm_destroy_partition(
 				     bg_record->bg_block_id)) 
@@ -1070,6 +1073,9 @@ extern int bg_free_block(bg_record_t *bg_record)
 				      bg_record->bg_block_id, 
 				      bg_err_str(rc), bg_record->state);
 			}
+#else
+			bg_record->state = RM_PARTITION_FREE;	
+#endif
 		}
 		
 		if ((bg_record->state == RM_PARTITION_FREE)
@@ -1077,14 +1083,23 @@ extern int bg_free_block(bg_record_t *bg_record)
 			break;
 		sleep(3);
 	}
-#endif
+	itr = list_iterator_create(bg_booted_block_list);
+	while ((found_record = (bg_record_t *) list_next(itr)) != NULL) {
+		if(found_record->bg_block_id)
+			if (!strcmp(found_record->bg_block_id, 
+				    bg_record->bg_block_id)) {
+				list_remove(itr);
+				break;
+			}
+	}
+	list_iterator_destroy(itr);
+
 	return SLURM_SUCCESS;
 }
 
 /* Free multiple blocks in parallel */
 extern void *mult_free_block(void *args)
 {
-#ifdef HAVE_BG_FILES
 	bg_record_t *bg_record = (bg_record_t*) args;
 
 	debug("freeing the block %s.", bg_record->bg_block_id);
@@ -1093,14 +1108,12 @@ extern void *mult_free_block(void *args)
 	slurm_mutex_lock(&freed_cnt_mutex);
 	num_block_freed++;
 	slurm_mutex_unlock(&freed_cnt_mutex);
-#endif	
 	return NULL;
 }
 
 /* destroy multiple blocks in parallel */
 extern void *mult_destroy_block(void *args)
 {
-#ifdef HAVE_BG_FILES
 	bg_record_t *bg_record = (bg_record_t*) args;
 	int rc;
 
@@ -1111,7 +1124,7 @@ extern void *mult_destroy_block(void *args)
 	debug("destroying %s\n",
 	      (char *)bg_record->bg_block_id);
 	bg_free_block(bg_record);
-	
+#ifdef HAVE_BG_FILES
 	rc = rm_remove_partition(
 		bg_record->bg_block_id);
 	if (rc != STATUS_OK) {
@@ -1120,11 +1133,11 @@ extern void *mult_destroy_block(void *args)
 		      bg_err_str(rc));
 	} else
 		debug("done\n");
+#endif
 	slurm_mutex_lock(&freed_cnt_mutex);
 	num_block_freed++;
 	slurm_mutex_unlock(&freed_cnt_mutex);
 
-#endif	
 	return NULL;
 }
 
@@ -1415,10 +1428,15 @@ static void _set_bg_lists()
 	if (bg_found_block_list) 
 		list_destroy(bg_found_block_list);
 	bg_found_block_list = list_create(NULL);
+	if (bg_booted_block_list) 
+		list_destroy(bg_booted_block_list);
+	bg_booted_block_list = list_create(NULL);
+	if (bg_job_block_list) 
+		list_destroy(bg_job_block_list);
+	bg_job_block_list = list_create(NULL);
 	
 	if (bg_curr_block_list)
-		list_destroy(bg_curr_block_list);
-	
+		list_destroy(bg_curr_block_list);	
 	bg_curr_block_list = list_create(destroy_bg_record);
 	
 /* empty the old list before reading new data */

@@ -116,8 +116,12 @@ extern int bluegene_mp_node_cnt;
 extern int bluegene_nc_node_cnt;
 extern ba_system_t *ba_system_ptr;
 extern time_t last_bg_update;
+
 extern List bg_curr_block_list; 	/* Initial bg block state */
 extern List bg_list;			/* List of configured BG blocks */
+extern List bg_job_block_list;  	/* jobs running in these blocks */
+extern List bg_booted_block_list;  	/* blocks that are booted */
+
 extern bool agent_fini;
 extern pthread_mutex_t block_state_mutex;
 extern int num_block_to_free;

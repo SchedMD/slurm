@@ -233,7 +233,8 @@ static int _find_best_block_match(struct job_record* job_ptr,
 					found_record->bg_block_id)))
 				continue;
 			if(blocks_overlap(record, found_record)) {
-				if(found_record->job_running != -1) {
+				if((found_record->job_running != -1) 
+				   && (checked < 1)) {
 					debug("can't use %s, everything is "
 					      "cool, but there is a job (%d) "
 					      "running on %s", 
