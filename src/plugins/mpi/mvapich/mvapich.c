@@ -1,5 +1,6 @@
 /*****************************************************************************\
- *  mvapich.c - srun support for MPICH-IB (MVAPICH 0.9.4 and 0.9.5)
+ *  mvapich.c - srun support for MPICH-IB (MVAPICH 0.9.4 and 0.9.5), for 
+ *	other versions see MVAPICH_VERSION below.
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).  
@@ -41,6 +42,15 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/net.h"
+
+/* NOTE: MVAPICH has changed protocols without changing version numbers.
+ * This makes support of MVAPICH very difficult. 
+ * Support for the following versions have been validated:
+ *
+ * For MVAPICH-GEN2-1.0-103,    set MVAPICH_VERSION to 2
+ * For MVAPICH 0.9.4 and 0.9.5, set MVAPICH_VERSION to 3
+ */
+#define MVAPICH_VERSION 3
 
 #include "src/plugins/mpi/mvapich/mvapich.h"
 
@@ -127,7 +137,7 @@ static struct mvapich_info * mvapich_info_create (int fd)
 	if (fd_read_n (fd, mvi->addr, mvi->addrlen) < 0)
 		E_RET ("mvapich: Unable to read addr info for rank %d: %m", mvi->rank);
 
-	if (mvi->version == 3) {
+	if (mvi->version == MVAPICH_VERSION) {
 		if (fd_read_n (fd, &mvi->pidlen, sizeof (int)) < 0)
 			E_RET ("mvapich: Unable to read pidlen for rank %d: %m", mvi->rank);
 
@@ -197,7 +207,7 @@ static void mvapich_bcast (void)
 		/*
 		 * Protocol version 3 requires pid list to be sent next
 		 */
-		if (protocol_version == 3) {
+		if (protocol_version == MVAPICH_VERSION) {
 			for (j = 0; j < nprocs; j++)
 				fd_write_n (m->fd, &mvarray[j]->pid, mvarray[j]->pidlen);
 		}
@@ -266,7 +276,7 @@ static void mvapich_wait_for_abort(srun_job_t *job)
 			continue;
 		}
 		close(newfd);
-		if (protocol_version == 3) {
+		if (protocol_version == MVAPICH_VERSION) {
 			int rank = (int) (*rbuf);
 			info ("mvapich: Received ABORT message from MPI Rank %d", rank);
 		} else
