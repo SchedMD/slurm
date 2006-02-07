@@ -108,34 +108,13 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_CHECKED, &checked);
-	
-	/* have to check checked to see which time the node 
-	   scheduler is looking to see if it is runnable.  If checked >=2 
-	   we want to fall through to tell the scheduler that it is runnable
-	   just not right now. 
-	*/
-	slurm_mutex_lock(&block_state_mutex);
-	if((full_system_block->job_running != -1) && (checked < 2)) {
-		checked++;
-		slurm_mutex_unlock(&block_state_mutex);
-		select_g_set_jobinfo(job_ptr->select_jobinfo,
-				     SELECT_DATA_CHECKED, &checked);
-	
-		debug("_find_best_block_match none found "
-		      "full system running on block %s. %d",
-		      full_system_block->bg_block_id, 
-		      full_system_block->job_running);
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_CONN_TYPE, &conn_type);
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_GEOMETRY, req_geometry);
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_ROTATE, &rotate);
 
-		return SLURM_ERROR;
-	}
-	slurm_mutex_unlock(&block_state_mutex);
-			
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-		SELECT_DATA_CONN_TYPE, &conn_type);
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-		SELECT_DATA_GEOMETRY, req_geometry);
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-		SELECT_DATA_ROTATE, &rotate);
 	for (i=0; i<BA_SYSTEM_DIMENSIONS; i++)
 		target_size *= req_geometry[i];
 	if (target_size == 0)	/* no geometry specified */
@@ -166,12 +145,6 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		}
 		slurm_mutex_unlock(&block_state_mutex);
 	
-		if(record->full_block && job_running) {
-			debug("Can't run on full system block "
-			      "another block has a job running.");
-			continue;
-		}
-			
 		if (req_procs > record->cpus_per_bp) {
 			/* We use the c-node count here. Job could start
 			 * twice this count if VIRTUAL_NODE_MODE, but this

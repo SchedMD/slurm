@@ -128,8 +128,6 @@ extern int num_block_to_free;
 extern int num_block_freed;
 extern int blocks_are_created;
 extern int procs_per_node;
-extern bg_record_t *full_system_block;
-
 
 #define MAX_PTHREAD_RETRIES  1
 

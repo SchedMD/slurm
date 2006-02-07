@@ -58,7 +58,6 @@ pthread_mutex_t block_state_mutex = PTHREAD_MUTEX_INITIALIZER;
 int num_block_to_free = 0;
 int num_block_freed = 0;
 int blocks_are_created = 0;
-bg_record_t *full_system_block = NULL;
 
 static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 #ifdef HAVE_BG_FILES
@@ -75,8 +74,7 @@ static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 #ifdef HAVE_BG
 static int  _addto_node_list(bg_record_t *bg_record, int *start, int *end);
 #endif
-#ifdef HAVE_BG_FILES
-#endif
+
 static void _set_bg_lists();
 static int  _validate_config_nodes(void);
 static int  _bg_record_cmpf_inc(bg_record_t *rec_a, bg_record_t *rec_b);
@@ -233,7 +231,6 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	sec_record->user_name = xstrdup(fir_record->user_name);
 	xfree(sec_record->target_name);
 	sec_record->target_name = xstrdup(fir_record->target_name);
-	sec_record->full_block = fir_record->full_block;
 	sec_record->user_uid = fir_record->user_uid;
 	sec_record->block_lifecycle = fir_record->block_lifecycle;
 	sec_record->state = fir_record->state;
@@ -631,9 +628,8 @@ extern int create_static_blocks(int overlayed)
 	struct passwd *pw_ent = NULL;
 	bg_record_t *bg_record = NULL, *found_record = NULL;
 	char *name = NULL;
-#ifndef HAVE_BG_FILES
-	static int block_inx = 0;
-#else
+
+#ifdef HAVE_BG_FILES
 	ListIterator itr_found;
 	init_wires();
 #endif
@@ -728,26 +724,9 @@ extern int create_static_blocks(int overlayed)
 	sort_bg_record_inc_size(bg_list);
 
 	
-#ifdef HAVE_BG_FILES
-	if(bg_list) {
-		itr = list_iterator_create(bg_list);
-		while ((bg_record = (bg_record_t*) list_next(itr)) != NULL) {
-			if ((bg_record->geo[X] == DIM_SIZE[X])
-			    &&  (bg_record->geo[Y] == DIM_SIZE[Y])
-			    &&  (bg_record->geo[Z] == DIM_SIZE[Z])) {
-				debug("full system block = %s.", 
-				      bg_record->bg_block_id);
-				bg_record->full_block = 1;
-				full_system_block = bg_record;
-				break;
-			}
-		}
-		list_iterator_destroy(itr);
-	} else {
-		error("create_overlayed_blocks: no bg_list 5");
-	}
-#else
+#ifndef HAVE_BG_FILES
 	char tmp_char[256];
+	static int block_inx = 0;
 	if(bg_list) {
 		slurm_mutex_lock(&block_state_mutex);
 		itr = list_iterator_create(bg_list);
@@ -763,15 +742,6 @@ extern int create_static_blocks(int overlayed)
 			     bg_record->bg_block_id, tmp_char,
 			     convert_conn_type(bg_record->conn_type),
 			     convert_node_use(bg_record->node_use));
-			
-			if ((bg_record->geo[X] == max_dim[X]+1)
-			    &&  (bg_record->geo[Y] == max_dim[Y]+1)
-			    &&  (bg_record->geo[Z] == max_dim[Z]+1)) {
-				debug("full system block = %s.", 
-				      bg_record->bg_block_id);
-				bg_record->full_block = 1;
-				full_system_block = bg_record;
-			}
 		}
 		list_iterator_destroy(itr);
 	} else {
@@ -819,9 +789,7 @@ extern int create_dynamic_block()
 	struct passwd *pw_ent = NULL;
 	bg_record_t *bg_record = NULL, *found_record = NULL;
 	char *name = NULL;
-#ifndef HAVE_BG_FILES
-	static int block_inx = 0;
-#else
+#ifdef HAVE_BG_FILES
 	ListIterator itr_found;
 	init_wires();
 #endif
@@ -925,12 +893,6 @@ extern int create_full_system_block()
 	struct passwd *pw_ent = NULL;
 	bg_record_t *bg_record = NULL, *found_record = NULL;
 	char *name = NULL;
-#ifndef HAVE_BG_FILES
-	static int block_inx = 0;
-#else
-	ListIterator itr_found;
-	init_wires();
-#endif
 		
 	/* Here we are adding a block that in for the entire machine 
 	   just in case it isn't in the bluegene.conf file.
@@ -998,7 +960,6 @@ extern int create_full_system_block()
 		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_ERROR;
 	}
-	full_system_block = bg_record;
 	bg_record->bg_block_list = list_create(NULL);			
 	bg_record->hostlist = hostlist_create(NULL);
 	/* bg_record->boot_state = 0;		Implicit */
@@ -1553,7 +1514,6 @@ static int _validate_config_nodes(void)
 					copy_bg_record(init_bg_record, 
 						       bg_record);
 					bg_record->full_block = 1;
-					full_system_block = bg_record;
 					debug("full system %s",
 					      bg_record->bg_block_id);
 					_format_node_name(bg_record, tmp_char);

@@ -239,6 +239,8 @@ static int _print_text_job(job_info_t * job_ptr)
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
 			     SELECT_DATA_NODE_CNT, 
 			     &node_cnt);
+	if(!strcasecmp(job_ptr->nodes,"waiting...")) 
+		quarter = -1;
 #endif
 	if(!params.commandline) {
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
