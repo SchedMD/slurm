@@ -784,8 +784,8 @@ extern void ba_set_node_down(ba_node_t *ba_node)
 {
 	if (!_initialized){
 		error("Error, configuration not initialized, "
-			"call init_configuration first");
-		return;
+		      "calling ba_init(NULL)");
+		ba_init(NULL);
 	}
 
 #ifdef DEBUG_PA
@@ -815,9 +815,8 @@ extern int allocate_block(ba_request_t* ba_request, List results)
 {
 
 	if (!_initialized){
-		error("allocate_block Error, configuration not initialized, "
-		      "call init_configuration first");
-		return 0;
+		error("Error, configuration not initialized, "
+		      "calling ba_init(NULL)");
 	}
 
 	if (!ba_request){
@@ -1504,7 +1503,7 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 				       node_tar[X],
 				       node_tar[Y],
 				       node_tar[Z]);
-				if(conn_type == TORUS) {
+				if(conn_type == SELECT_TORUS) {
 					dim_curr_switch->
 						int_wire[0].used = 1;
 					dim_curr_switch->
@@ -1576,8 +1575,8 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 				}
 								
 			} else {
-				if(conn_type == TORUS || 
-				   (conn_type == MESH && 
+				if(conn_type == SELECT_TORUS || 
+				   (conn_type == SELECT_MESH && 
 				    (node_tar[i2] != first[i2]))) {
 					dim_curr_switch->
 						int_wire[0].used = 1;
@@ -2452,7 +2451,7 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 		}
 	}
 
-	if(conn_type == TORUS)
+	if(conn_type == SELECT_TORUS)
 		for(i=0;i<count;i++) {
 			_set_one_dim(start, end, ba_node[i]->coord);
 		}
@@ -2568,7 +2567,8 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				;
 			next_switch = &next_node->axis_switch[X];
 
- 			if((conn_type == MESH) && (found == (geometry[X]))) {
+ 			if((conn_type == SELECT_MESH) 
+			   && (found == (geometry[X]))) {
 				debug2("we found the end of the mesh");
 				return 1;
 			}
@@ -2858,7 +2858,8 @@ int port_tar;
 			next_switch = &next_node->axis_switch[X];
 		
 			
- 			if((conn_type == MESH) && (found == (geometry[X]))) {
+ 			if((conn_type == SELECT_MESH) 
+			   && (found == (geometry[X]))) {
 				debug2("we found the end of the mesh");
 				return 1;
 			}
@@ -3683,7 +3684,7 @@ int main(int argc, char** argv)
 /* 	request->size = 32; */
 /* 	request->rotate = 0; */
 /* 	request->elongate = 0; */
-/* 	request->conn_type = TORUS; */
+/* 	request->conn_type = SELECT_TORUS; */
 /* 	new_ba_request(request); */
 /* 	print_ba_request(request); */
 /* 	if(!allocate_block(request, results)) { */
@@ -3705,7 +3706,7 @@ int main(int argc, char** argv)
 	request->size = 1;
 	request->rotate = 0;
 	request->elongate = 0;
-	request->conn_type = TORUS;
+	request->conn_type = SELECT_TORUS;
 	new_ba_request(request);
 	print_ba_request(request);
 	if(!allocate_block(request, results)) {
@@ -3722,7 +3723,7 @@ int main(int argc, char** argv)
 	request->geometry[2] = 1;
 	request->start_req = 0;
 	request->size = 1;
-	request->conn_type = TORUS;
+	request->conn_type = SELECT_TORUS;
 	new_ba_request(request);
 	print_ba_request(request);
 	if(!allocate_block(request, results)) {
@@ -3738,7 +3739,7 @@ int main(int argc, char** argv)
 /* 	request->geometry[1] = 4; */
 /* 	request->geometry[2] = 4; */
 /* 	//request->size = 2; */
-/* 	request->conn_type = TORUS; */
+/* 	request->conn_type = SELECT_TORUS; */
 /* 	new_ba_request(request); */
 /* 	print_ba_request(request); */
 /* 	if(!allocate_block(request, results)) { */
@@ -3753,7 +3754,7 @@ int main(int argc, char** argv)
 /* 	request->geometry[1] = 4; */
 /* 	request->geometry[2] = 4; */
 /* 	//request->size = 2; */
-/* 	request->conn_type = TORUS; */
+/* 	request->conn_type = SELECT_TORUS; */
 /* 	new_ba_request(request); */
 /* 	print_ba_request(request); */
 /* 	if(!allocate_block(request, results)) { */

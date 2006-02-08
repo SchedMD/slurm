@@ -320,6 +320,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	}
 
 	slurm_mutex_lock(&block_state_mutex);
+
 	bg_record->boot_count = 0;
 	xfree(bg_record->target_name);
 	bg_record->target_name = xstrdup(uid_to_string(bg_update_ptr->uid));

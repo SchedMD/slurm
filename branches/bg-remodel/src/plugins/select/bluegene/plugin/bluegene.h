@@ -202,7 +202,7 @@ extern char *bg_err_str(status_t inx);
  * RET - success of fitting all configurations
  */
 extern int create_defined_blocks(bg_layout_t overlapped);
-extern int create_dynamic_block();
+extern int create_dynamic_block(ba_request_t *request, List my_block_list);
 extern int create_full_system_block();
 
 extern int bg_free_block(bg_record_t *bg_record);

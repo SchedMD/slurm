@@ -529,6 +529,7 @@ extern void sort_bg_record_inc_size(List records){
 		return;
 	slurm_mutex_lock(&block_state_mutex);
 	list_sort(records, (ListCmpF) _bg_record_cmpf_inc);
+	last_bg_update = time(NULL);
 	slurm_mutex_unlock(&block_state_mutex);
 }
 
@@ -781,23 +782,25 @@ extern int create_defined_blocks(bg_layout_t overlapped)
  * job allocation.  This will be added to the booted and job bg_lists.
  * RET - success of fitting configuration in the running system.
  */
-extern int create_dynamic_block()
+extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 {
 	int rc = SLURM_SUCCESS;
-
+	static int block_inx = 0;
+	
 	ListIterator itr;
 	struct passwd *pw_ent = NULL;
-	bg_record_t *bg_record = NULL, *found_record = NULL;
+	bg_record_t *bg_record = NULL;
+	List results = list_create(NULL);
+	
 	char *name = NULL;
 #ifdef HAVE_BG_FILES
 	ListIterator itr_found;
-	init_wires();
 #endif
 	slurm_mutex_lock(&block_state_mutex);
 	reset_ba_system();
 		
-	if(bg_list) {
-		itr = list_iterator_create(bg_list);
+	if(my_block_list) {
+		itr = list_iterator_create(my_block_list);
 		while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
 			if(bg_record->bp_count>0 
 			   && !bg_record->full_block
@@ -818,71 +821,89 @@ extern int create_dynamic_block()
 					return SLURM_ERROR;
 				}
 				xfree(name);
+			} else {
+				debug("Hey this block %s isn't set up correct "
+				      "%d $d",
+				      bg_record->bg_block_id,
+				      bg_record->bp_count,
+				      bg_record->cpus_per_bp);
 			}
 		}
 		list_iterator_destroy(itr);
 	} else {
-		error("create_defined_blocks: no bg_list 1");
-		slurm_mutex_unlock(&block_state_mutex);
-		return SLURM_ERROR;
+		debug("No list was given");
 	}
 
-#ifdef HAVE_BG_FILES
-	if(bg_list) {
-		itr = list_iterator_create(bg_list);
-		while ((bg_record = (bg_record_t *) list_next(itr)) 
-		       != NULL) {
-			if(bg_found_block_list) {
-				itr_found = list_iterator_create(
-					bg_found_block_list);
-				while ((found_record = (bg_record_t*) 
-					list_next(itr_found)) != NULL) {
-					/*printf("%s %d %s %d\n",*/
-/* 					       bg_record->nodes, */
-/* 					       bg_record->quarter, */
-/* 					       found_record->nodes, */
-/* 					       found_record->quarter); */
-					
-					if ((!strcmp(bg_record->nodes, 
-						     found_record->nodes))
-					    && (bg_record->quarter ==
-						found_record->quarter)
-					    && (bg_record->segment ==
-						found_record->segment)) {
-						/* don't reboot this one */
-						break;	
-					}
-				}
-				list_iterator_destroy(itr_found);
-			} else {
-				error("create_defined_blocks: "
-				      "no bg_found_block_list 1");
-			}
-			if(found_record == NULL) {
-				if((rc = configure_block(bg_record)) 
-				   == SLURM_ERROR) {
-					list_iterator_destroy(itr);
-					slurm_mutex_unlock(&block_state_mutex);
-					return rc;
-				}
-				print_bg_record(bg_record);
-			}
-		}
-		list_iterator_destroy(itr);
-	} else {
-		error("create_defined_blocks: no bg_list 2");
+	if(request->conn_type == SELECT_NAV)
+		request->conn_type = SELECT_TORUS;
+
+	if(!new_ba_request(request)) {
+		error("Problems with request for size %d geo %dx%dx%d", 
+		      request->size,
+		      request->geometry[0], 
+		      request->geometry[1], 
+		      request->geometry[2]);
+		slurm_mutex_unlock(&block_state_mutex);
+		return SLURM_ERROR;
+	} 
+	
+	if (!allocate_block(request, results)){
+		error("allocate failure for %dx%dx%d", 
+		      request->geometry[0], request->geometry[1], 
+		      request->geometry[2]);
 		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_ERROR;
 	}
+	list_destroy(results);
+	/*set up bg_record here */
+
+	bg_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));
+	bg_record->user_name = 
+		xstrdup(slurmctld_conf.slurm_user_name);
+	if((pw_ent = getpwnam(bg_record->user_name)) == NULL) {
+		error("getpwnam(%s): %m", bg_record->user_name);
+	} else {
+		bg_record->user_uid = pw_ent->pw_uid;
+	}
+	bg_record->bg_block_list = list_create(NULL);		
+	bg_record->hostlist = hostlist_create(NULL);
+
+	bg_record->nodes = xmalloc(sizeof(char)*
+				   (strlen(request->save_name)
+				    +strlen(slurmctld_conf.node_prefix)
+				    +1));
+	sprintf(bg_record->nodes, "%s%s\0", 
+		slurmctld_conf.node_prefix, request->save_name);
+	_process_nodes(bg_record);
+	bg_record->node_use = SELECT_COPROCESSOR_MODE;
+	bg_record->conn_type = request->conn_type;
+	bg_record->cpus_per_bp = procs_per_node;
+	bg_record->node_cnt = bluegene_mp_node_cnt * bg_record->bp_count;
+	bg_record->quarter = -1;
+	bg_record->segment = -1;
+	
+
+#ifdef HAVE_BG_FILES
+	if((rc = configure_block(bg_record)) 
+	   == SLURM_ERROR) {
+		xfree(bg_record);
+		slurm_mutex_unlock(&block_state_mutex);
+		return SLURM_ERROR;
+	}
+#else
+	bg_record->bg_block_id = xmalloc(sizeof(char)*8);
+	bg_record->job_running = -1;
+	snprintf(bg_record->bg_block_id, 8, "RMP%d", 
+		 block_inx++);
 #endif
+	list_push(bg_list, bg_record);
+	print_bg_record(bg_record);
 	
 	last_bg_update = time(NULL);
 	slurm_mutex_unlock(&block_state_mutex);
 	sort_bg_record_inc_size(bg_list);
 	
-	rc = SLURM_SUCCESS;
-	//exit(0);
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 extern int create_full_system_block()

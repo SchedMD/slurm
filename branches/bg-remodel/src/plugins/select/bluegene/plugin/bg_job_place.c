@@ -54,22 +54,14 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
 
 	switch (rot_cnt) {
 		case 0:		/* ABC -> ACB */
-			SWAP(req_geometry[1], req_geometry[2], tmp);
+		case 2:		/* CAB -> CBA */
+		case 4:		/* BCA -> BAC */
+			SWAP(req_geometry[Y], req_geometry[Z], tmp);
 			break;
 		case 1:		/* ACB -> CAB */
-			SWAP(req_geometry[0], req_geometry[1], tmp);
-			break;
-		case 2:		/* CAB -> CBA */
-			SWAP(req_geometry[1], req_geometry[2], tmp);
-			break;
 		case 3:		/* CBA -> BCA */
-			SWAP(req_geometry[0], req_geometry[1], tmp);
-			break;
-		case 4:		/* BCA -> BAC */
-			SWAP(req_geometry[1], req_geometry[2], tmp);
-			break;
 		case 5:		/* BAC -> ABC */
-			SWAP(req_geometry[0], req_geometry[1], tmp);
+			SWAP(req_geometry[X], req_geometry[Y], tmp);
 			break;
 	}
 }
@@ -94,13 +86,17 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	bg_record_t *record = NULL;
 	bg_record_t *found_record = NULL;
 	int i;
-	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
+	int16_t req_geometry[BA_SYSTEM_DIMENSIONS];
 	uint16_t conn_type, rotate, target_size = 1, checked;
 	uint32_t req_procs = job_ptr->num_procs;
 	int rot_cnt = 0;
 	uint32_t proc_cnt;
 	int job_running = 0;
-       
+	ba_request_t request; 
+	int created = 0;
+	List lists_of_lists = NULL;
+	List temp_list = NULL;
+
 	if(!bg_list) {
 		error("_find_best_block_match: There is no bg_list");
 		return SLURM_ERROR;
@@ -117,13 +113,15 @@ static int _find_best_block_match(struct job_record* job_ptr,
 
 	for (i=0; i<BA_SYSTEM_DIMENSIONS; i++)
 		target_size *= req_geometry[i];
-	if (target_size == 0)	/* no geometry specified */
+	if (target_size == 0) {	/* no geometry specified */
 		target_size = min_nodes;
+		req_geometry[X] = -1;
+	}
 	/* this is where we should have the control flow depending on
 	 * the spec arguement */
 
 	*found_bg_record = NULL;
-	
+try_again:	
 	debug("number of blocks to check: %d", list_count(bg_list));
      	itr = list_iterator_create(bg_list);
 	while ((record = (bg_record_t*) list_next(itr))) {
@@ -237,7 +235,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		/*****************************************/
 		/* match up geometry as "best" possible  */
 		/*****************************************/
-		if (req_geometry[0] == 0)
+		if (req_geometry[X] == -1)
 			;	/* Geometry not specified */
 		else {	/* match requested geometry */
 			bool match = false;
@@ -259,11 +257,52 @@ static int _find_best_block_match(struct job_record* job_ptr,
 			if (!match) 
 				continue;	/* Not usable */
 		}
-		
 		*found_bg_record = record;
 		break;
 	}
 	list_iterator_destroy(itr);
+	if(!*found_bg_record 
+	   && !created 
+	   && bluegene_layout_mode == LAYOUT_DYNAMIC) {
+		lists_of_lists = list_create(NULL);
+		list_append(lists_of_lists, bg_list);
+		list_append(lists_of_lists, bg_booted_block_list);
+		list_append(lists_of_lists, bg_job_block_list);
+		itr = list_iterator_create(lists_of_lists);
+		while ((temp_list = (List)list_next(itr)) != NULL) {
+		
+			request.geometry[X] = req_geometry[X];
+			request.geometry[Y] = req_geometry[Y];
+			request.geometry[Z] = req_geometry[Z];
+			request.size = target_size;
+			request.conn_type = conn_type;
+			request.rotate = rotate;
+			request.elongate = true;
+			request.force_contig = false;
+			request.start_req=0;
+			created++;
+			/* 1- try empty space
+			   2- we see if we can create one in the 
+			      unused midplanes
+			   3- see if we can create one in the non 
+			      job running midplanes
+			   4- see if we can create one in the system.
+			*/
+			debug("trying with %d", created);
+			if(create_dynamic_block(&request, temp_list) 
+			   == SLURM_SUCCESS) {
+				list_iterator_destroy(itr);
+				list_destroy(lists_of_lists);
+				lists_of_lists = NULL;
+				goto try_again;
+			}
+		}
+		debug("trying with all free blocks");
+		if(create_dynamic_block(&request, NULL) == SLURM_ERROR)
+			error("this job will never run on this system");
+	}
+	if(lists_of_lists)
+		list_destroy(lists_of_lists);
 	checked++;
 	select_g_set_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_CHECKED, &checked);

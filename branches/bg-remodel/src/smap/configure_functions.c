@@ -107,7 +107,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 	ba_request_t *request = (ba_request_t*) xmalloc(sizeof(ba_request_t)); 
 	
 	request->geometry[0] = -1;
-	request->conn_type=TORUS;
+	request->conn_type=SELECT_TORUS;
 	request->rotate = false;
 	request->elongate = false;
 	request->force_contig = false;
@@ -120,10 +120,10 @@ static int _create_allocation(char *com, List allocated_blocks)
 		}
 		
 		if(!strncasecmp(com+i, "mesh", 4)) {
-			request->conn_type=MESH;
+			request->conn_type=SELECT_MESH;
 			i+=4;
 		} else if(!strncasecmp(com+i, "small", 5)) {
-			request->conn_type = SMALL;
+			request->conn_type = SELECT_SMALL;
 			i+=5;
 		} else if(!strncasecmp(com+i, "rotate", 6)) {
 			request->rotate=true;
@@ -481,10 +481,11 @@ static int _remove_allocation(char *com, List allocated_blocks)
 		while((allocated_block = list_next(results_i)) != NULL) {
 			if(found) {
 				if(redo_block(allocated_block->nodes, 
-					     allocated_block->request->geometry,
-					     allocated_block->
-					     request->conn_type, 
-					     color_count) == SLURM_ERROR) {
+					      allocated_block->
+					      request->geometry,
+					      allocated_block->
+					      request->conn_type, 
+					      color_count) == SLURM_ERROR) {
 					memset(error_string,0,255);
 					sprintf(error_string, 
 						"problem redoing the part.");
@@ -497,7 +498,8 @@ static int _remove_allocation(char *com, List allocated_blocks)
 				
 			} else if(allocated_block->letter == letter) {
 				found=1;
-				remove_block(allocated_block->nodes,color_count);
+				remove_block(allocated_block->nodes,
+					     color_count);
 				list_destroy(allocated_block->nodes);
 				delete_ba_request(allocated_block->request);
 				list_remove(results_i);
@@ -513,7 +515,7 @@ static int _remove_allocation(char *com, List allocated_blocks)
 
 static int _alter_allocation(char *com, List allocated_blocks)
 {
-	int torus=TORUS, i=5, i2=0;
+	int torus=SELECT_TORUS, i=5, i2=0;
 	int len = strlen(com);
 	bool rotate = false;
 	bool elongate = false;
@@ -525,7 +527,7 @@ static int _alter_allocation(char *com, List allocated_blocks)
 			i++;
 		}
 		if(!strncasecmp(com+i, "mesh", 4)) {
-			torus=MESH;
+			torus=SELECT_MESH;
 			i+=4;
 		} else if(!strncasecmp(com+i, "rotate", 6)) {
 			rotate=true;
@@ -695,9 +697,10 @@ static int _save_allocation(char *com, List allocated_blocks)
 		results_i = list_iterator_create(allocated_blocks);
 		while((allocated_block = list_next(results_i)) != NULL) {
 			memset(save_string,0,255);
-			if(allocated_block->request->conn_type == TORUS)
+			if(allocated_block->request->conn_type == SELECT_TORUS)
 				conn_type = "TORUS";
-			else if(allocated_block->request->conn_type == MESH)
+			else if(allocated_block->request->conn_type 
+				== SELECT_MESH)
 				conn_type = "MESH";
 			else
 				conn_type = "SMALL";
@@ -952,10 +955,10 @@ static void _print_text_command(allocated_block_t *allocated_block)
 	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 		  ba_system_ptr->xcord, "%c",allocated_block->letter);
 	ba_system_ptr->xcord += 4;
-	if(allocated_block->request->conn_type==TORUS) 
+	if(allocated_block->request->conn_type==SELECT_TORUS) 
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "TORUS");
-	else if (allocated_block->request->conn_type==MESH)
+	else if (allocated_block->request->conn_type==SELECT_MESH)
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "MESH");
 	else 

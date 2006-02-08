@@ -76,8 +76,6 @@ extern bool have_db2;
 enum {X, Y, Z};
 
 /* */
-enum {MESH, TORUS, SMALL};
-enum {COPROCESSOR, VIRTUAL};
 
 /* NOTE: Definition of bg_info_record_t moved to src/api/node_select_info.h */
 
