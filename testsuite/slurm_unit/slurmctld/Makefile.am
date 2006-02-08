@@ -6,7 +6,6 @@ TESTS =
 # check_PROGRAMS identifies programs that can be built at "make check" time, 
 # even if they can't be run stand-alone.
 check_PROGRAMS = \
-	security_2_2 \
 	$(TESTS) 
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
