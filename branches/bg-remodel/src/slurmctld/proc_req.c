@@ -453,7 +453,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		do_unlock = true;
 		lock_slurmctld(job_write_lock);
 		error_code = job_allocate(job_desc_msg,
-				immediate, false, true, uid, &job_ptr);
+					  immediate, false, 
+					  true, uid, &job_ptr);
 		/* unlock after finished using the job structure data */
 		END_TIMER;
 	}
@@ -484,7 +485,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		alloc_msg.node_cnt       = job_ptr->node_cnt;
 		alloc_msg.node_list      = xstrdup(job_ptr->nodes);
 		alloc_msg.num_cpu_groups = job_ptr->num_cpu_groups;
-		alloc_msg.select_jobinfo = select_g_copy_jobinfo(job_ptr->select_jobinfo);
+		alloc_msg.select_jobinfo = 
+			select_g_copy_jobinfo(job_ptr->select_jobinfo);
 		unlock_slurmctld(job_write_lock);
 
 		response_msg.msg_type = RESPONSE_RESOURCE_ALLOCATION;

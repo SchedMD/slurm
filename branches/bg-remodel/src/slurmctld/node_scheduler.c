@@ -603,12 +603,12 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 							    avail_bitmap, 
 							    min_nodes, 
 							    max_nodes);
-			} else 
+			} else {
 				pick_code = select_g_job_test(job_ptr, 
 							      avail_bitmap, 
 							      min_nodes, 
 							      max_nodes);
-			
+			}
 			if (pick_code == SLURM_SUCCESS) {
 				if ((node_lim != INFINITE) && 
 				    (bit_set_count(avail_bitmap) > node_lim)) {
@@ -636,7 +636,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			     (bit_set_count(avail_bitmap) <= node_lim))) {
 				FREE_NULL_BITMAP(total_bitmap);
                                 if (cr_enabled) 
-					FREE_NULL_BITMAP(partially_idle_node_bitmap);
+					FREE_NULL_BITMAP(
+						partially_idle_node_bitmap);
 				*select_bitmap = avail_bitmap;
 				return SLURM_SUCCESS;
 			}

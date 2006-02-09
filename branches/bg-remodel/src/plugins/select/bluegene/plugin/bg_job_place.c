@@ -31,6 +31,7 @@
 
 #define BUFSIZE 4096
 #define BITSIZE 128
+#define CHECK_COUNT 1
 
 #define _DEBUG 0
 
@@ -91,9 +92,9 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	uint32_t req_procs = job_ptr->num_procs;
 	int rot_cnt = 0;
 	uint32_t proc_cnt;
-	int job_running = 0;
 	ba_request_t request; 
 	int created = 0;
+	int found = 0;
 	List lists_of_lists = NULL;
 	List temp_list = NULL;
 
@@ -122,27 +123,11 @@ static int _find_best_block_match(struct job_record* job_ptr,
 
 	*found_bg_record = NULL;
 try_again:	
+	slurm_mutex_lock(&block_state_mutex);
 	debug("number of blocks to check: %d", list_count(bg_list));
      	itr = list_iterator_create(bg_list);
 	while ((record = (bg_record_t*) list_next(itr))) {
 		/* Check processor count */
-		/* have to check checked to see which time the node 
-		   scheduler is looking to see if it is runnable.  
-		   If checked >=2 we want to fall through to tell the 
-		   scheduler that it is runnable just not right now. 
-		*/
-		slurm_mutex_lock(&block_state_mutex);
-		debug3("job_running = %d", record->job_running);
-		if((record->job_running != -1) && (checked < 1)) {
-			job_running++;
-			debug("block %s in use by %s", 
-			      record->bg_block_id,
-			      record->user_name);
-			slurm_mutex_unlock(&block_state_mutex);
-			continue;
-		}
-		slurm_mutex_unlock(&block_state_mutex);
-	
 		if (req_procs > record->cpus_per_bp) {
 			/* We use the c-node count here. Job could start
 			 * twice this count if VIRTUAL_NODE_MODE, but this
@@ -192,12 +177,25 @@ try_again:
 				record->bg_block_id);
 			continue;
 		}
-
+		/* have to check checked to see which time the node 
+		   scheduler is looking to see if it is runnable.  
+		   If checked >=1 we want to fall through to tell the 
+		   scheduler that it is runnable just not right now. 
+		*/
+		debug3("job_running = %d", record->job_running);
+		if((record->job_running != -1) && (checked < 2)) {
+			debug("block %s in use by %s", 
+			      record->bg_block_id,
+			      record->user_name);
+			found = 1;
+			continue;
+		}
+		
 		/* Make sure no other partitions are under this partition 
 		   are booted and running jobs
 		*/
 		itr2 = list_iterator_create(bg_list);
-		while ((found_record = (bg_record_t*) 
+		while ((found_record = (bg_record_t*)
 			list_next(itr2)) != NULL) {
 			if ((!found_record->bg_block_id)
 			    || (!strcmp(record->bg_block_id, 
@@ -205,10 +203,10 @@ try_again:
 				continue;
 			if(blocks_overlap(record, found_record)) {
 				if((found_record->job_running != -1) 
-				   && (checked < 1)) {
-					debug("can't use %s, everything is "
-					      "cool, but there is a job (%d) "
-					      "running on %s", 
+				   && (checked < 2)) {
+					debug("can't use %s, there is a job "
+					      "(%d) running on an overlapping "
+					      "block %s", 
 					      record->bg_block_id,
 					      found_record->job_running,
 					      found_record->bg_block_id);
@@ -218,6 +216,7 @@ try_again:
 		}
 		list_iterator_destroy(itr2);
 		if(found_record) {
+			found = 1;
 			continue;
 		} 
 				
@@ -241,8 +240,7 @@ try_again:
 			bool match = false;
 			rot_cnt = 0;	/* attempt six rotations  */
 
-			for (rot_cnt=0; rot_cnt<6; rot_cnt++) {
-				
+			for (rot_cnt=0; rot_cnt<6; rot_cnt++) {		
 				if ((record->geo[X] >= req_geometry[X])
 				&&  (record->geo[Y] >= req_geometry[Y])
 				&&  (record->geo[Z] >= req_geometry[Z])) {
@@ -261,16 +259,17 @@ try_again:
 		break;
 	}
 	list_iterator_destroy(itr);
+	
 	if(!*found_bg_record 
 	   && !created 
 	   && bluegene_layout_mode == LAYOUT_DYNAMIC) {
+		slurm_mutex_unlock(&block_state_mutex);
 		lists_of_lists = list_create(NULL);
 		list_append(lists_of_lists, bg_list);
 		list_append(lists_of_lists, bg_booted_block_list);
 		list_append(lists_of_lists, bg_job_block_list);
 		itr = list_iterator_create(lists_of_lists);
-		while ((temp_list = (List)list_next(itr)) != NULL) {
-		
+		while ((temp_list = (List)list_next(itr)) != NULL) {	
 			request.geometry[X] = req_geometry[X];
 			request.geometry[Y] = req_geometry[Y];
 			request.geometry[Z] = req_geometry[Z];
@@ -288,7 +287,7 @@ try_again:
 			      job running midplanes
 			   4- see if we can create one in the system.
 			*/
-			debug("trying with %d", created);
+			debug2("trying with %d", created);
 			if(create_dynamic_block(&request, temp_list) 
 			   == SLURM_SUCCESS) {
 				list_iterator_destroy(itr);
@@ -297,12 +296,29 @@ try_again:
 				goto try_again;
 			}
 		}
-		debug("trying with all free blocks");
-		if(create_dynamic_block(&request, NULL) == SLURM_ERROR)
-			error("this job will never run on this system");
+		if(!found) {
+			request.geometry[X] = req_geometry[X];
+			request.geometry[Y] = req_geometry[Y];
+			request.geometry[Z] = req_geometry[Z];
+			request.size = target_size;
+			request.conn_type = conn_type;
+			request.rotate = rotate;
+			request.elongate = true;
+			request.force_contig = false;
+			request.start_req=0;
+			debug2("trying with all free blocks");
+			if(create_dynamic_block(&request, NULL) == SLURM_ERROR)
+				error("this job will never run on "
+				      "this system");
+			else
+				goto try_again;
+		}
+		slurm_mutex_lock(&block_state_mutex);		
 	}
+	
 	if(lists_of_lists)
 		list_destroy(lists_of_lists);
+	
 	checked++;
 	select_g_set_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_CHECKED, &checked);
@@ -313,9 +329,15 @@ try_again:
 			(*found_bg_record)->bg_block_id, 
 			(*found_bg_record)->nodes);
 		bit_and(slurm_block_bitmap, (*found_bg_record)->bitmap);
+		if(((*found_bg_record)->job_running == -1)
+		   && (checked < 2)) {
+			(*found_bg_record)->job_running = job_ptr->job_id;
+			list_push(bg_job_block_list, (*found_bg_record));
+		}
+		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_SUCCESS;
 	}
-	
+	slurm_mutex_unlock(&block_state_mutex);
 	debug("_find_best_block_match none found");
 	return SLURM_ERROR;
 }
@@ -335,7 +357,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	int spec = 1; /* this will be like, keep TYPE a priority, etc,  */
 	bg_record_t* record = NULL;
 	char buf[100];
-		
+	int rc = SLURM_SUCCESS;
+	
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 		SELECT_PRINT_MIXED);
 	debug("bluegene:submit_job: %s nodes=%d-%d", 
@@ -343,10 +366,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	      min_nodes, 
 	      max_nodes);
 	
-	if ((_find_best_block_match(job_ptr, slurm_block_bitmap, min_nodes, 
-				max_nodes, spec, &record)) == SLURM_ERROR) {
-		return SLURM_ERROR;
-	} else {
+	rc = _find_best_block_match(job_ptr, slurm_block_bitmap, min_nodes, 
+				    max_nodes, spec, &record);
+	
+	if (rc == SLURM_SUCCESS) {
 		/* set the block id and quarter (if any) */
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_BLOCK_ID, record->bg_block_id);
@@ -358,5 +381,5 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			SELECT_DATA_NODE_CNT, &record->node_cnt);
 	}
 
-	return SLURM_SUCCESS;
+	return rc;
 }

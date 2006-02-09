@@ -972,7 +972,7 @@ extern char *set_bg_block(List results, int *start,
 			     conn_type);
 
 	if(!found) {
-		debug("trying less efficient code");
+		debug2("trying less efficient code");
 		remove_block(results, color_count);
 		list_destroy(results);
 		results = list_create(NULL);
@@ -1998,11 +1998,11 @@ start_again:
 #endif
 		       x);
 	new_node:
-		debug("starting at %d%d%d",
-		      start[X]
+		debug2("starting at %d%d%d",
+		       start[X]
 #ifdef HAVE_BG
-		      , start[Y],
-		      start[Z]
+		       , start[Y],
+		       start[Z]
 #endif
 			);
 		
@@ -2027,7 +2027,7 @@ start_again:
 			if(ba_request->start_req) 
 				goto requested_end;
 			//exit(0);
-			debug("trying something else");
+			debug2("trying something else");
 			remove_block(results, color_count);
 			list_destroy(results);
 			results = list_create(NULL);
@@ -2065,7 +2065,7 @@ start_again:
 #endif
 	}							
 requested_end:
-	error("can't allocate");
+	debug("can't allocate");
 	
 	return 0;
 }
@@ -2443,9 +2443,10 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 				set=1;
 			}
 		} else {
-			error("No network connection to create bgblock "
-			      "containing %s", name);
-			error("Use smap to define bgblocks in bluegene.conf");
+			debug("No network connection to create "
+			      "bgblock containing %s", name);
+			debug("Use smap to define bgblocks in "
+			      "bluegene.conf");
 			xfree(name);
 			return NULL;
 		}

@@ -197,7 +197,7 @@ extern void *bluegene_agent(void *args);
 extern char *bg_err_str(status_t inx);
 
 /*
- * create_*_blocks - functions for creating blocks that will be used
+ * create_*_block(s) - functions for creating blocks that will be used
  *   for scheduling.
  * RET - success of fitting all configurations
  */
@@ -206,6 +206,8 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list);
 extern int create_full_system_block();
 
 extern int bg_free_block(bg_record_t *bg_record);
+extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record, 
+			       int delete);
 extern void *mult_free_block(void *args);
 extern void *mult_destroy_block(void *args);
 extern int read_bg_conf(void);
