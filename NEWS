@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
  -- Ignore BlueGene bgljobs in ERROR state (don't try to kill).
  -- Fix job accounting for batch jobs (Andy Riebs, HP, 
     slurm.hp.jobacct_divby0a.patch).
+ -- Added proctrack/linuxproc.so to the main RPM.
 
 * Changes in SLURM 1.0.2
 ========================
