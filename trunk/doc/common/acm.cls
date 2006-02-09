@@ -1344,7 +1344,7 @@
 \def\crdata#1{\global\acmcopyr{#1}}
 \def\permission#1{\global\boilerplate{#1}}
 %
-\global\boilerplate={Copyright is held by the author/owner(s).\\ {{\it WWW2005}, May 10--14, 2005, Chiba, Japan.}}
+\global\boilerplate={Copyright is held by the author/owner(s).\\ {\it Operating System Reviews}}
 \newtoks\copyrightetc
 % original \global\copyrightetc{ACM 1-58113-844-X/04/0005.\the\acmcopyr}
 % commented out following line---cew
