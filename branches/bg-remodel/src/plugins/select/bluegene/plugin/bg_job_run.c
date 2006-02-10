@@ -339,8 +339,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	} else if (bg_record->state == RM_PARTITION_CONFIGURING) {
 		bg_record->boot_state = 1;		
 	}
-	slurm_mutex_unlock(&job_start_mutex);
-		
+	
 	slurm_mutex_lock(&block_state_mutex);
 
 	bg_record->boot_count = 0;
@@ -357,6 +356,8 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		set_block_user(bg_record); 
 	}
 	slurm_mutex_unlock(&block_state_mutex);	
+	slurm_mutex_unlock(&job_start_mutex);
+	
 }
 
 /* Perform job termination work */
@@ -473,7 +474,6 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 				      bg_update_ptr->bg_block_id);
 		}
 			
-		remove_from_bg_list(bg_job_block_list, bg_record, 0);
 		slurm_mutex_lock(&block_state_mutex);
 		bg_record->job_running = -1;
 		
@@ -498,6 +498,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		
 		last_bg_update = time(NULL);
 		slurm_mutex_unlock(&block_state_mutex);
+		remove_from_bg_list(bg_job_block_list, bg_record, 0);
 	} 
 #ifdef HAVE_BG_FILES
 	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)

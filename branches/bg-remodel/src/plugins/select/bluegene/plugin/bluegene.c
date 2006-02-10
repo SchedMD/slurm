@@ -209,6 +209,7 @@ extern void destroy_bg_record(void *object)
 
 	if (bg_record) {
 		xfree(bg_record->bg_block_id);
+		bg_record->bg_block_id = NULL;
 		xfree(bg_record->nodes);
 		xfree(bg_record->user_name);
 		xfree(bg_record->target_name);
@@ -220,6 +221,7 @@ extern void destroy_bg_record(void *object)
 			bit_free(bg_record->bitmap);
 		
 		xfree(bg_record);
+		bg_record = NULL;
 	}
 }
 
@@ -872,6 +874,9 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	sprintf(bg_record->nodes, "%s%s\0", 
 		slurmctld_conf.node_prefix, request->save_name);
 	xfree(request->save_name);
+	if(request->elongate_geos)
+		list_destroy(request->elongate_geos);
+	
 	_process_nodes(bg_record);
 	if(bg_list) {
 		itr = list_iterator_create(bg_list);
@@ -1054,8 +1059,8 @@ extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record,
 	itr = list_iterator_create(my_bg_list);
 	while ((found_record = (bg_record_t *) list_next(itr)) != NULL) {
 		if(found_record->bg_block_id && bg_record->bg_block_id)
-			if (bit_equal(bg_record->bitmap, 
-				      found_record->bitmap)) {
+			if(!strcmp(bg_record->bg_block_id, 
+				   found_record->bg_block_id)) {
 				if(delete)
 					list_delete(itr);
 				else
@@ -1078,6 +1083,7 @@ extern int bg_free_block(bg_record_t *bg_record)
 		error("bg_free_block: there was no bg_record");
 		return SLURM_ERROR;
 	}
+	
 	while (1) {
 		if (bg_record->state != -1
 		    && bg_record->state != RM_PARTITION_FREE 
@@ -1097,7 +1103,9 @@ extern int bg_free_block(bg_record_t *bg_record)
 				      bg_err_str(rc), bg_record->state);
 			}
 #else
+			slurm_mutex_lock(&block_state_mutex);
 			bg_record->state = RM_PARTITION_FREE;	
+			slurm_mutex_unlock(&block_state_mutex);
 #endif
 		}
 		
@@ -1148,7 +1156,6 @@ extern void *mult_destroy_block(void *args)
 	} else
 		debug("done\n");
 #endif
-	remove_from_bg_list(bg_job_block_list, bg_record, 0);
 	remove_from_bg_list(bg_list, bg_record, 1);
 	slurm_mutex_lock(&freed_cnt_mutex);
 	num_block_freed++;

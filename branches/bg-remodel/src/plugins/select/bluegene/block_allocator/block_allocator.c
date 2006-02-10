@@ -142,6 +142,9 @@ static int *_set_best_path();
 /* */
 static int _set_one_dim(int *start, int *end, int *coord);
 
+/* */
+static void _destroy_geo(void *object);
+
 /* Global */
 List bp_map_list;
 List bg_info_list;
@@ -191,7 +194,7 @@ extern int new_ba_request(ba_request_t* ba_request)
 	
 	ba_request->rotate_count= 0;
 	ba_request->elongate_count = 0;
-	ba_request->elongate_geos = list_create(NULL);
+	ba_request->elongate_geos = list_create(_destroy_geo);
 	geo[X] = ba_request->geometry[X];
 	geo[Y] = ba_request->geometry[Y];
 	geo[Z] = ba_request->geometry[Z];
@@ -464,7 +467,7 @@ endit:
 	
 	ba_request->rotate_count= 0;
 	ba_request->elongate_count = 0;
-	ba_request->elongate_geos = list_create(NULL);
+	ba_request->elongate_geos = list_create(_destroy_geo);
 	geo[X] = ba_request->geometry[X];
 		
 	if(geo[X] != -1) { 
@@ -494,14 +497,10 @@ endit:
  */
 extern void delete_ba_request(ba_request_t *ba_request)
 {
-	int *geo_ptr;
-
-	if(ba_request->save_name!=NULL)
-		xfree(ba_request->save_name);
+	xfree(ba_request->save_name);
+	if(ba_request->elongate_geos)
+		list_destroy(ba_request->elongate_geos);
 	
-	while((geo_ptr = list_pop(ba_request->elongate_geos)) != NULL)
-		xfree(geo_ptr);
-
 	xfree(ba_request);
 }
 
@@ -3647,6 +3646,11 @@ static int _set_one_dim(int *start, int *end, int *coord)
 		}
 	}
 	return 1;
+}
+
+static void _destroy_geo(void *object) {
+	int *geo_ptr = (int *)object;
+	xfree(geo_ptr);
 }
 
 //#define BUILD_EXE
