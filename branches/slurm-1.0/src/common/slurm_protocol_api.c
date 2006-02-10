@@ -123,6 +123,7 @@ int slurm_api_set_default_config()
 	static time_t last_config_update = (time_t) 0;
 
 	slurm_mutex_lock(&config_lock);
+	config_stat.st_mtime = 0;
 	if (slurmctld_conf.slurm_conf
 	&&  (stat(slurmctld_conf.slurm_conf, &config_stat) < 0)) {
 		error("Can't stat %s: %m", slurmctld_conf.slurm_conf);
