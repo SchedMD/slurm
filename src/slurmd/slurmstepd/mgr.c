@@ -593,7 +593,7 @@ _fork_all_tasks(slurmd_job_t *job)
 			error ("exec_all_tasks: pipe: %m");
 			return SLURM_ERROR;
 		}
-		debug("New fdpair[0] = %d, fdpair[1] = %d", fdpair[0], fdpair[1]);
+		debug3("New fdpair[0] = %d, fdpair[1] = %d", fdpair[0], fdpair[1]);
 		fd_set_close_on_exec(fdpair[0]);
 		fd_set_close_on_exec(fdpair[1]);
 		readfds[i] = fdpair[0];
@@ -781,7 +781,9 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			}
 		}
 		if (t != NULL) {
-			debug3("Process %d, task %d finished", (int)pid, i);
+			verbose("task %lu (%lu) exited status 0x%04x %M",
+				(unsigned long)job->task[i]->gtid,
+				(unsigned long)pid, status);
 			t->exited  = true;
 			t->estatus = status;
 			job->envtp->env = job->env;
