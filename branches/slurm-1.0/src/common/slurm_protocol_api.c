@@ -137,9 +137,11 @@ int slurm_api_set_default_config()
 	&&  slurmctld_conf.slurmctld_port)
   		goto cleanup;
 
-	last_config_update = config_stat.st_mtime;
 	init_slurm_conf(&slurmctld_conf);
 	read_slurm_conf_ctl(&slurmctld_conf, false);
+	if (!config_stat.st_mtime)
+		stat(slurmctld_conf.slurm_conf, &config_stat);
+	last_config_update = config_stat.st_mtime;
 
 	if ((slurmctld_conf.control_addr == NULL) ||
 	    (slurmctld_conf.slurmctld_port == 0)) {
