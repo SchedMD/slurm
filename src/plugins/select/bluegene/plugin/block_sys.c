@@ -96,6 +96,7 @@ static void _pre_allocate(bg_record_t *bg_record)
 	int rc;
 	int send_psets=numpsets;
 
+	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionBlrtsImg,   
 			bluegene_blrts)) != STATUS_OK)
 		error("rm_set_data(RM_PartitionBlrtsImg)", bg_err_str(rc));
@@ -131,6 +132,7 @@ static void _pre_allocate(bg_record_t *bg_record)
 /* 	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionID,  */
 /* 			&bg_record->bg_block_id)) != STATUS_OK) */
 /* 		error("rm_set_data(RM_PartitionID)", bg_err_str(rc)); */
+	slurm_mutex_unlock(&api_file_mutex);
 }
 
 /** 
@@ -258,17 +260,21 @@ int read_bg_blocks()
 	rm_nodecard_t *ncard = NULL;
 	bool small = false;
 
+	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_set_serial(BG_SERIAL)) != STATUS_OK) {
 		error("rm_set_serial(): %s\n", bg_err_str(rc));
+		slurm_mutex_unlock(&api_file_mutex);
 		return SLURM_ERROR;
 	}			
 	set_bp_map();
 	if ((rc = rm_get_partitions_info(state, &block_list))
 			!= STATUS_OK) {
 		error("rm_get_partitions_info(): %s", bg_err_str(rc));
+		slurm_mutex_unlock(&api_file_mutex);
 		return SLURM_ERROR;
 		
 	}
+	slurm_mutex_unlock(&api_file_mutex);
 	
 	if ((rc = rm_get_data(block_list, RM_PartListSize, &block_count))
 			!= STATUS_OK) {
@@ -310,15 +316,19 @@ int read_bg_blocks()
 			free(block_name);
 			continue;
 		}
-		if(bg_recover) 
+		if(bg_recover) {
+			slurm_mutex_lock(&api_file_mutex);
 			if ((rc = rm_get_partition(block_name, &block_ptr))
 			    != STATUS_OK) {
 				error("Partition %s doesn't exist.",
 				      block_name);
 				rc = SLURM_ERROR;
 				free(block_name);
+				slurm_mutex_unlock(&api_file_mutex);
 				break;
 			}
+			slurm_mutex_unlock(&api_file_mutex);
+		}
 		/* New BG partition record */		
 		
 		bg_record = xmalloc(sizeof(bg_record_t));
