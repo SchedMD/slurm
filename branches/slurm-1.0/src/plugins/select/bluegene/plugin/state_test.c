@@ -309,15 +309,19 @@ extern void test_mmcs_failures(void)
 	rm_BGL_t *bg;
 	int rc;
 
+	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_set_serial(BG_SERIAL)) != STATUS_OK) {
+		slurm_mutex_unlock(&api_file_mutex);
 		error("rm_set_serial(%s): %s", BG_SERIAL, bg_err_str(rc));
 		return;
 	}
 	if ((rc = rm_get_BGL(&bg)) != STATUS_OK) {
+		slurm_mutex_unlock(&api_file_mutex);
 		error("rm_get_BGL(): %s", bg_err_str(rc));
 		return;
 	}
-
+	slurm_mutex_unlock(&api_file_mutex);
+			
 	_test_down_switches(bg);
 	_test_down_nodes(bg);
 	if ((rc = rm_free_BGL(bg)) != STATUS_OK)
