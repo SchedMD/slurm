@@ -269,7 +269,7 @@ bit_nffc(bitstr_t *b, int n)
 	_assert_bitstr_valid(b);
 	assert(n > 0 && n < _bitstr_bits(b));
 
-	for (bit = 0; bit <= _bitstr_bits(b); bit++) {
+	for (bit = 0; bit < _bitstr_bits(b); bit++) {
 		if (bit_test(b, bit)) {		/* fail */
 			cnt = 0;
 		} else {
