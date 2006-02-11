@@ -58,6 +58,10 @@
 #include "src/common/xmalloc.h"
 #include <dlfcn.h>
 
+#ifdef WITH_PTHREADS
+#  include <pthread.h>
+#endif				/* WITH_PTHREADS */
+
 // #define DEBUG_PA
 #define BIG_MAX 9999
 #define BUFSIZE 4096
