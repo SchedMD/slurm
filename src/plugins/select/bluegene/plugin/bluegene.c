@@ -1446,6 +1446,8 @@ static int _delete_old_blocks(void)
 					return SLURM_ERROR;
 				}
 				if(found_record == NULL) {
+					debug("deleting %s",
+					      found_record->bg_block_id);
 					slurm_attr_init(&attr_agent);
 					if (pthread_attr_setdetachstate(
 						    &attr_agent, 

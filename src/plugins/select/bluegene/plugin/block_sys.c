@@ -266,7 +266,9 @@ int read_bg_blocks()
 		slurm_mutex_unlock(&api_file_mutex);
 		return SLURM_ERROR;
 	}			
+	slurm_mutex_unlock(&api_file_mutex);
 	set_bp_map();
+	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_get_partitions_info(state, &block_list))
 			!= STATUS_OK) {
 		error("rm_get_partitions_info(): %s", bg_err_str(rc));
