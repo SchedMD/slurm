@@ -322,7 +322,7 @@ fi
 
 
 %changelog
-* Thu Fev 09 2006 Morris Jette <jette1@llnl.gov>
+* Thu Feb 09 2006 Morris Jette <jette1@llnl.gov>
 - Added proctrack/linuxproc to main RPM
 
 * Mon Nov 07 2005 Morris Jette <jette1@llnl.gov>
