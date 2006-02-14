@@ -10,7 +10,9 @@ documents those changes that are of interest to users and admins.
     slurm.hp.jobacct_divby0a.patch).
  -- Added proctrack/linuxproc.so to the main RPM.
  -- Added mutex around bridge api file to avoid locking up the api.
-
+ -- BlueGene mod: Terminate slurm_prolog and slurm_epilog immediately if 
+    SLURM_JOBID environment variable is invalid.
+ 
 * Changes in SLURM 1.0.2
 ========================
  -- Correctly report DRAINED node state as type OTHER for "sinfo --summarize".
