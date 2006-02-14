@@ -297,6 +297,7 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 		pack_time(last_bg_update, buffer);
 
 		if(bg_list) {
+			slurm_mutex_lock(&block_state_mutex);
 			itr = list_iterator_create(bg_list);
 			while ((bg_record = (bg_record_t *) list_next(itr)) 
 			       != NULL) {
@@ -306,6 +307,7 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 				blocks_packed++;
 			}
 			list_iterator_destroy(itr);
+			slurm_mutex_unlock(&block_state_mutex);
 		} else {
 			error("select_p_pack_node_info: no bg_list");
 			return SLURM_ERROR;

@@ -288,14 +288,17 @@ extern bg_record_t *find_bg_record(char *bg_block_id)
 */
 extern int update_block_user(bg_record_t *bg_record) 
 {
-#ifdef HAVE_BG_FILES
-	int rc=0;
 	struct passwd *pw_ent = NULL;
-	
+
 	if(!bg_record->target_name) {
 		error("Must set target_name to run update_block_user.");
 		return -1;
 	}
+
+#ifdef HAVE_BG_FILES
+	int rc=0;
+	
+	
 
 	if((rc = remove_all_users(bg_record->bg_block_id, 
 				  bg_record->target_name))
@@ -322,6 +325,7 @@ extern int update_block_user(bg_record_t *bg_record)
 			} 
 		}
 	}
+#endif
 	
 	if(strcmp(bg_record->target_name, bg_record->user_name)) {
 		xfree(bg_record->user_name);
@@ -335,7 +339,6 @@ extern int update_block_user(bg_record_t *bg_record)
 		return 1;
 	}
 	
-#endif
 	return 0;
 }
 
@@ -1048,8 +1051,7 @@ no_total:
 	return rc;
 }
 
-extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record, 
-			       int delete)
+extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record)
 {
 	bg_record_t *found_record = NULL;
 	ListIterator itr;
@@ -1058,14 +1060,9 @@ extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record,
 	slurm_mutex_lock(&block_state_mutex);	
 	itr = list_iterator_create(my_bg_list);
 	while ((found_record = (bg_record_t *) list_next(itr)) != NULL) {
-		if(found_record->bg_block_id && bg_record->bg_block_id)
-			if(!strcmp(bg_record->bg_block_id, 
-				   found_record->bg_block_id)) {
-				if(delete)
-					list_delete(itr);
-				else
-					list_remove(itr);
-				
+		if(found_record && bg_record)
+			if(bg_record == found_record) {
+				list_remove(itr);
 				rc = SLURM_SUCCESS;
 				break;
 			}
@@ -1114,7 +1111,7 @@ extern int bg_free_block(bg_record_t *bg_record)
 			break;
 		sleep(3);
 	}
-	remove_from_bg_list(bg_booted_block_list, bg_record, 0);
+	remove_from_bg_list(bg_booted_block_list, bg_record);
 	
 	return SLURM_SUCCESS;
 }
@@ -1143,9 +1140,9 @@ extern void *mult_destroy_block(void *args)
 	      bg_record->bg_block_id);
 	term_jobs_on_block(bg_record->bg_block_id);
 	
-	debug("destroying %s\n",
-	      (char *)bg_record->bg_block_id);
+	debug2("destroying %s", (char *)bg_record->bg_block_id);
 	bg_free_block(bg_record);
+	
 #ifdef HAVE_BG_FILES
 	rc = rm_remove_partition(
 		bg_record->bg_block_id);
@@ -1156,9 +1153,9 @@ extern void *mult_destroy_block(void *args)
 	} else
 		debug("done\n");
 #endif
-	remove_from_bg_list(bg_list, bg_record, 1);
 	slurm_mutex_lock(&freed_cnt_mutex);
 	num_block_freed++;
+	destroy_bg_record(bg_record);
 	slurm_mutex_unlock(&freed_cnt_mutex);
 
 	return NULL;

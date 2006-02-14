@@ -31,7 +31,7 @@
 
 #define BUFSIZE 4096
 #define BITSIZE 128
-#define CHECK_COUNT 1
+#define CHECK_COUNT 2
 
 #define _DEBUG 0
 
@@ -43,9 +43,9 @@ _STMT_START {		\
 } _STMT_END
 
 static int  _find_best_block_match(struct job_record* job_ptr,
-				bitstr_t* slurm_block_bitmap,
-				int min_nodes, int max_nodes,
-				int spec, bg_record_t** found_bg_record);
+				   bitstr_t* slurm_block_bitmap,
+				   int min_nodes, int max_nodes,
+				   int spec, bg_record_t** found_bg_record);
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
 
 /* Rotate a 3-D geometry array through its six permutations */
@@ -124,7 +124,9 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	*found_bg_record = NULL;
 try_again:	
 	slurm_mutex_lock(&block_state_mutex);
-	debug("number of blocks to check: %d", list_count(bg_list));
+	debug("number of blocks to check: %d state %d", 
+	      list_count(bg_list),
+	      checked);
      	itr = list_iterator_create(bg_list);
 	while ((record = (bg_record_t*) list_next(itr))) {
 		/* Check processor count */
@@ -183,7 +185,7 @@ try_again:
 		   scheduler that it is runnable just not right now. 
 		*/
 		debug3("job_running = %d", record->job_running);
-		if((record->job_running != -1) && (checked < 2)) {
+		if((record->job_running != -1) && (checked < CHECK_COUNT)) {
 			debug("block %s in use by %s", 
 			      record->bg_block_id,
 			      record->user_name);
@@ -203,7 +205,7 @@ try_again:
 				continue;
 			if(blocks_overlap(record, found_record)) {
 				if((found_record->job_running != -1) 
-				   && (checked < 2)) {
+				   && (checked < CHECK_COUNT)) {
 					debug("can't use %s, there is a job "
 					      "(%d) running on an overlapping "
 					      "block %s", 
@@ -319,24 +321,19 @@ try_again:
 	if(lists_of_lists)
 		list_destroy(lists_of_lists);
 	
-	checked++;
-	select_g_set_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_CHECKED, &checked);
-				
 	/* set the bitmap and do other allocation activities */
 	if (*found_bg_record) {
 		debug("_find_best_block_match %s <%s>", 
 			(*found_bg_record)->bg_block_id, 
 			(*found_bg_record)->nodes);
 		bit_and(slurm_block_bitmap, (*found_bg_record)->bitmap);
-		if(((*found_bg_record)->job_running == -1)
-		   && (checked < 2)) {
-			(*found_bg_record)->job_running = job_ptr->job_id;
-			list_push(bg_job_block_list, (*found_bg_record));
-		}
 		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_SUCCESS;
 	}
+	checked++;
+	select_g_set_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_CHECKED, &checked);
+	
 	slurm_mutex_unlock(&block_state_mutex);
 	debug("_find_best_block_match none found");
 	return SLURM_ERROR;

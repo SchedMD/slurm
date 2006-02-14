@@ -65,7 +65,8 @@ typedef struct slurm_select_ops {
 						  int node_cnt);
 	int 		(*part_init)		( List part_list );
 	int		(*job_test)		( struct job_record *job_ptr,
-						  bitstr_t *bitmap, int min_nodes, 
+						  bitstr_t *bitmap, 
+						  int min_nodes, 
 						  int max_nodes );
 	int		(*job_begin)		( struct job_record *job_ptr );
 	int		(*job_ready)		( struct job_record *job_ptr );

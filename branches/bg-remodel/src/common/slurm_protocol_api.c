@@ -1393,10 +1393,12 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 			slurm_free_cred(resp->cred);
 
 		rc = errno;
-		if(list_count(ret_list)>0) {
-			error("We didn't do things correctly "
-			      "missed %d responses",
-			      list_count(ret_list));
+		if(ret_list) {
+			if(list_count(ret_list)>0) {
+				error("We didn't do things correctly "
+				      "missed %d responses",
+				      list_count(ret_list));
+			}
 			list_destroy(ret_list);
 		}
 		

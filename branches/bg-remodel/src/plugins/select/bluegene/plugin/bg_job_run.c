@@ -193,7 +193,7 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 	bg_record->job_running = bg_update_ptr->job_id;
 	list_push(bg_job_block_list, bg_record);
 	slurm_mutex_unlock(&block_state_mutex);
-	
+
 	if(bg_record->state==RM_PARTITION_READY) {
 		if(bg_record->user_uid != bg_update_ptr->uid) {
 			slurm_mutex_lock(&block_state_mutex);
@@ -232,7 +232,8 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
 	int retries;
-	
+	List delete_list = list_create(NULL);
+
 	slurm_mutex_lock(&job_start_mutex);
 		
 	bg_record = find_bg_record(bg_update_ptr->bg_block_id);
@@ -242,7 +243,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		slurm_mutex_unlock(&job_start_mutex);
 		return;
 	}
-				
+
 	if(bg_record->state == RM_PARTITION_DEALLOCATING) {
 		debug("Block is in Deallocating state, waiting for free.");
 		bg_free_block(bg_record);
@@ -251,6 +252,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	if(bg_record->state == RM_PARTITION_FREE) {
 		num_block_to_free = 0;
 		num_block_freed = 0;
+		slurm_mutex_lock(&block_state_mutex);
 		itr = list_iterator_create(bg_list);
 		debug2("freeing all other blocks that use these midplanes");
 		while ((found_record = (bg_record_t*) 
@@ -267,55 +269,64 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 				continue;
 			}
 									
-			if(found_record->state != RM_PARTITION_FREE) {
+			//if(found_record->state != RM_PARTITION_FREE) {
 				debug("need to free %s it's part of %s",
 				      found_record->bg_block_id, 
 				      bg_record->bg_block_id);
-				
-				slurm_attr_init(&attr_agent);
-				if (pthread_attr_setdetachstate(
-					    &attr_agent, 
-					    PTHREAD_CREATE_JOINABLE))
-					error("pthread_attr_setdetach"
-					      "state error %m");
-
-				retries = 0;
-				if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
-					while (pthread_create(
-						       &thread_agent, 
-						       &attr_agent, 
-						       mult_destroy_block,
-						       (void *)found_record)) {
-						error("pthread_create "
-						      "error %m");
-						if (++retries 
-						    > MAX_PTHREAD_RETRIES)
-							fatal("Can't create "
-							      "pthread");
-						/* sleep and retry */
-						usleep(1000);	
-					}
-				} else {
-					while (pthread_create(&thread_agent, 
-							      &attr_agent, 
-							      mult_free_block, 
-							      (void *)
-							      found_record)) {
-						error("pthread_create "
-						      "error %m");
-						if (++retries 
-						    > MAX_PTHREAD_RETRIES)
-							fatal("Can't create "
-							      "pthread");
-						/* sleep and retry */
-						usleep(1000);	
-					}
-				}
+				list_push(delete_list, found_record);
+				if(bluegene_layout_mode == LAYOUT_DYNAMIC)
+					list_remove(itr);
 				num_block_to_free++;
-			}
+				//}
 		}		
 		list_iterator_destroy(itr);
 		
+		debug2("freeing all other blocks that use these midplanes");
+		while ((found_record = (bg_record_t*) 
+			list_pop(delete_list)) != NULL) {
+			slurm_attr_init(&attr_agent);
+			if (pthread_attr_setdetachstate(
+				    &attr_agent, 
+				    PTHREAD_CREATE_JOINABLE))
+				error("pthread_attr_setdetach"
+				      "state error %m");
+
+			retries = 0;
+			if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
+				while (pthread_create(
+					       &thread_agent, 
+					       &attr_agent, 
+					       mult_destroy_block,
+					       (void *)found_record)) {
+					error("pthread_create "
+					      "error %m");
+					if (++retries 
+					    > MAX_PTHREAD_RETRIES)
+						fatal("Can't create "
+						      "pthread");
+					/* sleep and retry */
+					usleep(1000);	
+				}
+			} else {
+				while (pthread_create(&thread_agent, 
+						      &attr_agent, 
+						      mult_free_block, 
+						      (void *)
+						      found_record)) {
+					error("pthread_create "
+					      "error %m");
+					if (++retries 
+					    > MAX_PTHREAD_RETRIES)
+						fatal("Can't create "
+						      "pthread");
+					/* sleep and retry */
+					usleep(1000);	
+				}
+			}
+		}
+		list_destroy(delete_list);
+		slurm_mutex_unlock(&block_state_mutex);
+	
 		/* wait for all necessary blocks to be freed */
 		while(num_block_to_free != num_block_freed) {
 			sleep(1);
@@ -498,7 +509,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		
 		last_bg_update = time(NULL);
 		slurm_mutex_unlock(&block_state_mutex);
-		remove_from_bg_list(bg_job_block_list, bg_record, 0);
+		remove_from_bg_list(bg_job_block_list, bg_record);
 	} 
 #ifdef HAVE_BG_FILES
 	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
@@ -701,6 +712,10 @@ extern int start_job(struct job_record *job_ptr)
 	if (bg_record) {
 		job_ptr->num_procs = (bg_record->cpus_per_bp *
 			bg_record->bp_count);
+		slurm_mutex_lock(&block_state_mutex);
+		bg_record->job_running = bg_update_ptr->job_id;
+		list_push(bg_job_block_list, bg_record);
+		slurm_mutex_unlock(&block_state_mutex);
 	}
 	info("Queue start of job %u in BG block %s",
 	     job_ptr->job_id, 
