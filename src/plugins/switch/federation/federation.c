@@ -1541,7 +1541,7 @@ _window_state_set(int adapter_cnt, fed_tableinfo_t *tableinfo,
 	fed_adapter_t *adapter;
 	fed_window_t *window;
 	NTBL *table;
-	int i;
+	int i, j;
 	
 	assert(tableinfo);
 	assert(hostname);
@@ -1558,7 +1558,6 @@ _window_state_set(int adapter_cnt, fed_tableinfo_t *tableinfo,
 	}
 	
 	for (i = 0; i < adapter_cnt; i++) {
-		adapter = &node->adapter_list[i];
 		if (tableinfo[i].table == NULL) {
 			error("tableinfo[%d].table is NULL", i);
 			return SLURM_ERROR;
@@ -1568,6 +1567,13 @@ _window_state_set(int adapter_cnt, fed_tableinfo_t *tableinfo,
 			error("tableinfo[%d].table[%d] is NULL", i, task_id);
 			return SLURM_ERROR;
 		}
+
+		/* Find the adapter that matches the one in tableinfo */
+		for (j = 0; j < node->adapter_count; j++) {
+			adapter = &node->adapter_list[j];
+			if (adapter->lid == table->lid)
+				break;
+		}
 		if (adapter->lid != table->lid) {
 			if (table->lid != 0)
 				error("Did not find the correct adapter: "
@@ -1575,6 +1581,7 @@ _window_state_set(int adapter_cnt, fed_tableinfo_t *tableinfo,
 				      adapter->lid, table->lid);
 			return SLURM_ERROR;
 		}
+
 		debug3("Setting status %s adapter %s, "
 		       "lid %hu, window %hu for task %d",
 		       state == NTBL_UNLOADED_STATE ? "UNLOADED" : "LOADED",
@@ -1665,7 +1672,7 @@ _job_step_window_state(fed_jobinfo_t *jp, hostlist_t hl, enum NTBL_RC state)
 	nprocs = jp->tableinfo[0].table_length;
 	hi = hostlist_iterator_create(hl);
 
-	debug("Allocating windows");
+	debug("Finding windows");
 	nnodes = hostlist_count(hl);
 	full_node_cnt = nprocs % nnodes;
 	min_procs_per_node = nprocs / nnodes;
