@@ -39,7 +39,8 @@ for f in sys.argv[1:]:
         pass
 
 for filename in files:
-    newfilename = filename[:-6] + '.html'
+    basefilename = os.path.basename(filename)
+    newfilename = basefilename[:-6] + '.html'
     print 'Converting', filename, '->', newfilename
     shtml = file(filename, 'r')
     html = file(newfilename, 'w')
