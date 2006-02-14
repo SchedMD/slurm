@@ -33,6 +33,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/types.h>
+#include <regex.h>
 
 #include <slurm/slurm_errno.h>
 #include "src/common/slurm_xlator.h"
@@ -343,6 +344,29 @@ int switch_p_alloc_jobinfo(switch_jobinfo_t *switch_job)
 	return fed_alloc_jobinfo((fed_jobinfo_t **)switch_job);
 }
 
+static char *adapter_name_check(char *network)
+{
+	regex_t re;
+	char *pattern = "(sni[[:digit:]])";
+        size_t nmatch = 5;
+        regmatch_t pmatch[5];
+        char *name;
+
+	if (regcomp(&re, pattern, REG_EXTENDED) != 0) {
+                error("sockname regex compilation failed\n");
+                return NULL;
+        }
+	memset(pmatch, 0, sizeof(regmatch_t)*nmatch);
+	if (regexec(&re, network, nmatch, pmatch, 0) == REG_NOMATCH) {
+		return NULL;
+	}
+	name = strndup(network + pmatch[1].rm_so,
+		       (size_t)(pmatch[1].rm_eo - pmatch[1].rm_so));
+	regfree(&re);
+	
+	return name;
+}
+
 int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist, 
 			   int *tasks_per_node, int cyclic_alloc, char *network) 
 {
@@ -350,6 +374,7 @@ int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist,
 	bool sn_all;
 	int i, err, nprocs = 0;
 	int bulk_xfer = 0;
+	char *adapter_name = NULL;
 
 	debug3("network = \"%s\"", network);
 	if(strstr(network, "ip") || strstr(network, "IP")) {
@@ -369,9 +394,12 @@ int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist,
 			   || strstr(network, "SN_SINGLE")) {
 			debug3("Found sn_single in network string");
 			sn_all = false;
+		} else if (adapter_name = adapter_name_check(network)) {
+			debug3("Found adapter %s in network string",
+			       adapter_name);
+			sn_all = false;
 		} else {
-			error("Network string contained neither sn_all "
-			      "nor sn_single");
+			sn_all = true;
 			return SLURM_ERROR;
 		}
 		for (i = 0; i < hostlist_count(list); i++)
@@ -381,9 +409,11 @@ int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist,
 		    || strstr(network, "BULK_XFER"))
 			bulk_xfer = 1;
 		err = fed_build_jobinfo((fed_jobinfo_t *)switch_job, list,
-					nprocs,	sn_all,
+					nprocs,	sn_all, adapter_name,
 					bulk_xfer);
 		hostlist_destroy(list);
+		if (adapter_name)
+			free(adapter_name);
 
 		return err;
 	}
