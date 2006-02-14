@@ -1422,8 +1422,8 @@ _find_window(fed_adapter_t *adapter, int window_id) {
  * Used by: slurmctld
  */
 static int
-_allocate_windows(int adapter_cnt, fed_tableinfo_t *tableinfo,
-		  char *hostname, int task_id)
+_allocate_windows_all(int adapter_cnt, fed_tableinfo_t *tableinfo,
+		      char *hostname, int task_id)
 {
 	fed_nodeinfo_t *node;
 	fed_adapter_t *adapter;
@@ -1459,6 +1459,70 @@ _allocate_windows(int adapter_cnt, fed_tableinfo_t *tableinfo,
 		strncpy(tableinfo[i].adapter_name, adapter->name,
 			FED_ADAPTERNAME_LEN);
 	}
+	
+	return SLURM_SUCCESS;
+}
+
+
+/* For a given process, fill out an NTBL
+ * struct (an array of these makes up the network table loaded
+ * for each job).  Assign a single adapter, lid and switch window to
+ * a task in a job.
+ *
+ * Used by: slurmctld
+ */
+static int
+_allocate_window_single(char *adapter_name, fed_tableinfo_t *tableinfo,
+			char *hostname, int task_id)
+{
+	fed_nodeinfo_t *node;
+	fed_adapter_t *adapter = NULL;
+	fed_window_t *window;
+	NTBL *table;
+	int i;
+	
+	assert(tableinfo);
+	assert(hostname);
+	
+	debug("in _allocate_window_single");
+	node = _find_node(fed_state, hostname);
+	if(node == NULL) {
+		error("Failed to find node in node_list: %s", hostname);
+		return SLURM_ERROR;
+	}
+	
+	/* find the adapter */
+	for (i = 0; i < node->adapter_count; i++) {
+		debug("adapter %s at index %d", node->adapter_list[i].name, i);
+		if (strcasecmp(node->adapter_list[i].name, adapter_name)
+		    == 0) {
+			adapter = &node->adapter_list[i];
+			debug("Found adapter %s", adapter_name);
+			break;
+		}
+	}
+	if (adapter == NULL) {
+		error("Failed to find adapter %s on node %s",
+		      adapter_name, hostname);
+		return SLURM_ERROR;
+	}
+
+	/* Reserve a window on the adapter for this task */
+	window = _find_free_window(adapter);
+	if (window == NULL) {
+		error("No free windows on node %s adapter %s",
+		      node->name, adapter->name);
+		return SLURM_ERROR;
+	}
+	window->status = NTBL_LOADED_STATE;
+
+	table = tableinfo[0].table[task_id];
+	table->task_id = task_id;
+	table->lid = adapter->lid;
+	table->window_id = window->id;
+
+	strncpy(tableinfo[0].adapter_name, adapter_name,
+		FED_ADAPTERNAME_LEN);
 	
 	return SLURM_SUCCESS;
 }
@@ -1670,7 +1734,7 @@ fed_job_step_allocated(fed_jobinfo_t *jp, hostlist_t hl)
  */
 int
 fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
-		  bool sn_all, int bulk_xfer)
+		  bool sn_all, char *adapter_name, int bulk_xfer)
 {
 	int nnodes;
 	hostlist_iterator_t hi;
@@ -1750,9 +1814,15 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 			task_cnt = min_procs_per_node;
 		
 		for (j = 0; j < task_cnt; j++) {
-			rc = _allocate_windows(jp->tables_per_task,
-					       jp->tableinfo,
-					       host, proc_cnt);
+			if (adapter_name == NULL) {
+				rc = _allocate_windows_all(jp->tables_per_task,
+							   jp->tableinfo,
+							   host, proc_cnt);
+			} else {
+				rc = _allocate_window_single(adapter_name,
+							     jp->tableinfo,
+							     host, proc_cnt);
+			}
 			if (rc != SLURM_SUCCESS) {
 				_unlock();
 				goto fail;
