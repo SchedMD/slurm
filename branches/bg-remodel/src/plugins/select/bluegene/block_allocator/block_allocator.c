@@ -192,6 +192,7 @@ extern int new_ba_request(ba_request_t* ba_request)
 	int *geo_ptr;
 	int messed_with = 0;
 	
+	ba_request->save_name= NULL;
 	ba_request->rotate_count= 0;
 	ba_request->elongate_count = 0;
 	ba_request->elongate_geos = list_create(_destroy_geo);
@@ -599,7 +600,10 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 	_db2_check();
 		
 	best_count=BEST_COUNT_INIT;
-						
+
+	if(ba_system_ptr)
+		_delete_ba_system();
+
 	ba_system_ptr = (ba_system_t *) xmalloc(sizeof(ba_system_t));
 	
 	ba_system_ptr->xcord = 1;
@@ -942,7 +946,6 @@ extern char *set_bg_block(List results, int *start,
 		results = list_create(NULL);
 	else
 		send_results = 1;
-	start_list = list_create(NULL);
 #ifdef HAVE_BG
 	if(start[X]>=DIM_SIZE[X] 
 	   || start[Y]>=DIM_SIZE[Y]
@@ -985,6 +988,7 @@ extern char *set_bg_block(List results, int *start,
 	}
 	if(found) {
 #ifdef HAVE_BG
+		start_list = list_create(NULL);
 		itr = list_iterator_create(results);
 		while((ba_node = (ba_node_t*) list_next(itr))) {
 			list_append(start_list, ba_node);
@@ -994,8 +998,11 @@ extern char *set_bg_block(List results, int *start,
 		if(!_fill_in_coords(results, 
 				    start_list, 
 				    geometry, 
-				    conn_type))			
+				    conn_type)) {
+			list_destroy(start_list);
 			return NULL;
+		}
+		list_destroy(start_list);			
 #endif		
 	} else {
 		return NULL;
@@ -2482,7 +2489,6 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 	int highest_phys_x = geometry[X] - start[X];
 	
 	ListIterator itr;
-	List path = NULL;
 
 	if(!ba_node)
 		return 0;
@@ -2578,8 +2584,13 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 			       next_node->phys_x, highest_phys_x);
 			if(next_node->phys_x >= highest_phys_x) {
 				debug2("looking for a passthrough");
-				list_destroy(best_path);
+				if(best_path)
+					list_destroy(best_path);
 				best_path = list_create(_delete_path_list);
+				if(path)
+					list_destroy(path);
+				path = list_create(_delete_path_list);
+	
 				_find_passthrough(curr_switch,
 						  0,
 						  results,
@@ -2633,8 +2644,12 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				goto found_path;
 			} else if(found == geometry[X]) {
 				debug2("finishing the torus!");
-				list_destroy(best_path);
+				if(best_path)
+					list_destroy(best_path);
 				best_path = list_create(_delete_path_list);
+				if(path)
+					list_destroy(path);
+				path = list_create(_delete_path_list);
 				_finish_torus(curr_switch, 
 					      0, 
 					      results, 
@@ -2787,8 +2802,7 @@ int port_tar;
 	ba_node_t *check_node = NULL;
 	
 	ListIterator itr;
-	List path = NULL;
-
+	
 	if(!ba_node)
 		return 0;
 
@@ -2869,8 +2883,12 @@ int port_tar;
 				goto found_path;
 			} else if(found == geometry[X]) {
 				debug2("finishing the torus!");
-				list_destroy(best_path);
+				if(best_path)
+					list_destroy(best_path);
 				best_path = list_create(_delete_path_list);
+				if(path)
+					list_destroy(path);
+				path = list_create(_delete_path_list);
 				_finish_torus(curr_switch, 
 					      0, 
 					      results, 
@@ -3006,15 +3024,19 @@ int port_tar;
 	       ba_node->coord[Z]);
 #endif
 
-	list_destroy(best_path);
+	if(best_path)
+		list_destroy(best_path);
 	best_path = list_create(_delete_path_list);
+	if(path)
+		list_destroy(path);
+	path = list_create(_delete_path_list);
 	int ports_to_try2[2] = {2,4};
 	
 	_find_next_free_using_port_2(curr_switch, 
-			0, 
-			results, 
-			X, 
-			0);
+				     0, 
+				     results, 
+				     X, 
+				     0);
 	if(best_count < BEST_COUNT_INIT) {
 		debug2("yes found next free %d", best_count);
 		node_tar = _set_best_path();
@@ -3242,7 +3264,9 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 			_find_next_free_using_port_2(next_switch, 
 					port_tar, nodes,
 					dim, count);
-			while(list_pop(path) != path_add){
+			while((temp_switch = list_pop(path)) != path_add){
+				xfree(temp_switch);
+				debug("Hey there is something here 1");
 			}
 		}
 	}
@@ -3431,8 +3455,11 @@ static int _find_passthrough(ba_switch_t *curr_switch, int source_port,
 		
 				_find_passthrough(next_switch, port_tar, nodes,
 						dim, count, highest_phys_x);
-				while(list_pop(path) != path_add){
-				} 
+				while((temp_switch = list_pop(path)) 
+				      != path_add){
+					xfree(temp_switch);
+					debug("Hey there is something here 2");
+				}
 			}
 		}
 	}
@@ -3572,7 +3599,10 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
 				list_push(path, path_add);
 				_finish_torus(next_switch, port_tar, nodes,
 						dim, count, start);
-				while(list_pop(path) != path_add){
+				while((temp_switch = list_pop(path)) 
+				      != path_add){
+					xfree(temp_switch);
+					debug("Hey there is something here 3");
 				} 
 			}
 		}

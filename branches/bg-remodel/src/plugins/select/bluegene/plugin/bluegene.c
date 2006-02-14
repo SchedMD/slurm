@@ -61,7 +61,12 @@ int num_block_to_free = 0;
 int num_block_freed = 0;
 int blocks_are_created = 0;
 
-static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
+List bg_free_block_list = NULL;  	/* blocks to be deleted */
+List bg_destroy_block_list = NULL;       /* blocks to be destroyed */
+int free_cnt = 0;
+int destroy_cnt = 0;
+
 #ifdef HAVE_BG_FILES
   static int _update_bg_record_state(List bg_destroy_list);
 #else
@@ -846,6 +851,9 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 		      request->geometry[0], 
 		      request->geometry[1], 
 		      request->geometry[2]);
+		xfree(request->save_name);
+		if(request->elongate_geos)
+			list_destroy(request->elongate_geos);
 		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_ERROR;
 	} 
@@ -854,6 +862,9 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 		debug2("allocate failure for %dx%dx%d", 
 		       request->geometry[0], request->geometry[1], 
 		       request->geometry[2]);
+		xfree(request->save_name);
+		if(request->elongate_geos)
+			list_destroy(request->elongate_geos);
 		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_ERROR;
 	}
@@ -871,9 +882,9 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	bg_record->hostlist = hostlist_create(NULL);
 
 	bg_record->nodes = xmalloc(sizeof(char)*
-				   (strlen(request->save_name)
-				    +strlen(slurmctld_conf.node_prefix)
-				    +1));
+				   (strlen(request->save_name)+
+				    strlen(slurmctld_conf.node_prefix)+
+				    1));
 	sprintf(bg_record->nodes, "%s%s\0", 
 		slurmctld_conf.node_prefix, request->save_name);
 	xfree(request->save_name);
@@ -975,8 +986,8 @@ extern int create_full_system_block()
 		itr = list_iterator_create(bg_found_block_list);
 		while ((found_record = (bg_record_t *) list_next(itr)) 
 		       != NULL) {
-			if (bit_equal(bg_record->bitmap, 
-				      found_record->bitmap)) {
+			if (!strcmp(bg_record->nodes, 
+				    found_record->nodes)) {
 				destroy_bg_record(bg_record);
 				list_iterator_destroy(itr);
 				/* don't create total already there */
@@ -992,8 +1003,8 @@ extern int create_full_system_block()
 		itr = list_iterator_create(bg_list);
 		while ((found_record = (bg_record_t *) list_next(itr)) 
 		       != NULL) {
-			if (bit_equal(bg_record->bitmap, 
-				      found_record->bitmap)) {
+			if (!strcmp(bg_record->nodes, 
+				    found_record->nodes)) {
 				destroy_bg_record(bg_record);
 				list_iterator_destroy(itr);
 				/* don't create total already there */
@@ -1119,46 +1130,154 @@ extern int bg_free_block(bg_record_t *bg_record)
 /* Free multiple blocks in parallel */
 extern void *mult_free_block(void *args)
 {
-	bg_record_t *bg_record = (bg_record_t*) args;
-
-	debug("freeing the block %s.", bg_record->bg_block_id);
-	bg_free_block(bg_record);	
-	debug("done\n");
+	bg_record_t *bg_record = NULL;
+	
+	/*
+	 * Don't just exit when there is no work left. Creating 
+	 * pthreads from within a dynamically linked object (plugin)
+	 * causes large memory leaks on some systems that seem 
+	 * unavoidable even from detached pthreads.
+	 */
+	while (!agent_fini) {
+		slurm_mutex_lock(&freed_cnt_mutex);
+		bg_record = list_dequeue(bg_free_block_list);
+		slurm_mutex_unlock(&freed_cnt_mutex);
+		if (!bg_record) {
+			usleep(100000);
+			continue;
+		}
+		debug("freeing the block %s.", bg_record->bg_block_id);
+		bg_free_block(bg_record);	
+		debug("done\n");
+		slurm_mutex_lock(&freed_cnt_mutex);
+		num_block_freed++;
+		slurm_mutex_unlock(&freed_cnt_mutex);
+	}
 	slurm_mutex_lock(&freed_cnt_mutex);
-	num_block_freed++;
-	slurm_mutex_unlock(&freed_cnt_mutex);
+	free_cnt--;
+	slurm_mutex_unlock(&freed_cnt_mutex);	
 	return NULL;
 }
 
 /* destroy multiple blocks in parallel */
 extern void *mult_destroy_block(void *args)
 {
-	bg_record_t *bg_record = (bg_record_t*) args;
+	bg_record_t *bg_record = NULL;
 	int rc;
 
-	debug("removing the jobs on block %s\n",
-	      bg_record->bg_block_id);
-	term_jobs_on_block(bg_record->bg_block_id);
-	
-	debug2("destroying %s", (char *)bg_record->bg_block_id);
-	bg_free_block(bg_record);
-	
+	/*
+	 * Don't just exit when there is no work left. Creating 
+	 * pthreads from within a dynamically linked object (plugin)
+	 * causes large memory leaks on some systems that seem 
+	 * unavoidable even from detached pthreads.
+	 */
+	while (!agent_fini) {
+		slurm_mutex_lock(&freed_cnt_mutex);
+		bg_record = list_dequeue(bg_destroy_block_list);
+		slurm_mutex_unlock(&freed_cnt_mutex);
+		if (!bg_record) {
+			usleep(100000);
+			continue;
+		}
+		debug("removing the jobs on block %s\n",
+		      bg_record->bg_block_id);
+		term_jobs_on_block(bg_record->bg_block_id);
+		
+		debug2("destroying %s", (char *)bg_record->bg_block_id);
+		bg_free_block(bg_record);
+		
 #ifdef HAVE_BG_FILES
-	rc = rm_remove_partition(
-		bg_record->bg_block_id);
-	if (rc != STATUS_OK) {
-		error("rm_remove_partition(%s): %s",
-		      bg_record->bg_block_id,
-		      bg_err_str(rc));
-	} else
-		debug("done\n");
+		rc = rm_remove_partition(
+			bg_record->bg_block_id);
+		if (rc != STATUS_OK) {
+			error("rm_remove_partition(%s): %s",
+			      bg_record->bg_block_id,
+			      bg_err_str(rc));
+		} else
+			debug("done\n");
 #endif
+		slurm_mutex_lock(&freed_cnt_mutex);
+		num_block_freed++;
+		destroy_bg_record(bg_record);
+		slurm_mutex_unlock(&freed_cnt_mutex);
+	}
 	slurm_mutex_lock(&freed_cnt_mutex);
-	num_block_freed++;
-	destroy_bg_record(bg_record);
-	slurm_mutex_unlock(&freed_cnt_mutex);
-
+	destroy_cnt--;
+	slurm_mutex_unlock(&freed_cnt_mutex);	
 	return NULL;
+}
+
+extern int free_block_list(List delete_list)
+{
+	bg_record_t *found_record = NULL;
+	int retries;
+	List *block_list = NULL;
+	int *count = NULL;
+	pthread_attr_t attr_agent;
+	pthread_t thread_agent;
+	
+	slurm_mutex_lock(&freed_cnt_mutex);
+	/* set up which list to push onto */
+	if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
+		block_list = &bg_destroy_block_list;
+		count = &destroy_cnt;
+	} else {
+		block_list = &bg_free_block_list;
+		count = &free_cnt;
+	}
+	if ((*block_list == NULL) 
+	    && ((*block_list = list_create(NULL)) == NULL))
+		fatal("malloc failure in free_block_list");
+	/* already running MAX_AGENTS we don't really need more 
+	   since they never end */
+	
+	while ((found_record = (bg_record_t*)list_pop(delete_list)) != NULL) {
+		/* push job onto queue in a FIFO */
+		if (list_push(*block_list, found_record) == NULL)
+			fatal("malloc failure in _block_op/list_push");
+		
+		if (*count > MAX_AGENT_COUNT) 
+			continue;
+		
+		(*count)++;
+		
+		slurm_attr_init(&attr_agent);
+		if (pthread_attr_setdetachstate(
+			    &attr_agent, 
+			    PTHREAD_CREATE_DETACHED))
+			error("pthread_attr_setdetachstate error %m");
+		retries = 0;
+		if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
+			while (pthread_create(&thread_agent, 
+					      &attr_agent, 
+					      mult_destroy_block,
+					      NULL)) {
+				error("pthread_create "
+				      "error %m");
+				if (++retries > MAX_PTHREAD_RETRIES)
+					fatal("Can't create "
+					      "pthread");
+				/* sleep and retry */
+				usleep(1000);	
+			}
+		} else {
+			while (pthread_create(&thread_agent, 
+					      &attr_agent, 
+					      mult_free_block, 
+					      NULL)) {
+				error("pthread_create "
+				      "error %m");
+				if (++retries > MAX_PTHREAD_RETRIES)
+					fatal("Can't create "
+					      "pthread");
+				/* sleep and retry */
+				usleep(1000);	
+			}
+		}
+	}
+	slurm_mutex_unlock(&freed_cnt_mutex);
+			
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1631,36 +1750,15 @@ static int _delete_old_blocks(void)
 
 	num_block_to_free = 0;
 	num_block_freed = 0;
-				
+
+	block_list = &bg_destroy_block_list;
+	count = &destroy_cnt;			
 	if(!bg_recover) {
 		if(bg_curr_block_list) {
 			itr_curr = list_iterator_create(bg_curr_block_list);
-			while ((init_record = (bg_record_t*) 
-				list_next(itr_curr))) {
-				slurm_attr_init(&attr_agent);
-				if (pthread_attr_setdetachstate(
-					    &attr_agent, 
-					    PTHREAD_CREATE_JOINABLE))
-					error("pthread_attr_setdetach"
-						      "state error %m");
-
+			while ((init_record = 
+				(bg_record_t*)list_next(itr_curr))) {
 				list_push(bg_destroy_list, init_record);
-				retries = 0;
-				while (pthread_create(&thread_agent, 
-						      &attr_agent, 
-						      mult_destroy_block, 
-						      (void *)
-						      init_record)) {
-					error("pthread_create "
-					      "error %m");
-					if (++retries 
-					    > MAX_PTHREAD_RETRIES)
-						fatal("Can't create "
-						      "pthread");
-					/* sleep and retry */
-					usleep(1000);	
-				}
-				num_block_to_free++;
 			}
 			list_iterator_destroy(itr_curr);
 		} else {
@@ -1696,31 +1794,8 @@ static int _delete_old_blocks(void)
 					return SLURM_ERROR;
 				}
 				if(found_record == NULL) {
-					slurm_attr_init(&attr_agent);
-					if (pthread_attr_setdetachstate(
-						    &attr_agent, 
-						    PTHREAD_CREATE_JOINABLE))
-						error("pthread_attr_setdetach"
-						      "state error %m");
-				
 					list_push(bg_destroy_list, 
 						  init_record);
-					retries = 0;
-					while (pthread_create(
-						       &thread_agent, 
-						       &attr_agent, 
-						       mult_destroy_block, 
-						       (void *)init_record)) {
-						error("pthread_create "
-						      "error %m");
-						if (++retries 
-						    > MAX_PTHREAD_RETRIES)
-							fatal("Can't create "
-							      "pthread");
-						/* sleep and retry */
-						usleep(1000);	
-					}
-					num_block_to_free++;
 				}
 			}		
 			list_iterator_destroy(itr_curr);
@@ -1730,6 +1805,43 @@ static int _delete_old_blocks(void)
 			return SLURM_ERROR;
 		}
 	}
+
+	slurm_mutex_lock(&freed_cnt_mutex);
+	if ((bg_destroy_block_list == NULL) 
+	    && ((bg_destroy_block_list = list_create(NULL)) == NULL))
+		fatal("malloc failure in block_list");
+	
+	itr_curr = list_iterator_create(bg_destroy_list);
+	while ((init_record = (bg_record_t*) list_next(itr_curr))) {
+		list_push(bg_destroy_block_list, init_record);
+		num_block_to_free++;
+		if (destroy_cnt > MAX_AGENT_COUNT) 
+			continue;
+		
+		destroy_cnt++;
+
+		slurm_attr_init(&attr_agent);
+		if (pthread_attr_setdetachstate(&attr_agent, 
+						PTHREAD_CREATE_DETACHED))
+			error("pthread_attr_setdetachstate error %m");
+		
+		retries = 0;
+		while (pthread_create(&thread_agent, 
+				      &attr_agent, 
+				      mult_destroy_block, 
+				      NULL)) {
+			error("pthread_create "
+			      "error %m");
+			if (++retries > MAX_PTHREAD_RETRIES)
+				fatal("Can't create "
+				      "pthread");
+			/* sleep and retry */
+			usleep(1000);	
+		}
+	}
+	list_iterator_destroy(itr_curr);
+	slurm_mutex_unlock(&freed_cnt_mutex);
+	
 	retries=30;
 	while(num_block_to_free != num_block_freed) {
 		_update_bg_record_state(bg_destroy_list);

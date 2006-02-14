@@ -138,6 +138,7 @@ extern int blocks_are_created;
 extern int procs_per_node;
 
 #define MAX_PTHREAD_RETRIES  1
+#define MAX_AGENT_COUNT      30
 
 #include "bg_block_info.h"
 #include "bg_job_place.h"
@@ -209,6 +210,7 @@ extern int bg_free_block(bg_record_t *bg_record);
 extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record);
 extern void *mult_free_block(void *args);
 extern void *mult_destroy_block(void *args);
+extern int free_block_list(List delete_list);
 extern int read_bg_conf(void);
 
 /* block_sys.c */

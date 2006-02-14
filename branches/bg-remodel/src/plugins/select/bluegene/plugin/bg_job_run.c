@@ -54,7 +54,6 @@
 
 #define MAX_POLL_RETRIES    220
 #define POLL_INTERVAL        3
-#define MAX_AGENT_COUNT      130
 
 enum update_op {START_OP, TERM_OP, SYNC_OP};
 
@@ -229,10 +228,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	bg_record_t *bg_record = NULL;
 	bg_record_t *found_record = NULL;
 	ListIterator itr;
-	pthread_attr_t attr_agent;
-	pthread_t thread_agent;
-	int retries;
-	List delete_list = list_create(NULL);
+	List delete_list;
 
 	slurm_mutex_lock(&job_start_mutex);
 		
@@ -253,13 +249,11 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		num_block_to_free = 0;
 		num_block_freed = 0;
 		slurm_mutex_lock(&block_state_mutex);
+		delete_list = list_create(NULL);
 		itr = list_iterator_create(bg_list);
-		debug2("freeing all other blocks that use these midplanes");
 		while ((found_record = (bg_record_t*) 
 			list_next(itr)) != NULL) {
-			if ((!found_record->bg_block_id)
-			    || (!strcmp(bg_record->bg_block_id, 
-					found_record->bg_block_id)))
+			if ((!found_record) || (bg_record == found_record))
 				continue;
 
 			if(!blocks_overlap(bg_record, found_record)) {
@@ -269,61 +263,16 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 				continue;
 			}
 									
-			//if(found_record->state != RM_PARTITION_FREE) {
-				debug("need to free %s it's part of %s",
-				      found_record->bg_block_id, 
-				      bg_record->bg_block_id);
-				list_push(delete_list, found_record);
-				if(bluegene_layout_mode == LAYOUT_DYNAMIC)
-					list_remove(itr);
-				num_block_to_free++;
-				//}
+			debug("need to make suer%s is free it's part of %s",
+			      found_record->bg_block_id, 
+			      bg_record->bg_block_id);
+			list_push(delete_list, found_record);
+			if(bluegene_layout_mode == LAYOUT_DYNAMIC)
+				list_remove(itr);
+			num_block_to_free++;
 		}		
 		list_iterator_destroy(itr);
-		
-		debug2("freeing all other blocks that use these midplanes");
-		while ((found_record = (bg_record_t*) 
-			list_pop(delete_list)) != NULL) {
-			slurm_attr_init(&attr_agent);
-			if (pthread_attr_setdetachstate(
-				    &attr_agent, 
-				    PTHREAD_CREATE_JOINABLE))
-				error("pthread_attr_setdetach"
-				      "state error %m");
-
-			retries = 0;
-			if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
-				while (pthread_create(
-					       &thread_agent, 
-					       &attr_agent, 
-					       mult_destroy_block,
-					       (void *)found_record)) {
-					error("pthread_create "
-					      "error %m");
-					if (++retries 
-					    > MAX_PTHREAD_RETRIES)
-						fatal("Can't create "
-						      "pthread");
-					/* sleep and retry */
-					usleep(1000);	
-				}
-			} else {
-				while (pthread_create(&thread_agent, 
-						      &attr_agent, 
-						      mult_free_block, 
-						      (void *)
-						      found_record)) {
-					error("pthread_create "
-					      "error %m");
-					if (++retries 
-					    > MAX_PTHREAD_RETRIES)
-						fatal("Can't create "
-						      "pthread");
-					/* sleep and retry */
-					usleep(1000);	
-				}
-			}
-		}
+	        free_block_list(delete_list);
 		list_destroy(delete_list);
 		slurm_mutex_unlock(&block_state_mutex);
 	
@@ -521,8 +470,8 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 /* Process requests off the bg_update_list queue and exit when done */
 static void *_block_agent(void *args)
 {
-	bg_update_t *bg_update_ptr;
-
+	bg_update_t *bg_update_ptr = NULL;
+	
 	/*
 	 * Don't just exit when there is no work left. Creating 
 	 * pthreads from within a dynamically linked object (plugin)
@@ -561,14 +510,15 @@ static void _block_op(bg_update_t *bg_update_ptr)
 	
 	slurm_mutex_lock(&agent_cnt_mutex);
 	if ((bg_update_list == NULL)
-	&&  ((bg_update_list = list_create(_bg_list_del)) == NULL))
+	    &&  ((bg_update_list = list_create(_bg_list_del)) == NULL))
 		fatal("malloc failure in start_job/list_create");
 
 	/* push job onto queue in a FIFO */
 	if (list_push(bg_update_list, bg_update_ptr) == NULL)
 		fatal("malloc failure in _block_op/list_push");
-	
-	if (agent_cnt > MAX_AGENT_COUNT) {	/* already running an agent */
+	/* already running MAX_AGENTS we don't really need more 
+	   since they never end */
+	if (agent_cnt > MAX_AGENT_COUNT) {
 		slurm_mutex_unlock(&agent_cnt_mutex);
 		return;
 	}
@@ -576,11 +526,13 @@ static void _block_op(bg_update_t *bg_update_ptr)
 	slurm_mutex_unlock(&agent_cnt_mutex);
 	/* spawn an agent */
 	slurm_attr_init(&attr_agent);
-	if (pthread_attr_setdetachstate(&attr_agent, PTHREAD_CREATE_JOINABLE))
+	if (pthread_attr_setdetachstate(&attr_agent, 
+					PTHREAD_CREATE_DETACHED))
 		error("pthread_attr_setdetachstate error %m");
-
+	
 	retries = 0;
-	while (pthread_create(&thread_agent, &attr_agent, _block_agent, NULL)) {
+	while (pthread_create(&thread_agent, &attr_agent, 
+			      _block_agent, NULL)) {
 		error("pthread_create error %m");
 		if (++retries > MAX_PTHREAD_RETRIES)
 			fatal("Can't create pthread");
@@ -809,8 +761,7 @@ extern int sync_jobs(List job_list)
 				job_ptr->job_state = JOB_FAILED 
 					| JOB_COMPLETING;
 				job_ptr->end_time = time(NULL);
-				xfree(bg_update_ptr->bg_block_id);
-				xfree(bg_update_ptr);
+				_bg_list_del(bg_update_ptr);
 				continue;
 			}
 

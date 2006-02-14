@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
 		slurm_attr_init(&attr_agent);
 		if (pthread_attr_setdetachstate(
 			    &attr_agent, 
-			    PTHREAD_CREATE_JOINABLE))
+			    PTHREAD_CREATE_DETACHED))
 			error("pthread_attr_setdetach"
 			      "state error %m");
 		
@@ -227,7 +227,7 @@ int main(int argc, char *argv[])
 			slurm_attr_init(&attr_agent);
 			if (pthread_attr_setdetachstate(
 				    &attr_agent, 
-				    PTHREAD_CREATE_JOINABLE))
+				    PTHREAD_CREATE_DETACHED))
 				error("pthread_attr_setdetach"
 				      "state error %m");
 			
