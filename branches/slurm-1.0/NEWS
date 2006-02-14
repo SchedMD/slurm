@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
  -- Added mutex around bridge api file to avoid locking up the api.
  -- BlueGene mod: Terminate slurm_prolog and slurm_epilog immediately if 
     SLURM_JOBID environment variable is invalid.
+ -- Federation driver: allow selection of a sepecific switch interface
+    (sni0, sni1, etc.) with -euidevice/MP_EUIDEVICE.
  
 * Changes in SLURM 1.0.2
 ========================
