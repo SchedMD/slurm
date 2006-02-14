@@ -55,6 +55,8 @@ typedef struct {
 static slurm_errtab_t slurm_errtab[] = {
 	{0, "No error"},
 	{-1, "Unspecified error"},
+	{EINPROGRESS, "Operation already in progress"},
+
 	/*General Message error codes */
 	{ SLURM_UNEXPECTED_MSG_ERROR, 
 	  "Unexpected message received" 			},
