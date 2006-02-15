@@ -1751,8 +1751,6 @@ static int _delete_old_blocks(void)
 	num_block_to_free = 0;
 	num_block_freed = 0;
 
-	block_list = &bg_destroy_block_list;
-	count = &destroy_cnt;			
 	if(!bg_recover) {
 		if(bg_curr_block_list) {
 			itr_curr = list_iterator_create(bg_curr_block_list);
