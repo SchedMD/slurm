@@ -94,7 +94,7 @@ static void _print_list(List list)
 static void _pre_allocate(bg_record_t *bg_record)
 {
 	int rc;
-	int send_psets=numpsets;
+	int send_psets=bluegene_numpsets;
 
 	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionBlrtsImg,   
 			      bluegene_blrts)) != STATUS_OK)
@@ -118,7 +118,7 @@ static void _pre_allocate(bg_record_t *bg_record)
 	
 	rc = bluegene_mp_node_cnt/bg_record->node_cnt;
 	if(rc > 1)
-		send_psets = numpsets/rc;
+		send_psets = bluegene_numpsets/rc;
 	
 	if ((rc = rm_set_data(bg_record->bg_block, RM_PartitionPsetsPerBP, 
 			      &send_psets)) != STATUS_OK)
