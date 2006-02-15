@@ -10,7 +10,7 @@ Summary: Simple Linux Utility for Resource Management
 
 License: GPL 
 Group: System Environment/Base
-Source: %{name}-%{version}-%{release}.tgz
+Source: %{name}-%{version}.tgz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 URL: http://www.llnl.gov/linux/slurm
 Requires: openssl >= 0.9.6
@@ -114,7 +114,7 @@ SLURM switch plugin for Quadrics Elan3 or Elan4.
 SLURM plugins for IBM AIX and Federation switch.
 
 %prep
-%setup -n %{name}-%{version}-%{release}
+%setup
 
 %build
 %configure --program-prefix=%{?_program_prefix:%{_program_prefix}} \
