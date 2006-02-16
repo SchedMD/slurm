@@ -240,7 +240,6 @@ struct job_details {
 	uint32_t magic;			/* magic cookie for data integrity */
 	uint32_t min_nodes;		/* minimum number of nodes */
 	uint32_t max_nodes;		/* maximum number of nodes */
-	uint32_t max_procs;		/* maximum processor count */
 	char *req_nodes;		/* required nodes */
 	char *exc_nodes;		/* excluded nodes */
 	bitstr_t *req_node_bitmap;	/* bitmap of required nodes */
