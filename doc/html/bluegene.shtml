@@ -96,12 +96,12 @@ Values in the X dimension increase to the right.
 Values in the Z dimension increase down and toward the left.</p>
 
 <pre>
-   a a a a b b d d    ID JOBID PARTITION BGL_BLOCK USER   NAME ST TIME NODES NODELIST
-  a a a a b b d d     a  12345 batch     RMP0      joseph tst1 R  43:12   64 bg[000x333]
- a a a a b b c c      b  12346 debug     RMP1      chris  sim3 R  12:34   16 bg[420x533]
-a a a a b b c c       c  12350 debug     RMP2      danny  job3 R   0:12    8 bg[622x733]
-                      d  12356 debug     RMP3      dan    colu R  18:05   16 bg[600x731]
-   a a a a b b d d    e  12378 debug     RMP4      joseph asx4 R   0:34    4 bg[612x713]
+   a a a a b b d d    ID JOBID PARTITION BG_BLOCK USER   NAME ST TIME NODES NODELIST
+  a a a a b b d d     a  12345 batch     RMP0     joseph tst1 R  43:12   64 bg[000x333]
+ a a a a b b c c      b  12346 debug     RMP1     chris  sim3 R  12:34   16 bg[420x533]
+a a a a b b c c       c  12350 debug     RMP2     danny  job3 R   0:12    8 bg[622x733]
+                      d  12356 debug     RMP3     dan    colu R  18:05   16 bg[600x731]
+   a a a a b b d d    e  12378 debug     RMP4     joseph asx4 R   0:34    4 bg[612x713]
   a a a a b b d d
  a a a a b b c c
 a a a a b b c c
