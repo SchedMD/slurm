@@ -44,8 +44,8 @@ typedef struct {
 	int letter_num;
 	List nodelist;
 	int size;
-	int quarter;	
-	int segment;	
+	uint16_t quarter;	
+	uint16_t segment;	
 	int node_cnt;	
 	bool printed;
 
@@ -617,10 +617,20 @@ static int _print_text_part(partition_info_t *part_ptr,
 			}
 		}
 		if(part_ptr->total_nodes >= 1024) {
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "%4dk", 
-				  part_ptr->total_nodes/1024);
+			i = part_ptr->total_nodes % 1024;
+			if(i > 0) {
+				i *= 10;
+				i /= 1024;
+				mvwprintw(ba_system_ptr->text_win, 
+					  ba_system_ptr->ycord,
+					  ba_system_ptr->xcord, "%2d.%dk", 
+					  part_ptr->total_nodes/1024, i);
+			} else {
+				mvwprintw(ba_system_ptr->text_win, 
+					  ba_system_ptr->ycord,
+					  ba_system_ptr->xcord, "%4dk", 
+					  part_ptr->total_nodes/1024);
+			}
 		} else	
 			mvwprintw(ba_system_ptr->text_win, 
 				  ba_system_ptr->ycord,
@@ -634,6 +644,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 			nodes = part_ptr->allow_groups;
 		else
 			nodes = part_ptr->nodes;
+		i=0;
 		prefixlen = i;
 		while (nodes && nodes[i]) {
 			width = ba_system_ptr->text_win->_maxx 
@@ -663,8 +674,8 @@ static int _print_text_part(partition_info_t *part_ptr,
 			i++;
 		}
 		if((params.display == BGPART) 
-		   && (db2_info_ptr->quarter != -1)) {
-			if(db2_info_ptr->segment != -1) {
+		   && (db2_info_ptr->quarter != (uint16_t) NO_VAL)) {
+			if(db2_info_ptr->segment != (uint16_t) NO_VAL) {
 				mvwprintw(ba_system_ptr->text_win, 
 					  ba_system_ptr->ycord,
 					  ba_system_ptr->xcord, ".%d.%d", 
@@ -721,9 +732,17 @@ static int _print_text_part(partition_info_t *part_ptr,
 			} 
 		}
 		
-		if(part_ptr->total_nodes >= 1024)
-			printf("%4dk ", part_ptr->total_nodes/1024);
-		else	
+		if(part_ptr->total_nodes >= 1024) {
+			i = part_ptr->total_nodes % 1024;
+			if(i > 0) {
+				i *= 10;
+				i /= 1024;
+				printf("%2d.%dk", 
+				       part_ptr->total_nodes/1024, i);
+			} else {
+				printf("%4dk ", part_ptr->total_nodes/1024);
+			}
+		} else	
 			printf("%5d ", part_ptr->total_nodes);
 		
 		tempxcord = ba_system_ptr->xcord;
@@ -734,8 +753,8 @@ static int _print_text_part(partition_info_t *part_ptr,
 			nodes = part_ptr->nodes;
 		
 		if((params.display == BGPART) 
-		   && (db2_info_ptr->quarter != -1)) {
-			if(db2_info_ptr->segment != -1)
+		   && (db2_info_ptr->quarter != (uint16_t) NO_VAL)) {
+			if(db2_info_ptr->segment != (uint16_t) NO_VAL)
 				printf("%s.%d.%d\n", nodes, 
 				       db2_info_ptr->quarter,
 				       db2_info_ptr->segment);

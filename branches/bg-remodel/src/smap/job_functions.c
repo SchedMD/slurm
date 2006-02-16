@@ -227,8 +227,8 @@ static int _print_text_job(job_info_t * job_ptr)
 	char time_buf[20];
 
 #ifdef HAVE_BG
-	int16_t quarter = -1;
-	int16_t segment = -1;
+	uint16_t quarter = (uint16_t) NO_VAL;
+	uint16_t segment = (uint16_t) NO_VAL;
 	uint32_t node_cnt = 0;
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
 			     SELECT_DATA_QUARTER, 
@@ -240,7 +240,7 @@ static int _print_text_job(job_info_t * job_ptr)
 			     SELECT_DATA_NODE_CNT, 
 			     &node_cnt);
 	if(!strcasecmp(job_ptr->nodes,"waiting...")) 
-		quarter = -1;
+		quarter = (uint16_t) NO_VAL;
 #endif
 	if(!params.commandline) {
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
@@ -285,12 +285,22 @@ static int _print_text_job(job_info_t * job_ptr)
 		ba_system_ptr->xcord += 11;
 
 #ifdef HAVE_BG
-		if(node_cnt >= 1024)
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "%4dk", 
-				  node_cnt/1024);
-		else
+		if(node_cnt >= 1024) {
+			i = node_cnt % 1024;
+			if(i > 0) {
+				i *= 10;
+				i /= 1024;
+				mvwprintw(ba_system_ptr->text_win, 
+					  ba_system_ptr->ycord,
+					  ba_system_ptr->xcord, "%2d.%dk", 
+					  node_cnt/1024, i);
+			} else {
+				mvwprintw(ba_system_ptr->text_win, 
+					  ba_system_ptr->ycord,
+					  ba_system_ptr->xcord, "%4dk", 
+					  node_cnt/1024);
+			}	
+		} else
 			mvwprintw(ba_system_ptr->text_win, 
 				  ba_system_ptr->ycord,
 				  ba_system_ptr->xcord, "%5d", 
@@ -305,7 +315,7 @@ static int _print_text_job(job_info_t * job_ptr)
 
 		tempxcord = ba_system_ptr->xcord;
 		
-
+		i=0;
 		while (job_ptr->nodes[i] != '\0') {
 			if ((printed = mvwaddch(ba_system_ptr->text_win,
 						ba_system_ptr->ycord, 
@@ -324,8 +334,8 @@ static int _print_text_job(job_info_t * job_ptr)
 			}
 			i++;
 		}
-		if(quarter != -1) {
-			if(segment != -1) {
+		if(quarter != (uint16_t) NO_VAL) {
+			if(segment != (uint16_t) NO_VAL) {
 				mvwprintw(ba_system_ptr->text_win, 
 					  ba_system_ptr->ycord,
 					  ba_system_ptr->xcord, ".%d.%d", 
@@ -366,16 +376,23 @@ static int _print_text_job(job_info_t * job_ptr)
 		
 		printf("%10.10s ", time_buf);
 #ifdef HAVE_BG		
-		if(node_cnt >= 1024)
-			printf("%4dk ", node_cnt/1024);
-		else
+		if(node_cnt >= 1024) {
+			i = node_cnt % 1024;
+			if(i > 0) {
+				i *= 10;
+				i /= 1024;
+				printf("%2d.%dk", node_cnt/1024, i);
+			} else {
+				printf("%4dk ", node_cnt/1024);
+			}
+		} else
 			printf("%5d ", node_cnt);
 #else
 		printf("%5d ", job_ptr->num_nodes);
 #endif
 		printf("%s", job_ptr->nodes);
-		if(quarter != -1) {
-			if(segment != -1)
+		if(quarter != (uint16_t) NO_VAL) {
+			if(segment != (uint16_t) NO_VAL)
 				printf(".%d.%d", quarter, segment);
 			else
 				printf(".%d", quarter);
