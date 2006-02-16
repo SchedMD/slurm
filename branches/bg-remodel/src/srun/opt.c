@@ -412,17 +412,27 @@ _verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 {
 	char *end_ptr;
 	int val1, val2;
-
+	
 	val1 = strtol(arg, &end_ptr, 10);
-	if (end_ptr[0] == '\0') {
+	if (end_ptr[0] == 'k' || end_ptr[0] == 'K') {
+		val1 *= 1024;
+		end_ptr++;
+	}
+
+ 	if (end_ptr[0] == '\0') {
 		*min_nodes = val1;
 		return true;
 	}
-
+	
 	if (end_ptr[0] != '-')
 		return false;
 
 	val2 = strtol(&end_ptr[1], &end_ptr, 10);
+	if (end_ptr[0] == 'k' || end_ptr[0] == 'K') {
+		val2 *= 1024;
+		end_ptr++;
+	}
+
 	if (end_ptr[0] == '\0') {
 		*min_nodes = val1;
 		*max_nodes = val2;
