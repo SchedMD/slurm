@@ -165,6 +165,7 @@ extern void get_bg_part()
 	partition_info_t part;
 	int number, start[BA_SYSTEM_DIMENSIONS], end[BA_SYSTEM_DIMENSIONS];
 	db2_block_info_t *block_ptr = NULL;
+	db2_block_info_t *found_block = NULL;
 	ListIterator itr;
 	List nodelist = NULL;
 
@@ -242,8 +243,7 @@ extern void get_bg_part()
 	
 	for (i=0; i<new_bg_ptr->record_count; i++) {
 		block_ptr = xmalloc(sizeof(db2_block_info_t));
-		list_append(block_list, block_ptr);
-		
+			
 		block_ptr->bg_block_name 
 			= xstrdup(new_bg_ptr->bg_info_array[i].bg_block_id);
 		block_ptr->nodes 
@@ -265,15 +265,27 @@ extern void get_bg_part()
 			= new_bg_ptr->bg_info_array[i].segment;
 		block_ptr->node_cnt 
 			= new_bg_ptr->bg_info_array[i].node_cnt;
-		if(block_ptr->quarter < 1 && block_ptr->segment < 1) {
+	       
+		itr = list_iterator_create(block_list);
+		while ((found_block = (db2_block_info_t*)list_next(itr)) 
+		       != NULL) {
+			if(!strcmp(block_ptr->nodes, found_block->nodes)) {
+				block_ptr->letter_num = 
+					found_block->letter_num;
+				break;
+			}
+		}
+		list_iterator_destroy(itr);
+
+		if(!found_block) {
 			last_count++;
 			_marknodes(block_ptr, last_count);
-		} else 
-			block_ptr->letter_num = last_count;
+		}
 		
 		if(block_ptr->bg_conn_type == SELECT_SMALL)
 			block_ptr->size = 0;
-		
+
+		list_append(block_list, block_ptr);
 	}
 	
 	if (!params.no_header)
@@ -806,7 +818,6 @@ static int _print_rest(db2_block_info_t *block_ptr)
 {
 	partition_info_t part;
 	db2_block_info_t *db2_info_ptr = NULL;
-	ListIterator itr;
 	int set = 0;
 		
 	if(block_ptr->node_cnt == 0)
