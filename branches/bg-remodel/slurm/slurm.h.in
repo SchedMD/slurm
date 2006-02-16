@@ -196,7 +196,8 @@ enum select_data_type {
 	SELECT_DATA_QUARTER,	/* data-> int16_t quarter */
 	SELECT_DATA_SEGMENT,	/* data-> int16_t segment */
 	SELECT_DATA_NODE_CNT,	/* data-> uint32_t node_cnt */
-	SELECT_DATA_CHECKED	/* data-> uint16_t checked */
+	SELECT_DATA_CHECKED,	/* data-> uint16_t checked */
+	SELECT_DATA_ALTERED     /* data-> uint16_t altered */
 };
 
 enum select_print_mode {
