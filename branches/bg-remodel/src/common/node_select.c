@@ -121,6 +121,7 @@ struct select_jobinfo {
 				   looking for best choice now */
 	uint16_t altered;       /* see if we have altered this job 
 				   or not yet */
+	uint32_t max_procs;	/* maximum processors to use */
 };
 #endif
 
@@ -744,6 +745,7 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
 		pack16(jobinfo->quarter, buffer);
 		pack16(jobinfo->segment, buffer);
 		pack32(jobinfo->node_cnt, buffer);
+		pack32(jobinfo->max_procs, buffer);
 	} else {
 		for (i=0; i<(SYSTEM_DIMENSIONS+3); i++)
 			pack16((uint16_t) 0, buffer);
@@ -772,6 +774,7 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer)
 	safe_unpack16(&(jobinfo->quarter), buffer);
 	safe_unpack16(&(jobinfo->segment), buffer);
 	safe_unpack32(&(jobinfo->node_cnt), buffer);
+	safe_unpack32(&(jobinfo->max_procs), buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:
@@ -818,22 +821,24 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 	switch (mode) {
 	case SELECT_PRINT_HEAD:
 		snprintf(buf, size,
-			 "CONNECT ROTATE GEOMETRY PART_ID");
+			 "CONNECT ROTATE MAX_PROCS GEOMETRY PART_ID");
 		break;
 	case SELECT_PRINT_DATA:
 		snprintf(buf, size, 
-			 "%7.7s %6.6s %8.8s %ux%ux%u %16s",
+			 "%7.7s %6.6s %9u    %1ux%1ux%1u %-16s",
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _job_rotate_string(jobinfo->rotate),
+			 jobinfo->max_procs,
 			 geometry[0], geometry[1], geometry[2],
 			 jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_MIXED:
 		snprintf(buf, size, 
-			 "Connection=%s Rotate=%s "
+			 "Connection=%s Rotate=%s MaxProcs=%u "
 			 "Geometry=%ux%ux%u Part_ID=%s",
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _job_rotate_string(jobinfo->rotate),
+			 jobinfo->max_procs,
 			 geometry[0], geometry[1], geometry[2],
 			 jobinfo->bg_block_id);
 		break;
