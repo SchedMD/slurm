@@ -2545,12 +2545,9 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				       node_tar[X],
 				       node_tar[Y],
 				       node_tar[Z]);
-				if((node_tar[X] == 
-				    next_node->coord[X] && 
-				    node_tar[Y] == 
-				    next_node->coord[Y] && 
-				    node_tar[Z] == 
-				    next_node->coord[Z])) {
+				if((node_tar[X] == next_node->coord[X] && 
+				    node_tar[Y] == next_node->coord[Y] && 
+				    node_tar[Z] == next_node->coord[Z])) {
 					not_first = 1;
 					break;
 				}				
@@ -2787,10 +2784,10 @@ static int _find_x_path2(List results, ba_node_t *ba_node,
 	int *start, int *first, int *geometry, 
 	int found, int conn_type) 
 {
-ba_switch_t *curr_switch = NULL; 
-ba_switch_t *next_switch = NULL; 
+	ba_switch_t *curr_switch = NULL; 
+	ba_switch_t *next_switch = NULL; 
 	
-int port_tar;
+	int port_tar;
 	int source_port=0;
 	int target_port=0;
 	int num_visited=0;
@@ -3012,7 +3009,6 @@ int port_tar;
 							= port_tar;
 					}
 					return 1;
-
 				}
 			} 			
 		}

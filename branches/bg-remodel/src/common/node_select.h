@@ -94,6 +94,12 @@ extern int select_g_update_nodeinfo (struct job_record *job_ptr,
 extern int select_g_get_info_from_plugin (enum select_data_info cr_info, 
 					  void *data);
 
+/* 
+ * Alter the node count for a job given the type of system we are on
+ * IN/OUT job_desc  - current job desc
+ */
+extern int select_g_alter_node_cnt (job_desc_msg_t *job_desc);
+
 /*
  * Note re/initialization of partition record data structure
  * IN part_list - list of partition records

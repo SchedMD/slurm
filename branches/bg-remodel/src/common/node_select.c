@@ -86,6 +86,7 @@ typedef struct slurm_select_ops {
                                                   enum select_data_info cr_info);
         int             (*get_info_from_plugin) ( enum select_data_info cr_info, 
                                                   void *data);
+	int             (*alter_node_cnt)       ( job_desc_msg_t * job_desc);
 } slurm_select_ops_t;
 
 typedef struct slurm_select_context {
@@ -118,7 +119,8 @@ struct select_jobinfo {
 	uint16_t checked;       /* for bg to tell plugin it already 
 				   checked and all partitions were full
 				   looking for best choice now */
-	
+	uint16_t altered;       /* see if we have altered this job 
+				   or not yet */
 };
 #endif
 
@@ -153,7 +155,8 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
                 "select_p_get_extra_jobinfo",
                 "select_p_get_select_nodeinfo",
                 "select_p_update_nodeinfo",
-                "select_p_get_info_from_plugin"
+                "select_p_get_info_from_plugin",
+		"select_p_alter_node_cnt"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -408,6 +411,18 @@ extern int select_g_get_info_from_plugin (enum select_data_info cr_info, void *d
        return (*(g_select_context->ops.get_info_from_plugin))(cr_info, data);
 }
 
+/* 
+ * Alter the node count for a job given the type of system we are on
+ * IN/OUT job_desc  - current job desc
+ */
+extern int select_g_alter_node_cnt (job_desc_msg_t *job_desc)
+{
+       if (slurm_select_init() < 0)
+               return SLURM_ERROR;
+
+       return (*(g_select_context->ops.alter_node_cnt))(job_desc);
+}
+
 /*
  * Select the "best" nodes for given job from those available
  * IN job_ptr - pointer to job being considered for initiation
@@ -584,6 +599,9 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 	case SELECT_DATA_CHECKED:
 		jobinfo->checked = *uint16;
 		break;		
+	case SELECT_DATA_ALTERED:
+		jobinfo->altered = *uint16;
+		break;		
 	default:
 		debug("select_g_set_jobinfo data_type %d invalid", 
 		      data_type);
@@ -644,6 +662,9 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 		break;
 	case SELECT_DATA_CHECKED:
 		*uint16 = jobinfo->checked;
+		break;
+	case SELECT_DATA_ALTERED:
+		*uint16 = jobinfo->altered;
 		break;
 	default:
 		debug("select_g_get_jobinfo data_type %d invalid", 

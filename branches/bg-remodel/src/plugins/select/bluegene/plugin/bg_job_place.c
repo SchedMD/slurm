@@ -139,8 +139,9 @@ try_again:
 			 */
 			proc_cnt = record->bp_count * record->cpus_per_bp;
 			if (req_procs > proc_cnt) {
-				debug("block %s CPU count too low",
-					record->bg_block_id);
+				debug("block %s CPU count too low %d",
+				      record->bg_block_id, 
+				      proc_cnt);
 				continue;
 			}
 		}
@@ -151,8 +152,9 @@ try_again:
  		if ((record->bp_count < min_nodes)
 		    ||  (max_nodes != 0 && record->bp_count > max_nodes)
 		    ||  (record->bp_count < target_size)) {
-			debug("block %s node count not suitable",
-				record->bg_block_id);
+			debug("block %s node count (%d) not suitable",
+			      record->bg_block_id,
+			      record->bp_count);
 			continue;
 		}
 		
@@ -164,8 +166,8 @@ try_again:
 		 * SLURM block not available to this job.
 		 */
 		if (!bit_super_set(record->bitmap, slurm_block_bitmap)) {
-			debug("bg block %s has nodes not usable by this "
-				"job", record->bg_block_id);
+			debug("bg block %s has nodes not usable by this job",
+			      record->bg_block_id);
 			continue;
 		}
 
@@ -276,6 +278,7 @@ try_again:
 			request.geometry[Y] = req_geometry[Y];
 			request.geometry[Z] = req_geometry[Z];
 			request.size = target_size;
+			request.procs = req_procs;
 			request.conn_type = conn_type;
 			request.rotate = rotate;
 			request.elongate = true;
@@ -303,6 +306,7 @@ try_again:
 			request.geometry[Y] = req_geometry[Y];
 			request.geometry[Z] = req_geometry[Z];
 			request.size = target_size;
+			request.procs = req_procs;
 			request.conn_type = conn_type;
 			request.rotate = rotate;
 			request.elongate = true;

@@ -1668,6 +1668,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	bool super_user = false;
 	struct job_record *job_ptr;
+	
+	select_g_alter_node_cnt(job_desc);
 
 	*job_pptr = (struct job_record *) NULL;
 	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid)))

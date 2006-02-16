@@ -347,5 +347,72 @@ extern int select_p_get_extra_jobinfo (struct node_record *node_ptr,
 
 extern int select_p_get_info_from_plugin (enum select_data_info info, void *data)
 {
-       return SLURM_SUCCESS;
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_alter_node_cnt (job_desc_msg_t *job_desc)
+{
+	int tmp;
+	
+	select_g_get_jobinfo(job_desc->select_jobinfo,
+			     SELECT_DATA_ALTERED, &tmp);
+	if(tmp == 1) {
+		info("already set %d-%d %d",
+		     job_desc->min_nodes, 
+		     job_desc->max_nodes,
+		     job_desc->num_procs);
+		return SLURM_SUCCESS;
+	}
+	tmp = 1;
+	select_g_set_jobinfo(job_desc->select_jobinfo,
+			     SELECT_DATA_ALTERED, &tmp);
+	
+	debug("Hey I am here %d-%d %d",
+	     job_desc->min_nodes, 
+	     job_desc->max_nodes,
+	     job_desc->num_procs);
+	if(job_desc->min_nodes == NO_VAL)
+		return SLURM_SUCCESS;
+	
+	tmp = job_desc->min_nodes % bluegene_mp_node_cnt;
+	if(tmp > 0)
+		job_desc->min_nodes += (bluegene_mp_node_cnt-tmp);
+	tmp = job_desc->min_nodes / bluegene_mp_node_cnt;
+			
+	if(tmp > 0) 
+		job_desc->min_nodes = tmp;
+	else if(job_desc->num_procs > 0) { 
+		tmp = job_desc->min_nodes % bluegene_nc_node_cnt;
+		if(tmp > 0)
+			job_desc->min_nodes += (bluegene_nc_node_cnt-tmp);
+		tmp = job_desc->min_nodes / bluegene_nc_node_cnt;
+		if(tmp > 0) {
+			job_desc->num_procs = job_desc->min_nodes;
+			job_desc->min_nodes = 1;
+		}
+	}
+	info("Now %d-%d %d",
+	     job_desc->min_nodes, 
+	     job_desc->max_nodes,
+	     job_desc->num_procs);
+
+	if(job_desc->max_nodes == NO_VAL) 
+		return SLURM_SUCCESS;
+		
+	tmp = job_desc->max_nodes % bluegene_mp_node_cnt;
+	if(tmp > 0)
+		job_desc->max_nodes += (bluegene_mp_node_cnt-tmp);
+	tmp = job_desc->max_nodes / bluegene_mp_node_cnt;
+	if(tmp > 0)
+		job_desc->max_nodes = tmp;
+	else
+		job_desc->max_nodes = 1;
+	
+	info("Now %d-%d %d",
+	     job_desc->min_nodes, 
+	     job_desc->max_nodes,
+	     job_desc->num_procs);
+
+	
+	return SLURM_SUCCESS;
 }

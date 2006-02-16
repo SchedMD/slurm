@@ -1180,4 +1180,9 @@ extern int select_p_get_info_from_plugin(enum select_data_info info,
 	return rc;
 }
 
+extern int select_p_alter_node_cnt (job_desc_msg_t *job_desc)
+{	
+	return SLURM_SUCCESS;
+}
+
 #undef __SELECT_CR_DEBUG

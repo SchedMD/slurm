@@ -118,6 +118,7 @@ typedef struct {
 	int start[BA_SYSTEM_DIMENSIONS];
 	int start_req;
 	int size; 
+	int procs; 
 	int conn_type;
 	int rotate_count;
 	int elongate_count;
@@ -161,7 +162,6 @@ typedef struct
 {
 	ba_connection_t int_wire[NUM_PORTS_PER_NODE];
 	ba_connection_t ext_wire[NUM_PORTS_PER_NODE];
-
 } ba_switch_t;
 
 /*
@@ -179,8 +179,7 @@ typedef struct {
 	int indecies;
 	int state;
 	int conn_type;
-	int phys_x;
-	
+	int phys_x;	
 } ba_node_t;
 
 typedef struct {
