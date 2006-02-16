@@ -197,7 +197,8 @@ enum select_data_type {
 	SELECT_DATA_SEGMENT,	/* data-> int16_t segment */
 	SELECT_DATA_NODE_CNT,	/* data-> uint32_t node_cnt */
 	SELECT_DATA_CHECKED,	/* data-> uint16_t checked */
-	SELECT_DATA_ALTERED     /* data-> uint16_t altered */
+	SELECT_DATA_ALTERED,    /* data-> uint16_t altered */
+	SELECT_DATA_MAX_PROCS	/* data-> uint32_t max_procs */
 };
 
 enum select_print_mode {

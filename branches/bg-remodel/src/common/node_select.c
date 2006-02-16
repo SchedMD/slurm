@@ -602,7 +602,10 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 		break;		
 	case SELECT_DATA_ALTERED:
 		jobinfo->altered = *uint16;
-		break;		
+		break;
+	case SELECT_DATA_MAX_PROCS:
+		jobinfo->max_procs = *uint32;
+		break;
 	default:
 		debug("select_g_set_jobinfo data_type %d invalid", 
 		      data_type);
@@ -666,6 +669,9 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 		break;
 	case SELECT_DATA_ALTERED:
 		*uint16 = jobinfo->altered;
+		break;
+	case SELECT_DATA_MAX_PROCS:
+		*uint32 = jobinfo->max_procs;
 		break;
 	default:
 		debug("select_g_get_jobinfo data_type %d invalid", 
