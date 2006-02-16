@@ -705,6 +705,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 {
 	pack32((uint32_t) detail_ptr->min_nodes, buffer);
 	pack32((uint32_t) detail_ptr->max_nodes, buffer);
+	pack32((uint32_t) detail_ptr->max_procs, buffer);
 	pack32((uint32_t) detail_ptr->total_procs, buffer);
 
 	pack16((uint16_t) detail_ptr->req_tasks, buffer);
@@ -736,7 +737,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	char *req_nodes = NULL, *exc_nodes = NULL, *features = NULL;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	char **argv = (char **) NULL;
-	uint32_t min_nodes, max_nodes, min_procs;
+	uint32_t min_nodes, max_nodes, min_procs, max_procs;
 	uint16_t argc = 0, req_tasks, shared, contiguous;
 	uint16_t cpus_per_task, name_len;
 	uint32_t min_memory, min_tmp_disk, total_procs;
@@ -746,6 +747,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	/* unpack the job's details from the buffer */
 	safe_unpack32(&min_nodes, buffer);
 	safe_unpack32(&max_nodes, buffer);
+	safe_unpack32(&max_procs, buffer);
 	safe_unpack32(&total_procs, buffer);
 
 	safe_unpack16(&req_tasks, buffer);
@@ -793,6 +795,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	/* now put the details into the job record */
 	job_ptr->details->min_nodes = min_nodes;
 	job_ptr->details->max_nodes = max_nodes;
+	job_ptr->details->max_procs = max_procs;
 	job_ptr->details->total_procs = total_procs;
 	job_ptr->details->req_tasks = req_tasks;
 	job_ptr->details->shared = shared;
