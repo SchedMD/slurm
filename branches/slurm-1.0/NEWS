@@ -14,7 +14,9 @@ documents those changes that are of interest to users and admins.
     SLURM_JOBID environment variable is invalid.
  -- Federation driver: allow selection of a sepecific switch interface
     (sni0, sni1, etc.) with -euidevice/MP_EUIDEVICE.
- 
+ -- Return an error for "scontrol reconfig" if there is already one in 
+    progress 
+
 * Changes in SLURM 1.0.2
 ========================
  -- Correctly report DRAINED node state as type OTHER for "sinfo --summarize".
