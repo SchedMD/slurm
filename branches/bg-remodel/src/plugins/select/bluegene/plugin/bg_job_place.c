@@ -116,7 +116,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		target_size *= req_geometry[i];
 	if (target_size == 0) {	/* no geometry specified */
 		target_size = min_nodes;
-		req_geometry[X] = -1;
+		req_geometry[X] = NO_VAL;
 	}
 	/* this is where we should have the control flow depending on
 	 * the spec arguement */
@@ -187,7 +187,8 @@ try_again:
 		   scheduler that it is runnable just not right now. 
 		*/
 		debug3("job_running = %d", record->job_running);
-		if((record->job_running != -1) && (checked < CHECK_COUNT)) {
+		if((record->job_running != NO_VAL) 
+		   && (checked < CHECK_COUNT)) {
 			debug("block %s in use by %s", 
 			      record->bg_block_id,
 			      record->user_name);
@@ -206,7 +207,7 @@ try_again:
 					found_record->bg_block_id)))
 				continue;
 			if(blocks_overlap(record, found_record)) {
-				if((found_record->job_running != -1) 
+				if((found_record->job_running != NO_VAL) 
 				   && (checked < CHECK_COUNT)) {
 					debug("can't use %s, there is a job "
 					      "(%d) running on an overlapping "
@@ -238,7 +239,7 @@ try_again:
 		/*****************************************/
 		/* match up geometry as "best" possible  */
 		/*****************************************/
-		if (req_geometry[X] == -1)
+		if (req_geometry[X] == NO_VAL)
 			;	/* Geometry not specified */
 		else {	/* match requested geometry */
 			bool match = false;

@@ -453,8 +453,13 @@ static void _print_header_part(void)
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "NODES");
 		ba_system_ptr->xcord += 7;
+#ifdef HAVE_BG
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "BP_LIST");
+#else
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "NODELIST");
+#endif
 		ba_system_ptr->xcord = 1;
 		ba_system_ptr->ycord++;
 	} else {
@@ -471,7 +476,11 @@ static void _print_header_part(void)
 		}
 
 		printf("NODES ");
+#ifdef HAVE_BG
+		printf("BG_LIST\n");
+#else
 		printf("NODELIST\n");	
+#endif
 	}	
 }
 
@@ -511,9 +520,8 @@ static int _print_text_part(partition_info_t *part_ptr,
 	int i = 0;
 	int width = 0;
 	char *nodes = NULL, time_buf[20];
-
-	if(!params.commandline) {
 		
+	if(!params.commandline) {
 		mvwprintw(ba_system_ptr->text_win, 
 			  ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "%c", 

@@ -208,6 +208,14 @@ enum select_print_mode {
 	SELECT_PRINT_BG_ID	/* Print just the BG_ID */
 };
 
+enum select_node_cnt {
+	SELECT_GET_NODE_MIN_OFFSET,   /* Give Min offset */ 
+	SELECT_GET_NODE_MAX_OFFSET,   /* Give Max offset */
+	SELECT_APPLY_NODE_MIN_OFFSET, /* Apply min offset to variable */
+	SELECT_APPLY_NODE_MAX_OFFSET, /* Apply max offset to variable */
+	SELECT_SET_NODE_CNT	      /* Set altered node cnt */
+};
+
 /* Possible task distributions across the nodes */
 enum task_dist_states {
 	SLURM_DIST_CYCLIC,	/* distribute tasks 1 per node, round robin */
@@ -499,6 +507,8 @@ typedef struct partition_info {
 	uint32_t min_nodes;	/* per job */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
+	uint32_t min_offset;	/* select plugin min offset */
+	uint32_t max_offset;	/* select plugin max offset */
 	uint16_t default_part;	/* 1 if this is default partition */
 	uint16_t hidden;	/* 1 if partition is hidden by default */
 	uint16_t root_only;	/* 1 if allocate must come for user root */

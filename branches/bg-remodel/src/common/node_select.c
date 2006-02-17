@@ -86,7 +86,8 @@ typedef struct slurm_select_ops {
                                                   enum select_data_info cr_info);
         int             (*get_info_from_plugin) ( enum select_data_info cr_info, 
                                                   void *data);
-	int             (*alter_node_cnt)       ( job_desc_msg_t * job_desc);
+	int             (*alter_node_cnt)       ( enum select_node_cnt type,
+						  void *data);
 } slurm_select_ops_t;
 
 typedef struct slurm_select_context {
@@ -111,9 +112,9 @@ struct select_jobinfo {
 	uint16_t node_use;	/* see enum node_use_type */
 	char *bg_block_id;	/* Blue Gene partition ID */
 	uint16_t magic;		/* magic number */
-	int16_t quarter;        /* for bg to tell which quarter of a small
+	uint16_t quarter;        /* for bg to tell which quarter of a small
 				   partition the job is running */ 
-	int16_t segment;        /* for bg to tell which segment of a quarter 
+	uint16_t segment;        /* for bg to tell which segment of a quarter 
 				   of a small partition the job is running */ 
 	uint32_t node_cnt;      /* how many procs in block */ 
 	uint16_t checked;       /* for bg to tell plugin it already 
@@ -416,12 +417,12 @@ extern int select_g_get_info_from_plugin (enum select_data_info cr_info, void *d
  * Alter the node count for a job given the type of system we are on
  * IN/OUT job_desc  - current job desc
  */
-extern int select_g_alter_node_cnt (job_desc_msg_t *job_desc)
+extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data)
 {
        if (slurm_select_init() < 0)
                return SLURM_ERROR;
 
-       return (*(g_select_context->ops.alter_node_cnt))(job_desc);
+       return (*(g_select_context->ops.alter_node_cnt))(type, data);
 }
 
 /*
@@ -545,8 +546,8 @@ extern int select_g_alloc_jobinfo (select_jobinfo_t *jobinfo)
 
 	*jobinfo = xmalloc(sizeof(struct select_jobinfo));
 	(*jobinfo)->magic = JOBINFO_MAGIC;
-	(*jobinfo)->quarter = -1;
-	(*jobinfo)->segment = -1;
+	(*jobinfo)->quarter = (uint16_t) NO_VAL;
+	(*jobinfo)->segment = (uint16_t) NO_VAL;
 	return SLURM_SUCCESS;
 }
 
@@ -561,7 +562,6 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 	int i, rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
 	uint32_t *uint32 = (uint32_t *) data;
-	int16_t *int16 = (int16_t *) data;
 	char * tmp_char = (char *) data;
 	
 	if (jobinfo->magic != JOBINFO_MAGIC) {
@@ -589,10 +589,10 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 		jobinfo->bg_block_id = xstrdup(tmp_char);
 		break;
 	case SELECT_DATA_QUARTER:
-		jobinfo->quarter = *int16;
+		jobinfo->quarter = *uint16;
 		break;
 	case SELECT_DATA_SEGMENT:
-		jobinfo->segment = *int16;
+		jobinfo->segment = *uint16;
 		break;
 	case SELECT_DATA_NODE_CNT:
 		jobinfo->node_cnt = *uint32;
@@ -626,7 +626,6 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 	int i, rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
 	uint32_t *uint32 = (uint32_t *) data;
-	int16_t *int16 = (int16_t *) data;
 	char **tmp_char = (char **) data;
 
 	if (jobinfo->magic != JOBINFO_MAGIC) {
@@ -656,10 +655,10 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 			*tmp_char = xstrdup(jobinfo->bg_block_id);
 		break;
 	case SELECT_DATA_QUARTER:
-		*int16 = jobinfo->quarter;
+		*uint16 = jobinfo->quarter;
 		break;
 	case SELECT_DATA_SEGMENT:
-		*int16 = jobinfo->segment;
+		*uint16 = jobinfo->segment;
 		break;
 	case SELECT_DATA_NODE_CNT:
 		*uint32 = jobinfo->node_cnt;
@@ -867,7 +866,6 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 {
 	uint16_t uint16_tmp;
-	int16_t int16_tmp;
 	uint32_t uint32_tmp;
 	
 	safe_unpackstr_xmalloc(&(bg_info_record->nodes), &uint16_tmp, buffer);
@@ -882,10 +880,10 @@ static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 	bg_info_record->conn_type = (int) uint16_tmp;
 	safe_unpack16(&uint16_tmp, buffer);
 	bg_info_record->node_use = (int) uint16_tmp;
-	safe_unpack16(&int16_tmp, buffer);
-	bg_info_record->quarter = (int) int16_tmp;
-	safe_unpack16(&int16_tmp, buffer);
-	bg_info_record->segment = (int) int16_tmp;
+	safe_unpack16(&uint16_tmp, buffer);
+	bg_info_record->quarter = (int) uint16_tmp;
+	safe_unpack16(&uint16_tmp, buffer);
+	bg_info_record->segment = (int) uint16_tmp;
 	safe_unpack32(&uint32_tmp, buffer);
 	bg_info_record->node_cnt = (int) uint32_tmp;
 		

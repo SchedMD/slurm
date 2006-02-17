@@ -49,10 +49,11 @@ List bg_booted_block_list = NULL;  	/* blocks that are booted */
 
 char *bluegene_blrts = NULL, *bluegene_linux = NULL, *bluegene_mloader = NULL;
 char *bluegene_ramdisk = NULL, *bridge_api_file = NULL; 
-bg_layout_t bluegene_layout_mode = -1;
+bg_layout_t bluegene_layout_mode = NO_VAL;
 int bluegene_numpsets = 0;
-int bluegene_mp_node_cnt = 0;
-int bluegene_nc_node_cnt = 0;
+int bluegene_bp_node_cnt = 0;
+int bluegene_quarter_node_cnt = 0;
+int bluegene_segment_node_cnt = 0;
 bool agent_fini = false;
 int bridge_api_verb = 0;
 time_t last_bg_update;
@@ -93,7 +94,7 @@ static bg_record_t *_create_small_record(bg_record_t *bg_record,
 					 int quarter, int segment);
 static int _add_bg_record(List records, char *nodes, 
 			  rm_connection_type_t conn_type, 
-			  int num32, int num128);
+			  int num_segment, int num_quarter);
 static int  _parse_bg_spec(char *in_line);
 static void _process_nodes(bg_record_t *bg_record);
 static int  _reopen_bridge_log(void);
@@ -355,8 +356,8 @@ extern int update_block_user(bg_record_t *bg_record)
 
 extern int format_node_name(bg_record_t *bg_record, char tmp_char[])
 {
-	if(bg_record->quarter != -1) {
-		if(bg_record->segment != -1) {
+	if(bg_record->quarter != NO_VAL) {
+		if(bg_record->segment != NO_VAL) {
 			sprintf(tmp_char,"%s.%d.%d\0",
 				bg_record->nodes,
 				bg_record->quarter,
@@ -384,13 +385,13 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 	}
 	bit_free(my_bitmap);
 		
-	if(rec_a->quarter != -1) {
-		if(rec_b->quarter == -1)
+	if(rec_a->quarter != NO_VAL) {
+		if(rec_b->quarter == NO_VAL)
 			return true;
 		else if(rec_a->quarter != rec_b->quarter)
 			return false;
-		if(rec_a->segment != -1) {
-			if(rec_b->segment == -1)
+		if(rec_a->segment != NO_VAL) {
+			if(rec_b->segment == NO_VAL)
 				return true;
 			else if(rec_a->segment 
 				!= rec_b->segment)
@@ -756,7 +757,6 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 			if (bg_record->bg_block_id)
 				continue;
 			bg_record->bg_block_id = xmalloc(sizeof(char)*8);
-			bg_record->job_running = -1;
 			snprintf(bg_record->bg_block_id, 8, "RMP%d", 
 				 block_inx++);
 			format_node_name(bg_record, tmp_char);
@@ -812,7 +812,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	bg_record_t *bg_record = NULL;
 	bg_record_t *found_record = NULL;
 	List results = list_create(NULL);
-	int num32=0, num128=0;
+	int num_quarter=0, num_segment=0;
 	char *name = NULL;
 
 	slurm_mutex_lock(&block_state_mutex);
@@ -824,8 +824,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 			if(bg_record->bp_count>0 
 			   && (bg_record->cpus_per_bp == procs_per_node
 			       || (bg_record->quarter == 0 
-				   && (bg_record->segment == 0 
-				       || bg_record->segment == -1)))) {
+				   && bg_record->segment < 1))) {
 				debug2("adding %s %d%d%d",
 				       bg_record->nodes,
 				       bg_record->start[X],
@@ -849,26 +848,26 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 		debug("No list was given");
 	}
 	info("proc count = %d size = %d",request->procs, request->size);
-	if(request->size==1 && request->procs < bluegene_mp_node_cnt) {
+	if(request->size==1 && request->procs < bluegene_bp_node_cnt) {
 		request->conn_type = SELECT_SMALL;
-		if(request->procs == bluegene_nc_node_cnt) {
-			num32=4;
-			num128=3;
+		if(request->procs == bluegene_segment_node_cnt) {
+			num_segment=4;
+			num_quarter=3;
 		} else {
-			num128=4;
+			num_quarter=4;
 		}
 		if(bg_list) {
 			itr = list_iterator_create(bg_list);
 			while ((bg_record = (bg_record_t *) list_next(itr)) 
 			       != NULL) {
-				if(bg_record->job_running != -1)
+				if(bg_record->job_running != NO_VAL)
 					continue;
 				if(bg_record->node_cnt == request->procs) {
 					list_iterator_destroy(itr);
 					slurm_mutex_unlock(&block_state_mutex);
 					return SLURM_SUCCESS;
 				}
-				if(bg_record->node_cnt > bluegene_mp_node_cnt)
+				if(bg_record->node_cnt > bluegene_bp_node_cnt)
 					continue;
 				break;
 			}
@@ -919,7 +918,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	/*set up bg_record(s) here */
 	results = list_create(destroy_bg_record);
 	_add_bg_record(results, request->save_name, 
-		       request->conn_type, num32, num128);
+		       request->conn_type, num_segment, num_quarter);
 
 	xfree(request->save_name);
 	if(request->elongate_geos)
@@ -1087,7 +1086,7 @@ extern int bg_free_block(bg_record_t *bg_record)
 	}
 	
 	while (1) {
-		if (bg_record->state != -1
+		if (bg_record->state != NO_VAL
 		    && bg_record->state != RM_PARTITION_FREE 
 		    && bg_record->state != RM_PARTITION_DEALLOCATING) {
 #ifdef HAVE_BG_FILES
@@ -1363,14 +1362,14 @@ extern int read_bg_conf(void)
 		fatal("MloaderImage not configured in bluegene.conf");
 	if (!bluegene_ramdisk)
 		fatal("RamDiskImage not configured in bluegene.conf");
-	if (!bluegene_mp_node_cnt)
+	if (!bluegene_bp_node_cnt)
 		fatal("MidplaneNodeCnt not configured in bluegene.conf "
 		      "make sure it is set before any Nodes= line");
-	if (!bluegene_nc_node_cnt)
+	if (!bluegene_segment_node_cnt)
 		fatal("NodeCardNodeCnt not configured in bluegene.conf "
 		      "make sure it is set before any Nodes= line");
 
-	if (bluegene_layout_mode == -1) {
+	if (bluegene_layout_mode == NO_VAL) {
 		info("Warning: LayoutMode was not specified in bluegene.conf "
 		     "defaulting to STATIC partitioning");
 		bluegene_layout_mode = LAYOUT_STATIC;
@@ -1912,49 +1911,43 @@ static int _split_block(bg_record_t *bg_record, int procs, int *block_inx)
 	bool full_bp = false; 
 	int small_count = 0;
 	int small_size = 0;
-	int num32 = 0, num128 = 0;
+	int num_segment = 0, num_quarter = 0;
 	int i;
 	int node_cnt = 0;
 	int quarter = 0;
 	int segment = 0;
 
-	if(bg_record->quarter == -1)
+	if(bg_record->quarter == NO_VAL)
 		full_bp = true;
 	
-	if(procs == bluegene_nc_node_cnt) {
-		num32=4;
+	if(procs == bluegene_segment_node_cnt) {
+		num_segment=4;
 		if(full_bp)
-			num128=3;
+			num_quarter=3;
 	} else if(full_bp) {
-		num128 = 4;
+		num_quarter = 4;
 	} else {
 		error("you asked for something that was already this size");
 		return SLURM_ERROR;
 	}
 	info("here asking for %d 32s from a %d block",
-	     num32, bg_record->node_cnt);
-	small_count = num32+num128; 
+	     num_segment, bg_record->node_cnt);
+	small_count = num_segment+num_quarter; 
 
 	ba_node = list_pop(bg_record->bg_block_list);
 	/* break midplane up into 16 parts */
-	small_size = 16;
+	small_size = bluegene_bp_node_cnt/bluegene_segment_node_cnt;
 	node_cnt = 0;
 	quarter = 0;
 	segment = 0;
 	for(i=0; i<small_count; i++) {
-		if(i == num32) {
+		if(i == num_segment) {
 			/* break midplane up into 4 parts */
 			small_size = 4;
 		}
 		
-		node_cnt += bluegene_mp_node_cnt/small_size;
-		if(node_cnt == 128) {
-			node_cnt = 0;
-			quarter++;
-		}
-		
 		if(small_size == 4)
-			segment = -1;
+			segment = NO_VAL;
 		else
 			segment = i%4; 
 		found_record = _create_small_record(bg_record,
@@ -1974,6 +1967,11 @@ static int _split_block(bg_record_t *bg_record, int procs, int *block_inx)
 #endif
 		list_push(bg_list, found_record);
 		print_bg_record(found_record);
+		node_cnt += bluegene_bp_node_cnt/small_size;
+		if(node_cnt == 128) {
+			node_cnt = 0;
+			quarter++;
+		}
 	}
 			
 	
@@ -1988,7 +1986,7 @@ static bg_record_t *_create_small_record(bg_record_t *bg_record,
 	
 	found_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));
 				
-	found_record->job_running = -1;
+	found_record->job_running = NO_VAL;
 	found_record->user_name = xstrdup(bg_record->user_name);
 	found_record->user_uid = bg_record->user_uid;
 	found_record->bg_block_list = list_create(NULL);
@@ -2000,10 +1998,10 @@ static bg_record_t *_create_small_record(bg_record_t *bg_record,
 	found_record->conn_type = SELECT_SMALL;
 				
 	found_record->node_use = SELECT_COPROCESSOR_MODE;
-	if(segment != -1)
+	if(segment != NO_VAL)
 		small_size = 16;
 	found_record->cpus_per_bp = procs_per_node/small_size;
-	found_record->node_cnt = bluegene_mp_node_cnt/small_size;
+	found_record->node_cnt = bluegene_bp_node_cnt/small_size;
 	found_record->quarter = quarter; 
 	found_record->segment = segment;
 			
@@ -2012,7 +2010,7 @@ static bg_record_t *_create_small_record(bg_record_t *bg_record,
 
 static int _add_bg_record(List records, char *nodes, 
 			  rm_connection_type_t conn_type, 
-			  int num32, int num128)
+			  int num_segment, int num_quarter)
 {
 	bg_record_t *bg_record = NULL;
 	bg_record_t *found_record = NULL;
@@ -2080,26 +2078,29 @@ static int _add_bg_record(List records, char *nodes,
 	bg_record->node_use = SELECT_COPROCESSOR_MODE;
 	bg_record->conn_type = conn_type;
 	bg_record->cpus_per_bp = procs_per_node;
-	bg_record->node_cnt = bluegene_mp_node_cnt * bg_record->bp_count;
-	bg_record->quarter = -1;
-	bg_record->segment = -1;
-	bg_record->job_running = -1;
+	bg_record->node_cnt = bluegene_bp_node_cnt * bg_record->bp_count;
+	bg_record->quarter = NO_VAL;
+	bg_record->segment = NO_VAL;
+	bg_record->job_running = NO_VAL;
 		
 	if(bg_record->conn_type != SELECT_SMALL)
 		list_append(records, bg_record);
 	else {
-		if(num32==0 && num128==0) {
+		if(num_segment==0 && num_quarter==0) {
 			info("No specs given for this small block, "
 			     "I am spliting this block into 4 quarters");
-			num128=4;
+			num_quarter=4;
 		}
-		if(((num32*32) + (num128*128)) != bluegene_mp_node_cnt)
+		if(((num_segment*bluegene_segment_node_cnt) + 
+		    (num_quarter*bluegene_quarter_node_cnt)) 
+		   != bluegene_bp_node_cnt)
 			fatal("There is an error in your bluegene.conf file.\n"
 			      "I am unable to request %d nodes in one "
 			      "midplane with %d nodes.", 
-			      ((num32*32) + (num128*128)), 
-			      bluegene_mp_node_cnt);
-		small_count = num32+num128; 
+			      ((num_segment*bluegene_segment_node_cnt) + 
+			       (num_quarter*bluegene_quarter_node_cnt)), 
+			      bluegene_bp_node_cnt);
+		small_count = num_segment+num_quarter; 
 		
 		/* Automatically create 4-way split if 
 		 * conn_type == SELECT_SMALL in bluegene.conf
@@ -2114,19 +2115,15 @@ static int _add_bg_record(List records, char *nodes,
 			quarter = 0;
 			segment = 0;
 			for(i=0; i<small_count; i++) {
-				if(i == num32) {
+				if(i == num_segment) {
 					/* break midplane up into 4 parts */
 					small_size = 4;
 				}
 								
-				node_cnt += bluegene_mp_node_cnt/small_size;
-				if(node_cnt == 128) {
-					node_cnt = 0;
-					quarter++;
-				}
+				
 				
 				if(small_size == 4)
-					segment = -1;
+					segment = NO_VAL;
 				else
 					segment = i%4; 
 				found_record = _create_small_record(bg_record,
@@ -2134,6 +2131,11 @@ static int _add_bg_record(List records, char *nodes,
 								    segment);
 								 
 				list_append(records, found_record);
+				node_cnt += bluegene_bp_node_cnt/small_size;
+				if(node_cnt == 128) {
+					node_cnt = 0;
+					quarter++;
+				}
 			}
 		}
 		list_iterator_destroy(itr);
@@ -2160,7 +2162,7 @@ static int _parse_bg_spec(char *in_line)
 	char *blrts_image = NULL,   *linux_image = NULL;
 	char *mloader_image = NULL, *ramdisk_image = NULL;
 	char *api_file = NULL, *layout = NULL;
-	int pset_num=-1, api_verb=-1, num32=0, num128=0;
+	int pset_num=-1, api_verb=-1, num_segment=0, num_quarter=0;
 	int mp_node_cnt = 0;
 	int nc_node_cnt = 0;
 	rm_connection_type_t send_conn;
@@ -2176,8 +2178,8 @@ static int _parse_bg_spec(char *in_line)
 				  "Nodes=", 's', &nodes,
 				  "RamDiskImage=", 's', &ramdisk_image,
 				  "Type=", 's', &conn_type,
-				  "Num32=", 'd', &num32,
-				  "Num128=", 'd', &num128,
+				  "Num32=", 'd', &num_segment,
+				  "Num128=", 'd', &num_quarter,
 				  "MidplaneNodeCnt=", 'd', &mp_node_cnt,
 				  "NodeCardNodeCnt=", 'd', &nc_node_cnt,
 				  "LayoutMode=", 's', &layout,
@@ -2232,11 +2234,12 @@ static int _parse_bg_spec(char *in_line)
 	if (api_verb >= 0) {
 		bridge_api_verb = api_verb;
 	}
-	if (mp_node_cnt > 0) {
-		bluegene_mp_node_cnt = mp_node_cnt;
+	if (mp_node_cnt > 0 && !bluegene_bp_node_cnt) {
+		bluegene_bp_node_cnt = mp_node_cnt;
+		bluegene_quarter_node_cnt = mp_node_cnt/4;		
 	}
-	if (nc_node_cnt > 0) {
-		bluegene_nc_node_cnt = nc_node_cnt;
+	if (nc_node_cnt > 0 && !bluegene_segment_node_cnt) {
+		bluegene_segment_node_cnt = nc_node_cnt;		
 	}
 	
 	/* Process node information */
@@ -2249,13 +2252,17 @@ static int _parse_bg_spec(char *in_line)
 		return SLURM_SUCCESS;
 	}
 	
-	if (!bluegene_mp_node_cnt)
-		fatal("MidplaneNodeCnt not configured in bluegene.conf "
-		      "make sure it is set before any Nodes= line");
-
-	if (!bluegene_nc_node_cnt)
-		fatal("NodeCardNodeCnt not configured in bluegene.conf "
-		      "make sure it is set before any Nodes= line");
+	if (!bluegene_bp_node_cnt) {
+		error("MidplaneNodeCnt not configured in bluegene.conf "
+		      "defaulting to 512 as MidplaneNodeCnt");
+		bluegene_bp_node_cnt = 512;
+		bluegene_quarter_node_cnt = 128;
+	}
+	if (!bluegene_segment_node_cnt) {
+		error("NodeCardNodeCnt not configured in bluegene.conf "
+		      "defaulting to 32 as NodeCardNodeCnt");
+		bluegene_segment_node_cnt = 32;
+	}
 	if (!conn_type || !strcasecmp(conn_type,"TORUS"))
 		send_conn = SELECT_TORUS;
 	else if(!strcasecmp(conn_type,"MESH"))
@@ -2264,7 +2271,7 @@ static int _parse_bg_spec(char *in_line)
 		send_conn = SELECT_SMALL;
 	xfree(conn_type);
 
-	_add_bg_record(bg_list, nodes, send_conn, num32, num128);
+	_add_bg_record(bg_list, nodes, send_conn, num_segment, num_quarter);
 	xfree(nodes);
 	
 	return SLURM_SUCCESS;
@@ -2381,7 +2388,7 @@ static void _process_nodes(bg_record_t *bg_record)
 		      bg_record->nodes);
 	}
 #endif
-	bg_record->node_cnt = bluegene_mp_node_cnt * bg_record->bp_count;
+	bg_record->node_cnt = bluegene_bp_node_cnt * bg_record->bp_count;
 	
 	return;
 }

@@ -195,8 +195,8 @@ extern void pack_block(bg_record_t *bg_record, Buf buffer)
 	pack16((uint16_t)bg_record->state, buffer);
 	pack16((uint16_t)bg_record->conn_type, buffer);
 	pack16((uint16_t)bg_record->node_use, buffer);	
-	pack16(bg_record->quarter, buffer);	
-	pack16(bg_record->segment, buffer);	
+	pack16((uint16_t)bg_record->quarter, buffer);	
+	pack16((uint16_t)bg_record->segment, buffer);	
 	pack32((uint32_t)bg_record->node_cnt, buffer);	
 }
 

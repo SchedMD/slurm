@@ -417,7 +417,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 		}
 		if(bg_record->quarter != quarter)
 			continue;
-		if(bg_record->segment != -1) {
+		if(bg_record->segment != NO_VAL) {
 			if(bg_record->segment != (i%4))
 				continue;
 		}

@@ -81,6 +81,11 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 	int j;
 	char time_str[16], select_buf[128];
 	struct group *group_info = NULL;
+#ifdef HAVE_BG
+	char *nodelist = "BP_List";
+#else
+	char *nodelist = "NodeList";
+#endif	
 
 	/****** Line 1 ******/
 	fprintf ( out, "JobId=%u ", job_ptr->job_id);
@@ -144,8 +149,8 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 		fprintf ( out, "\n   ");
 
 	/****** Line 6 ******/
-	fprintf ( out, "NodeList=%s ", job_ptr->nodes);
-	fprintf ( out, "NodeListIndices=");
+	fprintf ( out, "%s=%s ", nodelist, job_ptr->nodes);
+	fprintf ( out, "%sIndices=", nodelist);
 	for (j = 0; job_ptr->node_inx; j++) {
 		if (j > 0)
 			fprintf( out, ",%d", job_ptr->node_inx[j]);
@@ -191,8 +196,8 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 
 
 	/****** Line 10 ******/
-	fprintf ( out, "ReqNodeList=%s ", job_ptr->req_nodes);
-	fprintf ( out, "ReqNodeListIndices=");
+	fprintf ( out, "Req%s=%s ", nodelist, job_ptr->req_nodes);
+	fprintf ( out, "Req%sIndices=", nodelist);
 	for (j = 0; job_ptr->req_node_inx; j++) {
 		if (j > 0)
 			fprintf( out, ",%d", job_ptr->req_node_inx[j]);
@@ -207,8 +212,8 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 		fprintf ( out, "\n   ");
 
 	/****** Line 11 ******/
-	fprintf ( out, "ExcNodeList=%s ", job_ptr->exc_nodes);
-	fprintf ( out, "ExcNodeListIndices=");
+	fprintf ( out, "Exc%s=%s ", nodelist, job_ptr->exc_nodes);
+	fprintf ( out, "Exc%sIndices=", nodelist);
 	for (j = 0; job_ptr->exc_node_inx; j++) {
 		if (j > 0)
 			fprintf( out, ",%d", job_ptr->exc_node_inx[j]);

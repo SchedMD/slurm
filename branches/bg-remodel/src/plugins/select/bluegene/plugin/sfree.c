@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
 		}
 		delete_record = xmalloc(sizeof(delete_record_t));
 		delete_record->bg_block_id = xstrdup(bg_block_id);
-		delete_record->state = -1;
+		delete_record->state = NO_VAL;
 		list_push(delete_record_list, delete_record);
 
 		slurm_attr_init(&attr_agent);
@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
 			
 			free(bg_block_id);
 			
-			delete_record->state = -1;
+			delete_record->state = NO_VAL;
 			list_push(delete_record_list, delete_record);
 
 			slurm_attr_init(&attr_agent);
@@ -264,13 +264,13 @@ int main(int argc, char *argv[])
 
 static int _free_block(delete_record_t *delete_record)
 {
-	int state=-1;
+	int state=NO_VAL;
 	int rc;
 	int i=0;
 	info("freeing bgblock %s", delete_record->bg_block_id);
 	_term_jobs_on_block(delete_record->bg_block_id);
 	while (1) {
-		if (delete_record->state != -1
+		if (delete_record->state != NO_VAL
 		    && delete_record->state != RM_PARTITION_FREE 
 		    && delete_record->state != RM_PARTITION_DEALLOCATING) {
 			info("pm_destroy %s",delete_record->bg_block_id);
@@ -320,7 +320,7 @@ static int _update_bg_record_state()
 	if ((rc = rm_get_data(block_list, RM_PartListSize, &num_blocks))
 	    != STATUS_OK) {
 		error("rm_get_data(RM_PartListSize): %s", _bg_err_str(rc));
-		state = -1;
+		state = NO_VAL;
 		num_blocks = 0;
 	}
 	
@@ -332,7 +332,7 @@ static int _update_bg_record_state()
 			    != STATUS_OK) {
 				error("rm_get_data(RM_PartListNextPart): %s",
 				      _bg_err_str(rc));
-				state = -1;
+				state = NO_VAL;
 				break;
 			}
 		} else {
@@ -342,7 +342,7 @@ static int _update_bg_record_state()
 			    != STATUS_OK) {
 				error("rm_get_data(RM_PartListFirstPart: %s",
 				      _bg_err_str(rc));
-				state = -1;
+				state = NO_VAL;
 				break;
 			}
 		}
@@ -352,7 +352,7 @@ static int _update_bg_record_state()
 		    != STATUS_OK) {
 			error("rm_get_data(RM_PartitionID): %s",
 			      _bg_err_str(rc));
-			state = -1;
+			state = NO_VAL;
 			break;
 		}
 		
@@ -370,13 +370,13 @@ static int _update_bg_record_state()
 				continue;
 			}
 		
-			if(state == -1)
+			if(state == NO_VAL)
 				goto clean_up;
 			else if(j>=num_blocks) {
 				error("This bgblock, %s, "
 				      "doesn't exist in MMCS",
 				      bg_block_id);
-				state = -1;
+				state = NO_VAL;
 				goto clean_up;
 			}
 			

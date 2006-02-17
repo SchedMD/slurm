@@ -206,6 +206,8 @@ struct part_record {
 	uint32_t min_nodes;	/* per job */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
+	uint32_t min_offset;	/* select plugin min offset */
+	uint32_t max_offset;	/* select plugin max offset */
 	uint16_t root_only;	/* 1 if allocate/submit RPC can only be 
 				   issued by user root */
 	uint16_t shared;	/* 1 if job can share a node,

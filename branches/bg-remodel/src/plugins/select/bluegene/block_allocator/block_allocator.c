@@ -200,7 +200,7 @@ extern int new_ba_request(ba_request_t* ba_request)
 	geo[Y] = ba_request->geometry[Y];
 	geo[Z] = ba_request->geometry[Z];
 		
-	if(geo[X] != -1) { 
+	if(geo[X] != NO_VAL) { 
 		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++){
 			if ((geo[i] < 1) 
 			    ||  (geo[i] > DIM_SIZE[i])){
@@ -471,7 +471,7 @@ endit:
 	ba_request->elongate_geos = list_create(_destroy_geo);
 	geo[X] = ba_request->geometry[X];
 		
-	if(geo[X] != -1) { 
+	if(geo[X] != NO_VAL) { 
 		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++){
 			if ((geo[i] < 1) 
 			    ||  (geo[i] > DIM_SIZE[i])){

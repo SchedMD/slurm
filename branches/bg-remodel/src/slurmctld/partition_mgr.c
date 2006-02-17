@@ -697,6 +697,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 {
 	uint16_t default_part_flag;
 	char node_inx_ptr[BUFFER_SIZE];
+	uint32_t altered;
 
 	if (default_part_loc == part_ptr)
 		default_part_flag = 1;
@@ -705,10 +706,24 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 
 	packstr(part_ptr->name, buffer);
 	pack32(part_ptr->max_time, buffer);
-	pack32(part_ptr->max_nodes, buffer);
-	pack32(part_ptr->min_nodes, buffer);
-	pack32(part_ptr->total_nodes, buffer);
-
+	altered = part_ptr->max_nodes;
+	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, 
+				&altered);
+	pack32(altered, buffer);
+	altered = part_ptr->min_nodes;
+	select_g_alter_node_cnt(SELECT_APPLY_NODE_MIN_OFFSET, 
+				&altered);
+	pack32(altered, buffer);
+	altered = part_ptr->total_nodes;
+	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, 
+				&altered);
+	pack32(altered, buffer);
+	select_g_alter_node_cnt(SELECT_GET_NODE_MAX_OFFSET, 
+				&part_ptr->max_offset);
+	pack32(part_ptr->max_offset, buffer);
+	select_g_alter_node_cnt(SELECT_GET_NODE_MIN_OFFSET, 
+				&part_ptr->min_offset);
+	pack32(part_ptr->min_offset, buffer);
 	pack32(part_ptr->total_cpus, buffer);
 	pack16(default_part_flag, buffer);
 	pack16(part_ptr->hidden, buffer);

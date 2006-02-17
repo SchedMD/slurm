@@ -98,7 +98,7 @@ extern int select_g_get_info_from_plugin (enum select_data_info cr_info,
  * Alter the node count for a job given the type of system we are on
  * IN/OUT job_desc  - current job desc
  */
-extern int select_g_alter_node_cnt (job_desc_msg_t *job_desc);
+extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data);
 
 /*
  * Note re/initialization of partition record data structure

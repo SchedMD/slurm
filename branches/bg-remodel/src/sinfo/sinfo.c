@@ -54,7 +54,7 @@ static int  _build_sinfo_data(List sinfo_list,
 		partition_info_msg_t *partition_msg,
 		node_info_msg_t *node_msg);
 static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr, 
-		uint16_t part_inx, node_info_t *node_ptr);
+			  uint16_t part_inx, node_info_t *node_ptr);
 static bool _filter_out(node_info_t *node_ptr);
 static void _sinfo_list_delete(void *data);
 static node_info_t *_find_node(char *node_name, node_info_msg_t *node_msg); 
@@ -263,13 +263,14 @@ _query_server(partition_info_msg_t ** part_pptr,
 /*
  * _build_sinfo_data - make a sinfo_data entry for each unique node 
  *	configuration and add it to the sinfo_list for later printing.
- * sinfo_list IN/OUT - list of unique sinfo_dataa records to report
+ * sinfo_list IN/OUT - list of unique sinfo_data records to report
  * partition_msg IN - partition info message
  * node_msg IN - node info message
  * RET zero or error code 
  */
 static int _build_sinfo_data(List sinfo_list, 
-		partition_info_msg_t *partition_msg, node_info_msg_t *node_msg)
+			     partition_info_msg_t *partition_msg, 
+			     node_info_msg_t *node_msg)
 {
 	node_info_t *node_ptr;
 	partition_info_t* part_ptr;
@@ -278,6 +279,7 @@ static int _build_sinfo_data(List sinfo_list,
 	hostlist_t hl;
 	sinfo_data_t *sinfo_ptr;
 	char *node_name = NULL;
+	int offset = 0;
 
 	/* by default every partition is shown, even if no nodes */
 	if ((!params.node_flag) && params.match_flags.partition_flag) {
@@ -286,13 +288,14 @@ static int _build_sinfo_data(List sinfo_list,
 			if ((!params.partition) || 
 			    (_strcmp(params.partition, part_ptr->name) == 0))
 				_create_sinfo(sinfo_list, part_ptr, 
-						(uint16_t) j, NULL);
+					      (uint16_t) j, NULL);
 		}
 	}
 
 	/* make sinfo_list entries for every node in every partition */
 	for (j=0; j<partition_msg->record_count; j++, part_ptr++) {
 		part_ptr = &(partition_msg->partition_array[j]);
+		
 		if (params.filtering && params.partition
 		&&  _strcmp(part_ptr->name, params.partition))
 			continue;
@@ -321,13 +324,13 @@ static int _build_sinfo_data(List sinfo_list,
 			/* if no match, create new sinfo_data entry */
 			if (sinfo_ptr == NULL) {
 				_create_sinfo(sinfo_list, part_ptr, 
-					(uint16_t) j, node_ptr);
+					      (uint16_t) j, node_ptr);
 			}
 			list_iterator_destroy(i);
 		}
 		hostlist_destroy(hl);
 	}
-
+		
 	_sort_hostlist(sinfo_list);
 	return SLURM_SUCCESS;
 }
@@ -481,7 +484,11 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 {
 	uint16_t base_state;
+	int offset = 1;
 
+	if(sinfo_ptr->part_info->max_offset)
+		offset = sinfo_ptr->part_info->max_offset;
+	
 	if (sinfo_ptr->nodes_tot == 0) {	/* first node added */
 		sinfo_ptr->node_state = node_ptr->node_state;
 		sinfo_ptr->features   = node_ptr->features;
@@ -522,16 +529,15 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 
 	base_state = node_ptr->node_state & NODE_STATE_BASE;
 	if (node_ptr->node_state & NODE_STATE_DRAIN)
-		sinfo_ptr->nodes_other++;
+		sinfo_ptr->nodes_other += offset;
 	else if ((base_state == NODE_STATE_ALLOCATED)
 	||       (node_ptr->node_state & NODE_STATE_COMPLETING))
-		sinfo_ptr->nodes_alloc++;
+		sinfo_ptr->nodes_alloc += offset;
 	else if (base_state == NODE_STATE_IDLE)
-		sinfo_ptr->nodes_idle++;
+		sinfo_ptr->nodes_idle += offset;
 	else 
-		sinfo_ptr->nodes_other++;
-	sinfo_ptr->nodes_tot++;
-
+		sinfo_ptr->nodes_other += offset;
+	sinfo_ptr->nodes_tot += offset;
 	hostlist_push(sinfo_ptr->nodes, node_ptr->name);
 }
 
@@ -543,28 +549,31 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
  * node_ptr IN       - pointer to node record to add
  */
 static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr, 
-		uint16_t part_inx, node_info_t *node_ptr)
+			  uint16_t part_inx, node_info_t *node_ptr)
 {
 	sinfo_data_t *sinfo_ptr;
-
+	int offset = 1;
 	/* create an entry */
 	sinfo_ptr = xmalloc(sizeof(sinfo_data_t));
 
 	sinfo_ptr->part_info = part_ptr;
-
+	if(sinfo_ptr->part_info->max_offset) {
+		offset = sinfo_ptr->part_info->max_offset;
+		info("got %d and %d", sinfo_ptr->part_info->min_nodes,
+		     sinfo_ptr->part_info->max_nodes);
+	}
 	if (node_ptr) {
 		uint16_t base_state = node_ptr->node_state & 
 			NODE_STATE_BASE;
 		sinfo_ptr->node_state = node_ptr->node_state;
 		if ((base_state == NODE_STATE_ALLOCATED)
 		||  (node_ptr->node_state & NODE_STATE_COMPLETING))
-			sinfo_ptr->nodes_alloc++;
+			sinfo_ptr->nodes_alloc += offset;
 		else if (base_state == NODE_STATE_IDLE)
-			sinfo_ptr->nodes_idle++;
+			sinfo_ptr->nodes_idle += offset;
 		else 
-			sinfo_ptr->nodes_other++;
-		sinfo_ptr->nodes_tot++;
-
+			sinfo_ptr->nodes_other += offset;
+		sinfo_ptr->nodes_tot += offset;
 		sinfo_ptr->min_cpus = node_ptr->cpus;
 		sinfo_ptr->max_cpus = node_ptr->cpus;
 

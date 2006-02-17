@@ -227,7 +227,7 @@ static int _find_32node_segment(bg_record_t *bg_record,
 	char *my_card_name = NULL;
 	char *card_name = NULL;
 	rm_bp_id_t bp_id = NULL;
-	int segment = -1;
+	int segment = NO_VAL;
 	int card_count = 0;
 	int num = 0;
 	int i=0;
@@ -427,10 +427,10 @@ int read_bg_blocks()
 		
 		free(block_name);
 
-		bg_record->state = -1;
-		bg_record->quarter = -1;
-		bg_record->segment = -1;
-		bg_record->job_running = -1;
+		bg_record->state = NO_VAL;
+		bg_record->quarter = NO_VAL;
+		bg_record->segment = NO_VAL;
+		bg_record->job_running = NO_VAL;
 				
 		if ((rc = rm_get_data(block_ptr, 
 				      RM_PartitionBPNum, 

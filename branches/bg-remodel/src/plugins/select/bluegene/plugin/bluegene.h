@@ -120,8 +120,9 @@ extern char *bluegene_ramdisk;
 extern char *bridge_api_file;
 extern bg_layout_t bluegene_layout_mode;
 extern int bluegene_numpsets;
-extern int bluegene_mp_node_cnt;
-extern int bluegene_nc_node_cnt;
+extern int bluegene_bp_node_cnt;
+extern int bluegene_segment_node_cnt;
+extern int bluegene_quarter_node_cnt;
 extern ba_system_t *ba_system_ptr;
 extern time_t last_bg_update;
 

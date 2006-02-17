@@ -197,8 +197,13 @@ static void _print_header_job(void)
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "NODES");
 		ba_system_ptr->xcord += 6;
+#ifdef HAVE_BG
+		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "BP_LIST");
+#else
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
 			  ba_system_ptr->xcord, "NODELIST");
+#endif
 		ba_system_ptr->xcord = 1;
 		ba_system_ptr->ycord++;
 	} else {
@@ -212,7 +217,11 @@ static void _print_header_job(void)
 		printf("ST ");
 		printf("      TIME ");
 		printf("NODES ");
+#ifdef HAVE_BG
+		printf("BG_LIST\n");
+#else
 		printf("NODELIST\n");
+#endif
 	}
 }
 
@@ -241,6 +250,8 @@ static int _print_text_job(job_info_t * job_ptr)
 			     &node_cnt);
 	if(!strcasecmp(job_ptr->nodes,"waiting...")) 
 		quarter = (uint16_t) NO_VAL;
+#else
+	node_cnt = job_ptr->num_nodes;
 #endif
 	if(!params.commandline) {
 		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
@@ -284,7 +295,6 @@ static int _print_text_job(job_info_t * job_ptr)
 			  time_buf);
 		ba_system_ptr->xcord += 11;
 
-#ifdef HAVE_BG
 		if(node_cnt >= 1024) {
 			i = node_cnt % 1024;
 			if(i > 0) {
@@ -305,12 +315,7 @@ static int _print_text_job(job_info_t * job_ptr)
 				  ba_system_ptr->ycord,
 				  ba_system_ptr->xcord, "%5d", 
 				  node_cnt);
-#else
-		mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "%5d", 
-				  job_ptr->num_nodes);
-#endif
+
 		ba_system_ptr->xcord += 6;
 
 		tempxcord = ba_system_ptr->xcord;
@@ -375,7 +380,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		}
 		
 		printf("%10.10s ", time_buf);
-#ifdef HAVE_BG		
+
 		if(node_cnt >= 1024) {
 			i = node_cnt % 1024;
 			if(i > 0) {
@@ -387,9 +392,7 @@ static int _print_text_job(job_info_t * job_ptr)
 			}
 		} else
 			printf("%5d ", node_cnt);
-#else
-		printf("%5d ", job_ptr->num_nodes);
-#endif
+
 		printf("%s", job_ptr->nodes);
 		if(quarter != (uint16_t) NO_VAL) {
 			if(segment != (uint16_t) NO_VAL)

@@ -83,9 +83,8 @@ int print_sinfo_entry(sinfo_data_t *sinfo_data)
 	sinfo_format_t *current;
 
 	while ((current = (sinfo_format_t *) list_next(i)) != NULL) {
-		if (current->
-		    function(sinfo_data, current->width, 
-					current->right_justify, current->suffix)
+		if (current->function(sinfo_data, current->width, 
+				      current->right_justify, current->suffix)
 		    != SLURM_SUCCESS)
 			return SLURM_ERROR;
 	}
@@ -337,8 +336,13 @@ int _print_node_list(sinfo_data_t * sinfo_data, int width,
 		hostlist_ranged_string(sinfo_data->nodes, 
 					sizeof(tmp), tmp);
 		_print_str(tmp, width, right_justify, true);
-	} else
-		_print_str("NODELIST", width, right_justify, true);
+	} else {
+#ifdef HAVE_BG
+		_print_str("BP_LIST", width, right_justify, false);
+#else
+		_print_str("NODELIST", width, right_justify, false);
+#endif
+	}
 
 	if (suffix)
 		printf("%s", suffix);
@@ -346,7 +350,7 @@ int _print_node_list(sinfo_data_t * sinfo_data, int width,
 }
 
 int _print_nodes_t(sinfo_data_t * sinfo_data, int width,
-			bool right_justify, char *suffix)
+		   bool right_justify, char *suffix)
 {
 	char id[FORMAT_STRING_SIZE];
 	if (sinfo_data) {
@@ -361,7 +365,7 @@ int _print_nodes_t(sinfo_data_t * sinfo_data, int width,
 }
 
 int _print_nodes_ai(sinfo_data_t * sinfo_data, int width,
-			bool right_justify, char *suffix)
+		    bool right_justify, char *suffix)
 {
 	char id[FORMAT_STRING_SIZE];
 	if (sinfo_data) {

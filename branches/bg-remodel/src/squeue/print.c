@@ -530,9 +530,13 @@ int _print_job_priority(job_info_t * job, int width, bool right, char* suffix)
 
 int _print_job_nodes(job_info_t * job, int width, bool right, char* suffix)
 {
-	if (job == NULL)        /* Print the Header instead */
+	if (job == NULL) {       /* Print the Header instead */
+#ifdef HAVE_BG
+		_print_str("BP_LIST", width, right, false);
+#else
 		_print_str("NODELIST", width, right, false);
-	else
+#endif
+	} else
 		_print_nodes(job->nodes, width, right, false);
 
 	if (suffix)
@@ -543,13 +547,17 @@ int _print_job_nodes(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_reason_list(job_info_t * job, int width, bool right, 
 		char* suffix)
 {
-	int16_t quarter = -1;
-	int16_t segment = -1;
+	uint16_t quarter = (uint16_t) NO_VAL;
+	uint16_t segment = (uint16_t) NO_VAL;
 	char tmp_char[6];
 	
-	if (job == NULL)	/* Print the Header instead */
+	if (job == NULL) {	/* Print the Header instead */
+#ifdef HAVE_BG
+		_print_str("BP_LIST(REASON)", width, right, false);
+#else
 		_print_str("NODELIST(REASON)", width, right, false);
-	else if (job->job_state == JOB_PENDING) {
+#endif
+	} else if (job->job_state == JOB_PENDING) {
 		char id[FORMAT_STRING_SIZE];
 		snprintf(id, FORMAT_STRING_SIZE, "(%s)", 
 			job_reason_string(job->wait_reason));
@@ -565,8 +573,8 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 #endif
 		
 		_print_nodes(job->nodes, width, right, false);
-		if(quarter != -1) {
-			if(segment != -1) 
+		if(quarter != (uint16_t) NO_VAL) {
+			if(segment != (uint16_t) NO_VAL) 
 				sprintf(tmp_char,"0.%d.%d\0",quarter,segment);
 			else
 				sprintf(tmp_char,"0.%d\0",quarter);
@@ -616,7 +624,8 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 {
 	uint32_t node_cnt = 0;
 	char tmp_char[6];
-	
+	int i=0;
+
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("NODES", width, right_justify, true);
 	else {
@@ -628,9 +637,16 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 		if(node_cnt == 0)
 			node_cnt = _get_node_cnt(job);
 
-		if(node_cnt > 1024) {
-			node_cnt /= 1024;
-			sprintf(tmp_char,"%dk\0",node_cnt);
+		if(node_cnt >= 1024) {
+			i = node_cnt % 1024;
+			if(i > 0) {
+				i *= 10;
+				i /= 1024;
+				sprintf(tmp_char, "%d.%dk\0",
+					node_cnt/1024, i);
+			} else 
+				sprintf(tmp_char, "%dk\0",
+					node_cnt/1024);
 			_print_str(tmp_char, width, right_justify, true);
 		} else
 			_print_int(node_cnt, width, 
@@ -1025,9 +1041,13 @@ int _print_step_name(job_step_info_t * step, int width, bool right,
 int _print_step_nodes(job_step_info_t * step, int width, bool right, 
 		      char* suffix)
 {
-	if (step == NULL)	/* Print the Header instead */
+	if (step == NULL) {	/* Print the Header instead */
+#ifdef HAVE_BG
+		_print_str("BP_LIST", width, right, false);
+#else
 		_print_str("NODELIST", width, right, false);
-	else 
+#endif
+	} else 
 		_print_nodes(step->nodes, width, right, false);
 	if (suffix)
 		printf("%s", suffix);
