@@ -538,6 +538,7 @@ static void _block_op(bg_update_t *bg_update_ptr)
 			fatal("Can't create pthread");
 		usleep(1000);	/* sleep and retry */
 	}
+	pthread_attr_destroy(&attr_agent);
 }
 
 

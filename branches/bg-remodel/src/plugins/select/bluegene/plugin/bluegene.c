@@ -1267,6 +1267,7 @@ extern int free_block_list(List delete_list)
 				usleep(1000);	
 			}
 		}
+		pthread_attr_destroy(&attr_agent);
 	}
 	slurm_mutex_unlock(&freed_cnt_mutex);
 			
@@ -1844,6 +1845,7 @@ static int _delete_old_blocks(void)
 			/* sleep and retry */
 			usleep(1000);	
 		}
+		pthread_attr_destroy(&attr_agent);
 	}
 	list_iterator_destroy(itr_curr);
 	slurm_mutex_unlock(&freed_cnt_mutex);
