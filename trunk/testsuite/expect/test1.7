@@ -10,7 +10,7 @@
 # Note:    This script generates and then deletes files in the working directory 
 #          named test1.7.input, test1.7.output, and test1.7.error
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-6 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -41,10 +41,36 @@ set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
 set job_id      0
 
-# NOTE: If you change sleep_time, change job time limits as well
+# NOTE: If you increase sleep_time, change job time limits as well
 set sleep_time  180
 
 print_header $test_id
+
+#
+# Make sure sleep time is no larger than InactiveLimit
+set inactive_limit  $sleep_time
+log_user 0
+spawn $scontrol show config
+expect {
+	-re "InactiveLimit.*= ($number)" {
+		set inactive_limit $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$inactive_limit < $sleep_time} {
+	if {$inactive_limit != 0} {
+		set sleep_time $inactive_limit
+		send_user "\nReset job sleep time to $sleep_time seconds\n"
+	}
+}
 
 #
 # Delete left-over input script plus stdout/err files
