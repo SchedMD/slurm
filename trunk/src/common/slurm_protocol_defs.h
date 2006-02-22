@@ -154,6 +154,7 @@ typedef enum {
 	REQUEST_TERMINATE_JOB,
 	MESSAGE_EPILOG_COMPLETE,
 	REQUEST_SPAWN_TASK,
+	REQUEST_FILE_BCAST,
 
 	SRUN_PING = 7001,
 	SRUN_TIMEOUT,
@@ -541,6 +542,20 @@ typedef struct kvs_get_msg {
 	char * hostname;	/* hostname to be sent the kvs data */
 } kvs_get_msg_t;
 
+typedef struct file_bcast_msg {
+	char *fname;		/* name of the destination file */
+	uint16_t block_no;	/* block number of this data */
+	uint16_t force;		/* replace existing file if set */
+	uint16_t modes;		/* access rights for destination file */
+	uint32_t uid;		/* owner for destination file */
+	uint32_t gid;		/* group for destination file */
+	time_t atime;		/* last access time for destination file */
+	time_t mtime;		/* last modification time for dest file */
+	uint32_t block_len;	/* length of this data block */
+	char *data;		/* data for this block */
+} file_bcast_msg_t; 
+
+
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
@@ -645,6 +660,7 @@ void slurm_free_job_step_info_response_msg(
 void slurm_free_node_info_msg(node_info_msg_t * msg);
 void slurm_free_partition_info_msg(partition_info_msg_t * msg);
 void slurm_free_get_kvs_msg(kvs_get_msg_t *msg);
+void inline slurm_free_file_bcast_msg(file_bcast_msg_t *msg);
 
 extern char *job_reason_string(enum job_wait_reason inx);
 extern char *job_state_string(enum job_states inx);
