@@ -1224,7 +1224,7 @@ extern void build_node_details(struct job_record *job_ptr)
 	if ((cr_enabled) && (error_code == SLURM_SUCCESS)) {
                 error_code = select_g_update_nodeinfo(job_ptr, SELECT_CR_USED_CPUS);
                 if(error_code != SLURM_SUCCESS)
-                      error("Unable to update nodeinfo JobId=%u",
+                      fatal("Unable to update nodeinfo JobId=%u",
                             job_ptr->job_id);
         }
 }

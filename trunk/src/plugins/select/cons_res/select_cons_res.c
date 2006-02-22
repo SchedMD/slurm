@@ -104,7 +104,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
-#define __SELECT_CR_DEBUG 0
+#define SELECT_CR_DEBUG 0
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -139,12 +139,13 @@ const char plugin_name[] =
 const char plugin_type[] = "select/cons_res";
 const uint32_t plugin_version = 90;
 
-/* node_used_resources keeps track of the resources within a node that 
+/* node_cr_record keeps track of the resources within a node which 
  * have been reserved by already scheduled jobs. 
  */
-struct node_resource_table {
+struct node_cr_record {
 	struct node_record *node_ptr;	/* ptr to the node that own these resources */
 	uint32_t used_cpus;	/* cpu count reserved by already scheduled jobs */
+	struct node_cr_record *node_next;/* next entry with same hash index */
 };
 
 #define CR_JOB_STATE_SUSPENDED 1
@@ -160,10 +161,148 @@ struct select_cr_job {
 	bitstr_t *node_bitmap;	/* bitmap of nodes allocated to job    */
 };
 
-static struct node_resource_table *select_node_ptr;
+static struct node_cr_record *select_node_ptr; /* Array of node_cr_record. One
+						  entry for each node in the cluster */
 static int select_node_cnt;
+static struct node_cr_record **cr_node_hash_table = NULL; /* node_cr_record hash table */
+
 static uint16_t select_fast_schedule;
+
 List select_cr_job_list;	/* List of select_cr_job(s) that are still active */
+
+#if SELECT_CR_DEBUG
+/* 
+ * _cr_dump_hash - print the cr_node_hash_table contents, used for debugging
+ *	or analysis of hash technique. See _hash_table in slurmctld/node_mgr.c 
+ * global: select_node_ptr    - table of node_cr_record
+ *         cr_node_hash_table - table of hash indices
+ * Inspired from _dump_hash() in slurmctld/node_mgr.c
+ */
+static void _cr_dump_hash (void) 
+{
+	int i, inx;
+	struct node_cr_record *this_node_ptr;
+
+	if (cr_node_hash_table == NULL)
+		return;
+	for (i = 0; i < select_node_cnt; i++) {
+		this_node_ptr = cr_node_hash_table[i];
+		while (this_node_ptr) {
+		        inx = this_node_ptr - select_node_ptr;
+			verbose("node_hash[%d]:%d", i, inx);
+			this_node_ptr = this_node_ptr->node_next;
+		}
+	}
+}
+
+#endif
+
+/* 
+ * _cr_hash_index - return a hash table index for the given node name 
+ * IN name = the node's name
+ * RET the hash table index
+ * Inspired from _hash_index(char *name) in slurmctld/node_mgr.c 
+ */
+static int _cr_hash_index (const char *name) 
+{
+	int index = 0;
+	int j;
+
+	if ((select_node_cnt == 0)
+	||  (name == NULL))
+		return 0;	/* degenerate case */
+
+	/* Multiply each character by its numerical position in the
+	 * name string to add a bit of entropy, because host names such
+	 * as cluster[0001-1000] can cause excessive index collisions.
+	 */
+	for (j = 1; *name; name++, j++)
+		index += (int)*name * j;
+	index %= select_node_cnt;
+	
+	return index;
+}
+
+/*
+ * _build_cr_node_hash_table - build a hash table of the node_cr_record entries. 
+ * global: select_node_ptr    - table of node_cr_record 
+ *         cr_node_hash_table - table of hash indices
+ * NOTE: manages memory for cr_node_hash_table
+ * Inspired from rehash_nodes() in slurmctld/node_mgr.c
+ */
+void _build_cr_node_hash_table (void)
+{
+	int i, inx;
+
+	xfree (cr_node_hash_table);
+	cr_node_hash_table = xmalloc (sizeof (struct node_cr_record *) * 
+				select_node_cnt);
+
+	for (i = 0; i < select_node_cnt; i++) {
+		if (strlen (select_node_ptr[i].node_ptr->name) == 0)
+			continue;	/* vestigial record */
+		inx = _cr_hash_index (select_node_ptr[i].node_ptr->name);
+		select_node_ptr[i].node_next = cr_node_hash_table[inx];
+		cr_node_hash_table[inx] = &select_node_ptr[i];
+	}
+
+#if SELECT_CR_DEBUG
+	_cr_dump_hash();
+#endif
+	return;
+}
+
+/* 
+ * _find_cr_node_record - find a record for node with specified name
+ * input: name - name of the desired node 
+ * output: return pointer to node record or NULL if not found
+ * global: select_node_ptr - pointer to global select_node_ptr
+ *         cr_node_hash_table - table of hash indecies
+ * Inspired from find_node_record (char *name) in slurmctld/node_mgr.c 
+ */
+struct node_cr_record * 
+_find_cr_node_record (const char *name) 
+{
+	int i;
+
+	if ((name == NULL)
+	||  (name[0] == '\0')) {
+		info("_find_cr_node_record passed NULL name");
+		return NULL;
+	}
+
+	/* try to find via hash table, if it exists */
+	if (cr_node_hash_table) {
+		struct node_cr_record *this_node;
+
+		i = _cr_hash_index (name);
+		this_node = cr_node_hash_table[i];
+		while (this_node) {
+			xassert(this_node->node_ptr->magic == NODE_MAGIC);
+			if (strncmp(this_node->node_ptr->name, name, MAX_NAME_LEN) == 0) {
+			        debug3(" cons_res _find_cr_node_record: hash %s",  name);
+				return this_node;
+			}
+			this_node = this_node->node_next;
+		}
+		error ("_find_cr_node_record: lookup failure using hashtable for %s", 
+                        name);
+	} 
+
+	/* revert to sequential search */
+	else {
+		for (i = 0; i < select_node_cnt; i++) {
+		        if (strcmp (name, select_node_ptr[i].node_ptr->name) == 0) {
+			        debug3("cons_res _find_cr_node_record: linear %s",  name);
+				return (&select_node_ptr[i]);
+			}
+		}
+		error ("_find_cr_node_record: lookup failure with linear search for %s", 
+                        name);
+	}
+	error ("_find_cr_node_record: lookup failure with both method %s", name);
+	return (struct node_cr_record *) NULL;
+}
 
 /* To effectively deal with heterogeneous nodes, we fake a cyclic
  * distribution to figure out how many tasks go on each node and then
@@ -202,7 +341,7 @@ static void _cr_dist(struct select_cr_job *job)
 /* User has specified the --exclusive flag on the srun command line
  * which means that the job should use only dedicated nodes.  In this
  * case we do not need to compute the number of tasks on each nodes
- * since it should be set yo the number of cpus.
+ * since it should be set to the number of cpus.
  */
 static void _cr_exclusive_dist(struct select_cr_job *job)
 {
@@ -363,30 +502,26 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 		else
 			nodes = job->nhosts;
 		for (i = 0; i < nodes; i++) {
-			for (j = 0; j < select_node_cnt; j++) {
-				if (!bit_test(job->node_bitmap, j))
-					continue;
-				if (strcmp
-				    (select_node_ptr[j].node_ptr->name,
-				     job->host[i]) != 0)
-					continue;
-				select_node_ptr[j].used_cpus -=
-						job->ntask[i];
-				if (select_node_ptr[j].used_cpus < 0) {
-					error(" used_cpus < 0 %d on %s",
-					      select_node_ptr[j].used_cpus,
-					      select_node_ptr[j].node_ptr->
-					      name);
-					select_node_ptr[j].used_cpus = 0;
-					rc = SLURM_ERROR;
-				}
-				break;
-			}
-			if (j == select_node_cnt) {
+		        struct node_cr_record *this_node;
+   		        this_node = _find_cr_node_record(job->host[i]);
+			if (this_node == NULL) {
 				error(" cons_res: could not find node %s",
 					job->host[i]);
+				rc = SLURM_ERROR; 
+				goto out;
+			}
+
+			this_node->used_cpus -= job->ntask[i];
+			if (this_node->used_cpus < 0) {
+			        error(" used_cpus < 0 %d on %s",
+				        this_node->used_cpus,
+				        this_node->node_ptr->name);
+				this_node->used_cpus = 0;
+				rc = SLURM_ERROR;  
+				goto out;
 			}
 		}
+	     out:
 		list_remove(iterator);
 		_xfree_select_cr_job(job);
 		break;
@@ -432,6 +567,8 @@ extern int fini(void)
 	xfree(select_node_ptr);
 	select_node_ptr = NULL;
 	select_node_cnt = -1;
+	xfree(cr_node_hash_table);
+
 	verbose("%s shutting down ...", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -474,7 +611,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 
 	select_node_cnt = node_cnt;
 	select_node_ptr =
-	    xmalloc(sizeof(struct node_resource_table) *
+	    xmalloc(sizeof(struct node_cr_record) *
 		    (select_node_cnt));
 
 	for (i = 0; i < select_node_cnt; i++) {
@@ -482,6 +619,8 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		select_node_ptr[i].used_cpus = 0;
 	}
 	select_fast_schedule = slurm_get_fast_schedule();
+
+	_build_cr_node_hash_table();
 
 	return SLURM_SUCCESS;
 }
@@ -824,7 +963,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 			_cr_dist(job);
 		}
 
-#if (__SELECT_CR_DEBUG)
+#if SELECT_CR_DEBUG
 		for (i = 0; i < job->nhosts; i++)
 			debug3(" cons_res: after _cr_dist host %s cpus %u",
 			       job->host[i], job->ntask[i]);
@@ -881,7 +1020,7 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	int rc = SLURM_SUCCESS;
 	rc = _clear_select_jobinfo(job_ptr);
 	if (rc != SLURM_SUCCESS) {
-		error(" Error for %u in select/cons_res: "
+		fatal(" error for %u in select/cons_res: "
 			"_clear_select_jobinfo",
 			job_ptr->job_id);
 	}
@@ -911,27 +1050,28 @@ extern int select_p_job_suspend(struct job_record *job_ptr)
 		}
 		job->state |= CR_JOB_STATE_SUSPENDED;
 		for (i = 0; i < job->nhosts; i++) {
-			for (j = 0; j < select_node_cnt; j++) {
-				if (!bit_test(job->node_bitmap, j))
-					continue;
-				if (strcmp(select_node_ptr[j].node_ptr->name,
-						job->host[i]) != 0)
-					continue;
-				select_node_ptr[j].used_cpus -=
-					job->ntask[i];
-				if (select_node_ptr[j].used_cpus < 0) {
-					error(" used_cpus < 0 %d on %s",
-						select_node_ptr[j].used_cpus,
-						select_node_ptr[j].node_ptr->
-						name);
-					select_node_ptr[j].used_cpus = 0;
-				}
-				break;
+		        struct node_cr_record *this_node_ptr;
+   		        this_node_ptr = _find_cr_node_record (job->host[i]);
+			if (this_node_ptr == NULL) {
+				error(" cons_res: could not find node %s",
+					job->host[i]);
+				rc = SLURM_ERROR; 
+				goto cleanup;
+			}
+			this_node_ptr->used_cpus -= job->ntask[i];
+			if (this_node_ptr->used_cpus < 0) {
+			        error(" cons_res: used_cpus < 0 %d on %s",
+				        this_node_ptr->used_cpus,
+				        this_node_ptr->node_ptr->name);
+				this_node_ptr->used_cpus = 0;
+				rc = SLURM_ERROR; 
+				goto cleanup;
 			}
 		}
 		rc = SLURM_SUCCESS;
 		break;
 	}
+     cleanup:
 	list_iterator_destroy(job_iterator);
 
 	return rc;
@@ -959,20 +1099,20 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 		}
 		job->state &= (~CR_JOB_STATE_SUSPENDED);
 		for (i = 0; i < job->nhosts; i++) {
-			for (j = 0; j < select_node_cnt; j++) {
-				if (!bit_test(job->node_bitmap, j))
-					continue;
-				if (strcmp(select_node_ptr[j].node_ptr->name,
-						job->host[i]) != 0)
-					continue;
-				select_node_ptr[j].used_cpus +=
-						job->ntask[i];
-				break;
+		        struct node_cr_record *this_node;
+		        this_node = _find_cr_node_record (job->host[i]);
+			if (this_node == NULL) {
+			        error(" cons_res: could not find node %s",
+				        job->host[i]);
+				rc = SLURM_ERROR;
+				goto cleanup;
 			}
+			this_node->used_cpus += job->ntask[i];
 		}
 		rc = SLURM_SUCCESS;
 		break;
 	}
+     cleanup:
 	list_iterator_destroy(job_iterator);
 
 	return rc;
@@ -1019,12 +1159,12 @@ extern int select_p_get_extra_jobinfo(struct node_record *node_ptr,
 				list_next(iterator)) != NULL) {
 				if (job->job_id != job_ptr->job_id)
 					continue;
-				for (i = 0; i < job->nhosts; i++) {
+				for (i = 0; i < job->nhosts; i++) { 
 					if (strcmp
 					    (node_ptr->name,
 					     job->host[i]) == 0) {
-#if (__SELECT_CR_DEBUG)
-						debug3
+#if SELECT_CR_DEBUG
+						info
 						    (" cons_res: get_extra_jobinfo job_id %u %s tasks %d ",
 						     job->job_id,
 						     job->host[i],
@@ -1035,7 +1175,8 @@ extern int select_p_get_extra_jobinfo(struct node_record *node_ptr,
 					}
 				}
 				error(" cons_res could not find %s", 
-					node_ptr->name);
+				        node_ptr->name); 
+				rc = SLURM_ERROR;
 			}
 		      cleanup:
 			list_iterator_destroy(iterator);
@@ -1056,28 +1197,22 @@ extern int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 {
 	int rc = SLURM_SUCCESS, i;
 	int incr = -1;
+	struct node_cr_record *this_cr_node;
 
 	xassert(node_ptr);
 	xassert(node_ptr->magic == NODE_MAGIC);
 
 	switch (info) {
 	case SELECT_CR_USED_CPUS:
-		for (i = 0; i < select_node_cnt; i++)
-			if (strcmp
-			    (select_node_ptr[i].node_ptr->name,
-			     node_ptr->name) == 0) {
-				incr = i;
-				break;
-			}
-
-		if (incr >= 0) {
-			uint32_t *tmp_32 = (uint32_t *) data;
-			*tmp_32 = select_node_ptr[incr].used_cpus;
-		} else {
-			error("select_g_get_select_nodeinfo: "
-				"no node record match ");
+	        this_cr_node = _find_cr_node_record (node_ptr->name);
+		if (this_cr_node == NULL) {
+		        error(" cons_res: could not find node %s",
+				 this_cr_node->node_ptr->name);
 			rc = SLURM_ERROR;
+			return rc;
 		}
+		uint32_t *tmp_32 = (uint32_t *) data;
+		*tmp_32 = this_cr_node->used_cpus;
 		break;
 	default:
 		error("select_g_get_select_nodeinfo info %d invalid",
@@ -1085,7 +1220,6 @@ extern int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 		rc = SLURM_ERROR;
 		break;
 	}
-
 	return rc;
 }
 
@@ -1112,25 +1246,19 @@ extern int select_p_update_nodeinfo(struct job_record *job_ptr,
 			else
 				nodes = job->nhosts;
 			for (i = 0; i < nodes; i++) {
-				for (j = 0; j < select_node_cnt;
-				     j++) {
-					if (bit_test
-					    (job->node_bitmap,
-					     j) == 0)
-						continue;
-					if (strcmp
-					    (select_node_ptr[j].
-					     node_ptr->name,
-					     job->host[i]))
-						continue;
-					select_node_ptr[j].
-						used_cpus +=
-						job->ntask[i];
-					break;
+   			        struct node_cr_record *this_node;
+     		                this_node = _find_cr_node_record (job->host[i]);
+				if (this_node == NULL) {
+				        error(" cons_res: could not find node %s",
+					      job->host[i]);
+					rc = SLURM_ERROR;
+					goto cleanup;
 				}
+ 			        this_node->used_cpus += job->ntask[i];
 			}
 			break;
 		}
+	     cleanup:
 		list_iterator_destroy(iterator);
 		break;
 	default:
@@ -1179,5 +1307,3 @@ extern int select_p_get_info_from_plugin(enum select_data_info info,
 	}
 	return rc;
 }
-
-#undef __SELECT_CR_DEBUG

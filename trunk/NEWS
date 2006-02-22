@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
  -- Configuration parameter HeartBeatInterval is depracated. Now used half
     of SlurmdTimeout and SlurmctldTimeout for communications to slurmd and
     slurmctld daemons repsectively.
+ -- Add hash tables for select/cons_res plugin (Susanne Balle, HP, 
+    patch_02222006).
 
 * Changes in SLURM 1.0.3
 ========================
