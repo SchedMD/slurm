@@ -15,7 +15,9 @@ allocation.
 \fBSOURCE\fR is the name of a file on the current node.
 \fBDEST\fR should be the fully qualified pathname for the 
 file copy to be created on each node. 
-This should be on a file system local to that node.
+\fBDEST\fR should be on a file system local to that node.
+Note that parallel file systems may provide better performance 
+than \fBsbcast\fR can provide.
 
 .SH "OPTIONS"
 .TP
@@ -60,7 +62,7 @@ Using a batch script, transmit local file \fBmy.prog\fR to
 > cat my.job
 #!/bin/bash
 sbcast my.prog /tmp/my.prog
-srun my.prog
+srun /tmp/my.prog
 
 > srun --nodes=8 --batch my.job
 srun: jobid 12345 submitted

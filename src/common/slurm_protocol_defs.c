@@ -937,3 +937,12 @@ static void _slurm_free_partition_info_members(partition_info_t * part)
 	}
 }
 
+extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->fname);
+		xfree(msg->data);
+		xfree(msg);
+	}
+}
+
