@@ -65,11 +65,16 @@ expect {
 	}
 }
 log_user 1
+if {$inactive_limit == 0} {
+	set inactive_limit $sleep_time
+}
+if {$inactive_limit < 120} {
+	send_user "\nWARNING: Inactive limit is too low for this test\n"
+	exit 0
+}
 if {$inactive_limit < $sleep_time} {
-	if {$inactive_limit != 0} {
-		set sleep_time $inactive_limit
-		send_user "\nReset job sleep time to $sleep_time seconds\n"
-	}
+	set sleep_time $inactive_limit
+	send_user "\nReset job sleep time to $sleep_time seconds\n"
 }
 
 #
