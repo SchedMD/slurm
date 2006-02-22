@@ -51,7 +51,7 @@
 #include "src/common/xassert.h"
 
 #define MAX_NAME_LEN 64
-#define FORWARD_INIT -1
+#define FORWARD_INIT 0xffff
 
 /* used to define flags of the launch_tasks_request_msg_t.and
  * spawn task_request_msg_t task_flags
@@ -186,7 +186,7 @@ typedef struct forward {
 
 	uint16_t   cnt;           /* number of addresses to forward */
 	uint32_t   timeout;       /* original timeout increments */
-	int16_t    init;          /*tell me it has been set (-1) */
+	uint16_t   init;          /* tell me it has been set (FORWARD_INIT) */
 } forward_t;
 
 typedef struct slurm_protocol_config {
@@ -223,14 +223,14 @@ typedef struct slurm_msg {
 
 typedef struct ret_data_info {
 	char *node_name;
-	int32_t nodeid;
+	uint32_t nodeid;
 	void *data;
 } ret_data_info_t;
 
 typedef struct ret_types {
-	int32_t msg_rc;
-	int32_t err;
-	int32_t type;
+	uint32_t msg_rc;
+	uint32_t err;
+	uint32_t type;
 	List ret_data_list;
 } ret_types_t;
 
