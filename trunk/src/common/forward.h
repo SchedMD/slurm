@@ -1,12 +1,12 @@
 /*****************************************************************************\
  *  forward.h - get/print the job state information of slurm
  *
- *  $Id: job_info.h 4911 2005-05-19 00:59:52Z jette $
+ *  $Id$
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov> et. al.
- *  UCRL-CODE-2002-040.
+ *  Written by Danny Auble <auble1@llnl.gov>
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.

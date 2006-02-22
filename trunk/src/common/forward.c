@@ -1,11 +1,11 @@
 /*****************************************************************************\
- *  submit.c - submit a job with supplied contraints
- *  $Id: submit.c 6636 2005-11-17 19:50:10Z jette $
+ *  forward.c - forward RPCs through hierarchical slurmd communications
+ *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by moe jette <jette1@llnl.gov>.
- *  UCRL-CODE-2002-040.
+ *  Written by Danny Auble <auble1@llnl.gov>.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
