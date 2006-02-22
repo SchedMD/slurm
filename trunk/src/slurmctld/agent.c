@@ -796,7 +796,7 @@ static void *_thread_per_group_rpc(void *args)
 	msg.address  = thread_ptr->slurm_addr;
 	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
-	msg.forward = thread_ptr->forward;
+	msg.forward  = thread_ptr->forward;
 	msg.ret_list = NULL;
 	msg.orig_addr.sin_addr.s_addr = 0;
 	msg.srun_node_id = 0;
