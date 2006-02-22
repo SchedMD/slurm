@@ -157,7 +157,7 @@ rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
 LIST=./slurm.files
 touch $LIST
 if [ -d /etc/init.d ]; then
-   echo "%config(noreplace) /etc/init.d/slurm" >> $LIST
+   echo "/etc/init.d/slurm" >> $LIST
 fi
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so &&
    echo %{_libdir}/slurm/task_affinity.so >> $LIST
