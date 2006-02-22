@@ -18,6 +18,7 @@ found on a node rather than what is defined in <i>slurm.conf</i>?</a></li>
 <li><a href="#return_to_service">Why is a node shown in state DOWN when the node 
 has registered for service?</a></li>
 <li><a href="#down_node">What happens when a node crashes?</a></li>
+<li><a href="#share">How can I control the execution of multiple jobs per node?</a></li>
 </ol>
 <p><a name="comp"><b>1. Why is my job/node in COMPLETING state?</b></a><br>
 When a job is terminating, both the job and its nodes enter the state &quot;completing.&quot; 
@@ -212,6 +213,20 @@ with the srun option <i>--no-kill</i>.
 Any active job step on that node will be killed. 
 See the slurm.conf and srun man pages for more information.</p>
  
-<p style="text-align:center;">Last modified 18 January 2006</p>
+<p><a name="share"><b>13. How can I control the execution of multiple 
+jobs per node?</b></a><br>
+There are two mechanism to control this. 
+If you want to allocate individual processors on a node to jobs, 
+configure <i>SelectType=select/cons_res</i>. 
+See <a href="cons_res.html">Consumable Resources in SLURM</a>
+for details about this configuration.  
+If you want to allocate whole nodes to jobs, configure
+configure <i>SelectType=select/linear</i>.
+Each partition also has a configuration parameter <i>Shared</i>
+that enables more than one job to execute on each node. 
+See <i>man slurm.conf</i> for more information about these 
+configuration paramters.</p>
+
+<p style="text-align:center;">Last modified 22 February 2006</p>
 
 <!--#include virtual="footer.txt"-->
