@@ -109,12 +109,8 @@ struct select_jobinfo {
 	uint16_t node_use;	/* see enum node_use_type */
 	char *bg_block_id;	/* Blue Gene partition ID */
 	uint16_t magic;		/* magic number */
-	int32_t quarter;       /* for bg to tell which quarter of a small
+	int32_t quarter;  	/* for bg to tell which quarter of a small
 				   partition the job is running */ 
-	uint32_t checked;       /* for bg to tell plugin it already 
-				   checked and all partitions were full
-				   looking for best choice now */
-	
 };
 #endif
 
@@ -566,9 +562,6 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 	case SELECT_DATA_QUARTER:
 		jobinfo->quarter = *tmp_32;
 		break;
-	case SELECT_DATA_CHECKED:
-		jobinfo->checked = *tmp_16;
-		break;		
 	default:
 		debug("select_g_set_jobinfo data_type %d invalid", 
 		      data_type);
@@ -619,9 +612,6 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 		break;
 	case SELECT_DATA_QUARTER:
 		*tmp_32 = jobinfo->quarter;
-		break;
-	case SELECT_DATA_CHECKED:
-		*tmp_16 = jobinfo->checked;
 		break;
 	default:
 		debug("select_g_get_jobinfo data_type %d invalid", 
