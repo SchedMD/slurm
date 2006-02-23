@@ -4,6 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.0.4
 ========================
  -- Release job allocation if step creation fails (especially for BlueGene).
+ -- Fix bug select/bluegene warm start with changed bglblock layout.
 
 * Changes in SLURM 1.0.3
 ========================
