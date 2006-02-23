@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.0.4
+========================
+ -- Release job allocation if step creation fails (especially for BlueGene).
+
 * Changes in SLURM 1.0.3
 ========================
  -- Fix bug that could refuse to queue batch jobs for BlueGene system.
