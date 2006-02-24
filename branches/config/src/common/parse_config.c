@@ -58,6 +58,7 @@
 
 /* FIXME - change all malloc/free to xmalloc/xfree */
 /* FIXME - change all assert to xassert */
+/* FIXME - change all strdup to xstrdup */
 
 #define CONF_HASH_LEN 26
 
@@ -136,7 +137,6 @@ s_c_hashtbl_t *s_c_hashtbl_create(
 	len = CONF_HASH_LEN * sizeof(conf_file_values_t *);
 	hashtbl = (s_c_hashtbl_t *)malloc(len);
 	memset(hashtbl, 0, len);
-	printf("New hashtbl address = %x\n", hashtbl);
 					      
 	for (op = options; op->key != NULL; op++) {
 		value = malloc(sizeof(conf_file_values_t));
@@ -153,42 +153,47 @@ s_c_hashtbl_t *s_c_hashtbl_create(
 	return hashtbl;
 }
 
+static void _conf_file_values_free(conf_file_values_t *p)
+{
+	int i;
+
+	if (p->data_count > 0) {
+		switch(p->type) {
+		case S_C_ARRAY:
+			for (i = 0; i < p->data_count; i++) {
+				void **ptr_array = (void **)p->data;
+				if (p->destroy != NULL) {
+					p->destroy(ptr_array[i]);
+				} else {
+					free(ptr_array[i]);
+				}
+			}
+			free(p->data);
+			break;
+		default:
+			if (p->destroy != NULL) {
+				p->destroy(p->data);
+			} else {
+				free(p->data);
+			}
+			break;
+		}
+	}
+	free(p->key);
+	free(p);
+}
+
 void s_c_hashtbl_destroy(s_c_hashtbl_t *hashtbl) {
-	int i, j;
+	int i;
 	conf_file_values_t *p, *next;
 
-	printf("DESTROYING hashtbl = %x\n", hashtbl);	
 	for (i = 0; i < CONF_HASH_LEN; i++) {
 		for (p = hashtbl[i]; p != NULL; p = next) {
 			next = p->next;
-
-			free(p->key);
-			if (p->data_count == 0)
-				continue;
-
-			switch(p->type) {
-			case S_C_ARRAY:
-				for (j = 0; j < p->data_count; j++) {
-					void **ptr_array = (void **)p->data;
-					if (p->destroy != NULL) {
-						p->destroy(ptr_array[j]);
-					} else {
-						free(ptr_array[j]);
-					}
-				}
-				free(p->data);
-				break;
-			default:
-				if (p->destroy != NULL) {
-					p->destroy(p->data);
-					continue;
-				} else {
-					free(p->data);
-				}
-				break;
-			}
+			_conf_file_values_free(p);
 		}
 	}
+	free(hashtbl);
 }
 
 static void _keyvalue_regex_init(void)
@@ -281,24 +286,37 @@ static void _strip_cr_nl(char *line)
  */
 static void _strip_comments(char *line)
 {
+	int i;
+	int len = strlen(line);
+	int bs_count = 0;
+
+	for (i = 0; i < len; i++) {
+		/* if # character is preceded by an even number of
+		 * escape characters '\' */
+		if (line[i] == '#' && (bs_count%2) == 0) {
+			line[i] = '\0';
+ 			break;
+		} else if (line[i] == '\\') {
+			bs_count++;
+		} else {
+			bs_count = 0;
+		}
+	}
+}
+
+/*
+ * Strips any escape characters, "\".  If you WANT a back-slash,
+ * it must be escaped, "\\".
+ */
+static void _strip_escapes(char *line)
+{
 	int i, j;
 	int len = strlen(line);
 
-	/* replace comment flag "#" with an end of string (NULL) */
-	/* escape sequence "\#" translated to "#" */
-	for (i = 0; i < len; i++) {
-		if (line[i] == (char) NULL)
-			break;
-		if (line[i] != '#')
-			continue;
-		if ((i > 0) && (line[i - 1] == '\\')) {
-			for (j = i; j < len; j++) {
-				line[j - 1] = line[j];
-			}
-			continue;
-		}
-		line[i] = (char) NULL;
-		break;
+	for (i = 0, j = 0; i < len+1; i++, j++) {
+		if (line[i] == '\\')
+			i++;
+		line[j] = line[i];
 	}
 }
 
@@ -328,7 +346,9 @@ static int _get_next_line(char *buf, int buf_size, FILE *file)
 			break;
 		}
 	}
-	_strip_cr_nl(buf);
+	/*_strip_cr_nl(buf);*/ /* not necessary */
+	_strip_escapes(buf);
+	
 	return !eof;
 }
 
@@ -510,7 +530,6 @@ int s_c_get_string(const s_c_hashtbl_t *hashtbl, const char *key, char **str)
 		return -1;
 	}
 	if (p->data_count == 0) {
-		fprintf(stderr, "No value set for key \"%s\"\n", key);
 		return -1;
 	}
 
@@ -529,7 +548,6 @@ int s_c_get_long(const s_c_hashtbl_t *hashtbl, const char *key, long *num)
 		return -1;
 	}
 	if (p->data_count == 0) {
-		fprintf(stderr, "No value set for key \"%s\"\n", key);
 		return -1;
 	}
 
@@ -548,7 +566,6 @@ int s_c_get_pointer(const s_c_hashtbl_t *hashtbl, const char *key, void **ptr)
 		return -1;
 	}
 	if (p->data_count == 0) {
-		fprintf(stderr, "No value set for key \"%s\"\n", key);
 		return -1;
 	}
 
@@ -568,7 +585,6 @@ int s_c_get_array(const s_c_hashtbl_t *hashtbl, const char *key,
 		return -1;
 	}
 	if (p->data_count == 0) {
-		fprintf(stderr, "No value set for key \"%s\"\n", key);
 		return -1;
 	}
 
@@ -599,10 +615,12 @@ void s_c_dump_values(const s_c_hashtbl_t *hashtbl,
 	for (op = options; op->key != NULL; op++) {
 		switch(op->type) {
 		case S_C_STRING:
-			if (!s_c_get_string(hashtbl, op->key, &str))
+			if (!s_c_get_string(hashtbl, op->key, &str)) {
 				printf("%s = %s\n", op->key, str);
-			else
+				free(str);
+			} else {
 				printf("%s\n", op->key);
+			}
 			break;
 		case S_C_LONG:
 			if (!s_c_get_long(hashtbl, op->key, &num))
@@ -747,8 +765,6 @@ int parse_nodename(void **dest, slurm_conf_enum_t type,
 	s_c_parse_line(hashtbl, line);
 	s_c_dump_values(hashtbl, nodename_options);
 
-	printf("**********\n");
-
 	*dest = (void *)hashtbl;
 
 	return 0;
@@ -767,8 +783,6 @@ int parse_partitionname(void **dest, slurm_conf_enum_t type,
 	hashtbl = s_c_hashtbl_create(partitionname_options);
 	s_c_parse_line(hashtbl, line);
 	s_c_dump_values(hashtbl, partitionname_options);
-
-	printf("**********\n");
 
 	*dest = (void *)hashtbl;
 
