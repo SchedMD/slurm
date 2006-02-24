@@ -113,6 +113,7 @@ static int _remove_job(db_job_id_t job_id)
 		if ((rc = rm_get_job(job_id, &job_rec)) != STATUS_OK) {
 			if (rc == JOB_NOT_FOUND) {
 				debug("job %d removed from MMCS", job_id);
+				slurm_mutex_unlock(&api_file_mutex);
 				return STATUS_OK;
 			} 
 
@@ -362,6 +363,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 	slurm_mutex_lock(&api_file_mutex);
 	if ((rc = rm_get_jobs(live_states, &job_list)) != STATUS_OK) {
 		error("rm_get_jobs(): %s", bg_err_str(rc));
+		slurm_mutex_unlock(&api_file_mutex);
 		return;
 	}
 	slurm_mutex_unlock(&api_file_mutex);
@@ -896,6 +898,7 @@ extern int boot_block(bg_record_t *bg_record)
 		      bg_record->bg_block_id, 
 		      slurmctld_conf.slurm_user_name,
 		      bg_err_str(rc));
+		slurm_mutex_unlock(&api_file_mutex);
 		return SLURM_ERROR;
 	}
 	
@@ -905,6 +908,7 @@ extern int boot_block(bg_record_t *bg_record)
 	    != STATUS_OK) {
 		error("pm_create_partition(%s): %s",
 		      bg_record->bg_block_id, bg_err_str(rc));
+		slurm_mutex_unlock(&api_file_mutex);
 		return SLURM_ERROR;
 	}
 	slurm_mutex_unlock(&api_file_mutex);
