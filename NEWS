@@ -22,6 +22,7 @@ documents those changes that are of interest to users and admins.
  -- Restructure logic for scheduling BlueGene small block jobs. Added
     "test_only" flag to select_p_job_test() in select plugin.
  -- Correct squeue "NODELIST" output for BlueGene small block jobs.
+ -- Fix possible deadlock situations on BlueGene plugin on errors.
 
 * Changes in SLURM 1.0.4
 ========================
