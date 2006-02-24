@@ -562,7 +562,7 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		
 		_print_nodes(job->nodes, width, right, false);
 		if(quarter != -1) {
-			sprintf(tmp_char,"0.%d",quarter);
+			sprintf(tmp_char,".%d",quarter);
 			_print_str(tmp_char, width, right, false);
 		}
 	}

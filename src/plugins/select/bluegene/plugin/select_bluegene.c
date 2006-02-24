@@ -229,12 +229,13 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
  *	satisfy the request are cleared, other left set
  * IN min_nodes - minimum count of nodes
  * IN max_nodes - maximum count of nodes (0==don't care)
+ * IN test_only - if true, only test if ever could run, not necessarily now
  * RET zero on success, EINVAL otherwise
  * NOTE: bitmap must be a superset of req_nodes at the time that 
  *	select_p_job_test is called
  */
 extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-			     int min_nodes, int max_nodes)
+			     int min_nodes, int max_nodes, bool test_only)
 {
 	/* bg block test - is there a block where we have:
 	 * 1) geometry requested
@@ -246,7 +247,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	 * as the SLURM block logic will handle access rights.
 	 */
 
-	return submit_job(job_ptr, bitmap, min_nodes, max_nodes);
+	return submit_job(job_ptr, bitmap, min_nodes, max_nodes, test_only);
 }
 
 extern int select_p_job_begin(struct job_record *job_ptr)

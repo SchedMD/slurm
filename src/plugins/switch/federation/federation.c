@@ -1542,6 +1542,7 @@ _window_state_set(int adapter_cnt, fed_tableinfo_t *tableinfo,
 	fed_window_t *window;
 	NTBL *table;
 	int i, j;
+	bool adapter_found;
 	
 	assert(tableinfo);
 	assert(hostname);
@@ -1568,13 +1569,18 @@ _window_state_set(int adapter_cnt, fed_tableinfo_t *tableinfo,
 			return SLURM_ERROR;
 		}
 
+		adapter_found = false;
 		/* Find the adapter that matches the one in tableinfo */
 		for (j = 0; j < node->adapter_count; j++) {
 			adapter = &node->adapter_list[j];
-			if (adapter->lid == table->lid)
+			if (strcasecmp(adapter->name,
+				       tableinfo[i].adapter_name) == 0
+			    && adapter->lid == table->lid) {
+				adapter_found = true;
 				break;
+			}
 		}
-		if (adapter->lid != table->lid) {
+		if (!adapter_found) {
 			if (table->lid != 0)
 				error("Did not find the correct adapter: "
 				      "%hu vs. %hu",
