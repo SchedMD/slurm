@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.0.5
+========================
+ -- Correct squeue "NODELIST" output for BlueGene small block jobs.
+
 * Changes in SLURM 1.0.4
 ========================
  -- Release job allocation if step creation fails (especially for BlueGene).
