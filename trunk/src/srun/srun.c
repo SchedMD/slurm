@@ -238,8 +238,10 @@ long start, end;
 			_print_job_information(resp);
 						
 		job = job_create_allocation(resp);
-		if (create_job_step(job, resp) < 0)
+		if (create_job_step(job, resp) < 0) {
+			srun_job_destroy(job, 0);
 			exit(1);
+		}
 		
 		slurm_free_resource_allocation_response_msg(resp);
 	}

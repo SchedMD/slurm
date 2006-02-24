@@ -1900,7 +1900,7 @@ void helpMsg(void)
        "	  * Elapsed time fields are presented as 2 fields, integral\n"
        "	    seconds and integral microseconds\n"
        "    * If --dump is not specified, elapsed time fields are presented\n"
-       "      as [[days:]hours:]minutes:seconds.hundredths\n"
+       "      as [[days-]hours:]minutes:seconds.hundredths\n"
        "    * The default input file is the file named in the \"jobacct_loc\"\n"
        "      parameter in " SLURM_CONFIG_FILE ".\n"
        "\n"
