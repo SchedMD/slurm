@@ -44,7 +44,8 @@ _STMT_START {		\
 static int  _find_best_block_match(struct job_record* job_ptr,
 				bitstr_t* slurm_block_bitmap,
 				int min_nodes, int max_nodes,
-				int spec, bg_record_t** found_bg_record);
+				int spec, bg_record_t** found_bg_record,
+				bool test_only);
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
 
 /* Rotate a 3-D geometry array through its six permutations */
@@ -87,11 +88,11 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
  */
 static int _find_best_block_match(struct job_record* job_ptr, 
 		bitstr_t* slurm_block_bitmap, int min_nodes, int max_nodes,
-		int spec, bg_record_t** found_bg_record)
+		int spec, bg_record_t** found_bg_record, bool test_only)
 {
 	ListIterator itr;
 	bg_record_t* record = NULL;
-	int i;
+	int i, job_running = 0;
 	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
 	uint16_t conn_type, rotate, target_size = 1;
 	uint32_t req_procs = job_ptr->num_procs;
@@ -121,6 +122,16 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	debug("number of blocks to check: %d", list_count(bg_list));
      	itr = list_iterator_create(bg_list);
 	while ((record = (bg_record_t*) list_next(itr))) {
+		if ((record->job_running != -1) && (!test_only)) {
+			job_running++;
+			continue;
+		}
+		if(record->full_block && job_running) {
+			debug("Can't run on full system block "
+				"another block has a job running.");
+			continue;
+		}
+
 		if (req_procs > record->cnodes_per_bp) {
 			/* We use the c-node count here. Job could start
 			 * twice this count if VIRTUAL_NODE_MODE, but this
@@ -232,10 +243,11 @@ static int _find_best_block_match(struct job_record* job_ptr,
  *	be used
  * IN min_nodes, max_nodes  - minimum and maximum number of nodes to allocate
  *	to this job (considers slurm block limits)
+ * IN test_only - if true, only test if ever could run, not necessarily now
  * RET - SLURM_SUCCESS if job runnable now, error code otherwise
  */
 extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
-		      int min_nodes, int max_nodes)
+		      int min_nodes, int max_nodes, bool test_only)
 {
 	int spec = 1; /* this will be like, keep TYPE a priority, etc,  */
 	bg_record_t* record = NULL;
@@ -249,7 +261,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	      max_nodes);
 	
 	if ((_find_best_block_match(job_ptr, slurm_block_bitmap, min_nodes, 
-				max_nodes, spec, &record)) == SLURM_ERROR) {
+				max_nodes, spec, &record, test_only)) 
+				== SLURM_ERROR) {
 		return SLURM_ERROR;
 	} else {
 		/* set the block id and quarter (if any) */

@@ -10,7 +10,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-217948.
@@ -66,7 +66,7 @@ typedef struct slurm_select_ops {
 	int 		(*part_init)		( List part_list );
 	int		(*job_test)		( struct job_record *job_ptr,
 						  bitstr_t *bitmap, int min_nodes, 
-						  int max_nodes );
+						  int max_nodes, bool test_only );
 	int		(*job_begin)		( struct job_record *job_ptr );
 	int		(*job_ready)		( struct job_record *job_ptr );
 	int		(*job_fini)		( struct job_record *job_ptr );
@@ -403,16 +403,17 @@ extern int select_g_get_info_from_plugin (enum select_data_info cr_info, void *d
  * IN/OUT bitmap - map of nodes being considered for allocation on input,
  *                 map of nodes actually to be assigned on output
  * IN min_nodes - minimum number of nodes to allocate to job
- * IN max_nodes - maximum number of nodes to allocate to job 
+ * IN max_nodes - maximum number of nodes to allocate to job
+ * IN test_only - if true, only test if ever could run, not necessarily now 
  */
 extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-        int min_nodes, int max_nodes)
+        int min_nodes, int max_nodes, bool test_only)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
 
 	return (*(g_select_context->ops.job_test))(job_ptr, bitmap, 
-		min_nodes, max_nodes);
+		min_nodes, max_nodes, test_only);
 }
 
 /*
