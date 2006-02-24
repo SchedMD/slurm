@@ -42,6 +42,7 @@
 
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -116,8 +117,8 @@ static void _get_job_info(void)
 		exit(1);
 	}
 
-	verbose("node_list  = %s\n", alloc_resp->node_list);
-	verbose("node_cnt   = %u\n", alloc_resp->node_cnt);
+	verbose("node_list  = %s", alloc_resp->node_list);
+	verbose("node_cnt   = %u", alloc_resp->node_cnt);
 	/* also see alloc_resp->node_addr (array) */
 
 	/* do not bother to release the return message,
@@ -134,7 +135,7 @@ static int _get_block(char *buffer, size_t buf_size)
 	if (!fd) {
 		fd = open(params.src_fname, O_RDONLY);
 		if (!fd) {
-			error("Can't open `%s`: %s\n", 
+			error("Can't open `%s`: %s", 
 				params.src_fname, strerror(errno));
 			exit(1);
 		}
@@ -145,7 +146,7 @@ static int _get_block(char *buffer, size_t buf_size)
 		if (rc == -1) {
 			if ((errno == EINTR) || (errno == EAGAIN))
 				continue;
-			error("Can't read `%s`: %s\n",
+			error("Can't read `%s`: %s",
 				params.src_fname, strerror(errno));
 			exit(1);
 		} else if (rc == 0) {
@@ -163,9 +164,57 @@ static int _get_block(char *buffer, size_t buf_size)
 /* issue the RPC to ship the file's data */
 static void _send_rpc(file_bcast_msg_t *bcast_msg)
 {
-	//REQUEST_FILE_BCAST;
-	verbose("sending block %u with %u bytes", bcast_msg->block_no, 
-		bcast_msg->block_len);
+#if 1
+	slurm_msg_t msg;
+	int rc;
+
+	msg.msg_type = REQUEST_FILE_BCAST;
+	msg.address = alloc_resp->node_addr[0];
+	msg.data = bcast_msg;
+
+	if (slurm_send_recv_rc_msg_only_one(&msg, &rc, 0)) {
+		error("slurm_send_recv_rc_msg_only_one: %m");
+		exit(1);
+	}
+#else
+// This code will handle message fanout to multiple slurmd, not implemented yet
+	int i, rc;
+
+	/* use static structures for persistent communcations data */
+	static slurm_msg_t *msg = NULL; /* array of message structs, one per node */
+	static int *rc_array;
+	static int node_cnt;
+
+	if (!msg) {
+		node_cnt = alloc_resp->node_cnt;
+		msg = xmalloc(sizeof(slurm_msg_t) * node_cnt);
+		rc_array = xmalloc(sizeof(int) * node_cnt);
+		for (i = 0; i < node_cnt; i++) {
+			msg[i].msg_type = REQUEST_FILE_BCAST;
+			msg[i].address = alloc_resp->node_addr[i];
+		}
+		slurm_free_resource_allocation_response_msg(alloc_resp);
+	}
+	for (i = 0; i < node_cnt; i++)
+		msg[i].data = bcast_msg;
+
+	verbose("sending block %u with %u bytes to %d nodes", 
+		bcast_msg->block_no, bcast_msg->block_len, node_cnt);
+	//_p_send_recv_rc_msg(alloc_resp->node_cnt, msg, rc_array, 10);
+
+	rc = 0;
+	for (i = 0; i < node_cnt; i++) {
+		if (rc_array[i]) {
+			rc = rc_array[i];
+			break;
+		}
+	}
+#endif
+
+	if (rc) {
+		error("REQUEST_FILE_BCAST: %s", slurm_strerror(rc));
+		exit(1);
+	}
 }
 
 /* read and broadcast the file */
@@ -179,7 +228,7 @@ static void _bcast_file(void)
 	buf_size = MIN(buf_size, f_stat.st_size);
 	buffer = xmalloc(buf_size);
 
-	bcast_msg.fname     = params.src_fname;
+	bcast_msg.fname     = params.dst_fname;
 	bcast_msg.block_no  = 0;
 	bcast_msg.force     = params.force;
 	bcast_msg.modes     = f_stat.st_mode;

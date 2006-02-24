@@ -41,6 +41,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <utime.h>
 
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
@@ -91,6 +92,7 @@ static void _rpc_update_time(slurm_msg_t *, slurm_addr *);
 static void _rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr);
 static void _rpc_reconfig(slurm_msg_t *msg, slurm_addr *cli_addr);
 static void _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *);
+static void _rpc_file_bcast(slurm_msg_t *msg, slurm_addr *);
 static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
 static int  _run_prolog(uint32_t jobid, uid_t uid, char *bg_part_id);
 static int  _run_epilog(uint32_t jobid, uid_t uid, char *bg_part_id);
@@ -212,6 +214,10 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 					getpid(), rc);
 			slurm_free_jobacct_msg(msg->data);
 		}
+		break;
+	case REQUEST_FILE_BCAST:
+		_rpc_file_bcast(msg, cli);
+		slurm_free_file_bcast_msg(msg->data);
 		break;
 	default:
 		error("slurmd_req: invalid request msg type %d\n",
@@ -1083,6 +1089,59 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 	}
 }
 
+static void
+_rpc_file_bcast(slurm_msg_t *msg, slurm_addr *cli)
+{
+	file_bcast_msg_t *req = msg->data;
+	int fd, flags, offset, rc;
+
+	flags = O_WRONLY | O_CREAT;
+	if (req->force)
+		flags |= O_TRUNC;
+	fd = open(req->fname, flags, 0700);
+	if (fd == -1) {
+		error("Can't open `%s`: %s",
+			req->fname, strerror(errno));
+		rc = errno;
+		goto resp;
+	}
+
+	offset = 0;
+	info("req->block_len=%u",  req->block_len);	//FIXME
+	info("req->data=%s, @ %lu", req->data, (unsigned long) &req->data);	//FIXME
+	while (req->block_len - offset) {
+		rc = write(fd, &req->data[offset], (req->block_len - offset));
+		if (rc == -1) {
+			if ((errno == EINTR) || (errno == EAGAIN))
+				continue;
+			error("Can't write `%s`: %s",
+				req->fname, strerror(errno));
+			rc = errno;
+			goto resp;
+		}
+		offset += rc;
+	}
+	info("Wrote file `%s`, %u bytes", req->fname, req->block_len);
+	if (fchmod(fd, (req->modes & 0777))) {
+		error("Can't chmod `%s`: %s",
+			req->fname, strerror(errno));
+	}
+	close(fd);
+	fd = 0;
+	if (req->atime) {
+		struct utimbuf time_buf;
+		time_buf.actime  = req->atime;
+		time_buf.modtime = req->mtime;
+		if (utime(req->fname, &time_buf)) {
+			error("Can't utime `%s`: %s",
+				req->fname, strerror(errno));
+		}
+	}
+		
+
+ resp:	if (fd)
+		close(fd);
+}
 
 static void 
 _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)

@@ -279,6 +279,10 @@ static int  _unpack_kvs_data(struct kvs_comm_set **msg_ptr, Buf buffer);
 static void _pack_kvs_get(kvs_get_msg_t *msg_ptr, Buf buffer);
 static int  _unpack_kvs_get(kvs_get_msg_t **msg_ptr, Buf buffer);
 
+static void _pack_file_bcast(file_bcast_msg_t * msg , Buf buffer );
+
+static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , Buf buffer );
+
 /* pack_header
  * packs a slurm protocol header that proceeds every slurm message
  * IN header - the header structure to pack
@@ -618,6 +622,9 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	 case MESSAGE_JOBACCT_DATA:
 		_pack_jobacct_data((jobacct_msg_t *) msg->data, buffer);
 		break;
+	 case REQUEST_FILE_BCAST:
+		_pack_file_bcast((file_bcast_msg_t *) msg->data, buffer);
+		break;
 	 case PMI_KVS_PUT_REQ:
 	 case PMI_KVS_GET_RESP:
 		_pack_kvs_data((struct kvs_comm_set *) msg->data, buffer);
@@ -904,6 +911,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 	 case MESSAGE_JOBACCT_DATA:
 		rc = _unpack_jobacct_data( (jobacct_msg_t **) 
+				& msg->data, buffer);
+		break;
+	 case REQUEST_FILE_BCAST:
+		rc = _unpack_file_bcast( (file_bcast_msg_t **)
 				& msg->data, buffer);
 		break;
 	 case PMI_KVS_PUT_REQ:
@@ -3531,6 +3542,58 @@ static int _unpack_jobacct_data(jobacct_msg_t ** msg_ptr , Buf buffer )
 
     unpack_error:
 	xfree(msg -> data);
+	xfree(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_file_bcast(file_bcast_msg_t * msg , Buf buffer )
+{
+	xassert ( msg != NULL );
+
+	pack16 ( msg->block_no, buffer );
+	pack16 ( msg->force, buffer );
+	pack16 ( msg->modes, buffer );
+
+	pack32 ( msg->uid, buffer );
+	pack32 ( msg->gid, buffer );
+	pack32 ( msg->block_len, buffer );
+
+	pack_time ( msg->atime, buffer );
+	pack_time ( msg->mtime, buffer );
+
+	packstr( msg->fname, buffer );
+	packmem ( msg->data, msg->block_len, buffer ) ;
+}
+
+static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , Buf buffer )
+{
+	uint16_t uint16_tmp;
+	file_bcast_msg_t *msg ;
+
+	xassert ( msg_ptr != NULL );
+
+	msg = xmalloc ( sizeof (file_bcast_msg_t) ) ;
+	*msg_ptr = msg;
+
+	safe_unpack16 ( & msg->block_no, buffer );
+	safe_unpack16 ( & msg->force, buffer );
+	safe_unpack16 ( & msg->modes, buffer );
+
+	safe_unpack32 ( & msg->uid, buffer );
+	safe_unpack32 ( & msg->gid, buffer );
+	safe_unpack32 ( & msg->block_len, buffer );
+
+	safe_unpack_time ( & msg->atime, buffer );
+	safe_unpack_time ( & msg->mtime, buffer );
+
+	safe_unpackstr_xmalloc ( & msg->fname, &uint16_tmp, buffer );
+	safe_unpackmem_xmalloc ( & msg->data, &uint16_tmp , buffer ) ;
+	//msg->data = NULL;	/* we just moved the pointer */
+	return SLURM_SUCCESS;
+
+    unpack_error:
+	xfree(msg -> fname);
 	xfree(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
