@@ -1,6 +1,8 @@
 /*****************************************************************************\
  *  parse_config.c - parse any slurm.conf-like configuration file
  *
+ *  NOTE: when you see the prefix "s_p_", think "slurm parser".
+ *
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
@@ -46,9 +48,6 @@
 #include <slurm/slurm.h>
 
 #define BUFFER_SIZE 4096
-/*#define PARSE_DEBUG 1*/
-
-/* FIXME - change all malloc/free to xmalloc/xfree */
 
 #define CONF_HASH_LEN 26
 
@@ -59,15 +58,15 @@ static char *keyvalue_pattern =
 	"([[:graph:]]+)([[:space:]]|$)";
 static bool keyvalue_initialized = false;
 
-struct s_c_values {
+struct s_p_values {
 	char *key;
 	int type;
 	int data_count;
 	void *data;
-	s_c_values_t *next;
-	int (*handler)(void **, slurm_conf_enum_t,
+	int (*handler)(void **, slurm_parser_enum_t,
 		       const char *, const char *, const char *);
 	void (*destroy)(void *);
+	s_p_values_t *next;
 };
 
 /*
@@ -87,8 +86,8 @@ static int _conf_hashtbl_index(const char *key)
 	return idx % CONF_HASH_LEN;
 }
 
-static void _conf_hashtbl_insert(s_c_hashtbl_t *hashtbl,
-				 s_c_values_t *value)
+static void _conf_hashtbl_insert(s_p_hashtbl_t *hashtbl,
+				 s_p_values_t *value)
 {
 	int idx;
 
@@ -101,11 +100,11 @@ static void _conf_hashtbl_insert(s_c_hashtbl_t *hashtbl,
 /*
  * NOTE - "key" is case insensitive.
  */
-static s_c_values_t *_conf_hashtbl_lookup(
-	const s_c_hashtbl_t *hashtbl, const char *key)
+static s_p_values_t *_conf_hashtbl_lookup(
+	const s_p_hashtbl_t *hashtbl, const char *key)
 {
 	int idx;
-	s_c_values_t *p;
+	s_p_values_t *p;
 
 	xassert(key);
 	idx = _conf_hashtbl_index(key);
@@ -116,20 +115,20 @@ static s_c_values_t *_conf_hashtbl_lookup(
 	return NULL;
 }
 
-s_c_hashtbl_t *s_c_hashtbl_create(
-	s_c_options_t options[])
+s_p_hashtbl_t *s_p_hashtbl_create(
+	s_p_options_t options[])
 {
-	s_c_options_t *op = NULL;
-	s_c_values_t *value;
-	s_c_hashtbl_t *hashtbl;
+	s_p_options_t *op = NULL;
+	s_p_values_t *value;
+	s_p_hashtbl_t *hashtbl;
 	int len;
 
-	len = CONF_HASH_LEN * sizeof(s_c_values_t *);
-	hashtbl = (s_c_hashtbl_t *)xmalloc(len);
+	len = CONF_HASH_LEN * sizeof(s_p_values_t *);
+	hashtbl = (s_p_hashtbl_t *)xmalloc(len);
 	memset(hashtbl, 0, len);
 					      
 	for (op = options; op->key != NULL; op++) {
-		value = xmalloc(sizeof(s_c_values_t));
+		value = xmalloc(sizeof(s_p_values_t));
 		value->key = xstrdup(op->key);
 		value->type = op->type;
 		value->data_count = 0;
@@ -143,13 +142,13 @@ s_c_hashtbl_t *s_c_hashtbl_create(
 	return hashtbl;
 }
 
-static void _conf_file_values_free(s_c_values_t *p)
+static void _conf_file_values_free(s_p_values_t *p)
 {
 	int i;
 
 	if (p->data_count > 0) {
 		switch(p->type) {
-		case S_C_ARRAY:
+		case S_P_ARRAY:
 			for (i = 0; i < p->data_count; i++) {
 				void **ptr_array = (void **)p->data;
 				if (p->destroy != NULL) {
@@ -173,9 +172,9 @@ static void _conf_file_values_free(s_c_values_t *p)
 	xfree(p);
 }
 
-void s_c_hashtbl_destroy(s_c_hashtbl_t *hashtbl) {
+void s_p_hashtbl_destroy(s_p_hashtbl_t *hashtbl) {
 	int i;
-	s_c_values_t *p, *next;
+	s_p_values_t *p, *next;
 
 	for (i = 0; i < CONF_HASH_LEN; i++) {
 		for (p = hashtbl[i]; p != NULL; p = next) {
@@ -342,7 +341,7 @@ static int _get_next_line(char *buf, int buf_size, FILE *file)
 	return !eof;
 }
 
-static int _handle_string(s_c_values_t *v,
+static int _handle_string(s_p_values_t *v,
 			  const char *value, const char *line)
 {
 	if (v->data_count != 0) {
@@ -361,7 +360,7 @@ static int _handle_string(s_c_values_t *v,
 	return 0;
 }
 
-static int _handle_long(s_c_values_t *v,
+static int _handle_long(s_p_values_t *v,
 		       const char *value, const char *line)
 {
 	if (v->data_count != 0) {
@@ -393,7 +392,7 @@ static int _handle_long(s_c_values_t *v,
 	return 0;
 }
 
-static int _handle_pointer(s_c_values_t *v,
+static int _handle_pointer(s_p_values_t *v,
 			   const char *value, const char *line)
 {
 	if (v->data_count != 0) {
@@ -412,7 +411,7 @@ static int _handle_pointer(s_c_values_t *v,
 	return 0;
 }
 
-static int _handle_array(s_c_values_t *v,
+static int _handle_array(s_p_values_t *v,
 			 const char *value, const char *line)
 {
 	void *new_ptr;
@@ -433,28 +432,28 @@ static int _handle_array(s_c_values_t *v,
 	return 0;
 }
 
-static void _handle_keyvalue_match(s_c_values_t *v,
+static void _handle_keyvalue_match(s_p_values_t *v,
 				   const char *value, const char *line)
 {
 	/* debug3("key = %s, value = %s, line = \"%s\"", */
 	/*        v->key, value, line); */
 	switch (v->type) {
-	case S_C_STRING:
+	case S_P_STRING:
 		_handle_string(v, value, line);
 		break;
-	case S_C_LONG:
+	case S_P_LONG:
 		_handle_long(v, value, line);
 		break;
-	case S_C_POINTER:
+	case S_P_POINTER:
 		_handle_pointer(v, value, line);
 		break;
-	case S_C_ARRAY:
+	case S_P_ARRAY:
 		_handle_array(v, value, line);
 		break;
 	}
 }
 
-void s_c_parse_file(s_c_hashtbl_t *hashtbl, char *filename)
+void s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 {
 	FILE *f;
 	char line[BUFFER_SIZE];
@@ -471,7 +470,7 @@ void s_c_parse_file(s_c_hashtbl_t *hashtbl, char *filename)
 		/* debug3("line = \"%s\"", line); */
 
 		if (_keyvalue_regex(line, &key, &value, &leftover) == 0) {
-			s_c_values_t *p;
+			s_p_values_t *p;
 
 			if (p = _conf_hashtbl_lookup(hashtbl, key)) {
 				_handle_keyvalue_match(p, value, line);
@@ -486,11 +485,11 @@ void s_c_parse_file(s_c_hashtbl_t *hashtbl, char *filename)
 	fclose(f);
 }
 
-void s_c_parse_line(s_c_hashtbl_t *hashtbl, const char *line)
+void s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line)
 {
 	char *key, *value, *leftover;
 	const char *ptr = line;
-	s_c_values_t *p;
+	s_p_values_t *p;
 
 	_keyvalue_regex_init();
 
@@ -506,9 +505,9 @@ void s_c_parse_line(s_c_hashtbl_t *hashtbl, const char *line)
 	}
 }
 
-int s_c_get_string(const s_c_hashtbl_t *hashtbl, const char *key, char **str)
+int s_p_get_string(const s_p_hashtbl_t *hashtbl, const char *key, char **str)
 {
-	s_c_values_t *p;
+	s_p_values_t *p;
 
 	p = _conf_hashtbl_lookup(hashtbl, key);
 	if (p == NULL) {
@@ -524,9 +523,9 @@ int s_c_get_string(const s_c_hashtbl_t *hashtbl, const char *key, char **str)
 	return 0;
 }
 
-int s_c_get_long(const s_c_hashtbl_t *hashtbl, const char *key, long *num)
+int s_p_get_long(const s_p_hashtbl_t *hashtbl, const char *key, long *num)
 {
-	s_c_values_t *p;
+	s_p_values_t *p;
 
 	p = _conf_hashtbl_lookup(hashtbl, key);
 	if (p == NULL) {
@@ -542,9 +541,9 @@ int s_c_get_long(const s_c_hashtbl_t *hashtbl, const char *key, long *num)
 	return 0;
 }
 
-int s_c_get_pointer(const s_c_hashtbl_t *hashtbl, const char *key, void **ptr)
+int s_p_get_pointer(const s_p_hashtbl_t *hashtbl, const char *key, void **ptr)
 {
-	s_c_values_t *p;
+	s_p_values_t *p;
 
 	p = _conf_hashtbl_lookup(hashtbl, key);
 	if (p == NULL) {
@@ -560,10 +559,10 @@ int s_c_get_pointer(const s_c_hashtbl_t *hashtbl, const char *key, void **ptr)
 	return 0;
 }
 
-int s_c_get_array(const s_c_hashtbl_t *hashtbl, const char *key,
+int s_p_get_array(const s_p_hashtbl_t *hashtbl, const char *key,
 		  void **ptr_array[], int *count)
 {
-	s_c_values_t *p;
+	s_p_values_t *p;
 
 	p = _conf_hashtbl_lookup(hashtbl, key);
 	if (p == NULL) {
@@ -587,10 +586,10 @@ int s_c_get_array(const s_c_hashtbl_t *hashtbl, const char *key,
  *
  * Primarily for debugging purposes.
  */
-void s_c_dump_values(const s_c_hashtbl_t *hashtbl,
-		     const s_c_options_t options[])
+void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
+		     const s_p_options_t options[])
 {
-	const s_c_options_t *op = NULL;
+	const s_p_options_t *op = NULL;
 	long num;
 	char *str;
 	void *ptr;
@@ -600,28 +599,28 @@ void s_c_dump_values(const s_c_hashtbl_t *hashtbl,
 
 	for (op = options; op->key != NULL; op++) {
 		switch(op->type) {
-		case S_C_STRING:
-			if (!s_c_get_string(hashtbl, op->key, &str)) {
+		case S_P_STRING:
+			if (!s_p_get_string(hashtbl, op->key, &str)) {
 			        debug("%s = %s", op->key, str);
 				xfree(str);
 			} else {
 				debug("%s", op->key);
 			}
 			break;
-		case S_C_LONG:
-			if (!s_c_get_long(hashtbl, op->key, &num))
+		case S_P_LONG:
+			if (!s_p_get_long(hashtbl, op->key, &num))
 				debug("%s = %ld", op->key, num);
 			else
 				debug("%s", op->key);
 			break;
-		case S_C_POINTER:
-			if (!s_c_get_pointer(hashtbl, op->key, &ptr))
+		case S_P_POINTER:
+			if (!s_p_get_pointer(hashtbl, op->key, &ptr))
 				debug("%s = %x", op->key, ptr);
 			else
 				debug("%s", op->key);
 			break;
-		case S_C_ARRAY:
-			if (!s_c_get_array(hashtbl, op->key,
+		case S_P_ARRAY:
+			if (!s_p_get_array(hashtbl, op->key,
 					   &ptr_array, &count)) {
 				debug("%s, count = %d", op->key, count);
 			} else {
@@ -631,165 +630,3 @@ void s_c_dump_values(const s_c_hashtbl_t *hashtbl,
 		}
 	}
 }
-
-/**********************************************************************
- * What follows is specific to parsing the main slurm.conf file.
- **********************************************************************/
-#ifdef PARSE_DEBUG
-int parse_nodename(void **dest, slurm_conf_enum_t type,
-		   const char *key, const char *value, const char *leftover);
-void destroy_nodename(void *ptr);
-int parse_partitionname(void **dest, slurm_conf_enum_t type,
-		   const char *key, const char *value, const char *leftover);
-void destroy_partitionname(void *ptr);
-
-
-s_c_options_t conf_options[] = {
-	{"AuthType", S_C_STRING},
-	{"CheckpointType", S_C_STRING},
-	{"CacheGroups", S_C_LONG},
-	{"BackupAddr", S_C_STRING},
-	{"BackupController", S_C_STRING},
-	{"ControlAddr", S_C_STRING},
-	{"ControlMachine", S_C_STRING},
-	{"Epilog", S_C_STRING},
-	{"FastSchedule", S_C_LONG},
-	{"FirstJobId", S_C_LONG},
-	{"HashBase", S_C_LONG}, /* defunct */
-	{"HeartbeatInterval", S_C_LONG},
-	{"InactiveLimit", S_C_LONG},
-	{"JobAcctloc", S_C_STRING},
-	{"JobAcctParameters", S_C_STRING},
-	{"JobAcctType", S_C_STRING},
-	{"JobCompLoc", S_C_STRING},
-	{"JobCompType", S_C_STRING},
-	{"JobCredentialPrivateKey", S_C_STRING},
-	{"JobCredentialPublicCertificate", S_C_STRING},
-	{"KillTree", S_C_LONG}, /* FIXME - defunct? */
-	{"KillWait", S_C_LONG},
-	{"MaxJobCount", S_C_LONG},
-	{"MinJobAge", S_C_LONG},
-	{"MpichGmDirectSupport", S_C_LONG},
-	{"MpiDefault", S_C_STRING},
-	{"NodeName", S_C_ARRAY, parse_nodename, destroy_nodename},
-	{"PartitionName", S_C_ARRAY, parse_partitionname, destroy_partitionname},
-	{"PluginDir", S_C_STRING},
-	{"ProctrackType", S_C_STRING},
-	{"Prolog", S_C_STRING},
-	{"PropagateResourceLimitsExcept", S_C_STRING},
-	{"PropagateResourceLimits", S_C_STRING},
-	{"ReturnToService", S_C_LONG},
-	{"SchedulerAuth", S_C_STRING},
-	{"SchedulerPort", S_C_LONG},
-	{"SchedulerRootFilter", S_C_LONG},
-	{"SchedulerType", S_C_STRING},
-	{"SelectType", S_C_STRING},
-	{"SlurmUser", S_C_STRING},
-	{"SlurmctldDebug", S_C_LONG},
-	{"SlurmctldLogFile", S_C_STRING},
-	{"SlurmctldPidFile", S_C_STRING},
-	{"SlurmctldPort", S_C_LONG},
-	{"SlurmctldTimeout", S_C_LONG},
-	{"SlurmdDebug", S_C_LONG},
-	{"SlurmdLogFile", S_C_STRING},
-	{"SlurmdPidFile",  S_C_STRING},
-	{"SlurmdPort", S_C_LONG},
-	{"SlurmdSpoolDir", S_C_STRING},
-	{"SlurmdTimeout", S_C_LONG},
-	{"SrunEpilog", S_C_STRING},
-	{"SrunProlog", S_C_STRING},
-	{"StateSaveLocation", S_C_STRING},
-	{"SwitchType", S_C_STRING},
-	{"TaskEpilog", S_C_STRING},
-	{"TaskProlog", S_C_STRING},
-	{"TaskPlugin", S_C_STRING},
-	{"TmpFS", S_C_STRING},
-	{"TreeWidth", S_C_LONG},
-	{"WaitTime", S_C_LONG},
-	{NULL}
-};
-
-s_c_options_t nodename_options[] = {
-	{"NodeName", S_C_STRING},
-	{"NodeHostname", S_C_STRING},
-	{"NodeAddr", S_C_STRING},
-	{"Feature", S_C_STRING},
-	{"Port", S_C_LONG},
-	{"Procs", S_C_LONG},
-	{"RealMemory", S_C_LONG},
-	{"Reason", S_C_STRING},
-	{"State", S_C_STRING},
-	{"TmpDisk", S_C_LONG},
-	{"Weight", S_C_LONG},
-	{NULL}
-};
-
-s_c_options_t partitionname_options[] = {
-	{"PartitionName", S_C_STRING},
-	{"AllowGroups", S_C_STRING},
-	{"Default", S_C_STRING},
-	{"Hidden", S_C_STRING},
-	{"RootOnly", S_C_STRING},
-	{"MaxTime", S_C_STRING},
-	{"MaxNodes", S_C_LONG},
-	{"MinNodes", S_C_LONG},
-	{"Nodes", S_C_STRING},
-	{"Shared", S_C_STRING},
-	{"State", S_C_STRING},
-	{NULL}
-};
-
-int parse_nodename(void **dest, slurm_conf_enum_t type,
-		   const char *key, const char *value, const char *line)
-{
-	s_c_hashtbl_t *hashtbl;
-
-	hashtbl = s_c_hashtbl_create(nodename_options);
-	s_c_parse_line(hashtbl, line);
-	s_c_dump_values(hashtbl, nodename_options);
-
-	*dest = (void *)hashtbl;
-
-	return 0;
-}
-
-void destroy_nodename(void *ptr)
-{
-	s_c_hashtbl_destroy((s_c_hashtbl_t *)ptr);
-}
-
-int parse_partitionname(void **dest, slurm_conf_enum_t type,
-		   const char *key, const char *value, const char *line)
-{
-	s_c_hashtbl_t *hashtbl;
-
-	hashtbl = s_c_hashtbl_create(partitionname_options);
-	s_c_parse_line(hashtbl, line);
-	s_c_dump_values(hashtbl, partitionname_options);
-
-	*dest = (void *)hashtbl;
-
-	return 0;
-}
-
-void destroy_partitionname(void *ptr)
-{
-	s_c_hashtbl_destroy((s_c_hashtbl_t *)ptr);
-}
-
-
-void parse_slurm_conf(void) {
-	s_c_hashtbl_t *hashtbl;
-
-	hashtbl = s_c_hashtbl_create(conf_options);
-	s_c_parse_file(hashtbl, "/home/morrone/slurm.conf");
-	s_c_dump_values(hashtbl, conf_options);
-	s_c_hashtbl_destroy(hashtbl);
-}
-
-int main()
-{
-	parse_slurm_conf();
-}
-#endif
-

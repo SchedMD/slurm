@@ -1,5 +1,7 @@
 /*****************************************************************************
- *  parse_config.h - definitions parsing any configuration file
+ *  parse_config.h - parse any slurm.conf-like configuration file
+ *
+ *  NOTE: when you see the prefix "s_p_", think "slurm parser".
  *
  *  $Id$
  *****************************************************************************
@@ -29,35 +31,35 @@
 #ifndef _PARSE_CONFIG_H
 #define _PARSE_CONFIG_H
 
-typedef struct s_c_values s_c_values_t;
-typedef s_c_values_t * s_c_hashtbl_t;
+typedef struct s_p_values s_p_values_t;
+typedef s_p_values_t * s_p_hashtbl_t;
 
-typedef enum slurm_conf_enum {
-	S_C_STRING,
-	S_C_LONG,
-	S_C_POINTER,
-	S_C_ARRAY
-} slurm_conf_enum_t;
+typedef enum slurm_parser_enum {
+	S_P_STRING,
+	S_P_LONG,
+	S_P_POINTER,
+	S_P_ARRAY
+} slurm_parser_enum_t;
 
 typedef struct conf_file_options {
 	char *key;
-	slurm_conf_enum_t type;
-	int (*handler)(void **, slurm_conf_enum_t,
+	slurm_parser_enum_t type;
+	int (*handler)(void **, slurm_parser_enum_t,
 		       const char *, const char *, const char *);
 	void (*destroy)(void *);
-} s_c_options_t;
+} s_p_options_t;
 
 
-s_c_hashtbl_t *s_c_hashtbl_create(struct conf_file_options options[]);
-void s_c_hashtbl_destroy(s_c_hashtbl_t *hashtbl);
+s_p_hashtbl_t *s_p_hashtbl_create(struct conf_file_options options[]);
+void s_p_hashtbl_destroy(s_p_hashtbl_t *hashtbl);
 
-void s_c_parse_file(s_c_hashtbl_t *hashtbl, char *filename);
-void s_c_parse_line(s_c_hashtbl_t *hashtbl, const char *line);
+void s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename);
+void s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line);
 
-int s_c_get_string(const s_c_hashtbl_t *hashtbl, const char *key, char **str);
-int s_c_get_long(const s_c_hashtbl_t *hashtbl, const char *key, long *num);
-int s_c_get_pointer(const s_c_hashtbl_t *hashtbl, const char *key, void **ptr);
-int s_c_get_array(const s_c_hashtbl_t *hashtbl, const char *key,
+int s_p_get_string(const s_p_hashtbl_t *hashtbl, const char *key, char **str);
+int s_p_get_long(const s_p_hashtbl_t *hashtbl, const char *key, long *num);
+int s_p_get_pointer(const s_p_hashtbl_t *hashtbl, const char *key, void **ptr);
+int s_p_get_array(const s_p_hashtbl_t *hashtbl, const char *key,
 		  void **ptr_array[], int *count);
 
 /*
@@ -66,8 +68,8 @@ int s_c_get_array(const s_c_hashtbl_t *hashtbl, const char *key,
  *
  * Primarily for debugging purposes.
  */
-void s_c_dump_values(const s_c_hashtbl_t *hashtbl,
-		     const struct conf_file_options options[]);
+void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
+		     const s_p_options_t options[]);
 
 
 #endif /* !_PARSE_CONFIG_H */
