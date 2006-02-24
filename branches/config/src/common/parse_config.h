@@ -29,8 +29,8 @@
 #ifndef _PARSE_CONFIG_H
 #define _PARSE_CONFIG_H
 
-typedef struct conf_file_values conf_file_values_t;
-typedef conf_file_values_t * s_c_hashtbl_t;
+typedef struct s_c_values s_c_values_t;
+typedef s_c_values_t * s_c_hashtbl_t;
 
 typedef enum slurm_conf_enum {
 	S_C_STRING,
@@ -39,13 +39,13 @@ typedef enum slurm_conf_enum {
 	S_C_ARRAY
 } slurm_conf_enum_t;
 
-struct conf_file_options {
+typedef struct conf_file_options {
 	char *key;
 	slurm_conf_enum_t type;
 	int (*handler)(void **, slurm_conf_enum_t,
 		       const char *, const char *, const char *);
 	void (*destroy)(void *);
-};
+} s_c_options_t;
 
 
 s_c_hashtbl_t *s_c_hashtbl_create(struct conf_file_options options[]);

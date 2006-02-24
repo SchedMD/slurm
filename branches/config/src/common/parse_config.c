@@ -30,35 +30,25 @@
 #  include "config.h"
 #endif
 
-/* #include "src/common/hostlist.h" */
-/* #include "src/common/slurm_protocol_defs.h" */
-/* #include "src/common/log.h" */
-/* #include "src/common/macros.h" */
-/* #include "src/common/parse_spec.h" */
-/* #include "src/common/read_config.h" */
-/* #include "src/common/xmalloc.h" */
-/* #include "src/common/xstring.h" */
-/* #include "src/common/slurm_rlimits_info.h" */
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdbool.h>
-
+#include <string.h>
 #include <sys/types.h>
 #include <regex.h>
 
-#include <string.h>
-#include <assert.h>
+/* #include "src/common/slurm_protocol_defs.h" */
+#include "src/common/log.h"
+#include "src/common/macros.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+#include "src/common/xassert.h"
+/* #include "src/common/slurm_rlimits_info.h" */
+#include "src/common/parse_config.h"
+
 #include <slurm/slurm.h>
 
-#include "parse_config.h"
-
 #define BUFFER_SIZE 4096
-#define PARSE_DEBUG 1
+/*#define PARSE_DEBUG 1*/
 
 /* FIXME - change all malloc/free to xmalloc/xfree */
-/* FIXME - change all assert to xassert */
-/* FIXME - change all strdup to xstrdup */
 
 #define CONF_HASH_LEN 26
 
@@ -69,12 +59,12 @@ static char *keyvalue_pattern =
 	"([[:graph:]]+)([[:space:]]|$)";
 static bool keyvalue_initialized = false;
 
-struct conf_file_values {
+struct s_c_values {
 	char *key;
 	int type;
 	int data_count;
 	void *data;
-	conf_file_values_t *next;
+	s_c_values_t *next;
 	int (*handler)(void **, slurm_conf_enum_t,
 		       const char *, const char *, const char *);
 	void (*destroy)(void *);
@@ -88,7 +78,7 @@ static int _conf_hashtbl_index(const char *key)
 	int i;
 	int idx = 0;
 
-	assert(key);
+	xassert(key);
 	for (i = 0; i < 10; i++) {
 		if (key[i] == '\0')
 			break;
@@ -98,11 +88,11 @@ static int _conf_hashtbl_index(const char *key)
 }
 
 static void _conf_hashtbl_insert(s_c_hashtbl_t *hashtbl,
-				 conf_file_values_t *value)
+				 s_c_values_t *value)
 {
 	int idx;
 
-	assert(value);
+	xassert(value);
 	idx = _conf_hashtbl_index(value->key);
 	value->next = hashtbl[idx];
 	hashtbl[idx] = value;
@@ -111,13 +101,13 @@ static void _conf_hashtbl_insert(s_c_hashtbl_t *hashtbl,
 /*
  * NOTE - "key" is case insensitive.
  */
-static conf_file_values_t *_conf_hashtbl_lookup(
+static s_c_values_t *_conf_hashtbl_lookup(
 	const s_c_hashtbl_t *hashtbl, const char *key)
 {
 	int idx;
-	conf_file_values_t *p;
+	s_c_values_t *p;
 
-	assert(key);
+	xassert(key);
 	idx = _conf_hashtbl_index(key);
 	for (p = hashtbl[idx]; p != NULL; p = p->next) {
 		if (strcasecmp(p->key, key) == 0)
@@ -127,20 +117,20 @@ static conf_file_values_t *_conf_hashtbl_lookup(
 }
 
 s_c_hashtbl_t *s_c_hashtbl_create(
-	struct conf_file_options options[])
+	s_c_options_t options[])
 {
-	struct conf_file_options *op = NULL;
-	conf_file_values_t *value;
+	s_c_options_t *op = NULL;
+	s_c_values_t *value;
 	s_c_hashtbl_t *hashtbl;
 	int len;
 
-	len = CONF_HASH_LEN * sizeof(conf_file_values_t *);
-	hashtbl = (s_c_hashtbl_t *)malloc(len);
+	len = CONF_HASH_LEN * sizeof(s_c_values_t *);
+	hashtbl = (s_c_hashtbl_t *)xmalloc(len);
 	memset(hashtbl, 0, len);
 					      
 	for (op = options; op->key != NULL; op++) {
-		value = malloc(sizeof(conf_file_values_t));
-		value->key = strdup(op->key);
+		value = xmalloc(sizeof(s_c_values_t));
+		value->key = xstrdup(op->key);
 		value->type = op->type;
 		value->data_count = 0;
 		value->data = NULL;
@@ -153,7 +143,7 @@ s_c_hashtbl_t *s_c_hashtbl_create(
 	return hashtbl;
 }
 
-static void _conf_file_values_free(conf_file_values_t *p)
+static void _conf_file_values_free(s_c_values_t *p)
 {
 	int i;
 
@@ -165,27 +155,27 @@ static void _conf_file_values_free(conf_file_values_t *p)
 				if (p->destroy != NULL) {
 					p->destroy(ptr_array[i]);
 				} else {
-					free(ptr_array[i]);
+					xfree(ptr_array[i]);
 				}
 			}
-			free(p->data);
+			xfree(p->data);
 			break;
 		default:
 			if (p->destroy != NULL) {
 				p->destroy(p->data);
 			} else {
-				free(p->data);
+				xfree(p->data);
 			}
 			break;
 		}
 	}
-	free(p->key);
-	free(p);
+	xfree(p->key);
+	xfree(p);
 }
 
 void s_c_hashtbl_destroy(s_c_hashtbl_t *hashtbl) {
 	int i;
-	conf_file_values_t *p, *next;
+	s_c_values_t *p, *next;
 
 	for (i = 0; i < CONF_HASH_LEN; i++) {
 		for (p = hashtbl[i]; p != NULL; p = next) {
@@ -193,7 +183,7 @@ void s_c_hashtbl_destroy(s_c_hashtbl_t *hashtbl) {
 			_conf_file_values_free(p);
 		}
 	}
-	free(hashtbl);
+	xfree(hashtbl);
 }
 
 static void _keyvalue_regex_init(void)
@@ -352,11 +342,11 @@ static int _get_next_line(char *buf, int buf_size, FILE *file)
 	return !eof;
 }
 
-static int _handle_string(conf_file_values_t *v,
+static int _handle_string(s_c_values_t *v,
 			  const char *value, const char *line)
 {
 	if (v->data_count != 0) {
-		fprintf(stderr, "%s specified more than once\n", v->key);
+		error("%s specified more than once", v->key);
 		return -1;
 	}
 
@@ -364,18 +354,18 @@ static int _handle_string(conf_file_values_t *v,
 		/* call the handler function */
 		/* v->data_count = 1; */
 	} else {
-		v->data = strdup(value);
+		v->data = xstrdup(value);
 		v->data_count = 1;
 	}
 
 	return 0;
 }
 
-static int _handle_long(conf_file_values_t *v,
+static int _handle_long(s_c_values_t *v,
 		       const char *value, const char *line)
 {
 	if (v->data_count != 0) {
-		fprintf(stderr, "%s specified more than once\n", v->key);
+		error("%s specified more than once", v->key);
 		return -1;
 	}
 
@@ -389,14 +379,13 @@ static int _handle_long(conf_file_values_t *v,
 		num = strtol(value, &endptr, 0);
 		if ((num == 0 && errno == EINVAL)
 		    || (*endptr != '\0')) {
-			fprintf(stderr, "\"%s\" is not a valid number\n", value);
+			error("\"%s\" is not a valid number", value);
 			return -1;
 		} else if (errno == ERANGE) {
-			fprintf(stderr, "\"%s\" is out of range\n", value);
+			error("\"%s\" is out of range", value);
 			return -1;
 		}
-		v->data = malloc(sizeof(long));
-		/* printf("\"%ld\"\n", num); */
+		v->data = xmalloc(sizeof(long));
 		*(long *)v->data = num;
 		v->data_count = 1;
 	}
@@ -404,11 +393,11 @@ static int _handle_long(conf_file_values_t *v,
 	return 0;
 }
 
-static int _handle_pointer(conf_file_values_t *v,
+static int _handle_pointer(s_c_values_t *v,
 			   const char *value, const char *line)
 {
 	if (v->data_count != 0) {
-		fprintf(stderr, "%s specified more than once\n", v->key);
+		error("%s specified more than once", v->key);
 		return -1;
 	}
 
@@ -416,14 +405,14 @@ static int _handle_pointer(conf_file_values_t *v,
 		/* call the handler function */
 		/* v->data_count = 1; */
 	} else {
-		v->data = strdup(value);
+		v->data = xstrdup(value);
 		v->data_count = 1;
 	}
 
 	return 0;
 }
 
-static int _handle_array(conf_file_values_t *v,
+static int _handle_array(s_c_values_t *v,
 			 const char *value, const char *line)
 {
 	void *new_ptr;
@@ -434,20 +423,20 @@ static int _handle_array(conf_file_values_t *v,
 		if (v->handler(&new_ptr, v->type, v->key, value, line) != 0)
 			return -1;
 	} else {
-		new_ptr = strdup(value);
+		new_ptr = xstrdup(value);
 	}
 	v->data_count += 1;
-	v->data = realloc(v->data, (v->data_count)*sizeof(void *));
+	v->data = xrealloc(v->data, (v->data_count)*sizeof(void *));
 	data = &((void**)v->data)[v->data_count-1];
 	*data = new_ptr;
 
 	return 0;
 }
 
-static void _handle_keyvalue_match(conf_file_values_t *v,
+static void _handle_keyvalue_match(s_c_values_t *v,
 				   const char *value, const char *line)
 {
-	/* printf("key = %s, value = %s, line = \"%s\"\n", */
+	/* debug3("key = %s, value = %s, line = \"%s\"", */
 	/*        v->key, value, line); */
 	switch (v->type) {
 	case S_C_STRING:
@@ -479,19 +468,18 @@ void s_c_parse_file(s_c_hashtbl_t *hashtbl, char *filename)
 		/* skip empty lines */
 		if (line[0] == '\0')
 			continue;
-		/* printf("line = \"%s\"\n", line); */
+		/* debug3("line = \"%s\"", line); */
 
 		if (_keyvalue_regex(line, &key, &value, &leftover) == 0) {
-			conf_file_values_t *p;
+			s_c_values_t *p;
 
 			if (p = _conf_hashtbl_lookup(hashtbl, key)) {
 				_handle_keyvalue_match(p, value, line);
 			} else {
-				fprintf(stderr, "UNRECOGNIZED KEY %s!\n", key);
-				exit(1);
+				fatal("UNRECOGNIZED KEY %s!", key);
 			}
-			free(key);
-			free(value);
+			xfree(key);
+			xfree(value);
 		}
 	}
 
@@ -502,7 +490,7 @@ void s_c_parse_line(s_c_hashtbl_t *hashtbl, const char *line)
 {
 	char *key, *value, *leftover;
 	const char *ptr = line;
-	conf_file_values_t *p;
+	s_c_values_t *p;
 
 	_keyvalue_regex_init();
 
@@ -511,40 +499,38 @@ void s_c_parse_line(s_c_hashtbl_t *hashtbl, const char *line)
 			_handle_keyvalue_match(p, value, leftover);
 			ptr = leftover;
 		} else {
-			fprintf(stderr, "UNRECOGNIZED KEY %s!\n", key);
-			/* FIXME - should return error, not exit */
-			exit(1);
+			fatal("UNRECOGNIZED KEY %s!", key);
 		}
-		free(key);
-		free(value);
+		xfree(key);
+		xfree(value);
 	}
 }
 
 int s_c_get_string(const s_c_hashtbl_t *hashtbl, const char *key, char **str)
 {
-	conf_file_values_t *p;
+	s_c_values_t *p;
 
 	p = _conf_hashtbl_lookup(hashtbl, key);
 	if (p == NULL) {
-		fprintf(stderr, "Invalid key \"%s\"\n", key);
+		error("Invalid key \"%s\"", key);
 		return -1;
 	}
 	if (p->data_count == 0) {
 		return -1;
 	}
 
-	*str = strdup((char *)p->data);
+	*str = xstrdup((char *)p->data);
 
 	return 0;
 }
 
 int s_c_get_long(const s_c_hashtbl_t *hashtbl, const char *key, long *num)
 {
-	conf_file_values_t *p;
+	s_c_values_t *p;
 
 	p = _conf_hashtbl_lookup(hashtbl, key);
 	if (p == NULL) {
-		fprintf(stderr, "Invalid key \"%s\"\n", key);
+		error("Invalid key \"%s\"", key);
 		return -1;
 	}
 	if (p->data_count == 0) {
@@ -558,11 +544,11 @@ int s_c_get_long(const s_c_hashtbl_t *hashtbl, const char *key, long *num)
 
 int s_c_get_pointer(const s_c_hashtbl_t *hashtbl, const char *key, void **ptr)
 {
-	conf_file_values_t *p;
+	s_c_values_t *p;
 
 	p = _conf_hashtbl_lookup(hashtbl, key);
 	if (p == NULL) {
-		fprintf(stderr, "Invalid key \"%s\"\n", key);
+		error("Invalid key \"%s\"", key);
 		return -1;
 	}
 	if (p->data_count == 0) {
@@ -577,11 +563,11 @@ int s_c_get_pointer(const s_c_hashtbl_t *hashtbl, const char *key, void **ptr)
 int s_c_get_array(const s_c_hashtbl_t *hashtbl, const char *key,
 		  void **ptr_array[], int *count)
 {
-	conf_file_values_t *p;
+	s_c_values_t *p;
 
 	p = _conf_hashtbl_lookup(hashtbl, key);
 	if (p == NULL) {
-		fprintf(stderr, "Invalid key \"%s\"\n", key);
+		error("Invalid key \"%s\"", key);
 		return -1;
 	}
 	if (p->data_count == 0) {
@@ -602,9 +588,9 @@ int s_c_get_array(const s_c_hashtbl_t *hashtbl, const char *key,
  * Primarily for debugging purposes.
  */
 void s_c_dump_values(const s_c_hashtbl_t *hashtbl,
-		     const struct conf_file_options options[])
+		     const s_c_options_t options[])
 {
-	const struct conf_file_options *op = NULL;
+	const s_c_options_t *op = NULL;
 	long num;
 	char *str;
 	void *ptr;
@@ -616,33 +602,30 @@ void s_c_dump_values(const s_c_hashtbl_t *hashtbl,
 		switch(op->type) {
 		case S_C_STRING:
 			if (!s_c_get_string(hashtbl, op->key, &str)) {
-				printf("%s = %s\n", op->key, str);
-				free(str);
+			        debug("%s = %s", op->key, str);
+				xfree(str);
 			} else {
-				printf("%s\n", op->key);
+				debug("%s", op->key);
 			}
 			break;
 		case S_C_LONG:
 			if (!s_c_get_long(hashtbl, op->key, &num))
-				printf("%s = %ld\n", op->key, num);
+				debug("%s = %ld", op->key, num);
 			else
-				printf("%s\n", op->key);
+				debug("%s", op->key);
 			break;
 		case S_C_POINTER:
 			if (!s_c_get_pointer(hashtbl, op->key, &ptr))
-				printf("%s = %x\n", op->key, ptr);
+				debug("%s = %x", op->key, ptr);
 			else
-				printf("%s\n", op->key);
+				debug("%s", op->key);
 			break;
 		case S_C_ARRAY:
 			if (!s_c_get_array(hashtbl, op->key,
 					   &ptr_array, &count)) {
-				printf("%s, count = %d, ", op->key, count);
-				for (i = 0; i < count; i++)
-					printf("%x ", ptr_array[i]);
-				printf("\n");
+				debug("%s, count = %d", op->key, count);
 			} else {
-				printf("%s\n", op->key);
+				debug("%s", op->key);
 			}
 			break;
 		}
@@ -661,7 +644,7 @@ int parse_partitionname(void **dest, slurm_conf_enum_t type,
 void destroy_partitionname(void *ptr);
 
 
-struct conf_file_options conf_options[] = {
+s_c_options_t conf_options[] = {
 	{"AuthType", S_C_STRING},
 	{"CheckpointType", S_C_STRING},
 	{"CacheGroups", S_C_LONG},
@@ -726,7 +709,7 @@ struct conf_file_options conf_options[] = {
 	{NULL}
 };
 
-struct conf_file_options nodename_options[] = {
+s_c_options_t nodename_options[] = {
 	{"NodeName", S_C_STRING},
 	{"NodeHostname", S_C_STRING},
 	{"NodeAddr", S_C_STRING},
@@ -741,7 +724,7 @@ struct conf_file_options nodename_options[] = {
 	{NULL}
 };
 
-struct conf_file_options partitionname_options[] = {
+s_c_options_t partitionname_options[] = {
 	{"PartitionName", S_C_STRING},
 	{"AllowGroups", S_C_STRING},
 	{"Default", S_C_STRING},
