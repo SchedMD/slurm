@@ -1,7 +1,7 @@
 /*****************************************************************************
  *  parse_config.h - definitions parsing any configuration file
  *
- *  $Id: read_config.h 7121 2006-01-30 18:09:40Z jette $
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

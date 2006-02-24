@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  parse_config.c - parse any slurm.conf-like configuration file
  *
- *  $Id: read_config.c 7121 2006-01-30 18:09:40Z jette $
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
