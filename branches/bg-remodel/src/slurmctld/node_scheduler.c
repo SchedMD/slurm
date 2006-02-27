@@ -82,7 +82,7 @@ static void _node_load_bitmaps(bitstr_t * bitmap, bitstr_t ** no_load_bit,
 			       bitstr_t ** light_load_bit, 
 			       bitstr_t ** heavy_load_bit);
 static int _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap, 
-			   int min_nodes, int max_nodes);
+			   int min_nodes, int max_nodes, bool test_only);
 static int _pick_best_nodes(struct node_set *node_set_ptr, 
 			    int node_set_size, bitstr_t ** select_bitmap, 
 			    struct job_record *job_ptr, uint32_t min_nodes, 
@@ -271,7 +271,7 @@ static int _match_feature(char *seek, char *available)
  */
 static int
 _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap, 
-		int min_nodes, int max_nodes)
+		int min_nodes, int max_nodes, bool test_only)
 {
 	bitstr_t *no_load_bit, *light_load_bit, *heavy_load_bit;
 	int error_code;
@@ -289,13 +289,15 @@ _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 		bit_or(bitmap, job_ptr->details->req_node_bitmap);
 	
 	error_code = select_g_job_test(job_ptr, bitmap, 
-				       min_nodes, max_nodes);
+				       min_nodes, max_nodes, 
+				       test_only);
 
 	/* now try to use idle and lightly loaded nodes */
 	if (error_code) {
 		bit_or(bitmap, light_load_bit);
 		error_code = select_g_job_test(job_ptr, bitmap, 
-					       min_nodes, max_nodes);
+					       min_nodes, max_nodes, 
+					       test_only);
 	} 
 	FREE_NULL_BITMAP(light_load_bit);
 
@@ -303,7 +305,8 @@ _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 	if (error_code) {
 		bit_or(bitmap, heavy_load_bit);
 		error_code = select_g_job_test(job_ptr, bitmap, 
-					       min_nodes, max_nodes);
+					       min_nodes, max_nodes, 
+					       test_only);
 	}
 	FREE_NULL_BITMAP(heavy_load_bit);
 
@@ -402,9 +405,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool runable_ever  = false;	/* Job can ever run */
 	bool runable_avail = false;	/* Job can run with available nodes */
         int cr_enabled = 0;
-#ifdef HAVE_BG
-	uint16_t checked = 0;
-#endif
+
 	if (node_set_size == 0) {
 		info("_pick_best_nodes: empty node set for selection");
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
@@ -587,11 +588,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
                                 if (cr_enabled) 
                                         FREE_NULL_BITMAP(
 						partially_idle_node_bitmap);
-#ifdef HAVE_BG
-				select_g_set_jobinfo(job_ptr->select_jobinfo,
-						     SELECT_DATA_CHECKED, 
-						     &checked);
-#endif	
                                 return error_code;
                         }
 			if ((job_ptr->details->req_node_bitmap) &&
@@ -609,12 +605,14 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				pick_code = _pick_best_load(job_ptr, 
 							    avail_bitmap, 
 							    min_nodes, 
-							    max_nodes);
+							    max_nodes,
+							    false);
 			} else {
 				pick_code = select_g_job_test(job_ptr, 
 							      avail_bitmap, 
 							      min_nodes, 
-							      max_nodes);
+							      max_nodes,
+							      false);
 			}
 			if (pick_code == SLURM_SUCCESS) {
 				if ((node_lim != INFINITE) && 
@@ -628,11 +626,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
  				         FREE_NULL_BITMAP(
 						 partially_idle_node_bitmap);
 				*select_bitmap = avail_bitmap;
-#ifdef HAVE_BG
-				select_g_set_jobinfo(job_ptr->select_jobinfo,
-						     SELECT_DATA_CHECKED, 
-						     &checked);
-#endif	
 				return SLURM_SUCCESS;
 			}
 		}
@@ -642,7 +635,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		    (avail_nodes >= min_nodes) &&
 		    (avail_nodes <  max_nodes)) {
 			pick_code = select_g_job_test(job_ptr, avail_bitmap, 
-						      min_nodes, max_nodes);
+						      min_nodes, max_nodes,
+						      false);
 			if ((pick_code == SLURM_SUCCESS) &&
 			    ((node_lim == INFINITE) ||
 			     (bit_set_count(avail_bitmap) <= node_lim))) {
@@ -651,11 +645,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					FREE_NULL_BITMAP(
 						partially_idle_node_bitmap);
 				*select_bitmap = avail_bitmap;
-#ifdef HAVE_BG
-				select_g_set_jobinfo(job_ptr->select_jobinfo,
-						     SELECT_DATA_CHECKED, 
-						     &checked);
-#endif	
 				return SLURM_SUCCESS;
 			}
 		}
@@ -664,12 +653,12 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		 * nodes available) */
 
 		if ((!runable_ever || !runable_avail)
-		&&  (total_nodes >= min_nodes)
-		&&  ((slurmctld_conf.fast_schedule == 0) ||
-		     (total_cpus >= job_ptr->num_procs))
-		&&  ((job_ptr->details->req_node_bitmap == NULL) ||
-		     (bit_super_set(job_ptr->details->req_node_bitmap, 
-				total_bitmap)))) {
+		    &&  (total_nodes >= min_nodes)
+		    &&  ((slurmctld_conf.fast_schedule == 0) ||
+			 (total_cpus >= job_ptr->num_procs))
+		    &&  ((job_ptr->details->req_node_bitmap == NULL) ||
+			 (bit_super_set(job_ptr->details->req_node_bitmap, 
+					total_bitmap)))) {
 			if (!runable_avail) {
 				FREE_NULL_BITMAP(avail_bitmap);
 				avail_bitmap = bit_copy(total_bitmap);
@@ -681,7 +670,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				pick_code = select_g_job_test(job_ptr, 
 							      avail_bitmap, 
 							      min_nodes, 
-							      max_nodes);
+							      max_nodes,
+							      true);
                                 if (cr_enabled)
                                         job_ptr->cr_enabled = 1;
 				if (pick_code == SLURM_SUCCESS) {
@@ -698,7 +688,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				pick_code = select_g_job_test(job_ptr, 
 							      total_bitmap, 
 							      min_nodes, 
-							      max_nodes);
+							      max_nodes,
+							      true);
                                 if (cr_enabled)
                                         job_ptr->cr_enabled = 1;
 				if (pick_code == SLURM_SUCCESS)
@@ -722,10 +713,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		info("_pick_best_nodes: job never runnable");
 	}
-#ifdef HAVE_BG
-	select_g_set_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_CHECKED, &checked);
-#endif	
+
 	if (error_code == SLURM_SUCCESS)
 		error_code = ESLURM_NODES_BUSY;
 	return error_code;

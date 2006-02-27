@@ -69,7 +69,7 @@ typedef struct bg_record {
 	lifecycle_type_t block_lifecycle;/* either STATIC or DYNAMIC	*/
 	rm_partition_state_t state;   	/* the allocated block   */
 	int start[BA_SYSTEM_DIMENSIONS];/* start node */
-	int geo[BA_SYSTEM_DIMENSIONS];  /* geometry */
+	uint16_t geo[BA_SYSTEM_DIMENSIONS];  /* geometry */
 	rm_connection_type_t conn_type;	/* Mesh or Torus or NAV */
 	rm_partition_mode_t node_use;	/* either COPROCESSOR or VIRTUAL */
 	rm_partition_t *bg_block;       /* structure to hold info from db2 */

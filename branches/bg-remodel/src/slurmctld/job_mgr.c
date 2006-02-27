@@ -488,12 +488,12 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
         pack_time(dump_job_ptr->pre_sus_time, buffer);
 
 	pack16((uint16_t) dump_job_ptr->job_state, buffer);
-	pack16(dump_job_ptr->next_step_id, buffer);
-	pack16(dump_job_ptr->kill_on_node_fail, buffer);
-	pack16(dump_job_ptr->kill_on_step_done, buffer);
-	pack16(dump_job_ptr->batch_flag, buffer);
-	pack16(dump_job_ptr->port, buffer);
-	pack16(dump_job_ptr->mail_type, buffer);
+	pack16((uint16_t)dump_job_ptr->next_step_id, buffer);
+	pack16((uint16_t)dump_job_ptr->kill_on_node_fail, buffer);
+	pack16((uint16_t)dump_job_ptr->kill_on_step_done, buffer);
+	pack16((uint16_t)dump_job_ptr->batch_flag, buffer);
+	pack16((uint16_t)dump_job_ptr->port, buffer);
+	pack16((uint16_t)dump_job_ptr->mail_type, buffer);
 
 	packstr(dump_job_ptr->host, buffer);
 	packstr(dump_job_ptr->nodes, buffer);
@@ -839,14 +839,14 @@ static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 {
 	pack16((uint16_t) step_ptr->step_id, buffer);
 	pack16((uint16_t) step_ptr->cyclic_alloc, buffer);
-	pack16(step_ptr->port, buffer);
+	pack16((uint16_t)step_ptr->port, buffer);
 	pack32(step_ptr->num_tasks, buffer);
 	pack_time(step_ptr->start_time, buffer);
 	packstr(step_ptr->host,  buffer);
 	packstr(step_ptr->step_node_list,  buffer);
 	packstr(step_ptr->name, buffer);
 	packstr(step_ptr->network, buffer);
-	pack16(step_ptr->batch_step, buffer);
+	pack16((uint16_t)step_ptr->batch_step, buffer);
 	if (!step_ptr->batch_step)
 		switch_pack_jobinfo(step_ptr->switch_job, buffer);
 	checkpoint_pack_jobinfo(step_ptr->check_job, buffer);
@@ -1668,7 +1668,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	bool super_user = false;
 	struct job_record *job_ptr;
-	
+	uint16_t geo[SYSTEM_DIMENSIONS];
+
 	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_desc);
 
 	*job_pptr = (struct job_record *) NULL;
@@ -1762,12 +1763,15 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 	if (job_desc->min_nodes == NO_VAL)
 		job_desc->min_nodes = 1;
-#if SYSTEM_DIMENSIONS
-	if ((job_desc->geometry[0] != (uint16_t) NO_VAL)
-	&&  (job_desc->geometry[0] != 0)) {
+	
+	select_g_get_jobinfo(job_desc->select_jobinfo,
+			     SELECT_DATA_GEOMETRY,
+			     &geo);
+	if ((geo[0] != (uint16_t) NO_VAL) && (geo[0] != 0)) {
 		int i, tot = 1;
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
-			tot *= job_desc->geometry[i];
+		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+			tot *= geo[i];
+		}
 		if (job_desc->min_nodes > tot) {
 			info("MinNodes(%d) > GeometryNodes(%d)", 
 				job_desc->min_nodes, tot);
@@ -1776,7 +1780,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		}
 		job_desc->min_nodes = tot;
 	}
-#endif
+
 	if (job_desc->max_nodes == NO_VAL)
 		job_desc->max_nodes = 0;
 	if ((part_ptr->state_up)
@@ -2285,22 +2289,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	if (job_desc->work_dir)
 		detail_ptr->work_dir = xstrdup(job_desc->work_dir);
 	detail_ptr->begin_time = job_desc->begin_time;
-
-	if (select_g_alloc_jobinfo(&job_ptr->select_jobinfo))
-		return SLURM_ERROR;
-#if SYSTEM_DIMENSIONS
-	select_g_set_jobinfo(job_ptr->select_jobinfo,
-		SELECT_DATA_GEOMETRY, 
-		job_desc->geometry);
-#endif
-	select_g_set_jobinfo(job_ptr->select_jobinfo,
-		SELECT_DATA_CONN_TYPE, 
-		&job_desc->conn_type);
-	if (job_desc->conn_type == (uint16_t) NO_VAL)
-		job_desc->conn_type = SELECT_NAV;
-	select_g_set_jobinfo(job_ptr->select_jobinfo,
-		SELECT_DATA_ROTATE, 
-		&job_desc->rotate);
+	job_ptr->select_jobinfo = 
+		select_g_copy_jobinfo(job_desc->select_jobinfo);
 
 	*job_rec_ptr = job_ptr;
 	return SLURM_SUCCESS;
@@ -2417,7 +2407,7 @@ static void _job_timed_out(struct job_record *job_ptr)
  */
 static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate, 
 			      uid_t submit_uid)
-{
+{	
 	if ((job_desc_msg->num_procs == NO_VAL) &&
 	    (job_desc_msg->min_nodes == NO_VAL) &&
 	    (job_desc_msg->req_nodes == NULL)) {
@@ -2492,19 +2482,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		job_desc_msg->shared = 0;	/* default not shared nodes */
 	if (job_desc_msg->min_procs == NO_VAL)
 		job_desc_msg->min_procs = 1;	/* default 1 cpu per node */
-
-#if SYSTEM_DIMENSIONS
-	if (job_desc_msg->geometry[0] == (uint16_t) NO_VAL) {
-		int i;
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
-			job_desc_msg->geometry[i] = 0;
-	}
-#endif
-	if (job_desc_msg->conn_type == (uint16_t) NO_VAL)
-		job_desc_msg->conn_type = SELECT_NAV;  /* try TORUS, then MESH */
-	if (job_desc_msg->rotate == (uint16_t) NO_VAL)
-		job_desc_msg->rotate = true;    /* default to allow rotate */
-
+	
 	return SLURM_SUCCESS;
 }
 
@@ -2675,17 +2653,17 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 {
 	struct job_details *detail_ptr;
 
-	pack32(dump_job_ptr->job_id, buffer);
-	pack32(dump_job_ptr->user_id, buffer);
-	pack32(dump_job_ptr->group_id, buffer);
+	pack32((uint32_t)dump_job_ptr->job_id, buffer);
+	pack32((uint32_t)dump_job_ptr->user_id, buffer);
+	pack32((uint32_t)dump_job_ptr->group_id, buffer);
 
 	pack16((uint16_t) dump_job_ptr->job_state, buffer);
 	pack16((uint16_t) dump_job_ptr->batch_flag, buffer);
-	pack32(dump_job_ptr->alloc_sid, buffer);
+	pack32((uint32_t)dump_job_ptr->alloc_sid, buffer);
 	if ((dump_job_ptr->time_limit == NO_VAL) && dump_job_ptr->part_ptr)
-		pack32(dump_job_ptr->part_ptr->max_time, buffer);
+		pack32((uint32_t)dump_job_ptr->part_ptr->max_time, buffer);
 	else
-		pack32(dump_job_ptr->time_limit, buffer);
+		pack32((uint32_t)dump_job_ptr->time_limit, buffer);
 
 	if (dump_job_ptr->details)
 		 pack_time(dump_job_ptr->details->submit_time, buffer);
@@ -2703,18 +2681,18 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	pack_time(dump_job_ptr->suspend_time, buffer);
 	pack_time(dump_job_ptr->pre_sus_time, buffer);
 
-	pack32(dump_job_ptr->priority, buffer);
+	pack32((uint32_t)dump_job_ptr->priority, buffer);
 
 	packstr(dump_job_ptr->nodes, buffer);
 	packstr(dump_job_ptr->partition, buffer);
 	packstr(dump_job_ptr->account, buffer);
 	packstr(dump_job_ptr->network, buffer);
-	pack32(dump_job_ptr->dependency, buffer);
+	pack32((uint32_t)dump_job_ptr->dependency, buffer);
 
 	packstr(dump_job_ptr->name, buffer);
 	packstr(dump_job_ptr->alloc_node, buffer);
 	pack_bit_fmt(dump_job_ptr->node_bitmap, buffer);
-	pack32(dump_job_ptr->num_procs, buffer);
+	pack32((uint32_t)dump_job_ptr->num_procs, buffer);
 	
 	select_g_pack_jobinfo(dump_job_ptr->select_jobinfo, buffer);
 
@@ -2737,7 +2715,9 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 /* pack job details for "get_job_info" RPC */
 static void _pack_job_details(struct job_details *detail_ptr, Buf buffer)
 {
-	if (detail_ptr) {
+	uint32_t altered;
+	
+	if (detail_ptr) {		
 		pack32((uint32_t) detail_ptr->min_nodes, buffer);
 		pack16((uint16_t) detail_ptr->shared, buffer);
 		pack16((uint16_t) detail_ptr->contiguous, buffer);
@@ -3334,40 +3314,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_DISABLED;
 	}
 
-#if SYSTEM_DIMENSIONS
-	if (job_specs->geometry[0] != (uint16_t) NO_VAL) {
-		int i, tot = 1;
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
-			tot *= job_specs->geometry[i];
-		detail_ptr->min_nodes = tot;
-		detail_ptr->max_nodes = tot;
-		select_g_set_jobinfo(job_ptr->select_jobinfo,
-			SELECT_DATA_GEOMETRY,
-			job_specs->geometry);
-		 info("update_job: setting geometry to %ux%ux%u for job_id %u",
-			job_specs->geometry[0], job_specs->geometry[1], 
-			job_specs->geometry[2], job_ptr->job_id);
-	}
-#endif
-
-#ifdef HAVE_BG
-	if (job_specs->conn_type != (uint16_t) NO_VAL) {
-		select_g_set_jobinfo(job_ptr->select_jobinfo,
-			SELECT_DATA_CONN_TYPE,
-			&job_specs->conn_type);
-		info("update_job: setting conn_type to %u for job_id %u",
-			job_specs->conn_type, job_ptr->job_id);
-	}
-
-	if (job_specs->rotate != (uint16_t) NO_VAL) {
-		select_g_set_jobinfo(job_ptr->select_jobinfo,
-			SELECT_DATA_ROTATE,
-			&job_specs->rotate);
-		info("update_job: setting rotate to %u for job_id %u",
-			job_specs->rotate, job_ptr->job_id);
-	}
-#endif
-
 	return error_code;
 }
 
@@ -3529,8 +3475,8 @@ kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 	kill_req = xmalloc(sizeof(kill_job_msg_t));
 	kill_req->job_id	= job_id;
 	if (job_ptr) {  /* NULL if unknown */
-		kill_req->select_jobinfo = select_g_copy_jobinfo(
-			job_ptr->select_jobinfo);
+		kill_req->select_jobinfo = 
+			select_g_copy_jobinfo(job_ptr->select_jobinfo);
 	}
 
 	agent_info = xmalloc(sizeof(agent_arg_t));

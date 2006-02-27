@@ -651,6 +651,8 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 	struct passwd *pw_ent = NULL;
 	bg_record_t *bg_record = NULL, *found_record = NULL;
 	char *name = NULL;
+	int geo[BA_SYSTEM_DIMENSIONS];
+	int i;
 
 #ifdef HAVE_BG_FILES
 	ListIterator itr_found;
@@ -667,6 +669,8 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 			   && bg_record->cpus_per_bp == procs_per_node) {
 				if(overlapped == LAYOUT_OVERLAP)
 					reset_ba_system();
+				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
+					geo[i] = bg_record->geo[i];
 				debug2("adding %s starting at %d%d%d",
 				       bg_record->nodes,
 				       bg_record->start[X],
@@ -674,7 +678,7 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 				       bg_record->start[Z]);
 				name = set_bg_block(NULL,
 						    bg_record->start, 
-						    bg_record->geo, 
+						    geo, 
 						    bg_record->conn_type);
 				if(!name) {
 					debug("I was unable to make the "
@@ -814,7 +818,10 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	List results = list_create(NULL);
 	int num_quarter=0, num_segment=0;
 	char *name = NULL;
-
+	int geo[BA_SYSTEM_DIMENSIONS];
+	int proc_cnt=0;
+	int i;
+	
 	slurm_mutex_lock(&block_state_mutex);
 	reset_ba_system();
 		
@@ -825,17 +832,22 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 			   && (bg_record->cpus_per_bp == procs_per_node
 			       || (bg_record->quarter == 0 
 				   && bg_record->segment < 1))) {
-				debug2("adding %s %d%d%d",
+				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
+					geo[i] = bg_record->geo[i];
+				debug2("adding %s %d%d%d %d%d%d",
 				       bg_record->nodes,
 				       bg_record->start[X],
 				       bg_record->start[Y],
-				       bg_record->start[Z]);
+				       bg_record->start[Z],
+				       geo[X],
+				       geo[Y],
+				       geo[Z]);
 				name = set_bg_block(NULL,
 						    bg_record->start, 
-						    bg_record->geo, 
+						    geo, 
 						    bg_record->conn_type);
 				if(!name) {
-					debug2("I was unable to make the "
+					debug("I was unable to make the "
 					       "requested block.");
 					slurm_mutex_unlock(&block_state_mutex);
 					return SLURM_ERROR;
@@ -847,10 +859,12 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	} else {
 		debug("No list was given");
 	}
-	info("proc count = %d size = %d",request->procs, request->size);
+	
 	if(request->size==1 && request->procs < bluegene_bp_node_cnt) {
+		info("proc count = %d size = %d",
+		     request->procs, request->size);
 		request->conn_type = SELECT_SMALL;
-		if(request->procs == bluegene_segment_node_cnt) {
+		if(request->procs == (procs_per_node/16)) {
 			num_segment=4;
 			num_quarter=3;
 		} else {
@@ -862,17 +876,24 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 			       != NULL) {
 				if(bg_record->job_running != NO_VAL)
 					continue;
-				if(bg_record->node_cnt == request->procs) {
+				proc_cnt = bg_record->bp_count * 
+					bg_record->cpus_per_bp;
+				if(proc_cnt == request->procs) {
+					debug("found it here %s, %s",
+					      bg_record->bg_block_id,
+					      bg_record->nodes);
 					list_iterator_destroy(itr);
-					slurm_mutex_unlock(&block_state_mutex);
-					return SLURM_SUCCESS;
+					rc = SLURM_SUCCESS;
+					goto finished;
 				}
 				if(bg_record->node_cnt > bluegene_bp_node_cnt)
 					continue;
 				break;
 			}
-			list_iterator_destroy(itr);
 			if(bg_record) {
+				debug("going to split %s, %s",
+				      bg_record->bg_block_id,
+				      bg_record->nodes);
 				if(_split_block(bg_record, request->procs,
 						&block_inx)
 				   == SLURM_SUCCESS) {
@@ -880,9 +901,11 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 					destroy_bg_record(bg_record);
 				}
 				
-				slurm_mutex_unlock(&block_state_mutex);
-				return SLURM_SUCCESS;
+				list_iterator_destroy(itr);
+				rc = SLURM_SUCCESS;
+				goto finished;
 			}
+			list_iterator_destroy(itr);
 		}
 	}
 	
@@ -892,25 +915,27 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	if(!new_ba_request(request)) {
 		error("Problems with request for size %d geo %dx%dx%d", 
 		      request->size,
-		      request->geometry[0], 
-		      request->geometry[1], 
-		      request->geometry[2]);
+		      request->geometry[X], 
+		      request->geometry[Y], 
+		      request->geometry[Z]);
 		xfree(request->save_name);
 		if(request->elongate_geos)
 			list_destroy(request->elongate_geos);
-		slurm_mutex_unlock(&block_state_mutex);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto finished;
 	} 
 	
 	if (!allocate_block(request, results)){
-		debug2("allocate failure for %dx%dx%d", 
-		       request->geometry[0], request->geometry[1], 
-		       request->geometry[2]);
+		debug("allocate failure for %dx%dx%d", 
+		       request->geometry[X], 
+		       request->geometry[Y], 
+		       request->geometry[Z]);
 		xfree(request->save_name);
 		if(request->elongate_geos)
 			list_destroy(request->elongate_geos);
 		slurm_mutex_unlock(&block_state_mutex);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto finished;
 	}
 	list_destroy(results);
 		
@@ -930,10 +955,8 @@ got_results:
 #ifdef HAVE_BG_FILES
 		if((rc = configure_block(bg_record)) == SLURM_ERROR) {
 			xfree(bg_record);
-			list_destroy(results);
-			slurm_mutex_unlock(&block_state_mutex);
 			error("unable to configure block in api");
-			return SLURM_ERROR;
+			goto finished;
 		}
 #else
 		bg_record->bg_block_id = xmalloc(sizeof(char)*8);
@@ -943,6 +966,8 @@ got_results:
 		list_push(bg_list, bg_record);
 		print_bg_record(bg_record);
 	}
+
+finished:
 	if(results)
 		list_destroy(results);
 	
@@ -950,7 +975,7 @@ got_results:
 	slurm_mutex_unlock(&block_state_mutex);
 	sort_bg_record_inc_size(bg_list);
 	
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int create_full_system_block()
@@ -959,9 +984,9 @@ extern int create_full_system_block()
 	ListIterator itr;
 	bg_record_t *bg_record = NULL;
 	char *name = NULL;
-	int geo[BA_SYSTEM_DIMENSIONS];	
 	List records = NULL;
-
+	int geo[BA_SYSTEM_DIMENSIONS];
+	
 	/* Here we are adding a block that in for the entire machine 
 	   just in case it isn't in the bluegene.conf file.
 	*/
@@ -1030,7 +1055,7 @@ extern int create_full_system_block()
 	while((bg_record = (bg_record_t *) list_pop(records)) != NULL) {
 		name = set_bg_block(NULL,
 				    bg_record->start, 
-				    bg_record->geo, 
+				    geo, 
 				    bg_record->conn_type);		
 		if(!name) {
 			error("I was unable to make the "
@@ -1095,7 +1120,8 @@ extern int bg_free_block(bg_record_t *bg_record)
 				     bg_record->bg_block_id)) 
 			    != STATUS_OK) {
 				if(rc == PARTITION_NOT_FOUND) {
-					debug("block %s is not found");
+					debug("block %s is not found",
+					      bg_record->bg_block_id);
 					break;
 				}
 				error("pm_destroy_partition(%s): %s "
@@ -1922,7 +1948,7 @@ static int _split_block(bg_record_t *bg_record, int procs, int *block_inx)
 	if(bg_record->quarter == NO_VAL)
 		full_bp = true;
 	
-	if(procs == bluegene_segment_node_cnt) {
+	if(procs == (procs_per_node/16)) {
 		num_segment=4;
 		if(full_bp)
 			num_quarter=3;
@@ -1940,7 +1966,10 @@ static int _split_block(bg_record_t *bg_record, int procs, int *block_inx)
 	/* break midplane up into 16 parts */
 	small_size = bluegene_bp_node_cnt/bluegene_segment_node_cnt;
 	node_cnt = 0;
-	quarter = 0;
+	if(!full_bp)
+		quarter = bg_record->quarter;
+	else
+		quarter = 0;
 	segment = 0;
 	for(i=0; i<small_count; i++) {
 		if(i == num_segment) {

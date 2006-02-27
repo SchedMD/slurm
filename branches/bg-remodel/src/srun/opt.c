@@ -623,7 +623,7 @@ static void _opt_default()
 	opt.msg_timeout     = 5;  /* Default launch msg timeout           */
 
 	for (i=0; i<SYSTEM_DIMENSIONS; i++)
-		opt.geometry[i]	    = -1;
+		opt.geometry[i]	    = (uint16_t) NO_VAL;
 	opt.no_rotate	    = false;
 	opt.conn_type	    = -1;
 
@@ -792,7 +792,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_GEOMETRY:
-		if (_verify_geometry(val, opt.geometry)) {
+		if (_verify_geometry(val, (int *)opt.geometry)) {
 			error("\"%s=%s\" -- invalid geometry, ignoring...",
 				e->var, val);
 		}
@@ -1018,7 +1018,7 @@ void set_options(const int argc, char **argv, int first)
 			if(!first && opt.geometry)
 				break;
 						
-			if (_verify_geometry(optarg, opt.geometry))
+			if (_verify_geometry(optarg, (int *)opt.geometry))
 				exit(1);
 			break;
 		case (int)'H':
@@ -1718,7 +1718,7 @@ print_geometry()
 	char buf[32], *rc = NULL;
 
 	if ((SYSTEM_DIMENSIONS == 0)
-	||  (opt.geometry[0] < 0))
+	||  (opt.geometry[0] == (uint16_t)NO_VAL))
 		return NULL;
 
 	for (i=0; i<SYSTEM_DIMENSIONS; i++) {

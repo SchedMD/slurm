@@ -125,7 +125,7 @@ extern int select_g_job_init(List job_list);
  * IN max_nodes - maximum number of nodes to allocate to job 
  */
 extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-			     int min_nodes, int max_nodes);
+			     int min_nodes, int max_nodes, bool test_only);
 
 /*
  * Note initiation of job is about to begin. Called immediately 

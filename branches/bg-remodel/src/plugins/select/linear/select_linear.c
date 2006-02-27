@@ -182,7 +182,7 @@ extern int select_p_block_init(List part_list)
  *	select_p_job_test is called
  */
 extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-		int min_nodes, int max_nodes)
+			     int min_nodes, int max_nodes)
 {
 	int i, index, error_code = EINVAL, sufficient;
 	int *consec_nodes;	/* how many nodes we can add from this 

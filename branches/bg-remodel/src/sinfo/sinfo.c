@@ -559,8 +559,6 @@ static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr,
 	sinfo_ptr->part_info = part_ptr;
 	if(sinfo_ptr->part_info->max_offset) {
 		offset = sinfo_ptr->part_info->max_offset;
-		info("got %d and %d", sinfo_ptr->part_info->min_nodes,
-		     sinfo_ptr->part_info->max_nodes);
 	}
 	if (node_ptr) {
 		uint16_t base_state = node_ptr->node_state & 

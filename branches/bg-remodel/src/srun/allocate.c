@@ -371,8 +371,9 @@ job_desc_msg_create_from_opts (char *script)
 {
 	extern char **environ;
 	job_desc_msg_t *j = xmalloc(sizeof(*j));
-
+	
 	slurm_init_job_desc_msg(j);
+	select_g_alloc_jobinfo (&j->select_jobinfo);
 
 	j->contiguous     = opt.contiguous;
 	j->features       = opt.constraints;
@@ -404,19 +405,18 @@ job_desc_msg_create_from_opts (char *script)
 	if (opt.jobid != NO_VAL)
 		j->job_id	= opt.jobid;
 
-#if SYSTEM_DIMENSIONS
-	if (opt.geometry[0] > 0) {
-		int i;
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
-			j->geometry[i] = opt.geometry[i];
-	}
-#endif
-
-	if (opt.conn_type > -1)
-		j->conn_type = opt.conn_type;
+	if (opt.geometry[0] > 0) 
+		select_g_set_jobinfo(j->select_jobinfo,
+				     SELECT_DATA_GEOMETRY,
+				     opt.geometry);
+	if (opt.conn_type != -1)
+		select_g_set_jobinfo(j->select_jobinfo,
+				     SELECT_DATA_CONN_TYPE,
+				     (void *)opt.conn_type);
 	if (opt.no_rotate)
-		j->rotate = 0;
-
+		select_g_set_jobinfo(j->select_jobinfo,
+				     SELECT_DATA_ROTATE,
+				     0);	
 	if (opt.max_nodes)
 		j->max_nodes    = opt.max_nodes;
 	if (opt.mincpus > -1)

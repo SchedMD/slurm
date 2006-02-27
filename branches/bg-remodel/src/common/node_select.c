@@ -67,7 +67,8 @@ typedef struct slurm_select_ops {
 	int		(*job_test)		( struct job_record *job_ptr,
 						  bitstr_t *bitmap, 
 						  int min_nodes, 
-						  int max_nodes );
+						  int max_nodes,
+						  bool test_only);
 	int		(*job_begin)		( struct job_record *job_ptr );
 	int		(*job_ready)		( struct job_record *job_ptr );
 	int		(*job_fini)		( struct job_record *job_ptr );
@@ -116,10 +117,7 @@ struct select_jobinfo {
 				   partition the job is running */ 
 	uint16_t segment;        /* for bg to tell which segment of a quarter 
 				   of a small partition the job is running */ 
-	uint32_t node_cnt;      /* how many procs in block */ 
-	uint16_t checked;       /* for bg to tell plugin it already 
-				   checked and all partitions were full
-				   looking for best choice now */
+	uint32_t node_cnt;      /* how many cnodes in block */ 
 	uint16_t altered;       /* see if we have altered this job 
 				   or not yet */
 	uint32_t max_procs;	/* maximum processors to use */
@@ -129,9 +127,9 @@ struct select_jobinfo {
 /*
  * Local functions
  */
-static slurm_select_context_t *	_select_context_create(const char *select_type);
-static int 			_select_context_destroy(slurm_select_context_t *c);
-static slurm_select_ops_t *	_select_get_ops(slurm_select_context_t *c);
+static slurm_select_context_t *_select_context_create(const char *select_type);
+static int _select_context_destroy(slurm_select_context_t *c);
+static slurm_select_ops_t *_select_get_ops(slurm_select_context_t *c);
 
 /*
  * Locate and load the appropriate plugin
@@ -354,7 +352,8 @@ extern int select_g_block_init(List part_list)
  * Get selected data from a given node for a specific job. 
  * IN node_ptr  - current node record
  * IN job_ptr   - current job record
- * IN cr_info   - type of data to get from the node record (see enum select_data_info)
+ * IN cr_info   - type of data to get from the node record 
+ *                (see enum select_data_info)
  * IN/OUT data  - the data to get from node record
  */
 extern int select_g_get_extra_jobinfo (struct node_record *node_ptr, 
@@ -378,20 +377,25 @@ extern int select_g_get_extra_jobinfo (struct node_record *node_ptr,
  * IN/OUT data  - the data to get from node record
  */
 extern int select_g_get_select_nodeinfo (struct node_record *node_ptr, 
-                                         enum select_data_info cr_info, void *data)
+                                         enum select_data_info cr_info, 
+					 void *data)
 {
        if (slurm_select_init() < 0)
                return SLURM_ERROR;
 
-       return (*(g_select_context->ops.get_select_nodeinfo))(node_ptr, cr_info, data);
+       return (*(g_select_context->ops.get_select_nodeinfo))(node_ptr, 
+							     cr_info, 
+							     data);
 }
 
 /* 
  * Update select data for a specific node record for a specific job 
- * IN cr_info   - type of data to update for a given job record (see enum select_data_info)
+ * IN cr_info   - type of data to update for a given job record 
+ *                (see enum select_data_info)
  * IN job_ptr - current job record
  */
-extern int select_g_update_nodeinfo (struct job_record *job_ptr, enum select_data_info cr_info)
+extern int select_g_update_nodeinfo (struct job_record *job_ptr, 
+				     enum select_data_info cr_info)
 {
        if (slurm_select_init() < 0)
                return SLURM_ERROR;
@@ -402,10 +406,12 @@ extern int select_g_update_nodeinfo (struct job_record *job_ptr, enum select_dat
 /* 
  * Get select data from a plugin
  * IN node_pts  - current node record
- * IN cr_info   - type of data to get from the node record (see enum select_data_info)
+ * IN cr_info   - type of data to get from the node record 
+ *                (see enum select_data_info)
  * IN/OUT data  - the data to get from node record
  */
-extern int select_g_get_info_from_plugin (enum select_data_info cr_info, void *data)
+extern int select_g_get_info_from_plugin (enum select_data_info cr_info, 
+					  void *data)
 {
        if (slurm_select_init() < 0)
                return SLURM_ERROR;
@@ -434,13 +440,14 @@ extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data)
  * IN max_nodes - maximum number of nodes to allocate to job 
  */
 extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-        int min_nodes, int max_nodes)
+        int min_nodes, int max_nodes, bool test_only)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
 
 	return (*(g_select_context->ops.job_test))(job_ptr, bitmap, 
-		min_nodes, max_nodes);
+						   min_nodes, max_nodes, 
+						   test_only);
 }
 
 /*
@@ -493,7 +500,7 @@ extern int select_g_job_suspend(struct job_record *job_ptr)
 
 	return (*(g_select_context->ops.job_suspend))(job_ptr);
 }
-                                                                                
+
 /*
  * Resume a job. Executed from slurmctld.
  * IN job_ptr - pointer to job being resumed
@@ -523,6 +530,8 @@ static char *_job_conn_type_string(uint16_t inx)
 		return "torus";
 	else if (inx == SELECT_MESH)
 		return "mesh";
+	else if (inx == SELECT_SMALL)
+		return "small";
 	else
 		return "nav";
 }
@@ -542,12 +551,22 @@ static char *_job_rotate_string(uint16_t inx)
  */
 extern int select_g_alloc_jobinfo (select_jobinfo_t *jobinfo)
 {
+	int i;
 	xassert(jobinfo != NULL);
-
+	
 	*jobinfo = xmalloc(sizeof(struct select_jobinfo));
+	for (i=0; i<SYSTEM_DIMENSIONS; i++)
+			(*jobinfo)->geometry[i] = 0;
+	(*jobinfo)->conn_type = SELECT_NAV;
+	(*jobinfo)->rotate = true;
+	(*jobinfo)->node_use = SELECT_NAV;
+	(*jobinfo)->bg_block_id = NULL;
 	(*jobinfo)->magic = JOBINFO_MAGIC;
 	(*jobinfo)->quarter = (uint16_t) NO_VAL;
 	(*jobinfo)->segment = (uint16_t) NO_VAL;
+	(*jobinfo)->node_cnt = NO_VAL;
+	(*jobinfo)->max_procs =  NO_VAL;
+	
 	return SLURM_SUCCESS;
 }
 
@@ -562,7 +581,7 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 	int i, rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
 	uint32_t *uint32 = (uint32_t *) data;
-	char * tmp_char = (char *) data;
+	char *tmp_char = (char *) data;
 	
 	if (jobinfo->magic != JOBINFO_MAGIC) {
 		error("select_g_set_jobinfo: jobinfo magic bad");
@@ -571,7 +590,7 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 
 	switch (data_type) {
 	case SELECT_DATA_GEOMETRY:
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		for (i=0; i<SYSTEM_DIMENSIONS; i++) 
 			jobinfo->geometry[i] = uint16[i];
 		break;
 	case SELECT_DATA_ROTATE:
@@ -597,9 +616,6 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 	case SELECT_DATA_NODE_CNT:
 		jobinfo->node_cnt = *uint32;
 		break;
-	case SELECT_DATA_CHECKED:
-		jobinfo->checked = *uint16;
-		break;		
 	case SELECT_DATA_ALTERED:
 		jobinfo->altered = *uint16;
 		break;
@@ -635,8 +651,9 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 
 	switch (data_type) {
 	case SELECT_DATA_GEOMETRY:
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
 			uint16[i] = jobinfo->geometry[i];
+		}
 		break;
 	case SELECT_DATA_ROTATE:
 		*uint16 = jobinfo->rotate;
@@ -663,9 +680,6 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 	case SELECT_DATA_NODE_CNT:
 		*uint32 = jobinfo->node_cnt;
 		break;
-	case SELECT_DATA_CHECKED:
-		*uint16 = jobinfo->checked;
-		break;
 	case SELECT_DATA_ALTERED:
 		*uint16 = jobinfo->altered;
 		break;
@@ -688,24 +702,27 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 extern select_jobinfo_t select_g_copy_jobinfo(select_jobinfo_t jobinfo)
 {
 	struct select_jobinfo *rc = NULL;
-
+	int i;
+		
 	if (jobinfo == NULL)
 		;
 	else if (jobinfo->magic != JOBINFO_MAGIC)
 		error("select_g_copy_jobinfo: jobinfo magic bad");
 	else {
-		int i;
 		rc = xmalloc(sizeof(struct select_jobinfo));
-		rc->magic = JOBINFO_MAGIC;
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
-			rc->geometry[i] = jobinfo->geometry[i];
-		rc->rotate = jobinfo->rotate;
+		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+			rc->geometry[i] = (uint16_t)jobinfo->geometry[i];
+		}
 		rc->conn_type = jobinfo->conn_type;
 		rc->rotate = jobinfo->rotate;
+		rc->node_use = jobinfo->node_use;
+		rc->bg_block_id = xstrdup(jobinfo->bg_block_id);
+		rc->magic = JOBINFO_MAGIC;
 		rc->quarter = jobinfo->quarter;
 		rc->segment = jobinfo->segment;
 		rc->node_cnt = jobinfo->node_cnt;
-		rc->bg_block_id = xstrdup(jobinfo->bg_block_id);
+		rc->altered = jobinfo->altered;
+		rc->max_procs = jobinfo->max_procs;
 	}
 
 	return rc;
@@ -742,17 +759,18 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
 	int i;
 
 	if (jobinfo) {
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
-			pack16(jobinfo->geometry[i], buffer);		
-		pack16(jobinfo->conn_type, buffer);
-		pack16(jobinfo->rotate, buffer);
+		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+			pack16((uint16_t)jobinfo->geometry[i], buffer);
+		}
+		pack16((uint16_t)jobinfo->conn_type, buffer);
+		pack16((uint16_t)jobinfo->rotate, buffer);
 		packstr(jobinfo->bg_block_id, buffer);
-		pack16(jobinfo->quarter, buffer);
-		pack16(jobinfo->segment, buffer);
-		pack32(jobinfo->node_cnt, buffer);
-		pack32(jobinfo->max_procs, buffer);
+		pack16((uint16_t)jobinfo->quarter, buffer);
+		pack16((uint16_t)jobinfo->segment, buffer);
+		pack32((uint32_t)jobinfo->node_cnt, buffer);
+		pack32((uint32_t)jobinfo->max_procs, buffer);
 	} else {
-		for (i=0; i<(SYSTEM_DIMENSIONS+3); i++)
+		for (i=0; i<SYSTEM_DIMENSIONS; i++)
 			pack16((uint16_t) 0, buffer);
 		packstr(NULL, buffer);
 	}
@@ -771,8 +789,9 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer)
 	int i;
 	uint16_t uint16_tmp;
 
-	for (i=0; i<SYSTEM_DIMENSIONS; i++)
+	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
 		safe_unpack16(&(jobinfo->geometry[i]), buffer);
+	}
 	safe_unpack16(&(jobinfo->conn_type), buffer);
 	safe_unpack16(&(jobinfo->rotate), buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->bg_block_id), &uint16_tmp, buffer);
@@ -798,6 +817,7 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 {
 	uint16_t geometry[SYSTEM_DIMENSIONS];
 	int i;
+	char tmp_char[7];
 
 	if (buf == NULL) {
 		error("select_g_sprint_jobinfo: buf is null");
@@ -829,21 +849,23 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 			 "CONNECT ROTATE MAX_PROCS GEOMETRY PART_ID");
 		break;
 	case SELECT_PRINT_DATA:
+		convert_to_kilo(jobinfo->max_procs, tmp_char);
 		snprintf(buf, size, 
-			 "%7.7s %6.6s %9u    %1ux%1ux%1u %-16s",
+			 "%7.7s %6.6s %9s    %1ux%1ux%1u %-16s",
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _job_rotate_string(jobinfo->rotate),
-			 jobinfo->max_procs,
+			 tmp_char,
 			 geometry[0], geometry[1], geometry[2],
 			 jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_MIXED:
+		convert_to_kilo(jobinfo->max_procs, tmp_char);
 		snprintf(buf, size, 
-			 "Connection=%s Rotate=%s MaxProcs=%u "
+			 "Connection=%s Rotate=%s MaxProcs=%s "
 			 "Geometry=%ux%ux%u Part_ID=%s",
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _job_rotate_string(jobinfo->rotate),
-			 jobinfo->max_procs,
+			 tmp_char,
 			 geometry[0], geometry[1], geometry[2],
 			 jobinfo->bg_block_id);
 		break;

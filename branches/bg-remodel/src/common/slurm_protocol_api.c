@@ -1803,6 +1803,23 @@ void slurm_free_cred(void *cred)
 	(void) g_slurm_auth_destroy(cred);
 }
 
+int convert_to_kilo(int number, char *tmp)
+{
+	int i;
+	if(number >= 1024) {
+		i = number % 1024;
+		if(i > 0) {
+			i *= 10;
+			i /= 1024;
+			sprintf(tmp, "%d.%dk\0", number/1024, i);
+		} else 
+			sprintf(tmp, "%dk\0", number/1024);
+	} else
+		sprintf(tmp, "%d\0", number);
+
+	return SLURM_SUCCESS;
+}
+
 #if _DEBUG
 
 static void _print_data(char *data, int len)

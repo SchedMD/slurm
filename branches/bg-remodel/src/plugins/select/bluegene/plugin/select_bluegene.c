@@ -232,7 +232,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
  *	select_p_job_test is called
  */
 extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-			     int min_nodes, int max_nodes)
+			     int min_nodes, int max_nodes, bool test_only)
 {
 	/* bg block test - is there a block where we have:
 	 * 1) geometry requested
@@ -244,7 +244,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	 * as the SLURM block logic will handle access rights.
 	 */
 
-	return submit_job(job_ptr, bitmap, min_nodes, max_nodes);
+	return submit_job(job_ptr, bitmap, min_nodes, max_nodes, test_only);
 }
 
 extern int select_p_job_begin(struct job_record *job_ptr)
@@ -430,8 +430,14 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				
 		if(job_desc->min_nodes == NO_VAL)
 			return SLURM_SUCCESS;
-		
+
+		/* See if min_nodes is greater than one base partition */
 		if(job_desc->min_nodes > bluegene_bp_node_cnt) {
+			/*
+			  if it is make sure it is a factor of 
+			  bluegene_bp_node_cnt, if it isn't make it 
+			  that way 
+			*/
 			tmp = job_desc->min_nodes % bluegene_bp_node_cnt;
 			if(tmp > 0)
 				job_desc->min_nodes += 
@@ -439,14 +445,17 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		}
 		tmp = job_desc->min_nodes / bluegene_bp_node_cnt;
 		
+		/* this means it is greater or equal to one bp */
 		if(tmp > 0) 
 			job_desc->min_nodes = tmp;
 		else { 
+			/* this means it is either a quarter or smaller */
 			tmp = job_desc->min_nodes % bluegene_segment_node_cnt;
 			if(tmp > 0)
 				job_desc->min_nodes += 
 					(bluegene_segment_node_cnt-tmp);
-			job_desc->num_procs = job_desc->min_nodes;
+			tmp = bluegene_bp_node_cnt/job_desc->min_nodes;
+			job_desc->num_procs = procs_per_node/tmp;
 			job_desc->min_nodes = 1;
 		}
 		
@@ -468,16 +477,19 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			if(tmp > 0)
 				job_desc->max_nodes += 
 					(bluegene_segment_node_cnt-tmp);
+			tmp = bluegene_bp_node_cnt/job_desc->max_nodes;
+			tmp = procs_per_node/tmp;
+			
 			select_g_set_jobinfo(job_desc->select_jobinfo,
 					     SELECT_DATA_MAX_PROCS, 
-					     &job_desc->max_nodes);
-			tmp = job_desc->max_nodes;
+					     &tmp);
 			job_desc->max_nodes = 1;
 		}
+		tmp = NO_VAL;
+			
 		break;
 	default:
 		error("unknown option %d for alter_node_cnt",type);
 	}
-		
 	return SLURM_SUCCESS;
 }

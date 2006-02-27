@@ -81,8 +81,18 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 	int j;
 	char time_str[16], select_buf[128];
 	struct group *group_info = NULL;
+	char tmp1[7], tmp2[7];
+	uint16_t quarter = (uint16_t) NO_VAL;
+	uint16_t segment = (uint16_t) NO_VAL;
+	
 #ifdef HAVE_BG
 	char *nodelist = "BP_List";
+	select_g_get_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_QUARTER, 
+			     &quarter);
+	select_g_get_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_SEGMENT, 
+			     &segment);
 #else
 	char *nodelist = "NodeList";
 #endif	
@@ -149,7 +159,17 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 		fprintf ( out, "\n   ");
 
 	/****** Line 6 ******/
-	fprintf ( out, "%s=%s ", nodelist, job_ptr->nodes);
+	fprintf ( out, "%s=%s", nodelist, job_ptr->nodes);
+	if(job_ptr->nodes) {
+		if(quarter != (uint16_t) NO_VAL) {
+			if(segment != (uint16_t) NO_VAL) 
+				fprintf( out, ".%d.%d", quarter, segment);
+			else
+				fprintf( out, ".%d", quarter);
+		} 
+	}
+	fprintf ( out, " ");
+		
 	fprintf ( out, "%sIndices=", nodelist);
 	for (j = 0; job_ptr->node_inx; j++) {
 		if (j > 0)
@@ -165,21 +185,31 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 		fprintf ( out, "\n   ");
 
 	/****** Line 7 ******/
-	fprintf ( out, "ReqProcs=%u MinNodes=%u ", 
-		job_ptr->num_procs, job_ptr->num_nodes);
-	fprintf ( out, "Shared=%u Contiguous=%u ",  
-		job_ptr->shared, job_ptr->contiguous);
-	fprintf ( out, "CPUs/task=%u", job_ptr->cpus_per_task);
+	convert_to_kilo(job_ptr->num_procs, tmp1);
+	convert_to_kilo(job_ptr->num_nodes, tmp2);
+#ifdef HAVE_BG
+	fprintf ( out, "ReqProcs=%s MinBPs=%s ", tmp1, tmp2);
+#else
+	fprintf ( out, "ReqProcs=%s MinNodes=%s ", tmp1, tmp2);
+#endif
+	convert_to_kilo(job_ptr->shared, tmp1);
+	convert_to_kilo(job_ptr->contiguous, tmp2);
+	fprintf ( out, "Shared=%s Contiguous=%s ", tmp1, tmp2);
+	
+	convert_to_kilo(job_ptr->cpus_per_task, tmp1);
+	fprintf ( out, "CPUs/task=%s", tmp1);
 	if (one_liner)
 		fprintf ( out, " ");
 	else
 		fprintf ( out, "\n   ");
 
 	/****** Line 8 ******/
-	fprintf ( out, "MinProcs=%u MinMemory=%u ",  
-		job_ptr->min_procs, job_ptr->min_memory);
-	fprintf ( out, "Features=%s MinTmpDisk=%u", 
-		job_ptr->features, job_ptr->min_tmp_disk);
+	convert_to_kilo(job_ptr->min_procs, tmp1);
+	convert_to_kilo(job_ptr->min_memory, tmp2);
+	fprintf ( out, "MinProcs=%s MinMemory=%s ", tmp1, tmp2);
+
+	convert_to_kilo(job_ptr->min_tmp_disk, tmp1);
+	fprintf ( out, "Features=%s MinTmpDisk=%s", job_ptr->features, tmp1);
 	if (one_liner)
 		fprintf ( out, " ");
 	else

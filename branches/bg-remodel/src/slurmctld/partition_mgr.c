@@ -358,12 +358,12 @@ static void _dump_part_state(struct part_record *part_ptr, Buf buffer)
 	pack32(part_ptr->max_nodes, buffer);
 	pack32(part_ptr->min_nodes, buffer);
 
-	pack16(default_part_flag, buffer);
-	pack16(part_ptr->hidden, buffer);
-	pack16(part_ptr->root_only, buffer);
-	pack16(part_ptr->shared, buffer);
+	pack16((uint16_t)default_part_flag, buffer);
+	pack16((uint16_t)part_ptr->hidden, buffer);
+	pack16((uint16_t)part_ptr->root_only, buffer);
+	pack16((uint16_t)part_ptr->shared, buffer);
 
-	pack16(part_ptr->state_up, buffer);
+	pack16((uint16_t)part_ptr->state_up, buffer);
 	packstr(part_ptr->allow_groups, buffer);
 	packstr(part_ptr->nodes, buffer);
 }
@@ -705,32 +705,32 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 		default_part_flag = 0;
 
 	packstr(part_ptr->name, buffer);
-	pack32(part_ptr->max_time, buffer);
+	pack32((uint32_t)part_ptr->max_time, buffer);
 	altered = part_ptr->max_nodes;
 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, 
 				&altered);
-	pack32(altered, buffer);
+	pack32((uint32_t)altered, buffer);
 	altered = part_ptr->min_nodes;
 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MIN_OFFSET, 
 				&altered);
-	pack32(altered, buffer);
+	pack32((uint32_t)altered, buffer);
 	altered = part_ptr->total_nodes;
 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, 
 				&altered);
-	pack32(altered, buffer);
+	pack32((uint32_t)altered, buffer);
 	select_g_alter_node_cnt(SELECT_GET_NODE_MAX_OFFSET, 
 				&part_ptr->max_offset);
 	pack32(part_ptr->max_offset, buffer);
 	select_g_alter_node_cnt(SELECT_GET_NODE_MIN_OFFSET, 
 				&part_ptr->min_offset);
-	pack32(part_ptr->min_offset, buffer);
-	pack32(part_ptr->total_cpus, buffer);
-	pack16(default_part_flag, buffer);
-	pack16(part_ptr->hidden, buffer);
-	pack16(part_ptr->root_only, buffer);
-	pack16(part_ptr->shared, buffer);
+	pack32((uint32_t)part_ptr->min_offset, buffer);
+	pack32((uint32_t)part_ptr->total_cpus, buffer);
+	pack16((uint16_t)default_part_flag, buffer);
+	pack16((uint16_t)part_ptr->hidden, buffer);
+	pack16((uint16_t)part_ptr->root_only, buffer);
+	pack16((uint16_t)part_ptr->shared, buffer);
 
-	pack16(part_ptr->state_up, buffer);
+	pack16((uint16_t)part_ptr->state_up, buffer);
 	packstr(part_ptr->allow_groups, buffer);
 	packstr(part_ptr->nodes, buffer);
 	if (part_ptr->node_bitmap) {

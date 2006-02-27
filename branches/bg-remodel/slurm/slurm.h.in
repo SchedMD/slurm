@@ -196,7 +196,6 @@ enum select_data_type {
 	SELECT_DATA_QUARTER,	/* data-> int16_t quarter */
 	SELECT_DATA_SEGMENT,	/* data-> int16_t segment */
 	SELECT_DATA_NODE_CNT,	/* data-> uint32_t node_cnt */
-	SELECT_DATA_CHECKED,	/* data-> uint16_t checked */
 	SELECT_DATA_ALTERED,    /* data-> uint16_t altered */
 	SELECT_DATA_MAX_PROCS	/* data-> uint32_t max_procs */
 };
@@ -357,17 +356,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	time_t begin_time;	/* delay initiation until this time */
 	uint16_t mail_type;	/* see MAIL_JOB_ definitions above */
 	char *mail_user;	/* user to receive notification */
-/*
- * The following parameters are only meaningful on a Blue Gene
- * system at present. Some will be of value on other system.
- */
-#if SYSTEM_DIMENSIONS
-	uint16_t geometry[SYSTEM_DIMENSIONS];	/* node count in various 
-				 * dimensions, e.g. X, Y, and Z */
-#endif
-	uint16_t conn_type;	/* see enum connection_type */
-	uint16_t rotate;	/* permit geometry rotation if set */
-/* End of Blue Gene specific values */
 	select_jobinfo_t select_jobinfo; /* opaque data type,
 			* SLURM internal use only */
 } job_desc_msg_t;

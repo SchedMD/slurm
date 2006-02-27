@@ -520,7 +520,10 @@ static int _print_text_part(partition_info_t *part_ptr,
 	int i = 0;
 	int width = 0;
 	char *nodes = NULL, time_buf[20];
-		
+	char tmp_cnt[7];
+
+	convert_to_kilo(part_ptr->total_nodes, tmp_cnt);
+
 	if(!params.commandline) {
 		mvwprintw(ba_system_ptr->text_win, 
 			  ba_system_ptr->ycord,
@@ -624,26 +627,10 @@ static int _print_text_part(partition_info_t *part_ptr,
 				ba_system_ptr->xcord += 10;
 			}
 		}
-		if(part_ptr->total_nodes >= 1024) {
-			i = part_ptr->total_nodes % 1024;
-			if(i > 0) {
-				i *= 10;
-				i /= 1024;
-				mvwprintw(ba_system_ptr->text_win, 
-					  ba_system_ptr->ycord,
-					  ba_system_ptr->xcord, "%2d.%dk", 
-					  part_ptr->total_nodes/1024, i);
-			} else {
-				mvwprintw(ba_system_ptr->text_win, 
-					  ba_system_ptr->ycord,
-					  ba_system_ptr->xcord, "%4dk", 
-					  part_ptr->total_nodes/1024);
-			}
-		} else	
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "%5d", 
-				  part_ptr->total_nodes);
+		mvwprintw(ba_system_ptr->text_win, 
+			  ba_system_ptr->ycord,
+			  ba_system_ptr->xcord, "%5s", tmp_cnt);
+			  
 		ba_system_ptr->xcord += 7;
 
 		tempxcord = ba_system_ptr->xcord;
@@ -740,18 +727,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 			} 
 		}
 		
-		if(part_ptr->total_nodes >= 1024) {
-			i = part_ptr->total_nodes % 1024;
-			if(i > 0) {
-				i *= 10;
-				i /= 1024;
-				printf("%2d.%dk", 
-				       part_ptr->total_nodes/1024, i);
-			} else {
-				printf("%4dk ", part_ptr->total_nodes/1024);
-			}
-		} else	
-			printf("%5d ", part_ptr->total_nodes);
+		printf("%5s ", tmp_cnt);
 		
 		tempxcord = ba_system_ptr->xcord;
 		

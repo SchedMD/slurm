@@ -72,12 +72,17 @@ void slurm_print_partition_info_msg ( FILE* out,
 void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr, 
 				  int one_liner )
 {
-	int j ;
+	int j;
+	char tmp1[7], tmp2[7];
 
 	/****** Line 1 ******/
 	fprintf ( out, "PartitionName=%s ", part_ptr->name);
-	fprintf ( out, "TotalNodes=%u ", part_ptr->total_nodes);
-	fprintf ( out, "TotalCPUs=%u ", part_ptr->total_cpus);
+
+	convert_to_kilo(part_ptr->total_nodes, tmp1);
+	fprintf ( out, "TotalNodes=%s ", tmp1);
+
+	convert_to_kilo(part_ptr->total_cpus, tmp1);
+	fprintf ( out, "TotalCPUs=%s ", tmp1);
 	if (part_ptr->root_only)
 		fprintf ( out, "RootOnly=YES");
 	else
@@ -116,11 +121,14 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr,
 		fprintf ( out, "\n   ");
 
 	/****** Line 3 ******/
-	fprintf ( out, "MinNodes=%u ", part_ptr->min_nodes);
+	convert_to_kilo(part_ptr->min_nodes, tmp1);
+	fprintf ( out, "MinNodes=%s ", tmp1);
 	if (part_ptr->max_nodes == INFINITE)
 		fprintf ( out, "MaxNodes=UNLIMITED ");
-	else
-		fprintf ( out, "MaxNodes=%u ", part_ptr->max_nodes);
+	else {
+		convert_to_kilo(part_ptr->max_nodes, tmp1);
+		fprintf ( out, "MaxNodes=%s ", tmp1);
+	}
 	if ((part_ptr->allow_groups == NULL) || 
 	    (part_ptr->allow_groups[0] == '\0'))
 		fprintf ( out, "AllowGroups=ALL");
@@ -132,7 +140,11 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr,
 		fprintf ( out, "\n   ");
 
 	/****** Line 4 ******/
+#ifdef HAVE_BG
+	fprintf ( out, "BasePartions=%s BPIndices=", part_ptr->nodes);
+#else
 	fprintf ( out, "Nodes=%s NodeIndices=", part_ptr->nodes);
+#endif
 	for (j = 0; part_ptr->node_inx; j++) {
 		if (j > 0)
 			fprintf( out, ",%d", part_ptr->node_inx[j]);

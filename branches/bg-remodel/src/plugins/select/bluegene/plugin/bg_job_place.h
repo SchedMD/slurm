@@ -33,12 +33,14 @@
  * Try to find resources for a given job request
  * IN job_ptr - pointer to job record in slurmctld
  * IN/OUT bitmap - nodes availble for assignment to job, clear those not to 
- *	be used
+ *	           be used
  * IN min_nodes, max_nodes  - minimum and maximum number of nodes to allocate 
- *	to this job (considers slurm partition limits)
+ *	                      to this job (considers slurm partition limits)
+ * IN test_only - test to see if job is ever runnable, 
+ *                or (false) runable right now
  * RET - SLURM_SUCCESS if job runnable now, error code otherwise 
  */
 extern int submit_job(struct job_record *job_ptr, bitstr_t *bitmap,
-	       int min_nodes, int max_nodes);
+	       int min_nodes, int max_nodes, bool test_only);
 
 #endif /* _BG_JOB_PLACE_H_ */

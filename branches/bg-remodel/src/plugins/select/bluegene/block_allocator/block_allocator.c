@@ -200,7 +200,7 @@ extern int new_ba_request(ba_request_t* ba_request)
 	geo[Y] = ba_request->geometry[Y];
 	geo[Z] = ba_request->geometry[Z];
 		
-	if(geo[X] != NO_VAL) { 
+	if(geo[X] != (uint16_t)NO_VAL) { 
 		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++){
 			if ((geo[i] < 1) 
 			    ||  (geo[i] > DIM_SIZE[i])){
@@ -946,6 +946,7 @@ extern char *set_bg_block(List results, int *start,
 		results = list_create(NULL);
 	else
 		send_results = 1;
+	
 #ifdef HAVE_BG
 	if(start[X]>=DIM_SIZE[X] 
 	   || start[Y]>=DIM_SIZE[Y]
@@ -961,10 +962,10 @@ extern char *set_bg_block(List results, int *start,
 	ba_node = &ba_system_ptr->
 			grid[start[X]];	
 #endif
-
+	
 	if(!ba_node)
 		return NULL;
-	
+		
 	list_append(results, ba_node);
 	found = _find_x_path(results, ba_node,
 			     ba_node->coord, 
@@ -3262,7 +3263,7 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 					dim, count);
 			while((temp_switch = list_pop(path)) != path_add){
 				xfree(temp_switch);
-				debug("Hey there is something here 1");
+				debug3("something here 1");
 			}
 		}
 	}
@@ -3454,7 +3455,7 @@ static int _find_passthrough(ba_switch_t *curr_switch, int source_port,
 				while((temp_switch = list_pop(path)) 
 				      != path_add){
 					xfree(temp_switch);
-					debug("Hey there is something here 2");
+					debug3("something here 2");
 				}
 			}
 		}
@@ -3598,7 +3599,7 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
 				while((temp_switch = list_pop(path)) 
 				      != path_add){
 					xfree(temp_switch);
-					debug("Hey there is something here 3");
+					debug3("something here 3");
 				} 
 			}
 		}

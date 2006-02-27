@@ -575,9 +575,9 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		_print_nodes(job->nodes, width, right, false);
 		if(quarter != (uint16_t) NO_VAL) {
 			if(segment != (uint16_t) NO_VAL) 
-				sprintf(tmp_char,"0.%d.%d\0",quarter,segment);
+				sprintf(tmp_char,".%d.%d\0",quarter,segment);
 			else
-				sprintf(tmp_char,"0.%d\0",quarter);
+				sprintf(tmp_char,".%d\0",quarter);
 		
 			_print_str(tmp_char, width, right, false);
 		}
@@ -610,10 +610,13 @@ int _print_job_node_inx(job_info_t * job, int width, bool right, char* suffix)
 
 int _print_job_num_procs(job_info_t * job, int width, bool right, char* suffix)
 {
+	char tmp_char[6];
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CPUS", width, right, true);
-	else
-		_print_int(job->num_procs, width, right, true);
+	else {
+		convert_to_kilo(job->num_procs, tmp_char);
+		_print_str(tmp_char, width, right, true);
+	}
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
@@ -636,21 +639,8 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 #endif
 		if(node_cnt == 0)
 			node_cnt = _get_node_cnt(job);
-
-		if(node_cnt >= 1024) {
-			i = node_cnt % 1024;
-			if(i > 0) {
-				i *= 10;
-				i /= 1024;
-				sprintf(tmp_char, "%d.%dk\0",
-					node_cnt/1024, i);
-			} else 
-				sprintf(tmp_char, "%dk\0",
-					node_cnt/1024);
-			_print_str(tmp_char, width, right_justify, true);
-		} else
-			_print_int(node_cnt, width, 
-				   right_justify, true);
+		convert_to_kilo(node_cnt, tmp_char);
+		_print_str(tmp_char, width, right_justify, true);
 	}
 	if (suffix)
 		printf("%s", suffix);
@@ -697,10 +687,14 @@ static bool _node_in_list(char *node_name, char *node_list)
 int _print_job_shared(job_info_t * job, int width, bool right_justify, 
 		      char* suffix)
 {
+	char tmp_char[6];
+
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("SHARED", width, right_justify, true);
-	else
-		_print_int(job->shared, width, right_justify, true);
+	else {
+		convert_to_kilo(job->shared, tmp_char);
+		_print_str(tmp_char, width, right_justify, true);
+	}
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
@@ -709,10 +703,15 @@ int _print_job_shared(job_info_t * job, int width, bool right_justify,
 int _print_job_contiguous(job_info_t * job, int width, bool right_justify, 
 			  char* suffix)
 {
+	char tmp_char[6];
+
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CONTIGUOUS", width, right_justify, true);
-	else
-		_print_int(job->contiguous, width, right_justify, true);
+	else {
+		convert_to_kilo(job->contiguous, tmp_char);
+		_print_str(tmp_char, width, right_justify, true);
+	}
+	
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
@@ -721,10 +720,15 @@ int _print_job_contiguous(job_info_t * job, int width, bool right_justify,
 int _print_job_min_procs(job_info_t * job, int width, bool right_justify, 
 			 char* suffix)
 {
+	char tmp_char[6];
+	
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_PROCS", width, right_justify, true);
-	else
-		_print_int(job->min_procs, width, right_justify, true);
+	else {
+		convert_to_kilo(job->min_procs, tmp_char);
+		_print_str(tmp_char, width, right_justify, true);
+	}
+		
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
@@ -733,10 +737,15 @@ int _print_job_min_procs(job_info_t * job, int width, bool right_justify,
 int _print_job_min_memory(job_info_t * job, int width, bool right_justify, 
 			  char* suffix)
 {
+	char tmp_char[6];
+	
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_MEMORY", width, right_justify, true);
-	else
-		_print_int(job->min_memory, width, right_justify, true);
+	else {
+		convert_to_kilo(job->min_memory, tmp_char);
+		_print_str(tmp_char, width, right_justify, true);
+	}
+	
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
@@ -746,10 +755,15 @@ int
 _print_job_min_tmp_disk(job_info_t * job, int width, bool right_justify, 
 			char* suffix)
 {
+	char tmp_char[6];
+	
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_TMP_DISK", width, right_justify, true);
-	else
-		_print_int(job->min_tmp_disk, width, right_justify, true);
+	else {
+		convert_to_kilo(job->min_tmp_disk, tmp_char);
+		_print_str(tmp_char, width, right_justify, true);
+	}
+		
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;

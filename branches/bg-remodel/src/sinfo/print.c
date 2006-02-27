@@ -159,15 +159,23 @@ static int _print_secs(long time, int width, bool right, bool cut_output)
 static int 
 _build_min_max_string(char *buffer, int buf_size, int min, int max, bool range)
 {
+	int i;
+	char tmp_min[7];
+	char tmp_max[7];
+	convert_to_kilo(min, tmp_min);
+	convert_to_kilo(max, tmp_max);
+	
 	if (max == min)
-		return snprintf(buffer, buf_size, "%d", max);
+		return snprintf(buffer, buf_size, "%s", tmp_max);
 	else if (range) {
 		if (max == INFINITE)
-			return snprintf(buffer, buf_size, "%d-infinite", min);
+			return snprintf(buffer, buf_size, "%s-infinite", 
+					tmp_min);
 		else
-			return snprintf(buffer, buf_size, "%d-%d", min, max);
+			return snprintf(buffer, buf_size, "%s-%s", 
+					tmp_min, tmp_max);
 	} else
-		return snprintf(buffer, buf_size, "%d+", min);
+		return snprintf(buffer, buf_size, "%s+", tmp_min);
 }
 
 int
@@ -353,8 +361,11 @@ int _print_nodes_t(sinfo_data_t * sinfo_data, int width,
 		   bool right_justify, char *suffix)
 {
 	char id[FORMAT_STRING_SIZE];
+	char tmp[7];
 	if (sinfo_data) {
-		snprintf(id, FORMAT_STRING_SIZE, "%u", sinfo_data->nodes_tot);
+		convert_to_kilo(sinfo_data->nodes_tot, tmp);
+	
+		snprintf(id, FORMAT_STRING_SIZE, "%s", tmp);
 		_print_str(id, width, right_justify, true);
 	} else
 		_print_str("NODES", width, right_justify, true);
@@ -368,9 +379,14 @@ int _print_nodes_ai(sinfo_data_t * sinfo_data, int width,
 		    bool right_justify, char *suffix)
 {
 	char id[FORMAT_STRING_SIZE];
+	char tmpa[7];
+	char tmpi[7];
 	if (sinfo_data) {
-		snprintf(id, FORMAT_STRING_SIZE, "%u/%u", 
-		         sinfo_data->nodes_alloc, sinfo_data->nodes_idle);
+		convert_to_kilo(sinfo_data->nodes_alloc, tmpa);
+		convert_to_kilo(sinfo_data->nodes_idle, tmpi);
+	
+		snprintf(id, FORMAT_STRING_SIZE, "%s/%s", 
+		         tmpa, tmpi);
 		_print_str(id, width, right_justify, true);
 	} else
 		_print_str("NODES(A/I)", width, right_justify, true);
@@ -384,10 +400,17 @@ int _print_nodes_aiot(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
 	char id[FORMAT_STRING_SIZE];
+	char tmpa[7];
+	char tmpi[7];
+	char tmpo[7];
+	char tmpt[7];
 	if (sinfo_data) {
-		snprintf(id, FORMAT_STRING_SIZE, "%u/%u/%u/%u", 
-		         sinfo_data->nodes_alloc, sinfo_data->nodes_idle,
-		         sinfo_data->nodes_other, sinfo_data->nodes_tot);
+		convert_to_kilo(sinfo_data->nodes_alloc, tmpa);
+		convert_to_kilo(sinfo_data->nodes_idle, tmpi);
+		convert_to_kilo(sinfo_data->nodes_other, tmpo);
+		convert_to_kilo(sinfo_data->nodes_tot, tmpt);
+		snprintf(id, FORMAT_STRING_SIZE, "%s/%s/%s/%s", 
+		         tmpa, tmpi, tmpo, tmpt);
 		_print_str(id, width, right_justify, true);
 	} else
 		_print_str("NODES(A/I/O/T)", width, right_justify, true);
@@ -497,9 +520,9 @@ int _print_size(sinfo_data_t * sinfo_data, int width,
 			    (sinfo_data->part_info->max_nodes > 0))
 				sinfo_data->part_info->min_nodes = 1;
 			_build_min_max_string(id, FORMAT_STRING_SIZE, 
-		                      sinfo_data->part_info->min_nodes, 
-		                      sinfo_data->part_info->max_nodes,
-		                      true);
+					      sinfo_data->part_info->min_nodes,
+					      sinfo_data->part_info->max_nodes,
+					      true);
 			_print_str(id, width, right_justify, true);
 		}
 	} else
