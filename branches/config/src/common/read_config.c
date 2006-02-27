@@ -40,6 +40,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include <slurm/slurm.h>
 
@@ -54,6 +55,11 @@
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/parse_config.h"
 #include "src/common/slurm_config.h"
+
+static pthread_mutex_t conf_lock = PTHREAD_MUTEX_INITIALIZER;
+static s_p_hashtbl_t *conf_hashtbl;
+static slurm_ctl_conf_t *conf_ptr;
+static bool conf_initialized = false;
 
 static int defunct_option(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value,
@@ -162,7 +168,6 @@ s_p_options_t slurm_partition_options[] = {
 inline static void _normalize_debug_level(uint16_t *level);
 static int  _parse_node_spec (char *in_line, bool slurmd_hosts);
 static int  _parse_part_spec (char *in_line);
-
 
 typedef struct names_ll_s {
 	char *node_hostname;
@@ -534,164 +539,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	return;
 }
 
-
-/*
- * set_general_options
- *
- * IN hashtbl- input line, parsed info overwritten with white-space
- * OUT ctl_conf_ptr - pointer to data structure to be updated
- */
-static void
-set_general_options (const s_p_hashtbl_t *hashtbl,
-		     slurm_ctl_conf_t *conf)
-{
-	/*
-	 * First the defunct options
-	 */
-/* 	if ( kill_tree != -1) { */
-/* 		verbose("KillTree configuration parameter is defunct"); */
-/* 		verbose("  mapping to ProctrackType=proctrack/linuxproc"); */
-/* 		xfree(proctrack_type); */
-/* 		proctrack_type = xstrdup("proctrack/linuxproc"); */
-/* 	} */
-/* 	if ( heartbeat_interval != -1) */
-/* 		error("HeartbeatInterval is defunct, see man slurm.conf"); */
-/* 	if ( mpich_gm_dir != -1) { */
-/* 		verbose("MpichGmDirectSupport configuration parameter is defunct"); */
-/* 		verbose("  mapping to ProctrackType=proctrack/linuxproc"); */
-/* 		xfree(proctrack_type); */
-/* 		proctrack_type = xstrdup("proctrack/linuxproc"); */
-/* 	} */
-
-	/*
-	 * Now the currently valid options
-	 */
-	s_p_get_string(hashtbl, "AuthType", &conf->authtype);
-	s_p_get_string(hashtbl, "CheckpointType", &conf->checkpoint_type);
-	s_p_get_string(hashtbl, "BackupAddr", &conf->backup_addr);
-	s_p_get_string(hashtbl, "BackupController", &conf->backup_controller);
-	s_p_get_string(hashtbl, "ControlAddr", &conf->control_addr);
-	s_p_get_string(hashtbl, "ControlMachine", &conf->control_machine);
-	s_p_get_string(hashtbl, "Epilog", &conf->epilog);
-	s_p_get_uint16(hashtbl, "CacheGroups", &conf->cache_groups);
-	s_p_get_uint16(hashtbl, "FastSchedule", &conf->fast_schedule);
-	s_p_get_uint32(hashtbl, "FirstJobId", &conf->first_job_id);
-
-	if (s_p_get_uint16(hashtbl, "InactiveLimit", &conf->inactive_limit)) {
-#ifdef HAVE_BG
-		/* Inactive limit must be zero on Blue Gene */
-		error("InactiveLimit=%ld is invalid on Blue Gene",
-		      cont->inactive_limit);
-		conf->inactive_limit = 0; /* default value too */
-#endif
-	}
-
-	s_p_get_string(hashtbl, "JobAcctLoc", &conf->job_acct_loc);
-	s_p_get_string(hashtbl, "JobAcctParameters",
-		       &conf->job_acct_parameters);
-	s_p_get_string(hashtbl, "JobAcctType", &conf->job_acct_type);
-	s_p_get_string(hashtbl, "JobCompLoc", &conf->job_comp_loc);
-	s_p_get_string(hashtbl, "JobCompType", &conf->job_comp_type);
-	s_p_get_string(hashtbl, "JobCredentialPrivateKey",
-		       &conf->job_credential_private_key);
-	s_p_get_string(hashtbl, "JobCredentialPublicCertificate",
-		       &conf->job_credential_public_certificate);
-	s_p_get_uint16(hashtbl, "KillWait", &conf->kill_wait);
-	s_p_get_uint16(hashtbl, "MaxJobCount", &conf->max_job_cnt);
-	s_p_get_uint16(hashtbl, "MinJobAge", &conf->min_job_age);
-	s_p_get_string(hashtbl, "MpiDefault", &conf->mpi_default);
-	s_p_get_string(hashtbl, "PluginDir", &conf->plugindir);
-	s_p_get_string(hashtbl, "ProctrackType", &conf->proctrack_type);
-	s_p_get_string(hashtbl, "Prolog", &conf->prolog);
-
-/* FIXME - convert to new parsing system */
-/*         if ( propagate_rlimits ) { */
-/*                 if ( conf->propagate_rlimits ) { */
-/*                         error( MULTIPLE_VALUE_MSG, */
-/*                                "PropagateResourceLimits" ); */
-/*                         xfree( conf->propagate_rlimits ); */
-/*                 } */
-/*                 else if ( conf->propagate_rlimits_except ) { */
-/*                         error( "%s keyword conflicts with %s, using latter.", */
-/*                                 "PropagateResourceLimitsExcept", */
-/*                                 "PropagateResourceLimits"); */
-/*                         xfree( conf->propagate_rlimits_except ); */
-/*                 } */
-/*                 conf->propagate_rlimits = propagate_rlimits; */
-/*         } */
-/*         if ( propagate_rlimits_except ) { */
-/*                 if ( conf->propagate_rlimits_except ) { */
-/*                         error( MULTIPLE_VALUE_MSG, */
-/*                                "PropagateResourceLimitsExcept" ); */
-/*                         xfree( conf->propagate_rlimits_except ); */
-/*                 } */
-/*                 else if ( conf->propagate_rlimits ) { */
-/*                         error( "%s keyword conflicts with %s, using latter.", */
-/*                                 "PropagateResourceLimits", */
-/*                                 "PropagateResourceLimitsExcept"); */
-/*                         xfree( conf->propagate_rlimits ); */
-/*                 } */
-/*                 conf->propagate_rlimits_except =  */
-/*                                                       propagate_rlimits_except; */
-/*         } */
-
-	s_p_get_uint16(hashtbl, "ReturnToService", &conf->ret2service);
-	s_p_get_string(hashtbl, "SchedulerAuth", &conf->schedauth);
-
-	if (s_p_get_uint16(hashtbl, "SchedulerPort", &conf->schedport)) {
-		if (conf->schedport == 0) {
-			error("SchedulerPort=0 is invalid");
-			conf->schedport = (uint16_t)NO_VAL;
-		}
-	}
-
-	s_p_get_uint16(hashtbl, "SchedulerRootFilter", &conf->schedrootfltr);
-	s_p_get_string(hashtbl, "SchedulerType", &conf->schedtype);
-	s_p_get_string(hashtbl, "SelectType", &conf->select_type);
-
-	if (s_p_get_string(hashtbl, "SlurmUser", &conf->slurm_user_name)) {
-		struct passwd *slurm_passwd;
-		slurm_passwd = getpwnam(conf->slurm_user_name);
-		if (slurm_passwd == NULL) {
-			error ("Invalid user for SlurmUser %s, ignored",
-			       conf->slurm_user_name);
-			xfree(conf->slurm_user_name);
-		} else {
-			if (slurm_passwd->pw_uid > 0xffff)
-				error("SlurmUser numberic overflow, "
-				      "will be fixed soon");
-			else
-				conf->slurm_user_id = slurm_passwd->pw_uid;
-		}
-	}
-
-	s_p_get_uint16(hashtbl, "SlurmctldDebug", &conf->slurmctld_debug);
-	s_p_get_string(hashtbl, "SlurmctldPidFile", &conf->slurmctld_pidfile);
-	s_p_get_string(hashtbl, "SlurmctldLogFile", &conf->slurmctld_logfile);
-	s_p_get_uint32(hashtbl, "SlurmctldPort", &conf->slurmctld_port);
-	s_p_get_uint16(hashtbl, "SlurmctldTimeout", &conf->slurmctld_timeout);
-	s_p_get_uint16(hashtbl, "SlurmdDebug", &conf->slurmd_debug);
-	s_p_get_string(hashtbl, "SlurmdLogFile", &conf->slurmd_logfile);
-	s_p_get_string(hashtbl, "SlurmdPidFile", &conf->slurmd_pidfile);
-	s_p_get_uint32(hashtbl, "SlurmdPort", &conf->slurmd_port);
-	s_p_get_string(hashtbl, "SlurmdSpoolDir", &conf->slurmd_spooldir);
-	s_p_get_uint16(hashtbl, "SlurmdTimeout", &conf->slurmd_timeout);
-	s_p_get_string(hashtbl, "SrunProlog", &conf->srun_prolog);
-	s_p_get_string(hashtbl, "SrunEpilog", &conf->srun_epilog);
-	s_p_get_string(hashtbl, "StateSaveLocation",
-		       &conf->state_save_location);
-	s_p_get_string(hashtbl, "SwitchType", &conf->switch_type);
-	s_p_get_string(hashtbl, "TaskEpilog", &conf->task_epilog);
-	s_p_get_string(hashtbl, "TaskProlog", &conf->task_prolog);
-	s_p_get_string(hashtbl, "TmpFS", &conf->tmp_fs);
-	s_p_get_uint16(hashtbl, "WaitTime", &conf->wait_time);
-	if (s_p_get_uint16(hashtbl, "TreeWidth", &conf->schedport)) {
-		if (conf->tree_width == 0) {
-			error("TreeWidth=0 is invalid");
-			conf->tree_width = 50; /* default? */
-		}
-	}
-}
 
 /*
  * _parse_node_spec - just overwrite node specifications (toss the results)
@@ -1427,10 +1274,10 @@ read_slurm_conf_ctl (slurm_ctl_conf_t *ctl_conf_ptr, bool slurmd_hosts)
 {
 	s_p_hashtbl_t *hashtbl;
 
-	assert (ctl_conf_ptr);
+	assert(ctl_conf_ptr);
 	/* zero the conf structure */
 	init_slurm_conf (ctl_conf_ptr);
-	/* memset(ctl_conf_ptr, 0, sizeof(slurm_ctl_conf_t));*/
+	/* memset(ctl_conf_ptr, 0, sizeof(slurm_ctl_conf_t)); */
 
 	if (ctl_conf_ptr->slurm_conf == NULL) {
 		char *val = getenv("SLURM_CONF");
@@ -1451,10 +1298,104 @@ read_slurm_conf_ctl (slurm_ctl_conf_t *ctl_conf_ptr, bool slurmd_hosts)
 	/* _parse_part_spec (in_line) */
 
 	/* validate_config (ctl_conf_ptr); */
-	validate_and_set_defaults(hashtbl, ctl_conf_ptr);
+	validate_and_set_defaults(ctl_conf_ptr, hashtbl);
 	s_p_hashtbl_destroy(hashtbl);
 	
 	return SLURM_SUCCESS;
+}
+
+
+/* caller must lock conf_lock */
+static void
+_init_slurm_conf(char *file_name)
+{
+	conf_ptr = (slurm_ctl_conf_t *)xmalloc(sizeof(slurm_ctl_conf_t));
+
+	if (file_name == NULL)
+		file_name = SLURM_CONFIG_FILE;
+
+	conf_hashtbl = s_p_hashtbl_create(slurm_conf_options);
+	s_p_parse_file(conf_hashtbl, file_name);
+	/* s_p_dump_values(conf_hashtbl, slurm_conf_options); */
+	validate_and_set_defaults(conf_ptr, conf_hashtbl);
+	conf_ptr->slurm_conf = xstrdup(file_name);
+}
+
+/* caller must lock conf_lock */
+static void
+_destroy_slurm_conf()
+{
+	s_p_hashtbl_destroy(conf_hashtbl);
+	free_slurm_conf(conf_ptr);
+	xfree(conf_ptr);
+}
+
+/*
+ * slurm_conf_init - load the slurm configuration from the configured file.
+ * IN file_name - name of the slurm configuration file to be read
+ *                If file_name is NULL, then the compiled-in default
+ *                file name is used.
+ * Note: If the conf structures have already been initialized by a call to
+ *       slurm_conf_read, any subsequent calls will do nothing until
+ *       slurm_conf_destroy is called.
+ * RET 0 if no error, otherwise an error code.
+ */
+extern int
+slurm_conf_init(char *file_name)
+{
+	pthread_mutex_lock(&conf_lock);
+
+	if (conf_initialized) {
+		pthread_mutex_unlock(&conf_lock);
+		return SLURM_SUCCESS;
+	}
+
+	_init_slurm_conf(file_name);
+	conf_initialized = true;
+
+	pthread_mutex_unlock(&conf_lock);
+	return SLURM_SUCCESS;
+}
+
+extern int 
+slurm_conf_reinit(char *file_name)
+{
+	pthread_mutex_lock(&conf_lock);
+
+	if (conf_initialized) {
+		_destroy_slurm_conf();
+	}
+
+	_init_slurm_conf(file_name);
+	conf_initialized = true;
+
+	pthread_mutex_unlock(&conf_lock);
+	return SLURM_SUCCESS;
+
+}
+
+extern int
+slurm_conf_destroy(void)
+{
+	pthread_mutex_lock(&conf_lock);
+
+	if (!conf_initialized) {
+		pthread_mutex_unlock(&conf_lock);
+		return SLURM_SUCCESS;
+	}
+
+	_destroy_slurm_conf();
+
+	conf_initialized = false;
+	pthread_mutex_unlock(&conf_lock);
+
+	return SLURM_SUCCESS;
+}
+
+extern slurm_ctl_conf_t *
+slurm_conf_get_struct(void)
+{
+	return conf_ptr;
 }
 
 /* 
@@ -1709,8 +1650,7 @@ static void _normalize_debug_level(uint16_t *level)
  * NOTE: if control_addr is NULL, it is over-written by control_machine
  */
 void
-validate_and_set_defaults(s_p_hashtbl_t *hashtbl,
-			  slurm_ctl_conf_t *conf)
+validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 {
 	if (s_p_get_string(hashtbl, "BackupController",
 			   &conf->backup_controller)

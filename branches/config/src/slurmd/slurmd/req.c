@@ -1720,7 +1720,7 @@ _rpc_terminate_job(slurm_msg_t *msg, slurm_addr *cli)
 	/*
 	 *  Check for corpses
 	 */
-	delay = MAX(conf->cf.kill_wait, 5);
+	delay = MAX(conf->cf->kill_wait, 5);
 	if ( !_pause_for_job_completion (req->job_id, delay)
 	     && _terminate_all_steps(req->job_id, true) ) {
 		/*

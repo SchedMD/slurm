@@ -432,7 +432,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 
 	get_procs(&msg->cpus);
 	get_memory(&msg->real_memory_size);
-	get_tmp_disk(&msg->temporary_disk_space, conf->cf.tmp_fs);
+	get_tmp_disk(&msg->temporary_disk_space, conf->cf->tmp_fs);
 	debug3("Procs=%u RealMemory=%u, TmpDisk=%u", msg->cpus, 
 	       msg->real_memory_size, msg->temporary_disk_space);
 
@@ -505,52 +505,54 @@ _read_config()
 {
         char *path_pubkey;
 
-	conf->cf.slurm_conf = xstrdup(conf->conffile);
+	/* conf->cf->slurm_conf = xstrdup(conf->conffile); */
 
-	read_slurm_conf_ctl(&conf->cf, false);
+	/* read_slurm_conf_ctl(&conf->cf, false); */
+	slurm_conf_reinit(conf->conffile);
+	conf->cf = slurm_conf_get_struct();
 
 	slurm_mutex_lock(&conf->config_mutex);
 
 	if (conf->conffile == NULL)
-		conf->conffile = xstrdup(conf->cf.slurm_conf);
+		conf->conffile = xstrdup(conf->cf->slurm_conf);
 
 #ifndef MULTIPLE_SLURMD
-	conf->port          =  conf->cf.slurmd_port;
+	conf->port          =  conf->cf->slurmd_port;
 #endif
-	conf->slurm_user_id =  conf->cf.slurm_user_id;
+	conf->slurm_user_id =  conf->cf->slurm_user_id;
 
-	path_pubkey = xstrdup(conf->cf.job_credential_public_certificate);
+	path_pubkey = xstrdup(conf->cf->job_credential_public_certificate);
 
 	if (!conf->logfile)
-		conf->logfile = xstrdup(conf->cf.slurmd_logfile);
+		conf->logfile = xstrdup(conf->cf->slurmd_logfile);
 
 	/* node_name may already be set from a command line parameter */
 	if (conf->node_name == NULL)
 		_free_and_set(&conf->node_name,
 			      get_conf_node_name(conf->hostname));
-	_free_and_set(&conf->epilog,   xstrdup(conf->cf.epilog));
-	_free_and_set(&conf->prolog,   xstrdup(conf->cf.prolog));
-	_free_and_set(&conf->tmpfs,    xstrdup(conf->cf.tmp_fs));
-	_free_and_set(&conf->spooldir, xstrdup(conf->cf.slurmd_spooldir));
+	_free_and_set(&conf->epilog,   xstrdup(conf->cf->epilog));
+	_free_and_set(&conf->prolog,   xstrdup(conf->cf->prolog));
+	_free_and_set(&conf->tmpfs,    xstrdup(conf->cf->tmp_fs));
+	_free_and_set(&conf->spooldir, xstrdup(conf->cf->slurmd_spooldir));
 #ifdef MULTIPLE_SLURMD
 	/* append the NodeName to the spooldir to make it unique */
 	xstrfmtcat(conf->spooldir, ".%s", conf->node_name);
 #endif
-	_free_and_set(&conf->pidfile,  xstrdup(conf->cf.slurmd_pidfile));
+	_free_and_set(&conf->pidfile,  xstrdup(conf->cf->slurmd_pidfile));
 #ifdef MULTIPLE_SLURMD
 	/* append the NodeName to the pidfile name to make it unique */
 	xstrfmtcat(conf->pidfile, ".%s", conf->node_name);
 #endif
-	_free_and_set(&conf->task_prolog, xstrdup(conf->cf.task_prolog));
-	_free_and_set(&conf->task_epilog, xstrdup(conf->cf.task_epilog));
+	_free_and_set(&conf->task_prolog, xstrdup(conf->cf->task_prolog));
+	_free_and_set(&conf->task_epilog, xstrdup(conf->cf->task_epilog));
 	_free_and_set(&conf->pubkey,   path_pubkey);     
 
 	if ( (conf->node_name == NULL) ||
 	     (conf->node_name[0] == '\0') )
 		fatal("Node name lookup failure");
  
-	if ( (conf->cf.control_addr == NULL) || 
-	     (conf->cf.slurmctld_port == 0)    )
+	if ( (conf->cf->control_addr == NULL) || 
+	     (conf->cf->slurmctld_port == 0)    )
 		fatal("Unable to establish control machine or port");
 
 	slurm_mutex_unlock(&conf->config_mutex);
@@ -574,7 +576,7 @@ _reconfigure(void)
 	/*
 	 * Reinitialize the groups cache
 	 */
-	init_gids_cache(conf->cf.cache_groups);
+	init_gids_cache(conf->cf->cache_groups);
 
 	/*
 	 * XXX: reopen slurmd port?
@@ -584,11 +586,11 @@ _reconfigure(void)
 static void
 _print_conf()
 {
-	debug3("CacheGroups = %d",       conf->cf.cache_groups);
+	debug3("CacheGroups = %d",       conf->cf->cache_groups);
 	debug3("Confile     = `%s'",     conf->conffile);
-	debug3("Debug       = %d",       conf->cf.slurmd_debug);
+	debug3("Debug       = %d",       conf->cf->slurmd_debug);
 	debug3("Epilog      = `%s'",     conf->epilog);
-	debug3("Logfile     = `%s'",     conf->cf.slurmd_logfile);
+	debug3("Logfile     = `%s'",     conf->cf->slurmd_logfile);
 	debug3("Port        = %u",       conf->port);
 	debug3("Prolog      = `%s'",     conf->prolog);
 	debug3("TmpFS       = `%s'",     conf->tmpfs);
@@ -774,13 +776,13 @@ _slurmd_init()
 	/*
 	 * Set up the job accounting plugin
 	 */
-	g_slurmd_jobacct_init(conf->cf.job_acct_parameters);
+	g_slurmd_jobacct_init(conf->cf->job_acct_parameters);
 
 
 	/*
 	 * Cache the group access list
 	 */
-	init_gids_cache(conf->cf.cache_groups);
+	init_gids_cache(conf->cf->cache_groups);
 
 	return SLURM_SUCCESS;
 }
@@ -975,8 +977,8 @@ static void _update_logging(void)
 	 * Initialize debug level if not already set
 	 */
 	if ( (conf->debug_level == LOG_LEVEL_INFO)
-	    && (conf->cf.slurmd_debug != (uint16_t) NO_VAL) )
-		conf->debug_level = conf->cf.slurmd_debug; 
+	    && (conf->cf->slurmd_debug != (uint16_t) NO_VAL) )
+		conf->debug_level = conf->cf->slurmd_debug; 
 
 	o->stderr_level  = conf->debug_level;
 	o->logfile_level = conf->debug_level;

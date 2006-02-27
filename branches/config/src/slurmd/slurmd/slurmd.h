@@ -59,7 +59,7 @@ extern pid_t getpgid(pid_t pid);
  */
 typedef struct slurmd_config {
 
-	slurm_ctl_conf_t cf;            /* slurm.conf configuration        */
+	slurm_ctl_conf_t *cf;		/* slurm.conf configuration        */
 
 	char         *prog;		/* Program basename		   */
 	char         ***argv;           /* pointer to argument vector      */

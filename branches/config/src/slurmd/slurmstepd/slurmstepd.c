@@ -109,7 +109,7 @@ main (int argc, char *argv[])
 	xfree(conf->spooldir);
 	xfree(conf->node_name);
 	xfree(conf->logfile);
-	xfree(conf->cf.job_acct_parameters);
+	xfree(conf->cf->job_acct_parameters);
 	xfree(conf);
 	info("done with job");
 	return 0;
@@ -164,6 +164,7 @@ _init_from_slurmd(int sock, char **argv,
 	debug3("step_type = %d", step_type);
 	
 	/* receive conf from slurmd */
+	conf->cf = (slurm_ctl_conf_t *)xmalloc(sizeof(slurm_ctl_conf_t));
 	safe_read(sock, &len, sizeof(int));
 	incoming_buffer = xmalloc(len);
 	safe_read(sock, incoming_buffer, len);
@@ -194,7 +195,7 @@ _init_from_slurmd(int sock, char **argv,
 		conf->log_opts.syslog_level  = LOG_LEVEL_QUIET;
 
 	log_init(argv[0],conf->log_opts, LOG_DAEMON, conf->logfile);
-	g_slurmd_jobacct_init(conf->cf.job_acct_parameters);
+	g_slurmd_jobacct_init(conf->cf->job_acct_parameters);
 	switch_g_slurmd_step_init();
 
 	/* receive cli from slurmd */

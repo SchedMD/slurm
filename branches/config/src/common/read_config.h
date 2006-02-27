@@ -161,8 +161,20 @@ extern void report_leftover (char *in_line, int line_num);
  */
 extern void validate_config (slurm_ctl_conf_t *ctl_conf_ptr);
 
-extern void validate_and_set_defaults(s_p_hashtbl_t *hashtbl,
-				      slurm_ctl_conf_t *conf);
+extern void validate_and_set_defaults(slurm_ctl_conf_t *conf,
+				      s_p_hashtbl_t *hashtbl);
+
+/*
+ * NEW FUNCTIONS
+ */
+
+extern int slurm_conf_init(char *file_name);
+
+extern int slurm_conf_reinit(char *file_name);
+
+extern int slurm_conf_destroy(void);
+
+extern slurm_ctl_conf_t *slurm_conf_get_struct(void);
 
 
 #endif /* !_READ_CONFIG_H */
