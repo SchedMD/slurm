@@ -35,6 +35,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <regex.h>
+#include <stdint.h>
 
 /* #include "src/common/slurm_protocol_defs.h" */
 #include "src/common/log.h"
@@ -199,11 +200,11 @@ static void _keyvalue_regex_init(void)
 
 /*
  * IN line - string to be search for a key=value pair
- * OUT key - pointer to the key string (must be freed by caller)
- * OUT value - pointer to the value string (must be freed by caller)
+ * OUT key - pointer to the key string (caller must free with free())
+ * OUT value - pointer to the value string (caller must free with free())
  * OUT remaining - pointer into the "line" string denoting the start
  *                 of the unsearched portion of the string
- * Returns 0 when a key-value pair is found, and -1 otherwise.
+ * Return 0 when a key-value pair is found, and -1 otherwise.
  */
 static int _keyvalue_regex(const char *line,
 			   char **key, char **value, char **remaining)
@@ -220,10 +221,10 @@ static int _keyvalue_regex(const char *line,
 		return -1;
 	}
 	
-	*key = (char *)(strndup(line + pmatch[2].rm_so,
-				pmatch[2].rm_eo - pmatch[2].rm_so));
-	*value = (char *)(strndup(line + pmatch[3].rm_so,
-				  pmatch[3].rm_eo - pmatch[3].rm_so));
+	*key = (char *)(xstrndup(line + pmatch[2].rm_so,
+				 pmatch[2].rm_eo - pmatch[2].rm_so));
+	*value = (char *)(xstrndup(line + pmatch[3].rm_so,
+				   pmatch[3].rm_eo - pmatch[3].rm_so));
 	*remaining = (char *)(line + pmatch[3].rm_eo);
 	return 0;
 }
@@ -351,12 +352,13 @@ static int _handle_string(s_p_values_t *v,
 
 	if (v->handler != NULL) {
 		/* call the handler function */
-		/* v->data_count = 1; */
+		if (v->handler(&v->data, v->type, v->key, value, line) != 0)
+			return -1;
 	} else {
 		v->data = xstrdup(value);
-		v->data_count = 1;
 	}
 
+	v->data_count = 1;
 	return 0;
 }
 
@@ -370,7 +372,8 @@ static int _handle_long(s_p_values_t *v,
 
 	if (v->handler != NULL) {
 		/* call the handler function */
-		/* v->data_count = 1; */
+		if (v->handler(&v->data, v->type, v->key, value, line) != 0)
+			return -1;
 	} else {
 		char *endptr;
 		long num;
@@ -386,9 +389,89 @@ static int _handle_long(s_p_values_t *v,
 		}
 		v->data = xmalloc(sizeof(long));
 		*(long *)v->data = num;
-		v->data_count = 1;
 	}
 
+	v->data_count = 1;
+	return 0;
+}
+
+static int _handle_uint16(s_p_values_t *v,
+			  const char *value, const char *line)
+{
+	if (v->data_count != 0) {
+		error("%s specified more than once", v->key);
+		return -1;
+	}
+
+	if (v->handler != NULL) {
+		/* call the handler function */
+		if (v->handler(&v->data, v->type, v->key, value, line) != 0)
+			return -1;
+	} else {
+		char *endptr;
+		long num;
+
+		errno = 0;
+		num = strtol(value, &endptr, 0);
+		if ((num == 0 && errno == EINVAL)
+		    || (*endptr != '\0')) {
+			error("\"%s\" is not a valid number", value);
+			return -1;
+		} else if (errno == ERANGE) {
+			error("\"%s\" is out of range", value);
+			return -1;
+		} else if (num < 0) {
+			error("\"%s\" is less than zero", value);
+			return -1;
+		} else if (num > 0xffff) {
+			error("\"%s\" is greater than 65535", value);
+			return -1;
+		}
+		v->data = xmalloc(sizeof(uint16_t));
+		*(uint16_t *)v->data = (uint16_t)num;
+	}
+
+	v->data_count = 1;
+	return 0;
+}
+
+static int _handle_uint32(s_p_values_t *v,
+			  const char *value, const char *line)
+{
+	if (v->data_count != 0) {
+		error("%s specified more than once", v->key);
+		return -1;
+	}
+
+	if (v->handler != NULL) {
+		/* call the handler function */
+		if (v->handler(&v->data, v->type, v->key, value, line) != 0)
+			return -1;
+	} else {
+		char *endptr;
+		long num;
+
+		errno = 0;
+		num = strtol(value, &endptr, 0);
+		if ((num == 0 && errno == EINVAL)
+		    || (*endptr != '\0')) {
+			error("\"%s\" is not a valid number", value);
+			return -1;
+		} else if (errno == ERANGE) {
+			error("\"%s\" is out of range", value);
+			return -1;
+		} else if (num < 0) {
+			error("\"%s\" is less than zero", value);
+			return -1;
+		} else if (num > 0xffffffff) {
+			error("\"%s\" is greater than 65535", value);
+			return -1;
+		}
+		v->data = xmalloc(sizeof(uint32_t));
+		*(uint32_t *)v->data = (uint32_t)num;
+	}
+
+	v->data_count = 1;
 	return 0;
 }
 
@@ -402,12 +485,13 @@ static int _handle_pointer(s_p_values_t *v,
 
 	if (v->handler != NULL) {
 		/* call the handler function */
-		/* v->data_count = 1; */
+		if (v->handler(&v->data, v->type, v->key, value, line) != 0)
+			return -1;
 	} else {
 		v->data = xstrdup(value);
-		v->data_count = 1;
 	}
 
+	v->data_count = 1;
 	return 0;
 }
 
@@ -443,6 +527,12 @@ static void _handle_keyvalue_match(s_p_values_t *v,
 		break;
 	case S_P_LONG:
 		_handle_long(v, value, line);
+		break;
+	case S_P_UINT16:
+		_handle_uint16(v, value, line);
+		break;
+	case S_P_UINT32:
+		_handle_uint32(v, value, line);
 		break;
 	case S_P_POINTER:
 		_handle_pointer(v, value, line);
@@ -505,6 +595,19 @@ void s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line)
 	}
 }
 
+/*
+ * s_p_get_string - Search for a key in a s_p_hashtbl_t with value of type
+ *                  string.  If the key is found and has a set value, the
+ *                  value is retuned in "str".
+ *
+ * IN hashtbl - hash table created by s_p_hashtbl_create()
+ * IN key - hash table key.
+ * OUT str - pointer to a copy of the string value
+ *           (caller is resonsible for freeing str with xfree())
+ *
+ * Returns 1 when a value was set for "key" during parsing and "str"
+ *   was successfully set, otherwise returns 0;
+ */
 int s_p_get_string(const s_p_hashtbl_t *hashtbl, const char *key, char **str)
 {
 	s_p_values_t *p;
@@ -512,17 +615,33 @@ int s_p_get_string(const s_p_hashtbl_t *hashtbl, const char *key, char **str)
 	p = _conf_hashtbl_lookup(hashtbl, key);
 	if (p == NULL) {
 		error("Invalid key \"%s\"", key);
-		return -1;
+		return 0;
+	}
+	if (p->type != S_P_STRING) {
+		error("Key \"%s\" is not a string\n", key);
+		return 0;
 	}
 	if (p->data_count == 0) {
-		return -1;
+		return 0;
 	}
 
 	*str = xstrdup((char *)p->data);
 
-	return 0;
+	return 1;
 }
 
+/*
+ * s_p_get_long - Search for a key in a s_p_hashtbl_t with value of type
+ *                  lone.  If the key is found and has a set value, the
+ *                  value is retuned in "num".
+ *
+ * IN hashtbl - hash table created by s_p_hashtbl_create()
+ * IN key - hash table key
+ * OUT num - pointer to a long where the value is returned
+ *
+ * Returns 1 when a value was set for "key" during parsing and "num"
+ *   was successfully set, otherwise returns 0;
+ */
 int s_p_get_long(const s_p_hashtbl_t *hashtbl, const char *key, long *num)
 {
 	s_p_values_t *p;
@@ -530,17 +649,103 @@ int s_p_get_long(const s_p_hashtbl_t *hashtbl, const char *key, long *num)
 	p = _conf_hashtbl_lookup(hashtbl, key);
 	if (p == NULL) {
 		error("Invalid key \"%s\"", key);
-		return -1;
+		return 0;
+	}
+	if (p->type != S_P_LONG) {
+		error("Key \"%s\" is not a long\n", key);
+		return 0;
 	}
 	if (p->data_count == 0) {
-		return -1;
+		return 0;
 	}
 
 	*num = *(long *)p->data;
 
-	return 0;
+	return 1;
 }
 
+/*
+ * s_p_get_uint16 - Search for a key in a s_p_hashtbl_t with value of type
+ *                  lone.  If the key is found and has a set value, the
+ *                  value is retuned in "num".
+ *
+ * IN hashtbl - hash table created by s_p_hashtbl_create()
+ * IN key - hash table key
+ * OUT num - pointer to a uint16_t where the value is returned
+ *
+ * Returns 1 when a value was set for "key" during parsing and "num"
+ *   was successfully set, otherwise returns 0;
+ */
+int s_p_get_uint16(const s_p_hashtbl_t *hashtbl, const char *key,
+		   uint16_t *num)
+{
+	s_p_values_t *p;
+
+	p = _conf_hashtbl_lookup(hashtbl, key);
+	if (p == NULL) {
+		error("Invalid key \"%s\"", key);
+		return 0;
+	}
+	if (p->type != S_P_UINT16) {
+		error("Key \"%s\" is not a uint16_t\n", key);
+		return 0;
+	}
+	if (p->data_count == 0) {
+		return 0;
+	}
+
+	*num = *(uint16_t *)p->data;
+
+	return 1;
+}
+
+/*
+ * s_p_get_uint32 - Search for a key in a s_p_hashtbl_t with value of type
+ *                  lone.  If the key is found and has a set value, the
+ *                  value is retuned in "num".
+ *
+ * IN hashtbl - hash table created by s_p_hashtbl_create()
+ * IN key - hash table key
+ * OUT num - pointer to a uint32_t where the value is returned
+ *
+ * Returns 1 when a value was set for "key" during parsing and "num"
+ *   was successfully set, otherwise returns 0;
+ */
+int s_p_get_uint32(const s_p_hashtbl_t *hashtbl, const char *key,
+		   uint32_t *num)
+{
+	s_p_values_t *p;
+
+	p = _conf_hashtbl_lookup(hashtbl, key);
+	if (p == NULL) {
+		error("Invalid key \"%s\"", key);
+		return 0;
+	}
+	if (p->type != S_P_UINT32) {
+		error("Key \"%s\" is not a uint32_t\n", key);
+		return 0;
+	}
+	if (p->data_count == 0) {
+		return 0;
+	}
+
+	*num = *(uint32_t *)p->data;
+
+	return 1;
+}
+
+/*
+ * s_p_get_pointer - Search for a key in a s_p_hashtbl_t with value of type
+ *                   lone.  If the key is found and has a set value, the
+ *                   value is retuned in "ptr".
+ *
+ * IN hashtbl - hash table created by s_p_hashtbl_create()
+ * IN key - hash table key
+ * OUT num - pointer to a void pointer where the value is returned
+ *
+ * Returns 1 when a value was set for "key" during parsing and "ptr"
+ *   was successfully set, otherwise returns 0;
+ */
 int s_p_get_pointer(const s_p_hashtbl_t *hashtbl, const char *key, void **ptr)
 {
 	s_p_values_t *p;
@@ -548,15 +753,19 @@ int s_p_get_pointer(const s_p_hashtbl_t *hashtbl, const char *key, void **ptr)
 	p = _conf_hashtbl_lookup(hashtbl, key);
 	if (p == NULL) {
 		error("Invalid key \"%s\"", key);
-		return -1;
+		return 0;
+	}
+	if (p->type != S_P_POINTER) {
+		error("Key \"%s\" is not a pointer\n", key);
+		return 0;
 	}
 	if (p->data_count == 0) {
-		return -1;
+		return 0;
 	}
 
 	*ptr = p->data;
 
-	return 0;
+	return 1;
 }
 
 int s_p_get_array(const s_p_hashtbl_t *hashtbl, const char *key,
@@ -567,16 +776,20 @@ int s_p_get_array(const s_p_hashtbl_t *hashtbl, const char *key,
 	p = _conf_hashtbl_lookup(hashtbl, key);
 	if (p == NULL) {
 		error("Invalid key \"%s\"", key);
-		return -1;
+		return 0;
+	}
+	if (p->type != S_P_ARRAY) {
+		error("Key \"%s\" is not an array\n", key);
+		return 0;
 	}
 	if (p->data_count == 0) {
-		return -1;
+		return 0;
 	}
 
 	*ptr_array = (void **)p->data;
 	*count = p->data_count;
 
-	return 0;
+	return 1;
 }
 
 
@@ -591,6 +804,8 @@ void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
 {
 	const s_p_options_t *op = NULL;
 	long num;
+	uint16_t num16;
+	uint32_t num32;
 	char *str;
 	void *ptr;
 	void **ptr_array;
@@ -600,7 +815,7 @@ void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
 	for (op = options; op->key != NULL; op++) {
 		switch(op->type) {
 		case S_P_STRING:
-			if (!s_p_get_string(hashtbl, op->key, &str)) {
+			if (s_p_get_string(hashtbl, op->key, &str)) {
 			        debug("%s = %s", op->key, str);
 				xfree(str);
 			} else {
@@ -608,20 +823,32 @@ void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
 			}
 			break;
 		case S_P_LONG:
-			if (!s_p_get_long(hashtbl, op->key, &num))
+			if (s_p_get_long(hashtbl, op->key, &num))
 				debug("%s = %ld", op->key, num);
 			else
 				debug("%s", op->key);
 			break;
+		case S_P_UINT16:
+			if (s_p_get_uint16(hashtbl, op->key, &num16))
+				debug("%s = %hu", op->key, num16);
+			else
+				debug("%s", op->key);
+			break;
+		case S_P_UINT32:
+			if (s_p_get_uint32(hashtbl, op->key, &num32))
+				debug("%s = %u", op->key, num32);
+			else
+				debug("%s", op->key);
+			break;
 		case S_P_POINTER:
-			if (!s_p_get_pointer(hashtbl, op->key, &ptr))
+			if (s_p_get_pointer(hashtbl, op->key, &ptr))
 				debug("%s = %x", op->key, ptr);
 			else
 				debug("%s", op->key);
 			break;
 		case S_P_ARRAY:
-			if (!s_p_get_array(hashtbl, op->key,
-					   &ptr_array, &count)) {
+			if (s_p_get_array(hashtbl, op->key,
+					  &ptr_array, &count)) {
 				debug("%s, count = %d", op->key, count);
 			} else {
 				debug("%s", op->key);

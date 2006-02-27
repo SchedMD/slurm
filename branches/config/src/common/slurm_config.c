@@ -80,7 +80,7 @@ void destroy_partitionname(void *ptr)
 	s_p_hashtbl_destroy((s_p_hashtbl_t *)ptr);
 }
 
-void parse_slurm_conf(void) {
+void read_slurm_conf_init(void) {
 	s_p_hashtbl_t *hashtbl;
 
 	hashtbl = s_p_hashtbl_create(slurm_conf_options);

@@ -31,6 +31,7 @@
 #define _READ_CONFIG_H
 
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/parse_config.h"
 
 #define DEFAULT_AUTH_TYPE          "auth/none"
 #define DEFAULT_FAST_SCHEDULE       1
@@ -159,5 +160,9 @@ extern void report_leftover (char *in_line, int line_num);
  * NOTE: if control_addr is NULL, it is over-written by control_machine
  */
 extern void validate_config (slurm_ctl_conf_t *ctl_conf_ptr);
+
+extern void validate_and_set_defaults(s_p_hashtbl_t *hashtbl,
+				      slurm_ctl_conf_t *conf);
+
 
 #endif /* !_READ_CONFIG_H */

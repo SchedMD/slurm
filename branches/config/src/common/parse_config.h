@@ -31,12 +31,16 @@
 #ifndef _PARSE_CONFIG_H
 #define _PARSE_CONFIG_H
 
+#include <stdint.h>
+
 typedef struct s_p_values s_p_values_t;
 typedef s_p_values_t * s_p_hashtbl_t;
 
 typedef enum slurm_parser_enum {
 	S_P_STRING,
 	S_P_LONG,
+	S_P_UINT16,
+	S_P_UINT32,
 	S_P_POINTER,
 	S_P_ARRAY
 } slurm_parser_enum_t;
@@ -56,8 +60,18 @@ void s_p_hashtbl_destroy(s_p_hashtbl_t *hashtbl);
 void s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename);
 void s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line);
 
+/*
+ * s_p_get_string
+ *
+ * Caller is responsible for freeing returned string pointer with xfree().
+ */
 int s_p_get_string(const s_p_hashtbl_t *hashtbl, const char *key, char **str);
+
 int s_p_get_long(const s_p_hashtbl_t *hashtbl, const char *key, long *num);
+int s_p_get_uint16(const s_p_hashtbl_t *hashtbl, const char *key,
+		   uint16_t *num);
+int s_p_get_uint32(const s_p_hashtbl_t *hashtbl, const char *key,
+		   uint32_t *num);
 int s_p_get_pointer(const s_p_hashtbl_t *hashtbl, const char *key, void **ptr);
 int s_p_get_array(const s_p_hashtbl_t *hashtbl, const char *key,
 		  void **ptr_array[], int *count);
