@@ -651,7 +651,7 @@ static int _load_job_state(Buf buffer)
 	xfree(job_ptr->alloc_node);
 	job_ptr->alloc_node = alloc_node;
 	alloc_node          = NULL;	/* reused, nothing left to free */
-	strncpy(job_ptr->partition, partition, MAX_NAME_LEN);
+	strncpy(job_ptr->partition, partition, MAX_SLURM_NAME);
 	xfree(partition);
 	job_ptr->account = account;
 	account          = NULL;  /* reused, nothing left to free */
@@ -1541,9 +1541,9 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
 	agent_args->slurm_addr	= xmalloc(sizeof(struct sockaddr_in));
 	memcpy(agent_args->slurm_addr, &node_record_table_ptr[i].slurm_addr,
 			sizeof(struct sockaddr_in));
-	agent_args->node_names	= xmalloc(MAX_NAME_LEN);
+	agent_args->node_names	= xmalloc(MAX_SLURM_NAME);
 	strncpy(agent_args->node_names, node_record_table_ptr[i].name,
-			MAX_NAME_LEN);
+			MAX_SLURM_NAME);
 	
 	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	kill_tasks_msg->job_id      = job_ptr->job_id;
@@ -2196,7 +2196,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	if (error_code)
 		return error_code;
 
-	strncpy(job_ptr->partition, part_ptr->name, MAX_NAME_LEN);
+	strncpy(job_ptr->partition, part_ptr->name, MAX_SLURM_NAME);
 	job_ptr->part_ptr = part_ptr;
 	if (job_desc->job_id != NO_VAL)		/* already confirmed unique */
 		job_ptr->job_id = job_desc->job_id;
@@ -3261,7 +3261,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_INVALID_PARTITION_NAME;
 		if ((super_user && tmp_part_ptr)) {
 			strncpy(job_ptr->partition, job_specs->partition,
-				MAX_NAME_LEN);
+				MAX_SLURM_NAME);
 			job_ptr->part_ptr = tmp_part_ptr;
 			info("update_job: setting partition to %s for "
 				"job_id %u", job_specs->partition, 
@@ -3713,13 +3713,13 @@ _xmit_new_end_time(struct job_record *job_ptr)
 				 (sizeof(struct sockaddr_in) *
 				  buf_rec_size));
 			xrealloc((agent_args->node_names),
-				 (MAX_NAME_LEN * buf_rec_size));
+				 (MAX_SLURM_NAME * buf_rec_size));
 		}
 		agent_args->slurm_addr[agent_args->node_count] =
 		    node_record_table_ptr[i].slurm_addr;
 		strncpy(&agent_args->
-			node_names[MAX_NAME_LEN * agent_args->node_count],
-			node_record_table_ptr[i].name, MAX_NAME_LEN);
+			node_names[MAX_SLURM_NAME * agent_args->node_count],
+			node_record_table_ptr[i].name, MAX_SLURM_NAME);
 		agent_args->node_count++;
 #ifdef HAVE_FRONT_END		/* operate only on front-end node */
 		break;
@@ -3915,13 +3915,13 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 				(sizeof(struct sockaddr_in) *
 				buf_rec_size));
 			xrealloc((agent_args->node_names),
-				(MAX_NAME_LEN * buf_rec_size));
+				(MAX_SLURM_NAME * buf_rec_size));
 		}
 		agent_args->slurm_addr[agent_args->node_count] =
 			node_record_table_ptr[i].slurm_addr;
 		strncpy(&agent_args->
-			node_names[MAX_NAME_LEN * agent_args->node_count],
-			node_record_table_ptr[i].name, MAX_NAME_LEN);
+			node_names[MAX_SLURM_NAME * agent_args->node_count],
+			node_record_table_ptr[i].name, MAX_SLURM_NAME);
 		agent_args->node_count++;
 #ifdef HAVE_FRONT_END	/* Operate only on front-end */
 		break;
@@ -3962,13 +3962,13 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op)
 				(sizeof(struct sockaddr_in) *
 				buf_rec_size));
 			xrealloc((agent_args->node_names),
-				(MAX_NAME_LEN * buf_rec_size));
+				(MAX_SLURM_NAME * buf_rec_size));
 		}
 		agent_args->slurm_addr[agent_args->node_count] =
 			node_record_table_ptr[i].slurm_addr;
 		strncpy(&agent_args->
-			node_names[MAX_NAME_LEN * agent_args->node_count],
-			node_record_table_ptr[i].name, MAX_NAME_LEN);
+			node_names[MAX_SLURM_NAME * agent_args->node_count],
+			node_record_table_ptr[i].name, MAX_SLURM_NAME);
 		agent_args->node_count++;
 #ifdef HAVE_FRONT_END	/* Operate only on front-end */
 		break;

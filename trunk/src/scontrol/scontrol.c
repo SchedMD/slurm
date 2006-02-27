@@ -671,14 +671,14 @@ static void
 _print_daemons (void)
 {
 	slurm_ctl_conf_info_msg_t  conf;
-	char me[MAX_NAME_LEN], *b, *c, *n;
+	char me[MAX_SLURM_NAME], *b, *c, *n;
 	int actld = 0, ctld = 0, d = 0;
 	char daemon_list[] = "slurmctld slurmd";
 
 	bzero(&conf, sizeof(conf));
 	if (read_slurm_conf_ctl(&conf, true) != SLURM_SUCCESS)
 		return;
-	getnodename(me, MAX_NAME_LEN);
+	getnodename(me, MAX_SLURM_NAME);
 	if ((b = conf.backup_controller)) {
 		if ((strcmp(b, me) == 0) ||
 		    (strcasecmp(b, "localhost") == 0))

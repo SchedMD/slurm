@@ -127,7 +127,7 @@ void ping_nodes (void)
 	hostlist_t ping_hostlist = hostlist_create("");
 	hostlist_t reg_hostlist  = hostlist_create("");
 	hostlist_t down_hostlist = NULL;
-	char host_str[MAX_NAME_LEN];
+	char host_str[MAX_SLURM_NAME];
 
 	int ping_buf_rec_size = 0;
 	agent_arg_t *ping_agent_args;
@@ -221,13 +221,13 @@ void ping_nodes (void)
 				          (sizeof (struct sockaddr_in) * 
 					  reg_buf_rec_size));
 				xrealloc ((reg_agent_args->node_names), 
-				          (MAX_NAME_LEN * reg_buf_rec_size));
+				          (MAX_SLURM_NAME * reg_buf_rec_size));
 			}
 			reg_agent_args->slurm_addr[reg_agent_args->node_count] = 
 					node_ptr->slurm_addr;
-			pos = MAX_NAME_LEN * reg_agent_args->node_count;
+			pos = MAX_SLURM_NAME * reg_agent_args->node_count;
 			strncpy (&reg_agent_args->node_names[pos],
-			         node_ptr->name, MAX_NAME_LEN);
+			         node_ptr->name, MAX_SLURM_NAME);
 			reg_agent_args->node_count++;
 			continue;
 		}
@@ -239,13 +239,13 @@ void ping_nodes (void)
 			          (sizeof (struct sockaddr_in) * 
 				  ping_buf_rec_size));
 			xrealloc ((ping_agent_args->node_names), 
-			          (MAX_NAME_LEN * ping_buf_rec_size));
+			          (MAX_SLURM_NAME * ping_buf_rec_size));
 		}
 		ping_agent_args->slurm_addr[ping_agent_args->node_count] = 
 					node_ptr->slurm_addr;
-		pos = MAX_NAME_LEN * ping_agent_args->node_count;
+		pos = MAX_SLURM_NAME * ping_agent_args->node_count;
 		strncpy (&ping_agent_args->node_names[pos],
-		         node_ptr->name, MAX_NAME_LEN);
+		         node_ptr->name, MAX_SLURM_NAME);
 		ping_agent_args->node_count++;
 	}
 

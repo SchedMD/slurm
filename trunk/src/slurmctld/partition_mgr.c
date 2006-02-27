@@ -59,7 +59,7 @@
 /* Global variables */
 struct part_record default_part;	/* default configuration values */
 List part_list = NULL;			/* partition list */
-char default_part_name[MAX_NAME_LEN];	/* name of default partition */
+char default_part_name[MAX_SLURM_NAME];	/* name of default partition */
 struct part_record *default_part_loc = NULL; /* default partition location */
 time_t last_part_update;	/* time of last update to partition records */
 
@@ -464,7 +464,7 @@ int load_all_part_state(void)
 			part_ptr->max_nodes = max_nodes;
 			part_ptr->min_nodes = min_nodes;
 			if (def_part_flag) {
-				strncpy(default_part_name, part_name, MAX_NAME_LEN);
+				strncpy(default_part_name, part_name, MAX_SLURM_NAME);
 				default_part_loc = part_ptr;
 			}
 			part_ptr->root_only = root_only;
@@ -593,7 +593,7 @@ int list_find_part(void *part_entry, void *key)
 		return 1;
 
 	if (strncmp(((struct part_record *) part_entry)->name,
-		    (char *) key, MAX_NAME_LEN) == 0)
+		    (char *) key, MAX_SLURM_NAME) == 0)
 		return 1;
 
 	return 0;
@@ -740,7 +740,7 @@ int update_part(update_part_msg_t * part_desc)
 	struct part_record *part_ptr;
 
 	if ((part_desc->name == NULL) ||
-	    (strlen(part_desc->name) >= MAX_NAME_LEN)) {
+	    (strlen(part_desc->name) >= MAX_SLURM_NAME)) {
 		error("update_part: invalid partition name  %s",
 		      part_desc->name);
 		return ESLURM_INVALID_PARTITION_NAME;
@@ -805,7 +805,7 @@ int update_part(update_part_msg_t * part_desc)
 	    (strcmp(default_part_name, part_desc->name) != 0)) {
 		info("update_part: changing default partition from %s to %s", 
 		     default_part_name, part_desc->name);
-		strncpy(default_part_name, part_desc->name, MAX_NAME_LEN);
+		strncpy(default_part_name, part_desc->name, MAX_SLURM_NAME);
 		default_part_loc = part_ptr;
 	}
 
