@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     slurmctld daemons repsectively.
  -- Add hash tables for select/cons_res plugin (Susanne Balle, HP, 
     patch_02222006).
+ -- Remove some use of cr_enabled flag in slurmctld job record, use 
+    new flag "test_only" in select_g_job_test() instead.
 
 * Changes in SLURM 1.0.5
 ========================

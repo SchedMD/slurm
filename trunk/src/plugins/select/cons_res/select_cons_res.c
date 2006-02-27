@@ -671,21 +671,11 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	int best_fit_nodes, best_fit_cpus, best_fit_req;
 	int best_fit_location = 0, best_fit_sufficient;
 
-	/* Determine if consumable resources (of processors) is
-	 * enabled. In some cases, select_p_job_test is called to see
-	 * if a job can run if all the available resources were
-	 * available to the job. We therefore need to be able to
-	 * disable consumable resources (of processors). In the case
-	 * where consumable resources (of processors) is disabled the
-	 * code flow is similar to the select/linear plug-in.
-	 */
-	int cr_enabled = job_ptr->cr_enabled;
-
 	xassert(bitmap);
 
 	debug3(" cons_res plug-in: Job_id %u min %d max nodes %d "
-		"cr_enabled %d host %s ", job_ptr->job_id, min_nodes, 
-		max_nodes, cr_enabled, bitmap2node_name(bitmap));
+		"test_only %d host %s ", job_ptr->job_id, min_nodes, 
+		max_nodes, (int) test_only, bitmap2node_name(bitmap));
 
 	consec_index = 0;
 	consec_size = 50;	/* start allocation for 50 sets of 
@@ -710,7 +700,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 			if (consec_nodes[consec_index] == 0)
 				consec_start[consec_index] = index;
 			allocated_cpus = 0;
-			if (cr_enabled) {
+			if (!test_only) {
 				error_code =
 				    select_g_get_select_nodeinfo
 				    (select_node_ptr[index].node_ptr,
@@ -816,7 +806,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 				bit_set(bitmap, i);
 				rem_nodes--;
 				allocated_cpus = 0;
-				if (cr_enabled) {
+				if (!test_only) {
 					error_code =
 					    select_g_get_select_nodeinfo
 					    (select_node_ptr[i].node_ptr,
@@ -846,7 +836,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 				rem_nodes--;
 
 				allocated_cpus = 0;
-				if (cr_enabled) {
+				if (!test_only) {
 					error_code =
 					    select_g_get_select_nodeinfo
 					    (select_node_ptr[i].node_ptr,
@@ -878,7 +868,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 				rem_nodes--;
 
 				allocated_cpus = 0;
-				if (cr_enabled) {
+				if (!test_only) {
 					error_code =
 					    select_g_get_select_nodeinfo
 					    (select_node_ptr[i].node_ptr,
@@ -916,7 +906,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	if (error_code != SLURM_SUCCESS)
 		goto cleanup;
 
-	if (cr_enabled) {
+	if (!test_only) {
 		int jobid, job_nodecnt, j;
 		bitoff_t size;
 		static struct select_cr_job *job;

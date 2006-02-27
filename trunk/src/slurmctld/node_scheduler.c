@@ -656,14 +656,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				if (avail_bitmap == NULL)
 					fatal("bit_copy malloc failure");
 				bit_and(avail_bitmap, avail_node_bitmap);
-                                if (cr_enabled)
-                                        job_ptr->cr_enabled = 0;
 				pick_code = select_g_job_test(job_ptr, 
 							      avail_bitmap, 
 							      min_nodes, 
 							      max_nodes, true);
-                                if (cr_enabled)
-                                        job_ptr->cr_enabled = 1;
 				if (pick_code == SLURM_SUCCESS) {
 					runable_ever  = true;
 					if ((node_lim == INFINITE) ||
@@ -673,14 +669,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				}
 			}
 			if (!runable_ever) {
-                                if (cr_enabled)
-                                        job_ptr->cr_enabled = 0;
 				pick_code = select_g_job_test(job_ptr, 
 							      total_bitmap, 
 							      min_nodes, 
 							      max_nodes, true);
-                                if (cr_enabled)
-                                        job_ptr->cr_enabled = 1;
 				if (pick_code == SLURM_SUCCESS)
 					runable_ever = true;
 			}
